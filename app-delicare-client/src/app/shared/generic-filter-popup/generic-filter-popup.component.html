@@ -1,0 +1,114 @@
+<div class="filter-container">
+
+  <!-- BUTTON -->
+  <button
+    type="button"
+    class="filter-button"
+    [class.active]="isOpen"
+    [attr.aria-expanded]="isOpen"
+    (click)="toggle()">
+
+    <svg viewBox="0 0 24 24" class="filter-icon">
+      <path d="M3 5h18l-7 8v6l-4-2v-4L3 5z"></path>
+    </svg>
+
+    <span>{{ buttonText }}</span>
+
+    <span
+      class="filter-count"
+      *ngIf="activeFilterCount > 0">
+      {{ activeFilterCount }}
+    </span>
+
+    <span class="arrow" [class.rotate]="isOpen">
+      ⌃
+    </span>
+
+  </button>
+
+
+  <!-- POPUP -->
+  <section
+    *ngIf="isOpen"
+    class="filter-popup"
+    [style.--popup-width]="popupWidth"
+    role="dialog"
+    [attr.aria-label]="title">
+
+    <!-- HEADER -->
+    <div class="popup-header">
+
+      <div class="header-content">
+        <h3>{{ title }}</h3>
+        <p>{{ subtitle }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="close-icon"
+        aria-label="Đóng"
+        (click)="close()">
+
+        ×
+
+      </button>
+
+    </div>
+
+
+    <!-- CUSTOM FILTER CONTENT -->
+    <div class="popup-content">
+
+      <ng-content select="[filter-content]"></ng-content>
+
+    </div>
+
+
+    <!-- FOOTER -->
+    <div class="popup-footer">
+
+      <button
+        type="button"
+        class="clear-button"
+        (click)="onClear()">
+
+        <span>♧</span>
+        Xóa bộ lọc
+
+      </button>
+
+
+      <div class="footer-actions">
+
+        <button
+          type="button"
+          class="btn-close"
+          (click)="close()">
+
+          Đóng
+
+        </button>
+
+        <button
+          type="button"
+          class="btn-apply"
+          [disabled]="applyDisabled"
+          (click)="onApply()">
+
+          Áp dụng
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- NOTE -->
+    <div class="popup-note">
+      Các thay đổi chỉ được áp dụng sau khi nhấn "Áp dụng".
+    </div>
+
+  </section>
+
+</div>

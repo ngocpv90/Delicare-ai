@@ -1,0 +1,347 @@
+@if (permission?.allowAccess) {
+  <div class="row">
+    <div class="col-xl-12">
+
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive active-projects style-1 dataTables_wrapper">
+              <form [formGroup]="searchForm" (ngSubmit)="search()">
+                <div class="tbl-caption">
+                  <h4 class="heading mb-0">Danh mục khám bệnh</h4>
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                  @if (permission.allowAdd) { <button type="button" class="btn btn-primary btn-sm" title="Thêm mới dữ liệu" (click)="openModal()">+ Thêm mới</button> }
+                  </div>
+                </div>
+                <div class="row g-3 align-items-end clinic-tbl-filter">
+                  <div class="col-xl-4 col-lg-5 col-md-6">
+                    <div class="custom-search-wrapper">
+                      <!-- Icon Kính lúp (Nút Áp dụng / Tìm kiếm) -->
+                      <button type="submit" class="search-btn" title="Tìm kiếm">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <!-- Hoặc dùng Feather Icon / SVG nếu template W3CRM dùng loại icon khác:
+                        <i class="flaticon-381-search-2"></i> 
+                        -->
+                      </button>
+
+                      <!-- Ô nhập liệu -->
+                      <input 
+                        id="searchText" 
+                        type="text" 
+                        class="form-control form-control-sm search-input" 
+                        placeholder="Nhập tên danh mục..." 
+                        formControlName="searchText" 
+                        autocomplete="off"
+                      />
+
+                      <!-- Icon Dấu X (Nút Đặt lại / Reset - Chỉ hiển thị khi ô search có dữ liệu) -->
+                      @if (searchForm.get('searchText')?.value) {
+                        <button type="button" class="reset-btn" title="Đặt lại" (click)="clearSearch()">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
+                      }
+                      <div>
+                                   <app-generic-filter-popup
+                        title="Bộ lọc Lead"
+                        subtitle="Thiết lập một hoặc nhiều điều kiện để lọc dữ liệu"
+                        buttonText="Bộ lọc"
+
+                        /* [activeFilterCount]="activeFilterCount"
+
+                        [applyDisabled]="filterForm.invalid" */
+
+                        (opened)="onFilterOpened()"
+
+                        (dismissed)="onFilterDismissed()"
+
+                        (apply)="onFilterApply()"
+
+                        (clear)="onFilterClear()"> */
+                        
+
+                        <!-- ================================= -->
+                        <!-- CÁC THAM SỐ LỌC RIÊNG CỦA LEAD -->
+                        <!-- ================================= -->
+
+                        <div filter-content [formGroup]="filterForm">
+
+                          <div class="lead-filter-grid">
+
+                            <!-- KHÁCH HÀNG -->
+                            <div class="filter-field">
+
+                              <label>Khách hàng</label>
+
+                              <select formControlName="customerType">
+
+                                <option value="">Chọn khách hàng</option>
+
+                                <option value="RETAIL">Bán lẻ</option>
+
+                                <option value="CORPORATE">Doanh nghiệp</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- PHÂN KHÚC -->
+                            <div class="filter-field">
+
+                              <label>Phân khúc</label>
+
+                              <select formControlName="segment">
+
+                                <option value="">Chọn phân khúc</option>
+
+                                <option value="LARGE">Doanh nghiệp lớn</option>
+
+                                <option value="SME">SME</option>
+
+                                <option value="MASS">Bán lẻ</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- PHÒNG BAN -->
+                            <div class="filter-field">
+
+                              <label>Phòng ban</label>
+
+                              <select formControlName="departmentId">
+
+                                <option value="">Chọn phòng ban</option>
+
+                                <option value="PB01">Phòng KHDN 1</option>
+
+                                <option value="PB02">Phòng KHDN 2</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- CÁN BỘ -->
+                            <div class="filter-field">
+
+                              <label>Cán bộ</label>
+
+                              <select formControlName="ownerId">
+
+                                <option value="">Chọn cán bộ</option>
+
+                                <option value="RM001">Nguyễn Văn A</option>
+
+                                <option value="RM002">Trần Văn B</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- NHÓM SẢN PHẨM -->
+                            <div class="filter-field">
+
+                              <label>Nhóm sản phẩm</label>
+
+                              <select formControlName="productGroups" multiple>
+
+                                <option value="LOAN">Cho vay</option>
+
+                                <option value="GUARANTEE">Bảo lãnh</option>
+
+                                <option value="LC">LC</option>
+
+                                <option value="DEPOSIT">Tiền gửi</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- NGUỒN CHI TIẾT -->
+                            <div class="filter-field">
+
+                              <label>Nguồn chi tiết</label>
+
+                              <select formControlName="source">
+
+                                <option value="">Chọn nguồn</option>
+
+                                <option value="WEB">Website</option>
+
+                                <option value="RM">RM</option>
+
+                                <option value="REFERRAL">Giới thiệu</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- CHIẾN DỊCH -->
+                            <div class="filter-field">
+
+                              <label>Chiến dịch</label>
+
+                              <select formControlName="campaignId">
+
+                                <option value="">Chọn chiến dịch</option>
+
+                                <option value="CAMP01">Chiến dịch SME</option>
+
+                                <option value="CAMP02">Chiến dịch CASA</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- TRẠNG THÁI -->
+                            <div class="filter-field">
+
+                              <label>Trạng thái</label>
+
+                              <select formControlName="statuses" multiple>
+
+                                <option value="NEW">Mới</option>
+
+                                <option value="WORKING">Đang xử lý</option>
+
+                                <option value="WAITING">Chờ tiếp cận</option>
+
+                                <option value="CONVERTED">Đã chuyển đổi</option>
+
+                              </select>
+
+                            </div>
+
+
+                            <!-- NGÀY PHÂN GIAO -->
+                            <div class="filter-field">
+
+                              <label>Ngày phân giao</label>
+
+                              <div class="date-range" formGroupName="assignDate">
+
+                                <input type="date" formControlName="from">
+
+                                <span>→</span>
+
+                                <input type="date" formControlName="to">
+
+                              </div>
+
+                            </div>
+
+
+                            <!-- NGÀY TẠO -->
+                            <div class="filter-field">
+
+                              <label>Ngày tạo</label>
+
+                              <div class="date-range" formGroupName="createdDate">
+
+                                <input type="date" formControlName="from">
+
+                                <span>→</span>
+
+                                <input type="date" formControlName="to">
+
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+                      </app-generic-filter-popup>
+                      </div>
+                    </div>
+
+          
+                  </div>
+                  <!-- <div class="col-xl-3 col-lg-4 col-md-6">
+                    <label class="form-label" for="searchText">Tên danh mục</label>
+                    <input id="searchText" type="text" class="form-control input-rounded form-control-sm" placeholder="Nhập dữ liệu" formControlName="searchText" />
+                  </div>
+                  <div class="col-xl-3 col-lg-4 col-md-6 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">Áp dụng</button>
+                    <button type="button" class="btn btn-danger light btn-sm" (click)="reloadPage()">Đặt lại</button>
+                  </div> -->
+                </div>
+              </form>
+            <table class="table clinic-table mb-0">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width: 45px">STT</th>
+                  <th class="sortable" style="width: 120px" (click)="sort('name')">
+                    Tên danh mục
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+                  </th>
+                  <th class="sortable" style="width: 100px" (click)="sort('price')">
+                    Đơn giá
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('price')"></i>
+                  </th>
+                  <th class="sortable" style="width: 100px" (click)="sort('normalIndex')">
+                    Chỉ số bình thường
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('normalIndex')"></i>
+                  </th>
+                  <th class="text-end" style="width: 100px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (data of listData; track data.id) {
+                  <tr>
+                    <td class="text-center">{{ data.stt }}</td>
+                    <td>{{ data.name }}</td>
+                    <td>{{ data.price | number : "1.0" : "en-US" }} vnđ</td>
+                    <td>{{ data.normalIndex }}</td>
+                    <td class="text-end">
+                      @if (permission.allowEdit) {
+                        <button
+                          type="button"
+                          class="btn btn-primary light btn-xs sharp me-1"
+                          title="Sửa dữ liệu"
+                          (click)="openModal(data)"
+                        >
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+                      }
+                      @if (permission.allowDelete) {
+                        <button
+                          type="button"
+                          class="btn btn-danger light btn-xs sharp"
+                          title="Xóa dữ liệu"
+                          (click)="delete(data.id)"
+                        >
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Không có dữ liệu</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-table-pager
+            [page]="table.page"
+            [pageSize]="table.pageSize"
+            [total]="table.total"
+            (pageChange)="changePage($event)"
+            (pageSizeChange)="changePageSize($event)"
+          ></app-table-pager>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

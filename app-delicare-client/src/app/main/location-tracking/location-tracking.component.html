@@ -1,0 +1,88 @@
+@if (permission?.allowAccess) {
+  <div class="row">
+    <div class="col-xl-12">
+
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive active-projects style-1 dataTables_wrapper">
+              <form [formGroup]="searchForm" (ngSubmit)="search()">
+                <div class="tbl-caption">
+                  <h4 class="heading mb-0">Lịch sử đăng nhập</h4>
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                  </div>
+                </div>
+                <div class="row g-3 align-items-end clinic-tbl-filter">
+                  <div class="col-xl-3 col-lg-4 col-md-6">
+                    <label class="form-label" for="searchText">Tên đăng nhập</label>
+                    <input id="searchText" class="form-control" placeholder="Nhập dữ liệu" formControlName="searchText" />
+                  </div>
+                  <div class="col-xl-3 col-lg-4 col-md-6 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Áp dụng</button>
+                    <button type="button" class="btn btn-danger light" (click)="reloadPage()">Đặt lại</button>
+                  </div>
+                </div>
+              </form>
+            <table class="table clinic-table mb-0">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width: 80px">STT</th>
+                  <th class="sortable" style="width: 120px" (click)="sort('pcName')">
+                    Tên máy tính
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('pcName')"></i>
+                  </th>
+                  <th class="sortable" style="width: 80px" (click)="sort('userName')">
+                    Tên đăng nhập
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('userName')"></i>
+                  </th>
+                  <th class="sortable" style="width: 120px" (click)="sort('fullName')">
+                    Tên đầy đủ
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('fullName')"></i>
+                  </th>
+                  <th class="sortable" style="width: 80px" (click)="sort('phoneNumber')">
+                    Điện thoại
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('phoneNumber')"></i>
+                  </th>
+                  <th class="sortable" style="width: 80px" (click)="sort('iPv4')">
+                    Ip
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('iPv4')"></i>
+                  </th>
+                  <th class="sortable" style="width: 100px" (click)="sort('createdDate')">
+                    Ngày đăng nhập
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('createdDate')"></i>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (data of listData; track $index) {
+                  <tr>
+                    <td class="text-center">{{ data.stt }}</td>
+                    <td>{{ data.pcName }}</td>
+                    <td>{{ data.userName }}</td>
+                    <td>{{ data.fullName }}</td>
+                    <td>{{ data.phoneNumber }}</td>
+                    <td>{{ data.iPv4 }}</td>
+                    <td>{{ data.createdDate | date : dateFormat }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Không có dữ liệu</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-table-pager
+            [page]="table.page"
+            [pageSize]="table.pageSize"
+            [total]="table.total"
+            (pageChange)="changePage($event)"
+            (pageSizeChange)="changePageSize($event)"
+          ></app-table-pager>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

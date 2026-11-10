@@ -1,0 +1,17 @@
+﻿using AppDelicare.Model.Entity;
+
+namespace AppDelicare.Model.Entity
+{
+    public class ActualCost : BaseEntity
+    {
+        public Guid? ProductionBatchId { get; set; }
+        public Guid? ProductionOrderId { get; set; }
+        public decimal MaterialCost { get; set; }
+        public decimal LaborCost { get; set; }
+        public decimal OverheadCost { get; set; }
+        public decimal OtherCost { get; set; }
+        public decimal TotalCost { get; set; }
+        public string? CurrencyCode { get; set; }
+        public DateTime CalculatedAt { get; set; }
+    }
+}
