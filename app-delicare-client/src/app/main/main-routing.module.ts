@@ -119,11 +119,141 @@ export const mainRoutes: Routes = [
             (m) => m.MedicalWarehouseMainModule
           ),
       },
+      // <master-data-routes>
+      {
+        path: 'dm-cong-ty',
+        loadChildren: () =>
+          import('./master-data/company/md-company.module').then(
+            (m) => m.MdCompanyModule
+          ),
+      },
+      {
+        path: 'dm-don-vi-to-chuc',
+        loadChildren: () =>
+          import('./master-data/organization-unit/md-organization-unit.module').then(
+            (m) => m.MdOrganizationUnitModule
+          ),
+      },
+      {
+        path: 'dm-dia-diem-van-hanh',
+        loadChildren: () =>
+          import('./master-data/operational-location/md-operational-location.module').then(
+            (m) => m.MdOperationalLocationModule
+          ),
+      },
+      {
+        path: 'dm-khach-hang',
+        loadChildren: () =>
+          import('./master-data/customer/md-customer.module').then(
+            (m) => m.MdCustomerModule
+          ),
+      },
+      {
+        path: 'dm-lien-he-khach-hang',
+        loadChildren: () =>
+          import('./master-data/customer-contact/md-customer-contact.module').then(
+            (m) => m.MdCustomerContactModule
+          ),
+      },
+      {
+        path: 'dm-dia-diem-giao-hang',
+        loadChildren: () =>
+          import('./master-data/customer-delivery-location/md-customer-delivery-location.module').then(
+            (m) => m.MdCustomerDeliveryLocationModule
+          ),
+      },
       {
         path: 'nha-cung-cap',
         loadChildren: () =>
-          import('./supplier/supplier.module').then((m) => m.SupplierModule),
+          import('./master-data/supplier/md-supplier.module').then(
+            (m) => m.MdSupplierModule
+          ),
       },
+      {
+        path: 'dm-nguyen-lieu-ncc',
+        loadChildren: () =>
+          import('./master-data/supplier-material/md-supplier-material.module').then(
+            (m) => m.MdSupplierMaterialModule
+          ),
+      },
+      {
+        path: 'dm-nguyen-lieu',
+        loadChildren: () =>
+          import('./master-data/ingredient/md-ingredient.module').then(
+            (m) => m.MdIngredientModule
+          ),
+      },
+      {
+        path: 'dm-mon-an',
+        loadChildren: () =>
+          import('./master-data/dish/md-dish.module').then(
+            (m) => m.MdDishModule
+          ),
+      },
+      {
+        path: 'dm-kho',
+        loadChildren: () =>
+          import('./master-data/warehouse/md-warehouse.module').then(
+            (m) => m.MdWarehouseModule
+          ),
+      },
+      {
+        path: 'dm-khu-vuc-kho',
+        loadChildren: () =>
+          import('./master-data/storage-zone/md-storage-zone.module').then(
+            (m) => m.MdStorageZoneModule
+          ),
+      },
+      {
+        path: 'dm-vi-tri-luu-tru',
+        loadChildren: () =>
+          import('./master-data/storage-location/md-storage-location.module').then(
+            (m) => m.MdStorageLocationModule
+          ),
+      },
+      {
+        path: 'dm-nhan-vien',
+        loadChildren: () =>
+          import('./master-data/employee/md-employee.module').then(
+            (m) => m.MdEmployeeModule
+          ),
+      },
+      {
+        path: 'dm-phuong-tien',
+        loadChildren: () =>
+          import('./master-data/vehicle/md-vehicle.module').then(
+            (m) => m.MdVehicleModule
+          ),
+      },
+      {
+        path: 'dm-nhom-nguyen-lieu',
+        loadChildren: () =>
+          import('./master-data/ingredient-category/md-ingredient-category.module').then(
+            (m) => m.MdIngredientCategoryModule
+          ),
+      },
+      {
+        path: 'dm-don-vi-tinh',
+        loadChildren: () =>
+          import('./master-data/unit-of-measure/md-unit-of-measure.module').then(
+            (m) => m.MdUnitOfMeasureModule
+          ),
+      },
+      {
+        path: 'dm-nhom-mon-an',
+        loadChildren: () =>
+          import('./master-data/dish-category/md-dish-category.module').then(
+            (m) => m.MdDishCategoryModule
+          ),
+      },
+      {
+        path: 'dm-chuc-vu',
+        loadChildren: () =>
+          import('./master-data/position/md-position.module').then(
+            (m) => m.MdPositionModule
+          ),
+      },
+      // </master-data-routes>
       {
         path: 'don-vi-tinh',
         loadChildren: () =>

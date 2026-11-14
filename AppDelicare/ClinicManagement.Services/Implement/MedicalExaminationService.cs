@@ -27,6 +27,10 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
+                dynamicParameters.Add("@PriceFrom", request.PriceFrom);
+                dynamicParameters.Add("@PriceTo", request.PriceTo);
+                dynamicParameters.Add("@CreatedDateFrom", request.CreatedDateFrom?.Date);
+                dynamicParameters.Add("@CreatedDateTo", request.CreatedDateTo?.Date);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);

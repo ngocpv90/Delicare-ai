@@ -52,6 +52,8 @@ namespace AppDelicare.Data.Interface
         public IOpportunityRepository OpportunityRepository { get; }
 
         public ICompanyRepository CompanyRepository { get; }
+        public IOperationalLocationRepository OperationalLocationRepository { get; }
+        public IVehicleRepository VehicleRepository { get; }
         public IOrganizationUnitRepository OrganizationUnitRepository { get; }
         public IPositionRepository PositionRepository { get; }
         public IShiftRepository ShiftRepository { get; }

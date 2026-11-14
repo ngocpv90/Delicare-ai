@@ -125,6 +125,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(IngredientCategoryRequest request, string typeSave)
         {
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
             var checkDuplicate = _unitOfWork.IngredientCategoryRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -143,10 +147,29 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
             var checkDuplicate = _unitOfWork.IngredientCategoryRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
                 return string.Format(ConstantHelper.Message.CodeExist, request.Code);
+            }
+            if (request.ParentId.HasValue)
+            {
+                // Chan vong lap: khong chon chinh no hoac cap con cua no lam cap cha
+                Guid? parentId = request.ParentId;
+                var depth = 0;
+                while (parentId.HasValue && depth++ < 100)
+                {
+                    if (parentId == request.Id)
+                    {
+                        return "Không thể chọn chính nó hoặc cấp con của nó làm cấp cha.";
+                    }
+                    var currentId = parentId;
+                    parentId = _unitOfWork.IngredientCategoryRepository.GetSingle(x => x.Id == currentId && !x.IsDeleted)?.ParentId;
+                }
             }
             var update = _mapper.Map(request, exist);
             _unitOfWork.IngredientCategoryRepository.Update(update);
@@ -161,7 +184,8 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
             var checkForeignKey = (await _auditChangeService.GetColumnNameForeignKey()).ListData
-                .Where(x => (x.ColumnName ?? string.Empty).Contains(nameof(IngredientCategory))).ToList();
+                .Where(x => (x.ColumnName ?? string.Empty).Contains(nameof(IngredientCategory))
+                    || (x.TableName == "[" + nameof(IngredientCategory) + "]" && x.ColumnName == "ParentId")).ToList();
             if (checkForeignKey.Count != 0)
             {
                 foreach (var item in checkForeignKey)

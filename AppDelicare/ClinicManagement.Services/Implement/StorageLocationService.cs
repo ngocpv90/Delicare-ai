@@ -125,10 +125,23 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(StorageLocationRequest request, string typeSave)
         {
-            var checkDuplicate = _unitOfWork.StorageLocationRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
+            var checkDuplicate = _unitOfWork.StorageLocationRepository.GetSingle(x => x.Code == request.Code && x.WarehouseId == request.WarehouseId && !x.IsDeleted);
             if (checkDuplicate != null)
             {
                 return string.Format(ConstantHelper.Message.CodeExist, request.Code);
+            }
+            if (request.StorageZoneId.HasValue)
+            {
+                // Khu vuc phai thuoc dung kho da chon (khong thuoc kho -> tu choi)
+                var zone = _unitOfWork.StorageZoneRepository.GetSingle(x => x.Id == request.StorageZoneId && !x.IsDeleted);
+                if (zone == null || zone.WarehouseId != request.WarehouseId)
+                {
+                    return "Khu vực kho không thuộc kho đã chọn.";
+                }
             }
             var insert = _mapper.Map<StorageLocation>(request);
             _unitOfWork.StorageLocationRepository.Add(insert);
@@ -143,10 +156,23 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var checkDuplicate = _unitOfWork.StorageLocationRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
+            var checkDuplicate = _unitOfWork.StorageLocationRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && x.WarehouseId == request.WarehouseId && !x.IsDeleted);
             if (checkDuplicate != null)
             {
                 return string.Format(ConstantHelper.Message.CodeExist, request.Code);
+            }
+            if (request.StorageZoneId.HasValue)
+            {
+                // Khu vuc phai thuoc dung kho da chon (khong thuoc kho -> tu choi)
+                var zone = _unitOfWork.StorageZoneRepository.GetSingle(x => x.Id == request.StorageZoneId && !x.IsDeleted);
+                if (zone == null || zone.WarehouseId != request.WarehouseId)
+                {
+                    return "Khu vực kho không thuộc kho đã chọn.";
+                }
             }
             var update = _mapper.Map(request, exist);
             _unitOfWork.StorageLocationRepository.Update(update);

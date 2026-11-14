@@ -1,0 +1,66 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-xl-12 mb-3">
+        <label class="form-label" for="md_warehouseId">Kho<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="warehouseId"
+          [items]="items['warehouseId']"
+          [loading]="loadingLookup['warehouseId']"
+          [invalid]="isInvalid('warehouseId')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('warehouseId')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_code">Mã khu vực<span class="text-danger">*</span></label>
+        <input id="md_code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('code')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_name">Tên khu vực<span class="text-danger">*</span></label>
+        <input id="md_name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('name')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_temperatureRange">Dải nhiệt độ bảo quản</label>
+        <input id="md_temperatureRange" type="text" class="form-control" [class.is-invalid]="isInvalid('temperatureRange')" formControlName="temperatureRange" placeholder="VD: 0 - 4°C" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_status">Trạng thái<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="status"
+          [items]="options['status']"
+          [invalid]="isInvalid('status')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('status')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
+      <i class="fa-solid fa-xmark me-1"></i>Thoát
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+    </button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

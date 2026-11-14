@@ -419,6 +419,24 @@ namespace AppDelicare.Data.Repositories
             }
         }
 
+        private IOperationalLocationRepository _OperationalLocationRepository;
+        public IOperationalLocationRepository OperationalLocationRepository
+        {
+            get
+            {
+                return _OperationalLocationRepository ??= new OperationalLocationRepository(this);
+            }
+        }
+
+        private IVehicleRepository _VehicleRepository;
+        public IVehicleRepository VehicleRepository
+        {
+            get
+            {
+                return _VehicleRepository ??= new VehicleRepository(this);
+            }
+        }
+
         private IOrganizationUnitRepository _OrganizationUnitRepository;
         public IOrganizationUnitRepository OrganizationUnitRepository
         {

@@ -129,8 +129,43 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        // Khach hang phai ton tai; moi khach hang chi co 1 lien he chinh
+        private string Validate(CustomerContactRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.FullName))
+            {
+                return "Họ tên liên hệ không được để trống.";
+            }
+            if (_unitOfWork.CustomerRepository.GetSingle(x => x.Id == request.CustomerId && !x.IsDeleted) == null)
+            {
+                return "Khách hàng không tồn tại.";
+            }
+            return string.Empty;
+        }
+
+        private void ClearOtherPrimary(CustomerContactRequest request)
+        {
+            if (!request.IsPrimary)
+            {
+                return;
+            }
+            var others = _unitOfWork.CustomerContactRepository
+                .FindBy(x => x.CustomerId == request.CustomerId && x.Id != request.Id && x.IsPrimary && !x.IsDeleted).ToList();
+            foreach (var item in others)
+            {
+                item.IsPrimary = false;
+                _unitOfWork.CustomerContactRepository.Update(item);
+            }
+        }
+
         private async Task<string> Insert(CustomerContactRequest request, string typeSave)
         {
+            var error = Validate(request);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return error;
+            }
+            ClearOtherPrimary(request);
             var insert = _mapper.Map<CustomerContact>(request);
             _unitOfWork.CustomerContactRepository.Add(insert);
             await _unitOfWork.CustomerContactRepository.CommitAsync(typeSave);
@@ -144,6 +179,12 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            var error = Validate(request);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return error;
+            }
+            ClearOtherPrimary(request);
             var update = _mapper.Map(request, exist);
             _unitOfWork.CustomerContactRepository.Update(update);
             await _unitOfWork.CustomerContactRepository.CommitAsync(typeSave);

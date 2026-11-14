@@ -125,6 +125,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(SupplierRequest request, string typeSave)
         {
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
             var checkDuplicate = _unitOfWork.SupplierRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -142,6 +146,10 @@ namespace AppDelicare.Services.Implement
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
             }
             var checkDuplicate = _unitOfWork.SupplierRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)

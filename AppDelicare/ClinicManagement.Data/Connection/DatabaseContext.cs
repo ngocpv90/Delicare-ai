@@ -46,6 +46,8 @@ namespace AppDelicare.Data.Connection
         public virtual DbSet<Leads> Leads { get; set; }
         public virtual DbSet<Opportunity> Opportunity { get; set; }
         public virtual DbSet<Company> Company { get; set; }
+        public virtual DbSet<OperationalLocation> OperationalLocation { get; set; }
+        public virtual DbSet<Vehicle> Vehicle { get; set; }
         public virtual DbSet<OrganizationUnit> OrganizationUnit { get; set; }
         public virtual DbSet<Position> Position { get; set; }
         public virtual DbSet<Shift> Shift { get; set; }

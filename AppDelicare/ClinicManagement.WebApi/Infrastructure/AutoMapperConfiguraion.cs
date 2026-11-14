@@ -42,6 +42,8 @@ namespace AppDelicare.WebApi.Infrastructure
             CreateMap<OpportunityRequest, Opportunity>();
             //AppKitchen
             CreateMap<CompanyRequest, Company>();
+            CreateMap<OperationalLocationRequest, OperationalLocation>();
+            CreateMap<VehicleRequest, Vehicle>();
             CreateMap<OrganizationUnitRequest, OrganizationUnit>();
             CreateMap<PositionRequest, Position>();
             CreateMap<ShiftRequest, Shift>();

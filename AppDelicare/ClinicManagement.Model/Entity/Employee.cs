@@ -27,5 +27,14 @@ namespace AppDelicare.Model.Entity
         public string? ExternalValue { get; set; }
         public string? ExternalData { get; set; }
         public string? Note { get; set; }
+        // Truong phuc vu van hanh (Master Data - Employee)
+        public Guid? CompanyId { get; set; }
+        public Guid? OrganizationUnitId { get; set; }
+        public Guid? PositionId { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? Address { get; set; }
+        public DateTime? HireDate { get; set; }
+        public string? Status { get; set; }
     }
 }

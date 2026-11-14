@@ -1,0 +1,8 @@
+**/bin
+**/obj
+**/.vs
+**/*.user
+**/wwwroot/Logs
+backup-db
+ClinicManagement.Generator
+.git

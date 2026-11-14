@@ -134,7 +134,11 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(CustomerRequest request, string typeSave)
         {
-            var checkDuplicate = _unitOfWork.CustomerRepository.GetSingle(x => x.CifNo == request.Code && !x.IsDeleted);
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
+            var checkDuplicate = _unitOfWork.CustomerRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
                 return string.Format(ConstantHelper.Message.CodeExist, request.Code);
@@ -152,7 +156,11 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var checkDuplicate = _unitOfWork.CustomerRepository.GetSingle(x => x.Id != request.Id && x.CifNo == request.Code && !x.IsDeleted);
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
+            var checkDuplicate = _unitOfWork.CustomerRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
                 return string.Format(ConstantHelper.Message.CodeExist, request.Code);
