@@ -4,8 +4,9 @@ Bạn là kỹ sư chính của dự án **DELICARE**: hệ thống điều hàn
 
 **PHẠM VI HIỆN TẠI = CHỈ BACKEND (.NET 8 + SQL Server).**
 - **KHÔNG đọc / rà soát, tạo, sửa, xóa, build hay `npm install` bất kỳ thứ gì trong `app-delicare-client/`** (Angular). App Angular hiện tại chưa có đủ màn hình như mockup; **sau khi xong backend anh sẽ giao làm frontend riêng** (D-20).
-- **Không cần tương thích với Angular hiện tại.** Chuẩn API **duy nhất** là `docs/reference/DELICARE_API_Specification.md` (mục 1.2: base URL `/api/v1`, envelope, phân trang, mã lỗi, ETag, Idempotency-Key…). Frontend sau này sẽ làm mới theo đúng spec này.
-- **Mục tiêu Release 1:** hoàn thiện lõi .NET đủ API cho mọi màn hình trong mockup (`docs/mockup/`) theo `docs/reference/DELICARE_API_Specification.md`, có Swagger + test, triển khai được backend. Đây sẽ là hệ thống vận hành thật đầu tiên (bản Apps Script / Sheets chỉ là demo). Agent, Tool Gateway, Telegram / Zalo, Obsidian để Release 2.
+- **⚠ KHUNG CHUẨN = CODE CŨ (D-30, anh chốt 2026-11-15).** Mọi API viết theo đúng mẫu và quy ước của code cũ trong solution (`api/[controller]/<Action>`, Controller → Service → UnitOfWork / Dapper SP, `Result<T>` / `Results<T>`, `[FromForm]`, try/catch + Serilog). **KHÔNG sinh thêm API `/api/v1`**, không envelope mới, không CRUD generic, không Command / Handler. Code cũ **đã có** người dùng, nhóm quyền (vai trò), ma trận quyền, menu, đăng nhập → **rà soát và bổ sung trên cái đã có**, không viết lại song song. Chi tiết: mục 4.
+- `docs/reference/DELICARE_API_Specification.md` + Catalog chỉ còn là **danh sách yêu cầu nghiệp vụ** (màn hình cần chức năng gì, dữ liệu gì, quy tắc gì). **Không** dùng URL, envelope, mã lỗi, ETag / Idempotency-Key… ở mục 1.2 của spec.
+- **Mục tiêu Release 1:** hoàn thiện lõi .NET đủ API (theo khung cũ) cho mọi màn hình trong mockup (`docs/mockup/`), đủ nghiệp vụ mô tả trong spec, có Swagger + test, triển khai được backend. Đây sẽ là hệ thống vận hành thật đầu tiên (bản Apps Script / Sheets chỉ là demo). Agent, Tool Gateway, Telegram / Zalo, Obsidian để Release 2.
 
 Mục tiêu của file này: anh **không phải giải thích lại** bối cảnh. Mọi việc cần làm đã nằm trong `docs/claude/ROADMAP.md`. Em làm lần lượt từng task theo quy trình ở mục 6.
 
@@ -52,9 +53,9 @@ Delicare-ai/
 ├─ AppDelicare/                  ← solution .NET (AppDelicare.sln)
 │   ├─ AppDelicare.Model     (namespace AppDelicare.Model)    Entity, Request, SearchRequest, ViewModels, Helper
 │   ├─ AppDelicare.Data      (AppDelicare.Data)               DatabaseContext (EF Core), Repository<T>, UnitOfWork, DapperRepository
-│   ├─ AppDelicare.Services  (AppDelicare.Services)           Service CRUD sinh tự động
-│   ├─ AppDelicare.WebApi    (AppDelicare.WebApi)             Controller, Startup, Autofac, JWT, Serilog
-│   ├─ AppDelicare.Application (AppDelicare.Application)        Use case nghiệp vụ (Command / Query / Handler / Validator), CRUD v1 generic
+│   ├─ AppDelicare.Services  (AppDelicare.Services)           Service theo entity (sinh tự động) + method nghiệp vụ bổ sung tay ← NƠI VIẾT NGHIỆP VỤ
+│   ├─ AppDelicare.WebApi    (AppDelicare.WebApi)             Controller `api/[controller]`, Startup, Autofac, JWT, Serilog, Security (phân quyền)
+│   ├─ AppDelicare.Application (AppDelicare.Application)        ⛔ lớp v1 làm thử (CRUD generic, Command / Handler) – KHÔNG mở rộng; T45R chuyển nghiệp vụ về Services rồi đưa vào `_obsolete/`
 │   ├─ AppDelicare.Tests     (AppDelicare.Tests)              xUnit
 │   └─ ClinicManagement.Generator (T4 + OrmLite)                   bộ sinh mã CŨ (thay bằng tools/AppDelicare.CodeGen), chỉ chạy được trong Visual Studio
 ├─ app-delicare-client/          ← Angular 18 – ⛔ NGOÀI PHẠM VI: không đọc, không sửa, không build (làm sau khi xong backend)
@@ -65,7 +66,7 @@ Delicare-ai/
 Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Model / Data / Services / WebApi` đã đổi thành `AppDelicare.*` cho khớp tên project và namespace. Còn lại `ClinicManagement.Generator` (bộ sinh T4 cũ) giữ tên. **Không đổi tên thư mục khác** cho tới khi có task riêng.
 
 **Các project MỚI** sẽ thêm vào solution theo ROADMAP. Mỗi project ở một thư mục cùng tên:
-`AppDelicare.Application` (nghiệp vụ), `AppDelicare.Jobs` (Hangfire), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
+`AppDelicare.Jobs` (Hangfire, job gọi Service cũ), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
 
 ---
 
@@ -112,30 +113,56 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 
 ---
 
-## 4. Quy ước code
+## 4. Quy ước code – KHUNG CHUẨN LÀ CODE CŨ (D-30)
 
-**Backend (.NET 8):**
-- **Chuẩn API = `DELICARE_API_Specification.md` mục 1.2**, áp dụng cho mọi endpoint mới:
-  - Route `/api/v1/{module}/{resource}` (kebab-case số nhiều), lệnh chuyển trạng thái dạng `POST …/{id}/<action>`.
-  - Envelope `{ success, data, message, errors, traceId }`. Danh sách: `data = { items, total, page, pageSize }`, query `page`, `pageSize` (≤ 200), `q`, `sort=field:asc`, lọc theo tên cột.
-  - JSON camelCase theo tên cột SQL. **Không trả / nhận cột deprecated**, không bao giờ trả `PassWord`.
-  - Mã HTTP: 400 / 401 / 403 / 404 / 409 (`INVALID_TRANSITION`, `CONCURRENCY_CONFLICT`) / 422 (`REF_NOT_FOUND`, vi phạm nghiệp vụ) / 500. Mã lỗi theo Phụ lục A của spec.
-  - ETag = `ModifiedDate` (`If-Match`); lệnh ghi nhận `Idempotency-Key`; header `X-Branch-Id`.
-  - `[Permission("<screen-id>", Action)]` với `ObjectMenu.MetaLink = '#/<screen-id>'`.
-  - Swagger mô tả đủ (summary, ví dụ request / response) để làm frontend sau.
-- **Mã CRUD cũ sinh tự động** (`api/[controller]/GetAll|Insert|…`, `Result<T>`, `[FromForm]`): không phải chuẩn. Được phép thay bằng endpoint `/api/v1` theo spec. Có thể giữ tạm cho tới khi có bản v1 tương ứng, nhưng **không mở rộng thêm** theo mẫu cũ.
-- Bên trong vẫn dùng lại hạ tầng tốt có sẵn: UnitOfWork / Repository EF Core, Dapper + stored procedure cho truy vấn danh sách lớn, AuditChange tự động trong DbContext.
-- Nghiệp vụ mới (lệnh có trạng thái, sổ, duyệt) viết trong `AppDelicare.Application`: mỗi use case là một class `XxxCommand` + `XxxHandler` + validator. Tên project trong tài liệu API (`Delicare.Api`, `Delicare.Domain`…) là đề xuất cũ; **dùng tên thực tế ở mục 2**.
-- Thời gian: lưu theo **giờ Việt Nam** (Asia/Ho_Chi_Minh), khớp code cũ và 75/92 default `getdate()` / `sysdatetime()` của DDL. 17 cột có default `sysutcdatetime()` (UTC) → app **luôn tự gán giá trị**, không dựa vào default. Spec đề xuất UTC (GAP-Q-04); **D-18 chờ anh chốt**, tạm theo giờ VN. Lấy giờ qua `IClock`, không gọi `DateTime.Now` trực tiếp trong nghiệp vụ mới.
-- Mỗi lệnh ghi chạy trong 1 transaction (`IUnitOfWork.OpenTransaction`) và ghi `AuditChange`.
+### 4.1 Nguyên tắc
+1. **Code cũ trong solution là khung chuẩn.** Mọi chức năng mới hay bổ sung viết **giống hệt mẫu cũ** (mục 4.2). Mẫu để chép: `WarehouseController.cs` + `WarehouseService.cs`.
+2. **KHÔNG tạo API `/api/v1`.** Không dùng / mở rộng: `Controllers/V1/**`, `Api/ApiControllerBase`, envelope `{success,data,…}`, `EnvelopeResultFilter`, `IdempotencyFilter`, `BranchContext`, `PageQuery`, `CrudService` / `ResourceRegistry` / `TableMetadata.Generated.cs`, `IDispatcher` / Command / Handler trong `AppDelicare.Application`. Lớp này sẽ được T45R chuyển nghiệp vụ về khung cũ rồi đưa vào `_obsolete/`.
+3. **Rà soát trước, bổ sung sau.** Trước khi viết bất kỳ chức năng nào, tìm trong code cũ: Controller, Service (Interface + Implement), SP `DB/sp/usp<Entity>_*.sql`, Request / SearchRequest / ViewModel / Custom của entity đó và các service liên quan.
+   - Đã có → dùng lại; thiếu thì **thêm method vào đúng Service đó và thêm action vào đúng Controller đó**.
+   - Chưa có → tạo mới **theo đúng mẫu** (CodeGen cho bảng; tay cho service / controller nghiệp vụ không gắn bảng, đặt tên `XxxService` / `XxxController` như `InventoryLedgerService`, `DashboardController`, `ImportExcelController`).
+   - **Không** tạo service / controller thứ hai làm cùng việc với cái đã có.
+4. **Người dùng, vai trò, phân quyền, menu, đăng nhập ĐÃ CÓ trong code cũ** – dùng và bổ sung, không viết lại:
+
+   | Chức năng | Đã có ở |
+   |---|---|
+   | Đăng nhập, JWT, trả thông tin + menu theo quyền | `AuthenticationController.Login` → `LoginService`, `JwtFactoryService`, `TokenFactoryService` |
+   | Người dùng: danh sách, thêm / sửa / xóa, gán nhóm (`ListUserGroupId` → `UserClaim`), reset mật khẩu, khóa / mở (`SaveIsActive`), cấp admin (`SaveIsAdmin`), đổi mật khẩu, tạo user sau khi tạo Person (`InsertUserAfter`) | `UserController` / `UserService`, `UserClaimService` |
+   | Vai trò = nhóm người dùng | `UserGroupController` / `UserGroupService` (bảng `UserGroup`) |
+   | Ma trận quyền nhóm × menu (`AllowAccess/Add/Edit/Delete/Print/Export/Import`) | `UserRoleController.GetByUserGroupId` / `Update` → `UserRoleService` (SP `uspUserRole_GetByUserGroupId`) |
+   | Menu chức năng (cây 2 cấp, `MetaLink = '#/<screen-id>'`) | `ObjectMenuController` / `ObjectMenuService` |
+   | Kiểm tra quyền phía server | `Security/PermissionFilter` + `PermissionConvention` (T07, đọc chính các bảng trên – giữ, là hạ tầng chứ không phải API v1) |
+   | Người thao tác | `ICurrentActor` (`Data/Share/CurrentActor.cs`) |
+
+5. **Spec API = yêu cầu nghiệp vụ.** Với mỗi endpoint trong `DELICARE_API_Specification.md` / Catalog: hiểu chức năng → tìm chỗ tương đương trong code cũ → bổ sung action kiểu cũ `api/<Entity>/<Action>`. Ghi ánh xạ "màn hình → chức năng spec → action cũ" trong `docs/frontend-handoff/` để làm frontend sau.
+
+### 4.2 Mẫu từng tầng (chép đúng, kể cả cách đặt tên, thông báo, log)
+- **Controller** `AppDelicare.WebApi/Controllers/<Entity>Controller.cs` – mỗi file 1 controller:
+  - Kế thừa `BaseController` (`[Route("api/[controller]")]`, `[ApiController]`, `[Authorize]`); primary constructor inject `I<Entity>Service`.
+  - Action chuẩn: `GetAll([FromQuery] <Entity>SearchRequest)` (GET), `Insert([FromForm] <Entity>Request)` (POST), `Update([FromForm])` (PUT), `Delete(Guid id)` (DELETE), `GetById(Guid id)`, `GetAllData()` (dropdown).
+  - Thân action: kiểm `ModelState` / null → `BadRequest(ConstantHelper.Message.ModelStateMessage)`; `try { return Ok(await _service.X(...)); } catch (Exception ex) { Log.Error(string.Concat("[", GetType().Name, "]", " <Action>: ", ex.ToString())); return StatusCode(500, ConstantHelper.Message.InternalServer); }`.
+  - **Action nghiệp vụ** đặt trong controller của entity chính, tên động từ PascalCase như mẫu cũ (`ResetPassword`, `SaveIsActive`, `ChangePassword`). Ví dụ: `RecipeController.Submit / Lock / CalculateCost`, `OrderController.Submit / Confirm / Cancel`, `ApprovalRequestController.GetMyPending / Decide`, `InventoryTransactionController.Reverse`. Đọc = GET, ghi = POST / PUT. Request ghi dùng `[FromForm]` như cũ; chỉ khi request có danh sách lồng nhau (dòng đơn, dòng công thức…) mới dùng `[FromBody]` (như `AuthenticationController.Login`) và comment lý do.
+  - **Không bao giờ** inject `DatabaseContext` / `IUnitOfWork` vào controller; không đặt logic trong controller.
+- **Service** `AppDelicare.Services/Interface/I<Entity>Service.cs` + `Implement/<Entity>Service.cs`:
+  - Inject `IUnitOfWork`, `IDapperRepository`, `IMapper`, `IAuditChangeService`, và service khác khi cần (như `UserService` gọi `UserClaimService`).
+  - Trả `IResult<T>` (`Result<T> { ResponseCode, ResponseMessage, Data }`) / `IResults<T>` (`Results<T> { ResponseCode, ResponseMessage, ListData, TotalRecords }`). Thông báo lấy `ConstantHelper.Message` (thêm hằng mới vào đó nếu cần, tiếng Việt).
+  - Ghi: `Save(request, typeSave)` mở `using var tran = await _unitOfWork.OpenTransaction()`, gọi private `Insert / Update / Delete` trả `string` lỗi (rỗng = OK) → `CommitTransaction` / `RollbackTransaction` như mẫu; lỗi nghiệp vụ trả `ResponseCode = 400` + message. **Lệnh nghiệp vụ mới viết cùng kiểu**: 1 method public, transaction, kiểm tra quy tắc → message lỗi, ghi, commit.
+  - Xóa: xóa mềm qua `CommitAsync(TypeSave.Delete)`, kiểm tham chiếu bằng `_auditChangeService.IsReferencedAsync(...)` (ReferenceGuard).
+- **Danh sách / báo cáo:** SP `usp<Entity>_GetAll` (tham số `@SearchText`, các lọc, `@Page`, `@PageSize`, `@SortField`, `@SortOrder`; trả cột `TotalRow`), gọi `_dapperRepository.QueryMultipleUsingStoreProcAsync<<Entity>ViewModel>(...)`, gán `STT`. Truy vấn phức tạp khác: SP `usp<Entity>_<Mục đích>` (`CREATE OR ALTER`, tham số hóa) trong `DB/sp/`.
+- **DTO:** `Model/Request/<Entity>Request.cs`, `SearchRequest/<Entity>SearchRequest.cs`, `ViewModels/<Entity>ViewModel.cs` (sinh). Bổ sung: `Model/Request/Custom/<Entity>CustomRequest.cs` (hoặc `<Entity><Action>Request.cs`), `Model/ViewModels/Custom/<Entity>CustomViewModel.cs`, `Model/Model/<X>Model.cs` (như `UserRoleModel`). Map bằng AutoMapper (`Infrastructure/AutoMapperConfiguraion.cs`, `AutoMapperCustomConfiguraion.cs`). Không bao giờ trả `PassWord`; không nhận / trả cột deprecated.
+- **Entity / Repository / UnitOfWork / DbContext:** sinh bằng `tools/AppDelicare.CodeGen` (Entity và `*.Generated.cs` không sửa tay). Service / Controller sau khi sinh là **file của dev**: bổ sung tay; chỉ chạy lại CodeGen với `--only <Table>` (bảng mới) hoặc `--skip-existing`, không ghi đè file đã sửa.
+- **Phân quyền:** `PermissionConvention` tự gắn quyền cho controller kế thừa `BaseController` theo `ScreenMap` (controller → screen-id mockup) và tên action (`Get*`→View, `Insert/Create*`→Add, `Delete*`→Delete, `Export*`, `Print*`, `Import*`, còn lại → Edit). Action nghiệp vụ không khớp quy tắc tên đó (vd. duyệt, khóa) **phải** gắn `[Permission("<screen-id>", PermissionAction.Approve|…)]` rõ ràng. Controller mới phải có dòng trong `ScreenMap`.
+- **Giữ nguyên các cải tiến R1.0** (nằm trong khung cũ): bí mật ngoài code, `ICurrentActor`, AuditChange tự động trong DbContext, khóa sổ append-only, ReferenceGuard, CorrelationId, `/health`, Serilog, test.
+- **Thời gian:** lưu **giờ Việt Nam** (Asia/Ho_Chi_Minh), khớp code cũ. 17 cột default `sysutcdatetime()` → app luôn tự gán giá trị. D-18 chờ anh chốt. Lấy giờ qua `IClock` (T45R chuyển `IClock` / `BusinessRulesOptions` từ `AppDelicare.Application` sang `AppDelicare.Data/Share` + `AppDelicare.Model/Option`). Ngưỡng nghiệp vụ đọc từ cấu hình `BusinessRules`.
 - Log bằng Serilog. Không nuốt lỗi.
 
-**Frontend (Angular 18): NGOÀI PHẠM VI hiện tại** – không đọc, không sửa `app-delicare-client/`. Mỗi màn hình trong mockup được hiện thực ở backend dưới dạng API đủ dữ liệu cho màn hình đó, theo spec.
+**Frontend (Angular 18): NGOÀI PHẠM VI hiện tại** – không đọc, không sửa `app-delicare-client/`.
 
 **Kiểm tra trước khi báo xong:**
-- `dotnet build AppDelicare/AppDelicare.sln` không lỗi.
-- `dotnet test` xanh.
+- `dotnet build AppDelicare/AppDelicare.sln` không lỗi; `dotnet test` xanh.
 - `git status` không có thay đổi nào trong `app-delicare-client/`.
+- Không có file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; `grep -rn "api/v1" AppDelicare --include=*.cs` không tăng (sau T45R phải bằng 0).
+- Controller / Service mới hoặc sửa đúng mẫu 4.2 (so với `WarehouseController` / `WarehouseService`).
 
 ---
 
@@ -145,12 +172,15 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 |---|---|
 | Bảng / cột có tồn tại không, ý nghĩa từng bảng / cột | `docs/reference/DB_SCHEMA_124.md` (có mô tả từ Dictionary + BRD); gốc: `.sql`, `20261113_Dictionary_DB_AppDelicare.xlsx`, `DeliCare_Database_Dictionary_BRD.xlsx` |
 | Bảng nào tham chiếu bảng nào | `docs/reference/LOGICAL_RELATIONS.md` (224 quan hệ + 80 cột chưa rõ) |
-| Endpoint, input/output, logic của 1 màn hình | `docs/reference/DELICARE_API_Specification.md`, `DELICARE_API_Catalog.csv` |
+| **Mẫu code chuẩn để chép** | `Controllers/WarehouseController.cs` + `Services/Implement/WarehouseService.cs` (CRUD); `UserController` / `UserService` (action nghiệp vụ: ResetPassword, SaveIsActive, ChangePassword); `UserRoleController` / `UserRoleService` (ma trận quyền); `ObjectMenuService` (menu); `LoginService` (đăng nhập) |
+| Code cũ đã có gì, còn thiếu gì (theo màn hình) | `docs/claude/LEGACY_REVIEW.md` (T45R tạo, cập nhật mỗi task) |
+| Chức năng / dữ liệu / logic 1 màn hình cần có | `docs/reference/DELICARE_API_Specification.md`, `DELICARE_API_Catalog.csv` – **chỉ là yêu cầu nghiệp vụ**, API viết theo khung cũ |
 | Trạng thái hợp lệ | `docs/reference/STATUS_CATALOG.md` |
 | Cặp cột trùng (OrderNo/OrderNumber, DeleteddBy/DeletedBy…) | `docs/reference/DEPRECATED_COLUMNS.md` |
 | Biểu mẫu in thật, menu thật, quy tắc định lượng / hao hụt, quy trình báo giá → PO | `docs/claude/BUSINESS_DOCS.md` |
 | Sơ đồ tổ chức thật, luồng vận hành 9 bước, nhóm quyền, ma trận quyền | `docs/claude/ORG_STRUCTURE.md` (ảnh gốc: `docs/reference/org/`) |
 | Ngoài phạm vi (MISA lo kế toán / lương / công nợ; bán lẻ, bảo trì, CRM, CAPA để R2) | `docs/claude/DECISIONS.md` D-21…D-23 |
+| Khung chuẩn = code cũ, bỏ API v1 | `docs/claude/DECISIONS.md` D-30 |
 | Luồng nghiệp vụ end-to-end | `docs/reference/DELICARE_Business_Workflow.md` |
 | Ngưỡng, mã chứng từ, ca, nhiệt độ, KPI | `docs/claude/BUSINESS_RULES.md` |
 | Lỗi đã biết trong code hiện tại | `docs/claude/CODE_AUDIT.md` |
@@ -166,7 +196,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 2. Chọn task: **theo bảng "★ ƯU TIÊN – RELEASE 1" ở đầu ROADMAP**. Lấy task chưa DONE đầu tiên theo thứ tự lát R1.0 → R1.7, hoặc task anh chỉ định (`/task T13`). **Không làm task `DEFERRED(R2)`.** Nếu task bị chặn bởi quyết định chưa chốt thì bỏ qua, lấy task kế tiếp không phụ thuộc. Hết một lát thì deploy staging, cập nhật UAT_CHECKLIST và dừng lại báo anh.
 3. Tạo nhánh `feat/<TaskId>-<slug>` từ nhánh hiện tại.
 4. Viết kế hoạch ngắn (3–8 bước) vào PROGRESS dưới tiêu đề task, rồi làm.
-5. Đọc mã liên quan trước khi sửa. Đối chiếu bảng/cột với `DB_SCHEMA_124.md` **trước khi** viết entity, query hay DTO.
+5. **Rà soát code cũ trước khi viết** (mục 4.1): tìm Controller / Service / SP / Request / ViewModel của entity và các service liên quan; ghi vào kế hoạch "đã có gì – bổ sung gì – ở file nào". Có rồi thì dùng lại / bổ sung vào đúng file đó. Đối chiếu bảng/cột với `DB_SCHEMA_124.md` **trước khi** viết entity, query hay DTO.
 6. Build và test. Sửa tới khi xanh. Không tắt test để cho qua.
 7. Tự rà lại theo **tiêu chí nghiệm thu** của task. Đánh dấu từng tiêu chí đạt hay chưa.
 8. Cập nhật:
@@ -178,6 +208,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 
 **Khi nào dừng để hỏi anh:**
 - Cần tạo bảng hoặc cột.
+- Thấy cần một kiểu code / API **khác khung cũ** (route mới, base class mới, thư viện mới) → không tự làm, hỏi anh.
 - Cần chạy gì lên DB không phải dev.
 - Cần bí mật hoặc token thật.
 - Hai tài liệu nguồn mâu thuẫn mà DECISIONS chưa phân xử.

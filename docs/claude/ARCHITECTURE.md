@@ -1,5 +1,7 @@
 # ARCHITECTURE – Kiến trúc mục tiêu 4 lớp
 
+> **⚠ D-30 (2026-11-15): khung chuẩn của lớp 1 là code cũ.** Mọi chỗ trong file này nói `/api/v1/...` hoặc `AppDelicare.Application` (Command / Handler) **không còn áp dụng**: nghiệp vụ nằm trong `AppDelicare.Services` (Service theo entity + service nghiệp vụ cùng mẫu), API là controller `api/[controller]/<Action>`. Jobs, Integration, ToolGateway (R2) gọi các Service này thay cho Application. Chi tiết: CLAUDE.md mục 4.
+
 ```
              Quản lý (web)              Nội bộ               Khách
           Mission Control (Angular)   Telegram (3 bot)     Zalo OA

@@ -60,6 +60,8 @@ Một `UserGroup` cho mỗi vai trò, đặt tên theo mã. Quyền theo nhóm m
 
 Ghi vào `UserRole` (AllowAccess / Add / Edit / Delete / Print / Export / Import) qua `DB/seed/UserRole_seed.sql`.
 
+**Cột A (duyệt) – D-31:** không cấu hình trong appsettings. Mỗi loại duyệt là một mục `ObjectMenu` cấp 2 dưới nhóm "Phê duyệt"; vai trò có **A** được seed `UserRole.AllowAccess + AllowEdit` trên mục đó. Seed chỉ thêm phần thiếu, không ghi đè chỉnh sửa của admin. Sau go-live, admin đổi quyền trên màn hình ma trận quyền cũ (`UserRole/GetByUserGroupId`, `UserRole/Update`).
+
 | Nhóm màn hình → / Vai trò ↓ | Quản trị (P0) | KD & Đơn hàng | Thực đơn & Món | Mua hàng & Kho | Sản xuất & Giá thành | QC & ATTP | Đóng gói & Giao nhận | Nhân sự & Duyệt | KPI / Dashboard |
 |---|---|---|---|---|---|---|---|---|---|
 | CEO | V | V A | V A | V A | V A | V | V | V A | V X |

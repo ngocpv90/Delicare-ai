@@ -2,10 +2,11 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
-- Task đang làm: **T45B** – T45B.1–.4 DONE; kế tiếp T45B.5 (bàn giao frontend, /meta/statuses, /meta/reference-lists), rồi T49
+- **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
+- Task kế tiếp: **T45R** – rà soát code cũ, chuyển nghiệp vụ T45B.1–.4 (đang viết theo v1) về Service / Controller cũ, gỡ lớp v1 vào `_obsolete/`. Sau đó T45B.5 (bàn giao frontend theo route cũ), rồi T49.
 - Nhánh: `feat/T45B.4-p2-special` (chuỗi T00 → … → T45B.4; chưa merge, chưa push)
 - Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 108/108 xanh
-- Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
+- Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – giữ theo D-30, chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
 
@@ -55,13 +56,13 @@ Kế hoạch: 1) kiểm tra git 2) cài `.claude/` 3) tạo nhánh + commit tài
 
 Các khóa trên đã nằm trong lịch sử git (commit `2501aef`) → khi làm T01 anh cần **sinh khóa mới / đổi mật khẩu**, không chỉ xóa khỏi code.
 
-**Phát hiện thêm (ghi CODE_AUDIT):** A14 `GET api/AuditChange/DeleteData` xóa vật lý toàn DB (rất cao, D-21); A15 thiếu 74 SP; A16 `uspSystem_BackupDB`; A17 AutoMapper lỗ hổng.
+**Phát hiện thêm (ghi CODE_AUDIT):** A14 `GET api/AuditChange/DeleteData` xóa vật lý toàn DB (rất cao, D-26); A15 thiếu 74 SP; A16 `uspSystem_BackupDB`; A17 AutoMapper lỗ hổng.
 
 File chính: `.claude/*`, `DB/sp/*.sql`, `DB/sp/_MISSING_FROM_DB.md`, `DB/_ssms_diagrams/*`, `DB/README.md`, `docs/claude/{PROGRESS,ROADMAP,DECISIONS,CODE_AUDIT}.md`.
 Kiểm tra: `dotnet build` 0 lỗi; đăng nhập + gọi API bảo vệ OK; `git status` không có thay đổi trong `app-delicare-client/`.
 AC: [x] nhánh + commit · [x] build baseline · [x] báo cáo lệch DB · [x] DB/sp + danh sách SP thiếu · [x] đăng nhập API · [x] danh sách vị trí bí mật.
 Còn lại / GAP: không có GAP dữ liệu mới.
-Cần anh: D-21; merge nhánh khi thấy ổn; chuẩn bị đổi khóa JWT / license / mật khẩu `sa` cho T01.
+Cần anh: D-26; merge nhánh khi thấy ổn; chuẩn bị đổi khóa JWT / license / mật khẩu `sa` cho T01.
 
 ### T01 – Đưa bí mật ra khỏi code · 2026-11-14 · DONE
 Kế hoạch: 1) tìm đủ vị trí bí mật 2) bật user-secrets, đặt khóa dev 3) đọc từ `IConfiguration` 4) kiểm tra bí mật lúc khởi động 5) placeholder + `.example` 6) `RequireExpirationTime`, thời hạn từ cấu hình 7) SECRETS_TODO 8) build + chạy thử.
@@ -108,17 +109,17 @@ Kế hoạch: 1) `dotnet list package --vulnerable` 2) tra bản 8.x mới nhấ
 | Ghim gói gián tiếp đã vá: System.Formats.Asn1 8.0.2, System.IO.Packaging 8.0.1, System.Net.Http 4.3.4, System.Security.Cryptography.Pkcs 8.0.2, System.Text.RegularExpressions 4.3.1 | Model |
 
 - `Program.cs`: `UseSerilog` chuyển từ `IWebHostBuilder` (bị bỏ ở Serilog.AspNetCore 8) sang `IHostBuilder`. Cấu hình đọc từ `Serilog` trong appsettings vẫn như cũ.
-- AutoMapper 13.0.1: **giữ**, vì bản vá 15.1.4+ là license thương mại → D-22. `NuGetAuditSuppress` 3 advisory **chỉ ở Services** để không báo trùng; cảnh báo vẫn hiện ở WebApi.
+- AutoMapper 13.0.1: **giữ**, vì bản vá 15.1.4+ là license thương mại → D-27. `NuGetAuditSuppress` 3 advisory **chỉ ở Services** để không báo trùng; cảnh báo vẫn hiện ở WebApi.
 
 Kiểm tra:
 - `dotnet build --no-incremental`: **0 lỗi, 10 cảnh báo** (= mốc T00: 6 dòng NU1903 AutoMapper ở WebApi + 4 dòng CS8604).
-- `dotnet list package --vulnerable --include-transitive`: Data, Model **sạch**; WebApi / Services chỉ còn AutoMapper (D-22). Trước T04 có khoảng 15 gói có lỗ hổng.
+- `dotnet list package --vulnerable --include-transitive`: Data, Model **sạch**; WebApi / Services chỉ còn AutoMapper (D-27). Trước T04 có khoảng 15 gói có lỗ hổng.
 - Chạy app: Swagger JSON 200 (572 route), UI 200; login 200; không token 401; `User/GetAll` (Dapper + Microsoft.Data.SqlClient) 200; `User/GetById` (EF Core 8) 200; `UnitMeasure/GetAllData`, `ObjectMenu/GetAll` 200; log không có Error / Exception.
 - Chưa thử được: `DataTableBulkInsert` / `DataReaderBulkInsert` (SqlBulkCopy, chưa có màn hình gọi) và các thao tác ghi. Sẽ có test khi làm T09.
 - `git status`: không có thay đổi trong `app-delicare-client/`.
 
 AC: [x] build 0 lỗi · [x] số cảnh báo không tăng (10 = 10) · [x] app chạy.
-Còn lại: D-22 AutoMapper. `Microsoft.EntityFrameworkCore.SqlServer` 8.0.34 kéo Microsoft.Data.SqlClient 5.1.x, còn Data dùng 6.0.1 → NuGet chọn 6.0.1 cho cả app (đã chạy thử OK).
+Còn lại: D-27 AutoMapper. `Microsoft.EntityFrameworkCore.SqlServer` 8.0.34 kéo Microsoft.Data.SqlClient 5.1.x, còn Data dùng 6.0.1 → NuGet chọn 6.0.1 cho cả app (đã chạy thử OK).
 Ghi chú: `AppDelicare/.vscode/` chưa được theo dõi, không phải em tạo, em không đụng. `.gitignore` gốc chỉ bỏ qua `.vscode/` ở thư mục gốc.
 
 ### T02 – Định danh người thao tác (ICurrentActor) · 2026-11-14 · DONE

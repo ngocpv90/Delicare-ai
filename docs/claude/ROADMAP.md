@@ -6,7 +6,9 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 ## ★ ƯU TIÊN CỦA ANH (2026-11-14): RELEASE 1 = CHỈ BACKEND (.NET + SQL) đủ API cho mockup
 
-**Frontend Angular (`app-delicare-client/`) NGOÀI PHẠM VI (D-20): không đọc, không sửa, không build, không cần tương thích.** Backend làm đúng theo `DELICARE_API_Specification.md`. Sau khi xong backend anh sẽ giao frontend. Các task màn hình Angular (T42, T44-UI, T45, T46, T47) chuyển sang `DEFERRED(FE)`; thay bằng task API tương ứng: T45B, T46B, T47B.
+> **⚠ ĐỔI HƯỚNG 2026-11-15 (D-30):** **khung chuẩn là code cũ**, không sinh thêm API `/api/v1`. Mọi task dưới đây hiểu là: rà soát code cũ → bổ sung method vào Service cũ + action vào Controller cũ theo CLAUDE.md mục 4. Spec API chỉ là danh sách yêu cầu nghiệp vụ. Chỗ nào trong file này còn ghi `/api/v1/...` thì đọc là "chức năng đó, viết thành action kiểu cũ `api/<Entity>/<Action>`". **Task kế tiếp bắt buộc: T45R.**
+
+**Frontend Angular (`app-delicare-client/`) NGOÀI PHẠM VI (D-20): không đọc, không sửa, không build, không cần tương thích.** Backend làm theo khung code cũ (D-30), đủ nghiệp vụ mô tả trong `DELICARE_API_Specification.md`. Sau khi xong backend anh sẽ giao frontend. Các task màn hình Angular (T42, T44-UI, T45, T46, T47) chuyển sang `DEFERRED(FE)`; thay bằng task API tương ứng: T45B, T46B, T47B.
 
 **Chọn task theo THỨ TỰ BẢNG DƯỚI**, không theo số task. Hết mỗi lát:
 - API chạy trên staging backend;
@@ -18,7 +20,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | Lát | Backend giao được | Task theo thứ tự |
 |---|---|---|
 | R1.0 Nền móng | API an toàn, đúng 124 bảng, phân quyền thật, test, staging backend | T00 → T01 → T04 → T02 → T03 → T05 → T06 → T07 → T08 → T09 → **T48.1 (staging backend)** |
-| R1.1 Danh mục và quản trị (P0–P2) | API quản trị, nhóm quyền, menu; danh mục khách, điểm giao, hợp đồng, NCC, nguyên liệu, đơn vị, kho, món, công thức, ca | T10 → T21.1 (seed Shift) → T45B → T49 (API import danh mục) → **UAT-1 (API)** |
+| R1.1 Danh mục và quản trị (P0–P2) | API quản trị, nhóm quyền, menu; danh mục khách, điểm giao, hợp đồng, NCC, nguyên liệu, đơn vị, kho, món, công thức, ca | T10 → T21.1 (seed Shift) → T45B.1–.4 → **T45R (về khung cũ)** → T45B.5 → T49 (API import danh mục) → **UAT-1 (API)** |
 | R1.2 Đơn hàng (P3) | Hợp đồng, thực đơn tuần (buổi × lựa chọn, FC), đơn hàng, chốt 20h, duyệt | T11 → T12 → T13 → T46B.1 (API P3 + in thực đơn) → **UAT-2** |
 | R1.3 Kho và mua hàng (P4) | Nhập kho + QC, FEFO, kiểm kê, MRP, báo giá → PO, job 20h / 20h30 / 21h | T16 → T14 → T15 → T23.1 → T46B.2 (API P4 + in phiếu trước SX, đơn đặt hàng) → **UAT-3** |
 | R1.4 Sản xuất và ATTP (P5–P6) | Kế hoạch mẻ, cấp NL, nhiệt độ lõi, lưu mẫu, checklist, truy xuất | T17 → T18 → T46B.3 (API P5 + in phiếu sản xuất) → T47B.1 (API P6) → **UAT-4** |
@@ -102,6 +104,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Áp dụng **quy ước spec mục 1.2** cho toàn bộ route `/api/v1`: envelope `{success, data, message, errors, traceId}`, ProblemDetails / mã lỗi theo Phụ lục A, phân trang chuẩn, camelCase, lọc cột deprecated và `PassWord`. Làm thành base class / filter / middleware dùng chung (`ApiControllerBase`, `EnvelopeResultFilter`, `ExceptionToErrorMiddleware`).
 - Hỗ trợ `If-Match` / ETag (ModifiedDate), `Idempotency-Key` (lưu kết quả lệnh theo key – nơi lưu: `IntegrationLog` với `IdempotencyKey` có sẵn, PROPOSED), header `X-Branch-Id`.
 - Route CRUD cũ sinh tự động: không đụng ở task này (sẽ được thay dần bằng v1 ở T45B…).
+- **D-30 (2026-11-15):** phần v1 của task này (envelope, ApiControllerBase, Idempotency, ETag, X-Branch-Id) **không dùng nữa**, T45R đưa vào `_obsolete/`. Giữ phần chung: thứ tự middleware, CORS, exception handler, Swagger + JWT, CorrelationId.
 - Bật Swagger mô tả đầy đủ (XML comments), JWT trong Swagger, nhóm theo module.
 - AC: swagger chạy; test tích hợp cho 1 endpoint v1 mẫu: 200 đúng envelope, 400 / 422 đúng mã lỗi, 409 khi If-Match lệch, Idempotency-Key gửi 2 lần chỉ ghi 1 lần.
 
@@ -152,6 +155,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Mẫu `Command` / `Query` / `Handler` / `Validator` (FluentValidation). `IClock` (giờ VN). `BusinessRulesOptions` (BUSINESS_RULES). Dispatcher sự kiện sau commit. `Result` chuẩn.
 - Controller `/api/v1/...` mỏng, chỉ gọi handler.
 - AC: 1 use case mẫu (`Common.LookupQuery`) chạy end-to-end và có test.
+- **D-30 (2026-11-15):** project này **không mở rộng**. Nghiệp vụ viết trong `AppDelicare.Services` theo khung cũ. T45R chuyển `IClock` / `BusinessRulesOptions` sang tầng cũ và đưa project vào `_obsolete/`.
 
 ### T11 – Mã chứng từ · phụ thuộc T10 · `TODO`
 - `IDocumentNumberService` theo BUSINESS_RULES §11, dùng `sp_getapplock` + MAX cột đích.
@@ -159,12 +163,12 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 
 ### T12 – ApprovalService · phụ thuộc T10, T11 · `TODO`
 - Tạo / duyệt / từ chối / hết hạn. Nhiều bước theo `ApproverRoleCode`. `ApprovalDecision` chỉ ghi thêm, có `PayloadHash` chống sửa payload. Khi được duyệt thì thực thi lệnh gốc (registry `BusinessType` → handler).
-- API: `GET /api/v1/approvals/my-pending`, `POST /api/v1/approvals/{id}/decide`.
+- Viết trong `ApprovalRequestService` / `ApprovalDecisionService` cũ (+ service dùng chung `ApprovalService` nếu cần, cùng mẫu). API: `GET api/ApprovalRequest/GetMyPending`, `POST api/ApprovalRequest/Decide`.
 - AC: test tạo → duyệt → thực thi; từ chối không ghi; payload bị sửa thì từ chối.
 
 ### T13 – Đơn hàng · phụ thuộc T12 · `TODO`
 - Máy trạng thái Order. Submit / Confirm / Cancel. Kiểm tra giờ chốt 20h D-1. Kiểm tra lệch suất > 30%. Tính giá theo ContractMeal / PricePolicie.
-- API theo spec mục P3 trong `DELICARE_API_Specification.md`.
+- Chức năng theo spec mục P3 trong `DELICARE_API_Specification.md`, viết vào `OrderService` / `OrderLineService` + action `OrderController.Submit / Confirm / Cancel` (khung cũ).
 - AC: test các nhánh cutoff và deviation; số tổng của đơn đúng.
 
 ### T14 – MRP và đề xuất mua · phụ thuộc T13 · `TODO`
@@ -276,21 +280,53 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - QC / ATTP, đóng gói / giao vận / phản ánh / hộp, nhân sự, KPI dashboard.
 
 
-### T45B – API màn hình P0–P2 (quản trị và danh mục) · phụ thuộc T07, T10 · `DOING`
+### T45R – Rà soát code cũ, chuyển nghiệp vụ v1 về khung cũ, gỡ lớp v1 · phụ thuộc T45B.4 · `TODO` ← **LÀM ĐẦU TIÊN (D-30)**
+**Mục tiêu:** một khung duy nhất là code cũ (CLAUDE.md mục 4). Không mất nghiệp vụ nào đã làm ở T45B.1–.4. Không sinh API v1 mới.
+
+- **T45R.1 – Rà soát code cũ + kiểm kê v1** → tạo `docs/claude/LEGACY_REVIEW.md`:
+  - (a) Theo từng màn hình P0–P2 (`docs/mockup/js/data/catalog.js`) và nhóm Ca (`Shift`): controller / action cũ đang có, method service, SP, DTO; so với chức năng màn hình cần (mockup + spec) → cột **Có / Thiếu / Lỗi**.
+  - (b) Mọi endpoint trong `Controllers/V1/**` (kể cả 39 resource của `CrudResources.Generated.cs`, `AuthAndMe`, `MetaController`, `AuditController`) và handler trong `AppDelicare.Application/**`: nghiệp vụ gì → tương đương cũ đã có chưa → **chuyển sang** action / method nào (file cụ thể).
+  - Ví dụ đã thấy khi rà: v1 users lock/unlock ≡ `User/SaveIsActive`; reset ≡ `User/ResetPassword`; gán nhóm ≡ `UserRequest.ListUserGroupId` → `UserClaimService`; ma trận quyền ≡ `UserRole/GetByUserGroupId` + `UserRole/Update`; `/meta/menu` ≡ menu theo quyền từ `UserRoleService.GetByUserGroupId(…, false)`; danh sách / chi tiết / dropdown 39 resource ≡ `GetAll` / `GetById` / `GetAllData` của controller cũ.
+- **T45R.2 – Quản trị P0:** chỉ bổ sung phần còn **thiếu** vào `UserService` / `UserClaimService` / `UserGroupService` / `UserRoleService` / `ObjectMenuService` / `OrganizationUnitService` / `LoginService` và controller cùng tên: vd. tạo user kèm Person (dùng `PersonService` + `InsertUserAfter` có sẵn), xem trước / sao chép quyền nhóm, quyền hiệu lực của 1 user, cây + sắp xếp ObjectMenu, cây OrganizationUnit, merge-conflicts (`CoreDataMergeConflict`, Id bigint), thông tin user đang đăng nhập.
+  - **Phân quyền giữ cơ chế cũ (CLAUDE.md 4.3, D-31):**
+    - Bỏ `Permissions:ApproverGroups` (appsettings) và `ScreenMap.MatrixGroup` dùng cho duyệt. Thay bằng mục `ObjectMenu` cấp 2 "Phê duyệt / Duyệt …" + `UserRole` (seed chỉ thêm phần thiếu); `PermissionService.IsAllowed(Approve)` = `AllowEdit` trên mục đó.
+    - Chuyển `IPermissionService` sang `AppDelicare.Services`; gọi xóa cache từ `UserRoleService.Update`, `UserClaimService.SaveAfterUser`, `UserService` (Save / Delete / SaveIsActive / SaveIsAdmin), `UserGroupService.Save`, `ObjectMenuService` (Save / SaveIsActive). Bỏ sự kiện `PermissionsChanged` của Application.
+    - Kiểm `LoginService` vẫn trả đúng các trường cũ (token, thông tin user, `listMenu`).
+    - Test: đổi quyền qua `UserRole/Update` → lần gọi kế tiếp áp dụng ngay; khóa user (`SaveIsActive`) → 403 / không đăng nhập được; đổi tên nhóm không làm mất quyền duyệt; user 2 nhóm được quyền cộng dồn.
+- **T45R.3 – Danh mục P1:** vào service / controller cũ của từng entity: overview khách / NCC (`GetOverview`), SupplierMaterial ưu tiên + hiệu lực theo ngày (lọc trong SP GetAll), Ingredient kèm tồn (SP), sơ đồ kho, `UomConversion` quy đổi (`Convert`), chặn ngừng điểm giao khi còn đơn.
+- **T45R.4 – Món, công thức, giá, checklist P2 + Ca:** `RecipeService` / `RecipeController`: tạo phiên bản, dòng, `Submit`, `Lock` (`SnapshotJson` / `LockedAt` / `LockedBy`), `CalculateCost`; `StandardCost.Recalculate`; `PricePolicy` resolve + chặn chồng hiệu lực trong Insert / Update; Dish kèm công thức hiệu lực; checklist UNIQUE (Code, VersionNo); logic kiểm tra của `ShiftsController` v1 → `ShiftService`.
+- **T45R.5 – Gỡ lớp v1 + test:**
+  - Chuyển kỹ thuật dùng chung sang tầng cũ: `IClock`, `BusinessRulesOptions` (từ `Application/Common/ClockAndRules.cs`) → `AppDelicare.Data/Share` + `AppDelicare.Model/Option`; lookup cần thiết → `GetAllData` / SP.
+  - `PermissionConvention`: bỏ nhánh `ApplyCrud`. Giữ `PermissionFilter`, `PermissionService`, `ScreenMap`.
+  - Đưa vào `_obsolete/v1/` (không xóa, ghi PROGRESS): `Controllers/V1/**`, `Api/**` chỉ dùng cho v1 (ApiControllerBase, ApiEnvelope, EnvelopeResultFilter, ExceptionToErrorMiddleware, IdempotencyFilter, BranchContext, PageQuery, ApiJson…), project `AppDelicare.Application` (sau khi đã chuyển hết), phần sinh v1 trong `tools/AppDelicare.CodeGen` (nếu có). Gỡ đăng ký trong `Startup.cs` và `AppDelicare.sln`. `ProblemDetailsExceptionHandler`, `CorrelationIdMiddleware`, health check giữ.
+  - Swagger: mô tả lại theo route `api/[controller]/<Action>`, bỏ chữ "legacy".
+  - Test: viết lại test v1 thành test Service (và test tích hợp controller cũ) – giữ đủ kịch bản: 403 / 200 theo quyền, xóa đang tham chiếu bị chặn, khóa công thức, chồng hiệu lực giá, sổ append-only, đảo bút toán.
+  - Cập nhật `docs/api-tests/*.http`, `docs/claude/UAT_CHECKLIST.md` (R1.0, R1.1) sang route cũ.
+- **AC:**
+  - [ ] `LEGACY_REVIEW.md` đủ 2 bảng; mọi dòng v1 có cột "Chuyển sang" (không để trống).
+  - [ ] Swagger không còn route `/api/v1`; `grep -rn "api/v1" AppDelicare --include=*.cs` = 0 (ngoài `_obsolete`).
+  - [ ] Mọi controller mới / sửa đúng mẫu `WarehouseController`; mỗi file 1 controller; không controller nào inject `DatabaseContext` / `IUnitOfWork`.
+  - [ ] Không có service quản trị user / nhóm / quyền / menu mới song song với service cũ.
+  - [ ] Không còn quyền nào cấu hình trong appsettings hoặc theo tên nhóm cứng; quyền duyệt gán được trên màn hình ma trận quyền cũ.
+  - [ ] Build 0 lỗi; `dotnet test` xanh; `.http` chạy được trên DB dev.
+- Không cần dừng giữa các bước con, trừ khi rà soát thấy code cũ và mockup / spec mâu thuẫn mà DECISIONS chưa phân xử.
+
+### T45B – API màn hình P0–P2 (quản trị và danh mục) · phụ thuộc T07, T10 · `DOING` (T45B.1–.4 làm theo v1 → **T45R chuyển về khung cũ**; T45B.5 làm sau T45R)
 - Tách: **T45B.1** CRUD chuẩn generic cho 39 resource (`DONE` 2026-11-14) · **T45B.2** (`DONE` 2026-11-14 trừ /meta/statuses, /meta/reference-lists, auth/refresh → T45B.5) P0 riêng: users (tạo kèm Person + nhóm, lock/unlock, reset), ma trận quyền nhóm (GET/PUT/bulk/preview, effective-permissions), object-menus tree/reorder, org-units tree / branches, merge-conflicts (Id bigint), `/meta/menu`, `/meta/me`, `/meta/statuses`, `/meta/reference-lists` · **T45B.3** (`DONE` 2026-11-14) P1 riêng: customer overview / list mở rộng, supplier overview, supplier-materials ưu tiên + effectiveOn, ingredients kèm tồn, warehouse layout, UomService.Convert, delivery-location chặn ngừng khi còn đơn · **T45B.4** (`DONE` 2026-11-14) P2 riêng: dishes kèm activeRecipe, recipes phiên bản (tạo / dòng / submit / lock / cost), standard-costs recalculate, price-policies resolve + chặn chồng hiệu lực, checklist UNIQUE (Code, VersionNo) · **T45B.5** `docs/frontend-handoff/P0-P2.md` + `.http'
 - Với **mỗi màn hình P0–P2** trong `catalog.js`: đủ endpoint theo `DELICARE_API_Specification.md`, gồm danh sách (lọc / phân trang / sắp xếp), chi tiết, thêm / sửa / xóa mềm, dropdown lookup, import / export nếu spec có.
 - Quan hệ logic kiểm bằng `LOGICAL_RELATIONS.md`. Phân quyền `[Permission]`. Swagger mô tả.
-- Toàn bộ theo `/api/v1/...` và quy ước spec. Endpoint CRUD cũ tương ứng có thể gỡ khi bản v1 đã đủ và có test.
+- ~~Toàn bộ theo `/api/v1/...`~~ → **D-30: toàn bộ theo khung cũ** `api/[controller]/<Action>`; bổ sung vào controller / service cũ. Không gỡ endpoint cũ.
+- **T45B.5 (sau T45R):** `docs/frontend-handoff/P0-P2.md` (màn hình → chức năng spec → action cũ, request / response mẫu) + `.http`; danh mục trạng thái (STATUS_CATALOG) và danh sách tham chiếu cho dropdown viết thành action kiểu cũ (vd. controller không gắn bảng theo mẫu `DashboardController`).
 - AC: bảng đối chiếu `docs/frontend-handoff/P0-P2.md` (màn hình → endpoint → trạng thái); test tích hợp cho mỗi nhóm; file `.http`.
 
 ### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `TODO`
 - T46B.1 P3 (hợp đồng, thực đơn tuần buổi × lựa chọn + giá vốn / FC, đơn hàng theo khách → địa điểm → vị trí). T46B.2 P4 (mua hàng: báo giá → so sánh → PO; kho). T46B.3 P5 (kế hoạch sản xuất, giá thành).
 - **API in / xuất file** theo mẫu thật (BUSINESS_DOCS.md), dùng GemBox / Excel export có sẵn: Thực đơn gửi khách, Phiếu trước sản xuất, Phiếu sản xuất, Đơn đặt hàng NCC. Header pháp nhân lấy từ cấu hình. Trả file (docx / xlsx / pdf).
-- AC: như T45B cho P3–P5; mỗi mẫu in có test sinh file không lỗi.
+- AC: như T45B cho P3–P5 (khung cũ, D-30); mỗi mẫu in có test sinh file không lỗi. In / xuất file: action `Print*` / `Export*` trên controller của chứng từ, dùng `ExportToExcelHelper` / `TemplateExcelHelper` / GemBox có sẵn.
 
 ### T47B – API màn hình P6–P8 · phụ thuộc T18–T22 · `TODO`
 - T47B.1 P6 (QC / ATTP, checklist, nhiệt độ, truy xuất). T47B.2 P7 (đóng gói, giao vận, POD, phản ánh, hộp / khay, vệ sinh). T47B.3 P8 (nhân sự, KPI, **API dashboard điều hành**, hộp duyệt ApprovalRequest của user, cảnh báo nghiệp vụ).
-- AC: như T45B cho P6–P8.
+- AC: như T45B cho P6–P8 (khung cũ, D-30).
 
 ### T48 – Triển khai (staging → production) · phụ thuộc T03 · `TODO`
 - **T48.1 staging (làm ngay trong R1.0):** `DONE` (2026-11-14 – IIS / LocalDB chạy thử OK; Docker chưa chạy được vì máy dev chưa có Docker)
