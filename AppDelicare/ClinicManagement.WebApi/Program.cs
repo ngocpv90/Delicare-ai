@@ -13,11 +13,11 @@ namespace AppDelicare.WebApi
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+                // T04: Serilog.AspNetCore 8 chỉ còn UseSerilog trên IHostBuilder (bản trên IWebHostBuilder đã bị bỏ).
+                .UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration))
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-#pragma warning disable CS0618 // Type or member is obsolete
-                    webBuilder.UseStartup<Startup>().UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration));
-#pragma warning restore CS0618 // Type or member is obsolete
+                    webBuilder.UseStartup<Startup>();
                 });
     }
 }

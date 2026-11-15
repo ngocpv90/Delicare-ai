@@ -103,7 +103,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Bật Swagger mô tả đầy đủ (XML comments), JWT trong Swagger.
 - AC: swagger chạy; test tích hợp: `Supplier/GetAll` cũ vẫn trả đúng dạng cũ; 1 endpoint v1 mẫu trả 400 ProblemDetails khi input sai.
 
-### T04 – Nâng gói lên .NET 8 đồng bộ · phụ thuộc T00 · `TODO`
+### T04 – Nâng gói lên .NET 8 đồng bộ · phụ thuộc T00 · `DONE` (2026-11-14)
 - EF Core 8.x, `Microsoft.AspNetCore.Authentication.JwtBearer` 8.x, `Microsoft.AspNetCore.OpenApi` 8.x, Swashbuckle 6.5+, `Microsoft.IdentityModel.Tokens` cùng họ, `EFCore.BulkExtensions` 8.x. Không nâng gói thương mại (EvoPdf, Syncfusion, GemBox) nếu không cần.
 - AC: build 0 lỗi; số cảnh báo không tăng so với baseline; app chạy.
 

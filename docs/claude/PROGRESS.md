@@ -2,10 +2,10 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** (.NET + SQL, đủ API cho mockup; Angular ngoài phạm vi – D-20) · Lát hiện tại: **R1.0 Nền móng**
-- Task đang làm: T00, T01 DONE – task kế tiếp: **T04** (nâng gói .NET 8), theo thứ tự R1.0: T00 → T01 → T04 → T02 → T03…
-- Nhánh: `feat/T01-secrets` (tách từ `chore/T00-claude-setup`; cả hai chưa merge, chưa push)
+- Task đang làm: T00, T01, T04 DONE – task kế tiếp: **T02** (ICurrentActor), theo thứ tự R1.0: T00 → T01 → T04 → T02 → T03 → T05…
+- Nhánh: `feat/T04-net8-packages` (chuỗi nhánh: `chore/T00-claude-setup` → `feat/T01-secrets` → `feat/T04-net8-packages`; chưa merge, chưa push)
 - Build backend: OK – 0 lỗi, 10 cảnh báo (2026-11-14) · Build frontend: ngoài phạm vi · Test: chưa có project test (T09)
-- Việc anh cần làm: (1) đổi các khóa đã lộ theo `docs/claude/SECRETS_TODO.md`; (2) trả lời D-21 (endpoint `api/AuditChange/DeleteData`); (3) merge nhánh T00 → T01 khi anh thấy ổn.
+- Việc anh cần làm: (1) đổi các khóa đã lộ theo `docs/claude/SECRETS_TODO.md`; (2) trả lời D-21 (endpoint `api/AuditChange/DeleteData`) và D-22 (AutoMapper); (3) merge chuỗi nhánh khi anh thấy ổn.
 
 ---
 
@@ -88,3 +88,35 @@ Kiểm tra:
 AC: [x] grep repo không còn chuỗi bí mật cũ · [x] app chạy được khi secret nằm trong user-secrets · [x] thiếu secret thì báo lỗi rõ lúc khởi động · [x] `RequireExpirationTime = true`, thời hạn từ cấu hình · [x] `.example` + SECRETS_TODO.
 Còn lại: chưa có test tự động cho `StartupSecrets.Validate` (chưa có project test; thêm khi làm T09). `ServiceLocator.BuildServiceProvider` trong Startup để T03.
 Cần anh: đổi khóa theo SECRETS_TODO.md (bắt buộc: khóa JWT staging / prod, mật khẩu `sa`, thu hồi QuickPulse key). Máy dev khác muốn chạy thì phải tự đặt user-secrets.
+
+### T04 – Nâng gói lên .NET 8 đồng bộ · 2026-11-14 · DONE
+Kế hoạch: 1) `dotnet list package --vulnerable` 2) tra bản 8.x mới nhất và bản vá 3) nâng gói chính 4) sửa lỗi build 5) ghim gói gián tiếp có lỗ hổng 6) giữ số cảnh báo ≤ mốc 7) chạy thử app.
+
+Đã làm (gói thương mại EvoPdf, Syncfusion, GemBox **không đụng**):
+| Gói | Cũ → Mới | Project |
+|---|---|---|
+| Microsoft.EntityFrameworkCore.SqlServer / Tools | 7.0.3 → 8.0.34 | WebApi |
+| Microsoft.AspNetCore.Authentication.JwtBearer / OpenApi | 7.0.3 → 8.0.34 | WebApi |
+| Microsoft.AspNetCore.Identity.EntityFrameworkCore | 7.0.3 → 8.0.34 | Data |
+| EFCore.BulkExtensions 7.0.1 → **EFCore.BulkExtensions.SqlServer** 8.1.3 | gói chỉ SQL Server, bỏ được Npgsql / MySqlConnector có lỗ hổng | Data |
+| Microsoft.IdentityModel.Tokens | 6.27.0 → 7.7.3 (khớp bản JwtBearer 8 dùng, tránh trộn 7 / 8) | Model, WebApi |
+| Swashbuckle.AspNetCore | 6.4.0 → 6.9.0 | WebApi |
+| Serilog.AspNetCore | 6.1.0 → 8.0.3 | tất cả |
+| Microsoft.Extensions.* | 7.0.x → 8.0.x | Model, WebApi |
+| System.Data.SqlClient (gián tiếp, đã ngừng phát triển) → **Microsoft.Data.SqlClient 6.0.1** | đổi `using` ở `DapperRepository`, `UnitOfWork` | Data |
+| AutoMapper.Extensions.Microsoft.DependencyInjection 12.0.0 → bỏ; Services dùng thẳng AutoMapper 13.0.1; Model bỏ hẳn (không dùng) | Model, Services |
+| Ghim gói gián tiếp đã vá: System.Formats.Asn1 8.0.2, System.IO.Packaging 8.0.1, System.Net.Http 4.3.4, System.Security.Cryptography.Pkcs 8.0.2, System.Text.RegularExpressions 4.3.1 | Model |
+
+- `Program.cs`: `UseSerilog` chuyển từ `IWebHostBuilder` (bị bỏ ở Serilog.AspNetCore 8) sang `IHostBuilder`. Cấu hình đọc từ `Serilog` trong appsettings vẫn như cũ.
+- AutoMapper 13.0.1: **giữ**, vì bản vá 15.1.4+ là license thương mại → D-22. `NuGetAuditSuppress` 3 advisory **chỉ ở Services** để không báo trùng; cảnh báo vẫn hiện ở WebApi.
+
+Kiểm tra:
+- `dotnet build --no-incremental`: **0 lỗi, 10 cảnh báo** (= mốc T00: 6 dòng NU1903 AutoMapper ở WebApi + 4 dòng CS8604).
+- `dotnet list package --vulnerable --include-transitive`: Data, Model **sạch**; WebApi / Services chỉ còn AutoMapper (D-22). Trước T04 có khoảng 15 gói có lỗ hổng.
+- Chạy app: Swagger JSON 200 (572 route), UI 200; login 200; không token 401; `User/GetAll` (Dapper + Microsoft.Data.SqlClient) 200; `User/GetById` (EF Core 8) 200; `UnitMeasure/GetAllData`, `ObjectMenu/GetAll` 200; log không có Error / Exception.
+- Chưa thử được: `DataTableBulkInsert` / `DataReaderBulkInsert` (SqlBulkCopy, chưa có màn hình gọi) và các thao tác ghi. Sẽ có test khi làm T09.
+- `git status`: không có thay đổi trong `app-delicare-client/`.
+
+AC: [x] build 0 lỗi · [x] số cảnh báo không tăng (10 = 10) · [x] app chạy.
+Còn lại: D-22 AutoMapper. `Microsoft.EntityFrameworkCore.SqlServer` 8.0.34 kéo Microsoft.Data.SqlClient 5.1.x, còn Data dùng 6.0.1 → NuGet chọn 6.0.1 cho cả app (đã chạy thử OK).
+Ghi chú: `AppDelicare/.vscode/` chưa được theo dõi, không phải em tạo, em không đụng. `.gitignore` gốc chỉ bỏ qua `.vscode/` ở thư mục gốc.

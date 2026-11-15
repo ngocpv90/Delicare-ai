@@ -6,7 +6,7 @@ using AppDelicare.Model.Common;
 using AppDelicare.Model.Helper;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace AppDelicare.Data.Repositories
 {
