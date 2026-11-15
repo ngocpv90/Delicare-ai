@@ -3,9 +3,9 @@
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
-- T45R **DONE** (2026-11-15): nghiệp vụ T45B.1–.4 đã chuyển về Service / Controller cũ, lớp v1 ở `_obsolete/v1/`. Task kế tiếp: **T45B.5** (bàn giao frontend theo route cũ, danh mục trạng thái / tham chiếu), rồi T49.
+- T45R, T45B.5 **DONE** (2026-11-15). Lát R1.1 còn: **T49** (nhập Excel danh mục) → **UAT-1**.
 - Nhánh: `feat/T45R-legacy-framework` (từ `chore/rename-clinicmanagement` ← `feat/T45B.4-p2-special` ← … T00; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 76/76 xanh (test v1 chuyển `_obsolete/v1`, viết lại theo route cũ)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 79/79 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -383,3 +383,22 @@ Còn lại / GAP:
 - Cột NOT NULL chưa có `[Required]` ở DTO cũ: thiếu thì trả 500 (theo hành vi cũ). Sẽ xem lại ở T45B.5.
 
 Cần anh: duyệt 2 điểm PROPOSED (nhóm mới không có quyền; ResetPassword / GetPreview chỉ admin).
+
+### T45B.5 – Bàn giao frontend P0–P2, trạng thái, danh mục tham chiếu · 2026-11-15 · DONE
+Kế hoạch: 1) rà soát: chưa có action trạng thái / tham chiếu; STATUS_CATALOG (47 bộ), Gap Register sheet 08 (danh mục chưa có bảng) 2) CodeGen sinh StatusCatalog 3) MetaDataService / MetaDataController (mẫu cũ, không gắn bảng) 4) tài liệu bàn giao 5) test, .http, UAT.
+
+Đã làm:
+- CodeGen layer `status` → `Model/Helper/StatusCatalog.Generated.cs` (47 bộ, mã + nhãn tiếng Việt + nguồn).
+- `MetaData/GetStatuses?key=`, `MetaData/GetReferenceLists?name=`; chỉ cần đăng nhập.
+- Danh mục tham chiếu trong `appsettings.json` → `ReferenceLists`: 9 danh mục (MealType, WarehouseType, StorageType, WasteType, AdjustmentReason, ReturnInspectionResult, CustomerType, SupplierType, QcResult), đều PROPOSED.
+  - **MealType theo D-10 / BUSINESS_RULES** (SANG / TRUA / TOI / DEM), không theo Gap Register (BREAKFAST / LUNCH…).
+- `docs/frontend-handoff/P0-P2.md`:
+  - quy ước (đăng nhập, Result, lỗi, danh sách / form, ghi đè đủ trường, quyền, duyệt);
+  - 265 action theo màn hình, sinh từ code controller.
+- `.http` r1.1 có thêm MetaData; UAT_CHECKLIST thêm R1.1 (13 kịch bản), sửa R1.0 theo route cũ.
+
+Kiểm tra: build 0 lỗi / 10 cảnh báo; test **79/79** (+3: 47 bộ trạng thái và lọc key, danh mục từ cấu hình, user không quyền vẫn đọc được, chưa đăng nhập 401).
+
+AC: [x] bảng đối chiếu màn hình → action · [x] test · [x] .http.
+
+Còn lại / GAP: GAP-AUTH-01 (refresh token) vẫn mở. Danh mục tham chiếu và MealType chờ BA/PO chốt.

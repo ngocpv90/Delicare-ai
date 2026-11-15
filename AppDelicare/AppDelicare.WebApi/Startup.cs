@@ -58,6 +58,7 @@ namespace AppDelicare.WebApi
             services.Configure<AppDelicare.Model.Option.BusinessRulesOptions>(Configuration.GetSection(AppDelicare.Model.Option.BusinessRulesOptions.Section));
             services.AddSingleton<AppDelicare.Data.Share.IClock, AppDelicare.Data.Share.SystemClock>();
             services.Configure<AppDelicare.Model.Option.PermissionOptions>(Configuration.GetSection(AppDelicare.Model.Option.PermissionOptions.Section));
+            services.Configure<AppDelicare.Model.Option.ReferenceListsOptions>(Configuration.GetSection(AppDelicare.Model.Option.ReferenceListsOptions.Section)); // T45B.5
             services.AddScoped<AppDelicare.Data.Share.IReferenceGuard, AppDelicare.Data.Share.ReferenceGuard>();
             // T03: mọi ProblemDetails do MVC sinh (400 validation, Problem()) mang traceId = CorrelationId.
             services.AddProblemDetails(options => options.CustomizeProblemDetails = ctx =>

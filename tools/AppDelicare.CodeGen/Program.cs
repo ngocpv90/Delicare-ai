@@ -125,6 +125,14 @@ if (Layer("automapper"))
 
 // T45R (D-30): bỏ layer "crud" (metadata cho CRUD v1 generic) – lớp v1 đã chuyển vào _obsolete/v1.
 
+// T45B.5: danh mục trạng thái cho Meta/GetStatuses (luôn sinh lại – nguồn là tài liệu).
+if (Layer("status"))
+{
+    var statuses = StatusCatalogGen.Load(root);
+    Write(P("AppDelicare.Model", "Helper", "StatusCatalog.Generated.cs"), StatusCatalogGen.Code(statuses), true);
+    Console.WriteLine($"Bộ trạng thái: {statuses.Count}.");
+}
+
 // T07: bản đồ màn hình / quan hệ + seed tổ chức, menu, nhóm quyền (luôn sinh lại – nguồn là tài liệu).
 if (Layer("security"))
 {
