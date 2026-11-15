@@ -2,8 +2,8 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** (.NET + SQL, đủ API cho mockup; Angular ngoài phạm vi – D-20) · Lát hiện tại: **R1.0 Nền móng**
-- Task đang làm: T00–T08 DONE – task kế tiếp: **T09** (dự án test – phần lớn đã có từ T02/T03), rồi **T48.1** (staging backend) để đóng lát R1.0
-- Nhánh: `feat/T08-append-only` (chuỗi T00 → … → T08; chưa merge, chưa push)
+- Task đang làm: T00–T09 DONE – task kế tiếp: **T48.1** (staging backend) để đóng lát R1.0
+- Nhánh: `feat/T09-tests` (chuỗi T00 → … → T09; chưa merge, chưa push)
 - Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 71/71 xanh
 - Việc anh cần làm: (1) đổi khóa đã lộ theo `SECRETS_TODO.md`; (2) trả lời D-26 (DeleteData) và D-27 (AutoMapper); (3) merge chuỗi nhánh khi thấy ổn.
 
@@ -227,3 +227,9 @@ Kiểm tra:
 - **SQL Server thật**: Post + Reverse trên DB dev trong transaction rồi rollback – kiểu decimal(18,4) / cột deprecated NOT NULL ghi đúng, tồn về 0, rollback không để lại dòng sổ.
 AC: [x] cập nhật / xóa sổ bị chặn · [x] bút toán đảo làm tồn trở về đúng.
 Còn lại: `AuditChange/DeleteData` (đã khóa admin) vẫn DELETE vật lý bằng SQL nên **vượt qua khóa sổ** → D-26. Khóa dòng tồn khi nhiều người xuất cùng lúc (UPDLOCK / rowversion) làm cùng T16.
+
+### T09 – Dự án test · 2026-11-14 · DONE
+Đã làm: `AppDelicare.Tests` (xUnit, FluentAssertions 7.2.0, EF InMemory, Mvc.Testing, Xunit.SkippableFact) đã dựng dần từ T02 / T03 / T05 / T07 / T08; T09 bổ sung `ConnectionStrings:TestDb` (có thì test tích hợp dùng DB này thay MainConnectionString) và `AppDelicare.Tests/README.md` (3 loại test, cấu hình, quy ước: test ghi SQL Server phải ROLLBACK, không commit dữ liệu test vào sổ).
+Kiểm tra: `dotnet test` trên máy anh **71/71 xanh**, 0 skip (DB dev có); không có DB → test tích hợp Skip kèm lý do.
+AC: [x] `dotnet test` chạy được trên máy anh · [x] README test.
+Ghi chú: "Unit test cho Application" làm khi có `AppDelicare.Application` (T10).

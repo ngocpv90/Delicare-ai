@@ -139,7 +139,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Bỏ endpoint Update/Delete của các sổ. Thêm `InventoryLedgerService.Reverse(transactionId, reason)` ghi bút toán đảo.
 - AC: test cập nhật / xóa sổ bị chặn; bút toán đảo làm tồn trở về đúng.
 
-### T09 – Dự án test · phụ thuộc T02 · `TODO`
+### T09 – Dự án test · phụ thuộc T02 · `DONE` (2026-11-14)
 - `AppDelicare.Tests` (xUnit, FluentAssertions). Unit test cho Application. Integration test dùng DB dev (connection `ConnectionStrings:TestDb`), mỗi test chạy trong transaction rồi rollback. Không có DB thì skip có thông báo.
 - AC: `dotnet test` chạy được trên máy anh; README test.
 
