@@ -33,7 +33,7 @@ Không kết nối / đăng nhập được DB thì test tích hợp DB được
 Tài khoản đăng nhập test: biến môi trường `DELICARE_TEST_USER` / `DELICARE_TEST_PASSWORD`; mặc định tài khoản dev (`docs/claude/LOCAL_DEV.local.md`).
 
 ```powershell
-cd AppDelicare/ClinicManagement.WebApi
+cd AppDelicare/AppDelicare.WebApi
 dotnet user-secrets set "ConnectionStrings:TestDb" "Server=(localdb)\MSSQLLocalDB;Database=AppDelicare;Trusted_Connection=True;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
 ```
 

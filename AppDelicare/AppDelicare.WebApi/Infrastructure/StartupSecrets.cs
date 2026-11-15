@@ -56,7 +56,7 @@ namespace AppDelicare.WebApi.Infrastructure
             throw new InvalidOperationException(
                 "Cấu hình bí mật chưa đủ, ứng dụng dừng khởi động:" + Environment.NewLine
                 + string.Join(Environment.NewLine, errors.Select(e => " - " + e)) + Environment.NewLine
-                + "Cách đặt (dev): dotnet user-secrets set \"<Khóa>\" \"<giá trị>\" --project AppDelicare/ClinicManagement.WebApi" + Environment.NewLine
+                + "Cách đặt (dev): dotnet user-secrets set \"<Khóa>\" \"<giá trị>\" --project AppDelicare/AppDelicare.WebApi" + Environment.NewLine
                 + "Cách đặt (prod): biến môi trường, thay ':' bằng '__' (vd. Jwt__SigningKey)." + Environment.NewLine
                 + "Xem docs/claude/SECRETS_TODO.md.");
         }

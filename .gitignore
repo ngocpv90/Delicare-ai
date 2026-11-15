@@ -33,4 +33,4 @@ backup-db/
 deploy/docker/staging.env
 
 # Log ứng dụng (ngoài wwwroot – T21.1)
-AppDelicare/ClinicManagement.WebApi/Logs/
+AppDelicare/AppDelicare.WebApi/Logs/

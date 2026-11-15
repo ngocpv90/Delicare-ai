@@ -62,29 +62,29 @@ foreach (var t in selected)
     bool appendOnly = Metadata.AppendOnly.Contains(t.Name);
 
     // Entity: luôn sinh lại (chỉ là dữ liệu) – đây là bước "đồng bộ entity với 124 bảng".
-    if (Layer("entity")) Write(P("ClinicManagement.Model", "Entity", cls + ".cs"), templates.Entity(t), alwaysOverwrite: true);
+    if (Layer("entity")) Write(P("AppDelicare.Model", "Entity", cls + ".cs"), templates.Entity(t), alwaysOverwrite: true);
     if (Layer("repository"))
     {
-        Write(P("ClinicManagement.Data", "Interface", $"I{cls}Repository.cs"), Templates.IRepository(cls), false);
-        Write(P("ClinicManagement.Data", "Repositories", $"{cls}Repository.cs"), Templates.Repository(cls), false);
+        Write(P("AppDelicare.Data", "Interface", $"I{cls}Repository.cs"), Templates.IRepository(cls), false);
+        Write(P("AppDelicare.Data", "Repositories", $"{cls}Repository.cs"), Templates.Repository(cls), false);
     }
     if (!crud)
     {
         continue;
     }
-    if (Layer("request")) Write(P("ClinicManagement.Model", "Request", $"{cls}Request.cs"), templates.Request(t), false);
-    if (Layer("search")) Write(P("ClinicManagement.Model", "SearchRequest", $"{cls}SearchRequest.cs"), templates.SearchRequest(t), false);
-    if (Layer("viewmodel")) Write(P("ClinicManagement.Model", "ViewModels", $"{cls}ViewModel.cs"), templates.ViewModel(t), false);
+    if (Layer("request")) Write(P("AppDelicare.Model", "Request", $"{cls}Request.cs"), templates.Request(t), false);
+    if (Layer("search")) Write(P("AppDelicare.Model", "SearchRequest", $"{cls}SearchRequest.cs"), templates.SearchRequest(t), false);
+    if (Layer("viewmodel")) Write(P("AppDelicare.Model", "ViewModels", $"{cls}ViewModel.cs"), templates.ViewModel(t), false);
     if (Layer("service"))
     {
-        Write(P("ClinicManagement.Services", "Interface", $"I{cls}Service.cs"), Templates.IService(cls), false);
-        Write(P("ClinicManagement.Services", "Implement", $"{cls}Service.cs"), templates.Service(t), false);
+        Write(P("AppDelicare.Services", "Interface", $"I{cls}Service.cs"), Templates.IService(cls), false);
+        Write(P("AppDelicare.Services", "Implement", $"{cls}Service.cs"), templates.Service(t), false);
     }
-    if (Layer("controller")) Write(P("ClinicManagement.WebApi", "Controllers", $"{cls}Controller.cs"), Templates.Controller(cls, appendOnly), false);
+    if (Layer("controller")) Write(P("AppDelicare.WebApi", "Controllers", $"{cls}Controller.cs"), Templates.Controller(cls, appendOnly), false);
     if (Layer("sp"))
     {
         // Service cũ có thể truyền thêm tham số: SP phải khai báo đủ, nếu không Dapper báo "too many arguments".
-        string servicePath = P("ClinicManagement.Services", "Implement", $"{cls}Service.cs");
+        string servicePath = P("AppDelicare.Services", "Implement", $"{cls}Service.cs");
         var extra = File.Exists(servicePath) ? ServiceParams(File.ReadAllText(servicePath), $"usp{cls}_GetAll") : [];
         Write(Path.Combine(root, "DB", "sp", $"usp{cls}_GetAll.sql"), templates.StoredProcedure(t, extra), false);
     }
@@ -92,20 +92,20 @@ foreach (var t in selected)
 
 // File tổng hợp – luôn sinh lại cho TOÀN BỘ bảng (không phụ thuộc --only).
 var classes = all.Select(t => Metadata.ClassOf(t.Name)).ToList();
-if (Layer("dbcontext")) Write(P("ClinicManagement.Data", "Connection", "DatabaseContext.Generated.cs"), templates.DbContextPartial(all), true);
+if (Layer("dbcontext")) Write(P("AppDelicare.Data", "Connection", "DatabaseContext.Generated.cs"), templates.DbContextPartial(all), true);
 if (Layer("unitofwork"))
 {
-    Write(P("ClinicManagement.Data", "Interface", "IUnitOfWork.Generated.cs"), Templates.UnitOfWorkInterface(classes), true);
-    Write(P("ClinicManagement.Data", "Repositories", "UnitOfWork.Generated.cs"), Templates.UnitOfWorkClass(classes), true);
+    Write(P("AppDelicare.Data", "Interface", "IUnitOfWork.Generated.cs"), Templates.UnitOfWorkInterface(classes), true);
+    Write(P("AppDelicare.Data", "Repositories", "UnitOfWork.Generated.cs"), Templates.UnitOfWorkClass(classes), true);
 }
 if (Layer("automapper"))
 {
-    string legacyProfile = File.ReadAllText(P("ClinicManagement.WebApi", "Infrastructure", "AutoMapperConfiguraion.cs"));
+    string legacyProfile = File.ReadAllText(P("AppDelicare.WebApi", "Infrastructure", "AutoMapperConfiguraion.cs"));
     var mapped = all.Where(t => !Metadata.IsStandalone(t) && !Metadata.IsLegacyReadOnly(t))
         .Select(t => Metadata.ClassOf(t.Name))
         .Where(c => !Regex.IsMatch(legacyProfile, $@"CreateMap<{c}Request,\s*{c}>"))
         .ToList();
-    Write(P("ClinicManagement.WebApi", "Infrastructure", "AutoMapperGeneratedProfile.cs"), Templates.AutoMapperProfile(mapped), true);
+    Write(P("AppDelicare.WebApi", "Infrastructure", "AutoMapperGeneratedProfile.cs"), Templates.AutoMapperProfile(mapped), true);
 }
 
 // T45B: metadata bảng cho bộ CRUD v1 generic.
@@ -120,8 +120,8 @@ if (Layer("security"))
     var screens = Seeds.LoadScreens(root, out var menuOrder);
     var matrix = Seeds.LoadMatrix(root);
     var units = Seeds.LoadOrgUnits(root);
-    Write(P("ClinicManagement.WebApi", "Security", "ScreenMap.Generated.cs"), Seeds.ScreenMapCode(tables, screens), true);
-    Write(P("ClinicManagement.Data", "Share", "ReferenceMap.Generated.cs"), Seeds.ReferenceMapCode(tables, meta), true);
+    Write(P("AppDelicare.WebApi", "Security", "ScreenMap.Generated.cs"), Seeds.ScreenMapCode(tables, screens), true);
+    Write(P("AppDelicare.Data", "Share", "ReferenceMap.Generated.cs"), Seeds.ReferenceMapCode(tables, meta), true);
     Write(Path.Combine(root, "DB", "seed", "OrganizationUnit_seed.sql"), Seeds.OrganizationSeed(units), true);
     Write(Path.Combine(root, "DB", "seed", "ObjectMenu_seed.sql"), Seeds.ObjectMenuSeed(screens, menuOrder), true);
     Write(Path.Combine(root, "DB", "seed", "UserRole_seed.sql"), Seeds.UserRoleSeed(screens, matrix), true);

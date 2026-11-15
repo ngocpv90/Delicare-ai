@@ -1,39 +1,39 @@
-Print("----------ClinicManagement.Data----------")
-copy ..\ClinicManagement.Generator\ClinicManagement.Data.Connection\*.cs ..\ClinicManagement.Data\Connection
-copy ..\ClinicManagement.Generator\ClinicManagement.Data.Interface\*.cs ..\ClinicManagement.Data\Interface
-copy ..\ClinicManagement.Generator\ClinicManagement.Data.Repositories\*.cs ..\ClinicManagement.Data\Repositories
-copy ..\ClinicManagement.Generator\ClinicManagement.Data.Interface.UnitOfWork\*.cs ..\ClinicManagement.Data\Interface
-copy ..\ClinicManagement.Generator\ClinicManagement.Data.Repositories.UnitOfWork\*.cs ..\ClinicManagement.Data\Repositories
+Print("----------AppDelicare.Data----------")
+copy ..\ClinicManagement.Generator\ClinicManagement.Data.Connection\*.cs ..\AppDelicare.Data\Connection
+copy ..\ClinicManagement.Generator\ClinicManagement.Data.Interface\*.cs ..\AppDelicare.Data\Interface
+copy ..\ClinicManagement.Generator\ClinicManagement.Data.Repositories\*.cs ..\AppDelicare.Data\Repositories
+copy ..\ClinicManagement.Generator\ClinicManagement.Data.Interface.UnitOfWork\*.cs ..\AppDelicare.Data\Interface
+copy ..\ClinicManagement.Generator\ClinicManagement.Data.Repositories.UnitOfWork\*.cs ..\AppDelicare.Data\Repositories
 
 
-Print("----------ClinicManagement.Model----------")
-copy ..\ClinicManagement.Generator\ClinicManagement.Model.Entity\*.cs ..\ClinicManagement.Model\Entity
-copy ..\ClinicManagement.Generator\ClinicManagement.Model.Request\*.cs ..\ClinicManagement.Model\Request
-for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.Model.SearchRequest\*.cs") do if not exist "..\ClinicManagement.Model\SearchRequest\%%~nxF" copy %%F ..\ClinicManagement.Model\SearchRequest
-copy ..\ClinicManagement.Generator\ClinicManagement.Model.ViewModels\*.cs ..\ClinicManagement.Model\ViewModels
+Print("----------AppDelicare.Model----------")
+copy ..\ClinicManagement.Generator\ClinicManagement.Model.Entity\*.cs ..\AppDelicare.Model\Entity
+copy ..\ClinicManagement.Generator\ClinicManagement.Model.Request\*.cs ..\AppDelicare.Model\Request
+for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.Model.SearchRequest\*.cs") do if not exist "..\AppDelicare.Model\SearchRequest\%%~nxF" copy %%F ..\AppDelicare.Model\SearchRequest
+copy ..\ClinicManagement.Generator\ClinicManagement.Model.ViewModels\*.cs ..\AppDelicare.Model\ViewModels
 
 
-Print("----------ClinicManagement.Services----------")
-for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.Services.Interface\*.cs") do if not exist "..\ClinicManagement.Services\Interface\%%~nxF" copy %%F ..\ClinicManagement.Services\Interface
-for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.Services.Implement\*.cs") do if not exist "..\ClinicManagement.Services\Implement\%%~nxF" copy %%F ..\ClinicManagement.Services\Implement
+Print("----------AppDelicare.Services----------")
+for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.Services.Interface\*.cs") do if not exist "..\AppDelicare.Services\Interface\%%~nxF" copy %%F ..\AppDelicare.Services\Interface
+for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.Services.Implement\*.cs") do if not exist "..\AppDelicare.Services\Implement\%%~nxF" copy %%F ..\AppDelicare.Services\Implement
 
-Print("----------ClinicManagement.WebApi----------")
-for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.WebApi.Controllers\*.cs") do if not exist "..\ClinicManagement.WebApi\Controllers\%%~nxF" copy %%F ..\ClinicManagement.WebApi\Controllers
-copy ..\ClinicManagement.Generator\ClinicManagement.WebApi.Infrastructure\*.cs ..\ClinicManagement.WebApi\Infrastructure
+Print("----------AppDelicare.WebApi----------")
+for /r %%F in ("..\ClinicManagement.Generator\ClinicManagement.WebApi.Controllers\*.cs") do if not exist "..\AppDelicare.WebApi\Controllers\%%~nxF" copy %%F ..\AppDelicare.WebApi\Controllers
+copy ..\ClinicManagement.Generator\ClinicManagement.WebApi.Infrastructure\*.cs ..\AppDelicare.WebApi\Infrastructure
 
 
 Print("----------Delete All File Copy----------")
-del "..\ClinicManagement.Data\Connection\DomainGenerator.cs"
-del "..\ClinicManagement.Data\Interface\DomainGenerator.cs"
-del "..\ClinicManagement.Data\Repositories\DomainGenerator.cs"
-del "..\ClinicManagement.Model\Entity\DomainGenerator.cs"
-del "..\ClinicManagement.Model\Request\DomainGenerator.cs"
-del "..\ClinicManagement.Model\SearchRequest\DomainGenerator.cs"
-del "..\ClinicManagement.Model\ViewModels\DomainGenerator.cs"
-del "..\ClinicManagement.Services\Implement\DomainGenerator.cs"
-del "..\ClinicManagement.Services\Interface\DomainGenerator.cs"
-del "..\ClinicManagement.WebApi\Controllers\DomainGenerator.cs"
-del "..\ClinicManagement.WebApi\Infrastructure\DomainGenerator.cs"
+del "..\AppDelicare.Data\Connection\DomainGenerator.cs"
+del "..\AppDelicare.Data\Interface\DomainGenerator.cs"
+del "..\AppDelicare.Data\Repositories\DomainGenerator.cs"
+del "..\AppDelicare.Model\Entity\DomainGenerator.cs"
+del "..\AppDelicare.Model\Request\DomainGenerator.cs"
+del "..\AppDelicare.Model\SearchRequest\DomainGenerator.cs"
+del "..\AppDelicare.Model\ViewModels\DomainGenerator.cs"
+del "..\AppDelicare.Services\Implement\DomainGenerator.cs"
+del "..\AppDelicare.Services\Interface\DomainGenerator.cs"
+del "..\AppDelicare.WebApi\Controllers\DomainGenerator.cs"
+del "..\AppDelicare.WebApi\Infrastructure\DomainGenerator.cs"
 del "..\ClinicManagement.Generator\ClinicManagement.Data.Connection\*.cs"
 del "..\ClinicManagement.Generator\ClinicManagement.Data.Interface\*.cs"
 del "..\ClinicManagement.Generator\ClinicManagement.Data.Interface.UnitOfWork\*.cs"

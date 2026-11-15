@@ -60,7 +60,7 @@ Script `deploy/db/Deploy-Database.ps1` chạy được nhiều lần, không nh�
 ```powershell
 cd <repo>
 . ./deploy/staging.local.env.ps1                      # nạp biến môi trường Staging
-dotnet publish AppDelicare/ClinicManagement.WebApi/AppDelicare.WebApi.csproj -c Release -o C:\Deploy\delicare-staging
+dotnet publish AppDelicare/AppDelicare.WebApi/AppDelicare.WebApi.csproj -c Release -o C:\Deploy\delicare-staging
 cd C:\Deploy\delicare-staging
 dotnet AppDelicare.WebApi.dll --urls http://localhost:5200
 ```

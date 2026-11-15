@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.10.12224.181
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.WebApi", "ClinicManagement.WebApi\AppDelicare.WebApi.csproj", "{710D02D2-C5FC-49E8-A375-B1A28E2EEAE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.WebApi", "AppDelicare.WebApi\AppDelicare.WebApi.csproj", "{710D02D2-C5FC-49E8-A375-B1A28E2EEAE6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Data", "ClinicManagement.Data\AppDelicare.Data.csproj", "{6DD2E905-1ED7-4BD8-B499-9AC3FB27DF80}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Data", "AppDelicare.Data\AppDelicare.Data.csproj", "{6DD2E905-1ED7-4BD8-B499-9AC3FB27DF80}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Model", "ClinicManagement.Model\AppDelicare.Model.csproj", "{3CF3B1B6-06DC-474E-A4A9-5E4EBA744491}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Model", "AppDelicare.Model\AppDelicare.Model.csproj", "{3CF3B1B6-06DC-474E-A4A9-5E4EBA744491}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Services", "ClinicManagement.Services\AppDelicare.Services.csproj", "{E66CB87A-A318-4F99-AD09-C5B4C32249D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Services", "AppDelicare.Services\AppDelicare.Services.csproj", "{E66CB87A-A318-4F99-AD09-C5B4C32249D8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppDelicare.Generator", "ClinicManagement.Generator\AppDelicare.Generator.csproj", "{FAE70E2B-4FA5-4943-A3E9-D70ADA8455CF}"
 EndProject

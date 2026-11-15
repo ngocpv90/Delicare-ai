@@ -38,7 +38,7 @@
 **Solution sau khi nâng cấp:**
 | Project | Tham chiếu | Nội dung |
 |---|---|---|
-| AppDelicare.Model (thư mục ClinicManagement.Model) | – | Entity (map đúng 124 bảng), DTO, Option, Helper |
+| AppDelicare.Model (thư mục AppDelicare.Model) | – | Entity (map đúng 124 bảng), DTO, Option, Helper |
 | AppDelicare.Data | Model | DatabaseContext, Repository, UnitOfWork, Dapper, `ICurrentActor` |
 | AppDelicare.Services | Data, Model | CRUD danh mục (sinh mã) |
 | **AppDelicare.Application** (mới) | Data, Model | Use case nghiệp vụ theo miền: `Orders`, `Planning`, `Procurement`, `Inventory`, `Production`, `Quality`, `Logistics`, `Packaging`, `HR`, `Finance`, `Approval`, `Kpi`, `Common` (DocumentNumber, Clock, BusinessRules) |

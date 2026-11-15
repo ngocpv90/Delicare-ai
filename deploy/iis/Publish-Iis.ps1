@@ -10,7 +10,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
-$project = Join-Path $root "AppDelicare/ClinicManagement.WebApi/AppDelicare.WebApi.csproj"
+$project = Join-Path $root "AppDelicare/AppDelicare.WebApi/AppDelicare.WebApi.csproj"
 dotnet publish $project -c Release -o $Output /p:EnvironmentName=$Environment
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish lỗi" }
 New-Item -ItemType Directory -Force (Join-Path $Output "Logs") | Out-Null

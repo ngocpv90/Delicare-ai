@@ -1,18 +1,18 @@
 # DELICARE API – image Linux (T48.1). Build context = thư mục AppDelicare/ :
-#   docker build -f ClinicManagement.WebApi/Dockerfile -t delicare-api:staging AppDelicare
+#   docker build -f AppDelicare.WebApi/Dockerfile -t delicare-api:staging AppDelicare
 # Bí mật KHÔNG có trong image: truyền bằng biến môi trường lúc chạy (xem deploy/README.md).
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ClinicManagement.Model/AppDelicare.Model.csproj ClinicManagement.Model/
-COPY ClinicManagement.Data/AppDelicare.Data.csproj ClinicManagement.Data/
-COPY ClinicManagement.Services/AppDelicare.Services.csproj ClinicManagement.Services/
-COPY ClinicManagement.WebApi/AppDelicare.WebApi.csproj ClinicManagement.WebApi/
-RUN dotnet restore ClinicManagement.WebApi/AppDelicare.WebApi.csproj
-COPY ClinicManagement.Model/ ClinicManagement.Model/
-COPY ClinicManagement.Data/ ClinicManagement.Data/
-COPY ClinicManagement.Services/ ClinicManagement.Services/
-COPY ClinicManagement.WebApi/ ClinicManagement.WebApi/
-RUN dotnet publish ClinicManagement.WebApi/AppDelicare.WebApi.csproj -c Release -o /app --no-restore
+COPY AppDelicare.Model/AppDelicare.Model.csproj AppDelicare.Model/
+COPY AppDelicare.Data/AppDelicare.Data.csproj AppDelicare.Data/
+COPY AppDelicare.Services/AppDelicare.Services.csproj AppDelicare.Services/
+COPY AppDelicare.WebApi/AppDelicare.WebApi.csproj AppDelicare.WebApi/
+RUN dotnet restore AppDelicare.WebApi/AppDelicare.WebApi.csproj
+COPY AppDelicare.Model/ AppDelicare.Model/
+COPY AppDelicare.Data/ AppDelicare.Data/
+COPY AppDelicare.Services/ AppDelicare.Services/
+COPY AppDelicare.WebApi/ AppDelicare.WebApi/
+RUN dotnet publish AppDelicare.WebApi/AppDelicare.WebApi.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 # Giờ Việt Nam (D-18) + thư viện cho xử lý tài liệu (GemBox / Syncfusion).

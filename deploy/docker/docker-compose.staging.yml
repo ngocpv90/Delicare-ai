@@ -41,7 +41,7 @@ services:
   api:
     build:
       context: ../../AppDelicare
-      dockerfile: ClinicManagement.WebApi/Dockerfile
+      dockerfile: AppDelicare.WebApi/Dockerfile
     depends_on:
       db-init:
         condition: service_completed_successfully

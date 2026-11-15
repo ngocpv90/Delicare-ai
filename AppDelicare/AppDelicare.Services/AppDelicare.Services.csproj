@@ -13,13 +13,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ClinicManagement.Data\AppDelicare.Data.csproj" />
-    <ProjectReference Include="..\ClinicManagement.Model\AppDelicare.Model.csproj" />
+    <ProjectReference Include="..\AppDelicare.Data\AppDelicare.Data.csproj" />
+    <ProjectReference Include="..\AppDelicare.Model\AppDelicare.Model.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="GemBox.Document">
-      <HintPath>..\ClinicManagement.WebApi\Library\GemBox.Document.dll</HintPath>
+      <HintPath>..\AppDelicare.WebApi\Library\GemBox.Document.dll</HintPath>
     </Reference>
   </ItemGroup>
 

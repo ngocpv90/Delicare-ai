@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\ClinicManagement.Data\AppDelicare.Data.csproj" />
-    <ProjectReference Include="..\ClinicManagement.Model\AppDelicare.Model.csproj" />
+    <ProjectReference Include="..\AppDelicare.Data\AppDelicare.Data.csproj" />
+    <ProjectReference Include="..\AppDelicare.Model\AppDelicare.Model.csproj" />
   </ItemGroup>
 
   <ItemGroup>

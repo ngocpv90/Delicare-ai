@@ -17,7 +17,7 @@ Không ghi giá trị cũ hay mới ở đây. Các giá trị cũ dưới đây
 
 **Dev (máy anh) – user-secrets** (đã bật, `UserSecretsId` trong `AppDelicare.WebApi.csproj`):
 ```powershell
-cd AppDelicare/ClinicManagement.WebApi
+cd AppDelicare/AppDelicare.WebApi
 dotnet user-secrets list                     # xem tên khóa đã đặt
 dotnet user-secrets set "Jwt:SigningKey" "<giá trị>"
 ```
@@ -31,7 +31,7 @@ Sinh khóa ngẫu nhiên 64 byte:
 `Jwt__SigningKey`, `ConnectionStrings__MainConnectionString`, `Licenses__GemBox`, `ApplicationInsights__QuickPulseApiKey`.
 IIS: đặt trong `web.config` → `<environmentVariables>` của site (không commit file có giá trị), hoặc Application Pool. Docker: `--env-file` không commit.
 
-Mẫu placeholder: `AppDelicare/ClinicManagement.WebApi/appsettings.Development.json.example`.
+Mẫu placeholder: `AppDelicare/AppDelicare.WebApi/appsettings.Development.json.example`.
 
 ## 3. Lịch sử git (anh quyết)
 Giá trị cũ vẫn đọc được trong commit `2501aef`. Đổi khóa (mục 1) là **bắt buộc** và đủ để vô hiệu hóa. Nếu muốn xóa hẳn khỏi lịch sử thì phải viết lại lịch sử (`git filter-repo`) và force-push. Việc này ảnh hưởng mọi bản clone, em **không tự làm**.

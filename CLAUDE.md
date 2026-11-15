@@ -50,17 +50,19 @@ Delicare-ai/
 │   ├─ DELICARE_Module_Function_Mapping.xlsx, DELICARE_Database_Gap_Register.xlsx
 ├─ docs/mockup/                  ← mockup HTML đã được duyệt (giao diện + luồng tham chiếu)
 ├─ AppDelicare/                  ← solution .NET (AppDelicare.sln)
-│   ├─ ClinicManagement.Model     (namespace AppDelicare.Model)    Entity, Request, SearchRequest, ViewModels, Helper
-│   ├─ ClinicManagement.Data      (AppDelicare.Data)               DatabaseContext (EF Core), Repository<T>, UnitOfWork, DapperRepository
-│   ├─ ClinicManagement.Services  (AppDelicare.Services)           Service CRUD sinh tự động
-│   ├─ ClinicManagement.WebApi    (AppDelicare.WebApi)             Controller, Startup, Autofac, JWT, Serilog
-│   └─ ClinicManagement.Generator (T4 + OrmLite)                   bộ sinh mã CŨ, chỉ chạy được trong Visual Studio
+│   ├─ AppDelicare.Model     (namespace AppDelicare.Model)    Entity, Request, SearchRequest, ViewModels, Helper
+│   ├─ AppDelicare.Data      (AppDelicare.Data)               DatabaseContext (EF Core), Repository<T>, UnitOfWork, DapperRepository
+│   ├─ AppDelicare.Services  (AppDelicare.Services)           Service CRUD sinh tự động
+│   ├─ AppDelicare.WebApi    (AppDelicare.WebApi)             Controller, Startup, Autofac, JWT, Serilog
+│   ├─ AppDelicare.Application (AppDelicare.Application)        Use case nghiệp vụ (Command / Query / Handler / Validator), CRUD v1 generic
+│   ├─ AppDelicare.Tests     (AppDelicare.Tests)              xUnit
+│   └─ ClinicManagement.Generator (T4 + OrmLite)                   bộ sinh mã CŨ (thay bằng tools/AppDelicare.CodeGen), chỉ chạy được trong Visual Studio
 ├─ app-delicare-client/          ← Angular 18 – ⛔ NGOÀI PHẠM VI: không đọc, không sửa, không build (làm sau khi xong backend)
 ├─ backup-db/                    ← bản backup DB thật (AppDelicare_20261110.bak/.mdf/.ldf) – ĐÃ gitignore, KHÔNG commit, KHÔNG sửa
 └─ DB/                           ← (tạo mới) script SQL: DB/sp (stored procedure), DB/seed – được commit
 ```
 
-Tên thư mục `ClinicManagement.*` là di sản. **Không đổi tên thư mục** cho tới khi có task riêng. Namespace thực tế là `AppDelicare.*`.
+Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Model / Data / Services / WebApi` đã đổi thành `AppDelicare.*` cho khớp tên project và namespace. Còn lại `ClinicManagement.Generator` (bộ sinh T4 cũ) giữ tên. **Không đổi tên thư mục khác** cho tới khi có task riêng.
 
 **Các project MỚI** sẽ thêm vào solution theo ROADMAP. Mỗi project ở một thư mục cùng tên:
 `AppDelicare.Application` (nghiệp vụ), `AppDelicare.Jobs` (Hangfire), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).

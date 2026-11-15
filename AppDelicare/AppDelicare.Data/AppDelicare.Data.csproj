@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ClinicManagement.Model\AppDelicare.Model.csproj" />
+    <ProjectReference Include="..\AppDelicare.Model\AppDelicare.Model.csproj" />
   </ItemGroup>
 
 </Project>
