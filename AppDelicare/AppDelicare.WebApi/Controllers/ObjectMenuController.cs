@@ -3,6 +3,7 @@ using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
+using AppDelicare.Model.Request.Custom;
 using Serilog;
 using System.Net;
 
@@ -122,6 +123,40 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " SaveIsActive: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: cây menu chức năng (ParentId / LevelShow / OrderShow).</summary>
+        [HttpGet("GetTree")]
+        public async Task<IActionResult> GetTree(bool includeInactive)
+        {
+            try
+            {
+                return Ok(await _service.GetTree(includeInactive));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTree: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: đổi cha / thứ tự nhiều menu: [{ id, parentId, orderShow }]. Body JSON vì là danh sách (không gửi được bằng form). Chặn vòng lặp.</summary>
+        [HttpPut("UpdateOrder")]
+        public async Task<IActionResult> UpdateOrder([FromBody] List<ObjectMenuOrderRequest> request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.UpdateOrder(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " UpdateOrder: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

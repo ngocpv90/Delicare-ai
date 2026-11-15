@@ -19,7 +19,7 @@ namespace AppDelicare.Tests.Integration
         {
             var ctx = new DefaultHttpContext();
             ctx.Response.Body = new MemoryStream();
-            ctx.Request.Path = "/api/v1/x";
+            ctx.Request.Path = "/api/Shift/GetAll";
             ctx.Items[CurrentActor.CorrelationIdItemKey] = "corr-500";
             ctx.Features.Set<IExceptionHandlerFeature>(new ExceptionFeature(ex));
 

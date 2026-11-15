@@ -15,8 +15,8 @@ dotnet test --filter "FullyQualifiedName~Security"   # một nhóm
 | Loại | Ở đâu | Cần DB? | Dữ liệu |
 |---|---|---|---|
 | **Unit** | `Actor/`, `Schema/`, một phần `Ledger/` | Không | EF InMemory, mỗi test một DB riêng |
-| **API trong bộ nhớ** | `Integration/V1ShiftsTests`, `Security/PermissionTests`, `Ledger/AppendOnlyAndLedgerTests` | Không | `InMemoryApiFactory`: WebApi thật + EF InMemory + JWT tự ký bằng khóa test; user mặc định là admin |
-| **Tích hợp DB dev** | `Integration/HttpPipelineTests`, `Security/SeedTests`, `Ledger/LedgerSqlServerTests` | Có | `ApiFactory`: WebApi thật + SQL Server. Chỉ **đọc**, hoặc ghi trong **transaction rồi ROLLBACK** – không để lại dữ liệu |
+| **API trong bộ nhớ** | `Security/PermissionTests`, `Admin/AdminServiceTests`, `MasterData/MasterDataServiceTests`, `Menu/RecipeServiceTests`, `Ledger/AppendOnlyAndLedgerTests` | Không | `InMemoryApiFactory`: WebApi thật + EF InMemory + JWT tự ký bằng khóa test; user mặc định là admin. Gọi route cũ `api/<Controller>/<Action>` (form), đọc kết quả bằng `Integration/LegacyResult` (T45R). Action dùng SP (`GetAll`) không chạy được trên InMemory → để ở test DB dev |
+| **Tích hợp DB dev** | `Integration/HttpPipelineTests`, `Security/SeedTests`, `Ledger/LedgerSqlServerTests`, `Menu/RecipeSqlServerTests` | Có | `ApiFactory`: WebApi thật + SQL Server. Chỉ **đọc**, hoặc ghi trong **transaction rồi ROLLBACK** – không để lại dữ liệu |
 
 Không kết nối / đăng nhập được DB thì test tích hợp DB được **Skip kèm lý do** (`[SkippableFact]`), không báo lỗi.
 

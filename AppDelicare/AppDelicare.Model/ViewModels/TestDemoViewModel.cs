@@ -11,5 +11,7 @@ namespace AppDelicare.Model.ViewModels
 		public string? FieldImageSingle { get; set; }
 		public bool? FieldCheckBox { get; set; }
 		public bool? FieldSwitch { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? CreatedDate { get; set; }
 	}
 }

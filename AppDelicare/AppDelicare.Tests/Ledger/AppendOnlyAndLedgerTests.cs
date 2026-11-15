@@ -8,7 +8,6 @@ using AppDelicare.Model.Helper;
 using AppDelicare.Services.Implement;
 using AppDelicare.Services.Interface;
 using AppDelicare.Tests.Integration;
-using AppDelicare.WebApi.Api;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -178,7 +177,7 @@ namespace AppDelicare.Tests.Ledger
         }
 
         [Fact]
-        public async Task V1_reverse_endpoint_returns_201_then_409_on_second_call()
+        public async Task Legacy_reverse_action_reverses_once_then_refuses()
         {
             var ingredient = Guid.NewGuid();
             Guid receiptId = Guid.Empty;
@@ -188,23 +187,30 @@ namespace AppDelicare.Tests.Ledger
                 receiptId = txn.Id;
             });
             using var client = _factory.CreateAuthorizedClient();
+            FormUrlEncodedContent Form(string? reason) => new(reason == null
+                ? new Dictionary<string, string> { ["Id"] = receiptId.ToString() }
+                : new Dictionary<string, string> { ["Id"] = receiptId.ToString(), ["Reason"] = reason });
 
-            var first = await client.PostAsJsonAsync($"/api/v1/scm/inventory-transactions/{receiptId}/reverse", new { reason = "Nhập nhầm phiếu" });
-            var second = await client.PostAsJsonAsync($"/api/v1/scm/inventory-transactions/{receiptId}/reverse", new { reason = "Lần 2" });
-            var noReason = await client.PostAsJsonAsync($"/api/v1/scm/inventory-transactions/{receiptId}/reverse", new { });
+            var first = await client.PostAsync("/api/InventoryTransaction/Reverse", Form("Nhập nhầm phiếu"));
+            var second = await client.PostAsync("/api/InventoryTransaction/Reverse", Form("Lần 2"));
+            var noReason = await client.PostAsync("/api/InventoryTransaction/Reverse", Form(null));
 
-            first.StatusCode.Should().Be(HttpStatusCode.Created);
+            first.StatusCode.Should().Be(HttpStatusCode.OK);
             using (var body = JsonDocument.Parse(await first.Content.ReadAsStringAsync()))
             {
+                body.RootElement.GetProperty("responseCode").GetInt32().Should().Be(200);
                 body.RootElement.GetProperty("data").GetProperty("referenceId").GetGuid().Should().Be(receiptId);
                 body.RootElement.GetProperty("data").GetProperty("quantity").GetDecimal().Should().Be(-40);
             }
-            second.StatusCode.Should().Be(HttpStatusCode.Conflict);
             using (var body = JsonDocument.Parse(await second.Content.ReadAsStringAsync()))
             {
-                body.RootElement.GetProperty("errors")[0].GetProperty("code").GetString().Should().Be(ErrorCodes.InvalidTransition);
+                body.RootElement.GetProperty("responseCode").GetInt32().Should().Be(400);
+                body.RootElement.GetProperty("responseMessage").GetString().Should().Contain("đã được đảo");
             }
-            noReason.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            using (var body = JsonDocument.Parse(await noReason.Content.ReadAsStringAsync()))
+            {
+                body.RootElement.GetProperty("responseCode").GetInt32().Should().Be(400);
+            }
         }
 
         [Fact]

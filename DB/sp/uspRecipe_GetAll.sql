@@ -8,6 +8,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspRecipe_GetAll] (
 	, @DishId UNIQUEIDENTIFIER = NULL
 	, @Status NVARCHAR(MAX) = NULL
 	, @YieldUnitId UNIQUEIDENTIFIER = NULL
+	, @EffectiveOn DATE = NULL
 	, @VersionCode NVARCHAR(MAX) = NULL
 	, @YieldQuantity DECIMAL(18,4) = NULL
 	, @EffectiveFrom DATETIME = NULL
@@ -57,6 +58,7 @@ BEGIN
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@YieldUnitId IS NULL OR t.[YieldUnitId] = @YieldUnitId)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND (ISNULL(@VersionCode, '') = '' OR t.[VersionCode] LIKE CONCAT('%', @VersionCode, '%'))
 			AND (@YieldQuantity IS NULL OR t.[YieldQuantity] = @YieldQuantity)
 			AND (@EffectiveFrom IS NULL OR t.[EffectiveFrom] = @EffectiveFrom)

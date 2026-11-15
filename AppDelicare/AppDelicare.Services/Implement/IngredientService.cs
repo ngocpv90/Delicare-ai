@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -10,6 +11,8 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
@@ -124,6 +127,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(IngredientRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var checkDuplicate = _unitOfWork.IngredientRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -137,6 +146,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(IngredientRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.IngredientRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -198,6 +213,55 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 4.4): YieldPercent ∈ (0, 100]; StandardWastePercent ∈ [0, 100); ShelfLifeDays &gt; 0 khi quản lý hạn.</summary>
+        private Task<string> CheckRules(IngredientRequest request)
+        {
+            if (request.YieldPercent is { } y && (y <= 0 || y > 100))
+            {
+                return Task.FromResult(ConstantHelper.Message.YieldPercentRange);
+            }
+            if (request.StandardWastePercent is { } w && (w < 0 || w >= 100))
+            {
+                return Task.FromResult(ConstantHelper.Message.StandardWasteRange);
+            }
+            if (request.IsExpiryManaged && !(request.ShelfLifeDays > 0))
+            {
+                return Task.FromResult(ConstantHelper.Message.ShelfLifeRequired);
+            }
+            return Task.FromResult(string.Empty);
+        }
+
+        /// <summary>T45R (spec 4.4): tồn khả dụng của nguyên liệu (tổng các kho) và cờ dưới mức tối thiểu.</summary>
+        public async Task<IResult<IngredientStockModel>> GetStock(Guid id)
+        {
+            try
+            {
+                var ingredient = await _unitOfWork.IngredientRepository.GetSingleAsync(x => x.Id == id && !x.IsDeleted);
+                if (ingredient == null)
+                {
+                    return Result<IngredientStockModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var balances = await _unitOfWork.InventoryBalanceRepository.GetAll().AsNoTracking()
+                    .Where(b => b.IngredientId == id && !b.IsDeleted)
+                    .GroupBy(b => b.WarehouseId).Select(g => new IngredientStockByWarehouse { WarehouseId = g.Key, AvailableQuantity = g.Sum(b => b.AvailableQuantity) })
+                    .ToListAsync();
+                decimal available = balances.Sum(b => b.AvailableQuantity);
+                return Result<IngredientStockModel>.Success(new IngredientStockModel
+                {
+                    IngredientId = id,
+                    AvailableQuantity = available,
+                    MinimumStock = ingredient.MinimumStock,
+                    BelowMinimum = ingredient.MinimumStock is { } min && available < min,
+                    ListWarehouse = balances,
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetStock: ", ex.ToString()));
                 throw;
             }
         }

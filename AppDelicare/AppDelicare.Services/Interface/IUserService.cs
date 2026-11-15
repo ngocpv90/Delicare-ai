@@ -18,5 +18,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> SaveIsAdmin(Guid id);
         public Task<IResult<bool>> ChangePassword(ChangePasswordRequest request);
         public Task<bool> InsertUserAfter(Guid personId, string? fullName, string typeSave);
+        /// <summary>T45R: tài khoản đang đăng nhập + menu theo quyền.</summary>
+        public Task<IResult<CurrentUserModel>> GetCurrent();
     }
 }

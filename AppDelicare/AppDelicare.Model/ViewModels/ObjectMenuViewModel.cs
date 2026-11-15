@@ -1,4 +1,4 @@
-﻿namespace AppDelicare.Model.ViewModels
+namespace AppDelicare.Model.ViewModels
 {
     public class ObjectMenuViewModel : BaseViewModel
     {
@@ -13,5 +13,8 @@
         public string? AriaControls { get; set; }
         public bool IsActive { get; set; }
         public bool IsDefault { get; set; }
+        // T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+        public Guid? ParentId { get; set; }
+        public DateTime? CreatedDate { get; set; }
     }
 }

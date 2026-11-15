@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -10,6 +11,8 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
@@ -124,6 +127,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(UomConversionRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<UomConversion>(request);
             _unitOfWork.UomConversionRepository.Add(insert);
             await _unitOfWork.UomConversionRepository.CommitAsync(typeSave);
@@ -132,6 +141,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(UomConversionRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.UomConversionRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -188,6 +203,80 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 4.5): hệ số &gt; 0; 2 đơn vị khác nhau; không trùng cặp.</summary>
+        private async Task<string> CheckRules(UomConversionRequest request)
+        {
+            if (request.ConversionFactor <= 0)
+            {
+                return ConstantHelper.Message.ConversionFactorPositive;
+            }
+            if (request.FromUnitId == request.ToUnitId)
+            {
+                return ConstantHelper.Message.ConversionSameUnit;
+            }
+            if (await _unitOfWork.UomConversionRepository.GetAll()
+                .AnyAsync(x => x.FromUnitId == request.FromUnitId && x.ToUnitId == request.ToUnitId && x.Id != request.Id && !x.IsDeleted))
+            {
+                return ConstantHelper.Message.ConversionExist;
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// T45R (spec 4.5): quy đổi số lượng giữa 2 đơn vị – chiều xuôi (× hệ số), ngược (÷ hệ số), qua đơn vị trung gian (đường ngắn nhất);
+        /// chỉ dùng quy đổi đang hiệu lực tại ngày <paramref name="on"/> (mặc định hôm nay). Không có đường quy đổi → null.
+        /// </summary>
+        public async Task<decimal?> ConvertAsync(decimal quantity, Guid fromUnitId, Guid toUnitId, DateTime? on = null)
+        {
+            if (fromUnitId == toUnitId)
+            {
+                return quantity;
+            }
+            DateTime day = (on ?? DateTime.Today).Date;
+            var rules = await _unitOfWork.UomConversionRepository.GetAll().AsNoTracking()
+                .Where(x => !x.IsDeleted && x.FromUnitId != Guid.Empty && x.ToUnitId != Guid.Empty && x.ConversionFactor > 0
+                    && (x.EffectiveFrom == null || x.EffectiveFrom <= day) && (x.EffectiveTo == null || x.EffectiveTo >= day))
+                .Select(x => new { From = x.FromUnitId, To = x.ToUnitId, x.ConversionFactor }).ToListAsync();
+            var edges = rules.SelectMany(r => new[] { (r.From, r.To, Factor: r.ConversionFactor), (From: r.To, To: r.From, Factor: 1 / r.ConversionFactor) })
+                .GroupBy(e => e.From).ToDictionary(g => g.Key, g => g.ToList());
+            var best = new Dictionary<Guid, decimal> { [fromUnitId] = 1m };
+            var queue = new Queue<Guid>([fromUnitId]);
+            while (queue.Count > 0)
+            {
+                var u = queue.Dequeue();
+                if (u == toUnitId)
+                {
+                    return quantity * best[u];
+                }
+                foreach (var e in edges.GetValueOrDefault(u) ?? [])
+                {
+                    if (!best.ContainsKey(e.To))
+                    {
+                        best[e.To] = best[u] * e.Factor;
+                        queue.Enqueue(e.To);
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>T45R: API quy đổi – không có quy đổi → ResponseCode 400 "Chưa có quy đổi…".</summary>
+        public async Task<IResult<decimal>> ConvertQuantity(UomConvertRequest request)
+        {
+            try
+            {
+                var value = await ConvertAsync(request.Quantity, request.FromUnitId, request.ToUnitId, request.On);
+                return value == null
+                    ? Result<decimal>.Fail(ConstantHelper.Message.UomConversionMissing)
+                    : Result<decimal>.Success(value.Value, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ConvertQuantity: ", ex.ToString()));
                 throw;
             }
         }

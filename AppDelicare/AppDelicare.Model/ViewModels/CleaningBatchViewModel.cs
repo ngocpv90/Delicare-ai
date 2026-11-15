@@ -12,5 +12,10 @@ namespace AppDelicare.Model.ViewModels
 		public string? ResponsibleEmployeeName { get; set; }
 		public string? QualityStatus { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public Guid? ReturnInspectionId { get; set; }
+		public decimal? Quantity { get; set; }
+		public string? QcResult { get; set; }
+		public DateTime? CreatedDate { get; set; }
 	}
 }

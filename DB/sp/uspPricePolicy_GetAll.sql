@@ -9,6 +9,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspPricePolicy_GetAll] (
 	, @ContractId UNIQUEIDENTIFIER = NULL
 	, @MealType NVARCHAR(MAX) = NULL
 	, @Status NVARCHAR(MAX) = NULL
+	, @EffectiveOn DATE = NULL
 	, @Code NVARCHAR(MAX) = NULL
 	, @Name NVARCHAR(MAX) = NULL
 	, @UnitPrice DECIMAL(18,2) = NULL
@@ -51,6 +52,7 @@ BEGIN
 			AND (@ContractId IS NULL OR t.[ContractId] = @ContractId)
 			AND (ISNULL(@MealType, '') = '' OR t.[MealType] = @MealType)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND (ISNULL(@Code, '') = '' OR t.[Code] LIKE CONCAT('%', @Code, '%'))
 			AND (ISNULL(@Name, '') = '' OR t.[Name] LIKE CONCAT('%', @Name, '%'))
 			AND (@UnitPrice IS NULL OR t.[UnitPrice] = @UnitPrice)

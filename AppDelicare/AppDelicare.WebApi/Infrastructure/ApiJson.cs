@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
-namespace AppDelicare.WebApi.Api
+namespace AppDelicare.WebApi.Infrastructure
 {
     /// <summary>
     /// Cấu hình JSON dùng chung: camelCase (Spec 1.2) và KHÔNG BAO GIỜ trả trường mật khẩu ra ngoài

@@ -3,10 +3,10 @@
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
-- Task kế tiếp: **T45R** – rà soát code cũ, chuyển nghiệp vụ T45B.1–.4 (đang viết theo v1) về Service / Controller cũ, gỡ lớp v1 vào `_obsolete/`. Sau đó T45B.5 (bàn giao frontend theo route cũ), rồi T49.
-- Nhánh: `feat/T45B.4-p2-special` (chuỗi T00 → … → T45B.4; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 108/108 xanh
-- Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – giữ theo D-30, chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
+- T45R **DONE** (2026-11-15): nghiệp vụ T45B.1–.4 đã chuyển về Service / Controller cũ, lớp v1 ở `_obsolete/v1/`. Task kế tiếp: **T45B.5** (bàn giao frontend theo route cũ, danh mục trạng thái / tham chiếu), rồi T49.
+- Nhánh: `feat/T45R-legacy-framework` (từ `chore/rename-clinicmanagement` ← `feat/T45B.4-p2-special` ← … T00; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 76/76 xanh (test v1 chuyển `_obsolete/v1`, viết lại theo route cũ)
+- Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
 
@@ -328,3 +328,58 @@ Kiểm tra: build 0 lỗi / 10 cảnh báo; test **108/108** (+5): vòng đời 
 ### CHORE – Đổi tên thư mục ClinicManagement.* → AppDelicare.* · 2026-11-14 · DONE
 Theo yêu cầu của anh: `AppDelicare/ClinicManagement.{Model,Data,Services,WebApi}` → `AppDelicare/AppDelicare.{Model,Data,Services,WebApi}` (git mv, giữ lịch sử). Cập nhật đường dẫn trong `.sln`, các `.csproj`, Dockerfile, `deploy/*`, `CLAUDE.md`, `ARCHITECTURE.md`, `SECRETS_TODO.md`, `tools/AppDelicare.CodeGen`, `ClinicManagement.Generator/RunCopyFile.bat` (chỉ đích chép). Giữ nguyên `ClinicManagement.Generator`, `docs/reference/*` và các mục lịch sử cũ trong PROGRESS / CODE_AUDIT. Namespace, tên project, `UserSecretsId` không đổi.
 Kiểm tra: build 0 lỗi / 10 cảnh báo; test **108/108**; CodeGen `--dry-run` ghi 0 file.
+
+### T45R – Về khung code cũ, gỡ lớp v1 (D-30, D-31) · 2026-11-15 · DONE
+Kế hoạch: 1) rà soát code cũ + kiểm kê v1 → `LEGACY_REVIEW.md` 2) hạ tầng: IClock / BusinessRules về tầng cũ, sửa transaction UnitOfWork, PermissionService sang Services, quyền duyệt = menu "Duyệt …" 3) quản trị P0 4) danh mục P1 5) công thức / giá P2 6) gỡ lớp v1 vào `_obsolete/v1` 7) viết lại test 8) tài liệu.
+
+Rà soát (đã có – bổ sung gì – ở đâu): `docs/claude/LEGACY_REVIEW.md` (bảng màn hình P0–P2 và bảng endpoint v1 → action cũ).
+
+Đã làm:
+- **Hạ tầng (giữ trong khung cũ):**
+  - `IClock` → `Data/Share/Clock.cs`, `BusinessRulesOptions` / `PermissionOptions` → `Model/Option`.
+  - **Sửa `UnitOfWork.OpenTransaction` (CODE_AUDIT A21)**: trước đây EF không nằm trong transaction. Nay transaction mở trên kết nối DbContext, Dapper dùng chung, service lồng nhau tham gia transaction ngoài; InMemory bỏ qua.
+  - `Result<T>.Success / Fail` (cùng hình dạng cũ).
+  - `IPermissionService` / `PermissionService` → `AppDelicare.Services`; service User / UserClaim / UserGroup(UserRole) / ObjectMenu xóa cache quyền ngay khi ghi.
+  - **Quyền duyệt (D-31)**: mục ObjectMenu "Duyệt – …" (`#/approve/<screen-id>`, 14 màn có loại AP) + UserRole.AllowEdit; bỏ `Permissions:ApproverGroups` và `ScreenMap.MatrixGroup`. Seed chỉ thêm phần thiếu.
+- **P0**:
+  - `UserRole/GetMatrix`, `Update` (tạo dòng thiếu, chuẩn hóa cờ), `SaveAccessAll`, `CopyFromUserGroup`, `GetPreview` (admin), `GetByUserId`.
+  - `User/GetCurrent`; `SaveIsActive` chặn tự khóa; `ResetPassword` chỉ admin.
+  - **Nhóm mới không còn toàn quyền** (A22, PROPOSED).
+  - `ObjectMenu/GetTree`, `UpdateOrder` (chặn vòng lặp), MetaLink duy nhất.
+  - `OrganizationUnit/GetTree`, `GetBranches`, chặn vòng lặp cha.
+  - `CoreDataMergeConflict` controller / service / SP mới (Id bigint).
+- **P1**:
+  - Luật trong Insert / Update: Customer (CIF), CustomerDeliveryLocation (giờ giao, tọa độ, chặn ngừng khi còn đơn), Ingredient, SupplierMaterial (1 NCC ưu tiên), UomConversion, InventoryPolicy, Shift.
+  - `Customer/GetOverview`, `Supplier/GetOverview`, `Warehouse/GetLayout`, `Ingredient/GetStock`, `UomConversion/Convert`, `InventoryTransaction/Reverse`.
+- **P2**:
+  - `Recipe/GetByDishId, CreateVersion, Submit, Approve, Reject, Lock, CalculateCost`; Insert luôn tạo Draft, Update / Delete chỉ khi Draft; RecipeLine chỉ sửa khi Draft, ghi song song UomId.
+  - `StandardCost/Recalculate`, `Dish/GetActiveRecipe`.
+  - `PricePolicy/Resolve` + đơn giá > 0 + chặn chồng hiệu lực; checklist (Code, VersionNo).
+- **CodeGen**:
+  - `--merge` bổ sung cột DDL còn thiếu vào Request / ViewModel cũ (A23, 144 file).
+  - SP `GetAll` có `@EffectiveOn` cho bảng có hiệu lực (10 SP, đã cài lên DB dev).
+  - Bỏ layer `crud`; không thêm kiểm trùng Code đơn lẻ khi DDL có UNIQUE chứa Code.
+- **Gỡ v1 → `_obsolete/v1/`** (không xóa):
+  - `Controllers/V1/**` và `Api/**` (giữ `ApiJson` – ẩn mật khẩu – chuyển `Infrastructure`).
+  - Project `AppDelicare.Application` (đã gỡ khỏi sln / csproj), test v1, `CrudMetadataGen.cs`, `v1-hr-shifts.http`.
+  - Startup bỏ envelope / idempotency / X-Branch-Id; Swagger nhóm theo controller.
+
+Kiểm tra:
+- Build: `dotnet build --no-incremental` 0 lỗi / 10 cảnh báo (= mốc).
+- Test: **76/76**, gồm 3 test chạy SQL Server dev:
+  - rollback transaction UnitOfWork thật sự hủy ghi EF;
+  - vòng đời công thức trên DB thật rồi rollback;
+  - chạy thử action mới dùng SP.
+- CodeGen `--dry-run` ghi 0 file.
+- Seed ObjectMenu / UserRole chạy trên DB dev: 14 mục duyệt; "Duyệt – Công thức" cấp cho CEO, COO.
+- `grep api/v1` trong .cs = 0, ngoài `_obsolete` và 2 test kiểm tra sự vắng mặt.
+- `git status` không có thay đổi trong `app-delicare-client/`.
+
+AC: [x] LEGACY_REVIEW · [x] không route v1 · [x] đúng mẫu WarehouseController, không controller inject DbContext / UnitOfWork · [x] không service quản trị song song · [x] quyền không cấu hình appsettings / tên nhóm · [x] build + test xanh.
+
+Còn lại / GAP:
+- `.http` chưa chạy tay từng request.
+- Update theo kiểu cũ là **ghi đè đủ trường** (AutoMapper): frontend phải gửi lại mọi trường, nếu không cột mới sẽ thành null. Ghi rõ trong T45B.5.
+- Cột NOT NULL chưa có `[Required]` ở DTO cũ: thiếu thì trả 500 (theo hành vi cũ). Sẽ xem lại ở T45B.5.
+
+Cần anh: duyệt 2 điểm PROPOSED (nhóm mới không có quyền; ResetPassword / GetPreview chỉ admin).

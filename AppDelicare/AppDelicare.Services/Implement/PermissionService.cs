@@ -1,45 +1,39 @@
-using AppDelicare.Data.Connection;
+using AppDelicare.Data.Interface;
+using AppDelicare.Model.Option;
+using AppDelicare.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
-namespace AppDelicare.WebApi.Security
+namespace AppDelicare.Services.Implement
 {
-    /// <summary>Cờ quyền trên một menu (OR qua mọi nhóm của user).</summary>
-    public sealed record MenuRights(bool Access, bool Add, bool Edit, bool Delete, bool Print, bool Export, bool Import);
-
-    /// <summary>Quyền của một user: admin, các nhóm (UserGroup.Name), quyền theo MetaLink.</summary>
-    public sealed record UserPermissions(bool IsAdmin, IReadOnlySet<string> Groups, IReadOnlyDictionary<string, MenuRights> Menus)
-    {
-        public static readonly UserPermissions None = new(false, new HashSet<string>(), new Dictionary<string, MenuRights>());
-    }
-
-    public interface IPermissionService
-    {
-        Task<UserPermissions> GetAsync(Guid userId, CancellationToken cancellationToken = default);
-        bool IsAllowed(UserPermissions permissions, string screenId, PermissionAction action);
-        void Invalidate(Guid userId);
-    }
-
     /// <summary>
-    /// T07: UserRole × ObjectMenu theo UserGroup của user (qua UserClaim), cache theo <c>Permissions:CacheMinutes</c> (mặc định 5′).
+    /// T07 / T45R: UserRole × ObjectMenu theo UserGroup của user (qua UserClaim), cache theo <c>Permissions:CacheMinutes</c> (mặc định 5′).
     /// <c>User.IsAdmin</c> bỏ qua kiểm tra. User không tồn tại / không hoạt động / đã xóa → không có quyền.
+    /// Quyền duyệt (D-31) = AllowEdit trên mục menu <c>#/approve/&lt;screen-id&gt;</c>.
     /// </summary>
-    public sealed class PermissionService(DatabaseContext db, IMemoryCache cache, IOptions<PermissionOptions> options) : IPermissionService
+    public class PermissionService(IUnitOfWork unitOfWork, IMemoryCache cache, IOptions<PermissionOptions> options) : IPermissionService
     {
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly PermissionOptions _options = options.Value;
 
-        private static string CacheKey(Guid userId) => "perm:" + userId.ToString("N");
+        /// <summary>Thế hệ cache: tăng lên khi <see cref="InvalidateAll"/> → mọi khóa cũ không còn được đọc.</summary>
+        private static long _generation;
+
+        private static string CacheKey(Guid userId) => $"perm:{Interlocked.Read(ref _generation)}:{userId:N}";
 
         public void Invalidate(Guid userId) => cache.Remove(CacheKey(userId));
 
+        public void InvalidateAll() => Interlocked.Increment(ref _generation);
+
         public async Task<UserPermissions> GetAsync(Guid userId, CancellationToken cancellationToken = default)
         {
-            if (cache.TryGetValue(CacheKey(userId), out UserPermissions? cached) && cached != null)
+            string key = CacheKey(userId);
+            if (cache.TryGetValue(key, out UserPermissions? cached) && cached != null)
             {
                 return cached;
             }
-
+            var db = _unitOfWork.DbContext;
             var user = await db.User.AsNoTracking()
                 .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
                 .Select(u => new { u.IsAdmin })
@@ -60,9 +54,11 @@ namespace AppDelicare.WebApi.Security
                     .Where(g => groupIds.Contains(g.Id) && !g.IsDeleted && g.Name != null)
                     .Select(g => g.Name!)
                     .ToListAsync(cancellationToken);
+                // Chỉ nhóm chưa xóa mới cấp quyền.
+                var liveGroupIds = await db.UserGroup.AsNoTracking().Where(g => groupIds.Contains(g.Id) && !g.IsDeleted).Select(g => g.Id).ToListAsync(cancellationToken);
                 var rows = await (from r in db.UserRole.AsNoTracking()
                                   join m in db.ObjectMenu.AsNoTracking() on r.ObjectMenuId equals m.Id
-                                  where r.UserGroupId != null && groupIds.Contains(r.UserGroupId.Value) && !r.IsDeleted && !m.IsDeleted && m.IsActive && m.MetaLink != null
+                                  where r.UserGroupId != null && liveGroupIds.Contains(r.UserGroupId.Value) && !r.IsDeleted && !m.IsDeleted && m.IsActive && m.MetaLink != null
                                   select new { m.MetaLink, r.AllowAccess, r.AllowAdd, r.AllowEdit, r.AllowDelete, r.AllowPrint, r.AllowExport, r.AllowImport })
                                  .ToListAsync(cancellationToken);
                 var menus = rows.GroupBy(r => r.MetaLink!, StringComparer.OrdinalIgnoreCase)
@@ -71,8 +67,7 @@ namespace AppDelicare.WebApi.Security
                         g.Any(r => r.AllowPrint), g.Any(r => r.AllowExport), g.Any(r => r.AllowImport)), StringComparer.OrdinalIgnoreCase);
                 result = new UserPermissions(user.IsAdmin, new HashSet<string>(groups, StringComparer.OrdinalIgnoreCase), menus);
             }
-
-            cache.Set(CacheKey(userId), result, TimeSpan.FromMinutes(Math.Max(0, _options.CacheMinutes)));
+            cache.Set(key, result, TimeSpan.FromMinutes(Math.Max(0, _options.CacheMinutes)));
             return result;
         }
 
@@ -85,6 +80,10 @@ namespace AppDelicare.WebApi.Security
             if (action == PermissionAction.AdminOnly)
             {
                 return false;
+            }
+            if (action == PermissionAction.Approve)
+            {
+                return permissions.Menus.TryGetValue(IPermissionService.ApproveMenuPrefix + screenId, out var approve) && approve.Access && approve.Edit;
             }
             permissions.Menus.TryGetValue("#/" + screenId, out var rights);
             if (rights == null || !rights.Access)
@@ -100,9 +99,6 @@ namespace AppDelicare.WebApi.Security
                 PermissionAction.Print => rights.Print,
                 PermissionAction.Export => rights.Export,
                 PermissionAction.Import => rights.Import,
-                PermissionAction.Approve => ScreenMap.MatrixGroup.TryGetValue(screenId, out var column)
-                    && _options.ApproverGroups.TryGetValue(column, out var approvers)
-                    && approvers.Any(permissions.Groups.Contains),
                 _ => false,
             };
         }

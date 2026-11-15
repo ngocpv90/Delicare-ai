@@ -10,6 +10,9 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
@@ -199,6 +202,59 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>PO đã đóng (không tính "đang mở").</summary>
+        private static readonly string[] ClosedPoStatuses = ["Received", "Closed", "Cancelled"];
+
+        /// <summary>T45R (spec 4.3): tổng quan NCC – bảng giá, PO đang mở, 20 sự cố gần nhất, tỷ lệ đúng hạn / trả hàng 90 ngày.</summary>
+        public async Task<IResult<SupplierOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var supplier = await _unitOfWork.SupplierRepository.GetSingleAsync(x => x.Id == id && !x.IsDeleted);
+                if (supplier == null)
+                {
+                    return Result<SupplierOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var db = _unitOfWork.DbContext;
+                DateTime since = DateTime.Today.AddDays(-90);
+                var lines = await (from l in db.GoodsReceiptLine.AsNoTracking()
+                                   join r in db.GoodsReceipt.AsNoTracking() on l.GoodsReceiptId equals r.Id
+                                   where !l.IsDeleted && !r.IsDeleted && r.SupplierId == id && r.ReceiptDate >= since
+                                   select new { l.ReceivedQuantity, l.RejectedQuantity }).ToListAsync();
+                decimal received = lines.Sum(l => l.ReceivedQuantity);
+                var receipts = await (from r in db.GoodsReceipt.AsNoTracking()
+                                      join p in db.PurchaseOrder.AsNoTracking() on r.PurchaseOrderId equals p.Id
+                                      where !r.IsDeleted && r.SupplierId == id && r.ReceiptDate >= since
+                                      select new { r.ReceiptDate, Expected = p.ExpectedDeliveryDate ?? p.ExpectedDate }).ToListAsync();
+                var withExpected = receipts.Where(r => r.Expected != null).ToList();
+                var model = new SupplierOverviewModel
+                {
+                    Supplier = supplier,
+                    ListMaterial = await (from m in db.SupplierMaterial.AsNoTracking()
+                                          join i in db.Ingredient.AsNoTracking() on m.IngredientId equals i.Id into ig
+                                          from i in ig.DefaultIfEmpty()
+                                          where !m.IsDeleted && m.SupplierId == id
+                                          orderby i.Name
+                                          select new SupplierMaterialBriefModel
+                                          {
+                                              Id = m.Id, IngredientId = m.IngredientId, IngredientName = i.Name, UnitPrice = m.UnitPrice, IsPreferred = m.IsPreferred,
+                                              EffectiveFrom = m.EffectiveFrom, EffectiveTo = m.EffectiveTo, Status = m.Status,
+                                          }).ToListAsync(),
+                    ListOpenPurchaseOrder = await db.PurchaseOrder.AsNoTracking().Where(p => !p.IsDeleted && p.SupplierId == id && !ClosedPoStatuses.Contains(p.Status!))
+                        .OrderBy(p => p.ExpectedDeliveryDate).ToListAsync(),
+                    ListIssue = await db.SupplierIssue.AsNoTracking().Where(x => !x.IsDeleted && x.SupplierId == id).OrderByDescending(x => x.ReportedAt).Take(20).ToListAsync(),
+                    RejectRate = received > 0 ? Math.Round(lines.Sum(l => l.RejectedQuantity) / received * 100, 2) : null,
+                    OnTimeRate = withExpected.Count > 0 ? Math.Round(withExpected.Count(r => r.ReceiptDate.Date <= r.Expected!.Value.Date) * 100m / withExpected.Count, 2) : null,
+                };
+                return Result<SupplierOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
                 throw;
             }
         }

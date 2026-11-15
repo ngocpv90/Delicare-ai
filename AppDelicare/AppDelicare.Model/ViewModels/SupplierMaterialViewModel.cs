@@ -17,5 +17,9 @@ namespace AppDelicare.Model.ViewModels
 		public DateTime? EffectiveTo { get; set; }
 		public bool IsPreferred { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public Guid? PurchaseUomId { get; set; }
+		public string? DeliveryFrequency { get; set; }
+		public DateTime? CreatedDate { get; set; }
 	}
 }

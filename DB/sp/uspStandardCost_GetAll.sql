@@ -8,6 +8,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspStandardCost_GetAll] (
 	, @DishId UNIQUEIDENTIFIER = NULL
 	, @RecipeId UNIQUEIDENTIFIER = NULL
 	, @Status NVARCHAR(MAX) = NULL
+	, @EffectiveOn DATE = NULL
 	, @CostPerServing DECIMAL(18,4) = NULL
 	, @EffectiveFrom DATETIME = NULL
 	, @EffectiveTo DATETIME = NULL
@@ -46,6 +47,7 @@ BEGIN
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
 			AND (@RecipeId IS NULL OR t.[RecipeId] = @RecipeId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND (@CostPerServing IS NULL OR t.[CostPerServing] = @CostPerServing)
 			AND (@EffectiveFrom IS NULL OR t.[EffectiveFrom] = @EffectiveFrom)
 			AND (@EffectiveTo IS NULL OR t.[EffectiveTo] = @EffectiveTo)

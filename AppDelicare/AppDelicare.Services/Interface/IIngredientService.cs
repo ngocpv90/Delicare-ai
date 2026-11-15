@@ -5,6 +5,8 @@ using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 using System;
 using System.Threading.Tasks;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Interface
 {
@@ -14,5 +16,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(IngredientRequest request, string typeSave);
         public IResults<Ingredient> GetAllData();
         public Task<IResult<Ingredient>> GetById(Guid id);
+        // <summary>T45R: tồn khả dụng + dưới mức tối thiểu.</summary>
+        public Task<IResult<IngredientStockModel>> GetStock(Guid id);
     }
 }

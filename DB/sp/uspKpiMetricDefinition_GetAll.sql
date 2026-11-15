@@ -5,6 +5,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE OR ALTER PROCEDURE [dbo].[uspKpiMetricDefinition_GetAll] (
 	@SearchText NVARCHAR(MAX) = NULL
+	, @EffectiveOn DATE = NULL
 	, @Page INT = 1
 	, @PageSize INT = 10
 	, @SortField NVARCHAR(100) = NULL
@@ -34,6 +35,7 @@ BEGIN
 		FROM [dbo].[KpiMetricDefinition] AS t
 		
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[MetricCode] LIKE CONCAT('%', @SearchText, '%') OR t.[MetricName] LIKE CONCAT('%', @SearchText, '%') OR t.[DomainCode] LIKE CONCAT('%', @SearchText, '%') OR t.[UnitCode] LIKE CONCAT('%', @SearchText, '%') OR t.[AggregationCode] LIKE CONCAT('%', @SearchText, '%'))
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND t.IsDeleted = 0
 	),
 	TempCount (TotalRow) AS (SELECT COUNT(*) FROM TempResult)

@@ -3,6 +3,7 @@ using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
+using AppDelicare.Model.Request.Custom;
 using Serilog;
 using System.Net;
 
@@ -108,6 +109,25 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: tính lại giá thành chuẩn theo giá NCC hiện hành (listDishId trống = mọi món có công thức đang khóa).</summary>
+        [HttpPost("Recalculate")]
+        public async Task<IActionResult> Recalculate([FromForm] StandardCostRecalculateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Recalculate(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Recalculate: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

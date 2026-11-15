@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -38,6 +39,7 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@EffectiveTo", request.EffectiveTo);
                 //dynamicParameters.Add("@IsPreferred", request.IsPreferred);
                 dynamicParameters.Add("@Status", request.Status);
+                dynamicParameters.Add("@EffectiveOn", request.EffectiveOn?.Date); // T45R
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);
@@ -135,6 +137,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(SupplierMaterialRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<SupplierMaterial>(request);
             _unitOfWork.SupplierMaterialRepository.Add(insert);
             await _unitOfWork.SupplierMaterialRepository.CommitAsync(typeSave);
@@ -143,6 +151,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(SupplierMaterialRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.SupplierMaterialRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -201,6 +215,30 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>
+        /// T45R (spec 4.3): mỗi nguyên liệu chỉ 1 NCC ưu tiên – bật IsPreferred thì bỏ ưu tiên các dòng khác cùng nguyên liệu
+        /// (ghi trong cùng transaction với lần lưu).
+        /// </summary>
+        private async Task<string> CheckRules(SupplierMaterialRequest request)
+        {
+            if (!request.IsPreferred)
+            {
+                return string.Empty;
+            }
+            var others = await _unitOfWork.SupplierMaterialRepository.GetAll()
+                .Where(x => x.IngredientId == request.IngredientId && x.IsPreferred && x.Id != request.Id && !x.IsDeleted).ToListAsync();
+            if (others.Count != 0)
+            {
+                others.ForEach(o =>
+                {
+                    o.IsPreferred = false;
+                    _unitOfWork.SupplierMaterialRepository.Update(o);
+                });
+                await _unitOfWork.SupplierMaterialRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+            }
+            return string.Empty;
         }
     }
 }

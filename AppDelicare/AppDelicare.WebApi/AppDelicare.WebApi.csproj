@@ -41,7 +41,6 @@
     <ProjectReference Include="..\AppDelicare.Data\AppDelicare.Data.csproj" />
     <ProjectReference Include="..\AppDelicare.Model\AppDelicare.Model.csproj" />
     <ProjectReference Include="..\AppDelicare.Services\AppDelicare.Services.csproj" />
-    <ProjectReference Include="..\AppDelicare.Application\AppDelicare.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

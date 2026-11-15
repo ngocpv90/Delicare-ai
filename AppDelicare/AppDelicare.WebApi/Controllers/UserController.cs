@@ -171,5 +171,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>T45R: tài khoản đang đăng nhập + menu theo quyền hiệu lực (gọi sau đăng nhập / khi tải lại trang). Chỉ cần đăng nhập.</summary>
+        [HttpGet("GetCurrent")]
+        public async Task<IActionResult> GetCurrent()
+        {
+            try
+            {
+                return Ok(await _service.GetCurrent());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCurrent: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

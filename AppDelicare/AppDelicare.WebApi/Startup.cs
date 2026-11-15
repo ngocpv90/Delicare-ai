@@ -3,7 +3,6 @@ using Autofac;
 using AutoMapper;
 using Microsoft.ApplicationInsights.Extensibility.PerfCounterCollector.QuickPulse;
 using Microsoft.OpenApi.Models;
-using AppDelicare.WebApi.Api;
 using AppDelicare.WebApi.Infrastructure;
 using AppDelicare.WebApi.Security;
 using Microsoft.AspNetCore.Mvc;
@@ -44,24 +43,21 @@ namespace AppDelicare.WebApi
                     .WithExposedHeaders(CorrelationIdMiddleware.HeaderName, "Content-Disposition");
             }));
 
-            // T03: route v1 – envelope cho kết quả (EnvelopeResultFilter) và lỗi 400 (ConfigureV1ApiBehavior); JSON camelCase, không trả mật khẩu.
+            // D-30: khung cũ – controller `api/[controller]/<Action>` trả Result<T> / Results<T>. JSON camelCase, không bao giờ trả mật khẩu (ApiJson).
             services.AddControllers(options =>
                 {
-                    options.Filters.Add<EnvelopeResultFilter>();
                     // T07: phân quyền UserRole × ObjectMenu; controller CRUD cũ được gắn quyền tự động.
                     options.Filters.Add<PermissionFilter>();
                     options.Conventions.Add(new PermissionConvention());
                 })
                 .AddJsonOptions(options => ApiJson.Configure(options.JsonSerializerOptions));
-            services.AddSingleton<IPostConfigureOptions<ApiBehaviorOptions>, ConfigureV1ApiBehavior>();
             services.AddHttpContextAccessor();
-            services.AddScoped<IBranchContext, BranchContext>();
             services.AddMemoryCache();
             services.AddDelicareHealthChecks(); // T48.1
-            AppDelicare.Application.DependencyInjection.AddApplication(services, Configuration);
-            services.AddScoped<AppDelicare.Application.Common.IDomainEventHandler<AppDelicare.Application.Admin.PermissionsChanged>, PermissionCacheInvalidator>(); // T45B.2 // T10: dispatcher, handler, validator, IClock, BusinessRules
-            services.Configure<PermissionOptions>(Configuration.GetSection(PermissionOptions.Section));
-            services.AddScoped<IPermissionService, PermissionService>();
+            // T45R: IClock, BusinessRules, quyền ở tầng cũ (PermissionService trong AppDelicare.Services – Autofac đăng ký).
+            services.Configure<AppDelicare.Model.Option.BusinessRulesOptions>(Configuration.GetSection(AppDelicare.Model.Option.BusinessRulesOptions.Section));
+            services.AddSingleton<AppDelicare.Data.Share.IClock, AppDelicare.Data.Share.SystemClock>();
+            services.Configure<AppDelicare.Model.Option.PermissionOptions>(Configuration.GetSection(AppDelicare.Model.Option.PermissionOptions.Section));
             services.AddScoped<AppDelicare.Data.Share.IReferenceGuard, AppDelicare.Data.Share.ReferenceGuard>();
             // T03: mọi ProblemDetails do MVC sinh (400 validation, Problem()) mang traceId = CorrelationId.
             services.AddProblemDetails(options => options.CustomizeProblemDetails = ctx =>
@@ -82,19 +78,10 @@ namespace AppDelicare.WebApi
                 {
                     Title = Configuration["AppSettingHelper:ApiName"]?.ToString(),
                     Version = "v1",
-                    Description = "DELICARE backend API. Route mới `/api/v1/{module}/{resource}` theo DELICARE_API_Specification.md: envelope `{ success, data, message, errors, traceId }` cho cả thành công lẫn lỗi, mã lỗi theo Phụ lục A, danh sách `data = { items, total, page, pageSize }`, ETag + `If-Match`, `Idempotency-Key`, `X-Branch-Id`. Nhóm `legacy / …` là route CRUD cũ sinh tự động (sẽ thay dần bằng v1). Mọi response có header `X-Correlation-Id`.",
+                    Description = "DELICARE backend API – khung cũ (D-30): route `api/<Controller>/<Action>`; kết quả `Result<T>` { responseCode, responseMessage, data } / `Results<T>` { responseCode, responseMessage, listData, totalRecords }; lỗi nghiệp vụ trả responseCode = 400 kèm thông báo tiếng Việt. Mọi response có header `X-Correlation-Id`. Ánh xạ màn hình → action: docs/frontend-handoff/.",
                 });
-                // T03: nhóm theo module – v1: segment sau /api/v1 (admin, hr, scm…); route cũ: "legacy / <Controller>".
-                c.TagActionsBy(api =>
-                {
-                    string path = api.RelativePath ?? string.Empty;
-                    if (path.StartsWith("api/v1/", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string[] seg = path.Split('/');
-                        return [seg.Length > 3 ? $"v1 / {seg[2]} / {seg[3].Split('?')[0]}" : $"v1 / {seg[2]}"];
-                    }
-                    return [$"legacy / {api.ActionDescriptor.RouteValues["controller"]}"];
-                });
+                // Nhóm theo controller.
+                c.TagActionsBy(api => [api.ActionDescriptor.RouteValues["controller"]]);
                 c.OrderActionsBy(api => api.RelativePath);
                 // JWT: dán token (không cần chữ "Bearer ").
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -136,9 +123,6 @@ namespace AppDelicare.WebApi
         {
             app.UseMiddleware<CorrelationIdMiddleware>();
             app.UseExceptionHandler(errorApp => errorApp.Run(ProblemDetailsExceptionHandler.HandleAsync));
-            // T03: route /api/v1 – exception / lỗi không body → envelope (Phụ lục A); X-Branch-Id.
-            app.UseMiddleware<ExceptionToErrorMiddleware>();
-            app.UseMiddleware<BranchHeaderMiddleware>();
             app.UseHttpsRedirection();
             app.UseSwagger();
             app.UseSwaggerUI(c =>

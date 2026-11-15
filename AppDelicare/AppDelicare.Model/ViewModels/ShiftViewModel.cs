@@ -12,5 +12,7 @@ namespace AppDelicare.Model.ViewModels
 		public TimeSpan? EndTime { get; set; }
 		public string? Status { get; set; }
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? CreatedDate { get; set; }
 	}
 }

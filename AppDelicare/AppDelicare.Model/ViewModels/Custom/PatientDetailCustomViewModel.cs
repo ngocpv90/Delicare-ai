@@ -9,6 +9,6 @@
         public string? AdministrativeDistrictName { get; set; }
         public string? AdministrativeWardName { get; set; }
         public string? Address { get; set; }
-        public DateTime CreatedDate { get; set; }
+        public new DateTime CreatedDate { get; set; } // T45R: ViewModel gốc có CreatedDate (DateTime?) sau CodeGen --merge; bản Custom giữ kiểu cũ.
     }
 }

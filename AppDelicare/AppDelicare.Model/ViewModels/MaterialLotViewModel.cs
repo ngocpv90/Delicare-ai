@@ -16,5 +16,10 @@ namespace AppDelicare.Model.ViewModels
 		public DateTime? ReceivedDate { get; set; }
 		public string? QualityStatus { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? UnitCost { get; set; }
+		public string? QcStatus { get; set; }
+		public string? Note { get; set; }
+		public DateTime? CreatedDate { get; set; }
 	}
 }

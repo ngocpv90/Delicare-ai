@@ -1,4 +1,4 @@
-﻿namespace AppDelicare.Model.ViewModels
+namespace AppDelicare.Model.ViewModels
 {
     public class UserViewModel : BaseViewModel
     {
@@ -9,5 +9,9 @@
         public bool IsActive { get; set; }
         public bool IsAdmin { get; set; }
         public bool IsDefault { get; set; }
+        // T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+        public string? PassWord { get; set; }
+        public string? PersonName { get; set; }
+        public DateTime? CreatedDate { get; set; }
     }
 }

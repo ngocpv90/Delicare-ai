@@ -12,5 +12,7 @@ namespace AppDelicare.Model.ViewModels
 		public int Quantity { get; set; }
 		public decimal TotalPrice { get; set; }
 		public string? Result { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? CreatedDate { get; set; }
 	}
 }

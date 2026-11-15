@@ -10,6 +10,9 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
@@ -201,6 +204,39 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 4.6): sơ đồ kho – khu bảo quản (ngưỡng nhiệt) → vị trí lưu trữ.</summary>
+        public async Task<IResult<WarehouseLayoutModel>> GetLayout(Guid id)
+        {
+            try
+            {
+                var warehouse = await _unitOfWork.WarehouseRepository.GetSingleAsync(x => x.Id == id && !x.IsDeleted);
+                if (warehouse == null)
+                {
+                    return Result<WarehouseLayoutModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var zones = await _unitOfWork.StorageZoneRepository.GetAll().AsNoTracking().Where(z => !z.IsDeleted && z.WarehouseId == id).OrderBy(z => z.Code).ToListAsync();
+                var zoneIds = zones.Select(z => z.Id).ToList();
+                // StorageZoneId là cột mới, ZoneId là cột cũ (DEPRECATED_COLUMNS) – đọc cả hai.
+                var locations = await _unitOfWork.StorageLocationRepository.GetAll().AsNoTracking()
+                    .Where(l => !l.IsDeleted && ((l.StorageZoneId != null && zoneIds.Contains(l.StorageZoneId.Value)) || zoneIds.Contains(l.ZoneId)))
+                    .OrderBy(l => l.Code).ToListAsync();
+                return Result<WarehouseLayoutModel>.Success(new WarehouseLayoutModel
+                {
+                    Warehouse = warehouse,
+                    ListZone = zones.Select(z => new StorageZoneLayoutModel
+                    {
+                        Zone = z,
+                        ListLocation = locations.Where(l => (l.StorageZoneId ?? l.ZoneId) == z.Id).ToList(),
+                    }).ToList(),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetLayout: ", ex.ToString()));
                 throw;
             }
         }

@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -132,6 +133,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(InventoryPolicyRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<InventoryPolicy>(request);
             _unitOfWork.InventoryPolicyRepository.Add(insert);
             await _unitOfWork.InventoryPolicyRepository.CommitAsync(typeSave);
@@ -140,6 +147,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(InventoryPolicyRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.InventoryPolicyRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -198,6 +211,25 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>T45R (spec 4.6): Min ≤ Safety ≤ Reorder ≤ Max; một dòng cho (nguyên liệu, kho).</summary>
+        private async Task<string> CheckRules(InventoryPolicyRequest request)
+        {
+            var chain = new[] { request.MinimumStock, request.SafetyStock, request.ReorderPoint, request.MaximumStock }.Where(x => x != null).ToList();
+            for (int i = 1; i < chain.Count; i++)
+            {
+                if (chain[i - 1] > chain[i])
+                {
+                    return ConstantHelper.Message.StockChainInvalid;
+                }
+            }
+            if (await _unitOfWork.InventoryPolicyRepository.GetAll()
+                .AnyAsync(x => x.IngredientId == request.IngredientId && x.WarehouseId == request.WarehouseId && x.Id != request.Id && !x.IsDeleted))
+            {
+                return ConstantHelper.Message.InventoryPolicyExist;
+            }
+            return string.Empty;
         }
     }
 }

@@ -28,7 +28,6 @@
     <ProjectReference Include="..\AppDelicare.WebApi\AppDelicare.WebApi.csproj" />
     <ProjectReference Include="..\AppDelicare.Data\AppDelicare.Data.csproj" />
     <ProjectReference Include="..\AppDelicare.Model\AppDelicare.Model.csproj" />
-    <ProjectReference Include="..\AppDelicare.Application\AppDelicare.Application.csproj" />
   </ItemGroup>
 
 </Project>

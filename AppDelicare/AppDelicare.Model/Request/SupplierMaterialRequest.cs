@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System;
 
 namespace AppDelicare.Model.Request
@@ -15,5 +16,9 @@ namespace AppDelicare.Model.Request
 		public DateTime? EffectiveTo { get; set; }
 		public bool IsPreferred { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public Guid? PurchaseUomId { get; set; }
+		[MaxLength(100, ErrorMessage = "DeliveryFrequency tối đa 100 ký tự.")]
+		public string? DeliveryFrequency { get; set; }
 	}
 }

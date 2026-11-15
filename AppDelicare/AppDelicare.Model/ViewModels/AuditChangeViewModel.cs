@@ -6,5 +6,7 @@ namespace AppDelicare.Model.ViewModels
         public string? Action { get; set; }
         public string? EntityName { get; set; }
         public string? Changes { get; set; }
+        // T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+        public DateTime? CreatedDate { get; set; }
     }
 }

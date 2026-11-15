@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System;
 
 namespace AppDelicare.Model.Request
@@ -12,5 +13,9 @@ namespace AppDelicare.Model.Request
 		public decimal PurchaseQuantity { get; set; }
 		public Guid UnitId { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		[MaxLength(255, ErrorMessage = "RequirementNo tối đa 255 ký tự.")]
+		public string? RequirementNo { get; set; }
+		public string? Note { get; set; }
 	}
 }

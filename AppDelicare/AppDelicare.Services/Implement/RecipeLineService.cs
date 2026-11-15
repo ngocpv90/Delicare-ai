@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -131,7 +132,14 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(RecipeLineRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<RecipeLine>(request);
+            insert.UomId = insert.UnitId; // T45R: cột cũ UomId (NOT NULL, DEPRECATED_COLUMNS) ghi song song
             _unitOfWork.RecipeLineRepository.Add(insert);
             await _unitOfWork.RecipeLineRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -139,12 +147,19 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(RecipeLineRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.RecipeLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
             var update = _mapper.Map(request, exist);
+            update.UomId = update.UnitId; // T45R: ghi song song cột cũ
             _unitOfWork.RecipeLineRepository.Update(update);
             await _unitOfWork.RecipeLineRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -165,6 +180,11 @@ namespace AppDelicare.Services.Implement
             if (delete == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            string draft = await EnsureDraftAsync(delete.RecipeId); // T45R: chỉ xóa định lượng khi công thức Draft
+            if (!string.IsNullOrEmpty(draft))
+            {
+                return draft;
             }
             _unitOfWork.RecipeLineRepository.Update(delete);
             await _unitOfWork.RecipeLineRepository.CommitAsync(typeSave);
@@ -197,6 +217,62 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>
+        /// T45R (spec 5.2): chỉ sửa định lượng khi công thức Draft; nguyên liệu / đơn vị phải tồn tại; định lượng &gt; 0; hao hụt ∈ [0, 100).
+        /// Dòng mới không có thứ tự → xếp cuối.
+        /// </summary>
+        private async Task<string> CheckRules(RecipeLineRequest request)
+        {
+            if (request.Id != null)
+            {
+                // Sửa dòng: công thức hiện tại của dòng phải Draft và không chuyển dòng sang công thức khác.
+                var current = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(l => l.Id == request.Id && !l.IsDeleted);
+                if (current != null)
+                {
+                    request.RecipeId = current.RecipeId;
+                }
+            }
+            string draft = await EnsureDraftAsync(request.RecipeId);
+            if (!string.IsNullOrEmpty(draft))
+            {
+                return draft;
+            }
+            if (request.Quantity <= 0)
+            {
+                return ConstantHelper.Message.QuantityMustBePositive;
+            }
+            if (request.WastePercent is { } w && (w < 0 || w >= 100))
+            {
+                return ConstantHelper.Message.WastePercentRange;
+            }
+            if (!await _unitOfWork.IngredientRepository.GetAll().AnyAsync(i => i.Id == request.IngredientId && !i.IsDeleted))
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Nguyên liệu");
+            }
+            if (!await _unitOfWork.UnitMeasureRepository.GetAll().AnyAsync(u => u.Id == request.UnitId && !u.IsDeleted))
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Đơn vị tính");
+            }
+            if (request.Id == null && request.SortOrder == 0)
+            {
+                request.SortOrder = (await _unitOfWork.RecipeLineRepository.GetAll().Where(l => l.RecipeId == request.RecipeId && !l.IsDeleted)
+                    .MaxAsync(l => (int?)l.SortOrder) ?? 0) + 1;
+            }
+            return string.Empty;
+        }
+
+        private async Task<string> EnsureDraftAsync(Guid? recipeId)
+        {
+            var recipe = await _unitOfWork.RecipeRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(r => r.Id == recipeId && !r.IsDeleted);
+            if (recipe == null)
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Công thức");
+            }
+            return recipe.Status == RecipeStatus.Draft
+                ? string.Empty
+                : string.Format(ConstantHelper.Message.InvalidStatusForAction, "sửa định lượng", RecipeStatus.Draft, recipe.Status ?? "(trống)");
         }
     }
 }

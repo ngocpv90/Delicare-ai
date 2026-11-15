@@ -114,7 +114,7 @@ public sealed class Templates(Dictionary<string, Table> tables, Metadata meta)
         sb.AppendLine("{");
         sb.AppendLine($"\tpublic class {cls}Request : BaseRequest");
         sb.AppendLine("\t{");
-        foreach (var c in meta.BusinessColumns(t))
+        foreach (var c in meta.BusinessColumns(t).Where(c => !Metadata.NotInRequest.Contains(c.Name)))
         {
             if (!c.Nullable && c.Default == null && c.ClrType != "bool")
             {
@@ -276,7 +276,8 @@ public sealed class Templates(Dictionary<string, Table> tables, Metadata meta)
                 : $"\"Dữ liệu trùng ({string.Join(", ", uq.Columns)}) – vi phạm {uq.Name}.\"";
             dupChecks.Add((pred, msg));
         }
-        if (t.Find("Code") is { IsString: true } && !t.Uniques.Any(u => u.Columns.Count == 1 && u.Columns[0] == "Code") && !meta.IsDeprecated(t, "Code"))
+        // T45R: không thêm kiểm trùng Code đơn lẻ khi DDL đã có UNIQUE chứa Code (vd. (Code, VersionNo)) – sai nghiệp vụ phiên bản.
+        if (t.Find("Code") is { IsString: true } && !t.Uniques.Any(u => u.Columns.Contains("Code")) && !meta.IsDeprecated(t, "Code"))
         {
             dupChecks.Add(("x.Code == request.Code", "string.Format(ConstantHelper.Message.CodeExist, request.Code)"));
         }
@@ -627,6 +628,13 @@ public sealed class Templates(Dictionary<string, Table> tables, Metadata meta)
             where.Add(f.IsString
                 ? $"(ISNULL(@{f.Name}, '') = '' OR t.[{f.Name}] = @{f.Name})"
                 : $"(@{f.Name} IS NULL OR t.[{f.Name}] = @{f.Name})");
+        }
+        // T45R: bảng có hiệu lực theo ngày → lọc "đang hiệu lực tại ngày" (@EffectiveOn, mặc định NULL = không lọc).
+        if (t.Has("EffectiveFrom") && t.Has("EffectiveTo"))
+        {
+            declared.Add("EffectiveOn");
+            paramLines.Add("@EffectiveOn DATE = NULL");
+            where.Add("(@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))");
         }
         foreach (string p in extraParams.Where(p => !declared.Contains(p)))
         {

@@ -1,8 +1,11 @@
 ﻿using AutoMapper;
 using Dapper;
+using Microsoft.EntityFrameworkCore;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
@@ -13,11 +16,13 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ObjectMenuService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper) : IObjectMenuService
+    public class ObjectMenuService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+        , IPermissionService permissionService) : IObjectMenuService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
+        private readonly IPermissionService _permissionService = permissionService;
 
         public async Task<IResults<ObjectMenuViewModel>> GetAll(ObjectMenuSearchRequest request)
         {
@@ -124,6 +129,7 @@ namespace AppDelicare.Services.Implement
                         break;
                 }
                 _unitOfWork.CommitTransaction();
+                _permissionService.InvalidateAll(); // T45R: menu đổi → quyền theo MetaLink đổi
                 if (!string.IsNullOrEmpty(result))
                 {
                     return new Result<bool>
@@ -150,6 +156,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(ObjectMenuRequest request, string typeSave)
         {
+            if (MetaLinkExists(request.MetaLink, null))
+            {
+                return string.Format(ConstantHelper.Message.MetaLinkExist, request.MetaLink);
+            }
             var insert = _mapper.Map<ObjectMenu>(request);
             _unitOfWork.ObjectMenuRepository.Add(insert);
             await _unitOfWork.ObjectMenuRepository.CommitAsync(typeSave);
@@ -177,6 +187,10 @@ namespace AppDelicare.Services.Implement
             if (string.IsNullOrEmpty(request.Id.ToString()) || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            if (MetaLinkExists(request.MetaLink, request.Id))
+            {
+                return string.Format(ConstantHelper.Message.MetaLinkExist, request.MetaLink);
             }
             var update = _mapper.Map(request, exist);
             _unitOfWork.ObjectMenuRepository.Update(update);
@@ -237,6 +251,7 @@ namespace AppDelicare.Services.Implement
                 _unitOfWork.ObjectMenuRepository.Update(update);
                 await _unitOfWork.ObjectMenuRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
+                _permissionService.InvalidateAll(); // T45R: menu đổi → quyền theo MetaLink đổi
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
@@ -247,6 +262,99 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " SaveIsActive: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
+        private bool MetaLinkExists(string? metaLink, Guid? currentId)
+            => !string.IsNullOrWhiteSpace(metaLink)
+                && _unitOfWork.ObjectMenuRepository.GetSingle(x => x.MetaLink == metaLink && x.Id != currentId && !x.IsDeleted) != null;
+
+        public async Task<IResult<List<ObjectMenuTreeModel>>> GetTree(bool includeInactive)
+        {
+            try
+            {
+                var menus = await _unitOfWork.ObjectMenuRepository.GetAll().AsNoTracking()
+                    .Where(x => !x.IsDeleted && (includeInactive || x.IsActive))
+                    .OrderBy(x => x.LevelShow).ThenBy(x => x.OrderShow).ThenBy(x => x.Name)
+                    .Select(x => new ObjectMenuTreeModel
+                    {
+                        Id = x.Id, Name = x.Name, ShortName = x.ShortName, MetaLink = x.MetaLink, ParentId = x.ParentId,
+                        LevelShow = x.LevelShow, OrderShow = x.OrderShow, IconName = x.IconName, IsActive = x.IsActive,
+                    })
+                    .ToListAsync();
+                var roots = new List<ObjectMenuTreeModel>();
+                foreach (var m in menus)
+                {
+                    var parent = m.ParentId == null ? null : menus.FirstOrDefault(p => p.Id == m.ParentId && p != m);
+                    if (parent != null)
+                    {
+                        parent.Children.Add(m);
+                    }
+                    else
+                    {
+                        roots.Add(m);
+                    }
+                }
+                return Result<List<ObjectMenuTreeModel>>.Success(roots, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTree: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        public async Task<IResult<bool>> UpdateOrder(List<ObjectMenuOrderRequest> request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var ids = request.Select(x => x.Id).Concat(request.Where(x => x.ParentId != null).Select(x => x.ParentId!.Value)).Distinct().ToList();
+                var menus = _unitOfWork.ObjectMenuRepository.GetAll().Where(x => ids.Contains(x.Id) && !x.IsDeleted).ToList();
+                var missing = ids.Where(id => !menus.Any(m => m.Id == id)).ToList();
+                if (request.Count == 0 || missing.Count != 0)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<bool>.Fail(string.Format(ConstantHelper.Message.MenuNotFound, string.Join(ConstantHelper.CommaSpace, missing)), false);
+                }
+                // Chặn vòng lặp cha – con sau khi áp thay đổi.
+                var parents = _unitOfWork.ObjectMenuRepository.GetAll().AsNoTracking().Where(x => !x.IsDeleted).ToDictionary(x => x.Id, x => x.ParentId);
+                foreach (var item in request)
+                {
+                    parents[item.Id] = item.ParentId;
+                }
+                foreach (var item in request)
+                {
+                    var seen = new HashSet<Guid> { item.Id };
+                    Guid? cursor = item.ParentId;
+                    while (cursor != null)
+                    {
+                        if (!seen.Add(cursor.Value))
+                        {
+                            _unitOfWork.RollbackTransaction();
+                            return Result<bool>.Fail(ConstantHelper.Message.MenuCycle, false);
+                        }
+                        cursor = parents.GetValueOrDefault(cursor.Value);
+                    }
+                }
+                foreach (var item in request)
+                {
+                    var m = menus.First(x => x.Id == item.Id);
+                    m.ParentId = item.ParentId;
+                    m.OrderShow = item.OrderShow;
+                    m.LevelShow = item.ParentId == null ? 1 : 2;
+                    _unitOfWork.ObjectMenuRepository.Update(m);
+                }
+                await _unitOfWork.ObjectMenuRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                _permissionService.InvalidateAll();
+                return Result<bool>.Success(true, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " UpdateOrder: ", ex.ToString()));
                 _unitOfWork.RollbackTransaction();
                 throw;
             }

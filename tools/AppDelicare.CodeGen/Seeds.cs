@@ -14,7 +14,8 @@ namespace AppDelicare.CodeGen;
 /// </summary>
 public static partial class Seeds
 {
-    public sealed record Screen(string Id, string Name, string Phase, string Group, string? Table);
+    /// <summary>Màn hình catalog.js. <c>Approvable</c> = có loại "AP" (duyệt) → có mục menu "Duyệt …" (D-31).</summary>
+    public sealed record Screen(string Id, string Name, string Phase, string Group, string? Table, bool Approvable = false);
 
     public sealed record OrgUnit(string Code, string Name, string UnitType, string? Parent);
 
@@ -39,6 +40,10 @@ public static partial class Seeds
 
     public const string FallbackScreen = "dbx-explorer";
 
+    /// <summary>D-31: nhóm menu "Phê duyệt" và mục "Duyệt …" của từng màn hình có loại AP. Quyền duyệt = UserRole.AllowEdit trên mục đó.</summary>
+    public const string ApprovalGroupLink = "#/group/approve";
+    public const string ApprovalLinkPrefix = "#/approve/";
+
     public static List<Screen> LoadScreens(string root, out List<string> menuOrder)
     {
         string js = File.ReadAllText(Path.Combine(root, "docs", "mockup", "js", "data", "catalog.js"));
@@ -51,7 +56,8 @@ public static partial class Seeds
             f.GetProperty("name").GetString()!,
             f.GetProperty("ph").GetString()!,
             f.GetProperty("grp").GetString()!,
-            f.TryGetProperty("table", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null)).ToList();
+            f.TryGetProperty("table", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null,
+            f.TryGetProperty("types", out var ty) && ty.EnumerateArray().Any(x => x.GetString() == "AP"))).ToList();
     }
 
     public static List<OrgUnit> LoadOrgUnits(string root)
@@ -152,15 +158,6 @@ public static partial class Seeds
         {
             string screen = screens.FirstOrDefault(s => string.Equals(s.Table, t.Name, StringComparison.OrdinalIgnoreCase))?.Id ?? FallbackScreen;
             sb.AppendLine($"            [\"{Metadata.ClassOf(t.Name)}\"] = \"{screen}\",");
-        }
-        sb.AppendLine("        };");
-        sb.AppendLine();
-        sb.AppendLine("        /// <summary>screen-id → cột ma trận quyền (admin, sales, menu, scm, production, qc, logistics, hr, kpi).</summary>");
-        sb.AppendLine("        public static readonly IReadOnlyDictionary<string, string> MatrixGroup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)");
-        sb.AppendLine("        {");
-        foreach (var s in screens)
-        {
-            sb.AppendLine($"            [\"{s.Id}\"] = \"{GroupToMatrix[s.Group]}\",");
         }
         sb.AppendLine("        };");
         sb.AppendLine("    }");
@@ -276,6 +273,19 @@ public static partial class Seeds
                 sb.AppendLine($"    UPDATE [dbo].[ObjectMenu] SET Name = {Sql(s.Name)}, ShortName = {Sql(s.Phase)}, ParentId = {parent}, LevelShow = 2, OrderShow = {order} WHERE MetaLink = {Sql(link)} AND IsDeleted = 0 AND (ISNULL(Name, N'') <> {Sql(s.Name)} OR ISNULL(OrderShow, 0) <> {order});");
             }
         }
+        sb.AppendLine();
+        sb.AppendLine("-- D-31: nhóm \"Phê duyệt\" + mục \"Duyệt …\" cho màn hình có loại AP (MetaLink '#/approve/<screen-id>'). Chỉ thêm khi chưa có.");
+        sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(ApprovalGroupLink)} AND IsDeleted = 0)");
+        sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Phê duyệt', N'approve', {Sql(ApprovalGroupLink)}, NULL, 1, 9900, 1, 0, @Now, @SeedBy, 0);");
+        int a = 0;
+        foreach (var s in screens.Where(s => s.Approvable))
+        {
+            a++;
+            string link = ApprovalLinkPrefix + s.Id;
+            string parent = $"(SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(ApprovalGroupLink)} AND IsDeleted = 0)";
+            sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(link)} AND IsDeleted = 0)");
+            sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql("Duyệt – " + s.Name)}, {Sql(s.Phase)}, {Sql(link)}, {parent}, 2, {9900 + a}, 1, 0, @Now, @SeedBy, 0);");
+        }
         sb.AppendLine("COMMIT;");
         return sb.ToString();
     }
@@ -285,7 +295,7 @@ public static partial class Seeds
         var sb = new StringBuilder(SeedHeader);
         sb.AppendLine("BEGIN TRAN;");
         sb.AppendLine("-- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.");
-        sb.AppendLine("-- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) cấu hình ở appsettings Permissions:ApproverGroups.");
+        sb.AppendLine("-- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục \"Duyệt …\" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.");
         foreach (var (role, _, _) in matrix)
         {
             sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = {Sql(role)} AND IsDeleted = 0)");
@@ -325,14 +335,31 @@ public static partial class Seeds
             JOIN [dbo].[UserGroup] g ON g.Name = r.GroupName AND g.IsDeleted = 0
             JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
             WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
-            COMMIT;
             """);
+        var approvals = matrix.SelectMany(m => screens.Where(s => s.Approvable && Flags(m.Rights[GroupToMatrix[s.Group]]).Approve)
+            .Select(s => $"({Sql(m.Role)}, {Sql(ApprovalLinkPrefix + s.Id)})")).ToList();
+        if (approvals.Count > 0)
+        {
+            sb.AppendLine("-- D-31: quyền duyệt (cột A) – chỉ thêm khi chưa có dòng.");
+            sb.AppendLine("DECLARE @A TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(200));");
+            sb.AppendLine("INSERT INTO @A VALUES");
+            sb.AppendLine("    " + string.Join(",\n    ", approvals) + ";");
+            sb.AppendLine("""
+                INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
+                SELECT NEWID(), g.Id, m.Id, 1, 0, 1, 0, 0, 0, 0, @Now, @SeedBy, 0
+                FROM @A a
+                JOIN [dbo].[UserGroup] g ON g.Name = a.GroupName AND g.IsDeleted = 0
+                JOIN [dbo].[ObjectMenu] m ON m.MetaLink = a.MetaLink AND m.IsDeleted = 0
+                WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
+                """);
+        }
+        sb.AppendLine("COMMIT;");
         return sb.ToString();
     }
 
-    /// <summary>Nhóm được duyệt (A) theo cột ma trận → appsettings.</summary>
-    public static Dictionary<string, List<string>> Approvers(List<(string Role, string Label, Dictionary<string, string> Rights)> matrix)
-        => MatrixColumns.ToDictionary(c => c, c => matrix.Where(m => Flags(m.Rights[c]).Approve).Select(m => m.Role).ToList());
+    /// <summary>Tóm tắt quyền duyệt seed: mục "Duyệt …" → các nhóm (để in ra console khi chạy CodeGen).</summary>
+    public static Dictionary<string, List<string>> Approvers(List<Screen> screens, List<(string Role, string Label, Dictionary<string, string> Rights)> matrix)
+        => screens.Where(s => s.Approvable).ToDictionary(s => s.Id, s => matrix.Where(m => Flags(m.Rights[GroupToMatrix[s.Group]]).Approve).Select(m => m.Role).ToList());
 
     [GeneratedRegex(@"^\|\s*([A-Z0-9-]+)\s*\|\s*([^|]+?)\s*\|\s*(COMPANY|BOARD|DIVISION|DEPARTMENT|TEAM)\s*\|\s*([^|]*?)\s*\|\s*$")]
     private static partial Regex OrgRow();

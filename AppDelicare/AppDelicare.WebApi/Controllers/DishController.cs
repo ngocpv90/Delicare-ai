@@ -111,5 +111,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>T45R: công thức đang hiệu lực của món và giá vốn NVL / suất ước tính.</summary>
+        [HttpGet("GetActiveRecipe")]
+        public async Task<IActionResult> GetActiveRecipe(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetActiveRecipe(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetActiveRecipe: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

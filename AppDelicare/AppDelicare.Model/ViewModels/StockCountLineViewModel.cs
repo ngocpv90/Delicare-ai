@@ -16,5 +16,9 @@ namespace AppDelicare.Model.ViewModels
 		public Guid UnitId { get; set; }
 		public string? UnitName { get; set; }
 		public string? VarianceReason { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? VarianceValue { get; set; }
+		public string? Reason { get; set; }
+		public DateTime? CreatedDate { get; set; }
 	}
 }

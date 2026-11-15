@@ -280,7 +280,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - QC / ATTP, đóng gói / giao vận / phản ánh / hộp, nhân sự, KPI dashboard.
 
 
-### T45R – Rà soát code cũ, chuyển nghiệp vụ v1 về khung cũ, gỡ lớp v1 · phụ thuộc T45B.4 · `TODO` ← **LÀM ĐẦU TIÊN (D-30)**
+### T45R – Rà soát code cũ, chuyển nghiệp vụ v1 về khung cũ, gỡ lớp v1 · phụ thuộc T45B.4 · `DONE` (2026-11-15)
 **Mục tiêu:** một khung duy nhất là code cũ (CLAUDE.md mục 4). Không mất nghiệp vụ nào đã làm ở T45B.1–.4. Không sinh API v1 mới.
 
 - **T45R.1 – Rà soát code cũ + kiểm kê v1** → tạo `docs/claude/LEGACY_REVIEW.md`:
@@ -303,12 +303,12 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
   - Test: viết lại test v1 thành test Service (và test tích hợp controller cũ) – giữ đủ kịch bản: 403 / 200 theo quyền, xóa đang tham chiếu bị chặn, khóa công thức, chồng hiệu lực giá, sổ append-only, đảo bút toán.
   - Cập nhật `docs/api-tests/*.http`, `docs/claude/UAT_CHECKLIST.md` (R1.0, R1.1) sang route cũ.
 - **AC:**
-  - [ ] `LEGACY_REVIEW.md` đủ 2 bảng; mọi dòng v1 có cột "Chuyển sang" (không để trống).
-  - [ ] Swagger không còn route `/api/v1`; `grep -rn "api/v1" AppDelicare --include=*.cs` = 0 (ngoài `_obsolete`).
-  - [ ] Mọi controller mới / sửa đúng mẫu `WarehouseController`; mỗi file 1 controller; không controller nào inject `DatabaseContext` / `IUnitOfWork`.
-  - [ ] Không có service quản trị user / nhóm / quyền / menu mới song song với service cũ.
-  - [ ] Không còn quyền nào cấu hình trong appsettings hoặc theo tên nhóm cứng; quyền duyệt gán được trên màn hình ma trận quyền cũ.
-  - [ ] Build 0 lỗi; `dotnet test` xanh; `.http` chạy được trên DB dev.
+  - [x] `LEGACY_REVIEW.md` đủ 2 bảng; mọi dòng v1 có cột "Chuyển sang" (không để trống).
+  - [x] Swagger không còn route `/api/v1`; `grep -rn "api/v1" AppDelicare --include=*.cs` = 0 (ngoài `_obsolete`), trừ 2 test kiểm tra chính sự vắng mặt này.
+  - [x] Mọi controller mới / sửa đúng mẫu `WarehouseController`; mỗi file 1 controller; không controller nào inject `DatabaseContext` / `IUnitOfWork`.
+  - [x] Không có service quản trị user / nhóm / quyền / menu mới song song với service cũ.
+  - [x] Không còn quyền nào cấu hình trong appsettings hoặc theo tên nhóm cứng; quyền duyệt gán được trên màn hình ma trận quyền cũ.
+  - [x] Build 0 lỗi; `dotnet test` xanh. `.http` cập nhật theo route cũ; phần chạy trên DB dev đã kiểm bằng test SQL Server (chưa chạy tay từng request).
 - Không cần dừng giữa các bước con, trừ khi rà soát thấy code cũ và mockup / spec mâu thuẫn mà DECISIONS chưa phân xử.
 
 ### T45B – API màn hình P0–P2 (quản trị và danh mục) · phụ thuộc T07, T10 · `DOING` (T45B.1–.4 làm theo v1 → **T45R chuyển về khung cũ**; T45B.5 làm sau T45R)

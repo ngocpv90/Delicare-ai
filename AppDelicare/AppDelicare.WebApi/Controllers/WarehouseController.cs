@@ -111,5 +111,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>T45R: sơ đồ kho – khu bảo quản → vị trí.</summary>
+        [HttpGet("GetLayout")]
+        public async Task<IActionResult> GetLayout(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetLayout(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetLayout: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

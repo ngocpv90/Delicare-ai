@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -132,6 +133,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(CustomerDeliveryLocationRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var checkDuplicate = _unitOfWork.CustomerDeliveryLocationRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -145,6 +152,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(CustomerDeliveryLocationRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.CustomerDeliveryLocationRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -208,6 +221,33 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>Trạng thái đơn giao đã kết thúc (không chặn ngừng điểm giao).</summary>
+        private static readonly string[] ClosedDeliveryStatuses = ["DELIVERED", "Delivered", "FAILED", "Failed", "Cancelled", "CANCELLED", "Completed", "COMPLETED"];
+
+        /// <summary>T45R (spec 4.2): giờ giao từ &lt; đến; tọa độ hợp lệ; không ngừng hoạt động khi còn đơn giao chưa xong.</summary>
+        private async Task<string> CheckRules(CustomerDeliveryLocationRequest request)
+        {
+            if (request.DeliveryWindowFrom is { } from && request.DeliveryWindowTo is { } to && from >= to)
+            {
+                return ConstantHelper.Message.DeliveryWindowInvalid;
+            }
+            if (request.Latitude is { } lat && (lat < -90 || lat > 90))
+            {
+                return ConstantHelper.Message.LatitudeInvalid;
+            }
+            if (request.Longitude is { } lng && (lng < -180 || lng > 180))
+            {
+                return ConstantHelper.Message.LongitudeInvalid;
+            }
+            if (request.Id is { } id && request.Status == "Inactive"
+                && await _unitOfWork.DeliveryOrderRepository.GetAll().AnyAsync(d => !d.IsDeleted
+                    && (d.CustomerDeliveryLocationId == id || d.DeliveryLocationId == id) && !ClosedDeliveryStatuses.Contains(d.Status!)))
+            {
+                return ConstantHelper.Message.LocationInUse;
+            }
+            return string.Empty;
         }
     }
 }

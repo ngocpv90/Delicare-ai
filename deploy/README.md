@@ -107,10 +107,10 @@ Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệ
 |---|---|---|
 | Sức khỏe | `GET /health` | `{"status":"Healthy","checks":{"database":{"status":"Healthy"}}, "environment":"Staging"}` |
 | Còn sống | `GET /health/live` | HTTP 200 |
-| Swagger | mở `/swagger` | Thấy nhóm `v1 / …` và `legacy / …` |
+| Swagger | mở `/swagger` | Thấy nhóm theo controller (`Recipe`, `UserRole`…), không còn `/api/v1` |
 | Đăng nhập | `POST /api/Authentication/Login` `{ "userName": "admin", "passWord": "…" }` | `data.token` |
 | API danh mục | Swagger → Authorize (dán token) → `GET /api/OrganizationUnit/GetAll?Page=1&PageSize=50` | 33 đơn vị (DLC, CEO, OPS…) |
-| API v1 | `GET /api/v1/hr/shifts` | `{ "success": true, "data": { "items": [...] } }` |
+| Action nghiệp vụ | `GET /api/User/GetCurrent` | `{ "responseCode": 200, "data": { "user": {...}, "listMenu": [...] } }` |
 
 File thử nhanh bằng VS Code REST Client: `docs/api-tests/*.http`.
 

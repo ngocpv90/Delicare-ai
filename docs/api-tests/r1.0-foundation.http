@@ -20,8 +20,8 @@ Content-Type: application/json
 ### 3. Không token → 401 (route cũ)
 GET {{base}}/api/OrganizationUnit/GetAll?Page=1&PageSize=5
 
-### 4. Không token → 401 dạng envelope (route v1)
-GET {{base}}/api/v1/hr/shifts
+### 4. Không token → 401 (action nghiệp vụ)
+GET {{base}}/api/Shift/GetAllData
 
 ### 5. Cây tổ chức đã seed (33 đơn vị theo ORG_STRUCTURE)
 GET {{base}}/api/OrganizationUnit/GetAll?Page=1&PageSize=50&SortField=code&SortOrder=ascend
@@ -43,14 +43,13 @@ Authorization: Bearer {{token}}
 DELETE {{base}}/api/InventoryTransaction/Delete?id=00000000-0000-0000-0000-000000000001
 Authorization: Bearer {{token}}
 
-### 10. Đảo bút toán kho (thay <TransactionId>) – lần 2 trả 409 INVALID_TRANSITION
-POST {{base}}/api/v1/scm/inventory-transactions/<TransactionId>/reverse
+### 10. Đảo bút toán kho (thay <TransactionId>) – lần 2 trả responseCode 400 "đã được đảo"
+POST {{base}}/api/InventoryTransaction/Reverse
 Authorization: Bearer {{token}}
-Content-Type: application/json
-Idempotency-Key: demo-reverse-001
+Content-Type: application/x-www-form-urlencoded
 
-{ "reason": "[DEMO] Nhập nhầm số lượng" }
+Id=<TransactionId>&Reason=[DEMO] Nhập nhầm số lượng
 
-### 11. Lịch sử thay đổi của một bản ghi (thay <Table>/<Id>)
-GET {{base}}/api/v1/audit/OrganizationUnit/<Id>/history?take=20
+### 11. Lịch sử thay đổi của một bản ghi (thay <Id>; EntityName = tên class, vd. OrganizationUnit)
+GET {{base}}/api/AuditChange/GetAll?EntityName=OrganizationUnit&IdChange=<Id>&Page=1&PageSize=20
 Authorization: Bearer {{token}}

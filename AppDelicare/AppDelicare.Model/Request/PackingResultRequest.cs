@@ -11,5 +11,10 @@ namespace AppDelicare.Model.Request
 		public string? PackagingType { get; set; }
 		public string? QualityStatus { get; set; }
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? PlannedQty { get; set; }
+		public decimal? DamagedQty { get; set; }
+		public decimal? AcceptedQty { get; set; }
+		public string? Remark { get; set; }
 	}
 }

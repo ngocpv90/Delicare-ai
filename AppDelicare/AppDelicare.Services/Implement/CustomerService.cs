@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -10,6 +11,8 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
@@ -134,6 +137,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(CustomerRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var checkDuplicate = _unitOfWork.CustomerRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -147,6 +156,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(CustomerRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.CustomerRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -208,6 +223,69 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 4.1): CIF không trùng.</summary>
+        private async Task<string> CheckRules(CustomerRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.CIF)
+                && await _unitOfWork.CustomerRepository.GetAll().AnyAsync(x => x.CIF == request.CIF && x.Id != request.Id && !x.IsDeleted))
+            {
+                return string.Format(ConstantHelper.Message.CifExist, request.CIF);
+            }
+            return string.Empty;
+        }
+
+        /// <summary>Đơn đã giao xong – dùng tính số suất trung bình 7 ngày.</summary>
+        private static readonly string[] CompletedOrderStatuses = ["Delivered", "Reconciled"];
+
+        /// <summary>T45R (spec 4.1): hồ sơ khách hàng 360° – liên hệ, điểm giao, hợp đồng + suất, 15 đơn gần nhất, KPI.</summary>
+        public async Task<IResult<CustomerOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var customer = await _unitOfWork.CustomerRepository.GetSingleAsync(x => x.Id == id && !x.IsDeleted);
+                if (customer == null)
+                {
+                    return Result<CustomerOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var db = _unitOfWork.DbContext;
+                var contracts = await db.Contract.AsNoTracking().Where(x => !x.IsDeleted && x.CustomerId == id).OrderByDescending(x => x.StartDate).ToListAsync();
+                var contractIds = contracts.Select(x => x.Id).ToList();
+                var meals = await db.ContractMeal.AsNoTracking().Where(m => !m.IsDeleted && contractIds.Contains(m.ContractId)).ToListAsync();
+                var orders = db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.CustomerId == id);
+                DateTime since = DateTime.Today.AddDays(-7);
+                decimal meals7d = await orders.Where(o => o.MealDate >= since && CompletedOrderStatuses.Contains(o.Status!)).SumAsync(o => o.TotalQuantity) ?? 0m;
+                var model = new CustomerOverviewModel
+                {
+                    Customer = customer,
+                    ListContact = await db.CustomerContact.AsNoTracking().Where(x => !x.IsDeleted && x.CustomerId == id).ToListAsync(),
+                    ListLocation = await db.CustomerDeliveryLocation.AsNoTracking().Where(x => !x.IsDeleted && x.CustomerId == id).ToListAsync(),
+                    ListContract = contracts.Select(x => new ContractOverviewModel
+                    {
+                        Id = x.Id, ContractNumber = x.ContractNumber, Name = x.Name, StartDate = x.StartDate, EndDate = x.EndDate, Status = x.Status,
+                        ContractValue = x.ContractValue, ListMeal = meals.Where(m => m.ContractId == x.Id).ToList(),
+                    }).ToList(),
+                    ListRecentOrder = await orders.OrderByDescending(o => o.MealDate).Take(15).Select(o => new OrderBriefModel
+                    {
+                        Id = o.Id, OrderNumber = o.OrderNumber, MealDate = o.MealDate, DeliveryDate = o.DeliveryDate,
+                        TotalQuantity = o.TotalQuantity, TotalAmount = o.TotalAmount, Status = o.Status,
+                    }).ToListAsync(),
+                    OrderCount = await orders.CountAsync(),
+                    ReconciledRevenue = await (from r in db.OrderReconciliation.AsNoTracking()
+                                               join o in db.Order.AsNoTracking() on r.OrderId equals o.Id
+                                               where !r.IsDeleted && !o.IsDeleted && o.CustomerId == id
+                                               select r.FinalAmount).SumAsync() ?? 0m,
+                    ComplaintCount = await db.CustomerComplaint.AsNoTracking().CountAsync(x => !x.IsDeleted && x.CustomerId == id),
+                    AvgMealsPerDay7d = Math.Round(meals7d / 7m, 1),
+                };
+                return Result<CustomerOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
                 throw;
             }
         }

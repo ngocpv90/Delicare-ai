@@ -1,4 +1,5 @@
 using AutoMapper;
+using AppDelicare.Data.Share;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -10,13 +11,17 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
     public class DishService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IDishService
+        , IAuditChangeService auditChangeService, IRecipeService recipeService) : IDishService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IRecipeService _recipeService = recipeService;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
@@ -206,6 +211,30 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 5.1): công thức đang hiệu lực của món (Locked, IsActive) và giá vốn NVL / suất ước tính.</summary>
+        public async Task<IResult<RecipeVersionModel>> GetActiveRecipe(Guid id)
+        {
+            try
+            {
+                var recipe = await _unitOfWork.RecipeRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(r => r.DishId == id && r.IsActive && !r.IsDeleted);
+                if (recipe == null)
+                {
+                    return Result<RecipeVersionModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var cost = await _recipeService.CalculateCostAsync(recipe.Id, 1, null);
+                var lines = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted).OrderBy(l => l.SortOrder).ToListAsync();
+                return Result<RecipeVersionModel>.Success(new RecipeVersionModel
+                {
+                    Recipe = recipe, ListLine = lines, CostPerMeal = cost?.CostPerMeal ?? 0, CostComplete = cost?.Complete ?? false,
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetActiveRecipe: ", ex.ToString()));
                 throw;
             }
         }

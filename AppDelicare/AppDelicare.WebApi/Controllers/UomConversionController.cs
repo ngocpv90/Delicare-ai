@@ -3,6 +3,7 @@ using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
+using AppDelicare.Model.Request.Custom;
 using Serilog;
 using System.Net;
 
@@ -108,6 +109,25 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: quy đổi số lượng giữa 2 đơn vị (xuôi, ngược, qua đơn vị trung gian; chỉ quy đổi đang hiệu lực).</summary>
+        [HttpGet("Convert")]
+        public async Task<IActionResult> ConvertQuantity([FromQuery] UomConvertRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.ConvertQuantity(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ConvertQuantity: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

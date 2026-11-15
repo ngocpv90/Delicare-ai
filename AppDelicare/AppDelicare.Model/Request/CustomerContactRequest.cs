@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System;
 
 namespace AppDelicare.Model.Request
@@ -11,5 +12,10 @@ namespace AppDelicare.Model.Request
 		public string? Email { get; set; }
 		public bool IsPrimary { get; set; }
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		[MaxLength(500, ErrorMessage = "Name tối đa 500 ký tự.")]
+		public string? Name { get; set; }
+		[MaxLength(50, ErrorMessage = "Status tối đa 50 ký tự.")]
+		public string? Status { get; set; }
 	}
 }

@@ -5,7 +5,7 @@ using FluentAssertions;
 
 namespace AppDelicare.Tests.Integration
 {
-    /// <summary>T03 – pipeline HTTP: route cũ giữ nguyên dạng, route v1 trả ProblemDetails, CORS theo cấu hình, Swagger.</summary>
+    /// <summary>T03 / T45R – pipeline HTTP theo khung cũ: route api/[controller]/<Action>, 401 khi thiếu token, CORS theo cấu hình, Swagger.</summary>
     [Collection(ApiCollection.Name)]
     public class HttpPipelineTests(ApiFactory factory)
     {
@@ -40,56 +40,41 @@ namespace AppDelicare.Tests.Integration
         }
 
         [SkippableFact]
-        public async Task V1_invalid_route_value_returns_400_envelope()
-        {
-            Skip.If(_factory.SkipReason != null, _factory.SkipReason);
-            using var client = _factory.CreateAuthorizedClient();
-            client.DefaultRequestHeaders.Add(CorrelationIdMiddleware.HeaderName, "t03-bad-table");
-
-            var response = await client.GetAsync($"/api/v1/audit/Bad-Table;DROP/{Guid.NewGuid()}/history");
-
-            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            doc.RootElement.GetProperty("success").GetBoolean().Should().BeFalse();
-            var error = doc.RootElement.GetProperty("errors")[0];
-            error.GetProperty("code").GetString().Should().Be("VALIDATION_FAILED");
-            error.GetProperty("field").GetString().Should().Be("table");
-            doc.RootElement.GetProperty("traceId").GetString().Should().Be("t03-bad-table");
-        }
-
-        [SkippableFact]
-        public async Task V1_out_of_range_query_returns_400_envelope()
+        public async Task Record_history_uses_legacy_AuditChange_GetAll()
         {
             Skip.If(_factory.SkipReason != null, _factory.SkipReason);
             using var client = _factory.CreateAuthorizedClient();
 
-            var response = await client.GetAsync($"/api/v1/audit/TestDemo/{Guid.NewGuid()}/history?take=0");
-
-            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            doc.RootElement.GetProperty("errors")[0].GetProperty("field").GetString().Should().Be("take");
-        }
-
-        [SkippableFact]
-        public async Task V1_valid_request_returns_200_with_list()
-        {
-            Skip.If(_factory.SkipReason != null, _factory.SkipReason);
-            using var client = _factory.CreateAuthorizedClient();
-
-            var response = await client.GetAsync($"/api/v1/audit/TestDemo/{Guid.NewGuid()}/history?take=5");
+            var response = await client.GetAsync($"/api/AuditChange/GetAll?EntityName=TestDemo&IdChange={Guid.NewGuid()}&Page=1&PageSize=5");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            doc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
-            doc.RootElement.GetProperty("data").GetArrayLength().Should().Be(0);
+            doc.RootElement.GetProperty("responseCode").GetInt32().Should().Be(200);
+            doc.RootElement.GetProperty("listData").GetArrayLength().Should().Be(0);
+        }
+
+        [SkippableFact]
+        public async Task New_legacy_actions_run_on_sql_server()
+        {
+            Skip.If(_factory.SkipReason != null, _factory.SkipReason);
+            using var client = _factory.CreateAuthorizedClient();
+
+            // SP đã sinh lại có @EffectiveOn; SP mới cho bảng Id bigint; ma trận quyền và người dùng hiện tại (EF).
+            (await client.GetResultAsync("/api/SupplierMaterial/GetAll?Page=1&PageSize=5&EffectiveOn=2026-11-15")).Code.Should().Be(200);
+            (await client.GetResultAsync("/api/CoreDataMergeConflict/GetAll?Page=1&PageSize=5&IsResolved=false")).Code.Should().Be(200);
+            (await client.GetResultAsync("/api/PricePolicy/GetAll?Page=1&PageSize=5&EffectiveOn=2026-11-15")).Code.Should().Be(200);
+            var me = (await client.GetResultAsync("/api/User/GetCurrent")).Ok();
+            me.GetProperty("user").GetProperty("userName").GetString().Should().Be("admin");
+            (await client.GetResultAsync("/api/ObjectMenu/GetTree?includeInactive=false")).Ok().GetArrayLength().Should().BeGreaterThan(5);
+            (await client.GetResultAsync("/api/OrganizationUnit/GetBranches")).Code.Should().Be(200);
         }
 
         [Fact]
-        public async Task V1_without_token_is_401()
+        public async Task Business_action_without_token_is_401()
         {
             using var client = _factory.CreateClient();
 
-            var response = await client.GetAsync($"/api/v1/audit/TestDemo/{Guid.NewGuid()}/history");
+            var response = await client.GetAsync($"/api/Recipe/CalculateCost?id={Guid.NewGuid()}");
 
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
@@ -114,7 +99,7 @@ namespace AppDelicare.Tests.Integration
         }
 
         [Fact]
-        public async Task Swagger_json_contains_v1_endpoint_and_bearer_scheme()
+        public async Task Swagger_json_has_legacy_business_actions_no_v1_and_bearer_scheme()
         {
             using var client = _factory.CreateClient();
 
@@ -123,9 +108,10 @@ namespace AppDelicare.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             string json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
-            doc.RootElement.GetProperty("paths").TryGetProperty("/api/v1/audit/{table}/{id}/history", out var path).Should().BeTrue();
-            path.GetProperty("get").GetProperty("summary").GetString().Should().Contain("Lịch sử");
-            path.GetProperty("get").GetProperty("responses").TryGetProperty("400", out _).Should().BeTrue();
+            var paths = doc.RootElement.GetProperty("paths");
+            paths.TryGetProperty("/api/Recipe/Lock", out var path).Should().BeTrue();
+            path.GetProperty("post").GetProperty("summary").GetString().Should().Contain("khóa");
+            paths.EnumerateObject().Should().NotContain(p => p.Name.StartsWith("/api/v1", StringComparison.OrdinalIgnoreCase));
             doc.RootElement.GetProperty("components").GetProperty("securitySchemes").GetProperty("Bearer")
                 .GetProperty("scheme").GetString().Should().Be("bearer");
         }

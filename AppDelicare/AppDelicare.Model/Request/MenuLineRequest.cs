@@ -11,5 +11,9 @@ namespace AppDelicare.Model.Request
 		public int SortOrder { get; set; }
 		public decimal? StandardQuantity { get; set; }
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public int? SequenceNo { get; set; }
+		public decimal? PortionQty { get; set; }
+		public bool? IsRequired { get; set; }
 	}
 }

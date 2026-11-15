@@ -7,6 +7,8 @@ using AppDelicare.Model.Helper;
 using System.Data;
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AppDelicare.Data.Repositories
 {
@@ -33,9 +35,12 @@ namespace AppDelicare.Data.Repositories
         }
 
         protected IDbConnection _cn;
+        /// <summary>
+        /// T45R (CODE_AUDIT A21): khi đang có transaction, Dapper phải dùng CHÍNH kết nối của DbContext để cùng transaction với EF.
+        /// </summary>
         public IDbConnection Connection
         {
-            get => _cn;
+            get => _trans is SharedTransaction shared && shared.Connection != null ? shared.Connection : _cn;
         }
 
         protected DatabaseContext _context;
@@ -48,43 +53,43 @@ namespace AppDelicare.Data.Repositories
         public IDbTransaction Transaction
         {
 #pragma warning disable CS8603 // Possible null reference return.
-            get => _trans;
+            get => _trans is SharedTransaction shared ? shared.DbTransaction : _trans;
 #pragma warning restore CS8603 // Possible null reference return.
         }
 
-        public async Task<IDbTransaction> OpenTransaction()
-        {
-            if (_trans != null)
-            {
-                throw new Exception("A transaction is already open, you need to use a new DbContext for parallel job.");
-            }
-            if (_cn.State == ConnectionState.Closed)
-            {
-                if (_cn is not DbConnection)
-                {
-                    throw new Exception("Connection object does not support OpenAsync.");
-                }
-                await ((DbConnection)_cn).OpenAsync();
-            }
-            _trans = _cn.BeginTransaction();
-            return _trans;
-        }
+        public Task<IDbTransaction> OpenTransaction() => OpenSharedTransaction(null);
 
-        public async Task<IDbTransaction> OpenTransaction(IsolationLevel level)
+        public Task<IDbTransaction> OpenTransaction(IsolationLevel level) => OpenSharedTransaction(level);
+
+        /// <summary>
+        /// T45R (CODE_AUDIT A21). Trước đây transaction mở trên kết nối Dapper riêng nên các lần ghi EF (CommitAsync) không nằm trong nó
+        /// (mỗi lần lưu commit ngay, rollback vô tác dụng). Nay:
+        /// <list type="bullet">
+        /// <item>transaction mở trên kết nối của DbContext → mọi CommitAsync / SaveChangesAsync và Dapper qua <see cref="Connection"/> cùng 1 transaction;</item>
+        /// <item>service gọi lồng service (UserService → UserClaimService) dùng chung DbContext → tham gia transaction ngoài cùng, chỉ nơi mở mới commit / rollback;</item>
+        /// <item>provider không quan hệ (InMemory – test) → không có transaction.</item>
+        /// </list>
+        /// </summary>
+        private async Task<IDbTransaction> OpenSharedTransaction(IsolationLevel? level)
         {
             if (_trans != null)
             {
                 throw new Exception("A transaction is already open, you need to use a new DbContext for parallel job.");
             }
-            if (_cn.State == ConnectionState.Closed)
+            var database = _context.Database;
+            if (!database.IsRelational())
             {
-                if (_cn is not DbConnection)
-                {
-                    throw new Exception("Connection object does not support OpenAsync.");
-                }
-                await ((DbConnection)_cn).OpenAsync();
+                _trans = new SharedTransaction(null, null, owner: false);
             }
-            _trans = _cn.BeginTransaction(level);
+            else if (database.CurrentTransaction is { } outer)
+            {
+                _trans = new SharedTransaction(outer, database.GetDbConnection(), owner: false);
+            }
+            else
+            {
+                var own = level == null ? await database.BeginTransactionAsync() : await database.BeginTransactionAsync(level.Value);
+                _trans = new SharedTransaction(own, database.GetDbConnection(), owner: true);
+            }
             return _trans;
         }
 
@@ -98,9 +103,6 @@ namespace AppDelicare.Data.Repositories
             if (disposeTrans)
             {
                 _trans.Dispose();
-            }
-            if (disposeTrans)
-            {
                 _trans = null;
             }
         }
@@ -115,10 +117,45 @@ namespace AppDelicare.Data.Repositories
             if (disposeTrans)
             {
                 _trans.Dispose();
-            }
-            if (disposeTrans)
-            {
                 _trans = null;
+            }
+        }
+
+        /// <summary>Transaction EF dùng chung: chỉ bên mở (owner) mới commit / rollback / dispose transaction thật.</summary>
+        private sealed class SharedTransaction(IDbContextTransaction? efTransaction, DbConnection? connection, bool owner) : IDbTransaction
+        {
+            private bool _completed;
+
+            public DbConnection? Connection { get; } = connection;
+            IDbConnection? IDbTransaction.Connection => Connection;
+            public IsolationLevel IsolationLevel => efTransaction?.GetDbTransaction().IsolationLevel ?? IsolationLevel.Unspecified;
+            /// <summary>Transaction ADO.NET để truyền cho Dapper.</summary>
+            public DbTransaction? DbTransaction => efTransaction?.GetDbTransaction();
+
+            public void Commit()
+            {
+                if (owner && !_completed)
+                {
+                    efTransaction!.Commit();
+                }
+                _completed = true;
+            }
+
+            public void Rollback()
+            {
+                if (owner && !_completed)
+                {
+                    efTransaction!.Rollback();
+                }
+                _completed = true;
+            }
+
+            public void Dispose()
+            {
+                if (owner)
+                {
+                    efTransaction!.Dispose(); // chưa commit → EF tự rollback
+                }
             }
         }
 

@@ -73,6 +73,42 @@
             public static readonly string UserNameExist = "UserName {0} đã tồn tại, vui lòng nhập username khác";
             public static readonly string ResetPassword = "Đặt lại mật khẩu thành công";
             public static readonly string NotExist = " {0} không tồn tại trong cơ sở dữ liệu";
+            // T45R – thông báo nghiệp vụ bổ sung (khung cũ, D-30).
+            public static readonly string CannotLockYourself = "Không thể tự khóa tài khoản của chính mình";
+            public static readonly string GroupNotFound = "Không tìm thấy nhóm người dùng";
+            public static readonly string MenuNotFound = "Menu không tồn tại: {0}";
+            public static readonly string MenuCycle = "Sắp xếp tạo vòng lặp cha – con";
+            public static readonly string ParentCycle = "Đơn vị cha không được là chính nó hoặc đơn vị con của nó";
+            public static readonly string AlreadyResolved = "Xung đột này đã được xử lý";
+            public static readonly string ResolutionNoteRequired = "Ghi chú xử lý là bắt buộc (tối đa 1000 ký tự)";
+            public static readonly string InvalidStatusForAction = "Chỉ {0} khi công thức ở trạng thái {1} (hiện tại: {2})";
+            public static readonly string RecipeHasOpenVersion = "Món đang có bản công thức nháp / chờ duyệt – hoàn tất bản đó trước";
+            public static readonly string RecipeNeedsLine = "Công thức phải có ít nhất 1 dòng định lượng";
+            public static readonly string RejectReasonRequired = "Từ chối phải ghi lý do";
+            public static readonly string SourceRecipeNotInDish = "Công thức nguồn không thuộc món này";
+            public static readonly string QuantityMustBePositive = "Định lượng phải lớn hơn 0";
+            public static readonly string WastePercentRange = "Hao hụt phải trong khoảng [0, 100)";
+            public static readonly string UomConversionMissing = "Chưa có quy đổi giữa 2 đơn vị này";
+            public static readonly string PriceNotFound = "Không tìm thấy đơn giá áp dụng cho khách / hợp đồng / loại suất này";
+            public static readonly string PriceOverlap = "Chồng thời gian hiệu lực với chính sách giá khác cùng khách / hợp đồng / loại suất";
+            public static readonly string PriceMustBePositive = "Đơn giá phải lớn hơn 0";
+            public static readonly string CifExist = "CIF {0} đã tồn tại";
+            public static readonly string DeliveryWindowInvalid = "Giờ giao từ phải nhỏ hơn giờ giao đến";
+            public static readonly string LatitudeInvalid = "Vĩ độ phải trong [-90, 90]";
+            public static readonly string LongitudeInvalid = "Kinh độ phải trong [-180, 180]";
+            public static readonly string LocationInUse = "Còn đơn giao chưa hoàn tất tại điểm này – không ngừng hoạt động được";
+            public static readonly string YieldPercentRange = "Tỷ lệ thu hồi phải trong (0, 100]";
+            public static readonly string StandardWasteRange = "Tỷ lệ hao hụt chuẩn phải trong [0, 100)";
+            public static readonly string ShelfLifeRequired = "Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0";
+            public static readonly string ConversionFactorPositive = "Hệ số quy đổi phải lớn hơn 0";
+            public static readonly string ConversionSameUnit = "Đơn vị nguồn và đích phải khác nhau";
+            public static readonly string ConversionExist = "Cặp quy đổi đơn vị này đã tồn tại";
+            public static readonly string StockChainInvalid = "Phải thỏa Tồn tối thiểu ≤ Tồn an toàn ≤ Điểm đặt hàng ≤ Tồn tối đa";
+            public static readonly string InventoryPolicyExist = "Đã có chính sách tồn cho nguyên liệu này tại kho này";
+            public static readonly string ShiftTimeSame = "Giờ bắt đầu và giờ kết thúc không được trùng nhau";
+            public static readonly string ShiftTimeRange = "Giờ phải trong khoảng 00:00:00–23:59:59";
+            public static readonly string ChecklistVersionExist = "Checklist mã {0} phiên bản {1} đã tồn tại";
+            public static readonly string ReasonRequired = "Lý do là bắt buộc (3–1000 ký tự)";
         }
 
         public class TypeSave

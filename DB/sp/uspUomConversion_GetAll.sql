@@ -8,6 +8,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspUomConversion_GetAll] (
 	, @Status NVARCHAR(MAX) = NULL
 	, @FromUnitId UNIQUEIDENTIFIER = NULL
 	, @ToUnitId UNIQUEIDENTIFIER = NULL
+	, @EffectiveOn DATE = NULL
 	, @Page INT = 1
 	, @PageSize INT = 10
 	, @SortField NVARCHAR(100) = NULL
@@ -41,6 +42,7 @@ BEGIN
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@FromUnitId IS NULL OR t.[FromUnitId] = @FromUnitId)
 			AND (@ToUnitId IS NULL OR t.[ToUnitId] = @ToUnitId)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND t.IsDeleted = 0
 	),
 	TempCount (TotalRow) AS (SELECT COUNT(*) FROM TempResult)

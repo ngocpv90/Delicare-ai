@@ -111,5 +111,36 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>T45R: cây đơn vị tổ chức kèm số nhân viên, số kho, tên quản lý.</summary>
+        [HttpGet("GetTree")]
+        public async Task<IActionResult> GetTree(Guid? companyId)
+        {
+            try
+            {
+                return Ok(await _service.GetTree(companyId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTree: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: danh sách chi nhánh (UnitType = BRANCH) cho bộ chọn đơn vị trên header – mọi user đã đăng nhập.</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetBranches")]
+        public IActionResult GetBranches()
+        {
+            try
+            {
+                return Ok(_service.GetBranches());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBranches: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

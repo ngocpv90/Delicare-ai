@@ -13,5 +13,8 @@ namespace AppDelicare.Model.Request
 		public decimal? Revenue { get; set; }
 		public decimal? GrossMargin { get; set; }
 		public DateTime CalculatedAt { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? MealQty { get; set; }
+		public decimal? TotalCost { get; set; }
 	}
 }

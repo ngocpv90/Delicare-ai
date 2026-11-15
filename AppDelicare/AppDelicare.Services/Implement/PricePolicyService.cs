@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -10,6 +11,8 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
@@ -133,6 +136,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(PricePolicyRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var checkDuplicate = _unitOfWork.PricePolicyRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -146,6 +155,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(PricePolicyRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.PricePolicyRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -207,6 +222,75 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 5.4): đơn giá &gt; 0; chính sách đang áp dụng không chồng hiệu lực cùng khách / hợp đồng / loại suất.</summary>
+        private async Task<string> CheckRules(PricePolicyRequest request)
+        {
+            if (request.UnitPrice <= 0)
+            {
+                return ConstantHelper.Message.PriceMustBePositive;
+            }
+            if (request.Status != null && request.Status != ActiveStatus)
+            {
+                return string.Empty;
+            }
+            DateTime from = request.EffectiveFrom;
+            DateTime to = request.EffectiveTo ?? DateTime.MaxValue;
+            bool overlap = await _unitOfWork.PricePolicyRepository.GetAll().AnyAsync(p => !p.IsDeleted && p.Id != request.Id
+                && (p.Status == null || p.Status == ActiveStatus)
+                && p.CustomerId == request.CustomerId && p.ContractId == request.ContractId && p.MealType == request.MealType
+                && (p.EffectiveFrom == null || p.EffectiveFrom <= to) && (p.EffectiveTo == null || p.EffectiveTo >= from));
+            return overlap ? ConstantHelper.Message.PriceOverlap : string.Empty;
+        }
+
+        private const string ActiveStatus = "Active";
+
+        /// <summary>
+        /// T45R (spec 5.4): tra đơn giá áp dụng – thứ tự: chính sách theo hợp đồng → theo khách → ContractMeal.
+        /// Ưu tiên dòng đúng loại suất, rồi hiệu lực mới nhất. Không có → ResponseCode 400.
+        /// </summary>
+        public async Task<IResult<PriceResolveModel>> Resolve(PriceResolveRequest request)
+        {
+            try
+            {
+                DateTime day = (request.Date ?? DateTime.Today).Date;
+                IQueryable<PricePolicy> Effective() => _unitOfWork.PricePolicyRepository.GetAll().AsNoTracking().Where(p => !p.IsDeleted
+                    && (p.Status == null || p.Status == ActiveStatus)
+                    && (p.EffectiveFrom == null || p.EffectiveFrom <= day) && (p.EffectiveTo == null || p.EffectiveTo >= day)
+                    && (request.MealType == null || p.MealType == request.MealType || p.MealType == null) && p.UnitPrice > 0);
+                if (request.ContractId is { } contractId)
+                {
+                    var byContract = await Effective().Where(p => p.ContractId == contractId)
+                        .OrderByDescending(p => p.MealType != null).ThenByDescending(p => p.EffectiveFrom).FirstOrDefaultAsync();
+                    if (byContract != null)
+                    {
+                        return Result<PriceResolveModel>.Success(new PriceResolveModel { UnitPrice = byContract.UnitPrice, Source = "PricePolicy:Contract", SourceId = byContract.Id }, ConstantHelper.Message.GetAllSuccessfully);
+                    }
+                }
+                var byCustomer = await Effective().Where(p => p.CustomerId == request.CustomerId && p.ContractId == null)
+                    .OrderByDescending(p => p.MealType != null).ThenByDescending(p => p.EffectiveFrom).FirstOrDefaultAsync();
+                if (byCustomer != null)
+                {
+                    return Result<PriceResolveModel>.Success(new PriceResolveModel { UnitPrice = byCustomer.UnitPrice, Source = "PricePolicy:Customer", SourceId = byCustomer.Id }, ConstantHelper.Message.GetAllSuccessfully);
+                }
+                if (request.ContractId is { } cid)
+                {
+                    var meal = await _unitOfWork.ContractMealRepository.GetAll().AsNoTracking()
+                        .Where(m => !m.IsDeleted && m.ContractId == cid && (request.MealType == null || m.MealType == request.MealType) && m.UnitPrice > 0)
+                        .FirstOrDefaultAsync();
+                    if (meal != null)
+                    {
+                        return Result<PriceResolveModel>.Success(new PriceResolveModel { UnitPrice = meal.UnitPrice!.Value, Source = "ContractMeal", SourceId = meal.Id }, ConstantHelper.Message.GetAllSuccessfully);
+                    }
+                }
+                return Result<PriceResolveModel>.Fail(ConstantHelper.Message.PriceNotFound);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Resolve: ", ex.ToString()));
                 throw;
             }
         }

@@ -111,5 +111,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>T45R: tồn khả dụng theo kho và cờ dưới mức tối thiểu.</summary>
+        [HttpGet("GetStock")]
+        public async Task<IActionResult> GetStock(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetStock(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetStock: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

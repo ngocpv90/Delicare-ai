@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -124,6 +125,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(ShiftRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var checkDuplicate = _unitOfWork.ShiftRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -137,6 +144,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(ShiftRequest request, string typeSave)
         {
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var exist = _unitOfWork.ShiftRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -200,6 +213,27 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>T45R (từ API v1 T21): giờ bắt đầu ≠ kết thúc, giờ trong ngày, công ty phải tồn tại. Mã trùng đã kiểm ở Insert / Update.</summary>
+        private async Task<string> CheckRules(ShiftRequest request)
+        {
+            if (request.StartTime != null && request.StartTime == request.EndTime)
+            {
+                return ConstantHelper.Message.ShiftTimeSame;
+            }
+            foreach (var t in new[] { request.StartTime, request.EndTime })
+            {
+                if (t is { } v && (v < TimeSpan.Zero || v >= TimeSpan.FromDays(1)))
+                {
+                    return ConstantHelper.Message.ShiftTimeRange;
+                }
+            }
+            if (request.CompanyId is { } companyId && !await _unitOfWork.CompanyRepository.GetAll().AnyAsync(x => x.Id == companyId && !x.IsDeleted))
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Công ty");
+            }
+            return string.Empty;
         }
     }
 }

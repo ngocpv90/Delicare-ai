@@ -15,5 +15,8 @@ namespace AppDelicare.Model.ViewModels
 		public DateTime EffectiveFrom { get; set; }
 		public DateTime? EffectiveTo { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public string? MealType { get; set; }
+		public DateTime? CreatedDate { get; set; }
 	}
 }

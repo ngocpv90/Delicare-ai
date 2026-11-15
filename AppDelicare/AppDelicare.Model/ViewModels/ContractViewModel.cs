@@ -14,5 +14,10 @@ namespace AppDelicare.Model.ViewModels
 		public decimal? ContractValue { get; set; }
 		public string? Status { get; set; }
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? StartDate { get; set; }
+		public DateTime? EndDate { get; set; }
+		public string? PaymentTerm { get; set; }
+		public DateTime? CreatedDate { get; set; }
 	}
 }

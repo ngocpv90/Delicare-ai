@@ -9,6 +9,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspSupplierMaterial_GetAll] (
 	, @IngredientId UNIQUEIDENTIFIER = NULL
 	, @PurchaseUomId UNIQUEIDENTIFIER = NULL
 	, @Status NVARCHAR(MAX) = NULL
+	, @EffectiveOn DATE = NULL
 	, @SupplierMaterialCode NVARCHAR(MAX) = NULL
 	, @UnitPrice DECIMAL(18,2) = NULL
 	, @MinimumOrderQuantity DECIMAL(18,4) = NULL
@@ -56,6 +57,7 @@ BEGIN
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
 			AND (@PurchaseUomId IS NULL OR t.[PurchaseUomId] = @PurchaseUomId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND (ISNULL(@SupplierMaterialCode, '') = '' OR t.[SupplierMaterialCode] LIKE CONCAT('%', @SupplierMaterialCode, '%'))
 			AND (@UnitPrice IS NULL OR t.[UnitPrice] = @UnitPrice)
 			AND (@MinimumOrderQuantity IS NULL OR t.[MinimumOrderQuantity] = @MinimumOrderQuantity)

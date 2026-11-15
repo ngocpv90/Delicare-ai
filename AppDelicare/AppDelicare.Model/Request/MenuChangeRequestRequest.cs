@@ -23,7 +23,5 @@ namespace AppDelicare.Model.Request
 		public Guid? RequestedBy { get; set; }
 		[MaxLength(30, ErrorMessage = "RequestStatus tối đa 30 ký tự.")]
 		public string? RequestStatus { get; set; }
-		public Guid? ApprovedBy { get; set; }
-		public DateTime? ApprovedAt { get; set; }
 	}
 }

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System;
 
 namespace AppDelicare.Model.Request
@@ -10,5 +11,8 @@ namespace AppDelicare.Model.Request
 		public decimal? UnitPrice { get; set; }
 		public Guid? UnitId { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		[MaxLength(100, ErrorMessage = "ServiceType tối đa 100 ký tự.")]
+		public string? ServiceType { get; set; }
 	}
 }

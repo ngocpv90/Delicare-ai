@@ -15,5 +15,9 @@ namespace AppDelicare.Model.ViewModels
 		public string? ContactName { get; set; }
 		public string? Status { get; set; }
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public string? SupplierType { get; set; }
+		public string? ContactPhone { get; set; }
+		public DateTime? CreatedDate { get; set; }
 	}
 }

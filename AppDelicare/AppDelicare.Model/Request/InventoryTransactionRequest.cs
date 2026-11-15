@@ -17,5 +17,9 @@ namespace AppDelicare.Model.Request
 		public string? ReferenceType { get; set; }
 		public Guid? ReferenceId { get; set; }
 		public string? Reason { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? Quantity { get; set; }
+		public decimal? UnitCost { get; set; }
+		public string? Note { get; set; }
 	}
 }

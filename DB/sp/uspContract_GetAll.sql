@@ -7,6 +7,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspContract_GetAll] (
 	@SearchText NVARCHAR(MAX) = NULL
 	, @CustomerId UNIQUEIDENTIFIER = NULL
 	, @Status NVARCHAR(MAX) = NULL
+	, @EffectiveOn DATE = NULL
 	, @ContractNumber NVARCHAR(MAX) = NULL
 	, @Name NVARCHAR(MAX) = NULL
 	, @SignedDate DATETIME2 = NULL
@@ -48,6 +49,7 @@ BEGIN
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ContractNumber] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND (ISNULL(@ContractNumber, '') = '' OR t.[ContractNumber] LIKE CONCAT('%', @ContractNumber, '%'))
 			AND (ISNULL(@Name, '') = '' OR t.[Name] LIKE CONCAT('%', @Name, '%'))
 			AND (@SignedDate IS NULL OR t.[SignedDate] = @SignedDate)

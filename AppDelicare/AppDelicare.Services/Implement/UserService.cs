@@ -2,6 +2,7 @@
 using Dapper;
 using Microsoft.Extensions.Options;
 using AppDelicare.Data.Interface;
+using AppDelicare.Data.Share;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
@@ -17,7 +18,8 @@ namespace AppDelicare.Services.Implement
 {
     public class UserService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IOptions<AppSettingHelper> options
         , IImportService importService, IMapper mapper, IUserClaimService userClaimService
-        , IUserGroupService userGroupService, IAuditChangeService auditChangeService) : IUserService
+        , IUserGroupService userGroupService, IAuditChangeService auditChangeService
+        , ICurrentActor currentActor, IPermissionService permissionService, IUserRoleService userRoleService) : IUserService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -27,6 +29,9 @@ namespace AppDelicare.Services.Implement
         private readonly IUserClaimService _userClaimService = userClaimService;
         private readonly IUserGroupService _userGroupService = userGroupService;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private readonly ICurrentActor _currentActor = currentActor;
+        private readonly IPermissionService _permissionService = permissionService;
+        private readonly IUserRoleService _userRoleService = userRoleService;
 
         public async Task<IResults<UserViewModel>> GetAll(UserSearchRequest request)
         {
@@ -112,6 +117,10 @@ namespace AppDelicare.Services.Implement
                         break;
                 }
                 _unitOfWork.CommitTransaction();
+                if (request.Id is Guid savedUserId)
+                {
+                    _permissionService.Invalidate(savedUserId); // T45R: đổi nhóm / khóa / xóa áp dụng ngay
+                }
                 if (!string.IsNullOrEmpty(result))
                 {
                     return new Result<bool>
@@ -298,10 +307,17 @@ namespace AppDelicare.Services.Implement
                         Data = false
                     };
                 }
+                // T45R (spec 3.2): không tự khóa tài khoản của chính mình.
+                if (update.IsActive && _currentActor.Actor?.UserId == id)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<bool>.Fail(ConstantHelper.Message.CannotLockYourself, false);
+                }
                 update.IsActive = !update.IsActive;
                 _unitOfWork.UserRepository.Update(update);
                 await _unitOfWork.UserRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
+                _permissionService.Invalidate(id);
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
@@ -345,6 +361,7 @@ namespace AppDelicare.Services.Implement
                 _unitOfWork.UserRepository.Update(update);
                 await _unitOfWork.UserRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
+                _permissionService.Invalidate(id);
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
@@ -426,6 +443,27 @@ namespace AppDelicare.Services.Implement
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " ChangePassword: ", ex.ToString()));
                 _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 2.2 /meta/me): tài khoản đang đăng nhập + menu theo quyền hiệu lực.</summary>
+        public async Task<IResult<CurrentUserModel>> GetCurrent()
+        {
+            try
+            {
+                Guid userId = _currentActor.RequireActor().UserId;
+                var user = await GetById(userId);
+                if (user.ResponseCode != Convert.ToInt32(HttpStatusCode.OK))
+                {
+                    return Result<CurrentUserModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var menu = await _userRoleService.GetByUserId(userId);
+                return Result<CurrentUserModel>.Success(new CurrentUserModel { User = user.Data, ListMenu = menu.Data?.ListMenu ?? [] }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCurrent: ", ex.ToString()));
                 throw;
             }
         }

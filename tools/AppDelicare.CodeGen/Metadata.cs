@@ -33,6 +33,14 @@ public sealed partial class Metadata
         ["Id", "CreatedDate", "CreatedBy", "ModifiedDate", "ModifiedBy", "DeletedDate", "DeleteddBy", "DeletedBy", "IsDeleted"];
 
     /// <summary>Bảng không theo khuôn BaseEntity (Id bigint, không có cột audit).</summary>
+    /// <summary>
+    /// T45R: cột KHÔNG nhận từ Request (do lệnh nghiệp vụ / hệ thống ghi): mật khẩu, duyệt, khóa, ảnh chụp công thức, giá chuẩn tính tự động.
+    /// </summary>
+    public static readonly HashSet<string> NotInRequest = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "PassWord", "ApprovedAt", "ApprovedBy", "LockedAt", "LockedBy", "SnapshotJson",
+    };
+
     public static bool IsStandalone(Table t) => t.Find("Id")?.SqlType != "uniqueidentifier" || !t.Has("IsDeleted") || !t.Has("CreatedDate");
 
     public static bool IsLegacyReadOnly(Table t) => t.Name.EndsWith("_Legacy_20261113", StringComparison.OrdinalIgnoreCase);

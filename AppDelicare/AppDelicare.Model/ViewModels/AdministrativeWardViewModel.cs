@@ -13,5 +13,7 @@ namespace AppDelicare.Model.ViewModels
 		public Guid? AdministrativeUnitId { get; set; }
 		public string? AdministrativeUnitName { get; set; }
 		public bool IsDefault { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? CreatedDate { get; set; }
 	}
 }

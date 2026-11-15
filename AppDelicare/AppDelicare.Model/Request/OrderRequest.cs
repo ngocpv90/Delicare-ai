@@ -14,5 +14,7 @@ namespace AppDelicare.Model.Request
 		public decimal? TotalQuantity { get; set; }
 		public decimal? TotalAmount { get; set; }
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? MealDate { get; set; }
 	}
 }

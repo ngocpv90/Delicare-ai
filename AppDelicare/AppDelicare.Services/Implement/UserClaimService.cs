@@ -14,12 +14,13 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     public class UserClaimService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IUserClaimService
+        , IAuditChangeService auditChangeService, IPermissionService permissionService) : IUserClaimService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private readonly IPermissionService _permissionService = permissionService;
 
         public async Task<IResults<UserClaimViewModel>> GetAll(UserClaimSearchRequest request)
         {
@@ -240,6 +241,7 @@ namespace AppDelicare.Services.Implement
                     await _unitOfWork.UserClaimRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 }
                 _unitOfWork.CommitTransaction();
+                _permissionService.Invalidate(userId); // T45R: đổi nhóm áp dụng ngay
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),

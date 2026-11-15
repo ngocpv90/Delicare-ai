@@ -9,5 +9,7 @@ namespace AppDelicare.Model.Request
 		public decimal ReservedQuantity { get; set; }
 		public Guid UnitId { get; set; }
 		public string? Status { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? RequiredQty { get; set; }
 	}
 }

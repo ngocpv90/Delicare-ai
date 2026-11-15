@@ -8,5 +8,7 @@ namespace AppDelicare.Model.ViewModels
 		public DateTime? DateOfBirth { get; set; }
 		public string? Sex { get; set; }
 		public string? Address { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? CreatedDate { get; set; }
 	}
 }

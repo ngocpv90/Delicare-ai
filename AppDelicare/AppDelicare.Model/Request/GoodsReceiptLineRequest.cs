@@ -14,5 +14,9 @@ namespace AppDelicare.Model.Request
 		public DateTime? ManufactureDate { get; set; }
 		public DateTime? ExpiryDate { get; set; }
 		public string? QualityStatus { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? Quantity { get; set; }
+		public decimal? UnitCost { get; set; }
+		public Guid? LotId { get; set; }
 	}
 }

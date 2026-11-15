@@ -9,5 +9,7 @@ namespace AppDelicare.Model.ViewModels
 		public string? ShortNameVN { get; set; }
 		public string? ShortNameEN { get; set; }
 		public bool IsDefault { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? CreatedDate { get; set; }
 	}
 }

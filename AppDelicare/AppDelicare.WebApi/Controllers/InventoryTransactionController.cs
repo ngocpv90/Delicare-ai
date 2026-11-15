@@ -3,12 +3,13 @@ using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
+using AppDelicare.Model.Request.Custom;
 using Serilog;
 using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    /// <summary>Sổ cái kho – chỉ ghi thêm (CLAUDE.md 3.3, T08): không có Update / Delete. Sửa sai: POST /api/v1/scm/inventory-transactions/{id}/reverse.</summary>
+    /// <summary>Sổ cái kho – chỉ ghi thêm (CLAUDE.md 3.3, T08): không có Update / Delete. Sửa sai: POST api/InventoryTransaction/Reverse (bút toán đảo).</summary>
     public class InventoryTransactionController(IInventoryTransactionService service) : BaseController
     {
         private readonly IInventoryTransactionService _service = service;
@@ -73,6 +74,25 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: đảo một bút toán kho (sổ chỉ ghi thêm) – ghi bút toán ngược dấu, tồn trở lại như trước.</summary>
+        [HttpPost("Reverse")]
+        public async Task<IActionResult> Reverse([FromForm] InventoryReverseRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Reverse(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reverse: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

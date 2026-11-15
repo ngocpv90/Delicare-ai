@@ -7,6 +7,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspMenu_GetAll] (
 	@SearchText NVARCHAR(MAX) = NULL
 	, @Status NVARCHAR(MAX) = NULL
 	, @CompanyId UNIQUEIDENTIFIER = NULL
+	, @EffectiveOn DATE = NULL
 	, @Code NVARCHAR(MAX) = NULL
 	, @Name NVARCHAR(MAX) = NULL
 	, @MenuType NVARCHAR(MAX) = NULL
@@ -46,6 +47,7 @@ BEGIN
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%') OR t.[VersionCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@CompanyId IS NULL OR t.[CompanyId] = @CompanyId)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND (ISNULL(@Code, '') = '' OR t.[Code] LIKE CONCAT('%', @Code, '%'))
 			AND (ISNULL(@Name, '') = '' OR t.[Name] LIKE CONCAT('%', @Name, '%'))
 			AND (ISNULL(@MenuType, '') = '' OR t.[MenuType] LIKE CONCAT('%', @MenuType, '%'))

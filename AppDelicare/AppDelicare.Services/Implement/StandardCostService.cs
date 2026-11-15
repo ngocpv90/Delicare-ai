@@ -1,4 +1,5 @@
 using AutoMapper;
+using AppDelicare.Data.Share;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -10,13 +11,18 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
     public class StandardCostService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IStandardCostService
+        , IAuditChangeService auditChangeService, IRecipeService recipeService, IClock clock) : IStandardCostService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IRecipeService _recipeService = recipeService;
+        private readonly IClock _clock = clock;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
@@ -195,6 +201,38 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// T45R (spec 5.3): tính lại giá thành chuẩn theo giá NCC hiện hành cho món có công thức đang khóa (Locked, IsActive);
+        /// <paramref name="request"/>.ListDishId trống = mọi món. Bản cũ → Inactive. Trả số món đã tính.
+        /// </summary>
+        public async Task<IResult<int>> Recalculate(StandardCostRecalculateRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var dishIds = (request.ListDishId ?? string.Empty).Split(ConstantHelper.Comma, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(x => Guid.TryParse(x, out var g) ? g : Guid.Empty).Where(g => g != Guid.Empty).ToList();
+                var active = _unitOfWork.RecipeRepository.GetAll().AsNoTracking().Where(r => r.IsActive && !r.IsDeleted && r.Status == RecipeStatus.Locked);
+                if (dishIds.Count != 0)
+                {
+                    active = active.Where(r => dishIds.Contains(r.DishId));
+                }
+                var recipes = await active.ToListAsync();
+                foreach (var r in recipes)
+                {
+                    await _recipeService.UpsertStandardCostAsync(r.DishId, r.Id, _clock.Today);
+                }
+                _unitOfWork.CommitTransaction();
+                return Result<int>.Success(recipes.Count, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Recalculate: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
                 throw;
             }
         }

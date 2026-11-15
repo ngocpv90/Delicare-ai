@@ -1,4 +1,5 @@
 using AutoMapper;
+using AppDelicare.Data.Share;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -10,13 +11,18 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
     public class InventoryTransactionService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IInventoryTransactionService
+        , IAuditChangeService auditChangeService
+        , IInventoryLedgerService inventoryLedgerService) : IInventoryTransactionService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IInventoryLedgerService _inventoryLedgerService = inventoryLedgerService;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
@@ -201,6 +207,33 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// T45R (T08, chuyển từ lớp v1 cũ): đảo một bút toán kho – ghi bút toán ngược dấu tham chiếu dòng gốc, tồn kho trở lại như trước.
+        /// Sổ chỉ ghi thêm: không sửa / xóa bút toán. Lỗi nghiệp vụ (đã đảo, đảo bút toán đảo, không đủ tồn) → ResponseCode 400.
+        /// </summary>
+        public async Task<IResult<InventoryTransaction>> Reverse(InventoryReverseRequest request)
+        {
+            try
+            {
+                string reason = request.Reason?.Trim() ?? string.Empty;
+                if (reason.Length is < 3 or > 1000)
+                {
+                    return Result<InventoryTransaction>.Fail(ConstantHelper.Message.ReasonRequired);
+                }
+                var reversal = await _inventoryLedgerService.ReverseAsync(request.Id, reason);
+                return Result<InventoryTransaction>.Success(reversal, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (BusinessRuleException ex)
+            {
+                return Result<InventoryTransaction>.Fail(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reverse: ", ex.ToString()));
                 throw;
             }
         }

@@ -10,6 +10,9 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
@@ -149,6 +152,10 @@ namespace AppDelicare.Services.Implement
             {
                 return string.Format(ConstantHelper.Message.CodeExist, request.Code);
             }
+            if (CreatesCycle(request.Id!.Value, request.ParentId))
+            {
+                return ConstantHelper.Message.ParentCycle;
+            }
             var update = _mapper.Map(request, exist);
             _unitOfWork.OrganizationUnitRepository.Update(update);
             await _unitOfWork.OrganizationUnitRepository.CommitAsync(typeSave);
@@ -203,5 +210,90 @@ namespace AppDelicare.Services.Implement
                 throw;
             }
         }
+
+        /// <summary>T45R (spec 3.5): đơn vị cha không được là chính nó hoặc đơn vị con của nó.</summary>
+        private bool CreatesCycle(Guid id, Guid? parentId)
+        {
+            var seen = new HashSet<Guid>();
+            Guid? cursor = parentId;
+            while (cursor != null)
+            {
+                if (cursor == id)
+                {
+                    return true;
+                }
+                if (!seen.Add(cursor.Value))
+                {
+                    return false;
+                }
+                Guid current = cursor.Value;
+                cursor = _unitOfWork.OrganizationUnitRepository.GetAll().Where(x => x.Id == current).Select(x => x.ParentId).FirstOrDefault();
+            }
+            return false;
+        }
+
+        public async Task<IResult<List<OrganizationUnitTreeModel>>> GetTree(Guid? companyId)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var units = await db.OrganizationUnit.AsNoTracking().Where(x => !x.IsDeleted && (companyId == null || x.CompanyId == companyId))
+                    .OrderBy(x => x.Code).ToListAsync();
+                var unitIds = units.Select(x => x.Id).ToList();
+                var employees = await db.Employee.AsNoTracking().Where(e => !e.IsDeleted && e.OrganizationUnitId != null && unitIds.Contains(e.OrganizationUnitId.Value))
+                    .GroupBy(e => e.OrganizationUnitId!.Value).Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
+                var warehouses = await db.Warehouse.AsNoTracking().Where(w => !w.IsDeleted && w.OrganizationUnitId != null && unitIds.Contains(w.OrganizationUnitId.Value))
+                    .GroupBy(w => w.OrganizationUnitId!.Value).Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
+                var managerIds = units.Where(x => x.ManagerId != null).Select(x => x.ManagerId!.Value).Distinct().ToList();
+                var managers = await db.Employee.AsNoTracking().Where(e => managerIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName);
+                var nodes = units.ToDictionary(x => x.Id, x => new OrganizationUnitTreeModel
+                {
+                    Id = x.Id, Code = x.Code, Name = x.Name, UnitType = x.UnitType, ParentId = x.ParentId, ManagerId = x.ManagerId,
+                    ManagerName = x.ManagerId is { } m ? managers.GetValueOrDefault(m) : null,
+                    EmployeeCount = employees.GetValueOrDefault(x.Id), WarehouseCount = warehouses.GetValueOrDefault(x.Id), Status = x.Status,
+                });
+                var roots = new List<OrganizationUnitTreeModel>();
+                foreach (var x in units)
+                {
+                    if (x.ParentId is { } p && p != x.Id && nodes.TryGetValue(p, out var parent))
+                    {
+                        parent.Children.Add(nodes[x.Id]);
+                    }
+                    else
+                    {
+                        roots.Add(nodes[x.Id]);
+                    }
+                }
+                return Result<List<OrganizationUnitTreeModel>>.Success(roots, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTree: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T45R (spec 3.5): đơn vị UnitType = BRANCH cho bộ chọn đơn vị trên header.</summary>
+        public IResults<OrganizationUnit> GetBranches()
+        {
+            try
+            {
+                var list = _unitOfWork.OrganizationUnitRepository.GetAll().Where(x => !x.IsDeleted && x.UnitType == BranchType).OrderBy(x => x.Code).ToList();
+                return new Results<OrganizationUnit>
+                {
+                    ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
+                    ResponseMessage = ConstantHelper.Message.GetAllSuccessfully,
+                    ListData = list,
+                    TotalRecords = list.Count
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBranches: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        public const string BranchType = "BRANCH";
     }
 }

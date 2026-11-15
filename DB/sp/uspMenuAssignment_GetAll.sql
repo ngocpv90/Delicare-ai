@@ -11,6 +11,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspMenuAssignment_GetAll] (
 	, @MealType NVARCHAR(MAX) = NULL
 	, @Status NVARCHAR(MAX) = NULL
 	, @ContractId UNIQUEIDENTIFIER = NULL
+	, @EffectiveOn DATE = NULL
 	, @EffectiveFrom DATETIME = NULL
 	, @EffectiveTo DATETIME = NULL
 	, @Page INT = 1
@@ -51,6 +52,7 @@ BEGIN
 			AND (ISNULL(@MealType, '') = '' OR t.[MealType] = @MealType)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@ContractId IS NULL OR t.[ContractId] = @ContractId)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND (@EffectiveFrom IS NULL OR t.[EffectiveFrom] = @EffectiveFrom)
 			AND (@EffectiveTo IS NULL OR t.[EffectiveTo] = @EffectiveTo)
 			AND t.IsDeleted = 0

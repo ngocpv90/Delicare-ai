@@ -1,5 +1,5 @@
 using AppDelicare.Data.Share;
-using AppDelicare.WebApi.Api;
+using AppDelicare.Services.Interface;
 using AppDelicare.WebApi.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +11,7 @@ namespace AppDelicare.WebApi.Security
 {
     /// <summary>
     /// T07: kiểm tra <see cref="PermissionAttribute"/> cho mọi action cần đăng nhập. Không có quyền → 403
-    /// (route v1 được bọc envelope <c>PERMISSION_DENIED</c> bởi EnvelopeResultFilter).
+    ///.
     /// An toàn mặc định: action cần đăng nhập mà KHÔNG khai báo quyền → 403 (chỉ admin qua).
     /// </summary>
     public sealed class PermissionFilter(IPermissionService permissions, ICurrentActor currentActor) : IAsyncAuthorizationFilter
@@ -55,15 +55,15 @@ namespace AppDelicare.WebApi.Security
     /// T07: gắn quyền tự động cho controller CRUD cũ (kế thừa <see cref="BaseController"/>) – không phải sửa 120 file sinh mã:
     /// màn hình theo <see cref="ScreenMap.ByClass"/> (tên controller = tên class entity), thao tác theo tên action.
     /// Action / controller đã khai báo <see cref="PermissionAttribute"/> hoặc <see cref="SkipPermissionAttribute"/> thì giữ nguyên.
-    /// Controller v1 (<see cref="ApiControllerBase"/>) phải tự khai báo.
+    /// Action nghiệp vụ không khớp quy tắc tên (duyệt, khóa…) phải tự gắn <see cref="PermissionAttribute"/>.
     /// </summary>
     public sealed class PermissionConvention : IControllerModelConvention
     {
         /// <summary>Thao tác trên chính tài khoản đang đăng nhập.</summary>
-        private static readonly HashSet<string> SelfService = new(StringComparer.OrdinalIgnoreCase) { "GetProfile", "UpdateProfile", "ChangePassword" };
+        private static readonly HashSet<string> SelfService = new(StringComparer.OrdinalIgnoreCase) { "GetProfile", "UpdateProfile", "ChangePassword", "GetCurrent" };
 
-        /// <summary>Nguy hiểm / leo thang quyền: chỉ admin (D-26).</summary>
-        private static readonly HashSet<string> AdminActions = new(StringComparer.OrdinalIgnoreCase) { "DeleteData", "SaveIsAdmin" };
+        /// <summary>Nguy hiểm / leo thang quyền: chỉ admin (D-26; ResetPassword, GetPreview – spec 3.2 / 3.3: nhóm Quản trị hệ thống).</summary>
+        private static readonly HashSet<string> AdminActions = new(StringComparer.OrdinalIgnoreCase) { "DeleteData", "SaveIsAdmin", "ResetPassword", "GetPreview" };
 
         /// <summary>Controller không trùng tên bảng.</summary>
         private static readonly Dictionary<string, string> ControllerScreens = new(StringComparer.OrdinalIgnoreCase)
@@ -73,11 +73,6 @@ namespace AppDelicare.WebApi.Security
 
         public void Apply(ControllerModel controller)
         {
-            if (typeof(Controllers.V1.Crud.CrudResourceController).IsAssignableFrom(controller.ControllerType))
-            {
-                ApplyCrud(controller);
-                return;
-            }
             if (!typeof(BaseController).IsAssignableFrom(controller.ControllerType))
             {
                 return;
@@ -102,35 +97,6 @@ namespace AppDelicare.WebApi.Security
                 foreach (var selector in action.Selectors)
                 {
                     selector.EndpointMetadata.Add(filter);
-                }
-            }
-        }
-
-        /// <summary>T45B: resource CRUD chuẩn – màn theo ResourceRegistry, thao tác theo action.</summary>
-        private static void ApplyCrud(ControllerModel controller)
-        {
-            var attr = (Controllers.V1.Crud.CrudResourceAttribute?)Attribute.GetCustomAttribute(controller.ControllerType, typeof(Controllers.V1.Crud.CrudResourceAttribute));
-            if (attr == null)
-            {
-                return;
-            }
-            var resource = AppDelicare.Application.Common.Crud.ResourceRegistry.Find(attr.Module, attr.Path)
-                ?? throw new InvalidOperationException($"Resource {attr.Module}/{attr.Path} chưa khai báo trong ResourceRegistry.");
-            // Gỡ action không được phép (resource chỉ đọc…) để không chiếm route của API nghiệp vụ riêng và Swagger đúng thực tế.
-            controller.Actions.Where(a => (a.ActionName == "Create" && !resource.CanCreate) || (a.ActionName == "Update" && !resource.CanUpdate)
-                || (a.ActionName == "Delete" && !resource.CanDelete)).ToList().ForEach(a => controller.Actions.Remove(a));
-            foreach (var action in controller.Actions)
-            {
-                var permission = action.ActionName switch
-                {
-                    "Create" => PermissionAction.Add,
-                    "Update" => PermissionAction.Edit,
-                    "Delete" => PermissionAction.Delete,
-                    _ => PermissionAction.View,
-                };
-                foreach (var selector in action.Selectors)
-                {
-                    selector.EndpointMetadata.Add(new PermissionAttribute(resource.Screen, permission));
                 }
             }
         }

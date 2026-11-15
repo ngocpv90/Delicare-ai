@@ -10,8 +10,6 @@ namespace AppDelicare.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration)
         {
-            services.Configure<BusinessRulesOptions>(configuration.GetSection(BusinessRulesOptions.Section));
-            services.AddSingleton<IClock, SystemClock>();
             services.AddScoped<Common.Crud.ICrudService, Common.Crud.CrudService>();
             services.AddScoped<MasterData.IUomService, MasterData.UomService>();
             services.AddScoped<Menu.IRecipeCostCalculator, Menu.RecipeCostCalculator>();

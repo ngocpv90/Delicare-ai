@@ -1,4 +1,4 @@
-﻿namespace AppDelicare.Model.ViewModels
+namespace AppDelicare.Model.ViewModels
 {
     public class UserRoleViewModel : BaseViewModel
     {
@@ -20,5 +20,9 @@
         public bool AllowExport { get; set; }
         public bool AllowImport { get; set; }
         public List<UserRoleViewModel>? Children { get; set; }
+        // T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+        public Guid? UserGroupId { get; set; }
+        public string? UserGroupName { get; set; }
+        public DateTime? CreatedDate { get; set; }
     }
 }

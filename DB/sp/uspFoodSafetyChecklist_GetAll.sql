@@ -6,6 +6,7 @@ GO
 CREATE OR ALTER PROCEDURE [dbo].[uspFoodSafetyChecklist_GetAll] (
 	@SearchText NVARCHAR(MAX) = NULL
 	, @Status NVARCHAR(MAX) = NULL
+	, @EffectiveOn DATE = NULL
 	, @Page INT = 1
 	, @PageSize INT = 10
 	, @SortField NVARCHAR(100) = NULL
@@ -35,6 +36,7 @@ BEGIN
 		
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%') OR t.[AreaCode] LIKE CONCAT('%', @SearchText, '%') OR t.[FrequencyCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
+			AND (@EffectiveOn IS NULL OR ((t.[EffectiveFrom] IS NULL OR t.[EffectiveFrom] <= @EffectiveOn) AND (t.[EffectiveTo] IS NULL OR t.[EffectiveTo] >= @EffectiveOn)))
 			AND t.IsDeleted = 0
 	),
 	TempCount (TotalRow) AS (SELECT COUNT(*) FROM TempResult)
