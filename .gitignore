@@ -26,3 +26,8 @@ backup-db/
 
 # Ghi chú cục bộ (tài khoản dev, đường dẫn máy) – KHÔNG commit
 *.local.md
+
+# Biến môi trường staging cục bộ (bí mật) – KHÔNG commit
+*.local.env.ps1
+*.local.env
+deploy/docker/staging.env

@@ -57,6 +57,7 @@ namespace AppDelicare.WebApi
             services.AddHttpContextAccessor();
             services.AddScoped<IBranchContext, BranchContext>();
             services.AddMemoryCache();
+            services.AddDelicareHealthChecks(); // T48.1
             services.Configure<PermissionOptions>(Configuration.GetSection(PermissionOptions.Section));
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<AppDelicare.Data.Share.IReferenceGuard, AppDelicare.Data.Share.ReferenceGuard>();
@@ -152,6 +153,7 @@ namespace AppDelicare.WebApi
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapDelicareHealthChecks(); // T48.1: /health, /health/live
             });
 
             //SyncfusionLicenseProvider.RegisterLicense("YOUR LICENSE KEY");

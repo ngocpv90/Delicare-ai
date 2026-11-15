@@ -1,11 +1,11 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
-- Release: **R1 – CHỈ BACKEND** (.NET + SQL, đủ API cho mockup; Angular ngoài phạm vi – D-20) · Lát hiện tại: **R1.0 Nền móng**
-- Task đang làm: T00–T09 DONE – task kế tiếp: **T48.1** (staging backend) để đóng lát R1.0
-- Nhánh: `feat/T09-tests` (chuỗi T00 → … → T09; chưa merge, chưa push)
+- Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.0 Nền móng – XONG, chờ anh UAT** (UAT_CHECKLIST R1.0)
+- Task đang làm: R1.0 xong (T00–T09, T48.1). **Dừng chờ anh UAT** trước khi sang R1.1 (T10 → T21.1 → T45B → T49)
+- Nhánh: `feat/T48.1-staging` (chuỗi T00 → … → T48.1; chưa merge, chưa push)
 - Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 71/71 xanh
-- Việc anh cần làm: (1) đổi khóa đã lộ theo `SECRETS_TODO.md`; (2) trả lời D-26 (DeleteData) và D-27 (AutoMapper); (3) merge chuỗi nhánh khi thấy ổn.
+- Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
 
@@ -233,3 +233,23 @@ Còn lại: `AuditChange/DeleteData` (đã khóa admin) vẫn DELETE vật lý b
 Kiểm tra: `dotnet test` trên máy anh **71/71 xanh**, 0 skip (DB dev có); không có DB → test tích hợp Skip kèm lý do.
 AC: [x] `dotnet test` chạy được trên máy anh · [x] README test.
 Ghi chú: "Unit test cho Application" làm khi có `AppDelicare.Application` (T10).
+
+### T48.1 – Staging backend · 2026-11-14 · DONE
+Đã làm:
+- Cấu hình theo môi trường: `appsettings.Staging.json`, `appsettings.Production.json` (không có bí mật – chỉ biến môi trường); log path dùng `/` (chạy được Linux).
+- `/health` (API + DB qua `AddDbContextCheck`, JSON: status, thời gian, environment, version) và `/health/live`; không cần đăng nhập, không lộ chi tiết.
+- `deploy/db/Deploy-Database.ps1` (idempotent): tạo DB (tùy chọn) → **chỉ khi DB rỗng** chạy DDL chuẩn của PO (bỏ dòng `USE`) → mọi SP `DB/sp` → admin ban đầu (`DB/seed/00_Admin_seed.sql`, hash tính lúc chạy, không lưu mật khẩu) → seed tổ chức / menu / quyền. GAP-DEP-01.
+- IIS: `deploy/iis/Publish-Iis.ps1` (publish có web.config), hướng dẫn Hosting Bundle, App Pool, biến môi trường bí mật trên máy chủ.
+- Docker: `AppDelicare/ClinicManagement.WebApi/Dockerfile` (multi-stage, giờ VN, healthcheck, user không root), `AppDelicare/.dockerignore`, `deploy/docker/docker-compose.staging.yml` (SQL Server 2022 + `db-init` + API, không Angular), `db-init.sh`, `staging.env.example` (file thật gitignore). **Chưa chạy thử được – máy dev chưa cài Docker.**
+- CI: `.github/workflows/backend-ci.yml` – build + test + báo cáo gói lỗ hổng cho mỗi PR / push main; không deploy.
+- `deploy/README.md` (từng bước 3 cách + kiểm tra + sự cố), `docs/claude/UAT_CHECKLIST.md` (R1.0, 14 kịch bản), `docs/api-tests/r1.0-foundation.http`.
+- Gỡ ProjectReference tới `AppDelicare.Generator` (T4 .NET Framework, không code nào dùng) khỏi WebApi để publish / build Linux được. `uspSystem_BackupDB` (RESTORE ghi đè DB) → `_obsolete/DB/sp/` để script triển khai không bao giờ cài.
+- **Sửa lỗi lộ ra khi dựng DB mới**: đăng nhập lỗi 500 khi user không có Person; `uspUserRole_GetByUserGroupId` lỗi chuyển kiểu khi user chưa thuộc nhóm nào (chạy lại lên DB dev + staging); đăng nhập gọi `api.iplocation.net` (A20) → ghi IP client.
+
+Kiểm tra (máy anh, mô phỏng máy sạch – DB mới, bí mật chỉ qua biến môi trường, chạy bản publish Release ở `Staging`):
+- `Deploy-Database.ps1` trên DB **trống** `AppDelicare_Staging` (LocalDB): 124 bảng, 130 SP, admin, seed; chạy lần 2 không đổi gì (124 bảng / 1 user / 33 đơn vị / 130 menu / 16 nhóm / 1.904 quyền).
+- `/health` Healthy (database Healthy, environment Staging); `/health/live` 200; Swagger UI + JSON 200; đăng nhập admin staging → token; **119/119** `GetAll` 200; OrganizationUnit 33, UserGroup 16, v1 shifts 200; LocationTracking ghi IP client.
+- `dotnet build --no-incremental` 0 lỗi / 10 cảnh báo; `dotnet test` 71/71.
+- Hash mật khẩu ở 3 nơi (C#/PowerShell, Node, `md5sum` trong container) cho cùng kết quả.
+AC: [x] staging backend chạy được từ máy sạch theo README (cách A / B) · [x] `/health` xanh · [x] Swagger staging mở được · [x] đăng nhập qua API và gọi được API danh mục. (Cách C Docker: chưa kiểm được.)
+Bí mật staging trên máy anh: `deploy/staging.local.md`, `deploy/staging.local.env.ps1` (gitignore, không commit).

@@ -1,0 +1,56 @@
+### DELICARE – Lát R1.0 Nền móng: đăng nhập, sức khỏe, phân quyền, sổ chỉ ghi thêm
+### VS Code REST Client. Đổi @base / @password theo môi trường (staging: deploy/staging.local.md).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+
+### 1. Sức khỏe API + DB (không cần đăng nhập)
+GET {{base}}/health
+
+### 2. Đăng nhập
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### 3. Không token → 401 (route cũ)
+GET {{base}}/api/OrganizationUnit/GetAll?Page=1&PageSize=5
+
+### 4. Không token → 401 dạng envelope (route v1)
+GET {{base}}/api/v1/hr/shifts
+
+### 5. Cây tổ chức đã seed (33 đơn vị theo ORG_STRUCTURE)
+GET {{base}}/api/OrganizationUnit/GetAll?Page=1&PageSize=50&SortField=code&SortOrder=ascend
+Authorization: Bearer {{token}}
+
+### 6. Nhóm quyền đã seed (16 vai trò)
+GET {{base}}/api/UserGroup/GetAll?Page=1&PageSize=50
+Authorization: Bearer {{token}}
+
+### 7. Menu theo màn hình mockup (MetaLink #/<screen-id>)
+GET {{base}}/api/ObjectMenu/GetAll?Page=1&PageSize=20
+Authorization: Bearer {{token}}
+
+### 8. Quyền của một nhóm (thay <UserGroupId> bằng Id lấy ở bước 6, vd. OPS-SCM)
+GET {{base}}/api/UserRole/GetByUserGroupId?userGroupId=<UserGroupId>
+Authorization: Bearer {{token}}
+
+### 9. Sổ kho chỉ ghi thêm: route cũ không còn Update / Delete → 404 / 405
+DELETE {{base}}/api/InventoryTransaction/Delete?id=00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+### 10. Đảo bút toán kho (thay <TransactionId>) – lần 2 trả 409 INVALID_TRANSITION
+POST {{base}}/api/v1/scm/inventory-transactions/<TransactionId>/reverse
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-reverse-001
+
+{ "reason": "[DEMO] Nhập nhầm số lượng" }
+
+### 11. Lịch sử thay đổi của một bản ghi (thay <Table>/<Id>)
+GET {{base}}/api/v1/audit/OrganizationUnit/<Id>/history?take=20
+Authorization: Bearer {{token}}

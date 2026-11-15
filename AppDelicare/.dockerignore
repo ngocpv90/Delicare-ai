@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/node_modules/
+**/appsettings.Development.json
+**/*.local.*
+**/wwwroot/Logs/
+**/wwwroot/Import/
+AppDelicare.Tests/
+ClinicManagement.Generator/
+packages/

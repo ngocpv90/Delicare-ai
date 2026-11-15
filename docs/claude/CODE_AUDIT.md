@@ -23,6 +23,8 @@ Kết luận: **nâng cấp dần, không viết lại**. Nền móng (.NET 8, A
 | A16 | DB dev: `uspSystem_BackupDB` (`DB/sp/uspSystem_BackupDB.sql`) | Tên "Backup" nhưng thực chất **RESTORE … WITH REPLACE** ghi đè DB `AppDelicare` từ một file .bak với đường dẫn máy viết cứng. Code không gọi. Không bao giờ chạy SP này. | Cao | D-26 |
 | A17 | `WebApi/*.csproj` | Gói `AutoMapper 13.0.1` có 3 cảnh báo lỗ hổng mức cao (NU1903). | Trung bình | Giữ 13.0.1 – chờ D-27 (bản vá 15.1.4+ là license thương mại) |
 | A18 | `Data/Repositories/Repository.cs` `GetAllNoneDeleted()` | Tên hàm nói "không lấy bản ghi đã xóa" nhưng **không lọc `IsDeleted`** (trả cả bản ghi đã xóa mềm). Mọi chỗ gọi hàm này đều có thể lộ dữ liệu đã xóa. (T03 phát hiện.) | Cao | T05 (sửa trong Repository + CodeGen) – **ĐÃ SỬA T05** |
+| A19 | `Model/Helper/EncriptFunctionsHelper.cs` | **Mật khẩu băm MD5 không salt** (`GeneratePassword`). Lộ bảng User là dò ra mật khẩu yếu rất nhanh. (T48.1 phát hiện.) | Cao | Đề xuất task riêng: PBKDF2 / BCrypt + nâng hash dần khi user đăng nhập (giữ đăng nhập được với hash cũ) – D-29 |
+| A20 | `Services/Implement/LoginService.cs` | Mỗi lần đăng nhập gọi `api.iplocation.net` (lấy IP công khai của **server**, gửi request ra Internet, lỗi khi không có mạng); user không có Person → đăng nhập lỗi 500. | Trung bình | **ĐÃ SỬA T48.1**: ghi IP client từ request; null-safe Person |
 | A13 | Angular `app-delicare-client` | Vẫn là template w3crm + màn hình phòng khám (patient, medical…). Chưa có màn hình nghiệp vụ DELICARE. `jwt.interceptor` chỉ xử lý 401/403. Service gọi `.../GetAll?...` theo route cũ. | Trung bình | DEFERRED(FE) – ngoài phạm vi hiện tại (D-20) |
 
 ## B. Điểm tốt cần giữ

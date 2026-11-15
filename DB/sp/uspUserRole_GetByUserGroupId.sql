@@ -37,9 +37,10 @@ BEGIN
 		LEFT JOIN ObjectMenu AS om
 			ON om.Id = ur.ObjectMenuId
 				AND om.IsDeleted = 0
-		WHERE ur.UserGroupId IN (SELECT
-				value
-			FROM STRING_SPLIT(@ListUserGroupId, ','))
+		-- T48.1: user chưa thuộc nhóm nào (chuỗi rỗng) / phần tử không phải GUID → bỏ qua thay vì lỗi chuyển kiểu.
+		WHERE ur.UserGroupId IN (SELECT TRY_CONVERT(UNIQUEIDENTIFIER, LTRIM(RTRIM(value)))
+			FROM STRING_SPLIT(ISNULL(@ListUserGroupId, ''), ',')
+			WHERE TRY_CONVERT(UNIQUEIDENTIFIER, LTRIM(RTRIM(value))) IS NOT NULL)
 		AND om.IsActive = 1
 		AND ur.IsDeleted = 0
 

@@ -1,0 +1,58 @@
+# DELICARE – staging thử nghiệm bằng Docker (T48.1): SQL Server + khởi tạo DB + API. KHÔNG có Angular.
+# Chạy từ thư mục gốc repo:
+#   copy deploy/docker/staging.env.example deploy/docker/staging.env   (điền mật khẩu / khóa – file này KHÔNG commit)
+#   docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env up -d --build
+# Mở: http://localhost:8080/swagger , http://localhost:8080/health
+name: delicare-staging
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD:?Đặt SA_PASSWORD trong staging.env}
+      MSSQL_PID: Developer
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "14333:1433"
+    volumes:
+      - delicare-sql:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD}
+      DB_NAME: ${DB_NAME:-AppDelicare}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Đặt ADMIN_PASSWORD trong staging.env}
+    volumes:
+      - ../../docs/reference:/repo/docs/reference:ro
+      - ../../DB:/repo/DB:ro
+      - ./db-init.sh:/db-init.sh:ro
+    entrypoint: ["/bin/bash", "/db-init.sh"]
+    restart: "no"
+
+  api:
+    build:
+      context: ../../AppDelicare
+      dockerfile: ClinicManagement.WebApi/Dockerfile
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=sa;Password=${SA_PASSWORD};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Đặt JWT_SIGNING_KEY (>= 32 ký tự) trong staging.env}
+      Licenses__GemBox: ${GEMBOX_LICENSE:-}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  delicare-sql:

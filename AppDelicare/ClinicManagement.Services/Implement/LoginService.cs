@@ -15,7 +15,8 @@ using System.Security.Claims;
 namespace AppDelicare.Services.Implement
 {
     public class LoginService(ITokenFactoryService tokenFactory, IJwtFactoryService jwtFactory, IOptions<JwtIssuerOptions> jwtOptions
-        , IUnitOfWork unitOfWork, IOptions<AppSettingHelper> options, IUserRoleService userRoleService, ICurrentActor currentActor) : ILoginService
+        , IUnitOfWork unitOfWork, IOptions<AppSettingHelper> options, IUserRoleService userRoleService, ICurrentActor currentActor
+        , Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor) : ILoginService
     {
         private readonly ITokenFactoryService _tokenFactory = tokenFactory;
         private readonly IJwtFactoryService _jwtFactory = jwtFactory;
@@ -24,6 +25,7 @@ namespace AppDelicare.Services.Implement
         private readonly AppSettingHelper _appSettingHelper = options.Value;
         private readonly IUserRoleService _userRoleService = userRoleService;
         private readonly ICurrentActor _currentActor = currentActor;
+        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public async Task<Response<AuthenticateResponse>> Authenticate(LoginRequest request)
         {
@@ -58,31 +60,18 @@ namespace AppDelicare.Services.Implement
             var id = user.Id;
             var userName = user.UserName ?? string.Empty;
             var person = await _unitOfWork.PersonRepository.GetSingleAsync(x => x.Id == user.PersonId);
-            var fullName = person.FullName ?? string.Empty;
-            var avatar = !string.IsNullOrEmpty(person.Avatar) ? Path.Combine(_appSettingHelper.DomainFile ?? string.Empty, ConstantHelper.Import, ConstantHelper.FolderName.PERSON_IMAGE, person.Avatar) : string.Empty;
+            // T48.1: user chưa có hồ sơ Person (vd. admin của DB mới) không được làm lỗi đăng nhập.
+            var fullName = person?.FullName ?? string.Empty;
+            var avatar = !string.IsNullOrEmpty(person?.Avatar) ? Path.Combine(_appSettingHelper.DomainFile ?? string.Empty, ConstantHelper.Import, ConstantHelper.FolderName.PERSON_IMAGE, person!.Avatar!) : string.Empty;
             List<string> listUserGroupId = [.. _unitOfWork.UserClaimRepository.GetAll().Where(x => x.UserId == id && !x.IsDeleted).Select(x => x.UserGroupId.ToString())];
             var lstUserGroupId = listUserGroupId.Count != 0 ? string.Join(ConstantHelper.Comma, listUserGroupId) : string.Empty;
             List<string> listUserGroupName = [.. _unitOfWork.UserGroupRepository.GetAll().Where(x => listUserGroupId.Contains(x.Id.ToString()) && !x.IsDeleted).Select(x => x.Name)];
             var userGroupName = listUserGroupName.Count != 0 ? string.Join(ConstantHelper.CommaSpace, listUserGroupName) : string.Empty;
             var pcName = Dns.GetHostName();
-            var iPv4 = ConstantHelper.NotFound;
+            // T48.1 (CODE_AUDIT A20): trước đây gọi api.iplocation.net mỗi lần đăng nhập (lấy IP công khai của SERVER, gửi request ra
+            // Internet, lỗi khi không có mạng). Nay ghi IP của CLIENT gửi request.
+            var iPv4 = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? ConstantHelper.NotFound;
             var isAdmin = user.IsAdmin;
-            using (HttpClient client = new())
-            {
-                client.DefaultRequestHeaders.Accept.Clear();
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                //HttpResponseMessage responseV4 = await client.GetAsync("http://ipv4.iplocation.net");
-                HttpResponseMessage responseV4 = await client.GetAsync("https://api.iplocation.net/v2/get-ip");
-                if (responseV4.IsSuccessStatusCode)
-                {
-                    var getIpV4 = await responseV4.Content.ReadAsStringAsync();
-                    var resultIpV4 = JsonConvert.DeserializeObject<IpLocationResponse>(getIpV4);
-                    if (resultIpV4?.response_code == 200)
-                    {
-                        iPv4 = resultIpV4.ip;
-                    }
-                }
-            }
             var listMenu = (await _userRoleService.GetByUserGroupId(lstUserGroupId, false)).Data?.ListMenu;
             ClaimsIdentity identity = await GetClaimsIdentity(request);
             claims.Add(new Claim(ClaimTypes.Role, userName));

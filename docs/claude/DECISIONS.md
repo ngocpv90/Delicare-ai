@@ -26,6 +26,7 @@
 ## B. Chờ anh chốt (Claude Code: task phụ thuộc thì để BLOCKED, làm task khác)
 | Mã | Câu hỏi | Đề xuất của em | Ảnh hưởng |
 |---|---|---|---|
+| D-29 | (T48.1) **Mật khẩu đang băm MD5 không salt** (CODE_AUDIT A19). | Làm 1 task nhỏ trước go-live: băm PBKDF2 (có sẵn trong .NET) + tự nâng hash khi user đăng nhập thành công, tương thích hash cũ. | T48.2 |
 | D-26 | (T00) **Endpoint nguy hiểm `GET api/AuditChange/DeleteData`** (CODE_AUDIT A14): mọi user đăng nhập đều xóa vật lý được bản ghi đã xóa mềm ở mọi bảng, kể cả sổ append-only. SP `uspSystem_BackupDB` thực chất là RESTORE ghi đè DB (A16). | Gỡ endpoint (và `LocationTracking/DeleteData`) – không cần xét Angular (D-20). `uspSystem_BackupDB`: giữ file tham khảo, không chạy; xóa khỏi DB dev do anh quyết. | T05 |
 | D-27 | (T04) **AutoMapper 13.0.1 có 3 lỗ hổng DoS mức cao.** Bản vá chỉ từ 15.1.4, mà từ v15 AutoMapper là **license thương mại**. | Thay AutoMapper bằng Mapster (MIT) / map tay khi làm CodeGen T05; hoặc anh mua / đăng ký license rồi em nâng 15.1.4+. Ngắn hạn giữ 13.0.1 (chỉ map entity nội bộ). | T05 |
 | D-05 | Hangfire lưu job ở đâu? Luật cấm tạo bảng trong DB nghiệp vụ. | Một **database riêng** `DelicareOps` cho Hangfire. Trước khi chốt thì dùng InMemory. | T23 |
@@ -71,3 +72,4 @@ Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ g
 | GAP-PERM-03 | `UserGroup` không có cột Code. | `UserGroup.Name` = mã vai trò (CEO, OPS-SCM…, ORG_STRUCTURE mục 2). 20 nhóm cũ trong DB dev ("1"…"17", "123", "Administrator") **không xóa** – anh dọn khi UAT. | PROPOSED | T07 |
 | GAP-PERM-04 | Bảng không có màn hình riêng trong mockup (Patient, Person, DocumentFile, bảng hệ thống…). | Quyền theo màn `dbx-explorer` (Database Explorer). | PROPOSED – BA/PO CONFIRM | T07 |
 | GAP-INV-01 | Bút toán đảo: loại giao dịch và số chứng từ. | `TransactionType = ADJUSTMENT`, `ReferenceType = REVERSAL`, `ReferenceId` = dòng gốc, `Reason` bắt buộc; số = số gốc + "-R" (mã chuẩn ở T11). Không đảo 2 lần, không đảo bút toán đảo; đảo phiếu nhập đã xuất bớt → 422 INSUFFICIENT_STOCK. Quyền: `Edit` trên `#/scm-inv-txn`. | PROPOSED – BA/PO CONFIRM | T08 |
+| GAP-DEP-01 | DB staging mới cần schema + tài khoản admin ban đầu. | `Deploy-Database.ps1 -CreateSchemaIfEmpty` chạy **DDL chuẩn của PO** chỉ khi DB **rỗng** (không bao giờ sửa bảng có sẵn); admin tạo bằng `DB/seed/00_Admin_seed.sql`, mật khẩu truyền lúc chạy. Trên máy anh đã tạo `AppDelicare_Staging` (LocalDB) theo cách này. | PROPOSED – anh xác nhận cách dựng DB staging / UAT | T48.1 |
