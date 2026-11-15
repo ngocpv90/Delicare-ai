@@ -18,6 +18,10 @@ Kết luận: **nâng cấp dần, không viết lại**. Nền móng (.NET 8, A
 | A10 | `Delete` trong service sinh tự động | Kiểm tra tham chiếu bằng SQL động qua `uspSystem_ExecuteQuery` và tải toàn bộ metadata FK mỗi lần xóa. Do DB không có FK vật lý nên kiểm tra này gần như vô hiệu. | Trung bình | T07 (thay bằng `ReferenceGuard` theo quan hệ logic) |
 | A11 | `DatabaseContext` | Kế thừa `IdentityDbContext`. Các bảng `AspNet*` **không có** trong 124 bảng, cần xác minh không có code nào dùng Identity store. Ngoài ra dùng `DateTime.Now`. | Thấp | T05 |
 | A12 | `ClinicManagement.Generator` | T4 + OrmLite chỉ chạy được trong Visual Studio và đọc schema từ DB live. Claude Code trong VS Code không chạy được. | Thấp | T05 (thay bằng `tools/AppDelicare.CodeGen` đọc file DDL) |
+| A14 | `WebApi/Controllers/AuditChangeController.cs:60` → `AuditChangeService.DeleteData()` | **`GET api/AuditChange/DeleteData`**: bất kỳ user đã đăng nhập nào gọi một lệnh GET là **xóa vật lý** mọi bản ghi `IsDeleted = 1` ở **mọi bảng** (kể cả sổ append-only), qua SQL động `uspSystem_ExecuteQuery`. Không kiểm tra quyền, không ghi AuditChange. (T00 phát hiện 2026-11-14; cần xem thêm `LocationTrackingController` `DeleteData`.) | Rất cao | Đề xuất tắt ngay (D-21) |
+| A15 | DB dev ↔ code | **74 SP `usp<Entity>_GetAll` code gọi nhưng DB không có** → các route `GetAll` tương ứng trả 500 (đã thử `api/Customer/GetAll`). Danh sách: `DB/sp/_MISSING_FROM_DB.md`. | Cao | T05 |
+| A16 | DB dev: `uspSystem_BackupDB` (`DB/sp/uspSystem_BackupDB.sql`) | Tên "Backup" nhưng thực chất **RESTORE … WITH REPLACE** ghi đè DB `AppDelicare` từ một file .bak với đường dẫn máy viết cứng. Code không gọi. Không bao giờ chạy SP này. | Cao | D-21 |
+| A17 | `WebApi/*.csproj` | Gói `AutoMapper 13.0.1` có 3 cảnh báo lỗ hổng mức cao (NU1903). | Trung bình | T04 |
 | A13 | Angular `app-delicare-client` | Vẫn là template w3crm + màn hình phòng khám (patient, medical…). Chưa có màn hình nghiệp vụ DELICARE. `jwt.interceptor` chỉ xử lý 401/403. Service gọi `.../GetAll?...` theo route cũ. | Trung bình | DEFERRED(FE) – ngoài phạm vi hiện tại (D-20) |
 
 ## B. Điểm tốt cần giữ

@@ -48,7 +48,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 
 ## GIAI ĐOẠN 0 – Chuẩn bị
 
-### T00 – Khởi tạo môi trường làm việc · `TODO`
+### T00 – Khởi tạo môi trường làm việc · `DONE` (2026-11-14)
 - **Cài lệnh tắt:** nếu chưa có thư mục `.claude/` ở gốc repo thì sao chép `docs/claude/claude-config/commands/*` → `.claude/commands/` và `docs/claude/claude-config/settings.json` → `.claude/settings.json`. Báo anh: từ phiên sau có thể gõ `/next`, `/task T13`, `/status`, `/verify`, `/gap`.
 - Repo đã có git. Chạy `git status`, `git branch -a`, `git log --oneline -5`, `git remote -v`. Ghi lại nhánh hiện tại và các file đang sửa dở.
   - **Không đụng** vào các file anh đang sửa dở. Ví dụ ngày 10/11: `IngredientService`, `CompanyService`, `SupplierService`, `WarehouseService`…
@@ -67,12 +67,12 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
   - Chạy WebApi, gọi `POST api/Authentication/Login` bằng tài khoản dev admin (LOCAL_DEV.local.md) qua Swagger hoặc `.http`, rồi gọi thử 1 API có `[Authorize]`.
 - Liệt kê bí mật đang nằm trong code **theo vị trí file** (không ghi giá trị).
 - AC:
-  - [ ] Nhánh `chore/T00-claude-setup` có commit tài liệu.
-  - [ ] PROGRESS có kết quả build backend.
-  - [ ] Có báo cáo lệch giữa DB dev và DDL 124 bảng (hoặc ghi rõ chưa kết nối được và lý do).
-  - [ ] `DB/sp/` chứa toàn bộ SP lấy từ DB dev; có danh sách SP code gọi mà DB thiếu.
-  - [ ] Đăng nhập qua API thành công, nhận token, gọi được API có bảo vệ.
-  - [ ] Có danh sách vị trí bí mật.
+  - [x] Nhánh `chore/T00-claude-setup` có commit tài liệu.
+  - [x] PROGRESS có kết quả build backend.
+  - [x] Có báo cáo lệch giữa DB dev và DDL 124 bảng (hoặc ghi rõ chưa kết nối được và lý do).
+  - [x] `DB/sp/` chứa toàn bộ SP lấy từ DB dev; có danh sách SP code gọi mà DB thiếu.
+  - [x] Đăng nhập qua API thành công, nhận token, gọi được API có bảo vệ.
+  - [x] Có danh sách vị trí bí mật.
 
 ---
 
