@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
-- Task đang làm: **T45B** – T45B.1, .2, .3 DONE; kế tiếp T45B.4 (P2 riêng: công thức, giá thành) → .5, rồi T49
-- Nhánh: `feat/T45B.3-p1-special` (chuỗi T00 → … → T45B.3; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 103/103 xanh
+- Task đang làm: **T45B** – T45B.1–.4 DONE; kế tiếp T45B.5 (bàn giao frontend, /meta/statuses, /meta/reference-lists), rồi T49
+- Nhánh: `feat/T45B.4-p2-special` (chuỗi T00 → … → T45B.4; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 108/108 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -310,3 +310,16 @@ Còn lại (→ T45B.5): `/meta/statuses`, `/meta/reference-lists`, refresh toke
   - Kho: `GET /scm/warehouses/{id}/layout` (khu + nhiệt độ + vị trí, dùng StorageZoneId).
   - `IUomService.ConvertAsync` + `GET /scm/uom-conversions/convert`: chiều xuôi, ngược, qua đơn vị trung gian (BFS), chỉ quy đổi đang hiệu lực; không có → 422 UOM_CONVERSION_MISSING.
 Kiểm tra: build 0 lỗi / 10 cảnh báo; test **103/103** (+5) phủ từng mục trên. SQL Server thật: danh sách khách / nguyên liệu (có trường tính toán), lọc effectiveOn, overview (404 khi không có), convert (422 khi thiếu quy đổi), users / org tree / meta me / menu đều chạy, log không lỗi.
+
+### T45B.4 – API riêng của P2 (công thức, giá thành, chính sách giá) · 2026-11-14 · DONE
+Đã làm (`AppDelicare.Application/Menu/Recipes.cs`, `WebApi/Controllers/V1/Menu/P2Controllers.cs`):
+- **Phiên bản công thức** (không có bảng RecipeVersion – mỗi phiên bản là một Recipe cùng DishId): `GET /menu/dishes/{dishId}/recipes` (mới nhất trước, kèm dòng + chi phí / suất); `POST /menu/dishes/{dishId}/recipes` (VersionNo = max + 1, VersionCode = {mã món}-V{n}, Draft, sao chép dòng từ bản nguồn; chặn khi đã có bản Draft / PendingApproval → 409).
+- **Dòng định lượng** chỉ khi Draft: `POST /menu/recipes/{id}/lines`, `PUT` / `DELETE /menu/recipe-lines/{id}` (quantity > 0, nguyên liệu / đơn vị phải tồn tại, ghi song song UomId).
+- **Duyệt**: `submit` (≥ 1 dòng → PendingApproval + ApprovalRequest RECIPE_VERSION), `approve` / `reject` (quyền Approve – nhóm CEO, COO; từ chối bắt buộc lý do → về Draft) – GAP-P2-01.
+- **Khóa** `POST /menu/recipes/{id}/lock {effectiveFrom}` – spec 5.2 bước 1–5: bản hiệu lực cũ → Obsolete (EffectiveTo = from − 1), bản này Locked / IsActive / LockedAt / LockedBy, SnapshotJson, StandardCost mới (cũ → Inactive), Dishe.StandardCost.
+- **Giá thành** `GET /menu/recipes/{id}/cost?mealCount&on` – bước 6 qua `IRecipeCostCalculator` (giá NCC ưu tiên đang hiệu lực + UomService); dòng thiếu giá / thiếu quy đổi có `warning`, `complete = false`. `POST /production/standard-costs/recalculate` chạy lại bước 4–5 với giá hiện hành – GAP-P2-02.
+- **Món**: danh sách thêm `activeRecipe` + `estimatedMaterialCost`.
+- **Chính sách giá**: chặn chồng hiệu lực (422); `GET /sales/price-policies/resolve` (hợp đồng → khách → ContractMeal) – GAP-P2-03.
+- CRUD chuẩn: convention **gỡ action không được phép** (resource chỉ đọc không còn POST / PUT / DELETE – Swagger đúng thực tế, không chiếm route của API nghiệp vụ như `PUT /menu/recipe-lines/{id}`).
+
+Kiểm tra: build 0 lỗi / 10 cảnh báo; test **108/108** (+5): vòng đời đầy đủ V1 → khóa → V2 sao chép → khóa → V1 Obsolete (EffectiveTo đúng), chi phí có quy đổi g → kg (20 400 / suất), StandardCost Active / Inactive, Dishe.StandardCost, ApprovalRequest Approved, sửa dòng khi không Draft 409, khóa khi chưa duyệt 409; tính lại theo giá mới; thiếu giá → cảnh báo; tra đơn giá theo thứ tự + chồng hiệu lực 422 + nối tiếp hợp lệ; OPS-PLAN không duyệt được (403). **SQL Server thật** (transaction rồi rollback): tạo → dòng → gửi → duyệt → khóa, LockedAt / SnapshotJson / StandardCost 9 900 / UomId đúng, không để lại dữ liệu.

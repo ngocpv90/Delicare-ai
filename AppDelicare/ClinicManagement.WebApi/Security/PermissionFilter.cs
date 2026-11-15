@@ -116,6 +116,9 @@ namespace AppDelicare.WebApi.Security
             }
             var resource = AppDelicare.Application.Common.Crud.ResourceRegistry.Find(attr.Module, attr.Path)
                 ?? throw new InvalidOperationException($"Resource {attr.Module}/{attr.Path} chưa khai báo trong ResourceRegistry.");
+            // Gỡ action không được phép (resource chỉ đọc…) để không chiếm route của API nghiệp vụ riêng và Swagger đúng thực tế.
+            controller.Actions.Where(a => (a.ActionName == "Create" && !resource.CanCreate) || (a.ActionName == "Update" && !resource.CanUpdate)
+                || (a.ActionName == "Delete" && !resource.CanDelete)).ToList().ForEach(a => controller.Actions.Remove(a));
             foreach (var action in controller.Actions)
             {
                 var permission = action.ActionName switch

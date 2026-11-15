@@ -130,11 +130,11 @@ namespace AppDelicare.Application.Common.Crud
 
             // ---- P2 – món, công thức, chính sách ---------------------------------------------------
             new("menu-dish-cat", "menu", "dish-categories", "DishCategorie"),
-            new("menu-dish", "menu", "dishes", "Dishe"),
+            new("menu-dish", "menu", "dishes", "Dishe") { Enrich = Menu.P2Hooks.DishEnrich },
             new("menu-recipe", "menu", "recipes", "Recipe") { CanCreate = false, CanUpdate = false, CanDelete = false },
             new("menu-recipe-line", "menu", "recipe-lines", "RecipeLine") { CanCreate = false, CanUpdate = false, CanDelete = false },
             new("cost-standard", "production", "standard-costs", "StandardCost") { CanCreate = false, CanUpdate = false, CanDelete = false },
-            new("crm-price-policy", "sales", "price-policies", "PricePolicie") { Rules = PricePolicyRules },
+            new("crm-price-policy", "sales", "price-policies", "PricePolicie") { Rules = async c => { await PricePolicyRules(c); await Menu.P2Hooks.PricePolicyNoOverlap(c); } },
             new("qc-checklist", "qc", "checklists", "FoodSafetyChecklist"),
             new("qc-checklist-item", "qc", "checklist-items", "FoodSafetyChecklistItem"),
             new("prod-line", "production", "lines", "ProductionLine"),

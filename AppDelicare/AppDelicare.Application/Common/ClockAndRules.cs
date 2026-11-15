@@ -59,5 +59,11 @@ namespace AppDelicare.Application.Common
         };
         public int ExpiringLotDays { get; set; } = 7;
         public int ShortageForecastDays { get; set; } = 3;
+        /// <summary>Spec 5.2 bước 4: chi phí nhân công / suất khi khóa công thức (PROPOSED – BA/PO CONFIRM).</summary>
+        public decimal RecipeLaborCostPerServing { get; set; }
+        /// <summary>Spec 5.2 bước 4: chi phí chung / suất (PROPOSED – BA/PO CONFIRM).</summary>
+        public decimal RecipeOverheadCostPerServing { get; set; }
+        /// <summary>Số suất chuẩn của định lượng công thức khi Recipe.StandardOutputQty trống (spec 5.2: 100 suất).</summary>
+        public decimal RecipeStandardServings { get; set; } = 100;
     }
 }

@@ -14,6 +14,7 @@ namespace AppDelicare.Application
             services.AddSingleton<IClock, SystemClock>();
             services.AddScoped<Common.Crud.ICrudService, Common.Crud.CrudService>();
             services.AddScoped<MasterData.IUomService, MasterData.UomService>();
+            services.AddScoped<Menu.IRecipeCostCalculator, Menu.RecipeCostCalculator>();
             services.AddScoped<Dispatcher>();
             services.AddScoped<IDispatcher>(sp => sp.GetRequiredService<Dispatcher>());
             services.AddScoped<IDomainEventCollector>(sp => sp.GetRequiredService<Dispatcher>());
