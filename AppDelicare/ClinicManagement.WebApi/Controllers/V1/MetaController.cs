@@ -1,4 +1,5 @@
 using AppDelicare.Application.Common;
+using AppDelicare.Application.Common.Crud;
 using AppDelicare.Application.Common.Lookups;
 using AppDelicare.WebApi.Api;
 using AppDelicare.WebApi.Security;
@@ -8,8 +9,26 @@ namespace AppDelicare.WebApi.Controllers.V1
 {
     /// <summary>API hỗ trợ giao diện (Spec 2.2) – <c>/api/v1/meta</c>. Controller mỏng: chỉ gửi query tới tầng Application.</summary>
     [Route(RoutePrefix + "/meta")]
-    public sealed class MetaController(IDispatcher dispatcher) : ApiControllerBase
+    public sealed class MetaController(IDispatcher dispatcher, ICrudService crud) : ApiControllerBase
     {
+        /// <summary>Danh sách resource CRUD chuẩn (màn hình → route → quyền thao tác) – dùng cho frontend.</summary>
+        [HttpGet("resources")]
+        [SkipPermission]
+        [ProducesResponseType(typeof(ApiEnvelope<IReadOnlyList<object>>), StatusCodes.Status200OK)]
+        public IActionResult Resources()
+            => Ok(ResourceRegistry.All.Select(r => new { r.Screen, route = "/" + r.Route, r.Table, r.CanCreate, r.CanUpdate, r.CanDelete }).ToList());
+
+        /// <summary>Mô tả trường của một resource (kiểu, bắt buộc, độ dài, tham chiếu, nhãn) để dựng form / bảng.</summary>
+        /// <response code="404">NOT_FOUND – không có resource.</response>
+        [HttpGet("schema/{module}/{resource}")]
+        [SkipPermission]
+        [ProducesResponseType(typeof(ApiEnvelope<ResourceSchema>), StatusCodes.Status200OK)]
+        public IActionResult Schema(string module, string resource)
+        {
+            var r = ResourceRegistry.Find(module, resource);
+            return r == null ? throw ApiException.NotFound($"Không có resource {module}/{resource}.") : Ok(crud.Schema(r));
+        }
+
         /// <summary>Dropdown tham chiếu cho một bảng.</summary>
         /// <remarks>
         /// Ví dụ: <c>GET /api/v1/meta/lookups/Customer?q=ánh dương&amp;take=20</c>, hoặc lấy nhãn theo Id: <c>?ids=…&amp;ids=…</c>.

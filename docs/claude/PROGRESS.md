@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
-- Task đang làm: T10, T21.1 DONE – kế tiếp **T45B** (API màn hình P0–P2) → T49
-- Nhánh: `feat/T21.1-shift-seed` (chuỗi T00 → … → T10 → T21.1; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 83/83 xanh
+- Task đang làm: **T45B** – T45B.1 DONE (CRUD chuẩn 39 resource); kế tiếp T45B.2 (P0 riêng) → .3 → .4 → .5, rồi T49
+- Nhánh: `feat/T45B-api-p0-p2` (chuỗi T00 → … → T21.1 → T45B; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 91/91 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -273,3 +273,14 @@ AC: [x] 1 use case mẫu (`Common.LookupQuery`) chạy end-to-end và có test.
 Kèm theo: log chuyển từ `wwwroot/Logs` sang `Logs/` (ngoài thư mục web tĩnh). Đã kiểm: `/Logs/*.log` hiện trả 404 (kiểu .log không được phục vụ) nên **chưa lộ**, nhưng để trong wwwroot dễ lộ nếu bật phục vụ mọi kiểu file, bị đóng gói khi publish và khóa file khi build.
 Kiểm tra: test 83/83 (SeedTests kiểm thêm 4 ca, không trùng mã).
 AC (phần seed của T21): [x] 4 ca TRUA, TOI, DEM_23H, SANG_6H.
+
+### T45B.1 – CRUD chuẩn v1 cho màn hình P0–P2 · 2026-11-14 · DONE
+Đã làm:
+- CodeGen sinh `AppDelicare.Application/Common/Crud/TableMetadata.Generated.cs`: mỗi bảng – cột (kiểu, NOT NULL không DEFAULT, độ dài, audit, deprecated + cột thay thế, bảng đích theo LOGICAL_RELATIONS), UNIQUE, cột nhãn, cột tìm kiếm.
+- `ResourceRegistry`: **39 resource** cho 34 màn P0–P2 (`/api/v1/{module}/{resource}` theo spec mục 3–5), cờ CanCreate / CanUpdate / CanDelete (audit-changes, access-logs, recipes, recipe-lines, standard-costs: chỉ đọc – ghi qua API nghiệp vụ T45B.4), luật riêng theo spec: org-unit chặn vòng cha–con, object-menu MetaLink duy nhất, delivery-location khung giờ + tọa độ, ingredient YieldPercent / StandardWastePercent / ShelfLifeDays, uom-conversion factor > 0 + from ≠ to + không trùng cặp, inventory-policy Min ≤ Safety ≤ Reorder ≤ Max + một dòng / (nguyên liệu, kho), price-policy UnitPrice > 0.
+- `CrudService` (Application): danh sách (page / pageSize / q / sort / lọc theo cột camelCase / `xxxFrom` `xxxTo`), `summary` (total + byStatus), chi tiết + ETag + `{field}Label` cho cột tham chiếu, POST / PUT (chỉ trường gửi lên) / DELETE mềm. Kiểm tra: bắt buộc (gồm cột thay thế của cột cũ NOT NULL), kiểu, độ dài, trường lạ / cột deprecated / chỉ đọc → 400; UNIQUE + Code → 409 DUPLICATE; tham chiếu → 422 REF_NOT_FOUND; If-Match → 409; đang dùng → 409 IN_USE (ReferenceGuard). Ghi song song cột deprecated. Không trả mật khẩu / cột xóa mềm. Truy vấn động bằng expression tree (có tham số).
+- WebApi: `CrudResourceController` + 39 controller con (route tường minh, Swagger nhóm theo module); quyền theo màn qua `PermissionConvention` (đọc → View, POST → Add, PUT → Edit, DELETE → Delete); POST có `[Idempotent]`. `GET /api/v1/meta/resources`, `GET /api/v1/meta/schema/{module}/{resource}` (trường, kiểu, bắt buộc, độ dài, bảng tham chiếu, trường nhãn) cho frontend.
+
+Kiểm tra:
+- Build 0 lỗi / 10 cảnh báo; test **91/91** (+8): vòng tạo / đọc / danh sách / summary; 400 trường lạ / sai kiểu / quá dài / cột deprecated / thiếu cột thay thế; 409 DUPLICATE; 422 REF_NOT_FOUND (đúng field); nhãn tham chiếu; If-Match 409; xóa đang dùng 409 IN_USE; ghi song song FromUomId; luật uom-conversion; resource chỉ đọc 405; phân quyền theo màn (xem được, thêm 403, màn khác 403); schema + danh sách resource.
+- **SQL Server thật**: 39 resource × (danh sách có sort + summary) = **78/78 200**; tạo kho `[DEMO]` 201 → trùng 409 → sửa ETag mới 200 / cũ 409 → xóa 204 → đọc 404; lịch sử có Added + Modified; log không lỗi.

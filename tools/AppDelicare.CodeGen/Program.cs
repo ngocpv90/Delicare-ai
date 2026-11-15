@@ -108,6 +108,12 @@ if (Layer("automapper"))
     Write(P("ClinicManagement.WebApi", "Infrastructure", "AutoMapperGeneratedProfile.cs"), Templates.AutoMapperProfile(mapped), true);
 }
 
+// T45B: metadata bảng cho bộ CRUD v1 generic.
+if (Layer("crud"))
+{
+    Write(P("AppDelicare.Application", "Common", "Crud", "TableMetadata.Generated.cs"), CrudMetadataGen.Generate(tables, meta), true);
+}
+
 // T07: bản đồ màn hình / quan hệ + seed tổ chức, menu, nhóm quyền (luôn sinh lại – nguồn là tài liệu).
 if (Layer("security"))
 {

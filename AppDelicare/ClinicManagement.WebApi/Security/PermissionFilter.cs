@@ -73,6 +73,11 @@ namespace AppDelicare.WebApi.Security
 
         public void Apply(ControllerModel controller)
         {
+            if (typeof(Controllers.V1.Crud.CrudResourceController).IsAssignableFrom(controller.ControllerType))
+            {
+                ApplyCrud(controller);
+                return;
+            }
             if (!typeof(BaseController).IsAssignableFrom(controller.ControllerType))
             {
                 return;
@@ -97,6 +102,32 @@ namespace AppDelicare.WebApi.Security
                 foreach (var selector in action.Selectors)
                 {
                     selector.EndpointMetadata.Add(filter);
+                }
+            }
+        }
+
+        /// <summary>T45B: resource CRUD chuẩn – màn theo ResourceRegistry, thao tác theo action.</summary>
+        private static void ApplyCrud(ControllerModel controller)
+        {
+            var attr = (Controllers.V1.Crud.CrudResourceAttribute?)Attribute.GetCustomAttribute(controller.ControllerType, typeof(Controllers.V1.Crud.CrudResourceAttribute));
+            if (attr == null)
+            {
+                return;
+            }
+            var resource = AppDelicare.Application.Common.Crud.ResourceRegistry.Find(attr.Module, attr.Path)
+                ?? throw new InvalidOperationException($"Resource {attr.Module}/{attr.Path} chưa khai báo trong ResourceRegistry.");
+            foreach (var action in controller.Actions)
+            {
+                var permission = action.ActionName switch
+                {
+                    "Create" => PermissionAction.Add,
+                    "Update" => PermissionAction.Edit,
+                    "Delete" => PermissionAction.Delete,
+                    _ => PermissionAction.View,
+                };
+                foreach (var selector in action.Selectors)
+                {
+                    selector.EndpointMetadata.Add(new PermissionAttribute(resource.Screen, permission));
                 }
             }
         }
