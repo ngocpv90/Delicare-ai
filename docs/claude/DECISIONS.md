@@ -47,3 +47,7 @@ Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ g
 
 ## D. GAP mới phát sinh khi code (Claude Code ghi tiếp vào đây)
 <!-- Mẫu: | GAP-XXX-NN | mô tả | cách tạm | PROPOSED – BA/PO CONFIRM | task |  -->
+| Mã | Mô tả | Cách tạm | Trạng thái | Task |
+|---|---|---|---|---|
+| GAP-AUD-01 | `AuditChange` không có cột loại người thao tác (USER / SYSTEM / AGENT), mã agent, CorrelationId. | Ghi ở **dòng đầu cột `Changes`**: `- Actor: USER:<id> | CorrelationId: <id>`. | PROPOSED – BA/PO CONFIRM | T02 |
+| GAP-AUD-02 | Job hệ thống cần một User dịch vụ để điền CreatedBy (cột `uniqueidentifier`). | Cấu hình `SystemUsers:JobUserId` (trống = job không được ghi). Anh tạo 1 bản ghi `User` dịch vụ (vd. `system.job`, không cho đăng nhập web) khi làm T23. | PROPOSED – BA/PO CONFIRM | T02, T23 |

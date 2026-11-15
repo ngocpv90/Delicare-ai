@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using AppDelicare.Data.Interface;
+using AppDelicare.Data.Share;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Option;
@@ -14,7 +15,7 @@ using System.Security.Claims;
 namespace AppDelicare.Services.Implement
 {
     public class LoginService(ITokenFactoryService tokenFactory, IJwtFactoryService jwtFactory, IOptions<JwtIssuerOptions> jwtOptions
-        , IUnitOfWork unitOfWork, IOptions<AppSettingHelper> options, IUserRoleService userRoleService) : ILoginService
+        , IUnitOfWork unitOfWork, IOptions<AppSettingHelper> options, IUserRoleService userRoleService, ICurrentActor currentActor) : ILoginService
     {
         private readonly ITokenFactoryService _tokenFactory = tokenFactory;
         private readonly IJwtFactoryService _jwtFactory = jwtFactory;
@@ -22,6 +23,7 @@ namespace AppDelicare.Services.Implement
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly AppSettingHelper _appSettingHelper = options.Value;
         private readonly IUserRoleService _userRoleService = userRoleService;
+        private readonly ICurrentActor _currentActor = currentActor;
 
         public async Task<Response<AuthenticateResponse>> Authenticate(LoginRequest request)
         {
@@ -112,8 +114,12 @@ namespace AppDelicare.Services.Implement
                 CreatedBy = id,
                 CreatedDate = DateTime.Now
             };
-            _unitOfWork.LocationTrackingRepository.Add(insertLocationTracking);
-            _unitOfWork.LocationTrackingRepository.Commit();
+            // T02: request đăng nhập chưa có token → người thao tác là chính user vừa xác thực.
+            using (_currentActor.BeginScope(ActorInfo.ForUser(id)))
+            {
+                _unitOfWork.LocationTrackingRepository.Add(insertLocationTracking);
+                _unitOfWork.LocationTrackingRepository.Commit();
+            }
             return new Response<AuthenticateResponse>
             {
                 Code = Convert.ToInt32(HttpStatusCode.OK),

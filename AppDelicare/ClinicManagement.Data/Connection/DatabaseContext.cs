@@ -8,9 +8,9 @@ using System.Text;
 
 namespace AppDelicare.Data.Connection
 {
-	public class DatabaseContext(DbContextOptions<DatabaseContext> options, IAuthenticatedService authenticatedService) : IdentityDbContext(options)
+	public class DatabaseContext(DbContextOptions<DatabaseContext> options, ICurrentActor currentActor) : IdentityDbContext(options)
     {
-        private readonly IAuthenticatedService _authenticatedService = authenticatedService;
+        private readonly ICurrentActor _currentActor = currentActor;
 
 		public virtual DbSet<User> User { get; set; }
         public virtual DbSet<ObjectMenu> ObjectMenu { get; set; }
@@ -112,7 +112,14 @@ namespace AppDelicare.Data.Connection
         public virtual DbSet<MealCost> MealCost { get; set; }
         public async Task<int> SaveChangesAsync(string typeSave, CancellationToken cancellationToken = new CancellationToken())
         {
-            var user = _authenticatedService.Id;
+            // T02: không có người thao tác thì chặn ghi (không còn fallback "user đầu tiên").
+            if (!HasPendingChanges())
+            {
+                return await base.SaveChangesAsync(cancellationToken);
+            }
+            var actor = _currentActor.RequireActor();
+            var user = actor.UserId;
+            var auditHeader = BuildAuditHeader(actor);
             var date = DateTime.Now;
             foreach (var entry in ChangeTracker.Entries<BaseEntity>().ToList())
             {
@@ -150,13 +157,43 @@ namespace AppDelicare.Data.Connection
                     Action = modifiedEntity.State.ToString(),
                     CreatedDate = date,
                     CreatedBy = user,
-                    Changes = GetChanges(modifiedEntity, modifiedEntity.State),
+                    Changes = auditHeader + GetChanges(modifiedEntity, modifiedEntity.State),
                     IsDeleted = false,
                 };
                 AuditChange.Add(auditLog);
             }
             return await base.SaveChangesAsync(cancellationToken);
         }
+
+        /// <summary>T02: mọi đường ghi khác (SaveChanges / SaveChangesAsync không typeSave) cũng phải có người thao tác.</summary>
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            EnsureActorForPendingChanges();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            EnsureActorForPendingChanges();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        private bool HasPendingChanges()
+            => ChangeTracker.Entries().Any(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+
+        private void EnsureActorForPendingChanges()
+        {
+            if (HasPendingChanges())
+            {
+                _currentActor.RequireActor();
+            }
+        }
+
+        /// <summary>
+        /// GAP-AUD-01: AuditChange không có cột loại người thao tác / CorrelationId → ghi ở dòng đầu cột Changes.
+        /// </summary>
+        private string BuildAuditHeader(ActorInfo actor)
+            => $"- Actor: {actor} | CorrelationId: {_currentActor.CorrelationId} {ConstantHelper.Break}" + Environment.NewLine;
 
         private static string GetChanges(EntityEntry entity, EntityState state)
         {

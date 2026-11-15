@@ -26,8 +26,9 @@ namespace AppDelicare.WebApi.Ioc
 
             //----------------------Common-----------------------------------------------
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>();
-            builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>();
+            builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>().SingleInstance();
             builder.RegisterType<DbContext>().As<DbContext>();
+            builder.RegisterType<Data.Share.CurrentActor>().As<Data.Share.ICurrentActor>();
             builder.RegisterType<Data.Share.AuthenticatedService>().As<Data.Share.IAuthenticatedService>();
         }
     }

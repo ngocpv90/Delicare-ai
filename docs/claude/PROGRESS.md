@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** (.NET + SQL, đủ API cho mockup; Angular ngoài phạm vi – D-20) · Lát hiện tại: **R1.0 Nền móng**
-- Task đang làm: T00, T01, T04 DONE – task kế tiếp: **T02** (ICurrentActor), theo thứ tự R1.0: T00 → T01 → T04 → T02 → T03 → T05…
-- Nhánh: `feat/T04-net8-packages` (chuỗi nhánh: `chore/T00-claude-setup` → `feat/T01-secrets` → `feat/T04-net8-packages`; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (2026-11-14) · Build frontend: ngoài phạm vi · Test: chưa có project test (T09)
+- Task đang làm: T00, T01, T04, T02 DONE – task kế tiếp: **T03** (pipeline HTTP), rồi T05 → T06 (entity + module cho toàn bộ 124 bảng)
+- Nhánh: `feat/T02-current-actor` (chuỗi: T00 → T01 → T04 → T02; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 13/13 xanh
 - Việc anh cần làm: (1) đổi các khóa đã lộ theo `docs/claude/SECRETS_TODO.md`; (2) trả lời D-21 (endpoint `api/AuditChange/DeleteData`) và D-22 (AutoMapper); (3) merge chuỗi nhánh khi anh thấy ổn.
 
 ---
@@ -120,3 +120,19 @@ Kiểm tra:
 AC: [x] build 0 lỗi · [x] số cảnh báo không tăng (10 = 10) · [x] app chạy.
 Còn lại: D-22 AutoMapper. `Microsoft.EntityFrameworkCore.SqlServer` 8.0.34 kéo Microsoft.Data.SqlClient 5.1.x, còn Data dùng 6.0.1 → NuGet chọn 6.0.1 cho cả app (đã chạy thử OK).
 Ghi chú: `AppDelicare/.vscode/` chưa được theo dõi, không phải em tạo, em không đụng. `.gitignore` gốc chỉ bỏ qua `.vscode/` ở thư mục gốc.
+
+### T02 – Định danh người thao tác (ICurrentActor) · 2026-11-14 · DONE
+Đã làm:
+- `Data/Share/CurrentActor.cs` (mới): `ActorType` (User / System / Agent), `ActorInfo`, `ICurrentActor` (Actor, CorrelationId, `RequireActor()`, `BeginScope()` cho job / agent / bước đăng nhập), `UnauthorizedActorException`. HTTP lấy claim `id`; claim sai thì coi như không có người thao tác.
+- `AuthenticatedService`: **bỏ fallback "user đầu tiên"**; `UserInfo` dùng truy vấn có tham số `@Id` (hết ghép chuỗi SQL).
+- `DatabaseContext`: dùng `ICurrentActor`; có thay đổi mà không có người thao tác thì ném `UnauthorizedActorException`. Chặn ở **cả** `SaveChangesAsync(typeSave)` lẫn `SaveChanges()` / `SaveChangesAsync()` thường (trước đây 2 đường này bỏ qua audit). Audit ghi người thao tác + CorrelationId ở đầu cột `Changes` (GAP-AUD-01).
+- `LoginService`: ghi `LocationTracking` trong `BeginScope(ActorInfo.ForUser(id))`.
+- `CorrelationIdMiddleware` (đầu pipeline): header `X-Correlation-Id` hợp lệ (`^[A-Za-z0-9._-]{1,64}$`) hoặc tự sinh; trả lại ở response header; đẩy vào Serilog LogContext. Template log thêm `[{CorrelationId}]`, bật `Enrich: FromLogContext`.
+- `appsettings`: `SystemUsers:JobUserId` (GAP-AUD-02). `HttpContextAccessor` đăng ký SingleInstance (đúng chuẩn ASP.NET Core).
+- Project **`AppDelicare.Tests`** (xUnit, FluentAssertions 7.2.0 – bản 8 là license trả phí, EF InMemory) – nền cho T09.
+
+Kiểm tra:
+- `dotnet build`: 0 lỗi, 10 cảnh báo. `dotnet test`: **13/13 xanh**: chặn ghi khi không có người thao tác (3 đường SaveChanges); có token thì CreatedBy / ModifiedBy / DeleteddBy / AuditChange đúng; scope System cho job; scope lồng nhau; claim sai; middleware dùng header hợp lệ, tự sinh khi thiếu, từ chối header lạ (khoảng trắng, xuống dòng, quá 64 ký tự); log có thuộc tính CorrelationId.
+- Chạy thật trên DB dev: login (header `X-Correlation-Id` được trả lại) → `TestDemo/Insert` bản ghi `[DEMO] T02 actor check`: `CreatedBy` = admin; AuditChange có `Actor: USER:<admin> | CorrelationId: t02-insert-check`; `LocationTracking.CreatedBy` = admin; log có `[t02-...]`. Sau đó xóa mềm bản ghi demo qua API: `DeleteddBy` = admin.
+AC: [x] unit test chặn ghi khi không có người thao tác · [x] request có token thì CreatedBy đúng · [x] log có CorrelationId.
+Còn lại: dùng `IClock` thay `DateTime.Now` để T05 (cùng D-18). Agent actor chỉ dùng thật ở Release 2.

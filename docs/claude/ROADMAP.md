@@ -85,7 +85,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Thêm `docs/claude/SECRETS_TODO.md`: danh sách khóa anh cần **tạo mới / đổi** (không ghi giá trị cũ).
 - AC: grep repo không còn chuỗi bí mật cũ; app chạy được khi secret nằm trong user-secrets; thiếu secret thì báo lỗi rõ lúc khởi động.
 
-### T02 – Định danh người thao tác (ICurrentActor) · phụ thuộc T00 · `TODO`
+### T02 – Định danh người thao tác (ICurrentActor) · phụ thuộc T00 · `DONE` (2026-11-14)
 - Bỏ hành vi fallback "user đầu tiên" trong `AuthenticatedService`. Tạo `ICurrentActor { ActorType, UserId?, AgentCode?, CorrelationId }`.
   - HTTP: lấy từ claim.
   - Job: actor `SYSTEM` (User dịch vụ cấu hình `SystemUsers:JobUserId`).

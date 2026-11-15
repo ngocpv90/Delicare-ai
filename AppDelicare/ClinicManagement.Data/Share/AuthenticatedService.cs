@@ -1,31 +1,22 @@
 ﻿using AppDelicare.Data.Interface;
 using AppDelicare.Model.ViewModels;
-using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 
 namespace AppDelicare.Data.Share
 {
-    public class AuthenticatedService(IHttpContextAccessor httpContextAccessor, IDapperRepository dapperRepository) : IAuthenticatedService
+    /// <summary>
+    /// Giữ để tương thích code cũ. T02: KHÔNG còn fallback "user đầu tiên trong bảng User";
+    /// không có người thao tác thì ném <see cref="UnauthorizedActorException"/>.
+    /// </summary>
+    public class AuthenticatedService(ICurrentActor currentActor, IDapperRepository dapperRepository) : IAuthenticatedService
     {
         private readonly IDapperRepository _dapperRepository = dapperRepository;
-        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly ICurrentActor _currentActor = currentActor;
 
-        public Guid Id
-        {
-            get
-            {
-                var firstUser = _dapperRepository.QueryFirstOrDefault<Guid>("SELECT TOP 1 Id FROM [User] WHERE IsActive = 1 AND IsDeleted = 0");
-                var result = _httpContextAccessor.HttpContext?.User?.FindFirstValue("id");
-                return !string.IsNullOrEmpty(result?.ToString()) ? Guid.Parse(result) : firstUser;
-            }
-        }
+        public Guid Id => _currentActor.RequireActor().UserId;
 
-        public UserInfo UserInfo => _dapperRepository.QueryFirstOrDefault<UserInfo>(
-              "     SELECT TOP 1 u.Id"
-            + "           ,u.UserName"
-            + "           ,u.PersonId"
-            + "     FROM [User] AS u"
-            + $"    WHERE u.Id = '{Id}' AND u.IsActive = 1 AND u.IsDeleted = 0"
-            ) ?? new();
+        public UserInfo UserInfo => _dapperRepository.QueryMultipleWithParam<UserInfo>(
+              "SELECT TOP 1 u.Id, u.UserName, u.PersonId FROM [User] AS u"
+            + " WHERE u.Id = @Id AND u.IsActive = 1 AND u.IsDeleted = 0",
+              new { Id }).FirstOrDefault() ?? new();
     }
 }

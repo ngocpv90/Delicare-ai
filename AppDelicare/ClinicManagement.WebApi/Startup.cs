@@ -77,6 +77,8 @@ namespace AppDelicare.WebApi
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // T02: CorrelationId cho mọi request, đặt đầu pipeline để mọi log đều có.
+            app.UseMiddleware<CorrelationIdMiddleware>();
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
