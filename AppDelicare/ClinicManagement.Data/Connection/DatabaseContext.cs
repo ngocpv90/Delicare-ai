@@ -127,6 +127,8 @@ namespace AppDelicare.Data.Connection
         private string BuildAuditHeader(ActorInfo actor)
             => $"- Actor: {actor} | CorrelationId: {_currentActor.CorrelationId} {ConstantHelper.Break}" + Environment.NewLine;
 
+        private static readonly HashSet<string> SensitiveProperties = new(StringComparer.OrdinalIgnoreCase) { "PassWord", "Password", "PasswordHash" };
+
         private static string GetChanges(EntityEntry entity, EntityState state)
         {
             StringBuilder changes = new();
@@ -136,6 +138,12 @@ namespace AppDelicare.Data.Connection
                 var currentValue = entity.CurrentValues[property];
                 if (!Equals(originalValue, currentValue))
                 {
+                    // T45B.2: không ghi giá trị mật khẩu (kể cả hash) vào nhật ký – chỉ ghi là có thay đổi.
+                    if (SensitiveProperties.Contains(property.Name))
+                    {
+                        changes.AppendLine($"- {property.Name}: (đã thay đổi – không lưu giá trị) {ConstantHelper.Break}");
+                        continue;
+                    }
                     if (state == EntityState.Added && !string.IsNullOrEmpty(currentValue?.ToString()?.Trim()))
                     {
                         changes.AppendLine($"- {property.Name}: '{currentValue}' {ConstantHelper.Break}");

@@ -58,7 +58,8 @@ namespace AppDelicare.WebApi
             services.AddScoped<IBranchContext, BranchContext>();
             services.AddMemoryCache();
             services.AddDelicareHealthChecks(); // T48.1
-            AppDelicare.Application.DependencyInjection.AddApplication(services, Configuration); // T10: dispatcher, handler, validator, IClock, BusinessRules
+            AppDelicare.Application.DependencyInjection.AddApplication(services, Configuration);
+            services.AddScoped<AppDelicare.Application.Common.IDomainEventHandler<AppDelicare.Application.Admin.PermissionsChanged>, PermissionCacheInvalidator>(); // T45B.2 // T10: dispatcher, handler, validator, IClock, BusinessRules
             services.Configure<PermissionOptions>(Configuration.GetSection(PermissionOptions.Section));
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<AppDelicare.Data.Share.IReferenceGuard, AppDelicare.Data.Share.ReferenceGuard>();

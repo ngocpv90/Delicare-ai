@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
-- Task đang làm: **T45B** – T45B.1 DONE (CRUD chuẩn 39 resource); kế tiếp T45B.2 (P0 riêng) → .3 → .4 → .5, rồi T49
-- Nhánh: `feat/T45B-api-p0-p2` (chuỗi T00 → … → T21.1 → T45B; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 91/91 xanh
+- Task đang làm: **T45B** – T45B.1, T45B.2 DONE; kế tiếp T45B.3 (P1 riêng) → .4 → .5, rồi T49
+- Nhánh: `feat/T45B.2-p0-special` (chuỗi T00 → … → T45B.2; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 98/98 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -284,3 +284,16 @@ AC (phần seed của T21): [x] 4 ca TRUA, TOI, DEM_23H, SANG_6H.
 Kiểm tra:
 - Build 0 lỗi / 10 cảnh báo; test **91/91** (+8): vòng tạo / đọc / danh sách / summary; 400 trường lạ / sai kiểu / quá dài / cột deprecated / thiếu cột thay thế; 409 DUPLICATE; 422 REF_NOT_FOUND (đúng field); nhãn tham chiếu; If-Match 409; xóa đang dùng 409 IN_USE; ghi song song FromUomId; luật uom-conversion; resource chỉ đọc 405; phân quyền theo màn (xem được, thêm 403, màn khác 403); schema + danh sách resource.
 - **SQL Server thật**: 39 resource × (danh sách có sort + summary) = **78/78 200**; tạo kho `[DEMO]` 201 → trùng 409 → sửa ETag mới 200 / cũ 409 → xóa 204 → đọc 404; lịch sử có Added + Modified; log không lỗi.
+
+### T45B.2 – API quản trị riêng của P0 · 2026-11-14 · DONE
+Đã làm (logic ở `AppDelicare.Application/Admin`, controller mỏng ở `WebApi/Controllers/V1/Admin`, `AuthAndMe.cs`):
+- **Người dùng** `/api/v1/admin/users`: danh sách (isActive, groupId, q trên tên đăng nhập / họ tên / SĐT) kèm person + groups; chi tiết; tạo (Person → User → UserClaim trong 1 transaction, tên đăng nhập chuẩn hóa chữ thường, trùng → 409, mật khẩu ≥ 8, nhóm không có → 422); sửa hồ sơ; `PUT {id}/groups` (thêm / xóa mềm); `lock` (bắt buộc lý do, không tự khóa mình) / `unlock`; `reset-password` (**chỉ admin**, mật khẩu tạm 12 ký tự RNG, trả 1 lần); `effective-permissions` (OR mọi nhóm + `grantedBy`). Không bao giờ trả mật khẩu.
+- **Ma trận quyền nhóm** `/api/v1/admin/user-groups/{id}/permissions` GET (cây menu + cờ) / PUT (chuẩn hóa: bật cờ bất kỳ → bật AllowAccess, tắt AllowAccess → tắt hết) / `bulk`; `preview` (chỉ admin).
+- Sự kiện `PermissionsChanged` (phát sau commit) → `PermissionCacheInvalidator` xóa cache quyền **ngay** cho user liên quan (cấp / thu hồi quyền, đổi nhóm, khóa / mở).
+- **Menu** `/admin/object-menus/tree`, `PUT reorder` (đổi cha / thứ tự, chặn vòng lặp). **Đơn vị** `/admin/org-units/tree` (số nhân viên, số kho, tên quản lý), `/admin/branches` (UnitType = BRANCH, mọi user đăng nhập). **Merge-conflict** `/admin/merge-conflicts` (lọc resolved) + `POST {id}/resolve` (Id bigint, xử lý 2 lần → 409).
+- **Meta** `/api/v1/meta/menu` (cây menu user được truy cập + cờ), `/api/v1/meta/me` ({ user, branches, permissions }).
+- **Auth v1** `POST /api/v1/auth/login` → `{ accessToken, expiresIn, tokenType, userId, … }`, sai → 401 envelope (không phân biệt sai mật khẩu / không tồn tại); `POST /api/v1/auth/change-password` (sai mật khẩu cũ → 422). Refresh token chưa làm (GAP-AUTH-01).
+- `PasswordHasher` – một chỗ băm duy nhất (vẫn MD5 chờ D-29). **AuditChange không còn ghi giá trị mật khẩu (kể cả hash)** – chỉ ghi "đã thay đổi" (trước đây đổi mật khẩu là hash lọt vào nhật ký).
+
+Kiểm tra: build 0 lỗi / 10 cảnh báo; test **98/98** (+7): tạo user (không lộ mật khẩu, chuẩn hóa tên, 409 / 400 / 422, lọc q + groupId); cấp quyền có hiệu lực ngay + chuẩn hóa cờ + grantedBy + thu hồi ngay; khóa (thiếu lý do 400, tự khóa 422) → mất quyền ngay → mở lại; reset chỉ admin; đổi mật khẩu sai / đúng; audit không chứa hash; cây menu + reorder + chặn vòng lặp; cây đơn vị + đếm nhân viên + branches; merge-conflict resolve + 409; /meta/me + /meta/menu theo user; login v1 trên DB dev (token / 401 envelope).
+Còn lại (→ T45B.5): `/meta/statuses`, `/meta/reference-lists`, refresh token.
