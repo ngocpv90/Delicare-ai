@@ -57,13 +57,15 @@ Delicare-ai/
 │   ├─ AppDelicare.WebApi    (AppDelicare.WebApi)             Controller `api/[controller]`, Startup, Autofac, JWT, Serilog, Security (phân quyền)
 │   ├─ AppDelicare.Application (AppDelicare.Application)        ⛔ lớp v1 làm thử (CRUD generic, Command / Handler) – KHÔNG mở rộng; T45R chuyển nghiệp vụ về Services rồi đưa vào `_obsolete/`
 │   ├─ AppDelicare.Tests     (AppDelicare.Tests)              xUnit
-│   └─ ClinicManagement.Generator (T4 + OrmLite)                   bộ sinh mã CŨ (thay bằng tools/AppDelicare.CodeGen), chỉ chạy được trong Visual Studio
+│   └─ AppDelicare.Generator (T4 + OrmLite)                        bộ sinh mã T4 cũ – CHỈ THAM KHẢO, chỉ chạy được trong Visual Studio (đổi tên ở T45R.6)
 ├─ app-delicare-client/          ← Angular 18 – ⛔ NGOÀI PHẠM VI: không đọc, không sửa, không build (làm sau khi xong backend)
 ├─ backup-db/                    ← bản backup DB thật (AppDelicare_20261110.bak/.mdf/.ldf) – ĐÃ gitignore, KHÔNG commit, KHÔNG sửa
 └─ DB/                           ← (tạo mới) script SQL: DB/sp (stored procedure), DB/seed – được commit
 ```
 
-Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Model / Data / Services / WebApi` đã đổi thành `AppDelicare.*` cho khớp tên project và namespace. Còn lại `ClinicManagement.Generator` (bộ sinh T4 cũ) giữ tên. **Không đổi tên thư mục khác** cho tới khi có task riêng.
+Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Model / Data / Services / WebApi` đã đổi thành `AppDelicare.*` cho khớp tên project và namespace. Bộ sinh T4 cũ cũng **đã đổi thành `AppDelicare.Generator`** (T45R.6, anh đồng ý 2026-11-15). **Không đổi tên thư mục khác** nếu không có task riêng.
+
+**Bộ sinh mã chuẩn = `tools/AppDelicare.CodeGen`** (D-32): đọc DDL, sinh đúng mẫu code cũ, chạy bằng dòng lệnh nên test được. Bộ T4 giữ để tham khảo / đối chiếu mẫu, không dùng để sinh bảng mới.
 
 **Các project MỚI** sẽ thêm vào solution theo ROADMAP. Mỗi project ở một thư mục cùng tên:
 `AppDelicare.Jobs` (Hangfire, job gọi Service cũ), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
@@ -132,6 +134,8 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
    | Ma trận quyền nhóm × menu (`AllowAccess/Add/Edit/Delete/Print/Export/Import`) | `UserRoleController.GetByUserGroupId` / `Update` → `UserRoleService` (SP `uspUserRole_GetByUserGroupId`) |
    | Menu chức năng (cây 2 cấp, `MetaLink = '#/<screen-id>'`) | `ObjectMenuController` / `ObjectMenuService` |
    | Kiểm tra quyền phía server | `Security/PermissionFilter` + `PermissionConvention` (T07, đọc chính các bảng trên – giữ, là hạ tầng chứ không phải API v1) |
+
+   Quy tắc chi tiết: **mục 4.3**.
    | Người thao tác | `ICurrentActor` (`Data/Share/CurrentActor.cs`) |
 
 5. **Spec API = yêu cầu nghiệp vụ.** Với mỗi endpoint trong `DELICARE_API_Specification.md` / Catalog: hiểu chức năng → tìm chỗ tương đương trong code cũ → bổ sung action kiểu cũ `api/<Entity>/<Action>`. Ghi ánh xạ "màn hình → chức năng spec → action cũ" trong `docs/frontend-handoff/` để làm frontend sau.
@@ -156,11 +160,33 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 - **Thời gian:** lưu **giờ Việt Nam** (Asia/Ho_Chi_Minh), khớp code cũ. 17 cột default `sysutcdatetime()` → app luôn tự gán giá trị. D-18 chờ anh chốt. Lấy giờ qua `IClock` (T45R chuyển `IClock` / `BusinessRulesOptions` từ `AppDelicare.Application` sang `AppDelicare.Data/Share` + `AppDelicare.Model/Option`). Ngưỡng nghiệp vụ đọc từ cấu hình `BusinessRules`.
 - Log bằng Serilog. Không nuốt lỗi.
 
+### 4.3 Phân quyền, vai trò, người dùng – GIỮ ĐÚNG CƠ CHẾ CŨ (D-31)
+**Mô hình dữ liệu cũ là duy nhất:** `User` (`IsActive`, `IsAdmin`) → `UserClaim` (user thuộc nhóm nào) → `UserGroup` (vai trò) → `UserRole` (nhóm × `ObjectMenu`, cờ `AllowAccess / AllowAdd / AllowEdit / AllowDelete / AllowPrint / AllowExport / AllowImport`) ← `ObjectMenu` (menu 2 cấp, `MetaLink`). User thuộc nhiều nhóm thì quyền cộng dồn (OR). `IsAdmin = 1` có mọi quyền.
+
+**Được làm:**
+- Quản lý user / nhóm / ma trận quyền / menu **chỉ qua controller + service cũ**: `UserController`, `UserGroupController`, `UserRoleController` (`GetByUserGroupId`, `Update`), `ObjectMenuController`, `UserClaimService.SaveAfterUser`. Thiếu chức năng thì **thêm method / action vào đúng các file này**.
+- Đăng nhập giữ `AuthenticationController.Login` → `LoginService.Authenticate`: kiểm `IsDeleted` / `IsActive`, trả token + `listMenu` theo `UserRoleService.GetByUserGroupId(…, false)`. Giữ nguyên các trường trong token / response cũ (chỉ được thêm, không đổi tên, không bỏ).
+- Kiểm tra quyền phía server (`PermissionFilter` + `PermissionService`) **chỉ đọc đúng các bảng trên** – đây là cùng cơ chế cũ, áp ở server thay vì chỉ ẩn menu.
+
+**Không được làm:**
+- Không thêm bảng / cột / hệ quyền mới (ASP.NET Identity, role claim, policy theo tên nhóm, quyền trong `appsettings`…).
+- Không viết API quản trị user / nhóm / quyền / menu thứ hai (v1 đang có → T45R gỡ).
+- Không gán quyền theo **tên nhóm cứng trong code hoặc cấu hình**. Đổi tên nhóm trên màn hình quản trị không được làm hỏng quyền.
+
+**Quyền DUYỆT (không có cột `AllowApprove`):** mỗi loại duyệt là **một mục `ObjectMenu` cấp 2** dưới nhóm menu "Phê duyệt" (vd. Duyệt đơn hàng / lệch suất, Duyệt đề nghị & đơn mua, Duyệt kế hoạch sản xuất, Duyệt kiểm kê, Duyệt nghỉ / đổi ca, Duyệt phiên bản công thức). MetaLink trỏ hộp duyệt lọc theo loại (screen-id lấy từ mockup, vd. `#/approval-inbox?type=PO` – kiểm `catalog.js`). Nhóm nào được duyệt = `UserRole.AllowAccess` (xem) + `AllowEdit` (duyệt / từ chối) trên mục đó, gán trên **chính màn hình ma trận quyền cũ**. `PermissionAction.Approve` kiểm theo mục menu này. `ApprovalStep.ApproverRoleCode` (nếu dùng) chỉ thu hẹp thêm theo nhóm, không thay cho UserRole. Đây là dữ liệu cấu hình, không thêm cột (PROPOSED – anh duyệt khi UAT-1).
+
+**Cache quyền (5′):** mọi thao tác đổi quyền qua service cũ phải xóa cache ngay: `UserRoleService.Update`, `UserClaimService.SaveAfterUser`, `UserService.Save / Delete / SaveIsActive / SaveIsAdmin`, `UserGroupService.Save`, `ObjectMenuService.Save / SaveIsActive`. (T45R chuyển `IPermissionService` sang `AppDelicare.Services` để service cũ gọi được `Invalidate` / `InvalidateAll`.)
+
+**Seed** (`DB/seed/ObjectMenu_seed.sql`, `UserGroup_seed.sql`, `UserRole_seed.sql`): chỉ **thêm phần chưa có** (theo `MetaLink` / `Name`), **không ghi đè** quyền admin đã chỉnh trên màn hình.
+
+**Mật khẩu:** đang dùng `EncriptFunctionsHelper.GeneratePassword` (MD5). Đổi cách băm là D-29 (anh chốt); nếu làm thì sửa trong chính `EncriptFunctionsHelper` / `LoginService` / `UserService`, tương thích hash cũ, không đổi API.
+
 **Frontend (Angular 18): NGOÀI PHẠM VI hiện tại** – không đọc, không sửa `app-delicare-client/`.
 
 **Kiểm tra trước khi báo xong:**
 - `dotnet build AppDelicare/AppDelicare.sln` không lỗi; `dotnet test` xanh.
 - `git status` không có thay đổi nào trong `app-delicare-client/`.
+- Phân quyền: không bảng / cột / cấu hình quyền mới; không API quản trị user / quyền ngoài controller cũ (mục 4.3).
 - Không có file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; `grep -rn "api/v1" AppDelicare --include=*.cs` không tăng (sau T45R phải bằng 0).
 - Controller / Service mới hoặc sửa đúng mẫu 4.2 (so với `WarehouseController` / `WarehouseService`).
 

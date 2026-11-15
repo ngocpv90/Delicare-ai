@@ -1,6 +1,6 @@
 # AppDelicare.CodeGen – sinh mã từ DDL 124 bảng
 
-Console .NET 8, thay bộ sinh T4 + OrmLite cũ (`ClinicManagement.Generator`, chỉ chạy trong Visual Studio và đọc DB live).
+Console .NET 8, thay bộ sinh T4 + OrmLite cũ (`AppDelicare/AppDelicare.Generator`, chỉ chạy trong Visual Studio và đọc DB live).
 
 ## Đầu vào
 

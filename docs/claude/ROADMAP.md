@@ -311,15 +311,15 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
   - [x] Build 0 lỗi; `dotnet test` xanh. `.http` cập nhật theo route cũ; phần chạy trên DB dev đã kiểm bằng test SQL Server (chưa chạy tay từng request).
 - Không cần dừng giữa các bước con, trừ khi rà soát thấy code cũ và mockup / spec mâu thuẫn mà DECISIONS chưa phân xử.
 
-### T45R.6 – Đổi tên `ClinicManagement.Generator` → `AppDelicare.Generator` · phụ thuộc T45R.5 · `TODO`
+### T45R.6 – Đổi tên `ClinicManagement.Generator` → `AppDelicare.Generator` · phụ thuộc T45R.5 · `DONE` (2026-11-15, chờ anh chạy T4 trong Visual Studio)
 - Làm trên nhánh riêng `chore/T45R.6-rename-generator`. Dùng `git mv` để giữ lịch sử.
 - Đổi thư mục `AppDelicare/ClinicManagement.Generator` → `AppDelicare/AppDelicare.Generator` và 11 thư mục con `ClinicManagement.*` → `AppDelicare.*` (Data.Connection, Data.Interface, Data.Interface.UnitOfWork, Data.Repositories, Data.Repositories.UnitOfWork, Model.Entity, Model.Request, Model.SearchRequest, Model.ViewModels, Services.Implement, Services.Interface, WebApi.Controllers, WebApi.Infrastructure – đếm lại theo thực tế).
 - Sửa mọi tham chiếu: `AppDelicare.sln` (đường dẫn project), `AppDelicare.Generator.csproj` (Include / `<None>` / `<Compile>` theo thư mục), `RunCopyFile.bat` (mọi dòng `copy` / `del`), các file `.tt` / `.ttinclude` (tên thư mục đầu ra, namespace nếu có), `App.config`, `.gitignore`, `CLAUDE.md` mục 2, `tools/AppDelicare.CodeGen/README.md`, tài liệu khác trong `docs/claude/`.
 - **Không** chạy bộ sinh T4 (chỉ chạy được trong Visual Studio) và **không** sinh lại code. Không đổi nội dung template ngoài đường dẫn / tên.
 - AC:
-  - [ ] `grep -rni "ClinicManagement" AppDelicare tools docs/claude CLAUDE.md` = 0 (trừ `_obsolete/`, `PROGRESS.md` phần lịch sử, `bin/`, `obj/`, `.vs/`).
-  - [ ] `dotnet build AppDelicare/AppDelicare.sln` 0 lỗi (project Generator nếu không build được bằng dotnet CLI như trước thì ghi rõ trong PROGRESS, không được tệ hơn baseline); `dotnet test` xanh.
-  - [ ] `RunCopyFile.bat` đọc lại từng dòng khớp thư mục mới (liệt kê trong PROGRESS).
+  - [x] `grep -rni "ClinicManagement" AppDelicare tools docs/claude CLAUDE.md` = 0 (trừ `_obsolete/`, `PROGRESS.md` phần lịch sử, `bin/`, `obj/`, `.vs/`).
+  - [x] `dotnet build AppDelicare/AppDelicare.sln` 0 lỗi (project Generator nếu không build được bằng dotnet CLI như trước thì ghi rõ trong PROGRESS, không được tệ hơn baseline); `dotnet test` xanh.
+  - [x] `RunCopyFile.bat` đọc lại từng dòng khớp thư mục mới (liệt kê trong PROGRESS).
   - [ ] **Cần anh:** mở solution bằng Visual Studio, chạy T4 một lần ở bản sao / nhánh này, xác nhận file sinh ra đúng chỗ → rồi mới merge.
 
 ### T45B – API màn hình P0–P2 (quản trị và danh mục) · phụ thuộc T07, T10 · `DONE` (2026-11-15: T45B.1–.4 làm theo v1 → T45R chuyển về khung cũ; T45B.5 xong. GAP-AUTH-01 refresh token để mở)

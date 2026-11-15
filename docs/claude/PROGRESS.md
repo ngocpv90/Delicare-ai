@@ -458,3 +458,30 @@ Cần anh: tự nạp file thật (UAT R1.1 mục 15); chốt cách xử lý GAP
   - Thêm test `DtoNamingTests`.
 - Test 86/86.
 - **Dừng lát R1.1 – chờ anh UAT-1** theo `docs/claude/UAT_CHECKLIST.md` mục R1.0 + R1.1 (`deploy/README.md` mục 3 để chạy staging).
+
+### T45R.6 – Đổi tên bộ sinh T4 thành AppDelicare.Generator · 2026-11-15 · DONE (chờ anh chạy T4)
+Nhánh `chore/T45R.6-rename-generator` (từ `feat/T45R-legacy-framework`).
+
+Đã làm:
+- `git mv` 20 file (giữ lịch sử): `AppDelicare/ClinicManagement.Generator` → `AppDelicare/AppDelicare.Generator`; 14 thư mục con `ClinicManagement.*` → `AppDelicare.*`.
+  - Danh sách thư mục con: Data.Connection, Data.Interface, Data.Interface.UnitOfWork, Data.Repositories, Data.Repositories.UnitOfWork, Model.Entity, Model.Request, Model.SearchRequest, Model.ViewModels, Services.Implement, Services.Interface, WebApi.Controllers, WebApi.Infrastructure.
+- Sửa tham chiếu:
+  - `AppDelicare.sln`;
+  - `AppDelicare.Generator.csproj` (RootNamespace, AssemblyName, Compile Include);
+  - `Properties/AssemblyInfo.cs`;
+  - `RunCopyFile.bat` (mọi dòng copy / del, giữ CRLF);
+  - 14 `.tt`: Namespace và using `ClinicManagement.*` → `AppDelicare.*`, khớp namespace thật;
+  - `OrmLite.Core.ttinclude`: `DefaultClinicManagementspace` → `DefaultNamespace` (dấu vết lần thay chữ "Name" cũ, chỉ 2 chỗ: định nghĩa + override);
+  - `.dockerignore`, `CLAUDE.md` mục 2, `tools/AppDelicare.CodeGen/README.md`, `CODE_AUDIT` (A1, A2, A12).
+- Không chạy T4, không sinh lại code, không đổi nội dung template ngoài tên / namespace.
+
+Kiểm tra:
+- Build 0 lỗi / 10 cảnh báo (= mốc); test 86/86.
+- `RunCopyFile.bat`: 24 / 24 đường dẫn khớp thư mục thật (14 thư mục nguồn T4 + 10 thư mục đích).
+- grep "ClinicManagement" trong AppDelicare, tools, docs/claude, CLAUDE.md = 0. Ngoại lệ:
+  - log cũ (không theo dõi);
+  - mô tả task T45R.6 trong ROADMAP;
+  - D-32 trong DECISIONS;
+  - câu lịch sử lần đổi tên 2026-11-14 trong CLAUDE.md.
+
+Cần anh: mở solution bằng Visual Studio, chạy T4 một lần trên nhánh này, xác nhận file sinh ra đúng chỗ rồi mới merge.

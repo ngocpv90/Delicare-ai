@@ -8,5 +8,5 @@
 **/wwwroot/Logs/
 **/wwwroot/Import/
 AppDelicare.Tests/
-ClinicManagement.Generator/
+AppDelicare.Generator/
 packages/

@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Model", "AppDel
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppDelicare.Services", "AppDelicare.Services\AppDelicare.Services.csproj", "{E66CB87A-A318-4F99-AD09-C5B4C32249D8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppDelicare.Generator", "ClinicManagement.Generator\AppDelicare.Generator.csproj", "{FAE70E2B-4FA5-4943-A3E9-D70ADA8455CF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppDelicare.Generator", "AppDelicare.Generator\AppDelicare.Generator.csproj", "{FAE70E2B-4FA5-4943-A3E9-D70ADA8455CF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppDelicare.Tests", "AppDelicare.Tests\AppDelicare.Tests.csproj", "{2FECC7EF-59AF-4D8D-9178-7D3458439512}"
 EndProject
