@@ -83,7 +83,7 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -E -Q "DROP DATABASE AppDelicare_Staging"
    - Tạo **Application Pool** `delicare-api`, đặt **.NET CLR version = No Managed Code**.
    - Tạo **Site**, trỏ tới thư mục ở bước 3, gán App Pool trên, gắn binding (port / domain; staging có thể dùng HTTP nội bộ).
 5. Đặt **biến môi trường bí mật** cho site. Cách an toàn: IIS Manager → site → **Configuration Editor** → section `system.webServer/aspNetCore` → `environmentVariables`, thêm 3 biến ở mục 1. Cách này ghi vào `web.config` **trên máy chủ**; không chép file đó về repo.
-6. Cấp quyền ghi `wwwroot\Logs` cho tài khoản `IIS AppPool\delicare-api`.
+6. Cấp quyền ghi thư mục `Logs` (cạnh `AppDelicare.WebApi.dll`) cho tài khoản `IIS AppPool\delicare-api`.
 7. Kiểm tra theo mục 6.
 
 ## 5. Cách C – Docker

@@ -199,7 +199,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - PackagingLedger OUT / RETURN / LOSS, tỷ lệ thất thoát theo khách, sự kiện vượt ngưỡng. CleaningBatche `VS-…` 6 bước.
 - AC: test tỷ lệ thất thoát; lô vệ sinh phải đủ 6 bước mới hoàn tất.
 
-### T21 – Nhân sự · phụ thuộc T10 · `TODO`
+### T21 – Nhân sự · phụ thuộc T10 · `TODO` (T21.1 seed Shift: `DONE` 2026-11-14)
 - Seed Shift (TRUA, TOI, DEM_23H, SANG_6H). ShiftAssignment, AttendanceEvent (GPS so với KitchenWorkstation, QR, máy, chấm hộ), LeaveRequest, ShiftSwapRequest (duyệt).
 - AC: test hợp lệ theo bán kính; chấm hộ phải ghi rõ SourceChannel.
 

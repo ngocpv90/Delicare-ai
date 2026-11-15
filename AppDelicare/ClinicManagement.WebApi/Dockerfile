@@ -23,7 +23,7 @@ ENV TZ=Asia/Ho_Chi_Minh \
 RUN apt-get update && apt-get install -y --no-install-recommends tzdata libfontconfig1 curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app .
-RUN mkdir -p /app/wwwroot/Logs /app/wwwroot/Import && chown -R app:app /app/wwwroot
+RUN mkdir -p /app/Logs /app/wwwroot/Import && chown -R app:app /app/Logs /app/wwwroot
 USER app
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -fsS http://localhost:8080/health/live || exit 1

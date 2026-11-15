@@ -2,8 +2,8 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
-- Task đang làm: T10 DONE – kế tiếp **T21.1** (seed Shift) → T45B → T49
-- Nhánh: `feat/T10-application` (chuỗi T00 → … → T48.1 → T10; chưa merge, chưa push)
+- Task đang làm: T10, T21.1 DONE – kế tiếp **T45B** (API màn hình P0–P2) → T49
+- Nhánh: `feat/T21.1-shift-seed` (chuỗi T00 → … → T10 → T21.1; chưa merge, chưa push)
 - Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 83/83 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
@@ -266,3 +266,10 @@ Bí mật staging trên máy anh: `deploy/staging.local.md`, `deploy/staging.loc
 
 Kiểm tra: build 0 lỗi / 10 cảnh báo; test **83/83** (+12): dispatcher chạy handler + phát sự kiện sau thành công, lệnh lỗi hủy sự kiện, validator lỗi không chạy handler; IClock = UTC+7; BusinessRules đọc từ cấu hình + mặc định; lookup: thứ tự nhãn, lọc Inactive / đã xóa, tìm theo mã, theo ids, tên bảng legacy, chặn User / AuditChange / Patient / bảng lạ / _Legacy; end-to-end qua API (200, 400 `take`, 404 bảng chặn). Chạy thật trên DB dev: lookup OrganizationUnit / UserGroup / KitchenWorkstation / ObjectMenu / Company / Dishe 200, log không lỗi.
 AC: [x] 1 use case mẫu (`Common.LookupQuery`) chạy end-to-end và có test.
+
+### T21.1 – Seed ca làm việc · 2026-11-14 · DONE
+Đã làm: `DB/seed/Shift_seed.sql` – 4 ca theo đề xuất D-19 (chưa chốt, mã ca chỉ nằm ở bảng Shift nên đổi lại dễ): SANG_6H Sáng 06:00–09:00, TRUA Trưa 10:30–13:30, TOI Tối 16:30–19:30, DEM_23H Đêm 23:00–01:00 (qua đêm). Giờ là PROPOSED. Idempotent theo Code, **không ghi đè** tên / giờ đã có (giữ chỉnh sửa qua `/api/v1/hr/shifts`). Thêm vào `Deploy-Database.ps1`, `db-init.sh`, `SeedTests`.
+Đã chạy lên DB dev và staging (2 lần mỗi DB): đúng 4 ca, không trùng.
+Kèm theo: log chuyển từ `wwwroot/Logs` sang `Logs/` (ngoài thư mục web tĩnh). Đã kiểm: `/Logs/*.log` hiện trả 404 (kiểu .log không được phục vụ) nên **chưa lộ**, nhưng để trong wwwroot dễ lộ nếu bật phục vụ mọi kiểu file, bị đóng gói khi publish và khóa file khi build.
+Kiểm tra: test 83/83 (SeedTests kiểm thêm 4 ca, không trùng mã).
+AC (phần seed của T21): [x] 4 ca TRUA, TOI, DEM_23H, SANG_6H.

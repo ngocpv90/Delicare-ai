@@ -13,7 +13,7 @@ namespace AppDelicare.Tests.Security
     [Collection(ApiCollection.Name)]
     public class SeedTests(ApiFactory factory)
     {
-        private static readonly string[] SeedFiles = ["OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "UserRole_seed.sql"];
+        private static readonly string[] SeedFiles = ["OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "UserRole_seed.sql", "Shift_seed.sql"];
 
         private const string CountSql = """
             SELECT (SELECT COUNT(*) FROM Company WHERE IsDeleted = 0),
@@ -24,7 +24,9 @@ namespace AppDelicare.Tests.Security
                    (SELECT COUNT(*) FROM UserRole WHERE IsDeleted = 0),
                    (SELECT COUNT(*) FROM (SELECT Code FROM OrganizationUnit WHERE IsDeleted = 0 AND Code IS NOT NULL GROUP BY Code HAVING COUNT(*) > 1) d),
                    (SELECT COUNT(*) FROM (SELECT MetaLink FROM ObjectMenu WHERE IsDeleted = 0 AND MetaLink LIKE '#/%' GROUP BY MetaLink HAVING COUNT(*) > 1) d),
-                   (SELECT COUNT(*) FROM (SELECT UserGroupId, ObjectMenuId FROM UserRole WHERE IsDeleted = 0 GROUP BY UserGroupId, ObjectMenuId HAVING COUNT(*) > 1) d)
+                   (SELECT COUNT(*) FROM (SELECT UserGroupId, ObjectMenuId FROM UserRole WHERE IsDeleted = 0 GROUP BY UserGroupId, ObjectMenuId HAVING COUNT(*) > 1) d),
+                   (SELECT COUNT(*) FROM Shift WHERE IsDeleted = 0 AND Code IN ('SANG_6H','TRUA','TOI','DEM_23H')),
+                   (SELECT COUNT(*) FROM (SELECT Code FROM Shift WHERE IsDeleted = 0 AND Code IS NOT NULL GROUP BY Code HAVING COUNT(*) > 1) d)
             """;
 
         private static string SeedPath(string file)
@@ -77,6 +79,8 @@ namespace AppDelicare.Tests.Security
                 first[6].Should().Be(0, "không trùng mã đơn vị");
                 first[7].Should().Be(0, "không trùng MetaLink menu");
                 first[8].Should().Be(0, "không trùng cặp nhóm × menu");
+                first[9].Should().Be(4, "4 ca: SANG_6H, TRUA, TOI, DEM_23H (T21.1)");
+                first[10].Should().Be(0, "không trùng mã ca");
 
                 await using var tree = new SqlCommand("""
                     SELECT p.Code FROM OrganizationUnit c JOIN OrganizationUnit p ON p.Id = c.ParentId

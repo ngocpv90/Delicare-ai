@@ -13,6 +13,6 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $project = Join-Path $root "AppDelicare/ClinicManagement.WebApi/AppDelicare.WebApi.csproj"
 dotnet publish $project -c Release -o $Output /p:EnvironmentName=$Environment
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish lỗi" }
-New-Item -ItemType Directory -Force (Join-Path $Output "wwwroot/Logs") | Out-Null
+New-Item -ItemType Directory -Force (Join-Path $Output "Logs") | Out-Null
 Write-Host "Đã publish vào $Output (ASPNETCORE_ENVIRONMENT=$Environment ghi trong web.config)."
 Write-Host "Bước tiếp theo: deploy/README.md mục IIS – đặt biến môi trường bí mật cho Application Pool, KHÔNG ghi vào web.config trong repo."

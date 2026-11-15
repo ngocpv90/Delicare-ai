@@ -31,3 +31,6 @@ backup-db/
 *.local.env.ps1
 *.local.env
 deploy/docker/staging.env
+
+# Log ứng dụng (ngoài wwwroot – T21.1)
+AppDelicare/ClinicManagement.WebApi/Logs/
