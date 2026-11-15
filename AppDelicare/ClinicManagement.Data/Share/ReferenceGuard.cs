@@ -38,7 +38,7 @@ namespace AppDelicare.Data.Share
             var usages = new List<ReferenceUsage>();
             foreach (var (sourceTable, column) in sources)
             {
-                IEntityType? entity = db.Model.GetEntityTypes().FirstOrDefault(e => string.Equals(e.GetTableName(), sourceTable, StringComparison.OrdinalIgnoreCase));
+                IEntityType? entity = db.Model.GetEntityTypes().FirstOrDefault(e => string.Equals(TableOf(e), sourceTable, StringComparison.OrdinalIgnoreCase));
                 if (entity == null)
                 {
                     continue;
@@ -71,5 +71,9 @@ namespace AppDelicare.Data.Share
             }
             return query.CountAsync(cancellationToken);
         }
+
+        /// <summary>Tên bảng thật: [Table] trên class (đúng cả với provider không quan hệ như InMemory), không có thì GetTableName().</summary>
+        private static string? TableOf(IEntityType e)
+            => System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.ComponentModel.DataAnnotations.Schema.TableAttribute>(e.ClrType)?.Name ?? e.GetTableName();
     }
 }

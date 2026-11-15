@@ -31,6 +31,12 @@ namespace AppDelicare.WebApi.Api
                 await WriteAsync(context, ex.StatusCode, ex.Message, ex.Errors);
                 return;
             }
+            catch (AppDelicare.Application.Common.ValidationFailedException ex)
+            {
+                await WriteAsync(context, StatusCodes.Status400BadRequest, "Dữ liệu không hợp lệ.",
+                    ex.Errors.Select(e => new ApiError { Code = ErrorCodes.ValidationFailed, Field = e.Field, Message = e.Message }).ToList());
+                return;
+            }
             catch (BusinessRuleException ex)
             {
                 await WriteAsync(context, ex.StatusCode, ex.Message, [new ApiError { Code = ex.Code, Field = ex.Field, Message = ex.Message }]);

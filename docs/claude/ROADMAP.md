@@ -147,7 +147,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 
 ## GIAI ĐOẠN 2 – Nghiệp vụ lõi (Application)
 
-### T10 – Khung AppDelicare.Application · phụ thuộc T05, T09 · `TODO`
+### T10 – Khung AppDelicare.Application · phụ thuộc T05, T09 · `DONE` (2026-11-14)
 - Project mới. Cấu trúc thư mục theo miền (ARCHITECTURE §1).
 - Mẫu `Command` / `Query` / `Handler` / `Validator` (FluentValidation). `IClock` (giờ VN). `BusinessRulesOptions` (BUSINESS_RULES). Dispatcher sự kiện sau commit. `Result` chuẩn.
 - Controller `/api/v1/...` mỏng, chỉ gọi handler.

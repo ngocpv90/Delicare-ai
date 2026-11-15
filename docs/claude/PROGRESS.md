@@ -1,10 +1,10 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
-- Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.0 Nền móng – XONG, chờ anh UAT** (UAT_CHECKLIST R1.0)
-- Task đang làm: R1.0 xong (T00–T09, T48.1). **Dừng chờ anh UAT** trước khi sang R1.1 (T10 → T21.1 → T45B → T49)
-- Nhánh: `feat/T48.1-staging` (chuỗi T00 → … → T48.1; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 71/71 xanh
+- Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
+- Task đang làm: T10 DONE – kế tiếp **T21.1** (seed Shift) → T45B → T49
+- Nhánh: `feat/T10-application` (chuỗi T00 → … → T48.1 → T10; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 83/83 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -253,3 +253,16 @@ Kiểm tra (máy anh, mô phỏng máy sạch – DB mới, bí mật chỉ qua 
 - Hash mật khẩu ở 3 nơi (C#/PowerShell, Node, `md5sum` trong container) cho cùng kết quả.
 AC: [x] staging backend chạy được từ máy sạch theo README (cách A / B) · [x] `/health` xanh · [x] Swagger staging mở được · [x] đăng nhập qua API và gọi được API danh mục. (Cách C Docker: chưa kiểm được.)
 Bí mật staging trên máy anh: `deploy/staging.local.md`, `deploy/staging.local.env.ps1` (gitignore, không commit).
+
+### T10 – Khung AppDelicare.Application · 2026-11-14 · DONE
+Đã làm:
+- Project **`AppDelicare.Application`** (tham chiếu Data, Model; WebApi + Tests tham chiếu nó), thư mục theo miền bắt đầu từ `Common/`.
+- Messaging tự viết (MediatR từ v13 là license thương mại): `ICommand<T>` / `IQuery<T>`, `IRequestHandler`, `IDispatcher` (validator → handler → phát sự kiện), `IDomainEvent` + `IDomainEventHandler` + `IDomainEventCollector`: sự kiện chỉ phát khi **lệnh ngoài cùng thành công**, lệnh lỗi → hủy sự kiện. Gọi handler kiểu mạnh (exception không bị bọc).
+- Validator: **FluentValidation 12.2** (Apache-2.0). Lỗi → `ValidationFailedException` → 400 `VALIDATION_FAILED` từng `field` (camelCase).
+- `IClock` / `SystemClock`: giờ VN theo `BusinessRules:TimeZone` (Kind = Unspecified để ghi thẳng cột datetime). `BusinessRulesOptions` + section `BusinessRules` trong appsettings (BUSINESS_RULES.md).
+- `AddApplication()` quét assembly đăng ký handler / validator / handler sự kiện.
+- Use case mẫu **`Common.LookupQuery`** (Spec 2.2): `GET /api/v1/meta/lookups/{table}?q&take&ids` → `[{ id, label, code, status }]`; nhãn DisplayName → Name → FullName → số chứng từ → Code; chỉ Active khi bảng có Status; `ids` lấy đúng giá trị đang chọn; nhận tên bảng thật (`Dishe`) hoặc tên class (`Dish`); chặn bảng nhạy cảm (GAP-API-02). Truy vấn động theo metadata EF, không SQL ghép chuỗi. `MetaController` mỏng chỉ gọi dispatcher.
+- Sửa: dò bảng theo `[Table]` (đúng cả provider InMemory) trong LookupQuery và ReferenceGuard.
+
+Kiểm tra: build 0 lỗi / 10 cảnh báo; test **83/83** (+12): dispatcher chạy handler + phát sự kiện sau thành công, lệnh lỗi hủy sự kiện, validator lỗi không chạy handler; IClock = UTC+7; BusinessRules đọc từ cấu hình + mặc định; lookup: thứ tự nhãn, lọc Inactive / đã xóa, tìm theo mã, theo ids, tên bảng legacy, chặn User / AuditChange / Patient / bảng lạ / _Legacy; end-to-end qua API (200, 400 `take`, 404 bảng chặn). Chạy thật trên DB dev: lookup OrganizationUnit / UserGroup / KitchenWorkstation / ObjectMenu / Company / Dishe 200, log không lỗi.
+AC: [x] 1 use case mẫu (`Common.LookupQuery`) chạy end-to-end và có test.
