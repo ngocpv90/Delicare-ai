@@ -20,7 +20,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | Lát | Backend giao được | Task theo thứ tự |
 |---|---|---|
 | R1.0 Nền móng | API an toàn, đúng 124 bảng, phân quyền thật, test, staging backend | T00 → T01 → T04 → T02 → T03 → T05 → T06 → T07 → T08 → T09 → **T48.1 (staging backend)** |
-| R1.1 Danh mục và quản trị (P0–P2) | API quản trị, nhóm quyền, menu; danh mục khách, điểm giao, hợp đồng, NCC, nguyên liệu, đơn vị, kho, món, công thức, ca | T10 → T21.1 (seed Shift) → T45B.1–.4 → **T45R (về khung cũ)** → T45B.5 → T49 (API import danh mục) → **UAT-1 (API)** |
+| R1.1 Danh mục và quản trị (P0–P2) | API quản trị, nhóm quyền, menu; danh mục khách, điểm giao, hợp đồng, NCC, nguyên liệu, đơn vị, kho, món, công thức, ca | T10 → T21.1 (seed Shift) → T45B.1–.4 → **T45R (về khung cũ)** → T45B.5 → **T45R.6 (đổi tên Generator)** → T49 (API import danh mục) → **UAT-1 (API)** |
 | R1.2 Đơn hàng (P3) | Hợp đồng, thực đơn tuần (buổi × lựa chọn, FC), đơn hàng, chốt 20h, duyệt | T11 → T12 → T13 → T46B.1 (API P3 + in thực đơn) → **UAT-2** |
 | R1.3 Kho và mua hàng (P4) | Nhập kho + QC, FEFO, kiểm kê, MRP, báo giá → PO, job 20h / 20h30 / 21h | T16 → T14 → T15 → T23.1 → T46B.2 (API P4 + in phiếu trước SX, đơn đặt hàng) → **UAT-3** |
 | R1.4 Sản xuất và ATTP (P5–P6) | Kế hoạch mẻ, cấp NL, nhiệt độ lõi, lưu mẫu, checklist, truy xuất | T17 → T18 → T46B.3 (API P5 + in phiếu sản xuất) → T47B.1 (API P6) → **UAT-4** |
@@ -310,6 +310,17 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
   - [x] Không còn quyền nào cấu hình trong appsettings hoặc theo tên nhóm cứng; quyền duyệt gán được trên màn hình ma trận quyền cũ.
   - [x] Build 0 lỗi; `dotnet test` xanh. `.http` cập nhật theo route cũ; phần chạy trên DB dev đã kiểm bằng test SQL Server (chưa chạy tay từng request).
 - Không cần dừng giữa các bước con, trừ khi rà soát thấy code cũ và mockup / spec mâu thuẫn mà DECISIONS chưa phân xử.
+
+### T45R.6 – Đổi tên `ClinicManagement.Generator` → `AppDelicare.Generator` · phụ thuộc T45R.5 · `TODO`
+- Làm trên nhánh riêng `chore/T45R.6-rename-generator`. Dùng `git mv` để giữ lịch sử.
+- Đổi thư mục `AppDelicare/ClinicManagement.Generator` → `AppDelicare/AppDelicare.Generator` và 11 thư mục con `ClinicManagement.*` → `AppDelicare.*` (Data.Connection, Data.Interface, Data.Interface.UnitOfWork, Data.Repositories, Data.Repositories.UnitOfWork, Model.Entity, Model.Request, Model.SearchRequest, Model.ViewModels, Services.Implement, Services.Interface, WebApi.Controllers, WebApi.Infrastructure – đếm lại theo thực tế).
+- Sửa mọi tham chiếu: `AppDelicare.sln` (đường dẫn project), `AppDelicare.Generator.csproj` (Include / `<None>` / `<Compile>` theo thư mục), `RunCopyFile.bat` (mọi dòng `copy` / `del`), các file `.tt` / `.ttinclude` (tên thư mục đầu ra, namespace nếu có), `App.config`, `.gitignore`, `CLAUDE.md` mục 2, `tools/AppDelicare.CodeGen/README.md`, tài liệu khác trong `docs/claude/`.
+- **Không** chạy bộ sinh T4 (chỉ chạy được trong Visual Studio) và **không** sinh lại code. Không đổi nội dung template ngoài đường dẫn / tên.
+- AC:
+  - [ ] `grep -rni "ClinicManagement" AppDelicare tools docs/claude CLAUDE.md` = 0 (trừ `_obsolete/`, `PROGRESS.md` phần lịch sử, `bin/`, `obj/`, `.vs/`).
+  - [ ] `dotnet build AppDelicare/AppDelicare.sln` 0 lỗi (project Generator nếu không build được bằng dotnet CLI như trước thì ghi rõ trong PROGRESS, không được tệ hơn baseline); `dotnet test` xanh.
+  - [ ] `RunCopyFile.bat` đọc lại từng dòng khớp thư mục mới (liệt kê trong PROGRESS).
+  - [ ] **Cần anh:** mở solution bằng Visual Studio, chạy T4 một lần ở bản sao / nhánh này, xác nhận file sinh ra đúng chỗ → rồi mới merge.
 
 ### T45B – API màn hình P0–P2 (quản trị và danh mục) · phụ thuộc T07, T10 · `DONE` (2026-11-15: T45B.1–.4 làm theo v1 → T45R chuyển về khung cũ; T45B.5 xong. GAP-AUTH-01 refresh token để mở)
 - Tách: **T45B.1** CRUD chuẩn generic cho 39 resource (`DONE` 2026-11-14) · **T45B.2** (`DONE` 2026-11-14 trừ /meta/statuses, /meta/reference-lists, auth/refresh → T45B.5) P0 riêng: users (tạo kèm Person + nhóm, lock/unlock, reset), ma trận quyền nhóm (GET/PUT/bulk/preview, effective-permissions), object-menus tree/reorder, org-units tree / branches, merge-conflicts (Id bigint), `/meta/menu`, `/meta/me`, `/meta/statuses`, `/meta/reference-lists` · **T45B.3** (`DONE` 2026-11-14) P1 riêng: customer overview / list mở rộng, supplier overview, supplier-materials ưu tiên + effectiveOn, ingredients kèm tồn, warehouse layout, UomService.Convert, delivery-location chặn ngừng khi còn đơn · **T45B.4** (`DONE` 2026-11-14) P2 riêng: dishes kèm activeRecipe, recipes phiên bản (tạo / dòng / submit / lock / cost), standard-costs recalculate, price-policies resolve + chặn chồng hiệu lực, checklist UNIQUE (Code, VersionNo) · **T45B.5** `docs/frontend-handoff/P0-P2.md` + `.http'

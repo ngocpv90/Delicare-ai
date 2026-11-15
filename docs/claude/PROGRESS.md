@@ -5,7 +5,7 @@
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `feat/T45R-legacy-framework` (từ `chore/rename-clinicmanagement` ← `feat/T45B.4-p2-special` ← … T00; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 85/85 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 86/86 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -446,3 +446,15 @@ Còn lại / GAP:
 - Sheet "Rule" (quy tắc thực đơn) và "DS NCC" (địa chỉ, điện thoại NCC) chưa nạp: để T13 / R1.2.
 
 Cần anh: tự nạp file thật (UAT R1.1 mục 15); chốt cách xử lý GAP-IMP-01, ví dụ bổ sung cột định lượng vào file, hoặc lấy định lượng mặc định từ sheet Rule.
+
+### Deploy staging sau lát R1.1 · 2026-11-15 · DONE
+- `deploy/db/Deploy-Database.ps1` lên `AppDelicare_Staging` (LocalDB): giữ nguyên 124 bảng; 130 SP; seed tổ chức / menu (gồm 14 mục "Duyệt …") / nhóm quyền / ca.
+- Publish Release, chạy ở chế độ Staging:
+  - `/health` Healthy;
+  - gọi không token → 401;
+  - Swagger 747 route, 0 route `/api/v1`, có ImportExcel/Import, Recipe/Lock, MetaData.
+- **Lỗi phát hiện khi deploy và đã sửa:** `CodeGen --merge` so tên phân biệt hoa thường, nên thêm `QCInspectionId` vào DTO đã có `QcInspectionId` (trùng tên camelCase → Swagger JSON lỗi).
+  - Đã gỡ thuộc tính trùng; Merger so tên không phân biệt hoa thường.
+  - Thêm test `DtoNamingTests`.
+- Test 86/86.
+- **Dừng lát R1.1 – chờ anh UAT-1** theo `docs/claude/UAT_CHECKLIST.md` mục R1.0 + R1.1 (`deploy/README.md` mục 3 để chạy staging).

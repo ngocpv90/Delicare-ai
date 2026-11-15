@@ -12,8 +12,6 @@ namespace AppDelicare.Model.ViewModels
 		public string? Result { get; set; }
 		public string? Note { get; set; }
 		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
-		public Guid? QCInspectionId { get; set; }
-		public string? QCInspectionName { get; set; }
 		public Guid? IngredientId { get; set; }
 		public string? IngredientName { get; set; }
 		public decimal? Temperature { get; set; }

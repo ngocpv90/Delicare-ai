@@ -8,7 +8,8 @@ public static partial class Merger
 {
     public static string AddMissingProperties(string existing, string generated)
     {
-        var have = PropertyName().Matches(existing).Select(m => m.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+        // So tên không phân biệt hoa thường: QcInspectionId (file cũ) ≡ QCInspectionId (DDL) – tránh 2 thuộc tính trùng tên camelCase trong JSON.
+        var have = PropertyName().Matches(existing).Select(m => m.Groups[1].Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var lines = generated.Replace("\r\n", "\n").Split('\n');
         var block = new List<string>();
         var pending = new List<string>();
