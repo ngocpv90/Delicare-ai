@@ -12,10 +12,6 @@ namespace AppDelicare.WebApi.Infrastructure
             {
                 options.UseSqlServer(configuration.GetConnectionString(ConnectionHelper.DatabaseName.MainConnectionString.ToString()));
             });
-            services.AddCors(c =>
-            {
-                c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
-            });
         }
     }
 }
