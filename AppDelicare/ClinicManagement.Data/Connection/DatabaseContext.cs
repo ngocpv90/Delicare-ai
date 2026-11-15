@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using AppDelicare.Data.Share;
@@ -8,110 +7,20 @@ using System.Text;
 
 namespace AppDelicare.Data.Connection
 {
-	public class DatabaseContext(DbContextOptions<DatabaseContext> options, ICurrentActor currentActor) : IdentityDbContext(options)
+	/// <summary>DbContext chính. DbSet + cấu hình theo bảng nằm ở DatabaseContext.Generated.cs (CodeGen, T05).
+    /// Không còn kế thừa IdentityDbContext: các bảng AspNet* không có trong 124 bảng và không có code dùng Identity store (A11).</summary>
+	public partial class DatabaseContext(DbContextOptions<DatabaseContext> options, ICurrentActor currentActor) : DbContext(options)
     {
         private readonly ICurrentActor _currentActor = currentActor;
 
-		public virtual DbSet<User> User { get; set; }
-        public virtual DbSet<ObjectMenu> ObjectMenu { get; set; }
-        public virtual DbSet<UserGroup> UserGroup { get; set; }
-        public virtual DbSet<UserRole> UserRole { get; set; }
-        public virtual DbSet<DocumentFile> DocumentFile { get; set; }
-        public virtual DbSet<LocationTracking> LocationTracking { get; set; }
-        public virtual DbSet<AuditChange> AuditChange { get; set; }
-        public virtual DbSet<UserClaim> UserClaim { get; set; }
-		//Custom
-		public virtual DbSet<PatientDetail> PatientDetail { get; set; }
-		public virtual DbSet<MedicalExamination> MedicalExamination { get; set; }
-		public virtual DbSet<MedicineWarehouse> MedicineWarehouse { get; set; }
-		public virtual DbSet<Supplier> Supplier { get; set; }
-		public virtual DbSet<UnitMeasure> UnitMeasure { get; set; }
-		public virtual DbSet<AdministrativeDistrict> AdministrativeDistrict { get; set; }
-		public virtual DbSet<AdministrativeProvince> AdministrativeProvince { get; set; }
-		public virtual DbSet<AdministrativeRegion> AdministrativeRegion { get; set; }
-		public virtual DbSet<AdministrativeUnit> AdministrativeUnit { get; set; }
-		public virtual DbSet<AdministrativeWard> AdministrativeWard { get; set; }
-		public virtual DbSet<Person> Person { get; set; }
-		public virtual DbSet<TestDemo> TestDemo { get; set; }
-		public virtual DbSet<Patient> Patient { get; set; }
-        //App
-        public virtual DbSet<AppConfig> AppConfig { get; set; }
-        public virtual DbSet<Customer> Customer { get; set; }
-        public virtual DbSet<Region> Region { get; set; }
-        public virtual DbSet<Area> Area { get; set; }
-        public virtual DbSet<Branch> Branch { get; set; }
-        public virtual DbSet<Department> Department { get; set; }
-        public virtual DbSet<Employee> Employee { get; set; }
-        public virtual DbSet<Products> Products { get; set; }
-        public virtual DbSet<Leads> Leads { get; set; }
-        public virtual DbSet<Opportunity> Opportunity { get; set; }
-        public virtual DbSet<Company> Company { get; set; }
-        public virtual DbSet<OrganizationUnit> OrganizationUnit { get; set; }
-        public virtual DbSet<Position> Position { get; set; }
-        public virtual DbSet<Shift> Shift { get; set; }
-        public virtual DbSet<CustomerContact> CustomerContact { get; set; }
-        public virtual DbSet<CustomerDeliveryLocation> CustomerDeliveryLocation { get; set; }
-        public virtual DbSet<IngredientCategory> IngredientCategory { get; set; }
-        public virtual DbSet<UnitOfMeasure> UnitOfMeasure { get; set; }
-        public virtual DbSet<UomConversion> UomConversion { get; set; }
-        public virtual DbSet<Ingredient> Ingredient { get; set; }
-        public virtual DbSet<SupplierMaterial> SupplierMaterial { get; set; }
-        public virtual DbSet<MaterialLot> MaterialLot { get; set; }
-        public virtual DbSet<DishCategory> DishCategory { get; set; }
-        public virtual DbSet<Dish> Dish { get; set; }
-        public virtual DbSet<Recipe> Recipe { get; set; }
-        public virtual DbSet<RecipeLine> RecipeLine { get; set; }
-        public virtual DbSet<Menu> Menu { get; set; }
-        public virtual DbSet<MenuLine> MenuLine { get; set; }
-        public virtual DbSet<MenuAssignment> MenuAssignment { get; set; }
-        public virtual DbSet<Contract> Contract { get; set; }
-        public virtual DbSet<ContractMeals> ContractMeal { get; set; }
-        public virtual DbSet<PricePolicy> PricePolicy { get; set; }
-        public virtual DbSet<Forecast> Forecast { get; set; }
-        public virtual DbSet<Order> Order { get; set; }
-        public virtual DbSet<OrderLine> OrderLine { get; set; }
-        public virtual DbSet<MaterialRequirement> MaterialRequirement { get; set; }
-        public virtual DbSet<PurchaseRequest> PurchaseRequest { get; set; }
-        public virtual DbSet<PurchaseRequestLine> PurchaseRequestLine { get; set; }
-        public virtual DbSet<PurchaseOrder> PurchaseOrder { get; set; }
-        public virtual DbSet<PurchaseOrderLine> PurchaseOrderLine { get; set; }
-        public virtual DbSet<GoodsReceipt> GoodsReceipt { get; set; }
-        public virtual DbSet<GoodsReceiptLine> GoodsReceiptLine { get; set; }
-        public virtual DbSet<QcInspection> QcInspection { get; set; }
-        public virtual DbSet<QcInspectionLine> QcInspectionLine { get; set; }
-        public virtual DbSet<Warehouse> Warehouse { get; set; }
-        public virtual DbSet<StorageZone> StorageZone { get; set; }
-        public virtual DbSet<StorageLocation> StorageLocation { get; set; }
-        public virtual DbSet<InventoryPolicy> InventoryPolicy { get; set; }
-        public virtual DbSet<InventoryTransaction> InventoryTransaction { get; set; }
-        public virtual DbSet<InventoryBalance> InventoryBalance { get; set; }
-        public virtual DbSet<StockCount> StockCount { get; set; }
-        public virtual DbSet<StockCountLine> StockCountLine { get; set; }
-        public virtual DbSet<ProductionPlan> ProductionPlan { get; set; }
-        public virtual DbSet<ProductionPlanLine> ProductionPlanLine { get; set; }
-        public virtual DbSet<ProductionOrder> ProductionOrder { get; set; }
-        public virtual DbSet<MaterialReservation> MaterialReservation { get; set; }
-        public virtual DbSet<MaterialIssue> MaterialIssue { get; set; }
-        public virtual DbSet<MaterialIssueLine> MaterialIssueLine { get; set; }
-        public virtual DbSet<ProductionBatch> ProductionBatch { get; set; }
-        public virtual DbSet<ProductionOutput> ProductionOutput { get; set; }
-        public virtual DbSet<PackingOrder> PackingOrder { get; set; }
-        public virtual DbSet<PackingResult> PackingResult { get; set; }
-        public virtual DbSet<DeliveryRoute> DeliveryRoute { get; set; }
-        public virtual DbSet<DeliveryOrder> DeliveryOrder { get; set; }
-        public virtual DbSet<DeliveryLoading> DeliveryLoading { get; set; }
-        public virtual DbSet<DeliveryExecution> DeliveryExecution { get; set; }
-        public virtual DbSet<ProofOfDelivery> ProofOfDelivery { get; set; }
-        public virtual DbSet<ContainerReturn> ContainerReturn { get; set; }
-        public virtual DbSet<ReturnInspection> ReturnInspection { get; set; }
-        public virtual DbSet<CleaningBatch> CleaningBatch { get; set; }
-        public virtual DbSet<OrderReconciliation> OrderReconciliation { get; set; }
-        public virtual DbSet<MaterialConsumptionVariance> MaterialConsumptionVariance { get; set; }
-        public virtual DbSet<StandardCost> StandardCost { get; set; }
-        public virtual DbSet<ActualCost> ActualCost { get; set; }
-        public virtual DbSet<MealCost> MealCost { get; set; }
-        // T03: sổ IntegrationLog (append-only) – dùng cho Idempotency-Key.
-        public virtual DbSet<IntegrationLog> IntegrationLog { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            OnModelCreatingGenerated(modelBuilder);
+        }
+
+        partial void OnModelCreatingGenerated(ModelBuilder modelBuilder);
+
         public async Task<int> SaveChangesAsync(string typeSave, CancellationToken cancellationToken = new CancellationToken())
         {
             // T02: không có người thao tác thì chặn ghi (không còn fallback "user đầu tiên").
@@ -141,6 +50,8 @@ namespace AppDelicare.Data.Connection
                         if (typeSave == ConstantHelper.TypeSave.Delete)
                         {
                             entry.Entity.DeletedDate = date;
+                            // DEPRECATED_COLUMNS: ghi cả DeletedBy (mới) và DeleteddBy (cũ); bảng thiếu cột nào thì EF Ignore cột đó.
+                            entry.Entity.DeletedBy = user;
                             entry.Entity.DeleteddBy = user;
                             entry.Entity.IsDeleted = true;
                         }

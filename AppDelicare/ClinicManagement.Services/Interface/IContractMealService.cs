@@ -12,7 +12,7 @@ namespace AppDelicare.Services.Interface
     {
         public Task<IResults<ContractMealViewModel>> GetAll(ContractMealSearchRequest request);
         public Task<IResult<bool>> Save(ContractMealRequest request, string typeSave);
-        public IResults<ContractMeals> GetAllData();
-        public Task<IResult<ContractMeals>> GetById(Guid id);
+        public IResults<ContractMeal> GetAllData();
+        public Task<IResult<ContractMeal>> GetById(Guid id);
     }
 }

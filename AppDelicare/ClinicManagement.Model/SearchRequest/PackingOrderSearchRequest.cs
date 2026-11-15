@@ -6,7 +6,7 @@ namespace AppDelicare.Model.SearchRequest
 	{
 		public Guid? ProductionBatchId { get; set; }
 		public Guid? OrderId { get; set; }
-		public DateTime PackingDate { get; set; }
+		public DateTime? PackingDate { get; set; }
 		public string? Status { get; set; }
 	}
 }

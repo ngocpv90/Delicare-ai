@@ -58,6 +58,7 @@ namespace AppDelicare.WebApi
             {
                 x.AddProfile(new AutoMapperConfiguraion());
                 x.AddProfile(new AutoMapperCustomConfiguraion());
+                x.AddProfile(new AutoMapperGeneratedProfile()); // T05: CodeGen
             });
             IMapper mapper = autoMapper.CreateMapper();
             services.AddSingleton(mapper);

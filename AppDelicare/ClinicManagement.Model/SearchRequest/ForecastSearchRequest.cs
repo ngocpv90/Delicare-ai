@@ -6,7 +6,7 @@ namespace AppDelicare.Model.SearchRequest
 	{
 		public Guid CustomerId { get; set; }
 		public Guid? DeliveryLocationId { get; set; }
-		public DateTime ForecastDate { get; set; }
+		public DateTime? ForecastDate { get; set; }
 		public string? MealType { get; set; }
 		public string? Status { get; set; }
 	}

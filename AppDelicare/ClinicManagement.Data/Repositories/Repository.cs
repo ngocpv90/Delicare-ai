@@ -86,8 +86,13 @@ namespace AppDelicare.Data.Repositories
 
         public IQueryable<T> GetAllNoneDeleted()
         {
+            // T05 (A18): trước đây KHÔNG lọc IsDeleted. Bảng có cột IsDeleted thì chỉ lấy bản ghi chưa xóa mềm.
             IQueryable<T> query = _context.Set<T>();
-            return query.AsQueryable();
+            if (_context.Model.FindEntityType(typeof(T))?.FindProperty("IsDeleted") != null)
+            {
+                query = query.Where(x => !EF.Property<bool>(x, "IsDeleted"));
+            }
+            return query;
         }
 
         public async Task<IEnumerable<T>> GetAllUsingDapper(string storedProcedure) => await _unitOfWork.Connection.QueryAsync<T>(storedProcedure, commandType: CommandType.StoredProcedure);

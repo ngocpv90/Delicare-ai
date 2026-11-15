@@ -62,12 +62,12 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        public IResults<ContractMeals> GetAllData()
+        public IResults<ContractMeal> GetAllData()
         {
             try
             {
                 var list = _unitOfWork.ContractMealRepository.GetAll().Where(x => !x.IsDeleted).ToList();
-                return new Results<ContractMeals>
+                return new Results<ContractMeal>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
                     ResponseMessage = ConstantHelper.Message.GetAllSuccessfully,
@@ -130,7 +130,7 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(ContractMealRequest request, string typeSave)
         {
-            var insert = _mapper.Map<ContractMeals>(request);
+            var insert = _mapper.Map<ContractMeal>(request);
             _unitOfWork.ContractMealRepository.Add(insert);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -156,7 +156,7 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
             var checkForeignKey = (await _auditChangeService.GetColumnNameForeignKey()).ListData
-                .Where(x => (x.ColumnName ?? string.Empty).Contains(nameof(ContractMeals))).ToList();
+                .Where(x => (x.ColumnName ?? string.Empty).Contains(nameof(ContractMeal))).ToList();
             if (checkForeignKey.Count != 0)
             {
                 foreach (var item in checkForeignKey)
@@ -181,21 +181,21 @@ namespace AppDelicare.Services.Implement
             return string.Empty;
         }
 
-        public async Task<IResult<ContractMeals>> GetById(Guid id)
+        public async Task<IResult<ContractMeal>> GetById(Guid id)
         {
             try
             {
                 var data = await _unitOfWork.ContractMealRepository.GetSingleAsync(x => x.Id == id && !x.IsDeleted);
                 if (data == null)
                 {
-                    return new Result<ContractMeals>
+                    return new Result<ContractMeal>
                     {
                         ResponseCode = Convert.ToInt32(HttpStatusCode.BadRequest),
                         ResponseMessage = ConstantHelper.Message.RecordNotFoundMessage,
                         Data = null,
                     };
                 }
-                return new Result<ContractMeals>
+                return new Result<ContractMeal>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
                     ResponseMessage = ConstantHelper.Message.GetAllSuccessfully,

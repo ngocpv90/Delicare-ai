@@ -6,7 +6,7 @@ namespace AppDelicare.Model.SearchRequest
 	{
 		public Guid WarehouseId { get; set; }
 		public string? CountNumber { get; set; }
-		public DateTime CountDate { get; set; }
+		public DateTime? CountDate { get; set; }
 		public string? Status { get; set; }
 		public Guid? ResponsibleEmployeeId { get; set; }
 	}

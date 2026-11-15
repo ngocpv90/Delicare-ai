@@ -8,6 +8,6 @@ namespace AppDelicare.Model.SearchRequest
 		public Guid? ProductionOrderId { get; set; }
 		public decimal TotalCost { get; set; }
 		public string? CurrencyCode { get; set; }
-		public DateTime CalculatedAt { get; set; }
+		public DateTime? CalculatedAt { get; set; }
 	}
 }

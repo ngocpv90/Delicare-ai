@@ -6,7 +6,7 @@ namespace AppDelicare.Model.SearchRequest
 	{
 		public Guid? GoodsReceiptId { get; set; }
 		public string? InspectionNumber { get; set; }
-		public DateTime InspectionDate { get; set; }
+		public DateTime? InspectionDate { get; set; }
 		public Guid? InspectorEmployeeId { get; set; }
 		public string? Result { get; set; }
 	}

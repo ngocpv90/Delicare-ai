@@ -10,7 +10,7 @@ namespace AppDelicare.Model.SearchRequest
 		public Guid? StorageLocationId { get; set; }
 		public string? TransactionNumber { get; set; }
 		public string? TransactionType { get; set; }
-		public DateTime TransactionDate { get; set; }
+		public DateTime? TransactionDate { get; set; }
 		public Guid UnitId { get; set; }
 		public string? ReferenceType { get; set; }
 		public Guid? ReferenceId { get; set; }

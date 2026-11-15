@@ -109,7 +109,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - EF Core 8.x, `Microsoft.AspNetCore.Authentication.JwtBearer` 8.x, `Microsoft.AspNetCore.OpenApi` 8.x, Swashbuckle 6.5+, `Microsoft.IdentityModel.Tokens` cùng họ, `EFCore.BulkExtensions` 8.x. Không nâng gói thương mại (EvoPdf, Syncfusion, GemBox) nếu không cần.
 - AC: build 0 lỗi; số cảnh báo không tăng so với baseline; app chạy.
 
-### T05 – Bộ sinh mã mới + đồng bộ entity với 124 bảng · phụ thuộc T04 · `TODO`
+### T05 – Bộ sinh mã mới + đồng bộ entity với 124 bảng · phụ thuộc T04 · `DONE` (2026-11-14)
 - Tạo `tools/AppDelicare.CodeGen` (console .NET 8). Đọc `docs/reference/20261113_structure_db_appdelicare.sql` (parse `CREATE TABLE [dbo].[X]`, cột, kiểu, null, default). Sinh đúng **mẫu file hiện có**: Entity (kế thừa BaseEntity, `[Table("TênThật")]`), Request, SearchRequest, ViewModel, IRepository/Repository, I/Service, Controller, mục UnitOfWork, DbSet, cấu hình AutoMapper, SP `DB/sp/usp<Entity>_GetAll.sql` (CREATE OR ALTER, phân trang, sort, SearchText).
 - Tên class: bỏ hậu tố legacy (`Dishe`→`Dish`…) theo bảng ở CODE_AUDIT mục C. Kiểu `decimal(p,s)` sinh kèm `[Precision]`.
 - Cặp cột trùng: theo `docs/reference/DEPRECATED_COLUMNS.md`. Thêm `DeletedBy` vào BaseEntity, cấu hình EF bỏ cột không tồn tại theo từng bảng.
@@ -121,7 +121,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Ghi `tools/AppDelicare.CodeGen/README.md`: cách chạy và cờ `--only <Table>`, `--skip-existing`.
 - AC: build xanh; test "mọi DbSet map tới bảng có trong DDL và mọi property map tới cột có thật" (đọc DDL trong test) xanh; không còn entity map tới bảng không tồn tại.
 
-### T06 – Sinh mã cho 35 bảng còn thiếu · phụ thuộc T05 · `TODO`
+### T06 – Sinh mã cho 35 bảng còn thiếu · phụ thuộc T05 · `DONE` (2026-11-14)
 - Dùng CodeGen sinh CRUD cho danh sách CODE_AUDIT A1(c), trừ 2 bảng `_Legacy_20261113` (chỉ sinh entity đọc).
 - Với các sổ chỉ ghi thêm (`IntegrationLog`, `ApprovalDecision`, `TemperatureLog`, `PackagingLedger`, `AttendanceEvent`, `DeliveryEvent`, `ComplaintHistory`) **không sinh** Update/Delete (xem T08).
 - AC: build xanh; script SP nằm trong `DB/sp/`; DbSet đủ 124 − 2 legacy (hoặc đủ 124 nếu có entity đọc).

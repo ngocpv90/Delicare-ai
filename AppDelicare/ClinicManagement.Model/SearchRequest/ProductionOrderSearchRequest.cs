@@ -6,7 +6,7 @@ namespace AppDelicare.Model.SearchRequest
 	{
 		public Guid ProductionPlanId { get; set; }
 		public string? ProductionOrderNumber { get; set; }
-		public DateTime PlannedStartDate { get; set; }
+		public DateTime? PlannedStartDate { get; set; }
 		public DateTime? ActualStartDate { get; set; }
 		public DateTime? ActualEndDate { get; set; }
 		public Guid? ShiftId { get; set; }

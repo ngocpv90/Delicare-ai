@@ -9,6 +9,6 @@ namespace AppDelicare.Model.SearchRequest
 		public Guid? MaterialLotId { get; set; }
 		public Guid? StorageLocationId { get; set; }
 		public Guid UnitId { get; set; }
-		public DateTime LastCalculatedDate { get; set; }
+		public DateTime? LastCalculatedDate { get; set; }
 	}
 }

@@ -9,7 +9,7 @@ namespace AppDelicare.Model.SearchRequest
 		public string? Name { get; set; }
 		public string? MenuType { get; set; }
 		public string? VersionCode { get; set; }
-		public DateTime EffectiveFrom { get; set; }
+		public DateTime? EffectiveFrom { get; set; }
 		public DateTime? EffectiveTo { get; set; }
 		public string? Status { get; set; }
 	}

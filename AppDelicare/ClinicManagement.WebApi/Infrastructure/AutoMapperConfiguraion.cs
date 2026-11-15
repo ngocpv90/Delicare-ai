@@ -30,16 +30,8 @@ namespace AppDelicare.WebApi.Infrastructure
 			CreateMap<TestDemoRequest, TestDemo>();
 			CreateMap<PatientRequest, Patient>();
 			//App
-            CreateMap<AppConfigRequest, AppConfig>();
             CreateMap<CustomerRequest, Customer>();
-            CreateMap<RegionRequest, Region>();
-            CreateMap<AreaRequest, Area>();
-            CreateMap<BranchRequest, Branch>();
-            CreateMap<DepartmentRequest, Department>();
             CreateMap<EmployeeRequest, Employee>();
-            CreateMap<ProductRequest, Products>();
-            CreateMap<LeadRequest, Leads>();
-            CreateMap<OpportunityRequest, Opportunity>();
             //AppKitchen
             CreateMap<CompanyRequest, Company>();
             CreateMap<OrganizationUnitRequest, OrganizationUnit>();
@@ -51,7 +43,6 @@ namespace AppDelicare.WebApi.Infrastructure
             CreateMap<CustomerDeliveryLocationRequest, CustomerDeliveryLocation>();
             CreateMap<SupplierRequest, Supplier>();
             CreateMap<IngredientCategoryRequest, IngredientCategory>();
-            CreateMap<UnitOfMeasureRequest, UnitOfMeasure>();
             CreateMap<UomConversionRequest, UomConversion>();
             CreateMap<IngredientRequest, Ingredient>();
             CreateMap<SupplierMaterialRequest, SupplierMaterial>();
@@ -64,7 +55,7 @@ namespace AppDelicare.WebApi.Infrastructure
             CreateMap<MenuLineRequest, MenuLine>();
             CreateMap<MenuAssignmentRequest, MenuAssignment>();
             CreateMap<ContractRequest, Contract>();
-            CreateMap<ContractMealRequest, ContractMeals>();
+            CreateMap<ContractMealRequest, ContractMeal>();
             CreateMap<PricePolicyRequest, PricePolicy>();
             CreateMap<ForecastRequest, Forecast>();
             CreateMap<OrderRequest, Order>();

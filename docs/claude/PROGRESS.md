@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** (.NET + SQL, đủ API cho mockup; Angular ngoài phạm vi – D-20) · Lát hiện tại: **R1.0 Nền móng**
-- Task đang làm: T00–T04 DONE – task kế tiếp: **T05** (CodeGen + đồng bộ entity 124 bảng) → T06 (sinh 35 bảng còn thiếu)
-- Nhánh: `feat/T03-http-pipeline` (chuỗi: T00 → T01 → T04 → T02 → T03; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 45/45 xanh
+- Task đang làm: T00–T06 DONE – task kế tiếp: **T07** (phân quyền UserRole × ObjectMenu + ReferenceGuard)
+- Nhánh: `feat/T05-codegen` (chuỗi T00 → … → T03 → T05/T06; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 50/50 xanh
 - Việc anh cần làm: (1) đổi khóa đã lộ theo `SECRETS_TODO.md`; (2) trả lời D-26 (DeleteData) và D-27 (AutoMapper); (3) merge chuỗi nhánh khi thấy ổn.
 
 ---
@@ -175,3 +175,25 @@ Kiểm tra:
 - Chạy thật trên SQL Server dev: POST 2 lần cùng key → 201 + `Idempotency-Replayed: true`, DB có 1 ca + 1 dòng IntegrationLog (`Succeeded`, 201); ETag lúc tạo = lúc GET; PUT ETag mới 200, ETag cũ 409; DELETE 204; tiếng Việt lưu / đọc đúng. Dữ liệu thử: ca `DEMO-T03`, `DEMO-T03-UTF8` (đã xóa mềm) và 1 dòng IntegrationLog key `demo-t03-live-1` (sổ chỉ ghi thêm, để lại).
 AC: [x] swagger chạy · [x] 200 đúng envelope · [x] 400 / 422 đúng mã lỗi · [x] 409 khi If-Match lệch · [x] Idempotency-Key gửi 2 lần chỉ ghi 1 lần.
 Còn lại: lọc cột deprecated làm theo DTO khi sinh mã (T05 / T45B); `[Permission]` ở T07.
+
+### T05 – Bộ sinh mã mới + đồng bộ entity với 124 bảng · 2026-11-14 · DONE
+Đã làm:
+- **`tools/AppDelicare.CodeGen`** (console .NET 8, có trong solution, README): đọc DDL (cột, kiểu, NULL, UNIQUE, DEFAULT) + DEPRECATED_COLUMNS + LOGICAL_RELATIONS; sinh theo mẫu `Warehouse*`: Entity, Request, SearchRequest, ViewModel, I/Repository, I/Service, Controller (route cũ), SP `usp<Class>_GetAll`, `DatabaseContext.Generated.cs`, `IUnitOfWork.Generated.cs` / `UnitOfWork.Generated.cs`, `AutoMapperGeneratedProfile`. Cờ `--only`, `--skip-existing` (mặc định), `--force`, `--layers`, `--dry-run`. Entity + file tổng hợp luôn sinh lại; các lớp khác chỉ tạo khi chưa có (không đè service sửa tay).
+- Khác mẫu cũ có chủ đích: xóa **không** dùng SQL động `uspSystem_ExecuteQuery` (để ReferenceGuard T07); kiểm tra trùng theo 18 UNIQUE của DDL + `Code`; gán DEFAULT của SQL khi client không gửi; ghi song song cột deprecated; sổ chỉ ghi thêm không có Update / Delete.
+- **Entity đồng bộ 124 bảng**: `[Table("TênThật")]` (Dishe, ProductionBatche… giữ tên bảng thật, class bỏ hậu tố), decimal / datetime / date có `[Column(TypeName)]`, `[MaxLength]`, `[Required]`. `BaseEntity` thêm `DeletedBy`; xóa mềm ghi cả `DeletedBy` và `DeleteddBy`; bảng thiếu cột nào thì EF `Ignore`. `CoreDataMergeConflict` (Id bigint, không cột audit) là entity riêng.
+- `DatabaseContext`: `partial`, kế thừa `DbContext` (bỏ `IdentityDbContext` – không có bảng AspNet* và không code nào dùng, A11). `IUnitOfWork` / `UnitOfWork`: `partial`, thuộc tính repository viết tay thay bằng bản sinh.
+- **Chuyển `_obsolete/AppDelicare/…` (81 file)**: AppConfig, Area, Branch, Department, Opportunity, Region, Lead(s), Product(s), Employees (không có bảng – D-13) và UnitOfMeasure (bảng đã thành `_Legacy`, dùng UnitMeasure – D-02). `ContractMeals` → `ContractMeal`.
+- Sửa lỗi lộ ra khi đồng bộ: `CustomerService` kiểm tra trùng bằng cột `CifNo` **không tồn tại** (so với `request.Code`) → so `Code`; 28 SearchRequest có bộ lọc ngày `DateTime` không nullable (gửi `0001-01-01` → `SqlDateTime overflow`, 27 API GetAll trả 500) → `DateTime?`; A18 `Repository.GetAllNoneDeleted()` nay lọc `IsDeleted`.
+- 102 SP `GetAll` mới trong `DB/sp/` (74 SP code cũ gọi mà DB thiếu + bảng mới), khai báo thêm mọi tham số service cũ đang truyền. **Đã chạy lên DB dev** (LocalDB): DB có 122 SP `usp*_GetAll`.
+- Test `Schema/SchemaMappingTests` (đọc DDL trong test, dựng model SQL Server không kết nối): DDL 124 bảng; mọi DbSet → bảng có thật, mọi property → cột có thật; mọi bảng / cột DDL đều được map; kiểu C# khớp kiểu SQL; tên bảng legacy giữ nguyên.
+
+Kiểm tra:
+- `dotnet build --no-incremental`: 0 lỗi, **10 cảnh báo** (= mốc). `dotnet test`: **50/50 xanh**.
+- Chạy thật trên DB dev: **119/119** route `api/<X>/GetAll` (Dapper + SP) trả 200 / `responseCode` 200; **117/117** route `GetAllData` (EF, đọc mọi cột) trả 200; log không có lỗi.
+AC: [x] build xanh · [x] test DbSet ↔ bảng / property ↔ cột (đọc DDL) xanh · [x] không còn entity map tới bảng không tồn tại.
+Còn lại: service cũ vẫn kiểm tra xóa bằng SQL động (A10) → T07. D-27 (AutoMapper) chưa chốt nên template vẫn dùng AutoMapper.
+
+### T06 – Sinh mã cho 35 bảng còn thiếu · 2026-11-14 · DONE
+Đã làm: CodeGen sinh trọn CRUD (Request, SearchRequest, ViewModel, Service, Controller, SP) cho **34 bảng** của CODE_AUDIT A1(c) – 238 file; bảng thứ 35 `CoreDataMergeConflict` chỉ có entity + repository (không theo khuôn BaseEntity). 2 bảng `_Legacy_20261113` chỉ có entity + repository (chỉ đọc). 7 sổ chỉ ghi thêm (`IntegrationLog`, `ApprovalDecision`, `TemperatureLog`, `PackagingLedger`, `AttendanceEvent`, `DeliveryEvent`, `ComplaintHistory`): controller **không có** Update / Delete, service từ chối sửa / xóa.
+Kiểm tra: build xanh; SP trong `DB/sp/` và đã chạy lên DB dev; DbSet đủ **124** bảng (có entity đọc cho 2 bảng legacy); GetAll / GetAllData của các bảng mới chạy 200 trên DB dev (nằm trong 119 / 117 ở T05).
+AC: [x] build xanh · [x] SP nằm trong `DB/sp/` · [x] DbSet đủ 124.

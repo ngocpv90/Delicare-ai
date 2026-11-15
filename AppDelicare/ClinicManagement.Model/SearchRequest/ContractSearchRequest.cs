@@ -8,7 +8,7 @@ namespace AppDelicare.Model.SearchRequest
 		public string? ContractNumber { get; set; }
 		public string? Name { get; set; }
 		public DateTime? SignedDate { get; set; }
-		public DateTime EffectiveFrom { get; set; }
+		public DateTime? EffectiveFrom { get; set; }
 		public DateTime? EffectiveTo { get; set; }
 		public string? Status { get; set; }
 	}
