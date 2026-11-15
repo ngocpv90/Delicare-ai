@@ -39,3 +39,5 @@ Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) ho�
 | 11 | Giá vốn | `Recipe/CalculateCost?mealCount=50` | Đúng theo giá NCC ưu tiên + quy đổi; dòng thiếu giá có cảnh báo | [ ] | |
 | 12 | Chính sách giá | `PricePolicy/Resolve`; thêm chính sách chồng hiệu lực | Thứ tự hợp đồng → khách → ContractMeal; chồng → 400 | [ ] | |
 | 13 | Trạng thái / tham chiếu | `MetaData/GetStatuses`, `MetaData/GetReferenceLists` | 47 bộ trạng thái; MealType SANG / TRUA / TOI / DEM (PROPOSED) | [ ] | |
+| 14 | Nhập Excel – mẫu | Tải mẫu Customer / Ingredient / Dish / RecipeLine / SupplierMaterial, điền vài dòng (cố ý 1 dòng thiếu cột *) rồi `ImportExcel/Import` | Dòng đúng được nạp; dòng lỗi báo đúng số dòng + lý do; nạp lại không trùng | [ ] | |
+| 15 | Nhập Excel – file thật | Anh tự nạp `Rule Menu.xlsx` (RuleMenu_DishBank rồi RuleMenu_DishDetail) và `Tool_Tong hop bao gia` (BaoGia_Summary) | Món / nhóm món / nguyên liệu / NCC / bảng giá đúng; ghi chú GAP-IMP-01 (không có định lượng), GAP-IMP-02 (VAT) | [ ] | Chỉ anh nạp dữ liệu thật |

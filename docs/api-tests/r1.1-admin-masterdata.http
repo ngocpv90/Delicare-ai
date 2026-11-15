@@ -148,3 +148,28 @@ ListDishId=
 ### Tra đơn giá: hợp đồng → khách → ContractMeal
 GET {{base}}/api/PricePolicy/Resolve?CustomerId=<CustomerId>&ContractId=<ContractId>&MealType=TRUA&Date=2026-11-15
 Authorization: Bearer {{token}}
+
+### ================= T49 – nhập Excel danh mục
+### Các loại file nhập
+GET {{base}}/api/ImportExcel/GetTemplateList
+Authorization: Bearer {{token}}
+
+### Tải mẫu khách hàng (lưu file trả về)
+GET {{base}}/api/ImportExcel/GetTemplate?tableName=Customer
+Authorization: Bearer {{token}}
+
+### Nạp file (đổi đường dẫn file cho đúng máy; tableName theo GetTemplateList)
+POST {{base}}/api/ImportExcel/Import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=DelicareBoundary
+
+--DelicareBoundary
+Content-Disposition: form-data; name="TableName"
+
+Customer
+--DelicareBoundary
+Content-Disposition: form-data; name="File"; filename="Mau_nhap_Customer.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./Mau_nhap_Customer.xlsx
+--DelicareBoundary--

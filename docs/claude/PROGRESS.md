@@ -3,9 +3,9 @@
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
-- T45R, T45B.5 **DONE** (2026-11-15). Lát R1.1 còn: **T49** (nhập Excel danh mục) → **UAT-1**.
+- T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `feat/T45R-legacy-framework` (từ `chore/rename-clinicmanagement` ← `feat/T45B.4-p2-special` ← … T00; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 79/79 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 85/85 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -402,3 +402,47 @@ Kiểm tra: build 0 lỗi / 10 cảnh báo; test **79/79** (+3: 47 bộ trạng 
 AC: [x] bảng đối chiếu màn hình → action · [x] test · [x] .http.
 
 Còn lại / GAP: GAP-AUTH-01 (refresh token) vẫn mở. Danh mục tham chiếu và MealType chờ BA/PO chốt.
+
+### T49 – Nạp dữ liệu danh mục ban đầu (Excel) · 2026-11-15 · DONE
+Kế hoạch:
+1. Rà soát: `ImportExcelController.Save` / `ImportService` cũ chỉ nạp TestDemo (sheet 1, tiêu đề = tên thuộc tính, không báo lỗi từng dòng, lưu file vào wwwroot). Đọc cấu trúc file thật: chỉ dòng tiêu đề, không chép dữ liệu.
+2. `MasterDataImportService` + action trên `ImportExcelController`.
+3. File mẫu từng danh mục.
+4. Nạp file thật.
+5. Test (InMemory + SQL Server).
+6. Tài liệu.
+
+Đã làm:
+- `ImportExcel/GetTemplateList`, `GetTemplate?tableName=` (xlsx: tiêu đề tiếng Việt, cột * bắt buộc, ghi chú, 1 dòng ví dụ [DEMO]), `Import` (multipart).
+- Quyền: cờ **Import** trên màn hình đích, theo UserRole (D-31).
+- **11 file mẫu**: Customer, CustomerDeliveryLocation, Supplier, UnitMeasure, Ingredient, Warehouse, Employee, Vehicle, Dish, RecipeLine (định mức), SupplierMaterial (bảng giá NCC).
+- **3 bố cục file thật**: Rule Menu – Ngân hàng món; Rule Menu – Chi tiết món và hao hụt, giá; Tổng hợp báo giá – Summary.
+- Cách nạp:
+  - Idempotent theo mã; món / nhóm từ file thật nhận diện theo tên, mã sinh không dấu.
+  - Nhóm NL, nhóm món, ĐVT chưa có thì tạo.
+  - Định mức tạo công thức Draft V1 nếu món chưa có công thức.
+  - Ghi song song cột cũ (BaseUomId, CategoryId, EmployeeCode, UomId).
+  - Kiểm luật như service (hao hụt, hạn dùng, giờ giao, tọa độ, CIF, đơn giá > 0, 1 NCC ưu tiên); kiểm độ dài theo [MaxLength].
+  - Dòng lỗi bỏ qua và báo số dòng + lý do; dòng hợp lệ ghi trong 1 transaction.
+  - File đọc từ stream, không lưu trên server.
+- CIF trống → dùng mã khách (cột NOT NULL) – PROPOSED.
+
+Kiểm tra:
+- Build 0 lỗi / 10 cảnh báo.
+- Test **85/85** (+6):
+  - tải mẫu;
+  - lỗi từng dòng + nạp lại không trùng;
+  - chuỗi NL → món → định mức → bảng giá (NCC ưu tiên);
+  - 3 bố cục file thật với dữ liệu [DEMO] tự tạo;
+  - sai bố cục, sai loại, không quyền → 403;
+  - **SQL Server**: dòng ví dụ của cả 11 mẫu nạp được vào DB thật (transaction + rollback).
+- Không nạp dữ liệu thật; file tạm đã xóa.
+
+AC: [x] nạp file mẫu thành công · [x] nạp lại không trùng · [x] dòng lỗi được báo rõ.
+
+Còn lại / GAP:
+- **GAP-IMP-01**: "Chi tiết món và hao hụt, giá" không có cột **định lượng** → không tạo dòng định mức. Phải nhập bằng mẫu RecipeLine. % hao hụt theo từng món (cột G/H) và giá cột O chưa nạp.
+- **GAP-IMP-02**: SupplierMaterial không có cột VAT → % VAT trong báo giá không nạp.
+- Sheet "Rule" (quy tắc thực đơn) và "DS NCC" (địa chỉ, điện thoại NCC) chưa nạp: để T13 / R1.2.
+
+Cần anh: tự nạp file thật (UAT R1.1 mục 15); chốt cách xử lý GAP-IMP-01, ví dụ bổ sung cột định lượng vào file, hoặc lấy định lượng mặc định từ sheet Rule.

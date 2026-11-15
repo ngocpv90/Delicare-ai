@@ -343,7 +343,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
   - Phương án quay lui.
 - AC: staging backend chạy được từ máy sạch theo README; `/health` xanh; Swagger staging mở được; đăng nhập qua API và gọi được API danh mục.
 
-### T49 – Nạp dữ liệu danh mục ban đầu · phụ thuộc T45B · `TODO`
+### T49 – Nạp dữ liệu danh mục ban đầu · phụ thuộc T45B · `DONE` (2026-11-15)
 - **API** (không làm màn hình) **Import Excel** cho danh mục: khách, điểm giao, NCC, nguyên liệu, món, công thức / định mức, đơn vị, kho, nhân viên, xe. Dùng `ImportService` / `TemplateExcelHelper` sẵn có. Mỗi danh mục có một file mẫu.
 - Cột của file mẫu theo bảng `dbo` đích, đặt tên tiếng Việt dễ hiểu. **Ưu tiên tương thích file thật của anh** (BUSINESS_DOCS.md): import trực tiếp sheet "Ngân hàng món" và "Chi tiết món và hao hụt, giá" của `Rule Menu.xlsx` → DishCategorie / Dishe / Ingredient / Recipe / RecipeLine; bảng giá NCC từ `Tool_Tong hop bao gia` → Supplier / SupplierMaterial. Người dùng tự chạy import; Claude Code chỉ test bằng file mẫu tự tạo `[DEMO]`, không nạp dữ liệu thật.
 - Kiểm tra trùng mã, báo lỗi từng dòng, idempotent theo mã.
