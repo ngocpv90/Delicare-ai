@@ -53,6 +53,12 @@ namespace AppDelicare.Application.Common.Crud
         public decimal? Dec(string property) => Values.TryGetValue(property, out var v) && v != null ? Convert.ToDecimal(v) : null;
     }
 
+    /// <summary>Ngữ cảnh thêm trường tính toán.</summary>
+    public sealed record CrudEnrichContext(IReadOnlyList<IDictionary<string, object?>> Items, DatabaseContext Db, CancellationToken CancellationToken)
+    {
+        public List<Guid> Ids => Items.Select(i => (Guid)i["id"]!).ToList();
+    }
+
     /// <summary>
     /// Một resource v1 (một màn hình mockup): <c>/api/v1/{Module}/{Path}</c> trên bảng <see cref="Table"/>,
     /// quyền theo <see cref="Screen"/> (MetaLink <c>#/&lt;screen&gt;</c>).
@@ -64,6 +70,12 @@ namespace AppDelicare.Application.Common.Crud
         public bool CanDelete { get; init; } = true;
         /// <summary>Luật kiểm tra riêng theo spec; ném <see cref="BusinessRuleException"/>.</summary>
         public Func<CrudRuleContext, Task>? Rules { get; init; }
+        /// <summary>Thêm trường tính toán vào item (danh sách và chi tiết), vd. availableQuantity.</summary>
+        public Func<CrudEnrichContext, Task>? Enrich { get; init; }
+        /// <summary>Chạy sau khi lưu (cùng request), vd. tắt dòng ưu tiên cũ.</summary>
+        public Func<CrudRuleContext, Task>? AfterSave { get; init; }
+        /// <summary>Bộ lọc riêng theo key query (key này không đi qua lọc theo cột).</summary>
+        public IReadOnlyDictionary<string, Func<IQueryable, string, IQueryable>> CustomFilters { get; init; } = new Dictionary<string, Func<IQueryable, string, IQueryable>>();
         public string Route => $"api/v1/{Module}/{Path}";
         public bool ReadOnly => !CanCreate && !CanUpdate && !CanDelete;
     }
@@ -97,13 +109,17 @@ namespace AppDelicare.Application.Common.Crud
             new("adm-access-log", "admin", "access-logs", "LocationTracking") { CanCreate = false, CanUpdate = false, CanDelete = false },
 
             // ---- P1 – master data ------------------------------------------------------------------
-            new("crm-customer", "sales", "customers", "Customer"),
+            new("crm-customer", "sales", "customers", "Customer") { Enrich = MasterData.P1Hooks.CustomerEnrich, Rules = MasterData.P1Hooks.CustomerRules },
             new("crm-contact", "sales", "customer-contacts", "CustomerContact"),
-            new("crm-location", "sales", "delivery-locations", "CustomerDeliveryLocation") { Rules = DeliveryLocationRules },
+            new("crm-location", "sales", "delivery-locations", "CustomerDeliveryLocation") { Rules = async c => { await DeliveryLocationRules(c); await MasterData.P1Hooks.DeliveryLocationInactiveGuard(c); } },
             new("scm-supplier", "scm", "suppliers", "Supplier"),
-            new("scm-ingredient", "scm", "ingredients", "Ingredient") { Rules = IngredientRules },
+            new("scm-ingredient", "scm", "ingredients", "Ingredient") { Rules = IngredientRules, Enrich = MasterData.P1Hooks.IngredientEnrich },
             new("scm-ingredient-cat", "scm", "ingredient-categories", "IngredientCategorie"),
-            new("scm-supplier-material", "scm", "supplier-materials", "SupplierMaterial"),
+            new("scm-supplier-material", "scm", "supplier-materials", "SupplierMaterial")
+            {
+                AfterSave = MasterData.P1Hooks.SupplierMaterialPreferred,
+                CustomFilters = new Dictionary<string, Func<IQueryable, string, IQueryable>> { ["effectiveOn"] = MasterData.P1Hooks.SupplierMaterialEffectiveOn },
+            },
             new("scm-uom", "scm", "units", "UnitMeasure"),
             new("scm-uom-conversion", "scm", "uom-conversions", "UomConversion") { Rules = UomConversionRules },
             new("scm-warehouse", "scm", "warehouses", "Warehouse"),

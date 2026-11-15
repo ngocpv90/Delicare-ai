@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
-- Task đang làm: **T45B** – T45B.1, T45B.2 DONE; kế tiếp T45B.3 (P1 riêng) → .4 → .5, rồi T49
-- Nhánh: `feat/T45B.2-p0-special` (chuỗi T00 → … → T45B.2; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 98/98 xanh
+- Task đang làm: **T45B** – T45B.1, .2, .3 DONE; kế tiếp T45B.4 (P2 riêng: công thức, giá thành) → .5, rồi T49
+- Nhánh: `feat/T45B.3-p1-special` (chuỗi T00 → … → T45B.3; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 103/103 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25); (3) chốt D-26 (DeleteData), D-27 (AutoMapper), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -297,3 +297,16 @@ Kiểm tra:
 
 Kiểm tra: build 0 lỗi / 10 cảnh báo; test **98/98** (+7): tạo user (không lộ mật khẩu, chuẩn hóa tên, 409 / 400 / 422, lọc q + groupId); cấp quyền có hiệu lực ngay + chuẩn hóa cờ + grantedBy + thu hồi ngay; khóa (thiếu lý do 400, tự khóa 422) → mất quyền ngay → mở lại; reset chỉ admin; đổi mật khẩu sai / đúng; audit không chứa hash; cây menu + reorder + chặn vòng lặp; cây đơn vị + đếm nhân viên + branches; merge-conflict resolve + 409; /meta/me + /meta/menu theo user; login v1 trên DB dev (token / 401 envelope).
 Còn lại (→ T45B.5): `/meta/statuses`, `/meta/reference-lists`, refresh token.
+
+### T45B.3 – API riêng của P1 (master data) · 2026-11-14 · DONE
+Đã làm:
+- CRUD chuẩn thêm 3 hook: `Enrich` (thêm trường tính toán vào danh sách / chi tiết), `CustomFilters` (key lọc riêng), `AfterSave` (xử lý sau khi lưu, cùng request).
+- `AppDelicare.Application/MasterData/P1MasterData.cs`:
+  - Khách hàng: danh sách thêm `activeContracts`, `locationCount`, `avgMealsPerDay7d`, `branchName`; trùng CIF → 409; `GET /sales/customers/{id}/overview` (khách, liên hệ, điểm giao, hợp đồng + suất, 15 đơn gần nhất, KPI: số đơn, doanh thu đã đối soát qua Order, số phản ánh).
+  - Điểm giao: không cho `status = Inactive` khi còn DeliveryOrder chưa kết thúc → 409 IN_USE.
+  - Giá NCC: lọc `effectiveOn` (EffectiveFrom ≤ ngày ≤ EffectiveTo); đặt dòng mới `isPreferred` → tự tắt dòng ưu tiên cũ của cùng nguyên liệu.
+  - Nhà cung cấp: `GET /scm/suppliers/{id}/overview` (bảng giá + tên nguyên liệu, PO đang mở, vấn đề NCC, KPI 90 ngày onTimeRate / rejectRate – GAP-P1-01).
+  - Nguyên liệu: danh sách thêm `availableQuantity` (Σ InventoryBalance) và `belowMin`.
+  - Kho: `GET /scm/warehouses/{id}/layout` (khu + nhiệt độ + vị trí, dùng StorageZoneId).
+  - `IUomService.ConvertAsync` + `GET /scm/uom-conversions/convert`: chiều xuôi, ngược, qua đơn vị trung gian (BFS), chỉ quy đổi đang hiệu lực; không có → 422 UOM_CONVERSION_MISSING.
+Kiểm tra: build 0 lỗi / 10 cảnh báo; test **103/103** (+5) phủ từng mục trên. SQL Server thật: danh sách khách / nguyên liệu (có trường tính toán), lọc effectiveOn, overview (404 khi không có), convert (422 khi thiếu quy đổi), users / org tree / meta me / menu đều chạy, log không lỗi.

@@ -137,6 +137,11 @@ namespace AppDelicare.Application.Common.Crud
                 {
                     continue;
                 }
+                if (resource.CustomFilters.TryGetValue(key, out var custom))
+                {
+                    query = (IQueryable<T>)custom(query, raw);
+                    continue;
+                }
                 string field = key;
                 string op = "eq";
                 if (key.EndsWith("From", StringComparison.Ordinal) && info.FindByField(key[..^4]) is { IsDate: true })
@@ -220,6 +225,10 @@ namespace AppDelicare.Application.Common.Crud
             var rows = await Sorted(filtered, q.Sort).Skip((q.Page - 1) * q.PageSize).Take(q.PageSize).ToListAsync(ct);
             var items = rows.Select(ToDto).ToList();
             await AddLabelsAsync(items, ct);
+            if (resource.Enrich != null && items.Count > 0)
+            {
+                await resource.Enrich(new CrudEnrichContext(items, db, ct));
+            }
             return new CrudPage(items, total, q.Page, q.PageSize);
         }
 
@@ -246,6 +255,10 @@ namespace AppDelicare.Application.Common.Crud
         {
             var dto = ToDto(row);
             await AddLabelsAsync([dto], ct);
+            if (resource.Enrich != null)
+            {
+                await resource.Enrich(new CrudEnrichContext([dto], db, ct));
+            }
             string etag = row is BaseEntity b ? CrudService.ComputeETag(b.ModifiedDate, b.CreatedDate) : "\"0\"";
             return new CrudItem(dto, etag);
         }
@@ -311,6 +324,7 @@ namespace AppDelicare.Application.Common.Crud
             await ValidateAsync(row, provided, id: null, ct);
             db.Set<T>().Add(row);
             await db.SaveChangesAsync(ConstantHelper.TypeSave.Insert, ct);
+            await AfterSaveAsync(row, ((BaseEntity)(object)row).Id, ct);
             await db.Entry(row).ReloadAsync(ct);
             return await ItemAsync(row, ct);
         }
@@ -324,6 +338,7 @@ namespace AppDelicare.Application.Common.Crud
             Apply(row, provided);
             await ValidateAsync(row, provided, id, ct);
             await db.SaveChangesAsync(ConstantHelper.TypeSave.Update, ct);
+            await AfterSaveAsync(row, id, ct);
             await db.Entry(row).ReloadAsync(ct);
             return await ItemAsync(row, ct);
         }
@@ -486,6 +501,17 @@ namespace AppDelicare.Application.Common.Crud
             {
                 await resource.Rules(new CrudRuleContext(current, id, db, ct));
             }
+        }
+
+        private async Task AfterSaveAsync(T row, Guid id, CancellationToken ct)
+        {
+            if (resource.AfterSave == null)
+            {
+                return;
+            }
+            var entry = db.Entry(row);
+            var current = info.Columns.Where(c => entity.FindProperty(c.Property) != null).ToDictionary(c => c.Property, c => entry.Property(c.Property).CurrentValue);
+            await resource.AfterSave(new CrudRuleContext(current, id, db, ct));
         }
 
         private async Task<bool> ExistsAsync(string table, Guid id, CancellationToken ct)

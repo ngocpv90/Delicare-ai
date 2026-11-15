@@ -13,6 +13,7 @@ namespace AppDelicare.Application
             services.Configure<BusinessRulesOptions>(configuration.GetSection(BusinessRulesOptions.Section));
             services.AddSingleton<IClock, SystemClock>();
             services.AddScoped<Common.Crud.ICrudService, Common.Crud.CrudService>();
+            services.AddScoped<MasterData.IUomService, MasterData.UomService>();
             services.AddScoped<Dispatcher>();
             services.AddScoped<IDispatcher>(sp => sp.GetRequiredService<Dispatcher>());
             services.AddScoped<IDomainEventCollector>(sp => sp.GetRequiredService<Dispatcher>());
