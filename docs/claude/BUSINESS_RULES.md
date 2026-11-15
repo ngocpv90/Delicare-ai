@@ -54,7 +54,7 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 
 ## 5. Kho (sổ chỉ ghi thêm)
 - Tồn lô = nhập − trả lại − xuất + điều chỉnh kiểm kê đã duyệt. Tất cả đi qua `InventoryTransaction` (`QuantityIn` / `QuantityOut`, `ReferenceType` / `ReferenceId`). `InventoryBalance` chỉ là bảng tổng hợp, tính lại từ sổ.
-- Xuất theo **FEFO**. **Chặn** xuất lô đã hết hạn. Còn lô cùng nguyên liệu hạn gần hơn thì chỉ **cảnh báo**, không chặn.
+- Xuất theo **FEFO** (mặc định) hoặc **FIFO** theo `InventoryPolicie.UseFefo` của nguyên liệu (D-24; sơ đồ vận hành của nhà máy ghi FIFO). **Chặn** xuất lô đã hết hạn. Còn lô cùng nguyên liệu hạn gần hơn thì chỉ **cảnh báo**, không chặn.
 - Kiểm kê: chênh lệch > **2%** thì cần duyệt rồi mới ghi điều chỉnh.
 - Sửa hoặc hủy bút toán: ghi bút toán đảo (`TransactionType` = `REVERSAL`, hoặc ADJUSTMENT kèm `ReferenceId` trỏ về dòng gốc, có `Reason`). Không Update/Delete.
 
@@ -76,6 +76,9 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - Tỷ lệ thất thoát ≤ **3%**, hoặc theo ngưỡng riêng của khách (cột ngưỡng trên `Customer` / `Contract` nếu có; không có thì GAP-PKG-01).
 - Thất thoát vượt ngưỡng: báo **khách** rồi chuyển **kế toán** tính phí.
 - Lô vệ sinh 6 bước (`CleaningBatche` + `CleaningChecklistResult`): 1 nhận/quét QR → 2 phân loại → 3 rửa sơ → 4 rửa máy → 5 khử khuẩn → 6 kiểm tra và nhập kho sạch.
+
+## 8b. Điểm phát suất / căng tin tại khách (mô hình a – D-21)
+Điểm bán hiện tại = điểm phục vụ suất theo hợp đồng tại khách hàng. Nhân viên điểm nhận hàng (POD), ghi suất thực tế phục vụ / thừa / thiếu → `OrderReconciliation`; dữ liệu này là cơ sở dự báo nhu cầu kỳ sau (bước 1) và đối soát doanh thu. Không có thu tiền / POS trong R1.
 
 ## 9. Phản ánh khách
 Mức độ HIGH / MEDIUM / LOW, hạn xử lý 4 / 24 / 72 giờ (`CustomerComplaint`, lịch sử ở `ComplaintHistory`). Quá hạn thì báo lên cấp trên.

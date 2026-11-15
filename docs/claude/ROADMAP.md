@@ -6,7 +6,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 ## ★ ƯU TIÊN CỦA ANH (2026-11-14): RELEASE 1 = CHỈ BACKEND (.NET + SQL) đủ API cho mockup
 
-**Frontend Angular (`app-delicare-client/`) NGOÀI PHẠM VI (D-20).** Không sửa, không build. Các task màn hình Angular (T42, T44-UI, T45, T46, T47) chuyển sang `DEFERRED(FE)`. Thay bằng task API tương ứng: T45B, T46B, T47B.
+**Frontend Angular (`app-delicare-client/`) NGOÀI PHẠM VI (D-20): không đọc, không sửa, không build, không cần tương thích.** Backend làm đúng theo `DELICARE_API_Specification.md`. Sau khi xong backend anh sẽ giao frontend. Các task màn hình Angular (T42, T44-UI, T45, T46, T47) chuyển sang `DEFERRED(FE)`; thay bằng task API tương ứng: T45B, T46B, T47B.
 
 **Chọn task theo THỨ TỰ BẢNG DƯỚI**, không theo số task. Hết mỗi lát:
 - API chạy trên staging backend;
@@ -34,6 +34,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 - T43: cấu hình agent.
 - T50–T51: Obsidian.
 - T60–T61: chỉ nạp dữ liệu demo Sheets (tùy chọn).
+- GAP R2 (D-21…D-23): bán lẻ / POS, bảo trì thiết bị, CRM marketing, sổ CAPA, xuất dữ liệu sang MISA.
 - T62–T63: **hủy**, vì Sheets là demo, không có cắt chuyển (D-16).
 
 **Quy ước tách task:**
@@ -95,13 +96,14 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Middleware gắn `CorrelationId` (header `X-Correlation-Id` hoặc tự sinh) và đưa vào Serilog scope.
 - AC: unit test chứng minh ghi khi không có actor thì bị chặn; request có token thì CreatedBy đúng; log có CorrelationId.
 
-### T03 – Pipeline HTTP chuẩn · phụ thuộc T01 · `TODO`
+### T03 – Pipeline HTTP chuẩn · phụ thuộc T01 · `DOING` (1/2 xong: pipeline, CORS, exception handler; còn envelope / mã lỗi / ETag / Idempotency / X-Branch-Id)
 - Sửa thứ tự middleware: ExceptionHandler → HttpsRedirection → Static → Routing → CORS (danh sách origin lấy từ `Cors:AllowedOrigins`) → Authentication → Authorization → Endpoints. Bỏ `ServiceLocator.BuildServiceProvider`. Bỏ `CorsMiddleware` thừa.
 - Global exception handler: lỗi chưa bắt → log + 500, không lộ stack trace.
-- **Route cũ giữ nguyên hành vi** (HTTP 200 + `ResponseCode` trong body) vì Angular đang dùng; đọc `app-delicare-client/src/app/helpers/jwt.interceptor.ts` và các service (chỉ đọc) để xác nhận. **Không sửa Angular.**
-- **Route mới `/api/v1`**: ProblemDetails + mã HTTP thật (áp dụng qua convention / filter chỉ cho nhóm route v1).
-- Bật Swagger mô tả đầy đủ (XML comments), JWT trong Swagger.
-- AC: swagger chạy; test tích hợp: `Supplier/GetAll` cũ vẫn trả đúng dạng cũ; 1 endpoint v1 mẫu trả 400 ProblemDetails khi input sai.
+- Áp dụng **quy ước spec mục 1.2** cho toàn bộ route `/api/v1`: envelope `{success, data, message, errors, traceId}`, ProblemDetails / mã lỗi theo Phụ lục A, phân trang chuẩn, camelCase, lọc cột deprecated và `PassWord`. Làm thành base class / filter / middleware dùng chung (`ApiControllerBase`, `EnvelopeResultFilter`, `ExceptionToErrorMiddleware`).
+- Hỗ trợ `If-Match` / ETag (ModifiedDate), `Idempotency-Key` (lưu kết quả lệnh theo key – nơi lưu: `IntegrationLog` với `IdempotencyKey` có sẵn, PROPOSED), header `X-Branch-Id`.
+- Route CRUD cũ sinh tự động: không đụng ở task này (sẽ được thay dần bằng v1 ở T45B…).
+- Bật Swagger mô tả đầy đủ (XML comments), JWT trong Swagger, nhóm theo module.
+- AC: swagger chạy; test tích hợp cho 1 endpoint v1 mẫu: 200 đúng envelope, 400 / 422 đúng mã lỗi, 409 khi If-Match lệch, Idempotency-Key gửi 2 lần chỉ ghi 1 lần.
 
 ### T04 – Nâng gói lên .NET 8 đồng bộ · phụ thuộc T00 · `DONE` (2026-11-14)
 - EF Core 8.x, `Microsoft.AspNetCore.Authentication.JwtBearer` 8.x, `Microsoft.AspNetCore.OpenApi` 8.x, Swashbuckle 6.5+, `Microsoft.IdentityModel.Tokens` cùng họ, `EFCore.BulkExtensions` 8.x. Không nâng gói thương mại (EvoPdf, Syncfusion, GemBox) nếu không cần.
@@ -115,7 +117,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
   - Sửa sai lệch cột.
   - Gắn `[Table]`.
   - Bỏ `IdentityDbContext` nếu không dùng (xác minh trước).
-  - Entity không có bảng (`AppConfig, Area, Branch, Department, Employees, Leads, Opportunity, Products, Region`) chuyển vào `_obsolete/`, kèm controller, service và Angular service liên quan. Nếu Angular đang dùng thì ghi DECISIONS rồi giữ tạm, đánh dấu `[Obsolete]`.
+  - Entity không có bảng (`AppConfig, Area, Branch, Department, Employees, Leads, Opportunity, Products, Region`) chuyển vào `_obsolete/` (kèm repository, service, controller liên quan) và bỏ khỏi DbContext. Không cần xét Angular (D-20).
 - Ghi `tools/AppDelicare.CodeGen/README.md`: cách chạy và cờ `--only <Table>`, `--skip-existing`.
 - AC: build xanh; test "mọi DbSet map tới bảng có trong DDL và mọi property map tới cột có thật" (đọc DDL trong test) xanh; không còn entity map tới bảng không tồn tại.
 
@@ -126,10 +128,11 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 
 ### T07 – Phân quyền theo UserRole × ObjectMenu · phụ thuộc T05 · `TODO`
 - Attribute `[Permission("<MetaLink>", PermissionAction.View|Add|Edit|Delete|Print|Export|Import)]` + `PermissionFilter`. Đọc UserRole theo UserGroup của user, cache 5′. `User.IsAdmin` bỏ qua kiểm tra.
-- Gắn attribute cho mọi controller (CodeGen cập nhật template). MetaLink theo route Angular hoặc theo `screen_id` của mockup (`docs/mockup/js/data/catalog.js`).
+- Gắn attribute cho mọi controller (CodeGen cập nhật template). MetaLink = `#/<screen-id>` theo `screen_id` của mockup (`docs/mockup/js/data/catalog.js`), đúng quy ước spec mục 1.2.
 - Script seed `DB/seed/ObjectMenu_seed.sql` theo menu P0–P8 của mockup (`[DEMO]` không cần vì đây là dữ liệu cấu hình; ghi nguồn).
+- **Seed cơ cấu tổ chức thật** theo `docs/claude/ORG_STRUCTURE.md`: `OrganizationUnit` (cây CEO → khối → bộ phận → tổ), `UserGroup` (mỗi vai trò), `UserRole` theo ma trận quyền mục 2 (PROPOSED, D-25). Các tổ bếp đồng thời seed `KitchenWorkstation`. Script idempotent theo Code / Name.
 - Thay kiểm tra xóa bằng SQL động bằng `ReferenceGuard`: danh sách quan hệ logic (cột `XxxId` → bảng `Xxx`) sinh từ DDL; khi xóa mềm thì đếm tham chiếu bằng truy vấn có tham số.
-- AC: test – user không có AllowAdd gọi Insert thì 403; admin thì 200; xóa bản ghi đang được tham chiếu thì 409.
+- AC: test – user không có AllowAdd gọi Insert thì 403; admin thì 200; xóa bản ghi đang được tham chiếu thì 409; seed tổ chức chạy 2 lần không nhân bản; user nhóm OPS-SCM không duyệt được kế hoạch sản xuất.
 
 ### T08 – Khóa sổ chỉ ghi thêm · phụ thuộc T06 · `TODO`
 - Trong `DatabaseContext`: các entity sổ (CLAUDE.md 3.3) có `EntityState.Modified` / `Deleted` thì ném `AppendOnlyViolationException`.
@@ -174,19 +177,22 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - AC: test lô KHONG_DAT không xuất được; DAT_MOT_PHAN chỉ nhập phần đạt.
 
 ### T16 – Sổ kho (InventoryLedgerService) · phụ thuộc T08, T11 · `TODO`
-- Post IN / OUT / ADJUSTMENT / REVERSAL. Tính lại InventoryBalance. Xuất FEFO (chặn hết hạn, chặn KHONG_DAT, cảnh báo còn lô hạn gần hơn). Kiểm kê: lệch > 2% thì duyệt. Giữ chỗ (MaterialReservation).
+- Post IN / OUT / ADJUSTMENT / REVERSAL. Tính lại InventoryBalance. Gợi ý lô xuất theo `InventoryPolicie.UseFefo`: FEFO (mặc định) hoặc FIFO theo ngày nhận (D-24). Luôn chặn lô hết hạn, chặn lô KHONG_DAT; cảnh báo khi còn lô nên xuất trước. Kiểm kê: lệch > 2% thì duyệt. Giữ chỗ (MaterialReservation).
 - AC: test FEFO, chặn, tồn sau chuỗi giao dịch, đảo bút toán.
 
 ### T17 – Sản xuất · phụ thuộc T14, T16 · `TODO`
 - Kế hoạch ngược từ giờ xuất bếp (cutoff − 60′), chia mẻ theo ProductionLine, mã `ME-…`, cấp NL cho mẻ (MaterialIssue FEFO), sự kiện mẻ (bắt đầu / xong), nhiệt độ lõi ≥ 70°C (TemperatureLog CORE), lưu mẫu (FoodSafetyChecklistResult SAMPLE_RETAINED), sản lượng / hao hụt (ProductionOutput / MealWasteRecord).
-- AC: test lập kế hoạch đúng giờ; mẻ < 70°C bị chặn đóng gói.
+- **Công đoạn theo tổ** (ORG_STRUCTURE.md): mỗi mẻ đi qua Sơ chế → Nấu → Cơm/Canh (nếu có) → Chia suất/Đóng gói; mỗi công đoạn ghi bắt đầu / kết thúc / người làm / tổ (`KitchenWorkstationId`) bằng `FoodSafetyChecklistResult` hoặc sự kiện mẻ có sẵn (chọn theo DB_SCHEMA_124.md, thiếu thì GAP). API tiến độ bếp theo tổ.
+- AC: test lập kế hoạch đúng giờ; mẻ < 70°C bị chặn đóng gói; không chuyển công đoạn khi công đoạn trước chưa xong.
 
 ### T18 – ATTP và truy xuất · phụ thuộc T17 · `TODO`
-- Checklist theo ca với hạn tương đối (BUSINESS_RULES §6). Truy xuất xuôi lô → mẻ → đơn / khách và ngược mẻ → lô.
+- Checklist theo ca với hạn tương đối (BUSINESS_RULES §6). Seed checklist **kiểm soát thành phẩm** (QA 4.3): cảm quan, trọng lượng suất, lưu mẫu + người ký; checklist **5S / vệ sinh bếp** (QA 4.4). Truy xuất xuôi lô → mẻ → đơn / khách và ngược mẻ → lô.
+- **Báo cáo NCR tổng hợp** (QA 4.5, GAP-QA-01 tạm): gom SupplierIssue, CustomerComplaint, các dòng checklist / nhiệt độ không đạt kèm CorrectiveAction, lọc theo kỳ / bộ phận.
 - AC: test truy xuất 2 chiều trên dữ liệu mẫu.
 
 ### T19 – Giao vận và phản ánh · phụ thuộc T17 · `TODO`
 - DeliveryRoute `CX-…`, DeliveryStop, DeliveryEvent, nhiệt độ ≥ 60°C, thiếu / thừa suất, ProofOfDeliverie. CustomerComplaint `PA-…` với SLA 4/24/72h.
+- **Điểm phát suất (mô hình a, D-21)**: nhân viên điểm (nhóm OPS-POS) xác nhận nhận hàng, ghi **suất thực tế phục vụ** → `OrderReconciliation` (đặt / giao / thực tế / chênh lệch); báo cáo suất theo điểm, ngày, buổi.
 - AC: test SLA và cảnh báo nhiệt độ.
 
 ### T20 – Hộp / khay và vệ sinh · phụ thuộc T19 · `TODO`
@@ -273,7 +279,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 ### T45B – API màn hình P0–P2 (quản trị và danh mục) · phụ thuộc T07, T10 · `TODO`
 - Với **mỗi màn hình P0–P2** trong `catalog.js`: đủ endpoint theo `DELICARE_API_Specification.md`, gồm danh sách (lọc / phân trang / sắp xếp), chi tiết, thêm / sửa / xóa mềm, dropdown lookup, import / export nếu spec có.
 - Quan hệ logic kiểm bằng `LOGICAL_RELATIONS.md`. Phân quyền `[Permission]`. Swagger mô tả.
-- Route cũ Angular đang gọi: giữ. Route mới: `/api/v1/...` theo spec.
+- Toàn bộ theo `/api/v1/...` và quy ước spec. Endpoint CRUD cũ tương ứng có thể gỡ khi bản v1 đã đủ và có test.
 - AC: bảng đối chiếu `docs/frontend-handoff/P0-P2.md` (màn hình → endpoint → trạng thái); test tích hợp cho mỗi nhóm; file `.http`.
 
 ### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `TODO`

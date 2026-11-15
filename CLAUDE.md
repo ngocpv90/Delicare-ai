@@ -3,8 +3,8 @@
 Bạn là kỹ sư chính của dự án **DELICARE**: hệ thống điều hành nhà máy suất ăn công nghiệp, quy mô mục tiêu **20.000 suất/ngày**. Chủ dự án là **anh Phạm (PO)**. Hãy xưng "em", gọi chủ dự án là "anh". Giao tiếp và tài liệu viết bằng tiếng Việt. Mã nguồn đặt tên bằng tiếng Anh. Chữ hiển thị trên giao diện viết tiếng Việt.
 
 **PHẠM VI HIỆN TẠI = CHỈ BACKEND (.NET 8 + SQL Server).**
-- **KHÔNG tạo, sửa, xóa, build hay `npm install` bất kỳ thứ gì trong `app-delicare-client/`** (Angular). Frontend chưa được giao việc; anh sẽ đề cập riêng sau (D-20).
-- Được phép **đọc** `app-delicare-client/` chỉ để biết Angular đang gọi route nào, gửi / nhận dữ liệu dạng gì, rồi **giữ tương thích** các route cũ đó.
+- **KHÔNG đọc / rà soát, tạo, sửa, xóa, build hay `npm install` bất kỳ thứ gì trong `app-delicare-client/`** (Angular). App Angular hiện tại chưa có đủ màn hình như mockup; **sau khi xong backend anh sẽ giao làm frontend riêng** (D-20).
+- **Không cần tương thích với Angular hiện tại.** Chuẩn API **duy nhất** là `docs/reference/DELICARE_API_Specification.md` (mục 1.2: base URL `/api/v1`, envelope, phân trang, mã lỗi, ETag, Idempotency-Key…). Frontend sau này sẽ làm mới theo đúng spec này.
 - **Mục tiêu Release 1:** hoàn thiện lõi .NET đủ API cho mọi màn hình trong mockup (`docs/mockup/`) theo `docs/reference/DELICARE_API_Specification.md`, có Swagger + test, triển khai được backend. Đây sẽ là hệ thống vận hành thật đầu tiên (bản Apps Script / Sheets chỉ là demo). Agent, Tool Gateway, Telegram / Zalo, Obsidian để Release 2.
 
 Mục tiêu của file này: anh **không phải giải thích lại** bối cảnh. Mọi việc cần làm đã nằm trong `docs/claude/ROADMAP.md`. Em làm lần lượt từng task theo quy trình ở mục 6.
@@ -55,7 +55,7 @@ Delicare-ai/
 │   ├─ ClinicManagement.Services  (AppDelicare.Services)           Service CRUD sinh tự động
 │   ├─ ClinicManagement.WebApi    (AppDelicare.WebApi)             Controller, Startup, Autofac, JWT, Serilog
 │   └─ ClinicManagement.Generator (T4 + OrmLite)                   bộ sinh mã CŨ, chỉ chạy được trong Visual Studio
-├─ app-delicare-client/          ← Angular 18 – ⛔ NGOÀI PHẠM VI: chỉ đọc để giữ tương thích API, không sửa / build
+├─ app-delicare-client/          ← Angular 18 – ⛔ NGOÀI PHẠM VI: không đọc, không sửa, không build (làm sau khi xong backend)
 ├─ backup-db/                    ← bản backup DB thật (AppDelicare_20261110.bak/.mdf/.ldf) – ĐÃ gitignore, KHÔNG commit, KHÔNG sửa
 └─ DB/                           ← (tạo mới) script SQL: DB/sp (stored procedure), DB/seed – được commit
 ```
@@ -113,17 +113,22 @@ Tên thư mục `ClinicManagement.*` là di sản. **Không đổi tên thư m�
 ## 4. Quy ước code
 
 **Backend (.NET 8):**
-- Giữ mẫu hiện có cho CRUD danh mục: Controller → Service → UnitOfWork / Repository (EF Core) + Dapper / stored procedure cho `GetAll` phân trang. Route cũ `api/[controller]/GetAll|Insert|Update|Delete|GetById|GetAllData` **giữ nguyên** vì Angular đang gọi.
-- Nghiệp vụ mới (lệnh có trạng thái, sổ, duyệt) viết trong `AppDelicare.Application`: mỗi use case là một class `XxxCommand` + `XxxHandler` + validator. Route REST mới theo `docs/reference/DELICARE_API_Specification.md`, gốc `/api/v1/...`. Tên project trong tài liệu API (`Delicare.Api`, `Delicare.Domain`…) là đề xuất cũ; **dùng tên thực tế ở mục 2**.
-- Kết quả trả về dùng lại `Result<T>` / `Results<T>` (`ResponseCode`, `ResponseMessage`, `Data` / `ListData`, `TotalRecords`).
-  - **Route cũ** (`api/[controller]/GetAll|Insert|…` mà Angular đang gọi): giữ nguyên route, kiểu tham số (`[FromForm]`), dạng JSON và hành vi mã HTTP hiện tại, để Angular không vỡ.
-  - **Route mới `/api/v1/...`**: mã HTTP thật khớp `ResponseCode` (200 / 201 / 202 / 400 / 401 / 403 / 404 / 409 / 422 / 500), lỗi dạng ProblemDetails.
-  - Mỗi endpoint mới phải có mô tả Swagger (summary, ví dụ request / response) để team frontend dùng sau.
-- Thời gian: lưu theo **giờ Việt Nam** (Asia/Ho_Chi_Minh), khớp code cũ và 75/92 default `getdate()` / `sysdatetime()` của DDL. 17 cột có default `sysutcdatetime()` (UTC) → app **luôn tự gán giá trị**, không dựa vào default (D-18). Lấy giờ qua `IClock`, không gọi `DateTime.Now` trực tiếp trong nghiệp vụ mới.
+- **Chuẩn API = `DELICARE_API_Specification.md` mục 1.2**, áp dụng cho mọi endpoint mới:
+  - Route `/api/v1/{module}/{resource}` (kebab-case số nhiều), lệnh chuyển trạng thái dạng `POST …/{id}/<action>`.
+  - Envelope `{ success, data, message, errors, traceId }`. Danh sách: `data = { items, total, page, pageSize }`, query `page`, `pageSize` (≤ 200), `q`, `sort=field:asc`, lọc theo tên cột.
+  - JSON camelCase theo tên cột SQL. **Không trả / nhận cột deprecated**, không bao giờ trả `PassWord`.
+  - Mã HTTP: 400 / 401 / 403 / 404 / 409 (`INVALID_TRANSITION`, `CONCURRENCY_CONFLICT`) / 422 (`REF_NOT_FOUND`, vi phạm nghiệp vụ) / 500. Mã lỗi theo Phụ lục A của spec.
+  - ETag = `ModifiedDate` (`If-Match`); lệnh ghi nhận `Idempotency-Key`; header `X-Branch-Id`.
+  - `[Permission("<screen-id>", Action)]` với `ObjectMenu.MetaLink = '#/<screen-id>'`.
+  - Swagger mô tả đủ (summary, ví dụ request / response) để làm frontend sau.
+- **Mã CRUD cũ sinh tự động** (`api/[controller]/GetAll|Insert|…`, `Result<T>`, `[FromForm]`): không phải chuẩn. Được phép thay bằng endpoint `/api/v1` theo spec. Có thể giữ tạm cho tới khi có bản v1 tương ứng, nhưng **không mở rộng thêm** theo mẫu cũ.
+- Bên trong vẫn dùng lại hạ tầng tốt có sẵn: UnitOfWork / Repository EF Core, Dapper + stored procedure cho truy vấn danh sách lớn, AuditChange tự động trong DbContext.
+- Nghiệp vụ mới (lệnh có trạng thái, sổ, duyệt) viết trong `AppDelicare.Application`: mỗi use case là một class `XxxCommand` + `XxxHandler` + validator. Tên project trong tài liệu API (`Delicare.Api`, `Delicare.Domain`…) là đề xuất cũ; **dùng tên thực tế ở mục 2**.
+- Thời gian: lưu theo **giờ Việt Nam** (Asia/Ho_Chi_Minh), khớp code cũ và 75/92 default `getdate()` / `sysdatetime()` của DDL. 17 cột có default `sysutcdatetime()` (UTC) → app **luôn tự gán giá trị**, không dựa vào default. Spec đề xuất UTC (GAP-Q-04); **D-18 chờ anh chốt**, tạm theo giờ VN. Lấy giờ qua `IClock`, không gọi `DateTime.Now` trực tiếp trong nghiệp vụ mới.
 - Mỗi lệnh ghi chạy trong 1 transaction (`IUnitOfWork.OpenTransaction`) và ghi `AuditChange`.
 - Log bằng Serilog. Không nuốt lỗi.
 
-**Frontend (Angular 18): NGOÀI PHẠM VI hiện tại** – không sửa `app-delicare-client/`. Màn hình trong mockup được hiện thực ở backend dưới dạng API đủ dữ liệu cho màn hình đó.
+**Frontend (Angular 18): NGOÀI PHẠM VI hiện tại** – không đọc, không sửa `app-delicare-client/`. Mỗi màn hình trong mockup được hiện thực ở backend dưới dạng API đủ dữ liệu cho màn hình đó, theo spec.
 
 **Kiểm tra trước khi báo xong:**
 - `dotnet build AppDelicare/AppDelicare.sln` không lỗi.
@@ -142,6 +147,8 @@ Tên thư mục `ClinicManagement.*` là di sản. **Không đổi tên thư m�
 | Trạng thái hợp lệ | `docs/reference/STATUS_CATALOG.md` |
 | Cặp cột trùng (OrderNo/OrderNumber, DeleteddBy/DeletedBy…) | `docs/reference/DEPRECATED_COLUMNS.md` |
 | Biểu mẫu in thật, menu thật, quy tắc định lượng / hao hụt, quy trình báo giá → PO | `docs/claude/BUSINESS_DOCS.md` |
+| Sơ đồ tổ chức thật, luồng vận hành 9 bước, nhóm quyền, ma trận quyền | `docs/claude/ORG_STRUCTURE.md` (ảnh gốc: `docs/reference/org/`) |
+| Ngoài phạm vi (MISA lo kế toán / lương / công nợ; bán lẻ, bảo trì, CRM, CAPA để R2) | `docs/claude/DECISIONS.md` D-21…D-23 |
 | Luồng nghiệp vụ end-to-end | `docs/reference/DELICARE_Business_Workflow.md` |
 | Ngưỡng, mã chứng từ, ca, nhiệt độ, KPI | `docs/claude/BUSINESS_RULES.md` |
 | Lỗi đã biết trong code hiện tại | `docs/claude/CODE_AUDIT.md` |
@@ -172,7 +179,6 @@ Tên thư mục `ClinicManagement.*` là di sản. **Không đổi tên thư m�
 - Cần chạy gì lên DB không phải dev.
 - Cần bí mật hoặc token thật.
 - Hai tài liệu nguồn mâu thuẫn mà DECISIONS chưa phân xử.
-- Thay đổi làm vỡ route hoặc hợp đồng mà Angular đang gọi.
 - Việc cần sửa frontend → **không làm**, ghi vào DECISIONS mục "Việc cho frontend" để anh giao sau.
 
 Những việc khác em tự quyết theo tài liệu và ghi lại lý do trong PROGRESS.

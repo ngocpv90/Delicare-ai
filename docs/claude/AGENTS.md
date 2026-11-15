@@ -24,6 +24,8 @@
 | ACC | Kế toán | Kế toán | doanh thu, chi phí NL, giá thành suất, phí thất thoát hộp | `propose_container_loss_charge` → KT trưởng |
 | CSKH | CSKH – Zalo | Khách hàng | đơn và thực đơn **của chính khách đó** | `propose_portion_confirm`, `propose_shortage_report`, `propose_complaint` → KD / điều phối (khách không tự commit) |
 
+**Bổ sung R2 (theo sơ đồ tổ chức – ORG_STRUCTURE.md):** POS (điểm phát suất / bán lẻ – bộ phận 1.5) và MNT (thiết bị / bảo trì – 1.6), khi có bảng tương ứng (GAP-POS-01, GAP-MNT-01). ACC chỉ đọc số liệu hệ thống và xuất cho MISA, không thay MISA (D-23).
+
 Tên công cụ đọc giữ theo hàm cũ để Hermes không phải học lại (LEGACY_GATEWAY.md). Công cụ mới đặt tên `snake_case` tiếng Anh.
 
 ## 2. Lịch chạy
