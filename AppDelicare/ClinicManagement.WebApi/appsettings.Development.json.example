@@ -1,0 +1,22 @@
+// MẪU – chỉ chứa placeholder. KHÔNG ghi giá trị thật vào repo.
+// Cách khuyến nghị (dev): dùng dotnet user-secrets thay vì file này:
+//   cd AppDelicare/ClinicManagement.WebApi
+//   dotnet user-secrets set "Jwt:SigningKey" "<chuỗi ngẫu nhiên >= 32 byte>"
+//   dotnet user-secrets set "ConnectionStrings:MainConnectionString" "Server=(localdb)\\MSSQLLocalDB;Database=AppDelicare;Trusted_Connection=True;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+//   dotnet user-secrets set "Licenses:GemBox" "<license GemBox>"
+// Nếu vẫn muốn dùng file: sao chép thành appsettings.Development.json (đã .gitignore) rồi điền giá trị.
+{
+  "ConnectionStrings": {
+    "MainConnectionString": "<CONNECTION_STRING_DB_DEV>"
+  },
+  "Jwt": {
+    "SigningKey": "<RANDOM_SECRET_AT_LEAST_32_BYTES>",
+    "AccessTokenMinutes": 120
+  },
+  "Licenses": {
+    "GemBox": "<GEMBOX_LICENSE_OR_EMPTY>"
+  },
+  "ApplicationInsights": {
+    "QuickPulseApiKey": "<OPTIONAL>"
+  }
+}

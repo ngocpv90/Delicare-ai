@@ -2,28 +2,27 @@
 using Microsoft.IdentityModel.Tokens;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Option;
-using System.Text;
 
 namespace AppDelicare.WebApi.Infrastructure
 {
     public static class ConfigureService
     {
-        private const string SecretKey = "iNivDmHLpUA223sqsfhqGbMRdRj1PVkH";
-        private static readonly SymmetricSecurityKey SigningKey = new(Encoding.ASCII.GetBytes(SecretKey));
-
-        public static void InitAuthentication(this IServiceCollection services)
+        /// <summary>
+        /// Cấu hình JWT. Khóa ký đọc từ <c>Jwt:SigningKey</c> (user-secrets / biến môi trường), không viết cứng (T01).
+        /// Gọi <see cref="StartupSecrets.Validate"/> trước hàm này.
+        /// </summary>
+        public static void InitAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
-            IConfiguration configuration = ServiceLocator.Current.GetInstance<IConfiguration>();
-            // Register the ConfigurationBuilder instance of FacebookAuthSetting
-            //services.Configure<FacebookAuthSettings>(configuration.GetSection(nameof(FacebookAuthSettings)));
-            // Get options from app settings
+            SymmetricSecurityKey signingKey = new(StartupSecrets.GetSigningKeyBytes(configuration));
+            TimeSpan accessTokenLifetime = StartupSecrets.GetAccessTokenLifetime(configuration);
+
             IConfigurationSection jwtAppSettingOptions = configuration.GetSection(nameof(JwtIssuerOptions));
-            string? a = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
             services.Configure<JwtIssuerOptions>(options =>
             {
                 options.Issuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)] ?? string.Empty;
                 options.Audience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)] ?? string.Empty;
-                options.SigningCredentials = new SigningCredentials(SigningKey, SecurityAlgorithms.HmacSha256);
+                options.ValidFor = accessTokenLifetime;
+                options.SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
             });
 
             TokenValidationParameters tokenValidationParameters = new()
@@ -33,8 +32,8 @@ namespace AppDelicare.WebApi.Infrastructure
                 ValidateAudience = true,
                 ValidAudience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)],
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = SigningKey,
-                RequireExpirationTime = false,
+                IssuerSigningKey = signingKey,
+                RequireExpirationTime = true,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
             };

@@ -16,13 +16,22 @@ namespace AppDelicare.WebApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // T01: thiếu bí mật bắt buộc thì dừng ngay, báo rõ khóa nào thiếu.
+            StartupSecrets.Validate(Configuration);
+            // Cho các lớp cũ đọc cấu hình tĩnh (DapperRepository, UnitOfWork) thấy cả user-secrets / biến môi trường.
+            AppDelicare.Model.Common.ConfigurationCommon.Initialize(Configuration);
+
             services.AddApplicationInsightsTelemetry();
-            services.ConfigureTelemetryModule<QuickPulseTelemetryModule>((module, o) => module.AuthenticationApiKey = "flh1wcdc7ixx1zwtx0c1g2czmncctypsqsp8e4la");
+            string? quickPulseApiKey = Configuration[StartupSecrets.QuickPulseApiKey];
+            if (!string.IsNullOrWhiteSpace(quickPulseApiKey))
+            {
+                services.ConfigureTelemetryModule<QuickPulseTelemetryModule>((module, o) => module.AuthenticationApiKey = quickPulseApiKey);
+            }
             ServiceLocator.SetLocatorProvider(services.BuildServiceProvider());
             services.AddCors();
             services.AddControllers();
             services.InitConnection(Configuration);
-            services.InitAuthentication();
+            services.InitAuthentication(Configuration);
             var autoMapper = new MapperConfiguration(x =>
             {
                 x.AddProfile(new AutoMapperConfiguraion());
@@ -95,7 +104,14 @@ namespace AppDelicare.WebApi
             });
             app.UseMiddleware<CorsMiddleware>();
             //SyncfusionLicenseProvider.RegisterLicense("YOUR LICENSE KEY");
-            ComponentInfo.SetLicense("DN89-4CBL-I6GX-4R0G");
+            // T01: license GemBox đọc từ cấu hình. Không có thì chạy chế độ miễn phí giới hạn của GemBox.
+            string? gemBoxLicense = Configuration[StartupSecrets.GemBoxLicense];
+            if (string.IsNullOrWhiteSpace(gemBoxLicense))
+            {
+                Serilog.Log.Warning("Chưa cấu hình '{Key}': GemBox.Document chạy chế độ FREE-LIMITED.", StartupSecrets.GemBoxLicense);
+                gemBoxLicense = "FREE-LIMITED-KEY";
+            }
+            ComponentInfo.SetLicense(gemBoxLicense);
             ComponentInfo.FreeLimitReached += (sender, e) => e.FreeLimitReachedAction = FreeLimitReachedAction.ContinueAsTrial;
         }
     }

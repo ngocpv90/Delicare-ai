@@ -10,10 +10,20 @@ namespace AppDelicare.Model.Common
 
         private ConfigurationCommon()
         {
-            _config = new ConfigurationBuilder().AddJsonFile($"appsettings.json", false, true).Build();
+            // Dự phòng khi chưa Initialize (vd. công cụ ngoài host): chỉ có appsettings.json, KHÔNG có bí mật.
+            _config ??= new ConfigurationBuilder().AddJsonFile($"appsettings.json", false, true).Build();
         }
 
         public static ConfigurationCommon Instance => _instance ??= new ConfigurationCommon();
+
+        /// <summary>
+        /// Dùng cấu hình của host (appsettings + user-secrets + biến môi trường). Gọi một lần lúc khởi động (T01).
+        /// </summary>
+        public static void Initialize(IConfiguration configuration)
+        {
+            _config = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _instance ??= new ConfigurationCommon();
+        }
 
         public string GetConfig(string key) => _config?[key] ?? string.Empty;
 

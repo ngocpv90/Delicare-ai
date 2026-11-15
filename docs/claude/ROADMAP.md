@@ -78,7 +78,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 
 ## GIAI ĐOẠN 1 – Làm sạch lõi (CODE_AUDIT A1–A12)
 
-### T01 – Đưa bí mật ra khỏi code · phụ thuộc T00 · `TODO`
+### T01 – Đưa bí mật ra khỏi code · phụ thuộc T00 · `DONE` (2026-11-14)
 - Chuyển ra cấu hình: khóa ký JWT (`ConfigureServices.cs`), key ApplicationInsights QuickPulse, license GemBox (`Startup.cs`), connection string. Đọc từ `IConfiguration`: `Jwt:SigningKey`, `ApplicationInsights:QuickPulseApiKey`, `Licenses:GemBox`.
 - Bật `dotnet user-secrets` cho WebApi. Tạo `appsettings.Development.json.example` chỉ chứa placeholder.
 - Bật `RequireExpirationTime = true`. Thời hạn token lấy từ cấu hình.

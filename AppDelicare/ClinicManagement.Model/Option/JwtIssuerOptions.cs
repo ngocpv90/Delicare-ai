@@ -12,7 +12,6 @@ namespace AppDelicare.Model.Option
         public DateTime NotBefore => DateTime.Now;
         public DateTime IssuedAt => DateTime.Now;
         public TimeSpan ValidFor { get; set; } = TimeSpan.FromMinutes(120);
-        public string? Secret => "iNivDmHLpUA223sqsfhqGbMRdRj1PVkH";
         public Func<Task<string>> JtiGenerator => () => Task.FromResult(Guid.NewGuid().ToString());
         public SigningCredentials? SigningCredentials { get; set; }
     }
