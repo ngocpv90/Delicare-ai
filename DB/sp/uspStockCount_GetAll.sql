@@ -28,6 +28,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[WarehouseId]
+			, j1.[Name] AS [WarehouseName]
 			, t.[CountType]
 			, t.[CountDate]
 			, t.[Status]
@@ -38,7 +39,7 @@ BEGIN
 			, t.[ResponsibleEmployeeId]
 			, t.[CreatedDate]
 		FROM [dbo].[StockCount] AS t
-		
+		LEFT JOIN [dbo].[Warehouse] AS j1 ON j1.[Id] = t.[WarehouseId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[CountNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@WarehouseId IS NULL OR t.[WarehouseId] = @WarehouseId)
 			AND (ISNULL(@CountType, '') = '' OR t.[CountType] = @CountType)
@@ -55,6 +56,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'countType' THEN r.[CountType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'countType' THEN r.[CountType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'countDate' THEN r.[CountDate] END ASC,

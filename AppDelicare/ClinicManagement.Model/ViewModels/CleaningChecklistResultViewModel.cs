@@ -5,6 +5,7 @@ namespace AppDelicare.Model.ViewModels
 	public class CleaningChecklistResultViewModel : BaseViewModel
 	{
 		public Guid? CleaningBatchId { get; set; }
+		public string? CleaningBatchName { get; set; }
 		public Guid? WorkstationId { get; set; }
 		public Guid? ChecklistId { get; set; }
 		public Guid? ChecklistItemId { get; set; }

@@ -33,9 +33,12 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionPlanId]
+			, j1.[PlanNo] AS [ProductionPlanName]
 			, t.[DishId]
+			, j2.[Name] AS [DishName]
 			, t.[RecipeId]
 			, t.[ShiftId]
+			, j3.[Name] AS [ShiftName]
 			, t.[PlannedQty]
 			, t.[ActualQty]
 			, t.[Status]
@@ -48,10 +51,14 @@ BEGIN
 			, t.[ActualEndDate]
 			, t.[ResponsibleEmployeeId]
 			, t.[ProductionLineId]
+			, j4.[Name] AS [ProductionLineName]
 			, t.[RecipeSnapshotJson]
 			, t.[CreatedDate]
 		FROM [dbo].[ProductionOrder] AS t
-		
+		LEFT JOIN [dbo].[ProductionPlan] AS j1 ON j1.[Id] = t.[ProductionPlanId]
+		LEFT JOIN [dbo].[Dishe] AS j2 ON j2.[Id] = t.[DishId]
+		LEFT JOIN [dbo].[Shift] AS j3 ON j3.[Id] = t.[ShiftId]
+		LEFT JOIN [dbo].[ProductionLine] AS j4 ON j4.[Id] = t.[ProductionLineId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ProductionOrderNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ProductionPlanId IS NULL OR t.[ProductionPlanId] = @ProductionPlanId)
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
@@ -73,12 +80,18 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionPlanId' THEN r.[ProductionPlanId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionPlanId' THEN r.[ProductionPlanId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionPlanName' THEN r.[ProductionPlanName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionPlanName' THEN r.[ProductionPlanName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'recipeId' THEN r.[RecipeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'recipeId' THEN r.[RecipeId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'plannedQty' THEN r.[PlannedQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'plannedQty' THEN r.[PlannedQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'actualQty' THEN r.[ActualQty] END ASC,
@@ -103,6 +116,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'responsibleEmployeeId' THEN r.[ResponsibleEmployeeId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionLineId' THEN r.[ProductionLineId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionLineId' THEN r.[ProductionLineId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionLineName' THEN r.[ProductionLineName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionLineName' THEN r.[ProductionLineName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'recipeSnapshotJson' THEN r.[RecipeSnapshotJson] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'recipeSnapshotJson' THEN r.[RecipeSnapshotJson] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

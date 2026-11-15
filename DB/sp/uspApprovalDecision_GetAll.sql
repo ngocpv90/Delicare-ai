@@ -23,6 +23,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ApprovalRequestId]
+			, j1.[RequestNo] AS [ApprovalRequestName]
 			, t.[ApprovalStepId]
 			, t.[DecisionCode]
 			, t.[DecidedBy]
@@ -31,7 +32,7 @@ BEGIN
 			, t.[PayloadHash]
 			, t.[CreatedDate]
 		FROM [dbo].[ApprovalDecision] AS t
-		
+		LEFT JOIN [dbo].[ApprovalRequest] AS j1 ON j1.[Id] = t.[ApprovalRequestId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[DecisionCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ApprovalRequestId IS NULL OR t.[ApprovalRequestId] = @ApprovalRequestId)
 			AND (@ApprovalStepId IS NULL OR t.[ApprovalStepId] = @ApprovalStepId)
@@ -43,6 +44,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalStepId' THEN r.[ApprovalStepId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalStepId' THEN r.[ApprovalStepId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'decisionCode' THEN r.[DecisionCode] END ASC,

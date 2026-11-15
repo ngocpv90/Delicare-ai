@@ -26,6 +26,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CompanyId]
+			, j1.[Name] AS [CompanyName]
 			, t.[ParentId]
 			, t.[Code]
 			, t.[Name]
@@ -37,7 +38,7 @@ BEGIN
 			, t.[Phone]
 			, t.[CreatedDate]
 		FROM [dbo].[OrganizationUnit] AS t
-		
+		LEFT JOIN [dbo].[Company] AS j1 ON j1.[Id] = t.[CompanyId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@CompanyId IS NULL OR t.[CompanyId] = @CompanyId)
 			AND (@ParentId IS NULL OR t.[ParentId] = @ParentId)
@@ -52,6 +53,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyId' THEN r.[CompanyId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyId' THEN r.[CompanyId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyName' THEN r.[CompanyName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyName' THEN r.[CompanyName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'parentId' THEN r.[ParentId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'parentId' THEN r.[ParentId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'code' THEN r.[Code] END ASC,

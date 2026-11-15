@@ -23,7 +23,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[UserGroupId]
+			, j1.[Name] AS [UserGroupName]
 			, t.[ObjectMenuId]
+			, j2.[Name] AS [ObjectMenuName]
 			, t.[AllowAccess]
 			, t.[AllowAdd]
 			, t.[AllowEdit]
@@ -33,7 +35,8 @@ BEGIN
 			, t.[AllowImport]
 			, t.[CreatedDate]
 		FROM [dbo].[UserRole] AS t
-		
+		LEFT JOIN [dbo].[UserGroup] AS j1 ON j1.[Id] = t.[UserGroupId]
+		LEFT JOIN [dbo].[ObjectMenu] AS j2 ON j2.[Id] = t.[ObjectMenuId]
 		WHERE 1 = 1
 			AND (@UserGroupId IS NULL OR t.[UserGroupId] = @UserGroupId)
 			AND (@ObjectMenuId IS NULL OR t.[ObjectMenuId] = @ObjectMenuId)
@@ -45,8 +48,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'userGroupId' THEN r.[UserGroupId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'userGroupId' THEN r.[UserGroupId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'userGroupName' THEN r.[UserGroupName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'userGroupName' THEN r.[UserGroupName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'objectMenuId' THEN r.[ObjectMenuId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'objectMenuId' THEN r.[ObjectMenuId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'objectMenuName' THEN r.[ObjectMenuName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'objectMenuName' THEN r.[ObjectMenuName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'allowAccess' THEN r.[AllowAccess] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'allowAccess' THEN r.[AllowAccess] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'allowAdd' THEN r.[AllowAdd] END ASC,

@@ -24,7 +24,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[EmployeeId]
+			, j1.[FullName] AS [EmployeeName]
 			, t.[ShiftId]
+			, j2.[Name] AS [ShiftName]
 			, t.[WorkDate]
 			, t.[PlannedStart]
 			, t.[PlannedEnd]
@@ -33,7 +35,8 @@ BEGIN
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[ShiftAssignment] AS t
-		
+		LEFT JOIN [dbo].[Employee] AS j1 ON j1.[Id] = t.[EmployeeId]
+		LEFT JOIN [dbo].[Shift] AS j2 ON j2.[Id] = t.[ShiftId]
 		WHERE 1 = 1
 			AND (@EmployeeId IS NULL OR t.[EmployeeId] = @EmployeeId)
 			AND (@ShiftId IS NULL OR t.[ShiftId] = @ShiftId)
@@ -46,8 +49,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'workDate' THEN r.[WorkDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'workDate' THEN r.[WorkDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'plannedStart' THEN r.[PlannedStart] END ASC,

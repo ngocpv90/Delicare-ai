@@ -13,11 +13,19 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class AuditChangeService(IUnitOfWork unitOfWork, IMapper mapper, IDapperRepository dapperRepository) : IAuditChangeService
+    public class AuditChangeService(IUnitOfWork unitOfWork, IMapper mapper, IDapperRepository dapperRepository, AppDelicare.Data.Share.IReferenceGuard referenceGuard) : IAuditChangeService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
+        private readonly AppDelicare.Data.Share.IReferenceGuard _referenceGuard = referenceGuard;
+
+        public async Task<bool> IsReferencedAsync(string tableOrClass, Guid id, params string[] ignoreTables)
+        {
+            var ignore = new HashSet<string>(ignoreTables, StringComparer.OrdinalIgnoreCase);
+            var usages = await _referenceGuard.FindUsagesAsync(tableOrClass, id);
+            return usages.Any(u => !ignore.Contains(u.Table) && !ignore.Contains(AppDelicare.Data.Share.ReferenceMap.TableOfClass.GetValueOrDefault(u.Table, u.Table)));
+        }
 
         public async Task<IResults<AuditChangeCustomViewModel>> GetAll(AuditChangeSearchRequest request)
         {

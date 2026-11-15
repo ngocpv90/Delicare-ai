@@ -30,6 +30,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[OrderId]
+			, j1.[OrderNo] AS [OrderName]
 			, t.[ProducedQty]
 			, t.[PackedQty]
 			, t.[VarianceQty]
@@ -45,7 +46,7 @@ BEGIN
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[OrderReconciliation] AS t
-		
+		LEFT JOIN [dbo].[Order] AS j1 ON j1.[Id] = t.[OrderId]
 		WHERE 1 = 1
 			AND (@OrderId IS NULL OR t.[OrderId] = @OrderId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -64,6 +65,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderId' THEN r.[OrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderId' THEN r.[OrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderName' THEN r.[OrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderName' THEN r.[OrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'producedQty' THEN r.[ProducedQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'producedQty' THEN r.[ProducedQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'packedQty' THEN r.[PackedQty] END ASC,

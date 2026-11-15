@@ -29,17 +29,20 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[DeliveryOrderId]
+			, j1.[DeliveryNo] AS [DeliveryOrderName]
 			, t.[ReturnDate]
 			, t.[Quantity]
 			, t.[Status]
 			, t.[Note]
 			, t.[CustomerId]
+			, j2.[DisplayName] AS [CustomerName]
 			, t.[ExpectedQuantity]
 			, t.[ReturnedQuantity]
 			, t.[DamagedQuantity]
 			, t.[CreatedDate]
 		FROM [dbo].[ContainerReturn] AS t
-		
+		LEFT JOIN [dbo].[DeliveryOrder] AS j1 ON j1.[Id] = t.[DeliveryOrderId]
+		LEFT JOIN [dbo].[Customer] AS j2 ON j2.[Id] = t.[CustomerId]
 		WHERE 1 = 1
 			AND (@DeliveryOrderId IS NULL OR t.[DeliveryOrderId] = @DeliveryOrderId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -57,6 +60,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'returnDate' THEN r.[ReturnDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'returnDate' THEN r.[ReturnDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'quantity' THEN r.[Quantity] END ASC,
@@ -67,6 +72,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'note' THEN r.[Note] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'expectedQuantity' THEN r.[ExpectedQuantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'expectedQuantity' THEN r.[ExpectedQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'returnedQuantity' THEN r.[ReturnedQuantity] END ASC,

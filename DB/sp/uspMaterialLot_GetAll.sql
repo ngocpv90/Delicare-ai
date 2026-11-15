@@ -31,7 +31,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[IngredientId]
+			, j1.[Name] AS [IngredientName]
 			, t.[SupplierId]
+			, j2.[Name] AS [SupplierName]
 			, t.[ManufactureDate]
 			, t.[ExpiryDate]
 			, t.[ReceivedDate]
@@ -40,10 +42,13 @@ BEGIN
 			, t.[Status]
 			, t.[Note]
 			, t.[GoodsReceiptLineId]
+			, j3.[LotNumber] AS [GoodsReceiptLineName]
 			, t.[LotNumber]
 			, t.[CreatedDate]
 		FROM [dbo].[MaterialLot] AS t
-		
+		LEFT JOIN [dbo].[Ingredient] AS j1 ON j1.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[Supplier] AS j2 ON j2.[Id] = t.[SupplierId]
+		LEFT JOIN [dbo].[GoodsReceiptLine] AS j3 ON j3.[Id] = t.[GoodsReceiptLineId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[LotNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
 			AND (@SupplierId IS NULL OR t.[SupplierId] = @SupplierId)
@@ -63,8 +68,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierId' THEN r.[SupplierId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierId' THEN r.[SupplierId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierName' THEN r.[SupplierName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierName' THEN r.[SupplierName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'manufactureDate' THEN r.[ManufactureDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'manufactureDate' THEN r.[ManufactureDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'expiryDate' THEN r.[ExpiryDate] END ASC,
@@ -81,6 +90,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'note' THEN r.[Note] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptLineId' THEN r.[GoodsReceiptLineId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptLineId' THEN r.[GoodsReceiptLineId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptLineName' THEN r.[GoodsReceiptLineName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptLineName' THEN r.[GoodsReceiptLineName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'lotNumber' THEN r.[LotNumber] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'lotNumber' THEN r.[LotNumber] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

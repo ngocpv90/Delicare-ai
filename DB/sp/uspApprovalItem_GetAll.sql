@@ -25,6 +25,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ApprovalRequestId]
+			, j1.[RequestNo] AS [ApprovalRequestName]
 			, t.[ItemType]
 			, t.[ItemId]
 			, t.[ActionCode]
@@ -32,7 +33,7 @@ BEGIN
 			, t.[ItemStatus]
 			, t.[CreatedDate]
 		FROM [dbo].[ApprovalItem] AS t
-		
+		LEFT JOIN [dbo].[ApprovalRequest] AS j1 ON j1.[Id] = t.[ApprovalRequestId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ActionCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ApprovalRequestId IS NULL OR t.[ApprovalRequestId] = @ApprovalRequestId)
 			AND (ISNULL(@ItemType, '') = '' OR t.[ItemType] = @ItemType)
@@ -46,6 +47,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'itemType' THEN r.[ItemType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'itemType' THEN r.[ItemType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'itemId' THEN r.[ItemId] END ASC,

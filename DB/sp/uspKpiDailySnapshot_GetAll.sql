@@ -24,6 +24,7 @@ BEGIN
 			t.[Id]
 			, t.[SnapshotDate]
 			, t.[BranchId]
+			, j1.[Name] AS [BranchName]
 			, t.[MetricCode]
 			, t.[MetricVersion]
 			, t.[MetricValue]
@@ -37,7 +38,7 @@ BEGIN
 			, t.[DataQualityStatus]
 			, t.[CreatedDate]
 		FROM [dbo].[KpiDailySnapshot] AS t
-		
+		LEFT JOIN [dbo].[OrganizationUnit] AS j1 ON j1.[Id] = t.[BranchId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[MetricCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@BranchId IS NULL OR t.[BranchId] = @BranchId)
 			AND (ISNULL(@DataQualityStatus, '') = '' OR t.[DataQualityStatus] = @DataQualityStatus)
@@ -51,6 +52,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'snapshotDate' THEN r.[SnapshotDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'branchId' THEN r.[BranchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'branchId' THEN r.[BranchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'branchName' THEN r.[BranchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'branchName' THEN r.[BranchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'metricCode' THEN r.[MetricCode] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'metricCode' THEN r.[MetricCode] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'metricVersion' THEN r.[MetricVersion] END ASC,

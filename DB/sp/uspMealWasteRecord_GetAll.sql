@@ -26,9 +26,13 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionBatchId]
+			, j1.[BatchNo] AS [ProductionBatchName]
 			, t.[ProductionOrderId]
+			, j2.[ProductionOrderNo] AS [ProductionOrderName]
 			, t.[DishId]
+			, j3.[Name] AS [DishName]
 			, t.[ShiftId]
+			, j4.[Name] AS [ShiftName]
 			, t.[WasteType]
 			, t.[QuantityMeals]
 			, t.[QuantityKg]
@@ -38,7 +42,10 @@ BEGIN
 			, t.[RecordedBy]
 			, t.[CreatedDate]
 		FROM [dbo].[MealWasteRecord] AS t
-		
+		LEFT JOIN [dbo].[ProductionBatche] AS j1 ON j1.[Id] = t.[ProductionBatchId]
+		LEFT JOIN [dbo].[ProductionOrder] AS j2 ON j2.[Id] = t.[ProductionOrderId]
+		LEFT JOIN [dbo].[Dishe] AS j3 ON j3.[Id] = t.[DishId]
+		LEFT JOIN [dbo].[Shift] AS j4 ON j4.[Id] = t.[ShiftId]
 		WHERE 1 = 1
 			AND (@ProductionBatchId IS NULL OR t.[ProductionBatchId] = @ProductionBatchId)
 			AND (@ProductionOrderId IS NULL OR t.[ProductionOrderId] = @ProductionOrderId)
@@ -53,12 +60,20 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'wasteType' THEN r.[WasteType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'wasteType' THEN r.[WasteType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'quantityMeals' THEN r.[QuantityMeals] END ASC,

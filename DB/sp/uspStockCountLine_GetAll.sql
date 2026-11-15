@@ -29,18 +29,25 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[StockCountId]
+			, j1.[CountNo] AS [StockCountName]
 			, t.[IngredientId]
+			, j2.[Name] AS [IngredientName]
 			, t.[VarianceValue]
 			, t.[Reason]
 			, t.[MaterialLotId]
+			, j3.[LotNo] AS [MaterialLotName]
 			, t.[SystemQuantity]
 			, t.[PhysicalQuantity]
 			, t.[VarianceQuantity]
 			, t.[UnitId]
+			, j4.[Name] AS [UnitName]
 			, t.[VarianceReason]
 			, t.[CreatedDate]
 		FROM [dbo].[StockCountLine] AS t
-		
+		LEFT JOIN [dbo].[StockCount] AS j1 ON j1.[Id] = t.[StockCountId]
+		LEFT JOIN [dbo].[Ingredient] AS j2 ON j2.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[MaterialLot] AS j3 ON j3.[Id] = t.[MaterialLotId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j4 ON j4.[Id] = t.[UnitId]
 		WHERE 1 = 1
 			AND (@StockCountId IS NULL OR t.[StockCountId] = @StockCountId)
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
@@ -58,14 +65,20 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'stockCountId' THEN r.[StockCountId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'stockCountId' THEN r.[StockCountId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'stockCountName' THEN r.[StockCountName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'stockCountName' THEN r.[StockCountName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'varianceValue' THEN r.[VarianceValue] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'varianceValue' THEN r.[VarianceValue] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'reason' THEN r.[Reason] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'reason' THEN r.[Reason] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialLotId' THEN r.[MaterialLotId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'materialLotId' THEN r.[MaterialLotId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialLotName' THEN r.[MaterialLotName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'materialLotName' THEN r.[MaterialLotName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'systemQuantity' THEN r.[SystemQuantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'systemQuantity' THEN r.[SystemQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'physicalQuantity' THEN r.[PhysicalQuantity] END ASC,
@@ -74,6 +87,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'varianceQuantity' THEN r.[VarianceQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitId' THEN r.[UnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitId' THEN r.[UnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitName' THEN r.[UnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitName' THEN r.[UnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'varianceReason' THEN r.[VarianceReason] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'varianceReason' THEN r.[VarianceReason] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

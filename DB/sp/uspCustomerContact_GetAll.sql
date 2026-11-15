@@ -29,6 +29,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CustomerId]
+			, j1.[DisplayName] AS [CustomerName]
 			, t.[Name]
 			, t.[Position]
 			, t.[Phone]
@@ -39,7 +40,7 @@ BEGIN
 			, t.[FullName]
 			, t.[CreatedDate]
 		FROM [dbo].[CustomerContact] AS t
-		
+		LEFT JOIN [dbo].[Customer] AS j1 ON j1.[Id] = t.[CustomerId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Name] LIKE CONCAT('%', @SearchText, '%') OR t.[FullName] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -57,6 +58,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'name' THEN r.[Name] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'name' THEN r.[Name] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'position' THEN r.[Position] END ASC,

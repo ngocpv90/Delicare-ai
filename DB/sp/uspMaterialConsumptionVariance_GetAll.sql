@@ -28,7 +28,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionOrderId]
+			, j1.[ProductionOrderNo] AS [ProductionOrderName]
 			, t.[IngredientId]
+			, j2.[Name] AS [IngredientName]
 			, t.[TheoreticalQty]
 			, t.[VariancePercent]
 			, t.[VarianceValue]
@@ -39,7 +41,8 @@ BEGIN
 			, t.[VarianceCost]
 			, t.[CreatedDate]
 		FROM [dbo].[MaterialConsumptionVariance] AS t
-		
+		LEFT JOIN [dbo].[ProductionOrder] AS j1 ON j1.[Id] = t.[ProductionOrderId]
+		LEFT JOIN [dbo].[Ingredient] AS j2 ON j2.[Id] = t.[IngredientId]
 		WHERE 1 = 1
 			AND (@ProductionOrderId IS NULL OR t.[ProductionOrderId] = @ProductionOrderId)
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
@@ -56,8 +59,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'theoreticalQty' THEN r.[TheoreticalQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'theoreticalQty' THEN r.[TheoreticalQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'variancePercent' THEN r.[VariancePercent] END ASC,

@@ -29,7 +29,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[IngredientId]
+			, j1.[Name] AS [IngredientName]
 			, t.[WarehouseId]
+			, j2.[Name] AS [WarehouseName]
 			, t.[MinStock]
 			, t.[MaxStock]
 			, t.[SafetyStock]
@@ -43,7 +45,8 @@ BEGIN
 			, t.[ExpiryWarningDays]
 			, t.[CreatedDate]
 		FROM [dbo].[InventoryPolicie] AS t
-		
+		LEFT JOIN [dbo].[Ingredient] AS j1 ON j1.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[Warehouse] AS j2 ON j2.[Id] = t.[WarehouseId]
 		WHERE 1 = 1
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
 			AND (@WarehouseId IS NULL OR t.[WarehouseId] = @WarehouseId)
@@ -61,8 +64,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'minStock' THEN r.[MinStock] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'minStock' THEN r.[MinStock] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'maxStock' THEN r.[MaxStock] END ASC,

@@ -32,7 +32,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[GoodsReceiptId]
+			, j1.[ReceiptNo] AS [GoodsReceiptName]
 			, t.[IngredientId]
+			, j2.[Name] AS [IngredientName]
 			, t.[Quantity]
 			, t.[UnitCost]
 			, t.[LotId]
@@ -40,13 +42,16 @@ BEGIN
 			, t.[AcceptedQuantity]
 			, t.[RejectedQuantity]
 			, t.[UnitId]
+			, j3.[Name] AS [UnitName]
 			, t.[LotNumber]
 			, t.[ManufactureDate]
 			, t.[ExpiryDate]
 			, t.[QualityStatus]
 			, t.[CreatedDate]
 		FROM [dbo].[GoodsReceiptLine] AS t
-		
+		LEFT JOIN [dbo].[GoodsReceipt] AS j1 ON j1.[Id] = t.[GoodsReceiptId]
+		LEFT JOIN [dbo].[Ingredient] AS j2 ON j2.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j3 ON j3.[Id] = t.[UnitId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[LotNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@GoodsReceiptId IS NULL OR t.[GoodsReceiptId] = @GoodsReceiptId)
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
@@ -67,8 +72,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptId' THEN r.[GoodsReceiptId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptId' THEN r.[GoodsReceiptId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptName' THEN r.[GoodsReceiptName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptName' THEN r.[GoodsReceiptName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'quantity' THEN r.[Quantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'quantity' THEN r.[Quantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitCost' THEN r.[UnitCost] END ASC,
@@ -83,6 +92,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'rejectedQuantity' THEN r.[RejectedQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitId' THEN r.[UnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitId' THEN r.[UnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitName' THEN r.[UnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitName' THEN r.[UnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'lotNumber' THEN r.[LotNumber] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'lotNumber' THEN r.[LotNumber] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'manufactureDate' THEN r.[ManufactureDate] END ASC,

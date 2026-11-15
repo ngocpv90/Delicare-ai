@@ -34,11 +34,14 @@ BEGIN
 			t.[Id]
 			, t.[FullName]
 			, t.[OrganizationUnitId]
+			, j1.[Name] AS [OrganizationUnitName]
 			, t.[PositionId]
+			, j2.[Name] AS [PositionName]
 			, t.[Phone]
 			, t.[Email]
 			, t.[Status]
 			, t.[CompanyId]
+			, j3.[Name] AS [CompanyName]
 			, t.[Code]
 			, t.[DateOfBirth]
 			, t.[Gender]
@@ -46,7 +49,9 @@ BEGIN
 			, t.[HireDate]
 			, t.[CreatedDate]
 		FROM [dbo].[Employee] AS t
-		
+		LEFT JOIN [dbo].[OrganizationUnit] AS j1 ON j1.[Id] = t.[OrganizationUnitId]
+		LEFT JOIN [dbo].[Position] AS j2 ON j2.[Id] = t.[PositionId]
+		LEFT JOIN [dbo].[Company] AS j3 ON j3.[Id] = t.[CompanyId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[FullName] LIKE CONCAT('%', @SearchText, '%') OR t.[Code] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@OrganizationUnitId IS NULL OR t.[OrganizationUnitId] = @OrganizationUnitId)
 			AND (@PositionId IS NULL OR t.[PositionId] = @PositionId)
@@ -70,8 +75,12 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'fullName' THEN r.[FullName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'organizationUnitId' THEN r.[OrganizationUnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'organizationUnitId' THEN r.[OrganizationUnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'organizationUnitName' THEN r.[OrganizationUnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'organizationUnitName' THEN r.[OrganizationUnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'positionId' THEN r.[PositionId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'positionId' THEN r.[PositionId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'positionName' THEN r.[PositionName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'positionName' THEN r.[PositionName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'phone' THEN r.[Phone] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'phone' THEN r.[Phone] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'email' THEN r.[Email] END ASC,
@@ -80,6 +89,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyId' THEN r.[CompanyId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyId' THEN r.[CompanyId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyName' THEN r.[CompanyName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyName' THEN r.[CompanyName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'code' THEN r.[Code] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'code' THEN r.[Code] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dateOfBirth' THEN r.[DateOfBirth] END ASC,

@@ -25,16 +25,19 @@ BEGIN
 			t.[Id]
 			, t.[RequestNo]
 			, t.[EmployeeId]
+			, j1.[FullName] AS [EmployeeName]
 			, t.[FromDate]
 			, t.[ToDate]
 			, t.[LeaveTypeCode]
 			, t.[Reason]
 			, t.[RequestStatus]
 			, t.[ApprovalRequestId]
+			, j2.[RequestNo] AS [ApprovalRequestName]
 			, t.[SubmittedAt]
 			, t.[CreatedDate]
 		FROM [dbo].[LeaveRequest] AS t
-		
+		LEFT JOIN [dbo].[Employee] AS j1 ON j1.[Id] = t.[EmployeeId]
+		LEFT JOIN [dbo].[ApprovalRequest] AS j2 ON j2.[Id] = t.[ApprovalRequestId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[RequestNo] LIKE CONCAT('%', @SearchText, '%') OR t.[LeaveTypeCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@EmployeeId IS NULL OR t.[EmployeeId] = @EmployeeId)
 			AND (ISNULL(@RequestStatus, '') = '' OR t.[RequestStatus] = @RequestStatus)
@@ -49,6 +52,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'requestNo' THEN r.[RequestNo] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'fromDate' THEN r.[FromDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'fromDate' THEN r.[FromDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'toDate' THEN r.[ToDate] END ASC,
@@ -61,6 +66,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'requestStatus' THEN r.[RequestStatus] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'submittedAt' THEN r.[SubmittedAt] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'submittedAt' THEN r.[SubmittedAt] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

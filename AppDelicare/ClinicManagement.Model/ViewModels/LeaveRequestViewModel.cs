@@ -6,12 +6,14 @@ namespace AppDelicare.Model.ViewModels
 	{
 		public string? RequestNo { get; set; }
 		public Guid? EmployeeId { get; set; }
+		public string? EmployeeName { get; set; }
 		public DateTime? FromDate { get; set; }
 		public DateTime? ToDate { get; set; }
 		public string? LeaveTypeCode { get; set; }
 		public string? Reason { get; set; }
 		public string? RequestStatus { get; set; }
 		public Guid? ApprovalRequestId { get; set; }
+		public string? ApprovalRequestName { get; set; }
 		public DateTime? SubmittedAt { get; set; }
 		public DateTime? CreatedDate { get; set; }
 	}

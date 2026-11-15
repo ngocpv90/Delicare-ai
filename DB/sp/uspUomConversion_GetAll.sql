@@ -28,12 +28,15 @@ BEGIN
 			, t.[EffectiveTo]
 			, t.[Status]
 			, t.[FromUnitId]
+			, j1.[Name] AS [FromUnitName]
 			, t.[ToUnitId]
+			, j2.[Name] AS [ToUnitName]
 			, t.[IsActive]
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[UomConversion] AS t
-		
+		LEFT JOIN [dbo].[UnitMeasure] AS j1 ON j1.[Id] = t.[FromUnitId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j2 ON j2.[Id] = t.[ToUnitId]
 		WHERE 1 = 1
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@FromUnitId IS NULL OR t.[FromUnitId] = @FromUnitId)
@@ -54,8 +57,12 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'fromUnitId' THEN r.[FromUnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'fromUnitId' THEN r.[FromUnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'fromUnitName' THEN r.[FromUnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'fromUnitName' THEN r.[FromUnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'toUnitId' THEN r.[ToUnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'toUnitId' THEN r.[ToUnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'toUnitName' THEN r.[ToUnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'toUnitName' THEN r.[ToUnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'isActive' THEN r.[IsActive] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'isActive' THEN r.[IsActive] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'note' THEN r.[Note] END ASC,

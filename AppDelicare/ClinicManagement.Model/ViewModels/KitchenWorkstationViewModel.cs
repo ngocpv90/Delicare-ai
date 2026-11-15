@@ -13,7 +13,9 @@ namespace AppDelicare.Model.ViewModels
 		public string? Status { get; set; }
 		public string? Note { get; set; }
 		public Guid? CompanyId { get; set; }
+		public string? CompanyName { get; set; }
 		public Guid? OrganizationUnitId { get; set; }
+		public string? OrganizationUnitName { get; set; }
 		public DateTime? CreatedDate { get; set; }
 	}
 }

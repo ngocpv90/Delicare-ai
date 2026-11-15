@@ -5,6 +5,7 @@ namespace AppDelicare.Model.ViewModels
 	public class ApprovalItemViewModel : BaseViewModel
 	{
 		public Guid? ApprovalRequestId { get; set; }
+		public string? ApprovalRequestName { get; set; }
 		public string? ItemType { get; set; }
 		public Guid? ItemId { get; set; }
 		public string? ActionCode { get; set; }

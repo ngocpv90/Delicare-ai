@@ -29,7 +29,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[SupplierId]
+			, j1.[Name] AS [SupplierName]
 			, t.[PurchaseRequestId]
+			, j2.[RequestNo] AS [PurchaseRequestName]
 			, t.[OrderDate]
 			, t.[Status]
 			, t.[TotalAmount]
@@ -38,7 +40,8 @@ BEGIN
 			, t.[ExpectedDeliveryDate]
 			, t.[CreatedDate]
 		FROM [dbo].[PurchaseOrder] AS t
-		
+		LEFT JOIN [dbo].[Supplier] AS j1 ON j1.[Id] = t.[SupplierId]
+		LEFT JOIN [dbo].[PurchaseRequest] AS j2 ON j2.[Id] = t.[PurchaseRequestId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[PurchaseOrderNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@SupplierId IS NULL OR t.[SupplierId] = @SupplierId)
 			AND (@PurchaseRequestId IS NULL OR t.[PurchaseRequestId] = @PurchaseRequestId)
@@ -56,8 +59,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierId' THEN r.[SupplierId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierId' THEN r.[SupplierId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierName' THEN r.[SupplierName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierName' THEN r.[SupplierName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseRequestId' THEN r.[PurchaseRequestId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseRequestId' THEN r.[PurchaseRequestId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseRequestName' THEN r.[PurchaseRequestName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseRequestName' THEN r.[PurchaseRequestName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderDate' THEN r.[OrderDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderDate' THEN r.[OrderDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,

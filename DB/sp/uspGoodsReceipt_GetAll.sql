@@ -28,15 +28,20 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[PurchaseOrderId]
+			, j1.[PONo] AS [PurchaseOrderName]
 			, t.[SupplierId]
+			, j2.[Name] AS [SupplierName]
 			, t.[WarehouseId]
+			, j3.[Name] AS [WarehouseName]
 			, t.[ReceiptDate]
 			, t.[Status]
 			, t.[Note]
 			, t.[ReceiptNumber]
 			, t.[CreatedDate]
 		FROM [dbo].[GoodsReceipt] AS t
-		
+		LEFT JOIN [dbo].[PurchaseOrder] AS j1 ON j1.[Id] = t.[PurchaseOrderId]
+		LEFT JOIN [dbo].[Supplier] AS j2 ON j2.[Id] = t.[SupplierId]
+		LEFT JOIN [dbo].[Warehouse] AS j3 ON j3.[Id] = t.[WarehouseId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ReceiptNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@PurchaseOrderId IS NULL OR t.[PurchaseOrderId] = @PurchaseOrderId)
 			AND (@SupplierId IS NULL OR t.[SupplierId] = @SupplierId)
@@ -53,10 +58,16 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseOrderId' THEN r.[PurchaseOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseOrderId' THEN r.[PurchaseOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseOrderName' THEN r.[PurchaseOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseOrderName' THEN r.[PurchaseOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierId' THEN r.[SupplierId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierId' THEN r.[SupplierId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierName' THEN r.[SupplierName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierName' THEN r.[SupplierName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'receiptDate' THEN r.[ReceiptDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'receiptDate' THEN r.[ReceiptDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,

@@ -27,14 +27,17 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionOrderId]
+			, j1.[ProductionOrderNo] AS [ProductionOrderName]
 			, t.[WarehouseId]
+			, j2.[Name] AS [WarehouseName]
 			, t.[IssueDate]
 			, t.[Status]
 			, t.[Note]
 			, t.[IssueNumber]
 			, t.[CreatedDate]
 		FROM [dbo].[MaterialIssue] AS t
-		
+		LEFT JOIN [dbo].[ProductionOrder] AS j1 ON j1.[Id] = t.[ProductionOrderId]
+		LEFT JOIN [dbo].[Warehouse] AS j2 ON j2.[Id] = t.[WarehouseId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[IssueNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ProductionOrderId IS NULL OR t.[ProductionOrderId] = @ProductionOrderId)
 			AND (@WarehouseId IS NULL OR t.[WarehouseId] = @WarehouseId)
@@ -50,8 +53,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'issueDate' THEN r.[IssueDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'issueDate' THEN r.[IssueDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,

@@ -4,6 +4,7 @@ using AutoMapper;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
+using AppDelicare.Data.Share;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
@@ -15,11 +16,12 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class IntegrationChannelService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper) : IIntegrationChannelService
+    public class IntegrationChannelService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard) : IIntegrationChannelService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
+        private readonly IReferenceGuard _referenceGuard = referenceGuard;
 
         public async Task<IResults<IntegrationChannelViewModel>> GetAll(IntegrationChannelSearchRequest request)
         {
@@ -158,8 +160,11 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            // T07: kiểm tra bản ghi đang được tham chiếu bằng ReferenceGuard (quan hệ logic, truy vấn có tham số).
-            // KHÔNG dùng SQL động ghép chuỗi (uspSystem_ExecuteQuery) như mã cũ – CLAUDE.md 3.2.
+            // T07: bản ghi đang được tham chiếu (quan hệ logic, truy vấn có tham số) → không cho xóa.
+            if ((await _referenceGuard.FindUsagesAsync("IntegrationChannel", (Guid)id)).Count > 0)
+            {
+                return ConstantHelper.Message.DeleteExistFail;
+            }
             var delete = _unitOfWork.IntegrationChannelRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
             if (delete == null)
             {

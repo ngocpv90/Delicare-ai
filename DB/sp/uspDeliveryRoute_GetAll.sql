@@ -29,6 +29,7 @@ BEGIN
 			, t.[RouteNo]
 			, t.[DeliveryDate]
 			, t.[VehicleId]
+			, j1.[Code] AS [VehicleName]
 			, t.[DriverId]
 			, t.[PlannedStart]
 			, t.[PlannedEnd]
@@ -40,7 +41,7 @@ BEGIN
 			, t.[Description]
 			, t.[CreatedDate]
 		FROM [dbo].[DeliveryRoute] AS t
-		
+		LEFT JOIN [dbo].[Vehicle] AS j1 ON j1.[Id] = t.[VehicleId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[RouteNo] LIKE CONCAT('%', @SearchText, '%') OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@VehicleId IS NULL OR t.[VehicleId] = @VehicleId)
 			AND (@DriverId IS NULL OR t.[DriverId] = @DriverId)
@@ -60,6 +61,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryDate' THEN r.[DeliveryDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'vehicleId' THEN r.[VehicleId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'vehicleId' THEN r.[VehicleId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'vehicleName' THEN r.[VehicleName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'vehicleName' THEN r.[VehicleName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'driverId' THEN r.[DriverId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'driverId' THEN r.[DriverId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'plannedStart' THEN r.[PlannedStart] END ASC,

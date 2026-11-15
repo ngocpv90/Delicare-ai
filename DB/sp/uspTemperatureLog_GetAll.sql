@@ -26,9 +26,13 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[StorageZoneId]
+			, j1.[Name] AS [StorageZoneName]
 			, t.[StorageLocationId]
+			, j2.[Name] AS [StorageLocationName]
 			, t.[MaterialLotId]
+			, j3.[LotNo] AS [MaterialLotName]
 			, t.[ProductionBatchId]
+			, j4.[BatchNo] AS [ProductionBatchName]
 			, t.[MeasurementType]
 			, t.[TemperatureC]
 			, t.[MinAllowedC]
@@ -42,7 +46,10 @@ BEGIN
 			, t.[EvidenceUrl]
 			, t.[CreatedDate]
 		FROM [dbo].[TemperatureLog] AS t
-		
+		LEFT JOIN [dbo].[StorageZone] AS j1 ON j1.[Id] = t.[StorageZoneId]
+		LEFT JOIN [dbo].[StorageLocation] AS j2 ON j2.[Id] = t.[StorageLocationId]
+		LEFT JOIN [dbo].[MaterialLot] AS j3 ON j3.[Id] = t.[MaterialLotId]
+		LEFT JOIN [dbo].[ProductionBatche] AS j4 ON j4.[Id] = t.[ProductionBatchId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[DeviceCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@StorageZoneId IS NULL OR t.[StorageZoneId] = @StorageZoneId)
 			AND (@StorageLocationId IS NULL OR t.[StorageLocationId] = @StorageLocationId)
@@ -57,12 +64,20 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageZoneId' THEN r.[StorageZoneId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageZoneId' THEN r.[StorageZoneId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageZoneName' THEN r.[StorageZoneName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageZoneName' THEN r.[StorageZoneName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageLocationId' THEN r.[StorageLocationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageLocationId' THEN r.[StorageLocationId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageLocationName' THEN r.[StorageLocationName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageLocationName' THEN r.[StorageLocationName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialLotId' THEN r.[MaterialLotId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'materialLotId' THEN r.[MaterialLotId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialLotName' THEN r.[MaterialLotName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'materialLotName' THEN r.[MaterialLotName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'measurementType' THEN r.[MeasurementType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'measurementType' THEN r.[MeasurementType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'temperatureC' THEN r.[TemperatureC] END ASC,

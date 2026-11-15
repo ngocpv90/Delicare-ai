@@ -5,6 +5,7 @@ using Microsoft.ApplicationInsights.Extensibility.PerfCounterCollector.QuickPuls
 using Microsoft.OpenApi.Models;
 using AppDelicare.WebApi.Api;
 using AppDelicare.WebApi.Infrastructure;
+using AppDelicare.WebApi.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using AppDelicare.WebApi.Ioc;
@@ -44,11 +45,21 @@ namespace AppDelicare.WebApi
             }));
 
             // T03: route v1 – envelope cho kết quả (EnvelopeResultFilter) và lỗi 400 (ConfigureV1ApiBehavior); JSON camelCase, không trả mật khẩu.
-            services.AddControllers(options => options.Filters.Add<EnvelopeResultFilter>())
+            services.AddControllers(options =>
+                {
+                    options.Filters.Add<EnvelopeResultFilter>();
+                    // T07: phân quyền UserRole × ObjectMenu; controller CRUD cũ được gắn quyền tự động.
+                    options.Filters.Add<PermissionFilter>();
+                    options.Conventions.Add(new PermissionConvention());
+                })
                 .AddJsonOptions(options => ApiJson.Configure(options.JsonSerializerOptions));
             services.AddSingleton<IPostConfigureOptions<ApiBehaviorOptions>, ConfigureV1ApiBehavior>();
             services.AddHttpContextAccessor();
             services.AddScoped<IBranchContext, BranchContext>();
+            services.AddMemoryCache();
+            services.Configure<PermissionOptions>(Configuration.GetSection(PermissionOptions.Section));
+            services.AddScoped<IPermissionService, PermissionService>();
+            services.AddScoped<AppDelicare.Data.Share.IReferenceGuard, AppDelicare.Data.Share.ReferenceGuard>();
             // T03: mọi ProblemDetails do MVC sinh (400 validation, Problem()) mang traceId = CorrelationId.
             services.AddProblemDetails(options => options.CustomizeProblemDetails = ctx =>
                 ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.Items[AppDelicare.Data.Share.CurrentActor.CorrelationIdItemKey] as string ?? ctx.HttpContext.TraceIdentifier);

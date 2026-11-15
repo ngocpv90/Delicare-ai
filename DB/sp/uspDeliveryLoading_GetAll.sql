@@ -28,17 +28,22 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[DeliveryRouteId]
+			, j1.[Name] AS [DeliveryRouteName]
 			, t.[DeliveryOrderId]
+			, j2.[DeliveryNo] AS [DeliveryOrderName]
 			, t.[LoadedQty]
 			, t.[LoadingTime]
 			, t.[Status]
 			, t.[EmployeeId]
+			, j3.[FullName] AS [EmployeeName]
 			, t.[VehicleCode]
 			, t.[LoadingDate]
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[DeliveryLoading] AS t
-		
+		LEFT JOIN [dbo].[DeliveryRoute] AS j1 ON j1.[Id] = t.[DeliveryRouteId]
+		LEFT JOIN [dbo].[DeliveryOrder] AS j2 ON j2.[Id] = t.[DeliveryOrderId]
+		LEFT JOIN [dbo].[Employee] AS j3 ON j3.[Id] = t.[EmployeeId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[VehicleCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@DeliveryRouteId IS NULL OR t.[DeliveryRouteId] = @DeliveryRouteId)
 			AND (@DeliveryOrderId IS NULL OR t.[DeliveryOrderId] = @DeliveryOrderId)
@@ -55,8 +60,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'loadedQty' THEN r.[LoadedQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'loadedQty' THEN r.[LoadedQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'loadingTime' THEN r.[LoadingTime] END ASC,
@@ -65,6 +74,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'vehicleCode' THEN r.[VehicleCode] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'vehicleCode' THEN r.[VehicleCode] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'loadingDate' THEN r.[LoadingDate] END ASC,

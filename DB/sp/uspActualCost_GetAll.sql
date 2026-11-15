@@ -30,18 +30,21 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionBatchId]
+			, j1.[BatchNo] AS [ProductionBatchName]
 			, t.[MaterialCost]
 			, t.[LaborCost]
 			, t.[OverheadCost]
 			, t.[WasteCost]
 			, t.[TotalCost]
 			, t.[ProductionOrderId]
+			, j2.[ProductionOrderNo] AS [ProductionOrderName]
 			, t.[OtherCost]
 			, t.[CurrencyCode]
 			, t.[CalculatedAt]
 			, t.[CreatedDate]
 		FROM [dbo].[ActualCost] AS t
-		
+		LEFT JOIN [dbo].[ProductionBatche] AS j1 ON j1.[Id] = t.[ProductionBatchId]
+		LEFT JOIN [dbo].[ProductionOrder] AS j2 ON j2.[Id] = t.[ProductionOrderId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[CurrencyCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ProductionBatchId IS NULL OR t.[ProductionBatchId] = @ProductionBatchId)
 			AND (@ProductionOrderId IS NULL OR t.[ProductionOrderId] = @ProductionOrderId)
@@ -60,6 +63,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialCost' THEN r.[MaterialCost] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'materialCost' THEN r.[MaterialCost] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'laborCost' THEN r.[LaborCost] END ASC,
@@ -72,6 +77,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'totalCost' THEN r.[TotalCost] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'otherCost' THEN r.[OtherCost] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'otherCost' THEN r.[OtherCost] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'currencyCode' THEN r.[CurrencyCode] END ASC,

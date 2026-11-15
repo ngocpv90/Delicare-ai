@@ -68,15 +68,20 @@ BEGIN
 			, t.[RegionId]
 			, t.[AreaId]
 			, t.[BranchId]
+			, j1.[Name] AS [BranchName]
 			, t.[DepartmentId]
+			, j2.[Name] AS [DepartmentName]
 			, t.[UserAssignId]
 			, t.[CompanyId]
+			, j3.[Name] AS [CompanyName]
 			, t.[Note]
 			, t.[ExternalData]
 			, t.[ExternalValue]
 			, t.[CreatedDate]
 		FROM [dbo].[Customer] AS t
-		
+		LEFT JOIN [dbo].[OrganizationUnit] AS j1 ON j1.[Id] = t.[BranchId]
+		LEFT JOIN [dbo].[OrganizationUnit] AS j2 ON j2.[Id] = t.[DepartmentId]
+		LEFT JOIN [dbo].[Company] AS j3 ON j3.[Id] = t.[CompanyId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%') OR t.[DisplayName] LIKE CONCAT('%', @SearchText, '%') OR t.[PhoneNumber] LIKE CONCAT('%', @SearchText, '%') OR t.[TaxCode] LIKE CONCAT('%', @SearchText, '%') OR t.[FirstName] LIKE CONCAT('%', @SearchText, '%') OR t.[LastName] LIKE CONCAT('%', @SearchText, '%') OR t.[IdentityNumber] LIKE CONCAT('%', @SearchText, '%') OR t.[LegalName] LIKE CONCAT('%', @SearchText, '%') OR t.[BusinessRegistrationNumber] LIKE CONCAT('%', @SearchText, '%') OR t.[LegalRepresentativeName] LIKE CONCAT('%', @SearchText, '%') OR t.[ContactPersonName] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@CustomerType, '') = '' OR t.[CustomerType] = @CustomerType)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -164,12 +169,18 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'areaId' THEN r.[AreaId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'branchId' THEN r.[BranchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'branchId' THEN r.[BranchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'branchName' THEN r.[BranchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'branchName' THEN r.[BranchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'departmentId' THEN r.[DepartmentId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'departmentId' THEN r.[DepartmentId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'departmentName' THEN r.[DepartmentName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'departmentName' THEN r.[DepartmentName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'userAssignId' THEN r.[UserAssignId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'userAssignId' THEN r.[UserAssignId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyId' THEN r.[CompanyId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyId' THEN r.[CompanyId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyName' THEN r.[CompanyName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyName' THEN r.[CompanyName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'note' THEN r.[Note] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'note' THEN r.[Note] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'externalData' THEN r.[ExternalData] END ASC,

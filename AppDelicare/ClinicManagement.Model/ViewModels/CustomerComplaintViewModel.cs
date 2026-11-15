@@ -6,9 +6,13 @@ namespace AppDelicare.Model.ViewModels
 	{
 		public string? ComplaintNo { get; set; }
 		public Guid? CustomerId { get; set; }
+		public string? CustomerName { get; set; }
 		public Guid? OrderId { get; set; }
+		public string? OrderName { get; set; }
 		public Guid? DeliveryOrderId { get; set; }
+		public string? DeliveryOrderName { get; set; }
 		public Guid? DeliveryRouteId { get; set; }
+		public string? DeliveryRouteName { get; set; }
 		public string? SourceChannel { get; set; }
 		public string? CategoryCode { get; set; }
 		public string? Severity { get; set; }

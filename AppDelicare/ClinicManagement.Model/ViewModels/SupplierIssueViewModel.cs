@@ -5,8 +5,11 @@ namespace AppDelicare.Model.ViewModels
 	public class SupplierIssueViewModel : BaseViewModel
 	{
 		public Guid? SupplierId { get; set; }
+		public string? SupplierName { get; set; }
 		public Guid? PurchaseOrderId { get; set; }
+		public string? PurchaseOrderName { get; set; }
 		public Guid? GoodsReceiptId { get; set; }
+		public string? GoodsReceiptName { get; set; }
 		public string? IssueType { get; set; }
 		public string? Severity { get; set; }
 		public string? Description { get; set; }

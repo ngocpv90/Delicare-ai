@@ -12,6 +12,7 @@ namespace AppDelicare.Model.ViewModels
 		public string? Reason { get; set; }
 		public string? RequestStatus { get; set; }
 		public Guid? ApprovalRequestId { get; set; }
+		public string? ApprovalRequestName { get; set; }
 		public DateTime? SubmittedAt { get; set; }
 		public DateTime? CreatedDate { get; set; }
 	}

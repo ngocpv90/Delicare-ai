@@ -6,6 +6,7 @@ namespace AppDelicare.Model.ViewModels
 	{
 		public DateTime? SnapshotDate { get; set; }
 		public Guid? BranchId { get; set; }
+		public string? BranchName { get; set; }
 		public string? MetricCode { get; set; }
 		public int? MetricVersion { get; set; }
 		public decimal? MetricValue { get; set; }

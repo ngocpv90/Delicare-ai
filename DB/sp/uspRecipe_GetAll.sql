@@ -30,6 +30,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[DishId]
+			, j1.[Name] AS [DishName]
 			, t.[VersionNo]
 			, t.[YieldPercent]
 			, t.[StandardOutputQty]
@@ -42,6 +43,7 @@ BEGIN
 			, t.[VersionCode]
 			, t.[YieldQuantity]
 			, t.[YieldUnitId]
+			, j2.[Name] AS [YieldUnitName]
 			, t.[IsActive]
 			, t.[Instructions]
 			, t.[SnapshotJson]
@@ -49,7 +51,8 @@ BEGIN
 			, t.[LockedBy]
 			, t.[CreatedDate]
 		FROM [dbo].[Recipe] AS t
-		
+		LEFT JOIN [dbo].[Dishe] AS j1 ON j1.[Id] = t.[DishId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j2 ON j2.[Id] = t.[YieldUnitId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[VersionCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -68,6 +71,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'versionNo' THEN r.[VersionNo] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'versionNo' THEN r.[VersionNo] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'yieldPercent' THEN r.[YieldPercent] END ASC,
@@ -92,6 +97,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'yieldQuantity' THEN r.[YieldQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'yieldUnitId' THEN r.[YieldUnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'yieldUnitId' THEN r.[YieldUnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'yieldUnitName' THEN r.[YieldUnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'yieldUnitName' THEN r.[YieldUnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'isActive' THEN r.[IsActive] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'isActive' THEN r.[IsActive] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'instructions' THEN r.[Instructions] END ASC,

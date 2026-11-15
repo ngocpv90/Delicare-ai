@@ -27,14 +27,19 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[PurchaseRequestId]
+			, j1.[RequestNo] AS [PurchaseRequestName]
 			, t.[IngredientId]
+			, j2.[Name] AS [IngredientName]
 			, t.[Quantity]
 			, t.[RequiredDate]
 			, t.[Note]
 			, t.[UnitId]
+			, j3.[Name] AS [UnitName]
 			, t.[CreatedDate]
 		FROM [dbo].[PurchaseRequestLine] AS t
-		
+		LEFT JOIN [dbo].[PurchaseRequest] AS j1 ON j1.[Id] = t.[PurchaseRequestId]
+		LEFT JOIN [dbo].[Ingredient] AS j2 ON j2.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j3 ON j3.[Id] = t.[UnitId]
 		WHERE 1 = 1
 			AND (@PurchaseRequestId IS NULL OR t.[PurchaseRequestId] = @PurchaseRequestId)
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
@@ -50,8 +55,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseRequestId' THEN r.[PurchaseRequestId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseRequestId' THEN r.[PurchaseRequestId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseRequestName' THEN r.[PurchaseRequestName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseRequestName' THEN r.[PurchaseRequestName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'quantity' THEN r.[Quantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'quantity' THEN r.[Quantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'requiredDate' THEN r.[RequiredDate] END ASC,
@@ -60,6 +69,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'note' THEN r.[Note] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitId' THEN r.[UnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitId' THEN r.[UnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitName' THEN r.[UnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitName' THEN r.[UnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END DESC,
 		r.[CreatedDate] DESC

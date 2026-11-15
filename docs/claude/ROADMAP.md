@@ -126,7 +126,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Với các sổ chỉ ghi thêm (`IntegrationLog`, `ApprovalDecision`, `TemperatureLog`, `PackagingLedger`, `AttendanceEvent`, `DeliveryEvent`, `ComplaintHistory`) **không sinh** Update/Delete (xem T08).
 - AC: build xanh; script SP nằm trong `DB/sp/`; DbSet đủ 124 − 2 legacy (hoặc đủ 124 nếu có entity đọc).
 
-### T07 – Phân quyền theo UserRole × ObjectMenu · phụ thuộc T05 · `TODO`
+### T07 – Phân quyền theo UserRole × ObjectMenu · phụ thuộc T05 · `DONE` (2026-11-14)
 - Attribute `[Permission("<MetaLink>", PermissionAction.View|Add|Edit|Delete|Print|Export|Import)]` + `PermissionFilter`. Đọc UserRole theo UserGroup của user, cache 5′. `User.IsAdmin` bỏ qua kiểm tra.
 - Gắn attribute cho mọi controller (CodeGen cập nhật template). MetaLink = `#/<screen-id>` theo `screen_id` của mockup (`docs/mockup/js/data/catalog.js`), đúng quy ước spec mục 1.2.
 - Script seed `DB/seed/ObjectMenu_seed.sql` theo menu P0–P8 của mockup (`[DEMO]` không cần vì đây là dữ liệu cấu hình; ghi nguồn).

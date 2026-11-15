@@ -8,7 +8,9 @@ namespace AppDelicare.Model.ViewModels
 		public Guid? ChecklistItemId { get; set; }
 		public DateTime? CheckDate { get; set; }
 		public Guid? ShiftId { get; set; }
+		public string? ShiftName { get; set; }
 		public Guid? ProductionBatchId { get; set; }
+		public string? ProductionBatchName { get; set; }
 		public Guid? WorkstationId { get; set; }
 		public string? ResultCode { get; set; }
 		public string? ActualValue { get; set; }

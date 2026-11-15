@@ -34,10 +34,11 @@ BEGIN
 			, t.[Reason]
 			, t.[RequestStatus]
 			, t.[ApprovalRequestId]
+			, j1.[RequestNo] AS [ApprovalRequestName]
 			, t.[SubmittedAt]
 			, t.[CreatedDate]
 		FROM [dbo].[ShiftSwapRequest] AS t
-		
+		LEFT JOIN [dbo].[ApprovalRequest] AS j1 ON j1.[Id] = t.[ApprovalRequestId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[RequestNo] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@RequesterEmployeeId IS NULL OR t.[RequesterEmployeeId] = @RequesterEmployeeId)
 			AND (@TargetEmployeeId IS NULL OR t.[TargetEmployeeId] = @TargetEmployeeId)
@@ -67,6 +68,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'requestStatus' THEN r.[RequestStatus] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestId' THEN r.[ApprovalRequestId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'approvalRequestName' THEN r.[ApprovalRequestName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'submittedAt' THEN r.[SubmittedAt] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'submittedAt' THEN r.[SubmittedAt] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

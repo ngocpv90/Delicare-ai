@@ -27,7 +27,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[QCInspectionId]
+			, j1.[InspectionNumber] AS [QCInspectionName]
 			, t.[IngredientId]
+			, j2.[Name] AS [IngredientName]
 			, t.[Temperature]
 			, t.[Weight]
 			, t.[Appearance]
@@ -36,11 +38,14 @@ BEGIN
 			, t.[Result]
 			, t.[Remark]
 			, t.[GoodsReceiptLineId]
+			, j3.[LotNumber] AS [GoodsReceiptLineName]
 			, t.[Criterion]
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[QCInspectionLine] AS t
-		
+		LEFT JOIN [dbo].[QCInspection] AS j1 ON j1.[Id] = t.[QCInspectionId]
+		LEFT JOIN [dbo].[Ingredient] AS j2 ON j2.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[GoodsReceiptLine] AS j3 ON j3.[Id] = t.[GoodsReceiptLineId]
 		WHERE 1 = 1
 			AND (@QCInspectionId IS NULL OR t.[QCInspectionId] = @QCInspectionId)
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
@@ -56,8 +61,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'qCInspectionId' THEN r.[QCInspectionId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'qCInspectionId' THEN r.[QCInspectionId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'qCInspectionName' THEN r.[QCInspectionName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'qCInspectionName' THEN r.[QCInspectionName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'temperature' THEN r.[Temperature] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'temperature' THEN r.[Temperature] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'weight' THEN r.[Weight] END ASC,
@@ -74,6 +83,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'remark' THEN r.[Remark] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptLineId' THEN r.[GoodsReceiptLineId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptLineId' THEN r.[GoodsReceiptLineId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptLineName' THEN r.[GoodsReceiptLineName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptLineName' THEN r.[GoodsReceiptLineName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'criterion' THEN r.[Criterion] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'criterion' THEN r.[Criterion] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'note' THEN r.[Note] END ASC,

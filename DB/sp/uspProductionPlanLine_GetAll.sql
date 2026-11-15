@@ -28,15 +28,20 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionPlanId]
+			, j1.[PlanNo] AS [ProductionPlanName]
 			, t.[OrderLineId]
 			, t.[DishId]
+			, j2.[Name] AS [DishName]
 			, t.[PlannedQuantity]
 			, t.[ActualQuantity]
 			, t.[ShiftId]
+			, j3.[Name] AS [ShiftName]
 			, t.[Status]
 			, t.[CreatedDate]
 		FROM [dbo].[ProductionPlanLine] AS t
-		
+		LEFT JOIN [dbo].[ProductionPlan] AS j1 ON j1.[Id] = t.[ProductionPlanId]
+		LEFT JOIN [dbo].[Dishe] AS j2 ON j2.[Id] = t.[DishId]
+		LEFT JOIN [dbo].[Shift] AS j3 ON j3.[Id] = t.[ShiftId]
 		WHERE 1 = 1
 			AND (@ProductionPlanId IS NULL OR t.[ProductionPlanId] = @ProductionPlanId)
 			AND (@OrderLineId IS NULL OR t.[OrderLineId] = @OrderLineId)
@@ -53,16 +58,22 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionPlanId' THEN r.[ProductionPlanId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionPlanId' THEN r.[ProductionPlanId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionPlanName' THEN r.[ProductionPlanName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionPlanName' THEN r.[ProductionPlanName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderLineId' THEN r.[OrderLineId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderLineId' THEN r.[OrderLineId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'plannedQuantity' THEN r.[PlannedQuantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'plannedQuantity' THEN r.[PlannedQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'actualQuantity' THEN r.[ActualQuantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'actualQuantity' THEN r.[ActualQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

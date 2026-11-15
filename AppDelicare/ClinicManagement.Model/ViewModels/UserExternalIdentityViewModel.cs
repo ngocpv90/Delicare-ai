@@ -6,6 +6,7 @@ namespace AppDelicare.Model.ViewModels
 	{
 		public Guid? UserId { get; set; }
 		public Guid? EmployeeId { get; set; }
+		public string? EmployeeName { get; set; }
 		public Guid? IntegrationChannelId { get; set; }
 		public string? ExternalUserId { get; set; }
 		public string? ExternalUsername { get; set; }

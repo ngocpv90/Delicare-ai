@@ -27,8 +27,11 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[SupplierId]
+			, j1.[Name] AS [SupplierName]
 			, t.[PurchaseOrderId]
+			, j2.[PONo] AS [PurchaseOrderName]
 			, t.[GoodsReceiptId]
+			, j3.[ReceiptNo] AS [GoodsReceiptName]
 			, t.[IssueType]
 			, t.[Severity]
 			, t.[Description]
@@ -40,7 +43,9 @@ BEGIN
 			, t.[OwnerId]
 			, t.[CreatedDate]
 		FROM [dbo].[SupplierIssue] AS t
-		
+		LEFT JOIN [dbo].[Supplier] AS j1 ON j1.[Id] = t.[SupplierId]
+		LEFT JOIN [dbo].[PurchaseOrder] AS j2 ON j2.[Id] = t.[PurchaseOrderId]
+		LEFT JOIN [dbo].[GoodsReceipt] AS j3 ON j3.[Id] = t.[GoodsReceiptId]
 		WHERE 1 = 1
 			AND (@SupplierId IS NULL OR t.[SupplierId] = @SupplierId)
 			AND (@PurchaseOrderId IS NULL OR t.[PurchaseOrderId] = @PurchaseOrderId)
@@ -56,10 +61,16 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierId' THEN r.[SupplierId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierId' THEN r.[SupplierId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierName' THEN r.[SupplierName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierName' THEN r.[SupplierName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseOrderId' THEN r.[PurchaseOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseOrderId' THEN r.[PurchaseOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseOrderName' THEN r.[PurchaseOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'purchaseOrderName' THEN r.[PurchaseOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptId' THEN r.[GoodsReceiptId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptId' THEN r.[GoodsReceiptId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptName' THEN r.[GoodsReceiptName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptName' THEN r.[GoodsReceiptName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'issueType' THEN r.[IssueType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'issueType' THEN r.[IssueType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'severity' THEN r.[Severity] END ASC,

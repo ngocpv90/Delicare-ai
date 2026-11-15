@@ -37,11 +37,12 @@ BEGIN
 			, t.[Status]
 			, t.[Note]
 			, t.[CompanyId]
+			, j1.[Name] AS [CompanyName]
 			, t.[MenuType]
 			, t.[VersionCode]
 			, t.[CreatedDate]
 		FROM [dbo].[Menu] AS t
-		
+		LEFT JOIN [dbo].[Company] AS j1 ON j1.[Id] = t.[CompanyId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%') OR t.[VersionCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@CompanyId IS NULL OR t.[CompanyId] = @CompanyId)
@@ -74,6 +75,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'note' THEN r.[Note] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyId' THEN r.[CompanyId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyId' THEN r.[CompanyId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'companyName' THEN r.[CompanyName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'companyName' THEN r.[CompanyName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'menuType' THEN r.[MenuType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'menuType' THEN r.[MenuType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'versionCode' THEN r.[VersionCode] END ASC,

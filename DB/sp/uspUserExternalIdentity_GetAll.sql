@@ -26,6 +26,7 @@ BEGIN
 			t.[Id]
 			, t.[UserId]
 			, t.[EmployeeId]
+			, j1.[FullName] AS [EmployeeName]
 			, t.[IntegrationChannelId]
 			, t.[ExternalUserId]
 			, t.[ExternalUsername]
@@ -35,7 +36,7 @@ BEGIN
 			, t.[LastSeenAt]
 			, t.[CreatedDate]
 		FROM [dbo].[UserExternalIdentity] AS t
-		
+		LEFT JOIN [dbo].[Employee] AS j1 ON j1.[Id] = t.[EmployeeId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[DisplayName] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@UserId IS NULL OR t.[UserId] = @UserId)
 			AND (@EmployeeId IS NULL OR t.[EmployeeId] = @EmployeeId)
@@ -51,6 +52,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'userId' THEN r.[UserId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'integrationChannelId' THEN r.[IntegrationChannelId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'integrationChannelId' THEN r.[IntegrationChannelId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'externalUserId' THEN r.[ExternalUserId] END ASC,

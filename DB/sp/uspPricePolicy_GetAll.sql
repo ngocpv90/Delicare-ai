@@ -31,7 +31,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CustomerId]
+			, j1.[DisplayName] AS [CustomerName]
 			, t.[ContractId]
+			, j2.[Name] AS [ContractName]
 			, t.[MealType]
 			, t.[UnitPrice]
 			, t.[EffectiveFrom]
@@ -42,7 +44,8 @@ BEGIN
 			, t.[CurrencyCode]
 			, t.[CreatedDate]
 		FROM [dbo].[PricePolicie] AS t
-		
+		LEFT JOIN [dbo].[Customer] AS j1 ON j1.[Id] = t.[CustomerId]
+		LEFT JOIN [dbo].[Contract] AS j2 ON j2.[Id] = t.[ContractId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%') OR t.[CurrencyCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
 			AND (@ContractId IS NULL OR t.[ContractId] = @ContractId)
@@ -62,8 +65,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'contractId' THEN r.[ContractId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'contractId' THEN r.[ContractId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'contractName' THEN r.[ContractName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'contractName' THEN r.[ContractName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'mealType' THEN r.[MealType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'mealType' THEN r.[MealType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitPrice' THEN r.[UnitPrice] END ASC,

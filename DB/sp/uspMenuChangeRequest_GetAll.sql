@@ -28,11 +28,14 @@ BEGIN
 			t.[Id]
 			, t.[RequestNo]
 			, t.[OrderId]
+			, j1.[OrderNo] AS [OrderName]
 			, t.[MenuId]
+			, j2.[Name] AS [MenuName]
 			, t.[OriginalDishId]
 			, t.[RequestedDishId]
 			, t.[MealDate]
 			, t.[ShiftId]
+			, j3.[Name] AS [ShiftName]
 			, t.[Quantity]
 			, t.[Reason]
 			, t.[RequestedBy]
@@ -41,7 +44,9 @@ BEGIN
 			, t.[ApprovedAt]
 			, t.[CreatedDate]
 		FROM [dbo].[MenuChangeRequest] AS t
-		
+		LEFT JOIN [dbo].[Order] AS j1 ON j1.[Id] = t.[OrderId]
+		LEFT JOIN [dbo].[Menu] AS j2 ON j2.[Id] = t.[MenuId]
+		LEFT JOIN [dbo].[Shift] AS j3 ON j3.[Id] = t.[ShiftId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[RequestNo] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@OrderId IS NULL OR t.[OrderId] = @OrderId)
 			AND (@MenuId IS NULL OR t.[MenuId] = @MenuId)
@@ -59,8 +64,12 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'requestNo' THEN r.[RequestNo] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderId' THEN r.[OrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderId' THEN r.[OrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderName' THEN r.[OrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderName' THEN r.[OrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'menuId' THEN r.[MenuId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'menuId' THEN r.[MenuId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'menuName' THEN r.[MenuName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'menuName' THEN r.[MenuName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'originalDishId' THEN r.[OriginalDishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'originalDishId' THEN r.[OriginalDishId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'requestedDishId' THEN r.[RequestedDishId] END ASC,
@@ -69,6 +78,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'mealDate' THEN r.[MealDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'quantity' THEN r.[Quantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'quantity' THEN r.[Quantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'reason' THEN r.[Reason] END ASC,

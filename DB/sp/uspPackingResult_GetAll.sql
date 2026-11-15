@@ -28,6 +28,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[PackingOrderId]
+			, j1.[PackingNo] AS [PackingOrderName]
 			, t.[PlannedQty]
 			, t.[DamagedQty]
 			, t.[AcceptedQty]
@@ -40,7 +41,7 @@ BEGIN
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[PackingResult] AS t
-		
+		LEFT JOIN [dbo].[PackingOrder] AS j1 ON j1.[Id] = t.[PackingOrderId]
 		WHERE 1 = 1
 			AND (@PackingOrderId IS NULL OR t.[PackingOrderId] = @PackingOrderId)
 			AND (@ProductionOutputId IS NULL OR t.[ProductionOutputId] = @ProductionOutputId)
@@ -57,6 +58,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'packingOrderId' THEN r.[PackingOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'packingOrderId' THEN r.[PackingOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'packingOrderName' THEN r.[PackingOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'packingOrderName' THEN r.[PackingOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'plannedQty' THEN r.[PlannedQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'plannedQty' THEN r.[PlannedQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'damagedQty' THEN r.[DamagedQty] END ASC,

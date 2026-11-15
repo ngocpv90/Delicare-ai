@@ -6,11 +6,14 @@ namespace AppDelicare.Model.ViewModels
 	{
 		public string? RequestNo { get; set; }
 		public Guid? OrderId { get; set; }
+		public string? OrderName { get; set; }
 		public Guid? MenuId { get; set; }
+		public string? MenuName { get; set; }
 		public Guid? OriginalDishId { get; set; }
 		public Guid? RequestedDishId { get; set; }
 		public DateTime? MealDate { get; set; }
 		public Guid? ShiftId { get; set; }
+		public string? ShiftName { get; set; }
 		public decimal? Quantity { get; set; }
 		public string? Reason { get; set; }
 		public Guid? RequestedBy { get; set; }

@@ -115,6 +115,7 @@ public sealed partial class Metadata
     [GeneratedRegex(@"^\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*$")]
     private static partial Regex Row3();
 
-    [GeneratedRegex(@"^\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*→\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*Id\s*\|")]
+    // Dòng dữ liệu: "| Bảng nguồn | Cột | Bảng đích | Id | …" (ký hiệu → chỉ có ở dòng tiêu đề).
+    [GeneratedRegex(@"^\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*(?:→\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*Id\s*\|")]
     private static partial Regex RelationRow();
 }

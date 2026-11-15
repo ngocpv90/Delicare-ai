@@ -24,6 +24,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[EmployeeId]
+			, j1.[FullName] AS [EmployeeName]
 			, t.[ShiftAssignmentId]
 			, t.[EventType]
 			, t.[EventAt]
@@ -36,7 +37,7 @@ BEGIN
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[AttendanceEvent] AS t
-		
+		LEFT JOIN [dbo].[Employee] AS j1 ON j1.[Id] = t.[EmployeeId]
 		WHERE 1 = 1
 			AND (@EmployeeId IS NULL OR t.[EmployeeId] = @EmployeeId)
 			AND (@ShiftAssignmentId IS NULL OR t.[ShiftAssignmentId] = @ShiftAssignmentId)
@@ -49,6 +50,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeId' THEN r.[EmployeeId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'employeeName' THEN r.[EmployeeName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftAssignmentId' THEN r.[ShiftAssignmentId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftAssignmentId' THEN r.[ShiftAssignmentId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'eventType' THEN r.[EventType] END ASC,

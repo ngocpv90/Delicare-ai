@@ -25,6 +25,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CleaningBatchId]
+			, j1.[CleaningNo] AS [CleaningBatchName]
 			, t.[WorkstationId]
 			, t.[ChecklistId]
 			, t.[ChecklistItemId]
@@ -37,7 +38,7 @@ BEGIN
 			, t.[EvidenceUrl]
 			, t.[CreatedDate]
 		FROM [dbo].[CleaningChecklistResult] AS t
-		
+		LEFT JOIN [dbo].[CleaningBatche] AS j1 ON j1.[Id] = t.[CleaningBatchId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ResultCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@CleaningBatchId IS NULL OR t.[CleaningBatchId] = @CleaningBatchId)
 			AND (@WorkstationId IS NULL OR t.[WorkstationId] = @WorkstationId)
@@ -51,6 +52,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'cleaningBatchId' THEN r.[CleaningBatchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'cleaningBatchId' THEN r.[CleaningBatchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'cleaningBatchName' THEN r.[CleaningBatchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'cleaningBatchName' THEN r.[CleaningBatchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'workstationId' THEN r.[WorkstationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'workstationId' THEN r.[WorkstationId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'checklistId' THEN r.[ChecklistId] END ASC,

@@ -5,9 +5,13 @@ namespace AppDelicare.Model.ViewModels
 	public class TemperatureLogViewModel : BaseViewModel
 	{
 		public Guid? StorageZoneId { get; set; }
+		public string? StorageZoneName { get; set; }
 		public Guid? StorageLocationId { get; set; }
+		public string? StorageLocationName { get; set; }
 		public Guid? MaterialLotId { get; set; }
+		public string? MaterialLotName { get; set; }
 		public Guid? ProductionBatchId { get; set; }
+		public string? ProductionBatchName { get; set; }
 		public string? MeasurementType { get; set; }
 		public decimal? TemperatureC { get; set; }
 		public decimal? MinAllowedC { get; set; }

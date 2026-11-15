@@ -28,18 +28,21 @@ BEGIN
 			t.[Id]
 			, t.[RecipeId]
 			, t.[IngredientId]
+			, j1.[Name] AS [IngredientName]
 			, t.[Quantity]
 			, t.[WastePercent]
 			, t.[YieldPercent]
 			, t.[SequenceNo]
 			, t.[Note]
 			, t.[UnitId]
+			, j2.[Name] AS [UnitName]
 			, t.[ExpectedWasteRate]
 			, t.[PreparationNote]
 			, t.[SortOrder]
 			, t.[CreatedDate]
 		FROM [dbo].[RecipeLine] AS t
-		
+		LEFT JOIN [dbo].[Ingredient] AS j1 ON j1.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j2 ON j2.[Id] = t.[UnitId]
 		WHERE 1 = 1
 			AND (@RecipeId IS NULL OR t.[RecipeId] = @RecipeId)
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
@@ -57,6 +60,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'recipeId' THEN r.[RecipeId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'quantity' THEN r.[Quantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'quantity' THEN r.[Quantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'wastePercent' THEN r.[WastePercent] END ASC,
@@ -69,6 +74,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'note' THEN r.[Note] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitId' THEN r.[UnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitId' THEN r.[UnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitName' THEN r.[UnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitName' THEN r.[UnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'expectedWasteRate' THEN r.[ExpectedWasteRate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'expectedWasteRate' THEN r.[ExpectedWasteRate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'preparationNote' THEN r.[PreparationNote] END ASC,

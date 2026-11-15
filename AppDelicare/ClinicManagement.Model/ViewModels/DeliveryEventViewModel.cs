@@ -5,8 +5,10 @@ namespace AppDelicare.Model.ViewModels
 	public class DeliveryEventViewModel : BaseViewModel
 	{
 		public Guid? DeliveryRouteId { get; set; }
+		public string? DeliveryRouteName { get; set; }
 		public Guid? DeliveryStopId { get; set; }
 		public Guid? DeliveryOrderId { get; set; }
+		public string? DeliveryOrderName { get; set; }
 		public string? EventType { get; set; }
 		public DateTime? EventAt { get; set; }
 		public decimal? Latitude { get; set; }

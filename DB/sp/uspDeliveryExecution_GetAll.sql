@@ -30,7 +30,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[DeliveryOrderId]
+			, j1.[DeliveryNo] AS [DeliveryOrderName]
 			, t.[DeliveryRouteId]
+			, j2.[Name] AS [DeliveryRouteName]
 			, t.[Status]
 			, t.[DispatchedAt]
 			, t.[ArrivedAt]
@@ -42,7 +44,8 @@ BEGIN
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[DeliveryExecution] AS t
-		
+		LEFT JOIN [dbo].[DeliveryOrder] AS j1 ON j1.[Id] = t.[DeliveryOrderId]
+		LEFT JOIN [dbo].[DeliveryRoute] AS j2 ON j2.[Id] = t.[DeliveryRouteId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[DriverName] LIKE CONCAT('%', @SearchText, '%') OR t.[VehicleCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@DeliveryOrderId IS NULL OR t.[DeliveryOrderId] = @DeliveryOrderId)
 			AND (@DeliveryRouteId IS NULL OR t.[DeliveryRouteId] = @DeliveryRouteId)
@@ -61,8 +64,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dispatchedAt' THEN r.[DispatchedAt] END ASC,

@@ -31,6 +31,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[DeliveryOrderId]
+			, j1.[DeliveryNo] AS [DeliveryOrderName]
 			, t.[ReceiverName]
 			, t.[ReceiverPhone]
 			, t.[ReceivedAt]
@@ -43,7 +44,7 @@ BEGIN
 			, t.[RejectedQuantity]
 			, t.[CreatedDate]
 		FROM [dbo].[ProofOfDeliverie] AS t
-		
+		LEFT JOIN [dbo].[DeliveryOrder] AS j1 ON j1.[Id] = t.[DeliveryOrderId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ReceiverName] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@DeliveryOrderId IS NULL OR t.[DeliveryOrderId] = @DeliveryOrderId)
 			AND (@ConfirmedAt IS NULL OR t.[ConfirmedAt] = @ConfirmedAt)
@@ -63,6 +64,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'receiverName' THEN r.[ReceiverName] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'receiverName' THEN r.[ReceiverName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'receiverPhone' THEN r.[ReceiverPhone] END ASC,

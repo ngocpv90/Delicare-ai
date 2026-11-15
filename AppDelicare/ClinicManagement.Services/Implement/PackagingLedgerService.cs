@@ -4,6 +4,7 @@ using AutoMapper;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
+using AppDelicare.Data.Share;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
@@ -15,11 +16,12 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class PackagingLedgerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper) : IPackagingLedgerService
+    public class PackagingLedgerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard) : IPackagingLedgerService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
+        private readonly IReferenceGuard _referenceGuard = referenceGuard;
 
         public async Task<IResults<PackagingLedgerViewModel>> GetAll(PackagingLedgerSearchRequest request)
         {

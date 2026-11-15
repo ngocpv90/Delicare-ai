@@ -3,7 +3,9 @@ using System.Linq.Expressions;
 using AppDelicare.Data.Connection;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using AppDelicare.Data.Share;
 using AppDelicare.WebApi.Api;
+using AppDelicare.WebApi.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -96,9 +98,11 @@ namespace AppDelicare.WebApi.Controllers.V1.Hr
     /// Phân quyền <c>[Permission]</c> gắn ở T07. Logic sẽ chuyển sang AppDelicare.Application (T10).
     /// </summary>
     [Route(RoutePrefix + "/hr/shifts")]
-    public sealed class ShiftsController(DatabaseContext db) : ApiControllerBase
+    public sealed class ShiftsController(DatabaseContext db, IReferenceGuard referenceGuard) : ApiControllerBase
     {
         public const string StatusActive = "Active";
+        /// <summary>Màn hình mockup – MetaLink #/hr-shift.</summary>
+        public const string Screen = "hr-shift";
 
         private static readonly Dictionary<string, Expression<Func<Shift, object?>>> SortFields = new()
         {
@@ -113,6 +117,7 @@ namespace AppDelicare.WebApi.Controllers.V1.Hr
         /// <summary>Danh sách ca (phân trang, tìm theo mã / tên, sort).</summary>
         /// <response code="200">Envelope với <c>data = { items, total, page, pageSize }</c>.</response>
         [HttpGet]
+        [Permission(Screen, PermissionAction.View)]
         [ProducesResponseType(typeof(ApiEnvelope<PagedData<ShiftDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery] ShiftQuery query, CancellationToken cancellationToken)
         {
@@ -144,6 +149,7 @@ namespace AppDelicare.WebApi.Controllers.V1.Hr
         /// <response code="200">Envelope với <c>data</c> là ca.</response>
         /// <response code="404">NOT_FOUND – không có hoặc đã xóa.</response>
         [HttpGet("{id:guid}")]
+        [Permission(Screen, PermissionAction.View)]
         [ProducesResponseType(typeof(ApiEnvelope<ShiftDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
@@ -159,6 +165,7 @@ namespace AppDelicare.WebApi.Controllers.V1.Hr
         /// <response code="409">DUPLICATE – trùng mã ca.</response>
         /// <response code="422">REF_NOT_FOUND (companyId) hoặc BUSINESS_RULE (giờ bắt đầu = giờ kết thúc).</response>
         [HttpPost]
+        [Permission(Screen, PermissionAction.Add)]
         [Idempotent]
         [ProducesResponseType(typeof(ApiEnvelope<ShiftDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status409Conflict)]
@@ -184,6 +191,7 @@ namespace AppDelicare.WebApi.Controllers.V1.Hr
         /// <response code="409">CONCURRENCY_CONFLICT hoặc DUPLICATE.</response>
         /// <response code="422">REF_NOT_FOUND / BUSINESS_RULE.</response>
         [HttpPut("{id:guid}")]
+        [Permission(Screen, PermissionAction.Edit)]
         [ProducesResponseType(typeof(ApiEnvelope<ShiftDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status409Conflict)]
@@ -203,16 +211,24 @@ namespace AppDelicare.WebApi.Controllers.V1.Hr
             return Ok(dto);
         }
 
-        /// <summary>Xóa mềm ca. Kiểm tra đang được tham chiếu (409 IN_USE) sẽ có ở T07 (ReferenceGuard).</summary>
+        /// <summary>Xóa mềm ca. Đang được tham chiếu (ShiftAssignment, Order…) → 409 IN_USE.</summary>
         /// <response code="204">Đã xóa.</response>
+        /// <response code="409">IN_USE – ca đang được tham chiếu.</response>
         /// <response code="404">NOT_FOUND.</response>
         [HttpDelete("{id:guid}")]
+        [Permission(Screen, PermissionAction.Delete)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             Shift entity = await FindAsync(id, tracking: true, cancellationToken);
             EnsureIfMatch(ComputeETag(entity.ModifiedDate, entity.CreatedDate));
+            var usages = await referenceGuard.FindUsagesAsync("Shift", id, cancellationToken);
+            if (usages.Count > 0)
+            {
+                throw ApiException.Conflict(ErrorCodes.InUse,
+                    "Ca đang được dùng ở: " + string.Join(", ", usages.Select(u => $"{u.Table} ({u.Count})")) + ". Không xóa được.");
+            }
             db.Entry(entity).State = EntityState.Modified;
             await db.SaveChangesAsync(ConstantHelper.TypeSave.Delete, cancellationToken);
             return NoContent();

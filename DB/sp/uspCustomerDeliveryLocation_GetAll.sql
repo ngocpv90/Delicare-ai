@@ -29,6 +29,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CustomerId]
+			, j1.[DisplayName] AS [CustomerName]
 			, t.[Code]
 			, t.[Name]
 			, t.[Address]
@@ -42,7 +43,7 @@ BEGIN
 			, t.[DeliveryInstructions]
 			, t.[CreatedDate]
 		FROM [dbo].[CustomerDeliveryLocation] AS t
-		
+		LEFT JOIN [dbo].[Customer] AS j1 ON j1.[Id] = t.[CustomerId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%') OR t.[ContactName] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -60,6 +61,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'code' THEN r.[Code] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'code' THEN r.[Code] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'name' THEN r.[Name] END ASC,

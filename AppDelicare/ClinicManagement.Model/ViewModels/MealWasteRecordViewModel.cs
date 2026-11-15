@@ -5,9 +5,13 @@ namespace AppDelicare.Model.ViewModels
 	public class MealWasteRecordViewModel : BaseViewModel
 	{
 		public Guid? ProductionBatchId { get; set; }
+		public string? ProductionBatchName { get; set; }
 		public Guid? ProductionOrderId { get; set; }
+		public string? ProductionOrderName { get; set; }
 		public Guid? DishId { get; set; }
+		public string? DishName { get; set; }
 		public Guid? ShiftId { get; set; }
+		public string? ShiftName { get; set; }
 		public string? WasteType { get; set; }
 		public decimal? QuantityMeals { get; set; }
 		public decimal? QuantityKg { get; set; }

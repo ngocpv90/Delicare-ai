@@ -30,7 +30,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[OrderId]
+			, j1.[OrderNo] AS [OrderName]
 			, t.[DishId]
+			, j2.[Name] AS [DishName]
 			, t.[MealQty]
 			, t.[TotalCost]
 			, t.[CostPerMeal]
@@ -42,7 +44,8 @@ BEGIN
 			, t.[CalculatedAt]
 			, t.[CreatedDate]
 		FROM [dbo].[MealCost] AS t
-		
+		LEFT JOIN [dbo].[Order] AS j1 ON j1.[Id] = t.[OrderId]
+		LEFT JOIN [dbo].[Dishe] AS j2 ON j2.[Id] = t.[DishId]
 		WHERE 1 = 1
 			AND (@OrderId IS NULL OR t.[OrderId] = @OrderId)
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
@@ -61,8 +64,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderId' THEN r.[OrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderId' THEN r.[OrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderName' THEN r.[OrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderName' THEN r.[OrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'mealQty' THEN r.[MealQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'mealQty' THEN r.[MealQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'totalCost' THEN r.[TotalCost] END ASC,

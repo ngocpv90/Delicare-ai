@@ -25,8 +25,10 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[DeliveryRouteId]
+			, j1.[Name] AS [DeliveryRouteName]
 			, t.[DeliveryStopId]
 			, t.[DeliveryOrderId]
+			, j2.[DeliveryNo] AS [DeliveryOrderName]
 			, t.[EventType]
 			, t.[EventAt]
 			, t.[Latitude]
@@ -39,7 +41,8 @@ BEGIN
 			, t.[ExternalEventId]
 			, t.[CreatedDate]
 		FROM [dbo].[DeliveryEvent] AS t
-		
+		LEFT JOIN [dbo].[DeliveryRoute] AS j1 ON j1.[Id] = t.[DeliveryRouteId]
+		LEFT JOIN [dbo].[DeliveryOrder] AS j2 ON j2.[Id] = t.[DeliveryOrderId]
 		WHERE 1 = 1
 			AND (@DeliveryRouteId IS NULL OR t.[DeliveryRouteId] = @DeliveryRouteId)
 			AND (@DeliveryStopId IS NULL OR t.[DeliveryStopId] = @DeliveryStopId)
@@ -53,10 +56,14 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryStopId' THEN r.[DeliveryStopId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryStopId' THEN r.[DeliveryStopId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderId' THEN r.[DeliveryOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryOrderName' THEN r.[DeliveryOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'eventType' THEN r.[EventType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'eventType' THEN r.[EventType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'eventAt' THEN r.[EventAt] END ASC,

@@ -23,6 +23,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[WarehouseId]
+			, j1.[Name] AS [WarehouseName]
 			, t.[Code]
 			, t.[Name]
 			, t.[TemperatureMin]
@@ -31,7 +32,7 @@ BEGIN
 			, t.[TemperatureRange]
 			, t.[CreatedDate]
 		FROM [dbo].[StorageZone] AS t
-		
+		LEFT JOIN [dbo].[Warehouse] AS j1 ON j1.[Id] = t.[WarehouseId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@WarehouseId IS NULL OR t.[WarehouseId] = @WarehouseId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -43,6 +44,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'code' THEN r.[Code] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'code' THEN r.[Code] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'name' THEN r.[Name] END ASC,

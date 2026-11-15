@@ -27,6 +27,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[GoodsReceiptId]
+			, j1.[ReceiptNo] AS [GoodsReceiptName]
 			, t.[InspectionDate]
 			, t.[Result]
 			, t.[Remark]
@@ -35,7 +36,7 @@ BEGIN
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[QCInspection] AS t
-		
+		LEFT JOIN [dbo].[GoodsReceipt] AS j1 ON j1.[Id] = t.[GoodsReceiptId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[InspectionNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@GoodsReceiptId IS NULL OR t.[GoodsReceiptId] = @GoodsReceiptId)
 			AND (@InspectorEmployeeId IS NULL OR t.[InspectorEmployeeId] = @InspectorEmployeeId)
@@ -51,6 +52,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptId' THEN r.[GoodsReceiptId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptId' THEN r.[GoodsReceiptId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'goodsReceiptName' THEN r.[GoodsReceiptName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'goodsReceiptName' THEN r.[GoodsReceiptName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'inspectionDate' THEN r.[InspectionDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'inspectionDate' THEN r.[InspectionDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'result' THEN r.[Result] END ASC,

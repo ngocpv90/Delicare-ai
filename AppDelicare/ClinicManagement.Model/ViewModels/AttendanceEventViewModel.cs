@@ -5,6 +5,7 @@ namespace AppDelicare.Model.ViewModels
 	public class AttendanceEventViewModel : BaseViewModel
 	{
 		public Guid? EmployeeId { get; set; }
+		public string? EmployeeName { get; set; }
 		public Guid? ShiftAssignmentId { get; set; }
 		public string? EventType { get; set; }
 		public DateTime? EventAt { get; set; }

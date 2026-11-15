@@ -28,14 +28,17 @@ BEGIN
 			t.[Id]
 			, t.[ProductionDate]
 			, t.[ShiftId]
+			, j1.[Name] AS [ShiftName]
 			, t.[Status]
 			, t.[Note]
 			, t.[PlanNumber]
 			, t.[PlanDate]
 			, t.[OrganizationUnitId]
+			, j2.[Name] AS [OrganizationUnitName]
 			, t.[CreatedDate]
 		FROM [dbo].[ProductionPlan] AS t
-		
+		LEFT JOIN [dbo].[Shift] AS j1 ON j1.[Id] = t.[ShiftId]
+		LEFT JOIN [dbo].[OrganizationUnit] AS j2 ON j2.[Id] = t.[OrganizationUnitId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[PlanNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ShiftId IS NULL OR t.[ShiftId] = @ShiftId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -53,6 +56,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionDate' THEN r.[ProductionDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'note' THEN r.[Note] END ASC,
@@ -63,6 +68,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'planDate' THEN r.[PlanDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'organizationUnitId' THEN r.[OrganizationUnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'organizationUnitId' THEN r.[OrganizationUnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'organizationUnitName' THEN r.[OrganizationUnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'organizationUnitName' THEN r.[OrganizationUnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END DESC,
 		r.[CreatedDate] DESC

@@ -30,6 +30,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CustomerId]
+			, j1.[DisplayName] AS [CustomerName]
 			, t.[StartDate]
 			, t.[EndDate]
 			, t.[PaymentTerm]
@@ -43,7 +44,7 @@ BEGIN
 			, t.[ContractValue]
 			, t.[CreatedDate]
 		FROM [dbo].[Contract] AS t
-		
+		LEFT JOIN [dbo].[Customer] AS j1 ON j1.[Id] = t.[CustomerId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ContractNumber] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
@@ -62,6 +63,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'startDate' THEN r.[StartDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'startDate' THEN r.[StartDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'endDate' THEN r.[EndDate] END ASC,

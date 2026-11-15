@@ -29,18 +29,23 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionBatchId]
+			, j1.[BatchNo] AS [ProductionBatchName]
 			, t.[WasteQty]
 			, t.[Remark]
 			, t.[DishId]
+			, j2.[Name] AS [DishName]
 			, t.[ProducedQuantity]
 			, t.[AcceptedQuantity]
 			, t.[RejectedQuantity]
 			, t.[UnitId]
+			, j3.[Name] AS [UnitName]
 			, t.[QualityStatus]
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[ProductionOutput] AS t
-		
+		LEFT JOIN [dbo].[ProductionBatche] AS j1 ON j1.[Id] = t.[ProductionBatchId]
+		LEFT JOIN [dbo].[Dishe] AS j2 ON j2.[Id] = t.[DishId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j3 ON j3.[Id] = t.[UnitId]
 		WHERE 1 = 1
 			AND (@ProductionBatchId IS NULL OR t.[ProductionBatchId] = @ProductionBatchId)
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
@@ -58,12 +63,16 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'wasteQty' THEN r.[WasteQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'wasteQty' THEN r.[WasteQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'remark' THEN r.[Remark] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'remark' THEN r.[Remark] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'producedQuantity' THEN r.[ProducedQuantity] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'producedQuantity' THEN r.[ProducedQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'acceptedQuantity' THEN r.[AcceptedQuantity] END ASC,
@@ -72,6 +81,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'rejectedQuantity' THEN r.[RejectedQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitId' THEN r.[UnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitId' THEN r.[UnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitName' THEN r.[UnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitName' THEN r.[UnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'qualityStatus' THEN r.[QualityStatus] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'qualityStatus' THEN r.[QualityStatus] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'note' THEN r.[Note] END ASC,

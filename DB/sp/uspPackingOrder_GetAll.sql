@@ -27,7 +27,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionBatchId]
+			, j1.[BatchNo] AS [ProductionBatchName]
 			, t.[OrderId]
+			, j2.[OrderNo] AS [OrderName]
 			, t.[PlannedQty]
 			, t.[Status]
 			, t.[PackingOrderNumber]
@@ -35,7 +37,8 @@ BEGIN
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[PackingOrder] AS t
-		
+		LEFT JOIN [dbo].[ProductionBatche] AS j1 ON j1.[Id] = t.[ProductionBatchId]
+		LEFT JOIN [dbo].[Order] AS j2 ON j2.[Id] = t.[OrderId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[PackingOrderNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ProductionBatchId IS NULL OR t.[ProductionBatchId] = @ProductionBatchId)
 			AND (@OrderId IS NULL OR t.[OrderId] = @OrderId)
@@ -51,8 +54,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderId' THEN r.[OrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderId' THEN r.[OrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderName' THEN r.[OrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderName' THEN r.[OrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'plannedQty' THEN r.[PlannedQty] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'plannedQty' THEN r.[PlannedQty] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,

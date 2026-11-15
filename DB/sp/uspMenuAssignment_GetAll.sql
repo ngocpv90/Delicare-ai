@@ -29,16 +29,21 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CustomerId]
+			, j1.[DisplayName] AS [CustomerName]
 			, t.[DeliveryLocationId]
 			, t.[MenuId]
+			, j2.[Name] AS [MenuName]
 			, t.[MealType]
 			, t.[EffectiveFrom]
 			, t.[EffectiveTo]
 			, t.[Status]
 			, t.[ContractId]
+			, j3.[Name] AS [ContractName]
 			, t.[CreatedDate]
 		FROM [dbo].[MenuAssignment] AS t
-		
+		LEFT JOIN [dbo].[Customer] AS j1 ON j1.[Id] = t.[CustomerId]
+		LEFT JOIN [dbo].[Menu] AS j2 ON j2.[Id] = t.[MenuId]
+		LEFT JOIN [dbo].[Contract] AS j3 ON j3.[Id] = t.[ContractId]
 		WHERE 1 = 1
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
 			AND (@DeliveryLocationId IS NULL OR t.[DeliveryLocationId] = @DeliveryLocationId)
@@ -56,10 +61,14 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryLocationId' THEN r.[DeliveryLocationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryLocationId' THEN r.[DeliveryLocationId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'menuId' THEN r.[MenuId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'menuId' THEN r.[MenuId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'menuName' THEN r.[MenuName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'menuName' THEN r.[MenuName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'mealType' THEN r.[MealType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'mealType' THEN r.[MealType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'effectiveFrom' THEN r.[EffectiveFrom] END ASC,
@@ -70,6 +79,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'contractId' THEN r.[ContractId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'contractId' THEN r.[ContractId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'contractName' THEN r.[ContractName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'contractName' THEN r.[ContractName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END DESC,
 		r.[CreatedDate] DESC

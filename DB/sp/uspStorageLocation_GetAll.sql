@@ -27,11 +27,14 @@ BEGIN
 			, t.[Name]
 			, t.[Status]
 			, t.[WarehouseId]
+			, j1.[Name] AS [WarehouseName]
 			, t.[StorageZoneId]
+			, j2.[Name] AS [StorageZoneName]
 			, t.[LocationType]
 			, t.[CreatedDate]
 		FROM [dbo].[StorageLocation] AS t
-		
+		LEFT JOIN [dbo].[Warehouse] AS j1 ON j1.[Id] = t.[WarehouseId]
+		LEFT JOIN [dbo].[StorageZone] AS j2 ON j2.[Id] = t.[StorageZoneId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@WarehouseId IS NULL OR t.[WarehouseId] = @WarehouseId)
@@ -50,8 +53,12 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageZoneId' THEN r.[StorageZoneId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageZoneId' THEN r.[StorageZoneId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageZoneName' THEN r.[StorageZoneName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageZoneName' THEN r.[StorageZoneName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'locationType' THEN r.[LocationType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'locationType' THEN r.[LocationType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

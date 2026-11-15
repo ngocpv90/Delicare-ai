@@ -36,12 +36,15 @@ BEGIN
 			, t.[StandardCost]
 			, t.[Status]
 			, t.[DishCategoryId]
+			, j1.[Name] AS [DishCategoryName]
 			, t.[DefaultUnitId]
+			, j2.[Name] AS [DefaultUnitName]
 			, t.[StandardServingSize]
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[Dishe] AS t
-		
+		LEFT JOIN [dbo].[DishCategorie] AS j1 ON j1.[Id] = t.[DishCategoryId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j2 ON j2.[Id] = t.[DefaultUnitId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@DishCategoryId IS NULL OR t.[DishCategoryId] = @DishCategoryId)
@@ -73,8 +76,12 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishCategoryId' THEN r.[DishCategoryId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishCategoryId' THEN r.[DishCategoryId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishCategoryName' THEN r.[DishCategoryName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishCategoryName' THEN r.[DishCategoryName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'defaultUnitId' THEN r.[DefaultUnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'defaultUnitId' THEN r.[DefaultUnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'defaultUnitName' THEN r.[DefaultUnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'defaultUnitName' THEN r.[DefaultUnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'standardServingSize' THEN r.[StandardServingSize] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'standardServingSize' THEN r.[StandardServingSize] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'note' THEN r.[Note] END ASC,

@@ -33,7 +33,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[SupplierId]
+			, j1.[Name] AS [SupplierName]
 			, t.[IngredientId]
+			, j2.[Name] AS [IngredientName]
 			, t.[SupplierMaterialCode]
 			, t.[PurchaseUomId]
 			, t.[UnitPrice]
@@ -47,7 +49,8 @@ BEGIN
 			, t.[IsPreferred]
 			, t.[CreatedDate]
 		FROM [dbo].[SupplierMaterial] AS t
-		
+		LEFT JOIN [dbo].[Supplier] AS j1 ON j1.[Id] = t.[SupplierId]
+		LEFT JOIN [dbo].[Ingredient] AS j2 ON j2.[Id] = t.[IngredientId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[SupplierMaterialCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@SupplierId IS NULL OR t.[SupplierId] = @SupplierId)
 			AND (@IngredientId IS NULL OR t.[IngredientId] = @IngredientId)
@@ -69,8 +72,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierId' THEN r.[SupplierId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierId' THEN r.[SupplierId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierName' THEN r.[SupplierName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierName' THEN r.[SupplierName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'supplierMaterialCode' THEN r.[SupplierMaterialCode] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'supplierMaterialCode' THEN r.[SupplierMaterialCode] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'purchaseUomId' THEN r.[PurchaseUomId] END ASC,

@@ -5,6 +5,7 @@ namespace AppDelicare.Model.ViewModels
 	public class ApprovalStepViewModel : BaseViewModel
 	{
 		public Guid? ApprovalRequestId { get; set; }
+		public string? ApprovalRequestName { get; set; }
 		public int? StepNo { get; set; }
 		public Guid? ApproverUserId { get; set; }
 		public string? ApproverRoleCode { get; set; }

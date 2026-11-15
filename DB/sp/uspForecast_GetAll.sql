@@ -29,9 +29,11 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[CustomerId]
+			, j1.[DisplayName] AS [CustomerName]
 			, t.[DeliveryLocationId]
 			, t.[ForecastDate]
 			, t.[ShiftId]
+			, j2.[Name] AS [ShiftName]
 			, t.[MealType]
 			, t.[VersionNo]
 			, t.[Status]
@@ -39,7 +41,8 @@ BEGIN
 			, t.[ForecastQuantity]
 			, t.[CreatedDate]
 		FROM [dbo].[Forecast] AS t
-		
+		LEFT JOIN [dbo].[Customer] AS j1 ON j1.[Id] = t.[CustomerId]
+		LEFT JOIN [dbo].[Shift] AS j2 ON j2.[Id] = t.[ShiftId]
 		WHERE 1 = 1
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
 			AND (@DeliveryLocationId IS NULL OR t.[DeliveryLocationId] = @DeliveryLocationId)
@@ -57,12 +60,16 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryLocationId' THEN r.[DeliveryLocationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryLocationId' THEN r.[DeliveryLocationId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'forecastDate' THEN r.[ForecastDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'forecastDate' THEN r.[ForecastDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'mealType' THEN r.[MealType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'mealType' THEN r.[MealType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'versionNo' THEN r.[VersionNo] END ASC,

@@ -35,8 +35,11 @@ BEGIN
 			t.[Id]
 			, t.[TransactionType]
 			, t.[WarehouseId]
+			, j1.[Name] AS [WarehouseName]
 			, t.[StorageLocationId]
+			, j2.[Name] AS [StorageLocationName]
 			, t.[IngredientId]
+			, j3.[Name] AS [IngredientName]
 			, t.[ReferenceType]
 			, t.[ReferenceId]
 			, t.[Quantity]
@@ -44,14 +47,20 @@ BEGIN
 			, t.[TransactionDate]
 			, t.[Note]
 			, t.[MaterialLotId]
+			, j4.[LotNo] AS [MaterialLotName]
 			, t.[TransactionNumber]
 			, t.[QuantityIn]
 			, t.[QuantityOut]
 			, t.[UnitId]
+			, j5.[Name] AS [UnitName]
 			, t.[Reason]
 			, t.[CreatedDate]
 		FROM [dbo].[InventoryTransaction] AS t
-		
+		LEFT JOIN [dbo].[Warehouse] AS j1 ON j1.[Id] = t.[WarehouseId]
+		LEFT JOIN [dbo].[StorageLocation] AS j2 ON j2.[Id] = t.[StorageLocationId]
+		LEFT JOIN [dbo].[Ingredient] AS j3 ON j3.[Id] = t.[IngredientId]
+		LEFT JOIN [dbo].[MaterialLot] AS j4 ON j4.[Id] = t.[MaterialLotId]
+		LEFT JOIN [dbo].[UnitMeasure] AS j5 ON j5.[Id] = t.[UnitId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[TransactionNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@TransactionType, '') = '' OR t.[TransactionType] = @TransactionType)
 			AND (@WarehouseId IS NULL OR t.[WarehouseId] = @WarehouseId)
@@ -76,10 +85,16 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'transactionType' THEN r.[TransactionType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseId' THEN r.[WarehouseId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'warehouseName' THEN r.[WarehouseName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageLocationId' THEN r.[StorageLocationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageLocationId' THEN r.[StorageLocationId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'storageLocationName' THEN r.[StorageLocationName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'storageLocationName' THEN r.[StorageLocationName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientId' THEN r.[IngredientId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'ingredientName' THEN r.[IngredientName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'referenceType' THEN r.[ReferenceType] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'referenceType' THEN r.[ReferenceType] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'referenceId' THEN r.[ReferenceId] END ASC,
@@ -94,6 +109,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'note' THEN r.[Note] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialLotId' THEN r.[MaterialLotId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'materialLotId' THEN r.[MaterialLotId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialLotName' THEN r.[MaterialLotName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'materialLotName' THEN r.[MaterialLotName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'transactionNumber' THEN r.[TransactionNumber] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'transactionNumber' THEN r.[TransactionNumber] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'quantityIn' THEN r.[QuantityIn] END ASC,
@@ -102,6 +119,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'quantityOut' THEN r.[QuantityOut] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitId' THEN r.[UnitId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitId' THEN r.[UnitId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'unitName' THEN r.[UnitName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'unitName' THEN r.[UnitName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'reason' THEN r.[Reason] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'reason' THEN r.[Reason] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,

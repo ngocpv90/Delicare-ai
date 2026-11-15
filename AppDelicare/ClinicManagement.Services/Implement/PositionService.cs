@@ -159,21 +159,10 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var checkForeignKey = (await _auditChangeService.GetColumnNameForeignKey()).ListData
-                .Where(x => (x.ColumnName ?? string.Empty).Contains(nameof(Position))).ToList();
-            if (checkForeignKey.Count != 0)
+            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
+            if (await _auditChangeService.IsReferencedAsync(nameof(Position), (Guid)id))
             {
-                foreach (var item in checkForeignKey)
-                {
-                    var strSql = string.Concat("SELECT COUNT(*) FROM ", item.TableName, " where ", item.ColumnName, " = '", id, "' AND IsDeleted = 0");
-                    DynamicParameters dynamicParameters = new();
-                    dynamicParameters.Add("@StrSql", strSql);
-                    var checkExist = _dapperRepository.QueryFirstOrDefaultUsingStoreProc<long>("uspSystem_ExecuteQuery", dynamicParameters);
-                    if (checkExist > 0)
-                    {
-                        return ConstantHelper.Message.DeleteExistFail;
-                    }
-                }
+                return ConstantHelper.Message.DeleteExistFail;
             }
             var delete = _unitOfWork.PositionRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
             if (delete == null)

@@ -61,8 +61,30 @@ namespace AppDelicare.Tests.Integration
             });
         }
 
+        private readonly object _seedGate = new();
+        private bool _seeded;
+
+        /// <summary>T07: user mặc định của test là admin (bỏ qua kiểm tra quyền); test phân quyền tự tạo user thường.</summary>
+        private void EnsureAdminUser()
+        {
+            lock (_seedGate)
+            {
+                if (_seeded)
+                {
+                    return;
+                }
+                SeedAsync(db =>
+                {
+                    db.User.Add(new AppDelicare.Model.Entity.User { Id = UserId, UserName = "test-admin", IsAdmin = true, IsActive = true });
+                    return Task.CompletedTask;
+                }).GetAwaiter().GetResult();
+                _seeded = true;
+            }
+        }
+
         public HttpClient CreateAuthorizedClient(Guid? userId = null)
         {
+            EnsureAdminUser();
             var client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateToken(userId ?? UserId));
             return client;

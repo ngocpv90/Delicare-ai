@@ -30,18 +30,25 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[OrderId]
+			, j1.[OrderNo] AS [OrderName]
 			, t.[CustomerId]
+			, j2.[DisplayName] AS [CustomerName]
 			, t.[DeliveryDate]
 			, t.[Status]
 			, t.[CustomerDeliveryLocationId]
+			, j3.[Name] AS [CustomerDeliveryLocationName]
 			, t.[DeliveryRouteId]
+			, j4.[Name] AS [DeliveryRouteName]
 			, t.[DeliveryNumber]
 			, t.[PlannedDeliveryTime]
 			, t.[ActualDeliveryTime]
 			, t.[Note]
 			, t.[CreatedDate]
 		FROM [dbo].[DeliveryOrder] AS t
-		
+		LEFT JOIN [dbo].[Order] AS j1 ON j1.[Id] = t.[OrderId]
+		LEFT JOIN [dbo].[Customer] AS j2 ON j2.[Id] = t.[CustomerId]
+		LEFT JOIN [dbo].[CustomerDeliveryLocation] AS j3 ON j3.[Id] = t.[CustomerDeliveryLocationId]
+		LEFT JOIN [dbo].[DeliveryRoute] AS j4 ON j4.[Id] = t.[DeliveryRouteId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[DeliveryNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@OrderId IS NULL OR t.[OrderId] = @OrderId)
 			AND (@CustomerId IS NULL OR t.[CustomerId] = @CustomerId)
@@ -60,16 +67,24 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderId' THEN r.[OrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderId' THEN r.[OrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'orderName' THEN r.[OrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'orderName' THEN r.[OrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerId' THEN r.[CustomerId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerId' THEN r.[CustomerId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerName' THEN r.[CustomerName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerName' THEN r.[CustomerName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryDate' THEN r.[DeliveryDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryDate' THEN r.[DeliveryDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'status' THEN r.[Status] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'status' THEN r.[Status] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerDeliveryLocationId' THEN r.[CustomerDeliveryLocationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerDeliveryLocationId' THEN r.[CustomerDeliveryLocationId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'customerDeliveryLocationName' THEN r.[CustomerDeliveryLocationName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'customerDeliveryLocationName' THEN r.[CustomerDeliveryLocationName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteId' THEN r.[DeliveryRouteId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryRouteName' THEN r.[DeliveryRouteName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'deliveryNumber' THEN r.[DeliveryNumber] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'deliveryNumber' THEN r.[DeliveryNumber] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'plannedDeliveryTime' THEN r.[PlannedDeliveryTime] END ASC,

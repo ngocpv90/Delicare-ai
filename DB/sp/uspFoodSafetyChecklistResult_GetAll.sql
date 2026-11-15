@@ -29,7 +29,9 @@ BEGIN
 			, t.[ChecklistItemId]
 			, t.[CheckDate]
 			, t.[ShiftId]
+			, j1.[Name] AS [ShiftName]
 			, t.[ProductionBatchId]
+			, j2.[BatchNo] AS [ProductionBatchName]
 			, t.[WorkstationId]
 			, t.[ResultCode]
 			, t.[ActualValue]
@@ -39,7 +41,8 @@ BEGIN
 			, t.[EvidenceUrl]
 			, t.[CreatedDate]
 		FROM [dbo].[FoodSafetyChecklistResult] AS t
-		
+		LEFT JOIN [dbo].[Shift] AS j1 ON j1.[Id] = t.[ShiftId]
+		LEFT JOIN [dbo].[ProductionBatche] AS j2 ON j2.[Id] = t.[ProductionBatchId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[ResultCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ChecklistId IS NULL OR t.[ChecklistId] = @ChecklistId)
 			AND (@ChecklistItemId IS NULL OR t.[ChecklistItemId] = @ChecklistItemId)
@@ -60,8 +63,12 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'checkDate' THEN r.[CheckDate] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftId' THEN r.[ShiftId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftId' THEN r.[ShiftId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'shiftName' THEN r.[ShiftName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'shiftName' THEN r.[ShiftName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchId' THEN r.[ProductionBatchId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionBatchName' THEN r.[ProductionBatchName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'workstationId' THEN r.[WorkstationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'workstationId' THEN r.[WorkstationId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'resultCode' THEN r.[ResultCode] END ASC,

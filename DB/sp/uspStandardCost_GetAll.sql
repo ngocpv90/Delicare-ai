@@ -28,6 +28,7 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[DishId]
+			, j1.[Name] AS [DishName]
 			, t.[RecipeId]
 			, t.[MaterialCost]
 			, t.[LaborCost]
@@ -40,7 +41,7 @@ BEGIN
 			, t.[CurrencyCode]
 			, t.[CreatedDate]
 		FROM [dbo].[StandardCost] AS t
-		
+		LEFT JOIN [dbo].[Dishe] AS j1 ON j1.[Id] = t.[DishId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[CurrencyCode] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
 			AND (@RecipeId IS NULL OR t.[RecipeId] = @RecipeId)
@@ -57,6 +58,8 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'recipeId' THEN r.[RecipeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'recipeId' THEN r.[RecipeId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'materialCost' THEN r.[MaterialCost] END ASC,

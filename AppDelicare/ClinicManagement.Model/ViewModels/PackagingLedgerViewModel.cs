@@ -5,9 +5,12 @@ namespace AppDelicare.Model.ViewModels
 	public class PackagingLedgerViewModel : BaseViewModel
 	{
 		public Guid? CustomerId { get; set; }
+		public string? CustomerName { get; set; }
 		public Guid? DeliveryLocationId { get; set; }
 		public Guid? OrderId { get; set; }
+		public string? OrderName { get; set; }
 		public Guid? DeliveryRouteId { get; set; }
+		public string? DeliveryRouteName { get; set; }
 		public string? TransactionType { get; set; }
 		public string? PackagingType { get; set; }
 		public decimal? Quantity { get; set; }

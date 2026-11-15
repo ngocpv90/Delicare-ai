@@ -33,7 +33,9 @@ BEGIN
 		SELECT
 			t.[Id]
 			, t.[ProductionOrderId]
+			, j1.[ProductionOrderNo] AS [ProductionOrderName]
 			, t.[DishId]
+			, j2.[Name] AS [DishName]
 			, t.[RecipeId]
 			, t.[AcceptedQty]
 			, t.[RejectedQty]
@@ -46,9 +48,12 @@ BEGIN
 			, t.[PlannedQuantity]
 			, t.[ActualQuantity]
 			, t.[KitchenWorkstationId]
+			, j3.[Name] AS [KitchenWorkstationName]
 			, t.[CreatedDate]
 		FROM [dbo].[ProductionBatche] AS t
-		
+		LEFT JOIN [dbo].[ProductionOrder] AS j1 ON j1.[Id] = t.[ProductionOrderId]
+		LEFT JOIN [dbo].[Dishe] AS j2 ON j2.[Id] = t.[DishId]
+		LEFT JOIN [dbo].[KitchenWorkstation] AS j3 ON j3.[Id] = t.[KitchenWorkstationId]
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[BatchNumber] LIKE CONCAT('%', @SearchText, '%'))
 			AND (@ProductionOrderId IS NULL OR t.[ProductionOrderId] = @ProductionOrderId)
 			AND (@DishId IS NULL OR t.[DishId] = @DishId)
@@ -70,8 +75,12 @@ BEGIN
 	ORDER BY
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderId' THEN r.[ProductionOrderId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionOrderName' THEN r.[ProductionOrderName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishId' THEN r.[DishId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishId' THEN r.[DishId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'dishName' THEN r.[DishName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'dishName' THEN r.[DishName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'recipeId' THEN r.[RecipeId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'recipeId' THEN r.[RecipeId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'acceptedQty' THEN r.[AcceptedQty] END ASC,
@@ -96,6 +105,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'actualQuantity' THEN r.[ActualQuantity] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'kitchenWorkstationId' THEN r.[KitchenWorkstationId] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'kitchenWorkstationId' THEN r.[KitchenWorkstationId] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'kitchenWorkstationName' THEN r.[KitchenWorkstationName] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'kitchenWorkstationName' THEN r.[KitchenWorkstationName] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END DESC,
 		r.[CreatedDate] DESC

@@ -5,7 +5,9 @@ namespace AppDelicare.Model.ViewModels
 	public class ShiftAssignmentViewModel : BaseViewModel
 	{
 		public Guid? EmployeeId { get; set; }
+		public string? EmployeeName { get; set; }
 		public Guid? ShiftId { get; set; }
+		public string? ShiftName { get; set; }
 		public DateTime? WorkDate { get; set; }
 		public DateTime? PlannedStart { get; set; }
 		public DateTime? PlannedEnd { get; set; }
