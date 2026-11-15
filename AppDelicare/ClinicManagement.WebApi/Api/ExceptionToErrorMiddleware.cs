@@ -31,6 +31,16 @@ namespace AppDelicare.WebApi.Api
                 await WriteAsync(context, ex.StatusCode, ex.Message, ex.Errors);
                 return;
             }
+            catch (BusinessRuleException ex)
+            {
+                await WriteAsync(context, ex.StatusCode, ex.Message, [new ApiError { Code = ex.Code, Field = ex.Field, Message = ex.Message }]);
+                return;
+            }
+            catch (AppendOnlyViolationException ex)
+            {
+                await WriteAsync(context, StatusCodes.Status422UnprocessableEntity, ex.Message, [new ApiError { Code = ErrorCodes.BusinessRule, Message = ex.Message }]);
+                return;
+            }
             catch (UnauthorizedActorException)
             {
                 await WriteAsync(context, StatusCodes.Status401Unauthorized, EnvelopeResultFilter.DefaultMessage(401),

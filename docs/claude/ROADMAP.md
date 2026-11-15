@@ -134,7 +134,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Thay kiểm tra xóa bằng SQL động bằng `ReferenceGuard`: danh sách quan hệ logic (cột `XxxId` → bảng `Xxx`) sinh từ DDL; khi xóa mềm thì đếm tham chiếu bằng truy vấn có tham số.
 - AC: test – user không có AllowAdd gọi Insert thì 403; admin thì 200; xóa bản ghi đang được tham chiếu thì 409; seed tổ chức chạy 2 lần không nhân bản; user nhóm OPS-SCM không duyệt được kế hoạch sản xuất.
 
-### T08 – Khóa sổ chỉ ghi thêm · phụ thuộc T06 · `TODO`
+### T08 – Khóa sổ chỉ ghi thêm · phụ thuộc T06 · `DONE` (2026-11-14)
 - Trong `DatabaseContext`: các entity sổ (CLAUDE.md 3.3) có `EntityState.Modified` / `Deleted` thì ném `AppendOnlyViolationException`.
 - Bỏ endpoint Update/Delete của các sổ. Thêm `InventoryLedgerService.Reverse(transactionId, reason)` ghi bút toán đảo.
 - AC: test cập nhật / xóa sổ bị chặn; bút toán đảo làm tồn trở về đúng.

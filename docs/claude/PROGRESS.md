@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** (.NET + SQL, đủ API cho mockup; Angular ngoài phạm vi – D-20) · Lát hiện tại: **R1.0 Nền móng**
-- Task đang làm: T00–T07 DONE – task kế tiếp: **T08** (khóa sổ chỉ ghi thêm)
-- Nhánh: `feat/T07-permissions` (chuỗi T00 → … → T07; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 61/61 xanh
+- Task đang làm: T00–T08 DONE – task kế tiếp: **T09** (dự án test – phần lớn đã có từ T02/T03), rồi **T48.1** (staging backend) để đóng lát R1.0
+- Nhánh: `feat/T08-append-only` (chuỗi T00 → … → T08; chưa merge, chưa push)
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 71/71 xanh
 - Việc anh cần làm: (1) đổi khóa đã lộ theo `SECRETS_TODO.md`; (2) trả lời D-26 (DeleteData) và D-27 (AutoMapper); (3) merge chuỗi nhánh khi thấy ổn.
 
 ---
@@ -213,3 +213,17 @@ Kiểm tra:
 - Chạy thật trên DB dev: 119/119 `GetAll` 200 với admin; v1 shifts 200; log không lỗi.
 AC: [x] không AllowAdd gọi Insert → 403 · [x] admin → 200 · [x] xóa bản ghi đang được tham chiếu → 409 · [x] seed tổ chức chạy 2 lần không nhân bản · [x] OPS-SCM không duyệt được kế hoạch sản xuất.
 Còn lại: kiểm tra quyền theo đơn vị (`X-Branch-Id` ↔ OrganizationUnit của user) chưa có dữ liệu liên kết user ↔ đơn vị (GAP-C-10) → làm khi có Employee ↔ User. Cache quyền 5′: đổi quyền có hiệu lực sau tối đa 5 phút.
+
+### T08 – Khóa sổ chỉ ghi thêm · 2026-11-14 · DONE
+Đã làm:
+- `DatabaseContext.AppendOnlyTypes` = 9 sổ CLAUDE.md 3.3 (InventoryTransaction, PackagingLedger, TemperatureLog, AuditChange, IntegrationLog, ApprovalDecision, AttendanceEvent, DeliveryEvent, ComplaintHistory). Có dòng sổ ở trạng thái Modified / Deleted (kể cả xóa mềm) → `AppendOnlyViolationException` trên **mọi** đường SaveChanges. Route v1 → 422 envelope.
+- Bỏ `Update` / `Delete` của `InventoryTransactionController` cũ (các sổ sinh ở T06 vốn không có).
+- `InventoryLedgerService` (Spec 7): `PostAsync` ghi sổ + upsert `InventoryBalance` theo (kho, vị trí, nguyên liệu, lô) trong 1 transaction, chặn tồn âm (422 `INSUFFICIENT_STOCK`), ghi song song cột deprecated NOT NULL (UomId, LotId, TransactionNo, OnHandQty / ReservedQty / AvailableQty). `ReverseAsync(id, reason)`: bút toán ngược dấu tham chiếu dòng gốc (GAP-INV-01), không đảo 2 lần / không đảo bút toán đảo (409 `INVALID_TRANSITION`). Dùng chung transaction ngoài nếu có (vd. `[Idempotent]`).
+- `BusinessRuleException` (tầng service, không phụ thuộc WebApi) → envelope với mã HTTP + mã lỗi Phụ lục A.
+- v1 `POST /api/v1/scm/inventory-transactions/{id}/reverse` (`[Idempotent]`, quyền Edit `#/scm-inv-txn`).
+
+Kiểm tra:
+- `dotnet build --no-incremental`: 0 lỗi, 10 cảnh báo. `dotnet test`: **71/71 xanh** (+11): danh sách 9 sổ; sửa dòng sổ bị chặn ở cả 3 đường SaveChanges; xóa mềm / xóa cứng bị chặn; bảng thường vẫn sửa được; nhập 120 → xuất 20 (tồn 100) → đảo phiếu xuất → **tồn 120**, dòng gốc giữ nguyên, dòng đảo có ReferenceType / ReferenceId / Reason / CreatedBy; đảo 2 lần / đảo bút toán đảo → 409; đảo phiếu nhập đã xuất bớt → 422, xuất quá tồn → 422; v1 reverse 201 → lần 2 409, thiếu lý do 400; route cũ không còn Update / Delete.
+- **SQL Server thật**: Post + Reverse trên DB dev trong transaction rồi rollback – kiểu decimal(18,4) / cột deprecated NOT NULL ghi đúng, tồn về 0, rollback không để lại dòng sổ.
+AC: [x] cập nhật / xóa sổ bị chặn · [x] bút toán đảo làm tồn trở về đúng.
+Còn lại: `AuditChange/DeleteData` (đã khóa admin) vẫn DELETE vật lý bằng SQL nên **vượt qua khóa sổ** → D-26. Khóa dòng tồn khi nhiều người xuất cùng lúc (UPDLOCK / rowversion) làm cùng T16.

@@ -28,6 +28,7 @@ namespace AppDelicare.Data.Connection
             {
                 return await base.SaveChangesAsync(cancellationToken);
             }
+            EnsureAppendOnly();
             var actor = _currentActor.RequireActor();
             var user = actor.UserId;
             var auditHeader = BuildAuditHeader(actor);
@@ -96,9 +97,27 @@ namespace AppDelicare.Data.Connection
 
         private void EnsureActorForPendingChanges()
         {
+            EnsureAppendOnly();
             if (HasPendingChanges())
             {
                 _currentActor.RequireActor();
+            }
+        }
+
+        /// <summary>T08 – sổ chỉ ghi thêm (CLAUDE.md 3.3): chỉ được INSERT.</summary>
+        public static readonly IReadOnlySet<Type> AppendOnlyTypes = new HashSet<Type>
+        {
+            typeof(InventoryTransaction), typeof(PackagingLedger), typeof(TemperatureLog), typeof(AuditChange), typeof(IntegrationLog),
+            typeof(ApprovalDecision), typeof(AttendanceEvent), typeof(DeliveryEvent), typeof(ComplaintHistory),
+        };
+
+        private void EnsureAppendOnly()
+        {
+            var violation = ChangeTracker.Entries()
+                .FirstOrDefault(e => e.State is EntityState.Modified or EntityState.Deleted && AppendOnlyTypes.Contains(e.Entity.GetType()));
+            if (violation != null)
+            {
+                throw new AppendOnlyViolationException(violation.Entity.GetType().Name);
             }
         }
 

@@ -8,6 +8,7 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
+    /// <summary>Sổ cái kho – chỉ ghi thêm (CLAUDE.md 3.3, T08): không có Update / Delete. Sửa sai: POST /api/v1/scm/inventory-transactions/{id}/reverse.</summary>
     public class InventoryTransactionController(IInventoryTransactionService service) : BaseController
     {
         private readonly IInventoryTransactionService _service = service;
@@ -44,42 +45,6 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " Insert: ", ex.ToString()));
-                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
-            }
-        }
-
-        [HttpPut("Update")]
-        public async Task<IActionResult> Update([FromForm] InventoryTransactionRequest request)
-        {
-            try
-            {
-                if (!ModelState.IsValid || null == request)
-                {
-                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
-                }
-                return Ok(await _service.Save(request, ConstantHelper.TypeSave.Update));
-            }
-            catch (Exception ex)
-            {
-                Log.Error(string.Concat("[", GetType().Name, "]", " Update: ", ex.ToString()));
-                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
-            }
-        }
-
-        [HttpDelete("Delete")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            try
-            {
-                InventoryTransactionRequest request = new()
-                {
-                    Id = id
-                };
-                return Ok(await _service.Save(request, ConstantHelper.TypeSave.Delete));
-            }
-            catch (Exception ex)
-            {
-                Log.Error(string.Concat("[", GetType().Name, "]", " Delete: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
