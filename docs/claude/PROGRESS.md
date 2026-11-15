@@ -2,9 +2,9 @@
 
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** (.NET + SQL, đủ API cho mockup; Angular ngoài phạm vi – D-20) · Lát hiện tại: **R1.0 Nền móng**
-- Task đang làm: **T03 (2/2)** – envelope v1, mã lỗi Phụ lục A, ETag / If-Match, Idempotency-Key, X-Branch-Id. Tiếp theo T05 → T06 (entity + module 124 bảng)
+- Task đang làm: T00–T04 DONE – task kế tiếp: **T05** (CodeGen + đồng bộ entity 124 bảng) → T06 (sinh 35 bảng còn thiếu)
 - Nhánh: `feat/T03-http-pipeline` (chuỗi: T00 → T01 → T04 → T02 → T03; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 25/25 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-14) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 45/45 xanh
 - Việc anh cần làm: (1) đổi khóa đã lộ theo `SECRETS_TODO.md`; (2) trả lời D-26 (DeleteData) và D-27 (AutoMapper); (3) merge chuỗi nhánh khi thấy ổn.
 
 ---
@@ -137,7 +137,7 @@ Kiểm tra:
 AC: [x] unit test chặn ghi khi không có người thao tác · [x] request có token thì CreatedBy đúng · [x] log có CorrelationId.
 Còn lại: dùng `IClock` thay `DateTime.Now` để T05 (cùng D-18). Agent actor chỉ dùng thật ở Release 2.
 
-### T03 – Pipeline HTTP chuẩn · 2026-11-14 · DOING (1/2)
+### T03 – Pipeline HTTP chuẩn · 2026-11-14 · DONE (1/2 + 2/2)
 > **Lưu ý:** phần dưới làm theo T03 bản cũ. Bộ tài liệu mới của anh (2026-11-14, CLAUDE.md / ROADMAP / DECISIONS / ORG_STRUCTURE…) đổi quy ước v1 sang envelope + If-Match + Idempotency-Key + X-Branch-Id và bỏ yêu cầu tương thích Angular (D-20). Phần 2/2 sẽ làm theo bản mới; lỗi v1 dùng envelope (D-28).
 Đã làm:
 - `Startup.Configure` theo thứ tự: CorrelationId → ExceptionHandler → HttpsRedirection → Swagger / Static → Routing → CORS → Authentication → Authorization → Endpoints. Bỏ `UseDeveloperExceptionPage` (lộ stack trace), `ServiceLocator.BuildServiceProvider`, `CorsMiddleware` (`Access-Control-Allow-Origin: *`), policy `AllowAnyOrigin` trong `DatabaseConnection`. `ServiceLocator.cs`, `CorsMiddleware.cs` → `_obsolete/AppDelicare/ClinicManagement.WebApi/Infrastructure/`.
@@ -152,3 +152,26 @@ Kiểm tra:
 - `dotnet build`: 0 lỗi, cảnh báo ≤ 10. `dotnet test`: **25/25 xanh** (thêm 12): integration test bằng `WebApplicationFactory` (DB dev qua user-secrets, không có DB thì Skip kèm lý do): `Supplier/GetAll` cũ HTTP 200 + đúng dạng `totalRecords / listData / responseCode / responseMessage`; route cũ / v1 không token 401; v1 `table` sai → 400 `application/problem+json` có `errors.table`, `traceId` = header gửi lên; `take=0` → 400; v1 hợp lệ 200; CORS: localhost:4200 được, origin lạ không có header; Swagger có endpoint v1, summary tiếng Việt, response 400, scheme bearer; mọi response có `X-Correlation-Id`; exception handler 500 không lộ chuỗi bí mật / tên exception / stack; actor thiếu → 401.
 AC: [x] swagger chạy · [x] `Supplier/GetAll` cũ trả đúng dạng cũ · [x] endpoint v1 mẫu trả 400 ProblemDetails khi input sai.
 Phát hiện: A18 – `Repository.GetAllNoneDeleted()` không lọc `IsDeleted` (sửa ở T05).
+
+#### T03 phần 2/2 – quy ước v1 theo bộ tài liệu mới · 2026-11-14 · DONE
+Đã làm (thư mục `WebApi/Api/`):
+- `ApiEnvelope<T>` `{success, data, message, errors[{code, field, message}], traceId}`, `PagedData<T>` `{items, total, page, pageSize}`, `ErrorCodes` = Phụ lục A.
+- `ApiControllerBase` (thay `ApiV1ControllerBase`): action trả dữ liệu thô; `ComputeETag` (ModifiedDate ?? CreatedDate), `SetETag`, `EnsureIfMatch` → 409 `CONCURRENCY_CONFLICT`.
+- `EnvelopeResultFilter`: bọc mọi kết quả của controller v1; 400 model binding / DataAnnotations → `VALIDATION_FAILED` kèm `field` camelCase (route cũ giữ factory mặc định).
+- `ExceptionToErrorMiddleware` (chỉ `/api/v1`): `ApiException` → mã HTTP + envelope; `UnauthorizedActorException` → 401; lỗi khác → 500 không lộ chi tiết; response lỗi không body (401 JWT, 403, 404 route, 405) cũng thành envelope (D-28).
+- `IdempotencyFilter` + `[Idempotent]`: header `Idempotency-Key` (≤ 200) lưu vào sổ `IntegrationLog` (INSERT 1 dòng sau khi lệnh thành công, cùng transaction với lệnh trên SQL Server); gửi lại cùng nội dung → không chạy lại, trả mã cũ + `Idempotency-Replayed: true`; khác nội dung → 422; lệnh lỗi không lưu → thử lại được. GAP-IDEM-01/02.
+- `BranchHeaderMiddleware` + `IBranchContext`: `X-Branch-Id` phải là GUID (sai → 400); kiểm tra quyền theo đơn vị ở T07.
+- `PageQuery` (`page`, `pageSize` ≤ 200, `q`, `sort=field:asc`) + `ApplySort` theo whitelist (cột lạ → 400).
+- `ApiJson`: camelCase; **không bao giờ ghi ra** `PassWord` / `Password` / `PasswordHash` (vẫn đọc được khi đăng nhập) – áp cho toàn app.
+- Swagger nhóm theo module: `v1 / hr / shifts`, `v1 / audit`, `legacy / <Controller>`; mô tả quy ước v1.
+- Entity `IntegrationLog` (đúng DDL, không kế thừa BaseEntity vì bảng không có DeletedDate / DeleteddBy) + DbSet.
+- Endpoint mẫu **`/api/v1/hr/shifts`** (Spec 4.7): GET danh sách / chi tiết (ETag), POST (201, `[Idempotent]`), PUT (If-Match), DELETE (xóa mềm, 204). Kiểm tra: bắt buộc mã / tên / giờ (400), `companyId` không tồn tại (422 `REF_NOT_FOUND`), giờ bắt đầu = kết thúc (422 `BUSINESS_RULE`, GAP-HR-01), trùng mã (409 `DUPLICATE`), ca qua đêm hợp lệ (`isOvernight`). Sau khi lưu đọc lại bản ghi để ETag khớp độ chính xác `datetime` của SQL.
+- `AuditController` chuyển sang envelope.
+- `GemBoxLicense.Apply`: GemBox chỉ cho `SetLicense` 1 lần mỗi tiến trình (lỗi "serial key can be set only once" khi host khởi động lại – lộ ra khi chạy 2 test host).
+- `docs/api-tests/v1-hr-shifts.http`: luồng thử bằng REST Client.
+
+Kiểm tra:
+- `dotnet build`: 0 lỗi, 6 cảnh báo. `dotnet test`: **45/45 xanh**. Test v1 chạy trên host InMemory + JWT tự ký (không cần DB): 201 / 200 envelope + phân trang; 400 thiếu trường (đủ field), sai giờ, sort / pageSize / page sai, X-Branch-Id sai; 422 `REF_NOT_FOUND`, `BUSINESS_RULE`; 409 `DUPLICATE`, `CONCURRENCY_CONFLICT` (dữ liệu không đổi); Idempotency gửi 2 lần → 1 ca + 1 log; key dùng lại khác nội dung → 422; lệnh lỗi rồi thử lại cùng key → 201; 404 sau xóa; 401 / 404 route dạng envelope; mật khẩu không bị serialize.
+- Chạy thật trên SQL Server dev: POST 2 lần cùng key → 201 + `Idempotency-Replayed: true`, DB có 1 ca + 1 dòng IntegrationLog (`Succeeded`, 201); ETag lúc tạo = lúc GET; PUT ETag mới 200, ETag cũ 409; DELETE 204; tiếng Việt lưu / đọc đúng. Dữ liệu thử: ca `DEMO-T03`, `DEMO-T03-UTF8` (đã xóa mềm) và 1 dòng IntegrationLog key `demo-t03-live-1` (sổ chỉ ghi thêm, để lại).
+AC: [x] swagger chạy · [x] 200 đúng envelope · [x] 400 / 422 đúng mã lỗi · [x] 409 khi If-Match lệch · [x] Idempotency-Key gửi 2 lần chỉ ghi 1 lần.
+Còn lại: lọc cột deprecated làm theo DTO khi sinh mã (T05 / T45B); `[Permission]` ở T07.

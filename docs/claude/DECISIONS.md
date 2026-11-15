@@ -62,3 +62,7 @@ Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ g
 |---|---|---|---|---|
 | GAP-AUD-01 | `AuditChange` không có cột loại người thao tác (USER / SYSTEM / AGENT), mã agent, CorrelationId. | Ghi ở dòng đầu cột `Changes`: `- Actor: USER:<id> | CorrelationId: <id>`. | PROPOSED – BA/PO CONFIRM | T02 |
 | GAP-AUD-02 | Job hệ thống cần một User dịch vụ để điền CreatedBy (cột `uniqueidentifier`). | Cấu hình `SystemUsers:JobUserId` (trống = job không được ghi). Tạo 1 bản ghi `User` dịch vụ khi làm T23. | PROPOSED – BA/PO CONFIRM | T02, T23 |
+| GAP-IDEM-01 | `IntegrationLog` không có cột lưu body response → gửi lại cùng `Idempotency-Key` chỉ trả lại mã HTTP + `Idempotency-Replayed: true` + `originalTraceId`, không trả lại `data` (vd. Id vừa tạo). | Client tra lại bằng GET danh sách / mã. | PROPOSED – BA/PO CONFIRM | T03 |
+| GAP-IDEM-02 | Hai request cùng key chạy song song: IntegrationLog là sổ chỉ ghi thêm (không có trạng thái "đang chạy"), không có UNIQUE trên key. | Khóa trong tiến trình (đủ cho 1 instance). Chạy nhiều instance: dùng `sp_getapplock` (T48). | PROPOSED | T03, T48 |
+| GAP-API-01 | `If-Match` có bắt buộc cho PUT / DELETE không? | Hiện **không bắt buộc**: có gửi mà lệch → 409; không gửi → cho qua. | PROPOSED – BA/PO CONFIRM | T03 |
+| GAP-HR-01 | `Shift.Status` chưa có danh mục; `Shift` có giờ bắt đầu = giờ kết thúc. | Status: `Active` / `Inactive` (mặc định Active); bắt đầu = kết thúc → 422 BUSINESS_RULE. | PROPOSED – BA/PO CONFIRM | T03, T21.1 |

@@ -40,7 +40,7 @@ namespace AppDelicare.Tests.Integration
         }
 
         [SkippableFact]
-        public async Task V1_invalid_route_value_returns_400_problem_details()
+        public async Task V1_invalid_route_value_returns_400_envelope()
         {
             Skip.If(_factory.SkipReason != null, _factory.SkipReason);
             using var client = _factory.CreateAuthorizedClient();
@@ -49,15 +49,16 @@ namespace AppDelicare.Tests.Integration
             var response = await client.GetAsync($"/api/v1/audit/Bad-Table;DROP/{Guid.NewGuid()}/history");
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-            response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            doc.RootElement.GetProperty("status").GetInt32().Should().Be(400);
-            doc.RootElement.GetProperty("errors").TryGetProperty("table", out _).Should().BeTrue();
+            doc.RootElement.GetProperty("success").GetBoolean().Should().BeFalse();
+            var error = doc.RootElement.GetProperty("errors")[0];
+            error.GetProperty("code").GetString().Should().Be("VALIDATION_FAILED");
+            error.GetProperty("field").GetString().Should().Be("table");
             doc.RootElement.GetProperty("traceId").GetString().Should().Be("t03-bad-table");
         }
 
         [SkippableFact]
-        public async Task V1_out_of_range_query_returns_400_problem_details()
+        public async Task V1_out_of_range_query_returns_400_envelope()
         {
             Skip.If(_factory.SkipReason != null, _factory.SkipReason);
             using var client = _factory.CreateAuthorizedClient();
@@ -66,7 +67,7 @@ namespace AppDelicare.Tests.Integration
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            doc.RootElement.GetProperty("errors").TryGetProperty("take", out _).Should().BeTrue();
+            doc.RootElement.GetProperty("errors")[0].GetProperty("field").GetString().Should().Be("take");
         }
 
         [SkippableFact]
@@ -79,8 +80,8 @@ namespace AppDelicare.Tests.Integration
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            doc.RootElement.GetProperty("listData").ValueKind.Should().Be(JsonValueKind.Array);
-            doc.RootElement.GetProperty("totalRecords").GetInt64().Should().Be(0);
+            doc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+            doc.RootElement.GetProperty("data").GetArrayLength().Should().Be(0);
         }
 
         [Fact]

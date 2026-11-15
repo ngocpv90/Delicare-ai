@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using AppDelicare.Data.Interface;
-using AppDelicare.Data.Repositories;
+using AppDelicare.WebApi.Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,7 +36,7 @@ namespace AppDelicare.WebApi.Controllers.V1
 
     /// <summary>Nhật ký thay đổi (Spec 2.2 – <c>/api/v1/audit/{table}/{id}/history</c>).</summary>
     [Route(RoutePrefix + "/audit")]
-    public sealed class AuditController(IUnitOfWork unitOfWork) : ApiV1ControllerBase
+    public sealed class AuditController(IUnitOfWork unitOfWork) : ApiControllerBase
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
@@ -50,10 +50,10 @@ namespace AppDelicare.WebApi.Controllers.V1
         /// <param name="id">Id bản ghi.</param>
         /// <param name="take">Số dòng tối đa (1–200, mặc định 50).</param>
         /// <param name="cancellationToken">Hủy khi client ngắt kết nối.</param>
-        /// <response code="200">Danh sách lịch sử (có thể rỗng).</response>
-        /// <response code="400">Tham số sai (ValidationProblemDetails).</response>
+        /// <response code="200">Envelope, <c>data</c> là danh sách lịch sử (có thể rỗng).</response>
+        /// <response code="400">VALIDATION_FAILED – tham số sai.</response>
         [HttpGet("{table}/{id:guid}/history")]
-        [ProducesResponseType(typeof(Results<AuditHistoryItem>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiEnvelope<IReadOnlyList<AuditHistoryItem>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetHistory(
             [FromRoute, Required, RegularExpression("^[A-Za-z_][A-Za-z0-9_]{0,127}$", ErrorMessage = "Tên bảng chỉ gồm chữ, số, gạch dưới (tối đa 128 ký tự).")] string table,
             [FromRoute] Guid id,
@@ -86,11 +86,7 @@ namespace AppDelicare.WebApi.Controllers.V1
                 Changes = r.Changes,
             }).ToList();
 
-            return FromResults(new Results<AuditHistoryItem>(items, items.Count)
-            {
-                ResponseCode = StatusCodes.Status200OK,
-                ResponseMessage = "OK",
-            });
+            return Ok(items);
         }
     }
 }

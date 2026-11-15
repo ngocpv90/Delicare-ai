@@ -110,6 +110,8 @@ namespace AppDelicare.Data.Connection
         public virtual DbSet<StandardCost> StandardCost { get; set; }
         public virtual DbSet<ActualCost> ActualCost { get; set; }
         public virtual DbSet<MealCost> MealCost { get; set; }
+        // T03: sổ IntegrationLog (append-only) – dùng cho Idempotency-Key.
+        public virtual DbSet<IntegrationLog> IntegrationLog { get; set; }
         public async Task<int> SaveChangesAsync(string typeSave, CancellationToken cancellationToken = new CancellationToken())
         {
             // T02: không có người thao tác thì chặn ghi (không còn fallback "user đầu tiên").

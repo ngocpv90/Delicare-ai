@@ -96,7 +96,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Middleware gắn `CorrelationId` (header `X-Correlation-Id` hoặc tự sinh) và đưa vào Serilog scope.
 - AC: unit test chứng minh ghi khi không có actor thì bị chặn; request có token thì CreatedBy đúng; log có CorrelationId.
 
-### T03 – Pipeline HTTP chuẩn · phụ thuộc T01 · `DOING` (1/2 xong: pipeline, CORS, exception handler; còn envelope / mã lỗi / ETag / Idempotency / X-Branch-Id)
+### T03 – Pipeline HTTP chuẩn · phụ thuộc T01 · `DONE` (2026-11-14)
 - Sửa thứ tự middleware: ExceptionHandler → HttpsRedirection → Static → Routing → CORS (danh sách origin lấy từ `Cors:AllowedOrigins`) → Authentication → Authorization → Endpoints. Bỏ `ServiceLocator.BuildServiceProvider`. Bỏ `CorsMiddleware` thừa.
 - Global exception handler: lỗi chưa bắt → log + 500, không lộ stack trace.
 - Áp dụng **quy ước spec mục 1.2** cho toàn bộ route `/api/v1`: envelope `{success, data, message, errors, traceId}`, ProblemDetails / mã lỗi theo Phụ lục A, phân trang chuẩn, camelCase, lọc cột deprecated và `PassWord`. Làm thành base class / filter / middleware dùng chung (`ApiControllerBase`, `EnvelopeResultFilter`, `ExceptionToErrorMiddleware`).
