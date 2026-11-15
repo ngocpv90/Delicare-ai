@@ -96,6 +96,6 @@ Hạ tầng cũ phát hiện khi rà:
 | `IUomService`, `IRecipeCostCalculator` | Quy đổi, giá vốn | `UomConversionService.ConvertAsync`, `RecipeService.CalculateCostAsync` |
 | `PasswordHasher` | Băm mật khẩu | `EncriptFunctionsHelper` (đã có, D-29) |
 | `IDispatcher`, Command / Handler / Validator, domain event `PermissionsChanged` | | Bỏ. Service gọi `IPermissionService.Invalidate*` trực tiếp |
-| `Permissions:ApproverGroups` (appsettings), `ScreenMap.MatrixGroup` cho duyệt | Quyền duyệt | Mục ObjectMenu "Duyệt …" (MetaLink `#/approve/<screen-id>`) dưới nhóm "Phê duyệt" + UserRole (`AllowEdit`) – D-31 |
+| `Permissions:ApproverGroups` (appsettings), `ScreenMap.MatrixGroup` cho duyệt | Quyền duyệt | Mục ObjectMenu "Duyệt …" (MetaLink `#/wf-inbox?type=<screen-id>`) dưới nhóm "Phê duyệt" + UserRole (`AllowEdit`) – D-31 |
 | `Api/*` (ApiControllerBase, ApiEnvelope, EnvelopeResultFilter, ExceptionToErrorMiddleware, IdempotencyFilter, BranchContext / BranchHeaderMiddleware, PageQuery, ApiJson, ApiException) | Quy ước spec 1.2 | Bỏ → `_obsolete/v1/` |
 | `PermissionService`, `IPermissionService` (WebApi/Security) | Kiểm quyền | `AppDelicare.Services` (giữ logic, bỏ ApproverGroups). `PermissionFilter`, `PermissionConvention` (bỏ nhánh CRUD v1), `ScreenMap` giữ ở WebApi |

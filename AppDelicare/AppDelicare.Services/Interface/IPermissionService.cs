@@ -10,7 +10,7 @@ namespace AppDelicare.Services.Interface
         Print,
         Export,
         Import,
-        /// <summary>Duyệt (D-31): UserRole.AllowEdit trên ObjectMenu có MetaLink <c>#/approve/&lt;screen-id&gt;</c> (nhóm "Phê duyệt").</summary>
+        /// <summary>Duyệt (D-31, CLAUDE.md 4.3): UserRole.AllowEdit trên ObjectMenu có MetaLink <c>#/wf-inbox?type=&lt;screen-id&gt;</c> – hộp duyệt lọc theo loại (nhóm "Phê duyệt").</summary>
         Approve,
         /// <summary>Thao tác nguy hiểm / leo thang quyền – chỉ admin.</summary>
         AdminOnly,
@@ -32,7 +32,7 @@ namespace AppDelicare.Services.Interface
     public interface IPermissionService
     {
         /// <summary>Tiền tố MetaLink của mục menu duyệt.</summary>
-        public const string ApproveMenuPrefix = "#/approve/";
+        public const string ApproveMenuPrefix = "#/wf-inbox?type=";
 
         Task<UserPermissions> GetAsync(Guid userId, CancellationToken cancellationToken = default);
         bool IsAllowed(UserPermissions permissions, string screenId, PermissionAction action);

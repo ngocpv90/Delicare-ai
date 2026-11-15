@@ -208,7 +208,7 @@ namespace AppDelicare.Tests.Security
             var screenOnly = new Dictionary<string, MenuRights>(StringComparer.OrdinalIgnoreCase) { ["#/prod-plan"] = full };
             var withApproval = new Dictionary<string, MenuRights>(screenOnly, StringComparer.OrdinalIgnoreCase)
             {
-                ["#/approve/prod-plan"] = new MenuRights(true, false, true, false, false, false, false),
+                ["#/wf-inbox?type=prod-plan"] = new MenuRights(true, false, true, false, false, false, false),
             };
 
             // Tên nhóm (kể cả "COO") không cấp quyền duyệt; chỉ dòng UserRole trên mục "Duyệt …" mới cấp.

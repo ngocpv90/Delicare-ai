@@ -10,7 +10,7 @@ namespace AppDelicare.Services.Implement
     /// <summary>
     /// T07 / T45R: UserRole × ObjectMenu theo UserGroup của user (qua UserClaim), cache theo <c>Permissions:CacheMinutes</c> (mặc định 5′).
     /// <c>User.IsAdmin</c> bỏ qua kiểm tra. User không tồn tại / không hoạt động / đã xóa → không có quyền.
-    /// Quyền duyệt (D-31) = AllowEdit trên mục menu <c>#/approve/&lt;screen-id&gt;</c>.
+    /// Quyền duyệt (D-31) = AllowEdit trên mục menu <c>#/wf-inbox?type=&lt;screen-id&gt;</c>.
     /// </summary>
     public class PermissionService(IUnitOfWork unitOfWork, IMemoryCache cache, IOptions<PermissionOptions> options) : IPermissionService
     {

@@ -42,7 +42,9 @@ public static partial class Seeds
 
     /// <summary>D-31: nhóm menu "Phê duyệt" và mục "Duyệt …" của từng màn hình có loại AP. Quyền duyệt = UserRole.AllowEdit trên mục đó.</summary>
     public const string ApprovalGroupLink = "#/group/approve";
-    public const string ApprovalLinkPrefix = "#/approve/";
+    public const string ApprovalLinkPrefix = "#/wf-inbox?type=";
+    /// <summary>Tiền tố cũ (bản seed 2026-11-15 sáng) – seed đổi MetaLink tại chỗ sang tiền tố mới, giữ quyền đã gán.</summary>
+    public const string LegacyApprovalLinkPrefix = "#/approve/";
 
     public static List<Screen> LoadScreens(string root, out List<string> menuOrder)
     {
@@ -250,6 +252,7 @@ public static partial class Seeds
     {
         var sb = new StringBuilder(SeedHeader);
         sb.AppendLine("BEGIN TRAN;");
+        sb.AppendLine("-- CLAUDE.md 4.3: chỉ THÊM menu chưa có (theo MetaLink), không ghi đè tên / thứ tự admin đã chỉnh.");
         sb.AppendLine("-- Menu cấp 1 = nhóm màn hình (MetaLink '#/group/<n>'), cấp 2 = màn hình (MetaLink '#/<screen-id>'), thứ tự theo catalog.menuOrder.");
         int g = 0;
         foreach (string group in menuOrder)
@@ -258,8 +261,6 @@ public static partial class Seeds
             string groupLink = $"#/group/{g:00}";
             sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(groupLink)} AND IsDeleted = 0)");
             sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(group)}, {Sql(GroupToMatrix[group])}, {Sql(groupLink)}, NULL, 1, {g * 100}, 1, 0, @Now, @SeedBy, 0);");
-            sb.AppendLine("ELSE");
-            sb.AppendLine($"    UPDATE [dbo].[ObjectMenu] SET Name = {Sql(group)}, OrderShow = {g * 100}, LevelShow = 1 WHERE MetaLink = {Sql(groupLink)} AND IsDeleted = 0 AND (ISNULL(Name, N'') <> {Sql(group)} OR ISNULL(OrderShow, 0) <> {g * 100});");
             int i = 0;
             foreach (var s in screens.Where(s => s.Group == group))
             {
@@ -269,12 +270,12 @@ public static partial class Seeds
                 int order = g * 100 + i;
                 sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(link)} AND IsDeleted = 0)");
                 sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(s.Name)}, {Sql(s.Phase)}, {Sql(link)}, {parent}, 2, {order}, 1, 0, @Now, @SeedBy, 0);");
-                sb.AppendLine("ELSE");
-                sb.AppendLine($"    UPDATE [dbo].[ObjectMenu] SET Name = {Sql(s.Name)}, ShortName = {Sql(s.Phase)}, ParentId = {parent}, LevelShow = 2, OrderShow = {order} WHERE MetaLink = {Sql(link)} AND IsDeleted = 0 AND (ISNULL(Name, N'') <> {Sql(s.Name)} OR ISNULL(OrderShow, 0) <> {order});");
             }
         }
         sb.AppendLine();
-        sb.AppendLine("-- D-31: nhóm \"Phê duyệt\" + mục \"Duyệt …\" cho màn hình có loại AP (MetaLink '#/approve/<screen-id>'). Chỉ thêm khi chưa có.");
+        sb.AppendLine("-- D-31: nhóm \"Phê duyệt\" + mục \"Duyệt …\" cho màn hình có loại AP (MetaLink '#/wf-inbox?type=<screen-id>' – hộp duyệt lọc theo loại, CLAUDE.md 4.3). Chỉ thêm khi chưa có.");
+        sb.AppendLine($"-- Đổi MetaLink mục duyệt kiểu cũ '{LegacyApprovalLinkPrefix}<id>' → '{ApprovalLinkPrefix}<id>' (giữ dòng và quyền đã gán).");
+        sb.AppendLine($"UPDATE [dbo].[ObjectMenu] SET MetaLink = N'{ApprovalLinkPrefix}' + SUBSTRING(MetaLink, {LegacyApprovalLinkPrefix.Length + 1}, 200), ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink LIKE N'{LegacyApprovalLinkPrefix}%' AND IsDeleted = 0;");
         sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(ApprovalGroupLink)} AND IsDeleted = 0)");
         sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Phê duyệt', N'approve', {Sql(ApprovalGroupLink)}, NULL, 1, 9900, 1, 0, @Now, @SeedBy, 0);");
         int a = 0;
@@ -295,6 +296,7 @@ public static partial class Seeds
         var sb = new StringBuilder(SeedHeader);
         sb.AppendLine("BEGIN TRAN;");
         sb.AppendLine("-- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.");
+        sb.AppendLine("-- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh trên ma trận.");
         sb.AppendLine("-- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục \"Duyệt …\" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.");
         foreach (var (role, _, _) in matrix)
         {
@@ -320,14 +322,6 @@ public static partial class Seeds
         }
         sb.AppendLine("""
 
-            UPDATE ur SET AllowAccess = r.A, AllowAdd = r.Ad, AllowEdit = r.E, AllowDelete = r.D, AllowPrint = r.P, AllowExport = r.X, AllowImport = r.I,
-                   ModifiedDate = @Now, ModifiedBy = @SeedBy
-            FROM [dbo].[UserRole] ur
-            JOIN [dbo].[UserGroup] g ON g.Id = ur.UserGroupId AND g.IsDeleted = 0
-            JOIN [dbo].[ObjectMenu] m ON m.Id = ur.ObjectMenuId AND m.IsDeleted = 0
-            JOIN @R r ON r.GroupName = g.Name AND r.MetaLink = m.MetaLink
-            WHERE ur.IsDeleted = 0
-              AND (ur.AllowAccess <> r.A OR ur.AllowAdd <> r.Ad OR ur.AllowEdit <> r.E OR ur.AllowDelete <> r.D OR ur.AllowPrint <> r.P OR ur.AllowExport <> r.X OR ur.AllowImport <> r.I);
 
             INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
             SELECT NEWID(), g.Id, m.Id, r.A, r.Ad, r.E, r.D, r.P, r.X, r.I, @Now, @SeedBy, 0

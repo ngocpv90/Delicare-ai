@@ -181,7 +181,7 @@ namespace AppDelicare.Tests.Menu
 
             await _factory.SeedAsync(db =>
             {
-                var approve = new ObjectMenu { Id = Guid.NewGuid(), Name = "Duyệt – Công thức", MetaLink = "#/approve/menu-recipe", IsActive = true, LevelShow = 2 };
+                var approve = new ObjectMenu { Id = Guid.NewGuid(), Name = "Duyệt – Công thức", MetaLink = "#/wf-inbox?type=menu-recipe", IsActive = true, LevelShow = 2 };
                 db.ObjectMenu.Add(approve);
                 db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = groupId, ObjectMenuId = approve.Id, AllowAccess = true, AllowEdit = true });
                 return Task.CompletedTask;

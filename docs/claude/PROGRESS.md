@@ -5,7 +5,7 @@
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `feat/T45R-legacy-framework` (từ `chore/rename-clinicmanagement` ← `feat/T45B.4-p2-special` ← … T00; chưa merge, chưa push)
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 86/86 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 87/87 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -485,3 +485,14 @@ Kiểm tra:
   - câu lịch sử lần đổi tên 2026-11-14 trong CLAUDE.md.
 
 Cần anh: mở solution bằng Visual Studio, chạy T4 một lần trên nhánh này, xác nhận file sinh ra đúng chỗ rồi mới merge.
+
+### Theo CLAUDE.md 4.3 (anh bổ sung 2026-11-15): seed không ghi đè, MetaLink mục duyệt · DONE
+Nhánh `fix/T45R-seed-approval-link` (từ `chore/T45R.6-rename-generator`).
+- **Seed chỉ thêm phần chưa có**:
+  - `ObjectMenu_seed.sql` bỏ `ELSE UPDATE` tên / thứ tự / cha;
+  - `UserRole_seed.sql` bỏ khối `UPDATE ur` (trước đây chạy lại seed sẽ đưa quyền về ma trận đề xuất, ghi đè chỉnh sửa của admin);
+  - `OrganizationUnit_seed.sql` giữ nguyên (ngoài phạm vi 4.3).
+- **MetaLink mục duyệt** = hộp duyệt lọc theo loại: `#/wf-inbox?type=<screen-id>` (thay `#/approve/<screen-id>`).
+  - `wf-inbox` là màn "Hộp duyệt" trong catalog.js. Vẫn 14 mục, 1 mục / màn có loại AP (PROPOSED – anh có thể gộp theo nhóm khi UAT-1).
+  - Seed đổi MetaLink kiểu cũ tại chỗ, giữ dòng và quyền đã gán. Đã chạy trên DB dev và staging: 0 mục cũ, 14 mục mới; "Duyệt – Công thức" vẫn của CEO, COO.
+- Test 87/87 (+1 SQL Server `Seeds_do_not_overwrite_admin_changes`: thu hồi quyền duyệt của CEO + đổi tên menu → chạy lại seed → giữ nguyên; rollback).

@@ -93,5 +93,51 @@ namespace AppDelicare.Tests.Security
                 await tx.RollbackAsync();
             }
         }
+        /// <summary>CLAUDE.md 4.3: seed chỉ thêm phần chưa có – quyền / tên menu admin đã chỉnh trên màn hình không bị ghi đè khi chạy lại seed.</summary>
+        [SkippableFact]
+        public async Task Seeds_do_not_overwrite_admin_changes()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            string connectionString = factory.Services.GetRequiredService<IConfiguration>().GetConnectionString("MainConnectionString")!;
+            await using var cn = new SqlConnection(connectionString);
+            await cn.OpenAsync();
+            await using var tx = (SqlTransaction)await cn.BeginTransactionAsync();
+            try
+            {
+                async Task RunAsync(string file)
+                {
+                    await using var cmd = new SqlCommand(await File.ReadAllTextAsync(SeedPath(file)), cn, tx) { CommandTimeout = 120 };
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                async Task<object?> ScalarAsync(string sql)
+                {
+                    await using var cmd = new SqlCommand(sql, cn, tx);
+                    return await cmd.ExecuteScalarAsync();
+                }
+
+                await RunAsync("ObjectMenu_seed.sql");
+                await RunAsync("UserRole_seed.sql");
+                // Admin chỉnh: thu hồi quyền duyệt công thức của CEO và đổi tên menu.
+                await ScalarAsync("""
+                    UPDATE r SET AllowAccess = 0, AllowEdit = 0 FROM UserRole r JOIN UserGroup g ON g.Id = r.UserGroupId JOIN ObjectMenu m ON m.Id = r.ObjectMenuId
+                    WHERE g.Name = 'CEO' AND m.MetaLink = '#/wf-inbox?type=menu-recipe' AND r.IsDeleted = 0;
+                    UPDATE ObjectMenu SET Name = N'[DEMO] Tên admin đặt' WHERE MetaLink = '#/crm-customer' AND IsDeleted = 0;
+                    """);
+
+                await RunAsync("ObjectMenu_seed.sql");
+                await RunAsync("UserRole_seed.sql");
+
+                (await ScalarAsync("""
+                    SELECT CAST(r.AllowEdit AS int) FROM UserRole r JOIN UserGroup g ON g.Id = r.UserGroupId JOIN ObjectMenu m ON m.Id = r.ObjectMenuId
+                    WHERE g.Name = 'CEO' AND m.MetaLink = '#/wf-inbox?type=menu-recipe' AND r.IsDeleted = 0
+                    """)).Should().Be(0, "seed không được cấp lại quyền admin đã thu hồi");
+                (await ScalarAsync("SELECT Name FROM ObjectMenu WHERE MetaLink = '#/crm-customer' AND IsDeleted = 0")).Should().Be("[DEMO] Tên admin đặt");
+                (await ScalarAsync("SELECT COUNT(*) FROM ObjectMenu WHERE MetaLink LIKE '#/approve/%' AND IsDeleted = 0")).Should().Be(0);
+            }
+            finally
+            {
+                await tx.RollbackAsync();
+            }
+        }
     }
 }

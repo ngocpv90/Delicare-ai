@@ -8,6 +8,7 @@ IF @SeedBy IS NULL THROW 50001, N'Không có tài khoản admin để ghi Create
 DECLARE @Now DATETIME = GETDATE();
 BEGIN TRAN;
 -- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.
+-- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh trên ma trận.
 -- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục "Duyệt …" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.
 IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'CEO' AND IsDeleted = 0)
     INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'CEO', 0, @Now, @SeedBy, 0);
@@ -1952,14 +1953,6 @@ INSERT INTO @R VALUES
     (N'QA', N'#/dbx-explorer', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/dbx-gap', 0, 0, 0, 0, 0, 0, 0);
 
-UPDATE ur SET AllowAccess = r.A, AllowAdd = r.Ad, AllowEdit = r.E, AllowDelete = r.D, AllowPrint = r.P, AllowExport = r.X, AllowImport = r.I,
-       ModifiedDate = @Now, ModifiedBy = @SeedBy
-FROM [dbo].[UserRole] ur
-JOIN [dbo].[UserGroup] g ON g.Id = ur.UserGroupId AND g.IsDeleted = 0
-JOIN [dbo].[ObjectMenu] m ON m.Id = ur.ObjectMenuId AND m.IsDeleted = 0
-JOIN @R r ON r.GroupName = g.Name AND r.MetaLink = m.MetaLink
-WHERE ur.IsDeleted = 0
-  AND (ur.AllowAccess <> r.A OR ur.AllowAdd <> r.Ad OR ur.AllowEdit <> r.E OR ur.AllowDelete <> r.D OR ur.AllowPrint <> r.P OR ur.AllowExport <> r.X OR ur.AllowImport <> r.I);
 
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), g.Id, m.Id, r.A, r.Ad, r.E, r.D, r.P, r.X, r.I, @Now, @SeedBy, 0
@@ -1970,34 +1963,34 @@ WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id 
 -- D-31: quyền duyệt (cột A) – chỉ thêm khi chưa có dòng.
 DECLARE @A TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(200));
 INSERT INTO @A VALUES
-    (N'CEO', N'#/approve/menu-recipe'),
-    (N'CEO', N'#/approve/crm-price-policy'),
-    (N'CEO', N'#/approve/crm-contract'),
-    (N'CEO', N'#/approve/menu-menu'),
-    (N'CEO', N'#/approve/menu-change-request'),
-    (N'CEO', N'#/approve/scm-pr'),
-    (N'CEO', N'#/approve/scm-po'),
-    (N'CEO', N'#/approve/scm-adjustment'),
-    (N'CEO', N'#/approve/scm-stockcount'),
-    (N'CEO', N'#/approve/prod-plan'),
-    (N'CEO', N'#/approve/hr-leave'),
-    (N'CEO', N'#/approve/hr-swap'),
-    (N'CEO', N'#/approve/wf-inbox'),
-    (N'COO', N'#/approve/menu-recipe'),
-    (N'COO', N'#/approve/menu-menu'),
-    (N'COO', N'#/approve/menu-change-request'),
-    (N'COO', N'#/approve/scm-pr'),
-    (N'COO', N'#/approve/scm-po'),
-    (N'COO', N'#/approve/scm-adjustment'),
-    (N'COO', N'#/approve/scm-stockcount'),
-    (N'COO', N'#/approve/prod-plan'),
-    (N'COO', N'#/approve/hr-leave'),
-    (N'COO', N'#/approve/hr-swap'),
-    (N'COO', N'#/approve/wf-inbox'),
-    (N'FIN-HR', N'#/approve/hr-leave'),
-    (N'FIN-HR', N'#/approve/hr-swap'),
-    (N'FIN-HR', N'#/approve/wf-inbox'),
-    (N'QA', N'#/approve/qc-inspection');
+    (N'CEO', N'#/wf-inbox?type=menu-recipe'),
+    (N'CEO', N'#/wf-inbox?type=crm-price-policy'),
+    (N'CEO', N'#/wf-inbox?type=crm-contract'),
+    (N'CEO', N'#/wf-inbox?type=menu-menu'),
+    (N'CEO', N'#/wf-inbox?type=menu-change-request'),
+    (N'CEO', N'#/wf-inbox?type=scm-pr'),
+    (N'CEO', N'#/wf-inbox?type=scm-po'),
+    (N'CEO', N'#/wf-inbox?type=scm-adjustment'),
+    (N'CEO', N'#/wf-inbox?type=scm-stockcount'),
+    (N'CEO', N'#/wf-inbox?type=prod-plan'),
+    (N'CEO', N'#/wf-inbox?type=hr-leave'),
+    (N'CEO', N'#/wf-inbox?type=hr-swap'),
+    (N'CEO', N'#/wf-inbox?type=wf-inbox'),
+    (N'COO', N'#/wf-inbox?type=menu-recipe'),
+    (N'COO', N'#/wf-inbox?type=menu-menu'),
+    (N'COO', N'#/wf-inbox?type=menu-change-request'),
+    (N'COO', N'#/wf-inbox?type=scm-pr'),
+    (N'COO', N'#/wf-inbox?type=scm-po'),
+    (N'COO', N'#/wf-inbox?type=scm-adjustment'),
+    (N'COO', N'#/wf-inbox?type=scm-stockcount'),
+    (N'COO', N'#/wf-inbox?type=prod-plan'),
+    (N'COO', N'#/wf-inbox?type=hr-leave'),
+    (N'COO', N'#/wf-inbox?type=hr-swap'),
+    (N'COO', N'#/wf-inbox?type=wf-inbox'),
+    (N'FIN-HR', N'#/wf-inbox?type=hr-leave'),
+    (N'FIN-HR', N'#/wf-inbox?type=hr-swap'),
+    (N'FIN-HR', N'#/wf-inbox?type=wf-inbox'),
+    (N'QA', N'#/wf-inbox?type=qc-inspection');
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), g.Id, m.Id, 1, 0, 1, 0, 0, 0, 0, @Now, @SeedBy, 0
 FROM @A a

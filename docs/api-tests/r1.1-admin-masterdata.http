@@ -51,7 +51,7 @@ Content-Type: application/x-www-form-urlencoded
 
 ListPermission=[{"id":"00000000-0000-0000-0000-000000000000","userGroupId":"<UserGroupId>","objectMenuId":"<ObjectMenuId>","allowEdit":true}]
 
-### Quyền duyệt (D-31): cấp allowEdit trên mục "Duyệt – …" (MetaLink #/approve/<screen-id>) ở ma trận trên.
+### Quyền duyệt (D-31): cấp allowEdit trên mục "Duyệt – …" (MetaLink #/wf-inbox?type=<screen-id>) ở ma trận trên.
 
 ### Xem trước quyền của nhóm (chỉ admin)
 GET {{base}}/api/UserRole/GetPreview?userGroupId=<UserGroupId>
