@@ -7,7 +7,8 @@
        (docs/reference/20261113_structure_db_appdelicare.sql). DB đã có bảng → BỎ QUA (không bao giờ sửa bảng có sẵn).
     2. Mọi stored procedure trong DB/sp/*.sql (CREATE OR ALTER).
     3. Tài khoản quản trị ban đầu (DB/seed/00_Admin_seed.sql) nếu có -AdminPassword và user chưa tồn tại.
-    4. Seed cấu hình: OrganizationUnit → ObjectMenu → tắt menu app cũ (D-37) → UserRole → Shift.
+    4. Seed cấu hình: OrganizationUnit → ObjectMenu → tắt menu app cũ (D-37) → UserRole → Shift → checklist mẻ SAMPLE_RETAINED (T17).
+  sqlcmd luôn chạy với -f 65001 (UTF-8) – thiếu cờ này tên tiếng Việt bị lỗi font khi ghi vào DB.
   KHÔNG chạy lên DB production khi chưa có checklist go-live (T48.2).
 .EXAMPLE
   # Staging trên LocalDB của máy anh (Windows Authentication)
@@ -80,30 +81,13 @@ if ($AdminPassword) {
     $salt = New-Object byte[] 16
     [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($salt)
     $kdf = New-Object Security.Cryptography.Rfc2898DeriveBytes -ArgumentList ([Text.Encoding]::UTF8.GetBytes((Plain $AdminPassword))), $salt, 100000, ([Security.Cryptography.HashAlgorithmName]::SHA256)
-    $hash = 'PBKDF2$100000
-    Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
-}
-
-foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "ObjectMenu_disable_legacy.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
-    Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
-    Write-Host "  + Seed $name"
-}
-Write-Host "== Xong."
- + [Convert]::ToBase64String($salt) + '
-    Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
-}
-
-foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "ObjectMenu_disable_legacy.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
-    Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
-    Write-Host "  + Seed $name"
-}
-Write-Host "== Xong."
- + [Convert]::ToBase64String($kdf.GetBytes(32))
+    $hash = 'PBKDF2$100000$' + [Convert]::ToBase64String($salt) + '$' + [Convert]::ToBase64String($kdf.GetBytes(32))
     $kdf.Dispose()
     Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
 }
 
-foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "ObjectMenu_disable_legacy.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
+# Thứ tự seed = DB/README.md mục "Pilot". Mọi seed chỉ THÊM phần chưa có (idempotent), cần tài khoản 'admin' (ghi CreatedBy).
+foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "ObjectMenu_disable_legacy.sql", "UserRole_seed.sql", "Shift_seed.sql", "FoodSafetyChecklist_seed.sql")) {
     Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
     Write-Host "  + Seed $name"
 }

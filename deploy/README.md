@@ -4,8 +4,8 @@ Tài liệu này dành cho anh hoặc IT. Có 3 cách chạy staging, chọn 1. 
 
 | Cách | Khi nào dùng | Đã chạy thử |
 |---|---|---|
-| **A. Trên máy anh (LocalDB)** | Thử nhanh, UAT nội bộ | ✅ 2026-11-14 |
-| **B. IIS (Windows Server)** | Nếu chọn IIS cho production | ✅ phần publish + chạy bản publish ở chế độ Staging; chưa cài lên IIS thật |
+| **A. Trên máy anh (LocalDB)** | Thử nhanh, UAT nội bộ | ✅ 2026-11-14; cập nhật 2026-11-17 (backend Pilot + giao diện Angular, mục 8–9) |
+| **B. IIS (Windows Server)** | Nếu chọn IIS cho production | ✅ phần publish (`Publish-Iis.ps1`, lần cuối 2026-11-17) + chạy bản publish ở chế độ Staging; chưa cài lên IIS thật (cần quyền admin – anh / IT làm theo mục 4) |
 | **C. Docker (SQL Server + API)** | Nếu chọn Docker / Linux | ⚠️ Chưa chạy được: máy dev chưa cài Docker |
 
 Sau khi chạy, kiểm tra theo mục 6.
@@ -123,3 +123,23 @@ File thử nhanh bằng VS Code REST Client: `docs/api-tests/*.http`.
 | Đăng nhập trả 400 "Tài khoản hoặc mật khẩu không đúng" | Sai mật khẩu; tạo lại admin trên DB mới bằng `-AdminPassword` |
 | IIS lỗi 500.19 / 500.31 | Chưa cài Hosting Bundle hoặc chưa `iisreset` |
 | Script PowerShell báo lỗi chuỗi tiếng Việt | Dùng đúng file trong repo (đã lưu UTF-8 BOM); không lưu lại bằng Notepad dạng ANSI |
+
+## 8. Giao diện Angular trên staging (Pilot, cách A)
+
+Angular gọi API bằng đường dẫn tương đối `/api/` và dùng route dạng `#/…` → chỉ cần đặt bản build vào `wwwroot` của API (API đã bật `UseDefaultFiles` + `UseStaticFiles`), cùng một địa chỉ, không cần CORS / proxy.
+
+```powershell
+cd <repo>\app-delicare-client
+npm ci            # lần đầu
+npm run build     # ra dist\w3crm\browser
+Copy-Item .\dist\w3crm\browser\* C:\Deploy\delicare-staging\wwwroot -Recurse -Force   # giữ nguyên Import / Logs / Template có sẵn
+```
+Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): chép giống vậy vào `wwwroot` của site. Docker (cách C): `app-delicare-client/Dockerfile` + `nginx.conf` (nginx chuyển `/api/` sang container API).
+
+## 9. Cập nhật staging (lặp lại mỗi đợt, đã làm 2026-11-17 sau backend Pilot)
+
+1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (chạy mọi SP + seed theo `DB/README.md` mục "Pilot"; không đụng bảng / dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
+2. Dừng bản API đang chạy (cửa sổ `dotnet AppDelicare.WebApi.dll`), rồi publish đè: `./deploy/iis/Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging` (hoặc lệnh `dotnet publish` ở mục 3).
+3. Build + chép Angular (mục 8).
+4. Chạy: `. ./deploy/staging.local.env.ps1; cd C:\Deploy\delicare-staging; dotnet AppDelicare.WebApi.dll --urls http://localhost:5200`.
+5. Kiểm tra mục 6 + mở `http://localhost:5200/`; luồng Pilot: `docs/api-tests/pilot-flow.http` (đổi `@base = http://localhost:5200`, `@password` = mật khẩu admin staging) và `docs/claude/UAT_CHECKLIST.md` mục PILOT.

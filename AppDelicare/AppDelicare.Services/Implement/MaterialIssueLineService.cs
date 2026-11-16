@@ -27,11 +27,11 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@MaterialIssueId", request.MaterialIssueId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@MaterialIssueId", request.MaterialIssueId == Guid.Empty ? null : request.MaterialIssueId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 dynamicParameters.Add("@MaterialLotId", request.MaterialLotId);
                 //dynamicParameters.Add("@Quantity", request.Quantity);
-                dynamicParameters.Add("@UnitId", request.UnitId);
+                dynamicParameters.Add("@UnitId", request.UnitId == Guid.Empty ? null : request.UnitId);
                 //dynamicParameters.Add("@Note", request.Note);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);

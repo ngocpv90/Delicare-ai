@@ -125,5 +125,29 @@ namespace AppDelicare.Tests.Common
                 await db.ApprovalRequest.Where(a => list.Contains(a.Id) && a.BusinessType == "[DEMO]-T11").ExecuteDeleteAsync();
             }
         }
+
+        /// <summary>
+        /// T50R1 (lỗi tìm thấy khi chạy luồng Pilot trên DB dev): phiếu nhập 2 dòng ghi sổ → 2 lô cùng số NL-…-01 vì mã thứ 2 sinh trước khi lô thứ 1 được lưu.
+        /// Nay mã đã gán cho bản ghi đang theo dõi (chưa lưu) cũng được tính. Chạy trong transaction rồi ROLLBACK.
+        /// </summary>
+        [SkippableFact]
+        public async Task Numbers_generated_in_a_loop_before_saving_are_distinct_on_sql_server()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            var day = new DateTime(2099, 12, 30);
+            using var scope = factory.Services.CreateScope();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var numbers = scope.ServiceProvider.GetRequiredService<IDocumentNumberService>();
+            await using var tx = await unitOfWork.DbContext.Database.BeginTransactionAsync();
+            var lots = new List<string>();
+            for (int i = 0; i < 3; i++)
+            {
+                string no = await numbers.NextAsync(DocumentKind.MaterialLot, day, "T50R1");
+                lots.Add(no);
+                unitOfWork.MaterialLotRepository.Add(new MaterialLot { Id = Guid.NewGuid(), LotNumber = no, LotNo = no, IngredientId = Guid.NewGuid(), Status = "Available", Note = "[DEMO]" });
+            }
+            lots.Should().Equal("NL-991230-T50R1-01", "NL-991230-T50R1-02", "NL-991230-T50R1-03");
+            await tx.RollbackAsync();
+        }
     }
 }

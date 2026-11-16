@@ -4,7 +4,7 @@ namespace AppDelicare.Model.SearchRequest
 {
 	public class MaterialLotSearchRequest : BaseSearchRequest
 	{
-		public Guid IngredientId { get; set; }
+		public Guid? IngredientId { get; set; }
 		public Guid? SupplierId { get; set; }
 		public Guid? GoodsReceiptLineId { get; set; }
 		public string? LotNumber { get; set; }

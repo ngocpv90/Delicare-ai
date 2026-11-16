@@ -35,8 +35,8 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@WarehouseId", request.WarehouseId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@WarehouseId", request.WarehouseId == Guid.Empty ? null : request.WarehouseId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 dynamicParameters.Add("@MaterialLotId", request.MaterialLotId);
                 dynamicParameters.Add("@StorageLocationId", request.StorageLocationId);
                 dynamicParameters.Add("@TransactionNumber", request.TransactionNumber);
@@ -44,7 +44,7 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@TransactionDate", request.TransactionDate);
                 //dynamicParameters.Add("@QuantityIn", request.QuantityIn);
                 //dynamicParameters.Add("@QuantityOut", request.QuantityOut);
-                dynamicParameters.Add("@UnitId", request.UnitId);
+                dynamicParameters.Add("@UnitId", request.UnitId == Guid.Empty ? null : request.UnitId);
                 dynamicParameters.Add("@ReferenceType", request.ReferenceType);
                 dynamicParameters.Add("@ReferenceId", request.ReferenceId);
                 //dynamicParameters.Add("@Reason", request.Reason);
@@ -219,8 +219,8 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@WarehouseId", request.WarehouseId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@WarehouseId", request.WarehouseId == Guid.Empty ? null : request.WarehouseId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 dynamicParameters.Add("@MaterialLotId", request.MaterialLotId);
                 dynamicParameters.Add("@TransactionType", request.TransactionType);
                 dynamicParameters.Add("@ReferenceType", request.ReferenceType);

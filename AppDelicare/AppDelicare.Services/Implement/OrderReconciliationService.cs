@@ -54,7 +54,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@OrderId", request.OrderId);
+                dynamicParameters.Add("@OrderId", request.OrderId == Guid.Empty ? null : request.OrderId);
                 dynamicParameters.Add("@ProofOfDeliveryId", request.ProofOfDeliveryId);
                 dynamicParameters.Add("@ReconciliationDate", request.ReconciliationDate);
                 //dynamicParameters.Add("@OrderedQuantity", request.OrderedQuantity);

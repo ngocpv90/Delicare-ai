@@ -27,7 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ContainerReturnId", request.ContainerReturnId);
+                dynamicParameters.Add("@ContainerReturnId", request.ContainerReturnId == Guid.Empty ? null : request.ContainerReturnId);
                 dynamicParameters.Add("@InspectionDate", request.InspectionDate);
                 dynamicParameters.Add("@InspectorEmployeeId", request.InspectorEmployeeId);
                 dynamicParameters.Add("@Result", request.Result);

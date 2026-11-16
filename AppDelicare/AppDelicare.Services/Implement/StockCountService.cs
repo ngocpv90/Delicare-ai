@@ -40,7 +40,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@WarehouseId", request.WarehouseId);
+                dynamicParameters.Add("@WarehouseId", request.WarehouseId == Guid.Empty ? null : request.WarehouseId);
                 dynamicParameters.Add("@CountNumber", request.CountNumber);
                 dynamicParameters.Add("@CountDate", request.CountDate);
                 //dynamicParameters.Add("@CountType", request.CountType);

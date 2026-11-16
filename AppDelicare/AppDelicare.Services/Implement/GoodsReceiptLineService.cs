@@ -27,12 +27,12 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@GoodsReceiptId", request.GoodsReceiptId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@GoodsReceiptId", request.GoodsReceiptId == Guid.Empty ? null : request.GoodsReceiptId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 //dynamicParameters.Add("@ReceivedQuantity", request.ReceivedQuantity);
                 //dynamicParameters.Add("@AcceptedQuantity", request.AcceptedQuantity);
                 //dynamicParameters.Add("@RejectedQuantity", request.RejectedQuantity);
-                dynamicParameters.Add("@UnitId", request.UnitId);
+                dynamicParameters.Add("@UnitId", request.UnitId == Guid.Empty ? null : request.UnitId);
                 dynamicParameters.Add("@LotNumber", request.LotNumber);
                 dynamicParameters.Add("@ManufactureDate", request.ManufactureDate);
                 dynamicParameters.Add("@ExpiryDate", request.ExpiryDate);

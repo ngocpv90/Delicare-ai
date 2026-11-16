@@ -52,7 +52,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) · `DONE(PILOT)` 2026-11-16 (backend) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
 | P7 | T17 – Sản xuất (bản theo mẻ) → **FE-P7** · `DONE(PILOT)` 2026-11-16 (backend) | Kế hoạch mẻ `ME-…`, cấp NL cho mẻ (FEFO), bắt đầu / xong mẻ, **nhiệt độ lõi ≥ 70°C (chặn đóng gói)**, **lưu mẫu** (SAMPLE_RETAINED), sản lượng + hao hụt. In **Phiếu sản xuất**. Công đoạn theo tổ → sau Pilot. |
 | P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** · `DONE(PILOT)` 2026-11-16 (backend) | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
-| P9 | T50R1 (phần Pilot) + T48.1 – **kết thúc đợt backend, dừng báo anh** | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
+| P9 | T50R1 (phần Pilot) + T48.1 – **kết thúc đợt backend, dừng báo anh** · `DONE(PILOT)` 2026-11-17 (backend: `pilot-flow.http` chạy thật trên DB dev, test HTTP end-to-end, UAT_CHECKLIST PILOT, staging backend + bản build Angular; phần thao tác trên giao diện của UAT → sau FE, D-40) | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
 
 **`DEFERRED(PILOT)` – làm sau khi chạy thử, lúc chạy thử dùng cách thay thế:**
 
@@ -465,7 +465,7 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
   - [x] Build 0 lỗi, test xanh; Swagger / route không đổi.
 
 ### T48 – Triển khai (staging → production) · phụ thuộc T03 · `TODO`
-- **T48.1 staging (làm ngay trong R1.0):** `DONE` (2026-11-14 – IIS / LocalDB chạy thử OK; Docker chưa chạy được vì máy dev chưa có Docker)
+- **T48.1 staging (làm ngay trong R1.0):** `DONE` (2026-11-14 – IIS / LocalDB chạy thử OK; Docker chưa chạy được vì máy dev chưa có Docker). **Cập nhật 2026-11-17 (P9):** staging LocalDB chạy bản backend Pilot + bản build Angular trong `wwwroot` (deploy/README.md mục 8–9); IIS thật vẫn chờ anh / IT (cần quyền admin).
   - Cấu hình môi trường `Development` / `Staging` / `Production` (appsettings theo môi trường, bí mật qua biến môi trường).
   - **D-15 chưa chốt → không được chặn.** Chuẩn bị cả hai cách ở mức tối thiểu, không phụ thuộc hạ tầng cụ thể:
     - (a) **IIS:** `dotnet publish -c Release`, web.config, hướng dẫn cài .NET 8 Hosting Bundle.
@@ -485,7 +485,7 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
 - Kiểm tra trùng mã, báo lỗi từng dòng, idempotent theo mã.
 - AC: nạp file mẫu thành công; nạp lại không trùng; dòng lỗi được báo rõ.
 
-### T50R1 – Tài liệu API và UAT backend · song song các lát · `TODO`
+### T50R1 – Tài liệu API và UAT backend · song song các lát · `TODO` (phần Pilot `DONE(PILOT)` 2026-11-17: `docs/api-tests/pilot-flow.http`, `UAT_CHECKLIST.md` mục PILOT, `docs/frontend-handoff/README.md`, test `Pilot/PilotFlowSqlServerTests`; các lát R1 khác sau Pilot)
 - `docs/claude/UAT_CHECKLIST.md`: mỗi lát có kịch bản thử **bằng API** (vai trò / token, request theo thứ tự, kết quả mong đợi), lấy từ luồng trong `DELICARE_Business_Workflow.md`.
 - `docs/api-tests/*.http` (hoặc Postman collection): chạy được từng luồng end-to-end.
 - `docs/frontend-handoff/`: mỗi màn hình mockup ↔ danh sách endpoint, input / output mẫu, để team Angular dùng khi anh giao frontend.
