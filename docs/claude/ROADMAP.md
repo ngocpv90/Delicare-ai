@@ -21,7 +21,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | FE | **FE-0 → FE-3** (D-35) | Frontend cho các màn hình **đã có API**: khung ứng dụng, quản trị P0, danh mục P1, món / công thức / giá P2, nhập Excel. Xem mục FE bên dưới. |
 | P1 | T11 – Mã chứng từ | Đủ các loại mã dùng trong luồng (PH-, XN-, PO-, NL-, ME-, CX-, PA-, DN-). |
 | P2 | T12 – Duyệt **1 cấp** → **FE-P2** | Tạo / duyệt / từ chối / thực thi; quyền duyệt = mục menu "Phê duyệt" (D-31). Chỉ áp cho **PO** và **đơn sửa lệch > 30%**. Nhiều cấp, hết hạn tự động → sau Pilot. |
-| P3 | T13 + T46B.1 – Thực đơn tuần + Đơn hàng → **FE-P3** | Thực đơn tuần (buổi × lựa chọn, FC%); nhập suất; action **`Lock`** (bấm tay) áp hạn 20h D-1; tính tiền theo ContractMeal / PricePolicie; in **Thực đơn gửi khách**. |
+| P3 | T13 + T46B.1 – Thực đơn tuần + Đơn hàng → **FE-P3** · `DONE(PILOT)` 2026-11-16 (backend) | Thực đơn tuần (buổi × lựa chọn, FC%); nhập suất; action **`Lock`** (bấm tay) áp hạn 20h D-1; tính tiền theo ContractMeal / PricePolicie; in **Thực đơn gửi khách**. |
 | P4 | T16 – Sổ kho → **FE-P4** | IN / OUT / ADJUSTMENT / REVERSAL, tồn, gợi ý lô FEFO/FIFO (D-24), chặn lô hết hạn / KHONG_DAT. Kiểm kê: ghi nhận được, **duyệt lệch > 2% → sau Pilot** (admin điều chỉnh tay). |
 | P5 | T14 – Tính nhu cầu NL | Action **`Calculate`** (bấm tay): đơn đã khóa × công thức đã khóa × hao hụt, trừ tồn khả dụng (+ SafetyStock theo D-12 đề xuất) → PurchaseRequest nháp, gợi ý NCC. |
 | P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
@@ -208,7 +208,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Viết trong `ApprovalRequestService` / `ApprovalDecisionService` cũ (+ service dùng chung `ApprovalService` nếu cần, cùng mẫu). API: `GET api/ApprovalRequest/GetMyPending`, `POST api/ApprovalRequest/Decide`.
 - AC: test tạo → duyệt → thực thi; từ chối không ghi; payload bị sửa thì từ chối.
 
-### T13 – Đơn hàng · phụ thuộc T12 · `TODO`
+### T13 – Đơn hàng · phụ thuộc T12 · `DONE(PILOT)` (2026-11-16: máy trạng thái, giờ chốt 20h D-1, lệch suất > 30% → duyệt, giá, số PH-; job, lệch so lịch sử 4 tuần, sửa sau giờ chốt qua duyệt, dự báo → DEFERRED(PILOT))
 - Máy trạng thái Order. Submit / Confirm / Cancel. Kiểm tra giờ chốt 20h D-1. Kiểm tra lệch suất > 30%. Tính giá theo ContractMeal / PricePolicie.
 - Chức năng theo spec mục P3 trong `DELICARE_API_Specification.md`, viết vào `OrderService` / `OrderLineService` + action `OrderController.Submit / Confirm / Cancel` (khung cũ).
 - AC: test các nhánh cutoff và deviation; số tổng của đơn đúng.
@@ -393,7 +393,7 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
 - **T45B.5 (`DONE` 2026-11-15):** `docs/frontend-handoff/P0-P2.md` (265 action sinh từ code), `MetaData/GetStatuses` (47 bộ, CodeGen từ STATUS_CATALOG), `MetaData/GetReferenceLists` (appsettings ReferenceLists), `.http`, UAT R1.1. Nội dung gốc: `docs/frontend-handoff/P0-P2.md` (màn hình → chức năng spec → action cũ, request / response mẫu) + `.http`; danh mục trạng thái (STATUS_CATALOG) và danh sách tham chiếu cho dropdown viết thành action kiểu cũ (vd. controller không gắn bảng theo mẫu `DashboardController`).
 - AC: bảng đối chiếu `docs/frontend-handoff/P0-P2.md` (màn hình → endpoint → trạng thái); test tích hợp cho mỗi nhóm; file `.http`.
 
-### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `TODO`
+### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `TODO` (T46B.1 `DONE(PILOT)` 2026-11-16: thực đơn tuần + FC%, phân công, đơn hàng, in Thực đơn gửi khách; hợp đồng Submit / Terminate, dự báo, đổi món → sau Pilot)
 - T46B.1 P3 (hợp đồng, thực đơn tuần buổi × lựa chọn + giá vốn / FC, đơn hàng theo khách → địa điểm → vị trí). T46B.2 P4 (mua hàng: báo giá → so sánh → PO; kho). T46B.3 P5 (kế hoạch sản xuất, giá thành).
 - **API in / xuất file** theo mẫu thật (BUSINESS_DOCS.md), dùng GemBox / Excel export có sẵn: Thực đơn gửi khách, Phiếu trước sản xuất, Phiếu sản xuất, Đơn đặt hàng NCC. Header pháp nhân lấy từ cấu hình. Trả file (docx / xlsx / pdf).
 - AC: như T45B cho P3–P5 (khung cũ, D-30); mỗi mẫu in có test sinh file không lỗi. In / xuất file: action `Print*` / `Export*` trên controller của chứng từ, dùng `ExportToExcelHelper` / `TemplateExcelHelper` / GemBox có sẵn.

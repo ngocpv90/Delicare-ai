@@ -22,6 +22,13 @@ namespace AppDelicare.Services.Interface
         /// <summary>Thực thi khi được duyệt.</summary>
         Task<string?> ApproveAsync(Guid businessId, Guid actorUserId, string? note);
 
+        /// <summary>
+        /// T13: thực thi khi được duyệt, kèm <paramref name="proposalJson"/> = nội dung đề xuất lưu lúc gửi (vd. số suất mới của đơn lệch &gt; 30%).
+        /// Mặc định bỏ qua đề xuất và gọi bản 3 tham số – handler cũ không phải sửa.
+        /// </summary>
+        Task<string?> ApproveAsync(Guid businessId, Guid actorUserId, string? note, string? proposalJson)
+            => ApproveAsync(businessId, actorUserId, note);
+
         /// <summary>Xử lý khi bị từ chối (lý do bắt buộc).</summary>
         Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note);
     }

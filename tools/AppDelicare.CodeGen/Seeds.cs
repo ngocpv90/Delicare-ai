@@ -59,8 +59,15 @@ public static partial class Seeds
             f.GetProperty("ph").GetString()!,
             f.GetProperty("grp").GetString()!,
             f.TryGetProperty("table", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null,
-            f.TryGetProperty("types", out var ty) && ty.EnumerateArray().Any(x => x.GetString() == "AP"))).ToList();
+            (f.TryGetProperty("types", out var ty) && ty.EnumerateArray().Any(x => x.GetString() == "AP"))
+                || ExtraApprovable.Contains(f.GetProperty("id").GetString()!))).ToList();
     }
+
+    /// <summary>
+    /// Màn hình cần mục "Duyệt …" dù catalog.js không ghi loại AP: <c>crm-order</c> – T13 duyệt đơn sửa lệch suất &gt; 30%
+    /// (ApprovalRequest.BusinessType ORDER_DEVIATION, ROADMAP Pilot P2/P3).
+    /// </summary>
+    private static readonly HashSet<string> ExtraApprovable = new(StringComparer.OrdinalIgnoreCase) { "crm-order" };
 
     public static List<OrgUnit> LoadOrgUnits(string root)
     {

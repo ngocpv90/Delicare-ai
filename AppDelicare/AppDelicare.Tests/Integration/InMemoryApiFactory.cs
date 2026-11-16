@@ -58,8 +58,14 @@ namespace AppDelicare.Tests.Integration
             {
                 services.RemoveAll<DbContextOptions<DatabaseContext>>();
                 services.AddDbContext<DatabaseContext>(o => o.UseInMemoryDatabase(_databaseName));
+                // T13: đồng hồ điều khiển được (mặc định = giờ VN thật, không đổi hành vi test cũ).
+                services.RemoveAll<IClock>();
+                services.AddSingleton<IClock>(Clock);
             });
         }
+
+        /// <summary>T13: đặt <c>Clock.FixedNow</c> để thử giờ chốt đơn.</summary>
+        public TestClock Clock { get; } = new();
 
         private readonly object _seedGate = new();
         private bool _seeded;

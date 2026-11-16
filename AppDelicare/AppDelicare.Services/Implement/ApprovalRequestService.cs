@@ -230,10 +230,43 @@ namespace AppDelicare.Services.Implement
             => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(payload ?? string.Empty)));
 
         /// <summary>
+        /// T13: PayloadJson có đề xuất = {"state": "&lt;nội dung chuỗi&gt;", "proposal": "&lt;đề xuất chuỗi&gt;"} (cả hai lưu dạng chuỗi để hash
+        /// nội dung đúng từng byte). Không có đề xuất → PayloadJson = nội dung như T12 (tương thích ngược).
+        /// </summary>
+        private const string StateKey = "state";
+        private const string ProposalKey = "proposal";
+
+        private static string? WrapPayload(string? state, string? proposal)
+            => proposal == null ? state : Newtonsoft.Json.JsonConvert.SerializeObject(new Dictionary<string, string?> { [StateKey] = state, [ProposalKey] = proposal });
+
+        /// <summary>Tách PayloadJson đã lưu thành (nội dung, đề xuất). Định dạng cũ → (PayloadJson, null).</summary>
+        public static (string? State, string? Proposal) UnwrapPayload(string? payloadJson)
+        {
+            if (string.IsNullOrEmpty(payloadJson) || !payloadJson.TrimStart().StartsWith('{'))
+            {
+                return (payloadJson, null);
+            }
+            try
+            {
+                var obj = Newtonsoft.Json.Linq.JObject.Parse(payloadJson);
+                if (obj.Count == 2 && obj[StateKey] is Newtonsoft.Json.Linq.JValue { Type: Newtonsoft.Json.Linq.JTokenType.String or Newtonsoft.Json.Linq.JTokenType.Null } s
+                    && obj[ProposalKey] is Newtonsoft.Json.Linq.JValue { Type: Newtonsoft.Json.Linq.JTokenType.String } p)
+                {
+                    return ((string?)s.Value, (string?)p.Value);
+                }
+            }
+            catch (Newtonsoft.Json.JsonException)
+            {
+                // không phải JSON hợp lệ → coi như nội dung cũ
+            }
+            return (payloadJson, null);
+        }
+
+        /// <summary>
         /// Tạo yêu cầu duyệt (mã XN-) + 1 bước duyệt, lưu nội dung được duyệt. Gọi TRONG transaction của nghiệp vụ gửi duyệt.
         /// Đã có yêu cầu Pending cho cùng nghiệp vụ → trả lỗi.
         /// </summary>
-        public async Task<(ApprovalRequest? Request, string? Error)> CreateAsync(string businessType, Guid businessId)
+        public async Task<(ApprovalRequest? Request, string? Error)> CreateAsync(string businessType, Guid businessId, string? proposalJson = null)
         {
             var handler = HandlerOf(businessType);
             if (handler == null)
@@ -256,7 +289,7 @@ namespace AppDelicare.Services.Implement
                 RequestedAt = _clock.Now,
                 RequestedBy = actor,
                 CorrelationId = _currentActor.CorrelationId.Length <= 100 ? _currentActor.CorrelationId : _currentActor.CorrelationId[..100],
-                PayloadJson = await handler.BuildPayloadAsync(businessId),
+                PayloadJson = WrapPayload(await handler.BuildPayloadAsync(businessId), proposalJson),
             };
             _unitOfWork.ApprovalRequestRepository.Add(request);
             _unitOfWork.ApprovalStepRepository.Add(new ApprovalStep
@@ -368,7 +401,9 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.RejectReasonRequired;
             }
             string current = await handler.BuildPayloadAsync(businessId) ?? string.Empty;
-            string submittedHash = Hash(approval.PayloadJson);
+            // T13: hash chỉ tính trên nội dung nghiệp vụ (state); đề xuất (nếu có) chuyển cho handler khi duyệt.
+            var (submittedState, proposal) = UnwrapPayload(approval.PayloadJson);
+            string submittedHash = Hash(submittedState);
             if (request.Approve && Hash(current) != submittedHash)
             {
                 return ConstantHelper.Message.ApprovalPayloadChanged;
@@ -399,7 +434,7 @@ namespace AppDelicare.Services.Implement
             approval.CompletedAt = now;
             _unitOfWork.ApprovalRequestRepository.Update(approval);
             string? executed = request.Approve
-                ? await handler.ApproveAsync(businessId, actor, note)
+                ? await handler.ApproveAsync(businessId, actor, note, proposal)
                 : await handler.RejectAsync(businessId, actor, note!);
             if (executed != null)
             {

@@ -114,6 +114,38 @@
             public static readonly string ApprovalNotPending = "Yêu cầu không còn chờ duyệt (trạng thái: {0})";
             public static readonly string ApprovalNoRight = "Bạn không có quyền duyệt loại yêu cầu này";
             public static readonly string ApprovalPayloadChanged = "Nội dung chứng từ đã thay đổi sau khi gửi duyệt – gửi duyệt lại";
+            // T13 – thực đơn tuần, phân công thực đơn, đơn hàng (P3)
+            public static readonly string StatusActionInvalid = "Chỉ {0} khi {1} ở trạng thái {2} (hiện tại: {3})";
+            public static readonly string MenuLineDayOfWeekRange = "Thứ phải trong khoảng 1 (Thứ 2) – 7 (Chủ nhật)";
+            public static readonly string MenuLineOptionRange = "Lựa chọn (SequenceNo) phải trong khoảng 1 – 9";
+            public static readonly string MenuLineMealTypeRequired = "Dòng thực đơn phải có loại suất (MealType)";
+            public static readonly string MenuDishNoLockedRecipe = "Cảnh báo: món {0} chưa có công thức đang khóa – chưa tính được giá vốn";
+            public static readonly string MenuNeedsLine = "Thực đơn phải có ít nhất 1 món";
+            public static readonly string MenuPublishMissingDays = "Chưa đủ món để công bố – thiếu: {0}";
+            public static readonly string EffectiveRangeInvalid = "Ngày hiệu lực từ phải nhỏ hơn hoặc bằng ngày hiệu lực đến";
+            public static readonly string MenuAssignmentOverlap = "Chồng thời gian hiệu lực với phân công thực đơn khác cùng khách / điểm giao / loại suất";
+            public static readonly string MenuAssignmentContractMismatch = "Hợp đồng không thuộc khách hàng này";
+            public static readonly string MenuAssignmentMealTypeNotInContract = "Loại suất {0} không có trong suất của hợp đồng";
+            public static readonly string MenuAssignmentLocationMismatch = "Điểm giao không thuộc khách hàng này";
+            public static readonly string MenuNotAssigned = "Không có thực đơn được gán cho khách / điểm giao / loại suất / ngày này";
+            public static readonly string NoActiveContract = "Khách hàng không có hợp đồng đang hiệu lực tại ngày {0}";
+            public static readonly string ContractNotActiveOnDate = "Hợp đồng không ở trạng thái hiệu lực tại ngày {0}";
+            public static readonly string OrderAfterCutoff = "Đã quá giờ chốt đơn ({0}) cho ngày ăn {1} – không {2} được. Cần thay đổi sau giờ chốt: liên hệ điều phối";
+            public static readonly string OrderCutoffNotReached = "Chưa tới giờ chốt đơn ({0}) cho ngày ăn {1}";
+            public static readonly string OrderNeedsLine = "Đơn phải có ít nhất 1 dòng số suất lớn hơn 0";
+            public static readonly string OrderQuantityNegative = "Số suất không được âm";
+            public static readonly string OrderLineLocationMismatch = "Mỗi đơn chỉ cho 1 điểm giao – dòng có điểm giao khác đầu đơn";
+            public static readonly string OrderLineDuplicate = "Trùng dòng suất (cùng suất hợp đồng và ca)";
+            public static readonly string OrderContractMealInvalid = "Suất hợp đồng không thuộc hợp đồng của đơn";
+            public static readonly string OrderLineNotInOrder = "Dòng {0} không thuộc đơn này";
+            public static readonly string OrderLineIncomplete = "Mọi dòng phải có loại suất, ca và số suất lớn hơn 0";
+            public static readonly string OrderDuplicate = "Đã có đơn {0} cho khách / điểm giao / ngày ăn này – sửa đơn đó thay vì tạo mới";
+            public static readonly string OrderShiftNotFound = "Không xác định được ca giao cho loại suất {0} – chọn ca";
+            public static readonly string OrderCancelReasonRequired = "Hủy đơn phải ghi lý do";
+            public static readonly string OrderLineCrudBlocked = "Dòng đơn chỉ sửa qua Order/Create và Order/UpdateLines (tính lại tiền, giờ chốt, lệch suất)";
+            public static readonly string OrderInsertBlocked = "Tạo đơn qua Order/Create (sinh số PH-, tính giá, thực đơn, giờ chốt)";
+            public static readonly string OrderDeviationRequested = "Số suất lệch {0}% (> {1}%) so với đơn đã xác nhận – đã gửi duyệt {2}, số mới chỉ ghi khi được duyệt";
+            public static readonly string OrderDeviationPending = "Đơn đang có yêu cầu duyệt lệch suất {0} – chờ duyệt / từ chối trước khi sửa tiếp";
         }
 
         public class TypeSave

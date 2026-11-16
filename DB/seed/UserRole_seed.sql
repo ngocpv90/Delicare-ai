@@ -1968,6 +1968,7 @@ INSERT INTO @A VALUES
     (N'CEO', N'#/wf-inbox?type=crm-contract'),
     (N'CEO', N'#/wf-inbox?type=menu-menu'),
     (N'CEO', N'#/wf-inbox?type=menu-change-request'),
+    (N'CEO', N'#/wf-inbox?type=crm-order'),
     (N'CEO', N'#/wf-inbox?type=scm-pr'),
     (N'CEO', N'#/wf-inbox?type=scm-po'),
     (N'CEO', N'#/wf-inbox?type=scm-adjustment'),

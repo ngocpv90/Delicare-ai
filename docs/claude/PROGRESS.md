@@ -607,3 +607,60 @@ DEFERRED(PILOT): duyệt nhiều cấp theo ApproverRoleCode, hết hạn tự �
 Handler PO và đơn lệch > 30% làm cùng T15 / T13.
 
 **Chưa cập nhật `DELICARE_API_Catalog.xlsx` (sheet API_Catalog)** cho T11 / T12 và các task trước: máy chưa có `openpyxl`, lệnh cài bị chặn – cần anh cho phép cài hoặc tự cập nhật.
+
+### T13 + T46B.1 – Thực đơn tuần + Đơn hàng (Pilot P3) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T13-order-menu` (worktree `wt-T11`, từ T12).
+
+Kế hoạch:
+1. Rà soát Menu / MenuLine / MenuAssignment / Order / OrderLine / Contract / ContractMeal → LEGACY_REVIEW mục (c).
+2. Mở rộng engine duyệt T12: đề xuất (proposal) đi kèm yêu cầu duyệt, tương thích ngược.
+3. Thực đơn tuần: lịch + giá vốn + FC%, luật dòng thực đơn, Approve / Publish / Expire / Clone.
+4. Phân công thực đơn: kiểm chồng hiệu lực, Resolve.
+5. Đơn hàng: mẫu tạo đơn, Create, UpdateLines, máy trạng thái, giờ chốt 20h D-1, lệch suất > 30% → duyệt.
+6. In "Thực đơn gửi khách" (.xlsx).
+7. Test (InMemory + SQL Server rollback), tài liệu bàn giao, `.http`.
+
+Rà soát: 7 bảng đều có CRUD sinh mã, chưa có nghiệp vụ; CRUD Menu / Order đổi được trạng thái, số, tổng tiền; OrderLine CRUD không tính lại tiền. `MenuLine` không có cột lựa chọn (GAP-MENU-01), `OrderLine` không có cột điểm giao (GAP-ORD-01). Chi tiết: LEGACY_REVIEW (c).
+
+Đã làm (đều trong file cũ, đúng mẫu 4.2):
+- **Engine duyệt (T12 mở rộng):** `IApprovalRequestService.CreateAsync(type, id, proposalJson = null)`; có đề xuất → `PayloadJson = {"state":"<nội dung>","proposal":"<đề xuất>"}` (lưu dạng chuỗi để hash đúng byte), hash chỉ trên state; không có đề xuất → định dạng T12. `IApprovalHandler.ApproveAsync(…, proposalJson)` là default method gọi bản cũ → `RecipeApprovalHandler` không phải sửa. Test T12 giữ xanh.
+- **Thực đơn (`MenuService` / `MenuController`, `MenuLineService`):** `GetCalendar` (hàng = loại suất × lựa chọn × nhóm món, cột thứ 1–7, giá vốn / suất từng món theo công thức khóa, tổng + FC% theo (loại suất, lựa chọn, thứ), giá bán nhập tay hoặc tra theo khách); `Approve` (quyền duyệt `menu-menu`), `Publish` (đủ món mỗi thứ trong hiệu lực × loại suất đã gán), `Expire`, `Clone`; Insert luôn Draft, Update / Delete theo trạng thái; dòng thực đơn: thứ 1–7, lựa chọn 1–9, chỉ khi Draft / Approved, món chưa có công thức khóa → cảnh báo không chặn.
+- **Phân công (`MenuAssignmentService` / `Controller`):** luật Insert / Update (hợp đồng thuộc khách + có loại suất, điểm giao thuộc khách, không chồng hiệu lực); `Resolve` (điểm giao → khách; chỉ thực đơn Approved / Published).
+- **Đơn hàng (`OrderService` / `OrderController`):** `GetNewTemplate`, `GetDetail` (allowedActions, cutoffAt), `Create` (JSON – có dòng lồng nhau; 1 transaction; số `PH-YYMMDD-NNNN` qua `IDocumentNumberService.Voucher` – theo BUSINESS_RULES §11, không dùng `DH-` của spec; ghi song song OrderNo / OrderNumber, Amount / LineAmount; MenuId qua Resolve; UnitPrice qua `PricePolicyService.Resolve`; ca mặc định `BusinessRules:MealTypeDefaultShift`; bỏ dòng 0; chặn trùng đơn khách / điểm / ngày), `UpdateLines` (JSON), `Submit`, `Confirm`, `Lock`, `LockByMealDate` (nút thay job 20h), `Cancel` (lý do bắt buộc). CRUD Insert chuyển sang Create; Update chỉ Note / DeliveryDate đơn Draft; Delete chỉ Draft (kèm dòng); OrderLine CRUD ghi → lỗi nghiệp vụ.
+- **Giờ chốt (PROPOSED, GAP-ORD-02):** ngày ăn D chốt lúc 20:00 ngày D-1 (giờ VN qua `IClock`, giờ từ `BusinessRulesOptions`). Từ giờ chốt: chặn Create / UpdateLines / Submit / Confirm / Cancel đơn Confirmed; cho Lock, Cancel đơn Draft / Submitted. `LockByMealDate` chỉ chạy khi đã tới giờ chốt, khóa đơn Confirmed, trả danh sách đơn chưa xác nhận + đơn còn yêu cầu lệch suất chờ duyệt.
+- **Lệch suất (PROPOSED, GAP-ORD-03):** đơn Confirmed, dòng bất kỳ lệch (mới − cũ) / cũ (trị tuyệt đối) > 30% (`PortionDeviationPctNeedApproval`) → không ghi, tạo ApprovalRequest `ORDER_DEVIATION` (handler `OrderDeviationApprovalHandler`, màn `crm-order`) kèm đề xuất; duyệt → ghi số mới + tính lại tiền; từ chối → không đổi (ghi chú lý do vào đơn); đơn bị chốt / sửa sau khi gửi → không duyệt được (hash). Đúng 30% ghi ngay. Khi đang chờ duyệt không sửa tiếp được.
+- **In "Thực đơn gửi khách" (T46B.1):** `Menu/ExportForCustomer` (.xlsx, ClosedXML) theo bố cục sheet "4. Menu_Sent" của file thật (chỉ lấy cấu trúc, không chép dữ liệu): tên / địa chỉ pháp nhân từ bảng `Company` (Menu.CompanyId, không có thì công ty đầu tiên), tiêu đề, dự án, hiệu lực, bảng Thứ × buổi (Món + Trọng lượng thành phẩm = `Dish.StandardServingSize`); nhiều lựa chọn → tiền tố "LC n:".
+- **Quyền:** theo `PermissionConvention` (Get* = View, Create / Clone = Add, ExportForCustomer = Export, còn lại Edit). Khai báo rõ: `Menu/Approve` = Approve (`menu-menu`), `Menu/Publish`, `Expire` = Edit, `Menu/Clone` = Add, `Order/Confirm`, `Lock`, `LockByMealDate`, `Cancel` = Edit trên `crm-order` (thao tác vận hành, không phải duyệt – PROPOSED). Duyệt lệch suất = mục menu mới `#/wf-inbox?type=crm-order` "Duyệt – Đơn đặt suất ăn" (CodeGen `Seeds.ExtraApprovable`, sinh lại `ObjectMenu_seed.sql` / `UserRole_seed.sql`: chỉ thêm, nhóm CEO theo ma trận).
+- Thông báo tiếng Việt mới trong `ConstantHelper.Message`; trạng thái trong `OrderStatus` / `MenuStatus` (`Model/Helper/OrderStatus.cs`).
+- Test: `TestClock` (IClock điều khiển được, mặc định giờ thật) đăng ký trong `InMemoryApiFactory`.
+
+File chính: `Services/Implement/{OrderService, MenuService, MenuLineService, MenuAssignmentService, OrderLineService, ApprovalRequestService}.cs`, `Services/Implement/Approval/OrderDeviationApprovalHandler.cs`, `Services/Interface/{IOrderService, IMenuService, IMenuAssignmentService, IApprovalHandler, IApprovalRequestService}.cs`, `WebApi/Controllers/{Order, Menu, MenuAssignment}Controller.cs`, `Model/Request/Custom/{Order, Menu}CustomRequest.cs`, `Model/Model/{Order, Menu}Models.cs`, `Model/Helper/OrderStatus.cs`, `Model/Option/BusinessRulesOptions.cs` + `appsettings.json` (`MealTypeDefaultShift`), `tools/AppDelicare.CodeGen/Seeds.cs`, `DB/seed/{ObjectMenu, UserRole}_seed.sql`, tài liệu `docs/frontend-handoff/P3.md`, `docs/api-tests/p3-menu-order.http`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline worktree: 10 + 1 MSB3245 Generator).
+- `dotnet test`: **123/123** xanh (+13): `Sales/OrderTests` (8: mẫu → tạo → gửi → xác nhận → chốt, số PH-, ghi song song cột cũ, tổng tiền; chuyển trạng thái sai; giờ chốt trước / đúng 20:00 D-1 + LockByMealDate; lệch ≤ 30% ghi ngay, > 30% → duyệt / từ chối; duyệt sau khi đơn bị chốt bị chặn; thứ tự tra giá hợp đồng → khách → ContractMeal; không có hợp đồng; tương thích ngược PayloadJson), `Menu/MenuCalendarTests` (4: lịch + giá vốn + FC%, cảnh báo món chưa có công thức, thứ ngoài 1–7; Approve / Publish / Expire / Clone; phân công + Resolve + chồng hiệu lực; file in mở được bằng ClosedXML), `Sales/OrderSqlServerTests` (1: SQL Server dev, create → submit → confirm → lock trong transaction ngoài rồi rollback – đã chạy, không bị bỏ qua).
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+AC:
+- [x] T13: test các nhánh cutoff và deviation; số tổng của đơn đúng; Submit / Confirm / Cancel (+ Lock) theo máy trạng thái; giá theo PricePolicie / ContractMeal.
+- [x] T46B.1 (Pilot): thực đơn tuần buổi × lựa chọn + giá vốn / FC%; đơn theo khách → điểm giao; mẫu in Thực đơn gửi khách có test sinh file mở được.
+- [ ] `DELICARE_API_Catalog.xlsx` chưa cập nhật (máy chưa có `openpyxl`) – các dòng spec 6.2, 6.3, 6.6 cần ghi "Đã xong" / "Một phần" + action thực tế (xem `docs/frontend-handoff/P3.md`).
+
+DEFERRED(PILOT):
+- Job 20:00 tự khóa đơn (dùng nút `Order/LockByMealDate`), job hết hạn hợp đồng.
+- Sửa đơn sau giờ chốt qua duyệt `ORDER_CHANGE_AFTER_CUTOFF`; lệch suất so với trung bình 4 tuần cùng thứ của điểm giao.
+- Dự báo (Forecast): số lượng gợi ý trong mẫu tạo đơn (= 0), lệch dự báo > 10% khi xác nhận; danh sách dạng kanban (`view=board`, `statusCounts`), `orderedMeals` / `assignedCustomerCount` trong danh sách thực đơn.
+- Hợp đồng: Create kèm suất, Submit duyệt, Terminate (spec 6.1) – Pilot dùng CRUD Contract / ContractMeal, hợp đồng phải `Status = Active`.
+- Yêu cầu đổi món (MenuChangeRequest, spec 6.4), đối soát (6.7 – T19).
+- Đẩy thực đơn đã công bố qua Zalo cho khách.
+- In thực đơn: logo (chưa có file), bản PDF.
+
+Câu hỏi cho anh (DECISIONS GAP-MENU-01, GAP-MENU-02, GAP-ORD-01…03):
+1. "Lựa chọn 1/2/3" lưu ở `MenuLine.SequenceNo` được không? Số suất dự kiến theo lựa chọn có cần lưu (chưa có cột)?
+2. 1 đơn = 1 điểm giao (OrderLine không có cột điểm giao) – anh đồng ý?
+3. Sau 20:00 D-1: chặn tạo / sửa / gửi / xác nhận / hủy đơn đã xác nhận; vẫn cho chốt và hủy đơn chưa xác nhận – đúng ý anh? Đơn chưa xác nhận lúc chốt thì xử lý thế nào (hiện chỉ báo danh sách)?
+4. Lệch suất Pilot = so với số đã xác nhận (không phải trung bình 4 tuần) – tạm được không? Ai duyệt (seed hiện chỉ CEO theo ma trận; COO có cần)?
+5. FC% tính trên giá bán chưa VAT từ chính sách giá / ContractMeal; `PortionQty` của dòng thực đơn có nhân vào giá vốn không?
+6. Xác nhận đơn (Confirm) và Chốt (Lock) dùng quyền Sửa trên `crm-order` – hay cần tách quyền riêng?
+
+Cần anh: chạy lại `DB/seed/ObjectMenu_seed.sql` + `UserRole_seed.sql` trên DB dev / staging (chỉ thêm mục "Duyệt – Đơn đặt suất ăn" và quyền CEO); cho phép cài `openpyxl` để cập nhật Catalog.

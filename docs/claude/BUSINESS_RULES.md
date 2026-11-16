@@ -40,6 +40,7 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - Thêm hay sửa đơn sau giờ chốt: tạo `ApprovalRequest` (BusinessType=`ORDER_CHANGE_AFTER_CUTOFF`). Chỉ ghi khi đã được duyệt.
 - Số suất lệch > **30%** so với trung bình của điểm giao (tính trên lịch sử `OrderLine` của `DeliveryLocationId`, cửa sổ 4 tuần cùng thứ – PROPOSED) cũng cần duyệt.
 - Trạng thái: theo `STATUS_CATALOG.md` (Order: Draft → Submitted → Confirmed → Locked → InProduction → Delivered → Reconciled; Cancelled).
+- **Bản Pilot đã cài (T13, PROPOSED – DECISIONS GAP-ORD-01…03):** 1 đơn = 1 điểm giao; sau giờ chốt chặn tạo / sửa số suất / gửi / xác nhận / hủy đơn Confirmed, vẫn cho Lock và hủy Draft / Submitted; nút `Order/LockByMealDate` thay job 20:00 (chỉ chạy khi đã tới giờ chốt); lệch suất = sửa số suất đơn Confirmed, dòng bất kỳ lệch > 30% so với số đã xác nhận → `ApprovalRequest` `ORDER_DEVIATION`. `ORDER_CHANGE_AFTER_CUTOFF` và so lịch sử 4 tuần → sau Pilot. Ca mặc định theo loại suất: `BusinessRules:MealTypeDefaultShift` (SANG → SANG_6H, TRUA → TRUA, TOI → TOI, DEM → DEM_23H).
 
 ## 3. Định mức và MRP
 - Định mức tính theo **gram/suất** cộng **% hao hụt chế biến** (`RecipeLine`). Nhu cầu = Σ(số suất × g/suất × (1 + hao hụt%)), quy đổi đơn vị qua `UomConversion` sang `UnitMeasure` (PO chốt dùng `UnitId` → `UnitMeasure`).

@@ -31,5 +31,10 @@ namespace AppDelicare.Model.Option
         public decimal RecipeOverheadCostPerServing { get; set; }
         /// <summary>Số suất chuẩn của định lượng công thức khi Recipe.StandardOutputQty trống (spec 5.2: 100 suất).</summary>
         public decimal RecipeStandardServings { get; set; } = 100;
+        /// <summary>T13: ca giao mặc định theo loại suất (MealType → Shift.Code), D-19 / BUSINESS_RULES mục 0 (PROPOSED – BA/PO CONFIRM).</summary>
+        public Dictionary<string, string> MealTypeDefaultShift { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["SANG"] = "SANG_6H", ["TRUA"] = "TRUA", ["TOI"] = "TOI", ["DEM"] = "DEM_23H",
+        };
     }
 }
