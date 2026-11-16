@@ -6,7 +6,7 @@
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 87/87 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 92/92 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -497,3 +497,38 @@ Nhánh `fix/T45R-seed-approval-link` (từ `chore/T45R.6-rename-generator`).
   - `wf-inbox` là màn "Hộp duyệt" trong catalog.js. Vẫn 14 mục, 1 mục / màn có loại AP (PROPOSED – anh có thể gộp theo nhóm khi UAT-1).
   - Seed đổi MetaLink kiểu cũ tại chỗ, giữ dòng và quyền đã gán. Đã chạy trên DB dev và staging: 0 mục cũ, 14 mục mới; "Duyệt – Công thức" vẫn của CEO, COO.
 - Test 87/87 (+1 SQL Server `Seeds_do_not_overwrite_admin_changes`: thu hồi quyền duyệt của CEO + đổi tên menu → chạy lại seed → giữ nguyên; rollback).
+
+### T48.0 – Băm mật khẩu an toàn (D-29) · 2026-11-16 · DONE
+Nhánh `feat/T48.0-password-hash` (từ `main`).
+
+Rà soát code cũ:
+- **Đăng nhập** so `MD5(mật khẩu)` trong SQL.
+- **Tạo user / Reset** lưu `MD5(tên đăng nhập)`, tức mật khẩu khởi tạo = tên đăng nhập.
+- **Lỗi cũ ở ChangePassword**: kiểm và lưu `MD5(mật khẩu + tên)`, nên sau khi đổi mật khẩu user **không đăng nhập lại được**. Ngoài ra đòi độ dài ≥ 9 trong khi thông báo ghi "từ 8 ký tự".
+
+Đã làm (chỉ `EncriptFunctionsHelper`, `LoginService`, `UserService`, script deploy – không đổi API, bảng, cột):
+- `GeneratePassword` = PBKDF2-SHA256, salt ngẫu nhiên 16 byte, 100.000 vòng, chuỗi `PBKDF2$100000$<salt>$<hash>` trong `User.PassWord` (nvarchar(max)).
+- `VerifyPassword(mật khẩu, chuỗi lưu, tên, out needsUpgrade)`:
+  - PBKDF2: so sánh bằng `FixedTimeEquals`;
+  - MD5 cũ: chấp nhận `MD5(mk)` và `MD5(mk + tên)`, kèm cờ cần nâng.
+- Đăng nhập: tìm theo tên rồi kiểm; hash cũ đúng → ghi PBKDF2 ngay; `GetClaimsIdentity` kiểm cùng cách. Không log mật khẩu / hash.
+- Tạo / Reset / InsertUserAfter tự ghi PBKDF2 qua `GeneratePassword`.
+- ChangePassword: kiểm mật khẩu cũ bằng `VerifyPassword`, lưu PBKDF2 của mật khẩu mới (sửa lỗi không đăng nhập lại được); tối thiểu 8 ký tự đúng thông báo.
+- `Deploy-Database.ps1` tạo admin bằng PBKDF2 cùng định dạng (PowerShell 5.1); `00_Admin_seed.sql` sửa chú thích.
+
+Kiểm tra:
+- Build 0 lỗi / 10 cảnh báo.
+- Test **92/92** (+5 `PasswordHashTests`):
+  - MD5 cũ đăng nhập → nâng PBKDF2 → đăng nhập lần 2;
+  - hash `MD5(mk + tên)` đăng nhập được;
+  - sai mật khẩu bị từ chối (cũ / mới);
+  - 2 user cùng mật khẩu có hash khác nhau;
+  - hash do PowerShell sinh kiểm được bằng C#;
+  - tạo / đổi / reset ghi PBKDF2, đổi xong đăng nhập bằng mật khẩu mới, < 8 ký tự bị từ chối.
+- Trên SQL Server dev: admin đã tự nâng lên PBKDF2 sau lần đăng nhập của test tích hợp.
+
+AC: [x] cả 4 mục.
+
+Còn lại / cần anh:
+- **GAP-ADM-02 chưa đủ**: reset vẫn đặt mật khẩu = tên đăng nhập và trả `Result<bool>` (giữ API theo T48.0). Muốn "mật khẩu tạm 12 ký tự trả một lần" thì phải đổi response của `User/ResetPassword` → cần anh duyệt.
+- Mỗi lần đăng nhập tính PBKDF2 2–3 lần (~0,1–0,2 s), chấp nhận cho Pilot.

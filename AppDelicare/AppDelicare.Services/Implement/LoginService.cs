@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Share;
@@ -29,10 +30,13 @@ namespace AppDelicare.Services.Implement
 
         public async Task<Response<AuthenticateResponse>> Authenticate(LoginRequest request)
         {
-            var pass = EncriptFunctionsHelper.GeneratePassword(request.PassWord ?? string.Empty);
             List<Claim> claims = [];
             request.UserName = request.UserName?.ToLower();
-            var user = await _unitOfWork.UserRepository.GetSingleAsync(x => x.UserName == request.UserName && x.PassWord == pass);
+            // T48.0 (D-29): tìm theo tên đăng nhập rồi kiểm mật khẩu (PBKDF2 hoặc MD5 cũ) – không so chuỗi hash trong SQL nữa (salt ngẫu nhiên).
+            // Nhiều bản ghi trùng tên (đã xóa mềm + đang dùng): ưu tiên bản chưa xóa.
+            var candidates = await _unitOfWork.UserRepository.GetAll().Where(x => x.UserName == request.UserName)
+                .OrderBy(x => x.IsDeleted).ToListAsync();
+            var user = candidates.FirstOrDefault(x => EncriptFunctionsHelper.VerifyPassword(request.PassWord ?? string.Empty, x.PassWord, x.UserName, out _));
             if (user == null)
             {
                 return new Response<AuthenticateResponse>
@@ -56,6 +60,18 @@ namespace AppDelicare.Services.Implement
                     Code = Convert.ToInt32(HttpStatusCode.InternalServerError),
                     Message = ConstantHelper.Message.AccountInActive
                 };
+            }
+            // T48.0: hash MD5 cũ đúng mật khẩu → nâng lên PBKDF2 ngay (user không phải đổi mật khẩu). Không log mật khẩu / hash.
+            EncriptFunctionsHelper.VerifyPassword(request.PassWord ?? string.Empty, user.PassWord, user.UserName, out bool needsUpgrade);
+            if (needsUpgrade)
+            {
+                using (_currentActor.BeginScope(ActorInfo.ForUser(user.Id)))
+                {
+                    user.PassWord = EncriptFunctionsHelper.GeneratePassword(request.PassWord ?? string.Empty);
+                    _unitOfWork.UserRepository.Update(user);
+                    await _unitOfWork.UserRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                }
+                Serilog.Log.Information("Nâng hash mật khẩu lên PBKDF2 cho user {UserId}", user.Id);
             }
             var id = user.Id;
             var userName = user.UserName ?? string.Empty;
@@ -137,7 +153,7 @@ namespace AppDelicare.Services.Implement
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
             // check the credentials
-            if (EncriptFunctionsHelper.GeneratePassword(request.PassWord) == userToVerify.FirstOrDefault()?.PassWord)
+            if (EncriptFunctionsHelper.VerifyPassword(request.PassWord, userToVerify.FirstOrDefault()?.PassWord, request.UserName, out _))
             {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
                 return await Task.FromResult(_jwtFactory.GenerateClaimsIdentity(request.UserName, userToVerify.FirstOrDefault().Id));

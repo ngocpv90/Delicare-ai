@@ -402,17 +402,17 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
 - T47B.1 P6 (QC / ATTP, checklist, nhiệt độ, truy xuất). T47B.2 P7 (đóng gói, giao vận, POD, phản ánh, hộp / khay, vệ sinh). T47B.3 P8 (nhân sự, KPI, **API dashboard điều hành**, hộp duyệt ApprovalRequest của user, cảnh báo nghiệp vụ).
 - AC: như T45B cho P6–P8 (khung cũ, D-30).
 
-### T48.0 – Băm mật khẩu an toàn (D-29) · phụ thuộc T45R · `TODO` ← **PILOT P0, làm đầu tiên**
+### T48.0 – Băm mật khẩu an toàn (D-29) · phụ thuộc T45R · `DONE` (2026-11-16)
 - Theo **cơ chế cũ (D-31)**: chỉ sửa trong `EncriptFunctionsHelper`, `LoginService`, `UserService` (Insert / ResetPassword / ChangePassword). Không đổi API, không đổi request / response, **không thêm bảng / cột** (hash mới vẫn lưu trong `User.PassWord`).
 - Hash mới: PBKDF2 có sẵn trong .NET (`Rfc2898DeriveBytes.Pbkdf2`, SHA-256, salt ngẫu nhiên 16 byte, ≥ 100.000 vòng), lưu dạng chuỗi tự mô tả, vd. `PBKDF2$<vòng>$<salt base64>$<hash base64>` – kiểm tra độ dài cột `PassWord` trong DDL trước (không đủ thì dừng, ghi GAP).
 - Đăng nhập: nếu chuỗi lưu là hash mới → kiểm PBKDF2 (so sánh thời gian hằng `CryptographicOperations.FixedTimeEquals`); nếu là MD5 cũ → kiểm MD5, đúng thì **tự nâng lên PBKDF2** ngay trong lần đăng nhập đó. User cũ không phải đổi mật khẩu.
 - Reset / đổi / tạo mật khẩu luôn ghi hash mới. Giữ chính sách GAP-ADM-02.
 - Không in mật khẩu / hash ra log.
 - AC:
-  - [ ] Test: user hash MD5 cũ đăng nhập được và sau đó chuỗi lưu là PBKDF2; đăng nhập lần 2 vẫn được.
-  - [ ] Test: sai mật khẩu → từ chối (cả hash cũ lẫn mới); 2 user cùng mật khẩu có hash khác nhau.
-  - [ ] Test: ResetPassword / ChangePassword / tạo user ghi PBKDF2.
-  - [ ] Build 0 lỗi, test xanh; Swagger / route không đổi.
+  - [x] Test: user hash MD5 cũ đăng nhập được và sau đó chuỗi lưu là PBKDF2; đăng nhập lần 2 vẫn được.
+  - [x] Test: sai mật khẩu → từ chối (cả hash cũ lẫn mới); 2 user cùng mật khẩu có hash khác nhau.
+  - [x] Test: ResetPassword / ChangePassword / tạo user ghi PBKDF2.
+  - [x] Build 0 lỗi, test xanh; Swagger / route không đổi.
 
 ### T48 – Triển khai (staging → production) · phụ thuộc T03 · `TODO`
 - **T48.1 staging (làm ngay trong R1.0):** `DONE` (2026-11-14 – IIS / LocalDB chạy thử OK; Docker chưa chạy được vì máy dev chưa có Docker)
