@@ -1,0 +1,50 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã ca <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="VD: TRUA" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập mã (tối đa 50 ký tự)</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên ca <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="startTime">Giờ bắt đầu <span class="text-danger">(*)</span></label>
+        <input id="startTime" type="time" class="form-control" [class.is-invalid]="isInvalid('startTime')" formControlName="startTime" />
+        <div class="invalid-feedback">Vui lòng nhập giờ</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="endTime">Giờ kết thúc <span class="text-danger">(*)</span></label>
+        <input id="endTime" type="time" class="form-control" [class.is-invalid]="isInvalid('endTime')" formControlName="endTime" />
+        <div class="invalid-feedback">Vui lòng nhập giờ</div>
+        @if (overnight) {
+          <small class="text-muted">Ca qua đêm – kết thúc ngày hôm sau</small>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="companyId">Công ty / pháp nhân</label>
+        <app-select [loading]="isLoadingList" formControlName="companyId" [items]="listCompany" bindValue="id" bindLabel="label" placeholder="Chọn công ty"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea id="note" class="form-control" rows="2" formControlName="note" placeholder="Nhập dữ liệu"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

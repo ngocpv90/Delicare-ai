@@ -78,7 +78,56 @@ export const mainRoutes: Routes = [
             (m) => m.AuditChangeModule
           ),
       },
-      // ===== P1 – Danh mục =====
+      // ===== P1 – Danh mục (FE-2) =====
+      {
+        path: 'crm-customer',
+        loadChildren: () =>
+          import('./customer/customer.module').then(
+            (m) => m.CustomerModule
+          ),
+      },
+      {
+        path: 'crm-contact',
+        loadChildren: () =>
+          import('./customer-contact/customer-contact.module').then(
+            (m) => m.CustomerContactModule
+          ),
+      },
+      {
+        path: 'crm-location',
+        loadChildren: () =>
+          import('./customer-delivery-location/customer-delivery-location.module').then(
+            (m) => m.CustomerDeliveryLocationModule
+          ),
+      },
+      {
+        path: 'crm-contract',
+        loadChildren: () =>
+          import('./contract/contract.module').then(
+            (m) => m.ContractModule
+          ),
+      },
+      {
+        path: 'crm-contract-meal',
+        loadChildren: () =>
+          import('./contract-meal/contract-meal.module').then(
+            (m) => m.ContractMealModule
+          ),
+      },
+      {
+        path: 'scm-supplier-material',
+        loadChildren: () =>
+          import('./supplier-material/supplier-material.module').then(
+            (m) => m.SupplierMaterialModule
+          ),
+      },
+      {
+        path: 'scm-ingredient',
+        loadChildren: () =>
+          import('./ingredient/ingredient.module').then(
+            (m) => m.IngredientModule
+          ),
+      },
       {
         path: 'scm-supplier',
         loadChildren: () =>
@@ -90,6 +139,48 @@ export const mainRoutes: Routes = [
           import('./unit-measure/unit-measure.module').then(
             (m) => m.UnitMeasureModule
           ),
+      },
+      {
+        path: 'scm-ingredient-cat',
+        loadChildren: () =>
+          import('./ingredient-category/ingredient-category.module').then(
+            (m) => m.IngredientCategoryModule
+          ),
+      },
+      {
+        path: 'scm-uom-conversion',
+        loadChildren: () =>
+          import('./uom-conversion/uom-conversion.module').then((m) => m.UomConversionModule),
+      },
+      {
+        path: 'scm-warehouse',
+        loadChildren: () =>
+          import('./warehouse/warehouse.module').then((m) => m.WarehouseModule),
+      },
+      {
+        path: 'scm-zone',
+        loadChildren: () =>
+          import('./storage-zone/storage-zone.module').then((m) => m.StorageZoneModule),
+      },
+      {
+        path: 'scm-location',
+        loadChildren: () =>
+          import('./storage-location/storage-location.module').then((m) => m.StorageLocationModule),
+      },
+      {
+        path: 'scm-inv-policy',
+        loadChildren: () =>
+          import('./inventory-policy/inventory-policy.module').then((m) => m.InventoryPolicyModule),
+      },
+      {
+        path: 'hr-shift',
+        loadChildren: () =>
+          import('./shift/shift.module').then((m) => m.ShiftModule),
+      },
+      {
+        path: 'log-vehicle',
+        loadChildren: () =>
+          import('./vehicle/vehicle.module').then((m) => m.VehicleModule),
       },
       // ===== Old screens kept on their old paths (not in the DELI-CARE menu) =====
       {

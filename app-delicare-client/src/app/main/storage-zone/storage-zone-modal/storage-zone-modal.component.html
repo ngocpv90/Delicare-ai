@@ -1,0 +1,48 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <label class="form-label" for="warehouseId">Kho <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="warehouseId" [items]="listWarehouse" bindValue="id" bindLabel="label" placeholder="Chọn kho" [invalid]="isInvalid('warehouseId')"></app-select>
+        @if (isInvalid('warehouseId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã khu <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="VD: Z-LANH" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập mã (tối đa 50 ký tự)</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên khu <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="VD: Khu mát 0–5°C" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="temperatureMin">Nhiệt độ min (°C)</label>
+        <input id="temperatureMin" type="text" class="form-control text-end" appNumberInput [decimals]="2" formControlName="temperatureMin" placeholder="VD: 0" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="temperatureMax">Nhiệt độ max (°C)</label>
+        <input id="temperatureMax" type="text" class="form-control text-end" appNumberInput [decimals]="2" formControlName="temperatureMax" placeholder="VD: 5" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="temperatureRange">Mô tả dải nhiệt</label>
+        <input id="temperatureRange" type="text" class="form-control" formControlName="temperatureRange" placeholder="Để trống: tự ghi theo min / max" autocomplete="off" />
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

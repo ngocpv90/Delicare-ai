@@ -1,0 +1,61 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="fromUnitId">Từ đơn vị <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="fromUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Chọn đơn vị" [invalid]="isInvalid('fromUnitId')"></app-select>
+        @if (isInvalid('fromUnitId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="toUnitId">Sang đơn vị <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="toUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Chọn đơn vị" [invalid]="isInvalid('toUnitId')"></app-select>
+        @if (isInvalid('toUnitId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="conversionFactor">Hệ số <span class="text-danger">(*)</span></label>
+        <input id="conversionFactor" type="text" class="form-control text-end" appNumberInput [decimals]="6" [min]="0" [class.is-invalid]="isInvalid('conversionFactor')" formControlName="conversionFactor" placeholder="VD: 1000" />
+        <div class="invalid-feedback">Vui lòng nhập hệ số &gt; 0</div>
+      </div>
+      <div class="col-md-8 mb-3 d-flex align-items-end">
+        <div class="text-muted pb-2">
+          1 {{ unitName(formGroup.value.fromUnitId) }} = {{ (formGroup.value.conversionFactor | number: '1.0-6') || '…' }} {{ unitName(formGroup.value.toUnitId) }}
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="effectiveFrom">Hiệu lực từ</label>
+        <app-date-picker inputId="effectiveFrom" formControlName="effectiveFrom"></app-date-picker>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="effectiveTo">Hiệu lực đến</label>
+        <app-date-picker inputId="effectiveTo" formControlName="effectiveTo"></app-date-picker>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <div class="form-check">
+          <input id="isActive" type="checkbox" class="form-check-input" formControlName="isActive" />
+          <label class="form-check-label" for="isActive">Đang dùng</label>
+        </div>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea id="note" class="form-control" rows="2" formControlName="note" placeholder="Nhập dữ liệu"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

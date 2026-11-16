@@ -1,0 +1,166 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Kho nguyên liệu, thành phẩm, bao bì, kho lạnh theo chi nhánh / bếp; xem sơ đồ khu bảo quản và vị trí.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã, tên kho, địa chỉ" aria-label="Tìm theo mã, tên kho, địa chỉ" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="warehouseType" [items]="warehouseTypes" bindValue="code" bindLabel="label" placeholder="Tất cả loại kho" [searchable]="false" (selectionChange)="search()"></app-select>
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="organizationUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Tất cả đơn vị" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 130px" (click)="sort('code')">
+                Mã kho <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên kho <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="sortable" style="width: 140px" (click)="sort('warehouseType')">
+                Loại kho <i class="fa-solid ms-1" [ngClass]="table.sortIcon('warehouseType')"></i>
+              </th>
+              <th class="sortable" (click)="sort('organizationUnitName')">
+                Đơn vị / chi nhánh <i class="fa-solid ms-1" [ngClass]="table.sortIcon('organizationUnitName')"></i>
+              </th>
+              <th>Địa chỉ</th>
+              <th class="text-end" style="width: 90px">Số khu</th>
+              <th class="text-end" style="width: 90px">Số vị trí</th>
+              <th style="width: 150px">Trạng thái</th>
+              <th class="text-end" style="width: 140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.code }}</td>
+                <td class="fw-semibold">
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.name }}</a>
+                </td>
+                <td>{{ labelOf(warehouseTypes, data.warehouseType) }}</td>
+                <td>{{ data.organizationUnitName }}</td>
+                <td>{{ data.address }}</td>
+                <td class="text-end">{{ data.zoneCount }}</td>
+                <td class="text-end">{{ data.locationCount }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Sơ đồ kho" aria-label="Sơ đồ kho" (click)="openDrawer(data)"><i class="fa-solid fa-eye"></i></button>
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                  }
+                  @if (permission.allowDelete) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="drawerRow?.name"
+    [subtitle]="drawerRow?.code"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (drawerTab === 'info') {
+        <div class="dc-kv">
+          <div><label>Mã kho</label><span>{{ drawerRow.code }}</span></div>
+          <div><label>Tên kho</label><span>{{ drawerRow.name }}</span></div>
+          <div><label>Loại kho</label><span>{{ labelOf(warehouseTypes, drawerRow.warehouseType) || '—' }}</span></div>
+          <div><label>Đơn vị / chi nhánh</label><span>{{ drawerRow.organizationUnitName || '—' }}</span></div>
+          <div><label>Địa chỉ</label><span>{{ drawerRow.address || '—' }}</span></div>
+          <div>
+            <label>Trạng thái</label>
+            <span><app-status-badge [code]="drawerRow.status" [label]="labelOf(statuses, drawerRow.status)"></app-status-badge></span>
+          </div>
+          <div><label>Ghi chú</label><span>{{ drawerRow.note || '—' }}</span></div>
+        </div>
+      }
+      @if (drawerTab === 'layout') {
+        @if (isLoadingLayout) {
+          <div class="dc-empty">Đang tải...</div>
+        } @else if (!layout?.listZone?.length) {
+          <div class="dc-empty">Kho chưa có khu bảo quản. Thêm ở màn "Khu vực bảo quản".</div>
+        } @else {
+          @for (z of layout.listZone; track z.zone?.id) {
+            <div class="dc-zone">
+              <div class="dc-zone-head">
+                <div>
+                  <b>{{ z.zone?.code }} – {{ z.zone?.name }}</b>
+                  <small class="text-muted ms-2">
+                    @if (z.zone?.temperatureMin != null || z.zone?.temperatureMax != null) {
+                      {{ z.zone?.temperatureMin ?? '…' }} → {{ z.zone?.temperatureMax ?? '…' }} °C
+                    } @else {
+                      {{ z.zone?.temperatureRange }}
+                    }
+                  </small>
+                </div>
+                <span class="text-muted small">{{ z.listLocation?.length || 0 }} vị trí</span>
+              </div>
+              <div class="dc-bins">
+                @for (l of z.listLocation; track l.id) {
+                  <span class="dc-bin" [class.off]="l.status && l.status !== 'Active'" [title]="labelOf(locationTypes, l.locationType)">
+                    {{ l.code || l.name }}
+                  </span>
+                } @empty {
+                  <span class="text-muted small">Chưa có vị trí</span>
+                }
+              </div>
+            </div>
+          }
+        }
+      }
+    }
+    <ng-container drawer-footer>
+      @if (permission.allowEdit) {
+        <button type="button" class="btn btn-primary" (click)="editFromDrawer()"><i class="fa-solid fa-pen me-1"></i>Sửa</button>
+      }
+    </ng-container>
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

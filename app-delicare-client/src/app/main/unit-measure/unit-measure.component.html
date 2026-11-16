@@ -11,28 +11,41 @@
       <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
         <div class="dc-search">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input
-            id="searchText"
-            class="form-control"
-            placeholder="Tìm theo tên đơn vị tính"
-            aria-label="Tìm theo tên đơn vị tính"
-            formControlName="searchText"
-          />
+          <input id="searchText" class="form-control" placeholder="Tìm theo mã, tên, ký hiệu" aria-label="Tìm theo mã, tên, ký hiệu" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="uomType" [items]="uomTypes" bindValue="code" bindLabel="label" placeholder="Tất cả loại" [searchable]="false" (selectionChange)="search()"></app-select>
         </div>
         <button type="submit" class="btn btn-primary">Tìm</button>
         <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
       </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
       <div class="table-responsive">
         <table class="table dc-table mb-0">
           <thead>
             <tr>
               <th class="text-center" style="width: 70px">STT</th>
-              <th class="sortable" (click)="sort('name')">
-                Tên đơn vị tính
-                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              <th class="sortable" style="width: 120px" (click)="sort('code')">
+                Mã <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
               </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên đơn vị tính <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th style="width: 110px">Ký hiệu</th>
+              <th class="sortable" style="width: 170px" (click)="sort('uomType')">
+                Loại <i class="fa-solid ms-1" [ngClass]="table.sortIcon('uomType')"></i>
+              </th>
+              <th class="text-end" style="width: 110px">Số chữ số lẻ</th>
+              <th style="width: 150px">Trạng thái</th>
               @if (permission.allowEdit || permission.allowDelete) {
-                <th class="text-end" style="width: 120px">Thao tác</th>
+                <th class="text-end" style="width: 110px">Thao tác</th>
               }
             </tr>
           </thead>
@@ -40,25 +53,26 @@
             @for (data of listData; track data.id) {
               <tr>
                 <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.code }}</td>
                 <td class="fw-semibold">{{ data.name }}</td>
+                <td>{{ data.symbol }}</td>
+                <td>{{ labelOf(uomTypes, data.uomType) }}</td>
+                <td class="text-end">{{ data.decimalPrecision }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
                 @if (permission.allowEdit || permission.allowDelete) {
                   <td class="dc-actions">
                     @if (permission.allowEdit) {
-                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)">
-                        <i class="fa-solid fa-pen"></i>
-                      </button>
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
                     }
                     @if (permission.allowDelete) {
-                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
                     }
                   </td>
                 }
               </tr>
             } @empty {
               <tr>
-                <td colspan="3" class="dc-empty">Không có dữ liệu</td>
+                <td colspan="8" class="dc-empty">Không có dữ liệu</td>
               </tr>
             }
           </tbody>

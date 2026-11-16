@@ -1,0 +1,71 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <label class="form-label" for="customerId">Khách hàng <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="customerId" [items]="listCustomer" bindValue="id" bindLabel="label" placeholder="Chọn khách hàng" [invalid]="isInvalid('customerId')"></app-select>
+        @if (isInvalid('customerId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã điểm giao</label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Tối đa 50 ký tự</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên điểm giao <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="VD: Khoa Nội – tầng 3" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="address">Địa chỉ <span class="text-danger">(*)</span></label>
+        <input id="address" type="text" class="form-control" [class.is-invalid]="isInvalid('address')" formControlName="address" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="deliveryWindowFrom">Nhận hàng từ</label>
+        <input id="deliveryWindowFrom" type="time" class="form-control" formControlName="deliveryWindowFrom" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="deliveryWindowTo">Nhận hàng đến</label>
+        <input id="deliveryWindowTo" type="time" class="form-control" formControlName="deliveryWindowTo" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="contactName">Người nhận</label>
+        <input id="contactName" type="text" class="form-control" formControlName="contactName" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="contactPhone">Điện thoại người nhận</label>
+        <input id="contactPhone" type="text" class="form-control" formControlName="contactPhone" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 col-6 mb-3">
+        <label class="form-label" for="latitude">Vĩ độ (latitude)</label>
+        <input id="latitude" type="text" class="form-control text-end" appNumberInput [decimals]="6" [min]="-90" [max]="90" [class.is-invalid]="isInvalid('latitude')" formControlName="latitude" placeholder="VD: 21.028511" />
+        <div class="invalid-feedback">Từ -90 đến 90</div>
+      </div>
+      <div class="col-md-4 col-6 mb-3">
+        <label class="form-label" for="longitude">Kinh độ (longitude)</label>
+        <input id="longitude" type="text" class="form-control text-end" appNumberInput [decimals]="6" [min]="-180" [max]="180" [class.is-invalid]="isInvalid('longitude')" formControlName="longitude" placeholder="VD: 105.804817" />
+        <div class="invalid-feedback">Từ -180 đến 180</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="deliveryInstructions">Hướng dẫn giao hàng</label>
+        <textarea id="deliveryInstructions" class="form-control" rows="2" formControlName="deliveryInstructions" placeholder="VD: Giao cổng sau, gọi trước 15 phút"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

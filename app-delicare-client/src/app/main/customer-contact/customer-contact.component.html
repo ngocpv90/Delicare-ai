@@ -1,0 +1,101 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Người liên hệ của khách hàng: đặt suất, nhận hàng, đối soát, thanh toán. Mỗi khách hàng nên có một liên hệ chính.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo họ tên, chức vụ, điện thoại, email" aria-label="Tìm liên hệ" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="customerId" [items]="listCustomer" bindValue="id" bindLabel="label" placeholder="Tất cả khách hàng" (selectionChange)="search()"></app-select>
+        </div>
+        <div class="form-check mb-0">
+          <input id="primaryOnly" type="checkbox" class="form-check-input" formControlName="primaryOnly" (change)="setFilter('primaryOnly', $any($event.target).checked)" />
+          <label class="form-check-label" for="primaryOnly">Chỉ liên hệ chính</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('customerName')">
+                Khách hàng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('customerName')"></i>
+              </th>
+              <th class="sortable" (click)="sort('fullName')">
+                Họ và tên <i class="fa-solid ms-1" [ngClass]="table.sortIcon('fullName')"></i>
+              </th>
+              <th>Chức vụ</th>
+              <th style="width: 130px">Điện thoại</th>
+              <th>Email</th>
+              <th class="text-center" style="width: 100px">Liên hệ chính</th>
+              <th style="width: 140px">Trạng thái</th>
+              @if (permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 110px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.customerName }}</td>
+                <td class="fw-semibold">{{ data.fullName }}</td>
+                <td>{{ data.position }}</td>
+                <td>{{ data.phone }}</td>
+                <td>{{ data.email }}</td>
+                <td class="text-center">
+                  @if (data.isPrimary) {
+                    <i class="fa-solid fa-star text-warning" title="Liên hệ chính"></i>
+                  }
+                </td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                @if (permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>
