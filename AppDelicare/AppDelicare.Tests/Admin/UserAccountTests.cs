@@ -20,6 +20,8 @@ namespace AppDelicare.Tests.Admin
     /// mật khẩu tạm khi reset / tạo (12 ký tự, 24 giờ, PBKDF2T$), đăng nhập bằng mật khẩu tạm chỉ gọi được ChangePassword / GetCurrent,
     /// đổi xong dùng bình thường, quá hạn bị từ chối, mật khẩu tạm không nằm trong AuditChange / log.
     /// </summary>
+    // T50R1: chạy KHÔNG song song – test reset thay Log.Logger (tĩnh) để bắt log; host test khác khởi động cùng lúc (UseSerilog) ghi đè Log.Logger → test chập chờn.
+    [Collection(StaticLoggerCollection.Name)]
     public class UserAccountTests : IClassFixture<InMemoryApiFactory>
     {
         private readonly InMemoryApiFactory _factory;

@@ -16,5 +16,5 @@ for f in /repo/DB/sp/*.sql; do $SQL -d "$DB_NAME" -i "$f"; done
 echo "  + Stored procedure"
 HASH=$(printf '%s' "$ADMIN_PASSWORD" | md5sum | cut -d' ' -f1 | tr 'a-f' 'A-F' | sed -E 's/(..)/\1-/g; s/-$//')
 $SQL -d "$DB_NAME" -v AdminUserName="admin" AdminPasswordHash="$HASH" -i /repo/DB/seed/00_Admin_seed.sql
-for f in OrganizationUnit_seed.sql ObjectMenu_seed.sql ObjectMenu_disable_legacy.sql UserRole_seed.sql Shift_seed.sql; do $SQL -d "$DB_NAME" -i "/repo/DB/seed/$f"; echo "  + Seed $f"; done
+for f in OrganizationUnit_seed.sql ObjectMenu_seed.sql ObjectMenu_disable_legacy.sql UserRole_seed.sql Shift_seed.sql FoodSafetyChecklist_seed.sql; do $SQL -d "$DB_NAME" -i "/repo/DB/seed/$f"; echo "  + Seed $f"; done
 echo "== Xong."

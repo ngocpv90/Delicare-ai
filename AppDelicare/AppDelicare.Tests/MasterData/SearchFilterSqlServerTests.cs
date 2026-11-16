@@ -52,5 +52,45 @@ namespace AppDelicare.Tests.MasterData
                 units.ListData.Single(x => x.Id == unit.Id).Code.Should().Be(unit.Code);
             }
         }
+
+        /// <summary>
+        /// T50R1 (lỗi tìm thấy khi chạy luồng Pilot bằng API): 35 SearchRequest còn lọc cha kiểu <c>Guid</c> không null (MaterialLot.IngredientId,
+        /// Order.CustomerId, Recipe.DishId, ProductionBatch.ProductionOrderId…) → bỏ trống bị bind thành Guid rỗng → GetAll luôn rỗng
+        /// (vd. màn Lô nguyên liệu, Đơn hàng, Mẻ sản xuất không có dòng nào). Nay mọi lọc Id là <c>Guid?</c>, service đổi Guid rỗng → NULL.
+        /// </summary>
+        [SkippableFact]
+        public async Task Pilot_lists_without_parent_filter_return_all_rows()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            using var scope = factory.Services.CreateScope();
+            var sp = scope.ServiceProvider;
+            var db = sp.GetRequiredService<DatabaseContext>();
+
+            (await sp.GetRequiredService<IMaterialLotService>().GetAll(new MaterialLotSearchRequest { PageSize = 1 })).TotalRecords
+                .Should().Be(await db.MaterialLot.CountAsync(x => !x.IsDeleted));
+            (await sp.GetRequiredService<IMaterialLotService>().GetAll(new MaterialLotSearchRequest { PageSize = 1, IngredientId = Guid.Empty })).TotalRecords
+                .Should().Be(await db.MaterialLot.CountAsync(x => !x.IsDeleted), "Guid rỗng cũng coi như không lọc");
+            (await sp.GetRequiredService<IRecipeService>().GetAll(new RecipeSearchRequest { PageSize = 1 })).TotalRecords
+                .Should().Be(await db.Recipe.CountAsync(x => !x.IsDeleted));
+            (await sp.GetRequiredService<IOrderService>().GetAll(new OrderSearchRequest { PageSize = 1 })).TotalRecords
+                .Should().Be(await db.Order.CountAsync(x => !x.IsDeleted));
+            (await sp.GetRequiredService<IProductionBatchService>().GetAll(new ProductionBatchSearchRequest { PageSize = 1 })).TotalRecords
+                .Should().Be(await db.ProductionBatch.CountAsync(x => !x.IsDeleted));
+            (await sp.GetRequiredService<IMaterialIssueService>().GetAll(new MaterialIssueSearchRequest { PageSize = 1 })).TotalRecords
+                .Should().Be(await db.MaterialIssue.CountAsync(x => !x.IsDeleted));
+            (await sp.GetRequiredService<IMenuAssignmentService>().GetAll(new MenuAssignmentSearchRequest { PageSize = 1 })).TotalRecords
+                .Should().Be(await db.MenuAssignment.CountAsync(x => !x.IsDeleted));
+        }
+
+        /// <summary>T50R1: chặn tái phát – mọi thuộc tính lọc *Id kiểu Guid trong SearchRequest phải là Guid? (bỏ trống = không lọc).</summary>
+        [Fact]
+        public void Every_guid_filter_of_search_requests_is_nullable()
+        {
+            var offenders = typeof(BaseSearchRequest).Assembly.GetTypes()
+                .Where(t => t.IsClass && typeof(BaseSearchRequest).IsAssignableFrom(t))
+                .SelectMany(t => t.GetProperties().Where(p => p.PropertyType == typeof(Guid)).Select(p => $"{t.Name}.{p.Name}"))
+                .ToList();
+            offenders.Should().BeEmpty("lọc Guid không null bị bind thành Guid rỗng khi bỏ trống → danh sách rỗng");
+        }
     }
 }

@@ -9,3 +9,27 @@
 | `seed/` | Dữ liệu cấu hình (Shift, ObjectMenu, UserGroup, KpiMetricDefinition…). Dữ liệu demo gắn `[DEMO]`. | Claude Code chạy trên DB dev |
 
 Không có script tạo bảng / cột ngoài `migrations/` đã được PO duyệt.
+
+## Pilot (T11 … T19, T45R.8, T48.0, T14 / T15.1 / T17 / T17.1) – script SQL thêm / sửa và thứ tự chạy
+
+So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** dưới đây, luôn bằng `sqlcmd ... -b -I -f 65001` (**`-f 65001` bắt buộc** – thiếu cờ này tên tiếng Việt bị lỗi font khi ghi vào DB). Mọi script chạy lại được nhiều lần (SP `CREATE OR ALTER`; seed chỉ **thêm** phần chưa có, không ghi đè chỉnh sửa trên màn hình). Seed cần tài khoản `admin` đã có (ghi `CreatedBy`).
+
+`deploy/db/Deploy-Database.ps1` (và `deploy/docker/db-init.sh`) chạy **mọi** `DB/sp/*.sql` rồi đúng các seed dưới đây theo đúng thứ tự – dùng script này cho staging / DB mới.
+
+| # | Script | Task | Nội dung |
+|---|---|---|---|
+| 1 | `sp/uspInventoryTransaction_GetLedger.sql` (mới) | T16 | Sổ cái kho lọc khoảng ngày (`InventoryTransaction/GetLedger`) |
+| 2 | `sp/uspSupplier_GetAll.sql` (sửa) | T14 (FE-2) | Đủ cột ViewModel + lọc `Status` |
+| 3 | `sp/uspUnitMeasure_GetAll.sql` (sửa) | T14 (FE-2) | Đủ cột ViewModel + lọc `Status` |
+| 4 | `sp/uspUser_GetAll.sql` (sửa) | T45R.8 | Thêm `@IsActive` |
+| 5 | `seed/00_Admin_seed.sql` (sửa) | T48.0 | Tạo `admin` nếu chưa có – nhận hash **PBKDF2** (`-v AdminUserName= AdminPasswordHash=`); chỉ chạy qua `Deploy-Database.ps1 -AdminPassword` |
+| 6 | `seed/OrganizationUnit_seed.sql` (không đổi) | T07 | Cơ cấu tổ chức (chạy trước để các seed sau có công ty) |
+| 7 | `seed/ObjectMenu_seed.sql` (sửa) | T13, T15.1 | + mục "Duyệt – Đơn đặt suất ăn" (`#/wf-inbox?type=crm-order`), "Duyệt – Đơn mua hàng (Giám đốc)" (`#/wf-inbox?type=scm-po-director`) |
+| 8 | `seed/ObjectMenu_disable_legacy.sql` (mới) | T45R.8 (D-37) | Tắt 26 menu app cũ (không xóa) |
+| 9 | `seed/UserRole_seed.sql` (sửa) | T13, T15.1 | Quyền duyệt 2 mục trên cho nhóm CEO |
+| 10 | `seed/Shift_seed.sql` (không đổi) | T21.1 | 4 ca `SANG_6H` / `TRUA` / `TOI` / `DEM_23H` (Pilot chạy 4 ca – T17.1) |
+| 11 | `seed/FoodSafetyChecklist_seed.sql` (mới) | T17 | Bộ `PRD_BATCH`: `SAMPLE_RETAINED` (lưu mẫu – bắt buộc trước khi giao, D-42), `CORE_TEMP` |
+
+T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **không có SP / seed mới** (đọc / ghi qua EF + SP `usp*_GetAll` sẵn có).
+
+Đã chạy: DB dev `AppDelicare` (2026-11-17, mục 1–4, 6–11 theo thứ tự trên, `-f 65001`) và staging `AppDelicare_Staging` (qua `Deploy-Database.ps1`). Tên tiếng Việt bị lỗi font từ lần chạy seed trước (thiếu `-f 65001`: tên ca, ghi chú đơn vị, tên công ty, mục "Duyệt – Đơn đặt suất ăn") đã sửa bằng `deploy/db/Repair-VietnameseText.ps1` (dev 44 giá trị, staging 9).

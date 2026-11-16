@@ -32,7 +32,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ProductionPlanId", request.ProductionPlanId);
+                dynamicParameters.Add("@ProductionPlanId", request.ProductionPlanId == Guid.Empty ? null : request.ProductionPlanId);
                 dynamicParameters.Add("@ProductionOrderNumber", request.ProductionOrderNumber);
                 dynamicParameters.Add("@PlannedStartDate", request.PlannedStartDate);
                 dynamicParameters.Add("@ActualStartDate", request.ActualStartDate);

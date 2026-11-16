@@ -28,8 +28,8 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@MenuId", request.MenuId);
-                dynamicParameters.Add("@DishId", request.DishId);
+                dynamicParameters.Add("@MenuId", request.MenuId == Guid.Empty ? null : request.MenuId);
+                dynamicParameters.Add("@DishId", request.DishId == Guid.Empty ? null : request.DishId);
                 dynamicParameters.Add("@MealType", request.MealType);
                 //dynamicParameters.Add("@DayOfWeek", request.DayOfWeek);
                 //dynamicParameters.Add("@SortOrder", request.SortOrder);

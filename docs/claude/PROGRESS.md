@@ -1,14 +1,13 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
-- Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
-- **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
-- **2026-11-16 (D-40): LÀM HẾT BACKEND PILOT TRƯỚC, FE SAU.** Tạm dừng FE-3 (commit WIP trên `feat/FE-3-menu-masterdata`). **T45R.8 backend DONE** (nhánh `feat/T45R.8-admin`, 140/140 test). Task kế tiếp: T11 → T12 → T13 + T46B.1 → T16 → T14 → T15 → T17 → T19 → T50R1 → dừng báo anh. Sau đó mới tiếp FE.
-- **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
-- T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
-- Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend (2026-11-16, nhánh gộp `release/pilot`): xem mục T-MERGE. Trước gộp: `feat/T15.1-po-rules` 149/149, `feat/T45R.8-admin` 140/140, `feat/T19-delivery` 152/152.
-- Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
+- **2026-11-17: BACKEND PILOT XONG (P0 → P9) – dừng, chờ anh UAT-PILOT** (ROADMAP P9 `DONE(PILOT)`, mục T50R1 + T48.1 cuối file). Luồng P3 → P8 chạy thật bằng API trên DB dev (`docs/api-tests/pilot-flow.http`, 117 request / 8 chốt an toàn đúng) + test end-to-end qua HTTP (`Pilot/PilotFlowSqlServerTests`). Staging (LocalDB `AppDelicare_Staging`, `http://localhost:5200`) đã cập nhật backend Pilot + bản build Angular.
+- Nhánh: `feat/T50R1-pilot-flow` (từ `release/pilot` = T11 … T19 + T17.1 đã gộp, D-41). Chưa push / chưa gộp `main` – chờ anh duyệt.
+- Build: `dotnet build --no-incremental` 0 lỗi, 10 cảnh báo; `dotnet test` **173/173** (baseline 169 + 4); `npm run build` 0 lỗi.
+- **Tiếp theo (sau khi anh UAT-PILOT backend):** đợt FE theo D-40: FE-3 (phần còn lại) → FE của T45R.8 → FE-P2 → FE-P3 → FE-P4 → FE-P5 → FE-P7 → FE-P8 → UAT-PILOT trên giao diện (UAT_CHECKLIST mục PILOT-FE).
+- Khung chuẩn = code cũ (D-30), không sinh `/api/v1`. Tiến độ API theo `docs/reference/DELICARE_API_Catalog.xlsx` **chưa cập nhật** cho T11 … T19 / T50R1 (máy không có python / openpyxl) – gợi ý trạng thái: mục T50R1 bên dưới + gợi ý cuối từng mục T13 … T19.
+- Việc anh cần làm: (1) UAT-PILOT theo `docs/claude/UAT_CHECKLIST.md` mục PILOT trên staging; (2) duyệt / commit nhánh `feat/T50R1-pilot-flow`, rồi duyệt gộp `release/pilot` → `main`; (3) chốt các điểm PROPOSED của Pilot (mục T50R1 "Câu hỏi còn mở"); (4) IIS thật (deploy/README.md mục 4, cần quyền admin) nếu chọn IIS (D-15); (5) cập nhật / cho phép cài openpyxl để cập nhật Catalog; (6) các việc cũ: chạy T4 trong Visual Studio (T45R.6), D-26, D-27, đổi khóa đã lộ (SECRETS_TODO.md), nhánh `origin/develop`.
+- Lịch sử trạng thái trước 2026-11-17 (R1.0 / R1.1, D-34, D-40) xem các mục nhật ký bên dưới.
 
 ---
 
@@ -1143,3 +1142,61 @@ Câu hỏi cho anh (DECISIONS D-42, GAP-DLV-01…07):
 6. Mẫu "Biên bản giao hàng" thật (nếu có) để em sửa file in.
 
 Cần anh: không có script SQL mới; khai báo `Vehicle.Code` (mã ngắn dùng trong số chuyến), tài xế (Employee) và `DeliveryWindowFrom` của điểm giao trước khi chạy thử.
+
+### T50R1 (phần Pilot) + T48.1 + phần còn lại của T-MERGE (Pilot P9) · 2026-11-17 · DONE(PILOT)
+Nhánh `feat/T50R1-pilot-flow` (từ `release/pilot`). Backend + tài liệu + deploy staging; không đụng `app-delicare-client/src`, `docs/reference/*`.
+
+Kế hoạch:
+1. T-MERGE còn lại: `DB/README.md` mục "Pilot" (SP / seed theo thứ tự), `Deploy-Database.ps1` + `db-init.sh` đủ seed, chạy lại trên DB dev bằng `sqlcmd -b -I -f 65001`.
+2. `docs/api-tests/pilot-flow.http` – 1 luồng P3 → P8, 1 bộ `[DEMO]`, có các chốt an toàn; test tự động qua HTTP (transaction ngoài rồi rollback).
+3. Chạy API thật trên DB dev, chạy luồng; lỗi tìm được → sửa + test.
+4. `UAT_CHECKLIST.md` mục PILOT; `docs/frontend-handoff/README.md`.
+5. T48.1: deploy staging (DB + backend + Angular), smoke test.
+
+Đã làm:
+- **DB / deploy:** `DB/README.md` mục "Pilot" (11 script theo thứ tự chạy, so với `9d03b40`). `deploy/db/Deploy-Database.ps1` **bị hỏng từ T48.0** (đoạn băm mật khẩu admin bị chèn lặp 3 lần – chuỗi `'PBKDF2$100000…` không đóng, file không chạy được) → viết lại đoạn cuối, kiểm cú pháp bằng PowerShell parser, chạy thật trên staging; thêm `FoodSafetyChecklist_seed.sql` vào danh sách seed của `Deploy-Database.ps1` và `deploy/docker/db-init.sh`. DB dev: chạy lại 4 SP + 6 seed Pilot theo thứ tự với `-f 65001` (exit 0; `ObjectMenu_disable_legacy` lần chạy lại tắt 0).
+- **Tên tiếng Việt lỗi font** trên DB dev / staging (seed từng chạy thiếu `-f 65001`: tên + ghi chú 4 ca, tên công ty DLC, ghi chú 33 đơn vị, mục "Duyệt – Đơn đặt suất ăn"): script mới `deploy/db/Repair-VietnameseText.ps1` (giải mã ngược Windows-1252 → UTF-8, chỉ sửa giá trị giải mã được, UPDATE từng dòng theo Id + giá trị cũ, ModifiedBy = admin, mặc định chạy thử) – dev sửa 44 giá trị, staging 9; chạy lại: 0.
+- **`docs/api-tests/pilot-flow.http`** (117 request): danh mục tối thiểu (đơn vị, kho, NL mát / khô, NCC + bảng giá, 2 món + công thức gửi duyệt / duyệt / khóa, khách + điểm giao 11:00, hợp đồng + suất TRUA 35.000, xe, dây chuyền 1000 suất / mẻ, 2 lô bị chặn) → thực đơn tuần → phân công → đơn 1000 suất → chốt → MRP → PO 62,4 triệu → hộp duyệt GĐ → nhận hàng + QC → nhập kho → kế hoạch → phát hành → 2 mẻ → xuất NL → nấu / nhiệt độ lõi / lưu mẫu / sản lượng / đạt / đóng gói → chuyến → xuất phát → bàn giao + POD → đối soát → phản ánh. Biến + `# @name` theo cú pháp REST Client; 8 chốt an toàn ghi "→ 400".
+- **Test `AppDelicare.Tests/Pilot/PilotFlowSqlServerTests.cs`** (SQL Server dev, `[SkippableFact]`): cùng luồng **qua HTTP thật** (routing, model binding, PermissionFilter, controller → service). Giữ 1 transaction ngoài qua nhiều request bằng `IStartupFilter` đặt `HttpContext.RequestServices` = 1 scope dùng chung có DbContext đang mở transaction (UnitOfWork tham gia transaction ngoài); cuối test rollback, kiểm số dòng Order / MaterialLot / InventoryTransaction / ProductionBatch / DeliveryRoute / CustomerComplaint / TemperatureLog không đổi. Kiểm: số PH- / PO- / NL- (2 lô khác số) / ME- / CX- / PA-, tổng 35.000.000 / 62.400.000, blockedQuantity 80, hộp duyệt scm-po không có PO / scm-po-director có, QC 9 °C bị chặn, xuất NL không lấy lô hết hạn / KHONG_DAT, lõi 65 °C chặn đạt QC, xuất phát bị chặn vì 55 °C và vì mẻ chưa lưu mẫu, bàn giao 58 °C bị chặn, đối soát 34.650.000, đơn Reconciled, 2 phản ánh.
+- **Chạy thật trên DB dev** (`dotnet run` WebApi Development, `http://localhost:5125`), dữ liệu `[DEMO]` để lại trên dev:
+  - **P9A** (PowerShell `Invoke-RestMethod`, ngày ăn 25/11/2026): chạy hết luồng nhưng lộ 2 lỗi (dưới). Số: đơn `PH-261117-0003`, `KH-261125`, đề nghị `PH-261117-0004`, `PO-261117-0001`, `XN-261117-005`, phiếu nhập `PH-261117-0005`, 2 lô **cùng số** `NL-261117-DEMOP9A-01` (lỗi – giữ nguyên để đối chiếu), mẻ `ME-261125-TRUA-01/02`, `CX-261125-DEMOP9A-01`, `PA-261117-0001/0002`.
+  - **P9B** (PowerShell, sau khi sửa, ngày 26/11/2026): **88/88 bước đúng kỳ vọng**. Đơn `PH-261117-0012` (35.000.000 → Reconciled), `KH-261126`, đề nghị `PH-261117-0013`, `PO-261117-0002` (62.400.000, needsDirectorApproval, chỉ ở hộp `scm-po-director`, yêu cầu `XN-261117-008`), phiếu nhập / QC `PH-261117-0014`, lô `NL-261117-DEMOP9B-01` (bò 200) / `-02` (gạo 120), lệnh SX `PH-261117-0015/0016`, mẻ `ME-261126-TRUA-01` (bò kho) / `-02` (cơm) 08:30, phiếu xuất `PH-261117-0017/0018`, chuyến `CX-261126-DEMOP9B-01` + đơn giao `PH-261126-0001` → Completed, đối soát −10 (−1%) 34.650.000, phản ánh `PA-261117-0003` (tự động khi bàn giao) + `PA-261117-0004`.
+  - **P9C** (chạy chính file `pilot-flow.http` bằng trình chạy nhỏ đọc cú pháp REST Client, ngày 02/12/2026): **117 request đúng kỳ vọng**. Đơn `PH-261117-0021` → Reconciled, `PO-261117-0003` → Received, lô `NL-261117-DEMOP9C-01/02`, mẻ `ME-261202-TRUA-01/02` Packed, `CX-261202-DEMOP9C-01` Completed, `PA-261117-0005/0006`.
+- **Staging (T48.1):** `Deploy-Database.ps1` trên `AppDelicare_Staging` (131 SP + 6 seed, không đụng bảng) + sửa lỗi font; `Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging`; `npm run build` rồi chép `dist\w3crm\browser` vào `wwwroot` (cùng địa chỉ API, Angular dùng `/api/` + `#/`); chạy `dotnet AppDelicare.WebApi.dll --urls http://localhost:5200` với biến môi trường của `staging.local.env.ps1`. Smoke test: `/health` Healthy (Staging), Swagger 200, đăng nhập admin, GET 200 cho `User/GetCurrent`, `Menu`, `Order`, `MaterialLot`, `InventoryBalance/GetSummary`, `MaterialRequirement/GetByDate`, `PurchaseRequest`, `PurchaseOrder`, `GoodsReceipt`, `QcInspection`, `ApprovalRequest/GetMyPending`, `ProductionPlan`, `ProductionBatch/GetBoard`, `DeliveryRoute/GetBoard`, `OrderReconciliation/GetPendingOrders`, `CustomerComplaint`, `Shift` (tên ca đúng dấu); trang `/` trả giao diện DELI-CARE. IIS thật: không làm (cần quyền admin – anh / IT theo deploy/README.md mục 4). Docker: máy chưa có Docker. `deploy/README.md` thêm mục 8 (Angular trên staging) + 9 (cập nhật staging).
+- `UAT_CHECKLIST.md` mục **PILOT** (22 kịch bản API theo thứ tự request, vai trò gợi ý, kỳ vọng, các chốt an toàn) + ghi chú **PILOT-FE** (sau đợt FE, D-40). `docs/frontend-handoff/README.md` (mục lục P0-P2 … P8).
+
+Lỗi tìm được và đã sửa (đều có test):
+1. **Danh sách rỗng khi không lọc theo cha** – 35 SearchRequest còn lọc `Guid` không null (`MaterialLot.IngredientId`, `Order.CustomerId`, `Recipe.DishId`, `ProductionBatch.ProductionOrderId`, `MaterialIssue`, `InventoryBalance`, `InventoryTransaction`, `MenuAssignment`, `OrderReconciliation`, `DeliveryOrder`, `ProofOfDelivery`, `StockCount`…) → bỏ trống bị bind thành Guid rỗng, SP lọc `= 0000…` → `GetAll` luôn 0 dòng (màn Lô, Đơn hàng, Công thức, Mẻ… trống). Sửa như FE-2: thuộc tính → `Guid?`, 58 chỗ truyền tham số trong service đổi Guid rỗng → NULL. Test: `SearchFilterSqlServerTests.Pilot_lists_without_parent_filter_return_all_rows` (SQL Server, so với số dòng DB) + `Every_guid_filter_of_search_requests_is_nullable` (chặn tái phát cho mọi SearchRequest). `StorageLocation.WarehouseId`, `UomConversion.FromUnitId / ToUnitId`: service vốn không truyền lọc (ngoài Pilot – để nguyên).
+2. **Trùng số chứng từ khi sinh nhiều mã trước 1 lần lưu** – phiếu nhập 2 dòng → 2 lô cùng số `NL-…-01` (cũng ảnh hưởng đề nghị mua nhiều NCC → nhiều PO cùng số). Nguyên nhân: trên SQL Server `DocumentNumberService` chỉ đọc MAX từ dòng đã lưu (nhánh InMemory có tính bản ghi đang theo dõi nên test InMemory không bắt được). Sửa gốc: cộng thêm mã của bản ghi `Added` đang theo dõi trong DbContext (dùng chung hàm `MaxOf` với nhánh InMemory). Test: `DocumentNumberSqlServerTests.Numbers_generated_in_a_loop_before_saving_are_distinct_on_sql_server` (3 lô → -01 / -02 / -03) + kiểm trong test luồng Pilot.
+3. **`Deploy-Database.ps1` hỏng cú pháp** (từ T48.0) – xem trên; đã chạy thật trên staging.
+4. **Test chập chờn** `UserAccountTests.Reset_returns_temp_password_…` (có từ trước: 1/169 lỗi ở baseline) – host test khác khởi động song song ghi đè `Serilog.Log.Logger` → chuyển lớp test vào collection không song song `StaticLoggerCollection`. 3 lần chạy liên tiếp 173/173.
+Ghi chú (không phải lỗi): 2 lần đo nhiệt độ trong cùng 1 giây → lấy giá trị **thấp nhất** (thiết kế T19, an toàn) – test / `.http` ghi lần đo thấp kèm `MeasuredAt` lùi 10–15 phút như thực tế.
+
+File chính: `AppDelicare.Services/Implement/DocumentNumberService.cs`; 35 file `AppDelicare.Model/SearchRequest/*SearchRequest.cs` + 33 service tương ứng (`AppDelicare.Services/Implement/*Service.cs`, chỉ dòng `dynamicParameters.Add`); test `Tests/Pilot/PilotFlowSqlServerTests.cs` (mới), `Tests/MasterData/SearchFilterSqlServerTests.cs`, `Tests/Common/DocumentNumberTests.cs`, `Tests/Admin/UserAccountTests.cs`, `Tests/Integration/ApiFactory.cs`; `DB/README.md`, `deploy/db/Deploy-Database.ps1`, `deploy/db/Repair-VietnameseText.ps1` (mới), `deploy/docker/db-init.sh`, `deploy/README.md`; `docs/api-tests/pilot-flow.http` (mới), `docs/claude/{UAT_CHECKLIST, ROADMAP, PROGRESS}.md`, `docs/frontend-handoff/README.md` (mới).
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 10 cảnh báo (≤ 11).
+- `dotnet test`: **173/173** (+4: PilotFlow 1, SearchFilter 2, DocumentNumber 1), chạy 3 lần liên tiếp đều xanh; test SQL Server không bị bỏ qua.
+- `npm run build` (`app-delicare-client`): 0 lỗi (1 cảnh báo cũ "Unable to locate stylesheet D:\assets\css\style.css").
+- `git status`: không thay đổi trong `app-delicare-client/` (`dist` đã gitignore), `docs/reference/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; `api/v1` trong `*.cs` không tăng (3, đều trong test cũ).
+
+AC (P9): [x] `pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ `[DEMO]` (chạy thật trên DB dev) · [x] test tự động end-to-end qua HTTP · [x] UAT_CHECKLIST mục PILOT (API) · [~] mục PILOT phần thao tác trên giao diện → sau đợt FE (D-40) · [x] deploy staging backend + bản build Angular, smoke test · [ ] IIS thật (cần quyền admin) · [ ] Catalog (không có openpyxl).
+
+`DELICARE_API_Catalog.xlsx` – **chưa cập nhật** (máy không có python / openpyxl; T-MERGE: không tự gộp file nhị phân). Gợi ý cho anh / lần sau (cột J Trạng thái, K ghi chú, M Task):
+- Theo gợi ý đã ghi cuối các mục T13 (6.2 / 6.3 / 6.6), T16 (7.5 – 7.8), T14 (7.1), T15 (7.2 – 7.4, 9.1, 9.3, 9.5), T17 (8.1 – 8.4, 9.3), T19 (6.7, 10.2, 10.3, 10.5) và T45R.8 (dòng 34, 35, 38) phía trên.
+- T50R1 không thêm action mới; các dòng GET danh sách của Lô / Đơn hàng / Công thức / Mẻ / Lệnh SX / Phiếu xuất / Kiểm kê / Phân công thực đơn / Đối soát / Đơn giao / POD: cột K thêm "T50R1: bỏ trống lọc cha = không lọc".
+- Cột M thêm `T50R1` cho các dòng thuộc luồng P3 → P8 đã chạy end-to-end (đơn, MRP, PR, PO, nhận hàng, QC, kế hoạch, mẻ, chuyến, POD, đối soát, phản ánh).
+
+Câu hỏi còn mở (PROPOSED – gom từ các task Pilot, chi tiết ở DECISIONS):
+1. GAP-ORD-01…03, GAP-MENU-01/02: 1 đơn = 1 điểm giao; lựa chọn món lưu ở `MenuLine.SequenceNo`; xử lý đơn chưa xác nhận lúc chốt 20:00 D-1; lệch suất so với số đã xác nhận (chưa so trung bình 4 tuần), ai duyệt lệch suất (seed chỉ CEO).
+2. GAP-INV-02…11: phiếu xuất tay không gắn lệnh SX; lô chưa có kết quả QC vẫn cho xuất; ngưỡng kiểm kê 2% theo dòng; điều chỉnh tay chưa cần duyệt.
+3. GAP-MRP-02/04/08 + T14.1: chi tiết MRP trong Note (JSON); món chung nhiều lựa chọn không cộng dự phòng; cách tính "đã đề nghị".
+4. GAP-PUR-01/02/05/06/07/09/10: không duyệt đề nghị mua; PO bị từ chối về Nháp; hàng không đạt không nhập kho; dung sai nhận 10%; % VAT theo nhóm NL (đang 8% mọi dòng); cờ "ưu tiên dùng trước" chỉ trong Note.
+5. GAP-PRD-01…08 + T17.1 (a)–(f): chia phần theo ca, trạng thái phát hành theo ca, giờ xuất bếp nhập tay chỉ khi 1 ca, đơn nhiều ca, mã ca trong số mẻ.
+6. GAP-DLV-01…07: chặn xuất phát khi còn mẻ của ngày / ca chưa đóng gói; đo nhiệt độ 1 lần / chuyến + 1 lần / điểm; bàn giao < 60 °C không cho nhận; tính tiền theo suất phục vụ; tự tạo phản ánh khi có suất từ chối; mẫu Biên bản giao hàng thật.
+7. GAP-ADM-04/05: quy tắc tên đăng nhập; `IsActive` mặc định false.
+8. Mới (T50R1, GAP-DOC-01): số đơn giao `PH-` lấy theo **ngày giao** (`PH-261126-0001`), chứng từ khác theo ngày lập – giữ hay thống nhất? Hai lần đo nhiệt độ cùng giây lấy giá trị thấp nhất – giữ?
+
+Cần anh:
+- UAT-PILOT theo `UAT_CHECKLIST.md` mục PILOT trên staging `http://localhost:5200` (chạy lại theo deploy/README.md mục 9 bước 4; mật khẩu admin staging trong `deploy/staging.local.md`).
+- Duyệt / commit nhánh; chốt các câu hỏi trên; IIS thật nếu chọn IIS (deploy/README.md mục 4); cập nhật Catalog.

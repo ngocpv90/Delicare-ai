@@ -43,7 +43,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ProductionOrderId", request.ProductionOrderId);
+                dynamicParameters.Add("@ProductionOrderId", request.ProductionOrderId == Guid.Empty ? null : request.ProductionOrderId);
                 dynamicParameters.Add("@BatchNumber", request.BatchNumber);
                 dynamicParameters.Add("@StartDate", request.StartDate);
                 dynamicParameters.Add("@EndDate", request.EndDate);

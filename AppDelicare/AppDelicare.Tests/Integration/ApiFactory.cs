@@ -80,3 +80,13 @@ namespace AppDelicare.Tests.Integration
         public const string Name = "api";
     }
 }
+
+namespace AppDelicare.Tests.Integration
+{
+    /// <summary>T50R1: test thay <c>Serilog.Log.Logger</c> (tĩnh) chạy riêng, không song song với test khác (host test khởi động sẽ ghi đè Log.Logger).</summary>
+    [CollectionDefinition(Name, DisableParallelization = true)]
+    public sealed class StaticLoggerCollection
+    {
+        public const string Name = "static-logger";
+    }
+}

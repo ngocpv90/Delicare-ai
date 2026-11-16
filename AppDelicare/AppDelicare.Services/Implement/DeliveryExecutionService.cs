@@ -27,7 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@DeliveryOrderId", request.DeliveryOrderId);
+                dynamicParameters.Add("@DeliveryOrderId", request.DeliveryOrderId == Guid.Empty ? null : request.DeliveryOrderId);
                 dynamicParameters.Add("@DepartedAt", request.DepartedAt);
                 dynamicParameters.Add("@ArrivedAt", request.ArrivedAt);
                 dynamicParameters.Add("@DeliveredAt", request.DeliveredAt);

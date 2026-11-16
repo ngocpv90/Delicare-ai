@@ -43,12 +43,12 @@ namespace AppDelicare.Services.Implement
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
                 dynamicParameters.Add("@ProductionPlanId", request.ProductionPlanId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 //dynamicParameters.Add("@RequiredQuantity", request.RequiredQuantity);
                 //dynamicParameters.Add("@AvailableQuantity", request.AvailableQuantity);
                 //dynamicParameters.Add("@ExpectedIncomingQuantity", request.ExpectedIncomingQuantity);
                 //dynamicParameters.Add("@PurchaseQuantity", request.PurchaseQuantity);
-                dynamicParameters.Add("@UnitId", request.UnitId);
+                dynamicParameters.Add("@UnitId", request.UnitId == Guid.Empty ? null : request.UnitId);
                 dynamicParameters.Add("@Status", request.Status);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);

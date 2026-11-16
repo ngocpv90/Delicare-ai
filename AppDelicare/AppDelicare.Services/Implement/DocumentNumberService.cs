@@ -69,6 +69,14 @@ namespace AppDelicare.Services.Implement
                     throw new InvalidOperationException("Sinh mã chứng từ phải nằm trong transaction đang mở (IUnitOfWork.OpenTransaction) – khóa giữ tới khi ghi xong.");
                 }
                 current = await MaxFromSqlAsync(db, spec, root, cancellationToken);
+                // T50R1: cộng cả mã đã gán cho bản ghi đang theo dõi nhưng CHƯA lưu (vòng lặp sinh nhiều mã trước 1 lần CommitAsync –
+                // phiếu nhập nhiều dòng → nhiều lô NL-, đề nghị mua → nhiều PO-). Trước đây SQL chỉ thấy dòng đã lưu → 2 lô cùng số NL-…-01
+                // (InMemory đã tính bản ghi đang theo dõi nên test InMemory không bắt được).
+                int? pending = MaxOf(db.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).Select(e => e.Entity), spec, root);
+                if (pending != null && (current == null || pending > current))
+                {
+                    current = pending;
+                }
             }
             else
             {
@@ -123,12 +131,20 @@ namespace AppDelicare.Services.Implement
         /// <summary>Provider không quan hệ (test InMemory): tính trên dữ liệu đã lưu + đang theo dõi.</summary>
         private static int? MaxFromMemory(DbContext db, Spec spec, string root)
         {
+            var rows = spec.Targets.SelectMany(target =>
+                ((IQueryable<object>)typeof(DbContext).GetMethod(nameof(DbContext.Set), Type.EmptyTypes)!.MakeGenericMethod(target.Entity).Invoke(db, null)!).AsEnumerable())
+                .Concat(db.ChangeTracker.Entries().Select(e => e.Entity));
+            return MaxOf(rows, spec, root);
+        }
+
+        /// <summary>Số lớn nhất theo mã gốc trên một tập bản ghi (bỏ qua bản ghi khác loại entity đích). Mã gốc trùng (Digits = 0) tính là 1.</summary>
+        private static int? MaxOf(IEnumerable<object> entities, Spec spec, string root)
+        {
             int? max = null;
+            var list = entities as IList<object> ?? entities.ToList();
             foreach (var target in spec.Targets)
             {
-                var set = (IQueryable<object>)typeof(DbContext).GetMethod(nameof(DbContext.Set), Type.EmptyTypes)!.MakeGenericMethod(target.Entity).Invoke(db, null)!;
-                var rows = set.AsEnumerable().Concat(db.ChangeTracker.Entries().Where(e => e.Entity.GetType() == target.Entity).Select(e => e.Entity));
-                foreach (var row in rows)
+                foreach (var row in list.Where(r => r.GetType() == target.Entity))
                 {
                     foreach (string prop in target.Properties)
                     {
