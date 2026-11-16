@@ -132,47 +132,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(GoodsReceiptLineRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<GoodsReceiptLine>(request);
-            _unitOfWork.GoodsReceiptLineRepository.Add(insert);
-            await _unitOfWork.GoodsReceiptLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T15: dòng phiếu nhập chỉ ghi qua GoodsReceipt/Create và QcInspection/Conclude – CRUD không ghi (số nhận / đạt / lô gắn với sổ kho).</summary>
+        private Task<string> Insert(GoodsReceiptLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.GoodsReceiptLineCrudBlocked);
 
-        private async Task<string> Update(GoodsReceiptLineRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.GoodsReceiptLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.GoodsReceiptLineRepository.Update(update);
-            await _unitOfWork.GoodsReceiptLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(GoodsReceiptLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.GoodsReceiptLineCrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(GoodsReceiptLine), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.GoodsReceiptLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.GoodsReceiptLineRepository.Update(delete);
-            await _unitOfWork.GoodsReceiptLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.GoodsReceiptLineCrudBlocked);
 
         public async Task<IResult<GoodsReceiptLine>> GetById(Guid id)
         {

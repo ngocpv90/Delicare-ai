@@ -168,5 +168,25 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>T15: in Phiếu trước sản xuất (.xlsx) theo kế hoạch (id = ProductionPlanId) – quyền Xuất scm-requirement.</summary>
+        [HttpGet("ExportPreProduction")]
+        public async Task<IActionResult> ExportPreProduction(Guid id)
+        {
+            try
+            {
+                var result = await _service.ExportPreProduction(id);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Phieu_truoc_san_xuat_{id:N}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExportPreProduction: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

@@ -129,47 +129,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(PurchaseOrderLineRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<PurchaseOrderLine>(request);
-            _unitOfWork.PurchaseOrderLineRepository.Add(insert);
-            await _unitOfWork.PurchaseOrderLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T15: dòng PO chỉ ghi qua PurchaseOrder/UpdateLines (PO Nháp) hoặc ConvertToPurchaseOrder – CRUD không ghi (giữ tổng tiền / nội dung đã duyệt).</summary>
+        private Task<string> Insert(PurchaseOrderLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.PurchaseOrderLineCrudBlocked);
 
-        private async Task<string> Update(PurchaseOrderLineRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.PurchaseOrderLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.PurchaseOrderLineRepository.Update(update);
-            await _unitOfWork.PurchaseOrderLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(PurchaseOrderLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.PurchaseOrderLineCrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(PurchaseOrderLine), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.PurchaseOrderLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.PurchaseOrderLineRepository.Update(delete);
-            await _unitOfWork.PurchaseOrderLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.PurchaseOrderLineCrudBlocked);
 
         public async Task<IResult<PurchaseOrderLine>> GetById(Guid id)
         {

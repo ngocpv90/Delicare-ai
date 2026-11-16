@@ -195,6 +195,43 @@
             public static readonly string MrpUnitMissing = "Cảnh báo: nguyên liệu {0} thiếu quy đổi đơn vị {1} → {2} – phần này không được tính";
             public static readonly string MrpNoSupplier = "Chưa có NCC đang hiệu lực cho nguyên liệu này";
             public static readonly string MrpLeadTimeWarning = "Cảnh báo: NCC {0} cần {1} ngày giao – đặt hôm nay không kịp ngày {2}";
+            // T15 – mua hàng, nhận hàng, QC đầu vào (P6)
+            public static readonly string PurchaseRequestStatusLocked = "Trạng thái đề nghị mua chỉ đổi qua thao tác nghiệp vụ (ConvertToPurchaseOrder / Cancel)";
+            public static readonly string PurchaseRequestNeedsLine = "Đề nghị mua chưa có dòng nguyên liệu";
+            public static readonly string PurchaseRequestNoSupplier = "Chưa có NCC đang hiệu lực (SupplierMaterial) cho: {0} – thêm bảng giá NCC rồi lập PO";
+            public static readonly string PurchaseRequestLineLocked = "Chỉ sửa dòng của đề nghị mua Nháp (đề nghị hiện ở trạng thái {0})";
+            public static readonly string PurchaseOrderStatusLocked = "Trạng thái, số và tổng tiền của PO chỉ đổi qua thao tác nghiệp vụ (UpdateLines / Submit / Approve / Send / Cancel / Close)";
+            public static readonly string PurchaseOrderLineCrudBlocked = "Dòng PO chỉ ghi qua PurchaseOrder/UpdateLines (PO Nháp)";
+            public static readonly string PurchaseOrderNeedsLine = "PO chưa có dòng nguyên liệu (số lượng > 0)";
+            public static readonly string PurchaseOrderDuplicateIngredient = "Mỗi nguyên liệu chỉ có 1 dòng trên PO (trùng: {0})";
+            public static readonly string PurchaseOrderLineInvalid = "Số lượng phải > 0 và đơn giá không âm";
+            public static readonly string PurchaseOrderLineNotInOrder = "Dòng {0} không thuộc PO này";
+            public static readonly string PurchaseOrderFromRequestNoDelete = "PO lập từ đề nghị mua không xóa được – dùng PurchaseOrder/Cancel";
+            public static readonly string PurchaseOrderHasReceipt = "PO đã có phiếu nhập {0} – không hủy được (đóng PO bằng Close)";
+            public static readonly string PurchaseOrderPendingReceipt = "PO còn phiếu nhập chưa ghi sổ: {0}";
+            public static readonly string PurchaseOrderNotPending = "PO không có yêu cầu duyệt đang chờ";
+            public static readonly string PurchaseOrderAutoApproved = "PO tổng {0} ≤ ngưỡng tự duyệt {1} – đã duyệt tự động";
+            public static readonly string PurchaseOrderSubmitted = "Đã gửi duyệt PO (yêu cầu {0})";
+            public static readonly string CancelReasonRequired = "Nhập lý do hủy (tối thiểu 3 ký tự)";
+            public static readonly string SupplierNotFound = "Không tìm thấy nhà cung cấp";
+            public static readonly string SupplierInactive = "Nhà cung cấp đang ngừng giao dịch";
+            public static readonly string GoodsReceiptInsertBlocked = "Phiếu nhập chỉ lập qua GoodsReceipt/Create (theo PO đã duyệt)";
+            public static readonly string GoodsReceiptLineCrudBlocked = "Dòng phiếu nhập chỉ ghi qua GoodsReceipt/Create và QcInspection/Conclude";
+            public static readonly string GoodsReceiptDeleteBlocked = "Phiếu nhập không xóa – dùng GoodsReceipt/Cancel khi chưa ghi sổ";
+            public static readonly string GoodsReceiptPoNotReceivable = "Chỉ nhận hàng theo PO Đã duyệt / Đã gửi NCC / Nhận một phần (PO {0} đang {1})";
+            public static readonly string GoodsReceiptNeedsLine = "Phiếu nhập phải có ít nhất 1 dòng số lượng nhận > 0";
+            public static readonly string GoodsReceiptOverReceive = "{0}: nhận {1} vượt số còn được nhận {2} (đặt {3}, cho phép vượt {4}%)";
+            public static readonly string GoodsReceiptDuplicateLine = "Dòng PO {0} xuất hiện nhiều lần trong phiếu nhập";
+            public static readonly string GoodsReceiptDateInvalid = "{0}: ngày sản xuất sau hạn dùng";
+            public static readonly string GoodsReceiptNotConcluded = "Phiếu nhập chưa kết luận QC (QcInspection/Conclude) – chưa ghi sổ được";
+            public static readonly string QcInspectionCrudBlocked = "Phiếu QC đầu vào chỉ tạo cùng phiếu nhập và ghi kết quả qua QcInspection/Conclude";
+            public static readonly string QcResultInvalid = "{0}: kết quả QC phải là DAT / DAT_MOT_PHAN / KHONG_DAT";
+            public static readonly string QcLineMissing = "Chưa có kết quả QC cho dòng: {0}";
+            public static readonly string QcPartialQuantityInvalid = "{0}: DAT_MOT_PHAN cần số lượng đạt > 0 và < số nhận ({1})";
+            public static readonly string QcRemarkRequired = "{0}: kết quả {1} bắt buộc ghi nhận xét / lý do";
+            public static readonly string QcExpiredLot = "{0}: hạn dùng {1} trước ngày nhận – chỉ kết luận KHONG_DAT";
+            public static readonly string QcTemperatureRemarkRequired = "{0}: nhiệt độ nhận {1} °C vượt ngưỡng {2} °C – kết luận KHONG_DAT hoặc ghi lý do chấp nhận / hành động khắc phục";
+            public static readonly string ReceivingTempOutOfRange = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C";
         }
 
         public class TypeSave

@@ -22,5 +22,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<MaterialRequirementResultModel>> GetByDate(MaterialRequirementByDateRequest request);
         /// <summary>T14: kết quả đã lưu theo kế hoạch sản xuất.</summary>
         public Task<IResult<MaterialRequirementResultModel>> GetDetail(Guid productionPlanId);
+        /// <summary>T15: in Phiếu trước sản xuất (.xlsx) từ kết quả tính nhu cầu của kế hoạch.</summary>
+        public Task<IResult<byte[]>> ExportPreProduction(Guid productionPlanId);
     }
 }

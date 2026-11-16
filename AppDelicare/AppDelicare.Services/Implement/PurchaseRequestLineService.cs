@@ -128,9 +128,27 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>T15: dòng đề nghị mua chỉ thêm / sửa / xóa khi đề nghị còn Nháp; ghi song song UomId = UnitId (DEPRECATED_COLUMNS).</summary>
+        private string? DraftOnly(Guid purchaseRequestId)
+        {
+            var pr = _unitOfWork.PurchaseRequestRepository.GetSingle(x => x.Id == purchaseRequestId && !x.IsDeleted);
+            return pr == null ? ConstantHelper.Message.RecordNotFoundMessage
+                : pr.Status != PurchaseRequestStatus.Draft ? string.Format(ConstantHelper.Message.PurchaseRequestLineLocked, PurchaseRequestStatus.Label(pr.Status))
+                : null;
+        }
+
         private async Task<string> Insert(PurchaseRequestLineRequest request, string typeSave)
         {
+            if (DraftOnly(request.PurchaseRequestId) is { } error)
+            {
+                return error;
+            }
+            if (request.Quantity <= 0)
+            {
+                return ConstantHelper.Message.PurchaseOrderLineInvalid;
+            }
             var insert = _mapper.Map<PurchaseRequestLine>(request);
+            insert.UomId = insert.UnitId;
             _unitOfWork.PurchaseRequestLineRepository.Add(insert);
             await _unitOfWork.PurchaseRequestLineRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -143,7 +161,16 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            if ((DraftOnly(exist.PurchaseRequestId) ?? (request.PurchaseRequestId != exist.PurchaseRequestId ? DraftOnly(request.PurchaseRequestId) : null)) is { } error)
+            {
+                return error;
+            }
+            if (request.Quantity <= 0)
+            {
+                return ConstantHelper.Message.PurchaseOrderLineInvalid;
+            }
             var update = _mapper.Map(request, exist);
+            update.UomId = update.UnitId;
             _unitOfWork.PurchaseRequestLineRepository.Update(update);
             await _unitOfWork.PurchaseRequestLineRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -164,6 +191,10 @@ namespace AppDelicare.Services.Implement
             if (delete == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            if (DraftOnly(delete.PurchaseRequestId) is { } error)
+            {
+                return error;
             }
             _unitOfWork.PurchaseRequestLineRepository.Update(delete);
             await _unitOfWork.PurchaseRequestLineRepository.CommitAsync(typeSave);

@@ -1,4 +1,5 @@
 using AutoMapper;
+using ClosedXML.Excel;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -934,6 +935,158 @@ namespace AppDelicare.Services.Implement
                 }
             }
             return result;
+        }
+
+        /// <summary>
+        /// T15 – in "Phiếu trước sản xuất" (.xlsx, ClosedXML) từ kết quả tính nhu cầu đã lưu, theo bố cục file thật <c>Phieu_Truoc sx.xlsx</c>
+        /// (BUSINESS_DOCS.md – chỉ lấy cấu trúc, không chép dữ liệu): tên pháp nhân, PHIẾU TRƯỚC SẢN XUẤT, ngày SX / kế hoạch, số suất order (suất đơn đã chốt) /
+        /// số suất thực tế (để trống ghi tay); bảng món × số suất; bảng nguyên liệu: cần / tồn xuất được / tồn bị chặn / tồn an toàn, Tình trạng hàng (Đủ /
+        /// Thiếu – số thiếu, SL đề nghị mua, NCC gợi ý), cột ghi tay Tình trạng sơ chế (Đã SC / Chưa SC), Chất lượng hàng (Đạt / Không đạt – trả về), Ghi chú.
+        /// Định lượng theo từng món (cột "Định mức (g)" của file thật) không lưu riêng – MRP gộp theo nguyên liệu (GAP-MRP-02).
+        /// </summary>
+        public async Task<IResult<byte[]>> ExportPreProduction(Guid productionPlanId)
+        {
+            try
+            {
+                var data = await DetailAsync(productionPlanId);
+                if (data == null)
+                {
+                    return Result<byte[]>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var company = await _unitOfWork.DbContext.Company.AsNoTracking().Where(c => !c.IsDeleted).OrderBy(c => c.CreatedDate).FirstOrDefaultAsync();
+                const string brand = "#91AF42";
+                const int lastCol = 15;
+
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Phieu truoc SX");
+                ws.Cell(1, 1).Value = company?.Name ?? "DELICARE";
+                ws.Cell(1, 1).Style.Font.Bold = true;
+                ws.Cell(1, 11).Value = "Số suất order:";
+                ws.Cell(1, 13).Value = data.TotalMeals;
+                ws.Cell(2, 11).Value = "Số suất thực tế:";
+                ws.Range(3, 1, 3, lastCol).Merge().Value = "PHIẾU TRƯỚC SẢN XUẤT";
+                ws.Range(3, 1, 3, lastCol).Style.Font.SetBold().Font.SetFontSize(16).Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                ws.Range(4, 1, 4, lastCol).Merge().Value = $"Ngày sản xuất: {Day(data.ProductionDate)} – Kế hoạch {data.PlanNumber}"
+                    + (string.IsNullOrEmpty(data.WarehouseName) ? string.Empty : $" – Kho {data.WarehouseName}")
+                    + (data.CalculatedAt != null ? $" – tính lúc {data.CalculatedAt.Value.ToString("HH:mm dd/MM/yyyy", CultureInfo.InvariantCulture)}" : string.Empty);
+                ws.Range(4, 1, 4, lastCol).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center).Font.SetItalic();
+
+                void Header(IXLRange range) => range.Style.Font.SetBold().Font.SetFontColor(XLColor.White).Fill.SetBackgroundColor(XLColor.FromHtml(brand))
+                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center).Alignment.SetVertical(XLAlignmentVerticalValues.Center).Alignment.SetWrapText(true);
+
+                // Món × số suất.
+                int row = 6;
+                ws.Cell(row, 1).Value = "STT";
+                ws.Range(row, 2, row, 4).Merge().Value = "Tên món";
+                ws.Cell(row, 5).Value = "Số suất";
+                ws.Range(row, 6, row, 8).Merge().Value = "Công thức";
+                Header(ws.Range(row, 1, row, 8));
+                int dishStart = row;
+                int stt = 0;
+                foreach (var dish in data.ListDish.OrderBy(d => d.DishName))
+                {
+                    row++;
+                    ws.Cell(row, 1).Value = ++stt;
+                    ws.Range(row, 2, row, 4).Merge().Value = dish.DishName ?? dish.DishCode ?? string.Empty;
+                    ws.Cell(row, 5).Value = dish.Portions;
+                    ws.Range(row, 6, row, 8).Merge().Value = dish.RecipeVersion is { Length: > 0 } v ? $"{v}" + (dish.Warning != null ? $" – {dish.Warning}" : string.Empty) : dish.Warning ?? string.Empty;
+                }
+                ws.Range(dishStart, 1, row, 8).Style.Border.SetInsideBorder(XLBorderStyleValues.Thin).Border.SetOutsideBorder(XLBorderStyleValues.Thin);
+
+                // Nguyên liệu: số lượng / tình trạng hàng / sơ chế / chất lượng (2 dòng tiêu đề như mẫu).
+                row += 2;
+                int head = row;
+                ws.Range(head, 1, head + 1, 1).Merge().Value = "STT";
+                ws.Range(head, 2, head + 1, 2).Merge().Value = "Mã NL";
+                ws.Range(head, 3, head + 1, 3).Merge().Value = "Tên nguyên liệu";
+                ws.Range(head, 4, head + 1, 4).Merge().Value = "ĐVT";
+                ws.Range(head, 5, head, 8).Merge().Value = "Số lượng";
+                ws.Cell(head + 1, 5).Value = "SL cần";
+                ws.Cell(head + 1, 6).Value = "Tồn xuất được";
+                ws.Cell(head + 1, 7).Value = "Tồn bị chặn";
+                ws.Cell(head + 1, 8).Value = "Tồn an toàn";
+                ws.Range(head, 9, head, 12).Merge().Value = "Tình trạng hàng";
+                ws.Cell(head + 1, 9).Value = "Đủ";
+                ws.Cell(head + 1, 10).Value = "Thiếu\n(SL thiếu)";
+                ws.Cell(head + 1, 11).Value = "SL đề nghị mua";
+                ws.Cell(head + 1, 12).Value = "NCC gợi ý";
+                ws.Range(head, 13, head, 14).Merge().Value = "Tình trạng sơ chế / chất lượng";
+                ws.Cell(head + 1, 13).Value = "Đã SC / Chưa SC";
+                ws.Cell(head + 1, 14).Value = "Đạt / Không đạt\n(trả về)";
+                ws.Range(head, 15, head + 1, 15).Merge().Value = "Ghi chú";
+                Header(ws.Range(head, 1, head + 1, lastCol));
+                row = head + 1;
+                stt = 0;
+                foreach (var item in data.ListItem.OrderBy(i => i.IngredientName))
+                {
+                    row++;
+                    ws.Cell(row, 1).Value = ++stt;
+                    ws.Cell(row, 2).Value = item.IngredientCode ?? string.Empty;
+                    ws.Cell(row, 3).Value = item.IngredientName ?? string.Empty;
+                    ws.Cell(row, 4).Value = item.UnitName ?? string.Empty;
+                    ws.Cell(row, 5).Value = item.RequiredQuantity;
+                    ws.Cell(row, 6).Value = item.AvailableQuantity;
+                    ws.Cell(row, 7).Value = item.BlockedQuantity;
+                    ws.Cell(row, 8).Value = item.SafetyStock;
+                    if (item.ShortageQuantity > 0)
+                    {
+                        ws.Cell(row, 10).Value = item.ShortageQuantity;
+                        ws.Cell(row, 10).Style.Font.SetFontColor(XLColor.FromHtml("#F07825")).Font.SetBold();
+                    }
+                    else
+                    {
+                        ws.Cell(row, 9).Value = "✓";
+                    }
+                    if (item.PurchaseQuantity > 0)
+                    {
+                        ws.Cell(row, 11).Value = item.PurchaseQuantity;
+                    }
+                    ws.Cell(row, 12).Value = item.Supplier?.SupplierName ?? string.Empty;
+                    ws.Cell(row, 15).Value = item.Warning ?? string.Empty;
+                }
+                ws.Range(head, 1, row, lastCol).Style.Border.SetInsideBorder(XLBorderStyleValues.Thin).Border.SetOutsideBorder(XLBorderStyleValues.Thin);
+                ws.Range(head + 2, 5, row, 11).Style.NumberFormat.Format = "#,##0.####";
+                ws.Range(head + 2, 9, row, 9).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                if (data.ListWarning.Count != 0)
+                {
+                    row += 2;
+                    ws.Cell(row, 1).Value = "Cảnh báo:";
+                    ws.Cell(row, 1).Style.Font.Bold = true;
+                    foreach (string warning in data.ListWarning)
+                    {
+                        row++;
+                        ws.Range(row, 1, row, lastCol).Merge().Value = "• " + warning;
+                    }
+                }
+                row += 2;
+                ws.Range(row, 1, row, 4).Merge().Value = "Thời gian cần có hàng: ........................";
+                ws.Range(row, 9, row, 15).Merge().Value = "Người lập phiếu                    Bếp trưởng                    Thủ kho";
+                ws.Range(row, 9, row, 15).Style.Font.SetBold().Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+                ws.Column(1).Width = 6;
+                ws.Column(2).Width = 12;
+                ws.Column(3).Width = 30;
+                ws.Column(4).Width = 8;
+                for (int c = 5; c <= 11; c++)
+                {
+                    ws.Column(c).Width = 12;
+                }
+                ws.Column(12).Width = 24;
+                ws.Column(13).Width = 14;
+                ws.Column(14).Width = 14;
+                ws.Column(15).Width = 30;
+                ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
+                ws.PageSetup.FitToPages(1, 0);
+
+                using var stream = new MemoryStream();
+                wb.SaveAs(stream);
+                return Result<byte[]>.Success(stream.ToArray(), ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExportPreProduction: ", ex.ToString()));
+                throw;
+            }
         }
     }
 }

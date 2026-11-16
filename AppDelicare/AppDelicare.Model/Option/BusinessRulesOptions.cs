@@ -38,5 +38,15 @@ namespace AppDelicare.Model.Option
         };
         /// <summary>T14 / D-12: MRP cộng tồn an toàn (InventoryPolicie.SafetyStock, không có thì Ingredient.SafetyStock) vào nhu cầu (PROPOSED – BA/PO CONFIRM).</summary>
         public bool MrpIncludeSafetyStock { get; set; } = true;
+        /// <summary>T15: PO có tổng tiền ≤ ngưỡng này được tự duyệt khi gửi (0 = mọi PO phải duyệt) – PROPOSED – BA/PO CONFIRM (GAP-PUR-03).</summary>
+        public decimal PurchaseOrderAutoApproveMaxAmount { get; set; }
+        /// <summary>T15 / D-11: PO lớn hơn ngưỡng này cần GĐ duyệt. Pilot duyệt 1 cấp – chỉ ghi chú trong tiêu đề hộp duyệt (PROPOSED).</summary>
+        public decimal PurchaseOrderDirectorApprovalAmount { get; set; } = 50_000_000m;
+        /// <summary>T15: được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO – PROPOSED (GAP-PUR-04).</summary>
+        public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
+        /// <summary>T15: nhiệt độ nhận hàng tối đa (°C) theo Ingredient.StorageType – PROPOSED theo spec 9.1 (CHILLED &gt; 5, FROZEN &gt; −18 là ngoài ngưỡng).</summary>
+        public Dictionary<string, decimal> ReceivingTempMaxC { get; set; } = new(StringComparer.OrdinalIgnoreCase) { ["CHILLED"] = 5m, ["FROZEN"] = -18m };
+        /// <summary>T15: hạn xử lý sự cố NCC (SupplierIssue.DueAt) = lúc ghi sổ + số ngày này – PROPOSED (spec 9.1: +2 ngày).</summary>
+        public int SupplierIssueDueDays { get; set; } = 2;
     }
 }
