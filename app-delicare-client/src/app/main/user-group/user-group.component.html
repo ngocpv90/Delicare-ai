@@ -1,92 +1,88 @@
 @if (permission?.allowAccess) {
-  <div class="row">
-    <div class="col-xl-12">
-
-      <div class="card">
-        <div class="card-body p-0">
-          <div class="table-responsive active-projects style-1 dataTables_wrapper">
-              <form [formGroup]="searchForm" (ngSubmit)="search()">
-                <div class="tbl-caption">
-                  <h4 class="heading mb-0">Danh sách nhóm quyền</h4>
-                  <div class="d-flex flex-wrap align-items-center gap-2">
-                  @if (permission.allowAdd) { <button type="button" class="btn btn-primary btn-sm" title="Thêm mới dữ liệu" (click)="openModal()">+ Thêm mới</button> }
-                  </div>
-                </div>
-                <div class="row g-3 align-items-end clinic-tbl-filter">
-                  <div class="col-xl-3 col-lg-4 col-md-6">
-                    <label class="form-label" for="searchText">Tên phân quyền</label>
-                    <input id="searchText" class="form-control" placeholder="Nhập dữ liệu" formControlName="searchText" />
-                  </div>
-                  <div class="col-xl-3 col-lg-4 col-md-6 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Áp dụng</button>
-                    <button type="button" class="btn btn-danger light" (click)="reloadPage()">Đặt lại</button>
-                  </div>
-                </div>
-              </form>
-            <table class="table clinic-table mb-0">
-              <thead>
-                <tr>
-                  <th class="text-center" style="width: 45px">STT</th>
-                  <th class="sortable" style="width: 200px" (click)="sort('name')">
-                    Tên phân quyền
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
-                  </th>
-                  <th class="text-end" style="width: 120px">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (data of listData; track data.id) {
-                  <tr>
-                    <td class="text-center">{{ data.stt }}</td>
-                    <td>{{ data.name }}</td>
-                    <td class="text-end">
-                      @if (permission.allowEdit) {
-                        <button
-                          type="button"
-                          class="btn btn-primary light btn-xs sharp me-1"
-                          title="Sửa dữ liệu"
-                          (click)="openModal(data)"
-                        >
-                          <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-info light btn-xs sharp me-1"
-                          title="Phân quyền"
-                          (click)="openGivePermissionModal(data)"
-                        >
-                          <i class="fa-solid fa-users-gear"></i>
-                        </button>
-                      }
-                      @if (permission.allowDelete && !data.isDefault) {
-                        <button
-                          type="button"
-                          class="btn btn-danger light btn-xs sharp"
-                          title="Xóa dữ liệu"
-                          (click)="delete(data.id)"
-                        >
-                          <i class="fa-solid fa-trash"></i>
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="3" class="text-center text-muted py-4">Không có dữ liệu</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <app-table-pager
-            [page]="table.page"
-            [pageSize]="table.pageSize"
-            [total]="table.total"
-            (pageChange)="changePage($event)"
-            (pageSizeChange)="changePageSize($event)"
-          ></app-table-pager>
+  <app-page-header description="Nhóm người dùng = vai trò. Quyền của từng nhóm được gán trên màn Ma trận quyền.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            class="form-control"
+            placeholder="Tìm theo tên nhóm"
+            aria-label="Tìm theo tên nhóm"
+            formControlName="searchText"
+            autocomplete="off"
+          />
         </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('name')">
+                Tên nhóm người dùng
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="text-end" style="width: 150px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td class="fw-semibold">
+                  {{ data.name }}
+                  @if (data.isDefault) {
+                    <app-status-badge code="default" label="Mặc định" class="ms-1"></app-status-badge>
+                  }
+                </td>
+                <td class="dc-actions">
+                  @if (permissionMatrix?.allowAccess) {
+                    <button
+                      type="button"
+                      class="dc-act"
+                      title="Phân quyền"
+                      aria-label="Phân quyền"
+                      (click)="openPermission(data)"
+                    >
+                      <i class="fa-solid fa-users-gear"></i>
+                    </button>
+                  }
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                  }
+                  @if (permission.allowDelete && !data.isDefault) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
     </div>
   </div>
 } @else {

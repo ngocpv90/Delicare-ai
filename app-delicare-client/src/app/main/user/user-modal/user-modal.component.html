@@ -5,7 +5,7 @@
   </div>
   <div class="modal-body">
     <div class="row">
-      <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 mb-3">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="userName">
           Tên đăng nhập <span class="text-danger">(*)</span>
         </label>
@@ -19,11 +19,14 @@
           autocomplete="off"
           [readonly]="isReadonly"
         />
-        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+        <div class="invalid-feedback">Vui lòng nhập tên đăng nhập (không có khoảng trắng)</div>
+        @if (!isReadonly) {
+          <div class="form-text">Mật khẩu khởi tạo = tên đăng nhập; người dùng đổi sau lần đăng nhập đầu.</div>
+        }
       </div>
-      <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 mb-3">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="listUserGroupId">
-          Nhóm quyền <span class="text-danger">(*)</span>
+          Nhóm người dùng <span class="text-danger">(*)</span>
         </label>
         <app-select
           [loading]="isLoadingUserGroupId"
@@ -31,39 +34,48 @@
           [items]="listUserGroup"
           bindValue="id"
           bindLabel="name"
-          placeholder="Chọn dữ liệu"
+          placeholder="Chọn một hoặc nhiều nhóm"
           [multiple]="true"
           [invalid]="isInvalid('listUserGroupId')"
         ></app-select>
         @if (isInvalid('listUserGroupId')) {
-          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+          <div class="invalid-feedback d-block">Vui lòng chọn ít nhất một nhóm</div>
         }
       </div>
-      <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 mb-3">
-        <label class="form-label" for="personKeyword">Họ và tên</label>
-        <!-- Server-side search: type at least 3 characters to load matching people -->
-        <div class="input-group mb-2">
-          <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
-          <input
-            #personKeyword
-            id="personKeyword"
-            type="text"
-            class="form-control"
-            placeholder="Nhập 3 ký tự ..."
-            autocomplete="off"
-            (input)="personSearch(personKeyword.value, false)"
-          />
+      <div class="col-md-12 mb-3">
+        <label class="form-label" for="personKeyword">Hồ sơ cá nhân (họ và tên)</label>
+        <div class="row g-2">
+          <div class="col-md-5">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+              <input
+                #personKeyword
+                id="personKeyword"
+                type="text"
+                class="form-control"
+                placeholder="Nhập ít nhất 3 ký tự rồi Enter"
+                autocomplete="off"
+                (keydown.enter)="$event.preventDefault(); personSearch(personKeyword.value)"
+                (blur)="personSearch(personKeyword.value)"
+              />
+            </div>
+          </div>
+          <div class="col-md-7">
+            <app-select
+              [loading]="isLoadingPerson"
+              formControlName="personId"
+              [items]="listPerson"
+              bindValue="id"
+              bindLabel="fullName"
+              placeholder="Chọn hồ sơ"
+            ></app-select>
+          </div>
         </div>
-        <app-select
-          [loading]="isLoadingPerson"
-          formControlName="personId"
-          [items]="listPerson"
-          bindValue="id"
-          bindLabel="fullName"
-          [placeholder]="isLoadingPerson ? 'Đang tải...' : 'Chọn dữ liệu'"
-        ></app-select>
+        <div class="form-text">
+          Tìm trong danh sách hồ sơ cá nhân (màn "Thông tin cá nhân"). Tài khoản mới chỉ gợi ý hồ sơ chưa có tài khoản đang hoạt động.
+        </div>
       </div>
-      <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-6 mb-3">
+      <div class="col-md-6 mb-3">
         <label class="form-label d-block" for="isActive">Trạng thái</label>
         <div class="form-check form-switch">
           <input class="form-check-input" type="checkbox" formControlName="isActive" id="isActive" />
@@ -72,15 +84,17 @@
           </label>
         </div>
       </div>
-      <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-6 mb-3">
-        <label class="form-label d-block" for="isAdmin">Cấp quản trị</label>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" formControlName="isAdmin" id="isAdmin" />
-          <label class="form-check-label" for="isAdmin">
-            {{ formGroup.get('isAdmin')?.value ? 'Có' : 'Không' }}
-          </label>
+      @if (isAdmin) {
+        <div class="col-md-6 mb-3">
+          <label class="form-label d-block" for="isAdmin">Quản trị hệ thống</label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" formControlName="isAdmin" id="isAdmin" />
+            <label class="form-check-label" for="isAdmin">
+              {{ formGroup.get('isAdmin')?.value ? 'Có – mọi quyền' : 'Không' }}
+            </label>
+          </div>
         </div>
-      </div>
+      }
     </div>
   </div>
   <div class="modal-footer">

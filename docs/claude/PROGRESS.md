@@ -562,3 +562,31 @@ Cần anh / còn lại:
 - Màn `administrative-*`, `orgchart` còn route cũ, ngoài menu: gỡ hay giữ?
 - Chi nhánh mới lưu ở trình duyệt; màn nào cần lọc theo chi nhánh sẽ đọc giá trị này.
 - Màn `scm-uom` mới đổi giao diện; form vẫn chỉ có trường Tên (Update ghi đè đủ trường → FE-2 bổ sung).
+
+### FE-1 – Màn quản trị P0 · 2026-11-16 · DONE (chờ thử tay)
+Nhánh `feat/FE-1-admin` (từ FE-0). Chỉ sửa trong `app-delicare-client/`.
+
+Đã làm:
+- Màn `adm-user` (rà soát màn cũ `main/user`): lọc, nhóm, khóa / mở, reset (chỉ admin), drawer "Quyền hiệu lực". Sửa lỗi cũ: user mới mặc định là admin.
+- Màn `adm-usergroup`: popup phân quyền cũ thay bằng link sang `adm-permission`.
+- Màn `adm-permission` (mới) – ma trận 7 cờ:
+  - lưu theo dòng đã đổi qua `UserRole/Update`;
+  - Cấp / Thu hồi tất cả, Sao chép từ nhóm, Xem trước (admin);
+  - dòng duyệt `#/wf-inbox?type=` gắn nhãn "Duyệt".
+- Màn `adm-objectmenu`: đổi sang dạng cây; kéo thả bằng CDK có sẵn + nút lên / xuống, lưu qua `UpdateOrder`.
+- Màn `adm-orgunit` (mới, cây `GetTree`).
+- Màn `adm-employee`, `adm-position` (mới).
+- Màn `adm-person` đổi giao diện.
+- Helper `toFormData` gửi đủ trường khi Update (Update ghi đè đủ trường).
+- Service: user-role (5 action mới), object-menu (cây, sắp xếp), organization-unit, employee, position, company.
+
+Kiểm tra: `npm run build` 0 lỗi (1 cảnh báo có sẵn). Kịch bản thử tay: UAT_CHECKLIST mục PILOT-FE (chưa thử trên trình duyệt).
+
+Phát hiện → việc backend nhỏ (làm sau T13, ghi ở đây):
+- `UserRole/SaveAccessAll` chỉ cấp menu cấp 2 → sidebar ẩn nhóm cấp 1. FE tạm gửi thêm Update bật nhóm.
+- `User/GetAll` chưa có lọc IsActive (SP / SearchRequest).
+- `ObjectMenu` cho đặt cha cho menu cấp 1 đang có con (thành 3 cấp) – cần chặn ở `UpdateOrder` / Update.
+
+Cần anh:
+- **Tạo user kèm hồ sơ trong 1 bước chưa làm**: `Person/Insert` đã tự tạo 1 user (tên tự sinh, chưa có nhóm), nên làm thêm sẽ ra 2 tài khoản. Hiện màn user chỉ chọn hồ sơ có sẵn – anh chọn cách xử lý.
+- Danh sách loại đơn vị / trạng thái đơn vị lấy theo seed (PROPOSED), chưa có trong STATUS_CATALOG.

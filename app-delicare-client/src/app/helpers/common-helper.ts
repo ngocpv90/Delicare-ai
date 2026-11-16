@@ -221,3 +221,20 @@ export const downloadFile = (
   const blob = b64toBlob(fileContent, contentType);
   saveAs(blob, fileName);
 };
+
+// Form post body for Insert / Update (D-30): every key is sent – Update overwrites all fields,
+// null / undefined become '' (bound as null by the API), booleans as 'true' / 'false'.
+export const toFormData = (params: any): FormData => {
+  const formData = new FormData();
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+    formData.append(key, value === null || value === undefined ? STRING_EMPTY : String(value));
+  });
+  return formData;
+};
+
+// 'YYYY-MM-DD' for date-only form fields (Date | string | null)
+export const toDateParam = (value: any): string =>
+  value ? moment(value).format('YYYY-MM-DD') : STRING_EMPTY;
+
+export const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';

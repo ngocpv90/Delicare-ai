@@ -5,7 +5,7 @@
   </div>
   <div class="modal-body">
     <div class="row">
-      <div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-3">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="name">
           Tên chức năng <span class="text-danger">(*)</span>
         </label>
@@ -20,8 +20,8 @@
         />
         <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
       </div>
-      <div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-3">
-        <label class="form-label" for="shortName">Tên tiêu đề</label>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="shortName">Tên ngắn / nhãn</label>
         <input
           id="shortName"
           type="text"
@@ -31,19 +31,20 @@
           autocomplete="off"
         />
       </div>
-      <div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mb-3">
-        <label class="form-label" for="parentId">Chức năng cha</label>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="parentId">Nhóm menu cha</label>
         <app-select
           [loading]="isLoadingParentId"
           formControlName="parentId"
           [items]="listParent"
           bindValue="id"
           bindLabel="name"
-          placeholder="Chọn dữ liệu"
-          (selectionChange)="ngModelChangeParentId($event)"
+          placeholder="Không có (menu cấp 1)"
+          (selectionChange)="onChangeParentId($event)"
         ></app-select>
+        <div class="form-text">Menu chỉ có 2 cấp: để trống = nhóm cấp 1.</div>
       </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mb-3">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="metaLink">
           Đường dẫn <span class="text-danger">(*)</span>
         </label>
@@ -53,65 +54,41 @@
           class="form-control"
           [class.is-invalid]="isInvalid('metaLink')"
           formControlName="metaLink"
-          placeholder="Nhập dữ liệu"
+          placeholder="#/adm-user, #/group/10, #/wf-inbox?type=menu-recipe"
           autocomplete="off"
         />
         <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
       </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mb-3">
-        <label class="form-label" for="iconName">
-          Icon
-          <a
-            href="https://www.w3schools.com/icons/icons_reference.asp"
-            target="_blank"
-            class="ps-1"
-          >
-            (Link Icon)
-          </a>
-        </label>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="iconName">Biểu tượng</label>
         <input
           id="iconName"
           type="text"
           class="form-control"
           formControlName="iconName"
-          placeholder="Nhập dữ liệu"
+          placeholder="vd. fa-solid fa-users"
           autocomplete="off"
         />
       </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mb-3">
-        <label class="form-label" for="levelShow">
-          Cấp hiển thị <span class="text-danger">(*)</span>
-        </label>
-        <input
-          id="levelShow"
-          type="text"
-          class="form-control"
-          [class.is-invalid]="isInvalid('levelShow')"
-          formControlName="levelShow"
-          placeholder="Nhập dữ liệu"
-          autocomplete="off"
-          onkeypress="return isNumber(event)"
-          [readonly]="true"
-        />
-        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="levelShow">Cấp</label>
+        <input id="levelShow" type="text" class="form-control" formControlName="levelShow" readonly />
       </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mb-3">
+      <div class="col-md-3 col-6 mb-3">
         <label class="form-label" for="orderShow">
-          Thứ tự hiển thị <span class="text-danger">(*)</span>
+          Thứ tự <span class="text-danger">(*)</span>
         </label>
         <input
           id="orderShow"
-          type="text"
+          type="number"
           class="form-control"
           [class.is-invalid]="isInvalid('orderShow')"
           formControlName="orderShow"
-          placeholder="Nhập dữ liệu"
           autocomplete="off"
-          onkeypress="return isNumber(event)"
         />
         <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
       </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mb-3">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="dataTarget">DataTarget</label>
         <div class="input-group">
           <span class="input-group-text">#</span>
@@ -126,24 +103,16 @@
           />
         </div>
       </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mb-3">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="ariaControls">AriaControls</label>
-        <input
-          id="ariaControls"
-          type="text"
-          class="form-control"
-          formControlName="ariaControls"
-          placeholder="Nhập dữ liệu"
-          autocomplete="off"
-          [readOnly]="true"
-        />
+        <input id="ariaControls" type="text" class="form-control" formControlName="ariaControls" readonly />
       </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mb-3">
-        <label class="form-label d-block" for="isActive">Hiển thị</label>
+      <div class="col-md-6 mb-3">
+        <label class="form-label d-block" for="isActive">Hiển thị trên menu</label>
         <div class="form-check form-switch">
           <input class="form-check-input" type="checkbox" formControlName="isActive" id="isActive" />
           <label class="form-check-label" for="isActive">
-            {{ formGroup.get('isActive')?.value ? 'Có' : 'Không' }}
+            {{ formGroup.get('isActive')?.value ? 'Có' : 'Không (ẩn)' }}
           </label>
         </div>
       </div>

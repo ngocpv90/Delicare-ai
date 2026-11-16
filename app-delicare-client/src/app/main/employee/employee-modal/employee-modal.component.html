@@ -1,0 +1,82 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã nhân viên <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="fullName">Họ và tên <span class="text-danger">(*)</span></label>
+        <input id="fullName" type="text" class="form-control" [class.is-invalid]="isInvalid('fullName')" formControlName="fullName" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="organizationUnitId">Đơn vị</label>
+        <app-select
+          [loading]="isLoadingList"
+          formControlName="organizationUnitId"
+          [items]="listUnit"
+          bindValue="id"
+          bindLabel="label"
+          placeholder="Chọn đơn vị"
+          [invalid]="isInvalid('organizationUnitId')"
+          (selectionChange)="onChangeUnit($event)"
+        ></app-select>
+        @if (isInvalid('organizationUnitId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="positionId">Chức vụ</label>
+        <app-select [loading]="isLoadingList" formControlName="positionId" [items]="listPosition" bindValue="id" bindLabel="name" placeholder="Chọn chức vụ"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="dateOfBirth">Ngày sinh</label>
+        <app-date-picker inputId="dateOfBirth" formControlName="dateOfBirth"></app-date-picker>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="gender">Giới tính</label>
+        <app-select formControlName="gender" [items]="genders" bindValue="code" bindLabel="label" placeholder="Chọn" [searchable]="false"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="hireDate">Ngày vào làm</label>
+        <app-date-picker inputId="hireDate" formControlName="hireDate"></app-date-picker>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="phone">Điện thoại</label>
+        <input id="phone" type="text" class="form-control" formControlName="phone" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="email">Email</label>
+        <input id="email" type="email" class="form-control" [class.is-invalid]="isInvalid('email')" formControlName="email" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Email không hợp lệ</div>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="address">Địa chỉ</label>
+        <input id="address" type="text" class="form-control" formControlName="address" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="companyId">Công ty / pháp nhân</label>
+        <app-select [loading]="isLoadingList" formControlName="companyId" [items]="listCompany" bindValue="id" bindLabel="name" placeholder="Chọn công ty"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false" [invalid]="isInvalid('status')"></app-select>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
+      <i class="fa-solid fa-xmark me-1"></i>Thoát
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+    </button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

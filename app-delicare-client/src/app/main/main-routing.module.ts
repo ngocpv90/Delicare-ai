@@ -29,6 +29,30 @@ export const mainRoutes: Routes = [
           ),
       },
       {
+        path: 'adm-permission',
+        loadChildren: () =>
+          import('./user-permission/user-permission.module').then(
+            (m) => m.UserPermissionModule
+          ),
+      },
+      {
+        path: 'adm-orgunit',
+        loadChildren: () =>
+          import('./organization-unit/organization-unit.module').then(
+            (m) => m.OrganizationUnitModule
+          ),
+      },
+      {
+        path: 'adm-employee',
+        loadChildren: () =>
+          import('./employee/employee.module').then((m) => m.EmployeeModule),
+      },
+      {
+        path: 'adm-position',
+        loadChildren: () =>
+          import('./position/position.module').then((m) => m.PositionModule),
+      },
+      {
         path: 'adm-objectmenu',
         loadChildren: () =>
           import('./object-menu/object-menu.module').then(

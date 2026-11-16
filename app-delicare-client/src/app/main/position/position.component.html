@@ -1,0 +1,93 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Chức vụ dùng trong hồ sơ nhân viên.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            class="form-control"
+            placeholder="Tìm theo mã, tên chức vụ"
+            aria-label="Tìm theo mã, tên chức vụ"
+            formControlName="searchText"
+            autocomplete="off"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 140px" (click)="sort('code')">
+                Mã
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên chức vụ
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th>Mô tả</th>
+              <th class="sortable" style="width: 160px" (click)="sort('status')">
+                Trạng thái
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('status')"></i>
+              </th>
+              @if (permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 120px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.code }}</td>
+                <td class="fw-semibold">{{ data.name }}</td>
+                <td>{{ data.description }}</td>
+                <td>
+                  <app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge>
+                </td>
+                @if (permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

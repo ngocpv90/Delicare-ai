@@ -41,3 +41,17 @@ Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) ho�
 | 13 | Trạng thái / tham chiếu | `MetaData/GetStatuses`, `MetaData/GetReferenceLists` | 47 bộ trạng thái; MealType SANG / TRUA / TOI / DEM (PROPOSED) | [ ] | |
 | 14 | Nhập Excel – mẫu | Tải mẫu Customer / Ingredient / Dish / RecipeLine / SupplierMaterial, điền vài dòng (cố ý 1 dòng thiếu cột *) rồi `ImportExcel/Import` | Dòng đúng được nạp; dòng lỗi báo đúng số dòng + lý do; nạp lại không trùng | [ ] | |
 | 15 | Nhập Excel – file thật | Anh tự nạp `Rule Menu.xlsx` (RuleMenu_DishBank rồi RuleMenu_DishDetail) và `Tool_Tong hop bao gia` (BaoGia_Summary) | Món / nhóm món / nguyên liệu / NCC / bảng giá đúng; ghi chú GAP-IMP-01 (không có định lượng), GAP-IMP-02 (VAT) | [ ] | Chỉ anh nạp dữ liệu thật |
+
+## PILOT-FE – Giao diện (thử tay trên trình duyệt) · FE-0, FE-1 (2026-11-16)
+
+| # | Màn hình | Thao tác | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Khung (FE-0) | Đăng nhập; tải lại trang; đổi mật khẩu; đăng xuất; để token hết hạn | Menu theo quyền; tải lại vẫn đúng menu; đổi mật khẩu xong đăng nhập bằng mật khẩu mới; 401 → về đăng nhập | [ ] | |
+| 2 | Khung | Sidebar, ô chọn chi nhánh, màn `scm-uom`, máy tính bảng | Nhóm cấp 1 → màn cấp 2; chi nhánh lấy từ OrganizationUnit; chữ / nút đủ lớn; không còn chữ "phòng khám" / "W3CRM" | [ ] | |
+| 3 | adm-user | Tạo user 2 nhóm + chọn hồ sơ → đăng nhập (mật khẩu = tên); sửa nhóm; khóa / mở; tự khóa mình; reset mật khẩu (admin) | Đúng; các trường khác không mất sau khi sửa; tự khóa → thông báo lỗi; nút reset chỉ admin thấy | [ ] | |
+| 4 | adm-usergroup | Thêm / sửa / xóa; xóa nhóm đang dùng; nút "Phân quyền" | Xóa nhóm đang dùng → thông báo; "Phân quyền" mở adm-permission đúng nhóm | [ ] | |
+| 5 | adm-permission | Tick Sửa → tự bật Truy cập + nhóm cha; bỏ Truy cập → xóa dòng; Lưu; Cấp / Thu hồi tất cả; Sao chép từ nhóm; Xem trước (admin); dòng "Duyệt" | Tải lại thấy đúng cờ; user nhóm đó thấy / mất màn hình sau khi đăng nhập lại; dòng duyệt lưu được | [ ] | |
+| 6 | adm-objectmenu | Kéo thả / lên xuống; ẩn / hiện; thêm con; sửa; xóa | Thứ tự sidebar khớp sau khi tải lại | [ ] | |
+| 7 | adm-orgunit | Cây; thêm con; đổi quản lý; đặt cha là con của mình; trùng mã | Vòng lặp / trùng mã → thông báo; đơn vị BRANCH hiện ở ô chọn chi nhánh | [ ] | |
+| 8 | adm-employee, adm-position | Thêm / sửa (ngày không lệch 1 ngày, trường khác giữ nguyên) / lọc / xóa | Đúng | [ ] | |
+| 9 | Mọi màn | User thường không có quyền Thêm / Sửa / Xóa | Nút ẩn đúng; không có quyền xem → trang "không tìm thấy" | [ ] | |

@@ -629,3 +629,47 @@ body.has-page-header .page-titles { display: none; }
 .dc-login .dc-login-legal { color: var(--dc-muted); font-size: 12px; letter-spacing: 0.3px; }
 .dc-login .pages-left { background: var(--dc-green-soft); }
 .dc-login .pages-left .login-content h3 { color: var(--dc-green-dark); font-weight: 800; }
+
+/* ===== FE-1 Quản trị: filter dropdown, side list, permission matrix, menu / org trees ===== */
+.dc-filter-select { flex: 0 1 220px; min-width: 180px; }
+.dc-side-list { display: flex; flex-direction: column; gap: 4px; max-height: 640px; overflow: auto; }
+.dc-side-item {
+  display: flex; align-items: center; width: 100%; min-height: 40px; padding: 8px 12px; text-align: left;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--dc-ink); font-size: 14px;
+}
+.dc-side-item:hover { background: #FAFBF8; border-color: var(--dc-line); }
+.dc-side-item.active { background: var(--dc-green-soft); border-color: #CFE0B4; color: var(--dc-green-dark); font-weight: 700; }
+.dc-matrix-wrap { max-height: 640px; overflow: auto; }
+.dc-matrix thead th { position: sticky; top: 0; z-index: 1; background: #fff; }
+.dc-matrix td small { font-size: 11.5px; }
+.dc-matrix .form-check-input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+.dc-matrix-group td { background: #F3F6EF !important; font-weight: 800; }
+.dc-row-dirty td:first-child { box-shadow: inset 3px 0 0 var(--dc-orange); }
+.dc-tree { display: flex; flex-direction: column; gap: 8px; }
+.dc-tree-node { border: 1px solid var(--dc-line); border-radius: 10px; background: #fff; overflow: hidden; }
+.dc-tree-row { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; background: #fff; }
+.dc-tree-row.level-1 { background: #F7F9F4; }
+.dc-tree-row.level-2 { border-top: 1px solid #F0F2EE; padding-left: 44px; }
+.dc-tree-row.inactive .dc-tree-main { opacity: 0.55; }
+.dc-tree-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.dc-tree-main small { flex-basis: 100%; color: var(--dc-muted); font-size: 12px; }
+.dc-tree-status { flex: none; }
+.dc-tree-tag {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--dc-blue-soft); color: #4C7FAE;
+  font-size: 11.5px; font-weight: 600;
+}
+.dc-tree-toggle {
+  width: 28px; height: 28px; flex: none; border: 0; border-radius: 6px; background: transparent; color: #7D877F;
+}
+.dc-tree-toggle:hover { background: var(--dc-green-soft); color: var(--dc-green-dark); }
+.dc-tree-toggle-space { display: inline-block; width: 28px; flex: none; }
+.dc-tree-cell { display: flex; align-items: center; gap: 6px; }
+.dc-drag { cursor: grab; color: #A0A99F; padding: 4px; flex: none; }
+.cdk-drag-preview { box-shadow: 0 8px 24px rgba(23, 37, 28, 0.18); border-radius: 10px; background: #fff; }
+.cdk-drag-placeholder { opacity: 0.35; }
+.cdk-drag-animating, .dc-tree.cdk-drop-list-dragging .dc-tree-node:not(.cdk-drag-placeholder),
+.dc-tree-children.cdk-drop-list-dragging .dc-tree-row:not(.cdk-drag-placeholder) { transition: transform 200ms ease; }
+@media (max-width: 767.98px) {
+  .dc-tree-row.level-2 { padding-left: 20px; }
+  .dc-tree-row { flex-wrap: wrap; }
+}
