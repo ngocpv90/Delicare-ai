@@ -132,47 +132,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(ProofOfDeliveryRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<ProofOfDelivery>(request);
-            _unitOfWork.ProofOfDeliveryRepository.Add(insert);
-            await _unitOfWork.ProofOfDeliveryRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T19: biên bản giao nhận (POD) chỉ ghi khi bàn giao (DeliveryStop/Deliver, kiểm nhiệt độ ≥ 60 °C) và không sửa / xóa – là căn cứ đối soát.</summary>
+        private static Task<string> Blocked()
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Biên bản giao nhận (POD)", "DeliveryStop/Deliver"));
 
-        private async Task<string> Update(ProofOfDeliveryRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.ProofOfDeliveryRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.ProofOfDeliveryRepository.Update(update);
-            await _unitOfWork.ProofOfDeliveryRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Insert(ProofOfDeliveryRequest request, string typeSave) => Blocked();
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(ProofOfDelivery), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.ProofOfDeliveryRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.ProofOfDeliveryRepository.Update(delete);
-            await _unitOfWork.ProofOfDeliveryRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(ProofOfDeliveryRequest request, string typeSave) => Blocked();
+
+        private Task<string> Delete(Guid? id, string typeSave) => Blocked();
 
         public async Task<IResult<ProofOfDelivery>> GetById(Guid id)
         {

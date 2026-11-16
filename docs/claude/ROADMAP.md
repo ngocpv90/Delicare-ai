@@ -12,6 +12,23 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 **Mục tiêu:** chạy thử sớm **một luồng thông suốt** Đơn hàng → Nhu cầu NL → Mua → Nhận + QC → Kho → Sản xuất → Giao + đối soát suất, với danh mục thật, 1–2 khách, 1 bếp. Mỗi bước làm **bản tối thiểu** (bấm nút thay job, duyệt 1 cấp). **Giữ ngay** mọi kiểm soát ATTP: nhiệt độ lõi ≥ 70°C, nhiệt độ giao ≥ 60°C, lưu mẫu, chặn lô hết hạn / KHONG_DAT.
 
+> **⚠ T-MERGE – GỘP NHÁNH PILOT (anh chốt 2026-11-16, D-41) – làm NGAY SAU T19, TRƯỚC T50R1.**
+> **Điều phối 3 thư mục làm việc song song** (`Delicare-ai`, `wt-T11`, `wt-T17`, `wt-T45R8`):
+> - **Chỉ phiên ở `wt-T17`** làm tiếp: xong T19 → T-MERGE → T50R1 → deploy staging → dừng báo anh.
+> - Phiên ở **`wt-T11`** và **`wt-T45R8`**: **DỪNG**, không nhận task mới (T17 đã DONE ở `wt-T17` – không làm lại). Commit hết thay đổi đang dở rồi báo "đã dừng".
+>
+> **T-MERGE – các bước:**
+> 1. Tạo nhánh `release/pilot` từ `main`. Xác định nhánh "đầu" chứa đủ lịch sử bằng `git merge-base` / `git branch --contains` (dự kiến: `feat/T15.1-po-rules` [T48.0 → T11 → T12 → T13 → T16 → T14 → T15 → T14.1 → T15.1], `feat/T19-delivery` [T17 → T19, tách từ T15], `feat/T45R.8-admin` [FE-0 → FE-1 → FE-2 → FE-3 WIP + T45R.8], cùng các nhánh FE nếu không nằm trong T45R.8). Gộp lần lượt bằng `git merge --no-ff`, **không rebase, không force**.
+> 2. Giải xung đột:
+>    - Code (`ConstantHelper`, `ScreenMap`, DI, seed menu / quyền, SearchRequest, SP…): **giữ cả hai phía** (hợp), không bỏ logic của nhánh nào; sau đó build + test.
+>    - `PROGRESS.md`: một mục "Trạng thái hiện tại" duy nhất, đúng thực tế sau gộp; nhật ký giữ **đủ mọi mục** theo thứ tự thời gian, không trùng.
+>    - `DECISIONS.md`, `ROADMAP.md`, `GAP`: hợp đủ các dòng; **kiểm trùng mã** (D-xx, GAP-xx) – nếu hai nhánh dùng cùng mã cho hai nội dung khác nhau thì đánh lại mã cho bản sau và sửa mọi chỗ tham chiếu; ghi bảng đổi mã vào PROGRESS.
+>    - `DELICARE_API_Catalog.xlsx` (file nhị phân): lấy bản của `main`/mới nhất, **không tự gộp**; ghi PROGRESS "cần cập nhật Catalog" (em / anh cập nhật sau).
+>    - Script SQL trong `DB/sp`, `DB/seed`: liệt kê đầy đủ theo thứ tự chạy vào `DB/README.md` mục "Pilot".
+> 3. Kiểm tra trên **một bản gộp duy nhất**: `dotnet build --no-incremental` 0 lỗi; `dotnet test` **toàn bộ xanh** (số test ≥ tổng các nhánh, không mất test); chạy lại mọi SP / seed mới lên DB dev theo thứ tự trong `DB/README.md`; chạy các file `docs/api-tests/*.http`; `npm run build` của `app-delicare-client` 0 lỗi (FE-3 WIP vẫn phải build được).
+> 4. Dọn: sau khi `release/pilot` xanh → `git worktree remove` 3 thư mục `wt-*` (giữ nhánh, không xóa nhánh). **Không push, không gộp vào `main`** – báo anh danh sách nhánh đã gộp, số test, xung đột đã giải, để anh duyệt rồi mới push / gộp `main`.
+> 5. T50R1 làm trên `release/pilot`.
+
 **Làm đúng thứ tự này** (đứng trước bảng R1 bên dưới; task trong bảng R1 không có ở đây thì chờ sau Pilot):
 
 | # | Task | Phạm vi PILOT (phần còn lại của task giữ `TODO` sau Pilot) |
@@ -26,7 +43,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | P5 | T14 – Tính nhu cầu NL · `DONE(PILOT)` 2026-11-16 (backend) | Action **`Calculate`** (bấm tay): đơn đã khóa × công thức đã khóa × hao hụt, trừ tồn khả dụng (+ SafetyStock theo D-12 đề xuất) → PurchaseRequest nháp, gợi ý NCC. |
 | P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) · `DONE(PILOT)` 2026-11-16 (backend) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
 | P7 | T17 – Sản xuất (bản theo mẻ) → **FE-P7** · `DONE(PILOT)` 2026-11-16 (backend) | Kế hoạch mẻ `ME-…`, cấp NL cho mẻ (FEFO), bắt đầu / xong mẻ, **nhiệt độ lõi ≥ 70°C (chặn đóng gói)**, **lưu mẫu** (SAMPLE_RETAINED), sản lượng + hao hụt. In **Phiếu sản xuất**. Công đoạn theo tổ → sau Pilot. |
-| P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
+| P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** · `DONE(PILOT)` 2026-11-16 (backend) | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
 | P9 | T50R1 (phần Pilot) + T48.1 | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
 
 **`DEFERRED(PILOT)` – làm sau khi chạy thử, lúc chạy thử dùng cách thay thế:**
@@ -236,7 +253,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - **Báo cáo NCR tổng hợp** (QA 4.5, GAP-QA-01 tạm): gom SupplierIssue, CustomerComplaint, các dòng checklist / nhiệt độ không đạt kèm CorrectiveAction, lọc theo kỳ / bộ phận.
 - AC: test truy xuất 2 chiều trên dữ liệu mẫu.
 
-### T19 – Giao vận và phản ánh · phụ thuộc T17 · `TODO`
+### T19 – Giao vận và phản ánh · phụ thuộc T17 · `DONE(PILOT)` (2026-11-16: chuyến CX- + đơn giao PH- + điểm dừng, nhiệt độ xuất phát / bàn giao ≥ 60 °C chặn xuất phát / bàn giao (TemperatureLog DELIVERY + DeliveryEvent), mẻ chưa đóng gói / chưa lưu mẫu chặn xuất phát (D-42), POD, đơn → Delivered, đối soát suất phục vụ → Reconciled, phản ánh PA- tạo / giao xử lý / đã xử lý / đóng / từ chối, in biên bản giao hàng (GAP-DLV-01…07). Cảnh báo SLA tự động, báo cáo suất theo điểm, xếp hàng (DeliveryLoading / Execution), tách đơn giao, PackingOrder → DEFERRED(PILOT))
 - DeliveryRoute `CX-…`, DeliveryStop, DeliveryEvent, nhiệt độ ≥ 60°C, thiếu / thừa suất, ProofOfDeliverie. CustomerComplaint `PA-…` với SLA 4/24/72h.
 - **Điểm phát suất (mô hình a, D-21)**: nhân viên điểm (nhóm OPS-POS) xác nhận nhận hàng, ghi **suất thực tế phục vụ** → `OrderReconciliation` (đặt / giao / thực tế / chênh lệch); báo cáo suất theo điểm, ngày, buổi.
 - AC: test SLA và cảnh báo nhiệt độ.

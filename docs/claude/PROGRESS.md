@@ -6,7 +6,7 @@
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 11 cảnh báo (no-incremental; 2026-11-16, nhánh `feat/T17-production`) · Test: `AppDelicare.Tests` 148/148 xanh · T17 (P7) DONE(PILOT) 2026-11-16 → kế tiếp T19
+- Build backend: OK – 0 lỗi, 11 cảnh báo (no-incremental; 2026-11-16, nhánh `feat/T19-delivery`) · Test: `AppDelicare.Tests` 152/152 xanh · T19 (P8) DONE(PILOT) 2026-11-16 → kế tiếp T-MERGE (D-41) rồi T50R1
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -891,3 +891,69 @@ Câu hỏi cho anh (DECISIONS GAP-PRD-01, 03…08):
 6. Phát hành kế hoạch chuyển đơn hàng Đã chốt → Đang sản xuất – đúng không? Lệnh SX dùng mã `PH-` (BUSINESS_RULES §11) – được chứ?
 
 Cần anh: chạy `DB/seed/FoodSafetyChecklist_seed.sql` trên staging (DB dev đã chạy); khai báo `ProductionLine` (năng lực mẻ, phút / mẻ) và giờ giao của điểm giao trước khi chạy thử.
+
+### T19 – Giao + đối soát + phản ánh (Pilot P8) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T19-delivery` (worktree `wt-T17`, trên T17). Chỉ backend (D-40).
+
+Kế hoạch:
+1. Rà soát DeliveryRoute / DeliveryStop / DeliveryOrder / DeliveryEvent / ProofOfDeliverie / OrderReconciliation / CustomerComplaint / ComplaintHistory / Vehicle / TemperatureLog → LEGACY_REVIEW mục (h).
+2. Lập chuyến `CX-` (đơn giao `PH-` + điểm dừng) từ đơn Đang sản xuất của ngày / ca.
+3. Nhiệt độ giao ≥ 60 °C (TemperatureLog DELIVERY + DeliveryEvent TEMP_CHECK), xuất phát (chặn nhiệt độ, mẻ chưa đóng gói, mẻ chưa lưu mẫu – D-42).
+4. Đến điểm / bàn giao + POD (nhiệt độ bàn giao) / thất bại; đơn hàng → Đã giao; chuyến hoàn thành.
+5. Đối soát suất thực tế phục vụ → OrderReconciliation, đóng → đơn Đã đối soát.
+6. Phản ánh `PA-` cơ bản (tạo / giao xử lý / đã xử lý / đóng / từ chối / ghi chú).
+7. Chặn CRUD cũ phá máy trạng thái; test InMemory + 1 test SQL Server rollback; tài liệu.
+
+Rà soát: 10 bảng chỉ có CRUD sinh mã (tạo chuyến / đơn giao không số, đổi trạng thái tùy ý, POD / đối soát nhập tay, `DeliveryEvent/Insert` ghi được nhiệt độ "đạt" giả, phản ánh không số / không SLA). Mã CX / PA / PH (DeliveryOrder) đã có trong `DocumentNumberService` (T11). Chi tiết: LEGACY_REVIEW (h).
+
+**Anh chốt 2026-11-16 (D-42, điều phối chuyển):** lưu mẫu bắt buộc **trước khi giao**, không phải trước khi đạt QC → `BusinessRules:ProductionRequireSampleBeforeRelease` mặc định `false` (appsettings + Options); `ProductionBatch/Release` khi chưa lưu mẫu chỉ **cảnh báo**; `ProductionBatch/RecordSampleRetained` nhận thêm mẻ Đã đóng gói (để bổ sung mẫu trước khi xuất chuyến). Chỉ sửa đúng 2 chỗ này trong `ProductionBatchService` + kỳ vọng test T17 (`ProductionTests`: đạt QC khi chưa lưu mẫu → Passed + cảnh báo, ghi mẫu sau).
+
+Đã làm (đều trong file cũ, đúng mẫu 4.2; thêm 1 lớp tĩnh dùng chung `DeliveryRules`, không có service / controller mới):
+- **Chuyến (`DeliveryRouteService` / `DeliveryRouteController`, `log-route`)**: `GetBoard` (chuyến của ngày, tải / % tải, statusCounts), `GetReadyOrders`, `GetDetail` (điểm dừng + POD, sự kiện, mẻ của ngày / ca + đã lưu mẫu, `listBlocker`, `allowedActions`), `Create` (JSON – có danh sách đơn: xe hợp lệ (không Maintenance / Inactive), tài xế = Employee, đơn Đang sản xuất của ngày + dòng thuộc ca, chưa có đơn giao còn hiệu lực; số `CX-YYMMDD-<mã xe>-NN`; mỗi đơn 1 đơn giao `PH-` (DeliveryNumber + DeliveryNo) + 1 điểm dừng, giờ dự kiến = `DeliveryWindowFrom`, thứ tự theo giờ; giờ xuất phát kế hoạch = giờ sớm nhất − 60′; cảnh báo vượt tải / xe bận / sản xuất chưa sẵn sàng), `RecordTemperature` (xuất phát hoặc tại điểm), `Dispatch` (chặn khi nhiệt độ xuất phát gần nhất < 60 °C / chưa đo, mẻ của ngày / ca chưa Đã đóng gói, mẻ chưa lưu mẫu – thông báo liệt kê số `ME-`; có nhiệt độ dưới ngưỡng kèm khắc phục → vẫn lưu lần đo, trả 400), `ExportDeliveryNote` (.xlsx). CRUD: Insert → lỗi; Update chỉ tên / mô tả / tài xế / giờ khi Kế hoạch; Delete chỉ Kế hoạch chưa có sự kiện (xóa mềm kèm điểm dừng + đơn giao).
+- **Điểm dừng (`DeliveryStopService` / `DeliveryStopController`, `log-stop`)**: `Arrive`, `Deliver` (nhiệt độ bàn giao gần nhất tại điểm ≥ 60 °C; POD giao / nhận / từ chối, người nhận, đường dẫn chữ ký / ảnh; điểm Đã giao + DeliveredMealQty + ShortageQty; đơn giao Đã giao; đơn hàng → `Delivered` khi mọi đơn giao còn hiệu lực đã giao; suất bị từ chối → phản ánh `PA-` POD / SHORTAGE tự động; mọi điểm xong → chuyến Completed), `Fail` (lý do; đơn giao Failed, đơn hàng giữ InProduction để xếp chuyến bù). CRUD: Insert / Delete → lỗi; Update chỉ thứ tự / giờ dự kiến / ghi chú khi Kế hoạch.
+- **Đối soát (`OrderReconciliationService` / `Controller`, `crm-reconciliation`)**: `GetPendingOrders`, `GetDetail`, `GetByOrder`, `Reconcile` (đơn Đã giao có POD; suất phục vụ ≤ Σ suất nhận POD, phục vụ + trả về + hủy ≤ nhận; Ordered / Delivered / Accepted (= phục vụ) / Variance / VariancePercent / Status Khớp – Chênh lệch / ProofOfDeliveryId / FinalAmount = giá trị đơn × suất tính tiền ÷ suất đặt theo `ReconciliationBillingBasis` = SERVED; ghi song song cột cũ; trả về / hủy / suất nhận / cơ sở tính tiền → JSON trong `Note`), `Close` (|chênh| > 1% bắt buộc ghi chú; đơn hàng → `Reconciled`). CRUD → lỗi.
+- **Phản ánh (`CustomerComplaintService` / `Controller`, `log-complaint`)**: `Create` (`PA-YYMMDD-NNNN`, mức độ High / Medium / Low, `SlaDueAt` = lúc nhận + 4 / 24 / 72 giờ, liên kết đơn / điểm dừng / đơn giao / chuyến cùng khách, mẻ ghi vào mô tả), `Assign`, `Resolve`, `Close`, `Reject`, `AddComment`, `GetDetail` (lịch sử, `isOverdue`). Mọi bước ghi `ComplaintHistory`. CRUD: Insert / Delete → lỗi; Update chỉ phân loại / kênh / mô tả / mức độ khi Mới / Đang xử lý.
+- **Chặn CRUD khác**: `DeliveryOrder` (Insert / Delete → lỗi, Update chỉ ghi chú), `ProofOfDelivery` (Insert / Update / Delete → lỗi), `DeliveryEvent` / `ComplaintHistory` Insert → lỗi (sổ chỉ ghi thêm, ghi qua action). Gỡ header auto-generated ở các file đã sửa tay.
+- **`DeliveryRules`** (lớp tĩnh): ghi nhiệt độ giao (TemperatureLog DELIVERY + DeliveryEvent TEMP_CHECK, `ExternalEventId = TemperatureLog:<Id>`), lần đo gần nhất (cùng giây → thấp nhất), mẻ phục vụ chuyến + đã lưu mẫu, điều kiện xuất phát, hạn SLA, tạo phản ánh, chi tiết chuyến, mẫu in Biên bản giao hàng.
+- Cấu hình `BusinessRules` (PROPOSED): `DeliveryRequirePackedBatches` true, `DeliveryRequireSampleRetained` true (D-42), `ReconciliationBillingBasis` SERVED, `ReconciliationVarianceRemarkPct` 1, `DeliveryAutoComplaintOnRejected` true (dùng sẵn `DeliveryTempMinC` 60, `ComplaintSlaHours`, `TransportMinutesBeforeCutoff`).
+- Hằng `Model/Helper/DeliveryStatus.cs`; request `Model/Request/Custom/DeliveryCustomRequest.cs`; model `Model/Model/DeliveryModels.cs`; thông báo tiếng Việt trong `ConstantHelper.Message`.
+- Quyền theo `PermissionConvention` (Get* = View, `Create` = Add, `Export*` = Export, còn lại Edit) trên `log-route`, `log-stop`, `crm-reconciliation`, `log-complaint` (ScreenMap + ObjectMenu đã có). **Không thêm SP, seed, mục menu.**
+
+File chính: `Services/Implement/{DeliveryRules, DeliveryRouteService, DeliveryStopService, DeliveryOrderService, DeliveryEventService, ProofOfDeliveryService, OrderReconciliationService, CustomerComplaintService, ComplaintHistoryService, ProductionBatchService}.cs`, `Services/Interface/I{DeliveryRoute, DeliveryStop, OrderReconciliation, CustomerComplaint}Service.cs`, `WebApi/Controllers/{DeliveryRoute, DeliveryStop, OrderReconciliation, CustomerComplaint}Controller.cs`, `Model/Helper/{DeliveryStatus, ConstantHelper}.cs`, `Model/Option/BusinessRulesOptions.cs`, `Model/Request/Custom/DeliveryCustomRequest.cs`, `Model/Model/DeliveryModels.cs`, `WebApi/appsettings.json`, test `Tests/Delivery/{DeliveryTests, DeliverySqlServerTests}.cs` (+ sửa `Tests/Production/ProductionTests.cs`), tài liệu `docs/frontend-handoff/P8.md`, `docs/api-tests/p8-delivery.http`, BUSINESS_RULES §6 / §7 / §9, LEGACY_REVIEW (h), DECISIONS D-42 + GAP-DLV-01…07.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **152/152** xanh (+4):
+  - `Delivery/DeliveryTests` (3, InMemory): luồng đủ – chờ xếp chuyến → lập `CX-261221-XED1-01` (điểm #1 B 11:00 40 suất, #2 A 11:30 60 suất, PH- liên tiếp, xuất phát kế hoạch 10:00, tải 100 / 120 = 83,33%), đơn đã có chuyến không xếp lại; xuất phát bị chặn (chưa đo + "Mẻ chưa lưu mẫu thức ăn (bắt buộc trước khi giao): ME-261221-D1-02"); 55 °C không khắc phục → 400 không ghi; 55 °C có khắc phục → lưu TemperatureLog DELIVERY (IsWithinRange = false, Min 60, người ghi) + sự kiện trỏ TemperatureLog, vẫn chặn; lưu mẫu mẻ Đã đóng gói + đo 65 °C → Đang giao; bàn giao 58 °C → lưu lần đo, chặn; 62 °C → B Đã giao (đơn B Delivered); A chưa đo tại điểm → chặn, nhận > giao → chặn; 63 °C giao 58 / nhận 56 → thiếu 2, từ chối 2 → phản ánh PA- POD / SHORTAGE, chuyến Completed; in biên bản mở được; đối soát A (phục vụ 57 > 56 → chặn; 50 + 4 + 3 > 56 → chặn; 50 / 4 / 2 → chênh −10, −16,67%, 1.500.000, Variance), đóng thiếu ghi chú → chặn, có ghi chú → Closed, đơn A Reconciled; B phục vụ 40 → Matched 1.200.000, đóng không cần ghi chú. Mẻ chưa đóng gói ("ME-261221-D2-02 (Đạt)") chặn xuất phát; CRUD cũ (DeliveryRoute / DeliveryEvent / ProofOfDelivery / OrderReconciliation / CustomerComplaint / ComplaintHistory Insert) → 400; xóa chuyến có lần đo → chặn, chuyến chưa đo → xóa được, đơn trở lại chờ xếp chuyến; chuyến thứ 2 cùng xe số `-02`. Phản ánh: mức độ sai / đơn khác khách → 400; tạo `PA-261221-NNNN` High → hạn +4 giờ, mẻ trong mô tả; Resolve khi Mới → 400; Assign → AddComment → Resolve (bắt buộc nội dung) → Reject khi Đã xử lý → 400 → Close; lịch sử CREATED / ASSIGNED / COMMENT / RESOLVED / CLOSED; Update khi Đóng → 400; LOW nhận cách 80 giờ → quá hạn, từ chối → hết quá hạn.
+  - `Delivery/DeliverySqlServerTests` (1, SQL Server dev): chuyến `CX-991229-<XE>-NN` + đơn giao `PH-991229-NNNN` (sp_getapplock) → đo 57,5 °C (khắc phục) → xuất phát bị chặn → xuất phát 65 °C → đến điểm → bàn giao 64 °C + POD → chuyến Completed → đối soát 48 / 50 (−4%, 1.440.000) → đóng (đơn Reconciled) → phản ánh PA- tạo / giao / xử lý / đóng (4 dòng lịch sử) – trong transaction ngoài rồi rollback, không để lại dữ liệu (đã chạy, không bị bỏ qua).
+  - `Production/ProductionTests` sửa theo D-42 (đạt QC khi chưa lưu mẫu → Passed + cảnh báo).
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; không sửa PurchaseOrder* / GoodsReceipt* / QcInspection*, `ApprovalRequestService`, `IApprovalHandler`, seed ObjectMenu / UserRole, User / Person / Login, PermissionFilter.
+- Script SQL: **không có** SP / seed mới (dùng SP `usp*_GetAll` sẵn có). Không chạy script nào lên DB dev.
+
+AC (T19, bản Pilot):
+- [x] Nhiệt độ giao < 60 °C chặn xuất phát và bàn giao (lần đo gần nhất; dưới ngưỡng bắt buộc khắc phục, vẫn lưu sổ).
+- [x] Mẻ chưa lưu mẫu chặn xuất phát, thông báo liệt kê số ME- (D-42); mẻ chưa đóng gói chặn xuất phát.
+- [x] Định dạng `CX-YYMMDD-<XE>-NN`, `PA-YYMMDD-NNNN` (+ `PH-` đơn giao).
+- [x] Đối soát tính tay được (đặt / giao / nhận / phục vụ / trả về / hủy, chênh lệch, giá trị); đơn → Đã giao → Đã đối soát.
+- [x] Vòng đời phản ánh (tạo / giao xử lý / đã xử lý / đóng / từ chối / ghi chú, lịch sử, hạn SLA, quá hạn khi xem).
+- [x] 1 test SQL Server rollback: chuyến → xuất phát → bàn giao / POD → đối soát (+ phản ánh).
+- [ ] Cảnh báo SLA tự động / leo thang, báo cáo suất theo điểm / ngày / buổi → DEFERRED(PILOT).
+- [ ] `DELICARE_API_Catalog.xlsx` không sửa (theo điều phối). Gợi ý cột J / L (M = T19): 10.2 GET routes = Đã xong (`DeliveryRoute/GetBoard`, `GetDetail`); routes/plan = Một phần (`DeliveryRoute/Create`, 1 xe / lần, không chia khu vực); POST/PUT routes = Một phần (`Create`, `Update` khi Kế hoạch); routes/{id}/stops = Một phần (`DeliveryStop/Update`); load = Chưa bắt đầu; dispatch = Đã xong (`DeliveryRoute/Dispatch`); complete = Đã xong (tự động khi mọi điểm xong). Delivery-orders thủ công / split / route / cancel = Chưa bắt đầu (GET = CRUD `DeliveryOrder/GetAll`). 10.3 executions GET = Một phần (`DeliveryRoute/GetDetail`); arrive = Đã xong (`DeliveryStop/Arrive`); pod = Đã xong (`DeliveryStop/Deliver`, chưa ghi PackagingLedger); fail = Đã xong (`DeliveryStop/Fail`); events = Một phần (`GetDetail.listEvent`, `DeliveryEvent/GetAll`). 10.5 complaints GET = Một phần (CRUD GetAll; `isOverdue` ở GetDetail); POST = Đã xong (`CustomerComplaint/Create`); transition = Đã xong (`Assign` / `Resolve` / `Close` / `Reject`); history = Đã xong (`GetDetail.listHistory`). 6.7 reconciliations GET = Một phần (`GetPendingOrders`, `GetAll`; chưa có chart); reconcile = Đã xong (`OrderReconciliation/Reconcile`); close = Đã xong (`Close`). In biên bản giao nhận = Một phần (`DeliveryRoute/ExportDeliveryNote`).
+
+DEFERRED(PILOT):
+- Xếp hàng lên xe (`DeliveryLoading`, trạng thái Loading), `DeliveryExecution`, PackingOrder / PackingResult khi đóng gói, PackagingLedger OUT / RETURN (T20).
+- Lập chuyến nhiều xe / theo khu vực, tách / chuyển / hủy đơn giao tay, 1 đơn nhiều điểm giao (GAP-ORD-01).
+- Cảnh báo / leo thang SLA phản ánh và cảnh báo nhiệt độ tự động (T23), báo cáo suất theo điểm / ngày / buổi, biểu đồ Đặt – Giao – Nhận (spec 6.7 chart), KPI giao đúng giờ.
+- Gửi Zalo cho khách khi xuất phát; tọa độ GPS liên tục.
+- `ProducedQty` / `PackedQty` trong đối soát (cần gắn mẻ ↔ đơn).
+- `allowedActions` của mẻ Đã đóng gói chưa có `recordSampleRetained` (API đã nhận) – để T17.1 bổ sung.
+
+Câu hỏi cho anh (DECISIONS D-42, GAP-DLV-01…07):
+1. Xuất phát bị chặn khi **còn mẻ của ngày / ca chưa đóng gói xong** – đúng thực tế (hay cho xe chạy khi đủ món của các điểm trên chuyến)?
+2. Nhiệt độ: đo **1 lần lúc xuất phát** (cấp chuyến) + **1 lần mỗi điểm khi bàn giao** – đủ chưa, hay cần đo theo từng thùng / món?
+3. Bàn giao dưới 60 °C: hiện **không cho bàn giao** (phải báo thất bại để giao bù) – hay cho khách nhận kèm biên bản?
+4. Đối soát tính tiền theo **suất thực tế phục vụ** (spec 6.7) – hay theo suất đặt / số tối thiểu hợp đồng / max(đặt, phục vụ)? Cấu hình `ReconciliationBillingBasis` đổi được.
+5. Suất bị từ chối khi bàn giao có tự tạo phản ánh (mức Trung bình) không?
+6. Mẫu "Biên bản giao hàng" thật (nếu có) để em sửa file in.
+
+Cần anh: không có script SQL mới; khai báo `Vehicle.Code` (mã ngắn dùng trong số chuyến), tài xế (Employee) và `DeliveryWindowFrom` của điểm giao trước khi chạy thử.

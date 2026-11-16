@@ -54,7 +54,20 @@ namespace AppDelicare.Model.Option
         public int ProductionPackingMinutes { get; set; } = 30;
         /// <summary>T17: số phút mỗi mẻ khi dây chuyền chưa có MinutesPerBatch (hoặc không chọn dây chuyền). PROPOSED (GAP-PRD-07).</summary>
         public int ProductionDefaultMinutesPerBatch { get; set; } = 60;
-        /// <summary>T17: bắt buộc lưu mẫu (SAMPLE_RETAINED) trước khi mẻ đạt QC (BUSINESS_RULES §6 "mỗi mẻ phải lưu mẫu"). PROPOSED – BA/PO CONFIRM.</summary>
-        public bool ProductionRequireSampleBeforeRelease { get; set; } = true;
+        /// <summary>
+        /// T17: bắt buộc lưu mẫu (SAMPLE_RETAINED) trước khi mẻ đạt QC. Anh chốt 2026-11-16: lưu mẫu bắt buộc TRƯỚC KHI GIAO, không phải trước khi đạt QC →
+        /// mặc định false (đạt QC chỉ cảnh báo khi chưa lưu mẫu); chặn ở T19 <c>DeliveryRoute/Dispatch</c>.
+        /// </summary>
+        public bool ProductionRequireSampleBeforeRelease { get; set; }
+        /// <summary>T19: chặn xuất chuyến khi mẻ của ngày / ca chưa đóng gói xong (còn mẻ chưa Đã đóng gói / Không đạt) – PROPOSED – BA/PO CONFIRM (GAP-DLV-03).</summary>
+        public bool DeliveryRequirePackedBatches { get; set; } = true;
+        /// <summary>T19: chặn xuất chuyến khi có mẻ (đã đóng gói) của ngày / ca chưa lưu mẫu SAMPLE_RETAINED – anh chốt 2026-11-16.</summary>
+        public bool DeliveryRequireSampleRetained { get; set; } = true;
+        /// <summary>T19: cơ sở tính tiền khi đối soát: ORDERED / DELIVERED / ACCEPTED / SERVED – PROPOSED (spec 6.7: TotalAmount × suất nhận ÷ suất đặt; GAP-DLV-05).</summary>
+        public string ReconciliationBillingBasis { get; set; } = "SERVED";
+        /// <summary>T19: đóng đối soát có |chênh lệch| % lớn hơn ngưỡng này phải ghi chú (spec 6.7, GAP-F-11 tạm 1%) – PROPOSED.</summary>
+        public decimal ReconciliationVarianceRemarkPct { get; set; } = 1.0m;
+        /// <summary>T19: bàn giao có suất bị từ chối → tự tạo phản ánh PA- (SourceChannel POD, SHORTAGE) – spec 10.3, PROPOSED.</summary>
+        public bool DeliveryAutoComplaintOnRejected { get; set; } = true;
     }
 }

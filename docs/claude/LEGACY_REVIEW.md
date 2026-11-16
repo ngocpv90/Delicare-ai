@@ -172,3 +172,21 @@ Rà trước khi viết: ProductionPlan(+Line), ProductionOrder, ProductionBatch
 | prod-waste | MealWasteRecord | CRUD | Dòng gắn mẻ chỉ ghi qua `ProductionBatch/RecordWaste` (Insert / Update / Delete dòng có `ProductionBatchId` → lỗi); dòng không gắn mẻ giữ CRUD. Gỡ header auto-generated |
 | qc-temperature / qc-checklist-result | TemperatureLog / FoodSafetyChecklistResult | CRUD (TemperatureLog chỉ ghi thêm – T08) | Không sửa; T17 ghi CORE + SAMPLE_RETAINED qua action của mẻ |
 | (dùng chung) | – | – | Lớp tĩnh `Services/Implement/ProductionRules` (chọn công thức như MRP, lịch ngược, nguyên liệu của mẻ, điều kiện ATTP, mẫu in Phiếu sản xuất) – không đăng ký DI, không phải service thứ hai |
+
+## (h) Pilot P8 – giao vận, đối soát suất, phản ánh (T19, 2026-11-16)
+
+Rà trước khi viết: DeliveryRoute, DeliveryStop, DeliveryOrder, DeliveryEvent, ProofOfDeliverie (entity `ProofOfDelivery`), OrderReconciliation, CustomerComplaint, ComplaintHistory, Vehicle, TemperatureLog đều chỉ có CRUD sinh mã: chuyến / đơn giao tạo không số, đổi `Status` / `StopStatus` tùy ý, POD / đối soát nhập tay mọi con số, `DeliveryEvent/Insert` ghi được nhiệt độ "đạt" giả, phản ánh tạo không số / không hạn SLA. Không có kiểm nhiệt độ giao 60 °C. `DocumentNumberService` (T11) đã có CX / PA / PH (DeliveryOrder). DeliveryExecution / DeliveryLoading (xếp hàng) không dùng trong Pilot (GAP-DLV-02).
+
+| Màn hình | Bảng → Controller / Service cũ | Đánh giá trước T19 | Bổ sung / sửa trong T19 |
+|---|---|---|---|
+| log-route | DeliveryRoute | CRUD tạo chuyến không số, đổi trạng thái | Insert → lỗi nghiệp vụ (dùng `Create`); Update chỉ tên / mô tả / tài xế / giờ kế hoạch khi Kế hoạch; Delete chỉ Kế hoạch chưa có sự kiện (xóa kèm điểm dừng + đơn giao). Mới: `GetBoard`, `GetReadyOrders`, `GetDetail`, `Create` (JSON), `RecordTemperature`, `Dispatch`, `ExportDeliveryNote` (.xlsx) |
+| log-stop | DeliveryStop | CRUD | Insert / Delete → lỗi; Update chỉ thứ tự / giờ dự kiến / ghi chú khi chuyến + điểm Kế hoạch. Mới: `Arrive`, `Deliver` (POD), `Fail`. Gỡ header auto-generated |
+| log-delivery-order | DeliveryOrder | CRUD | Insert / Delete → lỗi (sinh khi lập chuyến); Update chỉ ghi chú |
+| log-event | DeliveryEvent (chỉ ghi thêm – T08) | CRUD Insert ghi tùy ý | Insert → lỗi (sự kiện / nhiệt độ chỉ qua action chuyến / điểm). Gỡ header auto-generated |
+| log-pod | ProofOfDeliverie | CRUD | Insert / Update / Delete → lỗi (ghi qua `DeliveryStop/Deliver`, không sửa) |
+| crm-reconciliation | OrderReconciliation | CRUD nhập tay số liệu | Insert / Update / Delete → lỗi. Mới: `GetPendingOrders`, `GetDetail`, `GetByOrder`, `Reconcile`, `Close` |
+| log-complaint | CustomerComplaint | CRUD tạo không số / SLA, đổi trạng thái | Insert / Delete → lỗi; Update chỉ phân loại / kênh / mô tả / mức độ (tính lại SLA) khi Mới / Đang xử lý. Mới: `GetDetail`, `Create`, `Assign`, `Resolve`, `Close`, `Reject`, `AddComment`. Gỡ header auto-generated |
+| log-complaint-history | ComplaintHistory (chỉ ghi thêm) | CRUD Insert | Insert → lỗi (ghi qua action phản ánh). Gỡ header auto-generated |
+| qc-temperature | TemperatureLog | CRUD (chỉ ghi thêm) | Không sửa; T19 ghi DELIVERY qua action (căn cứ chặn là `DeliveryEvent` TEMP_CHECK) |
+| prod-batch | ProductionBatche | (T17) | D-42: `RecordSampleRetained` nhận thêm mẻ Đã đóng gói; `Release` chỉ cảnh báo khi chưa lưu mẫu (`ProductionRequireSampleBeforeRelease` = false) |
+| (dùng chung) | – | – | Lớp tĩnh `Services/Implement/DeliveryRules` (nhiệt độ giao, điều kiện xuất phát, chi tiết chuyến, tạo phản ánh PA-, mẫu in) – không đăng ký DI, không phải service thứ hai |

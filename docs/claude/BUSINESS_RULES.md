@@ -68,11 +68,13 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - Chia suất, nấu thêm, suất thừa ghi vào `MealWasteRecord` / `ProductionOutput`.
 - Checklist ATTP theo ca, hạn tính từ giờ xuất bếp: sơ chế −150′, vệ sinh khu sơ chế −90′, xả nguội −20′, vệ sinh bếp +90′.
 - **Bản Pilot đã cài (T17, PROPOSED – DECISIONS GAP-PRD-01, 03…08):** kế hoạch KH- theo ngày (MRP) → `ProductionPlan/Approve` → `Release` gán 1 ca (`BusinessRules:ProductionDefaultShiftCode` = TRUA), lịch ngược: giờ xuất bếp = giờ giao sớm nhất của điểm giao (`DeliveryWindowFrom`, không có → giờ bắt đầu ca) − `TransportMinutesBeforeCutoff` 60′, mẻ cuối mỗi món xong trước xuất bếp `ProductionPackingMinutes` = 30′, mỗi mẻ `MinutesPerBatch` (trống → `ProductionDefaultMinutesPerBatch` = 60′), số mẻ theo `CapacityMealPerBatch` của dây chuyền chọn; mã `ME-YYMMDD-<CA>-NN`. Nhiệt độ lõi: lần đo gần nhất < `CoreTempMinC` (70 °C) hoặc chưa đo → chặn đạt QC và chặn đóng gói; dưới ngưỡng bắt buộc hành động khắc phục. Lưu mẫu bắt buộc trước khi đạt QC (`ProductionRequireSampleBeforeRelease` = true; seed `DB/seed/FoodSafetyChecklist_seed.sql`). Công đoạn theo tổ → sau Pilot.
+- **Anh chốt 2026-11-16 (D-42):** lưu mẫu bắt buộc **trước khi giao**, không phải trước khi mẻ đạt QC → `ProductionRequireSampleBeforeRelease` = false (đạt QC chỉ cảnh báo), chặn ở `DeliveryRoute/Dispatch` (T19).
 
 ## 7. Giao vận
 - Nhiệt độ khi giao ≥ **60°C** (`DeliveryEvent` + `TemperatureLog` MeasurementType=`DELIVERY`).
 - Trễ, thiếu hay thừa suất ghi theo từng điểm dừng (`DeliveryStop`). Có ảnh xác nhận (`ProofOfDeliverie`).
 - Khách báo thiếu suất → **bếp** nấu bù → **giao vận** giao bù (luồng liên phòng, xem AGENTS.md).
+- **Bản Pilot đã cài (T19, PROPOSED – DECISIONS GAP-DLV-01…07, D-42):** `DeliveryRoute/Create` lập chuyến `CX-YYMMDD-<XE>-NN` (đơn Đang sản xuất của ngày / ca chưa có chuyến; mỗi đơn 1 đơn giao `PH-` + 1 điểm dừng, thứ tự theo giờ giao). **Xuất phát bị chặn** khi nhiệt độ xuất phát đo gần nhất < `DeliveryTempMinC` (60 °C) hoặc chưa đo, còn mẻ của ngày / ca chưa Đã đóng gói (`DeliveryRequirePackedBatches`), có mẻ **chưa lưu mẫu** (`DeliveryRequireSampleRetained` – anh chốt 2026-11-16: lưu mẫu bắt buộc trước khi giao). **Bàn giao bị chặn** khi nhiệt độ tại điểm gần nhất < 60 °C / chưa đo. Dưới ngưỡng bắt buộc ghi hành động khắc phục; lần đo vẫn được lưu. POD → đơn hàng Đã giao; suất bị từ chối → phản ánh `PA-` tự động. Đối soát: suất phục vụ (khách xác nhận) → `OrderReconciliation`, giá trị = giá trị đơn × suất tính tiền ÷ suất đặt (`ReconciliationBillingBasis` = SERVED); đóng → đơn Đã đối soát.
 
 ## 8. Hộp / khay và vệ sinh
 - `PackagingLedger` là sổ chỉ ghi thêm: OUT (xuất theo chuyến), RETURN (thu về), LOSS (thất thoát), DAMAGED.
@@ -85,6 +87,7 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 
 ## 9. Phản ánh khách
 Mức độ HIGH / MEDIUM / LOW, hạn xử lý 4 / 24 / 72 giờ (`CustomerComplaint`, lịch sử ở `ComplaintHistory`). Quá hạn thì báo lên cấp trên.
+- **Bản Pilot đã cài (T19, GAP-DLV-06):** `CustomerComplaint/Create` (số `PA-YYMMDD-NNNN`, `SlaDueAt` = lúc nhận + 4 / 24 / 72 giờ, mức độ lưu High / Medium / Low) → `Assign` (Đang xử lý) → `Resolve` (Đã xử lý) → `Close`; `Reject`; `AddComment`; lịch sử ở `ComplaintHistory`. `isOverdue` tính khi xem; cảnh báo / leo thang tự động → sau Pilot (T23).
 
 ## 10. Nhân sự
 Chấm công hợp lệ khi nằm trong bán kính bếp (GPS), hoặc quét QR tại bếp, hoặc từ máy chấm công, hoặc chấm hộ (phải ghi rõ hình thức). Lưu ở `AttendanceEvent` (`IsValid`, `SourceChannel` = GPS / QR / MACHINE / PROXY, `DistanceMeters`). Tọa độ và bán kính bếp lấy từ `KitchenWorkstation.Latitude` / `Longitude` / `RadiusMeters`. Có đơn nghỉ (`LeaveRequest`) và đổi ca (`ShiftSwapRequest`).

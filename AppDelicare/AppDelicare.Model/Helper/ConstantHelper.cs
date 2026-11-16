@@ -267,6 +267,49 @@
             public static readonly string WasteTypeInvalid = "Loại hao hụt không hợp lệ ({0})";
             public static readonly string WasteBatchViaAction = "Hao hụt gắn mẻ ghi qua ProductionBatch/RecordWaste (cập nhật số hao hụt của mẻ)";
             public static readonly string WorkstationNotFound = "Không tìm thấy trạm bếp";
+
+            // T19 – giao vận, đối soát, phản ánh (P8)
+            public static readonly string DeliveryCrudBlocked = "{0} không ghi trực tiếp qua thêm / sửa / xóa – dùng {1}";
+            public static readonly string RouteNotFound = "Không tìm thấy chuyến xe";
+            public static readonly string StopNotFound = "Không tìm thấy điểm dừng";
+            public static readonly string VehicleNotFound = "Không tìm thấy xe";
+            public static readonly string VehicleUnavailable = "Xe {0} đang ở trạng thái {1} – không xếp chuyến được";
+            public static readonly string DriverNotFound = "Không tìm thấy tài xế (nhân viên)";
+            public static readonly string RouteNoOrders = "Không có đơn hàng Đang sản xuất nào của ngày {0} chưa được xếp chuyến";
+            public static readonly string RouteOrderInvalid = "Đơn {0} không xếp chuyến được: {1}";
+            public static readonly string RouteOverCapacity = "Tổng {0} suất vượt tải xe {1} ({2} suất)";
+            public static readonly string RouteVehicleBusy = "Xe {0} đã có chuyến khác chưa hoàn thành trong ngày: {1}";
+            public static readonly string RouteNotReadyWarning = "Sản xuất chưa sẵn sàng giao: {0}";
+            public static readonly string DeliveryTempCorrectiveRequired = "Nhiệt độ {0} °C dưới ngưỡng giao {1} °C – bắt buộc ghi hành động khắc phục";
+            public static readonly string DeliveryTempBelowWarning = "Nhiệt độ {0} °C dưới ngưỡng giao {1} °C – không được xuất phát / bàn giao tới khi đo lại đạt";
+            public static readonly string DepartureTempMissing = "Chưa đo nhiệt độ xuất phát (≥ {0} °C)";
+            public static readonly string DepartureTempBelow = "Nhiệt độ xuất phát đo gần nhất {0} °C dưới ngưỡng {1} °C – hâm lại / thay suất và đo lại";
+            public static readonly string HandoverTempMissing = "Chưa đo nhiệt độ bàn giao tại điểm (≥ {0} °C)";
+            public static readonly string HandoverTempBelow = "Nhiệt độ bàn giao đo gần nhất {0} °C dưới ngưỡng {1} °C – không bàn giao được; báo điều phối giao bù (Fail điểm dừng)";
+            public static readonly string BatchesNone = "Chưa có mẻ nấu nào của ngày / ca phục vụ chuyến";
+            public static readonly string BatchesNotPacked = "Mẻ chưa đóng gói xong: {0}";
+            public static readonly string BatchesNoSample = "Mẻ chưa lưu mẫu thức ăn (bắt buộc trước khi giao): {0}";
+            public static readonly string RouteCannotDispatch = "Chuyến {0} chưa được xuất phát: {1}";
+            public static readonly string RouteCannotDeliver = "Điểm {0} chưa bàn giao được: {1}";
+            public static readonly string PodQuantityInvalid = "Số giao phải lớn hơn 0; số nhận từ 0 tới số giao";
+            public static readonly string PodReceiverRequired = "Phải ghi tên người nhận";
+            public static readonly string StopReasonRequired = "Phải ghi lý do giao thất bại";
+            public static readonly string RouteStopTempInvalid = "Chỉ đo nhiệt độ tại điểm khi chuyến Đang giao và điểm chưa giao xong";
+            public static readonly string RouteDepartureTempInvalid = "Chỉ đo nhiệt độ xuất phát khi chuyến ở Kế hoạch / Đang xếp";
+            public static readonly string RouteDeleteHasEvents = "Chuyến đã có sự kiện / nhiệt độ ghi nhận – không xóa được";
+            public static readonly string StopSequenceExists = "Thứ tự {0} đã có trong chuyến";
+            public static readonly string ReconcileOrderNotFound = "Không tìm thấy đơn hàng";
+            public static readonly string ReconcileQuantityInvalid = "Suất phục vụ từ 0 tới số suất khách nhận khi bàn giao ({0}); trả về / hủy không âm và phục vụ + trả về + hủy không vượt số nhận";
+            public static readonly string ReconcileNoPod = "Đơn {0} chưa có biên bản giao nhận (POD)";
+            public static readonly string ReconciliationNotFound = "Không tìm thấy bản đối soát";
+            public static readonly string ReconcileClosed = "Đối soát của đơn {0} đã đóng";
+            public static readonly string ReconcileRemarkRequired = "Chênh lệch {0}% vượt ngưỡng {1}% – phải ghi chú khi đóng đối soát";
+            public static readonly string ComplaintNotFound = "Không tìm thấy phản ánh";
+            public static readonly string ComplaintSeverityInvalid = "Mức độ phản ánh không hợp lệ ({0}) – High / Medium / Low";
+            public static readonly string ComplaintCustomerNotFound = "Không tìm thấy khách hàng";
+            public static readonly string ComplaintLinkInvalid = "{0} không tồn tại hoặc không thuộc khách hàng của phản ánh";
+            public static readonly string ComplaintCommentRequired = "Phải ghi nội dung (nhận xét / cách xử lý / lý do)";
+            public static readonly string ComplaintAssigneeNotFound = "Không tìm thấy người được giao xử lý";
         }
 
         public class TypeSave

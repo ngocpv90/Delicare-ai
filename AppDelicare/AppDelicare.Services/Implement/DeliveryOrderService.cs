@@ -130,14 +130,11 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(DeliveryOrderRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<DeliveryOrder>(request);
-            _unitOfWork.DeliveryOrderRepository.Add(insert);
-            await _unitOfWork.DeliveryOrderRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T19: đơn giao chỉ sinh khi lập chuyến (DeliveryRoute/Create, số PH-) – CRUD Insert không ghi (tách / chuyển chuyến tay → sau Pilot).</summary>
+        private Task<string> Insert(DeliveryOrderRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Đơn giao", "DeliveryRoute/Create"));
 
+        /// <summary>T19: CRUD Update chỉ đổi ghi chú; trạng thái / số / chuyến / giờ giao đổi qua DeliveryRoute / DeliveryStop.</summary>
         private async Task<string> Update(DeliveryOrderRequest request, string typeSave)
         {
             var exist = _unitOfWork.DeliveryOrderRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
@@ -145,32 +142,15 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.DeliveryOrderRepository.Update(update);
+            exist.Note = string.IsNullOrWhiteSpace(request.Note) ? exist.Note : request.Note.Trim();
+            _unitOfWork.DeliveryOrderRepository.Update(exist);
             await _unitOfWork.DeliveryOrderRepository.CommitAsync(typeSave);
             return string.Empty;
         }
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(DeliveryOrder), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.DeliveryOrderRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.DeliveryOrderRepository.Update(delete);
-            await _unitOfWork.DeliveryOrderRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T19: không xóa đơn giao lẻ – xóa cả chuyến Kế hoạch (DeliveryRoute/Delete) hoặc báo thất bại (DeliveryStop/Fail).</summary>
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Đơn giao", "DeliveryRoute/Delete (chuyến Kế hoạch) hoặc DeliveryStop/Fail"));
 
         public async Task<IResult<DeliveryOrder>> GetById(Guid id)
         {

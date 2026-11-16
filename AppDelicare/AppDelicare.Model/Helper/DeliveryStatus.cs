@@ -1,0 +1,174 @@
+namespace AppDelicare.Model.Helper
+{
+    /// <summary>T19 – trạng thái chuyến xe (STATUS_CATALOG: DeliveryRoute.Status, PROPOSED – BA/PO CONFIRM): Planned → (Loading) → InTransit → Completed.</summary>
+    public static class DeliveryRouteStatus
+    {
+        public const string Planned = "Planned";
+        /// <summary>Có trong STATUS_CATALOG; Pilot chưa dùng bước xếp hàng (DeliveryLoading) – Dispatch nhận cả Planned / Loading.</summary>
+        public const string Loading = "Loading";
+        public const string InTransit = "InTransit";
+        public const string Completed = "Completed";
+
+        public static string Label(string? status) => status switch
+        {
+            Planned => "Kế hoạch",
+            Loading => "Đang xếp",
+            InTransit => "Đang giao",
+            Completed => "Hoàn thành",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>T19 – trạng thái điểm dừng (STATUS_CATALOG: DeliveryStop.StopStatus): Planned → Arrived → Delivered / Failed.</summary>
+    public static class DeliveryStopStatus
+    {
+        public const string Planned = "Planned";
+        public const string Arrived = "Arrived";
+        public const string Delivered = "Delivered";
+        public const string Failed = "Failed";
+
+        public static readonly string[] Closed = [Delivered, Failed];
+
+        public static string Label(string? status) => status switch
+        {
+            Planned => "Kế hoạch",
+            Arrived => "Đã đến",
+            Delivered => "Đã giao",
+            Failed => "Thất bại",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>
+    /// T19 – trạng thái đơn giao (DeliveryOrder.Status – chưa có trong STATUS_CATALOG, PROPOSED – BA/PO CONFIRM, GAP-DLV-02):
+    /// Planned → InTransit → Delivered / Failed (đi cùng điểm dừng). Đơn giao Failed không còn hiệu lực → đơn hàng được xếp chuyến lại.
+    /// </summary>
+    public static class DeliveryOrderStatus
+    {
+        public const string Planned = "Planned";
+        public const string InTransit = "InTransit";
+        public const string Delivered = "Delivered";
+        public const string Failed = "Failed";
+
+        /// <summary>Đơn giao còn hiệu lực (đơn hàng đã có chuyến, không xếp lại).</summary>
+        public static readonly string[] Active = [Planned, InTransit, Delivered];
+
+        public static string Label(string? status) => status switch
+        {
+            Planned => "Kế hoạch",
+            InTransit => "Đang giao",
+            Delivered => "Đã giao",
+            Failed => "Thất bại",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>T19 – trạng thái đối soát (STATUS_CATALOG: OrderReconciliation.Status): Open → Matched / Variance → Closed.</summary>
+    public static class ReconciliationStatus
+    {
+        public const string Open = "Open";
+        public const string Matched = "Matched";
+        public const string Variance = "Variance";
+        public const string Closed = "Closed";
+
+        public static string Label(string? status) => status switch
+        {
+            Open => "Mở",
+            Matched => "Khớp",
+            Variance => "Chênh lệch",
+            Closed => "Đóng",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>T19 – trạng thái phản ánh (STATUS_CATALOG: CustomerComplaint.ComplaintStatus): Open → InProgress → Resolved → Closed; Rejected.</summary>
+    public static class ComplaintStatus
+    {
+        public const string Open = "Open";
+        public const string InProgress = "InProgress";
+        public const string Resolved = "Resolved";
+        public const string Closed = "Closed";
+        public const string Rejected = "Rejected";
+
+        /// <summary>Đã xong (không tính quá hạn SLA).</summary>
+        public static readonly string[] Done = [Resolved, Closed, Rejected];
+
+        public static string Label(string? status) => status switch
+        {
+            Open => "Mới",
+            InProgress => "Đang xử lý",
+            Resolved => "Đã xử lý",
+            Closed => "Đóng",
+            Rejected => "Từ chối",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>
+    /// T19 – mức độ phản ánh (BUSINESS_RULES §9: HIGH / MEDIUM / LOW, hạn 4 / 24 / 72 giờ). Lưu dạng <c>High / Medium / Low</c> cho khớp mặc định SQL (<c>N'Medium'</c>);
+    /// tra hạn trong <c>BusinessRules:ComplaintSlaHours</c> không phân biệt hoa / thường.
+    /// </summary>
+    public static class ComplaintSeverity
+    {
+        public const string High = "High";
+        public const string Medium = "Medium";
+        public const string Low = "Low";
+
+        /// <summary>Chuẩn hóa (HIGH / high / Cao…) → High / Medium / Low; trống → Medium; sai → null.</summary>
+        public static string? Normalize(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return Medium;
+            }
+            return value.Trim().ToUpperInvariant() switch
+            {
+                "HIGH" or "CAO" => High,
+                "MEDIUM" or "TRUNG BÌNH" or "TRUNG BINH" => Medium,
+                "LOW" or "THẤP" or "THAP" => Low,
+                _ => null,
+            };
+        }
+
+        public static string Label(string? severity) => severity?.ToUpperInvariant() switch
+        {
+            "HIGH" => "Cao",
+            "MEDIUM" => "Trung bình",
+            "LOW" => "Thấp",
+            _ => severity ?? string.Empty,
+        };
+    }
+
+    /// <summary>T19 – mã dùng chung của giao vận (BUSINESS_RULES §7, §9).</summary>
+    public static class DeliveryCode
+    {
+        /// <summary>TemperatureLog.MeasurementType của nhiệt độ giao (BUSINESS_RULES §7).</summary>
+        public const string DeliveryMeasurement = "DELIVERY";
+        /// <summary>DeliveryEvent.EventType: đo nhiệt độ (DeliveryStopId trống = lúc xuất phát; có = lúc bàn giao tại điểm).</summary>
+        public const string EventTemperature = "TEMP_CHECK";
+        public const string EventDispatched = "DISPATCHED";
+        public const string EventArrived = "ARRIVED";
+        public const string EventDelivered = "DELIVERED";
+        public const string EventFailed = "FAILED";
+        /// <summary>Tiền tố DeliveryEvent.ExternalEventId trỏ tới dòng TemperatureLog cùng lần đo (TemperatureLog không có cột chuyến / điểm – GAP-DLV-01).</summary>
+        public const string TemperatureLogRef = "TemperatureLog:";
+        public const string SourceManual = "MANUAL";
+
+        /// <summary>ComplaintHistory.EventType.</summary>
+        public const string ComplaintCreated = "CREATED";
+        public const string ComplaintAssigned = "ASSIGNED";
+        public const string ComplaintResolved = "RESOLVED";
+        public const string ComplaintClosed = "CLOSED";
+        public const string ComplaintRejected = "REJECTED";
+        public const string ComplaintComment = "COMMENT";
+        /// <summary>Phản ánh tự tạo khi bàn giao có suất bị từ chối (spec 10.3 pod).</summary>
+        public const string ComplaintSourcePod = "POD";
+        public const string ComplaintCategoryShortage = "SHORTAGE";
+
+        /// <summary>Cơ sở tính tiền khi đối soát (BusinessRules:ReconciliationBillingBasis, PROPOSED – GAP-DLV-05).</summary>
+        public const string BillingOrdered = "ORDERED";
+        public const string BillingDelivered = "DELIVERED";
+        public const string BillingAccepted = "ACCEPTED";
+        public const string BillingServed = "SERVED";
+    }
+}

@@ -451,7 +451,8 @@ namespace AppDelicare.Services.Implement
         /// Mỗi mẻ 1 lần.
         /// </summary>
         public Task<IResult<ProductionBatchDetailModel>> RecordSampleRetained(ProductionBatchSampleRequest request)
-            => RunAsync(request.Id, "ghi lưu mẫu", [ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed], async (batch, order, actor, warnings) =>
+            // Anh chốt 2026-11-16: lưu mẫu bắt buộc trước khi giao → ghi được cả khi mẻ Đã đóng gói (chặn ở DeliveryRoute/Dispatch).
+            => RunAsync(request.Id, "ghi lưu mẫu", [ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed, ProductionBatchStatus.Packed], async (batch, order, actor, warnings) =>
             {
                 var db = _unitOfWork.DbContext;
                 var item = await ProductionRules.SampleItemAsync(db);
@@ -576,6 +577,11 @@ namespace AppDelicare.Services.Implement
                 if (blockers.Count != 0)
                 {
                     return string.Format(ConstantHelper.Message.BatchCannotRelease, Number(batch), string.Join("; ", blockers));
+                }
+                if (!_rules.ProductionRequireSampleBeforeRelease && (await ProductionRules.SamplesAsync(_unitOfWork.DbContext, batch.Id)).Count == 0)
+                {
+                    // Anh chốt 2026-11-16: lưu mẫu bắt buộc trước khi giao (chặn ở DeliveryRoute/Dispatch) – đạt QC chỉ cảnh báo.
+                    warnings.Add(ConstantHelper.Message.SampleMissing + " – bắt buộc trước khi xuất chuyến giao");
                 }
                 batch.Status = ProductionBatchStatus.Passed;
                 batch.QcStatus = BatchQcStatus.Pass;

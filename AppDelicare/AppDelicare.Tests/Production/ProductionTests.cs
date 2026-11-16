@@ -246,19 +246,19 @@ namespace AppDelicare.Tests.Production
             // Chờ QC: nhiệt độ 65 °C, chưa lưu mẫu, chưa ghi sản lượng → không cho đạt.
             var blocked = await c.PostFormAsync("/api/ProductionBatch/Release", ("Id", soup));
             blocked.Fail("65 °C dưới ngưỡng 70 °C");
-            blocked.Message.Should().Contain("Chưa lưu mẫu").And.Contain("Chưa ghi sản lượng");
+            blocked.Message.Should().Contain("Chưa ghi sản lượng").And.NotContain("Chưa lưu mẫu", "anh chốt 2026-11-16: lưu mẫu bắt buộc trước khi giao, không phải trước khi đạt QC");
             (await c.PostFormAsync("/api/ProductionBatch/RecordCoreTemperature", ("Id", soup), ("TemperatureC", 75.5m), ("DeviceCode", "NK-01"))).Ok();
             (await c.PostFormAsync("/api/ProductionBatch/RecordOutput", ("Id", soup), ("ProducedQuantity", 80m), ("RejectedQuantity", 2m))).Ok();
-            var noSample = await c.PostFormAsync("/api/ProductionBatch/Release", ("Id", soup));
-            noSample.Fail("Chưa lưu mẫu");
-            noSample.Message.Should().NotContain("nhiệt độ", "đã đo lại đạt 75,5 °C");
 
-            (await c.PostFormAsync("/api/ProductionBatch/RecordSampleRetained", ("Id", soup), ("ActualValue", "Tủ mẫu số 2 – 150 g"))).Ok();
-            (await c.PostFormAsync("/api/ProductionBatch/RecordSampleRetained", ("Id", soup))).Fail("đã ghi lưu mẫu");
+            // Chưa lưu mẫu → vẫn đạt QC nhưng cảnh báo (lưu mẫu chặn ở DeliveryRoute/Dispatch – anh chốt 2026-11-16).
             var passed = (await c.PostFormAsync("/api/ProductionBatch/Release", ("Id", soup))).Ok();
             passed.GetProperty("batch").GetProperty("status").GetString().Should().Be("Passed");
             passed.GetProperty("batch").GetProperty("qcStatus").GetString().Should().Be("PASS");
-            passed.GetProperty("batch").GetProperty("sampleRetained").GetBoolean().Should().BeTrue();
+            passed.GetProperty("batch").GetProperty("sampleRetained").GetBoolean().Should().BeFalse();
+            passed.GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("Chưa lưu mẫu"));
+            var sampled = (await c.PostFormAsync("/api/ProductionBatch/RecordSampleRetained", ("Id", soup), ("ActualValue", "Tủ mẫu số 2 – 150 g"))).Ok();
+            sampled.GetProperty("batch").GetProperty("sampleRetained").GetBoolean().Should().BeTrue();
+            (await c.PostFormAsync("/api/ProductionBatch/RecordSampleRetained", ("Id", soup))).Fail("đã ghi lưu mẫu");
 
             // Đo lại trước khi đóng gói: 68 °C → chặn đóng gói; hâm lại 72 °C → đóng gói được.
             (await c.PostFormAsync("/api/ProductionBatch/RecordCoreTemperature", ("Id", soup), ("TemperatureC", 68m), ("CorrectiveAction", "Hâm lại"))).Ok();
