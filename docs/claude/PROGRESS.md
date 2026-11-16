@@ -7,7 +7,7 @@
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 92/92 xanh
+- Build backend: OK – 0 lỗi, 11 cảnh báo (no-incremental; 2026-11-16, nhánh `feat/T15.1-po-rules`) · Test: `AppDelicare.Tests` 149/149 xanh · T15.1 (quy tắc mua hàng anh chốt 2026-11-16) DONE(PILOT) → kế tiếp T17
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -591,3 +591,355 @@ Phát hiện → việc backend nhỏ (làm sau T13, ghi ở đây):
 Cần anh:
 - **Tạo user kèm hồ sơ trong 1 bước chưa làm**: `Person/Insert` đã tự tạo 1 user (tên tự sinh, chưa có nhóm), nên làm thêm sẽ ra 2 tài khoản. Hiện màn user chỉ chọn hồ sơ có sẵn – anh chọn cách xử lý.
 - Danh sách loại đơn vị / trạng thái đơn vị lấy theo seed (PROPOSED), chưa có trong STATUS_CATALOG.
+### T11 – Mã chứng từ (Pilot P1) · 2026-11-16 · DONE
+Nhánh `feat/T11-document-number` (từ `feat/T48.0-password-hash`, làm trong worktree riêng song song FE-0).
+
+Rà soát: chưa có service sinh mã; `RecipeService.Submit` tự đặt `RV-yyMMdd-HHmmssfff` (có thể trùng khi bấm đồng thời, sai mẫu XN).
+
+Đã làm:
+- `IDocumentNumberService.NextAsync(kind, date, suffix)` (`AppDelicare.Services`, Autofac tự đăng ký), đủ 10 loại BUSINESS_RULES §11:
+  - PH (đơn, nhập, xuất, kiểm kê, đề nghị mua, lệnh SX, đóng gói, giao – dùng chung, không trùng giữa các bảng – PROPOSED);
+  - XN, PA, PO, DN;
+  - NL / ME / CX: hậu tố NCC / ca / xe, bắt buộc;
+  - KH: `KH-YYMMDD`, phiên bản sau `-2`, `-3`;
+  - VS: `VS-YYMMDD-<CA>`, lần sau `-2`.
+- SQL Server:
+  - `sp_getapplock` (Exclusive, LockOwner = Transaction) theo mã gốc;
+  - `MAX(TRY_CAST(phần số))` gộp cột chuẩn + cột cũ (DEPRECATED_COLUMNS);
+  - tên bảng / cột lấy từ metadata EF, giá trị là tham số, LIKE có escape;
+  - bắt buộc gọi trong transaction đang mở (sau T45R, `UnitOfWork.OpenTransaction` đã bao EF).
+- Không bảng đếm, không SEQUENCE.
+- Hậu tố: bỏ dấu, chữ hoa, chỉ A–Z 0–9, tối đa 20 ký tự.
+- `RecipeService.Submit` dùng mã `XN-` cho ApprovalRequest.RequestNo.
+
+Kiểm tra:
+- Build 0 lỗi.
+- Test **105/105** (+13):
+  - định dạng 10 loại;
+  - tăng tiếp theo dữ liệu có sẵn (cả cột cũ `ReceiptNo`, PH chung nhiều bảng), đếm riêng theo hậu tố và theo ngày;
+  - hậu tố bắt buộc;
+  - **SQL Server: 50 transaction song song → 50 mã khác nhau, liên tục XN-991231-001..050** (dùng ngày 2099, xóa đúng 50 dòng test theo Id).
+
+AC: [x] 50 lần song song không trùng · [x] đúng định dạng mọi loại.
+
+GAP:
+- `AttendanceEvent` không có cột mã → loại CC chưa có chỗ ghi (ngoài Pilot).
+- Bảng có cột cũ NOT NULL (vd. `MaterialLot.LotNo`) → nơi tạo bản ghi phải ghi song song cả cột cũ (T15).
+
+### T12 – Duyệt 1 cấp (Pilot P2) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T12-approval` (từ `feat/T11-document-number`, worktree riêng).
+
+Rà soát:
+- `ApprovalRequestService` / `Controller` chỉ có CRUD sinh mã – CRUD sửa được cả `RequestStatus` (duyệt "chui").
+- Duyệt công thức tự cập nhật ApprovalRequest, không ghi ApprovalDecision.
+- `ApprovalDecision.ApprovalStepId` NOT NULL nên cần ApprovalStep.
+
+Đã làm (trong `ApprovalRequestService` cũ, gỡ header auto-generated):
+- `IApprovalHandler` – registry theo BusinessType: BuildPayload / Describe / Approve / Reject; đăng ký trong `Ioc/ComponentRegistrar`; lấy handler lúc dùng qua IServiceProvider để tránh vòng phụ thuộc.
+- `CreateAsync(businessType, businessId)`: gọi trong transaction của nghiệp vụ; mã `XN-` (T11) + ApprovalStep bước 1 + PayloadJson; chặn 2 yêu cầu Pending cùng chứng từ.
+- `GetMyPending(type)`: chỉ loại người đăng nhập có quyền duyệt (mục `#/wf-inbox?type=<screen>`, D-31; admin thấy hết); kèm tiêu đề, người gửi.
+- `Decide`, trong 1 transaction:
+  - kiểm quyền duyệt;
+  - từ chối bắt buộc lý do;
+  - **so hash nội dung lúc gửi với nội dung hiện tại – khác thì không duyệt, không ghi gì**;
+  - ghi ApprovalDecision (chỉ ghi thêm, PayloadHash SHA-256), cập nhật bước + yêu cầu;
+  - thực thi handler (lỗi → rollback toàn bộ).
+- CRUD `ApprovalRequest/Update` không đổi được trạng thái / nghiệp vụ / nội dung / mã.
+- Action: `ApprovalRequest/GetMyPending`, `ApprovalRequest/Decide` (chỉ cần đăng nhập, service tự kiểm quyền).
+- Công thức (RECIPE_VERSION, `RecipeApprovalHandler`): `Recipe/Submit` tạo yêu cầu qua engine; `Recipe/Approve` / `Reject` gọi `Decide`. Hành vi cũ giữ nguyên, nay có ApprovalDecision.
+
+Kiểm tra:
+- Build 0 lỗi.
+- Test **110/110** (+5 ApprovalTests):
+  - gửi → mã XN + bước + người có quyền thấy, người không quyền không thấy / không duyệt được;
+  - duyệt → thực thi + ApprovalDecision;
+  - từ chối cần lý do và không thực thi;
+  - nội dung bị sửa → không duyệt, không ghi;
+  - CRUD không đổi được trạng thái; Recipe/Approve đi qua engine.
+- RecipeServiceTests cũ vẫn xanh.
+
+AC (bản Pilot): [x] tạo → duyệt → thực thi · [x] từ chối không thực thi · [x] payload bị sửa thì không duyệt.
+
+DEFERRED(PILOT): duyệt nhiều cấp theo ApproverRoleCode, hết hạn tự động (job T23).
+
+Handler PO và đơn lệch > 30% làm cùng T15 / T13.
+
+**Chưa cập nhật `DELICARE_API_Catalog.xlsx` (sheet API_Catalog)** cho T11 / T12 và các task trước: máy chưa có `openpyxl`, lệnh cài bị chặn – cần anh cho phép cài hoặc tự cập nhật.
+
+### T13 + T46B.1 – Thực đơn tuần + Đơn hàng (Pilot P3) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T13-order-menu` (worktree `wt-T11`, từ T12).
+
+Kế hoạch:
+1. Rà soát Menu / MenuLine / MenuAssignment / Order / OrderLine / Contract / ContractMeal → LEGACY_REVIEW mục (c).
+2. Mở rộng engine duyệt T12: đề xuất (proposal) đi kèm yêu cầu duyệt, tương thích ngược.
+3. Thực đơn tuần: lịch + giá vốn + FC%, luật dòng thực đơn, Approve / Publish / Expire / Clone.
+4. Phân công thực đơn: kiểm chồng hiệu lực, Resolve.
+5. Đơn hàng: mẫu tạo đơn, Create, UpdateLines, máy trạng thái, giờ chốt 20h D-1, lệch suất > 30% → duyệt.
+6. In "Thực đơn gửi khách" (.xlsx).
+7. Test (InMemory + SQL Server rollback), tài liệu bàn giao, `.http`.
+
+Rà soát: 7 bảng đều có CRUD sinh mã, chưa có nghiệp vụ; CRUD Menu / Order đổi được trạng thái, số, tổng tiền; OrderLine CRUD không tính lại tiền. `MenuLine` không có cột lựa chọn (GAP-MENU-01), `OrderLine` không có cột điểm giao (GAP-ORD-01). Chi tiết: LEGACY_REVIEW (c).
+
+Đã làm (đều trong file cũ, đúng mẫu 4.2):
+- **Engine duyệt (T12 mở rộng):** `IApprovalRequestService.CreateAsync(type, id, proposalJson = null)`; có đề xuất → `PayloadJson = {"state":"<nội dung>","proposal":"<đề xuất>"}` (lưu dạng chuỗi để hash đúng byte), hash chỉ trên state; không có đề xuất → định dạng T12. `IApprovalHandler.ApproveAsync(…, proposalJson)` là default method gọi bản cũ → `RecipeApprovalHandler` không phải sửa. Test T12 giữ xanh.
+- **Thực đơn (`MenuService` / `MenuController`, `MenuLineService`):** `GetCalendar` (hàng = loại suất × lựa chọn × nhóm món, cột thứ 1–7, giá vốn / suất từng món theo công thức khóa, tổng + FC% theo (loại suất, lựa chọn, thứ), giá bán nhập tay hoặc tra theo khách); `Approve` (quyền duyệt `menu-menu`), `Publish` (đủ món mỗi thứ trong hiệu lực × loại suất đã gán), `Expire`, `Clone`; Insert luôn Draft, Update / Delete theo trạng thái; dòng thực đơn: thứ 1–7, lựa chọn 1–9, chỉ khi Draft / Approved, món chưa có công thức khóa → cảnh báo không chặn.
+- **Phân công (`MenuAssignmentService` / `Controller`):** luật Insert / Update (hợp đồng thuộc khách + có loại suất, điểm giao thuộc khách, không chồng hiệu lực); `Resolve` (điểm giao → khách; chỉ thực đơn Approved / Published).
+- **Đơn hàng (`OrderService` / `OrderController`):** `GetNewTemplate`, `GetDetail` (allowedActions, cutoffAt), `Create` (JSON – có dòng lồng nhau; 1 transaction; số `PH-YYMMDD-NNNN` qua `IDocumentNumberService.Voucher` – theo BUSINESS_RULES §11, không dùng `DH-` của spec; ghi song song OrderNo / OrderNumber, Amount / LineAmount; MenuId qua Resolve; UnitPrice qua `PricePolicyService.Resolve`; ca mặc định `BusinessRules:MealTypeDefaultShift`; bỏ dòng 0; chặn trùng đơn khách / điểm / ngày), `UpdateLines` (JSON), `Submit`, `Confirm`, `Lock`, `LockByMealDate` (nút thay job 20h), `Cancel` (lý do bắt buộc). CRUD Insert chuyển sang Create; Update chỉ Note / DeliveryDate đơn Draft; Delete chỉ Draft (kèm dòng); OrderLine CRUD ghi → lỗi nghiệp vụ.
+- **Giờ chốt (PROPOSED, GAP-ORD-02):** ngày ăn D chốt lúc 20:00 ngày D-1 (giờ VN qua `IClock`, giờ từ `BusinessRulesOptions`). Từ giờ chốt: chặn Create / UpdateLines / Submit / Confirm / Cancel đơn Confirmed; cho Lock, Cancel đơn Draft / Submitted. `LockByMealDate` chỉ chạy khi đã tới giờ chốt, khóa đơn Confirmed, trả danh sách đơn chưa xác nhận + đơn còn yêu cầu lệch suất chờ duyệt.
+- **Lệch suất (PROPOSED, GAP-ORD-03):** đơn Confirmed, dòng bất kỳ lệch (mới − cũ) / cũ (trị tuyệt đối) > 30% (`PortionDeviationPctNeedApproval`) → không ghi, tạo ApprovalRequest `ORDER_DEVIATION` (handler `OrderDeviationApprovalHandler`, màn `crm-order`) kèm đề xuất; duyệt → ghi số mới + tính lại tiền; từ chối → không đổi (ghi chú lý do vào đơn); đơn bị chốt / sửa sau khi gửi → không duyệt được (hash). Đúng 30% ghi ngay. Khi đang chờ duyệt không sửa tiếp được.
+- **In "Thực đơn gửi khách" (T46B.1):** `Menu/ExportForCustomer` (.xlsx, ClosedXML) theo bố cục sheet "4. Menu_Sent" của file thật (chỉ lấy cấu trúc, không chép dữ liệu): tên / địa chỉ pháp nhân từ bảng `Company` (Menu.CompanyId, không có thì công ty đầu tiên), tiêu đề, dự án, hiệu lực, bảng Thứ × buổi (Món + Trọng lượng thành phẩm = `Dish.StandardServingSize`); nhiều lựa chọn → tiền tố "LC n:".
+- **Quyền:** theo `PermissionConvention` (Get* = View, Create / Clone = Add, ExportForCustomer = Export, còn lại Edit). Khai báo rõ: `Menu/Approve` = Approve (`menu-menu`), `Menu/Publish`, `Expire` = Edit, `Menu/Clone` = Add, `Order/Confirm`, `Lock`, `LockByMealDate`, `Cancel` = Edit trên `crm-order` (thao tác vận hành, không phải duyệt – PROPOSED). Duyệt lệch suất = mục menu mới `#/wf-inbox?type=crm-order` "Duyệt – Đơn đặt suất ăn" (CodeGen `Seeds.ExtraApprovable`, sinh lại `ObjectMenu_seed.sql` / `UserRole_seed.sql`: chỉ thêm, nhóm CEO theo ma trận).
+- Thông báo tiếng Việt mới trong `ConstantHelper.Message`; trạng thái trong `OrderStatus` / `MenuStatus` (`Model/Helper/OrderStatus.cs`).
+- Test: `TestClock` (IClock điều khiển được, mặc định giờ thật) đăng ký trong `InMemoryApiFactory`.
+
+File chính: `Services/Implement/{OrderService, MenuService, MenuLineService, MenuAssignmentService, OrderLineService, ApprovalRequestService}.cs`, `Services/Implement/Approval/OrderDeviationApprovalHandler.cs`, `Services/Interface/{IOrderService, IMenuService, IMenuAssignmentService, IApprovalHandler, IApprovalRequestService}.cs`, `WebApi/Controllers/{Order, Menu, MenuAssignment}Controller.cs`, `Model/Request/Custom/{Order, Menu}CustomRequest.cs`, `Model/Model/{Order, Menu}Models.cs`, `Model/Helper/OrderStatus.cs`, `Model/Option/BusinessRulesOptions.cs` + `appsettings.json` (`MealTypeDefaultShift`), `tools/AppDelicare.CodeGen/Seeds.cs`, `DB/seed/{ObjectMenu, UserRole}_seed.sql`, tài liệu `docs/frontend-handoff/P3.md`, `docs/api-tests/p3-menu-order.http`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline worktree: 10 + 1 MSB3245 Generator).
+- `dotnet test`: **123/123** xanh (+13): `Sales/OrderTests` (8: mẫu → tạo → gửi → xác nhận → chốt, số PH-, ghi song song cột cũ, tổng tiền; chuyển trạng thái sai; giờ chốt trước / đúng 20:00 D-1 + LockByMealDate; lệch ≤ 30% ghi ngay, > 30% → duyệt / từ chối; duyệt sau khi đơn bị chốt bị chặn; thứ tự tra giá hợp đồng → khách → ContractMeal; không có hợp đồng; tương thích ngược PayloadJson), `Menu/MenuCalendarTests` (4: lịch + giá vốn + FC%, cảnh báo món chưa có công thức, thứ ngoài 1–7; Approve / Publish / Expire / Clone; phân công + Resolve + chồng hiệu lực; file in mở được bằng ClosedXML), `Sales/OrderSqlServerTests` (1: SQL Server dev, create → submit → confirm → lock trong transaction ngoài rồi rollback – đã chạy, không bị bỏ qua).
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+AC:
+- [x] T13: test các nhánh cutoff và deviation; số tổng của đơn đúng; Submit / Confirm / Cancel (+ Lock) theo máy trạng thái; giá theo PricePolicie / ContractMeal.
+- [x] T46B.1 (Pilot): thực đơn tuần buổi × lựa chọn + giá vốn / FC%; đơn theo khách → điểm giao; mẫu in Thực đơn gửi khách có test sinh file mở được.
+- [ ] `DELICARE_API_Catalog.xlsx` chưa cập nhật (máy chưa có `openpyxl`) – các dòng spec 6.2, 6.3, 6.6 cần ghi "Đã xong" / "Một phần" + action thực tế (xem `docs/frontend-handoff/P3.md`).
+
+DEFERRED(PILOT):
+- Job 20:00 tự khóa đơn (dùng nút `Order/LockByMealDate`), job hết hạn hợp đồng.
+- Sửa đơn sau giờ chốt qua duyệt `ORDER_CHANGE_AFTER_CUTOFF`; lệch suất so với trung bình 4 tuần cùng thứ của điểm giao.
+- Dự báo (Forecast): số lượng gợi ý trong mẫu tạo đơn (= 0), lệch dự báo > 10% khi xác nhận; danh sách dạng kanban (`view=board`, `statusCounts`), `orderedMeals` / `assignedCustomerCount` trong danh sách thực đơn.
+- Hợp đồng: Create kèm suất, Submit duyệt, Terminate (spec 6.1) – Pilot dùng CRUD Contract / ContractMeal, hợp đồng phải `Status = Active`.
+- Yêu cầu đổi món (MenuChangeRequest, spec 6.4), đối soát (6.7 – T19).
+- Đẩy thực đơn đã công bố qua Zalo cho khách.
+- In thực đơn: logo (chưa có file), bản PDF.
+
+Câu hỏi cho anh (DECISIONS GAP-MENU-01, GAP-MENU-02, GAP-ORD-01…03):
+1. "Lựa chọn 1/2/3" lưu ở `MenuLine.SequenceNo` được không? Số suất dự kiến theo lựa chọn có cần lưu (chưa có cột)?
+2. 1 đơn = 1 điểm giao (OrderLine không có cột điểm giao) – anh đồng ý?
+3. Sau 20:00 D-1: chặn tạo / sửa / gửi / xác nhận / hủy đơn đã xác nhận; vẫn cho chốt và hủy đơn chưa xác nhận – đúng ý anh? Đơn chưa xác nhận lúc chốt thì xử lý thế nào (hiện chỉ báo danh sách)?
+4. Lệch suất Pilot = so với số đã xác nhận (không phải trung bình 4 tuần) – tạm được không? Ai duyệt (seed hiện chỉ CEO theo ma trận; COO có cần)?
+5. FC% tính trên giá bán chưa VAT từ chính sách giá / ContractMeal; `PortionQty` của dòng thực đơn có nhân vào giá vốn không?
+6. Xác nhận đơn (Confirm) và Chốt (Lock) dùng quyền Sửa trên `crm-order` – hay cần tách quyền riêng?
+
+Cần anh: chạy lại `DB/seed/ObjectMenu_seed.sql` + `UserRole_seed.sql` trên DB dev / staging (chỉ thêm mục "Duyệt – Đơn đặt suất ăn" và quyền CEO); cho phép cài `openpyxl` để cập nhật Catalog.
+
+### T16 – Sổ kho (Pilot P4) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T16-inventory` (worktree `wt-T11`, từ T13).
+
+Kế hoạch:
+1. Rà soát InventoryTransaction / InventoryBalance / MaterialLot / MaterialIssue(+Line) / StockCount(+Line) / MaterialReservation / InventoryPolicie / Warehouse / StorageLocation → LEGACY_REVIEW mục (d).
+2. Quy tắc lô dùng chung (chặn hết hạn / QC / tạm giữ, thứ tự FEFO / FIFO, cảnh báo) – lớp tĩnh `InventoryLotRules`, dùng chung transaction của service gọi.
+3. Sổ cái: điều chỉnh tay, chuyển kho, sổ cái lọc khoảng ngày (SP mới), tính lại tồn; chặn CRUD ghi thẳng sổ / tồn.
+4. Tồn: tổng hợp theo kho × nguyên liệu (xuất được, sắp hết hạn, mức tồn), theo lô (thứ tự FEFO, lý do chặn).
+5. Phiếu xuất: gợi ý lô, Create (PH-), Post (ISSUE qua `InventoryLedgerService`), Cancel (đảo).
+6. Kiểm kê: Create (dòng từ tồn), RecordCounts, Post (ADJUSTMENT; lệch > 2% chỉ admin).
+7. Test InMemory + SQL Server (rollback), tài liệu bàn giao P4, `.http`.
+
+Rà soát: cả 9 bảng chỉ có CRUD sinh mã; nghiệp vụ duy nhất là `InventoryLedgerService` (T08) + `InventoryTransaction/Reverse`. Lỗ hổng: `InventoryTransaction/Insert` ghi thẳng vào sổ (không cập nhật tồn); `InventoryBalance` CRUD sửa thẳng tồn; `MaterialLot/Update` đổi được QC KHONG_DAT → DAT và trạng thái; MaterialIssue / StockCount CRUD không số, không dòng, không ghi sổ, đổi trạng thái tùy ý; dòng phiếu sửa tùy ý. Chi tiết: LEGACY_REVIEW (d).
+
+Đã làm (đều trong file cũ, đúng mẫu 4.2; thêm 1 lớp tĩnh dùng chung, không có service / controller mới):
+- **`InventoryLotRules`** (`Services/Implement`, lớp tĩnh – không đăng ký DI): `BlockReason` (HSD < hôm nay giờ VN, QC `KHONG_DAT` / `REJECT` / `HOLD`, lô OnHold / Expired), `UseFefoAsync` (InventoryPolicie, không có → FEFO – D-24), `LoadAsync` (tồn theo dòng + lô + thứ tự xuất), `Suggest`, `IsEarlier` (cảnh báo), kiểm kho / vị trí / lô / đơn vị, phân bổ trên các vị trí.
+- **Sổ cái (`InventoryLedgerService`)**: `RebuildBalancesAsync` (tính lại OnHand từ sổ theo (kho, vị trí, NL, lô), giữ Reserved, ghi song song cột cũ); chặn bút toán khác đơn vị dòng tồn (`UNIT_MISMATCH`). T11: thêm `InventoryTransaction.TransactionNumber / TransactionNo` vào nguồn MAX của mã `PH-`.
+- **`InventoryTransactionService` / `Controller`**: `GetLedger` (SP mới `DB/sp/uspInventoryTransaction_GetLedger.sql` – đã chạy trên DB dev), `Adjust` (ADJUSTMENT, số PH-, lý do bắt buộc, ReferenceType ManualAdjustment), `Transfer` (TRANSFER_OUT / TRANSFER_IN cùng ReferenceId). CRUD Insert / Update / Delete → lỗi nghiệp vụ.
+- **`InventoryBalanceService` / `Controller`**: `GetSummary`, `GetByLot`, `RebuildBalance` (`[AdminOnly]`). CRUD → lỗi nghiệp vụ.
+- **`MaterialLotService` / `Controller`**: Insert (số lô bắt buộc hoặc sinh `NL-` theo mã NCC, Status Available / OnHold, ghi song song LotNo / QualityStatus), Update (giữ Status, chặn sửa QC không đạt, chặn đổi NL khi có giao dịch), Delete (chặn khi có giao dịch / tồn); mới `Hold`, `Release`.
+- **`MaterialIssueService` / `Controller`**: `SuggestLots`, `Create` (JSON; chặn lô hết hạn / QC / tạm giữ / vượt tồn; cảnh báo lô nên xuất trước; dòng không chọn lô → tự phân bổ), `Post` (kiểm lại toàn bộ rồi ghi ISSUE, 1 transaction), `Cancel` (Draft → Hủy; Issued → bút toán đảo), `GetDetail`. CRUD: Insert → Create; Update chỉ Note / IssueDate phiếu Nháp; Delete chỉ Nháp. `MaterialIssueLine` CRUD → lỗi nghiệp vụ.
+- **`StockCountService` / `Controller`**: `Create` (form; dòng từ tồn, Physical mặc định = System), `RecordCounts` (JSON; thêm dòng hàng ngoài sổ), `Post` (dòng lệch phải có lý do; lệch dòng > `StockCountVariancePctNeedApproval` → chỉ admin; ADJUSTMENT `ReferenceType = StockCount`; ApprovedBy / ApprovedAt = người ghi sổ), `GetDetail` (% lệch, vượt ngưỡng). CRUD: Insert → Create; Update chỉ Note / người phụ trách; Delete chỉ Draft / Counting. `StockCountLine` CRUD → lỗi nghiệp vụ.
+- Hằng trạng thái `Model/Helper/InventoryStatus.cs` (MaterialLot, QC, MaterialIssue, StockCount, ReferenceType); request `Model/Request/Custom/InventoryCustomRequest.cs`; model `Model/Model/InventoryModels.cs`; thông báo tiếng Việt trong `ConstantHelper.Message`; `Results<T>.Success / Fail` (giống `Result<T>`).
+- Quyền theo `PermissionConvention` (Get* = View, Create = Add, còn lại Edit); `InventoryBalance/RebuildBalance` = AdminOnly. Không thêm mục menu / seed.
+
+File chính: `Services/Implement/{InventoryLotRules, InventoryLedgerService, InventoryTransactionService, InventoryBalanceService, MaterialLotService, MaterialIssueService, MaterialIssueLineService, StockCountService, StockCountLineService, DocumentNumberService}.cs`, `Services/Interface/I{InventoryLedger, InventoryTransaction, InventoryBalance, MaterialLot, MaterialIssue, StockCount}Service.cs`, `WebApi/Controllers/{InventoryTransaction, InventoryBalance, MaterialLot, MaterialIssue, StockCount}Controller.cs`, `Data/Repositories/Results.cs`, `Model/Helper/{InventoryStatus, ConstantHelper}.cs`, `Model/Request/Custom/InventoryCustomRequest.cs`, `Model/Model/InventoryModels.cs`, `DB/sp/uspInventoryTransaction_GetLedger.sql`, test `Tests/Inventory/{InventoryTests, InventorySqlServerTests}.cs`, tài liệu `docs/frontend-handoff/P4.md`, `docs/api-tests/p4-inventory.http`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline worktree).
+- `dotnet test`: **131/131** xanh (+8):
+  - `Inventory/InventoryTests` (7): gợi ý FEFO bỏ lô hết hạn / KHONG_DAT / HOLD / tạm giữ + GetByLot + GetSummary; FIFO theo ngày nhận và FEFO theo HSD; phiếu xuất chặn lô hết hạn / REJECT / vượt tồn, cảnh báo FEFO, tự phân bổ, Post ghi ISSUE, Post thiếu tồn không ghi gì, lô bị tạm giữ sau khi lập phiếu; hủy phiếu đã xuất → đảo, tồn trở lại; chuỗi điều chỉnh / chuyển kho / xuất / đảo khớp sổ + RebuildBalance sửa tồn lệch; kiểm kê (lý do bắt buộc, lệch 20% người thường bị chặn – admin ghi được, lệch ~1% người thường ghi được, ADJUSTMENT đúng); CRUD cũ không phá sổ / lô.
+  - `Inventory/InventorySqlServerTests` (1, SQL Server dev): nhập 3 lô, lô hết hạn bị chặn, Create FEFO với số PH- qua sp_getapplock, Post ghi ISSUE + cột cũ song song, thiếu tồn bị chặn, rollback không để lại dữ liệu, gọi SP GetLedger – đã chạy, không bị bỏ qua.
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+AC (T16, bản Pilot):
+- [x] Post IN / OUT / ADJUSTMENT / REVERSAL (+ TRANSFER) qua `InventoryLedgerService`; InventoryBalance tính lại (theo từng bút toán + `RebuildBalance`).
+- [x] Gợi ý lô FEFO (mặc định) / FIFO theo `InventoryPolicie.UseFefo`; luôn chặn lô hết hạn, KHONG_DAT / REJECT / HOLD, tạm giữ; cảnh báo khi còn lô nên xuất trước.
+- [x] Test FEFO, chặn, tồn sau chuỗi giao dịch, đảo bút toán.
+- [~] Kiểm kê: ghi nhận + ghi sổ điều chỉnh xong; **duyệt lệch > 2% → DEFERRED(PILOT)** (Pilot: chỉ admin ghi sổ).
+- [ ] Giữ chỗ (MaterialReservation) → DEFERRED(PILOT).
+- [ ] `DELICARE_API_Catalog.xlsx` chưa cập nhật (không cài được `openpyxl`). Gợi ý: 7.5 lots = Một phần (thiếu trace); 7.6 summary / by-lot / transactions / rebuild / transfer / adjust = Đã xong; 7.7 = Một phần (suggest theo nguyên liệu, create / post / cancel; reservations chưa); 7.8 = Một phần (create / lines / post; submit duyệt chưa). Action thực tế: `docs/frontend-handoff/P4.md`.
+
+DEFERRED(PILOT):
+- Duyệt kiểm kê lệch > 2% (`PendingApproval`, ApprovalRequest STOCK_COUNT) và duyệt điều chỉnh tay (STOCK_ADJUSTMENT) qua engine T12.
+- MaterialReservation (giữ chỗ theo lệnh SX, giảm ReservedQuantity khi xuất, Reserved → Issued) – làm cùng T14 / T17; gợi ý theo `productionOrderId` (spec 7.7) – T17.
+- Job hết hạn lô hằng ngày (LotExpiryJob: Status Expired + WASTE) – T23. Pilot: lô hết hạn đã bị chặn theo HSD, hủy hàng bằng `Adjust` âm.
+- `MaterialLot.Status = Consumed` khi hết tồn; truy xuất lô (`trace`, T18); quy đổi đơn vị khi xuất; phân trang `GetSummary`.
+
+Câu hỏi cho anh (DECISIONS GAP-INV-02 … GAP-INV-11):
+1. Phiếu xuất chưa gắn lệnh SX ghi `ProductionOrderId` = Guid rỗng – tạm được trong Pilot? (T17 sẽ gắn mẻ / lệnh.)
+2. Lô chưa có kết quả QC (nhập tay / tồn đầu kỳ) cho xuất – đúng ý anh? `HOLD` có chặn xuất không (BUSINESS_RULES ánh xạ DAT_MOT_PHAN = HOLD, phần đạt được nhập)?
+3. Không có chính sách tồn → FEFO; DB mặc định `UseFefo = 0` → khi tạo chính sách cho NL có hạn dùng có cần tự bật FEFO?
+4. Kiểm kê: ngưỡng 2% xét từng dòng (lô) hay tổng phiếu / giá trị? Dòng chưa đếm coi như khớp – được không?
+5. Điều chỉnh tay (tồn đầu kỳ, hủy hàng) Pilot chỉ cần quyền Sửa `scm-inv-txn`, chưa duyệt – được không?
+
+Cần anh: chạy `DB/sp/uspInventoryTransaction_GetLedger.sql` trên staging (DB dev đã chạy); cho phép cài `openpyxl` để cập nhật Catalog.
+
+### T14 – Tính nhu cầu NL + đề nghị mua nháp (Pilot P5) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T14-mrp` (worktree `wt-T11`, từ T16).
+
+Kế hoạch:
+1. Rà soát MaterialRequirement / ProductionPlan(+Line) / PurchaseRequest(+Line) / SupplierMaterial / Recipe / InventoryBalance → LEGACY_REVIEW mục (e).
+2. Đơn Locked × thực đơn (MenuLine theo loại suất + thứ) → món × suất; món × công thức khóa (snapshot) × hao hụt → nhu cầu theo nguyên liệu (quy đổi về đơn vị cơ sở).
+3. Trừ tồn xuất được (InventoryLotRules, tại ngày SX), cộng SafetyStock (D-12), NCC gợi ý + MOQ.
+4. Ghi trong 1 transaction: kế hoạch neo KH-, dòng kế hoạch, MaterialRequirement (cập nhật tại chỗ), PurchaseRequest Draft PH- + dòng.
+5. Đọc: GetByDate / GetDetail. Test InMemory (bộ số tính tay) + SQL Server rollback. Tài liệu P5, `.http`.
+
+Đã làm (đúng mẫu 4.2, trong file cũ):
+- **`MaterialRequirementService` / `MaterialRequirementController`**: `Calculate` (POST form `ProductionDate, WarehouseId?, OrganizationUnitId?, Note?`), `GetByDate` (GET `productionDate, organizationUnitId?`; chưa tính → `data = null`), `GetDetail` (GET `productionPlanId`). CRUD Insert / Update / Delete → lỗi nghiệp vụ.
+- Thuật toán (PROPOSED, DECISIONS GAP-MRP-01…06): đơn **Locked** của ngày (đơn chưa chốt → cảnh báo); suất dòng đơn chia đều các lựa chọn (SequenceNo); công thức Locked / Obsolete hiệu lực tại ngày (SnapshotJson) → Locked + IsActive → Approved mới nhất (cảnh báo); nhu cầu = định lượng × suất ÷ suất chuẩn × (1 + hao hụt %) (WastePercent, trống = Ingredient.StandardWastePercent), quy đổi về `BaseUnitId` (thiếu quy đổi → cảnh báo + `incomplete`); khả dụng = AvailableQuantity của lô không bị chặn tại ngày SX (lô hết hạn trước ngày SX, QC không đạt, tạm giữ → `blockedQuantity`); thiếu = max(0, nhu cầu + SafetyStock − khả dụng − hàng sắp về (0)); mua = max(thiếu, MOQ) làm tròn lên; NCC ưu tiên → giá → lead time (cảnh báo không kịp ngày).
+- Ghi: `ProductionPlan` Draft `KH-YYMMDD` (sp_getapplock của mã KH- tuần tự hóa 2 lần tính cùng ngày) + `ProductionPlanLine` theo món; `MaterialRequirement` theo nguyên liệu (`Shortage / Sufficient / Requested`, ghi song song cột cũ *Qty); `PurchaseRequest` Draft `PH-` + dòng (ghi song song `RequestNo`, `UomId`), NCC gợi ý trong Note. Chi tiết không có cột → JSON trong Note (GAP-MRP-02). Tính lại: cập nhật tại chỗ, dòng thừa xóa mềm; PR Draft giữ số; PR đã gửi duyệt / duyệt / lập PO → chặn; kế hoạch đã duyệt → chặn.
+- Cấu hình `BusinessRules:MrpIncludeSafetyStock` (mặc định true, D-12). Trạng thái `Model/Helper/PurchasingStatus.cs`; model `Model/Model/MaterialRequirementModels.cs`; request `Model/Request/Custom/MaterialRequirementCustomRequest.cs`; thông báo tiếng Việt trong `ConstantHelper.Message`.
+- Quyền theo `PermissionConvention` (`scm-requirement`: Get* = View, Calculate = Edit). Không thêm mục menu / seed. Không SP mới cho T14.
+
+File T14: `Services/Implement/MaterialRequirementService.cs`, `Services/Interface/IMaterialRequirementService.cs`, `WebApi/Controllers/MaterialRequirementController.cs`, `Model/Helper/{PurchasingStatus, ConstantHelper}.cs`, `Model/Model/MaterialRequirementModels.cs`, `Model/Request/Custom/MaterialRequirementCustomRequest.cs`, `Model/Option/BusinessRulesOptions.cs`, `WebApi/appsettings.json`, test `Tests/Purchasing/{MrpTests, MrpSqlServerTests}.cs`, tài liệu `docs/frontend-handoff/P5.md`, `docs/api-tests/p5-mrp.http`.
+
+Sửa nhỏ backend theo FE-2 (cùng nhánh, file riêng để commit riêng):
+- Lọc cha trống: 7 SearchRequest `Guid` → `Guid?` + service đổi `Guid.Empty` → NULL (CustomerContact, CustomerDeliveryLocation, Contract, ContractMeal, SupplierMaterial ×2, InventoryPolicy, StorageZone). SP đã xử lý NULL – không sửa SP.
+- Form đọc số theo InvariantCulture: `WebApi/Infrastructure/InvariantFormValueProviders.cs` + 1 dòng `Startup.cs` (GAP-FORM-01). Test giả lập máy chủ vi-VN: "12.5" → 12.5 (bỏ sửa thì test ra 125 – đã thử).
+- `DB/sp/uspSupplier_GetAll.sql`, `DB/sp/uspUnitMeasure_GetAll.sql`: đủ cột ViewModel + lọc Status (+ CompanyId); `SupplierService` / `UnitMeasureService` truyền tham số; `UnitMeasureSearchRequest.Status` mới. **Đã chạy trên DB dev.**
+- UserRole/SaveAccessAll cấp 1, User/GetAll IsActive, chặn menu cấp 3: **không làm ở nhánh này** – chuyển sang T45R.8 (theo điều phối).
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **137/137** xanh (+6): `Purchasing/MrpTests` (3: bộ số tính tay – Thịt 24,75 kg / tồn 10 + 5 bị chặn / an toàn 2 / MOQ 20 → mua 20; Rau 18 kg, lô KHONG_DAT bị chặn, CT chỉ Approved → cảnh báo; Gạo 36 kg, tồn 50 000 g quy đổi 50 kg, an toàn 20 → mua 6, chưa có NCC; PR PH- 3 dòng, 2 270 000; tính lại sau nhập thêm gạo → cùng kế hoạch / PR, dòng gạo Sufficient, dòng PR gạo xóa mềm; PR PendingApproval → chặn; không có đơn chốt / kho sai / CRUD → 400; kế hoạch Approved → chặn), `Purchasing/MrpSqlServerTests` (1, SQL Server dev: Calculate + tính lại với KH- / PH- qua sp_getapplock trong transaction ngoài rồi rollback – đã chạy, không bị bỏ qua), `Common/FormCultureTests` (1), `MasterData/SearchFilterSqlServerTests` (1, SQL Server dev, chỉ đọc).
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+AC (T14, bản Pilot):
+- [x] MaterialRequirement từ đơn Locked × công thức đã khóa (snapshot) × hao hụt, quy đổi đơn vị.
+- [x] Thiếu hụt so với tồn khả dụng (đã trừ giữ chỗ trên InventoryBalance, bỏ lô bị chặn) + SafetyStock (D-12).
+- [x] PurchaseRequest nháp + gợi ý NCC (SupplierMaterial ưu tiên / giá / MOQ).
+- [x] Test số liệu với bộ dữ liệu nhỏ tính tay được (+ SQL Server rollback).
+- [ ] `DELICARE_API_Catalog.xlsx` chưa cập nhật (máy không có python / openpyxl). Gợi ý: 7.1 GET material-requirements = Đã xong (`MaterialRequirement/GetByDate`, `GetDetail`); calculate = Đã xong (`MaterialRequirement/Calculate`, theo ngày thay vì productionPlanId); create-purchase-request = Một phần (gộp vào Calculate, chưa bufferPercent / duyệt).
+
+DEFERRED(PILOT):
+- Job 20:30 (MRP) / 21:00 (đề nghị mua) – T23; Pilot bấm tay `Calculate`.
+- Hàng sắp về từ PO (`ExpectedIncomingQuantity`) – sau T15; giữ chỗ `MaterialReservation` theo lệnh SX – T17.
+- `bufferPercent`, chọn dòng khi lập đề nghị, duyệt PR 2 cấp, PR → PO – T15. Hao hụt 2 tầng, quy cách đóng gói.
+- Lọc đơn theo chi nhánh (Order không có cột chi nhánh).
+
+Câu hỏi cho anh (DECISIONS GAP-MRP-01…06, D-12):
+1. MRP tự tạo kế hoạch sản xuất Draft `KH-` theo ngày (chưa theo ca) làm chỗ neo – được không? T17 sẽ tách ca từ kế hoạch này.
+2. Suất chia đều cho các lựa chọn món (chưa có số suất theo lựa chọn) – tạm được? Hay tính đủ suất cho mọi lựa chọn (mua dư)?
+3. Hao hụt: dùng (1 + WastePercent %) theo BUSINESS_RULES §3 hay chia cho (1 − hao hụt) / YieldPercent như spec 7.1 và Phiếu trước SX?
+4. Chỉ đơn Đã chốt được tính; đơn Đã xác nhận chưa chốt chỉ cảnh báo – đúng ý anh?
+5. Đề nghị mua đã gửi duyệt thì không cho tính lại – hay cho tính và tạo đề nghị bổ sung phần chênh?
+
+Cần anh: chạy `DB/sp/uspSupplier_GetAll.sql`, `DB/sp/uspUnitMeasure_GetAll.sql` trên staging (DB dev đã chạy).
+
+### T15 – Mua hàng → nhận hàng → QC đầu vào (Pilot P6) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T15-purchasing` (worktree `wt-T11`, từ T14). Chỉ backend (D-40).
+
+Kế hoạch:
+1. Rà soát PurchaseRequest / PurchaseOrder / GoodsReceipt / QCInspection (+Line), SupplierIssue, TemperatureLog, SupplierMaterial → LEGACY_REVIEW mục (f).
+2. Đề nghị mua → PO: `ConvertToPurchaseOrder` theo NCC gợi ý (PO-), chặn CRUD phá trạng thái.
+3. PO: UpdateLines, Submit → duyệt 1 cấp qua engine T12 (handler mới PURCHASE_ORDER), Send / Cancel / Close.
+4. Phiếu nhập theo PO đã duyệt (PH-, nhiệt độ nhận) + phiếu QC; kết luận QC DAT / DAT_MOT_PHAN / KHONG_DAT.
+5. Ghi sổ: lô NL-, nhập kho phần đạt (InventoryLedgerService), TemperatureLog RECEIVING, SupplierIssue, trạng thái PO.
+6. In Đơn đặt hàng NCC + Phiếu trước sản xuất (.xlsx, bố cục file thật – chỉ cấu trúc).
+7. Test InMemory + SQL Server (rollback); tài liệu P5.md, `.http`, DECISIONS (GAP-PUR-01…08).
+
+Rà soát: cả 8 bảng chỉ có CRUD sinh mã – CRUD đổi được trạng thái / số / tổng tiền, dòng sửa tùy ý, phiếu nhập không ghi sổ. Lọc `SupplierId` của GetAll PO / phiếu nhập là `Guid` → danh sách luôn rỗng khi không lọc (đã sửa). Mục duyệt `#/wf-inbox?type=scm-po` đã có trong `ObjectMenu_seed.sql` và DB dev (CEO, COO) → **không cần seed mới**. Chi tiết: LEGACY_REVIEW (f).
+
+Đã làm (đều trong file cũ, đúng mẫu 4.2; thêm 1 lớp tĩnh `PurchasingRules` + 1 handler duyệt, không có service / controller mới):
+- **Đề nghị mua (`PurchaseRequestService` / `Controller`)**: `GetDetail` (dòng + NCC gợi ý + tiền ước tính + PO đã lập), `ConvertToPurchaseOrder` (form; Nháp / Đã duyệt; mỗi nguyên liệu chọn bảng giá đang hiệu lực tại ngày cần: ưu tiên → giá → lead time; thiếu NCC → lỗi kèm tên; mỗi NCC 1 PO Nháp `PO-YYMMDD-NNNN` (T11, ghi song song PONo / ExpectedDate / UomId / Amount); quy đổi sang đơn vị mua; dưới MOQ / chưa có giá → cảnh báo; đề nghị → Converted), `Cancel`. CRUD: Insert luôn Draft + số PH-; Update / Delete chỉ Draft. `PurchaseRequestLineService`: chỉ ghi khi đề nghị Draft, số lượng > 0, ghi song song UomId.
+- **Đơn mua (`PurchaseOrderService` / `Controller`)**: `GetDetail` (dòng + đã nhận / đang chờ / còn lại, phiếu nhập, yêu cầu duyệt đang chờ, `needsDirectorApproval`, `allowedActions`), `UpdateLines` (JSON, Draft, mỗi nguyên liệu 1 dòng, đơn vị / giá mặc định theo bảng giá NCC, tính lại tổng), `Submit` (Draft → PendingApproval + `ApprovalRequest` PURCHASE_ORDER; tổng ≤ `PurchaseOrderAutoApproveMaxAmount` > 0 → tự Approved), `Approve` / `Reject` (gọi `ApprovalRequestService.Decide`; quyền Approve trên `scm-po` = mục "Duyệt – Đơn mua hàng"; hash nội dung = trạng thái + NCC + tổng + dòng; từ chối → về Draft), `Send`, `Cancel` (lý do; chưa có phiếu nhập), `Close`, `ExportOrder` (.xlsx theo sheet "2. Form_PO" của file thật). CRUD: Insert = Draft + PO- + tổng 0 (kiểm NCC), Update chỉ Draft, Delete chỉ PO Draft lập tay. `PurchaseOrderLine` CRUD ghi → lỗi. GetAll truyền thêm Status / PurchaseRequestId; `SupplierId` trống = không lọc.
+- **Handler duyệt**: `Services/Implement/Approval/PurchaseOrderApprovalHandler` (BusinessType `PURCHASE_ORDER`, ScreenId `scm-po`, tiêu đề hộp duyệt "PO … – NCC – tổng tiền" + cảnh báo > 50 triệu theo D-11).
+- **Phiếu nhập (`GoodsReceiptService` / `Controller`)**: `Create` (JSON; PO Approved / Sent / PartiallyReceived – PO chưa duyệt bị chặn; nhận ≤ còn lại + 10%; số `PH-YYMMDD-NNNN`; dòng: số nhận, đơn vị + đơn giá theo PO, số lô NCC, NSX / HSD (trống = nhận + ShelfLifeDays), nhiệt độ nhận; tạo QCInspection cùng số + QCInspectionLine; nguyên liệu `QcRequired = false` → tự DAT; cảnh báo nhiệt độ), `Post` (form; chỉ khi đã kết luận QC; mỗi dòng 1 lô `NL-YYMMDD-<mã NCC>-NN`, QcStatus = kết quả, KHONG_DAT → OnHold; RECEIPT qua `InventoryLedgerService` **chỉ số đạt**; TemperatureLog RECEIVING gắn lô, IsWithinRange theo ngưỡng; 1 SupplierIssue nếu có dòng không đạt / đạt một phần; phiếu → Posted; PO → PartiallyReceived / Received), `Cancel`, `GetDetail` (dòng + kết quả QC + nhiệt độ / ngưỡng / kết quả gợi ý + lô). CRUD Insert / Delete → lỗi, Update chỉ Note. `GoodsReceiptLine` CRUD ghi → lỗi. GetAll: NCC / PO / kho trống = không lọc.
+- **QC đầu vào (`QcInspectionService` / `Controller`)**: `Conclude` (JSON; mọi dòng phải có kết quả; DAT_MOT_PHAN cần 0 < số đạt < số nhận + nhận xét; KHONG_DAT cần nhận xét; HSD trước ngày nhận → chỉ KHONG_DAT; nhiệt độ vượt ngưỡng mà chấp nhận → bắt buộc lý do; nhận cả PASS / HOLD / REJECT; ghi QC line + GoodsReceiptLine.QualityStatus / Accepted / Rejected + QCInspection.Result; phiếu → Accepted / PartiallyAccepted / Rejected; kết luận lại được khi chưa ghi sổ), `GetDetail`. CRUD Insert / Delete → lỗi, Update chỉ Note / Remark. `QcInspectionLine` CRUD ghi → lỗi.
+- **In Phiếu trước sản xuất**: `MaterialRequirement/ExportPreProduction?id=<planId>` (.xlsx theo `Phieu_Truoc sx.xlsx`: số suất order, món × suất, nguyên liệu cần / tồn xuất được / bị chặn / tồn an toàn / Đủ – Thiếu / SL đề nghị mua / NCC gợi ý, cột ghi tay sơ chế + chất lượng). Chỉ đọc dòng tiêu đề của file thật, không chép dữ liệu.
+- Cấu hình `BusinessRules` (PROPOSED): `PurchaseOrderAutoApproveMaxAmount` 0, `PurchaseOrderDirectorApprovalAmount` 50 000 000, `GoodsReceiptOverReceivePct` 10, `ReceivingTempMaxC` { CHILLED 5, FROZEN −18 }, `SupplierIssueDueDays` 2. `ReferenceLists:QcResult` đổi sang DAT / DAT_MOT_PHAN / KHONG_DAT.
+- Hằng trạng thái `PurchaseOrderStatus`, `GoodsReceiptStatus`, `IncomingQcResult`, `ReceivingCode` (`Model/Helper/PurchasingStatus.cs`); request `Model/Request/Custom/PurchasingCustomRequest.cs`; model `Model/Model/PurchasingModels.cs`; thông báo tiếng Việt trong `ConstantHelper.Message`.
+- Quyền theo `PermissionConvention`: Get* = View; `GoodsReceipt/Create` = Add; `ExportOrder`, `ExportPreProduction` = Export; còn lại (ConvertToPurchaseOrder, UpdateLines, Submit, Send, Cancel, Close, Post, Conclude) = Edit trên màn tương ứng; `PurchaseOrder/Approve`, `Reject` = Approve `scm-po` (khai báo rõ). Không thêm mục menu / seed / SP.
+
+File chính: `Services/Implement/{PurchaseRequestService, PurchaseRequestLineService, PurchaseOrderService, PurchaseOrderLineService, GoodsReceiptService, GoodsReceiptLineService, QCInspectionService, QcInspectionLineService, MaterialRequirementService, PurchasingRules}.cs`, `Services/Implement/Approval/PurchaseOrderApprovalHandler.cs`, `Services/Interface/I{PurchaseRequest, PurchaseOrder, GoodsReceipt, QcInspection, MaterialRequirement}Service.cs`, `WebApi/Controllers/{PurchaseRequest, PurchaseOrder, GoodsReceipt, QcInspection, MaterialRequirement}Controller.cs`, `Model/Helper/{PurchasingStatus, ConstantHelper}.cs`, `Model/Option/BusinessRulesOptions.cs`, `Model/Request/Custom/PurchasingCustomRequest.cs`, `Model/Model/PurchasingModels.cs`, `Model/SearchRequest/{PurchaseOrder, GoodsReceipt}SearchRequest.cs`, `WebApi/appsettings.json`, test `Tests/Purchasing/{PurchasingTests, PurchasingSqlServerTests}.cs`, tài liệu `docs/frontend-handoff/P5.md` (mục 4–9), `docs/api-tests/p6-purchasing.http`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **143/143** xanh (+6):
+  - `Purchasing/PurchasingTests` (5, InMemory): lập PO theo NCC ưu tiên (thắng NCC rẻ hơn), số `PO-261220-NNNN`, tổng 2 150 000 / 450 000, cảnh báo MOQ, đề nghị → Converted, không lập lại / không sửa dòng, PO từ đề nghị không xóa, UpdateLines tính lại tổng + chặn trùng nguyên liệu, nguyên liệu chưa có NCC → lỗi kèm tên; duyệt PO: phiếu nhập trên PO Nháp / Chờ duyệt bị chặn, yêu cầu `XN-` PURCHASE_ORDER, người không có quyền không thấy / không duyệt (Decide 400, Approve 403), người có quyền mục `#/wf-inbox?type=scm-po` thấy tiêu đề và duyệt → Approved + ApprovalDecision (hash 64 ký tự), PO bị sửa sau khi gửi → không duyệt được, từ chối cần lý do → về Nháp, in Đơn đặt hàng mở được, Send, Cancel; nhận hàng: vượt 10% bị chặn, số `PH-`, cảnh báo + gợi ý KHONG_DAT khi vượt nhiệt độ, ghi sổ trước QC bị chặn, 5 nhánh lỗi kết luận QC, ghi sổ → 3 lô `NL-261220-SAPUR3-NN`, chỉ nhập Thịt 10 + Rau 15 (DAT_MOT_PHAN), Cá KHONG_DAT không nhập + lô OnHold, TemperatureLog RECEIVING ×3 (Rau ngoài ngưỡng, có hành động khắc phục), SupplierIssue High / TEMPERATURE / hạn +2 ngày, PO Nhận một phần, **xuất kho lô KHONG_DAT bị chặn, lô DAT_MOT_PHAN chỉ xuất được 15**, lô KHONG_DAT không sửa được thành DAT, nhận bù → Received → Close → không nhận thêm; CRUD cũ không phá máy trạng thái; MRP → đề nghị → PO 2 000 000 + in Phiếu trước sản xuất (SL cần 40, thiếu 40, NCC gợi ý) + MRP không tính lại khi đề nghị đã lập PO.
+  - `Purchasing/PurchasingSqlServerTests` (1, SQL Server dev): PR → PO (PO- qua sp_getapplock) → Submit (XN-) → Approve qua engine → phiếu nhập PH- → QC DAT_MOT_PHAN 8 / 10 → ghi sổ: lô NL-, RECEIPT 8, tồn 8, TemperatureLog 1, PO PartiallyReceived, ApprovalDecision APPROVE – trong transaction ngoài rồi rollback, không để lại dữ liệu (đã chạy, không bị bỏ qua).
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; không SP / seed mới (không cần chạy script nào trên DB dev / staging).
+
+AC (T15, bản Pilot):
+- [x] PR → PO (gộp theo NCC, giá từ SupplierMaterial) → GoodsReceipt (PH-) → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → InventoryTransaction IN (chỉ phần đạt).
+- [x] PO duyệt 1 cấp qua engine (quyền qua mục menu, hash nội dung); phiếu nhập trên PO chưa duyệt bị chặn; mã PO- / PH- / NL- đúng định dạng.
+- [x] Lô KHONG_DAT không xuất được (MaterialIssue bị chặn); DAT_MOT_PHAN chỉ nhập phần đạt.
+- [x] SupplierIssue khi không đạt / đạt một phần; TemperatureLog RECEIVING (ngưỡng mát / đông lạnh PROPOSED).
+- [x] In Đơn đặt hàng NCC + Phiếu trước sản xuất (.xlsx, test mở được).
+- [x] 1 test SQL Server rollback cho toàn luồng PR → PO → GR → QC → tồn.
+- [ ] `DELICARE_API_Catalog.xlsx` không sửa (theo điều phối). Gợi ý cột J / L (cột M = T15): 7.2 GET purchase-requests = Đã xong (`PurchaseRequest/GetAll`, `GetDetail`); POST = Đã xong (`PurchaseRequest/Insert` + `PurchaseRequestLine/Insert`); submit = Không làm (Pilot – GAP-PUR-06); convert-to-po = Đã xong (`PurchaseRequest/ConvertToPurchaseOrder`). 7.3 approve = Đã xong (`PurchaseOrder/Submit` + `Approve` / `Reject`, 1 cấp); send = Một phần (`PurchaseOrder/Send`, chưa gửi email / Zalo); receive = Đã xong (`GoodsReceipt/Create`); close / cancel = Đã xong (`PurchaseOrder/Close`, `Cancel`). 7.4 GET goods-receipts = Đã xong (`GoodsReceipt/GetAll`, `GetDetail`); post = Đã xong (`GoodsReceipt/Post`). 9.1 GET inspections = Đã xong (`QcInspection/GetAll`, `GetDetail`); conclude = Đã xong (`QcInspection/Conclude`). 9.3 temperature-logs = Một phần (ghi RECEIVING khi nhập hàng; series / IoT chưa). 9.5 supplier-issues = Một phần (CRUD + tự tạo khi QC; transition chưa).
+
+DEFERRED(PILOT):
+- Duyệt đề nghị mua 2 cấp (spec 7.2 submit), duyệt PO 2 cấp theo ngưỡng D-11 (> 50 triệu GĐ) – engine T12 mới 1 cấp.
+- Gửi PO cho NCC qua email / Zalo (OutboundMessage), bản PDF; VAT trên mẫu in (GAP-PUR-07); logo.
+- Trả hàng NCC / hủy lô KHONG_DAT (chứng từ trả hàng, bút toán RETURN), đảo phiếu nhập đã ghi sổ; chuyển trạng thái sự cố NCC (`transition`, spec 9.5).
+- Hàng sắp về từ PO cho MRP (`ExpectedIncomingQuantity` – T14 vẫn = 0); vị trí kho theo `Ingredient.StorageType` khi ghi sổ (Pilot: chọn `StorageLocationId` hoặc trống); mã thiết bị đo nhiệt độ; so sánh báo giá nhiều NCC (sheet `Price_Compare` của file thật).
+
+Câu hỏi cho anh (DECISIONS GAP-PUR-01…08, D-11):
+1. Pilot không bắt buộc duyệt đề nghị mua (chỉ duyệt PO 1 cấp) – được không? PO > 50 triệu có cần GĐ duyệt thêm ngay trong Pilot?
+2. PO bị từ chối → về Nháp để sửa gửi lại (thay vì trạng thái Từ chối) – đúng ý anh? Cho nhận hàng khi PO mới "Đã duyệt" (chưa bấm "Đã gửi NCC") – được không?
+3. Hàng không đạt (KHONG_DAT / phần trả của DAT_MOT_PHAN) không nhập kho, chỉ tạo lô tạm giữ để truy xuất và ghi sự cố NCC – hay anh muốn nhập vào kho "chờ trả" rồi xuất trả?
+4. Ngưỡng nhiệt độ nhận: mát ≤ 5 °C, đông lạnh ≤ −18 °C, hàng khô / thường không kiểm – đúng chưa? Vượt ngưỡng mà vẫn nhận (ghi lý do) có được không hay bắt buộc KHONG_DAT?
+5. Dung sai nhận vượt 10% / dòng PO có phù hợp (rau, thịt cân lệch)?
+6. In Đơn đặt hàng: có cần cột VAT (mẫu thật có % VAT theo NCC – chưa có cột trong DB)?
+
+### T14.1 – MRP: dự phòng lựa chọn + tính bổ sung (anh chốt 2026-11-16) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T14.1-mrp-buffer` (worktree `wt-T11`, từ T15). Chỉ backend + tài liệu.
+
+Anh chốt 2026-11-16 (ghi ở DECISIONS mục "Anh chốt 2026-11-16", GAP-MRP-01 / 03 / 05 / 06 đánh dấu "Anh chốt 2026-11-16"): kế hoạch nháp `KH-` theo ngày; chia đều lựa chọn + dự phòng 15% / lựa chọn; hao hụt giữ (1 + %); chỉ đơn Locked; đề nghị mua đã đi tiếp → tính lại vẫn chặn + thêm tính bổ sung; T45R.8: IsActive mặc định không hoạt động, ChangePassword giữ hành vi cũ.
+
+Đã làm (trong file cũ, đúng mẫu 4.2; không bảng / cột / SP / seed mới):
+- **Dự phòng lựa chọn:** `BusinessRules:MrpOptionBufferPct` (mặc định 15, 0 = tắt; `BusinessRulesOptions` + `appsettings.json`). Thực đơn có ≥ 2 lựa chọn cho loại suất: mỗi món = suất ÷ số lựa chọn × (1 + 15%); 1 lựa chọn không cộng. PROPOSED: món có trong nhiều lựa chọn (cơm chung) không vượt số suất dòng đơn (món chung mọi lựa chọn không cộng dự phòng). `listDish[].bufferPortions` mới (phần dự phòng, đã nằm trong `portions`).
+- **`MaterialRequirement/CalculateTopUp`** (POST form `ProductionDate, WarehouseId?, OrganizationUnitId?, Note?`; quyền Edit `scm-requirement` theo PermissionConvention): cùng khóa ngày với Calculate; kế hoạch phải có + còn Nháp; cần ≥ 1 đề nghị của kế hoạch đã Chờ duyệt / Duyệt / Lập PO (còn Nháp → dùng Calculate). Tính lại nhu cầu; đã đề nghị = Σ dòng các đề nghị chưa Hủy / Từ chối (chính + bổ sung trước) − đã nhận đạt (phiếu nhập Đã ghi sổ của PO lập từ các đề nghị đó); chênh lệch dương → **1 đề nghị mua Nháp `PH-` mới** chỉ cho phần chênh (MOQ + NCC gợi ý như Calculate; Note "BỔ SUNG – … bổ sung cho PH-…"); không thiếu thêm → không lập, thông báo; âm → cảnh báo. Cập nhật tại chỗ dòng nhu cầu (`PurchaseQuantity` = đã đề nghị + bổ sung; nguyên liệu hết nhu cầu giữ dòng nhu cầu 0) + dòng kế hoạch; liên kết đề nghị bổ sung trong `ProductionPlan.Note` (`TopUpPurchaseRequestIds`) – GAP-MRP-08 (PROPOSED). 1 transaction, `RequireActor`.
+- Calculate: thông báo chặn chỉ hướng sang CalculateTopUp; kế hoạch đã có đề nghị bổ sung còn hiệu lực → chặn (tránh lập trùng). Kết quả GetByDate / GetDetail / Calculate thêm `listTopUpPurchaseRequest[]`; CalculateTopUp thêm `topUp` (`purchaseRequest`, `listComparedRequestNumber`, `listLine[]` thiếu / đã đề nghị / chênh lệch / bổ sung / NCC, `listWarning`).
+- Tách phần tính chung của Calculate thành `ComputeAsync` / `PriceAsync` / `UpsertPlanLines` / `SoftDeleteAsync` (cùng service) để Calculate và CalculateTopUp dùng chung – số liệu Calculate không đổi khi dự phòng = 0.
+
+File: `Services/Implement/MaterialRequirementService.cs`, `Services/Interface/IMaterialRequirementService.cs`, `WebApi/Controllers/MaterialRequirementController.cs`, `Model/Model/MaterialRequirementModels.cs`, `Model/Helper/ConstantHelper.cs`, `Model/Option/BusinessRulesOptions.cs`, `WebApi/appsettings.json`, test `Tests/Purchasing/MrpTests.cs`, tài liệu `docs/claude/{DECISIONS, BUSINESS_RULES, PROGRESS}.md`, `docs/frontend-handoff/P5.md`, `docs/api-tests/p5-mrp.http`. Không đụng MaterialIssue* / ProductionPlan* / ProductionBatch* / ProductionOrder* service (T17 song song).
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **145/145** xanh (+2, `Purchasing/MrpTests`): (1) 2 lựa chọn 100 suất → món A = B = 50 × 1,15 = 57,5 (dự phòng 7,5, NL 5,75 kg), cơm chung = 100, thực đơn 1 lựa chọn TOI 40 không dự phòng; cấu hình 0 → 50; (2) Calculate → đề nghị 1 thịt 10 → bổ sung khi còn Nháp bị chặn → gửi duyệt + tăng đơn 100 → 130 → Calculate chặn, CalculateTopUp lập đề nghị Nháp mới chỉ thịt 3 (300 000), đề nghị 1 không đổi, dòng nhu cầu 13 / mua 13 → gọi lại không lập → giảm còn 110 → chỉ cảnh báo thừa 2 → hủy đề nghị 1 nhưng còn đề nghị bổ sung → Calculate chặn. Test T14 cũ chạy với dự phòng 0 (giữ bộ số tính tay).
+
+PROPOSED (chờ anh xác nhận – GAP-MRP-03 / 08):
+1. Món chung nhiều lựa chọn không vượt số suất dòng đơn (không cộng dự phòng cho cơm / canh chung).
+2. "Đã đề nghị" trừ phần đã nhận đạt (đã nằm trong tồn); đề nghị Hủy / Từ chối không tính; PO bị hủy không tự trừ.
+3. Calculate bị chặn khi kế hoạch đã có đề nghị bổ sung còn hiệu lực; bổ sung chỉ khi kế hoạch còn Nháp.
+4. Thừa do làm tròn MOQ cũng hiện cảnh báo "thừa" (theo đúng ý "âm → cảnh báo").
+Release 2: suất theo từng lựa chọn (đặt trước / tỉ lệ 4 tuần) cần cột mới – GAP-MRP-07.
+
+### T15.1 – Quy tắc mua hàng anh chốt 2026-11-16 (nhiệt độ 3 vùng, GĐ duyệt PO ≥ 50 triệu, VAT phương án A) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T15.1-po-rules` (worktree `wt-T11`, từ T15 + T14.1). Chỉ backend + seed + tài liệu. Không đụng MaterialIssue* / Production* / MaterialRequirementService.
+
+Kế hoạch: (1) cấu hình `ReceivingTemp` 3 vùng thay `ReceivingTempMaxC`, kiểm ở QcInspection/Conclude, đánh dấu + sự cố NCC ở GoodsReceipt/Post; (2) engine duyệt: mục quyền theo từng yêu cầu (hook mặc định trong `IApprovalHandler`), PO ≥ ngưỡng → `scm-po-director`; seed mục menu + quyền CEO (CodeGen + seed khớp nhau), chạy seed DB dev; (3) VAT tính khi đọc / in; (4) test; (5) tài liệu.
+
+Đã làm (trong file cũ, đúng mẫu 4.2; không bảng / cột / SP mới):
+- **Nhiệt độ nhận 3 vùng** – `BusinessRulesOptions.ReceivingTemp` (`ReceivingTempRule { AcceptMax, ConditionalMax, RequireNoThawConfirmation }`: CHILLED 5 / 8, FROZEN −18 / −15 + xác nhận rã đông; `ReceivingTempMaxC` bỏ hẳn, appsettings đổi theo). `PurchasingRules`: `ReceivingTempRuleOf`, `TempZone` (ACCEPT / CONDITIONAL / REJECT / MISSING / NOT_CHECKED – hằng `ReceivingTempZone`), `SuggestResult(zone, …)`, `ConditionalNote`. `QcInspection/Conclude`: khi kết luận DAT / DAT_MOT_PHAN – chưa đo (mát / đông lạnh) → lỗi; vùng loại → lỗi (chỉ KHONG_DAT); vùng có điều kiện → bắt buộc `remark`, đông lạnh thêm `noThawConfirmed` (request mới); ghi `QCInspectionLine.Note` = `[UU_TIEN_DUNG_TRUOC] Nhận có điều kiện …`. `GoodsReceipt/Create`: cảnh báo theo vùng; `QcRequired = false` chỉ tự DAT khi vùng nhận / không kiểm. `GoodsReceipt/Post`: lô nhận có điều kiện → Note thêm cờ ưu tiên dùng trước; dòng có điều kiện (kể cả DAT) luôn vào `SupplierIssue` (TEMPERATURE). Chi tiết phiếu nhập thêm `temperatureZone(Name)`, `conditionalMaxTemperature`, `noThawConfirmationRequired`, `useFirst`.
+- **GĐ duyệt PO ≥ 50 triệu** – `IApprovalHandler` thêm 2 member mặc định: `ApprovalScreenIds` (= [ScreenId]) và `RequiredScreenIdAsync(businessId)` (= ScreenId) → handler cũ (công thức, đơn lệch) không đổi. `ApprovalRequestService.GetMyPending` lọc theo mục quyền của **từng yêu cầu** (type = mục đó), `Decide` kiểm Approve trên mục đó (ApprovalNoRight). `PurchaseOrderApprovalHandler`: mục `scm-po` / `scm-po-director` theo `PurchaseOrderService.ApprovalScreenIdAsync` (tổng ≥ `PurchaseOrderDirectorApprovalAmount`). `PurchaseOrder/Approve` / `Reject`: bỏ `[Permission("scm-po", Approve)]` → `[SkipPermission]` (engine kiểm, như `ApprovalRequest/Decide`) – người không quyền nhận 400 thay vì 403. Submit: PO lớn không tự duyệt, thông báo "cần Giám đốc duyệt". GetDetail: `needsDirectorApproval` (≥), `approvalScreenId`.
+- **Seed**: `tools/AppDelicare.CodeGen/Seeds.cs` thêm `ExtraApprovals` (`scm-po-director`, "Duyệt – Đơn mua hàng (Giám đốc)", P4, nhóm CEO) → sinh lại `DB/seed/ObjectMenu_seed.sql` (+1 mục OrderShow 9916) và `UserRole_seed.sql` (+ CEO AllowAccess / AllowEdit) bằng `dotnet run --project tools/AppDelicare.CodeGen -- --layers security` (chỉ 2 file seed đổi, đúng phần thêm). **Đã chạy 2 seed trên DB dev `(localdb)\MSSQLLocalDB` / `AppDelicare`** (insert-only, idempotent): có mục `#/wf-inbox?type=scm-po-director`, CEO = 1 / 1.
+- **VAT phương án A** – `BusinessRulesOptions.PurchaseVat { DefaultPct = 8, ByIngredientCategoryCode = {} }` (appsettings có ví dụ PROPOSED `RAU: 5` trong chú thích). `PurchasingRules.VatPctByIngredientAsync` (mã nhóm NL → nhóm cha ≤ 5 cấp → mặc định), `VatAmount` (làm tròn đồng). `PurchaseOrder/GetDetail`: `listLine[].vatPct / vatAmount / amountInclVat`, `subtotalAmount / vatAmount / totalAmountInclVat`. `ExportOrder`: cột % VAT + Tiền VAT, chân bảng chưa VAT / thuế VAT / gồm VAT. Không ghi DB.
+- Tài liệu: DECISIONS (mục "Anh chốt 2026-11-16 (T15 mua hàng → T15.1)", ý 7 T14.1, D-11 đã chốt, GAP-PUR-02/03/04/07/08 cập nhật, **GAP-PUR-09** (cột VAT → R2, cần anh duyệt migration), **GAP-PUR-10** (cờ ưu tiên dùng trước trong Note), GAP-MRP-03 / 08 chốt), BUSINESS_RULES §4, `docs/frontend-handoff/P5.md` mục 10, `docs/api-tests/p6-purchasing.http` (21–24).
+
+File: `Model/Option/BusinessRulesOptions.cs`, `Model/Helper/{PurchasingStatus, ConstantHelper}.cs`, `Model/Model/PurchasingModels.cs`, `Model/Request/Custom/PurchasingCustomRequest.cs`, `Services/Interface/{IApprovalHandler, IPurchaseOrderService}.cs`, `Services/Implement/{ApprovalRequestService, PurchaseOrderService, GoodsReceiptService, QCInspectionService, PurchasingRules}.cs`, `Services/Implement/Approval/PurchaseOrderApprovalHandler.cs`, `WebApi/Controllers/PurchaseOrderController.cs`, `WebApi/appsettings.json`, `tools/AppDelicare.CodeGen/Seeds.cs`, `DB/seed/{ObjectMenu, UserRole}_seed.sql`, test `Tests/Purchasing/{PurchasingOwnerRulesTests (mới), PurchasingTests, MrpTests}.cs`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **149/149** xanh (+4):
+  - `PurchasingOwnerRulesTests.Receiving_temperature_three_zones…`: mát 4 nhận / 7 có điều kiện (thiếu lý do → lỗi; lô `[UU_TIEN_DUNG_TRUOC]`, sự cố NCC) / 9 loại (DAT hoặc DAT_MOT_PHAN kèm lý do → lỗi; KHONG_DAT → lô OnHold, không tồn); đông lạnh −20 nhận / −16 (thiếu `noThawConfirmed` → lỗi) / −12 loại; DRY không nhiệt độ OK; mát chưa đo → lỗi, gửi `temperature` lúc QC → OK; 6 dòng nhập kho, 7 TemperatureLog; phiếu 2 chỉ 1 dòng có điều kiện DAT → sự cố TEMPERATURE / Medium.
+  - `…Po_at_or_above_director_threshold…`: PO 60 triệu – người duyệt `scm-po` không thấy (GetMyPending không type / `scm-po`), Approve / Reject / Decide → "không có quyền"; GĐ (`scm-po-director`) thấy trong `type=scm-po-director` (screenId đúng, tiêu đề "Giám đốc"), duyệt → Approved; PO 10 triệu – người duyệt `scm-po` duyệt, GĐ không duyệt được; PO đúng 50 triệu → `needsDirectorApproval`.
+  - `…Vat_is_computed…`: Thịt 1 000 000 × 8% = 80 000; Rau (nhóm con của "RAUTUOI" = 5%) 400 000 → 20 000; Muối 37 035 × 8% = 2 962,8 → 2 963; tổng 1 437 035 / 102 963 / 1 539 998 – GetDetail và file in; `purchaseOrder.totalAmount` không đổi.
+  - `MrpTests.CalculateTopUp_subtracts_received_qc_passed_quantity…` (GAP-MRP-08 ý 1 anh chốt): đề nghị 10 → PO → nhận 6 DAT ghi sổ → bổ sung: thiếu 4, đã đề nghị 4, chênh 0, không cảnh báo thừa; tăng 130 suất → bổ sung đúng 3.
+  - Test T15 cũ chỉnh theo quy tắc mới: Rau 8 °C gợi ý DAT (vùng có điều kiện); Approve không quyền → 400 thay 403.
+- `git status`: không thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+PROPOSED (chờ anh xác nhận):
+1. Bảng % VAT theo nhóm nguyên liệu (vd. rau củ tươi 5%) – đang để trống, mọi dòng 8%; cần mã nhóm thật (GAP-PUR-09).
+2. Cờ "ưu tiên dùng trước" chỉ nằm trong Note (GAP-PUR-10); xuất kho FEFO chưa tự ưu tiên lô này (MaterialIssue – T17).
+3. Hàng mát / đông lạnh chưa đo nhiệt độ: chặn khi kết luận DAT / DAT_MOT_PHAN (KHONG_DAT vẫn cho) – không chặn ở bước lập phiếu nhập (chỉ cảnh báo).
+4. Hộp duyệt: `type=scm-po` chỉ trả PO dưới ngưỡng, PO lớn chỉ ở `type=scm-po-director` (người có cả 2 quyền xem 2 hộp).
+5. Phiếu nhập chỉ có dòng nhận có điều kiện (đều DAT) → sự cố NCC mức Medium.

@@ -130,47 +130,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(StockCountLineRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<StockCountLine>(request);
-            _unitOfWork.StockCountLineRepository.Add(insert);
-            await _unitOfWork.StockCountLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T16: dòng kiểm kê chỉ ghi qua StockCount/Create (tồn hệ thống) và StockCount/RecordCounts (số đếm, chênh lệch) – CRUD không ghi.</summary>
+        private Task<string> Insert(StockCountLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.StockCountLineCrudBlocked);
 
-        private async Task<string> Update(StockCountLineRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.StockCountLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.StockCountLineRepository.Update(update);
-            await _unitOfWork.StockCountLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(StockCountLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.StockCountLineCrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(StockCountLine), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.StockCountLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.StockCountLineRepository.Update(delete);
-            await _unitOfWork.StockCountLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.StockCountLineCrudBlocked);
 
         public async Task<IResult<StockCountLine>> GetById(Guid id)
         {

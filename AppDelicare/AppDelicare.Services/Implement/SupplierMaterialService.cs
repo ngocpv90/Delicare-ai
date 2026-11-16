@@ -28,8 +28,8 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@SupplierId", request.SupplierId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@SupplierId", request.SupplierId == Guid.Empty ? null : request.SupplierId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 dynamicParameters.Add("@SupplierMaterialCode", request.SupplierMaterialCode);
                 //dynamicParameters.Add("@UnitPrice", request.UnitPrice);
                 //dynamicParameters.Add("@MinimumOrderQuantity", request.MinimumOrderQuantity);

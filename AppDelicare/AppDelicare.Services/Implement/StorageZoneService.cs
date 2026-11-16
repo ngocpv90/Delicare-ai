@@ -27,7 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@WarehouseId", request.WarehouseId);
+                dynamicParameters.Add("@WarehouseId", request.WarehouseId == Guid.Empty ? null : request.WarehouseId);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);

@@ -35,5 +35,8 @@ namespace AppDelicare.Services.Interface
 
         /// <summary>Ghi bút toán đảo dòng <paramref name="transactionId"/>: số lượng ngược dấu, <c>ReferenceType = REVERSAL</c>, <c>ReferenceId</c> = dòng gốc.</summary>
         Task<InventoryTransaction> ReverseAsync(Guid transactionId, string reason, CancellationToken cancellationToken = default);
+
+        /// <summary>T16: tính lại InventoryBalance từ sổ cái (cả kho hoặc 1 kho). Trả số dòng tồn và số dòng thay đổi.</summary>
+        Task<(int Rows, int Changed)> RebuildBalancesAsync(Guid? warehouseId, CancellationToken cancellationToken = default);
     }
 }

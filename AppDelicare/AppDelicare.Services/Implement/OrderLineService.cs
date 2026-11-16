@@ -130,47 +130,16 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(OrderLineRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<OrderLine>(request);
-            _unitOfWork.OrderLineRepository.Add(insert);
-            await _unitOfWork.OrderLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        // T13: dòng đơn chỉ ghi qua Order/Create và Order/UpdateLines (đơn giá theo tra giá, tổng đơn, giờ chốt 20h D-1, lệch suất > 30%).
+        // CRUD Insert / Update / Delete của OrderLine không ghi để không phá máy trạng thái và tổng tiền (PROPOSED).
+        private static Task<string> Insert(OrderLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.OrderLineCrudBlocked);
 
-        private async Task<string> Update(OrderLineRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.OrderLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.OrderLineRepository.Update(update);
-            await _unitOfWork.OrderLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Update(OrderLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.OrderLineCrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(OrderLine), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.OrderLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.OrderLineRepository.Update(delete);
-            await _unitOfWork.OrderLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.OrderLineCrudBlocked);
 
         public async Task<IResult<OrderLine>> GetById(Guid id)
         {

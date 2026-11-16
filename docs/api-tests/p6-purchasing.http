@@ -1,0 +1,199 @@
+### DELICARE – Pilot P6 (T15, khung cũ D-30): đề nghị mua → PO (duyệt 1 cấp) → phiếu nhập → QC đầu vào → lô NL- → nhập kho; in Đơn đặt hàng, Phiếu trước SX.
+### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
+### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
+### Chuẩn bị: đề nghị mua Nháp từ MaterialRequirement/Calculate (docs/api-tests/p5-mrp.http) hoặc PurchaseRequest/Insert + PurchaseRequestLine/Insert;
+### bảng giá NCC (SupplierMaterial) cho mọi nguyên liệu; người duyệt có quyền mục "Duyệt – Đơn mua hàng" (#/wf-inbox?type=scm-po) hoặc admin;
+### T15.1: PO ≥ 50 triệu cần quyền mục "Duyệt – Đơn mua hàng (Giám đốc)" (#/wf-inbox?type=scm-po-director).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@purchaseRequestId = <PurchaseRequestId – đề nghị mua Nháp>
+@warehouseId = <WarehouseId – kho nhận>
+@planId = <ProductionPlanId – kế hoạch của MaterialRequirement/Calculate>
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### ============ Phiếu trước sản xuất (scm-requirement)
+### 1. In Phiếu trước sản xuất (.xlsx)
+GET {{base}}/api/MaterialRequirement/ExportPreProduction?id={{planId}}
+Authorization: Bearer {{token}}
+
+### ============ Đề nghị mua (scm-pr)
+### 2. Chi tiết đề nghị: dòng + NCC gợi ý + tiền ước tính
+GET {{base}}/api/PurchaseRequest/GetDetail?id={{purchaseRequestId}}
+Authorization: Bearer {{token}}
+
+### 3. Lập PO (mỗi NCC gợi ý 1 PO Nháp PO-YYMMDD-NNNN), đề nghị → Converted
+# @name convert
+POST {{base}}/api/PurchaseRequest/ConvertToPurchaseOrder
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{purchaseRequestId}}&Note=[DEMO] lập PO thử
+
+###
+@poId = {{convert.response.body.data.listPurchaseOrder[0].id}}
+
+### ============ Đơn mua (scm-po)
+### 4. Chi tiết PO (dòng + đã nhận / còn lại, allowedActions)
+# @name po
+GET {{base}}/api/PurchaseOrder/GetDetail?id={{poId}}
+Authorization: Bearer {{token}}
+
+###
+@poLineId = {{po.response.body.data.listLine[0].id}}
+@ingredientId = {{po.response.body.data.listLine[0].ingredientId}}
+
+### 5. Sửa dòng PO Nháp (JSON – gửi toàn bộ dòng; đơn giá trống = theo bảng giá NCC)
+PUT {{base}}/api/PurchaseOrder/UpdateLines
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{poId}}", "note": "[DEMO] sửa số lượng", "listLine": [ { "id": "{{poLineId}}", "ingredientId": "{{ingredientId}}", "quantity": 20 } ] }
+
+### 6. Lỗi: nhận hàng khi PO chưa duyệt → 400
+POST {{base}}/api/GoodsReceipt/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "purchaseOrderId": "{{poId}}", "warehouseId": "{{warehouseId}}", "listLine": [ { "purchaseOrderLineId": "{{poLineId}}", "receivedQuantity": 1 } ] }
+
+### 7. Gửi duyệt (Nháp → Chờ duyệt, yêu cầu XN-)
+POST {{base}}/api/PurchaseOrder/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{poId}}&Note=[DEMO] gửi duyệt
+
+### 8. Hộp duyệt của người đăng nhập (loại scm-po)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-po
+Authorization: Bearer {{token}}
+
+### 9. Duyệt PO (quyền Duyệt = mục menu #/wf-inbox?type=scm-po). Từ chối: PurchaseOrder/Reject + Note bắt buộc → PO về Nháp
+POST {{base}}/api/PurchaseOrder/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{poId}}&Note=[DEMO] đồng ý
+
+### 10. In Đơn đặt hàng NCC (.xlsx)
+GET {{base}}/api/PurchaseOrder/ExportOrder?id={{poId}}
+Authorization: Bearer {{token}}
+
+### 11. Đã duyệt → Đã gửi NCC
+POST {{base}}/api/PurchaseOrder/Send
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{poId}}
+
+### ============ Nhận hàng (scm-gr) + QC đầu vào (qc-inspection)
+### 12. Nhận hàng theo PO (JSON): số nhận, số lô NCC, NSX / HSD, nhiệt độ nhận (°C) → phiếu PH- Chờ QC + phiếu QC
+# @name gr
+POST {{base}}/api/GoodsReceipt/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "purchaseOrderId": "{{poId}}", "warehouseId": "{{warehouseId}}", "note": "[DEMO] nhận hàng thử",
+  "listLine": [ { "purchaseOrderLineId": "{{poLineId}}", "receivedQuantity": 20, "supplierLotNumber": "[DEMO]-LOT-01",
+                  "manufactureDate": "2026-12-19", "expiryDate": "2026-12-25", "temperatureC": 4.5 } ] }
+
+###
+@grId = {{gr.response.body.data.goodsReceipt.id}}
+@qcId = {{gr.response.body.data.qcInspectionId}}
+@grLineId = {{gr.response.body.data.listLine[0].id}}
+
+### 13. Lỗi: ghi sổ trước khi kết luận QC → 400
+POST {{base}}/api/GoodsReceipt/Post
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{grId}}
+
+### 14. Chi tiết phiếu QC (nhiệt độ + ngưỡng, kết quả gợi ý)
+GET {{base}}/api/QcInspection/GetDetail?id={{qcId}}
+Authorization: Bearer {{token}}
+
+### 15. Kết luận QC: DAT_MOT_PHAN – đạt 18 / 20, bắt buộc nhận xét (DAT / KHONG_DAT tương tự)
+POST {{base}}/api/QcInspection/Conclude
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{qcId}}", "note": "[DEMO] QC đầu vào",
+  "listLine": [ { "goodsReceiptLineId": "{{grLineId}}", "result": "DAT_MOT_PHAN", "acceptedQuantity": 18, "remark": "[DEMO] 2 kg dập", "appearance": "Tươi", "packaging": "Nguyên" } ] }
+
+### 16. Ghi sổ: lô NL-YYMMDD-<mã NCC>-NN, nhập kho phần đạt (18), nhiệt độ RECEIVING, sự cố NCC, PO → Nhận một phần
+POST {{base}}/api/GoodsReceipt/Post
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{grId}}&Note=[DEMO] ghi sổ
+
+### 17. Kiểm tra: chi tiết phiếu nhập (lô, supplierIssueId) và PO (đã nhận / còn lại)
+GET {{base}}/api/GoodsReceipt/GetDetail?id={{grId}}
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/PurchaseOrder/GetDetail?id={{poId}}
+Authorization: Bearer {{token}}
+
+### 18. Sự cố NCC vừa ghi
+GET {{base}}/api/SupplierIssue/GetAll?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### 19. Lỗi: CRUD ghi tay → 400
+POST {{base}}/api/GoodsReceipt/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+SupplierId=00000000-0000-0000-0000-000000000000&WarehouseId={{warehouseId}}&ReceiptDate=2026-12-20
+
+###
+POST {{base}}/api/PurchaseOrderLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+PurchaseOrderId={{poId}}&IngredientId={{ingredientId}}&Quantity=1&UnitPrice=1
+
+### 20. Hủy phiếu nhập chưa ghi sổ (lý do bắt buộc) / Đóng PO
+POST {{base}}/api/GoodsReceipt/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id=<GoodsReceiptId chưa ghi sổ>&Reason=[DEMO] nhập nhầm
+
+###
+POST {{base}}/api/PurchaseOrder/Close
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{poId}}
+
+### ============ T15.1 (anh chốt 2026-11-16): nhiệt độ 3 vùng, duyệt Giám đốc ≥ 50 triệu, VAT phương án A
+### 21. Kết luận QC vùng "có điều kiện": mát 5 < t ≤ 8 °C → bắt buộc remark; đông lạnh −18 < t ≤ −15 °C → thêm noThawConfirmed = true.
+###     Vùng loại (mát > 8 / đông lạnh > −15) → chỉ KHONG_DAT (DAT / DAT_MOT_PHAN → 400 "vùng loại"). Hàng mát / đông lạnh chưa có nhiệt độ → gửi "temperature".
+POST {{base}}/api/QcInspection/Conclude
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{qcId}}", "note": "[DEMO] QC có điều kiện",
+  "listLine": [ { "goodsReceiptLineId": "{{grLineId}}", "result": "DAT", "remark": "[DEMO] −16 °C, đá cứng – dùng trước", "noThawConfirmed": true } ] }
+
+### 22. Hộp duyệt Giám đốc: chỉ PO tổng ≥ BusinessRules:PurchaseOrderDirectorApprovalAmount (quyền mục #/wf-inbox?type=scm-po-director – seed nhóm CEO)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-po-director
+Authorization: Bearer {{token}}
+
+### 23. Chi tiết PO: approvalScreenId (scm-po / scm-po-director), VAT tính khi đọc (listLine[].vatPct / vatAmount, subtotalAmount / vatAmount / totalAmountInclVat)
+GET {{base}}/api/PurchaseOrder/GetDetail?id={{poId}}
+Authorization: Bearer {{token}}
+
+### 24. In Đơn đặt hàng có cột % VAT, Tiền VAT và 3 dòng tổng (chưa VAT / VAT / gồm VAT)
+GET {{base}}/api/PurchaseOrder/ExportOrder?id={{poId}}
+Authorization: Bearer {{token}}

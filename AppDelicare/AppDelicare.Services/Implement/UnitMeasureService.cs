@@ -27,6 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
+                dynamicParameters.Add("@Status", request.Status); // FE-2: lọc trạng thái (SP mới có @Status)
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);

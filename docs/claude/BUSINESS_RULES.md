@@ -40,17 +40,33 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - Thêm hay sửa đơn sau giờ chốt: tạo `ApprovalRequest` (BusinessType=`ORDER_CHANGE_AFTER_CUTOFF`). Chỉ ghi khi đã được duyệt.
 - Số suất lệch > **30%** so với trung bình của điểm giao (tính trên lịch sử `OrderLine` của `DeliveryLocationId`, cửa sổ 4 tuần cùng thứ – PROPOSED) cũng cần duyệt.
 - Trạng thái: theo `STATUS_CATALOG.md` (Order: Draft → Submitted → Confirmed → Locked → InProduction → Delivered → Reconciled; Cancelled).
+- **Bản Pilot đã cài (T13, PROPOSED – DECISIONS GAP-ORD-01…03):** 1 đơn = 1 điểm giao; sau giờ chốt chặn tạo / sửa số suất / gửi / xác nhận / hủy đơn Confirmed, vẫn cho Lock và hủy Draft / Submitted; nút `Order/LockByMealDate` thay job 20:00 (chỉ chạy khi đã tới giờ chốt); lệch suất = sửa số suất đơn Confirmed, dòng bất kỳ lệch > 30% so với số đã xác nhận → `ApprovalRequest` `ORDER_DEVIATION`. `ORDER_CHANGE_AFTER_CUTOFF` và so lịch sử 4 tuần → sau Pilot. Ca mặc định theo loại suất: `BusinessRules:MealTypeDefaultShift` (SANG → SANG_6H, TRUA → TRUA, TOI → TOI, DEM → DEM_23H).
 
 ## 3. Định mức và MRP
 - Định mức tính theo **gram/suất** cộng **% hao hụt chế biến** (`RecipeLine`). Nhu cầu = Σ(số suất × g/suất × (1 + hao hụt%)), quy đổi đơn vị qua `UomConversion` sang `UnitMeasure` (PO chốt dùng `UnitId` → `UnitMeasure`).
 - Kế hoạch đã duyệt thì **khóa định mức**. **Không tạo RecipeVersion.** Dùng cột có sẵn của `Recipe`: `SnapshotJson` (ảnh chụp các dòng định mức), `LockedAt`, `LockedBy`, `VersionNo` / `VersionCode`, `EffectiveFrom` / `EffectiveTo`.
 - Thiếu hụt = Nhu cầu − (tồn khả dụng − đã giữ chỗ `MaterialReservation`). Thiếu thì sinh `PurchaseRequest` nháp lúc 21:00, gợi ý NCC từ `SupplierMaterial` (ưu tiên, giá, lead time).
+- **Anh chốt 2026-11-16 (T14.1):** công thức hao hụt giữ như trên (số lượng × (1 + hao hụt %)); **chỉ đơn Đã chốt (Locked)** được tính, đơn Confirmed chỉ cảnh báo; kế hoạch nháp `KH-` theo **ngày**. Thực đơn có ≥ 2 lựa chọn cho một loại suất: số suất chia đều cho các lựa chọn rồi **cộng dự phòng `BusinessRules:MrpOptionBufferPct` = 15% mỗi lựa chọn** (0 = tắt; ví dụ 100 suất, 2 lựa chọn → mỗi lựa chọn 57,5 suất). Đề nghị mua của ngày đã gửi duyệt / duyệt / lập PO → không tính lại, dùng **tính bổ sung** (`MaterialRequirement/CalculateTopUp`): đề nghị mua bổ sung Nháp chỉ cho phần thiếu thêm, phần thừa chỉ cảnh báo.
 - Đổi món hoặc đổi nguyên liệu ảnh hưởng tới khách thì tạo `MenuChangeRequest` và **xin từng khách chấp thuận** (G1). NCC chính không giao được thì đặt PO bù cho NCC dự phòng (G2).
 
 ## 4. Mua hàng – nhập kho – QC
 - Kết quả kiểm nhận lô: `DAT` (đạt), `DAT_MOT_PHAN` (đạt một phần), `KHONG_DAT` (không đạt). Lưu ở `QCInspection.Result`, `GoodsReceiptLine.QualityStatus` (+ `AcceptedQuantity` / `RejectedQuantity`) và `MaterialLot.QcStatus` (cột chuẩn, xem DEPRECATED_COLUMNS.md). Nếu BRD dùng PASS/HOLD/REJECT thì ánh xạ DAT=PASS, DAT_MOT_PHAN=HOLD (phần đạt được nhập), KHONG_DAT=REJECT – PROPOSED.
 - Lô `KHONG_DAT`: **chặn xuất cho sản xuất**, chỉ được trả NCC hoặc hủy, FEFO bỏ qua lô này, ghi `SupplierIssue`. Lô `DAT_MOT_PHAN`: xuất được phần đạt, cũng ghi `SupplierIssue`.
 - Kiểm nhiệt độ khi nhận so với ngưỡng bảo quản của nguyên liệu. Ghi `TemperatureLog` (MeasurementType=`RECEIVING`).
+- **Bản Pilot đã cài (T15 + T15.1 – anh chốt 2026-11-16, DECISIONS mục "Anh chốt 2026-11-16 (T15 mua hàng → T15.1)", GAP-PUR-01…10, D-11):**
+  - **Duyệt PO bắt buộc**, 1 cấp: `BusinessRules:PurchaseOrderAutoApproveMaxAmount` = 0 (mọi PO phải duyệt). PO **≥ `PurchaseOrderDirectorApprovalAmount` = 50 000 000** đ chỉ **Giám đốc** duyệt (mục quyền `#/wf-inbox?type=scm-po-director`, seed nhóm CEO); dưới ngưỡng duyệt trên `#/wf-inbox?type=scm-po`. PO lớn không tự duyệt.
+  - Nhận hàng khi PO **Đã duyệt** / Đã gửi NCC / Nhận một phần; nhận vượt tối đa `GoodsReceiptOverReceivePct` = **10%** mỗi dòng.
+  - **Nhiệt độ nhận 3 vùng** (`BusinessRules:ReceivingTemp` theo `Ingredient.StorageType`):
+
+    | Kiểu | Nhận | Nhận có điều kiện | Loại |
+    |---|---|---|---|
+    | CHILLED | ≤ 5 °C | 5 < t ≤ 8 °C | > 8 °C |
+    | FROZEN | ≤ −18 °C | −18 < t ≤ −15 °C + xác nhận "không có dấu hiệu rã đông" | > −15 °C |
+    | DRY / AMBIENT | không kiểm | – | – |
+
+    Có điều kiện → bắt buộc lý do, lô "ưu tiên dùng trước" (`[UU_TIEN_DUNG_TRUOC]` trong Note – GAP-PUR-10), luôn ghi `SupplierIssue` TEMPERATURE. Vùng loại → chỉ KHONG_DAT (có lý do cũng không nhận). Hàng mát / đông lạnh chưa đo → không kết luận đạt được.
+  - HSD trước ngày nhận → chỉ KHONG_DAT; ghi sổ **chỉ nhập phần đạt**, lô KHONG_DAT = Tạm giữ không có tồn; `SupplierIssue` hạn xử lý `SupplierIssueDueDays` = 2 ngày.
+  - **VAT (phương án A):** chỉ tính khi in Đơn đặt hàng / xem chi tiết PO theo `BusinessRules:PurchaseVat` (`DefaultPct` 8%, `ByIngredientCategoryCode` theo mã nhóm nguyên liệu – PROPOSED, đang trống); không lưu DB (cột VAT → GAP-PUR-09, R2).
 
 ## 5. Kho (sổ chỉ ghi thêm)
 - Tồn lô = nhập − trả lại − xuất + điều chỉnh kiểm kê đã duyệt. Tất cả đi qua `InventoryTransaction` (`QuantityIn` / `QuantityOut`, `ReferenceType` / `ReferenceId`). `InventoryBalance` chỉ là bảng tổng hợp, tính lại từ sổ.

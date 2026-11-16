@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,78 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15: chi tiết phiếu nhập + kết quả QC + nhiệt độ / ngưỡng + lô đã tạo.</summary>
+        [HttpGet("GetDetail")]
+        public async Task<IActionResult> GetDetail(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetDetail(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15 (spec 7.3 receive): lập phiếu nhập Chờ QC theo PO đã duyệt. JSON body vì có danh sách dòng lồng nhau.</summary>
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromBody] GoodsReceiptCreateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Create(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Create: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15 (spec 7.4 post): ghi sổ phiếu đã kết luận QC – lô NL-, nhập kho phần đạt, nhiệt độ nhận, sự cố NCC.</summary>
+        [HttpPost("Post")]
+        public async Task<IActionResult> Post([FromForm] GoodsReceiptPostRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Post(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Post: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15: hủy phiếu nhập chưa ghi sổ (lý do bắt buộc).</summary>
+        [HttpPost("Cancel")]
+        public async Task<IActionResult> Cancel([FromForm] PurchaseCancelRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Cancel(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Cancel: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,59 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15: chi tiết đề nghị mua – dòng + NCC gợi ý + tiền ước tính + PO đã lập.</summary>
+        [HttpGet("GetDetail")]
+        public async Task<IActionResult> GetDetail(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetDetail(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15 (spec 7.2 convert-to-po): lập PO Nháp theo NCC gợi ý (mỗi NCC 1 PO), đề nghị → Đã lập PO. Quyền Sửa scm-pr.</summary>
+        [HttpPost("ConvertToPurchaseOrder")]
+        public async Task<IActionResult> ConvertToPurchaseOrder([FromForm] PurchaseRequestConvertRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.ConvertToPurchaseOrder(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ConvertToPurchaseOrder: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15: hủy đề nghị Nháp / Đã duyệt (lý do bắt buộc).</summary>
+        [HttpPost("Cancel")]
+        public async Task<IActionResult> Cancel([FromForm] PurchaseCancelRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Cancel(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Cancel: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

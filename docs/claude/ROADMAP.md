@@ -46,10 +46,10 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | P0b | **T45R.8 – Hoàn thiện quản trị** (D-37, D-38, D-39) | Tắt 26 menu cũ; tạo người dùng 1 bước (đúng 1 tài khoản); mật khẩu tạm khi reset / tạo tài khoản. **Làm NGAY, chỉ phần backend** (D-40); phần giao diện làm cùng đợt FE. |
 | P1 | T11 – Mã chứng từ | Đủ các loại mã dùng trong luồng (PH-, XN-, PO-, NL-, ME-, CX-, PA-, DN-). |
 | P2 | T12 – Duyệt **1 cấp** → **FE-P2** | Tạo / duyệt / từ chối / thực thi; quyền duyệt = mục menu "Phê duyệt" (D-31). Chỉ áp cho **PO** và **đơn sửa lệch > 30%**. Nhiều cấp, hết hạn tự động → sau Pilot. |
-| P3 | T13 + T46B.1 – Thực đơn tuần + Đơn hàng → **FE-P3** | Thực đơn tuần (buổi × lựa chọn, FC%); nhập suất; action **`Lock`** (bấm tay) áp hạn 20h D-1; tính tiền theo ContractMeal / PricePolicie; in **Thực đơn gửi khách**. |
-| P4 | T16 – Sổ kho → **FE-P4** | IN / OUT / ADJUSTMENT / REVERSAL, tồn, gợi ý lô FEFO/FIFO (D-24), chặn lô hết hạn / KHONG_DAT. Kiểm kê: ghi nhận được, **duyệt lệch > 2% → sau Pilot** (admin điều chỉnh tay). |
-| P5 | T14 – Tính nhu cầu NL | Action **`Calculate`** (bấm tay): đơn đã khóa × công thức đã khóa × hao hụt, trừ tồn khả dụng (+ SafetyStock theo D-12 đề xuất) → PurchaseRequest nháp, gợi ý NCC. |
-| P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
+| P3 | T13 + T46B.1 – Thực đơn tuần + Đơn hàng → **FE-P3** · `DONE(PILOT)` 2026-11-16 (backend) | Thực đơn tuần (buổi × lựa chọn, FC%); nhập suất; action **`Lock`** (bấm tay) áp hạn 20h D-1; tính tiền theo ContractMeal / PricePolicie; in **Thực đơn gửi khách**. |
+| P4 | T16 – Sổ kho → **FE-P4** · `DONE(PILOT)` 2026-11-16 (backend) | IN / OUT / ADJUSTMENT / REVERSAL, tồn, gợi ý lô FEFO/FIFO (D-24), chặn lô hết hạn / KHONG_DAT. Kiểm kê: ghi nhận được, **duyệt lệch > 2% → sau Pilot** (admin điều chỉnh tay). |
+| P5 | T14 – Tính nhu cầu NL · `DONE(PILOT)` 2026-11-16 (backend) | Action **`Calculate`** (bấm tay): đơn đã khóa × công thức đã khóa × hao hụt, trừ tồn khả dụng (+ SafetyStock theo D-12 đề xuất) → PurchaseRequest nháp, gợi ý NCC. |
+| P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) · `DONE(PILOT)` 2026-11-16 (backend) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
 | P7 | T17 – Sản xuất (bản theo mẻ) → **FE-P7** | Kế hoạch mẻ `ME-…`, cấp NL cho mẻ (FEFO), bắt đầu / xong mẻ, **nhiệt độ lõi ≥ 70°C (chặn đóng gói)**, **lưu mẫu** (SAMPLE_RETAINED), sản lượng + hao hụt. In **Phiếu sản xuất**. Công đoạn theo tổ → sau Pilot. |
 | P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
 | P9 | T50R1 (phần Pilot) + T48.1 – **kết thúc đợt backend, dừng báo anh** | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
@@ -224,30 +224,30 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - AC: 1 use case mẫu (`Common.LookupQuery`) chạy end-to-end và có test.
 - **D-30 (2026-11-15):** project này **không mở rộng**. Nghiệp vụ viết trong `AppDelicare.Services` theo khung cũ. T45R chuyển `IClock` / `BusinessRulesOptions` sang tầng cũ và đưa project vào `_obsolete/`.
 
-### T11 – Mã chứng từ · phụ thuộc T10 · `TODO`
+### T11 – Mã chứng từ · phụ thuộc T10 · `DONE` (2026-11-16)
 - `IDocumentNumberService` theo BUSINESS_RULES §11, dùng `sp_getapplock` + MAX cột đích.
 - AC: test chạy song song 50 lần không trùng mã; đúng định dạng cho mọi loại.
 
-### T12 – ApprovalService · phụ thuộc T10, T11 · `TODO`
+### T12 – ApprovalService · phụ thuộc T10, T11 · `DONE(PILOT)` (2026-11-16: 1 cấp; nhiều cấp / hết hạn → DEFERRED(PILOT))
 - Tạo / duyệt / từ chối / hết hạn. Nhiều bước theo `ApproverRoleCode`. `ApprovalDecision` chỉ ghi thêm, có `PayloadHash` chống sửa payload. Khi được duyệt thì thực thi lệnh gốc (registry `BusinessType` → handler).
 - Viết trong `ApprovalRequestService` / `ApprovalDecisionService` cũ (+ service dùng chung `ApprovalService` nếu cần, cùng mẫu). API: `GET api/ApprovalRequest/GetMyPending`, `POST api/ApprovalRequest/Decide`.
 - AC: test tạo → duyệt → thực thi; từ chối không ghi; payload bị sửa thì từ chối.
 
-### T13 – Đơn hàng · phụ thuộc T12 · `TODO`
+### T13 – Đơn hàng · phụ thuộc T12 · `DONE(PILOT)` (2026-11-16: máy trạng thái, giờ chốt 20h D-1, lệch suất > 30% → duyệt, giá, số PH-; job, lệch so lịch sử 4 tuần, sửa sau giờ chốt qua duyệt, dự báo → DEFERRED(PILOT))
 - Máy trạng thái Order. Submit / Confirm / Cancel. Kiểm tra giờ chốt 20h D-1. Kiểm tra lệch suất > 30%. Tính giá theo ContractMeal / PricePolicie.
 - Chức năng theo spec mục P3 trong `DELICARE_API_Specification.md`, viết vào `OrderService` / `OrderLineService` + action `OrderController.Submit / Confirm / Cancel` (khung cũ).
 - AC: test các nhánh cutoff và deviation; số tổng của đơn đúng.
 
-### T14 – MRP và đề xuất mua · phụ thuộc T13 · `TODO`
+### T14 – MRP và đề xuất mua · phụ thuộc T13 · `DONE(PILOT)` (2026-11-16: `MaterialRequirement/Calculate` bấm tay – đơn Locked × công thức khóa (snapshot) × hao hụt, quy đổi đơn vị, trừ tồn xuất được, + SafetyStock (D-12), MOQ, PurchaseRequest Draft PH- + gợi ý NCC, kế hoạch neo KH- (GAP-MRP-01…06); job 20:30 / 21:00, hàng sắp về từ PO, giữ chỗ MaterialReservation, duyệt PR 2 cấp → DEFERRED(PILOT) / T15)
 - Tính MaterialRequirement từ đơn Locked × Recipe (đã khóa) × hao hụt, quy đổi đơn vị. Thiếu hụt so với tồn khả dụng và giữ chỗ. Sinh PurchaseRequest nháp, gợi ý NCC (SupplierMaterial).
 - Khóa định mức: `Recipe.SnapshotJson` / `LockedAt` / `LockedBy`.
 - AC: test số liệu với bộ dữ liệu mẫu nhỏ (tính tay được).
 
-### T15 – Mua hàng, nhận hàng, QC đầu vào · phụ thuộc T14, T16 · `TODO`
+### T15 – Mua hàng, nhận hàng, QC đầu vào · phụ thuộc T14, T16 · `DONE(PILOT)` (2026-11-16: PR → PO (ConvertToPurchaseOrder theo NCC ưu tiên, PO- ), PO duyệt 1 cấp qua engine T12 (PURCHASE_ORDER, `#/wf-inbox?type=scm-po`), phiếu nhập PH- theo PO đã duyệt + nhiệt độ nhận, QC DAT / DAT_MOT_PHAN / KHONG_DAT, ghi sổ: lô NL-, nhập kho phần đạt, TemperatureLog RECEIVING, SupplierIssue; in Đơn đặt hàng NCC + Phiếu trước sản xuất (GAP-PUR-01…08). Duyệt PR 2 cấp, duyệt PO 2 cấp theo ngưỡng D-11, trả hàng NCC, gửi PO qua email / Zalo, hàng sắp về cho MRP → DEFERRED(PILOT))
 - PR → PO (duyệt theo giá trị, ngưỡng PROPOSED trong cấu hình) → GoodsReceipt → QC (DAT / DAT_MOT_PHAN / KHONG_DAT) → MaterialLot `NL-…` → InventoryTransaction IN. SupplierIssue khi không đạt. TemperatureLog RECEIVING.
 - AC: test lô KHONG_DAT không xuất được; DAT_MOT_PHAN chỉ nhập phần đạt.
 
-### T16 – Sổ kho (InventoryLedgerService) · phụ thuộc T08, T11 · `TODO`
+### T16 – Sổ kho (InventoryLedgerService) · phụ thuộc T08, T11 · `DONE(PILOT)` (2026-11-16: IN / OUT / ADJUSTMENT / REVERSAL / TRANSFER, tồn + tính lại, FEFO / FIFO, chặn lô, phiếu xuất, kiểm kê ghi nhận; duyệt kiểm kê lệch > 2% (Pilot: chỉ admin ghi sổ), duyệt điều chỉnh, giữ chỗ MaterialReservation, job hết hạn lô → DEFERRED(PILOT))
 - Post IN / OUT / ADJUSTMENT / REVERSAL. Tính lại InventoryBalance. Gợi ý lô xuất theo `InventoryPolicie.UseFefo`: FEFO (mặc định) hoặc FIFO theo ngày nhận (D-24). Luôn chặn lô hết hạn, chặn lô KHONG_DAT; cảnh báo khi còn lô nên xuất trước. Kiểm kê: lệch > 2% thì duyệt. Giữ chỗ (MaterialReservation).
 - AC: test FEFO, chặn, tồn sau chuỗi giao dịch, đảo bút toán.
 
@@ -443,7 +443,7 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
 - **T45B.5 (`DONE` 2026-11-15):** `docs/frontend-handoff/P0-P2.md` (265 action sinh từ code), `MetaData/GetStatuses` (47 bộ, CodeGen từ STATUS_CATALOG), `MetaData/GetReferenceLists` (appsettings ReferenceLists), `.http`, UAT R1.1. Nội dung gốc: `docs/frontend-handoff/P0-P2.md` (màn hình → chức năng spec → action cũ, request / response mẫu) + `.http`; danh mục trạng thái (STATUS_CATALOG) và danh sách tham chiếu cho dropdown viết thành action kiểu cũ (vd. controller không gắn bảng theo mẫu `DashboardController`).
 - AC: bảng đối chiếu `docs/frontend-handoff/P0-P2.md` (màn hình → endpoint → trạng thái); test tích hợp cho mỗi nhóm; file `.http`.
 
-### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `TODO`
+### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `TODO` (T46B.1 `DONE(PILOT)` 2026-11-16: thực đơn tuần + FC%, phân công, đơn hàng, in Thực đơn gửi khách; hợp đồng Submit / Terminate, dự báo, đổi món → sau Pilot)
 - T46B.1 P3 (hợp đồng, thực đơn tuần buổi × lựa chọn + giá vốn / FC, đơn hàng theo khách → địa điểm → vị trí). T46B.2 P4 (mua hàng: báo giá → so sánh → PO; kho). T46B.3 P5 (kế hoạch sản xuất, giá thành).
 - **API in / xuất file** theo mẫu thật (BUSINESS_DOCS.md), dùng GemBox / Excel export có sẵn: Thực đơn gửi khách, Phiếu trước sản xuất, Phiếu sản xuất, Đơn đặt hàng NCC. Header pháp nhân lấy từ cấu hình. Trả file (docx / xlsx / pdf).
 - AC: như T45B cho P3–P5 (khung cũ, D-30); mỗi mẫu in có test sinh file không lỗi. In / xuất file: action `Print*` / `Export*` trên controller của chứng từ, dùng `ExportToExcelHelper` / `TemplateExcelHelper` / GemBox có sẵn.

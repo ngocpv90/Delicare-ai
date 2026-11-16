@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,25 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T13 (spec 6.3): thực đơn áp dụng cho (khách, điểm giao, loại suất, ngày) – cấp điểm giao trước, rồi cấp khách.</summary>
+        [HttpGet("Resolve")]
+        public async Task<IActionResult> Resolve([FromQuery] MenuResolveRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Resolve(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Resolve: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

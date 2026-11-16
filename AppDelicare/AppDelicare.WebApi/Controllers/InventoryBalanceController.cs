@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,64 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T16: tồn theo kho × nguyên liệu: tồn, khả dụng, xuất được, lô sắp hết hạn, mức tồn.</summary>
+        [HttpGet("GetSummary")]
+        public async Task<IActionResult> GetSummary([FromQuery] InventorySummaryRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetSummary(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSummary: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T16: tồn theo lô / vị trí, sắp FEFO / FIFO, lý do chặn xuất.</summary>
+        [HttpGet("GetByLot")]
+        public async Task<IActionResult> GetByLot([FromQuery] InventoryByLotRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetByLot(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetByLot: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T16: quản trị – tính lại tồn từ sổ cái.</summary>
+        [Security.AdminOnly]
+        [HttpPost("RebuildBalance")]
+        public async Task<IActionResult> RebuildBalance([FromForm] InventoryRebuildRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.RebuildBalance(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RebuildBalance: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

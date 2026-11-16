@@ -1,0 +1,187 @@
+### DELICARE – Pilot P3 (T13 + T46B.1, khung cũ D-30): thực đơn tuần, phân công thực đơn, đơn hàng, chốt 20h D-1, lệch suất > 30%, in thực đơn gửi khách.
+### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
+### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@customerId = <CustomerId>
+@locationId = <CustomerDeliveryLocationId>
+@contractId = <ContractId – Status Active, hiệu lực tại ngày ăn>
+@contractMealTrua = <ContractMealId loại TRUA>
+@dishId = <DishId – nên có công thức đang khóa>
+@mealDate = 2026-12-10
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### ================= 1. Thực đơn tuần (menu-menu)
+### 1.1 Tạo thực đơn (luôn là Nháp, VersionNo = 1)
+POST {{base}}/api/Menu/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code=[DEMO]-TD-W50&Name=[DEMO] Thực đơn tuần 50&EffectiveFrom=2026-12-07&EffectiveTo=2026-12-13
+
+### 1.2 Lấy Id thực đơn vừa tạo
+# @name menus
+GET {{base}}/api/Menu/GetAll?SearchText=[DEMO]-TD-W50&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@menuId = {{menus.response.body.listData[0].id}}
+
+### 1.3 Thêm món: Thứ 2 (DayOfWeek 1), buổi TRƯA, lựa chọn 1 (SequenceNo). Món chưa có công thức khóa → vẫn lưu, message có "Cảnh báo".
+POST {{base}}/api/MenuLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+MenuId={{menuId}}&DishId={{dishId}}&MealType=TRUA&DayOfWeek=1&SequenceNo=1&SortOrder=1
+
+### 1.4 Thứ 8 → lỗi "Thứ phải trong khoảng 1 – 7"
+POST {{base}}/api/MenuLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+MenuId={{menuId}}&DishId={{dishId}}&MealType=TRUA&DayOfWeek=8
+
+### 1.5 Lịch tuần + giá vốn + FC% (giá bán nhập tay; hoặc customerId=&contractId= để tra giá)
+GET {{base}}/api/Menu/GetCalendar?id={{menuId}}&mealType=TRUA&sellingPrice=40000
+Authorization: Bearer {{token}}
+
+### 1.6 Duyệt (quyền: mục "Duyệt – Thực đơn & phiên bản")
+POST {{base}}/api/Menu/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{menuId}}
+
+### 1.7 Công bố – thiếu món ngày nào sẽ báo "Chưa đủ món để công bố – thiếu: TRƯA: Thứ 3, …"
+POST {{base}}/api/Menu/Publish
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{menuId}}
+
+### 1.8 In thực đơn gửi khách (.xlsx)
+GET {{base}}/api/Menu/ExportForCustomer?id={{menuId}}&project=[DEMO] Nhà máy A
+Authorization: Bearer {{token}}
+
+### 1.9 Sao chép sang tuần sau (bản nháp mới)
+POST {{base}}/api/Menu/Clone
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{menuId}}&Code=[DEMO]-TD-W51&EffectiveFrom=2026-12-14&EffectiveTo=2026-12-20
+
+### ================= 2. Phân công thực đơn (menu-assignment)
+### 2.1 Gán cấp khách (DeliveryLocationId trống) cho loại suất TRUA
+POST {{base}}/api/MenuAssignment/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerId}}&ContractId={{contractId}}&MenuId={{menuId}}&MealType=TRUA&EffectiveFrom=2026-12-07&EffectiveTo=2026-12-13
+
+### 2.2 Gán lại cùng khách / loại suất / thời gian → lỗi "Chồng thời gian hiệu lực"
+POST {{base}}/api/MenuAssignment/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerId}}&MenuId={{menuId}}&MealType=TRUA&EffectiveFrom=2026-12-10
+
+### 2.3 Thực đơn áp dụng (điểm giao trước, rồi cấp khách)
+GET {{base}}/api/MenuAssignment/Resolve?customerId={{customerId}}&deliveryLocationId={{locationId}}&mealType=TRUA&date={{mealDate}}
+Authorization: Bearer {{token}}
+
+### ================= 3. Đơn hàng (crm-order)
+### 3.1 Khung tạo đơn: hợp đồng Active, suất × điểm giao, ca mặc định, đơn giá, thực đơn, giờ chốt
+GET {{base}}/api/Order/GetNewTemplate?customerId={{customerId}}&mealDate={{mealDate}}
+Authorization: Bearer {{token}}
+
+### 3.2 Tạo đơn (JSON – có danh sách dòng). 1 đơn = 1 điểm giao. Số lượng 0 bị bỏ. Số PH-YYMMDD-NNNN.
+# @name created
+POST {{base}}/api/Order/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "deliveryLocationId": "{{locationId}}",
+  "mealDate": "{{mealDate}}",
+  "note": "[DEMO] đơn thử P3",
+  "listLine": [ { "contractMealId": "{{contractMealTrua}}", "quantity": 100 } ]
+}
+
+###
+@orderId = {{created.response.body.data.order.id}}
+@lineId = {{created.response.body.data.listLine[0].id}}
+
+### 3.3 Chi tiết đơn (allowedActions, cutoffAt, yêu cầu duyệt lệch suất đang chờ)
+GET {{base}}/api/Order/GetDetail?id={{orderId}}
+Authorization: Bearer {{token}}
+
+### 3.4 Gửi đơn
+POST {{base}}/api/Order/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderId}}
+
+### 3.5 Xác nhận
+POST {{base}}/api/Order/Confirm
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderId}}&Note=[DEMO] khách xác nhận
+
+### 3.6 Sửa số suất đơn đã xác nhận: 100 → 120 (+20% ≤ 30%) → ghi ngay
+PUT {{base}}/api/Order/UpdateLines
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{orderId}}", "listLine": [ { "id": "{{lineId}}", "quantity": 120 } ] }
+
+### 3.7 120 → 200 (+66,7% > 30%) → không ghi, tạo yêu cầu duyệt ORDER_DEVIATION (data.approvalRequested = true)
+PUT {{base}}/api/Order/UpdateLines
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{orderId}}", "listLine": [ { "id": "{{lineId}}", "quantity": 200 } ], "note": "[DEMO] khách tăng ca" }
+
+### 3.8 Hộp duyệt lệch suất (quyền: mục "Duyệt – Đơn đặt suất ăn", #/wf-inbox?type=crm-order)
+# @name pending
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=crm-order
+Authorization: Bearer {{token}}
+
+### 3.9 Duyệt → số suất mới được ghi (Approve=false + Note để từ chối)
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{pending.response.body.listData[0].id}}&Approve=true&Note=[DEMO] đồng ý
+
+### 3.10 Chốt 1 đơn (bấm tay, bất kỳ lúc nào)
+POST {{base}}/api/Order/Lock
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderId}}
+
+### 3.11 Nút "Chốt đơn 20h" theo ngày ăn (thay job): trước 20:00 ngày D-1 → lỗi "Chưa tới giờ chốt"
+POST {{base}}/api/Order/LockByMealDate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+MealDate={{mealDate}}
+
+### 3.12 Hủy (Nháp / Đã gửi / Đã xác nhận trước giờ chốt) – lý do bắt buộc
+POST {{base}}/api/Order/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderId}}&Reason=[DEMO] thử hủy

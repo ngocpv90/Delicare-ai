@@ -1,0 +1,56 @@
+using AppDelicare.Data.Connection;
+using AppDelicare.Model.SearchRequest;
+using AppDelicare.Services.Interface;
+using AppDelicare.Tests.Integration;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace AppDelicare.Tests.MasterData
+{
+    /// <summary>
+    /// FE-2 follow-up trên SQL Server dev (bỏ qua nếu không có DB, chỉ đọc): bỏ trống lọc cha (CustomerId, WarehouseId…) = không lọc
+    /// (trước đây bind thành Guid rỗng → danh sách rỗng); uspSupplier_GetAll / uspUnitMeasure_GetAll trả đủ cột và lọc Status.
+    /// </summary>
+    [Collection(ApiCollection.Name)]
+    public class SearchFilterSqlServerTests(ApiFactory factory)
+    {
+        [SkippableFact]
+        public async Task Omitted_parent_filters_return_all_rows_and_supplier_unit_lists_have_full_columns()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            using var scope = factory.Services.CreateScope();
+            var sp = scope.ServiceProvider;
+            var db = sp.GetRequiredService<DatabaseContext>();
+
+            var contacts = await sp.GetRequiredService<ICustomerContactService>().GetAll(new CustomerContactSearchRequest { PageSize = 1000 });
+            contacts.TotalRecords.Should().Be(await db.CustomerContact.CountAsync(x => !x.IsDeleted));
+            var zones = await sp.GetRequiredService<IStorageZoneService>().GetAll(new StorageZoneSearchRequest { PageSize = 1000 });
+            zones.TotalRecords.Should().Be(await db.StorageZone.CountAsync(x => !x.IsDeleted));
+            var materials = await sp.GetRequiredService<ISupplierMaterialService>().GetAll(new SupplierMaterialSearchRequest { PageSize = 1000, IngredientId = Guid.Empty });
+            materials.TotalRecords.Should().Be(await db.SupplierMaterial.CountAsync(x => !x.IsDeleted), "Guid rỗng cũng coi như không lọc");
+
+            var suppliers = await sp.GetRequiredService<ISupplierService>().GetAll(new SupplierSearchRequest { PageSize = 1000 });
+            suppliers.TotalRecords.Should().Be(await db.Supplier.CountAsync(x => !x.IsDeleted));
+            var withCode = await db.Supplier.Where(x => !x.IsDeleted && x.Code != null).Select(x => new { x.Id, x.Code, x.Status }).FirstOrDefaultAsync();
+            if (withCode != null)
+            {
+                suppliers.ListData.Single(x => x.Id == withCode.Id).Code.Should().Be(withCode.Code);
+                if (withCode.Status != null)
+                {
+                    var byStatus = await sp.GetRequiredService<ISupplierService>().GetAll(new SupplierSearchRequest { PageSize = 1000, Status = withCode.Status });
+                    byStatus.ListData.Should().OnlyContain(x => x.Status == withCode.Status);
+                    byStatus.TotalRecords.Should().Be(await db.Supplier.CountAsync(x => !x.IsDeleted && x.Status == withCode.Status));
+                }
+            }
+
+            var units = await sp.GetRequiredService<IUnitMeasureService>().GetAll(new UnitMeasureSearchRequest { PageSize = 1000 });
+            units.TotalRecords.Should().Be(await db.UnitMeasure.CountAsync(x => !x.IsDeleted));
+            var unit = await db.UnitMeasure.Where(x => !x.IsDeleted && x.Code != null).Select(x => new { x.Id, x.Code }).FirstOrDefaultAsync();
+            if (unit != null)
+            {
+                units.ListData.Single(x => x.Id == unit.Id).Code.Should().Be(unit.Code);
+            }
+        }
+    }
+}
