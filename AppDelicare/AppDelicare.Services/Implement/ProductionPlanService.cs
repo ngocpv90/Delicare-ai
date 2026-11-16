@@ -245,15 +245,17 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
-        /// T17 (spec 8.1 release, BUSINESS_RULES §6, Pilot P7) – phát hành kế hoạch Đã duyệt trong 1 transaction:
+        /// T17 (spec 8.1 release, BUSINESS_RULES §6, Pilot P7) + T17.1 (anh chốt 2026-11-16: Pilot chạy 4 ca / ngày) – phát hành kế hoạch Đã duyệt trong 1 transaction:
         /// <list type="number">
-        /// <item>Ca: chọn hoặc mặc định <c>BusinessRules:ProductionDefaultShiftCode</c> (Pilot 1 ca – kế hoạch MRP theo ngày, GAP-PRD-01).</item>
-        /// <item>Giờ xuất bếp: nhập tay, hoặc giờ giao sớm nhất của điểm giao (đơn Đã chốt của ngày, dòng thuộc ca) − <c>TransportMinutesBeforeCutoff</c> (60′),
-        /// không có thì giờ bắt đầu ca − 60′. Mẻ cuối mỗi món xong lúc giờ xuất bếp − <c>ProductionPackingMinutes</c> (chia suất / đóng gói).</item>
-        /// <item>Mỗi dòng món → 1 lệnh SX <c>PH-</c> (Released) với công thức khóa tại ngày (thiếu → chặn, Đã duyệt → cảnh báo) + ảnh chụp định lượng.</item>
-        /// <item>Chia mẻ theo dây chuyền (<c>CapacityMealPerBatch</c>, <c>MinutesPerBatch</c>; không chọn → 1 mẻ / món, <c>ProductionDefaultMinutesPerBatch</c>);
-        /// lịch ngược, các mẻ của món nối tiếp; mã <c>ME-YYMMDD-&lt;CA&gt;-NN</c> theo giờ bắt đầu (StartDate / EndDate = giờ kế hoạch – GAP-PRD-03).</item>
-        /// <item>Kế hoạch → Đã phát hành; dòng kế hoạch gắn ca; đơn hàng Đã chốt của ngày (có dòng thuộc ca) → Đang sản xuất.</item>
+        /// <item>Kế hoạch MRP vẫn 1 KH- / ngày; số phần từng món chia theo ca của đơn Đã chốt (<c>OrderLine.ShiftId</c>; chưa gán ca → <c>ProductionDefaultShiftCode</c>)
+        /// – <see cref="ProductionRules.SplitByShiftAsync"/>. <c>ShiftId</c> = chỉ phát hành ca đó; bỏ trống = mọi ca chưa phát hành.</item>
+        /// <item>Mỗi ca giờ xuất bếp riêng: nhập tay (chỉ khi phát hành 1 ca), hoặc giờ giao sớm nhất của điểm giao của ca − <c>TransportMinutesBeforeCutoff</c> (60′),
+        /// không có thì giờ bắt đầu ca − 60′. Mẻ cuối mỗi món xong lúc giờ xuất bếp − <c>ProductionPackingMinutes</c> (30′); các món song song (anh chốt, GAP-PRD-07).</item>
+        /// <item>Mỗi ca × món → 1 lệnh SX <c>PH-</c> (Released) với công thức khóa tại ngày (thiếu → chặn, Đã duyệt → cảnh báo) + ảnh chụp định lượng.</item>
+        /// <item>Chia mẻ đều theo dây chuyền (<c>CapacityMealPerBatch</c>, <c>MinutesPerBatch</c>; không chọn → 1 mẻ / món, <c>ProductionDefaultMinutesPerBatch</c>);
+        /// lịch ngược, các mẻ của món nối tiếp; mã <c>ME-YYMMDD-&lt;CA&gt;-NN</c> theo ca, theo giờ bắt đầu (StartDate / EndDate = giờ kế hoạch – GAP-PRD-03).</item>
+        /// <item>Ca đã phát hành = có lệnh SX của kế hoạch gắn ca (không cột mới). Kế hoạch → Đã phát hành khi mọi ca có nhu cầu đã phát hành, còn ca thì giữ Đã duyệt
+        /// (PROPOSED – BA/PO CONFIRM); dòng kế hoạch Released khi mọi ca của món đã phát hành; đơn Đã chốt có dòng thuộc ca vừa phát hành → Đang sản xuất.</item>
         /// </list>
         /// </summary>
         public async Task<IResult<ProductionPlanDetailModel>> Release(ProductionPlanReleaseRequest request)
@@ -282,12 +284,48 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(ConstantHelper.Message.PlanNeedsLine);
                 }
-                var shift = request.ShiftId is { } sid && sid != Guid.Empty
-                    ? await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sid && !s.IsDeleted)
-                    : await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => s.Code == _rules.ProductionDefaultShiftCode && !s.IsDeleted);
-                if (shift == null)
+                DateTime date = plan.ProductionDate.Date;
+                var warnings = new List<string>();
+
+                // 0) Chia dòng món theo ca (T17.1) → ca cần phát hành ở lần gọi này.
+                var (parts, fallback, splitWarnings, splitError) = await ProductionRules.SplitByShiftAsync(db, date, planLines, _rules);
+                if (splitError != null)
                 {
-                    return Fail(ConstantHelper.Message.ShiftNotFound);
+                    return Fail(splitError);
+                }
+                warnings.AddRange(splitWarnings);
+                var released = await ReleasedShiftIdsAsync(plan.Id);
+                var pending = parts.Where(p => !released.Contains(p.Shift.Id)).ToList();
+                List<ProductionRules.ShiftPart> toRelease;
+                if (request.ShiftId is { } sid && sid != Guid.Empty)
+                {
+                    var chosen = await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sid && !s.IsDeleted);
+                    if (chosen == null)
+                    {
+                        return Fail(ConstantHelper.Message.ShiftNotFound);
+                    }
+                    if (released.Contains(sid))
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.ReleaseShiftAlready, chosen.Code));
+                    }
+                    var part = pending.FirstOrDefault(p => p.Shift.Id == sid);
+                    if (part == null)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.ReleaseShiftNoDemand, chosen.Code));
+                    }
+                    toRelease = [part];
+                }
+                else
+                {
+                    if (pending.Count == 0)
+                    {
+                        return Fail(ConstantHelper.Message.ReleaseNothingPending);
+                    }
+                    if (dispatchTime != null && pending.Count > 1)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.ReleaseDispatchNeedsShift, pending.Count, string.Join(", ", pending.Select(p => p.Shift.Code))));
+                    }
+                    toRelease = pending;
                 }
                 ProductionLine? line = null;
                 if (request.ProductionLineId is { } lid && lid != Guid.Empty)
@@ -298,25 +336,17 @@ namespace AppDelicare.Services.Implement
                         return Fail(ConstantHelper.Message.ProductionLineNotFound);
                     }
                 }
-                DateTime date = plan.ProductionDate.Date;
-                var (dispatchAt, source) = await ProductionRules.ResolveDispatchAsync(db, date, shift, dispatchTime, _rules);
-                if (dispatchAt == null)
-                {
-                    return Fail(ConstantHelper.Message.DispatchTimeMissing);
-                }
-                DateTime cookEnd = dispatchAt.Value.AddMinutes(-_rules.ProductionPackingMinutes);
                 int minutes = line?.MinutesPerBatch is > 0 ? (int)Math.Ceiling(line.MinutesPerBatch.Value) : _rules.ProductionDefaultMinutesPerBatch;
 
-                // 1) Công thức + lịch theo món.
-                var dishIds = planLines.Select(l => l.DishId).Distinct().ToList();
+                // 1) Công thức theo món (các món của ca sẽ phát hành).
+                var dishIds = toRelease.SelectMany(p => p.Lines).Select(l => l.Line.DishId).Distinct().ToList();
                 var dishNames = await db.Dish.AsNoTracking().Where(d => dishIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name ?? d.Code ?? string.Empty);
-                var warnings = new List<string>();
                 var missing = new List<string>();
-                var work = new List<(ProductionPlanLine Line, Recipe Recipe, string Snapshot, List<ProductionRules.ScheduledBatch> Batches)>();
-                foreach (var planLine in planLines.OrderBy(l => dishNames.GetValueOrDefault(l.DishId)))
+                var recipes = new Dictionary<Guid, (Recipe Recipe, string Snapshot)>();
+                foreach (Guid dishId in dishIds.OrderBy(d => dishNames.GetValueOrDefault(d)))
                 {
-                    string dishName = dishNames.GetValueOrDefault(planLine.DishId) ?? planLine.DishId.ToString();
-                    var (recipe, locked, snapshot) = await ProductionRules.SelectRecipeAsync(db, planLine.DishId, date);
+                    string dishName = dishNames.GetValueOrDefault(dishId) ?? dishId.ToString();
+                    var (recipe, locked, snapshot) = await ProductionRules.SelectRecipeAsync(db, dishId, date);
                     if (recipe == null || snapshot.Count == 0)
                     {
                         missing.Add(dishName);
@@ -326,82 +356,111 @@ namespace AppDelicare.Services.Implement
                     {
                         warnings.Add(string.Format(ConstantHelper.Message.ReleaseRecipeNotLocked, dishName));
                     }
-                    string json = locked && ProductionRules.ParseSnapshot(recipe.SnapshotJson).Count != 0
-                        ? recipe.SnapshotJson! : Newtonsoft.Json.JsonConvert.SerializeObject(snapshot);
-                    work.Add((planLine, recipe, json, ProductionRules.Schedule(planLine.PlannedQuantity, line?.CapacityMealPerBatch, minutes, cookEnd)));
+                    recipes[dishId] = (recipe, locked && ProductionRules.ParseSnapshot(recipe.SnapshotJson).Count != 0
+                        ? recipe.SnapshotJson! : Newtonsoft.Json.JsonConvert.SerializeObject(snapshot));
                 }
                 if (missing.Count != 0)
                 {
                     return Fail(string.Format(ConstantHelper.Message.ReleaseNoRecipe, string.Join(", ", missing)));
                 }
 
-                // 2) Lệnh SX (PH-) + mẻ (ME-…-<CA>-NN) – sinh mã đầu rồi cộng dần (sp_getapplock giữ tới khi commit).
+                // 2) Mỗi ca: giờ xuất bếp riêng → lệnh SX (PH-) theo món + mẻ (ME-yyMMdd-<CA>-NN) lịch ngược riêng.
+                // Sinh mã đầu rồi cộng dần (sp_getapplock giữ tới khi commit); PH- cộng dần qua mọi ca, ME- theo từng ca.
                 string planNo = plan.PlanNumber ?? plan.PlanNo ?? string.Empty;
                 string firstOrderNo = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
-                string firstBatchNo = await _documentNumberService.NextAsync(DocumentKind.ProductionBatch, date, shift.Code);
-                string orderNote = $"Kế hoạch {planNo} – ca {shift.Code} – xuất bếp {dispatchAt.Value.ToString("HH:mm dd/MM/yyyy", CultureInfo.InvariantCulture)} ({source})"
-                    + (string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim());
-                var allBatches = new List<(ProductionOrder Order, string DishName, ProductionRules.ScheduledBatch Batch)>();
                 int orderIndex = 0;
-                foreach (var (planLine, recipe, snapshot, batches) in work)
+                foreach (var part in toRelease)
                 {
-                    string number = ProductionRules.Increment(firstOrderNo, orderIndex++);
-                    var order = new ProductionOrder
+                    var shift = part.Shift;
+                    var (dispatchAt, source) = await ProductionRules.ResolveDispatchAsync(db, date, shift, dispatchTime, _rules, fallback?.Id);
+                    if (dispatchAt == null)
                     {
-                        Id = Guid.NewGuid(),
-                        ProductionOrderNumber = number,
-                        ProductionOrderNo = number,
-                        ProductionPlanId = plan.Id,
-                        DishId = planLine.DishId,
-                        RecipeId = recipe.Id,
-                        ShiftId = shift.Id,
-                        ProductionLineId = line?.Id,
-                        PlannedQty = planLine.PlannedQuantity,
-                        Status = ProductionOrderStatus.Released,
-                        PlannedStartDate = batches.Min(b => b.Start),
-                        StartTime = batches.Min(b => b.Start),
-                        EndTime = batches.Max(b => b.End),
-                        RecipeSnapshotJson = snapshot,
-                        Note = orderNote,
-                    };
-                    _unitOfWork.ProductionOrderRepository.Add(order);
-                    allBatches.AddRange(batches.Select(b => (order, dishNames.GetValueOrDefault(planLine.DishId) ?? string.Empty, b)));
-                    planLine.ShiftId = shift.Id;
-                    planLine.Status = ProductionPlanStatus.Released;
-                    _unitOfWork.ProductionPlanLineRepository.Update(planLine);
+                        return Fail(ConstantHelper.Message.DispatchTimeMissing + $" (ca {shift.Code})");
+                    }
+                    DateTime cookEnd = dispatchAt.Value.AddMinutes(-_rules.ProductionPackingMinutes);
+                    string firstBatchNo = await _documentNumberService.NextAsync(DocumentKind.ProductionBatch, date, shift.Code);
+                    string orderNote = $"Kế hoạch {planNo} – ca {shift.Code} – xuất bếp {dispatchAt.Value.ToString("HH:mm dd/MM/yyyy", CultureInfo.InvariantCulture)} ({source})"
+                        + (string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim());
+                    var allBatches = new List<(ProductionOrder Order, string DishName, ProductionRules.ScheduledBatch Batch)>();
+                    foreach (var (planLine, quantity) in part.Lines.OrderBy(l => dishNames.GetValueOrDefault(l.Line.DishId)))
+                    {
+                        var (recipe, snapshot) = recipes[planLine.DishId];
+                        var batches = ProductionRules.Schedule(quantity, line?.CapacityMealPerBatch, minutes, cookEnd);
+                        string number = ProductionRules.Increment(firstOrderNo, orderIndex++);
+                        var order = new ProductionOrder
+                        {
+                            Id = Guid.NewGuid(),
+                            ProductionOrderNumber = number,
+                            ProductionOrderNo = number,
+                            ProductionPlanId = plan.Id,
+                            DishId = planLine.DishId,
+                            RecipeId = recipe.Id,
+                            ShiftId = shift.Id,
+                            ProductionLineId = line?.Id,
+                            PlannedQty = quantity,
+                            Status = ProductionOrderStatus.Released,
+                            PlannedStartDate = batches.Min(b => b.Start),
+                            StartTime = batches.Min(b => b.Start),
+                            EndTime = batches.Max(b => b.End),
+                            RecipeSnapshotJson = snapshot,
+                            Note = orderNote,
+                        };
+                        _unitOfWork.ProductionOrderRepository.Add(order);
+                        allBatches.AddRange(batches.Select(b => (order, dishNames.GetValueOrDefault(planLine.DishId) ?? string.Empty, b)));
+                    }
+                    int batchIndex = 0;
+                    foreach (var (order, dishName, scheduled) in allBatches.OrderBy(x => x.Batch.Start).ThenBy(x => x.DishName).ThenBy(x => x.Batch.Index))
+                    {
+                        string number = ProductionRules.Increment(firstBatchNo, batchIndex++);
+                        _unitOfWork.ProductionBatchRepository.Add(new ProductionBatch
+                        {
+                            Id = Guid.NewGuid(),
+                            BatchNumber = number,
+                            BatchNo = number,
+                            ProductionOrderId = order.Id,
+                            DishId = order.DishId,
+                            RecipeId = order.RecipeId,
+                            PlannedQty = scheduled.Quantity,
+                            PlannedQuantity = scheduled.Quantity,
+                            StartDate = scheduled.Start,
+                            EndDate = scheduled.End,
+                            Status = ProductionBatchStatus.Planned,
+                        });
+                        if (scheduled.Start < _clock.Now)
+                        {
+                            warnings.Add(string.Format(ConstantHelper.Message.ReleaseStartInPast, number, ProductionRules.Time(scheduled.Start)));
+                        }
+                    }
+                    released.Add(shift.Id);
                 }
-                int batchIndex = 0;
-                foreach (var (order, dishName, scheduled) in allBatches.OrderBy(x => x.Batch.Start).ThenBy(x => x.DishName).ThenBy(x => x.Batch.Index))
+
+                // 3) Dòng kế hoạch: Đã phát hành khi mọi ca của món đã phát hành; gắn ca khi món chỉ thuộc 1 ca.
+                foreach (var planLine in planLines)
                 {
-                    string number = ProductionRules.Increment(firstBatchNo, batchIndex++);
-                    _unitOfWork.ProductionBatchRepository.Add(new ProductionBatch
+                    var lineShifts = parts.Where(p => p.Lines.Any(l => l.Line.Id == planLine.Id)).Select(p => p.Shift.Id).ToList();
+                    if (lineShifts.Count != 0 && lineShifts.All(released.Contains))
                     {
-                        Id = Guid.NewGuid(),
-                        BatchNumber = number,
-                        BatchNo = number,
-                        ProductionOrderId = order.Id,
-                        DishId = order.DishId,
-                        RecipeId = order.RecipeId,
-                        PlannedQty = scheduled.Quantity,
-                        PlannedQuantity = scheduled.Quantity,
-                        StartDate = scheduled.Start,
-                        EndDate = scheduled.End,
-                        Status = ProductionBatchStatus.Planned,
-                    });
-                    if (scheduled.Start < _clock.Now)
-                    {
-                        warnings.Add(string.Format(ConstantHelper.Message.ReleaseStartInPast, number, ProductionRules.Time(scheduled.Start)));
+                        planLine.ShiftId = lineShifts.Count == 1 ? lineShifts[0] : null;
+                        planLine.Status = ProductionPlanStatus.Released;
+                        _unitOfWork.ProductionPlanLineRepository.Update(planLine);
                     }
                 }
 
-                // 3) Kế hoạch → Đã phát hành; đơn Đã chốt của ngày (có dòng thuộc ca) → Đang sản xuất.
-                plan.Status = ProductionPlanStatus.Released;
-                _unitOfWork.ProductionPlanRepository.Update(plan);
+                // 4) Kế hoạch → Đã phát hành khi mọi ca có nhu cầu đã phát hành (còn ca → giữ Đã duyệt);
+                // đơn Đã chốt của ngày có dòng thuộc ca vừa phát hành (dòng chưa gán ca = ca mặc định) → Đang sản xuất.
+                if (parts.All(p => released.Contains(p.Shift.Id)))
+                {
+                    plan.Status = ProductionPlanStatus.Released;
+                    _unitOfWork.ProductionPlanRepository.Update(plan);
+                }
+                var releasedNow = toRelease.Select(p => p.Shift.Id).ToHashSet();
                 DateTime next = date.AddDays(1);
                 var lockedOrders = _unitOfWork.OrderRepository.GetAll().Where(o => !o.IsDeleted && o.MealDate >= date && o.MealDate < next && o.Status == OrderStatus.Locked).ToList();
                 var lockedIds = lockedOrders.Select(o => o.Id).ToList();
-                var inShift = db.OrderLine.AsNoTracking().Where(l => lockedIds.Contains(l.OrderId) && !l.IsDeleted && (l.ShiftId == null || l.ShiftId == shift.Id))
-                    .Select(l => l.OrderId).Distinct().ToHashSet();
+                var inShift = db.OrderLine.AsNoTracking().Where(l => lockedIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0)
+                    .Select(l => new { l.OrderId, l.ShiftId }).ToList()
+                    .Where(l => (l.ShiftId ?? fallback?.Id) is { } s && releasedNow.Contains(s))
+                    .Select(l => l.OrderId).ToHashSet();
                 foreach (var customerOrder in lockedOrders.Where(o => inShift.Contains(o.Id)))
                 {
                     customerOrder.Status = OrderStatus.InProduction;
@@ -427,7 +486,13 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>T17: chi tiết kế hoạch – dòng món, lệnh SX, mẻ (lịch + ATTP), thao tác được phép.</summary>
+        /// <summary>T17.1: ca đã phát hành của kế hoạch = ca của các lệnh SX (chưa hủy) thuộc kế hoạch.</summary>
+        private async Task<HashSet<Guid>> ReleasedShiftIdsAsync(Guid planId)
+            => (await _unitOfWork.DbContext.ProductionOrder.AsNoTracking()
+                    .Where(o => o.ProductionPlanId == planId && !o.IsDeleted && o.ShiftId != null && o.Status != ProductionOrderStatus.Cancelled)
+                    .Select(o => o.ShiftId!.Value).Distinct().ToListAsync()).ToHashSet();
+
+        /// <summary>T17: chi tiết kế hoạch – dòng món, lệnh SX, mẻ (lịch + ATTP), thao tác được phép. T17.1: + phần theo ca.</summary>
         public async Task<IResult<ProductionPlanDetailModel>> GetDetail(Guid id)
         {
             try
@@ -457,7 +522,37 @@ namespace AppDelicare.Services.Implement
             var orders = await db.ProductionOrder.AsNoTracking().Where(o => o.ProductionPlanId == id && !o.IsDeleted).ToListAsync();
             var orderIds = orders.Select(o => o.Id).ToList();
             var batches = await db.ProductionBatch.AsNoTracking().Where(b => orderIds.Contains(b.ProductionOrderId) && !b.IsDeleted).ToListAsync();
-            return new ProductionPlanDetailModel
+
+            // T17.1: phần theo ca – ca đã phát hành lấy theo lệnh SX, ca chưa phát hành theo phép chia hiện tại (đơn Đã chốt / Đang SX).
+            var (parts, _, splitWarnings, _) = await ProductionRules.SplitByShiftAsync(db, plan.ProductionDate.Date, lines, _rules);
+            var liveOrders = orders.Where(o => o.Status != ProductionOrderStatus.Cancelled && o.ShiftId != null).ToList();
+            var releasedIds = liveOrders.Select(o => o.ShiftId!.Value).ToHashSet();
+            var shiftIds = parts.Select(p => p.Shift.Id).Concat(releasedIds).Distinct().ToList();
+            var shiftMap = await db.Shift.AsNoTracking().Where(s => shiftIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id);
+            var listShift = shiftIds.Where(shiftMap.ContainsKey).Select(id =>
+            {
+                var shift = shiftMap[id];
+                var mine = liveOrders.Where(o => o.ShiftId == id).ToList();
+                var mineIds = mine.Select(o => o.Id).ToHashSet();
+                var mineBatches = batches.Where(b => mineIds.Contains(b.ProductionOrderId)).ToList();
+                bool isReleased = releasedIds.Contains(id);
+                return new ProductionPlanShiftModel
+                {
+                    ShiftId = id,
+                    ShiftCode = shift.Code,
+                    ShiftName = shift.Name,
+                    StartTime = shift.StartTime,
+                    Portions = isReleased ? mine.Sum(o => o.PlannedQty) : parts.FirstOrDefault(p => p.Shift.Id == id)?.Portions ?? 0m,
+                    Released = isReleased,
+                    DispatchAt = mineBatches.Count == 0 ? null : mineBatches.Max(b => b.EndDate ?? b.StartDate).AddMinutes(_rules.ProductionPackingMinutes),
+                    OrderCount = mine.Count,
+                    BatchCount = mineBatches.Count,
+                };
+            }).OrderBy(s => s.StartTime ?? TimeSpan.MaxValue).ThenBy(s => s.ShiftCode).ToList();
+            bool hasPending = listShift.Any(s => !s.Released);
+            var lineShifts = parts.SelectMany(p => p.Lines.Select(l => (l.Line.Id, p.Shift.Id, p.Shift.Code, l.Quantity))).ToList();
+
+            var detail = new ProductionPlanDetailModel
             {
                 ProductionPlan = plan,
                 StatusName = ProductionPlanStatus.Label(plan.Status),
@@ -471,18 +566,26 @@ namespace AppDelicare.Services.Implement
                     PlannedQuantity = l.PlannedQuantity,
                     ShiftId = l.ShiftId,
                     Status = l.Status,
+                    ListShift = [.. lineShifts.Where(x => x.Item1 == l.Id).Select(x => new ProductionPlanLineShiftModel { ShiftId = x.Item2, ShiftCode = x.Code, Quantity = x.Quantity })],
                 }).OrderBy(l => l.DishName)],
                 ListOrder = await ProductionRules.OrderBriefsAsync(db, orders),
                 ListBatch = await ProductionRules.BatchBriefsAsync(db, batches, _rules),
                 DispatchAt = batches.Count == 0 ? null : batches.Max(b => b.EndDate ?? b.StartDate).AddMinutes(_rules.ProductionPackingMinutes),
+                ListShift = listShift,
                 AllowedActions = plan.Status switch
                 {
                     ProductionPlanStatus.Draft => ["approve"],
-                    ProductionPlanStatus.Approved => ["release"],
+                    // T17.1: phát hành từng ca – còn ca chưa phát hành thì giữ "release"; đã có lệnh SX thì in phiếu được.
+                    ProductionPlanStatus.Approved => [.. (hasPending ? new[] { "release" } : []), .. (orders.Count != 0 ? new[] { "exportProductionSheet" } : [])],
                     ProductionPlanStatus.Released or ProductionPlanStatus.Completed => ["exportProductionSheet"],
                     _ => [],
                 },
             };
+            if (plan.Status is ProductionPlanStatus.Draft or ProductionPlanStatus.Approved)
+            {
+                detail.ListWarning.AddRange(splitWarnings);
+            }
+            return detail;
         }
 
         /// <summary>T17: in "Phiếu sản xuất" (.xlsx) cho cả kế hoạch – mỗi mẻ 1 nhóm dòng nguyên liệu (định mức / SL cần / thực xuất).</summary>

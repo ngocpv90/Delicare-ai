@@ -269,6 +269,11 @@
             public static readonly string ReleaseNoRecipe = "Món chưa có công thức đã khóa / đã duyệt – không phát hành được: {0}";
             public static readonly string ReleaseRecipeNotLocked = "Cảnh báo: món {0} dùng công thức Đã duyệt chưa khóa – lệnh SX lưu ảnh chụp định lượng hiện tại";
             public static readonly string ReleaseStartInPast = "Cảnh báo: mẻ {0} có giờ bắt đầu kế hoạch {1} đã qua";
+            public static readonly string ReleaseLinesWithoutShift = "Cảnh báo: {0} dòng đơn chưa gán ca – tính vào ca mặc định {1}";
+            public static readonly string ReleaseShiftAlready = "Ca {0} của kế hoạch đã phát hành";
+            public static readonly string ReleaseShiftNoDemand = "Ca {0} không có suất nào trong kế hoạch ngày này";
+            public static readonly string ReleaseNothingPending = "Mọi ca có nhu cầu của kế hoạch đã phát hành";
+            public static readonly string ReleaseDispatchNeedsShift = "Giờ xuất bếp nhập tay chỉ dùng khi phát hành 1 ca – chọn ca (ShiftId); còn {0} ca chưa phát hành: {1}";
             public static readonly string ProductionCrudBlocked = "{0} chỉ tạo / đổi trạng thái qua thao tác nghiệp vụ ({1})";
             public static readonly string BatchNotFound = "Không tìm thấy mẻ nấu";
             public static readonly string BatchIssueExists = "Mẻ {0} đã có phiếu xuất {1} ({2}) – xuất thêm qua MaterialIssue/Create (ghi lệnh SX) hoặc hủy phiếu cũ";

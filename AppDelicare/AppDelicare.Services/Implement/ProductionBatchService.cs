@@ -780,6 +780,11 @@ namespace AppDelicare.Services.Implement
                     _ => ["recordWaste", "exportProductionSheet"],
                 },
             };
+            // T17.1 (anh chốt 2026-11-16, D-42): mẻ Đã đóng gói chưa lưu mẫu vẫn ghi lưu mẫu được (bắt buộc trước khi xuất chuyến).
+            if (batch.Status == ProductionBatchStatus.Packed && !detail.Batch.SampleRetained)
+            {
+                detail.AllowedActions = ["recordSampleRetained", .. detail.AllowedActions];
+            }
             if (batch.Status is ProductionBatchStatus.Cooking or ProductionBatchStatus.QcPending or ProductionBatchStatus.Passed)
             {
                 detail.ListBlocker = await ProductionRules.SafetyBlockersAsync(db, batch, _rules, needOutput: true);

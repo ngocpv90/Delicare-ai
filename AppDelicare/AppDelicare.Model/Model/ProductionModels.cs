@@ -13,8 +13,10 @@ namespace AppDelicare.Model.Model
         public List<ProductionPlanLineDetailModel> ListLine { get; set; } = [];
         public List<ProductionOrderBriefModel> ListOrder { get; set; } = [];
         public List<ProductionBatchBriefModel> ListBatch { get; set; } = [];
-        /// <summary>Giờ xuất bếp đã dùng khi phát hành (từ ghi chú lệnh SX); null = chưa phát hành.</summary>
+        /// <summary>Giờ xuất bếp muộn nhất trong các ca đã phát hành (mẻ cuối + đóng gói); null = chưa phát hành. Theo từng ca: <see cref="ListShift"/>.</summary>
         public DateTime? DispatchAt { get; set; }
+        /// <summary>T17.1: các ca có nhu cầu trong ngày (sắp theo giờ bắt đầu) – kế hoạch Đã phát hành khi mọi ca đã phát hành.</summary>
+        public List<ProductionPlanShiftModel> ListShift { get; set; } = [];
         public List<string> AllowedActions { get; set; } = [];
         public List<string> ListWarning { get; set; } = [];
     }
@@ -28,6 +30,32 @@ namespace AppDelicare.Model.Model
         public decimal PlannedQuantity { get; set; }
         public Guid? ShiftId { get; set; }
         public string? Status { get; set; }
+        /// <summary>T17.1: số phần của món theo ca (chia theo suất của ca trong đơn Đã chốt / Đang SX).</summary>
+        public List<ProductionPlanLineShiftModel> ListShift { get; set; } = [];
+    }
+
+    public class ProductionPlanLineShiftModel
+    {
+        public Guid ShiftId { get; set; }
+        public string? ShiftCode { get; set; }
+        public decimal Quantity { get; set; }
+    }
+
+    /// <summary>
+    /// T17.1 (anh chốt 2026-11-16 – 4 ca / ngày): phần của 1 ca trong kế hoạch ngày – số phần, đã phát hành chưa, giờ xuất bếp, số lệnh / mẻ.
+    /// Ca đã phát hành = có lệnh SX của kế hoạch gắn ca đó (không có cột trạng thái theo ca – GAP-PRD-01).
+    /// </summary>
+    public class ProductionPlanShiftModel
+    {
+        public Guid ShiftId { get; set; }
+        public string? ShiftCode { get; set; }
+        public string? ShiftName { get; set; }
+        public TimeSpan? StartTime { get; set; }
+        public decimal Portions { get; set; }
+        public bool Released { get; set; }
+        public DateTime? DispatchAt { get; set; }
+        public int OrderCount { get; set; }
+        public int BatchCount { get; set; }
     }
 
     public class ProductionOrderBriefModel

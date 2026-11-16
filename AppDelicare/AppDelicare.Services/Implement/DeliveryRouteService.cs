@@ -394,7 +394,7 @@ namespace AppDelicare.Services.Implement
                 }
                 var orderIds = selected.Select(s => s.Order.Id).ToList();
                 List<Guid> shiftIds = shift != null ? [shift.Id]
-                    : await db.OrderLine.AsNoTracking().Where(l => !l.IsDeleted && orderIds.Contains(l.OrderId) && l.ShiftId != null).Select(l => l.ShiftId!.Value).Distinct().ToListAsync();
+                    : await DeliveryRules.OrderShiftIdsAsync(db, orderIds, _rules);
                 var notReady = DeliveryRules.ProductionBlockers(await DeliveryRules.BatchesAsync(db, date, shiftIds), _rules);
                 if (notReady.Count != 0)
                 {
