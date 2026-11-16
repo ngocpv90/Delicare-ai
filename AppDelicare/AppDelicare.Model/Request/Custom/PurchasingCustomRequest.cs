@@ -132,5 +132,10 @@ namespace AppDelicare.Model.Request.Custom
         public string? Packaging { get; set; }
         [MaxLength(1000)]
         public string? Remark { get; set; }
+        /// <summary>
+        /// T15.1: hàng đông lạnh nhận có điều kiện (−18 &lt; nhiệt độ ≤ −15 °C) – người kiểm xác nhận "không có dấu hiệu rã đông" (bắt buộc khi kết luận đạt).
+        /// Lưu vào QCInspectionLine.Note (không có cột riêng).
+        /// </summary>
+        public bool? NoThawConfirmed { get; set; }
     }
 }

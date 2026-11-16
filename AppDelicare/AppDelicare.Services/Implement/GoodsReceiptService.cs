@@ -282,7 +282,10 @@ namespace AppDelicare.Services.Implement
                     var poLine = poLines[input.PurchaseOrderLineId];
                     ingredients.TryGetValue(poLine.IngredientId, out var ingredient);
                     DateTime? expiry = input.ExpiryDate ?? (ingredient?.ShelfLifeDays is > 0 ? receiptDate.Date.AddDays(ingredient.ShelfLifeDays.Value) : null);
-                    bool autoPass = ingredient?.QcRequired == false; // spec 7.3: không yêu cầu QC → tự đạt (PROPOSED)
+                    var tempRule = PurchasingRules.ReceivingTempRuleOf(_rules, ingredient?.StorageType);
+                    string zone = PurchasingRules.TempZone(tempRule, input.TemperatureC);
+                    // spec 7.3: không yêu cầu QC → tự đạt (PROPOSED); T15.1: hàng mát / đông lạnh chỉ tự đạt khi nhiệt độ đã đo và trong vùng đạt.
+                    bool autoPass = ingredient?.QcRequired == false && zone is ReceivingTempZone.Accept or ReceivingTempZone.NotChecked;
                     allAuto &= autoPass;
                     var line = new GoodsReceiptLine
                     {
@@ -293,17 +296,28 @@ namespace AppDelicare.Services.Implement
                         ManufactureDate = input.ManufactureDate, ExpiryDate = expiry, QualityStatus = autoPass ? IncomingQcResult.Dat : null,
                     };
                     _unitOfWork.GoodsReceiptLineRepository.Add(line);
-                    decimal? maxTemp = PurchasingRules.MaxReceivingTemp(_rules, ingredient?.StorageType);
                     _unitOfWork.QcInspectionLineRepository.Add(new QcInspectionLine
                     {
                         Id = Guid.NewGuid(), QCInspectionId = inspection.Id, IngredientId = poLine.IngredientId, GoodsReceiptLineId = line.Id,
                         Temperature = input.TemperatureC, ExpiryDate = expiry,
-                        Criterion = maxTemp != null ? $"Nhiệt độ nhận ≤ {PurchasingRules.Qty(maxTemp.Value)} °C ({ingredient?.StorageType})" : null,
+                        Criterion = tempRule != null
+                            ? $"Nhiệt độ nhận ({ingredient?.StorageType}): đạt ≤ {PurchasingRules.Qty(tempRule.AcceptMax)} °C, có điều kiện ≤ {PurchasingRules.Qty(tempRule.ConditionalMax)} °C, lớn hơn → loại"
+                            : null,
                         Result = autoPass ? IncomingQcResult.Dat : null, Remark = autoPass ? "Nguyên liệu không yêu cầu QC – tự đạt" : null,
                     });
-                    if (input.TemperatureC != null && maxTemp != null && input.TemperatureC > maxTemp)
+                    switch (zone)
                     {
-                        warnings.Add(string.Format(ConstantHelper.Message.ReceivingTempOutOfRange, ingredient?.Name, PurchasingRules.Qty(input.TemperatureC.Value), PurchasingRules.Qty(maxTemp.Value)));
+                        case ReceivingTempZone.Missing:
+                            warnings.Add(string.Format(ConstantHelper.Message.ReceivingTempMissingWarning, ingredient?.Name, ingredient?.StorageType));
+                            break;
+                        case ReceivingTempZone.Conditional:
+                            warnings.Add(string.Format(ConstantHelper.Message.ReceivingTempConditional, ingredient?.Name, PurchasingRules.Qty(input.TemperatureC!.Value),
+                                PurchasingRules.Qty(tempRule!.AcceptMax), PurchasingRules.Qty(tempRule.ConditionalMax)));
+                            break;
+                        case ReceivingTempZone.Reject:
+                            warnings.Add(string.Format(ConstantHelper.Message.ReceivingTempOutOfRange, ingredient?.Name, PurchasingRules.Qty(input.TemperatureC!.Value),
+                                PurchasingRules.Qty(tempRule!.ConditionalMax)));
+                            break;
                     }
                 }
                 if (allAuto)
@@ -387,23 +401,33 @@ namespace AppDelicare.Services.Implement
                     string result = IncomingQcResult.Normalize(line.QualityStatus)!;
                     ingredients.TryGetValue(line.IngredientId, out var ingredient);
                     string lotNumber = await _documentNumberService.NextAsync(DocumentKind.MaterialLot, receipt.ReceiptDate.Date, suffix);
+                    var qc = qcLines.FirstOrDefault(q => q.GoodsReceiptLineId == line.Id);
+                    var tempRule = PurchasingRules.ReceivingTempRuleOf(_rules, ingredient?.StorageType);
+                    string zone = PurchasingRules.TempZone(tempRule, qc?.Temperature);
+                    // T15.1: nhận có điều kiện nhiệt độ (không phải KHONG_DAT) → lô "ưu tiên dùng trước" (Note – GAP-PUR-10) + sự cố NCC.
+                    bool conditional = zone == ReceivingTempZone.Conditional && result != IncomingQcResult.KhongDat;
+                    string? conditionalNote = conditional
+                        ? (qc?.Note?.Contains(ReceivingCode.UseFirstMarker) == true ? qc.Note : PurchasingRules.ConditionalNote(tempRule!, qc!.Temperature!.Value, false))
+                        : null;
                     var lot = new MaterialLot
                     {
                         Id = Guid.NewGuid(), LotNumber = lotNumber, LotNo = lotNumber, IngredientId = line.IngredientId, SupplierId = receipt.SupplierId,
                         ManufactureDate = line.ManufactureDate, ExpiryDate = line.ExpiryDate, ReceivedDate = receipt.ReceiptDate, UnitCost = line.UnitCost,
                         QcStatus = result, QualityStatus = result, GoodsReceiptLineId = line.Id,
                         Status = result == IncomingQcResult.KhongDat ? MaterialLotStatus.OnHold : MaterialLotStatus.Available,
-                        Note = PurchasingRules.AppendNote($"Phiếu nhập {number}", string.IsNullOrWhiteSpace(line.LotNumber) ? null : $"Lô NCC: {line.LotNumber}"),
+                        Note = PurchasingRules.AppendNote(
+                            PurchasingRules.AppendNote($"Phiếu nhập {number}", string.IsNullOrWhiteSpace(line.LotNumber) ? null : $"Lô NCC: {line.LotNumber}"),
+                            conditionalNote),
                     };
                     _unitOfWork.MaterialLotRepository.Add(lot);
                     line.LotId = lot.Id;
                     _unitOfWork.GoodsReceiptLineRepository.Update(line);
                     created.Add((line, lot, result));
-                    if (result != IncomingQcResult.Dat)
+                    if (result != IncomingQcResult.Dat || conditional)
                     {
                         anyRejected |= result == IncomingQcResult.KhongDat;
-                        var qc = qcLines.FirstOrDefault(q => q.GoodsReceiptLineId == line.Id);
                         issueLines.Add($"{ingredient?.Name} – lô {lotNumber}: {IncomingQcResult.Label(result)}, nhận {PurchasingRules.Qty(line.ReceivedQuantity)}, đạt {PurchasingRules.Qty(line.AcceptedQuantity)}, trả {PurchasingRules.Qty(line.RejectedQuantity)}"
+                            + (zone is ReceivingTempZone.Conditional or ReceivingTempZone.Reject ? $", nhiệt độ {PurchasingRules.Qty(qc!.Temperature!.Value)} °C ({ReceivingTempZone.Label(zone)})" : string.Empty)
                             + (string.IsNullOrWhiteSpace(qc?.Remark) ? string.Empty : $" ({qc.Remark})"));
                     }
                 }
@@ -561,7 +585,9 @@ namespace AppDelicare.Services.Implement
                 ingredients.TryGetValue(l.IngredientId, out var ingredient);
                 var qc = qcLines.FirstOrDefault(q => q.GoodsReceiptLineId == l.Id);
                 var poLine = poLines.FirstOrDefault(p => p.IngredientId == l.IngredientId);
-                decimal? max = PurchasingRules.MaxReceivingTemp(_rules, ingredient?.StorageType);
+                var tempRule = PurchasingRules.ReceivingTempRuleOf(_rules, ingredient?.StorageType);
+                decimal? max = tempRule?.AcceptMax;
+                string zone = PurchasingRules.TempZone(tempRule, qc?.Temperature);
                 MaterialLot? lot = l.LotId is { } lotId ? lots.GetValueOrDefault(lotId) : null;
                 detail.ListLine.Add(new GoodsReceiptLineDetailModel
                 {
@@ -572,7 +598,10 @@ namespace AppDelicare.Services.Implement
                     QcInspectionLineId = qc?.Id, QualityStatus = l.QualityStatus, QualityStatusName = IncomingQcResult.Label(l.QualityStatus),
                     Temperature = qc?.Temperature, MaxAllowedTemperature = max,
                     TemperatureWithinRange = qc?.Temperature is { } temp && max != null ? temp <= max : null,
-                    SuggestedResult = PurchasingRules.SuggestResult(qc?.Temperature, max, l.ExpiryDate, receipt.ReceiptDate),
+                    ConditionalMaxTemperature = tempRule?.ConditionalMax, TemperatureZone = zone, TemperatureZoneName = ReceivingTempZone.Label(zone),
+                    NoThawConfirmationRequired = zone == ReceivingTempZone.Conditional && tempRule!.RequireNoThawConfirmation,
+                    UseFirst = (qc?.Note?.Contains(ReceivingCode.UseFirstMarker) ?? false) || (lot?.Note?.Contains(ReceivingCode.UseFirstMarker) ?? false),
+                    SuggestedResult = PurchasingRules.SuggestResult(zone, l.ExpiryDate, receipt.ReceiptDate),
                     Weight = qc?.Weight, Appearance = qc?.Appearance, Packaging = qc?.Packaging, Remark = qc?.Remark,
                     MaterialLotId = lot?.Id, LotNumber = lot?.LotNumber ?? lot?.LotNo, LotStatus = lot?.Status,
                 });

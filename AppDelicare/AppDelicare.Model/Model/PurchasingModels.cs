@@ -66,8 +66,16 @@ namespace AppDelicare.Model.Model
         public string? PurchaseRequestNumber { get; set; }
         public Guid? PendingApprovalId { get; set; }
         public string? PendingApprovalNo { get; set; }
-        /// <summary>Tổng tiền vượt ngưỡng GĐ duyệt (D-11) – Pilot chỉ cảnh báo.</summary>
+        /// <summary>T15.1 (D-11): tổng tiền ≥ ngưỡng GĐ duyệt → chỉ người có quyền mục "Duyệt – Đơn mua hàng (Giám đốc)" duyệt được.</summary>
         public bool NeedsDirectorApproval { get; set; }
+        /// <summary>T15.1: mục quyền duyệt áp cho PO này: <c>scm-po</c> hoặc <c>scm-po-director</c> (MetaLink <c>#/wf-inbox?type=…</c>).</summary>
+        public string? ApprovalScreenId { get; set; }
+        /// <summary>T15.1 (VAT phương án A – tính khi đọc, KHÔNG lưu DB, GAP-PUR-09): tổng chưa VAT = Σ thành tiền dòng.</summary>
+        public decimal SubtotalAmount { get; set; }
+        /// <summary>Σ tiền VAT các dòng (mỗi dòng làm tròn đồng).</summary>
+        public decimal VatAmount { get; set; }
+        /// <summary>Tổng tiền gồm VAT = SubtotalAmount + VatAmount.</summary>
+        public decimal TotalAmountInclVat { get; set; }
         public List<string> AllowedActions { get; set; } = [];
         public List<PurchaseOrderLineDetailModel> ListLine { get; set; } = [];
         public List<GoodsReceiptBriefModel> ListGoodsReceipt { get; set; } = [];
@@ -85,6 +93,11 @@ namespace AppDelicare.Model.Model
         public string? UnitName { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal LineAmount { get; set; }
+        /// <summary>T15.1 (tính khi đọc, không lưu – GAP-PUR-09): % VAT theo nhóm nguyên liệu / mặc định (BusinessRules:PurchaseVat).</summary>
+        public decimal VatPct { get; set; }
+        /// <summary>LineAmount × VatPct / 100, làm tròn đồng.</summary>
+        public decimal VatAmount { get; set; }
+        public decimal AmountInclVat { get; set; }
         public string? Note { get; set; }
         /// <summary>Σ số đạt của phiếu nhập đã ghi sổ (GAP-PUR-01: PurchaseOrderLine không có cột đã nhận).</summary>
         public decimal ReceivedQuantity { get; set; }
@@ -146,10 +159,19 @@ namespace AppDelicare.Model.Model
         public string? QualityStatus { get; set; }
         public string? QualityStatusName { get; set; }
         public decimal? Temperature { get; set; }
-        /// <summary>Nhiệt độ tối đa cho phép theo kiểu bảo quản (BusinessRules:ReceivingTempMaxC); trống = không giới hạn.</summary>
+        /// <summary>Nhiệt độ tối đa để "đạt" theo kiểu bảo quản (BusinessRules:ReceivingTemp.AcceptMax); trống = không kiểm.</summary>
         public decimal? MaxAllowedTemperature { get; set; }
+        /// <summary>T15.1: nhiệt độ tối đa vùng "nhận có điều kiện" (ReceivingTemp.ConditionalMax); lớn hơn → loại.</summary>
+        public decimal? ConditionalMaxTemperature { get; set; }
         public bool? TemperatureWithinRange { get; set; }
-        /// <summary>Kết quả QC gợi ý (nhiệt độ vượt ngưỡng / hết hạn → KHONG_DAT) – người kiểm vẫn quyết định.</summary>
+        /// <summary>T15.1: ACCEPT / CONDITIONAL / REJECT / MISSING / NOT_CHECKED (ReceivingTempZone).</summary>
+        public string? TemperatureZone { get; set; }
+        public string? TemperatureZoneName { get; set; }
+        /// <summary>T15.1: vùng có điều kiện của hàng đông lạnh → khi kết luận đạt phải gửi <c>noThawConfirmed = true</c>.</summary>
+        public bool NoThawConfirmationRequired { get; set; }
+        /// <summary>T15.1: lô nhận có điều kiện – "ưu tiên dùng trước" (đánh dấu trong Note, GAP-PUR-10).</summary>
+        public bool UseFirst { get; set; }
+        /// <summary>Kết quả QC gợi ý (nhiệt độ vùng loại / hết hạn → KHONG_DAT) – người kiểm vẫn quyết định.</summary>
         public string? SuggestedResult { get; set; }
         public decimal? Weight { get; set; }
         public string? Appearance { get; set; }

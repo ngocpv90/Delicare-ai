@@ -410,7 +410,8 @@ namespace AppDelicare.Services.Implement
                 po!.TotalAmount = total;
                 po.Note = PurchasingRules.AppendNote(po.Note, request.Note);
                 string message;
-                if (_rules.PurchaseOrderAutoApproveMaxAmount > 0 && total <= _rules.PurchaseOrderAutoApproveMaxAmount)
+                // T15.1: PO ≥ ngưỡng GĐ không bao giờ tự duyệt (kể cả khi cấu hình tự duyệt cao hơn).
+                if (_rules.PurchaseOrderAutoApproveMaxAmount > 0 && total <= _rules.PurchaseOrderAutoApproveMaxAmount && !NeedsDirector(total))
                 {
                     po.Status = PurchaseOrderStatus.Approved;
                     message = string.Format(ConstantHelper.Message.PurchaseOrderAutoApproved, PurchasingRules.Money(total), PurchasingRules.Money(_rules.PurchaseOrderAutoApproveMaxAmount));
@@ -431,6 +432,10 @@ namespace AppDelicare.Services.Implement
                         return Result<PurchaseOrderDetailModel>.Fail(approvalError);
                     }
                     message = string.Format(ConstantHelper.Message.PurchaseOrderSubmitted, approval!.RequestNo);
+                    if (NeedsDirector(total))
+                    {
+                        message += " – " + string.Format(ConstantHelper.Message.PurchaseOrderDirectorRequired, PurchasingRules.Money(total), PurchasingRules.Money(_rules.PurchaseOrderDirectorApprovalAmount));
+                    }
                 }
                 _unitOfWork.CommitTransaction();
                 return Result<PurchaseOrderDetailModel>.Success(await DetailAsync(po.Id), message);
@@ -494,9 +499,22 @@ namespace AppDelicare.Services.Implement
             }
             decimal total = row.TotalAmount ?? 0m;
             string text = $"PO {row.Number} – {row.Supplier} – {PurchasingRules.Money(total)} đ";
-            return total > _rules.PurchaseOrderDirectorApprovalAmount
-                ? $"{text} (> {PurchasingRules.Money(_rules.PurchaseOrderDirectorApprovalAmount)} đ: cần GĐ duyệt – D-11)"
+            return NeedsDirector(total)
+                ? $"{text} (≥ {PurchasingRules.Money(_rules.PurchaseOrderDirectorApprovalAmount)} đ: Giám đốc duyệt – D-11)"
                 : text;
+        }
+
+        /// <summary>T15.1 (D-11, anh chốt 2026-11-16): tổng ≥ <c>BusinessRules:PurchaseOrderDirectorApprovalAmount</c> → Giám đốc duyệt.</summary>
+        private bool NeedsDirector(decimal total) => total >= _rules.PurchaseOrderDirectorApprovalAmount;
+
+        /// <summary>
+        /// T15.1: mục quyền duyệt của PO (gọi từ <c>PurchaseOrderApprovalHandler.RequiredScreenIdAsync</c>): tổng ≥ ngưỡng GĐ → <c>scm-po-director</c>, còn lại <c>scm-po</c>.
+        /// Tổng tiền đọc từ PO hiện tại – nếu bị sửa sau khi gửi thì hash khác, không duyệt được.
+        /// </summary>
+        public async Task<string> ApprovalScreenIdAsync(Guid id)
+        {
+            decimal total = await _unitOfWork.DbContext.PurchaseOrder.AsNoTracking().Where(x => x.Id == id).Select(x => x.TotalAmount).FirstOrDefaultAsync() ?? 0m;
+            return NeedsDirector(total) ? PurchaseOrderStatus.DirectorScreenId : PurchaseOrderStatus.ScreenId;
         }
 
         /// <summary>
@@ -646,26 +664,36 @@ namespace AppDelicare.Services.Implement
                     ? await db.PurchaseRequest.AsNoTracking().Where(p => p.Id == prId).Select(p => p.RequestNumber ?? p.RequestNo).FirstOrDefaultAsync()
                     : null,
                 PendingApprovalId = pending?.Id, PendingApprovalNo = pending?.RequestNo,
-                NeedsDirectorApproval = (po.TotalAmount ?? 0m) > _rules.PurchaseOrderDirectorApprovalAmount,
+                NeedsDirectorApproval = NeedsDirector(po.TotalAmount ?? 0m),
+                ApprovalScreenId = NeedsDirector(po.TotalAmount ?? 0m) ? PurchaseOrderStatus.DirectorScreenId : PurchaseOrderStatus.ScreenId,
                 ListGoodsReceipt = receipts.Select(r => new GoodsReceiptBriefModel
                 {
                     Id = r.Id, ReceiptNumber = r.ReceiptNumber ?? r.ReceiptNo, ReceiptDate = r.ReceiptDate, Status = r.Status, StatusName = GoodsReceiptStatus.Label(r.Status),
                 }).ToList(),
             };
+            // T15.1 (VAT phương án A – GAP-PUR-09): % VAT theo nhóm nguyên liệu / mặc định, chỉ tính khi đọc, không lưu.
+            var vatPct = await PurchasingRules.VatPctByIngredientAsync(db, _rules, ingredientIds);
             foreach (var l in lines)
             {
                 ingredients.TryGetValue(l.IngredientId, out var ingredient);
                 var (received, pendingQty) = totals.TryGetValue(l.IngredientId, out var t) ? t : (0m, 0m);
+                decimal pct = vatPct.TryGetValue(l.IngredientId, out var p) ? p : _rules.PurchaseVat.DefaultPct;
+                decimal vat = PurchasingRules.VatAmount(l.LineAmount, pct);
                 detail.ListLine.Add(new PurchaseOrderLineDetailModel
                 {
                     Id = l.Id, IngredientId = l.IngredientId, IngredientCode = ingredient?.Code, IngredientName = ingredient?.Name,
                     Quantity = l.Quantity, UnitId = l.UnitId, UnitName = units.GetValueOrDefault(l.UnitId), UnitPrice = l.UnitPrice, LineAmount = l.LineAmount, Note = l.Note,
+                    VatPct = pct, VatAmount = vat, AmountInclVat = l.LineAmount + vat,
                     ReceivedQuantity = received, PendingQuantity = pendingQty, RemainingQuantity = Math.Max(0m, l.Quantity - received - pendingQty),
                 });
             }
+            detail.SubtotalAmount = detail.ListLine.Sum(l => l.LineAmount);
+            detail.VatAmount = detail.ListLine.Sum(l => l.VatAmount);
+            detail.TotalAmountInclVat = detail.SubtotalAmount + detail.VatAmount;
             if (detail.NeedsDirectorApproval)
             {
-                detail.ListWarning.Add($"Tổng tiền > {PurchasingRules.Money(_rules.PurchaseOrderDirectorApprovalAmount)} đ – theo D-11 cần GĐ duyệt (Pilot duyệt 1 cấp)");
+                detail.ListWarning.Add(string.Format(ConstantHelper.Message.PurchaseOrderDirectorRequired, PurchasingRules.Money(po.TotalAmount ?? 0m),
+                    PurchasingRules.Money(_rules.PurchaseOrderDirectorApprovalAmount)));
             }
             bool hasReceipt = receipts.Any(r => r.Status != GoodsReceiptStatus.Cancelled);
             switch (po.Status)
@@ -702,8 +730,9 @@ namespace AppDelicare.Services.Implement
         /// <summary>
         /// T15 – in "Đơn đặt hàng NCC" (.xlsx, ClosedXML) theo bố cục sheet "2. Form_PO" của file thật (BUSINESS_DOCS.md – chỉ lấy cấu trúc, không chép dữ liệu):
         /// tên / địa chỉ / điện thoại pháp nhân (bảng Company đầu tiên – PO không có cột công ty), tiêu đề ĐƠN ĐẶT HÀNG, số + ngày, NCC (tên, địa chỉ), nơi giao /
-        /// thời gian giao, bảng STT · Mã · Tên · Đơn vị tính chính · Số lượng · Đơn giá (chưa VAT) · Thành tiền (chưa VAT) · Ghi chú, dòng tổng, chữ ký.
-        /// VAT chưa có cột (GAP-PUR-07) → chỉ in giá chưa VAT.
+        /// thời gian giao, bảng STT · Mã · Tên · Đơn vị tính chính · Số lượng · Đơn giá (chưa VAT) · Thành tiền (chưa VAT) · % VAT · Tiền VAT · Ghi chú,
+        /// chân bảng tổng chưa VAT / tiền VAT / tổng gồm VAT, chữ ký. T15.1 (anh chốt 2026-11-16, VAT phương án A): % VAT theo <c>BusinessRules:PurchaseVat</c>,
+        /// tính khi in – không lưu DB (GAP-PUR-09).
         /// </summary>
         public async Task<IResult<byte[]>> ExportOrder(Guid id)
         {
@@ -721,7 +750,7 @@ namespace AppDelicare.Services.Implement
                 var company = await _unitOfWork.DbContext.Company.AsNoTracking().Where(c => !c.IsDeleted).OrderBy(c => c.CreatedDate).FirstOrDefaultAsync();
                 var po = detail.PurchaseOrder;
                 const string brand = "#91AF42";
-                const int lastCol = 8;
+                const int lastCol = 10;
 
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Don dat hang");
@@ -740,7 +769,8 @@ namespace AppDelicare.Services.Implement
                 ws.Cell(10, 6).Value = "Thời gian giao hàng: " + (po.ExpectedDeliveryDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? string.Empty);
 
                 int header = 12;
-                string[] titles = ["STT", "Mã", "Tên", "Đơn vị tính chính", "Số lượng", "Đơn giá\n(chưa VAT)", "Thành tiền\n(chưa VAT)", "Ghi chú"];
+                // T15.1 (VAT phương án A): thêm cột % VAT + Tiền VAT mỗi dòng, chân bảng: tổng chưa VAT / tiền VAT / tổng gồm VAT (tính khi in, không lưu).
+                string[] titles = ["STT", "Mã", "Tên", "Đơn vị tính chính", "Số lượng", "Đơn giá\n(chưa VAT)", "Thành tiền\n(chưa VAT)", "% VAT", "Tiền VAT", "Ghi chú"];
                 for (int c = 0; c < titles.Length; c++)
                 {
                     ws.Cell(header, c + 1).Value = titles[c];
@@ -758,35 +788,50 @@ namespace AppDelicare.Services.Implement
                     ws.Cell(row, 5).Value = l.Quantity;
                     ws.Cell(row, 6).Value = l.UnitPrice;
                     ws.Cell(row, 7).Value = l.LineAmount;
-                    ws.Cell(row, 8).Value = l.Note ?? string.Empty;
+                    ws.Cell(row, 8).Value = l.VatPct;
+                    ws.Cell(row, 9).Value = l.VatAmount;
+                    ws.Cell(row, 10).Value = l.Note ?? string.Empty;
                     row++;
                 }
-                ws.Range(row, 1, row, 6).Merge().Value = "Tổng cộng (chưa VAT)";
-                ws.Range(row, 1, row, 6).Style.Font.SetBold().Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
-                ws.Cell(row, 7).Value = detail.ListLine.Sum(l => l.LineAmount);
-                ws.Cell(row, 7).Style.Font.Bold = true;
+                int firstTotal = row;
+                foreach (var (label, value) in new[]
+                {
+                    ("Tổng cộng (chưa VAT)", detail.SubtotalAmount), ("Tiền thuế VAT", detail.VatAmount), ("Tổng cộng (gồm VAT)", detail.TotalAmountInclVat),
+                })
+                {
+                    ws.Range(row, 1, row, 6).Merge().Value = label;
+                    ws.Range(row, 1, row, 6).Style.Font.SetBold().Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
+                    ws.Cell(row, 7).Value = value;
+                    ws.Cell(row, 7).Style.Font.Bold = true;
+                    row++;
+                }
+                row--;
                 ws.Range(header, 1, row, lastCol).Style.Border.SetInsideBorder(XLBorderStyleValues.Thin).Border.SetOutsideBorder(XLBorderStyleValues.Thin);
                 ws.Range(header + 1, 5, row, 5).Style.NumberFormat.Format = "#,##0.####";
                 ws.Range(header + 1, 6, row, 7).Style.NumberFormat.Format = "#,##0";
+                ws.Range(header + 1, 8, firstTotal - 1, 8).Style.NumberFormat.Format = "0.##\"%\"";
+                ws.Range(header + 1, 9, firstTotal - 1, 9).Style.NumberFormat.Format = "#,##0";
 
                 int sign = row + 2;
                 ws.Range(sign, 1, sign, 3).Merge().Value = "Người lập";
-                ws.Range(sign, 4, sign, 5).Merge().Value = "Người duyệt";
-                ws.Range(sign, 6, sign, 8).Merge().Value = "Nhà cung cấp xác nhận";
+                ws.Range(sign, 4, sign, 6).Merge().Value = "Người duyệt";
+                ws.Range(sign, 7, sign, lastCol).Merge().Value = "Nhà cung cấp xác nhận";
                 ws.Range(sign, 1, sign, lastCol).Style.Font.SetBold().Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
                 ws.Range(sign + 1, 1, sign + 1, 3).Merge().Value = "(Ký, ghi rõ họ tên)";
-                ws.Range(sign + 1, 4, sign + 1, 5).Merge().Value = "(Ký, ghi rõ họ tên)";
-                ws.Range(sign + 1, 6, sign + 1, 8).Merge().Value = "(Ký, ghi rõ họ tên)";
+                ws.Range(sign + 1, 4, sign + 1, 6).Merge().Value = "(Ký, ghi rõ họ tên)";
+                ws.Range(sign + 1, 7, sign + 1, lastCol).Merge().Value = "(Ký, ghi rõ họ tên)";
                 ws.Range(sign + 1, 1, sign + 1, lastCol).Style.Font.SetItalic().Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
 
                 ws.Column(1).Width = 6;
                 ws.Column(2).Width = 12;
-                ws.Column(3).Width = 36;
+                ws.Column(3).Width = 32;
                 ws.Column(4).Width = 12;
                 ws.Column(5).Width = 12;
                 ws.Column(6).Width = 14;
                 ws.Column(7).Width = 16;
-                ws.Column(8).Width = 24;
+                ws.Column(8).Width = 8;
+                ws.Column(9).Width = 14;
+                ws.Column(10).Width = 22;
                 ws.PageSetup.PageOrientation = XLPageOrientation.Portrait;
                 ws.PageSetup.FitToPages(1, 0);
 

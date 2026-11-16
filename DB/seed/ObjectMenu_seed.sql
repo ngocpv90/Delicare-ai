@@ -305,4 +305,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?ty
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Duyệt – Đơn đổi ca', N'P8', N'#/wf-inbox?type=hr-swap', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9914, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=wf-inbox' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Duyệt – Hộp phê duyệt tập trung', N'P8', N'#/wf-inbox?type=wf-inbox', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9915, 1, 0, @Now, @SeedBy, 0);
+-- T15.1: mục quyền duyệt không gắn màn hình catalog (PO ≥ ngưỡng Giám đốc duyệt – D-11).
+IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=scm-po-director' AND IsDeleted = 0)
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Duyệt – Đơn mua hàng (Giám đốc)', N'P4', N'#/wf-inbox?type=scm-po-director', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9916, 1, 0, @Now, @SeedBy, 0);
 COMMIT;

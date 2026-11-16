@@ -180,7 +180,8 @@ namespace AppDelicare.Tests.Purchasing
             using var other = _factory.CreateAuthorizedClient(await UserAsync(withApprove: false));
             (await other.GetResultAsync("/api/ApprovalRequest/GetMyPending?type=scm-po")).ListData.GetArrayLength().Should().Be(0);
             (await other.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", request.Id), ("Approve", true))).Fail("không có quyền");
-            (await other.PostAsync("/api/PurchaseOrder/Approve", LegacyHttp.Form(("Id", poA.Id)))).StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+            // T15.1: quyền duyệt PO kiểm trong engine theo tổng tiền (scm-po / scm-po-director) → lỗi nghiệp vụ thay vì 403 ở filter.
+            (await other.PostFormAsync("/api/PurchaseOrder/Approve", ("Id", poA.Id))).Fail("không có quyền");
 
             // Người có quyền: thấy (tiêu đề có số PO + NCC), duyệt → Approved + ApprovalDecision.
             using var approver = _factory.CreateAuthorizedClient(await UserAsync(withApprove: true));
@@ -251,8 +252,10 @@ namespace AppDelicare.Tests.Purchasing
             created.GetProperty("goodsReceipt").GetProperty("status").GetString().Should().Be("QCPending");
             created.GetProperty("inspectionNumber").GetString().Should().Be(created.GetProperty("goodsReceipt").GetProperty("receiptNumber").GetString());
             created.GetProperty("listWarning").EnumerateArray().Select(x => x.GetString()).Should().Contain(w => w!.Contains("Rau PUR3") && w.Contains("8 °C"));
-            Line(created, s.Veg).GetProperty("suggestedResult").GetString().Should().Be("KHONG_DAT");
-            Line(created, s.Fish).GetProperty("suggestedResult").GetString().Should().Be("KHONG_DAT", "đông lạnh −10 °C > −18 °C");
+            // T15.1: mát 8 °C = vùng nhận có điều kiện (5 < t ≤ 8) → gợi ý DAT kèm lý do; đông lạnh −10 °C > −15 °C = vùng loại.
+            Line(created, s.Veg).GetProperty("suggestedResult").GetString().Should().Be("DAT");
+            Line(created, s.Veg).GetProperty("temperatureZone").GetString().Should().Be("CONDITIONAL");
+            Line(created, s.Fish).GetProperty("suggestedResult").GetString().Should().Be("KHONG_DAT", "đông lạnh −10 °C > −15 °C – vùng loại");
             Line(created, s.Meat).GetProperty("suggestedResult").GetString().Should().Be("DAT");
             Guid inspectionId = created.GetProperty("qcInspectionId").GetGuid();
             Guid LineId(Guid ingredient) => Line(created, ingredient).GetProperty("id").GetGuid();

@@ -53,7 +53,20 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - Kết quả kiểm nhận lô: `DAT` (đạt), `DAT_MOT_PHAN` (đạt một phần), `KHONG_DAT` (không đạt). Lưu ở `QCInspection.Result`, `GoodsReceiptLine.QualityStatus` (+ `AcceptedQuantity` / `RejectedQuantity`) và `MaterialLot.QcStatus` (cột chuẩn, xem DEPRECATED_COLUMNS.md). Nếu BRD dùng PASS/HOLD/REJECT thì ánh xạ DAT=PASS, DAT_MOT_PHAN=HOLD (phần đạt được nhập), KHONG_DAT=REJECT – PROPOSED.
 - Lô `KHONG_DAT`: **chặn xuất cho sản xuất**, chỉ được trả NCC hoặc hủy, FEFO bỏ qua lô này, ghi `SupplierIssue`. Lô `DAT_MOT_PHAN`: xuất được phần đạt, cũng ghi `SupplierIssue`.
 - Kiểm nhiệt độ khi nhận so với ngưỡng bảo quản của nguyên liệu. Ghi `TemperatureLog` (MeasurementType=`RECEIVING`).
-- **Bản Pilot đã cài (T15, PROPOSED – DECISIONS GAP-PUR-01…08, D-11):** PO duyệt 1 cấp (`BusinessRules:PurchaseOrderAutoApproveMaxAmount` = 0 → mọi PO phải duyệt; `PurchaseOrderDirectorApprovalAmount` = 50 000 000 chỉ cảnh báo "cần GĐ"); nhận vượt tối đa `GoodsReceiptOverReceivePct` = 10% mỗi dòng; nhiệt độ nhận tối đa `ReceivingTempMaxC` = { CHILLED: 5, FROZEN: −18 } °C (kiểu khác không kiểm), vượt mà vẫn chấp nhận phải ghi lý do; HSD trước ngày nhận → chỉ KHONG_DAT; ghi sổ chỉ nhập phần đạt, lô KHONG_DAT = Tạm giữ không có tồn; `SupplierIssue` hạn xử lý `SupplierIssueDueDays` = 2 ngày.
+- **Bản Pilot đã cài (T15 + T15.1 – anh chốt 2026-11-16, DECISIONS mục "Anh chốt 2026-11-16 (T15 mua hàng → T15.1)", GAP-PUR-01…10, D-11):**
+  - **Duyệt PO bắt buộc**, 1 cấp: `BusinessRules:PurchaseOrderAutoApproveMaxAmount` = 0 (mọi PO phải duyệt). PO **≥ `PurchaseOrderDirectorApprovalAmount` = 50 000 000** đ chỉ **Giám đốc** duyệt (mục quyền `#/wf-inbox?type=scm-po-director`, seed nhóm CEO); dưới ngưỡng duyệt trên `#/wf-inbox?type=scm-po`. PO lớn không tự duyệt.
+  - Nhận hàng khi PO **Đã duyệt** / Đã gửi NCC / Nhận một phần; nhận vượt tối đa `GoodsReceiptOverReceivePct` = **10%** mỗi dòng.
+  - **Nhiệt độ nhận 3 vùng** (`BusinessRules:ReceivingTemp` theo `Ingredient.StorageType`):
+
+    | Kiểu | Nhận | Nhận có điều kiện | Loại |
+    |---|---|---|---|
+    | CHILLED | ≤ 5 °C | 5 < t ≤ 8 °C | > 8 °C |
+    | FROZEN | ≤ −18 °C | −18 < t ≤ −15 °C + xác nhận "không có dấu hiệu rã đông" | > −15 °C |
+    | DRY / AMBIENT | không kiểm | – | – |
+
+    Có điều kiện → bắt buộc lý do, lô "ưu tiên dùng trước" (`[UU_TIEN_DUNG_TRUOC]` trong Note – GAP-PUR-10), luôn ghi `SupplierIssue` TEMPERATURE. Vùng loại → chỉ KHONG_DAT (có lý do cũng không nhận). Hàng mát / đông lạnh chưa đo → không kết luận đạt được.
+  - HSD trước ngày nhận → chỉ KHONG_DAT; ghi sổ **chỉ nhập phần đạt**, lô KHONG_DAT = Tạm giữ không có tồn; `SupplierIssue` hạn xử lý `SupplierIssueDueDays` = 2 ngày.
+  - **VAT (phương án A):** chỉ tính khi in Đơn đặt hàng / xem chi tiết PO theo `BusinessRules:PurchaseVat` (`DefaultPct` 8%, `ByIngredientCategoryCode` theo mã nhóm nguyên liệu – PROPOSED, đang trống); không lưu DB (cột VAT → GAP-PUR-09, R2).
 
 ## 5. Kho (sổ chỉ ghi thêm)
 - Tồn lô = nhập − trả lại − xuất + điều chỉnh kiểm kê đã duyệt. Tất cả đi qua `InventoryTransaction` (`QuantityIn` / `QuantityOut`, `ReferenceType` / `ReferenceId`). `InventoryBalance` chỉ là bảng tổng hợp, tính lại từ sổ.

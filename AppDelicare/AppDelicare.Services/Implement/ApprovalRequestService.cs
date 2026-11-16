@@ -307,8 +307,8 @@ namespace AppDelicare.Services.Implement
             {
                 var perms = await _permissionService.GetAsync(_currentActor.RequireActor().UserId);
                 var handlers = ((IEnumerable<IApprovalHandler>?)_serviceProvider.GetService(typeof(IEnumerable<IApprovalHandler>)) ?? [])
-                    .Where(h => string.IsNullOrEmpty(type) || h.ScreenId.Equals(type, StringComparison.OrdinalIgnoreCase))
-                    .Where(h => _permissionService.IsAllowed(perms, h.ScreenId, PermissionAction.Approve))
+                    .Where(h => string.IsNullOrEmpty(type) || h.ApprovalScreenIds.Contains(type, StringComparer.OrdinalIgnoreCase))
+                    .Where(h => h.ApprovalScreenIds.Any(screen => _permissionService.IsAllowed(perms, screen, PermissionAction.Approve)))
                     .ToList();
                 var types = handlers.Select(h => h.BusinessType).ToList();
                 var rows = await _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking()
@@ -324,9 +324,16 @@ namespace AppDelicare.Services.Implement
                 foreach (var r in rows)
                 {
                     var h = handlers.First(x => x.BusinessType.Equals(r.BusinessType, StringComparison.OrdinalIgnoreCase));
+                    // T15.1: mục quyền theo từng yêu cầu (vd. PO ≥ ngưỡng GĐ → scm-po-director) – chỉ hiện cho người có quyền mục đó, lọc type theo mục đó.
+                    string screen = r.BusinessId is { } sid ? await h.RequiredScreenIdAsync(sid) : h.ScreenId;
+                    if ((!string.IsNullOrEmpty(type) && !screen.Equals(type, StringComparison.OrdinalIgnoreCase))
+                        || !_permissionService.IsAllowed(perms, screen, PermissionAction.Approve))
+                    {
+                        continue;
+                    }
                     list.Add(new ApprovalPendingModel
                     {
-                        Id = r.Id, RequestNo = r.RequestNo, BusinessType = r.BusinessType, BusinessId = r.BusinessId, ScreenId = h.ScreenId,
+                        Id = r.Id, RequestNo = r.RequestNo, BusinessType = r.BusinessType, BusinessId = r.BusinessId, ScreenId = screen,
                         Title = r.BusinessId is { } bid ? await h.DescribeAsync(bid) : null,
                         RequestedAt = r.RequestedAt, RequestedBy = r.RequestedBy,
                         RequestedByName = r.RequestedBy is { } uid ? names.GetValueOrDefault(uid) : null,
@@ -391,7 +398,8 @@ namespace AppDelicare.Services.Implement
             }
             Guid actor = _currentActor.RequireActor().UserId;
             var perms = await _permissionService.GetAsync(actor);
-            if (!_permissionService.IsAllowed(perms, handler.ScreenId, PermissionAction.Approve))
+            // T15.1: mục quyền theo nghiệp vụ cụ thể (mặc định ScreenId của handler; PO ≥ ngưỡng GĐ → scm-po-director).
+            if (!_permissionService.IsAllowed(perms, await handler.RequiredScreenIdAsync(businessId), PermissionAction.Approve))
             {
                 return ConstantHelper.Message.ApprovalNoRight;
             }

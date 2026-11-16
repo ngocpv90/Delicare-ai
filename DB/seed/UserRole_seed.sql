@@ -1991,7 +1991,8 @@ INSERT INTO @A VALUES
     (N'FIN-HR', N'#/wf-inbox?type=hr-leave'),
     (N'FIN-HR', N'#/wf-inbox?type=hr-swap'),
     (N'FIN-HR', N'#/wf-inbox?type=wf-inbox'),
-    (N'QA', N'#/wf-inbox?type=qc-inspection');
+    (N'QA', N'#/wf-inbox?type=qc-inspection'),
+    (N'CEO', N'#/wf-inbox?type=scm-po-director');
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), g.Id, m.Id, 1, 0, 1, 0, 0, 0, 0, @Now, @SeedBy, 0
 FROM @A a

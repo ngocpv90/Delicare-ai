@@ -166,8 +166,11 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T15: duyệt PO qua engine T12 – quyền Duyệt = mục menu #/wf-inbox?type=scm-po (D-31).</summary>
-        [Security.Permission("scm-po", PermissionAction.Approve)]
+        /// <summary>
+        /// T15: duyệt PO qua engine T12 – quyền Duyệt = mục menu #/wf-inbox?type=scm-po (D-31). T15.1: PO ≥ ngưỡng GĐ → mục #/wf-inbox?type=scm-po-director;
+        /// mục quyền phụ thuộc tổng tiền của PO nên engine (ApprovalRequestService.Decide) kiểm, không gắn cứng 1 màn hình ở filter (như ApprovalRequest/Decide).
+        /// </summary>
+        [Security.SkipPermission] // T15.1: quyền duyệt kiểm trong engine theo tổng tiền PO (scm-po / scm-po-director)
         [HttpPost("Approve")]
         public async Task<IActionResult> Approve([FromForm] PurchaseActionRequest request)
         {
@@ -187,7 +190,7 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>T15: từ chối PO (lý do bắt buộc) qua engine T12 – PO về Nháp.</summary>
-        [Security.Permission("scm-po", PermissionAction.Approve)]
+        [Security.SkipPermission] // T15.1: quyền duyệt kiểm trong engine theo tổng tiền PO (scm-po / scm-po-director)
         [HttpPost("Reject")]
         public async Task<IActionResult> Reject([FromForm] PurchaseActionRequest request)
         {

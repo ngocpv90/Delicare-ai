@@ -236,8 +236,14 @@
             public static readonly string QcPartialQuantityInvalid = "{0}: DAT_MOT_PHAN cần số lượng đạt > 0 và < số nhận ({1})";
             public static readonly string QcRemarkRequired = "{0}: kết quả {1} bắt buộc ghi nhận xét / lý do";
             public static readonly string QcExpiredLot = "{0}: hạn dùng {1} trước ngày nhận – chỉ kết luận KHONG_DAT";
-            public static readonly string QcTemperatureRemarkRequired = "{0}: nhiệt độ nhận {1} °C vượt ngưỡng {2} °C – kết luận KHONG_DAT hoặc ghi lý do chấp nhận / hành động khắc phục";
-            public static readonly string ReceivingTempOutOfRange = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C";
+            public static readonly string QcTemperatureRemarkRequired = "{0}: nhiệt độ nhận {1} °C vượt ngưỡng {2} °C (nhận có điều kiện tới {3} °C) – kết luận KHONG_DAT hoặc ghi lý do chấp nhận / hành động khắc phục";
+            public static readonly string QcTemperatureRejectZone = "{0}: nhiệt độ nhận {1} °C > {2} °C (vùng loại) – chỉ được kết luận KHONG_DAT, không nhận kể cả khi có lý do";
+            public static readonly string QcTemperatureMissing = "{0}: chưa có nhiệt độ nhận – hàng {1} bắt buộc đo nhiệt độ trước khi kết luận đạt";
+            public static readonly string QcNoThawConfirmRequired = "{0}: hàng đông lạnh {1} °C (nhận có điều kiện) – phải xác nhận \"không có dấu hiệu rã đông\" (noThawConfirmed)";
+            public static readonly string ReceivingTempOutOfRange = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C – vùng loại, chỉ kết luận KHONG_DAT";
+            public static readonly string ReceivingTempConditional = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C (≤ {3} °C: nhận có điều kiện – cần lý do, lô ưu tiên dùng trước)";
+            public static readonly string ReceivingTempMissingWarning = "Cảnh báo: {0} ({1}) chưa có nhiệt độ nhận – bắt buộc đo trước khi kết luận QC";
+            public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Duyệt – Đơn mua hàng (Giám đốc)\")";
         }
 
         public class TypeSave

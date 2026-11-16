@@ -82,6 +82,12 @@ namespace AppDelicare.Model.Helper
         /// <summary>Màn hình đơn mua – quyền duyệt = mục menu <c>#/wf-inbox?type=scm-po</c> (D-31).</summary>
         public const string ScreenId = "scm-po";
 
+        /// <summary>
+        /// T15.1 (D-11, anh chốt 2026-11-16): PO có tổng ≥ <c>BusinessRules:PurchaseOrderDirectorApprovalAmount</c> chỉ Giám đốc duyệt – quyền = mục menu
+        /// <c>#/wf-inbox?type=scm-po-director</c> "Duyệt – Đơn mua hàng (Giám đốc)" (không phải màn hình riêng, chỉ là mục quyền duyệt).
+        /// </summary>
+        public const string DirectorScreenId = "scm-po-director";
+
         /// <summary>PO được nhận hàng (lập phiếu nhập) – PROPOSED: Đã duyệt cũng nhận được (Pilot có thể không bấm "Đã gửi NCC").</summary>
         public static readonly IReadOnlyList<string> Receivable = [Approved, Sent, PartiallyReceived];
 
@@ -166,5 +172,33 @@ namespace AppDelicare.Model.Helper
         public const string IssueOpen = "Open";
         public const string SeverityHigh = "High";
         public const string SeverityMedium = "Medium";
+        /// <summary>
+        /// T15.1: đánh dấu "ưu tiên dùng trước" trong <c>MaterialLot.Note</c> (lô nhận có điều kiện nhiệt độ) và trong <c>QCInspectionLine.Note</c>
+        /// – bảng không có cột ưu tiên (GAP-PUR-10).
+        /// </summary>
+        public const string UseFirstMarker = "[UU_TIEN_DUNG_TRUOC]";
+    }
+
+    /// <summary>
+    /// T15.1 (anh chốt 2026-11-16) – vùng nhiệt độ nhận hàng theo <c>BusinessRules:ReceivingTemp</c>: ACCEPT (≤ AcceptMax), CONDITIONAL (≤ ConditionalMax:
+    /// nhận có điều kiện), REJECT (lớn hơn: chỉ KHONG_DAT), MISSING (hàng mát / đông lạnh chưa đo), NOT_CHECKED (DRY / AMBIENT – không kiểm).
+    /// </summary>
+    public static class ReceivingTempZone
+    {
+        public const string Accept = "ACCEPT";
+        public const string Conditional = "CONDITIONAL";
+        public const string Reject = "REJECT";
+        public const string Missing = "MISSING";
+        public const string NotChecked = "NOT_CHECKED";
+
+        public static string Label(string? zone) => zone switch
+        {
+            Accept => "Đạt nhiệt độ",
+            Conditional => "Nhận có điều kiện",
+            Reject => "Loại (vượt ngưỡng)",
+            Missing => "Chưa đo nhiệt độ",
+            NotChecked => "Không kiểm nhiệt độ",
+            _ => zone ?? string.Empty,
+        };
     }
 }

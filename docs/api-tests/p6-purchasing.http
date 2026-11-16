@@ -2,7 +2,8 @@
 ### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
 ### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
 ### Chuẩn bị: đề nghị mua Nháp từ MaterialRequirement/Calculate (docs/api-tests/p5-mrp.http) hoặc PurchaseRequest/Insert + PurchaseRequestLine/Insert;
-### bảng giá NCC (SupplierMaterial) cho mọi nguyên liệu; người duyệt có quyền mục "Duyệt – Đơn mua hàng" (#/wf-inbox?type=scm-po) hoặc admin.
+### bảng giá NCC (SupplierMaterial) cho mọi nguyên liệu; người duyệt có quyền mục "Duyệt – Đơn mua hàng" (#/wf-inbox?type=scm-po) hoặc admin;
+### T15.1: PO ≥ 50 triệu cần quyền mục "Duyệt – Đơn mua hàng (Giám đốc)" (#/wf-inbox?type=scm-po-director).
 @base = http://localhost:5125
 @user = admin
 @password = admin
@@ -174,3 +175,25 @@ Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 Id={{poId}}
+
+### ============ T15.1 (anh chốt 2026-11-16): nhiệt độ 3 vùng, duyệt Giám đốc ≥ 50 triệu, VAT phương án A
+### 21. Kết luận QC vùng "có điều kiện": mát 5 < t ≤ 8 °C → bắt buộc remark; đông lạnh −18 < t ≤ −15 °C → thêm noThawConfirmed = true.
+###     Vùng loại (mát > 8 / đông lạnh > −15) → chỉ KHONG_DAT (DAT / DAT_MOT_PHAN → 400 "vùng loại"). Hàng mát / đông lạnh chưa có nhiệt độ → gửi "temperature".
+POST {{base}}/api/QcInspection/Conclude
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{qcId}}", "note": "[DEMO] QC có điều kiện",
+  "listLine": [ { "goodsReceiptLineId": "{{grLineId}}", "result": "DAT", "remark": "[DEMO] −16 °C, đá cứng – dùng trước", "noThawConfirmed": true } ] }
+
+### 22. Hộp duyệt Giám đốc: chỉ PO tổng ≥ BusinessRules:PurchaseOrderDirectorApprovalAmount (quyền mục #/wf-inbox?type=scm-po-director – seed nhóm CEO)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-po-director
+Authorization: Bearer {{token}}
+
+### 23. Chi tiết PO: approvalScreenId (scm-po / scm-po-director), VAT tính khi đọc (listLine[].vatPct / vatAmount, subtotalAmount / vatAmount / totalAmountInclVat)
+GET {{base}}/api/PurchaseOrder/GetDetail?id={{poId}}
+Authorization: Bearer {{token}}
+
+### 24. In Đơn đặt hàng có cột % VAT, Tiền VAT và 3 dòng tổng (chưa VAT / VAT / gồm VAT)
+GET {{base}}/api/PurchaseOrder/ExportOrder?id={{poId}}
+Authorization: Bearer {{token}}

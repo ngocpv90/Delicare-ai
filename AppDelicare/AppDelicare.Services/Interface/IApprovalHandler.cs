@@ -13,6 +13,17 @@ namespace AppDelicare.Services.Interface
         /// <summary>Màn hình của nghiệp vụ – quyền duyệt = mục menu <c>#/wf-inbox?type=&lt;ScreenId&gt;</c> (D-31).</summary>
         string ScreenId { get; }
 
+        /// <summary>
+        /// T15.1: mọi mục quyền duyệt handler có thể dùng (để hộp duyệt lọc theo <c>type</c> / quyền). Mặc định chỉ <see cref="ScreenId"/> – handler cũ không phải sửa.
+        /// </summary>
+        IReadOnlyCollection<string> ApprovalScreenIds => new[] { ScreenId };
+
+        /// <summary>
+        /// T15.1: mục quyền duyệt bắt buộc cho 1 nghiệp vụ cụ thể (vd. PO ≥ ngưỡng GĐ → <c>scm-po-director</c>). Mặc định <see cref="ScreenId"/>.
+        /// Vẫn duyệt 1 cấp – chỉ đổi mục quyền được kiểm.
+        /// </summary>
+        Task<string> RequiredScreenIdAsync(Guid businessId) => Task.FromResult(ScreenId);
+
         /// <summary>Nội dung được duyệt (JSON ổn định). Lưu khi gửi; lúc duyệt dựng lại và so hash – khác thì không cho duyệt.</summary>
         Task<string?> BuildPayloadAsync(Guid businessId);
 

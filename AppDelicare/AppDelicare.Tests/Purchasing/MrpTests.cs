@@ -1,4 +1,4 @@
-
+using System.Net.Http.Json;
 using System.Text.Json;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Option;
@@ -472,6 +472,83 @@ namespace AppDelicare.Tests.Purchasing
             // Đề nghị chính bị hủy nhưng đề nghị bổ sung còn hiệu lực → Calculate vẫn chặn (tránh lập trùng).
             await _factory.SeedAsync(async db => (await db.PurchaseRequest.SingleAsync(p => p.Id == pr1)).Status = "Cancelled");
             (await Calc()).Fail("bổ sung");
+        }
+
+        /// <summary>
+        /// T15.1 (anh chốt 2026-11-16, GAP-MRP-08 ý 2): "đã đề nghị" trừ phần đã nhận đạt (phiếu nhập Đã ghi sổ) – phần đó đã nằm trong tồn, không bị đề nghị lại.
+        /// 100 suất × 10 kg thịt / 100 suất = 10 kg → đề nghị 1 = 10 → lập PO → nhận 6 kg DAT, ghi sổ (tồn 6). Bổ sung khi không đổi suất: thiếu 10 − 6 = 4,
+        /// đã đề nghị 10 − 6 = 4 → chênh 0, không lập, không cảnh báo "thừa". Tăng 130 suất: thiếu 13 − 6 = 7, đã đề nghị 4 → bổ sung đúng 3.
+        /// </summary>
+        [Fact]
+        public async Task CalculateTopUp_subtracts_received_qc_passed_quantity_from_already_requested()
+        {
+            DateTime date = new(2026, 12, 24);
+            int day = date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)date.DayOfWeek;
+            Guid kg = Guid.NewGuid(), meat = Guid.NewGuid(), menu = Guid.NewGuid(), customer = Guid.NewGuid(), order = Guid.NewGuid();
+            Guid orderLine = Guid.NewGuid(), supplier = Guid.NewGuid(), warehouse = Guid.NewGuid();
+            var dish = new Dish { Id = Guid.NewGuid(), Code = "M-TOP2", Name = "Món M TOP2" };
+            await _factory.SeedAsync(db =>
+            {
+                db.Warehouse.Add(new Warehouse { Id = warehouse, Code = "TOP2", Name = "Kho TOP2", Status = "Active" });
+                db.UnitMeasure.Add(new UnitMeasure { Id = kg, Code = "KG-TOP2", Name = "kg" });
+                db.Ingredient.Add(new Ingredient { Id = meat, Code = "THIT-TOP2", Name = "Thịt TOP2", BaseUnitId = kg });
+                db.Dish.Add(dish);
+                db.Recipe.Add(new Recipe
+                {
+                    Id = Guid.NewGuid(), DishId = dish.Id, VersionNo = 1, Status = "Locked", IsActive = true, StandardOutputQty = 100, EffectiveFrom = new DateTime(2026, 12, 1),
+                    LockedAt = new DateTime(2026, 12, 1), SnapshotJson = Snapshot((meat, 10, kg, 0)),
+                });
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-TOP2", Name = "Thực đơn TOP2", VersionNo = 1, Status = "Published", EffectiveFrom = new DateTime(2026, 12, 1) });
+                db.MenuLine.Add(new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = dish.Id, MealType = "TRUA", DayOfWeek = day, SequenceNo = 1 });
+                db.Customer.Add(new Customer { Id = customer, Code = "TOP2", Name = "Khách TOP2", CIF = "TOP2", CustomerType = "FACTORY", DisplayName = "TOP2", Status = "Active" });
+                db.Order.Add(new Order { Id = order, OrderNumber = "PH-TOP2", OrderNo = "PH-TOP2", CustomerId = customer, OrderDate = Today, MealDate = date, DeliveryDate = date, Status = "Locked", TotalQuantity = 100 });
+                db.OrderLine.Add(new OrderLine { Id = orderLine, OrderId = order, MenuId = menu, MealType = "TRUA", Quantity = 100 });
+                db.Supplier.Add(new Supplier { Id = supplier, Code = "NCC-TOP2", Name = "NCC thịt TOP2", Status = "Active" });
+                db.SupplierMaterial.Add(new SupplierMaterial { Id = Guid.NewGuid(), SupplierId = supplier, IngredientId = meat, IsPreferred = true, UnitPrice = 100000, PurchaseUomId = kg, MinimumOrderQuantity = 2, EffectiveFrom = new DateTime(2026, 1, 1), Status = "Active" });
+                return Task.CompletedTask;
+            });
+            using var c = _factory.CreateAuthorizedClient();
+            Task<LegacyResult> TopUp() => c.PostFormAsync("/api/MaterialRequirement/CalculateTopUp", ("ProductionDate", date), ("WarehouseId", warehouse));
+            static JsonElement MeatLine(JsonElement data, Guid meat)
+                => data.GetProperty("topUp").GetProperty("listLine").EnumerateArray().Single(l => l.GetProperty("ingredientId").GetGuid() == meat);
+
+            var first = (await c.PostFormAsync("/api/MaterialRequirement/Calculate", ("ProductionDate", date), ("WarehouseId", warehouse))).Ok();
+            Guid pr1 = first.GetProperty("purchaseRequest").GetProperty("id").GetGuid();
+            Item(first, meat).GetProperty("purchaseQuantity").GetDecimal().Should().Be(10);
+
+            // Đề nghị → PO (đề nghị Đã lập PO) → PO Đã duyệt → nhận 6 kg, QC DAT, ghi sổ.
+            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", pr1))).Ok();
+            var po = await _factory.QueryAsync(db => db.PurchaseOrder.AsNoTracking().SingleAsync(p => p.PurchaseRequestId == pr1));
+            await _factory.SeedAsync(async db => (await db.PurchaseOrder.SingleAsync(p => p.Id == po.Id)).Status = "Approved");
+            Guid poLine = await _factory.QueryAsync(db => db.PurchaseOrderLine.AsNoTracking().Where(l => l.PurchaseOrderId == po.Id).Select(l => l.Id).SingleAsync());
+            var receipt = (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/GoodsReceipt/Create", new
+            {
+                purchaseOrderId = po.Id, warehouseId = warehouse, listLine = new[] { new { purchaseOrderLineId = poLine, receivedQuantity = 6m } },
+            }))).Ok();
+            Guid receiptId = receipt.GetProperty("goodsReceipt").GetProperty("id").GetGuid();
+            (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/QcInspection/Conclude", new
+            {
+                id = receipt.GetProperty("qcInspectionId").GetGuid(),
+                listLine = new[] { new { goodsReceiptLineId = receipt.GetProperty("listLine")[0].GetProperty("id").GetGuid(), result = "DAT" } },
+            }))).Ok();
+            (await c.PostFormAsync("/api/GoodsReceipt/Post", ("Id", receiptId))).Ok();
+
+            // Không đổi suất: phần đã nhận (6) không bị tính 2 lần (tồn + đã đề nghị) → chênh 0, không lập, không cảnh báo thừa.
+            var same = await TopUp();
+            same.Message.Should().Contain("Không thiếu thêm");
+            var sameData = same.Ok();
+            MeatLine(sameData, meat).GetProperty("shortageQuantity").GetDecimal().Should().Be(4);
+            MeatLine(sameData, meat).GetProperty("requestedQuantity").GetDecimal().Should().Be(4, "đã đề nghị 10 − đã nhận đạt 6");
+            MeatLine(sameData, meat).GetProperty("differenceQuantity").GetDecimal().Should().Be(0);
+            sameData.GetProperty("topUp").GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().NotContain(w => w!.Contains("thừa"));
+
+            // Tăng 130 suất → bổ sung đúng phần thiếu thêm 3.
+            await _factory.SeedAsync(async db => (await db.OrderLine.SingleAsync(l => l.Id == orderLine)).Quantity = 130);
+            var up = (await TopUp()).Ok();
+            MeatLine(up, meat).GetProperty("shortageQuantity").GetDecimal().Should().Be(7);
+            MeatLine(up, meat).GetProperty("requestedQuantity").GetDecimal().Should().Be(4);
+            MeatLine(up, meat).GetProperty("topUpQuantity").GetDecimal().Should().Be(3);
+            up.GetProperty("topUp").GetProperty("purchaseRequest").GetProperty("estimatedAmount").GetDecimal().Should().Be(300_000);
         }
     }
 }

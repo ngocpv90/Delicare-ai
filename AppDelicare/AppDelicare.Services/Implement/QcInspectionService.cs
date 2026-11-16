@@ -213,7 +213,8 @@ namespace AppDelicare.Services.Implement
         /// T15 (spec 9.1 conclude, PROPOSED – GAP-PUR-08), 1 transaction – phiếu nhập Chờ QC hoặc đã kết luận nhưng chưa ghi sổ (cho kết luận lại).
         /// Mọi dòng phải có kết quả DAT / DAT_MOT_PHAN / KHONG_DAT (nhận cả PASS / HOLD / REJECT):
         /// DAT → đạt = nhận; DAT_MOT_PHAN → 0 &lt; đạt &lt; nhận, bắt buộc nhận xét; KHONG_DAT → đạt = 0, bắt buộc nhận xét.
-        /// Hạn dùng trước ngày nhận → chỉ được KHONG_DAT (chặn lô hết hạn). Nhiệt độ nhận vượt ngưỡng kiểu bảo quản mà vẫn chấp nhận → bắt buộc lý do / hành động khắc phục.
+        /// Hạn dùng trước ngày nhận → chỉ được KHONG_DAT (chặn lô hết hạn). T15.1 nhiệt độ 3 vùng (BusinessRules:ReceivingTemp): hàng mát / đông lạnh chưa đo → lỗi;
+        /// vùng loại → chỉ KHONG_DAT; vùng có điều kiện → bắt buộc lý do (đông lạnh: thêm noThawConfirmed), dòng QC đánh dấu "ưu tiên dùng trước".
         /// Ghi: QCInspectionLine, GoodsReceiptLine (QualityStatus, Accepted / Rejected), QCInspection.Result (tất cả DAT → DAT; tất cả KHONG_DAT → KHONG_DAT; còn lại
         /// DAT_MOT_PHAN), phiếu nhập → Đạt / Đạt một phần / Không đạt. Lô, nhập kho, sự cố NCC ghi khi <c>GoodsReceipt/Post</c>.
         /// </summary>
@@ -238,7 +239,7 @@ namespace AppDelicare.Services.Implement
                 var ingredientIds = lines.Select(l => l.IngredientId).Distinct().ToList();
                 var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
                 var inputs = (request.ListLine ?? []).GroupBy(l => l.GoodsReceiptLineId).ToDictionary(g => g.Key, g => g.Last());
-                var decided = new List<(GoodsReceiptLine Line, QcInspectionLineInput Input, string Result, decimal Accepted, decimal? Temperature)>();
+                var decided = new List<(GoodsReceiptLine Line, QcInspectionLineInput Input, string Result, decimal Accepted, decimal? Temperature, string? TempNote)>();
                 if (error == null)
                 {
                     var foreign = inputs.Keys.FirstOrDefault(k => lines.All(l => l.Id != k));
@@ -255,7 +256,9 @@ namespace AppDelicare.Services.Implement
                     string? result = IncomingQcResult.Normalize(input.Result);
                     string? remark = input.Remark?.Trim();
                     decimal? temperature = input.Temperature ?? qcLines.FirstOrDefault(q => q.GoodsReceiptLineId == line.Id)?.Temperature;
-                    decimal? maxTemp = PurchasingRules.MaxReceivingTemp(_rules, ingredient?.StorageType);
+                    var tempRule = PurchasingRules.ReceivingTempRuleOf(_rules, ingredient?.StorageType);
+                    string zone = PurchasingRules.TempZone(tempRule, temperature);
+                    bool accepting = result != null && result != IncomingQcResult.KhongDat;
                     decimal accepted = result switch
                     {
                         IncomingQcResult.Dat => line.ReceivedQuantity,
@@ -268,21 +271,33 @@ namespace AppDelicare.Services.Implement
                         : result != IncomingQcResult.Dat && string.IsNullOrEmpty(remark) ? string.Format(ConstantHelper.Message.QcRemarkRequired, name, result)
                         : result != IncomingQcResult.KhongDat && line.ExpiryDate != null && line.ExpiryDate.Value.Date < receipt!.ReceiptDate.Date
                             ? string.Format(ConstantHelper.Message.QcExpiredLot, name, line.ExpiryDate.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture))
-                        : result != IncomingQcResult.KhongDat && temperature != null && maxTemp != null && temperature > maxTemp && string.IsNullOrEmpty(remark)
-                            ? string.Format(ConstantHelper.Message.QcTemperatureRemarkRequired, name, PurchasingRules.Qty(temperature.Value), PurchasingRules.Qty(maxTemp.Value))
+                        // T15.1 (anh chốt 2026-11-16): nhiệt độ nhận 3 vùng – chỉ áp khi kết luận nhận (DAT / DAT_MOT_PHAN); KHONG_DAT luôn được.
+                        : accepting && zone == ReceivingTempZone.Missing
+                            ? string.Format(ConstantHelper.Message.QcTemperatureMissing, name, ingredient?.StorageType)
+                        : accepting && zone == ReceivingTempZone.Reject
+                            ? string.Format(ConstantHelper.Message.QcTemperatureRejectZone, name, PurchasingRules.Qty(temperature!.Value), PurchasingRules.Qty(tempRule!.ConditionalMax))
+                        : accepting && zone == ReceivingTempZone.Conditional && string.IsNullOrEmpty(remark)
+                            ? string.Format(ConstantHelper.Message.QcTemperatureRemarkRequired, name, PurchasingRules.Qty(temperature!.Value), PurchasingRules.Qty(tempRule!.AcceptMax),
+                                PurchasingRules.Qty(tempRule.ConditionalMax))
+                        : accepting && zone == ReceivingTempZone.Conditional && tempRule!.RequireNoThawConfirmation && input.NoThawConfirmed != true
+                            ? string.Format(ConstantHelper.Message.QcNoThawConfirmRequired, name, PurchasingRules.Qty(temperature!.Value))
                         : null;
                     if (error != null)
                     {
                         break;
                     }
-                    decided.Add((line, input, result!, accepted, temperature));
+                    // Nhận có điều kiện → đánh dấu "ưu tiên dùng trước" trong QCInspectionLine.Note (GAP-PUR-10); GoodsReceipt/Post chép sang lô + tạo sự cố NCC.
+                    string? tempNote = accepting && zone == ReceivingTempZone.Conditional
+                        ? PurchasingRules.ConditionalNote(tempRule!, temperature!.Value, input.NoThawConfirmed == true)
+                        : null;
+                    decided.Add((line, input, result!, accepted, temperature, tempNote));
                 }
                 if (error != null)
                 {
                     _unitOfWork.RollbackTransaction();
                     return Result<GoodsReceiptDetailModel>.Fail(error);
                 }
-                foreach (var (line, input, result, accepted, temperature) in decided)
+                foreach (var (line, input, result, accepted, temperature, tempNote) in decided)
                 {
                     line.QualityStatus = result;
                     line.AcceptedQuantity = accepted;
@@ -305,6 +320,7 @@ namespace AppDelicare.Services.Implement
                     qc.Packaging = input.Packaging ?? qc.Packaging;
                     qc.Remark = string.IsNullOrWhiteSpace(input.Remark) ? null : input.Remark.Trim();
                     qc.ExpiryDate = line.ExpiryDate;
+                    qc.Note = tempNote; // T15.1: kết luận lại → ghi đè (Note của dòng QC chỉ dùng cho cờ nhận có điều kiện)
                 }
                 var results = decided.Select(d => d.Result).ToList();
                 string overall = results.All(r => r == IncomingQcResult.Dat) ? IncomingQcResult.Dat

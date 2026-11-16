@@ -32,6 +32,8 @@ namespace AppDelicare.Services.Interface
         /// <summary>T15 (handler duyệt): nội dung được duyệt (hash), tiêu đề hộp duyệt, thực thi quyết định (trong transaction của engine).</summary>
         public Task<string?> BuildApprovalStateAsync(Guid id);
         public Task<string?> DescribeAsync(Guid id);
+        /// <summary>T15.1: mục quyền duyệt của PO – scm-po-director nếu tổng ≥ ngưỡng GĐ, còn lại scm-po.</summary>
+        public Task<string> ApprovalScreenIdAsync(Guid id);
         public Task<string?> ApplyDecisionAsync(Guid id, bool approved, string? note);
         /// <summary>T15: cập nhật trạng thái nhận hàng sau khi ghi sổ phiếu nhập (trong transaction của GoodsReceipt/Post).</summary>
         public Task RefreshReceiptStatusAsync(Guid id);

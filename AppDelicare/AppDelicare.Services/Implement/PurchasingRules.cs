@@ -61,14 +61,66 @@ namespace AppDelicare.Services.Implement
                 g.Where(x => x.Status != GoodsReceiptStatus.Posted).Sum(x => x.ReceivedQuantity)));
         }
 
-        /// <summary>Nhiệt độ nhận tối đa (°C) theo kiểu bảo quản (<c>BusinessRules:ReceivingTempMaxC</c>); null = không giới hạn (PROPOSED).</summary>
-        public static decimal? MaxReceivingTemp(BusinessRulesOptions rules, string? storageType)
-            => !string.IsNullOrWhiteSpace(storageType) && rules.ReceivingTempMaxC.TryGetValue(storageType.Trim(), out var max) ? max : null;
+        /// <summary>T15.1: ngưỡng nhiệt độ nhận theo kiểu bảo quản (<c>BusinessRules:ReceivingTemp</c>); null = không kiểm (DRY / AMBIENT / trống).</summary>
+        public static ReceivingTempRule? ReceivingTempRuleOf(BusinessRulesOptions rules, string? storageType)
+            => !string.IsNullOrWhiteSpace(storageType) && rules.ReceivingTemp.TryGetValue(storageType.Trim(), out var rule) ? rule : null;
 
-        /// <summary>Kết quả gợi ý: hạn dùng trước ngày nhận hoặc nhiệt độ vượt ngưỡng → KHONG_DAT, còn lại DAT (spec 9.1 – PROPOSED).</summary>
-        public static string SuggestResult(decimal? temperature, decimal? maxTemp, DateTime? expiryDate, DateTime receiptDate)
-            => (expiryDate != null && expiryDate.Value.Date < receiptDate.Date) || (temperature != null && maxTemp != null && temperature > maxTemp)
+        /// <summary>Nhiệt độ nhận tối đa để "đạt" (AcceptMax) – dùng cho TemperatureLog.MaxAllowedC / hiển thị; null = không kiểm.</summary>
+        public static decimal? MaxReceivingTemp(BusinessRulesOptions rules, string? storageType) => ReceivingTempRuleOf(rules, storageType)?.AcceptMax;
+
+        /// <summary>T15.1 (anh chốt 2026-11-16): vùng nhiệt độ nhận – xem <see cref="ReceivingTempZone"/>.</summary>
+        public static string TempZone(ReceivingTempRule? rule, decimal? temperature)
+            => rule == null ? ReceivingTempZone.NotChecked
+                : temperature == null ? ReceivingTempZone.Missing
+                : temperature <= rule.AcceptMax ? ReceivingTempZone.Accept
+                : temperature <= rule.ConditionalMax ? ReceivingTempZone.Conditional
+                : ReceivingTempZone.Reject;
+
+        /// <summary>
+        /// Kết quả gợi ý: hạn dùng trước ngày nhận hoặc nhiệt độ vùng loại → KHONG_DAT; còn lại DAT (vùng có điều kiện: DAT kèm lý do – người kiểm quyết định).
+        /// </summary>
+        public static string SuggestResult(string zone, DateTime? expiryDate, DateTime receiptDate)
+            => (expiryDate != null && expiryDate.Value.Date < receiptDate.Date) || zone == ReceivingTempZone.Reject
                 ? IncomingQcResult.KhongDat
                 : IncomingQcResult.Dat;
+
+        /// <summary>Ghi chú "nhận có điều kiện – ưu tiên dùng trước" (QCInspectionLine.Note / MaterialLot.Note – GAP-PUR-10).</summary>
+        public static string ConditionalNote(ReceivingTempRule rule, decimal temperature, bool noThawConfirmed)
+            => $"{ReceivingCode.UseFirstMarker} Nhận có điều kiện: nhiệt độ {Qty(temperature)} °C (đạt ≤ {Qty(rule.AcceptMax)} °C, có điều kiện ≤ {Qty(rule.ConditionalMax)} °C) – ưu tiên dùng trước"
+                + (noThawConfirmed ? "; đã xác nhận không có dấu hiệu rã đông" : string.Empty);
+
+        /// <summary>
+        /// T15.1 (phương án A – GAP-PUR-09): % VAT của từng nguyên liệu theo <c>BusinessRules:PurchaseVat</c> – mã nhóm nguyên liệu (IngredientCategoryId,
+        /// cột cũ CategoryId), không khớp thì xét nhóm cha (tối đa 5 cấp), cuối cùng DefaultPct. Chỉ tính khi đọc, không lưu.
+        /// </summary>
+        public static async Task<Dictionary<Guid, decimal>> VatPctByIngredientAsync(DatabaseContext db, BusinessRulesOptions rules, IReadOnlyCollection<Guid> ingredientIds)
+        {
+            var vat = rules.PurchaseVat ?? new PurchaseVatOptions();
+            var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id))
+                .Select(i => new { i.Id, CategoryId = i.IngredientCategoryId ?? i.CategoryId }).ToListAsync();
+            var categories = vat.ByIngredientCategoryCode.Count == 0
+                ? []
+                : await db.IngredientCategory.AsNoTracking().Where(c => !c.IsDeleted).Select(c => new { c.Id, c.Code, c.ParentId }).ToDictionaryAsync(c => c.Id);
+            var result = new Dictionary<Guid, decimal>();
+            foreach (var i in ingredients)
+            {
+                decimal pct = vat.DefaultPct;
+                Guid? current = i.CategoryId;
+                for (int depth = 0; depth < 5 && current is { } cid && categories.TryGetValue(cid, out var category); depth++)
+                {
+                    if (!string.IsNullOrWhiteSpace(category.Code) && vat.ByIngredientCategoryCode.TryGetValue(category.Code.Trim(), out var byCode))
+                    {
+                        pct = byCode;
+                        break;
+                    }
+                    current = category.ParentId;
+                }
+                result[i.Id] = pct;
+            }
+            return result;
+        }
+
+        /// <summary>Tiền VAT của 1 dòng: thành tiền × % / 100, làm tròn đồng (VND, 0,5 làm tròn lên).</summary>
+        public static decimal VatAmount(decimal lineAmount, decimal pct) => Math.Round(lineAmount * pct / 100m, 0, MidpointRounding.AwayFromZero);
     }
 }
