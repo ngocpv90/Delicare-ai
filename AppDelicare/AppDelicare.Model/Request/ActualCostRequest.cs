@@ -1,0 +1,18 @@
+
+namespace AppDelicare.Model.Request
+{
+	public class ActualCostRequest : BaseRequest
+	{
+		public Guid? ProductionBatchId { get; set; }
+		public Guid? ProductionOrderId { get; set; }
+		public decimal MaterialCost { get; set; }
+		public decimal LaborCost { get; set; }
+		public decimal OverheadCost { get; set; }
+		public decimal OtherCost { get; set; }
+		public decimal TotalCost { get; set; }
+		public string? CurrencyCode { get; set; }
+		public DateTime CalculatedAt { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public decimal? WasteCost { get; set; }
+	}
+}

@@ -1,3 +1,39 @@
+# Dữ liệu DB thật / backup – KHÔNG commit
 backup-db/
+*.bak
+*.mdf
+*.ldf
+
+# IDE
 .vs/
+.vscode/*
+!.vscode/extensions.json
+*.user
+*.suo
+
+# .NET
+**/bin/
+**/obj/
+**/wwwroot/Logs/
+**/wwwroot/Import/
+**/appsettings.*.local.json
+**/appsettings.Development.json
+
+# Angular / Node
+**/node_modules/
+**/.angular/
+**/dist/
+
+# Ghi chú cục bộ (tài khoản dev, đường dẫn máy) – KHÔNG commit
+*.local.md
+
+# Biến môi trường staging cục bộ (bí mật) – KHÔNG commit
+*.local.env.ps1
+*.local.env
+deploy/docker/staging.env
+
+# Log ứng dụng (ngoài wwwroot – T21.1)
+AppDelicare/AppDelicare.WebApi/Logs/
+
+# develop
 .env

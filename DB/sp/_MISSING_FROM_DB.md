@@ -1,0 +1,82 @@
+# SP mà code gọi nhưng DB dev KHÔNG có (T00 – 2026-11-14)
+
+Nguồn: tìm chuỗi `"usp..."` trong `AppDelicare/**/*.cs`, so với `sys.procedures` của DB dev `AppDelicare` ((localdb)\MSSQLLocalDB).
+Hệ quả: route `api/<Entity>/GetAll` tương ứng trả **HTTP 500** (đã thử `api/Customer/GetAll`).
+Dự kiến xử lý: T05 (CodeGen sinh SP `GetAll` từ DDL 124 bảng). Một số SP thuộc entity không có bảng (Area, Branch, Department, Region, Lead, Op, Employee, AppConfig, UnitOfMeasure) → không sinh, xem D-13.
+
+Tổng: 74 SP
+
+- uspActualCost_GetAll
+- uspAppConfig_GetAll
+- uspArea_GetAll
+- uspBranch_GetAll
+- uspCleaningBatch_GetAll
+- uspCompany_GetAll
+- uspContainerReturn_GetAll
+- uspContractMeal_GetAll
+- uspContract_GetAll
+- uspCustomerContact_GetAll
+- uspCustomerDeliveryLocation_GetAll
+- uspCustomer_GetAll
+- uspDeliveryExecution_GetAll
+- uspDeliveryLoading_GetAll
+- uspDeliveryOrder_GetAll
+- uspDeliveryRoute_GetAll
+- uspDepartment_GetAll
+- uspDishCategory_GetAll
+- uspDish_GetAll
+- uspEmployee_GetAll
+- uspForecast_GetAll
+- uspGoodsReceiptLine_GetAll
+- uspGoodsReceipt_GetAll
+- uspIngredientCategory_GetAll
+- uspIngredient_GetAll
+- uspInventoryBalance_GetAll
+- uspInventoryPolicy_GetAll
+- uspInventoryTransaction_GetAll
+- uspLead_GetAll
+- uspMaterialConsumptionVariance_GetAll
+- uspMaterialIssueLine_GetAll
+- uspMaterialIssue_GetAll
+- uspMaterialLot_GetAll
+- uspMaterialRequirement_GetAll
+- uspMaterialReservation_GetAll
+- uspMealCost_GetAll
+- uspMenuAssignment_GetAll
+- uspMenuLine_GetAll
+- uspMenu_GetAll
+- uspOp_GetAll
+- uspOrderLine_GetAll
+- uspOrderReconciliation_GetAll
+- uspOrder_GetAll
+- uspOrganizationUnit_GetAll
+- uspPackingOrder_GetAll
+- uspPackingResult_GetAll
+- uspPosition_GetAll
+- uspPricePolicy_GetAll
+- uspProductionBatch_GetAll
+- uspProductionOrder_GetAll
+- uspProductionOutput_GetAll
+- uspProductionPlanLine_GetAll
+- uspProductionPlan_GetAll
+- uspProofOfDelivery_GetAll
+- uspPurchaseOrderLine_GetAll
+- uspPurchaseOrder_GetAll
+- uspPurchaseRequestLine_GetAll
+- uspPurchaseRequest_GetAll
+- uspQcInspectionLine_GetAll
+- uspQcInspection_GetAll
+- uspRecipeLine_GetAll
+- uspRecipe_GetAll
+- uspRegion_GetAll
+- uspReturnInspection_GetAll
+- uspShift_GetAll
+- uspStandardCost_GetAll
+- uspStockCountLine_GetAll
+- uspStockCount_GetAll
+- uspStorageLocation_GetAll
+- uspStorageZone_GetAll
+- uspSupplierMaterial_GetAll
+- uspUnitOfMeasure_GetAll
+- uspUomConversion_GetAll
+- uspWarehouse_GetAll

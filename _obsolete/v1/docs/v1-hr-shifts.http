@@ -1,0 +1,66 @@
+### DELICARE – /api/v1/hr/shifts (T03 – endpoint mẫu khung v1)
+### Dùng với VS Code REST Client hoặc Rider/Visual Studio (.http). Dữ liệu thử gắn [DEMO].
+@base = http://localhost:5125
+@user = admin
+@password = admin
+
+### 1. Đăng nhập (route cũ) → copy data.token vào @token
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### 2. Danh sách ca (phân trang, tìm, sort)
+GET {{base}}/api/v1/hr/shifts?page=1&pageSize=20&q=&sort=startTime:asc
+Authorization: Bearer {{token}}
+
+### 3. Tạo ca qua đêm – gửi 2 lần cùng Idempotency-Key: lần 2 trả Idempotency-Replayed: true, không tạo thêm
+# @name create
+POST {{base}}/api/v1/hr/shifts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-shift-ca4-001
+
+{ "code": "DEMO-CA4", "name": "[DEMO] Ca 4", "startTime": "18:00:00", "endTime": "02:00:00", "note": "[DEMO]" }
+
+###
+@shiftId = {{create.response.body.data.id}}
+@etag = {{create.response.headers.ETag}}
+
+### 4. Chi tiết (header ETag)
+GET {{base}}/api/v1/hr/shifts/{{shiftId}}
+Authorization: Bearer {{token}}
+
+### 5. Sửa với If-Match (gửi lại ETag cũ lần 2 → 409 CONCURRENCY_CONFLICT)
+PUT {{base}}/api/v1/hr/shifts/{{shiftId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+If-Match: {{etag}}
+
+{ "code": "DEMO-CA4", "name": "[DEMO] Ca 4 (sửa)", "startTime": "18:30:00", "endTime": "02:30:00" }
+
+### 6. Lỗi mẫu: 400 VALIDATION_FAILED
+POST {{base}}/api/v1/hr/shifts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "startTime": "08:00:00" }
+
+### 7. Lỗi mẫu: 422 BUSINESS_RULE (giờ bắt đầu = giờ kết thúc)
+POST {{base}}/api/v1/hr/shifts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "code": "DEMO-ZERO", "name": "[DEMO] x", "startTime": "08:00:00", "endTime": "08:00:00" }
+
+### 8. Lịch sử xử lý của ca
+GET {{base}}/api/v1/audit/Shift/{{shiftId}}/history?take=20
+Authorization: Bearer {{token}}
+
+### 9. Xóa mềm (204)
+DELETE {{base}}/api/v1/hr/shifts/{{shiftId}}
+Authorization: Bearer {{token}}

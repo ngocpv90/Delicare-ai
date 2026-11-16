@@ -1,0 +1,19 @@
+namespace AppDelicare.Model.ViewModels
+{
+	public class AdministrativeWardViewModel : BaseViewModel
+    {
+		public string? Code { get; set; }
+		public string? CodeName { get; set; }
+		public string? NameVN { get; set; }
+		public string? NameEN { get; set; }
+		public string? FullNameVN { get; set; }
+		public string? FullNameEN { get; set; }
+		public Guid? AdministrativeDistrictId { get; set; }
+		public string? AdministrativeDistrictName { get; set; }
+		public Guid? AdministrativeUnitId { get; set; }
+		public string? AdministrativeUnitName { get; set; }
+		public bool IsDefault { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public DateTime? CreatedDate { get; set; }
+	}
+}

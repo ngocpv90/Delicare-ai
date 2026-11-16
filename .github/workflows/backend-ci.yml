@@ -1,0 +1,31 @@
+# T48.1 – CI backend: build + test cho mỗi PR / push. KHÔNG deploy (production chỉ triển khai thủ công theo checklist T48.2).
+# Test cần DB dev tự Skip trên CI (không có user-secrets) – xem AppDelicare/AppDelicare.Tests/README.md.
+name: backend-ci
+on:
+  pull_request:
+    paths: ["AppDelicare/**", "tools/**", "DB/**", "docs/reference/**", ".github/workflows/backend-ci.yml"]
+  push:
+    branches: [main]
+    paths: ["AppDelicare/**", "tools/**", "DB/**", "docs/reference/**", ".github/workflows/backend-ci.yml"]
+jobs:
+  build-test:
+    runs-on: windows-latest   # solution còn project T4 cũ (.NET Framework) nên build trên Windows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Restore
+        run: dotnet restore AppDelicare/AppDelicare.sln
+      - name: Build
+        run: dotnet build AppDelicare/AppDelicare.sln -c Release --no-restore
+      - name: Test
+        run: dotnet test AppDelicare/AppDelicare.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+      - name: Vulnerable packages (báo cáo, không chặn)
+        run: dotnet list AppDelicare/AppDelicare.sln package --vulnerable --include-transitive
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"

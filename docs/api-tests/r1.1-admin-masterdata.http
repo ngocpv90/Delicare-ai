@@ -1,0 +1,175 @@
+### DELICARE – Lát R1.1 (T45R, khung cũ D-30): quản trị P0, danh mục P1, công thức P2.
+### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData, totalRecords }.
+### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Không có quyền: HTTP 403. Thiếu token: 401.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### ================= Dùng chung (chỉ cần đăng nhập)
+### 47 bộ trạng thái (hoặc ?key=Order.Status)
+GET {{base}}/api/MetaData/GetStatuses
+Authorization: Bearer {{token}}
+
+### Danh mục tham chiếu (hoặc ?name=MealType)
+GET {{base}}/api/MetaData/GetReferenceLists
+Authorization: Bearer {{token}}
+
+### ================= P0 – quản trị
+### Người đang đăng nhập + menu theo quyền (chỉ cần đăng nhập)
+GET {{base}}/api/User/GetCurrent
+Authorization: Bearer {{token}}
+
+### Chi nhánh cho bộ chọn đơn vị (chỉ cần đăng nhập)
+GET {{base}}/api/OrganizationUnit/GetBranches
+Authorization: Bearer {{token}}
+
+### Cây đơn vị kèm số nhân viên, số kho
+GET {{base}}/api/OrganizationUnit/GetTree
+Authorization: Bearer {{token}}
+
+### Cây menu
+GET {{base}}/api/ObjectMenu/GetTree?includeInactive=false
+Authorization: Bearer {{token}}
+
+### Ma trận quyền 1 nhóm (thay <UserGroupId>) – mọi menu, kể cả menu chưa có dòng (id = 0000…)
+GET {{base}}/api/UserRole/GetMatrix?userGroupId=<UserGroupId>
+Authorization: Bearer {{token}}
+
+### Cập nhật ma trận: dòng có id → sửa; dòng id rỗng + userGroupId + objectMenuId → tạo. Bật cờ bất kỳ → tự bật allowAccess.
+PUT {{base}}/api/UserRole/Update
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ListPermission=[{"id":"00000000-0000-0000-0000-000000000000","userGroupId":"<UserGroupId>","objectMenuId":"<ObjectMenuId>","allowEdit":true}]
+
+### Quyền duyệt (D-31): cấp allowEdit trên mục "Duyệt – …" (MetaLink #/wf-inbox?type=<screen-id>) ở ma trận trên.
+
+### Xem trước quyền của nhóm (chỉ admin)
+GET {{base}}/api/UserRole/GetPreview?userGroupId=<UserGroupId>
+Authorization: Bearer {{token}}
+
+### Quyền hiệu lực của 1 user
+GET {{base}}/api/UserRole/GetByUserId?userId=<UserId>
+Authorization: Bearer {{token}}
+
+### Khóa / mở khóa tài khoản (không tự khóa chính mình)
+GET {{base}}/api/User/SaveIsActive?id=<UserId>
+Authorization: Bearer {{token}}
+
+### Xung đột dữ liệu chưa xử lý
+GET {{base}}/api/CoreDataMergeConflict/GetAll?IsResolved=false&Page=1&PageSize=20
+Authorization: Bearer {{token}}
+
+### ================= P1 – danh mục
+### Khách hàng 360°
+GET {{base}}/api/Customer/GetOverview?id=<CustomerId>
+Authorization: Bearer {{token}}
+
+### Tổng quan NCC
+GET {{base}}/api/Supplier/GetOverview?id=<SupplierId>
+Authorization: Bearer {{token}}
+
+### Bảng giá NCC đang hiệu lực tại ngày
+GET {{base}}/api/SupplierMaterial/GetAll?EffectiveOn=2026-11-15&Page=1&PageSize=20
+Authorization: Bearer {{token}}
+
+### Quy đổi 2 kg → g (thay Id đơn vị)
+GET {{base}}/api/UomConversion/Convert?Quantity=2&FromUnitId=<KgId>&ToUnitId=<GId>
+Authorization: Bearer {{token}}
+
+### Tồn khả dụng của nguyên liệu
+GET {{base}}/api/Ingredient/GetStock?id=<IngredientId>
+Authorization: Bearer {{token}}
+
+### Sơ đồ kho
+GET {{base}}/api/Warehouse/GetLayout?id=<WarehouseId>
+Authorization: Bearer {{token}}
+
+### ================= P2 – công thức, giá thành, chính sách giá
+### Tạo phiên bản công thức (Draft), có thể sao chép từ bản cũ
+POST {{base}}/api/Recipe/CreateVersion
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+DishId=<DishId>
+
+### Thêm dòng định lượng (chỉ khi Draft; định lượng cho 100 suất)
+POST {{base}}/api/RecipeLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+RecipeId=<RecipeId>&IngredientId=<IngredientId>&Quantity=12000&UnitId=<GId>&SequenceNo=1
+
+### Giá vốn NVL cho 50 suất
+GET {{base}}/api/Recipe/CalculateCost?id=<RecipeId>&mealCount=50
+Authorization: Bearer {{token}}
+
+### Gửi duyệt → duyệt (quyền "Duyệt – Công thức") → khóa
+POST {{base}}/api/Recipe/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+id=<RecipeId>
+
+###
+POST {{base}}/api/Recipe/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id=<RecipeId>
+
+###
+POST {{base}}/api/Recipe/Lock
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id=<RecipeId>&EffectiveFrom=2026-12-01
+
+### Các phiên bản của món
+GET {{base}}/api/Recipe/GetByDishId?dishId=<DishId>
+Authorization: Bearer {{token}}
+
+### Tính lại giá thành chuẩn (trống = mọi món có công thức đang khóa)
+POST {{base}}/api/StandardCost/Recalculate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ListDishId=
+
+### Tra đơn giá: hợp đồng → khách → ContractMeal
+GET {{base}}/api/PricePolicy/Resolve?CustomerId=<CustomerId>&ContractId=<ContractId>&MealType=TRUA&Date=2026-11-15
+Authorization: Bearer {{token}}
+
+### ================= T49 – nhập Excel danh mục
+### Các loại file nhập
+GET {{base}}/api/ImportExcel/GetTemplateList
+Authorization: Bearer {{token}}
+
+### Tải mẫu khách hàng (lưu file trả về)
+GET {{base}}/api/ImportExcel/GetTemplate?tableName=Customer
+Authorization: Bearer {{token}}
+
+### Nạp file (đổi đường dẫn file cho đúng máy; tableName theo GetTemplateList)
+POST {{base}}/api/ImportExcel/Import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=DelicareBoundary
+
+--DelicareBoundary
+Content-Disposition: form-data; name="TableName"
+
+Customer
+--DelicareBoundary
+Content-Disposition: form-data; name="File"; filename="Mau_nhap_Customer.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./Mau_nhap_Customer.xlsx
+--DelicareBoundary--

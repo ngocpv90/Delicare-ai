@@ -1,0 +1,146 @@
+using Microsoft.AspNetCore.Mvc;
+using AppDelicare.Model.Helper;
+using AppDelicare.Model.Request;
+using AppDelicare.Model.SearchRequest;
+using AppDelicare.Services.Interface;
+using Serilog;
+using System.Net;
+
+namespace AppDelicare.WebApi.Controllers
+{
+    public class OrganizationUnitController(IOrganizationUnitService service) : BaseController
+    {
+        private readonly IOrganizationUnitService _service = service;
+
+        [HttpGet("GetAll")]
+        public async Task<IActionResult> GetAll([FromQuery] OrganizationUnitSearchRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetAll(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetAll: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpPost("Insert")]
+        public async Task<IActionResult> Insert([FromForm] OrganizationUnitRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Save(request, ConstantHelper.TypeSave.Insert));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Insert: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpPut("Update")]
+        public async Task<IActionResult> Update([FromForm] OrganizationUnitRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Save(request, ConstantHelper.TypeSave.Update));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Update: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpDelete("Delete")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try
+            {
+                OrganizationUnitRequest request = new()
+                {
+                    Id = id
+                };
+                return Ok(await _service.Save(request, ConstantHelper.TypeSave.Delete));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Delete: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpGet("GetById")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetById(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpGet("GetAllData")]
+        public IActionResult GetAllData()
+        {
+            try
+            {
+                return Ok(_service.GetAllData());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: cây đơn vị tổ chức kèm số nhân viên, số kho, tên quản lý.</summary>
+        [HttpGet("GetTree")]
+        public async Task<IActionResult> GetTree(Guid? companyId)
+        {
+            try
+            {
+                return Ok(await _service.GetTree(companyId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTree: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T45R: danh sách chi nhánh (UnitType = BRANCH) cho bộ chọn đơn vị trên header – mọi user đã đăng nhập.</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetBranches")]
+        public IActionResult GetBranches()
+        {
+            try
+            {
+                return Ok(_service.GetBranches());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBranches: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+    }
+}
