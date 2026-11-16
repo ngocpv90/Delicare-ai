@@ -203,7 +203,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - `IDocumentNumberService` theo BUSINESS_RULES §11, dùng `sp_getapplock` + MAX cột đích.
 - AC: test chạy song song 50 lần không trùng mã; đúng định dạng cho mọi loại.
 
-### T12 – ApprovalService · phụ thuộc T10, T11 · `TODO`
+### T12 – ApprovalService · phụ thuộc T10, T11 · `DONE(PILOT)` (2026-11-16: 1 cấp; nhiều cấp / hết hạn → DEFERRED(PILOT))
 - Tạo / duyệt / từ chối / hết hạn. Nhiều bước theo `ApproverRoleCode`. `ApprovalDecision` chỉ ghi thêm, có `PayloadHash` chống sửa payload. Khi được duyệt thì thực thi lệnh gốc (registry `BusinessType` → handler).
 - Viết trong `ApprovalRequestService` / `ApprovalDecisionService` cũ (+ service dùng chung `ApprovalService` nếu cần, cùng mẫu). API: `GET api/ApprovalRequest/GetMyPending`, `POST api/ApprovalRequest/Decide`.
 - AC: test tạo → duyệt → thực thi; từ chối không ghi; payload bị sửa thì từ chối.

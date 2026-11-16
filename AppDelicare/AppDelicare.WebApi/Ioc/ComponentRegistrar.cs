@@ -24,6 +24,10 @@ namespace AppDelicare.WebApi.Ioc
             builder.RegisterAssemblyTypes([Assembly.GetAssembly(typeof(JwtIssuerOptions))]).Where(x => x.IsClass && x.Name.EndsWith("Options")).As(t => t.GetInterfaces().Length != 0 ? t.GetInterfaces()[0] : t);
 #pragma warning restore CS8601 // Possible null reference assignment.
 
+            // T12: bộ xử lý duyệt theo BusinessType (IApprovalHandler) – registry cho ApprovalRequestService.
+            builder.RegisterAssemblyTypes([Assembly.GetAssembly(typeof(ILoginService))!])
+                .Where(x => x.IsClass && !x.IsAbstract && typeof(IApprovalHandler).IsAssignableFrom(x)).As<IApprovalHandler>();
+
             //----------------------Common-----------------------------------------------
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>();
             builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>().SingleInstance();

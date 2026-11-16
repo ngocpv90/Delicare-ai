@@ -6,7 +6,7 @@
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 105/105 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 110/110 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -567,3 +567,43 @@ AC: [x] 50 lần song song không trùng · [x] đúng định dạng mọi lo�
 GAP:
 - `AttendanceEvent` không có cột mã → loại CC chưa có chỗ ghi (ngoài Pilot).
 - Bảng có cột cũ NOT NULL (vd. `MaterialLot.LotNo`) → nơi tạo bản ghi phải ghi song song cả cột cũ (T15).
+
+### T12 – Duyệt 1 cấp (Pilot P2) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T12-approval` (từ `feat/T11-document-number`, worktree riêng).
+
+Rà soát:
+- `ApprovalRequestService` / `Controller` chỉ có CRUD sinh mã – CRUD sửa được cả `RequestStatus` (duyệt "chui").
+- Duyệt công thức tự cập nhật ApprovalRequest, không ghi ApprovalDecision.
+- `ApprovalDecision.ApprovalStepId` NOT NULL nên cần ApprovalStep.
+
+Đã làm (trong `ApprovalRequestService` cũ, gỡ header auto-generated):
+- `IApprovalHandler` – registry theo BusinessType: BuildPayload / Describe / Approve / Reject; đăng ký trong `Ioc/ComponentRegistrar`; lấy handler lúc dùng qua IServiceProvider để tránh vòng phụ thuộc.
+- `CreateAsync(businessType, businessId)`: gọi trong transaction của nghiệp vụ; mã `XN-` (T11) + ApprovalStep bước 1 + PayloadJson; chặn 2 yêu cầu Pending cùng chứng từ.
+- `GetMyPending(type)`: chỉ loại người đăng nhập có quyền duyệt (mục `#/wf-inbox?type=<screen>`, D-31; admin thấy hết); kèm tiêu đề, người gửi.
+- `Decide`, trong 1 transaction:
+  - kiểm quyền duyệt;
+  - từ chối bắt buộc lý do;
+  - **so hash nội dung lúc gửi với nội dung hiện tại – khác thì không duyệt, không ghi gì**;
+  - ghi ApprovalDecision (chỉ ghi thêm, PayloadHash SHA-256), cập nhật bước + yêu cầu;
+  - thực thi handler (lỗi → rollback toàn bộ).
+- CRUD `ApprovalRequest/Update` không đổi được trạng thái / nghiệp vụ / nội dung / mã.
+- Action: `ApprovalRequest/GetMyPending`, `ApprovalRequest/Decide` (chỉ cần đăng nhập, service tự kiểm quyền).
+- Công thức (RECIPE_VERSION, `RecipeApprovalHandler`): `Recipe/Submit` tạo yêu cầu qua engine; `Recipe/Approve` / `Reject` gọi `Decide`. Hành vi cũ giữ nguyên, nay có ApprovalDecision.
+
+Kiểm tra:
+- Build 0 lỗi.
+- Test **110/110** (+5 ApprovalTests):
+  - gửi → mã XN + bước + người có quyền thấy, người không quyền không thấy / không duyệt được;
+  - duyệt → thực thi + ApprovalDecision;
+  - từ chối cần lý do và không thực thi;
+  - nội dung bị sửa → không duyệt, không ghi;
+  - CRUD không đổi được trạng thái; Recipe/Approve đi qua engine.
+- RecipeServiceTests cũ vẫn xanh.
+
+AC (bản Pilot): [x] tạo → duyệt → thực thi · [x] từ chối không thực thi · [x] payload bị sửa thì không duyệt.
+
+DEFERRED(PILOT): duyệt nhiều cấp theo ApproverRoleCode, hết hạn tự động (job T23).
+
+Handler PO và đơn lệch > 30% làm cùng T15 / T13.
+
+**Chưa cập nhật `DELICARE_API_Catalog.xlsx` (sheet API_Catalog)** cho T11 / T12 và các task trước: máy chưa có `openpyxl`, lệnh cài bị chặn – cần anh cho phép cài hoặc tự cập nhật.

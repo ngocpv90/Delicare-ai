@@ -109,6 +109,11 @@
             public static readonly string ShiftTimeRange = "Giờ phải trong khoảng 00:00:00–23:59:59";
             public static readonly string ChecklistVersionExist = "Checklist mã {0} phiên bản {1} đã tồn tại";
             public static readonly string ReasonRequired = "Lý do là bắt buộc (3–1000 ký tự)";
+            // T12 – duyệt
+            public static readonly string ApprovalAlreadyPending = "Đã có yêu cầu duyệt đang chờ cho chứng từ này";
+            public static readonly string ApprovalNotPending = "Yêu cầu không còn chờ duyệt (trạng thái: {0})";
+            public static readonly string ApprovalNoRight = "Bạn không có quyền duyệt loại yêu cầu này";
+            public static readonly string ApprovalPayloadChanged = "Nội dung chứng từ đã thay đổi sau khi gửi duyệt – gửi duyệt lại";
         }
 
         public class TypeSave
