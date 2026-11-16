@@ -8,6 +8,7 @@ using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Net;
 
@@ -129,14 +130,37 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>T17 (spec 8.1 lines): thêm món vào kế hoạch Nháp (cộng dự phòng) – 1 món 1 dòng, số phần &gt; 0, ghi song song PlannedQty.</summary>
         private async Task<string> Insert(ProductionPlanLineRequest request, string typeSave)
         {
-            var insert = _mapper.Map<ProductionPlanLine>(request);
-            _unitOfWork.ProductionPlanLineRepository.Add(insert);
+            string? error = await CheckDraftPlanAsync(request.ProductionPlanId);
+            if (error != null)
+            {
+                return error;
+            }
+            if (request.PlannedQuantity <= 0)
+            {
+                return ConstantHelper.Message.QuantityPositive;
+            }
+            if (_unitOfWork.ProductionPlanLineRepository.GetAll().Any(l => l.ProductionPlanId == request.ProductionPlanId && l.DishId == request.DishId && !l.IsDeleted))
+            {
+                return ConstantHelper.Message.PlanLineDuplicateDish;
+            }
+            _unitOfWork.ProductionPlanLineRepository.Add(new ProductionPlanLine
+            {
+                Id = Guid.NewGuid(),
+                ProductionPlanId = request.ProductionPlanId,
+                DishId = request.DishId,
+                OrderLineId = request.OrderLineId,
+                PlannedQuantity = request.PlannedQuantity,
+                PlannedQty = request.PlannedQuantity,
+                Status = ProductionPlanStatus.Draft,
+            });
             await _unitOfWork.ProductionPlanLineRepository.CommitAsync(typeSave);
             return string.Empty;
         }
 
+        /// <summary>T17: chỉ sửa số phần của dòng thuộc kế hoạch Nháp (ghi song song PlannedQty); món / kế hoạch / ca / trạng thái không đổi qua CRUD.</summary>
         private async Task<string> Update(ProductionPlanLineRequest request, string typeSave)
         {
             var exist = _unitOfWork.ProductionPlanLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
@@ -144,31 +168,45 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.ProductionPlanLineRepository.Update(update);
+            string? error = await CheckDraftPlanAsync(exist.ProductionPlanId);
+            if (error != null)
+            {
+                return error;
+            }
+            if (request.PlannedQuantity <= 0)
+            {
+                return ConstantHelper.Message.QuantityPositive;
+            }
+            exist.PlannedQuantity = request.PlannedQuantity;
+            exist.PlannedQty = request.PlannedQuantity;
+            _unitOfWork.ProductionPlanLineRepository.Update(exist);
             await _unitOfWork.ProductionPlanLineRepository.CommitAsync(typeSave);
             return string.Empty;
         }
 
+        /// <summary>T17: chỉ xóa (mềm) dòng của kế hoạch Nháp.</summary>
         private async Task<string> Delete(Guid? id, string typeSave)
         {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(ProductionPlanLine), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.ProductionPlanLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
+            var delete = id == null ? null : _unitOfWork.ProductionPlanLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
             if (delete == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            string? error = await CheckDraftPlanAsync(delete.ProductionPlanId);
+            if (error != null)
+            {
+                return error;
+            }
             _unitOfWork.ProductionPlanLineRepository.Update(delete);
             await _unitOfWork.ProductionPlanLineRepository.CommitAsync(typeSave);
             return string.Empty;
+        }
+
+        private async Task<string?> CheckDraftPlanAsync(Guid planId)
+        {
+            var plan = await _unitOfWork.DbContext.ProductionPlan.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId && !p.IsDeleted);
+            return plan == null ? ConstantHelper.Message.RecordNotFoundMessage
+                : plan.Status != ProductionPlanStatus.Draft ? ConstantHelper.Message.PlanLineDraftOnly : null;
         }
 
         public async Task<IResult<ProductionPlanLine>> GetById(Guid id)

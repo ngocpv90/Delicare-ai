@@ -157,3 +157,18 @@ Rà trước khi viết: PurchaseRequest(+Line), PurchaseOrder(+Line), GoodsRece
 | qc-inspection / qc-inspection-line | QCInspection / QCInspectionLine | CRUD ghi kết quả tùy ý | Insert / Delete → lỗi nghiệp vụ; Update chỉ Note / Remark. Mới: `GetDetail`, `Conclude` (JSON). `QcInspectionLine` CRUD ghi → lỗi nghiệp vụ |
 | scm-requirement | MaterialRequirement | (T14) | Mới: `ExportPreProduction` (.xlsx Phiếu trước sản xuất) |
 | qc-supplier-issue / qc-temperature | SupplierIssue / TemperatureLog | CRUD (TemperatureLog chỉ ghi thêm – T08) | Không sửa; T15 ghi SupplierIssue + TemperatureLog RECEIVING khi ghi sổ phiếu nhập |
+
+## (g) Pilot P7 – sản xuất theo mẻ (T17, 2026-11-16)
+
+Rà trước khi viết: ProductionPlan(+Line), ProductionOrder, ProductionBatche (entity `ProductionBatch`), ProductionOutput, MealWasteRecord, TemperatureLog, FoodSafetyChecklist(+Item, +Result), ProductionLine, Shift đều chỉ có CRUD sinh mã: CRUD tạo lệnh / mẻ không số, đổi `Status` / `QcStatus` / số lượng tùy ý (mẻ có thể "đóng gói" mà không đo nhiệt độ, không lưu mẫu); `ProductionPlanLine` sửa được cả khi kế hoạch đã duyệt; `ProductionOutput` không gắn số đạt của mẻ. Kế hoạch `KH-` + dòng món do T14 (`MaterialRequirementService.Calculate`) tạo – **không sửa** service này (T17 chỉ đọc). Phiếu xuất (T16) gắn `ProductionOrderId` rỗng (GAP-INV-02). DB dev chưa có `ProductionLine`, chưa có checklist `SAMPLE_RETAINED` (→ seed mới).
+
+| Màn hình | Bảng → Controller / Service cũ | Đánh giá trước T17 | Bổ sung / sửa trong T17 |
+|---|---|---|---|
+| prod-plan | ProductionPlan | CRUD đổi Status tùy ý | Insert / Update → lỗi nghiệp vụ (tạo bằng MRP Calculate; Note là JSON MRP); Delete chỉ Nháp. Mới: `GetDetail`, `Approve` (`[Permission(prod-plan, Approve)]`), `Release` (lệnh SX PH- + mẻ ME-, lịch ngược, đơn → InProduction), `ExportProductionSheet` (.xlsx) |
+| prod-plan-line | ProductionPlanLine | CRUD ghi tùy ý | Insert / Update / Delete chỉ khi kế hoạch Nháp, 1 món 1 dòng, số phần > 0, ghi song song PlannedQty |
+| prod-order | ProductionOrder | CRUD tạo lệnh không số, đổi trạng thái | Insert / Delete → lỗi nghiệp vụ; Update chỉ Note / ResponsibleEmployeeId. Mới: `GetDetail` (ảnh chụp định lượng, mẻ, phiếu xuất). Trạng thái tự đổi theo mẻ |
+| prod-batch | ProductionBatche | CRUD tạo / đổi trạng thái tùy ý | Insert / Delete → lỗi nghiệp vụ; Update chỉ trạm bếp (Kế hoạch / Đang nấu). Mới: `GetBoard`, `GetDetail`, `CreateMaterialIssue` (gọi `MaterialIssueService.Create` / `Post` – FEFO, chặn lô), `Start`, `Finish`, `RecordCoreTemperature`, `RecordSampleRetained`, `RecordOutput`, `RecordWaste`, `Release`, `Hold`, `Reject`, `Pack`, `ExportProductionSheet` |
+| prod-output | ProductionOutput | CRUD ghi tùy ý | Insert / Update / Delete → lỗi nghiệp vụ (ghi qua `ProductionBatch/RecordOutput` / `Reject`) |
+| prod-waste | MealWasteRecord | CRUD | Dòng gắn mẻ chỉ ghi qua `ProductionBatch/RecordWaste` (Insert / Update / Delete dòng có `ProductionBatchId` → lỗi); dòng không gắn mẻ giữ CRUD. Gỡ header auto-generated |
+| qc-temperature / qc-checklist-result | TemperatureLog / FoodSafetyChecklistResult | CRUD (TemperatureLog chỉ ghi thêm – T08) | Không sửa; T17 ghi CORE + SAMPLE_RETAINED qua action của mẻ |
+| (dùng chung) | – | – | Lớp tĩnh `Services/Implement/ProductionRules` (chọn công thức như MRP, lịch ngược, nguyên liệu của mẻ, điều kiện ATTP, mẫu in Phiếu sản xuất) – không đăng ký DI, không phải service thứ hai |

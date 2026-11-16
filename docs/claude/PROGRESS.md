@@ -6,7 +6,7 @@
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 11 cảnh báo (no-incremental; 2026-11-16, nhánh `feat/T15-purchasing`) · Test: `AppDelicare.Tests` 143/143 xanh · T15 (P6) DONE(PILOT) 2026-11-16 → kế tiếp T17
+- Build backend: OK – 0 lỗi, 11 cảnh báo (no-incremental; 2026-11-16, nhánh `feat/T17-production`) · Test: `AppDelicare.Tests` 148/148 xanh · T17 (P7) DONE(PILOT) 2026-11-16 → kế tiếp T19
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -830,3 +830,64 @@ Câu hỏi cho anh (DECISIONS GAP-PUR-01…08, D-11):
 4. Ngưỡng nhiệt độ nhận: mát ≤ 5 °C, đông lạnh ≤ −18 °C, hàng khô / thường không kiểm – đúng chưa? Vượt ngưỡng mà vẫn nhận (ghi lý do) có được không hay bắt buộc KHONG_DAT?
 5. Dung sai nhận vượt 10% / dòng PO có phù hợp (rau, thịt cân lệch)?
 6. In Đơn đặt hàng: có cần cột VAT (mẫu thật có % VAT theo NCC – chưa có cột trong DB)?
+
+### T17 – Sản xuất theo mẻ (Pilot P7) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T17-production` (worktree `wt-T17`, từ T15). Chỉ backend (D-40).
+
+Kế hoạch:
+1. Rà soát ProductionPlan(+Line) / ProductionOrder / ProductionBatche / ProductionOutput / MealWasteRecord / TemperatureLog / FoodSafetyChecklist(+Item, +Result) / ProductionLine / Shift → LEGACY_REVIEW mục (g). Đọc (không sửa) `MaterialRequirementService` (T14 tạo KH- + dòng món).
+2. Duyệt kế hoạch (1 cấp) → phát hành: lệnh SX PH- theo món (công thức khóa + ảnh chụp định lượng), mẻ ME-YYMMDD-<CA>-NN chia theo dây chuyền, lịch ngược từ giờ xuất bếp.
+3. Xuất NL cho mẻ: tính theo định lượng × phần mẻ, gọi `MaterialIssueService.Create` / `Post` (FEFO, chặn lô) gắn lệnh SX thật.
+4. Sự kiện mẻ: Start → Finish; nhiệt độ lõi (TemperatureLog CORE), lưu mẫu (SAMPLE_RETAINED), sản lượng / hao hụt; QC đạt / giữ / loại; đóng gói; hoàn thành lệnh / kế hoạch.
+5. In Phiếu sản xuất (.xlsx, theo tiêu đề file thật `Phieu san xuat.xlsx`).
+6. Chặn CRUD cũ phá máy trạng thái. Seed checklist SAMPLE_RETAINED.
+7. Test InMemory (bộ số tính tay) + 1 test SQL Server rollback; tài liệu P7.md, `.http`, DECISIONS (GAP-PRD), LEGACY_REVIEW, BUSINESS_RULES.
+
+Rà soát: cả 10 bảng chỉ có CRUD sinh mã – CRUD tạo lệnh / mẻ không số, đổi trạng thái / QC tùy ý (đóng gói được khi chưa đo nhiệt độ, chưa lưu mẫu). DB dev chưa có `ProductionLine`, chưa có checklist `SAMPLE_RETAINED`. Chi tiết: LEGACY_REVIEW (g).
+
+Đã làm (đều trong file cũ, đúng mẫu 4.2; thêm 1 lớp tĩnh dùng chung `ProductionRules`, không có service / controller mới):
+- **Kế hoạch (`ProductionPlanService` / `ProductionPlanController`, `prod-plan`)**: `GetDetail`; `Approve` (Nháp → Đã duyệt, `[Permission("prod-plan", Approve)]` = mục "Duyệt – Kế hoạch sản xuất" đã có trong seed); `Release` (form `Id, ShiftId?, ProductionLineId?, DispatchTime?, Note?`, 1 transaction): ca (mặc định `ProductionDefaultShiftCode` = TRUA), giờ xuất bếp (giờ giao sớm nhất `CustomerDeliveryLocation.DeliveryWindowFrom` của đơn Đã chốt, dòng thuộc ca − 60′; không có → `Shift.StartTime` − 60′; hoặc nhập tay), mẻ cuối xong trước xuất bếp 30′ (`ProductionPackingMinutes`), mỗi món → 1 lệnh SX `PH-` (Released, công thức chọn như MRP: khóa hiệu lực → khóa đang dùng → Đã duyệt + cảnh báo; không có → chặn; `RecipeSnapshotJson`), chia mẻ ⌈phần ÷ `CapacityMealPerBatch`⌉ (mẻ đầy trước) × `MinutesPerBatch` (trống 60′), các mẻ của món nối tiếp, món song song; mã `ME-YYMMDD-<CA>-NN` (T11, sinh mã đầu rồi cộng dần trong cùng khóa `sp_getapplock`) theo giờ bắt đầu rồi tên món; StartDate / EndDate = giờ kế hoạch; dòng kế hoạch gắn ca → Released; kế hoạch → Released; đơn Đã chốt của ngày (dòng thuộc ca) → `InProduction`. `ExportProductionSheet` (.xlsx). CRUD: Insert / Update → lỗi (tạo bằng MRP, Note là JSON MRP); Delete chỉ Nháp.
+- **Dòng kế hoạch (`ProductionPlanLineService`)**: Insert / Update / Delete chỉ khi kế hoạch Nháp, 1 món 1 dòng, số phần > 0, ghi song song PlannedQty.
+- **Lệnh SX (`ProductionOrderService` / `Controller`, `prod-order`)**: `GetDetail` (ảnh chụp định lượng, mẻ, phiếu xuất). CRUD: Insert / Delete → lỗi; Update chỉ Note / ResponsibleEmployeeId. Trạng thái tự đổi: Released → InProgress (mẻ đầu bắt đầu) → Completed (mọi mẻ Packed / Failed; ActualQty = Σ số đạt mẻ đóng gói); mọi lệnh xong → kế hoạch Completed.
+- **Mẻ (`ProductionBatchService` / `Controller`, `prod-batch`)**: `GetBoard` (mẻ của ngày + statusCounts + phần kế hoạch / đạt), `GetDetail` (nguyên liệu cần / đã xuất, phiếu xuất, nhiệt độ, lưu mẫu, sản lượng, hao hụt, `listBlocker`, `allowedActions`); `CreateMaterialIssue` (form `Id, WarehouseId, Post`; định lượng × phần mẻ ÷ suất chuẩn × (1 + hao hụt %) quy đổi sang đơn vị tồn → `MaterialIssueService.Create` (FEFO / FIFO, chặn lô hết hạn / KHONG_DAT / tạm giữ / thiếu tồn) + `Post` trong 1 transaction; `ProductionOrderId` thật + "Mẻ ME-…" trong Note; 1 phiếu tự động / mẻ); `Start`; `Finish`; `RecordCoreTemperature` (TemperatureLog CORE, Min 70 °C, IsWithinRange ở server, dưới ngưỡng bắt buộc hành động khắc phục, RecordedBy = người thao tác); `RecordSampleRetained` (FoodSafetyChecklistResult SAMPLE_RETAINED, 1 lần / mẻ); `RecordOutput` (ProductionOutput 1 dòng / mẻ, ghi song song cột cũ; số đạt / loại của mẻ); `RecordWaste` (MealWasteRecord, WasteQty mẻ = Σ); `Release` (Chờ QC → Đạt – **chặn** khi nhiệt độ lõi gần nhất < 70 °C / chưa đo, chưa lưu mẫu, chưa ghi sản lượng); `Hold`; `Reject` (lý do; toàn bộ thành hao hụt QC_REJECT); `Pack` (Đạt → Đã đóng gói – kiểm lại nhiệt độ lõi gần nhất ≥ 70 °C); `ExportProductionSheet`. CRUD: Insert / Delete → lỗi; Update chỉ trạm bếp.
+- **`ProductionOutput`**: CRUD ghi → lỗi (qua RecordOutput). **`MealWasteRecord`**: dòng gắn mẻ chỉ qua RecordWaste; gỡ header auto-generated.
+- **`ProductionRules`** (lớp tĩnh): chọn công thức, ảnh chụp, lịch ngược `Schedule`, giờ xuất bếp, nguyên liệu mẻ, điều kiện ATTP, tóm tắt lệnh / mẻ, mẫu in Phiếu sản xuất (bố cục theo tiêu đề file thật: tên pháp nhân, Số suất order / thực tế, PHIẾU SẢN XUẤT, Thứ – ngày; Buổi | Tên món | Tên NL | ĐVT | Số lượng (Định mức / SL cần / Thực xuất / Xuất thêm / Lý do) | SC ký nhận | Sơ chế (SL sau SC / Tiêu hao / Trả về) | Bếp ký nhận | Ghi chú – chỉ đọc tiêu đề, không chép dữ liệu).
+- Cấu hình `BusinessRules` (PROPOSED): `ProductionDefaultShiftCode` TRUA, `ProductionPackingMinutes` 30, `ProductionDefaultMinutesPerBatch` 60, `ProductionRequireSampleBeforeRelease` true (dùng sẵn `TransportMinutesBeforeCutoff` 60, `CoreTempMinC` 70).
+- Hằng `Model/Helper/ProductionStatus.cs` (ProductionOrderStatus, ProductionBatchStatus, BatchQcStatus, ProductionCode); request `Model/Request/Custom/ProductionCustomRequest.cs`; model `Model/Model/ProductionModels.cs`; thông báo tiếng Việt trong `ConstantHelper.Message`.
+- Seed mới `DB/seed/FoodSafetyChecklist_seed.sql` (bộ `PRD_BATCH`: SAMPLE_RETAINED, CORE_TEMP – cấu hình PROPOSED, chỉ thêm khi chưa có) – **đã chạy trên DB dev 2 lần** (lần 2 không thêm dòng).
+- Quyền theo `PermissionConvention`: Get* = View; `CreateMaterialIssue` = Add; `Export*` = Export; còn lại Edit (`prod-plan`, `prod-order`, `prod-batch`); `ProductionPlan/Approve` = Approve `prod-plan` (khai báo rõ). Không thêm mục menu / seed quyền / SP.
+
+File chính: `Services/Implement/{ProductionRules, ProductionPlanService, ProductionPlanLineService, ProductionOrderService, ProductionBatchService, ProductionOutputService, MealWasteRecordService}.cs`, `Services/Interface/I{ProductionPlan, ProductionOrder, ProductionBatch}Service.cs`, `WebApi/Controllers/{ProductionPlan, ProductionOrder, ProductionBatch}Controller.cs`, `Model/Helper/{ProductionStatus, ConstantHelper}.cs`, `Model/Option/BusinessRulesOptions.cs`, `Model/Request/Custom/ProductionCustomRequest.cs`, `Model/Model/ProductionModels.cs`, `WebApi/appsettings.json`, `DB/seed/FoodSafetyChecklist_seed.sql`, test `Tests/Production/{ProductionTests, ProductionSqlServerTests}.cs`, tài liệu `docs/frontend-handoff/P7.md`, `docs/api-tests/p7-production.http`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **148/148** xanh (+5):
+  - `Production/ProductionTests` (4, InMemory): lịch ngược tính tay (`Schedule`: 250 phần / 100 / 60′ / xong 10:00 → 07–08, 08–09, 09–10 (50)); phát hành: giao 11:30 → xuất bếp 10:30 → 4 mẻ `ME-261221-<CA>-01…04` đúng giờ / số phần / thứ tự (Thịt#1, Thịt#2, Canh, Thịt#3), lệnh `PH-261220-NNNN` Released + ảnh chụp, đơn → InProduction, dòng kế hoạch gắn ca; CRUD cũ bị chặn (kế hoạch, dòng kế hoạch đã phát hành, mẻ, lệnh, sản lượng, hao hụt gắn mẻ; Update mẻ không đổi trạng thái); in Phiếu sản xuất mở được (SL cần 13,2 kg); xuất NL cho mẻ: 13,2 kg = L1 10 + L2 3,2 (FEFO), bỏ lô hết hạn 50 kg + KHONG_DAT 50 kg, phiếu gắn lệnh SX thật + số mẻ, 1 phiếu / mẻ, mẻ 50 phần cần 6,6 chỉ còn 3,6 xuất được → chặn, không ghi phiếu, lô bị chặn không có bút toán xuất; ATTP: 65 °C không khắc phục → 400, có khắc phục → lưu + cảnh báo, Release bị chặn (65 °C + chưa lưu mẫu + chưa sản lượng), đo lại 75,5 °C → còn chặn vì chưa lưu mẫu, lưu mẫu (1 lần) → Passed; đo lại 68 °C → Pack bị chặn, 72 °C → Packed; sổ nhiệt độ 4 dòng đúng IsWithinRange / Min 70 / người ghi; sản lượng 80 / đạt 78 / loại 2, hao hụt 3; lệnh Canh Completed (ActualQty 78); 3 mẻ Thịt Reject (lý do bắt buộc) → QC_REJECT ×3 → kế hoạch Completed; GetBoard; in phiếu mẻ (Rau 4 kg).
+  - `Production/ProductionSqlServerTests` (1, SQL Server dev): kế hoạch → Approve → Release (PH- + ME- qua sp_getapplock, xuất bếp 10:30 → mẻ 09:00) → CreateMaterialIssue Post (5 kg từ lô còn hạn, lô hết hạn 30 kg không đụng) → Start → nhiệt độ 74,5 → lưu mẫu → Finish → sản lượng 50 / loại 1 → Release → Pack → lệnh + kế hoạch Completed – trong transaction ngoài rồi rollback, không để lại dữ liệu (đã chạy, không bị bỏ qua).
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; không sửa `MaterialRequirementService`.
+
+AC (T17, bản Pilot):
+- [x] Lập kế hoạch đúng giờ (lịch ngược từ giờ xuất bếp, tính tay được) + chia mẻ theo dây chuyền + mã `ME-YYMMDD-<CA>-NN`.
+- [x] Mẻ < 70 °C bị chặn đạt QC / đóng gói (lần đo gần nhất; đo lại đạt mới qua).
+- [x] Mẻ chưa lưu mẫu không được đạt QC (PROPOSED, cấu hình `ProductionRequireSampleBeforeRelease`).
+- [x] Xuất NL cho mẻ dùng FEFO, chặn lô hết hạn / KHONG_DAT; phiếu xuất gắn lệnh SX thật.
+- [x] Sản lượng / hao hụt (ProductionOutput / MealWasteRecord); in Phiếu sản xuất (.xlsx).
+- [x] 1 test SQL Server rollback cho plan → batch → issue → start → temp → sample → finish → output (→ release → pack).
+- [ ] "Không chuyển công đoạn khi công đoạn trước chưa xong" (công đoạn theo tổ) → DEFERRED(PILOT).
+- [ ] `DELICARE_API_Catalog.xlsx` không sửa (theo điều phối). Gợi ý cột J / L (M = T17): 8.1 GET plans = Đã xong (`ProductionPlan/GetAll`, `GetDetail`); generate = Một phần (MRP `MaterialRequirement/Calculate` tạo KH- theo ngày); lines = Đã xong (`ProductionPlanLine/Insert / Update / Delete`, chỉ Nháp); approve = Đã xong (`ProductionPlan/Approve`); release = Đã xong (`ProductionPlan/Release`, chưa giữ chỗ). 8.2 GET orders = Đã xong (`ProductionOrder/GetAll`, `GetDetail`); complete = Đã xong (tự động khi đóng gói / loại hết mẻ); close / cancel = Chưa bắt đầu. 8.3 batch-board / batches/{id} = Đã xong (`ProductionBatch/GetBoard`, `GetDetail`); start / finish = Đã xong; qc = Đã xong (`Release` / `Hold` / `Reject`); create-packing-order = Một phần (`Pack`, chưa sinh PackingOrder). 8.4 outputs = Đã xong (`ProductionBatch/RecordOutput` + `ProductionOutput/GetAll`); waste-records = Một phần (`ProductionBatch/RecordWaste`, MealWasteRecord CRUD; summary chưa). 9.3 temperature-logs = Một phần (+ CORE của mẻ).
+
+DEFERRED(PILOT):
+- Công đoạn theo tổ (Sơ chế → Nấu → Cơm / Canh → Chia suất, người làm / tổ, API tiến độ bếp theo tổ).
+- Nhiều ca / ngày (tách kế hoạch theo `OrderLine.ShiftId`), phân món → dây chuyền theo nhóm món, nhiều dây chuyền song song, phiên bản kế hoạch (GAP-PRD-02).
+- Giữ chỗ `MaterialReservation` khi phát hành; quy đổi đơn vị khi xuất ngoài định lượng; xuất thêm / trả về NL cho mẻ (dùng `MaterialIssue/Create` / `Cancel`).
+- Đóng / hủy lệnh SX, hủy mẻ, `PackingOrder` khi đóng gói (T19 / T47B.2), giá thành thực tế (spec 8.5), báo cáo hao hụt (summary), checklist ATTP theo ca (T18).
+
+Câu hỏi cho anh (DECISIONS GAP-PRD-01, 03…08):
+1. Pilot 1 ca: phát hành gán cả kế hoạch ngày cho 1 ca (mặc định TRUA) – được không? Khi chạy nhiều ca có cần MRP tách kế hoạch theo ca không?
+2. Giờ xuất bếp = giờ giao sớm nhất của điểm giao (`DeliveryWindowFrom`) − 60′; mẻ cuối xong trước 30′ để chia suất / đóng gói; các món nấu song song – đúng thực tế bếp? Mẻ đầy trước, mẻ cuối phần lẻ – hay chia đều?
+3. Ngưỡng nhiệt độ lõi 70 °C (BUSINESS_RULES) hay 75 °C (spec 8.3)? Đo lại sau khi đạt mà < 70 °C thì chặn đóng gói – đúng ý anh?
+4. Bắt buộc lưu mẫu trước khi mẻ "Đạt" (đề xuất) – hay chỉ trước khi giao?
+5. Xác nhận kế hoạch (Approve) bấm 1 cấp với quyền mục "Duyệt – Kế hoạch sản xuất" – có cần qua hộp duyệt (ApprovalRequest) như PO không?
+6. Phát hành kế hoạch chuyển đơn hàng Đã chốt → Đang sản xuất – đúng không? Lệnh SX dùng mã `PH-` (BUSINESS_RULES §11) – được chứ?
+
+Cần anh: chạy `DB/seed/FoodSafetyChecklist_seed.sql` trên staging (DB dev đã chạy); khai báo `ProductionLine` (năng lực mẻ, phút / mẻ) và giờ giao của điểm giao trước khi chạy thử.

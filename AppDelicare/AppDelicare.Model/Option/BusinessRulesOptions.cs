@@ -48,5 +48,13 @@ namespace AppDelicare.Model.Option
         public Dictionary<string, decimal> ReceivingTempMaxC { get; set; } = new(StringComparer.OrdinalIgnoreCase) { ["CHILLED"] = 5m, ["FROZEN"] = -18m };
         /// <summary>T15: hạn xử lý sự cố NCC (SupplierIssue.DueAt) = lúc ghi sổ + số ngày này – PROPOSED (spec 9.1: +2 ngày).</summary>
         public int SupplierIssueDueDays { get; set; } = 2;
+        /// <summary>T17: ca sản xuất mặc định khi phát hành kế hoạch không chọn ca (Shift.Code) – Pilot chỉ ca trưa (D-35), PROPOSED – BA/PO CONFIRM (GAP-PRD-01).</summary>
+        public string ProductionDefaultShiftCode { get; set; } = "TRUA";
+        /// <summary>T17: số phút chia suất / đóng gói trước giờ xuất bếp – mẻ cuối của mỗi món phải nấu xong trước (giờ xuất bếp − số phút này). PROPOSED (GAP-PRD-07).</summary>
+        public int ProductionPackingMinutes { get; set; } = 30;
+        /// <summary>T17: số phút mỗi mẻ khi dây chuyền chưa có MinutesPerBatch (hoặc không chọn dây chuyền). PROPOSED (GAP-PRD-07).</summary>
+        public int ProductionDefaultMinutesPerBatch { get; set; } = 60;
+        /// <summary>T17: bắt buộc lưu mẫu (SAMPLE_RETAINED) trước khi mẻ đạt QC (BUSINESS_RULES §6 "mỗi mẻ phải lưu mẫu"). PROPOSED – BA/PO CONFIRM.</summary>
+        public bool ProductionRequireSampleBeforeRelease { get; set; } = true;
     }
 }

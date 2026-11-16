@@ -1,6 +1,8 @@
 using AppDelicare.Data.Interface;
 using AppDelicare.Model.Entity;
+using AppDelicare.Model.Model;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 using System;
@@ -14,5 +16,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(ProductionPlanRequest request, string typeSave);
         public IResults<ProductionPlan> GetAllData();
         public Task<IResult<ProductionPlan>> GetById(Guid id);
+        // T17 (Pilot P7): xác nhận kế hoạch, phát hành → lệnh SX + mẻ ME- (lịch ngược từ giờ xuất bếp), chi tiết, in Phiếu sản xuất.
+        public Task<IResult<ProductionPlanDetailModel>> Approve(ProductionActionRequest request);
+        public Task<IResult<ProductionPlanDetailModel>> Release(ProductionPlanReleaseRequest request);
+        public Task<IResult<ProductionPlanDetailModel>> GetDetail(Guid id);
+        public Task<IResult<byte[]>> ExportProductionSheet(Guid id);
     }
 }
