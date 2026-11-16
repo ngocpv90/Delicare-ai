@@ -4,7 +4,7 @@ namespace AppDelicare.Model.SearchRequest
 {
 	public class ContractSearchRequest : BaseSearchRequest
 	{
-		public Guid CustomerId { get; set; }
+		public Guid? CustomerId { get; set; }
 		public string? ContractNumber { get; set; }
 		public string? Name { get; set; }
 		public DateTime? SignedDate { get; set; }

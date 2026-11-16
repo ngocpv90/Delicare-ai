@@ -27,7 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ContractId", request.ContractId);
+                dynamicParameters.Add("@ContractId", request.ContractId == Guid.Empty ? null : request.ContractId);
                 dynamicParameters.Add("@MealType", request.MealType);
                 //dynamicParameters.Add("@MealName", request.MealName);
                 //dynamicParameters.Add("@UnitPrice", request.UnitPrice);
