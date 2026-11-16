@@ -664,3 +664,60 @@ Câu hỏi cho anh (DECISIONS GAP-MENU-01, GAP-MENU-02, GAP-ORD-01…03):
 6. Xác nhận đơn (Confirm) và Chốt (Lock) dùng quyền Sửa trên `crm-order` – hay cần tách quyền riêng?
 
 Cần anh: chạy lại `DB/seed/ObjectMenu_seed.sql` + `UserRole_seed.sql` trên DB dev / staging (chỉ thêm mục "Duyệt – Đơn đặt suất ăn" và quyền CEO); cho phép cài `openpyxl` để cập nhật Catalog.
+
+### T16 – Sổ kho (Pilot P4) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T16-inventory` (worktree `wt-T11`, từ T13).
+
+Kế hoạch:
+1. Rà soát InventoryTransaction / InventoryBalance / MaterialLot / MaterialIssue(+Line) / StockCount(+Line) / MaterialReservation / InventoryPolicie / Warehouse / StorageLocation → LEGACY_REVIEW mục (d).
+2. Quy tắc lô dùng chung (chặn hết hạn / QC / tạm giữ, thứ tự FEFO / FIFO, cảnh báo) – lớp tĩnh `InventoryLotRules`, dùng chung transaction của service gọi.
+3. Sổ cái: điều chỉnh tay, chuyển kho, sổ cái lọc khoảng ngày (SP mới), tính lại tồn; chặn CRUD ghi thẳng sổ / tồn.
+4. Tồn: tổng hợp theo kho × nguyên liệu (xuất được, sắp hết hạn, mức tồn), theo lô (thứ tự FEFO, lý do chặn).
+5. Phiếu xuất: gợi ý lô, Create (PH-), Post (ISSUE qua `InventoryLedgerService`), Cancel (đảo).
+6. Kiểm kê: Create (dòng từ tồn), RecordCounts, Post (ADJUSTMENT; lệch > 2% chỉ admin).
+7. Test InMemory + SQL Server (rollback), tài liệu bàn giao P4, `.http`.
+
+Rà soát: cả 9 bảng chỉ có CRUD sinh mã; nghiệp vụ duy nhất là `InventoryLedgerService` (T08) + `InventoryTransaction/Reverse`. Lỗ hổng: `InventoryTransaction/Insert` ghi thẳng vào sổ (không cập nhật tồn); `InventoryBalance` CRUD sửa thẳng tồn; `MaterialLot/Update` đổi được QC KHONG_DAT → DAT và trạng thái; MaterialIssue / StockCount CRUD không số, không dòng, không ghi sổ, đổi trạng thái tùy ý; dòng phiếu sửa tùy ý. Chi tiết: LEGACY_REVIEW (d).
+
+Đã làm (đều trong file cũ, đúng mẫu 4.2; thêm 1 lớp tĩnh dùng chung, không có service / controller mới):
+- **`InventoryLotRules`** (`Services/Implement`, lớp tĩnh – không đăng ký DI): `BlockReason` (HSD < hôm nay giờ VN, QC `KHONG_DAT` / `REJECT` / `HOLD`, lô OnHold / Expired), `UseFefoAsync` (InventoryPolicie, không có → FEFO – D-24), `LoadAsync` (tồn theo dòng + lô + thứ tự xuất), `Suggest`, `IsEarlier` (cảnh báo), kiểm kho / vị trí / lô / đơn vị, phân bổ trên các vị trí.
+- **Sổ cái (`InventoryLedgerService`)**: `RebuildBalancesAsync` (tính lại OnHand từ sổ theo (kho, vị trí, NL, lô), giữ Reserved, ghi song song cột cũ); chặn bút toán khác đơn vị dòng tồn (`UNIT_MISMATCH`). T11: thêm `InventoryTransaction.TransactionNumber / TransactionNo` vào nguồn MAX của mã `PH-`.
+- **`InventoryTransactionService` / `Controller`**: `GetLedger` (SP mới `DB/sp/uspInventoryTransaction_GetLedger.sql` – đã chạy trên DB dev), `Adjust` (ADJUSTMENT, số PH-, lý do bắt buộc, ReferenceType ManualAdjustment), `Transfer` (TRANSFER_OUT / TRANSFER_IN cùng ReferenceId). CRUD Insert / Update / Delete → lỗi nghiệp vụ.
+- **`InventoryBalanceService` / `Controller`**: `GetSummary`, `GetByLot`, `RebuildBalance` (`[AdminOnly]`). CRUD → lỗi nghiệp vụ.
+- **`MaterialLotService` / `Controller`**: Insert (số lô bắt buộc hoặc sinh `NL-` theo mã NCC, Status Available / OnHold, ghi song song LotNo / QualityStatus), Update (giữ Status, chặn sửa QC không đạt, chặn đổi NL khi có giao dịch), Delete (chặn khi có giao dịch / tồn); mới `Hold`, `Release`.
+- **`MaterialIssueService` / `Controller`**: `SuggestLots`, `Create` (JSON; chặn lô hết hạn / QC / tạm giữ / vượt tồn; cảnh báo lô nên xuất trước; dòng không chọn lô → tự phân bổ), `Post` (kiểm lại toàn bộ rồi ghi ISSUE, 1 transaction), `Cancel` (Draft → Hủy; Issued → bút toán đảo), `GetDetail`. CRUD: Insert → Create; Update chỉ Note / IssueDate phiếu Nháp; Delete chỉ Nháp. `MaterialIssueLine` CRUD → lỗi nghiệp vụ.
+- **`StockCountService` / `Controller`**: `Create` (form; dòng từ tồn, Physical mặc định = System), `RecordCounts` (JSON; thêm dòng hàng ngoài sổ), `Post` (dòng lệch phải có lý do; lệch dòng > `StockCountVariancePctNeedApproval` → chỉ admin; ADJUSTMENT `ReferenceType = StockCount`; ApprovedBy / ApprovedAt = người ghi sổ), `GetDetail` (% lệch, vượt ngưỡng). CRUD: Insert → Create; Update chỉ Note / người phụ trách; Delete chỉ Draft / Counting. `StockCountLine` CRUD → lỗi nghiệp vụ.
+- Hằng trạng thái `Model/Helper/InventoryStatus.cs` (MaterialLot, QC, MaterialIssue, StockCount, ReferenceType); request `Model/Request/Custom/InventoryCustomRequest.cs`; model `Model/Model/InventoryModels.cs`; thông báo tiếng Việt trong `ConstantHelper.Message`; `Results<T>.Success / Fail` (giống `Result<T>`).
+- Quyền theo `PermissionConvention` (Get* = View, Create = Add, còn lại Edit); `InventoryBalance/RebuildBalance` = AdminOnly. Không thêm mục menu / seed.
+
+File chính: `Services/Implement/{InventoryLotRules, InventoryLedgerService, InventoryTransactionService, InventoryBalanceService, MaterialLotService, MaterialIssueService, MaterialIssueLineService, StockCountService, StockCountLineService, DocumentNumberService}.cs`, `Services/Interface/I{InventoryLedger, InventoryTransaction, InventoryBalance, MaterialLot, MaterialIssue, StockCount}Service.cs`, `WebApi/Controllers/{InventoryTransaction, InventoryBalance, MaterialLot, MaterialIssue, StockCount}Controller.cs`, `Data/Repositories/Results.cs`, `Model/Helper/{InventoryStatus, ConstantHelper}.cs`, `Model/Request/Custom/InventoryCustomRequest.cs`, `Model/Model/InventoryModels.cs`, `DB/sp/uspInventoryTransaction_GetLedger.sql`, test `Tests/Inventory/{InventoryTests, InventorySqlServerTests}.cs`, tài liệu `docs/frontend-handoff/P4.md`, `docs/api-tests/p4-inventory.http`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline worktree).
+- `dotnet test`: **131/131** xanh (+8):
+  - `Inventory/InventoryTests` (7): gợi ý FEFO bỏ lô hết hạn / KHONG_DAT / HOLD / tạm giữ + GetByLot + GetSummary; FIFO theo ngày nhận và FEFO theo HSD; phiếu xuất chặn lô hết hạn / REJECT / vượt tồn, cảnh báo FEFO, tự phân bổ, Post ghi ISSUE, Post thiếu tồn không ghi gì, lô bị tạm giữ sau khi lập phiếu; hủy phiếu đã xuất → đảo, tồn trở lại; chuỗi điều chỉnh / chuyển kho / xuất / đảo khớp sổ + RebuildBalance sửa tồn lệch; kiểm kê (lý do bắt buộc, lệch 20% người thường bị chặn – admin ghi được, lệch ~1% người thường ghi được, ADJUSTMENT đúng); CRUD cũ không phá sổ / lô.
+  - `Inventory/InventorySqlServerTests` (1, SQL Server dev): nhập 3 lô, lô hết hạn bị chặn, Create FEFO với số PH- qua sp_getapplock, Post ghi ISSUE + cột cũ song song, thiếu tồn bị chặn, rollback không để lại dữ liệu, gọi SP GetLedger – đã chạy, không bị bỏ qua.
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+AC (T16, bản Pilot):
+- [x] Post IN / OUT / ADJUSTMENT / REVERSAL (+ TRANSFER) qua `InventoryLedgerService`; InventoryBalance tính lại (theo từng bút toán + `RebuildBalance`).
+- [x] Gợi ý lô FEFO (mặc định) / FIFO theo `InventoryPolicie.UseFefo`; luôn chặn lô hết hạn, KHONG_DAT / REJECT / HOLD, tạm giữ; cảnh báo khi còn lô nên xuất trước.
+- [x] Test FEFO, chặn, tồn sau chuỗi giao dịch, đảo bút toán.
+- [~] Kiểm kê: ghi nhận + ghi sổ điều chỉnh xong; **duyệt lệch > 2% → DEFERRED(PILOT)** (Pilot: chỉ admin ghi sổ).
+- [ ] Giữ chỗ (MaterialReservation) → DEFERRED(PILOT).
+- [ ] `DELICARE_API_Catalog.xlsx` chưa cập nhật (không cài được `openpyxl`). Gợi ý: 7.5 lots = Một phần (thiếu trace); 7.6 summary / by-lot / transactions / rebuild / transfer / adjust = Đã xong; 7.7 = Một phần (suggest theo nguyên liệu, create / post / cancel; reservations chưa); 7.8 = Một phần (create / lines / post; submit duyệt chưa). Action thực tế: `docs/frontend-handoff/P4.md`.
+
+DEFERRED(PILOT):
+- Duyệt kiểm kê lệch > 2% (`PendingApproval`, ApprovalRequest STOCK_COUNT) và duyệt điều chỉnh tay (STOCK_ADJUSTMENT) qua engine T12.
+- MaterialReservation (giữ chỗ theo lệnh SX, giảm ReservedQuantity khi xuất, Reserved → Issued) – làm cùng T14 / T17; gợi ý theo `productionOrderId` (spec 7.7) – T17.
+- Job hết hạn lô hằng ngày (LotExpiryJob: Status Expired + WASTE) – T23. Pilot: lô hết hạn đã bị chặn theo HSD, hủy hàng bằng `Adjust` âm.
+- `MaterialLot.Status = Consumed` khi hết tồn; truy xuất lô (`trace`, T18); quy đổi đơn vị khi xuất; phân trang `GetSummary`.
+
+Câu hỏi cho anh (DECISIONS GAP-INV-02 … GAP-INV-11):
+1. Phiếu xuất chưa gắn lệnh SX ghi `ProductionOrderId` = Guid rỗng – tạm được trong Pilot? (T17 sẽ gắn mẻ / lệnh.)
+2. Lô chưa có kết quả QC (nhập tay / tồn đầu kỳ) cho xuất – đúng ý anh? `HOLD` có chặn xuất không (BUSINESS_RULES ánh xạ DAT_MOT_PHAN = HOLD, phần đạt được nhập)?
+3. Không có chính sách tồn → FEFO; DB mặc định `UseFefo = 0` → khi tạo chính sách cho NL có hạn dùng có cần tự bật FEFO?
+4. Kiểm kê: ngưỡng 2% xét từng dòng (lô) hay tổng phiếu / giá trị? Dòng chưa đếm coi như khớp – được không?
+5. Điều chỉnh tay (tồn đầu kỳ, hủy hàng) Pilot chỉ cần quyền Sửa `scm-inv-txn`, chưa duyệt – được không?
+
+Cần anh: chạy `DB/sp/uspInventoryTransaction_GetLedger.sql` trên staging (DB dev đã chạy); cho phép cài `openpyxl` để cập nhật Catalog.

@@ -1,0 +1,213 @@
+### DELICARE – Pilot P4 (T16, khung cũ D-30): sổ kho, lô, gợi ý FEFO / FIFO, phiếu xuất, điều chỉnh / chuyển kho, kiểm kê.
+### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
+### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
+### Trước khi chạy: SP DB/sp/uspInventoryTransaction_GetLedger.sql đã chạy trên DB.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@warehouseId = <WarehouseId – kho bếp>
+@warehouse2Id = <WarehouseId – kho khác (thử chuyển kho)>
+@ingredientId = <IngredientId – có BaseUnitId>
+@supplierId = <SupplierId – có Code (để sinh số lô NL-)>
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### ================= 1. Lô + tồn đầu kỳ (scm-lot, scm-inv-txn)
+### 1.1 Lô hạn gần (số lô tự sinh NL-YYMMDD-<mã NCC>-NN vì để trống LotNumber)
+POST {{base}}/api/MaterialLot/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+IngredientId={{ingredientId}}&SupplierId={{supplierId}}&ExpiryDate=2026-12-20&ReceivedDate=2026-12-01&QcStatus=DAT&UnitCost=120000&Note=[DEMO] lô hạn gần
+
+### 1.2 Lô hạn xa (số lô nhập tay)
+POST {{base}}/api/MaterialLot/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+IngredientId={{ingredientId}}&LotNumber=[DEMO]-LOT-XA&ExpiryDate=2027-01-15&ReceivedDate=2026-11-25&QcStatus=DAT&UnitCost=118000
+
+### 1.3 Lô QC không đạt (để thử chặn)
+POST {{base}}/api/MaterialLot/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+IngredientId={{ingredientId}}&LotNumber=[DEMO]-LOT-KD&ExpiryDate=2027-01-10&QcStatus=KHONG_DAT&UnitCost=118000
+
+### 1.4 Lấy Id các lô
+# @name lots
+GET {{base}}/api/MaterialLot/GetAll?IngredientId={{ingredientId}}&Page=1&PageSize=20&SortField=expiryDate&SortOrder=ascend
+Authorization: Bearer {{token}}
+
+###
+@lotSoon = {{lots.response.body.listData[0].id}}
+@lotLater = <Id lô [DEMO]-LOT-XA>
+@lotFailed = <Id lô [DEMO]-LOT-KD>
+
+### 1.5 Tồn đầu kỳ = điều chỉnh tăng (Quantity dương), lý do bắt buộc, số PH-
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{ingredientId}}&MaterialLotId={{lotSoon}}&Quantity=20&Reason=[DEMO] Tồn đầu kỳ
+
+###
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{ingredientId}}&MaterialLotId={{lotLater}}&Quantity=30&Reason=[DEMO] Tồn đầu kỳ
+
+###
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{ingredientId}}&MaterialLotId={{lotFailed}}&Quantity=10&Reason=[DEMO] Tồn đầu kỳ
+
+### 1.6 Thiếu lý do → 400
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{ingredientId}}&MaterialLotId={{lotSoon}}&Quantity=-1
+
+### 1.7 CRUD ghi thẳng vào sổ → 400
+POST {{base}}/api/InventoryTransaction/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{ingredientId}}&TransactionType=RECEIPT&QuantityIn=5
+
+### ================= 2. Tồn kho (scm-inv-balance)
+### 2.1 Tồn theo nguyên liệu: tồn 60, xuất được 50 (lô KHONG_DAT bị chặn), mức tồn
+GET {{base}}/api/InventoryBalance/GetSummary?warehouseId={{warehouseId}}
+Authorization: Bearer {{token}}
+
+### 2.2 Tồn theo lô, thứ tự FEFO (pickRank), lý do chặn
+GET {{base}}/api/InventoryBalance/GetByLot?ingredientId={{ingredientId}}&warehouseId={{warehouseId}}
+Authorization: Bearer {{token}}
+
+### 2.3 Lô hết hạn trong 30 ngày
+GET {{base}}/api/InventoryBalance/GetByLot?warehouseId={{warehouseId}}&expiringWithinDays=30
+Authorization: Bearer {{token}}
+
+### ================= 3. Phiếu xuất (scm-issue)
+### 3.1 Gợi ý lô cho 25: lô hạn gần 20 + lô hạn xa 5; lô KHONG_DAT trong listBlocked
+GET {{base}}/api/MaterialIssue/SuggestLots?warehouseId={{warehouseId}}&ingredientId={{ingredientId}}&quantity=25
+Authorization: Bearer {{token}}
+
+### 3.2 Chọn lô KHONG_DAT → 400
+POST {{base}}/api/MaterialIssue/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "warehouseId": "{{warehouseId}}", "listLine": [ { "ingredientId": "{{ingredientId}}", "materialLotId": "{{lotFailed}}", "quantity": 1 } ] }
+
+### 3.3 Chọn lô hạn xa khi còn lô hạn gần → tạo được, listWarning có cảnh báo FEFO
+POST {{base}}/api/MaterialIssue/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "warehouseId": "{{warehouseId}}", "note": "[DEMO] xuất chọn lô", "listLine": [ { "ingredientId": "{{ingredientId}}", "materialLotId": "{{lotLater}}", "quantity": 2 } ] }
+
+### 3.4 Không chọn lô → tự phân bổ FEFO
+# @name issue
+POST {{base}}/api/MaterialIssue/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "warehouseId": "{{warehouseId}}", "note": "[DEMO] xuất cho bếp ca trưa", "listLine": [ { "ingredientId": "{{ingredientId}}", "quantity": 25 } ] }
+
+###
+@issueId = {{issue.response.body.data.materialIssue.id}}
+
+### 3.5 Ghi sổ (Nháp → Đã xuất): bút toán ISSUE, tồn giảm
+POST {{base}}/api/MaterialIssue/Post
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{issueId}}
+
+### 3.6 Chi tiết (dòng, lô, bút toán)
+GET {{base}}/api/MaterialIssue/GetDetail?id={{issueId}}
+Authorization: Bearer {{token}}
+
+### 3.7 Hủy phiếu đã xuất → bút toán đảo, tồn trở lại
+POST {{base}}/api/MaterialIssue/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{issueId}}&Reason=[DEMO] Bếp trả lại nguyên lô
+
+### ================= 4. Lô tạm giữ, chuyển kho, sổ cái
+### 4.1 Tạm giữ lô hạn gần (không còn được gợi ý / xuất)
+POST {{base}}/api/MaterialLot/Hold
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{lotSoon}}&Reason=[DEMO] Nghi bao bì rách
+
+### 4.2 Mở tạm giữ
+POST {{base}}/api/MaterialLot/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{lotSoon}}
+
+### 4.3 Chuyển 5 sang kho 2 (cặp TRANSFER_OUT / TRANSFER_IN)
+POST {{base}}/api/InventoryTransaction/Transfer
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+FromWarehouseId={{warehouseId}}&ToWarehouseId={{warehouse2Id}}&IngredientId={{ingredientId}}&MaterialLotId={{lotLater}}&Quantity=5&Reason=[DEMO] Chuyển bếp 2
+
+### 4.4 Sổ cái theo khoảng ngày
+GET {{base}}/api/InventoryTransaction/GetLedger?ingredientId={{ingredientId}}&fromDate=2026-11-01&toDate=2026-12-31&page=1&pageSize=50
+Authorization: Bearer {{token}}
+
+### ================= 5. Kiểm kê (scm-stockcount)
+### 5.1 Tạo phiếu (dòng = tồn hệ thống)
+# @name count
+POST {{base}}/api/StockCount/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&CountType=DAILY&Note=[DEMO] kiểm kê cuối ngày
+
+###
+@countId = {{count.response.body.data.stockCount.id}}
+@countLineId = {{count.response.body.data.listLine[0].id}}
+
+### 5.2 Ghi số đếm (lệch có lý do)
+PUT {{base}}/api/StockCount/RecordCounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{countId}}", "listLine": [ { "id": "{{countLineId}}", "physicalQuantity": 19.5, "varianceReason": "[DEMO] Hao hụt rã đông" } ] }
+
+### 5.3 Chi tiết: variancePercent, needsApproval (> 2%)
+GET {{base}}/api/StockCount/GetDetail?id={{countId}}
+Authorization: Bearer {{token}}
+
+### 5.4 Ghi sổ: lệch > 2% → chỉ admin (người thường nhận 400 "chỉ quản trị viên…"); dòng lệch → ADJUSTMENT
+POST {{base}}/api/StockCount/Post
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}
+
+### ================= 6. Quản trị
+### 6.1 Tính lại tồn từ sổ cái (chỉ admin) – khớp thì changed = 0
+POST {{base}}/api/InventoryBalance/RebuildBalance
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}

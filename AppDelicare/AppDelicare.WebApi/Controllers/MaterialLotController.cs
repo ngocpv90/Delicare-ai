@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,44 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T16: tạm giữ lô (Available → OnHold), lý do bắt buộc – lô tạm giữ bị chặn xuất.</summary>
+        [HttpPost("Hold")]
+        public async Task<IActionResult> Hold([FromForm] MaterialLotHoldRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Hold(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Hold: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T16: mở lô tạm giữ (OnHold → Available).</summary>
+        [HttpPost("Release")]
+        public async Task<IActionResult> Release([FromForm] MaterialLotHoldRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Release(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Release: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

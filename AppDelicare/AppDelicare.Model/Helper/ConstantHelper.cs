@@ -146,6 +146,38 @@
             public static readonly string OrderInsertBlocked = "Tạo đơn qua Order/Create (sinh số PH-, tính giá, thực đơn, giờ chốt)";
             public static readonly string OrderDeviationRequested = "Số suất lệch {0}% (> {1}%) so với đơn đã xác nhận – đã gửi duyệt {2}, số mới chỉ ghi khi được duyệt";
             public static readonly string OrderDeviationPending = "Đơn đang có yêu cầu duyệt lệch suất {0} – chờ duyệt / từ chối trước khi sửa tiếp";
+            // T16 – sổ kho, xuất kho, kiểm kê (P4)
+            public static readonly string LedgerInsertBlocked = "Sổ kho chỉ ghi thêm qua nghiệp vụ: điều chỉnh (InventoryTransaction/Adjust), chuyển kho (Transfer), xuất kho (MaterialIssue/Post), kiểm kê (StockCount/Post), đảo bút toán (Reverse)";
+            public static readonly string BalanceCrudBlocked = "Tồn kho được tính từ sổ cái – không thêm / sửa / xóa trực tiếp (quản trị: InventoryBalance/RebuildBalance)";
+            public static readonly string WarehouseNotFound = "Không tìm thấy kho";
+            public static readonly string StorageLocationNotInWarehouse = "Vị trí lưu kho không thuộc kho đã chọn";
+            public static readonly string IngredientNotFound = "Không tìm thấy nguyên liệu";
+            public static readonly string LotNotFound = "Không tìm thấy lô";
+            public static readonly string LotIngredientMismatch = "Lô {0} không thuộc nguyên liệu đã chọn";
+            public static readonly string UnitRequired = "Không xác định được đơn vị tính – chọn đơn vị";
+            public static readonly string UnitMismatch = "Đơn vị tính khác đơn vị của tồn kho hiện có ({0}) – Pilot chưa quy đổi đơn vị khi ghi sổ";
+            public static readonly string QuantityPositive = "Số lượng phải lớn hơn 0";
+            public static readonly string AdjustQuantityNonZero = "Số lượng điều chỉnh phải khác 0 (dương = tăng, âm = giảm)";
+            public static readonly string TransferSameLocation = "Kho / vị trí nhận phải khác kho / vị trí chuyển";
+            public static readonly string InsufficientAvailable = "Không đủ tồn khả dụng của {0}: còn {1}, cần {2}";
+            public static readonly string LotHoldInvalid = "Chỉ tạm giữ lô đang khả dụng (hiện tại: {0})";
+            public static readonly string LotReleaseInvalid = "Chỉ mở lô đang tạm giữ (hiện tại: {0})";
+            public static readonly string LotNumberRequired = "Nhập số lô (hoặc chọn nhà cung cấp có mã để sinh số NL-)";
+            public static readonly string LotQcFailedLocked = "Lô có kết quả QC {0} – không đổi kết quả QC qua sửa danh mục (chỉ qua luồng QC nhập hàng)";
+            public static readonly string LotIngredientLocked = "Lô đã có giao dịch kho – không đổi nguyên liệu của lô";
+            public static readonly string IssueNeedsLine = "Phiếu xuất phải có ít nhất 1 dòng số lượng lớn hơn 0";
+            public static readonly string IssueInsertBlocked = "Tạo phiếu xuất qua MaterialIssue/Create (sinh số PH-, kiểm lô FEFO / FIFO, hạn dùng, QC)";
+            public static readonly string IssueLineCrudBlocked = "Dòng phiếu xuất chỉ ghi qua MaterialIssue/Create";
+            public static readonly string IssueCancelReasonRequired = "Hủy phiếu xuất phải ghi lý do";
+            public static readonly string ProductionOrderNotFound = "Không tìm thấy lệnh sản xuất";
+            public static readonly string LotNotFirstWarning = "Cảnh báo: còn lô {0} ({1}) nên xuất trước lô {2} theo {3}";
+            public static readonly string StockCountInsertBlocked = "Tạo phiếu kiểm kê qua StockCount/Create (sinh số PH-, lấy tồn hệ thống)";
+            public static readonly string StockCountLineCrudBlocked = "Dòng kiểm kê chỉ ghi qua StockCount/RecordCounts";
+            public static readonly string CountTypeInvalid = "Loại kiểm kê phải là DAILY / WEEKLY / MONTHLY / ADHOC";
+            public static readonly string PhysicalQuantityNegative = "Số lượng thực tế không được âm";
+            public static readonly string CountLineNotInCount = "Dòng {0} không thuộc phiếu kiểm kê này";
+            public static readonly string VarianceReasonRequired = "Dòng {0} lệch {1} – phải ghi lý do chênh lệch";
+            public static readonly string VarianceNeedsAdmin = "Chênh lệch kiểm kê {0}% vượt ngưỡng {1}% – Pilot: chỉ quản trị viên được ghi sổ (duyệt kiểm kê để sau Pilot)";
         }
 
         public class TypeSave

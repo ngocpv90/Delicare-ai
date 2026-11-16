@@ -22,5 +22,11 @@ namespace AppDelicare.Data.Repositories
         public List<T> ListData { get; set; }
         public int ResponseCode { get; set; }
         public string ResponseMessage { get; set; }
+
+        /// <summary>T16: danh sách thành công (ResponseCode = 200, TotalRecords = số dòng) – cùng hình dạng Results cũ.</summary>
+        public static Results<T> Success(List<T> listData, string message) => new(listData, listData.Count) { ResponseCode = 200, ResponseMessage = message };
+
+        /// <summary>T16: lỗi nghiệp vụ (ResponseCode = 400 như mẫu cũ), danh sách rỗng.</summary>
+        public static Results<T> Fail(string message) => new([], 0) { ResponseCode = 400, ResponseMessage = message };
     }
 }

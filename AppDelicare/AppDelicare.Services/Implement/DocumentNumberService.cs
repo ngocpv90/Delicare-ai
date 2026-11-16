@@ -32,6 +32,8 @@ namespace AppDelicare.Services.Implement
                 new(typeof(GoodsReceipt), ["ReceiptNumber", "ReceiptNo"]),
                 new(typeof(MaterialIssue), ["IssueNumber", "IssueNo"]),
                 new(typeof(StockCount), ["CountNumber", "CountNo"]),
+                // T16: bút toán điều chỉnh / chuyển kho tay (không có phiếu riêng – GAP-F-03 / F-04) lấy số PH- trên sổ cái.
+                new(typeof(InventoryTransaction), ["TransactionNumber", "TransactionNo"]),
                 new(typeof(PurchaseRequest), ["RequestNumber", "RequestNo"]),
                 new(typeof(ProductionOrder), ["ProductionOrderNumber", "ProductionOrderNo"]),
                 new(typeof(PackingOrder), ["PackingOrderNumber", "PackingNo"]),
