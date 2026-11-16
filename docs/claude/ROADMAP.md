@@ -12,6 +12,23 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 **Mục tiêu:** chạy thử sớm **một luồng thông suốt** Đơn hàng → Nhu cầu NL → Mua → Nhận + QC → Kho → Sản xuất → Giao + đối soát suất, với danh mục thật, 1–2 khách, 1 bếp. Mỗi bước làm **bản tối thiểu** (bấm nút thay job, duyệt 1 cấp). **Giữ ngay** mọi kiểm soát ATTP: nhiệt độ lõi ≥ 70°C, nhiệt độ giao ≥ 60°C, lưu mẫu, chặn lô hết hạn / KHONG_DAT.
 
+> **⚠ T-MERGE – GỘP NHÁNH PILOT (anh chốt 2026-11-16, D-41) – làm NGAY SAU T19, TRƯỚC T50R1.**
+> **Điều phối 3 thư mục làm việc song song** (`Delicare-ai`, `wt-T11`, `wt-T17`, `wt-T45R8`):
+> - **Chỉ phiên ở `wt-T17`** làm tiếp: xong T19 → T-MERGE → T50R1 → deploy staging → dừng báo anh.
+> - Phiên ở **`wt-T11`** và **`wt-T45R8`**: **DỪNG**, không nhận task mới (T17 đã DONE ở `wt-T17` – không làm lại). Commit hết thay đổi đang dở rồi báo "đã dừng".
+>
+> **T-MERGE – các bước:**
+> 1. Tạo nhánh `release/pilot` từ `main`. Xác định nhánh "đầu" chứa đủ lịch sử bằng `git merge-base` / `git branch --contains` (dự kiến: `feat/T15.1-po-rules` [T48.0 → T11 → T12 → T13 → T16 → T14 → T15 → T14.1 → T15.1], `feat/T19-delivery` [T17 → T19, tách từ T15], `feat/T45R.8-admin` [FE-0 → FE-1 → FE-2 → FE-3 WIP + T45R.8], cùng các nhánh FE nếu không nằm trong T45R.8). Gộp lần lượt bằng `git merge --no-ff`, **không rebase, không force**.
+> 2. Giải xung đột:
+>    - Code (`ConstantHelper`, `ScreenMap`, DI, seed menu / quyền, SearchRequest, SP…): **giữ cả hai phía** (hợp), không bỏ logic của nhánh nào; sau đó build + test.
+>    - `PROGRESS.md`: một mục "Trạng thái hiện tại" duy nhất, đúng thực tế sau gộp; nhật ký giữ **đủ mọi mục** theo thứ tự thời gian, không trùng.
+>    - `DECISIONS.md`, `ROADMAP.md`, `GAP`: hợp đủ các dòng; **kiểm trùng mã** (D-xx, GAP-xx) – nếu hai nhánh dùng cùng mã cho hai nội dung khác nhau thì đánh lại mã cho bản sau và sửa mọi chỗ tham chiếu; ghi bảng đổi mã vào PROGRESS.
+>    - `DELICARE_API_Catalog.xlsx` (file nhị phân): lấy bản của `main`/mới nhất, **không tự gộp**; ghi PROGRESS "cần cập nhật Catalog" (em / anh cập nhật sau).
+>    - Script SQL trong `DB/sp`, `DB/seed`: liệt kê đầy đủ theo thứ tự chạy vào `DB/README.md` mục "Pilot".
+> 3. Kiểm tra trên **một bản gộp duy nhất**: `dotnet build --no-incremental` 0 lỗi; `dotnet test` **toàn bộ xanh** (số test ≥ tổng các nhánh, không mất test); chạy lại mọi SP / seed mới lên DB dev theo thứ tự trong `DB/README.md`; chạy các file `docs/api-tests/*.http`; `npm run build` của `app-delicare-client` 0 lỗi (FE-3 WIP vẫn phải build được).
+> 4. Dọn: sau khi `release/pilot` xanh → `git worktree remove` 3 thư mục `wt-*` (giữ nhánh, không xóa nhánh). **Không push, không gộp vào `main`** – báo anh danh sách nhánh đã gộp, số test, xung đột đã giải, để anh duyệt rồi mới push / gộp `main`.
+> 5. T50R1 làm trên `release/pilot`.
+
 **Làm đúng thứ tự này** (đứng trước bảng R1 bên dưới; task trong bảng R1 không có ở đây thì chờ sau Pilot):
 
 | # | Task | Phạm vi PILOT (phần còn lại của task giữ `TODO` sau Pilot) |
