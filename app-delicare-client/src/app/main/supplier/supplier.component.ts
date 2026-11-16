@@ -1,159 +1,87 @@
-import { Component, OnInit, Renderer2 } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
-import { Router } from '@angular/router';
-import {
-  checkClassActive,
-  notificationCommon,
-  permission,
-} from 'src/app/helpers/common-helper';
-import {
-  ADD_MODAL_TITLE,
-  ERROR,
-  STRING_EMPTY,
-  SUCCESS,
-  UPDATE_MODAL_TITLE,
-} from 'src/app/helpers/constant-helper';
+import { Component } from '@angular/core';
+import { forkJoin, map } from 'rxjs';
+import { ACTIVE_STATUSES, CodeLabel, labelOf } from 'src/app/helpers/master-data-options';
+import { MetaDataService } from 'src/app/services/meta-data.service';
 import { SupplierService } from 'src/app/services/supplier.service';
-import { AuthenticationService } from 'src/app/services/authentication.service';
-import { ModalService } from 'src/app/shared/modal.service';
-import { NotifyService } from 'src/app/shared/notify.service';
-import { TableState } from 'src/app/shared/table/table-state';
+import { DrawerTab } from 'src/app/shared/detail-drawer/detail-drawer.component';
+import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { SupplierModalComponent } from './supplier-modal/supplier-modal.component';
 
+// scm-supplier – Hồ sơ nhà cung cấp. FE-2: list from Supplier/GetAllData (uspSupplier_GetAll only returns
+// Id / Name / Note) + ngăn kéo tổng quan (Supplier/GetOverview: bảng giá, PO đang mở, sự cố, tỷ lệ 90 ngày).
 @Component({
   selector: 'app-supplier',
   templateUrl: './supplier.component.html',
 })
-export class SupplierComponent implements OnInit {
-  public listData: any[] = [];
-  public searchForm!: UntypedFormGroup;
-  public isLoading = false;
-  public table = new TableState();
-  public permission: any;
+export class SupplierComponent extends MasterListBase {
+  public readonly statuses = ACTIVE_STATUSES;
+  public readonly labelOf = labelOf;
+  public supplierTypes: CodeLabel[] = [];
+  protected searchFields = ['code', 'name', 'taxCode', 'phone', 'contactName', 'contactPhone', 'email'];
+  protected override filterDefaults = { supplierType: null, status: '' };
+
+  // Drawer
+  public drawerOpen = false;
+  public drawerRow: any;
+  public drawerTab = 'overview';
+  public readonly drawerTabs: DrawerTab[] = [
+    { key: 'overview', label: 'Tổng quan' },
+    { key: 'price', label: 'Bảng giá' },
+    { key: 'po', label: 'PO đang mở' },
+    { key: 'issue', label: 'Sự cố' },
+  ];
+  public overview: any;
+  public isLoadingOverview = false;
 
   constructor(
-    private authenticationService: AuthenticationService,
     private supplierService: SupplierService,
-    private formBuilder: UntypedFormBuilder,
-    private notifyService: NotifyService,
-    private modalService: ModalService,
-    private router: Router,
-    private renderer: Renderer2
-  ) {}
-
-  public ngOnInit(): void {
-    checkClassActive(
-      this.router,
-      this.renderer,
-      this.authenticationService.userValue?.listMenu
-    );
-    this.permission = permission(
-      this.router.url,
-      this.authenticationService.userValue?.listMenu
-    );
-    this.searchForm = this.formBuilder.group({
-      searchText: [STRING_EMPTY],
-    });
-    if (this.permission?.allowAccess) {
-      this.getData();
-    }
+    private metaDataService: MetaDataService
+  ) {
+    super();
   }
 
-  private getData(): void {
-    this.isLoading = true;
-    const { searchText } = this.searchForm.value;
-    const param = {
-      ...this.table.toParams(),
-      searchText: searchText ?? STRING_EMPTY,
-    };
-    this.supplierService.getAll(param).subscribe(
-      (data) => {
-        if (data.responseCode === 200) {
-          this.table.total = data.totalRecords;
-          this.listData = data.listData;
-        }
-      },
-      () => {
-        this.isLoading = false;
-        notificationCommon(this.notifyService, ERROR);
-      },
-      () => {
-        this.isLoading = false;
-      }
+  protected override init(): void {
+    this.metaDataService.getReferenceList('SupplierType').subscribe((list) => (this.supplierTypes = list));
+  }
+
+  protected loadRows() {
+    return forkJoin([this.supplierService.getAllData()]).pipe(
+      map(([res]) => (res?.responseCode === 200 ? res.listData ?? [] : []))
     );
   }
 
-  public search(): void {
-    this.table.page = 1;
-    this.getData();
-  }
-
-  public sort(field: string): void {
-    this.table.toggleSort(field);
-    this.getData();
-  }
-
-  public changePage(page: number): void {
-    this.table.page = page;
-    this.getData();
-  }
-
-  public changePageSize(size: number): void {
-    this.table.pageSize = size;
-    this.table.page = 1;
-    this.getData();
+  protected deleteRow(id: any) {
+    return this.supplierService.delete(id);
   }
 
   public openModal(data?: any): void {
-    this.modalService
-      .openForResult(SupplierModalComponent, {
-        title: data ? UPDATE_MODAL_TITLE : ADD_MODAL_TITLE,
-        data,
-        size: 'lg',
-      })
-      .subscribe((result) => {
-        if (result?.reLoad) {
-          this.getData();
-        }
-      });
+    this.openForm(SupplierModalComponent, data);
   }
 
-  public async delete(id: any): Promise<void> {
-    if (!(await this.notifyService.confirmDelete())) {
-      return;
-    }
-    this.isLoading = true;
-    this.supplierService.delete(id).subscribe(
-      (result) => {
-        if (result.responseCode === 200) {
-          notificationCommon(
-            this.notifyService,
-            SUCCESS,
-            result.responseMessage
-          );
-          if (this.listData.length === 1 && this.table.page > 1) {
-            this.table.page--;
-          }
-          this.getData();
+  public openDrawer(row: any): void {
+    this.drawerRow = row;
+    this.drawerTab = 'overview';
+    this.drawerOpen = true;
+    this.overview = null;
+    this.isLoadingOverview = true;
+    this.supplierService.getOverview(row.id).subscribe({
+      next: (res) => {
+        this.isLoadingOverview = false;
+        if (res?.responseCode === 200) {
+          this.overview = res.data;
         } else {
-          notificationCommon(
-            this.notifyService,
-            ERROR,
-            result.responseMessage
-          );
+          this.notify.error(res?.responseMessage);
         }
       },
-      () => {
-        this.isLoading = false;
-        notificationCommon(this.notifyService, ERROR);
+      error: () => {
+        this.isLoadingOverview = false;
+        this.notify.error();
       },
-      () => {
-        this.isLoading = false;
-      }
-    );
+    });
   }
 
-  public reloadPage(): void {
-    location.reload();
+  public editFromDrawer(): void {
+    this.drawerOpen = false;
+    this.openModal(this.drawerRow);
   }
 }

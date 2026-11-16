@@ -47,4 +47,10 @@ export class SupplierService {
   public getAllData(): Observable<any> {
     return this.httpClient.get<any>(`${URL_API}Supplier/GetAllData`);
   }
+
+  // FE-2: tổng quan NCC – bảng giá, PO đang mở, sự cố, tỷ lệ đúng hạn / trả hàng 90 ngày
+  public getOverview(id: any): Observable<any> {
+    const param = QUESTION_MARK.concat(`id=${id}`);
+    return this.httpClient.get<any>(`${URL_API}Supplier/GetOverview${param}`);
+  }
 }

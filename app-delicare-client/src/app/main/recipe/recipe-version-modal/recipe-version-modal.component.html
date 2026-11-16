@@ -1,0 +1,27 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <label class="form-label" for="dishId">Món <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="dishId" [items]="listDish" bindValue="id" bindLabel="label" placeholder="Chọn món" [invalid]="isInvalid('dishId')" (selectionChange)="dishChanged($event)"></app-select>
+        @if (isInvalid('dishId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="copyFromRecipeId">Sao chép định lượng từ phiên bản</label>
+        <app-select formControlName="copyFromRecipeId" [items]="listVersion" bindValue="id" bindLabel="label" placeholder="Không sao chép (công thức trống)"></app-select>
+        <small class="text-muted">Phiên bản mới ở trạng thái Nháp. Món đang có bản Nháp / Chờ duyệt thì không tạo được bản mới.</small>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-code-branch me-1"></i>Tạo phiên bản</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

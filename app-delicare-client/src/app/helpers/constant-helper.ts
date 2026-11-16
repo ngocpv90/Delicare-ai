@@ -1,8 +1,14 @@
 // Same-origin API: nginx (Docker) or proxy.conf.json (ng serve) forwards /api to the .NET backend
 export const URL_API = '/api/';
-export const PROJECT_NAME = 'Quản lý phòng khám đa khoa Trung Cang';
+// Branding (docs/claude/BUSINESS_DOCS.md "Thông tin pháp nhân"): display name + legal entity name. Change here only.
 export const PROJECT_SHORT_NAME = 'DELI-CARE';
+export const LEGAL_NAME = 'CÔNG TY CỔ PHẦN THƯƠNG MẠI DỊCH VỤ DELICARE VN';
+export const PROJECT_NAME = LEGAL_NAME;
 export const DOMAIN_ROUTER = 'quan-tri';
+// Home screen inside DOMAIN_ROUTER: always allowed, not an ObjectMenu row
+export const HOME_ROUTE = 'trang-chu';
+// Selected branch of the header branch selector (api/OrganizationUnit/GetBranches)
+export const BRANCH_KEY = 'branchId';
 export const LOGO_HEADER_NAME = 'assets/img/logo/logo2.png';
 export const LOGO_LOGIN_NAME = 'assets/img/logo/logo2.png';
 export const STRING_EMPTY = '';

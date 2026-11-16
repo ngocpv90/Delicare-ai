@@ -398,7 +398,7 @@ namespace AppDelicare.Services.Implement
                         }
                         message += "Tài khoản của bạn đang bị khóa, vui lòng liên hệ với quản trị viên";
                     }
-                    if (exist.PassWord != EncriptFunctionsHelper.GeneratePassword(string.Concat(request.PassWordOld ?? string.Empty, exist.UserName)))
+                    if (!EncriptFunctionsHelper.VerifyPassword(request.PassWordOld ?? string.Empty, exist.PassWord, exist.UserName, out _)) // T48.0: kiểm cả PBKDF2 và MD5 cũ
                     {
                         if (!string.IsNullOrEmpty(message))
                         {
@@ -406,7 +406,7 @@ namespace AppDelicare.Services.Implement
                         }
                         message += "Mật khẩu cũ không đúng";
                     }
-                    if (request.PassWordNew?.Length < 9)
+                    if ((request.PassWordNew?.Length ?? 0) < 8) // T48.0: đúng thông báo "từ 8 ký tự" (GAP-ADM-02); trước đây đòi ≥ 9
                     {
                         if (!string.IsNullOrEmpty(message))
                         {
@@ -427,7 +427,8 @@ namespace AppDelicare.Services.Implement
                 }
                 if (exist != null)
                 {
-                    exist.PassWord = EncriptFunctionsHelper.GeneratePassword(string.Concat(request.PassWordNew ?? string.Empty, exist.UserName));
+                    // T48.0: lưu PBKDF2 của mật khẩu mới (trước đây MD5(mật khẩu + tên) – đăng nhập kiểm MD5(mật khẩu) nên user không vào lại được).
+                    exist.PassWord = EncriptFunctionsHelper.GeneratePassword(request.PassWordNew ?? string.Empty);
                     _unitOfWork.UserRepository.Update(exist);
                     await _unitOfWork.UserRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 }

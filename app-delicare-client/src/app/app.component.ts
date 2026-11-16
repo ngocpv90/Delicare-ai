@@ -10,7 +10,7 @@ import { AuthenticationService } from './services/authentication.service';
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  title = 'clinic';
+  title = 'delicare';
 
   constructor(private authenticationService: AuthenticationService) {}
 

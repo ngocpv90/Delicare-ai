@@ -56,4 +56,15 @@ export class ObjectMenuService {
       `${URL_API}ObjectMenu/SaveIsActive${param}`
     );
   }
+
+  // Menu tree (level 1 -> children), includeInactive = also hidden menus
+  public getTree(includeInactive: boolean): Observable<any> {
+    const param = QUESTION_MARK.concat(`includeInactive=${includeInactive}`);
+    return this.httpClient.get<any>(`${URL_API}ObjectMenu/GetTree${param}`);
+  }
+
+  // JSON body [{ id, parentId, orderShow }] (a list cannot be sent as a form)
+  public updateOrder(list: { id: string; parentId: string | null; orderShow: number }[]): Observable<any> {
+    return this.httpClient.put<any>(`${URL_API}ObjectMenu/UpdateOrder`, list);
+  }
 }

@@ -13,6 +13,7 @@ import {
   ENC,
   ERROR,
   GIF,
+  HOME_ROUTE,
   INTERNAL_SERVER_ERROR,
   JPEG,
   JPG,
@@ -21,6 +22,7 @@ import {
   PNG,
   PPT,
   PPTX,
+  QUESTION_MARK,
   RAR,
   SOURCE,
   STRING_EMPTY,
@@ -37,19 +39,15 @@ export function checkClassActive(
   listMenu?: any[]
 ): void {
   const url = router.url;
-  let firstMenu = SOURCE;
-  if (listMenu) {
-    firstMenu = firstMenu.concat(listMenu[0].metaLink);
-  }
   if (
     !url.startsWith('/dang-nhap') &&
-    url !== SOURCE.concat(DOMAIN_ROUTER, firstMenu) &&
+    url.split(QUESTION_MARK)[0] !== SOURCE.concat(DOMAIN_ROUTER, SOURCE, HOME_ROUTE) &&
     !checkPermission(url, listMenu)
   ) {
     router?.navigate(['/khong-co-quyen-truy-cap']);
     return;
   }
-  // Active menu state is handled by the W3CRM sidebar (main/share/sidebar)
+  // Active menu state is handled by the sidebar (main/share/sidebar)
   if (url.startsWith('/dang-nhap')) {
     renderer.addClass(document.body, 'body-login');
   } else {
@@ -158,24 +156,47 @@ export const randomCode = (stringLength: number) => {
   return randomstring;
 };
 
+// ===== ObjectMenu.MetaLink <-> route (the ONE place that knows the MetaLink format) =====
+// MetaLink is '#/<screen-id>' (D-35), '#/wf-inbox?type=<screen-id>' (approval items) or '#/group/NN'
+// (level-1 groups). Older rows may still hold '<path>' or '/<path>'. Routes live under '/<DOMAIN_ROUTER>/'.
+export const menuPath = (metaLink?: string | null): string =>
+  (metaLink ?? STRING_EMPTY).trim().replace(/^#/, STRING_EMPTY).replace(/^\/+/, STRING_EMPTY);
+
+export const menuUrl = (metaLink?: string | null): string =>
+  SOURCE.concat(DOMAIN_ROUTER, SOURCE, menuPath(metaLink));
+
+// routerLink + queryParams for a menu item (routerLink does not accept '?a=b' inside the path)
+export const menuLink = (metaLink?: string | null): { path: string; queryParams: any } => {
+  const [path, query] = menuUrl(metaLink).split(QUESTION_MARK);
+  const queryParams: any = {};
+  new URLSearchParams(query ?? STRING_EMPTY).forEach((v, k) => (queryParams[k] = v));
+  return { path, queryParams };
+};
+
+export const isGroupMenu = (menu: any): boolean => menuPath(menu?.metaLink).startsWith('group/');
+
+// Screen items of the 2-level listMenu: level-1 items without children (not groups) + every level-2 item
+export const flattenMenu = (listMenu?: any[]): any[] =>
+  (listMenu ?? []).flatMap((x) =>
+    x.children?.length ? x.children : isGroupMenu(x) ? [] : [x]
+  );
+
+// Menu item of a router url: exact match (incl. ?type=…), else same path when the MetaLink has no query
+export const findMenuByUrl = (url: string, listMenu?: any[]): any => {
+  const items = flattenMenu(listMenu);
+  const path = url.split(QUESTION_MARK)[0];
+  return (
+    items.find((x) => menuUrl(x.metaLink) === url) ??
+    items.find((x) => !menuPath(x.metaLink).includes(QUESTION_MARK) && menuUrl(x.metaLink) === path)
+  );
+};
+
 export function checkPermission(url: string, listMenu?: any[]): boolean {
-  const listMenuLevel1 = listMenu?.filter((x) => x.children.length === 0);
-  const listMenuLevel2 = listMenu?.flatMap((x) => x.children);
-  const per = listMenuLevel1
-    ?.concat(listMenuLevel2)
-    .find((x) => SOURCE.concat(DOMAIN_ROUTER, SOURCE, x.metaLink) === url);
-  if (!per) {
-    return false;
-  }
-  return true;
+  return !!findMenuByUrl(url, listMenu);
 }
 
 export const permission = (url: string, listMenu?: any[]) => {
-  const listMenuLevel1 = listMenu?.filter((x) => x.children.length === 0);
-  const listMenuLevel2 = listMenu?.flatMap((x) => x.children);
-  const per = listMenuLevel1
-    ?.concat(listMenuLevel2)
-    .find((x) => SOURCE.concat(DOMAIN_ROUTER, SOURCE, x.metaLink) === url);
+  const per = findMenuByUrl(url, listMenu);
   if (!per) {
     return undefined;
   }
@@ -200,3 +221,20 @@ export const downloadFile = (
   const blob = b64toBlob(fileContent, contentType);
   saveAs(blob, fileName);
 };
+
+// Form post body for Insert / Update (D-30): every key is sent – Update overwrites all fields,
+// null / undefined become '' (bound as null by the API), booleans as 'true' / 'false'.
+export const toFormData = (params: any): FormData => {
+  const formData = new FormData();
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+    formData.append(key, value === null || value === undefined ? STRING_EMPTY : String(value));
+  });
+  return formData;
+};
+
+// 'YYYY-MM-DD' for date-only form fields (Date | string | null)
+export const toDateParam = (value: any): string =>
+  value ? moment(value).format('YYYY-MM-DD') : STRING_EMPTY;
+
+export const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';

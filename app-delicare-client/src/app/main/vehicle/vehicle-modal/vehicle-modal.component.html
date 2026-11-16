@@ -1,0 +1,46 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã xe <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="VD: XE01" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập mã (tối đa 50 ký tự)</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="licensePlate">Biển số <span class="text-danger">(*)</span></label>
+        <input id="licensePlate" type="text" class="form-control" [class.is-invalid]="isInvalid('licensePlate')" formControlName="licensePlate" placeholder="VD: 29C-123.45" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="vehicleType">Loại xe</label>
+        <input id="vehicleType" type="text" class="form-control" list="vehicleTypeList" formControlName="vehicleType" placeholder="VD: Xe tải lạnh 2.5T" autocomplete="off" />
+        <datalist id="vehicleTypeList">
+          @for (t of typeSuggestions; track t) {
+            <option [value]="t"></option>
+          }
+        </datalist>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="capacity">Tải trọng / sức chứa</label>
+        <input id="capacity" type="text" class="form-control text-end" appNumberInput [decimals]="2" [min]="0" formControlName="capacity" placeholder="Nhập số" />
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea id="note" class="form-control" rows="2" formControlName="note" placeholder="Nhập dữ liệu"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

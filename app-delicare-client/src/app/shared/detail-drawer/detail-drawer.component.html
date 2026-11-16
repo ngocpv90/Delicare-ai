@@ -1,0 +1,45 @@
+@if (open) {
+  <div class="dc-drawer-wrap" (click)="close()">
+    <aside
+      class="dc-drawer"
+      role="dialog"
+      aria-modal="true"
+      [style.width]="'min(' + width + ', 100%)'"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dc-drawer-head">
+        <div class="dc-drawer-title">
+          <h2>{{ title }}</h2>
+          @if (subtitle) {
+            <small>{{ subtitle }}</small>
+          }
+        </div>
+        <button type="button" class="btn dc-btn-icon" title="Đóng" (click)="close()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      @if (tabs.length) {
+        <div class="dc-tabs" role="tablist">
+          @for (t of tabs; track t.key) {
+            <button
+              type="button"
+              role="tab"
+              class="dc-tab"
+              [class.active]="t.key === activeTab"
+              [attr.aria-selected]="t.key === activeTab"
+              (click)="selectTab(t.key)"
+            >
+              {{ t.label }}
+            </button>
+          }
+        </div>
+      }
+      <div class="dc-drawer-body">
+        <ng-content></ng-content>
+      </div>
+      <div class="dc-drawer-foot">
+        <ng-content select="[drawer-footer]"></ng-content>
+      </div>
+    </aside>
+  </div>
+}

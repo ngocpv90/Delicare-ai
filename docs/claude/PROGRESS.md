@@ -3,9 +3,11 @@
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
+- **2026-11-16 (D-40): LÀM HẾT BACKEND PILOT TRƯỚC, FE SAU.** Tạm dừng FE-3 (commit WIP trên `feat/FE-3-menu-masterdata`). Task kế tiếp: **T45R.8 (chỉ backend)** → T11 → T12 → T13 + T46B.1 → T16 → T14 → T15 → T17 → T19 → T50R1 → dừng báo anh. Sau đó mới tiếp FE.
+- **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 87/87 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 92/92 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -496,3 +498,96 @@ Nhánh `fix/T45R-seed-approval-link` (từ `chore/T45R.6-rename-generator`).
   - `wf-inbox` là màn "Hộp duyệt" trong catalog.js. Vẫn 14 mục, 1 mục / màn có loại AP (PROPOSED – anh có thể gộp theo nhóm khi UAT-1).
   - Seed đổi MetaLink kiểu cũ tại chỗ, giữ dòng và quyền đã gán. Đã chạy trên DB dev và staging: 0 mục cũ, 14 mục mới; "Duyệt – Công thức" vẫn của CEO, COO.
 - Test 87/87 (+1 SQL Server `Seeds_do_not_overwrite_admin_changes`: thu hồi quyền duyệt của CEO + đổi tên menu → chạy lại seed → giữ nguyên; rollback).
+
+### T48.0 – Băm mật khẩu an toàn (D-29) · 2026-11-16 · DONE
+Nhánh `feat/T48.0-password-hash` (từ `main`).
+
+Rà soát code cũ:
+- **Đăng nhập** so `MD5(mật khẩu)` trong SQL.
+- **Tạo user / Reset** lưu `MD5(tên đăng nhập)`, tức mật khẩu khởi tạo = tên đăng nhập.
+- **Lỗi cũ ở ChangePassword**: kiểm và lưu `MD5(mật khẩu + tên)`, nên sau khi đổi mật khẩu user **không đăng nhập lại được**. Ngoài ra đòi độ dài ≥ 9 trong khi thông báo ghi "từ 8 ký tự".
+
+Đã làm (chỉ `EncriptFunctionsHelper`, `LoginService`, `UserService`, script deploy – không đổi API, bảng, cột):
+- `GeneratePassword` = PBKDF2-SHA256, salt ngẫu nhiên 16 byte, 100.000 vòng, chuỗi `PBKDF2$100000$<salt>$<hash>` trong `User.PassWord` (nvarchar(max)).
+- `VerifyPassword(mật khẩu, chuỗi lưu, tên, out needsUpgrade)`:
+  - PBKDF2: so sánh bằng `FixedTimeEquals`;
+  - MD5 cũ: chấp nhận `MD5(mk)` và `MD5(mk + tên)`, kèm cờ cần nâng.
+- Đăng nhập: tìm theo tên rồi kiểm; hash cũ đúng → ghi PBKDF2 ngay; `GetClaimsIdentity` kiểm cùng cách. Không log mật khẩu / hash.
+- Tạo / Reset / InsertUserAfter tự ghi PBKDF2 qua `GeneratePassword`.
+- ChangePassword: kiểm mật khẩu cũ bằng `VerifyPassword`, lưu PBKDF2 của mật khẩu mới (sửa lỗi không đăng nhập lại được); tối thiểu 8 ký tự đúng thông báo.
+- `Deploy-Database.ps1` tạo admin bằng PBKDF2 cùng định dạng (PowerShell 5.1); `00_Admin_seed.sql` sửa chú thích.
+
+Kiểm tra:
+- Build 0 lỗi / 10 cảnh báo.
+- Test **92/92** (+5 `PasswordHashTests`):
+  - MD5 cũ đăng nhập → nâng PBKDF2 → đăng nhập lần 2;
+  - hash `MD5(mk + tên)` đăng nhập được;
+  - sai mật khẩu bị từ chối (cũ / mới);
+  - 2 user cùng mật khẩu có hash khác nhau;
+  - hash do PowerShell sinh kiểm được bằng C#;
+  - tạo / đổi / reset ghi PBKDF2, đổi xong đăng nhập bằng mật khẩu mới, < 8 ký tự bị từ chối.
+- Trên SQL Server dev: admin đã tự nâng lên PBKDF2 sau lần đăng nhập của test tích hợp.
+
+AC: [x] cả 4 mục.
+
+Còn lại / cần anh:
+- **GAP-ADM-02 chưa đủ**: reset vẫn đặt mật khẩu = tên đăng nhập và trả `Result<bool>` (giữ API theo T48.0). Muốn "mật khẩu tạm 12 ký tự trả một lần" thì phải đổi response của `User/ResetPassword` → cần anh duyệt.
+- Mỗi lần đăng nhập tính PBKDF2 2–3 lần (~0,1–0,2 s), chấp nhận cho Pilot.
+
+### FE-0 – Khung ứng dụng Angular (D-35, D-36) · 2026-11-16 · DONE (chờ thử tay)
+Nhánh `feat/FE-0-app-shell` (từ `feat/T48.0-password-hash`). Chỉ sửa trong `app-delicare-client/`.
+
+Mốc ban đầu: `npm run build` của bản cũ **lỗi sẵn 5 lỗi** ở `main/medical-examination`. Không sửa file đó; gỡ route nên module không còn được build.
+
+Đã làm:
+- MetaLink `#/<screen-id>` (cả `?type=`) xử lý một chỗ trong `helpers/common-helper.ts` (`menuPath`, `menuLink`, `findMenuByUrl`); `permission()` / `checkPermission()` dùng chung.
+- Đăng nhập, phiên:
+  - guard gọi `api/User/GetCurrent` khi tải lại trang;
+  - sửa lỗi cũ "chưa đăng nhập vẫn qua guard" (`userValue` là `{}`);
+  - 401 → về đăng nhập kèm `returnUrl`; 403 → màn hình tự báo.
+- Route theo screen-id: `adm-user`, `adm-usergroup`, `adm-objectmenu`, `adm-person`, `adm-access-log`, `adm-audit`, `scm-supplier`, `scm-uom`. Đường dẫn cũ chuyển hướng sang các route này; mục menu chưa có màn hình → "Chức năng chưa có".
+- Gỡ khỏi route (không xóa file): demo w3crm (`pages`, `components`, `plugins`), `patient*`, `medical-*`, `test-demo`, `delete-data` (D-26).
+- Sidebar dựng từ `listMenu` (nhóm cấp 1 → màn cấp 2); ô chọn chi nhánh `api/OrganizationUnit/GetBranches`; bỏ nút sáng / tối.
+- Tên DELI-CARE + tên pháp nhân (tab, footer, đăng nhập); không còn chữ "phòng khám" / "W3CRM" trên giao diện.
+- Giao diện D-36 trong `assets/css/clinic.css` (không sửa `style.css`): màu, font Be Vietnam Pro (Google Fonts), cỡ 14 / 13 / 12px, dòng ≥ 44px, nút ≥ 36px.
+- Thành phần dùng chung: `shared/page-header`, `shared/status-badge`, `shared/detail-drawer`; `services/meta-data.service.ts` (cache GetStatuses / GetReferenceLists).
+- Màn mẫu `scm-uom` (unit-measure) theo khung mới.
+- Đổi mật khẩu sửa 3 lỗi: báo thành công cả khi lỗi; đòi ≥ 9 ký tự; gửi sai trường.
+
+Kiểm tra: `npm run build` **0 lỗi**, 1 cảnh báo có sẵn (`<link style.css>` trong index.html). **Chưa thử trên trình duyệt, chưa chụp ảnh trước / sau** (không có công cụ trình duyệt trong phiên này).
+
+Cần anh / còn lại:
+- Thử tay theo UAT (đăng nhập, tải lại, đổi mật khẩu, 401, sidebar, chi nhánh, scm-uom).
+- DB dev còn **26 mục ObjectMenu của app cũ** với MetaLink kiểu cũ (`quan-ly-dang-nhap`, `quan-ly-vung`…) – vẫn hiện trên menu nếu nhóm có quyền. Em không tự tắt (dữ liệu của anh): anh chọn tắt (IsActive = 0) hay giữ.
+- Font đang tải từ Google Fonts; muốn chạy nội bộ không mạng thì cần file woff2.
+- Màn `administrative-*`, `orgchart` còn route cũ, ngoài menu: gỡ hay giữ?
+- Chi nhánh mới lưu ở trình duyệt; màn nào cần lọc theo chi nhánh sẽ đọc giá trị này.
+- Màn `scm-uom` mới đổi giao diện; form vẫn chỉ có trường Tên (Update ghi đè đủ trường → FE-2 bổ sung).
+
+### FE-1 – Màn quản trị P0 · 2026-11-16 · DONE (chờ thử tay)
+Nhánh `feat/FE-1-admin` (từ FE-0). Chỉ sửa trong `app-delicare-client/`.
+
+Đã làm:
+- Màn `adm-user` (rà soát màn cũ `main/user`): lọc, nhóm, khóa / mở, reset (chỉ admin), drawer "Quyền hiệu lực". Sửa lỗi cũ: user mới mặc định là admin.
+- Màn `adm-usergroup`: popup phân quyền cũ thay bằng link sang `adm-permission`.
+- Màn `adm-permission` (mới) – ma trận 7 cờ:
+  - lưu theo dòng đã đổi qua `UserRole/Update`;
+  - Cấp / Thu hồi tất cả, Sao chép từ nhóm, Xem trước (admin);
+  - dòng duyệt `#/wf-inbox?type=` gắn nhãn "Duyệt".
+- Màn `adm-objectmenu`: đổi sang dạng cây; kéo thả bằng CDK có sẵn + nút lên / xuống, lưu qua `UpdateOrder`.
+- Màn `adm-orgunit` (mới, cây `GetTree`).
+- Màn `adm-employee`, `adm-position` (mới).
+- Màn `adm-person` đổi giao diện.
+- Helper `toFormData` gửi đủ trường khi Update (Update ghi đè đủ trường).
+- Service: user-role (5 action mới), object-menu (cây, sắp xếp), organization-unit, employee, position, company.
+
+Kiểm tra: `npm run build` 0 lỗi (1 cảnh báo có sẵn). Kịch bản thử tay: UAT_CHECKLIST mục PILOT-FE (chưa thử trên trình duyệt).
+
+Phát hiện → việc backend nhỏ (làm sau T13, ghi ở đây):
+- `UserRole/SaveAccessAll` chỉ cấp menu cấp 2 → sidebar ẩn nhóm cấp 1. FE tạm gửi thêm Update bật nhóm.
+- `User/GetAll` chưa có lọc IsActive (SP / SearchRequest).
+- `ObjectMenu` cho đặt cha cho menu cấp 1 đang có con (thành 3 cấp) – cần chặn ở `UpdateOrder` / Update.
+
+Cần anh:
+- **Tạo user kèm hồ sơ trong 1 bước chưa làm**: `Person/Insert` đã tự tạo 1 user (tên tự sinh, chưa có nhóm), nên làm thêm sẽ ra 2 tài khoản. Hiện màn user chỉ chọn hồ sơ có sẵn – anh chọn cách xử lý.
+- Danh sách loại đơn vị / trạng thái đơn vị lấy theo seed (PROPOSED), chưa có trong STATUS_CATALOG.

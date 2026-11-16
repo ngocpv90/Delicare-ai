@@ -1,165 +1,229 @@
 @if (permission?.allowAccess) {
-  <div class="row">
-    <div class="col-xl-12">
+  <app-page-header description="Tài khoản đăng nhập, gán nhóm người dùng (vai trò), khóa / mở khóa và xem quyền hiệu lực.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            class="form-control"
+            placeholder="Tên đăng nhập"
+            aria-label="Tìm theo tên đăng nhập"
+            formControlName="userName"
+            autocomplete="off"
+          />
+        </div>
+        <div class="dc-search">
+          <i class="fa-solid fa-user"></i>
+          <input
+            class="form-control"
+            placeholder="Họ và tên"
+            aria-label="Tìm theo họ và tên"
+            formControlName="fullName"
+            autocomplete="off"
+          />
+        </div>
+        <div class="dc-filter-select">
+          <app-select
+            [loading]="isLoadingUserGroupId"
+            formControlName="userGroupId"
+            [items]="listUserGroup"
+            bindValue="id"
+            bindLabel="name"
+            placeholder="Tất cả nhóm"
+          ></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('userName')">
+                Tên đăng nhập
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('userName')"></i>
+              </th>
+              <th class="sortable" (click)="sort('fullName')">
+                Họ và tên
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('fullName')"></i>
+              </th>
+              <th>Nhóm người dùng</th>
+              <th class="sortable" style="width: 120px" (click)="sort('isAdmin')">
+                Quản trị
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('isAdmin')"></i>
+              </th>
+              <th class="sortable" style="width: 150px" (click)="sort('isActive')">
+                Trạng thái
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('isActive')"></i>
+              </th>
+              <th class="text-end" style="width: 200px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td class="fw-semibold">
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.userName }}</a>
+                </td>
+                <td>{{ data.fullName }}</td>
+                <td>{{ data.userGroupName }}</td>
+                <td>
+                  @if (data.isAdmin) {
+                    <app-status-badge code="confirmed" label="Quản trị"></app-status-badge>
+                  }
+                </td>
+                <td>
+                  <app-status-badge
+                    [code]="data.isActive ? 'active' : 'locked-user'"
+                    [label]="data.isActive ? 'Đang hoạt động' : 'Đang khóa'"
+                  ></app-status-badge>
+                </td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Xem" aria-label="Xem" (click)="openDrawer(data)">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="dc-act"
+                      [class.danger]="data.isActive"
+                      [title]="data.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'"
+                      [attr.aria-label]="data.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'"
+                      (click)="toggleActive(data)"
+                    >
+                      <i class="fa-solid" [ngClass]="data.isActive ? 'fa-lock' : 'fa-lock-open'"></i>
+                    </button>
+                  }
+                  @if (isAdmin) {
+                    <button
+                      type="button"
+                      class="dc-act"
+                      title="Đặt lại mật khẩu"
+                      aria-label="Đặt lại mật khẩu"
+                      (click)="resetPassword(data)"
+                    >
+                      <i class="fa-solid fa-key"></i>
+                    </button>
+                  }
+                  @if (permission.allowDelete && !data.isDefault) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
 
-      <div class="card">
-        <div class="card-body p-0">
-          <div class="table-responsive active-projects style-1 dataTables_wrapper">
-              <form [formGroup]="searchForm" (ngSubmit)="search()">
-                <div class="tbl-caption">
-                  <h4 class="heading mb-0">Danh sách tài khoản</h4>
-                  <div class="d-flex flex-wrap align-items-center gap-2">
-                  @if (permission.allowAdd) { <button type="button" class="btn btn-primary btn-sm" title="Thêm mới dữ liệu" (click)="openModal()">+ Thêm mới</button> }
-                  </div>
-                </div>
-                <div class="row g-3 align-items-end clinic-tbl-filter">
-                  <div class="col-xl-3 col-lg-4 col-md-6">
-                    <label class="form-label" for="userName">Tên đăng nhập</label>
-                    <input
-                      id="userName"
-                      type="text"
-                      class="form-control"
-                      formControlName="userName"
-                      placeholder="Nhập dữ liệu"
-                      autocomplete="off"
-                    />
-                  </div>
-                  <div class="col-xl-3 col-lg-4 col-md-6">
-                    <label class="form-label" for="fullName">Họ và tên</label>
-                    <input
-                      id="fullName"
-                      type="text"
-                      class="form-control"
-                      formControlName="fullName"
-                      placeholder="Nhập dữ liệu"
-                    />
-                  </div>
-                  <div class="col-xl-3 col-lg-4 col-md-6">
-                    <label class="form-label" for="userGroupId">Vai trò</label>
-                    <app-select
-                  [loading]="isLoadingUserGroupId"
-                      formControlName="userGroupId"
-                      [items]="listUserGroup"
-                      bindValue="id"
-                      bindLabel="name"
-                      placeholder="Chọn dữ liệu"
-                    ></app-select>
-                  </div>
-                  <div class="col-xl-3 col-lg-4 col-md-6 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Áp dụng</button>
-                    <button type="button" class="btn btn-danger light" (click)="reloadPage()">Đặt lại</button>
-                  </div>
-                </div>
-              </form>
-            <table class="table clinic-table mb-0">
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="drawerRow?.userName"
+    [subtitle]="drawerRow?.fullName"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (drawerTab === 'info') {
+        <div class="dc-kv">
+          <div><label>Tên đăng nhập</label><span>{{ drawerRow.userName }}</span></div>
+          <div><label>Họ và tên</label><span>{{ drawerRow.fullName || '—' }}</span></div>
+          <div><label>Nhóm người dùng</label><span>{{ drawerRow.userGroupName || '—' }}</span></div>
+          <div><label>Quản trị</label><span>{{ drawerRow.isAdmin ? 'Có (mọi quyền)' : 'Không' }}</span></div>
+          <div>
+            <label>Trạng thái</label>
+            <span>
+              <app-status-badge
+                [code]="drawerRow.isActive ? 'active' : 'locked-user'"
+                [label]="drawerRow.isActive ? 'Đang hoạt động' : 'Đang khóa'"
+              ></app-status-badge>
+            </span>
+          </div>
+          <div><label>Số màn hình được truy cập</label><span>{{ isLoadingEffective ? '…' : effectiveScreenCount }}</span></div>
+        </div>
+      }
+      @if (drawerTab === 'permission') {
+        <p class="text-muted small mb-2">
+          Quyền hiệu lực = gộp (OR) quyền của các nhóm người dùng của tài khoản. Tài khoản quản trị có mọi quyền.
+        </p>
+        @if (isLoadingEffective) {
+          <div class="dc-empty">Đang tải...</div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table dc-table dc-matrix mb-0">
               <thead>
                 <tr>
-                  <th class="text-center" style="width: 45px">STT</th>
-                  <th class="sortable" style="width: 150px" (click)="sort('userName')">
-                    Tên đăng nhập
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('userName')"></i>
-                  </th>
-                  <th class="sortable" style="width: 150px" (click)="sort('fullName')">
-                    Họ và tên
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('fullName')"></i>
-                  </th>
-                  <th style="width: 150px">Vai trò</th>
-                  <th class="sortable" style="width: 100px" (click)="sort('isAdmin')">
-                    Cấp quản trị
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('isAdmin')"></i>
-                  </th>
-                  <th class="sortable" style="width: 140px" (click)="sort('isActive')">
-                    Trạng thái
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('isActive')"></i>
-                  </th>
-                  <th class="text-end" style="width: 120px">Thao tác</th>
+                  <th>Chức năng</th>
+                  @for (f of flags; track f.key) {
+                    <th class="text-center">{{ f.label }}</th>
+                  }
                 </tr>
               </thead>
               <tbody>
-                @for (data of listData; track data.id) {
-                  <tr>
-                    <td class="text-center">{{ data.stt }}</td>
-                    <td>{{ data.userName }}</td>
-                    <td>{{ data.fullName }}</td>
-                    <td>{{ data.userGroupName }}</td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          [id]="'isAdmin' + data.id"
-                          [checked]="data.isAdmin"
-                          (change)="data.isAdmin = !data.isAdmin; onChangeIsAdmin(data.id)"
-                        />
-                        <label class="form-check-label" [for]="'isAdmin' + data.id">
-                          {{ data.isAdmin ? 'Có' : 'Không' }}
-                        </label>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          [id]="'isActive' + data.id"
-                          [checked]="data.isActive"
-                          (change)="data.isActive = !data.isActive; onChangeIsActive(data.id)"
-                        />
-                        <label class="form-check-label" [for]="'isActive' + data.id">
-                          {{ data.isActive ? 'Đang hoạt động' : 'Đang khóa' }}
-                        </label>
-                      </div>
-                    </td>
-                    <td class="text-end">
-                      @if (permission.allowEdit) {
-                        <button
-                          type="button"
-                          class="btn btn-primary light btn-xs sharp me-1"
-                          title="Sửa dữ liệu"
-                          (click)="openModal(data)"
-                        >
-                          <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-warning light btn-xs sharp me-1"
-                          title="Reset mật khẩu"
-                          (click)="resetPassword(data.id)"
-                        >
-                          <i class="fa-solid fa-key"></i>
-                        </button>
+                @for (g of effectiveMenu; track g.objectMenuId) {
+                  @if (g.children?.length) {
+                    <tr class="dc-matrix-group">
+                      <td [attr.colspan]="flags.length + 1">{{ g.objectMenuName }}</td>
+                    </tr>
+                  }
+                  @for (m of g.children?.length ? g.children : [g]; track m.objectMenuId) {
+                    <tr>
+                      <td class="ps-4">{{ m.objectMenuName }}</td>
+                      @for (f of flags; track f.key) {
+                        <td class="text-center">
+                          @if (m[f.key]) {
+                            <i class="fa-solid fa-check text-primary" [attr.aria-label]="f.label"></i>
+                          }
+                        </td>
                       }
-                      @if (permission.allowDelete && !data.isDefault) {
-                        <button
-                          type="button"
-                          class="btn btn-danger light btn-xs sharp"
-                          title="Xóa dữ liệu"
-                          (click)="delete(data.id)"
-                        >
-                          <i class="fa-solid fa-trash"></i>
-                        </button>
-                      }
-                    </td>
-                  </tr>
+                    </tr>
+                  }
                 } @empty {
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Không có dữ liệu</td>
+                    <td [attr.colspan]="flags.length + 1" class="dc-empty">Chưa có quyền nào</td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
-          <app-table-pager
-            [page]="table.page"
-            [pageSize]="table.pageSize"
-            [total]="table.total"
-            (pageChange)="changePage($event)"
-            (pageSizeChange)="changePageSize($event)"
-          ></app-table-pager>
-        </div>
-      </div>
-    </div>
-  </div>
+        }
+      }
+    }
+    <ng-container drawer-footer>
+      @if (drawerRow && permission.allowEdit) {
+        <button type="button" class="btn btn-primary" (click)="openModal(drawerRow)">
+          <i class="fa-solid fa-pen me-1"></i>Sửa
+        </button>
+      }
+    </ng-container>
+  </app-detail-drawer>
 } @else {
   <app-not-found isFullPage="false"></app-not-found>
 }

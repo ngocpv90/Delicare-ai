@@ -1,63 +1,218 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { HOME_ROUTE } from '../helpers/constant-helper';
 import { MainComponent } from './main.component';
+import { ComingSoonComponent } from './share/coming-soon/coming-soon.component';
 
+// Route path = mockup screen-id = ObjectMenu.MetaLink without '#/' (D-35, CLAUDE.md 4.4).
+// Old Vietnamese paths of the reused screens redirect to their screen-id.
+// Hospital screens (patient*, medical-*, test-demo, delete-data) and the hospital dashboard are no longer
+// routed (files kept). Menu items whose screen is not built yet fall through to ComingSoonComponent.
 export const mainRoutes: Routes = [
-  { path: '', redirectTo: 'trang-chu', pathMatch: 'full' },
+  { path: '', redirectTo: HOME_ROUTE, pathMatch: 'full' },
   {
     path: '',
     component: MainComponent,
     children: [
+      { path: HOME_ROUTE, component: ComingSoonComponent, data: { home: true } },
+      // ===== P0 – Quản trị =====
       {
-        path: 'trang-chu',
-        loadChildren: () =>
-          import('./dashboard/dashboard.module').then((m) => m.DashboardModule),
-      },
-      {
-        path: 'quan-ly-tai-khoan',
+        path: 'adm-user',
         loadChildren: () =>
           import('./user/user.module').then((m) => m.UserModule),
       },
       {
-        path: 'phan-quyen-tai-khoan',
+        path: 'adm-usergroup',
         loadChildren: () =>
           import('./user-group/user-group.module').then(
             (m) => m.UserGroupModule
           ),
       },
       {
-        path: 'quan-ly-chuc-nang',
+        path: 'adm-permission',
+        loadChildren: () =>
+          import('./user-permission/user-permission.module').then(
+            (m) => m.UserPermissionModule
+          ),
+      },
+      {
+        path: 'adm-orgunit',
+        loadChildren: () =>
+          import('./organization-unit/organization-unit.module').then(
+            (m) => m.OrganizationUnitModule
+          ),
+      },
+      {
+        path: 'adm-employee',
+        loadChildren: () =>
+          import('./employee/employee.module').then((m) => m.EmployeeModule),
+      },
+      {
+        path: 'adm-position',
+        loadChildren: () =>
+          import('./position/position.module').then((m) => m.PositionModule),
+      },
+      {
+        path: 'adm-objectmenu',
         loadChildren: () =>
           import('./object-menu/object-menu.module').then(
             (m) => m.ObjectMenuModule
           ),
       },
       {
-        path: 'quan-ly-dang-nhap',
+        path: 'adm-person',
+        loadChildren: () =>
+          import('./person/person.module').then((m) => m.PersonModule),
+      },
+      {
+        path: 'adm-access-log',
         loadChildren: () =>
           import('./location-tracking/location-tracking.module').then(
             (m) => m.LocationTrackingModule
           ),
       },
       {
-        path: 'quan-ly-thay-doi-du-lieu',
+        path: 'adm-audit',
         loadChildren: () =>
           import('./audit-change/audit-change.module').then(
             (m) => m.AuditChangeModule
           ),
       },
+      // ===== P1 – Danh mục (FE-2) =====
       {
-        path: 'quan-ly-xoa-du-lieu-cu',
+        path: 'crm-customer',
         loadChildren: () =>
-          import('./delete-data/delete-data.module').then(
-            (m) => m.DeleteDataModule
+          import('./customer/customer.module').then(
+            (m) => m.CustomerModule
           ),
       },
       {
-        path: 'chuc-nang-demo',
+        path: 'crm-contact',
         loadChildren: () =>
-          import('./test-demo/test-demo.module').then((m) => m.TestDemoModule),
+          import('./customer-contact/customer-contact.module').then(
+            (m) => m.CustomerContactModule
+          ),
       },
+      {
+        path: 'crm-location',
+        loadChildren: () =>
+          import('./customer-delivery-location/customer-delivery-location.module').then(
+            (m) => m.CustomerDeliveryLocationModule
+          ),
+      },
+      {
+        path: 'crm-contract',
+        loadChildren: () =>
+          import('./contract/contract.module').then(
+            (m) => m.ContractModule
+          ),
+      },
+      {
+        path: 'crm-contract-meal',
+        loadChildren: () =>
+          import('./contract-meal/contract-meal.module').then(
+            (m) => m.ContractMealModule
+          ),
+      },
+      {
+        path: 'scm-supplier-material',
+        loadChildren: () =>
+          import('./supplier-material/supplier-material.module').then(
+            (m) => m.SupplierMaterialModule
+          ),
+      },
+      {
+        path: 'scm-ingredient',
+        loadChildren: () =>
+          import('./ingredient/ingredient.module').then(
+            (m) => m.IngredientModule
+          ),
+      },
+      {
+        path: 'scm-supplier',
+        loadChildren: () =>
+          import('./supplier/supplier.module').then((m) => m.SupplierModule),
+      },
+      {
+        path: 'scm-uom',
+        loadChildren: () =>
+          import('./unit-measure/unit-measure.module').then(
+            (m) => m.UnitMeasureModule
+          ),
+      },
+      {
+        path: 'scm-ingredient-cat',
+        loadChildren: () =>
+          import('./ingredient-category/ingredient-category.module').then(
+            (m) => m.IngredientCategoryModule
+          ),
+      },
+      {
+        path: 'scm-uom-conversion',
+        loadChildren: () =>
+          import('./uom-conversion/uom-conversion.module').then((m) => m.UomConversionModule),
+      },
+      {
+        path: 'scm-warehouse',
+        loadChildren: () =>
+          import('./warehouse/warehouse.module').then((m) => m.WarehouseModule),
+      },
+      {
+        path: 'scm-zone',
+        loadChildren: () =>
+          import('./storage-zone/storage-zone.module').then((m) => m.StorageZoneModule),
+      },
+      {
+        path: 'scm-location',
+        loadChildren: () =>
+          import('./storage-location/storage-location.module').then((m) => m.StorageLocationModule),
+      },
+      {
+        path: 'scm-inv-policy',
+        loadChildren: () =>
+          import('./inventory-policy/inventory-policy.module').then((m) => m.InventoryPolicyModule),
+      },
+      {
+        path: 'hr-shift',
+        loadChildren: () =>
+          import('./shift/shift.module').then((m) => m.ShiftModule),
+      },
+      {
+        path: 'log-vehicle',
+        loadChildren: () =>
+          import('./vehicle/vehicle.module').then((m) => m.VehicleModule),
+      },
+      // ===== P2 – Món, công thức, giá (FE-3) =====
+      {
+        path: 'menu-dish-cat',
+        loadChildren: () =>
+          import('./dish-category/dish-category.module').then((m) => m.DishCategoryModule),
+      },
+      {
+        path: 'menu-dish',
+        loadChildren: () => import('./dish/dish.module').then((m) => m.DishModule),
+      },
+      {
+        path: 'menu-recipe',
+        loadChildren: () => import('./recipe/recipe.module').then((m) => m.RecipeModule),
+      },
+      {
+        path: 'cost-standard',
+        loadChildren: () =>
+          import('./standard-cost/standard-cost.module').then((m) => m.StandardCostModule),
+      },
+      {
+        path: 'crm-price-policy',
+        loadChildren: () =>
+          import('./price-policy/price-policy.module').then((m) => m.PricePolicyModule),
+      },
+      // Nhập Excel (T49): no ObjectMenu item yet – route PROPOSED, reached from "Nhập Excel" buttons / URL
+      {
+        path: 'sys-import',
+        loadChildren: () =>
+          import('./master-import/master-import.module').then((m) => m.MasterImportModule),
+      },
+      // ===== Old screens kept on their old paths (not in the DELI-CARE menu) =====
       {
         path: 'quan-ly-vung',
         loadChildren: () =>
@@ -94,77 +249,6 @@ export const mainRoutes: Routes = [
           ),
       },
       {
-        path: 'nguoi-dung',
-        loadChildren: () =>
-          import('./person/person.module').then((m) => m.PersonModule),
-      },
-      {
-        path: 'kham-benh',
-        loadChildren: () =>
-          import('./medical-examination/medical-examination.module').then(
-            (m) => m.MedicalExaminationModule
-          ),
-      },
-      {
-        path: 'kho-thuoc-le',
-        loadChildren: () =>
-          import('./medical-warehouse-odd/medical-warehouse-odd.module').then(
-            (m) => m.MedicalWarehouseOddModule
-          ),
-      },
-      {
-        path: 'kho-thuoc-chinh',
-        loadChildren: () =>
-          import('./medical-warehouse-main/medical-warehouse-main.module').then(
-            (m) => m.MedicalWarehouseMainModule
-          ),
-      },
-      {
-        path: 'nha-cung-cap',
-        loadChildren: () =>
-          import('./supplier/supplier.module').then((m) => m.SupplierModule),
-      },
-      {
-        path: 'don-vi-tinh',
-        loadChildren: () =>
-          import('./unit-measure/unit-measure.module').then(
-            (m) => m.UnitMeasureModule
-          ),
-      },
-      {
-        path: 'thuoc-sap-het-han',
-        loadChildren: () =>
-          import(
-            './medical-warehouse-expiry/medical-warehouse-expiry.module'
-          ).then((m) => m.MedicalWarehouseExpiryModule),
-      },
-      {
-        path: 'benh-nhan',
-        loadChildren: () =>
-          import('./patient/patient.module').then((m) => m.PatientModule),
-      },
-      {
-        path: 'nhap-ket-qua',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'danh-muc-khach-hang',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'khach-hang-360',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
         path: 'ql-vung',
         loadChildren: () =>
           import('./orgchart/region/region.module').then(
@@ -178,41 +262,17 @@ export const mainRoutes: Routes = [
             (m) => m.AreaModule
           ),
       },
-      {
-        path: 'ql-chi-nhanh',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-phong-ban',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-san-pham',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-nhu-cau-khach-hang',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-co-hoi-ban-hang',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
+      // ===== Old paths -> screen-id =====
+      { path: 'quan-ly-tai-khoan', redirectTo: 'adm-user' },
+      { path: 'phan-quyen-tai-khoan', redirectTo: 'adm-usergroup' },
+      { path: 'quan-ly-chuc-nang', redirectTo: 'adm-objectmenu' },
+      { path: 'nguoi-dung', redirectTo: 'adm-person' },
+      { path: 'quan-ly-dang-nhap', redirectTo: 'adm-access-log' },
+      { path: 'quan-ly-thay-doi-du-lieu', redirectTo: 'adm-audit' },
+      { path: 'nha-cung-cap', redirectTo: 'scm-supplier' },
+      { path: 'don-vi-tinh', redirectTo: 'scm-uom' },
+      // Menu item without a built screen yet (incl. 'wf-inbox?type=…', groups): placeholder, no crash
+      { path: '**', component: ComingSoonComponent },
     ],
   },
 ];

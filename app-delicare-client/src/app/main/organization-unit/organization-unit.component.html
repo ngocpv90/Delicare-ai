@@ -1,0 +1,121 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Cây đơn vị: công ty → khối → phòng ban / bếp / kho / chi nhánh. Đơn vị loại Chi nhánh hiện ở ô chọn chi nhánh trên đầu trang.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <div class="dc-toolbar">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            class="form-control"
+            placeholder="Tìm theo tên, mã, người quản lý"
+            aria-label="Tìm theo tên, mã, người quản lý"
+            [(ngModel)]="searchText"
+            (ngModelChange)="build()"
+            autocomplete="off"
+          />
+        </div>
+        <div class="dc-filter-select">
+          <app-select
+            [items]="unitTypes"
+            bindValue="code"
+            bindLabel="label"
+            placeholder="Tất cả loại đơn vị"
+            [(ngModel)]="unitType"
+            (selectionChange)="build()"
+          ></app-select>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+        <span class="flex-grow-1"></span>
+        <span class="text-muted small">{{ total }} đơn vị</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="collapseAll(false)">Mở tất cả</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="collapseAll(true)">Thu gọn</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th>Đơn vị</th>
+              <th style="width: 120px">Mã</th>
+              <th style="width: 140px">Loại</th>
+              <th>Người quản lý</th>
+              <th class="num" style="width: 100px">Nhân viên</th>
+              <th class="num" style="width: 70px">Kho</th>
+              <th style="width: 150px">Trạng thái</th>
+              @if (permission.allowAdd || permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 130px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows; track r.node.id) {
+              <tr>
+                <td>
+                  <div class="dc-tree-cell" [style.padding-left.px]="r.depth * 22">
+                    @if (r.hasChildren) {
+                      <button
+                        type="button"
+                        class="dc-tree-toggle"
+                        [attr.aria-expanded]="!collapsed.has(r.node.id)"
+                        [title]="collapsed.has(r.node.id) ? 'Mở' : 'Thu gọn'"
+                        (click)="toggle(r.node.id)"
+                      >
+                        <i class="fa-solid" [ngClass]="collapsed.has(r.node.id) ? 'fa-chevron-right' : 'fa-chevron-down'"></i>
+                      </button>
+                    } @else {
+                      <span class="dc-tree-toggle-space"></span>
+                    }
+                    <span [class.fw-semibold]="r.depth < 2">{{ r.node.name }}</span>
+                  </div>
+                </td>
+                <td>{{ r.node.code }}</td>
+                <td>
+                  @if (r.node.unitType) {
+                    <span class="dc-tree-tag">{{ labelOf(unitTypes, r.node.unitType) }}</span>
+                  }
+                </td>
+                <td>{{ r.node.managerName || '—' }}</td>
+                <td class="num">{{ r.node.employeeCount }}</td>
+                <td class="num">{{ r.node.warehouseCount }}</td>
+                <td>
+                  <app-status-badge [code]="r.node.status" [label]="labelOf(statuses, r.node.status)"></app-status-badge>
+                </td>
+                @if (permission.allowAdd || permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowAdd) {
+                      <button type="button" class="dc-act" title="Thêm đơn vị con" aria-label="Thêm đơn vị con" (click)="openModal(undefined, r.node.id)">
+                        <i class="fa-solid fa-plus"></i>
+                      </button>
+                    }
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(r.node)">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(r.node)">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

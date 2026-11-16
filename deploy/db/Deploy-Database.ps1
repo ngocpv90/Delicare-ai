@@ -76,8 +76,30 @@ foreach ($f in $sps) { Invoke-Sql $Database $f.FullName }
 Write-Host "  + Stored procedure: $($sps.Count) file"
 
 if ($AdminPassword) {
-    $md5 = [Security.Cryptography.MD5]::Create()
-    $hash = [BitConverter]::ToString($md5.ComputeHash([Text.Encoding]::UTF8.GetBytes((Plain $AdminPassword))))
+    # T48.0 (D-29): PBKDF2-SHA256, salt 16 byte, 100.000 vòng – cùng định dạng EncriptFunctionsHelper.GeneratePassword.
+    $salt = New-Object byte[] 16
+    [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($salt)
+    $kdf = New-Object Security.Cryptography.Rfc2898DeriveBytes -ArgumentList ([Text.Encoding]::UTF8.GetBytes((Plain $AdminPassword))), $salt, 100000, ([Security.Cryptography.HashAlgorithmName]::SHA256)
+    $hash = 'PBKDF2$100000
+    Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
+}
+
+foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
+    Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
+    Write-Host "  + Seed $name"
+}
+Write-Host "== Xong."
+ + [Convert]::ToBase64String($salt) + '
+    Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
+}
+
+foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
+    Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
+    Write-Host "  + Seed $name"
+}
+Write-Host "== Xong."
+ + [Convert]::ToBase64String($kdf.GetBytes(32))
+    $kdf.Dispose()
     Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
 }
 

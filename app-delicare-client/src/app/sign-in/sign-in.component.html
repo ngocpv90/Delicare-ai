@@ -1,12 +1,13 @@
-<div class="authincation h-100 clinic-login">
+<div class="authincation h-100 dc-login">
   <div class="container-fluid h-100">
     <div class="row h-100">
       <div class="col-lg-6 col-md-12 col-sm-12 mx-auto align-self-center">
         <div class="login-form">
           <div class="text-center">
-            <img class="clinic-login-logo mb-3" [src]="logoName" alt="" />
+            <img class="dc-login-logo mb-3" [src]="logoName" alt="DELI-CARE" />
             <h3 class="title">Đăng nhập</h3>
-            <p>Đăng nhập để sử dụng hệ thống {{ projectName }}</p>
+            <p class="mb-1"><b>{{ shortName }}</b> – hệ thống quản lý suất ăn</p>
+            <p class="dc-login-legal">{{ projectName }}</p>
           </div>
           <form [formGroup]="signinForm" (ngSubmit)="submitForm()" novalidate>
             <div class="mb-4">
@@ -80,7 +81,7 @@
       <div class="col-xl-6 col-sm-6 d-none d-sm-block">
         <div class="pages-left h-100">
           <div class="login-content">
-            <h3 class="mb-2">HỆ THỐNG</h3>
+            <h3 class="mb-2">{{ shortName }}</h3>
             <p>{{ projectName }}</p>
           </div>
           <div class="login-media text-center">

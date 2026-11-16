@@ -5,18 +5,16 @@ import {
   Validators,
 } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { NotifyService } from 'src/app/shared/notify.service';
-import { notificationCommon } from 'src/app/helpers/common-helper';
-import {
-  COMMA,
-  ERROR,
-  STRING_EMPTY,
-  SUCCESS,
-} from 'src/app/helpers/constant-helper';
+import { toFormData } from 'src/app/helpers/common-helper';
+import { COMMA, STRING_EMPTY } from 'src/app/helpers/constant-helper';
+import { AuthenticationService } from 'src/app/services/authentication.service';
 import { PersonService } from 'src/app/services/person.service';
 import { UserGroupService } from 'src/app/services/user-group.service';
 import { UserService } from 'src/app/services/user.service';
+import { NotifyService } from 'src/app/shared/notify.service';
 
+// adm-user create / edit. Sends every UserRequest field (Update overwrites): Id, UserName, PersonId,
+// IsActive, IsAdmin, IsDefault, ListUserGroupId (comma separated group ids).
 @Component({
   selector: 'app-user-modal',
   templateUrl: './user-modal.component.html',
@@ -32,25 +30,29 @@ export class UserModalComponent implements OnInit {
   public isReadonly = false;
   public isLoadingPerson = false;
   public listPerson: any[] = [];
+  // Only an admin may grant / remove the admin flag (the flag is still sent unchanged by others)
+  public isAdmin = false;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
     private userGroupService: UserGroupService,
     private userService: UserService,
     private personService: PersonService,
-    private notifyService: NotifyService,
+    private authenticationService: AuthenticationService,
+    private notify: NotifyService,
     private activeModal: NgbActiveModal
   ) {}
 
   public ngOnInit(): void {
+    this.isAdmin = !!this.authenticationService.userValue?.isAdmin;
     this.getAllDataUserGroup();
     this.formGroup = this.formBuilder.group({
       id: [STRING_EMPTY],
-      userName: [STRING_EMPTY, [Validators.required]],
-      isActive: [true],
-      isAdmin: [true],
+      userName: [STRING_EMPTY, [Validators.required, Validators.pattern(/^\S+$/)]],
+      personId: [null],
       listUserGroupId: [[], [Validators.required]],
-      personId: [STRING_EMPTY],
+      isActive: [true],
+      isAdmin: [false],
       isDefault: [false],
     });
     if (this.data) {
@@ -59,17 +61,20 @@ export class UserModalComponent implements OnInit {
         (data) => {
           if (data.responseCode === 200) {
             const item = data.data;
-            item.listUserGroupId = item.listUserGroupId
-              ? item.listUserGroupId.split(COMMA)
-              : item.listUserGroupId;
-            this.personSearch(item.fullName, true);
+            item.listUserGroupId = item.listUserGroupId ? item.listUserGroupId.split(COMMA) : [];
+            // Keep the current person selectable before any search
+            if (item.personId) {
+              this.listPerson = [{ id: item.personId, fullName: item.fullName ?? STRING_EMPTY }];
+            }
             this.formGroup.patchValue(item);
             this.isReadonly = true;
+          } else {
+            this.notify.error(data.responseMessage);
           }
         },
         () => {
           this.isLoading = false;
-          notificationCommon(this.notifyService, ERROR);
+          this.notify.error();
         },
         () => {
           this.isLoading = false;
@@ -88,7 +93,7 @@ export class UserModalComponent implements OnInit {
       },
       () => {
         this.isLoadingUserGroupId = false;
-        notificationCommon(this.notifyService, ERROR);
+        this.notify.error();
       },
       () => {
         this.isLoadingUserGroupId = false;
@@ -96,7 +101,7 @@ export class UserModalComponent implements OnInit {
     );
   }
 
-  public destroyModal(reLoad: any): void {
+  public destroyModal(reLoad: boolean): void {
     this.activeModal.close({ reLoad });
   }
 
@@ -105,95 +110,64 @@ export class UserModalComponent implements OnInit {
     return control.invalid && (this.submitted || control.dirty || control.touched);
   }
 
+  // Person/GetAllDataByKey: ≥ 3 characters; new account = only people without an active account
+  public personSearch(value: string): void {
+    if (!value || value.trim().length < 3) {
+      return;
+    }
+    this.isLoadingPerson = true;
+    const current = this.listPerson.find((x) => x.id === this.formGroup.value.personId);
+    this.personService.getAllDataByKey(value.trim(), this.isReadonly).subscribe(
+      (data) => {
+        if (data.responseCode === 200) {
+          const list: any[] = data.listData ?? [];
+          this.listPerson = current && !list.some((x) => x.id === current.id) ? [current, ...list] : list;
+        }
+      },
+      () => {
+        this.isLoadingPerson = false;
+        this.notify.error();
+      },
+      () => {
+        this.isLoadingPerson = false;
+      }
+    );
+  }
+
   public submitForm(): void {
     this.submitted = true;
     if (!this.formGroup.valid) {
       return;
     }
     this.isLoading = true;
-    const params = this.formGroup.value;
-    params.userName = params.userName || STRING_EMPTY;
-    params.isActive = params.isActive || false;
-    params.isAdmin = params.isAdmin || false;
-    params.listUserGroupId = params.listUserGroupId || STRING_EMPTY;
-    params.isDefault = params.isDefault || false;
-    params.personId = params.personId || STRING_EMPTY;
-    const formData: FormData = new FormData();
-    Object.keys(params).forEach((key) => formData.append(key, params[key]));
-    if (params.id !== STRING_EMPTY) {
-      this.userService.update(formData).subscribe(
-        (data) => {
-          if (data.responseCode === 200) {
-            notificationCommon(
-              this.notifyService,
-              SUCCESS,
-              data.responseMessage
-            );
-            this.destroyModal(true);
-          } else {
-            notificationCommon(
-              this.notifyService,
-              ERROR,
-              data.responseMessage
-            );
-          }
-        },
-        () => {
-          this.isLoading = false;
-          notificationCommon(this.notifyService, ERROR);
-        },
-        () => {
-          this.isLoading = false;
+    const value = this.formGroup.value;
+    const params = {
+      id: value.id || STRING_EMPTY,
+      userName: (value.userName ?? STRING_EMPTY).trim(),
+      personId: value.personId ?? STRING_EMPTY,
+      isActive: !!value.isActive,
+      isAdmin: !!value.isAdmin,
+      isDefault: !!value.isDefault,
+      listUserGroupId: (value.listUserGroupId ?? []).join(COMMA),
+    };
+    const formData = toFormData(params);
+    const request = params.id ? this.userService.update(formData) : this.userService.insert(formData);
+    request.subscribe(
+      (data) => {
+        if (data.responseCode === 200) {
+          this.notify.success(data.responseMessage);
+          this.destroyModal(true);
+        } else {
+          this.notify.error(data.responseMessage);
         }
-      );
-    } else {
-      this.userService.insert(formData).subscribe(
-        (data) => {
-          if (data.responseCode === 200) {
-            notificationCommon(
-              this.notifyService,
-              SUCCESS,
-              data.responseMessage
-            );
-            this.destroyModal(true);
-          } else {
-            notificationCommon(
-              this.notifyService,
-              ERROR,
-              data.responseMessage
-            );
-          }
-        },
-        () => {
-          this.isLoading = false;
-          notificationCommon(this.notifyService, ERROR);
-        },
-        () => {
-          this.isLoading = false;
-        }
-      );
-    }
-  }
-
-  public personSearch(value: string, isEdit: boolean): void {
-    if (value && value.length > 2) {
-      this.isLoadingPerson = true;
-      this.personService.getAllDataByKey(value, isEdit).subscribe(
-        (data) => {
-          if (data.responseCode === 200) {
-            this.listPerson = data.listData;
-          }
-        },
-        () => {
-          this.isLoadingPerson = false;
-          notificationCommon(this.notifyService, ERROR);
-        },
-        () => {
-          this.isLoadingPerson = false;
-        }
-      );
-    } else {
-      this.listPerson = [];
-    }
+      },
+      () => {
+        this.isLoading = false;
+        this.notify.error();
+      },
+      () => {
+        this.isLoading = false;
+      }
+    );
   }
 }

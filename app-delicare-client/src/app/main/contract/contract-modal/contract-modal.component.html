@@ -1,0 +1,63 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <label class="form-label" for="customerId">Khách hàng <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="customerId" [items]="listCustomer" bindValue="id" bindLabel="label" placeholder="Chọn khách hàng" [invalid]="isInvalid('customerId')"></app-select>
+        @if (isInvalid('customerId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="contractNumber">Số hợp đồng <span class="text-danger">(*)</span></label>
+        <input id="contractNumber" type="text" class="form-control" [class.is-invalid]="isInvalid('contractNumber')" formControlName="contractNumber" placeholder="VD: HD-2026-001" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên hợp đồng <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="signedDate">Ngày ký</label>
+        <app-date-picker inputId="signedDate" formControlName="signedDate"></app-date-picker>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="effectiveFrom">Hiệu lực từ <span class="text-danger">(*)</span></label>
+        <app-date-picker inputId="effectiveFrom" formControlName="effectiveFrom" [invalid]="isInvalid('effectiveFrom')"></app-date-picker>
+        @if (isInvalid('effectiveFrom')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn ngày</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="effectiveTo">Hiệu lực đến</label>
+        <app-date-picker inputId="effectiveTo" formControlName="effectiveTo"></app-date-picker>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="contractValue">Giá trị hợp đồng (VNĐ)</label>
+        <input id="contractValue" type="text" class="form-control text-end" appNumberInput [min]="0" formControlName="contractValue" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="paymentTerm">Điều khoản thanh toán</label>
+        <input id="paymentTerm" type="text" class="form-control" formControlName="paymentTerm" placeholder="VD: Theo tháng, 30 ngày" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea id="note" class="form-control" rows="2" formControlName="note" placeholder="Nhập dữ liệu"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

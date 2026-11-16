@@ -1,131 +1,70 @@
-import { Component, Input, OnInit } from '@angular/core';
-import {
-  UntypedFormBuilder,
-  UntypedFormGroup,
-  Validators,
-} from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { NotifyService } from 'src/app/shared/notify.service';
-import { notificationCommon } from 'src/app/helpers/common-helper';
-import { ERROR, STRING_EMPTY, SUCCESS } from 'src/app/helpers/constant-helper';
+import { Component } from '@angular/core';
+import { Validators } from '@angular/forms';
+import { ACTIVE_STATUSES, CodeLabel } from 'src/app/helpers/master-data-options';
+import { MasterLookupService } from 'src/app/services/master-lookup.service';
+import { MetaDataService } from 'src/app/services/meta-data.service';
 import { SupplierService } from 'src/app/services/supplier.service';
+import { MasterModalBase } from 'src/app/shared/master/master-modal.base';
 
+// SupplierRequest: CompanyId, Code, Name, TaxCode, Address, Phone, Email, ContactName, Status, Note,
+// SupplierType, ContactPhone. FE-2: the old form only had Name / Note (Update overwrote the rest with null).
 @Component({
   selector: 'app-supplier-modal',
   templateUrl: './supplier-modal.component.html',
 })
-export class SupplierModalComponent implements OnInit {
-  @Input() public title = STRING_EMPTY;
-  @Input() public data: any;
-  public isLoading = false;
-  public submitted = false;
-  public formGroup!: UntypedFormGroup;
+export class SupplierModalComponent extends MasterModalBase {
+  public readonly statuses = ACTIVE_STATUSES;
+  public supplierTypes: CodeLabel[] = [];
+  public listCompany: any[] = [];
+  protected requestFields = [
+    'companyId', 'code', 'name', 'taxCode', 'address', 'phone', 'email', 'contactName', 'status', 'note',
+    'supplierType', 'contactPhone',
+  ];
 
   constructor(
-    private formBuilder: UntypedFormBuilder,
-    private supplierService: SupplierService,
-    private notifyService: NotifyService,
-    private activeModal: NgbActiveModal
-  ) {}
+    protected api: SupplierService,
+    private lookup: MasterLookupService,
+    private metaDataService: MetaDataService
+  ) {
+    super();
+  }
 
-  public ngOnInit(): void {
-    this.formGroup = this.formBuilder.group({
-      id: [STRING_EMPTY],
-      name: [STRING_EMPTY, [Validators.required]],
-      note: [STRING_EMPTY],
+  protected buildForm() {
+    return this.formBuilder.group({
+      code: ['', [Validators.required, Validators.maxLength(50)]],
+      name: ['', [Validators.required]],
+      supplierType: [null],
+      taxCode: [''],
+      phone: [''],
+      email: ['', [Validators.email]],
+      address: [''],
+      contactName: [''],
+      contactPhone: [''],
+      companyId: [null],
+      status: ['Active', [Validators.required]],
+      note: [''],
     });
-    if (this.data) {
-      this.isLoading = true;
-      this.supplierService.getById(this.data.id).subscribe(
-        (data) => {
-          if (data.responseCode === 200) {
-            const item = data.data;
-            this.formGroup.patchValue(item);
-          }
-        },
-        () => {
-          this.isLoading = false;
-          notificationCommon(this.notifyService, ERROR);
-        },
-        () => {
-          this.isLoading = false;
-        }
-      );
-    }
   }
 
-  public isInvalid(name: string): boolean {
-    const control = this.formGroup.controls[name];
-    return control.invalid && (this.submitted || control.dirty || control.touched);
+  protected override loadLists(): void {
+    this.isLoadingList = true;
+    this.metaDataService.getReferenceList('SupplierType').subscribe((list) => (this.supplierTypes = list));
+    this.lookup.companies().subscribe((companies) => {
+      this.listCompany = companies;
+      if (!this.isEdit && companies.length === 1 && !this.formGroup.value.companyId) {
+        this.formGroup.patchValue({ companyId: companies[0].id });
+      }
+      this.isLoadingList = false;
+    });
   }
 
-  public destroyModal(reLoad: any): void {
-    this.activeModal.close({ reLoad });
-  }
-
-  public submitForm(): void {
-    this.submitted = true;
-    if (!this.formGroup.valid) {
-      return;
-    }
-    this.isLoading = true;
-    const params = this.formGroup.value;
-    params.name = params.name || STRING_EMPTY;
-    params.note = params.note || STRING_EMPTY;
-    const formData: FormData = new FormData();
-    Object.keys(params).forEach((key) => formData.append(key, params[key]));
-    if (params.id !== STRING_EMPTY) {
-      this.supplierService.update(formData).subscribe(
-        (data) => {
-          if (data.responseCode === 200) {
-            notificationCommon(
-              this.notifyService,
-              SUCCESS,
-              data.responseMessage
-            );
-            this.destroyModal(true);
-          } else {
-            notificationCommon(
-              this.notifyService,
-              ERROR,
-              data.responseMessage
-            );
-          }
-        },
-        () => {
-          this.isLoading = false;
-          notificationCommon(this.notifyService, ERROR);
-        },
-        () => {
-          this.isLoading = false;
-        }
-      );
-    } else {
-      this.supplierService.insert(formData).subscribe(
-        (data) => {
-          if (data.responseCode === 200) {
-            notificationCommon(
-              this.notifyService,
-              SUCCESS,
-              data.responseMessage
-            );
-            this.destroyModal(true);
-          } else {
-            notificationCommon(
-              this.notifyService,
-              ERROR,
-              data.responseMessage
-            );
-          }
-        },
-        () => {
-          this.isLoading = false;
-          notificationCommon(this.notifyService, ERROR);
-        },
-        () => {
-          this.isLoading = false;
-        }
-      );
-    }
+  protected override toParams(v: any) {
+    return {
+      ...v,
+      code: (v.code ?? '').trim(),
+      name: (v.name ?? '').trim(),
+      taxCode: (v.taxCode ?? '').trim(),
+      email: (v.email ?? '').trim(),
+    };
   }
 }

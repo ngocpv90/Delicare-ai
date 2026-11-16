@@ -1,0 +1,99 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Khu bảo quản trong kho (mát, đông, khô…) và ngưỡng nhiệt độ cho phép.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã, tên khu, kho" aria-label="Tìm theo mã, tên khu, kho" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="warehouseId" [items]="listWarehouse" bindValue="id" bindLabel="label" placeholder="Tất cả kho" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('warehouseName')">
+                Kho <i class="fa-solid ms-1" [ngClass]="table.sortIcon('warehouseName')"></i>
+              </th>
+              <th class="sortable" style="width: 120px" (click)="sort('code')">
+                Mã khu <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên khu <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 110px" (click)="sort('temperatureMin')">
+                Nhiệt độ min <i class="fa-solid ms-1" [ngClass]="table.sortIcon('temperatureMin')"></i>
+              </th>
+              <th class="text-end" style="width: 110px">Nhiệt độ max</th>
+              <th>Dải nhiệt</th>
+              <th class="text-end" style="width: 90px">Số vị trí</th>
+              <th style="width: 150px">Trạng thái</th>
+              @if (permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 110px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.warehouseName }}</td>
+                <td>{{ data.code }}</td>
+                <td class="fw-semibold">{{ data.name }}</td>
+                <td class="text-end">{{ data.temperatureMin != null ? (data.temperatureMin | number: '1.0-2') + ' °C' : '' }}</td>
+                <td class="text-end">{{ data.temperatureMax != null ? (data.temperatureMax | number: '1.0-2') + ' °C' : '' }}</td>
+                <td>{{ data.temperatureRange }}</td>
+                <td class="text-end">{{ data.locationCount }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                @if (permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

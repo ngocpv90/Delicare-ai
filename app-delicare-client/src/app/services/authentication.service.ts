@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import Swal from 'sweetalert2';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import {
   AUTHEN,
   NOTIFICATION_TITLE,
@@ -18,19 +18,29 @@ import { User } from '../helpers/user';
 export class AuthenticationService {
   private userSubject: BehaviorSubject<User | null>;
   public user: Observable<User | null>;
+  // api/User/GetCurrent is called once per page load (AuthGuard) to refresh user + menu after a reload
+  private currentLoaded = false;
+  private autoLogoutTimer: any;
 
   constructor(
     private http: HttpClient,
     private router: Router
   ) {
-    this.userSubject = new BehaviorSubject<User | null>(
-      JSON.parse(localStorage.getItem(AUTHEN) || '{}')
-    );
+    this.userSubject = new BehaviorSubject<User | null>(this.readStoredUser());
     this.user = this.userSubject.asObservable();
   }
 
   public get userValue(): User | null {
     return this.userSubject.value;
+  }
+
+  private readStoredUser(): User | null {
+    try {
+      const user = JSON.parse(localStorage.getItem(AUTHEN) || 'null');
+      return user?.token ? user : null;
+    } catch {
+      return null;
+    }
   }
 
   public signIn(userName: string, passWord: string): any {
@@ -45,7 +55,9 @@ export class AuthenticationService {
             const exp = date + expireTime * 1000;
             const data = { ...user.data, expireTime: exp };
             localStorage.setItem(AUTHEN, JSON.stringify(data));
-            this.userSubject.next(user.data);
+            this.userSubject.next(data);
+            // Login already returned the menu: no GetCurrent needed until the next reload
+            this.currentLoaded = true;
             this.autoLogout(user.data.expireTime * 1000);
             return user;
           }
@@ -54,14 +66,50 @@ export class AuthenticationService {
       );
   }
 
-  public logout(): void {
+  // Reload: refresh user info + listMenu from api/User/GetCurrent ({ user, listMenu }), keep the stored token.
+  // Never fails: a 401 is handled by JwtInterceptor (session cleared, back to the sign-in page).
+  public loadCurrent(): Observable<boolean> {
+    if (this.currentLoaded || !this.userValue?.token) {
+      return of(!!this.userValue?.token);
+    }
+    return this.http.get<any>(`${URL_API}User/GetCurrent`).pipe(
+      map((res) => {
+        if (res?.responseCode === 200 && res.data && this.userValue) {
+          const u = res.data.user ?? {};
+          const data: User = {
+            ...this.userValue,
+            fullName: u.fullName ?? this.userValue.fullName,
+            userName: u.userName ?? this.userValue.userName,
+            avatar: u.avatar ?? this.userValue.avatar,
+            isAdmin: u.isAdmin ?? this.userValue.isAdmin,
+            listMenu: res.data.listMenu ?? [],
+          };
+          localStorage.setItem(AUTHEN, JSON.stringify(data));
+          this.userSubject.next(data);
+          this.currentLoaded = true;
+        }
+        return !!this.userValue?.token;
+      }),
+      catchError(() => of(!!this.userValue?.token))
+    );
+  }
+
+  // Drop the session without navigating (used by logout and by JwtInterceptor on 401)
+  public clearSession(): void {
     localStorage.removeItem(AUTHEN);
+    this.currentLoaded = false;
+    clearTimeout(this.autoLogoutTimer);
     this.userSubject.next(null);
+  }
+
+  public logout(): void {
+    this.clearSession();
     this.router.navigate(['/dang-nhap']);
   }
 
   private autoLogout(expireDate: number): any {
-    setTimeout(() => {
+    clearTimeout(this.autoLogoutTimer);
+    this.autoLogoutTimer = setTimeout(() => {
       Swal.fire({
         icon: 'warning',
         title: NOTIFICATION_TITLE,
@@ -70,22 +118,15 @@ export class AuthenticationService {
         confirmButtonColor: 'var(--primary)',
         allowOutsideClick: false,
         allowEscapeKey: false,
-      }).then(() => {
-        localStorage.removeItem(AUTHEN);
-        this.userSubject.next(null);
-        this.router.navigate(['/dang-nhap']);
-      });
+      }).then(() => this.logout());
     }, expireDate);
   }
 
   public autoLogin(): void {
-    const userData: {
-      userName: string;
-      token: string;
-      expireTime: number;
-    } = JSON.parse(localStorage.getItem(AUTHEN) || '{}');
-    if (!userData.userName) {
-      this.logout();
+    const userData = this.readStoredUser();
+    if (!userData?.userName) {
+      // Not signed in: nothing to restore. Guarded routes send the user to the sign-in page.
+      this.clearSession();
       return;
     }
     const todaysDate = new Date().getTime();

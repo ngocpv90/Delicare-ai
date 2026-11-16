@@ -1,0 +1,65 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="customerId">Khách hàng <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="customerId" [items]="listCustomer" bindValue="id" bindLabel="label" placeholder="Chọn khách hàng" [invalid]="isInvalid('customerId')" (selectionChange)="customerChanged($event)"></app-select>
+        @if (isInvalid('customerId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="contractId">Hợp đồng</label>
+        <app-select [loading]="isLoadingList" formControlName="contractId" [items]="listContract" bindValue="id" bindLabel="label" placeholder="Không theo hợp đồng (áp cho khách)"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã chính sách</label>
+        <input id="code" type="text" class="form-control" formControlName="code" placeholder="VD: CSG-2026-01" autocomplete="off" />
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên chính sách</label>
+        <input id="name" type="text" class="form-control" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="mealType">Buổi / loại suất</label>
+        <app-select formControlName="mealType" [items]="mealTypes" bindValue="code" bindLabel="label" placeholder="Mọi loại suất" [searchable]="false"></app-select>
+      </div>
+      <div class="col-md-5 mb-3">
+        <label class="form-label" for="unitPrice">Đơn giá / suất <span class="text-danger">(*)</span></label>
+        <input id="unitPrice" type="text" class="form-control text-end" [class.is-invalid]="isInvalid('unitPrice')" appNumberInput [min]="0" formControlName="unitPrice" />
+        <div class="invalid-feedback">Đơn giá phải lớn hơn 0</div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <label class="form-label" for="currencyCode">Tiền tệ</label>
+        <input id="currencyCode" type="text" class="form-control" formControlName="currencyCode" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="effectiveFrom">Hiệu lực từ <span class="text-danger">(*)</span></label>
+        <app-date-picker inputId="effectiveFrom" formControlName="effectiveFrom" [invalid]="isInvalid('effectiveFrom')"></app-date-picker>
+        @if (isInvalid('effectiveFrom')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn ngày</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="effectiveTo">Hiệu lực đến</label>
+        <app-date-picker inputId="effectiveTo" formControlName="effectiveTo"></app-date-picker>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12">
+        <small class="text-muted">Chính sách đang hoạt động không được chồng thời gian hiệu lực với chính sách khác cùng khách hàng / hợp đồng / loại suất.</small>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

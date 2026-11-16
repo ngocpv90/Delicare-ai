@@ -1,0 +1,101 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Giá thành chuẩn / suất của từng món theo công thức đã khóa: nguyên vật liệu + nhân công + chi phí chung."></app-page-header>
+  @if (permission.allowEdit) {
+    <div class="card dc-list-card">
+      <div class="card-body">
+        <div class="dc-card-title">Tính lại giá thành chuẩn</div>
+        <div class="dc-toolbar dc-try-box">
+          <div style="flex: 1 1 420px; min-width: 260px">
+            <app-select [multiple]="true" [(ngModel)]="recalcDishIds" [items]="listDish" bindValue="id" bindLabel="label" placeholder="Tất cả món có công thức đã khóa"></app-select>
+          </div>
+          <button type="button" class="btn btn-primary" [disabled]="isRecalculating" (click)="recalculate()">
+            <i class="fa-solid fa-rotate me-1"></i>Tính lại
+          </button>
+        </div>
+        <div class="text-muted small">Theo giá NCC ưu tiên đang hiệu lực hôm nay. Bản cũ chuyển "Hết hiệu lực", giá thành chuẩn của món được cập nhật.</div>
+      </div>
+    </div>
+  }
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã / tên món, phiên bản" aria-label="Tìm giá thành" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="dishId" [items]="listDish" bindValue="id" bindLabel="label" placeholder="Tất cả món" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('dishName')">
+                Món <i class="fa-solid ms-1" [ngClass]="table.sortIcon('dishName')"></i>
+              </th>
+              <th class="sortable" style="width: 150px" (click)="sort('versionCode')">
+                Phiên bản CT <i class="fa-solid ms-1" [ngClass]="table.sortIcon('versionCode')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 120px" (click)="sort('materialCost')">
+                NVL <i class="fa-solid ms-1" [ngClass]="table.sortIcon('materialCost')"></i>
+              </th>
+              <th class="text-end" style="width: 110px">Nhân công</th>
+              <th class="text-end" style="width: 110px">Chi phí chung</th>
+              <th class="text-end sortable" style="width: 140px" (click)="sort('costPerServing')">
+                Giá thành / suất <i class="fa-solid ms-1" [ngClass]="table.sortIcon('costPerServing')"></i>
+              </th>
+              <th class="sortable" style="width: 200px" (click)="sort('effectiveFrom')">
+                Hiệu lực <i class="fa-solid ms-1" [ngClass]="table.sortIcon('effectiveFrom')"></i>
+              </th>
+              <th style="width: 130px">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>
+                  <span class="fw-semibold">{{ data.dishName }}</span>
+                  <small class="text-muted ms-1">{{ data.dishCode }}</small>
+                </td>
+                <td>{{ data.versionCode }}</td>
+                <td class="text-end">{{ data.materialCost | number: '1.0-0' }}</td>
+                <td class="text-end">{{ data.laborCost | number: '1.0-0' }}</td>
+                <td class="text-end">{{ data.overheadCost | number: '1.0-0' }}</td>
+                <td class="text-end fw-semibold">{{ data.costPerServing | number: '1.0-0' }} <small class="text-muted">{{ data.currencyCode }}</small></td>
+                <td>{{ data.effectiveFrom | date: dateFormat }} – {{ (data.effectiveTo | date: dateFormat) || '…' }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

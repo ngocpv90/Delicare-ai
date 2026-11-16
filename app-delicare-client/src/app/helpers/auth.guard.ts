@@ -5,7 +5,7 @@ import {
   RouterStateSnapshot,
   UrlTree,
 } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { AuthenticationService } from '../services/authentication.service';
 
 @Injectable({
@@ -24,13 +24,16 @@ export class AuthGuard {
     | Promise<boolean | UrlTree>
     | boolean
     | UrlTree {
-    const user = this.authenticationService.userValue;
-    if (user) {
-      return true;
+    const signIn = () =>
+      this.router.createUrlTree(['/dang-nhap'], {
+        queryParams: { returnUrl: state.url },
+      });
+    if (!this.authenticationService.userValue?.token) {
+      return signIn();
     }
-    this.router.navigate(['/dang-nhap'], {
-      queryParams: { returnUrl: state.url },
-    });
-    return false;
+    // First guarded navigation after a reload: refresh user + menu (api/User/GetCurrent)
+    return this.authenticationService
+      .loadCurrent()
+      .pipe(map((ok) => (ok ? true : signIn())));
   }
 }

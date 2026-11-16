@@ -53,4 +53,45 @@ export class NotifyService {
     });
     return result.isConfirmed;
   }
+
+  // Yes / no question for a business action (gửi duyệt, tính lại…)
+  public async confirm(message: string, confirmText = 'Đồng ý'): Promise<boolean> {
+    const result = await Swal.fire({
+      title: NOTIFICATION_TITLE,
+      text: message,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: confirmText,
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: 'var(--primary)',
+      cancelButtonColor: '#6e7881',
+      reverseButtons: true,
+    });
+    return result.isConfirmed;
+  }
+
+  // Asks for one value (text / textarea / date). Returns null when cancelled.
+  public async prompt(options: {
+    title: string;
+    label?: string;
+    input?: 'text' | 'textarea' | 'date';
+    value?: string;
+    required?: boolean;
+    confirmText?: string;
+  }): Promise<string | null> {
+    const result = await Swal.fire({
+      title: options.title,
+      input: options.input ?? 'textarea',
+      inputLabel: options.label,
+      inputValue: options.value ?? '',
+      showCancelButton: true,
+      confirmButtonText: options.confirmText ?? 'Đồng ý',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: 'var(--primary)',
+      cancelButtonColor: '#6e7881',
+      reverseButtons: true,
+      inputValidator: (value: any) => (options.required && !String(value ?? '').trim() ? 'Vui lòng nhập dữ liệu' : null),
+    });
+    return result.isConfirmed ? String(result.value ?? '') : null;
+  }
 }

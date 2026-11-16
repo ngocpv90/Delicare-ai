@@ -70,7 +70,7 @@ export class ChangePasswordComponent implements OnInit {
     if (params.passWordNew !== params.passWordEnter) {
       message += 'Mật khẩu mới chưa khớp với mật khẩu nhập lại <br>';
     }
-    if (params.passWordNew.length < 9) {
+    if (params.passWordNew.length < 8) {
       message += 'Mật khẩu mới từ 8 ký tự trở lên <br>';
     }
     if (message != STRING_EMPTY) {
@@ -79,32 +79,19 @@ export class ChangePasswordComponent implements OnInit {
     }
     this.isLoading = true;
     const formData: FormData = new FormData();
-    Object.keys(params).forEach((key) => formData.append(key, params[key]));
+    // Backend ChangePasswordRequest: Id, PassWordOld, PassWordNew (form)
+    ['id', 'passWordOld', 'passWordNew'].forEach((key) => formData.append(key, params[key] ?? STRING_EMPTY));
     this.userService.changePassword(formData).subscribe(
       (data) => {
-        if (data.responseCode === 200) {
-          notificationCommon(
-            this.notifyService,
-            SUCCESS,
-            data.responseMessage
-          );
-          this.changePassWordForm.reset();
-          this.submitted = false;
-        } else {
-          notificationCommon(
-            this.notifyService,
-            ERROR,
-            data.responseMessage
-          );
+        this.isLoading = false;
+        if (data?.responseCode !== 200) {
+          notificationCommon(this.notifyService, ERROR, data?.responseMessage);
+          return;
         }
-      },
-      () => {
-        this.isLoading = false;
-        notificationCommon(this.notifyService, ERROR);
-      },
-      () => {
-        this.isLoading = false;
-        // Blocking warning alert (was a modal warning dialog), OK logs the user out
+        notificationCommon(this.notifyService, SUCCESS, data.responseMessage);
+        this.changePassWordForm.reset();
+        this.submitted = false;
+        // Only after a successful change: blocking alert, OK signs the user out
         Swal.fire({
           title: NOTIFICATION_TITLE,
           text: 'Thông tin mật khẩu của bạn đã thay đổi. Vui lòng chọn OK để đăng nhập lại',
@@ -114,10 +101,13 @@ export class ChangePasswordComponent implements OnInit {
           allowOutsideClick: false,
           allowEscapeKey: false,
         }).then(() => {
-          localStorage.removeItem(AUTHEN);
           this.activeModal.close({ reLoad: false });
-          this.router.navigate(['/dang-nhap']);
+          this.authenticationService.logout();
         });
+      },
+      () => {
+        this.isLoading = false;
+        notificationCommon(this.notifyService, ERROR);
       }
     );
   }

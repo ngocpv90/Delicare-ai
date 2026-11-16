@@ -1,0 +1,195 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Nguyên liệu dùng trong công thức, mua hàng và kho: nhóm, đơn vị tính, điều kiện bảo quản, hạn dùng, hao hụt.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã, tên, quy cách" aria-label="Tìm theo mã, tên, quy cách" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="ingredientCategoryId" [items]="listCategory" bindValue="id" bindLabel="label" placeholder="Tất cả nhóm" (selectionChange)="search()"></app-select>
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="storageType" [items]="storageTypes" bindValue="code" bindLabel="label" placeholder="Tất cả kiểu bảo quản" [searchable]="false" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 120px" (click)="sort('code')">
+                Mã <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên nguyên liệu <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="sortable" (click)="sort('categoryName')">
+                Nhóm <i class="fa-solid ms-1" [ngClass]="table.sortIcon('categoryName')"></i>
+              </th>
+              <th style="width: 110px">ĐVT cơ sở</th>
+              <th style="width: 140px">Bảo quản</th>
+              <th class="text-end sortable" style="width: 100px" (click)="sort('shelfLifeDays')">
+                HSD (ngày) <i class="fa-solid ms-1" [ngClass]="table.sortIcon('shelfLifeDays')"></i>
+              </th>
+              <th class="text-end" style="width: 110px">Tồn tối thiểu</th>
+              <th class="text-end" style="width: 100px">Hao hụt %</th>
+              <th style="width: 140px">Trạng thái</th>
+              <th class="text-end" style="width: 140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.code }}</td>
+                <td class="fw-semibold">
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.name }}</a>
+                  @if (data.specification) {
+                    <div class="small text-muted">{{ data.specification }}</div>
+                  }
+                </td>
+                <td>{{ data.categoryName }}</td>
+                <td>{{ data.baseUnitName }}</td>
+                <td>{{ labelOf(storageTypes, data.storageType) }}</td>
+                <td class="text-end">{{ data.shelfLifeDays }}</td>
+                <td class="text-end">{{ data.minimumStock | number: '1.0-3' }}</td>
+                <td class="text-end">{{ data.standardWastePercent | number: '1.0-2' }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Xem tồn kho" aria-label="Xem tồn kho" (click)="openDrawer(data, 'stock')"><i class="fa-solid fa-eye"></i></button>
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                  }
+                  @if (permission.allowDelete) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="11" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="drawerRow?.name"
+    [subtitle]="drawerRow?.code"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (drawerTab === 'info') {
+        <div class="dc-kv">
+          <div><label>Mã</label><span>{{ drawerRow.code }}</span></div>
+          <div><label>Tên nguyên liệu</label><span>{{ drawerRow.name }}</span></div>
+          <div><label>Nhóm</label><span>{{ drawerRow.categoryName || '—' }}</span></div>
+          <div><label>Quy cách</label><span>{{ drawerRow.specification || '—' }}</span></div>
+          <div><label>ĐVT cơ sở</label><span>{{ drawerRow.baseUnitName || '—' }}</span></div>
+          <div><label>ĐVT mua / xuất dùng</label><span>{{ drawerRow.purchaseUomName || '—' }} / {{ drawerRow.issueUomName || '—' }}</span></div>
+          <div><label>Kiểu bảo quản</label><span>{{ labelOf(storageTypes, drawerRow.storageType) || '—' }}</span></div>
+          <div><label>Điều kiện bảo quản</label><span>{{ drawerRow.storageCondition || '—' }}</span></div>
+          <div><label>Hạn dùng</label><span>{{ drawerRow.shelfLifeDays != null ? drawerRow.shelfLifeDays + ' ngày' : '—' }}</span></div>
+          <div><label>Tồn tối thiểu / an toàn</label><span>{{ (drawerRow.minimumStock | number: '1.0-3') || '—' }} / {{ (drawerRow.safetyStock | number: '1.0-3') || '—' }}</span></div>
+          <div><label>Tỷ lệ thành phẩm / hao hụt chuẩn</label><span>{{ (drawerRow.yieldPercent | number: '1.0-2') || '—' }}% / {{ (drawerRow.standardWastePercent | number: '1.0-2') || '—' }}%</span></div>
+          <div>
+            <label>Kiểm soát</label>
+            <span>
+              {{ drawerRow.isExpiryManaged || drawerRow.expiryControl ? 'Hạn dùng' : '' }}
+              {{ drawerRow.lotControl ? '· Lô' : '' }}
+              {{ drawerRow.qcRequired ? '· QC khi nhận' : '' }}
+            </span>
+          </div>
+          <div>
+            <label>Trạng thái</label>
+            <span><app-status-badge [code]="drawerRow.status" [label]="labelOf(statuses, drawerRow.status)"></app-status-badge></span>
+          </div>
+          <div><label>Ghi chú</label><span>{{ drawerRow.note || '—' }}</span></div>
+        </div>
+      }
+      @if (drawerTab === 'stock') {
+        @if (isLoadingStock) {
+          <div class="dc-empty">Đang tải...</div>
+        } @else if (stock) {
+          <div class="dc-kpis">
+            <div class="dc-kpi">
+              <label>Tồn khả dụng</label>
+              <b>{{ stock.availableQuantity | number: '1.0-3' }}</b>
+              <small>{{ drawerRow.baseUnitName }}</small>
+            </div>
+            <div class="dc-kpi">
+              <label>Tồn tối thiểu</label>
+              <b>{{ (stock.minimumStock | number: '1.0-3') || '—' }}</b>
+              <small>{{ drawerRow.baseUnitName }}</small>
+            </div>
+            <div class="dc-kpi" [class.danger]="stock.belowMinimum">
+              <label>Cảnh báo</label>
+              <b>{{ stock.belowMinimum ? 'Dưới mức tối thiểu' : 'Đủ' }}</b>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Kho</th>
+                  <th class="text-end">Tồn khả dụng</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (w of stock.listWarehouse; track w.warehouseId) {
+                  <tr>
+                    <td>{{ warehouseName(w.warehouseId) }}</td>
+                    <td class="text-end">{{ w.availableQuantity | number: '1.0-3' }} {{ drawerRow.baseUnitName }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="2" class="dc-empty">Chưa có tồn kho</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+    <ng-container drawer-footer>
+      @if (permission.allowEdit) {
+        <button type="button" class="btn btn-primary" (click)="editFromDrawer()"><i class="fa-solid fa-pen me-1"></i>Sửa</button>
+      }
+    </ng-container>
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>
