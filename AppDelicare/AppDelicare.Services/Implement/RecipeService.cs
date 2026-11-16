@@ -22,7 +22,8 @@ namespace AppDelicare.Services.Implement
 {
     public class RecipeService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService
-        , IUomConversionService uomConversionService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IRecipeService
+        , IUomConversionService uomConversionService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules
+        , IDocumentNumberService documentNumberService) : IRecipeService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -32,6 +33,7 @@ namespace AppDelicare.Services.Implement
         private readonly IClock _clock = clock;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly BusinessRulesOptions _rules = rules.Value;
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
 
         public async Task<IResults<RecipeViewModel>> GetAll(RecipeSearchRequest request)
         {
@@ -363,7 +365,7 @@ namespace AppDelicare.Services.Implement
                     Id = Guid.NewGuid(),
                     BusinessType = RecipeStatus.BusinessType,
                     BusinessId = recipe.Id,
-                    RequestNo = "RV-" + _clock.Now.ToString("yyMMdd-HHmmssfff", System.Globalization.CultureInfo.InvariantCulture),
+                    RequestNo = await _documentNumberService.NextAsync(DocumentKind.Approval, _clock.Today), // T11: XN-YYMMDD-NNN
                     RequestStatus = "Pending",
                     RequestedAt = _clock.Now,
                     RequestedBy = _currentActor.RequireActor().UserId,

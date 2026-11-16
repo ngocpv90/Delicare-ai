@@ -199,7 +199,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - AC: 1 use case mẫu (`Common.LookupQuery`) chạy end-to-end và có test.
 - **D-30 (2026-11-15):** project này **không mở rộng**. Nghiệp vụ viết trong `AppDelicare.Services` theo khung cũ. T45R chuyển `IClock` / `BusinessRulesOptions` sang tầng cũ và đưa project vào `_obsolete/`.
 
-### T11 – Mã chứng từ · phụ thuộc T10 · `TODO`
+### T11 – Mã chứng từ · phụ thuộc T10 · `DONE` (2026-11-16)
 - `IDocumentNumberService` theo BUSINESS_RULES §11, dùng `sp_getapplock` + MAX cột đích.
 - AC: test chạy song song 50 lần không trùng mã; đúng định dạng cho mọi loại.
 

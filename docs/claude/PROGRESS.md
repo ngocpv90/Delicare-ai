@@ -6,7 +6,7 @@
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 92/92 xanh
+- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 105/105 xanh
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -532,3 +532,38 @@ AC: [x] cả 4 mục.
 Còn lại / cần anh:
 - **GAP-ADM-02 chưa đủ**: reset vẫn đặt mật khẩu = tên đăng nhập và trả `Result<bool>` (giữ API theo T48.0). Muốn "mật khẩu tạm 12 ký tự trả một lần" thì phải đổi response của `User/ResetPassword` → cần anh duyệt.
 - Mỗi lần đăng nhập tính PBKDF2 2–3 lần (~0,1–0,2 s), chấp nhận cho Pilot.
+
+### T11 – Mã chứng từ (Pilot P1) · 2026-11-16 · DONE
+Nhánh `feat/T11-document-number` (từ `feat/T48.0-password-hash`, làm trong worktree riêng song song FE-0).
+
+Rà soát: chưa có service sinh mã; `RecipeService.Submit` tự đặt `RV-yyMMdd-HHmmssfff` (có thể trùng khi bấm đồng thời, sai mẫu XN).
+
+Đã làm:
+- `IDocumentNumberService.NextAsync(kind, date, suffix)` (`AppDelicare.Services`, Autofac tự đăng ký), đủ 10 loại BUSINESS_RULES §11:
+  - PH (đơn, nhập, xuất, kiểm kê, đề nghị mua, lệnh SX, đóng gói, giao – dùng chung, không trùng giữa các bảng – PROPOSED);
+  - XN, PA, PO, DN;
+  - NL / ME / CX: hậu tố NCC / ca / xe, bắt buộc;
+  - KH: `KH-YYMMDD`, phiên bản sau `-2`, `-3`;
+  - VS: `VS-YYMMDD-<CA>`, lần sau `-2`.
+- SQL Server:
+  - `sp_getapplock` (Exclusive, LockOwner = Transaction) theo mã gốc;
+  - `MAX(TRY_CAST(phần số))` gộp cột chuẩn + cột cũ (DEPRECATED_COLUMNS);
+  - tên bảng / cột lấy từ metadata EF, giá trị là tham số, LIKE có escape;
+  - bắt buộc gọi trong transaction đang mở (sau T45R, `UnitOfWork.OpenTransaction` đã bao EF).
+- Không bảng đếm, không SEQUENCE.
+- Hậu tố: bỏ dấu, chữ hoa, chỉ A–Z 0–9, tối đa 20 ký tự.
+- `RecipeService.Submit` dùng mã `XN-` cho ApprovalRequest.RequestNo.
+
+Kiểm tra:
+- Build 0 lỗi.
+- Test **105/105** (+13):
+  - định dạng 10 loại;
+  - tăng tiếp theo dữ liệu có sẵn (cả cột cũ `ReceiptNo`, PH chung nhiều bảng), đếm riêng theo hậu tố và theo ngày;
+  - hậu tố bắt buộc;
+  - **SQL Server: 50 transaction song song → 50 mã khác nhau, liên tục XN-991231-001..050** (dùng ngày 2099, xóa đúng 50 dòng test theo Id).
+
+AC: [x] 50 lần song song không trùng · [x] đúng định dạng mọi loại.
+
+GAP:
+- `AttendanceEvent` không có cột mã → loại CC chưa có chỗ ghi (ngoài Pilot).
+- Bảng có cột cũ NOT NULL (vd. `MaterialLot.LotNo`) → nơi tạo bản ghi phải ghi song song cả cột cũ (T15).
