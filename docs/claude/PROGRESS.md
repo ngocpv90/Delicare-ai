@@ -3,6 +3,7 @@
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
+- **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
 - Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 87/87 xanh

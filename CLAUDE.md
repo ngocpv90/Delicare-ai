@@ -2,8 +2,8 @@
 
 Bạn là kỹ sư chính của dự án **DELICARE**: hệ thống điều hành nhà máy suất ăn công nghiệp, quy mô mục tiêu **20.000 suất/ngày**. Chủ dự án là **anh Phạm (PO)**. Hãy xưng "em", gọi chủ dự án là "anh". Giao tiếp và tài liệu viết bằng tiếng Việt. Mã nguồn đặt tên bằng tiếng Anh. Chữ hiển thị trên giao diện viết tiếng Việt.
 
-**PHẠM VI HIỆN TẠI = CHỈ BACKEND (.NET 8 + SQL Server).**
-- **KHÔNG đọc / rà soát, tạo, sửa, xóa, build hay `npm install` bất kỳ thứ gì trong `app-delicare-client/`** (Angular). App Angular hiện tại chưa có đủ màn hình như mockup; **sau khi xong backend anh sẽ giao làm frontend riêng** (D-20).
+**PHẠM VI HIỆN TẠI = BACKEND (.NET 8 + SQL Server) + FRONTEND ANGULAR CHO CÁC MÀN HÌNH PILOT (D-35, 2026-11-16).**
+- **Frontend `app-delicare-client/` (Angular 18): được làm từ 2026-11-16 (D-35), nhưng CHỈ các màn hình của lát PILOT có API backend đã xong**, theo **khung Angular cũ** (mục 4.4). Màn hình ngoài Pilot vẫn để sau.
 - **⚠ KHUNG CHUẨN = CODE CŨ (D-30, anh chốt 2026-11-15).** Mọi API viết theo đúng mẫu và quy ước của code cũ trong solution (`api/[controller]/<Action>`, Controller → Service → UnitOfWork / Dapper SP, `Result<T>` / `Results<T>`, `[FromForm]`, try/catch + Serilog). **KHÔNG sinh thêm API `/api/v1`**, không envelope mới, không CRUD generic, không Command / Handler. Code cũ **đã có** người dùng, nhóm quyền (vai trò), ma trận quyền, menu, đăng nhập → **rà soát và bổ sung trên cái đã có**, không viết lại song song. Chi tiết: mục 4.
 - `docs/reference/DELICARE_API_Specification.md` + Catalog chỉ còn là **danh sách yêu cầu nghiệp vụ** (màn hình cần chức năng gì, dữ liệu gì, quy tắc gì). **Không** dùng URL, envelope, mã lỗi, ETag / Idempotency-Key… ở mục 1.2 của spec.
 - **Mục tiêu Release 1:** hoàn thiện lõi .NET đủ API (theo khung cũ) cho mọi màn hình trong mockup (`docs/mockup/`), đủ nghiệp vụ mô tả trong spec, có Swagger + test, triển khai được backend. Đây sẽ là hệ thống vận hành thật đầu tiên (bản Apps Script / Sheets chỉ là demo). Agent, Tool Gateway, Telegram / Zalo, Obsidian để Release 2.
@@ -16,7 +16,7 @@ Mục tiêu của file này: anh **không phải giải thích lại** bối c�
 
 | Lớp | Thành phần | Vai trò |
 |---|---|---|
-| **1. Lõi nghiệp vụ** | .NET 8 Web API + SQL Server (124 bảng `dbo`); Angular 18 là frontend (ngoài phạm vi hiện tại) | **Nguồn sự thật duy nhất**: hợp đồng, đơn, định mức, kho, lô truy xuất, sản xuất, giao nhận, hộp/khay, nhân sự. Các mốc hạn chót (20h khóa đơn…) chạy bằng job trong lõi. |
+| **1. Lõi nghiệp vụ** | .NET 8 Web API + SQL Server (124 bảng `dbo`); Angular 18 là frontend (chỉ màn hình Pilot – D-35) | **Nguồn sự thật duy nhất**: hợp đồng, đơn, định mức, kho, lô truy xuất, sản xuất, giao nhận, hộp/khay, nhân sự. Các mốc hạn chót (20h khóa đơn…) chạy bằng job trong lõi. |
 | **2. Cổng công cụ (Tool Gateway)** | Service riêng `AppDelicare.ToolGateway`: MCP server + REST | Agent chỉ làm việc qua đây. Phân quyền theo vai trò, ghi log mọi lệnh. **Đọc thì trả lời ngay. Ghi thì phải qua 2 bước: đề xuất → người xác nhận → ghi.** Có `POST /api/gateway` tương thích hợp đồng cũ của Apps Script. |
 | **3. Hermes + agent phòng ban** | Vivi (điều phối) và 11 agent phòng ban | Chỉ nhắc, tóm tắt, đề xuất và xin xác nhận. Không tự quyết dữ liệu. |
 | **4. Second Brain** | Vault Obsidian theo cấu trúc số 10…99 | Lõi xuất sang vault **một chiều**. Agent đọc kiến thức ở đây. Dữ liệu giao dịch không bao giờ sửa trong vault. |
@@ -58,7 +58,7 @@ Delicare-ai/
 │   ├─ AppDelicare.Application (AppDelicare.Application)        ⛔ lớp v1 làm thử (CRUD generic, Command / Handler) – KHÔNG mở rộng; T45R chuyển nghiệp vụ về Services rồi đưa vào `_obsolete/`
 │   ├─ AppDelicare.Tests     (AppDelicare.Tests)              xUnit
 │   └─ AppDelicare.Generator (T4 + OrmLite)                        bộ sinh mã T4 cũ – CHỈ THAM KHẢO, chỉ chạy được trong Visual Studio (đổi tên ở T45R.6)
-├─ app-delicare-client/          ← Angular 18 – ⛔ NGOÀI PHẠM VI: không đọc, không sửa, không build (làm sau khi xong backend)
+├─ app-delicare-client/          ← Angular 18 – chỉ màn hình PILOT theo khung Angular cũ (mục 4.4, D-35)
 ├─ backup-db/                    ← bản backup DB thật (AppDelicare_20261110.bak/.mdf/.ldf) – ĐÃ gitignore, KHÔNG commit, KHÔNG sửa
 └─ DB/                           ← (tạo mới) script SQL: DB/sp (stored procedure), DB/seed – được commit
 ```
@@ -181,11 +181,34 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 
 **Mật khẩu:** đang dùng `EncriptFunctionsHelper.GeneratePassword` (MD5). Đổi cách băm là D-29 (anh chốt); nếu làm thì sửa trong chính `EncriptFunctionsHelper` / `LoginService` / `UserService`, tương thích hash cũ, không đổi API.
 
-**Frontend (Angular 18): NGOÀI PHẠM VI hiện tại** – không đọc, không sửa `app-delicare-client/`.
+### 4.4 Frontend Angular – KHUNG CHUẨN LÀ CODE ANGULAR CŨ (D-35)
+**Phạm vi:** chỉ các màn hình **Pilot** (ROADMAP mục ★★, nhóm FE-x) và chỉ khi **API backend tương ứng đã "Đã xong"** trong `docs/reference/DELICARE_API_Catalog.xlsx` / `docs/frontend-handoff/`. Không làm màn hình mà backend chưa có.
+
+**Mẫu để chép** (giống D-30 cho backend – không đổi kiến trúc, không thêm thư viện UI):
+- Service: `src/app/services/<entity>.service.ts` theo mẫu `unit-measure.service.ts` – `getAll / insert / update / delete / getById / getAllData` + method cho action nghiệp vụ (`URL_API + '<Controller>/<Action>'`). Insert / Update gửi **form** như backend (D-30); action nhận JSON thì gửi JSON.
+- Màn hình danh sách: `src/app/main/<screen>/<screen>.component.ts|html` + `<screen>-routing.module.ts` + `<screen>.module.ts` theo mẫu `main/unit-measure`, `main/user`, `main/supplier`: `TableState` + `table-pager`, `searchForm`, `permission(...)` từ `listMenu` để ẩn / hiện nút Thêm / Sửa / Xóa / In / Xuất / Nhập; kiểm `responseCode === 200`, `responseCode === 400` → hiện `responseMessage` qua `NotifyService`.
+- Form: `<screen>-modal/<screen>-modal.component.ts|html` mở bằng `ModalService` (mẫu `unit-measure-modal`, `user-modal`). Dropdown dùng `shared/form/select.component`, ngày dùng `shared/form/date-picker.component`, số dùng `number-input.directive`.
+- Route: thêm vào `main/main-routing.module.ts` (lazy `loadChildren`). **Đường dẫn route = screen-id của mockup** (vd. `adm-user`, `crm-customer`) để khớp `ObjectMenu.MetaLink = '#/<screen-id>'`. Helper `permission()` / `checkPermission()` trong `helpers/common-helper.ts` hiện so `'/' + DOMAIN_ROUTER + '/' + metaLink` → sửa **một chỗ** ở helper để bỏ tiền tố `#/` khi so (không sửa dữ liệu MetaLink).
+- Sidebar dựng từ `listMenu` (đăng nhập / `api/User/GetCurrent`), không hard-code menu.
+- Bố cục, nhãn, cột, bộ lọc, nút theo `docs/mockup/` (màn hình cùng screen-id). Chữ hiển thị tiếng Việt.
+- **Giao diện (D-36): giữ khung code Angular cũ, thay "lớp áo" theo mockup.** Làm bằng CSS + vài thành phần dùng chung, không đổi kiến trúc:
+  - Màu: chính `#91AF42` (đậm `#6F9131`, nhạt `#EFF5E5`), phụ `#F07825`; nền `#F6F8F4`, chữ `#263238`, viền `#E8ECE5` – ghi đè biến `--primary`… của template trong `src/assets/css/custom.css` / `clinic.css` (không sửa `style.css` gốc). Font **Be Vietnam Pro** (tải về `assets`, không phụ thuộc mạng ngoài nếu triển khai nội bộ được).
+  - **Cỡ chữ / kích thước (giữ cỡ của bản cũ, không dùng cỡ nhỏ của mockup):** chữ thường 14px; chữ trong bảng 13px; tiêu đề cột 12px, **không in hoa**; dòng bảng cao ≥ 44px; nút và ô nhập cao ≥ 36px; tiêu đề trang ~20px; mục menu sidebar 13–14px, cao ≥ 40px. Dùng được trên máy tính bảng.
+  - Tên hiển thị: **DELI-CARE**; tiêu đề tab, footer, trang đăng nhập dùng tên pháp nhân (BUSINESS_DOCS.md). Bỏ mọi chữ "phòng khám", "W3CRM".
+  - Sidebar nhóm theo menu cấp 1 của `ObjectMenu` (như mockup), mục đang mở được tô; ô chọn chi nhánh (`api/OrganizationUnit/GetBranches`) trên header. Bỏ nút sáng / tối.
+  - Thành phần dùng chung `shared/page-header`: đường dẫn trang → tiêu đề → mô tả ngắn → nút hành động bên phải (Xuất / Tạo mới…). Mọi màn hình mới dùng; màn hình cũ đổi khi được sửa.
+  - Bảng: nhãn trạng thái màu (`shared/status-badge`, màu theo `api/MetaData/GetStatuses`), cột khóa ngoại hiện tên; nút thao tác xem / sửa / xóa dạng viền mảnh như mockup; giữ `table-pager` cũ. Cột STT giữ (khung cũ).
+  - Lọc: ô tìm + dropdown lọc đặt ngay trên bảng; nút lọc nhanh theo trạng thái nếu màn hình có cột trạng thái. Thẻ số liệu đầu trang chỉ làm ở màn hình mockup có và API có số liệu.
+  - Thêm / sửa: popup (`ModalService`) như cũ. **Ngăn kéo chi tiết bên phải có tab** chỉ cho màn hình cần xem sâu: khách hàng 360°, NCC, công thức, đơn hàng, PO, mẻ sản xuất, chuyến giao.
+  - **Không đưa vào app thật** các phần chỉ để trình diễn của mockup: nhãn "DỮ LIỆU DEMO", nút "Truy vết DB", tên cột DB in nhỏ dưới tiêu đề cột, khung cảnh báo GAP / PARTIAL, nút đổi vai trò, "Hướng dẫn trình diễn".
+- Màn hình cũ đã có (`main/user`, `main/user-group`, `main/object-menu`, `main/person`, `main/supplier`, `main/unit-measure`, `main/change-password`, `main/profile`…): **rà soát và bổ sung**, không viết lại song song.
+- Không xóa `pages/**` (demo template w3crm) – chỉ gỡ khỏi route / menu (đưa route demo ra khỏi `app.routes.ts` hoặc chặn bằng guard). Không đụng `main/patient*`, `main/medical-*` ngoài việc ẩn khỏi menu.
+- Không gọi `api/AuditChange/DeleteData`, `api/LocationTracking/DeleteData` (D-26).
+- Được chạy trong `app-delicare-client/`: `npm ci`, `npm run build`, `npm start` (dev). Không nâng phiên bản Angular / thư viện. `environment` trỏ API staging / local, không ghi bí mật.
 
 **Kiểm tra trước khi báo xong:**
 - `dotnet build AppDelicare/AppDelicare.sln` không lỗi; `dotnet test` xanh.
-- `git status` không có thay đổi nào trong `app-delicare-client/`.
+- Task backend: `git status` không có thay đổi trong `app-delicare-client/`. Task frontend (FE-x): `npm run build` trong `app-delicare-client/` không lỗi; chỉ sửa file thuộc màn hình của task + helper / route / service dùng chung cần thiết.
 - Phân quyền: không bảng / cột / cấu hình quyền mới; không API quản trị user / quyền ngoài controller cũ (mục 4.3).
 - Không có file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; `grep -rn "api/v1" AppDelicare --include=*.cs` không tăng (sau T45R phải bằng 0).
 - Controller / Service mới hoặc sửa đúng mẫu 4.2 (so với `WarehouseController` / `WarehouseService`).
@@ -229,6 +252,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
    - ROADMAP: đổi trạng thái task (`TODO` → `DONE` / `BLOCKED`).
    - PROGRESS: ghi đã làm gì, file chính, cách kiểm tra, việc còn lại.
    - DECISIONS: GAP hoặc câu hỏi mới.
+   - **`docs/reference/DELICARE_API_Catalog.xlsx`, sheet `API_Catalog`**: với mỗi dòng spec mà task làm, cập nhật cột **J Trạng thái** (`Đã xong` / `Một phần` / `Đang làm` / `Chưa bắt đầu` / `Không làm`), **L API thực tế (khung cũ)**, **M Task**, ghi chú ở **K** nếu cần. Không sửa cột A–I, không thêm / xóa dòng. Đây là **ngoại lệ duy nhất** của luật "không sửa `docs/reference/*`" (anh yêu cầu 2026-11-16). Dùng openpyxl, giữ định dạng; sheet `Tong_hop` tự tính.
 9. Commit trên nhánh task. Báo anh **ngắn gọn**: xong gì, kiểm tra thế nào, cần anh làm gì (vd. chạy script SQL trên DB dev, nhập secret).
 10. Nếu anh nói "làm tiếp", "tiếp" hoặc `/next` thì quay lại bước 1.
 
@@ -238,6 +262,6 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 - Cần chạy gì lên DB không phải dev.
 - Cần bí mật hoặc token thật.
 - Hai tài liệu nguồn mâu thuẫn mà DECISIONS chưa phân xử.
-- Việc cần sửa frontend → **không làm**, ghi vào DECISIONS mục "Việc cho frontend" để anh giao sau.
+- Việc frontend ngoài màn hình Pilot → không làm, ghi vào DECISIONS mục "Việc cho frontend".
 
 Những việc khác em tự quyết theo tài liệu và ghi lại lý do trong PROGRESS.

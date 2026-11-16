@@ -6,9 +6,51 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 ## ★ ƯU TIÊN CỦA ANH (2026-11-14): RELEASE 1 = CHỈ BACKEND (.NET + SQL) đủ API cho mockup
 
-> **⚠ ĐỔI HƯỚNG 2026-11-15 (D-30):** **khung chuẩn là code cũ**, không sinh thêm API `/api/v1`. Mọi task dưới đây hiểu là: rà soát code cũ → bổ sung method vào Service cũ + action vào Controller cũ theo CLAUDE.md mục 4. Spec API chỉ là danh sách yêu cầu nghiệp vụ. Chỗ nào trong file này còn ghi `/api/v1/...` thì đọc là "chức năng đó, viết thành action kiểu cũ `api/<Entity>/<Action>`". **Task kế tiếp bắt buộc: T45R.**
+> **⚠ ĐỔI HƯỚNG 2026-11-15 (D-30):** **khung chuẩn là code cũ**, không sinh thêm API `/api/v1`. Mọi task dưới đây hiểu là: rà soát code cũ → bổ sung method vào Service cũ + action vào Controller cũ theo CLAUDE.md mục 4. Spec API chỉ là danh sách yêu cầu nghiệp vụ. Chỗ nào trong file này còn ghi `/api/v1/...` thì đọc là "chức năng đó, viết thành action kiểu cũ `api/<Entity>/<Action>`". (T45R đã DONE 2026-11-15.) **Từ 2026-11-16: làm theo bảng LÁT PILOT ngay dưới đây.**
 
-**Frontend Angular (`app-delicare-client/`) NGOÀI PHẠM VI (D-20): không đọc, không sửa, không build, không cần tương thích.** Backend làm theo khung code cũ (D-30), đủ nghiệp vụ mô tả trong `DELICARE_API_Specification.md`. Sau khi xong backend anh sẽ giao frontend. Các task màn hình Angular (T42, T44-UI, T45, T46, T47) chuyển sang `DEFERRED(FE)`; thay bằng task API tương ứng: T45B, T46B, T47B.
+## ★★ LÁT PILOT – ƯU TIÊN SỐ 1 (anh chốt 2026-11-16, D-34)
+
+**Mục tiêu:** chạy thử sớm **một luồng thông suốt** Đơn hàng → Nhu cầu NL → Mua → Nhận + QC → Kho → Sản xuất → Giao + đối soát suất, với danh mục thật, 1–2 khách, 1 bếp. Mỗi bước làm **bản tối thiểu** (bấm nút thay job, duyệt 1 cấp). **Giữ ngay** mọi kiểm soát ATTP: nhiệt độ lõi ≥ 70°C, nhiệt độ giao ≥ 60°C, lưu mẫu, chặn lô hết hạn / KHONG_DAT.
+
+**Làm đúng thứ tự này** (đứng trước bảng R1 bên dưới; task trong bảng R1 không có ở đây thì chờ sau Pilot):
+
+| # | Task | Phạm vi PILOT (phần còn lại của task giữ `TODO` sau Pilot) |
+|---|---|---|
+| P0 | **T48.0 – Băm mật khẩu (D-29)** | Bắt buộc trước khi người thật dùng. Xem mô tả task T48.0. |
+| P0 | T45R.6 | Code đã DONE. **Cần anh:** chạy T4 trong Visual Studio một lần để xác nhận. Không chặn task khác. |
+| FE | **FE-0 → FE-3** (D-35) | Frontend cho các màn hình **đã có API**: khung ứng dụng, quản trị P0, danh mục P1, món / công thức / giá P2, nhập Excel. Xem mục FE bên dưới. |
+| P1 | T11 – Mã chứng từ | Đủ các loại mã dùng trong luồng (PH-, XN-, PO-, NL-, ME-, CX-, PA-, DN-). |
+| P2 | T12 – Duyệt **1 cấp** → **FE-P2** | Tạo / duyệt / từ chối / thực thi; quyền duyệt = mục menu "Phê duyệt" (D-31). Chỉ áp cho **PO** và **đơn sửa lệch > 30%**. Nhiều cấp, hết hạn tự động → sau Pilot. |
+| P3 | T13 + T46B.1 – Thực đơn tuần + Đơn hàng → **FE-P3** | Thực đơn tuần (buổi × lựa chọn, FC%); nhập suất; action **`Lock`** (bấm tay) áp hạn 20h D-1; tính tiền theo ContractMeal / PricePolicie; in **Thực đơn gửi khách**. |
+| P4 | T16 – Sổ kho → **FE-P4** | IN / OUT / ADJUSTMENT / REVERSAL, tồn, gợi ý lô FEFO/FIFO (D-24), chặn lô hết hạn / KHONG_DAT. Kiểm kê: ghi nhận được, **duyệt lệch > 2% → sau Pilot** (admin điều chỉnh tay). |
+| P5 | T14 – Tính nhu cầu NL | Action **`Calculate`** (bấm tay): đơn đã khóa × công thức đã khóa × hao hụt, trừ tồn khả dụng (+ SafetyStock theo D-12 đề xuất) → PurchaseRequest nháp, gợi ý NCC. |
+| P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
+| P7 | T17 – Sản xuất (bản theo mẻ) → **FE-P7** | Kế hoạch mẻ `ME-…`, cấp NL cho mẻ (FEFO), bắt đầu / xong mẻ, **nhiệt độ lõi ≥ 70°C (chặn đóng gói)**, **lưu mẫu** (SAMPLE_RETAINED), sản lượng + hao hụt. In **Phiếu sản xuất**. Công đoạn theo tổ → sau Pilot. |
+| P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
+| P9 | T50R1 (phần Pilot) + T48.1 | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
+
+**`DEFERRED(PILOT)` – làm sau khi chạy thử, lúc chạy thử dùng cách thay thế:**
+
+| Nhóm | Task | Lúc Pilot |
+|---|---|---|
+| Job tự động 19h / 20h / 20h30 / 21h / 5h30, hết hạn duyệt, SLA | T23 | Nút bấm tay |
+| KPI, dashboard điều hành | T22, T47B.3 | Danh sách lọc theo ngày |
+| Báo cáo NCR, báo cáo truy xuất 2 chiều | T18 (báo cáo) | Dữ liệu vẫn ghi đủ |
+| Checklist ATTP theo ca, 5S | T18 (còn lại) | Checklist giấy |
+| Hộp / khay, vệ sinh 6 bước | T20 | Sổ giấy |
+| Nhân sự: chấm công GPS, nghỉ phép, đổi ca | T21 | Cách làm hiện tại |
+| Duyệt nhiều cấp, duyệt kiểm kê lệch > 2% | T12 (mở rộng), T16 | Duyệt 1 cấp / admin điều chỉnh |
+| Công đoạn theo tổ bếp | T17 (mở rộng) | Theo dõi theo mẻ |
+| Mẫu in / xuất file khác | T46B, T47B | — |
+| Bot Telegram / Zalo, Tool Gateway, Obsidian | T30–T51 | `DEFERRED(R2)` như cũ |
+| Production chính thức | T48.2 | Chạy thử trên staging |
+
+**Phạm vi chạy thử (D-35):** 1–2 khách, 1 bếp, ca trưa.
+
+Quy ước: khi làm task có phần Pilot, ghi rõ trong PROGRESS phần nào DONE, phần nào để `DEFERRED(PILOT)`; trạng thái task trong ROADMAP ghi `DONE(PILOT)` khi xong phạm vi Pilot.
+
+
+**Frontend Angular (`app-delicare-client/`): từ 2026-11-16 làm các màn hình Pilot theo khung Angular cũ (D-35, CLAUDE.md 4.4); màn hình ngoài Pilot vẫn `DEFERRED(FE)`.** Backend làm theo khung code cũ (D-30), đủ nghiệp vụ mô tả trong `DELICARE_API_Specification.md`. Sau khi xong backend anh sẽ giao frontend. Các task màn hình Angular (T42, T44-UI, T45, T46, T47) chuyển sang `DEFERRED(FE)`; thay bằng task API tương ứng: T45B, T46B, T47B.
 
 **Chọn task theo THỨ TỰ BẢNG DƯỚI**, không theo số task. Hết mỗi lát:
 - API chạy trên staging backend;
@@ -280,6 +322,27 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - QC / ATTP, đóng gói / giao vận / phản ánh / hộp, nhân sự, KPI dashboard.
 
 
+### FE-0 → FE-P7 – Frontend Angular cho màn hình Pilot (D-35) · theo CLAUDE.md mục 4.4
+Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" trong `DELICARE_API_Catalog.xlsx`; theo khung Angular cũ (mẫu `main/unit-measure`, `services/unit-measure.service.ts`); route = screen-id; bố cục theo `docs/mockup/`; gọi đúng route trong `docs/frontend-handoff/`. AC chung: `npm run build` 0 lỗi; đăng nhập bằng user không phải admin thấy / ẩn đúng nút theo quyền; lỗi nghiệp vụ (`responseCode = 400`) hiện đúng thông báo; ghi PROGRESS + kịch bản thử tay vào `UAT_CHECKLIST.md` mục PILOT-FE.
+
+- **FE-0 – Khung ứng dụng · `TODO`**
+  - Đăng nhập `api/Authentication/Login`; tải lại trang `api/User/GetCurrent`; đổi mật khẩu; đăng xuất. Interceptor JWT cũ giữ; 401 → về trang đăng nhập.
+  - Sidebar từ `listMenu`; sửa helper `permission()` / `checkPermission()` bỏ tiền tố `#/` của MetaLink (một chỗ). Route mới = screen-id.
+  - Gỡ route / menu demo w3crm (`pages/**`) và màn bệnh viện (`patient*`, `medical-*`) khỏi menu – không xóa file.
+  - **Giao diện theo D-36 (CLAUDE.md 4.4 mục "Giao diện")**: ghi đè màu / font / cỡ chữ (14px thường, 13px bảng, dòng ≥ 44px, nút ≥ 36px), tên DELI-CARE + pháp nhân, sidebar nhóm theo menu cấp 1, bộ chọn chi nhánh `api/OrganizationUnit/GetBranches`, thành phần dùng chung `shared/page-header` và `shared/status-badge`, kiểu nút thao tác bảng, ngăn kéo chi tiết dùng chung (`shared/detail-drawer`).
+  - Áp ngay cho màn hình cũ `main/unit-measure` làm mẫu chuẩn; chụp màn hình trước / sau, so với `docs/mockup` cùng loại màn, ghi vào PROGRESS. AC thêm: không còn chữ "phòng khám" / "W3CRM" trên giao diện; không có phần chỉ-để-trình-diễn của mockup.
+  - Dropdown trạng thái dùng `api/MetaData/GetStatuses`, danh mục tham chiếu `api/MetaData/GetReferenceLists` (service dùng chung, cache trong phiên).
+- **FE-1 – Quản trị (P0) · `TODO`**: `adm-user` (tạo kèm hồ sơ Person, gán nhóm, khóa / mở, reset mật khẩu), `adm-usergroup`, `adm-permission` (ma trận `GetMatrix` / `Update` / `SaveAccessAll` / `CopyFromUserGroup` / `GetPreview`), `adm-objectmenu` (cây + kéo thả `UpdateOrder`), `adm-orgunit` (cây), `adm-employee`, `adm-position`. Rà soát màn cũ `main/user`, `main/user-group`, `main/object-menu`, `main/person` và bổ sung.
+- **FE-2 – Danh mục (P1) · `TODO`**: `crm-customer` (+ drawer 360° `GetOverview`), `crm-contact`, `crm-location`, `crm-contract` + suất hợp đồng (CRUD `Contract` / `ContractMeal`), `scm-supplier` (+ `GetOverview`), `scm-supplier-material` (lọc theo ngày hiệu lực, 1 NCC ưu tiên), `scm-ingredient` (+ tồn `GetStock`), `scm-ingredient-cat`, `scm-uom`, `scm-uom-conversion` (thử quy đổi), `scm-warehouse` (+ sơ đồ `GetLayout`), `scm-zone`, `scm-location`, `scm-inv-policy`, `hr-shift`, `log-vehicle`.
+- **FE-3 – Món, công thức, giá (P2) + nhập Excel · `TODO`**: `menu-dish-cat`, `menu-dish`, `menu-recipe` (phiên bản: tạo / dòng định lượng / gửi duyệt / duyệt – từ chối / khóa / giá vốn), `cost-standard` (tính lại), `crm-price-policy` (+ tra giá `Resolve`), màn **Nhập dữ liệu Excel** (`api/ImportExcel/GetTemplateList` / `GetTemplate` / `Import`, hiển thị lỗi từng dòng).
+- **FE-P2 … FE-P8** – làm **ngay sau** backend tương ứng trong bảng Pilot (khi `.http` của task đó chạy được):
+  - FE-P2 (sau T12): hộp duyệt `wf-inbox` (danh sách chờ duyệt của tôi, duyệt / từ chối).
+  - FE-P3 (sau T13 + T46B.1): `menu-menu` (lịch tuần buổi × lựa chọn, FC%), `menu-assignment`, `crm-order` (tạo / sửa dòng / gửi / xác nhận / **Chốt**), in Thực đơn gửi khách.
+  - FE-P4 (sau T16): `scm-inv-balance`, `scm-inv-txn`, `scm-lot`, `scm-issue` (gợi ý FEFO), kiểm kê (ghi nhận).
+  - FE-P5 (sau T14 + T15): `scm-requirement` (nút Tính nhu cầu), `scm-pr`, `scm-po` (duyệt, in), `scm-gr` + `qc-inspection` (kết luận QC, nhiệt độ nhận), in Phiếu trước sản xuất.
+  - FE-P7 (sau T17): `prod-plan`, `prod-order`, `prod-batch` (bắt đầu / xong / nhiệt độ lõi / lưu mẫu / QC), `prod-output`, `prod-waste`, `log-packing-order`, in Phiếu sản xuất.
+  - FE-P8 (sau T19): `log-route`, `log-execution` / `log-pod` (nhiệt độ giao, xác nhận đã giao), `crm-reconciliation` (suất thực tế), `log-complaint` (cơ bản).
+
 ### T45R – Rà soát code cũ, chuyển nghiệp vụ v1 về khung cũ, gỡ lớp v1 · phụ thuộc T45B.4 · `DONE` (2026-11-15)
 **Mục tiêu:** một khung duy nhất là code cũ (CLAUDE.md mục 4). Không mất nghiệp vụ nào đã làm ở T45B.1–.4. Không sinh API v1 mới.
 
@@ -338,6 +401,18 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 ### T47B – API màn hình P6–P8 · phụ thuộc T18–T22 · `TODO`
 - T47B.1 P6 (QC / ATTP, checklist, nhiệt độ, truy xuất). T47B.2 P7 (đóng gói, giao vận, POD, phản ánh, hộp / khay, vệ sinh). T47B.3 P8 (nhân sự, KPI, **API dashboard điều hành**, hộp duyệt ApprovalRequest của user, cảnh báo nghiệp vụ).
 - AC: như T45B cho P6–P8 (khung cũ, D-30).
+
+### T48.0 – Băm mật khẩu an toàn (D-29) · phụ thuộc T45R · `TODO` ← **PILOT P0, làm đầu tiên**
+- Theo **cơ chế cũ (D-31)**: chỉ sửa trong `EncriptFunctionsHelper`, `LoginService`, `UserService` (Insert / ResetPassword / ChangePassword). Không đổi API, không đổi request / response, **không thêm bảng / cột** (hash mới vẫn lưu trong `User.PassWord`).
+- Hash mới: PBKDF2 có sẵn trong .NET (`Rfc2898DeriveBytes.Pbkdf2`, SHA-256, salt ngẫu nhiên 16 byte, ≥ 100.000 vòng), lưu dạng chuỗi tự mô tả, vd. `PBKDF2$<vòng>$<salt base64>$<hash base64>` – kiểm tra độ dài cột `PassWord` trong DDL trước (không đủ thì dừng, ghi GAP).
+- Đăng nhập: nếu chuỗi lưu là hash mới → kiểm PBKDF2 (so sánh thời gian hằng `CryptographicOperations.FixedTimeEquals`); nếu là MD5 cũ → kiểm MD5, đúng thì **tự nâng lên PBKDF2** ngay trong lần đăng nhập đó. User cũ không phải đổi mật khẩu.
+- Reset / đổi / tạo mật khẩu luôn ghi hash mới. Giữ chính sách GAP-ADM-02.
+- Không in mật khẩu / hash ra log.
+- AC:
+  - [ ] Test: user hash MD5 cũ đăng nhập được và sau đó chuỗi lưu là PBKDF2; đăng nhập lần 2 vẫn được.
+  - [ ] Test: sai mật khẩu → từ chối (cả hash cũ lẫn mới); 2 user cùng mật khẩu có hash khác nhau.
+  - [ ] Test: ResetPassword / ChangePassword / tạo user ghi PBKDF2.
+  - [ ] Build 0 lỗi, test xanh; Swagger / route không đổi.
 
 ### T48 – Triển khai (staging → production) · phụ thuộc T03 · `TODO`
 - **T48.1 staging (làm ngay trong R1.0):** `DONE` (2026-11-14 – IIS / LocalDB chạy thử OK; Docker chưa chạy được vì máy dev chưa có Docker)
