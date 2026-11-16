@@ -1,0 +1,69 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã món <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="VD: MON001" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập mã (tối đa 50 ký tự)</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên món <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="dishCategoryId">Nhóm món</label>
+        <app-select [loading]="isLoadingList" formControlName="dishCategoryId" [items]="listCategory" bindValue="id" bindLabel="label" placeholder="Chọn nhóm món"></app-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="mealCategory">Loại món</label>
+        <input id="mealCategory" type="text" class="form-control" list="mealCategoryList" formControlName="mealCategory" placeholder="VD: Món mặn" autocomplete="off" />
+        <datalist id="mealCategoryList">
+          @for (s of mealCategorySuggestions; track s) {
+            <option [value]="s"></option>
+          }
+        </datalist>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="standardPortion">Định lượng chuẩn / suất</label>
+        <input id="standardPortion" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="standardPortion" placeholder="VD: 120" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="defaultUnitId">Đơn vị tính</label>
+        <app-select [loading]="isLoadingList" formControlName="defaultUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Chọn ĐVT"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="standardServingSize">Khẩu phần chuẩn</label>
+        <input id="standardServingSize" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="standardServingSize" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label">Giá thành chuẩn / suất</label>
+        <div class="form-control-plaintext">
+          {{ (standardCost | number: '1.0-0') || '—' }}
+          <small class="text-muted ms-1">(tự tính khi khóa công thức hoặc tính lại giá thành chuẩn)</small>
+        </div>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="description">Mô tả</label>
+        <textarea id="description" class="form-control" rows="2" formControlName="description" placeholder="Nhập dữ liệu"></textarea>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea id="note" class="form-control" rows="2" formControlName="note" placeholder="Nhập dữ liệu"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

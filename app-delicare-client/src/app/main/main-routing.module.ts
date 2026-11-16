@@ -182,6 +182,36 @@ export const mainRoutes: Routes = [
         loadChildren: () =>
           import('./vehicle/vehicle.module').then((m) => m.VehicleModule),
       },
+      // ===== P2 – Món, công thức, giá (FE-3) =====
+      {
+        path: 'menu-dish-cat',
+        loadChildren: () =>
+          import('./dish-category/dish-category.module').then((m) => m.DishCategoryModule),
+      },
+      {
+        path: 'menu-dish',
+        loadChildren: () => import('./dish/dish.module').then((m) => m.DishModule),
+      },
+      {
+        path: 'menu-recipe',
+        loadChildren: () => import('./recipe/recipe.module').then((m) => m.RecipeModule),
+      },
+      {
+        path: 'cost-standard',
+        loadChildren: () =>
+          import('./standard-cost/standard-cost.module').then((m) => m.StandardCostModule),
+      },
+      {
+        path: 'crm-price-policy',
+        loadChildren: () =>
+          import('./price-policy/price-policy.module').then((m) => m.PricePolicyModule),
+      },
+      // Nhập Excel (T49): no ObjectMenu item yet – route PROPOSED, reached from "Nhập Excel" buttons / URL
+      {
+        path: 'sys-import',
+        loadChildren: () =>
+          import('./master-import/master-import.module').then((m) => m.MasterImportModule),
+      },
       // ===== Old screens kept on their old paths (not in the DELI-CARE menu) =====
       {
         path: 'quan-ly-vung',

@@ -1,0 +1,134 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Đơn giá suất ăn theo khách hàng / hợp đồng / loại suất và thời gian hiệu lực. Dùng khi tính tiền đơn hàng.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <div class="dc-card-title">Tra giá áp dụng</div>
+      <div class="dc-toolbar dc-try-box">
+        <div class="dc-filter-select">
+          <app-select [(ngModel)]="tryCustomerId" [items]="listCustomer" bindValue="id" bindLabel="label" placeholder="Khách hàng" (selectionChange)="tryCustomerChanged($event)"></app-select>
+        </div>
+        <div class="dc-filter-select">
+          <app-select [(ngModel)]="tryContractId" [items]="tryContracts" bindValue="id" bindLabel="label" placeholder="Hợp đồng (không bắt buộc)"></app-select>
+        </div>
+        <div style="width: 150px">
+          <app-select [(ngModel)]="tryMealType" [items]="mealTypes" bindValue="code" bindLabel="label" placeholder="Loại suất" [searchable]="false"></app-select>
+        </div>
+        <div style="width: 170px" title="Ngày áp dụng (trống = hôm nay)">
+          <app-date-picker [(ngModel)]="tryDate" placeholder="Ngày (mặc định hôm nay)"></app-date-picker>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" [disabled]="isResolving" (click)="resolve()">
+          <i class="fa-solid fa-magnifying-glass-dollar me-1"></i>Tra giá
+        </button>
+        @if (tryResult) {
+          <span class="fw-semibold">
+            = {{ tryResult.unitPrice | number: '1.0-0' }} đ / suất
+            <small class="text-muted ms-1">({{ sourceLabel(tryResult.source) }})</small>
+          </span>
+        }
+        @if (tryError) {
+          <span class="text-danger">{{ tryError }}</span>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã, tên, khách hàng, hợp đồng" aria-label="Tìm chính sách giá" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="customerId" [items]="listCustomer" bindValue="id" bindLabel="label" placeholder="Tất cả khách hàng" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 130px" (click)="sort('code')">
+                Mã <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên chính sách <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="sortable" (click)="sort('customerName')">
+                Khách hàng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('customerName')"></i>
+              </th>
+              <th class="sortable" (click)="sort('contractName')">
+                Hợp đồng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('contractName')"></i>
+              </th>
+              <th style="width: 100px">Loại suất</th>
+              <th class="text-end sortable" style="width: 120px" (click)="sort('unitPrice')">
+                Đơn giá <i class="fa-solid ms-1" [ngClass]="table.sortIcon('unitPrice')"></i>
+              </th>
+              <th class="sortable" style="width: 190px" (click)="sort('effectiveFrom')">
+                Hiệu lực <i class="fa-solid ms-1" [ngClass]="table.sortIcon('effectiveFrom')"></i>
+              </th>
+              <th style="width: 140px">Trạng thái</th>
+              @if (permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 110px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.code }}</td>
+                <td class="fw-semibold">{{ data.name }}</td>
+                <td>{{ data.customerName }}</td>
+                <td>{{ data.contractName || '—' }}</td>
+                <td>{{ data.mealType ? labelOf(mealTypes, data.mealType) : 'Mọi loại' }}</td>
+                <td class="text-end">{{ data.unitPrice | number: '1.0-0' }}</td>
+                <td>{{ (data.effectiveFrom | date: dateFormat) || '…' }} – {{ (data.effectiveTo | date: dateFormat) || '…' }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                @if (permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

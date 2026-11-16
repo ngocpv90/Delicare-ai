@@ -38,6 +38,23 @@ export const YES_NO: CodeLabel[] = [
   { code: 'false', label: 'Không' },
 ];
 
+// FE-3. Dish.MealCategory is free text – suggestions only (PROPOSED – BA/PO CONFIRM, from the mockup / Rule Menu dish bank).
+export const DISH_MEAL_CATEGORY_SUGGESTIONS = ['Món mặn', 'Món xào', 'Món canh', 'Rau', 'Cơm', 'Tráng miệng', 'Món chay'];
+
+// StandardCost.Status: written by Recipe/Lock and StandardCost/Recalculate (Active / Inactive). PricePolicie.Status: the
+// overlap check only looks at Active (or empty). No STATUS_CATALOG set – PROPOSED – BA/PO CONFIRM.
+export const COST_STATUSES: CodeLabel[] = [
+  { code: 'Active', label: 'Đang áp dụng' },
+  { code: 'Inactive', label: 'Hết hiệu lực' },
+];
+
+// PricePolicy/Resolve source -> label
+export const PRICE_SOURCES: CodeLabel[] = [
+  { code: 'PricePolicy:Contract', label: 'Chính sách giá theo hợp đồng' },
+  { code: 'PricePolicy:Customer', label: 'Chính sách giá theo khách hàng' },
+  { code: 'ContractMeal', label: 'Đơn giá suất ăn trong hợp đồng' },
+];
+
 export const labelOf = (list: CodeLabel[], code?: string | null): string =>
   list.find((x) => x.code.toLowerCase() === (code ?? '').toLowerCase())?.label ?? code ?? '';
 

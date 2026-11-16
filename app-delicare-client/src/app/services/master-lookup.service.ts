@@ -64,6 +64,15 @@ export class MasterLookupService {
     return this.list('OrganizationUnit');
   }
 
+  // FE-3
+  public dishes(): Observable<any[]> {
+    return this.list('Dish');
+  }
+
+  public dishCategories(): Observable<any[]> {
+    return this.list('DishCategory');
+  }
+
   // Branches (OrganizationUnit.UnitType = BRANCH) – same source as the header branch selector
   public branches(): Observable<any[]> {
     return this.httpClient.get<any>(`${URL_API}OrganizationUnit/GetBranches`).pipe(

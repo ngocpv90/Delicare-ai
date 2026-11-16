@@ -1,0 +1,325 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Phiên bản công thức theo món: định lượng nguyên liệu, gửi duyệt, khóa áp dụng và giá vốn nguyên vật liệu.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openCreateVersion()">
+        <i class="fa-solid fa-code-branch me-1"></i>Tạo phiên bản
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã phiên bản, mã / tên món" aria-label="Tìm công thức" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="dishId" [items]="listDish" bindValue="id" bindLabel="label" placeholder="Tất cả món" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 160px" (click)="sort('versionCode')">
+                Mã phiên bản <i class="fa-solid ms-1" [ngClass]="table.sortIcon('versionCode')"></i>
+              </th>
+              <th class="sortable" (click)="sort('dishName')">
+                Món <i class="fa-solid ms-1" [ngClass]="table.sortIcon('dishName')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 90px" (click)="sort('versionNo')">
+                Số bản <i class="fa-solid ms-1" [ngClass]="table.sortIcon('versionNo')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 120px" (click)="sort('standardOutputQty')">
+                Suất chuẩn <i class="fa-solid ms-1" [ngClass]="table.sortIcon('standardOutputQty')"></i>
+              </th>
+              <th class="sortable" style="width: 200px" (click)="sort('effectiveFrom')">
+                Hiệu lực <i class="fa-solid ms-1" [ngClass]="table.sortIcon('effectiveFrom')"></i>
+              </th>
+              <th style="width: 130px">Trạng thái</th>
+              <th class="text-end" style="width: 150px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.versionCode || 'V' + data.versionNo }}</a>
+                  @if (data.isActive) {
+                    <i class="fa-solid fa-circle-check text-success ms-1" title="Đang áp dụng"></i>
+                  }
+                </td>
+                <td>
+                  <span class="fw-semibold">{{ data.dishName }}</span>
+                  <small class="text-muted ms-1">{{ data.dishCode }}</small>
+                </td>
+                <td class="text-end">{{ data.versionNo }}</td>
+                <td class="text-end">{{ data.standardOutputQty | number: '1.0-2' }}</td>
+                <td>
+                  @if (data.effectiveFrom) {
+                    {{ data.effectiveFrom | date: dateFormat }} – {{ (data.effectiveTo | date: dateFormat) || '…' }}
+                  }
+                </td>
+                <td><app-status-badge key="Recipe.Status" [code]="data.status"></app-status-badge></td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Xem định lượng" aria-label="Xem định lượng" (click)="openDrawer(data)"><i class="fa-solid fa-eye"></i></button>
+                  @if (permission.allowEdit && data.status === 'Draft') {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openEdit(data)"><i class="fa-solid fa-pen"></i></button>
+                  }
+                  @if (permission.allowAdd && data.status !== 'Draft' && data.status !== 'PendingApproval') {
+                    <button type="button" class="dc-act" title="Tạo phiên bản mới từ bản này" aria-label="Tạo phiên bản mới" (click)="newVersionFrom(data)"><i class="fa-solid fa-code-branch"></i></button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="(drawerRow?.versionCode || '') + ' · ' + (drawerRow?.dishName || '')"
+    [subtitle]="labelOf(statuses, drawerRow?.status) + (drawerRow?.isActive ? ' · đang áp dụng' : '')"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    width="900px"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (isLoadingDrawer && !current) {
+        <div class="dc-empty">Đang tải...</div>
+      }
+      @if (drawerTab === 'lines') {
+        <div class="dc-kpis">
+          <div class="dc-kpi"><label>Trạng thái</label><b><app-status-badge key="Recipe.Status" [code]="drawerRow.status"></app-status-badge></b></div>
+          <div class="dc-kpi"><label>Số suất chuẩn</label><b>{{ drawerRow.standardOutputQty | number: '1.0-2' }}</b></div>
+          <div class="dc-kpi"><label>Số nguyên liệu</label><b>{{ current?.listLine?.length ?? 0 }}</b></div>
+          <div class="dc-kpi" [class.danger]="current && !current.costComplete">
+            <label>Giá vốn NVL / suất</label><b>{{ current?.costPerMeal | number: '1.0-0' }}</b>
+            @if (current && !current.costComplete) {
+              <small>thiếu giá / quy đổi</small>
+            }
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">
+            Định lượng cho {{ drawerRow.standardOutputQty | number: '1.0-2' }} suất chuẩn.
+            @if (!isDraft) {
+              Chỉ sửa được khi phiên bản ở trạng thái Nháp.
+            }
+          </span>
+          @if (isDraft && can('allowAdd')) {
+            <button type="button" class="btn btn-primary btn-sm" (click)="openLineModal()"><i class="fa-solid fa-plus me-1"></i>Thêm nguyên liệu</button>
+          }
+        </div>
+        <div class="table-responsive">
+          <table class="table dc-table mb-0">
+            <thead>
+              <tr>
+                <th style="width: 50px">#</th>
+                <th>Nguyên liệu</th>
+                <th class="text-end">Định lượng</th>
+                <th>ĐVT</th>
+                <th class="text-end">% HH sơ chế</th>
+                <th class="text-end">% HH chế biến</th>
+                <th>Ghi chú sơ chế</th>
+                @if (isDraft && (can('allowEdit') || can('allowDelete'))) {
+                  <th class="text-end" style="width: 100px">Thao tác</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of current?.listLine ?? []; track l.id; let i = $index) {
+                <tr>
+                  <td>{{ i + 1 }}</td>
+                  <td class="fw-semibold">{{ l.ingredientName }}</td>
+                  <td class="text-end">{{ l.quantity | number: '1.0-4' }}</td>
+                  <td>{{ l.unitName }}</td>
+                  <td class="text-end">{{ l.wastePercent | number: '1.0-2' }}</td>
+                  <td class="text-end">{{ l.expectedWasteRate | number: '1.0-2' }}</td>
+                  <td>{{ l.preparationNote }}</td>
+                  @if (isDraft && (can('allowEdit') || can('allowDelete'))) {
+                    <td class="dc-actions">
+                      @if (can('allowEdit')) {
+                        <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openLineModal(l)"><i class="fa-solid fa-pen"></i></button>
+                      }
+                      @if (can('allowDelete')) {
+                        <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="deleteLine(l.id)"><i class="fa-solid fa-trash"></i></button>
+                      }
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="dc-empty">Chưa có dòng định lượng</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (drawerTab === 'cost') {
+        <div class="dc-toolbar dc-try-box">
+          <div style="width: 140px">
+            <input class="form-control text-end" appNumberInput [decimals]="2" [min]="0" [(ngModel)]="costMealCount" placeholder="Số suất" aria-label="Số suất" />
+          </div>
+          <span class="text-muted">suất, giá tại ngày</span>
+          <div style="width: 170px">
+            <app-date-picker [(ngModel)]="costOn" placeholder="Hôm nay"></app-date-picker>
+          </div>
+          <button type="button" class="btn btn-outline-secondary" [disabled]="isLoadingCost" (click)="calculateCost()">
+            <i class="fa-solid fa-calculator me-1"></i>Tính giá vốn
+          </button>
+        </div>
+        <div class="text-muted small mb-2">Theo giá NCC ưu tiên đang hiệu lực (Bảng giá NCC), quy đổi sang đơn vị giá NCC.</div>
+        @if (cost) {
+          <div class="dc-kpis">
+            <div class="dc-kpi"><label>Số suất</label><b>{{ cost.mealCount | number: '1.0-2' }}</b></div>
+            <div class="dc-kpi"><label>Giá vốn NVL / suất</label><b>{{ cost.costPerMeal | number: '1.0-0' }}</b></div>
+            <div class="dc-kpi"><label>Tổng giá vốn NVL</label><b>{{ cost.totalMaterialCost | number: '1.0-0' }}</b></div>
+            <div class="dc-kpi" [class.danger]="!cost.complete"><label>Đủ dữ liệu giá</label><b>{{ cost.complete ? 'Đủ' : 'Thiếu' }}</b></div>
+          </div>
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Nguyên liệu</th>
+                  <th class="text-end">Định lượng ({{ cost.standardServings | number: '1.0-2' }} suất)</th>
+                  <th>ĐVT</th>
+                  <th class="text-end">Đơn giá NCC</th>
+                  <th>ĐVT giá</th>
+                  <th class="text-end">Thành tiền</th>
+                  <th>Cảnh báo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of cost.listLine; track l.lineId) {
+                  <tr>
+                    <td class="fw-semibold">{{ l.ingredientName }}</td>
+                    <td class="text-end">{{ l.quantity | number: '1.0-4' }}</td>
+                    <td>{{ l.unitName }}</td>
+                    <td class="text-end">{{ l.unitPrice | number: '1.0-0' }}</td>
+                    <td>{{ l.priceUnitName }}</td>
+                    <td class="text-end">{{ l.amount | number: '1.0-0' }}</td>
+                    <td class="text-danger small">{{ l.warning }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="dc-empty">Chưa có dòng định lượng</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+      @if (drawerTab === 'versions') {
+        <div class="table-responsive">
+          <table class="table dc-table mb-0">
+            <thead>
+              <tr>
+                <th>Phiên bản</th>
+                <th>Trạng thái</th>
+                <th>Hiệu lực</th>
+                <th class="text-end">Số NL</th>
+                <th class="text-end">Giá vốn / suất</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of versions; track v.recipe?.id) {
+                <tr [class.table-active]="v.recipe?.id === drawerRow.id">
+                  <td>
+                    <a href="javascript:void(0)" (click)="selectVersion(v)">{{ v.recipe?.versionCode || 'V' + v.recipe?.versionNo }}</a>
+                    @if (v.recipe?.isActive) {
+                      <i class="fa-solid fa-circle-check text-success ms-1" title="Đang áp dụng"></i>
+                    }
+                  </td>
+                  <td><app-status-badge key="Recipe.Status" [code]="v.recipe?.status"></app-status-badge></td>
+                  <td>
+                    @if (v.recipe?.effectiveFrom) {
+                      {{ v.recipe.effectiveFrom | date: dateFormat }} – {{ (v.recipe.effectiveTo | date: dateFormat) || '…' }}
+                    }
+                  </td>
+                  <td class="text-end">{{ v.listLine?.length ?? 0 }}</td>
+                  <td class="text-end">
+                    {{ v.costPerMeal | number: '1.0-0' }}
+                    @if (!v.costComplete) {
+                      <i class="fa-solid fa-triangle-exclamation text-warning ms-1" title="Thiếu giá NCC / quy đổi đơn vị"></i>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="dc-empty">Không có dữ liệu</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (drawerTab === 'info') {
+        <div class="dc-kv">
+          <div><label>Món</label><span>{{ drawerRow.dishCode }} – {{ drawerRow.dishName }}</span></div>
+          <div><label>Mã phiên bản</label><span>{{ drawerRow.versionCode || '—' }} (bản số {{ drawerRow.versionNo }})</span></div>
+          <div><label>Số suất chuẩn</label><span>{{ (drawerRow.standardOutputQty | number: '1.0-2') || '—' }}</span></div>
+          <div><label>Sản lượng thành phẩm</label><span>{{ (drawerRow.yieldQuantity | number: '1.0-3') || '—' }}</span></div>
+          <div><label>% thành phẩm</label><span>{{ (drawerRow.yieldPercent | number: '1.0-2') || '—' }}</span></div>
+          <div><label>Hiệu lực</label><span>{{ (drawerRow.effectiveFrom | date: dateFormat) || '…' }} – {{ (drawerRow.effectiveTo | date: dateFormat) || '…' }}</span></div>
+          <div><label>Duyệt lúc</label><span>{{ (drawerRow.approvedAt | date: 'dd/MM/yyyy HH:mm') || '—' }}</span></div>
+          <div><label>Khóa lúc</label><span>{{ (drawerRow.lockedAt | date: 'dd/MM/yyyy HH:mm') || '—' }}</span></div>
+          <div style="grid-column: 1 / -1"><label>Hướng dẫn chế biến</label><span style="white-space: pre-line">{{ drawerRow.instructions || '—' }}</span></div>
+          <div style="grid-column: 1 / -1"><label>Ghi chú</label><span>{{ drawerRow.note || '—' }}</span></div>
+        </div>
+      }
+    }
+    <ng-container drawer-footer>
+      @if (drawerRow?.status === 'Draft') {
+        @if (permission.allowDelete) {
+          <button type="button" class="btn btn-outline-danger" (click)="deleteVersion()"><i class="fa-solid fa-trash me-1"></i>Xóa bản nháp</button>
+        }
+        @if (permission.allowEdit) {
+          <button type="button" class="btn btn-outline-secondary" (click)="openEdit(drawerRow)"><i class="fa-solid fa-pen me-1"></i>Sửa thông tin</button>
+          <button type="button" class="btn btn-primary" (click)="submit()"><i class="fa-solid fa-paper-plane me-1"></i>Gửi duyệt</button>
+        }
+      }
+      @if (drawerRow?.status === 'PendingApproval' && canApprove) {
+        <button type="button" class="btn btn-outline-danger" (click)="reject()"><i class="fa-solid fa-xmark me-1"></i>Từ chối</button>
+        <button type="button" class="btn btn-primary" (click)="approve()"><i class="fa-solid fa-check me-1"></i>Duyệt</button>
+      }
+      @if (drawerRow?.status === 'Approved' && canApprove) {
+        <button type="button" class="btn btn-primary" (click)="lock()"><i class="fa-solid fa-lock me-1"></i>Khóa & áp dụng</button>
+      }
+      @if (permission.allowAdd && drawerRow && drawerRow.status !== 'Draft' && drawerRow.status !== 'PendingApproval') {
+        <button type="button" class="btn btn-outline-secondary" (click)="newVersionFrom(drawerRow)"><i class="fa-solid fa-code-branch me-1"></i>Tạo phiên bản mới từ bản này</button>
+      }
+    </ng-container>
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

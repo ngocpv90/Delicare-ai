@@ -1,0 +1,55 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <label class="form-label" for="ingredientId">Nguyên liệu <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="ingredientId" [items]="listIngredient" bindValue="id" bindLabel="label" placeholder="Chọn nguyên liệu" [invalid]="isInvalid('ingredientId')" (selectionChange)="ingredientChanged($event)"></app-select>
+        @if (isInvalid('ingredientId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="quantity">Định lượng <span class="text-danger">(*)</span></label>
+        <input id="quantity" type="text" class="form-control text-end" [class.is-invalid]="isInvalid('quantity')" appNumberInput [decimals]="4" [min]="0" formControlName="quantity" />
+        <div class="invalid-feedback">Định lượng phải lớn hơn 0</div>
+        @if (data?.standardOutputQty) {
+          <small class="text-muted">Cho {{ data.standardOutputQty | number: '1.0-2' }} suất chuẩn của công thức</small>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="unitId">Đơn vị tính <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="unitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Chọn ĐVT" [invalid]="isInvalid('unitId')"></app-select>
+        @if (isInvalid('unitId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="wastePercent">% hao hụt sơ chế</label>
+        <input id="wastePercent" type="text" class="form-control text-end" [class.is-invalid]="isInvalid('wastePercent')" appNumberInput [decimals]="2" [min]="0" [max]="99.99" formControlName="wastePercent" placeholder="VD: 5" />
+        <div class="invalid-feedback">Từ 0 đến dưới 100</div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="expectedWasteRate">% hao hụt chế biến</label>
+        <input id="expectedWasteRate" type="text" class="form-control text-end" [class.is-invalid]="isInvalid('expectedWasteRate')" appNumberInput [decimals]="2" [min]="0" [max]="99.99" formControlName="expectedWasteRate" />
+        <div class="invalid-feedback">Từ 0 đến dưới 100</div>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="preparationNote">Ghi chú sơ chế</label>
+        <input id="preparationNote" type="text" class="form-control" formControlName="preparationNote" placeholder="VD: Thái hạt lựu" autocomplete="off" />
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea id="note" class="form-control" rows="2" formControlName="note" placeholder="Nhập dữ liệu"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>
