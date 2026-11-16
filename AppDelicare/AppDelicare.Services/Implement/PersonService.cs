@@ -131,11 +131,54 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(PersonCustomRequest request, string typeSave)
         {
+            var (error, _) = await InsertCore(request, typeSave);
+            return error;
+        }
+
+        /// <summary>
+        /// T45R.8 (D-38): <c>Person/Insert</c> = tạo người dùng 1 bước: Person + ĐÚNG 1 User (tên đăng nhập nhập vào hoặc tự sinh)
+        /// + nhóm quyền, trong CÙNG transaction. Trả tài khoản vừa tạo kèm mật khẩu tạm (D-39) – chỉ trả một lần.
+        /// </summary>
+        public async Task<IResult<PersonUserCreatedViewModel>> InsertPersonUser(PersonCustomRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var (error, created) = await InsertCore(request, ConstantHelper.TypeSave.Insert);
+                if (!string.IsNullOrEmpty(error) || created == null)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<PersonUserCreatedViewModel>.Fail(error);
+                }
+                _unitOfWork.CommitTransaction();
+                return Result<PersonUserCreatedViewModel>.Success(created, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " InsertPersonUser: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
+        private async Task<(string Error, PersonUserCreatedViewModel? Created)> InsertCore(PersonCustomRequest request, string typeSave)
+        {
+            // Kiểm tài khoản TRƯỚC khi ghi Person (không để lại hồ sơ mồ côi khi tên đăng nhập trùng / nhóm sai).
+            string error = _userService.ValidateNewAccount(request.UserName, request.FullName, request.ListUserGroupId, out string userName);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return (error, null);
+            }
             var insert = _mapper.Map<Person>(request);
             _unitOfWork.PersonRepository.Add(insert);
             await _unitOfWork.PersonRepository.CommitAsync(typeSave);
-            await _userService.InsertUserAfter(insert.Id, insert.FullName, typeSave);
-            return string.Empty;
+            var account = await _userService.InsertUserAfter(insert.Id, insert.FullName, typeSave, userName, request.ListUserGroupId, request.IsActive ?? false);
+            if (account.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || account.Data == null)
+            {
+                return (account.ResponseMessage ?? ConstantHelper.Message.InternalServer, null);
+            }
+            account.Data.PersonId = insert.Id;
+            return (string.Empty, account.Data);
         }
 
         private async Task<string> Update(PersonCustomRequest request, string typeSave)
@@ -216,7 +259,8 @@ namespace AppDelicare.Services.Implement
                     }
                     else
                     {
-                        var listPersonId = _unitOfWork.UserRepository.GetAll().Where(x => x.IsActive && !x.IsDeleted).Select(x => x.PersonId).ToList();
+                        // T45R.8 (D-38): 1 Person ↔ tối đa 1 User → loại mọi hồ sơ đã có tài khoản (kể cả tài khoản đang khóa).
+                        var listPersonId = _unitOfWork.UserRepository.GetAll().Where(x => !x.IsDeleted).Select(x => x.PersonId).ToList();
                         list = [.. list.Where(x => !listPersonId.Contains(x.Id)).Take(10).OrderBy(x => x.FullName)];
                     }
                 }

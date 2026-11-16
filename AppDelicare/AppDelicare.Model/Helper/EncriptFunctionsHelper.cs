@@ -39,6 +39,74 @@ namespace AppDelicare.Model.Helper
 
         public static bool IsPbkdf2(string? stored) => stored != null && stored.StartsWith(Pbkdf2Prefix, StringComparison.Ordinal);
 
+        // ---- T45R.8 (D-39, GAP-ADM-02): mật khẩu tạm ----
+
+        /// <summary>Tiền tố hash của mật khẩu TẠM: <c>PBKDF2T$&lt;hết hạn unix (giây, UTC)&gt;$&lt;vòng&gt;$&lt;salt&gt;$&lt;hash&gt;</c>.</summary>
+        public const string Pbkdf2TempPrefix = "PBKDF2T$";
+        public const int TemporaryPasswordLength = 12;
+        /// <summary>Hạn mật khẩu tạm (D-39: 24 giờ).</summary>
+        public static readonly TimeSpan TemporaryPasswordLifetime = TimeSpan.FromHours(24);
+
+        // Bỏ ký tự dễ nhầm: 0 / O, 1 / l / I.
+        private const string TempUpper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        private const string TempLower = "abcdefghijkmnopqrstuvwxyz";
+        private const string TempDigit = "23456789";
+
+        /// <summary>
+        /// Sinh mật khẩu tạm 12 ký tự bằng RNG mật mã (<see cref="RandomNumberGenerator"/>), có ít nhất 1 chữ hoa, 1 chữ thường, 1 số,
+        /// không có ký tự dễ nhầm (0, O, 1, l, I). KHÔNG log / KHÔNG lưu bản rõ.
+        /// </summary>
+        public static string GenerateTemporaryPassword()
+        {
+            string all = TempUpper + TempLower + TempDigit;
+            char[] chars = new char[TemporaryPasswordLength];
+            chars[0] = TempUpper[RandomNumberGenerator.GetInt32(TempUpper.Length)];
+            chars[1] = TempLower[RandomNumberGenerator.GetInt32(TempLower.Length)];
+            chars[2] = TempDigit[RandomNumberGenerator.GetInt32(TempDigit.Length)];
+            for (int i = 3; i < chars.Length; i++)
+            {
+                chars[i] = all[RandomNumberGenerator.GetInt32(all.Length)];
+            }
+            // Xáo trộn Fisher–Yates để 3 ký tự bắt buộc không luôn nằm đầu chuỗi.
+            for (int i = chars.Length - 1; i > 0; i--)
+            {
+                int j = RandomNumberGenerator.GetInt32(i + 1);
+                (chars[i], chars[j]) = (chars[j], chars[i]);
+            }
+            return new string(chars);
+        }
+
+        /// <summary>Hash để LƯU mật khẩu tạm, hết hạn tại <paramref name="expiresUtc"/>.</summary>
+        public static string GenerateTemporaryPasswordHash(string password, DateTime expiresUtc)
+        {
+            string normal = GeneratePassword(password); // PBKDF2$<vòng>$<salt>$<hash>
+            long unix = new DateTimeOffset(DateTime.SpecifyKind(expiresUtc, DateTimeKind.Utc)).ToUnixTimeSeconds();
+            return string.Concat(Pbkdf2TempPrefix, unix, "$", normal[Pbkdf2Prefix.Length..]);
+        }
+
+        public static bool IsTemporary(string? stored) => stored != null && stored.StartsWith(Pbkdf2TempPrefix, StringComparison.Ordinal);
+
+        /// <summary>Hạn (UTC) của hash mật khẩu tạm; false nếu không phải mật khẩu tạm hoặc sai định dạng.</summary>
+        public static bool TryGetTemporaryExpiry(string? stored, out DateTime expiresUtc)
+        {
+            expiresUtc = DateTime.MinValue;
+            if (!IsTemporary(stored))
+            {
+                return false;
+            }
+            string[] parts = stored!.Split('$');
+            if (parts.Length != 5 || !long.TryParse(parts[1], out long unix))
+            {
+                return false;
+            }
+            expiresUtc = DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime;
+            return true;
+        }
+
+        /// <summary>Mật khẩu tạm đã hết hạn (hoặc hash tạm sai định dạng) so với <paramref name="utcNow"/>.</summary>
+        public static bool IsTemporaryExpired(string? stored, DateTime utcNow)
+            => IsTemporary(stored) && (!TryGetTemporaryExpiry(stored, out DateTime expires) || expires <= utcNow);
+
         /// <summary>Kiểm mật khẩu với chuỗi đã lưu (PBKDF2 hoặc MD5 cũ).</summary>
         public static bool VerifyPassword(string password, string hash) => VerifyPassword(password, hash, null, out _);
 
@@ -52,6 +120,16 @@ namespace AppDelicare.Model.Helper
             if (string.IsNullOrEmpty(stored))
             {
                 return false;
+            }
+            // T45R.8: mật khẩu tạm kiểm như PBKDF2 (bỏ phần hạn); hết hạn hay chưa do nơi gọi kiểm (LoginService – theo IClock).
+            if (IsTemporary(stored))
+            {
+                string[] temp = stored.Split('$');
+                if (temp.Length != 5)
+                {
+                    return false;
+                }
+                stored = string.Concat(Pbkdf2Prefix, temp[2], "$", temp[3], "$", temp[4]);
             }
             if (IsPbkdf2(stored))
             {

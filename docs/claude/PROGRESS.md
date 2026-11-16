@@ -3,7 +3,7 @@
 ## Trạng thái hiện tại
 - Release: **R1 – CHỈ BACKEND** · Lát hiện tại: **R1.1 Danh mục và quản trị** (R1.0 xong, chờ anh UAT song song)
 - **⚠ ĐỔI HƯỚNG (D-30, anh chốt 2026-11-15): khung chuẩn = code cũ, không sinh thêm API `/api/v1`.** Xem CLAUDE.md mục 4, ROADMAP T45R.
-- **2026-11-16 (D-40): LÀM HẾT BACKEND PILOT TRƯỚC, FE SAU.** Tạm dừng FE-3 (commit WIP trên `feat/FE-3-menu-masterdata`). Task kế tiếp: **T45R.8 (chỉ backend)** → T11 → T12 → T13 + T46B.1 → T16 → T14 → T15 → T17 → T19 → T50R1 → dừng báo anh. Sau đó mới tiếp FE.
+- **2026-11-16 (D-40): LÀM HẾT BACKEND PILOT TRƯỚC, FE SAU.** Tạm dừng FE-3 (commit WIP trên `feat/FE-3-menu-masterdata`). **T45R.8 backend DONE** (nhánh `feat/T45R.8-admin`, 140/140 test). Task kế tiếp: T11 → T12 → T13 + T46B.1 → T16 → T14 → T15 → T17 → T19 → T50R1 → dừng báo anh. Sau đó mới tiếp FE.
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
@@ -722,3 +722,45 @@ Câu hỏi cho anh (DECISIONS GAP-INV-02 … GAP-INV-11):
 5. Điều chỉnh tay (tồn đầu kỳ, hủy hàng) Pilot chỉ cần quyền Sửa `scm-inv-txn`, chưa duyệt – được không?
 
 Cần anh: chạy `DB/sp/uspInventoryTransaction_GetLedger.sql` trên staging (DB dev đã chạy); cho phép cài `openpyxl` để cập nhật Catalog.
+
+### T45R.8 – Hoàn thiện quản trị người dùng (D-37, D-38, D-39) · 2026-11-16 · Backend DONE · FE TODO (D-40)
+Nhánh `feat/T45R.8-admin` (worktree `wt-T45R8`). Chỉ backend; phần giao diện (`adm-user` 1 form, popup mật khẩu tạm, chuyển màn Đổi mật khẩu) làm cùng đợt FE.
+
+Rà soát code cũ (đã có – bổ sung vào đúng file):
+- `Person/Insert` → `PersonService.Insert` → `UserService.InsertUserAfter`: tự sinh tên (lỗi khi họ tên có 2 dấu cách hoặc > 6 từ, không bỏ dấu chữ cái đầu), mật khẩu = tên đăng nhập, không gán nhóm, User `IsActive = false`.
+- `User/Insert` không chặn Person đã có User; `User/ResetPassword` đặt mật khẩu = tên đăng nhập, trả `Result<bool>`.
+- `PermissionFilter` không có khái niệm "phải đổi mật khẩu"; `UserRole/SaveAccessAll` chỉ cấp menu cấp 2; `uspUser_GetAll` không lọc IsActive; `ObjectMenu/Insert|Update` cho tạo cấp 3.
+
+Đã làm:
+- **D-37** `DB/seed/ObjectMenu_disable_legacy.sql` (idempotent, liệt kê 26 Id + MetaLink): `IsActive = 0` cho 21 mục cấp 2 kiểu cũ (`benh-nhan`, `quan-ly-…`, `kho-thuoc-…`…) và 5 mục cấp 1 (`trang-chu` + 4 nhóm `#` theo Id: Danh mục, Khám bệnh, Kho thuốc, Hệ thống) – nhóm chỉ tắt khi không còn con đang bật. Không xóa, không đụng UserRole. **DB dev: chạy 2 lần – lần 1 tắt 21 + 5, lần 2 tắt 0, không lỗi.** Đã thêm vào `deploy/db/Deploy-Database.ps1` và `deploy/docker/db-init.sh` (sau `ObjectMenu_seed.sql`). Staging: anh chạy.
+- **D-38** `PersonCustomRequest` + `UserName`, `ListUserGroupId`, `IsActive` (chỉ trường request). `PersonService.InsertPersonUser` (action `Person/Insert`): kiểm tài khoản **trước** khi ghi (tên đăng nhập / nhóm) → Person → `UserService.InsertUserAfter(personId, fullName, typeSave, userName?, listUserGroupId?, isActive)` → `UserClaimService.SaveAfterUser`, tất cả trong 1 transaction; trả `Result<PersonUserCreatedViewModel>` { PersonId, UserId, UserName, TempPassword }. `UserService.ValidateNewAccount`: tên nhập vào → chữ thường, `^[a-z0-9][a-z0-9._-]{1,49}$`, không trùng (LOWER, bỏ bản xóa mềm); trống → sinh như cũ (tên + chữ cái đầu, bỏ dấu cả chữ đầu, trùng thêm 1, 2…). `User/Insert` → `UserService.InsertAccount`: chặn Person đã có User, Person không tồn tại, trùng tên; mật khẩu tạm; trả `Result<PersonUserCreatedViewModel>`. `Person/GetAllDataByKey?isEdit=false` loại mọi hồ sơ đã có User (kể cả đang khóa).
+- **D-39** `EncriptFunctionsHelper`: `GenerateTemporaryPassword` (12 ký tự, `RandomNumberGenerator`, không 0 O 1 l I, ≥ 1 hoa / thường / số, xáo Fisher–Yates), `GenerateTemporaryPasswordHash` → `PBKDF2T$<hết hạn unix>$100000$<salt>$<hash>`, `IsTemporary`, `IsTemporaryExpired`; `VerifyPassword` hiểu dạng tạm. Hạn = `IClock.UtcNow` + 24 giờ. `User/ResetPassword` → `Result<string>` (Data = mật khẩu tạm, một lần; log chỉ ghi user + người thao tác; AuditChange tự ghi Actor / CreatedBy = admin, IdChange = user, "PassWord: (đã thay đổi – không lưu giá trị)"). `LoginService`: mật khẩu tạm quá hạn → `code 400` "Mật khẩu tạm đã hết hạn, liên hệ quản trị"; còn hạn → `data.mustChangePassword = true` + claim `pwd_temp`. `PermissionFilter`: token `pwd_temp` mà DB vẫn là mật khẩu tạm → 403 `{ responseCode: 403, responseMessage: "Cần đổi mật khẩu" }` cho mọi action trừ `User/ChangePassword`, `User/GetCurrent`, `Authentication/*` (kiểm trước cả SkipPermission). `ChangePassword` lưu PBKDF2 thường (chặn khi mật khẩu tạm đã hết hạn); đổi xong token cũ dùng bình thường. `User/GetCurrent` thêm `mustChangePassword`.
+- **FE-1 follow-ups:** `UserRole/SaveAccessAll` gồm cả menu cấp 1; `User/GetAll` lọc `IsActive` (`UserSearchRequest.IsActive`, SP `uspUser_GetAll` thêm `@IsActive BIT = NULL` – đã chạy trên DB dev); `ObjectMenu/Insert|Update` chặn cấp 3 (cha phải là mục cấp 1, mục có con không được có cha), `LevelShow` chuẩn hóa theo `ParentId`.
+- Docs: `docs/frontend-handoff/P0-P2.md` (mục 1.1, bảng adm-person / adm-user / adm-permission / adm-objectmenu, **mục 6** mới), `docs/api-tests/t45r8-admin-users.http`, UAT_CHECKLIST (T45R.8), DECISIONS (GAP-ADM-02 cập nhật, GAP-ADM-04, GAP-ADM-05), LEGACY_REVIEW.
+
+Thay đổi hợp đồng API (FE cần biết):
+- `Person/Insert`: `data` từ `true` → `{ personId, userId, userName, tempPassword }`.
+- `User/Insert`: `data` từ `true` → cùng dạng trên; mật khẩu ban đầu không còn = tên đăng nhập.
+- `User/ResetPassword`: `Result<bool>` → `Result<string>` (Data = mật khẩu tạm). Route / method (GET) giữ nguyên.
+- `Authentication/Login`: thêm `data.mustChangePassword` (trường cũ giữ nguyên); `User/GetCurrent`: thêm `mustChangePassword`.
+- Mọi API: có thể trả 403 kèm body "Cần đổi mật khẩu" khi token là mật khẩu tạm.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **140/140** xanh (+9; baseline 131):
+  - `Admin/UserAccountTests` (7): tạo 1 bước (1 Person + 1 User + 2 nhóm, tên chuẩn hóa, PBKDF2T$, đăng nhập được + mustChangePassword); tự sinh tên `hadt` / `hadt1`, không gửi IsActive → false; trùng tên (khác hoa thường) / tên có dấu / nhóm sai bị chặn và không để lại Person; `User/Insert` cho Person đã có User / trùng tên bị chặn, hồ sơ chưa có User thì được; 300 mật khẩu tạm đúng 12 ký tự, không ký tự dễ nhầm, đủ hoa / thường / số + định dạng hash; reset trả mật khẩu tạm, AuditChange có "ai reset cho ai", không chứa mật khẩu (và không chứa hash tạm), log (Serilog sink bắt tạm) không chứa mật khẩu; đăng nhập tạm → claim `pwd_temp`, GetCurrent được, `UserGroup/GetAllData` / `Person/GetProfile` / `User/GetById` 403 "Cần đổi mật khẩu" (kể cả admin), đổi xong token cũ dùng được, đăng nhập lại bình thường; TestClock: +23 giờ đăng nhập được, +24 giờ 1 phút bị từ chối đúng thông báo, ChangePassword bằng mật khẩu tạm hết hạn bị chặn.
+  - `Admin/AdminServiceTests`: + `Object_menu_insert_update_reject_a_third_level`; `SaveAccessAll` kiểm thêm menu cấp 1.
+  - `Admin/UserAccountSqlServerTests` (1, SQL Server dev – đã chạy, không skip): `User/GetAll?IsActive=true|false`.
+  - `Security/PasswordHashTests`: sửa kịch bản tạo / reset theo D-39 (mật khẩu ban đầu và mật khẩu reset là mật khẩu tạm trả về, lưu PBKDF2T$). MD5 cũ / PBKDF2 thường vẫn đăng nhập và nâng cấp như cũ.
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+AC (phần backend): [x] test tạo 1 bước / chặn; [x] test mật khẩu tạm (12 ký tự, chỉ ChangePassword / GetCurrent, đổi xong bình thường, quá 24h, không trong AuditChange / log); [x] script D-37 chạy 2 lần (DB dev); [x] build / test xanh. Còn: `npm run build` + UAT PILOT-FE (phần FE), Catalog.
+
+`DELICARE_API_Catalog.xlsx` **chưa cập nhật** (không có openpyxl). Gợi ý:
+- Dòng 35 (`POST /admin/users`): J = `Đã xong`, L = `POST api/Person/Insert` (form: hồ sơ + UserName, ListUserGroupId, IsActive → PersonUserCreatedViewModel); hồ sơ có sẵn: `POST api/User/Insert`; M = `T45R.8`; K = "Mật khẩu tạm thay cho password; IsActive mặc định false (GAP-ADM-05)".
+- Dòng 38 (`POST /admin/users/{id}/reset-password`): J = `Đã xong`, L = `GET api/User/ResetPassword?id=` (Result<string> = mật khẩu tạm), M = `T45R.8`.
+- (Dòng 34 – danh sách user lọc isActive: có thể ghi thêm L = `GET api/User/GetAll?IsActive=`, M = `T45R.8`.)
+
+PROPOSED – BA/PO CONFIRM: quy tắc tên đăng nhập (GAP-ADM-04); `IsActive` mặc định false khi không gửi (GAP-ADM-05); `User/Insert` dùng mật khẩu tạm + đổi `data`; giữ `ResetPassword` là GET.
+
+Cần anh: chạy trên staging `DB/seed/ObjectMenu_disable_legacy.sql` và `DB/sp/uspUser_GetAll.sql` (hoặc chạy lại `Deploy-Database.ps1`); chốt GAP-ADM-04 / 05.

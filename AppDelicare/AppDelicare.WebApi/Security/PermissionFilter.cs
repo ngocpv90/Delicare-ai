@@ -1,4 +1,5 @@
 using AppDelicare.Data.Share;
+using Microsoft.Extensions.DependencyInjection;
 using AppDelicare.Services.Interface;
 using AppDelicare.WebApi.Controllers;
 using Microsoft.AspNetCore.Authorization;
@@ -16,8 +17,33 @@ namespace AppDelicare.WebApi.Security
     /// </summary>
     public sealed class PermissionFilter(IPermissionService permissions, ICurrentActor currentActor) : IAsyncAuthorizationFilter
     {
+        /// <summary>T45R.8 (D-39): API còn gọi được khi đăng nhập bằng mật khẩu tạm (ngoài ra 403 "Cần đổi mật khẩu").</summary>
+        private static readonly HashSet<string> TempPasswordUserActions = new(StringComparer.OrdinalIgnoreCase) { "ChangePassword", "GetCurrent" };
+
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
+            // T45R.8 (D-39): token có claim pwd_temp (đăng nhập bằng mật khẩu tạm) → chỉ User/ChangePassword, User/GetCurrent, Authentication/*.
+            // Chặn TRƯỚC mọi ngoại lệ bên dưới (SkipPermission như GetProfile cũng bị chặn). Đã đổi mật khẩu (DB không còn PBKDF2T$) thì token dùng bình thường.
+            var principal = context.HttpContext.User;
+            if (principal.Identity?.IsAuthenticated == true
+                && principal.HasClaim(c => c.Type == AppDelicare.Model.Helper.ConstantHelper.JwtClaimIdentifiers.PwdTemp)
+                && !AllowedWithTempPassword(context.ActionDescriptor))
+            {
+                ActorInfo? tempActor = currentActor.Actor;
+                var users = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                if (tempActor == null || await users.IsTemporaryPassword(tempActor.UserId))
+                {
+                    Log.Warning("Chặn {Path}: tài khoản {Actor} đang dùng mật khẩu tạm, cần đổi mật khẩu", context.HttpContext.Request.Path.Value, tempActor);
+                    context.Result = new ObjectResult(new AppDelicare.Data.Repositories.Result<bool>
+                    {
+                        ResponseCode = StatusCodes.Status403Forbidden,
+                        ResponseMessage = AppDelicare.Model.Helper.ConstantHelper.Message.MustChangePassword,
+                        Data = false,
+                    }) { StatusCode = StatusCodes.Status403Forbidden };
+                    return;
+                }
+            }
+
             var metadata = context.ActionDescriptor.EndpointMetadata;
             if (metadata.OfType<IAllowAnonymous>().Any() || metadata.OfType<SkipPermissionAttribute>().Any()
                 || !metadata.OfType<IAuthorizeData>().Any())
@@ -49,6 +75,11 @@ namespace AppDelicare.WebApi.Security
                 context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
             }
         }
+
+        private static bool AllowedWithTempPassword(Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor descriptor)
+            => descriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor action
+               && (string.Equals(action.ControllerName, "Authentication", StringComparison.OrdinalIgnoreCase)
+                   || (string.Equals(action.ControllerName, "User", StringComparison.OrdinalIgnoreCase) && TempPasswordUserActions.Contains(action.ActionName)));
     }
 
     /// <summary>

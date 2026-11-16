@@ -8,5 +8,7 @@ namespace AppDelicare.Model.Model
         public UserModel? User { get; set; }
         /// <summary>Menu 2 cấp user được truy cập, kèm cờ quyền (ẩn / hiện nút).</summary>
         public List<UserRoleViewModel> ListMenu { get; set; } = [];
+        /// <summary>T45R.8 (D-39): tài khoản đang dùng mật khẩu tạm → frontend chuyển thẳng màn Đổi mật khẩu.</summary>
+        public bool MustChangePassword { get; set; }
     }
 }

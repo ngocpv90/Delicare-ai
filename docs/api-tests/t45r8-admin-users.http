@@ -1,0 +1,103 @@
+### DELICARE – T45R.8 (D-37, D-38, D-39): tạo người dùng 1 bước, mật khẩu tạm, lọc user, menu 2 cấp.
+### VS Code REST Client. Chạy trên DB dev / staging. Mật khẩu tạm chỉ trả MỘT LẦN trong response – không dán vào tài liệu / chat.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@groupId = 00000000-0000-0000-0000-000000000000
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### ================= D-38 – tạo người dùng 1 bước (Person + đúng 1 User + nhóm, 1 transaction)
+# Kết quả: data = { personId, userId, userName, tempPassword }. Bỏ UserName → tự sinh (vd. "thuongnt").
+# @name createUser
+POST {{base}}/api/Person/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+FullName=[DEMO] Nguyễn Thị Thương&PhoneNumber=0900000000&UserName=demo.thuong&ListUserGroupId={{groupId}}&IsActive=true
+
+###
+@newUserId = {{createUser.response.body.data.userId}}
+@newPersonId = {{createUser.response.body.data.personId}}
+@newUserName = {{createUser.response.body.data.userName}}
+@tempPassword = {{createUser.response.body.data.tempPassword}}
+
+### Trùng tên đăng nhập (khác hoa thường) → responseCode 400 "UserName demo.thuong đã tồn tại…"
+POST {{base}}/api/Person/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+FullName=[DEMO] Người khác&UserName=DEMO.Thuong
+
+### Tài khoản thứ 2 cho cùng hồ sơ → responseCode 400 "Hồ sơ này đã có tài khoản đăng nhập…"
+POST {{base}}/api/User/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+UserName=demo.thuong2&PersonId={{newPersonId}}&IsActive=true
+
+### Hồ sơ CHƯA có tài khoản (cho nút "Tạo tài khoản cho hồ sơ có sẵn")
+GET {{base}}/api/Person/GetAllDataByKey?key=DEMO&isEdit=false
+Authorization: Bearer {{token}}
+
+### ================= D-39 – mật khẩu tạm
+### Đăng nhập bằng mật khẩu tạm → data.mustChangePassword = true, token có claim pwd_temp
+# @name tempLogin
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{newUserName}}", "passWord": "{{tempPassword}}" }
+
+###
+@tempToken = {{tempLogin.response.body.data.token}}
+
+### Được gọi: GetCurrent (data.mustChangePassword = true)
+GET {{base}}/api/User/GetCurrent
+Authorization: Bearer {{tempToken}}
+
+### Bị chặn: HTTP 403 { responseCode: 403, responseMessage: "Cần đổi mật khẩu" }
+GET {{base}}/api/Person/GetProfile
+Authorization: Bearer {{tempToken}}
+
+### Đổi mật khẩu → lưu PBKDF2 thường; sau đó token dùng bình thường
+PUT {{base}}/api/User/ChangePassword
+Authorization: Bearer {{tempToken}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{newUserId}}&PassWordOld={{tempPassword}}&PassWordNew=Doi-mat-khau-8
+
+### Admin đặt lại mật khẩu → data = mật khẩu tạm mới (12 ký tự, hạn 24 giờ). Chỉ admin.
+GET {{base}}/api/User/ResetPassword?id={{newUserId}}
+Authorization: Bearer {{token}}
+
+### Quá 24 giờ: Login trả { code: 400, message: "Mật khẩu tạm đã hết hạn, liên hệ quản trị" } (kiểm bằng test – TestClock)
+
+### ================= FE-1 follow-ups
+### Lọc tài khoản Đang dùng / Đã khóa
+GET {{base}}/api/User/GetAll?Page=1&PageSize=20&IsActive=false
+Authorization: Bearer {{token}}
+
+### Cấp truy cập toàn bộ (gồm cả nhóm menu cấp 1)
+POST {{base}}/api/UserRole/SaveAccessAll
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+UserGroupId={{groupId}}&AllowAccess=true
+
+### Menu cấp 3 bị chặn: ParentId là một mục cấp 2 → responseCode 400 "Menu chỉ có 2 cấp…"
+POST {{base}}/api/ObjectMenu/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Name=[DEMO] Cấp 3&MetaLink=#/demo-level-3&ParentId=<id mục cấp 2, vd. #/adm-user>&IsActive=true
+
+### D-37: menu app cũ đã tắt → cây menu (chỉ mục đang bật) không còn "quan-ly-…"
+GET {{base}}/api/ObjectMenu/GetTree?includeInactive=false
+Authorization: Bearer {{token}}
