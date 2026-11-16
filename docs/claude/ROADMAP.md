@@ -51,7 +51,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | P5 | T14 – Tính nhu cầu NL · `DONE(PILOT)` 2026-11-16 (backend) | Action **`Calculate`** (bấm tay): đơn đã khóa × công thức đã khóa × hao hụt, trừ tồn khả dụng (+ SafetyStock theo D-12 đề xuất) → PurchaseRequest nháp, gợi ý NCC. |
 | P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) · `DONE(PILOT)` 2026-11-16 (backend) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
 | P7 | T17 – Sản xuất (bản theo mẻ) → **FE-P7** · `DONE(PILOT)` 2026-11-16 (backend) | Kế hoạch mẻ `ME-…`, cấp NL cho mẻ (FEFO), bắt đầu / xong mẻ, **nhiệt độ lõi ≥ 70°C (chặn đóng gói)**, **lưu mẫu** (SAMPLE_RETAINED), sản lượng + hao hụt. In **Phiếu sản xuất**. Công đoạn theo tổ → sau Pilot. |
-| P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
+| P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** · `DONE(PILOT)` 2026-11-16 (backend) | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
 | P9 | T50R1 (phần Pilot) + T48.1 – **kết thúc đợt backend, dừng báo anh** | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
 
 **`DEFERRED(PILOT)` – làm sau khi chạy thử, lúc chạy thử dùng cách thay thế:**
@@ -261,7 +261,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - **Báo cáo NCR tổng hợp** (QA 4.5, GAP-QA-01 tạm): gom SupplierIssue, CustomerComplaint, các dòng checklist / nhiệt độ không đạt kèm CorrectiveAction, lọc theo kỳ / bộ phận.
 - AC: test truy xuất 2 chiều trên dữ liệu mẫu.
 
-### T19 – Giao vận và phản ánh · phụ thuộc T17 · `TODO`
+### T19 – Giao vận và phản ánh · phụ thuộc T17 · `DONE(PILOT)` (2026-11-16: chuyến CX- + đơn giao PH- + điểm dừng, nhiệt độ xuất phát / bàn giao ≥ 60 °C chặn xuất phát / bàn giao (TemperatureLog DELIVERY + DeliveryEvent), mẻ chưa đóng gói / chưa lưu mẫu chặn xuất phát (D-42), POD, đơn → Delivered, đối soát suất phục vụ → Reconciled, phản ánh PA- tạo / giao xử lý / đã xử lý / đóng / từ chối, in biên bản giao hàng (GAP-DLV-01…07). Cảnh báo SLA tự động, báo cáo suất theo điểm, xếp hàng (DeliveryLoading / Execution), tách đơn giao, PackingOrder → DEFERRED(PILOT))
 - DeliveryRoute `CX-…`, DeliveryStop, DeliveryEvent, nhiệt độ ≥ 60°C, thiếu / thừa suất, ProofOfDeliverie. CustomerComplaint `PA-…` với SLA 4/24/72h.
 - **Điểm phát suất (mô hình a, D-21)**: nhân viên điểm (nhóm OPS-POS) xác nhận nhận hàng, ghi **suất thực tế phục vụ** → `OrderReconciliation` (đặt / giao / thực tế / chênh lệch); báo cáo suất theo điểm, ngày, buổi.
 - AC: test SLA và cảnh báo nhiệt độ.
