@@ -1,14 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
+import { findMenuByUrl } from 'src/app/helpers/common-helper';
 import {
   DOMAIN_ROUTER,
+  HOME_ROUTE,
   SOURCE,
   STRING_EMPTY,
 } from 'src/app/helpers/constant-helper';
 import { AuthenticationService } from 'src/app/services/authentication.service';
 
-// W3CRM page title bar (.page-titles), rendered once in the main layout and updated per route
+// Breadcrumb bar (.page-titles) of the layout for old screens. Screens using shared/page-header hide it
+// (body.has-page-header) because the page header has its own breadcrumb.
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
@@ -17,9 +20,9 @@ export class HeaderComponent implements OnInit {
   public titleHeader = STRING_EMPTY;
   public titlePage = STRING_EMPTY;
   public isShowBreadcrumb = false;
-  public title = STRING_EMPTY;
+  public title = 'Trang chủ';
   public titleSubPage = STRING_EMPTY;
-  public domainRouter = STRING_EMPTY;
+  public domainRouter = SOURCE.concat(DOMAIN_ROUTER, SOURCE, HOME_ROUTE);
 
   constructor(
     private router: Router,
@@ -34,22 +37,12 @@ export class HeaderComponent implements OnInit {
   }
 
   private update(url: string): void {
-    const currentUrl = url.split('?')[0];
-    const listMenu = this.authenticationService.userValue?.listMenu;
-    if (!listMenu?.length) {
-      return;
-    }
-    const home = listMenu[0];
-    this.domainRouter = SOURCE.concat(DOMAIN_ROUTER, SOURCE, home.metaLink);
-    this.title = home.objectMenuName;
-    const link = (x: any) => SOURCE.concat(DOMAIN_ROUTER, SOURCE, x.metaLink);
-    const menu =
-      listMenu.flatMap((x) => x.children).find((x) => link(x) === currentUrl) ??
-      listMenu.find((x) => link(x) === currentUrl);
+    const listMenu = this.authenticationService.userValue?.listMenu ?? [];
+    const menu = findMenuByUrl(url, listMenu);
     this.titleSubPage = menu?.objectMenuName ?? STRING_EMPTY;
-    this.titleHeader = menu?.shortName || menu?.objectMenuName || STRING_EMPTY;
+    this.titleHeader = menu?.objectMenuName ?? STRING_EMPTY;
     this.titlePage =
-      listMenu.find((x) => x.id === menu?.parentId)?.objectMenuName ?? STRING_EMPTY;
+      listMenu.find((x: any) => x.id === menu?.parentId)?.objectMenuName ?? STRING_EMPTY;
     this.isShowBreadcrumb = !!this.titlePage;
   }
 }

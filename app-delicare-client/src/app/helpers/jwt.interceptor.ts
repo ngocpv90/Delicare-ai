@@ -19,14 +19,17 @@ export class JwtInterceptor implements HttpInterceptor {
   ) {}
 
   private handleAuthError(err: HttpErrorResponse): Observable<any> {
-    //handle your auth error or rethrow
-    if (err.status === 401 || err.status === 403) {
-      //navigate /delete cookies or whatever
-      this.router.navigate(['/dang-nhap']);
-      // if you've caught / handled the error, you don't want to rethrow it unless you also want downstream consumers to have to handle it as well.
-      return of(err.message); // or EMPTY may be appropriate here
+    // 401 = not signed in / token expired (no refresh token yet, GAP-AUTH-01): drop the session, back to sign-in
+    if (err.status === 401) {
+      const returnUrl = this.router.url;
+      this.authenticationService.clearSession();
+      if (!returnUrl.startsWith('/dang-nhap')) {
+        this.router.navigate(['/dang-nhap'], { queryParams: { returnUrl } });
+      }
+      return of(err.message);
     }
-    return throwError(err);
+    // 403 and everything else: the caller shows its own error (buttons are hidden by listMenu flags)
+    return throwError(() => err);
   }
 
   intercept(
@@ -34,20 +37,13 @@ export class JwtInterceptor implements HttpInterceptor {
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
     // add auth header with jwt if user is logged in and request is to the api url
-    const user = this.authenticationService.userValue;
-    if (user !== null) {
-      const isLoggedIn = user && user.token;
-      const isApiUrl = request.url.startsWith(URL_API);
-      if (isLoggedIn && isApiUrl) {
-        request = request.clone({
-          setHeaders: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-      }
-      return next
-        .handle(request)
-        .pipe(catchError((x) => this.handleAuthError(x)));
+    const token = this.authenticationService.userValue?.token;
+    if (token && request.url.startsWith(URL_API)) {
+      request = request.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
     }
     return next
       .handle(request)

@@ -1,63 +1,73 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { HOME_ROUTE } from '../helpers/constant-helper';
 import { MainComponent } from './main.component';
+import { ComingSoonComponent } from './share/coming-soon/coming-soon.component';
 
+// Route path = mockup screen-id = ObjectMenu.MetaLink without '#/' (D-35, CLAUDE.md 4.4).
+// Old Vietnamese paths of the reused screens redirect to their screen-id.
+// Hospital screens (patient*, medical-*, test-demo, delete-data) and the hospital dashboard are no longer
+// routed (files kept). Menu items whose screen is not built yet fall through to ComingSoonComponent.
 export const mainRoutes: Routes = [
-  { path: '', redirectTo: 'trang-chu', pathMatch: 'full' },
+  { path: '', redirectTo: HOME_ROUTE, pathMatch: 'full' },
   {
     path: '',
     component: MainComponent,
     children: [
+      { path: HOME_ROUTE, component: ComingSoonComponent, data: { home: true } },
+      // ===== P0 – Quản trị =====
       {
-        path: 'trang-chu',
-        loadChildren: () =>
-          import('./dashboard/dashboard.module').then((m) => m.DashboardModule),
-      },
-      {
-        path: 'quan-ly-tai-khoan',
+        path: 'adm-user',
         loadChildren: () =>
           import('./user/user.module').then((m) => m.UserModule),
       },
       {
-        path: 'phan-quyen-tai-khoan',
+        path: 'adm-usergroup',
         loadChildren: () =>
           import('./user-group/user-group.module').then(
             (m) => m.UserGroupModule
           ),
       },
       {
-        path: 'quan-ly-chuc-nang',
+        path: 'adm-objectmenu',
         loadChildren: () =>
           import('./object-menu/object-menu.module').then(
             (m) => m.ObjectMenuModule
           ),
       },
       {
-        path: 'quan-ly-dang-nhap',
+        path: 'adm-person',
+        loadChildren: () =>
+          import('./person/person.module').then((m) => m.PersonModule),
+      },
+      {
+        path: 'adm-access-log',
         loadChildren: () =>
           import('./location-tracking/location-tracking.module').then(
             (m) => m.LocationTrackingModule
           ),
       },
       {
-        path: 'quan-ly-thay-doi-du-lieu',
+        path: 'adm-audit',
         loadChildren: () =>
           import('./audit-change/audit-change.module').then(
             (m) => m.AuditChangeModule
           ),
       },
+      // ===== P1 – Danh mục =====
       {
-        path: 'quan-ly-xoa-du-lieu-cu',
+        path: 'scm-supplier',
         loadChildren: () =>
-          import('./delete-data/delete-data.module').then(
-            (m) => m.DeleteDataModule
+          import('./supplier/supplier.module').then((m) => m.SupplierModule),
+      },
+      {
+        path: 'scm-uom',
+        loadChildren: () =>
+          import('./unit-measure/unit-measure.module').then(
+            (m) => m.UnitMeasureModule
           ),
       },
-      {
-        path: 'chuc-nang-demo',
-        loadChildren: () =>
-          import('./test-demo/test-demo.module').then((m) => m.TestDemoModule),
-      },
+      // ===== Old screens kept on their old paths (not in the DELI-CARE menu) =====
       {
         path: 'quan-ly-vung',
         loadChildren: () =>
@@ -94,77 +104,6 @@ export const mainRoutes: Routes = [
           ),
       },
       {
-        path: 'nguoi-dung',
-        loadChildren: () =>
-          import('./person/person.module').then((m) => m.PersonModule),
-      },
-      {
-        path: 'kham-benh',
-        loadChildren: () =>
-          import('./medical-examination/medical-examination.module').then(
-            (m) => m.MedicalExaminationModule
-          ),
-      },
-      {
-        path: 'kho-thuoc-le',
-        loadChildren: () =>
-          import('./medical-warehouse-odd/medical-warehouse-odd.module').then(
-            (m) => m.MedicalWarehouseOddModule
-          ),
-      },
-      {
-        path: 'kho-thuoc-chinh',
-        loadChildren: () =>
-          import('./medical-warehouse-main/medical-warehouse-main.module').then(
-            (m) => m.MedicalWarehouseMainModule
-          ),
-      },
-      {
-        path: 'nha-cung-cap',
-        loadChildren: () =>
-          import('./supplier/supplier.module').then((m) => m.SupplierModule),
-      },
-      {
-        path: 'don-vi-tinh',
-        loadChildren: () =>
-          import('./unit-measure/unit-measure.module').then(
-            (m) => m.UnitMeasureModule
-          ),
-      },
-      {
-        path: 'thuoc-sap-het-han',
-        loadChildren: () =>
-          import(
-            './medical-warehouse-expiry/medical-warehouse-expiry.module'
-          ).then((m) => m.MedicalWarehouseExpiryModule),
-      },
-      {
-        path: 'benh-nhan',
-        loadChildren: () =>
-          import('./patient/patient.module').then((m) => m.PatientModule),
-      },
-      {
-        path: 'nhap-ket-qua',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'danh-muc-khach-hang',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'khach-hang-360',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
         path: 'ql-vung',
         loadChildren: () =>
           import('./orgchart/region/region.module').then(
@@ -178,41 +117,17 @@ export const mainRoutes: Routes = [
             (m) => m.AreaModule
           ),
       },
-      {
-        path: 'ql-chi-nhanh',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-phong-ban',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-san-pham',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-nhu-cau-khach-hang',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
-      {
-        path: 'ql-co-hoi-ban-hang',
-        loadChildren: () =>
-          import('./patient-result/patient-result.module').then(
-            (m) => m.PatientResultModule
-          ),
-      },
+      // ===== Old paths -> screen-id =====
+      { path: 'quan-ly-tai-khoan', redirectTo: 'adm-user' },
+      { path: 'phan-quyen-tai-khoan', redirectTo: 'adm-usergroup' },
+      { path: 'quan-ly-chuc-nang', redirectTo: 'adm-objectmenu' },
+      { path: 'nguoi-dung', redirectTo: 'adm-person' },
+      { path: 'quan-ly-dang-nhap', redirectTo: 'adm-access-log' },
+      { path: 'quan-ly-thay-doi-du-lieu', redirectTo: 'adm-audit' },
+      { path: 'nha-cung-cap', redirectTo: 'scm-supplier' },
+      { path: 'don-vi-tinh', redirectTo: 'scm-uom' },
+      // Menu item without a built screen yet (incl. 'wf-inbox?type=…', groups): placeholder, no crash
+      { path: '**', component: ComingSoonComponent },
     ],
   },
 ];

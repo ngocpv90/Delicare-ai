@@ -1,17 +1,16 @@
-<div class="deznav" (mouseover)="hoverAdd(true)" (mouseout)="hoverAdd(false)">
+<div class="deznav dc-sidebar" (mouseover)="hoverAdd(true)" (mouseout)="hoverAdd(false)">
   <div class="deznav-scroll">
     <ul class="metismenu" id="menu">
-      <li class="menu-title first">CHỨC NĂNG</li>
       @for (item of listMenu; track $index) {
-        @if (item.children.length === 0) {
+        @if (!item.children?.length) {
           <li [ngClass]="{ 'mm-active': isCurrent(item) }">
-            <a [routerLink]="[link(item)]" aria-expanded="false">
+            <a [routerLink]="[item.link.path]" [queryParams]="item.link.queryParams" aria-expanded="false">
               <div class="menu-icon" [innerHtml]="iconFor(item) | safeHtmlSvg"></div>
               <span class="nav-text ms-2">{{ item.objectMenuName }}</span>
             </a>
           </li>
         } @else {
-          <li [ngClass]="{ 'mm-active': isParentActive(item) }">
+          <li class="dc-group" [ngClass]="{ 'mm-active': isParentActive(item) }">
             <a
               class="has-arrow ai-icon"
               href="javascript:void(0)"
@@ -29,7 +28,8 @@
               @for (child of item.children; track $index) {
                 <li [ngClass]="{ 'mm-active': isCurrent(child) }">
                   <a
-                    [routerLink]="[link(child)]"
+                    [routerLink]="[child.link.path]"
+                    [queryParams]="child.link.queryParams"
                     [ngClass]="{ 'mm-active': isCurrent(child) }"
                     >{{ child.objectMenuName }}</a
                   >

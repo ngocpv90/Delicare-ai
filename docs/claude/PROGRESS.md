@@ -532,3 +532,33 @@ AC: [x] cả 4 mục.
 Còn lại / cần anh:
 - **GAP-ADM-02 chưa đủ**: reset vẫn đặt mật khẩu = tên đăng nhập và trả `Result<bool>` (giữ API theo T48.0). Muốn "mật khẩu tạm 12 ký tự trả một lần" thì phải đổi response của `User/ResetPassword` → cần anh duyệt.
 - Mỗi lần đăng nhập tính PBKDF2 2–3 lần (~0,1–0,2 s), chấp nhận cho Pilot.
+
+### FE-0 – Khung ứng dụng Angular (D-35, D-36) · 2026-11-16 · DONE (chờ thử tay)
+Nhánh `feat/FE-0-app-shell` (từ `feat/T48.0-password-hash`). Chỉ sửa trong `app-delicare-client/`.
+
+Mốc ban đầu: `npm run build` của bản cũ **lỗi sẵn 5 lỗi** ở `main/medical-examination`. Không sửa file đó; gỡ route nên module không còn được build.
+
+Đã làm:
+- MetaLink `#/<screen-id>` (cả `?type=`) xử lý một chỗ trong `helpers/common-helper.ts` (`menuPath`, `menuLink`, `findMenuByUrl`); `permission()` / `checkPermission()` dùng chung.
+- Đăng nhập, phiên:
+  - guard gọi `api/User/GetCurrent` khi tải lại trang;
+  - sửa lỗi cũ "chưa đăng nhập vẫn qua guard" (`userValue` là `{}`);
+  - 401 → về đăng nhập kèm `returnUrl`; 403 → màn hình tự báo.
+- Route theo screen-id: `adm-user`, `adm-usergroup`, `adm-objectmenu`, `adm-person`, `adm-access-log`, `adm-audit`, `scm-supplier`, `scm-uom`. Đường dẫn cũ chuyển hướng sang các route này; mục menu chưa có màn hình → "Chức năng chưa có".
+- Gỡ khỏi route (không xóa file): demo w3crm (`pages`, `components`, `plugins`), `patient*`, `medical-*`, `test-demo`, `delete-data` (D-26).
+- Sidebar dựng từ `listMenu` (nhóm cấp 1 → màn cấp 2); ô chọn chi nhánh `api/OrganizationUnit/GetBranches`; bỏ nút sáng / tối.
+- Tên DELI-CARE + tên pháp nhân (tab, footer, đăng nhập); không còn chữ "phòng khám" / "W3CRM" trên giao diện.
+- Giao diện D-36 trong `assets/css/clinic.css` (không sửa `style.css`): màu, font Be Vietnam Pro (Google Fonts), cỡ 14 / 13 / 12px, dòng ≥ 44px, nút ≥ 36px.
+- Thành phần dùng chung: `shared/page-header`, `shared/status-badge`, `shared/detail-drawer`; `services/meta-data.service.ts` (cache GetStatuses / GetReferenceLists).
+- Màn mẫu `scm-uom` (unit-measure) theo khung mới.
+- Đổi mật khẩu sửa 3 lỗi: báo thành công cả khi lỗi; đòi ≥ 9 ký tự; gửi sai trường.
+
+Kiểm tra: `npm run build` **0 lỗi**, 1 cảnh báo có sẵn (`<link style.css>` trong index.html). **Chưa thử trên trình duyệt, chưa chụp ảnh trước / sau** (không có công cụ trình duyệt trong phiên này).
+
+Cần anh / còn lại:
+- Thử tay theo UAT (đăng nhập, tải lại, đổi mật khẩu, 401, sidebar, chi nhánh, scm-uom).
+- DB dev còn **26 mục ObjectMenu của app cũ** với MetaLink kiểu cũ (`quan-ly-dang-nhap`, `quan-ly-vung`…) – vẫn hiện trên menu nếu nhóm có quyền. Em không tự tắt (dữ liệu của anh): anh chọn tắt (IsActive = 0) hay giữ.
+- Font đang tải từ Google Fonts; muốn chạy nội bộ không mạng thì cần file woff2.
+- Màn `administrative-*`, `orgchart` còn route cũ, ngoài menu: gỡ hay giữ?
+- Chi nhánh mới lưu ở trình duyệt; màn nào cần lọc theo chi nhánh sẽ đọc giá trị này.
+- Màn `scm-uom` mới đổi giao diện; form vẫn chỉ có trường Tên (Update ghi đè đủ trường → FE-2 bổ sung).

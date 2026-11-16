@@ -1,0 +1,36 @@
+@if (isHome) {
+  <app-page-header
+    title="Xin chào{{ fullName ? ', ' + fullName : '' }}"
+    [breadcrumb]="[]"
+    [description]="shortName + ' – ' + legalName"
+  ></app-page-header>
+  <div class="row g-3">
+    @for (g of groups; track $index) {
+      <div class="col-xl-4 col-md-6">
+        <div class="card h-100 mb-0">
+          <div class="card-body">
+            <h4 class="dc-card-title">{{ g.name }}</h4>
+            <ul class="dc-link-list">
+              @for (i of g.items; track $index) {
+                <li><a [routerLink]="[i.link.path]" [queryParams]="i.link.queryParams">{{ i.name }}</a></li>
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="col-12">
+        <div class="card"><div class="card-body text-muted">Tài khoản chưa được phân quyền chức năng nào.</div></div>
+      </div>
+    }
+  </div>
+} @else {
+  <app-page-header [title]="menuName || 'Chức năng'"></app-page-header>
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <i class="fa-solid fa-person-digging fs-1 text-primary mb-3 d-block"></i>
+      <h4 class="mb-2">Chức năng chưa có</h4>
+      <p class="text-muted mb-0">Màn hình này đang được xây dựng và sẽ có trong bản cập nhật tới.</p>
+    </div>
+  </div>
+}

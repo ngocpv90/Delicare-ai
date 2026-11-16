@@ -1,85 +1,76 @@
 @if (permission?.allowAccess) {
-  <div class="row">
-    <div class="col-xl-12">
-      <div class="card">
-        <div class="card-body p-0">
-          <div class="table-responsive active-projects style-1 dataTables_wrapper">
-            <form [formGroup]="searchForm" (ngSubmit)="search()">
-              <div class="tbl-caption">
-                <h4 class="heading mb-0">Danh sách đơn vị tính</h4>
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                  @if (permission.allowAdd) {
-                    <button type="button" class="btn btn-primary btn-sm" (click)="openModal()">+ Thêm mới</button>
-                  }
-                </div>
-              </div>
-              <div class="row g-3 align-items-end clinic-tbl-filter">
-                <div class="col-xl-3 col-lg-4 col-md-6">
-                  <label class="form-label" for="searchText">Tên đơn vị tính</label>
-                  <input id="searchText" class="form-control" placeholder="Nhập dữ liệu" formControlName="searchText" />
-                </div>
-                <div class="col-xl-3 col-lg-4 col-md-6 d-flex gap-2">
-                  <button type="submit" class="btn btn-primary">Áp dụng</button>
-                  <button type="button" class="btn btn-danger light" (click)="reloadPage()">Đặt lại</button>
-                </div>
-              </div>
-            </form>
-            <table class="table clinic-table mb-0">
-              <thead>
-                <tr>
-                  <th class="text-center" style="width: 70px">STT</th>
-                  <th class="sortable" (click)="sort('name')">
-                    Tên đơn vị tính
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
-                  </th>
-                  <th style="width: 120px">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (data of listData; track data.id) {
-                  <tr>
-                    <td class="text-center">{{ data.stt }}</td>
-                    <td><h6 class="mb-0 fs-13">{{ data.name }}</h6></td>
-                    <td>
-                      @if (permission.allowEdit) {
-                        <button
-                          type="button"
-                          class="btn btn-primary light btn-xs sharp me-1"
-                          title="Sửa dữ liệu"
-                          (click)="openModal(data)"
-                        >
-                          <i class="fa-solid fa-pen"></i>
-                        </button>
-                      }
-                      @if (permission.allowDelete) {
-                        <button
-                          type="button"
-                          class="btn btn-danger light btn-xs sharp"
-                          title="Xóa dữ liệu"
-                          (click)="delete(data.id)"
-                        >
-                          <i class="fa-solid fa-trash"></i>
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="3" class="text-center text-muted py-4">Không có dữ liệu</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-            <app-table-pager
-              [page]="table.page"
-              [pageSize]="table.pageSize"
-              [total]="table.total"
-              (pageChange)="changePage($event)"
-              (pageSizeChange)="changePageSize($event)"
-            ></app-table-pager>
-          </div>
+  <app-page-header description="Đơn vị tính dùng cho nguyên liệu, công thức, mua hàng và kho.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            id="searchText"
+            class="form-control"
+            placeholder="Tìm theo tên đơn vị tính"
+            aria-label="Tìm theo tên đơn vị tính"
+            formControlName="searchText"
+          />
         </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('name')">
+                Tên đơn vị tính
+                <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              @if (permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 120px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td class="fw-semibold">{{ data.name }}</td>
+                @if (permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
     </div>
   </div>
 } @else {

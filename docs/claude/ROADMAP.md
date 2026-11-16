@@ -325,7 +325,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 ### FE-0 → FE-P7 – Frontend Angular cho màn hình Pilot (D-35) · theo CLAUDE.md mục 4.4
 Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" trong `DELICARE_API_Catalog.xlsx`; theo khung Angular cũ (mẫu `main/unit-measure`, `services/unit-measure.service.ts`); route = screen-id; bố cục theo `docs/mockup/`; gọi đúng route trong `docs/frontend-handoff/`. AC chung: `npm run build` 0 lỗi; đăng nhập bằng user không phải admin thấy / ẩn đúng nút theo quyền; lỗi nghiệp vụ (`responseCode = 400`) hiện đúng thông báo; ghi PROGRESS + kịch bản thử tay vào `UAT_CHECKLIST.md` mục PILOT-FE.
 
-- **FE-0 – Khung ứng dụng · `TODO`**
+- **FE-0 – Khung ứng dụng · `DONE` (2026-11-16, build 0 lỗi; chưa thử tay trên trình duyệt)**
   - Đăng nhập `api/Authentication/Login`; tải lại trang `api/User/GetCurrent`; đổi mật khẩu; đăng xuất. Interceptor JWT cũ giữ; 401 → về trang đăng nhập.
   - Sidebar từ `listMenu`; sửa helper `permission()` / `checkPermission()` bỏ tiền tố `#/` của MetaLink (một chỗ). Route mới = screen-id.
   - Gỡ route / menu demo w3crm (`pages/**`) và màn bệnh viện (`patient*`, `medical-*`) khỏi menu – không xóa file.
