@@ -55,3 +55,14 @@ Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) ho�
 | 7 | adm-orgunit | Cây; thêm con; đổi quản lý; đặt cha là con của mình; trùng mã | Vòng lặp / trùng mã → thông báo; đơn vị BRANCH hiện ở ô chọn chi nhánh | [ ] | |
 | 8 | adm-employee, adm-position | Thêm / sửa (ngày không lệch 1 ngày, trường khác giữ nguyên) / lọc / xóa | Đúng | [ ] | |
 | 9 | Mọi màn | User thường không có quyền Thêm / Sửa / Xóa | Nút ẩn đúng; không có quyền xem → trang "không tìm thấy" | [ ] | |
+### T45R.8 – Hoàn thiện quản trị người dùng (backend, 2026-11-16) · file thử: `docs/api-tests/t45r8-admin-users.http` · tài liệu: `docs/frontend-handoff/P0-P2.md` mục 6
+Trước khi thử trên staging: chạy `DB/seed/ObjectMenu_disable_legacy.sql` (hoặc `deploy/db/Deploy-Database.ps1` – đã có trong danh sách seed) và `DB/sp/uspUser_GetAll.sql`.
+
+| # | Kịch bản | Thao tác | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Tắt menu cũ (D-37) | Chạy script 2 lần; đăng nhập xem `listMenu` | Lần 1 tắt 26 mục (21 cấp 2 + 5 cấp 1), lần 2 tắt 0, không lỗi; không còn "Quản lý…", "Khám bệnh", "Kho thuốc"… | [ ] | Không xóa, không đổi UserRole |
+| 2 | Tạo người dùng 1 bước (D-38) | `Person/Insert` có Họ tên + `UserName` + `ListUserGroupId` + `IsActive=true` | Đúng 1 Person + 1 User + nhóm; response có `tempPassword` 12 ký tự | [ ] | |
+| 3 | Chặn tài khoản thứ 2 / trùng tên | `User/Insert` cho hồ sơ vừa tạo; `Person/Insert` với tên đăng nhập trùng (khác hoa thường) | responseCode 400, không tạo hồ sơ thừa | [ ] | |
+| 4 | Mật khẩu tạm (D-39) | Admin `User/ResetPassword` → đăng nhập bằng mật khẩu tạm → gọi 1 màn bất kỳ → `User/ChangePassword` → gọi lại | Login có `mustChangePassword = true`; API khác 403 "Cần đổi mật khẩu"; đổi xong dùng bình thường; mật khẩu tạm không có trong `AuditChange` (tab Lịch sử của User chỉ ghi "PassWord: đã thay đổi") | [ ] | |
+| 5 | Mật khẩu tạm hết hạn | Đăng nhập bằng mật khẩu tạm sau 24 giờ | "Mật khẩu tạm đã hết hạn, liên hệ quản trị" | [ ] | Có test tự động (TestClock) |
+| 6 | FE-1 follow-ups | `User/GetAll?IsActive=false`; `UserRole/SaveAccessAll`; `ObjectMenu/Insert` dưới mục cấp 2 | Chỉ user bị khóa; nhóm menu cấp 1 cũng được cấp; menu cấp 3 → 400 | [ ] | |

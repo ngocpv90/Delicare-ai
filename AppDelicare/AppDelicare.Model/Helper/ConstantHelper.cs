@@ -39,6 +39,8 @@
         public static class JwtClaimIdentifiers
         {
             public const string Rol = "rol", Id = "id";
+            /// <summary>T45R.8 (D-39): token đăng nhập bằng mật khẩu tạm – chỉ được gọi User/ChangePassword, User/GetCurrent, Authentication/*.</summary>
+            public const string PwdTemp = "pwd_temp";
         }
 
         public static class JwtClaims
@@ -78,6 +80,16 @@
             public static readonly string GroupNotFound = "Không tìm thấy nhóm người dùng";
             public static readonly string MenuNotFound = "Menu không tồn tại: {0}";
             public static readonly string MenuCycle = "Sắp xếp tạo vòng lặp cha – con";
+            // T45R.8 (D-37..D-39) – quản trị người dùng, mật khẩu tạm, menu 2 cấp.
+            public static readonly string TempPasswordExpired = "Mật khẩu tạm đã hết hạn, liên hệ quản trị";
+            public static readonly string MustChangePassword = "Cần đổi mật khẩu";
+            public static readonly string PersonHasUser = "Hồ sơ này đã có tài khoản đăng nhập ({0}) – mỗi hồ sơ chỉ có tối đa 1 tài khoản";
+            public static readonly string PersonNotFound = "Không tìm thấy hồ sơ cá nhân";
+            public static readonly string UserNameInvalid = "Tên đăng nhập chỉ gồm chữ thường không dấu, số và các ký tự . _ - (3–50 ký tự, không khoảng trắng)";
+            public static readonly string UserNameCannotGenerate = "Không tự sinh được tên đăng nhập từ họ tên, vui lòng nhập tên đăng nhập";
+            public static readonly string MenuMaxTwoLevels = "Menu chỉ có 2 cấp: không thể đặt mục này dưới một mục cấp 2";
+            public static readonly string MenuHasChildren = "Mục menu đang có mục con nên phải là mục cấp 1 (không chọn mục cha)";
+            public static readonly string MenuParentNotFound = "Không tìm thấy mục menu cha";
             public static readonly string ParentCycle = "Đơn vị cha không được là chính nó hoặc đơn vị con của nó";
             public static readonly string AlreadyResolved = "Xung đột này đã được xử lý";
             public static readonly string ResolutionNoteRequired = "Ghi chú xử lý là bắt buộc (tối đa 1000 ký tự)";

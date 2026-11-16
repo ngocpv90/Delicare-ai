@@ -79,7 +79,7 @@ namespace AppDelicare.Tests.Admin
         [Fact]
         public async Task Access_all_copy_preview_and_effective_permissions()
         {
-            var (group, _, menuA, menuB) = await SeedMenusAsync("bulk");
+            var (group, parentMenu, menuA, menuB) = await SeedMenusAsync("bulk");
             Guid target = Guid.NewGuid(), userId = Guid.NewGuid();
             await _factory.SeedAsync(db =>
             {
@@ -92,6 +92,8 @@ namespace AppDelicare.Tests.Admin
 
             (await c.PostFormAsync("/api/UserRole/SaveAccessAll", ("UserGroupId", group), ("AllowAccess", true))).Ok().GetInt32().Should().BeGreaterThan(0);
             (await _factory.QueryAsync(db => db.UserRole.AnyAsync(r => r.UserGroupId == group && r.ObjectMenuId == menuB && r.AllowAccess && !r.IsDeleted))).Should().BeTrue();
+            // T45R.8 (FE-1): SaveAccessAll gồm cả nhóm menu cấp 1.
+            (await _factory.QueryAsync(db => db.UserRole.AnyAsync(r => r.UserGroupId == group && r.ObjectMenuId == parentMenu && r.AllowAccess && !r.IsDeleted))).Should().BeTrue();
 
             (await c.PostFormAsync("/api/UserRole/CopyFromUserGroup", ("SourceUserGroupId", group), ("TargetUserGroupId", target))).Ok();
             var preview = (await c.GetResultAsync($"/api/UserRole/GetPreview?userGroupId={target}")).Ok();
@@ -138,6 +140,31 @@ namespace AppDelicare.Tests.Admin
             moved.LevelShow.Should().Be(1);
 
             (await c.PostFormAsync("/api/ObjectMenu/Insert", ("Name", "Trùng"), ("MetaLink", "#/tree-a"), ("LevelShow", 2))).Fail("#/tree-a");
+        }
+
+        [Fact]
+        public async Task Object_menu_insert_update_reject_a_third_level()
+        {
+            var (_, parent, menuA, _) = await SeedMenusAsync("lvl");
+            using var c = _factory.CreateAuthorizedClient();
+
+            // Dưới mục cấp 2 → cấp 3: chặn.
+            (await c.PostFormAsync("/api/ObjectMenu/Insert", ("Name", "Cấp 3"), ("MetaLink", "#/lvl-c"), ("ParentId", menuA), ("IsActive", true))).Fail("2 cấp");
+            (await _factory.QueryAsync(db => db.ObjectMenu.AnyAsync(m => m.MetaLink == "#/lvl-c"))).Should().BeFalse();
+            // Dưới mục cấp 1 → được, LevelShow chuẩn hóa = 2.
+            (await c.PostFormAsync("/api/ObjectMenu/Insert", ("Name", "Màn C"), ("MetaLink", "#/lvl-c"), ("ParentId", parent), ("LevelShow", 1), ("IsActive", true))).Ok();
+            (await _factory.QueryAsync(db => db.ObjectMenu.Where(m => m.MetaLink == "#/lvl-c").Select(m => m.LevelShow).SingleAsync())).Should().Be(2);
+            // Sửa: mục cấp 1 đang có con không được gắn vào cha; mục cấp 2 không được chuyển xuống dưới mục cấp 2 khác.
+            Guid other = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                db.ObjectMenu.Add(new ObjectMenu { Id = other, Name = "Nhóm khác lvl", MetaLink = "#/group/lvl-2", LevelShow = 1, OrderShow = 2, IsActive = true });
+                return Task.CompletedTask;
+            });
+            (await c.PutFormAsync("/api/ObjectMenu/Update", ("Id", parent), ("Name", "Nhóm lvl"), ("MetaLink", "#/group/lvl"), ("ParentId", other), ("IsActive", true))).Fail("mục con");
+            Guid menuC = await _factory.QueryAsync(db => db.ObjectMenu.Where(m => m.MetaLink == "#/lvl-c").Select(m => m.Id).SingleAsync());
+            (await c.PutFormAsync("/api/ObjectMenu/Update", ("Id", menuC), ("Name", "Màn C"), ("MetaLink", "#/lvl-c"), ("ParentId", menuA), ("IsActive", true))).Fail("2 cấp");
+            (await c.PutFormAsync("/api/ObjectMenu/Update", ("Id", menuC), ("Name", "Màn C"), ("MetaLink", "#/lvl-c"), ("ParentId", other), ("IsActive", true))).Ok();
         }
 
         [Fact]

@@ -285,11 +285,12 @@ namespace AppDelicare.Services.Implement
                     _unitOfWork.RollbackTransaction();
                     return Result<int>.Fail(ConstantHelper.Message.GroupNotFound);
                 }
-                var level2 = (await ActiveMenusAsync()).Where(m => m.LevelShow == 2).Select(m => m.Id).ToList();
+                // T45R.8 (FE-1): gồm cả nhóm menu cấp 1 (sidebar cần AllowAccess của nhóm), không chỉ màn hình cấp 2.
+                var menuIds = (await ActiveMenusAsync()).Where(m => m.LevelShow == 1 || m.LevelShow == 2).Select(m => m.Id).ToList();
                 var existing = _unitOfWork.UserRoleRepository.GetAll()
-                    .Where(x => x.UserGroupId == userGroupId && x.ObjectMenuId != null && level2.Contains(x.ObjectMenuId.Value) && !x.IsDeleted).ToList();
+                    .Where(x => x.UserGroupId == userGroupId && x.ObjectMenuId != null && menuIds.Contains(x.ObjectMenuId.Value) && !x.IsDeleted).ToList();
                 int changed = 0;
-                foreach (var menuId in level2)
+                foreach (var menuId in menuIds)
                 {
                     var row = existing.FirstOrDefault(x => x.ObjectMenuId == menuId);
                     if (row == null)

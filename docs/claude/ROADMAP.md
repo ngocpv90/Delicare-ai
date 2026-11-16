@@ -43,7 +43,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | P0 | **T48.0 – Băm mật khẩu (D-29)** | Bắt buộc trước khi người thật dùng. Xem mô tả task T48.0. |
 | P0 | T45R.6 | Code đã DONE. **Cần anh:** chạy T4 trong Visual Studio một lần để xác nhận. Không chặn task khác. |
 | FE | **FE-0 → FE-3** (D-35) | FE-0, FE-1 DONE (chờ thử tay). **FE-3 TẠM DỪNG (D-40)** – làm tiếp sau khi xong backend Pilot. |
-| P0b | **T45R.8 – Hoàn thiện quản trị** (D-37, D-38, D-39) | Tắt 26 menu cũ; tạo người dùng 1 bước (đúng 1 tài khoản); mật khẩu tạm khi reset / tạo tài khoản. **Làm NGAY, chỉ phần backend** (D-40); phần giao diện làm cùng đợt FE. |
+| P0b | **T45R.8 – Hoàn thiện quản trị** (D-37, D-38, D-39) | Tắt 26 menu cũ; tạo người dùng 1 bước (đúng 1 tài khoản); mật khẩu tạm khi reset / tạo tài khoản. **Backend DONE 2026-11-16** (D-40); phần giao diện làm cùng đợt FE. |
 | P1 | T11 – Mã chứng từ | Đủ các loại mã dùng trong luồng (PH-, XN-, PO-, NL-, ME-, CX-, PA-, DN-). |
 | P2 | T12 – Duyệt **1 cấp** → **FE-P2** | Tạo / duyệt / từ chối / thực thi; quyền duyệt = mục menu "Phê duyệt" (D-31). Chỉ áp cho **PO** và **đơn sửa lệch > 30%**. Nhiều cấp, hết hạn tự động → sau Pilot. |
 | P3 | T13 + T46B.1 – Thực đơn tuần + Đơn hàng → **FE-P3** · `DONE(PILOT)` 2026-11-16 (backend) | Thực đơn tuần (buổi × lựa chọn, FC%); nhập suất; action **`Lock`** (bấm tay) áp hạn 20h D-1; tính tiền theo ContractMeal / PricePolicie; in **Thực đơn gửi khách**. |
@@ -347,7 +347,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - QC / ATTP, đóng gói / giao vận / phản ánh / hộp, nhân sự, KPI dashboard.
 
 
-### T45R.8 – Hoàn thiện quản trị người dùng (D-37, D-38, D-39) · phụ thuộc T48.0, FE-1 · `TODO` ← **làm ngay sau FE-3, trước T11**
+### T45R.8 – Hoàn thiện quản trị người dùng (D-37, D-38, D-39) · phụ thuộc T48.0, FE-1 · **Backend `DONE` (2026-11-16), FE `TODO`** (D-40 – làm cùng đợt FE)
 Theo cơ chế cũ (D-30, D-31): chỉ sửa `PersonService`, `UserService`, `LoginService`, `EncriptFunctionsHelper`, controller cùng tên, DTO Custom; **không thêm bảng / cột**.
 
 - **D-37 – Tắt menu cũ:** script `DB/seed/ObjectMenu_disable_legacy.sql` (idempotent) đặt `IsActive = 0` cho các mục ObjectMenu của app cũ (MetaLink kiểu cũ như `quan-ly-dang-nhap`, `quan-ly-vung`… – liệt kê đúng 26 mục đã phát hiện ở FE-0 theo Id + MetaLink trong comment). Không xóa, không đụng `UserRole`. Chạy trên DB dev, đưa vào `deploy` cho staging. Nhóm menu cấp 1 chỉ tắt khi không còn con đang bật.
@@ -367,10 +367,10 @@ Theo cơ chế cũ (D-30, D-31): chỉ sửa `PersonService`, `UserService`, `Lo
   - `User/ChangePassword` thành công → lưu PBKDF2 thường (bỏ dấu tạm).
   - Frontend: popup hiện mật khẩu tạm + nút Sao chép + cảnh báo "chỉ hiện một lần"; đăng nhập có `mustChangePassword` → chuyển thẳng màn Đổi mật khẩu, không vào được màn khác.
 - **AC:**
-  - [ ] Test: tạo người dùng 1 bước → đúng 1 Person + 1 User + nhóm đúng; `User/Insert` cho Person đã có User bị chặn; UserName trùng bị chặn.
-  - [ ] Test: reset trả mật khẩu tạm 12 ký tự; đăng nhập bằng mật khẩu tạm → chỉ gọi được ChangePassword / GetCurrent; đổi xong dùng bình thường; mật khẩu tạm quá 24h bị từ chối; mật khẩu tạm không xuất hiện trong log / AuditChange.
-  - [ ] Script D-37 chạy 2 lần không lỗi; menu cũ không còn trên sidebar.
-  - [ ] `dotnet build` / `dotnet test` xanh; `npm run build` 0 lỗi; cập nhật `DELICARE_API_Catalog.xlsx` (dòng 35, 38) và UAT_CHECKLIST mục PILOT-FE.
+  - [x] Test: tạo người dùng 1 bước → đúng 1 Person + 1 User + nhóm đúng; `User/Insert` cho Person đã có User bị chặn; UserName trùng bị chặn. (`Admin/UserAccountTests`)
+  - [x] Test: reset trả mật khẩu tạm 12 ký tự; đăng nhập bằng mật khẩu tạm → chỉ gọi được ChangePassword / GetCurrent; đổi xong dùng bình thường; mật khẩu tạm quá 24h bị từ chối; mật khẩu tạm không xuất hiện trong log / AuditChange. (`Admin/UserAccountTests`)
+  - [x] Script D-37 chạy 2 lần không lỗi (DB dev: lần 1 tắt 21 + 5 = 26 mục, lần 2 tắt 0); menu cũ không còn trong `listMenu` (SP lọc `IsActive = 1`). Staging: anh chạy (đã thêm vào `deploy`).
+  - [~] `dotnet build` / `dotnet test` xanh (backend: 0 lỗi, 140/140); `npm run build`, UAT_CHECKLIST PILOT-FE → làm cùng phần FE; Catalog dòng 35, 38 chưa cập nhật (không có openpyxl – gợi ý trạng thái trong PROGRESS).
 
 ### FE-0 → FE-P7 – Frontend Angular cho màn hình Pilot (D-35) · theo CLAUDE.md mục 4.4
 Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" trong `DELICARE_API_Catalog.xlsx`; theo khung Angular cũ (mẫu `main/unit-measure`, `services/unit-measure.service.ts`); route = screen-id; bố cục theo `docs/mockup/`; gọi đúng route trong `docs/frontend-handoff/`. AC chung: `npm run build` 0 lỗi; đăng nhập bằng user không phải admin thấy / ẩn đúng nút theo quyền; lỗi nghiệp vụ (`responseCode = 400`) hiện đúng thông báo; ghi PROGRESS + kịch bản thử tay vào `UAT_CHECKLIST.md` mục PILOT-FE.

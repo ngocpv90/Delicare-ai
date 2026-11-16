@@ -7,7 +7,7 @@
        (docs/reference/20261113_structure_db_appdelicare.sql). DB đã có bảng → BỎ QUA (không bao giờ sửa bảng có sẵn).
     2. Mọi stored procedure trong DB/sp/*.sql (CREATE OR ALTER).
     3. Tài khoản quản trị ban đầu (DB/seed/00_Admin_seed.sql) nếu có -AdminPassword và user chưa tồn tại.
-    4. Seed cấu hình: OrganizationUnit → ObjectMenu → UserRole → Shift.
+    4. Seed cấu hình: OrganizationUnit → ObjectMenu → tắt menu app cũ (D-37) → UserRole → Shift.
   KHÔNG chạy lên DB production khi chưa có checklist go-live (T48.2).
 .EXAMPLE
   # Staging trên LocalDB của máy anh (Windows Authentication)
@@ -84,7 +84,7 @@ if ($AdminPassword) {
     Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
 }
 
-foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
+foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "ObjectMenu_disable_legacy.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
     Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
     Write-Host "  + Seed $name"
 }
@@ -93,7 +93,7 @@ Write-Host "== Xong."
     Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
 }
 
-foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
+foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "ObjectMenu_disable_legacy.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
     Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
     Write-Host "  + Seed $name"
 }
@@ -103,7 +103,7 @@ Write-Host "== Xong."
     Invoke-Sql $Database (Join-Path $root "DB/seed/00_Admin_seed.sql") @("AdminUserName=$AdminUserName", "AdminPasswordHash=$hash")
 }
 
-foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
+foreach ($name in @("OrganizationUnit_seed.sql", "ObjectMenu_seed.sql", "ObjectMenu_disable_legacy.sql", "UserRole_seed.sql", "Shift_seed.sql")) {
     Invoke-Sql $Database (Join-Path $root "DB/seed/$name")
     Write-Host "  + Seed $name"
 }

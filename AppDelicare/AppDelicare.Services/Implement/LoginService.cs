@@ -17,7 +17,7 @@ namespace AppDelicare.Services.Implement
 {
     public class LoginService(ITokenFactoryService tokenFactory, IJwtFactoryService jwtFactory, IOptions<JwtIssuerOptions> jwtOptions
         , IUnitOfWork unitOfWork, IOptions<AppSettingHelper> options, IUserRoleService userRoleService, ICurrentActor currentActor
-        , Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor) : ILoginService
+        , Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, IClock clock) : ILoginService
     {
         private readonly ITokenFactoryService _tokenFactory = tokenFactory;
         private readonly IJwtFactoryService _jwtFactory = jwtFactory;
@@ -27,6 +27,7 @@ namespace AppDelicare.Services.Implement
         private readonly IUserRoleService _userRoleService = userRoleService;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly IClock _clock = clock;
 
         public async Task<Response<AuthenticateResponse>> Authenticate(LoginRequest request)
         {
@@ -59,6 +60,16 @@ namespace AppDelicare.Services.Implement
                 {
                     Code = Convert.ToInt32(HttpStatusCode.InternalServerError),
                     Message = ConstantHelper.Message.AccountInActive
+                };
+            }
+            // T45R.8 (D-39): mật khẩu tạm – quá hạn 24 giờ thì từ chối; còn hạn thì đăng nhập được nhưng bắt buộc đổi mật khẩu.
+            bool mustChangePassword = EncriptFunctionsHelper.IsTemporary(user.PassWord);
+            if (mustChangePassword && EncriptFunctionsHelper.IsTemporaryExpired(user.PassWord, _clock.UtcNow))
+            {
+                return new Response<AuthenticateResponse>
+                {
+                    Code = Convert.ToInt32(HttpStatusCode.BadRequest),
+                    Message = ConstantHelper.Message.TempPasswordExpired
                 };
             }
             // T48.0: hash MD5 cũ đúng mật khẩu → nâng lên PBKDF2 ngay (user không phải đổi mật khẩu). Không log mật khẩu / hash.
@@ -99,6 +110,11 @@ namespace AppDelicare.Services.Implement
             claims.Add(new Claim(ClaimTypes.Role, iPv4 ?? ConstantHelper.NotFound));
             claims.Add(new Claim(ClaimTypes.Role, isAdmin.ToString()));
             claims.Add(new Claim(ClaimTypes.Role, string.Join(ConstantHelper.Comma, listMenu?.Select(x => x.ObjectMenuName).ToList() ?? [])));
+            if (mustChangePassword)
+            {
+                // T45R.8: PermissionFilter chỉ cho gọi User/ChangePassword, User/GetCurrent, Authentication/* (403 "Cần đổi mật khẩu").
+                claims.Add(new Claim(ConstantHelper.JwtClaimIdentifiers.PwdTemp, "true"));
+            }
             var jwt = await _tokenFactory.GenerateJwt(identity,
                                                       _jwtFactory,
                                                       _jwtOptions,
@@ -112,6 +128,10 @@ namespace AppDelicare.Services.Implement
                                                       listMenu ?? [],
                                                       claims);
             var jwtObject = JsonConvert.DeserializeObject<AuthenticateResponse>(jwt);
+            if (jwtObject != null)
+            {
+                jwtObject.MustChangePassword = mustChangePassword; // T45R.8: trường thêm, không đổi trường cũ
+            }
             LocationTracking insertLocationTracking = new()
             {
                 IPv4 = iPv4,

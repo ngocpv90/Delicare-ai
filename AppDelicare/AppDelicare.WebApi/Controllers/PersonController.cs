@@ -39,7 +39,7 @@ namespace AppDelicare.WebApi.Controllers
                 {
                     return BadRequest(ConstantHelper.Message.ModelStateMessage);
                 }
-                return Ok(await _service.Save(request, ConstantHelper.TypeSave.Insert));
+                return Ok(await _service.InsertPersonUser(request)); // T45R.8 (D-38): Result<PersonUserCreatedViewModel>
             }
             catch (Exception ex)
             {

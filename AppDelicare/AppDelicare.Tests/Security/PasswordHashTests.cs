@@ -98,20 +98,23 @@ namespace AppDelicare.Tests.Security
         {
             using var admin = _factory.CreateAuthorizedClient();
 
-            (await admin.PostFormAsync("/api/User/Insert", ("UserName", "t480-created"), ("IsActive", true))).Ok();
+            // T45R.8 (D-39): mật khẩu ban đầu = mật khẩu tạm trả một lần (trước đây = tên đăng nhập), lưu PBKDF2T$.
+            string initial = (await admin.PostFormAsync("/api/User/Insert", ("UserName", "t480-created"), ("IsActive", true))).Ok().GetProperty("tempPassword").GetString()!;
             var created = await _factory.QueryAsync(db => db.User.AsNoTracking().SingleAsync(u => u.UserName == "t480-created"));
-            created.PassWord.Should().StartWith("PBKDF2$");
-            (await LoginAsync("t480-created", "t480-created")).Should().Be((200, true), "mật khẩu khởi tạo = tên đăng nhập (hành vi cũ)");
+            created.PassWord.Should().StartWith("PBKDF2T$");
+            (await LoginAsync("t480-created", "t480-created")).Code.Should().NotBe(200, "không còn mật khẩu = tên đăng nhập");
+            (await LoginAsync("t480-created", initial)).Should().Be((200, true));
 
-            (await admin.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", "t480-created"), ("PassWordNew", "Mat-khau-moi-8"))).Ok();
+            (await admin.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", initial), ("PassWordNew", "Mat-khau-moi-8"))).Ok();
             (await StoredAsync(created.Id)).Should().StartWith("PBKDF2$");
             (await LoginAsync("t480-created", "Mat-khau-moi-8")).Should().Be((200, true), "trước T48.0 đổi mật khẩu xong không đăng nhập lại được");
-            (await LoginAsync("t480-created", "t480-created")).Code.Should().NotBe(200);
+            (await LoginAsync("t480-created", initial)).Code.Should().NotBe(200);
             (await admin.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", "Mat-khau-moi-8"), ("PassWordNew", "1234567"))).Fail("8 ký tự");
 
-            (await admin.GetResultAsync($"/api/User/ResetPassword?id={created.Id}")).Ok();
-            (await StoredAsync(created.Id)).Should().StartWith("PBKDF2$");
-            (await LoginAsync("t480-created", "t480-created")).Should().Be((200, true));
+            string reset = (await admin.GetResultAsync($"/api/User/ResetPassword?id={created.Id}")).Ok().GetString()!;
+            (await StoredAsync(created.Id)).Should().StartWith("PBKDF2T$");
+            (await LoginAsync("t480-created", "Mat-khau-moi-8")).Code.Should().NotBe(200, "reset thay mật khẩu cũ");
+            (await LoginAsync("t480-created", reset)).Should().Be((200, true));
         }
     }
 }
