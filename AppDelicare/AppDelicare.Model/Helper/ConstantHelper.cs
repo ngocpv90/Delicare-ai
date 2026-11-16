@@ -256,6 +256,41 @@
             public static readonly string ReceivingTempConditional = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C (≤ {3} °C: nhận có điều kiện – cần lý do, lô ưu tiên dùng trước)";
             public static readonly string ReceivingTempMissingWarning = "Cảnh báo: {0} ({1}) chưa có nhiệt độ nhận – bắt buộc đo trước khi kết luận QC";
             public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Duyệt – Đơn mua hàng (Giám đốc)\")";
+            // T17 – sản xuất theo mẻ (P7)
+            public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất được tạo bằng MaterialRequirement/Calculate (KH- theo ngày sản xuất)";
+            public static readonly string PlanUpdateBlocked = "Trạng thái / số / ngày kế hoạch chỉ đổi qua thao tác nghiệp vụ (Approve / Release) – dòng món sửa qua ProductionPlanLine khi kế hoạch còn Nháp";
+            public static readonly string PlanNeedsLine = "Kế hoạch chưa có dòng món có số phần lớn hơn 0";
+            public static readonly string PlanLineDraftOnly = "Chỉ sửa dòng kế hoạch khi kế hoạch ở trạng thái Nháp";
+            public static readonly string PlanLineDuplicateDish = "Món này đã có dòng trong kế hoạch";
+            public static readonly string ShiftNotFound = "Không tìm thấy ca sản xuất (ca giao) – chọn ca hoặc cấu hình BusinessRules:ProductionDefaultShiftCode";
+            public static readonly string ProductionLineNotFound = "Không tìm thấy dây chuyền sản xuất đang hoạt động";
+            public static readonly string DispatchTimeInvalid = "Giờ xuất bếp phải dạng HH:mm";
+            public static readonly string DispatchTimeMissing = "Không xác định được giờ xuất bếp: điểm giao chưa có giờ giao, ca chưa có giờ bắt đầu – nhập giờ xuất bếp (DispatchTime)";
+            public static readonly string ReleaseNoRecipe = "Món chưa có công thức đã khóa / đã duyệt – không phát hành được: {0}";
+            public static readonly string ReleaseRecipeNotLocked = "Cảnh báo: món {0} dùng công thức Đã duyệt chưa khóa – lệnh SX lưu ảnh chụp định lượng hiện tại";
+            public static readonly string ReleaseStartInPast = "Cảnh báo: mẻ {0} có giờ bắt đầu kế hoạch {1} đã qua";
+            public static readonly string ProductionCrudBlocked = "{0} chỉ tạo / đổi trạng thái qua thao tác nghiệp vụ ({1})";
+            public static readonly string BatchNotFound = "Không tìm thấy mẻ nấu";
+            public static readonly string BatchIssueExists = "Mẻ {0} đã có phiếu xuất {1} ({2}) – xuất thêm qua MaterialIssue/Create (ghi lệnh SX) hoặc hủy phiếu cũ";
+            public static readonly string BatchIssueNoMaterial = "Lệnh SX không có ảnh chụp định lượng – không tính được nguyên liệu của mẻ";
+            public static readonly string BatchIssueUnitMissing = "Nguyên liệu {0} thiếu quy đổi đơn vị {1} → {2} (đơn vị tồn kho)";
+            public static readonly string BatchNotIssuedWarning = "Cảnh báo: mẻ {0} chưa có phiếu xuất nguyên liệu đã ghi sổ";
+            public static readonly string CoreTempCorrectiveRequired = "Nhiệt độ lõi {0} °C dưới ngưỡng {1} °C – phải ghi hành động khắc phục (nấu tiếp / hâm lại rồi đo lại)";
+            public static readonly string CoreTempBelowWarning = "Cảnh báo: nhiệt độ lõi {0} °C dưới ngưỡng {1} °C – mẻ bị chặn đạt QC / đóng gói tới khi đo lại đạt";
+            public static readonly string CoreTempMissing = "Chưa đo nhiệt độ lõi (TemperatureLog CORE)";
+            public static readonly string CoreTempBelow = "Nhiệt độ lõi đo gần nhất {0} °C dưới ngưỡng {1} °C – nấu tiếp / hâm lại và đo lại";
+            public static readonly string SampleMissing = "Chưa lưu mẫu thức ăn (SAMPLE_RETAINED)";
+            public static readonly string SampleAlready = "Mẻ đã ghi lưu mẫu lúc {0}";
+            public static readonly string SampleChecklistMissing = "Chưa có mục checklist SAMPLE_RETAINED – chạy DB/seed/FoodSafetyChecklist_seed.sql";
+            public static readonly string OutputMissing = "Chưa ghi sản lượng mẻ (ProductionBatch/RecordOutput)";
+            public static readonly string OutputQuantityInvalid = "Số phần nấu được phải lớn hơn 0; số loại từ 0 tới số nấu được";
+            public static readonly string BatchCannotRelease = "Mẻ {0} chưa đạt điều kiện ATTP: {1}";
+            public static readonly string BatchCannotPack = "Mẻ {0} chưa được đóng gói: {1}";
+            public static readonly string BatchReasonRequired = "Phải ghi lý do (nhận xét QC)";
+            public static readonly string WasteQuantityRequired = "Nhập số suất hoặc số kg hao hụt (lớn hơn 0)";
+            public static readonly string WasteTypeInvalid = "Loại hao hụt không hợp lệ ({0})";
+            public static readonly string WasteBatchViaAction = "Hao hụt gắn mẻ ghi qua ProductionBatch/RecordWaste (cập nhật số hao hụt của mẻ)";
+            public static readonly string WorkstationNotFound = "Không tìm thấy trạm bếp";
         }
 
         public class TypeSave

@@ -81,6 +81,7 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - **Mỗi mẻ phải lưu mẫu thức ăn.** `ProductionBatche` không có cột riêng. Ghi bằng `FoodSafetyChecklistResult` (ChecklistItem mã `SAMPLE_RETAINED`, `ProductionBatchId`, `CheckedBy`, `CheckedAt`, `EvidenceUrl`). Seed checklist item này (PROPOSED).
 - Chia suất, nấu thêm, suất thừa ghi vào `MealWasteRecord` / `ProductionOutput`.
 - Checklist ATTP theo ca, hạn tính từ giờ xuất bếp: sơ chế −150′, vệ sinh khu sơ chế −90′, xả nguội −20′, vệ sinh bếp +90′.
+- **Bản Pilot đã cài (T17, PROPOSED – DECISIONS GAP-PRD-01, 03…08):** kế hoạch KH- theo ngày (MRP) → `ProductionPlan/Approve` → `Release` gán 1 ca (`BusinessRules:ProductionDefaultShiftCode` = TRUA), lịch ngược: giờ xuất bếp = giờ giao sớm nhất của điểm giao (`DeliveryWindowFrom`, không có → giờ bắt đầu ca) − `TransportMinutesBeforeCutoff` 60′, mẻ cuối mỗi món xong trước xuất bếp `ProductionPackingMinutes` = 30′, mỗi mẻ `MinutesPerBatch` (trống → `ProductionDefaultMinutesPerBatch` = 60′), số mẻ theo `CapacityMealPerBatch` của dây chuyền chọn; mã `ME-YYMMDD-<CA>-NN`. Nhiệt độ lõi: lần đo gần nhất < `CoreTempMinC` (70 °C) hoặc chưa đo → chặn đạt QC và chặn đóng gói; dưới ngưỡng bắt buộc hành động khắc phục. Lưu mẫu bắt buộc trước khi đạt QC (`ProductionRequireSampleBeforeRelease` = true; seed `DB/seed/FoodSafetyChecklist_seed.sql`). Công đoạn theo tổ → sau Pilot.
 
 ## 7. Giao vận
 - Nhiệt độ khi giao ≥ **60°C** (`DeliveryEvent` + `TemperatureLog` MeasurementType=`DELIVERY`).

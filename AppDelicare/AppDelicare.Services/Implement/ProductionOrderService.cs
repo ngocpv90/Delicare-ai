@@ -4,22 +4,27 @@ using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Option;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
     public class ProductionOrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IProductionOrderService
+        , IAuditChangeService auditChangeService, IOptions<BusinessRulesOptions> rules) : IProductionOrderService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private readonly BusinessRulesOptions _rules = rules.Value;
 
         public async Task<IResults<ProductionOrderViewModel>> GetAll(ProductionOrderSearchRequest request)
         {
@@ -131,14 +136,11 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(ProductionOrderRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<ProductionOrder>(request);
-            _unitOfWork.ProductionOrderRepository.Add(insert);
-            await _unitOfWork.ProductionOrderRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T17: lệnh SX chỉ sinh khi phát hành kế hoạch (ProductionPlan/Release – số PH-, công thức + ảnh chụp định lượng) – CRUD Insert không ghi.</summary>
+        private Task<string> Insert(ProductionOrderRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Lệnh sản xuất", "ProductionPlan/Release"));
 
+        /// <summary>T17: CRUD Update chỉ sửa ghi chú / người phụ trách; trạng thái, món, công thức, số lượng, lịch chỉ đổi qua phát hành kế hoạch và thao tác mẻ.</summary>
         private async Task<string> Update(ProductionOrderRequest request, string typeSave)
         {
             var exist = _unitOfWork.ProductionOrderRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
@@ -146,32 +148,16 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.ProductionOrderRepository.Update(update);
+            exist.Note = request.Note;
+            exist.ResponsibleEmployeeId = request.ResponsibleEmployeeId is { } e && e != Guid.Empty ? e : null;
+            _unitOfWork.ProductionOrderRepository.Update(exist);
             await _unitOfWork.ProductionOrderRepository.CommitAsync(typeSave);
             return string.Empty;
         }
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(ProductionOrder), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.ProductionOrderRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.ProductionOrderRepository.Update(delete);
-            await _unitOfWork.ProductionOrderRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T17: lệnh SX không xóa (đã có mẻ / phiếu xuất) – hủy lệnh để sau Pilot.</summary>
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Lệnh sản xuất", "không xóa"));
 
         public async Task<IResult<ProductionOrder>> GetById(Guid id)
         {
@@ -197,6 +183,54 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>T17 (spec 8.2 orders/{id}): chi tiết lệnh SX – ảnh chụp định lượng, mẻ (lịch + ATTP), phiếu xuất của lệnh.</summary>
+        public async Task<IResult<ProductionOrderDetailModel>> GetDetail(Guid id)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var order = await db.ProductionOrder.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted);
+                if (order == null)
+                {
+                    return Result<ProductionOrderDetailModel>.Fail(ConstantHelper.Message.ProductionOrderNotFound);
+                }
+                var batches = await db.ProductionBatch.AsNoTracking().Where(b => b.ProductionOrderId == id && !b.IsDeleted).ToListAsync();
+                var issues = await db.MaterialIssue.AsNoTracking().Where(i => i.ProductionOrderId == id && !i.IsDeleted).OrderBy(i => i.CreatedDate).ToListAsync();
+                var ingredientIds = ProductionRules.ParseSnapshot(order.RecipeSnapshotJson).Select(l => l.IngredientId).Distinct().ToList();
+                var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => i.Name);
+                var units = await db.UnitMeasure.AsNoTracking().ToDictionaryAsync(u => u.Id, u => u.Name ?? u.Code);
+                return Result<ProductionOrderDetailModel>.Success(new ProductionOrderDetailModel
+                {
+                    ProductionOrder = order,
+                    Order = (await ProductionRules.OrderBriefsAsync(db, [order])).Single(),
+                    ListRecipeLine = [.. ProductionRules.ParseSnapshot(order.RecipeSnapshotJson).Select(l => new ProductionRecipeLineModel
+                    {
+                        IngredientId = l.IngredientId,
+                        IngredientName = ingredients.GetValueOrDefault(l.IngredientId),
+                        Quantity = l.Quantity,
+                        UnitId = l.UnitId,
+                        UnitName = units.GetValueOrDefault(l.UnitId),
+                        WastePercent = l.WastePercent,
+                    })],
+                    ListBatch = await ProductionRules.BatchBriefsAsync(db, batches, _rules),
+                    ListIssue = [.. issues.Select(i => new ProductionIssueBriefModel
+                    {
+                        Id = i.Id,
+                        IssueNumber = i.IssueNumber ?? i.IssueNo,
+                        IssueDate = i.IssueDate,
+                        Status = i.Status,
+                        StatusName = MaterialIssueStatus.Label(i.Status),
+                        WarehouseId = i.WarehouseId,
+                    })],
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
                 throw;
             }
         }

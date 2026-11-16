@@ -1,0 +1,158 @@
+### DELICARE – Pilot P7 (T17, khung cũ D-30): kế hoạch KH- → duyệt → phát hành (lệnh SX PH- + mẻ ME-, lịch ngược từ giờ xuất bếp) → xuất NL cho mẻ (FEFO)
+### → bắt đầu → nhiệt độ lõi (≥ 70 °C) → lưu mẫu → xong → sản lượng → đạt QC → đóng gói; in Phiếu sản xuất.
+### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
+### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
+### Chuẩn bị: kế hoạch Nháp từ MaterialRequirement/Calculate (docs/api-tests/p5-mrp.http); món có công thức đã khóa; tồn kho NL (p6-purchasing.http);
+### seed DB/seed/FoodSafetyChecklist_seed.sql (mục SAMPLE_RETAINED); người duyệt có quyền mục "Duyệt – Kế hoạch sản xuất" (#/wf-inbox?type=prod-plan) hoặc admin.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@planId = <ProductionPlanId – kế hoạch KH- Nháp>
+@shiftId = <ShiftId – ca TRUA (để trống = BusinessRules:ProductionDefaultShiftCode)>
+@lineId = <ProductionLineId – dây chuyền (CapacityMealPerBatch, MinutesPerBatch)>
+@warehouseId = <WarehouseId – kho nguyên liệu>
+@batchId = <ProductionBatchId – lấy từ listBatch của bước 3>
+@productionDate = 2026-11-17
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### ============ Kế hoạch (prod-plan)
+### 1. Chi tiết kế hoạch: dòng món, lệnh SX, mẻ, allowedActions
+GET {{base}}/api/ProductionPlan/GetDetail?id={{planId}}
+Authorization: Bearer {{token}}
+
+### 2. Xác nhận kế hoạch (Nháp → Đã duyệt) – quyền Duyệt prod-plan
+POST {{base}}/api/ProductionPlan/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{planId}}&Note=[DEMO] duyệt kế hoạch
+
+### 3. Phát hành: lệnh SX PH- theo món + mẻ ME-YYMMDD-<CA>-NN, lịch ngược (giờ giao sớm nhất − 60′, mẻ cuối xong trước xuất bếp 30′)
+###    Bỏ DispatchTime để tự tính; nhập DispatchTime=10:30 để ép giờ xuất bếp.
+POST {{base}}/api/ProductionPlan/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{planId}}&ShiftId={{shiftId}}&ProductionLineId={{lineId}}&Note=[DEMO]
+
+### 4. In Phiếu sản xuất (.xlsx) cả kế hoạch
+GET {{base}}/api/ProductionPlan/ExportProductionSheet?id={{planId}}
+Authorization: Bearer {{token}}
+
+### ============ Mẻ (prod-batch)
+### 5. Bảng mẻ của ngày (+ statusCounts, plannedPortions, passedPortions)
+GET {{base}}/api/ProductionBatch/GetBoard?ProductionDate={{productionDate}}
+Authorization: Bearer {{token}}
+
+### 6. Chi tiết mẻ: nguyên liệu cần, phiếu xuất, nhiệt độ lõi, lưu mẫu, sản lượng, listBlocker
+GET {{base}}/api/ProductionBatch/GetDetail?id={{batchId}}
+Authorization: Bearer {{token}}
+
+### 7. Xuất NL cho mẻ (FEFO, bỏ lô hết hạn / KHONG_DAT) và ghi sổ ngay
+POST {{base}}/api/ProductionBatch/CreateMaterialIssue
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&WarehouseId={{warehouseId}}&Post=true&Note=[DEMO]
+
+### 8. Bắt đầu nấu (Kế hoạch → Đang nấu)
+POST {{base}}/api/ProductionBatch/Start
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+### 9a. Nhiệt độ lõi dưới 70 °C không có hành động khắc phục → 400
+POST {{base}}/api/ProductionBatch/RecordCoreTemperature
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&TemperatureC=65
+
+### 9b. Dưới ngưỡng kèm hành động khắc phục → lưu + cảnh báo (mẻ bị chặn đạt QC / đóng gói)
+POST {{base}}/api/ProductionBatch/RecordCoreTemperature
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&TemperatureC=65&CorrectiveAction=[DEMO] nấu tiếp 10 phút
+
+### 9c. Đo lại đạt
+POST {{base}}/api/ProductionBatch/RecordCoreTemperature
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&TemperatureC=75.5&DeviceCode=NK-01
+
+### 10. Lưu mẫu (SAMPLE_RETAINED)
+POST {{base}}/api/ProductionBatch/RecordSampleRetained
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&ActualValue=[DEMO] tủ mẫu số 2 – 150 g
+
+### 11. Nấu xong (Đang nấu → Chờ QC)
+POST {{base}}/api/ProductionBatch/Finish
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&ActualQuantity=80
+
+### 12. Sản lượng: nấu 80, loại 2 → đạt 78
+POST {{base}}/api/ProductionBatch/RecordOutput
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&ProducedQuantity=80&RejectedQuantity=2
+
+### 13. Hao hụt / suất thừa
+POST {{base}}/api/ProductionBatch/RecordWaste
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&WasteType=OVERPRODUCTION&QuantityMeals=3&Reason=[DEMO] nấu dư
+
+### 14. Đạt QC (chặn nếu nhiệt độ lõi gần nhất < 70 °C, chưa lưu mẫu, chưa ghi sản lượng)
+POST {{base}}/api/ProductionBatch/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+### 15. Đóng gói (kiểm lại nhiệt độ lõi ≥ 70 °C) – lệnh / kế hoạch tự Hoàn thành khi đủ mẻ
+POST {{base}}/api/ProductionBatch/Pack
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+### 16. Loại mẻ (lý do bắt buộc) – thay cho 14 / 15 khi mẻ không đạt
+POST {{base}}/api/ProductionBatch/Reject
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&Note=[DEMO] cháy đáy
+
+### 17. In Phiếu sản xuất của mẻ
+GET {{base}}/api/ProductionBatch/ExportProductionSheet?id={{batchId}}
+Authorization: Bearer {{token}}
+
+### ============ Lệnh SX (prod-order)
+### 18. Chi tiết lệnh SX: ảnh chụp định lượng, mẻ, phiếu xuất
+GET {{base}}/api/ProductionOrder/GetDetail?id=<ProductionOrderId>
+Authorization: Bearer {{token}}
+
+### ============ CRUD cũ bị chặn (400)
+### 19. Thêm mẻ tay → 400 (sinh khi phát hành)
+POST {{base}}/api/ProductionBatch/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionOrderId=<ProductionOrderId>&StartDate={{productionDate}}
