@@ -36,5 +36,7 @@ namespace AppDelicare.Model.Option
         {
             ["SANG"] = "SANG_6H", ["TRUA"] = "TRUA", ["TOI"] = "TOI", ["DEM"] = "DEM_23H",
         };
+        /// <summary>T14 / D-12: MRP cộng tồn an toàn (InventoryPolicie.SafetyStock, không có thì Ingredient.SafetyStock) vào nhu cầu (PROPOSED – BA/PO CONFIRM).</summary>
+        public bool MrpIncludeSafetyStock { get; set; } = true;
     }
 }

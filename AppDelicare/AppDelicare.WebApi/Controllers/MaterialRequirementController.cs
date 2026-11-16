@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,62 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// T14 (Pilot P5): tính nhu cầu NL cho ngày sản xuất (bấm tay thay job 20:30) – đơn Đã chốt × công thức đã khóa × hao hụt,
+        /// trừ tồn xuất được, cộng tồn an toàn → MaterialRequirement + đề nghị mua nháp (PH-), gợi ý NCC. Tính lại cùng ngày = cập nhật kết quả cũ.
+        /// </summary>
+        [HttpPost("Calculate")]
+        public async Task<IActionResult> Calculate([FromForm] MaterialRequirementCalculateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Calculate(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Calculate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T14: kết quả tính nhu cầu đã lưu của ngày sản xuất (+ chi nhánh); chưa tính → data = null.</summary>
+        [HttpGet("GetByDate")]
+        public async Task<IActionResult> GetByDate([FromQuery] MaterialRequirementByDateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetByDate(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetByDate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T14: kết quả tính nhu cầu theo kế hoạch sản xuất.</summary>
+        [HttpGet("GetDetail")]
+        public async Task<IActionResult> GetDetail(Guid productionPlanId)
+        {
+            try
+            {
+                return Ok(await _service.GetDetail(productionPlanId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

@@ -6,7 +6,7 @@
 - **2026-11-16 (D-34): ưu tiên LÁT PILOT** (ROADMAP mục ★★). Task kế tiếp: **T48.0 (D-29 băm mật khẩu)** → **FE-0 → FE-3** (frontend màn hình đã có API, D-35) → T11 → T12 (1 cấp) → T13 + T46B.1 → T16 → T14 → T15 → T17 (theo mẻ) → T19 (tối thiểu) → UAT-PILOT. Cần anh: chạy T4 trong Visual Studio để xác nhận T45R.6; D-35 đã chốt (frontend Pilot; chạy thử 1–2 khách, 1 bếp, ca trưa). Tiến độ API: `docs/reference/DELICARE_API_Catalog.xlsx` (58/234 xong, Pilot 53/140 – 2026-11-16). Thư mục `AppDelicare/AppDelicare.Application` chỉ còn `bin/obj` (rác build, không trong git) – có thể xóa tay.
 - T45R, T45B.5, T49 **DONE** (2026-11-15). **Lát R1.1 xong phần code → dừng chờ anh UAT-1** (UAT_CHECKLIST R1.1). Sau UAT-1: lát R1.2 (T11 mã chứng từ → T12 ApprovalService → T13 đơn hàng → T46B.1).
 - Nhánh: `main` (2026-11-15: fast-forward toàn bộ chuỗi T00 → … → T45R.6 → sửa seed, đã push lên origin). Nhánh `origin/develop` (2 commit của máy khác, cấu trúc cũ + Angular) KHÔNG merge – cần anh quyết.
-- Build backend: OK – 0 lỗi, 10 cảnh báo (no-incremental; 2026-11-15) · Build frontend: ngoài phạm vi · Test: `AppDelicare.Tests` 110/110 xanh
+- Build backend: OK – 0 lỗi, 11 cảnh báo (no-incremental; 2026-11-16, nhánh `feat/T14-mrp`) · Test: `AppDelicare.Tests` 137/137 xanh · T14 (P5) DONE(PILOT) 2026-11-16 → kế tiếp T15
 - Việc anh cần làm: (1) UAT R1.0 theo `docs/claude/UAT_CHECKLIST.md` trên staging (deploy/README.md mục 3); (2) duyệt ma trận quyền (D-25) và 2 điểm PROPOSED của T45R (nhóm mới không có quyền; ResetPassword chỉ admin); (3) chốt D-26 (DeleteData), D-27 (AutoMapper – chỉ còn chuyện license), D-29 (băm mật khẩu); (4) đổi khóa đã lộ (SECRETS_TODO.md); (5) merge chuỗi nhánh.
 
 ---
@@ -721,3 +721,55 @@ Câu hỏi cho anh (DECISIONS GAP-INV-02 … GAP-INV-11):
 5. Điều chỉnh tay (tồn đầu kỳ, hủy hàng) Pilot chỉ cần quyền Sửa `scm-inv-txn`, chưa duyệt – được không?
 
 Cần anh: chạy `DB/sp/uspInventoryTransaction_GetLedger.sql` trên staging (DB dev đã chạy); cho phép cài `openpyxl` để cập nhật Catalog.
+
+### T14 – Tính nhu cầu NL + đề nghị mua nháp (Pilot P5) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T14-mrp` (worktree `wt-T11`, từ T16).
+
+Kế hoạch:
+1. Rà soát MaterialRequirement / ProductionPlan(+Line) / PurchaseRequest(+Line) / SupplierMaterial / Recipe / InventoryBalance → LEGACY_REVIEW mục (e).
+2. Đơn Locked × thực đơn (MenuLine theo loại suất + thứ) → món × suất; món × công thức khóa (snapshot) × hao hụt → nhu cầu theo nguyên liệu (quy đổi về đơn vị cơ sở).
+3. Trừ tồn xuất được (InventoryLotRules, tại ngày SX), cộng SafetyStock (D-12), NCC gợi ý + MOQ.
+4. Ghi trong 1 transaction: kế hoạch neo KH-, dòng kế hoạch, MaterialRequirement (cập nhật tại chỗ), PurchaseRequest Draft PH- + dòng.
+5. Đọc: GetByDate / GetDetail. Test InMemory (bộ số tính tay) + SQL Server rollback. Tài liệu P5, `.http`.
+
+Đã làm (đúng mẫu 4.2, trong file cũ):
+- **`MaterialRequirementService` / `MaterialRequirementController`**: `Calculate` (POST form `ProductionDate, WarehouseId?, OrganizationUnitId?, Note?`), `GetByDate` (GET `productionDate, organizationUnitId?`; chưa tính → `data = null`), `GetDetail` (GET `productionPlanId`). CRUD Insert / Update / Delete → lỗi nghiệp vụ.
+- Thuật toán (PROPOSED, DECISIONS GAP-MRP-01…06): đơn **Locked** của ngày (đơn chưa chốt → cảnh báo); suất dòng đơn chia đều các lựa chọn (SequenceNo); công thức Locked / Obsolete hiệu lực tại ngày (SnapshotJson) → Locked + IsActive → Approved mới nhất (cảnh báo); nhu cầu = định lượng × suất ÷ suất chuẩn × (1 + hao hụt %) (WastePercent, trống = Ingredient.StandardWastePercent), quy đổi về `BaseUnitId` (thiếu quy đổi → cảnh báo + `incomplete`); khả dụng = AvailableQuantity của lô không bị chặn tại ngày SX (lô hết hạn trước ngày SX, QC không đạt, tạm giữ → `blockedQuantity`); thiếu = max(0, nhu cầu + SafetyStock − khả dụng − hàng sắp về (0)); mua = max(thiếu, MOQ) làm tròn lên; NCC ưu tiên → giá → lead time (cảnh báo không kịp ngày).
+- Ghi: `ProductionPlan` Draft `KH-YYMMDD` (sp_getapplock của mã KH- tuần tự hóa 2 lần tính cùng ngày) + `ProductionPlanLine` theo món; `MaterialRequirement` theo nguyên liệu (`Shortage / Sufficient / Requested`, ghi song song cột cũ *Qty); `PurchaseRequest` Draft `PH-` + dòng (ghi song song `RequestNo`, `UomId`), NCC gợi ý trong Note. Chi tiết không có cột → JSON trong Note (GAP-MRP-02). Tính lại: cập nhật tại chỗ, dòng thừa xóa mềm; PR Draft giữ số; PR đã gửi duyệt / duyệt / lập PO → chặn; kế hoạch đã duyệt → chặn.
+- Cấu hình `BusinessRules:MrpIncludeSafetyStock` (mặc định true, D-12). Trạng thái `Model/Helper/PurchasingStatus.cs`; model `Model/Model/MaterialRequirementModels.cs`; request `Model/Request/Custom/MaterialRequirementCustomRequest.cs`; thông báo tiếng Việt trong `ConstantHelper.Message`.
+- Quyền theo `PermissionConvention` (`scm-requirement`: Get* = View, Calculate = Edit). Không thêm mục menu / seed. Không SP mới cho T14.
+
+File T14: `Services/Implement/MaterialRequirementService.cs`, `Services/Interface/IMaterialRequirementService.cs`, `WebApi/Controllers/MaterialRequirementController.cs`, `Model/Helper/{PurchasingStatus, ConstantHelper}.cs`, `Model/Model/MaterialRequirementModels.cs`, `Model/Request/Custom/MaterialRequirementCustomRequest.cs`, `Model/Option/BusinessRulesOptions.cs`, `WebApi/appsettings.json`, test `Tests/Purchasing/{MrpTests, MrpSqlServerTests}.cs`, tài liệu `docs/frontend-handoff/P5.md`, `docs/api-tests/p5-mrp.http`.
+
+Sửa nhỏ backend theo FE-2 (cùng nhánh, file riêng để commit riêng):
+- Lọc cha trống: 7 SearchRequest `Guid` → `Guid?` + service đổi `Guid.Empty` → NULL (CustomerContact, CustomerDeliveryLocation, Contract, ContractMeal, SupplierMaterial ×2, InventoryPolicy, StorageZone). SP đã xử lý NULL – không sửa SP.
+- Form đọc số theo InvariantCulture: `WebApi/Infrastructure/InvariantFormValueProviders.cs` + 1 dòng `Startup.cs` (GAP-FORM-01). Test giả lập máy chủ vi-VN: "12.5" → 12.5 (bỏ sửa thì test ra 125 – đã thử).
+- `DB/sp/uspSupplier_GetAll.sql`, `DB/sp/uspUnitMeasure_GetAll.sql`: đủ cột ViewModel + lọc Status (+ CompanyId); `SupplierService` / `UnitMeasureService` truyền tham số; `UnitMeasureSearchRequest.Status` mới. **Đã chạy trên DB dev.**
+- UserRole/SaveAccessAll cấp 1, User/GetAll IsActive, chặn menu cấp 3: **không làm ở nhánh này** – chuyển sang T45R.8 (theo điều phối).
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **137/137** xanh (+6): `Purchasing/MrpTests` (3: bộ số tính tay – Thịt 24,75 kg / tồn 10 + 5 bị chặn / an toàn 2 / MOQ 20 → mua 20; Rau 18 kg, lô KHONG_DAT bị chặn, CT chỉ Approved → cảnh báo; Gạo 36 kg, tồn 50 000 g quy đổi 50 kg, an toàn 20 → mua 6, chưa có NCC; PR PH- 3 dòng, 2 270 000; tính lại sau nhập thêm gạo → cùng kế hoạch / PR, dòng gạo Sufficient, dòng PR gạo xóa mềm; PR PendingApproval → chặn; không có đơn chốt / kho sai / CRUD → 400; kế hoạch Approved → chặn), `Purchasing/MrpSqlServerTests` (1, SQL Server dev: Calculate + tính lại với KH- / PH- qua sp_getapplock trong transaction ngoài rồi rollback – đã chạy, không bị bỏ qua), `Common/FormCultureTests` (1), `MasterData/SearchFilterSqlServerTests` (1, SQL Server dev, chỉ đọc).
+- `git status`: không có thay đổi trong `app-delicare-client/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`.
+
+AC (T14, bản Pilot):
+- [x] MaterialRequirement từ đơn Locked × công thức đã khóa (snapshot) × hao hụt, quy đổi đơn vị.
+- [x] Thiếu hụt so với tồn khả dụng (đã trừ giữ chỗ trên InventoryBalance, bỏ lô bị chặn) + SafetyStock (D-12).
+- [x] PurchaseRequest nháp + gợi ý NCC (SupplierMaterial ưu tiên / giá / MOQ).
+- [x] Test số liệu với bộ dữ liệu nhỏ tính tay được (+ SQL Server rollback).
+- [ ] `DELICARE_API_Catalog.xlsx` chưa cập nhật (máy không có python / openpyxl). Gợi ý: 7.1 GET material-requirements = Đã xong (`MaterialRequirement/GetByDate`, `GetDetail`); calculate = Đã xong (`MaterialRequirement/Calculate`, theo ngày thay vì productionPlanId); create-purchase-request = Một phần (gộp vào Calculate, chưa bufferPercent / duyệt).
+
+DEFERRED(PILOT):
+- Job 20:30 (MRP) / 21:00 (đề nghị mua) – T23; Pilot bấm tay `Calculate`.
+- Hàng sắp về từ PO (`ExpectedIncomingQuantity`) – sau T15; giữ chỗ `MaterialReservation` theo lệnh SX – T17.
+- `bufferPercent`, chọn dòng khi lập đề nghị, duyệt PR 2 cấp, PR → PO – T15. Hao hụt 2 tầng, quy cách đóng gói.
+- Lọc đơn theo chi nhánh (Order không có cột chi nhánh).
+
+Câu hỏi cho anh (DECISIONS GAP-MRP-01…06, D-12):
+1. MRP tự tạo kế hoạch sản xuất Draft `KH-` theo ngày (chưa theo ca) làm chỗ neo – được không? T17 sẽ tách ca từ kế hoạch này.
+2. Suất chia đều cho các lựa chọn món (chưa có số suất theo lựa chọn) – tạm được? Hay tính đủ suất cho mọi lựa chọn (mua dư)?
+3. Hao hụt: dùng (1 + WastePercent %) theo BUSINESS_RULES §3 hay chia cho (1 − hao hụt) / YieldPercent như spec 7.1 và Phiếu trước SX?
+4. Chỉ đơn Đã chốt được tính; đơn Đã xác nhận chưa chốt chỉ cảnh báo – đúng ý anh?
+5. Đề nghị mua đã gửi duyệt thì không cho tính lại – hay cho tính và tạo đề nghị bổ sung phần chênh?
+
+Cần anh: chạy `DB/sp/uspSupplier_GetAll.sql`, `DB/sp/uspUnitMeasure_GetAll.sql` trên staging (DB dev đã chạy).

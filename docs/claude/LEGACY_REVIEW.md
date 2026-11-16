@@ -130,3 +130,16 @@ Rà trước khi viết: 9 bảng (InventoryTransaction, InventoryBalance, Mater
 | scm-reservation | MaterialReservation | Có CRUD; không đụng tồn (ReservedQuantity của InventoryBalance không đổi) | Không sửa – **DEFERRED(PILOT)** (giữ chỗ theo lệnh SX làm cùng T14 / T17). Tồn khả dụng = OnHand − ReservedQuantity vẫn được tôn trọng khi xuất |
 | scm-inv-policy | InventoryPolicie | Có (T45B: chuỗi Min ≤ Safety ≤ Reorder ≤ Max, 1 dòng / (nguyên liệu, kho)) | Không sửa; `UseFefo`, `ExpiryWarningDays`, mức tồn được đọc trong gợi ý lô và `GetSummary` |
 | scm-warehouse / storage-location | Warehouse / StorageLocation | Có (CRUD, `Warehouse/GetLayout`) | Không sửa; dùng để kiểm kho / vị trí thuộc kho khi ghi sổ |
+
+## (e) Pilot P5 – tính nhu cầu NL (MRP) + đề nghị mua nháp (T14, 2026-11-16)
+
+Rà trước khi viết: MaterialRequirement, ProductionPlan / ProductionPlanLine, PurchaseRequest / PurchaseRequestLine, SupplierMaterial đều chỉ có CRUD sinh mã (Controller / Service / Repository / Request / ViewModel / SP `usp<Entity>_GetAll`), chưa có nghiệp vụ. Dùng lại: `IDocumentNumberService` (KH-, PH-), `IUomConversionService.ConvertAsync`, `InventoryLotRules.LoadAsync` (T16, tồn xuất được / bị chặn), `MenuService.MenuDayOf`, quy ước công thức khóa của `RecipeService.Lock` (SnapshotJson). Không tạo service / controller thứ hai.
+
+| Màn hình | Bảng → Controller / Service cũ | Đánh giá trước T14 | Bổ sung / sửa trong T14 |
+|---|---|---|---|
+| scm-requirement | MaterialRequirement | Thiếu / Lỗi: CRUD ghi số nhu cầu tùy ý, không có tính toán | Mới: `Calculate` (form), `GetByDate`, `GetDetail` trong `MaterialRequirementService` / `MaterialRequirementController`. CRUD Insert / Update / Delete → lỗi nghiệp vụ (chỉ ghi qua Calculate). `GetAll` giữ nguyên |
+| prod-plan / prod-plan-line | ProductionPlan / ProductionPlanLine | Có CRUD | Không sửa service; Calculate tạo / cập nhật kế hoạch Draft neo theo ngày (GAP-MRP-01). Lập kế hoạch theo ca, duyệt, phát hành → T17 |
+| scm-pr / scm-pr-line | PurchaseRequest / PurchaseRequestLine | Có CRUD (đổi được Status tùy ý) | Không sửa trong T14; Calculate sinh PR Draft + dòng (PH-, ghi song song RequestNo / UomId). Submit / duyệt / chuyển PO và chặn CRUD đổi trạng thái → T15 |
+| scm-supplier-material | SupplierMaterial | Có (T45B: một NCC ưu tiên / nguyên liệu) | Không sửa; đọc NCC gợi ý. FE-2: lọc `SupplierId` / `IngredientId` trống = không lọc |
+
+FE-2 follow-up (cùng nhánh, commit riêng): 7 SearchRequest lọc cha đổi `Guid` → `Guid?` (CustomerContact / CustomerDeliveryLocation / Contract: CustomerId; ContractMeal: ContractId; SupplierMaterial: SupplierId, IngredientId; InventoryPolicy: IngredientId; StorageZone: WarehouseId) – service đổi `Guid.Empty` thành NULL, SP đã xử lý NULL sẵn. `uspSupplier_GetAll` / `uspUnitMeasure_GetAll` viết lại theo mẫu CodeGen: đủ cột ViewModel, lọc `@Status` (+ `@CompanyId` cho NCC), tham số mới có mặc định. **Quy ước mới:** form `[FromForm]` luôn đọc theo InvariantCulture (`InvariantCultureValueProviderFactory`, GAP-FORM-01) – query string vốn đã invariant.

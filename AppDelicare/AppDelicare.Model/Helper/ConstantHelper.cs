@@ -178,6 +178,23 @@
             public static readonly string CountLineNotInCount = "Dòng {0} không thuộc phiếu kiểm kê này";
             public static readonly string VarianceReasonRequired = "Dòng {0} lệch {1} – phải ghi lý do chênh lệch";
             public static readonly string VarianceNeedsAdmin = "Chênh lệch kiểm kê {0}% vượt ngưỡng {1}% – Pilot: chỉ quản trị viên được ghi sổ (duyệt kiểm kê để sau Pilot)";
+            // T14 – tính nhu cầu NL (MRP) + đề nghị mua nháp (P5)
+            public static readonly string MrpCrudBlocked = "Nhu cầu nguyên liệu chỉ ghi qua MaterialRequirement/Calculate (tính lại theo ngày sản xuất)";
+            public static readonly string MrpDateRequired = "Chọn ngày sản xuất";
+            public static readonly string OrganizationUnitNotFound = "Không tìm thấy chi nhánh / đơn vị";
+            public static readonly string MrpWarehouseNotInUnit = "Kho đã chọn không thuộc chi nhánh đã chọn";
+            public static readonly string MrpPlanNotDraft = "Kế hoạch sản xuất {0} đã ở trạng thái {1} – không tính lại nhu cầu";
+            public static readonly string MrpPurchaseRequestLocked = "Đề nghị mua {0} của lần tính trước đang ở trạng thái {1} – không tính lại được (từ chối / hủy đề nghị mua trước)";
+            public static readonly string MrpNoLockedOrder = "Không có đơn Đã chốt cho ngày {0} – chốt đơn (Order/Lock, Order/LockByMealDate) trước khi tính nhu cầu";
+            public static readonly string MrpNotCalculated = "Chưa tính nhu cầu nguyên liệu cho ngày {0}";
+            public static readonly string MrpOrdersNotLocked = "Cảnh báo: còn {0} đơn chưa chốt của ngày {1} (không được tính)";
+            public static readonly string MrpOrderLineNoMenu = "Cảnh báo: đơn {0} (loại suất {1}) chưa gắn thực đơn – bỏ qua {2} suất";
+            public static readonly string MrpMenuNoDish = "Cảnh báo: thực đơn {0} không có món cho loại suất {1} thứ {2} – bỏ qua {3} suất của đơn {4}";
+            public static readonly string MrpDishNoRecipe = "Món chưa có công thức đã khóa / đã duyệt – không tính nguyên liệu";
+            public static readonly string MrpRecipeNotLocked = "Công thức chưa khóa (Đã duyệt) – dùng dòng định lượng hiện tại";
+            public static readonly string MrpUnitMissing = "Cảnh báo: nguyên liệu {0} thiếu quy đổi đơn vị {1} → {2} – phần này không được tính";
+            public static readonly string MrpNoSupplier = "Chưa có NCC đang hiệu lực cho nguyên liệu này";
+            public static readonly string MrpLeadTimeWarning = "Cảnh báo: NCC {0} cần {1} ngày giao – đặt hôm nay không kịp ngày {2}";
         }
 
         public class TypeSave
