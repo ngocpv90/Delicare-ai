@@ -12,13 +12,21 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 **Mục tiêu:** chạy thử sớm **một luồng thông suốt** Đơn hàng → Nhu cầu NL → Mua → Nhận + QC → Kho → Sản xuất → Giao + đối soát suất, với danh mục thật, 1–2 khách, 1 bếp. Mỗi bước làm **bản tối thiểu** (bấm nút thay job, duyệt 1 cấp). **Giữ ngay** mọi kiểm soát ATTP: nhiệt độ lõi ≥ 70°C, nhiệt độ giao ≥ 60°C, lưu mẫu, chặn lô hết hạn / KHONG_DAT.
 
+> **⚠ THỨ TỰ MỚI 2026-11-16 (D-40): LÀM HẾT BACKEND PILOT TRƯỚC, FRONTEND SAU.**
+> - **Tạm dừng frontend ngay:** FE-3 đang làm dở → commit phần đã có (`wip(FE-3): …`) trên nhánh `feat/FE-3-menu-masterdata`, ghi PROGRESS phần xong / chưa xong, **không làm thêm FE**. Không xóa code FE đã làm (FE-0, FE-1, FE-2 nếu có).
+> - **Làm lần lượt backend:** T45R.8 (**chỉ phần backend**: script tắt menu D-37, `Person/Insert` 1 bước D-38, mật khẩu tạm D-39 + test; bỏ qua phần giao diện) → T11 → T12 → T13 + T46B.1 → T16 → T14 → T15 → T17 → T19 → T50R1 (`pilot-flow.http` chạy hết luồng bằng API) → deploy staging backend.
+> - Mỗi task: cập nhật `DELICARE_API_Catalog.xlsx`, `.http`, `docs/frontend-handoff/` (route, request / response mẫu cho từng màn) để làm FE sau không phải tra lại.
+> - **Xong toàn bộ backend Pilot → dừng, báo anh.** Sau đó mới làm tiếp FE: FE-3 (phần còn lại) → phần FE của T45R.8 → FE-P2 → FE-P3 → FE-P4 → FE-P5 → FE-P7 → FE-P8 → UAT-PILOT trên giao diện.
+> - Các chỗ "→ **FE-Px**" trong bảng dưới chỉ là ghi chú màn hình tương ứng, **không làm ngay**.
+
 **Làm đúng thứ tự này** (đứng trước bảng R1 bên dưới; task trong bảng R1 không có ở đây thì chờ sau Pilot):
 
 | # | Task | Phạm vi PILOT (phần còn lại của task giữ `TODO` sau Pilot) |
 |---|---|---|
 | P0 | **T48.0 – Băm mật khẩu (D-29)** | Bắt buộc trước khi người thật dùng. Xem mô tả task T48.0. |
 | P0 | T45R.6 | Code đã DONE. **Cần anh:** chạy T4 trong Visual Studio một lần để xác nhận. Không chặn task khác. |
-| FE | **FE-0 → FE-3** (D-35) | Frontend cho các màn hình **đã có API**: khung ứng dụng, quản trị P0, danh mục P1, món / công thức / giá P2, nhập Excel. Xem mục FE bên dưới. |
+| FE | **FE-0 → FE-3** (D-35) | FE-0, FE-1 DONE (chờ thử tay). **FE-3 TẠM DỪNG (D-40)** – làm tiếp sau khi xong backend Pilot. |
+| P0b | **T45R.8 – Hoàn thiện quản trị** (D-37, D-38, D-39) | Tắt 26 menu cũ; tạo người dùng 1 bước (đúng 1 tài khoản); mật khẩu tạm khi reset / tạo tài khoản. **Làm NGAY, chỉ phần backend** (D-40); phần giao diện làm cùng đợt FE. |
 | P1 | T11 – Mã chứng từ | Đủ các loại mã dùng trong luồng (PH-, XN-, PO-, NL-, ME-, CX-, PA-, DN-). |
 | P2 | T12 – Duyệt **1 cấp** → **FE-P2** | Tạo / duyệt / từ chối / thực thi; quyền duyệt = mục menu "Phê duyệt" (D-31). Chỉ áp cho **PO** và **đơn sửa lệch > 30%**. Nhiều cấp, hết hạn tự động → sau Pilot. |
 | P3 | T13 + T46B.1 – Thực đơn tuần + Đơn hàng → **FE-P3** | Thực đơn tuần (buổi × lựa chọn, FC%); nhập suất; action **`Lock`** (bấm tay) áp hạn 20h D-1; tính tiền theo ContractMeal / PricePolicie; in **Thực đơn gửi khách**. |
@@ -27,7 +35,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | P6 | T15 – Mua → Nhận → QC đầu vào → **FE-P5** (gồm cả màn T14) | PR → PO (duyệt 1 cấp) → GoodsReceipt → QC DAT / DAT_MOT_PHAN / KHONG_DAT → MaterialLot `NL-…` → nhập kho; nhiệt độ nhận hàng. In **Đơn đặt hàng NCC**, **Phiếu trước sản xuất**. |
 | P7 | T17 – Sản xuất (bản theo mẻ) → **FE-P7** | Kế hoạch mẻ `ME-…`, cấp NL cho mẻ (FEFO), bắt đầu / xong mẻ, **nhiệt độ lõi ≥ 70°C (chặn đóng gói)**, **lưu mẫu** (SAMPLE_RETAINED), sản lượng + hao hụt. In **Phiếu sản xuất**. Công đoạn theo tổ → sau Pilot. |
 | P8 | T19 – Giao + đối soát (bản tối thiểu) → **FE-P8** | Chuyến `CX-…`, điểm dừng, **nhiệt độ giao ≥ 60°C**, POD, **suất thực tế phục vụ** → OrderReconciliation; phiếu phản ánh `PA-…` cơ bản (tạo / xử lý / đóng). Cảnh báo SLA tự động → sau Pilot. |
-| P9 | T50R1 (phần Pilot) + T48.1 | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
+| P9 | T50R1 (phần Pilot) + T48.1 – **kết thúc đợt backend, dừng báo anh** | `docs/api-tests/pilot-flow.http` chạy hết P3 → P8 bằng 1 bộ dữ liệu `[DEMO]`; `UAT_CHECKLIST.md` mục **PILOT** (cả thao tác trên giao diện); deploy staging backend + bản build Angular. → **Dừng, báo anh UAT-PILOT.** |
 
 **`DEFERRED(PILOT)` – làm sau khi chạy thử, lúc chạy thử dùng cách thay thế:**
 
@@ -321,6 +329,31 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 ### T47 – Màn hình nghiệp vụ P6–P8 · `DEFERRED(FE)`
 - QC / ATTP, đóng gói / giao vận / phản ánh / hộp, nhân sự, KPI dashboard.
 
+
+### T45R.8 – Hoàn thiện quản trị người dùng (D-37, D-38, D-39) · phụ thuộc T48.0, FE-1 · `TODO` ← **làm ngay sau FE-3, trước T11**
+Theo cơ chế cũ (D-30, D-31): chỉ sửa `PersonService`, `UserService`, `LoginService`, `EncriptFunctionsHelper`, controller cùng tên, DTO Custom; **không thêm bảng / cột**.
+
+- **D-37 – Tắt menu cũ:** script `DB/seed/ObjectMenu_disable_legacy.sql` (idempotent) đặt `IsActive = 0` cho các mục ObjectMenu của app cũ (MetaLink kiểu cũ như `quan-ly-dang-nhap`, `quan-ly-vung`… – liệt kê đúng 26 mục đã phát hiện ở FE-0 theo Id + MetaLink trong comment). Không xóa, không đụng `UserRole`. Chạy trên DB dev, đưa vào `deploy` cho staging. Nhóm menu cấp 1 chỉ tắt khi không còn con đang bật.
+- **D-38 – Tạo người dùng 1 bước, đúng 1 tài khoản:**
+  - `PersonCustomRequest` thêm trường tùy chọn: `UserName`, `ListUserGroupId`, `IsActive` (chỉ là trường request, không thêm cột).
+  - `PersonService.Insert` → `UserService.InsertUserAfter(personId, fullName, typeSave, userName?, listUserGroupId?)`: có `UserName` thì dùng (kiểm trùng, không dấu, không khoảng trắng), không có thì tự sinh như cũ; gán nhóm qua `UserClaimService.SaveAfterUser`; tất cả **trong cùng transaction** của Person. Mật khẩu ban đầu theo D-39 (mật khẩu tạm).
+  - Action `Person/Insert` trả thêm thông tin tài khoản vừa tạo: `Result<PersonUserCreatedViewModel>` { PersonId, UserId, UserName, TempPassword } – ViewModel Custom.
+  - `User/Insert` (gắn tài khoản cho hồ sơ có sẵn) **chặn** khi Person đã có User (1 Person ↔ tối đa 1 User); `UserName` không trùng (không phân biệt hoa thường).
+  - Frontend `adm-user` → "Tạo mới" = **một form** gồm: Hồ sơ (Họ tên, SĐT, Ngày sinh, Giới tính, Địa chỉ) + Tài khoản (Tên đăng nhập – gợi ý tự sinh, Nhóm quyền, Đang dùng) → gọi `Person/Insert`; xong hiện popup mật khẩu tạm (D-39). Nút phụ "Tạo tài khoản cho hồ sơ có sẵn" chỉ liệt kê Person **chưa có** User (`Person/GetAllDataByKey` hoặc lọc trong SP).
+  - Nút "Lấy từ nhân viên" trên form: chọn `Employee` để điền sẵn Họ tên / SĐT / Ngày sinh / Giới tính / Địa chỉ (chỉ điền form, **không** lưu liên kết – DB không có cột Employee↔Person/User; ghi **GAP-ADM-03 PROPOSED**).
+  - `adm-person`: chỉ xem / sửa hồ sơ; bỏ nút Tạo mới (tránh tạo tài khoản ngoài ý muốn).
+- **D-39 – Mật khẩu tạm khi reset và khi tạo tài khoản:**
+  - Sinh mật khẩu tạm **12 ký tự** bằng RNG mật mã (`RandomNumberGenerator`), bỏ ký tự dễ nhầm (0/O, 1/l/I), có chữ hoa, chữ thường, số.
+  - Lưu trong `User.PassWord` dạng `PBKDF2T$<hết hạn unix>$100000$<salt>$<hash>` (chữ **T** = tạm, hạn **24 giờ**) – không thêm cột.
+  - `User/ResetPassword` (chỉ admin) trả `Result<string>`: `Data` = mật khẩu tạm, **chỉ trả một lần**, không log, không lưu bản rõ; ghi AuditChange "reset bởi ai, cho ai" (không có mật khẩu).
+  - Đăng nhập bằng mật khẩu tạm: hết hạn → từ chối, thông báo "Mật khẩu tạm đã hết hạn, liên hệ quản trị"; còn hạn → đăng nhập được, response thêm trường `mustChangePassword = true` (chỉ thêm trường) và token có claim `pwd_temp`. `PermissionFilter` chặn mọi API (403, thông báo "Cần đổi mật khẩu") **trừ** `User/ChangePassword`, `User/GetCurrent`, `Authentication/*`.
+  - `User/ChangePassword` thành công → lưu PBKDF2 thường (bỏ dấu tạm).
+  - Frontend: popup hiện mật khẩu tạm + nút Sao chép + cảnh báo "chỉ hiện một lần"; đăng nhập có `mustChangePassword` → chuyển thẳng màn Đổi mật khẩu, không vào được màn khác.
+- **AC:**
+  - [ ] Test: tạo người dùng 1 bước → đúng 1 Person + 1 User + nhóm đúng; `User/Insert` cho Person đã có User bị chặn; UserName trùng bị chặn.
+  - [ ] Test: reset trả mật khẩu tạm 12 ký tự; đăng nhập bằng mật khẩu tạm → chỉ gọi được ChangePassword / GetCurrent; đổi xong dùng bình thường; mật khẩu tạm quá 24h bị từ chối; mật khẩu tạm không xuất hiện trong log / AuditChange.
+  - [ ] Script D-37 chạy 2 lần không lỗi; menu cũ không còn trên sidebar.
+  - [ ] `dotnet build` / `dotnet test` xanh; `npm run build` 0 lỗi; cập nhật `DELICARE_API_Catalog.xlsx` (dòng 35, 38) và UAT_CHECKLIST mục PILOT-FE.
 
 ### FE-0 → FE-P7 – Frontend Angular cho màn hình Pilot (D-35) · theo CLAUDE.md mục 4.4
 Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" trong `DELICARE_API_Catalog.xlsx`; theo khung Angular cũ (mẫu `main/unit-measure`, `services/unit-measure.service.ts`); route = screen-id; bố cục theo `docs/mockup/`; gọi đúng route trong `docs/frontend-handoff/`. AC chung: `npm run build` 0 lỗi; đăng nhập bằng user không phải admin thấy / ẩn đúng nút theo quyền; lỗi nghiệp vụ (`responseCode = 400`) hiện đúng thông báo; ghi PROGRESS + kịch bản thử tay vào `UAT_CHECKLIST.md` mục PILOT-FE.
