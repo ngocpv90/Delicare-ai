@@ -830,3 +830,27 @@ Câu hỏi cho anh (DECISIONS GAP-PUR-01…08, D-11):
 4. Ngưỡng nhiệt độ nhận: mát ≤ 5 °C, đông lạnh ≤ −18 °C, hàng khô / thường không kiểm – đúng chưa? Vượt ngưỡng mà vẫn nhận (ghi lý do) có được không hay bắt buộc KHONG_DAT?
 5. Dung sai nhận vượt 10% / dòng PO có phù hợp (rau, thịt cân lệch)?
 6. In Đơn đặt hàng: có cần cột VAT (mẫu thật có % VAT theo NCC – chưa có cột trong DB)?
+
+### T14.1 – MRP: dự phòng lựa chọn + tính bổ sung (anh chốt 2026-11-16) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T14.1-mrp-buffer` (worktree `wt-T11`, từ T15). Chỉ backend + tài liệu.
+
+Anh chốt 2026-11-16 (ghi ở DECISIONS mục "Anh chốt 2026-11-16", GAP-MRP-01 / 03 / 05 / 06 đánh dấu "Anh chốt 2026-11-16"): kế hoạch nháp `KH-` theo ngày; chia đều lựa chọn + dự phòng 15% / lựa chọn; hao hụt giữ (1 + %); chỉ đơn Locked; đề nghị mua đã đi tiếp → tính lại vẫn chặn + thêm tính bổ sung; T45R.8: IsActive mặc định không hoạt động, ChangePassword giữ hành vi cũ.
+
+Đã làm (trong file cũ, đúng mẫu 4.2; không bảng / cột / SP / seed mới):
+- **Dự phòng lựa chọn:** `BusinessRules:MrpOptionBufferPct` (mặc định 15, 0 = tắt; `BusinessRulesOptions` + `appsettings.json`). Thực đơn có ≥ 2 lựa chọn cho loại suất: mỗi món = suất ÷ số lựa chọn × (1 + 15%); 1 lựa chọn không cộng. PROPOSED: món có trong nhiều lựa chọn (cơm chung) không vượt số suất dòng đơn (món chung mọi lựa chọn không cộng dự phòng). `listDish[].bufferPortions` mới (phần dự phòng, đã nằm trong `portions`).
+- **`MaterialRequirement/CalculateTopUp`** (POST form `ProductionDate, WarehouseId?, OrganizationUnitId?, Note?`; quyền Edit `scm-requirement` theo PermissionConvention): cùng khóa ngày với Calculate; kế hoạch phải có + còn Nháp; cần ≥ 1 đề nghị của kế hoạch đã Chờ duyệt / Duyệt / Lập PO (còn Nháp → dùng Calculate). Tính lại nhu cầu; đã đề nghị = Σ dòng các đề nghị chưa Hủy / Từ chối (chính + bổ sung trước) − đã nhận đạt (phiếu nhập Đã ghi sổ của PO lập từ các đề nghị đó); chênh lệch dương → **1 đề nghị mua Nháp `PH-` mới** chỉ cho phần chênh (MOQ + NCC gợi ý như Calculate; Note "BỔ SUNG – … bổ sung cho PH-…"); không thiếu thêm → không lập, thông báo; âm → cảnh báo. Cập nhật tại chỗ dòng nhu cầu (`PurchaseQuantity` = đã đề nghị + bổ sung; nguyên liệu hết nhu cầu giữ dòng nhu cầu 0) + dòng kế hoạch; liên kết đề nghị bổ sung trong `ProductionPlan.Note` (`TopUpPurchaseRequestIds`) – GAP-MRP-08 (PROPOSED). 1 transaction, `RequireActor`.
+- Calculate: thông báo chặn chỉ hướng sang CalculateTopUp; kế hoạch đã có đề nghị bổ sung còn hiệu lực → chặn (tránh lập trùng). Kết quả GetByDate / GetDetail / Calculate thêm `listTopUpPurchaseRequest[]`; CalculateTopUp thêm `topUp` (`purchaseRequest`, `listComparedRequestNumber`, `listLine[]` thiếu / đã đề nghị / chênh lệch / bổ sung / NCC, `listWarning`).
+- Tách phần tính chung của Calculate thành `ComputeAsync` / `PriceAsync` / `UpsertPlanLines` / `SoftDeleteAsync` (cùng service) để Calculate và CalculateTopUp dùng chung – số liệu Calculate không đổi khi dự phòng = 0.
+
+File: `Services/Implement/MaterialRequirementService.cs`, `Services/Interface/IMaterialRequirementService.cs`, `WebApi/Controllers/MaterialRequirementController.cs`, `Model/Model/MaterialRequirementModels.cs`, `Model/Helper/ConstantHelper.cs`, `Model/Option/BusinessRulesOptions.cs`, `WebApi/appsettings.json`, test `Tests/Purchasing/MrpTests.cs`, tài liệu `docs/claude/{DECISIONS, BUSINESS_RULES, PROGRESS}.md`, `docs/frontend-handoff/P5.md`, `docs/api-tests/p5-mrp.http`. Không đụng MaterialIssue* / ProductionPlan* / ProductionBatch* / ProductionOrder* service (T17 song song).
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (= baseline).
+- `dotnet test`: **145/145** xanh (+2, `Purchasing/MrpTests`): (1) 2 lựa chọn 100 suất → món A = B = 50 × 1,15 = 57,5 (dự phòng 7,5, NL 5,75 kg), cơm chung = 100, thực đơn 1 lựa chọn TOI 40 không dự phòng; cấu hình 0 → 50; (2) Calculate → đề nghị 1 thịt 10 → bổ sung khi còn Nháp bị chặn → gửi duyệt + tăng đơn 100 → 130 → Calculate chặn, CalculateTopUp lập đề nghị Nháp mới chỉ thịt 3 (300 000), đề nghị 1 không đổi, dòng nhu cầu 13 / mua 13 → gọi lại không lập → giảm còn 110 → chỉ cảnh báo thừa 2 → hủy đề nghị 1 nhưng còn đề nghị bổ sung → Calculate chặn. Test T14 cũ chạy với dự phòng 0 (giữ bộ số tính tay).
+
+PROPOSED (chờ anh xác nhận – GAP-MRP-03 / 08):
+1. Món chung nhiều lựa chọn không vượt số suất dòng đơn (không cộng dự phòng cho cơm / canh chung).
+2. "Đã đề nghị" trừ phần đã nhận đạt (đã nằm trong tồn); đề nghị Hủy / Từ chối không tính; PO bị hủy không tự trừ.
+3. Calculate bị chặn khi kế hoạch đã có đề nghị bổ sung còn hiệu lực; bổ sung chỉ khi kế hoạch còn Nháp.
+4. Thừa do làm tròn MOQ cũng hiện cảnh báo "thừa" (theo đúng ý "âm → cảnh báo").
+Release 2: suất theo từng lựa chọn (đặt trước / tỉ lệ 4 tuần) cần cột mới – GAP-MRP-07.

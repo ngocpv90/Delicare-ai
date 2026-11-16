@@ -18,6 +18,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<MaterialRequirement>> GetById(Guid id);
         /// <summary>T14: tính nhu cầu NL của 1 ngày sản xuất + đề nghị mua nháp (1 transaction).</summary>
         public Task<IResult<MaterialRequirementResultModel>> Calculate(MaterialRequirementCalculateRequest request);
+        /// <summary>T14.1: đề nghị mua đã gửi duyệt / duyệt / lập PO → tính lại và lập đề nghị mua bổ sung Nháp cho phần thiếu thêm (1 transaction).</summary>
+        public Task<IResult<MaterialRequirementResultModel>> CalculateTopUp(MaterialRequirementCalculateRequest request);
         /// <summary>T14: kết quả đã lưu theo ngày sản xuất (+ chi nhánh).</summary>
         public Task<IResult<MaterialRequirementResultModel>> GetByDate(MaterialRequirementByDateRequest request);
         /// <summary>T14: kết quả đã lưu theo kế hoạch sản xuất.</summary>

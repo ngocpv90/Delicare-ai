@@ -46,6 +46,7 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - Định mức tính theo **gram/suất** cộng **% hao hụt chế biến** (`RecipeLine`). Nhu cầu = Σ(số suất × g/suất × (1 + hao hụt%)), quy đổi đơn vị qua `UomConversion` sang `UnitMeasure` (PO chốt dùng `UnitId` → `UnitMeasure`).
 - Kế hoạch đã duyệt thì **khóa định mức**. **Không tạo RecipeVersion.** Dùng cột có sẵn của `Recipe`: `SnapshotJson` (ảnh chụp các dòng định mức), `LockedAt`, `LockedBy`, `VersionNo` / `VersionCode`, `EffectiveFrom` / `EffectiveTo`.
 - Thiếu hụt = Nhu cầu − (tồn khả dụng − đã giữ chỗ `MaterialReservation`). Thiếu thì sinh `PurchaseRequest` nháp lúc 21:00, gợi ý NCC từ `SupplierMaterial` (ưu tiên, giá, lead time).
+- **Anh chốt 2026-11-16 (T14.1):** công thức hao hụt giữ như trên (số lượng × (1 + hao hụt %)); **chỉ đơn Đã chốt (Locked)** được tính, đơn Confirmed chỉ cảnh báo; kế hoạch nháp `KH-` theo **ngày**. Thực đơn có ≥ 2 lựa chọn cho một loại suất: số suất chia đều cho các lựa chọn rồi **cộng dự phòng `BusinessRules:MrpOptionBufferPct` = 15% mỗi lựa chọn** (0 = tắt; ví dụ 100 suất, 2 lựa chọn → mỗi lựa chọn 57,5 suất). Đề nghị mua của ngày đã gửi duyệt / duyệt / lập PO → không tính lại, dùng **tính bổ sung** (`MaterialRequirement/CalculateTopUp`): đề nghị mua bổ sung Nháp chỉ cho phần thiếu thêm, phần thừa chỉ cảnh báo.
 - Đổi món hoặc đổi nguyên liệu ảnh hưởng tới khách thì tạo `MenuChangeRequest` và **xin từng khách chấp thuận** (G1). NCC chính không giao được thì đặt PO bù cho NCC dự phòng (G2).
 
 ## 4. Mua hàng – nhập kho – QC

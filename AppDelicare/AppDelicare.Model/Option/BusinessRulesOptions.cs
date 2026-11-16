@@ -38,6 +38,11 @@ namespace AppDelicare.Model.Option
         };
         /// <summary>T14 / D-12: MRP cộng tồn an toàn (InventoryPolicie.SafetyStock, không có thì Ingredient.SafetyStock) vào nhu cầu (PROPOSED – BA/PO CONFIRM).</summary>
         public bool MrpIncludeSafetyStock { get; set; } = true;
+        /// <summary>
+        /// T14.1 (anh chốt 2026-11-16, GAP-MRP-03): thực đơn có ≥ 2 lựa chọn cho cùng loại suất → số suất chia đều cho các lựa chọn rồi cộng thêm
+        /// % dự phòng này cho mỗi lựa chọn (0 = tắt). Thực đơn 1 lựa chọn không cộng.
+        /// </summary>
+        public decimal MrpOptionBufferPct { get; set; } = 15m;
         /// <summary>T15: PO có tổng tiền ≤ ngưỡng này được tự duyệt khi gửi (0 = mọi PO phải duyệt) – PROPOSED – BA/PO CONFIRM (GAP-PUR-03).</summary>
         public decimal PurchaseOrderAutoApproveMaxAmount { get; set; }
         /// <summary>T15 / D-11: PO lớn hơn ngưỡng này cần GĐ duyệt. Pilot duyệt 1 cấp – chỉ ghi chú trong tiêu đề hộp duyệt (PROPOSED).</summary>

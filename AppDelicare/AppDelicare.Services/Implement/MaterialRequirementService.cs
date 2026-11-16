@@ -197,6 +197,9 @@ namespace AppDelicare.Services.Implement
             public int OrderCount { get; set; }
             public decimal TotalMeals { get; set; }
             public Guid? PurchaseRequestId { get; set; }
+            /// <summary>T14.1: đề nghị mua bổ sung (CalculateTopUp) của kế hoạch, cũ → mới (không có cột liên kết đề nghị mua ↔ kế hoạch – GAP-MRP-02).</summary>
+            public List<Guid> TopUpPurchaseRequestIds { get; set; } = [];
+            public DateTime? TopUpAt { get; set; }
             public string? UserNote { get; set; }
             public List<MaterialRequirementDishModel> Dishes { get; set; } = [];
             public List<string> Warnings { get; set; } = [];
@@ -213,6 +216,12 @@ namespace AppDelicare.Services.Implement
             public Guid? PurchaseRequestId { get; set; }
             public Guid? PurchaseRequestLineId { get; set; }
             public MaterialRequirementSupplierModel? Supplier { get; set; }
+            /// <summary>T14.1: số đã đề nghị còn chờ về (đơn vị cơ sở) lúc tính bổ sung gần nhất.</summary>
+            public decimal? RequestedQuantity { get; set; }
+            public Guid? TopUpPurchaseRequestId { get; set; }
+            public Guid? TopUpPurchaseRequestLineId { get; set; }
+            /// <summary>T14.1: NCC gợi ý + tiền ước tính của dòng đề nghị mua bổ sung.</summary>
+            public MaterialRequirementSupplierModel? TopUpSupplier { get; set; }
         }
 
         private sealed class RecipeLineInput
@@ -238,9 +247,31 @@ namespace AppDelicare.Services.Implement
             public bool Incomplete { get; set; }
             public List<string> Warnings { get; } = [];
             public MaterialRequirementSupplierModel? Supplier { get; set; }
+            /// <summary>Bảng giá NCC gợi ý (ưu tiên → giá thấp → giao nhanh) và MOQ quy về đơn vị cơ sở.</summary>
+            public SupplierMaterial? Best { get; set; }
+            public Supplier? BestSupplier { get; set; }
+            public Guid PurchaseUnit { get; set; }
+            public decimal? MoqBase { get; set; }
+        }
+
+        /// <summary>Kết quả tính chung của Calculate / CalculateTopUp (chưa ghi, chưa tính số mua).</summary>
+        private sealed class Computation(Converter converter)
+        {
+            public Converter Converter { get; } = converter;
+            public List<Order> LockedOrders { get; set; } = [];
+            public List<OrderLine> OrderLines { get; set; } = [];
+            public Dictionary<Guid, decimal> Portions { get; } = [];
+            public Dictionary<Guid, Guid> FirstOrderLine { get; } = [];
+            public List<MaterialRequirementDishModel> Dishes { get; } = [];
+            public Dictionary<Guid, ItemCalc> Items { get; } = [];
+            public Dictionary<Guid, Ingredient> Ingredients { get; set; } = [];
+            public Dictionary<Guid, string?> UnitNames { get; set; } = [];
+            public List<string> Warnings { get; } = [];
         }
 
         private static string Day(DateTime date) => date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+        private static string Num(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 
         private static decimal Round4(decimal value) => Math.Round(value, 4, MidpointRounding.AwayFromZero);
 
@@ -248,6 +279,13 @@ namespace AppDelicare.Services.Implement
         private static decimal Ceil4(decimal value) => Math.Ceiling(value * 10000m) / 10000m;
 
         private static bool SameText(string? a, string? b) => string.Equals((a ?? string.Empty).Trim(), (b ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase);
+
+        private static Guid UnitOf(Guid unitId, Guid uomId) => unitId != Guid.Empty ? unitId : uomId;
+
+        private static bool IsActivePurchaseRequest(string? status) => status != PurchaseRequestStatus.Cancelled && status != PurchaseRequestStatus.Rejected;
+
+        private static bool IsMovedOn(string? status)
+            => status is PurchaseRequestStatus.PendingApproval or PurchaseRequestStatus.Approved or PurchaseRequestStatus.Converted;
 
         private static T? ReadJson<T>(string? json) where T : class
         {
@@ -294,18 +332,390 @@ namespace AppDelicare.Services.Implement
                 .OrderBy(p => p.CreatedDate);
         }
 
+        /// <summary>Kiểm tra chi nhánh / kho của lần tính. Trả thông báo lỗi hoặc null.</summary>
+        private async Task<string?> ValidateScopeAsync(Guid? unitId, Guid? warehouseId)
+        {
+            var db = _unitOfWork.DbContext;
+            if (unitId != null && !await db.OrganizationUnit.AsNoTracking().AnyAsync(o => o.Id == unitId && !o.IsDeleted))
+            {
+                return ConstantHelper.Message.OrganizationUnitNotFound;
+            }
+            if (warehouseId != null)
+            {
+                var warehouse = await db.Warehouse.AsNoTracking().FirstOrDefaultAsync(w => w.Id == warehouseId && !w.IsDeleted);
+                if (warehouse == null)
+                {
+                    return ConstantHelper.Message.WarehouseNotFound;
+                }
+                if (unitId != null && warehouse.OrganizationUnitId != unitId)
+                {
+                    return ConstantHelper.Message.MrpWarehouseNotInUnit;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Bước tính chung (không ghi): đơn Đã chốt × thực đơn → món × suất (chia đều lựa chọn + dự phòng), món × công thức → nhu cầu theo nguyên liệu,
+        /// tồn xuất được / bị chặn, tồn an toàn, thiếu, NCC gợi ý + MOQ. <paramref name="extraIngredients"/> (nguyên liệu → đơn vị dự phòng): nguyên liệu
+        /// phải có dòng kết quả dù không còn nhu cầu (CalculateTopUp – dòng nhu cầu / đề nghị mua cũ), nhu cầu = 0.
+        /// </summary>
+        private async Task<(Computation? Data, string? Error)> ComputeAsync(DateTime date, Guid? unitId, Guid? warehouseId, IReadOnlyDictionary<Guid, Guid>? extraIngredients = null)
+        {
+            var db = _unitOfWork.DbContext;
+            // 2) Đơn đã chốt × thực đơn → món × suất.
+            DateTime next = date.AddDays(1);
+            var orders = await db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.MealDate >= date && o.MealDate < next).ToListAsync();
+            var lockedOrders = orders.Where(o => o.Status == OrderStatus.Locked).ToList();
+            if (lockedOrders.Count == 0)
+            {
+                return (null, string.Format(ConstantHelper.Message.MrpNoLockedOrder, Day(date)));
+            }
+            var c = new Computation(new Converter(_uomConversionService, date)) { LockedOrders = lockedOrders };
+            var warnings = c.Warnings;
+            // Anh chốt 2026-11-16: chỉ đơn Locked được tính; đơn Confirmed (và Draft / Submitted) chỉ cảnh báo.
+            int notLocked = orders.Count(o => o.Status is OrderStatus.Draft or OrderStatus.Submitted or OrderStatus.Confirmed);
+            if (notLocked > 0)
+            {
+                warnings.Add(string.Format(ConstantHelper.Message.MrpOrdersNotLocked, notLocked, Day(date)));
+            }
+            var orderIds = lockedOrders.Select(o => o.Id).ToList();
+            var orderLines = await db.OrderLine.AsNoTracking().Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0).ToListAsync();
+            c.OrderLines = orderLines;
+            var menuIds = orderLines.Where(l => l.MenuId != null).Select(l => l.MenuId!.Value).Distinct().ToList();
+            int dayOfWeek = MenuService.MenuDayOf(date);
+            var menuLines = await db.MenuLine.AsNoTracking().Where(m => menuIds.Contains(m.MenuId) && !m.IsDeleted && m.DayOfWeek == dayOfWeek).ToListAsync();
+            var menuNames = await db.Menu.AsNoTracking().Where(m => menuIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id, m => m.Code ?? m.Name);
+            var orderNo = lockedOrders.ToDictionary(o => o.Id, o => o.OrderNumber ?? o.OrderNo ?? o.Id.ToString("N")[..8]);
+            var portions = c.Portions;
+            var bufferPortions = new Dictionary<Guid, decimal>();
+            decimal bufferRate = Math.Max(0m, _rules.MrpOptionBufferPct) / 100m;
+            foreach (var line in orderLines.OrderBy(l => orderNo[l.OrderId]).ThenBy(l => l.MealType))
+            {
+                if (line.MenuId == null)
+                {
+                    warnings.Add(string.Format(ConstantHelper.Message.MrpOrderLineNoMenu, orderNo[line.OrderId], line.MealType, Round4(line.Quantity)));
+                    continue;
+                }
+                var options = menuLines.Where(m => m.MenuId == line.MenuId && SameText(m.MealType, line.MealType))
+                    .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
+                if (options.Count == 0)
+                {
+                    warnings.Add(string.Format(ConstantHelper.Message.MrpMenuNoDish, menuNames.GetValueOrDefault(line.MenuId.Value), line.MealType, dayOfWeek == 7 ? "CN" : (dayOfWeek + 1).ToString(CultureInfo.InvariantCulture),
+                        Round4(line.Quantity), orderNo[line.OrderId]));
+                    continue;
+                }
+                // Anh chốt 2026-11-16 (GAP-MRP-03): chưa có số suất theo lựa chọn → chia đều số suất của dòng đơn cho các lựa chọn,
+                // rồi cộng dự phòng BusinessRules:MrpOptionBufferPct cho mỗi lựa chọn khi có ≥ 2 lựa chọn.
+                // PROPOSED – BA/PO CONFIRM: món nằm trong nhiều lựa chọn không vượt quá số suất của dòng đơn (món chung mọi lựa chọn, ví dụ cơm, không cộng dự phòng).
+                decimal perOption = line.Quantity / options.Count;
+                bool buffered = options.Count >= 2 && bufferRate > 0;
+                foreach (var dish in options.SelectMany(o => o).GroupBy(m => m.DishId))
+                {
+                    decimal even = perOption * dish.Count();
+                    decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
+                    portions[dish.Key] = portions.GetValueOrDefault(dish.Key) + qty;
+                    if (qty > even)
+                    {
+                        bufferPortions[dish.Key] = bufferPortions.GetValueOrDefault(dish.Key) + qty - even;
+                    }
+                    c.FirstOrderLine.TryAdd(dish.Key, line.Id);
+                }
+            }
+
+            // 3) Món × công thức → nhu cầu theo nguyên liệu (đơn vị cơ sở).
+            var dishIds = portions.Keys.ToList();
+            var dishes = await db.Dish.AsNoTracking().Where(d => dishIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id);
+            var recipes = await db.Recipe.AsNoTracking()
+                .Where(r => dishIds.Contains(r.DishId) && !r.IsDeleted
+                    && (r.Status == RecipeStatus.Locked || r.Status == RecipeStatus.Obsolete || r.Status == RecipeStatus.Approved))
+                .ToListAsync();
+            var inputs = new List<(Guid DishId, decimal Portions, decimal Servings, RecipeLineInput Line)>();
+            foreach (var (dishId, qty) in portions.OrderBy(p => dishes.GetValueOrDefault(p.Key)?.Name))
+            {
+                var dish = dishes.GetValueOrDefault(dishId);
+                var model = new MaterialRequirementDishModel
+                {
+                    DishId = dishId, DishCode = dish?.Code, DishName = dish?.Name, Portions = Round4(qty), BufferPortions = Round4(bufferPortions.GetValueOrDefault(dishId)),
+                };
+                c.Dishes.Add(model);
+                var mine = recipes.Where(r => r.DishId == dishId).ToList();
+                var recipe = mine.Where(r => r.Status is RecipeStatus.Locked or RecipeStatus.Obsolete && r.LockedAt != null
+                            && (r.EffectiveFrom == null || r.EffectiveFrom.Value.Date <= date) && (r.EffectiveTo == null || r.EffectiveTo.Value.Date >= date))
+                        .OrderByDescending(r => r.Status == RecipeStatus.Locked).ThenByDescending(r => r.EffectiveFrom).ThenByDescending(r => r.VersionNo).FirstOrDefault()
+                    ?? mine.Where(r => r.Status == RecipeStatus.Locked && r.IsActive).OrderByDescending(r => r.VersionNo).FirstOrDefault();
+                bool lockedRecipe = recipe != null;
+                recipe ??= mine.Where(r => r.Status == RecipeStatus.Approved).OrderByDescending(r => r.VersionNo).FirstOrDefault();
+                if (recipe == null)
+                {
+                    model.Warning = ConstantHelper.Message.MrpDishNoRecipe;
+                    warnings.Add($"Cảnh báo: món {dish?.Name ?? dishId.ToString()} – {ConstantHelper.Message.MrpDishNoRecipe}");
+                    continue;
+                }
+                model.RecipeId = recipe.Id;
+                model.RecipeVersion = recipe.VersionCode ?? "v" + recipe.VersionNo.ToString(CultureInfo.InvariantCulture);
+                List<RecipeLineInput>? lines = null;
+                if (lockedRecipe && !string.IsNullOrWhiteSpace(recipe.SnapshotJson))
+                {
+                    try
+                    {
+                        lines = JsonConvert.DeserializeObject<List<RecipeLineInput>>(recipe.SnapshotJson);
+                    }
+                    catch (JsonException)
+                    {
+                        lines = null;
+                    }
+                }
+                if (lines is { Count: > 0 })
+                {
+                    model.RecipeSource = "Snapshot";
+                }
+                else
+                {
+                    model.RecipeSource = "Lines";
+                    lines = await db.RecipeLine.AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted)
+                        .Select(l => new RecipeLineInput { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent })
+                        .ToListAsync();
+                }
+                if (!lockedRecipe)
+                {
+                    model.Warning = ConstantHelper.Message.MrpRecipeNotLocked;
+                    warnings.Add($"Cảnh báo: món {dish?.Name} – {ConstantHelper.Message.MrpRecipeNotLocked}");
+                }
+                decimal servings = recipe.StandardOutputQty is > 0 ? recipe.StandardOutputQty.Value : _rules.RecipeStandardServings;
+                inputs.AddRange(lines.Where(l => l.Quantity > 0).Select(l => (dishId, qty, servings, l)));
+            }
+
+            var ingredientIds = inputs.Select(i => i.Line.IngredientId).Concat(extraIngredients?.Keys ?? Enumerable.Empty<Guid>()).Distinct().ToList();
+            var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
+            var unitNames = await db.UnitMeasure.AsNoTracking().ToDictionaryAsync(u => u.Id, u => (string?)(u.Name ?? u.Code));
+            c.Ingredients = ingredients;
+            c.UnitNames = unitNames;
+            var converter = c.Converter;
+            var items = c.Items;
+            Guid BaseUnitOf(Ingredient? ingredient, Guid fallback)
+                => ingredient?.BaseUnitId is { } b && b != Guid.Empty ? b : ingredient?.BaseUomId is { } o && o != Guid.Empty ? o : fallback;
+            // Hao hụt theo BUSINESS_RULES §3 (anh chốt 2026-11-16): nhu cầu = định lượng × suất ÷ suất chuẩn × (1 + hao hụt %).
+            foreach (var (dishId, qty, servings, line) in inputs)
+            {
+                var ingredient = ingredients.GetValueOrDefault(line.IngredientId);
+                if (!items.TryGetValue(line.IngredientId, out var item))
+                {
+                    item = new ItemCalc { IngredientId = line.IngredientId, UnitId = BaseUnitOf(ingredient, line.UnitId) };
+                    items[line.IngredientId] = item;
+                }
+                decimal waste = line.WastePercent ?? ingredient?.StandardWastePercent ?? 0m;
+                decimal gross = line.Quantity * qty / servings * (1 + waste / 100m);
+                decimal? converted = await converter.ConvertAsync(gross, line.UnitId, item.UnitId);
+                if (converted == null)
+                {
+                    item.Incomplete = true;
+                    string message = string.Format(ConstantHelper.Message.MrpUnitMissing, ingredient?.Name, unitNames.GetValueOrDefault(line.UnitId), unitNames.GetValueOrDefault(item.UnitId));
+                    if (!warnings.Contains(message))
+                    {
+                        warnings.Add(message);
+                        item.Warnings.Add(message);
+                    }
+                    continue;
+                }
+                item.Required += converted.Value;
+            }
+            foreach (var (ingredientId, fallbackUnit) in extraIngredients ?? new Dictionary<Guid, Guid>())
+            {
+                if (!items.ContainsKey(ingredientId))
+                {
+                    items[ingredientId] = new ItemCalc { IngredientId = ingredientId, UnitId = BaseUnitOf(ingredients.GetValueOrDefault(ingredientId), fallbackUnit) };
+                }
+            }
+
+            // 4) Tồn xuất được tại ngày sản xuất (lô hết hạn trước ngày SX không tính), tồn an toàn, NCC gợi ý.
+            var warehouseIds = warehouseId != null ? [warehouseId.Value]
+                : unitId != null ? await db.Warehouse.AsNoTracking().Where(w => w.OrganizationUnitId == unitId && !w.IsDeleted).Select(w => w.Id).ToListAsync()
+                : null;
+            DateTime stockDay = date > _clock.Today ? date : _clock.Today;
+            var stockRows = (await InventoryLotRules.LoadAsync(db, stockDay, _rules.ExpiringLotDays, warehouseId))
+                .Where(r => items.ContainsKey(r.IngredientId) && (warehouseIds == null || warehouseIds.Contains(r.WarehouseId))).ToList();
+            foreach (var row in stockRows)
+            {
+                var item = items[row.IngredientId];
+                bool usable = row.BlockReason == null;
+                decimal quantity = usable ? Math.Max(row.AvailableQuantity, 0) : Math.Max(row.OnHandQuantity, 0);
+                if (quantity == 0)
+                {
+                    continue;
+                }
+                decimal? converted = await converter.ConvertAsync(quantity, row.UnitId, item.UnitId);
+                if (converted == null)
+                {
+                    string message = string.Format(ConstantHelper.Message.MrpUnitMissing, row.IngredientName, row.UnitName, unitNames.GetValueOrDefault(item.UnitId));
+                    if (!warnings.Contains(message))
+                    {
+                        warnings.Add(message);
+                        item.Warnings.Add(message);
+                    }
+                    continue;
+                }
+                if (usable)
+                {
+                    item.Available += converted.Value;
+                }
+                else
+                {
+                    item.Blocked += converted.Value;
+                }
+            }
+            if (_rules.MrpIncludeSafetyStock)
+            {
+                var policies = (await db.InventoryPolicy.AsNoTracking()
+                        .Where(p => !p.IsDeleted && ingredientIds.Contains(p.IngredientId) && p.SafetyStock != null)
+                        .OrderByDescending(p => p.CreatedDate).ToListAsync())
+                    .Where(p => (warehouseIds == null || warehouseIds.Contains(p.WarehouseId)) && !SameText(p.Status, "Inactive"))
+                    .GroupBy(p => (p.WarehouseId, p.IngredientId)).Select(g => g.First()).ToList();
+                foreach (var item in items.Values)
+                {
+                    var mine = policies.Where(p => p.IngredientId == item.IngredientId).ToList();
+                    item.Safety = mine.Count != 0 ? mine.Sum(p => p.SafetyStock ?? 0m) : ingredients.GetValueOrDefault(item.IngredientId)?.SafetyStock ?? 0m;
+                }
+            }
+            var supplierRows = (await db.SupplierMaterial.AsNoTracking()
+                    .Where(m => !m.IsDeleted && ingredientIds.Contains(m.IngredientId)
+                        && (m.EffectiveFrom == null || m.EffectiveFrom <= date) && (m.EffectiveTo == null || m.EffectiveTo >= date))
+                    .ToListAsync())
+                .Where(m => !SameText(m.Status, "Inactive")).ToList();
+            var supplierIds = supplierRows.Select(m => m.SupplierId).Distinct().ToList();
+            var suppliers = (await db.Supplier.AsNoTracking().Where(s => supplierIds.Contains(s.Id) && !s.IsDeleted).ToListAsync())
+                .Where(s => !SameText(s.Status, "Inactive")).ToDictionary(s => s.Id);
+            foreach (var item in items.Values)
+            {
+                item.Required = Round4(item.Required);
+                item.Available = Round4(item.Available);
+                item.Blocked = Round4(item.Blocked);
+                item.Shortage = Round4(Math.Max(0, item.Required + item.Safety - item.Available - item.Incoming));
+                var best = supplierRows.Where(m => m.IngredientId == item.IngredientId && suppliers.ContainsKey(m.SupplierId))
+                    .OrderByDescending(m => m.IsPreferred).ThenBy(m => m.UnitPrice == null).ThenBy(m => m.UnitPrice).ThenBy(m => m.LeadTimeDays ?? int.MaxValue)
+                    .FirstOrDefault();
+                if (best != null)
+                {
+                    item.Best = best;
+                    item.BestSupplier = suppliers[best.SupplierId];
+                    item.PurchaseUnit = best.PurchaseUomId is { } pu && pu != Guid.Empty ? pu : item.UnitId;
+                    decimal? moq = best.MinimumOrderQuantity ?? best.MinimumOrderQty;
+                    item.MoqBase = moq is > 0 ? await converter.ConvertAsync(moq.Value, item.PurchaseUnit, item.UnitId) : null;
+                }
+            }
+            return (c, null);
+        }
+
+        /// <summary>
+        /// Số mua của 1 nguyên liệu cho số cần <paramref name="need"/> (đơn vị cơ sở): làm tròn lên MOQ của NCC gợi ý (PROPOSED – GAP-MRP-04), giá / tiền ước tính
+        /// theo đơn vị mua, cảnh báo NCC giao không kịp / chưa có NCC.
+        /// </summary>
+        private async Task PriceAsync(Computation c, ItemCalc item, decimal need, DateTime date)
+        {
+            decimal purchase = need;
+            item.Supplier = null;
+            if (item.Best != null && item.BestSupplier != null)
+            {
+                var best = item.Best;
+                var supplier = item.BestSupplier;
+                if (purchase > 0 && item.MoqBase is { } moqBase && purchase < moqBase)
+                {
+                    purchase = moqBase; // PROPOSED: số mua tối thiểu = MOQ (chưa có cột quy cách đóng gói – GAP-MRP-04).
+                }
+                purchase = Ceil4(purchase);
+                decimal? inPurchaseUnit = purchase > 0 ? await c.Converter.ConvertAsync(purchase, item.UnitId, item.PurchaseUnit) : 0m;
+                item.Supplier = new MaterialRequirementSupplierModel
+                {
+                    SupplierMaterialId = best.Id,
+                    SupplierId = best.SupplierId,
+                    SupplierCode = supplier.Code,
+                    SupplierName = supplier.Name,
+                    IsPreferred = best.IsPreferred,
+                    UnitPrice = best.UnitPrice,
+                    PurchaseUnitId = item.PurchaseUnit,
+                    PurchaseUnitName = c.UnitNames.GetValueOrDefault(item.PurchaseUnit),
+                    MinimumOrderQuantity = best.MinimumOrderQuantity ?? best.MinimumOrderQty,
+                    LeadTimeDays = best.LeadTimeDays,
+                    PurchaseQuantityInPurchaseUnit = inPurchaseUnit == null ? null : Round4(inPurchaseUnit.Value),
+                    EstimatedAmount = inPurchaseUnit != null && best.UnitPrice != null ? Math.Round(inPurchaseUnit.Value * best.UnitPrice.Value, 2) : null,
+                };
+                if (purchase > 0 && best.LeadTimeDays is > 0 && _clock.Today.AddDays(best.LeadTimeDays.Value) > date)
+                {
+                    string message = string.Format(ConstantHelper.Message.MrpLeadTimeWarning, supplier.Name, best.LeadTimeDays, Day(date));
+                    item.Warnings.Add(message);
+                    c.Warnings.Add($"{message} ({c.Ingredients.GetValueOrDefault(item.IngredientId)?.Name})");
+                }
+            }
+            else if (purchase > 0)
+            {
+                item.Warnings.Add(ConstantHelper.Message.MrpNoSupplier);
+            }
+            item.Purchase = Ceil4(purchase);
+        }
+
+        /// <summary>Ghi chú dòng đề nghị mua: NCC gợi ý dạng chữ (PurchaseRequestLine không có cột NCC / đơn giá – GAP-MRP-02).</summary>
+        private static string PurchaseLineNote(ItemCalc item)
+            => item.Supplier == null ? ConstantHelper.Message.MrpNoSupplier
+                : $"NCC gợi ý: {item.Supplier.SupplierName}"
+                  + (item.Supplier.UnitPrice != null ? $" – giá {item.Supplier.UnitPrice.Value.ToString("0.##", CultureInfo.InvariantCulture)}/{item.Supplier.PurchaseUnitName}" : string.Empty)
+                  + (item.Supplier.MinimumOrderQuantity != null ? $" – MOQ {item.Supplier.MinimumOrderQuantity.Value.ToString("0.####", CultureInfo.InvariantCulture)}" : string.Empty);
+
+        /// <summary>Dòng kế hoạch theo món: cập nhật tại chỗ / thêm (dòng không còn món đã được xóa mềm trước đó).</summary>
+        private void UpsertPlanLines(ProductionPlan plan, List<ProductionPlanLine> oldPlanLines, Computation c)
+        {
+            foreach (var (dishId, qty) in c.Portions)
+            {
+                var line = oldPlanLines.FirstOrDefault(l => l.DishId == dishId);
+                if (line == null)
+                {
+                    _unitOfWork.ProductionPlanLineRepository.Add(new ProductionPlanLine
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductionPlanId = plan.Id,
+                        DishId = dishId,
+                        OrderLineId = c.FirstOrderLine.GetValueOrDefault(dishId),
+                        PlannedQuantity = Round4(qty),
+                        PlannedQty = Round4(qty),
+                        Status = ProductionPlanStatus.Draft,
+                    });
+                }
+                else
+                {
+                    line.PlannedQuantity = Round4(qty);
+                    line.PlannedQty = Round4(qty);
+                    line.OrderLineId = c.FirstOrderLine.GetValueOrDefault(dishId);
+                    _unitOfWork.ProductionPlanLineRepository.Update(line);
+                }
+            }
+        }
+
+        /// <summary>Xóa mềm (CommitAsync Delete đánh dấu mọi bản ghi đang sửa – phải chạy trước khi thêm / cập nhật).</summary>
+        private async Task SoftDeleteAsync(List<BaseEntity> toDelete)
+        {
+            if (toDelete.Count == 0)
+            {
+                return;
+            }
+            foreach (var entity in toDelete)
+            {
+                _unitOfWork.DbContext.Update(entity);
+            }
+            await _unitOfWork.MaterialRequirementRepository.CommitAsync(ConstantHelper.TypeSave.Delete);
+        }
+
         /// <summary>
         /// T14 (spec 7.1 calculate, BUSINESS_RULES §3, Pilot P5) – bấm tay thay job 20:30, trong 1 transaction:
         /// <list type="number">
         /// <item>Đơn <b>Đã chốt</b> (Locked) có ngày ăn = ngày sản xuất × thực đơn của dòng đơn (MenuLine cùng loại suất, thứ của ngày) → món × suất.
-        /// Thực đơn có nhiều lựa chọn (SequenceNo) → suất chia đều cho các lựa chọn (PROPOSED, GAP-MRP-03).</item>
+        /// Thực đơn có nhiều lựa chọn (SequenceNo) → suất chia đều cho các lựa chọn rồi cộng dự phòng <c>MrpOptionBufferPct</c> mỗi lựa chọn (T14.1, GAP-MRP-03).</item>
         /// <item>Món × công thức: bản đã khóa hiệu lực tại ngày (SnapshotJson; thiếu thì dòng định lượng), không có thì bản Đã duyệt mới nhất (cảnh báo).
         /// Nhu cầu = định lượng × suất ÷ suất chuẩn (StandardOutputQty, mặc định BusinessRules 100) × (1 + hao hụt %), hao hụt = RecipeLine.WastePercent,
         /// trống thì Ingredient.StandardWastePercent; quy đổi về đơn vị cơ sở của nguyên liệu qua UomConversion.</item>
         /// <item>Khả dụng = Σ AvailableQuantity (đã trừ giữ chỗ) của lô không bị chặn tại ngày sản xuất (InventoryLotRules: hết hạn / QC / tạm giữ), theo kho / chi nhánh.</item>
         /// <item>Thiếu = max(0, nhu cầu + tồn an toàn (D-12, PROPOSED) − khả dụng − hàng sắp về (Pilot = 0)); số mua làm tròn lên MOQ của NCC gợi ý.</item>
         /// <item>Ghi: ProductionPlan Draft (KH-, tạo nếu chưa có) + ProductionPlanLine theo món, MaterialRequirement theo nguyên liệu (cập nhật tại chỗ, dòng thừa xóa mềm),
-        /// PurchaseRequest Draft (PH-) + dòng cho phần thiếu (đề nghị nháp của lần trước được cập nhật; đề nghị đã gửi duyệt / duyệt / lập PO → không tính lại).</item>
+        /// PurchaseRequest Draft (PH-) + dòng cho phần thiếu (đề nghị nháp của lần trước được cập nhật; đề nghị đã gửi duyệt / duyệt / lập PO → không tính lại,
+        /// dùng <see cref="CalculateTopUp"/>).</item>
         /// </list>
         /// </summary>
         public async Task<IResult<MaterialRequirementResultModel>> Calculate(MaterialRequirementCalculateRequest request)
@@ -322,21 +732,10 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 Guid? unitId = request.OrganizationUnitId is { } ou && ou != Guid.Empty ? ou : null;
                 Guid? warehouseId = request.WarehouseId is { } wh && wh != Guid.Empty ? wh : null;
-                if (unitId != null && !await db.OrganizationUnit.AsNoTracking().AnyAsync(o => o.Id == unitId && !o.IsDeleted))
+                string? scopeError = await ValidateScopeAsync(unitId, warehouseId);
+                if (scopeError != null)
                 {
-                    return Fail(ConstantHelper.Message.OrganizationUnitNotFound);
-                }
-                if (warehouseId != null)
-                {
-                    var warehouse = await db.Warehouse.AsNoTracking().FirstOrDefaultAsync(w => w.Id == warehouseId && !w.IsDeleted);
-                    if (warehouse == null)
-                    {
-                        return Fail(ConstantHelper.Message.WarehouseNotFound);
-                    }
-                    if (unitId != null && warehouse.OrganizationUnitId != unitId)
-                    {
-                        return Fail(ConstantHelper.Message.MrpWarehouseNotInUnit);
-                    }
+                    return Fail(scopeError);
                 }
 
                 // 1) Khóa theo ngày (sp_getapplock của mã KH- – 2 lần tính cùng ngày chạy lần lượt) rồi tìm kế hoạch neo + kết quả lần trước.
@@ -346,14 +745,26 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(string.Format(ConstantHelper.Message.MrpPlanNotDraft, plan.PlanNumber ?? plan.PlanNo, ProductionPlanStatus.Label(plan.Status)));
                 }
+                var planNote = ReadJson<PlanNote>(plan?.Note);
+                // T14.1: kế hoạch đã có đề nghị mua bổ sung còn hiệu lực → tính lại sẽ lập trùng → chỉ được tính bổ sung.
+                if (planNote?.TopUpPurchaseRequestIds is { Count: > 0 } topUpIds)
+                {
+                    var activeTopUps = _unitOfWork.PurchaseRequestRepository.GetAll()
+                        .Where(p => topUpIds.Contains(p.Id) && !p.IsDeleted && p.Status != PurchaseRequestStatus.Cancelled && p.Status != PurchaseRequestStatus.Rejected).ToList();
+                    if (activeTopUps.Count != 0)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.MrpTopUpExists, plan!.PlanNumber ?? plan.PlanNo,
+                            string.Join(", ", activeTopUps.Select(p => p.RequestNumber ?? p.RequestNo))));
+                    }
+                }
                 var oldRows = plan == null ? [] : _unitOfWork.MaterialRequirementRepository.GetAll().Where(r => r.ProductionPlanId == plan.Id && !r.IsDeleted).ToList();
                 var oldPlanLines = plan == null ? [] : _unitOfWork.ProductionPlanLineRepository.GetAll().Where(l => l.ProductionPlanId == plan.Id && !l.IsDeleted).ToList();
-                Guid? oldPrId = ReadJson<PlanNote>(plan?.Note)?.PurchaseRequestId
+                Guid? oldPrId = planNote?.PurchaseRequestId
                     ?? oldRows.Select(r => ReadJson<RowNote>(r.Note)?.PurchaseRequestId).FirstOrDefault(x => x != null);
                 PurchaseRequest? purchaseRequest = oldPrId == null ? null : _unitOfWork.PurchaseRequestRepository.GetSingle(p => p.Id == oldPrId && !p.IsDeleted);
                 if (purchaseRequest != null && purchaseRequest.Status != PurchaseRequestStatus.Draft)
                 {
-                    if (purchaseRequest.Status is PurchaseRequestStatus.PendingApproval or PurchaseRequestStatus.Approved or PurchaseRequestStatus.Converted)
+                    if (IsMovedOn(purchaseRequest.Status))
                     {
                         return Fail(string.Format(ConstantHelper.Message.MrpPurchaseRequestLocked, purchaseRequest.RequestNumber ?? purchaseRequest.RequestNo,
                             PurchaseRequestStatus.Label(purchaseRequest.Status)));
@@ -361,257 +772,16 @@ namespace AppDelicare.Services.Implement
                     purchaseRequest = null; // Từ chối / Hủy → lần này lập đề nghị mới, đề nghị cũ giữ nguyên.
                 }
 
-                // 2) Đơn đã chốt × thực đơn → món × suất.
-                var warnings = new List<string>();
-                DateTime next = date.AddDays(1);
-                var orders = await db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.MealDate >= date && o.MealDate < next).ToListAsync();
-                var lockedOrders = orders.Where(o => o.Status == OrderStatus.Locked).ToList();
-                if (lockedOrders.Count == 0)
+                // 2–4) Đơn đã chốt × thực đơn × công thức → nhu cầu, tồn, thiếu, NCC gợi ý.
+                var (calc, error) = await ComputeAsync(date, unitId, warehouseId);
+                if (calc == null)
                 {
-                    return Fail(string.Format(ConstantHelper.Message.MrpNoLockedOrder, Day(date)));
+                    return Fail(error!);
                 }
-                int notLocked = orders.Count(o => o.Status is OrderStatus.Draft or OrderStatus.Submitted or OrderStatus.Confirmed);
-                if (notLocked > 0)
-                {
-                    warnings.Add(string.Format(ConstantHelper.Message.MrpOrdersNotLocked, notLocked, Day(date)));
-                }
-                var orderIds = lockedOrders.Select(o => o.Id).ToList();
-                var orderLines = await db.OrderLine.AsNoTracking().Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0).ToListAsync();
-                var menuIds = orderLines.Where(l => l.MenuId != null).Select(l => l.MenuId!.Value).Distinct().ToList();
-                int dayOfWeek = MenuService.MenuDayOf(date);
-                var menuLines = await db.MenuLine.AsNoTracking().Where(m => menuIds.Contains(m.MenuId) && !m.IsDeleted && m.DayOfWeek == dayOfWeek).ToListAsync();
-                var menuNames = await db.Menu.AsNoTracking().Where(m => menuIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id, m => m.Code ?? m.Name);
-                var orderNo = lockedOrders.ToDictionary(o => o.Id, o => o.OrderNumber ?? o.OrderNo ?? o.Id.ToString("N")[..8]);
-                var portions = new Dictionary<Guid, decimal>();
-                var firstOrderLine = new Dictionary<Guid, Guid>();
-                foreach (var line in orderLines.OrderBy(l => orderNo[l.OrderId]).ThenBy(l => l.MealType))
-                {
-                    if (line.MenuId == null)
-                    {
-                        warnings.Add(string.Format(ConstantHelper.Message.MrpOrderLineNoMenu, orderNo[line.OrderId], line.MealType, Round4(line.Quantity)));
-                        continue;
-                    }
-                    var options = menuLines.Where(m => m.MenuId == line.MenuId && SameText(m.MealType, line.MealType))
-                        .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
-                    if (options.Count == 0)
-                    {
-                        warnings.Add(string.Format(ConstantHelper.Message.MrpMenuNoDish, menuNames.GetValueOrDefault(line.MenuId.Value), line.MealType, dayOfWeek == 7 ? "CN" : (dayOfWeek + 1).ToString(CultureInfo.InvariantCulture),
-                            Round4(line.Quantity), orderNo[line.OrderId]));
-                        continue;
-                    }
-                    // PROPOSED (GAP-MRP-03): chưa có số suất theo lựa chọn → chia đều số suất của dòng đơn cho các lựa chọn.
-                    decimal perOption = line.Quantity / options.Count;
-                    foreach (var option in options)
-                    {
-                        foreach (var dish in option)
-                        {
-                            portions[dish.DishId] = portions.GetValueOrDefault(dish.DishId) + perOption;
-                            firstOrderLine.TryAdd(dish.DishId, line.Id);
-                        }
-                    }
-                }
-
-                // 3) Món × công thức → nhu cầu theo nguyên liệu (đơn vị cơ sở).
-                var dishIds = portions.Keys.ToList();
-                var dishes = await db.Dish.AsNoTracking().Where(d => dishIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id);
-                var recipes = await db.Recipe.AsNoTracking()
-                    .Where(r => dishIds.Contains(r.DishId) && !r.IsDeleted
-                        && (r.Status == RecipeStatus.Locked || r.Status == RecipeStatus.Obsolete || r.Status == RecipeStatus.Approved))
-                    .ToListAsync();
-                var dishModels = new List<MaterialRequirementDishModel>();
-                var inputs = new List<(Guid DishId, decimal Portions, decimal Servings, RecipeLineInput Line)>();
-                foreach (var (dishId, qty) in portions.OrderBy(p => dishes.GetValueOrDefault(p.Key)?.Name))
-                {
-                    var dish = dishes.GetValueOrDefault(dishId);
-                    var model = new MaterialRequirementDishModel { DishId = dishId, DishCode = dish?.Code, DishName = dish?.Name, Portions = Round4(qty) };
-                    dishModels.Add(model);
-                    var mine = recipes.Where(r => r.DishId == dishId).ToList();
-                    var recipe = mine.Where(r => r.Status is RecipeStatus.Locked or RecipeStatus.Obsolete && r.LockedAt != null
-                                && (r.EffectiveFrom == null || r.EffectiveFrom.Value.Date <= date) && (r.EffectiveTo == null || r.EffectiveTo.Value.Date >= date))
-                            .OrderByDescending(r => r.Status == RecipeStatus.Locked).ThenByDescending(r => r.EffectiveFrom).ThenByDescending(r => r.VersionNo).FirstOrDefault()
-                        ?? mine.Where(r => r.Status == RecipeStatus.Locked && r.IsActive).OrderByDescending(r => r.VersionNo).FirstOrDefault();
-                    bool lockedRecipe = recipe != null;
-                    recipe ??= mine.Where(r => r.Status == RecipeStatus.Approved).OrderByDescending(r => r.VersionNo).FirstOrDefault();
-                    if (recipe == null)
-                    {
-                        model.Warning = ConstantHelper.Message.MrpDishNoRecipe;
-                        warnings.Add($"Cảnh báo: món {dish?.Name ?? dishId.ToString()} – {ConstantHelper.Message.MrpDishNoRecipe}");
-                        continue;
-                    }
-                    model.RecipeId = recipe.Id;
-                    model.RecipeVersion = recipe.VersionCode ?? "v" + recipe.VersionNo.ToString(CultureInfo.InvariantCulture);
-                    List<RecipeLineInput>? lines = null;
-                    if (lockedRecipe && !string.IsNullOrWhiteSpace(recipe.SnapshotJson))
-                    {
-                        try
-                        {
-                            lines = JsonConvert.DeserializeObject<List<RecipeLineInput>>(recipe.SnapshotJson);
-                        }
-                        catch (JsonException)
-                        {
-                            lines = null;
-                        }
-                    }
-                    if (lines is { Count: > 0 })
-                    {
-                        model.RecipeSource = "Snapshot";
-                    }
-                    else
-                    {
-                        model.RecipeSource = "Lines";
-                        lines = await db.RecipeLine.AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted)
-                            .Select(l => new RecipeLineInput { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent })
-                            .ToListAsync();
-                    }
-                    if (!lockedRecipe)
-                    {
-                        model.Warning = ConstantHelper.Message.MrpRecipeNotLocked;
-                        warnings.Add($"Cảnh báo: món {dish?.Name} – {ConstantHelper.Message.MrpRecipeNotLocked}");
-                    }
-                    decimal servings = recipe.StandardOutputQty is > 0 ? recipe.StandardOutputQty.Value : _rules.RecipeStandardServings;
-                    inputs.AddRange(lines.Where(l => l.Quantity > 0).Select(l => (dishId, qty, servings, l)));
-                }
-
-                var ingredientIds = inputs.Select(i => i.Line.IngredientId).Distinct().ToList();
-                var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
-                var unitNames = await db.UnitMeasure.AsNoTracking().ToDictionaryAsync(u => u.Id, u => u.Name ?? u.Code);
-                var converter = new Converter(_uomConversionService, date);
-                var items = new Dictionary<Guid, ItemCalc>();
-                foreach (var (dishId, qty, servings, line) in inputs)
-                {
-                    var ingredient = ingredients.GetValueOrDefault(line.IngredientId);
-                    if (!items.TryGetValue(line.IngredientId, out var item))
-                    {
-                        Guid baseUnit = ingredient?.BaseUnitId is { } b && b != Guid.Empty ? b : ingredient?.BaseUomId is { } o && o != Guid.Empty ? o : line.UnitId;
-                        item = new ItemCalc { IngredientId = line.IngredientId, UnitId = baseUnit };
-                        items[line.IngredientId] = item;
-                    }
-                    decimal waste = line.WastePercent ?? ingredient?.StandardWastePercent ?? 0m;
-                    decimal gross = line.Quantity * qty / servings * (1 + waste / 100m);
-                    decimal? converted = await converter.ConvertAsync(gross, line.UnitId, item.UnitId);
-                    if (converted == null)
-                    {
-                        item.Incomplete = true;
-                        string message = string.Format(ConstantHelper.Message.MrpUnitMissing, ingredient?.Name, unitNames.GetValueOrDefault(line.UnitId), unitNames.GetValueOrDefault(item.UnitId));
-                        if (!warnings.Contains(message))
-                        {
-                            warnings.Add(message);
-                            item.Warnings.Add(message);
-                        }
-                        continue;
-                    }
-                    item.Required += converted.Value;
-                }
-
-                // 4) Tồn xuất được tại ngày sản xuất (lô hết hạn trước ngày SX không tính), tồn an toàn, NCC gợi ý.
-                var warehouseIds = warehouseId != null ? [warehouseId.Value]
-                    : unitId != null ? await db.Warehouse.AsNoTracking().Where(w => w.OrganizationUnitId == unitId && !w.IsDeleted).Select(w => w.Id).ToListAsync()
-                    : null;
-                DateTime stockDay = date > _clock.Today ? date : _clock.Today;
-                var stockRows = (await InventoryLotRules.LoadAsync(db, stockDay, _rules.ExpiringLotDays, warehouseId))
-                    .Where(r => items.ContainsKey(r.IngredientId) && (warehouseIds == null || warehouseIds.Contains(r.WarehouseId))).ToList();
-                foreach (var row in stockRows)
-                {
-                    var item = items[row.IngredientId];
-                    bool usable = row.BlockReason == null;
-                    decimal quantity = usable ? Math.Max(row.AvailableQuantity, 0) : Math.Max(row.OnHandQuantity, 0);
-                    if (quantity == 0)
-                    {
-                        continue;
-                    }
-                    decimal? converted = await converter.ConvertAsync(quantity, row.UnitId, item.UnitId);
-                    if (converted == null)
-                    {
-                        string message = string.Format(ConstantHelper.Message.MrpUnitMissing, row.IngredientName, row.UnitName, unitNames.GetValueOrDefault(item.UnitId));
-                        if (!warnings.Contains(message))
-                        {
-                            warnings.Add(message);
-                            item.Warnings.Add(message);
-                        }
-                        continue;
-                    }
-                    if (usable)
-                    {
-                        item.Available += converted.Value;
-                    }
-                    else
-                    {
-                        item.Blocked += converted.Value;
-                    }
-                }
-                if (_rules.MrpIncludeSafetyStock)
-                {
-                    var policies = (await db.InventoryPolicy.AsNoTracking()
-                            .Where(p => !p.IsDeleted && ingredientIds.Contains(p.IngredientId) && p.SafetyStock != null)
-                            .OrderByDescending(p => p.CreatedDate).ToListAsync())
-                        .Where(p => (warehouseIds == null || warehouseIds.Contains(p.WarehouseId)) && !SameText(p.Status, "Inactive"))
-                        .GroupBy(p => (p.WarehouseId, p.IngredientId)).Select(g => g.First()).ToList();
-                    foreach (var item in items.Values)
-                    {
-                        var mine = policies.Where(p => p.IngredientId == item.IngredientId).ToList();
-                        item.Safety = mine.Count != 0 ? mine.Sum(p => p.SafetyStock ?? 0m) : ingredients.GetValueOrDefault(item.IngredientId)?.SafetyStock ?? 0m;
-                    }
-                }
-                var supplierRows = (await db.SupplierMaterial.AsNoTracking()
-                        .Where(m => !m.IsDeleted && ingredientIds.Contains(m.IngredientId)
-                            && (m.EffectiveFrom == null || m.EffectiveFrom <= date) && (m.EffectiveTo == null || m.EffectiveTo >= date))
-                        .ToListAsync())
-                    .Where(m => !SameText(m.Status, "Inactive")).ToList();
-                var supplierIds = supplierRows.Select(m => m.SupplierId).Distinct().ToList();
-                var suppliers = (await db.Supplier.AsNoTracking().Where(s => supplierIds.Contains(s.Id) && !s.IsDeleted).ToListAsync())
-                    .Where(s => !SameText(s.Status, "Inactive")).ToDictionary(s => s.Id);
+                var items = calc.Items;
                 foreach (var item in items.Values)
                 {
-                    item.Required = Round4(item.Required);
-                    item.Available = Round4(item.Available);
-                    item.Blocked = Round4(item.Blocked);
-                    item.Shortage = Round4(Math.Max(0, item.Required + item.Safety - item.Available - item.Incoming));
-                    var best = supplierRows.Where(m => m.IngredientId == item.IngredientId && suppliers.ContainsKey(m.SupplierId))
-                        .OrderByDescending(m => m.IsPreferred).ThenBy(m => m.UnitPrice == null).ThenBy(m => m.UnitPrice).ThenBy(m => m.LeadTimeDays ?? int.MaxValue)
-                        .FirstOrDefault();
-                    decimal purchase = item.Shortage;
-                    if (best != null)
-                    {
-                        var supplier = suppliers[best.SupplierId];
-                        Guid purchaseUnit = best.PurchaseUomId is { } pu && pu != Guid.Empty ? pu : item.UnitId;
-                        decimal? moq = best.MinimumOrderQuantity ?? best.MinimumOrderQty;
-                        if (purchase > 0 && moq is > 0)
-                        {
-                            decimal? moqBase = await converter.ConvertAsync(moq.Value, purchaseUnit, item.UnitId);
-                            if (moqBase != null && purchase < moqBase.Value)
-                            {
-                                purchase = moqBase.Value; // PROPOSED: số mua tối thiểu = MOQ (chưa có cột quy cách đóng gói – GAP-MRP-04).
-                            }
-                        }
-                        purchase = Ceil4(purchase);
-                        decimal? inPurchaseUnit = purchase > 0 ? await converter.ConvertAsync(purchase, item.UnitId, purchaseUnit) : 0m;
-                        item.Supplier = new MaterialRequirementSupplierModel
-                        {
-                            SupplierMaterialId = best.Id,
-                            SupplierId = best.SupplierId,
-                            SupplierCode = supplier.Code,
-                            SupplierName = supplier.Name,
-                            IsPreferred = best.IsPreferred,
-                            UnitPrice = best.UnitPrice,
-                            PurchaseUnitId = purchaseUnit,
-                            PurchaseUnitName = unitNames.GetValueOrDefault(purchaseUnit),
-                            MinimumOrderQuantity = moq,
-                            LeadTimeDays = best.LeadTimeDays,
-                            PurchaseQuantityInPurchaseUnit = inPurchaseUnit == null ? null : Round4(inPurchaseUnit.Value),
-                            EstimatedAmount = inPurchaseUnit != null && best.UnitPrice != null ? Math.Round(inPurchaseUnit.Value * best.UnitPrice.Value, 2) : null,
-                        };
-                        if (purchase > 0 && best.LeadTimeDays is > 0 && _clock.Today.AddDays(best.LeadTimeDays.Value) > date)
-                        {
-                            string message = string.Format(ConstantHelper.Message.MrpLeadTimeWarning, supplier.Name, best.LeadTimeDays, Day(date));
-                            item.Warnings.Add(message);
-                            warnings.Add($"{message} ({ingredients.GetValueOrDefault(item.IngredientId)?.Name})");
-                        }
-                    }
-                    else if (purchase > 0)
-                    {
-                        item.Warnings.Add(ConstantHelper.Message.MrpNoSupplier);
-                    }
-                    item.Purchase = Ceil4(purchase);
+                    await PriceAsync(calc, item, item.Shortage, date);
                 }
 
                 // 5) Ghi trong cùng transaction. Xóa mềm trước (CommitAsync Delete đánh dấu mọi bản ghi đang sửa) rồi thêm / cập nhật.
@@ -620,20 +790,13 @@ namespace AppDelicare.Services.Implement
                     .Where(l => l.PurchaseRequestId == purchaseRequest.Id && !l.IsDeleted).ToList();
                 var toDelete = new List<BaseEntity>();
                 toDelete.AddRange(oldRows.Where(r => !items.ContainsKey(r.IngredientId)));
-                toDelete.AddRange(oldPlanLines.Where(l => !portions.ContainsKey(l.DishId)));
+                toDelete.AddRange(oldPlanLines.Where(l => !calc.Portions.ContainsKey(l.DishId)));
                 toDelete.AddRange(oldPrLines.Where(l => !needPurchase || !items.TryGetValue(l.IngredientId, out var it) || it.Purchase <= 0));
                 if (purchaseRequest != null && !needPurchase)
                 {
                     toDelete.Add(purchaseRequest);
                 }
-                if (toDelete.Count != 0)
-                {
-                    foreach (var entity in toDelete)
-                    {
-                        db.Update(entity);
-                    }
-                    await _unitOfWork.MaterialRequirementRepository.CommitAsync(ConstantHelper.TypeSave.Delete);
-                }
+                await SoftDeleteAsync(toDelete);
 
                 DateTime now = _clock.Now;
                 if (plan == null)
@@ -650,30 +813,7 @@ namespace AppDelicare.Services.Implement
                     };
                     _unitOfWork.ProductionPlanRepository.Add(plan);
                 }
-                foreach (var (dishId, qty) in portions)
-                {
-                    var line = oldPlanLines.FirstOrDefault(l => l.DishId == dishId);
-                    if (line == null)
-                    {
-                        _unitOfWork.ProductionPlanLineRepository.Add(new ProductionPlanLine
-                        {
-                            Id = Guid.NewGuid(),
-                            ProductionPlanId = plan.Id,
-                            DishId = dishId,
-                            OrderLineId = firstOrderLine.GetValueOrDefault(dishId),
-                            PlannedQuantity = Round4(qty),
-                            PlannedQty = Round4(qty),
-                            Status = ProductionPlanStatus.Draft,
-                        });
-                    }
-                    else
-                    {
-                        line.PlannedQuantity = Round4(qty);
-                        line.PlannedQty = Round4(qty);
-                        line.OrderLineId = firstOrderLine.GetValueOrDefault(dishId);
-                        _unitOfWork.ProductionPlanLineRepository.Update(line);
-                    }
-                }
+                UpsertPlanLines(plan, oldPlanLines, calc);
 
                 if (needPurchase && purchaseRequest == null)
                 {
@@ -705,10 +845,6 @@ namespace AppDelicare.Services.Implement
                     if (item.Purchase > 0)
                     {
                         prLine = oldPrLines.FirstOrDefault(l => l.IngredientId == item.IngredientId && !toDelete.Contains(l));
-                        string lineNote = item.Supplier == null ? ConstantHelper.Message.MrpNoSupplier
-                            : $"NCC gợi ý: {item.Supplier.SupplierName}"
-                              + (item.Supplier.UnitPrice != null ? $" – giá {item.Supplier.UnitPrice.Value.ToString("0.##", CultureInfo.InvariantCulture)}/{item.Supplier.PurchaseUnitName}" : string.Empty)
-                              + (item.Supplier.MinimumOrderQuantity != null ? $" – MOQ {item.Supplier.MinimumOrderQuantity.Value.ToString("0.####", CultureInfo.InvariantCulture)}" : string.Empty);
                         if (prLine == null)
                         {
                             prLine = new PurchaseRequestLine { Id = Guid.NewGuid(), PurchaseRequestId = purchaseRequest!.Id, IngredientId = item.IngredientId };
@@ -722,7 +858,7 @@ namespace AppDelicare.Services.Implement
                         prLine.UnitId = item.UnitId;
                         prLine.UomId = item.UnitId;
                         prLine.RequiredDate = date;
-                        prLine.Note = lineNote;
+                        prLine.Note = PurchaseLineNote(item);
                     }
                     var note = new RowNote
                     {
@@ -764,12 +900,15 @@ namespace AppDelicare.Services.Implement
                     CalculatedAt = now,
                     CalculatedBy = actor.UserId,
                     WarehouseId = warehouseId,
-                    OrderCount = lockedOrders.Count,
-                    TotalMeals = Round4(orderLines.Sum(l => l.Quantity)),
+                    OrderCount = calc.LockedOrders.Count,
+                    TotalMeals = Round4(calc.OrderLines.Sum(l => l.Quantity)),
                     PurchaseRequestId = needPurchase ? purchaseRequest!.Id : null,
+                    // Đề nghị bổ sung cũ (đã hủy / từ chối) giữ lại để tra cứu.
+                    TopUpPurchaseRequestIds = planNote?.TopUpPurchaseRequestIds ?? [],
+                    TopUpAt = planNote?.TopUpAt,
                     UserNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(),
-                    Dishes = dishModels,
-                    Warnings = warnings,
+                    Dishes = calc.Dishes,
+                    Warnings = calc.Warnings,
                 });
                 if (_unitOfWork.DbContext.Entry(plan).State != EntityState.Added)
                 {
@@ -783,6 +922,285 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " Calculate: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+
+            IResult<MaterialRequirementResultModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                return Result<MaterialRequirementResultModel>.Fail(message);
+            }
+        }
+
+        /// <summary>
+        /// T14.1 (anh chốt 2026-11-16) – tính bổ sung khi đề nghị mua của kế hoạch đã gửi duyệt / duyệt / lập PO (Calculate bị chặn), trong 1 transaction:
+        /// <list type="number">
+        /// <item>Tính lại nhu cầu của ngày như Calculate (đơn Locked, chia lựa chọn + dự phòng, công thức, tồn, tồn an toàn).</item>
+        /// <item>Đã đề nghị = Σ dòng các đề nghị mua <b>chưa hủy / từ chối</b> của kế hoạch (đề nghị chính + các đề nghị bổ sung trước) quy về đơn vị cơ sở,
+        /// trừ phần đã nhận đạt (phiếu nhập đã ghi sổ của PO lập từ các đề nghị đó – vì phần này đã nằm trong tồn xuất được). PROPOSED – BA/PO CONFIRM.</item>
+        /// <item>Chênh lệch = thiếu mới − đã đề nghị còn chờ về. Dương → 1 đề nghị mua <b>Nháp mới</b> (PH-, Note "BỔ SUNG …") chỉ cho phần chênh lệch,
+        /// làm tròn MOQ + NCC gợi ý như Calculate. Âm → chỉ cảnh báo (không sửa đề nghị cũ). Không thiếu thêm → không lập đề nghị, trả thông báo.</item>
+        /// <item>Cập nhật tại chỗ dòng nhu cầu (không DELETE; nguyên liệu không còn nhu cầu giữ dòng với nhu cầu 0) + dòng kế hoạch theo món.</item>
+        /// </list>
+        /// Quyền = Sửa trên <c>scm-requirement</c> (PermissionConvention, như Calculate).
+        /// </summary>
+        public async Task<IResult<MaterialRequirementResultModel>> CalculateTopUp(MaterialRequirementCalculateRequest request)
+        {
+            if (request.ProductionDate == default)
+            {
+                return Result<MaterialRequirementResultModel>.Fail(ConstantHelper.Message.MrpDateRequired);
+            }
+            DateTime date = request.ProductionDate.Date;
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                Guid? unitId = request.OrganizationUnitId is { } ou && ou != Guid.Empty ? ou : null;
+                Guid? warehouseId = request.WarehouseId is { } wh && wh != Guid.Empty ? wh : null;
+                string? scopeError = await ValidateScopeAsync(unitId, warehouseId);
+                if (scopeError != null)
+                {
+                    return Fail(scopeError);
+                }
+
+                // 1) Cùng khóa theo ngày với Calculate (sp_getapplock của mã KH-), kế hoạch neo phải có và còn Nháp.
+                await _documentNumberService.NextAsync(DocumentKind.ProductionPlan, date);
+                var plan = PlansOf(date, unitId).FirstOrDefault();
+                if (plan == null)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.MrpTopUpNotCalculated, Day(date)));
+                }
+                string? planNo = plan.PlanNumber ?? plan.PlanNo;
+                if (plan.Status != ProductionPlanStatus.Draft)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.MrpPlanNotDraft, planNo, ProductionPlanStatus.Label(plan.Status)));
+                }
+                var planNote = ReadJson<PlanNote>(plan.Note);
+                var oldRows = _unitOfWork.MaterialRequirementRepository.GetAll().Where(r => r.ProductionPlanId == plan.Id && !r.IsDeleted).ToList();
+                var oldPlanLines = _unitOfWork.ProductionPlanLineRepository.GetAll().Where(l => l.ProductionPlanId == plan.Id && !l.IsDeleted).ToList();
+                Guid? mainPrId = planNote?.PurchaseRequestId ?? oldRows.Select(r => ReadJson<RowNote>(r.Note)?.PurchaseRequestId).FirstOrDefault(x => x != null);
+                var topUpIds = planNote?.TopUpPurchaseRequestIds ?? [];
+                var prIds = topUpIds.ToList();
+                if (mainPrId != null)
+                {
+                    prIds.Insert(0, mainPrId.Value);
+                }
+                var activePrs = _unitOfWork.PurchaseRequestRepository.GetAll().Where(p => prIds.Contains(p.Id) && !p.IsDeleted).ToList()
+                    .Where(p => IsActivePurchaseRequest(p.Status)).OrderBy(p => prIds.IndexOf(p.Id)).ToList();
+                if (!activePrs.Any(p => IsMovedOn(p.Status)))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.MrpTopUpNotNeeded, planNo));
+                }
+
+                // 2) Đã đề nghị (chưa hủy / từ chối) và đã nhận đạt qua phiếu nhập đã ghi sổ.
+                var activeIds = activePrs.Select(p => p.Id).ToList();
+                var prLines = await db.PurchaseRequestLine.AsNoTracking().Where(l => activeIds.Contains(l.PurchaseRequestId) && !l.IsDeleted).ToListAsync();
+                var poIds = await db.PurchaseOrder.AsNoTracking()
+                    .Where(p => p.PurchaseRequestId != null && activeIds.Contains(p.PurchaseRequestId.Value) && !p.IsDeleted).Select(p => p.Id).ToListAsync();
+                var grIds = await db.GoodsReceipt.AsNoTracking()
+                    .Where(g => g.PurchaseOrderId != null && poIds.Contains(g.PurchaseOrderId.Value) && !g.IsDeleted && g.Status == GoodsReceiptStatus.Posted).Select(g => g.Id).ToListAsync();
+                var grLines = await db.GoodsReceiptLine.AsNoTracking().Where(l => grIds.Contains(l.GoodsReceiptId) && !l.IsDeleted && l.AcceptedQuantity > 0).ToListAsync();
+
+                // 3) Tính lại nhu cầu (giữ cả nguyên liệu đã có dòng nhu cầu / đã đề nghị dù không còn nhu cầu).
+                var extras = new Dictionary<Guid, Guid>();
+                foreach (var row in oldRows)
+                {
+                    extras.TryAdd(row.IngredientId, row.UnitId);
+                }
+                foreach (var line in prLines)
+                {
+                    extras.TryAdd(line.IngredientId, UnitOf(line.UnitId, line.UomId));
+                }
+                var (calc, error) = await ComputeAsync(date, unitId, warehouseId, extras);
+                if (calc == null)
+                {
+                    return Fail(error!);
+                }
+                var items = calc.Items;
+                var requested = new Dictionary<Guid, decimal>();
+                var received = new Dictionary<Guid, decimal>();
+                async Task SumAsync(Dictionary<Guid, decimal> target, Guid ingredientId, decimal quantity, Guid unit)
+                {
+                    var item = items[ingredientId];
+                    decimal? converted = await calc.Converter.ConvertAsync(quantity, unit, item.UnitId);
+                    if (converted == null)
+                    {
+                        item.Incomplete = true;
+                        string message = string.Format(ConstantHelper.Message.MrpUnitMissing, calc.Ingredients.GetValueOrDefault(ingredientId)?.Name,
+                            calc.UnitNames.GetValueOrDefault(unit), calc.UnitNames.GetValueOrDefault(item.UnitId));
+                        if (!calc.Warnings.Contains(message))
+                        {
+                            calc.Warnings.Add(message);
+                            item.Warnings.Add(message);
+                        }
+                        return;
+                    }
+                    target[ingredientId] = target.GetValueOrDefault(ingredientId) + converted.Value;
+                }
+                foreach (var line in prLines)
+                {
+                    await SumAsync(requested, line.IngredientId, line.Quantity, UnitOf(line.UnitId, line.UomId));
+                }
+                foreach (var line in grLines.Where(l => items.ContainsKey(l.IngredientId)))
+                {
+                    await SumAsync(received, line.IngredientId, line.AcceptedQuantity, UnitOf(line.UnitId, line.UomId));
+                }
+
+                // 4) Chênh lệch theo nguyên liệu → số bổ sung (dương) / cảnh báo (âm).
+                var topUp = new MaterialRequirementTopUpModel { ListComparedRequestNumber = [.. activePrs.Select(p => p.RequestNumber ?? p.RequestNo ?? p.Id.ToString())] };
+                var openQty = new Dictionary<Guid, decimal>();
+                foreach (var item in items.Values.OrderBy(i => calc.Ingredients.GetValueOrDefault(i.IngredientId)?.Name))
+                {
+                    var ingredient = calc.Ingredients.GetValueOrDefault(item.IngredientId);
+                    decimal open = Round4(Math.Max(0m, requested.GetValueOrDefault(item.IngredientId) - received.GetValueOrDefault(item.IngredientId)));
+                    openQty[item.IngredientId] = open;
+                    decimal diff = Round4(item.Shortage - open);
+                    await PriceAsync(calc, item, diff > 0 ? diff : 0m, date);
+                    string? warning = null;
+                    if (diff < 0)
+                    {
+                        string unitName = calc.UnitNames.GetValueOrDefault(item.UnitId) ?? string.Empty;
+                        warning = string.Format(ConstantHelper.Message.MrpTopUpOverRequested, ingredient?.Name, Num(open), unitName, Num(item.Shortage), Num(-diff));
+                        topUp.ListWarning.Add(warning);
+                        item.Warnings.Add(warning);
+                    }
+                    topUp.ListLine.Add(new MaterialRequirementTopUpLineModel
+                    {
+                        IngredientId = item.IngredientId,
+                        IngredientCode = ingredient?.Code,
+                        IngredientName = ingredient?.Name,
+                        UnitId = item.UnitId,
+                        UnitName = calc.UnitNames.GetValueOrDefault(item.UnitId),
+                        ShortageQuantity = item.Shortage,
+                        RequestedQuantity = open,
+                        DifferenceQuantity = diff,
+                        TopUpQuantity = item.Purchase,
+                        Supplier = item.Purchase > 0 ? item.Supplier : null,
+                        Warning = item.Purchase > 0 && item.Warnings.Count != 0 ? string.Join(" | ", item.Warnings) : warning,
+                    });
+                }
+                bool needTopUp = items.Values.Any(i => i.Purchase > 0);
+
+                // 5) Ghi: dòng kế hoạch (xóa mềm món không còn), đề nghị mua bổ sung Nháp mới, dòng nhu cầu cập nhật tại chỗ.
+                await SoftDeleteAsync([.. oldPlanLines.Where(l => !calc.Portions.ContainsKey(l.DishId))]);
+                DateTime now = _clock.Now;
+                UpsertPlanLines(plan, oldPlanLines, calc);
+                PurchaseRequest? topUpPr = null;
+                if (needTopUp)
+                {
+                    string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                    string userNote = string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim();
+                    topUpPr = new PurchaseRequest
+                    {
+                        Id = Guid.NewGuid(),
+                        RequestNumber = number,
+                        RequestNo = number,
+                        RequestDate = now,
+                        RequiredDate = date,
+                        Status = PurchaseRequestStatus.Draft,
+                        Note = $"BỔ SUNG – Tự động từ tính nhu cầu bổ sung NL ngày {Day(date)} – kế hoạch {planNo} – bổ sung cho {string.Join(", ", topUp.ListComparedRequestNumber)}{userNote}",
+                    };
+                    _unitOfWork.PurchaseRequestRepository.Add(topUpPr);
+                }
+                foreach (var item in items.Values)
+                {
+                    PurchaseRequestLine? prLine = null;
+                    if (topUpPr != null && item.Purchase > 0)
+                    {
+                        prLine = new PurchaseRequestLine
+                        {
+                            Id = Guid.NewGuid(),
+                            PurchaseRequestId = topUpPr.Id,
+                            IngredientId = item.IngredientId,
+                            Quantity = item.Purchase,
+                            UnitId = item.UnitId,
+                            UomId = item.UnitId,
+                            RequiredDate = date,
+                            Note = PurchaseLineNote(item),
+                        };
+                        _unitOfWork.PurchaseRequestLineRepository.Add(prLine);
+                    }
+                    var row = oldRows.FirstOrDefault(r => r.IngredientId == item.IngredientId);
+                    var oldNote = row == null ? null : ReadJson<RowNote>(row.Note);
+                    decimal requestedTotal = Round4(requested.GetValueOrDefault(item.IngredientId));
+                    var note = new RowNote
+                    {
+                        SafetyStock = item.Safety,
+                        BlockedQuantity = item.Blocked,
+                        ShortageQuantity = item.Shortage,
+                        Incomplete = item.Incomplete,
+                        Warning = item.Warnings.Count == 0 ? null : string.Join(" | ", item.Warnings),
+                        PurchaseRequestId = oldNote?.PurchaseRequestId,
+                        PurchaseRequestLineId = oldNote?.PurchaseRequestLineId,
+                        Supplier = oldNote?.Supplier ?? item.Supplier,
+                        RequestedQuantity = openQty.GetValueOrDefault(item.IngredientId),
+                        TopUpPurchaseRequestId = prLine != null ? topUpPr!.Id : oldNote?.TopUpPurchaseRequestId,
+                        TopUpPurchaseRequestLineId = prLine?.Id ?? oldNote?.TopUpPurchaseRequestLineId,
+                        TopUpSupplier = prLine != null ? item.Supplier : oldNote?.TopUpSupplier,
+                    };
+                    if (row == null)
+                    {
+                        row = new MaterialRequirement { Id = Guid.NewGuid(), ProductionPlanId = plan.Id, IngredientId = item.IngredientId };
+                        _unitOfWork.MaterialRequirementRepository.Add(row);
+                    }
+                    else
+                    {
+                        _unitOfWork.MaterialRequirementRepository.Update(row);
+                    }
+                    // Số đề nghị mua của dòng = Σ đã đề nghị (chưa hủy / từ chối) + bổ sung lần này.
+                    decimal purchaseTotal = Round4(requestedTotal + (prLine != null ? item.Purchase : 0m));
+                    row.RequirementNo = planNo;
+                    row.UnitId = item.UnitId;
+                    row.RequiredQuantity = item.Required;
+                    row.RequiredQty = item.Required;
+                    row.AvailableQuantity = item.Available;
+                    row.AvailableQty = item.Available;
+                    row.ExpectedIncomingQuantity = item.Incoming;
+                    row.ExpectedIncomingQty = item.Incoming;
+                    row.PurchaseQuantity = purchaseTotal;
+                    row.PurchaseQty = purchaseTotal;
+                    row.Status = purchaseTotal > 0 ? MaterialRequirementStatus.Requested : MaterialRequirementStatus.Sufficient;
+                    row.Note = JsonConvert.SerializeObject(note);
+                }
+
+                if (topUpPr != null)
+                {
+                    topUpIds.Add(topUpPr.Id);
+                }
+                plan.Note = JsonConvert.SerializeObject(new PlanNote
+                {
+                    CalculatedAt = now,
+                    CalculatedBy = actor.UserId,
+                    WarehouseId = warehouseId,
+                    OrderCount = calc.LockedOrders.Count,
+                    TotalMeals = Round4(calc.OrderLines.Sum(l => l.Quantity)),
+                    PurchaseRequestId = mainPrId,
+                    TopUpPurchaseRequestIds = topUpIds,
+                    TopUpAt = now,
+                    UserNote = string.IsNullOrWhiteSpace(request.Note) ? planNote?.UserNote : request.Note.Trim(),
+                    Dishes = calc.Dishes,
+                    Warnings = [.. calc.Warnings, .. topUp.ListWarning],
+                });
+                _unitOfWork.ProductionPlanRepository.Update(plan);
+                await _unitOfWork.MaterialRequirementRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+
+                var detail = await DetailAsync(plan.Id);
+                detail!.TopUp = topUp;
+                if (topUpPr != null)
+                {
+                    topUp.PurchaseRequest = detail.ListTopUpPurchaseRequest.FirstOrDefault(p => p.Id == topUpPr.Id);
+                    return Result<MaterialRequirementResultModel>.Success(detail,
+                        string.Format(ConstantHelper.Message.MrpTopUpCreated, topUpPr.RequestNumber, topUp.ListLine.Count(l => l.TopUpQuantity > 0)));
+                }
+                return Result<MaterialRequirementResultModel>.Success(detail,
+                    string.Format(ConstantHelper.Message.MrpTopUpNothingShort, string.Join(", ", topUp.ListComparedRequestNumber)));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CalculateTopUp: ", ex.ToString()));
                 _unitOfWork.RollbackTransaction();
                 throw;
             }
@@ -932,6 +1350,26 @@ namespace AppDelicare.Services.Implement
                         LineCount = await db.PurchaseRequestLine.AsNoTracking().CountAsync(l => l.PurchaseRequestId == pr.Id && !l.IsDeleted),
                         EstimatedAmount = result.EstimatedAmount,
                     };
+                }
+            }
+            // T14.1: đề nghị mua bổ sung (CalculateTopUp), cũ → mới; tiền ước tính theo NCC gợi ý của dòng bổ sung.
+            if (summary?.TopUpPurchaseRequestIds is { Count: > 0 } topUpIds)
+            {
+                var notes = rows.Select(r => ReadJson<RowNote>(r.Note)).Where(n => n != null).Select(n => n!).ToList();
+                var topUps = await db.PurchaseRequest.AsNoTracking().Where(p => topUpIds.Contains(p.Id) && !p.IsDeleted).ToListAsync();
+                foreach (var pr in topUps.OrderBy(p => topUpIds.IndexOf(p.Id)))
+                {
+                    result.ListTopUpPurchaseRequest.Add(new MaterialRequirementPurchaseRequestModel
+                    {
+                        Id = pr.Id,
+                        RequestNumber = pr.RequestNumber ?? pr.RequestNo,
+                        RequestDate = pr.RequestDate,
+                        RequiredDate = pr.RequiredDate,
+                        Status = pr.Status,
+                        StatusName = PurchaseRequestStatus.Label(pr.Status),
+                        LineCount = await db.PurchaseRequestLine.AsNoTracking().CountAsync(l => l.PurchaseRequestId == pr.Id && !l.IsDeleted),
+                        EstimatedAmount = notes.Where(n => n.TopUpPurchaseRequestId == pr.Id).Sum(n => n.TopUpSupplier?.EstimatedAmount ?? 0m),
+                    });
                 }
             }
             return result;

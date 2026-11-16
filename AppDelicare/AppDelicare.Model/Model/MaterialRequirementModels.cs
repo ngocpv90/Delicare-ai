@@ -29,8 +29,44 @@ namespace AppDelicare.Model.Model
         public List<MaterialRequirementDishModel> ListDish { get; set; } = [];
         public List<MaterialRequirementItemModel> ListItem { get; set; } = [];
         public MaterialRequirementPurchaseRequestModel? PurchaseRequest { get; set; }
+        /// <summary>T14.1: các đề nghị mua bổ sung (CalculateTopUp) của kế hoạch, cũ → mới (gồm cả đề nghị đã hủy / từ chối – xem status).</summary>
+        public List<MaterialRequirementPurchaseRequestModel> ListTopUpPurchaseRequest { get; set; } = [];
+        /// <summary>T14.1: chỉ có trong kết quả của <c>CalculateTopUp</c> – so sánh nhu cầu mới với số đã đề nghị.</summary>
+        public MaterialRequirementTopUpModel? TopUp { get; set; }
         /// <summary>Cảnh báo không chặn: món chưa có công thức khóa, thiếu quy đổi đơn vị, đơn chưa chốt, NCC cần nhiều ngày giao…</summary>
         public List<string> ListWarning { get; set; } = [];
+    }
+
+    /// <summary>T14.1: kết quả tính bổ sung (CalculateTopUp) – đề nghị mua đã gửi duyệt / duyệt / lập PO nên không tính lại được.</summary>
+    public class MaterialRequirementTopUpModel
+    {
+        /// <summary>Đề nghị mua bổ sung vừa lập (Nháp). Null = không thiếu thêm.</summary>
+        public MaterialRequirementPurchaseRequestModel? PurchaseRequest { get; set; }
+        /// <summary>Các đề nghị mua (chưa hủy / từ chối) đã dùng làm "số đã đề nghị".</summary>
+        public List<string> ListComparedRequestNumber { get; set; } = [];
+        public List<MaterialRequirementTopUpLineModel> ListLine { get; set; } = [];
+        /// <summary>Cảnh báo của lần bổ sung: nguyên liệu đã đề nghị nhiều hơn nhu cầu mới (chênh lệch âm) – chỉ cảnh báo, không sửa đề nghị cũ.</summary>
+        public List<string> ListWarning { get; set; } = [];
+    }
+
+    /// <summary>T14.1: 1 nguyên liệu khi tính bổ sung (đơn vị cơ sở).</summary>
+    public class MaterialRequirementTopUpLineModel
+    {
+        public Guid IngredientId { get; set; }
+        public string? IngredientCode { get; set; }
+        public string? IngredientName { get; set; }
+        public Guid UnitId { get; set; }
+        public string? UnitName { get; set; }
+        /// <summary>Thiếu theo lần tính mới = max(0, nhu cầu + tồn an toàn − tồn xuất được).</summary>
+        public decimal ShortageQuantity { get; set; }
+        /// <summary>Đã đề nghị (Σ dòng các đề nghị chưa hủy / từ chối) − đã nhận đạt qua phiếu nhập đã ghi sổ của PO lập từ các đề nghị đó.</summary>
+        public decimal RequestedQuantity { get; set; }
+        /// <summary>Chênh lệch = thiếu − đã đề nghị còn chờ về; &gt; 0 → bổ sung, &lt; 0 → cảnh báo.</summary>
+        public decimal DifferenceQuantity { get; set; }
+        /// <summary>Số đề nghị mua bổ sung (chênh lệch dương, làm tròn lên MOQ của NCC gợi ý).</summary>
+        public decimal TopUpQuantity { get; set; }
+        public MaterialRequirementSupplierModel? Supplier { get; set; }
+        public string? Warning { get; set; }
     }
 
     /// <summary>T14: món × số suất phải nấu (từ đơn Locked × thực đơn) và công thức đã dùng.</summary>
@@ -39,7 +75,10 @@ namespace AppDelicare.Model.Model
         public Guid DishId { get; set; }
         public string? DishCode { get; set; }
         public string? DishName { get; set; }
+        /// <summary>Số suất phải nấu (đã gồm dự phòng lựa chọn).</summary>
         public decimal Portions { get; set; }
+        /// <summary>T14.1: phần suất dự phòng cộng thêm do thực đơn có ≥ 2 lựa chọn (<c>BusinessRules:MrpOptionBufferPct</c>), đã nằm trong <c>Portions</c>.</summary>
+        public decimal BufferPortions { get; set; }
         public Guid? RecipeId { get; set; }
         public string? RecipeVersion { get; set; }
         /// <summary><c>Snapshot</c> = SnapshotJson của công thức đã khóa; <c>Lines</c> = dòng định lượng hiện tại; trống = không có công thức.</summary>

@@ -135,6 +135,29 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>
+        /// T14.1 (anh chốt 2026-11-16): đề nghị mua của kế hoạch đã gửi duyệt / duyệt / lập PO (Calculate bị chặn) → tính lại nhu cầu của ngày,
+        /// so với số đã đề nghị (đề nghị chưa hủy / từ chối, trừ phần đã nhận) → lập đề nghị mua bổ sung Nháp mới (PH-) cho phần thiếu thêm;
+        /// không thiếu thêm → không lập, trả thông báo; thừa → chỉ cảnh báo. Quyền = Sửa trên scm-requirement (như Calculate).
+        /// </summary>
+        [HttpPost("CalculateTopUp")]
+        public async Task<IActionResult> CalculateTopUp([FromForm] MaterialRequirementCalculateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CalculateTopUp(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CalculateTopUp: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T14: kết quả tính nhu cầu đã lưu của ngày sản xuất (+ chi nhánh); chưa tính → data = null.</summary>
         [HttpGet("GetByDate")]
         public async Task<IActionResult> GetByDate([FromQuery] MaterialRequirementByDateRequest request)

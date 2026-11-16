@@ -184,7 +184,13 @@
             public static readonly string OrganizationUnitNotFound = "Không tìm thấy chi nhánh / đơn vị";
             public static readonly string MrpWarehouseNotInUnit = "Kho đã chọn không thuộc chi nhánh đã chọn";
             public static readonly string MrpPlanNotDraft = "Kế hoạch sản xuất {0} đã ở trạng thái {1} – không tính lại nhu cầu";
-            public static readonly string MrpPurchaseRequestLocked = "Đề nghị mua {0} của lần tính trước đang ở trạng thái {1} – không tính lại được (từ chối / hủy đề nghị mua trước)";
+            public static readonly string MrpPurchaseRequestLocked = "Đề nghị mua {0} của lần tính trước đang ở trạng thái {1} – không tính lại được. Dùng Tính bổ sung (CalculateTopUp) để lập đề nghị mua bổ sung phần thiếu thêm, hoặc từ chối / hủy đề nghị mua trước";
+            public static readonly string MrpTopUpExists = "Kế hoạch {0} đã có đề nghị mua bổ sung {1} – không tính lại được. Dùng Tính bổ sung (CalculateTopUp), hoặc hủy các đề nghị mua của kế hoạch trước";
+            public static readonly string MrpTopUpNotCalculated = "Chưa tính nhu cầu nguyên liệu cho ngày {0} – dùng Tính nhu cầu (Calculate)";
+            public static readonly string MrpTopUpNotNeeded = "Đề nghị mua của kế hoạch {0} còn Nháp / chưa có – dùng Tính nhu cầu (Calculate) để tính lại, không cần tính bổ sung";
+            public static readonly string MrpTopUpNothingShort = "Không thiếu thêm so với các đề nghị mua đã lập ({0}) – không lập đề nghị mua bổ sung";
+            public static readonly string MrpTopUpCreated = "Đã lập đề nghị mua bổ sung {0} ({1} dòng)";
+            public static readonly string MrpTopUpOverRequested = "Cảnh báo: {0} đã đề nghị {1} {2}, nhu cầu mới chỉ thiếu {3} {2} (thừa {4}) – không tự sửa đề nghị cũ, kiểm tra lại nếu cần";
             public static readonly string MrpNoLockedOrder = "Không có đơn Đã chốt cho ngày {0} – chốt đơn (Order/Lock, Order/LockByMealDate) trước khi tính nhu cầu";
             public static readonly string MrpNotCalculated = "Chưa tính nhu cầu nguyên liệu cho ngày {0}";
             public static readonly string MrpOrdersNotLocked = "Cảnh báo: còn {0} đơn chưa chốt của ngày {1} (không được tính)";
