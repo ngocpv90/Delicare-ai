@@ -14,10 +14,10 @@ namespace AppDelicare.Tests.Production
     /// KHONG_DAT) → bắt đầu → nhiệt độ lõi (≥ 70 °C) → lưu mẫu → xong → sản lượng → đạt QC → đóng gói.
     /// Hôm nay (đồng hồ test) = 20/12/2026 10:00, ngày sản xuất 21/12/2026 (thứ 2).
     /// <para>Bộ số tính tay: điểm giao nhận lúc 11:30 → giờ xuất bếp 11:30 − 60′ = 10:30 → mẻ cuối xong 10:30 − 30′ (chia suất / đóng gói) = 10:00.
-    /// Dây chuyền 100 phần / mẻ, 60 phút / mẻ. Thịt kho 250 phần → 3 mẻ 100 / 100 / 50: 07:00–08:00, 08:00–09:00, 09:00–10:00; Canh 80 phần → 1 mẻ 09:00–10:00.
-    /// Số mẻ theo giờ bắt đầu rồi tên món: -01 Thịt#1, -02 Thịt#2, -03 Canh, -04 Thịt#3.</para>
-    /// <para>Định lượng: Thịt 12 kg / 100 suất, hao hụt 10% → mẻ 100 phần cần 13,2 kg; mẻ 50 phần 6,6 kg. Rau 5 kg / 100 suất → mẻ 80 phần 4 kg.
-    /// Lô thịt: L1 HSD 22/12 10 kg, L2 HSD 30/12 20 kg, LX hết hạn 19/12 50 kg, LK KHONG_DAT 50 kg → mẻ -01 lấy L1 10 + L2 3,2 (FEFO).</para>
+    /// Dây chuyền 100 phần / mẻ, 60 phút / mẻ. Thịt kho 250 phần → 3 mẻ chia đều 84 / 83 / 83 (T17.1, anh chốt 2026-11-16): 07:00–08:00, 08:00–09:00, 09:00–10:00;
+    /// Canh 80 phần → 1 mẻ 09:00–10:00. Số mẻ theo giờ bắt đầu rồi tên món: -01 Thịt#1, -02 Thịt#2, -03 Canh, -04 Thịt#3.</para>
+    /// <para>Định lượng: Thịt 12 kg / 100 suất, hao hụt 10% → mẻ 84 phần cần 11,088 kg; mẻ 83 phần 10,956 kg. Rau 5 kg / 100 suất → mẻ 80 phần 4 kg.
+    /// Lô thịt: L1 HSD 22/12 10 kg, L2 HSD 30/12 20 kg, LX hết hạn 19/12 50 kg, LK KHONG_DAT 50 kg → mẻ -01 lấy L1 10 + L2 1,088 (FEFO).</para>
     /// </summary>
     public class ProductionTests : IClassFixture<InMemoryApiFactory>
     {
@@ -64,7 +64,13 @@ namespace AppDelicare.Tests.Production
                 db.Customer.Add(new Customer { Id = customer, Code = "KH-" + code, Name = "[DEMO] Khách " + code, CIF = "C" + code, CustomerType = "FACTORY", DisplayName = "Khách " + code, Status = "Active" });
                 db.CustomerDeliveryLocation.Add(new CustomerDeliveryLocation { Id = location, CustomerId = customer, Code = "DG-" + code, Name = "Điểm giao " + code, DeliveryWindowFrom = new TimeSpan(11, 30, 0) });
                 db.Order.Add(new Order { Id = order, OrderNumber = "PH-" + code, OrderNo = "PH-" + code, CustomerId = customer, DeliveryLocationId = location, OrderDate = Today, MealDate = Day, DeliveryDate = Day, Status = "Locked" });
-                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = order, MealType = "TRUA", ShiftId = shift, Quantity = 330 });
+                // T17.1: thực đơn của dòng đơn → món × ca (phát hành chia kế hoạch theo ca của đơn).
+                Guid menu = Guid.NewGuid();
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-" + code, Name = "Thực đơn " + code, VersionNo = 1, Status = "Published", EffectiveFrom = Today.AddDays(-30) });
+                db.MenuLine.AddRange(
+                    new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = dishMeat, MealType = "TRUA", DayOfWeek = 1, SequenceNo = 1 },
+                    new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = dishSoup, MealType = "TRUA", DayOfWeek = 1, SequenceNo = 1 });
+                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = order, MenuId = menu, MealType = "TRUA", ShiftId = shift, Quantity = 330 });
 
                 var ledger = new InventoryLedgerService(db);
                 foreach (var (name, ingredient, expiry, qc, qty) in new[]
@@ -107,12 +113,16 @@ namespace AppDelicare.Tests.Production
         private Task<ProductionBatch> BatchAsync(Guid id) => _factory.QueryAsync(db => db.ProductionBatch.AsNoTracking().SingleAsync(b => b.Id == id));
 
         [Fact]
-        public void Schedule_is_backward_from_cook_end_with_full_batches_first()
+        public void Schedule_is_backward_from_cook_end_with_even_batches()
         {
             var end = Day.AddHours(10);
             var batches = ProductionRules.Schedule(250, 100, 60, end);
+            // T17.1 (anh chốt 2026-11-16): N = ceil(250 / 100) = 3, chia đều 84 / 83 / 83 (mẻ đầu nhận phần dư).
             batches.Select(b => (b.Quantity, b.Start.ToString("HH:mm"), b.End.ToString("HH:mm"))).Should().Equal(
-                (100m, "07:00", "08:00"), (100m, "08:00", "09:00"), (50m, "09:00", "10:00"));
+                (84m, "07:00", "08:00"), (83m, "08:00", "09:00"), (83m, "09:00", "10:00"));
+            ProductionRules.Schedule(300, 100, 60, end).Select(b => b.Quantity).Should().Equal(100m, 100m, 100m);
+            ProductionRules.Schedule(201, 100, 30, end).Select(b => b.Quantity).Should().Equal(67m, 67m, 67m);
+            ProductionRules.Schedule(57.5m, 50, 30, end).Select(b => b.Quantity).Should().Equal(29m, 28.5m);
             ProductionRules.Schedule(80, null, 45, end).Should().ContainSingle()
                 .Which.Should().Be(new ProductionRules.ScheduledBatch(1, 80, Day.AddHours(9).AddMinutes(15), end));
             ProductionRules.Increment("ME-261221-TRUA-09", 3).Should().Be("ME-261221-TRUA-12");
@@ -132,10 +142,10 @@ namespace AppDelicare.Tests.Production
             batches.Select(b => (b.GetProperty("batchNumber").GetString(), b.GetProperty("dishId").GetGuid(), b.GetProperty("plannedQuantity").GetDecimal(),
                     b.GetProperty("plannedStart").GetDateTime().ToString("HH:mm"), b.GetProperty("plannedEnd").GetDateTime().ToString("HH:mm")))
                 .Should().Equal(
-                    (prefix + "01", s.DishMeat, 100m, "07:00", "08:00"),
-                    (prefix + "02", s.DishMeat, 100m, "08:00", "09:00"),
+                    (prefix + "01", s.DishMeat, 84m, "07:00", "08:00"),
+                    (prefix + "02", s.DishMeat, 83m, "08:00", "09:00"),
                     (prefix + "03", s.DishSoup, 80m, "09:00", "10:00"),
-                    (prefix + "04", s.DishMeat, 50m, "09:00", "10:00"));
+                    (prefix + "04", s.DishMeat, 83m, "09:00", "10:00"));
             batches.Should().OnlyContain(b => b.GetProperty("status").GetString() == "Planned");
 
             var detail = (await c.GetResultAsync($"/api/ProductionPlan/GetDetail?id={s.Plan}")).Ok();
@@ -154,7 +164,7 @@ namespace AppDelicare.Tests.Production
             meatOrder.ProductionOrderNumber.Should().Be(meatOrder.ProductionOrderNo);
             var batch = await BatchAsync(Id(batches[0]));
             batch.BatchNo.Should().Be(batch.BatchNumber);
-            batch.PlannedQty.Should().Be(100);
+            batch.PlannedQty.Should().Be(84);
             (await _factory.QueryAsync(db => db.Order.AsNoTracking().SingleAsync(o => o.Id == s.Order))).Status.Should().Be("InProduction");
             (await _factory.QueryAsync(db => db.ProductionPlanLine.AsNoTracking().Where(l => l.ProductionPlanId == s.Plan).ToListAsync()))
                 .Should().OnlyContain(l => l.ShiftId == s.ShiftId && l.Status == "Released");
@@ -182,7 +192,7 @@ namespace AppDelicare.Tests.Production
             ws.Cell(1, 13).GetValue<decimal>().Should().Be(330, "số suất order = Σ phần kế hoạch của các mẻ");
             ws.Cell(7, 6).GetString().Should().Be("SL cần");
             ws.Cell(8, 3).GetString().Should().Be("Thịt P1");
-            ws.Cell(8, 6).GetValue<decimal>().Should().Be(13.2m);
+            ws.Cell(8, 6).GetValue<decimal>().Should().Be(11.088m, "12 kg / 100 suất × 84 phần × 1,1");
         }
 
         [Fact]
@@ -195,7 +205,7 @@ namespace AppDelicare.Tests.Production
 
             var detail = (await c.GetResultAsync($"/api/ProductionBatch/GetDetail?id={first}")).Ok();
             var material = detail.GetProperty("listMaterial").EnumerateArray().Single();
-            material.GetProperty("requiredQuantity").GetDecimal().Should().Be(13.2m, "12 kg / 100 suất × 100 phần × 1,1");
+            material.GetProperty("requiredQuantity").GetDecimal().Should().Be(11.088m, "12 kg / 100 suất × 84 phần × 1,1");
             material.GetProperty("quantityPerServing").GetDecimal().Should().Be(0.12m);
 
             var issue = (await c.PostFormAsync("/api/ProductionBatch/CreateMaterialIssue", ("Id", first), ("WarehouseId", s.Warehouse), ("Post", true))).Ok();
@@ -203,7 +213,7 @@ namespace AppDelicare.Tests.Production
             issue.GetProperty("materialIssue").GetProperty("issueNumber").GetString().Should().MatchRegex(@"^PH-261220-\d{4}$");
             var lines = issue.GetProperty("listLine").EnumerateArray()
                 .Select(l => (l.GetProperty("materialLotId").GetGuid(), l.GetProperty("quantity").GetDecimal())).ToList();
-            lines.Should().BeEquivalentTo([(s.Lots["L1"], 10m), (s.Lots["L2"], 3.2m)], "FEFO: lô hạn gần trước, bỏ lô hết hạn / KHONG_DAT");
+            lines.Should().BeEquivalentTo([(s.Lots["L1"], 10m), (s.Lots["L2"], 1.088m)], "FEFO: lô hạn gần trước, bỏ lô hết hạn / KHONG_DAT");
             var saved = await _factory.QueryAsync(db => db.MaterialIssue.AsNoTracking().SingleAsync(i => i.Id == issue.GetProperty("materialIssue").GetProperty("id").GetGuid()));
             saved.ProductionOrderId.Should().Be((await BatchAsync(first)).ProductionOrderId, "phiếu xuất gắn lệnh SX thật (GAP-INV-02 đã đóng)");
             saved.Note.Should().Contain(batches[0].GetProperty("batchNumber").GetString());
@@ -212,7 +222,7 @@ namespace AppDelicare.Tests.Production
 
             // 1 phiếu tự động / mẻ.
             (await c.PostFormAsync("/api/ProductionBatch/CreateMaterialIssue", ("Id", first), ("WarehouseId", s.Warehouse), ("Post", true))).Fail("đã có phiếu xuất");
-            // Mẻ -02 lấy tiếp L2 (13,2 / 16,8 còn lại); mẻ 50 phần cần 6,6 nhưng chỉ còn 3,6 kg xuất được – 100 kg hết hạn / KHONG_DAT không được dùng.
+            // Mẻ -02 (83 phần) lấy tiếp L2 (10,956 / 18,912 còn lại); mẻ -04 (83 phần) cần 10,956 nhưng chỉ còn 7,956 kg xuất được – 100 kg hết hạn / KHONG_DAT không được dùng.
             (await c.PostFormAsync("/api/ProductionBatch/CreateMaterialIssue", ("Id", second), ("WarehouseId", s.Warehouse), ("Post", true))).Ok();
             (await c.PostFormAsync("/api/ProductionBatch/CreateMaterialIssue", ("Id", last), ("WarehouseId", s.Warehouse), ("Post", true))).Fail("Không đủ tồn khả dụng");
             (await _factory.QueryAsync(db => db.MaterialIssue.AsNoTracking().CountAsync(i => i.Note != null && i.Note.Contains(batches[3].GetProperty("batchNumber").GetString()!))))

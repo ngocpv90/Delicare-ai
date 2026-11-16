@@ -1,4 +1,4 @@
-### DELICARE – Pilot P7 (T17, khung cũ D-30): kế hoạch KH- → duyệt → phát hành (lệnh SX PH- + mẻ ME-, lịch ngược từ giờ xuất bếp) → xuất NL cho mẻ (FEFO)
+### DELICARE – Pilot P7 (T17 + T17.1 phát hành theo ca, khung cũ D-30): kế hoạch KH- → duyệt → phát hành (lệnh SX PH- + mẻ ME-, lịch ngược từ giờ xuất bếp) → xuất NL cho mẻ (FEFO)
 ### → bắt đầu → nhiệt độ lõi (≥ 70 °C) → lưu mẫu → xong → sản lượng → đạt QC → đóng gói; in Phiếu sản xuất.
 ### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
 ### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
@@ -8,7 +8,8 @@
 @user = admin
 @password = admin
 @planId = <ProductionPlanId – kế hoạch KH- Nháp>
-@shiftId = <ShiftId – ca TRUA (để trống = BusinessRules:ProductionDefaultShiftCode)>
+@shiftId = <ShiftId – ca cần phát hành, vd. TRUA (T17.1: để trống = mọi ca chưa phát hành)>
+@eveningShiftId = <ShiftId – ca TOI (T17.1: phát hành sau)>
 @lineId = <ProductionLineId – dây chuyền (CapacityMealPerBatch, MinutesPerBatch)>
 @warehouseId = <WarehouseId – kho nguyên liệu>
 @batchId = <ProductionBatchId – lấy từ listBatch của bước 3>
@@ -35,13 +36,28 @@ Content-Type: application/x-www-form-urlencoded
 
 Id={{planId}}&Note=[DEMO] duyệt kế hoạch
 
-### 3. Phát hành: lệnh SX PH- theo món + mẻ ME-YYMMDD-<CA>-NN, lịch ngược (giờ giao sớm nhất − 60′, mẻ cuối xong trước xuất bếp 30′)
-###    Bỏ DispatchTime để tự tính; nhập DispatchTime=10:30 để ép giờ xuất bếp.
+### 3. Phát hành 1 ca (T17.1 – 4 ca / ngày): kế hoạch ngày chia theo ca của đơn Đã chốt; ca này → lệnh SX PH- theo món + mẻ ME-YYMMDD-<CA>-NN,
+###    lịch ngược riêng (giờ giao sớm nhất của điểm giao thuộc ca − 60′, mẻ cuối xong trước xuất bếp 30′), mẻ chia đều (250 / 100 → 84, 83, 83).
+###    Kế hoạch giữ Đã duyệt tới khi mọi ca trong listShift đã phát hành. Bỏ DispatchTime để tự tính; DispatchTime=10:30 chỉ dùng khi phát hành 1 ca.
 POST {{base}}/api/ProductionPlan/Release
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 Id={{planId}}&ShiftId={{shiftId}}&ProductionLineId={{lineId}}&Note=[DEMO]
+
+### 3b. Phát hành lại cùng ca → 400 "đã phát hành"
+POST {{base}}/api/ProductionPlan/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{planId}}&ShiftId={{shiftId}}
+
+### 3c. Phát hành các ca còn lại (bỏ trống ShiftId = mọi ca chưa phát hành; hoặc ShiftId={{eveningShiftId}}) → kế hoạch Đã phát hành
+POST {{base}}/api/ProductionPlan/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{planId}}&ProductionLineId={{lineId}}&Note=[DEMO]
 
 ### 4. In Phiếu sản xuất (.xlsx) cả kế hoạch
 GET {{base}}/api/ProductionPlan/ExportProductionSheet?id={{planId}}
@@ -119,7 +135,7 @@ Content-Type: application/x-www-form-urlencoded
 
 Id={{batchId}}&WasteType=OVERPRODUCTION&QuantityMeals=3&Reason=[DEMO] nấu dư
 
-### 14. Đạt QC (chặn nếu nhiệt độ lõi gần nhất < 70 °C, chưa lưu mẫu, chưa ghi sản lượng)
+### 14. Đạt QC (chặn nếu nhiệt độ lõi gần nhất < 70 °C, chưa ghi sản lượng; chưa lưu mẫu chỉ cảnh báo – D-42, chặn ở DeliveryRoute/Dispatch)
 POST {{base}}/api/ProductionBatch/Release
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -132,6 +148,10 @@ Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 Id={{batchId}}
+
+### 15b. Mẻ Đã đóng gói chưa lưu mẫu: GetDetail có allowedActions "recordSampleRetained" → gọi bước 10 trước khi xuất chuyến (T17.1)
+GET {{base}}/api/ProductionBatch/GetDetail?id={{batchId}}
+Authorization: Bearer {{token}}
 
 ### 16. Loại mẻ (lý do bắt buộc) – thay cho 14 / 15 khi mẻ không đạt
 POST {{base}}/api/ProductionBatch/Reject

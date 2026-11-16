@@ -110,11 +110,30 @@ namespace AppDelicare.Services.Implement
             });
 
         /// <summary>Ca của các đơn trên chuyến (OrderLine.ShiftId) – chuyến không có cột ca (GAP-DLV-04).</summary>
-        public static async Task<List<Guid>> RouteShiftIdsAsync(DatabaseContext db, Guid routeId)
+        public static async Task<List<Guid>> RouteShiftIdsAsync(DatabaseContext db, Guid routeId, BusinessRulesOptions rules)
         {
             var orderIds = await db.DeliveryOrder.AsNoTracking().Where(d => !d.IsDeleted && d.DeliveryRouteId == routeId).Select(d => d.OrderId).ToListAsync();
-            return await db.OrderLine.AsNoTracking().Where(l => !l.IsDeleted && orderIds.Contains(l.OrderId) && l.ShiftId != null)
-                .Select(l => l.ShiftId!.Value).Distinct().ToListAsync();
+            return await OrderShiftIdsAsync(db, orderIds, rules);
+        }
+
+        /// <summary>
+        /// Ca của các đơn (OrderLine.ShiftId). T17.1: dòng chưa gán ca thuộc ca mặc định <c>ProductionDefaultShiftCode</c> (cùng quy tắc ProductionPlan/Release);
+        /// không có ca mặc định → bỏ qua (danh sách rỗng = mọi mẻ của ngày như T19).
+        /// </summary>
+        public static async Task<List<Guid>> OrderShiftIdsAsync(DatabaseContext db, IReadOnlyCollection<Guid> orderIds, BusinessRulesOptions rules)
+        {
+            var shiftIds = await db.OrderLine.AsNoTracking().Where(l => !l.IsDeleted && orderIds.Contains(l.OrderId))
+                .Select(l => l.ShiftId).Distinct().ToListAsync();
+            var result = shiftIds.Where(s => s != null).Select(s => s!.Value).ToList();
+            if (shiftIds.Contains(null))
+            {
+                var fallback = await db.Shift.AsNoTracking().Where(s => s.Code == rules.ProductionDefaultShiftCode && !s.IsDeleted).Select(s => (Guid?)s.Id).FirstOrDefaultAsync();
+                if (fallback != null && !result.Contains(fallback.Value))
+                {
+                    result.Add(fallback.Value);
+                }
+            }
+            return result;
         }
 
         /// <summary>
@@ -185,7 +204,7 @@ namespace AppDelicare.Services.Implement
         /// <summary>Điều kiện xuất phát đầy đủ: sản xuất + nhiệt độ xuất phát gần nhất ≥ DeliveryTempMinC.</summary>
         public static async Task<List<string>> DispatchBlockersAsync(DatabaseContext db, DeliveryRoute route, BusinessRulesOptions rules)
         {
-            var batches = await BatchesAsync(db, route.DeliveryDate, await RouteShiftIdsAsync(db, route.Id));
+            var batches = await BatchesAsync(db, route.DeliveryDate, await RouteShiftIdsAsync(db, route.Id, rules));
             var blockers = ProductionBlockers(batches, rules);
             var temp = await LatestTemperatureAsync(db, route.Id, null);
             if (temp == null)
@@ -335,7 +354,7 @@ namespace AppDelicare.Services.Implement
                 bool planning = route.Status is DeliveryRouteStatus.Planned or DeliveryRouteStatus.Loading;
                 if (withBatches)
                 {
-                    var shiftIds = await RouteShiftIdsAsync(db, route.Id);
+                    var shiftIds = await RouteShiftIdsAsync(db, route.Id, rules);
                     detail.ListBatch = await BatchesAsync(db, route.DeliveryDate, shiftIds);
                     if (planning)
                     {

@@ -1045,6 +1045,39 @@ Câu hỏi cho anh (DECISIONS GAP-PRD-01, 03…08):
 
 Cần anh: chạy `DB/seed/FoodSafetyChecklist_seed.sql` trên staging (DB dev đã chạy); khai báo `ProductionLine` (năng lực mẻ, phút / mẻ) và giờ giao của điểm giao trước khi chạy thử.
 
+### T17.1 – Sản xuất 4 ca / ngày + chia mẻ đều (anh chốt 2026-11-16) · 2026-11-16 · DONE(PILOT)
+Nhánh `feat/T17.1-shifts` (từ `release/pilot`). Chỉ backend + tài liệu. Không bảng / cột / SP / seed mới.
+
+Anh chốt 2026-11-16 (DECISIONS mục "Anh chốt 2026-11-16 (T17)"; GAP-PRD-01 / 06 / 07 đánh dấu đã chốt, GAP-PRD-08 phần lưu mẫu = D-42, GAP-PRD-05 giữ nguyên): Pilot 4 ca / ngày, KH- vẫn theo ngày, phát hành tách theo ca; lịch giữ như T17; chia mẻ đều; duyệt 1 cấp; phát hành → đơn Đang SX; lệnh SX `PH-`.
+
+Đã làm (trong file cũ, đúng mẫu 4.2):
+- **`ProductionRules.SplitByShiftAsync`** (mới, lớp tĩnh): chia số phần từng dòng kế hoạch theo ca = tỉ lệ suất của món trong ca, tính như MRP (T14 / T14.1: dòng đơn Đã chốt / Đang SX × MenuLine cùng loại suất + thứ, chia đều lựa chọn + `MrpOptionBufferPct`); ca = `OrderLine.ShiftId`, chưa gán → `ProductionDefaultShiftCode` (cảnh báo); món không có trong đơn → ca mặc định; làm tròn 4 số lẻ, ca cuối nhận phần còn lại (tổng = dòng kế hoạch). Ca sắp theo `StartTime`.
+- **`ProductionRules.Schedule`**: chia mẻ đều – N = ⌈phần ÷ năng lực⌉, phần nguyên chia đều, các mẻ đầu nhận phần dư, phần lẻ thập phân vào mẻ cuối (250 / 100 → 84, 83, 83; 57,5 / 50 → 29, 28,5).
+- **`ProductionRules.ResolveDispatchAsync`**: thêm `fallbackShiftId`; dòng chưa gán ca thuộc ca mặc định (không còn tính cho mọi ca); đơn có dòng ở ≥ 2 ca không dùng khung giờ điểm giao (PROPOSED).
+- **`ProductionPlan/Release`**: tách theo ca – `ShiftId` = chỉ ca đó (ca đã phát hành → 400 "đã phát hành", ca không có suất → 400), trống = mọi ca chưa phát hành; `DispatchTime` nhập tay chỉ khi phát hành 1 ca. Mỗi ca: giờ xuất bếp riêng → lệnh SX `PH-` / món (`ShiftId`, `PlannedQty` = phần của ca) + mẻ `ME-yyMMdd-<ca>-NN` (số mẻ riêng từng ca). Ca đã phát hành = có lệnh SX (chưa hủy) của kế hoạch gắn ca. Kế hoạch giữ Đã duyệt tới khi mọi ca có nhu cầu đã phát hành → Đã phát hành; dòng kế hoạch Released khi mọi ca của món đã phát hành (`ShiftId` chỉ khi món thuộc 1 ca); đơn Đã chốt có dòng thuộc ca vừa phát hành → `InProduction`. Hoàn thành kế hoạch (ProductionBatchService) vốn chỉ khi kế hoạch Released → không đổi.
+- **`ProductionPlan/GetDetail`**: `listShift[]` (`shiftId, shiftCode, shiftName, startTime, portions, released, dispatchAt, orderCount, batchCount`), `listLine[].listShift[]` (`shiftId, shiftCode, quantity`); `allowedActions` Đã duyệt = `release` (còn ca) + `exportProductionSheet` (đã có lệnh SX); `listWarning` dòng đơn chưa gán ca.
+- **`ProductionBatch/GetDetail`**: mẻ Đã đóng gói chưa lưu mẫu → `allowedActions` có `recordSampleRetained` (D-42).
+- **Giao (`DeliveryRules.OrderShiftIdsAsync`)**: ca của đơn trên chuyến – dòng chưa gán ca → ca mặc định (cùng quy tắc phát hành); dùng cho `DeliveryRoute/Create` (cảnh báo) và `Dispatch` / chi tiết chuyến. Kiểm mẻ vẫn theo ngày + ca (T19).
+- Thông báo mới `ConstantHelper.Message.Release{LinesWithoutShift, ShiftAlready, ShiftNoDemand, NothingPending, DispatchNeedsShift}`; model `ProductionPlanShiftModel`, `ProductionPlanLineShiftModel`; chú thích `BusinessRulesOptions.ProductionDefaultShiftCode`, `ProductionPlanReleaseRequest`.
+
+File: `Services/Implement/{ProductionRules, ProductionPlanService, ProductionBatchService, DeliveryRules, DeliveryRouteService}.cs`, `Model/Model/ProductionModels.cs`, `Model/Helper/ConstantHelper.cs`, `Model/Option/BusinessRulesOptions.cs`, `Model/Request/Custom/ProductionCustomRequest.cs`, test `Tests/Production/{ProductionShiftTests (mới), ProductionTests, ProductionSqlServerTests}.cs`, tài liệu `docs/claude/{DECISIONS, BUSINESS_RULES, PROGRESS}.md`, `docs/frontend-handoff/P7.md`, `docs/api-tests/p7-production.http`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 10 cảnh báo (≤ 11 baseline).
+- `dotnet test`: **169/169** xanh (+2, baseline 167):
+  - `ProductionShiftTests.Release_splits_the_daily_plan_by_shift…`: đơn TRUA 250 (giao 11:30) + TOI 100 (giao 17:30), kế hoạch Thịt 350 / Canh 80 → listShift TRUA 330 / TOI 100, Thịt 250 + 100; `DispatchTime` khi còn 2 ca → 400; phát hành TOI → 1 mẻ `ME-261221-TOIS1-01` 100 phần 15:00–16:00, xuất bếp 16:30, kế hoạch vẫn Approved (`release` + `exportProductionSheet`), đơn TOI InProduction, đơn TRUA còn Locked; phát hành lại TOI → 400; phát hành phần còn lại → TRUA `ME-261221-TRUAS1-01…04` 84 / 83 / 80 (Canh) / 83, 07:00–10:00; kế hoạch Released; 3 lệnh SX `PH-` khác số (TOI Thịt 100, TRUA Thịt 250, Canh 80); dòng Thịt Released không gắn ca, Canh gắn TRUA.
+  - `ProductionShiftTests.Dispatch_of_an_evening_route…`: phát hành cả ngày 1 lần; mẻ TOI đóng gói chưa lưu mẫu → `allowedActions` có `recordSampleRetained`; chuyến TOI (đơn TOI) chỉ liệt kê mẻ TOI, xuất phát bị chặn chỉ vì mẻ TOI chưa lưu mẫu (không nhắc mẻ TRUA); lưu mẫu → xuất phát được trong khi 4 mẻ TRUA còn Kế hoạch.
+  - Sửa test T17: lịch tính tay 84 / 83 / 83 (+ 300 → 100×3, 201 → 67×3, 57,5 / 50 → 29 / 28,5); phát hành P1 mẻ 84 / 83 / 80 / 83, Phiếu sản xuất SL cần 11,088; xuất NL mẻ 84 phần = L1 10 + L2 1,088, mẻ 83 cuối cần 10,956 > 7,956 còn → chặn; seed thêm thực đơn cho đơn (phát hành chia theo ca cần dòng đơn × thực đơn). SQL Server test: seed thêm đơn Locked + thực đơn, kiểm `listShift` + đơn → InProduction (đã chạy, không skip).
+- `git status`: không thay đổi trong `app-delicare-client/`, `docs/reference/`.
+
+PROPOSED (chờ anh xác nhận – DECISIONS "Anh chốt 2026-11-16 (T17)" mục PROPOSED):
+1. Số phần món theo ca = dòng kế hoạch chia theo tỉ lệ suất của món trong từng ca (tính như MRP); món không có trong đơn → ca mặc định.
+2. Kế hoạch giữ Đã duyệt tới khi mọi ca có nhu cầu đã phát hành; "ca đã phát hành" suy ra từ lệnh SX (không cột trạng thái theo ca).
+3. Giờ xuất bếp nhập tay chỉ khi phát hành 1 ca.
+4. Đơn có dòng ở ≥ 2 ca không dùng khung giờ điểm giao (1 điểm giao chỉ có 1 khung giờ) → giờ bắt đầu ca − 60′.
+5. Chuyến có đơn chưa gán ca → kiểm mẻ của ca mặc định.
+6. Mã ca bỏ ký tự đặc biệt trong mã mẻ (`SANG_6H` → `SANG6H`, `DEM_23H` → `DEM23H`).
+
 ### T19 – Giao + đối soát + phản ánh (Pilot P8) · 2026-11-16 · DONE(PILOT)
 Nhánh `feat/T19-delivery` (worktree `wt-T17`, trên T17). Chỉ backend (D-40).
 

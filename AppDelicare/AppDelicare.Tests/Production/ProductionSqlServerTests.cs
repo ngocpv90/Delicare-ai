@@ -52,6 +52,13 @@ namespace AppDelicare.Tests.Production
                 });
                 db.ProductionPlan.Add(new ProductionPlan { Id = plan, PlanNumber = tag, PlanNo = tag, ProductionDate = day, PlanDate = clock.Today, Status = "Draft", Note = "[DEMO]" });
                 db.ProductionPlanLine.Add(new ProductionPlanLine { Id = Guid.NewGuid(), ProductionPlanId = plan, DishId = dish, PlannedQuantity = 50, PlannedQty = 50, Status = "Draft" });
+                // T17.1: phát hành chia kế hoạch theo ca của đơn Đã chốt (dòng đơn × thực đơn) → đơn 50 suất ca test.
+                Guid menu = Guid.NewGuid(), customer = Guid.NewGuid(), order = Guid.NewGuid();
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = tag, Name = "[DEMO] Thực đơn T17", VersionNo = 1, Status = "Published", EffectiveFrom = clock.Today });
+                db.MenuLine.Add(new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = dish, MealType = "TRUA", DayOfWeek = day.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)day.DayOfWeek, SequenceNo = 1 });
+                db.Customer.Add(new Customer { Id = customer, Code = tag, Name = "[DEMO] Khách T17", CIF = tag, CustomerType = "FACTORY", DisplayName = "[DEMO] Khách T17", Status = "Active" });
+                db.Order.Add(new Order { Id = order, OrderNumber = tag, OrderNo = tag, CustomerId = customer, OrderDate = clock.Today, MealDate = day, DeliveryDate = day, Status = "Locked", TotalQuantity = 50, Note = "[DEMO]" });
+                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = order, MenuId = menu, MealType = "TRUA", ShiftId = shift, Quantity = 50 });
                 db.MaterialLot.AddRange(
                     new MaterialLot { Id = goodLot, IngredientId = ingredient, LotNumber = tag + "-A", LotNo = tag + "-A", ExpiryDate = day.AddDays(3), ReceivedDate = clock.Today, QcStatus = "DAT", QualityStatus = "DAT", Status = "Available" },
                     new MaterialLot { Id = expiredLot, IngredientId = ingredient, LotNumber = tag + "-X", LotNo = tag + "-X", ExpiryDate = clock.Today.AddDays(-1), ReceivedDate = clock.Today.AddDays(-9), QcStatus = "DAT", QualityStatus = "DAT", Status = "Available" });
@@ -80,6 +87,9 @@ namespace AppDelicare.Tests.Production
                 batchBrief.BatchNumber.Should().MatchRegex($@"^ME-{day:yyMMdd}-{shiftCode}-\d{{2}}$");
                 batchBrief.PlannedStart.Should().Be(day.AddHours(9), "xuất bếp 10:30 − 30′ đóng gói − 60′ mẻ");
                 released.Data.ListOrder.Single().ProductionOrderNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                released.Data.ProductionPlan.Status.Should().Be("Released");
+                released.Data.ListShift.Should().ContainSingle(x => x.ShiftId == shift && x.Released && x.Portions == 50);
+                (await db.Order.AsNoTracking().SingleAsync(o => o.Id == order)).Status.Should().Be("InProduction");
 
                 // Cần 5 kg (10 kg / 100 suất × 50 phần): lô hết hạn 30 kg bị bỏ, lấy 5 / 8 kg của lô còn hạn.
                 var issue = await batchService.CreateMaterialIssue(new ProductionBatchIssueRequest { Id = batchBrief.Id, WarehouseId = warehouse, Post = true, Note = "[DEMO]" });

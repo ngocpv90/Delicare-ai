@@ -66,7 +66,10 @@ namespace AppDelicare.Model.Option
         public int SupplierIssueDueDays { get; set; } = 2;
         /// <summary>T15.1 (anh chốt 2026-11-16, phương án A – không lưu DB, GAP-PUR-09): % VAT in trên Đơn đặt hàng NCC và trả trong PurchaseOrder/GetDetail.</summary>
         public PurchaseVatOptions PurchaseVat { get; set; } = new();
-        /// <summary>T17: ca sản xuất mặc định khi phát hành kế hoạch không chọn ca (Shift.Code) – Pilot chỉ ca trưa (D-35), PROPOSED – BA/PO CONFIRM (GAP-PRD-01).</summary>
+        /// <summary>
+        /// T17.1 (anh chốt 2026-11-16 – Pilot 4 ca / ngày, phát hành tách theo ca của đơn): chỉ còn là ca (Shift.Code) cho dòng đơn chưa gán ca
+        /// và món không có trong đơn khi chia kế hoạch theo ca (GAP-PRD-01).
+        /// </summary>
         public string ProductionDefaultShiftCode { get; set; } = "TRUA";
         /// <summary>T17: số phút chia suất / đóng gói trước giờ xuất bếp – mẻ cuối của mỗi món phải nấu xong trước (giờ xuất bếp − số phút này). PROPOSED (GAP-PRD-07).</summary>
         public int ProductionPackingMinutes { get; set; } = 30;

@@ -13,8 +13,9 @@ namespace AppDelicare.Model.Request.Custom
 
     /// <summary>
     /// T17 (spec 8.1 release, Pilot P7): phát hành kế hoạch Đã duyệt → lệnh SX (PH-) theo món + mẻ (ME-yyMMdd-&lt;CA&gt;-NN), lập lịch ngược từ giờ xuất bếp.
-    /// Bỏ trống ShiftId = ca mặc định (BusinessRules:ProductionDefaultShiftCode); ProductionLineId = dây chuyền chia mẻ (năng lực / phút mỗi mẻ);
-    /// DispatchTime ("HH:mm") = giờ xuất bếp nhập tay (bỏ trống = giờ giao sớm nhất của điểm giao − TransportMinutesBeforeCutoff).
+    /// T17.1: kế hoạch ngày chia theo ca của đơn Đã chốt – ShiftId = chỉ phát hành ca đó, bỏ trống = mọi ca chưa phát hành;
+    /// ProductionLineId = dây chuyền chia mẻ (năng lực / phút mỗi mẻ);
+    /// DispatchTime ("HH:mm") = giờ xuất bếp nhập tay, chỉ khi phát hành 1 ca (bỏ trống = giờ giao sớm nhất của điểm giao thuộc ca − TransportMinutesBeforeCutoff).
     /// </summary>
     public class ProductionPlanReleaseRequest
     {

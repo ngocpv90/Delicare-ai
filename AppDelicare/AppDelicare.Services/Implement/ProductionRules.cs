@@ -37,7 +37,8 @@ namespace AppDelicare.Services.Implement
         public static decimal Ceil4(decimal value) => Math.Ceiling(value * 10000m) / 10000m;
 
         /// <summary>
-        /// Lịch ngược của 1 món (PROPOSED – BA/PO CONFIRM, GAP-PRD-07): số mẻ = ceil(phần ÷ năng lực mẻ) (năng lực trống = 1 mẻ), mẻ đầy trước, mẻ cuối phần còn lại;
+        /// Lịch ngược của 1 món (GAP-PRD-07 – anh chốt 2026-11-16): số mẻ N = ceil(phần ÷ năng lực mẻ) (năng lực trống = 1 mẻ), chia đều – số phần nguyên chia
+        /// đều cho N mẻ, các mẻ đầu nhận phần dư (250 / 100 → 84, 83, 83), phần lẻ thập phân (nếu có) cộng vào mẻ cuối;
         /// các mẻ của món chạy nối tiếp, mẻ cuối kết thúc đúng <paramref name="cookEnd"/>; các món khác nhau chạy song song.
         /// </summary>
         public static List<ScheduledBatch> Schedule(decimal quantity, decimal? capacityPerBatch, int minutesPerBatch, DateTime cookEnd)
@@ -49,13 +50,117 @@ namespace AppDelicare.Services.Implement
             }
             decimal capacity = capacityPerBatch is > 0 ? capacityPerBatch.Value : quantity;
             int count = (int)Math.Ceiling(quantity / capacity);
+            decimal whole = Math.Floor(quantity);
+            decimal fraction = quantity - whole;
+            decimal size = Math.Floor(whole / count);
+            int extra = (int)(whole - size * count);
             for (int k = 1; k <= count; k++)
             {
-                decimal qty = Math.Min(capacity, quantity - capacity * (k - 1));
+                decimal qty = size + (k <= extra ? 1 : 0) + (k == count ? fraction : 0);
                 DateTime end = cookEnd.AddMinutes(-(double)(minutesPerBatch * (count - k)));
                 result.Add(new ScheduledBatch(k, Round4(qty), end.AddMinutes(-minutesPerBatch), end));
             }
             return result;
+        }
+
+        /// <summary>Phần của 1 ca trong kế hoạch ngày: ca + số phần từng dòng món (dòng kế hoạch) của ca.</summary>
+        public sealed class ShiftPart
+        {
+            public Shift Shift { get; set; } = null!;
+            public List<(ProductionPlanLine Line, decimal Quantity)> Lines { get; set; } = [];
+            public decimal Portions => Lines.Sum(l => l.Quantity);
+        }
+
+        /// <summary>
+        /// T17.1 (anh chốt 2026-11-16 – Pilot chạy 4 ca / ngày, kế hoạch MRP vẫn 1 KH- / ngày): chia số phần của từng dòng món theo ca.
+        /// Tỉ lệ = suất của món theo ca, tính như MRP (T14 / T14.1) trên đơn Đã chốt / Đang SX của ngày: dòng đơn × thực đơn (MenuLine cùng loại suất, thứ của ngày),
+        /// chia đều lựa chọn + dự phòng <c>MrpOptionBufferPct</c>; ca = <c>OrderLine.ShiftId</c>, dòng chưa gán ca → ca mặc định <c>ProductionDefaultShiftCode</c>.
+        /// Số phần dòng kế hoạch (đã duyệt) chia theo tỉ lệ đó (làm tròn 4 số lẻ, ca cuối nhận phần còn lại) – tổng luôn bằng dòng kế hoạch.
+        /// Món không có nhu cầu trong đơn (dòng thêm tay) → ca mặc định (PROPOSED – BA/PO CONFIRM). Ca sắp theo giờ bắt đầu rồi mã.
+        /// </summary>
+        public static async Task<(List<ShiftPart> Parts, Shift? Fallback, List<string> Warnings, string? Error)> SplitByShiftAsync(
+            DatabaseContext db, DateTime date, List<ProductionPlanLine> planLines, BusinessRulesOptions rules)
+        {
+            var warnings = new List<string>();
+            var fallback = await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => s.Code == rules.ProductionDefaultShiftCode && !s.IsDeleted);
+            DateTime next = date.Date.AddDays(1);
+            var orderIds = await db.Order.AsNoTracking()
+                .Where(o => !o.IsDeleted && o.MealDate >= date.Date && o.MealDate < next && (o.Status == OrderStatus.Locked || o.Status == OrderStatus.InProduction))
+                .Select(o => o.Id).ToListAsync();
+            var orderLines = await db.OrderLine.AsNoTracking().Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0 && l.MenuId != null).ToListAsync();
+            var menuIds = orderLines.Select(l => l.MenuId!.Value).Distinct().ToList();
+            int dayOfWeek = MenuService.MenuDayOf(date.Date);
+            var menuLines = await db.MenuLine.AsNoTracking().Where(m => menuIds.Contains(m.MenuId) && !m.IsDeleted && m.DayOfWeek == dayOfWeek).ToListAsync();
+            decimal bufferRate = Math.Max(0m, rules.MrpOptionBufferPct) / 100m;
+            // weights[món][ca] = suất của món trong ca (cùng công thức MRP).
+            var weights = new Dictionary<Guid, Dictionary<Guid, decimal>>();
+            int unassigned = 0;
+            foreach (var line in orderLines)
+            {
+                Guid? shiftId = line.ShiftId ?? fallback?.Id;
+                var options = menuLines.Where(m => m.MenuId == line.MenuId && string.Equals((m.MealType ?? string.Empty).Trim(), (line.MealType ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
+                if (shiftId == null || options.Count == 0)
+                {
+                    continue;
+                }
+                if (line.ShiftId == null)
+                {
+                    unassigned++;
+                }
+                decimal perOption = line.Quantity / options.Count;
+                bool buffered = options.Count >= 2 && bufferRate > 0;
+                foreach (var dish in options.SelectMany(o => o).GroupBy(m => m.DishId))
+                {
+                    decimal even = perOption * dish.Count();
+                    decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
+                    if (!weights.TryGetValue(dish.Key, out var byShift))
+                    {
+                        byShift = [];
+                        weights[dish.Key] = byShift;
+                    }
+                    byShift[shiftId.Value] = byShift.GetValueOrDefault(shiftId.Value) + qty;
+                }
+            }
+            if (unassigned > 0 && fallback != null)
+            {
+                warnings.Add(string.Format(ConstantHelper.Message.ReleaseLinesWithoutShift, unassigned, fallback.Code));
+            }
+
+            var split = new Dictionary<Guid, List<(ProductionPlanLine Line, decimal Quantity)>>();
+            foreach (var planLine in planLines.Where(l => l.PlannedQuantity > 0))
+            {
+                var byShift = weights.GetValueOrDefault(planLine.DishId)?.Where(x => x.Value > 0).OrderBy(x => x.Key).ToList() ?? [];
+                if (byShift.Count == 0)
+                {
+                    if (fallback == null)
+                    {
+                        return ([], null, warnings, ConstantHelper.Message.ShiftNotFound);
+                    }
+                    byShift = [new(fallback.Id, 1m)];
+                }
+                decimal total = byShift.Sum(x => x.Value), given = 0m;
+                for (int i = 0; i < byShift.Count; i++)
+                {
+                    decimal qty = i == byShift.Count - 1 ? planLine.PlannedQuantity - given : Round4(planLine.PlannedQuantity * byShift[i].Value / total);
+                    given += qty;
+                    if (qty <= 0)
+                    {
+                        continue;
+                    }
+                    if (!split.TryGetValue(byShift[i].Key, out var list))
+                    {
+                        list = [];
+                        split[byShift[i].Key] = list;
+                    }
+                    list.Add((planLine, qty));
+                }
+            }
+            var shiftIds = split.Keys.ToList();
+            var shifts = await db.Shift.AsNoTracking().Where(s => shiftIds.Contains(s.Id)).ToListAsync();
+            var parts = shifts.OrderBy(s => s.StartTime ?? TimeSpan.MaxValue).ThenBy(s => s.Code)
+                .Select(s => new ShiftPart { Shift = s, Lines = split[s.Id] }).ToList();
+            return (parts, fallback, warnings, null);
         }
 
         /// <summary>
@@ -107,9 +212,10 @@ namespace AppDelicare.Services.Implement
         /// <summary>
         /// Giờ xuất bếp của (ngày, ca) – BUSINESS_RULES §6: giờ chốt giao của điểm giao − <c>TransportMinutesBeforeCutoff</c> (60′).
         /// Giờ chốt giao = giờ giao sớm nhất (<c>CustomerDeliveryLocation.DeliveryWindowFrom</c>) của các đơn Đã chốt / Đang SX trong ngày có dòng thuộc ca
-        /// (dòng chưa gán ca tính cho mọi ca); không có thì giờ bắt đầu ca (<c>Shift.StartTime</c>) – PROPOSED (GAP-PRD-07). Nhập tay <paramref name="dispatchTime"/> → dùng luôn.
+        /// (dòng chưa gán ca thuộc ca mặc định <paramref name="fallbackShiftId"/>); không có thì giờ bắt đầu ca (<c>Shift.StartTime</c>) − 60′ – anh chốt 2026-11-16 (GAP-PRD-07).
+        /// Nhập tay <paramref name="dispatchTime"/> → dùng luôn.
         /// </summary>
-        public static async Task<(DateTime? DispatchAt, string Source)> ResolveDispatchAsync(DatabaseContext db, DateTime date, Shift shift, TimeSpan? dispatchTime, BusinessRulesOptions rules)
+        public static async Task<(DateTime? DispatchAt, string Source)> ResolveDispatchAsync(DatabaseContext db, DateTime date, Shift shift, TimeSpan? dispatchTime, BusinessRulesOptions rules, Guid? fallbackShiftId = null)
         {
             if (dispatchTime != null)
             {
@@ -120,9 +226,14 @@ namespace AppDelicare.Services.Implement
                 .Where(o => !o.IsDeleted && o.MealDate >= date.Date && o.MealDate < next && (o.Status == OrderStatus.Locked || o.Status == OrderStatus.InProduction))
                 .Select(o => new { o.Id, o.DeliveryLocationId }).ToListAsync();
             var orderIds = orders.Select(o => o.Id).ToList();
+            // T17.1: dòng chưa gán ca thuộc ca mặc định (không còn tính cho mọi ca). Đơn có dòng ở nhiều ca: điểm giao chỉ có 1 khung giờ
+            // → khung giờ đó không dùng cho ca nào (về giờ bắt đầu ca) – PROPOSED – BA/PO CONFIRM (GAP-PRD-01).
             var inShift = (await db.OrderLine.AsNoTracking()
-                    .Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0 && (l.ShiftId == null || l.ShiftId == shift.Id))
-                    .Select(l => l.OrderId).Distinct().ToListAsync()).ToHashSet();
+                    .Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0)
+                    .Select(l => new { l.OrderId, l.ShiftId }).ToListAsync())
+                .GroupBy(l => l.OrderId)
+                .Where(g => g.Select(l => l.ShiftId ?? fallbackShiftId).Distinct().Count() == 1 && (g.First().ShiftId ?? fallbackShiftId) == shift.Id)
+                .Select(g => g.Key).ToHashSet();
             var locationIds = orders.Where(o => inShift.Contains(o.Id) && o.DeliveryLocationId != null).Select(o => o.DeliveryLocationId!.Value).Distinct().ToList();
             var windows = await db.CustomerDeliveryLocation.AsNoTracking()
                 .Where(l => locationIds.Contains(l.Id) && l.DeliveryWindowFrom != null).Select(l => l.DeliveryWindowFrom!.Value).ToListAsync();
