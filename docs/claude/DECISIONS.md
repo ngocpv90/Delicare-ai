@@ -26,6 +26,8 @@
 | D-09 | Kiến trúc 4 lớp: nâng cấp dần solution hiện có (không viết lại); sổ chỉ ghi thêm; hạn chót do job lõi chạy, agent chỉ thông báo / xin xác nhận; ToolGateway là service riêng, mỗi agent một tài khoản dịch vụ. | 2026-11-14 – **giả định đã đồng ý khi anh yêu cầu giao việc cho Claude Code; anh sửa tại đây nếu khác** |
 | D-10 | Quy tắc nghiệp vụ theo bản demo Apps Script (BUSINESS_RULES.md) khi mâu thuẫn với mockup / BRD: nhiệt độ lõi 70°C, giao 60°C, ca TRUA / TOI / DEM_23H / SANG_6H, kết quả QC DAT / DAT_MOT_PHAN / KHONG_DAT, KPI 95 / 55 / 3%. | 2026-11-14 – giả định như D-09 |
 
+| D-33 | **Frontend = giao diện mockup đã duyệt (`docs/mockup/`) chạy trong Angular**, không viết lại từng màn hình. Engine mockup chép sang `app-delicare-client/src/assets/delicare/`; `store.js` đọc / ghi API cũ cho mọi bảng có controller (`GetAllData`, `GetAll` phân trang cho nhật ký, `Insert` / `Update` / `Delete`; `UserRole` qua `GetMatrix` + `Update ListPermission`), bảng chưa có API đọc (`DocumentFile`, 2 bảng `_Legacy_`) giữ dữ liệu DEMO; màn hình GAP giữ HTML tĩnh. Nhãn góc trên cho biết nguồn dữ liệu (API / API + DEMO / DEMO / tĩnh). Hướng dẫn → có nút chuyển sang dữ liệu DEMO để trình diễn. Trang đăng nhập theo nhận diện mockup. Route `/#/quan-tri/<screen-id>`; `MainModule` cũ (W3CRM) không còn gắn route (code giữ nguyên). **Thay phần "chỉ backend" của D-20.** | 2026-11-16 (anh giao) |
+
 ## B. Chờ anh chốt (Claude Code: task phụ thuộc thì để BLOCKED, làm task khác)
 | Mã | Câu hỏi | Đề xuất của em | Ảnh hưởng |
 |---|---|---|---|
@@ -59,6 +61,10 @@ Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ g
 
 ## E. Việc cho frontend (ghi lại, KHÔNG làm – chờ anh giao)
 <!-- Mẫu: | FE-NN | màn hình / file Angular | việc cần đổi | lý do (API mới / thay đổi) | -->
+| FE-01 | `src/assets/delicare/js/modules/*` | Thao tác nghiệp vụ (duyệt, chuyển trạng thái, ghi sổ kho…) hiện đi qua `Update` chung của bảng. Nối sang action nghiệp vụ đã có: `Recipe/Submit·Approve·Reject·Lock·CreateVersion`, `InventoryTransaction/Reverse`, `StandardCost/Recalculate`, `CoreDataMergeConflict/Resolve`, `UserRole/SaveAccessAll·CopyFromUserGroup`, `ObjectMenu/SaveIsActive·UpdateOrder`, `User/ResetPassword·SaveIsActive`. | Backend kiểm tra quy tắc ở action riêng; `Update` chung bỏ qua cột NotInRequest (ApprovedAt, LockedAt…). |
+| FE-02 | dữ liệu `ObjectMenu` | Tài khoản không phải admin chỉ thấy màn hình có `ObjectMenu.MetaLink = '#/<screen-id>'` được cấp quyền. Seed menu cũ đang là link Angular cũ (`dm-cong-ty`…) → cần seed lại theo screen-id của `catalog.js`. | Không seed thì nhóm thường chỉ thấy Dashboard. |
+| FE-03 | `store.js` | Bảng lớn (đơn, dòng đơn, giao dịch kho) đang tải toàn bộ qua `GetAllData`. Khi dữ liệu thật lớn → chuyển sang `GetAll` phân trang / lọc theo ngày. | Hiệu năng. |
+| FE-04 | `DocumentFile` | Chưa có API đọc danh sách (chỉ `Delete`) → màn hình tài liệu đang dùng DEMO. | Thiếu `GetAll` / `GetAllData`. |
 
 ## D. GAP mới phát sinh khi code (Claude Code ghi tiếp vào đây)
 <!-- Mẫu: | GAP-XXX-NN | mô tả | cách tạm | PROPOSED – BA/PO CONFIRM | task |  -->

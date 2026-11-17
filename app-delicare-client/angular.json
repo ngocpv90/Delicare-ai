@@ -38,9 +38,17 @@
             "styles": [
               "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.css",
-              "src/assets/css/custom.css",
+              {
+                "input": "src/assets/css/custom.css",
+                "bundleName": "w3crm",
+                "inject": false
+              },
               "node_modules/ngx-toastr/toastr.css",
-              "src/assets/css/clinic.css"
+              {
+                "input": "src/assets/css/clinic.css",
+                "bundleName": "w3crm",
+                "inject": false
+              }
             ],
             "scripts": []
           },
@@ -58,7 +66,15 @@
                   "maximumError": "4mb"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
             },
             "development": {
               "optimization": false,

@@ -25,7 +25,7 @@ export class AuthGuard {
     | boolean
     | UrlTree {
     const user = this.authenticationService.userValue;
-    if (user) {
+    if (user?.token) {
       return true;
     }
     this.router.navigate(['/dang-nhap'], {

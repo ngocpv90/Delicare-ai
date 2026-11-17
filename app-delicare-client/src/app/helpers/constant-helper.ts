@@ -1,6 +1,6 @@
 // Same-origin API: nginx (Docker) or proxy.conf.json (ng serve) forwards /api to the .NET backend
 export const URL_API = '/api/';
-export const PROJECT_NAME = 'Quản lý phòng khám đa khoa Trung Cang';
+export const PROJECT_NAME = 'DELI-CARE · Hệ thống điều hành suất ăn công nghiệp';
 export const PROJECT_SHORT_NAME = 'DELI-CARE';
 export const DOMAIN_ROUTER = 'quan-tri';
 export const LOGO_HEADER_NAME = 'assets/img/logo/logo2.png';

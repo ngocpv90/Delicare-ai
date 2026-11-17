@@ -1,0 +1,45 @@
+<!-- Khung chép từ docs/mockup/index.html. Nội dung #navGroups / #content do engine (assets/delicare/js) vẽ. -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar" aria-label="Menu chính">
+    <div class="brand">
+      <div class="brand-mark">🥕</div>
+      <div class="brand-copy"><div class="brand-name">DELI-CARE</div><div class="brand-sub">ENTERPRISE MANAGEMENT</div></div>
+    </div>
+    <button class="side-context" id="sideContext" title="Chọn đơn vị làm việc">
+      <span class="context-icon"><svg class="i" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/></svg></span>
+      <span class="context-copy"><b id="sideBranch">Tất cả đơn vị</b><small>OrganizationUnit · BRANCH</small></span><span>⌄</span>
+    </button>
+    <nav class="side-scroll" id="navGroups"></nav>
+    <div class="side-bottom">
+      <button class="nav-link" id="helpLink"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Hướng dẫn sử dụng</span></button>
+      <button class="profile nav-link" data-role-btn title="Tài khoản"><div class="avatar js-avatar">…</div><div class="profile-copy"><b id="userName"></b><small id="userRole"></small></div></button>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" id="backdrop"></div>
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn mobile-menu" id="mobileMenu" aria-label="Mở menu"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <button class="icon-btn desktop-collapse" id="collapseBtn" aria-label="Thu gọn menu"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button>
+      <label class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="globalSearch" placeholder="Tìm chức năng, bảng DB, khách hàng, đơn hàng, nguyên liệu, lô…" autocomplete="off"><div class="search-results" id="searchResults"></div></label>
+      <div class="top-spacer"></div>
+      <span class="demo-ribbon" id="dataRibbon" title="Nguồn dữ liệu của màn hình đang xem">ĐANG TẢI…</span>
+      <button class="branch-select" id="branchSelect"><span class="branch-dot"></span><span class="branch-text"><small>ĐƠN VỊ LÀM VIỆC</small><b id="topBranch">Tất cả đơn vị</b></span><span>⌄</span></button>
+      <button class="icon-btn" id="notificationBtn" title="Cảnh báo & công việc"><svg class="i" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><i class="notify-dot" id="notifyCount">0</i></button>
+      <button class="icon-btn" id="helpBtn" title="Hướng dẫn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.7c-1.1 1-1.9 1.4-1.9 3M12 17.5h.01"/></svg></button>
+      <button class="user btn ghost" data-role-btn title="Tài khoản"><div class="avatar js-avatar">…</div><div class="user-copy"><b>Tài khoản</b><small>bấm để xem</small></div></button>
+    </header>
+    <!-- Angular chỉ quản lý khối trạng thái nạp này; #content để engine vẽ (không đặt nút Angular bên trong). -->
+    @if (loading || loadError) {
+      <div class="content">
+        @if (loading) {
+          <div class="card panel empty"><h2>Đang tải giao diện DELI-CARE…</h2><p class="muted">Nạp danh mục chức năng, cấu trúc dữ liệu và kết nối API.</p></div>
+        }
+        @if (loadError) {
+          <div class="notice gap"><div><b>Không khởi động được giao diện</b>{{ loadError }}</div></div>
+        }
+      </div>
+    }
+    <section class="content" id="content"></section>
+  </main>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>

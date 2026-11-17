@@ -3,7 +3,7 @@
 Bạn là kỹ sư chính của dự án **DELICARE**: hệ thống điều hành nhà máy suất ăn công nghiệp, quy mô mục tiêu **20.000 suất/ngày**. Chủ dự án là **anh Phạm (PO)**. Hãy xưng "em", gọi chủ dự án là "anh". Giao tiếp và tài liệu viết bằng tiếng Việt. Mã nguồn đặt tên bằng tiếng Anh. Chữ hiển thị trên giao diện viết tiếng Việt.
 
 **PHẠM VI HIỆN TẠI = CHỈ BACKEND (.NET 8 + SQL Server).**
-- **KHÔNG đọc / rà soát, tạo, sửa, xóa, build hay `npm install` bất kỳ thứ gì trong `app-delicare-client/`** (Angular). App Angular hiện tại chưa có đủ màn hình như mockup; **sau khi xong backend anh sẽ giao làm frontend riêng** (D-20).
+- **Frontend (D-33, anh giao 2026-11-16):** `app-delicare-client/` chạy giao diện mockup đã duyệt. Engine mockup nằm ở `src/assets/delicare/` (chép từ `docs/mockup/`, đã nối API), vỏ Angular ở `src/app/delicare/`. Bảng có API cũ thì đọc / ghi API thật, chưa có thì dữ liệu DEMO. Sửa giao diện = sửa `src/assets/delicare/`, KHÔNG sửa `docs/mockup/` (bản tham chiếu gốc). Build: Node ≥ 18.19 (nvm có v20.19.4).
 - **⚠ KHUNG CHUẨN = CODE CŨ (D-30, anh chốt 2026-11-15).** Mọi API viết theo đúng mẫu và quy ước của code cũ trong solution (`api/[controller]/<Action>`, Controller → Service → UnitOfWork / Dapper SP, `Result<T>` / `Results<T>`, `[FromForm]`, try/catch + Serilog). **KHÔNG sinh thêm API `/api/v1`**, không envelope mới, không CRUD generic, không Command / Handler. Code cũ **đã có** người dùng, nhóm quyền (vai trò), ma trận quyền, menu, đăng nhập → **rà soát và bổ sung trên cái đã có**, không viết lại song song. Chi tiết: mục 4.
 - `docs/reference/DELICARE_API_Specification.md` + Catalog chỉ còn là **danh sách yêu cầu nghiệp vụ** (màn hình cần chức năng gì, dữ liệu gì, quy tắc gì). **Không** dùng URL, envelope, mã lỗi, ETag / Idempotency-Key… ở mục 1.2 của spec.
 - **Mục tiêu Release 1:** hoàn thiện lõi .NET đủ API (theo khung cũ) cho mọi màn hình trong mockup (`docs/mockup/`), đủ nghiệp vụ mô tả trong spec, có Swagger + test, triển khai được backend. Đây sẽ là hệ thống vận hành thật đầu tiên (bản Apps Script / Sheets chỉ là demo). Agent, Tool Gateway, Telegram / Zalo, Obsidian để Release 2.
@@ -58,7 +58,7 @@ Delicare-ai/
 │   ├─ AppDelicare.Application (AppDelicare.Application)        ⛔ lớp v1 làm thử (CRUD generic, Command / Handler) – KHÔNG mở rộng; T45R chuyển nghiệp vụ về Services rồi đưa vào `_obsolete/`
 │   ├─ AppDelicare.Tests     (AppDelicare.Tests)              xUnit
 │   └─ AppDelicare.Generator (T4 + OrmLite)                        bộ sinh mã T4 cũ – CHỈ THAM KHẢO, chỉ chạy được trong Visual Studio (đổi tên ở T45R.6)
-├─ app-delicare-client/          ← Angular 18 – ⛔ NGOÀI PHẠM VI: không đọc, không sửa, không build (làm sau khi xong backend)
+├─ app-delicare-client/          ← Angular 18 – giao diện theo mockup (D-33): src/app/delicare (vỏ) + src/assets/delicare (engine mockup nối API)
 ├─ backup-db/                    ← bản backup DB thật (AppDelicare_20261110.bak/.mdf/.ldf) – ĐÃ gitignore, KHÔNG commit, KHÔNG sửa
 └─ DB/                           ← (tạo mới) script SQL: DB/sp (stored procedure), DB/seed – được commit
 ```
@@ -181,11 +181,11 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 
 **Mật khẩu:** đang dùng `EncriptFunctionsHelper.GeneratePassword` (MD5). Đổi cách băm là D-29 (anh chốt); nếu làm thì sửa trong chính `EncriptFunctionsHelper` / `LoginService` / `UserService`, tương thích hash cũ, không đổi API.
 
-**Frontend (Angular 18): NGOÀI PHẠM VI hiện tại** – không đọc, không sửa `app-delicare-client/`.
+**Frontend (Angular 18) – D-33:** route `/#/quan-tri/<screen-id>` → `DelicareShellComponent` nạp engine `src/assets/delicare/js` (thứ tự như `docs/mockup/index.html`). `store.js` ánh xạ bảng → controller (`GetAllData` / `GetAll` / `Insert` / `Update` / `Delete`, `UserRole` qua `GetMatrix` + `Update`). Quyền menu = `listMenu` của tài khoản (MetaLink `#/<screen-id>`), `IsAdmin` thấy hết. Thêm API nghiệp vụ mới (duyệt, khóa…) → nối vào đúng màn hình trong `src/assets/delicare/js/modules/`.
 
 **Kiểm tra trước khi báo xong:**
 - `dotnet build AppDelicare/AppDelicare.sln` không lỗi; `dotnet test` xanh.
-- `git status` không có thay đổi nào trong `app-delicare-client/`.
+- Nếu có sửa `app-delicare-client/`: `npx ng build` không lỗi (Node 20).
 - Phân quyền: không bảng / cột / cấu hình quyền mới; không API quản trị user / quyền ngoài controller cũ (mục 4.3).
 - Không có file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; `grep -rn "api/v1" AppDelicare --include=*.cs` không tăng (sau T45R phải bằng 0).
 - Controller / Service mới hoặc sửa đúng mẫu 4.2 (so với `WarehouseController` / `WarehouseService`).
@@ -238,6 +238,6 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 - Cần chạy gì lên DB không phải dev.
 - Cần bí mật hoặc token thật.
 - Hai tài liệu nguồn mâu thuẫn mà DECISIONS chưa phân xử.
-- Việc cần sửa frontend → **không làm**, ghi vào DECISIONS mục "Việc cho frontend" để anh giao sau.
+- Việc frontend lớn ngoài phạm vi task đang làm → ghi vào DECISIONS mục "Việc cho frontend".
 
 Những việc khác em tự quyết theo tài liệu và ghi lại lý do trong PROGRESS.

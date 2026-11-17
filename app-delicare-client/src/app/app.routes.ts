@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 import { AdminLayoutComponent } from './elements/admin-layout/admin-layout.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { EmployeesComponent } from './pages/employees/employees.component';
@@ -165,9 +165,13 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./sign-in/sign-in.module').then((m) => m.SignInModule),
   },
+  // Giao diện DELICARE theo mockup (docs/mockup): một route duy nhất cho /quan-tri và mọi /quan-tri/<screen-id>,
+  // để component không bị tạo lại khi đổi màn hình – engine tự định tuyến theo hash.
   {
-    path: DOMAIN_ROUTER,
-    loadChildren: () => import('./main/main.module').then((m) => m.MainModule),
+    matcher: (segments: UrlSegment[]): UrlMatchResult | null =>
+      segments.length && segments[0].path === DOMAIN_ROUTER ? { consumed: segments } : null,
+    loadComponent: () =>
+      import('./delicare/delicare-shell.component').then((m) => m.DelicareShellComponent),
     canActivate: [AuthGuard],
   },
   {

@@ -20,13 +20,13 @@ export class JwtInterceptor implements HttpInterceptor {
 
   private handleAuthError(err: HttpErrorResponse): Observable<any> {
     //handle your auth error or rethrow
-    if (err.status === 401 || err.status === 403) {
-      //navigate /delete cookies or whatever
+    // 401 = hết phiên → về trang đăng nhập. 403 = thiếu quyền trên một màn hình: KHÔNG đăng xuất,
+    // trả lỗi cho nơi gọi tự báo (giao diện DELICARE đọc nhiều bảng cùng lúc, thiếu quyền một bảng là chuyện bình thường).
+    if (err.status === 401) {
       this.router.navigate(['/dang-nhap']);
-      // if you've caught / handled the error, you don't want to rethrow it unless you also want downstream consumers to have to handle it as well.
-      return of(err.message); // or EMPTY may be appropriate here
+      return of(err.message);
     }
-    return throwError(err);
+    return throwError(() => err);
   }
 
   intercept(
