@@ -69,3 +69,7 @@ Remove-Item Env:DELICARE_SQL_PASSWORD
 ## 4. Khi thêm SP / seed mới (dev backend)
 
 Thêm 1 dòng vào **cuối nhóm tương ứng** trong `deploy/db/scripts.order` và vào bảng trong `DB/README.md`. SP quên ghi vẫn được chạy (sau cùng) kèm **cảnh báo**; seed quên ghi **không chạy**.
+
+## 5. Production / tài khoản SQL ứng dụng (T48.4, D-60)
+- Production: `docker-compose.production.yml` (nginx + api + job, SQL Server riêng) – cách làm ở `deploy/README.md` mục 10.
+- Staging / server dev FE: thêm vào `staging.env` `APP_DB_USER=delicare_app` + `APP_DB_PASSWORD=…` rồi `run --rm db-init` → api / job dùng tài khoản này (không còn dùng sa). Bỏ trống = giữ như cũ (sa).

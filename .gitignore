@@ -31,6 +31,9 @@ backup-db/
 *.local.env.ps1
 *.local.env
 deploy/docker/staging.env
+# T48.4 (D-60): bí mật production + chứng chỉ HTTPS trên server
+deploy/docker/production.env
+deploy/docker/certs/
 
 # Log ứng dụng (ngoài wwwroot – T21.1)
 AppDelicare/AppDelicare.WebApi/Logs/

@@ -18,6 +18,15 @@ string environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
     ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
     ?? "Production";
 string? runOnce = ArgValue(args, "--run");
+// T48.4 (D-60): Docker HEALTHCHECK – không dựng host, chỉ đọc file nhịp (JobHost__HeartbeatFile / JobHost__HeartbeatMaxAgeSeconds).
+if (args.Contains("--healthcheck", StringComparer.OrdinalIgnoreCase))
+{
+    string path = Environment.GetEnvironmentVariable("JobHost__HeartbeatFile") is { Length: > 0 } p ? p : JobHeartbeat.DefaultPath;
+    int maxAge = int.TryParse(Environment.GetEnvironmentVariable("JobHost__HeartbeatMaxAgeSeconds"), out int s) && s > 0 ? s : JobHeartbeat.DefaultMaxAgeSeconds;
+    bool fresh = JobHeartbeat.IsFresh(path, TimeSpan.FromSeconds(maxAge), DateTime.UtcNow);
+    Console.WriteLine(fresh ? "healthy" : "unhealthy: " + path);
+    return fresh ? 0 : 1;
+}
 bool listOnly = args.Contains("--list", StringComparer.OrdinalIgnoreCase);
 
 IHost host = Host.CreateDefaultBuilder(args)
@@ -38,7 +47,7 @@ IHost host = Host.CreateDefaultBuilder(args)
         }
         config.AddEnvironmentVariables();
     })
-    .UseSerilog((context, logger) => logger.ReadFrom.Configuration(context.Configuration))
+    .UseSerilog((context, logger) => SerilogSetup.Configure(logger, context.Configuration))
     .ConfigureServices((context, services) =>
     {
         if (string.IsNullOrWhiteSpace(context.Configuration.GetConnectionString(ConstantHelper.MainConnectionString)))

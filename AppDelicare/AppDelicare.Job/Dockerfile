@@ -27,4 +27,10 @@ WORKDIR /app
 COPY --from=build /app .
 RUN mkdir -p /app/Logs /app/App_Data/DocumentFiles && chown -R app:app /app/Logs /app/App_Data
 USER app
+# T48.4 (D-60): khỏe = vòng hẹn giờ ghi file nhịp trong 2 phút gần nhất (dotnet AppDelicare.Job.dll --healthcheck – không dựng host).
+# Log chỉ ra console (Docker giữ + xoay vòng – logging driver trong compose).
+ENV JobHost__HeartbeatFile=/tmp/delicare-job-heartbeat \
+    JobHost__HeartbeatMaxAgeSeconds=120 \
+    Logging__ConsoleOnly=true
+HEALTHCHECK --interval=60s --timeout=10s --start-period=60s --retries=3 CMD ["dotnet", "/app/AppDelicare.Job.dll", "--healthcheck"]
 ENTRYPOINT ["dotnet", "AppDelicare.Job.dll"]

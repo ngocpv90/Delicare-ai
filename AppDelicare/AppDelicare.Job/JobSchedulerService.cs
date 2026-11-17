@@ -16,12 +16,16 @@ namespace AppDelicare.Job
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             int pollSeconds = Math.Clamp(configuration.GetValue("JobHost:PollSeconds", 30), 5, 300);
-            Log.Information("[Job] AppDelicare.Job bắt đầu – kiểm job mỗi {Seconds} giây", pollSeconds);
+            // T48.4 (D-60): file nhịp cho Docker HEALTHCHECK (--healthcheck) + cảnh báo lệch giờ SQL Server.
+            string heartbeat = configuration[JobHeartbeat.FileKey] is { Length: > 0 } hb ? hb : JobHeartbeat.DefaultPath;
+            Log.Information("[Job] AppDelicare.Job bắt đầu – kiểm job mỗi {Seconds} giây, file nhịp {Heartbeat}", pollSeconds, heartbeat);
+            await WarnDatabaseClockAsync();
             await LogScheduleAsync();
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
+                    Beat(heartbeat);
                     List<string> due;
                     await using (var scope = services.CreateAsyncScope())
                     {
@@ -35,6 +39,7 @@ namespace AppDelicare.Job
                         }
                         await using var scope = services.CreateAsyncScope();
                         await scope.ServiceProvider.GetRequiredService<IJobRunService>().Run(code, JobTrigger.Schedule, stoppingToken);
+                        Beat(heartbeat);
                     }
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -56,6 +61,37 @@ namespace AppDelicare.Job
                 }
             }
             Log.Information("[Job] AppDelicare.Job dừng");
+        }
+
+        private static void Beat(string path)
+        {
+            try
+            {
+                JobHeartbeat.Write(path, DateTime.UtcNow);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[Job] không ghi được file nhịp {Path}", path);
+            }
+        }
+
+        private async Task WarnDatabaseClockAsync()
+        {
+            try
+            {
+                await using var scope = services.CreateAsyncScope();
+                var clock = scope.ServiceProvider.GetRequiredService<AppDelicare.Data.Share.IClock>();
+                string connection = configuration.GetConnectionString(AppDelicare.Model.Helper.ConstantHelper.MainConnectionString) ?? string.Empty;
+                TimeSpan drift = await AppDelicare.Services.Ioc.DatabaseClockCheck.GetDriftAsync(connection, clock);
+                if (drift.Duration() > AppDelicare.Services.Ioc.DatabaseClockCheck.MaxDrift)
+                {
+                    Log.Warning("[Job] {Message}", AppDelicare.Services.Ioc.DatabaseClockCheck.Describe(drift));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[Job] không kiểm được giờ SQL Server");
+            }
         }
 
         private async Task LogScheduleAsync()
