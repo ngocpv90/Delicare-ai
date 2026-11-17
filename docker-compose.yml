@@ -6,9 +6,11 @@
 #   Web  : http://<server>:4444           (đổi bằng WEB_PORT trong .env)
 #   API  : http://<server>:5125/swagger   (đổi bằng API_PORT trong .env; trong mạng Docker là api:8080)
 #
-# DB phải đủ 124 bảng + stored procedure + seed của bản đang chạy. Lần đầu và sau mỗi lần kéo code mới, cập nhật DB bằng:
-#   docker compose run --rm db-init
-# (tạo / cập nhật stored procedure, thêm seed còn thiếu; DB trống thì tạo 124 bảng; KHÔNG sửa bảng đã có.)
+# ĐỒNG BỘ DATABASE TỰ ĐỘNG: mỗi lần "up", dịch vụ db-sync chạy TRƯỚC api (deploy/db/migrate.sh), xong mới khởi động api:
+#   - DB trống → tạo đủ 124 bảng từ DDL chuẩn;
+#   - cập nhật stored procedure + thêm seed còn thiếu (chạy lại an toàn);
+#   - DB thiếu bảng / cột so với bản code → DỪNG và in danh sách; đặt DB_AUTO_MIGRATE=1 để tự nâng cấp bằng DB/migrations (backup trước).
+# Tắt đồng bộ: DB_AUTO_SYNC=0 trong .env. Chạy riêng:  docker compose run --rm db-sync
 # Bộ đầy đủ có SQL Server riêng trong Docker: deploy/docker/docker-compose.staging.yml; production (HTTPS): docker-compose.production.yml.
 services:
   api:
@@ -29,6 +31,9 @@ services:
     volumes:
       - api-import:/app/wwwroot/Import            # ảnh đại diện / tệp nhập Excel
       - api-docs:/app/App_Data/DocumentFiles      # tệp đính kèm (DocumentFile)
+    depends_on:
+      db-sync:
+        condition: service_completed_successfully
     ports:
       - "${API_PORT:-5125}:8080"
 
@@ -52,6 +57,9 @@ services:
       dockerfile: AppDelicare.Job/Dockerfile
     container_name: delicare-job
     restart: unless-stopped
+    depends_on:
+      db-sync:
+        condition: service_completed_successfully
     environment:
       DOTNET_ENVIRONMENT: ${APP_ENVIRONMENT:-Staging}
       TZ: Asia/Ho_Chi_Minh
@@ -61,11 +69,15 @@ services:
     volumes:
       - api-docs:/app/App_Data/DocumentFiles
 
-  # Cập nhật DB – chạy tay:  docker compose run --rm db-init   (dùng chung .env; tài khoản SQL cần quyền tạo stored procedure)
-  db-init:
-    profiles: ["tools"]
+  # Đồng bộ database trước khi api chạy (xem đầu file). Tài khoản SQL trong .env cần quyền tạo stored procedure
+  # (và quyền ALTER / BACKUP nếu bật DB_AUTO_MIGRATE).
+  db-sync:
     image: mcr.microsoft.com/mssql/server:2025-latest
     environment:
+      DB_AUTO_SYNC: ${DB_AUTO_SYNC:-1}
+      DB_AUTO_MIGRATE: ${DB_AUTO_MIGRATE:-0}
+      DB_BACKUP_BEFORE_MIGRATE: ${DB_BACKUP_BEFORE_MIGRATE:-1}
+      DB_ALLOW_SCHEMA_DRIFT: ${DB_ALLOW_SCHEMA_DRIFT:-0}
       DB_SERVER: ${DB_SERVER}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -77,7 +89,7 @@ services:
       - ./DB:/repo/DB:ro
       - ./deploy/db:/repo/deploy/db:ro
       - ./deploy/docker/db-init.sh:/db-init.sh:ro
-    entrypoint: ["/bin/bash", "/db-init.sh"]
+    entrypoint: ["/bin/bash", "/repo/deploy/db/migrate.sh"]
     restart: "no"
 
 volumes:
