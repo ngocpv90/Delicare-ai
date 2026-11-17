@@ -807,7 +807,11 @@ namespace AppDelicare.Services.Implement
                     var d = await db.DeliveryOrder.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
                     return Fail(string.Format(ConstantHelper.Message.StopNotOnRoute, d?.DeliveryNumber ?? id.ToString()));
                 }
-                var targets = wanted.Count == 0 ? deliveryOrders : deliveryOrders.Where(d => wanted.ContainsKey(d.Id)).ToList();
+                // Danh sách trống = các đơn giao chưa xếp (giữ số đã xếp của đơn giao đã xếp); có danh sách = xếp / xếp lại đúng các đơn giao đó.
+                var deliveryOrderIds = deliveryOrders.Select(d => d.Id).ToList();
+                var alreadyLoaded = await db.DeliveryLoading.AsNoTracking()
+                    .Where(l => !l.IsDeleted && deliveryOrderIds.Contains(l.DeliveryOrderId) && l.Status == DeliveryLoadingStatus.Loaded).Select(l => l.DeliveryOrderId).ToListAsync();
+                var targets = wanted.Count == 0 ? deliveryOrders.Where(d => !alreadyLoaded.Contains(d.Id)).ToList() : deliveryOrders.Where(d => wanted.ContainsKey(d.Id)).ToList();
                 if (targets.Count == 0)
                 {
                     return Fail(string.Format(ConstantHelper.Message.RouteLoadNothing, DeliveryRules.RouteNumber(route)));
