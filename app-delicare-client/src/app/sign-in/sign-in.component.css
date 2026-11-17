@@ -2,7 +2,8 @@
 .dc-login {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 1fr);
+  /* Form đăng nhập bên TRÁI (như bản cũ), phần giới thiệu bên phải. */
+  grid-template-columns: minmax(360px, 1fr) minmax(0, 1.1fr);
   background: var(--bg, #f6f8f3);
 }
 .dc-login-hero {
@@ -22,6 +23,7 @@
 .dc-login-copy li b { display: block; font-size: 26px; color: #fff; }
 .dc-login-copy li span { font-size: 12px; opacity: .85; }
 .dc-login-panel {
+  order: -1;
   display: flex;
   flex-direction: column;
   align-items: center;
