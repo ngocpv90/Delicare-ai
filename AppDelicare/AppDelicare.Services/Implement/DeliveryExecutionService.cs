@@ -192,13 +192,7 @@ namespace AppDelicare.Services.Implement
                     var execution = executions.Where(e => e.DeliveryOrderId == d.Id).OrderByDescending(e => e.CreatedDate).FirstOrDefault();
                     var location = (d.CustomerDeliveryLocationId ?? d.DeliveryLocationId) is { } lid ? locations.GetValueOrDefault(lid) : null;
                     var order = orders.GetValueOrDefault(d.OrderId);
-                    string status = execution?.Status ?? d.Status switch
-                    {
-                        DeliveryOrderStatus.InTransit => stop?.StopStatus == DeliveryStopStatus.Arrived ? DeliveryExecutionStatus.Arrived : DeliveryExecutionStatus.Dispatched,
-                        DeliveryOrderStatus.Delivered => DeliveryExecutionStatus.Delivered,
-                        DeliveryOrderStatus.Failed => DeliveryExecutionStatus.Failed,
-                        _ => DeliveryExecutionStatus.Ready,
-                    };
+                    string status = DeliveryRules.ExecutionStatus(d, stop, execution);
                     list.Add(new DeliveryExecutionItemModel
                     {
                         DeliveryOrderId = d.Id,

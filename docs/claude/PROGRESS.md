@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-17: BE3.5 DONE – dashboard điều hành + hành trình đơn hàng** (Catalog 231, 232) trên nhánh `feat/BE3.5-dashboard` (worktree `wt-BE35`, từ `release/pilot` @ af24e5c, chưa push): `Dashboard/GetExecutive`, `Dashboard/GetOrderJourney`; test **279 / 279**, `be3.5-dashboard.http` **13 / 13** trên DB dev, đối chiếu số dashboard với Order / ProductionBatch / DeliveryExecution GetBoard + chuông khớp 100 %. PROPOSED D-57 ad–ai. Handoff `docs/frontend-handoff/BE3.5.md`.
 - **2026-11-17: BE3.3 DONE – chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan** (Catalog 16, 17, 18) trên nhánh `feat/BE3.3-alerts-search` (worktree `wt-BE33`, từ `release/pilot` @ 5aeaf30, chưa push): `Common/GetAlerts`, `Common/GlobalSearch`, `Common/GetRelated`; test **274 / 274**; `be3.3-alerts-search.http` **31 / 31** trên DB dev. PROPOSED D-57 p–u. Handoff `docs/frontend-handoff/BE3.3.md`.
 - **2026-11-17: BE3.2 DONE – IoT nhiệt độ** (Catalog 166) trên nhánh `feat/BE3.2-iot` (từ `release/pilot` @ 2aeb84a, chưa push): `POST api/IotTemperature/Receive` (khóa API riêng, không JWT), test **268 / 268**, `be3.2-iot.http` 3 / 3 trên DB dev (khóa đặt lúc chạy, không commit). PROPOSED D-57 f, o. Tiếp theo: BE3.3 cảnh báo, tìm kiếm, tab Liên quan.
 - **2026-11-17: BE3.1 DONE – biểu đồ + sự kiện giao** (đợt BE-3, D-57) trên nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ 8e12696, chưa push): Catalog 100 / 157 / 163 / 192 / 193; test **264 / 264**; `be3.1-charts.http` **22 / 22** trên DB dev. PROPOSED D-57 (j)–(n). Tiếp theo: BE3.2 IoT nhiệt độ.
@@ -1838,3 +1839,21 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
 | 16 | Đã xong | `GET api/Common/GetRelated?resource=&id=` | BE3.3 |
 | 17 | Đã xong | `GET api/Common/GlobalSearch?q=` | BE3.3 |
 | 18 | Đã xong | `GET api/Common/GetAlerts?branchId=` | BE3.3 |
+
+### BE3.5 – Dashboard điều hành + hành trình đơn hàng (Catalog 231, 232) · 2026-11-17 · DONE
+Nhánh `feat/BE3.5-dashboard` (worktree `wt-BE35`, từ `release/pilot` @ `af24e5c`), chưa push.
+
+**Kế hoạch / rà soát code cũ:** đã có `DashboardController` (rỗng, ControllerScreens → `dash-exec`) + `DashboardService` / `IDashboardService` mẫu cũ (chưa dùng) → bổ sung vào đúng 2 file này, không tạo controller / service mới. Dùng lại: `CommonService.GetAlerts` (khối cảnh báo), quy tắc tồn / lô / phản ánh của chuông (tách thành `GetSharedCounts`), trạng thái thực hiện giao của `DeliveryExecution/GetBoard` (tách thành `DeliveryRules.ExecutionStatus`), công thức tiến độ của `ProductionBatch/GetBoard`. Mục menu `#/flow-e2e` chưa có → không seed (D-57 ai).
+
+**Đã làm (khung cũ, không bảng / cột / SP / seed mới)**
+- `Dashboard/GetExecutive` (date?, shiftId?, branchId?): `kpi` (plannedMeals, orders {total, byStatus, listStatus}, productionProgress, delivery {delivered, total, byStatus}, stockAlerts, qcHoldReject + qcDetail, staffing, openComplaints), `chart.meals7d`, `shiftProgress`, `kpiSnapshot` (4 chỉ tiêu từ KpiDailySnapshot, met theo chiều chỉ tiêu), `orders` (6 đơn đầu + trạng thái giao), `ordersTotal`, `alerts` (= Common/GetAlerts của người đăng nhập). Cache 60 giây phần chung theo (ngày, ca, chi nhánh); ca / chi nhánh không có, ngày sai → 400. Quyền Xem `#/dash-exec`.
+- `Dashboard/GetOrderJourney` (orderId): 8 chặng ORDER → PRODUCTION_PLAN → PRODUCTION → PACKING → DELIVERY → POD → RECONCILIATION → COMPLAINT, mỗi chặng `{ stage, title, route, status, statusName, at, done, documentCount, canView, note, documents [{ id, number, status, statusName, at, route }] }` + `currentStage`; chỉ màn hình + số chứng từ (D-58). Quyền Xem `flow-e2e` / `dash-exec` / `crm-order` (403); chứng từ theo quyền Xem màn của chứng từ.
+- File: `Services/Implement/DashboardService.cs`, `Interface/IDashboardService.cs`, `WebApi/Controllers/DashboardController.cs`, `Model/Model/DashboardExecutiveModels.cs`, `Model/Option/DashboardRulesOptions.cs` (`BusinessRules:Dashboard`), `CommonService.Alerts.cs` (+ `GetSharedCounts`, `GetUnitTree`), `DeliveryRules.ExecutionStatus` (+ `DeliveryExecutionService` dùng lại), thông báo `ConstantHelper` khối BE3.5, appsettings.
+
+**Kiểm tra:** build 0 lỗi; test **279 / 279** (+5 `Dashboard/DashboardTests.cs`: từng khối trên dữ liệu seed + so sánh Order / ProductionBatch / DeliveryExecution GetBoard + chuông; lọc chi nhánh (đơn vị con) / ca; 400; cache 60 giây theo khóa nhưng cảnh báo theo người; quyền dash-exec; hành trình 8 chặng + đơn Nháp / Hủy + quyền chứng từ; chiều KPI). `be3.5-dashboard.http` **13 / 13** trên DB dev (37 @expect, 5 chốt 400). Đối chiếu tay ngày 2026-12-01 / 12-02 trên DB dev: đơn / trạng thái, suất, kế hoạch / đạt / số mẻ, giao, tồn, lô, phản ánh, cảnh báo – **12 / 12 khớp** mỗi ngày; số suất 1 650 / 2 000 phần / 998 suất nhận khớp truy vấn SQL.
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 231 | Đã xong | `GET api/Dashboard/GetExecutive?date=&shiftId=&branchId=` | BE3.5 |
+| 232 | Đã xong | `GET api/Dashboard/GetOrderJourney?orderId=` | BE3.5 |

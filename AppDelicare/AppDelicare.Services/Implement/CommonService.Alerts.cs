@@ -135,9 +135,7 @@ namespace AppDelicare.Services.Implement
                 }
                 if (Can(AlertCode.LotOnHold))
                 {
-                    int n = await db.MaterialLot.AsNoTracking()
-                        .Where(l => !l.IsDeleted && (l.QcStatus == LotQcStatus.Hold || l.Status == MaterialLotStatus.OnHold) && stock.Any(b => b.MaterialLotId == l.Id))
-                        .CountAsync();
+                    int n = await CountLotOnHoldAsync(otherWarehouses);
                     Add(AlertCode.LotOnHold, SeverityMedium, n, ConstantHelper.Message.AlertLotOnHoldTitle, string.Format(ConstantHelper.Message.AlertLotOnHoldDetail, n));
                 }
                 if (Can(AlertCode.LotExpiring))
@@ -171,11 +169,7 @@ namespace AppDelicare.Services.Implement
                 // 6. Phản ánh đang mở (Mới / Đang xử lý): quá hạn SLA (như CustomerComplaint/GetList isOverdue) và chưa quá hạn – 2 cảnh báo không trùng nhau.
                 if (Can(AlertCode.ComplaintOpen))
                 {
-                    var open = db.CustomerComplaint.AsNoTracking().Where(c => !c.IsDeleted && (c.ComplaintStatus == ComplaintStatus.Open || c.ComplaintStatus == ComplaintStatus.InProgress));
-                    if (units != null)
-                    {
-                        open = open.Where(c => !db.Customer.Any(cu => cu.Id == c.CustomerId && cu.BranchId != null && !units.Contains(cu.BranchId.Value)));
-                    }
+                    var open = OpenComplaints(units);
                     int overdue = await open.CountAsync(c => c.SlaDueAt != null && c.SlaDueAt < now);
                     int total = await open.CountAsync();
                     Add(AlertCode.ComplaintOverdue, SeverityHigh, overdue, ConstantHelper.Message.AlertComplaintOverdueTitle, string.Format(ConstantHelper.Message.AlertComplaintOverdueDetail, overdue));
@@ -204,6 +198,69 @@ namespace AppDelicare.Services.Implement
         }
 
         private static int SeverityRank(string severity) => severity switch { SeverityHigh => 0, SeverityMedium => 1, _ => 2 };
+
+        /// <summary>
+        /// BE3.5 (Catalog 231 – dashboard điều hành): số liệu dùng chung với chuông cảnh báo, KHÔNG lọc theo quyền / không cache theo người (dashboard tự cache):
+        /// NL dưới tồn tối thiểu, lô còn tồn đang tạm giữ / QC HOLD, phản ánh Mới / Đang xử lý – cùng quy tắc + lọc chi nhánh (đơn vị con) như <see cref="GetAlerts"/>.
+        /// Chi nhánh không có → null.
+        /// </summary>
+        public async Task<SharedAlertCountsModel?> GetSharedCounts(Guid? branchId)
+        {
+            try
+            {
+                List<Guid>? units = null;
+                if (branchId is { } bid && bid != Guid.Empty)
+                {
+                    units = await UnitTreeAsync(bid);
+                    if (units == null)
+                    {
+                        return null;
+                    }
+                }
+                List<Guid>? otherWarehouses = units == null ? null : await _unitOfWork.DbContext.Warehouse.AsNoTracking()
+                    .Where(w => w.OrganizationUnitId != null && !units.Contains(w.OrganizationUnitId.Value)).Select(w => w.Id).ToListAsync();
+                return new SharedAlertCountsModel
+                {
+                    StockBelowMin = await CountStockBelowMinAsync(otherWarehouses),
+                    LotOnHold = await CountLotOnHoldAsync(otherWarehouses),
+                    OpenComplaints = await OpenComplaints(units).CountAsync(),
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSharedCounts: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>Lô còn tồn (OnHand &gt; 0 ở kho thuộc chi nhánh) có QcStatus = HOLD hoặc Status = OnHold (PROPOSED – D-57 r).</summary>
+        private Task<int> CountLotOnHoldAsync(List<Guid>? otherWarehouses)
+        {
+            var db = _unitOfWork.DbContext;
+            var stock = db.InventoryBalance.AsNoTracking().Where(b => !b.IsDeleted && b.OnHandQuantity > 0);
+            if (otherWarehouses != null)
+            {
+                stock = stock.Where(b => !otherWarehouses.Contains(b.WarehouseId));
+            }
+            return db.MaterialLot.AsNoTracking()
+                .Where(l => !l.IsDeleted && (l.QcStatus == LotQcStatus.Hold || l.Status == MaterialLotStatus.OnHold) && stock.Any(b => b.MaterialLotId == l.Id))
+                .CountAsync();
+        }
+
+        /// <summary>Phản ánh Mới / Đang xử lý; lọc chi nhánh qua <c>Customer.BranchId</c> (khách chưa gắn chi nhánh vẫn tính – D-57 q).</summary>
+        private IQueryable<Model.Entity.CustomerComplaint> OpenComplaints(List<Guid>? units)
+        {
+            var db = _unitOfWork.DbContext;
+            var open = db.CustomerComplaint.AsNoTracking().Where(c => !c.IsDeleted && (c.ComplaintStatus == ComplaintStatus.Open || c.ComplaintStatus == ComplaintStatus.InProgress));
+            if (units != null)
+            {
+                open = open.Where(c => !db.Customer.Any(cu => cu.Id == c.CustomerId && cu.BranchId != null && !units.Contains(cu.BranchId.Value)));
+            }
+            return open;
+        }
+
+        /// <summary>BE3.5: đơn vị + đơn vị con (dashboard lọc chi nhánh như chuông). Không có → null.</summary>
+        public Task<List<Guid>?> GetUnitTree(Guid unitId) => UnitTreeAsync(unitId);
 
         /// <summary>Đơn vị + mọi đơn vị con (theo ParentId). Không có → null.</summary>
         private async Task<List<Guid>?> UnitTreeAsync(Guid unitId)

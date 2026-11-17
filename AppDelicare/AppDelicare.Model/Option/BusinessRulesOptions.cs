@@ -14,6 +14,8 @@ namespace AppDelicare.Model.Option
         public ChartRulesOptions Charts { get; set; } = new();
         /// <summary>BE3.3: chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan – section <c>BusinessRules:Alerts</c> (PROPOSED – D-57 h, i, p–u).</summary>
         public AlertRulesOptions Alerts { get; set; } = new();
+        /// <summary>BE3.5: dashboard điều hành + hành trình đơn – section <c>BusinessRules:Dashboard</c> (PROPOSED – D-57 ad–ai).</summary>
+        public DashboardRulesOptions Dashboard { get; set; } = new();
         public int OrderCutoffHourPreviousDay { get; set; } = 20;
         public string OrderLockJobTime { get; set; } = "20:00";
         public string MrpJobTime { get; set; } = "20:30";
