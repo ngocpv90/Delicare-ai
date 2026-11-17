@@ -10,6 +10,8 @@
 
 Không có script tạo bảng / cột ngoài `migrations/` đã được PO duyệt.
 
+**SQL Server 2022 (D-61, T48.5):** mọi script ở đây (SP, seed, migrations) và SQL inline trong C# **chỉ dùng cú pháp có trong SQL Server 2022** (mức tương thích 160) – danh sách cấm ở CLAUDE.md mục 3.1 quy tắc 0 (kiểu `json` / `vector`, `REGEXP_*`, `JSON_OBJECTAGG` / `JSON_ARRAYAGG` / `JSON_CONTAINS`, `CURRENT_DATE`, `||`…). Test `SqlServer2022CompatibilityTests` quét tự động (bỏ qua comment và chuỗi dữ liệu). Mức tương thích DB do `deploy/db/compat-level.sql` giữ ở 160 khi deploy. Không chuyển DB bằng `.bak` giữa SQL Server 2025 và 2022 – chỉ bằng script.
+
 ## Pilot (T11 … T19, T45R.8, T48.0, T14 / T15.1 / T17 / T17.1) – script SQL thêm / sửa và thứ tự chạy
 
 So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** dưới đây, luôn bằng `sqlcmd ... -b -I -f 65001` (**`-f 65001` bắt buộc** – thiếu cờ này tên tiếng Việt bị lỗi font khi ghi vào DB). Mọi script chạy lại được nhiều lần (SP `CREATE OR ALTER`; seed chỉ **thêm** phần chưa có, không ghi đè chỉnh sửa trên màn hình). Seed cần tài khoản `admin` đã có (ghi `CreatedBy`).
