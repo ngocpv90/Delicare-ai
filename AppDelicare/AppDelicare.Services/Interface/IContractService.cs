@@ -14,5 +14,16 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(ContractRequest request, string typeSave);
         public IResults<Contract> GetAllData();
         public Task<IResult<Contract>> GetById(Guid id);
+        // BE2.2 (spec 6.1, Catalog 78–80): tạo kèm suất, gửi duyệt (engine T12 – CONTRACT), duyệt / từ chối, chấm dứt, chi tiết.
+        public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> Create(AppDelicare.Model.Request.Custom.ContractCreateRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> Submit(AppDelicare.Model.Request.Custom.ContractActionRequest request);
+        public Task<IResult<bool>> Decide(AppDelicare.Model.Request.Custom.ContractActionRequest request, bool approve);
+        public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> Terminate(AppDelicare.Model.Request.Custom.ContractTerminateRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> GetDetail(Guid id);
+        /// <summary>Nội bộ (handler CONTRACT): nội dung được duyệt, tiêu đề, thực thi duyệt / từ chối – chạy trong transaction của engine.</summary>
+        public Task<string?> BuildApprovalStateAsync(Guid id);
+        public Task<string?> DescribeAsync(Guid id);
+        public Task<string?> ApproveFromEngineAsync(Guid id, string? note);
+        public Task<string?> RejectFromEngineAsync(Guid id, string note);
     }
 }

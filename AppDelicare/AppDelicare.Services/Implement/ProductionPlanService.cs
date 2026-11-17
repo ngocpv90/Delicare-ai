@@ -501,7 +501,7 @@ namespace AppDelicare.Services.Implement
         /// (như MRP – <see cref="ProductionRules.DishDemandsAsync"/>) → cộng dồn theo món; OrderLineId = dòng đơn đầu tiên.</item>
         /// <item>Kế hoạch neo (ngày, chi nhánh, không ca): chưa có → tạo Nháp KH-; Nháp chưa tính nhu cầu NL → cập nhật dòng tại chỗ (dòng món không còn → xóa mềm);
         /// đã Duyệt trở đi → chặn; đã tính nhu cầu NL (MaterialRequirement) → chặn (tính lại bằng MaterialRequirement/Calculate).</item>
-        /// <item>Chưa áp MenuChangeRequest (đổi món – BE2.2).</item>
+        /// <item>BE2.2: áp yêu cầu đổi món Đã duyệt (MenuChangeRequest) qua <see cref="ProductionRules.DishDemandsAsync"/>.</item>
         /// </list>
         /// </summary>
         public async Task<IResult<ProductionPlanDetailModel>> Generate(ProductionPlanGenerateRequest request)

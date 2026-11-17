@@ -21,6 +21,12 @@ namespace AppDelicare.Model.Request.Custom
         [MaxLength(2000)]
         public string? Note { get; set; }
         public List<OrderCreateLineRequest> ListLine { get; set; } = [];
+        /// <summary>
+        /// BE2.2 (ORDER_CHANGE_AFTER_CUTOFF): chỉ dùng khi đã quá giờ chốt – có lý do thì tạo đơn Nháp + gửi duyệt "thêm đơn sau giờ chốt"
+        /// (duyệt → Đã chốt; từ chối / hủy → Hủy). Trống → sau giờ chốt bị chặn như T13.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? AfterCutoffReason { get; set; }
     }
 
     public class OrderCreateLineRequest

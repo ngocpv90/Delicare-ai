@@ -159,7 +159,7 @@ namespace AppDelicare.Tests.Sales
             (await Act(c, "Cancel", confirmed, ("Reason", "Khách hủy muộn"))).Fail("quá giờ chốt");
             var detail = (await c.GetResultAsync($"/api/Order/GetDetail?id={confirmed}")).Ok();
             detail.GetProperty("isAfterCutoff").GetBoolean().Should().BeTrue();
-            detail.GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().BeEquivalentTo(["lock"]);
+            detail.GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().BeEquivalentTo(["lock", "requestChange"], "BE2.2: sau giờ chốt xin sửa qua duyệt");
 
             var summary = (await c.PostFormAsync("/api/Order/LockByMealDate", ("MealDate", MealDate))).Ok();
             summary.GetProperty("lockedCount").GetInt32().Should().Be(1);

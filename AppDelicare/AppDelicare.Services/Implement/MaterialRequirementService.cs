@@ -390,6 +390,7 @@ namespace AppDelicare.Services.Implement
             var portions = c.Portions;
             var bufferPortions = new Dictionary<Guid, decimal>();
             decimal bufferRate = Math.Max(0m, _rules.MrpOptionBufferPct) / 100m;
+            var lineDemands = new List<ProductionRules.DishDemand>();
             foreach (var line in orderLines.OrderBy(l => orderNo[l.OrderId]).ThenBy(l => l.MealType))
             {
                 if (line.MenuId == null)
@@ -414,13 +415,24 @@ namespace AppDelicare.Services.Implement
                 {
                     decimal even = perOption * dish.Count();
                     decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
-                    portions[dish.Key] = portions.GetValueOrDefault(dish.Key) + qty;
+                    lineDemands.Add(new ProductionRules.DishDemand(line.OrderId, line.Id, line.ShiftId ?? Guid.Empty, dish.Key, qty));
                     if (qty > even)
                     {
                         bufferPortions[dish.Key] = bufferPortions.GetValueOrDefault(dish.Key) + qty - even;
                     }
-                    c.FirstOrderLine.TryAdd(dish.Key, line.Id);
                 }
+            }
+            // BE2.2 (spec 6.4): đổi món đã duyệt (MenuChangeRequest) chuyển suất món cũ → món mới trước khi tính nguyên liệu.
+            var menuChanges = lineDemands.Count == 0 ? [] : await ProductionRules.ApprovedMenuChangesAsync(db, date);
+            if (menuChanges.Count != 0)
+            {
+                lineDemands = ProductionRules.ApplyMenuChanges(lineDemands, menuChanges);
+                warnings.Add($"Đã áp {menuChanges.Count} yêu cầu đổi món đã duyệt của ngày {Day(date)}");
+            }
+            foreach (var d in lineDemands)
+            {
+                portions[d.DishId] = portions.GetValueOrDefault(d.DishId) + d.Quantity;
+                c.FirstOrderLine.TryAdd(d.DishId, d.OrderLineId);
             }
 
             // 3) Món × công thức → nhu cầu theo nguyên liệu (đơn vị cơ sở).

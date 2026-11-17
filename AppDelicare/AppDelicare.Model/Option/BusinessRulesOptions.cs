@@ -95,6 +95,10 @@ namespace AppDelicare.Model.Option
         /// (<c>DeliveryRoute/Load</c>). false = cho xuất phát thẳng từ Kế hoạch như T19. PROPOSED – BA/PO CONFIRM.
         /// </summary>
         public bool DeliveryRequireLoading { get; set; } = true;
+        /// <summary>BE2.2 (spec 6.6 confirm): |đặt − dự báo| / dự báo × 100 vượt ngưỡng này → cảnh báo + ghi nhận vào đơn (không chặn). PROPOSED – BA/PO CONFIRM.</summary>
+        public decimal ForecastVariancePctWarning { get; set; } = 10.0m;
+        /// <summary>BE2.2: số ngày tối đa của ma trận / công bố dự báo trong 1 lần gọi.</summary>
+        public int ForecastMaxDays { get; set; } = 62;
     }
 
     /// <summary>T15.1: ngưỡng nhiệt độ nhận hàng của 1 kiểu bảo quản (°C).</summary>

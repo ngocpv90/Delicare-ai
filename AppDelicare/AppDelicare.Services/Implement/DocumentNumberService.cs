@@ -38,6 +38,8 @@ namespace AppDelicare.Services.Implement
                 new(typeof(ProductionOrder), ["ProductionOrderNumber", "ProductionOrderNo"]),
                 new(typeof(PackingOrder), ["PackingOrderNumber", "PackingNo"]),
                 new(typeof(DeliveryOrder), ["DeliveryNumber", "DeliveryNo"]),
+                // BE2.2: phiếu yêu cầu đổi món (spec 6.4 – RequestNo tự sinh).
+                new(typeof(MenuChangeRequest), ["RequestNo"]),
             ]),
             [DocumentKind.Approval] = new("XN", 3, false, [new(typeof(ApprovalRequest), ["RequestNo"])]),
             [DocumentKind.Complaint] = new("PA", 4, false, [new(typeof(CustomerComplaint), ["ComplaintNo"])]),
@@ -48,6 +50,8 @@ namespace AppDelicare.Services.Implement
             [DocumentKind.DeliveryRoute] = new("CX", 2, true, [new(typeof(DeliveryRoute), ["RouteNo"])]),
             [DocumentKind.ProductionPlan] = new("KH", 0, false, [new(typeof(ProductionPlan), ["PlanNumber", "PlanNo"])]),
             [DocumentKind.CleaningBatch] = new("VS", 0, true, [new(typeof(CleaningBatch), ["CleaningBatchNumber", "CleaningNo"])]),
+            // BE2.2 (spec 6.1 – số hợp đồng tự sinh, PROPOSED – D-51): HD-YYMMDD-NNN; ghi song song ContractNumber / ContractNo (cột cũ).
+            [DocumentKind.Contract] = new("HD", 3, false, [new(typeof(Contract), ["ContractNumber", "ContractNo"])]),
         };
 
         public async Task<string> NextAsync(DocumentKind kind, DateTime date, string? suffix = null, CancellationToken cancellationToken = default)

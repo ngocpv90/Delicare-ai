@@ -10,6 +10,7 @@
 ### Kiểm tự động cùng luồng: AppDelicare.Tests/Pilot/PilotFlowSqlServerTests.cs (qua HTTP, transaction ngoài rồi rollback).
 ### BE2.1 (2026-11-17): mẻ 1 đóng gói theo lệnh đóng gói (P7.9b – PackingOrder/GenerateFromBatch → Start → RecordResult), xếp hàng lên xe bắt buộc trước khi xuất phát (P8.5b – DeliveryRoute/Load).
 ###   Đã chạy lại trên DB dev 2026-11-17 (key B21B, ngày 16/12/2026): 121 request đúng kỳ vọng (mọi bước "→ 400" trả 400, thêm chốt "đóng gói trực tiếp mẻ còn lệnh đóng gói").
+### BE2.2 (2026-11-17): hợp đồng CRUD Insert luôn Nháp → thêm bước 0.9b gửi duyệt + duyệt. Đã chạy lại trên DB dev (key B22A, ngày 20/01/2027): 123 request đúng kỳ vọng (8 chốt an toàn; 4 bước xuất file .xlsx).
 @base = http://localhost:5125
 @user = admin
 @password = admin
@@ -252,7 +253,7 @@ Authorization: Bearer {{token}}
 ###
 @locationId = {{loc.response.body.listData[0].id}}
 
-### 0.9 Hợp đồng Active + suất TRƯA 35.000 đ
+### 0.9 Hợp đồng (Nháp – BE2.2) + suất TRƯA 35.000 đ
 POST {{base}}/api/Contract/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -281,6 +282,20 @@ Authorization: Bearer {{token}}
 
 ###
 @contractMealId = {{cm.response.body.listData[0].id}}
+
+### 0.9b BE2.2: hợp đồng tạo ra luôn Nháp (Status gửi lên bị bỏ qua) → gửi duyệt → duyệt (engine CONTRACT, quyền mục #/wf-inbox?type=crm-contract) mới Hiệu lực
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractId}}
+
+###
+POST {{base}}/api/Contract/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractId}}&Note=[DEMO] duyệt hợp đồng
 
 ### 0.10 Xe (mã ngắn – dùng trong số chuyến CX-YYMMDD-<mã xe>-NN) + dây chuyền 1000 suất / mẻ, 60 phút / mẻ
 POST {{base}}/api/Vehicle/Insert

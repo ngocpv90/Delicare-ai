@@ -495,7 +495,17 @@ namespace AppDelicare.Services.Implement
                     model.Record = await db.Recipe.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
                     model.Lines = await db.RecipeLine.AsNoTracking().Where(x => x.RecipeId == id && !x.IsDeleted).OrderBy(x => x.SortOrder).ToListAsync();
                     break;
+                case ContractStatus.BusinessType:
+                    model.Table = "Contract";
+                    model.Record = await db.Contract.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    model.Lines = await db.ContractMeal.AsNoTracking().Where(x => x.ContractId == id && !x.IsDeleted).OrderBy(x => x.MealType).ToListAsync();
+                    break;
+                case MenuChangeStatus.BusinessType:
+                    model.Table = "MenuChangeRequest";
+                    model.Record = await db.MenuChangeRequest.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    break;
                 case OrderStatus.DeviationBusinessType:
+                case OrderStatus.ChangeAfterCutoffBusinessType:
                     model.Table = "Order";
                     model.Record = await db.Order.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
                     model.Lines = await db.OrderLine.AsNoTracking().Where(x => x.OrderId == id && !x.IsDeleted).ToListAsync();
