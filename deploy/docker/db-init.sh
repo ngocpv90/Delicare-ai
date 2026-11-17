@@ -10,6 +10,8 @@
 #   DB_NAME         tên DB (mặc định AppDelicare)
 #   ADMIN_PASSWORD  mật khẩu admin app – CHỈ cần khi DB chưa có tài khoản admin
 #   ADMIN_USERNAME  mặc định admin
+#   APP_DB_USER / APP_DB_PASSWORD  (T48.4, D-60) tài khoản SQL riêng cho api / job – đọc + ghi + EXECUTE, không DDL (deploy/db/app-login.sql);
+#                   APP_DB_RESET_PASSWORD=1 để đặt lại mật khẩu login đã có. Không đặt = bỏ qua.
 #   Tùy chọn (chạy ngoài container / thử): DB_SERVER (db,1433), DB_USER (sa), DB_TRUSTED_AUTH=1 (-E), SQLCMD_BIN, REPO_ROOT (/repo)
 # Xem thứ tự sẽ chạy mà không kết nối DB (từ gốc repo):  REPO_ROOT=. bash deploy/docker/db-init.sh --dry-run
 set -euo pipefail
@@ -122,4 +124,19 @@ for rel in "${ORDER[@]}" "${EXTRA[@]}"; do
   esac
 done
 echo "  + Stored procedure: $SP_COUNT file"
+
+# T48.4 (D-60): tài khoản SQL riêng cho api / job (đọc + ghi + EXECUTE, không DDL) – chỉ khi đặt APP_DB_USER + APP_DB_PASSWORD.
+# Mật khẩu → hex ASCII trong file tạm (quyền 600), không đưa lên dòng lệnh. APP_DB_RESET_PASSWORD=1 để đặt lại mật khẩu login đã có.
+if [ -n "${APP_DB_USER:-}" ]; then
+  [ -n "${APP_DB_PASSWORD:-}" ] || die "Đặt APP_DB_PASSWORD cùng APP_DB_USER"
+  case "$APP_DB_USER" in *[!A-Za-z0-9_]*|sa) die "APP_DB_USER chỉ gồm chữ, số, _ và không phải sa" ;; esac
+  case "$APP_DB_PASSWORD" in *[![:print:]]*) die "APP_DB_PASSWORD chỉ dùng ký tự ASCII in được" ;; esac
+  ( umask 077
+    printf ':setvar AppLogin "%s"\n:setvar AppPasswordHex %s\n:setvar ResetPassword %s\n:r "%s"\n' \
+      "$APP_DB_USER" "$(printf '%s' "$APP_DB_PASSWORD" | od -An -v -tx1 | tr -d ' \n')" "${APP_DB_RESET_PASSWORD:-0}" \
+      "$REPO/deploy/db/app-login.sql" > "$TMP_DIR/app-login.sql" )
+  "${SQL[@]}" -d "$DB_NAME" -i "$TMP_DIR/app-login.sql" || die "Lỗi khi tạo tài khoản ứng dụng $APP_DB_USER"
+  rm -f "$TMP_DIR/app-login.sql"
+  echo "  + Tài khoản ứng dụng: $APP_DB_USER (đọc / ghi / EXECUTE)"
+fi
 echo "== Xong."
