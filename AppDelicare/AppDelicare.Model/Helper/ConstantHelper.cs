@@ -214,7 +214,7 @@
             public static readonly string MrpNoSupplier = "Chưa có NCC đang hiệu lực cho nguyên liệu này";
             public static readonly string MrpLeadTimeWarning = "Cảnh báo: NCC {0} cần {1} ngày giao – đặt hôm nay không kịp ngày {2}";
             // T15 – mua hàng, nhận hàng, QC đầu vào (P6)
-            public static readonly string PurchaseRequestStatusLocked = "Trạng thái đề nghị mua chỉ đổi qua thao tác nghiệp vụ (ConvertToPurchaseOrder / Cancel)";
+            public static readonly string PurchaseRequestStatusLocked = "Trạng thái đề nghị mua chỉ đổi qua thao tác nghiệp vụ (Submit / Approve / Reject / ConvertToPurchaseOrder / Cancel)";
             public static readonly string PurchaseRequestNeedsLine = "Đề nghị mua chưa có dòng nguyên liệu";
             public static readonly string PurchaseRequestNoSupplier = "Chưa có NCC đang hiệu lực (SupplierMaterial) cho: {0} – thêm bảng giá NCC rồi lập PO";
             public static readonly string PurchaseRequestLineLocked = "Chỉ sửa dòng của đề nghị mua Nháp (đề nghị hiện ở trạng thái {0})";
@@ -432,6 +432,19 @@
             public static readonly string OrderChangeRequested = "Đã gửi duyệt sửa đơn sau giờ chốt ({0}) – số mới chỉ ghi khi được duyệt";
             public static readonly string OrderCreateAfterCutoffRequested = "Đã tạo đơn {0} (Nháp) và gửi duyệt thêm đơn sau giờ chốt ({1}) – duyệt xong đơn chuyển Đã chốt";
             public static readonly string OrderApprovalPending = "Đơn đang có yêu cầu duyệt {0} – chờ duyệt / từ chối trước khi sửa tiếp";
+            // BE2.3 – duyệt nhiều cấp, đề nghị mua 2 cấp, kiểm kê / điều chỉnh tồn qua duyệt.
+            public static readonly string ApprovalStepApproved = "Đã duyệt cấp {0}/{1} – chuyển cấp {2} ({3})";
+            public static readonly string ApprovalAlreadyDecidedStep = "Bạn đã quyết định cấp {0} của yêu cầu này – cấp sau phải do người khác duyệt";
+            public static readonly string ApprovalStepOverdue = "Bước duyệt cấp {0} đã quá hạn ({1:dd/MM/yyyy HH:mm}) – người gửi hủy yêu cầu và gửi duyệt lại";
+            public static readonly string ApprovalNoSteps = "Chưa cấu hình bước duyệt cho loại {0}";
+            public static readonly string PurchaseRequestSubmitted = "Đã gửi duyệt đề nghị mua (yêu cầu {0}, {1} cấp)";
+            public static readonly string PurchaseRequestNotPending = "Đề nghị mua không có yêu cầu duyệt đang chờ";
+            public static readonly string StockCountNoApprovalNeeded = "Phiếu kiểm kê không có dòng lệch > {0}% – không cần duyệt, ghi sổ trực tiếp (StockCount/Post)";
+            public static readonly string StockCountSubmitted = "Đã gửi duyệt phiếu kiểm kê (yêu cầu {0}, lệch lớn nhất {1}% > {2}%)";
+            public static readonly string StockCountNeedsApproval = "Chênh lệch kiểm kê {0}% vượt ngưỡng {1}% – gửi duyệt (StockCount/Submit) và chờ duyệt xong mới ghi sổ";
+            public static readonly string StockCountNotApproved = "Phiếu kiểm kê đang chờ duyệt – chưa ghi sổ được";
+            public static readonly string StockCountNotPending = "Phiếu kiểm kê không có yêu cầu duyệt đang chờ";
+            public static readonly string StockAdjustmentSubmitted = "Đã gửi duyệt điều chỉnh tồn (yêu cầu {0}) – chỉ ghi sổ khi được duyệt";
         }
 
         public class TypeSave

@@ -27,5 +27,8 @@ namespace AppDelicare.Services.Interface
         // BE2.1 (spec 11.5) – chi tiết + hủy yêu cầu duyệt.
         public Task<IResult<AppDelicare.Model.Model.ApprovalDetailModel>> GetDetail(Guid id);
         public Task<IResult<bool>> Cancel(AppDelicare.Model.Request.Custom.ApprovalCancelRequest request);
+
+        /// <summary>BE2.3: yêu cầu đang mở (Pending / InProgress) của 1 chứng từ + cấp đang chờ; không có → null.</summary>
+        public Task<ApprovalProgressModel?> OpenProgressAsync(string businessType, Guid businessId);
     }
 }

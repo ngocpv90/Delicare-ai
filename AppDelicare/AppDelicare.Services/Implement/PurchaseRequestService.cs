@@ -19,8 +19,9 @@ namespace AppDelicare.Services.Implement
 {
     public class PurchaseRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IUomConversionService uomConversionService
-        , IClock clock) : IPurchaseRequestService
+        , IClock clock, IApprovalRequestService approvalRequestService) : IPurchaseRequestService
     {
+        private readonly IApprovalRequestService _approvalRequestService = approvalRequestService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -309,15 +310,143 @@ namespace AppDelicare.Services.Implement
                                                   LineCount = db.PurchaseOrderLine.Count(x => x.PurchaseOrderId == po.Id && !x.IsDeleted),
                                               }).ToListAsync();
             detail.ListPurchaseOrder.ForEach(p => p.StatusName = PurchaseOrderStatus.Label(p.Status));
-            if (pr.Status is PurchaseRequestStatus.Draft or PurchaseRequestStatus.Approved)
+            // BE2.3 (D-46): Nháp → gửi duyệt (2 cấp); chỉ Đã duyệt mới lập PO.
+            switch (pr.Status)
             {
-                detail.AllowedActions.AddRange(["convertToPurchaseOrder", "cancel"]);
+                case PurchaseRequestStatus.Draft:
+                    detail.AllowedActions.AddRange(["update", "updateLines", "submit", "cancel"]);
+                    break;
+                case PurchaseRequestStatus.PendingApproval:
+                    detail.PendingApproval = await _approvalRequestService.OpenProgressAsync(PurchaseRequestStatus.BusinessType, pr.Id);
+                    detail.AllowedActions.AddRange(["approve", "reject", "cancelApproval"]);
+                    break;
+                case PurchaseRequestStatus.Approved:
+                    detail.AllowedActions.AddRange(["convertToPurchaseOrder", "cancel"]);
+                    break;
             }
             return detail;
         }
 
+        // ============================================================ BE2.3 (D-46) – đề nghị mua duyệt 2 cấp (PURCHASE_REQUEST)
+
         /// <summary>
-        /// T15 (spec 7.2 convert-to-po, PROPOSED – GAP-PUR-06), 1 transaction: đề nghị Nháp / Đã duyệt (Pilot không bắt buộc duyệt đề nghị – PO được duyệt 1 cấp).
+        /// BE2.3 (spec 7.2 submit, D-46): đề nghị Nháp (kể cả do MRP lập) → Chờ duyệt + ApprovalRequest PURCHASE_REQUEST 2 cấp (cấp 1 Trưởng bộ phận Mua hàng
+        /// <c>#/wf-inbox?type=scm-pr-l1</c> → cấp 2 Giám đốc vận hành <c>scm-pr-l2</c>). Phải có ≥ 1 dòng số lượng &gt; 0. 1 transaction.
+        /// </summary>
+        public async Task<IResult<PurchaseRequestDetailModel>> Submit(PurchaseActionRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var pr = _unitOfWork.PurchaseRequestRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
+                bool hasLine = pr != null && await _unitOfWork.DbContext.PurchaseRequestLine.AsNoTracking()
+                    .AnyAsync(l => l.PurchaseRequestId == pr.Id && !l.IsDeleted && l.Quantity > 0);
+                string? error = pr == null ? ConstantHelper.Message.RecordNotFoundMessage
+                    : pr.Status != PurchaseRequestStatus.Draft ? InvalidStatus(pr, "gửi duyệt đề nghị mua", PurchaseRequestStatus.Draft)
+                    : !hasLine ? ConstantHelper.Message.PurchaseRequestNeedsLine
+                    : null;
+                if (error != null)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<PurchaseRequestDetailModel>.Fail(error);
+                }
+                // Lưu trạng thái Chờ duyệt TRƯỚC khi tạo yêu cầu: nội dung được duyệt (hash) đọc từ DB.
+                pr!.Status = PurchaseRequestStatus.PendingApproval;
+                pr.Note = PurchasingRules.AppendNote(pr.Note, request.Note);
+                _unitOfWork.PurchaseRequestRepository.Update(pr);
+                await _unitOfWork.PurchaseRequestRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                var (approval, approvalError) = await _approvalRequestService.CreateAsync(PurchaseRequestStatus.BusinessType, pr.Id);
+                if (approvalError != null)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<PurchaseRequestDetailModel>.Fail(approvalError);
+                }
+                int levels = await _unitOfWork.DbContext.ApprovalStep.CountAsync(s => s.ApprovalRequestId == approval!.Id && !s.IsDeleted);
+                _unitOfWork.CommitTransaction();
+                return Result<PurchaseRequestDetailModel>.Success(await DetailAsync(pr.Id), string.Format(ConstantHelper.Message.PurchaseRequestSubmitted, approval!.RequestNo, levels));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Submit: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.3: duyệt / từ chối **cấp đang chờ** của đề nghị mua qua engine (<c>ApprovalRequestService.Decide</c>: quyền mục của cấp, hash nội dung,
+        /// ApprovalDecision). Duyệt cấp 1 → chờ cấp 2; duyệt cấp 2 → Đã duyệt; từ chối ở cấp nào → về Nháp kèm lý do (D-46).
+        /// </summary>
+        public async Task<IResult<bool>> Decide(PurchaseActionRequest request, bool approve)
+        {
+            try
+            {
+                var pending = await _approvalRequestService.OpenProgressAsync(PurchaseRequestStatus.BusinessType, request.Id);
+                if (pending == null)
+                {
+                    return Result<bool>.Fail(ConstantHelper.Message.PurchaseRequestNotPending, false);
+                }
+                return await _approvalRequestService.Decide(new ApprovalDecideRequest { Id = pending.Id, Approve = approve, Note = request.Note });
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Decide: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>Nội dung được duyệt của PURCHASE_REQUEST: trạng thái, ngày cần, từng dòng (nguyên liệu, số lượng, đơn vị, ngày cần). Sửa sau khi gửi → không duyệt được.</summary>
+        public async Task<string?> BuildApprovalStateAsync(Guid id)
+        {
+            var pr = await _unitOfWork.DbContext.PurchaseRequest.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+            if (pr == null)
+            {
+                return null;
+            }
+            var lines = await _unitOfWork.DbContext.PurchaseRequestLine.AsNoTracking().Where(l => l.PurchaseRequestId == id && !l.IsDeleted)
+                .OrderBy(l => l.Id).ToListAsync();
+            static string D(decimal v) => v.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+            static string? Day(DateTime? d) => d?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            return Newtonsoft.Json.JsonConvert.SerializeObject(new
+            {
+                pr.Id, pr.Status, RequiredDate = Day(pr.RequiredDate),
+                Lines = lines.Select(l => new { l.Id, l.IngredientId, Quantity = D(l.Quantity), l.UnitId, RequiredDate = Day(l.RequiredDate) }),
+            });
+        }
+
+        /// <summary>Tiêu đề trong hộp duyệt: số đề nghị – ngày cần – số dòng – tiền ước tính (theo NCC gợi ý).</summary>
+        public async Task<string?> DescribeAsync(Guid id)
+        {
+            var detail = await DetailAsync(id);
+            if (detail == null)
+            {
+                return null;
+            }
+            var pr = detail.PurchaseRequest;
+            string day = pr.RequiredDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "–";
+            return $"Đề nghị mua {pr.RequestNumber ?? pr.RequestNo} – cần ngày {day} – {detail.ListLine.Count} dòng – ước tính {PurchasingRules.Money(detail.EstimatedAmount)} đ";
+        }
+
+        /// <summary>
+        /// Thực thi quyết định ở cấp cuối (gọi từ <c>PurchaseRequestApprovalHandler</c>, TRONG transaction của engine): Chờ duyệt → Đã duyệt; từ chối / hủy
+        /// ở bất kỳ cấp nào → về Nháp (D-46), lý do ghi vào Note.
+        /// </summary>
+        public Task<string?> ApplyDecisionAsync(Guid id, bool approved, string? note)
+        {
+            var pr = _unitOfWork.PurchaseRequestRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
+            if (pr == null || pr.Status != PurchaseRequestStatus.PendingApproval)
+            {
+                return Task.FromResult<string?>(pr == null ? ConstantHelper.Message.RecordNotFoundMessage
+                    : InvalidStatus(pr, approved ? "duyệt đề nghị mua" : "từ chối đề nghị mua", PurchaseRequestStatus.PendingApproval));
+            }
+            pr.Status = approved ? PurchaseRequestStatus.Approved : PurchaseRequestStatus.Draft;
+            pr.Note = PurchasingRules.AppendNote(pr.Note, string.IsNullOrWhiteSpace(note) ? null : (approved ? "Duyệt: " : "Từ chối: ") + note.Trim());
+            _unitOfWork.PurchaseRequestRepository.Update(pr);
+            return Task.FromResult<string?>(null);
+        }
+
+        /// <summary>
+        /// T15 (spec 7.2 convert-to-po), 1 transaction: BE2.3 (D-46) chỉ đề nghị **Đã duyệt** (2 cấp) – trước đây Nháp cũng lập được.
         /// Mỗi nguyên liệu chọn NCC theo bảng giá đang hiệu lực tại ngày cần hàng (ưu tiên → giá → lead time); nguyên liệu chưa có NCC → lỗi kèm danh sách.
         /// Mỗi NCC 1 PO Nháp số <c>PO-YYMMDD-NNNN</c>; dòng cùng nguyên liệu gộp lại; số lượng quy đổi sang đơn vị mua của bảng giá (thiếu quy đổi → giữ đơn vị
         /// của đề nghị, cảnh báo); đơn giá = SupplierMaterial.UnitPrice; dưới MOQ → cảnh báo. Đề nghị → Converted.
@@ -332,8 +461,8 @@ namespace AppDelicare.Services.Implement
                 List<PurchaseRequestLine> lines = pr == null ? [] : await db.PurchaseRequestLine.AsNoTracking()
                     .Where(l => l.PurchaseRequestId == pr.Id && !l.IsDeleted && l.Quantity > 0).OrderBy(l => l.CreatedDate).ToListAsync();
                 string? error = pr == null ? ConstantHelper.Message.RecordNotFoundMessage
-                    : pr.Status is not (PurchaseRequestStatus.Draft or PurchaseRequestStatus.Approved)
-                        ? InvalidStatus(pr, "lập PO từ đề nghị mua", PurchaseRequestStatus.Draft, PurchaseRequestStatus.Approved)
+                    : pr.Status != PurchaseRequestStatus.Approved
+                        ? InvalidStatus(pr, "lập PO từ đề nghị mua", PurchaseRequestStatus.Approved)
                     : lines.Count == 0 ? ConstantHelper.Message.PurchaseRequestNeedsLine
                     : null;
                 var ingredientIds = lines.Select(l => l.IngredientId).Distinct().ToList();
@@ -442,7 +571,10 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>T15: hủy đề nghị Nháp / Đã duyệt (lý do bắt buộc, ghi "Hủy: …" vào Note). Tính lại MRP sẽ lập đề nghị mới (GAP-MRP-06).</summary>
+        /// <summary>
+        /// T15: hủy đề nghị Nháp / Đã duyệt (lý do bắt buộc, ghi "Hủy: …" vào Note). Tính lại MRP sẽ lập đề nghị mới (GAP-MRP-06).
+        /// BE2.3: đề nghị đang Chờ duyệt không hủy thẳng được – người gửi hủy yêu cầu duyệt (<c>ApprovalRequest/Cancel</c>, về Nháp) hoặc người duyệt từ chối trước.
+        /// </summary>
         public async Task<IResult<PurchaseRequestDetailModel>> Cancel(PurchaseCancelRequest request)
         {
             using var tran = await _unitOfWork.OpenTransaction();

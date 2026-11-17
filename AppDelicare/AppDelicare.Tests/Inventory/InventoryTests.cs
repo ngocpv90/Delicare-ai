@@ -220,14 +220,21 @@ namespace AppDelicare.Tests.Inventory
             (await c.PostFormAsync("/api/InventoryTransaction/Adjust", ("WarehouseId", s.Warehouse), ("IngredientId", s.Ingredient), ("MaterialLotId", lot), ("Quantity", 10m))).Fail("Lý do");
             (await c.PostFormAsync("/api/InventoryTransaction/Adjust", ("WarehouseId", s.Warehouse), ("IngredientId", s.Ingredient), ("MaterialLotId", lot),
                 ("Quantity", -200m), ("Reason", "Hủy hàng hỏng"))).Fail("Không đủ tồn");
-            var plus = (await c.PostFormAsync("/api/InventoryTransaction/Adjust", ("WarehouseId", s.Warehouse), ("IngredientId", s.Ingredient), ("MaterialLotId", lot),
+            // BE2.3 (GAP-F-04): điều chỉnh tay → yêu cầu duyệt STOCK_ADJUSTMENT; chưa duyệt thì chưa có bút toán, duyệt xong mới ghi (ReferenceId = khóa nối).
+            var pendingPlus = (await c.PostFormAsync("/api/InventoryTransaction/Adjust", ("WarehouseId", s.Warehouse), ("IngredientId", s.Ingredient), ("MaterialLotId", lot),
                 ("Quantity", 10m), ("Reason", "Tồn đầu kỳ bổ sung"))).Ok();
-            plus.GetProperty("transactionType").GetString().Should().Be("ADJUSTMENT");
-            plus.GetProperty("transactionNumber").GetString().Should().MatchRegex(@"^PH-261208-\d{4}$");
-            plus.GetProperty("referenceType").GetString().Should().Be("ManualAdjustment");
-            var minus = (await c.PostFormAsync("/api/InventoryTransaction/Adjust", ("WarehouseId", s.Warehouse), ("IngredientId", s.Ingredient), ("MaterialLotId", lot),
-                ("Quantity", -5m), ("Reason", "Hỏng khi bảo quản"))).Ok();
-            minus.GetProperty("quantityOut").GetDecimal().Should().Be(5);
+            pendingPlus.GetProperty("pendingApproval").GetBoolean().Should().BeTrue();
+            Guid plusRef = pendingPlus.GetProperty("referenceId").GetGuid();
+            (await _factory.QueryAsync(db => db.InventoryTransaction.CountAsync(t => t.ReferenceId == plusRef))).Should().Be(0, "chưa duyệt");
+            (await c.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", pendingPlus.GetProperty("approvalRequestId").GetGuid()), ("Approve", true), ("Note", "ok"))).Ok();
+            var plus = await _factory.QueryAsync(db => db.InventoryTransaction.AsNoTracking().SingleAsync(t => t.ReferenceId == plusRef));
+            plus.TransactionType.Should().Be("ADJUSTMENT");
+            plus.TransactionNumber.Should().MatchRegex(@"^PH-261208-\d{4}$");
+            plus.ReferenceType.Should().Be("ManualAdjustment");
+            plus.Reason.Should().Be("Tồn đầu kỳ bổ sung");
+            Guid minusRef = await c.AdjustAndApproveAsync(("WarehouseId", s.Warehouse), ("IngredientId", s.Ingredient), ("MaterialLotId", lot),
+                ("Quantity", -5m), ("Reason", "Hỏng khi bảo quản"));
+            (await _factory.QueryAsync(db => db.InventoryTransaction.AsNoTracking().SingleAsync(t => t.ReferenceId == minusRef))).QuantityOut.Should().Be(5);
 
             var transfer = await c.PostFormAsync("/api/InventoryTransaction/Transfer", ("FromWarehouseId", s.Warehouse), ("ToWarehouseId", s.Warehouse2),
                 ("IngredientId", s.Ingredient), ("MaterialLotId", lot), ("Quantity", 25m), ("Reason", "Chuyển bếp 2"));
@@ -239,7 +246,7 @@ namespace AppDelicare.Tests.Inventory
 
             Guid issue = IssueId((await CreateIssue(c, s, new { ingredientId = s.Ingredient, quantity = 30m })).Ok());
             (await c.PostFormAsync("/api/MaterialIssue/Post", ("Id", issue))).Ok();
-            (await c.PostFormAsync("/api/InventoryTransaction/Reverse", ("Id", minus.GetProperty("id").GetGuid()), ("Reason", "Ghi nhầm hỏng"))).Ok();
+            (await c.PostFormAsync("/api/InventoryTransaction/Reverse", ("Id", await _factory.QueryAsync(db => db.InventoryTransaction.Where(t => t.ReferenceId == minusRef).Select(t => t.Id).SingleAsync())), ("Reason", "Ghi nhầm hỏng"))).Ok();
 
             // 100 + 10 − 5 − 25 − 30 + 5 = 55 ở kho 1; 25 ở kho 2.
             (await OnHandAsync(s.Warehouse, s.Ingredient)).Should().Be(55);
@@ -282,7 +289,7 @@ namespace AppDelicare.Tests.Inventory
         }
 
         [Fact]
-        public async Task Stock_count_records_variance_posts_adjustments_and_needs_admin_above_threshold()
+        public async Task Stock_count_records_variance_posts_adjustments_and_needs_two_level_approval_above_threshold()
         {
             var s = await SeedAsync("COUNT", useFefo: null, new LotSpec("S-A", 30, 1, "DAT", 100), new LotSpec("S-B", 30, 1, "DAT", 50));
             using var admin = _factory.CreateAuthorizedClient();
@@ -310,12 +317,28 @@ namespace AppDelicare.Tests.Inventory
 
             (await keeper.PostFormAsync("/api/StockCount/Post", ("Id", id))).Fail("lý do chênh lệch");
             (await PutJson(keeper, "/api/StockCount/RecordCounts", new { id, listLine = new object[] { new { id = lineB, physicalQuantity = 40m, varianceReason = "Mất mát" } } })).Ok();
-            (await keeper.PostFormAsync("/api/StockCount/Post", ("Id", id))).Fail("quản trị viên");
+            // BE2.3 (spec 7.8 submit / post): vượt 2% → phải gửi duyệt STOCK_COUNT 2 cấp; admin cũng không ghi sổ thẳng nữa.
+            (await keeper.PostFormAsync("/api/StockCount/Post", ("Id", id))).Fail("gửi duyệt");
+            (await admin.PostFormAsync("/api/StockCount/Post", ("Id", id))).Fail("gửi duyệt");
+            var submitted = (await keeper.PostFormAsync("/api/StockCount/Submit", ("Id", id))).Ok();
+            submitted.GetProperty("stockCount").GetProperty("status").GetString().Should().Be("PendingApproval");
+            submitted.GetProperty("pendingApproval").GetProperty("stepCount").GetInt32().Should().Be(2);
+            submitted.GetProperty("pendingApproval").GetProperty("screenId").GetString().Should().Be("scm-stockcount");
+            (await PutJson(keeper, "/api/StockCount/RecordCounts", new { id, listLine = new object[] { new { id = lineA, physicalQuantity = 1m } } })).Fail("trạng thái");
+            (await admin.PostFormAsync("/api/StockCount/Post", ("Id", id))).Fail("chờ duyệt");
+            (await keeper.PostFormAsync("/api/StockCount/Approve", ("Id", id))).Fail("không có quyền");
+            (await admin.PostFormAsync("/api/StockCount/Approve", ("Id", id), ("Note", "Cấp 1 ok"))).Ok();
+            (await admin.GetResultAsync($"/api/StockCount/GetDetail?id={id}")).Ok().GetProperty("pendingApproval").GetProperty("screenId").GetString().Should().Be("scm-stockcount-l2");
+            (await admin.PostFormAsync("/api/StockCount/Post", ("Id", id))).Fail("chờ duyệt");
             (await OnHandAsync(s.Warehouse, s.Ingredient)).Should().Be(150, "chưa ghi sổ");
+            (await admin.PostFormAsync("/api/StockCount/Approve", ("Id", id), ("Note", "Kế toán ok"))).Ok();
+            var approved = (await keeper.GetResultAsync($"/api/StockCount/GetDetail?id={id}")).Ok();
+            approved.GetProperty("isApproved").GetBoolean().Should().BeTrue();
+            approved.GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().Equal("post");
 
-            var posted = (await admin.PostFormAsync("/api/StockCount/Post", ("Id", id))).Ok();
+            var posted = (await keeper.PostFormAsync("/api/StockCount/Post", ("Id", id))).Ok();
             posted.GetProperty("stockCount").GetProperty("status").GetString().Should().Be("Posted");
-            posted.GetProperty("stockCount").GetProperty("approvedBy").GetGuid().Should().Be(InMemoryApiFactory.UserId);
+            posted.GetProperty("stockCount").GetProperty("approvedBy").GetGuid().Should().Be(InMemoryApiFactory.UserId, "người duyệt cấp cuối");
             var txns = posted.GetProperty("listTransaction").EnumerateArray().ToList();
             txns.Should().HaveCount(2);
             txns.Should().OnlyContain(t => t.GetProperty("transactionType").GetString() == "ADJUSTMENT" && t.GetProperty("referenceType").GetString() == "StockCount");
@@ -331,6 +354,7 @@ namespace AppDelicare.Tests.Inventory
             })).Ok();
             small.GetProperty("stockCount").GetProperty("countType").GetString().Should().Be("ADHOC");
             small.GetProperty("maxVariancePercent").GetDecimal().Should().BeApproximately(1.01m, 0.01m);
+            (await keeper.PostFormAsync("/api/StockCount/Submit", ("Id", id2))).Fail("không cần duyệt");
             (await keeper.PostFormAsync("/api/StockCount/Post", ("Id", id2))).Ok();
             (await OnHandAsync(s.Warehouse, s.Ingredient, s.Lots["S-A"])).Should().Be(100);
         }

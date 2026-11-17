@@ -99,6 +99,29 @@ namespace AppDelicare.Model.Option
         public decimal ForecastVariancePctWarning { get; set; } = 10.0m;
         /// <summary>BE2.2: số ngày tối đa của ma trận / công bố dự báo trong 1 lần gọi.</summary>
         public int ForecastMaxDays { get; set; } = 62;
+
+        // ------------------------------------------------------------ BE2.3 – duyệt nhiều cấp (PROPOSED – BA/PO CONFIRM, D-52)
+        /// <summary>
+        /// BE2.3 (spec 2.3 "cấu hình mẫu quy trình trong file cấu hình", GAP-F-08): BusinessType → danh sách mục quyền duyệt theo thứ tự bước
+        /// (mỗi phần tử = screen-id của mục <c>#/wf-inbox?type=&lt;id&gt;</c>). Có khóa → thay quy trình mặc định của handler (vd. CONTRACT 2 cấp).
+        /// Để trống = mặc định của handler (PURCHASE_REQUEST 2 cấp D-46, STOCK_COUNT 2 cấp spec 2.3, PO theo ngưỡng D-11, còn lại 1 cấp).
+        /// </summary>
+        public Dictionary<string, string[]> ApprovalSteps { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>BE2.3: hạn xử lý mỗi bước duyệt (giờ, tính từ lúc bước được giao). 0 = không có hạn. Quá hạn chỉ là cờ (D-45: không job).</summary>
+        public int ApprovalStepDueHours { get; set; } = 48;
+        /// <summary>BE2.3: hạn riêng theo BusinessType (giờ) – ghi đè <see cref="ApprovalStepDueHours"/>.</summary>
+        public Dictionary<string, int> ApprovalStepDueHoursByType { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>BE2.3: true = bước đã quá hạn không duyệt / từ chối được nữa (người gửi hủy rồi gửi lại). Mặc định false = chỉ gắn cờ quá hạn.</summary>
+        public bool ApprovalBlockOverdueDecision { get; set; }
+        /// <summary>BE2.3: duyệt nhiều cấp – một người không quyết định 2 bước của cùng yêu cầu (quản trị viên được miễn).</summary>
+        public bool ApprovalRequireDistinctApprovers { get; set; } = true;
+        /// <summary>
+        /// BE2.3 (PO nhiều cấp theo ngưỡng): true = PO ≥ <see cref="PurchaseOrderDirectorApprovalAmount"/> duyệt 2 cấp (<c>scm-po</c> → <c>scm-po-director</c>).
+        /// Mặc định false = 1 cấp Giám đốc như D-11 (anh chốt 2026-11-16).
+        /// </summary>
+        public bool PurchaseOrderDirectorTwoLevel { get; set; }
+        /// <summary>BE2.3 (spec 7.6 adjust, GAP-F-04): điều chỉnh tồn tay phải duyệt STOCK_ADJUSTMENT trước khi ghi sổ. false = ghi ngay như T16.</summary>
+        public bool StockAdjustmentRequireApproval { get; set; } = true;
     }
 
     /// <summary>T15.1: ngưỡng nhiệt độ nhận hàng của 1 kiểu bảo quản (°C).</summary>

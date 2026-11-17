@@ -116,7 +116,10 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T16: bút toán điều chỉnh tay (Quantity có dấu, lý do bắt buộc) – ADJUSTMENT, số PH-.</summary>
+        /// <summary>
+        /// T16: bút toán điều chỉnh tay (Quantity có dấu, lý do bắt buộc) – ADJUSTMENT, số PH-. BE2.3: mặc định gửi duyệt STOCK_ADJUSTMENT
+        /// (mục #/wf-inbox?type=scm-adjustment), bút toán ghi khi duyệt; data = InventoryAdjustResultModel.
+        /// </summary>
         [HttpPost("Adjust")]
         public async Task<IActionResult> Adjust([FromForm] InventoryAdjustRequest request)
         {

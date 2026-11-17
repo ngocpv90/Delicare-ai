@@ -1,0 +1,416 @@
+### DELICARE – BE2.3: DUYỆT NHIỀU CẤP (T12 mở rộng, khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### Đề nghị mua 2 cấp (D-46: scm-pr-l1 → scm-pr-l2) – từ chối cấp 2 về Nháp – gửi lại – hủy giữa chừng – duyệt đủ 2 cấp → lập PO;
+### điều chỉnh tồn tay qua duyệt STOCK_ADJUSTMENT (scm-adjustment); kiểm kê lệch > 2% → Submit → 2 cấp (scm-stockcount → scm-stockcount-l2) → ghi sổ;
+### hộp duyệt theo cấp (GetMyPending?type=…), chi tiết yêu cầu (listStepInfo, currentStepNo, dueAt / isOverdue).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Mỗi lần chạy lại đổi @key. Admin chạy thay mọi cấp (admin được miễn luật "mỗi cấp 1 người";
+### người thường đã quyết định 1 cấp không duyệt được cấp sau – kiểm trong AppDelicare.Tests/Approval/MultiLevelApprovalTests.cs).
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Đã chạy trên DB dev 2026-11-17 (key B23A): 58 / 58 đúng kỳ vọng (8 chốt an toàn trả 400).
+### Trước khi chạy: seed DB/seed/ObjectMenu_seed.sql + UserRole_seed.sql bản BE2.3 (mục scm-pr-l1 / scm-pr-l2 / scm-stockcount-l2) – deploy/db/scripts.order.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@key = B23A
+@code = DEMO{{key}}
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 0. DANH MỤC TỐI THIỂU
+### 0.1 Đơn vị kg, kho
+POST {{base}}/api/UnitMeasure/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}KG&Name=[DEMO] kg {{key}}&Symbol=kg&Status=Active
+
+###
+# @name kg
+GET {{base}}/api/UnitMeasure/GetAll?SearchText={{code}}KG&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@kgId = {{kg.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/Warehouse/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}K&Name=[DEMO] Kho {{key}}&WarehouseType=KITCHEN&Status=Active
+
+###
+# @name wh
+GET {{base}}/api/Warehouse/GetAll?SearchText={{code}}K&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@warehouseId = {{wh.response.body.listData[0].id}}
+
+### 0.2 Nguyên liệu gạo + NCC + bảng giá 15.000 đ/kg
+POST {{base}}/api/Ingredient/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}GAO&Name=[DEMO] Gạo {{key}}&BaseUnitId={{kgId}}&StorageType=DRY&QcRequired=false&Status=Active
+
+###
+# @name rice
+GET {{base}}/api/Ingredient/GetAll?SearchText={{code}}GAO&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@riceId = {{rice.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/Supplier/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}&Name=[DEMO] NCC {{key}}&SupplierType=VEGETABLE&Status=Active
+
+###
+# @name sup
+GET {{base}}/api/Supplier/GetAll?SearchText={{code}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@supplierId = {{sup.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/SupplierMaterial/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+SupplierId={{supplierId}}&IngredientId={{riceId}}&UnitPrice=15000&MinimumOrderQuantity=0&LeadTimeDays=1&EffectiveFrom={{$datetime "YYYY-MM-DD" -1 d}}&IsPreferred=true&Status=Active
+
+### 0.3 Lô gạo (chưa có tồn)
+POST {{base}}/api/MaterialLot/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+IngredientId={{riceId}}&SupplierId={{supplierId}}&LotNumber={{code}}-GAO&ExpiryDate={{$datetime "YYYY-MM-DD" 90 d}}&ReceivedDate={{$datetime "YYYY-MM-DD" -1 d}}&QcStatus=DAT&UnitCost=15000&Note=[DEMO]
+
+###
+# @name lot
+GET {{base}}/api/MaterialLot/GetAll?SearchText={{code}}-GAO&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@lotId = {{lot.response.body.listData[0].id}}
+
+########## 1. ĐIỀU CHỈNH TỒN TAY QUA DUYỆT STOCK_ADJUSTMENT (spec 7.6, GAP-F-04)
+### 1.1 CHỐT AN TOÀN → 400: giảm quá tồn (chưa có tồn) – chặn ngay khi gửi
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{riceId}}&MaterialLotId={{lotId}}&Quantity=-5&Reason=[DEMO] Hỏng
+
+### 1.2 Tồn đầu kỳ +100 kg → chỉ GỬI DUYỆT (data.pendingApproval = true, approvalRequestId, referenceId; transaction = null)
+# @name adj
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{riceId}}&MaterialLotId={{lotId}}&Quantity=100&Reason=[DEMO] Tồn đầu kỳ
+
+###
+@adjApproval = {{adj.response.body.data.approvalRequestId}}
+
+### 1.3 Hộp duyệt điều chỉnh tồn (mục #/wf-inbox?type=scm-adjustment): tiêu đề "Điều chỉnh tồn … +100 kg – … – lý do: …"
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-adjustment
+Authorization: Bearer {{token}}
+
+### 1.4 Chi tiết yêu cầu: stepCount 1, proposalJson = nội dung điều chỉnh, business.lines rỗng (chưa ghi sổ)
+GET {{base}}/api/ApprovalRequest/GetDetail?id={{adjApproval}}
+Authorization: Bearer {{token}}
+
+### 1.5 Duyệt → bút toán ADJUSTMENT (ManualAdjustment, ReferenceId = referenceId, số PH- lấy lúc duyệt)
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adjApproval}}&Approve=true&Note=[DEMO] khớp biên bản
+
+### 1.6 Tồn sau duyệt: 100 kg
+GET {{base}}/api/InventoryBalance/GetSummary?WarehouseId={{warehouseId}}&SearchText={{code}}GAO&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+### 1.7 Điều chỉnh −10 kg → từ chối → không ghi gì
+# @name adj2
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{riceId}}&MaterialLotId={{lotId}}&Quantity=-10&Reason=[DEMO] Hao hụt chưa có biên bản
+
+### 1.8 CHỐT AN TOÀN → 400: từ chối phải có lý do
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adj2.response.body.data.approvalRequestId}}&Approve=false
+
+###
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adj2.response.body.data.approvalRequestId}}&Approve=false&Note=[DEMO] Chưa có biên bản hủy
+
+########## 2. ĐỀ NGHỊ MUA DUYỆT 2 CẤP (D-46)
+### 2.1 Đề nghị mua tay (luôn Nháp) + 1 dòng gạo 200 kg
+POST {{base}}/api/PurchaseRequest/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+RequestNumber={{code}}-DN1&RequestDate={{$datetime "YYYY-MM-DD"}}&RequiredDate={{$datetime "YYYY-MM-DD" 3 d}}&Note=[DEMO] đề nghị mua BE2.3
+
+###
+# @name pr
+GET {{base}}/api/PurchaseRequest/GetAll?SearchText={{code}}-DN1&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@prId = {{pr.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/PurchaseRequestLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+PurchaseRequestId={{prId}}&IngredientId={{riceId}}&Quantity=200&UnitId={{kgId}}&Note=[DEMO]
+
+### 2.2 CHỐT AN TOÀN → 400: Nháp không lập PO được (chỉ Đã duyệt)
+POST {{base}}/api/PurchaseRequest/ConvertToPurchaseOrder
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}
+
+### 2.3 CHỐT AN TOÀN → 400: chưa gửi duyệt thì không có yêu cầu để duyệt
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}
+
+### 2.4 Gửi duyệt → Chờ duyệt, yêu cầu XN- PURCHASE_REQUEST 2 cấp (message "… 2 cấp"); pendingApproval.stepNo = 1, screenId = scm-pr-l1
+POST {{base}}/api/PurchaseRequest/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cần nhập trước ngày 3
+
+### 2.5 CHỐT AN TOÀN → 400: đang chờ duyệt thì không gửi lại / không sửa dòng
+POST {{base}}/api/PurchaseRequest/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}
+
+### 2.6 Hộp duyệt cấp 1 (#/wf-inbox?type=scm-pr-l1): stepNo 1 / stepCount 2, stepName, dueAt (+48 giờ), isOverdue = false
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-pr-l1
+Authorization: Bearer {{token}}
+
+### 2.7 Duyệt cấp 1 → message "Đã duyệt cấp 1/2 – chuyển cấp 2 (…)"; yêu cầu InProgress
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 1 – đúng nhu cầu
+
+### 2.8 Chi tiết đề nghị: vẫn Chờ duyệt, pendingApproval.stepNo = 2, screenId = scm-pr-l2
+# @name prd
+GET {{base}}/api/PurchaseRequest/GetDetail?id={{prId}}
+Authorization: Bearer {{token}}
+
+###
+@prApproval1 = {{prd.response.body.data.pendingApproval.id}}
+
+### 2.9 Chi tiết yêu cầu: statusName "Đang duyệt", currentStepNo 2, listStepInfo (cấp 1 Đã duyệt, cấp 2 isCurrent)
+GET {{base}}/api/ApprovalRequest/GetDetail?id={{prApproval1}}
+Authorization: Bearer {{token}}
+
+### 2.10 Từ chối ở cấp 2 → đề nghị về Nháp, Note "Từ chối: [Cấp 2/2] …"
+POST {{base}}/api/PurchaseRequest/Reject
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] Giảm còn 150 kg
+
+### 2.11 Sửa dòng khi Nháp (150 kg) → gửi lại (yêu cầu mới)
+# @name prd2
+GET {{base}}/api/PurchaseRequest/GetDetail?id={{prId}}
+Authorization: Bearer {{token}}
+
+###
+PUT {{base}}/api/PurchaseRequestLine/Update
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prd2.response.body.data.listLine[0].id}}&PurchaseRequestId={{prId}}&IngredientId={{riceId}}&Quantity=150&UnitId={{kgId}}&Note=[DEMO] sau từ chối
+
+###
+POST {{base}}/api/PurchaseRequest/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] gửi lại
+
+### 2.12 Duyệt cấp 1 rồi người gửi HỦY giữa chừng (ApprovalRequest/Cancel) → đề nghị về Nháp, cấp 2 Skipped / Cancelled, ApprovalDecision CANCEL
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 1
+
+###
+# @name prd3
+GET {{base}}/api/PurchaseRequest/GetDetail?id={{prId}}
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/ApprovalRequest/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prd3.response.body.data.pendingApproval.id}}&Reason=[DEMO] Đổi ngày cần
+
+### 2.13 Gửi lại lần 3 → duyệt cấp 1 → duyệt cấp 2 → Đã duyệt
+POST {{base}}/api/PurchaseRequest/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] gửi lại lần 3
+
+###
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 1
+
+### Hộp duyệt cấp 2 (#/wf-inbox?type=scm-pr-l2)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-pr-l2
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 2 – đồng ý
+
+### 2.14 CHỐT AN TOÀN → 400: đã duyệt xong, không còn yêu cầu chờ
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}
+
+### 2.15 Lập PO (150 × 15.000 = 2.250.000) → PO Nháp; PO duyệt 1 cấp như T15.1 (dưới ngưỡng Giám đốc)
+# @name convert
+POST {{base}}/api/PurchaseRequest/ConvertToPurchaseOrder
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO]
+
+###
+@poId = {{convert.response.body.data.listPurchaseOrder[0].id}}
+
+###
+POST {{base}}/api/PurchaseOrder/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{poId}}&Note=[DEMO]
+
+### Chi tiết PO: pendingApproval.stepCount = 1, screenId = scm-po
+GET {{base}}/api/PurchaseOrder/GetDetail?id={{poId}}
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/PurchaseOrder/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{poId}}&Note=[DEMO]
+
+########## 3. KIỂM KÊ LỆCH > 2% → DUYỆT 2 CẤP → GHI SỔ (spec 7.8 submit / post, 131 / 132)
+### 3.1 Tạo phiếu (dòng = tồn hệ thống 100 kg)
+# @name count
+POST {{base}}/api/StockCount/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{riceId}}&CountType=ADHOC&Note=[DEMO] kiểm kê BE2.3
+
+###
+@countId = {{count.response.body.data.stockCount.id}}
+
+### 3.2 Đếm 95 kg (lệch 5% > 2%), có lý do → needsApproval = true, allowedActions recordCounts / submit
+PUT {{base}}/api/StockCount/RecordCounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{countId}}", "listLine": [ { "id": "{{count.response.body.data.listLine[0].id}}", "physicalQuantity": 95, "varianceReason": "[DEMO] Chuột cắn bao" } ] }
+
+### 3.3 CHỐT AN TOÀN → 400: lệch > 2% không ghi sổ thẳng (kể cả admin) – phải gửi duyệt
+POST {{base}}/api/StockCount/Post
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}
+
+### 3.4 Gửi duyệt → Chờ duyệt, STOCK_COUNT 2 cấp (Quản lý kho scm-stockcount → Kế toán scm-stockcount-l2)
+POST {{base}}/api/StockCount/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}&Note=[DEMO]
+
+### 3.5 Duyệt cấp 1 (Quản lý kho)
+POST {{base}}/api/StockCount/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}&Note=[DEMO] cấp 1
+
+### 3.6 CHỐT AN TOÀN → 400: mới duyệt cấp 1, chưa ghi sổ được
+POST {{base}}/api/StockCount/Post
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}
+
+### 3.7 Hộp duyệt cấp 2 (#/wf-inbox?type=scm-stockcount-l2) → duyệt cấp 2 (Kế toán)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-stockcount-l2
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/StockCount/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}&Note=[DEMO] kế toán đồng ý
+
+### 3.8 Chi tiết: statusName "Đã duyệt – chờ ghi sổ", isApproved = true, allowedActions = [post]
+GET {{base}}/api/StockCount/GetDetail?id={{countId}}
+Authorization: Bearer {{token}}
+
+### 3.9 Ghi sổ → Posted, ADJUSTMENT −5 kg (ReferenceType StockCount), ApprovedBy = người duyệt cấp cuối
+POST {{base}}/api/StockCount/Post
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}&Note=[DEMO]

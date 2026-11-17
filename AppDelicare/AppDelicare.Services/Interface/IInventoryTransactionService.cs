@@ -21,7 +21,10 @@ namespace AppDelicare.Services.Interface
         /// <summary>T16: sổ cái có lọc khoảng ngày (SP uspInventoryTransaction_GetLedger).</summary>
         public Task<IResults<InventoryTransactionViewModel>> GetLedger(InventoryLedgerSearchRequest request);
         /// <summary>T16: bút toán điều chỉnh tay (ADJUSTMENT, số PH-, lý do bắt buộc).</summary>
-        public Task<IResult<InventoryTransaction>> Adjust(InventoryAdjustRequest request);
+        public Task<IResult<InventoryAdjustResultModel>> Adjust(InventoryAdjustRequest request);
+        // BE2.3 – duyệt điều chỉnh tồn STOCK_ADJUSTMENT (gọi từ StockAdjustmentApprovalHandler, trong transaction của engine).
+        public Task<string?> DescribeAdjustmentAsync(Guid referenceId);
+        public Task<string?> ApplyApprovedAdjustmentAsync(Guid referenceId, string? proposalJson, string? note);
         /// <summary>T16: chuyển kho / vị trí (cặp TRANSFER_OUT / TRANSFER_IN).</summary>
         public Task<IResults<InventoryTransaction>> Transfer(InventoryTransferRequest request);
     }

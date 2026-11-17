@@ -392,7 +392,7 @@ namespace AppDelicare.Services.Implement
                     return Result<bool>.Fail(ConstantHelper.Message.RecordNotFoundMessage, false);
                 }
                 var approval = await _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking()
-                    .Where(a => !a.IsDeleted && a.BusinessType == RecipeStatus.BusinessType && a.BusinessId == recipe.Id && a.RequestStatus == "Pending")
+                    .Where(a => !a.IsDeleted && a.BusinessType == RecipeStatus.BusinessType && a.BusinessId == recipe.Id && ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus))
                     .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
                 if (approval == null)
                 {

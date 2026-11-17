@@ -52,6 +52,15 @@ namespace AppDelicare.Tests.Purchasing
                 var grService = scope.ServiceProvider.GetRequiredService<IGoodsReceiptService>();
                 var qcService = scope.ServiceProvider.GetRequiredService<IQcInspectionService>();
 
+                // BE2.3 (D-46): đề nghị Nháp → gửi duyệt → 2 cấp (admin) → Đã duyệt mới lập PO (trên SQL Server: ApprovalStep UNIQUE (yêu cầu, cấp)).
+                (await prService.ConvertToPurchaseOrder(new PurchaseRequestConvertRequest { Id = pr })).ResponseCode.Should().Be(400);
+                var prSubmitted = await prService.Submit(new PurchaseActionRequest { Id = pr, Note = "[DEMO]" });
+                prSubmitted.ResponseCode.Should().Be(200, prSubmitted.ResponseMessage);
+                prSubmitted.Data!.PendingApproval!.StepCount.Should().Be(2);
+                (await prService.Decide(new PurchaseActionRequest { Id = pr, Note = "[DEMO] cấp 1" }, true)).ResponseCode.Should().Be(200);
+                (await prService.GetDetail(pr)).Data!.PendingApproval!.ScreenId.Should().Be("scm-pr-l2");
+                (await prService.Decide(new PurchaseActionRequest { Id = pr, Note = "[DEMO] cấp 2" }, true)).ResponseCode.Should().Be(200);
+                (await prService.GetDetail(pr)).Data!.PurchaseRequest.Status.Should().Be("Approved");
                 var converted = await prService.ConvertToPurchaseOrder(new PurchaseRequestConvertRequest { Id = pr, Note = "[DEMO]" });
                 converted.ResponseCode.Should().Be(200, converted.ResponseMessage);
                 var poBrief = converted.Data!.ListPurchaseOrder.Single();

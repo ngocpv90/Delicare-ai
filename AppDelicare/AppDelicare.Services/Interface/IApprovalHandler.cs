@@ -24,6 +24,13 @@ namespace AppDelicare.Services.Interface
         /// </summary>
         Task<string> RequiredScreenIdAsync(Guid businessId) => Task.FromResult(ScreenId);
 
+        /// <summary>
+        /// BE2.3 – quy trình nhiều cấp: mục quyền duyệt của từng bước, theo thứ tự (bước 1, 2…). Engine tạo 1 <c>ApprovalStep</c> / phần tử lúc gửi và
+        /// chỉ gọi <see cref="ApproveAsync(Guid, Guid, string?, string?)"/> ở bước cuối (từ chối / hủy ở bất kỳ bước nào gọi Reject / Cancel).
+        /// Mặc định 1 bước = <see cref="RequiredScreenIdAsync"/> – handler cũ không phải sửa. Cấu hình <c>BusinessRules:ApprovalSteps</c> ghi đè (engine).
+        /// </summary>
+        async Task<IReadOnlyList<string>> StepScreenIdsAsync(Guid businessId) => [await RequiredScreenIdAsync(businessId)];
+
         /// <summary>Nội dung được duyệt (JSON ổn định). Lưu khi gửi; lúc duyệt dựng lại và so hash – khác thì không cho duyệt.</summary>
         Task<string?> BuildPayloadAsync(Guid businessId);
 

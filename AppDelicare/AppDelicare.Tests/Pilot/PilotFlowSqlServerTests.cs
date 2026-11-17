@@ -193,8 +193,11 @@ namespace AppDelicare.Tests.Pilot
                     Guid lot = await Insert<Model.Entity.MaterialLot>("MaterialLot", q => q.Where(x => x.LotNumber == code + "-" + suffix).Select(x => x.Id).SingleAsync(),
                         ("IngredientId", beef), ("SupplierId", supplier), ("LotNumber", code + "-" + suffix), ("ExpiryDate", expiry), ("ReceivedDate", today.AddDays(-10)),
                         ("QcStatus", qc), ("UnitCost", 300_000m), ("Note", "[DEMO] lô bị chặn"));
-                    (await Post("/api/InventoryTransaction/Adjust", ("WarehouseId", warehouse), ("IngredientId", beef), ("MaterialLotId", lot), ("Quantity", qty),
+                    // BE2.3 (GAP-F-04): điều chỉnh tồn tay → yêu cầu STOCK_ADJUSTMENT, duyệt (admin) mới ghi sổ.
+                    var adjust = (await Post("/api/InventoryTransaction/Adjust", ("WarehouseId", warehouse), ("IngredientId", beef), ("MaterialLotId", lot), ("Quantity", qty),
                         ("Reason", "[DEMO] Tồn đầu kỳ (lô bị chặn)"))).Ok();
+                    adjust.GetProperty("pendingApproval").GetBoolean().Should().BeTrue();
+                    (await Post("/api/ApprovalRequest/Decide", ("Id", adjust.GetProperty("approvalRequestId").GetGuid()), ("Approve", true), ("Note", "[DEMO]"))).Ok();
                 }
 
                 // ===== P3. Thực đơn tuần → phân công → đơn hàng → chốt
@@ -233,6 +236,12 @@ namespace AppDelicare.Tests.Pilot
                 lines.Single(l => l.GetProperty("ingredientId").GetGuid() == rice).GetProperty("purchaseQuantity").GetDecimal().Should().Be(120m);
 
                 // ===== P6. Đề nghị → PO → duyệt Giám đốc (≥ 50 triệu) → nhận hàng + QC → nhập kho
+                // BE2.3 (D-46): đề nghị do MRP lập → gửi duyệt → cấp 1 (Trưởng mua hàng) → cấp 2 (COO) → mới lập PO.
+                (await Post("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", prId))).Fail("Đã duyệt");
+                (await Post("/api/PurchaseRequest/Submit", ("Id", prId), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/PurchaseRequest/Approve", ("Id", prId), ("Note", "[DEMO] cấp 1"))).Ok();
+                (await Get($"/api/PurchaseRequest/GetDetail?id={prId}")).Ok().GetProperty("pendingApproval").GetProperty("stepNo").GetInt32().Should().Be(2);
+                (await Post("/api/PurchaseRequest/Approve", ("Id", prId), ("Note", "[DEMO] cấp 2"))).Ok();
                 var converted = (await Post("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", prId), ("Note", "[DEMO]"))).Ok();
                 Guid poId = Id(converted.GetProperty("listPurchaseOrder")[0]);
                 var po = (await Get($"/api/PurchaseOrder/GetDetail?id={poId}")).Ok();

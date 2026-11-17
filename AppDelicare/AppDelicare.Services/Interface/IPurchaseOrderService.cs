@@ -34,6 +34,8 @@ namespace AppDelicare.Services.Interface
         public Task<string?> DescribeAsync(Guid id);
         /// <summary>T15.1: mục quyền duyệt của PO – scm-po-director nếu tổng ≥ ngưỡng GĐ, còn lại scm-po.</summary>
         public Task<string> ApprovalScreenIdAsync(Guid id);
+        /// <summary>BE2.3: các cấp duyệt của PO theo ngưỡng (D-11 mặc định 1 cấp; <c>PurchaseOrderDirectorTwoLevel</c> = scm-po → scm-po-director).</summary>
+        public Task<IReadOnlyList<string>> ApprovalStepScreenIdsAsync(Guid id);
         public Task<string?> ApplyDecisionAsync(Guid id, bool approved, string? note);
         /// <summary>T15: cập nhật trạng thái nhận hàng sau khi ghi sổ phiếu nhập (trong transaction của GoodsReceipt/Post).</summary>
         public Task RefreshReceiptStatusAsync(Guid id);

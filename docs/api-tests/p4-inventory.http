@@ -52,11 +52,21 @@ Authorization: Bearer {{token}}
 @lotFailed = <Id lô [DEMO]-LOT-KD>
 
 ### 1.5 Tồn đầu kỳ = điều chỉnh tăng (Quantity dương), lý do bắt buộc, số PH-
+### BE2.3 (GAP-F-04): Adjust chỉ GỬI DUYỆT STOCK_ADJUSTMENT (data.pendingApproval = true, approvalRequestId, referenceId) – duyệt ở 1.5a mới ghi bút toán.
+### Hai lần điều chỉnh sau cũng cần duyệt như 1.5a (hoặc tắt bằng BusinessRules:StockAdjustmentRequireApproval = false trên DB dev).
+# @name adj1
 POST {{base}}/api/InventoryTransaction/Adjust
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 WarehouseId={{warehouseId}}&IngredientId={{ingredientId}}&MaterialLotId={{lotSoon}}&Quantity=20&Reason=[DEMO] Tồn đầu kỳ
+
+### 1.5a Duyệt điều chỉnh (mục #/wf-inbox?type=scm-adjustment) → bút toán ADJUSTMENT, ReferenceId = referenceId
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adj1.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt
 
 ###
 POST {{base}}/api/InventoryTransaction/Adjust
@@ -197,7 +207,21 @@ Content-Type: application/json
 GET {{base}}/api/StockCount/GetDetail?id={{countId}}
 Authorization: Bearer {{token}}
 
-### 5.4 Ghi sổ: lệch > 2% → chỉ admin (người thường nhận 400 "chỉ quản trị viên…"); dòng lệch → ADJUSTMENT
+### 5.4 BE2.3 (spec 7.8): lệch > 2% → Post trả 400 "gửi duyệt"; gửi duyệt STOCK_COUNT 2 cấp (scm-stockcount → scm-stockcount-l2)
+POST {{base}}/api/StockCount/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}&Note=[DEMO]
+
+### 5.5 Duyệt cấp 1 (Quản lý kho) rồi cấp 2 (Kế toán) – chạy 2 lần (người khác nhau, admin được miễn)
+POST {{base}}/api/StockCount/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{countId}}&Note=[DEMO] duyệt
+
+### 5.6 Ghi sổ (lệch ≤ 2% ghi thẳng; lệch > 2% chỉ khi đã duyệt đủ cấp – isApproved = true); dòng lệch → ADJUSTMENT
 POST {{base}}/api/StockCount/Post
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded

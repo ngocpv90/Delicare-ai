@@ -12,6 +12,8 @@ namespace AppDelicare.Model.Model
         public List<PurchaseRequestLineDetailModel> ListLine { get; set; } = [];
         /// <summary>PO đã lập từ đề nghị này.</summary>
         public List<PurchaseOrderBriefModel> ListPurchaseOrder { get; set; } = [];
+        /// <summary>BE2.3 (D-46): yêu cầu duyệt 2 cấp đang mở (cấp đang chờ, mục quyền, hạn) – null khi không chờ duyệt.</summary>
+        public ApprovalProgressModel? PendingApproval { get; set; }
     }
 
     public class PurchaseRequestLineDetailModel
@@ -70,6 +72,8 @@ namespace AppDelicare.Model.Model
         public bool NeedsDirectorApproval { get; set; }
         /// <summary>T15.1: mục quyền duyệt áp cho PO này: <c>scm-po</c> hoặc <c>scm-po-director</c> (MetaLink <c>#/wf-inbox?type=…</c>).</summary>
         public string? ApprovalScreenId { get; set; }
+        /// <summary>BE2.3: yêu cầu duyệt đang mở (cấp đang chờ / tổng số cấp, mục quyền, hạn) – null khi không chờ duyệt.</summary>
+        public ApprovalProgressModel? PendingApproval { get; set; }
         /// <summary>T15.1 (VAT phương án A – tính khi đọc, KHÔNG lưu DB, GAP-PUR-09): tổng chưa VAT = Σ thành tiền dòng.</summary>
         public decimal SubtotalAmount { get; set; }
         /// <summary>Σ tiền VAT các dòng (mỗi dòng làm tròn đồng).</summary>
