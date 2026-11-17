@@ -14,9 +14,11 @@ import {
 } from '../helpers/common-helper';
 import {
   DOMAIN_ROUTER,
+  HOME_ROUTE,
   ERROR,
   LOGO_LOGIN_NAME,
   PROJECT_NAME,
+  PROJECT_SHORT_NAME,
   SOURCE,
   STRING_EMPTY,
 } from '../helpers/constant-helper';
@@ -34,6 +36,7 @@ export class SignInComponent implements OnInit {
   private returnUrl!: string;
   private captch: string | undefined;
   public projectName = PROJECT_NAME;
+  public shortName = PROJECT_SHORT_NAME;
   public logoName = LOGO_LOGIN_NAME;
   public showPassword = false;
 
@@ -46,9 +49,8 @@ export class SignInComponent implements OnInit {
     private renderer: Renderer2,
     theme: ThemeService
   ) {
-    theme.use('delicare');
-    if (this.authenticationService.userValue?.token) {
-      this.router.navigate([SOURCE.concat(DOMAIN_ROUTER)]);
+    if (this.authenticationService.userValue) {
+      this.router.navigate([SOURCE.concat(DOMAIN_ROUTER, SOURCE, HOME_ROUTE)]);
     }
   }
 
@@ -64,7 +66,7 @@ export class SignInComponent implements OnInit {
     });
     this.returnUrl =
       this.route.snapshot.queryParams['returnUrl'] ||
-      SOURCE.concat(DOMAIN_ROUTER);
+      SOURCE.concat(DOMAIN_ROUTER, SOURCE, HOME_ROUTE);
   }
 
   public isInvalid(name: string): boolean {
@@ -107,7 +109,7 @@ export class SignInComponent implements OnInit {
             notificationCommon(this.notifyService, ERROR, data.message);
           } else {
             // tslint:disable-next-line:no-unused-expression
-            this.router.navigate([this.returnUrl]);
+            this.router.navigateByUrl(this.returnUrl);
           }
         },
         (error: any) => {

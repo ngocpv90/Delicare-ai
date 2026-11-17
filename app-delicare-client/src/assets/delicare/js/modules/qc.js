@@ -22,6 +22,12 @@
           if (res.some(x => !x.r)) return UI.toast('Chưa kết luận đủ các dòng', 'err');
           const rm = m.querySelector('#rm').value;
           if (res.some(x => x.r !== 'PASS') && !rm) return UI.toast('Nhập lý do cho dòng HOLD/REJECT', 'err');
+          if (Store.isLive) {
+            // QcInspection/Conclude: backend ghi dòng QC, phiếu nhập, lô và sự cố NCC trong một giao dịch (PASS / HOLD / REJECT ↔ DAT / DAT_MOT_PHAN / KHONG_DAT).
+            const num = v => v === '' || v === null || v === undefined ? null : Number(v);
+            return Store.act('QcInspection/Conclude', { json: { id, inspectorEmployeeId: qi.InspectorEmployeeId || null, note: rm || null, listLine: res.map(({ l, r }) => ({ goodsReceiptLineId: l.GoodsReceiptLineId, result: r, temperature: num(m.querySelector(`[data-t="${l.Id}"]`).value), weight: l.Weight ?? null, appearance: m.querySelector(`[data-a="${l.Id}"]`).value, packaging: m.querySelector(`[data-p="${l.Id}"]`).value, remark: r !== 'PASS' ? rm : (l.Remark || null) })) }, tables: ['QCInspection', 'QCInspectionLine', 'GoodsReceipt', 'GoodsReceiptLine', 'MaterialLot', 'SupplierIssue'] })
+              .then(x => { if (!x.ok) return; close(); UI.toast('Đã kết luận QC đầu vào', 'ok'); APP.refresh(); });
+          }
           res.forEach(({ l, r }) => { Store.update('QCInspectionLine', l.Id, { Result: r, Temperature: Number(m.querySelector(`[data-t="${l.Id}"]`).value), Appearance: m.querySelector(`[data-a="${l.Id}"]`).value, Packaging: m.querySelector(`[data-p="${l.Id}"]`).value, Remark: r !== 'PASS' ? rm : l.Remark }); const gl = Store.get('GoodsReceiptLine', l.GoodsReceiptLineId); if (gl) Store.update('GoodsReceiptLine', gl.Id, { QualityStatus: r, AcceptedQuantity: r === 'PASS' ? gl.ReceivedQuantity : 0, RejectedQuantity: r === 'REJECT' ? gl.ReceivedQuantity : 0 }); });
           const all = res.map(x => x.r); const overall = all.every(x => x === 'PASS') ? 'PASS' : all.every(x => x === 'REJECT') ? 'REJECT' : all.includes('PASS') ? 'PASS' : 'HOLD';
           Store.update('QCInspection', id, { Result: overall, InspectorEmployeeId: qi.InspectorEmployeeId || (Store.rows('Employee').find(e => Store.label('Position', e.PositionId).includes('QC')) || {}).Id, Note: rm || qi.Note });
@@ -75,6 +81,12 @@
       const vals = items.map(it => ({ it, v: el.querySelector(`[data-v="${it.Id}"]`).value, r: el.querySelector(`[data-rc="${it.Id}"]`).value, ca: el.querySelector(`[data-ca="${it.Id}"]`).value }));
       if (vals.some(x => !x.r)) return UI.toast('Chọn kết quả cho tất cả tiêu chí', 'err');
       if (vals.some(x => x.r === 'FAIL' && !x.ca)) return UI.toast('Tiêu chí FAIL bắt buộc nhập hành động khắc phục', 'err');
+      if (Store.isLive) {
+        // FoodSafetyChecklistResult/Record: ghi cả lượt checklist một lần; backend tự chuyển mẻ liên quan khi tiêu chí trọng yếu không đạt.
+        const crit0 = vals.filter(x => x.r === 'FAIL' && x.it.IsCritical);
+        return Store.act('FoodSafetyChecklistResult/Record', { json: { checklistId: ck.Id, checkDate: Store.ctx.date, shiftId: cs.shift || null, workstationId: (Store.rows('KitchenWorkstation')[2] || {}).Id || null, listItem: vals.map(x => ({ checklistItemId: x.it.Id, resultCode: x.r, actualValue: x.v || null, correctiveAction: x.ca || null })) }, tables: ['FoodSafetyChecklistResult', 'ProductionBatche'] })
+          .then(r => { if (!r.ok) return; UI.toast(crit0.length ? `Có ${crit0.length} tiêu chí TRỌNG YẾU không đạt – mẻ liên quan chuyển chờ QC` : 'Đã ghi kết quả checklist ATTP', crit0.length ? 'warn' : 'ok'); APP.refresh(); });
+      }
       vals.forEach(x => { const ex = today.find(r => r.ChecklistItemId === x.it.Id); const data = { ResultCode: x.r, ActualValue: x.v, CorrectiveAction: x.ca || null, CheckedBy: Store.user.id, CheckedAt: U.iso(new Date()) }; if (ex) Store.update('FoodSafetyChecklistResult', ex.Id, data); else Store.add('FoodSafetyChecklistResult', Object.assign({ ChecklistId: ck.Id, ChecklistItemId: x.it.Id, CheckDate: Store.ctx.date, ShiftId: cs.shift, WorkstationId: (Store.rows('KitchenWorkstation')[2] || {}).Id }, data)); });
       const crit = vals.filter(x => x.r === 'FAIL' && x.it.IsCritical);
       UI.toast(crit.length ? `Có ${crit.length} tiêu chí TRỌNG YẾU không đạt – mẻ liên quan chuyển chờ QC` : 'Đã ghi kết quả checklist ATTP', crit.length ? 'warn' : 'ok'); APP.refresh();

@@ -11,6 +11,8 @@ namespace AppDelicare.Services.Interface
     {
         public Task<IResults<PersonViewModel>> GetAll(PersonSearchRequest request);
         public Task<IResult<bool>> Save(PersonCustomRequest request, string typeSave);
+        /// <summary>T45R.8 (D-38): Person/Insert – tạo hồ sơ + đúng 1 tài khoản (+ nhóm) trong 1 transaction, trả mật khẩu tạm một lần.</summary>
+        public Task<IResult<PersonUserCreatedViewModel>> InsertPersonUser(PersonCustomRequest request);
         public IResults<Person> GetAllData();
         public Task<IResult<Person>> GetById(Guid id);
         public Task<IResults<PersonViewModel>> GetAllDataByKey(string key, bool isEdit);

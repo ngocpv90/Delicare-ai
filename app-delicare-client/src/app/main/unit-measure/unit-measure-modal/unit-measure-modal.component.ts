@@ -1,95 +1,44 @@
-import { Component, Input, OnInit } from '@angular/core';
-import {
-  UntypedFormBuilder,
-  UntypedFormGroup,
-  Validators,
-} from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { STRING_EMPTY } from 'src/app/helpers/constant-helper';
+import { Component } from '@angular/core';
+import { Validators } from '@angular/forms';
+import { ACTIVE_STATUSES, UOM_TYPES, toNumberParam } from 'src/app/helpers/master-data-options';
 import { UnitMeasureService } from 'src/app/services/unit-measure.service';
-import { NotifyService } from 'src/app/shared/notify.service';
+import { MasterModalBase } from 'src/app/shared/master/master-modal.base';
 
+// UnitMeasureRequest: Name, Code, UomType, DecimalPrecision, Status, Symbol, UnitType.
+// FE-2 adds the fields the old form missed (Update overwrites every column). UnitType is an older duplicate
+// of UomType: kept from the record, filled with UomType when empty (PROPOSED – BA/PO CONFIRM).
 @Component({
   selector: 'app-unit-measure-modal',
   templateUrl: './unit-measure-modal.component.html',
 })
-export class UnitMeasureModalComponent implements OnInit {
-  @Input() public title = STRING_EMPTY;
-  @Input() public data: any;
-  public isLoading = false;
-  public submitted = false;
-  public formGroup!: UntypedFormGroup;
+export class UnitMeasureModalComponent extends MasterModalBase {
+  public readonly statuses = ACTIVE_STATUSES;
+  public readonly uomTypes = UOM_TYPES;
+  protected requestFields = ['name', 'code', 'uomType', 'decimalPrecision', 'status', 'symbol', 'unitType'];
 
-  constructor(
-    private formBuilder: UntypedFormBuilder,
-    private unitMeasureService: UnitMeasureService,
-    private notify: NotifyService,
-    private activeModal: NgbActiveModal
-  ) {}
+  constructor(protected api: UnitMeasureService) {
+    super();
+  }
 
-  public ngOnInit(): void {
-    this.formGroup = this.formBuilder.group({
-      id: [STRING_EMPTY],
-      name: [STRING_EMPTY, [Validators.required]],
+  protected buildForm() {
+    return this.formBuilder.group({
+      code: ['', [Validators.required, Validators.maxLength(50)]],
+      name: ['', [Validators.required, Validators.maxLength(255)]],
+      symbol: [''],
+      uomType: [null, [Validators.required]],
+      decimalPrecision: [0, [Validators.min(0), Validators.max(6)]],
+      status: ['Active', [Validators.required]],
     });
-    if (this.data) {
-      this.isLoading = true;
-      this.unitMeasureService.getById(this.data.id).subscribe(
-        (data) => {
-          if (data.responseCode === 200) {
-            this.formGroup.patchValue(data.data);
-          }
-        },
-        () => {
-          this.isLoading = false;
-          this.notify.error();
-        },
-        () => {
-          this.isLoading = false;
-        }
-      );
-    }
   }
 
-  public isInvalid(name: string): boolean {
-    const control = this.formGroup.controls[name];
-    return control.invalid && (this.submitted || control.dirty || control.touched);
-  }
-
-  public destroyModal(reLoad: boolean): void {
-    this.activeModal.close({ reLoad });
-  }
-
-  public submitForm(): void {
-    this.submitted = true;
-    if (!this.formGroup.valid) {
-      return;
-    }
-    this.isLoading = true;
-    const params = this.formGroup.value;
-    params.name = params.name || STRING_EMPTY;
-    const formData: FormData = new FormData();
-    Object.keys(params).forEach((key) => formData.append(key, params[key] ?? STRING_EMPTY));
-    const request =
-      params.id && params.id !== STRING_EMPTY
-        ? this.unitMeasureService.update(formData)
-        : this.unitMeasureService.insert(formData);
-    request.subscribe(
-      (data) => {
-        if (data.responseCode === 200) {
-          this.notify.success(data.responseMessage);
-          this.destroyModal(true);
-        } else {
-          this.notify.error(data.responseMessage);
-        }
-      },
-      () => {
-        this.isLoading = false;
-        this.notify.error();
-      },
-      () => {
-        this.isLoading = false;
-      }
-    );
+  protected override toParams(v: any) {
+    return {
+      ...v,
+      code: (v.code ?? '').trim(),
+      name: (v.name ?? '').trim(),
+      symbol: (v.symbol ?? '').trim(),
+      decimalPrecision: toNumberParam(v.decimalPrecision),
+      unitType: this.record?.unitType || v.uomType,
+    };
   }
 }

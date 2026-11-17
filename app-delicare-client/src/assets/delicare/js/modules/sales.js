@@ -77,11 +77,18 @@
       foot: () => `${editable ? `<button class="btn" data-act="saveq">${I('ok')} Lưu số lượng</button>` : ''}${actions ? `<button class="btn orange" data-act="${actions[0]}">${I('approve')} ${actions[1]}</button>` : ''}${['Draft', 'Submitted', 'Confirmed'].includes(o.Status) ? `<button class="btn danger" data-act="cancel">Hủy đơn</button>` : ''}`,
       onAct: (a, row, close, btn) => {
         const d = btn.closest('.drawer');
-        if (a === 'saveq') { d.querySelectorAll('[data-ql]').forEach(inp => { const l = Store.get('OrderLine', inp.dataset.ql); const q = Math.max(0, Number(inp.value) || 0); Store.update('OrderLine', l.Id, { Quantity: q, LineAmount: q * (l.UnitPrice || 0) }); }); recalc(id); UI.toast('Đã cập nhật số lượng – OrderLine.Quantity (DEMO)', 'ok'); close(); orderDetail(id); APP.refresh(); }
-        if (a === 'submit') { if (!lines.length || !lines.every(l => l.ShiftId && l.MealType)) return UI.toast('Đơn phải có ít nhất 1 dòng với Ca và Loại suất', 'err'); Store.update('Order', id, { Status: 'Submitted' }); done('Đã gửi đơn'); }
-        if (a === 'confirm') { const fq = U.sum(fc, 'ForecastQuantity'); const diff = fq ? (o.TotalQuantity - fq) / fq * 100 : 0; UI.confirm(`Xác nhận đơn <b>${esc(o.OrderNumber)}</b> – ${U.num(o.TotalQuantity)} suất.<br><span class="small ${Math.abs(diff) > 10 ? 'bad' : 'muted'}">So với dự báo: ${fq ? U.pct(diff) : 'không có dự báo'}</span>`, () => { Store.update('Order', id, { Status: 'Confirmed' }); done('Đã xác nhận – đơn sẵn sàng vào kế hoạch sản xuất'); }); }
-        if (a === 'lock') UI.confirm('Chốt số lượng? Sau khi chốt, mọi thay đổi phải qua Yêu cầu đổi món / phê duyệt.<div class="notice gap mt small">GAP-F-07: SQL chưa có cột giờ chốt (cut-off). Mockup cho phép chốt thủ công.</div>', () => { Store.update('Order', id, { Status: 'Locked' }); done('Đã chốt số lượng'); });
-        if (a === 'cancel') UI.confirm('Hủy đơn hàng này?', r => { Store.update('Order', id, { Status: 'Cancelled', Note: r }, 'Hủy đơn'); done('Đã hủy đơn'); }, { input: 'Lý do hủy', required: true, danger: true, ok: 'Hủy đơn' });
+        // Chế độ API: action nghiệp vụ Order/* (backend kiểm tra giờ chốt, hợp đồng, dự báo…); DEMO: đổi trạng thái tại chỗ.
+        const T = ['Order', 'OrderLine', 'ApprovalRequest'];
+        const step = (action, form, status, msg) => Store.act('Order/' + action, { form: Object.assign({ Id: id }, form), tables: T, demo: () => Store.update('Order', id, Object.assign({ Status: status }, form && form.Reason ? { Note: form.Reason } : {})) }).then(r => { if (r.ok) done(msg); });
+        if (a === 'saveq') {
+          const qty = [...d.querySelectorAll('[data-ql]')].map(inp => ({ id: inp.dataset.ql, quantity: Math.max(0, Number(inp.value) || 0) }));
+          Store.act('Order/UpdateLines', { method: 'PUT', json: { id, listLine: qty }, tables: T, demo: () => { qty.forEach(x => { const l = Store.get('OrderLine', x.id); Store.update('OrderLine', l.Id, { Quantity: x.quantity, LineAmount: x.quantity * (l.UnitPrice || 0) }); }); recalc(id); } })
+            .then(r => { if (!r.ok) return; UI.toast('Đã cập nhật số lượng – OrderLine.Quantity (DEMO)', 'ok'); close(); orderDetail(id); APP.refresh(); });
+        }
+        if (a === 'submit') { if (!lines.length || !lines.every(l => l.ShiftId && l.MealType)) return UI.toast('Đơn phải có ít nhất 1 dòng với Ca và Loại suất', 'err'); step('Submit', null, 'Submitted', 'Đã gửi đơn'); }
+        if (a === 'confirm') { const fq = U.sum(fc, 'ForecastQuantity'); const diff = fq ? (o.TotalQuantity - fq) / fq * 100 : 0; UI.confirm(`Xác nhận đơn <b>${esc(o.OrderNumber)}</b> – ${U.num(o.TotalQuantity)} suất.<br><span class="small ${Math.abs(diff) > 10 ? 'bad' : 'muted'}">So với dự báo: ${fq ? U.pct(diff) : 'không có dự báo'}</span>`, () => step('Confirm', null, 'Confirmed', 'Đã xác nhận – đơn sẵn sàng vào kế hoạch sản xuất')); }
+        if (a === 'lock') UI.confirm('Chốt số lượng? Sau khi chốt, mọi thay đổi phải qua Yêu cầu đổi món / phê duyệt.<div class="notice gap mt small">GAP-F-07: SQL chưa có cột giờ chốt (cut-off). Mockup cho phép chốt thủ công.</div>', () => step('Lock', null, 'Locked', 'Đã chốt số lượng'));
+        if (a === 'cancel') UI.confirm('Hủy đơn hàng này?', r => step('Cancel', { Reason: r }, 'Cancelled', 'Đã hủy đơn'), { input: 'Lý do hủy', required: true, danger: true, ok: 'Hủy đơn' });
         function done(m) { close(); UI.toast(m + ' (Order.Status · DEMO)', 'ok'); APP.refresh(); orderDetail(id); }
       }
     });
@@ -107,6 +114,12 @@
           const cid = m.querySelector('#nC').value, box = m.querySelector('#nLines'), dte = m.querySelector('#nD').value;
           if (!cid || !box.dataset.ct) return UI.toast('Chọn khách hàng có hợp đồng hiệu lực', 'err');
           const ins = [...box.querySelectorAll('[data-m]')].filter(x => +x.value > 0); if (!ins.length) return UI.toast('Nhập ít nhất 1 dòng số lượng > 0', 'err');
+          if (Store.isLive) {
+            // Order/Create: backend tự sinh số đơn, lấy đơn giá từ ContractMeal, kiểm tra hợp đồng hiệu lực và giờ chốt.
+            const locId = Store.by('CustomerDeliveryLocation', 'CustomerId', cid)[0].Id;
+            return Store.act('Order/Create', { json: { customerId: cid, contractId: box.dataset.ct, deliveryLocationId: locId, mealDate: dte, deliveryDate: dte + 'T10:00:00', listLine: ins.map(x => ({ contractMealId: x.dataset.m, shiftId: x.dataset.s, quantity: +x.value, deliveryLocationId: x.dataset.l })) }, tables: ['Order', 'OrderLine'] })
+              .then(r => { if (!r.ok) return; const no = r.data && r.data.order; close(); os.date = dte; UI.toast('Đã tạo đơn ' + esc(no ? no.orderNumber : '') + ' (Draft)', 'ok'); APP.go('crm-order'); APP.refresh(); if (no) setTimeout(() => orderDetail(no.id), 80); });
+          }
           const n = Store.rows('Order').filter(o => U.day(o.MealDate) === dte).length + 1;
           const o = Store.add('Order', { CustomerId: cid, ContractId: box.dataset.ct, DeliveryLocationId: Store.by('CustomerDeliveryLocation', 'CustomerId', cid)[0].Id, OrderNumber: 'DH-' + dte.slice(2).replace(/-/g, '') + '-' + String(n).padStart(2, '0'), OrderDate: U.iso(new Date()), MealDate: dte, DeliveryDate: dte + 'T10:00', Status: 'Draft' });
           ins.forEach(x => { const ml = Store.get('ContractMeal', x.dataset.m); const q = +x.value; Store.add('OrderLine', { OrderId: o.Id, MenuId: (Store.rows('Menu').find(mn => U.day(mn.EffectiveFrom) <= dte && dte <= U.day(mn.EffectiveTo)) || {}).Id, MealType: ml.MealType, ShiftId: x.dataset.s, Quantity: q, UnitPrice: ml.UnitPrice, LineAmount: q * ml.UnitPrice, ContractMealId: ml.Id, Note: Store.get('CustomerDeliveryLocation', x.dataset.l).Name }); });
@@ -125,11 +138,19 @@
       top: `<div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Chuỗi đối soát Đặt → Sản xuất → Đóng gói → Giao → Nhận (BRD)</div><div class="panel-desc">Σ theo ngày ăn · chênh lệch = AcceptedQuantity − OrderedQuantity</div></div><div class="chart-legend"><span><i class="legend-dot" style="background:#B9CE8B"></i>Đặt</span><span><i class="legend-dot" style="background:#79A8CC"></i>Giao</span><span><i class="legend-dot" style="background:#F5B17E"></i>Nhận</span></div></div>${UI.bars(days.map(d => U.date(d).slice(0, 5)), [{ name: 'Đặt', values: days.map(d => U.sum(byDay[d], 'OrderedQuantity')), color: '#B9CE8B' }, { name: 'Giao', values: days.map(d => U.sum(byDay[d], 'DeliveredQuantity')), color: '#79A8CC' }, { name: 'Nhận', values: days.map(d => U.sum(byDay[d], 'AcceptedQuantity')), color: '#F5B17E' }], { h: 180 })}<div class="notice warn small mt">${I('alert')}<div>GAP-F-11: chưa có nơi cấu hình ngưỡng chênh lệch. Mockup đánh dấu đỏ khi |VariancePercent| &gt; 1%.</div></div></div>`,
       cols: [{ k: 'OrderId', label: 'Đơn hàng' }, { k: 'OrderedQuantity', label: 'Đặt', num: true }, { k: 'ProducedQty', label: 'Sản xuất', num: true }, { k: 'PackedQty', label: 'Đóng gói', num: true }, { k: 'DeliveredQuantity', label: 'Giao', num: true }, { k: 'AcceptedQuantity', label: 'Nhận', num: true }, { k: 'VariancePercent', label: 'Chênh lệch %', num: true, render: r => `<span class="${Math.abs(r.VariancePercent) > 1 ? 'bad' : 'up'}">${U.pct(r.VariancePercent, 2)}</span>` }, { k: 'FinalAmount', label: 'Giá trị chốt', num: true }, { k: 'Status', label: 'Trạng thái' }]
     });
+    // Chế độ API: in biên bản đối soát (PDF) và chốt đối soát qua action nghiệp vụ.
+    if (Store.isLive) APP.rowExtra(el, tr => {
+      const r = Store.get('OrderReconciliation', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td) return;
+      td.insertAdjacentHTML('afterbegin', `<button class="btn xs" data-prt title="In biên bản đối soát (PDF)">${I('export')} In</button> ${r.Status !== 'Closed' ? '<button class="btn xs orange" data-cls>Chốt</button> ' : ''}`);
+      td.querySelector('[data-prt]').onclick = () => Store.download('OrderReconciliation/Print', { id: r.Id });
+      const c = td.querySelector('[data-cls]'); if (c) c.onclick = () => UI.confirm('Chốt đối soát đơn <b>' + esc(Store.label('Order', r.OrderId)) + '</b>? Sau khi chốt không sửa được số liệu.', note => Store.act('OrderReconciliation/Close', { form: { Id: r.Id, Remark: note }, tables: ['OrderReconciliation', 'Order'] }).then(x => { if (x.ok) { UI.toast('Đã chốt đối soát', 'ok'); APP.refresh(); } }), { input: 'Ghi chú', ok: 'Chốt đối soát' });
+    });
   });
   // ---------- Hợp đồng: gửi phê duyệt ----------
   APP.register('crm-contract', (el, f) => {
     APP.genericList(el, f, { noTransit: true });
-    APP.rowExtra(el, tr => { const r = Store.get('Contract', tr.dataset.row); if (r.Status === 'Draft') { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-sub="${r.Id}">Gửi duyệt</button> `); td.querySelector('[data-sub]').onclick = () => { APP.submitApproval('CONTRACT', 'Contract', r.Id, [['Ban giám đốc']], 'Duyệt hợp đồng ' + r.ContractNumber); Store.update('Contract', r.Id, { Status: 'PendingApproval' }); APP.refresh(); }; } });
+    APP.rowExtra(el, tr => { const r = Store.get('Contract', tr.dataset.row); if (r.Status === 'Draft') { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-sub="${r.Id}">Gửi duyệt</button> `); td.querySelector('[data-sub]').onclick = () => Store.act('Contract/Submit', { form: { Id: r.Id }, tables: ['Contract', 'ApprovalRequest', 'ApprovalStep', 'ApprovalItem'], demo: () => { APP.submitApproval('CONTRACT', 'Contract', r.Id, [['Ban giám đốc']], 'Duyệt hợp đồng ' + r.ContractNumber); Store.update('Contract', r.Id, { Status: 'PendingApproval' }); } }).then(x => { if (!x.ok) return; if (!x.demo) UI.toast('Đã gửi duyệt hợp đồng ' + esc(r.ContractNumber), 'ok'); APP.refresh(); }); }
+      if (r.Status === 'Active' && Store.isLive) { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs danger" data-term="${r.Id}">Thanh lý</button> `); td.querySelector('[data-term]').onclick = () => UI.confirm('Thanh lý hợp đồng <b>' + esc(r.ContractNumber) + '</b>?', note => Store.act('Contract/Terminate', { form: { Id: r.Id, Reason: note }, tables: ['Contract'] }).then(x => { if (x.ok) { UI.toast('Đã thanh lý hợp đồng', 'ok'); APP.refresh(); } }), { input: 'Lý do thanh lý', required: true, danger: true, ok: 'Thanh lý' }); } });
   });
   // ---------- Dự báo: pivot ----------
   APP.register('crm-forecast', (el, f) => {

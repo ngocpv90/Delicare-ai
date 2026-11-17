@@ -1,0 +1,104 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Loại suất và đơn giá theo từng hợp đồng khách hàng (buổi sáng / trưa / tối / đêm).">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo tên suất, hợp đồng, khách hàng" aria-label="Tìm suất ăn" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="contractId" [items]="listContract" bindValue="id" bindLabel="label" placeholder="Tất cả hợp đồng" (selectionChange)="search()"></app-select>
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="mealType" [items]="mealTypes" bindValue="code" bindLabel="label" placeholder="Tất cả buổi" [searchable]="false" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('contractName')">
+                Hợp đồng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('contractName')"></i>
+              </th>
+              <th class="sortable" (click)="sort('customerName')">
+                Khách hàng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('customerName')"></i>
+              </th>
+              <th class="sortable" style="width: 120px" (click)="sort('mealType')">
+                Buổi <i class="fa-solid ms-1" [ngClass]="table.sortIcon('mealType')"></i>
+              </th>
+              <th class="sortable" (click)="sort('mealName')">
+                Tên suất <i class="fa-solid ms-1" [ngClass]="table.sortIcon('mealName')"></i>
+              </th>
+              <th>Hình thức phục vụ</th>
+              <th class="text-end sortable" style="width: 120px" (click)="sort('unitPrice')">
+                Đơn giá <i class="fa-solid ms-1" [ngClass]="table.sortIcon('unitPrice')"></i>
+              </th>
+              <th style="width: 100px">ĐVT</th>
+              <th style="width: 140px">Trạng thái</th>
+              @if (permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 110px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.contractName }}</td>
+                <td>{{ data.customerName }}</td>
+                <td>{{ labelOf(mealTypes, data.mealType) }}</td>
+                <td class="fw-semibold">{{ data.mealName }}</td>
+                <td>{{ data.serviceType }}</td>
+                <td class="text-end">{{ data.unitPrice | number: '1.0-0' }}</td>
+                <td>{{ data.unitName }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                @if (permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

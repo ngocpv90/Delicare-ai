@@ -1,0 +1,26 @@
+<div class="dc-page-header">
+  <nav class="dc-breadcrumb" aria-label="Đường dẫn trang">
+    <a [routerLink]="[homeLink]">Trang chủ</a>
+    @for (c of crumbs; track $index) {
+      <span class="sep">/</span>
+      @if ($last) {
+        <strong>{{ c.label }}</strong>
+      } @else if (c.link) {
+        <a [routerLink]="[c.link]">{{ c.label }}</a>
+      } @else {
+        <span>{{ c.label }}</span>
+      }
+    }
+  </nav>
+  <div class="dc-page-heading">
+    <div class="dc-page-title-wrap">
+      <h1 class="dc-page-title">{{ pageTitle }}</h1>
+      @if (description) {
+        <p class="dc-page-desc">{{ description }}</p>
+      }
+    </div>
+    <div class="dc-page-actions">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</div>

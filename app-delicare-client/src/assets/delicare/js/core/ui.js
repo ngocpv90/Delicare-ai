@@ -142,6 +142,8 @@
         });
         const v2 = opt.validate && opt.validate(out); if (v2) { ok = false; UI.toast(v2, 'err'); }
         if (!ok) return;
+        // opt.submit: màn hình tự lưu qua action nghiệp vụ (vd. LeaveRequest/Create) thay cho Insert / Update chung.
+        if (opt.submit) return opt.submit(out, close);
         let saved;
         if (editing) saved = Store.update(t, row.Id, out, opt.note); else saved = Store.add(t, Object.assign({}, opt.defaults || {}, out));
         close(); UI.toast((editing ? 'Đã cập nhật ' : 'Đã tạo ') + esc(Store.label(t, saved)) + ` <small>(dbo.${t} · DEMO)</small>`, 'ok');
@@ -165,7 +167,13 @@
   };
   UI.trace = (t, screenId) => UI.modal({ title: 'Truy vết Database – dbo.' + t, sub: 'Module → Function → Screen → Table → Column', size: 'lg', body: UI.traceHtml(t, screenId) });
   // ---------- Drawer chi tiết bản ghi ----------
-  UI.history = (t, id) => {
+  UI.history = (t, id, pane) => {
+    // Chế độ API: Common/GetHistory gộp AuditChange + quyết định duyệt + lịch sử phản ánh + tệp đính kèm (đã che dữ liệu nhạy cảm).
+    // Vẽ ngay bản cục bộ, có kết quả server thì thay; bảng backend không hỗ trợ thì giữ bản cục bộ.
+    if (pane && Store.isLive) Store.query('Common/GetHistory', { resource: Store.controllerOf(t), id }).then(x => {
+      if (!x.ok || !pane.isConnected) return;
+      pane.innerHTML = x.list.length ? `<div class="timeline">${x.list.map(h => `<div class="tl ${/DELETE|REJECT/i.test(h.action || '') ? 'red' : /INSERT|CREATE/i.test(h.action || '') ? '' : 'orange'}"><b>${esc(h.actionName || h.action || '')}${h.referenceNo ? ' · ' + esc(h.referenceNo) : ''}</b><small>${esc(U.dt(String(h.at || '').replace(/\.\d+$/, '')))} · ${esc(h.byName || '')}${h.comment ? ' · ' + esc(h.comment) : ''} · ${esc(h.source || '')}</small></div>`).join('')}</div>` : '<div class="empty">Chưa có lịch sử</div>';
+    });
     const a = Store.rows('AuditChange').filter(x => x.IdChange === id && (x.EntityName === t));
     const extra = [];
     if (t === 'CustomerComplaint') Store.by('ComplaintHistory', 'ComplaintId', id).forEach(h => extra.push({ at: h.EventAt, b: (h.OldStatus ? h.OldStatus + ' → ' : '') + (h.NewStatus || h.EventType), s: h.Comment + ' · dbo.ComplaintHistory' }));
@@ -189,7 +197,7 @@
     const perm = opt.screen ? Store.perm(opt.screen) : { edit: true };
     const tabs = [{ label: 'Thông tin', html: (opt.top || '') + UI.kvHtml(t, row) }].concat(opt.tabs || []).concat([
       { label: 'Liên quan', html: () => UI.children(t, id) },
-      { label: 'Lịch sử xử lý', html: () => UI.history(t, id) },
+      { label: 'Lịch sử xử lý', html: p => UI.history(t, id, p) },
       { label: 'Truy vết DB', html: () => UI.traceHtml(t, opt.screen) }]);
     UI.drawer({
       title: esc(Store.label(t, row)), sub: 'dbo.' + t + (opt.screen ? ' · #/' + opt.screen : ''), badge: sc ? UI.badge(row[sc], t, sc) : '', tabs,

@@ -1,0 +1,154 @@
+### DELICARE – Pilot P8 (T19, khung cũ D-30): chuyến CX- (đơn giao PH- + điểm dừng) → nhiệt độ xuất phát (≥ 60 °C) → xuất phát
+### (chặn khi mẻ chưa đóng gói / chưa lưu mẫu – D-42) → đến điểm → bàn giao + POD (nhiệt độ ≥ 60 °C) → đối soát suất phục vụ → đóng; phản ánh PA-.
+### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
+### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
+### Chuẩn bị: đơn Đang sản xuất (ProductionPlan/Release – p7-production.http), mẻ của ngày đã Đóng gói + lưu mẫu, xe (Vehicle có Code), tài xế (Employee).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@deliveryDate = 2026-11-17
+@shiftId = <ShiftId – ca TRUA>
+@vehicleId = <VehicleId>
+@driverId = <EmployeeId – tài xế>
+@orderId = <OrderId – đơn Đang sản xuất của ngày giao>
+@routeId = <DeliveryRouteId – lấy từ bước 3>
+@stopId = <DeliveryStopId – lấy từ listStop của bước 3>
+@batchId = <ProductionBatchId – mẻ chưa lưu mẫu (nếu bị chặn ở bước 6)>
+@reconciliationId = <OrderReconciliationId – lấy từ bước 12>
+@customerId = <CustomerId>
+@complaintId = <CustomerComplaintId – lấy từ bước 14>
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### ============ Chuyến xe (log-route)
+### 1. Đơn chờ xếp chuyến của ngày / ca
+GET {{base}}/api/DeliveryRoute/GetReadyOrders?DeliveryDate={{deliveryDate}}&ShiftId={{shiftId}}
+Authorization: Bearer {{token}}
+
+### 2. Bảng chuyến của ngày (+ statusCounts, tải, % tải)
+GET {{base}}/api/DeliveryRoute/GetBoard?DeliveryDate={{deliveryDate}}
+Authorization: Bearer {{token}}
+
+### 3. Lập chuyến CX-YYMMDD-<XE>-NN (JSON). listOrderId rỗng = mọi đơn chờ xếp của ngày / ca.
+POST {{base}}/api/DeliveryRoute/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "deliveryDate": "{{deliveryDate}}", "shiftId": "{{shiftId}}", "vehicleId": "{{vehicleId}}", "driverId": "{{driverId}}", "description": "[DEMO]", "listOrderId": ["{{orderId}}"] }
+
+### 4. Chi tiết chuyến: điểm dừng, sự kiện, mẻ của ngày / ca (sampleRetained), listBlocker
+GET {{base}}/api/DeliveryRoute/GetDetail?id={{routeId}}
+Authorization: Bearer {{token}}
+
+### 5. Xuất phát khi chưa đo nhiệt độ → 400 "Chưa đo nhiệt độ xuất phát" (+ mẻ chưa đóng gói / chưa lưu mẫu nếu có)
+POST {{base}}/api/DeliveryRoute/Dispatch
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{routeId}}
+
+### 6. Đo 55 °C (dưới ngưỡng) – bắt buộc hành động khắc phục; lần đo được lưu nhưng vẫn chặn xuất phát
+POST {{base}}/api/DeliveryRoute/RecordTemperature
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{routeId}}&TemperatureC=55&CorrectiveAction=[DEMO] Hâm lại thùng giữ nhiệt&DeviceCode=NK-01
+
+### 7. (Nếu bị chặn vì mẻ chưa lưu mẫu – D-42) ghi lưu mẫu cho mẻ, kể cả mẻ Đã đóng gói
+POST {{base}}/api/ProductionBatch/RecordSampleRetained
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&ActualValue=[DEMO] Tủ mẫu 150 g
+
+### 8. Xuất phát kèm lần đo đạt 65 °C → Đang giao
+POST {{base}}/api/DeliveryRoute/Dispatch
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{routeId}}&TemperatureC=65&DeviceCode=NK-01&Latitude=10.80&Longitude=106.70&Note=[DEMO]
+
+### ============ Thực hiện giao (log-execution / log-pod)
+### 9. Đến điểm
+POST {{base}}/api/DeliveryStop/Arrive
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{stopId}}&Latitude=10.81&Longitude=106.71
+
+### 10. Bàn giao + POD: nhiệt độ bàn giao 63 °C, giao 58, nhận 56 (2 suất từ chối → phản ánh PA- tự động); đơn hàng → Đã giao
+POST {{base}}/api/DeliveryStop/Deliver
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{stopId}}&TemperatureC=63&DeliveredQuantity=58&AcceptedQuantity=56&ReceiverName=[DEMO] Chị Lan&ReceiverPhone=0900000000&SignatureUrl=/files/pod/sign.png&Remark=[DEMO] 2 suất móp hộp
+
+### 11. (Thay cho 10 khi không giao được) giao thất bại – đơn hàng giữ Đang sản xuất để xếp chuyến giao bù
+# POST {{base}}/api/DeliveryStop/Fail
+# Authorization: Bearer {{token}}
+# Content-Type: application/x-www-form-urlencoded
+#
+# Id={{stopId}}&Reason=[DEMO] Nhiệt độ dưới 60 °C, trả về bếp
+
+### 11b. In biên bản giao hàng (.xlsx)
+GET {{base}}/api/DeliveryRoute/ExportDeliveryNote?id={{routeId}}
+Authorization: Bearer {{token}}
+
+### ============ Đối soát suất (crm-reconciliation)
+### 12. Đơn Đã giao chờ đối soát
+GET {{base}}/api/OrderReconciliation/GetPendingOrders?MealDate={{deliveryDate}}
+Authorization: Bearer {{token}}
+
+### 13. Ghi suất thực tế phục vụ 50, trả về 4, hủy 2 → Chênh lệch, giá trị = giá trị đơn × 50 ÷ suất đặt
+POST {{base}}/api/OrderReconciliation/Reconcile
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+OrderId={{orderId}}&ServedQuantity=50&ReturnedQuantity=4&WastedQuantity=2&Remark=[DEMO] khách xác nhận qua Zalo
+
+### 13b. Đóng đối soát (chênh > 1% phải có Remark) → đơn hàng Đã đối soát
+POST {{base}}/api/OrderReconciliation/Close
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{reconciliationId}}&Remark=[DEMO] Khách nghỉ ca
+
+### ============ Phản ánh (log-complaint)
+### 14. Tạo phản ánh PA- (High → hạn 4 giờ)
+POST {{base}}/api/CustomerComplaint/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerId}}&DeliveryStopId={{stopId}}&Severity=High&SourceChannel=ZALO&CategoryCode=QUALITY&Description=[DEMO] Cơm bị khô
+
+### 15. Giao xử lý → Đang xử lý
+POST {{base}}/api/CustomerComplaint/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{complaintId}}&Comment=[DEMO] Bếp trưởng kiểm tra
+
+### 16. Đã xử lý (cách xử lý bắt buộc)
+POST {{base}}/api/CustomerComplaint/Resolve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{complaintId}}&Comment=[DEMO] Giao bù 2 suất
+
+### 17. Đóng
+POST {{base}}/api/CustomerComplaint/Close
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{complaintId}}
+
+### 18. Chi tiết + lịch sử + isOverdue
+GET {{base}}/api/CustomerComplaint/GetDetail?id={{complaintId}}
+Authorization: Bearer {{token}}

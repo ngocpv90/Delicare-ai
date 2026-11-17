@@ -1,0 +1,115 @@
+<app-page-header title="Nhập dữ liệu Excel" description="Nạp danh mục ban đầu từ file Excel: tải file mẫu, điền dữ liệu, nạp lại. Nạp lại cùng mã sẽ cập nhật, không tạo trùng; dòng lỗi được bỏ qua và liệt kê bên dưới."></app-page-header>
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card dc-list-card">
+      <div class="card-body">
+        <div class="dc-card-title">Loại dữ liệu</div>
+        @if (isLoadingList) {
+          <div class="dc-empty">Đang tải...</div>
+        } @else {
+          <div class="dc-side-list">
+            @for (t of templates; track t.tableName) {
+              <button type="button" class="dc-side-item text-start" [class.active]="selected?.tableName === t.tableName" (click)="select(t)">
+                <div class="fw-semibold">{{ t.title }}</div>
+                <small class="text-muted">
+                  {{ t.hasTemplate ? 'Có file mẫu' : 'File vận hành' + (t.sheetName ? ' · sheet "' + t.sheetName + '"' : '') }} · {{ t.screenTitle }}
+                </small>
+              </button>
+            } @empty {
+              <div class="dc-empty">Bạn chưa có quyền nhập dữ liệu cho danh mục nào</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    @if (selected) {
+      <div class="card dc-list-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+            <div>
+              <div class="dc-card-title mb-1">{{ selected.title }}</div>
+              <small class="text-muted">Mã loại: {{ selected.tableName }} · Quyền: Nhập trên màn hình "{{ selected.screenTitle }}"</small>
+            </div>
+            @if (selected.hasTemplate) {
+              <button type="button" class="btn btn-outline-secondary" (click)="downloadTemplate()">
+                <i class="fa-solid fa-file-arrow-down me-1"></i>Tải file mẫu
+              </button>
+            }
+          </div>
+          <div class="table-responsive mb-3">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Cột</th>
+                  <th style="width: 110px">Bắt buộc</th>
+                  <th>Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of selected.listColumn ?? []; track $index) {
+                  <tr>
+                    <td class="fw-semibold">{{ c.header }}</td>
+                    <td>{{ c.required ? 'Có' : '' }}</td>
+                    <td>{{ c.note }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="dc-toolbar">
+            <input #fileInput type="file" class="form-control" style="max-width: 420px" accept=".xlsx,.xlsm" aria-label="Chọn file Excel" (change)="fileChanged($event)" />
+            <button type="button" class="btn btn-primary" [disabled]="!file || isLoading" (click)="upload()">
+              <i class="fa-solid fa-file-import me-1"></i>Nhập dữ liệu
+            </button>
+          </div>
+          <small class="text-muted">File .xlsx / .xlsm. File không được lưu lại trên máy chủ.</small>
+        </div>
+      </div>
+      @if (result) {
+        <div class="card dc-list-card">
+          <div class="card-body">
+            <div class="dc-card-title">Kết quả nhập</div>
+            <div class="text-muted small mb-2">{{ resultMessage }}</div>
+            <div class="dc-kpis">
+              <div class="dc-kpi"><label>Số dòng đọc được</label><b>{{ result.totalRows }}</b></div>
+              <div class="dc-kpi"><label>Thêm mới</label><b>{{ result.inserted }}</b></div>
+              <div class="dc-kpi"><label>Cập nhật</label><b>{{ result.updated }}</b></div>
+              <div class="dc-kpi"><label>Không đổi / bỏ qua</label><b>{{ result.skipped }}</b></div>
+              <div class="dc-kpi" [class.danger]="result.listError?.length"><label>Dòng lỗi</label><b>{{ result.listError?.length ?? 0 }}</b></div>
+            </div>
+            @if (result.listNote?.length) {
+              <ul class="small mb-3">
+                @for (n of result.listNote; track $index) {
+                  <li>{{ n }}</li>
+                }
+              </ul>
+            }
+            @if (result.listError?.length) {
+              <div class="table-responsive">
+                <table class="table dc-table mb-0">
+                  <thead>
+                    <tr>
+                      <th style="width: 110px">Dòng Excel</th>
+                      <th>Lỗi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (e of result.listError; track $index) {
+                      <tr>
+                        <td>{{ e.row }}</td>
+                        <td class="text-danger">{{ e.message }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>
+<app-loading *ngIf="isLoading"></app-loading>

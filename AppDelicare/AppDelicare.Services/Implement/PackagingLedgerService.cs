@@ -13,15 +13,24 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Option;
+using AppDelicare.Model.Request.Custom;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
-    public class PackagingLedgerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard) : IPackagingLedgerService
+    public class PackagingLedgerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IPackagingLedgerService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IReferenceGuard _referenceGuard = referenceGuard;
+        private readonly IClock _clock = clock;
+        private readonly ICurrentActor _currentActor = currentActor;
+        private readonly BusinessRulesOptions _rules = rules.Value;
 
         public async Task<IResults<PackagingLedgerViewModel>> GetAll(PackagingLedgerSearchRequest request)
         {
@@ -124,14 +133,12 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(PackagingLedgerRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<PackagingLedger>(request);
-            var entity = insert;
-            _unitOfWork.PackagingLedgerRepository.Add(insert);
-            await _unitOfWork.PackagingLedgerRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>
+        /// BE2.5: sổ bao bì chỉ ghi từ nghiệp vụ (spec 10: "PackagingLedger chỉ đọc + ghi từ nghiệp vụ") – bàn giao (OUT), thu hồi (IN), mẻ vệ sinh đạt (AVAILABLE),
+        /// ghi tay có lý do + kiểm số còn ở khách qua PackagingLedger/Record. CRUD Insert không ghi (không kiểm được số dư / người ghi).
+        /// </summary>
+        private static Task<string> Insert(PackagingLedgerRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Sổ bao bì", "DeliveryStop/Deliver, ContainerReturn/Record, CleaningBatch/Complete, PackagingLedger/Record"));
 
 
         public async Task<IResult<PackagingLedger>> GetById(Guid id)
@@ -159,6 +166,110 @@ namespace AppDelicare.Services.Implement
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.5 (spec 10.4 GET packaging-ledger/balance, Catalog 196; T20 "tỷ lệ thất thoát theo khách"): số khay / hộp còn ở khách = Σ OUT − Σ IN − Σ LOSS theo (khách, loại),
+        /// lũy kế tới ngày "đến"; tỷ lệ thất thoát trong kỳ = Σ LOSS ÷ Σ OUT × 100 so với ngưỡng (Customer.ExternalData containerLossMaxPct – GAP-PKG-01, không có → KpiContainerLossMaxPct 3%).
+        /// </summary>
+        public async Task<IResult<PackagingBalanceModel>> GetBalance(PackagingBalanceRequest request)
+        {
+            try
+            {
+                var list = await PackagingRules.BalanceAsync(_unitOfWork.DbContext, _rules, request.CustomerId, request.PackagingType, request.From, request.To);
+                if (request.OverThresholdOnly == true)
+                {
+                    list = [.. list.Where(x => x.IsOverThreshold)];
+                }
+                return Result<PackagingBalanceModel>.Success(new PackagingBalanceModel
+                {
+                    From = request.From?.Date,
+                    To = request.To?.Date,
+                    ListItem = list,
+                    TotalOutstanding = list.Sum(x => x.Outstanding),
+                    OverThresholdCount = list.Count(x => x.IsOverThreshold),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBalance: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.5 (T20 "PackagingLedger OUT / RETURN / LOSS"; PROPOSED D-54 b): ghi tay 1 dòng sổ bao bì có lý do – OUT (tồn đầu kỳ khay đang ở khách / giao bổ sung),
+        /// IN (khách trả ngoài phiếu thu hồi), LOSS (thất thoát tại khách – tính tỷ lệ, vượt ngưỡng → cảnh báo báo khách / chuyển kế toán). IN / LOSS không vượt số còn ở khách.
+        /// Sổ chỉ ghi thêm: sửa sai = ghi dòng ngược lại.
+        /// </summary>
+        public async Task<IResult<PackagingRecordModel>> Record(PackagingRecordRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                string type = (request.TransactionType ?? string.Empty).Trim().ToUpperInvariant();
+                if (!PackagingTransactionType.Manual.Contains(type))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.PackagingManualTypeInvalid, string.Join(", ", PackagingTransactionType.Manual)));
+                }
+                if (request.Quantity <= 0)
+                {
+                    return Fail(ConstantHelper.Message.PackagingQuantityInvalid);
+                }
+                string? packaging = DeliveryRules.Clean(request.PackagingType);
+                string? reason = DeliveryRules.Clean(request.Reason);
+                if (packaging == null || reason == null)
+                {
+                    return Fail(ConstantHelper.Message.ModelStateMessage);
+                }
+                var customer = await db.Customer.AsNoTracking().FirstOrDefaultAsync(c => c.Id == request.CustomerId && !c.IsDeleted);
+                if (customer == null)
+                {
+                    return Fail(ConstantHelper.Message.ComplaintCustomerNotFound);
+                }
+                DeliveryOrder? deliveryOrder = null;
+                if (request.DeliveryOrderId is { } did && did != Guid.Empty)
+                {
+                    deliveryOrder = await db.DeliveryOrder.AsNoTracking().FirstOrDefaultAsync(d => d.Id == did && !d.IsDeleted && d.CustomerId == customer.Id);
+                    if (deliveryOrder == null)
+                    {
+                        return Fail(ConstantHelper.Message.DeliveryOrderNotFound);
+                    }
+                }
+                if (type != PackagingTransactionType.Out)
+                {
+                    decimal outstanding = await PackagingRules.OutstandingAsync(db, customer.Id, packaging);
+                    if (request.Quantity > outstanding)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.PackagingOverOutstanding, customer.DisplayName ?? customer.Name,
+                            PackagingRules.Num(Math.Max(0, outstanding)), packaging, PackagingTransactionType.Label(type).ToLowerInvariant(), PackagingRules.Num(request.Quantity)));
+                    }
+                }
+                string? condition = DeliveryRules.Clean(request.ConditionCode)?.ToUpperInvariant()
+                    ?? (type == PackagingTransactionType.Loss ? null : PackagingCondition.Good);
+                var row = PackagingRules.Add(_unitOfWork, actor, _clock.Now, type, packaging, request.Quantity, deliveryOrder, customer.Id, condition, "Ghi tay: " + reason);
+                await _unitOfWork.PackagingLedgerRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                _unitOfWork.CommitTransaction();
+                var warnings = new List<string>();
+                var balance = await PackagingRules.CheckThresholdAsync(db, _rules, customer.Id, packaging, warnings);
+                return Result<PackagingRecordModel>.Success(new PackagingRecordModel { Ledger = row, Balance = balance, ListWarning = warnings }, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Record: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                throw;
+            }
+
+            IResult<PackagingRecordModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                return Result<PackagingRecordModel>.Fail(message);
             }
         }
     }

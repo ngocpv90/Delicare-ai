@@ -1,0 +1,534 @@
+### DELICARE – BE2.2: HỢP ĐỒNG, DỰ BÁO, ĐỔI MÓN, SỬA ĐƠN SAU GIỜ CHỐT (khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29C, ngày 27/11/2026): 73 / 73 đúng kỳ vọng.
+### Hợp đồng kèm suất + số HD- (78) → gửi duyệt / duyệt (79, engine CONTRACT 1 cấp) → dự báo nhập hàng loạt / công bố / ma trận (87–89)
+### → gợi ý số suất trong mẫu tạo đơn (92) → xác nhận đơn + lệch dự báo > 10% (96) → đổi món MenuChangeRequest (104) → kế hoạch Nháp cập nhật
+### → chấm dứt hợp đồng (80) → thêm / sửa đơn sau giờ chốt qua duyệt ORDER_CHANGE_AFTER_CUTOFF (ngày ăn = hôm nay, giờ chốt 20:00 hôm qua đã qua).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Mỗi lần chạy lại đổi @key và @day (ngày ăn tương lai, chưa qua 20:00 ngày trước,
+### chưa có kế hoạch sản xuất khác Nháp trên DB; @dow = thứ của @day: 1 = Thứ 2 … 7 = Chủ nhật).
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Đã chạy trên DB dev 2026-11-17 (key B22D, ngày 17/12/2026): 73 / 73 request đúng kỳ vọng (15 chốt an toàn trả 400); số chứng từ ở PROGRESS mục BE2.2.
+### BE2.4 (2026-11-17): không đổi bước. Đã chạy lại trên DB dev (key B24C, ngày 03/12/2026): 73 / 73 đúng kỳ vọng.
+### BE2.5 (2026-11-17): không đổi bước. Đã chạy lại trên DB dev (key B25C, ngày 04/01/2027 – Thứ 2): 73 / 73 đúng kỳ vọng.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@key = B22E
+@code = DEMO{{key}}
+@day = 2026-12-24
+### 2026-12-24 là Thứ 5 (đã dùng: B22D 17/12/2026).
+@dow = 4
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 0. DANH MỤC TỐI THIỂU: 2 món (gà, cá), khách A (2 điểm giao) + khách B
+### 0.1 Món gà / cá
+POST {{base}}/api/Dish/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}GA&Name=[DEMO] Gà kho {{key}}&StandardServingSize=150&Status=Active
+
+###
+POST {{base}}/api/Dish/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}CA&Name=[DEMO] Cá kho {{key}}&StandardServingSize=150&Status=Active
+
+###
+# @name ga
+GET {{base}}/api/Dish/GetAll?SearchText={{code}}GA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name ca
+GET {{base}}/api/Dish/GetAll?SearchText={{code}}CA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@gaId = {{ga.response.body.listData[0].id}}
+@caId = {{ca.response.body.listData[0].id}}
+
+### 0.2 Khách A + B, điểm giao A1 / A2
+POST {{base}}/api/Customer/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}A&CIF={{code}}A&Name=[DEMO] Khách A {{key}}&DisplayName=[DEMO] Khách A {{key}}&CustomerType=FACTORY&Status=Active
+
+###
+POST {{base}}/api/Customer/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}B&CIF={{code}}B&Name=[DEMO] Khách B {{key}}&DisplayName=[DEMO] Khách B {{key}}&CustomerType=FACTORY&Status=Active
+
+###
+# @name cusA
+GET {{base}}/api/Customer/GetAll?SearchText={{code}}A&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name cusB
+GET {{base}}/api/Customer/GetAll?SearchText={{code}}B&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@customerA = {{cusA.response.body.listData[0].id}}
+@customerB = {{cusB.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/CustomerDeliveryLocation/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&Code={{code}}A1&Name=[DEMO] Căng tin A1 {{key}}&Address=[DEMO] Quận 1&DeliveryWindowFrom=11:00&DeliveryWindowTo=12:00&Status=Active
+
+###
+POST {{base}}/api/CustomerDeliveryLocation/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&Code={{code}}A2&Name=[DEMO] Căng tin A2 {{key}}&Address=[DEMO] Quận 7&DeliveryWindowFrom=11:00&DeliveryWindowTo=12:00&Status=Active
+
+###
+# @name locA1
+GET {{base}}/api/CustomerDeliveryLocation/GetAll?SearchText={{code}}A1&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name locA2
+GET {{base}}/api/CustomerDeliveryLocation/GetAll?SearchText={{code}}A2&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@locA1 = {{locA1.response.body.listData[0].id}}
+@locA2 = {{locA2.response.body.listData[0].id}}
+
+########## 1. HỢP ĐỒNG (Catalog 78–80)
+### 1.1 CHỐT AN TOÀN → 400: loại suất trùng (TRUA 2 lần)
+POST {{base}}/api/Contract/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerA}}", "effectiveFrom": "{{$datetime "YYYY-MM-DD" -1 d}}", "listMeal": [ { "mealType": "TRUA", "unitPrice": 35000 }, { "mealType": "trua", "unitPrice": 36000 } ] }
+
+### 1.2 Tạo hợp đồng Nháp kèm 2 loại suất (số HD-YYMMDD-NNN tự sinh)
+# @name ctA
+POST {{base}}/api/Contract/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerA}}", "name": "[DEMO] HĐ A {{key}}", "signedDate": "{{$datetime "YYYY-MM-DD" -1 d}}", "effectiveFrom": "{{$datetime "YYYY-MM-DD" -1 d}}", "paymentTerm": "[DEMO] 30 ngày", "contractValue": 500000000, "note": "[DEMO]", "listMeal": [ { "mealType": "TRUA", "mealName": "[DEMO] Suất trưa", "serviceType": "SUAT", "unitPrice": 40000 }, { "mealType": "SANG", "mealName": "[DEMO] Suất sáng", "unitPrice": 20000 } ] }
+
+###
+@contractA = {{ctA.response.body.data.contract.id}}
+
+### 1.3 Thêm loại suất khi còn Nháp (TOI) – được
+POST {{base}}/api/ContractMeal/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ContractId={{contractA}}&MealType=TOI&MealName=[DEMO] Suất tối&UnitPrice=38000
+
+### 1.4 Gửi duyệt → Chờ duyệt + XN-
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}&Note=[DEMO] gửi duyệt
+
+### 1.5 CHỐT AN TOÀN → 400: hợp đồng đã gửi duyệt không thêm loại suất được
+POST {{base}}/api/ContractMeal/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ContractId={{contractA}}&MealType=DEM&MealName=[DEMO] Suất đêm&UnitPrice=30000
+
+### 1.6 Hộp duyệt hợp đồng (mục #/wf-inbox?type=crm-contract)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=crm-contract
+Authorization: Bearer {{token}}
+
+### 1.7 Duyệt → Hiệu lực
+POST {{base}}/api/Contract/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}&Note=[DEMO] đồng ý
+
+### 1.8 CHỐT AN TOÀN → 400: hợp đồng Hiệu lực không sửa qua CRUD
+PUT {{base}}/api/Contract/Update
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}&CustomerId={{customerA}}&EffectiveFrom={{$datetime "YYYY-MM-DD" -1 d}}&Status=Draft
+
+### 1.9 Chi tiết: loại suất SANG / TOI / TRUA (theo MealType), allowedActions = terminate
+# @name ctDetail
+GET {{base}}/api/Contract/GetDetail?id={{contractA}}
+Authorization: Bearer {{token}}
+
+###
+@mealTrua = {{ctDetail.response.body.data.listMeal[2].id}}
+@mealSang = {{ctDetail.response.body.data.listMeal[0].id}}
+
+### 1.10 Hợp đồng B: CRUD Insert (Status gửi lên bị bỏ qua → Nháp) + suất → gửi duyệt → từ chối (về Nháp) → gửi lại → duyệt
+POST {{base}}/api/Contract/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerB}}&ContractNumber={{code}}HDB&Name=[DEMO] HĐ B {{key}}&EffectiveFrom={{$datetime "YYYY-MM-DD" -1 d}}&Status=Active
+
+###
+# @name conB
+GET {{base}}/api/Contract/GetAll?SearchText={{code}}HDB&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@contractB = {{conB.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/ContractMeal/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ContractId={{contractB}}&MealType=TRUA&MealName=[DEMO] Suất trưa&UnitPrice=35000
+
+###
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}
+
+### 1.11 CHỐT AN TOÀN → 400: từ chối phải có lý do
+POST {{base}}/api/Contract/Reject
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}
+
+###
+POST {{base}}/api/Contract/Reject
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}&Note=[DEMO] sai điều khoản thanh toán
+
+###
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}
+
+###
+POST {{base}}/api/Contract/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}
+
+### 1.12 Thực đơn tuần (món gà ngày @dow) – duyệt, gán cho khách A
+POST {{base}}/api/Menu/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}TD&Name=[DEMO] Thực đơn {{key}}&EffectiveFrom={{day}}&EffectiveTo={{day}}
+
+###
+# @name menu
+GET {{base}}/api/Menu/GetAll?SearchText={{code}}TD&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@menuId = {{menu.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/MenuLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+MenuId={{menuId}}&DishId={{gaId}}&MealType=TRUA&DayOfWeek={{dow}}&SequenceNo=1&SortOrder=1
+
+###
+POST {{base}}/api/Menu/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{menuId}}
+
+###
+POST {{base}}/api/MenuAssignment/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&ContractId={{contractA}}&MenuId={{menuId}}&MealType=TRUA&EffectiveFrom={{day}}&EffectiveTo={{day}}
+
+########## 2. DỰ BÁO (Catalog 87–89) + GỢI Ý SỐ SUẤT (92)
+### 2.1 CHỐT AN TOÀN → 400: số suất dự báo âm
+POST {{base}}/api/Forecast/Import
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "listItem": [ { "customerId": "{{customerA}}", "deliveryLocationId": "{{locA1}}", "forecastDate": "{{day}}", "mealType": "TRUA", "forecastQuantity": -5 } ] }
+
+### 2.2 Nhập v1: điểm A1 = 100, cấp khách = 51 (chia cho điểm chưa có dự báo riêng → A2)
+POST {{base}}/api/Forecast/Import
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "note": "[DEMO] v1", "listItem": [ { "customerId": "{{customerA}}", "deliveryLocationId": "{{locA1}}", "forecastDate": "{{day}}", "mealType": "TRUA", "forecastQuantity": 100 }, { "customerId": "{{customerA}}", "forecastDate": "{{day}}", "mealType": "TRUA", "forecastQuantity": 51 } ] }
+
+### 2.3 Công bố
+POST {{base}}/api/Forecast/Publish
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+From={{day}}&To={{day}}&ListCustomerId={{customerA}}
+
+### 2.4 CHỐT AN TOÀN → 400: không còn bản Nháp để công bố
+POST {{base}}/api/Forecast/Publish
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+From={{day}}&To={{day}}&ListCustomerId={{customerA}}
+
+### 2.5 Mẫu tạo đơn: suggestedQuantity A1 = 100, A2 = 51
+GET {{base}}/api/Order/GetNewTemplate?customerId={{customerA}}&mealDate={{day}}
+Authorization: Bearer {{token}}
+
+### 2.6 Nhập v2 điểm A1 = 120 (Nháp) – ma trận vẫn 151 đã công bố, draftValues 120
+POST {{base}}/api/Forecast/Import
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "note": "[DEMO] v2", "listItem": [ { "customerId": "{{customerA}}", "deliveryLocationId": "{{locA1}}", "forecastDate": "{{day}}", "mealType": "TRUA", "forecastQuantity": 120 } ] }
+
+###
+GET {{base}}/api/Forecast/GetMatrix?From={{day}}&To={{day}}&CustomerId={{customerA}}
+Authorization: Bearer {{token}}
+
+### 2.7 Công bố v2 → v1 điểm A1 Bị thay thế; ma trận = 171
+POST {{base}}/api/Forecast/Publish
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+From={{day}}&To={{day}}
+
+###
+GET {{base}}/api/Forecast/GetMatrix?From={{day}}&To={{day}}&CustomerId={{customerA}}
+Authorization: Bearer {{token}}
+
+### 2.8 CHỐT AN TOÀN → 400: thêm dự báo qua CRUD Insert
+POST {{base}}/api/Forecast/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&ForecastDate={{day}}&ForecastQuantity=5
+
+########## 3. ĐƠN + LỆCH DỰ BÁO KHI XÁC NHẬN (96)
+### 3.1 Đơn A1 135 suất (dự báo 120 → +12,5%)
+# @name oA1
+POST {{base}}/api/Order/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerA}}", "contractId": "{{contractA}}", "deliveryLocationId": "{{locA1}}", "mealDate": "{{day}}", "note": "[DEMO]", "listLine": [ { "contractMealId": "{{mealTrua}}", "quantity": 135 } ] }
+
+###
+@orderA1 = {{oA1.response.body.data.order.id}}
+
+###
+POST {{base}}/api/Order/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA1}}
+
+### 3.2 Xác nhận: responseMessage có "Lệch dự báo +12.5%…", forecastVarianceExceeded = true, Note đơn có [LECH_DU_BAO]
+POST {{base}}/api/Order/Confirm
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA1}}
+
+###
+GET {{base}}/api/Order/GetDetail?id={{orderA1}}
+Authorization: Bearer {{token}}
+
+########## 4. ĐỔI MÓN (104) – kế hoạch Nháp của ngày được cập nhật khi duyệt
+### 4.1 Sinh kế hoạch Nháp của ngày (gà 135)
+# @name plan
+POST {{base}}/api/ProductionPlan/Generate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{day}}&Note=[DEMO]
+
+###
+@planId = {{plan.response.body.data.productionPlan.id}}
+
+### 4.2 CHỐT AN TOÀN → 400: yêu cầu đổi món phải có lý do
+POST {{base}}/api/MenuChangeRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+OrderId={{orderA1}}&OriginalDishId={{gaId}}&RequestedDishId={{caId}}&Quantity=30
+
+### 4.3 CHỐT AN TOÀN → 400: món cũ (cá) không có trong thực đơn của đơn
+POST {{base}}/api/MenuChangeRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+OrderId={{orderA1}}&OriginalDishId={{caId}}&RequestedDishId={{gaId}}&Quantity=30&Reason=[DEMO] thử
+
+### 4.4 Đổi 30 suất gà → cá (số PH-, gửi duyệt MENU_CHANGE)
+# @name mc1
+POST {{base}}/api/MenuChangeRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+OrderId={{orderA1}}&OriginalDishId={{gaId}}&RequestedDishId={{caId}}&Quantity=30&Reason=[DEMO] khách dị ứng gà
+
+###
+@mc1 = {{mc1.response.body.data.request.id}}
+
+###
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=menu-change-request
+Authorization: Bearer {{token}}
+
+### 4.5 Duyệt → kế hoạch Nháp: gà 105, cá 30
+POST {{base}}/api/MenuChangeRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{mc1}}&Note=[DEMO] đồng ý
+
+###
+GET {{base}}/api/ProductionPlan/GetDetail?id={{planId}}
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/MenuChangeRequest/GetDetail?id={{mc1}}
+Authorization: Bearer {{token}}
+
+### 4.6 Yêu cầu 2 (cá → gà 5 suất) → từ chối
+# @name mc2
+POST {{base}}/api/MenuChangeRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+OrderId={{orderA1}}&OriginalDishId={{gaId}}&RequestedDishId={{caId}}&Quantity=5&Reason=[DEMO] thử từ chối
+
+###
+POST {{base}}/api/MenuChangeRequest/Reject
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{mc2.response.body.data.request.id}}&Note=[DEMO] bếp không kịp
+
+### 4.7 CHỐT AN TOÀN → 400: không sửa yêu cầu đổi món qua CRUD
+PUT {{base}}/api/MenuChangeRequest/Update
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{mc1}}&RequestNo=X&MealDate={{day}}&Reason=x
+
+########## 5. CHẤM DỨT HỢP ĐỒNG (80)
+### 5.1 CHỐT AN TOÀN → 400: hợp đồng A còn đơn chưa giao sau ngày chấm dứt (ngày mai < @day)
+POST {{base}}/api/Contract/Terminate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}&Reason=[DEMO] khách dừng&EffectiveTo={{$datetime "YYYY-MM-DD" 1 d}}
+
+### 5.2 Chấm dứt hợp đồng B từ ngày mai (không có đơn)
+POST {{base}}/api/Contract/Terminate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}&Reason=[DEMO] khách dừng dịch vụ&EffectiveTo={{$datetime "YYYY-MM-DD"}}
+
+########## 6. THÊM / SỬA ĐƠN SAU GIỜ CHỐT (ORDER_CHANGE_AFTER_CUTOFF) – ngày ăn = hôm nay (giờ chốt 20:00 hôm qua đã qua)
+### 6.1 CHỐT AN TOÀN → 400: tạo đơn sau giờ chốt không lý do
+POST {{base}}/api/Order/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerA}}", "contractId": "{{contractA}}", "deliveryLocationId": "{{locA2}}", "mealDate": "{{$datetime "YYYY-MM-DD"}}", "listLine": [ { "contractMealId": "{{mealTrua}}", "quantity": 30 } ] }
+
+### 6.2 Thêm đơn sau giờ chốt kèm lý do → đơn Nháp + gửi duyệt
+# @name late
+POST {{base}}/api/Order/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerA}}", "contractId": "{{contractA}}", "deliveryLocationId": "{{locA2}}", "mealDate": "{{$datetime "YYYY-MM-DD"}}", "afterCutoffReason": "[DEMO] khách bổ sung ca", "note": "[DEMO]", "listLine": [ { "contractMealId": "{{mealTrua}}", "quantity": 30 } ] }
+
+###
+@lateId = {{late.response.body.data.order.id}}
+
+###
+# @name lateDetail
+GET {{base}}/api/Order/GetDetail?id={{lateId}}
+Authorization: Bearer {{token}}
+
+### 6.3 Duyệt (hộp duyệt crm-order) → đơn Đã chốt
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{lateDetail.response.body.data.pendingApprovalId}}&Approve=true&Note=[DEMO] đồng ý thêm
+
+### 6.4 CHỐT AN TOÀN → 400: sau giờ chốt không sửa thẳng bằng UpdateLines
+PUT {{base}}/api/Order/UpdateLines
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{lateId}}", "listLine": [ { "id": "{{lateDetail.response.body.data.listLine[0].id}}", "quantity": 35 } ] }
+
+### 6.5 CHỐT AN TOÀN → 400: xin sửa phải có lý do
+POST {{base}}/api/Order/RequestChange
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{lateId}}", "listLine": [ { "id": "{{lateDetail.response.body.data.listLine[0].id}}", "quantity": 35 } ] }
+
+### 6.6 Xin sửa: TRUA 30 → 35 + thêm SANG 10 → gửi duyệt (chưa ghi)
+POST {{base}}/api/Order/RequestChange
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{lateId}}", "reason": "[DEMO] khách tăng ca", "listLine": [ { "id": "{{lateDetail.response.body.data.listLine[0].id}}", "quantity": 35 } ], "listNewLine": [ { "contractMealId": "{{mealSang}}", "quantity": 10 } ] }
+
+###
+# @name lateDetail2
+GET {{base}}/api/Order/GetDetail?id={{lateId}}
+Authorization: Bearer {{token}}
+
+### 6.7 CHỐT AN TOÀN → 400: đang có yêu cầu duyệt
+POST {{base}}/api/Order/RequestChange
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{lateId}}", "reason": "[DEMO] lần 2", "listLine": [ { "id": "{{lateDetail.response.body.data.listLine[0].id}}", "quantity": 40 } ] }
+
+### 6.8 Duyệt → TRUA 35 + SANG 10, tổng 35 × 40.000 + 10 × 20.000 = 1.600.000, Đã chốt, Note [SAU_GIO_CHOT]
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{lateDetail2.response.body.data.pendingApprovalId}}&Approve=true&Note=[DEMO] đồng ý
+
+###
+GET {{base}}/api/Order/GetDetail?id={{lateId}}
+Authorization: Bearer {{token}}

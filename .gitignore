@@ -37,3 +37,5 @@ AppDelicare/AppDelicare.WebApi/Logs/
 
 # develop
 .env
+# BE2.7: tệp đính kèm người dùng tải lên (DocumentStorage:RootPath) – KHÔNG commit
+**/App_Data/

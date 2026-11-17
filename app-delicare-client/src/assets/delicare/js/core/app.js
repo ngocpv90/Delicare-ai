@@ -92,8 +92,17 @@
     el.querySelectorAll('[data-st]').forEach(c => c.onclick = () => { el.querySelectorAll('[data-st]').forEach(x => x.classList.toggle('active', x === c)); tbl.setFilter(sc, c.dataset.st); });
     el.querySelector('[data-act="add"]') && (el.querySelector('[data-act="add"]').onclick = () => UI.form(t, null, { title: f.name, defaults: opt.defaults, onSave: () => APP.refresh() }));
     el.querySelector('[data-act="export"]') && (el.querySelector('[data-act="export"]').onclick = () => { U.csv(rowsFn(), cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => UI.text(t, c.k, r[c.k]) })), `DELICARE_DEMO_${t}.csv`); UI.toast('Đã xuất CSV ' + rowsFn().length + ' dòng (DỮ LIỆU DEMO)', 'ok'); });
+    // Chế độ API: Common/ExportList xuất Excel từ server (đủ dòng, đúng quyền Xuất) cho các bảng backend có đăng ký.
+    if (Store.isLive && perm.exp !== false) APP.resources().then(set => {
+      const b = el.querySelector('[data-act="export"]'), key = Store.controllerOf(t);
+      if (!b || !b.isConnected || !set.has(key.toLowerCase()) || el.querySelector('[data-act="xlsx"]')) return;
+      b.insertAdjacentHTML('afterend', `<button class="btn" data-act="xlsx">${I('export')} Xuất Excel</button>`);
+      el.querySelector('[data-act="xlsx"]').onclick = () => Store.download('Common/ExportList', { Resource: key, Format: 'xlsx' }).then(r => { if (r.ok) UI.toast('Đã xuất ' + esc(r.fileName || 'Excel'), 'ok'); });
+    });
     return tbl;
   };
+  // Danh sách resource dùng chung của backend (Common/GetResources) – tải 1 lần.
+  APP.resources = () => APP._res || (APP._res = Store.query('Common/GetResources').then(x => new Set((x.ok ? (Array.isArray(x.data) ? x.data : x.list) : []).map(r => String(r.resource || '').toLowerCase()))));
   // Gắn nút thao tác riêng theo dòng – giữ nguyên khi lọc/sắp xếp/phân trang
   APP.rowExtra = (el, fn) => { const r = APP._lastTbl; if (r) r.extra = fn; el.querySelectorAll('#gt tr[data-row]').forEach(fn); };
   // Kho nguyên liệu mặc định: WH-RM (dữ liệu mẫu) → kho nguyên liệu đầu tiên → kho đầu tiên.

@@ -160,6 +160,11 @@ namespace AppDelicare.Services.Implement
             {
                 return string.Format(ConstantHelper.Message.MetaLinkExist, request.MetaLink);
             }
+            string levelError = CheckTwoLevels(request, null);
+            if (!string.IsNullOrEmpty(levelError))
+            {
+                return levelError;
+            }
             var insert = _mapper.Map<ObjectMenu>(request);
             _unitOfWork.ObjectMenuRepository.Add(insert);
             await _unitOfWork.ObjectMenuRepository.CommitAsync(typeSave);
@@ -192,9 +197,42 @@ namespace AppDelicare.Services.Implement
             {
                 return string.Format(ConstantHelper.Message.MetaLinkExist, request.MetaLink);
             }
+            string levelError = CheckTwoLevels(request, exist.Id);
+            if (!string.IsNullOrEmpty(levelError))
+            {
+                return levelError;
+            }
             var update = _mapper.Map(request, exist);
             _unitOfWork.ObjectMenuRepository.Update(update);
             await _unitOfWork.ObjectMenuRepository.CommitAsync(typeSave);
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// T45R.8 (FE-1): menu chỉ 2 cấp. Mục cha phải là mục cấp 1 (không có cha); mục đang có con không được gắn vào cha.
+        /// LevelShow chuẩn hóa theo ParentId (1 = không cha, 2 = có cha) như <see cref="UpdateOrder"/>.
+        /// </summary>
+        private string CheckTwoLevels(ObjectMenuRequest request, Guid? currentId)
+        {
+            if (request.ParentId is not Guid parentId)
+            {
+                request.LevelShow = 1;
+                return string.Empty;
+            }
+            var parent = _unitOfWork.ObjectMenuRepository.GetAll().AsNoTracking().FirstOrDefault(x => x.Id == parentId && !x.IsDeleted);
+            if (parent == null || parentId == currentId)
+            {
+                return ConstantHelper.Message.MenuParentNotFound;
+            }
+            if (parent.ParentId != null)
+            {
+                return ConstantHelper.Message.MenuMaxTwoLevels;
+            }
+            if (currentId is Guid id && _unitOfWork.ObjectMenuRepository.GetAll().Any(x => x.ParentId == id && !x.IsDeleted))
+            {
+                return ConstantHelper.Message.MenuHasChildren;
+            }
+            request.LevelShow = 2;
             return string.Empty;
         }
 

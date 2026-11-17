@@ -16,6 +16,7 @@ RUN dotnet publish AppDelicare.WebApi/AppDelicare.WebApi.csproj -c Release -o /a
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 # Giờ Việt Nam (D-18) + thư viện cho xử lý tài liệu (GemBox / Syncfusion).
+# PDF mẫu in (BE2.7.1, PDFsharp-MigraDoc): font Noto Sans nhúng trong AppDelicare.Services.dll → không cần gói font apt.
 ENV TZ=Asia/Ho_Chi_Minh \
     ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Staging \
@@ -23,7 +24,8 @@ ENV TZ=Asia/Ho_Chi_Minh \
 RUN apt-get update && apt-get install -y --no-install-recommends tzdata libfontconfig1 curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app .
-RUN mkdir -p /app/Logs /app/wwwroot/Import && chown -R app:app /app/Logs /app/wwwroot
+# BE2.7: tệp đính kèm DocumentFile (DocumentStorage:RootPath = App_Data/DocumentFiles, NGOÀI wwwroot) – gắn volume ở docker-compose.
+RUN mkdir -p /app/Logs /app/wwwroot/Import /app/App_Data/DocumentFiles && chown -R app:app /app/Logs /app/wwwroot /app/App_Data
 USER app
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -fsS http://localhost:8080/health/live || exit 1

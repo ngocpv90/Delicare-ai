@@ -4,6 +4,7 @@ using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using Microsoft.EntityFrameworkCore;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
@@ -27,8 +28,8 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@MenuId", request.MenuId);
-                dynamicParameters.Add("@DishId", request.DishId);
+                dynamicParameters.Add("@MenuId", request.MenuId == Guid.Empty ? null : request.MenuId);
+                dynamicParameters.Add("@DishId", request.DishId == Guid.Empty ? null : request.DishId);
                 dynamicParameters.Add("@MealType", request.MealType);
                 //dynamicParameters.Add("@DayOfWeek", request.DayOfWeek);
                 //dynamicParameters.Add("@SortOrder", request.SortOrder);
@@ -117,7 +118,9 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess,
+                    ResponseMessage = (typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess)
+                        // T13: cảnh báo không chặn (món chưa có công thức đang khóa).
+                        + (string.IsNullOrEmpty(_warning) ? string.Empty : ". " + _warning),
                     Data = true
                 };
             }
@@ -129,8 +132,61 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        // ============================================================ T13 – dòng thực đơn tuần (spec 6.2)
+        private string? _warning;
+
+        /// <summary>Thực đơn chỉ sửa món khi ở Draft / Approved (spec 6.2). Trả lỗi hoặc rỗng.</summary>
+        private async Task<string> CheckMenuEditable(Guid menuId, string action)
+        {
+            var menu = await _unitOfWork.MenuRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(m => m.Id == menuId && !m.IsDeleted);
+            if (menu == null)
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Thực đơn").Trim();
+            }
+            return menu.Status is null or MenuStatus.Draft or MenuStatus.Approved
+                ? string.Empty
+                : string.Format(ConstantHelper.Message.StatusActionInvalid, action, "thực đơn", "Nháp / Đã duyệt", MenuStatus.Label(menu.Status));
+        }
+
+        /// <summary>Spec 6.2: thứ 1–7, lựa chọn 1–9 (SequenceNo – GAP-MENU-01), có loại suất, món tồn tại; món chưa có công thức đang khóa → chỉ cảnh báo.</summary>
+        private async Task<string> CheckRules(MenuLineRequest request, string action)
+        {
+            string error = await CheckMenuEditable(request.MenuId, action);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return error;
+            }
+            if (request.DayOfWeek is not (>= 1 and <= 7))
+            {
+                return ConstantHelper.Message.MenuLineDayOfWeekRange;
+            }
+            if (request.SequenceNo is { } option && option is < 1 or > 9)
+            {
+                return ConstantHelper.Message.MenuLineOptionRange;
+            }
+            if (string.IsNullOrWhiteSpace(request.MealType))
+            {
+                return ConstantHelper.Message.MenuLineMealTypeRequired;
+            }
+            var dish = await _unitOfWork.DishRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(d => d.Id == request.DishId && !d.IsDeleted);
+            if (dish == null)
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Món").Trim();
+            }
+            bool hasLockedRecipe = await _unitOfWork.RecipeRepository.GetAll()
+                .AnyAsync(r => r.DishId == dish.Id && !r.IsDeleted && r.IsActive && r.Status == RecipeStatus.Locked);
+            _warning = hasLockedRecipe ? null : string.Format(ConstantHelper.Message.MenuDishNoLockedRecipe, dish.Name);
+            return string.Empty;
+        }
+
         private async Task<string> Insert(MenuLineRequest request, string typeSave)
         {
+            string invalid = await CheckRules(request, "thêm món");
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
+            request.SequenceNo ??= 1;
             var insert = _mapper.Map<MenuLine>(request);
             _unitOfWork.MenuLineRepository.Add(insert);
             await _unitOfWork.MenuLineRepository.CommitAsync(typeSave);
@@ -144,6 +200,14 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            // T13: không chuyển dòng sang thực đơn khác; kiểm tra như thêm mới.
+            request.MenuId = exist.MenuId;
+            string invalid = await CheckRules(request, "sửa món");
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
+            request.SequenceNo ??= exist.SequenceNo ?? 1;
             var update = _mapper.Map(request, exist);
             _unitOfWork.MenuLineRepository.Update(update);
             await _unitOfWork.MenuLineRepository.CommitAsync(typeSave);
@@ -165,6 +229,12 @@ namespace AppDelicare.Services.Implement
             if (delete == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            // T13: chỉ bỏ món khi thực đơn Draft / Approved.
+            string notEditable = await CheckMenuEditable(delete.MenuId, "bỏ món");
+            if (!string.IsNullOrEmpty(notEditable))
+            {
+                return notEditable;
             }
             _unitOfWork.MenuLineRepository.Update(delete);
             await _unitOfWork.MenuLineRepository.CommitAsync(typeSave);

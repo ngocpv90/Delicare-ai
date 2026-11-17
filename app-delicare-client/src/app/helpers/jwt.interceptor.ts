@@ -19,13 +19,16 @@ export class JwtInterceptor implements HttpInterceptor {
   ) {}
 
   private handleAuthError(err: HttpErrorResponse): Observable<any> {
-    //handle your auth error or rethrow
-    // 401 = hết phiên → về trang đăng nhập. 403 = thiếu quyền trên một màn hình: KHÔNG đăng xuất,
-    // trả lỗi cho nơi gọi tự báo (giao diện DELICARE đọc nhiều bảng cùng lúc, thiếu quyền một bảng là chuyện bình thường).
+    // 401 = not signed in / token expired (no refresh token yet, GAP-AUTH-01): drop the session, back to sign-in
     if (err.status === 401) {
-      this.router.navigate(['/dang-nhap']);
+      const returnUrl = this.router.url;
+      this.authenticationService.clearSession();
+      if (!returnUrl.startsWith('/dang-nhap')) {
+        this.router.navigate(['/dang-nhap'], { queryParams: { returnUrl } });
+      }
       return of(err.message);
     }
+    // 403 and everything else: the caller shows its own error (buttons are hidden by listMenu flags)
     return throwError(() => err);
   }
 
@@ -34,20 +37,13 @@ export class JwtInterceptor implements HttpInterceptor {
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
     // add auth header with jwt if user is logged in and request is to the api url
-    const user = this.authenticationService.userValue;
-    if (user !== null) {
-      const isLoggedIn = user && user.token;
-      const isApiUrl = request.url.startsWith(URL_API);
-      if (isLoggedIn && isApiUrl) {
-        request = request.clone({
-          setHeaders: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-      }
-      return next
-        .handle(request)
-        .pipe(catchError((x) => this.handleAuthError(x)));
+    const token = this.authenticationService.userValue?.token;
+    if (token && request.url.startsWith(URL_API)) {
+      request = request.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
     }
     return next
       .handle(request)

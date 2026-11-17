@@ -4,6 +4,9 @@ using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
+using Microsoft.EntityFrameworkCore;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
@@ -27,9 +30,9 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@CustomerId", request.CustomerId);
+                dynamicParameters.Add("@CustomerId", request.CustomerId == Guid.Empty ? null : request.CustomerId);
                 dynamicParameters.Add("@ContractId", request.ContractId);
-                dynamicParameters.Add("@MenuId", request.MenuId);
+                dynamicParameters.Add("@MenuId", request.MenuId == Guid.Empty ? null : request.MenuId);
                 dynamicParameters.Add("@DeliveryLocationId", request.DeliveryLocationId);
                 dynamicParameters.Add("@EffectiveFrom", request.EffectiveFrom);
                 dynamicParameters.Add("@EffectiveTo", request.EffectiveTo);
@@ -131,7 +134,14 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(MenuAssignmentRequest request, string typeSave)
         {
+            // T13 (spec 6.3): kiểm tra trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<MenuAssignment>(request);
+            insert.Status ??= ActiveStatus;
             _unitOfWork.MenuAssignmentRepository.Add(insert);
             await _unitOfWork.MenuAssignmentRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -143,6 +153,12 @@ namespace AppDelicare.Services.Implement
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            // T13 (spec 6.3): kiểm tra trước khi ghi.
+            var invalid = await CheckRules(request);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
             }
             var update = _mapper.Map(request, exist);
             _unitOfWork.MenuAssignmentRepository.Update(update);
@@ -197,6 +213,102 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
             }
+        }
+
+        // ============================================================ T13 – phân công thực đơn (spec 6.3)
+        private const string ActiveStatus = "Active";
+
+        /// <summary>
+        /// Spec 6.3: hiệu lực từ ≤ đến; khách / thực đơn tồn tại; hợp đồng (nếu có) thuộc đúng khách và có suất <c>MealType</c>;
+        /// điểm giao (nếu có) thuộc khách; không chồng hiệu lực với phân công Active khác cùng (khách, điểm giao, loại suất).
+        /// </summary>
+        private async Task<string> CheckRules(MenuAssignmentRequest request)
+        {
+            if (request.EffectiveTo != null && request.EffectiveTo.Value.Date < request.EffectiveFrom.Date)
+            {
+                return ConstantHelper.Message.EffectiveRangeInvalid;
+            }
+            if (!await _unitOfWork.CustomerRepository.GetAll().AnyAsync(c => c.Id == request.CustomerId && !c.IsDeleted))
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Khách hàng").Trim();
+            }
+            if (!await _unitOfWork.MenuRepository.GetAll().AnyAsync(m => m.Id == request.MenuId && !m.IsDeleted))
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Thực đơn").Trim();
+            }
+            if (request.ContractId is { } contractId)
+            {
+                var contract = await _unitOfWork.ContractRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(c => c.Id == contractId && !c.IsDeleted);
+                if (contract == null || contract.CustomerId != request.CustomerId)
+                {
+                    return ConstantHelper.Message.MenuAssignmentContractMismatch;
+                }
+                if (!string.IsNullOrEmpty(request.MealType)
+                    && !await _unitOfWork.ContractMealRepository.GetAll().AnyAsync(m => m.ContractId == contractId && !m.IsDeleted && m.MealType == request.MealType))
+                {
+                    return string.Format(ConstantHelper.Message.MenuAssignmentMealTypeNotInContract, request.MealType);
+                }
+            }
+            if (request.DeliveryLocationId is { } locationId
+                && !await _unitOfWork.CustomerDeliveryLocationRepository.GetAll().AnyAsync(l => l.Id == locationId && l.CustomerId == request.CustomerId && !l.IsDeleted))
+            {
+                return ConstantHelper.Message.MenuAssignmentLocationMismatch;
+            }
+            if (request.Status != null && request.Status != ActiveStatus)
+            {
+                return string.Empty;
+            }
+            DateTime from = request.EffectiveFrom.Date;
+            DateTime to = request.EffectiveTo?.Date ?? new DateTime(9999, 12, 31);
+            bool overlap = await _unitOfWork.MenuAssignmentRepository.GetAll().AnyAsync(a => !a.IsDeleted && a.Id != request.Id
+                && (a.Status == null || a.Status == ActiveStatus)
+                && a.CustomerId == request.CustomerId && a.DeliveryLocationId == request.DeliveryLocationId && a.MealType == request.MealType
+                && (a.EffectiveFrom == null || a.EffectiveFrom <= to) && (a.EffectiveTo == null || a.EffectiveTo >= from));
+            return overlap ? ConstantHelper.Message.MenuAssignmentOverlap : string.Empty;
+        }
+
+        public async Task<IResult<MenuResolveModel>> Resolve(MenuResolveRequest request)
+        {
+            try
+            {
+                var found = await ResolveAsync(request.CustomerId, request.DeliveryLocationId, request.MealType, request.Date);
+                return found == null
+                    ? Result<MenuResolveModel>.Fail(ConstantHelper.Message.MenuNotAssigned)
+                    : Result<MenuResolveModel>.Success(found, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Resolve: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Spec 6.3: phân công Active hiệu lực tại ngày, đúng loại suất (dòng không ghi loại suất áp cho mọi loại – ưu tiên thấp hơn);
+        /// cấp điểm giao trước, rồi cấp khách (DeliveryLocationId trống). Chỉ thực đơn Approved / Published (PROPOSED – BA/PO CONFIRM).
+        /// </summary>
+        public async Task<MenuResolveModel?> ResolveAsync(Guid customerId, Guid? deliveryLocationId, string? mealType, DateTime date)
+        {
+            DateTime day = date.Date;
+            var rows = await (from a in _unitOfWork.MenuAssignmentRepository.GetAll().AsNoTracking()
+                              join m in _unitOfWork.MenuRepository.GetAll().AsNoTracking() on a.MenuId equals m.Id
+                              where !a.IsDeleted && !m.IsDeleted && a.CustomerId == customerId
+                                  && (a.Status == null || a.Status == ActiveStatus)
+                                  && (m.Status == MenuStatus.Approved || m.Status == MenuStatus.Published)
+                                  && (a.EffectiveFrom == null || a.EffectiveFrom <= day) && (a.EffectiveTo == null || a.EffectiveTo >= day)
+                                  && (a.MealType == null || a.MealType == mealType)
+                                  && (a.DeliveryLocationId == null || a.DeliveryLocationId == deliveryLocationId)
+                              select new { a.Id, a.DeliveryLocationId, a.MealType, a.EffectiveFrom, MenuId = m.Id, m.Code, m.Name }).ToListAsync();
+            var best = rows
+                .OrderByDescending(r => r.DeliveryLocationId != null)
+                .ThenByDescending(r => r.MealType != null)
+                .ThenByDescending(r => r.EffectiveFrom)
+                .FirstOrDefault();
+            return best == null ? null : new MenuResolveModel
+            {
+                MenuId = best.MenuId, MenuCode = best.Code, MenuName = best.Name, MenuAssignmentId = best.Id,
+                Level = best.DeliveryLocationId != null ? "LOCATION" : "CUSTOMER",
+            };
         }
     }
 }

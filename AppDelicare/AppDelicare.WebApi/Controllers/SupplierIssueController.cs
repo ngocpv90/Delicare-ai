@@ -7,6 +7,7 @@ using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.WebApi.Controllers
 {
@@ -107,6 +108,44 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5 (spec 9.5): danh sách sự cố NCC theo trạng thái / NCC / mức độ / kỳ + isOverdue, hoursToDue, allowedTransitions, statusCounts.</summary>
+        [HttpGet("GetList")]
+        public async Task<IActionResult> GetList([FromQuery] SupplierIssueListRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetList(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5 (spec 9.5 transition, Catalog 170): chuyển trạng thái sự cố NCC (InProgress / Resolved – bắt buộc cách xử lý / Closed – ghi ClosedAt).</summary>
+        [HttpPost("Transition")]
+        public async Task<IActionResult> Transition([FromForm] SupplierIssueTransitionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Transition(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Transition: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

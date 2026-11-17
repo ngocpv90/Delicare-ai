@@ -5,6 +5,7 @@ using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.WebApi.Controllers
 {
@@ -108,6 +109,82 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5 (spec 9.4): chi tiết mẻ vệ sinh khay / hộp – 6 bước + kết quả mới nhất, nguồn thu hồi / kiểm tra, allowedActions.</summary>
+        [HttpGet("GetDetail")]
+        public async Task<IActionResult> GetDetail(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetDetail(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5 (spec 9.4 POST cleaning-batches, Catalog 167): lập mẻ vệ sinh VS- từ phiếu kiểm tra thu hồi (số khay ≤ số dùng được còn lại).</summary>
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromForm] CleaningBatchCreateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Create(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Create: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// BE2.5 (spec 9.4 results, Catalog 168): ghi kết quả các bước vệ sinh (checklist VS-KHAY, đi lần lượt) – JSON vì có danh sách bước.
+        /// Quyền Thêm của màn "Checklist vệ sinh".
+        /// </summary>
+        [Security.Permission("qc-cleaning-result", PermissionAction.Add)]
+        [HttpPost("RecordResults")]
+        public async Task<IActionResult> RecordResults([FromBody] CleaningRecordRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.RecordResults(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RecordResults: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5 (spec 9.4 complete, Catalog 169): kết luận mẻ vệ sinh PASS (đủ các bước ĐẠT → sổ bao bì AVAILABLE) / REJECT (lý do – vệ sinh lại).</summary>
+        [HttpPost("Complete")]
+        public async Task<IActionResult> Complete([FromForm] CleaningCompleteRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Complete(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Complete: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

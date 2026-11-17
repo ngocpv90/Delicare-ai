@@ -1,3 +1,4 @@
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NgModule } from '@angular/core';
 
 import { NotFoundModule } from 'src/app/not-found/not-found.module';
@@ -12,6 +13,7 @@ import { ObjectMenuComponent } from './object-menu.component';
   declarations: [ObjectMenuComponent, ObjectMenuModalComponent],
   imports: [
     SharedUiModule,
+    DragDropModule,
     ObjectMenuRoutingModule,
     LoadingModule,
     NotFoundModule,

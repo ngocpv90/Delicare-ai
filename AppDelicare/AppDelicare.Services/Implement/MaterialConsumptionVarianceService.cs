@@ -10,16 +10,22 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Option;
+using AppDelicare.Model.Request.Custom;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
     public class MaterialConsumptionVarianceService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IMaterialConsumptionVarianceService
+        , IAuditChangeService auditChangeService, IOptions<BusinessRulesOptions> rules) : IMaterialConsumptionVarianceService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private readonly BusinessRulesOptions _rules = rules.Value;
 
         public async Task<IResults<MaterialConsumptionVarianceViewModel>> GetAll(MaterialConsumptionVarianceSearchRequest request)
         {
@@ -27,8 +33,8 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ProductionOrderId", request.ProductionOrderId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@ProductionOrderId", request.ProductionOrderId == Guid.Empty ? null : request.ProductionOrderId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 //dynamicParameters.Add("@StandardQuantity", request.StandardQuantity);
                 //dynamicParameters.Add("@ActualQuantity", request.ActualQuantity);
                 //dynamicParameters.Add("@VarianceQuantity", request.VarianceQuantity);
@@ -129,26 +135,13 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(MaterialConsumptionVarianceRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<MaterialConsumptionVariance>(request);
-            _unitOfWork.MaterialConsumptionVarianceRepository.Add(insert);
-            await _unitOfWork.MaterialConsumptionVarianceRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.4: Chênh lệch tiêu hao chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/Close) – CRUD Insert không ghi.</summary>
+        private Task<string> Insert(MaterialConsumptionVarianceRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Chênh lệch tiêu hao", "ProductionOrder/Close"));
 
-        private async Task<string> Update(MaterialConsumptionVarianceRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.MaterialConsumptionVarianceRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.MaterialConsumptionVarianceRepository.Update(update);
-            await _unitOfWork.MaterialConsumptionVarianceRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.4: Chênh lệch tiêu hao chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/Close) – CRUD Update không ghi.</summary>
+        private Task<string> Update(MaterialConsumptionVarianceRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Chênh lệch tiêu hao", "ProductionOrder/Close"));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {
@@ -195,6 +188,50 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.4 (spec 7.9, Catalog 135): chênh lệch tiêu hao (chỉ đọc – sinh khi đóng lệnh SX) theo lệnh / ngày sản xuất (từ / đến) / nguyên liệu,
+        /// kèm lệnh, món, ngày, cờ vượt ngưỡng <c>ConsumptionVariancePctWarning</c>.
+        /// </summary>
+        public async Task<IResults<ConsumptionVarianceModel>> GetList(ConsumptionVarianceListRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                List<Guid>? orderIds = null;
+                if (request.From != null || request.To != null)
+                {
+                    var planIds = await db.ProductionPlan.AsNoTracking()
+                        .Where(p => !p.IsDeleted && (request.From == null || p.ProductionDate >= request.From.Value.Date)
+                            && (request.To == null || p.ProductionDate < request.To.Value.Date.AddDays(1)))
+                        .Select(p => p.Id).ToListAsync();
+                    orderIds = await db.ProductionOrder.AsNoTracking().Where(o => planIds.Contains(o.ProductionPlanId)).Select(o => o.Id).ToListAsync();
+                }
+                var rows = await db.MaterialConsumptionVariance.AsNoTracking()
+                    .Where(v => !v.IsDeleted
+                        && (request.ProductionOrderId == null || request.ProductionOrderId == Guid.Empty || v.ProductionOrderId == request.ProductionOrderId)
+                        && (request.IngredientId == null || request.IngredientId == Guid.Empty || v.IngredientId == request.IngredientId)
+                        && (orderIds == null || orderIds.Contains(v.ProductionOrderId)))
+                    .ToListAsync();
+                var list = await CostingRules.VarianceModelsAsync(db, rows, _rules);
+                if (request.OverThresholdOnly)
+                {
+                    list = [.. list.Where(v => v.IsOverThreshold)];
+                }
+                return new Results<ConsumptionVarianceModel>
+                {
+                    ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
+                    ResponseMessage = ConstantHelper.Message.GetAllSuccessfully,
+                    ListData = [.. list.OrderBy(v => v.ProductionDate).ThenBy(v => v.ProductionOrderNumber).ThenBy(v => v.IngredientName)],
+                    TotalRecords = list.Count,
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
                 throw;
             }
         }

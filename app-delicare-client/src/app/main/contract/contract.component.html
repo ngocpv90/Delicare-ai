@@ -1,0 +1,191 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Hợp đồng suất ăn với khách hàng: thời hạn hiệu lực, giá trị, điều khoản thanh toán và bảng suất ăn – đơn giá.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo số hợp đồng, tên, khách hàng" aria-label="Tìm hợp đồng" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="customerId" [items]="listCustomer" bindValue="id" bindLabel="label" placeholder="Tất cả khách hàng" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 140px" (click)="sort('contractNumber')">
+                Số hợp đồng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('contractNumber')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên hợp đồng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="sortable" (click)="sort('customerName')">
+                Khách hàng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('customerName')"></i>
+              </th>
+              <th class="sortable" style="width: 110px" (click)="sort('signedDate')">
+                Ngày ký <i class="fa-solid ms-1" [ngClass]="table.sortIcon('signedDate')"></i>
+              </th>
+              <th class="sortable" style="width: 190px" (click)="sort('effectiveFrom')">
+                Hiệu lực <i class="fa-solid ms-1" [ngClass]="table.sortIcon('effectiveFrom')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 130px" (click)="sort('contractValue')">
+                Giá trị <i class="fa-solid ms-1" [ngClass]="table.sortIcon('contractValue')"></i>
+              </th>
+              <th class="text-end" style="width: 80px">Số suất</th>
+              <th style="width: 130px">Trạng thái</th>
+              <th class="text-end" style="width: 140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.contractNumber }}</a>
+                </td>
+                <td class="fw-semibold">{{ data.name }}</td>
+                <td>{{ data.customerName }}</td>
+                <td>{{ data.signedDate | date: dateFormat }}</td>
+                <td>{{ (data.effectiveFrom | date: dateFormat) || '…' }} – {{ (data.effectiveTo | date: dateFormat) || '…' }}</td>
+                <td class="text-end">{{ data.contractValue | number: '1.0-0' }}</td>
+                <td class="text-end">{{ data.mealCount }}</td>
+                <td><app-status-badge key="Contract.Status" [code]="data.status"></app-status-badge></td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Xem suất ăn" aria-label="Xem suất ăn" (click)="openDrawer(data)"><i class="fa-solid fa-eye"></i></button>
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                  }
+                  @if (permission.allowDelete) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="drawerRow?.contractNumber + ' · ' + (drawerRow?.name || '')"
+    [subtitle]="drawerRow?.customerName"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    width="820px"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (drawerTab === 'info') {
+        <div class="dc-kv">
+          <div><label>Số hợp đồng</label><span>{{ drawerRow.contractNumber }}</span></div>
+          <div><label>Tên hợp đồng</label><span>{{ drawerRow.name || '—' }}</span></div>
+          <div><label>Khách hàng</label><span>{{ drawerRow.customerName || '—' }}</span></div>
+          <div><label>Ngày ký</label><span>{{ (drawerRow.signedDate | date: dateFormat) || '—' }}</span></div>
+          <div><label>Hiệu lực</label><span>{{ (drawerRow.effectiveFrom | date: dateFormat) || '…' }} – {{ (drawerRow.effectiveTo | date: dateFormat) || '…' }}</span></div>
+          <div><label>Giá trị hợp đồng</label><span>{{ (drawerRow.contractValue | number: '1.0-0') || '—' }}</span></div>
+          <div><label>Điều khoản thanh toán</label><span>{{ drawerRow.paymentTerm || '—' }}</span></div>
+          <div>
+            <label>Trạng thái</label>
+            <span><app-status-badge key="Contract.Status" [code]="drawerRow.status"></app-status-badge></span>
+          </div>
+          <div><label>Ghi chú</label><span>{{ drawerRow.note || '—' }}</span></div>
+        </div>
+      }
+      @if (drawerTab === 'meal') {
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Loại suất và đơn giá theo hợp đồng – dùng khi tạo đơn hàng.</span>
+          @if (mealPermission?.allowAdd) {
+            <button type="button" class="btn btn-primary btn-sm" (click)="openMealModal()"><i class="fa-solid fa-plus me-1"></i>Thêm suất</button>
+          }
+        </div>
+        @if (isLoadingMeal) {
+          <div class="dc-empty">Đang tải...</div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Buổi / loại suất</th>
+                  <th>Tên suất</th>
+                  <th>Hình thức phục vụ</th>
+                  <th class="text-end">Đơn giá</th>
+                  <th>ĐVT</th>
+                  <th>Trạng thái</th>
+                  @if (mealPermission?.allowEdit || mealPermission?.allowDelete) {
+                    <th class="text-end" style="width: 100px">Thao tác</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of meals; track m.id) {
+                  <tr>
+                    <td>{{ labelOf(mealTypes, m.mealType) }}</td>
+                    <td class="fw-semibold">{{ m.mealName }}</td>
+                    <td>{{ m.serviceType }}</td>
+                    <td class="text-end">{{ m.unitPrice | number: '1.0-0' }}</td>
+                    <td>{{ m.unitName }}</td>
+                    <td><app-status-badge [code]="m.status" [label]="labelOf(recordStatuses, m.status)"></app-status-badge></td>
+                    @if (mealPermission?.allowEdit || mealPermission?.allowDelete) {
+                      <td class="dc-actions">
+                        @if (mealPermission?.allowEdit) {
+                          <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openMealModal(m)"><i class="fa-solid fa-pen"></i></button>
+                        }
+                        @if (mealPermission?.allowDelete) {
+                          <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="deleteMeal(m.id)"><i class="fa-solid fa-trash"></i></button>
+                        }
+                      </td>
+                    }
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="dc-empty">Hợp đồng chưa có suất ăn</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+    <ng-container drawer-footer>
+      @if (permission.allowEdit) {
+        <button type="button" class="btn btn-primary" (click)="editFromDrawer()"><i class="fa-solid fa-pen me-1"></i>Sửa hợp đồng</button>
+      }
+    </ng-container>
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

@@ -27,7 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ContainerReturnId", request.ContainerReturnId);
+                dynamicParameters.Add("@ContainerReturnId", request.ContainerReturnId == Guid.Empty ? null : request.ContainerReturnId);
                 dynamicParameters.Add("@InspectionDate", request.InspectionDate);
                 dynamicParameters.Add("@InspectorEmployeeId", request.InspectorEmployeeId);
                 dynamicParameters.Add("@Result", request.Result);
@@ -127,47 +127,14 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(ReturnInspectionRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<ReturnInspection>(request);
-            _unitOfWork.ReturnInspectionRepository.Add(insert);
-            await _unitOfWork.ReturnInspectionRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.5: phiếu kiểm tra chỉ lập qua ContainerReturn/Inspect (phiếu thu hồi → Đã kiểm tra, tự lập mẻ vệ sinh) – không thêm / sửa / xóa qua CRUD.</summary>
+        private static Task<string> Insert(ReturnInspectionRequest request, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private async Task<string> Update(ReturnInspectionRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.ReturnInspectionRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.ReturnInspectionRepository.Update(update);
-            await _unitOfWork.ReturnInspectionRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Update(ReturnInspectionRequest request, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(ReturnInspection), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.ReturnInspectionRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.ReturnInspectionRepository.Update(delete);
-            await _unitOfWork.ReturnInspectionRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Delete(Guid? id, string typeSave) => Task.FromResult(CrudBlocked);
+
+        private static string CrudBlocked => string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Phiếu kiểm tra vật dụng thu hồi", "ContainerReturn/Inspect");
 
         public async Task<IResult<ReturnInspection>> GetById(Guid id)
         {

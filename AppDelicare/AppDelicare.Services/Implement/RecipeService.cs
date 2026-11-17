@@ -22,7 +22,8 @@ namespace AppDelicare.Services.Implement
 {
     public class RecipeService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService
-        , IUomConversionService uomConversionService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IRecipeService
+        , IUomConversionService uomConversionService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules
+        , IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService) : IRecipeService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -32,6 +33,8 @@ namespace AppDelicare.Services.Implement
         private readonly IClock _clock = clock;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly BusinessRulesOptions _rules = rules.Value;
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        private readonly IApprovalRequestService _approvalRequestService = approvalRequestService;
 
         public async Task<IResults<RecipeViewModel>> GetAll(RecipeSearchRequest request)
         {
@@ -39,7 +42,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@DishId", request.DishId);
+                dynamicParameters.Add("@DishId", request.DishId == Guid.Empty ? null : request.DishId);
                 dynamicParameters.Add("@VersionCode", request.VersionCode);
                 //dynamicParameters.Add("@YieldQuantity", request.YieldQuantity);
                 dynamicParameters.Add("@YieldUnitId", request.YieldUnitId);
@@ -358,18 +361,13 @@ namespace AppDelicare.Services.Implement
                 }
                 recipe!.Status = RecipeStatus.PendingApproval;
                 _unitOfWork.RecipeRepository.Update(recipe);
-                _unitOfWork.ApprovalRequestRepository.Add(new ApprovalRequest
+                // T12: yêu cầu duyệt qua engine chung (mã XN-, bước duyệt, nội dung được duyệt để chống sửa sau khi gửi).
+                var (_, approvalError) = await _approvalRequestService.CreateAsync(RecipeStatus.BusinessType, recipe.Id);
+                if (approvalError != null)
                 {
-                    Id = Guid.NewGuid(),
-                    BusinessType = RecipeStatus.BusinessType,
-                    BusinessId = recipe.Id,
-                    RequestNo = "RV-" + _clock.Now.ToString("yyMMdd-HHmmssfff", System.Globalization.CultureInfo.InvariantCulture),
-                    RequestStatus = "Pending",
-                    RequestedAt = _clock.Now,
-                    RequestedBy = _currentActor.RequireActor().UserId,
-                    CorrelationId = _currentActor.CorrelationId.Length <= 100 ? _currentActor.CorrelationId : _currentActor.CorrelationId[..100],
-                    PayloadJson = JsonConvert.SerializeObject(new { recipe.Id, recipe.DishId, recipe.VersionCode }),
-                });
+                    _unitOfWork.RollbackTransaction();
+                    return Result<bool>.Fail(approvalError, false);
+                }
                 await _unitOfWork.RecipeRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
                 _unitOfWork.CommitTransaction();
                 return Result<bool>.Success(true, ConstantHelper.Message.SaveSuccess);
@@ -385,47 +383,26 @@ namespace AppDelicare.Services.Implement
         /// <summary>T45R (spec 5.2): duyệt (PendingApproval → Approved) hoặc từ chối (→ Draft, bắt buộc lý do). Cập nhật ApprovalRequest.</summary>
         public async Task<IResult<bool>> Decide(RecipeDecisionRequest request, bool approve)
         {
-            using var tran = await _unitOfWork.OpenTransaction();
             try
             {
-                var recipe = _unitOfWork.RecipeRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-                string error = recipe == null ? ConstantHelper.Message.RecordNotFoundMessage
-                    : recipe.Status != RecipeStatus.PendingApproval ? InvalidStatus(recipe, RecipeStatus.PendingApproval, approve ? "duyệt" : "từ chối")
-                    : !approve && string.IsNullOrWhiteSpace(request.Note) ? ConstantHelper.Message.RejectReasonRequired
-                    : string.Empty;
-                if (!string.IsNullOrEmpty(error))
+                // T12: duyệt / từ chối qua engine chung (ghi ApprovalDecision, kiểm quyền + nội dung, thực thi RecipeApprovalHandler).
+                var recipe = await _unitOfWork.RecipeRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted);
+                if (recipe == null)
                 {
-                    _unitOfWork.RollbackTransaction();
-                    return Result<bool>.Fail(error, false);
+                    return Result<bool>.Fail(ConstantHelper.Message.RecordNotFoundMessage, false);
                 }
-                recipe!.Status = approve ? RecipeStatus.Approved : RecipeStatus.Draft;
-                if (approve)
-                {
-                    recipe.ApprovedAt = _clock.Now;
-                    recipe.ApprovedBy = _currentActor.RequireActor().UserId;
-                }
-                else
-                {
-                    recipe.Note = string.IsNullOrWhiteSpace(recipe.Note) ? $"Từ chối: {request.Note}" : $"{recipe.Note}\nTừ chối: {request.Note}";
-                }
-                _unitOfWork.RecipeRepository.Update(recipe);
-                var approval = await _unitOfWork.ApprovalRequestRepository.GetAll()
-                    .Where(a => !a.IsDeleted && a.BusinessType == RecipeStatus.BusinessType && a.BusinessId == recipe.Id && a.RequestStatus == "Pending")
+                var approval = await _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking()
+                    .Where(a => !a.IsDeleted && a.BusinessType == RecipeStatus.BusinessType && a.BusinessId == recipe.Id && ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus))
                     .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
-                if (approval != null)
+                if (approval == null)
                 {
-                    approval.RequestStatus = approve ? "Approved" : "Rejected";
-                    approval.CompletedAt = _clock.Now;
-                    _unitOfWork.ApprovalRequestRepository.Update(approval);
+                    return Result<bool>.Fail(InvalidStatus(recipe, RecipeStatus.PendingApproval, approve ? "duyệt" : "từ chối"), false);
                 }
-                await _unitOfWork.RecipeRepository.CommitAsync(ConstantHelper.TypeSave.Update);
-                _unitOfWork.CommitTransaction();
-                return Result<bool>.Success(true, ConstantHelper.Message.SaveSuccess);
+                return await _approvalRequestService.Decide(new ApprovalDecideRequest { Id = approval.Id, Approve = approve, Note = request.Note });
             }
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " Decide: ", ex.ToString()));
-                _unitOfWork.RollbackTransaction();
                 throw;
             }
         }

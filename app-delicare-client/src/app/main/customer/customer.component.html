@@ -1,0 +1,302 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Khách hàng suất ăn (bệnh viện, trường học, nhà máy…): hồ sơ, liên hệ, điểm giao, hợp đồng và đơn hàng – xem 360° ở ngăn kéo bên phải.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã, tên, MST, điện thoại, người liên hệ" aria-label="Tìm khách hàng" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="customerType" [items]="customerTypes" bindValue="code" bindLabel="label" placeholder="Tất cả loại KH" [searchable]="false" (selectionChange)="search()"></app-select>
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="branchId" [items]="listBranch" bindValue="id" bindLabel="label" placeholder="Tất cả chi nhánh" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 110px" (click)="sort('code')">
+                Mã KH <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('customerName')">
+                Khách hàng <i class="fa-solid ms-1" [ngClass]="table.sortIcon('customerName')"></i>
+              </th>
+              <th class="sortable" style="width: 120px" (click)="sort('customerType')">
+                Loại <i class="fa-solid ms-1" [ngClass]="table.sortIcon('customerType')"></i>
+              </th>
+              <th class="sortable" (click)="sort('branchName')">
+                Chi nhánh phục vụ <i class="fa-solid ms-1" [ngClass]="table.sortIcon('branchName')"></i>
+              </th>
+              <th>Hợp đồng hiệu lực</th>
+              <th class="text-end" style="width: 90px">Điểm giao</th>
+              <th style="width: 140px">Trạng thái</th>
+              <th class="text-end" style="width: 140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.code }}</td>
+                <td class="fw-semibold">
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.customerName }}</a>
+                  @if (data.phoneNumber || data.phone) {
+                    <div class="small text-muted">{{ data.phoneNumber || data.phone }}</div>
+                  }
+                </td>
+                <td>{{ labelOf(customerTypes, data.customerType) }}</td>
+                <td>{{ data.branchName }}</td>
+                <td>{{ data.activeContracts }}</td>
+                <td class="text-end">{{ data.locationCount }}</td>
+                <td><app-status-badge key="Customer.Status" [code]="data.status"></app-status-badge></td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Xem 360°" aria-label="Xem 360°" (click)="openDrawer(data)"><i class="fa-solid fa-eye"></i></button>
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                  }
+                  @if (permission.allowDelete) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="drawerRow?.customerName"
+    [subtitle]="(drawerRow?.code || '') + (drawerRow?.customerType ? ' · ' + labelOf(customerTypes, drawerRow?.customerType) : '')"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    width="860px"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (isLoadingOverview) {
+        <div class="dc-empty">Đang tải...</div>
+      } @else if (overview) {
+        @if (drawerTab === 'overview') {
+          <div class="dc-kpis">
+            <div class="dc-kpi">
+              <label>Đơn hàng</label>
+              <b>{{ overview.orderCount | number }}</b>
+            </div>
+            <div class="dc-kpi">
+              <label>Doanh thu đã đối soát</label>
+              <b>{{ overview.reconciledRevenue | number: '1.0-0' }}</b>
+              <small>VNĐ</small>
+            </div>
+            <div class="dc-kpi">
+              <label>Suất TB/ngày (7 ngày)</label>
+              <b>{{ overview.avgMealsPerDay7d | number: '1.0-1' }}</b>
+            </div>
+            <div class="dc-kpi" [class.danger]="overview.complaintCount > 0">
+              <label>Khiếu nại</label>
+              <b>{{ overview.complaintCount | number }}</b>
+            </div>
+          </div>
+          <div class="dc-kv">
+            <div><label>Mã khách hàng</label><span>{{ drawerRow.code || '—' }}</span></div>
+            <div><label>Tên pháp nhân</label><span>{{ drawerRow.legalName || drawerRow.name || '—' }}</span></div>
+            <div><label>Mã số thuế</label><span>{{ drawerRow.taxCode || '—' }}</span></div>
+            <div><label>Điện thoại / Email</label><span>{{ drawerRow.phoneNumber || drawerRow.phone || '—' }} · {{ drawerRow.email || '—' }}</span></div>
+            <div><label>Địa chỉ</label><span>{{ drawerRow.address || '—' }}</span></div>
+            <div><label>Chi nhánh phục vụ</label><span>{{ drawerRow.branchName || '—' }}</span></div>
+            <div>
+              <label>Người liên hệ chính</label>
+              <span>{{ drawerRow.contactPersonName || '—' }} {{ drawerRow.contactPersonPhone ? '· ' + drawerRow.contactPersonPhone : '' }}</span>
+            </div>
+            <div><label>Phân khúc</label><span>{{ drawerRow.segment || '—' }}</span></div>
+            <div>
+              <label>Trạng thái</label>
+              <span><app-status-badge key="Customer.Status" [code]="drawerRow.status"></app-status-badge></span>
+            </div>
+            <div><label>Ghi chú</label><span>{{ drawerRow.note || '—' }}</span></div>
+          </div>
+        }
+        @if (drawerTab === 'contact') {
+          <div class="dc-card-title">Người liên hệ</div>
+          <div class="table-responsive mb-3">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Họ tên</th>
+                  <th>Chức vụ</th>
+                  <th>Điện thoại</th>
+                  <th>Email</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of overview.listContact; track c.id) {
+                  <tr>
+                    <td class="fw-semibold">
+                      {{ c.fullName || c.name }}
+                      @if (c.isPrimary) {
+                        <app-status-badge code="active" label="Chính"></app-status-badge>
+                      }
+                    </td>
+                    <td>{{ c.position }}</td>
+                    <td>{{ c.phone }}</td>
+                    <td>{{ c.email }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="dc-empty">Chưa có người liên hệ</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="dc-card-title">Điểm giao hàng</div>
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Điểm giao</th>
+                  <th>Địa chỉ</th>
+                  <th>Khung giờ nhận</th>
+                  <th>Người nhận</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of overview.listLocation; track l.id) {
+                  <tr>
+                    <td class="fw-semibold">{{ l.name }}</td>
+                    <td>{{ l.address }}</td>
+                    <td>{{ timeText(l.deliveryWindowFrom) || '…' }} – {{ timeText(l.deliveryWindowTo) || '…' }}</td>
+                    <td>{{ l.contactName }} {{ l.contactPhone ? '· ' + l.contactPhone : '' }}</td>
+                    <td><app-status-badge [code]="l.status" [label]="labelOf(recordStatuses, l.status)"></app-status-badge></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="dc-empty">Chưa có điểm giao</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        @if (drawerTab === 'contract') {
+          @for (ct of overview.listContract; track ct.id) {
+            <div class="dc-zone">
+              <div class="dc-zone-head">
+                <div>
+                  <b>{{ ct.contractNumber }}</b> · {{ ct.name }}
+                  <div class="small text-muted">
+                    Hiệu lực {{ (ct.startDate | date: dateFormat) || '…' }} – {{ (ct.endDate | date: dateFormat) || '…' }}
+                    @if (ct.contractValue) {
+                      · Giá trị {{ ct.contractValue | number: '1.0-0' }} VNĐ
+                    }
+                  </div>
+                </div>
+                <app-status-badge key="Contract.Status" [code]="ct.status"></app-status-badge>
+              </div>
+              <div class="table-responsive">
+                <table class="table dc-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Buổi / loại suất</th>
+                      <th>Tên suất</th>
+                      <th class="text-end">Đơn giá</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (m of ct.listMeal; track m.id) {
+                      <tr>
+                        <td>{{ labelOf(mealTypes, m.mealType) }}</td>
+                        <td>{{ m.mealName }}</td>
+                        <td class="text-end">{{ m.unitPrice | number: '1.0-0' }}</td>
+                        <td><app-status-badge [code]="m.status" [label]="labelOf(recordStatuses, m.status)"></app-status-badge></td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="4" class="dc-empty">Chưa có suất ăn</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          } @empty {
+            <div class="dc-empty">Khách hàng chưa có hợp đồng</div>
+          }
+        }
+        @if (drawerTab === 'order') {
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Số đơn</th>
+                  <th>Ngày ăn</th>
+                  <th class="text-end">Suất</th>
+                  <th class="text-end">Thành tiền</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of overview.listRecentOrder; track o.id) {
+                  <tr>
+                    <td class="fw-semibold">{{ o.orderNumber }}</td>
+                    <td>{{ o.mealDate | date: dateFormat }}</td>
+                    <td class="text-end">{{ o.totalQuantity | number: '1.0-0' }}</td>
+                    <td class="text-end">{{ o.totalAmount | number: '1.0-0' }}</td>
+                    <td><app-status-badge key="Order.Status" [code]="o.status"></app-status-badge></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="dc-empty">Chưa có đơn hàng</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+    <ng-container drawer-footer>
+      @if (permission.allowEdit) {
+        <button type="button" class="btn btn-primary" (click)="editFromDrawer()"><i class="fa-solid fa-pen me-1"></i>Sửa</button>
+      }
+    </ng-container>
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

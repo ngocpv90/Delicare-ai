@@ -1,0 +1,342 @@
+### DELICARE – BE2.7: API DÙNG CHUNG + MẪU IN (khung cũ D-30).
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (dữ liệu [DEMO] có sẵn – hoặc chạy full-flow.http trước): 43 / 43 đúng kỳ vọng.
+### Danh sách hỗ trợ (danh sách trắng) → thống kê theo trạng thái (Catalog 2) → xuất Excel / CSV (8) → tệp đính kèm tải lên / danh sách / tải xuống (19–21)
+### → lịch sử bản ghi gộp AuditChange + ApprovalDecision + tệp (15) → mẫu in phiếu nhập / xuất / kiểm kê / giao / POD / đối soát (24–29) → in hàng loạt (30).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Dùng dữ liệu [DEMO] đã có trên DB dev (chạy full-flow.http, pilot-flow.http hoặc be2.1…be2.6 trước ít nhất 1 lần):
+### phiếu nhập Đã ghi sổ, phiếu xuất Đã xuất, kiểm kê, đơn giao, POD, đối soát Đóng, chuyến Hoàn tất. Không cần SP / seed mới.
+### Mẫu in trả tệp .pdf (mặc định – BE2.7.1, D-56 k), .xlsx (format=xlsx) hoặc .docx (format=docx). Tệp đính kèm lưu trong DocumentStorage:RootPath (mặc định
+### App_Data/DocumentFiles cạnh WebApi, NGOÀI wwwroot, đã gitignore) – tên tệp trên đĩa = SHA-256, tải lại cùng nội dung → isDuplicate = true.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Quyền theo màn của danh sách (Xem / Xuất / Sửa / In → HTTP 403) kiểm trong AppDelicare.Tests/Common/*.cs (admin ở đây có mọi quyền).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 1. DANH SÁCH HỖ TRỢ + THỐNG KÊ THEO TRẠNG THÁI (Catalog 2)
+### 1.1 Danh sách trắng (chỉ màn người dùng có quyền Xem)
+GET {{base}}/api/Common/GetResources
+Authorization: Bearer {{token}}
+
+### 1.2 Đơn đặt suất ăn theo trạng thái (đủ mọi mã STATUS_CATALOG, kể cả 0)
+GET {{base}}/api/Common/GetStatusSummary?Resource=Order
+Authorization: Bearer {{token}}
+
+### 1.3 Cùng bộ lọc với danh sách: tìm chữ + khoảng ngày (theo MealDate)
+GET {{base}}/api/Common/GetStatusSummary?Resource=Order&SearchText=PH-&FromDate=2026-11-01&ToDate=2027-12-31
+Authorization: Bearer {{token}}
+
+### 1.4 Phiếu nhập / phản ánh (cột trạng thái riêng ComplaintStatus)
+GET {{base}}/api/Common/GetStatusSummary?Resource=CustomerComplaint
+Authorization: Bearer {{token}}
+
+### 1.5 → 400 bảng ngoài danh sách trắng (không bao giờ đọc bảng tùy ý)
+GET {{base}}/api/Common/GetStatusSummary?Resource=User
+Authorization: Bearer {{token}}
+
+### 1.6 → 400 tên lạ
+GET {{base}}/api/Common/GetStatusSummary?Resource=Order%3BDROP%20TABLE%20x
+Authorization: Bearer {{token}}
+
+### 1.7 → 400 danh sách không có cột trạng thái
+GET {{base}}/api/Common/GetStatusSummary?Resource=ProofOfDelivery
+Authorization: Bearer {{token}}
+
+########## 2. XUẤT DANH SÁCH (Catalog 8) – tệp .xlsx / .csv
+### 2.1 Đơn hàng → Excel (trạng thái + tên khách thay cho Id)
+GET {{base}}/api/Common/ExportList?Resource=Order&FromDate=2026-11-01
+Authorization: Bearer {{token}}
+
+### 2.2 Phiếu nhập Đã ghi sổ → CSV (UTF-8 BOM, chống chèn công thức)
+GET {{base}}/api/Common/ExportList?Resource=GoodsReceipt&Status=Posted&Format=csv
+Authorization: Bearer {{token}}
+
+### 2.3 → 400 định dạng không hỗ trợ
+GET {{base}}/api/Common/ExportList?Resource=Order&Format=pdf
+Authorization: Bearer {{token}}
+
+### 2.4 → 400 bảng ngoài danh sách trắng
+GET {{base}}/api/Common/ExportList?Resource=UserRole
+Authorization: Bearer {{token}}
+
+########## 3. CHỨNG TỪ [DEMO] CÓ SẴN TRÊN DB DEV
+# @name gr
+GET {{base}}/api/GoodsReceipt/GetAll?Status=Posted&Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+###
+@grId = {{gr.response.body.listData[0].id}}
+
+###
+# @name issue
+GET {{base}}/api/MaterialIssue/GetAll?Status=Issued&Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+###
+@issueId = {{issue.response.body.listData[0].id}}
+
+###
+# @name count
+GET {{base}}/api/StockCount/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+###
+@countId = {{count.response.body.listData[0].id}}
+
+###
+# @name pod
+GET {{base}}/api/ProofOfDelivery/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+###
+@podId = {{pod.response.body.listData[0].id}}
+@podDeliveryId = {{pod.response.body.listData[0].deliveryOrderId}}
+
+###
+# @name rec
+GET {{base}}/api/OrderReconciliation/GetAll?Status=Closed&Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+###
+@recId = {{rec.response.body.listData[0].id}}
+
+###
+# @name route
+GET {{base}}/api/DeliveryRoute/GetAll?Status=Completed&Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+###
+@routeId = {{route.response.body.listData[0].id}}
+
+########## 4. TỆP ĐÍNH KÈM (Catalog 19–21)
+### 4.1 Tải lên ảnh / bằng chứng cho POD (multipart: File, Category, Resource, RecordId) – quyền Sửa #/log-pod
+# @name upload
+POST {{base}}/api/DocumentFile/Upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=B27BOUNDARY
+
+--B27BOUNDARY
+Content-Disposition: form-data; name="Category"
+
+evidence
+--B27BOUNDARY
+Content-Disposition: form-data; name="Resource"
+
+ProofOfDelivery
+--B27BOUNDARY
+Content-Disposition: form-data; name="RecordId"
+
+{{podId}}
+--B27BOUNDARY
+Content-Disposition: form-data; name="File"; filename="[DEMO] bien ban giao nhan.pdf"
+Content-Type: application/pdf
+
+%PDF-1.4
+% [DEMO] BE2.7 tệp thử đính kèm biên bản giao nhận
+--B27BOUNDARY--
+
+###
+@fileId = {{upload.response.body.data.id}}
+
+### 4.2 Tải lại cùng nội dung → trả tệp cũ (isDuplicate = true), không thêm dòng
+POST {{base}}/api/DocumentFile/Upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=B27BOUNDARY
+
+--B27BOUNDARY
+Content-Disposition: form-data; name="Category"
+
+evidence
+--B27BOUNDARY
+Content-Disposition: form-data; name="Resource"
+
+ProofOfDelivery
+--B27BOUNDARY
+Content-Disposition: form-data; name="RecordId"
+
+{{podId}}
+--B27BOUNDARY
+Content-Disposition: form-data; name="File"; filename="ban sao.pdf"
+Content-Type: application/pdf
+
+%PDF-1.4
+% [DEMO] BE2.7 tệp thử đính kèm biên bản giao nhận
+--B27BOUNDARY--
+
+### 4.3 → 400 tệp chạy được (.exe)
+POST {{base}}/api/DocumentFile/Upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=B27BOUNDARY
+
+--B27BOUNDARY
+Content-Disposition: form-data; name="File"; filename="setup.exe"
+Content-Type: application/octet-stream
+
+MZ-demo
+--B27BOUNDARY--
+
+### 4.4 → 400 đổi đuôi (nội dung không phải PDF)
+POST {{base}}/api/DocumentFile/Upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=B27BOUNDARY
+
+--B27BOUNDARY
+Content-Disposition: form-data; name="File"; filename="hoa-don.pdf"
+Content-Type: application/pdf
+
+MZ-demo khong phai pdf
+--B27BOUNDARY--
+
+### 4.5 → 400 SVG (có thể chứa script)
+POST {{base}}/api/DocumentFile/Upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=B27BOUNDARY
+
+--B27BOUNDARY
+Content-Disposition: form-data; name="File"; filename="anh.svg"
+Content-Type: image/svg+xml
+
+<svg onload="alert(1)"></svg>
+--B27BOUNDARY--
+
+### 4.6 → 400 gắn vào bảng ngoài danh sách trắng
+POST {{base}}/api/DocumentFile/Upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=B27BOUNDARY
+
+--B27BOUNDARY
+Content-Disposition: form-data; name="Resource"
+
+../User
+--B27BOUNDARY
+Content-Disposition: form-data; name="RecordId"
+
+{{podId}}
+--B27BOUNDARY
+Content-Disposition: form-data; name="File"; filename="a.pdf"
+Content-Type: application/pdf
+
+%PDF-1.4
+--B27BOUNDARY--
+
+### 4.7 Danh sách tệp của POD (quyền Xem #/log-pod)
+GET {{base}}/api/DocumentFile/GetList?Resource=ProofOfDelivery&RecordId={{podId}}
+Authorization: Bearer {{token}}
+
+### 4.8 Mọi tệp (màn #/adm-document) lọc đuôi pdf
+GET {{base}}/api/DocumentFile/GetList?FileType=pdf&Page=1&PageSize=20
+Authorization: Bearer {{token}}
+
+### 4.9 Tải xuống (Content-Disposition: attachment; ghi AuditChange "Download")
+GET {{base}}/api/DocumentFile/Download?id={{fileId}}
+Authorization: Bearer {{token}}
+
+########## 5. LỊCH SỬ BẢN GHI (Catalog 15) – mới nhất trước, che mật khẩu / bí mật / GPS
+### 5.1 POD: AuditChange + tệp đính kèm
+GET {{base}}/api/Common/GetHistory?resource=ProofOfDelivery&id={{podId}}
+Authorization: Bearer {{token}}
+
+### 5.2 Kiểm kê: AuditChange (+ dòng kiểm kê) + quyết định duyệt (nếu lệch > 2%)
+GET {{base}}/api/Common/GetHistory?resource=StockCount&id={{countId}}
+Authorization: Bearer {{token}}
+
+### 5.3 → 400 bảng ngoài danh sách trắng
+GET {{base}}/api/Common/GetHistory?resource=User&id={{podId}}
+Authorization: Bearer {{token}}
+
+########## 6. MẪU IN (Catalog 24–29) – PDF mặc định (BE2.7.1: A4, font Noto Sans nhúng), format=xlsx = Excel, format=docx = Word
+### 6.1 Phiếu nhập kho (QC đã kết luận) – PDF (mặc định)
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}
+Authorization: Bearer {{token}}
+
+### 6.2 Phiếu nhập kho – Word
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=docx
+Authorization: Bearer {{token}}
+
+### 6.3 Phiếu nhập kho – PDF ghi rõ format (BE2.7.1)
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=pdf
+Authorization: Bearer {{token}}
+
+### 6.3b Phiếu nhập kho – Excel
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=xlsx
+Authorization: Bearer {{token}}
+
+### 6.3c → 400 định dạng không hỗ trợ (chỉ pdf, xlsx, docx)
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=html
+Authorization: Bearer {{token}}
+
+### 6.4 Phiếu xuất kho (Đã xuất)
+GET {{base}}/api/MaterialIssue/Print?id={{issueId}}
+Authorization: Bearer {{token}}
+
+### 6.5 Biên bản kiểm kê (chưa ghi sổ → chữ BẢN NHÁP + chữ chìm mỗi trang PDF)
+GET {{base}}/api/StockCount/Print?id={{countId}}
+Authorization: Bearer {{token}}
+
+### 6.6 Phiếu giao hàng (đơn giao của POD)
+GET {{base}}/api/DeliveryOrder/Print?id={{podDeliveryId}}
+Authorization: Bearer {{token}}
+
+### 6.7 Biên bản giao nhận (POD)
+GET {{base}}/api/ProofOfDelivery/Print?id={{podId}}
+Authorization: Bearer {{token}}
+
+### 6.8 Biên bản đối soát (Đóng)
+GET {{base}}/api/OrderReconciliation/Print?id={{recId}}
+Authorization: Bearer {{token}}
+
+### 6.9 → 400 không tìm thấy phiếu
+GET {{base}}/api/GoodsReceipt/Print?id=00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+########## 7. IN HÀNG LOẠT (Catalog 30) – JSON, tối đa 100 phiếu, quyền In từng loại
+### 7.1 Mọi phiếu giao của chuyến (theo thứ tự điểm dừng) + POD → 1 tệp PDF (mặc định – BE2.7.1), mỗi phiếu sang trang mới
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "deliveryRouteId": "{{routeId}}", "items": [ { "type": "POD", "id": "{{podId}}" } ] }
+
+### 7.1b Như 7.1 → 1 tệp Excel nhiều sheet
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "format": "xlsx", "deliveryRouteId": "{{routeId}}", "items": [ { "type": "POD", "id": "{{podId}}" } ] }
+
+### 7.1c Danh sách hỗn hợp 6 loại phiếu → 1 tệp PDF (format ghi rõ)
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "format": "pdf", "items": [ { "type": "GOODS_RECEIPT", "id": "{{grId}}" }, { "type": "MATERIAL_ISSUE", "id": "{{issueId}}" }, { "type": "STOCK_COUNT", "id": "{{countId}}" }, { "type": "DELIVERY_ORDER", "id": "{{podDeliveryId}}" }, { "type": "POD", "id": "{{podId}}" }, { "type": "RECONCILIATION", "id": "{{recId}}" } ] }
+
+### 7.2 Danh sách hỗn hợp → Word (mỗi phiếu 1 trang)
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "format": "docx", "items": [ { "type": "GOODS_RECEIPT", "id": "{{grId}}" }, { "type": "MATERIAL_ISSUE", "id": "{{issueId}}" }, { "type": "RECONCILIATION", "id": "{{recId}}" } ] }
+
+### 7.3 → 400 loại phiếu không hợp lệ
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "items": [ { "type": "User", "id": "{{podId}}" } ] }
+
+### 7.4 → 400 chưa chọn phiếu
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "items": [] }

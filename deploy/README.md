@@ -4,9 +4,9 @@ Tài liệu này dành cho anh hoặc IT. Có 3 cách chạy staging, chọn 1. 
 
 | Cách | Khi nào dùng | Đã chạy thử |
 |---|---|---|
-| **A. Trên máy anh (LocalDB)** | Thử nhanh, UAT nội bộ | ✅ 2026-11-14 |
-| **B. IIS (Windows Server)** | Nếu chọn IIS cho production | ✅ phần publish + chạy bản publish ở chế độ Staging; chưa cài lên IIS thật |
-| **C. Docker (SQL Server + API)** | Nếu chọn Docker / Linux | ⚠️ Chưa chạy được: máy dev chưa cài Docker |
+| **A. Trên máy anh (LocalDB)** | Thử nhanh, UAT nội bộ | ✅ 2026-11-14; cập nhật 2026-11-17 (backend Pilot + giao diện Angular, mục 8–9) |
+| **B. IIS (Windows Server)** | Nếu chọn IIS cho production | ✅ phần publish (`Publish-Iis.ps1`, lần cuối 2026-11-17) + chạy bản publish ở chế độ Staging; chưa cài lên IIS thật (cần quyền admin – anh / IT làm theo mục 4) |
+| **C. Docker (SQL Server + API)** | Nếu chọn Docker / Linux; server dev FE | ⚠️ Chưa chạy Docker thật (máy dev chưa cài Docker). `db-init.sh` đã chạy thật bằng Git Bash + sqlcmd trên LocalDB (T48.3) |
 
 Sau khi chạy, kiểm tra theo mục 6.
 
@@ -36,9 +36,8 @@ Sinh khóa JWT (PowerShell):
 
 Script `deploy/db/Deploy-Database.ps1` chạy được nhiều lần, không nhân bản dữ liệu:
 1. DB **rỗng** + có cờ `-CreateSchemaIfEmpty` → tạo 124 bảng từ DDL chuẩn của PO. DB đã có bảng → **không đụng tới bảng**.
-2. Cài mọi stored procedure trong `DB/sp/`.
-3. Tạo tài khoản `admin` (nếu truyền `-AdminPassword` và chưa có user này).
-4. Seed cơ cấu tổ chức, menu, nhóm quyền (`DB/seed/`).
+2. Chạy đúng thứ tự trong **`deploy/db/scripts.order`** (T48.3 – nguồn thứ tự **duy nhất**, `deploy/docker/db-init.sh` đọc cùng file): mọi stored procedure `DB/sp/` → tài khoản `admin` (nếu truyền `-AdminPassword` / biến `DELICARE_ADMIN_PASSWORD` và chưa có user này; hash PBKDF2) → seed cơ cấu tổ chức, menu, nhóm quyền, ca, checklist (`DB/seed/`, chỉ thêm phần chưa có).
+3. `-ListOnly`: chỉ in thứ tự script, không kết nối DB. Tài khoản SQL có thể lấy từ biến môi trường `DELICARE_SQL_USER` / `DELICARE_SQL_PASSWORD` (mật khẩu đưa cho sqlcmd qua `SQLCMDPASSWORD`, không nằm trên dòng lệnh). `-TrustServerCertificate` cho SQL Server dùng chứng chỉ tự ký (Docker).
 
 ```powershell
 # DB staging mới trên SQL Server (Windows Authentication)
@@ -96,10 +95,22 @@ docker compose -f deploy/docker/docker-compose.staging.yml logs -f db-init   # x
 ```
 
 - `db`: SQL Server 2022 (cổng máy 14333).
-- `db-init`: tạo DB, 124 bảng (lần đầu), SP, admin, seed rồi dừng.
-- `api`: chạy ở cổng 8080.
+- `db-init`: tạo DB, 124 bảng (lần đầu), SP, admin (lần đầu, PBKDF2), seed rồi dừng – theo `deploy/db/scripts.order`, chạy lại được.
+- `api`: chạy ở cổng 8080. Tệp đính kèm (BE2.7) nằm ở volume `delicare-docs` → `/app/App_Data/DocumentFiles` (`DocumentStorage__RootPath`); `down -v` xóa cả tệp.
+
+**Cập nhật DB sau `git pull` (T48.3, server Docker của dev FE):**
+```bash
+git pull && docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init
+```
+hoặc `bash deploy/docker/update-db.sh` (chỉ chạy khi có thay đổi DB, ghi log, cron 5 phút tùy chọn). Chi tiết + phương án dự phòng (`Deploy-Database.ps1 -Server "<ip>,14333" -TrustServerCertificate` từ máy dev FE): `deploy/docker/README.md`.
 
 Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệu.
+
+### Thư mục tệp đính kèm (BE2.7 – `DocumentStorage`)
+- Tệp người dùng tải lên (`DocumentFile/Upload`) lưu **ngoài wwwroot**, tên = SHA-256, tại `DocumentStorage:RootPath` (mặc định `App_Data/DocumentFiles` cạnh `AppDelicare.WebApi.dll`). Giới hạn `DocumentStorage:MaxFileSizeMb` (20), đuôi `AllowedExtensions` (pdf, jpg, png, xlsx, docx – tệp chạy được luôn bị chặn).
+- **IIS (cách B):** cấp quyền ghi thư mục `App_Data\DocumentFiles` cho `IIS AppPool\delicare-api` (như `Logs`), hoặc đặt biến môi trường `DocumentStorage__RootPath=D:\DelicareData\DocumentFiles` ra ổ dữ liệu riêng; **sao lưu thư mục này cùng DB** (DB chỉ giữ khóa lưu trữ). Không chép đè thư mục này khi cập nhật bản build.
+- **Docker (cách C):** volume `delicare-docs` (đã khai báo trong `docker-compose.staging.yml`). Kestrel / IIS mặc định nhận request tới ~28–30 MB – tăng `MaxFileSizeMb` quá 25 thì phải tăng giới hạn request.
+- Mẫu in (BE2.7.1): **PDF mặc định** (PDFsharp-MigraDoc 6.2.4, MIT) + xlsx / docx. Font PDF **Noto Sans nhúng trong `AppDelicare.Services.dll`** (giấy phép `Fonts/NotoSans-OFL.txt` đi kèm bản publish) → IIS và Docker **không cần cài font** (không thêm gói apt). Đổi mặc định: `BusinessRules__Common__PrintDefaultFormat=xlsx`. Word cần `Licenses__GemBox` (thiếu → bản dùng thử của GemBox).
 
 ## 6. Kiểm tra sau triển khai
 
@@ -123,3 +134,27 @@ File thử nhanh bằng VS Code REST Client: `docs/api-tests/*.http`.
 | Đăng nhập trả 400 "Tài khoản hoặc mật khẩu không đúng" | Sai mật khẩu; tạo lại admin trên DB mới bằng `-AdminPassword` |
 | IIS lỗi 500.19 / 500.31 | Chưa cài Hosting Bundle hoặc chưa `iisreset` |
 | Script PowerShell báo lỗi chuỗi tiếng Việt | Dùng đúng file trong repo (đã lưu UTF-8 BOM); không lưu lại bằng Notepad dạng ANSI |
+
+## 8. Giao diện Angular trên staging (Pilot, cách A)
+
+Angular gọi API bằng đường dẫn tương đối `/api/` và dùng route dạng `#/…` → chỉ cần đặt bản build vào `wwwroot` của API (API đã bật `UseDefaultFiles` + `UseStaticFiles`), cùng một địa chỉ, không cần CORS / proxy.
+
+```powershell
+cd <repo>\app-delicare-client
+npm ci            # lần đầu
+npm run build     # ra dist\w3crm\browser
+Copy-Item .\dist\w3crm\browser\* C:\Deploy\delicare-staging\wwwroot -Recurse -Force   # giữ nguyên Import / Logs / Template có sẵn
+```
+Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): chép giống vậy vào `wwwroot` của site. Docker (cách C): `app-delicare-client/Dockerfile` + `nginx.conf` (nginx chuyển `/api/` sang container API).
+
+## 9. Cập nhật staging (lặp lại mỗi đợt; đã làm 2026-11-17 sau backend Pilot và sau BE2.9)
+
+1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (chạy mọi SP + seed theo `deploy/db/scripts.order`; không đụng bảng / dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
+2. Dừng bản API đang chạy (cửa sổ `dotnet AppDelicare.WebApi.dll`), rồi publish đè: `./deploy/iis/Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging` (hoặc lệnh `dotnet publish` ở mục 3).
+3. Build + chép Angular (mục 8).
+4. Chạy: `. ./deploy/staging.local.env.ps1; cd C:\Deploy\delicare-staging; dotnet AppDelicare.WebApi.dll --urls http://localhost:5200`.
+5. Kiểm tra mục 6 + mở `http://localhost:5200/`; toàn luồng: `docs/api-tests/full-flow.http` (đổi `@base = http://localhost:5200`, `@password` = mật khẩu admin staging, `@key` / `@day` / `@dow` mới) và `docs/claude/UAT_CHECKLIST.md` mục TOÀN LUỒNG R1 (bản cũ: `pilot-flow.http`, mục PILOT).
+6. Tệp đính kèm (BE2.7): thư mục `C:\Deploy\delicare-staging\App_Data\DocumentFiles` (tạo 1 lần; `dotnet publish -o` không xóa thư mục này – **không xóa khi cập nhật**, sao lưu cùng DB). Muốn để ngoài thư mục bản build: đặt `$env:DocumentStorage__RootPath` trước bước 4.
+7. Dừng: Ctrl+C ở cửa sổ đang chạy (hoặc `Get-CimInstance Win32_Process | ? { $_.CommandLine -like "*AppDelicare.WebApi.dll*" } | % { Stop-Process -Id $_.ProcessId }`).
+
+Lần cập nhật gần nhất: **2026-11-17 – BE2.9** (toàn bộ BE-2: BE2.1–BE2.7 + sửa lỗi BE2.9): DB 131 SP + 8 seed theo `scripts.order` (không đụng bảng), publish đè (giữ bản build Angular cũ trong `wwwroot`), smoke 49 / 49, `full-flow.http` 216 / 216 trên staging (dữ liệu `[DEMO]` key B29S). Sau đó đã **dừng** API staging.

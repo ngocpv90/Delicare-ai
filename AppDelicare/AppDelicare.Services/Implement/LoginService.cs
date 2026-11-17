@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Share;
@@ -16,7 +17,7 @@ namespace AppDelicare.Services.Implement
 {
     public class LoginService(ITokenFactoryService tokenFactory, IJwtFactoryService jwtFactory, IOptions<JwtIssuerOptions> jwtOptions
         , IUnitOfWork unitOfWork, IOptions<AppSettingHelper> options, IUserRoleService userRoleService, ICurrentActor currentActor
-        , Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor) : ILoginService
+        , Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, IClock clock) : ILoginService
     {
         private readonly ITokenFactoryService _tokenFactory = tokenFactory;
         private readonly IJwtFactoryService _jwtFactory = jwtFactory;
@@ -26,13 +27,17 @@ namespace AppDelicare.Services.Implement
         private readonly IUserRoleService _userRoleService = userRoleService;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly IClock _clock = clock;
 
         public async Task<Response<AuthenticateResponse>> Authenticate(LoginRequest request)
         {
-            var pass = EncriptFunctionsHelper.GeneratePassword(request.PassWord ?? string.Empty);
             List<Claim> claims = [];
             request.UserName = request.UserName?.ToLower();
-            var user = await _unitOfWork.UserRepository.GetSingleAsync(x => x.UserName == request.UserName && x.PassWord == pass);
+            // T48.0 (D-29): tìm theo tên đăng nhập rồi kiểm mật khẩu (PBKDF2 hoặc MD5 cũ) – không so chuỗi hash trong SQL nữa (salt ngẫu nhiên).
+            // Nhiều bản ghi trùng tên (đã xóa mềm + đang dùng): ưu tiên bản chưa xóa.
+            var candidates = await _unitOfWork.UserRepository.GetAll().Where(x => x.UserName == request.UserName)
+                .OrderBy(x => x.IsDeleted).ToListAsync();
+            var user = candidates.FirstOrDefault(x => EncriptFunctionsHelper.VerifyPassword(request.PassWord ?? string.Empty, x.PassWord, x.UserName, out _));
             if (user == null)
             {
                 return new Response<AuthenticateResponse>
@@ -56,6 +61,28 @@ namespace AppDelicare.Services.Implement
                     Code = Convert.ToInt32(HttpStatusCode.InternalServerError),
                     Message = ConstantHelper.Message.AccountInActive
                 };
+            }
+            // T45R.8 (D-39): mật khẩu tạm – quá hạn 24 giờ thì từ chối; còn hạn thì đăng nhập được nhưng bắt buộc đổi mật khẩu.
+            bool mustChangePassword = EncriptFunctionsHelper.IsTemporary(user.PassWord);
+            if (mustChangePassword && EncriptFunctionsHelper.IsTemporaryExpired(user.PassWord, _clock.UtcNow))
+            {
+                return new Response<AuthenticateResponse>
+                {
+                    Code = Convert.ToInt32(HttpStatusCode.BadRequest),
+                    Message = ConstantHelper.Message.TempPasswordExpired
+                };
+            }
+            // T48.0: hash MD5 cũ đúng mật khẩu → nâng lên PBKDF2 ngay (user không phải đổi mật khẩu). Không log mật khẩu / hash.
+            EncriptFunctionsHelper.VerifyPassword(request.PassWord ?? string.Empty, user.PassWord, user.UserName, out bool needsUpgrade);
+            if (needsUpgrade)
+            {
+                using (_currentActor.BeginScope(ActorInfo.ForUser(user.Id)))
+                {
+                    user.PassWord = EncriptFunctionsHelper.GeneratePassword(request.PassWord ?? string.Empty);
+                    _unitOfWork.UserRepository.Update(user);
+                    await _unitOfWork.UserRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                }
+                Serilog.Log.Information("Nâng hash mật khẩu lên PBKDF2 cho user {UserId}", user.Id);
             }
             var id = user.Id;
             var userName = user.UserName ?? string.Empty;
@@ -83,6 +110,11 @@ namespace AppDelicare.Services.Implement
             claims.Add(new Claim(ClaimTypes.Role, iPv4 ?? ConstantHelper.NotFound));
             claims.Add(new Claim(ClaimTypes.Role, isAdmin.ToString()));
             claims.Add(new Claim(ClaimTypes.Role, string.Join(ConstantHelper.Comma, listMenu?.Select(x => x.ObjectMenuName).ToList() ?? [])));
+            if (mustChangePassword)
+            {
+                // T45R.8: PermissionFilter chỉ cho gọi User/ChangePassword, User/GetCurrent, Authentication/* (403 "Cần đổi mật khẩu").
+                claims.Add(new Claim(ConstantHelper.JwtClaimIdentifiers.PwdTemp, "true"));
+            }
             var jwt = await _tokenFactory.GenerateJwt(identity,
                                                       _jwtFactory,
                                                       _jwtOptions,
@@ -96,6 +128,10 @@ namespace AppDelicare.Services.Implement
                                                       listMenu ?? [],
                                                       claims);
             var jwtObject = JsonConvert.DeserializeObject<AuthenticateResponse>(jwt);
+            if (jwtObject != null)
+            {
+                jwtObject.MustChangePassword = mustChangePassword; // T45R.8: trường thêm, không đổi trường cũ
+            }
             LocationTracking insertLocationTracking = new()
             {
                 IPv4 = iPv4,
@@ -137,7 +173,7 @@ namespace AppDelicare.Services.Implement
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
             // check the credentials
-            if (EncriptFunctionsHelper.GeneratePassword(request.PassWord) == userToVerify.FirstOrDefault()?.PassWord)
+            if (EncriptFunctionsHelper.VerifyPassword(request.PassWord, userToVerify.FirstOrDefault()?.PassWord, request.UserName, out _))
             {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
                 return await Task.FromResult(_jwtFactory.GenerateClaimsIdentity(request.UserName, userToVerify.FirstOrDefault().Id));

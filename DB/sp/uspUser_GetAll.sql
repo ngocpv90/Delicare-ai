@@ -6,6 +6,7 @@ GO
 CREATE OR ALTER PROCEDURE [dbo].[uspUser_GetAll] (@FullName NVARCHAR(MAX)
 , @UserName NVARCHAR(MAX)
 , @UserGroupId NVARCHAR(MAX)
+, @IsActive BIT = NULL -- T45R.8 (FE-1): loc Dang dung / Da khoa (NULL = tat ca)
 , @Page INT
 , @PageSize INT
 , @SortField NVARCHAR(MAX)
@@ -51,6 +52,10 @@ BEGIN
 			AND (
 			ISNULL(@UserName, '') = ''
 			OR u.UserName LIKE CONCAT('%', @UserName, '%')
+			)
+			AND (
+			@IsActive IS NULL
+			OR u.IsActive = @IsActive
 			)
 			AND u.IsDeleted = 0),
 		TempCount (TotalRow)

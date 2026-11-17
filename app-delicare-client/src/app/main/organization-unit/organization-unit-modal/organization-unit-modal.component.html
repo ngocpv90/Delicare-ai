@@ -1,0 +1,67 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã đơn vị <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="vd. OPS-KIT" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên đơn vị <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="unitType">Loại đơn vị <span class="text-danger">(*)</span></label>
+        <app-select formControlName="unitType" [items]="unitTypes" bindValue="code" bindLabel="label" placeholder="Chọn loại" [invalid]="isInvalid('unitType')"></app-select>
+        @if (isInvalid('unitType')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="parentId">Đơn vị cha</label>
+        <app-select [loading]="isLoadingList" formControlName="parentId" [items]="listParent" bindValue="id" bindLabel="label" placeholder="Không có (đơn vị gốc)"></app-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="companyId">Công ty / pháp nhân <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="companyId" [items]="listCompany" bindValue="id" bindLabel="name" placeholder="Chọn công ty" [invalid]="isInvalid('companyId')"></app-select>
+        @if (isInvalid('companyId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="managerId">Người quản lý</label>
+        <app-select [loading]="isLoadingList" formControlName="managerId" [items]="listEmployee" bindValue="id" bindLabel="label" placeholder="Chọn nhân viên"></app-select>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="address">Địa chỉ</label>
+        <input id="address" type="text" class="form-control" formControlName="address" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="phone">Điện thoại</label>
+        <input id="phone" type="text" class="form-control" formControlName="phone" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false" [invalid]="isInvalid('status')"></app-select>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <input id="note" type="text" class="form-control" formControlName="note" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
+      <i class="fa-solid fa-xmark me-1"></i>Thoát
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+    </button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

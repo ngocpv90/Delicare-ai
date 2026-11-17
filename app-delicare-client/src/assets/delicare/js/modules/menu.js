@@ -62,7 +62,23 @@
     el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { ms.menu = b.dataset.m; APP.refresh(); });
     el.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => { ms.mt = b.dataset.mt; APP.refresh(); });
     el.querySelector('#mAdd').onclick = () => UI.form('MenuLine', null, { title: 'Thêm món vào thực đơn', fields: ['DishId', 'MealType', 'DayOfWeek', 'SequenceNo', 'PortionQty', 'IsRequired', 'Note'], defaults: { MenuId: mn.Id, MealType: ms.mt, SortOrder: 99 }, validate: o => (o.DayOfWeek < 1 || o.DayOfWeek > 7) ? 'DayOfWeek phải từ 1 (T2) đến 7 (CN)' : null, onSave: () => APP.refresh() });
-    const nb = el.querySelector('#mNext'); if (nb) nb.onclick = () => UI.confirm(`Chuyển thực đơn sang <b>${UI.statusVi('Menu', 'Status', next)}</b>?`, () => { Store.update('Menu', mn.Id, { Status: next }); UI.toast('Đã cập nhật Menu.Status', 'ok'); APP.refresh(); });
+    const nb = el.querySelector('#mNext'); if (nb) nb.onclick = () => UI.confirm(`Chuyển thực đơn sang <b>${UI.statusVi('Menu', 'Status', next)}</b>?`, () => {
+      // Chế độ API: Menu/Approve · Publish · Expire (backend kiểm tra công thức hiệu lực, giá vốn, trùng kỳ); trạng thái khác dùng Update chung.
+      const action = { Approved: 'Approve', Published: 'Publish', Expired: 'Expire' }[next];
+      const local = () => Store.update('Menu', mn.Id, { Status: next });
+      if (!action) { local(); UI.toast('Đã cập nhật Menu.Status', 'ok'); return APP.refresh(); }
+      Store.act('Menu/' + action, { form: { Id: mn.Id }, tables: ['Menu', 'MenuLine', 'MenuAssignment'], demo: local }).then(r => { if (r.ok) { UI.toast('Đã cập nhật Menu.Status', 'ok'); APP.refresh(); } });
+    });
+    // Chế độ API: xuất thực đơn gửi khách + nhân bản thực đơn sang kỳ mới.
+    if (Store.isLive) {
+      const bar = el.querySelector('#mAdd');
+      bar.insertAdjacentHTML('beforebegin', `<button class="btn" id="mExp">${I('export')} Xuất gửi khách</button><button class="btn" id="mClone">${I('layers')} Nhân bản</button>`);
+      el.querySelector('#mExp').onclick = () => Store.download('Menu/ExportForCustomer', { id: mn.Id });
+      el.querySelector('#mClone').onclick = () => UI.modal({ title: 'Nhân bản thực đơn ' + esc(mn.Code), sub: 'Menu/Clone · chép toàn bộ MenuLine sang kỳ mới (Nháp)', size: 'sm',
+        body: `<div class="field"><label>Mã <code>Code</code></label><input class="input" id="cCode" value="${esc(mn.Code)}-COPY"></div><div class="field mt"><label>Tên <code>Name</code></label><input class="input" id="cName" value="${esc(mn.Name)}"></div><div class="field mt"><label>Hiệu lực từ <span class="req">*</span> <code>EffectiveFrom</code></label><input type="date" class="input" id="cFrom" value="${U.addDays(U.day(mn.EffectiveTo || Store.ctx.date), 1)}"></div>`,
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="cOk">Nhân bản</button>',
+        onMount: (m, close) => m.querySelector('#cOk').onclick = () => { const from = m.querySelector('#cFrom').value; if (!from) return UI.toast('Chọn ngày hiệu lực', 'err'); Store.act('Menu/Clone', { form: { Id: mn.Id, Code: m.querySelector('#cCode').value.trim(), Name: m.querySelector('#cName').value.trim(), EffectiveFrom: from }, tables: ['Menu', 'MenuLine'] }).then(r => { if (!r.ok) return; close(); const nid = r.data && (r.data.id || (r.data.menu && r.data.menu.id)); if (nid) ms.menu = nid; UI.toast('Đã nhân bản thực đơn', 'ok'); APP.refresh(); }); } });
+    }
   });
   // ---------- Món ăn: thêm cột giá thành ----------
   APP.register('menu-dish', (el, f) => APP.genericList(el, f, {

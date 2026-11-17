@@ -19,7 +19,10 @@ export interface DelicareHost {
   user: User | null;
   hashBase: string;
   get(path: string): Promise<any>;
-  send(method: 'POST' | 'PUT' | 'DELETE', path: string, body?: FormData): Promise<any>;
+  /** body: FormData ([FromForm]) hoặc object thường (gửi JSON cho action [FromBody]). */
+  send(method: 'POST' | 'PUT' | 'DELETE', path: string, body?: FormData | object): Promise<any>;
+  /** Tải tệp (in phiếu PDF, xuất Excel…) kèm token. Server trả JSON (từ chối) thì resolve { ok: false, message }. */
+  download(path: string, body?: object): Promise<{ ok: boolean; message?: string; fileName?: string }>;
   perm(screenId: string): ScreenPermission;
   errorText(error: any): string;
   logout(): void;
@@ -54,6 +57,43 @@ export function createDelicareHost(http: HttpClient, user: User | null, logout: 
         default:
           return firstValueFrom(http.delete<any>(url(path)));
       }
+    },
+    download: async (path, body) => {
+      const req = body
+        ? http.post(url(path), body, { responseType: 'blob', observe: 'response' })
+        : http.get(url(path), { responseType: 'blob', observe: 'response' });
+      const res: any = await firstValueFrom(req);
+      // JwtInterceptor nuốt 401/403 và trả chuỗi message thay cho HttpResponse.
+      if (typeof res === 'string') {
+        return { ok: false, message: res };
+      }
+      const blob: Blob | null = res?.body ?? null;
+      if (!blob) {
+        return { ok: false, message: 'Không có dữ liệu tệp' };
+      }
+      if ((blob.type || '').includes('json')) {
+        let message = 'Lỗi API';
+        try {
+          const json = JSON.parse(await blob.text());
+          message = json?.responseMessage || json?.message || message;
+        } catch {
+          /* giữ message mặc định */
+        }
+        return { ok: false, message };
+      }
+      const cd = String(res.headers?.get('content-disposition') ?? '');
+      const star = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+      const plain = /filename="?([^";]+)"?/i.exec(cd);
+      const fileName = star ? decodeURIComponent(star[1]) : plain ? plain[1] : 'tai-ve';
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 60000);
+      return { ok: true, fileName };
     },
     perm: (screenId) => {
       if (user?.isAdmin) {

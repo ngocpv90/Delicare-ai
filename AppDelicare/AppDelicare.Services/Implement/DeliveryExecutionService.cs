@@ -4,6 +4,9 @@ using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
+using Microsoft.EntityFrameworkCore;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
@@ -27,7 +30,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@DeliveryOrderId", request.DeliveryOrderId);
+                dynamicParameters.Add("@DeliveryOrderId", request.DeliveryOrderId == Guid.Empty ? null : request.DeliveryOrderId);
                 dynamicParameters.Add("@DepartedAt", request.DepartedAt);
                 dynamicParameters.Add("@ArrivedAt", request.ArrivedAt);
                 dynamicParameters.Add("@DeliveredAt", request.DeliveredAt);
@@ -130,46 +133,119 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(DeliveryExecutionRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<DeliveryExecution>(request);
-            _unitOfWork.DeliveryExecutionRepository.Add(insert);
-            await _unitOfWork.DeliveryExecutionRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.1: Thực hiện giao chỉ ghi qua nghiệp vụ (DeliveryRoute/Load / Dispatch, DeliveryStop/Arrive / Deliver / Fail) – CRUD thêm / sửa / xóa không ghi (giữ máy trạng thái, người thao tác, số liệu).</summary>
+        private Task<string> Insert(DeliveryExecutionRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Thực hiện giao", "DeliveryRoute/Load / Dispatch, DeliveryStop/Arrive / Deliver / Fail"));
 
-        private async Task<string> Update(DeliveryExecutionRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.DeliveryExecutionRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.DeliveryExecutionRepository.Update(update);
-            await _unitOfWork.DeliveryExecutionRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(DeliveryExecutionRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Thực hiện giao", "DeliveryRoute/Load / Dispatch, DeliveryStop/Arrive / Deliver / Fail"));
 
-        private async Task<string> Delete(Guid? id, string typeSave)
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Thực hiện giao", "DeliveryRoute/Load / Dispatch, DeliveryStop/Arrive / Deliver / Fail"));
+
+        /// <summary>
+        /// BE2.1 (spec 10.3 GET executions): thực hiện giao của ngày giao – mỗi đơn giao (không tính Hủy) kèm điểm giao, chuyến, điểm dừng, xếp hàng, POD và trạng thái
+        /// READY → LOADED → DISPATCHED → ARRIVED → DELIVERED / FAILED (theo DeliveryExecution; chưa có dòng → suy theo đơn giao / điểm dừng) + đếm theo trạng thái.
+        /// </summary>
+        public async Task<IResult<DeliveryExecutionBoardModel>> GetBoard(DeliveryExecutionBoardRequest request)
         {
-            if (id == null)
+            if (request.DeliveryDate == default)
             {
-                return ConstantHelper.Message.RecordNotFoundMessage;
+                return Result<DeliveryExecutionBoardModel>.Fail(ConstantHelper.Message.DeliveryDateRequired);
             }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(DeliveryExecution), (Guid)id))
+            try
             {
-                return ConstantHelper.Message.DeleteExistFail;
+                var db = _unitOfWork.DbContext;
+                DateTime date = request.DeliveryDate.Date, next = date.AddDays(1);
+                var query = db.DeliveryOrder.AsNoTracking()
+                    .Where(d => !d.IsDeleted && d.DeliveryDate >= date && d.DeliveryDate < next && d.Status != DeliveryOrderStatus.Cancelled);
+                if (request.DeliveryRouteId is { } rid && rid != Guid.Empty)
+                {
+                    query = query.Where(d => d.DeliveryRouteId == rid);
+                }
+                var deliveryOrders = await query.ToListAsync();
+                var ids = deliveryOrders.Select(d => d.Id).ToList();
+                var meals = await DeliveryRules.DeliveryOrderMealsAsync(db, deliveryOrders);
+                var stops = await db.DeliveryStop.AsNoTracking().Where(s => !s.IsDeleted && s.DeliveryOrderId != null && ids.Contains(s.DeliveryOrderId.Value)).ToListAsync();
+                var routeIds = stops.Select(s => s.DeliveryRouteId).Distinct().ToList();
+                var routes = await db.DeliveryRoute.AsNoTracking().Where(r => routeIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id);
+                var vehicleIds = routes.Values.Where(r => r.VehicleId != null).Select(r => r.VehicleId!.Value).Distinct().ToList();
+                var vehicles = await db.Vehicle.AsNoTracking().Where(v => vehicleIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id);
+                var driverIds = routes.Values.Where(r => r.DriverId != null).Select(r => r.DriverId!.Value).Distinct().ToList();
+                var drivers = await db.Employee.AsNoTracking().Where(e => driverIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName);
+                var orderIds = deliveryOrders.Select(d => d.OrderId).Distinct().ToList();
+                var orders = await db.Order.AsNoTracking().Where(o => orderIds.Contains(o.Id)).ToDictionaryAsync(o => o.Id);
+                var customerIds = deliveryOrders.Select(d => d.CustomerId).Distinct().ToList();
+                var customers = await db.Customer.AsNoTracking().Where(c => customerIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.DisplayName ?? c.Name);
+                var locationIds = deliveryOrders.Select(d => d.CustomerDeliveryLocationId ?? d.DeliveryLocationId).Where(x => x != null).Select(x => x!.Value).Distinct().ToList();
+                var locations = await db.CustomerDeliveryLocation.AsNoTracking().Where(l => locationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id);
+                var executions = await db.DeliveryExecution.AsNoTracking().Where(e => !e.IsDeleted && ids.Contains(e.DeliveryOrderId)).ToListAsync();
+                var loadings = await db.DeliveryLoading.AsNoTracking().Where(l => !l.IsDeleted && ids.Contains(l.DeliveryOrderId) && l.Status == DeliveryLoadingStatus.Loaded).ToListAsync();
+                var pods = await db.ProofOfDelivery.AsNoTracking().Where(p => !p.IsDeleted && ids.Contains(p.DeliveryOrderId)).ToListAsync();
+
+                var list = new List<DeliveryExecutionItemModel>();
+                foreach (var d in deliveryOrders)
+                {
+                    var stop = stops.FirstOrDefault(s => s.DeliveryOrderId == d.Id);
+                    var route = stop != null ? routes.GetValueOrDefault(stop.DeliveryRouteId) : null;
+                    var vehicle = route?.VehicleId is { } vid ? vehicles.GetValueOrDefault(vid) : null;
+                    var execution = executions.Where(e => e.DeliveryOrderId == d.Id).OrderByDescending(e => e.CreatedDate).FirstOrDefault();
+                    var location = (d.CustomerDeliveryLocationId ?? d.DeliveryLocationId) is { } lid ? locations.GetValueOrDefault(lid) : null;
+                    var order = orders.GetValueOrDefault(d.OrderId);
+                    string status = execution?.Status ?? d.Status switch
+                    {
+                        DeliveryOrderStatus.InTransit => stop?.StopStatus == DeliveryStopStatus.Arrived ? DeliveryExecutionStatus.Arrived : DeliveryExecutionStatus.Dispatched,
+                        DeliveryOrderStatus.Delivered => DeliveryExecutionStatus.Delivered,
+                        DeliveryOrderStatus.Failed => DeliveryExecutionStatus.Failed,
+                        _ => DeliveryExecutionStatus.Ready,
+                    };
+                    list.Add(new DeliveryExecutionItemModel
+                    {
+                        DeliveryOrderId = d.Id,
+                        DeliveryNumber = d.DeliveryNumber ?? d.DeliveryNo,
+                        DeliveryOrderStatus = d.Status,
+                        MealQuantity = meals[d.Id],
+                        OrderId = d.OrderId,
+                        OrderNumber = order?.OrderNumber ?? order?.OrderNo,
+                        CustomerId = d.CustomerId,
+                        CustomerName = customers.GetValueOrDefault(d.CustomerId),
+                        DeliveryLocationId = location?.Id,
+                        LocationName = location?.Name,
+                        Address = location?.Address,
+                        DeliveryRouteId = route?.Id,
+                        RouteNo = route == null ? null : DeliveryRules.RouteNumber(route),
+                        RouteStatus = route?.Status,
+                        VehicleCode = vehicle?.Code ?? vehicle?.LicensePlate,
+                        DriverName = route?.DriverId is { } did ? drivers.GetValueOrDefault(did) : null,
+                        DeliveryStopId = stop?.Id,
+                        SequenceNo = stop?.SequenceNo,
+                        StopStatus = stop?.StopStatus,
+                        PlannedArrival = stop?.PlannedArrival ?? d.PlannedDeliveryTime,
+                        ActualArrival = stop?.ActualArrival,
+                        LoadedQty = loadings.Where(l => l.DeliveryOrderId == d.Id).OrderByDescending(l => l.LoadingTime).FirstOrDefault()?.LoadedQty,
+                        Status = status,
+                        StatusName = DeliveryExecutionStatus.Label(status),
+                        Execution = execution,
+                        Pod = pods.Where(p => p.DeliveryOrderId == d.Id).OrderByDescending(p => p.ConfirmedAt).FirstOrDefault(),
+                    });
+                }
+                var counts = list.GroupBy(x => x.Status).ToDictionary(g => g.Key, g => g.Count());
+                if (!string.IsNullOrWhiteSpace(request.Status))
+                {
+                    list = [.. list.Where(x => string.Equals(x.Status, request.Status.Trim(), StringComparison.OrdinalIgnoreCase))];
+                }
+                return Result<DeliveryExecutionBoardModel>.Success(new DeliveryExecutionBoardModel
+                {
+                    DeliveryDate = date,
+                    ListItem = [.. list.OrderBy(x => x.RouteNo ?? "~", StringComparer.Ordinal).ThenBy(x => x.SequenceNo).ThenBy(x => x.DeliveryNumber, StringComparer.Ordinal)],
+                    StatusCounts = counts,
+                }, ConstantHelper.Message.GetAllSuccessfully);
             }
-            var delete = _unitOfWork.DeliveryExecutionRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
+            catch (Exception ex)
             {
-                return ConstantHelper.Message.RecordNotFoundMessage;
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBoard: ", ex.ToString()));
+                throw;
             }
-            _unitOfWork.DeliveryExecutionRepository.Update(delete);
-            await _unitOfWork.DeliveryExecutionRepository.CommitAsync(typeSave);
-            return string.Empty;
         }
 
         public async Task<IResult<DeliveryExecution>> GetById(Guid id)

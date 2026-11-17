@@ -153,7 +153,9 @@ export class PersonComponent implements OnInit {
     );
   }
 
-  public reloadPage(): void {
-    location.reload();
+  // Clear the filter and reload the first page (no full page reload)
+  public resetSearch(): void {
+    this.searchForm.reset({ searchText: '' });
+    this.search();
   }
 }

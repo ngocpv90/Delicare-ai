@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,124 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// T14 (Pilot P5): tính nhu cầu NL cho ngày sản xuất (bấm tay thay job 20:30) – đơn Đã chốt × công thức đã khóa × hao hụt,
+        /// trừ tồn xuất được, cộng tồn an toàn → MaterialRequirement + đề nghị mua nháp (PH-), gợi ý NCC. Tính lại cùng ngày = cập nhật kết quả cũ.
+        /// </summary>
+        [HttpPost("Calculate")]
+        public async Task<IActionResult> Calculate([FromForm] MaterialRequirementCalculateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Calculate(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Calculate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// T14.1 (anh chốt 2026-11-16): đề nghị mua của kế hoạch đã gửi duyệt / duyệt / lập PO (Calculate bị chặn) → tính lại nhu cầu của ngày,
+        /// so với số đã đề nghị (đề nghị chưa hủy / từ chối, trừ phần đã nhận) → lập đề nghị mua bổ sung Nháp mới (PH-) cho phần thiếu thêm;
+        /// không thiếu thêm → không lập, trả thông báo; thừa → chỉ cảnh báo. Quyền = Sửa trên scm-requirement (như Calculate).
+        /// </summary>
+        [HttpPost("CalculateTopUp")]
+        public async Task<IActionResult> CalculateTopUp([FromForm] MaterialRequirementCalculateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CalculateTopUp(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CalculateTopUp: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T14: kết quả tính nhu cầu đã lưu của ngày sản xuất (+ chi nhánh); chưa tính → data = null.</summary>
+        [HttpGet("GetByDate")]
+        public async Task<IActionResult> GetByDate([FromQuery] MaterialRequirementByDateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetByDate(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetByDate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T14: kết quả tính nhu cầu theo kế hoạch sản xuất.</summary>
+        [HttpGet("GetDetail")]
+        public async Task<IActionResult> GetDetail(Guid productionPlanId)
+        {
+            try
+            {
+                return Ok(await _service.GetDetail(productionPlanId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T15: in Phiếu trước sản xuất (.xlsx) theo kế hoạch (id = ProductionPlanId) – quyền Xuất scm-requirement.</summary>
+        [HttpGet("ExportPreProduction")]
+        public async Task<IActionResult> ExportPreProduction(Guid id)
+        {
+            try
+            {
+                var result = await _service.ExportPreProduction(id);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Phieu_truoc_san_xuat_{id:N}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExportPreProduction: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 7.1 create-purchase-request): lập / làm lại đề nghị mua Nháp từ các dòng thiếu được chọn + % dự phòng – JSON vì có danh sách dòng.</summary>
+        [HttpPost("CreatePurchaseRequest")]
+        public async Task<IActionResult> CreatePurchaseRequest([FromBody] MaterialRequirementPurchaseRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CreatePurchaseRequest(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreatePurchaseRequest: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

@@ -1,0 +1,56 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <label class="form-label" for="contractId">Hợp đồng <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="contractId" [items]="listContract" bindValue="id" bindLabel="label" placeholder="Chọn hợp đồng" [invalid]="isInvalid('contractId')"></app-select>
+        @if (isInvalid('contractId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="mealType">Buổi / loại suất <span class="text-danger">(*)</span></label>
+        <app-select formControlName="mealType" [items]="mealTypes" bindValue="code" bindLabel="label" placeholder="Chọn" [searchable]="false" [invalid]="isInvalid('mealType')"></app-select>
+        @if (isInvalid('mealType')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="mealName">Tên suất <span class="text-danger">(*)</span></label>
+        <input id="mealName" type="text" class="form-control" [class.is-invalid]="isInvalid('mealName')" formControlName="mealName" placeholder="VD: Suất trưa tiêu chuẩn" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="unitPrice">Đơn giá (VNĐ) <span class="text-danger">(*)</span></label>
+        <input id="unitPrice" type="text" class="form-control text-end" appNumberInput [min]="0" [class.is-invalid]="isInvalid('unitPrice')" formControlName="unitPrice" />
+        <div class="invalid-feedback">Vui lòng nhập đơn giá</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="unitId">Đơn vị tính</label>
+        <app-select [loading]="isLoadingList" formControlName="unitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Chọn đơn vị"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="serviceType">Hình thức phục vụ</label>
+        <input id="serviceType" type="text" class="form-control" list="serviceTypeList" formControlName="serviceType" placeholder="VD: Giao tận nơi" autocomplete="off" />
+        <datalist id="serviceTypeList">
+          @for (s of serviceSuggestions; track s) {
+            <option [value]="s"></option>
+          }
+        </datalist>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

@@ -84,6 +84,71 @@ namespace AppDelicare.Services.Implement
             return reversal;
         }
 
+        /// <summary>
+        /// T16 (spec 7.6 rebuild-balance): tính lại OnHand của InventoryBalance từ sổ cái theo khóa (kho, vị trí, nguyên liệu, lô).
+        /// Giữ ReservedQuantity; Available = OnHand − Reserved; dòng tồn không còn bút toán → 0. Ghi song song cột deprecated.
+        /// </summary>
+        public async Task<(int Rows, int Changed)> RebuildBalancesAsync(Guid? warehouseId, CancellationToken cancellationToken = default)
+        {
+            await using var transaction = db.Database.IsRelational() && db.Database.CurrentTransaction == null ? await db.Database.BeginTransactionAsync(cancellationToken) : null;
+            DateTime now = DateTime.Now;
+            var sums = (await db.InventoryTransaction.AsNoTracking()
+                    .Where(t => !t.IsDeleted && (warehouseId == null || t.WarehouseId == warehouseId))
+                    .Select(t => new { t.WarehouseId, t.StorageLocationId, t.IngredientId, t.MaterialLotId, t.UnitId, t.QuantityIn, t.QuantityOut, t.CreatedDate })
+                    .ToListAsync(cancellationToken))
+                .GroupBy(t => (t.WarehouseId, t.StorageLocationId, t.IngredientId, t.MaterialLotId))
+                .ToDictionary(g => g.Key, g => (OnHand: g.Sum(x => x.QuantityIn - x.QuantityOut), UnitId: g.OrderByDescending(x => x.CreatedDate).First().UnitId));
+            var balances = await db.InventoryBalance
+                .Where(b => !b.IsDeleted && (warehouseId == null || b.WarehouseId == warehouseId))
+                .ToListAsync(cancellationToken);
+            int changed = 0;
+            var seen = new HashSet<(Guid, Guid?, Guid, Guid?)>();
+            foreach (var balance in balances)
+            {
+                var key = (balance.WarehouseId, balance.StorageLocationId, balance.IngredientId, balance.MaterialLotId);
+                decimal onHand = sums.TryGetValue(key, out var sum) ? sum.OnHand : 0;
+                seen.Add(key);
+                if (balance.OnHandQuantity != onHand || balance.OnHandQty != onHand || balance.AvailableQuantity != onHand - balance.ReservedQuantity)
+                {
+                    changed++;
+                    balance.OnHandQuantity = balance.OnHandQty = onHand;
+                    balance.ReservedQty = balance.ReservedQuantity;
+                    balance.AvailableQuantity = balance.AvailableQty = onHand - balance.ReservedQuantity;
+                    balance.LastCalculatedDate = now;
+                    balance.UpdatedDate = now;
+                }
+            }
+            foreach (var (key, sum) in sums.Where(s => !seen.Contains(s.Key)))
+            {
+                changed++;
+                db.InventoryBalance.Add(new InventoryBalance
+                {
+                    Id = Guid.NewGuid(),
+                    WarehouseId = key.WarehouseId,
+                    StorageLocationId = key.StorageLocationId,
+                    IngredientId = key.IngredientId,
+                    MaterialLotId = key.MaterialLotId,
+                    LotId = key.MaterialLotId,
+                    UnitId = sum.UnitId,
+                    OnHandQuantity = sum.OnHand,
+                    OnHandQty = sum.OnHand,
+                    AvailableQuantity = sum.OnHand,
+                    AvailableQty = sum.OnHand,
+                    LastCalculatedDate = now,
+                    UpdatedDate = now,
+                });
+            }
+            if (changed > 0)
+            {
+                await db.SaveChangesAsync(ConstantHelper.TypeSave.Update, cancellationToken);
+            }
+            if (transaction != null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+            return (balances.Count + sums.Keys.Count(k => !seen.Contains(k)), changed);
+        }
+
         private static void Validate(InventoryPostRequest r)
         {
             if (!TransactionTypes.Contains(r.TransactionType))
@@ -108,6 +173,11 @@ namespace AppDelicare.Services.Implement
             var balance = await db.InventoryBalance.FirstOrDefaultAsync(b => !b.IsDeleted
                 && b.WarehouseId == r.WarehouseId && b.StorageLocationId == r.StorageLocationId
                 && b.IngredientId == r.IngredientId && b.MaterialLotId == r.MaterialLotId, cancellationToken);
+            if (balance != null && balance.UnitId != r.UnitId)
+            {
+                // T16: 1 dòng tồn = 1 đơn vị; không quy đổi ngầm (PROPOSED – quy đổi qua UomConversion để sau Pilot).
+                throw new BusinessRuleException(422, "UNIT_MISMATCH", "Đơn vị tính khác đơn vị của dòng tồn hiện có – không cộng / trừ được.", "unitId");
+            }
             decimal onHand = balance?.OnHandQuantity ?? 0;
             decimal reserved = balance?.ReservedQuantity ?? 0;
             if (onHand + delta < 0)
@@ -162,6 +232,11 @@ namespace AppDelicare.Services.Implement
             balance.UpdatedDate = now;
 
             await db.SaveChangesAsync(balance.CreatedDate == default ? ConstantHelper.TypeSave.Insert : ConstantHelper.TypeSave.Update, cancellationToken);
+            // BE2.4 (D-53 a): nguyên liệu đang được giữ chỗ cho lệnh SX → phân bổ lại ReservedQuantity (FEFO) sau biến động tồn.
+            if (await ReservationRules.AnyOpenAsync(db, [r.IngredientId]))
+            {
+                await ReservationRules.ReallocateAsync(db, [r.IngredientId], now.Date);
+            }
             return entity;
         }
     }

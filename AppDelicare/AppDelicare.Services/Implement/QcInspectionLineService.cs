@@ -27,7 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@QcInspectionId", request.QcInspectionId);
+                dynamicParameters.Add("@QcInspectionId", request.QcInspectionId == Guid.Empty ? null : request.QcInspectionId);
                 dynamicParameters.Add("@GoodsReceiptLineId", request.GoodsReceiptLineId);
                 //dynamicParameters.Add("@Criterion", request.Criterion);
                 dynamicParameters.Add("@Result", request.Result);
@@ -127,47 +127,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(QcInspectionLineRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<QcInspectionLine>(request);
-            _unitOfWork.QcInspectionLineRepository.Add(insert);
-            await _unitOfWork.QcInspectionLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T15: kết quả QC từng dòng chỉ ghi qua QcInspection/Conclude – CRUD không ghi.</summary>
+        private Task<string> Insert(QcInspectionLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.QcInspectionCrudBlocked);
 
-        private async Task<string> Update(QcInspectionLineRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.QcInspectionLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.QcInspectionLineRepository.Update(update);
-            await _unitOfWork.QcInspectionLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(QcInspectionLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.QcInspectionCrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(QcInspectionLine), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.QcInspectionLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.QcInspectionLineRepository.Update(delete);
-            await _unitOfWork.QcInspectionLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.QcInspectionCrudBlocked);
 
         public async Task<IResult<QcInspectionLine>> GetById(Guid id)
         {

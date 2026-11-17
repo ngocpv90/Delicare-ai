@@ -1,0 +1,230 @@
+@if (permission?.allowAccess) {
+  <app-page-header
+    description="Vai trò = nhóm người dùng. Tick ô để cấp / thu hồi quyền trên từng chức năng, rồi bấm Lưu thay đổi – có hiệu lực ở lần tải menu kế tiếp của người dùng."
+  >
+    @if (permission.allowEdit) {
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        [disabled]="!changedRows().length"
+        (click)="discard()"
+      >
+        Hủy thay đổi
+      </button>
+      <button type="button" class="btn btn-primary" [disabled]="!changedRows().length" (click)="save()">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Lưu thay đổi
+        @if (changedRows().length) {
+          ({{ changedRows().length }})
+        }
+      </button>
+    }
+  </app-page-header>
+  <div class="row g-3">
+    <div class="col-lg-3">
+      <div class="card dc-list-card h-100">
+        <div class="card-body">
+          <div class="dc-card-title">Nhóm người dùng</div>
+          @if (isLoadingGroup) {
+            <div class="dc-empty">Đang tải...</div>
+          }
+          <div class="dc-side-list" role="listbox" aria-label="Nhóm người dùng">
+            @for (g of listGroup; track g.id) {
+              <button
+                type="button"
+                class="dc-side-item"
+                role="option"
+                [class.active]="g.id === groupId"
+                [attr.aria-selected]="g.id === groupId"
+                (click)="selectGroup(g.id)"
+              >
+                <i class="fa-solid fa-users me-2"></i>{{ g.name }}
+              </button>
+            } @empty {
+              @if (!isLoadingGroup) {
+                <div class="dc-empty">Chưa có nhóm người dùng</div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-9">
+      <div class="card dc-list-card">
+        <div class="card-body">
+          <div class="dc-toolbar justify-content-between">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <h2 class="dc-card-title mb-0 me-2">{{ group?.name || '—' }}</h2>
+              <div class="dc-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input
+                  class="form-control"
+                  placeholder="Lọc chức năng"
+                  aria-label="Lọc chức năng"
+                  [(ngModel)]="searchText"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              @if (permission.allowEdit && groupId) {
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="accessAll(true)">
+                  <i class="fa-solid fa-check-double me-1"></i>Cấp tất cả
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="accessAll(false)">
+                  <i class="fa-solid fa-ban me-1"></i>Thu hồi tất cả
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openCopy()">
+                  <i class="fa-solid fa-copy me-1"></i>Sao chép từ nhóm…
+                </button>
+              }
+              @if (isAdmin && groupId) {
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openPreview()">
+                  <i class="fa-solid fa-eye me-1"></i>Xem trước
+                </button>
+              }
+            </div>
+          </div>
+          <div class="table-responsive dc-matrix-wrap">
+            <table class="table dc-table dc-matrix mb-0">
+              <thead>
+                <tr>
+                  <th>Chức năng</th>
+                  @for (f of flags; track f.key) {
+                    <th class="text-center" style="width: 72px">{{ f.label }}</th>
+                  }
+                  @if (permission.allowEdit) {
+                    <th class="text-center" style="width: 64px">Cả dòng</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (root of matrix; track root.objectMenuId) {
+                  @if (isRootVisible(root)) {
+                    <ng-container
+                      *ngTemplateOutlet="row; context: { $implicit: root, parent: null, group: isGroupRow(root) }"
+                    ></ng-container>
+                    @for (child of visibleChildren(root); track child.objectMenuId) {
+                      <ng-container
+                        *ngTemplateOutlet="row; context: { $implicit: child, parent: root, group: false }"
+                      ></ng-container>
+                    }
+                  }
+                } @empty {
+                  <tr>
+                    <td [attr.colspan]="flags.length + 2" class="dc-empty">
+                      {{ groupId ? 'Không có chức năng' : 'Chọn một nhóm người dùng' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="text-muted small mt-2 mb-0">
+            Mục "Duyệt – …" (nhóm Phê duyệt): cột Sửa là quyền <b>Duyệt</b>. Tick một quyền bất kỳ sẽ tự bật Truy cập;
+            bỏ Truy cập sẽ bỏ hết quyền của dòng. Mở một màn hình sẽ tự mở nhóm menu chứa nó.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #row let-r let-parent="parent" let-group="group">
+    <tr [class.dc-matrix-group]="group" [class.dc-row-dirty]="isDirty(r)">
+      <td [class.ps-4]="!!parent">
+        {{ r.objectMenuName }}
+        @if (isApproval(r)) {
+          <app-status-badge code="pending" label="Duyệt" class="ms-1"></app-status-badge>
+        }
+        @if (!group) {
+          <small class="d-block text-muted">{{ r.metaLink }}</small>
+        }
+      </td>
+      @for (f of flags; track f.key) {
+        <td class="text-center">
+          @if (!group || f.key === 'allowAccess') {
+            <input
+              type="checkbox"
+              class="form-check-input"
+              [checked]="r[f.key]"
+              [disabled]="!permission.allowEdit"
+              [title]="isApproval(r) && f.key === 'allowEdit' ? 'Duyệt' : f.label"
+              [attr.aria-label]="(isApproval(r) && f.key === 'allowEdit' ? 'Duyệt' : f.label) + ' – ' + r.objectMenuName"
+              (change)="toggle(r, f.key, $any($event.target).checked, parent)"
+            />
+            @if (isApproval(r) && f.key === 'allowEdit') {
+              <small class="d-block text-muted">Duyệt</small>
+            }
+          }
+        </td>
+      }
+      @if (permission.allowEdit) {
+        <td class="text-center">
+          @if (!group) {
+            <button type="button" class="dc-act" title="Bật / tắt cả dòng" aria-label="Bật / tắt cả dòng" (click)="toggleRow(r, parent)">
+              <i class="fa-solid fa-check-double"></i>
+            </button>
+          }
+        </td>
+      }
+    </tr>
+  </ng-template>
+
+  <app-detail-drawer
+    [open]="previewOpen"
+    [title]="'Xem trước: ' + (preview?.userGroupName || '')"
+    [subtitle]="(preview?.screenCount ?? 0) + ' màn hình được truy cập · ' + (preview?.listUser?.length ?? 0) + ' tài khoản'"
+    (closed)="previewOpen = false"
+  >
+    @if (preview) {
+      <div class="dc-card-title">Tài khoản thuộc nhóm</div>
+      <p>
+        @for (u of preview.listUser; track u.id; let last = $last) {
+          {{ u.userName }}{{ last ? '' : ', ' }}
+        } @empty {
+          <span class="text-muted">Chưa có tài khoản</span>
+        }
+      </p>
+      <div class="dc-card-title">Menu và quyền nhóm nhận được</div>
+      <div class="table-responsive">
+        <table class="table dc-table dc-matrix mb-0">
+          <thead>
+            <tr>
+              <th>Chức năng</th>
+              @for (f of flags; track f.key) {
+                <th class="text-center">{{ f.label }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of preview.listMenu; track g.objectMenuId) {
+              @if (g.children?.length) {
+                <tr class="dc-matrix-group">
+                  <td [attr.colspan]="flags.length + 1">{{ g.objectMenuName }}</td>
+                </tr>
+              }
+              @for (m of g.children?.length ? g.children : [g]; track m.objectMenuId) {
+                <tr>
+                  <td class="ps-4">{{ m.objectMenuName }}</td>
+                  @for (f of flags; track f.key) {
+                    <td class="text-center">
+                      @if (m[f.key]) {
+                        <i class="fa-solid fa-check text-primary" [attr.aria-label]="f.label"></i>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            } @empty {
+              <tr>
+                <td [attr.colspan]="flags.length + 1" class="dc-empty">Nhóm chưa có quyền nào</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

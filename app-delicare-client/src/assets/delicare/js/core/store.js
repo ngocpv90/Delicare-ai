@@ -25,7 +25,9 @@
   // Tên bảng legacy → tên class / controller (tools/AppDelicare.CodeGen/Metadata.cs ClassNames).
   const CLASS = { Dishe: 'Dish', DishCategorie: 'DishCategory', IngredientCategorie: 'IngredientCategory', InventoryPolicie: 'InventoryPolicy', PricePolicie: 'PricePolicy', ProductionBatche: 'ProductionBatch', CleaningBatche: 'CleaningBatch', ProofOfDeliverie: 'ProofOfDelivery', QCInspection: 'QcInspection', QCInspectionLine: 'QcInspectionLine' };
   // Bảng không có API đọc danh sách → dữ liệu DEMO.
-  const NO_READ = new Set(['ActualCosts_Legacy_20261113', 'UnitsOfMeasure_Legacy_20261113', 'DocumentFile']);
+  const NO_READ = new Set(['ActualCosts_Legacy_20261113', 'UnitsOfMeasure_Legacy_20261113']);
+  // Bảng đọc qua action danh sách riêng (không có GetAllData).
+  const LIST_PATH = { DocumentFile: 'DocumentFile/GetList?Page=1&PageSize=200' };
   // Bảng nhật ký lớn / không có GetAllData → GetAll phân trang (1 trang 1000 dòng).
   const PAGED = new Set(['AuditChange', 'LocationTracking', 'CoreDataMergeConflict']);
   const PAGE_SIZE = 1000;
@@ -98,7 +100,7 @@
       }
       return out;
     }
-    const res = await HOST.get(PAGED.has(t) ? `${c}/GetAll?Page=1&PageSize=${PAGE_SIZE}` : `${c}/GetAllData`);
+    const res = await HOST.get(LIST_PATH[t] || (PAGED.has(t) ? `${c}/GetAll?Page=1&PageSize=${PAGE_SIZE}` : `${c}/GetAllData`));
     const fail = failOf(res); if (fail) throw new Error(fail);
     return listOf(res).map(r => fromApi(t, r));
   }
@@ -122,6 +124,16 @@
     return fd;
   }
   function toast(msg, kind) { if (window.UI && UI.toast) UI.toast(msg, kind); }
+  // Object thường → FormData cho action [FromForm] (bỏ null / rỗng).
+  function objForm(obj) {
+    const fd = new FormData();
+    Object.entries(obj || {}).forEach(([k, v]) => {
+      if (v === null || v === undefined || v === '') return;
+      fd.append(k, typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v));
+    });
+    return fd;
+  }
+  const qs = obj => Object.entries(obj || {}).filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
   function write(t, action, live) {
     const c = ctrlOf(t);
     const row = Object.assign({}, live);
@@ -172,6 +184,43 @@
       }
       return inflight[t] || Promise.resolve();
     },
+    // Tải lại các bảng từ API (sau action nghiệp vụ làm đổi nhiều bảng).
+    reload(tables) {
+      const list = (tables || []).filter(t => S.tables[t] && isApi(t));
+      list.forEach(t => { if (src[t] !== 'pending') src[t] = 'idle'; });
+      return Promise.all(list.map(t => Store.ensure(t)));
+    },
+    // ---- Action nghiệp vụ (api/<Controller>/<Action>) ----
+    // opt: { method = 'POST', form | json, tables: bảng tải lại khi thành công, demo: thao tác thay thế ở chế độ DEMO, quiet }
+    // Luôn resolve { ok, data, message } – lỗi đã hiện toast (trừ khi quiet). Backend tự kiểm tra quy tắc và ghi các bảng liên quan.
+    act(path, opt = {}) {
+      if (mode !== 'api' || !HOST) { if (opt.demo) opt.demo(); return Promise.resolve({ ok: true, demo: true }); }
+      const body = opt.json !== undefined ? opt.json : (opt.form ? objForm(opt.form) : undefined);
+      const bad = msg => { if (!opt.quiet) toast(`<b>${UTIL.esc(path)}</b>: ${UTIL.esc(msg)}`, 'err'); return { ok: false, message: msg }; };
+      return HOST.send(opt.method || 'POST', path, body).then(res => {
+        if (typeof res === 'string') return bad(res);           // JwtInterceptor nuốt 401 / 403
+        const fail = failOf(res); if (fail) return bad(fail);
+        return Store.reload(opt.tables).then(() => ({ ok: true, res, data: res && res.data !== undefined ? res.data : res }));
+      }).catch(e => bad(HOST.errorText(e)));
+    },
+    // Đọc qua action riêng (GetDetail, GetBoard, GetHistory…). Resolve { ok, data, list, message }, không toast.
+    query(path, params) {
+      if (mode !== 'api' || !HOST) return Promise.resolve({ ok: false, demo: true });
+      const q = qs(params);
+      return HOST.get(path + (q ? '?' + q : '')).then(res => {
+        if (typeof res === 'string') return { ok: false, message: res };
+        const fail = failOf(res); if (fail) return { ok: false, message: fail };
+        return { ok: true, res, data: res && res.data, list: listOf(res) };
+      }).catch(e => ({ ok: false, message: HOST.errorText(e) }));
+    },
+    // Tải tệp: in phiếu (<Controller>/Print?id=…), xuất danh sách (Common/ExportList…), in hàng loạt (Common/PrintBatch + json).
+    download(path, params, json) {
+      if (mode !== 'api' || !HOST) { toast('Chế độ DEMO không có tệp in / xuất – chuyển sang dữ liệu API.', 'warn'); return Promise.resolve({ ok: false, demo: true }); }
+      const q = qs(params);
+      return HOST.download(path + (q ? '?' + q : ''), json).then(r => { if (!r.ok) toast(`<b>${UTIL.esc(path)}</b>: ${UTIL.esc(r.message || 'Lỗi API')}`, 'err'); return r; })
+        .catch(e => { const m = HOST.errorText(e); toast(`<b>${UTIL.esc(path)}</b>: ${UTIL.esc(m)}`, 'err'); return { ok: false, message: m }; });
+    },
+    get isLive() { return mode === 'api' && !!HOST; },
     idle() { const p = Object.values(inflight); return p.length ? Promise.all(p).then(() => Store.idle()) : Promise.resolve(); },
     // ---- Đọc ----
     rows(t, withDeleted) { Store.ensure(t); return (data[t] || []).filter(r => withDeleted || !r.IsDeleted); },

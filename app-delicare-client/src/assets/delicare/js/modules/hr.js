@@ -27,6 +27,8 @@
       onMount: (m, close) => m.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
         const sid = b.dataset.s;
         if (a && Store.by('AttendanceEvent', 'ShiftAssignmentId', a.Id).length) return UI.toast('Ca đã có chấm công – không thể đổi. Dùng Đơn đổi ca.', 'err');
+        // Chế độ API: ShiftAssignment/Assign – phân / đổi / bỏ ca (ShiftId trống = bỏ); backend kiểm tra trùng ca, nghỉ phép, chấm công.
+        if (Store.isLive) return Store.act('ShiftAssignment/Assign', { method: 'PUT', form: { EmployeeId: eid, WorkDate: d, ShiftId: sid || null }, tables: ['ShiftAssignment'] }).then(r => { if (!r.ok) return; close(); const w = (r.data && r.data.listWarning) || []; UI.toast('Đã cập nhật phân ca' + (w.length ? '<br><span class="small">' + w.map(esc).join('<br>') + '</span>' : ''), w.length ? 'warn' : 'ok'); APP.refresh(); });
         if (!sid) { Store.remove('ShiftAssignment', a.Id); }
         else if (a) Store.update('ShiftAssignment', a.Id, { ShiftId: sid });
         else { const s = Store.get('Shift', sid); Store.add('ShiftAssignment', { EmployeeId: eid, ShiftId: sid, WorkDate: d, PlannedStart: d + 'T' + U.time(s.StartTime), PlannedEnd: d + 'T' + U.time(s.EndTime), AssignmentStatus: 'Planned', AssignedBy: Store.user.id }); }
@@ -40,7 +42,12 @@
     const all = Store.rows('ApprovalRequest').slice().sort((a, b) => (b.RequestedAt || '').localeCompare(a.RequestedAt || ''));
     const pend = all.filter(a => ['Pending', 'InProgress'].includes(a.RequestStatus));
     const cur = a => Store.by('ApprovalStep', 'ApprovalRequestId', a.Id).find(s => s.DecisionStatus === 'Waiting');
-    const mine = pend.filter(a => { const s = cur(a); return s && (Store.user.group === 'Quản trị hệ thống' || Store.user.group === s.ApproverRoleCode); });
+    // Chế độ API: "Chờ tôi duyệt" lấy từ ApprovalRequest/GetMyPending (đúng người duyệt của bước hiện tại), làm mới sau 30 giây.
+    if (Store.isLive && (!ws.mineIds || Date.now() - ws.mineAt > 30000) && !ws.mineBusy) {
+      ws.mineBusy = true;
+      Store.query('ApprovalRequest/GetMyPending').then(x => { ws.mineBusy = false; ws.mineAt = Date.now(); const had = ws.mineIds; ws.mineIds = new Set(x.ok ? x.list.map(p => p.id) : []); if (!had || had.size !== ws.mineIds.size) { if (APP.current === 'wf-inbox') APP.refresh(); } });
+    }
+    const mine = Store.isLive ? pend.filter(a => ws.mineIds && ws.mineIds.has(a.Id)) : pend.filter(a => { const s = cur(a); return s && (Store.user.group === 'Quản trị hệ thống' || Store.user.group === s.ApproverRoleCode); });
     const list = ws.tab === 'mine' ? mine : ws.tab === 'pending' ? pend : all;
     el.innerHTML = APP.header(f, '', { sub: 'Hộp phê duyệt tập trung cho mọi nghiệp vụ: ApprovalRequest (BusinessType, BusinessId) → ApprovalStep (StepNo, ApproverRoleCode) → ApprovalDecision. Duyệt bước cuối sẽ cập nhật trạng thái bản ghi nghiệp vụ.' }) + `
     <div class="notice warn">${I('alert')}<div><b>GAP-F-08:</b> SQL không có bảng mẫu quy trình (số cấp, vai trò, hạn mức theo BusinessType). Mockup dùng cấu hình cố định: Đề nghị mua 2 cấp (Quản lý kho → Ban giám đốc), các nghiệp vụ khác 1 cấp.</div></div>
@@ -64,6 +71,12 @@
   }
   function decide(id, ok) {
     const r = Store.get('ApprovalRequest', id); const steps = Store.by('ApprovalStep', 'ApprovalRequestId', id).sort((a, b) => a.StepNo - b.StepNo);
+    if (Store.isLive) {
+      // ApprovalRequest/Decide: backend kiểm tra người duyệt của bước hiện tại, ghi quyết định và áp kết quả vào bản ghi nghiệp vụ.
+      const biz = BT[r.BusinessType];
+      return UI.confirm(`${ok ? 'Duyệt' : 'Từ chối'} <b>${esc(r.RequestNo)}</b>`, note => Store.act('ApprovalRequest/Decide', { form: { Id: id, Approve: ok, Note: note }, tables: ['ApprovalRequest', 'ApprovalStep', 'ApprovalDecision', 'ApprovalItem'].concat(biz ? [biz[0]] : []) })
+        .then(x => { if (!x.ok) return; ws.mineIds = null; UI.toast(ok ? 'Đã duyệt' : 'Đã từ chối', ok ? 'ok' : 'warn'); APP.refresh(); }), { input: 'Ý kiến phê duyệt', required: !ok, ok: ok ? 'Duyệt' : 'Từ chối', danger: !ok });
+    }
     const s = steps.find(x => x.DecisionStatus === 'Waiting'); if (!s) return;
     if (Store.user.group !== 'Quản trị hệ thống' && Store.user.group !== s.ApproverRoleCode) return UI.toast(`Bước ${s.StepNo} cần vai trò "${esc(s.ApproverRoleCode)}" – đổi vai trò bằng avatar góc phải`, 'err');
     UI.confirm(`${ok ? 'Duyệt' : 'Từ chối'} <b>${esc(r.RequestNo)}</b> – bước ${s.StepNo}/${steps.length} (${esc(s.ApproverRoleCode)})`, note => {
@@ -83,6 +96,15 @@
   ['hr-leave', 'hr-swap'].forEach(id => APP.register(id, (el, f) => {
     const t = f.table;
     APP.genericList(el, f, { noTransit: true, noAdd: true, top: `<div class="card panel mb spread"><div><div class="panel-title">${id === 'hr-leave' ? 'Tạo đơn xin nghỉ' : 'Tạo đơn đổi ca'}</div><div class="panel-desc">Đơn sinh kèm ApprovalRequest (BusinessType = ${id === 'hr-leave' ? 'LEAVE_REQUEST' : 'SHIFT_SWAP'}) → duyệt tại Hộp phê duyệt</div></div><button class="btn primary" id="nReq">${I('plus')} Tạo đơn</button></div>` });
+    // Chế độ API: LeaveRequest/Create · ShiftSwapRequest/Create (backend sinh số đơn + yêu cầu duyệt), hủy đơn chờ duyệt qua .../Cancel.
+    const ctrl = id === 'hr-leave' ? 'LeaveRequest' : 'ShiftSwapRequest', RT = [t, 'ApprovalRequest', 'ApprovalStep', 'ApprovalItem', 'ShiftAssignment'];
+    if (Store.isLive) {
+      APP.rowExtra(el, tr => { const r = Store.get(t, tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td || r.RequestStatus !== 'Pending') return; td.insertAdjacentHTML('afterbegin', '<button class="btn xs danger" data-cx>Hủy đơn</button> '); td.querySelector('[data-cx]').onclick = () => UI.confirm('Hủy đơn <b>' + esc(r.RequestNo || '') + '</b>?', note => Store.act(ctrl + '/Cancel', { form: { Id: r.Id, Reason: note }, tables: RT }).then(x => { if (x.ok) { UI.toast('Đã hủy đơn', 'ok'); APP.refresh(); } }), { input: 'Lý do', required: true, danger: true, ok: 'Hủy đơn' }); });
+      el.querySelector('#nReq').onclick = () => UI.form(t, null, { title: f.name, fields: id === 'hr-leave' ? ['EmployeeId', 'FromDate', 'ToDate', 'LeaveTypeCode', 'Reason'] : ['TargetEmployeeId', 'CurrentShiftAssignmentId', 'ProposedShiftAssignmentId', 'Reason'],
+        validate: o => id === 'hr-leave' && o.FromDate && o.ToDate && o.ToDate < o.FromDate ? 'Đến ngày phải ≥ Từ ngày' : null,
+        submit: (o, close) => Store.act(ctrl + '/Create', { form: o, tables: RT }).then(x => { if (!x.ok) return; close(); UI.toast('Đã tạo đơn và gửi duyệt', 'ok'); APP.refresh(); }) });
+      return;
+    }
     el.querySelector('#nReq').onclick = () => UI.form(t, null, { title: f.name, defaults: { RequestNo: (id === 'hr-leave' ? 'NP' : 'DC') + '-2611-' + String(Store.rows(t).length + 1).padStart(3, '0'), RequestStatus: 'Pending', SubmittedAt: U.iso(new Date()) }, fields: id === 'hr-leave' ? ['RequestNo', 'EmployeeId', 'FromDate', 'ToDate', 'LeaveTypeCode', 'Reason'] : ['RequestNo', 'RequesterEmployeeId', 'TargetEmployeeId', 'CurrentShiftAssignmentId', 'ProposedShiftAssignmentId', 'Reason'],
       validate: o => id === 'hr-leave' && o.FromDate && o.ToDate && o.ToDate < o.FromDate ? 'Đến ngày phải ≥ Từ ngày' : null,
       onSave: row => { const ar = APP.submitApproval(id === 'hr-leave' ? 'LEAVE_REQUEST' : 'SHIFT_SWAP', t, row.Id, [[id === 'hr-leave' ? 'Quản lý bếp' : 'Bếp trưởng']], row.RequestNo); Store.update(t, row.Id, { ApprovalRequestId: ar.Id }); APP.refresh(); } });

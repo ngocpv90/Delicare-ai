@@ -1,0 +1,105 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-3 mb-3">
+        <label class="form-label" for="code">Mã nguyên liệu <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập mã (tối đa 50 ký tự)</div>
+      </div>
+      <div class="col-md-5 mb-3">
+        <label class="form-label" for="name">Tên nguyên liệu <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="ingredientCategoryId">Nhóm nguyên liệu <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="ingredientCategoryId" [items]="listCategory" bindValue="id" bindLabel="label" placeholder="Chọn nhóm" [invalid]="isInvalid('ingredientCategoryId')"></app-select>
+        @if (isInvalid('ingredientCategoryId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-12 mb-3">
+        <label class="form-label" for="specification">Quy cách</label>
+        <input id="specification" type="text" class="form-control" formControlName="specification" placeholder="VD: Thùng 10 kg, hút chân không" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="baseUnitId">ĐVT cơ sở (tồn kho, định mức) <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="baseUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Chọn đơn vị" [invalid]="isInvalid('baseUnitId')"></app-select>
+        @if (isInvalid('baseUnitId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="purchaseUomId">ĐVT mua hàng</label>
+        <app-select [loading]="isLoadingList" formControlName="purchaseUomId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Như ĐVT cơ sở"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="issueUomId">ĐVT xuất dùng</label>
+        <app-select [loading]="isLoadingList" formControlName="issueUomId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Như ĐVT cơ sở"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="storageType">Kiểu bảo quản</label>
+        <app-select formControlName="storageType" [items]="storageTypes" bindValue="code" bindLabel="label" placeholder="Chọn kiểu" [searchable]="false"></app-select>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="storageCondition">Điều kiện bảo quản</label>
+        <input id="storageCondition" type="text" class="form-control" formControlName="storageCondition" placeholder="VD: 0–5°C, tránh ánh nắng" autocomplete="off" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="shelfLifeDays">Hạn dùng (ngày)</label>
+        <input id="shelfLifeDays" type="text" class="form-control text-end" appNumberInput [min]="0" formControlName="shelfLifeDays" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="minimumStock">Tồn tối thiểu</label>
+        <input id="minimumStock" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="minimumStock" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="safetyStock">Tồn an toàn</label>
+        <input id="safetyStock" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="safetyStock" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="yieldPercent">Tỷ lệ thành phẩm (%)</label>
+        <input id="yieldPercent" type="text" class="form-control text-end" appNumberInput [decimals]="2" [min]="0" [max]="100" [class.is-invalid]="isInvalid('yieldPercent')" formControlName="yieldPercent" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="standardWastePercent">Hao hụt chuẩn (%)</label>
+        <input id="standardWastePercent" type="text" class="form-control text-end" appNumberInput [decimals]="2" [min]="0" [max]="100" [class.is-invalid]="isInvalid('standardWastePercent')" formControlName="standardWastePercent" />
+      </div>
+      <div class="col-md-6 mb-3 d-flex align-items-end flex-wrap gap-3">
+        <div class="form-check">
+          <input id="isExpiryManaged" type="checkbox" class="form-check-input" formControlName="isExpiryManaged" />
+          <label class="form-check-label" for="isExpiryManaged">Quản lý hạn dùng</label>
+        </div>
+        <div class="form-check">
+          <input id="lotControl" type="checkbox" class="form-check-input" formControlName="lotControl" />
+          <label class="form-check-label" for="lotControl">Quản lý theo lô</label>
+        </div>
+        <div class="form-check">
+          <input id="qcRequired" type="checkbox" class="form-check-input" formControlName="qcRequired" />
+          <label class="form-check-label" for="qcRequired">QC khi nhận hàng</label>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="companyId">Công ty / pháp nhân</label>
+        <app-select [loading]="isLoadingList" formControlName="companyId" [items]="listCompany" bindValue="id" bindLabel="label" placeholder="Chọn công ty"></app-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <input id="note" type="text" class="form-control" formControlName="note" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

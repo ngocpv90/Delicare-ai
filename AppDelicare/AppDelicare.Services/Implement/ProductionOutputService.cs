@@ -27,8 +27,8 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ProductionBatchId", request.ProductionBatchId);
-                dynamicParameters.Add("@DishId", request.DishId);
+                dynamicParameters.Add("@ProductionBatchId", request.ProductionBatchId == Guid.Empty ? null : request.ProductionBatchId);
+                dynamicParameters.Add("@DishId", request.DishId == Guid.Empty ? null : request.DishId);
                 //dynamicParameters.Add("@ProducedQuantity", request.ProducedQuantity);
                 //dynamicParameters.Add("@AcceptedQuantity", request.AcceptedQuantity);
                 //dynamicParameters.Add("@RejectedQuantity", request.RejectedQuantity);
@@ -130,47 +130,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(ProductionOutputRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<ProductionOutput>(request);
-            _unitOfWork.ProductionOutputRepository.Add(insert);
-            await _unitOfWork.ProductionOutputRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T17: sản lượng mẻ chỉ ghi qua ProductionBatch/RecordOutput (1 dòng / mẻ, cập nhật số đạt / loại của mẻ) – CRUD không ghi.</summary>
+        private Task<string> Insert(ProductionOutputRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ProductionBatch/RecordOutput, Reject"));
 
-        private async Task<string> Update(ProductionOutputRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.ProductionOutputRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.ProductionOutputRepository.Update(update);
-            await _unitOfWork.ProductionOutputRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(ProductionOutputRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ProductionBatch/RecordOutput, Reject"));
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(ProductionOutput), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.ProductionOutputRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.ProductionOutputRepository.Update(delete);
-            await _unitOfWork.ProductionOutputRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ProductionBatch/RecordOutput, Reject"));
 
         public async Task<IResult<ProductionOutput>> GetById(Guid id)
         {

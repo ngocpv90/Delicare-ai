@@ -1,0 +1,191 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Danh mục món ăn: nhóm món, định lượng chuẩn / suất, giá thành chuẩn (tính từ công thức đã khóa).">
+    @if (permission.allowImport) {
+      <button type="button" class="btn btn-outline-secondary" (click)="openImport()">
+        <i class="fa-solid fa-file-import me-1"></i>Nhập Excel
+      </button>
+    }
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo mã, tên món, nhóm" aria-label="Tìm món" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="dishCategoryId" [items]="listCategory" bindValue="id" bindLabel="label" placeholder="Tất cả nhóm món" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 130px" (click)="sort('code')">
+                Mã món <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên món <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="sortable" (click)="sort('categoryName')">
+                Nhóm món <i class="fa-solid ms-1" [ngClass]="table.sortIcon('categoryName')"></i>
+              </th>
+              <th class="sortable" style="width: 130px" (click)="sort('mealCategory')">
+                Loại món <i class="fa-solid ms-1" [ngClass]="table.sortIcon('mealCategory')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 150px" (click)="sort('standardPortion')">
+                Định lượng / suất <i class="fa-solid ms-1" [ngClass]="table.sortIcon('standardPortion')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 140px" (click)="sort('standardCost')">
+                Giá thành chuẩn <i class="fa-solid ms-1" [ngClass]="table.sortIcon('standardCost')"></i>
+              </th>
+              <th style="width: 140px">Trạng thái</th>
+              <th class="text-end" style="width: 150px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.code }}</a>
+                </td>
+                <td class="fw-semibold">{{ data.name }}</td>
+                <td>{{ data.categoryName }}</td>
+                <td>{{ data.mealCategory }}</td>
+                <td class="text-end">{{ data.standardPortion | number: '1.0-3' }} {{ data.standardPortion != null ? data.unitName : '' }}</td>
+                <td class="text-end">{{ data.standardCost | number: '1.0-0' }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Xem công thức" aria-label="Xem công thức" (click)="openDrawer(data)"><i class="fa-solid fa-eye"></i></button>
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                  }
+                  @if (permission.allowDelete) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="drawerRow?.code + ' · ' + (drawerRow?.name || '')"
+    [subtitle]="drawerRow?.categoryName"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    width="820px"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (drawerTab === 'info') {
+        <div class="dc-kv">
+          <div><label>Mã món</label><span>{{ drawerRow.code }}</span></div>
+          <div><label>Tên món</label><span>{{ drawerRow.name || '—' }}</span></div>
+          <div><label>Nhóm món</label><span>{{ drawerRow.categoryName || '—' }}</span></div>
+          <div><label>Loại món</label><span>{{ drawerRow.mealCategory || '—' }}</span></div>
+          <div><label>Định lượng chuẩn / suất</label><span>{{ (drawerRow.standardPortion | number: '1.0-3') || '—' }} {{ drawerRow.unitName }}</span></div>
+          <div><label>Khẩu phần chuẩn</label><span>{{ (drawerRow.standardServingSize | number: '1.0-3') || '—' }}</span></div>
+          <div><label>Giá thành chuẩn / suất</label><span>{{ (drawerRow.standardCost | number: '1.0-0') || '—' }}</span></div>
+          <div>
+            <label>Trạng thái</label>
+            <span><app-status-badge [code]="drawerRow.status" [label]="labelOf(statuses, drawerRow.status)"></app-status-badge></span>
+          </div>
+          <div><label>Mô tả</label><span>{{ drawerRow.description || '—' }}</span></div>
+          <div><label>Ghi chú</label><span>{{ drawerRow.note || '—' }}</span></div>
+        </div>
+      }
+      @if (drawerTab === 'recipe') {
+        @if (isLoadingRecipe) {
+          <div class="dc-empty">Đang tải...</div>
+        } @else if (activeRecipe) {
+          <div class="dc-kpis">
+            <div class="dc-kpi"><label>Phiên bản</label><b>{{ activeRecipe.recipe?.versionCode }}</b></div>
+            <div class="dc-kpi"><label>Áp dụng từ</label><b>{{ activeRecipe.recipe?.effectiveFrom | date: dateFormat }}</b></div>
+            <div class="dc-kpi"><label>Số suất chuẩn</label><b>{{ activeRecipe.recipe?.standardOutputQty | number: '1.0-2' }}</b></div>
+            <div class="dc-kpi" [class.danger]="!activeRecipe.costComplete">
+              <label>Giá vốn NVL / suất</label><b>{{ activeRecipe.costPerMeal | number: '1.0-0' }}</b>
+              @if (!activeRecipe.costComplete) {
+                <small>thiếu giá / quy đổi</small>
+              }
+            </div>
+          </div>
+          <div class="text-muted small mb-2">Định lượng cho {{ activeRecipe.recipe?.standardOutputQty | number: '1.0-2' }} suất chuẩn.</div>
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th style="width: 50px">#</th>
+                  <th>Nguyên liệu</th>
+                  <th class="text-end">Định lượng</th>
+                  <th>ĐVT</th>
+                  <th class="text-end">% hao hụt</th>
+                  <th>Ghi chú sơ chế</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of activeRecipe.listLine; track l.id; let i = $index) {
+                  <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td class="fw-semibold">{{ l.ingredientName }}</td>
+                    <td class="text-end">{{ l.quantity | number: '1.0-4' }}</td>
+                    <td>{{ l.unitName }}</td>
+                    <td class="text-end">{{ l.wastePercent | number: '1.0-2' }}</td>
+                    <td>{{ l.preparationNote }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="dc-empty">Công thức chưa có dòng định lượng</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="dc-empty">{{ activeRecipeMessage }}</div>
+        }
+      }
+    }
+    <ng-container drawer-footer>
+      <button type="button" class="btn btn-outline-secondary" (click)="openRecipes(drawerRow)"><i class="fa-solid fa-list-check me-1"></i>Các phiên bản công thức</button>
+      @if (permission.allowEdit) {
+        <button type="button" class="btn btn-primary" (click)="editFromDrawer()"><i class="fa-solid fa-pen me-1"></i>Sửa món</button>
+      }
+    </ng-container>
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

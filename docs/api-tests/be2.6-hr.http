@@ -1,0 +1,479 @@
+### DELICARE – BE2.6: NHÂN SỰ (T21, khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29H): 65 / 65 đúng kỳ vọng.
+### Lưới ca (201) → phân / đổi / bỏ ca (202, UNIQUE kể cả dòng xóa mềm → dùng lại dòng) → phân ca hàng loạt (203) → xác nhận (204, không gửi Telegram)
+### → vào / ra ca GPS theo bán kính trạm bếp, chống trùng ExternalEventId, ngoài bán kính (205) → bảng công dạng danh sách + chi tiết (206) → đánh vắng
+### → đơn nghỉ + duyệt qua engine LEAVE_REQUEST (207) → nhường ca / đổi ca + duyệt SHIFT_SWAP (208) → hủy đơn (209).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Mỗi lần chạy lại đổi @key (nhân viên mới theo key nên các ngày @d1…@d7 dùng lại được;
+### @d1 phải là Thứ 2 trong tương lai). Admin chạy thay nhân viên: chấm công cho nhân viên khác cần quyền Thêm trên #/hr-attendance và ghi rõ hình thức
+### (GPS / QR / MACHINE / PROXY) – nhân viên tự chấm (EmployeeId trống, tài khoản có mã nhân viên = tên đăng nhập) kiểm trong AppDelicare.Tests/Hr/HrTests.cs.
+### Ca hôm nay của bước 5 lấy giờ Việt Nam = UTC + 7 ({{$datetime … 410 m}} = giờ VN − 10 phút, 540 m = giờ VN + 2 giờ) – đúng trên máy ở mọi múi giờ.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Không cần seed mới: mục menu #/hr-shift-assign, #/hr-attendance, #/hr-leave, #/hr-swap, #/wf-inbox?type=hr-leave / hr-swap + quyền đã có trong seed T07.
+### Đã chạy trên DB dev 2026-11-17 (key B26B, giờ VN ~11:07): 65 / 65 đúng kỳ vọng (20 chốt an toàn trả 400). Lần B26A dở dang (máy chạy múi giờ PST – đã đổi sang $datetime + 7 giờ).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@key = B26B
+@code = DEMO{{key}}
+@d1 = 2027-01-11
+@d2 = 2027-01-12
+@d3 = 2027-01-13
+@d6 = 2027-01-16
+@d7 = 2027-01-17
+@past = 2026-01-05
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 0. DANH MỤC TỐI THIỂU
+### 0.1 Ca TRUA / TOI có sẵn (seed Shift_seed.sql)
+# @name truaShift
+GET {{base}}/api/Shift/GetAll?SearchText=TRUA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@trua = {{truaShift.response.body.listData[0].id}}
+
+###
+# @name toiShift
+GET {{base}}/api/Shift/GetAll?SearchText=TOI&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@toi = {{toiShift.response.body.listData[0].id}}
+
+### 0.2 Ba nhân viên [DEMO]
+POST {{base}}/api/Employee/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}-NV1&FullName=[DEMO] Nguyễn Văn An {{key}}&Phone=0900000001&Status=Active
+
+###
+POST {{base}}/api/Employee/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}-NV2&FullName=[DEMO] Trần Thị Bình {{key}}&Phone=0900000002&Status=Active
+
+###
+POST {{base}}/api/Employee/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}-NV3&FullName=[DEMO] Lê Văn Cường {{key}}&Phone=0900000003&Status=Active
+
+###
+# @name nv1
+GET {{base}}/api/Employee/GetAll?SearchText={{code}}-NV1&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@e1 = {{nv1.response.body.listData[0].id}}
+
+###
+# @name nv2
+GET {{base}}/api/Employee/GetAll?SearchText={{code}}-NV2&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@e2 = {{nv2.response.body.listData[0].id}}
+
+###
+# @name nv3
+GET {{base}}/api/Employee/GetAll?SearchText={{code}}-NV3&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@e3 = {{nv3.response.body.listData[0].id}}
+
+### 0.3 Trạm bếp có tọa độ + bán kính 100 m (tọa độ [DEMO])
+POST {{base}}/api/KitchenWorkstation/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}-KW&Name=[DEMO] Cổng bếp {{key}}&AreaName=[DEMO] Cổng chính&Latitude=10.8231000&Longitude=106.6297000&RadiusMeters=100&Status=Active
+
+########## 1. LƯỚI CA (Catalog 201)
+###
+GET {{base}}/api/ShiftAssignment/GetGrid?FromDate={{d1}}&Days=7&SearchText={{code}}
+Authorization: Bearer {{token}}
+
+########## 2. PHÂN / ĐỔI / BỎ CA (Catalog 202)
+### 2.1 NV1 ngày @d1 ca TRUA (giờ theo ca)
+# @name a1
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&WorkDate={{d1}}&ShiftId={{trua}}&Note=[DEMO] phân ca
+
+### 2.2 Đổi sang TOI (dòng TRUA xóa mềm)
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&WorkDate={{d1}}&ShiftId={{toi}}
+
+### 2.3 Đổi lại TRUA → dùng lại dòng đã xóa mềm (UQ_ShiftAssignment_Employee_Shift_Date tính cả dòng xóa)
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&WorkDate={{d1}}&ShiftId={{trua}}
+
+### 2.4 Ngày đã qua → 400
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&WorkDate={{past}}&ShiftId={{trua}}
+
+### 2.5 CRUD Insert bị chặn (chỉ qua lưới ca) → 400
+POST {{base}}/api/ShiftAssignment/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&WorkDate={{d1}}&ShiftId={{toi}}
+
+########## 3. PHÂN CA HÀNG LOẠT (Catalog 203) – 3 nhân viên × @d1…@d7, bỏ Chủ nhật (7) → tạo 17, bỏ qua 1 (NV1 @d1 đã có ca)
+###
+POST {{base}}/api/ShiftAssignment/BulkAssign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeIds={{e1}}&EmployeeIds={{e2}}&EmployeeIds={{e3}}&ShiftId={{trua}}&FromDate={{d1}}&ToDate={{d7}}&SkipWeekdays=7&Note=[DEMO] lịch tuần
+
+### 3.1 Quá 31 ngày → 400
+POST {{base}}/api/ShiftAssignment/BulkAssign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeIds={{e1}}&ShiftId={{trua}}&FromDate={{d1}}&ToDate=2027-03-31
+
+########## 4. XÁC NHẬN LỊCH CA (Catalog 204) – Kế hoạch → Xác nhận, notificationSent = false (không gửi Telegram)
+###
+POST {{base}}/api/ShiftAssignment/Confirm
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WorkDate={{d1}}&ShiftId={{trua}}
+
+########## 5. CHẤM CÔNG (Catalog 205) + BẢNG CÔNG (Catalog 206)
+### 5.1 NV3 ca hôm nay (giờ riêng: từ 10 phút trước tới 2 giờ sau)
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&WorkDate={{$datetime "YYYY-MM-DD" 410 m}}&ShiftId={{trua}}&PlannedStart={{$datetime "YYYY-MM-DDTHH:mm:ss" 410 m}}&PlannedEnd={{$datetime "YYYY-MM-DDTHH:mm:ss" 540 m}}
+
+### 5.2 Tài khoản admin không gắn nhân viên, tự chấm → 400
+POST {{base}}/api/AttendanceEvent/CheckIn
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Latitude=10.8233000&Longitude=106.6297000
+
+### 5.3 Chấm cho nhân viên khác mà không ghi rõ hình thức → 400
+POST {{base}}/api/AttendanceEvent/CheckIn
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&Latitude=10.8233000&Longitude=106.6297000
+
+### 5.4 Chấm hộ (PROXY) không ghi lý do → 400
+POST {{base}}/api/AttendanceEvent/CheckIn
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&SourceChannel=PROXY
+
+### 5.5 Vào ca GPS cách trạm ~ 22 m → hợp lệ (isValid = true), đi muộn 10 phút
+POST {{base}}/api/AttendanceEvent/CheckIn
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&SourceChannel=GPS&Latitude=10.8233000&Longitude=106.6297000&ExternalEventId={{code}}-IN&Note=[DEMO] app chấm công
+
+### 5.6 Gửi lại cùng ExternalEventId → isDuplicate = true, không ghi thêm
+POST {{base}}/api/AttendanceEvent/CheckIn
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&SourceChannel=GPS&Latitude=10.8233000&Longitude=106.6297000&ExternalEventId={{code}}-IN
+
+### 5.7 NV2 không có ca hôm nay → 400
+POST {{base}}/api/AttendanceEvent/CheckIn
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e2}}&SourceChannel=MACHINE
+
+### 5.8 Ra ca GPS cách ~ 1,1 km → vẫn ghi, isValid = false + cảnh báo "Ngoài bán kính"; về sớm
+POST {{base}}/api/AttendanceEvent/CheckOut
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&SourceChannel=GPS&Latitude=10.8331000&Longitude=106.6297000
+
+### 5.9 Ra ca lần 2 → 400 (chưa vào ca nào)
+POST {{base}}/api/AttendanceEvent/CheckOut
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&SourceChannel=GPS&Latitude=10.8233000&Longitude=106.6297000
+
+### 5.10 Bảng công hôm nay (dòng NV3: present 1, invalidEvents 1, earlyLeave 1)
+GET {{base}}/api/AttendanceEvent/GetTimesheet?FromDate={{$datetime "YYYY-MM-DD" 410 m}}&ToDate={{$datetime "YYYY-MM-DD" 7 h}}&SearchText={{code}}&Page=1&PageSize=50
+Authorization: Bearer {{token}}
+
+### 5.11 Bảng công chi tiết theo ca
+GET {{base}}/api/AttendanceEvent/GetTimesheetDetail?FromDate={{$datetime "YYYY-MM-DD" 410 m}}&ToDate={{$datetime "YYYY-MM-DD" 7 h}}&EmployeeId={{e3}}
+Authorization: Bearer {{token}}
+
+### 5.12 Khoảng ngày ngược → 400
+GET {{base}}/api/AttendanceEvent/GetTimesheet?FromDate={{d2}}&ToDate={{d1}}
+Authorization: Bearer {{token}}
+
+### 5.13 Ca đã chấm công không bỏ được → 400 (dùng đơn đổi ca)
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&WorkDate={{$datetime "YYYY-MM-DD" 410 m}}
+
+### 5.14 Đánh vắng ca đã hết giờ mà không vào ca (thao tác tay, D-45)
+POST {{base}}/api/ShiftAssignment/MarkAbsent
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WorkDate={{$datetime "YYYY-MM-DD" 410 m}}
+
+### 5.15 Ca hôm nay của tài khoản admin (không gắn nhân viên) → 400
+GET {{base}}/api/AttendanceEvent/GetMine
+Authorization: Bearer {{token}}
+
+########## 6. ĐƠN NGHỈ (Catalog 207) + DUYỆT LEAVE_REQUEST + HỦY (209)
+### 6.1 Loại nghỉ sai → 400
+POST {{base}}/api/LeaveRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e2}}&FromDate={{d2}}&ToDate={{d3}}&LeaveTypeCode=XYZ&Reason=[DEMO] về quê
+
+### 6.2 NV2 nghỉ @d2 → @d3 (phép năm) → Chờ duyệt, số DN-, ApprovalRequest LEAVE_REQUEST
+# @name leave1
+POST {{base}}/api/LeaveRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e2}}&FromDate={{d2}}&ToDate={{d3}}&LeaveTypeCode=ANNUAL&Reason=[DEMO] về quê
+
+###
+@leave1Id = {{leave1.response.body.data.request.id}}
+
+### 6.3 Trùng khoảng ngày → 400
+POST {{base}}/api/LeaveRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e2}}&FromDate={{d3}}&ToDate={{d3}}&LeaveTypeCode=SICK&Reason=[DEMO] bị ốm
+
+### 6.4 Hộp duyệt "Duyệt – Đơn xin nghỉ"
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=hr-leave
+Authorization: Bearer {{token}}
+
+### 6.5 Chi tiết (listWarning: duyệt sẽ bỏ 2 ca)
+GET {{base}}/api/LeaveRequest/GetDetail?id={{leave1Id}}
+Authorization: Bearer {{token}}
+
+### 6.6 Duyệt → Đã duyệt, 2 ca của NV2 trong khoảng nghỉ bị bỏ (chi tiết: "thiếu người")
+POST {{base}}/api/LeaveRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{leave1Id}}&Note=[DEMO] đồng ý
+
+###
+GET {{base}}/api/LeaveRequest/GetDetail?id={{leave1Id}}
+Authorization: Bearer {{token}}
+
+### 6.7 Phân ca vào ngày nghỉ phép → 400
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e2}}&WorkDate={{d2}}&ShiftId={{trua}}
+
+### 6.8 Hủy đơn đã duyệt → 400 (chỉ Chờ duyệt)
+POST {{base}}/api/LeaveRequest/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{leave1Id}}&Reason=[DEMO] thôi
+
+### 6.9 Đơn NV1 @d6 → từ chối (lý do bắt buộc)
+# @name leave2
+POST {{base}}/api/LeaveRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&FromDate={{d6}}&ToDate={{d6}}&LeaveTypeCode=PERSONAL&Reason=[DEMO] việc riêng
+
+###
+@leave2Id = {{leave2.response.body.data.request.id}}
+
+### 6.10 Từ chối không ghi lý do → 400
+POST {{base}}/api/LeaveRequest/Reject
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{leave2Id}}
+
+###
+POST {{base}}/api/LeaveRequest/Reject
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{leave2Id}}&Note=[DEMO] thiếu người ngày đó
+
+### 6.11 Đơn NV1 @d6 lần 2 → người tạo hủy (Catalog 209) → Đã hủy + yêu cầu duyệt Đã hủy
+# @name leave3
+POST {{base}}/api/LeaveRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&FromDate={{d6}}&ToDate={{d6}}&LeaveTypeCode=PERSONAL&Reason=[DEMO] việc riêng lần 2
+
+###
+POST {{base}}/api/LeaveRequest/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{leave3.response.body.data.request.id}}&Reason=[DEMO] đổi kế hoạch
+
+### 6.12 Lưới ca @d1: NV2 ngày @d2 / @d3 onLeave = true
+GET {{base}}/api/ShiftAssignment/GetGrid?FromDate={{d1}}&Days=7&SearchText={{code}}
+Authorization: Bearer {{token}}
+
+########## 7. ĐỔI CA / NHƯỜNG CA (Catalog 208) + DUYỆT SHIFT_SWAP + HỦY (209)
+### 7.1 Lấy ca TRUA @d3 của NV1 (phân lại cùng ca = không đổi, trả Id dòng) – bước sau: nhường cho NV3 (đã có ca @d3) bị chặn
+# @name a3
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&WorkDate={{d3}}&ShiftId={{trua}}
+
+###
+@nv1d3 = {{a3.response.body.data.assignment.id}}
+
+### 7.1b Nhường cho NV3 đang có ca @d3 → 400
+POST {{base}}/api/ShiftSwapRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CurrentShiftAssignmentId={{nv1d3}}&TargetEmployeeId={{e3}}&Reason=[DEMO] bận việc
+
+### 7.2 Bỏ ca @d3 của NV3 (dòng xóa mềm) rồi gửi lại → Chờ duyệt (số PH-)
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e3}}&WorkDate={{d3}}
+
+###
+# @name give1
+POST {{base}}/api/ShiftSwapRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CurrentShiftAssignmentId={{nv1d3}}&TargetEmployeeId={{e3}}&Reason=[DEMO] bận việc
+
+###
+@give1Id = {{give1.response.body.data.request.id}}
+
+### 7.3 Ca đang trong đơn đổi ca chờ duyệt không đổi được → 400
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e1}}&WorkDate={{d3}}&ShiftId={{toi}}
+
+### 7.4 Hộp duyệt "Duyệt – Đơn đổi ca" + duyệt → ca chuyển sang NV3 (dùng lại dòng NV3 đã xóa mềm)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=hr-swap
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/ShiftSwapRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{give1Id}}&Note=[DEMO] đồng ý
+
+###
+GET {{base}}/api/ShiftSwapRequest/GetDetail?id={{give1Id}}
+Authorization: Bearer {{token}}
+
+### 7.5 Hoán đổi: NV1 ca TRUA @d1 ↔ NV2 ca TOI @d7 (NV2 bỏ ca @d1 trước để không trùng ngày)
+# @name b7
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e2}}&WorkDate={{d7}}&ShiftId={{toi}}
+
+###
+PUT {{base}}/api/ShiftAssignment/Assign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{e2}}&WorkDate={{d1}}
+
+###
+# @name swap1
+POST {{base}}/api/ShiftSwapRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CurrentShiftAssignmentId={{a1.response.body.data.assignment.id}}&ProposedShiftAssignmentId={{b7.response.body.data.assignment.id}}&Reason=[DEMO] đổi ngày nghỉ
+
+###
+POST {{base}}/api/ShiftSwapRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{swap1.response.body.data.request.id}}&Note=[DEMO] đồng ý
+
+### 7.6 Nhường ca TOI @d7 (nay của NV1) cho NV3 rồi người tạo hủy (Catalog 209)
+# @name give2
+POST {{base}}/api/ShiftSwapRequest/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CurrentShiftAssignmentId={{b7.response.body.data.assignment.id}}&TargetEmployeeId={{e3}}&Reason=[DEMO] có việc
+
+###
+POST {{base}}/api/ShiftSwapRequest/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{give2.response.body.data.request.id}}&Reason=[DEMO] xong việc
+
+### 7.7 Hủy lại đơn đã hủy → 400
+POST {{base}}/api/ShiftSwapRequest/Cancel
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{give2.response.body.data.request.id}}&Reason=[DEMO] lần 2
+
+### 7.8 Lưới ca cuối: NV1 @d1 trống / @d3 trống / @d7 TOI; NV2 @d1 TRUA; NV3 @d3 TRUA
+GET {{base}}/api/ShiftAssignment/GetGrid?FromDate={{d1}}&Days=7&SearchText={{code}}
+Authorization: Bearer {{token}}

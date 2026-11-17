@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -108,6 +109,136 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 10.1 GET packing-orders): lệnh đóng gói theo ngày đóng gói / trạng thái / đơn / mẻ.</summary>
+        [HttpGet("GetList")]
+        public async Task<IActionResult> GetList([FromQuery] PackingOrderListRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetList(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1: lệnh đóng gói của 1 mẻ + số phần đạt / đã chia / còn lại (id = mẻ).</summary>
+        [HttpGet("GetByBatch")]
+        public async Task<IActionResult> GetByBatch(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetByBatch(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetByBatch: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1: sinh lệnh đóng gói từ mẻ Đạt QC – chia số phần đạt cho các đơn của ngày / ca theo tỉ lệ suất món. Quyền Thêm log-packing-order.</summary>
+        [Security.Permission("log-packing-order", PermissionAction.Add)]
+        [HttpPost("GenerateFromBatch")]
+        public async Task<IActionResult> GenerateFromBatch([FromForm] PackingOrderGenerateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GenerateFromBatch(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GenerateFromBatch: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 10.1 POST packing-orders): lập lệnh đóng gói tay (Σ số phần ≤ số đạt của mẻ).</summary>
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromForm] PackingOrderCreateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Create(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Create: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 10.1 start): Kế hoạch → Đang đóng gói.</summary>
+        [HttpPost("Start")]
+        public async Task<IActionResult> Start([FromForm] PackingOrderActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Start(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Start: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 10.1 result): ghi kết quả đóng gói (PackingResult) – đóng gói + hỏng + loại = kế hoạch; mẻ chia hết + xong → mẻ Đã đóng gói.</summary>
+        [HttpPost("RecordResult")]
+        public async Task<IActionResult> RecordResult([FromForm] PackingOrderResultRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.RecordResult(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RecordResult: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 10.1 cancel): hủy lệnh Kế hoạch, lý do bắt buộc – số phần trả về mẻ.</summary>
+        [HttpPost("Cancel")]
+        public async Task<IActionResult> Cancel([FromForm] PackingOrderActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Cancel(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Cancel: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

@@ -1,20 +1,125 @@
 #!/bin/bash
-# Khởi tạo DB staging trong container (T48.1) – cùng thứ tự với deploy/db/Deploy-Database.ps1, idempotent.
+# DELICARE – khởi tạo / cập nhật DB trong container (T48.1, T48.3). Idempotent: chạy lại bao nhiêu lần cũng được.
+#   1. Tạo database nếu chưa có; DB chưa có bảng nào → tạo 124 bảng từ DDL chuẩn của PO. DB đã có bảng → KHÔNG đụng tới bảng.
+#   2. Chạy đúng thứ tự trong deploy/db/scripts.order (nguồn duy nhất, dùng chung với deploy/db/Deploy-Database.ps1):
+#      SP (CREATE OR ALTER) → tài khoản admin (chỉ khi chưa có, hash PBKDF2 như T48.0) → seed (chỉ thêm phần chưa có).
+#   sqlcmd luôn có -f 65001 (UTF-8) – thiếu cờ này tên tiếng Việt bị lỗi font.
+#
+# Biến môi trường (docker-compose.staging.yml truyền từ staging.env – không ghi giá trị vào repo):
+#   SA_PASSWORD     mật khẩu SQL (bắt buộc, trừ khi DB_TRUSTED_AUTH=1)
+#   DB_NAME         tên DB (mặc định AppDelicare)
+#   ADMIN_PASSWORD  mật khẩu admin app – CHỈ cần khi DB chưa có tài khoản admin
+#   ADMIN_USERNAME  mặc định admin
+#   Tùy chọn (chạy ngoài container / thử): DB_SERVER (db,1433), DB_USER (sa), DB_TRUSTED_AUTH=1 (-E), SQLCMD_BIN, REPO_ROOT (/repo)
+# Xem thứ tự sẽ chạy mà không kết nối DB (từ gốc repo):  REPO_ROOT=. bash deploy/docker/db-init.sh --dry-run
 set -euo pipefail
-SQL="/opt/mssql-tools18/bin/sqlcmd -S db,1433 -U sa -P $SA_PASSWORD -C -b -I -f 65001"
+
+REPO="${REPO_ROOT:-/repo}"
+ORDER_FILE="$REPO/deploy/db/scripts.order"
+DB_NAME="${DB_NAME:-AppDelicare}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
+DRY_RUN="${DRY_RUN:-0}"
+[ "${1:-}" = "--dry-run" ] && DRY_RUN=1
+
+die() { printf 'LỖI: %s\n' "$*" >&2; exit 1; }
+sql_str() { printf '%s' "${1//\'/\'\'}"; }   # giá trị đặt trong N'...'
+
+# ---- Đọc danh sách thứ tự ----
+[ -f "$ORDER_FILE" ] || die "Không thấy $ORDER_FILE"
+ORDER=()
+declare -A LISTED=()
+while IFS= read -r line || [ -n "$line" ]; do
+  line="${line%$'\r'}"
+  line="${line%%#*}"
+  line="${line#"${line%%[![:space:]]*}"}"
+  line="${line%"${line##*[![:space:]]}"}"
+  [ -z "$line" ] && continue
+  [ -f "$REPO/$line" ] || die "scripts.order: không thấy file $line"
+  [ -z "${LISTED[$line]:-}" ] || die "scripts.order: $line ghi 2 lần"
+  LISTED[$line]=1
+  ORDER+=("$line")
+done < "$ORDER_FILE"
+
+# SP có trong DB/sp nhưng quên ghi vào scripts.order: vẫn chạy (sau cùng, thứ tự byte) + cảnh báo. Seed quên ghi: KHÔNG chạy.
+EXTRA=()
+while IFS= read -r name; do
+  [ -n "$name" ] || continue
+  [ -n "${LISTED[DB/sp/$name]:-}" ] || EXTRA+=("DB/sp/$name")
+done < <(cd "$REPO/DB/sp" && LC_ALL=C ls -1 -- *.sql 2>/dev/null | LC_ALL=C sort)
+for f in "$REPO"/DB/seed/*.sql; do
+  [ -e "$f" ] || continue
+  [ -n "${LISTED[DB/seed/${f##*/}]:-}" ] || echo "  ! CẢNH BÁO: DB/seed/${f##*/} không có trong scripts.order – KHÔNG chạy"
+done
+for rel in "${EXTRA[@]}"; do echo "  ! CẢNH BÁO: $rel không có trong scripts.order – vẫn chạy ở cuối (hãy thêm vào scripts.order)"; done
+
+if [ "$DRY_RUN" = "1" ]; then
+  echo "== DRY RUN – thứ tự sẽ chạy (${#ORDER[@]} trong scripts.order + ${#EXTRA[@]} SP ngoài danh sách):"
+  for rel in "${ORDER[@]}" "${EXTRA[@]}"; do echo "$rel"; done
+  exit 0
+fi
+
+# ---- Kết nối ----
+SQLCMD_BIN="${SQLCMD_BIN:-/opt/mssql-tools18/bin/sqlcmd}"
+if [ "${DB_TRUSTED_AUTH:-0}" = "1" ]; then
+  AUTH=(-E)
+else
+  [ -n "${SA_PASSWORD:-}" ] || die "Chưa đặt SA_PASSWORD"
+  export SQLCMDPASSWORD="$SA_PASSWORD"   # sqlcmd đọc mật khẩu từ biến này – không lộ trên dòng lệnh (ps)
+  AUTH=(-U "${DB_USER:-sa}")
+fi
+SQL=("$SQLCMD_BIN" -S "${DB_SERVER:-db,1433}" "${AUTH[@]}" -C -b -I -f 65001)
+scalar() { "${SQL[@]}" -d "$1" -r1 -h -1 -W -Q "SET NOCOUNT ON; $2" | tr -d '[:space:]'; }
+run_file() { "${SQL[@]}" -d "$DB_NAME" -i "$REPO/$1" || die "Lỗi khi chạy $1"; }
+
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
+chmod 700 "$TMP_DIR"
+
 echo "== DELICARE db-init → $DB_NAME"
-$SQL -d master -Q "IF DB_ID(N'$DB_NAME') IS NULL CREATE DATABASE [$DB_NAME];"
-TABLES=$($SQL -d "$DB_NAME" -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0" | tr -d '[:space:]')
+"${SQL[@]}" -d master -Q "IF DB_ID(N'$(sql_str "$DB_NAME")') IS NULL CREATE DATABASE [${DB_NAME//]/]]}];" || die "Không tạo được database $DB_NAME"
+
+TABLES=$(scalar "$DB_NAME" "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0")
 if [ "$TABLES" = "0" ]; then
-  sed -E 's/^USE \[[^]]+\][[:space:]]*$//' /repo/docs/reference/20261113_structure_db_appdelicare.sql > /tmp/ddl.sql
-  $SQL -d "$DB_NAME" -i /tmp/ddl.sql
-  echo "  + Đã tạo schema 124 bảng"
+  sed -E 's/^USE \[[^]]+\][[:space:]]*$//' "$REPO/docs/reference/20261113_structure_db_appdelicare.sql" > "$TMP_DIR/ddl.sql"
+  "${SQL[@]}" -d "$DB_NAME" -i "$TMP_DIR/ddl.sql" || die "Lỗi khi tạo schema"
+  echo "  + Đã tạo schema: $(scalar "$DB_NAME" "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0") bảng"
 else
   echo "  = Schema đã có ($TABLES bảng) – không đụng tới bảng"
 fi
-for f in /repo/DB/sp/*.sql; do $SQL -d "$DB_NAME" -i "$f"; done
-echo "  + Stored procedure"
-HASH=$(printf '%s' "$ADMIN_PASSWORD" | md5sum | cut -d' ' -f1 | tr 'a-f' 'A-F' | sed -E 's/(..)/\1-/g; s/-$//')
-$SQL -d "$DB_NAME" -v AdminUserName="admin" AdminPasswordHash="$HASH" -i /repo/DB/seed/00_Admin_seed.sql
-for f in OrganizationUnit_seed.sql ObjectMenu_seed.sql UserRole_seed.sql Shift_seed.sql; do $SQL -d "$DB_NAME" -i "/repo/DB/seed/$f"; echo "  + Seed $f"; done
+
+SP_COUNT=0
+for rel in "${ORDER[@]}" "${EXTRA[@]}"; do
+  case "$rel" in
+    */00_Admin_seed.sql)
+      EXISTS=$(scalar "$DB_NAME" "SELECT COUNT(*) FROM [dbo].[User] WHERE UserName = LOWER(N'$(sql_str "$ADMIN_USERNAME")') AND IsDeleted = 0")
+      if [ "$EXISTS" != "0" ]; then
+        echo "  = Tài khoản $ADMIN_USERNAME đã có – giữ nguyên"
+        continue
+      fi
+      [ -n "${ADMIN_PASSWORD:-}" ] || die "DB chưa có tài khoản $ADMIN_USERNAME – đặt ADMIN_PASSWORD (staging.env) cho lần chạy đầu"
+      # Mật khẩu → hex UTF-8 → file tạm (quyền 600) → pbkdf2-hash.sql tính PBKDF2 ngay trong SQL Server (cùng định dạng T48.0).
+      # Không in, không đưa mật khẩu lên dòng lệnh.
+      ( umask 077
+        printf ':setvar PasswordHex %s\n:r "%s"\n' "$(printf '%s' "$ADMIN_PASSWORD" | od -An -v -tx1 | tr -d ' \n')" \
+          "$REPO/deploy/db/pbkdf2-hash.sql" > "$TMP_DIR/hash.sql" )
+      HASH=$("${SQL[@]}" -d master -h -1 -W -i "$TMP_DIR/hash.sql" | tr -d '\r' | grep -m1 '^PBKDF2\$' || true)
+      rm -f "$TMP_DIR/hash.sql"
+      [ -n "$HASH" ] || die "Không tính được hash mật khẩu admin"
+      # Không dùng "-v AdminPasswordHash=...": sqlcmd tách sai giá trị có "=" (đuôi base64). Dùng :setvar + :r trong file tạm.
+      case "$ADMIN_USERNAME" in *'"'*) die "ADMIN_USERNAME không hợp lệ" ;; esac
+      printf ':setvar AdminUserName "%s"\n:setvar AdminPasswordHash "%s"\n:r "%s"\n' "$ADMIN_USERNAME" "$HASH" "$REPO/$rel" > "$TMP_DIR/admin.sql"
+      "${SQL[@]}" -d "$DB_NAME" -i "$TMP_DIR/admin.sql" || die "Lỗi khi chạy $rel"
+      echo "  + Admin: $rel"
+      ;;
+    DB/sp/*)
+      run_file "$rel"
+      SP_COUNT=$((SP_COUNT + 1))
+      ;;
+    *)
+      run_file "$rel"
+      echo "  + Seed $rel"
+      ;;
+  esac
+done
+echo "  + Stored procedure: $SP_COUNT file"
 echo "== Xong."

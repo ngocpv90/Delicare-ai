@@ -1,0 +1,67 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-7 mb-3">
+        <label class="form-label" for="ingredientId">Nguyên liệu <span class="text-danger">(*)</span></label>
+        <app-select [loading]="isLoadingList" formControlName="ingredientId" [items]="listIngredient" bindValue="id" bindLabel="label" placeholder="Chọn nguyên liệu" [invalid]="isInvalid('ingredientId')"></app-select>
+        @if (isInvalid('ingredientId')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-5 mb-3">
+        <label class="form-label" for="warehouseId">Kho</label>
+        <app-select [loading]="isLoadingList" formControlName="warehouseId" [items]="listWarehouse" bindValue="id" bindLabel="label" placeholder="Mọi kho"></app-select>
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="minimumStock">Tồn tối thiểu</label>
+        <input id="minimumStock" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="minimumStock" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="safetyStock">Tồn an toàn</label>
+        <input id="safetyStock" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="safetyStock" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="reorderPoint">Điểm đặt hàng lại</label>
+        <input id="reorderPoint" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="reorderPoint" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="maximumStock">Tồn tối đa</label>
+        <input id="maximumStock" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="maximumStock" />
+      </div>
+      <div class="col-12 mb-2">
+        <small class="text-muted">Tối thiểu ≤ An toàn ≤ Điểm đặt lại ≤ Tối đa (theo đơn vị tính cơ sở của nguyên liệu).</small>
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="criticalLevel">Mức nguy cấp</label>
+        <input id="criticalLevel" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="criticalLevel" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="leadTimeDays">Lead time (ngày)</label>
+        <input id="leadTimeDays" type="text" class="form-control text-end" appNumberInput [min]="0" formControlName="leadTimeDays" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="expiryWarningDays">Cảnh báo HSD trước (ngày)</label>
+        <input id="expiryWarningDays" type="text" class="form-control text-end" appNumberInput [min]="0" formControlName="expiryWarningDays" />
+      </div>
+      <div class="col-md-3 col-6 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-12 mb-3">
+        <div class="form-check">
+          <input id="useFefo" type="checkbox" class="form-check-input" formControlName="useFefo" />
+          <label class="form-check-label" for="useFefo">Xuất kho theo FEFO (hết hạn trước – xuất trước)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

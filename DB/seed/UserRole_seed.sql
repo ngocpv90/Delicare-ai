@@ -1968,6 +1968,7 @@ INSERT INTO @A VALUES
     (N'CEO', N'#/wf-inbox?type=crm-contract'),
     (N'CEO', N'#/wf-inbox?type=menu-menu'),
     (N'CEO', N'#/wf-inbox?type=menu-change-request'),
+    (N'CEO', N'#/wf-inbox?type=crm-order'),
     (N'CEO', N'#/wf-inbox?type=scm-pr'),
     (N'CEO', N'#/wf-inbox?type=scm-po'),
     (N'CEO', N'#/wf-inbox?type=scm-adjustment'),
@@ -1990,7 +1991,11 @@ INSERT INTO @A VALUES
     (N'FIN-HR', N'#/wf-inbox?type=hr-leave'),
     (N'FIN-HR', N'#/wf-inbox?type=hr-swap'),
     (N'FIN-HR', N'#/wf-inbox?type=wf-inbox'),
-    (N'QA', N'#/wf-inbox?type=qc-inspection');
+    (N'QA', N'#/wf-inbox?type=qc-inspection'),
+    (N'CEO', N'#/wf-inbox?type=scm-po-director'),
+    (N'OPS-SCM', N'#/wf-inbox?type=scm-pr-l1'),
+    (N'COO', N'#/wf-inbox?type=scm-pr-l2'),
+    (N'FIN-ACC', N'#/wf-inbox?type=scm-stockcount-l2');
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), g.Id, m.Id, 1, 0, 1, 0, 0, 0, 0, @Now, @SeedBy, 0
 FROM @A a

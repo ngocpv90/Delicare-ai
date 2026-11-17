@@ -1,0 +1,162 @@
+# DELICARE – THỨ TỰ CHẠY SCRIPT DB (T48.3) – NGUỒN DUY NHẤT.
+# Đọc bởi: deploy/db/Deploy-Database.ps1 (Windows / máy dev) và deploy/docker/db-init.sh (Docker).
+# Mỗi dòng = 1 đường dẫn tính từ gốc repo, chạy từ trên xuống bằng sqlcmd -b -I -f 65001.
+# Dòng trống và phần sau '#' bị bỏ qua. Không dùng ký tự đại diện (*): thứ tự sắp xếp tên file
+# của PowerShell và bash khác nhau, nên liệt kê từng file.
+#
+# QUY TẮC KHI THÊM SCRIPT MỚI:
+#   - SP mới (DB/sp/uspXxx.sql, CREATE OR ALTER): thêm 1 dòng vào CUỐI nhóm "Stored procedure".
+#   - Seed mới (DB/seed/..., chỉ THÊM phần chưa có): thêm vào CUỐI nhóm "Seed", sau seed mà nó phụ thuộc.
+#   - Ghi thêm dòng tương ứng vào bảng trong DB/README.md.
+#   - SP có trong DB/sp mà quên ghi ở đây: 2 script vẫn chạy (sau cùng) và in CẢNH BÁO; seed quên ghi: KHÔNG chạy.
+#   - Không bao giờ đưa vào đây script CREATE/ALTER/DROP TABLE, ADD COLUMN, DROP, TRUNCATE, DELETE hàng loạt.
+#   - DDL 124 bảng (docs/reference/...) KHÔNG nằm trong danh sách: chỉ chạy khi DB rỗng (-CreateSchemaIfEmpty / db-init).
+
+# ---- Stored procedure (CREATE OR ALTER) ----
+DB/sp/uspActualCost_GetAll.sql
+DB/sp/uspAdministrativeDistrict_GetAll.sql
+DB/sp/uspAdministrativeProvince_GetAll.sql
+DB/sp/uspAdministrativeRegion_GetAll.sql
+DB/sp/uspAdministrativeUnit_GetAll.sql
+DB/sp/uspAdministrativeWard_GetAll.sql
+DB/sp/uspAnalyticsRefreshLog_GetAll.sql
+DB/sp/uspApprovalDecision_GetAll.sql
+DB/sp/uspApprovalItem_GetAll.sql
+DB/sp/uspApprovalRequest_GetAll.sql
+DB/sp/uspApprovalStep_GetAll.sql
+DB/sp/uspAttendanceEvent_GetAll.sql
+DB/sp/uspAuditChange_GetAll.sql
+DB/sp/uspBotConfiguration_GetAll.sql
+DB/sp/uspCleaningBatch_GetAll.sql
+DB/sp/uspCleaningChecklistResult_GetAll.sql
+DB/sp/uspCompany_GetAll.sql
+DB/sp/uspComplaintHistory_GetAll.sql
+DB/sp/uspContainerReturn_GetAll.sql
+DB/sp/uspContract_GetAll.sql
+DB/sp/uspContractMeal_GetAll.sql
+DB/sp/uspCoreDataMergeConflict_GetAll.sql
+DB/sp/uspCustomer_GetAll.sql
+DB/sp/uspCustomerComplaint_GetAll.sql
+DB/sp/uspCustomerContact_GetAll.sql
+DB/sp/uspCustomerDeliveryLocation_GetAll.sql
+DB/sp/uspDeliveryEvent_GetAll.sql
+DB/sp/uspDeliveryExecution_GetAll.sql
+DB/sp/uspDeliveryLoading_GetAll.sql
+DB/sp/uspDeliveryOrder_GetAll.sql
+DB/sp/uspDeliveryRoute_GetAll.sql
+DB/sp/uspDeliveryStop_GetAll.sql
+DB/sp/uspDish_GetAll.sql
+DB/sp/uspDishCategory_GetAll.sql
+DB/sp/uspDocumentFile_GetAll.sql
+DB/sp/uspEmployee_GetAll.sql
+DB/sp/uspFoodSafetyChecklist_GetAll.sql
+DB/sp/uspFoodSafetyChecklistItem_GetAll.sql
+DB/sp/uspFoodSafetyChecklistResult_GetAll.sql
+DB/sp/uspForecast_GetAll.sql
+DB/sp/uspGoodsReceipt_GetAll.sql
+DB/sp/uspGoodsReceiptLine_GetAll.sql
+DB/sp/uspInboundMessage_GetAll.sql
+DB/sp/uspIngredient_GetAll.sql
+DB/sp/uspIngredientCategory_GetAll.sql
+DB/sp/uspIntegrationChannel_GetAll.sql
+DB/sp/uspIntegrationLog_GetAll.sql
+DB/sp/uspInventoryBalance_GetAll.sql
+DB/sp/uspInventoryPolicy_GetAll.sql
+DB/sp/uspInventoryTransaction_GetAll.sql
+DB/sp/uspInventoryTransaction_GetLedger.sql
+DB/sp/uspKitchenWorkstation_GetAll.sql
+DB/sp/uspKpiDailySnapshot_GetAll.sql
+DB/sp/uspKpiMetricDefinition_GetAll.sql
+DB/sp/uspKpiMonthlySnapshot_GetAll.sql
+DB/sp/uspLeaveRequest_GetAll.sql
+DB/sp/uspLocationTracking_DeleteData.sql
+DB/sp/uspLocationTracking_GetAll.sql
+DB/sp/uspMaterialConsumptionVariance_GetAll.sql
+DB/sp/uspMaterialIssue_GetAll.sql
+DB/sp/uspMaterialIssueLine_GetAll.sql
+DB/sp/uspMaterialLot_GetAll.sql
+DB/sp/uspMaterialRequirement_GetAll.sql
+DB/sp/uspMaterialReservation_GetAll.sql
+DB/sp/uspMealCost_GetAll.sql
+DB/sp/uspMealWasteRecord_GetAll.sql
+DB/sp/uspMedicalExamination_GetAll.sql
+DB/sp/uspMedicineWarehouse_GetAll.sql
+DB/sp/uspMedicineWarehouse_GetExpiry.sql
+DB/sp/uspMenu_GetAll.sql
+DB/sp/uspMenuAssignment_GetAll.sql
+DB/sp/uspMenuChangeRequest_GetAll.sql
+DB/sp/uspMenuLine_GetAll.sql
+DB/sp/uspObjectMenu_GetAll.sql
+DB/sp/uspOrder_GetAll.sql
+DB/sp/uspOrderLine_GetAll.sql
+DB/sp/uspOrderReconciliation_GetAll.sql
+DB/sp/uspOrganizationUnit_GetAll.sql
+DB/sp/uspOutboundMessage_GetAll.sql
+DB/sp/uspPackagingLedger_GetAll.sql
+DB/sp/uspPackingOrder_GetAll.sql
+DB/sp/uspPackingResult_GetAll.sql
+DB/sp/uspPatient_GetAll.sql
+DB/sp/uspPatientDetail_GetAll.sql
+DB/sp/uspPerson_GetAll.sql
+DB/sp/uspPerson_GetAllDataByKey.sql
+DB/sp/uspPerson_GetProfile.sql
+DB/sp/uspPosition_GetAll.sql
+DB/sp/uspPricePolicy_GetAll.sql
+DB/sp/uspProductionBatch_GetAll.sql
+DB/sp/uspProductionLine_GetAll.sql
+DB/sp/uspProductionOrder_GetAll.sql
+DB/sp/uspProductionOutput_GetAll.sql
+DB/sp/uspProductionPlan_GetAll.sql
+DB/sp/uspProductionPlanLine_GetAll.sql
+DB/sp/uspProofOfDelivery_GetAll.sql
+DB/sp/uspPurchaseOrder_GetAll.sql
+DB/sp/uspPurchaseOrderLine_GetAll.sql
+DB/sp/uspPurchaseRequest_GetAll.sql
+DB/sp/uspPurchaseRequestLine_GetAll.sql
+DB/sp/uspQcInspection_GetAll.sql
+DB/sp/uspQcInspectionLine_GetAll.sql
+DB/sp/uspRecipe_GetAll.sql
+DB/sp/uspRecipeLine_GetAll.sql
+DB/sp/uspReturnInspection_GetAll.sql
+DB/sp/uspShift_GetAll.sql
+DB/sp/uspShiftAssignment_GetAll.sql
+DB/sp/uspShiftSwapRequest_GetAll.sql
+DB/sp/uspStandardCost_GetAll.sql
+DB/sp/uspStockCount_GetAll.sql
+DB/sp/uspStockCountLine_GetAll.sql
+DB/sp/uspStorageLocation_GetAll.sql
+DB/sp/uspStorageZone_GetAll.sql
+DB/sp/uspSupplier_GetAll.sql
+DB/sp/uspSupplierIssue_GetAll.sql
+DB/sp/uspSupplierMaterial_GetAll.sql
+DB/sp/uspSystem_ExecuteQuery.sql
+DB/sp/uspSystem_GetColumnNameForeignKey.sql
+DB/sp/uspTableName_GetAll.sql
+DB/sp/uspTemperatureLog_GetAll.sql
+DB/sp/uspTestDemo_GetAll.sql
+DB/sp/uspUnitMeasure_GetAll.sql
+DB/sp/uspUomConversion_GetAll.sql
+DB/sp/uspUser_GetAll.sql
+DB/sp/uspUserClaim_GetAll.sql
+DB/sp/uspUserExternalIdentity_GetAll.sql
+DB/sp/uspUserGroup_GetAll.sql
+DB/sp/uspUserRole_GetAll.sql
+DB/sp/uspUserRole_GetByUserGroupId.sql
+DB/sp/uspVehicle_GetAll.sql
+DB/sp/uspWarehouse_GetAll.sql
+
+# ---- Tài khoản quản trị ban đầu ----
+# Nhận biến AdminUserName / AdminPasswordHash (PBKDF2, script tự tính từ mật khẩu ở biến môi trường / tham số).
+# Đã có user này thì không đổi gì.
+DB/seed/00_Admin_seed.sql
+
+# ---- Seed cấu hình (chỉ thêm phần chưa có; cần tài khoản admin để ghi CreatedBy) ----
+DB/seed/OrganizationUnit_seed.sql
+DB/seed/ObjectMenu_seed.sql
+DB/seed/ObjectMenu_disable_legacy.sql
+DB/seed/UserRole_seed.sql
+DB/seed/Shift_seed.sql
+DB/seed/FoodSafetyChecklist_seed.sql
+DB/seed/ProductionStage_seed.sql
+# BE2.5: checklist ATTP theo ca / mẻ (QA_FG, PREP, PREP_AREA_CLEAN, BLAST_CHILL, KITCHEN_CLEAN) + vệ sinh khay 6 bước (VS-KHAY)
+DB/seed/FoodSafetyQa_seed.sql

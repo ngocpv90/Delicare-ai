@@ -1,160 +1,145 @@
 @if (permission?.allowAccess) {
-  <div class="row">
-    <div class="col-xl-12">
-
-      <div class="card">
-        <div class="card-body p-0">
-          <div class="table-responsive active-projects style-1 dataTables_wrapper">
-              <form [formGroup]="searchForm" (ngSubmit)="search()">
-                <div class="tbl-caption">
-                  <h4 class="heading mb-0">Danh sách chức năng</h4>
-                  <div class="d-flex flex-wrap align-items-center gap-2">
-                  @if (permission.allowAdd) { <button type="button" class="btn btn-primary btn-sm" title="Thêm mới dữ liệu" (click)="openModal()">+ Thêm mới</button> }
-                  </div>
-                </div>
-                <div class="row g-3 align-items-end clinic-tbl-filter">
-                  <div class="col-xl-3 col-lg-4 col-md-6">
-                    <label class="form-label" for="searchText">Tên chức năng</label>
-                    <input
-                      id="searchText"
-                      class="form-control"
-                      placeholder="Nhập dữ liệu"
-                      formControlName="searchText"
-                    />
-                  </div>
-                  <div class="col-xl-3 col-lg-4 col-md-6">
-                    <label class="form-label" for="parentId">Chức năng cha</label>
-                    <app-select
-                      [loading]="isLoadingParentId"
-                      formControlName="parentId"
-                      [items]="listParent"
-                      bindValue="id"
-                      bindLabel="name"
-                      placeholder="Chọn dữ liệu"
-                    ></app-select>
-                  </div>
-                  <div class="col-xl-3 col-lg-4 col-md-6 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Áp dụng</button>
-                    <button type="button" class="btn btn-danger light" (click)="reloadPage()">Đặt lại</button>
-                  </div>
-                </div>
-              </form>
-            <table class="table clinic-table mb-0">
-              <thead>
-                <tr>
-                  <th class="text-center" style="width: 80px">STT</th>
-                  <th class="sortable" style="width: 150px" (click)="sort('name')">
-                    Tên chức năng
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
-                  </th>
-                  <th class="sortable" style="width: 150px" (click)="sort('shortName')">
-                    Tên tiêu đề
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('shortName')"></i>
-                  </th>
-                  <th class="sortable" style="width: 150px" (click)="sort('parentName')">
-                    Chức năng cha
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('parentName')"></i>
-                  </th>
-                  <th class="sortable" style="width: 200px" (click)="sort('metaLink')">
-                    Đường dẫn
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('metaLink')"></i>
-                  </th>
-                  <th class="sortable" style="width: 80px" (click)="sort('iconName')">
-                    Icon
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('iconName')"></i>
-                  </th>
-                  <th class="sortable" style="width: 120px" (click)="sort('levelShow')">
-                    Cấp hiển thị
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('levelShow')"></i>
-                  </th>
-                  <th class="sortable" style="width: 130px" (click)="sort('orderShow')">
-                    Thứ tự hiển thị
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('orderShow')"></i>
-                  </th>
-                  <th class="sortable" style="width: 120px" (click)="sort('dataTarget')">
-                    DataTarget
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('dataTarget')"></i>
-                  </th>
-                  <th class="sortable" style="width: 120px" (click)="sort('ariaControls')">
-                    AriaControls
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('ariaControls')"></i>
-                  </th>
-                  <th class="sortable" style="width: 120px" (click)="sort('isActive')">
-                    Hiển thị
-                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('isActive')"></i>
-                  </th>
-                  <th class="text-end" style="width: 100px">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (data of listData; track data.id) {
-                  <tr>
-                    <td class="text-center">{{ data.stt }}</td>
-                    <td>{{ data.name }}</td>
-                    <td>{{ data.shortName }}</td>
-                    <td>{{ data.parentName }}</td>
-                    <td>{{ data.metaLink }}</td>
-                    <td><i [ngClass]="data.iconName"></i></td>
-                    <td>{{ data.levelShow }}</td>
-                    <td>{{ data.orderShow }}</td>
-                    <td>{{ data.dataTarget }}</td>
-                    <td>{{ data.ariaControls }}</td>
-                    <td>
-                      <div class="form-check form-switch">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          [id]="'isActive' + data.id"
-                          [checked]="data.isActive"
-                          (change)="data.isActive = !data.isActive; onChangeIsActive(data.id)"
-                        />
-                        <label class="form-check-label" [for]="'isActive' + data.id">
-                          {{ data.isActive ? 'Có' : 'Không' }}
-                        </label>
-                      </div>
-                    </td>
-                    <td class="text-end">
-                      @if (permission.allowEdit) {
-                        <button
-                          type="button"
-                          class="btn btn-primary light btn-xs sharp me-1"
-                          title="Sửa dữ liệu"
-                          (click)="openModal(data)"
-                        >
-                          <i class="fa-solid fa-pen"></i>
-                        </button>
-                      }
-                      @if (permission.allowDelete && !data.isDefault) {
-                        <button
-                          type="button"
-                          class="btn btn-danger light btn-xs sharp"
-                          title="Xóa dữ liệu"
-                          (click)="delete(data.id)"
-                        >
-                          <i class="fa-solid fa-trash"></i>
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="12" class="text-center text-muted py-4">Không có dữ liệu</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <app-table-pager
-            [page]="table.page"
-            [pageSize]="table.pageSize"
-            [total]="table.total"
-            (pageChange)="changePage($event)"
-            (pageSizeChange)="changePageSize($event)"
-          ></app-table-pager>
+  <app-page-header description="Cây menu 2 cấp: nhóm (cấp 1) → màn hình (cấp 2). Đường dẫn dạng #/mã-màn-hình. Kéo thả hoặc dùng mũi tên để đổi thứ tự – lưu ngay.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <div class="dc-toolbar">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            class="form-control"
+            placeholder="Tìm theo tên, đường dẫn"
+            aria-label="Tìm theo tên, đường dẫn"
+            [(ngModel)]="searchText"
+            autocomplete="off"
+          />
         </div>
+        <button type="button" class="dc-chip" [class.active]="activeFilter === 'all'" (click)="setFilter('all')">
+          Tất cả ({{ countAll }})
+        </button>
+        <button type="button" class="dc-chip" [class.active]="activeFilter === 'active'" (click)="setFilter('active')">
+          Đang hiển thị ({{ countActive }})
+        </button>
+        <button type="button" class="dc-chip" [class.active]="activeFilter === 'inactive'" (click)="setFilter('inactive')">
+          Đang ẩn ({{ countAll - countActive }})
+        </button>
+        <span class="flex-grow-1"></span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="collapseAll(false)">Mở tất cả</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="collapseAll(true)">Thu gọn</button>
+      </div>
+      @if (permission.allowEdit && !canReorder) {
+        <p class="text-muted small">Bỏ lọc để kéo thả đổi thứ tự.</p>
+      }
+
+      <div class="dc-tree" cdkDropList [cdkDropListDisabled]="!canReorder" (cdkDropListDropped)="drop(tree, null, $event)">
+        @for (root of tree; track root.id; let i = $index; let firstRoot = $first; let lastRoot = $last) {
+          @if (isRootVisible(root)) {
+            <div class="dc-tree-node" cdkDrag [cdkDragDisabled]="!canReorder">
+              <div class="dc-tree-row level-1" [class.inactive]="!root.isActive">
+                @if (canReorder) {
+                  <span class="dc-drag" cdkDragHandle title="Kéo để đổi thứ tự" aria-label="Kéo để đổi thứ tự">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                  </span>
+                }
+                <button
+                  type="button"
+                  class="dc-tree-toggle"
+                  [attr.aria-expanded]="!collapsed.has(root.id)"
+                  [title]="collapsed.has(root.id) ? 'Mở' : 'Thu gọn'"
+                  (click)="toggleCollapse(root.id)"
+                >
+                  <i class="fa-solid" [ngClass]="collapsed.has(root.id) ? 'fa-chevron-right' : 'fa-chevron-down'"></i>
+                </button>
+                <div class="dc-tree-main">
+                  <b>{{ root.name }}</b>
+                  @if (root.shortName) {
+                    <span class="dc-tree-tag">{{ root.shortName }}</span>
+                  }
+                  <small>{{ root.metaLink }} · {{ root.children?.length ?? 0 }} chức năng · thứ tự {{ root.orderShow }}</small>
+                </div>
+                <ng-container *ngTemplateOutlet="actions; context: { $implicit: root, list: tree, parentId: null, index: i, first: firstRoot, last: lastRoot, isRoot: true }"></ng-container>
+              </div>
+              @if (!collapsed.has(root.id)) {
+                <div
+                  class="dc-tree-children"
+                  cdkDropList
+                  [cdkDropListDisabled]="!canReorder"
+                  (cdkDropListDropped)="drop(root.children, root.id, $event)"
+                >
+                  @for (child of visibleChildren(root); track child.id; let j = $index; let first = $first; let last = $last) {
+                    <div class="dc-tree-row level-2" [class.inactive]="!child.isActive" cdkDrag [cdkDragDisabled]="!canReorder">
+                      @if (canReorder) {
+                        <span class="dc-drag" cdkDragHandle title="Kéo để đổi thứ tự" aria-label="Kéo để đổi thứ tự">
+                          <i class="fa-solid fa-grip-vertical"></i>
+                        </span>
+                      }
+                      <div class="dc-tree-main">
+                        <span>{{ child.name }}</span>
+                        @if (child.shortName) {
+                          <span class="dc-tree-tag">{{ child.shortName }}</span>
+                        }
+                        <small>{{ child.metaLink }} · thứ tự {{ child.orderShow }}</small>
+                      </div>
+                      <ng-container *ngTemplateOutlet="actions; context: { $implicit: child, list: root.children, parentId: root.id, index: j, first: first, last: last, isRoot: false }"></ng-container>
+                    </div>
+                  } @empty {
+                    <div class="dc-tree-row level-2 text-muted small">Chưa có chức năng con</div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        } @empty {
+          <div class="dc-empty">Không có dữ liệu</div>
+        }
       </div>
     </div>
   </div>
+
+  <ng-template #actions let-m let-list="list" let-parentId="parentId" let-index="index" let-first="first" let-last="last" let-isRoot="isRoot">
+    <div class="dc-tree-status">
+      <app-status-badge [code]="m.isActive ? 'active' : 'hidden'" [label]="m.isActive ? 'Hiển thị' : 'Đang ẩn'"></app-status-badge>
+    </div>
+    <div class="dc-actions">
+      @if (canReorder) {
+        <button type="button" class="dc-act" title="Lên" aria-label="Lên" [disabled]="first" (click)="move(list, parentId, index, -1)">
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+        <button type="button" class="dc-act" title="Xuống" aria-label="Xuống" [disabled]="last" (click)="move(list, parentId, index, 1)">
+          <i class="fa-solid fa-arrow-down"></i>
+        </button>
+      }
+      @if (permission.allowAdd && isRoot) {
+        <button type="button" class="dc-act" title="Thêm chức năng con" aria-label="Thêm chức năng con" (click)="openModal(undefined, m.id)">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      }
+      @if (permission.allowEdit) {
+        <button
+          type="button"
+          class="dc-act"
+          [title]="m.isActive ? 'Ẩn khỏi menu' : 'Hiển thị trên menu'"
+          [attr.aria-label]="m.isActive ? 'Ẩn khỏi menu' : 'Hiển thị trên menu'"
+          (click)="toggleActive(m)"
+        >
+          <i class="fa-solid" [ngClass]="m.isActive ? 'fa-eye-slash' : 'fa-eye'"></i>
+        </button>
+        <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(m)">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+      }
+      @if (permission.allowDelete) {
+        <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(m)">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      }
+    </div>
+  </ng-template>
 } @else {
   <app-not-found isFullPage="false"></app-not-found>
 }

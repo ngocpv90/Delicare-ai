@@ -1,0 +1,247 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Hồ sơ nhà cung cấp nguyên liệu, bao bì: thông tin pháp lý, liên hệ, bảng giá, PO đang mở và chất lượng giao hàng.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="searchText" class="form-control" placeholder="Tìm theo mã, tên, MST, điện thoại, người liên hệ" aria-label="Tìm nhà cung cấp" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="supplierType" [items]="supplierTypes" bindValue="code" bindLabel="label" placeholder="Tất cả loại NCC" [searchable]="false" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" style="width: 110px" (click)="sort('code')">
+                Mã NCC <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+              </th>
+              <th class="sortable" (click)="sort('name')">
+                Tên nhà cung cấp <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+              </th>
+              <th class="sortable" style="width: 120px" (click)="sort('supplierType')">
+                Loại <i class="fa-solid ms-1" [ngClass]="table.sortIcon('supplierType')"></i>
+              </th>
+              <th style="width: 130px">Mã số thuế</th>
+              <th>Người liên hệ</th>
+              <th style="width: 130px">Điện thoại</th>
+              <th style="width: 140px">Trạng thái</th>
+              <th class="text-end" style="width: 140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td>{{ data.code }}</td>
+                <td class="fw-semibold">
+                  <a href="javascript:void(0)" (click)="openDrawer(data)">{{ data.name }}</a>
+                  @if (data.address) {
+                    <div class="small text-muted">{{ data.address }}</div>
+                  }
+                </td>
+                <td>{{ labelOf(supplierTypes, data.supplierType) }}</td>
+                <td>{{ data.taxCode }}</td>
+                <td>
+                  {{ data.contactName }}
+                  @if (data.contactPhone) {
+                    <div class="small text-muted">{{ data.contactPhone }}</div>
+                  }
+                </td>
+                <td>{{ data.phone }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                <td class="dc-actions">
+                  <button type="button" class="dc-act" title="Xem tổng quan" aria-label="Xem tổng quan" (click)="openDrawer(data)"><i class="fa-solid fa-eye"></i></button>
+                  @if (permission.allowEdit) {
+                    <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                  }
+                  @if (permission.allowDelete) {
+                    <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+
+  <app-detail-drawer
+    [open]="drawerOpen"
+    [title]="drawerRow?.name"
+    [subtitle]="drawerRow?.code"
+    [tabs]="drawerTabs"
+    [(activeTab)]="drawerTab"
+    width="820px"
+    (closed)="drawerOpen = false"
+  >
+    @if (drawerRow) {
+      @if (isLoadingOverview) {
+        <div class="dc-empty">Đang tải...</div>
+      } @else if (overview) {
+        @if (drawerTab === 'overview') {
+          <div class="dc-kpis">
+            <div class="dc-kpi">
+              <label>Giao đúng hạn (90 ngày)</label>
+              <b>{{ overview.onTimeRate != null ? (overview.onTimeRate | number: '1.0-2') + '%' : '—' }}</b>
+            </div>
+            <div class="dc-kpi" [class.danger]="overview.rejectRate > 0">
+              <label>Tỷ lệ trả hàng (90 ngày)</label>
+              <b>{{ overview.rejectRate != null ? (overview.rejectRate | number: '1.0-2') + '%' : '—' }}</b>
+            </div>
+            <div class="dc-kpi">
+              <label>Mặt hàng / PO mở / sự cố</label>
+              <b>{{ overview.listMaterial?.length || 0 }} / {{ overview.listOpenPurchaseOrder?.length || 0 }} / {{ overview.listIssue?.length || 0 }}</b>
+            </div>
+          </div>
+          <div class="dc-kv">
+            <div><label>Mã NCC</label><span>{{ drawerRow.code || '—' }}</span></div>
+            <div><label>Loại</label><span>{{ labelOf(supplierTypes, drawerRow.supplierType) || '—' }}</span></div>
+            <div><label>Mã số thuế</label><span>{{ drawerRow.taxCode || '—' }}</span></div>
+            <div><label>Điện thoại / Email</label><span>{{ drawerRow.phone || '—' }} · {{ drawerRow.email || '—' }}</span></div>
+            <div><label>Người liên hệ</label><span>{{ drawerRow.contactName || '—' }} {{ drawerRow.contactPhone ? '· ' + drawerRow.contactPhone : '' }}</span></div>
+            <div><label>Địa chỉ</label><span>{{ drawerRow.address || '—' }}</span></div>
+            <div>
+              <label>Trạng thái</label>
+              <span><app-status-badge [code]="drawerRow.status" [label]="labelOf(statuses, drawerRow.status)"></app-status-badge></span>
+            </div>
+            <div><label>Ghi chú</label><span>{{ drawerRow.note || '—' }}</span></div>
+          </div>
+        }
+        @if (drawerTab === 'price') {
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Nguyên liệu</th>
+                  <th class="text-end">Đơn giá</th>
+                  <th>Hiệu lực</th>
+                  <th>Ưu tiên</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of overview.listMaterial; track m.id) {
+                  <tr>
+                    <td class="fw-semibold">{{ m.ingredientName }}</td>
+                    <td class="text-end">{{ m.unitPrice | number: '1.0-2' }}</td>
+                    <td>{{ (m.effectiveFrom | date: dateFormat) || '…' }} – {{ (m.effectiveTo | date: dateFormat) || '…' }}</td>
+                    <td>
+                      @if (m.isPreferred) {
+                        <app-status-badge code="active" label="Ưu tiên"></app-status-badge>
+                      }
+                    </td>
+                    <td><app-status-badge [code]="m.status" [label]="labelOf(statuses, m.status)"></app-status-badge></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="dc-empty">Chưa có bảng giá</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        @if (drawerTab === 'po') {
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Số PO</th>
+                  <th>Ngày đặt</th>
+                  <th>Ngày giao dự kiến</th>
+                  <th class="text-end">Giá trị</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of overview.listOpenPurchaseOrder; track p.id) {
+                  <tr>
+                    <td class="fw-semibold">{{ p.purchaseOrderNumber || p.poNo }}</td>
+                    <td>{{ p.orderDate | date: dateFormat }}</td>
+                    <td>{{ (p.expectedDeliveryDate || p.expectedDate) | date: dateFormat }}</td>
+                    <td class="text-end">{{ p.totalAmount | number: '1.0-0' }}</td>
+                    <td><app-status-badge key="PurchaseOrder.Status" [code]="p.status"></app-status-badge></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="dc-empty">Không có PO đang mở</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        @if (drawerTab === 'issue') {
+          <div class="table-responsive">
+            <table class="table dc-table mb-0">
+              <thead>
+                <tr>
+                  <th>Ngày ghi nhận</th>
+                  <th>Loại</th>
+                  <th>Mức độ</th>
+                  <th>Mô tả</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (i of overview.listIssue; track i.id) {
+                  <tr>
+                    <td>{{ i.reportedAt | date: dateFormat }}</td>
+                    <td>{{ i.issueType }}</td>
+                    <td>{{ i.severity }}</td>
+                    <td>{{ i.description }}</td>
+                    <td><app-status-badge key="SupplierIssue.IssueStatus" [code]="i.issueStatus"></app-status-badge></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="dc-empty">Không có sự cố</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+    <ng-container drawer-footer>
+      @if (permission.allowEdit) {
+        <button type="button" class="btn btn-primary" (click)="editFromDrawer()"><i class="fa-solid fa-pen me-1"></i>Sửa</button>
+      }
+    </ng-container>
+  </app-detail-drawer>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

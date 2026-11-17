@@ -5,30 +5,41 @@
   </div>
   <div class="modal-body">
     <div class="row">
-      <div class="col-12 mb-3">
-        <label class="form-label" for="name">
-          Tên đơn vị tính <span class="text-danger">(*)</span>
-        </label>
-        <input
-          id="name"
-          type="text"
-          class="form-control"
-          [class.is-invalid]="isInvalid('name')"
-          formControlName="name"
-          placeholder="Nhập dữ liệu"
-          autocomplete="off"
-        />
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="code">Mã <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="VD: KG" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập mã (tối đa 50 ký tự)</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="name">Tên đơn vị tính <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="VD: Kilogram" autocomplete="off" />
         <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="symbol">Ký hiệu</label>
+        <input id="symbol" type="text" class="form-control" formControlName="symbol" placeholder="VD: kg" autocomplete="off" />
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="uomType">Loại đơn vị <span class="text-danger">(*)</span></label>
+        <app-select formControlName="uomType" [items]="uomTypes" bindValue="code" bindLabel="label" placeholder="Chọn loại" [searchable]="false" [invalid]="isInvalid('uomType')"></app-select>
+        @if (isInvalid('uomType')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="decimalPrecision">Số chữ số lẻ</label>
+        <input id="decimalPrecision" type="text" class="form-control text-end" appNumberInput [min]="0" [max]="6" [class.is-invalid]="isInvalid('decimalPrecision')" formControlName="decimalPrecision" />
+        <div class="invalid-feedback">Từ 0 đến 6</div>
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
       </div>
     </div>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
-      <i class="fa-solid fa-xmark me-1"></i>Thoát
-    </button>
-    <button type="submit" class="btn btn-primary btn-sm">
-      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
-    </button>
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
   </div>
   <app-loading-modal *ngIf="isLoading"></app-loading-modal>
 </form>

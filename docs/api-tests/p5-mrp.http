@@ -1,0 +1,112 @@
+### DELICARE – Pilot P5 (T14 + T14.1, khung cũ D-30): tính nhu cầu nguyên liệu (MRP) + đề nghị mua nháp + tính bổ sung.
+### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
+### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
+### Chuẩn bị: đơn ngày @productionDate đã Locked (docs/api-tests/p3-menu-order.http), món có công thức đã khóa (Recipe/Lock),
+### tồn kho (docs/api-tests/p4-inventory.http), SupplierMaterial cho nguyên liệu.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@productionDate = 2026-12-15
+@warehouseId = <WarehouseId – kho bếp>
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### 1. Xem kết quả ngày (chưa tính → data = null)
+GET {{base}}/api/MaterialRequirement/GetByDate?productionDate={{productionDate}}
+Authorization: Bearer {{token}}
+
+### 2. Tính nhu cầu (trừ tồn của 1 kho; bỏ WarehouseId = mọi kho)
+# @name calc
+POST {{base}}/api/MaterialRequirement/Calculate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{productionDate}}&WarehouseId={{warehouseId}}&Note=[DEMO] tính nhu cầu thử
+
+###
+@planId = {{calc.response.body.data.productionPlanId}}
+
+### 3. Tính lại (cập nhật kết quả cũ, giữ số kế hoạch KH- và số đề nghị mua PH-)
+POST {{base}}/api/MaterialRequirement/Calculate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{productionDate}}&WarehouseId={{warehouseId}}
+
+### 4. Xem theo kế hoạch
+GET {{base}}/api/MaterialRequirement/GetDetail?productionPlanId={{planId}}
+Authorization: Bearer {{token}}
+
+### 5. Dòng nhu cầu thô (CRUD sinh mã – chỉ đọc)
+GET {{base}}/api/MaterialRequirement/GetAll?productionPlanId={{planId}}&page=1&pageSize=50
+Authorization: Bearer {{token}}
+
+### 6. Đề nghị mua nháp vừa sinh (CRUD sinh mã, T15 bổ sung nghiệp vụ)
+GET {{base}}/api/PurchaseRequestLine/GetAll?purchaseRequestId={{calc.response.body.data.purchaseRequest.id}}&page=1&pageSize=50
+Authorization: Bearer {{token}}
+
+### 7. Lỗi: ngày không có đơn Đã chốt → 400
+POST {{base}}/api/MaterialRequirement/Calculate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate=2099-01-01
+
+### 8. Lỗi: CRUD ghi tay → 400 (chỉ qua Calculate)
+POST {{base}}/api/MaterialRequirement/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionPlanId={{planId}}&IngredientId=00000000-0000-0000-0000-000000000000&RequiredQuantity=1.5
+
+### ============ FE-2 follow-up
+### 9. Lọc cha bỏ trống = không lọc (trước đây trả rỗng)
+GET {{base}}/api/SupplierMaterial/GetAll?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### 10. NCC: đủ cột + lọc trạng thái
+GET {{base}}/api/Supplier/GetAll?status=Active&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### 11. Đơn vị tính: đủ cột + lọc trạng thái
+GET {{base}}/api/UnitMeasure/GetAll?status=Active&page=1&pageSize=50
+Authorization: Bearer {{token}}
+
+### ============ T14.1 (anh chốt 2026-11-16): dự phòng lựa chọn + tính bổ sung
+### Dự phòng: BusinessRules:MrpOptionBufferPct = 15 (appsettings) – thực đơn ≥ 2 lựa chọn → mỗi món = suất ÷ số lựa chọn × 1,15; xem data.listDish[].bufferPortions ở bước 2.
+
+### 12. Tính bổ sung khi đề nghị còn Nháp → 400 "… còn Nháp / chưa có – dùng Tính nhu cầu (Calculate)"
+POST {{base}}/api/MaterialRequirement/CalculateTopUp
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{productionDate}}&WarehouseId={{warehouseId}}
+
+### 13. (Sau khi đề nghị PH- của bước 2 đã gửi duyệt / duyệt / lập PO – docs/api-tests/p6-purchasing.http – và khách tăng suất đơn Locked)
+###     Calculate → 400 "… không tính lại được. Dùng Tính bổ sung (CalculateTopUp) …"
+POST {{base}}/api/MaterialRequirement/Calculate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{productionDate}}&WarehouseId={{warehouseId}}
+
+### 14. Tính bổ sung → đề nghị mua Nháp PH- MỚI chỉ cho phần thiếu thêm (data.topUp.purchaseRequest);
+###     gọi lại khi không đổi → 200 "Không thiếu thêm … – không lập đề nghị mua bổ sung", data.topUp.purchaseRequest = null;
+###     giảm suất → data.topUp.listWarning "… (thừa n) …", không sửa đề nghị cũ.
+# @name topup
+POST {{base}}/api/MaterialRequirement/CalculateTopUp
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{productionDate}}&WarehouseId={{warehouseId}}&Note=[DEMO] khách tăng suất
+
+### 15. Dòng đề nghị bổ sung vừa lập
+GET {{base}}/api/PurchaseRequest/GetDetail?id={{topup.response.body.data.topUp.purchaseRequest.id}}
+Authorization: Bearer {{token}}

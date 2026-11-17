@@ -4,7 +4,7 @@ namespace AppDelicare.Model.SearchRequest
 {
 	public class OrderSearchRequest : BaseSearchRequest
 	{
-		public Guid CustomerId { get; set; }
+		public Guid? CustomerId { get; set; }
 		public Guid? ContractId { get; set; }
 		public Guid? DeliveryLocationId { get; set; }
 		public string? OrderNumber { get; set; }

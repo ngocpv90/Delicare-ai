@@ -4,6 +4,7 @@ using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using Microsoft.EntityFrameworkCore;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
@@ -27,7 +28,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@ContractId", request.ContractId);
+                dynamicParameters.Add("@ContractId", request.ContractId == Guid.Empty ? null : request.ContractId);
                 dynamicParameters.Add("@MealType", request.MealType);
                 //dynamicParameters.Add("@MealName", request.MealName);
                 //dynamicParameters.Add("@UnitPrice", request.UnitPrice);
@@ -128,9 +129,48 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BE2.2: loại suất chỉ thêm / sửa / xóa khi hợp đồng còn Nháp (hợp đồng đã gửi duyệt / hiệu lực: giá đã duyệt không đổi tay – đổi giá qua chính sách giá
+        /// hoặc hợp đồng mới). MealType bắt buộc, không trùng trong hợp đồng; đơn giá (nếu có) &gt; 0. PROPOSED – BA/PO CONFIRM (D-51).
+        /// </summary>
+        private async Task<string?> RuleErrorAsync(Guid contractId, string? mealType, decimal? unitPrice, Guid? selfId)
+        {
+            var contract = await _unitOfWork.DbContext.Contract.AsNoTracking().FirstOrDefaultAsync(c => c.Id == contractId && !c.IsDeleted);
+            if (contract == null)
+            {
+                return ConstantHelper.Message.ContractNotFound;
+            }
+            if (contract.Status != ContractStatus.Draft)
+            {
+                return string.Format(ConstantHelper.Message.ContractEditOnlyDraft, ContractStatus.Label(contract.Status));
+            }
+            if (selfId != null && mealType == null)
+            {
+                return null; // xóa
+            }
+            if (string.IsNullOrWhiteSpace(mealType))
+            {
+                return ConstantHelper.Message.ContractMealTypeRequired;
+            }
+            if (unitPrice is <= 0)
+            {
+                return string.Format(ConstantHelper.Message.ContractMealPriceInvalid, mealType);
+            }
+            string meal = mealType.Trim().ToUpper();
+            bool duplicate = await _unitOfWork.DbContext.ContractMeal.AsNoTracking()
+                .AnyAsync(m => m.ContractId == contractId && !m.IsDeleted && m.Id != selfId && m.MealType != null && m.MealType.Trim().ToUpper() == meal);
+            return duplicate ? string.Format(ConstantHelper.Message.ContractMealTypeDuplicate, mealType.Trim()) : null;
+        }
+
         private async Task<string> Insert(ContractMealRequest request, string typeSave)
         {
+            if (await RuleErrorAsync(request.ContractId, request.MealType, request.UnitPrice, null) is { } error)
+            {
+                return error;
+            }
             var insert = _mapper.Map<ContractMeal>(request);
+            insert.MealType = request.MealType!.Trim();
+            insert.Status ??= ContractStatus.Active;
             _unitOfWork.ContractMealRepository.Add(insert);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -143,7 +183,14 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            if (await RuleErrorAsync(exist.ContractId, request.MealType, request.UnitPrice, exist.Id) is { } error)
+            {
+                return error;
+            }
+            Guid contractId = exist.ContractId;
             var update = _mapper.Map(request, exist);
+            update.ContractId = contractId; // không chuyển loại suất sang hợp đồng khác
+            update.MealType = request.MealType!.Trim();
             _unitOfWork.ContractMealRepository.Update(update);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -164,6 +211,10 @@ namespace AppDelicare.Services.Implement
             if (delete == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            if (await RuleErrorAsync(delete.ContractId, null, null, delete.Id) is { } error)
+            {
+                return error;
             }
             _unitOfWork.ContractMealRepository.Update(delete);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);

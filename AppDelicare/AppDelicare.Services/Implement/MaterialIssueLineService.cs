@@ -27,11 +27,11 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                dynamicParameters.Add("@MaterialIssueId", request.MaterialIssueId);
-                dynamicParameters.Add("@IngredientId", request.IngredientId);
+                dynamicParameters.Add("@MaterialIssueId", request.MaterialIssueId == Guid.Empty ? null : request.MaterialIssueId);
+                dynamicParameters.Add("@IngredientId", request.IngredientId == Guid.Empty ? null : request.IngredientId);
                 dynamicParameters.Add("@MaterialLotId", request.MaterialLotId);
                 //dynamicParameters.Add("@Quantity", request.Quantity);
-                dynamicParameters.Add("@UnitId", request.UnitId);
+                dynamicParameters.Add("@UnitId", request.UnitId == Guid.Empty ? null : request.UnitId);
                 //dynamicParameters.Add("@Note", request.Note);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
@@ -128,47 +128,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(MaterialIssueLineRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<MaterialIssueLine>(request);
-            _unitOfWork.MaterialIssueLineRepository.Add(insert);
-            await _unitOfWork.MaterialIssueLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>T16: dòng phiếu xuất chỉ ghi qua MaterialIssue/Create (kiểm lô hạn dùng / QC / FEFO, tồn khả dụng) – CRUD không ghi.</summary>
+        private Task<string> Insert(MaterialIssueLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.IssueLineCrudBlocked);
 
-        private async Task<string> Update(MaterialIssueLineRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.MaterialIssueLineRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.MaterialIssueLineRepository.Update(update);
-            await _unitOfWork.MaterialIssueLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(MaterialIssueLineRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.IssueLineCrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(MaterialIssueLine), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.MaterialIssueLineRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.MaterialIssueLineRepository.Update(delete);
-            await _unitOfWork.MaterialIssueLineRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.IssueLineCrudBlocked);
 
         public async Task<IResult<MaterialIssueLine>> GetById(Guid id)
         {

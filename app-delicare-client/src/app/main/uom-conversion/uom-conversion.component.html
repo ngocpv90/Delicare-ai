@@ -1,0 +1,131 @@
+@if (permission?.allowAccess) {
+  <app-page-header description="Hệ số quy đổi giữa các đơn vị tính (mua – nhập kho – xuất dùng). 1 [từ đơn vị] = hệ số × [sang đơn vị]; chiều ngược tự tính.">
+    @if (permission.allowAdd) {
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="fa-solid fa-plus me-1"></i>Tạo mới
+      </button>
+    }
+  </app-page-header>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <div class="dc-card-title">Thử quy đổi</div>
+      <div class="dc-toolbar dc-try-box">
+        <div style="width: 130px">
+          <input class="form-control text-end" appNumberInput [decimals]="4" [(ngModel)]="tryQuantity" placeholder="Số lượng" aria-label="Số lượng" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select [(ngModel)]="tryFromUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Từ đơn vị"></app-select>
+        </div>
+        <i class="fa-solid fa-arrow-right text-muted"></i>
+        <div class="dc-filter-select">
+          <app-select [(ngModel)]="tryToUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Sang đơn vị"></app-select>
+        </div>
+        <div style="width: 170px" title="Ngày áp dụng (trống = hôm nay)">
+          <app-date-picker [(ngModel)]="tryOn" placeholder="Ngày (mặc định hôm nay)"></app-date-picker>
+        </div>
+        <button type="button" class="btn btn-outline-secondary" [disabled]="isConverting" (click)="convert()">
+          <i class="fa-solid fa-calculator me-1"></i>Quy đổi
+        </button>
+        @if (tryResult !== null) {
+          <span class="fw-semibold">
+            = {{ tryResult | number: '1.0-6' }} {{ unitName(tryToUnitId) }}
+          </span>
+        }
+        @if (tryError) {
+          <span class="text-danger">{{ tryError }}</span>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="card dc-list-card">
+    <div class="card-body">
+      <form class="dc-toolbar" [formGroup]="searchForm" (ngSubmit)="search()">
+        <div class="dc-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input class="form-control" placeholder="Tìm theo tên đơn vị, ghi chú" aria-label="Tìm theo tên đơn vị, ghi chú" formControlName="searchText" autocomplete="off" />
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="fromUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Tất cả từ đơn vị" (selectionChange)="search()"></app-select>
+        </div>
+        <div class="dc-filter-select">
+          <app-select formControlName="toUnitId" [items]="listUnit" bindValue="id" bindLabel="label" placeholder="Tất cả sang đơn vị" (selectionChange)="search()"></app-select>
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Đặt lại</button>
+      </form>
+      <div class="dc-toolbar">
+        <button type="button" class="dc-chip" [class.active]="!searchForm.value.status" (click)="setFilter('status', '')">Tất cả · {{ countOf('status') }}</button>
+        @for (s of statuses; track s.code) {
+          <button type="button" class="dc-chip" [class.active]="searchForm.value.status === s.code" (click)="setFilter('status', s.code)">
+            {{ s.label }} · {{ countOf('status', s.code) }}
+          </button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="table dc-table mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 70px">STT</th>
+              <th class="sortable" (click)="sort('fromUnitName')">
+                Từ đơn vị <i class="fa-solid ms-1" [ngClass]="table.sortIcon('fromUnitName')"></i>
+              </th>
+              <th class="sortable" (click)="sort('toUnitName')">
+                Sang đơn vị <i class="fa-solid ms-1" [ngClass]="table.sortIcon('toUnitName')"></i>
+              </th>
+              <th class="text-end sortable" style="width: 130px" (click)="sort('conversionFactor')">
+                Hệ số <i class="fa-solid ms-1" [ngClass]="table.sortIcon('conversionFactor')"></i>
+              </th>
+              <th>Diễn giải</th>
+              <th class="sortable" style="width: 200px" (click)="sort('effectiveFrom')">
+                Hiệu lực <i class="fa-solid ms-1" [ngClass]="table.sortIcon('effectiveFrom')"></i>
+              </th>
+              <th style="width: 110px">Đang dùng</th>
+              <th style="width: 150px">Trạng thái</th>
+              @if (permission.allowEdit || permission.allowDelete) {
+                <th class="text-end" style="width: 110px">Thao tác</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (data of listData; track data.id) {
+              <tr>
+                <td class="text-center">{{ data.stt }}</td>
+                <td class="fw-semibold">{{ data.fromUnitName }}</td>
+                <td class="fw-semibold">{{ data.toUnitName }}</td>
+                <td class="text-end">{{ data.conversionFactor | number: '1.0-6' }}</td>
+                <td class="text-muted">1 {{ data.fromUnitName }} = {{ data.conversionFactor | number: '1.0-6' }} {{ data.toUnitName }}</td>
+                <td>{{ (data.effectiveFrom | date: dateFormat) || '…' }} – {{ (data.effectiveTo | date: dateFormat) || '…' }}</td>
+                <td>{{ data.isActive ? 'Có' : 'Không' }}</td>
+                <td><app-status-badge [code]="data.status" [label]="labelOf(statuses, data.status)"></app-status-badge></td>
+                @if (permission.allowEdit || permission.allowDelete) {
+                  <td class="dc-actions">
+                    @if (permission.allowEdit) {
+                      <button type="button" class="dc-act" title="Sửa" aria-label="Sửa" (click)="openModal(data)"><i class="fa-solid fa-pen"></i></button>
+                    }
+                    @if (permission.allowDelete) {
+                      <button type="button" class="dc-act danger" title="Xóa" aria-label="Xóa" (click)="delete(data.id)"><i class="fa-solid fa-trash"></i></button>
+                    }
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="dc-empty">Không có dữ liệu</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-table-pager
+        [page]="table.page"
+        [pageSize]="table.pageSize"
+        [total]="table.total"
+        (pageChange)="changePage($event)"
+        (pageSizeChange)="changePageSize($event)"
+      ></app-table-pager>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

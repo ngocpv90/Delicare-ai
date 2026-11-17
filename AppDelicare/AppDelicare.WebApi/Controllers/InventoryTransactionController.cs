@@ -96,5 +96,65 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>T16: sổ cái kho có lọc khoảng ngày / loại / chứng từ nguồn (chỉ đọc).</summary>
+        [HttpGet("GetLedger")]
+        public async Task<IActionResult> GetLedger([FromQuery] InventoryLedgerSearchRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetLedger(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetLedger: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// T16: bút toán điều chỉnh tay (Quantity có dấu, lý do bắt buộc) – ADJUSTMENT, số PH-. BE2.3: mặc định gửi duyệt STOCK_ADJUSTMENT
+        /// (mục #/wf-inbox?type=scm-adjustment), bút toán ghi khi duyệt; data = InventoryAdjustResultModel.
+        /// </summary>
+        [HttpPost("Adjust")]
+        public async Task<IActionResult> Adjust([FromForm] InventoryAdjustRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Adjust(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Adjust: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T16: chuyển kho / vị trí 1 lô – cặp TRANSFER_OUT / TRANSFER_IN.</summary>
+        [HttpPost("Transfer")]
+        public async Task<IActionResult> Transfer([FromForm] InventoryTransferRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Transfer(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Transfer: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

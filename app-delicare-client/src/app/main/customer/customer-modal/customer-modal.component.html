@@ -1,0 +1,98 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-3 mb-3">
+        <label class="form-label" for="code">Mã khách hàng <span class="text-danger">(*)</span></label>
+        <input id="code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập mã (tối đa 50 ký tự)</div>
+      </div>
+      <div class="col-md-5 mb-3">
+        <label class="form-label" for="name">Tên khách hàng <span class="text-danger">(*)</span></label>
+        <input id="name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="VD: Bệnh viện Đa khoa X" autocomplete="off" />
+        <div class="invalid-feedback">Vui lòng nhập dữ liệu</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="displayName">Tên hiển thị</label>
+        <input id="displayName" type="text" class="form-control" formControlName="displayName" placeholder="Trống = như tên khách hàng" autocomplete="off" />
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="legalName">Tên pháp nhân (xuất hóa đơn)</label>
+        <input id="legalName" type="text" class="form-control" formControlName="legalName" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="customerType">Loại khách hàng <span class="text-danger">(*)</span></label>
+        <app-select formControlName="customerType" [items]="customerTypes" bindValue="code" bindLabel="label" placeholder="Chọn loại" [searchable]="false" [invalid]="isInvalid('customerType')"></app-select>
+        @if (isInvalid('customerType')) {
+          <div class="invalid-feedback d-block">Vui lòng chọn dữ liệu</div>
+        }
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="taxCode">Mã số thuế</label>
+        <input id="taxCode" type="text" class="form-control" formControlName="taxCode" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="businessRegistrationNumber">Số ĐKKD</label>
+        <input id="businessRegistrationNumber" type="text" class="form-control" formControlName="businessRegistrationNumber" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="segment">Phân khúc</label>
+        <input id="segment" type="text" class="form-control" formControlName="segment" placeholder="VD: Y tế" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="phone">Điện thoại</label>
+        <input id="phone" type="text" class="form-control" formControlName="phone" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-8 mb-3">
+        <label class="form-label" for="email">Email</label>
+        <input id="email" type="email" class="form-control" [class.is-invalid]="isInvalid('email')" formControlName="email" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Email không hợp lệ</div>
+      </div>
+      <div class="col-12 mb-3">
+        <label class="form-label" for="address">Địa chỉ</label>
+        <input id="address" type="text" class="form-control" formControlName="address" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="legalRepresentativeName">Người đại diện pháp luật</label>
+        <input id="legalRepresentativeName" type="text" class="form-control" formControlName="legalRepresentativeName" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="contactPersonName">Người liên hệ chính</label>
+        <input id="contactPersonName" type="text" class="form-control" formControlName="contactPersonName" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="contactPersonPhone">Điện thoại người liên hệ</label>
+        <input id="contactPersonPhone" type="text" class="form-control" formControlName="contactPersonPhone" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="contactPersonEmail">Email người liên hệ</label>
+        <input id="contactPersonEmail" type="email" class="form-control" [class.is-invalid]="isInvalid('contactPersonEmail')" formControlName="contactPersonEmail" placeholder="Nhập dữ liệu" autocomplete="off" />
+        <div class="invalid-feedback">Email không hợp lệ</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="branchId">Chi nhánh phục vụ</label>
+        <app-select [loading]="isLoadingList" formControlName="branchId" [items]="listBranch" bindValue="id" bindLabel="label" placeholder="Chọn chi nhánh"></app-select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label" for="status">Trạng thái <span class="text-danger">(*)</span></label>
+        <app-select formControlName="status" [items]="statuses" bindValue="code" bindLabel="label" [allowClear]="false" [searchable]="false"></app-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="companyId">Công ty / pháp nhân phục vụ</label>
+        <app-select [loading]="isLoadingList" formControlName="companyId" [items]="listCompany" bindValue="id" bindLabel="label" placeholder="Chọn công ty"></app-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label" for="note">Ghi chú</label>
+        <input id="note" type="text" class="form-control" formControlName="note" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)"><i class="fa-solid fa-xmark me-1"></i>Thoát</button>
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Lưu</button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>
