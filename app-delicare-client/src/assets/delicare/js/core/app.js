@@ -145,6 +145,7 @@
     if (f.id === 'adm-reference') UI.table(el.querySelector('#rt'), { cols: [{ k: 0, label: 'Mã' }, { k: 1, label: 'Danh mục' }, { k: 2, label: 'Bảng SQL' }, { k: 3, label: 'Cột đang lưu' }, { k: 4, label: 'Giá trị đề xuất' }, { k: 6, label: 'Trạng thái', render: r => UI.badge(r[6] === 'Có bảng' ? 'Active' : r[6] === 'Open' ? 'Open' : 'OK') }], rows: CAT.gaps.ref.map((r, i) => Object.assign({ Id: 'ref' + i }, r)), pageSize: 15 });
     if (f.id === 'scm-transfer' || f.id === 'scm-adjustment') UI.table(el.querySelector('#rt'), { table: 'InventoryTransaction', cols: APP.pickCols('InventoryTransaction', 8), rows: () => Store.rows('InventoryTransaction').filter(r => f.id === 'scm-transfer' ? /TRANSFER/.test(r.TransactionType) : ['ADJUSTMENT', 'WASTE'].includes(r.TransactionType)), pageSize: 8 });
   }
+  APP.gapScreen = gapScreen;
   function gpsMock() {
     const ev = Store.rows('DeliveryEvent').filter(e => e.EventAt && e.EventAt.startsWith(Store.ctx.date) && e.Latitude);
     const xs = ev.map(e => +e.Longitude), ys = ev.map(e => +e.Latitude);

@@ -24,6 +24,7 @@ const SCRIPTS = [
   'modules/admin.js',
   'modules/integration.js',
   'modules/explorer.js',
+  'modules/be3.js',
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';
 const SCRIPT_ATTR = 'data-delicare';

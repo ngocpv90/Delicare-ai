@@ -195,8 +195,9 @@
     const row = Store.get(t, id); if (!row) { UI.toast('Không tìm thấy bản ghi', 'err'); return; }
     const sc = Store.statusCol(t);
     const perm = opt.screen ? Store.perm(opt.screen) : { edit: true };
-    const tabs = [{ label: 'Thông tin', html: (opt.top || '') + UI.kvHtml(t, row) }].concat(opt.tabs || []).concat([
-      { label: 'Liên quan', html: () => UI.children(t, id) },
+    // UI.liveTabs / UI.related (modules/be3.js): tab theo API BE-3 ở chế độ dữ liệu thật; không có thì dùng cách cũ.
+    const tabs = [{ label: 'Thông tin', html: (opt.top || '') + UI.kvHtml(t, row) }].concat(opt.tabs || []).concat(UI.liveTabs ? UI.liveTabs(t, id) : []).concat([
+      { label: 'Liên quan', html: p => (UI.related ? UI.related(t, id, p) : UI.children(t, id)) },
       { label: 'Lịch sử xử lý', html: p => UI.history(t, id, p) },
       { label: 'Truy vết DB', html: () => UI.traceHtml(t, opt.screen) }]);
     UI.drawer({
