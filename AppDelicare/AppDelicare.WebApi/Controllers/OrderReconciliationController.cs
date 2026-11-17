@@ -220,5 +220,24 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE3.1 (Catalog 100): danh sách đối soát theo ngày ăn (from / to – mặc định 30 ngày, status, customerId, searchText, page) + <c>chart</c> Đặt – Giao – Nhận theo ngày + <c>statusCounts</c>.</summary>
+        [HttpGet("GetList")]
+        public async Task<IActionResult> GetList([FromQuery] ReconciliationListRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetList(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

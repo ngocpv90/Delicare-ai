@@ -688,6 +688,44 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BE3.1 (Catalog 192, spec 10.3 delivery-orders/{id}/events): timeline sự kiện của 1 đơn giao theo <c>EventAt</c> – sự kiện gắn đơn,
+        /// sự kiện tại điểm dừng của đơn, và sự kiện cấp chuyến (xếp hàng, xuất phát, nhiệt độ xuất phát, vị trí xe) của chuyến chứa đơn (PROPOSED D-57 l).
+        /// </summary>
+        public async Task<IResults<DeliveryEventItemModel>> GetEvents(Guid id)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var order = await db.DeliveryOrder.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
+                if (order == null)
+                {
+                    return new Results<DeliveryEventItemModel> { ResponseCode = Convert.ToInt32(HttpStatusCode.BadRequest), ResponseMessage = ConstantHelper.Message.DeliveryOrderNotFound, ListData = [] };
+                }
+                var stopIds = await db.DeliveryStop.AsNoTracking().Where(s => !s.IsDeleted && s.DeliveryOrderId == id).Select(s => s.Id).ToListAsync();
+                Guid? routeId = order.DeliveryRouteId;
+                var events = await db.DeliveryEvent.AsNoTracking()
+                    .Where(e => !e.IsDeleted && (e.DeliveryOrderId == id
+                        || (e.DeliveryStopId != null && stopIds.Contains(e.DeliveryStopId.Value))
+                        || (routeId != null && e.DeliveryRouteId == routeId && e.DeliveryStopId == null && e.DeliveryOrderId == null)))
+                    .OrderBy(e => e.EventAt).ThenBy(e => e.CreatedDate)
+                    .ToListAsync();
+                var items = await ChartRules.DeliveryEventItemsAsync(db, events);
+                return new Results<DeliveryEventItemModel>
+                {
+                    ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
+                    ResponseMessage = ConstantHelper.Message.GetAllSuccessfully,
+                    ListData = items,
+                    TotalRecords = items.Count,
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetEvents: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResult<DeliveryOrder>> GetById(Guid id)
         {
             try

@@ -99,6 +99,15 @@ Trước khi thử trên staging: chạy `DB/seed/ObjectMenu_disable_legacy.sql`
 
 Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1-flow-gaps.http` (đóng gói, xếp xe, đơn giao), `be2.2-contract-forecast.http` (hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt), `be2.3-multilevel-approval.http` (duyệt nhiều cấp, kiểm kê), `be2.4-inventory-production.http` (giữ chỗ, hủy lệnh, công đoạn, giá thành), `be2.5-foodsafety-packaging.http` (ATTP, vệ sinh, hộp / khay, sự cố NCC), `be2.6-hr.http` (nhân sự), `be2.7-common-print.http` (in / xuất / tệp / lịch sử).
 
+## BIỂU ĐỒ + SỰ KIỆN GIAO (BE3.1, 2026-11-17) · file thử: `docs/api-tests/be3.1-charts.http` · test: `AppDelicare.Tests/Charts/ChartTests.cs`
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Biểu đồ đối soát | `OrderReconciliation/GetList` tháng có đơn | `chart` đủ mọi ngày; tổng Đặt / Giao / Nhận khớp màn đối soát từng đơn | [ ] | |
+| 2 | Hao hụt theo loại / món / ca / ngày | `MealWasteRecord/GetSummary` 4 kiểu groupBy | Tổng suất bằng nhau ở 4 kiểu; giá trị = suất × giá thành chuẩn | [ ] | |
+| 3 | Biểu đồ nhiệt độ kho | `TemperatureLog/GetSeries` khu vực MÁT | Ngưỡng = khu vực; lần đo vượt ngưỡng hiện đỏ | [ ] | |
+| 4 | Timeline đơn giao | `DeliveryOrder/GetEvents` 1 đơn đã giao | Xếp hàng → xuất phát → đo nhiệt → đến điểm → bàn giao, đúng thứ tự giờ | [ ] | |
+| 5 | Vị trí xe | Tài xế `DeliveryEvent/RecordPosition` khi đang giao → `GetVehiclePositions` | Điểm mới nhất của chuyến = vị trí vừa ghi; chuyến chưa xuất phát → 400 | [ ] | |
+
 ## JOB TỰ ĐỘNG (T23, 2026-11-17) · file thử: `docs/api-tests/t23-jobs.http` · test tự động: `AppDelicare.Tests/Jobs/JobTests.cs`
 Chạy `AppDelicare.Job` cạnh API (deploy/README.md mục "Job tự động"). Kiểm bằng admin; giờ theo giờ Việt Nam.
 

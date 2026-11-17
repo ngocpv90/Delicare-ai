@@ -23,5 +23,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<OrderReconciliationDetailModel>> GetDetail(Guid id);
         public Task<IResult<OrderReconciliationDetailModel>> GetByOrder(Guid orderId);
         public Task<IResults<ReconciliationPendingModel>> GetPendingOrders(ReconciliationPendingRequest request);
+        /// <summary>BE3.1 (Catalog 100): danh sách đối soát + biểu đồ Đặt – Giao – Nhận theo ngày ăn.</summary>
+        public Task<IResult<ReconciliationListModel>> GetList(ReconciliationListRequest request);
     }
 }

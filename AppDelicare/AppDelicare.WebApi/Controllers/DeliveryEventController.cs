@@ -78,5 +78,43 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE3.1 (Catalog 193, GAP-F-05): vị trí xe theo sự kiện giao của 1 ngày giao (deliveryDate, routeId?) – không phải GPS liên tục.</summary>
+        [HttpGet("GetVehiclePositions")]
+        public async Task<IActionResult> GetVehiclePositions([FromQuery] AppDelicare.Model.Request.Custom.VehiclePositionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetVehiclePositions(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetVehiclePositions: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE3.1 (Catalog 193): tài xế ghi vị trí hiện tại (form: routeId, latitude, longitude, note) – chuyến Đang xếp / Đang giao. Quyền Sửa trên log-event (PROPOSED D-57 m).</summary>
+        [HttpPost("RecordPosition")]
+        public async Task<IActionResult> RecordPosition([FromForm] AppDelicare.Model.Request.Custom.DeliveryPositionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.RecordPosition(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RecordPosition: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

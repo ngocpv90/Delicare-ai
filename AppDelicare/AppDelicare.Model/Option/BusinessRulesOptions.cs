@@ -10,6 +10,8 @@ namespace AppDelicare.Model.Option
         public HrRulesOptions Hr { get; set; } = new();
         /// <summary>BE2.7: giới hạn API dùng chung (xuất danh sách, in hàng loạt, lịch sử) – section <c>BusinessRules:Common</c> (PROPOSED – D-56).</summary>
         public CommonRulesOptions Common { get; set; } = new();
+        /// <summary>BE3.1: giới hạn dữ liệu biểu đồ – section <c>BusinessRules:Charts</c> (PROPOSED – D-57).</summary>
+        public ChartRulesOptions Charts { get; set; } = new();
         public int OrderCutoffHourPreviousDay { get; set; } = 20;
         public string OrderLockJobTime { get; set; } = "20:00";
         public string MrpJobTime { get; set; } = "20:30";
