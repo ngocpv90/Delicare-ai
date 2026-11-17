@@ -1,3 +1,4 @@
+using AppDelicare.Data.Share;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Dapper;
@@ -17,7 +18,7 @@ using AppDelicare.Model.Request.Custom;
 namespace AppDelicare.Services.Implement
 {
     public class CustomerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : ICustomerService
+        , IAuditChangeService auditChangeService, IClock clock) : ICustomerService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -256,7 +257,7 @@ namespace AppDelicare.Services.Implement
                 var contractIds = contracts.Select(x => x.Id).ToList();
                 var meals = await db.ContractMeal.AsNoTracking().Where(m => !m.IsDeleted && contractIds.Contains(m.ContractId)).ToListAsync();
                 var orders = db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.CustomerId == id);
-                DateTime since = DateTime.Today.AddDays(-7);
+                DateTime since = clock.Today /* Rà soát BE: giờ nghiệp vụ VN */.AddDays(-7);
                 decimal meals7d = await orders.Where(o => o.MealDate >= since && CompletedOrderStatuses.Contains(o.Status!)).SumAsync(o => o.TotalQuantity) ?? 0m;
                 var model = new CustomerOverviewModel
                 {

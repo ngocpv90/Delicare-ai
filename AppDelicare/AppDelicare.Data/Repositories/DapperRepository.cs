@@ -53,10 +53,11 @@ namespace AppDelicare.Data.Repositories
         {
             try
             {
-                using SqlConnection connection = new(connectionString);
-                connection.Open();
+                // Rà soát BE: mở kết nối / đọc bất đồng bộ – không chặn luồng thread-pool khi tải cao (mọi API GetAll sinh mã đi qua đây).
+                await using SqlConnection connection = new(connectionString);
+                await connection.OpenAsync();
                 using var multi = await connection.QueryMultipleAsync(spName, parms, commandTimeout: commandTimeOut, commandType: CommandType.StoredProcedure);
-                var result = multi.Read<T>();
+                var result = await multi.ReadAsync<T>();
                 return result;
             }
             catch (Exception ex)

@@ -110,6 +110,9 @@ try {
         }
     }
 
+    # T48.5 (D-61): mức tương thích DB = 160 (SQL Server 2022): > 160 → đặt về 160; < 160 → chỉ cảnh báo.
+    Invoke-Sql $Database (Join-Path $PSScriptRoot "compat-level.sql")
+
     $tables = Query-Scalar $Database "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0"
     if ($tables -eq "0") {
         if (-not $CreateSchemaIfEmpty) { throw "Database rỗng. Thêm -CreateSchemaIfEmpty để tạo 124 bảng từ DDL chuẩn." }

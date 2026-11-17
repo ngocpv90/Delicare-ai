@@ -81,6 +81,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 ## 3. LUẬT CỨNG – không bao giờ vi phạm
 
 ### 3.1 Cơ sở dữ liệu (yêu cầu gốc của PO, giữ nguyên văn)
+0. **Phiên bản chuẩn = SQL Server 2022, mức tương thích 160 (D-61).** Máy anh chạy SQL Server 2025 nhưng DB dev đặt `COMPATIBILITY_LEVEL = 160`; máy dev FE, server test, production là 2022. **Chỉ dùng cú pháp có trong 2022** – cấm (trong SQL, SP, seed và SQL inline trong C#): kiểu `json`, `vector`; `REGEXP_*`; `JSON_OBJECTAGG` / `JSON_ARRAYAGG` / `JSON_CONTAINS`; `EDIT_DISTANCE*`, `JARO_WINKLER_*`; `UNISTR`, `PRODUCT()`, `BASE64_ENCODE` / `BASE64_DECODE`, `CURRENT_DATE`, toán tử nối `||`; `AI_GENERATE_*`, `VECTOR_*`, `sp_invoke_external_rest_endpoint`. Mức 160 **không chặn hết** các hàm này (một số hàm regex vẫn chạy ở mọi mức) → test quét mã (T48.5) là chốt chặn. **Không chuyển dữ liệu giữa các máy bằng `.bak`** (bản 2025 không khôi phục được trên 2022) – chỉ bằng script (`deploy/db/scripts.order`).
 1. SQL Server, **chỉ schema `dbo`**. **"Không tự tạo schema dm, vh, ht, bc"**.
 2. **"Không tự tạo Foreign Key vật lý"**. Quan hệ kiểm tra ở tầng Service.
 3. **"Không tạo bảng RecipeVersion"**.
@@ -249,6 +250,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 4. Viết kế hoạch ngắn (3–8 bước) vào PROGRESS dưới tiêu đề task, rồi làm.
 5. **Rà soát code cũ trước khi viết** (mục 4.1): tìm Controller / Service / SP / Request / ViewModel của entity và các service liên quan; ghi vào kế hoạch "đã có gì – bổ sung gì – ở file nào". Có rồi thì dùng lại / bổ sung vào đúng file đó. Đối chiếu bảng/cột với `DB_SCHEMA_124.md` **trước khi** viết entity, query hay DTO.
 6. Build và test. Sửa tới khi xanh. Không tắt test để cho qua.
+   - **Trước mỗi lần gộp `main` (D-61, T48.5):** test `SqlServer2022CompatibilityTests` xanh **và** kiểm trên SQL Server 2022 thật (Docker – `deploy/README.md` mục 11: DB trống → `db-init` 2 lần → `full-flow.http` đạt); ghi kết quả vào PROGRESS. Máy chưa có Docker → ghi rõ "chưa kiểm 2022 thật" khi báo anh.
 7. Tự rà lại theo **tiêu chí nghiệm thu** của task. Đánh dấu từng tiêu chí đạt hay chưa.
 8. Cập nhật:
    - ROADMAP: đổi trạng thái task (`TODO` → `DONE` / `BLOCKED`).

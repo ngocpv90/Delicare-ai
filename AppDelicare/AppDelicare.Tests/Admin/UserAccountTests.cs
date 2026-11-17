@@ -279,7 +279,7 @@ namespace AppDelicare.Tests.Admin
                 expired.Message.Should().Be("Mật khẩu tạm đã hết hạn, liên hệ quản trị");
                 expired.Token.Should().BeNull();
                 // Đổi mật khẩu bằng mật khẩu tạm đã hết hạn cũng bị chặn.
-                (await admin.PutFormAsync("/api/User/ChangePassword", ("Id", userId), ("PassWordOld", temp), ("PassWordNew", "Moi-12345678"))).Fail("hết hạn");
+                (await _factory.CreateAuthorizedClient(userId).PutFormAsync("/api/User/ChangePassword", ("Id", userId), ("PassWordOld", temp), ("PassWordNew", "Moi-12345678"))).Fail("hết hạn");
                 // Sai mật khẩu vẫn báo lỗi chung (không lộ việc tài khoản có mật khẩu tạm).
                 (await LoginAsync("t45r8-expired", "sai-mat-khau")).Message.Should().Be(ConstantHelper.Message.UserInActiveMessage);
             }

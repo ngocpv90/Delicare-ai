@@ -441,6 +441,7 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var db = _unitOfWork.DbContext;
+                await DbLocks.DocumentAsync(db, "MaterialIssue", request.Id); // Rà soát BE: 2 lần ghi sổ / hủy cùng lúc chạy lần lượt.
                 var issue = _unitOfWork.MaterialIssueRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
                 if (issue == null || issue.Status != MaterialIssueStatus.Draft)
                 {
@@ -573,6 +574,7 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var db = _unitOfWork.DbContext;
+                await DbLocks.DocumentAsync(db, "MaterialIssue", request.Id); // Rà soát BE: 2 lần ghi sổ / hủy cùng lúc chạy lần lượt.
                 var issue = _unitOfWork.MaterialIssueRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
                 if (issue == null || (issue.Status != MaterialIssueStatus.Draft && issue.Status != MaterialIssueStatus.Issued))
                 {

@@ -10,6 +10,8 @@
 
 Không có script tạo bảng / cột ngoài `migrations/` đã được PO duyệt.
 
+**SQL Server 2022 (D-61, T48.5):** mọi script ở đây (SP, seed, migrations) và SQL inline trong C# **chỉ dùng cú pháp có trong SQL Server 2022** (mức tương thích 160) – danh sách cấm ở CLAUDE.md mục 3.1 quy tắc 0 (kiểu `json` / `vector`, `REGEXP_*`, `JSON_OBJECTAGG` / `JSON_ARRAYAGG` / `JSON_CONTAINS`, `CURRENT_DATE`, `||`…). Test `SqlServer2022CompatibilityTests` quét tự động (bỏ qua comment và chuỗi dữ liệu). Mức tương thích DB do `deploy/db/compat-level.sql` giữ ở 160 khi deploy. Không chuyển DB bằng `.bak` giữa SQL Server 2025 và 2022 – chỉ bằng script.
+
 ## Pilot (T11 … T19, T45R.8, T48.0, T14 / T15.1 / T17 / T17.1) – script SQL thêm / sửa và thứ tự chạy
 
 So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** dưới đây, luôn bằng `sqlcmd ... -b -I -f 65001` (**`-f 65001` bắt buộc** – thiếu cờ này tên tiếng Việt bị lỗi font khi ghi vào DB). Mọi script chạy lại được nhiều lần (SP `CREATE OR ALTER`; seed chỉ **thêm** phần chưa có, không ghi đè chỉnh sửa trên màn hình). Seed cần tài khoản `admin` đã có (ghi `CreatedBy`).
@@ -51,6 +53,20 @@ T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **kh�
 **BE2.7 (2026-11-17): không có SP / seed mới** – tệp đính kèm lưu ngoài DB (`DocumentStorage:RootPath`, xem `deploy/README.md`); DB chỉ giữ khóa lưu trữ trong `DocumentFile.FileNameHas` (GAP-DOC-01).
 
 **BE2.9 (2026-11-17) – kiểm tra cuối đợt BE-2:** `deploy/db/scripts.order` (140 dòng: 131 SP + `00_Admin_seed.sql` + 8 seed) **khớp đúng** với `DB/sp/*.sql` + `DB/seed/*.sql` (so bằng `diff`, không thiếu / không thừa); không SP / seed mới trong BE2.9. Đã chạy `Deploy-Database.ps1` trên staging `AppDelicare_Staging` (0 lỗi, `Repair-VietnameseText.ps1` chạy thử: 0 giá trị lỗi font).
+
+**T48.5 (2026-11-17): không bảng / cột / SP / seed mới** – thêm `deploy/db/compat-level.sql` (đặt mức tương thích về 160 nếu DB đang > 160), `Deploy-Database.ps1` và `db-init.sh` tự gọi, không cần chạy tay.
+
+**REVIEW-BE-1 (2026-11-17): sửa 7 SP, không bảng / cột / seed mới** – `uspAuditChange_GetAll`, `uspUser_GetAll`, `uspUserClaim_GetAll`, `uspUserGroup_GetAll`, `uspPerson_GetAll`, `uspObjectMenu_GetAll`, `uspLocationTracking_GetAll`: chặn `Page` ≥ 1, `PageSize` 1–1000. Cả 7 đã có trong `scripts.order` (không thêm dòng). **Đã chạy trên DB dev và staging** (`Deploy-Database.ps1`).
+
+### Kiểm tra lược đồ (2026-11-17)
+
+Toàn bộ lịch sử git: lệnh tạo bảng / thêm cột **chỉ có** trong `migrations/20261113_restore_structure_db_appdelicare.sql` (PO, T00). Mọi task sau đó (T01 … BE-3, T48.x, REVIEW-BE-1) **không** tạo bảng, thêm cột, FK hay index. DB dev và staging: **124 bảng / 2264 cột, khớp từng cột** với `docs/reference/20261113_structure_db_appdelicare.sql` (bảng thứ 125 `sysdiagrams` do SSMS tự tạo, không thuộc ứng dụng).
+
+→ **Dev FE / server test sau `git pull`:** không có migration bảng nào phải chạy. Chỉ cần cập nhật SP + seed và build lại API:
+- Docker: `docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init`, rồi `... up -d --build api` (hoặc `bash deploy/docker/update-db.sh`) – xem `deploy/docker/README.md` mục 2.
+- SQL Server thường: `./deploy/db/Deploy-Database.ps1 -Server "<server>" -Database <db>` rồi publish lại API (`deploy/README.md` mục 9).
+
+Cả hai chạy lại bao nhiêu lần cũng được và không đụng bảng / dữ liệu nghiệp vụ. Khi nào có thay đổi bảng / cột (phải được anh duyệt), script sẽ nằm trong `migrations/` và được ghi rõ ở mục này.
 
 ### Khóa cấu hình mới của đợt BE-2 (appsettings.json – có giá trị mặc định, PROPOSED; staging / Docker kế thừa từ appsettings.json khi publish)
 

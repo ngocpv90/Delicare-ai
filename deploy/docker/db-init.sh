@@ -79,6 +79,8 @@ chmod 700 "$TMP_DIR"
 
 echo "== DELICARE db-init → $DB_NAME"
 "${SQL[@]}" -d master -Q "IF DB_ID(N'$(sql_str "$DB_NAME")') IS NULL CREATE DATABASE [${DB_NAME//]/]]}];" || die "Không tạo được database $DB_NAME"
+# T48.5 (D-61): mức tương thích DB = 160 (SQL Server 2022): > 160 → đặt về 160; < 160 → chỉ cảnh báo, không tự nâng.
+"${SQL[@]}" -d "$DB_NAME" -i "$REPO/deploy/db/compat-level.sql" || die "Lỗi khi kiểm mức tương thích"
 
 TABLES=$(scalar "$DB_NAME" "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0")
 if [ "$TABLES" = "0" ]; then

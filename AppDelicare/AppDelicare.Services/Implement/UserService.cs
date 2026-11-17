@@ -206,6 +206,7 @@ namespace AppDelicare.Services.Implement
             request.UserName = userName;
             var insert = _mapper.Map<User>(request);
             insert.Id = Guid.NewGuid();
+            insert.IsAdmin = false; // Rà soát BE: quyền quản trị chỉ đổi qua User/SaveIsAdmin (AdminOnly) – không nhận từ form Insert.
             var created = await AddAccount(insert, request.ListUserGroupId, typeSave);
             return (string.Empty, created);
         }
@@ -312,7 +313,7 @@ namespace AppDelicare.Services.Implement
             }
             update.PersonId = request.PersonId;
             update.IsActive = request.IsActive;
-            update.IsAdmin = request.IsAdmin;
+            // Rà soát BE: KHÔNG ghi IsAdmin từ form Update (người có quyền Sửa màn adm-user tự nâng thành admin được) – chỉ qua User/SaveIsAdmin (AdminOnly).
             _unitOfWork.UserRepository.Update(update);
             await _unitOfWork.UserRepository.CommitAsync(typeSave);
             await _userClaimService.SaveAfterUser(update.Id, request.ListUserGroupId);
@@ -514,7 +515,14 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var message = string.Empty;
-                var exist = _unitOfWork.UserRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
+                // Rà soát BE: chỉ đổi mật khẩu của CHÍNH người đăng nhập (trước đây lấy Id từ form → đoán mật khẩu user khác không giới hạn).
+                Guid me = _currentActor.RequireActor().UserId;
+                if (request.Id != Guid.Empty && request.Id != me)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<bool>.Fail("Chỉ đổi được mật khẩu của chính tài khoản đang đăng nhập.");
+                }
+                var exist = _unitOfWork.UserRepository.GetSingle(x => x.Id == me && !x.IsDeleted);
                 if (exist == null)
                 {
                     message += "Tài khoản của bạn không tồn tại trong hệ thống";
