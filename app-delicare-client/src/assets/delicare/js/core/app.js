@@ -244,7 +244,31 @@
     if (errs.length) el.insertAdjacentHTML('afterbegin', `<div class="notice gap">${I('alert')}<div><b>Không tải được dữ liệu từ API</b>${errs.map(t => `<code>${esc(Store.controllerOf(t))}</code>: ${esc(Store.errorOf(t))}`).join('<br>')}</div></div>`);
     finish(el);
   }
+  // Chế độ dữ liệu thật: dọn phần chữ kỹ thuật của mockup còn nằm trong các màn riêng (CLAUDE.md 4.4) –
+  // khung ghi chú GAP / PARTIAL / PROPOSED, tên Bảng.Cột trong ngoặc, hậu tố "PROPOSED – BA/PO CONFIRM".
+  const TECH_NOTICE = /^\s*(GAP-[A-Z]|DATABASE GAP|PARTIAL\s*[–-])|BA\/PO CONFIRM|SQL DEFAULT|SQL (chưa|không) có|Mockup/;
+  const TECH_PAREN = /\s*\((?:dbo\.)?[A-Z][A-Za-z0-9_]*\.[A-Z][A-Za-z0-9_]*(?:\s*[=<>!]+\s*[^()]*)?\)/g;
+  const TECH_WORD = /PROPOSED|BA\/PO CONFIRM|BRD\s*:/;
+  function cleanDemoText(root) {
+    if (!API_MODE() || !root) return;
+    root.querySelectorAll('.notice').forEach(n => { if (TECH_NOTICE.test(n.textContent || '') && !/Không tải được|Lỗi/.test(n.textContent || '')) n.remove(); });
+    // Chú thích dưới thẻ số liệu / mô tả khối mà nội dung là tên cột kiểu "QcStatus = PASS", "Σ PlannedQuantity" → bỏ chú thích đó.
+    root.querySelectorAll('.kpi-foot, .panel-desc').forEach(n => { if (!n.children.length && /\b[A-Z][a-z]+[A-Z][A-Za-z]+\b/.test(n.textContent || '')) n.textContent = ''; });
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const edits = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode, p = node.parentElement;
+      if (!p || p.closest('script,style,textarea,input,select,svg,code,.mono')) continue;
+      const v = node.nodeValue; if (!v || v.length < 6) continue;
+      // Bỏ cả câu có nhãn kỹ thuật (tách câu theo dấu chấm + khoảng trắng để không cắt nhầm "Order.Status").
+      const nv = (TECH_WORD.test(v) ? v.split(/(?<=[.!?])\s+/).filter(s => !TECH_WORD.test(s)).join(' ') : v).replace(TECH_PAREN, '');
+      if (nv !== v) edits.push([node, nv]);
+    }
+    edits.forEach(([node, nv]) => { const p = node.parentElement; node.nodeValue = nv; if (p && !p.textContent.trim() && !p.children.length && p !== root) p.remove(); });
+  }
+  APP.cleanDemoText = cleanDemoText;
   function finish(el) {
+    cleanDemoText(el);
     el.insertAdjacentHTML('beforeend', API_MODE()
       ? '<div class="footer-note">DELI-CARE · ENTERPRISE MANAGEMENT · Dữ liệu đọc / ghi qua API (bảng chưa có API hiển thị dữ liệu DEMO) · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>'
       : '<div class="footer-note">DELI-CARE · ENTERPRISE MOCKUP · DỮ LIỆU DEMO – KHÔNG PHẢI DỮ LIỆU THẬT · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>');
@@ -422,7 +446,16 @@
     if (Store.isLive) alertTimer = setInterval(() => { if (!document.hidden) pullAlerts(); }, ALERT_TTL);
     onDoc(window, 'hashchange', route);
     // Dò API của mọi màn hình trước khi vẽ màn đầu tiên: backend đang nối thiếu controller nào thì ẩn menu của nó.
-    Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => { buildNav(); route(); });
+    // Vẽ màn hình đầu tiên NGAY; dò API chạy nền, xong thì dựng lại menu (và vẽ lại nếu màn đang xem thuộc bảng vừa bị ẩn).
+    route();
+    Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => {
+      const before = document.querySelectorAll('[data-nav]').length;
+      buildNav();
+      document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === APP.current));
+      const act = document.querySelector(`[data-nav="${APP.current}"]`); if (act) act.closest('.group').classList.remove('closed');
+      const cur = FN[APP.current];
+      if (document.querySelectorAll('[data-nav]').length !== before && cur && cur.table && Store.isMissing(cur.table) && !overlayOpen()) route();
+    });
   };
   window.APP = APP;
 })();
