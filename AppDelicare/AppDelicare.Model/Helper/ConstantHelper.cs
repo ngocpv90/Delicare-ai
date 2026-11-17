@@ -503,6 +503,14 @@
             public static readonly string AlertLotExpiringDetail = "{0} lô còn tồn hết hạn trong {1} ngày tới";
             public static readonly string SearchTextLength = "Từ khóa tìm kiếm phải từ {0} đến {1} ký tự";
             public static readonly string RelatedResourceNotSupported = "Danh sách '{0}' không có tab Liên quan";
+            // BE3.5 – dashboard điều hành, hành trình đơn hàng.
+            public static readonly string DashboardShiftNotFound = "Không tìm thấy ca làm việc";
+            public static readonly string DashboardDateInvalid = "Ngày xem dashboard không hợp lệ";
+            public static readonly string JourneyOrderRequired = "Chưa chọn đơn hàng";
+            public static readonly string JourneyOrderNotFound = "Không tìm thấy đơn hàng";
+            public static readonly string JourneyNoRight = "Bạn không có quyền Xem hành trình đơn hàng (cần quyền Xem màn #/flow-e2e, #/dash-exec hoặc #/crm-order)";
+            public static readonly string JourneySharedProduction = "Kế hoạch / lệnh sản xuất gộp theo ngày ăn (dùng chung cho mọi đơn cùng ngày)";
+            public static readonly string JourneyNoComplaint = "Không có phản ánh";
             // BE3.2 – IoT nhiệt độ.
             public static readonly string IotEmpty = "Không có lần đo nào";
             public static readonly string IotTooMany = "Tối đa {0} lần đo mỗi lần gửi";

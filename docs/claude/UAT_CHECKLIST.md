@@ -99,6 +99,17 @@ Trước khi thử trên staging: chạy `DB/seed/ObjectMenu_disable_legacy.sql`
 
 Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1-flow-gaps.http` (đóng gói, xếp xe, đơn giao), `be2.2-contract-forecast.http` (hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt), `be2.3-multilevel-approval.http` (duyệt nhiều cấp, kiểm kê), `be2.4-inventory-production.http` (giữ chỗ, hủy lệnh, công đoạn, giá thành), `be2.5-foodsafety-packaging.http` (ATTP, vệ sinh, hộp / khay, sự cố NCC), `be2.6-hr.http` (nhân sự), `be2.7-common-print.http` (in / xuất / tệp / lịch sử).
 
+## DASHBOARD ĐIỀU HÀNH + HÀNH TRÌNH ĐƠN (BE3.5, 2026-11-17) · file thử: `docs/api-tests/be3.5-dashboard.http` · test: `AppDelicare.Tests/Dashboard/DashboardTests.cs`
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Số liệu khớp danh sách | `Dashboard/GetExecutive?date=2026-12-02` so với `Order/GetBoard`, `ProductionBatch/GetBoard`, `DeliveryExecution/GetBoard`, chuông | Số đơn / trạng thái, suất, tiến độ, giao, tồn, phản ánh trùng khớp | [ ] | mẻ Hủy không tính (D-57 ae) |
+| 2 | Lọc ca / chi nhánh | Chọn 1 ca, 1 chi nhánh | Suất / đơn / mẻ / ca làm chỉ của ca / chi nhánh (gồm đơn vị con); giao không lọc ca | [ ] | |
+| 3 | Cache 60 giây | Tạo 1 đơn mới cho ngày đang xem, tải lại ngay rồi sau 60 giây | Lần đầu số cũ, sau 60 giây số mới (`generatedAt` đổi) | [ ] | |
+| 4 | Cảnh báo theo người | Mở dashboard bằng admin rồi bằng người chỉ có quyền Xem dashboard | Thẻ số giống nhau; khối cảnh báo của người thứ 2 chỉ theo quyền của họ | [ ] | |
+| 5 | KPI ngày | Bấm KPI Refresh (BE3.4) cho 1 ngày rồi mở dashboard ngày đó | 4 chỉ tiêu có giá trị / mục tiêu / đạt (chi phí càng thấp càng tốt) | [ ] | chưa tính → trống |
+| 6 | Hành trình đơn | Bấm 1 đơn đã đối soát → `Dashboard/GetOrderJourney` | 8 chặng, số KH / lệnh SX / mẻ / đóng gói / đơn giao / chuyến / POD / đối soát / phản ánh đúng; chặng hiện tại đúng | [ ] | KH- dùng chung cả ngày |
+| 7 | Quyền hành trình | Người chỉ Xem đơn hàng mở hành trình | Thấy trạng thái mọi chặng nhưng chỉ chứng từ đơn; người không có quyền → 403 | [ ] | |
+
 ## CHUÔNG CẢNH BÁO + TÌM KIẾM + LIÊN QUAN (BE3.3, 2026-11-17) · file thử: `docs/api-tests/be3.3-alerts-search.http` · test: `AppDelicare.Tests/Common/AlertsSearchRelatedTests.cs`
 | # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
 |---|---|---|---|---|---|

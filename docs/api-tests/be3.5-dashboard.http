@@ -1,0 +1,111 @@
+### DELICARE – BE3.5: DASHBOARD ĐIỀU HÀNH + HÀNH TRÌNH ĐƠN HÀNG (đợt BE-3, D-57) – khung cũ D-30.
+### Dashboard điều hành theo ngày / ca / chi nhánh (Catalog 231, spec 12.1) → hành trình 1 đơn qua các chặng (Catalog 232, spec 12.2).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Dùng dữ liệu [DEMO] đã có trên DB dev (chạy full-flow.http trước ít nhất 1 lần):
+### ngày ăn 2026-12-02 có 4 đơn (3 Đã chốt + 1 Đã đối soát), 2 mẻ đã xong, 1 đơn giao; KPI snapshot ngày 2026-11-16 (toàn công ty + 1 chi nhánh).
+### Không cần SP / seed mới. Phần số liệu chung cache 60 giây theo (ngày, ca, chi nhánh); cảnh báo theo người đăng nhập.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Dòng "# @expect …" là kiểm số liệu cho trình chạy tự động (REST Client bỏ qua).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@day = 2026-12-02
+@kpiDay = 2026-11-16
+@kpiBranch = FAE4D8F9-C419-407A-A7EC-08AF024589E0
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 1. DASHBOARD ĐIỀU HÀNH (Catalog 231)
+### 1.1 Toàn công ty – mọi khối: kpi, chart.meals7d, shiftProgress, kpiSnapshot, orders (6 đơn đầu + trạng thái giao), alerts
+# @name dash
+# @expect data.date ~ ^2026-12-02
+# @expect data.kpi.plannedMeals == 1650
+# @expect data.kpi.orders.total == 4
+# @expect data.kpi.orders.byStatus.Locked == 3
+# @expect data.kpi.orders.byStatus.Reconciled == 1
+# @expect data.kpi.productionProgress.batchCount == 2
+# @expect data.kpi.productionProgress.percent == 100
+# @expect data.kpi.delivery.total == 1
+# @expect data.kpi.delivery.delivered == 1
+# @expect data.kpi.openComplaints >= 1
+# @expect data.chart.meals7d length == 7
+# @expect data.chart.meals7d.6.planned == 1650
+# @expect data.chart.meals7d.6.accepted == 998
+# @expect data.kpiSnapshot length == 4
+# @expect data.orders length == 4
+# @expect data.orders.0.orderNumber == PH-261117-0021
+# @expect data.orders.0.listDelivery.0.status == DELIVERED
+# @expect data.ordersTotal == 4
+GET {{base}}/api/Dashboard/GetExecutive?date={{day}}
+Authorization: Bearer {{token}}
+
+### 1.2 Gọi lại trong 60 giây – cùng số (phần chung lấy từ cache, cảnh báo vẫn theo người)
+# @expect data.kpi.plannedMeals == 1650
+# @expect data.generatedAt == {{dash.response.body.data.generatedAt}}
+GET {{base}}/api/Dashboard/GetExecutive?date={{day}}
+Authorization: Bearer {{token}}
+
+### 1.3 Lọc ca (ca của mẻ / dòng đơn) – mỗi ca 1 dòng tiến độ
+# @expect data.shiftProgress length == 1
+# @expect data.shiftId == {{dash.response.body.data.shiftProgress.0.shiftId}}
+GET {{base}}/api/Dashboard/GetExecutive?date={{day}}&shiftId={{dash.response.body.data.shiftProgress.0.shiftId}}
+Authorization: Bearer {{token}}
+
+### 1.4 KPI snapshot của 1 chi nhánh (ngày 2026-11-16) – mục tiêu đọc từ snapshot, chi phí càng thấp càng tốt
+# @expect data.kpiSnapshot[metricCode=PROD_ACHIEVEMENT].target == 98
+# @expect data.kpiSnapshot[metricCode=FIN_FOOD_COST].lowerIsBetter == true
+# @expect data.kpiSnapshot[metricCode=FIN_FOOD_COST].target == 55
+GET {{base}}/api/Dashboard/GetExecutive?date={{kpiDay}}&branchId={{kpiBranch}}
+Authorization: Bearer {{token}}
+
+### 1.5 Không truyền ngày = hôm nay (giờ máy chủ)
+# @expect data.chart.meals7d length == 7
+GET {{base}}/api/Dashboard/GetExecutive
+Authorization: Bearer {{token}}
+
+### 1.6 → 400 (ca không có)
+GET {{base}}/api/Dashboard/GetExecutive?date={{day}}&shiftId=00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+### 1.7 → 400 (chi nhánh không có)
+GET {{base}}/api/Dashboard/GetExecutive?date={{day}}&branchId=00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+### 1.8 → 400 (ngày không hợp lệ)
+GET {{base}}/api/Dashboard/GetExecutive?date=1900-01-01
+Authorization: Bearer {{token}}
+
+########## 2. HÀNH TRÌNH ĐƠN HÀNG (Catalog 232)
+### 2.1 Đơn đã đối soát (đơn đầu của dashboard): 8 chặng – màn hình + số chứng từ, không tên bảng / cột
+# @expect data.orderNumber == PH-261117-0021
+# @expect data.stages length == 8
+# @expect data.stages.0.stage == ORDER
+# @expect data.stages[stage=ORDER].done == true
+# @expect data.stages[stage=PRODUCTION_PLAN].documents length >= 1
+# @expect data.stages[stage=DELIVERY].status == Done
+# @expect data.stages[stage=POD].done == true
+# @expect data.stages[stage=RECONCILIATION].done == true
+# @expect data.stages[stage=RECONCILIATION].route == #/crm-reconciliation
+GET {{base}}/api/Dashboard/GetOrderJourney?orderId={{dash.response.body.data.orders.0.id}}
+Authorization: Bearer {{token}}
+
+### 2.2 Đơn Đã chốt (chưa giao)
+# @expect data.stages[stage=ORDER].status == Done
+# @expect data.stages[stage=DELIVERY].done == false
+GET {{base}}/api/Dashboard/GetOrderJourney?orderId={{dash.response.body.data.orders.1.id}}
+Authorization: Bearer {{token}}
+
+### 2.3 → 400 (chưa chọn đơn)
+GET {{base}}/api/Dashboard/GetOrderJourney?orderId=00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### 2.4 → 400 (đơn không có)
+GET {{base}}/api/Dashboard/GetOrderJourney?orderId=00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}

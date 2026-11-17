@@ -1,12 +1,57 @@
-﻿namespace AppDelicare.WebApi.Controllers
+﻿using Microsoft.AspNetCore.Mvc;
+using AppDelicare.Model.Helper;
+using AppDelicare.Services.Interface;
+using Serilog;
+using System.Net;
+
+namespace AppDelicare.WebApi.Controllers
 {
-    public class DashboardController : BaseController
+    /// <summary>
+    /// Dashboard (không gắn bảng – màn <c>#/dash-exec</c> theo PermissionConvention.ControllerScreens). BE3.5 (Catalog 231, 232 – spec 12.1, 12.2):
+    /// dashboard điều hành + hành trình đơn hàng. Chỉ đọc.
+    /// </summary>
+    public class DashboardController(IDashboardService dashboardService) : BaseController
     {
-        //private readonly IDashboardService _dashboardService;
+        private readonly IDashboardService _dashboardService = dashboardService;
 
-        public DashboardController()
+        private const int Forbidden = 403;
+
+        /// <summary>
+        /// BE3.5 – Catalog 231: dashboard điều hành của ngày (trống = hôm nay), lọc ca / chi nhánh (gồm đơn vị con) → kpi, chart.meals7d, shiftProgress, kpiSnapshot,
+        /// orders (6 đơn đầu + trạng thái giao), alerts (= Common/GetAlerts của người đang đăng nhập). Quyền Xem <c>#/dash-exec</c> (tự gắn theo tên action Get*).
+        /// </summary>
+        [HttpGet("GetExecutive")]
+        public async Task<IActionResult> GetExecutive(DateTime? date, Guid? shiftId, Guid? branchId)
         {
+            try
+            {
+                return Ok(await _dashboardService.GetExecutive(date, shiftId, branchId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetExecutive: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
 
+        /// <summary>
+        /// BE3.5 – Catalog 232: hành trình 1 đơn hàng (Đơn → Kế hoạch SX → Lệnh SX / mẻ → Đóng gói → Đơn giao / chuyến → POD → Đối soát → Phản ánh).
+        /// Quyền Xem 1 trong các màn <c>#/flow-e2e</c>, <c>#/dash-exec</c>, <c>#/crm-order</c> (service kiểm – không có → 403); chứng từ chỉ trả khi được Xem màn của chứng từ.
+        /// </summary>
+        [Security.SkipPermission] // service kiểm quyền Xem (flow-e2e / dash-exec / crm-order) và quyền Xem màn của từng chứng từ
+        [HttpGet("GetOrderJourney")]
+        public async Task<IActionResult> GetOrderJourney(Guid orderId)
+        {
+            try
+            {
+                var result = await _dashboardService.GetOrderJourney(orderId);
+                return result.ResponseCode == Forbidden ? StatusCode(Forbidden, result) : Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOrderJourney: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
         }
 
         //[HttpGet("GetCount")]

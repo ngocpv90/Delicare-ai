@@ -16,6 +16,8 @@ namespace AppDelicare.Model.Option
         public AlertRulesOptions Alerts { get; set; } = new();
         /// <summary>BE3.4: KPI (giao đúng giờ, khoảng xem mặc định / tối đa) – section <c>BusinessRules:Kpi</c> (PROPOSED – D-57 w–ab).</summary>
         public KpiRulesOptions Kpi { get; set; } = new();
+        /// <summary>BE3.5: dashboard điều hành + hành trình đơn – section <c>BusinessRules:Dashboard</c> (PROPOSED – D-57 ad–ai).</summary>
+        public DashboardRulesOptions Dashboard { get; set; } = new();
         public int OrderCutoffHourPreviousDay { get; set; } = 20;
         public string OrderLockJobTime { get; set; } = "20:00";
         public string MrpJobTime { get; set; } = "20:30";
