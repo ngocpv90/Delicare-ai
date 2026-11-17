@@ -53,6 +53,11 @@ namespace AppDelicare.Tests.Integration
                     ["JwtIssuerOptions:Issuer"] = Issuer,
                     ["JwtIssuerOptions:Audience"] = Audience,
                 });
+                // BE2.3: cấu hình riêng của 1 test (vd. BusinessRules:ApprovalSteps:CONTRACT:0) – đặt trước lần gọi CreateClient đầu tiên.
+                if (Settings.Count > 0)
+                {
+                    config.AddInMemoryCollection(Settings);
+                }
             });
             builder.ConfigureTestServices(services =>
             {
@@ -63,6 +68,9 @@ namespace AppDelicare.Tests.Integration
                 services.AddSingleton<IClock>(Clock);
             });
         }
+
+        /// <summary>BE2.3: ghi đè cấu hình cho factory riêng của 1 test (không dùng với fixture chung đã khởi động).</summary>
+        public Dictionary<string, string?> Settings { get; } = [];
 
         /// <summary>T13: đặt <c>Clock.FixedNow</c> để thử giờ chốt đơn.</summary>
         public TestClock Clock { get; } = new();

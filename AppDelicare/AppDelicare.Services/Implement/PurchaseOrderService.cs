@@ -283,7 +283,7 @@ namespace AppDelicare.Services.Implement
 
         private Task<ApprovalRequest?> PendingApprovalAsync(Guid id)
             => _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking()
-                .Where(a => !a.IsDeleted && a.BusinessType == PurchaseOrderStatus.BusinessType && a.BusinessId == id && a.RequestStatus == "Pending")
+                .Where(a => !a.IsDeleted && a.BusinessType == PurchaseOrderStatus.BusinessType && a.BusinessId == id && ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
         /// <summary>
@@ -518,6 +518,18 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
+        /// BE2.3 – PO nhiều cấp theo ngưỡng: dưới ngưỡng GĐ → [scm-po]; ≥ ngưỡng → [scm-po-director] (D-11, 1 cấp) hoặc [scm-po, scm-po-director] khi bật
+        /// <c>BusinessRules:PurchaseOrderDirectorTwoLevel</c> (PROPOSED – D-52). Cấu hình <c>ApprovalSteps:PURCHASE_ORDER</c> (nếu có) thay toàn bộ (engine).
+        /// </summary>
+        public async Task<IReadOnlyList<string>> ApprovalStepScreenIdsAsync(Guid id)
+        {
+            decimal total = await _unitOfWork.DbContext.PurchaseOrder.AsNoTracking().Where(x => x.Id == id).Select(x => x.TotalAmount).FirstOrDefaultAsync() ?? 0m;
+            return !NeedsDirector(total) ? [PurchaseOrderStatus.ScreenId]
+                : _rules.PurchaseOrderDirectorTwoLevel ? [PurchaseOrderStatus.ScreenId, PurchaseOrderStatus.DirectorScreenId]
+                : [PurchaseOrderStatus.DirectorScreenId];
+        }
+
+        /// <summary>
         /// Thực thi quyết định duyệt (gọi từ <c>PurchaseOrderApprovalHandler</c>, TRONG transaction của engine): Chờ duyệt → Đã duyệt; từ chối → về Nháp
         /// để sửa và gửi lại (PROPOSED – GAP-PUR-02), lý do ghi vào Note.
         /// </summary>
@@ -664,8 +676,9 @@ namespace AppDelicare.Services.Implement
                     ? await db.PurchaseRequest.AsNoTracking().Where(p => p.Id == prId).Select(p => p.RequestNumber ?? p.RequestNo).FirstOrDefaultAsync()
                     : null,
                 PendingApprovalId = pending?.Id, PendingApprovalNo = pending?.RequestNo,
+                PendingApproval = pending == null ? null : await _approvalRequestService.OpenProgressAsync(PurchaseOrderStatus.BusinessType, id),
                 NeedsDirectorApproval = NeedsDirector(po.TotalAmount ?? 0m),
-                ApprovalScreenId = NeedsDirector(po.TotalAmount ?? 0m) ? PurchaseOrderStatus.DirectorScreenId : PurchaseOrderStatus.ScreenId,
+                ApprovalScreenId = NeedsDirector(po.TotalAmount ?? 0m) && !_rules.PurchaseOrderDirectorTwoLevel ? PurchaseOrderStatus.DirectorScreenId : PurchaseOrderStatus.ScreenId,
                 ListGoodsReceipt = receipts.Select(r => new GoodsReceiptBriefModel
                 {
                     Id = r.Id, ReceiptNumber = r.ReceiptNumber ?? r.ReceiptNo, ReceiptDate = r.ReceiptDate, Status = r.Status, StatusName = GoodsReceiptStatus.Label(r.Status),

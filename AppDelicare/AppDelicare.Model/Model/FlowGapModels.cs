@@ -117,6 +117,13 @@ namespace AppDelicare.Model.Model
         public string? ProposalJson { get; set; }
         public bool CanDecide { get; set; }
         public bool CanCancel { get; set; }
+        /// <summary>BE2.3: cấp đang chờ (0 khi đã kết thúc) / tổng số cấp, hạn của bước đang chờ + cờ quá hạn.</summary>
+        public int CurrentStepNo { get; set; }
+        public int StepCount { get; set; } = 1;
+        public DateTime? DueAt { get; set; }
+        public bool IsOverdue { get; set; }
+        /// <summary>BE2.3: các bước kèm mục quyền, tên bước, người quyết định.</summary>
+        public List<ApprovalStepInfoModel> ListStepInfo { get; set; } = [];
     }
 
     public class ApprovalDecisionItemModel

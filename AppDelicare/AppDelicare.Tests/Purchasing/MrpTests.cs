@@ -517,6 +517,7 @@ namespace AppDelicare.Tests.Purchasing
             Item(first, meat).GetProperty("purchaseQuantity").GetDecimal().Should().Be(10);
 
             // Đề nghị → PO (đề nghị Đã lập PO) → PO Đã duyệt → nhận 6 kg, QC DAT, ghi sổ.
+            await c.ApprovePurchaseRequestAsync(pr1); // BE2.3 (D-46)
             (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", pr1))).Ok();
             var po = await _factory.QueryAsync(db => db.PurchaseOrder.AsNoTracking().SingleAsync(p => p.PurchaseRequestId == pr1));
             await _factory.SeedAsync(async db => (await db.PurchaseOrder.SingleAsync(p => p.Id == po.Id)).Status = "Approved");

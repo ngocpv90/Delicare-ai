@@ -308,7 +308,7 @@ namespace AppDelicare.Services.Implement
 
         private Task<ApprovalRequest?> PendingApprovalAsync(Guid contractId)
             => _unitOfWork.DbContext.ApprovalRequest.AsNoTracking()
-                .Where(a => !a.IsDeleted && a.BusinessType == ContractStatus.BusinessType && a.BusinessId == contractId && a.RequestStatus == ApprovalRequestService.Pending)
+                .Where(a => !a.IsDeleted && a.BusinessType == ContractStatus.BusinessType && a.BusinessId == contractId && ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
         /// <summary>

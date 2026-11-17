@@ -11,6 +11,9 @@
 ### BE2.1 (2026-11-17): mẻ 1 đóng gói theo lệnh đóng gói (P7.9b – PackingOrder/GenerateFromBatch → Start → RecordResult), xếp hàng lên xe bắt buộc trước khi xuất phát (P8.5b – DeliveryRoute/Load).
 ###   Đã chạy lại trên DB dev 2026-11-17 (key B21B, ngày 16/12/2026): 121 request đúng kỳ vọng (mọi bước "→ 400" trả 400, thêm chốt "đóng gói trực tiếp mẻ còn lệnh đóng gói").
 ### BE2.2 (2026-11-17): hợp đồng CRUD Insert luôn Nháp → thêm bước 0.9b gửi duyệt + duyệt. Đã chạy lại trên DB dev (key B22A, ngày 20/01/2027): 123 request đúng kỳ vọng (8 chốt an toàn; 4 bước xuất file .xlsx).
+### BE2.3 (2026-11-17): điều chỉnh tồn tay phải duyệt STOCK_ADJUSTMENT (thêm bước Decide sau mỗi Adjust); đề nghị mua do MRP lập phải duyệt 2 cấp (D-46: scm-pr-l1 → scm-pr-l2)
+###   trước khi lập PO (P6.0a–f; admin chạy thay cả 2 cấp – admin được miễn luật "mỗi cấp 1 người").
+###   Đã chạy lại trên DB dev 2026-11-17 (key B23P, ngày 03/02/2027): 131 / 131 đúng kỳ vọng (9 chốt an toàn).
 @base = http://localhost:5125
 @user = admin
 @password = admin
@@ -351,19 +354,35 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/MaterialLot/GetAll?SearchText={{code}}-KD&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
-###
+### BE2.3: điều chỉnh tồn tay → yêu cầu duyệt STOCK_ADJUSTMENT (data.pendingApproval = true), duyệt xong mới ghi bút toán
+# @name adjHH
 POST {{base}}/api/InventoryTransaction/Adjust
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 WarehouseId={{warehouseId}}&IngredientId={{beefId}}&MaterialLotId={{lotHH.response.body.listData[0].id}}&Quantity=50&Reason=[DEMO] Tồn đầu kỳ (lô hết hạn)
 
+### Duyệt điều chỉnh (mục #/wf-inbox?type=scm-adjustment)
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adjHH.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt tồn đầu kỳ
+
 ###
+# @name adjKD
 POST {{base}}/api/InventoryTransaction/Adjust
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 WarehouseId={{warehouseId}}&IngredientId={{beefId}}&MaterialLotId={{lotKD.response.body.listData[0].id}}&Quantity=30&Reason=[DEMO] Tồn đầu kỳ (lô KHONG_DAT)
+
+###
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adjKD.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt tồn đầu kỳ
 
 ########## P3. THỰC ĐƠN TUẦN → PHÂN CÔNG → ĐƠN HÀNG → CHỐT
 ### P3.1 Thực đơn tuần (luôn Nháp) – hiệu lực 7 ngày từ @day
@@ -467,7 +486,43 @@ ProductionDate={{day}}&WarehouseId={{warehouseId}}&Note=[DEMO]
 GET {{base}}/api/MaterialRequirement/ExportPreProduction?id={{planId}}
 Authorization: Bearer {{token}}
 
-########## P6. ĐỀ NGHỊ → PO → DUYỆT GIÁM ĐỐC → NHẬN HÀNG + QC → NHẬP KHO
+########## P6. ĐỀ NGHỊ → DUYỆT 2 CẤP → PO → DUYỆT GIÁM ĐỐC → NHẬN HÀNG + QC → NHẬP KHO
+### P6.0a CHỐT AN TOÀN → 400: BE2.3 (D-46) đề nghị mua còn Nháp không lập PO được (chỉ Đã duyệt)
+POST {{base}}/api/PurchaseRequest/ConvertToPurchaseOrder
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}
+
+### P6.0b Gửi duyệt đề nghị mua → XN- PURCHASE_REQUEST 2 cấp (cấp 1 Trưởng bộ phận Mua hàng, cấp 2 Giám đốc vận hành)
+POST {{base}}/api/PurchaseRequest/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] gửi duyệt
+
+### P6.0c Hộp duyệt cấp 1 (mục #/wf-inbox?type=scm-pr-l1): stepNo 1 / stepCount 2, dueAt (+48 giờ)
+GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-pr-l1
+Authorization: Bearer {{token}}
+
+### P6.0d Duyệt cấp 1 → yêu cầu InProgress, chờ cấp 2 (đề nghị vẫn Chờ duyệt)
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 1 – đúng nhu cầu
+
+### P6.0e Chi tiết đề nghị: pendingApproval.stepNo = 2, screenId = scm-pr-l2; allowedActions approve / reject
+GET {{base}}/api/PurchaseRequest/GetDetail?id={{prId}}
+Authorization: Bearer {{token}}
+
+### P6.0f Duyệt cấp 2 → đề nghị Đã duyệt
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 2 – đồng ý
+
 ### P6.1 Lập PO theo NCC ưu tiên → PO-YYMMDD-NNNN Nháp, tổng 62.400.000 (200 × 300.000 + 120 × 20.000)
 # @name convert
 POST {{base}}/api/PurchaseRequest/ConvertToPurchaseOrder

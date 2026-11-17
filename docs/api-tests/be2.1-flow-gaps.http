@@ -8,6 +8,8 @@
 ### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
 ### Đã chạy trên DB dev 2026-11-17 (key B21J, ngày 06/01/2027): 138 / 138 request đúng kỳ vọng (11 chốt an toàn trả 400); số chứng từ ở PROGRESS mục BE2.1.
 ### BE2.2 (2026-11-17): thêm bước gửi duyệt + duyệt 2 hợp đồng (CRUD Insert luôn Nháp). Đã chạy lại trên DB dev (key B22C, ngày 09/12/2026): 142 / 142 đúng kỳ vọng (11 chốt). Lưu ý: @day ≤ hôm nay + 60 ngày (lô tồn đầu kỳ hạn dùng +60 ngày – quá hạn thì MRP đề nghị cả gà, không có NCC).
+### BE2.3 (2026-11-17): thêm bước duyệt STOCK_ADJUSTMENT sau 2 lần điều chỉnh tồn đầu kỳ, và duyệt đề nghị mua 2 cấp (D-46) trước khi lập PO (2.5b–d).
+###   Đã chạy lại trên DB dev (key B23G, ngày 31/12/2026): 147 / 147 đúng kỳ vọng.
 @base = http://localhost:5125
 @user = admin
 @password = admin
@@ -149,7 +151,8 @@ Authorization: Bearer {{token}}
 ###
 @lotChicken = {{lotGa.response.body.listData[0].id}}
 
-###
+### BE2.3: điều chỉnh tồn tay → yêu cầu duyệt STOCK_ADJUSTMENT → duyệt mới ghi bút toán
+# @name adjGa
 POST {{base}}/api/InventoryTransaction/Adjust
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -157,11 +160,26 @@ Content-Type: application/x-www-form-urlencoded
 WarehouseId={{warehouseId}}&IngredientId={{chickenId}}&MaterialLotId={{lotChicken}}&Quantity=120&Reason=[DEMO] Tồn đầu kỳ gà
 
 ###
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adjGa.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt tồn đầu kỳ
+
+###
+# @name adjRau
 POST {{base}}/api/InventoryTransaction/Adjust
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 WarehouseId={{warehouseId}}&IngredientId={{vegId}}&MaterialLotId={{lotRau.response.body.listData[0].id}}&Quantity=100&Reason=[DEMO] Tồn đầu kỳ rau
+
+###
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adjRau.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt tồn đầu kỳ
 
 ### 0.5 Món Cơm gà + công thức khóa (gà 15 kg, rau 10 kg / 100 suất)
 POST {{base}}/api/Dish/Insert
@@ -604,6 +622,27 @@ Content-Type: application/json
 
 ###
 @prId = {{prq.response.body.data.purchaseRequest.id}}
+
+### 2.5b BE2.3 (D-46): gửi duyệt đề nghị mua 2 cấp
+POST {{base}}/api/PurchaseRequest/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] gửi duyệt
+
+### 2.5c Duyệt cấp 1 (scm-pr-l1)
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 1
+
+### 2.5d Duyệt cấp 2 (scm-pr-l2) → Đã duyệt
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{prId}}&Note=[DEMO] cấp 2
 
 ### 2.6 Lập PO (1,365 triệu) → gửi duyệt → chi tiết yêu cầu duyệt (bản ghi PO + dòng) → người gửi hủy → PO về Nháp
 # @name convert

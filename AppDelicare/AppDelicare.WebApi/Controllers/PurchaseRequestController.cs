@@ -147,6 +147,68 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>BE2.3 (D-46): Nháp → Chờ duyệt (ApprovalRequest PURCHASE_REQUEST 2 cấp: scm-pr-l1 → scm-pr-l2). Quyền Sửa scm-pr.</summary>
+        [HttpPost("Submit")]
+        public async Task<IActionResult> Submit([FromForm] PurchaseActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Submit(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Submit: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// BE2.3 (D-46): duyệt **cấp đang chờ** qua engine – quyền Duyệt = mục #/wf-inbox?type=scm-pr-l1 (cấp 1) / scm-pr-l2 (cấp 2); mục phụ thuộc cấp nên
+        /// engine (ApprovalRequestService.Decide) kiểm, không gắn cứng 1 màn hình ở filter (như PurchaseOrder/Approve).
+        /// </summary>
+        [Security.SkipPermission] // BE2.3: quyền duyệt kiểm trong engine theo cấp đang chờ (scm-pr-l1 / scm-pr-l2)
+        [HttpPost("Approve")]
+        public async Task<IActionResult> Approve([FromForm] PurchaseActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Decide(request, true));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Approve: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.3 (D-46): từ chối ở cấp đang chờ (lý do bắt buộc) – đề nghị về Nháp kèm lý do.</summary>
+        [Security.SkipPermission] // BE2.3: quyền duyệt kiểm trong engine theo cấp đang chờ (scm-pr-l1 / scm-pr-l2)
+        [HttpPost("Reject")]
+        public async Task<IActionResult> Reject([FromForm] PurchaseActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Decide(request, false));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reject: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T15: hủy đề nghị Nháp / Đã duyệt (lý do bắt buộc).</summary>
         [HttpPost("Cancel")]
         public async Task<IActionResult> Cancel([FromForm] PurchaseCancelRequest request)

@@ -22,5 +22,12 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<PurchaseRequestConvertResultModel>> ConvertToPurchaseOrder(PurchaseRequestConvertRequest request);
         /// <summary>T15: hủy đề nghị Nháp / Đã duyệt (lý do bắt buộc).</summary>
         public Task<IResult<PurchaseRequestDetailModel>> Cancel(PurchaseCancelRequest request);
+
+        // BE2.3 (D-46) – duyệt đề nghị mua 2 cấp qua engine (PURCHASE_REQUEST).
+        public Task<IResult<PurchaseRequestDetailModel>> Submit(PurchaseActionRequest request);
+        public Task<IResult<bool>> Decide(PurchaseActionRequest request, bool approve);
+        public Task<string?> BuildApprovalStateAsync(Guid id);
+        public Task<string?> DescribeAsync(Guid id);
+        public Task<string?> ApplyDecisionAsync(Guid id, bool approved, string? note);
     }
 }

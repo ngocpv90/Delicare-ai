@@ -273,7 +273,7 @@ namespace AppDelicare.Services.Implement
         /// <summary>Yêu cầu duyệt đang chờ của đơn (lệch suất ORDER_DEVIATION hoặc sửa sau giờ chốt ORDER_CHANGE_AFTER_CUTOFF – BE2.2).</summary>
         private async Task<ApprovalRequest?> PendingDeviationAsync(Guid orderId)
             => await _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking()
-                .Where(a => !a.IsDeleted && OrderStatus.ApprovalBusinessTypes.Contains(a.BusinessType) && a.BusinessId == orderId && a.RequestStatus == "Pending")
+                .Where(a => !a.IsDeleted && OrderStatus.ApprovalBusinessTypes.Contains(a.BusinessType) && a.BusinessId == orderId && ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
         /// <summary>Spec 6.6 new-template: hợp đồng Active tại ngày ăn (không có → lỗi), ContractMeal × điểm giao, ca mặc định, đơn giá, thực đơn.</summary>
@@ -1206,7 +1206,7 @@ namespace AppDelicare.Services.Implement
                 return null;
             }
             var approval = await _unitOfWork.DbContext.ApprovalRequest.AsNoTracking()
-                .Where(a => !a.IsDeleted && a.BusinessType == OrderStatus.ChangeAfterCutoffBusinessType && a.BusinessId == orderId && a.RequestStatus == "Pending")
+                .Where(a => !a.IsDeleted && a.BusinessType == OrderStatus.ChangeAfterCutoffBusinessType && a.BusinessId == orderId && ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
             string? proposalJson = approval == null ? null : ApprovalRequestService.UnwrapPayload(approval.PayloadJson).Proposal;
             var proposal = string.IsNullOrEmpty(proposalJson) ? null : JsonConvert.DeserializeObject<AfterCutoffProposal>(proposalJson);

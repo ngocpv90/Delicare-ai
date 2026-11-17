@@ -22,6 +22,9 @@ namespace AppDelicare.Services.Implement.Approval
 
         public Task<string> RequiredScreenIdAsync(Guid businessId) => _purchaseOrderService.ApprovalScreenIdAsync(businessId);
 
+        /// <summary>BE2.3 – PO nhiều cấp theo ngưỡng: mặc định như D-11 (1 cấp); bật <c>BusinessRules:PurchaseOrderDirectorTwoLevel</c> → PO lớn 2 cấp.</summary>
+        public Task<IReadOnlyList<string>> StepScreenIdsAsync(Guid businessId) => _purchaseOrderService.ApprovalStepScreenIdsAsync(businessId);
+
         public Task<string?> BuildPayloadAsync(Guid businessId) => _purchaseOrderService.BuildApprovalStateAsync(businessId);
 
         public Task<string?> DescribeAsync(Guid businessId) => _purchaseOrderService.DescribeAsync(businessId);

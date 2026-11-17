@@ -336,7 +336,7 @@ namespace AppDelicare.Services.Implement
 
         private Task<ApprovalRequest?> LatestApprovalAsync(Guid id, bool pendingOnly)
             => _unitOfWork.DbContext.ApprovalRequest.AsNoTracking()
-                .Where(a => !a.IsDeleted && a.BusinessType == MenuChangeStatus.BusinessType && a.BusinessId == id && (!pendingOnly || a.RequestStatus == ApprovalRequestService.Pending))
+                .Where(a => !a.IsDeleted && a.BusinessType == MenuChangeStatus.BusinessType && a.BusinessId == id && (!pendingOnly || ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus)))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
         /// <summary>Duyệt / từ chối qua engine T12 (<c>ApprovalRequestService.Decide</c>: quyền mục "Duyệt – Yêu cầu đổi món", hash, ApprovalDecision).</summary>

@@ -95,6 +95,7 @@ namespace AppDelicare.Tests.Purchasing
         private async Task<(Scenario S, PurchaseOrder PoA, PurchaseOrder PoB)> ApprovedPoAsync(HttpClient admin, string code)
         {
             var s = await SeedAsync(code);
+            await admin.ApprovePurchaseRequestAsync(s.Request); // BE2.3 (D-46): chỉ đề nghị Đã duyệt 2 cấp mới lập PO.
             var convert = (await admin.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Ok();
             convert.GetProperty("listPurchaseOrder").GetArrayLength().Should().Be(2);
             var poA = await PoOfAsync(s.SupplierA, s.Request);
@@ -112,7 +113,12 @@ namespace AppDelicare.Tests.Purchasing
             using var c = _factory.CreateAuthorizedClient();
             var detail = (await c.GetResultAsync($"/api/PurchaseRequest/GetDetail?id={s.Request}")).Ok();
             detail.GetProperty("estimatedAmount").GetDecimal().Should().Be(2_600_000m);
-            detail.GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().Contain("convertToPurchaseOrder");
+            detail.GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().Contain("submit").And.NotContain("convertToPurchaseOrder");
+            // BE2.3 (D-46): Nháp không lập PO được – phải duyệt 2 cấp trước.
+            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Fail("Đã duyệt");
+            await c.ApprovePurchaseRequestAsync(s.Request);
+            (await c.GetResultAsync($"/api/PurchaseRequest/GetDetail?id={s.Request}")).Ok()
+                .GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().Contain("convertToPurchaseOrder");
 
             var result = await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request), ("Note", "[DEMO] lập PO"));
             var data = result.Ok();
@@ -132,7 +138,7 @@ namespace AppDelicare.Tests.Purchasing
             (await _factory.QueryAsync(db => db.PurchaseRequest.AsNoTracking().SingleAsync(p => p.Id == s.Request))).Status.Should().Be("Converted");
 
             // Đã lập PO → không lập lại, không sửa dòng đề nghị.
-            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Fail("Nháp / Đã duyệt");
+            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Fail("Đã duyệt");
             (await c.PostFormAsync("/api/PurchaseRequestLine/Insert", ("PurchaseRequestId", s.Request), ("IngredientId", s.Meat), ("Quantity", 1m), ("UnitId", s.Kg))).Fail("Nháp");
 
             // PO lập từ đề nghị: không xóa (Cancel), sửa dòng → tổng tính lại.
@@ -150,6 +156,7 @@ namespace AppDelicare.Tests.Purchasing
                 db.PurchaseRequestLine.Add(new PurchaseRequestLine { Id = Guid.NewGuid(), PurchaseRequestId = pr2, IngredientId = salt, Quantity = 1, UnitId = s.Kg, UomId = s.Kg });
                 return Task.CompletedTask;
             });
+            await c.ApprovePurchaseRequestAsync(pr2);
             (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", pr2))).Fail("Muối PUR1");
         }
 
@@ -158,6 +165,7 @@ namespace AppDelicare.Tests.Purchasing
         {
             var s = await SeedAsync("PUR2");
             using var admin = _factory.CreateAuthorizedClient();
+            await admin.ApprovePurchaseRequestAsync(s.Request);
             (await admin.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Ok();
             var poA = await PoOfAsync(s.SupplierA, s.Request);
             var poB = await PoOfAsync(s.SupplierB, s.Request);
@@ -440,6 +448,7 @@ namespace AppDelicare.Tests.Purchasing
             }
             (await c.GetAsync($"/api/MaterialRequirement/ExportPreProduction?id={Guid.NewGuid()}")).EnsureSuccessStatusCode();
 
+            await c.ApprovePurchaseRequestAsync(prId); // BE2.3 (D-46): đề nghị do MRP lập cũng phải duyệt 2 cấp.
             var converted = (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", prId))).Ok();
             var po = converted.GetProperty("listPurchaseOrder").EnumerateArray().Single();
             po.GetProperty("totalAmount").GetDecimal().Should().Be(2_000_000m);

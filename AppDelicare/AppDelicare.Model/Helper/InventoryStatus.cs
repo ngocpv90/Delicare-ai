@@ -64,6 +64,13 @@ namespace AppDelicare.Model.Helper
         public const string PendingApproval = "PendingApproval";
         public const string Posted = "Posted";
 
+        /// <summary>BE2.3 (spec 7.8 submit, 2.3): BusinessType của ApprovalRequest khi duyệt kiểm kê lệch &gt; ngưỡng.</summary>
+        public const string BusinessType = "STOCK_COUNT";
+        /// <summary>Cấp 1 – Quản lý kho (mục <c>#/wf-inbox?type=scm-stockcount</c>, đã có từ T07).</summary>
+        public const string ScreenId = "scm-stockcount";
+        /// <summary>Cấp 2 – Kế toán (mục <c>#/wf-inbox?type=scm-stockcount-l2</c>, spec 2.3) – PROPOSED.</summary>
+        public const string Level2ScreenId = "scm-stockcount-l2";
+
         public static readonly IReadOnlyList<string> CountTypes = ["DAILY", "WEEKLY", "MONTHLY", "ADHOC"];
 
         public static string Label(string? status) => status switch
@@ -74,6 +81,14 @@ namespace AppDelicare.Model.Helper
             Posted => "Đã ghi sổ",
             _ => status ?? string.Empty,
         };
+    }
+
+    /// <summary>BE2.3 (spec 7.6 adjust, GAP-F-04): duyệt điều chỉnh tồn tay STOCK_ADJUSTMENT (không có bảng phiếu điều chỉnh).</summary>
+    public static class StockAdjustmentStatus
+    {
+        public const string BusinessType = "STOCK_ADJUSTMENT";
+        /// <summary>Mục quyền duyệt <c>#/wf-inbox?type=scm-adjustment</c> "Duyệt – Phiếu điều chỉnh tồn" (đã có từ T07).</summary>
+        public const string ScreenId = "scm-adjustment";
     }
 
     /// <summary>T16 – loại chứng từ nguồn của bút toán kho (<c>InventoryTransaction.ReferenceType</c>, PROPOSED – BA/PO CONFIRM).</summary>

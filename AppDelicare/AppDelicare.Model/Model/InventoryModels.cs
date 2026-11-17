@@ -146,12 +146,30 @@ namespace AppDelicare.Model.Model
         public decimal MaxVariancePercent { get; set; }
         /// <summary>Ngưỡng BusinessRules:StockCountVariancePctNeedApproval.</summary>
         public decimal VarianceThresholdPercent { get; set; }
-        /// <summary>true = có dòng lệch vượt ngưỡng → Pilot: chỉ admin ghi sổ được (duyệt kiểm kê → DEFERRED(PILOT)).</summary>
+        /// <summary>true = có dòng lệch vượt ngưỡng → BE2.3: phải gửi duyệt STOCK_COUNT (StockCount/Submit) và duyệt xong mới ghi sổ.</summary>
         public bool NeedsApproval { get; set; }
+        /// <summary>BE2.3: đã duyệt đủ các cấp (ApprovedBy có giá trị, phiếu còn Chờ duyệt) → chờ ghi sổ.</summary>
+        public bool IsApproved { get; set; }
         public decimal TotalVarianceValue { get; set; }
-        /// <summary>recordCounts, post (theo trạng thái).</summary>
+        /// <summary>recordCounts, submit, approve, reject, post (theo trạng thái).</summary>
         public List<string> AllowedActions { get; set; } = [];
         public List<InventoryTransaction> ListTransaction { get; set; } = [];
+        /// <summary>BE2.3: yêu cầu duyệt đang mở (cấp đang chờ / tổng số cấp, mục quyền, hạn).</summary>
+        public ApprovalProgressModel? PendingApproval { get; set; }
+    }
+
+    /// <summary>
+    /// BE2.3 (spec 7.6 adjust, GAP-F-04): kết quả điều chỉnh tồn tay – ghi ngay (<see cref="Transaction"/>) hoặc đã gửi duyệt STOCK_ADJUSTMENT
+    /// (<see cref="PendingApproval"/> = true, bút toán ghi khi duyệt với <c>ReferenceId</c> = <see cref="ReferenceId"/>).
+    /// </summary>
+    public class InventoryAdjustResultModel
+    {
+        public InventoryTransaction? Transaction { get; set; }
+        public bool PendingApproval { get; set; }
+        public Guid? ApprovalRequestId { get; set; }
+        public string? ApprovalRequestNo { get; set; }
+        /// <summary>Khóa nối yêu cầu duyệt ↔ bút toán (ApprovalRequest.BusinessId = InventoryTransaction.ReferenceId).</summary>
+        public Guid? ReferenceId { get; set; }
     }
 
     public class StockCountLineDetailModel

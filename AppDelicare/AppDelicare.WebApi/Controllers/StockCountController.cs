@@ -166,7 +166,66 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T16: ghi sổ kiểm kê – dòng lệch → ADJUSTMENT; lệch vượt ngưỡng: Pilot chỉ admin.</summary>
+        /// <summary>BE2.3 (spec 7.8 submit): gửi duyệt phiếu có dòng lệch &gt; ngưỡng (2%) – STOCK_COUNT 2 cấp (scm-stockcount → scm-stockcount-l2).</summary>
+        [HttpPost("Submit")]
+        public async Task<IActionResult> Submit([FromForm] InventoryDocumentActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Submit(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Submit: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.3: duyệt cấp đang chờ của phiếu kiểm kê qua engine (quyền theo mục của cấp – engine kiểm).</summary>
+        [Security.SkipPermission] // BE2.3: quyền duyệt kiểm trong engine theo cấp đang chờ (scm-stockcount / scm-stockcount-l2)
+        [HttpPost("Approve")]
+        public async Task<IActionResult> Approve([FromForm] InventoryDocumentActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Decide(request, true));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Approve: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.3: từ chối (lý do bắt buộc) – phiếu về Đang kiểm để đếm / sửa lý do rồi gửi lại.</summary>
+        [Security.SkipPermission] // BE2.3: quyền duyệt kiểm trong engine theo cấp đang chờ (scm-stockcount / scm-stockcount-l2)
+        [HttpPost("Reject")]
+        public async Task<IActionResult> Reject([FromForm] InventoryDocumentActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Decide(request, false));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reject: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>T16: ghi sổ kiểm kê – dòng lệch → ADJUSTMENT. BE2.3: lệch vượt ngưỡng chỉ ghi sổ khi đã duyệt đủ cấp (spec 7.8 post: "chỉ khi đã có ApprovedBy").</summary>
         [HttpPost("Post")]
         public async Task<IActionResult> Post([FromForm] InventoryDocumentActionRequest request)
         {

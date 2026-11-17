@@ -75,8 +75,16 @@ public static partial class Seeds
     /// <summary>
     /// T15.1 (D-11, anh chốt 2026-11-16): PO tổng ≥ <c>BusinessRules:PurchaseOrderDirectorApprovalAmount</c> do Giám đốc duyệt → mục
     /// <c>#/wf-inbox?type=scm-po-director</c>, chỉ seed quyền cho nhóm CEO (admin đổi trên ma trận quyền).
+    /// <para>BE2.3 (D-46, anh chốt 2026-11-16 – nhóm duyệt từng cấp PROPOSED): đề nghị mua 2 cấp <c>scm-pr-l1</c> (Trưởng bộ phận Mua hàng → seed OPS-SCM) →
+    /// <c>scm-pr-l2</c> (Giám đốc vận hành → seed COO); kiểm kê lệch &gt; 2% cấp 2 Kế toán <c>scm-stockcount-l2</c> (spec 2.3 → seed FIN-ACC).</para>
     /// </summary>
-    public static readonly IReadOnlyList<ExtraApproval> ExtraApprovals = [new("scm-po-director", "Đơn mua hàng (Giám đốc)", "P4", ["CEO"])];
+    public static readonly IReadOnlyList<ExtraApproval> ExtraApprovals =
+    [
+        new("scm-po-director", "Đơn mua hàng (Giám đốc)", "P4", ["CEO"]),
+        new("scm-pr-l1", "Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng)", "P4", ["OPS-SCM"]),
+        new("scm-pr-l2", "Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)", "P4", ["COO"]),
+        new("scm-stockcount-l2", "Phiếu kiểm kê (cấp 2 – Kế toán)", "P4", ["FIN-ACC"]),
+    ];
 
     public static List<OrgUnit> LoadOrgUnits(string root)
     {

@@ -30,6 +30,20 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/PurchaseRequest/GetDetail?id={{purchaseRequestId}}
 Authorization: Bearer {{token}}
 
+### 2b. BE2.3 (D-46): gửi duyệt đề nghị mua 2 cấp (cấp 1 #/wf-inbox?type=scm-pr-l1, cấp 2 scm-pr-l2) – chỉ đề nghị Đã duyệt mới lập PO
+POST {{base}}/api/PurchaseRequest/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{purchaseRequestId}}&Note=[DEMO]
+
+### 2c. Duyệt cấp đang chờ – chạy 2 lần (cấp 1 rồi cấp 2); từ chối = PurchaseRequest/Reject (Note bắt buộc) → về Nháp
+POST {{base}}/api/PurchaseRequest/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{purchaseRequestId}}&Note=[DEMO] duyệt
+
 ### 3. Lập PO (mỗi NCC gợi ý 1 PO Nháp PO-YYMMDD-NNNN), đề nghị → Converted
 # @name convert
 POST {{base}}/api/PurchaseRequest/ConvertToPurchaseOrder

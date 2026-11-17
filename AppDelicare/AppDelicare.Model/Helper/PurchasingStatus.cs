@@ -28,6 +28,15 @@ namespace AppDelicare.Model.Helper
         public const string Converted = "Converted";
         public const string Cancelled = "Cancelled";
 
+        /// <summary>BE2.3 (D-46): BusinessType của ApprovalRequest khi duyệt đề nghị mua (handler <c>PurchaseRequestApprovalHandler</c>).</summary>
+        public const string BusinessType = "PURCHASE_REQUEST";
+        /// <summary>Màn hình nghiệp vụ.</summary>
+        public const string ScreenId = "scm-pr";
+        /// <summary>D-46: cấp 1 – Trưởng bộ phận Mua hàng (mục <c>#/wf-inbox?type=scm-pr-l1</c>).</summary>
+        public const string Level1ScreenId = "scm-pr-l1";
+        /// <summary>D-46: cấp 2 – Giám đốc vận hành (mục <c>#/wf-inbox?type=scm-pr-l2</c>).</summary>
+        public const string Level2ScreenId = "scm-pr-l2";
+
         public static string Label(string? status) => status switch
         {
             Draft => "Nháp",
