@@ -310,7 +310,7 @@ namespace AppDelicare.Services.Implement
             var orders = await db.ProductionOrder.AsNoTracking().Where(o => !o.IsDeleted && planIds.Contains(o.ProductionPlanId) && o.Status != ProductionOrderStatus.Cancelled)
                 .Select(o => new { o.Id, o.ShiftId }).ToListAsync();
             var orderIds = orders.Where(o => shiftIds.Count == 0 || o.ShiftId == null || shiftIds.Contains(o.ShiftId.Value)).Select(o => o.Id).ToList();
-            var batches = await db.ProductionBatch.AsNoTracking().Where(b => !b.IsDeleted && orderIds.Contains(b.ProductionOrderId)).ToListAsync();
+            var batches = await db.ProductionBatch.AsNoTracking().Where(b => !b.IsDeleted && orderIds.Contains(b.ProductionOrderId) && b.Status != ProductionBatchStatus.Cancelled).ToListAsync();
             if (batches.Count == 0)
             {
                 return [];

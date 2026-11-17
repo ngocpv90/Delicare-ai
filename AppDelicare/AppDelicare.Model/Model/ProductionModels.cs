@@ -17,6 +17,8 @@ namespace AppDelicare.Model.Model
         public DateTime? DispatchAt { get; set; }
         /// <summary>T17.1: các ca có nhu cầu trong ngày (sắp theo giờ bắt đầu) – kế hoạch Đã phát hành khi mọi ca đã phát hành.</summary>
         public List<ProductionPlanShiftModel> ListShift { get; set; } = [];
+        /// <summary>BE2.4 (spec 8.1 release reservations[]): giữ chỗ nguyên liệu của các lệnh SX của kế hoạch.</summary>
+        public List<MaterialReservationModel> ListReservation { get; set; } = [];
         public List<string> AllowedActions { get; set; } = [];
         public List<string> ListWarning { get; set; } = [];
     }
@@ -131,6 +133,8 @@ namespace AppDelicare.Model.Model
         public List<FoodSafetyChecklistResult> ListSample { get; set; } = [];
         public ProductionOutput? Output { get; set; }
         public List<MealWasteRecord> ListWaste { get; set; } = [];
+        /// <summary>BE2.4: công đoạn theo tổ (Sơ chế → Nấu → Chia suất) của mẻ – trạng thái, giờ, tổ, người.</summary>
+        public List<ProductionStageModel> ListStage { get; set; } = [];
         public List<string> AllowedActions { get; set; } = [];
         /// <summary>Lý do chưa được đạt QC / đóng gói (nhiệt độ lõi, lưu mẫu, sản lượng).</summary>
         public List<string> ListBlocker { get; set; } = [];
@@ -164,6 +168,14 @@ namespace AppDelicare.Model.Model
         public List<ProductionRecipeLineModel> ListRecipeLine { get; set; } = [];
         public List<ProductionBatchBriefModel> ListBatch { get; set; } = [];
         public List<ProductionIssueBriefModel> ListIssue { get; set; } = [];
+        /// <summary>BE2.4 (spec 8.2 orders/{id} reservations[]): giữ chỗ nguyên liệu của lệnh.</summary>
+        public List<MaterialReservationModel> ListReservation { get; set; } = [];
+        /// <summary>BE2.4: chênh lệch tiêu hao (sinh khi đóng lệnh).</summary>
+        public List<ConsumptionVarianceModel> ListVariance { get; set; } = [];
+        /// <summary>BE2.4: giá thành thực tế của lệnh (cộng các mẻ), null = chưa tính.</summary>
+        public ActualCostModel? ActualCost { get; set; }
+        public List<string> AllowedActions { get; set; } = [];
+        public List<string> ListWarning { get; set; } = [];
     }
 
     public class ProductionRecipeLineModel

@@ -19,7 +19,8 @@ namespace AppDelicare.Services.Implement
 {
     public class MaterialLotService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock
-        , Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IMaterialLotService
+        , Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules, IInventoryLedgerService inventoryLedgerService
+        , ICurrentActor currentActor) : IMaterialLotService
     {
         private readonly AppDelicare.Model.Option.BusinessRulesOptions _rules = rules.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -394,6 +395,139 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " ChangeStatus: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.4 (spec 7.5 LotExpiryJob, Catalog 121 – D-45: không job, gọi bằng thao tác tay / job sau này gọi lại) – xử lý lô hết hạn trong 1 transaction:
+        /// lô Khả dụng (hoặc đã Hết hạn nhưng còn tồn) có hạn dùng &lt; hôm nay → <c>Status = Expired</c> + bút toán WASTE toàn bộ tồn từng dòng tồn
+        /// (số PH- chung của lần chạy, <c>ReferenceType = LotExpiry</c>, <c>ReferenceId</c> = lô, lý do "Hết hạn sử dụng …"). Lô đang tạm giữ → bỏ qua (giữ để xử lý riêng).
+        /// Lô còn ≤ ngày cảnh báo → chỉ liệt kê. <c>Preview</c> = chỉ liệt kê, không ghi. Giữ chỗ nằm trên lô hết hạn được phân bổ lại sang lô khác (sổ cái).
+        /// PROPOSED – BA/PO CONFIRM (D-53 d).
+        /// </summary>
+        public async Task<IResult<LotExpiryResultModel>> ProcessExpired(MaterialLotExpireRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                DateTime today = _clock.Today;
+                Guid? warehouseId = request.WarehouseId is { } w && w != Guid.Empty ? w : null;
+                var rows = await InventoryLotRules.LoadAsync(db, today, _rules.ExpiringLotDays, warehouseId);
+                var result = new LotExpiryResultModel { Preview = request.Preview, Today = today };
+                var expiredRows = rows.Where(r => r.MaterialLotId != null && r.IsExpired && r.OnHandQuantity > 0).ToList();
+                var lotIds = expiredRows.Select(r => r.MaterialLotId!.Value).Distinct().ToList();
+                // Lô hết hạn không còn tồn nhưng vẫn Khả dụng → chỉ đổi trạng thái (không có bút toán) – khi chạy cho mọi kho.
+                if (warehouseId == null)
+                {
+                    lotIds.AddRange(await db.MaterialLot.AsNoTracking()
+                        .Where(l => !l.IsDeleted && l.ExpiryDate != null && l.ExpiryDate < today && (l.Status == null || l.Status == MaterialLotStatus.Available) && !lotIds.Contains(l.Id))
+                        .Select(l => l.Id).ToListAsync());
+                }
+                var lots = _unitOfWork.MaterialLotRepository.GetAll().Where(l => lotIds.Contains(l.Id)).ToList();
+                var ingredientIds = lots.Select(l => l.IngredientId).Distinct().ToList();
+                var ingredientNames = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => i.Name);
+                string? number = null;
+                foreach (var lot in lots.OrderBy(l => l.ExpiryDate).ThenBy(l => l.LotNumber ?? l.LotNo))
+                {
+                    var mine = expiredRows.Where(r => r.MaterialLotId == lot.Id).ToList();
+                    string lotNo = lot.LotNumber ?? lot.LotNo ?? lot.Id.ToString("N")[..8];
+                    var item = new LotExpiryItemModel
+                    {
+                        MaterialLotId = lot.Id,
+                        LotNumber = lotNo,
+                        IngredientId = lot.IngredientId,
+                        IngredientName = ingredientNames.GetValueOrDefault(lot.IngredientId),
+                        ExpiryDate = lot.ExpiryDate,
+                        LotStatus = lot.Status,
+                        WasteQuantity = mine.Sum(r => r.OnHandQuantity),
+                        UnitName = mine.FirstOrDefault()?.UnitName,
+                        WasteValue = lot.UnitCost is { } cost ? Math.Round(mine.Sum(r => r.OnHandQuantity) * cost, 2) : null,
+                        TransactionCount = mine.Count,
+                    };
+                    result.ListLot.Add(item);
+                    if (string.Equals(lot.Status, MaterialLotStatus.OnHold, StringComparison.OrdinalIgnoreCase))
+                    {
+                        item.SkippedReason = ConstantHelper.Message.LotExpiryOnHoldSkipped;
+                        item.TransactionCount = 0;
+                        continue;
+                    }
+                    if (request.Preview)
+                    {
+                        continue;
+                    }
+                    string reason = string.Format(ConstantHelper.Message.LotExpiryReason, lot.ExpiryDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture));
+                    foreach (var row in mine)
+                    {
+                        number ??= await _documentNumberService.NextAsync(DocumentKind.Voucher, today);
+                        await inventoryLedgerService.PostAsync(new InventoryPostRequest
+                        {
+                            TransactionType = "WASTE",
+                            TransactionNumber = number,
+                            TransactionDate = _clock.Now,
+                            WarehouseId = row.WarehouseId,
+                            StorageLocationId = row.StorageLocationId,
+                            IngredientId = row.IngredientId,
+                            MaterialLotId = lot.Id,
+                            UnitId = row.UnitId,
+                            QuantityOut = row.OnHandQuantity,
+                            UnitCost = lot.UnitCost,
+                            ReferenceType = InventoryReferenceType.LotExpiry,
+                            ReferenceId = lot.Id,
+                            Reason = reason,
+                            Note = string.IsNullOrWhiteSpace(request.Note) ? $"Hủy tồn lô hết hạn {lotNo}" : request.Note.Trim(),
+                        });
+                    }
+                    if (!string.Equals(lot.Status, MaterialLotStatus.Expired, StringComparison.OrdinalIgnoreCase))
+                    {
+                        lot.Status = MaterialLotStatus.Expired;
+                        lot.Note = string.IsNullOrWhiteSpace(lot.Note) ? reason : $"{lot.Note}\n{reason}";
+                        _unitOfWork.MaterialLotRepository.Update(lot);
+                    }
+                }
+                result.TransactionNumber = number;
+                result.ExpiredLotCount = result.ListLot.Count(l => l.SkippedReason == null);
+                result.TotalWasteValue = result.ListLot.Where(l => l.SkippedReason == null).Sum(l => l.WasteValue ?? 0m);
+                result.ListExpiring = [.. rows.Where(r => r.MaterialLotId != null && r.IsExpiring && r.BlockReason == null && r.OnHandQuantity > 0)
+                    .GroupBy(r => r.MaterialLotId!.Value)
+                    .Select(g => new LotExpiryItemModel
+                    {
+                        MaterialLotId = g.Key,
+                        LotNumber = g.First().LotNumber,
+                        IngredientId = g.First().IngredientId,
+                        IngredientName = g.First().IngredientName,
+                        ExpiryDate = g.First().ExpiryDate,
+                        LotStatus = g.First().LotStatus,
+                        WasteQuantity = g.Sum(r => r.OnHandQuantity),
+                        UnitName = g.First().UnitName,
+                        WasteValue = g.First().UnitCost is { } c ? Math.Round(g.Sum(r => r.OnHandQuantity) * c, 2) : null,
+                    }).OrderBy(i => i.ExpiryDate)];
+                if (result.ListLot.Count == 0)
+                {
+                    result.ListWarning.Add(ConstantHelper.Message.LotExpiryNone);
+                }
+                if (request.Preview)
+                {
+                    _unitOfWork.RollbackTransaction();
+                }
+                else
+                {
+                    await _unitOfWork.MaterialLotRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                    _unitOfWork.CommitTransaction();
+                }
+                return Result<LotExpiryResultModel>.Success(result, request.Preview ? ConstantHelper.Message.GetAllSuccessfully : ConstantHelper.Message.SaveSuccess);
+            }
+            catch (BusinessRuleException ex)
+            {
+                _unitOfWork.RollbackTransaction();
+                return Result<LotExpiryResultModel>.Fail(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ProcessExpired: ", ex.ToString()));
                 _unitOfWork.RollbackTransaction();
                 throw;
             }

@@ -232,6 +232,11 @@ namespace AppDelicare.Services.Implement
             balance.UpdatedDate = now;
 
             await db.SaveChangesAsync(balance.CreatedDate == default ? ConstantHelper.TypeSave.Insert : ConstantHelper.TypeSave.Update, cancellationToken);
+            // BE2.4 (D-53 a): nguyên liệu đang được giữ chỗ cho lệnh SX → phân bổ lại ReservedQuantity (FEFO) sau biến động tồn.
+            if (await ReservationRules.AnyOpenAsync(db, [r.IngredientId]))
+            {
+                await ReservationRules.ReallocateAsync(db, [r.IngredientId], now.Date);
+            }
             return entity;
         }
     }

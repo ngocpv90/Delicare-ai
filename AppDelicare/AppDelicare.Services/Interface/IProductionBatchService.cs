@@ -21,6 +21,10 @@ namespace AppDelicare.Services.Interface
         // T17 (Pilot P7): bảng mẻ, chi tiết, xuất NL cho mẻ (FEFO), bắt đầu / xong, nhiệt độ lõi, lưu mẫu, sản lượng, hao hụt, QC đạt / giữ / loại, đóng gói, in Phiếu sản xuất.
         public Task<IResult<ProductionBoardModel>> GetBoard(ProductionBoardRequest request);
         public Task<IResult<ProductionBatchDetailModel>> GetDetail(Guid id);
+        // BE2.4 (T17 công đoạn theo tổ): bắt đầu / xong công đoạn, tiến độ bếp theo tổ.
+        public Task<IResult<ProductionBatchDetailModel>> StartStage(AppDelicare.Model.Request.Custom.ProductionStageRequest request);
+        public Task<IResult<ProductionBatchDetailModel>> FinishStage(AppDelicare.Model.Request.Custom.ProductionStageRequest request);
+        public Task<IResult<ProductionStageBoardModel>> GetStageBoard(AppDelicare.Model.Request.Custom.ProductionStageBoardRequest request);
         public Task<IResult<MaterialIssueDetailModel>> CreateMaterialIssue(ProductionBatchIssueRequest request);
         public Task<IResult<ProductionBatchDetailModel>> Start(ProductionBatchStartRequest request);
         public Task<IResult<ProductionBatchDetailModel>> Finish(ProductionBatchFinishRequest request);

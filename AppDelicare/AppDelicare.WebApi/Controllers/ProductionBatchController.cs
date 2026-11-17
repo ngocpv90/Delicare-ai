@@ -390,5 +390,62 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.4 (T17 công đoạn theo tổ): bắt đầu công đoạn (SO_CHE / NAU / CHIA_SUAT…) của mẻ – tổ, người làm, trạm; không chuyển khi công đoạn trước chưa xong.</summary>
+        [HttpPost("StartStage")]
+        public async Task<IActionResult> StartStage([FromForm] ProductionStageRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.StartStage(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " StartStage: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.4: xong công đoạn đang làm của mẻ.</summary>
+        [HttpPost("FinishStage")]
+        public async Task<IActionResult> FinishStage([FromForm] ProductionStageRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.FinishStage(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " FinishStage: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.4: tiến độ bếp theo tổ / công đoạn của 1 ngày sản xuất.</summary>
+        [HttpGet("GetStageBoard")]
+        public async Task<IActionResult> GetStageBoard([FromQuery] ProductionStageBoardRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetStageBoard(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetStageBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

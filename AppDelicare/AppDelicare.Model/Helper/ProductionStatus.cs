@@ -34,6 +34,8 @@ namespace AppDelicare.Model.Helper
         public const string Passed = "Passed";
         public const string Failed = "Failed";
         public const string Packed = "Packed";
+        /// <summary>BE2.4 (spec 8.2 cancel "mẻ → hủy"): mẻ của lệnh SX bị hủy (chưa nấu). STATUS_CATALOG chưa có giá trị này – PROPOSED (D-53).</summary>
+        public const string Cancelled = "Cancelled";
 
         /// <summary>Mẻ đã kết thúc (không còn thao tác sản xuất).</summary>
         public static readonly string[] Closed = [Packed, Failed];
@@ -46,6 +48,7 @@ namespace AppDelicare.Model.Helper
             Passed => "Đạt",
             Failed => "Không đạt",
             Packed => "Đã đóng gói",
+            Cancelled => "Hủy",
             _ => status ?? string.Empty,
         };
     }
@@ -81,5 +84,31 @@ namespace AppDelicare.Model.Helper
         public const string WasteOverProduction = "OVERPRODUCTION";
         /// <summary>Đánh dấu mẻ trong MaterialIssue.Note (MaterialIssue không có cột ProductionBatchId – GAP-PRD-04).</summary>
         public const string IssueBatchTag = "Mẻ ";
+
+        /// <summary>BE2.4: FoodSafetyChecklist.Code của bộ "Công đoạn sản xuất theo tổ" (seed <c>DB/seed/ProductionStage_seed.sql</c>; mục = công đoạn, SortOrder = thứ tự).</summary>
+        public const string StageChecklist = "PRD_STAGE";
+        /// <summary>Công đoạn Nấu – bắt đầu Nấu thì mẻ Kế hoạch tự chuyển Đang nấu; nấu xong mẻ (Finish) cần công đoạn này đã xong (nếu mẻ ghi công đoạn).</summary>
+        public const string StageCook = "NAU";
+        /// <summary>Công đoạn Chia suất – chỉ bắt đầu khi mẻ Đạt QC (nhiệt độ lõi ≥ 70 °C); đóng gói mẻ cần công đoạn này đã xong (nếu mẻ ghi công đoạn).</summary>
+        public const string StagePortion = "CHIA_SUAT";
+        /// <summary>FoodSafetyChecklistResult.ResultCode của sự kiện công đoạn (sổ ghi thêm: 1 dòng bắt đầu + 1 dòng xong).</summary>
+        public const string StageStarted = "STARTED";
+        public const string StageDone = "DONE";
+    }
+
+    /// <summary>BE2.4 – trạng thái công đoạn của mẻ (tính từ sự kiện FoodSafetyChecklistResult, không lưu cột).</summary>
+    public static class ProductionStageStatus
+    {
+        public const string NotStarted = "NotStarted";
+        public const string InProgress = "InProgress";
+        public const string Done = "Done";
+
+        public static string Label(string? status) => status switch
+        {
+            NotStarted => "Chưa làm",
+            InProgress => "Đang làm",
+            Done => "Đã xong",
+            _ => status ?? string.Empty,
+        };
     }
 }

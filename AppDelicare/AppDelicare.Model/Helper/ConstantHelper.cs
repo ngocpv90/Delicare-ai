@@ -445,6 +445,46 @@
             public static readonly string StockCountNotApproved = "Phiếu kiểm kê đang chờ duyệt – chưa ghi sổ được";
             public static readonly string StockCountNotPending = "Phiếu kiểm kê không có yêu cầu duyệt đang chờ";
             public static readonly string StockAdjustmentSubmitted = "Đã gửi duyệt điều chỉnh tồn (yêu cầu {0}) – chỉ ghi sổ khi được duyệt";
+
+            // BE2.4 – kho & sản xuất mở rộng
+            public static readonly string ReservationUnitMissing = "Lệnh {0}: thiếu quy đổi đơn vị {2} → {3} cho {1} – chưa giữ chỗ nguyên liệu này";
+            public static readonly string ReservationShort = "Lệnh {0}: giữ chỗ {1} được {2} / {3} {4} – thiếu {5} (vẫn phát hành)";
+            public static readonly string ReservationDone = "Đã giữ chỗ nguyên liệu cho lệnh {0}";
+            public static readonly string MrpIncomingNoDate = "PO {0} chưa có ngày giao dự kiến – không tính vào hàng sắp về";
+            public static readonly string MrpIncomingCounted = "Đã trừ hàng sắp về từ PO: {0}";
+            public static readonly string LotExpiryOnHoldSkipped = "Lô đang tạm giữ – xử lý riêng (không tự hủy tồn)";
+            public static readonly string LotExpiryReason = "Hết hạn sử dụng {0}";
+            public static readonly string LotExpiryNone = "Không có lô hết hạn cần xử lý";
+            public static readonly string ProductionOrderCancelReasonRequired = "Hủy lệnh sản xuất phải ghi lý do (tối thiểu 3 ký tự)";
+            public static readonly string ProductionOrderCancelStarted = "Lệnh {0} đã có mẻ bắt đầu nấu ({1}) – không hủy được (mẻ không đạt thì dùng Loại mẻ)";
+            public static readonly string ProductionOrderCancelIssued = "Lệnh {0} đã xuất kho ({1}) – hủy phiếu xuất (MaterialIssue/Cancel) trước khi hủy lệnh";
+            public static readonly string ProductionOrderCancelled = "Đã hủy lệnh {0}: {1} mẻ hủy, giải phóng giữ chỗ {2} nguyên liệu";
+            public static readonly string ProductionOrderPlanReopened = "Kế hoạch {0} trở về Đã duyệt – ca {1} phát hành lại được";
+            public static readonly string ProductionOrderNoIssue = "Lệnh {0} chưa có phiếu xuất nguyên liệu đã ghi sổ – tiêu hao thực tế = 0";
+            public static readonly string ProductionCostLotNoUnitCost = "Dòng xuất {0} (lô {1}) chưa có đơn giá – chi phí NVL dòng này tính 0";
+            public static readonly string ProductionCostIssueNotAllocated = "Phiếu xuất {0} của lệnh không gắn mẻ – chi phí chia cho các mẻ theo số phần kế hoạch";
+            public static readonly string ProductionCostNoStandard = "Món chưa có giá thành chuẩn đang hiệu lực – giá trị hao hụt tính theo chi phí NVL / phần";
+            public static readonly string VarianceUnitMissing = "Thiếu quy đổi {1} → {2} cho {0} – không tính được chênh lệch tiêu hao nguyên liệu này";
+            public static readonly string VarianceOverThreshold = "Chênh lệch tiêu hao vượt {0}%: {1}";
+            public static readonly string StageChecklistMissing = "Chưa có danh mục công đoạn sản xuất (checklist PRD_STAGE) – chạy DB/seed/ProductionStage_seed.sql";
+            public static readonly string StageNotFound = "Không có công đoạn {0} trong danh mục công đoạn (PRD_STAGE)";
+            public static readonly string StageAlreadyStarted = "Công đoạn {0} của mẻ {1} đã bắt đầu lúc {2}";
+            public static readonly string StageNotStarted = "Công đoạn {0} của mẻ {1} chưa bắt đầu";
+            public static readonly string StageAlreadyDone = "Công đoạn {0} của mẻ {1} đã xong lúc {2}";
+            public static readonly string StagePreviousNotDone = "Chưa xong công đoạn trước ({0}) – không chuyển sang {1}";
+            public static readonly string StageBatchStatus = "Công đoạn {0} chỉ làm khi mẻ ở trạng thái {1} (hiện tại: {2})";
+            public static readonly string StageTeamNotFound = "Không tìm thấy tổ (đơn vị tổ chức) đã chọn";
+            public static readonly string StageEmployeeNotFound = "Không tìm thấy nhân viên: {0}";
+            public static readonly string StageTooManyEmployees = "Tối đa {0} người cho 1 công đoạn";
+            public static readonly string StageEmployeeNotInTeam = "Nhân viên {0} không thuộc tổ {1}";
+            public static readonly string StageCookNotDone = "Mẻ {0}: phải xong công đoạn Nấu trước khi nấu xong mẻ";
+            public static readonly string StagePortionNotDone = "Mẻ {0}: phải xong công đoạn Chia suất trước khi đóng gói";
+            public static readonly string MealCostOrderNotFound = "Không tìm thấy đơn hàng";
+            public static readonly string MealCostNotReconciled = "Đơn chưa đối soát – suất nhận lấy theo biên bản giao (POD)";
+            public static readonly string MealCostNoPod = "Đơn chưa có biên bản giao – suất nhận tạm bằng suất đặt";
+            public static readonly string MealCostUseStandard = "Món {0} (ca {1}): lệnh SX chưa tính giá thành thực tế – dùng giá thành chuẩn";
+            public static readonly string MealCostNoCost = "Món {0}: không có giá thành thực tế / chuẩn – giá vốn tính 0";
+            public static readonly string MealCostNoDemand = "Đơn không có dòng gắn thực đơn của ngày – không tính được giá vốn theo món";
         }
 
         public class TypeSave

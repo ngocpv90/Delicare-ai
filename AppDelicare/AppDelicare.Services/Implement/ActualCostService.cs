@@ -10,6 +10,11 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Option;
+using AppDelicare.Model.Request.Custom;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
@@ -131,26 +136,13 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(ActualCostRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<ActualCost>(request);
-            _unitOfWork.ActualCostRepository.Add(insert);
-            await _unitOfWork.ActualCostRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.4: Giá thành thực tế chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/CalculateCost, Close) – CRUD Insert không ghi.</summary>
+        private Task<string> Insert(ActualCostRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá thành thực tế", "ProductionOrder/CalculateCost, Close"));
 
-        private async Task<string> Update(ActualCostRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.ActualCostRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.ActualCostRepository.Update(update);
-            await _unitOfWork.ActualCostRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.4: Giá thành thực tế chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/CalculateCost, Close) – CRUD Update không ghi.</summary>
+        private Task<string> Update(ActualCostRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá thành thực tế", "ProductionOrder/CalculateCost, Close"));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {
@@ -197,6 +189,54 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.4 (spec 8.5 GET actual-costs, Catalog 152): giá thành thực tế đã tính theo lệnh SX (cộng các mẻ) – lọc ngày sản xuất (từ / đến), món, lệnh;
+        /// <c>Breakdown</c> = cơ cấu chi phí cộng cả danh sách (NVL / nhân công / chung / hao hụt / khác), giá thành / phần + giá thành chuẩn / phần.
+        /// </summary>
+        public async Task<IResult<ActualCostListModel>> GetList(ActualCostListRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var planIds = await db.ProductionPlan.AsNoTracking()
+                    .Where(p => !p.IsDeleted && (request.From == null || p.ProductionDate >= request.From.Value.Date)
+                        && (request.To == null || p.ProductionDate < request.To.Value.Date.AddDays(1)))
+                    .Select(p => p.Id).ToListAsync();
+                var orderIds = await db.ProductionOrder.AsNoTracking()
+                    .Where(o => !o.IsDeleted && planIds.Contains(o.ProductionPlanId)
+                        && (request.DishId == null || request.DishId == Guid.Empty || o.DishId == request.DishId)
+                        && (request.ProductionOrderId == null || request.ProductionOrderId == Guid.Empty || o.Id == request.ProductionOrderId))
+                    .Select(o => o.Id).ToListAsync();
+                var stored = await CostingRules.StoredAsync(db, orderIds);
+                var list = stored.Values.OrderBy(c => c.ProductionDate).ThenBy(c => c.ShiftCode).ThenBy(c => c.DishName).ToList();
+                decimal accepted = list.Sum(c => c.AcceptedPortions);
+                decimal total = list.Sum(c => c.TotalCost);
+                var standardRows = list.Where(c => c.StandardCostPerPortion != null).ToList();
+                return Result<ActualCostListModel>.Success(new ActualCostListModel
+                {
+                    ListData = list,
+                    Breakdown = new ActualCostModel
+                    {
+                        MaterialCost = list.Sum(c => c.MaterialCost),
+                        LaborCost = list.Sum(c => c.LaborCost),
+                        OverheadCost = list.Sum(c => c.OverheadCost),
+                        WasteCost = list.Sum(c => c.WasteCost),
+                        OtherCost = list.Sum(c => c.OtherCost),
+                        TotalCost = total,
+                        AcceptedPortions = accepted,
+                        CostPerPortion = accepted > 0 ? Math.Round(total / accepted, 4) : null,
+                        StandardCostPerPortion = standardRows.Sum(c => c.AcceptedPortions) is > 0 and var sp
+                            ? Math.Round(standardRows.Sum(c => c.StandardCostPerPortion!.Value * c.AcceptedPortions) / sp, 4) : null,
+                    },
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
                 throw;
             }
         }

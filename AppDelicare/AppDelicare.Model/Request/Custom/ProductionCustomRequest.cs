@@ -137,4 +137,84 @@ namespace AppDelicare.Model.Request.Custom
         public Guid? ShiftId { get; set; }
         public string? Status { get; set; }
     }
+
+    /// <summary>BE2.4 (spec 8.2 cancel, Catalog 145): hủy lệnh SX chưa nấu / chưa xuất kho (form) – lý do bắt buộc.</summary>
+    public class ProductionOrderCancelRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        [MaxLength(1000)]
+        public string? Reason { get; set; }
+    }
+
+    /// <summary>
+    /// BE2.4 (T17 công đoạn theo tổ): bắt đầu / xong 1 công đoạn của mẻ (form). StageCode = mã mục checklist PRD_STAGE (SO_CHE / NAU / CHIA_SUAT…);
+    /// TeamId = tổ (OrganizationUnit loại TEAM, trống = tổ mặc định của công đoạn – BusinessRules:ProductionStageTeams); EmployeeIds = người làm (Employee, lặp khóa form).
+    /// </summary>
+    public class ProductionStageRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        [Required, MaxLength(50)]
+        public string StageCode { get; set; } = string.Empty;
+        public Guid? TeamId { get; set; }
+        public Guid? KitchenWorkstationId { get; set; }
+        public List<Guid>? EmployeeIds { get; set; }
+        public DateTime? At { get; set; }
+    }
+
+    /// <summary>BE2.4: tiến độ bếp theo tổ / công đoạn của 1 ngày sản xuất.</summary>
+    public class ProductionStageBoardRequest
+    {
+        [Required]
+        public DateTime ProductionDate { get; set; }
+        public Guid? ShiftId { get; set; }
+        public Guid? TeamId { get; set; }
+    }
+
+    /// <summary>BE2.4 (spec 8.5 GET actual-costs, Catalog 152): giá thành thực tế theo lệnh SX – lọc theo ngày sản xuất / món / lệnh.</summary>
+    public class ActualCostListRequest
+    {
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+        public Guid? DishId { get; set; }
+        public Guid? ProductionOrderId { get; set; }
+    }
+
+    /// <summary>BE2.4 (spec 7.9, Catalog 135): chênh lệch tiêu hao – lọc theo lệnh SX / ngày sản xuất / nguyên liệu.</summary>
+    public class ConsumptionVarianceListRequest
+    {
+        public Guid? ProductionOrderId { get; set; }
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+        public Guid? IngredientId { get; set; }
+        public bool OverThresholdOnly { get; set; }
+    }
+
+    /// <summary>BE2.4 (spec 8.5 meal-costs/calculate, Catalog 154): tính giá vốn suất của 1 đơn hàng đã giao / đối soát (form).</summary>
+    public class MealCostCalculateRequest
+    {
+        [Required]
+        public Guid OrderId { get; set; }
+    }
+
+    /// <summary>BE2.4: giá vốn suất đã tính – theo đơn hoặc theo ngày ăn.</summary>
+    public class MealCostListRequest
+    {
+        public Guid? OrderId { get; set; }
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+    }
+
+    /// <summary>
+    /// BE2.4 (spec 7.5 LotExpiryJob – D-45 không job → thao tác tay): lô Khả dụng có hạn dùng &lt; hôm nay → Hết hạn + bút toán WASTE toàn bộ tồn (form).
+    /// Preview = true chỉ liệt kê, không ghi.
+    /// </summary>
+    public class MaterialLotExpireRequest
+    {
+        public Guid? WarehouseId { get; set; }
+        public bool Preview { get; set; }
+        [MaxLength(1000)]
+        public string? Note { get; set; }
+    }
 }

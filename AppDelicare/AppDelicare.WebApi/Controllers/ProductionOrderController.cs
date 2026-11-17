@@ -127,5 +127,81 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.4 (Catalog 126): giữ chỗ (bổ sung) nguyên liệu cho lệnh Phát hành / Đang SX – quyền Sửa prod-order.</summary>
+        [HttpPost("Reserve")]
+        public async Task<IActionResult> Reserve([FromForm] ProductionActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Reserve(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reserve: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.4 (spec 8.2 cancel, Catalog 145): hủy lệnh chưa nấu / chưa xuất kho, lý do bắt buộc – mẻ Hủy, giải phóng giữ chỗ.</summary>
+        [HttpPost("Cancel")]
+        public async Task<IActionResult> Cancel([FromForm] ProductionOrderCancelRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Cancel(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Cancel: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.4 (spec 8.2 close, Catalog 144): Hoàn thành → Đóng – chênh lệch tiêu hao + giá thành thực tế, giải phóng giữ chỗ dư.</summary>
+        [HttpPost("Close")]
+        public async Task<IActionResult> Close([FromForm] ProductionActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Close(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Close: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.4 (spec 8.5 calculate-cost, Catalog 153): tính (lại) giá thành thực tế của lệnh (ActualCost theo mẻ).</summary>
+        [HttpPost("CalculateCost")]
+        public async Task<IActionResult> CalculateCost([FromForm] ProductionActionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CalculateCost(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CalculateCost: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }
