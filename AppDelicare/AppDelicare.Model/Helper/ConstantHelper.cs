@@ -553,6 +553,62 @@
             public static readonly string MealCostUseStandard = "Món {0} (ca {1}): lệnh SX chưa tính giá thành thực tế – dùng giá thành chuẩn";
             public static readonly string MealCostNoCost = "Món {0}: không có giá thành thực tế / chuẩn – giá vốn tính 0";
             public static readonly string MealCostNoDemand = "Đơn không có dòng gắn thực đơn của ngày – không tính được giá vốn theo món";
+
+            // BE2.5 – ATTP, vệ sinh, hộp / khay
+            public static readonly string ChecklistNotFound = "Không tìm thấy bộ checklist";
+            public static readonly string ChecklistInactive = "Bộ checklist {0} không áp dụng ngày {1} (Ngừng hoặc ngoài thời gian hiệu lực)";
+            public static readonly string ChecklistViaAction = "Bộ checklist {0} ghi qua thao tác riêng: {1}";
+            public static readonly string ChecklistItemNotInChecklist = "Tiêu chí {0} không thuộc bộ checklist {1}";
+            public static readonly string ChecklistItemDuplicate = "Tiêu chí {0} có 2 kết quả trong cùng lần ghi";
+            public static readonly string ChecklistResultInvalid = "Kết quả tiêu chí {0} phải là PASS hoặc FAIL";
+            public static readonly string ChecklistFailNeedsCorrective = "Tiêu chí {0} KHÔNG ĐẠT – bắt buộc ghi hành động khắc phục";
+            public static readonly string ChecklistRequiredMissing = "Tiêu chí bắt buộc chưa có kết quả: {0}";
+            public static readonly string ChecklistNoItems = "Chưa có kết quả tiêu chí nào để ghi";
+            public static readonly string ChecklistShiftNotFound = "Không tìm thấy ca làm việc";
+            public static readonly string ChecklistBatchClosed = "Mẻ {0} đã hủy – không ghi checklist";
+            public static readonly string CriticalFailHoldBatch = "Mẻ {0}: tiêu chí trọng yếu KHÔNG ĐẠT ({1}) – {2}; đạt QC / đóng gói / xuất chuyến bị chặn tới khi kiểm lại ĐẠT";
+            public static readonly string CriticalFailNoBatch = "Tiêu chí trọng yếu KHÔNG ĐẠT: {0} – QA xử lý ngay";
+            public static readonly string CriticalFailAlertLater = "Cảnh báo Telegram cho QA làm ở Release 2 – hiện xem trong danh sách lỗi trọng yếu";
+            public static readonly string CriticalFailOpen = "Tiêu chí ATTP trọng yếu chưa đạt (kiểm lại sau khắc phục): {0}";
+            public static readonly string BatchesCriticalFailOpen = "Mẻ có tiêu chí ATTP trọng yếu chưa đạt: {0}";
+            public static readonly string CleaningInspectionNotFound = "Không tìm thấy phiếu kiểm tra vật dụng thu hồi";
+            public static readonly string CleaningNothingUsable = "Phiếu kiểm tra không còn khay / hộp dùng được để vệ sinh (đã lập mẻ hết hoặc kết luận Không đạt)";
+            public static readonly string CleaningQuantityInvalid = "Số khay / hộp đưa vào mẻ vệ sinh phải từ 1 tới số dùng được còn lại ({0})";
+            public static readonly string CleaningBatchNotFound = "Không tìm thấy mẻ vệ sinh";
+            public static readonly string CleaningChecklistMissing = "Chưa có bộ checklist vệ sinh {0} (seed DB/seed/FoodSafetyQa_seed.sql)";
+            public static readonly string CleaningStepOrder = "Bước {0} chưa làm được: bước trước {1} chưa ĐẠT (vệ sinh đi lần lượt các bước)";
+            public static readonly string CleaningChemicalRequired = "Bước {0}: phải ghi hóa chất đã dùng";
+            public static readonly string CleaningNotAllPassed = "Mẻ vệ sinh {0} chưa ĐẠT đủ các bước: {1}";
+            public static readonly string CleaningRejectReasonRequired = "Kết luận Không đạt phải ghi lý do (vệ sinh lại)";
+            public static readonly string CleaningQcInvalid = "Kết luận mẻ vệ sinh phải là PASS hoặc REJECT";
+            public static readonly string CleaningRejectedWarning = "Mẻ {0} không đạt: {1} khay / hộp chờ lập mẻ vệ sinh mới";
+            public static readonly string CleaningAvailableRecorded = "Sổ bao bì: {0} {1} sạch, sẵn sàng dùng lại (AVAILABLE)";
+            public static readonly string ContainerDeliveryNotDelivered = "Chỉ thu hồi khay / hộp của đơn giao Đã giao (hiện tại: {0})";
+            public static readonly string ContainerQuantityInvalid = "Số trả về / hỏng không hợp lệ (0 ≤ hỏng ≤ trả về, trả về > 0)";
+            public static readonly string ContainerPackagingUnknown = "Đơn giao chưa ghi sổ bao bì giao cho khách – chọn loại bao bì";
+            public static readonly string ContainerPackagingAmbiguous = "Đơn giao có nhiều loại bao bì ({0}) – chọn loại thu hồi";
+            public static readonly string ContainerOverOutstanding = "Khách {0} chỉ còn {1} {2} – không thu hồi {3}";
+            public static readonly string ContainerReturnNotFound = "Không tìm thấy phiếu thu hồi khay / hộp";
+            public static readonly string ContainerInspectResultInvalid = "Kết quả kiểm tra phải là một trong: {0}";
+            public static readonly string ContainerInspectQtyInvalid = "Số hỏng / thiếu khi kiểm tra không hợp lệ (0 ≤ hỏng ≤ số trả về, thiếu ≥ 0)";
+            public static readonly string ContainerInspectNoteRequired = "Kết quả {0} phải ghi chú tình trạng";
+            public static readonly string ContainerStillOutstanding = "Còn {0} {1} của đơn giao {2} ở khách – thu hồi tiếp hoặc ghi thất thoát (PackagingLedger/Record LOSS)";
+            public static readonly string ContainerMoreThanExpected = "Thu hồi {0} nhiều hơn số phải thu {1} của đơn giao (trả khay của chuyến trước)";
+            public static readonly string ContainerCleaningCreated = "Đã lập mẻ vệ sinh {0} cho {1} khay / hộp dùng được";
+            public static readonly string ContainerNoUsable = "Không có khay / hộp dùng được – không lập mẻ vệ sinh";
+            public static readonly string PackagingManualTypeInvalid = "Loại phát sinh ghi tay phải là: {0}";
+            public static readonly string PackagingQuantityInvalid = "Số lượng phải lớn hơn 0";
+            public static readonly string PackagingOverOutstanding = "Khách {0} chỉ còn {1} {2} – không ghi {3} {4}";
+            public static readonly string PackagingLossOverThreshold = "Khách {0} ({1}): tỷ lệ thất thoát {2}% vượt ngưỡng {3}% – báo khách và chuyển kế toán tính phí";
+            public static readonly string PackagingOutRecorded = "Sổ bao bì: giao {0} {1} cho khách (OUT), chờ thu hồi";
+            public static readonly string SupplierIssueNotFound = "Không tìm thấy sự cố nhà cung cấp";
+            public static readonly string SupplierIssueTargetInvalid = "Trạng thái chuyển tới phải là InProgress, Resolved hoặc Closed";
+            public static readonly string SupplierIssueTransitionInvalid = "Không chuyển sự cố từ {0} sang {1}";
+            public static readonly string SupplierIssueResolutionRequired = "Chuyển Đã xử lý phải ghi cách xử lý";
+            public static readonly string SupplierIssueOwnerNotFound = "Không tìm thấy người phụ trách (người dùng)";
+            public static readonly string SupplierIssueSeverityInvalid = "Mức độ phải là High / Medium / Low";
+            public static readonly string SupplierIssueClosedLocked = "Sự cố đã Đóng – không sửa";
+            public static readonly string SupplierIssueStatusViaTransition = "Trạng thái / cách xử lý sự cố chỉ đổi qua SupplierIssue/Transition";
         }
 
         public class TypeSave

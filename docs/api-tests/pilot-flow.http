@@ -13,6 +13,8 @@
 ### BE2.2 (2026-11-17): hợp đồng CRUD Insert luôn Nháp → thêm bước 0.9b gửi duyệt + duyệt. Đã chạy lại trên DB dev (key B22A, ngày 20/01/2027): 123 request đúng kỳ vọng (8 chốt an toàn; 4 bước xuất file .xlsx).
 ### BE2.3 (2026-11-17): điều chỉnh tồn tay phải duyệt STOCK_ADJUSTMENT (thêm bước Decide sau mỗi Adjust); đề nghị mua do MRP lập phải duyệt 2 cấp (D-46: scm-pr-l1 → scm-pr-l2)
 ### BE2.4 (2026-11-17): giữ chỗ nguyên liệu khi phát hành (xuất cho mẻ dùng phần đã giữ – không đổi bước); thêm P9 đóng lệnh SX + giá thành thực tế + giá vốn suất.
+### BE2.5: đã chạy lại trên DB dev (key B25P, ngày 29/12/2026): 141 / 141 đúng kỳ vọng (+ P10).
+### BE2.5 (2026-11-17): bàn giao (P8.8) ghi sổ bao bì OUT + phiếu Chờ thu hồi; thêm P10 thu hồi hộp → kiểm tra → mẻ vệ sinh 6 bước → số dư hộp ở khách.
 ###   Đã chạy trên DB dev (key B24Q, ngày 11/12/2026): 136 / 136 đúng kỳ vọng.
 ###   trước khi lập PO (P6.0a–f; admin chạy thay cả 2 cấp – admin được miễn luật "mỗi cấp 1 người").
 ###   Đã chạy lại trên DB dev 2026-11-17 (key B23P, ngày 03/02/2027): 131 / 131 đúng kỳ vọng (9 chốt an toàn).
@@ -890,6 +892,7 @@ Content-Type: application/x-www-form-urlencoded
 Id={{stopId}}&TemperatureC=58&DeliveredQuantity=1000&AcceptedQuantity=998&ReceiverName=[DEMO] Chị Lan
 
 ### P8.8 Bàn giao 63 °C, giao 1000 / nhận 998 (2 suất từ chối → phản ánh PA- tự động) → đơn Đã giao, chuyến Hoàn thành
+### BE2.5: bàn giao tự ghi sổ bao bì OUT 998 "[DEMO] hộp giữ nhiệt" (loại của kết quả đóng gói P7.9b, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi (P10)
 POST {{base}}/api/DeliveryStop/Deliver
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -985,4 +988,39 @@ OrderId={{orderId}}
 
 ###
 GET {{base}}/api/MealCost/GetList?OrderId={{orderId}}
+Authorization: Bearer {{token}}
+
+########## P10 (BE2.5). THU HỒI HỘP / KHAY → KIỂM TRA → VỆ SINH 6 BƯỚC → SỐ DƯ (Catalog 167–169, 190, 194–196)
+### P10.1 Thu hồi 990 hộp (hỏng 5) của đơn giao → sổ bao bì IN 985 tốt + 5 hỏng, còn 8 hộp ở khách
+# @name p10ret
+POST {{base}}/api/ContainerReturn/Record
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+DeliveryOrderId={{route.response.body.data.listStop[0].deliveryOrderId}}&ReturnedQuantity=990&DamagedQuantity=5&Note=[DEMO] thu cuối ca
+
+### P10.2 Kiểm tra (bẩn) → tự lập mẻ vệ sinh VS- 985 hộp dùng được
+# @name p10insp
+POST {{base}}/api/ContainerReturn/Inspect
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{p10ret.response.body.data.return.id}}&InspectionResult=DIRTY&Note=[DEMO] dính dầu
+
+### P10.3 6 bước vệ sinh đạt → kết luận ĐẠT (sổ bao bì AVAILABLE 985)
+POST {{base}}/api/CleaningBatch/RecordResults
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{p10insp.response.body.data.listCleaningBatch[0].id}}", "listItem": [ { "itemCode": "NHAN_QR", "resultCode": "PASS" }, { "itemCode": "PHAN_LOAI", "resultCode": "PASS" }, { "itemCode": "RUA_SO", "resultCode": "PASS" }, { "itemCode": "RUA_MAY", "resultCode": "PASS" }, { "itemCode": "KHU_KHUAN", "resultCode": "PASS", "chemicalUsed": "[DEMO] Chlorine 200 ppm" }, { "itemCode": "KIEM_TRA_NHAP_KHO", "resultCode": "PASS" } ] }
+
+###
+POST {{base}}/api/CleaningBatch/Complete
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{p10insp.response.body.data.listCleaningBatch[0].id}}&QcResult=PASS
+
+### P10.4 Số dư hộp ở khách: OUT 998, IN 990 (hỏng 5), còn 8
+GET {{base}}/api/PackagingLedger/GetBalance?CustomerId={{customerId}}
 Authorization: Bearer {{token}}

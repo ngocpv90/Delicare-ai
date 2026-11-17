@@ -124,48 +124,14 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(CleaningChecklistResultRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<CleaningChecklistResult>(request);
-            var entity = insert;
-            _unitOfWork.CleaningChecklistResultRepository.Add(insert);
-            await _unitOfWork.CleaningChecklistResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.5: kết quả bước vệ sinh là bằng chứng vệ sinh – chỉ ghi qua CleaningBatch/RecordResults / Complete, không thêm / sửa / xóa qua CRUD.</summary>
+        private static Task<string> Insert(CleaningChecklistResultRequest request, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private async Task<string> Update(CleaningChecklistResultRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.CleaningChecklistResultRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var entity = _mapper.Map(request, exist);
-            _unitOfWork.CleaningChecklistResultRepository.Update(entity);
-            await _unitOfWork.CleaningChecklistResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Update(CleaningChecklistResultRequest request, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: bản ghi đang được tham chiếu (quan hệ logic, truy vấn có tham số) → không cho xóa.
-            if ((await _referenceGuard.FindUsagesAsync("CleaningChecklistResult", (Guid)id)).Count > 0)
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.CleaningChecklistResultRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.CleaningChecklistResultRepository.Update(delete);
-            await _unitOfWork.CleaningChecklistResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Delete(Guid? id, string typeSave) => Task.FromResult(CrudBlocked);
+
+        private static string CrudBlocked => string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Kết quả bước vệ sinh khay / hộp", "CleaningBatch/RecordResults (làm lại = ghi lần mới), CleaningBatch/Complete");
 
         public async Task<IResult<CleaningChecklistResult>> GetById(Guid id)
         {

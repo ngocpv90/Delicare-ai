@@ -322,6 +322,8 @@ namespace AppDelicare.Services.Implement
                 .Select(r => r.ProductionBatchId!.Value).Distinct().ToListAsync();
             var dishIds = batches.Select(b => b.DishId).Distinct().ToList();
             var dishes = await db.Dish.AsNoTracking().Where(d => dishIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name);
+            // BE2.5: tiêu chí ATTP trọng yếu đang KHÔNG ĐẠT của mẻ (chặn xuất chuyến – D-54 d).
+            var critical = await FoodSafetyRules.OpenCriticalFailuresAsync(db, batchIds);
             return [.. batches.Select(b => new DeliveryBatchBriefModel
             {
                 Id = b.Id,
@@ -330,6 +332,7 @@ namespace AppDelicare.Services.Implement
                 Status = b.Status,
                 StatusName = ProductionBatchStatus.Label(b.Status),
                 SampleRetained = sampled.Contains(b.Id),
+                OpenCriticalFailures = critical.GetValueOrDefault(b.Id) ?? [],
             }).OrderBy(b => b.BatchNumber, StringComparer.Ordinal)];
         }
 
@@ -359,6 +362,15 @@ namespace AppDelicare.Services.Implement
                 if (noSample.Count != 0)
                 {
                     blockers.Add(string.Format(ConstantHelper.Message.BatchesNoSample, string.Join(", ", noSample.Select(b => b.BatchNumber))));
+                }
+            }
+            if (rules.FoodSafetyCriticalFailHoldsBatch)
+            {
+                var failing = batches.Where(b => b.Status != ProductionBatchStatus.Failed && b.OpenCriticalFailures.Count != 0).ToList();
+                if (failing.Count != 0)
+                {
+                    blockers.Add(string.Format(ConstantHelper.Message.BatchesCriticalFailOpen,
+                        string.Join("; ", failing.Select(b => b.BatchNumber + " (" + string.Join(", ", b.OpenCriticalFailures) + ")"))));
                 }
             }
             return blockers;

@@ -7,6 +7,7 @@ using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.WebApi.Controllers
 {
@@ -75,6 +76,45 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5 (spec 10.4 GET packaging-ledger/balance, Catalog 196): số khay / hộp còn ở khách theo (khách, loại) + tỷ lệ thất thoát trong kỳ so với ngưỡng.</summary>
+        [HttpGet("GetBalance")]
+        public async Task<IActionResult> GetBalance([FromQuery] PackagingBalanceRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetBalance(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBalance: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5: ghi tay 1 dòng sổ bao bì (OUT tồn đầu kỳ / IN / LOSS thất thoát) có lý do – không vượt số còn ở khách. Quyền Thêm của màn sổ bao bì.</summary>
+        [Security.Permission("log-packaging-ledger", PermissionAction.Add)]
+        [HttpPost("Record")]
+        public async Task<IActionResult> Record([FromForm] PackagingRecordRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Record(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Record: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

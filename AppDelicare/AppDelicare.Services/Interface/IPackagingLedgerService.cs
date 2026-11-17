@@ -5,6 +5,8 @@ using AppDelicare.Model.Entity;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Interface
 {
@@ -14,5 +16,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(PackagingLedgerRequest request, string typeSave);
         public IResults<PackagingLedger> GetAllData();
         public Task<IResult<PackagingLedger>> GetById(Guid id);
+
+        /// <summary>BE2.5 (Catalog 196): số khay / hộp còn ở khách + tỷ lệ thất thoát.</summary>
+        public Task<IResult<PackagingBalanceModel>> GetBalance(PackagingBalanceRequest request);
+        /// <summary>BE2.5: ghi tay 1 dòng sổ bao bì (OUT / IN / LOSS) có lý do.</summary>
+        public Task<IResult<PackagingRecordModel>> Record(PackagingRecordRequest request);
     }
 }

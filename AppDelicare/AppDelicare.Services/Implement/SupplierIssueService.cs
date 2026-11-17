@@ -13,15 +13,24 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Option;
+using AppDelicare.Model.Request.Custom;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
-    public class SupplierIssueService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard) : ISupplierIssueService
+    public class SupplierIssueService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : ISupplierIssueService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IReferenceGuard _referenceGuard = referenceGuard;
+        private readonly IClock _clock = clock;
+        private readonly ICurrentActor _currentActor = currentActor;
+        private readonly BusinessRulesOptions _rules = rules.Value;
 
         public async Task<IResults<SupplierIssueViewModel>> GetAll(SupplierIssueSearchRequest request)
         {
@@ -126,11 +135,28 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BE2.5 (spec 9.5 CRUD): lập sự cố NCC tay – NCC phải tồn tại; luôn Mới (trạng thái / cách xử lý / ngày đóng chỉ qua SupplierIssue/Transition);
+        /// mức độ High / Medium / Low (mặc định Medium); báo lúc = bây giờ nếu trống; hạn xử lý trống = báo lúc + SupplierIssueDueDays.
+        /// </summary>
         private async Task<string> Insert(SupplierIssueRequest request, string typeSave)
         {
+            if (request.SupplierId is not { } supplierId || !await _unitOfWork.DbContext.Supplier.AnyAsync(s => s.Id == supplierId && !s.IsDeleted))
+            {
+                return ConstantHelper.Message.SupplierNotFound;
+            }
+            string? severity = ComplaintSeverity.Normalize(request.Severity);
+            if (severity == null)
+            {
+                return ConstantHelper.Message.SupplierIssueSeverityInvalid;
+            }
             var insert = _mapper.Map<SupplierIssue>(request);
-            if (request.Severity == null) insert.Severity = "Medium";
-            if (request.IssueStatus == null) insert.IssueStatus = "Open";
+            insert.Severity = severity;
+            insert.IssueStatus = SupplierIssueStatus.Open;
+            insert.Resolution = null;
+            insert.ClosedAt = null;
+            insert.ReportedAt = request.ReportedAt ?? _clock.Now;
+            insert.DueAt = request.DueAt ?? insert.ReportedAt.AddDays(_rules.SupplierIssueDueDays);
             var entity = insert;
             _unitOfWork.SupplierIssueRepository.Add(insert);
             await _unitOfWork.SupplierIssueRepository.CommitAsync(typeSave);
@@ -144,7 +170,23 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            // BE2.5: sự cố Đóng không sửa; trạng thái / cách xử lý / ngày đóng / ngày báo giữ nguyên (chỉ đổi qua SupplierIssue/Transition).
+            if (exist.IssueStatus == SupplierIssueStatus.Closed)
+            {
+                return ConstantHelper.Message.SupplierIssueClosedLocked;
+            }
+            string? severity = ComplaintSeverity.Normalize(request.Severity ?? exist.Severity);
+            if (severity == null)
+            {
+                return ConstantHelper.Message.SupplierIssueSeverityInvalid;
+            }
+            var (status, resolution, closedAt, reportedAt) = (exist.IssueStatus, exist.Resolution, exist.ClosedAt, exist.ReportedAt);
             var entity = _mapper.Map(request, exist);
+            entity.IssueStatus = status;
+            entity.Resolution = resolution;
+            entity.ClosedAt = closedAt;
+            entity.ReportedAt = reportedAt;
+            entity.Severity = severity;
             _unitOfWork.SupplierIssueRepository.Update(entity);
             await _unitOfWork.SupplierIssueRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -196,6 +238,174 @@ namespace AppDelicare.Services.Implement
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.5 (spec 9.5 – màn #/qc-supplier-issue): danh sách sự cố NCC theo trạng thái / NCC / mức độ / kỳ báo + quá hạn (DueAt &lt; bây giờ và chưa Đã xử lý / Đóng –
+        /// cờ khi xem thay job hằng giờ, D-45) + đếm theo trạng thái; quá hạn lên đầu.
+        /// </summary>
+        public async Task<IResult<SupplierIssueListModel>> GetList(SupplierIssueListRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var query = db.SupplierIssue.AsNoTracking().Where(i => !i.IsDeleted);
+                if (request.SupplierId is { } sid && sid != Guid.Empty)
+                {
+                    query = query.Where(i => i.SupplierId == sid);
+                }
+                if (!string.IsNullOrWhiteSpace(request.Severity))
+                {
+                    string severity = ComplaintSeverity.Normalize(request.Severity) ?? request.Severity.Trim();
+                    query = query.Where(i => i.Severity == severity);
+                }
+                if (request.From is { } from)
+                {
+                    query = query.Where(i => i.ReportedAt >= from.Date);
+                }
+                if (request.To is { } to)
+                {
+                    DateTime end = to.Date.AddDays(1);
+                    query = query.Where(i => i.ReportedAt < end);
+                }
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    string q = request.SearchText.Trim();
+                    query = query.Where(i => i.Description != null && i.Description.Contains(q) || i.IssueType != null && i.IssueType.Contains(q));
+                }
+                DateTime now = _clock.Now;
+                var all = await query.ToListAsync();
+                var counts = all.GroupBy(i => i.IssueStatus ?? string.Empty).ToDictionary(g => g.Key, g => g.Count());
+                if (!string.IsNullOrWhiteSpace(request.Status))
+                {
+                    all = [.. all.Where(i => i.IssueStatus == request.Status.Trim())];
+                }
+                if (request.Overdue == true)
+                {
+                    all = [.. all.Where(i => IsOverdue(i, now))];
+                }
+                int page = Math.Max(1, request.Page), size = Math.Clamp(request.PageSize, 1, 500);
+                var paged = all.OrderByDescending(i => IsOverdue(i, now)).ThenBy(i => i.DueAt ?? DateTime.MaxValue).ThenByDescending(i => i.ReportedAt)
+                    .Skip((page - 1) * size).Take(size).ToList();
+                return Result<SupplierIssueListModel>.Success(new SupplierIssueListModel
+                {
+                    ListItem = await ItemsAsync(paged, now),
+                    TotalRecords = all.Count,
+                    StatusCounts = counts,
+                    OverdueCount = all.Count(i => IsOverdue(i, now)),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        private static bool IsOverdue(SupplierIssue issue, DateTime now)
+            => issue.DueAt != null && issue.DueAt < now && issue.IssueStatus != SupplierIssueStatus.Resolved && issue.IssueStatus != SupplierIssueStatus.Closed;
+
+        private async Task<List<SupplierIssueListItemModel>> ItemsAsync(List<SupplierIssue> issues, DateTime now)
+        {
+            var db = _unitOfWork.DbContext;
+            var supplierIds = issues.Select(i => i.SupplierId).Distinct().ToList();
+            var suppliers = await db.Supplier.AsNoTracking().Where(s => supplierIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
+            var receiptIds = issues.Where(i => i.GoodsReceiptId != null).Select(i => i.GoodsReceiptId!.Value).Distinct().ToList();
+            var receipts = await db.GoodsReceipt.AsNoTracking().Where(r => receiptIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.ReceiptNumber ?? r.ReceiptNo);
+            var poIds = issues.Where(i => i.PurchaseOrderId != null).Select(i => i.PurchaseOrderId!.Value).Distinct().ToList();
+            var pos = await db.PurchaseOrder.AsNoTracking().Where(p => poIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PurchaseOrderNumber ?? p.PONo);
+            var ownerIds = issues.Where(i => i.OwnerId != null).Select(i => i.OwnerId!.Value).Distinct().ToList();
+            var owners = await db.User.AsNoTracking().Where(u => ownerIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
+            return [.. issues.Select(i => new SupplierIssueListItemModel
+            {
+                Issue = i,
+                StatusName = SupplierIssueStatus.Label(i.IssueStatus),
+                SeverityName = ComplaintSeverity.Label(i.Severity),
+                SupplierName = suppliers.GetValueOrDefault(i.SupplierId),
+                GoodsReceiptNumber = i.GoodsReceiptId is { } r ? receipts.GetValueOrDefault(r) : null,
+                PurchaseOrderNumber = i.PurchaseOrderId is { } p ? pos.GetValueOrDefault(p) : null,
+                OwnerName = i.OwnerId is { } o ? owners.GetValueOrDefault(o) : null,
+                IsOverdue = IsOverdue(i, now),
+                HoursToDue = i.DueAt != null && i.IssueStatus != SupplierIssueStatus.Resolved && i.IssueStatus != SupplierIssueStatus.Closed
+                    ? Math.Round((decimal)(i.DueAt.Value - now).TotalHours, 2) : null,
+                AllowedTransitions = [.. new[] { SupplierIssueStatus.InProgress, SupplierIssueStatus.Resolved, SupplierIssueStatus.Closed }.Where(t => SupplierIssueStatus.CanMove(i.IssueStatus, t))],
+            })];
+        }
+
+        /// <summary>
+        /// BE2.5 (spec 9.5 POST supplier-issues/{id}/transition, Catalog 170; PROPOSED D-54 e): Mới → Đang xử lý (người phụ trách = OwnerId, trống = người thao tác) / Đã xử lý;
+        /// Đang xử lý → Đã xử lý (bắt buộc cách xử lý); Đã xử lý → Đóng (ClosedAt) hoặc mở lại Đang xử lý (ghi lý do vào cách xử lý). Lịch sử ở AuditChange.
+        /// </summary>
+        public async Task<IResult<SupplierIssueListItemModel>> Transition(SupplierIssueTransitionRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                var issue = _unitOfWork.SupplierIssueRepository.GetSingle(i => i.Id == request.Id && !i.IsDeleted);
+                if (issue == null)
+                {
+                    return Fail(ConstantHelper.Message.SupplierIssueNotFound);
+                }
+                string? to = SupplierIssueStatus.All.FirstOrDefault(s => string.Equals(s, request.To?.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (to == null || to == SupplierIssueStatus.Open)
+                {
+                    return Fail(ConstantHelper.Message.SupplierIssueTargetInvalid);
+                }
+                if (!SupplierIssueStatus.CanMove(issue.IssueStatus, to))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.SupplierIssueTransitionInvalid, SupplierIssueStatus.Label(issue.IssueStatus), SupplierIssueStatus.Label(to)));
+                }
+                string? resolution = DeliveryRules.Clean(request.Resolution);
+                if (to == SupplierIssueStatus.Resolved && resolution == null)
+                {
+                    return Fail(ConstantHelper.Message.SupplierIssueResolutionRequired);
+                }
+                if (request.OwnerId is { } owner && owner != Guid.Empty)
+                {
+                    if (!await db.User.AsNoTracking().AnyAsync(u => u.Id == owner && !u.IsDeleted))
+                    {
+                        return Fail(ConstantHelper.Message.SupplierIssueOwnerNotFound);
+                    }
+                    issue.OwnerId = owner;
+                }
+                else if (to == SupplierIssueStatus.InProgress && issue.OwnerId == null)
+                {
+                    issue.OwnerId = actor.UserId;
+                }
+                DateTime now = _clock.Now;
+                if (to == SupplierIssueStatus.InProgress && issue.IssueStatus == SupplierIssueStatus.Resolved)
+                {
+                    // Mở lại: giữ cách xử lý cũ kèm ghi chú mở lại (AuditChange giữ bản trước).
+                    resolution = string.Join(" | ", new[] { issue.Resolution, "Mở lại " + ProductionRules.Time(now) + (resolution == null ? string.Empty : ": " + resolution) }.Where(x => !string.IsNullOrEmpty(x)));
+                }
+                if (resolution != null)
+                {
+                    issue.Resolution = resolution.Length > 2000 ? resolution[..2000] : resolution;
+                }
+                issue.IssueStatus = to;
+                issue.ClosedAt = to == SupplierIssueStatus.Closed ? now : null;
+                _unitOfWork.SupplierIssueRepository.Update(issue);
+                await _unitOfWork.SupplierIssueRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                var fresh = await db.SupplierIssue.AsNoTracking().FirstAsync(i => i.Id == issue.Id);
+                return Result<SupplierIssueListItemModel>.Success((await ItemsAsync([fresh], now))[0], ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Transition: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                throw;
+            }
+
+            IResult<SupplierIssueListItemModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                return Result<SupplierIssueListItemModel>.Fail(message);
             }
         }
     }

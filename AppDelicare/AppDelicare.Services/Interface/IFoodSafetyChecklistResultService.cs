@@ -2,7 +2,9 @@
 #nullable enable
 using AppDelicare.Data.Interface;
 using AppDelicare.Model.Entity;
+using AppDelicare.Model.Model;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 
@@ -14,5 +16,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(FoodSafetyChecklistResultRequest request, string typeSave);
         public IResults<FoodSafetyChecklistResult> GetAllData();
         public Task<IResult<FoodSafetyChecklistResult>> GetById(Guid id);
+        /// <summary>BE2.5 (Catalog 161): lần chạy checklist theo ngày / ca / mẻ.</summary>
+        public Task<IResult<ChecklistRunModel>> GetRun(ChecklistRunRequest request);
+        /// <summary>BE2.5 (Catalog 162): ghi kết quả checklist + lỗi trọng yếu.</summary>
+        public Task<IResult<ChecklistRecordModel>> Record(ChecklistRecordRequest request);
     }
 }

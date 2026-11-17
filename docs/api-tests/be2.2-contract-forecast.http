@@ -8,6 +8,7 @@
 ### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
 ### Đã chạy trên DB dev 2026-11-17 (key B22D, ngày 17/12/2026): 73 / 73 request đúng kỳ vọng (15 chốt an toàn trả 400); số chứng từ ở PROGRESS mục BE2.2.
 ### BE2.4 (2026-11-17): không đổi bước. Đã chạy lại trên DB dev (key B24C, ngày 03/12/2026): 73 / 73 đúng kỳ vọng.
+### BE2.5 (2026-11-17): không đổi bước. Đã chạy lại trên DB dev (key B25C, ngày 04/01/2027 – Thứ 2): 73 / 73 đúng kỳ vọng.
 @base = http://localhost:5125
 @user = admin
 @password = admin

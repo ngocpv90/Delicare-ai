@@ -11,6 +11,7 @@
 ### BE2.3 (2026-11-17): thêm bước duyệt STOCK_ADJUSTMENT sau 2 lần điều chỉnh tồn đầu kỳ, và duyệt đề nghị mua 2 cấp (D-46) trước khi lập PO (2.5b–d).
 ###   Đã chạy lại trên DB dev (key B23G, ngày 31/12/2026): 147 / 147 đúng kỳ vọng.
 ### BE2.4 (2026-11-17): không đổi bước (giữ chỗ khi phát hành không chặn luồng). Đã chạy lại trên DB dev (key B24G, ngày 15/12/2026): 147 / 147 đúng kỳ vọng.
+### BE2.5 (2026-11-17): bàn giao ghi thêm sổ bao bì OUT + phiếu Chờ thu hồi (không đổi bước). Đã chạy lại trên DB dev (key B25G, ngày 05/01/2027): 147 / 147 đúng kỳ vọng.
 @base = http://localhost:5125
 @user = admin
 @password = admin

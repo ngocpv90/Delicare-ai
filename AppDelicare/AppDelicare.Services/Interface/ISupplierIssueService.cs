@@ -5,6 +5,8 @@ using AppDelicare.Model.Entity;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Interface
 {
@@ -14,5 +16,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(SupplierIssueRequest request, string typeSave);
         public IResults<SupplierIssue> GetAllData();
         public Task<IResult<SupplierIssue>> GetById(Guid id);
+
+        /// <summary>BE2.5 (spec 9.5): danh sách sự cố NCC + quá hạn.</summary>
+        public Task<IResult<SupplierIssueListModel>> GetList(SupplierIssueListRequest request);
+        /// <summary>BE2.5 (Catalog 170): chuyển trạng thái sự cố NCC.</summary>
+        public Task<IResult<SupplierIssueListItemModel>> Transition(SupplierIssueTransitionRequest request);
     }
 }
