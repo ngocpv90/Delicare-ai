@@ -32,6 +32,7 @@ So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** 
 | 12 | `seed/ProductionStage_seed.sql` (mới) | BE2.4 | Bộ `PRD_STAGE` "Công đoạn sản xuất theo tổ": `SO_CHE` → `NAU` → `CHIA_SUAT` (PROPOSED – D-53 e). Chỉ thêm khi chưa có (theo Code / ItemCode), không ghi đè |
 | 13 | `seed/FoodSafetyQa_seed.sql` (mới) | BE2.5 | Bộ checklist `QA_FG` (thành phẩm), `PREP`, `PREP_AREA_CLEAN`, `BLAST_CHILL`, `KITCHEN_CLEAN` (5S), `VS-KHAY` (vệ sinh khay 6 bước) – PROPOSED D-54. Chỉ thêm khi chưa có (theo Code / ItemCode), không ghi đè |
 | 14 | `seed/SystemUser_seed.sql` (mới) | T23 | Tài khoản dịch vụ `system` (Id cố định `061877ad-396c-4386-8868-25d4940bf467` = `SystemUsers:JobUserId`) cho job tự động – không đăng nhập được (mật khẩu không phải hash hợp lệ), không cấp nhóm quyền. Chỉ thêm khi chưa có |
+| 15 | `seed/KpiMetricDefinition_seed.sql` (mới) | BE3.4 | 11 chỉ tiêu KPI phiên bản 1 theo spec 11.7 + BUSINESS_RULES §12 (`PROD_ACHIEVEMENT`, `WASTE_RATE`, `QC_REJECT_RATE`, `QC_CORE_TEMP_PASS`, `QC_SAMPLE_RETAINED`, `DEL_ONTIME`, `INV_ACCURACY`, `FIN_COST_MEAL`, `FIN_FOOD_COST`, `PKG_LOSS_RATE`, `CS_COMPLAINT_SLA`); mục tiêu = thẻ `[TARGET >= x]` cuối `FormulaDescription` (GAP-KPI-01). Công thức + mục tiêu PROPOSED – D-57 b, w–ab. Chỉ thêm mã chưa có (mọi phiên bản, kể cả đã xóa mềm), không ghi đè – đổi số qua màn `#/kpi-definition` (tạo phiên bản mới) |
 
 T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **không có SP / seed mới** (đọc / ghi qua EF + SP `usp*_GetAll` sẵn có).
 

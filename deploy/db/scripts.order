@@ -162,3 +162,5 @@ DB/seed/ProductionStage_seed.sql
 DB/seed/FoodSafetyQa_seed.sql
 # T23 (D-48): tài khoản dịch vụ system cho AppDelicare.Job (Id cố định = SystemUsers:JobUserId; không đăng nhập được)
 DB/seed/SystemUser_seed.sql
+# BE3.4 (spec 11.7): 11 chỉ tiêu KPI phiên bản 1 (công thức + mục tiêu PROPOSED – D-57 b, w–ab); chỉ thêm mã chưa có
+DB/seed/KpiMetricDefinition_seed.sql
