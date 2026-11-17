@@ -300,6 +300,11 @@ namespace AppDelicare.Services.Implement
                 DateTime now = _clock.Now;
                 stop.StopStatus = DeliveryStopStatus.Arrived;
                 stop.ActualArrival = now;
+                if (deliveryOrder != null)
+                {
+                    // BE2.1 (spec 10.3 arrive): thực hiện giao DISPATCHED → ARRIVED.
+                    DeliveryRules.SyncExecution(_unitOfWork, deliveryOrder, route.Id, DeliveryExecutionStatus.Arrived, now);
+                }
                 if (!string.IsNullOrWhiteSpace(request.Note))
                 {
                     stop.Note = request.Note.Trim();
@@ -378,6 +383,7 @@ namespace AppDelicare.Services.Implement
                 deliveryOrder.Status = DeliveryOrderStatus.Delivered;
                 deliveryOrder.ActualDeliveryTime = now;
                 _unitOfWork.DeliveryOrderRepository.Update(deliveryOrder);
+                DeliveryRules.SyncExecution(_unitOfWork, deliveryOrder, route.Id, DeliveryExecutionStatus.Delivered, now);
                 DeliveryRules.AddEvent(_unitOfWork, actor, now, route.Id, stop.Id, deliveryOrder.Id, DeliveryCode.EventDelivered,
                     $"Bàn giao {DeliveryRules.Num(delivered)} suất, nhận {DeliveryRules.Num(accepted)}" + (rejected > 0 ? $", từ chối {DeliveryRules.Num(rejected)}" : string.Empty)
                     + " – người nhận " + pod.ReceiverName, null, null, request.PhotoUrl);
@@ -391,8 +397,10 @@ namespace AppDelicare.Services.Implement
                 if (order != null && order.Status == OrderStatus.InProduction)
                 {
                     bool othersOpen = await db.DeliveryOrder.AsNoTracking().AnyAsync(d => d.OrderId == order.Id && !d.IsDeleted && d.Id != deliveryOrder.Id
-                        && d.Status != DeliveryOrderStatus.Delivered && d.Status != DeliveryOrderStatus.Failed);
-                    if (!othersOpen)
+                        && d.Status != DeliveryOrderStatus.Delivered && d.Status != DeliveryOrderStatus.Failed && d.Status != DeliveryOrderStatus.Cancelled);
+                    // BE2.1: đơn hàng có nhiều đơn giao (lập tay / tách) – chỉ Đã giao khi mọi suất đã nằm trong đơn giao (không còn phần chưa lập đơn giao).
+                    bool unallocated = (await DeliveryRules.RemainingMealsAsync(db, [order], deliveryOrder.Id))[order.Id] - (stop.PlannedMealQty ?? DeliveryRules.TaggedMeals(deliveryOrder.Note) ?? 0m) > 0;
+                    if (!othersOpen && !unallocated)
                     {
                         order.Status = OrderStatus.Delivered;
                         _unitOfWork.OrderRepository.Update(order);
@@ -425,6 +433,7 @@ namespace AppDelicare.Services.Implement
                     deliveryOrder.Status = DeliveryOrderStatus.Failed;
                     deliveryOrder.Note = string.Join(" – ", new[] { deliveryOrder.Note, "Thất bại: " + request.Reason.Trim() }.Where(x => !string.IsNullOrEmpty(x)));
                     _unitOfWork.DeliveryOrderRepository.Update(deliveryOrder);
+                    DeliveryRules.SyncExecution(_unitOfWork, deliveryOrder, route.Id, DeliveryExecutionStatus.Failed, now, "Giao thất bại: " + request.Reason.Trim());
                 }
                 DeliveryRules.AddEvent(_unitOfWork, actor, now, route.Id, stop.Id, stop.DeliveryOrderId, DeliveryCode.EventFailed,
                     "Giao thất bại: " + request.Reason.Trim(), request.Latitude, request.Longitude);

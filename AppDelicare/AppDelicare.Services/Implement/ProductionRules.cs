@@ -30,6 +30,83 @@ namespace AppDelicare.Services.Implement
         /// <summary>1 mẻ trong lịch: số phần, giờ bắt đầu / kết thúc kế hoạch.</summary>
         public readonly record struct ScheduledBatch(int Index, decimal Quantity, DateTime Start, DateTime End);
 
+        /// <summary>BE2.1: nhu cầu 1 món của 1 dòng đơn (đã quy ca – dòng chưa gán ca = ca mặc định).</summary>
+        public sealed record DishDemand(Guid OrderId, Guid OrderLineId, Guid ShiftId, Guid DishId, decimal Quantity);
+
+        /// <summary>
+        /// BE2.1 – suất từng món theo dòng đơn của ngày (cùng công thức MRP T14 / T14.1 và T17.1 SplitByShiftAsync): đơn ở các trạng thái <paramref name="statuses"/>,
+        /// dòng đơn × thực đơn (MenuLine cùng loại suất, thứ của ngày), chia đều lựa chọn + dự phòng <c>MrpOptionBufferPct</c> (món chung mọi lựa chọn không vượt số suất dòng);
+        /// ca = <c>OrderLine.ShiftId</c>, trống → <c>ProductionDefaultShiftCode</c>. Dòng không có thực đơn / thực đơn không có món cho thứ đó → bỏ qua (trả kèm danh sách dòng bỏ qua).
+        /// </summary>
+        public static async Task<(List<DishDemand> Demands, List<Order> Orders, List<OrderLine> Skipped, Shift? Fallback)> DishDemandsAsync(
+            DatabaseContext db, DateTime date, IReadOnlyCollection<string> statuses, BusinessRulesOptions rules)
+        {
+            var fallback = await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => s.Code == rules.ProductionDefaultShiftCode && !s.IsDeleted);
+            DateTime day = date.Date, next = day.AddDays(1);
+            var orders = await db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.MealDate >= day && o.MealDate < next && statuses.Contains(o.Status!)).ToListAsync();
+            var orderIds = orders.Select(o => o.Id).ToList();
+            var orderLines = await db.OrderLine.AsNoTracking().Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0).ToListAsync();
+            var menuIds = orderLines.Where(l => l.MenuId != null).Select(l => l.MenuId!.Value).Distinct().ToList();
+            int dayOfWeek = MenuService.MenuDayOf(day);
+            var menuLines = await db.MenuLine.AsNoTracking().Where(m => menuIds.Contains(m.MenuId) && !m.IsDeleted && m.DayOfWeek == dayOfWeek).ToListAsync();
+            decimal bufferRate = Math.Max(0m, rules.MrpOptionBufferPct) / 100m;
+            var demands = new List<DishDemand>();
+            var skipped = new List<OrderLine>();
+            foreach (var line in orderLines)
+            {
+                Guid? shiftId = line.ShiftId ?? fallback?.Id;
+                var options = line.MenuId == null ? []
+                    : menuLines.Where(m => m.MenuId == line.MenuId && string.Equals((m.MealType ?? string.Empty).Trim(), (line.MealType ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
+                        .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
+                if (shiftId == null || options.Count == 0)
+                {
+                    skipped.Add(line);
+                    continue;
+                }
+                decimal perOption = line.Quantity / options.Count;
+                bool buffered = options.Count >= 2 && bufferRate > 0;
+                foreach (var dish in options.SelectMany(o => o).GroupBy(m => m.DishId))
+                {
+                    decimal even = perOption * dish.Count();
+                    decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
+                    demands.Add(new DishDemand(line.OrderId, line.Id, shiftId.Value, dish.Key, qty));
+                }
+            }
+            return (demands, orders, skipped, fallback);
+        }
+
+        /// <summary>
+        /// Lệnh SX hoàn thành khi mọi mẻ (kể cả mẻ đang xử lý) đã đóng gói / không đạt (ActualQty = Σ số đạt của mẻ đã đóng gói); kế hoạch Đã phát hành hoàn thành
+        /// khi mọi lệnh hoàn thành. Không lưu (service gọi CommitAsync). T17 – chuyển từ ProductionBatchService để PackingOrderService dùng chung (BE2.1).
+        /// </summary>
+        public static async Task CompleteOrderIfDoneAsync(Data.Interface.IUnitOfWork uow, DateTime now, ProductionBatch current, ProductionOrder order)
+        {
+            var db = uow.DbContext;
+            var others = await db.ProductionBatch.AsNoTracking().Where(b => b.ProductionOrderId == order.Id && !b.IsDeleted && b.Id != current.Id).ToListAsync();
+            var all = others.Append(current).ToList();
+            if (!all.All(b => ProductionBatchStatus.Closed.Contains(b.Status)))
+            {
+                return;
+            }
+            order.Status = ProductionOrderStatus.Completed;
+            order.ActualQty = all.Where(b => b.Status == ProductionBatchStatus.Packed).Sum(b => b.AcceptedQty ?? b.ActualQuantity ?? b.ActualQty ?? 0m);
+            order.ActualEndDate = now;
+            uow.ProductionOrderRepository.Update(order);
+            var plan = uow.ProductionPlanRepository.GetSingle(p => p.Id == order.ProductionPlanId && !p.IsDeleted);
+            if (plan == null || plan.Status != ProductionPlanStatus.Released)
+            {
+                return;
+            }
+            bool otherOrdersDone = !await db.ProductionOrder.AsNoTracking()
+                .AnyAsync(o => o.ProductionPlanId == plan.Id && !o.IsDeleted && o.Id != order.Id
+                    && o.Status != ProductionOrderStatus.Completed && o.Status != ProductionOrderStatus.Closed && o.Status != ProductionOrderStatus.Cancelled);
+            if (otherOrdersDone)
+            {
+                plan.Status = ProductionPlanStatus.Completed;
+                uow.ProductionPlanRepository.Update(plan);
+            }
+        }
+
         public static string Day(DateTime date) => date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
         public static string Time(DateTime date) => date.ToString("HH:mm dd/MM", CultureInfo.InvariantCulture);
         public static string Num(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);

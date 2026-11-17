@@ -431,6 +431,93 @@ namespace AppDelicare.Services.Implement
             };
         }
 
+        /// <summary>
+        /// BE2.1 (spec 10.5 GET complaints, Catalog 197): danh sách phản ánh đủ trường (khách, đơn, đơn giao, chuyến, người xử lý, tên trạng thái / mức độ),
+        /// <c>isOverdue</c> = SlaDueAt &lt; bây giờ và chưa Đã xử lý / Đóng / Từ chối, số giờ còn lại; lọc trạng thái / mức độ / khách / quá hạn / kỳ nhận / tìm số, mô tả;
+        /// đếm theo trạng thái + số quá hạn (trên tập đã lọc, trước phân trang). Quá hạn xếp trước, rồi hạn SLA gần nhất.
+        /// </summary>
+        public async Task<IResult<CustomerComplaintListModel>> GetList(ComplaintListRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var query = db.CustomerComplaint.AsNoTracking().Where(c => !c.IsDeleted);
+                if (!string.IsNullOrWhiteSpace(request.Status))
+                {
+                    query = query.Where(c => c.ComplaintStatus == request.Status);
+                }
+                if (!string.IsNullOrWhiteSpace(request.Severity))
+                {
+                    string severity = ComplaintSeverity.Normalize(request.Severity) ?? request.Severity.Trim();
+                    query = query.Where(c => c.Severity == severity);
+                }
+                if (request.CustomerId is { } cid && cid != Guid.Empty)
+                {
+                    query = query.Where(c => c.CustomerId == cid);
+                }
+                if (request.From is { } from)
+                {
+                    query = query.Where(c => c.ReceivedAt >= from.Date);
+                }
+                if (request.To is { } to)
+                {
+                    DateTime end = to.Date.AddDays(1);
+                    query = query.Where(c => c.ReceivedAt < end);
+                }
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    string q = request.SearchText.Trim();
+                    query = query.Where(c => (c.ComplaintNo != null && c.ComplaintNo.Contains(q)) || (c.Description != null && c.Description.Contains(q)));
+                }
+                DateTime now = _clock.Now;
+                var all = await query.ToListAsync();
+                bool Overdue(CustomerComplaint c) => c.SlaDueAt != null && c.SlaDueAt < now && !ComplaintStatus.Done.Contains(c.ComplaintStatus);
+                if (request.Overdue == true)
+                {
+                    all = [.. all.Where(Overdue)];
+                }
+                var counts = all.GroupBy(c => c.ComplaintStatus ?? string.Empty).ToDictionary(g => g.Key, g => g.Count());
+                int page = Math.Max(1, request.Page), size = Math.Clamp(request.PageSize, 1, 500);
+                var paged = all.OrderByDescending(Overdue).ThenBy(c => c.SlaDueAt ?? DateTime.MaxValue).ThenByDescending(c => c.ReceivedAt)
+                    .Skip((page - 1) * size).Take(size).ToList();
+                var customerIds = paged.Select(c => c.CustomerId).Distinct().ToList();
+                var customers = await db.Customer.AsNoTracking().Where(c => customerIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.DisplayName ?? c.Name);
+                var orderIds = paged.Where(c => c.OrderId != null).Select(c => c.OrderId!.Value).Distinct().ToList();
+                var orders = await db.Order.AsNoTracking().Where(o => orderIds.Contains(o.Id)).ToDictionaryAsync(o => o.Id, o => o.OrderNumber ?? o.OrderNo);
+                var deliveryIds = paged.Where(c => c.DeliveryOrderId != null).Select(c => c.DeliveryOrderId!.Value).Distinct().ToList();
+                var deliveries = await db.DeliveryOrder.AsNoTracking().Where(d => deliveryIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.DeliveryNumber ?? d.DeliveryNo);
+                var routeIds = paged.Where(c => c.DeliveryRouteId != null).Select(c => c.DeliveryRouteId!.Value).Distinct().ToList();
+                var routes = await db.DeliveryRoute.AsNoTracking().Where(r => routeIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.RouteNo ?? r.Code);
+                var userIds = paged.Where(c => c.AssignedTo != null).Select(c => c.AssignedTo!.Value).Distinct().ToList();
+                var users = await db.User.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
+                var list = paged.Select(c => new CustomerComplaintListItemModel
+                {
+                    Complaint = c,
+                    StatusName = ComplaintStatus.Label(c.ComplaintStatus),
+                    SeverityName = ComplaintSeverity.Label(c.Severity),
+                    CustomerName = customers.GetValueOrDefault(c.CustomerId),
+                    OrderNumber = c.OrderId is { } o ? orders.GetValueOrDefault(o) : null,
+                    DeliveryNumber = c.DeliveryOrderId is { } d ? deliveries.GetValueOrDefault(d) : null,
+                    RouteNo = c.DeliveryRouteId is { } r ? routes.GetValueOrDefault(r) : null,
+                    AssignedToName = c.AssignedTo is { } u ? users.GetValueOrDefault(u) : null,
+                    IsOverdue = Overdue(c),
+                    HoursToDue = c.SlaDueAt is { } due && !ComplaintStatus.Done.Contains(c.ComplaintStatus) ? Math.Round((decimal)(due - now).TotalHours, 1) : null,
+                }).ToList();
+                return Result<CustomerComplaintListModel>.Success(new CustomerComplaintListModel
+                {
+                    ListItem = list,
+                    TotalRecords = all.Count,
+                    StatusCounts = counts,
+                    OverdueCount = all.Count(Overdue),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResult<CustomerComplaint>> GetById(Guid id)
         {
             try

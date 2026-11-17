@@ -339,6 +339,55 @@
             public static readonly string ComplaintLinkInvalid = "{0} không tồn tại hoặc không thuộc khách hàng của phản ánh";
             public static readonly string ComplaintCommentRequired = "Phải ghi nội dung (nhận xét / cách xử lý / lý do)";
             public static readonly string ComplaintAssigneeNotFound = "Không tìm thấy người được giao xử lý";
+
+            // BE2.1 – đóng gói, xếp xe, đơn giao, lập chuyến nhiều xe, kế hoạch theo ca, đề nghị mua chọn dòng, nhiệt độ tự do, hao hụt, duyệt, truy xuất
+            public static readonly string PackingOrderNotFound = "Không tìm thấy lệnh đóng gói";
+            public static readonly string PackingBatchNotPassed = "Chỉ lập lệnh đóng gói từ mẻ Đạt QC (mẻ {0} đang {1})";
+            public static readonly string PackingOverAllocated = "Tổng số phần các lệnh đóng gói của mẻ {0} ({1}) vượt số phần đạt của mẻ ({2})";
+            public static readonly string PackingOrderNotEligible = "Đơn {0} đang {1} – chỉ lập lệnh đóng gói / đơn giao cho đơn Đã chốt / Đang sản xuất";
+            public static readonly string PackingQuantityMismatch = "Số đóng gói + hỏng + loại ({0}) phải bằng số phần kế hoạch của lệnh ({1})";
+            public static readonly string PackingQuantityInvalid = "Số phần phải lớn hơn 0, số hỏng / loại không âm";
+            public static readonly string PackingNothingToAllocate = "Mẻ {0} đã chia hết số phần đạt cho lệnh đóng gói";
+            public static readonly string PackingNoOrders = "Không có đơn Đã chốt / Đang sản xuất nào của ngày {0} (ca {1}) để chia mẻ";
+            public static readonly string PackingReasonRequired = "Phải ghi lý do hủy";
+            public static readonly string PackingLeftoverWarning = "Mẻ {0} còn {1} phần chưa chia cho đơn (dư) – ghi hao hụt nấu dư nếu không dùng";
+            public static readonly string BatchPackViaPackingOrders = "Mẻ {0} đang đóng gói theo lệnh đóng gói ({1}) – hoàn tất bằng PackingOrder/RecordResult";
+            public static readonly string RouteNotLoaded = "Chưa xếp hàng lên xe (DeliveryRoute/Load): {0}";
+            public static readonly string RouteLoadNothing = "Chuyến {0} không có đơn giao nào chờ xếp hàng";
+            public static readonly string LoadQuantityInvalid = "Số suất xếp lên xe của đơn giao {0} phải lớn hơn 0";
+            public static readonly string LoadShortWarning = "Đơn giao {0} xếp {1} / {2} suất kế hoạch";
+            public static readonly string DeliveryOrderNotFound = "Không tìm thấy đơn giao";
+            public static readonly string DeliveryOrderLocationInvalid = "Điểm giao không tồn tại hoặc không thuộc khách hàng của đơn";
+            public static readonly string DeliveryOrderOverQuantity = "Đơn {0} còn {1} suất chưa lập đơn giao – không lập thêm {2} suất";
+            public static readonly string DeliveryOrderLoaded = "Đơn giao {0} đã xếp lên xe – không {1} được";
+            public static readonly string DeliveryOrderLineInvalid = "Dòng đơn {0} không thuộc đơn, hoặc số suất không hợp lệ (0 < số suất ≤ {1})";
+            public static readonly string DeliveryOrderQuantityRequired = "Nhập số suất của đơn giao (lớn hơn 0) hoặc các dòng đơn";
+            public static readonly string DeliveryOrderReasonRequired = "Phải ghi lý do hủy đơn giao";
+            public static readonly string SplitPartsInvalid = "Tách đơn giao cần ít nhất 2 phần, mỗi phần lớn hơn 0 suất";
+            public static readonly string SplitSumMismatch = "Tổng số suất các phần ({0}) phải bằng số suất của đơn giao ({1})";
+            public static readonly string RouteTargetInvalid = "Chuyến {0} đang {1} – chỉ gán / chuyển đơn giao vào chuyến Kế hoạch";
+            public static readonly string RouteDateMismatch = "Ngày giao của đơn giao ({0}) khác ngày của chuyến ({1})";
+            public static readonly string StopSequenceInvalid = "Thứ tự điểm dừng phải từ 1 và không trùng trong chuyến";
+            public static readonly string StopNotOnRoute = "Đơn giao {0} không thuộc chuyến";
+            public static readonly string DriverBusy = "Tài xế đã có chuyến trùng khung giờ trong ngày: {0}";
+            public static readonly string RoutePlanNoVehicle = "Chọn ít nhất 1 xe để lập chuyến";
+            public static readonly string RoutePlanNothing = "Không có đơn hàng / đơn giao nào của ngày {0} cần xếp chuyến";
+            public static readonly string RoutePlanOverflow = "{0} ({1} suất) không vừa tải còn trống của xe nào – xếp vào xe {2} (vượt tải)";
+            public static readonly string PlanGenerateNoOrders = "Không có đơn Đã xác nhận / Đã chốt nào của ngày {0} có thực đơn cho ngày đó";
+            public static readonly string PlanGenerateNotDraft = "Kế hoạch {0} đang {1} – không sinh lại được";
+            public static readonly string PlanGenerateHasMrp = "Kế hoạch {0} đã tính nhu cầu nguyên liệu – tính lại bằng MaterialRequirement/Calculate";
+            public static readonly string MrpPlanNotFound = "Không tìm thấy kế hoạch sản xuất";
+            public static readonly string MrpNoShortageSelected = "Không có dòng thiếu nào (số mua > 0) được chọn để lập đề nghị mua";
+            public static readonly string MrpBufferInvalid = "Tỷ lệ dự phòng từ 0 tới 100 (%)";
+            public static readonly string MrpRequirementNotInPlan = "Dòng nhu cầu không thuộc kế hoạch hoặc đã bị xóa";
+            public static readonly string TempTargetRequired = "Chọn ít nhất 1 đối tượng đo: khu kho, vị trí kho, lô nguyên liệu hoặc mẻ nấu";
+            public static readonly string TempTargetNotFound = "{0} không tồn tại";
+            public static readonly string TempTypeViaAction = "Nhiệt độ {0} ghi qua {1} (gắn kiểm soát ATTP của nghiệp vụ)";
+            public static readonly string TempOutOfRangeWarning = "Nhiệt độ {0} °C ngoài ngưỡng {1} – cần ghi hành động khắc phục";
+            public static readonly string WasteRecordNotFound = "Không tìm thấy bản ghi hao hụt";
+            public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
+            public static readonly string ApprovalCancelOnlyRequester = "Chỉ người gửi yêu cầu được hủy";
+            public static readonly string ApprovalCancelReasonRequired = "Phải ghi lý do hủy yêu cầu duyệt";
         }
 
         public class TypeSave

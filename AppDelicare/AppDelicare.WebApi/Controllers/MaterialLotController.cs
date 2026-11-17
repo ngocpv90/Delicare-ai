@@ -150,5 +150,39 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.1 (spec 7.5 GET lots): lô + tồn, hạn dùng, bị chặn; lọc nguyên liệu / NCC / trạng thái / QC / sắp hết hạn.</summary>
+        [HttpGet("GetList")]
+        public async Task<IActionResult> GetList([FromQuery] MaterialLotListRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetList(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 7.5 trace): truy xuất xuôi lô → phiếu xuất → lệnh SX → mẻ → đóng gói → đơn → đơn giao → khách (+ nguồn gốc lô).</summary>
+        [HttpGet("Trace")]
+        public async Task<IActionResult> Trace(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.Trace(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Trace: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

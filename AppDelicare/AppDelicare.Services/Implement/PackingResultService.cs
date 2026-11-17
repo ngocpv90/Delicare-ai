@@ -129,47 +129,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(PackingResultRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<PackingResult>(request);
-            _unitOfWork.PackingResultRepository.Add(insert);
-            await _unitOfWork.PackingResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.1: Kết quả đóng gói chỉ ghi qua nghiệp vụ (PackingOrder/RecordResult) – CRUD thêm / sửa / xóa không ghi (giữ máy trạng thái, người thao tác, số liệu).</summary>
+        private Task<string> Insert(PackingResultRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Kết quả đóng gói", "PackingOrder/RecordResult"));
 
-        private async Task<string> Update(PackingResultRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.PackingResultRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.PackingResultRepository.Update(update);
-            await _unitOfWork.PackingResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(PackingResultRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Kết quả đóng gói", "PackingOrder/RecordResult"));
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(PackingResult), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.PackingResultRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.PackingResultRepository.Update(delete);
-            await _unitOfWork.PackingResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Kết quả đóng gói", "PackingOrder/RecordResult"));
 
         public async Task<IResult<PackingResult>> GetById(Guid id)
         {

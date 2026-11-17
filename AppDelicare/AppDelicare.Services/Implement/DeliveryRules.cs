@@ -30,6 +30,169 @@ namespace AppDelicare.Services.Implement
 
         public static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+        // ============================================================ BE2.1 – số suất của đơn giao (GAP-DLV-08), suất còn lại của đơn hàng
+
+        /// <summary>Số suất ghi trong tag <c>[SUAT:n]</c> ở đầu DeliveryOrder.Note (null = không có tag – đơn giao T19 lấy từ điểm dừng).</summary>
+        public static decimal? TaggedMeals(string? note)
+        {
+            if (string.IsNullOrEmpty(note) || !note.StartsWith(DeliveryCode.MealTagPrefix, StringComparison.Ordinal))
+            {
+                return null;
+            }
+            int end = note.IndexOf(']');
+            return end > DeliveryCode.MealTagPrefix.Length
+                && decimal.TryParse(note[DeliveryCode.MealTagPrefix.Length..end], NumberStyles.Number, CultureInfo.InvariantCulture, out decimal value) ? value : null;
+        }
+
+        /// <summary>Ghi / thay tag số suất ở đầu ghi chú, giữ phần chữ phía sau.</summary>
+        public static string WithMeals(string? note, decimal meals)
+        {
+            string rest = note ?? string.Empty;
+            if (TaggedMeals(rest) != null)
+            {
+                rest = rest[(rest.IndexOf(']') + 1)..].TrimStart();
+            }
+            string tag = DeliveryCode.MealTagPrefix + Num(meals) + "]";
+            return string.IsNullOrEmpty(rest) ? tag : tag + " " + rest;
+        }
+
+        /// <summary>Ghi chú đơn giao khi gán chuyến: <c>[SUAT:n] Chuyến CX-… – &lt;ghi chú cũ bỏ phần "Chuyến …" cũ&gt;</c>.</summary>
+        public static string RouteNote(string routeNo, string? note, decimal meals)
+        {
+            string? rest = NoteText(note);
+            if (rest != null && rest.StartsWith("Chuyến ", StringComparison.Ordinal))
+            {
+                int cut = rest.IndexOf(" – ", StringComparison.Ordinal);
+                rest = cut < 0 ? null : Clean(rest[(cut + 3)..]);
+            }
+            return WithMeals(rest == null ? "Chuyến " + routeNo : "Chuyến " + routeNo + " – " + rest, meals);
+        }
+
+        /// <summary>Ghi chú không có tag số suất (hiển thị).</summary>
+        public static string? NoteText(string? note)
+            => TaggedMeals(note) == null ? note : Clean(note![(note.IndexOf(']') + 1)..]);
+
+        /// <summary>Số suất của từng đơn giao: điểm dừng còn hiệu lực (PlannedMealQty) → tag trong Note → 0.</summary>
+        public static async Task<Dictionary<Guid, decimal>> DeliveryOrderMealsAsync(DatabaseContext db, IReadOnlyCollection<DeliveryOrder> deliveryOrders)
+        {
+            var ids = deliveryOrders.Select(d => d.Id).ToList();
+            var stops = await db.DeliveryStop.AsNoTracking().Where(s => !s.IsDeleted && s.DeliveryOrderId != null && ids.Contains(s.DeliveryOrderId.Value))
+                .Select(s => new { DeliveryOrderId = s.DeliveryOrderId!.Value, s.PlannedMealQty }).ToListAsync();
+            return deliveryOrders.ToDictionary(d => d.Id,
+                d => stops.FirstOrDefault(s => s.DeliveryOrderId == d.Id)?.PlannedMealQty ?? TaggedMeals(d.Note) ?? 0m);
+        }
+
+        /// <summary>Suất đã nằm trong đơn giao còn hiệu lực (Kế hoạch / Đang giao / Đã giao) của từng đơn hàng; <paramref name="exceptId"/> = bỏ qua 1 đơn giao.</summary>
+        public static async Task<Dictionary<Guid, decimal>> AllocatedMealsAsync(DatabaseContext db, IReadOnlyCollection<Guid> orderIds, Guid? exceptId = null)
+        {
+            var active = await db.DeliveryOrder.AsNoTracking()
+                .Where(d => !d.IsDeleted && orderIds.Contains(d.OrderId) && DeliveryOrderStatus.Active.Contains(d.Status!) && d.Id != exceptId).ToListAsync();
+            var meals = await DeliveryOrderMealsAsync(db, active);
+            return active.GroupBy(d => d.OrderId).ToDictionary(g => g.Key, g => g.Sum(d => meals[d.Id]));
+        }
+
+        /// <summary>Suất của đơn hàng chưa lập đơn giao còn hiệu lực = tổng suất đơn − Σ suất đơn giao còn hiệu lực.</summary>
+        public static async Task<Dictionary<Guid, decimal>> RemainingMealsAsync(DatabaseContext db, IReadOnlyCollection<Order> orders, Guid? exceptDeliveryOrderId = null)
+        {
+            var orderIds = orders.Select(o => o.Id).ToList();
+            var lines = await db.OrderLine.AsNoTracking().Where(l => !l.IsDeleted && orderIds.Contains(l.OrderId)).ToListAsync();
+            var allocated = await AllocatedMealsAsync(db, orderIds, exceptDeliveryOrderId);
+            return orders.ToDictionary(o => o.Id, o => OrderQuantity(o, lines) - allocated.GetValueOrDefault(o.Id));
+        }
+
+        /// <summary>Đơn giao đã có dòng xếp hàng Loaded (đã lên xe).</summary>
+        public static Task<bool> IsLoadedAsync(DatabaseContext db, Guid deliveryOrderId)
+            => db.DeliveryLoading.AsNoTracking().AnyAsync(l => !l.IsDeleted && l.DeliveryOrderId == deliveryOrderId && l.Status == DeliveryLoadingStatus.Loaded);
+
+        /// <summary>
+        /// Đánh số lại điểm dừng của 1 chuyến – ràng buộc UNIQUE (DeliveryRouteId, SequenceNo) tính cả dòng đã xóa mềm (DDL UQ_DeliveryStop_Route_Sequence):
+        /// bước 1 đổi các điểm liên quan sang số âm tạm (nhỏ hơn mọi số đang có), lưu; bước 2 gán số cuối, lưu. Điểm bị bỏ (<paramref name="removed"/>) giữ số âm.
+        /// <paramref name="ordered"/> = các điểm còn hiệu lực theo thứ tự mới (đánh 1..n) – hoặc <paramref name="finalNumbers"/> nếu có số cụ thể.
+        /// </summary>
+        public static async Task ResequenceAsync(IUnitOfWork uow, Guid routeId, IReadOnlyList<DeliveryStop> ordered, IReadOnlyCollection<DeliveryStop>? removed = null,
+            IReadOnlyDictionary<Guid, int>? finalNumbers = null)
+        {
+            var db = uow.DbContext;
+            int min = Math.Min(0, await db.DeliveryStop.Where(s => s.DeliveryRouteId == routeId).Select(s => (int?)s.SequenceNo).MinAsync() ?? 0);
+            var all = ordered.Concat(removed ?? []).ToList();
+            int temp = min - 1;
+            foreach (var stop in all)
+            {
+                stop.SequenceNo = temp--;
+                uow.DeliveryStopRepository.Update(stop);
+            }
+            await uow.DeliveryStopRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                ordered[i].SequenceNo = finalNumbers != null && finalNumbers.TryGetValue(ordered[i].Id, out int n) ? n : i + 1;
+                uow.DeliveryStopRepository.Update(ordered[i]);
+            }
+            await uow.DeliveryStopRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+        }
+
+        /// <summary>Số âm chưa dùng cho điểm dừng sắp xóa mềm (giải phóng số thứ tự – xem <see cref="ResequenceAsync"/>).</summary>
+        public static async Task<int> FreeNegativeSequenceAsync(DatabaseContext db, Guid routeId)
+            => Math.Min(0, await db.DeliveryStop.Where(s => s.DeliveryRouteId == routeId).Select(s => (int?)s.SequenceNo).MinAsync() ?? 0) - 1;
+
+        /// <summary>Cập nhật / tạo dòng thực hiện giao (DeliveryExecution) của đơn giao theo bước (spec 10.3). Không lưu.</summary>
+        public static void SyncExecution(IUnitOfWork uow, DeliveryOrder deliveryOrder, Guid? routeId, string status, DateTime at, string? remark = null,
+            string? driverName = null, string? vehicleCode = null)
+        {
+            var execution = uow.DeliveryExecutionRepository.GetAll().Where(e => e.DeliveryOrderId == deliveryOrder.Id && !e.IsDeleted)
+                .OrderByDescending(e => e.CreatedDate).FirstOrDefault();
+            if (execution == null)
+            {
+                execution = new DeliveryExecution { Id = Guid.NewGuid(), DeliveryOrderId = deliveryOrder.Id };
+                uow.DeliveryExecutionRepository.Add(execution);
+            }
+            else
+            {
+                uow.DeliveryExecutionRepository.Update(execution);
+            }
+            execution.DeliveryRouteId = routeId ?? execution.DeliveryRouteId;
+            execution.Status = status;
+            execution.DriverName = driverName ?? execution.DriverName;
+            execution.VehicleCode = vehicleCode ?? execution.VehicleCode;
+            switch (status)
+            {
+                case DeliveryExecutionStatus.Dispatched:
+                    execution.DispatchedAt = at;
+                    execution.DepartedAt = at;
+                    break;
+                case DeliveryExecutionStatus.Arrived:
+                    execution.ArrivedAt = at;
+                    break;
+                case DeliveryExecutionStatus.Delivered:
+                    execution.DeliveredAt = at;
+                    execution.ArrivedAt ??= at;
+                    break;
+            }
+            if (remark != null)
+            {
+                execution.Remark = remark.Length > 2000 ? remark[..2000] : remark;
+            }
+        }
+
+        /// <summary>
+        /// Khu vực giao (spec 10.2 plan "byArea") – CustomerDeliveryLocation / Customer không có cột khu vực (GAP-DLV-09, PROPOSED – BA/PO CONFIRM):
+        /// <c>Customer.AreaId</c> nếu có; không có → quận / huyện / thị xã / thành phố tách từ địa chỉ điểm giao (phần cuối có tiền tố đó); không có → phần cuối địa chỉ;
+        /// trống → "(chưa rõ khu vực)".
+        /// </summary>
+        public static string AreaOf(CustomerDeliveryLocation? location, Customer? customer)
+        {
+            if (customer?.AreaId is { } areaId && areaId != Guid.Empty)
+            {
+                return "AREA:" + areaId.ToString("N")[..8];
+            }
+            var parts = (location?.Address ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            string[] districtPrefixes = ["quận", "q.", "huyện", "h.", "thị xã", "tx."];
+            string[] cityPrefixes = ["thành phố", "tp.", "tp "];
+            string? area = parts.LastOrDefault(p => districtPrefixes.Any(x => p.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
+                ?? parts.LastOrDefault(p => cityPrefixes.Any(x => p.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
+                ?? parts.LastOrDefault();
+            return string.IsNullOrWhiteSpace(area) ? "(chưa rõ khu vực)" : area.Trim();
+        }
+
         /// <summary>Lần đo nhiệt độ gần nhất: cấp chuyến (stopId null = xuất phát) hoặc cấp điểm dừng (bàn giao).</summary>
         public static Task<DeliveryEvent?> LatestTemperatureAsync(DatabaseContext db, Guid routeId, Guid? stopId)
             => db.DeliveryEvent.AsNoTracking()
@@ -206,6 +369,22 @@ namespace AppDelicare.Services.Implement
         {
             var batches = await BatchesAsync(db, route.DeliveryDate, await RouteShiftIdsAsync(db, route.Id, rules));
             var blockers = ProductionBlockers(batches, rules);
+            if (rules.DeliveryRequireLoading)
+            {
+                // BE2.1 (spec 10.2 dispatch): mọi đơn giao còn hiệu lực trên chuyến phải đã xếp lên xe (DeliveryLoading Loaded).
+                var stopOrderIds = await db.DeliveryStop.AsNoTracking().Where(s => !s.IsDeleted && s.DeliveryRouteId == route.Id && s.DeliveryOrderId != null)
+                    .Select(s => s.DeliveryOrderId!.Value).ToListAsync();
+                var open = await db.DeliveryOrder.AsNoTracking()
+                    .Where(d => !d.IsDeleted && stopOrderIds.Contains(d.Id) && d.Status == DeliveryOrderStatus.Planned).ToListAsync();
+                var openIds = open.Select(d => d.Id).ToList();
+                var loaded = await db.DeliveryLoading.AsNoTracking()
+                    .Where(l => !l.IsDeleted && openIds.Contains(l.DeliveryOrderId) && l.Status == DeliveryLoadingStatus.Loaded).Select(l => l.DeliveryOrderId).ToListAsync();
+                var notLoaded = open.Where(d => !loaded.Contains(d.Id)).Select(d => d.DeliveryNumber ?? d.DeliveryNo ?? d.Id.ToString("N")[..8]).OrderBy(x => x, StringComparer.Ordinal).ToList();
+                if (notLoaded.Count != 0)
+                {
+                    blockers.Add(string.Format(ConstantHelper.Message.RouteNotLoaded, string.Join(", ", notLoaded)));
+                }
+            }
             var temp = await LatestTemperatureAsync(db, route.Id, null);
             if (temp == null)
             {
@@ -295,6 +474,10 @@ namespace AppDelicare.Services.Implement
             var vehicles = await db.Vehicle.AsNoTracking().Where(v => vehicleIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id);
             var driverIds = routes.Where(r => r.DriverId != null).Select(r => r.DriverId!.Value).ToList();
             var drivers = await db.Employee.AsNoTracking().Where(e => driverIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName);
+            // BE2.1: xếp hàng lên xe + trạng thái thực hiện giao theo đơn giao.
+            var loadings = await db.DeliveryLoading.AsNoTracking()
+                .Where(l => !l.IsDeleted && deliveryOrderIds.Contains(l.DeliveryOrderId) && l.Status == DeliveryLoadingStatus.Loaded).ToListAsync();
+            var executions = await db.DeliveryExecution.AsNoTracking().Where(e => !e.IsDeleted && deliveryOrderIds.Contains(e.DeliveryOrderId)).ToListAsync();
 
             var result = new List<DeliveryRouteDetailModel>();
             foreach (var route in routes)
@@ -343,6 +526,9 @@ namespace AppDelicare.Services.Implement
                         ShortageQty = stop.ShortageQty,
                         HandoverTemperatureC = handover?.TemperatureC,
                         Pod = deliveryOrder == null ? null : pods.Where(p => p.DeliveryOrderId == deliveryOrder.Id).OrderByDescending(p => p.ConfirmedAt).FirstOrDefault(),
+                        LoadedQty = deliveryOrder == null ? null : loadings.Where(l => l.DeliveryOrderId == deliveryOrder.Id).OrderByDescending(l => l.LoadingTime).FirstOrDefault()?.LoadedQty,
+                        ExecutionStatus = deliveryOrder == null ? null
+                            : executions.Where(e => e.DeliveryOrderId == deliveryOrder.Id).OrderByDescending(e => e.CreatedDate).FirstOrDefault()?.Status ?? DeliveryExecutionStatus.Ready,
                         Note = stop.Note,
                         AllowedActions = !open ? []
                             : stop.StopStatus == DeliveryStopStatus.Planned ? ["arrive", "recordTemperature", "deliver", "fail"]
@@ -361,10 +547,13 @@ namespace AppDelicare.Services.Implement
                         detail.ListBlocker = await DispatchBlockersAsync(db, route, rules);
                     }
                 }
+                // BE2.1: thêm load (xếp hàng lên xe), updateStops (đổi thứ tự điểm). Bắt buộc xếp hàng → Kế hoạch không có dispatch.
                 detail.AllowedActions = route.Status switch
                 {
-                    DeliveryRouteStatus.Planned => ["recordTemperature", "dispatch", "update", "delete", "exportDeliveryNote"],
-                    DeliveryRouteStatus.Loading => ["recordTemperature", "dispatch", "exportDeliveryNote"],
+                    DeliveryRouteStatus.Planned => rules.DeliveryRequireLoading
+                        ? ["recordTemperature", "load", "updateStops", "update", "delete", "exportDeliveryNote"]
+                        : ["recordTemperature", "load", "dispatch", "updateStops", "update", "delete", "exportDeliveryNote"],
+                    DeliveryRouteStatus.Loading => ["recordTemperature", "load", "dispatch", "exportDeliveryNote"],
                     DeliveryRouteStatus.InTransit => ["exportDeliveryNote"],
                     _ => ["exportDeliveryNote"],
                 };

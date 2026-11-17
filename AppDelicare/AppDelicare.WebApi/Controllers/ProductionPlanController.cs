@@ -186,5 +186,25 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.1 (spec 8.1 generate): sinh / làm lại kế hoạch Nháp KH- của ngày từ đơn Đã xác nhận / Đã chốt, số phần theo ca. Quyền Thêm prod-plan.</summary>
+        [Security.Permission("prod-plan", PermissionAction.Add)]
+        [HttpPost("Generate")]
+        public async Task<IActionResult> Generate([FromForm] ProductionPlanGenerateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Generate(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Generate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

@@ -134,7 +134,14 @@ namespace AppDelicare.Tests.Delivery
             // Lưu mẫu mẻ đã đóng gói (ghi được khi Packed) + đo lại 65 °C → xuất phát.
             (await c.PostFormAsync("/api/ProductionBatch/RecordSampleRetained", ("Id", s.BatchNoSample), ("ActualValue", "Tủ mẫu 3"))).Ok();
             (await c.PostFormAsync("/api/DeliveryRoute/RecordTemperature", ("Id", routeId), ("TemperatureC", 65m), ("DeviceCode", "NK-02"))).Ok();
+            // BE2.1: chưa xếp hàng lên xe → vẫn chặn; xếp hàng (DeliveryLoading + DeliveryExecution LOADED) rồi mới xuất phát.
+            (await c.PostFormAsync("/api/DeliveryRoute/Dispatch", ("Id", routeId))).Fail("Chưa xếp hàng lên xe (DeliveryRoute/Load): " + do1 + ", " + do2);
+            var loaded = (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = s.Driver })).Ok();
+            loaded.GetProperty("route").GetProperty("route").GetProperty("status").GetString().Should().Be("Loading");
+            loaded.GetProperty("listLoading").EnumerateArray().Select(l => l.GetProperty("loadedQty").GetDecimal()).Should().BeEquivalentTo([40m, 60m]);
+            loaded.GetProperty("listExecution").EnumerateArray().Select(l => l.GetProperty("status").GetString()).Should().OnlyContain(x => x == "LOADED");
             var dispatched = (await c.PostFormAsync("/api/DeliveryRoute/Dispatch", ("Id", routeId), ("Latitude", 10.8m), ("Longitude", 106.7m))).Ok();
+            (await _factory.QueryAsync(db => db.DeliveryExecution.Where(e => e.DeliveryRouteId == routeId).Select(e => e.Status).ToListAsync())).Should().OnlyContain(x => x == "DISPATCHED");
             dispatched.GetProperty("route").GetProperty("status").GetString().Should().Be("InTransit");
             dispatched.GetProperty("route").GetProperty("actualStart").GetDateTime().Should().Be(Day.AddHours(10));
             dispatched.GetProperty("departureTemperatureC").GetDecimal().Should().Be(65);

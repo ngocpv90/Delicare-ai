@@ -330,6 +330,7 @@ namespace AppDelicare.Tests.Pilot
                 (await Post("/api/DeliveryRoute/Dispatch", ("Id", routeId))).Fail("60");
                 (await Post("/api/DeliveryRoute/Dispatch", ("Id", routeId), ("TemperatureC", 65m), ("DeviceCode", "[DEMO]-NK"))).Fail("ME-"); // cơm chưa lưu mẫu
                 (await Post("/api/ProductionBatch/RecordSampleRetained", ("Id", batchRice), ("ActualValue", "[DEMO] tủ mẫu 150 g"))).Ok();
+                (await PostJson("/api/DeliveryRoute/Load", new { id = routeId, note = "[DEMO]" })).Ok(); // BE2.1: xếp hàng lên xe
                 (await Post("/api/DeliveryRoute/Dispatch", ("Id", routeId), ("TemperatureC", 65m), ("DeviceCode", "[DEMO]-NK"), ("Note", "[DEMO]"))).Ok();
                 (await Post("/api/DeliveryStop/Arrive", ("Id", stopId))).Ok();
                 (await Post("/api/DeliveryStop/Deliver", ("Id", stopId), ("TemperatureC", 58m), ("DeliveredQuantity", 1000m), ("AcceptedQuantity", 998m),

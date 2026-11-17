@@ -4,6 +4,7 @@ using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using AppDelicare.Model.Model;
 using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
@@ -17,8 +18,10 @@ using Microsoft.EntityFrameworkCore;
 namespace AppDelicare.Services.Implement
 {
     public class MaterialLotService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock) : IMaterialLotService
+        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock
+        , Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IMaterialLotService
     {
+        private readonly AppDelicare.Model.Option.BusinessRulesOptions _rules = rules.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -227,6 +230,92 @@ namespace AppDelicare.Services.Implement
             _unitOfWork.MaterialLotRepository.Update(delete);
             await _unitOfWork.MaterialLotRepository.CommitAsync(typeSave);
             return string.Empty;
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 7.5 GET lots, Catalog 118): lô theo nguyên liệu / NCC / trạng thái / QC (LotNumber, QcStatus – bỏ LotNo, QualityStatus) / sắp hết hạn trong N ngày / còn tồn,
+        /// kèm tồn (Σ InventoryBalance của lô), số ngày tới hạn, hết hạn, bị chặn xuất (InventoryLotRules: hết hạn, KHONG_DAT / REJECT / HOLD, tạm giữ).
+        /// </summary>
+        public async Task<IResults<MaterialLotListItemModel>> GetList(MaterialLotListRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                DateTime today = _clock.Today;
+                var query = db.MaterialLot.AsNoTracking().Where(l => !l.IsDeleted);
+                if (request.IngredientId is { } ing && ing != Guid.Empty)
+                {
+                    query = query.Where(l => l.IngredientId == ing);
+                }
+                if (request.SupplierId is { } sup && sup != Guid.Empty)
+                {
+                    query = query.Where(l => l.SupplierId == sup);
+                }
+                if (!string.IsNullOrWhiteSpace(request.Status))
+                {
+                    query = query.Where(l => l.Status == request.Status);
+                }
+                if (!string.IsNullOrWhiteSpace(request.QcStatus))
+                {
+                    query = query.Where(l => l.QcStatus == request.QcStatus);
+                }
+                if (request.ExpiringWithinDays is { } days)
+                {
+                    DateTime limit = today.AddDays(days + 1);
+                    query = query.Where(l => l.ExpiryDate != null && l.ExpiryDate < limit);
+                }
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    string q = request.SearchText.Trim();
+                    query = query.Where(l => (l.LotNumber != null && l.LotNumber.Contains(q)) || (l.LotNo != null && l.LotNo.Contains(q)));
+                }
+                var lots = await query.ToListAsync();
+                var lotIds = lots.Select(l => l.Id).ToList();
+                var balances = await db.InventoryBalance.AsNoTracking()
+                    .Where(b => !b.IsDeleted && ((b.MaterialLotId != null && lotIds.Contains(b.MaterialLotId.Value)) || (b.LotId != null && lotIds.Contains(b.LotId.Value))))
+                    .Select(b => new { LotId = b.MaterialLotId ?? b.LotId, b.OnHandQuantity, b.AvailableQuantity }).ToListAsync();
+                var ingredientIds = lots.Select(l => l.IngredientId).Distinct().ToList();
+                var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
+                var supplierIds = lots.Where(l => l.SupplierId != null).Select(l => l.SupplierId!.Value).Distinct().ToList();
+                var suppliers = await db.Supplier.AsNoTracking().Where(s => supplierIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
+                var list = lots.Select(l => new MaterialLotListItemModel
+                {
+                    Lot = l,
+                    IngredientCode = ingredients.GetValueOrDefault(l.IngredientId)?.Code,
+                    IngredientName = ingredients.GetValueOrDefault(l.IngredientId)?.Name,
+                    SupplierName = l.SupplierId is { } s ? suppliers.GetValueOrDefault(s) : null,
+                    OnHandQuantity = balances.Where(b => b.LotId == l.Id).Sum(b => b.OnHandQuantity),
+                    AvailableQuantity = balances.Where(b => b.LotId == l.Id).Sum(b => b.AvailableQuantity),
+                    DaysToExpiry = l.ExpiryDate is { } e ? (int)(e.Date - today).TotalDays : null,
+                    IsExpired = l.ExpiryDate is { } x && x.Date < today,
+                    IsBlocked = InventoryLotRules.BlockReason(l, today) != null,
+                }).Where(x => request.InStock != true || x.OnHandQuantity > 0)
+                .OrderBy(x => x.Lot.ExpiryDate ?? DateTime.MaxValue).ThenBy(x => x.Lot.LotNumber, StringComparer.Ordinal).ToList();
+                return Results<MaterialLotListItemModel>.Success(list, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 7.5 trace, Catalog 119): truy xuất xuôi của lô – NCC / PO / phiếu nhập / nhiệt độ nhận của lô, rồi phiếu xuất → lệnh SX → mẻ → lệnh đóng gói → đơn → đơn giao → khách
+        /// (<see cref="TraceRules.ForwardFromLotAsync"/>). Ngược từ mẻ: ProductionBatch/Trace.
+        /// </summary>
+        public async Task<IResult<TraceModel>> Trace(Guid id)
+        {
+            try
+            {
+                var model = await TraceRules.ForwardFromLotAsync(_unitOfWork.DbContext, id, _rules);
+                return model == null ? Result<TraceModel>.Fail(ConstantHelper.Message.LotNotFound) : Result<TraceModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Trace: ", ex.ToString()));
+                throw;
+            }
         }
 
         public async Task<IResult<MaterialLot>> GetById(Guid id)

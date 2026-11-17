@@ -90,6 +90,11 @@ namespace AppDelicare.Model.Option
         public decimal ReconciliationVarianceRemarkPct { get; set; } = 1.0m;
         /// <summary>T19: bàn giao có suất bị từ chối → tự tạo phản ánh PA- (SourceChannel POD, SHORTAGE) – spec 10.3, PROPOSED.</summary>
         public bool DeliveryAutoComplaintOnRejected { get; set; } = true;
+        /// <summary>
+        /// BE2.1 (spec 10.2 load / dispatch): xuất phát chỉ từ chuyến Đang xếp (Loading) và mọi đơn giao của chuyến đã có dòng xếp hàng Loaded
+        /// (<c>DeliveryRoute/Load</c>). false = cho xuất phát thẳng từ Kế hoạch như T19. PROPOSED – BA/PO CONFIRM.
+        /// </summary>
+        public bool DeliveryRequireLoading { get; set; } = true;
     }
 
     /// <summary>T15.1: ngưỡng nhiệt độ nhận hàng của 1 kiểu bảo quản (°C).</summary>

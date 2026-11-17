@@ -492,6 +492,142 @@ namespace AppDelicare.Services.Implement
                     .Where(o => o.ProductionPlanId == planId && !o.IsDeleted && o.ShiftId != null && o.Status != ProductionOrderStatus.Cancelled)
                     .Select(o => o.ShiftId!.Value).Distinct().ToListAsync()).ToHashSet();
 
+        /// <summary>
+        /// BE2.1 (spec 8.1 generate, Catalog 137) – sinh / làm lại kế hoạch Nháp của ngày trong 1 transaction. Theo GAP-MRP-01 / GAP-PRD-01 (anh chốt): <b>1 KH- / ngày</b>
+        /// (không tách kế hoạch theo ca như spec), chia theo ca ở dòng kế hoạch (ShiftId khi món thuộc đúng 1 ca) và ở <c>ListShift</c> của chi tiết; phát hành theo từng ca
+        /// bằng Release như T17.1. PROPOSED – BA/PO CONFIRM (D-49): spec "mỗi ca một kế hoạch" mâu thuẫn quyết định KH- theo ngày → giữ quyết định của anh.
+        /// <list type="number">
+        /// <item>Nguồn: dòng đơn của đơn <b>Đã xác nhận / Đã chốt</b> có ngày ăn = ngày × thực đơn (MenuLine cùng loại suất, thứ của ngày), chia đều lựa chọn + dự phòng
+        /// (như MRP – <see cref="ProductionRules.DishDemandsAsync"/>) → cộng dồn theo món; OrderLineId = dòng đơn đầu tiên.</item>
+        /// <item>Kế hoạch neo (ngày, chi nhánh, không ca): chưa có → tạo Nháp KH-; Nháp chưa tính nhu cầu NL → cập nhật dòng tại chỗ (dòng món không còn → xóa mềm);
+        /// đã Duyệt trở đi → chặn; đã tính nhu cầu NL (MaterialRequirement) → chặn (tính lại bằng MaterialRequirement/Calculate).</item>
+        /// <item>Chưa áp MenuChangeRequest (đổi món – BE2.2).</item>
+        /// </list>
+        /// </summary>
+        public async Task<IResult<ProductionPlanDetailModel>> Generate(ProductionPlanGenerateRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                DateTime date = request.ProductionDate.Date, next = date.AddDays(1);
+                Guid? unitId = request.OrganizationUnitId is { } ou && ou != Guid.Empty ? ou : null;
+                if (unitId != null && !await db.OrganizationUnit.AsNoTracking().AnyAsync(o => o.Id == unitId && !o.IsDeleted))
+                {
+                    return Fail(ConstantHelper.Message.OrganizationUnitNotFound);
+                }
+                // Khóa theo ngày (sp_getapplock của mã KH-) như MaterialRequirement/Calculate – 2 lần sinh / tính cùng ngày chạy lần lượt.
+                string planNumber = await _documentNumberService.NextAsync(DocumentKind.ProductionPlan, date);
+                var plan = _unitOfWork.ProductionPlanRepository.GetAll()
+                    .Where(p => !p.IsDeleted && p.ProductionDate >= date && p.ProductionDate < next && p.OrganizationUnitId == unitId && p.ShiftId == null)
+                    .OrderBy(p => p.CreatedDate).FirstOrDefault();
+                if (plan != null && plan.Status != ProductionPlanStatus.Draft)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.PlanGenerateNotDraft, plan.PlanNumber ?? plan.PlanNo, ProductionPlanStatus.Label(plan.Status)));
+                }
+                if (plan != null && await db.MaterialRequirement.AsNoTracking().AnyAsync(r => r.ProductionPlanId == plan.Id && !r.IsDeleted))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.PlanGenerateHasMrp, plan.PlanNumber ?? plan.PlanNo));
+                }
+                var (demands, orders, skipped, _) = await ProductionRules.DishDemandsAsync(db, date, [OrderStatus.Confirmed, OrderStatus.Locked], _rules);
+                if (demands.Count == 0)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.PlanGenerateNoOrders, ProductionRules.Day(date)));
+                }
+                var warnings = new List<string>();
+                if (skipped.Count != 0)
+                {
+                    warnings.Add($"{skipped.Count} dòng đơn không có thực đơn / thực đơn không có món cho ngày này – không đưa vào kế hoạch");
+                }
+                int pending = await db.Order.AsNoTracking().CountAsync(o => !o.IsDeleted && o.MealDate >= date && o.MealDate < next
+                    && (o.Status == OrderStatus.Draft || o.Status == OrderStatus.Submitted));
+                if (pending > 0)
+                {
+                    warnings.Add($"{pending} đơn Nháp / Đã gửi của ngày chưa được tính (chỉ đơn Đã xác nhận / Đã chốt)");
+                }
+                var byDish = demands.GroupBy(d => d.DishId)
+                    .Select(g => (DishId: g.Key, Quantity: ProductionRules.Round4(g.Sum(x => x.Quantity)), FirstLine: g.First().OrderLineId, Shifts: g.Select(x => x.ShiftId).Distinct().ToList()))
+                    .ToList();
+
+                var oldLines = plan == null ? [] : _unitOfWork.ProductionPlanLineRepository.GetAll().Where(l => l.ProductionPlanId == plan.Id && !l.IsDeleted).ToList();
+                var toDelete = oldLines.Where(l => byDish.All(d => d.DishId != l.DishId)).ToList();
+                if (toDelete.Count != 0)
+                {
+                    foreach (var line in toDelete)
+                    {
+                        _unitOfWork.ProductionPlanLineRepository.Update(line);
+                    }
+                    await _unitOfWork.ProductionPlanLineRepository.CommitAsync(ConstantHelper.TypeSave.Delete);
+                }
+                DateTime now = _clock.Now;
+                if (plan == null)
+                {
+                    plan = new ProductionPlan
+                    {
+                        Id = Guid.NewGuid(),
+                        PlanNumber = planNumber,
+                        PlanNo = planNumber,
+                        ProductionDate = date,
+                        PlanDate = now,
+                        OrganizationUnitId = unitId,
+                        Status = ProductionPlanStatus.Draft,
+                    };
+                    _unitOfWork.ProductionPlanRepository.Add(plan);
+                }
+                else
+                {
+                    _unitOfWork.ProductionPlanRepository.Update(plan);
+                }
+                foreach (var dish in byDish)
+                {
+                    var line = oldLines.FirstOrDefault(l => l.DishId == dish.DishId && !toDelete.Contains(l));
+                    if (line == null)
+                    {
+                        line = new ProductionPlanLine { Id = Guid.NewGuid(), ProductionPlanId = plan.Id, DishId = dish.DishId };
+                        _unitOfWork.ProductionPlanLineRepository.Add(line);
+                    }
+                    else
+                    {
+                        _unitOfWork.ProductionPlanLineRepository.Update(line);
+                    }
+                    line.PlannedQuantity = dish.Quantity;
+                    line.PlannedQty = dish.Quantity;
+                    line.OrderLineId = dish.FirstLine;
+                    line.ShiftId = dish.Shifts.Count == 1 ? dish.Shifts[0] : null;
+                    line.Status = ProductionPlanStatus.Draft;
+                }
+                var orderIds = demands.Select(d => d.OrderId).Distinct().ToList();
+                plan.Note = Newtonsoft.Json.JsonConvert.SerializeObject(new
+                {
+                    Source = "GENERATE",
+                    GeneratedAt = now,
+                    GeneratedBy = actor.UserId,
+                    OrderCount = orderIds.Count,
+                    TotalMeals = orders.Where(o => orderIds.Contains(o.Id)).Sum(o => o.TotalQuantity ?? 0m),
+                    UserNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(),
+                    Warnings = warnings,
+                });
+                await _unitOfWork.ProductionPlanRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                var detail = (await DetailAsync(plan.Id))!;
+                detail.ListWarning.InsertRange(0, warnings);
+                return Result<ProductionPlanDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Generate: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+
+            IResult<ProductionPlanDetailModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                return Result<ProductionPlanDetailModel>.Fail(message);
+            }
+        }
+
         /// <summary>T17: chi tiết kế hoạch – dòng món, lệnh SX, mẻ (lịch + ATTP), thao tác được phép. T17.1: + phần theo ca.</summary>
         public async Task<IResult<ProductionPlanDetailModel>> GetDetail(Guid id)
         {

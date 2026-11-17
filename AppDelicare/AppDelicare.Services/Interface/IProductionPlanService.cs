@@ -19,6 +19,8 @@ namespace AppDelicare.Services.Interface
         // T17 (Pilot P7): xác nhận kế hoạch, phát hành → lệnh SX + mẻ ME- (lịch ngược từ giờ xuất bếp), chi tiết, in Phiếu sản xuất.
         public Task<IResult<ProductionPlanDetailModel>> Approve(ProductionActionRequest request);
         public Task<IResult<ProductionPlanDetailModel>> Release(ProductionPlanReleaseRequest request);
+        /// <summary>BE2.1 (spec 8.1 generate): sinh / làm lại kế hoạch Nháp của ngày từ đơn Đã xác nhận / Đã chốt (1 KH- / ngày, số phần theo ca).</summary>
+        public Task<IResult<ProductionPlanDetailModel>> Generate(ProductionPlanGenerateRequest request);
         public Task<IResult<ProductionPlanDetailModel>> GetDetail(Guid id);
         public Task<IResult<byte[]>> ExportProductionSheet(Guid id);
     }

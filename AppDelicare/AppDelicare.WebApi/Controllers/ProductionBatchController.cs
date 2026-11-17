@@ -375,5 +375,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.1 (spec 7.5 trace – chiều ngược): mẻ → phiếu xuất → lô NL → phiếu nhập → PO → NCC, kèm mẻ → đóng gói → đơn → khách.</summary>
+        [HttpGet("Trace")]
+        public async Task<IActionResult> Trace(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.Trace(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Trace: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

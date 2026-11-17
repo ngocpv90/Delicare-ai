@@ -20,6 +20,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<MaterialRequirementResultModel>> Calculate(MaterialRequirementCalculateRequest request);
         /// <summary>T14.1: đề nghị mua đã gửi duyệt / duyệt / lập PO → tính lại và lập đề nghị mua bổ sung Nháp cho phần thiếu thêm (1 transaction).</summary>
         public Task<IResult<MaterialRequirementResultModel>> CalculateTopUp(MaterialRequirementCalculateRequest request);
+        /// <summary>BE2.1 (spec 7.1 create-purchase-request): đề nghị mua Nháp từ dòng thiếu được chọn + % dự phòng.</summary>
+        public Task<IResult<MaterialRequirementResultModel>> CreatePurchaseRequest(MaterialRequirementPurchaseRequest request);
         /// <summary>T14: kết quả đã lưu theo ngày sản xuất (+ chi nhánh).</summary>
         public Task<IResult<MaterialRequirementResultModel>> GetByDate(MaterialRequirementByDateRequest request);
         /// <summary>T14: kết quả đã lưu theo kế hoạch sản xuất.</summary>

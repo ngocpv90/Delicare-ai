@@ -33,6 +33,150 @@ namespace AppDelicare.Model.Request.Custom
         [MaxLength(1000)]
         public string? Description { get; set; }
         public List<Guid> ListOrderId { get; set; } = [];
+        /// <summary>BE2.1: đơn giao lập tay / tách (Kế hoạch, chưa gán chuyến, cùng ngày giao) đưa vào chuyến. Có danh sách này mà <c>ListOrderId</c> trống → chỉ lấy các đơn giao này.</summary>
+        public List<Guid> ListDeliveryOrderId { get; set; } = [];
+    }
+
+    /// <summary>BE2.1 (spec 10.2 load): xếp hàng lên xe – JSON vì có danh sách. <c>ListItem</c> trống = mọi đơn giao Kế hoạch của chuyến, số suất = suất kế hoạch.</summary>
+    public class DeliveryRouteLoadRequest
+    {
+        /// <summary>Id chuyến xe.</summary>
+        [Required]
+        public Guid Id { get; set; }
+        /// <summary>Nhân viên xếp hàng (Employee) – tùy chọn.</summary>
+        public Guid? EmployeeId { get; set; }
+        public List<DeliveryLoadItemRequest> ListItem { get; set; } = [];
+        [MaxLength(1000)]
+        public string? Note { get; set; }
+    }
+
+    public class DeliveryLoadItemRequest
+    {
+        [Required]
+        public Guid DeliveryOrderId { get; set; }
+        /// <summary>Số suất xếp lên xe; trống = suất kế hoạch của đơn giao.</summary>
+        public decimal? LoadedQty { get; set; }
+    }
+
+    /// <summary>BE2.1 (spec 10.2 PUT routes/{id}/stops): đổi thứ tự / giờ dự kiến các điểm dừng của chuyến Kế hoạch – JSON.</summary>
+    public class DeliveryRouteStopsRequest
+    {
+        /// <summary>Id chuyến xe.</summary>
+        [Required]
+        public Guid Id { get; set; }
+        public List<DeliveryRouteStopItemRequest> ListStop { get; set; } = [];
+    }
+
+    public class DeliveryRouteStopItemRequest
+    {
+        [Required]
+        public Guid DeliveryOrderId { get; set; }
+        public int SequenceNo { get; set; }
+        public DateTime? PlannedArrival { get; set; }
+    }
+
+    /// <summary>
+    /// BE2.1 (spec 10.2 plan): lập chuyến cho nhiều xe theo khu vực – JSON. Đơn Đang sản xuất của ngày còn suất chưa lập đơn giao + đơn giao Kế hoạch chưa gán chuyến,
+    /// gom theo khu vực (GAP-DLV-09), chia cho các xe theo tải còn trống; mỗi xe có hàng → 1 chuyến CX-.
+    /// </summary>
+    public class DeliveryRoutePlanRequest
+    {
+        [Required]
+        public DateTime DeliveryDate { get; set; }
+        public Guid? ShiftId { get; set; }
+        public List<DeliveryPlanVehicleRequest> ListVehicle { get; set; } = [];
+        /// <summary>Chỉ hỗ trợ "byArea" (mặc định).</summary>
+        [MaxLength(50)]
+        public string? Strategy { get; set; }
+    }
+
+    public class DeliveryPlanVehicleRequest
+    {
+        [Required]
+        public Guid VehicleId { get; set; }
+        public Guid? DriverId { get; set; }
+    }
+
+    /// <summary>
+    /// BE2.1 (spec 10.2 POST delivery-orders): lập đơn giao tay cho 1 phần / toàn bộ suất của đơn hàng – JSON vì có dòng đơn.
+    /// Số suất = Σ <c>ListLine.Quantity</c>, hoặc <c>MealQuantity</c>, hoặc trống cả hai = toàn bộ suất còn lại của đơn.
+    /// </summary>
+    public class DeliveryOrderCreateRequest
+    {
+        [Required]
+        public Guid OrderId { get; set; }
+        /// <summary>Điểm giao (thuộc khách của đơn); trống = điểm giao của đơn hàng.</summary>
+        public Guid? CustomerDeliveryLocationId { get; set; }
+        public DateTime? PlannedDeliveryTime { get; set; }
+        public decimal? MealQuantity { get; set; }
+        public List<DeliveryOrderLineRequest> ListLine { get; set; } = [];
+        [MaxLength(1000)]
+        public string? Note { get; set; }
+    }
+
+    public class DeliveryOrderLineRequest
+    {
+        [Required]
+        public Guid OrderLineId { get; set; }
+        public decimal Quantity { get; set; }
+    }
+
+    /// <summary>BE2.1 (spec 10.2 split): tách đơn giao chưa xếp lên xe thành nhiều phần (phần đầu giữ đơn gốc, phần sau là đơn giao mới chưa gán chuyến) – JSON.</summary>
+    public class DeliveryOrderSplitRequest
+    {
+        /// <summary>Id đơn giao.</summary>
+        [Required]
+        public Guid Id { get; set; }
+        public List<DeliveryOrderSplitPartRequest> ListPart { get; set; } = [];
+    }
+
+    public class DeliveryOrderSplitPartRequest
+    {
+        public Guid? CustomerDeliveryLocationId { get; set; }
+        public DateTime? PlannedDeliveryTime { get; set; }
+        public decimal MealQuantity { get; set; }
+    }
+
+    /// <summary>BE2.1 (spec 10.2 PUT delivery-orders/{id}/route): gán / chuyển đơn giao vào chuyến Kế hoạch (form). Trống SequenceNo = cuối chuyến.</summary>
+    public class DeliveryOrderAssignRouteRequest
+    {
+        /// <summary>Id đơn giao.</summary>
+        [Required]
+        public Guid Id { get; set; }
+        [Required]
+        public Guid DeliveryRouteId { get; set; }
+        public int? SequenceNo { get; set; }
+    }
+
+    /// <summary>BE2.1 (spec 10.2 cancel): hủy đơn giao chưa xếp lên xe (form) – lý do bắt buộc.</summary>
+    public class DeliveryOrderCancelRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        [MaxLength(1000)]
+        public string? Reason { get; set; }
+    }
+
+    /// <summary>BE2.1 (spec 10.2 GET delivery-orders): lọc đơn giao. <c>Unassigned = true</c> = chưa gán chuyến.</summary>
+    public class DeliveryOrderListRequest
+    {
+        public DateTime? DeliveryDate { get; set; }
+        public Guid? OrderId { get; set; }
+        public Guid? CustomerId { get; set; }
+        public Guid? DeliveryRouteId { get; set; }
+        [MaxLength(50)]
+        public string? Status { get; set; }
+        public bool? Unassigned { get; set; }
+    }
+
+    /// <summary>BE2.1 (spec 10.3 GET executions): thực hiện giao của ngày (+ trạng thái, chuyến).</summary>
+    public class DeliveryExecutionBoardRequest
+    {
+        [Required]
+        public DateTime DeliveryDate { get; set; }
+        [MaxLength(50)]
+        public string? Status { get; set; }
+        public Guid? DeliveryRouteId { get; set; }
     }
 
     /// <summary>T19: đo nhiệt độ giao (form). DeliveryStopId trống = nhiệt độ lúc xuất phát của chuyến; có = lúc bàn giao tại điểm. &lt; 60 °C bắt buộc hành động khắc phục.</summary>

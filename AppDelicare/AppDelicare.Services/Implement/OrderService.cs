@@ -749,6 +749,96 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>Thứ tự 8 cột của bảng đơn (STATUS_CATALOG Order.Status).</summary>
+        private static readonly string[] BoardStatuses =
+            [OrderStatus.Draft, OrderStatus.Submitted, OrderStatus.Confirmed, OrderStatus.Locked, OrderStatus.InProduction, OrderStatus.Delivered, OrderStatus.Reconciled, OrderStatus.Cancelled];
+
+        /// <summary>
+        /// BE2.1 (spec 6.6 GET orders view=board, Catalog 90): bảng đơn theo 8 trạng thái + đếm theo trạng thái. Lọc ngày ăn (1 ngày hoặc khoảng), trạng thái, khách,
+        /// chi nhánh của khách (<c>Customer.BranchId</c>), tìm theo số đơn / tên khách. Không lọc ngày → 30 ngày gần nhất tới 7 ngày tới (tránh tải hết – PROPOSED).
+        /// </summary>
+        public async Task<IResult<OrderBoardModel>> GetBoard(OrderBoardRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var query = db.Order.AsNoTracking().Where(o => !o.IsDeleted);
+                if (request.MealDate is { } day)
+                {
+                    DateTime d = day.Date, next = d.AddDays(1);
+                    query = query.Where(o => o.MealDate >= d && o.MealDate < next);
+                }
+                else
+                {
+                    DateTime from = (request.MealDateFrom ?? _clock.Today.AddDays(-30)).Date;
+                    DateTime to = (request.MealDateTo ?? _clock.Today.AddDays(7)).Date.AddDays(1);
+                    query = query.Where(o => o.MealDate >= from && o.MealDate < to);
+                }
+                if (!string.IsNullOrWhiteSpace(request.Status))
+                {
+                    query = query.Where(o => o.Status == request.Status);
+                }
+                if (request.CustomerId is { } cid && cid != Guid.Empty)
+                {
+                    query = query.Where(o => o.CustomerId == cid);
+                }
+                if (request.BranchId is { } bid && bid != Guid.Empty)
+                {
+                    var customerIds = db.Customer.Where(c => c.BranchId == bid).Select(c => c.Id);
+                    query = query.Where(o => customerIds.Contains(o.CustomerId));
+                }
+                var orders = await query.ToListAsync();
+                var ids = orders.Select(o => o.CustomerId).Distinct().ToList();
+                var customers = await db.Customer.AsNoTracking().Where(c => ids.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.DisplayName ?? c.Name);
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    string q = request.SearchText.Trim();
+                    orders = [.. orders.Where(o => (o.OrderNumber ?? o.OrderNo ?? string.Empty).Contains(q, StringComparison.OrdinalIgnoreCase)
+                        || (customers.GetValueOrDefault(o.CustomerId) ?? string.Empty).Contains(q, StringComparison.OrdinalIgnoreCase))];
+                }
+                var locationIds = orders.Where(o => o.DeliveryLocationId != null).Select(o => o.DeliveryLocationId!.Value).Distinct().ToList();
+                var locations = await db.CustomerDeliveryLocation.AsNoTracking().Where(l => locationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, l => l.Name);
+                var items = orders.Select(o => new OrderBoardItemModel
+                {
+                    Id = o.Id,
+                    OrderNumber = o.OrderNumber ?? o.OrderNo,
+                    CustomerId = o.CustomerId,
+                    CustomerName = customers.GetValueOrDefault(o.CustomerId),
+                    DeliveryLocationId = o.DeliveryLocationId,
+                    LocationName = o.DeliveryLocationId is { } lid ? locations.GetValueOrDefault(lid) : null,
+                    MealDate = o.MealDate,
+                    DeliveryDate = o.DeliveryDate,
+                    TotalQuantity = o.TotalQuantity,
+                    TotalAmount = o.TotalAmount,
+                    Status = o.Status,
+                }).OrderBy(x => x.MealDate).ThenBy(x => x.OrderNumber, StringComparer.Ordinal).ToList();
+                var columns = BoardStatuses.Concat(items.Select(i => i.Status ?? string.Empty).Where(s => !BoardStatuses.Contains(s)).Distinct())
+                    .Select(status =>
+                    {
+                        var mine = items.Where(i => (i.Status ?? string.Empty) == status).ToList();
+                        return new OrderBoardColumnModel
+                        {
+                            Status = status,
+                            StatusName = OrderStatus.Label(status),
+                            Count = mine.Count,
+                            TotalQuantity = mine.Sum(i => i.TotalQuantity ?? 0m),
+                            ListItem = mine,
+                        };
+                    }).ToList();
+                return Result<OrderBoardModel>.Success(new OrderBoardModel
+                {
+                    ListColumn = columns,
+                    StatusCounts = columns.ToDictionary(c => c.Status, c => c.Count),
+                    TotalRecords = items.Count,
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBoard: ", ex.ToString()));
+                throw;
+            }
+        }
+
         /// <summary>Chi tiết đơn (spec 6.6 GET {id}) – dòng kèm tên suất / ca / thực đơn, thao tác được phép, yêu cầu lệch suất đang chờ.</summary>
         public async Task<IResult<OrderDetailModel>> GetDetail(Guid id)
         {

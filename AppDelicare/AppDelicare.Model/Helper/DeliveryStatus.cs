@@ -49,8 +49,10 @@ namespace AppDelicare.Model.Helper
         public const string InTransit = "InTransit";
         public const string Delivered = "Delivered";
         public const string Failed = "Failed";
+        /// <summary>BE2.1 (spec 10.2 delivery-orders cancel): hủy đơn giao chưa xếp lên xe – suất trả lại đơn hàng (PROPOSED – BA/PO CONFIRM).</summary>
+        public const string Cancelled = "Cancelled";
 
-        /// <summary>Đơn giao còn hiệu lực (đơn hàng đã có chuyến, không xếp lại).</summary>
+        /// <summary>Đơn giao còn hiệu lực (giữ suất của đơn hàng – phần còn lại mới được lập đơn giao / xếp chuyến).</summary>
         public static readonly string[] Active = [Planned, InTransit, Delivered];
 
         public static string Label(string? status) => status switch
@@ -59,6 +61,73 @@ namespace AppDelicare.Model.Helper
             InTransit => "Đang giao",
             Delivered => "Đã giao",
             Failed => "Thất bại",
+            Cancelled => "Hủy",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>BE2.1 (spec 10.2 load) – trạng thái dòng xếp hàng lên xe (DeliveryLoading.Status – chưa có trong STATUS_CATALOG, PROPOSED – BA/PO CONFIRM).</summary>
+    public static class DeliveryLoadingStatus
+    {
+        public const string Loaded = "Loaded";
+        /// <summary>Dòng xếp hàng của đơn giao bị hủy / tách lại trước khi xuất phát.</summary>
+        public const string Cancelled = "Cancelled";
+
+        public static string Label(string? status) => status switch
+        {
+            Loaded => "Đã xếp lên xe",
+            Cancelled => "Hủy",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>
+    /// BE2.1 (spec 10 – BRD) – trạng thái thực hiện giao (DeliveryExecution.Status): READY → LOADED → DISPATCHED → ARRIVED → DELIVERED / FAILED.
+    /// Đơn giao chưa có dòng DeliveryExecution (chưa xếp hàng) hiển thị READY.
+    /// </summary>
+    public static class DeliveryExecutionStatus
+    {
+        public const string Ready = "READY";
+        public const string Loaded = "LOADED";
+        public const string Dispatched = "DISPATCHED";
+        public const string Arrived = "ARRIVED";
+        public const string Delivered = "DELIVERED";
+        public const string Failed = "FAILED";
+        public const string Cancelled = "CANCELLED";
+
+        public static string Label(string? status) => status switch
+        {
+            Ready => "Chờ xếp hàng",
+            Loaded => "Đã xếp lên xe",
+            Dispatched => "Đang giao",
+            Arrived => "Đã đến",
+            Delivered => "Đã giao",
+            Failed => "Thất bại",
+            Cancelled => "Hủy",
+            _ => status ?? string.Empty,
+        };
+    }
+
+    /// <summary>
+    /// BE2.1 (spec 10.1) – trạng thái lệnh đóng gói (PackingOrder.Status, PROPOSED – BA/PO CONFIRM):
+    /// Planned → Packing (Start) → Packed (RecordResult); Planned → Cancelled (Cancel).
+    /// </summary>
+    public static class PackingOrderStatus
+    {
+        public const string Planned = "Planned";
+        public const string Packing = "Packing";
+        public const string Packed = "Packed";
+        public const string Cancelled = "Cancelled";
+
+        /// <summary>Lệnh còn hiệu lực (giữ số phần của mẻ).</summary>
+        public static readonly string[] Active = [Planned, Packing, Packed];
+
+        public static string Label(string? status) => status switch
+        {
+            Planned => "Kế hoạch",
+            Packing => "Đang đóng gói",
+            Packed => "Đã đóng gói",
+            Cancelled => "Hủy",
             _ => status ?? string.Empty,
         };
     }
@@ -147,6 +216,8 @@ namespace AppDelicare.Model.Helper
         /// <summary>DeliveryEvent.EventType: đo nhiệt độ (DeliveryStopId trống = lúc xuất phát; có = lúc bàn giao tại điểm).</summary>
         public const string EventTemperature = "TEMP_CHECK";
         public const string EventDispatched = "DISPATCHED";
+        /// <summary>BE2.1: xếp hàng lên xe (DeliveryRoute/Load).</summary>
+        public const string EventLoaded = "LOADED";
         public const string EventArrived = "ARRIVED";
         public const string EventDelivered = "DELIVERED";
         public const string EventFailed = "FAILED";
@@ -170,5 +241,14 @@ namespace AppDelicare.Model.Helper
         public const string BillingDelivered = "DELIVERED";
         public const string BillingAccepted = "ACCEPTED";
         public const string BillingServed = "SERVED";
+
+        /// <summary>
+        /// BE2.1 (GAP-DLV-08): DeliveryOrder không có cột số suất → số suất của đơn giao ghi ở đầu <c>DeliveryOrder.Note</c> dạng <c>[SUAT:60]</c>
+        /// (đã gán chuyến thì lấy <c>DeliveryStop.PlannedMealQty</c>; tag vẫn cập nhật song song).
+        /// </summary>
+        public const string MealTagPrefix = "[SUAT:";
+
+        /// <summary>BE2.1: MealWasteRecord.WasteType khi đóng gói có suất hỏng / loại (ReferenceLists WasteType).</summary>
+        public const string WastePacking = "PACKING_DAMAGE";
     }
 }

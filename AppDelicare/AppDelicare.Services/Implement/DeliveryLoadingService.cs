@@ -128,47 +128,15 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(DeliveryLoadingRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<DeliveryLoading>(request);
-            _unitOfWork.DeliveryLoadingRepository.Add(insert);
-            await _unitOfWork.DeliveryLoadingRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.1: Dòng xếp hàng lên xe chỉ ghi qua nghiệp vụ (DeliveryRoute/Load) – CRUD thêm / sửa / xóa không ghi (giữ máy trạng thái, người thao tác, số liệu).</summary>
+        private Task<string> Insert(DeliveryLoadingRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Dòng xếp hàng lên xe", "DeliveryRoute/Load"));
 
-        private async Task<string> Update(DeliveryLoadingRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.DeliveryLoadingRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.DeliveryLoadingRepository.Update(update);
-            await _unitOfWork.DeliveryLoadingRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Update(DeliveryLoadingRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Dòng xếp hàng lên xe", "DeliveryRoute/Load"));
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: ReferenceGuard (quan hệ logic, truy vấn có tham số) thay SQL động uspSystem_ExecuteQuery (A10).
-            if (await _auditChangeService.IsReferencedAsync(nameof(DeliveryLoading), (Guid)id))
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.DeliveryLoadingRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.DeliveryLoadingRepository.Update(delete);
-            await _unitOfWork.DeliveryLoadingRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private Task<string> Delete(Guid? id, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Dòng xếp hàng lên xe", "DeliveryRoute/Load"));
 
         public async Task<IResult<DeliveryLoading>> GetById(Guid id)
         {

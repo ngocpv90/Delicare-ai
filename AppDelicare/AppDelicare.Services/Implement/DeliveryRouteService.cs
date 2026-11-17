@@ -171,6 +171,12 @@ namespace AppDelicare.Services.Implement
             exist.DriverId = request.DriverId is { } d && d != Guid.Empty ? d : null;
             exist.PlannedStart = request.PlannedStart ?? exist.PlannedStart;
             exist.PlannedEnd = request.PlannedEnd ?? exist.PlannedEnd;
+            // BE2.1 (spec 10.2 PUT routes): 1 tài xế không trùng khung giờ cùng ngày.
+            string? overlap = await DriverOverlapAsync(exist.DriverId, exist.DeliveryDate, exist.PlannedStart, exist.PlannedEnd, exist.Id);
+            if (overlap != null)
+            {
+                return overlap;
+            }
             _unitOfWork.DeliveryRouteRepository.Update(exist);
             await _unitOfWork.DeliveryRouteRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -238,7 +244,10 @@ namespace AppDelicare.Services.Implement
             => string.Format(ConstantHelper.Message.StatusActionInvalid, action, "chuyến " + DeliveryRules.RouteNumber(route),
                 string.Join(" / ", expected.Select(DeliveryRouteStatus.Label)), DeliveryRouteStatus.Label(route.Status));
 
-        /// <summary>Đơn hàng Đang sản xuất của ngày (dòng thuộc ca hoặc chưa gán ca) chưa có đơn giao còn hiệu lực + số suất.</summary>
+        /// <summary>
+        /// Đơn hàng Đang sản xuất của ngày (dòng thuộc ca hoặc chưa gán ca) còn suất chưa nằm trong đơn giao còn hiệu lực + số suất còn lại
+        /// (BE2.1: 1 đơn hàng có thể có nhiều đơn giao – lập tay / tách; T19: chưa có đơn giao → toàn bộ suất).
+        /// </summary>
         private async Task<List<(Order Order, decimal Quantity)>> CandidatesAsync(DateTime deliveryDate, Guid? shiftId)
         {
             var db = _unitOfWork.DbContext;
@@ -246,13 +255,191 @@ namespace AppDelicare.Services.Implement
             var orders = await db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.Status == OrderStatus.InProduction && o.MealDate >= date && o.MealDate < next).ToListAsync();
             var orderIds = orders.Select(o => o.Id).ToList();
             var lines = await db.OrderLine.AsNoTracking().Where(l => !l.IsDeleted && orderIds.Contains(l.OrderId)).ToListAsync();
-            var routed = await db.DeliveryOrder.AsNoTracking()
-                .Where(d => !d.IsDeleted && orderIds.Contains(d.OrderId) && DeliveryOrderStatus.Active.Contains(d.Status!))
-                .Select(d => d.OrderId).Distinct().ToListAsync();
+            var remaining = await DeliveryRules.RemainingMealsAsync(db, orders);
             return [.. orders
-                .Where(o => !routed.Contains(o.Id))
+                .Where(o => remaining[o.Id] > 0)
                 .Where(o => shiftId == null || shiftId == Guid.Empty || lines.Any(l => l.OrderId == o.Id && (l.ShiftId == null || l.ShiftId == shiftId)))
-                .Select(o => (o, DeliveryRules.OrderQuantity(o, lines)))];
+                .Select(o => (o, remaining[o.Id]))];
+        }
+
+        /// <summary>Đơn giao Kế hoạch chưa gán chuyến của ngày giao (BE2.1 – lập tay / tách), lọc ca theo dòng đơn hàng.</summary>
+        private async Task<List<(DeliveryOrder DeliveryOrder, Order Order, decimal Quantity)>> UnassignedAsync(DateTime deliveryDate, Guid? shiftId, IReadOnlyCollection<Guid>? onlyIds = null)
+        {
+            var db = _unitOfWork.DbContext;
+            DateTime date = deliveryDate.Date, next = date.AddDays(1);
+            var list = await db.DeliveryOrder.AsNoTracking()
+                .Where(d => !d.IsDeleted && d.DeliveryRouteId == null && d.Status == DeliveryOrderStatus.Planned && d.DeliveryDate >= date && d.DeliveryDate < next)
+                .ToListAsync();
+            if (onlyIds != null)
+            {
+                list = [.. list.Where(d => onlyIds.Contains(d.Id))];
+            }
+            var orderIds = list.Select(d => d.OrderId).Distinct().ToList();
+            var orders = await db.Order.AsNoTracking().Where(o => orderIds.Contains(o.Id) && !o.IsDeleted).ToDictionaryAsync(o => o.Id);
+            var lines = await db.OrderLine.AsNoTracking().Where(l => !l.IsDeleted && orderIds.Contains(l.OrderId)).ToListAsync();
+            var meals = await DeliveryRules.DeliveryOrderMealsAsync(db, list);
+            return [.. list
+                .Where(d => orders.ContainsKey(d.OrderId))
+                .Where(d => shiftId == null || shiftId == Guid.Empty || lines.Any(l => l.OrderId == d.OrderId && (l.ShiftId == null || l.ShiftId == shiftId)))
+                .Select(d => (d, orders[d.OrderId], meals[d.Id]))];
+        }
+
+        /// <summary>1 điểm dừng sẽ lập: đơn hàng (phần suất còn lại → đơn giao mới) hoặc đơn giao có sẵn chưa gán chuyến.</summary>
+        private sealed record RouteItem(Order Order, DeliveryOrder? Existing, decimal Quantity, Guid? LocationId);
+
+        /// <summary>Kiểm xe (không Bảo trì / Ngừng, có mã) + tài xế. Trả (xe, mã xe, lỗi).</summary>
+        private async Task<(Vehicle? Vehicle, string Code, string? Error)> VehicleAsync(Guid vehicleId, Guid? driverId)
+        {
+            var db = _unitOfWork.DbContext;
+            var vehicle = await db.Vehicle.AsNoTracking().FirstOrDefaultAsync(v => v.Id == vehicleId && !v.IsDeleted);
+            if (vehicle == null)
+            {
+                return (null, string.Empty, ConstantHelper.Message.VehicleNotFound);
+            }
+            string code = vehicle.Code ?? vehicle.LicensePlate ?? string.Empty;
+            if (vehicle.Status != null && VehicleBlockedStatus.Contains(vehicle.Status.ToUpperInvariant()))
+            {
+                return (null, code, string.Format(ConstantHelper.Message.VehicleUnavailable, code, vehicle.Status));
+            }
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return (null, code, ConstantHelper.Message.VehicleNotFound + " (xe chưa có mã / biển số để đặt số chuyến)");
+            }
+            if (driverId is { } driver && driver != Guid.Empty && !await db.Employee.AsNoTracking().AnyAsync(e => e.Id == driver && !e.IsDeleted))
+            {
+                return (null, code, ConstantHelper.Message.DriverNotFound);
+            }
+            return (vehicle, code, null);
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 10.2 POST routes: "một xe / tài xế không trùng khung giờ cùng ngày"): tài xế đã có chuyến chưa hoàn thành cùng ngày mà khung giờ kế hoạch giao nhau
+        /// (chỉ xét khi cả 2 chuyến có giờ bắt đầu + kết thúc) → lỗi. PROPOSED – BA/PO CONFIRM.
+        /// </summary>
+        private async Task<string?> DriverOverlapAsync(Guid? driverId, DateTime date, DateTime? start, DateTime? end, Guid? exceptRouteId)
+        {
+            if (driverId is not { } driver || driver == Guid.Empty || start == null || end == null)
+            {
+                return null;
+            }
+            DateTime next = date.Date.AddDays(1);
+            var clash = await _unitOfWork.DbContext.DeliveryRoute.AsNoTracking()
+                .Where(r => !r.IsDeleted && r.DriverId == driver && r.Id != exceptRouteId && r.DeliveryDate >= date.Date && r.DeliveryDate < next
+                    && r.Status != DeliveryRouteStatus.Completed && r.PlannedStart != null && r.PlannedEnd != null
+                    && r.PlannedStart < end && start < r.PlannedEnd)
+                .Select(r => r.RouteNo).ToListAsync();
+            return clash.Count == 0 ? null : string.Format(ConstantHelper.Message.DriverBusy, string.Join(", ", clash));
+        }
+
+        /// <summary>
+        /// Lập 1 chuyến (trong transaction đang mở, có lưu): số CX-, đơn giao PH- cho phần suất mới (tag [SUAT:n] – GAP-DLV-08) hoặc gắn đơn giao có sẵn, điểm dừng theo giờ giao;
+        /// cảnh báo vượt tải / xe bận / sản xuất chưa sẵn sàng vào <paramref name="warnings"/>.
+        /// </summary>
+        private async Task<DeliveryRoute> BuildRouteAsync(DateTime date, Vehicle vehicle, string vehicleCode, Guid? driverId, Shift? shift, List<RouteItem> items,
+            DateTime? plannedStart, DateTime? plannedEnd, string? name, string? description, List<string> warnings)
+        {
+            var db = _unitOfWork.DbContext;
+            var locationIds = items.Where(s => s.LocationId != null).Select(s => s.LocationId!.Value).Distinct().ToList();
+            var locations = await db.CustomerDeliveryLocation.AsNoTracking().Where(l => locationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id);
+            var plannedStops = items.Select(s =>
+            {
+                var location = s.LocationId is { } lid ? locations.GetValueOrDefault(lid) : null;
+                DateTime? arrival = s.Existing?.PlannedDeliveryTime is { } t && t.Date == date && t.TimeOfDay != TimeSpan.Zero ? t
+                    : location?.DeliveryWindowFrom is { } from ? date.Add(from) : null;
+                return (Item: s, Location: location, Arrival: arrival);
+            })
+            .OrderBy(s => s.Arrival ?? DateTime.MaxValue).ThenBy(s => s.Location?.Name).ThenBy(s => s.Item.Order.OrderNumber ?? s.Item.Order.OrderNo)
+            .ToList();
+
+            decimal load = plannedStops.Sum(s => s.Item.Quantity);
+            if (vehicle.Capacity is > 0 && load > vehicle.Capacity.Value)
+            {
+                warnings.Add(string.Format(ConstantHelper.Message.RouteOverCapacity, DeliveryRules.Num(load), vehicleCode, DeliveryRules.Num(vehicle.Capacity.Value)));
+            }
+            DateTime next = date.AddDays(1);
+            var busy = await db.DeliveryRoute.AsNoTracking()
+                .Where(r => !r.IsDeleted && r.VehicleId == vehicle.Id && r.DeliveryDate >= date && r.DeliveryDate < next && r.Status != DeliveryRouteStatus.Completed)
+                .Select(r => r.RouteNo).ToListAsync();
+            if (busy.Count != 0)
+            {
+                warnings.Add(string.Format(ConstantHelper.Message.RouteVehicleBusy, vehicleCode, string.Join(", ", busy)));
+            }
+            var orderIds = items.Select(s => s.Order.Id).Distinct().ToList();
+            List<Guid> shiftIds = shift != null ? [shift.Id] : await DeliveryRules.OrderShiftIdsAsync(db, orderIds, _rules);
+            var notReady = DeliveryRules.ProductionBlockers(await DeliveryRules.BatchesAsync(db, date, shiftIds), _rules);
+            if (notReady.Count != 0)
+            {
+                warnings.Add(string.Format(ConstantHelper.Message.RouteNotReadyWarning, string.Join("; ", notReady)));
+            }
+
+            DateTime? firstArrival = plannedStops.Select(s => s.Arrival).Where(a => a != null).Min();
+            string routeNo = await _documentNumberService.NextAsync(DocumentKind.DeliveryRoute, date, vehicleCode);
+            var route = new DeliveryRoute
+            {
+                Id = Guid.NewGuid(),
+                RouteNo = routeNo,
+                Code = routeNo,
+                DeliveryDate = date,
+                VehicleId = vehicle.Id,
+                DriverId = driverId is { } dr && dr != Guid.Empty ? dr : null,
+                PlannedStart = plannedStart ?? firstArrival?.AddMinutes(-_rules.TransportMinutesBeforeCutoff),
+                PlannedEnd = plannedEnd,
+                Status = DeliveryRouteStatus.Planned,
+                Name = DeliveryRules.Clean(name) ?? $"Chuyến {(shift?.Code is { } sc ? sc + " " : string.Empty)}{date:dd/MM} – xe {vehicleCode}",
+                Description = DeliveryRules.Clean(description),
+            };
+            _unitOfWork.DeliveryRouteRepository.Add(route);
+            int newCount = plannedStops.Count(s => s.Item.Existing == null);
+            string first = newCount == 0 ? string.Empty : await _documentNumberService.NextAsync(DocumentKind.Voucher, date);
+            int seq = 0, created = 0;
+            foreach (var s in plannedStops)
+            {
+                seq++;
+                var deliveryOrder = s.Item.Existing;
+                if (deliveryOrder == null)
+                {
+                    string number = ProductionRules.Increment(first, created);
+                    created++;
+                    deliveryOrder = new DeliveryOrder
+                    {
+                        Id = Guid.NewGuid(),
+                        DeliveryNumber = number,
+                        DeliveryNo = number,
+                        OrderId = s.Item.Order.Id,
+                        CustomerId = s.Item.Order.CustomerId,
+                        DeliveryLocationId = s.Item.LocationId,
+                        CustomerDeliveryLocationId = s.Item.LocationId,
+                        DeliveryDate = date,
+                        DeliveryRouteId = route.Id,
+                        PlannedDeliveryTime = s.Arrival ?? date,
+                        Status = DeliveryOrderStatus.Planned,
+                        Note = DeliveryRules.WithMeals("Chuyến " + routeNo, s.Item.Quantity),
+                    };
+                    _unitOfWork.DeliveryOrderRepository.Add(deliveryOrder);
+                }
+                else
+                {
+                    deliveryOrder = _unitOfWork.DeliveryOrderRepository.GetSingle(d => d.Id == deliveryOrder.Id)!;
+                    deliveryOrder.DeliveryRouteId = route.Id;
+                    deliveryOrder.PlannedDeliveryTime = s.Arrival ?? deliveryOrder.PlannedDeliveryTime;
+                    deliveryOrder.Note = DeliveryRules.RouteNote(routeNo, deliveryOrder.Note, s.Item.Quantity);
+                    _unitOfWork.DeliveryOrderRepository.Update(deliveryOrder);
+                }
+                _unitOfWork.DeliveryStopRepository.Add(new DeliveryStop
+                {
+                    Id = Guid.NewGuid(),
+                    DeliveryRouteId = route.Id,
+                    DeliveryOrderId = deliveryOrder.Id,
+                    CustomerId = s.Item.Order.CustomerId,
+                    DeliveryLocationId = s.Item.LocationId,
+                    SequenceNo = seq,
+                    PlannedArrival = s.Arrival,
+                    PlannedMealQty = s.Item.Quantity,
+                    StopStatus = DeliveryStopStatus.Planned,
+                });
+            }
+            await _unitOfWork.DeliveryRouteRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+            return route;
         }
 
         /// <summary>T19: đơn hàng chờ xếp chuyến của ngày giao (+ ca).</summary>
@@ -293,12 +480,14 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
-        /// T19 (spec 10.2 POST routes + plan, Pilot P8): lập chuyến cho 1 ngày / ca / xe trong 1 transaction.
+        /// T19 (spec 10.2 POST routes, Pilot P8) + BE2.1: lập chuyến cho 1 ngày / ca / xe trong 1 transaction.
         /// <list type="bullet">
-        /// <item>Số chuyến <c>CX-yyMMdd-&lt;mã xe&gt;-NN</c> (T11, hậu tố = Vehicle.Code, trống thì biển số); xe Bảo trì / Ngừng → chặn; tài xế phải là Employee.</item>
-        /// <item>Đơn: Đang sản xuất, ngày ăn = ngày giao, dòng thuộc ca, chưa có đơn giao còn hiệu lực (Kế hoạch / Đang giao / Đã giao). Trống danh sách = lấy hết.</item>
-        /// <item>Mỗi đơn → 1 đơn giao <c>PH-</c> (DeliveryNumber + DeliveryNo) + 1 điểm dừng: suất kế hoạch = tổng suất đơn, giờ dự kiến = ngày + DeliveryWindowFrom của điểm giao;
-        /// thứ tự theo giờ dự kiến rồi tên điểm. Giờ xuất phát kế hoạch (trống) = giờ dự kiến sớm nhất − TransportMinutesBeforeCutoff.</item>
+        /// <item>Số chuyến <c>CX-yyMMdd-&lt;mã xe&gt;-NN</c> (T11, hậu tố = Vehicle.Code, trống thì biển số); xe Bảo trì / Ngừng → chặn; tài xế phải là Employee;
+        /// BE2.1: tài xế đã có chuyến trùng khung giờ kế hoạch cùng ngày → chặn (khi có đủ giờ bắt đầu / kết thúc).</item>
+        /// <item>Đơn: Đang sản xuất, ngày ăn = ngày giao, dòng thuộc ca, còn suất chưa nằm trong đơn giao còn hiệu lực. BE2.1: <c>ListDeliveryOrderId</c> = đơn giao lập tay / tách
+        /// (Kế hoạch, chưa gán chuyến). Cả 2 danh sách trống = lấy hết đơn hàng chờ xếp.</item>
+        /// <item>Mỗi đơn hàng → 1 đơn giao <c>PH-</c> cho phần suất còn lại + 1 điểm dừng; đơn giao có sẵn → 1 điểm dừng. Giờ dự kiến = giờ giao của đơn giao,
+        /// không có thì ngày + DeliveryWindowFrom; thứ tự theo giờ rồi tên điểm. Giờ xuất phát kế hoạch (trống) = giờ sớm nhất − TransportMinutesBeforeCutoff.</item>
         /// <item>Cảnh báo (không chặn): vượt tải xe, xe đã có chuyến chưa xong trong ngày, sản xuất chưa sẵn sàng (mẻ chưa đóng gói / chưa lưu mẫu).</item>
         /// </list>
         /// </summary>
@@ -310,23 +499,10 @@ namespace AppDelicare.Services.Implement
                 _currentActor.RequireActor();
                 var db = _unitOfWork.DbContext;
                 DateTime date = request.DeliveryDate.Date;
-                var vehicle = await db.Vehicle.AsNoTracking().FirstOrDefaultAsync(v => v.Id == request.VehicleId && !v.IsDeleted);
+                var (vehicle, vehicleCode, vehicleError) = await VehicleAsync(request.VehicleId, request.DriverId);
                 if (vehicle == null)
                 {
-                    return Fail(ConstantHelper.Message.VehicleNotFound);
-                }
-                string vehicleCode = vehicle.Code ?? vehicle.LicensePlate ?? string.Empty;
-                if (vehicle.Status != null && VehicleBlockedStatus.Contains(vehicle.Status.ToUpperInvariant()))
-                {
-                    return Fail(string.Format(ConstantHelper.Message.VehicleUnavailable, vehicleCode, vehicle.Status));
-                }
-                if (string.IsNullOrWhiteSpace(vehicleCode))
-                {
-                    return Fail(ConstantHelper.Message.VehicleNotFound + " (xe chưa có mã / biển số để đặt số chuyến)");
-                }
-                if (request.DriverId is { } driver && driver != Guid.Empty && !await db.Employee.AsNoTracking().AnyAsync(e => e.Id == driver && !e.IsDeleted))
-                {
-                    return Fail(ConstantHelper.Message.DriverNotFound);
+                    return Fail(vehicleError!);
                 }
                 Shift? shift = null;
                 if (request.ShiftId is { } sid && sid != Guid.Empty)
@@ -337,123 +513,55 @@ namespace AppDelicare.Services.Implement
                         return Fail(ConstantHelper.Message.ShiftNotFound);
                     }
                 }
-
-                var candidates = await CandidatesAsync(date, shift?.Id);
-                List<(Order Order, decimal Quantity)> selected;
-                if (request.ListOrderId.Count == 0)
+                string? overlap = await DriverOverlapAsync(request.DriverId, date, request.PlannedStart, request.PlannedEnd, null);
+                if (overlap != null)
                 {
-                    selected = candidates;
-                    if (selected.Count == 0)
+                    return Fail(overlap);
+                }
+
+                var items = new List<RouteItem>();
+                var candidates = await CandidatesAsync(date, shift?.Id);
+                if (request.ListOrderId.Count == 0 && request.ListDeliveryOrderId.Count == 0)
+                {
+                    items.AddRange(candidates.Select(c => new RouteItem(c.Order, null, c.Quantity, c.Order.DeliveryLocationId)));
+                    if (items.Count == 0)
                     {
                         return Fail(string.Format(ConstantHelper.Message.RouteNoOrders, ProductionRules.Day(date)));
                     }
                 }
-                else
+                foreach (Guid orderId in request.ListOrderId.Distinct())
                 {
-                    selected = [];
-                    foreach (Guid orderId in request.ListOrderId.Distinct())
+                    var hit = candidates.FirstOrDefault(c => c.Order.Id == orderId);
+                    if (hit.Order == null)
                     {
-                        var hit = candidates.FirstOrDefault(c => c.Order.Id == orderId);
-                        if (hit.Order == null)
+                        var order = await db.Order.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId && !o.IsDeleted);
+                        string reason = order == null ? "không tồn tại"
+                            : order.Status != OrderStatus.InProduction ? "đơn ở trạng thái " + OrderStatus.Label(order.Status) + " (cần Đang sản xuất)"
+                            : order.MealDate.Date != date ? "ngày ăn " + ProductionRules.Day(order.MealDate) + " khác ngày giao"
+                            : "đã có chuyến hoặc không có dòng thuộc ca";
+                        return Fail(string.Format(ConstantHelper.Message.RouteOrderInvalid, order?.OrderNumber ?? order?.OrderNo ?? orderId.ToString(), reason));
+                    }
+                    items.Add(new RouteItem(hit.Order, null, hit.Quantity, hit.Order.DeliveryLocationId));
+                }
+                if (request.ListDeliveryOrderId.Count != 0)
+                {
+                    var ids = request.ListDeliveryOrderId.Distinct().ToList();
+                    var unassigned = await UnassignedAsync(date, null, ids);
+                    foreach (Guid id in ids)
+                    {
+                        var hit = unassigned.FirstOrDefault(u => u.DeliveryOrder.Id == id);
+                        if (hit.DeliveryOrder == null)
                         {
-                            var order = await db.Order.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId && !o.IsDeleted);
-                            string reason = order == null ? "không tồn tại"
-                                : order.Status != OrderStatus.InProduction ? "đơn ở trạng thái " + OrderStatus.Label(order.Status) + " (cần Đang sản xuất)"
-                                : order.MealDate.Date != date ? "ngày ăn " + ProductionRules.Day(order.MealDate) + " khác ngày giao"
-                                : "đã có chuyến hoặc không có dòng thuộc ca";
-                            return Fail(string.Format(ConstantHelper.Message.RouteOrderInvalid, order?.OrderNumber ?? order?.OrderNo ?? orderId.ToString(), reason));
+                            var d = await db.DeliveryOrder.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+                            return Fail(string.Format(ConstantHelper.Message.RouteOrderInvalid, d?.DeliveryNumber ?? id.ToString(),
+                                d == null ? "không tồn tại" : d.DeliveryRouteId != null ? "đơn giao đã có chuyến" : "đơn giao ở trạng thái " + DeliveryOrderStatus.Label(d.Status) + " hoặc khác ngày giao"));
                         }
-                        selected.Add(hit);
+                        items.Add(new RouteItem(hit.Order, hit.DeliveryOrder, hit.Quantity, hit.DeliveryOrder.CustomerDeliveryLocationId ?? hit.DeliveryOrder.DeliveryLocationId));
                     }
                 }
 
                 var warnings = new List<string>();
-                var locationIds = selected.Where(s => s.Order.DeliveryLocationId != null).Select(s => s.Order.DeliveryLocationId!.Value).Distinct().ToList();
-                var locations = await db.CustomerDeliveryLocation.AsNoTracking().Where(l => locationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id);
-                var plannedStops = selected.Select(s =>
-                {
-                    var location = s.Order.DeliveryLocationId is { } lid ? locations.GetValueOrDefault(lid) : null;
-                    DateTime? arrival = location?.DeliveryWindowFrom is { } from ? date.Add(from) : null;
-                    return (s.Order, s.Quantity, Location: location, Arrival: arrival);
-                })
-                .OrderBy(s => s.Arrival ?? DateTime.MaxValue).ThenBy(s => s.Location?.Name).ThenBy(s => s.Order.OrderNumber ?? s.Order.OrderNo)
-                .ToList();
-
-                decimal load = plannedStops.Sum(s => s.Quantity);
-                if (vehicle.Capacity is > 0 && load > vehicle.Capacity.Value)
-                {
-                    warnings.Add(string.Format(ConstantHelper.Message.RouteOverCapacity, DeliveryRules.Num(load), vehicleCode, DeliveryRules.Num(vehicle.Capacity.Value)));
-                }
-                DateTime next = date.AddDays(1);
-                var busy = await db.DeliveryRoute.AsNoTracking()
-                    .Where(r => !r.IsDeleted && r.VehicleId == vehicle.Id && r.DeliveryDate >= date && r.DeliveryDate < next && r.Status != DeliveryRouteStatus.Completed)
-                    .Select(r => r.RouteNo).ToListAsync();
-                if (busy.Count != 0)
-                {
-                    warnings.Add(string.Format(ConstantHelper.Message.RouteVehicleBusy, vehicleCode, string.Join(", ", busy)));
-                }
-                var orderIds = selected.Select(s => s.Order.Id).ToList();
-                List<Guid> shiftIds = shift != null ? [shift.Id]
-                    : await DeliveryRules.OrderShiftIdsAsync(db, orderIds, _rules);
-                var notReady = DeliveryRules.ProductionBlockers(await DeliveryRules.BatchesAsync(db, date, shiftIds), _rules);
-                if (notReady.Count != 0)
-                {
-                    warnings.Add(string.Format(ConstantHelper.Message.RouteNotReadyWarning, string.Join("; ", notReady)));
-                }
-
-                DateTime? firstArrival = plannedStops.Select(s => s.Arrival).Where(a => a != null).Min();
-                string routeNo = await _documentNumberService.NextAsync(DocumentKind.DeliveryRoute, date, vehicleCode);
-                var route = new DeliveryRoute
-                {
-                    Id = Guid.NewGuid(),
-                    RouteNo = routeNo,
-                    Code = routeNo,
-                    DeliveryDate = date,
-                    VehicleId = vehicle.Id,
-                    DriverId = request.DriverId is { } dr && dr != Guid.Empty ? dr : null,
-                    PlannedStart = request.PlannedStart ?? firstArrival?.AddMinutes(-_rules.TransportMinutesBeforeCutoff),
-                    PlannedEnd = request.PlannedEnd,
-                    Status = DeliveryRouteStatus.Planned,
-                    Name = DeliveryRules.Clean(request.Name) ?? $"Chuyến {(shift?.Code is { } sc ? sc + " " : string.Empty)}{date:dd/MM} – xe {vehicleCode}",
-                    Description = DeliveryRules.Clean(request.Description),
-                };
-                _unitOfWork.DeliveryRouteRepository.Add(route);
-                string first = await _documentNumberService.NextAsync(DocumentKind.Voucher, date);
-                int seq = 0;
-                foreach (var s in plannedStops)
-                {
-                    string number = ProductionRules.Increment(first, seq);
-                    seq++;
-                    var deliveryOrder = new DeliveryOrder
-                    {
-                        Id = Guid.NewGuid(),
-                        DeliveryNumber = number,
-                        DeliveryNo = number,
-                        OrderId = s.Order.Id,
-                        CustomerId = s.Order.CustomerId,
-                        DeliveryLocationId = s.Order.DeliveryLocationId,
-                        CustomerDeliveryLocationId = s.Order.DeliveryLocationId,
-                        DeliveryDate = date,
-                        DeliveryRouteId = route.Id,
-                        PlannedDeliveryTime = s.Arrival ?? date,
-                        Status = DeliveryOrderStatus.Planned,
-                        Note = "Chuyến " + routeNo,
-                    };
-                    _unitOfWork.DeliveryOrderRepository.Add(deliveryOrder);
-                    _unitOfWork.DeliveryStopRepository.Add(new DeliveryStop
-                    {
-                        Id = Guid.NewGuid(),
-                        DeliveryRouteId = route.Id,
-                        DeliveryOrderId = deliveryOrder.Id,
-                        CustomerId = s.Order.CustomerId,
-                        DeliveryLocationId = s.Order.DeliveryLocationId,
-                        SequenceNo = seq,
-                        PlannedArrival = s.Arrival,
-                        PlannedMealQty = s.Quantity,
-                        StopStatus = DeliveryStopStatus.Planned,
-                    });
-                }
-                await _unitOfWork.DeliveryRouteRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                var route = await BuildRouteAsync(date, vehicle, vehicleCode, request.DriverId, shift, items, request.PlannedStart, request.PlannedEnd, request.Name, request.Description, warnings);
                 _unitOfWork.CommitTransaction();
                 var detail = await DeliveryRules.RouteDetailAsync(db, route.Id, _rules);
                 detail!.ListWarning.InsertRange(0, warnings);
@@ -472,6 +580,307 @@ namespace AppDelicare.Services.Implement
                 _unitOfWork.RollbackTransaction();
                 _unitOfWork.DbContext.ChangeTracker.Clear();
                 return Result<DeliveryRouteDetailModel>.Fail(message);
+            }
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 10.2 plan, strategy "byArea"): lập chuyến cho nhiều xe trong 1 transaction.
+        /// <list type="number">
+        /// <item>Hàng cần xếp = đơn hàng Đang sản xuất của ngày (dòng thuộc ca) còn suất chưa lập đơn giao + đơn giao Kế hoạch chưa gán chuyến.</item>
+        /// <item>Gom theo khu vực (<see cref="DeliveryRules.AreaOf"/> – GAP-DLV-09), khu vực lớn trước; mỗi khu vực vào xe còn trống nhiều nhất chứa vừa cả khu vực,
+        /// không vừa → chia theo điểm (đơn lớn trước) vào xe còn trống nhiều nhất; không xe nào vừa → xe còn trống nhiều nhất + cảnh báo vượt tải.
+        /// Xe không khai tải = không giới hạn. Không tách đơn tự động (tách tay bằng DeliveryOrder/Split). PROPOSED – BA/PO CONFIRM.</item>
+        /// <item>Mỗi xe có hàng → 1 chuyến CX- (như Create), điểm dừng theo giờ giao.</item>
+        /// </list>
+        /// </summary>
+        public async Task<IResult<DeliveryRoutePlanModel>> Plan(DeliveryRoutePlanRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                DateTime date = request.DeliveryDate.Date;
+                if (request.ListVehicle.Count == 0)
+                {
+                    return Fail(ConstantHelper.Message.RoutePlanNoVehicle);
+                }
+                Shift? shift = null;
+                if (request.ShiftId is { } sid && sid != Guid.Empty)
+                {
+                    shift = await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sid && !s.IsDeleted);
+                    if (shift == null)
+                    {
+                        return Fail(ConstantHelper.Message.ShiftNotFound);
+                    }
+                }
+                var vehicles = new List<(Vehicle Vehicle, string Code, Guid? DriverId)>();
+                foreach (var v in request.ListVehicle.GroupBy(x => x.VehicleId).Select(g => g.First()))
+                {
+                    var (vehicle, code, error) = await VehicleAsync(v.VehicleId, v.DriverId);
+                    if (vehicle == null)
+                    {
+                        return Fail(error!);
+                    }
+                    vehicles.Add((vehicle, code, v.DriverId));
+                }
+
+                var items = (await CandidatesAsync(date, shift?.Id)).Select(c => new RouteItem(c.Order, null, c.Quantity, c.Order.DeliveryLocationId)).ToList();
+                items.AddRange((await UnassignedAsync(date, shift?.Id)).Select(u => new RouteItem(u.Order, u.DeliveryOrder, u.Quantity,
+                    u.DeliveryOrder.CustomerDeliveryLocationId ?? u.DeliveryOrder.DeliveryLocationId)));
+                if (items.Count == 0)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.RoutePlanNothing, ProductionRules.Day(date)));
+                }
+                var locationIds = items.Where(i => i.LocationId != null).Select(i => i.LocationId!.Value).Distinct().ToList();
+                var locations = await db.CustomerDeliveryLocation.AsNoTracking().Where(l => locationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id);
+                var customerIds = items.Select(i => i.Order.CustomerId).Distinct().ToList();
+                var customers = await db.Customer.AsNoTracking().Where(c => customerIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id);
+                var areas = items
+                    .GroupBy(i => DeliveryRules.AreaOf(i.LocationId is { } lid ? locations.GetValueOrDefault(lid) : null, customers.GetValueOrDefault(i.Order.CustomerId)))
+                    .Select(g => (Area: g.Key, Items: g.OrderByDescending(i => i.Quantity).ToList(), Total: g.Sum(i => i.Quantity)))
+                    .OrderByDescending(a => a.Total).ThenBy(a => a.Area, StringComparer.Ordinal).ToList();
+
+                var warnings = new List<string>();
+                var assigned = vehicles.ToDictionary(v => v.Vehicle.Id, _ => new List<RouteItem>());
+                decimal Free(Vehicle v) => v.Capacity is > 0 ? v.Capacity.Value - assigned[v.Id].Sum(i => i.Quantity) : decimal.MaxValue;
+                var planAreas = new List<DeliveryPlanAreaModel>();
+                foreach (var area in areas)
+                {
+                    var model = new DeliveryPlanAreaModel { Area = area.Area, MealQuantity = area.Total, StopCount = area.Items.Count };
+                    planAreas.Add(model);
+                    var whole = vehicles.Where(v => Free(v.Vehicle) >= area.Total).OrderByDescending(v => Free(v.Vehicle)).ThenBy(v => v.Code, StringComparer.Ordinal).FirstOrDefault();
+                    if (whole.Vehicle != null)
+                    {
+                        assigned[whole.Vehicle.Id].AddRange(area.Items);
+                        model.ListVehicleCode.Add(whole.Code);
+                        continue;
+                    }
+                    foreach (var item in area.Items)
+                    {
+                        var fit = vehicles.Where(v => Free(v.Vehicle) >= item.Quantity).OrderByDescending(v => Free(v.Vehicle)).ThenBy(v => v.Code, StringComparer.Ordinal).FirstOrDefault();
+                        if (fit.Vehicle == null)
+                        {
+                            fit = vehicles.OrderByDescending(v => Free(v.Vehicle)).ThenBy(v => v.Code, StringComparer.Ordinal).First();
+                            warnings.Add(string.Format(ConstantHelper.Message.RoutePlanOverflow,
+                                item.Existing?.DeliveryNumber ?? item.Order.OrderNumber ?? item.Order.OrderNo, DeliveryRules.Num(item.Quantity), fit.Code));
+                        }
+                        assigned[fit.Vehicle.Id].Add(item);
+                        if (!model.ListVehicleCode.Contains(fit.Code))
+                        {
+                            model.ListVehicleCode.Add(fit.Code);
+                        }
+                    }
+                }
+
+                var routeIds = new List<Guid>();
+                foreach (var v in vehicles.Where(v => assigned[v.Vehicle.Id].Count != 0))
+                {
+                    var route = await BuildRouteAsync(date, v.Vehicle, v.Code, v.DriverId, shift, assigned[v.Vehicle.Id], null, null, null,
+                        "Lập theo khu vực: " + string.Join(", ", planAreas.Where(a => a.ListVehicleCode.Contains(v.Code)).Select(a => a.Area)), warnings);
+                    routeIds.Add(route.Id);
+                }
+                _unitOfWork.CommitTransaction();
+                var routes = await db.DeliveryRoute.AsNoTracking().Where(r => routeIds.Contains(r.Id)).OrderBy(r => r.RouteNo).ToListAsync();
+                return Result<DeliveryRoutePlanModel>.Success(new DeliveryRoutePlanModel
+                {
+                    DeliveryDate = date,
+                    ListRoute = await DeliveryRules.RouteDetailsAsync(db, routes, _rules, withBatches: false),
+                    ListArea = planAreas,
+                    ListWarning = warnings.Distinct().ToList(),
+                }, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Plan: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                throw;
+            }
+
+            IResult<DeliveryRoutePlanModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                return Result<DeliveryRoutePlanModel>.Fail(message);
+            }
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 10.2 PUT routes/{id}/stops): đổi thứ tự / giờ dự kiến điểm dừng khi chuyến Kế hoạch. Số thứ tự ≥ 1, không trùng (điểm không gửi giữ số cũ);
+        /// lưu 2 bước qua số âm tạm vì UNIQUE (DeliveryRouteId, SequenceNo) – <see cref="DeliveryRules.ResequenceAsync"/>.
+        /// </summary>
+        public async Task<IResult<DeliveryRouteDetailModel>> UpdateStops(DeliveryRouteStopsRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                var route = _unitOfWork.DeliveryRouteRepository.GetSingle(r => r.Id == request.Id && !r.IsDeleted);
+                if (route == null)
+                {
+                    return Fail(ConstantHelper.Message.RouteNotFound);
+                }
+                if (route.Status != DeliveryRouteStatus.Planned)
+                {
+                    return Fail(InvalidStatus(route, "đổi thứ tự điểm dừng", DeliveryRouteStatus.Planned));
+                }
+                var stops = _unitOfWork.DeliveryStopRepository.GetAll().Where(s => s.DeliveryRouteId == route.Id && !s.IsDeleted).ToList();
+                var numbers = stops.ToDictionary(s => s.Id, s => s.SequenceNo);
+                foreach (var item in request.ListStop)
+                {
+                    var stop = stops.FirstOrDefault(s => s.DeliveryOrderId == item.DeliveryOrderId);
+                    if (stop == null)
+                    {
+                        var d = await db.DeliveryOrder.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.DeliveryOrderId);
+                        return Fail(string.Format(ConstantHelper.Message.StopNotOnRoute, d?.DeliveryNumber ?? item.DeliveryOrderId.ToString()));
+                    }
+                    if (item.SequenceNo < 1)
+                    {
+                        return Fail(ConstantHelper.Message.StopSequenceInvalid);
+                    }
+                    numbers[stop.Id] = item.SequenceNo;
+                    if (item.PlannedArrival != null)
+                    {
+                        stop.PlannedArrival = item.PlannedArrival;
+                    }
+                }
+                if (numbers.Values.Distinct().Count() != numbers.Count)
+                {
+                    return Fail(ConstantHelper.Message.StopSequenceInvalid);
+                }
+                var ordered = stops.OrderBy(s => numbers[s.Id]).ToList();
+                await DeliveryRules.ResequenceAsync(_unitOfWork, route.Id, ordered, null, numbers);
+                _unitOfWork.CommitTransaction();
+                return Result<DeliveryRouteDetailModel>.Success((await DeliveryRules.RouteDetailAsync(db, route.Id, _rules))!, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " UpdateStops: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                throw;
+            }
+
+            IResult<DeliveryRouteDetailModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                return Result<DeliveryRouteDetailModel>.Fail(message);
+            }
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 10.2 load): xếp hàng lên xe – chuyến Kế hoạch / Đang xếp → Đang xếp. Mỗi đơn giao Kế hoạch của chuyến (hoặc trong <c>ListItem</c>):
+        /// DeliveryLoading (LoadedQty = số gửi, trống = suất kế hoạch; LoadingTime / LoadingDate = bây giờ; VehicleCode = mã xe; Status Loaded; nhân viên xếp)
+        /// + DeliveryExecution LOADED (tài xế, mã xe); sự kiện LOADED. Xếp lại đơn giao đã xếp → cập nhật số. Xếp thiếu / thừa so với kế hoạch → cảnh báo (PROPOSED).
+        /// Chưa liên kết PackingOrder (spec GAP-C-03).
+        /// </summary>
+        public async Task<IResult<DeliveryLoadModel>> Load(DeliveryRouteLoadRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                var route = _unitOfWork.DeliveryRouteRepository.GetSingle(r => r.Id == request.Id && !r.IsDeleted);
+                if (route == null)
+                {
+                    return Fail(ConstantHelper.Message.RouteNotFound);
+                }
+                if (route.Status is not (DeliveryRouteStatus.Planned or DeliveryRouteStatus.Loading))
+                {
+                    return Fail(InvalidStatus(route, "xếp hàng lên xe", DeliveryRouteStatus.Planned, DeliveryRouteStatus.Loading));
+                }
+                if (request.EmployeeId is { } emp && emp != Guid.Empty && !await db.Employee.AsNoTracking().AnyAsync(e => e.Id == emp && !e.IsDeleted))
+                {
+                    return Fail(ConstantHelper.Message.DriverNotFound);
+                }
+                var stops = await db.DeliveryStop.AsNoTracking().Where(s => s.DeliveryRouteId == route.Id && !s.IsDeleted && s.DeliveryOrderId != null).ToListAsync();
+                var stopOrderIds = stops.Select(s => s.DeliveryOrderId!.Value).ToList();
+                var deliveryOrders = _unitOfWork.DeliveryOrderRepository.GetAll()
+                    .Where(d => stopOrderIds.Contains(d.Id) && !d.IsDeleted && d.Status == DeliveryOrderStatus.Planned).ToList();
+                var wanted = request.ListItem.GroupBy(i => i.DeliveryOrderId).ToDictionary(g => g.Key, g => g.Last().LoadedQty);
+                foreach (var id in wanted.Keys.Where(id => deliveryOrders.All(d => d.Id != id)))
+                {
+                    var d = await db.DeliveryOrder.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    return Fail(string.Format(ConstantHelper.Message.StopNotOnRoute, d?.DeliveryNumber ?? id.ToString()));
+                }
+                var targets = wanted.Count == 0 ? deliveryOrders : deliveryOrders.Where(d => wanted.ContainsKey(d.Id)).ToList();
+                if (targets.Count == 0)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.RouteLoadNothing, DeliveryRules.RouteNumber(route)));
+                }
+                var vehicle = route.VehicleId is { } vid ? await db.Vehicle.AsNoTracking().FirstOrDefaultAsync(v => v.Id == vid) : null;
+                string? vehicleCode = vehicle?.Code ?? vehicle?.LicensePlate;
+                string? driverName = route.DriverId is { } did ? await db.Employee.AsNoTracking().Where(e => e.Id == did).Select(e => e.FullName).FirstOrDefaultAsync() : null;
+                var warnings = new List<string>();
+                DateTime now = _clock.Now;
+                var loadings = new List<DeliveryLoading>();
+                foreach (var deliveryOrder in targets.OrderBy(d => stops.First(s => s.DeliveryOrderId == d.Id).SequenceNo))
+                {
+                    var stop = stops.First(s => s.DeliveryOrderId == deliveryOrder.Id);
+                    decimal planned = stop.PlannedMealQty ?? DeliveryRules.TaggedMeals(deliveryOrder.Note) ?? 0m;
+                    decimal qty = wanted.GetValueOrDefault(deliveryOrder.Id) ?? planned;
+                    string number = deliveryOrder.DeliveryNumber ?? deliveryOrder.DeliveryNo ?? deliveryOrder.Id.ToString("N")[..8];
+                    if (qty <= 0)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.LoadQuantityInvalid, number));
+                    }
+                    if (qty != planned)
+                    {
+                        warnings.Add(string.Format(ConstantHelper.Message.LoadShortWarning, number, DeliveryRules.Num(qty), DeliveryRules.Num(planned)));
+                    }
+                    var loading = _unitOfWork.DeliveryLoadingRepository.GetAll()
+                        .FirstOrDefault(l => l.DeliveryOrderId == deliveryOrder.Id && !l.IsDeleted && l.Status == DeliveryLoadingStatus.Loaded);
+                    if (loading == null)
+                    {
+                        loading = new DeliveryLoading { Id = Guid.NewGuid(), DeliveryRouteId = route.Id, DeliveryOrderId = deliveryOrder.Id, Status = DeliveryLoadingStatus.Loaded };
+                        _unitOfWork.DeliveryLoadingRepository.Add(loading);
+                    }
+                    else
+                    {
+                        _unitOfWork.DeliveryLoadingRepository.Update(loading);
+                    }
+                    loading.LoadedQty = qty;
+                    loading.LoadingTime = now;
+                    loading.LoadingDate = now;
+                    loading.VehicleCode = vehicleCode;
+                    loading.EmployeeId = request.EmployeeId is { } e2 && e2 != Guid.Empty ? e2 : loading.EmployeeId;
+                    loading.Note = DeliveryRules.Clean(request.Note) ?? loading.Note;
+                    loadings.Add(loading);
+                    DeliveryRules.SyncExecution(_unitOfWork, deliveryOrder, route.Id, DeliveryExecutionStatus.Loaded, now, null, driverName, vehicleCode);
+                }
+                route.Status = DeliveryRouteStatus.Loading;
+                _unitOfWork.DeliveryRouteRepository.Update(route);
+                DeliveryRules.AddEvent(_unitOfWork, actor, now, route.Id, null, null, DeliveryCode.EventLoaded,
+                    $"Xếp hàng lên xe {vehicleCode}: {loadings.Count} đơn giao, {DeliveryRules.Num(loadings.Sum(l => l.LoadedQty ?? 0m))} suất");
+                await _unitOfWork.DeliveryRouteRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                var detail = (await DeliveryRules.RouteDetailAsync(db, route.Id, _rules))!;
+                detail.ListWarning.InsertRange(0, warnings);
+                var loadedIds = loadings.Select(l => l.DeliveryOrderId).ToList();
+                return Result<DeliveryLoadModel>.Success(new DeliveryLoadModel
+                {
+                    Route = detail,
+                    ListLoading = await db.DeliveryLoading.AsNoTracking().Where(l => l.DeliveryRouteId == route.Id && !l.IsDeleted && l.Status == DeliveryLoadingStatus.Loaded).ToListAsync(),
+                    ListExecution = await db.DeliveryExecution.AsNoTracking().Where(x => x.DeliveryRouteId == route.Id && !x.IsDeleted).ToListAsync(),
+                }, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Load: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                throw;
+            }
+
+            IResult<DeliveryLoadModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                return Result<DeliveryLoadModel>.Fail(message);
             }
         }
 
@@ -589,10 +998,14 @@ namespace AppDelicare.Services.Implement
                 route.Status = DeliveryRouteStatus.InTransit;
                 route.ActualStart = now;
                 _unitOfWork.DeliveryRouteRepository.Update(route);
+                var vehicle = route.VehicleId is { } vid ? await db.Vehicle.AsNoTracking().FirstOrDefaultAsync(v => v.Id == vid) : null;
+                string? driverName = route.DriverId is { } did ? await db.Employee.AsNoTracking().Where(e => e.Id == did).Select(e => e.FullName).FirstOrDefaultAsync() : null;
                 foreach (var deliveryOrder in _unitOfWork.DeliveryOrderRepository.GetAll().Where(d => d.DeliveryRouteId == route.Id && !d.IsDeleted && d.Status == DeliveryOrderStatus.Planned).ToList())
                 {
                     deliveryOrder.Status = DeliveryOrderStatus.InTransit;
                     _unitOfWork.DeliveryOrderRepository.Update(deliveryOrder);
+                    // BE2.1 (spec 10.2 dispatch): thực hiện giao LOADED → DISPATCHED (DispatchedAt, DepartedAt).
+                    DeliveryRules.SyncExecution(_unitOfWork, deliveryOrder, route.Id, DeliveryExecutionStatus.Dispatched, now, null, driverName, vehicle?.Code ?? vehicle?.LicensePlate);
                 }
                 DeliveryRules.AddEvent(_unitOfWork, actor, now, route.Id, null, null, DeliveryCode.EventDispatched,
                     "Xuất phát chuyến " + DeliveryRules.RouteNumber(route) + (string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim()),

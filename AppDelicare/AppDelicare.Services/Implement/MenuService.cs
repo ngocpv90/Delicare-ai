@@ -217,6 +217,60 @@ namespace AppDelicare.Services.Implement
             return string.Empty;
         }
 
+        /// <summary>
+        /// BE2.1 (spec 6.2 GET menus, Catalog 82): thực đơn + số dòng / số món, số khách được phân công (MenuAssignment còn hiệu lực, không Inactive – khách khác nhau),
+        /// suất đã đặt <c>orderedMeals</c> = Σ OrderLine.Quantity có MenuId này (đơn chưa xóa, không Hủy). Lọc trạng thái, hiệu lực tại ngày, tìm mã / tên.
+        /// </summary>
+        public async Task<IResults<MenuListItemModel>> GetList(MenuListRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var query = db.Menu.AsNoTracking().Where(m => !m.IsDeleted);
+                if (!string.IsNullOrWhiteSpace(request.Status))
+                {
+                    query = query.Where(m => m.Status == request.Status);
+                }
+                if (request.EffectiveOn is { } on)
+                {
+                    DateTime d = on.Date;
+                    query = query.Where(m => (m.EffectiveFrom == null || m.EffectiveFrom <= d) && (m.EffectiveTo == null || m.EffectiveTo >= d));
+                }
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    string q = request.SearchText.Trim();
+                    query = query.Where(m => (m.Code != null && m.Code.Contains(q)) || (m.Name != null && m.Name.Contains(q)));
+                }
+                var menus = await query.OrderByDescending(m => m.EffectiveFrom).ThenBy(m => m.Code).ToListAsync();
+                var ids = menus.Select(m => m.Id).ToList();
+                var lines = await db.MenuLine.AsNoTracking().Where(l => ids.Contains(l.MenuId) && !l.IsDeleted).Select(l => new { l.MenuId, l.DishId }).ToListAsync();
+                DateTime? at = request.EffectiveOn?.Date;
+                var assignments = await db.MenuAssignment.AsNoTracking()
+                    .Where(a => ids.Contains(a.MenuId) && !a.IsDeleted && (a.Status == null || a.Status != "Inactive")
+                        && (at == null || ((a.EffectiveFrom == null || a.EffectiveFrom <= at) && (a.EffectiveTo == null || a.EffectiveTo >= at))))
+                    .Select(a => new { a.MenuId, a.CustomerId }).ToListAsync();
+                var activeOrders = db.Order.Where(o => !o.IsDeleted && o.Status != OrderStatus.Cancelled).Select(o => o.Id);
+                var ordered = await db.OrderLine.AsNoTracking()
+                    .Where(l => !l.IsDeleted && l.MenuId != null && ids.Contains(l.MenuId.Value) && activeOrders.Contains(l.OrderId))
+                    .GroupBy(l => l.MenuId!.Value).Select(g => new { MenuId = g.Key, Meals = g.Sum(l => l.Quantity) }).ToListAsync();
+                var list = menus.Select(m => new MenuListItemModel
+                {
+                    Menu = m,
+                    StatusName = MenuStatus.Label(m.Status),
+                    LineCount = lines.Count(l => l.MenuId == m.Id),
+                    DishCount = lines.Where(l => l.MenuId == m.Id).Select(l => l.DishId).Distinct().Count(),
+                    AssignedCustomerCount = assignments.Where(a => a.MenuId == m.Id).Select(a => a.CustomerId).Distinct().Count(),
+                    OrderedMeals = ordered.FirstOrDefault(o => o.MenuId == m.Id)?.Meals ?? 0m,
+                }).ToList();
+                return Results<MenuListItemModel>.Success(list, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResult<Menu>> GetById(Guid id)
         {
             try

@@ -211,5 +211,24 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.1 (spec 7.1 create-purchase-request): lập / làm lại đề nghị mua Nháp từ các dòng thiếu được chọn + % dự phòng – JSON vì có danh sách dòng.</summary>
+        [HttpPost("CreatePurchaseRequest")]
+        public async Task<IActionResult> CreatePurchaseRequest([FromBody] MaterialRequirementPurchaseRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CreatePurchaseRequest(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreatePurchaseRequest: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }
