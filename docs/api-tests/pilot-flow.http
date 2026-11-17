@@ -8,13 +8,15 @@
 ### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
 ### Đã chạy chính file này trên DB dev 2026-11-17 (key P9C, ngày 02/12/2026): 117 request đúng kỳ vọng (8 chốt an toàn trả 400) – số chứng từ ở PROGRESS mục T50R1.
 ### Kiểm tự động cùng luồng: AppDelicare.Tests/Pilot/PilotFlowSqlServerTests.cs (qua HTTP, transaction ngoài rồi rollback).
+### BE2.1 (2026-11-17): mẻ 1 đóng gói theo lệnh đóng gói (P7.9b – PackingOrder/GenerateFromBatch → Start → RecordResult), xếp hàng lên xe bắt buộc trước khi xuất phát (P8.5b – DeliveryRoute/Load).
+###   Đã chạy lại trên DB dev 2026-11-17 (key B21B, ngày 16/12/2026): 121 request đúng kỳ vọng (mọi bước "→ 400" trả 400, thêm chốt "đóng gói trực tiếp mẻ còn lệnh đóng gói").
 @base = http://localhost:5125
 @user = admin
 @password = admin
-@key = P9D
+@key = B21C
 @code = DEMO{{key}}
-@day = 2026-12-09
-### Thứ của @day (1 = Thứ 2 … 7 = Chủ nhật) – 2026-12-09 là Thứ 4. Đổi @day thì sửa @dow cho khớp.
+@day = 2026-12-23
+### Thứ của @day (1 = Thứ 2 … 7 = Chủ nhật) – 2026-12-23 là Thứ 4. Đổi @day thì sửa @dow cho khớp (đã dùng: P9C 02/12, B21B 16/12/2026).
 @dow = 3
 
 # @name login
@@ -667,12 +669,37 @@ Content-Type: application/x-www-form-urlencoded
 
 Id={{batch1}}
 
+### P7.9b (BE2.1) Mẻ 1 đóng gói theo lệnh đóng gói: sinh từ mẻ (1000 phần đạt → 1 lệnh PH- cho đơn) → bắt đầu → kết quả 1000 → mẻ tự Đã đóng gói
+# @name pk1
+POST {{base}}/api/PackingOrder/GenerateFromBatch
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionBatchId={{batch1}}&Note=[DEMO]
+
 ###
+@packing1 = {{pk1.response.body.data.listPackingOrder[0].packingOrder.id}}
+
+### CHỐT AN TOÀN → 400: đóng gói trực tiếp mẻ đang có lệnh đóng gói chưa xong
 POST {{base}}/api/ProductionBatch/Pack
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 Id={{batch1}}
+
+###
+POST {{base}}/api/PackingOrder/Start
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{packing1}}
+
+###
+POST {{base}}/api/PackingOrder/RecordResult
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{packing1}}&PackedQuantity=1000&PackagingType=[DEMO] hộp giữ nhiệt
 
 ### P7.10 Mẻ 2: lõi 82 °C → xong → sản lượng → đạt (CHƯA lưu mẫu → chỉ cảnh báo, D-42) → đóng gói
 POST {{base}}/api/ProductionBatch/RecordCoreTemperature
@@ -761,6 +788,13 @@ Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 Id={{batch2}}&ActualValue=[DEMO] tủ mẫu 150 g
+
+### P8.5b (BE2.1) Xếp hàng lên xe (DeliveryLoading + thực hiện giao LOADED, chuyến → Đang xếp) – bắt buộc trước khi xuất phát
+POST {{base}}/api/DeliveryRoute/Load
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{routeId}}", "note": "[DEMO]" }
 
 ###
 POST {{base}}/api/DeliveryRoute/Dispatch

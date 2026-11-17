@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-17: BE2.1 DONE** trên nhánh `feat/BE2.1-flow-gaps` (worktree `wt-BE21`, từ `release/pilot`, chưa push / chưa gộp): đóng gói từ mẻ, xếp hàng lên xe (bắt buộc trước khi xuất phát), đơn giao tay / tách / gán – chuyển chuyến / hủy, lập chuyến nhiều xe theo khu vực, thực hiện giao, kế hoạch sinh theo ca (1 KH- / ngày), đề nghị mua chọn dòng + dự phòng, nhiệt độ tự do, hao hụt, bảng đơn, danh sách thực đơn / phản ánh, chi tiết + hủy yêu cầu duyệt, truy xuất 2 chiều. `dotnet test` **185/185**; `be2.1-flow-gaps.http` 138/138 + `pilot-flow.http` 121/121 chạy thật trên DB dev. PROPOSED chờ anh: DECISIONS **D-50 (a)–(h)**. Không SP / seed mới. Kế tiếp: T48.3 (ROADMAP) → BE2.2. Chi tiết: mục BE2.1 cuối file.
 - **2026-11-16 (D-44): KHÔNG CHẠY PILOT – hoàn thiện toàn bộ luồng R1.** Mọi mục DEFERRED(PILOT) vào BE-2. Để sau khi xong luồng: bot, Hermes + quản lý agent, dashboard / KPI, báo cáo.
 - **2026-11-16 (D-43): ĐỢT BE-2 – hoàn thiện toàn bộ API backend** (trừ bot, dashboard / KPI, báo cáo). Task kế tiếp: **BE2.1** (lấp chỗ thiếu luồng Pilot: đóng gói, xếp xe, đơn giao, lập chuyến nhiều xe…) → BE2.2 → … → BE2.9 (ROADMAP mục ★★★). FE của Claude Code tạm dừng; bạn frontend dùng `docs/frontend-handoff/`. Catalog đã cập nhật 2026-11-16: 124/234 xong, Pilot 114/140.
 - **2026-11-17: BACKEND PILOT XONG (P0 → P9) – dừng, chờ anh UAT-PILOT** (ROADMAP P9 `DONE(PILOT)`, mục T50R1 + T48.1 cuối file). Luồng P3 → P8 chạy thật bằng API trên DB dev (`docs/api-tests/pilot-flow.http`, 117 request / 8 chốt an toàn đúng) + test end-to-end qua HTTP (`Pilot/PilotFlowSqlServerTests`). Staging (LocalDB `AppDelicare_Staging`, `http://localhost:5200`) đã cập nhật backend Pilot + bản build Angular.
@@ -1202,3 +1203,81 @@ Câu hỏi còn mở (PROPOSED – gom từ các task Pilot, chi tiết ở DECI
 Cần anh:
 - UAT-PILOT theo `UAT_CHECKLIST.md` mục PILOT trên staging `http://localhost:5200` (chạy lại theo deploy/README.md mục 9 bước 4; mật khẩu admin staging trong `deploy/staging.local.md`).
 - Duyệt / commit nhánh; chốt các câu hỏi trên; IIS thật nếu chọn IIS (deploy/README.md mục 4); cập nhật Catalog.
+
+### BE2.1 – Lấp chỗ thiếu của luồng Pilot · 2026-11-17 · DONE
+Nhánh `feat/BE2.1-flow-gaps` (worktree `wt-BE21`, từ `release/pilot` @ `f9b3231`). Chỉ backend (D-49); không đụng `app-delicare-client/`, `docs/reference/*`, `deploy/db/Deploy-Database.ps1`, `deploy/docker/db-init.sh` (T48.3 đang sửa song song).
+
+Kế hoạch:
+1. Rà soát: PackingOrder / PackingResult / DeliveryLoading / DeliveryExecution / DeliveryOrder chỉ có CRUD sinh mã (ghi tay được mọi trường); DeliveryRoute / Stop, ProductionBatch, ProductionPlan, MaterialRequirement, TemperatureLog, MealWasteRecord, Order, Menu, CustomerComplaint, ApprovalRequest, MaterialLot đã có nghiệp vụ T13–T19 → bổ sung method vào đúng service + action vào đúng controller (không service / controller mới; thêm 1 lớp tĩnh dùng chung `TraceRules` như `DeliveryRules`).
+2. Đóng gói từ mẻ (171–175) + tách `CompleteOrderIfDoneAsync` sang `ProductionRules` dùng chung.
+3. Đơn giao tay / tách / gán – chuyển / hủy (184–187), lập chuyến nhiều xe theo khu vực + đổi thứ tự (177–179), xếp hàng lên xe (180), thực hiện giao (188).
+4. Kế hoạch sinh theo ca (137), đề nghị mua chọn dòng + dự phòng (107).
+5. Nhiệt độ tự do (165), hao hụt (156), bảng đơn (90), thực đơn (82), phản ánh (197), chi tiết + hủy yêu cầu duyệt (211, 213), truy xuất 2 chiều (118, 119).
+6. Test InMemory + SQL Server rollback; `.http` chạy thật trên DB dev; handoff; DECISIONS / ROADMAP / BUSINESS_RULES.
+
+Đã làm (mẫu 4.2; quyền theo `PermissionConvention`, ngoại lệ ghi `[Permission]` / `[SkipPermission]`):
+- **Đóng gói** (`PackingOrderService` / `PackingOrderController`, `log-packing-order`): `GetList`, `GetByBatch`, `GenerateFromBatch` (Thêm – mẻ Đạt QC + lõi ≥ 70 °C + đã ghi sản lượng; số phần đạt còn lại chia cho đơn Đã chốt / Đang SX cùng ngày + ca theo tỉ lệ suất món, phần dư lớn nhất; lệnh `PH-`), `Create` (Σ ≤ số đạt), `Start`, `RecordResult` (đóng gói + hỏng + loại = kế hoạch; `PackingResult`; hỏng / loại → `MealWasteRecord` PACKING_DAMAGE + WasteQty mẻ; mẻ chia hết + mọi lệnh xong → mẻ Đã đóng gói → lệnh SX / kế hoạch hoàn thành), `Cancel` (chỉ Kế hoạch, lý do). `ProductionBatch/Pack` chặn khi còn lệnh chưa xong. CRUD PackingOrder / PackingResult → 400.
+- **Xếp xe / chuyến** (`DeliveryRouteService`): `Load` (JSON; DeliveryLoading Loaded + DeliveryExecution LOADED, chuyến → Đang xếp, sự kiện LOADED; danh sách trống = đơn giao chưa xếp), `Plan` (JSON, nhiều xe theo khu vực), `UpdateStops` (JSON); `Create` nhận thêm `listDeliveryOrderId`, đơn hàng lấy **phần suất còn lại**; tài xế trùng khung giờ → chặn (Create / Update). `Dispatch`: chặn khi còn đơn giao chưa xếp (`BusinessRules:DeliveryRequireLoading` = true), thực hiện giao → DISPATCHED. `DeliveryStop/Arrive / Deliver / Fail` cập nhật thực hiện giao (ARRIVED / DELIVERED / FAILED); đơn hàng → Đã giao chỉ khi không còn suất chưa lập đơn giao. Chi tiết chuyến thêm `loadedQty`, `executionStatus`; `allowedActions` thêm `load`, `updateStops` (Kế hoạch không còn `dispatch`).
+- **Đơn giao** (`DeliveryOrderService` / `DeliveryOrderController`, `log-delivery-order`): `GetList`, `Create` (JSON), `Split` (JSON), `AssignRoute`, `Cancel`; số suất ở tag `[SUAT:n]` (GAP-DLV-08); đánh số lại điểm dừng 2 bước qua số âm vì UNIQUE (route, sequence) tính cả dòng xóa mềm (GAP-DLV-10). CRUD Insert → 400; Update giữ tag.
+- **Thực hiện giao** (`DeliveryExecutionService` / `Controller`, `log-execution`): `GetBoard` + `statusCounts`; CRUD DeliveryExecution / DeliveryLoading → 400.
+- **Kế hoạch** `ProductionPlan/Generate` (Thêm – 1 KH- / ngày từ đơn Đã xác nhận / Đã chốt, `ShiftId` dòng khi món thuộc 1 ca; chặn khi đã Duyệt / đã tính nhu cầu NL) – dùng `ProductionRules.DishDemandsAsync` (mới, cùng công thức MRP).
+- **MRP** `MaterialRequirement/CreatePurchaseRequest` (JSON – dòng chọn + % dự phòng, làm tròn lên 4 số lẻ; cập nhật đề nghị Nháp tại chỗ; đã gửi duyệt → chặn).
+- **Nhiệt độ** `TemperatureLog/Record` (Thêm `qc-temperature`; ngưỡng khu kho / HOT_HOLDING ≥ 60; CORE / DELIVERY / RECEIVING → chặn; ngoài ngưỡng → lưu + cảnh báo); CRUD Insert dùng cùng logic (bỏ IsWithinRange / RecordedBy của client). Gỡ header auto-generated của `TemperatureLog*`, `MealWasteRecord*`.
+- **Hao hụt** `MealWasteRecord/Record` (Thêm `prod-waste`; mẻ / lệnh SX / món + ca; loại theo `ReferenceLists:WasteType`) + `GetList` (tổng suất / kg, theo loại); CRUD Insert → 400.
+- **Danh sách**: `Order/GetBoard` (8 cột + statusCounts, lọc BranchId của khách), `Menu/GetList` (lineCount, dishCount, assignedCustomerCount, orderedMeals), `CustomerComplaint/GetList` (đủ trường, isOverdue, hoursToDue, statusCounts, overdueCount, phân trang), `MaterialLot/GetList` (tồn, hạn, bị chặn, sắp hết hạn).
+- **Duyệt** `ApprovalRequest/GetDetail` + `Cancel` (`[SkipPermission]` như GetMyPending / Decide, service kiểm người gửi / người duyệt / admin); `IApprovalHandler.CancelAsync` mặc định = xử lý từ chối (handler cũ không sửa); ghi ApprovalDecision CANCEL.
+- **Truy xuất** `MaterialLot/Trace` (xuôi) + `ProductionBatch/Trace` (ngược) – `TraceRules` (lớp tĩnh), liên kết suy luận đánh dấu `inferred` (GAP-TRC-01).
+- Cấu hình: `BusinessRules:DeliveryRequireLoading` = true; `ReferenceLists:WasteType` + `PACKING_DAMAGE`; `ReferenceLists:TemperatureMeasurementType` (mới). Thông báo tiếng Việt trong `ConstantHelper.Message`. Hằng `DeliveryLoadingStatus`, `DeliveryExecutionStatus`, `PackingOrderStatus`, `DeliveryOrderStatus.Cancelled` (`Model/Helper/DeliveryStatus.cs`).
+- **Không có SP / seed mới**, không thêm bảng / cột, không mục menu mới (mọi screen-id đã có trong `ObjectMenu_seed.sql`) → `deploy/db/scripts.order` (T48.3) không cần thêm dòng nào.
+
+File chính: `AppDelicare.Services/Implement/{PackingOrderService, PackingResultService, DeliveryRouteService, DeliveryOrderService, DeliveryExecutionService, DeliveryLoadingService, DeliveryStopService, DeliveryRules, ProductionRules, ProductionBatchService, ProductionPlanService, MaterialRequirementService, TemperatureLogService, MealWasteRecordService, OrderService, MenuService, CustomerComplaintService, ApprovalRequestService, MaterialLotService, TraceRules (mới)}.cs`, interface tương ứng + `IApprovalHandler.cs`, 14 controller, `Model/Helper/{DeliveryStatus, ConstantHelper}.cs`, `Model/Option/BusinessRulesOptions.cs`, `Model/Model/{DeliveryModels, FlowGapModels (mới)}.cs`, `Model/Request/Custom/{DeliveryCustomRequest, MaterialRequirementCustomRequest, ProductionCustomRequest, PackingCustomRequest (mới), FlowGapCustomRequest (mới)}.cs`, `WebApi/appsettings.json`; test `Tests/Delivery/{FlowGapDeliveryTests, FlowGapSqlServerTests}.cs`, `Tests/Production/FlowGapTests.cs` (mới) + sửa `DeliveryTests`, `DeliverySqlServerTests`, `ProductionShiftTests`, `PilotFlowSqlServerTests` (thêm bước Load); `docs/api-tests/be2.1-flow-gaps.http` (mới), `pilot-flow.http`; `docs/frontend-handoff/BE2.1.md` (mới), `README.md`, `P7.md`, `P8.md`; `docs/claude/{DECISIONS, ROADMAP, BUSINESS_RULES, PROGRESS}.md`, `DB/README.md`.
+
+Kiểm tra:
+- `dotnet build AppDelicare.sln --no-incremental`: 0 lỗi, 11 cảnh báo (cảnh báo cũ, không thêm mới).
+- `dotnet test`: **185/185** (baseline 173 + 12: FlowGapDeliveryTests 4, FlowGapTests 7, FlowGapSqlServerTests 1 – SQL Server dev, không bị bỏ qua; 4 test cũ sửa để xếp hàng trước khi xuất phát).
+  - FlowGapDeliveryTests: sinh lệnh đóng gói 100 → A 60 / B 40; chia hết thì chặn sinh lại / lập tay vượt / Pack thẳng; hủy B → còn 40 → lập tay lại; kết quả lệch tổng → chặn; 58 + 1 + 1 → hao hụt PACKING_DAMAGE 2; lệnh cuối → mẻ Packed, lệnh SX Completed; mẻ lõi 65 °C / chưa Đạt QC → chặn. Đơn giao tay 25 (điểm Quận 7) → vượt 35 còn lại chặn, điểm của khách khác chặn → tách 15 + 10 → chuyến (35 còn lại + 15) → gán 10 vào đầu → đổi thứ tự → chuyển sang chuyến B (đánh số lại cả 2, điểm cũ xóa mềm) → hủy đơn giao B (lý do bắt buộc) → xếp hàng 34 / 35 (cảnh báo) → chưa xếp hết thì chặn xuất phát; đã xếp thì không hủy / không gán vào chuyến Đang xếp → xuất phát → bảng thực hiện giao (DISPATCHED 2, READY 2, đơn Hủy không hiện) → đến điểm → ARRIVED; CRUD cũ chặn. Lập chuyến 2 xe: Quận Tân Bình (A 60 + C 30) → xe 100, TP. Thủ Đức (B 40) → xe 50, `CX-261217-XAR1-01`, hết hàng thì chặn.
+  - FlowGapTests: Generate (Đã xác nhận + Đã chốt, bỏ Nháp: cơm 150 / gà 100 ca trưa / cá 50 ca tối; sinh lại cập nhật tại chỗ; đã duyệt chặn); CreatePurchaseRequest (dự phòng 5% → 105 / 35; chọn lại 10% → 110, dòng gạo xóa mềm; đã gửi duyệt chặn); nhiệt độ (thiếu đối tượng / CORE / DELIVERY / loại lạ chặn; 7 °C ngoài 0…5 → lưu + cảnh báo, server tính IsWithinRange; HOT_HOLDING 55 không đạt; CRUD Insert tính ở server); hao hụt (loại sai / thiếu số / mẻ chưa nấu / không đối tượng chặn; WasteQty mẻ 5; tổng 5 suất 5,5 kg); bảng đơn 8 cột / BranchId / tìm; thực đơn 3 dòng 2 món 1 khách 80 suất; phản ánh quá hạn 1 (hoursToDue −4) / lọc mức độ; duyệt: chi tiết công thức + dòng, người lạ không hủy / không xem, hủy → công thức Draft, Cancelled + CANCEL, admin hủy được của người khác; truy xuất lô → NCC / PO / phiếu nhập / mẻ 1 / lệnh đóng gói / đơn A / khách A, ngược mẻ 2 → đơn suy luận A + B, mẻ 1 → lô → NCC + lõi 78 °C; danh sách lô sắp hết hạn.
+  - FlowGapSqlServerTests: đóng gói (số PH- qua sp_getapplock) → mẻ Packed; đơn giao tay → chuyến → tách → gán vào số 1 → đảo thứ tự → hủy (số âm) → lập lại + gán cuối (tái dùng số 3) → xếp hàng 3 dòng → xuất phát → 3 DISPATCHED; rollback, số dòng không đổi.
+- **Chạy thật trên DB dev** (`dotnet run` WebApi Development, cổng 5321, trình chạy nhỏ đọc cú pháp REST Client – kiểm `responseCode` 200 / 400 theo đánh dấu "→ 400"):
+  - `be2.1-flow-gaps.http` **138/138** (11 chốt an toàn trả 400) – chạy 3 lần (key B21H 30/12/2026 – lộ 1 lỗi ở tiêu đề của file .http (đánh dấu "→ 400" nhầm), đã sửa; B21J 06/01/2027; B21K 13/01/2027). Số chứng từ lần B21K: đơn `PH-261117-0074/0075/0076` (300 / 200 / 150 → Đang SX), kế hoạch `KH-270113`, đề nghị `PH-261117-0077` (rau 68,25 = 65 × 1,05 → Đã lập PO), PO gửi duyệt rồi người gửi hủy (về Nháp), mẻ `ME-270113-TRUA-01` → 3 lệnh đóng gói `PH-261117-0080/0081/0082` → Packed, đơn giao `PH-270113-0001` (60, Hủy) … `-0006`, chuyến `CX-270113-DEMOB21KX1-01` (Quận 7: 150 + 200 + 40 = 390 / 400) và `CX-270113-DEMOB21KX2-01` (Quận 1: 200 + 60) → Đang giao, 5 đơn giao DISPATCHED.
+  - `pilot-flow.http` **121/121** (thêm lệnh đóng gói mẻ 1 + chốt Pack thẳng + bước Load) – chạy 2 lần (B21B 16/12/2026, B21C 23/12/2026).
+  - Dữ liệu `[DEMO]` để lại trên DB dev (như T50R1). Không chạy script SQL nào.
+- `git status`: không thay đổi trong `app-delicare-client/`, `docs/reference/`, `deploy/`; không file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; không `api/v1` mới.
+
+AC (BE2.1): [x] mọi mục phạm vi có API + test · [x] chốt ATTP giữ nguyên (lõi ≥ 70 °C kiểm lại khi đóng gói, giao ≥ 60 °C, lưu mẫu trước khi giao, lô hết hạn / KHONG_DAT bị chặn – không đổi) · [x] `.http` chạy thật · [x] handoff · [x] không bảng / cột / SP mới · [ ] Catalog Excel (máy không có openpyxl – bảng dưới).
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`, cột J / L / K; cột M = `BE2.1`):
+| STT | Trạng thái (J) | API thực tế – khung cũ (L) | Ghi chú (K) |
+|---|---|---|---|
+| 82 | Đã xong | `GET Menu/GetList` | lineCount, dishCount, assignedCustomerCount, orderedMeals |
+| 90 | Đã xong | `GET Order/GetBoard` | 8 cột + statusCounts; danh sách = `Order/GetAll` |
+| 107 | Một phần | `POST MaterialRequirement/CreatePurchaseRequest` | Chưa gọi duyệt 2 cấp (BE2.3, D-46); làm tròn 4 số lẻ (D-50 g) |
+| 118 | Đã xong | `GET MaterialLot/GetList` | + `MaterialLot/GetAll` (CRUD) |
+| 119 | Đã xong | `GET MaterialLot/Trace`, `GET ProductionBatch/Trace` | Liên kết suy luận `inferred` (GAP-TRC-01); chưa QR (GAP-F-10) |
+| 137 | Một phần | `POST ProductionPlan/Generate` | 1 KH- / ngày, tách ca ở dòng (D-50 a); chưa áp MenuChangeRequest (BE2.2) |
+| 156 | Đã xong | `POST MealWasteRecord/Record`, `GET MealWasteRecord/GetList`, `ProductionBatch/RecordWaste` | Tổng hợp biểu đồ (157) để sau |
+| 165 | Đã xong | `POST TemperatureLog/Record` | CORE / DELIVERY / RECEIVING qua nghiệp vụ; ngoài ngưỡng lưu + cảnh báo |
+| 171 | Đã xong | `GET PackingOrder/GetList`, `GetByBatch` | |
+| 172 | Đã xong | `POST PackingOrder/RecordResult` | |
+| 173 | Đã xong | `POST PackingOrder/Create`, `GenerateFromBatch` | Sinh từ mẻ theo tỉ lệ suất (GAP-PCK-01) |
+| 174 | Đã xong | `POST PackingOrder/Start` | |
+| 175 | Đã xong | `POST PackingOrder/Cancel` | |
+| 177 | Đã xong | `POST DeliveryRoute/Plan` | Khu vực theo AreaId / địa chỉ (GAP-DLV-09) |
+| 178 | Đã xong | `POST DeliveryRoute/Create`, `PUT DeliveryRoute/Update` | Tài xế không trùng khung giờ |
+| 179 | Đã xong | `PUT DeliveryRoute/UpdateStops` | |
+| 180 | Đã xong | `POST DeliveryRoute/Load` | Bắt buộc trước Dispatch (D-50 b); chưa liên kết PackingOrder (GAP-C-03) |
+| 181 | Đã xong | `POST DeliveryRoute/Dispatch` | (T19) + yêu cầu đã xếp hàng, thực hiện giao DISPATCHED; chưa gửi Zalo |
+| 183 | Đã xong | `GET DeliveryOrder/GetList` | mealQuantity, routeNo, unassigned |
+| 184 | Đã xong | `POST DeliveryOrder/Create` | Số suất ở tag Note (GAP-DLV-08) |
+| 185 | Đã xong | `POST DeliveryOrder/Split` | |
+| 186 | Đã xong | `POST DeliveryOrder/AssignRoute` | |
+| 187 | Đã xong | `POST DeliveryOrder/Cancel` | |
+| 188 | Đã xong | `GET DeliveryExecution/GetBoard` | + statusCounts |
+| 197 | Đã xong | `GET CustomerComplaint/GetList` | isOverdue, hoursToDue, statusCounts |
+| 211 | Đã xong | `GET ApprovalRequest/GetDetail` | business.record + lines |
+| 213 | Đã xong | `POST ApprovalRequest/Cancel` | Cancelled + ApprovalDecision CANCEL (GAP-APR-01) |
+
+PROPOSED chờ anh (DECISIONS **D-50**, mẫu D-49 – em đã cài theo "Đề xuất", không mục nào BLOCKED):
+(a) Generate giữ 1 KH- / ngày (spec: mỗi ca 1 kế hoạch); (b) xếp hàng bắt buộc trước khi xuất phát; (c) số suất đơn giao ở tag `[SUAT:n]` trong Note (dài hạn: cột `DeliveryOrder.MealQuantity` – cần anh duyệt migration); (d) khu vực = AreaId / quận trong địa chỉ; (e) lệnh đóng gói chia theo tỉ lệ suất, vẫn cho Pack thẳng mẻ chưa có lệnh; (f) yêu cầu duyệt thêm trạng thái Cancelled; (g) dự phòng làm tròn 4 số lẻ, không lưu; (h) truy xuất suy luận + danh mục loại đo nhiệt độ.
+
+Cần anh: không có script SQL mới. Khi gộp nhánh: appsettings có 3 khóa mới (DB/README.md); T48.3 không cần thêm dòng vào `deploy/db/scripts.order`. FE: đọc `docs/frontend-handoff/BE2.1.md` mục "Thay đổi hành vi" (xếp xe trước khi xuất phát, nhiều đơn giao / đơn).

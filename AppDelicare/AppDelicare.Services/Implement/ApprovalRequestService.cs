@@ -319,7 +319,7 @@ namespace AppDelicare.Services.Implement
                                    join p in _unitOfWork.PersonRepository.GetAll() on u.PersonId equals p.Id into pp
                                    from p in pp.DefaultIfEmpty()
                                    where userIds.Contains(u.Id)
-                                   select new { u.Id, Name = p != null && p.FullName != null ? p.FullName : u.UserName }).ToDictionaryAsync(x => x.Id, x => x.Name);
+                                   select new { u.Id, Name = p != null && p.FullName != null ? p.FullName : u.UserName }).ToDictionaryAsync(x => x.Id, x => (string?)x.Name);
                 var list = new List<ApprovalPendingModel>();
                 foreach (var r in rows)
                 {
@@ -462,7 +462,7 @@ namespace AppDelicare.Services.Implement
                           join p in _unitOfWork.PersonRepository.GetAll() on u.PersonId equals p.Id into pp
                           from p in pp.DefaultIfEmpty()
                           where list.Contains(u.Id)
-                          select new { u.Id, Name = p != null && p.FullName != null ? p.FullName : u.UserName }).ToDictionaryAsync(x => x.Id, x => x.Name);
+                          select new { u.Id, Name = p != null && p.FullName != null ? p.FullName : u.UserName }).ToDictionaryAsync(x => x.Id, x => (string?)x.Name);
         }
 
         private static string StatusLabel(string? status) => status switch

@@ -70,7 +70,7 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>Ghi chú không có tag số suất (hiển thị).</summary>
         public static string? NoteText(string? note)
-            => TaggedMeals(note) == null ? note : Clean(note![(note.IndexOf(']') + 1)..]);
+            => TaggedMeals(note) == null ? note : Clean(note![(note!.IndexOf(']') + 1)..]);
 
         /// <summary>Số suất của từng đơn giao: điểm dừng còn hiệu lực (PlannedMealQty) → tag trong Note → 0.</summary>
         public static async Task<Dictionary<Guid, decimal>> DeliveryOrderMealsAsync(DatabaseContext db, IReadOnlyCollection<DeliveryOrder> deliveryOrders)
