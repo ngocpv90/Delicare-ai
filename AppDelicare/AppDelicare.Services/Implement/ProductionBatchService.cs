@@ -713,6 +713,10 @@ namespace AppDelicare.Services.Implement
         /// <summary>T17 (spec 8.3 batch-board): mẻ của 1 ngày sản xuất (theo kế hoạch của ngày) + đếm theo trạng thái, số phần kế hoạch / đạt.</summary>
         public async Task<IResult<ProductionBoardModel>> GetBoard(ProductionBoardRequest request)
         {
+            if (request.ProductionDate == default)
+            {
+                return Result<ProductionBoardModel>.Fail(ConstantHelper.Message.MrpDateRequired);
+            }
             try
             {
                 var db = _unitOfWork.DbContext;
@@ -1044,6 +1048,10 @@ namespace AppDelicare.Services.Implement
         /// </summary>
         public async Task<IResult<ProductionStageBoardModel>> GetStageBoard(ProductionStageBoardRequest request)
         {
+            if (request.ProductionDate == default)
+            {
+                return Result<ProductionStageBoardModel>.Fail(ConstantHelper.Message.MrpDateRequired);
+            }
             try
             {
                 var db = _unitOfWork.DbContext;

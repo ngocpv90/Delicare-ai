@@ -219,8 +219,9 @@ namespace AppDelicare.Services.Implement
         }
 
         // ============================================================ BE2.2 – dự báo (spec 6.5, Catalog 87–89)
+        // BE2.9: thiếu From / To (= DateTime.MinValue) → báo lỗi thay vì lỗi 500 SqlDateTime overflow.
         private string? RangeError(DateTime from, DateTime to)
-            => to.Date < from.Date || (to.Date - from.Date).TotalDays + 1 > _rules.ForecastMaxDays
+            => from == default || to == default || to.Date < from.Date || (to.Date - from.Date).TotalDays + 1 > _rules.ForecastMaxDays
                 ? string.Format(ConstantHelper.Message.ForecastRangeInvalid, _rules.ForecastMaxDays) : null;
 
         private static string DayKey(DateTime d) => d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);

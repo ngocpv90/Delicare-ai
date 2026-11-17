@@ -285,6 +285,8 @@
             // T14 – tính nhu cầu NL (MRP) + đề nghị mua nháp (P5)
             public static readonly string MrpCrudBlocked = "Nhu cầu nguyên liệu chỉ ghi qua MaterialRequirement/Calculate (tính lại theo ngày sản xuất)";
             public static readonly string MrpDateRequired = "Chọn ngày sản xuất";
+            /// <summary>BE2.9: bảng chuyến / thực hiện giao / đơn chờ xếp chuyến thiếu ngày giao (trước đây lỗi 500 SqlDateTime overflow).</summary>
+            public static readonly string DeliveryDateRequired = "Chọn ngày giao";
             public static readonly string OrganizationUnitNotFound = "Không tìm thấy chi nhánh / đơn vị";
             public static readonly string MrpWarehouseNotInUnit = "Kho đã chọn không thuộc chi nhánh đã chọn";
             public static readonly string MrpPlanNotDraft = "Kế hoạch sản xuất {0} đã ở trạng thái {1} – không tính lại nhu cầu";
