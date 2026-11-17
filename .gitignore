@@ -40,3 +40,6 @@ AppDelicare/AppDelicare.WebApi/Logs/
 
 # BE2.7: tệp đính kèm người dùng tải lên (DocumentStorage:RootPath) – KHÔNG commit
 **/App_Data/
+
+# docker-compose.yml ở gốc repo: bí mật của server (DB_CONNECTION, JWT_SIGNING_KEY)
+/.env

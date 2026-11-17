@@ -1,16 +1,36 @@
+# DELICARE – chạy web + API bằng Docker trên server dev / test (DB là SQL Server có sẵn bên ngoài, KHÔNG kèm trong file này).
+#
+# Chuẩn bị (1 lần):   cp .env.example .env    rồi điền DB_CONNECTION + JWT_SIGNING_KEY   (.env KHÔNG commit)
+# Chạy / cập nhật:     docker compose up -d --build
+#
+#   Web  : http://<server>:4444           (đổi bằng WEB_PORT trong .env)
+#   API  : http://<server>:5125/swagger   (đổi bằng API_PORT trong .env; trong mạng Docker là api:8080)
+#
+# DB phải đủ 124 bảng + stored procedure + seed của bản đang chạy. Sau mỗi lần kéo code mới, cập nhật DB bằng:
+#   ./deploy/db/Deploy-Database.ps1 -Server <server> -Database <db> -SqlUser <user>      (Windows)
+#   hoặc deploy/docker/db-init.sh (Linux) – xem deploy/README.md mục 2.
+# Bộ đầy đủ có SQL Server riêng trong Docker: deploy/docker/docker-compose.staging.yml; production (HTTPS): docker-compose.production.yml.
 services:
   api:
     build:
       context: ./AppDelicare
-      dockerfile: Dockerfile
+      dockerfile: AppDelicare.WebApi/Dockerfile
     container_name: delicare-api
     restart: unless-stopped
-    # DB connection string is read from ClinicManagement.WebApi/appsettings.json
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Staging}
+      TZ: Asia/Ho_Chi_Minh
+      # Bí mật lấy từ .env (không nằm trong image, không nằm trong repo).
+      ConnectionStrings__MainConnectionString: ${DB_CONNECTION:?Đặt DB_CONNECTION trong .env}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Đặt JWT_SIGNING_KEY (>= 32 ký tự) trong .env}
+      Licenses__GemBox: ${GEMBOX_LICENSE:-}
+      DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+      Logging__ConsoleOnly: "true"
     volumes:
-      - api-import:/app/wwwroot/Import   # uploaded avatars / attachments
-      - api-logs:/app/wwwroot/Logs
+      - api-import:/app/wwwroot/Import            # ảnh đại diện / tệp nhập Excel
+      - api-docs:/app/App_Data/DocumentFiles      # tệp đính kèm (DocumentFile)
     ports:
-      - "5125:8080"   # direct API/Swagger access: http://localhost:5125/swagger
+      - "${API_PORT:-5125}:8080"
 
   web:
     build:
@@ -21,8 +41,26 @@ services:
     depends_on:
       - api
     ports:
-      - "80:80"       # app: http://localhost
+      - "${WEB_PORT:-4444}:80"                    # nginx trong container: phục vụ Angular + chuyển /api, /Import → api:8080
+
+  # Job tự động (khóa đơn 20h, MRP, KPI…): CHỈ bật khi DB này là của riêng môi trường đang chạy.
+  #   docker compose --profile job up -d --build
+  job:
+    profiles: ["job"]
+    build:
+      context: ./AppDelicare
+      dockerfile: AppDelicare.Job/Dockerfile
+    container_name: delicare-job
+    restart: unless-stopped
+    environment:
+      DOTNET_ENVIRONMENT: ${APP_ENVIRONMENT:-Staging}
+      TZ: Asia/Ho_Chi_Minh
+      ConnectionStrings__MainConnectionString: ${DB_CONNECTION:?Đặt DB_CONNECTION trong .env}
+      Licenses__GemBox: ${GEMBOX_LICENSE:-}
+      DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+    volumes:
+      - api-docs:/app/App_Data/DocumentFiles
 
 volumes:
   api-import:
-  api-logs:
+  api-docs:
