@@ -1,8 +1,9 @@
 ### DELICARE – BE2.7: API DÙNG CHUNG + MẪU IN (khung cũ D-30).
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (dữ liệu [DEMO] có sẵn – hoặc chạy full-flow.http trước): 43 / 43 đúng kỳ vọng.
 ### Danh sách hỗ trợ (danh sách trắng) → thống kê theo trạng thái (Catalog 2) → xuất Excel / CSV (8) → tệp đính kèm tải lên / danh sách / tải xuống (19–21)
 ### → lịch sử bản ghi gộp AuditChange + ApprovalDecision + tệp (15) → mẫu in phiếu nhập / xuất / kiểm kê / giao / POD / đối soát (24–29) → in hàng loạt (30).
 ###
-### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Dùng dữ liệu [DEMO] đã có trên DB dev (chạy pilot-flow.http hoặc be2.1…be2.6 trước ít nhất 1 lần):
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Dùng dữ liệu [DEMO] đã có trên DB dev (chạy full-flow.http, pilot-flow.http hoặc be2.1…be2.6 trước ít nhất 1 lần):
 ### phiếu nhập Đã ghi sổ, phiếu xuất Đã xuất, kiểm kê, đơn giao, POD, đối soát Đóng, chuyến Hoàn tất. Không cần SP / seed mới.
 ### Mẫu in trả tệp .xlsx (mặc định) hoặc .docx (format=docx); format=pdf → 400 (D-56 b). Tệp đính kèm lưu trong DocumentStorage:RootPath (mặc định
 ### App_Data/DocumentFiles cạnh WebApi, NGOÀI wwwroot, đã gitignore) – tên tệp trên đĩa = SHA-256, tải lại cùng nội dung → isDuplicate = true.

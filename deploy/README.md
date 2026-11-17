@@ -147,10 +147,14 @@ Copy-Item .\dist\w3crm\browser\* C:\Deploy\delicare-staging\wwwroot -Recurse -Fo
 ```
 Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): chép giống vậy vào `wwwroot` của site. Docker (cách C): `app-delicare-client/Dockerfile` + `nginx.conf` (nginx chuyển `/api/` sang container API).
 
-## 9. Cập nhật staging (lặp lại mỗi đợt, đã làm 2026-11-17 sau backend Pilot)
+## 9. Cập nhật staging (lặp lại mỗi đợt; đã làm 2026-11-17 sau backend Pilot và sau BE2.9)
 
 1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (chạy mọi SP + seed theo `deploy/db/scripts.order`; không đụng bảng / dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
 2. Dừng bản API đang chạy (cửa sổ `dotnet AppDelicare.WebApi.dll`), rồi publish đè: `./deploy/iis/Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging` (hoặc lệnh `dotnet publish` ở mục 3).
 3. Build + chép Angular (mục 8).
 4. Chạy: `. ./deploy/staging.local.env.ps1; cd C:\Deploy\delicare-staging; dotnet AppDelicare.WebApi.dll --urls http://localhost:5200`.
-5. Kiểm tra mục 6 + mở `http://localhost:5200/`; luồng Pilot: `docs/api-tests/pilot-flow.http` (đổi `@base = http://localhost:5200`, `@password` = mật khẩu admin staging) và `docs/claude/UAT_CHECKLIST.md` mục PILOT.
+5. Kiểm tra mục 6 + mở `http://localhost:5200/`; toàn luồng: `docs/api-tests/full-flow.http` (đổi `@base = http://localhost:5200`, `@password` = mật khẩu admin staging, `@key` / `@day` / `@dow` mới) và `docs/claude/UAT_CHECKLIST.md` mục TOÀN LUỒNG R1 (bản cũ: `pilot-flow.http`, mục PILOT).
+6. Tệp đính kèm (BE2.7): thư mục `C:\Deploy\delicare-staging\App_Data\DocumentFiles` (tạo 1 lần; `dotnet publish -o` không xóa thư mục này – **không xóa khi cập nhật**, sao lưu cùng DB). Muốn để ngoài thư mục bản build: đặt `$env:DocumentStorage__RootPath` trước bước 4.
+7. Dừng: Ctrl+C ở cửa sổ đang chạy (hoặc `Get-CimInstance Win32_Process | ? { $_.CommandLine -like "*AppDelicare.WebApi.dll*" } | % { Stop-Process -Id $_.ProcessId }`).
+
+Lần cập nhật gần nhất: **2026-11-17 – BE2.9** (toàn bộ BE-2: BE2.1–BE2.7 + sửa lỗi BE2.9): DB 131 SP + 8 seed theo `scripts.order` (không đụng bảng), publish đè (giữ bản build Angular cũ trong `wwwroot`), smoke 49 / 49, `full-flow.http` 216 / 216 trên staging (dữ liệu `[DEMO]` key B29S). Sau đó đã **dừng** API staging.

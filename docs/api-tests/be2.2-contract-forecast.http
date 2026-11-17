@@ -1,4 +1,5 @@
 ### DELICARE – BE2.2: HỢP ĐỒNG, DỰ BÁO, ĐỔI MÓN, SỬA ĐƠN SAU GIỜ CHỐT (khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29C, ngày 27/11/2026): 73 / 73 đúng kỳ vọng.
 ### Hợp đồng kèm suất + số HD- (78) → gửi duyệt / duyệt (79, engine CONTRACT 1 cấp) → dự báo nhập hàng loạt / công bố / ma trận (87–89)
 ### → gợi ý số suất trong mẫu tạo đơn (92) → xác nhận đơn + lệch dự báo > 10% (96) → đổi món MenuChangeRequest (104) → kế hoạch Nháp cập nhật
 ### → chấm dứt hợp đồng (80) → thêm / sửa đơn sau giờ chốt qua duyệt ORDER_CHANGE_AFTER_CUTOFF (ngày ăn = hôm nay, giờ chốt 20:00 hôm qua đã qua).
