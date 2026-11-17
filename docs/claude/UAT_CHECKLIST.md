@@ -108,6 +108,18 @@ Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1
 | 4 | Duyệt | Gửi duyệt 1 công thức; người có quyền Duyệt mở chuông | `APPROVAL_PENDING` = 1, bấm → `#/wf-inbox` | [ ] | |
 | 5 | Tìm kiếm | Gõ "don hang", mã khách, số PO | Thấy màn hình đúng quyền; bản ghi ≤ 5 / loại; không có tên bảng | [ ] | |
 | 6 | Liên quan | Mở khách hàng / lô → tab Liên quan | Đơn / hợp đồng / phản ánh; lô → phiếu nhập, phiếu xuất, mẻ dùng lô | [ ] | |
+## KPI (BE3.4, 2026-11-17) · file thử: `docs/api-tests/be3.4-kpi.http` · test: `AppDelicare.Tests/Kpi/KpiTests.cs`
+Cần: đã chạy `DB/seed/KpiMetricDefinition_seed.sql`; tài khoản admin để bấm làm mới.
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Danh sách chỉ tiêu | `#/kpi-definition` | 11 chỉ tiêu, có mục tiêu + chiều (≥ / ≤); công thức + mục tiêu đúng ý BA / PO (PROPOSED D-57 y) | [ ] | |
+| 2 | Phiên bản | Sửa mục tiêu 1 chỉ tiêu | Có phiên bản mới hiệu lực từ hôm nay, bản cũ đóng hôm qua, số KPI cũ giữ mục tiêu cũ; sửa bản cũ → báo lỗi | [ ] | |
+| 3 | Làm mới KPI ngày | Admin bấm làm mới 1 ngày có đơn giao / mẻ | Số khớp tay (vd. giao đúng giờ = đơn trễ ≤ 15′ ÷ đơn đã giao + thất bại); bấm lại không nhân đôi | [ ] | |
+| 4 | Thiếu dữ liệu | Làm mới ngày không có dữ liệu | Chỉ tiêu hiện "Thiếu dữ liệu" (INCOMPLETE), không đỏ / xanh | [ ] | |
+| 5 | Đạt / không đạt | KPI ngày / tháng | Hao hụt, thất thoát, food cost: thấp hơn mục tiêu = đạt; giao đúng giờ, lưu mẫu: cao hơn = đạt | [ ] | |
+| 6 | KPI tháng | Làm mới tháng này | Số tính trên cả tháng tới hôm nay | [ ] | |
+| 7 | Quyền | User không phải admin | Không bấm được làm mới (403); xem KPI theo quyền Xem màn | [ ] | |
+| 8 | Nhật ký | `#/kpi-refresh` | Mỗi lần bấm 1 dòng Thành công, người chạy, số dòng; đang chạy trùng → "Đang chạy ở nơi khác" | [ ] | |
 
 ## IOT NHIỆT ĐỘ (BE3.2, 2026-11-17) · file thử: `docs/api-tests/be3.2-iot.http` · test: `AppDelicare.Tests/Iot/IotTemperatureTests.cs`
 Cần: `Iot__ApiKeys__0` + 1 thiết bị `Iot__Devices__<mã>__StorageZoneCode` (biến môi trường của API – deploy/README.md).

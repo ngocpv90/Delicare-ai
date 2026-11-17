@@ -22,7 +22,8 @@ Content-Type: application/json
 @token = {{login.response.body.data.token}}
 
 ### 1. Danh sách job (admin)
-# @expect totalRecords == 5
+# @expect totalRecords == 7
+# @expect listData[jobCode=KPI_DAILY].enabled == false
 # @expect listData[jobCode=LockOrders].at == 20:00
 # @expect listData[jobCode=Mrp].at == 20:30
 # @expect listData[jobCode=ContractExpiry].enabled == true

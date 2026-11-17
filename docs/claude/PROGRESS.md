@@ -2,6 +2,7 @@
 
 ## Trạng thái hiện tại
 - **2026-11-17: BE3.3 DONE – chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan** (Catalog 16, 17, 18) trên nhánh `feat/BE3.3-alerts-search` (worktree `wt-BE33`, từ `release/pilot` @ 5aeaf30, chưa push): `Common/GetAlerts`, `Common/GlobalSearch`, `Common/GetRelated`; test **274 / 274**; `be3.3-alerts-search.http` **31 / 31** trên DB dev. PROPOSED D-57 p–u. Handoff `docs/frontend-handoff/BE3.3.md`.
+- **2026-11-17: BE3.4 DONE – KPI** (Catalog 221–225) trên nhánh `feat/BE3.4-kpi` (worktree `wt-BE34`, từ `release/pilot` @ 5aeaf30, chưa push): định nghĩa + phiên bản + mục tiêu, `KpiSnapshot/Refresh` (chỉ admin, sp_getapplock + AnalyticsRefreshLog, upsert), `GetDaily` / `GetMonthly`, `AnalyticsRefreshLog/GetList`; seed 11 chỉ tiêu; job KPI có code nhưng tắt; test **275 / 275**, `be3.4-kpi.http` **33 / 33** trên DB dev. PROPOSED D-57 w–ac, GAP-KPI-01. Chi tiết: mục BE3.4 cuối file.
 - **2026-11-17: BE3.2 DONE – IoT nhiệt độ** (Catalog 166) trên nhánh `feat/BE3.2-iot` (từ `release/pilot` @ 2aeb84a, chưa push): `POST api/IotTemperature/Receive` (khóa API riêng, không JWT), test **268 / 268**, `be3.2-iot.http` 3 / 3 trên DB dev (khóa đặt lúc chạy, không commit). PROPOSED D-57 f, o. Tiếp theo: BE3.3 cảnh báo, tìm kiếm, tab Liên quan.
 - **2026-11-17: BE3.1 DONE – biểu đồ + sự kiện giao** (đợt BE-3, D-57) trên nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ 8e12696, chưa push): Catalog 100 / 157 / 163 / 192 / 193; test **264 / 264**; `be3.1-charts.http` **22 / 22** trên DB dev. PROPOSED D-57 (j)–(n). Tiếp theo: BE3.2 IoT nhiệt độ.
 - **2026-11-17: T23.1 DONE – Job tự động** trên nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ f648505, chưa push / chưa gộp): project mới `AppDelicare.Job` (D-48) + 5 job LockOrders 20:00 / Mrp 20:30 (+ đề nghị mua) / LotExpiry 00:15 / ContractExpiry 00:30 / MarkAbsent 08:00, `api/Job/GetAll` / `Run` (admin), `Contract/ExpireOverdue`; seed user `system`; test **258 / 258**; `t23-jobs.http` 6 / 6 trên DB dev. PROPOSED D-59. Anh chỉ đạo 2026-11-17: **chỉ làm backend** (không FE).
@@ -1831,6 +1832,24 @@ Nhánh `feat/BE3.3-alerts-search` (worktree `wt-BE33`, từ `release/pilot` @ `5
 - File: `Services/Implement/CommonService.Alerts.cs`, `CommonRelations.cs`, `Model/Model/AlertSearchModels.cs`, `Model/Option/AlertRulesOptions.cs` (`BusinessRules:Alerts`), thông báo `ConstantHelper` khối BE3.3, appsettings.
 
 **Kiểm tra:** build 0 lỗi; test **274 / 274** (+6 `Common/AlertsSearchRelatedTests.cs`: danh sách trắng khớp ScreenMap; từng quy tắc cảnh báo + chi nhánh / đơn vị con / dữ liệu không gắn chi nhánh + quyền + cache; duyệt chỉ hộp của mình; tìm kiếm ≥ 2 ký tự, ≤ 5 / loại, chỉ loại được Xem, màn không dấu, không tên bảng; Liên quan ≤ 8 + count, bỏ nhóm, 403 / 400; truy xuất lô → phiếu nhập / phiếu xuất / mẻ). `docs/api-tests/be3.3-alerts-search.http` **31 / 31** trên DB dev (đủ 9 nguồn Liên quan – truy vấn EF dịch được sang SQL Server; DB dev chưa có đơn vị loại BRANCH nên bước lọc chi nhánh lấy 1 đơn vị bất kỳ).
+### BE3.4 – KPI (Catalog 221–225) · 2026-11-17 · DONE
+Nhánh `feat/BE3.4-kpi` (worktree `wt-BE34`, từ `release/pilot` @ `5aeaf30`), chưa push.
+
+**Kế hoạch / rà soát code cũ:** đã có CRUD sinh mã `KpiMetricDefinition`, `KpiDailySnapshot`, `KpiMonthlySnapshot`, `AnalyticsRefreshLog` (controller + service + SP GetAll), menu `#/kpi-*` trong `ObjectMenu_seed.sql`, ScreenMap → bổ sung vào đúng các file đó; lock + nhật ký của `JobRunService` (T23) tách ra dùng chung; controller mới không gắn bảng `KpiSnapshotController` (như `DashboardController`).
+
+**Đã làm (khung cũ, không bảng / cột / SP mới; 1 seed mới)**
+- **221** `KpiMetricDefinitionService` / Controller: Insert / Update nhận `KpiMetricDefinitionCustomRequest` (+ `TargetValue`, `TargetDirection`); đổi công thức / mục tiêu / đơn vị / tổng hợp → phiên bản mới (VersionNo lớn nhất + 1 kể cả bản xóa mềm), đóng `EffectiveTo` bản cũ, không sửa bản cũ; chỉ sửa / xóa bản mới nhất; xóa khi chưa có số KPI (bản trước mở lại); UNIQUE (MetricCode, VersionNo) kiểm trong Service. Mục tiêu = thẻ `[TARGET >= x]` cuối FormulaDescription (GAP-KPI-01). `GetAll` trả `KpiMetricDefinitionCustomViewModel` (formula, targetValue, targetDirection, isCurrent); `GetById` trả `KpiDefinitionModel`.
+- Seed `DB/seed/KpiMetricDefinition_seed.sql` (11 chỉ tiêu v1, PROPOSED; add-only theo MetricCode) + dòng cuối `deploy/db/scripts.order` + dòng 15 `DB/README.md`.
+- **224** `KpiCalculationService.Refresh` (`KpiSnapshot/Refresh`, `[AdminOnly]`): KPI_DAILY (date) / KPI_MONTHLY (month yyyy-MM), branchId?; khóa `sp_getapplock` `DELICARE_JOB_<jobCode>` + `AnalyticsRefreshLog` Running → Succeeded / Failed / Locked (RowsProcessed, SourceWatermark `MANUAL|yyyy-MM-dd[|branch=…]`); `Calculate` upsert theo (ngày / tháng, chi nhánh, mã, phiên bản) – dùng lại cả dòng xóa mềm; INCOMPLETE khi mẫu số 0 / thiếu một phần dữ liệu / chưa có công thức. 11 công thức (D-57 y) trên ProductionBatch / ProductionOutput / MealWasteRecord / TemperatureLog CORE / FoodSafetyChecklistResult SAMPLE_RETAINED / DeliveryOrder / StockCount(Line) + MaterialLot.UnitCost / MealCost / PackagingLedger / CustomerComplaint.
+- `Services/Jobs/AnalyticsRunGate.cs`: khóa + nhật ký tách từ `JobRunService` (SQL Server: kết nối riêng; InMemory: khóa trong tiến trình + EF); `JobRunService` dùng lại, hành vi T23 giữ nguyên (sửa thêm: ErrorMessage cắt 2000 = độ dài cột, trước là 4000).
+- `Services/Jobs/KpiJobs.cs`: job `KPI_DAILY` 23:30 / `KPI_MONTHLY` 23:45 gọi cùng `Calculate`; `Jobs:KPI_DAILY / KPI_MONTHLY` **Enabled = false** (D-45, D-57 aa).
+- **222 / 223** `KpiSnapshotService.GetDaily / GetMonthly` → `{ period, from, to, branchId, domainCode, metrics: [{ definition, latest: { value, target, variance, met, … }, series: [{ date, value, target, met }] }] }`; `met` theo chiều mục tiêu (LOWER: WASTE / REJECT / EXPIRY / COST / LOSS). Quyền Xem `#/kpi-daily`, `#/kpi-monthly` gắn rõ trên action.
+- **225** `AnalyticsRefreshLogService.GetList` (`AnalyticsRefreshLog/GetList`): jobCode, status, from / to theo StartedAt, phân trang, trigger / ngày nghiệp vụ tách từ watermark, tên người chạy.
+- `BusinessRules:Kpi` (OnTimeToleranceMinutes 15, khoảng xem mặc định / tối đa), `ConstantHelper.Message` khối `// BE3.4`, `KpiCode`.
+
+**Kiểm tra:** build 0 lỗi; test **275 / 275** (+7: `Kpi/KpiTests.cs` – phiên bản, 11 công thức trên dữ liệu mẫu + chiều "đạt" + chi nhánh + KPI tháng, upsert chạy lại + dòng xóa mềm + nhật ký / GetList, ngày không dữ liệu → INCOMPLETE + mã chưa có công thức, kiểm tra đầu vào, chỉ admin làm mới / quyền xem; `KpiRefreshSqlServerTests` trên DB dev: khóa sp_getapplock → 400 + dòng Locked, nhật ký Succeeded, upsert không nhân đôi, dọn đúng dòng của test; `JobTests` cập nhật danh sách 7 job). `docs/api-tests/be3.4-kpi.http` **33 / 33** trên DB dev (cổng 5126; chạy lại lần 2 vẫn 33 / 33). `t23-jobs.http`: kỳ vọng 7 job. Seed chạy 2 lần trên DB dev: lần 1 thêm 11, lần 2 thêm 0. Số KPI tháng 11/2026 trên DB dev: CS_COMPLAINT_SLA 64 %, INV_ACCURACY 95 %, PKG_LOSS_RATE 0,11 % (OK); các chỉ tiêu khác INCOMPLETE vì DB dev chưa có mẻ / đơn giao / giá vốn suất trong tháng 11 tới ngày 17.
+
+**Còn lại / cần anh:** duyệt D-57 w–ac (mục tiêu trong FormulaDescription – GAP-KPI-01, công thức 11 chỉ tiêu, chỉ admin làm mới, job KPI đang tắt); deploy: chạy `DB/seed/KpiMetricDefinition_seed.sql` (đã có trong `scripts.order`), thêm `BusinessRules:Kpi` + `Jobs:KPI_*` vào appsettings của môi trường (có mặc định trong code).
 
 Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
 | STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
@@ -1838,3 +1857,8 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
 | 16 | Đã xong | `GET api/Common/GetRelated?resource=&id=` | BE3.3 |
 | 17 | Đã xong | `GET api/Common/GlobalSearch?q=` | BE3.3 |
 | 18 | Đã xong | `GET api/Common/GetAlerts?branchId=` | BE3.3 |
+| 221 | Đã xong | `KpiMetricDefinition/GetAll / GetById / Insert / Update / Delete` (+ phiên bản, mục tiêu) | BE3.4 |
+| 222 | Đã xong | `GET api/KpiSnapshot/GetDaily` | BE3.4 |
+| 223 | Đã xong | `GET api/KpiSnapshot/GetMonthly` | BE3.4 |
+| 224 | Đã xong | `POST api/KpiSnapshot/Refresh` (chỉ admin; INVENTORY_BALANCE không làm) | BE3.4 |
+| 225 | Đã xong | `GET api/AnalyticsRefreshLog/GetList` | BE3.4 |

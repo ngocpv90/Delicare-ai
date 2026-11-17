@@ -523,6 +523,27 @@
             public static readonly string StorageZoneNotFound = "Không tìm thấy khu vực kho";
             public static readonly string DeliveryPositionInvalid = "Tọa độ không hợp lệ (vĩ độ -90…90, kinh độ -180…180)";
             public static readonly string DeliveryPositionRouteNotRunning = "Chỉ ghi vị trí khi chuyến đang xếp hàng / đang giao (hiện tại: {0})";
+            // BE3.4 – KPI.
+            public static readonly string KpiMetricCodeExists = "Mã chỉ tiêu {0} đã có – sửa chỉ tiêu để tạo phiên bản mới";
+            public static readonly string KpiMetricCodeChange = "Không đổi được mã chỉ tiêu – tạo chỉ tiêu mới";
+            public static readonly string KpiVersionDuplicate = "Chỉ tiêu {0} đã có phiên bản {1}";
+            public static readonly string KpiVersionNotLatest = "Chỉ sửa được phiên bản mới nhất (v{0}) – phiên bản cũ giữ nguyên để đối chiếu số liệu";
+            public static readonly string KpiVersionClosed = "Phiên bản này đã đóng (hết hiệu lực {0:dd/MM/yyyy}) – không sửa";
+            public static readonly string KpiEffectiveFromInvalid = "Ngày hiệu lực của phiên bản mới phải sau ngày hiệu lực của phiên bản đang dùng ({0:dd/MM/yyyy})";
+            public static readonly string KpiDirectionInvalid = "Chiều mục tiêu không hợp lệ ({0}) – dùng HIGHER (càng cao càng tốt) hoặc LOWER (càng thấp càng tốt)";
+            public static readonly string KpiFormulaTooLong = "Công thức + mục tiêu tối đa 2000 ký tự";
+            public static readonly string KpiDeleteHasSnapshot = "Chỉ tiêu đã có số liệu KPI – không xóa, hãy ngừng sử dụng (IsActive = false)";
+            public static readonly string KpiNewVersionCreated = "Đã tạo phiên bản {0} (hiệu lực từ {1:dd/MM/yyyy}); phiên bản {2} đóng ngày {3:dd/MM/yyyy}";
+            public static readonly string KpiJobCodeInvalid = "Mã làm mới không hợp lệ ({0}) – dùng KPI_DAILY hoặc KPI_MONTHLY";
+            public static readonly string KpiInventoryBalanceNotSupported = "INVENTORY_BALANCE không làm ở R1 – tồn kho tính trực tiếp từ sổ kho";
+            public static readonly string KpiDateInFuture = "Không làm mới KPI cho ngày / tháng tương lai";
+            public static readonly string KpiMonthInvalid = "Tháng không hợp lệ ({0}) – dùng dạng yyyy-MM";
+            public static readonly string KpiMonthRangeInvalid = "Khoảng tháng không hợp lệ: từ phải trước đến, tối đa {0} tháng";
+            public static readonly string KpiBranchNotFound = "Không tìm thấy chi nhánh (đơn vị tổ chức)";
+            public static readonly string KpiRefreshRunning = "Đang có lần làm mới {0} khác – thử lại sau";
+            public static readonly string KpiRefreshDone = "Đã làm mới {0}: {1} chỉ tiêu, {2} thiếu dữ liệu";
+            public static readonly string KpiRefreshFailed = "Làm mới {0} lỗi: {1}";
+            public static readonly string KpiNoFormula = "Chưa có công thức tính trong hệ thống cho mã này";
             // T23 – job tự động (D-48).
             public static readonly string JobNotFound = "Không có job '{0}'. Các job: {1}";
             public static readonly string JobUserMissing = "Chưa cấu hình tài khoản chạy job (SystemUsers:JobUserId) – job không được ghi dữ liệu";

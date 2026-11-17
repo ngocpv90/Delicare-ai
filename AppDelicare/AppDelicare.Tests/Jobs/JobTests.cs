@@ -48,7 +48,8 @@ namespace AppDelicare.Tests.Jobs
     /// <summary>T23: DI – WebApi và host AppDelicare.Job (chỉ AddDelicareCore + DelicareServicesModule, không có phần riêng của web) dựng được mọi job.</summary>
     public class JobDependencyInjectionTests(InMemoryApiFactory factory) : IClassFixture<InMemoryApiFactory>
     {
-        private static readonly string[] Codes = ["ContractExpiry", "LockOrders", "LotExpiry", "MarkAbsent", "Mrp"];
+        // BE3.4: + KPI_DAILY / KPI_MONTHLY (cấu hình Enabled = false).
+        private static readonly string[] Codes = ["ContractExpiry", "KPI_DAILY", "KPI_MONTHLY", "LockOrders", "LotExpiry", "MarkAbsent", "Mrp"];
 
         [Fact]
         public void WebApi_container_resolves_all_jobs_and_runner()

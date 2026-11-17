@@ -29,11 +29,12 @@ namespace AppDelicare.Services.Jobs
     /// <summary>T23 (D-48): điều phối job – dùng chung cho AppDelicare.Job (hẹn giờ) và <c>api/Job/Run</c> (bấm tay).</summary>
     public sealed class JobRunService(IEnumerable<IScheduledJob> jobs, IConfiguration configuration, IClock clock, ICurrentActor currentActor) : IJobRunService
     {
-        private const string LockPrefix = "DELICARE_JOB_";
         private readonly List<IScheduledJob> _jobs = jobs.OrderBy(j => j.Code, StringComparer.Ordinal).ToList();
         private readonly IConfiguration _configuration = configuration;
         private readonly IClock _clock = clock;
         private readonly ICurrentActor _currentActor = currentActor;
+        // BE3.4: khóa sp_getapplock + AnalyticsRefreshLog tách ra AnalyticsRunGate (dùng chung với nút làm mới KPI) – hành vi T23 giữ nguyên.
+        private readonly AnalyticsRunGate _gate = new(configuration, clock);
 
         private string ConnectionString => _configuration.GetConnectionString(ConstantHelper.MainConnectionString)
             ?? throw new InvalidOperationException("Thiếu ConnectionStrings:MainConnectionString.");
@@ -108,12 +109,8 @@ namespace AppDelicare.Services.Jobs
                 Trigger = trigger,
                 StartedAt = _clock.Now,
             };
-            await using var lockConnection = new SqlConnection(ConnectionString);
-            await lockConnection.OpenAsync(cancellationToken);
-            int lockResult = await lockConnection.ExecuteScalarAsync<int>(
-                "DECLARE @r int; EXEC @r = sp_getapplock @Resource = @Resource, @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 0; SELECT @r;",
-                new { Resource = LockPrefix + job.Code });
-            if (lockResult < 0)
+            await using var runLock = await _gate.TryAcquireAsync(job.Code, cancellationToken);
+            if (runLock == null)
             {
                 run.RunStatus = JobRunStatus.Locked;
                 run.CompletedAt = _clock.Now;
@@ -122,84 +119,52 @@ namespace AppDelicare.Services.Jobs
                 Log.Warning("[Job] {JobCode} {Trigger}: đang có lần chạy khác – bỏ qua (RunId {RunId})", job.Code, trigger, run.RunId);
                 return Result<JobRunResultModel>.Fail(run.Message);
             }
+            run.RunStatus = JobRunStatus.Running;
+            await InsertLogAsync(run, actor.UserId);
+            Log.Information("[Job] {JobCode} {Trigger} bắt đầu (RunId {RunId}, actor {Actor})", job.Code, trigger, run.RunId, actor);
+            JobOutcome outcome;
             try
             {
-                run.RunStatus = JobRunStatus.Running;
-                await InsertLogAsync(run, actor.UserId);
-                Log.Information("[Job] {JobCode} {Trigger} bắt đầu (RunId {RunId}, actor {Actor})", job.Code, trigger, run.RunId, actor);
-                JobOutcome outcome;
-                try
+                using (_currentActor.BeginScope(actor, $"job-{job.Code}-{run.RunId:N}"))
                 {
-                    using (_currentActor.BeginScope(actor, $"job-{job.Code}-{run.RunId:N}"))
-                    {
-                        outcome = await job.RunAsync(run.StartedAt, cancellationToken);
-                    }
+                    outcome = await job.RunAsync(run.StartedAt, cancellationToken);
                 }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "[Job] {JobCode} lỗi (RunId {RunId})", job.Code, run.RunId);
-                    outcome = new JobOutcome(JobRunStatus.Failed, 0, null, ex.Message);
-                }
-                run.RunStatus = outcome.Status;
-                run.RowsProcessed = outcome.RowsProcessed;
-                run.TargetDate = outcome.TargetDate;
-                run.Message = outcome.Message;
-                run.CompletedAt = _clock.Now;
-                await UpdateLogAsync(run, actor.UserId);
-                Log.Information("[Job] {JobCode} xong: {RunStatus}, {Rows} dòng, ngày {TargetDate:dd/MM/yyyy} – {Message}",
-                    job.Code, run.RunStatus, run.RowsProcessed, run.TargetDate, run.Message);
-                return run.RunStatus == JobRunStatus.Failed
-                    ? Result<JobRunResultModel>.Fail(string.Format(ConstantHelper.Message.JobFailed, job.Code, run.Message))
-                    : Result<JobRunResultModel>.Success(run, run.Message ?? ConstantHelper.Message.SaveSuccess);
             }
-            finally
+            catch (Exception ex)
             {
-                await lockConnection.ExecuteAsync("EXEC sp_releaseapplock @Resource = @Resource, @LockOwner = 'Session';", new { Resource = LockPrefix + job.Code });
+                Log.Error(ex, "[Job] {JobCode} lỗi (RunId {RunId})", job.Code, run.RunId);
+                outcome = new JobOutcome(JobRunStatus.Failed, 0, null, ex.Message);
             }
+            run.RunStatus = outcome.Status;
+            run.RowsProcessed = outcome.RowsProcessed;
+            run.TargetDate = outcome.TargetDate;
+            run.Message = outcome.Message;
+            run.CompletedAt = _clock.Now;
+            await UpdateLogAsync(run, actor.UserId);
+            Log.Information("[Job] {JobCode} xong: {RunStatus}, {Rows} dòng, ngày {TargetDate:dd/MM/yyyy} – {Message}",
+                job.Code, run.RunStatus, run.RowsProcessed, run.TargetDate, run.Message);
+            return run.RunStatus == JobRunStatus.Failed
+                ? Result<JobRunResultModel>.Fail(string.Format(ConstantHelper.Message.JobFailed, job.Code, run.Message))
+                : Result<JobRunResultModel>.Success(run, run.Message ?? ConstantHelper.Message.SaveSuccess);
         }
 
         // AnalyticsRefreshLog (bảng có sẵn): JobCode, RunId, StartedAt, CompletedAt, RunStatus, RowsProcessed,
-        // SourceWatermark = "<trigger>|<ngày nghiệp vụ yyyy-MM-dd>", ErrorMessage = thông báo (≤ 4000).
-        private async Task InsertLogAsync(JobRunResultModel run, Guid actorId)
-        {
-            await using var connection = new SqlConnection(ConnectionString);
-            await connection.ExecuteAsync(
-                "INSERT INTO dbo.AnalyticsRefreshLog (Id, JobCode, RunId, StartedAt, CompletedAt, RunStatus, RowsProcessed, SourceWatermark, ErrorMessage, CreatedDate, CreatedBy, IsDeleted)"
-                + " VALUES (@Id, @JobCode, @RunId, @StartedAt, @CompletedAt, @RunStatus, @RowsProcessed, @SourceWatermark, @ErrorMessage, @CreatedDate, @CreatedBy, 0);",
-                new
-                {
-                    Id = run.RunId,
-                    run.JobCode,
-                    run.RunId,
-                    run.StartedAt,
-                    run.CompletedAt,
-                    run.RunStatus,
-                    run.RowsProcessed,
-                    SourceWatermark = Watermark(run),
-                    ErrorMessage = Truncate(run.Message),
-                    CreatedDate = _clock.Now,
-                    CreatedBy = actorId,
-                });
-        }
+        // SourceWatermark = "<trigger>|<ngày nghiệp vụ yyyy-MM-dd>", ErrorMessage = thông báo (≤ 2000 – độ dài cột).
+        private Task InsertLogAsync(JobRunResultModel run, Guid actorId) => _gate.InsertLogAsync(Entry(run), actorId);
 
-        private async Task UpdateLogAsync(JobRunResultModel run, Guid actorId)
+        private Task UpdateLogAsync(JobRunResultModel run, Guid actorId) => _gate.UpdateLogAsync(Entry(run), actorId);
+
+        private static AnalyticsRunEntry Entry(JobRunResultModel run) => new()
         {
-            await using var connection = new SqlConnection(ConnectionString);
-            await connection.ExecuteAsync(
-                "UPDATE dbo.AnalyticsRefreshLog SET CompletedAt = @CompletedAt, RunStatus = @RunStatus, RowsProcessed = @RowsProcessed, SourceWatermark = @SourceWatermark,"
-                + " ErrorMessage = @ErrorMessage, ModifiedDate = @ModifiedDate, ModifiedBy = @ModifiedBy WHERE Id = @Id;",
-                new
-                {
-                    Id = run.RunId,
-                    run.CompletedAt,
-                    run.RunStatus,
-                    run.RowsProcessed,
-                    SourceWatermark = Watermark(run),
-                    ErrorMessage = Truncate(run.Message),
-                    ModifiedDate = _clock.Now,
-                    ModifiedBy = actorId,
-                });
-        }
+            RunId = run.RunId,
+            JobCode = run.JobCode,
+            StartedAt = run.StartedAt,
+            CompletedAt = run.CompletedAt,
+            RunStatus = run.RunStatus,
+            RowsProcessed = run.RowsProcessed,
+            SourceWatermark = Watermark(run),
+            Message = run.Message,
+        };
 
         private async Task<Dictionary<string, JobRunResultModel>> LastRunsAsync()
         {
@@ -235,8 +200,6 @@ namespace AppDelicare.Services.Jobs
         }
 
         private static string Watermark(JobRunResultModel run) => $"{run.Trigger}|{run.TargetDate:yyyy-MM-dd}";
-
-        private static string? Truncate(string? text) => text is { Length: > 4000 } ? text[..4000] : text;
 
         private sealed class LogRow
         {

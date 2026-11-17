@@ -1,0 +1,246 @@
+### DELICARE – BE3.4: KPI (đợt BE-3, D-57, spec 11.7) – khung cũ D-30.
+### Định nghĩa chỉ tiêu + phiên bản (Catalog 221) → làm mới bấm tay (224, khóa + nhật ký + upsert) → KPI ngày (222) / tháng (223) → nhật ký làm mới (225).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Cần đã chạy seed DB/seed/KpiMetricDefinition_seed.sql (11 chỉ tiêu phiên bản 1).
+### Dữ liệu giao dịch: dữ liệu [DEMO] trên DB dev (full-flow.http) quanh tháng 11/2026 – chỉ tiêu không có dữ liệu sẽ là INCOMPLETE (đúng thiết kế).
+### Khối 1 tạo chỉ tiêu thử "HTTP_KPI_DEMO" (IsActive = false – không vào số KPI) rồi xóa mềm lại ở cuối khối; chạy lại được (phiên bản tăng tiếp).
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Dòng "# @expect …" là kiểm số liệu cho trình chạy tự động (REST Client bỏ qua).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@day = 2026-11-16
+@month = 2026-11
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 1. ĐỊNH NGHĨA KPI + PHIÊN BẢN (Catalog 221)
+### 1.1 Danh sách chỉ tiêu (seed) – mục tiêu tách khỏi FormulaDescription
+# @expect totalRecords >= 1
+# @expect listData[metricCode=DEL_ONTIME].targetValue == 95
+# @expect listData[metricCode=DEL_ONTIME].targetDirection == HIGHER
+# @expect listData[metricCode=DEL_ONTIME].isCurrent == true
+GET {{base}}/api/KpiMetricDefinition/GetAll?SearchText=DEL_ONTIME&Page=1&PageSize=20
+Authorization: Bearer {{token}}
+
+### 1.2 Thêm chỉ tiêu thử (không dùng – IsActive = false), mục tiêu ≥ 90
+POST {{base}}/api/KpiMetricDefinition/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+MetricCode=HTTP_KPI_DEMO&MetricName=[DEMO] Chỉ tiêu thử .http&DomainCode=ZZ&UnitCode=%25&FormulaDescription=A ÷ B&AggregationCode=RATIO&EffectiveFrom=2026-01-01&IsActive=false&TargetValue=90
+
+### 1.3 → 400 (mã đã có – muốn đổi thì sửa để tạo phiên bản mới)
+POST {{base}}/api/KpiMetricDefinition/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+MetricCode=HTTP_KPI_DEMO&MetricName=Trùng&DomainCode=ZZ&FormulaDescription=X&EffectiveFrom=2026-01-01
+
+### 1.4 Tìm bản vừa thêm
+# @name def
+# @expect totalRecords == 1
+# @expect listData.0.targetValue == 90
+# @expect listData.0.formula == A ÷ B
+GET {{base}}/api/KpiMetricDefinition/GetAll?SearchText=HTTP_KPI_DEMO
+Authorization: Bearer {{token}}
+
+### 1.5 Đổi mục tiêu → tạo phiên bản mới (hiệu lực hôm nay), bản cũ đóng hôm qua
+PUT {{base}}/api/KpiMetricDefinition/Update
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{def.response.body.listData.0.id}}&MetricCode=HTTP_KPI_DEMO&MetricName=[DEMO] Chỉ tiêu thử .http&DomainCode=ZZ&UnitCode=%25&FormulaDescription=A ÷ B&AggregationCode=RATIO&EffectiveFrom=2026-01-01&IsActive=false&TargetValue=80&TargetDirection=HIGHER
+
+### 1.6 → 400 (bản cũ không sửa được)
+PUT {{base}}/api/KpiMetricDefinition/Update
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{def.response.body.listData.0.id}}&MetricCode=HTTP_KPI_DEMO&MetricName=Sửa bản cũ&DomainCode=ZZ&FormulaDescription=C&EffectiveFrom=2026-01-01
+
+### 1.7 2 phiên bản – mới nhất trước
+# @name defs
+# @expect totalRecords == 2
+# @expect listData.0.targetValue == 80
+# @expect listData.1.targetValue == 90
+# @expect listData.1.effectiveTo ~ ^20
+GET {{base}}/api/KpiMetricDefinition/GetAll?SearchText=HTTP_KPI_DEMO&SortField=versionNo&SortOrder=descend
+Authorization: Bearer {{token}}
+
+### 1.8 Xem 1 phiên bản (mục tiêu + chiều + đã có công thức tính chưa)
+# @expect data.targetValue == 80
+# @expect data.targetDirection == HIGHER
+# @expect data.hasCalculator == false
+GET {{base}}/api/KpiMetricDefinition/GetById?id={{defs.response.body.listData.0.id}}
+Authorization: Bearer {{token}}
+
+### 1.9 → 400 (xóa bản cũ khi còn bản mới)
+DELETE {{base}}/api/KpiMetricDefinition/Delete?id={{defs.response.body.listData.1.id}}
+Authorization: Bearer {{token}}
+
+### 1.10 Xóa bản mới nhất (chưa có số KPI) → bản cũ mở lại hiệu lực
+DELETE {{base}}/api/KpiMetricDefinition/Delete?id={{defs.response.body.listData.0.id}}
+Authorization: Bearer {{token}}
+
+### 1.11 Bản cũ đã mở lại (EffectiveTo trống)
+# @expect totalRecords == 1
+# @expect listData.0.effectiveTo == null
+GET {{base}}/api/KpiMetricDefinition/GetAll?SearchText=HTTP_KPI_DEMO
+Authorization: Bearer {{token}}
+
+### 1.12 Dọn: xóa mềm chỉ tiêu thử
+DELETE {{base}}/api/KpiMetricDefinition/Delete?id={{defs.response.body.listData.1.id}}
+Authorization: Bearer {{token}}
+
+########## 2. LÀM MỚI KPI BẤM TAY (Catalog 224 – chỉ admin)
+### 2.1 KPI ngày (khóa KPI_DAILY → nhật ký Running → Succeeded, upsert)
+# @name daily
+# @expect data.runStatus == Succeeded
+# @expect data.jobCode == KPI_DAILY
+# @expect data.sourceWatermark == MANUAL|2026-11-16
+# @expect data.metrics length >= 11
+# @expect data.metrics[metricCode=DEL_ONTIME].metricVersion >= 1
+# @expect data.metrics[metricCode=FIN_COST_MEAL].target == null
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_DAILY&date={{day}}
+
+### 2.2 Chạy lại – cùng số dòng (upsert, không nhân đôi)
+# @expect data.rowsProcessed == {{daily.response.body.data.rowsProcessed}}
+# @expect data.incompleteCount == {{daily.response.body.data.incompleteCount}}
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_DAILY&date={{day}}
+
+### 2.3 KPI tháng (tới hôm nay nếu là tháng này)
+# @name monthly
+# @expect data.runStatus == Succeeded
+# @expect data.periodDate ~ ^2026-11-01
+# @expect data.metrics length >= 11
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_MONTHLY&month={{month}}
+
+### 2.4 Đơn vị tổ chức đầu tiên (để thử làm mới theo chi nhánh; DB dev chưa có đơn vị loại BRANCH nên lấy GetAllData)
+# @name branches
+GET {{base}}/api/OrganizationUnit/GetAllData
+Authorization: Bearer {{token}}
+
+### 2.5 KPI ngày theo chi nhánh (dòng snapshot riêng, không đè số toàn công ty)
+# @expect data.branchId == {{branches.response.body.listData.0.id}}
+# @expect data.sourceWatermark contains branch=
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_DAILY&date={{day}}&branchId={{branches.response.body.listData.0.id}}
+
+### 2.6 → 400 (mã làm mới sai)
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_WEEKLY
+
+### 2.7 → 400 (INVENTORY_BALANCE không làm ở R1)
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=INVENTORY_BALANCE
+
+### 2.8 → 400 (ngày tương lai)
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_DAILY&date=2099-01-01
+
+### 2.9 → 400 (tháng sai định dạng)
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_MONTHLY&month=2026-13
+
+### 2.10 → 400 (chi nhánh không tồn tại)
+POST {{base}}/api/KpiSnapshot/Refresh
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KPI_DAILY&branchId=00000000-0000-0000-0000-000000000001
+
+########## 3. KPI NGÀY / THÁNG (Catalog 222 / 223)
+### 3.1 KPI ngày tháng 11 – { metrics: [{ definition, latest, series }] }
+# @expect data.period == DAILY
+# @expect data.metrics length >= 11
+# @expect data.from ~ ^2026-11-01
+GET {{base}}/api/KpiSnapshot/GetDaily?From=2026-11-01&To=2026-11-30
+Authorization: Bearer {{token}}
+
+### 3.2 Lọc nhóm QA (3 chỉ tiêu: QC_CORE_TEMP_PASS, QC_REJECT_RATE, QC_SAMPLE_RETAINED)
+# @expect data.metrics length == 3
+# @expect data.domainCode == QA
+GET {{base}}/api/KpiSnapshot/GetDaily?From=2026-11-01&To=2026-11-30&DomainCode=QA
+Authorization: Bearer {{token}}
+
+### 3.3 KPI ngày theo chi nhánh
+# @expect data.branchId == {{branches.response.body.listData.0.id}}
+GET {{base}}/api/KpiSnapshot/GetDaily?From=2026-11-01&To=2026-11-30&BranchId={{branches.response.body.listData.0.id}}
+Authorization: Bearer {{token}}
+
+### 3.4 KPI tháng
+# @expect data.period == MONTHLY
+# @expect data.metrics length >= 11
+# @expect data.from ~ ^2026-11-01
+GET {{base}}/api/KpiSnapshot/GetMonthly?FromMonth={{month}}&ToMonth={{month}}
+Authorization: Bearer {{token}}
+
+### 3.5 → 400 (từ sau đến)
+GET {{base}}/api/KpiSnapshot/GetDaily?From=2026-11-30&To=2026-11-01
+Authorization: Bearer {{token}}
+
+### 3.6 → 400 (quá 36 tháng)
+GET {{base}}/api/KpiSnapshot/GetMonthly?FromMonth=2020-01&ToMonth=2026-12
+Authorization: Bearer {{token}}
+
+########## 4. NHẬT KÝ LÀM MỚI (Catalog 225)
+### 4.1 Nhật ký KPI_DAILY – mới nhất trước, có lần chạy ở bước 2.1
+# @expect totalRecords >= 2
+# @expect listData.0.jobCode == KPI_DAILY
+# @expect listData[runId={{daily.response.body.data.runId}}].runStatus == Succeeded
+# @expect listData[runId={{daily.response.body.data.runId}}].trigger == MANUAL
+# @expect listData[runId={{daily.response.body.data.runId}}].createdByName == admin
+GET {{base}}/api/AnalyticsRefreshLog/GetList?JobCode=KPI_DAILY&PageSize=50
+Authorization: Bearer {{token}}
+
+### 4.2 Lọc trạng thái
+# @expect listData[runId={{monthly.response.body.data.runId}}].runStatusName == Thành công
+GET {{base}}/api/AnalyticsRefreshLog/GetList?JobCode=KPI_MONTHLY&Status=Succeeded
+Authorization: Bearer {{token}}
+
+### 4.3 → 400 (từ sau đến)
+GET {{base}}/api/AnalyticsRefreshLog/GetList?From=2026-12-31&To=2026-11-01
+Authorization: Bearer {{token}}
+
+########## 5. JOB KPI (đã có code, đang TẮT – D-45 / D-57 aa)
+### 5.1 KPI_DAILY / KPI_MONTHLY có trong danh sách job, Enabled = false
+# @expect listData[jobCode=KPI_DAILY].enabled == false
+# @expect listData[jobCode=KPI_MONTHLY].enabled == false
+# @expect listData[jobCode=KPI_DAILY].at == 23:30
+GET {{base}}/api/Job/GetAll
+Authorization: Bearer {{token}}
