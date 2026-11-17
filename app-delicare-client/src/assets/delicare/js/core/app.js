@@ -10,7 +10,8 @@
   //  - Tích hợp bot (kênh, bot, định danh, tin vào / ra, nhật ký): backend mới có CRUD thô, nghiệp vụ bot làm sau (D-44).
   const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap',
     'int-channel', 'int-bot', 'int-identity', 'int-inbound', 'int-outbound', 'int-log']);
-  const hiddenNow = id => Store.isLive && HIDDEN_LIVE.has(id);
+  // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).
+  const hiddenNow = id => Store.isLive && (HIDDEN_LIVE.has(id) || !!(FN[id] && FN[id].table && Store.isBroken(FN[id].table)));
   const SCREENS = {};
   const APP = { FN, SCREENS, current: null, params: {} };
   APP.register = (id, fn) => SCREENS[id] = fn;
@@ -184,7 +185,7 @@
   const overlayOpen = () => !!document.querySelector('#content ~ * .overlay, .overlay, .drawer-wrap');
   function setLoading(on) { document.getElementById('app').classList.toggle('dc-loading', !!on); }
   // ---------- Router ----------
-  let routeSeq = 0, cycleActive = false;
+  let routeSeq = 0, cycleActive = false, navErrKey = '';
   function route() {
     const seq = ++routeSeq;
     const base = APP.base(), raw = location.hash;
@@ -233,7 +234,11 @@
       }
     }
     screenTables = [...Store.touched];
-    const errs = screenTables.filter(t => Store.srcOf(t) === 'error');
+    // Chỉ báo lỗi khi chính bảng của màn hình đang xem bị lỗi thật. Bảng phụ lỗi / backend chưa có API (404) → bỏ qua (menu của bảng đó đã ẩn), ghi console.
+    const failed = screenTables.filter(t => Store.srcOf(t) === 'error');
+    const errs = failed.filter(t => t === f.table && !Store.isMissing(t));
+    if (failed.length) { const key = failed.join(','); if (key !== navErrKey) { navErrKey = key; buildNav(); document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === f.id)); const act2 = document.querySelector(`[data-nav="${f.id}"]`); if (act2) act2.closest('.group').classList.remove('closed'); } }
+    if (f.table && Store.isMissing(f.table)) el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel empty">${I('database')}<h2 class="mt">Chức năng này chưa có trên máy chủ đang kết nối</h2><p class="muted">Máy chủ chưa có API cho màn hình này nên mục menu đã được ẩn.</p></div>`;
     if (errs.length) el.insertAdjacentHTML('afterbegin', `<div class="notice gap">${I('alert')}<div><b>Không tải được dữ liệu từ API</b>${errs.map(t => `<code>${esc(Store.controllerOf(t))}</code>: ${esc(Store.errorOf(t))}`).join('<br>')}</div></div>`);
     finish(el);
   }
@@ -412,7 +417,9 @@
     }, true);
     // Chuông cảnh báo: hỏi lại mỗi 60 giây khi người dùng đứng yên trên một màn hình.
     if (Store.isLive) alertTimer = setInterval(() => { if (!document.hidden) pullAlerts(); }, ALERT_TTL);
-    onDoc(window, 'hashchange', route); route();
+    onDoc(window, 'hashchange', route);
+    // Dò API của mọi màn hình trước khi vẽ màn đầu tiên: backend đang nối thiếu controller nào thì ẩn menu của nó.
+    Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => { buildNav(); route(); });
   };
   window.APP = APP;
 })();

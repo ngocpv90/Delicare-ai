@@ -40,6 +40,9 @@
   const data = {}, idx = {};
   const src = {};                   // table -> 'demo' | 'idle' | 'pending' | 'api' | 'error'
   const errMsg = {};
+  const missing = {}, probed = {};   // table -> true
+  // Bảng không có GetById (đọc qua action riêng) → không dò, coi như có.
+  const NO_PROBE = new Set(['UserRole', 'DocumentFile', 'AuditChange', 'LocationTracking']);
   const inflight = {};              // table -> Promise
   const listeners = [];
   const touched = new Set();        // bảng được màn hình hiện tại đọc
@@ -173,13 +176,29 @@
     pendingCount() { return Object.values(src).filter(s => s === 'pending').length; },
     touched,
     onLoaded(fn) { listeners.push(fn); },
+    // ---- Backend đang nối có API của bảng này không ----
+    // missing: route không tồn tại (404) → coi như chưa có chức năng, giao diện ẩn menu. broken: gọi được nhưng lỗi (500…).
+    isMissing(t) { return !!missing[t]; },
+    isBroken(t) { return !!missing[t] || src[t] === 'error'; },
+    // Dò nhanh lúc mở app: gọi <Controller>/GetById với Id rỗng (không tải dữ liệu). 404 = backend chưa có controller này.
+    probe(tables) {
+      if (mode !== 'api' || !HOST) return Promise.resolve();
+      const list = [...new Set(tables)].filter(t => S.tables[t] && isApi(t) && !NO_PROBE.has(t) && !probed[t]);
+      return Promise.all(list.map(t => {
+        probed[t] = true;
+        return HOST.get(`${ctrlOf(t)}/GetById?id=${EMPTY_GUID}`).then(() => { }, e => {
+          if (e && e.status === 404) { missing[t] = true; setRows(t, []); src[t] = 'error'; errMsg[t] = HOST.errorText(e); }
+        });
+      }));
+    },
     ensure(t) {
       if (!S.tables[t]) return Promise.resolve();
       touched.add(t);
+      if (missing[t]) { src[t] = 'error'; return Promise.resolve(); }   // backend chưa có API → không gọi lại
       if (src[t] === 'idle') {
         src[t] = 'pending';
         inflight[t] = fetchTable(t).then(rows => { setRows(t, rows); src[t] = 'api'; delete errMsg[t]; })
-          .catch(e => { setRows(t, []); src[t] = 'error'; errMsg[t] = HOST.errorText(e); console.warn('[DELICARE] Không tải được', t, e); })
+          .catch(e => { setRows(t, []); src[t] = 'error'; errMsg[t] = HOST.errorText(e); if (e && e.status === 404) missing[t] = true; console.warn('[DELICARE] Không tải được', t, e); })
           .finally(() => { delete inflight[t]; notify(t); });
       }
       return inflight[t] || Promise.resolve();
