@@ -35,6 +35,8 @@ namespace AppDelicare.Services.Implement
                 // T16: bút toán điều chỉnh / chuyển kho tay (không có phiếu riêng – GAP-F-03 / F-04) lấy số PH- trên sổ cái.
                 new(typeof(InventoryTransaction), ["TransactionNumber", "TransactionNo"]),
                 new(typeof(PurchaseRequest), ["RequestNumber", "RequestNo"]),
+                // BE2.6: đơn đổi ca (spec 11.3 – RequestNo tự sinh; BUSINESS_RULES §11 chưa có mẫu riêng → PH-, PROPOSED D-55 h).
+                new(typeof(ShiftSwapRequest), ["RequestNo"]),
                 new(typeof(ProductionOrder), ["ProductionOrderNumber", "ProductionOrderNo"]),
                 new(typeof(PackingOrder), ["PackingOrderNumber", "PackingNo"]),
                 new(typeof(DeliveryOrder), ["DeliveryNumber", "DeliveryNo"]),
