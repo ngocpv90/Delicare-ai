@@ -59,6 +59,11 @@ export class MedicalExaminationComponent implements OnInit {
     this.searchForm = this.formBuilder.group({
       searchText: [STRING_EMPTY],
     });
+    this.filterForm = this.formBuilder.group({
+      price: this.formBuilder.group({ from: [null], to: [null] }),
+      createdDate: this.formBuilder.group({ from: [''], to: [''] }),
+    });
+    this.appliedFilters = this.filterForm.getRawValue();
     if (this.permission?.allowAccess) {
       this.getData();
     }
@@ -67,9 +72,14 @@ export class MedicalExaminationComponent implements OnInit {
   private getData(): void {
     this.isLoading = true;
     const { searchText } = this.searchForm.value;
+    const { price, createdDate } = this.appliedFilters;
     const param = {
       ...this.table.toParams(),
       searchText: searchText ?? STRING_EMPTY,
+      priceFrom: price?.from,
+      priceTo: price?.to,
+      createdDateFrom: createdDate?.from,
+      createdDateTo: createdDate?.to,
     };
     this.medicalExaminationService.getAll(param).subscribe(
       (data) => {
@@ -189,7 +199,6 @@ export class MedicalExaminationComponent implements OnInit {
   }
   // Khi nhấn Áp dụng
   onFilterApply(): void {
-
     if (this.filterForm.invalid) {
       this.filterForm.markAllAsTouched();
       return;
@@ -197,94 +206,52 @@ export class MedicalExaminationComponent implements OnInit {
 
     const values = this.filterForm.getRawValue();
 
-    // Kiểm tra khoảng ngày
-    const dateRanges = [
-      {
-        label: 'Ngày phân giao',
-        value: values.assignDate
-      },
-      {
-        label: 'Ngày tạo',
-        value: values.createdDate
-      }
+    // Kiểm tra khoảng giá / khoảng ngày
+    const ranges = [
+      { label: 'giá', value: values.price },
+      { label: 'ngày tạo', value: values.createdDate },
     ];
-
-    for (const range of dateRanges) {
-
+    for (const range of ranges) {
       if (
-        range.value.from &&
-        range.value.to &&
+        this.hasValue(range.value.from) &&
+        this.hasValue(range.value.to) &&
         range.value.from > range.value.to
       ) {
-        alert(`Khoảng ${range.label} không hợp lệ`);
+        notificationCommon(
+          this.notifyService,
+          ERROR,
+          `Khoảng ${range.label} không hợp lệ: giá trị "từ" lớn hơn "đến"`
+        );
         return;
       }
     }
 
     this.appliedFilters = structuredClone(values);
-
     this.activeFilterCount = this.countFilters(values);
-
-    this.pageNumber = 1;
-
-    // Gọi API lọc dữ liệu
-    this.loadLeads();
+    this.table.page = 1;
+    this.getData();
   }
 
-  // Đếm số tham số đang được lọc
+  private hasValue(value: any): boolean {
+    return value !== null && value !== undefined && value !== '';
+  }
+
+  // Đếm số điều kiện đang lọc (mỗi khoảng có "từ" hoặc "đến" tính là 1)
   private countFilters(values: any): number {
-
-    // return Object.values(values).filter(value => {
-
-    //   if (Array.isArray(value)) {
-    //     return value.length > 0;
-    //   }
-
-    //   if (value && typeof value === 'object') {
-    //     return !!(value.from || value.to);
-    //   }
-
-    //   return value !== null &&
-    //     value !== undefined &&
-    //     value !== '';
-
-    // }).length;
-    return 0;
+    return Object.values(values).filter(
+      (range: any) => this.hasValue(range?.from) || this.hasValue(range?.to)
+    ).length;
   }
 
   // Xóa bộ lọc
   onFilterClear(): void {
-
     this.filterForm.reset({
-
-      customerType: '',
-      segment: '',
-      departmentId: '',
-      ownerId: '',
-      productGroups: [],
-      source: '',
-      campaignId: '',
-      statuses: [],
-
-      assignDate: {
-        from: '',
-        to: ''
-      },
-
-      createdDate: {
-        from: '',
-        to: ''
-      }
-
+      price: { from: null, to: null },
+      createdDate: { from: '', to: '' },
     });
-
-    // this.appliedFilters = this.filterForm.getRawValue();
-
-    // this.activeFilterCount = 0;
-
-    // this.pageNumber = 1;
-
-    this.loadLeads();
+    this.appliedFilters = this.filterForm.getRawValue();
+    this.activeFilterCount = 0;
+    this.table.page = 1;
+    this.getData();
   }
-
 }

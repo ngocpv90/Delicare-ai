@@ -1,0 +1,97 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_supplierId">Nhà cung cấp<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="supplierId"
+          [items]="items['supplierId']"
+          [loading]="loadingLookup['supplierId']"
+          [invalid]="isInvalid('supplierId')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('supplierId')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_ingredientId">Nguyên liệu<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="ingredientId"
+          [items]="items['ingredientId']"
+          [loading]="loadingLookup['ingredientId']"
+          [invalid]="isInvalid('ingredientId')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('ingredientId')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_supplierMaterialCode">Mã nguyên liệu của NCC</label>
+        <input id="md_supplierMaterialCode" type="text" class="form-control" [class.is-invalid]="isInvalid('supplierMaterialCode')" formControlName="supplierMaterialCode" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_unitPrice">Đơn giá</label>
+        <input id="md_unitPrice" type="text" class="form-control text-end" appNumberInput [decimals]="2" [min]="0" formControlName="unitPrice" placeholder="Nhập số" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_minimumOrderQuantity">MOQ (SL đặt tối thiểu)</label>
+        <input id="md_minimumOrderQuantity" type="text" class="form-control text-end" appNumberInput [decimals]="3" [min]="0" formControlName="minimumOrderQuantity" placeholder="Nhập số" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_leadTimeDays">Lead time (ngày)</label>
+        <input id="md_leadTimeDays" type="text" class="form-control text-end" appNumberInput [decimals]="0" [min]="0" formControlName="leadTimeDays" placeholder="Nhập số" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_effectiveFrom">Hiệu lực từ</label>
+        <app-date-picker inputId="md_effectiveFrom" formControlName="effectiveFrom" [invalid]="isInvalid('effectiveFrom')"></app-date-picker>
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_effectiveTo">Hiệu lực đến</label>
+        <app-date-picker inputId="md_effectiveTo" formControlName="effectiveTo" [invalid]="isInvalid('effectiveTo')"></app-date-picker>
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_status">Trạng thái<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="status"
+          [items]="options['status']"
+          [invalid]="isInvalid('status')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('status')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3 d-flex align-items-end">
+        <div class="form-check form-switch mb-2">
+          <input id="md_isPreferred" class="form-check-input" type="checkbox" formControlName="isPreferred" />
+          <label class="form-check-label" for="md_isPreferred">NCC ưu tiên</label>
+        </div>
+      </div>
+      <div class="col-xl-12 mb-3">
+        <label class="form-label" for="md_qualityRequirement">Yêu cầu chất lượng</label>
+        <textarea id="md_qualityRequirement" class="form-control" [class.is-invalid]="isInvalid('qualityRequirement')" formControlName="qualityRequirement" placeholder="Nhập dữ liệu" rows="3"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
+      <i class="fa-solid fa-xmark me-1"></i>Thoát
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+    </button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

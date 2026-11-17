@@ -1,0 +1,86 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_companyId">Công ty</label>
+        <app-select
+          formControlName="companyId"
+          [items]="items['companyId']"
+          [loading]="loadingLookup['companyId']"
+          [invalid]="isInvalid('companyId')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_code">Mã nhà cung cấp<span class="text-danger">*</span></label>
+        <input id="md_code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('code')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_name">Tên nhà cung cấp<span class="text-danger">*</span></label>
+        <input id="md_name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('name')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_taxCode">Mã số thuế</label>
+        <input id="md_taxCode" type="text" class="form-control" [class.is-invalid]="isInvalid('taxCode')" formControlName="taxCode" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_contactName">Người liên hệ</label>
+        <input id="md_contactName" type="text" class="form-control" [class.is-invalid]="isInvalid('contactName')" formControlName="contactName" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_phone">Điện thoại</label>
+        <input id="md_phone" type="text" class="form-control" [class.is-invalid]="isInvalid('phone')" formControlName="phone" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_email">Email</label>
+        <input id="md_email" type="email" class="form-control" [class.is-invalid]="isInvalid('email')" formControlName="email" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('email')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập email hợp lệ</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_status">Trạng thái<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="status"
+          [items]="options['status']"
+          [invalid]="isInvalid('status')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('status')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-12 mb-3">
+        <label class="form-label" for="md_address">Địa chỉ</label>
+        <textarea id="md_address" class="form-control" [class.is-invalid]="isInvalid('address')" formControlName="address" placeholder="Nhập dữ liệu" rows="3"></textarea>
+      </div>
+      <div class="col-xl-12 mb-3">
+        <label class="form-label" for="md_note">Ghi chú</label>
+        <textarea id="md_note" class="form-control" [class.is-invalid]="isInvalid('note')" formControlName="note" placeholder="Nhập dữ liệu" rows="3"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
+      <i class="fa-solid fa-xmark me-1"></i>Thoát
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+    </button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>
