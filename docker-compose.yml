@@ -1,14 +1,14 @@
 # DELICARE – chạy web + API bằng Docker trên server dev / test (DB là SQL Server có sẵn bên ngoài, KHÔNG kèm trong file này).
 #
-# Chuẩn bị (1 lần):   cp .env.example .env    rồi điền DB_CONNECTION + JWT_SIGNING_KEY   (.env KHÔNG commit)
+# Chuẩn bị (1 lần):   cp .env.example .env    rồi điền DB_USER, DB_PASSWORD, JWT_SIGNING_KEY   (.env KHÔNG commit)
 # Chạy / cập nhật:     docker compose up -d --build
 #
 #   Web  : http://<server>:4444           (đổi bằng WEB_PORT trong .env)
 #   API  : http://<server>:5125/swagger   (đổi bằng API_PORT trong .env; trong mạng Docker là api:8080)
 #
-# DB phải đủ 124 bảng + stored procedure + seed của bản đang chạy. Sau mỗi lần kéo code mới, cập nhật DB bằng:
-#   ./deploy/db/Deploy-Database.ps1 -Server <server> -Database <db> -SqlUser <user>      (Windows)
-#   hoặc deploy/docker/db-init.sh (Linux) – xem deploy/README.md mục 2.
+# DB phải đủ 124 bảng + stored procedure + seed của bản đang chạy. Lần đầu và sau mỗi lần kéo code mới, cập nhật DB bằng:
+#   docker compose run --rm db-init
+# (tạo / cập nhật stored procedure, thêm seed còn thiếu; DB trống thì tạo 124 bảng; KHÔNG sửa bảng đã có.)
 # Bộ đầy đủ có SQL Server riêng trong Docker: deploy/docker/docker-compose.staging.yml; production (HTTPS): docker-compose.production.yml.
 services:
   api:
@@ -21,7 +21,7 @@ services:
       ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Staging}
       TZ: Asia/Ho_Chi_Minh
       # Bí mật lấy từ .env (không nằm trong image, không nằm trong repo).
-      ConnectionStrings__MainConnectionString: ${DB_CONNECTION:?Đặt DB_CONNECTION trong .env}
+      ConnectionStrings__MainConnectionString: "Server=${DB_SERVER:?Đặt DB_SERVER trong .env};Database=${DB_NAME:?Đặt DB_NAME trong .env};User Id=${DB_USER:?Đặt DB_USER trong .env};Password=${DB_PASSWORD:?Đặt DB_PASSWORD trong .env};Encrypt=${DB_ENCRYPT:-False};TrustServerCertificate=True;MultipleActiveResultSets=true;"
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?Đặt JWT_SIGNING_KEY (>= 32 ký tự) trong .env}
       Licenses__GemBox: ${GEMBOX_LICENSE:-}
       DocumentStorage__RootPath: /app/App_Data/DocumentFiles
@@ -55,11 +55,30 @@ services:
     environment:
       DOTNET_ENVIRONMENT: ${APP_ENVIRONMENT:-Staging}
       TZ: Asia/Ho_Chi_Minh
-      ConnectionStrings__MainConnectionString: ${DB_CONNECTION:?Đặt DB_CONNECTION trong .env}
+      ConnectionStrings__MainConnectionString: "Server=${DB_SERVER:?Đặt DB_SERVER trong .env};Database=${DB_NAME:?Đặt DB_NAME trong .env};User Id=${DB_USER:?Đặt DB_USER trong .env};Password=${DB_PASSWORD:?Đặt DB_PASSWORD trong .env};Encrypt=${DB_ENCRYPT:-False};TrustServerCertificate=True;MultipleActiveResultSets=true;"
       Licenses__GemBox: ${GEMBOX_LICENSE:-}
       DocumentStorage__RootPath: /app/App_Data/DocumentFiles
     volumes:
       - api-docs:/app/App_Data/DocumentFiles
+
+  # Cập nhật DB – chạy tay:  docker compose run --rm db-init   (dùng chung .env; tài khoản SQL cần quyền tạo stored procedure)
+  db-init:
+    profiles: ["tools"]
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    environment:
+      DB_SERVER: ${DB_SERVER}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      SA_PASSWORD: ${DB_PASSWORD}
+      # Chỉ dùng khi DB chưa có tài khoản admin của ứng dụng.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes:
+      - ./docs/reference:/repo/docs/reference:ro
+      - ./DB:/repo/DB:ro
+      - ./deploy/db:/repo/deploy/db:ro
+      - ./deploy/docker/db-init.sh:/db-init.sh:ro
+    entrypoint: ["/bin/bash", "/db-init.sh"]
+    restart: "no"
 
 volumes:
   api-import:
