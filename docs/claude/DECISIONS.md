@@ -93,9 +93,9 @@ PROPOSED (T17.1, chờ anh xác nhận): (a) số phần món theo ca = dòng k�
 | D-19 | Ánh xạ buổi ăn (SÁNG / TRƯA / TỐI / ĐÊM trong file menu thật) ↔ ca giao (SANG_6H / TRUA / TOI / DEM_23H của bản demo). Dùng bộ nào làm `Shift.Code`? | Dùng `SANG_6H`, `TRUA`, `TOI`, `DEM_23H` làm mã; tên hiển thị Sáng / Trưa / Tối / Đêm. | T21.1 |
 | D-15 | Triển khai lên đâu: IIS trên Windows Server hay Docker (Linux)? Domain, máy chủ SQL production? **Anh chưa quyết định (2026-11-14).** | Không chặn task: T48.1 chuẩn bị cả IIS lẫn Docker ở mức tối thiểu, staging chạy trên máy anh. Chỉ T48.2 (production) cần chốt. | T48.2 |
 | D-18 | Múi giờ lưu DB: DDL lẫn lộn `getdate()` / `sysdatetime()` (giờ máy chủ) và 17 cột `sysutcdatetime()` (UTC). | Lưu **giờ VN** cho mọi cột; app luôn tự gán thời gian, không dựa default; máy chủ đặt múi giờ VN. PROPOSED – anh xác nhận. | T02, T05 |
-| D-50 | **BE2.1 – các quy tắc PROPOSED đã cài (mẫu hỏi D-49, chi tiết từng mục ở bảng ngay dưới).** Không mục nào chặn việc; em đã làm theo phương án "Đề xuất". | Anh chốt từng mục (a)–(h) hoặc chọn phương án khác. | BE2.1 |
-| D-51 | **BE2.2 – các quy tắc PROPOSED đã cài (mẫu hỏi D-49, chi tiết bảng D-51 ngay dưới).** Không mục nào chặn việc; em đã làm theo phương án "Đề xuất". | Anh chốt từng mục (a)–(j) hoặc chọn phương án khác. | BE2.2 |
-| D-52 | **BE2.3 – duyệt nhiều cấp: các quy tắc PROPOSED đã cài (mẫu hỏi D-49, bảng D-52 ngay dưới).** Không mục nào BLOCKED; em đã làm theo "Đề xuất". | Anh chốt từng mục (a)–(j). | BE2.3 |
+| D-50 | **BE2.1 – các quy tắc PROPOSED đã cài (mẫu hỏi D-49, chi tiết từng mục ở bảng ngay dưới).** Không mục nào chặn việc; em đã làm theo phương án "Đề xuất". | ✅ **Anh chốt 2026-11-17: đồng ý toàn bộ phương án Đề xuất** (anh trả lời "đồng ý"). | BE2.1 |
+| D-51 | **BE2.2 – các quy tắc PROPOSED đã cài (mẫu hỏi D-49, chi tiết bảng D-51 ngay dưới).** Không mục nào chặn việc; em đã làm theo phương án "Đề xuất". | ✅ **Anh chốt 2026-11-17: đồng ý toàn bộ phương án Đề xuất** (anh trả lời "đồng ý"). | BE2.2 |
+| D-52 | **BE2.3 – duyệt nhiều cấp: các quy tắc PROPOSED đã cài (mẫu hỏi D-49, bảng D-52 ngay dưới).** Không mục nào BLOCKED; em đã làm theo "Đề xuất". | ✅ **Anh chốt 2026-11-17: đồng ý toàn bộ phương án Đề xuất** (anh trả lời "đồng ý"). | BE2.3 |
 | D-53 | **BE2.4 – kho & sản xuất mở rộng: các quy tắc PROPOSED đã cài (mẫu hỏi D-49, bảng D-53 ngay dưới).** Không mục nào BLOCKED; em đã làm theo "Đề xuất". | Anh chốt từng mục (a)–(h). | BE2.4 |
 
 #### D-50 – BE2.1: câu hỏi kèm đề xuất (PROPOSED – BA/PO CONFIRM, đã cài theo "Đề xuất")
