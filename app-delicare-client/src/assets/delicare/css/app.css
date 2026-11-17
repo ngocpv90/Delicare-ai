@@ -296,3 +296,43 @@ table.matrix input{accent-color:var(--green);width:15px;height:15px;cursor:point
 .app.dc-loading::before{content:"";position:fixed;left:0;top:0;height:3px;width:100%;z-index:9999;background:linear-gradient(90deg,transparent,var(--green),var(--orange),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:dcload 1s linear infinite}
 @keyframes dcload{from{background-position:-50% 0}to{background-position:150% 0}}
 .app.dc-loading .content{opacity:.75;transition:opacity .2s}
+
+/* ===== App thật (CLAUDE.md 4.4, D-36) – ghi đè cỡ chữ / kích thước của mockup: giữ cỡ của bản cũ, dùng được trên máy tính bảng =====
+   Chữ thường 14px · bảng 13px · tiêu đề cột 12px không in hoa · dòng bảng ≥ 44px · nút và ô nhập ≥ 36px · tiêu đề trang ~20px · menu 13–14px, cao ≥ 40px. */
+body.dc-body{font-size:14px;line-height:1.5}
+body.dc-body h1{font-size:20px;letter-spacing:-.3px}
+body.dc-body .subtitle{font-size:13px}
+body.dc-body .breadcrumb{font-size:12px}
+body.dc-body .eyebrow{font-size:11px;letter-spacing:.6px}
+body.dc-body .dt th{font-size:12px;text-transform:none;letter-spacing:0;padding:11px 10px;color:#6F7B72}
+body.dc-body .dt td{font-size:13px;padding:11px 10px;height:44px}
+body.dc-body .btn{font-size:13px;min-height:36px;padding:7px 14px}
+body.dc-body .btn.sm{font-size:12.5px;min-height:32px;padding:5px 11px}
+body.dc-body .btn.xs{font-size:12px;min-height:30px;padding:4px 9px}
+body.dc-body .input,body.dc-body .select,body.dc-body textarea.input{font-size:14px;min-height:36px}
+body.dc-body .field label{font-size:12.5px}
+body.dc-body .nav-link{font-size:13.5px;min-height:40px}
+body.dc-body .group-toggle{font-size:11.5px;letter-spacing:.5px;min-height:36px}
+body.dc-body .panel-title{font-size:14px}
+body.dc-body .panel-desc,body.dc-body .kpi-foot,body.dc-body .alert-copy small{font-size:12px}
+body.dc-body .kpi-top{font-size:12.5px}
+body.dc-body .alert-copy b{font-size:13px}
+body.dc-body .chip{font-size:12.5px;padding:6px 12px}
+body.dc-body .badge{font-size:12px}
+body.dc-body .tab{font-size:13px;padding:11px 14px}
+body.dc-body .kv label{font-size:11.5px;text-transform:none;letter-spacing:0}
+body.dc-body .kv span{font-size:13.5px}
+body.dc-body .small{font-size:12px}
+body.dc-body .pager{font-size:12.5px}
+
+/* ===== Chế độ dữ liệu thật (body.dc-live): bỏ các phần chỉ để trình diễn của mockup (CLAUDE.md 4.4) =====
+   tên cột DB dưới tiêu đề cột / cạnh nhãn, nút "Truy vết DB", nhãn nguồn dữ liệu, chấm GAP, ghi chú chân trang, hướng dẫn trình diễn. */
+body.dc-live .dt th small,
+body.dc-live .kv label code,
+body.dc-live .field label code,
+body.dc-live [data-trace],
+body.dc-live .demo-ribbon,
+body.dc-live .gap-dot,
+body.dc-live .footer-note,
+body.dc-live #helpLink,
+body.dc-live #helpBtn{display:none !important}
