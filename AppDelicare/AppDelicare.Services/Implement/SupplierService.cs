@@ -1,3 +1,4 @@
+using AppDelicare.Data.Share;
 using AutoMapper;
 using Dapper;
 using AppDelicare.Data.Interface;
@@ -17,7 +18,7 @@ using AppDelicare.Model.Request.Custom;
 namespace AppDelicare.Services.Implement
 {
     public class SupplierService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : ISupplierService
+        , IAuditChangeService auditChangeService, IClock clock) : ISupplierService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -221,7 +222,7 @@ namespace AppDelicare.Services.Implement
                     return Result<SupplierOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
                 }
                 var db = _unitOfWork.DbContext;
-                DateTime since = DateTime.Today.AddDays(-90);
+                DateTime since = clock.Today /* Rà soát BE: giờ nghiệp vụ VN */.AddDays(-90);
                 var lines = await (from l in db.GoodsReceiptLine.AsNoTracking()
                                    join r in db.GoodsReceipt.AsNoTracking() on l.GoodsReceiptId equals r.Id
                                    where !l.IsDeleted && !r.IsDeleted && r.SupplierId == id && r.ReceiptDate >= since

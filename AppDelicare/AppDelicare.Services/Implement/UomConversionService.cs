@@ -1,3 +1,4 @@
+using AppDelicare.Data.Share;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Dapper;
@@ -17,7 +18,7 @@ using AppDelicare.Model.Request.Custom;
 namespace AppDelicare.Services.Implement
 {
     public class UomConversionService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IUomConversionService
+        , IAuditChangeService auditChangeService, IClock clock) : IUomConversionService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -236,7 +237,7 @@ namespace AppDelicare.Services.Implement
             {
                 return quantity;
             }
-            DateTime day = (on ?? DateTime.Today).Date;
+            DateTime day = (on ?? clock.Today /* Rà soát BE: giờ nghiệp vụ VN */).Date;
             var rules = await _unitOfWork.UomConversionRepository.GetAll().AsNoTracking()
                 .Where(x => !x.IsDeleted && x.FromUnitId != Guid.Empty && x.ToUnitId != Guid.Empty && x.ConversionFactor > 0
                     && (x.EffectiveFrom == null || x.EffectiveFrom <= day) && (x.EffectiveTo == null || x.EffectiveTo >= day))

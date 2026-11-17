@@ -12,6 +12,10 @@ CREATE OR ALTER PROCEDURE [dbo].[uspObjectMenu_GetAll] (@SearchText NVARCHAR(MAX
 AS
 BEGIN
 	SET NOCOUNT ON;
+	-- Rà soát BE: chặn PageSize / Page bất thường (như các SP GetAll khác) – PageSize=1000000 từng trả cả bảng.
+	IF @Page IS NULL OR @Page < 1 SET @Page = 1;
+	IF @PageSize IS NULL OR @PageSize < 1 SET @PageSize = 10;
+	IF @PageSize > 1000 SET @PageSize = 1000;
 	DECLARE @strErrorMessage NVARCHAR(4000)
 		   ,@intErrorSeverity INT
 		   ,@intErrorState INT
