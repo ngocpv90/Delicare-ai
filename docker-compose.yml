@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: ./AppDelicare
+      dockerfile: Dockerfile
+    container_name: delicare-api
+    restart: unless-stopped
+    # DB connection string is read from ClinicManagement.WebApi/appsettings.json
+    volumes:
+      - api-import:/app/wwwroot/Import   # uploaded avatars / attachments
+      - api-logs:/app/wwwroot/Logs
+    ports:
+      - "5125:8080"   # direct API/Swagger access: http://localhost:5125/swagger
+
+  web:
+    build:
+      context: ./app-delicare-client
+      dockerfile: Dockerfile
+    container_name: delicare-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"       # app: http://localhost
+
+volumes:
+  api-import:
+  api-logs:

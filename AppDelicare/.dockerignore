@@ -10,3 +10,5 @@
 AppDelicare.Tests/
 AppDelicare.Generator/
 packages/
+backup-db/
+.git
