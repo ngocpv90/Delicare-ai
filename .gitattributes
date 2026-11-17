@@ -1,0 +1,2 @@
+# T48.3: script bash chạy trong container Linux / cron – luôn LF (core.autocrlf=true trên Windows sẽ làm hỏng bash nếu là CRLF).
+*.sh text eol=lf

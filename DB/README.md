@@ -14,7 +14,7 @@ Không có script tạo bảng / cột ngoài `migrations/` đã được PO duy
 
 So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** dưới đây, luôn bằng `sqlcmd ... -b -I -f 65001` (**`-f 65001` bắt buộc** – thiếu cờ này tên tiếng Việt bị lỗi font khi ghi vào DB). Mọi script chạy lại được nhiều lần (SP `CREATE OR ALTER`; seed chỉ **thêm** phần chưa có, không ghi đè chỉnh sửa trên màn hình). Seed cần tài khoản `admin` đã có (ghi `CreatedBy`).
 
-`deploy/db/Deploy-Database.ps1` (và `deploy/docker/db-init.sh`) chạy **mọi** `DB/sp/*.sql` rồi đúng các seed dưới đây theo đúng thứ tự – dùng script này cho staging / DB mới.
+**Thứ tự chạy chính thức = `deploy/db/scripts.order`** (T48.3 – nguồn **duy nhất**; `deploy/db/Deploy-Database.ps1` và `deploy/docker/db-init.sh` cùng đọc file này: 131 SP `DB/sp` → `00_Admin_seed.sql` → 6 seed dưới đây). **SP / seed mới phải thêm 1 dòng vào cuối nhóm tương ứng trong `scripts.order`** (và 1 dòng vào bảng dưới). SP quên ghi vẫn chạy (sau cùng) kèm cảnh báo; seed quên ghi **không chạy**. Dùng 2 script này cho staging / DB mới / server Docker của dev FE (`deploy/docker/README.md`).
 
 | # | Script | Task | Nội dung |
 |---|---|---|---|
@@ -22,7 +22,7 @@ So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** 
 | 2 | `sp/uspSupplier_GetAll.sql` (sửa) | T14 (FE-2) | Đủ cột ViewModel + lọc `Status` |
 | 3 | `sp/uspUnitMeasure_GetAll.sql` (sửa) | T14 (FE-2) | Đủ cột ViewModel + lọc `Status` |
 | 4 | `sp/uspUser_GetAll.sql` (sửa) | T45R.8 | Thêm `@IsActive` |
-| 5 | `seed/00_Admin_seed.sql` (sửa) | T48.0 | Tạo `admin` nếu chưa có – nhận hash **PBKDF2** (`-v AdminUserName= AdminPasswordHash=`); chỉ chạy qua `Deploy-Database.ps1 -AdminPassword` |
+| 5 | `seed/00_Admin_seed.sql` (sửa) | T48.0 | Tạo `admin` nếu chưa có – nhận hash **PBKDF2** (biến sqlcmd `AdminUserName`, `AdminPasswordHash` – truyền bằng `:setvar`, không dùng `-v`, T48.3); chỉ chạy qua `Deploy-Database.ps1 -AdminPassword` hoặc `db-init.sh` (`ADMIN_PASSWORD`, khi chưa có admin) |
 | 6 | `seed/OrganizationUnit_seed.sql` (không đổi) | T07 | Cơ cấu tổ chức (chạy trước để các seed sau có công ty) |
 | 7 | `seed/ObjectMenu_seed.sql` (sửa) | T13, T15.1 | + mục "Duyệt – Đơn đặt suất ăn" (`#/wf-inbox?type=crm-order`), "Duyệt – Đơn mua hàng (Giám đốc)" (`#/wf-inbox?type=scm-po-director`) |
 | 8 | `seed/ObjectMenu_disable_legacy.sql` (mới) | T45R.8 (D-37) | Tắt 26 menu app cũ (không xóa) |

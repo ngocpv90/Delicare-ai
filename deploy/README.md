@@ -6,7 +6,7 @@ Tài liệu này dành cho anh hoặc IT. Có 3 cách chạy staging, chọn 1. 
 |---|---|---|
 | **A. Trên máy anh (LocalDB)** | Thử nhanh, UAT nội bộ | ✅ 2026-11-14; cập nhật 2026-11-17 (backend Pilot + giao diện Angular, mục 8–9) |
 | **B. IIS (Windows Server)** | Nếu chọn IIS cho production | ✅ phần publish (`Publish-Iis.ps1`, lần cuối 2026-11-17) + chạy bản publish ở chế độ Staging; chưa cài lên IIS thật (cần quyền admin – anh / IT làm theo mục 4) |
-| **C. Docker (SQL Server + API)** | Nếu chọn Docker / Linux | ⚠️ Chưa chạy được: máy dev chưa cài Docker |
+| **C. Docker (SQL Server + API)** | Nếu chọn Docker / Linux; server dev FE | ⚠️ Chưa chạy Docker thật (máy dev chưa cài Docker). `db-init.sh` đã chạy thật bằng Git Bash + sqlcmd trên LocalDB (T48.3) |
 
 Sau khi chạy, kiểm tra theo mục 6.
 
@@ -36,9 +36,8 @@ Sinh khóa JWT (PowerShell):
 
 Script `deploy/db/Deploy-Database.ps1` chạy được nhiều lần, không nhân bản dữ liệu:
 1. DB **rỗng** + có cờ `-CreateSchemaIfEmpty` → tạo 124 bảng từ DDL chuẩn của PO. DB đã có bảng → **không đụng tới bảng**.
-2. Cài mọi stored procedure trong `DB/sp/`.
-3. Tạo tài khoản `admin` (nếu truyền `-AdminPassword` và chưa có user này).
-4. Seed cơ cấu tổ chức, menu, nhóm quyền (`DB/seed/`).
+2. Chạy đúng thứ tự trong **`deploy/db/scripts.order`** (T48.3 – nguồn thứ tự **duy nhất**, `deploy/docker/db-init.sh` đọc cùng file): mọi stored procedure `DB/sp/` → tài khoản `admin` (nếu truyền `-AdminPassword` / biến `DELICARE_ADMIN_PASSWORD` và chưa có user này; hash PBKDF2) → seed cơ cấu tổ chức, menu, nhóm quyền, ca, checklist (`DB/seed/`, chỉ thêm phần chưa có).
+3. `-ListOnly`: chỉ in thứ tự script, không kết nối DB. Tài khoản SQL có thể lấy từ biến môi trường `DELICARE_SQL_USER` / `DELICARE_SQL_PASSWORD` (mật khẩu đưa cho sqlcmd qua `SQLCMDPASSWORD`, không nằm trên dòng lệnh). `-TrustServerCertificate` cho SQL Server dùng chứng chỉ tự ký (Docker).
 
 ```powershell
 # DB staging mới trên SQL Server (Windows Authentication)
@@ -96,8 +95,14 @@ docker compose -f deploy/docker/docker-compose.staging.yml logs -f db-init   # x
 ```
 
 - `db`: SQL Server 2022 (cổng máy 14333).
-- `db-init`: tạo DB, 124 bảng (lần đầu), SP, admin, seed rồi dừng.
+- `db-init`: tạo DB, 124 bảng (lần đầu), SP, admin (lần đầu, PBKDF2), seed rồi dừng – theo `deploy/db/scripts.order`, chạy lại được.
 - `api`: chạy ở cổng 8080.
+
+**Cập nhật DB sau `git pull` (T48.3, server Docker của dev FE):**
+```bash
+git pull && docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init
+```
+hoặc `bash deploy/docker/update-db.sh` (chỉ chạy khi có thay đổi DB, ghi log, cron 5 phút tùy chọn). Chi tiết + phương án dự phòng (`Deploy-Database.ps1 -Server "<ip>,14333" -TrustServerCertificate` từ máy dev FE): `deploy/docker/README.md`.
 
 Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệu.
 
@@ -138,7 +143,7 @@ Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): 
 
 ## 9. Cập nhật staging (lặp lại mỗi đợt, đã làm 2026-11-17 sau backend Pilot)
 
-1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (chạy mọi SP + seed theo `DB/README.md` mục "Pilot"; không đụng bảng / dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
+1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (chạy mọi SP + seed theo `deploy/db/scripts.order`; không đụng bảng / dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
 2. Dừng bản API đang chạy (cửa sổ `dotnet AppDelicare.WebApi.dll`), rồi publish đè: `./deploy/iis/Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging` (hoặc lệnh `dotnet publish` ở mục 3).
 3. Build + chép Angular (mục 8).
 4. Chạy: `. ./deploy/staging.local.env.ps1; cd C:\Deploy\delicare-staging; dotnet AppDelicare.WebApi.dll --urls http://localhost:5200`.

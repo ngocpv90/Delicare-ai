@@ -17,3 +17,13 @@ Lưu ý chung cho FE (T50R1):
 - Danh sách `GetAll` không truyền Id cha (vd. `MaterialLot/GetAll` không có `IngredientId`) nay trả **đủ dòng**; truyền Guid rỗng cũng coi như không lọc.
 - CRUD `Insert` của danh mục trả `data = true` (không trả Id) → sau khi thêm, tải lại danh sách (`GetAll?SearchText=<mã>`).
 - Số chứng từ do server sinh (`PH-`, `PO-`, `XN-`, `KH-`, `NL-`, `ME-`, `CX-`, `PA-`), không nhập tay.
+
+## Cập nhật DB trên server Docker của dev FE (T48.3)
+
+Sau mỗi lần lấy code mới (backend có thể thêm SP / seed), chạy từ gốc repo:
+
+```bash
+git pull && docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init
+```
+
+Hoặc `bash deploy/docker/update-db.sh` (chỉ chạy `db-init` khi có thay đổi DB; cron 5 phút tùy chọn). `db-init` chạy lại an toàn: không đụng bảng / dữ liệu đã nhập, admin đã có thì giữ nguyên. Có code backend mới thì build lại API: `... up -d --build api`. Server không ra Internet: `Deploy-Database.ps1 -Server "<ip>,14333" -TrustServerCertificate` từ máy dev FE. Chi tiết: [`deploy/docker/README.md`](../../deploy/docker/README.md).

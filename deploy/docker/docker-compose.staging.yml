@@ -22,6 +22,9 @@ services:
       timeout: 5s
       retries: 20
 
+  # T48.3: chạy lại bao nhiêu lần cũng được (idempotent) – cập nhật SP / seed mới sau git pull:
+  #   docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init
+  # Thứ tự script: deploy/db/scripts.order (dùng chung với Deploy-Database.ps1).
   db-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
     depends_on:
@@ -30,10 +33,12 @@ services:
     environment:
       SA_PASSWORD: ${SA_PASSWORD}
       DB_NAME: ${DB_NAME:-AppDelicare}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Đặt ADMIN_PASSWORD trong staging.env}
+      # Chỉ cần khi DB chưa có tài khoản admin (lần chạy đầu); db-init báo lỗi rõ nếu thiếu.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
       - ../../docs/reference:/repo/docs/reference:ro
       - ../../DB:/repo/DB:ro
+      - ../db:/repo/deploy/db:ro
       - ./db-init.sh:/db-init.sh:ro
     entrypoint: ["/bin/bash", "/db-init.sh"]
     restart: "no"
