@@ -42,7 +42,7 @@ Sau khi chạy: `dotnet build AppDelicare/AppDelicare.sln`, `dotnet test`, rồi
 | Entity | `Model/Entity/<Class>.cs` – `[Table("TênThật")]`, kế thừa `BaseEntity`, `[MaxLength]`, `[Required]`, `[Column(TypeName)]` cho decimal / datetime / date, giá trị DEFAULT hằng số | **Luôn** (entity chỉ là dữ liệu – đồng bộ với DDL) |
 | DbContext | `Data/Connection/DatabaseContext.Generated.cs` – DbSet mọi bảng; `Ignore` thuộc tính BaseEntity không có cột ở bảng đó (`DeletedBy`, `DeletedDate`…); kiểu cột audit | **Luôn** |
 | UnitOfWork | `Data/Interface/IUnitOfWork.Generated.cs`, `Data/Repositories/UnitOfWork.Generated.cs` | **Luôn** |
-| AutoMapper | `WebApi/Infrastructure/AutoMapperGeneratedProfile.cs` – map Request → Entity cho bảng chưa có trong `AutoMapperConfiguraion.cs` | **Luôn** |
+| AutoMapper | `Services/Mapping/AutoMapperGeneratedProfile.cs` (T23: chuyển từ WebApi để AppDelicare.Job dùng chung) – map Request → Entity cho bảng chưa có trong `AutoMapperConfiguraion.cs` | **Luôn** |
 | Repository | `I<Class>Repository`, `<Class>Repository` | Chỉ khi chưa có |
 | Request / SearchRequest / ViewModel | Request: cột nghiệp vụ + `[Required]` (NOT NULL không DEFAULT) + `[MaxLength]`. SearchRequest: lọc theo `XxxId`, `…Status`, `…Type`. ViewModel: cột + `XxxName` (nhãn bảng đích: DisplayName → Name → FullName → số chứng từ → Code) | Chỉ khi chưa có |
 | Service / Controller | Theo mẫu `Warehouse*` (route cũ `api/<Class>/GetAll|Insert|Update|Delete|GetById|GetAllData`). Kiểm tra trùng theo `UNIQUE` của DDL + `Code`. Gán DEFAULT khi client không gửi. Sổ chỉ ghi thêm: **không có Update / Delete**. Xóa: **không** dùng SQL động `uspSystem_ExecuteQuery` (kiểm tra tham chiếu làm ở T07 – ReferenceGuard) | Chỉ khi chưa có |

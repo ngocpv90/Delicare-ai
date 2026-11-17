@@ -48,6 +48,12 @@ namespace AppDelicare.Model.Request.Custom
         public string? Note { get; set; }
     }
 
+    /// <summary>T23 (Catalog 81 ContractExpiryJob 00:30): chuyển hợp đồng Hiệu lực có ngày hết hiệu lực &lt; hôm nay sang Hết hạn (form). Preview = chỉ liệt kê.</summary>
+    public class ContractExpireRequest
+    {
+        public bool Preview { get; set; }
+    }
+
     /// <summary>BE2.2 (spec 6.1 terminate, Catalog 80): chấm dứt hợp đồng Hiệu lực (form). EffectiveTo trống = hôm nay.</summary>
     public class ContractTerminateRequest
     {

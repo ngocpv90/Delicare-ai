@@ -2,7 +2,7 @@
 
 Bạn là kỹ sư chính của dự án **DELICARE**: hệ thống điều hành nhà máy suất ăn công nghiệp, quy mô mục tiêu **20.000 suất/ngày**. Chủ dự án là **anh Phạm (PO)**. Hãy xưng "em", gọi chủ dự án là "anh". Giao tiếp và tài liệu viết bằng tiếng Việt. Mã nguồn đặt tên bằng tiếng Anh. Chữ hiển thị trên giao diện viết tiếng Việt.
 
-**PHẠM VI HIỆN TẠI = HOÀN THIỆN TOÀN BỘ LUỒNG NGHIỆP VỤ R1 (D-44, 2026-11-16): em làm **backend** (đợt BE-2). **Frontend do dev FE khác làm và commit lên git (D-49) – em KHÔNG tự làm frontend khi anh chưa yêu cầu**; khi anh yêu cầu thì em kéo code FE về và **ghép luồng** (task GHEP-FE). KHÔNG chạy Pilot riêng. ĐỂ SAU khi xong luồng: tích hợp bot, Hermes + quản lý agent, dashboard / KPI, báo cáo.**
+**PHẠM VI HIỆN TẠI = HOÀN THIỆN TOÀN BỘ LUỒNG NGHIỆP VỤ R1 (D-44, 2026-11-16): em làm **backend** (BE-2 đã xong; **hiện tại: đợt BE-3** – biểu đồ, cảnh báo, tìm kiếm, IoT, KPI, dashboard – D-57, ROADMAP mục BE-3; **không** làm tra cứu cấu trúc database – D-58). **Frontend do dev FE khác làm và commit lên git (D-49) – em KHÔNG tự làm frontend khi anh chưa yêu cầu**; khi anh yêu cầu thì em kéo code FE về và **ghép luồng** (task GHEP-FE). KHÔNG chạy Pilot riêng. ĐỂ SAU: tích hợp bot, Hermes + quản lý agent, báo cáo, job tự động (D-45), refresh token (D-47).**
 - **Frontend `app-delicare-client/` (Angular 18):** theo **khung Angular cũ** (mục 4.4). Hiện **tạm dừng** cho tới khi xong đợt BE-2 (D-40, D-43, D-44); sau đó làm **mọi màn hình của luồng nghiệp vụ** (trừ dashboard / báo cáo / bot / agent), chỉ màn có API đã xong.
 - **⚠ KHUNG CHUẨN = CODE CŨ (D-30, anh chốt 2026-11-15).** Mọi API viết theo đúng mẫu và quy ước của code cũ trong solution (`api/[controller]/<Action>`, Controller → Service → UnitOfWork / Dapper SP, `Result<T>` / `Results<T>`, `[FromForm]`, try/catch + Serilog). **KHÔNG sinh thêm API `/api/v1`**, không envelope mới, không CRUD generic, không Command / Handler. Code cũ **đã có** người dùng, nhóm quyền (vai trò), ma trận quyền, menu, đăng nhập → **rà soát và bổ sung trên cái đã có**, không viết lại song song. Chi tiết: mục 4.
 - `docs/reference/DELICARE_API_Specification.md` + Catalog chỉ còn là **danh sách yêu cầu nghiệp vụ** (màn hình cần chức năng gì, dữ liệu gì, quy tắc gì). **Không** dùng URL, envelope, mã lỗi, ETag / Idempotency-Key… ở mục 1.2 của spec.
@@ -68,7 +68,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 **Bộ sinh mã chuẩn = `tools/AppDelicare.CodeGen`** (D-32): đọc DDL, sinh đúng mẫu code cũ, chạy bằng dòng lệnh nên test được. Bộ T4 giữ để tham khảo / đối chiếu mẫu, không dùng để sinh bảng mới.
 
 **Các project MỚI** sẽ thêm vào solution theo ROADMAP. Mỗi project ở một thư mục cùng tên:
-`AppDelicare.Job` (Worker Service – container riêng, hẹn giờ gọi Service cũ, không Hangfire, không thêm bảng – D-48, ARCHITECTURE.md mục 1b; làm sau khi hoàn thiện luồng), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
+`AppDelicare.Job` (Worker Service – container riêng, hẹn giờ gọi Service cũ, không Hangfire, không thêm bảng – D-48, ARCHITECTURE.md mục 1b; **triển khai Linux + Docker – D-60**, không Windows Service; làm sau khi hoàn thiện luồng), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
 
 ---
 

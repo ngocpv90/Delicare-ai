@@ -1,12 +1,12 @@
-# Triển khai DELICARE backend (staging)
+# Triển khai DELICARE backend
 
-Tài liệu này dành cho anh hoặc IT. Có 3 cách chạy staging, chọn 1. D-15 (IIS hay Docker cho production) chưa chốt nên cả hai đều được chuẩn bị.
+Tài liệu này dành cho anh hoặc IT. **Cách chuẩn cho test và production: Linux + Docker (D-60, anh chốt 2026-11-17)** – mục 10. Cách A / B (Windows, IIS) chỉ còn để chạy thử trên máy dev Windows; **không** dùng IIS / Windows Service / Task Scheduler cho production.
 
 | Cách | Khi nào dùng | Đã chạy thử |
 |---|---|---|
 | **A. Trên máy anh (LocalDB)** | Thử nhanh, UAT nội bộ | ✅ 2026-11-14; cập nhật 2026-11-17 (backend Pilot + giao diện Angular, mục 8–9) |
 | **B. IIS (Windows Server)** | Nếu chọn IIS cho production | ✅ phần publish (`Publish-Iis.ps1`, lần cuối 2026-11-17) + chạy bản publish ở chế độ Staging; chưa cài lên IIS thật (cần quyền admin – anh / IT làm theo mục 4) |
-| **C. Docker (SQL Server + API)** | Nếu chọn Docker / Linux; server dev FE | ⚠️ Chưa chạy Docker thật (máy dev chưa cài Docker). `db-init.sh` đã chạy thật bằng Git Bash + sqlcmd trên LocalDB (T48.3) |
+| **C. Docker (SQL Server + API + Job)** | **Cách chuẩn (D-60)**: server test / dev FE; production theo mục 10 | ⚠️ Chưa chạy Docker thật (máy dev chưa cài Docker). `db-init.sh` đã chạy thật bằng Git Bash + sqlcmd trên LocalDB (T48.3) |
 
 Sau khi chạy, kiểm tra theo mục 6.
 
@@ -112,6 +112,38 @@ Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệ
 - **Docker (cách C):** volume `delicare-docs` (đã khai báo trong `docker-compose.staging.yml`). Kestrel / IIS mặc định nhận request tới ~28–30 MB – tăng `MaxFileSizeMb` quá 25 thì phải tăng giới hạn request.
 - Mẫu in (BE2.7.1): **PDF mặc định** (PDFsharp-MigraDoc 6.2.4, MIT) + xlsx / docx. Font PDF **Noto Sans nhúng trong `AppDelicare.Services.dll`** (giấy phép `Fonts/NotoSans-OFL.txt` đi kèm bản publish) → IIS và Docker **không cần cài font** (không thêm gói apt). Đổi mặc định: `BusinessRules__Common__PrintDefaultFormat=xlsx`. Word cần `Licenses__GemBox` (thiếu → bản dùng thử của GemBox).
 
+### Cảm biến nhiệt độ IoT (BE3.2)
+- API `POST api/IotTemperature/Receive` dùng **khóa riêng** (header `X-Api-Key`), không dùng đăng nhập. Khóa là **bí mật**: đặt biến môi trường cho API `Iot__ApiKeys__0=<khóa ≥ 32 ký tự>` (thêm `Iot__ApiKeys__1`… khi đổi khóa / nhiều cổng). Không đặt = API IoT tắt (401).
+- Khai báo thiết bị → khu vực kho: `Iot__Devices__<MÃ-THIẾT-BỊ>__StorageZoneCode=<mã khu vực>` (hoặc `__StorageZoneId`), tùy chọn `__MeasurementType`, `__Enabled=false`. Docker: thêm vào `environment` của service `api`; IIS: `environmentVariables` của site.
+- Chi tiết + giới hạn: `docs/frontend-handoff/BE3.2.md`.
+
+### Job tự động (T23 – `AppDelicare.Job`, D-48)
+Tiến trình **riêng** (không chạy trong WebApi – IIS tự tắt app khi không có truy cập). Chạy **đúng 1 bản**; nếu lỡ chạy 2 bản, khóa `sp_getapplock` theo mã job chặn chạy trùng.
+
+| Job | Giờ (VN) | Việc (gọi đúng Service của nút bấm tay) |
+|---|---|---|
+| `LockOrders` | 20:00 | Khóa đơn Đã xác nhận của ngày mai (`Order/LockByMealDate`) |
+| `Mrp` | 20:30 | MRP ngày sản xuất mai + đề nghị mua Nháp (`MaterialRequirement/Calculate`) |
+| `LotExpiry` | 00:15 | Lô quá hạn → Hết hạn + hao hụt (`MaterialLot/ProcessExpired`) |
+| `ContractExpiry` | 00:30 | Hợp đồng quá ngày hết hiệu lực → Hết hạn (`Contract/ExpireOverdue`) |
+| `MarkAbsent` | 08:00 | Chốt vắng ca của hôm qua (`ShiftAssignment/MarkAbsent`) |
+
+- **Lịch / bật tắt:** mục `Jobs` trong `appsettings.json` **của WebApi** (Job đọc file này dưới tên `appsettings.shared.json`), ví dụ biến môi trường `Jobs__Mrp__At=21:00`, `Jobs__LockOrders__Enabled=false`. Lỡ giờ (máy tắt) → chạy bù ngay khi bật lại, **trong cùng ngày**.
+- **Tài khoản ghi:** `system` (seed `DB/seed/SystemUser_seed.sql`, Id cố định = `SystemUsers:JobUserId`, không đăng nhập được). Chạy tay `api/Job/Run` ghi dưới admin bấm.
+- **Lịch sử chạy:** bảng `AnalyticsRefreshLog` (Succeeded / Skipped = nghiệp vụ từ chối hoặc không có gì / Failed / Locked) + log file `Logs/AppDelicare.Job*.log`. Xem: `GET api/Job/GetAll` (admin).
+- **Bí mật:** chỉ cần `ConnectionStrings__MainConnectionString` (+ `Licenses__GemBox` nếu có). Môi trường: `DOTNET_ENVIRONMENT=Staging` / `Production`.
+- **Docker (cách C):** service `job` trong `docker-compose.staging.yml` (đã khai báo, không scale).
+- **Chạy thử trên máy dev Windows (cách A – không dùng cho production, D-60):**
+  ```powershell
+  dotnet publish AppDelicare/AppDelicare.Job/AppDelicare.Job.csproj -c Release -o C:\Deploy\delicare-job
+  # chạy thử: liệt kê job, chạy 1 job rồi thoát
+  $env:DOTNET_ENVIRONMENT = "Staging"; $env:ConnectionStrings__MainConnectionString = "<chuỗi kết nối>"
+  dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll --list
+  dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll --run ContractExpiry
+  ```
+  Chạy liên tục trên server: **chỉ Docker** (service `job`, `restart: unless-stopped`, HEALTHCHECK bằng file nhịp – mục 10). Không Task Scheduler / Windows Service (D-60, D-59 g đã bỏ).
+- Cập nhật bản build Job: dừng tác vụ / container → publish đè → chạy lại. Deploy API không làm dừng Job và ngược lại.
+
 ## 6. Kiểm tra sau triển khai
 
 | Bước | Lệnh / thao tác | Kỳ vọng |
@@ -157,4 +189,32 @@ Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): 
 6. Tệp đính kèm (BE2.7): thư mục `C:\Deploy\delicare-staging\App_Data\DocumentFiles` (tạo 1 lần; `dotnet publish -o` không xóa thư mục này – **không xóa khi cập nhật**, sao lưu cùng DB). Muốn để ngoài thư mục bản build: đặt `$env:DocumentStorage__RootPath` trước bước 4.
 7. Dừng: Ctrl+C ở cửa sổ đang chạy (hoặc `Get-CimInstance Win32_Process | ? { $_.CommandLine -like "*AppDelicare.WebApi.dll*" } | % { Stop-Process -Id $_.ProcessId }`).
 
-Lần cập nhật gần nhất: **2026-11-17 – BE2.9** (toàn bộ BE-2: BE2.1–BE2.7 + sửa lỗi BE2.9): DB 131 SP + 8 seed theo `scripts.order` (không đụng bảng), publish đè (giữ bản build Angular cũ trong `wwwroot`), smoke 49 / 49, `full-flow.http` 216 / 216 trên staging (dữ liệu `[DEMO]` key B29S). Sau đó đã **dừng** API staging.
+Lần cập nhật gần nhất: **2026-11-17 – BE3.7** (T23 + BE3.1–BE3.5: DB 131 SP + seed SystemUser, KpiMetricDefinition; publish đè; `full-flow.http` 217 / 217 trên staging). Lần trước: **2026-11-17 – BE2.9** (toàn bộ BE-2: BE2.1–BE2.7 + sửa lỗi BE2.9): DB 131 SP + 8 seed theo `scripts.order` (không đụng bảng), publish đè (giữ bản build Angular cũ trong `wwwroot`), smoke 49 / 49, `full-flow.http` 216 / 216 trên staging (dữ liệu `[DEMO]` key B29S). Sau đó đã **dừng** API staging.
+
+## 10. Production Linux + Docker (T48.4, D-60)
+
+**Thành phần** (`deploy/docker/docker-compose.production.yml`): `nginx` (build Angular từ `app-delicare-client` + HTTPS + chuyển `/api`, `/Import` → `api`), `api` (AppDelicare.WebApi), `job` (AppDelicare.Job – **đúng 1 bản**), `db-init` (chạy tay). **SQL Server không nằm trong compose production** – server / container riêng có ổ dữ liệu + backup.
+
+**SQL Server (anh / IT chuẩn bị):**
+- Đặt múi giờ **Asia/Ho_Chi_Minh** cho máy / container SQL Server (container: `TZ=Asia/Ho_Chi_Minh`). Lý do: cột mặc định `sysdatetime()` và SP so ngày theo giờ DB phải trùng giờ VN của ứng dụng. Lệch > 5 phút → `/health` báo `dbclock: Degraded` (kèm số phút lệch) và Job ghi cảnh báo lúc khởi động.
+- Backup full hằng đêm + log 15 phút; volume tệp đính kèm `delicare-docs` backup cùng DB.
+- Tài khoản ứng dụng riêng (**không dùng sa** cho api / job): `db-init` tạo bằng `deploy/db/app-login.sql` khi đặt `APP_DB_USER` + `APP_DB_PASSWORD` – quyền `db_datareader`, `db_datawriter`, `GRANT EXECUTE`, **không DDL**. Tài khoản quản trị SQL (`DB_ADMIN_USER` / `DB_ADMIN_PASSWORD`) chỉ dùng cho `db-init`.
+
+**Lần đầu trên server Linux** (đã cài Docker Engine + compose plugin, clone repo):
+```bash
+cp deploy/docker/production.env.example deploy/docker/production.env   # điền – KHÔNG commit (gitignore)
+mkdir -p deploy/docker/certs   # fullchain.pem + privkey.pem của domain (KHÔNG commit)
+docker compose -f deploy/docker/docker-compose.production.yml --env-file deploy/docker/production.env run --rm db-init
+docker compose -f deploy/docker/docker-compose.production.yml --env-file deploy/docker/production.env up -d --build
+docker compose -f deploy/docker/docker-compose.production.yml ps        # api / job / nginx: healthy
+```
+
+**Cập nhật bản mới:** `git pull` → `run --rm db-init` (SP / seed mới) → `up -d --build`. Deploy `api` không làm dừng `job` và ngược lại.
+
+**Kiểm tra:** `https://<domain>/health` → `database: Healthy`, `dbclock: Healthy`; `docker compose … exec job dotnet AppDelicare.Job.dll --list`; trạng thái `job` = healthy (HEALTHCHECK `--healthcheck`: vòng hẹn giờ ghi file nhịp `/tmp/delicare-job-heartbeat` trong 2 phút gần nhất).
+
+**Log:** trong Docker chỉ ghi console (`Logging__ConsoleOnly=true`) – Docker giữ + xoay vòng (`json-file`, 20 MB × 10 / container): `docker compose … logs -f api job`. Chạy ngoài Docker (máy dev) vẫn ghi file `Logs/`.
+
+**Bí mật** (chỉ trong `production.env` trên server): mật khẩu SQL quản trị + ứng dụng, `JWT_SIGNING_KEY`, `ADMIN_PASSWORD` (lần đầu), `GEMBOX_LICENSE`, `IOT_API_KEY_0/1`.
+
+Máy dev hiện chưa có Docker → compose production **chưa chạy thật**; đã kiểm: build, test, `db-init.sh` (cú pháp + dry-run), `app-login.sql` trên LocalDB (tạo / chạy lại / quyền / đăng nhập SQL), `--healthcheck` + file nhịp, `/health` dbclock (PROGRESS T48.4).

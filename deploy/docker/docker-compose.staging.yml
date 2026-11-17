@@ -4,6 +4,13 @@
 #   docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env up -d --build
 # Mở: http://localhost:8080/swagger , http://localhost:8080/health
 name: delicare-staging
+
+# T48.4 (D-60): log Docker xoay vòng (20 MB × 10) cho api / job.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "10"
 services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -35,6 +42,10 @@ services:
       DB_NAME: ${DB_NAME:-AppDelicare}
       # Chỉ cần khi DB chưa có tài khoản admin (lần chạy đầu); db-init báo lỗi rõ nếu thiếu.
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # T48.4 (D-60): tài khoản SQL riêng cho api / job (đọc / ghi / EXECUTE, không DDL). Không đặt = api / job vẫn dùng sa (như cũ).
+      APP_DB_USER: ${APP_DB_USER:-}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-}
+      APP_DB_RESET_PASSWORD: ${APP_DB_RESET_PASSWORD:-0}
     volumes:
       - ../../docs/reference:/repo/docs/reference:ro
       - ../../DB:/repo/DB:ro
@@ -52,7 +63,9 @@ services:
         condition: service_completed_successfully
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
-      ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=sa;Password=${SA_PASSWORD};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+      TZ: Asia/Ho_Chi_Minh
+      Logging__ConsoleOnly: "true"
+      ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=${APP_DB_USER:-sa};Password=${APP_DB_PASSWORD:-${SA_PASSWORD}};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?Đặt JWT_SIGNING_KEY (>= 32 ký tự) trong staging.env}
       Licenses__GemBox: ${GEMBOX_LICENSE:-}
       # BE2.7: tệp đính kèm (DocumentFile) lưu ngoài wwwroot, giữ qua lần build lại image.
@@ -62,6 +75,27 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+    logging: *logging
+
+  # T23 (D-48): job tự động – container riêng, ĐÚNG 1 bản (không scale). Lịch: Jobs:<mã> trong appsettings.json của WebApi (giờ VN);
+  # tắt 1 job: Jobs__LockOrders__Enabled: "false". Xem / chạy tay: api/Job/GetAll, api/Job/Run (admin).
+  job:
+    build:
+      context: ../../AppDelicare
+      dockerfile: AppDelicare.Job/Dockerfile
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      DOTNET_ENVIRONMENT: Staging
+      TZ: Asia/Ho_Chi_Minh
+      ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=${APP_DB_USER:-sa};Password=${APP_DB_PASSWORD:-${SA_PASSWORD}};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+      Licenses__GemBox: ${GEMBOX_LICENSE:-}
+      DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+    volumes:
+      - delicare-docs:/app/App_Data/DocumentFiles
+    restart: unless-stopped
+    logging: *logging
 
 volumes:
   delicare-sql:

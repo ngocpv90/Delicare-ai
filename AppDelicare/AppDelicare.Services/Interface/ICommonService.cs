@@ -18,5 +18,15 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<FileContentModel>> ExportList(CommonListRequest request);
         /// <summary>Catalog 15: lịch sử bản ghi gộp AuditChange (+ dòng con) + ApprovalDecision + ComplaintHistory + tệp đính kèm, mới nhất trước. Quyền Xem.</summary>
         public Task<IResults<RecordHistoryItemModel>> GetHistory(string? resource, Guid id);
+        /// <summary>BE3.3 – Catalog 18: chuông cảnh báo (spec 12.1) – chỉ cảnh báo có số > 0 thuộc màn người dùng được Xem; cache 60 giây theo (người, chi nhánh).</summary>
+        public Task<IResults<AlertModel>> GetAlerts(Guid? branchId);
+        /// <summary>BE3.3 – Catalog 17: tìm kiếm toàn cục – màn hình theo menu được Xem + bản ghi của 8 loại danh sách trắng (không trả tên bảng / cột – D-58).</summary>
+        public Task<IResult<GlobalSearchModel>> GlobalSearch(string? q);
+        /// <summary>BE3.3 – Catalog 16: tab Liên quan – nhóm chứng từ theo quan hệ viết cứng, mỗi nhóm ≤ 8 dòng + tổng; bỏ nhóm không được Xem.</summary>
+        public Task<IResults<RelatedGroupModel>> GetRelated(string? resource, Guid id);
+        /// <summary>BE3.5 – Catalog 231: số NL dưới tồn tối thiểu / lô tạm giữ / phản ánh đang mở – cùng quy tắc chuông, không lọc quyền, không cache. Chi nhánh không có → null.</summary>
+        public Task<SharedAlertCountsModel?> GetSharedCounts(Guid? branchId);
+        /// <summary>BE3.5: đơn vị + mọi đơn vị con (theo ParentId). Không có → null.</summary>
+        public Task<List<Guid>?> GetUnitTree(Guid unitId);
     }
 }

@@ -228,5 +228,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE3.1 (Catalog 192): timeline sự kiện giao của 1 đơn giao (query: id) – sự kiện của đơn, của điểm dừng và cấp chuyến, theo thời gian.</summary>
+        [HttpGet("GetEvents")]
+        public async Task<IActionResult> GetEvents([FromQuery] Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetEvents(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetEvents: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

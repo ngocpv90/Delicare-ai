@@ -22,8 +22,9 @@ namespace AppDelicare.Services.Implement
 {
     /// <summary>T17: hao hụt gắn mẻ qua ProductionBatch/RecordWaste. BE2.1 (spec 8.4): ghi hao hụt chung (Record – mẻ / lệnh SX / món + ca), danh sách theo kỳ.</summary>
     public class MealWasteRecordService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IOptions<ReferenceListsOptions> referenceLists) : IMealWasteRecordService
+        , IClock clock, ICurrentActor currentActor, IOptions<ReferenceListsOptions> referenceLists, IOptions<BusinessRulesOptions> rules) : IMealWasteRecordService
     {
+        private readonly BusinessRulesOptions _rules = rules.Value;
         private readonly IClock _clock = clock;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly ReferenceListsOptions _referenceLists = referenceLists.Value;
@@ -363,6 +364,87 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE3.1 (Catalog 157, spec 8.4 waste-records/summary): tổng hợp hao hụt theo <c>OccurredAt</c> trong [from, to] (mặc định 30 ngày),
+        /// nhóm theo <c>wasteType</c> (mặc định) / <c>dish</c> / <c>shift</c> / <c>date</c>. <c>cost</c> = Σ suất × <c>StandardCost.CostPerServing</c> của món
+        /// (bản Active hiệu lực tại ngày hao hụt, không có thì bản mới nhất) – PROPOSED D-57 (k); dòng không có món / giá → không tính (đếm ở RecordsWithoutCost).
+        /// Sắp xếp: nhiều suất trước (date: theo ngày).
+        /// </summary>
+        public async Task<IResult<WasteSummaryModel>> GetSummary(MealWasteSummaryRequest request)
+        {
+            try
+            {
+                string requested = string.IsNullOrWhiteSpace(request.GroupBy) ? "wasteType" : request.GroupBy.Trim();
+                string groupBy = new[] { "wasteType", "dish", "shift", "date" }.FirstOrDefault(a => a.Equals(requested, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+                if (groupBy.Length == 0)
+                {
+                    return Result<WasteSummaryModel>.Fail(string.Format(ConstantHelper.Message.ChartGroupByInvalid, request.GroupBy));
+                }
+                var charts = _rules.Charts;
+                string? error = ChartRules.DayRange(request.From, request.To, _clock.Today, charts.DefaultRangeDays, charts.MaxRangeDays, out DateTime from, out DateTime to);
+                if (error != null)
+                {
+                    return Result<WasteSummaryModel>.Fail(error);
+                }
+                var db = _unitOfWork.DbContext;
+                DateTime end = to.AddDays(1);
+                var list = await db.MealWasteRecord.AsNoTracking().Where(x => !x.IsDeleted && x.OccurredAt >= from && x.OccurredAt < end).ToListAsync();
+                var dishIds = list.Where(x => x.DishId != null).Select(x => x.DishId!.Value).Distinct().ToList();
+                var costs = (await db.StandardCost.AsNoTracking().Where(c => !c.IsDeleted && dishIds.Contains(c.DishId) && c.CostPerServing > 0).ToListAsync())
+                    .GroupBy(c => c.DishId).ToDictionary(g => g.Key, g => g.ToList());
+                decimal? CostOf(MealWasteRecord x)
+                {
+                    if (x.DishId is not { } dish || (x.QuantityMeals ?? 0m) <= 0m || !costs.TryGetValue(dish, out var options))
+                    {
+                        return null;
+                    }
+                    DateTime day = x.OccurredAt.Date;
+                    var cost = options.Where(c => c.Status == "Active" && (c.EffectiveFrom == null || c.EffectiveFrom <= day) && (c.EffectiveTo == null || c.EffectiveTo >= day))
+                        .OrderByDescending(c => c.EffectiveFrom).FirstOrDefault()
+                        ?? options.OrderByDescending(c => c.EffectiveFrom ?? c.CreatedDate).First();
+                    return Math.Round(x.QuantityMeals!.Value * cost.CostPerServing, 0);
+                }
+                var labels = _referenceLists.Lists.TryGetValue("WasteType", out var types) ? types.ToDictionary(t => t.Code, t => t.Label, StringComparer.OrdinalIgnoreCase) : [];
+                var dishes = await db.Dish.AsNoTracking().Where(x => dishIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, x => x.Name);
+                var shiftIds = list.Where(x => x.ShiftId != null).Select(x => x.ShiftId!.Value).Distinct().ToList();
+                var shifts = await db.Shift.AsNoTracking().Where(x => shiftIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, x => x.Name ?? x.Code);
+                (string Key, string Label) KeyOf(MealWasteRecord x) => groupBy switch
+                {
+                    "dish" => x.DishId is { } d ? (d.ToString(), dishes.GetValueOrDefault(d) ?? d.ToString()) : (string.Empty, "(Không gắn món)"),
+                    "shift" => x.ShiftId is { } s ? (s.ToString(), shifts.GetValueOrDefault(s) ?? s.ToString()) : (string.Empty, "(Không gắn ca)"),
+                    "date" => (x.OccurredAt.ToString("yyyy-MM-dd"), x.OccurredAt.ToString("dd/MM/yyyy")),
+                    _ => (x.WasteType ?? string.Empty, x.WasteType is { } t ? labels.GetValueOrDefault(t, t) : "(Không ghi loại)"),
+                };
+                var withCost = list.Select(x => (Record: x, Cost: CostOf(x))).ToList();
+                var items = withCost.GroupBy(x => KeyOf(x.Record)).Select(g => new WasteSummaryItemModel
+                {
+                    Key = g.Key.Key,
+                    Label = g.Key.Label,
+                    QuantityMeals = g.Sum(x => x.Record.QuantityMeals ?? 0m),
+                    QuantityKg = g.Sum(x => x.Record.QuantityKg ?? 0m),
+                    Cost = g.Any(x => x.Cost != null) ? g.Sum(x => x.Cost ?? 0m) : null,
+                    RecordCount = g.Count(),
+                });
+                items = groupBy == "date" ? items.OrderBy(x => x.Key) : items.OrderByDescending(x => x.QuantityMeals).ThenByDescending(x => x.QuantityKg).ThenBy(x => x.Label);
+                return Result<WasteSummaryModel>.Success(new WasteSummaryModel
+                {
+                    From = from,
+                    To = to,
+                    GroupBy = groupBy,
+                    TotalMeals = list.Sum(x => x.QuantityMeals ?? 0m),
+                    TotalKg = list.Sum(x => x.QuantityKg ?? 0m),
+                    TotalCost = withCost.Any(x => x.Cost != null) ? withCost.Sum(x => x.Cost ?? 0m) : null,
+                    RecordsWithoutCost = withCost.Count(x => x.Cost == null && (x.Record.QuantityMeals ?? 0m) > 0m),
+                    ListItem = items.ToList(),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSummary: ", ex.ToString()));
                 throw;
             }
         }

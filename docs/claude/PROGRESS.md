@@ -1,6 +1,15 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-17: T48.4 DONE – production Linux + Docker (D-60)** trên nhánh `feat/T48.4-docker` (từ `release/pilot` @ 9951db7): compose production (nginx + api + job, SQL riêng), tài khoản SQL ứng dụng, kiểm giờ SQL, file nhịp Job, log console trong Docker; test **292 / 292**. **Docker chưa chạy thật** (máy dev không có Docker). Anh duyệt 2026-11-17: đồng ý toàn bộ đề xuất BE-3 + đã push `main` = `release/pilot` = 9951db7; đã đổi khóa JWT dev / staging + mật khẩu admin staging.
+- **2026-11-17: BE3.7 DONE – ĐỢT BE-3 XONG (BE3.1–BE3.5; BE3.6 không làm – D-58). Dừng, chờ anh duyệt** – tất cả đã gộp `release/pilot` (T23 → BE3.1 → BE3.2 → BE3.3 → BE3.4 → BE3.5), **chưa push / chưa gộp `main`**. Test **288 / 288**; mọi `.http` BE-2 / T23 / BE-3 xanh trên DB dev; staging cập nhật (DB + publish) – `full-flow.http` 217 / 217. Tiếp theo theo ROADMAP: **T48.4** (production Linux + Docker – D-60) khi anh cho làm.
+- **2026-11-17: BE3.5 DONE – dashboard điều hành + hành trình đơn hàng** (Catalog 231, 232) trên nhánh `feat/BE3.5-dashboard` (worktree `wt-BE35`, từ `release/pilot` @ af24e5c, chưa push): `Dashboard/GetExecutive`, `Dashboard/GetOrderJourney`; test **279 / 279**, `be3.5-dashboard.http` **13 / 13** trên DB dev, đối chiếu số dashboard với Order / ProductionBatch / DeliveryExecution GetBoard + chuông khớp 100 %. PROPOSED D-57 ad–ai. Handoff `docs/frontend-handoff/BE3.5.md`.
+- **2026-11-17: BE3.3 DONE – chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan** (Catalog 16, 17, 18) trên nhánh `feat/BE3.3-alerts-search` (worktree `wt-BE33`, từ `release/pilot` @ 5aeaf30, chưa push): `Common/GetAlerts`, `Common/GlobalSearch`, `Common/GetRelated`; test **274 / 274**; `be3.3-alerts-search.http` **31 / 31** trên DB dev. PROPOSED D-57 p–u. Handoff `docs/frontend-handoff/BE3.3.md`.
+- **2026-11-17: BE3.4 DONE – KPI** (Catalog 221–225) trên nhánh `feat/BE3.4-kpi` (worktree `wt-BE34`, từ `release/pilot` @ 5aeaf30, chưa push): định nghĩa + phiên bản + mục tiêu, `KpiSnapshot/Refresh` (chỉ admin, sp_getapplock + AnalyticsRefreshLog, upsert), `GetDaily` / `GetMonthly`, `AnalyticsRefreshLog/GetList`; seed 11 chỉ tiêu; job KPI có code nhưng tắt; test **275 / 275**, `be3.4-kpi.http` **33 / 33** trên DB dev. PROPOSED D-57 w–ac, GAP-KPI-01. Chi tiết: mục BE3.4 cuối file.
+- **2026-11-17: BE3.2 DONE – IoT nhiệt độ** (Catalog 166) trên nhánh `feat/BE3.2-iot` (từ `release/pilot` @ 2aeb84a, chưa push): `POST api/IotTemperature/Receive` (khóa API riêng, không JWT), test **268 / 268**, `be3.2-iot.http` 3 / 3 trên DB dev (khóa đặt lúc chạy, không commit). PROPOSED D-57 f, o. Tiếp theo: BE3.3 cảnh báo, tìm kiếm, tab Liên quan.
+- **2026-11-17: BE3.1 DONE – biểu đồ + sự kiện giao** (đợt BE-3, D-57) trên nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ 8e12696, chưa push): Catalog 100 / 157 / 163 / 192 / 193; test **264 / 264**; `be3.1-charts.http` **22 / 22** trên DB dev. PROPOSED D-57 (j)–(n). Tiếp theo: BE3.2 IoT nhiệt độ.
+- **2026-11-17: T23.1 DONE – Job tự động** trên nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ f648505, chưa push / chưa gộp): project mới `AppDelicare.Job` (D-48) + 5 job LockOrders 20:00 / Mrp 20:30 (+ đề nghị mua) / LotExpiry 00:15 / ContractExpiry 00:30 / MarkAbsent 08:00, `api/Job/GetAll` / `Run` (admin), `Contract/ExpireOverdue`; seed user `system`; test **258 / 258**; `t23-jobs.http` 6 / 6 trên DB dev. PROPOSED D-59. Anh chỉ đạo 2026-11-17: **chỉ làm backend** (không FE).
+- **2026-11-17: Đã gộp + push** BE2.9 và BE2.7.1 vào `release/pilot` = `main` (`81bcf3a`); test 245 / 245. **Staging cập nhật bản có PDF** (`Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging`): `full-flow.http` **217 / 217** trên staging (`@key=B272`, `@day=2026-12-15` – ngày 2026-12-01 đã dùng ở lần chạy BE2.9, kế hoạch SX đã Hoàn thành nên không chạy lại được), 6 mẫu in + `Common/PrintBatch` trả `application/pdf`; chạy xong đã dừng API staging. Dữ liệu thử còn lại trên staging: mã `DEMOB29S…`, `DEMOB271…` (lần chạy lỗi giữa chừng vì trùng ngày), `DEMOB272…`. **Còn 0 task backend BE-2**; tiếp theo: GHEP-FE (khi anh yêu cầu) → UAT toàn luồng → T48.2.
 - **2026-11-17: BE2.9 DONE – ĐỢT BE-2 XONG (BE2.1–BE2.7 + BE2.9; BE2.8 để sau D-45). Dừng, chờ anh duyệt** – nhánh `feat/BE2.9-full-flow` (worktree `wt-BE29`, từ `release/pilot` @ 7b0fc43, chưa push / chưa gộp `main`): `full-flow.http` (toàn luồng R1, 216 request / 22 chốt / 60 kiểm số liệu) **216 / 216 trên DB dev và trên staging**; chạy lại `pilot-flow` + `be2.1…be2.7` đều đạt; test **243 / 243** (+ FullFlowSqlServerTests, MissingDateParameterTests); sửa 1 lỗi (6 bảng điều hành thiếu ngày → HTTP 500); staging `AppDelicare_Staging` / `http://localhost:5200` đã cập nhật + smoke 49 / 49 rồi **dừng**. Danh sách PROPOSED / GAP cần anh chốt (thư viện PDF, cột `DeliveryOrder.MealQuantity`, User ↔ Employee, cột liên kết DocumentFile, D-53…D-56): mục BE2.9 cuối file.
 - **2026-11-17: BE2.7.1 DONE** trên nhánh `feat/BE2.7.1-pdf` (worktree `wt-PDF`, từ `release/pilot` @ 7b0fc43, chưa push / chưa gộp): mẫu in **PDF** (anh chốt 2026-11-17 – PDFsharp-MigraDoc 6.2.4 MIT + font Noto Sans OFL nhúng) cho 6 phiếu + in hàng loạt (1 PDF, mỗi phiếu trang mới); **PDF mặc định** (PROPOSED D-56 k, cấu hình `BusinessRules:Common:PrintDefaultFormat`). GAP-PRINT-01 / D-56 (b) đã xử lý. Test 236/236, `be2.7-common-print.http` 47/47 trên DB dev. Chi tiết: mục BE2.7.1 cuối file.
 - **2026-11-17: BE2.7 DONE** trên nhánh `feat/BE2.7-common-print` (worktree `wt-BE27`, từ `release/pilot` @ 724488d, chưa push / chưa gộp): danh sách trắng + thống kê trạng thái + xuất Excel / CSV (`Common/*`), lịch sử gộp AuditChange + duyệt + phản ánh + tệp, tệp đính kèm ngoài wwwroot (`DocumentFile/Upload`, `GetList`, `Download`), mẫu in phiếu nhập / xuất / kiểm kê / giao / POD / đối soát + in hàng loạt – **xlsx / docx, chưa PDF (D-56 b, cần anh chọn thư viện)**. Test 234/234, `be2.7-common-print.http` 43/43. Chi tiết: mục BE2.7 cuối file.
@@ -1753,3 +1762,142 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`): STT **24�
 PROPOSED chờ anh: **D-56 (k)** – PDF là định dạng mặc định khi FE không gửi `format` (đổi lại Excel bằng `BusinessRules:Common:PrintDefaultFormat=xlsx`, không cần sửa code). FE chưa gọi API in (đã kiểm `app-delicare-client`) nên chưa ảnh hưởng; handoff đã ghi.
 
 Cần anh: không có việc DB. Khi gộp BE2.7.1 lên staging chỉ cần build lại (font đi theo DLL).
+
+### T23.1 – Job tự động (AppDelicare.Job, D-48) · 2026-11-17 · DONE
+Nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ `f648505`, chưa push / chưa gộp). Anh chọn 2026-11-17 ("T23 Job tự động") sau khi Catalog R1 đã làm hết; chỉ làm backend.
+
+**Đã làm**
+- **DI dùng chung (D-48):** `AppDelicare.Services/Ioc/ServiceRegistration.AddDelicareCore` (ConfigurationCommon, IClock, Options nghiệp vụ, DbContext, AutoMapper) + `DelicareServicesModule` (Autofac – quy tắc cũ của `WebApi/Ioc/ComponentRegistrar`, thêm `IScheduledJob`). WebApi `Startup` / `ComponentRegistrar` gọi lại 2 hàm này (bỏ `InitConnection`). AutoMapper profile chuyển `WebApi/Infrastructure` → `Services/Mapping` (CodeGen `Program.cs` / `Templates.cs` / README ghi vào chỗ mới). Gói: chỉ thêm tham chiếu **Autofac 6.5.0 (đã có trong solution)** cho Services – không gói NuGet mới.
+- **Lõi job (`Services/Jobs`):** `IScheduledJob` + `JobOutcome` (Result 200 → Succeeded, 400 → Skipped), `JobSchedule` (HH:mm giờ VN, chạy bù trong ngày, lần kế tiếp), `JobRunService` (khóa `sp_getapplock` Session theo mã job → ghi `AnalyticsRefreshLog` Running → chạy trong `ICurrentActor.BeginScope` (SCHEDULE = user `system`, MANUAL = người bấm) → cập nhật Succeeded / Skipped / Failed / Locked; SourceWatermark = `<trigger>|<ngày nghiệp vụ>`).
+- **5 job (`DailyJobs.cs`)**, mỗi job gọi đúng Service của nút bấm tay: `LockOrders` (Order.LockByMealDate D+1), `Mrp` (MaterialRequirement.Calculate D+1 – đã tạo đề nghị mua → gộp PurchaseProposal 21:00), `LotExpiry` (MaterialLot.ProcessExpired), `ContractExpiry` (**mới** `ContractService.ExpireOverdue`), `MarkAbsent` (ShiftAssignment.MarkAbsent hôm qua).
+- **`AppDelicare.Job`** (Microsoft.NET.Sdk + framework ASP.NET Core, Autofac, Serilog – gói đã có): `Program.cs` (cấu hình = `appsettings.shared*.json` link từ WebApi + `appsettings.json` riêng + biến môi trường; `--list`, `--run <mã>`), `JobSchedulerService` (mỗi `JobHost:PollSeconds` = 30 giây), `Dockerfile`; docker-compose thêm service `job`.
+- **API (khung cũ):** `JobController` `GetAll` / `Run` – `[AdminOnly]`; `Contract/ExpireOverdue` (preview) – quyền Sửa `crm-contract`.
+- **Seed:** `DB/seed/SystemUser_seed.sql` – user `system` Id cố định `061877ad-…f467` (không đăng nhập được), thêm cuối `deploy/db/scripts.order`, DB/README mục 14; `appsettings.json` WebApi: `SystemUsers:JobUserId` + mục `Jobs`. **Đã chạy seed trên DB dev 2 lần** (lần 2 "đã có – giữ nguyên"). Không bảng / cột / SP mới.
+- **Sửa lỗi có sẵn:** `MaterialIssue` chi tiết – dòng cùng nguyên liệu trả theo hạn lô (FEFO) rồi số lô; trước đây thứ tự phụ thuộc DB → `FullFlowSqlServerTests` chập chờn (gặp 3 / 4 lần chạy cả bộ khi thêm test mới).
+
+**Kiểm tra:** build 0 lỗi; test **258 / 258** (+13: lịch giờ, DI WebApi + DI host Job không có phần web, quyền admin, ContractExpire, JobRunService trên SQL Server – user system, log, khóa chống trùng, job lỗi, mã sai), cả bộ chạy 3 lần liên tiếp xanh; `docs/api-tests/t23-jobs.http` **6 / 6** trên DB dev (chạy thật ContractExpiry – 0 hợp đồng quá hạn); `AppDelicare.Job --list` / `--run ContractExpiry` (ghi log dưới `system`, ngày VN) / vòng hẹn giờ 25 giây với mọi job tắt; `dotnet publish` Job + chạy bản publish môi trường Staging. **Chưa** chạy Docker (máy không có Docker), chưa cài Task Scheduler trên staging.
+
+**PROPOSED D-59 (a)–(h)** – xem DECISIONS. Cần anh: duyệt gói `Microsoft.Extensions.Hosting.WindowsServices` nếu muốn chạy dạng Windows Service (D-59 g).
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`):
+| STT | Trạng thái (J) | API thực tế | Task (M) |
+|---|---|---|---|
+| 81 | Đã xong | Job `ContractExpiry` 00:30 + `POST api/Contract/ExpireOverdue` | T23 |
+| 121 | Đã xong | Job `LotExpiry` 00:15 (`MaterialLot/ProcessExpired`) | T23 |
+| 97 (phần job 20:00) | Đã xong | Job `LockOrders` 20:00 (`Order/LockByMealDate`) | T23 |
+| 106 / 107 (phần job 20:30 / 21:00) | Đã xong | Job `Mrp` 20:30 (`MaterialRequirement/Calculate` – tạo đề nghị mua) | T23 |
+
+### BE3.1 – Biểu đồ + sự kiện giao (Catalog 100, 157, 163, 192, 193) · 2026-11-17 · DONE
+Nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ `8e12696` = sau gộp T23), chưa push. Đợt BE-3 theo CLAUDE.md / ROADMAP (anh chốt D-57; D-58 không tra cứu cấu trúc DB – BE3.1 không trả tên bảng / cột).
+
+**Đã làm (khung cũ, không bảng / cột / SP / seed mới)**
+- **100** `OrderReconciliation/GetList` (query from / to theo ngày ăn – mặc định 30 ngày, status, customerId, searchText, page): danh sách đối soát + `chart` Đặt – Giao – Nhận theo ngày ăn (đủ mọi ngày, 0 khi trống, theo đúng bộ lọc) + `statusCounts` (trước lọc trạng thái).
+- **157** `MealWasteRecord/GetSummary` (from / to, groupBy = wasteType | dish | shift | date): suất, kg, giá trị = suất × `StandardCost.CostPerServing` (bản hiệu lực theo ngày), `recordsWithoutCost`.
+- **163** `TemperatureLog/GetSeries` (storageZoneId, from / to – mặc định 48 giờ, tối đa 31 ngày): ngưỡng khu vực + điểm; > 2 000 lần đo → gộp theo phút (trung bình, min / max, vượt ngưỡng vẫn giữ).
+- **192** `DeliveryOrder/GetEvents` (id): timeline sự kiện của đơn + điểm dừng của đơn + cấp chuyến, có số chuyến / biển số / tài xế / thứ tự điểm / người ghi / nhãn loại.
+- **193** `DeliveryEvent/GetVehiclePositions` (deliveryDate, routeId?): vị trí theo sự kiện có tọa độ (GAP-F-05) + vị trí mới nhất mỗi chuyến; `DeliveryEvent/RecordPosition` (tài xế ghi, EventType mới `POSITION`, chỉ chuyến Đang xếp / Đang giao).
+- Dùng chung: `ChartRules` (khoảng ngày, dòng sự kiện giao), `BusinessRules:Charts` (PROPOSED), `DeliveryCode.EventLabel`.
+
+**Kiểm tra:** build 0 lỗi; test **264 / 264** (+6 `Charts/ChartTests.cs`); `docs/api-tests/be3.1-charts.http` **22 / 22** trên DB dev (SQL Server – số thật: 12 đối soát, biểu đồ 1000 / 1000 / 990 mỗi ngày có đơn; hao hụt 33 suất = 66 000 đ); ghi vị trí thật trên chuyến Đang giao `[DEMO]` rồi đọc lại; gọi không token → 401.
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`, cột N = BE-3):
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 100 | Đã xong | `GET api/OrderReconciliation/GetList` (+ chart, statusCounts) | BE3.1 |
+| 157 | Đã xong | `GET api/MealWasteRecord/GetSummary` | BE3.1 |
+| 163 | Đã xong | `GET api/TemperatureLog/GetSeries` | BE3.1 |
+| 192 | Đã xong | `GET api/DeliveryOrder/GetEvents` | BE3.1 |
+| 193 | Đã xong | `GET api/DeliveryEvent/GetVehiclePositions` + `POST api/DeliveryEvent/RecordPosition` | BE3.1 |
+
+### BE3.2 – IoT nhiệt độ (Catalog 166) · 2026-11-17 · DONE
+Nhánh `feat/BE3.2-iot` (worktree `wt-BE32`, từ `release/pilot` @ `2aeb84a`), chưa push.
+
+**Đã làm (khung cũ, không bảng / cột / SP / seed mới)**
+- `IotTemperatureController.Receive` (`[AllowAnonymous]` + `[SkipPermission]` + `[IotApiKey]`): JSON mảng `[{ deviceCode, measuredAt, temperatureC }]` ≤ 500.
+- `Security/IotApiKeyFilter`: header `X-Api-Key` so với `Iot:ApiKeys` (băm SHA-256, thời gian hằng; không log khóa – chỉ 8 ký tự băm), trống = tắt (401), giới hạn `RateLimitPerMinute` / khóa (429, IMemoryCache).
+- `IotTemperatureService`: thiết bị → khu vực (`Iot:Devices`: StorageZoneId / StorageZoneCode, StorageLocationId, MeasurementType, Enabled), kiểm giờ đo / nhiệt độ, chống trùng (DeviceCode, MeasuredAt) trong DB + trong lô, ngưỡng khu vực → IsWithinRange, ghi `TemperatureLog` SourceChannel `IOT` trong `ICurrentActor.BeginScope(system)`; dòng lỗi → `rejected` + log cảnh báo.
+- Cấu hình `Iot` trong appsettings (ApiKeys rỗng – bí mật đặt bằng biến môi trường), `IotOptions` đăng ký trong `AddDelicareCore`.
+
+**Kiểm tra:** build 0 lỗi; test **268 / 268** (+4 `Iot/IotTemperatureTests.cs`: khóa sai / thiếu / token người dùng → 401; lô 12 dòng – 3 ghi, 1 trùng, 8 từ chối đúng lý do; gửi lại không ghi thêm; giờ UTC → VN; system là người ghi; biểu đồ BE3.1 thấy lần đo IoT; lô rỗng / > 500; 429). `docs/api-tests/be3.2-iot.http` **3 / 3** trên DB dev (khóa ngẫu nhiên đặt lúc chạy API, thiết bị `DEMO-SENSOR-01` → khu vực `DEMOB21HKL`): 3 dòng IOT trong `TemperatureLog` (08:00 đạt, 08:05 7,1 °C vượt ngưỡng, 01:10Z → 08:10), CreatedBy = system; không khóa → 401.
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 166 | Đã xong | `POST api/IotTemperature/Receive` (header `X-Api-Key`) | BE3.2 |
+
+### BE3.3 – Chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan (Catalog 16, 17, 18) · 2026-11-17 · DONE
+Nhánh `feat/BE3.3-alerts-search` (worktree `wt-BE33`, từ `release/pilot` @ `5aeaf30`), chưa push.
+
+**Đã làm (khung cũ, thêm vào `CommonController` / `CommonService` của BE2.7; không bảng / cột / SP / seed mới)**
+- `Common/GetAlerts` (branchId?): 9 mã – `STOCK_BELOW_MIN`, `APPROVAL_PENDING` (dùng lại `ApprovalRequestService.GetMyPending`), `QC_INCOMING_PENDING`, `LOT_ON_HOLD`, `TEMPERATURE_OUT_OF_RANGE` (48 giờ, cả IoT), `COMPLAINT_OVERDUE`, `COMPLAINT_OPEN`, `OUTBOUND_FAILED`, `LOT_EXPIRING` (2 ngày, còn tồn); chỉ count > 0, HIGH trước; quyền Xem màn của từng cảnh báo; lọc chi nhánh + đơn vị con qua kho / khách; cache `IMemoryCache` 60 giây theo (người, chi nhánh).
+- `Common/GlobalSearch` (q 2…100 ký tự, sai → 400): màn hình theo `ObjectMenu` được Xem (không dấu), ≤ 10; bản ghi 8 loại danh sách trắng (`CommonRelations.SearchTypes`), ≤ 5 / loại, chỉ loại được Xem; không trả tên bảng / cột (D-58).
+- `Common/GetRelated` (resource, id): 9 nguồn, quan hệ viết cứng (`CommonRelations.Related`, theo LOGICAL_RELATIONS.md), mỗi nhóm = tên màn + route + tổng + ≤ 8 dòng mới nhất (nhãn + trạng thái + tên trạng thái); bỏ nhóm không được Xem; không Xem nguồn → 403; resource ngoài danh sách / bản ghi không có → 400.
+- File: `Services/Implement/CommonService.Alerts.cs`, `CommonRelations.cs`, `Model/Model/AlertSearchModels.cs`, `Model/Option/AlertRulesOptions.cs` (`BusinessRules:Alerts`), thông báo `ConstantHelper` khối BE3.3, appsettings.
+
+**Kiểm tra:** build 0 lỗi; test **274 / 274** (+6 `Common/AlertsSearchRelatedTests.cs`: danh sách trắng khớp ScreenMap; từng quy tắc cảnh báo + chi nhánh / đơn vị con / dữ liệu không gắn chi nhánh + quyền + cache; duyệt chỉ hộp của mình; tìm kiếm ≥ 2 ký tự, ≤ 5 / loại, chỉ loại được Xem, màn không dấu, không tên bảng; Liên quan ≤ 8 + count, bỏ nhóm, 403 / 400; truy xuất lô → phiếu nhập / phiếu xuất / mẻ). `docs/api-tests/be3.3-alerts-search.http` **31 / 31** trên DB dev (đủ 9 nguồn Liên quan – truy vấn EF dịch được sang SQL Server; DB dev chưa có đơn vị loại BRANCH nên bước lọc chi nhánh lấy 1 đơn vị bất kỳ).
+### BE3.4 – KPI (Catalog 221–225) · 2026-11-17 · DONE
+Nhánh `feat/BE3.4-kpi` (worktree `wt-BE34`, từ `release/pilot` @ `5aeaf30`), chưa push.
+
+**Kế hoạch / rà soát code cũ:** đã có CRUD sinh mã `KpiMetricDefinition`, `KpiDailySnapshot`, `KpiMonthlySnapshot`, `AnalyticsRefreshLog` (controller + service + SP GetAll), menu `#/kpi-*` trong `ObjectMenu_seed.sql`, ScreenMap → bổ sung vào đúng các file đó; lock + nhật ký của `JobRunService` (T23) tách ra dùng chung; controller mới không gắn bảng `KpiSnapshotController` (như `DashboardController`).
+
+**Đã làm (khung cũ, không bảng / cột / SP mới; 1 seed mới)**
+- **221** `KpiMetricDefinitionService` / Controller: Insert / Update nhận `KpiMetricDefinitionCustomRequest` (+ `TargetValue`, `TargetDirection`); đổi công thức / mục tiêu / đơn vị / tổng hợp → phiên bản mới (VersionNo lớn nhất + 1 kể cả bản xóa mềm), đóng `EffectiveTo` bản cũ, không sửa bản cũ; chỉ sửa / xóa bản mới nhất; xóa khi chưa có số KPI (bản trước mở lại); UNIQUE (MetricCode, VersionNo) kiểm trong Service. Mục tiêu = thẻ `[TARGET >= x]` cuối FormulaDescription (GAP-KPI-01). `GetAll` trả `KpiMetricDefinitionCustomViewModel` (formula, targetValue, targetDirection, isCurrent); `GetById` trả `KpiDefinitionModel`.
+- Seed `DB/seed/KpiMetricDefinition_seed.sql` (11 chỉ tiêu v1, PROPOSED; add-only theo MetricCode) + dòng cuối `deploy/db/scripts.order` + dòng 15 `DB/README.md`.
+- **224** `KpiCalculationService.Refresh` (`KpiSnapshot/Refresh`, `[AdminOnly]`): KPI_DAILY (date) / KPI_MONTHLY (month yyyy-MM), branchId?; khóa `sp_getapplock` `DELICARE_JOB_<jobCode>` + `AnalyticsRefreshLog` Running → Succeeded / Failed / Locked (RowsProcessed, SourceWatermark `MANUAL|yyyy-MM-dd[|branch=…]`); `Calculate` upsert theo (ngày / tháng, chi nhánh, mã, phiên bản) – dùng lại cả dòng xóa mềm; INCOMPLETE khi mẫu số 0 / thiếu một phần dữ liệu / chưa có công thức. 11 công thức (D-57 y) trên ProductionBatch / ProductionOutput / MealWasteRecord / TemperatureLog CORE / FoodSafetyChecklistResult SAMPLE_RETAINED / DeliveryOrder / StockCount(Line) + MaterialLot.UnitCost / MealCost / PackagingLedger / CustomerComplaint.
+- `Services/Jobs/AnalyticsRunGate.cs`: khóa + nhật ký tách từ `JobRunService` (SQL Server: kết nối riêng; InMemory: khóa trong tiến trình + EF); `JobRunService` dùng lại, hành vi T23 giữ nguyên (sửa thêm: ErrorMessage cắt 2000 = độ dài cột, trước là 4000).
+- `Services/Jobs/KpiJobs.cs`: job `KPI_DAILY` 23:30 / `KPI_MONTHLY` 23:45 gọi cùng `Calculate`; `Jobs:KPI_DAILY / KPI_MONTHLY` **Enabled = false** (D-45, D-57 aa).
+- **222 / 223** `KpiSnapshotService.GetDaily / GetMonthly` → `{ period, from, to, branchId, domainCode, metrics: [{ definition, latest: { value, target, variance, met, … }, series: [{ date, value, target, met }] }] }`; `met` theo chiều mục tiêu (LOWER: WASTE / REJECT / EXPIRY / COST / LOSS). Quyền Xem `#/kpi-daily`, `#/kpi-monthly` gắn rõ trên action.
+- **225** `AnalyticsRefreshLogService.GetList` (`AnalyticsRefreshLog/GetList`): jobCode, status, from / to theo StartedAt, phân trang, trigger / ngày nghiệp vụ tách từ watermark, tên người chạy.
+- `BusinessRules:Kpi` (OnTimeToleranceMinutes 15, khoảng xem mặc định / tối đa), `ConstantHelper.Message` khối `// BE3.4`, `KpiCode`.
+
+**Kiểm tra:** build 0 lỗi; test **275 / 275** (+7: `Kpi/KpiTests.cs` – phiên bản, 11 công thức trên dữ liệu mẫu + chiều "đạt" + chi nhánh + KPI tháng, upsert chạy lại + dòng xóa mềm + nhật ký / GetList, ngày không dữ liệu → INCOMPLETE + mã chưa có công thức, kiểm tra đầu vào, chỉ admin làm mới / quyền xem; `KpiRefreshSqlServerTests` trên DB dev: khóa sp_getapplock → 400 + dòng Locked, nhật ký Succeeded, upsert không nhân đôi, dọn đúng dòng của test; `JobTests` cập nhật danh sách 7 job). `docs/api-tests/be3.4-kpi.http` **33 / 33** trên DB dev (cổng 5126; chạy lại lần 2 vẫn 33 / 33). `t23-jobs.http`: kỳ vọng 7 job. Seed chạy 2 lần trên DB dev: lần 1 thêm 11, lần 2 thêm 0. Số KPI tháng 11/2026 trên DB dev: CS_COMPLAINT_SLA 64 %, INV_ACCURACY 95 %, PKG_LOSS_RATE 0,11 % (OK); các chỉ tiêu khác INCOMPLETE vì DB dev chưa có mẻ / đơn giao / giá vốn suất trong tháng 11 tới ngày 17.
+
+**Còn lại / cần anh:** duyệt D-57 w–ac (mục tiêu trong FormulaDescription – GAP-KPI-01, công thức 11 chỉ tiêu, chỉ admin làm mới, job KPI đang tắt); deploy: chạy `DB/seed/KpiMetricDefinition_seed.sql` (đã có trong `scripts.order`), thêm `BusinessRules:Kpi` + `Jobs:KPI_*` vào appsettings của môi trường (có mặc định trong code).
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 16 | Đã xong | `GET api/Common/GetRelated?resource=&id=` | BE3.3 |
+| 17 | Đã xong | `GET api/Common/GlobalSearch?q=` | BE3.3 |
+| 18 | Đã xong | `GET api/Common/GetAlerts?branchId=` | BE3.3 |
+| 221 | Đã xong | `KpiMetricDefinition/GetAll / GetById / Insert / Update / Delete` (+ phiên bản, mục tiêu) | BE3.4 |
+| 222 | Đã xong | `GET api/KpiSnapshot/GetDaily` | BE3.4 |
+| 223 | Đã xong | `GET api/KpiSnapshot/GetMonthly` | BE3.4 |
+| 224 | Đã xong | `POST api/KpiSnapshot/Refresh` (chỉ admin; INVENTORY_BALANCE không làm) | BE3.4 |
+| 225 | Đã xong | `GET api/AnalyticsRefreshLog/GetList` | BE3.4 |
+
+### BE3.5 – Dashboard điều hành + hành trình đơn hàng (Catalog 231, 232) · 2026-11-17 · DONE
+Nhánh `feat/BE3.5-dashboard` (worktree `wt-BE35`, từ `release/pilot` @ `af24e5c`), chưa push.
+
+**Kế hoạch / rà soát code cũ:** đã có `DashboardController` (rỗng, ControllerScreens → `dash-exec`) + `DashboardService` / `IDashboardService` mẫu cũ (chưa dùng) → bổ sung vào đúng 2 file này, không tạo controller / service mới. Dùng lại: `CommonService.GetAlerts` (khối cảnh báo), quy tắc tồn / lô / phản ánh của chuông (tách thành `GetSharedCounts`), trạng thái thực hiện giao của `DeliveryExecution/GetBoard` (tách thành `DeliveryRules.ExecutionStatus`), công thức tiến độ của `ProductionBatch/GetBoard`. Mục menu `#/flow-e2e` chưa có → không seed (D-57 ai).
+
+**Đã làm (khung cũ, không bảng / cột / SP / seed mới)**
+- `Dashboard/GetExecutive` (date?, shiftId?, branchId?): `kpi` (plannedMeals, orders {total, byStatus, listStatus}, productionProgress, delivery {delivered, total, byStatus}, stockAlerts, qcHoldReject + qcDetail, staffing, openComplaints), `chart.meals7d`, `shiftProgress`, `kpiSnapshot` (4 chỉ tiêu từ KpiDailySnapshot, met theo chiều chỉ tiêu), `orders` (6 đơn đầu + trạng thái giao), `ordersTotal`, `alerts` (= Common/GetAlerts của người đăng nhập). Cache 60 giây phần chung theo (ngày, ca, chi nhánh); ca / chi nhánh không có, ngày sai → 400. Quyền Xem `#/dash-exec`.
+- `Dashboard/GetOrderJourney` (orderId): 8 chặng ORDER → PRODUCTION_PLAN → PRODUCTION → PACKING → DELIVERY → POD → RECONCILIATION → COMPLAINT, mỗi chặng `{ stage, title, route, status, statusName, at, done, documentCount, canView, note, documents [{ id, number, status, statusName, at, route }] }` + `currentStage`; chỉ màn hình + số chứng từ (D-58). Quyền Xem `flow-e2e` / `dash-exec` / `crm-order` (403); chứng từ theo quyền Xem màn của chứng từ.
+- File: `Services/Implement/DashboardService.cs`, `Interface/IDashboardService.cs`, `WebApi/Controllers/DashboardController.cs`, `Model/Model/DashboardExecutiveModels.cs`, `Model/Option/DashboardRulesOptions.cs` (`BusinessRules:Dashboard`), `CommonService.Alerts.cs` (+ `GetSharedCounts`, `GetUnitTree`), `DeliveryRules.ExecutionStatus` (+ `DeliveryExecutionService` dùng lại), thông báo `ConstantHelper` khối BE3.5, appsettings.
+
+**Kiểm tra:** build 0 lỗi; test **279 / 279** (+5 `Dashboard/DashboardTests.cs`: từng khối trên dữ liệu seed + so sánh Order / ProductionBatch / DeliveryExecution GetBoard + chuông; lọc chi nhánh (đơn vị con) / ca; 400; cache 60 giây theo khóa nhưng cảnh báo theo người; quyền dash-exec; hành trình 8 chặng + đơn Nháp / Hủy + quyền chứng từ; chiều KPI). `be3.5-dashboard.http` **13 / 13** trên DB dev (37 @expect, 5 chốt 400). Đối chiếu tay ngày 2026-12-01 / 12-02 trên DB dev: đơn / trạng thái, suất, kế hoạch / đạt / số mẻ, giao, tồn, lô, phản ánh, cảnh báo – **12 / 12 khớp** mỗi ngày; số suất 1 650 / 2 000 phần / 998 suất nhận khớp truy vấn SQL.
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 231 | Đã xong | `GET api/Dashboard/GetExecutive?date=&shiftId=&branchId=` | BE3.5 |
+| 232 | Đã xong | `GET api/Dashboard/GetOrderJourney?orderId=` | BE3.5 |
+
+### BE3.7 – Gộp, kiểm tra, deploy đợt BE-3 · 2026-11-17 · DONE (chờ anh duyệt)
+- **Gộp** (`--no-ff`, xung đột tài liệu giữ cả 2 bên): T23 (8e12696) → BE3.1 (2aeb84a) → BE3.2 (5aeaf30) → BE3.3 (af24e5c) → BE3.4 (a15322d) → tài liệu D-60 của anh → BE3.5 (4cbabee). BE3.3 / BE3.4 / BE3.5 do agent làm trên worktree riêng, em rà diff (không DDL / `sys.*` / SQL ghép chuỗi / bí mật) rồi gộp, build + test lại sau mỗi lần gộp.
+- **Test D-58 mới** `Security/NoDatabaseStructureApiTests`: không controller / action tên kiểu tra cứu cấu trúc; mã nguồn WebApi / Services / Data / Model / Job không đọc `INFORMATION_SCHEMA` / `sys.*`. Lưu ý: `MetaData/GetStatuses` (T45B.5) trả khóa bộ trạng thái dạng `Order.Status` (tên thực thể.cột) – **hỏi anh** có coi là vi phạm D-58 không (FE đang dùng để lấy nhãn trạng thái).
+- **Test toàn bộ 288 / 288.**
+- **`.http` trên DB dev** (WebApi Development, cổng 5125): `full-flow.http` **217 / 217** (`@key=B37C`, `@day=2026-12-05`, `@dow=6` – ngày trống gần nhất; ngày xa như 2028 làm bước giữ chỗ #111 = 0 vì lô thử hạn hôm nay + 20 / 30 ngày); be2.1 **147 / 147** (2026-11-28, dow 6), be2.2 **73 / 73**, be2.3 **58 / 58**, be2.4 **125 / 125** (2026-11-29, dow 7), be2.5 **142 / 142** (2026-12-06, dow 7), be2.6 **65 / 65**, be2.7 **47 / 47**, t23 **6 / 6**, be3.1 **22 / 22** (sửa bước 5.4 dùng Id chuyến cố định – đơn giao đầu danh sách không còn gắn chuyến), be3.2 **3 / 3** (khóa IoT sinh lúc chạy), be3.3 **31 / 31**, be3.4 **33 / 33**, be3.5 **13 / 13**.
+- **Staging** (`AppDelicare_Staging`, cổng 5200): `Deploy-Database.ps1` → 131 SP + seed (thêm `SystemUser_seed` – tạo user system, `KpiMetricDefinition_seed` – 11 chỉ tiêu); publish đè `C:\Deploy\delicare-staging` (giữ Angular cũ trong wwwroot); `full-flow.http` **217 / 217** (`@key=B37S`, `@day=2026-11-28`, `@dow=6`), t23 6 / 6, be3.3 31 / 31, be3.4 33 / 33; be3.1 19 / 22 và be3.5 8 / 13 chỉ sai ở bước `@expect` gắn dữ liệu riêng DB dev (số suất 1650, Id chi nhánh dev, khu vực kho đầu danh sách) – API đều trả 200. Chạy xong đã dừng API staging. Job (`AppDelicare.Job`) chưa chạy trên staging (chờ T48.4 Docker – D-60).
+- Bí mật: agent BE3.5 lỡ in `dotnet user-secrets list` (khóa JWT dev + license GemBox) ra nhật ký làm việc – không có trong commit; **đề xuất anh đổi khóa JWT dev / staging** (cùng mật khẩu admin staging đã nêu trước).
+
+### T48.4 – Production Linux + Docker (D-60) · 2026-11-17 · DONE (Docker chưa chạy thật)
+Nhánh `feat/T48.4-docker` (worktree `wt-T484`).
+- **Compose production** `deploy/docker/docker-compose.production.yml`: `nginx` (Dockerfile 2 giai đoạn build Angular + `default.conf.template`: HTTP → HTTPS, `/api`, `/Import`, `/health` → api, `client_max_body_size` theo `MAX_UPLOAD_MB`, header bảo mật, cache file tĩnh), `api`, `job` (1 bản), `db-init` (profile tools, tài khoản quản trị SQL); không SQL Server; bí mật qua `production.env` (`production.env.example` không giá trị thật; `.gitignore` thêm `production.env`, `certs/`); log `json-file` 20 MB × 10.
+- **Giờ SQL**: `DatabaseClockCheck` (Services) – `/health` thêm `dbclock` (Degraded khi lệch > 5 phút, kèm mô tả), Job cảnh báo lúc khởi động. Đã thấy thật: LocalDB máy dev lệch −900 phút (giờ máy UTC−8).
+- **Tài khoản SQL ứng dụng**: `deploy/db/app-login.sql` (login + user, db_datareader / db_datawriter / EXECUTE, không DDL, idempotent, mật khẩu hex qua file tạm) + `db-init.sh` (`APP_DB_USER`, `APP_DB_PASSWORD`, `APP_DB_RESET_PASSWORD`). Thử trên LocalDB dev: tạo → chạy lại không đổi → quyền đọc / ghi / EXECUTE = 1, CREATE TABLE / ALTER schema = 0 → đăng nhập SQL được → **đã xóa login thử**. Compose staging dùng tài khoản này khi đặt biến (không đặt = sa như cũ).
+- **Job**: file nhịp (`JobHeartbeat`, `JobHost:HeartbeatFile`) ghi mỗi vòng + sau mỗi job; `dotnet AppDelicare.Job.dll --healthcheck` (không dựng host) – Dockerfile Job có HEALTHCHECK. Thử thật: chưa có nhịp → unhealthy / exit 1; chạy vòng hẹn giờ 20 giây → healthy / exit 0.
+- **Log**: `SerilogSetup` (WebApi + Job) – `Logging:ConsoleOnly=true` (đặt trong Docker) bỏ sink File, chỉ console.
+- **Tài liệu**: `deploy/README.md` (Linux + Docker là chuẩn, mục 10 production; bỏ Task Scheduler / Windows Service), `deploy/docker/README.md` mục 5, DECISIONS "T48.4 – đề xuất" (a)–(e).
+- **Kiểm tra**: build 0 lỗi; test **292 / 292** (+4 `Deploy/DeployHealthTests.cs`); `db-init.sh` `bash -n` + dry-run; `/health` thật → database Healthy, dbclock Degraded (máy dev). **Chưa**: `docker compose` (không có Docker), kiểm cú pháp YAML bằng công cụ (lệnh tải gói js-yaml bị chặn) – cần chạy bước 7 (dựng staging Docker trên Linux + full-flow + --list + health) khi có máy Docker.

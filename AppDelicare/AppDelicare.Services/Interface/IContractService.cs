@@ -20,6 +20,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Decide(AppDelicare.Model.Request.Custom.ContractActionRequest request, bool approve);
         public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> Terminate(AppDelicare.Model.Request.Custom.ContractTerminateRequest request);
         public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> GetDetail(Guid id);
+        /// <summary>T23: hợp đồng Hiệu lực quá ngày hết hiệu lực → Hết hạn (job ContractExpiry 00:30 và nút bấm tay).</summary>
+        public Task<IResult<AppDelicare.Model.Model.ContractExpireResultModel>> ExpireOverdue(AppDelicare.Model.Request.Custom.ContractExpireRequest request);
         /// <summary>Nội bộ (handler CONTRACT): nội dung được duyệt, tiêu đề, thực thi duyệt / từ chối – chạy trong transaction của engine.</summary>
         public Task<string?> BuildApprovalStateAsync(Guid id);
         public Task<string?> DescribeAsync(Guid id);

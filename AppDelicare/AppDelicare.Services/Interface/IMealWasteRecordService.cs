@@ -19,5 +19,7 @@ namespace AppDelicare.Services.Interface
         // BE2.1 (spec 8.4 waste-records).
         public Task<IResult<MealWasteItemModel>> Record(MealWasteRecordCreateRequest request);
         public Task<IResult<MealWasteListModel>> GetList(MealWasteListRequest request);
+        /// <summary>BE3.1 (Catalog 157): tổng hợp hao hụt theo loại / món / ca / ngày cho biểu đồ.</summary>
+        public Task<IResult<WasteSummaryModel>> GetSummary(MealWasteSummaryRequest request);
     }
 }

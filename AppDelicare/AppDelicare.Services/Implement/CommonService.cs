@@ -14,6 +14,7 @@ using AppDelicare.Model.Request.Custom;
 using AppDelicare.Services.Interface;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -24,7 +25,7 @@ namespace AppDelicare.Services.Implement
     /// Bảng / cột chỉ lấy từ <see cref="CommonRegistry"/>; quyền theo màn hình của danh sách (<see cref="CommonAccess"/>). Chỉ đọc.
     /// </summary>
     public partial class CommonService(IUnitOfWork unitOfWork, ICurrentActor currentActor, IPermissionService permissionService, IClock clock,
-        IOptions<BusinessRulesOptions> rules) : ICommonService
+        IOptions<BusinessRulesOptions> rules, IMemoryCache cache, IApprovalRequestService approvalRequestService) : ICommonService
     {
         public const string SourceAudit = "AUDIT";
         public const string SourceApproval = "APPROVAL";
@@ -36,6 +37,9 @@ namespace AppDelicare.Services.Implement
         private readonly IPermissionService _permissionService = permissionService;
         private readonly IClock _clock = clock;
         private readonly CommonRulesOptions _rules = rules.Value.Common;
+        private readonly AlertRulesOptions _alertRules = rules.Value.Alerts;
+        private readonly IMemoryCache _cache = cache;
+        private readonly IApprovalRequestService _approvalRequestService = approvalRequestService;
 
         /// <summary>Cột hệ thống không hiện trong lịch sử (đã có ở thời điểm / người thao tác).</summary>
         private static readonly HashSet<string> HiddenAuditFields = new(StringComparer.OrdinalIgnoreCase)

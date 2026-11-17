@@ -99,6 +99,73 @@ Trước khi thử trên staging: chạy `DB/seed/ObjectMenu_disable_legacy.sql`
 
 Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1-flow-gaps.http` (đóng gói, xếp xe, đơn giao), `be2.2-contract-forecast.http` (hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt), `be2.3-multilevel-approval.http` (duyệt nhiều cấp, kiểm kê), `be2.4-inventory-production.http` (giữ chỗ, hủy lệnh, công đoạn, giá thành), `be2.5-foodsafety-packaging.http` (ATTP, vệ sinh, hộp / khay, sự cố NCC), `be2.6-hr.http` (nhân sự), `be2.7-common-print.http` (in / xuất / tệp / lịch sử).
 
+## DASHBOARD ĐIỀU HÀNH + HÀNH TRÌNH ĐƠN (BE3.5, 2026-11-17) · file thử: `docs/api-tests/be3.5-dashboard.http` · test: `AppDelicare.Tests/Dashboard/DashboardTests.cs`
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Số liệu khớp danh sách | `Dashboard/GetExecutive?date=2026-12-02` so với `Order/GetBoard`, `ProductionBatch/GetBoard`, `DeliveryExecution/GetBoard`, chuông | Số đơn / trạng thái, suất, tiến độ, giao, tồn, phản ánh trùng khớp | [ ] | mẻ Hủy không tính (D-57 ae) |
+| 2 | Lọc ca / chi nhánh | Chọn 1 ca, 1 chi nhánh | Suất / đơn / mẻ / ca làm chỉ của ca / chi nhánh (gồm đơn vị con); giao không lọc ca | [ ] | |
+| 3 | Cache 60 giây | Tạo 1 đơn mới cho ngày đang xem, tải lại ngay rồi sau 60 giây | Lần đầu số cũ, sau 60 giây số mới (`generatedAt` đổi) | [ ] | |
+| 4 | Cảnh báo theo người | Mở dashboard bằng admin rồi bằng người chỉ có quyền Xem dashboard | Thẻ số giống nhau; khối cảnh báo của người thứ 2 chỉ theo quyền của họ | [ ] | |
+| 5 | KPI ngày | Bấm KPI Refresh (BE3.4) cho 1 ngày rồi mở dashboard ngày đó | 4 chỉ tiêu có giá trị / mục tiêu / đạt (chi phí càng thấp càng tốt) | [ ] | chưa tính → trống |
+| 6 | Hành trình đơn | Bấm 1 đơn đã đối soát → `Dashboard/GetOrderJourney` | 8 chặng, số KH / lệnh SX / mẻ / đóng gói / đơn giao / chuyến / POD / đối soát / phản ánh đúng; chặng hiện tại đúng | [ ] | KH- dùng chung cả ngày |
+| 7 | Quyền hành trình | Người chỉ Xem đơn hàng mở hành trình | Thấy trạng thái mọi chặng nhưng chỉ chứng từ đơn; người không có quyền → 403 | [ ] | |
+
+## CHUÔNG CẢNH BÁO + TÌM KIẾM + LIÊN QUAN (BE3.3, 2026-11-17) · file thử: `docs/api-tests/be3.3-alerts-search.http` · test: `AppDelicare.Tests/Common/AlertsSearchRelatedTests.cs`
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Chuông theo quyền | Đăng nhập thủ kho (chỉ Xem kho / lô) → `Common/GetAlerts` | Chỉ cảnh báo tồn / lô; không thấy phản ánh / nhiệt độ | [ ] | |
+| 2 | Chuông theo chi nhánh | Chọn chi nhánh trên header | Số tồn / lô / phiếu nhập / phản ánh chỉ của chi nhánh (dữ liệu chưa gắn chi nhánh vẫn hiện) | [ ] | |
+| 3 | Nhiệt độ IoT | Gửi 1 lần đo vượt ngưỡng qua `IotTemperature/Receive`, đợi ≤ 60 giây | `TEMPERATURE_OUT_OF_RANGE` tăng 1 | [ ] | cache 60 giây |
+| 4 | Duyệt | Gửi duyệt 1 công thức; người có quyền Duyệt mở chuông | `APPROVAL_PENDING` = 1, bấm → `#/wf-inbox` | [ ] | |
+| 5 | Tìm kiếm | Gõ "don hang", mã khách, số PO | Thấy màn hình đúng quyền; bản ghi ≤ 5 / loại; không có tên bảng | [ ] | |
+| 6 | Liên quan | Mở khách hàng / lô → tab Liên quan | Đơn / hợp đồng / phản ánh; lô → phiếu nhập, phiếu xuất, mẻ dùng lô | [ ] | |
+## KPI (BE3.4, 2026-11-17) · file thử: `docs/api-tests/be3.4-kpi.http` · test: `AppDelicare.Tests/Kpi/KpiTests.cs`
+Cần: đã chạy `DB/seed/KpiMetricDefinition_seed.sql`; tài khoản admin để bấm làm mới.
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Danh sách chỉ tiêu | `#/kpi-definition` | 11 chỉ tiêu, có mục tiêu + chiều (≥ / ≤); công thức + mục tiêu đúng ý BA / PO (PROPOSED D-57 y) | [ ] | |
+| 2 | Phiên bản | Sửa mục tiêu 1 chỉ tiêu | Có phiên bản mới hiệu lực từ hôm nay, bản cũ đóng hôm qua, số KPI cũ giữ mục tiêu cũ; sửa bản cũ → báo lỗi | [ ] | |
+| 3 | Làm mới KPI ngày | Admin bấm làm mới 1 ngày có đơn giao / mẻ | Số khớp tay (vd. giao đúng giờ = đơn trễ ≤ 15′ ÷ đơn đã giao + thất bại); bấm lại không nhân đôi | [ ] | |
+| 4 | Thiếu dữ liệu | Làm mới ngày không có dữ liệu | Chỉ tiêu hiện "Thiếu dữ liệu" (INCOMPLETE), không đỏ / xanh | [ ] | |
+| 5 | Đạt / không đạt | KPI ngày / tháng | Hao hụt, thất thoát, food cost: thấp hơn mục tiêu = đạt; giao đúng giờ, lưu mẫu: cao hơn = đạt | [ ] | |
+| 6 | KPI tháng | Làm mới tháng này | Số tính trên cả tháng tới hôm nay | [ ] | |
+| 7 | Quyền | User không phải admin | Không bấm được làm mới (403); xem KPI theo quyền Xem màn | [ ] | |
+| 8 | Nhật ký | `#/kpi-refresh` | Mỗi lần bấm 1 dòng Thành công, người chạy, số dòng; đang chạy trùng → "Đang chạy ở nơi khác" | [ ] | |
+
+## IOT NHIỆT ĐỘ (BE3.2, 2026-11-17) · file thử: `docs/api-tests/be3.2-iot.http` · test: `AppDelicare.Tests/Iot/IotTemperatureTests.cs`
+Cần: `Iot__ApiKeys__0` + 1 thiết bị `Iot__Devices__<mã>__StorageZoneCode` (biến môi trường của API – deploy/README.md).
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Khóa API | Gửi không khóa / sai khóa | HTTP 401 | [ ] | |
+| 2 | Nhận lô | Gửi 1 lô (đạt, vượt ngưỡng, thiết bị lạ) | Đạt + vượt ngưỡng được ghi (IOT, người ghi system); thiết bị lạ trong `rejected` | [ ] | |
+| 3 | Gửi lại | Gửi lại cùng lô | `accepted = 0`, `duplicate` = số đã ghi | [ ] | |
+| 4 | Biểu đồ | `TemperatureLog/GetSeries` khu vực của thiết bị | Thấy lần đo IoT, lần vượt ngưỡng đỏ | [ ] | |
+
+## BIỂU ĐỒ + SỰ KIỆN GIAO (BE3.1, 2026-11-17) · file thử: `docs/api-tests/be3.1-charts.http` · test: `AppDelicare.Tests/Charts/ChartTests.cs`
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Biểu đồ đối soát | `OrderReconciliation/GetList` tháng có đơn | `chart` đủ mọi ngày; tổng Đặt / Giao / Nhận khớp màn đối soát từng đơn | [ ] | |
+| 2 | Hao hụt theo loại / món / ca / ngày | `MealWasteRecord/GetSummary` 4 kiểu groupBy | Tổng suất bằng nhau ở 4 kiểu; giá trị = suất × giá thành chuẩn | [ ] | |
+| 3 | Biểu đồ nhiệt độ kho | `TemperatureLog/GetSeries` khu vực MÁT | Ngưỡng = khu vực; lần đo vượt ngưỡng hiện đỏ | [ ] | |
+| 4 | Timeline đơn giao | `DeliveryOrder/GetEvents` 1 đơn đã giao | Xếp hàng → xuất phát → đo nhiệt → đến điểm → bàn giao, đúng thứ tự giờ | [ ] | |
+| 5 | Vị trí xe | Tài xế `DeliveryEvent/RecordPosition` khi đang giao → `GetVehiclePositions` | Điểm mới nhất của chuyến = vị trí vừa ghi; chuyến chưa xuất phát → 400 | [ ] | |
+
+## JOB TỰ ĐỘNG (T23, 2026-11-17) · file thử: `docs/api-tests/t23-jobs.http` · test tự động: `AppDelicare.Tests/Jobs/JobTests.cs`
+Chạy `AppDelicare.Job` cạnh API (deploy/README.md mục "Job tự động"). Kiểm bằng admin; giờ theo giờ Việt Nam.
+
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Danh sách job | `dotnet AppDelicare.Job.dll --list` và `GET api/Job/GetAll` | 5 job, giờ 20:00 / 20:30 / 00:15 / 00:30 / 08:00, lần chạy kế tiếp đúng giờ VN | [ ] | |
+| 2 | Khóa đơn 20:00 | Có đơn Đã xác nhận ngày mai → chờ 20:00 (hoặc `Job/Run` LockOrders sau 20:00) | Đơn → Đã khóa; `lastRun.message` liệt kê đơn chưa xác nhận / chờ duyệt | [ ] | Trước 20:00 → Skipped "chưa đến giờ chốt" |
+| 3 | MRP 20:30 | Sau bước 2 | Kế hoạch KH- ngày mai, đề nghị mua Nháp cho nguyên liệu thiếu | [ ] | |
+| 4 | Lô hết hạn 00:15 | Có lô Khả dụng hạn hôm qua | Lô → Hết hạn, phiếu hao hụt PH- | [ ] | |
+| 5 | Hợp đồng hết hạn 00:30 | Hợp đồng Hiệu lực hết hiệu lực hôm qua (`Contract/ExpireOverdue` preview trước) | Hợp đồng → Hết hạn, ghi chú "Hết hạn ngày …" | [ ] | |
+| 6 | Chốt vắng 08:00 | Ca hôm qua không chấm vào | Phân ca → Vắng | [ ] | |
+| 7 | Lỡ giờ | Tắt Job qua 20:00, bật lại trước 24:00 | Chạy bù LockOrders / Mrp ngay khi bật | [ ] | |
+| 8 | Chống chạy trùng | Chạy 2 bản Job cùng lúc / bấm `Job/Run` khi job đang chạy | Bản thứ 2: Locked "đang chạy ở nơi khác" | [ ] | |
+| 9 | Quyền | User thường gọi `api/Job/GetAll` | HTTP 403 | [ ] | |
+| 10 | Người ghi | Xem lịch sử bản ghi (`Common/GetHistory`) của đơn do job khóa | Người thao tác = `system` | [ ] | |
+
 ## PILOT – Luồng P3 → P8 bằng API (T50R1, 2026-11-17) – **ĐÃ THAY bằng mục TOÀN LUỒNG R1 ở trên (BE2.9)**, giữ để đối chiếu · file thử: `docs/api-tests/pilot-flow.http` · test tự động: `AppDelicare.Tests/Pilot/PilotFlowSqlServerTests.cs`
 Thử trên **staging** (`http://localhost:5200`, deploy/README.md mục 9) hoặc dev. Chạy `pilot-flow.http` **từ trên xuống** (đổi `@key`, `@day`, `@dow` mỗi lần). Lỗi nghiệp vụ = HTTP 200 + `responseCode 400` + thông báo tiếng Việt; không có quyền màn hình = HTTP 403.
 **Vai trò / token:** chạy lần 1 bằng `admin` (mọi quyền) để thấy luồng thông suốt; lần 2 đăng nhập **đúng người** từng bước (cột "Vai trò") – quyền = ma trận `UserRole` × mục menu (D-31), nhóm gợi ý theo ORG_STRUCTURE (PROPOSED – anh chỉnh trên màn phân quyền). Quyền duyệt = `AllowEdit` trên mục "Duyệt – …" (`#/wf-inbox?type=<màn>`).

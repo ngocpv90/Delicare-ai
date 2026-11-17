@@ -30,6 +30,19 @@ namespace AppDelicare.Services.Implement
 
         public static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+        /// <summary>
+        /// BE2.1 (spec 10.3) – trạng thái thực hiện giao của 1 đơn giao: dòng DeliveryExecution mới nhất; chưa có → suy theo đơn giao / điểm dừng
+        /// (READY → DISPATCHED / ARRIVED → DELIVERED / FAILED). Dùng chung cho DeliveryExecution/GetBoard và dashboard (BE3.5) để số liệu khớp.
+        /// </summary>
+        public static string ExecutionStatus(DeliveryOrder d, DeliveryStop? stop, DeliveryExecution? execution)
+            => execution?.Status ?? d.Status switch
+            {
+                DeliveryOrderStatus.InTransit => stop?.StopStatus == DeliveryStopStatus.Arrived ? DeliveryExecutionStatus.Arrived : DeliveryExecutionStatus.Dispatched,
+                DeliveryOrderStatus.Delivered => DeliveryExecutionStatus.Delivered,
+                DeliveryOrderStatus.Failed => DeliveryExecutionStatus.Failed,
+                _ => DeliveryExecutionStatus.Ready,
+            };
+
         // ============================================================ BE2.1 – số suất của đơn giao (GAP-DLV-08), suất còn lại của đơn hàng
 
         /// <summary>Số suất ghi trong tag <c>[SUAT:n]</c> ở đầu DeliveryOrder.Note (null = không có tag – đơn giao T19 lấy từ điểm dừng).</summary>

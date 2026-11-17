@@ -372,6 +372,91 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BE3.1 (Catalog 100, spec 6.7 GET reconciliations): đối soát theo <b>ngày ăn</b> của đơn (from / to, mặc định 30 ngày – BusinessRules:Charts),
+        /// trạng thái, khách, tìm số đơn / tên khách. <c>chart</c> = Σ suất đặt / giao / nhận theo ngày ăn trên toàn bộ kết quả lọc (không phân trang),
+        /// đủ mọi ngày trong khoảng (ngày không có đối soát = 0) để vẽ liền trục. <c>statusCounts</c> tính trước khi lọc trạng thái (chip lọc nhanh).
+        /// </summary>
+        public async Task<IResult<ReconciliationListModel>> GetList(ReconciliationListRequest request)
+        {
+            try
+            {
+                var charts = _rules.Charts;
+                string? error = ChartRules.DayRange(request.From, request.To, _clock.Today, charts.DefaultRangeDays, charts.MaxRangeDays, out DateTime from, out DateTime to);
+                if (error != null)
+                {
+                    return Result<ReconciliationListModel>.Fail(error);
+                }
+                var db = _unitOfWork.DbContext;
+                DateTime end = to.AddDays(1);
+                var query = from r in db.OrderReconciliation.AsNoTracking()
+                            join o in db.Order.AsNoTracking() on r.OrderId equals o.Id
+                            join c in db.Customer.AsNoTracking() on o.CustomerId equals c.Id into cj
+                            from c in cj.DefaultIfEmpty()
+                            where !r.IsDeleted && !o.IsDeleted && o.MealDate >= @from && o.MealDate < end
+                            select new { r, o.MealDate, o.CustomerId, OrderNumber = o.OrderNumber ?? o.OrderNo, CustomerName = c != null ? (c.DisplayName ?? c.Name) : null };
+                if (request.CustomerId is { } customer && customer != Guid.Empty)
+                {
+                    query = query.Where(x => x.CustomerId == customer);
+                }
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    string text = request.SearchText.Trim();
+                    query = query.Where(x => (x.OrderNumber != null && x.OrderNumber.Contains(text)) || (x.CustomerName != null && x.CustomerName.Contains(text)));
+                }
+                var counts = await query.GroupBy(x => x.r.Status ?? string.Empty).Select(g => new { g.Key, Count = g.Count() }).ToListAsync();
+                if (!string.IsNullOrWhiteSpace(request.Status))
+                {
+                    string status = request.Status.Trim();
+                    query = query.Where(x => x.r.Status == status);
+                }
+                var byDate = await query.GroupBy(x => x.MealDate)
+                    .Select(g => new { Date = g.Key, Ordered = g.Sum(x => x.r.OrderedQuantity), Delivered = g.Sum(x => x.r.DeliveredQuantity), Accepted = g.Sum(x => x.r.AcceptedQuantity) })
+                    .ToListAsync();
+                int total = await query.CountAsync();
+                int page = Math.Max(1, request.Page), size = Math.Clamp(request.PageSize, 1, 500);
+                var rows = await query.OrderByDescending(x => x.MealDate).ThenBy(x => x.OrderNumber)
+                    .Skip((page - 1) * size).Take(size).ToListAsync();
+                var model = new ReconciliationListModel
+                {
+                    From = from,
+                    To = to,
+                    TotalRecords = total,
+                    StatusCounts = counts.ToDictionary(x => x.Key, x => x.Count),
+                    ListItem = rows.Select(x => new ReconciliationListItemModel
+                    {
+                        Id = x.r.Id,
+                        OrderId = x.r.OrderId,
+                        OrderNumber = x.OrderNumber,
+                        MealDate = x.MealDate,
+                        CustomerId = x.CustomerId,
+                        CustomerName = x.CustomerName,
+                        ReconciliationDate = x.r.ReconciliationDate,
+                        OrderedQuantity = x.r.OrderedQuantity,
+                        DeliveredQuantity = x.r.DeliveredQuantity,
+                        AcceptedQuantity = x.r.AcceptedQuantity,
+                        VarianceQty = x.r.VarianceQty,
+                        VariancePercent = x.r.VariancePercent,
+                        FinalAmount = x.r.FinalAmount,
+                        Status = x.r.Status,
+                        StatusName = ReconciliationStatus.Label(x.r.Status),
+                    }).ToList(),
+                };
+                var points = byDate.GroupBy(x => x.Date.Date).ToDictionary(g => g.Key, g => (Ordered: g.Sum(x => x.Ordered), Delivered: g.Sum(x => x.Delivered), Accepted: g.Sum(x => x.Accepted)));
+                for (DateTime d = from; d <= to; d = d.AddDays(1))
+                {
+                    var p = points.TryGetValue(d, out var v) ? v : (Ordered: 0m, Delivered: 0m, Accepted: 0m);
+                    model.Chart.Add(new ReconciliationChartPointModel { Date = d, Ordered = p.Ordered, Delivered = p.Delivered, Accepted = p.Accepted });
+                }
+                return Result<ReconciliationListModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                throw;
+            }
+        }
+
         /// <summary>T19: đơn Đã giao chờ đối soát (kể cả đã có bản đối soát chưa đóng) – lọc ngày ăn / khách.</summary>
         public async Task<IResults<ReconciliationPendingModel>> GetPendingOrders(ReconciliationPendingRequest request)
         {

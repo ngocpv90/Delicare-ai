@@ -18,5 +18,7 @@ namespace AppDelicare.Services.Interface
 
         // BE2.1 (spec 9.3 POST temperature-logs) – ghi nhiệt độ tự do.
         public Task<IResult<TemperatureLogRecordModel>> Record(TemperatureRecordRequest request);
+        /// <summary>BE3.1 (Catalog 163): chuỗi nhiệt độ 1 khu vực kho cho biểu đồ.</summary>
+        public Task<IResult<AppDelicare.Model.Model.TemperatureSeriesModel>> GetSeries(AppDelicare.Model.Request.Custom.TemperatureSeriesRequest request);
     }
 }

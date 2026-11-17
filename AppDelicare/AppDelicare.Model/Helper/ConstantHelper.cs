@@ -481,6 +481,82 @@
             public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
             public static readonly string ApprovalCancelOnlyRequester = "Chỉ người gửi yêu cầu được hủy";
             public static readonly string ApprovalCancelReasonRequired = "Phải ghi lý do hủy yêu cầu duyệt";
+            // BE3.3 – chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan.
+            public static readonly string AlertBranchNotFound = "Không tìm thấy chi nhánh / đơn vị";
+            public static readonly string AlertStockBelowMinTitle = "Nguyên liệu dưới tồn tối thiểu";
+            public static readonly string AlertStockBelowMinDetail = "{0} nguyên liệu có tồn khả dụng dưới mức tối thiểu";
+            public static readonly string AlertApprovalTitle = "Yêu cầu chờ bạn duyệt";
+            public static readonly string AlertApprovalDetail = "{0} yêu cầu đang chờ bạn duyệt, {1} đã quá hạn";
+            public static readonly string AlertQcPendingTitle = "Phiếu nhập chờ kết luận QC";
+            public static readonly string AlertQcPendingDetail = "{0} phiếu nhập ({1} dòng) chưa kết luận QC đầu vào";
+            public static readonly string AlertLotOnHoldTitle = "Lô nguyên liệu đang tạm giữ";
+            public static readonly string AlertLotOnHoldDetail = "{0} lô còn tồn đang tạm giữ / QC HOLD – chưa được xuất dùng";
+            public static readonly string AlertTemperatureTitle = "Nhiệt độ ngoài ngưỡng";
+            public static readonly string AlertTemperatureDetail = "{0} lần đo ngoài ngưỡng trong {1} giờ qua (kể cả cảm biến IoT)";
+            public static readonly string AlertComplaintOverdueTitle = "Phản ánh quá hạn xử lý";
+            public static readonly string AlertComplaintOverdueDetail = "{0} phản ánh đã quá hạn SLA";
+            public static readonly string AlertComplaintOpenTitle = "Phản ánh đang mở";
+            public static readonly string AlertComplaintOpenDetail = "{0} phản ánh mới / đang xử lý (chưa quá hạn)";
+            public static readonly string AlertOutboundFailedTitle = "Tin nhắn gửi lỗi";
+            public static readonly string AlertOutboundFailedDetail = "{0} tin nhắn gửi ra ngoài bị lỗi";
+            public static readonly string AlertLotExpiringTitle = "Lô sắp hết hạn";
+            public static readonly string AlertLotExpiringDetail = "{0} lô còn tồn hết hạn trong {1} ngày tới";
+            public static readonly string SearchTextLength = "Từ khóa tìm kiếm phải từ {0} đến {1} ký tự";
+            public static readonly string RelatedResourceNotSupported = "Danh sách '{0}' không có tab Liên quan";
+            // BE3.5 – dashboard điều hành, hành trình đơn hàng.
+            public static readonly string DashboardShiftNotFound = "Không tìm thấy ca làm việc";
+            public static readonly string DashboardDateInvalid = "Ngày xem dashboard không hợp lệ";
+            public static readonly string JourneyOrderRequired = "Chưa chọn đơn hàng";
+            public static readonly string JourneyOrderNotFound = "Không tìm thấy đơn hàng";
+            public static readonly string JourneyNoRight = "Bạn không có quyền Xem hành trình đơn hàng (cần quyền Xem màn #/flow-e2e, #/dash-exec hoặc #/crm-order)";
+            public static readonly string JourneySharedProduction = "Kế hoạch / lệnh sản xuất gộp theo ngày ăn (dùng chung cho mọi đơn cùng ngày)";
+            public static readonly string JourneyNoComplaint = "Không có phản ánh";
+            // BE3.2 – IoT nhiệt độ.
+            public static readonly string IotEmpty = "Không có lần đo nào";
+            public static readonly string IotTooMany = "Tối đa {0} lần đo mỗi lần gửi";
+            public static readonly string IotDeviceRequired = "Thiếu mã thiết bị";
+            public static readonly string IotDeviceUnknown = "Thiết bị chưa khai báo trong cấu hình Iot:Devices";
+            public static readonly string IotDeviceDisabled = "Thiết bị đang tạm ngưng";
+            public static readonly string IotDeviceZoneMissing = "Khu vực kho của thiết bị không tồn tại";
+            public static readonly string IotDeviceZoneAmbiguous = "Mã khu vực kho của thiết bị trùng ở nhiều kho – khai báo StorageZoneId";
+            public static readonly string IotMeasuredAtRequired = "Thiếu giờ đo";
+            public static readonly string IotMeasuredAtOutOfRange = "Giờ đo không hợp lệ (cũ hơn {0} ngày hoặc ở tương lai quá {1} phút)";
+            public static readonly string IotTemperatureOutOfRange = "Nhiệt độ ngoài khoảng cảm biến ({0} … {1} °C)";
+            public static readonly string IotReceived = "Đã ghi {0} lần đo, trùng {1}, từ chối {2}";
+            public static readonly string IotApiKeyInvalid = "Khóa API không hợp lệ";
+            public static readonly string IotRateLimited = "Gửi quá nhiều – thử lại sau 1 phút";
+            // BE3.1 – biểu đồ, sự kiện giao, vị trí xe.
+            public static readonly string ChartRangeInvalid = "Khoảng thời gian không hợp lệ: từ phải trước đến, tối đa {0} ngày";
+            public static readonly string ChartGroupByInvalid = "Nhóm theo không hợp lệ ({0}) – dùng wasteType, dish, shift hoặc date";
+            public static readonly string StorageZoneNotFound = "Không tìm thấy khu vực kho";
+            public static readonly string DeliveryPositionInvalid = "Tọa độ không hợp lệ (vĩ độ -90…90, kinh độ -180…180)";
+            public static readonly string DeliveryPositionRouteNotRunning = "Chỉ ghi vị trí khi chuyến đang xếp hàng / đang giao (hiện tại: {0})";
+            // BE3.4 – KPI.
+            public static readonly string KpiMetricCodeExists = "Mã chỉ tiêu {0} đã có – sửa chỉ tiêu để tạo phiên bản mới";
+            public static readonly string KpiMetricCodeChange = "Không đổi được mã chỉ tiêu – tạo chỉ tiêu mới";
+            public static readonly string KpiVersionDuplicate = "Chỉ tiêu {0} đã có phiên bản {1}";
+            public static readonly string KpiVersionNotLatest = "Chỉ sửa được phiên bản mới nhất (v{0}) – phiên bản cũ giữ nguyên để đối chiếu số liệu";
+            public static readonly string KpiVersionClosed = "Phiên bản này đã đóng (hết hiệu lực {0:dd/MM/yyyy}) – không sửa";
+            public static readonly string KpiEffectiveFromInvalid = "Ngày hiệu lực của phiên bản mới phải sau ngày hiệu lực của phiên bản đang dùng ({0:dd/MM/yyyy})";
+            public static readonly string KpiDirectionInvalid = "Chiều mục tiêu không hợp lệ ({0}) – dùng HIGHER (càng cao càng tốt) hoặc LOWER (càng thấp càng tốt)";
+            public static readonly string KpiFormulaTooLong = "Công thức + mục tiêu tối đa 2000 ký tự";
+            public static readonly string KpiDeleteHasSnapshot = "Chỉ tiêu đã có số liệu KPI – không xóa, hãy ngừng sử dụng (IsActive = false)";
+            public static readonly string KpiNewVersionCreated = "Đã tạo phiên bản {0} (hiệu lực từ {1:dd/MM/yyyy}); phiên bản {2} đóng ngày {3:dd/MM/yyyy}";
+            public static readonly string KpiJobCodeInvalid = "Mã làm mới không hợp lệ ({0}) – dùng KPI_DAILY hoặc KPI_MONTHLY";
+            public static readonly string KpiInventoryBalanceNotSupported = "INVENTORY_BALANCE không làm ở R1 – tồn kho tính trực tiếp từ sổ kho";
+            public static readonly string KpiDateInFuture = "Không làm mới KPI cho ngày / tháng tương lai";
+            public static readonly string KpiMonthInvalid = "Tháng không hợp lệ ({0}) – dùng dạng yyyy-MM";
+            public static readonly string KpiMonthRangeInvalid = "Khoảng tháng không hợp lệ: từ phải trước đến, tối đa {0} tháng";
+            public static readonly string KpiBranchNotFound = "Không tìm thấy chi nhánh (đơn vị tổ chức)";
+            public static readonly string KpiRefreshRunning = "Đang có lần làm mới {0} khác – thử lại sau";
+            public static readonly string KpiRefreshDone = "Đã làm mới {0}: {1} chỉ tiêu, {2} thiếu dữ liệu";
+            public static readonly string KpiRefreshFailed = "Làm mới {0} lỗi: {1}";
+            public static readonly string KpiNoFormula = "Chưa có công thức tính trong hệ thống cho mã này";
+            // T23 – job tự động (D-48).
+            public static readonly string JobNotFound = "Không có job '{0}'. Các job: {1}";
+            public static readonly string JobUserMissing = "Chưa cấu hình tài khoản chạy job (SystemUsers:JobUserId) – job không được ghi dữ liệu";
+            public static readonly string JobAlreadyRunning = "Job đang chạy ở nơi khác – lần này bỏ qua";
+            public static readonly string JobFailed = "Job {0} lỗi: {1}";
             // BE2.2 – hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt.
             public static readonly string ContractNotFound = "Không tìm thấy hợp đồng";
             public static readonly string ContractCustomerNotFound = "Khách hàng không tồn tại";

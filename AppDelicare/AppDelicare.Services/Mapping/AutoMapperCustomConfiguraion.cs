@@ -3,7 +3,7 @@ using AppDelicare.Model.Entity;
 using AppDelicare.Model.Model;
 using AppDelicare.Model.Request.Custom;
 
-namespace AppDelicare.WebApi.Infrastructure
+namespace AppDelicare.Services.Mapping
 {
     public class AutoMapperCustomConfiguraion : Profile
     {

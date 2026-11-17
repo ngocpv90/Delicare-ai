@@ -224,5 +224,23 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>
+        /// T23 (Catalog 81): hợp đồng Hiệu lực có ngày hết hiệu lực &lt; hôm nay → Hết hạn (form: <c>preview</c> = chỉ liệt kê).
+        /// Job ContractExpiry 00:30 gọi cùng hàm. Quyền Sửa trên crm-contract (PROPOSED D-59).
+        /// </summary>
+        [HttpPost("ExpireOverdue")]
+        public async Task<IActionResult> ExpireOverdue([FromForm] ContractExpireRequest request)
+        {
+            try
+            {
+                return Ok(await _service.ExpireOverdue(request ?? new ContractExpireRequest()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExpireOverdue: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

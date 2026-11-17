@@ -98,5 +98,24 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE3.1 (Catalog 163): chuỗi nhiệt độ của 1 khu vực kho (storageZoneId, from / to – mặc định 48 giờ) + ngưỡng khu vực; quá 2 000 lần đo thì gộp theo phút.</summary>
+        [HttpGet("GetSeries")]
+        public async Task<IActionResult> GetSeries([FromQuery] AppDelicare.Model.Request.Custom.TemperatureSeriesRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetSeries(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSeries: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

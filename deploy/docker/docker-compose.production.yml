@@ -1,0 +1,97 @@
+# DELICARE – PRODUCTION trên Linux + Docker (T48.4, D-60). KHÔNG kèm SQL Server (SQL Server riêng: server / container có ổ dữ liệu + backup).
+# Chuẩn bị trên server (thư mục chứa repo):
+#   cp deploy/docker/production.env.example deploy/docker/production.env   (điền – file này KHÔNG commit)
+#   đặt chứng chỉ HTTPS: deploy/docker/certs/fullchain.pem + privkey.pem (KHÔNG commit)
+#   docker compose -f deploy/docker/docker-compose.production.yml --env-file deploy/docker/production.env run --rm db-init   (lần đầu / sau mỗi bản mới)
+#   docker compose -f deploy/docker/docker-compose.production.yml --env-file deploy/docker/production.env up -d --build
+# Thành phần: nginx (Angular build + HTTPS + /api → api), api (scale được), job (ĐÚNG 1 bản), db-init (chạy tay, dùng tài khoản quản trị SQL).
+# Bí mật chỉ nằm trong production.env trên server. api / job dùng tài khoản SQL riêng (APP_DB_USER – đọc / ghi / EXECUTE, không DDL), không dùng sa.
+name: delicare-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "10"
+
+x-app-env: &app-env
+  TZ: Asia/Ho_Chi_Minh
+  ConnectionStrings__MainConnectionString: "Server=${DB_SERVER:?Đặt DB_SERVER};Database=${DB_NAME:-AppDelicare};User Id=${APP_DB_USER:?Đặt APP_DB_USER};Password=${APP_DB_PASSWORD:?Đặt APP_DB_PASSWORD};Encrypt=${DB_ENCRYPT:-True};TrustServerCertificate=${DB_TRUST_CERT:-False};MultipleActiveResultSets=true;"
+  Licenses__GemBox: ${GEMBOX_LICENSE:-}
+  DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+  Logging__ConsoleOnly: "true"
+  Iot__ApiKeys__0: ${IOT_API_KEY_0:-}
+  Iot__ApiKeys__1: ${IOT_API_KEY_1:-}
+
+services:
+  # Chạy tay khi cài lần đầu / cập nhật bản mới (SP + seed theo deploy/db/scripts.order; tạo tài khoản SQL ứng dụng).
+  # Dùng tài khoản quản trị SQL (DB_ADMIN_USER / DB_ADMIN_PASSWORD) – CHỈ ở đây.
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    profiles: ["tools"]
+    environment:
+      DB_SERVER: ${DB_SERVER}
+      DB_USER: ${DB_ADMIN_USER:-sa}
+      SA_PASSWORD: ${DB_ADMIN_PASSWORD:?Đặt DB_ADMIN_PASSWORD}
+      DB_NAME: ${DB_NAME:-AppDelicare}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      APP_DB_RESET_PASSWORD: ${APP_DB_RESET_PASSWORD:-0}
+    volumes:
+      - ../../docs/reference:/repo/docs/reference:ro
+      - ../../DB:/repo/DB:ro
+      - ../db:/repo/deploy/db:ro
+      - ./db-init.sh:/db-init.sh:ro
+    entrypoint: ["/bin/bash", "/db-init.sh"]
+    restart: "no"
+    logging: *logging
+
+  api:
+    build:
+      context: ../../AppDelicare
+      dockerfile: AppDelicare.WebApi/Dockerfile
+    environment:
+      <<: *app-env
+      ASPNETCORE_ENVIRONMENT: Production
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Đặt JWT_SIGNING_KEY (>= 32 ký tự)}
+      Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN:-}
+    volumes:
+      - delicare-docs:/app/App_Data/DocumentFiles
+    expose:
+      - "8080"
+    restart: unless-stopped
+    logging: *logging
+
+  # ĐÚNG 1 bản (không scale): lịch Jobs:<mã> trong appsettings.json của WebApi; khóa sp_getapplock chống chạy trùng nếu lỡ chạy 2 bản.
+  job:
+    build:
+      context: ../../AppDelicare
+      dockerfile: AppDelicare.Job/Dockerfile
+    environment:
+      <<: *app-env
+      DOTNET_ENVIRONMENT: Production
+    volumes:
+      - delicare-docs:/app/App_Data/DocumentFiles
+    restart: unless-stopped
+    logging: *logging
+
+  nginx:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/nginx/Dockerfile
+    depends_on:
+      - api
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?Đặt SERVER_NAME (domain)}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-25}
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  delicare-docs:
