@@ -329,6 +329,10 @@ namespace AppDelicare.Services.Implement
                 {
                     return ConstantHelper.Message.PodQuantityInvalid;
                 }
+                if (request.PackagingQuantity is < 0)
+                {
+                    return ConstantHelper.Message.PackagingQuantityInvalid;
+                }
                 if (string.IsNullOrWhiteSpace(request.ReceiverName))
                 {
                     return ConstantHelper.Message.PodReceiverRequired;
@@ -413,6 +417,28 @@ namespace AppDelicare.Services.Implement
                         $"Bàn giao {deliveryOrder.DeliveryNumber ?? deliveryOrder.DeliveryNo} (chuyến {DeliveryRules.RouteNumber(route)}): khách từ chối {DeliveryRules.Num(rejected)} / {DeliveryRules.Num(delivered)} suất"
                         + (pod.Remark == null ? string.Empty : " – " + pod.Remark));
                     ctx.Warnings.Add("Đã tạo phản ánh " + complaint.ComplaintNo + " cho số suất bị từ chối");
+                }
+
+                // BE2.5 (spec 10.3 pod "Ghi PackagingLedger OUT nếu đóng khay", Catalog 190; PROPOSED D-54 a): khay / hộp để lại ở khách → sổ bao bì OUT
+                // (số = gửi kèm, trống = suất khách nhận × PackagingUnitsPerMeal khi PackagingOutOnDelivery) + phiếu thu hồi Chờ thu hồi (ContainerReturn Expected).
+                decimal? packaging = request.PackagingQuantity ?? (_rules.PackagingOutOnDelivery ? accepted * _rules.PackagingUnitsPerMeal : null);
+                if (packaging is > 0 and { } qty)
+                {
+                    qty = Math.Ceiling(qty);
+                    string type = DeliveryRules.Clean(request.PackagingType) ?? await PackagingRules.DefaultTypeAsync(db, deliveryOrder.OrderId, _rules);
+                    PackagingRules.Add(_unitOfWork, actor, now, PackagingTransactionType.Out, type, qty, deliveryOrder, null, PackagingCondition.Good,
+                        $"Bàn giao chuyến {DeliveryRules.RouteNumber(route)} điểm {stopName} – {DeliveryRules.Num(accepted)} suất");
+                    _unitOfWork.ContainerReturnRepository.Add(new ContainerReturn
+                    {
+                        Id = Guid.NewGuid(),
+                        DeliveryOrderId = deliveryOrder.Id,
+                        CustomerId = deliveryOrder.CustomerId,
+                        ReturnDate = deliveryOrder.DeliveryDate.Date,
+                        ExpectedQuantity = (int)qty,
+                        Status = ContainerReturnStatus.Expected,
+                        Note = PackagingRules.WithType(null, type),
+                    });
+                    ctx.Warnings.Add(string.Format(ConstantHelper.Message.PackagingOutRecorded, DeliveryRules.Num(qty), type));
                 }
                 return null;
             });

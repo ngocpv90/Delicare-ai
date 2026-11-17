@@ -29,6 +29,7 @@ So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** 
 | 9 | `seed/UserRole_seed.sql` (sửa) | T13, T15.1 | Quyền duyệt 2 mục trên cho nhóm CEO |
 | 10 | `seed/Shift_seed.sql` (không đổi) | T21.1 | 4 ca `SANG_6H` / `TRUA` / `TOI` / `DEM_23H` (Pilot chạy 4 ca – T17.1) |
 | 11 | `seed/FoodSafetyChecklist_seed.sql` (mới) | T17 | Bộ `PRD_BATCH`: `SAMPLE_RETAINED` (lưu mẫu – bắt buộc trước khi giao, D-42), `CORE_TEMP` |
+| 13 | `seed/FoodSafetyQa_seed.sql` (mới) | BE2.5 | Bộ checklist `QA_FG` (thành phẩm), `PREP`, `PREP_AREA_CLEAN`, `BLAST_CHILL`, `KITCHEN_CLEAN` (5S), `VS-KHAY` (vệ sinh khay 6 bước) – PROPOSED D-54. Chỉ thêm khi chưa có (theo Code / ItemCode), không ghi đè |
 | 12 | `seed/ProductionStage_seed.sql` (mới) | BE2.4 | Bộ `PRD_STAGE` "Công đoạn sản xuất theo tổ": `SO_CHE` → `NAU` → `CHIA_SUAT` (PROPOSED – D-53 e). Chỉ thêm khi chưa có (theo Code / ItemCode), không ghi đè |
 
 T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **không có SP / seed mới** (đọc / ghi qua EF + SP `usp*_GetAll` sẵn có).
@@ -38,6 +39,8 @@ T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **kh�
 **BE2.2 (2026-11-17): không có SP / seed mới** – không thêm dòng nào vào `deploy/db/scripts.order`. Mục duyệt `#/wf-inbox?type=crm-contract`, `menu-change-request`, `crm-order` đã có trong `seed/ObjectMenu_seed.sql` / `UserRole_seed.sql` (nhóm CEO; COO thêm đổi món). Cấu hình mới (appsettings): `BusinessRules:ForecastVariancePctWarning` (10), `BusinessRules:ForecastMaxDays` (62) – có giá trị mặc định trong code.
 
 **BE2.3 (2026-11-17): không có SP / file seed mới** – chỉ **sinh lại** 2 seed đã có trong `deploy/db/scripts.order` (`seed/ObjectMenu_seed.sql`, `seed/UserRole_seed.sql`) bằng `dotnet run --project tools/AppDelicare.CodeGen -- --layers security` (`Seeds.ExtraApprovals`): thêm 3 mục duyệt `#/wf-inbox?type=scm-pr-l1` (OPS-SCM), `scm-pr-l2` (COO), `scm-stockcount-l2` (FIN-ACC) + quyền AllowAccess / AllowEdit (insert-only, idempotent). **Đã chạy 2 seed trên DB dev `AppDelicare`** (`sqlcmd -b -I -f 65001`). Server Docker của dev FE: `db-init` tự chạy lại 2 seed. Cấu hình mới (appsettings, có mặc định trong code): `BusinessRules:ApprovalSteps`, `ApprovalStepDueHours` (48), `ApprovalStepDueHoursByType`, `ApprovalBlockOverdueDecision` (false), `ApprovalRequireDistinctApprovers` (true), `PurchaseOrderDirectorTwoLevel` (false), `StockAdjustmentRequireApproval` (true).
+
+**BE2.5 (2026-11-17): 1 seed mới `seed/FoodSafetyQa_seed.sql`** (mục 13) – đã thêm vào `deploy/db/scripts.order` ngay sau `ProductionStage_seed.sql`; **đã chạy trên DB dev 2 lần** (`sqlcmd -b -I -f 65001`, lần 2 không thêm dòng). Không SP mới, không bảng / cột.
 
 **BE2.4 (2026-11-17): 1 seed mới `seed/ProductionStage_seed.sql`** (mục 12) – đã thêm vào `deploy/db/scripts.order` ngay sau `FoodSafetyChecklist_seed.sql`; **đã chạy trên DB dev 2 lần** (`sqlcmd -f 65001`, lần 2 không thêm dòng). Không SP mới (đọc / ghi qua EF + `usp*_GetAll` sẵn có), không bảng / cột.
 

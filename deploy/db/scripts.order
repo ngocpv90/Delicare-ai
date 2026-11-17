@@ -158,3 +158,5 @@ DB/seed/UserRole_seed.sql
 DB/seed/Shift_seed.sql
 DB/seed/FoodSafetyChecklist_seed.sql
 DB/seed/ProductionStage_seed.sql
+# BE2.5: checklist ATTP theo ca / mẻ (QA_FG, PREP, PREP_AREA_CLEAN, BLAST_CHILL, KITCHEN_CLEAN) + vệ sinh khay 6 bước (VS-KHAY)
+DB/seed/FoodSafetyQa_seed.sql

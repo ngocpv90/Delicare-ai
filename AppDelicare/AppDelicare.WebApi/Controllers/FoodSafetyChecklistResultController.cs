@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -107,6 +108,48 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.5 (spec 9.2 run, Catalog 161): lần chạy checklist ATTP theo ngày / ca / mẻ – tiêu chí + kết quả hiện tại, hạn làm, tỷ lệ đạt 7 ngày.</summary>
+        [HttpGet("GetRun")]
+        public async Task<IActionResult> GetRun([FromQuery] ChecklistRunRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetRun(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetRun: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// BE2.5 (spec 9.2 results, Catalog 162): ghi kết quả checklist ATTP – JSON vì có danh sách tiêu chí. Tiêu chí trọng yếu KHÔNG ĐẠT kèm mẻ → giữ mẻ
+        /// (trả <c>listCriticalFailure</c>). Quyền Thêm của màn "Thực hiện checklist theo ca/mẻ".
+        /// </summary>
+        [Security.Permission("qc-checklist-result", PermissionAction.Add)]
+        [HttpPost("Record")]
+        public async Task<IActionResult> Record([FromBody] ChecklistRecordRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Record(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Record: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

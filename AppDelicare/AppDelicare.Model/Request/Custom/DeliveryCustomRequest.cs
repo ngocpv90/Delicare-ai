@@ -261,6 +261,14 @@ namespace AppDelicare.Model.Request.Custom
         public string? PhotoUrl { get; set; }
         [MaxLength(2000)]
         public string? Remark { get; set; }
+        /// <summary>
+        /// BE2.5 (spec 10.3 pod "Ghi PackagingLedger OUT nếu đóng khay"): số khay / hộp để lại ở khách. Trống = theo cấu hình <c>PackagingOutOnDelivery</c>
+        /// (suất khách nhận × <c>PackagingUnitsPerMeal</c>); 0 = không ghi sổ bao bì (hộp dùng 1 lần).
+        /// </summary>
+        public decimal? PackagingQuantity { get; set; }
+        /// <summary>BE2.5: loại khay / hộp; trống = loại bao bì của kết quả đóng gói của đơn, không có thì <c>PackagingDefaultType</c>.</summary>
+        [MaxLength(100)]
+        public string? PackagingType { get; set; }
     }
 
     /// <summary>T19: giao thất bại tại điểm (form) – lý do bắt buộc.</summary>

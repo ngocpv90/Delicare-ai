@@ -189,6 +189,8 @@ namespace AppDelicare.Model.Model
         public string? Status { get; set; }
         public string? StatusName { get; set; }
         public bool SampleRetained { get; set; }
+        /// <summary>BE2.5: tiêu chí ATTP trọng yếu đang KHÔNG ĐẠT (chặn xuất chuyến tới khi kiểm lại ĐẠT).</summary>
+        public List<string> OpenCriticalFailures { get; set; } = [];
     }
 
     /// <summary>T19: chuyến của 1 ngày giao (spec 10.2 GET routes) + đếm theo trạng thái.</summary>

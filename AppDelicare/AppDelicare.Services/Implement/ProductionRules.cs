@@ -437,6 +437,12 @@ namespace AppDelicare.Services.Implement
             {
                 blockers.Add(ConstantHelper.Message.OutputMissing);
             }
+            // BE2.5 (spec 9.2, PROPOSED D-54 d): tiêu chí ATTP trọng yếu KHÔNG ĐẠT gắn mẻ (kết quả mới nhất) → chặn tới khi kiểm lại ĐẠT.
+            if (rules.FoodSafetyCriticalFailHoldsBatch
+                && (await FoodSafetyRules.OpenCriticalFailuresAsync(db, [batch.Id])).TryGetValue(batch.Id, out var critical))
+            {
+                blockers.Add(string.Format(ConstantHelper.Message.CriticalFailOpen, string.Join(", ", critical)));
+            }
             return blockers;
         }
 

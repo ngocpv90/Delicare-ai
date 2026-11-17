@@ -145,6 +145,26 @@ namespace AppDelicare.Model.Option
         public decimal ProductionLaborCostPerHour { get; set; }
         /// <summary>BE2.4 (spec 7.9): |chênh lệch tiêu hao| % vượt ngưỡng này → đánh dấu <c>isOverThreshold</c> (không chặn đóng lệnh).</summary>
         public decimal ConsumptionVariancePctWarning { get; set; } = 5.0m;
+
+        // ------------------------------------------------------------ BE2.5 – ATTP, vệ sinh, hộp / khay (PROPOSED – BA/PO CONFIRM, D-54)
+        /// <summary>
+        /// BE2.5 (spec 9.2): tiêu chí trọng yếu (IsCritical) KHÔNG ĐẠT gắn mẻ → giữ mẻ: Đạt → Chờ QC (QcStatus HOLD), mẻ đang nấu / chờ QC → HOLD;
+        /// mẻ bị chặn đạt QC / đóng gói / xuất chuyến tới khi tiêu chí đó được kiểm lại ĐẠT. false = chỉ cảnh báo.
+        /// </summary>
+        public bool FoodSafetyCriticalFailHoldsBatch { get; set; } = true;
+        /// <summary>BE2.5 (spec 9.4): mã bộ checklist vệ sinh khay / hộp 6 bước (seed <c>DB/seed/FoodSafetyQa_seed.sql</c>).</summary>
+        public string CleaningChecklistCode { get; set; } = "VS-KHAY";
+        /// <summary>BE2.5: bước vệ sinh phải ghi hóa chất đã dùng khi ĐẠT (ItemCode của checklist vệ sinh).</summary>
+        public string[] CleaningChemicalRequiredItems { get; set; } = ["KHU_KHUAN"];
+        /// <summary>BE2.5 (spec 10.4 inspect "khay dùng được → tự tạo CleaningBatche"): kiểm tra thu hồi xong tự lập mẻ vệ sinh VS- cho số khay dùng được.</summary>
+        public bool CleaningAutoCreateOnInspect { get; set; } = true;
+        /// <summary>
+        /// BE2.5 (spec 10.3 pod "Ghi PackagingLedger OUT nếu đóng khay"): bàn giao không gửi số khay → tự ghi OUT = suất khách nhận × <see cref="PackagingUnitsPerMeal"/>,
+        /// loại = loại bao bì của kết quả đóng gói của đơn, không có thì <see cref="PackagingDefaultType"/>. false = chỉ ghi khi bàn giao gửi số khay.
+        /// </summary>
+        public bool PackagingOutOnDelivery { get; set; } = true;
+        public string PackagingDefaultType { get; set; } = "KHAY";
+        public decimal PackagingUnitsPerMeal { get; set; } = 1m;
     }
 
     /// <summary>T15.1: ngưỡng nhiệt độ nhận hàng của 1 kiểu bảo quản (°C).</summary>

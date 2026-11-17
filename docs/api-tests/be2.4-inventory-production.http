@@ -6,6 +6,7 @@
 ### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Mỗi lần chạy lại đổi @key và @day (ngày ăn tương lai ≤ hôm nay + 60 ngày, chưa qua 20:00 ngày trước;
 ### @dow = thứ của @day, 1 = Thứ 2 … 7 = Chủ nhật). Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
 ### Đã chạy trên DB dev 2026-11-17 (key B24B, ngày 08/12/2026): 125 / 125 đúng kỳ vọng (9 chốt an toàn trả 400).
+### BE2.5 (2026-11-17): không đổi bước. Đã chạy lại trên DB dev (key B25B, ngày 12/01/2027): 125 / 125 đúng kỳ vọng.
 ### Trước khi chạy: seed DB/seed/ProductionStage_seed.sql (checklist PRD_STAGE – deploy/db/scripts.order). Tổ mặc định của công đoạn = OrganizationUnit OPS-KIT-* (seed T07).
 @base = http://localhost:5125
 @user = admin

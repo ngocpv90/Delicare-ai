@@ -1,0 +1,1037 @@
+### DELICARE – BE2.5: ATTP, VỆ SINH, HỘP / KHAY (khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### Danh mục + đơn + kế hoạch + MRP (chép từ be2.4-inventory-production.http mục 0–2.2) → phát hành + nấu → CHECKLIST ATTP theo mẻ / ca (161, 162):
+### tiêu chí trọng yếu KHÔNG ĐẠT giữ mẻ → kiểm lại ĐẠT → đóng gói → chuyến + BÀN GIAO ghi SỔ BAO BÌ OUT (190) → THU HỒI khay (194) → KIỂM TRA (195)
+### → MẺ VỆ SINH 6 BƯỚC (167–169, đi lần lượt, không đạt → vệ sinh lại) → SỐ DƯ + THẤT THOÁT (196) → SỰ CỐ NCC chuyển trạng thái (170).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Mỗi lần chạy lại đổi @key và @day (ngày ăn tương lai ≤ hôm nay + 60 ngày, chưa qua 20:00 ngày trước,
+### NGÀY CHƯA CÓ KẾ HOẠCH SẢN XUẤT – 1 KH- / ngày; @dow = thứ của @day, 1 = Thứ 2 … 7 = Chủ nhật). Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400
+### kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Trước khi chạy: seed DB/seed/FoodSafetyQa_seed.sql (checklist QA_FG, PREP…, VS-KHAY – deploy/db/scripts.order) + ProductionStage_seed.sql.
+### Đã chạy trên DB dev 2026-11-17 (key B25A, ngày 22/12/2026): 142 / 142 đúng kỳ vọng (16 chốt an toàn trả 400).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@key = B25A
+@code = DEMO{{key}}
+@day = 2026-12-22
+### 2026-12-22 là Thứ 3 (ngày chưa có kế hoạch sản xuất trên DB dev).
+@dow = 2
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 0. DANH MỤC TỐI THIỂU
+### 0.1 Đơn vị kg, kho bếp + khu kho lạnh 0…5 °C
+POST {{base}}/api/UnitMeasure/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}KG&Name=[DEMO] kg {{key}}&Symbol=kg&Status=Active
+
+###
+# @name kg
+GET {{base}}/api/UnitMeasure/GetAll?SearchText={{code}}KG&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@kgId = {{kg.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/Warehouse/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}K&Name=[DEMO] Kho bếp {{key}}&WarehouseType=KITCHEN&Status=Active
+
+###
+# @name wh
+GET {{base}}/api/Warehouse/GetAll?SearchText={{code}}K&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@warehouseId = {{wh.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/StorageZone/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&Code={{code}}KL&Name=[DEMO] Kho lạnh {{key}}&TemperatureMin=0&TemperatureMax=5&Status=Active
+
+###
+# @name zone
+GET {{base}}/api/StorageZone/GetAll?SearchText={{code}}KL&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@zoneId = {{zone.response.body.listData[0].id}}
+
+### 0.2 Nguyên liệu: gà (đủ tồn), rau (tồn an toàn 100 kg → MRP thiếu)
+POST {{base}}/api/Ingredient/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}GA&Name=[DEMO] Thịt gà {{key}}&BaseUnitId={{kgId}}&StorageType=CHILLED&QcRequired=true&Status=Active
+
+###
+POST {{base}}/api/Ingredient/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}RAU&Name=[DEMO] Rau cải {{key}}&BaseUnitId={{kgId}}&StorageType=DRY&QcRequired=false&SafetyStock=100&Status=Active
+
+###
+# @name ga
+GET {{base}}/api/Ingredient/GetAll?SearchText={{code}}GA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name rau
+GET {{base}}/api/Ingredient/GetAll?SearchText={{code}}RAU&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@chickenId = {{ga.response.body.listData[0].id}}
+@vegId = {{rau.response.body.listData[0].id}}
+
+### 0.3 NCC + bảng giá rau 20.000 đ/kg
+POST {{base}}/api/Supplier/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}&Name=[DEMO] NCC {{key}}&SupplierType=VEGETABLE&Status=Active
+
+###
+# @name sup
+GET {{base}}/api/Supplier/GetAll?SearchText={{code}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@supplierId = {{sup.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/SupplierMaterial/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+SupplierId={{supplierId}}&IngredientId={{vegId}}&UnitPrice=20000&MinimumOrderQuantity=0&LeadTimeDays=1&EffectiveFrom={{$datetime "YYYY-MM-DD" -1 d}}&IsPreferred=true&Status=Active
+
+### 0.4 Tồn: lô gà 120 kg, lô rau 100 kg (cùng NCC – để truy xuất)
+POST {{base}}/api/MaterialLot/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+IngredientId={{chickenId}}&SupplierId={{supplierId}}&LotNumber={{code}}-GA&ExpiryDate={{$datetime "YYYY-MM-DD" 60 d}}&ReceivedDate={{$datetime "YYYY-MM-DD" -1 d}}&QcStatus=DAT&UnitCost=80000&Note=[DEMO]
+
+###
+POST {{base}}/api/MaterialLot/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+IngredientId={{vegId}}&SupplierId={{supplierId}}&LotNumber={{code}}-RAU&ExpiryDate={{$datetime "YYYY-MM-DD" 60 d}}&ReceivedDate={{$datetime "YYYY-MM-DD" -1 d}}&QcStatus=DAT&UnitCost=20000&Note=[DEMO]
+
+###
+# @name lotGa
+GET {{base}}/api/MaterialLot/GetAll?SearchText={{code}}-GA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name lotRau
+GET {{base}}/api/MaterialLot/GetAll?SearchText={{code}}-RAU&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@lotChicken = {{lotGa.response.body.listData[0].id}}
+
+### BE2.3: điều chỉnh tồn tay → yêu cầu duyệt STOCK_ADJUSTMENT → duyệt mới ghi bút toán
+# @name adjGa
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{chickenId}}&MaterialLotId={{lotChicken}}&Quantity=120&Reason=[DEMO] Tồn đầu kỳ gà
+
+###
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adjGa.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt tồn đầu kỳ
+
+###
+# @name adjRau
+POST {{base}}/api/InventoryTransaction/Adjust
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+WarehouseId={{warehouseId}}&IngredientId={{vegId}}&MaterialLotId={{lotRau.response.body.listData[0].id}}&Quantity=100&Reason=[DEMO] Tồn đầu kỳ rau
+
+###
+POST {{base}}/api/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{adjRau.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt tồn đầu kỳ
+
+### 0.5 Món Cơm gà + công thức khóa (gà 15 kg, rau 10 kg / 100 suất)
+POST {{base}}/api/Dish/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}COMGA&Name=[DEMO] Cơm gà {{key}}&StandardServingSize=350&Status=Active
+
+###
+# @name dish
+GET {{base}}/api/Dish/GetAll?SearchText={{code}}COMGA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@dishId = {{dish.response.body.listData[0].id}}
+
+###
+# @name recipe
+POST {{base}}/api/Recipe/CreateVersion
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+DishId={{dishId}}
+
+###
+@recipeId = {{recipe.response.body.data.id}}
+
+###
+POST {{base}}/api/RecipeLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+RecipeId={{recipeId}}&IngredientId={{chickenId}}&Quantity=15&UnitId={{kgId}}&SequenceNo=1
+
+###
+POST {{base}}/api/RecipeLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+RecipeId={{recipeId}}&IngredientId={{vegId}}&Quantity=10&UnitId={{kgId}}&SequenceNo=2
+
+###
+POST {{base}}/api/Recipe/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+id={{recipeId}}
+
+###
+POST {{base}}/api/Recipe/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{recipeId}}&Note=[DEMO]
+
+###
+POST {{base}}/api/Recipe/Lock
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{recipeId}}&EffectiveFrom={{$datetime "YYYY-MM-DD"}}
+
+### 0.6 Khách A (2 điểm giao: Quận 1 / Quận 7) + khách B (Quận 7), hợp đồng suất TRƯA 35.000 đ
+POST {{base}}/api/Customer/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}A&CIF={{code}}A&Name=[DEMO] Khách A {{key}}&DisplayName=[DEMO] Khách A {{key}}&CustomerType=FACTORY&Status=Active
+
+###
+POST {{base}}/api/Customer/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}B&CIF={{code}}B&Name=[DEMO] Khách B {{key}}&DisplayName=[DEMO] Khách B {{key}}&CustomerType=FACTORY&Status=Active
+
+###
+# @name cusA
+GET {{base}}/api/Customer/GetAll?SearchText={{code}}A&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name cusB
+GET {{base}}/api/Customer/GetAll?SearchText={{code}}B&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@customerA = {{cusA.response.body.listData[0].id}}
+@customerB = {{cusB.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/CustomerDeliveryLocation/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&Code={{code}}A1&Name=[DEMO] Căng tin A1 {{key}}&Address=[DEMO] 12 Lê Lợi, Quận 1, TP. HCM&DeliveryWindowFrom=11:00&DeliveryWindowTo=12:00&Status=Active
+
+###
+POST {{base}}/api/CustomerDeliveryLocation/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&Code={{code}}A2&Name=[DEMO] Xưởng A2 {{key}}&Address=[DEMO] 5 Nguyễn Văn Linh, Quận 7, TP. HCM&DeliveryWindowFrom=11:30&DeliveryWindowTo=12:30&Status=Active
+
+###
+POST {{base}}/api/CustomerDeliveryLocation/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerB}}&Code={{code}}B1&Name=[DEMO] Căng tin B {{key}}&Address=[DEMO] 9 Huỳnh Tấn Phát, Quận 7, TP. HCM&DeliveryWindowFrom=11:15&DeliveryWindowTo=12:15&Status=Active
+
+###
+# @name locA1
+GET {{base}}/api/CustomerDeliveryLocation/GetAll?SearchText={{code}}A1&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name locA2
+GET {{base}}/api/CustomerDeliveryLocation/GetAll?SearchText={{code}}A2&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name locB
+GET {{base}}/api/CustomerDeliveryLocation/GetAll?SearchText={{code}}B1&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@locA1 = {{locA1.response.body.listData[0].id}}
+@locA2 = {{locA2.response.body.listData[0].id}}
+@locB = {{locB.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/Contract/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&ContractNumber={{code}}HDA&Name=[DEMO] HĐ A {{key}}&EffectiveFrom={{$datetime "YYYY-MM-DD" -1 d}}&Status=Active
+
+###
+POST {{base}}/api/Contract/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerB}}&ContractNumber={{code}}HDB&Name=[DEMO] HĐ B {{key}}&EffectiveFrom={{$datetime "YYYY-MM-DD" -1 d}}&Status=Active
+
+###
+# @name conA
+GET {{base}}/api/Contract/GetAll?SearchText={{code}}HDA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name conB
+GET {{base}}/api/Contract/GetAll?SearchText={{code}}HDB&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@contractA = {{conA.response.body.listData[0].id}}
+@contractB = {{conB.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/ContractMeal/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ContractId={{contractA}}&MealType=TRUA&MealName=[DEMO] Suất trưa&UnitPrice=35000&Status=Active
+
+###
+POST {{base}}/api/ContractMeal/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ContractId={{contractB}}&MealType=TRUA&MealName=[DEMO] Suất trưa&UnitPrice=35000&Status=Active
+
+###
+# @name cmA
+GET {{base}}/api/ContractMeal/GetAll?ContractId={{contractA}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name cmB
+GET {{base}}/api/ContractMeal/GetAll?ContractId={{contractB}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+### BE2.2: hợp đồng tạo ra luôn Nháp → gửi duyệt → duyệt (engine CONTRACT) mới Hiệu lực
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}
+
+###
+POST {{base}}/api/Contract/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}&Note=[DEMO] duyệt
+
+###
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}
+
+###
+POST {{base}}/api/Contract/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}&Note=[DEMO] duyệt
+
+### 0.7 2 xe (tải 400 / 300 suất), tài xế = nhân viên, dây chuyền 1000 suất / mẻ
+POST {{base}}/api/Vehicle/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}X1&LicensePlate=[DEMO] 51C-{{key}}1&VehicleType=TRUCK&Capacity=400&Status=Active
+
+###
+POST {{base}}/api/Vehicle/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}X2&LicensePlate=[DEMO] 51C-{{key}}2&VehicleType=TRUCK&Capacity=300&Status=Active
+
+###
+# @name veh1
+GET {{base}}/api/Vehicle/GetAll?SearchText={{code}}X1&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name veh2
+GET {{base}}/api/Vehicle/GetAll?SearchText={{code}}X2&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@vehicle1 = {{veh1.response.body.listData[0].id}}
+@vehicle2 = {{veh2.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/ProductionLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}&Name=[DEMO] Dây chuyền {{key}}&CapacityMealPerBatch=1000&MinutesPerBatch=60&Status=Active
+
+###
+# @name pl
+GET {{base}}/api/ProductionLine/GetAll?SearchText={{code}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@lineId = {{pl.response.body.listData[0].id}}
+
+### 0.8 Thực đơn (ngày @day, TRƯA: Cơm gà) → duyệt → phân công cho 2 khách
+POST {{base}}/api/Menu/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}TD&Name=[DEMO] Thực đơn {{key}}&EffectiveFrom={{day}}&EffectiveTo={{day}}
+
+###
+# @name menu
+GET {{base}}/api/Menu/GetAll?SearchText={{code}}TD&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@menuId = {{menu.response.body.listData[0].id}}
+
+###
+POST {{base}}/api/MenuLine/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+MenuId={{menuId}}&DishId={{dishId}}&MealType=TRUA&DayOfWeek={{dow}}&SequenceNo=1&SortOrder=1
+
+###
+POST {{base}}/api/Menu/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{menuId}}
+
+###
+POST {{base}}/api/MenuAssignment/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&ContractId={{contractA}}&MenuId={{menuId}}&MealType=TRUA&EffectiveFrom={{day}}&EffectiveTo={{day}}
+
+###
+POST {{base}}/api/MenuAssignment/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerB}}&ContractId={{contractB}}&MenuId={{menuId}}&MealType=TRUA&EffectiveFrom={{day}}&EffectiveTo={{day}}
+
+########## 1. ĐƠN HÀNG → BẢNG ĐƠN (90) + THỰC ĐƠN (82)
+### 1.1 3 đơn: A1 300, A2 200, B 150 suất
+# @name oA1
+POST {{base}}/api/Order/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerA}}", "deliveryLocationId": "{{locA1}}", "mealDate": "{{day}}", "note": "[DEMO]", "listLine": [ { "contractMealId": "{{cmA.response.body.listData[0].id}}", "quantity": 300 } ] }
+
+###
+# @name oA2
+POST {{base}}/api/Order/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerA}}", "deliveryLocationId": "{{locA2}}", "mealDate": "{{day}}", "note": "[DEMO]", "listLine": [ { "contractMealId": "{{cmA.response.body.listData[0].id}}", "quantity": 200 } ] }
+
+###
+# @name oB
+POST {{base}}/api/Order/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerId": "{{customerB}}", "deliveryLocationId": "{{locB}}", "mealDate": "{{day}}", "note": "[DEMO]", "listLine": [ { "contractMealId": "{{cmB.response.body.listData[0].id}}", "quantity": 150 } ] }
+
+###
+@orderA1 = {{oA1.response.body.data.order.id}}
+@orderA2 = {{oA2.response.body.data.order.id}}
+@orderB = {{oB.response.body.data.order.id}}
+
+### 1.2 Bảng đơn: 3 đơn ở cột Nháp (statusCounts.Draft = 3)
+GET {{base}}/api/Order/GetBoard?MealDate={{day}}&SearchText=
+Authorization: Bearer {{token}}
+
+### 1.3 Gửi + xác nhận 3 đơn
+POST {{base}}/api/Order/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA1}}
+
+###
+POST {{base}}/api/Order/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA2}}
+
+###
+POST {{base}}/api/Order/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderB}}
+
+###
+POST {{base}}/api/Order/Confirm
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA1}}&Note=[DEMO]
+
+###
+POST {{base}}/api/Order/Confirm
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA2}}&Note=[DEMO]
+
+###
+POST {{base}}/api/Order/Confirm
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderB}}&Note=[DEMO]
+
+### 1.4 Thực đơn: lineCount 1, assignedCustomerCount 2, orderedMeals 650
+GET {{base}}/api/Menu/GetList?SearchText={{code}}TD&EffectiveOn={{day}}
+Authorization: Bearer {{token}}
+
+########## 2. KẾ HOẠCH SINH THEO CA (137) → MRP → ĐỀ NGHỊ MUA CHỌN DÒNG + DỰ PHÒNG (107) → PO → CHI TIẾT / HỦY YÊU CẦU DUYỆT (211, 213)
+### 2.1 Sinh kế hoạch Nháp KH- từ đơn Đã xác nhận: Cơm gà 650 phần, ca TRUA (1 KH- / ngày – GAP-MRP-01)
+# @name gen
+POST {{base}}/api/ProductionPlan/Generate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{day}}&Note=[DEMO]
+
+###
+@planId = {{gen.response.body.data.productionPlan.id}}
+
+### 2.2 Chốt đơn → tính nhu cầu NL (gà 97,5 kg đủ tồn; rau 65 kg + tồn an toàn 100 − khả dụng 100 = thiếu 65 → đề nghị Nháp)
+POST {{base}}/api/Order/Lock
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA1}}
+
+###
+POST {{base}}/api/Order/Lock
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderA2}}
+
+###
+POST {{base}}/api/Order/Lock
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{orderB}}
+
+###
+# @name mrp
+POST {{base}}/api/MaterialRequirement/Calculate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ProductionDate={{day}}&WarehouseId={{warehouseId}}&Note=[DEMO]
+
+########## 3. PHÁT HÀNH → NẤU MẺ (650 phần) → LÕI 76 °C → SẢN LƯỢNG → LƯU MẪU → ĐẠT QC
+### 3.1 Duyệt + phát hành kế hoạch → 1 mẻ 650 phần (dây chuyền 1000 / mẻ); đơn → Đang sản xuất
+POST {{base}}/api/ProductionPlan/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{planId}}&Note=[DEMO]
+
+###
+# @name rel
+POST {{base}}/api/ProductionPlan/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{planId}}&ProductionLineId={{lineId}}&Note=[DEMO]
+
+###
+@batchId = {{rel.response.body.data.listBatch[0].id}}
+
+### 3.2 Xuất NL cho mẻ (FEFO, ghi sổ) → nấu → lõi 76 °C → xong → sản lượng 650 → lưu mẫu → đạt QC
+POST {{base}}/api/ProductionBatch/CreateMaterialIssue
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&WarehouseId={{warehouseId}}&Post=true&Note=[DEMO]
+
+###
+POST {{base}}/api/ProductionBatch/Start
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+###
+POST {{base}}/api/ProductionBatch/RecordCoreTemperature
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&TemperatureC=76&DeviceCode=[DEMO]-NK
+
+###
+POST {{base}}/api/ProductionBatch/Finish
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&ActualQuantity=650
+
+###
+POST {{base}}/api/ProductionBatch/RecordOutput
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&ProducedQuantity=650&RejectedQuantity=0
+
+###
+POST {{base}}/api/ProductionBatch/RecordSampleRetained
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}&ActualValue=[DEMO] tủ mẫu 150 g
+
+###
+POST {{base}}/api/ProductionBatch/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+########## 4. CHECKLIST ATTP THEO MẺ / CA (161, 162) – TIÊU CHÍ TRỌNG YẾU KHÔNG ĐẠT GIỮ MẺ
+### 4.1 Bộ "Kiểm soát thành phẩm" QA_FG (seed): Cảm quan (trọng yếu), Trọng lượng suất (trọng yếu), Lưu mẫu + người ký
+# @name fg
+GET {{base}}/api/FoodSafetyChecklist/GetAll?SearchText=QA_FG&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@fgId = {{fg.response.body.listData[0].id}}
+
+### 4.2 Lần chạy theo mẻ: 3 tiêu chí chưa kiểm, ca = ca của lệnh SX (TRUA), tỷ lệ đạt 7 ngày
+GET {{base}}/api/FoodSafetyChecklistResult/GetRun?ChecklistId={{fgId}}&ProductionBatchId={{batchId}}&CheckDate={{day}}
+Authorization: Bearer {{token}}
+
+### 4.3 CHỐT AN TOÀN → 400: còn tiêu chí bắt buộc chưa có kết quả (Trọng lượng suất, Lưu mẫu + người ký)
+POST {{base}}/api/FoodSafetyChecklistResult/Record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "checklistId": "{{fgId}}", "productionBatchId": "{{batchId}}", "checkDate": "{{day}}", "listItem": [ { "itemCode": "CAM_QUAN", "resultCode": "PASS" } ] }
+
+### 4.4 CHỐT AN TOÀN → 400: KHÔNG ĐẠT phải ghi hành động khắc phục
+POST {{base}}/api/FoodSafetyChecklistResult/Record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "checklistId": "{{fgId}}", "productionBatchId": "{{batchId}}", "checkDate": "{{day}}", "listItem": [ { "itemCode": "CAM_QUAN", "resultCode": "FAIL" }, { "itemCode": "TRONG_LUONG_SUAT", "resultCode": "PASS" }, { "itemCode": "LUU_MAU_KY", "resultCode": "PASS" } ] }
+
+### 4.5 Bộ công đoạn PRD_STAGE (seed BE2.4)
+# @name stageCl
+GET {{base}}/api/FoodSafetyChecklist/GetAll?SearchText=PRD_STAGE&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+### CHỐT AN TOÀN → 400: bộ công đoạn ghi qua ProductionBatch/StartStage – FinishStage (giữ kiểm soát công đoạn)
+POST {{base}}/api/FoodSafetyChecklistResult/Record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "checklistId": "{{stageCl.response.body.listData[0].id}}", "productionBatchId": "{{batchId}}", "listItem": [ { "itemCode": "SO_CHE", "resultCode": "PASS" } ] }
+
+### 4.6 Cảm quan KHÔNG ĐẠT (trọng yếu) → mẻ Đạt → Chờ QC, tạm giữ (listCriticalFailure, cảnh báo Telegram để R2)
+POST {{base}}/api/FoodSafetyChecklistResult/Record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "checklistId": "{{fgId}}", "productionBatchId": "{{batchId}}", "checkDate": "{{day}}", "listItem": [ { "itemCode": "CAM_QUAN", "resultCode": "FAIL", "actualValue": "[DEMO] cơm hơi khô", "correctiveAction": "[DEMO] Tách mẻ, bếp trưởng nếm lại" }, { "itemCode": "TRONG_LUONG_SUAT", "resultCode": "PASS", "actualValue": "352 g" }, { "itemCode": "LUU_MAU_KY", "resultCode": "PASS", "actualValue": "[DEMO] đã ký" } ] }
+
+### 4.7 CHỐT AN TOÀN → 400: đạt QC khi tiêu chí trọng yếu chưa kiểm lại ĐẠT
+POST {{base}}/api/ProductionBatch/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+### 4.8 Kiểm lại Cảm quan ĐẠT (dòng mới – giữ lịch sử, historyCount = 2) → đạt QC → đóng gói
+POST {{base}}/api/FoodSafetyChecklistResult/Record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "checklistId": "{{fgId}}", "productionBatchId": "{{batchId}}", "checkDate": "{{day}}", "listItem": [ { "itemCode": "CAM_QUAN", "resultCode": "PASS", "actualValue": "[DEMO] nếm lại đạt" } ] }
+
+###
+POST {{base}}/api/ProductionBatch/Release
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+###
+POST {{base}}/api/ProductionBatch/Pack
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batchId}}
+
+### 4.9 Checklist theo ca "Kiểm tra sơ chế" (PREP): hạn = giờ xuất bếp của ca − 150′ (BUSINESS_RULES §6) → ghi đạt
+# @name prep
+GET {{base}}/api/FoodSafetyChecklist/GetAll?SearchText=PREP&SortField=code&SortOrder=ascend&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+# @name shiftTrua
+GET {{base}}/api/Shift/GetAll?SearchText=TRUA&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/FoodSafetyChecklistResult/GetRun?ChecklistId={{prep.response.body.listData[0].id}}&ShiftId={{shiftTrua.response.body.listData[0].id}}&CheckDate={{day}}
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/FoodSafetyChecklistResult/Record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "checklistId": "{{prep.response.body.listData[0].id}}", "shiftId": "{{shiftTrua.response.body.listData[0].id}}", "checkDate": "{{day}}", "listItem": [ { "itemCode": "NGUYEN_LIEU_DUNG_LO", "resultCode": "PASS" }, { "itemCode": "TACH_SONG_CHIN", "resultCode": "PASS" }, { "itemCode": "RA_DONG_DUNG_CACH", "resultCode": "PASS" } ] }
+
+########## 5. CHUYẾN → BÀN GIAO + SỔ BAO BÌ OUT (190)
+### 5.1 Chuyến xe X1 (400 suất): đơn A2 200 + B 150
+# @name route
+POST {{base}}/api/DeliveryRoute/Create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "deliveryDate": "{{day}}", "vehicleId": "{{vehicle1}}", "description": "[DEMO] chuyến BE2.5", "listOrderId": ["{{orderA2}}", "{{orderB}}"] }
+
+###
+@routeId = {{route.response.body.data.route.id}}
+
+### 5.2 Xếp hàng → xuất phát 65 °C
+POST {{base}}/api/DeliveryRoute/Load
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{routeId}}", "note": "[DEMO]" }
+
+###
+# @name disp
+POST {{base}}/api/DeliveryRoute/Dispatch
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{routeId}}&TemperatureC=65&DeviceCode=[DEMO]-NK&Note=[DEMO]
+
+###
+### điểm #1 = khách B 150 suất (giao 11:15), #2 = A2 200 suất (11:30)
+@stopB = {{disp.response.body.data.listStop[0].id}}
+@stopA2 = {{disp.response.body.data.listStop[1].id}}
+@doB = {{disp.response.body.data.listStop[0].deliveryOrderId}}
+@doA2 = {{disp.response.body.data.listStop[1].deliveryOrderId}}
+
+### 5.3 Điểm #1 (B 150): hộp dùng 1 lần (PackagingQuantity = 0) → không ghi sổ bao bì, không phiếu thu hồi
+POST {{base}}/api/DeliveryStop/Deliver
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{stopB}}&TemperatureC=62&DeliveredQuantity=150&ReceiverName=[DEMO] Anh Nam&PackagingQuantity=0
+
+### 5.4 Điểm #2 (A2 200): giao / nhận 200 (63 °C) → sổ bao bì OUT 200 khay loại KHAY (BusinessRules:PackagingDefaultType – mẻ đóng gói thẳng, không có kết quả đóng gói ghi loại) + phiếu Chờ thu hồi
+POST {{base}}/api/DeliveryStop/Deliver
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{stopA2}}&TemperatureC=63&DeliveredQuantity=200&ReceiverName=[DEMO] Chị Lan
+
+########## 6. THU HỒI KHAY (194) → KIỂM TRA (195)
+### 6.1 Phiếu thu hồi của khách A: Chờ thu hồi, expectedQuantity = 200 (statusCounts)
+# @name crList
+GET {{base}}/api/ContainerReturn/GetList?CustomerId={{customerA}}&Status=Expected
+Authorization: Bearer {{token}}
+
+###
+@crId = {{crList.response.body.data.listItem[0].return.id}}
+
+### 6.2 CHỐT AN TOÀN → 400: đơn giao của B không ghi sổ bao bì (hộp dùng 1 lần) – không có khay để thu
+POST {{base}}/api/ContainerReturn/Record
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+DeliveryOrderId={{doB}}&ReturnedQuantity=5
+
+### 6.3 CHỐT AN TOÀN → 400: thu hồi nhiều hơn số khay còn ở khách
+POST {{base}}/api/ContainerReturn/Record
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+DeliveryOrderId={{doA2}}&ReturnedQuantity=999
+
+### 6.4 Thu hồi 195 (hỏng 3) → sổ bao bì IN 192 tốt + 3 hỏng; phiếu Đã thu hồi; cảnh báo còn 5 khay ở khách
+# @name ret
+POST {{base}}/api/ContainerReturn/Record
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+DeliveryOrderId={{doA2}}&ReturnedQuantity=195&DamagedQuantity=3&Note=[DEMO] thu cuối ca
+
+### 6.5 CHỐT AN TOÀN → 400: kết quả khác OK phải ghi chú tình trạng
+POST {{base}}/api/ContainerReturn/Inspect
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{crId}}&InspectionResult=DAMAGED&DamagedQty=4
+
+### 6.6 Kiểm tra: hỏng 4 → dùng được 191 → tự lập mẻ vệ sinh VS-YYMMDD-<CA> 191 khay
+# @name insp
+POST {{base}}/api/ContainerReturn/Inspect
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{crId}}&InspectionResult=DAMAGED&DamagedQty=4&Note=[DEMO] 4 khay móp
+
+###
+@inspectionId = {{insp.response.body.data.listInspection[0].id}}
+@vs1 = {{insp.response.body.data.listCleaningBatch[0].id}}
+
+### 6.7 CHỐT AN TOÀN → 400: phiếu đã kiểm tra không kiểm lại
+POST {{base}}/api/ContainerReturn/Inspect
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{crId}}&InspectionResult=OK
+
+########## 7. MẺ VỆ SINH 6 BƯỚC (167–169): Nhận / quét QR → Phân loại → Rửa sơ → Rửa máy → Khử khuẩn → Kiểm tra và nhập kho sạch
+### 7.1 CHỐT AN TOÀN → 400: Rửa sơ trước khi Nhận / Phân loại (đi lần lượt)
+POST {{base}}/api/CleaningBatch/RecordResults
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{vs1}}", "listItem": [ { "itemCode": "RUA_SO", "resultCode": "PASS" } ] }
+
+### 7.2 Bước 1–4 đạt
+POST {{base}}/api/CleaningBatch/RecordResults
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{vs1}}", "listItem": [ { "itemCode": "NHAN_QR", "resultCode": "PASS", "actualValue": "191 khay" }, { "itemCode": "PHAN_LOAI", "resultCode": "PASS" }, { "itemCode": "RUA_SO", "resultCode": "PASS" }, { "itemCode": "RUA_MAY", "resultCode": "PASS", "actualValue": "65 °C" } ] }
+
+### 7.3 CHỐT AN TOÀN → 400: Khử khuẩn đạt phải ghi hóa chất
+POST {{base}}/api/CleaningBatch/RecordResults
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{vs1}}", "listItem": [ { "itemCode": "KHU_KHUAN", "resultCode": "PASS" } ] }
+
+### 7.4 Khử khuẩn KHÔNG ĐẠT (khắc phục: pha lại dung dịch)
+POST {{base}}/api/CleaningBatch/RecordResults
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{vs1}}", "listItem": [ { "itemCode": "KHU_KHUAN", "resultCode": "FAIL", "actualValue": "Chlorine 80 ppm", "correctiveAction": "[DEMO] Pha lại dung dịch 200 ppm" } ] }
+
+### 7.5 CHỐT AN TOÀN → 400: kết luận ĐẠT khi chưa đủ 6 bước đạt
+POST {{base}}/api/CleaningBatch/Complete
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{vs1}}&QcResult=PASS
+
+### 7.6 QC kết luận KHÔNG ĐẠT (lý do) → mẻ Hoàn tất / REJECT, 191 khay chờ vệ sinh lại
+POST {{base}}/api/CleaningBatch/Complete
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{vs1}}&QcResult=REJECT&Note=[DEMO] Còn vết dầu – rửa lại
+
+### 7.7 Lập mẻ vệ sinh lại (số VS-…-2) cho 191 khay
+# @name vs2
+POST {{base}}/api/CleaningBatch/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ReturnInspectionId={{inspectionId}}
+
+###
+@vs2Id = {{vs2.response.body.data.batch.id}}
+
+### 7.8 6 bước đạt (khử khuẩn ghi hóa chất)
+POST {{base}}/api/CleaningBatch/RecordResults
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "id": "{{vs2Id}}", "listItem": [ { "itemCode": "NHAN_QR", "resultCode": "PASS" }, { "itemCode": "PHAN_LOAI", "resultCode": "PASS" }, { "itemCode": "RUA_SO", "resultCode": "PASS" }, { "itemCode": "RUA_MAY", "resultCode": "PASS", "actualValue": "65 °C" }, { "itemCode": "KHU_KHUAN", "resultCode": "PASS", "chemicalUsed": "[DEMO] Chlorine 200 ppm, 5 phút" }, { "itemCode": "KIEM_TRA_NHAP_KHO", "resultCode": "PASS" } ] }
+
+### 7.9 Kết luận ĐẠT → sổ bao bì AVAILABLE 191 khay sạch, sẵn sàng dùng lại
+POST {{base}}/api/CleaningBatch/Complete
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{vs2Id}}&QcResult=PASS
+
+### 7.10 CHỐT AN TOÀN → 400: phiếu kiểm tra không còn khay dùng được để lập mẻ
+POST {{base}}/api/CleaningBatch/Create
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+ReturnInspectionId={{inspectionId}}
+
+###
+GET {{base}}/api/CleaningBatch/GetDetail?id={{vs2Id}}
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/ContainerReturn/GetDetail?id={{crId}}
+Authorization: Bearer {{token}}
+
+########## 8. SỐ DƯ KHAY Ở KHÁCH + THẤT THOÁT (196)
+### 8.1 Số dư khách A: OUT 200, IN 195 (hỏng 3), còn 5
+GET {{base}}/api/PackagingLedger/GetBalance?CustomerId={{customerA}}
+Authorization: Bearer {{token}}
+
+### 8.2 CHỐT AN TOÀN → 400: thất thoát vượt số còn ở khách
+POST {{base}}/api/PackagingLedger/Record
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&TransactionType=LOSS&PackagingType=KHAY&Quantity=999&Reason=[DEMO] thử
+
+### 8.3 CHỐT AN TOÀN → 400: sổ bao bì không ghi qua CRUD (chỉ từ nghiệp vụ / PackagingLedger/Record)
+POST {{base}}/api/PackagingLedger/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&TransactionType=IN&PackagingType=KHAY&Quantity=1
+
+### 8.4 Ghi thất thoát 3 khay (khách báo mất) → còn 2, tỷ lệ thất thoát 3 ÷ 200 = 1,5% (≤ 3% → không cảnh báo)
+POST {{base}}/api/PackagingLedger/Record
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+CustomerId={{customerA}}&TransactionType=LOSS&PackagingType=KHAY&Quantity=3&DeliveryOrderId={{doA2}}&Reason=[DEMO] Khách báo mất 3 khay
+
+###
+GET {{base}}/api/PackagingLedger/GetBalance?CustomerId={{customerA}}&From={{day}}&To={{day}}
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/PackagingLedger/GetAll?CustomerId={{customerA}}&Page=1&PageSize=20
+Authorization: Bearer {{token}}
+
+########## 9. SỰ CỐ NHÀ CUNG CẤP (170): Mới → Đang xử lý → Đã xử lý → Đóng
+### 9.1 Lập sự cố (CRUD – luôn Mới, hạn mặc định +2 ngày)
+POST {{base}}/api/SupplierIssue/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+SupplierId={{supplierId}}&IssueType=QUALITY&Severity=High&Description=[DEMO] Rau dập 10% lô {{code}}-RAU
+
+###
+# @name si
+GET {{base}}/api/SupplierIssue/GetList?SupplierId={{supplierId}}&Status=Open
+Authorization: Bearer {{token}}
+
+###
+@issueId = {{si.response.body.data.listItem[0].issue.id}}
+
+### 9.2 CHỐT AN TOÀN → 400: Mới không đóng thẳng
+POST {{base}}/api/SupplierIssue/Transition
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{issueId}}&To=Closed
+
+### 9.3 Nhận xử lý (người phụ trách = người thao tác)
+POST {{base}}/api/SupplierIssue/Transition
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{issueId}}&To=InProgress
+
+### 9.4 CHỐT AN TOÀN → 400: Đã xử lý phải ghi cách xử lý
+POST {{base}}/api/SupplierIssue/Transition
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{issueId}}&To=Resolved
+
+###
+POST {{base}}/api/SupplierIssue/Transition
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{issueId}}&To=Resolved&Resolution=[DEMO] NCC đổi 6,5 kg rau
+
+###
+POST {{base}}/api/SupplierIssue/Transition
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{issueId}}&To=Closed
+
+###
+GET {{base}}/api/SupplierIssue/GetList?SupplierId={{supplierId}}
+Authorization: Bearer {{token}}

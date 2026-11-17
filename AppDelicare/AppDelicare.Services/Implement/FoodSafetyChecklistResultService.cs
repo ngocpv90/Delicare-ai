@@ -7,21 +7,30 @@ using AppDelicare.Data.Repositories;
 using AppDelicare.Data.Share;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
+using AppDelicare.Model.Model;
+using AppDelicare.Model.Option;
 using AppDelicare.Model.Request;
+using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class FoodSafetyChecklistResultService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard) : IFoodSafetyChecklistResultService
+    public class FoodSafetyChecklistResultService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IFoodSafetyChecklistResultService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IReferenceGuard _referenceGuard = referenceGuard;
+        private readonly IClock _clock = clock;
+        private readonly ICurrentActor _currentActor = currentActor;
+        private readonly BusinessRulesOptions _rules = rules.Value;
 
         public async Task<IResults<FoodSafetyChecklistResultViewModel>> GetAll(FoodSafetyChecklistResultSearchRequest request)
         {
@@ -125,48 +134,18 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(FoodSafetyChecklistResultRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<FoodSafetyChecklistResult>(request);
-            var entity = insert;
-            _unitOfWork.FoodSafetyChecklistResultRepository.Add(insert);
-            await _unitOfWork.FoodSafetyChecklistResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>
+        /// BE2.5: kết quả checklist là bằng chứng ATTP (lưu mẫu, công đoạn, lỗi trọng yếu chặn mẻ) – không thêm / sửa / xóa qua CRUD
+        /// (ghi qua FoodSafetyChecklistResult/Record hoặc thao tác của mẻ; sửa = ghi lần kiểm mới).
+        /// </summary>
+        private static Task<string> Insert(FoodSafetyChecklistResultRequest request, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private async Task<string> Update(FoodSafetyChecklistResultRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.FoodSafetyChecklistResultRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var entity = _mapper.Map(request, exist);
-            _unitOfWork.FoodSafetyChecklistResultRepository.Update(entity);
-            await _unitOfWork.FoodSafetyChecklistResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Update(FoodSafetyChecklistResultRequest request, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private async Task<string> Delete(Guid? id, string typeSave)
-        {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: bản ghi đang được tham chiếu (quan hệ logic, truy vấn có tham số) → không cho xóa.
-            if ((await _referenceGuard.FindUsagesAsync("FoodSafetyChecklistResult", (Guid)id)).Count > 0)
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.FoodSafetyChecklistResultRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.FoodSafetyChecklistResultRepository.Update(delete);
-            await _unitOfWork.FoodSafetyChecklistResultRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        private static Task<string> Delete(Guid? id, string typeSave) => Task.FromResult(CrudBlocked);
+
+        private static string CrudBlocked => string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Kết quả checklist ATTP",
+            "FoodSafetyChecklistResult/Record (kiểm lại = ghi lần mới) hoặc thao tác của mẻ (lưu mẫu, công đoạn)");
 
         public async Task<IResult<FoodSafetyChecklistResult>> GetById(Guid id)
         {
@@ -194,6 +173,321 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetById: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>
+        /// BE2.5 (spec 9.2 GET checklists/{id}/run, Catalog 161; T18 "checklist theo ca với hạn tương đối"): tiêu chí theo SortOrder ghép kết quả hiện tại
+        /// (dòng mới nhất) của (bộ, ngày, ca, mẻ) + hạn làm (giờ xuất bếp của ngày / ca + ChecklistOffsetsMinutes theo mã bộ) + tỷ lệ đạt 7 ngày.
+        /// </summary>
+        public async Task<IResult<ChecklistRunModel>> GetRun(ChecklistRunRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var checklist = await db.FoodSafetyChecklist.AsNoTracking().FirstOrDefaultAsync(c => c.Id == request.ChecklistId && !c.IsDeleted);
+                if (checklist == null)
+                {
+                    return Result<ChecklistRunModel>.Fail(ConstantHelper.Message.ChecklistNotFound);
+                }
+                var (batch, shiftId, error) = await ResolveRunAsync(request.ProductionBatchId, request.ShiftId);
+                if (error != null)
+                {
+                    return Result<ChecklistRunModel>.Fail(error);
+                }
+                DateTime date = (request.CheckDate ?? _clock.Today).Date;
+                return Result<ChecklistRunModel>.Success(await BuildRunAsync(checklist, date, shiftId, batch), ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetRun: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>Mẻ (nếu có, không Hủy) + ca của lần chạy (trống → ca của lệnh SX của mẻ).</summary>
+        private async Task<(ProductionBatch? Batch, Guid? ShiftId, string? Error)> ResolveRunAsync(Guid? batchId, Guid? shiftId)
+        {
+            var db = _unitOfWork.DbContext;
+            ProductionBatch? batch = null;
+            if (batchId is { } b && b != Guid.Empty)
+            {
+                batch = await db.ProductionBatch.AsNoTracking().FirstOrDefaultAsync(x => x.Id == b && !x.IsDeleted);
+                if (batch == null)
+                {
+                    return (null, null, ConstantHelper.Message.BatchNotFound);
+                }
+                if (shiftId is not { } s0 || s0 == Guid.Empty)
+                {
+                    shiftId = await db.ProductionOrder.AsNoTracking().Where(o => o.Id == batch.ProductionOrderId).Select(o => o.ShiftId).FirstOrDefaultAsync();
+                }
+            }
+            if (shiftId is { } s && s != Guid.Empty)
+            {
+                if (!await db.Shift.AsNoTracking().AnyAsync(x => x.Id == s && !x.IsDeleted))
+                {
+                    return (null, null, ConstantHelper.Message.ChecklistShiftNotFound);
+                }
+                return (batch, s, null);
+            }
+            return (batch, null, null);
+        }
+
+        private async Task<ChecklistRunModel> BuildRunAsync(FoodSafetyChecklist checklist, DateTime date, Guid? shiftId, ProductionBatch? batch)
+        {
+            var db = _unitOfWork.DbContext;
+            var items = await FoodSafetyRules.ItemsAsync(db, checklist.Id);
+            var results = await FoodSafetyRules.RunResultsAsync(db, checklist.Id, date, shiftId, batch?.Id);
+            var latest = FoodSafetyRules.Latest(results, r => r.ChecklistItemId);
+            var userIds = latest.Values.Where(r => r.CheckedBy != null).Select(r => r.CheckedBy!.Value).Distinct().ToList();
+            var users = await db.User.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
+            var shift = shiftId is { } sid ? await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sid) : null;
+            var run = new ChecklistRunModel
+            {
+                Checklist = checklist,
+                CheckDate = date,
+                ShiftId = shiftId,
+                ShiftCode = shift?.Code,
+                ShiftName = shift?.Name,
+                ProductionBatchId = batch?.Id,
+                BatchNumber = batch?.BatchNumber ?? batch?.BatchNo,
+                ListItem = [.. items.Select(i =>
+                {
+                    latest.TryGetValue(i.Id, out var r);
+                    return new ChecklistRunItemModel
+                    {
+                        Item = i,
+                        Result = r,
+                        ResultName = r == null ? null : FoodSafetyCode.ResultLabel(r.ResultCode),
+                        CheckedByName = r?.CheckedBy is { } u ? users.GetValueOrDefault(u) : null,
+                        HistoryCount = results.Count(x => x.ChecklistItemId == i.Id),
+                    };
+                })],
+            };
+            run.RequiredCount = items.Count(i => i.IsRequired);
+            run.DoneCount = run.ListItem.Count(x => x.Result != null);
+            run.PassCount = run.ListItem.Count(x => x.Result?.ResultCode == FoodSafetyCode.ResultPass);
+            run.FailCount = run.ListItem.Count(x => x.Result?.ResultCode == FoodSafetyCode.ResultFail);
+            run.IsComplete = run.ListItem.Where(x => x.Item.IsRequired).All(x => x.Result != null);
+            run.ListCriticalFailure = [.. run.ListItem.Where(x => x.Item.IsCritical && x.Result?.ResultCode == FoodSafetyCode.ResultFail).Select(x => x.Item.ItemName ?? x.Item.ItemCode ?? string.Empty)];
+            // Hạn tương đối (BUSINESS_RULES §6): giờ xuất bếp của (ngày, ca) + độ lệch theo mã bộ (PREP −150′, PREP_AREA_CLEAN −90′, BLAST_CHILL −20′, KITCHEN_CLEAN +90′).
+            if (shift != null && checklist.Code != null && _rules.ChecklistOffsetsMinutes.TryGetValue(checklist.Code, out int offset))
+            {
+                var (dispatchAt, source) = await ProductionRules.ResolveDispatchAsync(db, date, shift, null, _rules);
+                if (dispatchAt != null)
+                {
+                    run.DueAt = dispatchAt.Value.AddMinutes(offset);
+                    run.DueSource = $"Giờ xuất bếp {ProductionRules.Time(dispatchAt.Value)} ({source}) {(offset >= 0 ? "+" : "−")} {Math.Abs(offset)}′";
+                    run.IsOverdue = run.DueAt < _clock.Now && !run.IsComplete;
+                }
+            }
+            // Tỷ lệ đạt 7 ngày (spec 9.2 passRate7d): kết quả mới nhất mỗi (ngày, ca, mẻ, tiêu chí) của bộ – cùng ca nếu lần chạy có ca.
+            DateTime first = date.AddDays(-6);
+            var history = await db.FoodSafetyChecklistResult.AsNoTracking()
+                .Where(r => !r.IsDeleted && r.ChecklistId == checklist.Id && r.CheckDate >= first && r.CheckDate <= date
+                    && (shiftId == null || r.ShiftId == shiftId) && (r.ResultCode == FoodSafetyCode.ResultPass || r.ResultCode == FoodSafetyCode.ResultFail))
+                .OrderBy(r => r.CheckedAt).ThenBy(r => r.CreatedDate)
+                .Select(r => new { r.CheckDate, r.ShiftId, r.ProductionBatchId, r.ChecklistItemId, r.ResultCode }).ToListAsync();
+            var lastOf = new Dictionary<(DateTime, Guid?, Guid?, Guid), string?>();
+            foreach (var h in history)
+            {
+                lastOf[(h.CheckDate.Date, h.ShiftId, h.ProductionBatchId, h.ChecklistItemId)] = h.ResultCode;
+            }
+            for (DateTime d = first; d <= date; d = d.AddDays(1))
+            {
+                var day = lastOf.Where(x => x.Key.Item1 == d).Select(x => x.Value).ToList();
+                int pass = day.Count(c => c == FoodSafetyCode.ResultPass);
+                run.ListPassRate7d.Add(new ChecklistPassRateModel
+                {
+                    Date = d,
+                    Total = day.Count,
+                    Pass = pass,
+                    Rate = day.Count == 0 ? null : Math.Round(pass * 100m / day.Count, 2, MidpointRounding.AwayFromZero),
+                });
+            }
+            return run;
+        }
+
+        /// <summary>
+        /// BE2.5 (spec 9.2 POST checklists/{id}/results, Catalog 162): ghi kết quả checklist ATTP của (bộ, ngày, ca, mẻ) – mỗi tiêu chí 1 dòng mới (giữ lịch sử,
+        /// dòng mới nhất là kết quả hiện tại – D-54 c). Bộ phải áp dụng ngày kiểm; bộ công đoạn / lưu mẫu / vệ sinh khay ghi qua thao tác riêng.
+        /// Tiêu chí bắt buộc phải có kết quả (đã ghi trước hoặc trong lần này); FAIL bắt buộc hành động khắc phục.
+        /// Tiêu chí trọng yếu FAIL kèm mẻ → giữ mẻ (<c>FoodSafetyCriticalFailHoldsBatch</c>): Đạt → Chờ QC + HOLD, đang nấu / chờ QC → HOLD, Đã đóng gói → chặn xuất chuyến;
+        /// đạt QC / đóng gói / xuất chuyến bị chặn tới khi tiêu chí được kiểm lại ĐẠT (ProductionRules.SafetyBlockersAsync, DeliveryRules.ProductionBlockers).
+        /// Cảnh báo Telegram → Release 2 (chỉ trả danh sách criticalFailures).
+        /// </summary>
+        public async Task<IResult<ChecklistRecordModel>> Record(ChecklistRecordRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                var checklist = await db.FoodSafetyChecklist.AsNoTracking().FirstOrDefaultAsync(c => c.Id == request.ChecklistId && !c.IsDeleted);
+                if (checklist == null)
+                {
+                    return Fail(ConstantHelper.Message.ChecklistNotFound);
+                }
+                if (FoodSafetyRules.ViaAction(checklist.Code, _rules) is { } via)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ChecklistViaAction, checklist.Code, via));
+                }
+                DateTime now = _clock.Now;
+                DateTime date = (request.CheckDate ?? now).Date;
+                if (!FoodSafetyRules.IsEffective(checklist, date))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ChecklistInactive, checklist.Code, ProductionRules.Day(date)));
+                }
+                var (batchInfo, shiftId, runError) = await ResolveRunAsync(request.ProductionBatchId, request.ShiftId);
+                if (runError != null)
+                {
+                    return Fail(runError);
+                }
+                if (batchInfo?.Status == ProductionBatchStatus.Cancelled)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ChecklistBatchClosed, batchInfo.BatchNumber ?? batchInfo.BatchNo));
+                }
+                if (request.ListItem.Count == 0)
+                {
+                    return Fail(ConstantHelper.Message.ChecklistNoItems);
+                }
+                var items = await FoodSafetyRules.ItemsAsync(db, checklist.Id);
+                var existing = FoodSafetyRules.Latest(await FoodSafetyRules.RunResultsAsync(db, checklist.Id, date, shiftId, batchInfo?.Id), r => r.ChecklistItemId);
+                var rows = new List<(FoodSafetyChecklistItem Item, string Code, ChecklistRecordItemRequest Input)>();
+                foreach (var input in request.ListItem)
+                {
+                    var item = input.ChecklistItemId is { } iid && iid != Guid.Empty
+                        ? items.FirstOrDefault(i => i.Id == iid)
+                        : items.FirstOrDefault(i => string.Equals(i.ItemCode, input.ItemCode?.Trim(), StringComparison.OrdinalIgnoreCase));
+                    string label = input.ItemCode ?? input.ChecklistItemId?.ToString() ?? string.Empty;
+                    if (item == null)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.ChecklistItemNotInChecklist, label, checklist.Code));
+                    }
+                    string name = item.ItemName ?? item.ItemCode ?? label;
+                    if (rows.Any(r => r.Item.Id == item.Id))
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.ChecklistItemDuplicate, name));
+                    }
+                    string? code = FoodSafetyCode.NormalizeResult(input.ResultCode);
+                    if (code == null)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.ChecklistResultInvalid, name));
+                    }
+                    if (code == FoodSafetyCode.ResultFail && string.IsNullOrWhiteSpace(input.CorrectiveAction))
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.ChecklistFailNeedsCorrective, name));
+                    }
+                    rows.Add((item, code, input));
+                }
+                var missing = items.Where(i => i.IsRequired && !existing.ContainsKey(i.Id) && rows.All(r => r.Item.Id != i.Id)).Select(i => i.ItemName ?? i.ItemCode).ToList();
+                if (missing.Count != 0)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ChecklistRequiredMissing, string.Join(", ", missing)));
+                }
+                foreach (var (item, code, input) in rows)
+                {
+                    _unitOfWork.FoodSafetyChecklistResultRepository.Add(new FoodSafetyChecklistResult
+                    {
+                        Id = Guid.NewGuid(),
+                        ChecklistId = checklist.Id,
+                        ChecklistItemId = item.Id,
+                        CheckDate = date,
+                        ShiftId = shiftId,
+                        ProductionBatchId = batchInfo?.Id,
+                        WorkstationId = request.WorkstationId is { } w && w != Guid.Empty ? w : batchInfo?.KitchenWorkstationId,
+                        ResultCode = code,
+                        ActualValue = FoodSafetyRules.Clean(input.ActualValue),
+                        CheckedBy = actor.UserId,
+                        CheckedAt = FoodSafetyRules.NextCheckedAt(now, existing.GetValueOrDefault(item.Id)?.CheckedAt),
+                        CorrectiveAction = FoodSafetyRules.Clean(input.CorrectiveAction),
+                        EvidenceUrl = FoodSafetyRules.Clean(input.EvidenceUrl),
+                    });
+                }
+
+                var model = new ChecklistRecordModel { Saved = rows.Count };
+                var critical = rows.Where(r => r.Item.IsCritical && r.Code == FoodSafetyCode.ResultFail).ToList();
+                string? batchNumber = batchInfo?.BatchNumber ?? batchInfo?.BatchNo;
+                string? batchAction = null;
+                if (critical.Count != 0)
+                {
+                    string names = string.Join(", ", critical.Select(r => r.Item.ItemName ?? r.Item.ItemCode));
+                    if (batchInfo != null && _rules.FoodSafetyCriticalFailHoldsBatch)
+                    {
+                        var batch = _unitOfWork.ProductionBatchRepository.GetSingle(x => x.Id == batchInfo.Id && !x.IsDeleted)!;
+                        batchAction = HoldBatch(batch);
+                        model.ListWarning.Add(string.Format(ConstantHelper.Message.CriticalFailHoldBatch, batchNumber, names, batchAction));
+                    }
+                    else
+                    {
+                        model.ListWarning.Add(string.Format(ConstantHelper.Message.CriticalFailNoBatch, names) + (batchNumber == null ? string.Empty : " (mẻ " + batchNumber + ")"));
+                    }
+                    model.ListWarning.Add(ConstantHelper.Message.CriticalFailAlertLater);
+                }
+                model.ListCriticalFailure = [.. critical.Select(r => new ChecklistCriticalFailureModel
+                {
+                    ChecklistItemId = r.Item.Id,
+                    ItemCode = r.Item.ItemCode,
+                    ItemName = r.Item.ItemName,
+                    ActualValue = FoodSafetyRules.Clean(r.Input.ActualValue),
+                    CorrectiveAction = FoodSafetyRules.Clean(r.Input.CorrectiveAction),
+                    ProductionBatchId = batchInfo?.Id,
+                    BatchNumber = batchNumber,
+                    BatchAction = batchAction,
+                })];
+                // Update: dòng thêm vẫn được gán CreatedDate / CreatedBy, mẻ bị giữ được gán ModifiedDate / ModifiedBy.
+                await _unitOfWork.FoodSafetyChecklistResultRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                var freshBatch = batchInfo == null ? null : await db.ProductionBatch.AsNoTracking().FirstOrDefaultAsync(x => x.Id == batchInfo.Id);
+                model.Run = await BuildRunAsync(checklist, date, shiftId, freshBatch);
+                return Result<ChecklistRecordModel>.Success(model, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Record: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                throw;
+            }
+
+            IResult<ChecklistRecordModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                return Result<ChecklistRecordModel>.Fail(message);
+            }
+        }
+
+        /// <summary>Giữ mẻ khi tiêu chí trọng yếu KHÔNG ĐẠT (PROPOSED D-54 d) – trả mô tả tác động.</summary>
+        private string HoldBatch(ProductionBatch batch)
+        {
+            string before = ProductionBatchStatus.Label(batch.Status);
+            string action;
+            switch (batch.Status)
+            {
+                case ProductionBatchStatus.Passed:
+                    batch.Status = ProductionBatchStatus.QcPending;
+                    action = $"{before} → {ProductionBatchStatus.Label(ProductionBatchStatus.QcPending)}, tạm giữ";
+                    break;
+                case ProductionBatchStatus.Planned:
+                case ProductionBatchStatus.Cooking:
+                case ProductionBatchStatus.QcPending:
+                    action = before + ", tạm giữ";
+                    break;
+                case ProductionBatchStatus.Packed:
+                    return before + " – chặn xuất chuyến";
+                default:
+                    return before;
+            }
+            batch.QcStatus = BatchQcStatus.Hold;
+            batch.QualityStatus = BatchQcStatus.Hold;
+            _unitOfWork.ProductionBatchRepository.Update(batch);
+            var output = _unitOfWork.ProductionOutputRepository.GetSingle(o => o.ProductionBatchId == batch.Id && !o.IsDeleted);
+            if (output != null)
+            {
+                output.QualityStatus = BatchQcStatus.Hold;
+                _unitOfWork.ProductionOutputRepository.Update(output);
+            }
+            return action;
         }
     }
 }
