@@ -22,6 +22,7 @@
 @code = DEMO{{key}}
 @day = 2026-12-01
 ### 2026-12-01 là Thứ 3 (1 = Thứ 2 … 7 = Chủ nhật). Đổi @day thì sửa @dow cho khớp.
+### Chạy lại trên cùng một DB: đổi CẢ @key VÀ @day (ngày đã chạy có kế hoạch SX "Hoàn thành" → MRP trả 400, các bước sau hỏng dây chuyền).
 @dow = 2
 
 # @name login
