@@ -44,8 +44,8 @@ namespace AppDelicare.Services.Implement
                     };
                 }
 
-                var fileName = request.File.FileName.Replace(getExtension, string.Empty);
-                var fileNameHas = string.Concat(request.File.FileName.Replace(getExtension, string.Empty), ConstantHelper.Underlined, MurmurHashHelper.Hash(request.File.FileName + Guid.NewGuid()), getExtension);
+                // Rà soát BE: tên tệp tạm = Guid + đuôi – không dùng tên client (chống "../" ghi ra ngoài thư mục).
+                var fileNameHas = string.Concat(Guid.NewGuid().ToString("N"), getExtension);
 
                 // Path Folder
                 if (!Directory.Exists(_webRootPath))
@@ -91,6 +91,7 @@ namespace AppDelicare.Services.Implement
                         Data = false
                     };
                 }
+                DeleteFile(filePath); // Rà soát BE: tệp Excel tạm không để lại trong wwwroot sau khi nhập.
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
@@ -126,6 +127,9 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        private const long MaxImageBytes = 5 * 1024 * 1024;
+        private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg" };
+
         public InformationFileViewModel GetInformationFile(IFormFile file)
         {
             if (file == null || file.Length <= 0)
@@ -134,11 +138,10 @@ namespace AppDelicare.Services.Implement
             }
             else
             {
-                var getExtension = Path.GetExtension(ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName?.Trim('"')) ?? string.Empty;
-                var fileName = file.FileName.Replace(getExtension, string.Empty);
-                var guid = Guid.NewGuid().ToString();
-                var has = MurmurHashHelper.Hash(string.Concat(file.FileName, guid).ToString()).ToString();
-                var fileNameHas = string.Concat(fileName, ConstantHelper.Underlined, has, getExtension);
+                // Rà soát BE: tên lưu trên đĩa = Guid + đuôi (chữ thường) – KHÔNG dùng tên client (chống "../" ghi ra ngoài thư mục).
+                var getExtension = Path.GetExtension(Path.GetFileName(file.FileName ?? string.Empty)).ToLowerInvariant();
+                var fileName = Path.GetFileNameWithoutExtension(Path.GetFileName(file.FileName ?? string.Empty));
+                var fileNameHas = string.Concat(Guid.NewGuid().ToString("N"), getExtension);
                 var fileSize = Convert.ToInt32(file?.Length ?? 0);
                 return new()
                 {
@@ -172,22 +175,40 @@ namespace AppDelicare.Services.Implement
                         url = Path.Combine(_webRootPath, ConstantHelper.FolderName.TEST_DEMO_UPLOAD);
                         break;
                     default:
-                        break;
+                        return false; // Rà soát BE: loại thư mục lạ → không ghi (trước đây ghi vào thư mục chạy app).
                 }
+                // Rà soát BE: thư mục nằm trong wwwroot (phục vụ tĩnh cùng domain) → chỉ nhận ảnh PNG / JPEG ≤ 5 MB, kiểm byte đầu tệp
+                // (chống tải .html / .svg / .js → XSS lưu trữ), tên tệp không chứa đường dẫn, đường dẫn cuối phải nằm trong thư mục đích.
+                string root = Path.GetFullPath(url);
                 foreach (var item in listFile)
                 {
-                    if (string.IsNullOrEmpty(item.FileName) || item.File == null)
+                    if (string.IsNullOrEmpty(item.FileName) || item.File == null || item.File.Length <= 0 || item.File.Length > MaxImageBytes)
                     {
                         return false;
                     }
-                    if (!Directory.Exists(url))
+                    string name = Path.GetFileName(item.FileName);
+                    string ext = Path.GetExtension(name).ToLowerInvariant();
+                    if (name != item.FileName || !AllowedImageExtensions.Contains(ext))
                     {
-                        Directory.CreateDirectory(url);
+                        return false;
                     }
-                    var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), url);
-                    var fullPath = Path.Combine(pathToSave, item.FileName);
-                    using FileStream fileStream = new(fullPath, FileMode.Create);
-                    item.File.CopyTo(fileStream);
+                    byte[] content;
+                    using (var ms = new MemoryStream())
+                    {
+                        item.File.CopyTo(ms);
+                        content = ms.ToArray();
+                    }
+                    if (!DocumentStorageRules.ContentMatches(ext, content))
+                    {
+                        return false;
+                    }
+                    var fullPath = Path.GetFullPath(Path.Combine(root, name));
+                    if (!fullPath.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                    Directory.CreateDirectory(root);
+                    File.WriteAllBytes(fullPath, content);
                 }
                 return true;
             }

@@ -1,4 +1,4 @@
-using AppDelicare.Data.Connection;
+﻿using AppDelicare.Data.Connection;
 using AppDelicare.Data.Share;
 using AppDelicare.Services.Implement;
 using AppDelicare.Services.Interface;
@@ -10,8 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AppDelicare.Tests.Ledger
 {
     /// <summary>
-    /// T08 – sổ cái kho trên SQL Server thật (kiểu cột, cột deprecated NOT NULL, transaction): chạy trong 1 transaction rồi ROLLBACK
-    /// vì sổ chỉ ghi thêm không xóa được. Không có DB dev thì Skip.
+    /// T08 â€“ sá»• cÃ¡i kho trÃªn SQL Server tháº­t (kiá»ƒu cá»™t, cá»™t deprecated NOT NULL, transaction): cháº¡y trong 1 transaction rá»“i ROLLBACK
+    /// vÃ¬ sá»• chá»‰ ghi thÃªm khÃ´ng xÃ³a Ä‘Æ°á»£c. KhÃ´ng cÃ³ DB dev thÃ¬ Skip.
     /// </summary>
     [Collection(ApiCollection.Name)]
     public class LedgerSqlServerTests(ApiFactory factory)
@@ -50,7 +50,47 @@ namespace AppDelicare.Tests.Ledger
             }
 
             db.ChangeTracker.Clear();
-            (await db.InventoryTransaction.CountAsync()).Should().Be(before, "rollback không để lại dòng sổ");
+            (await db.InventoryTransaction.CountAsync()).Should().Be(before, "rollback khÃ´ng Ä‘á»ƒ láº¡i dÃ²ng sá»•");
+        }
+
+        /// <summary>
+        /// RÃ  soÃ¡t BE 2026-11-17: 2 bÃºt toÃ¡n cÃ¹ng dÃ²ng tá»“n cháº¡y Láº¦N LÆ¯á»¢T (khÃ³a sp_getapplock theo dÃ²ng tá»“n) â€“ bÃºt toÃ¡n 2 chá» bÃºt toÃ¡n 1
+        /// káº¿t thÃºc transaction rá»“i má»›i Ä‘á»c sá»‘ tá»“n (trÆ°á»›c Ä‘Ã¢y cÃ¹ng Ä‘á»c 1 sá»‘ rá»“i ghi Ä‘Ã¨ nhau). Cáº£ 2 transaction Ä‘á»u rollback â€“ khÃ´ng Ä‘á»ƒ láº¡i dá»¯ liá»‡u.
+        /// </summary>
+        [SkippableFact]
+        public async Task Concurrent_postings_on_same_balance_row_run_one_after_another()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            using var scopeA = factory.Services.CreateScope();
+            using var scopeB = factory.Services.CreateScope();
+            var dbA = scopeA.ServiceProvider.GetRequiredService<DatabaseContext>();
+            var dbB = scopeB.ServiceProvider.GetRequiredService<DatabaseContext>();
+            var actorA = scopeA.ServiceProvider.GetRequiredService<ICurrentActor>();
+            var actorB = scopeB.ServiceProvider.GetRequiredService<ICurrentActor>();
+            Guid admin = await dbA.User.Where(u => u.UserName == "admin").Select(u => u.Id).SingleAsync();
+            var key = new { Warehouse = Guid.NewGuid(), Ingredient = Guid.NewGuid(), Unit = Guid.NewGuid() };
+            InventoryPostRequest Receipt(string no) => new()
+            {
+                TransactionType = "RECEIPT", TransactionNumber = no, WarehouseId = key.Warehouse, IngredientId = key.Ingredient, UnitId = key.Unit, QuantityIn = 5,
+            };
+
+            using (actorA.BeginScope(ActorInfo.ForUser(admin)))
+            using (actorB.BeginScope(ActorInfo.ForUser(admin)))
+            await using (var txA = await dbA.Database.BeginTransactionAsync())
+            await using (var txB = await dbB.Database.BeginTransactionAsync())
+            {
+                // A chá»‰ giá»¯ khÃ³a dÃ²ng tá»“n (khÃ´ng ghi gÃ¬) â†’ B bá»‹ cháº·n Ä‘Ãºng bá»Ÿi khÃ³a sp_getapplock, khÃ´ng pháº£i khÃ³a dÃ²ng cá»§a báº£ng.
+                await DbLocks.BalanceAsync(dbA, key.Warehouse, null, key.Ingredient, null);
+                var postB = new InventoryLedgerService(dbB).PostAsync(Receipt("[DEMO]-REVIEW-B"));
+                (await Task.WhenAny(postB, Task.Delay(1500))).Should().NotBeSameAs(postB, "bÃºt toÃ¡n B pháº£i chá» khÃ³a dÃ²ng tá»“n cá»§a A");
+
+                await txA.RollbackAsync();
+                await postB.WaitAsync(TimeSpan.FromSeconds(15));
+                dbB.ChangeTracker.Clear();
+                (await dbB.InventoryBalance.AsNoTracking().Where(b => b.IngredientId == key.Ingredient).Select(b => b.OnHandQuantity).SingleAsync())
+                    .Should().Be(5, "B Ä‘á»c sá»‘ tá»“n SAU khi A káº¿t thÃºc (A Ä‘Ã£ rollback) â€“ khÃ´ng cá»™ng trÃªn sá»‘ cÅ©");
+                await txB.RollbackAsync();
+            }
         }
     }
 }

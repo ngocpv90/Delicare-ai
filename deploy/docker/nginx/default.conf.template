@@ -41,6 +41,7 @@ server {
     location = /health { proxy_pass http://api:8080; access_log off; }
 
     # Angular (hash routing #/...): mọi đường dẫn khác → index.html; file có hash cache lâu.
-    location ~* \.(js|css|woff2?|ttf|svg|png|jpg|ico)$ { expires 30d; add_header Cache-Control "public"; try_files $uri =404; }
-    location / { try_files $uri $uri/ /index.html; add_header Cache-Control "no-cache"; }
+    # Rà soát BE: KHÔNG add_header trong location – nginx sẽ bỏ hết add_header cấp server (mất HSTS / X-Frame-Options / nosniff); dùng expires.
+    location ~* \.(js|css|woff2?|ttf|svg|png|jpg|ico)$ { expires 30d; try_files $uri =404; }
+    location / { try_files $uri $uri/ /index.html; expires -1; }
 }

@@ -306,8 +306,21 @@ namespace AppDelicare.Services.Implement
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
-                var update = _unitOfWork.PersonRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-                if (string.IsNullOrEmpty(request.Id.ToString()) || update == null)
+                // Rà soát BE: chỉ sửa hồ sơ của CHÍNH người đăng nhập (Person gắn với User hiện tại) – trước đây sửa được hồ sơ bất kỳ theo Id gửi lên.
+                Guid me = _authenticatedService.Id;
+                Guid? myPersonId = _unitOfWork.UserRepository.GetSingle(x => x.Id == me && !x.IsDeleted)?.PersonId;
+                if (myPersonId == null || (request.Id is Guid requested && requested != Guid.Empty && requested != myPersonId))
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return new Result<bool>
+                    {
+                        ResponseCode = Convert.ToInt32(HttpStatusCode.BadRequest),
+                        ResponseMessage = "Chỉ sửa được hồ sơ của chính tài khoản đang đăng nhập.",
+                        Data = false
+                    };
+                }
+                var update = _unitOfWork.PersonRepository.GetSingle(x => x.Id == myPersonId && !x.IsDeleted);
+                if (update == null)
                 {
                     return new Result<bool>
                     {
@@ -347,6 +360,7 @@ namespace AppDelicare.Services.Implement
                 update.Address = request.Address;
                 _unitOfWork.PersonRepository.Update(update);
                 await _unitOfWork.PersonRepository.CommitAsync(ConstantHelper.TypeSave.UpdateProfile);
+                _unitOfWork.CommitTransaction(); // Rà soát BE: trước đây thiếu commit → thay đổi hồ sơ bị rollback.
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),

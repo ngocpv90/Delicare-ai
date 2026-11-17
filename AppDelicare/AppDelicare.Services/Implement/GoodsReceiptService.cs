@@ -217,6 +217,8 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var db = _unitOfWork.DbContext;
+                // Rà soát BE: khóa theo PO – 2 phiếu nhập cùng PO tạo cùng lúc không cùng qua kiểm "nhập vượt".
+                await DbLocks.DocumentAsync(db, "PurchaseOrderReceipt", request.PurchaseOrderId);
                 var po = await db.PurchaseOrder.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.PurchaseOrderId && !x.IsDeleted);
                 var inputs = (request.ListLine ?? []).Where(l => l.ReceivedQuantity != 0).ToList();
                 string? error = po == null ? ConstantHelper.Message.RecordNotFoundMessage
@@ -356,6 +358,7 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var db = _unitOfWork.DbContext;
+                await DbLocks.DocumentAsync(db, "GoodsReceipt", request.Id); // Rà soát BE: 2 lần ghi sổ cùng lúc chạy lần lượt.
                 var receipt = _unitOfWork.GoodsReceiptRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
                 var po = receipt?.PurchaseOrderId is { } poId ? await db.PurchaseOrder.AsNoTracking().FirstOrDefaultAsync(p => p.Id == poId && !p.IsDeleted) : null;
                 string? error = receipt == null ? ConstantHelper.Message.RecordNotFoundMessage
@@ -509,6 +512,7 @@ namespace AppDelicare.Services.Implement
             try
             {
                 string? reason = request.Reason?.Trim();
+                await DbLocks.DocumentAsync(_unitOfWork.DbContext, "GoodsReceipt", request.Id); // Rà soát BE: hủy và ghi sổ cùng lúc chạy lần lượt.
                 var receipt = _unitOfWork.GoodsReceiptRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
                 string? error = string.IsNullOrEmpty(reason) || reason.Length < 3 ? ConstantHelper.Message.CancelReasonRequired
                     : receipt == null ? ConstantHelper.Message.RecordNotFoundMessage

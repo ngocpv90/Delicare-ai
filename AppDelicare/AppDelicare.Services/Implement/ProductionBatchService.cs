@@ -445,6 +445,10 @@ namespace AppDelicare.Services.Implement
         public Task<IResult<ProductionBatchDetailModel>> RecordCoreTemperature(ProductionBatchTemperatureRequest request)
             => RunAsync(request.Id, "ghi nhiệt độ lõi", [ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed], (batch, order, actor, warnings) =>
             {
+                if (TemperatureTime.Resolve(request.MeasuredAt, _clock, out DateTime measuredAt) is string timeError)
+                {
+                    return Task.FromResult<string?>(timeError); // Rà soát BE: giờ đo ngoài khoảng → không ghi (chống "che" lần đo thật).
+                }
                 decimal min = _rules.CoreTempMinC;
                 bool within = request.TemperatureC >= min;
                 string? corrective = string.IsNullOrWhiteSpace(request.CorrectiveAction) ? null : request.CorrectiveAction.Trim();
@@ -460,7 +464,7 @@ namespace AppDelicare.Services.Implement
                     TemperatureC = request.TemperatureC,
                     MinAllowedC = min,
                     IsWithinRange = within,
-                    MeasuredAt = request.MeasuredAt ?? _clock.Now,
+                    MeasuredAt = measuredAt,
                     DeviceCode = string.IsNullOrWhiteSpace(request.DeviceCode) ? null : request.DeviceCode.Trim(),
                     SourceChannel = "MANUAL",
                     RecordedBy = actor.UserId,

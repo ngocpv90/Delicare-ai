@@ -105,11 +105,14 @@ namespace AppDelicare.Tests.Security
             (await LoginAsync("t480-created", "t480-created")).Code.Should().NotBe(200, "không còn mật khẩu = tên đăng nhập");
             (await LoginAsync("t480-created", initial)).Should().Be((200, true));
 
-            (await admin.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", initial), ("PassWordNew", "Mat-khau-moi-8"))).Ok();
+            // Rà soát BE: chỉ đổi mật khẩu của chính mình – admin gọi cho user khác bị chặn (admin dùng ResetPassword).
+            (await admin.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", initial), ("PassWordNew", "Mat-khau-moi-8"))).Fail("chính tài khoản");
+            using var self = _factory.CreateAuthorizedClient(created.Id);
+            (await self.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", initial), ("PassWordNew", "Mat-khau-moi-8"))).Ok();
             (await StoredAsync(created.Id)).Should().StartWith("PBKDF2$");
             (await LoginAsync("t480-created", "Mat-khau-moi-8")).Should().Be((200, true), "trước T48.0 đổi mật khẩu xong không đăng nhập lại được");
             (await LoginAsync("t480-created", initial)).Code.Should().NotBe(200);
-            (await admin.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", "Mat-khau-moi-8"), ("PassWordNew", "1234567"))).Fail("8 ký tự");
+            (await self.PutFormAsync("/api/User/ChangePassword", ("Id", created.Id), ("PassWordOld", "Mat-khau-moi-8"), ("PassWordNew", "1234567"))).Fail("8 ký tự");
 
             string reset = (await admin.GetResultAsync($"/api/User/ResetPassword?id={created.Id}")).Ok().GetString()!;
             (await StoredAsync(created.Id)).Should().StartWith("PBKDF2T$");

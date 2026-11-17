@@ -542,6 +542,8 @@ namespace AppDelicare.Services.Implement
 
         private async Task<(string? Error, string? Message)> DecideCoreAsync(ApprovalDecideRequest request)
         {
+            // Rà soát BE: 2 lần duyệt cùng lúc chạy lần lượt – lần 2 thấy yêu cầu đã đóng (không áp điều chỉnh tồn 2 lần).
+            await DbLocks.DocumentAsync(_unitOfWork.DbContext, "ApprovalRequest", request.Id);
             var approval = _unitOfWork.ApprovalRequestRepository.GetSingle(a => a.Id == request.Id && !a.IsDeleted);
             if (approval == null)
             {
@@ -861,6 +863,7 @@ namespace AppDelicare.Services.Implement
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
+                await DbLocks.DocumentAsync(_unitOfWork.DbContext, "ApprovalRequest", request.Id); // Rà soát BE: hủy và duyệt cùng lúc chạy lần lượt.
                 var approval = _unitOfWork.ApprovalRequestRepository.GetSingle(a => a.Id == request.Id && !a.IsDeleted);
                 if (approval == null)
                 {
