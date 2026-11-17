@@ -70,7 +70,7 @@ AppDelicare.Services   (đã có) OrderService.LockByMealDate, MaterialRequireme
                        Ioc/ServiceRegistration.cs     đăng ký DI dùng chung cho WebApi + Job (tách từ WebApi/Ioc)
 AppDelicare.WebApi     Controllers/JobController.cs   (khung cũ) GetAll: job + lần chạy kế tiếp; Run: chạy tay (chỉ admin, gọi thẳng Service)
 AppDelicare.Job        Worker Service .NET 8 (MỚI)
-  ├─ Program.cs                    Host + Serilog + chuỗi kết nối + DI dùng chung; UseWindowsService() khi chạy IIS / Windows
+  ├─ Program.cs                    Host + Serilog + chuỗi kết nối + DI dùng chung (chạy trong container Linux – D-60)
   ├─ Scheduling/IScheduledJob.cs   Name, RunAsync(now, ct)
   ├─ Scheduling/JobSchedulerService.cs  BackgroundService, mỗi phút kiểm job đến giờ (giờ VN qua IClock), chạy bù job lỡ giờ trong ngày
   ├─ Scheduling/JobLock.cs         sp_getapplock theo tên job → không bao giờ chạy trùng (kể cả nhiều instance)
@@ -86,8 +86,8 @@ AppDelicare.Job        Worker Service .NET 8 (MỚI)
 2. Lịch sử chạy: Serilog + ghi `AnalyticsRefreshLog` (bảng có sẵn: JobCode, RunId, Started / Completed, RunStatus, RowsProcessed).
 3. Mọi ghi dữ liệu qua Service → AuditChange ghi người thực hiện = `system`.
 4. Test: đồng hồ giả (`IClock`) để chạy job ở mọi mốc giờ; test khóa chống trùng.
-5. Triển khai: **Docker** = container `job` riêng (1 bản, API chạy bao nhiêu bản tùy ý); **IIS / Windows** = Windows Service. Deploy API không làm dừng job và ngược lại.
-6. **Không** chạy job bên trong WebApi (IIS tự tắt app khi không có truy cập → job không chạy đúng giờ).
+5. Triển khai: **Linux + Docker (D-60)** = container `job` riêng (đúng 1 bản, `restart: unless-stopped`, health check bằng file nhịp; API chạy bao nhiêu bản tùy ý). Không dùng Windows Service / Task Scheduler. Deploy API không làm dừng job và ngược lại.
+6. **Không** chạy job bên trong WebApi (web app có thể bị dừng / khởi động lại theo truy cập hoặc khi deploy → job không chạy đúng giờ, và scale API lên nhiều bản sẽ chạy trùng).
 
 **Đã cài (T23, 2026-11-17 – PROPOSED D-59):** khác sơ đồ trên ở chỗ job nằm trong `AppDelicare.Services/Jobs/` (`IScheduledJob`, `JobSchedule`, `JobRunService` = khóa + log + actor, `DailyJobs.cs` = 5 job) để `JobController` của WebApi chạy tay cùng code; `AppDelicare.Job` chỉ có `Program.cs` (host, `--list`, `--run <mã>`) + `JobSchedulerService` (mỗi 30 giây). DI dùng chung: `AppDelicare.Services/Ioc/ServiceRegistration.AddDelicareCore` + `DelicareServicesModule` (Autofac); AutoMapper profile chuyển sang `AppDelicare.Services/Mapping/` (CodeGen ghi vào đó). Tài khoản job: user `system` (Id cố định, seed `SystemUser_seed.sql`). Lịch `Jobs:<mã>` ở `appsettings.json` của WebApi (Job đọc qua link `appsettings.shared.json`). Windows: Task Scheduler (Windows Service chờ duyệt gói – D-59 g). Deploy: `deploy/README.md` mục "Job tự động".
 
@@ -129,6 +129,11 @@ AppDelicare.Job        Worker Service .NET 8 (MỚI)
 - **Zalo OA:** webhook `/api/integration/zalo`. Khách chỉ được: xem đơn / thực đơn, chốt số suất (thành đề xuất, nhân viên kinh doanh xác nhận), báo thiếu suất, gửi phản ánh. Liên kết khách: GAP-INT-01 (`UserExternalIdentity` cần `UserId`; khách không phải User → tạm dùng `ExternalUserId` + `CustomerContact` qua `Note` / `ExternalData`, chờ PO chốt).
 
 ## 6. Hạ tầng (đề xuất)
-- Prod: Windows Server / IIS hoặc Docker. SQL Server 2019+. Backup full hằng đêm + log 15′.
+- **Prod = test = Linux + Docker (D-60, anh chốt 2026-11-17):**
+  - `nginx` – phục vụ Angular build, HTTPS, chuyển `/api` → `api`; `api` – AppDelicare.WebApi; `job` – AppDelicare.Job (1 bản); SQL Server 2019+ riêng (không nằm chung compose production), có ổ dữ liệu.
+  - SQL Server đặt `TZ=Asia/Ho_Chi_Minh` (cột mặc định `sysdatetime()` cùng giờ với IClock). Ứng dụng dùng tài khoản SQL riêng (đọc / ghi / EXECUTE, không DDL), **không dùng `sa`**.
+  - Bí mật (chuỗi kết nối, JWT, khóa IoT, license) qua `.env` trên server, không commit. Log ra console, Docker giữ + xoay vòng.
+  - Backup full hằng đêm + log 15′; tệp đính kèm (`DocumentStorage`) nằm trên volume riêng, backup cùng DB.
+  - `deploy/iis/` chỉ còn dùng chạy thử trên máy dev Windows.
 - ToolGateway và AppDelicare.Job chạy tiến trình / container riêng, tách khỏi WebApi.
 - Giám sát: Serilog → file + Seq (tùy chọn). Health check `/health`.

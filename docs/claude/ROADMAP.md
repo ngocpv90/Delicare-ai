@@ -25,6 +25,15 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | ~~BE3.6~~ | ~~DB Explorer + GAP: 226–230, 233, 234~~ | **KHÔNG LÀM (D-58)** – anh không cho phép tra cứu cấu trúc database. |
 | **BE3.7** | **Gộp, kiểm tra, deploy** | Chạy lại `full-flow.http` (+ dashboard / KPI kiểm khớp số liệu của luồng: số suất, tiến độ, giao, cảnh báo), mọi `.http` của BE-2 / BE-3, test xanh; test xác nhận **không API nào trả cấu trúc DB** (D-58); `scripts.order` / `DB/README.md` đủ seed mới; deploy staging + smoke; cập nhật Catalog; **dừng, báo anh** (không push / gộp `main` khi anh chưa duyệt). |
 
+### T48.4 – Production Linux + Docker (D-60, anh chốt 2026-11-17) · làm **sau BE3.7**, trước T48.2 · `TODO`
+1. **`deploy/docker/docker-compose.production.yml`**: `nginx` (Angular build + HTTPS + `/api` → `api`), `api`, `job` (đúng 1 bản, `restart: unless-stopped`) – **không kèm SQL Server**; bí mật qua `.env` trên server (`deploy/docker/production.env.example` không có giá trị thật). Volume cho tệp đính kèm. Nginx: giới hạn kích thước upload khớp `DocumentStorage:MaxFileSizeMb`, header bảo mật, chuyển HTTP → HTTPS (chứng chỉ do anh cung cấp / Let's Encrypt – để trống cấu hình).
+2. **Giờ SQL Server**: tài liệu + compose staging / production đặt `TZ=Asia/Ho_Chi_Minh` cho SQL Server; thêm kiểm tra khởi động (API `/health` và job) cảnh báo nếu `SYSDATETIME()` của DB lệch giờ VN của IClock > 5 phút.
+3. **Tài khoản SQL riêng cho ứng dụng**: script `deploy/db/app-login.sql` (tham số tên / mật khẩu từ biến, không ghi cứng) tạo login + user `db_datareader`, `db_datawriter`, `GRANT EXECUTE` – **không** quyền DDL. Compose staging / production dùng tài khoản này cho `api` và `job`; `sa` chỉ dùng cho `db-init`. (Chỉ chạy trên DB dev / Docker dev để thử; DB khác do anh chạy.)
+4. **Health check job**: `JobSchedulerService` ghi file nhịp (`/tmp/job-heartbeat`) mỗi vòng; Dockerfile / compose `HEALTHCHECK` kiểm file không cũ quá 2 phút. Test đơn vị cho file nhịp.
+5. **Log**: Docker (`Staging` / `Production`) chỉ ghi console (Serilog Console), cấu hình `logging: driver json-file, max-size 20m, max-file 10` cho `api` / `job`; file log giữ cho chạy ngoài Docker (dev).
+6. **Bỏ đường IIS / Windows Service cho production**: D-59 (g) bỏ, không thêm gói `WindowsServices`; `deploy/README.md` ghi rõ Linux + Docker là cách chuẩn, `deploy/iis/` chỉ chạy thử trên máy dev.
+7. **Kiểm tra**: dựng lại staging Docker trên Linux theo compose production (+ SQL container), chạy `full-flow.http` + `--list` của job + kiểm health check; checklist go-live T48.2 cập nhật theo Docker. **Dừng, báo anh** (không push / gộp `main` khi anh chưa duyệt, không chạy lên server thật).
+
 ## ★★★ ĐỢT BE-2 – HOÀN THIỆN API BACKEND (anh chốt 2026-11-16, D-43, D-44) – **XONG 2026-11-17 (BE2.1–BE2.7, BE2.9; BE2.8 để sau D-45) – chờ anh duyệt / chốt PROPOSED (PROGRESS mục BE2.9)**
 
 > **⚠ D-44 (2026-11-16): KHÔNG CHẠY PILOT.** Mục tiêu là **hoàn thiện toàn bộ luồng nghiệp vụ R1**. Mọi mục `DEFERRED(PILOT)` (bảng trong mục ★★ bên dưới và trong từng task) **trở thành TODO** và nằm trong BE-2, **trừ** nhóm "Để sau" cuối mục này. Không còn giới hạn "1–2 khách, 1 bếp, ca trưa", không có UAT-PILOT riêng: kiểm thử theo **toàn luồng**. Thứ tự sau BE-2: **FE toàn bộ màn hình luồng (FE-ALL)** → **UAT toàn luồng** → production (T48.2) → mới làm nhóm "Để sau".
@@ -542,7 +551,7 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
   - Health check `/health` (API + DB). Script SQL triển khai: chạy `DB/sp/*.sql` và `DB/seed/*.sql` theo thứ tự, idempotent.
   - CI (nếu repo có remote GitHub / GitLab / Azure DevOps): pipeline build + test cho mỗi PR. Không tự deploy production.
   - Viết `deploy/README.md`: từng bước anh (hoặc IT) làm theo.
-- **T48.2 production (R1.7):**
+- **T48.2 production (R1.7)** – phụ thuộc **T48.4** (Linux + Docker, D-60):
   - Checklist go-live: backup DB, chạy script, cấu hình HTTPS, CORS đúng domain, tạo tài khoản admin, phân quyền nhóm, theo dõi log.
   - Phương án quay lui.
 - AC: staging backend chạy được từ máy sạch theo README; `/health` xanh; Swagger staging mở được; đăng nhập qua API và gọi được API danh mục.
