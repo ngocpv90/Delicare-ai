@@ -404,6 +404,8 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (h) | Cấu hình nghiệp vụ của Job. | Job đọc **chính `appsettings*.json` của WebApi** (link → `appsettings.shared*.json`) rồi `appsettings.json` riêng (log, `JobHost:PollSeconds`) → BusinessRules / lịch `Jobs` chỉ có 1 nguồn; `api/Job/GetAll` và Job thấy cùng lịch. | Chép cấu hình sang Job (dễ lệch). |
 
 ## T48.4 – Production Linux + Docker (D-60): đề xuất đã cài (mẫu D-49 – làm theo "Đề xuất" khi anh chưa trả lời)
+
+> ✅ **Anh chốt 2026-11-17 ("đồng ý và tiếp tục"): đồng ý toàn bộ (a)–(e).** Cùng lúc anh đồng ý đề xuất T48.5: hạ `AppDelicare_Staging` về mức 160 (đã làm 2026-11-17) và push các commit T48.5.
 | # | Vấn đề | Đề xuất (em chọn) + lý do | Phương án khác |
 |---|---|---|---|
 | (a) | Angular build ở đâu cho nginx. | **Dockerfile nginx 2 giai đoạn** (node 20 build `app-delicare-client` → nginx 1.27 alpine) – server chỉ cần `git pull` + `up --build`; không sửa code FE (D-49). | Dev FE build sẵn rồi chép `dist` lên server. |
