@@ -81,6 +81,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 ## 3. LUẬT CỨNG – không bao giờ vi phạm
 
 ### 3.1 Cơ sở dữ liệu (yêu cầu gốc của PO, giữ nguyên văn)
+0. **Phiên bản chuẩn = SQL Server 2022, mức tương thích 160 (D-61).** Máy anh chạy SQL Server 2025 nhưng DB dev đặt `COMPATIBILITY_LEVEL = 160`; máy dev FE, server test, production là 2022. **Chỉ dùng cú pháp có trong 2022** – cấm (trong SQL, SP, seed và SQL inline trong C#): kiểu `json`, `vector`; `REGEXP_*`; `JSON_OBJECTAGG` / `JSON_ARRAYAGG` / `JSON_CONTAINS`; `EDIT_DISTANCE*`, `JARO_WINKLER_*`; `UNISTR`, `PRODUCT()`, `BASE64_ENCODE` / `BASE64_DECODE`, `CURRENT_DATE`, toán tử nối `||`; `AI_GENERATE_*`, `VECTOR_*`, `sp_invoke_external_rest_endpoint`. Mức 160 **không chặn hết** các hàm này (một số hàm regex vẫn chạy ở mọi mức) → test quét mã (T48.5) là chốt chặn. **Không chuyển dữ liệu giữa các máy bằng `.bak`** (bản 2025 không khôi phục được trên 2022) – chỉ bằng script (`deploy/db/scripts.order`).
 1. SQL Server, **chỉ schema `dbo`**. **"Không tự tạo schema dm, vh, ht, bc"**.
 2. **"Không tự tạo Foreign Key vật lý"**. Quan hệ kiểm tra ở tầng Service.
 3. **"Không tạo bảng RecipeVersion"**.
