@@ -250,6 +250,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 4. Viết kế hoạch ngắn (3–8 bước) vào PROGRESS dưới tiêu đề task, rồi làm.
 5. **Rà soát code cũ trước khi viết** (mục 4.1): tìm Controller / Service / SP / Request / ViewModel của entity và các service liên quan; ghi vào kế hoạch "đã có gì – bổ sung gì – ở file nào". Có rồi thì dùng lại / bổ sung vào đúng file đó. Đối chiếu bảng/cột với `DB_SCHEMA_124.md` **trước khi** viết entity, query hay DTO.
 6. Build và test. Sửa tới khi xanh. Không tắt test để cho qua.
+   - **Trước mỗi lần gộp `main` (D-61, T48.5):** test `SqlServer2022CompatibilityTests` xanh **và** kiểm trên SQL Server 2022 thật (Docker – `deploy/README.md` mục 11: DB trống → `db-init` 2 lần → `full-flow.http` đạt); ghi kết quả vào PROGRESS. Máy chưa có Docker → ghi rõ "chưa kiểm 2022 thật" khi báo anh.
 7. Tự rà lại theo **tiêu chí nghiệm thu** của task. Đánh dấu từng tiêu chí đạt hay chưa.
 8. Cập nhật:
    - ROADMAP: đổi trạng thái task (`TODO` → `DONE` / `BLOCKED`).
