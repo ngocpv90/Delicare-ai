@@ -149,5 +149,24 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE3.1 (Catalog 157): tổng hợp hao hụt cho biểu đồ (from / to – mặc định 30 ngày, groupBy = wasteType | dish | shift | date) – suất, kg, giá trị theo giá thành chuẩn.</summary>
+        [HttpGet("GetSummary")]
+        public async Task<IActionResult> GetSummary([FromQuery] MealWasteSummaryRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetSummary(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSummary: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

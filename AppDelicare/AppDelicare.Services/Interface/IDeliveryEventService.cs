@@ -14,5 +14,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(DeliveryEventRequest request, string typeSave);
         public IResults<DeliveryEvent> GetAllData();
         public Task<IResult<DeliveryEvent>> GetById(Guid id);
+        /// <summary>BE3.1 (Catalog 193): vị trí xe theo sự kiện của 1 ngày giao.</summary>
+        public Task<IResult<AppDelicare.Model.Model.VehiclePositionModel>> GetVehiclePositions(AppDelicare.Model.Request.Custom.VehiclePositionRequest request);
+        /// <summary>BE3.1 (Catalog 193): tài xế ghi vị trí hiện tại của chuyến (DeliveryEvent POSITION).</summary>
+        public Task<IResult<AppDelicare.Model.Model.DeliveryEventItemModel>> RecordPosition(AppDelicare.Model.Request.Custom.DeliveryPositionRequest request);
     }
 }

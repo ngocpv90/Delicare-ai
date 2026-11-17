@@ -481,6 +481,12 @@
             public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
             public static readonly string ApprovalCancelOnlyRequester = "Chỉ người gửi yêu cầu được hủy";
             public static readonly string ApprovalCancelReasonRequired = "Phải ghi lý do hủy yêu cầu duyệt";
+            // BE3.1 – biểu đồ, sự kiện giao, vị trí xe.
+            public static readonly string ChartRangeInvalid = "Khoảng thời gian không hợp lệ: từ phải trước đến, tối đa {0} ngày";
+            public static readonly string ChartGroupByInvalid = "Nhóm theo không hợp lệ ({0}) – dùng wasteType, dish, shift hoặc date";
+            public static readonly string StorageZoneNotFound = "Không tìm thấy khu vực kho";
+            public static readonly string DeliveryPositionInvalid = "Tọa độ không hợp lệ (vĩ độ -90…90, kinh độ -180…180)";
+            public static readonly string DeliveryPositionRouteNotRunning = "Chỉ ghi vị trí khi chuyến đang xếp hàng / đang giao (hiện tại: {0})";
             // T23 – job tự động (D-48).
             public static readonly string JobNotFound = "Không có job '{0}'. Các job: {1}";
             public static readonly string JobUserMissing = "Chưa cấu hình tài khoản chạy job (SystemUsers:JobUserId) – job không được ghi dữ liệu";

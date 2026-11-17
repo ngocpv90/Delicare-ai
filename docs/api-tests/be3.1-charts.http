@@ -1,0 +1,130 @@
+### DELICARE – BE3.1: BIỂU ĐỒ + SỰ KIỆN GIAO (đợt BE-3, D-57) – khung cũ D-30.
+### Đối soát + biểu đồ Đặt – Giao – Nhận theo ngày ăn (Catalog 100) → tổng hợp hao hụt (157) → chuỗi nhiệt độ khu vực kho (163)
+### → timeline sự kiện đơn giao (192) → vị trí xe theo sự kiện + tài xế ghi vị trí (193, GAP-F-05: không phải GPS liên tục).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Dùng dữ liệu [DEMO] đã có trên DB dev (chạy full-flow.http trước ít nhất 1 lần):
+### đối soát / hao hụt / nhiệt độ / chuyến giao quanh tháng 11–12/2026. Không cần SP / seed mới.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Dòng "# @expect …" là kiểm số liệu cho trình chạy tự động (REST Client bỏ qua).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@from = 2026-11-01
+@to = 2026-12-31
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 1. ĐỐI SOÁT + BIỂU ĐỒ (Catalog 100)
+### 1.1 Danh sách + chart theo ngày ăn (đủ 61 ngày, ngày không có = 0) + statusCounts
+# @expect data.totalRecords >= 1
+# @expect data.chart length == 61
+# @expect data.from ~ ^2026-11-01
+GET {{base}}/api/OrderReconciliation/GetList?From={{from}}&To={{to}}&Page=1&PageSize=20
+Authorization: Bearer {{token}}
+
+### 1.2 Lọc trạng thái Đóng + tìm theo số đơn / tên khách
+GET {{base}}/api/OrderReconciliation/GetList?From={{from}}&To={{to}}&Status=Closed&SearchText=PH-
+Authorization: Bearer {{token}}
+
+### 1.3 → 400 (từ sau đến)
+GET {{base}}/api/OrderReconciliation/GetList?From=2026-12-31&To=2026-11-01
+Authorization: Bearer {{token}}
+
+### 1.4 → 400 (quá 366 ngày)
+GET {{base}}/api/OrderReconciliation/GetList?From=2025-01-01&To=2026-12-31
+Authorization: Bearer {{token}}
+
+########## 2. TỔNG HỢP HAO HỤT (Catalog 157)
+### 2.1 Theo loại hao hụt (mặc định) – suất, kg, giá trị theo giá thành chuẩn
+# @expect data.groupBy == wasteType
+# @expect data.totalMeals >= 0
+GET {{base}}/api/MealWasteRecord/GetSummary?From={{from}}&To={{to}}
+Authorization: Bearer {{token}}
+
+### 2.2 Theo món
+# @expect data.groupBy == dish
+GET {{base}}/api/MealWasteRecord/GetSummary?From={{from}}&To={{to}}&GroupBy=dish
+Authorization: Bearer {{token}}
+
+### 2.3 Theo ca
+# @expect data.groupBy == shift
+GET {{base}}/api/MealWasteRecord/GetSummary?From={{from}}&To={{to}}&GroupBy=shift
+Authorization: Bearer {{token}}
+
+### 2.4 Theo ngày
+# @expect data.groupBy == date
+GET {{base}}/api/MealWasteRecord/GetSummary?From={{from}}&To={{to}}&GroupBy=date
+Authorization: Bearer {{token}}
+
+### 2.5 → 400 (nhóm theo không hỗ trợ)
+GET {{base}}/api/MealWasteRecord/GetSummary?GroupBy=customer
+Authorization: Bearer {{token}}
+
+########## 3. CHUỖI NHIỆT ĐỘ KHU VỰC KHO (Catalog 163)
+### 3.1 Lấy 1 khu vực kho
+# @name zone
+GET {{base}}/api/StorageZone/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.2 Chuỗi 31 ngày (ngưỡng khu vực + điểm; quá 2 000 lần đo thì gộp theo phút)
+# @expect data.storageZoneId == {{zone.response.body.listData[0].id}}
+# @expect data.measurementCount >= 0
+GET {{base}}/api/TemperatureLog/GetSeries?StorageZoneId={{zone.response.body.listData[0].id}}&From=2026-11-01T00:00&To=2026-12-01T23:59
+Authorization: Bearer {{token}}
+
+### 3.3 Mặc định 48 giờ gần nhất
+GET {{base}}/api/TemperatureLog/GetSeries?StorageZoneId={{zone.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.4 → 400 (quá 31 ngày)
+GET {{base}}/api/TemperatureLog/GetSeries?StorageZoneId={{zone.response.body.listData[0].id}}&From=2026-10-01&To=2026-12-31
+Authorization: Bearer {{token}}
+
+### 3.5 → 400 (khu vực không có)
+GET {{base}}/api/TemperatureLog/GetSeries?StorageZoneId=00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+########## 4. TIMELINE SỰ KIỆN ĐƠN GIAO (Catalog 192)
+### 4.1 Lấy 1 đơn giao
+# @name dorder
+GET {{base}}/api/DeliveryOrder/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 4.2 Timeline: sự kiện của đơn + điểm dừng + cấp chuyến (xếp hàng, xuất phát…), theo thời gian
+GET {{base}}/api/DeliveryOrder/GetEvents?id={{dorder.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 4.3 → 400 (đơn giao không có)
+GET {{base}}/api/DeliveryOrder/GetEvents?id=00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+
+########## 5. VỊ TRÍ XE THEO SỰ KIỆN (Catalog 193)
+### 5.1 Vị trí theo sự kiện của ngày giao 01/12/2026 (+ vị trí mới nhất mỗi chuyến)
+# @expect data.deliveryDate ~ ^2026-12-01
+GET {{base}}/api/DeliveryEvent/GetVehiclePositions?DeliveryDate=2026-12-01
+Authorization: Bearer {{token}}
+
+### 5.2 → 400 (thiếu ngày giao)
+GET {{base}}/api/DeliveryEvent/GetVehiclePositions
+Authorization: Bearer {{token}}
+
+### 5.3 → 400 (chuyến không có) – tài xế ghi vị trí: POST DeliveryEvent/RecordPosition (routeId, latitude, longitude, note) khi chuyến Đang xếp / Đang giao
+POST {{base}}/api/DeliveryEvent/RecordPosition
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+routeId=00000000-0000-0000-0000-000000000001&latitude=10.776&longitude=106.700&note=[DEMO]
+
+### 5.4 → 400 (tọa độ sai)
+POST {{base}}/api/DeliveryEvent/RecordPosition
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+routeId={{dorder.response.body.listData[0].deliveryRouteId}}&latitude=95&longitude=106.700

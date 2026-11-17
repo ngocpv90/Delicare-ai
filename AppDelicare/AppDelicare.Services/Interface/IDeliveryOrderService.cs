@@ -23,5 +23,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<DeliveryOrderActionModel>> Split(DeliveryOrderSplitRequest request);
         public Task<IResult<DeliveryOrderActionModel>> AssignRoute(DeliveryOrderAssignRouteRequest request);
         public Task<IResult<DeliveryOrderActionModel>> Cancel(DeliveryOrderCancelRequest request);
+        /// <summary>BE3.1 (Catalog 192): timeline sự kiện giao của 1 đơn giao.</summary>
+        public Task<IResults<AppDelicare.Model.Model.DeliveryEventItemModel>> GetEvents(Guid id);
     }
 }

@@ -303,6 +303,75 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BE3.1 (Catalog 163, spec 9.3 temperature-logs/series): chuỗi nhiệt độ của 1 khu vực kho (StorageZoneId của lần đo) trong [from, to]
+        /// (mặc định 48 giờ tới bây giờ, tối đa 31 ngày – BusinessRules:Charts). Ngưỡng = StorageZone.TemperatureMin / Max. Quá <c>TemperatureMaxPoints</c>
+        /// lần đo → gộp theo khoảng N phút (trung bình, min / max, đạt khi mọi lần đo trong khoảng đạt – điểm vượt ngưỡng không bị "làm mờ").
+        /// </summary>
+        public async Task<IResult<TemperatureSeriesModel>> GetSeries(TemperatureSeriesRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var zone = await db.StorageZone.AsNoTracking().FirstOrDefaultAsync(z => z.Id == request.StorageZoneId && !z.IsDeleted);
+                if (zone == null)
+                {
+                    return Result<TemperatureSeriesModel>.Fail(ConstantHelper.Message.StorageZoneNotFound);
+                }
+                var charts = _rules.Charts;
+                DateTime to = request.To ?? (request.From?.AddHours(charts.TemperatureDefaultHours) ?? _clock.Now);
+                DateTime from = request.From ?? to.AddHours(-charts.TemperatureDefaultHours);
+                if (from >= to || (to - from).TotalDays > charts.TemperatureMaxRangeDays)
+                {
+                    return Result<TemperatureSeriesModel>.Fail(string.Format(ConstantHelper.Message.ChartRangeInvalid, charts.TemperatureMaxRangeDays));
+                }
+                var logs = await db.TemperatureLog.AsNoTracking()
+                    .Where(t => !t.IsDeleted && t.StorageZoneId == zone.Id && t.MeasuredAt >= from && t.MeasuredAt <= to)
+                    .OrderBy(t => t.MeasuredAt)
+                    .Select(t => new { t.MeasuredAt, t.TemperatureC, t.IsWithinRange })
+                    .ToListAsync();
+                var model = new TemperatureSeriesModel
+                {
+                    StorageZoneId = zone.Id,
+                    ZoneCode = zone.Code,
+                    ZoneName = zone.Name,
+                    TemperatureMin = zone.TemperatureMin,
+                    TemperatureMax = zone.TemperatureMax,
+                    From = from,
+                    To = to,
+                    MeasurementCount = logs.Count,
+                    OutOfRangeCount = logs.Count(t => t.IsWithinRange == false),
+                };
+                int maxPoints = Math.Max(10, charts.TemperatureMaxPoints);
+                if (logs.Count <= maxPoints)
+                {
+                    model.Points = logs.Select(t => new TemperaturePointModel { MeasuredAt = t.MeasuredAt, TemperatureC = t.TemperatureC, IsWithinRange = t.IsWithinRange }).ToList();
+                    return Result<TemperatureSeriesModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+                }
+                int bucket = Math.Max(1, (int)Math.Ceiling((to - from).TotalMinutes / maxPoints));
+                model.BucketMinutes = bucket;
+                model.Points = logs
+                    .GroupBy(t => from.AddMinutes(Math.Floor((t.MeasuredAt - from).TotalMinutes / bucket) * bucket))
+                    .Select(g => new TemperaturePointModel
+                    {
+                        MeasuredAt = g.Key,
+                        TemperatureC = Math.Round(g.Average(t => t.TemperatureC), 2),
+                        MinC = g.Min(t => t.TemperatureC),
+                        MaxC = g.Max(t => t.TemperatureC),
+                        IsWithinRange = g.Any(t => t.IsWithinRange == false) ? false : g.All(t => t.IsWithinRange == true) ? true : null,
+                        Count = g.Count(),
+                    })
+                    .OrderBy(p => p.MeasuredAt)
+                    .ToList();
+                return Result<TemperatureSeriesModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSeries: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResult<TemperatureLog>> GetById(Guid id)
         {
             try

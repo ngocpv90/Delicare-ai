@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-17: BE3.1 DONE – biểu đồ + sự kiện giao** (đợt BE-3, D-57) trên nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ 8e12696, chưa push): Catalog 100 / 157 / 163 / 192 / 193; test **264 / 264**; `be3.1-charts.http` **22 / 22** trên DB dev. PROPOSED D-57 (j)–(n). Tiếp theo: BE3.2 IoT nhiệt độ.
 - **2026-11-17: T23.1 DONE – Job tự động** trên nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ f648505, chưa push / chưa gộp): project mới `AppDelicare.Job` (D-48) + 5 job LockOrders 20:00 / Mrp 20:30 (+ đề nghị mua) / LotExpiry 00:15 / ContractExpiry 00:30 / MarkAbsent 08:00, `api/Job/GetAll` / `Run` (admin), `Contract/ExpireOverdue`; seed user `system`; test **258 / 258**; `t23-jobs.http` 6 / 6 trên DB dev. PROPOSED D-59. Anh chỉ đạo 2026-11-17: **chỉ làm backend** (không FE).
 - **2026-11-17: Đã gộp + push** BE2.9 và BE2.7.1 vào `release/pilot` = `main` (`81bcf3a`); test 245 / 245. **Staging cập nhật bản có PDF** (`Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging`): `full-flow.http` **217 / 217** trên staging (`@key=B272`, `@day=2026-12-15` – ngày 2026-12-01 đã dùng ở lần chạy BE2.9, kế hoạch SX đã Hoàn thành nên không chạy lại được), 6 mẫu in + `Common/PrintBatch` trả `application/pdf`; chạy xong đã dừng API staging. Dữ liệu thử còn lại trên staging: mã `DEMOB29S…`, `DEMOB271…` (lần chạy lỗi giữa chừng vì trùng ngày), `DEMOB272…`. **Còn 0 task backend BE-2**; tiếp theo: GHEP-FE (khi anh yêu cầu) → UAT toàn luồng → T48.2.
 - **2026-11-17: BE2.9 DONE – ĐỢT BE-2 XONG (BE2.1–BE2.7 + BE2.9; BE2.8 để sau D-45). Dừng, chờ anh duyệt** – nhánh `feat/BE2.9-full-flow` (worktree `wt-BE29`, từ `release/pilot` @ 7b0fc43, chưa push / chưa gộp `main`): `full-flow.http` (toàn luồng R1, 216 request / 22 chốt / 60 kiểm số liệu) **216 / 216 trên DB dev và trên staging**; chạy lại `pilot-flow` + `be2.1…be2.7` đều đạt; test **243 / 243** (+ FullFlowSqlServerTests, MissingDateParameterTests); sửa 1 lỗi (6 bảng điều hành thiếu ngày → HTTP 500); staging `AppDelicare_Staging` / `http://localhost:5200` đã cập nhật + smoke 49 / 49 rồi **dừng**. Danh sách PROPOSED / GAP cần anh chốt (thư viện PDF, cột `DeliveryOrder.MealQuantity`, User ↔ Employee, cột liên kết DocumentFile, D-53…D-56): mục BE2.9 cuối file.
@@ -1779,3 +1780,25 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`):
 | 121 | Đã xong | Job `LotExpiry` 00:15 (`MaterialLot/ProcessExpired`) | T23 |
 | 97 (phần job 20:00) | Đã xong | Job `LockOrders` 20:00 (`Order/LockByMealDate`) | T23 |
 | 106 / 107 (phần job 20:30 / 21:00) | Đã xong | Job `Mrp` 20:30 (`MaterialRequirement/Calculate` – tạo đề nghị mua) | T23 |
+
+### BE3.1 – Biểu đồ + sự kiện giao (Catalog 100, 157, 163, 192, 193) · 2026-11-17 · DONE
+Nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ `8e12696` = sau gộp T23), chưa push. Đợt BE-3 theo CLAUDE.md / ROADMAP (anh chốt D-57; D-58 không tra cứu cấu trúc DB – BE3.1 không trả tên bảng / cột).
+
+**Đã làm (khung cũ, không bảng / cột / SP / seed mới)**
+- **100** `OrderReconciliation/GetList` (query from / to theo ngày ăn – mặc định 30 ngày, status, customerId, searchText, page): danh sách đối soát + `chart` Đặt – Giao – Nhận theo ngày ăn (đủ mọi ngày, 0 khi trống, theo đúng bộ lọc) + `statusCounts` (trước lọc trạng thái).
+- **157** `MealWasteRecord/GetSummary` (from / to, groupBy = wasteType | dish | shift | date): suất, kg, giá trị = suất × `StandardCost.CostPerServing` (bản hiệu lực theo ngày), `recordsWithoutCost`.
+- **163** `TemperatureLog/GetSeries` (storageZoneId, from / to – mặc định 48 giờ, tối đa 31 ngày): ngưỡng khu vực + điểm; > 2 000 lần đo → gộp theo phút (trung bình, min / max, vượt ngưỡng vẫn giữ).
+- **192** `DeliveryOrder/GetEvents` (id): timeline sự kiện của đơn + điểm dừng của đơn + cấp chuyến, có số chuyến / biển số / tài xế / thứ tự điểm / người ghi / nhãn loại.
+- **193** `DeliveryEvent/GetVehiclePositions` (deliveryDate, routeId?): vị trí theo sự kiện có tọa độ (GAP-F-05) + vị trí mới nhất mỗi chuyến; `DeliveryEvent/RecordPosition` (tài xế ghi, EventType mới `POSITION`, chỉ chuyến Đang xếp / Đang giao).
+- Dùng chung: `ChartRules` (khoảng ngày, dòng sự kiện giao), `BusinessRules:Charts` (PROPOSED), `DeliveryCode.EventLabel`.
+
+**Kiểm tra:** build 0 lỗi; test **264 / 264** (+6 `Charts/ChartTests.cs`); `docs/api-tests/be3.1-charts.http` **22 / 22** trên DB dev (SQL Server – số thật: 12 đối soát, biểu đồ 1000 / 1000 / 990 mỗi ngày có đơn; hao hụt 33 suất = 66 000 đ); ghi vị trí thật trên chuyến Đang giao `[DEMO]` rồi đọc lại; gọi không token → 401.
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`, cột N = BE-3):
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 100 | Đã xong | `GET api/OrderReconciliation/GetList` (+ chart, statusCounts) | BE3.1 |
+| 157 | Đã xong | `GET api/MealWasteRecord/GetSummary` | BE3.1 |
+| 163 | Đã xong | `GET api/TemperatureLog/GetSeries` | BE3.1 |
+| 192 | Đã xong | `GET api/DeliveryOrder/GetEvents` | BE3.1 |
+| 193 | Đã xong | `GET api/DeliveryEvent/GetVehiclePositions` + `POST api/DeliveryEvent/RecordPosition` | BE3.1 |
