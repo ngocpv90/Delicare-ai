@@ -10,6 +10,7 @@
 ### BE2.2 (2026-11-17): thêm bước gửi duyệt + duyệt 2 hợp đồng (CRUD Insert luôn Nháp). Đã chạy lại trên DB dev (key B22C, ngày 09/12/2026): 142 / 142 đúng kỳ vọng (11 chốt). Lưu ý: @day ≤ hôm nay + 60 ngày (lô tồn đầu kỳ hạn dùng +60 ngày – quá hạn thì MRP đề nghị cả gà, không có NCC).
 ### BE2.3 (2026-11-17): thêm bước duyệt STOCK_ADJUSTMENT sau 2 lần điều chỉnh tồn đầu kỳ, và duyệt đề nghị mua 2 cấp (D-46) trước khi lập PO (2.5b–d).
 ###   Đã chạy lại trên DB dev (key B23G, ngày 31/12/2026): 147 / 147 đúng kỳ vọng.
+### BE2.4 (2026-11-17): không đổi bước (giữ chỗ khi phát hành không chặn luồng). Đã chạy lại trên DB dev (key B24G, ngày 15/12/2026): 147 / 147 đúng kỳ vọng.
 @base = http://localhost:5125
 @user = admin
 @password = admin

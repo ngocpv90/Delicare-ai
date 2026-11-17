@@ -8,6 +8,7 @@
 ### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
 ### Đã chạy trên DB dev 2026-11-17 (key B23A): 58 / 58 đúng kỳ vọng (8 chốt an toàn trả 400).
 ### Trước khi chạy: seed DB/seed/ObjectMenu_seed.sql + UserRole_seed.sql bản BE2.3 (mục scm-pr-l1 / scm-pr-l2 / scm-stockcount-l2) – deploy/db/scripts.order.
+### BE2.4 (2026-11-17): không đổi bước. Đã chạy lại trên DB dev (key B24E): 58 / 58 đúng kỳ vọng.
 @base = http://localhost:5125
 @user = admin
 @password = admin

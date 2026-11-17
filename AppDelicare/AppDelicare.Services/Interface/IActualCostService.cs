@@ -14,5 +14,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(ActualCostRequest request, string typeSave);
         public IResults<ActualCost> GetAllData();
         public Task<IResult<ActualCost>> GetById(Guid id);
+        // BE2.4 (spec 8.5 GET actual-costs, Catalog 152).
+        public Task<IResult<AppDelicare.Model.Model.ActualCostListModel>> GetList(AppDelicare.Model.Request.Custom.ActualCostListRequest request);
     }
 }

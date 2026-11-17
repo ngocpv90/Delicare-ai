@@ -184,5 +184,24 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.4 (spec 7.5 LotExpiryJob – D-45 thao tác tay): lô hết hạn → Hết hạn + WASTE toàn bộ tồn; Preview = chỉ liệt kê.</summary>
+        [HttpPost("ProcessExpired")]
+        public async Task<IActionResult> ProcessExpired([FromForm] MaterialLotExpireRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.ProcessExpired(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ProcessExpired: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

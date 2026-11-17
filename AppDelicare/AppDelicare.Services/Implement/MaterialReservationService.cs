@@ -127,26 +127,13 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(MaterialReservationRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<MaterialReservation>(request);
-            _unitOfWork.MaterialReservationRepository.Add(insert);
-            await _unitOfWork.MaterialReservationRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.4: Giữ chỗ nguyên liệu chỉ sinh / cập nhật qua nghiệp vụ (ProductionPlan/Release, ProductionOrder/Reserve) – CRUD Insert không ghi.</summary>
+        private Task<string> Insert(MaterialReservationRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giữ chỗ nguyên liệu", "ProductionPlan/Release, ProductionOrder/Reserve"));
 
-        private async Task<string> Update(MaterialReservationRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.MaterialReservationRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.MaterialReservationRepository.Update(update);
-            await _unitOfWork.MaterialReservationRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>BE2.4: Giữ chỗ nguyên liệu chỉ sinh / cập nhật qua nghiệp vụ (ProductionPlan/Release, ProductionOrder/Reserve) – CRUD Update không ghi.</summary>
+        private Task<string> Update(MaterialReservationRequest request, string typeSave)
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giữ chỗ nguyên liệu", "ProductionPlan/Release, ProductionOrder/Reserve"));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {

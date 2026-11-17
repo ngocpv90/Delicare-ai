@@ -14,5 +14,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(MaterialConsumptionVarianceRequest request, string typeSave);
         public IResults<MaterialConsumptionVariance> GetAllData();
         public Task<IResult<MaterialConsumptionVariance>> GetById(Guid id);
+        // BE2.4 (spec 7.9, Catalog 135).
+        public Task<IResults<AppDelicare.Model.Model.ConsumptionVarianceModel>> GetList(AppDelicare.Model.Request.Custom.ConsumptionVarianceListRequest request);
     }
 }

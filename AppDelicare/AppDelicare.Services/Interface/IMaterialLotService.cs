@@ -23,5 +23,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<MaterialLot>> Hold(MaterialLotHoldRequest request);
         /// <summary>T16: mở lô tạm giữ (OnHold → Available).</summary>
         public Task<IResult<MaterialLot>> Release(MaterialLotHoldRequest request);
+        /// <summary>BE2.4 (spec 7.5 LotExpiryJob – D-45 thao tác tay): lô hết hạn → Hết hạn + bút toán WASTE toàn bộ tồn; lô sắp hết hạn → cảnh báo.</summary>
+        public Task<IResult<AppDelicare.Model.Model.LotExpiryResultModel>> ProcessExpired(MaterialLotExpireRequest request);
     }
 }

@@ -122,6 +122,29 @@ namespace AppDelicare.Model.Option
         public bool PurchaseOrderDirectorTwoLevel { get; set; }
         /// <summary>BE2.3 (spec 7.6 adjust, GAP-F-04): điều chỉnh tồn tay phải duyệt STOCK_ADJUSTMENT trước khi ghi sổ. false = ghi ngay như T16.</summary>
         public bool StockAdjustmentRequireApproval { get; set; } = true;
+
+        // ------------------------------------------------------------ BE2.4 – kho & sản xuất mở rộng (PROPOSED – BA/PO CONFIRM, D-53)
+        /// <summary>BE2.4 (spec 8.1 release bước 4, Catalog 126): phát hành kế hoạch thì giữ chỗ nguyên liệu (MaterialReservation) cho lệnh SX mới. false = không giữ chỗ (như T17).</summary>
+        public bool ProductionReserveOnRelease { get; set; } = true;
+        /// <summary>BE2.4 (spec 7.1 bước 5): MRP trừ hàng sắp về từ PO Đã duyệt / Đã gửi / Nhận một phần có ngày giao dự kiến ≤ ngày sản xuất (trừ phần đã nhận).</summary>
+        public bool MrpIncludeIncomingPurchaseOrders { get; set; } = true;
+        /// <summary>
+        /// BE2.4 (T17 công đoạn theo tổ): true = mọi mẻ bắt buộc đi qua công đoạn (Sơ chế → Nấu → Chia suất) – nấu xong cần công đoạn Nấu xong, đóng gói cần Chia suất xong.
+        /// Mặc định false = chỉ kiểm khi mẻ đã bắt đầu ghi công đoạn (mẻ không ghi công đoạn chạy như T17).
+        /// </summary>
+        public bool ProductionRequireStages { get; set; }
+        /// <summary>BE2.4: tổ mặc định của từng công đoạn (ItemCode mục checklist PRD_STAGE → OrganizationUnit.Code loại TEAM, ORG_STRUCTURE.md).</summary>
+        public Dictionary<string, string> ProductionStageTeams { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["SO_CHE"] = "OPS-KIT-PREP", ["NAU"] = "OPS-KIT-COOK", ["COM_CANH"] = "OPS-KIT-RICE", ["CHIA_SUAT"] = "OPS-KIT-PORT",
+        };
+        /// <summary>
+        /// BE2.4 (spec 8.5: LaborCost = giờ công × đơn giá, chưa có bảng lương): đơn giá 1 giờ công (VND). &gt; 0 và mẻ có ghi công đoạn → nhân công = Σ giờ công đoạn × số người × đơn giá;
+        /// còn lại nhân công = số phần nấu được × <see cref="RecipeLaborCostPerServing"/>.
+        /// </summary>
+        public decimal ProductionLaborCostPerHour { get; set; }
+        /// <summary>BE2.4 (spec 7.9): |chênh lệch tiêu hao| % vượt ngưỡng này → đánh dấu <c>isOverThreshold</c> (không chặn đóng lệnh).</summary>
+        public decimal ConsumptionVariancePctWarning { get; set; } = 5.0m;
     }
 
     /// <summary>T15.1: ngưỡng nhiệt độ nhận hàng của 1 kiểu bảo quản (°C).</summary>

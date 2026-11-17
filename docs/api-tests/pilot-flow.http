@@ -12,6 +12,8 @@
 ###   Đã chạy lại trên DB dev 2026-11-17 (key B21B, ngày 16/12/2026): 121 request đúng kỳ vọng (mọi bước "→ 400" trả 400, thêm chốt "đóng gói trực tiếp mẻ còn lệnh đóng gói").
 ### BE2.2 (2026-11-17): hợp đồng CRUD Insert luôn Nháp → thêm bước 0.9b gửi duyệt + duyệt. Đã chạy lại trên DB dev (key B22A, ngày 20/01/2027): 123 request đúng kỳ vọng (8 chốt an toàn; 4 bước xuất file .xlsx).
 ### BE2.3 (2026-11-17): điều chỉnh tồn tay phải duyệt STOCK_ADJUSTMENT (thêm bước Decide sau mỗi Adjust); đề nghị mua do MRP lập phải duyệt 2 cấp (D-46: scm-pr-l1 → scm-pr-l2)
+### BE2.4 (2026-11-17): giữ chỗ nguyên liệu khi phát hành (xuất cho mẻ dùng phần đã giữ – không đổi bước); thêm P9 đóng lệnh SX + giá thành thực tế + giá vốn suất.
+###   Đã chạy trên DB dev (key B24Q, ngày 11/12/2026): 136 / 136 đúng kỳ vọng.
 ###   trước khi lập PO (P6.0a–f; admin chạy thay cả 2 cấp – admin được miễn luật "mỗi cấp 1 người").
 ###   Đã chạy lại trên DB dev 2026-11-17 (key B23P, ngày 03/02/2027): 131 / 131 đúng kỳ vọng (9 chốt an toàn).
 @base = http://localhost:5125
@@ -955,4 +957,32 @@ Authorization: Bearer {{token}}
 
 ###
 GET {{base}}/api/CustomerComplaint/GetAll?CustomerId={{customerId}}&Page=1&PageSize=10
+Authorization: Bearer {{token}}
+
+########## P9 (BE2.4). GIÁ THÀNH THỰC TẾ → ĐÓNG LỆNH SX → GIÁ VỐN SUẤT (Catalog 144, 152–154)
+### P9.1 Lệnh SX Hoàn thành của kế hoạch → đóng lệnh (chênh lệch tiêu hao + giá thành thực tế, giải phóng giữ chỗ dư)
+# @name poDone
+GET {{base}}/api/ProductionOrder/GetAll?ProductionPlanId={{planId}}&Status=Completed&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+POST {{base}}/api/ProductionOrder/Close
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{poDone.response.body.listData[0].id}}&Note=[DEMO]
+
+###
+GET {{base}}/api/ActualCost/GetList?From={{day}}&To={{day}}
+Authorization: Bearer {{token}}
+
+### P9.2 Giá vốn suất của đơn đã đối soát (suất nhận theo đối soát; giá / phần = giá thành thực tế lệnh SX phân bổ theo phần món của ngày / ca)
+POST {{base}}/api/MealCost/Calculate
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+OrderId={{orderId}}
+
+###
+GET {{base}}/api/MealCost/GetList?OrderId={{orderId}}
 Authorization: Bearer {{token}}

@@ -360,7 +360,8 @@ namespace AppDelicare.Services.Implement
         /// tồn xuất được / bị chặn, tồn an toàn, thiếu, NCC gợi ý + MOQ. <paramref name="extraIngredients"/> (nguyên liệu → đơn vị dự phòng): nguyên liệu
         /// phải có dòng kết quả dù không còn nhu cầu (CalculateTopUp – dòng nhu cầu / đề nghị mua cũ), nhu cầu = 0.
         /// </summary>
-        private async Task<(Computation? Data, string? Error)> ComputeAsync(DateTime date, Guid? unitId, Guid? warehouseId, IReadOnlyDictionary<Guid, Guid>? extraIngredients = null)
+        private async Task<(Computation? Data, string? Error)> ComputeAsync(DateTime date, Guid? unitId, Guid? warehouseId, IReadOnlyDictionary<Guid, Guid>? extraIngredients = null,
+            IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null)
         {
             var db = _unitOfWork.DbContext;
             // 2) Đơn đã chốt × thực đơn → món × suất.
@@ -574,6 +575,70 @@ namespace AppDelicare.Services.Implement
                 else
                 {
                     item.Blocked += converted.Value;
+                }
+            }
+            // BE2.4 (spec 7.1 bước 5): hàng sắp về = Σ dòng PO Đã duyệt / Đã gửi / Nhận một phần có ngày giao dự kiến ≤ ngày sản xuất, trừ phần đã nhận đạt
+            // (phiếu nhập đã ghi sổ – đã nằm trong tồn). PO chưa có ngày giao dự kiến → không tính, cảnh báo. PO lập từ đề nghị mua của chính kế hoạch (tính bổ sung) bỏ qua
+            // vì đã tính trong "đã đề nghị" (GAP-MRP-08). PROPOSED – BA/PO CONFIRM (D-53 b).
+            if (_rules.MrpIncludeIncomingPurchaseOrders)
+            {
+                var receivable = PurchaseOrderStatus.Receivable.ToList();
+                var pos = (await db.PurchaseOrder.AsNoTracking().Where(p => !p.IsDeleted && p.Status != null && receivable.Contains(p.Status)).ToListAsync())
+                    .Where(p => excludePurchaseRequestIds == null || p.PurchaseRequestId == null || !excludePurchaseRequestIds.Contains(p.PurchaseRequestId.Value)).ToList();
+                var poIds = pos.Select(p => p.Id).ToList();
+                var itemIds = items.Keys.ToList();
+                var poLines = await db.PurchaseOrderLine.AsNoTracking().Where(l => poIds.Contains(l.PurchaseOrderId) && !l.IsDeleted && itemIds.Contains(l.IngredientId)).ToListAsync();
+                var incomingPos = new List<string>();
+                foreach (var po in pos.Where(p => poLines.Any(l => l.PurchaseOrderId == p.Id)).OrderBy(p => p.PurchaseOrderNumber ?? p.PONo))
+                {
+                    string poNo = po.PurchaseOrderNumber ?? po.PONo ?? po.Id.ToString("N")[..8];
+                    DateTime? expected = po.ExpectedDeliveryDate ?? po.ExpectedDate;
+                    if (expected == null)
+                    {
+                        warnings.Add(string.Format(ConstantHelper.Message.MrpIncomingNoDate, poNo));
+                        continue;
+                    }
+                    if (expected.Value.Date > date)
+                    {
+                        continue;
+                    }
+                    var totals = await PurchasingRules.ReceiptTotalsAsync(db, po.Id);
+                    bool counted = false;
+                    foreach (var line in poLines.Where(l => l.PurchaseOrderId == po.Id))
+                    {
+                        decimal remaining = line.Quantity - (totals.TryGetValue(line.IngredientId, out var t) ? t.Received : 0m);
+                        if (remaining <= 0)
+                        {
+                            continue;
+                        }
+                        var item = items[line.IngredientId];
+                        Guid lineUnit = UnitOf(line.UnitId, line.UomId);
+                        decimal? converted = await converter.ConvertAsync(remaining, lineUnit, item.UnitId);
+                        if (converted == null)
+                        {
+                            string message = string.Format(ConstantHelper.Message.MrpUnitMissing, ingredients.GetValueOrDefault(line.IngredientId)?.Name, unitNames.GetValueOrDefault(lineUnit), unitNames.GetValueOrDefault(item.UnitId));
+                            if (!warnings.Contains(message))
+                            {
+                                warnings.Add(message);
+                                item.Warnings.Add(message);
+                            }
+                            continue;
+                        }
+                        item.Incoming += converted.Value;
+                        counted = true;
+                    }
+                    if (counted)
+                    {
+                        incomingPos.Add(poNo);
+                    }
+                }
+                foreach (var item in items.Values)
+                {
+                    item.Incoming = Round4(item.Incoming);
+                }
+                if (incomingPos.Count != 0)
+                {
+                    warnings.Add(string.Format(ConstantHelper.Message.MrpIncomingCounted, string.Join(", ", incomingPos)));
                 }
             }
             if (_rules.MrpIncludeSafetyStock)
@@ -1025,7 +1090,7 @@ namespace AppDelicare.Services.Implement
                 {
                     extras.TryAdd(line.IngredientId, UnitOf(line.UnitId, line.UomId));
                 }
-                var (calc, error) = await ComputeAsync(date, unitId, warehouseId, extras);
+                var (calc, error) = await ComputeAsync(date, unitId, warehouseId, extras, activeIds);
                 if (calc == null)
                 {
                     return Fail(error!);

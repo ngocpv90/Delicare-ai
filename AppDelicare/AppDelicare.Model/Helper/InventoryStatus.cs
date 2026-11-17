@@ -98,5 +98,31 @@ namespace AppDelicare.Model.Helper
         public const string StockCount = "StockCount";
         public const string ManualAdjustment = "ManualAdjustment";
         public const string Transfer = "Transfer";
+        /// <summary>BE2.4 (spec 7.5 LotExpiryJob → thao tác tay <c>MaterialLot/ProcessExpired</c>, D-45): bút toán WASTE hủy tồn lô hết hạn, ReferenceId = lô.</summary>
+        public const string LotExpiry = "LotExpiry";
+    }
+
+    /// <summary>
+    /// BE2.4 – giữ chỗ nguyên liệu cho lệnh SX (STATUS_CATALOG: MaterialReservation.Status, PROPOSED – BA/PO CONFIRM):
+    /// Reserved → PartiallyIssued → Issued → Released. <c>ReservedQuantity</c> = số còn đang giữ (giảm dần khi xuất); <c>RequiredQty</c> = số cần lúc giữ.
+    /// </summary>
+    public static class MaterialReservationStatus
+    {
+        public const string Reserved = "Reserved";
+        public const string PartiallyIssued = "PartiallyIssued";
+        public const string Issued = "Issued";
+        public const string Released = "Released";
+
+        /// <summary>Giữ chỗ còn hiệu lực (tính vào InventoryBalance.ReservedQuantity).</summary>
+        public static readonly IReadOnlyList<string> Open = [Reserved, PartiallyIssued];
+
+        public static string Label(string? status) => status switch
+        {
+            Reserved => "Đã giữ",
+            PartiallyIssued => "Đã xuất một phần",
+            Issued => "Đã xuất",
+            Released => "Đã giải phóng",
+            _ => status ?? string.Empty,
+        };
     }
 }

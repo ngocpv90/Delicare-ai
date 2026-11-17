@@ -22,8 +22,9 @@ namespace AppDelicare.Services.Implement
 {
     public class ProductionPlanService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
-        , IOptions<BusinessRulesOptions> rules) : IProductionPlanService
+        , IOptions<BusinessRulesOptions> rules, IUomConversionService uomConversionService) : IProductionPlanService
     {
+        private readonly IUomConversionService _uomConversionService = uomConversionService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -369,6 +370,7 @@ namespace AppDelicare.Services.Implement
                 string planNo = plan.PlanNumber ?? plan.PlanNo ?? string.Empty;
                 string firstOrderNo = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
                 int orderIndex = 0;
+                var newOrders = new List<ProductionOrder>();
                 foreach (var part in toRelease)
                 {
                     var shift = part.Shift;
@@ -406,6 +408,7 @@ namespace AppDelicare.Services.Implement
                             Note = orderNote,
                         };
                         _unitOfWork.ProductionOrderRepository.Add(order);
+                        newOrders.Add(order);
                         allBatches.AddRange(batches.Select(b => (order, dishNames.GetValueOrDefault(planLine.DishId) ?? string.Empty, b)));
                     }
                     int batchIndex = 0;
@@ -466,7 +469,17 @@ namespace AppDelicare.Services.Implement
                     customerOrder.Status = OrderStatus.InProduction;
                     _unitOfWork.OrderRepository.Update(customerOrder);
                 }
+                // 5) BE2.4 (spec 8.1 bước 4, Catalog 126): giữ chỗ nguyên liệu cho các lệnh SX vừa phát hành – thiếu vẫn phát hành, trả cảnh báo (D-53 a).
+                HashSet<Guid> reservedIngredients = [];
+                if (_rules.ProductionReserveOnRelease)
+                {
+                    var (touched, reserveWarnings) = await ReservationRules.ReserveAsync(db, _uomConversionService, newOrders, date, _clock.Today, _rules,
+                        r => _unitOfWork.MaterialReservationRepository.Add(r));
+                    reservedIngredients = touched;
+                    warnings.AddRange(reserveWarnings);
+                }
                 await _unitOfWork.ProductionPlanRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                await ReservationRules.ReallocateAsync(db, reservedIngredients, _clock.Today);
                 _unitOfWork.CommitTransaction();
                 var detail = await DetailAsync(plan.Id);
                 detail!.ListWarning.AddRange(warnings);
@@ -708,6 +721,7 @@ namespace AppDelicare.Services.Implement
                 ListBatch = await ProductionRules.BatchBriefsAsync(db, batches, _rules),
                 DispatchAt = batches.Count == 0 ? null : batches.Max(b => b.EndDate ?? b.StartDate).AddMinutes(_rules.ProductionPackingMinutes),
                 ListShift = listShift,
+                ListReservation = orderIds.Count == 0 ? [] : await ReservationRules.ModelsAsync(db, orderIds),
                 AllowedActions = plan.Status switch
                 {
                     ProductionPlanStatus.Draft => ["approve"],

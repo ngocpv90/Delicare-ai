@@ -409,11 +409,16 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T17 (spec 8.3 finish): Đang nấu → Chờ QC, giờ xong thực tế (EndTime), số phần thực nấu (tùy chọn).</summary>
         public Task<IResult<ProductionBatchDetailModel>> Finish(ProductionBatchFinishRequest request)
-            => RunAsync(request.Id, "nấu xong", [ProductionBatchStatus.Cooking], (batch, order, actor, warnings) =>
+            => RunAsync(request.Id, "nấu xong", [ProductionBatchStatus.Cooking], async (batch, order, actor, warnings) =>
             {
                 if (request.ActualQuantity is < 0)
                 {
-                    return Task.FromResult<string?>(ConstantHelper.Message.OutputQuantityInvalid);
+                    return ConstantHelper.Message.OutputQuantityInvalid;
+                }
+                // BE2.4: mẻ đi theo công đoạn → công đoạn Nấu phải xong trước khi nấu xong mẻ.
+                if (await StageNotDoneAsync(batch, ProductionCode.StageCook))
+                {
+                    return string.Format(ConstantHelper.Message.StageCookNotDone, Number(batch));
                 }
                 batch.Status = ProductionBatchStatus.QcPending;
                 batch.EndTime = _clock.Now;
@@ -422,8 +427,16 @@ namespace AppDelicare.Services.Implement
                     batch.ActualQty = request.ActualQuantity;
                     batch.ActualQuantity = request.ActualQuantity;
                 }
-                return Task.FromResult<string?>(null);
+                return null;
             });
+
+        /// <summary>BE2.4: mẻ có ghi công đoạn (hoặc bắt buộc công đoạn) mà công đoạn <paramref name="stageCode"/> (có trong danh mục) chưa xong.</summary>
+        private async Task<bool> StageNotDoneAsync(ProductionBatch batch, string stageCode)
+        {
+            var stages = (await ProductionStageRules.StagesAsync(_unitOfWork.DbContext, [batch.Id], _rules))[batch.Id];
+            var stage = stages.FirstOrDefault(s => s.StageCode == stageCode);
+            return stage != null && ProductionStageRules.UsesStages(stages, _rules) && stage.Status != ProductionStageStatus.Done;
+        }
 
         /// <summary>
         /// T17 (BUSINESS_RULES §6): ghi nhiệt độ lõi – TemperatureLog CORE (sổ chỉ ghi thêm), MinAllowedC = CoreTempMinC (70 °C), IsWithinRange tính ở server.
@@ -674,6 +687,11 @@ namespace AppDelicare.Services.Implement
                 {
                     return string.Format(ConstantHelper.Message.BatchCannotPack, Number(batch), string.Join("; ", blockers));
                 }
+                // BE2.4: mẻ đi theo công đoạn → công đoạn Chia suất phải xong trước khi đóng gói.
+                if (await StageNotDoneAsync(batch, ProductionCode.StagePortion))
+                {
+                    return string.Format(ConstantHelper.Message.StagePortionNotDone, Number(batch));
+                }
                 // BE2.1: mẻ còn lệnh đóng gói chưa xong (Kế hoạch / Đang đóng gói) → hoàn tất bằng PackingOrder/RecordResult (mẻ tự Đã đóng gói khi chia hết và mọi lệnh
                 // đã đóng gói). Mọi lệnh đã xong mà mẻ còn phần dư chưa chia → được đóng gói mẻ trực tiếp (phần dư ghi hao hụt nấu dư nếu bỏ).
                 var packing = await _unitOfWork.DbContext.PackingOrder.AsNoTracking()
@@ -779,6 +797,23 @@ namespace AppDelicare.Services.Implement
                     _ => ["recordWaste", "exportProductionSheet"],
                 },
             };
+            // BE2.4: công đoạn theo tổ – thao tác startStage / finishStage khi mẻ chưa xong / chưa hủy và danh mục có công đoạn.
+            detail.ListStage = (await ProductionStageRules.StagesAsync(db, [batch.Id], _rules))[batch.Id];
+            if (detail.ListStage.Count != 0 && batch.Status is not (ProductionBatchStatus.Failed or ProductionBatchStatus.Cancelled))
+            {
+                if (detail.ListStage.Any(s => s.Status == ProductionStageStatus.NotStarted))
+                {
+                    detail.AllowedActions.Add("startStage");
+                }
+                if (detail.ListStage.Any(s => s.Status == ProductionStageStatus.InProgress))
+                {
+                    detail.AllowedActions.Add("finishStage");
+                }
+            }
+            if (batch.Status == ProductionBatchStatus.Cancelled)
+            {
+                detail.AllowedActions = [];
+            }
             // T17.1 (anh chốt 2026-11-16, D-42): mẻ Đã đóng gói chưa lưu mẫu vẫn ghi lưu mẫu được (bắt buộc trước khi xuất chuyến).
             if (batch.Status == ProductionBatchStatus.Packed && !detail.Batch.SampleRetained)
             {
@@ -817,6 +852,255 @@ namespace AppDelicare.Services.Implement
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " ExportProductionSheet: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.4 (T17 công đoạn theo tổ): bắt đầu 1 công đoạn của mẻ – ghi sự kiện STARTED (FoodSafetyChecklistResult, sổ ghi thêm) kèm tổ / người / trạm.
+        /// Không chuyển công đoạn khi công đoạn trước (bắt buộc, hoặc đã bắt đầu) chưa xong. Trước Nấu: mẻ Kế hoạch / Đang nấu; Nấu: mẻ Kế hoạch (tự chuyển Đang nấu) / Đang nấu;
+        /// giữa Nấu và Chia suất: Đang nấu / Chờ QC; Chia suất: chỉ mẻ Đạt QC (nhiệt độ lõi ≥ 70 °C đã kiểm); sau Chia suất: Đạt / Đã đóng gói. PROPOSED – BA/PO CONFIRM (D-53 e).
+        /// </summary>
+        public Task<IResult<ProductionBatchDetailModel>> StartStage(ProductionStageRequest request)
+            => RunAsync(request.Id, "bắt đầu công đoạn", [ProductionBatchStatus.Planned, ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed, ProductionBatchStatus.Packed],
+                async (batch, order, actor, warnings) =>
+                {
+                    var db = _unitOfWork.DbContext;
+                    var (checklist, items) = await ProductionStageRules.StageItemsAsync(db);
+                    if (checklist == null || items.Count == 0)
+                    {
+                        return ConstantHelper.Message.StageChecklistMissing;
+                    }
+                    string code = request.StageCode.Trim().ToUpperInvariant();
+                    var item = items.FirstOrDefault(i => string.Equals(i.ItemCode, code, StringComparison.OrdinalIgnoreCase));
+                    if (item == null)
+                    {
+                        return string.Format(ConstantHelper.Message.StageNotFound, code);
+                    }
+                    var stages = (await ProductionStageRules.StagesAsync(db, [batch.Id], _rules))[batch.Id];
+                    var stage = stages.First(s => s.StageCode == item.ItemCode);
+                    if (stage.Status != ProductionStageStatus.NotStarted)
+                    {
+                        return string.Format(ConstantHelper.Message.StageAlreadyStarted, item.ItemName, Number(batch), ProductionRules.Time(stage.StartedAt!.Value));
+                    }
+                    var pendingBefore = stages.Where(s => s.SortOrder < item.SortOrder && s.Status != ProductionStageStatus.Done
+                        && (s.IsRequired || s.Status == ProductionStageStatus.InProgress)).Select(s => s.StageName ?? s.StageCode).ToList();
+                    if (pendingBefore.Count != 0)
+                    {
+                        return string.Format(ConstantHelper.Message.StagePreviousNotDone, string.Join(", ", pendingBefore), item.ItemName);
+                    }
+                    int? cookOrder = items.FirstOrDefault(i => i.ItemCode == ProductionCode.StageCook)?.SortOrder;
+                    int? portionOrder = items.FirstOrDefault(i => i.ItemCode == ProductionCode.StagePortion)?.SortOrder;
+                    string[] allowed = portionOrder != null && item.SortOrder > portionOrder ? [ProductionBatchStatus.Passed, ProductionBatchStatus.Packed]
+                        : portionOrder != null && item.SortOrder == portionOrder ? [ProductionBatchStatus.Passed]
+                        : cookOrder != null && item.SortOrder > cookOrder ? [ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending]
+                        : [ProductionBatchStatus.Planned, ProductionBatchStatus.Cooking];
+                    if (!allowed.Contains(batch.Status))
+                    {
+                        return string.Format(ConstantHelper.Message.StageBatchStatus, item.ItemName, string.Join(" / ", allowed.Select(ProductionBatchStatus.Label)), ProductionBatchStatus.Label(batch.Status));
+                    }
+                    // Tổ: chọn tay hoặc tổ mặc định của công đoạn (BusinessRules:ProductionStageTeams → OrganizationUnit.Code).
+                    OrganizationUnit? team = null;
+                    if (request.TeamId is { } tid && tid != Guid.Empty)
+                    {
+                        team = await db.OrganizationUnit.AsNoTracking().FirstOrDefaultAsync(o => o.Id == tid && !o.IsDeleted);
+                        if (team == null)
+                        {
+                            return ConstantHelper.Message.StageTeamNotFound;
+                        }
+                    }
+                    else if (_rules.ProductionStageTeams.TryGetValue(item.ItemCode ?? string.Empty, out var teamCode))
+                    {
+                        team = await db.OrganizationUnit.AsNoTracking().FirstOrDefaultAsync(o => o.Code == teamCode && !o.IsDeleted);
+                    }
+                    var (employeeIds, employeeError) = await CheckEmployeesAsync(request.EmployeeIds, team, warnings);
+                    if (employeeError != null)
+                    {
+                        return employeeError;
+                    }
+                    if (request.KitchenWorkstationId is { } ws && ws != Guid.Empty)
+                    {
+                        if (!await db.KitchenWorkstation.AsNoTracking().AnyAsync(k => k.Id == ws && !k.IsDeleted))
+                        {
+                            return ConstantHelper.Message.WorkstationNotFound;
+                        }
+                        if (batch.Status is ProductionBatchStatus.Planned or ProductionBatchStatus.Cooking)
+                        {
+                            batch.KitchenWorkstationId = ws;
+                        }
+                    }
+                    DateTime at = request.At ?? _clock.Now;
+                    if (item.SortOrder == cookOrder && batch.Status == ProductionBatchStatus.Planned)
+                    {
+                        // Bắt đầu Nấu = bắt đầu mẻ (như ProductionBatch/Start).
+                        if (!await ProductionRules.IssuesOf(db, batch).AnyAsync(i => i.Status == MaterialIssueStatus.Issued))
+                        {
+                            warnings.Add(string.Format(ConstantHelper.Message.BatchNotIssuedWarning, Number(batch)));
+                        }
+                        batch.Status = ProductionBatchStatus.Cooking;
+                        batch.StartTime = at;
+                        if (order.Status == ProductionOrderStatus.Released)
+                        {
+                            order.Status = ProductionOrderStatus.InProgress;
+                        }
+                        order.ActualStartDate ??= at;
+                        _unitOfWork.ProductionOrderRepository.Update(order);
+                    }
+                    AddStageEvent(checklist, item, batch, order, actor, ProductionCode.StageStarted, at,
+                        new ProductionStageRules.StagePayload { TeamId = team?.Id, EmployeeIds = employeeIds },
+                        request.KitchenWorkstationId is { } w && w != Guid.Empty ? w : batch.KitchenWorkstationId);
+                    return null;
+                });
+
+        /// <summary>BE2.4: xong 1 công đoạn đang làm của mẻ – ghi sự kiện DONE (người làm cập nhật nếu gửi kèm).</summary>
+        public Task<IResult<ProductionBatchDetailModel>> FinishStage(ProductionStageRequest request)
+            => RunAsync(request.Id, "xong công đoạn", [ProductionBatchStatus.Planned, ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed, ProductionBatchStatus.Packed],
+                async (batch, order, actor, warnings) =>
+                {
+                    var db = _unitOfWork.DbContext;
+                    var (checklist, items) = await ProductionStageRules.StageItemsAsync(db);
+                    if (checklist == null || items.Count == 0)
+                    {
+                        return ConstantHelper.Message.StageChecklistMissing;
+                    }
+                    string code = request.StageCode.Trim().ToUpperInvariant();
+                    var item = items.FirstOrDefault(i => string.Equals(i.ItemCode, code, StringComparison.OrdinalIgnoreCase));
+                    if (item == null)
+                    {
+                        return string.Format(ConstantHelper.Message.StageNotFound, code);
+                    }
+                    var stage = (await ProductionStageRules.StagesAsync(db, [batch.Id], _rules))[batch.Id].First(s => s.StageCode == item.ItemCode);
+                    if (stage.Status == ProductionStageStatus.NotStarted)
+                    {
+                        return string.Format(ConstantHelper.Message.StageNotStarted, item.ItemName, Number(batch));
+                    }
+                    if (stage.Status == ProductionStageStatus.Done)
+                    {
+                        return string.Format(ConstantHelper.Message.StageAlreadyDone, item.ItemName, Number(batch), ProductionRules.Time(stage.FinishedAt!.Value));
+                    }
+                    OrganizationUnit? team = stage.TeamId != null ? await db.OrganizationUnit.AsNoTracking().FirstOrDefaultAsync(o => o.Id == stage.TeamId) : null;
+                    var (employeeIds, employeeError) = await CheckEmployeesAsync(request.EmployeeIds, team, warnings);
+                    if (employeeError != null)
+                    {
+                        return employeeError;
+                    }
+                    DateTime at = request.At ?? _clock.Now;
+                    if (stage.StartedAt is { } startedAt && at < startedAt)
+                    {
+                        at = startedAt;
+                    }
+                    AddStageEvent(checklist, item, batch, order, actor, ProductionCode.StageDone, at,
+                        new ProductionStageRules.StagePayload { TeamId = stage.TeamId, EmployeeIds = employeeIds }, stage.KitchenWorkstationId ?? batch.KitchenWorkstationId);
+                    return null;
+                });
+
+        private async Task<(List<Guid> Ids, string? Error)> CheckEmployeesAsync(List<Guid>? requested, OrganizationUnit? team, List<string> warnings)
+        {
+            var ids = (requested ?? []).Where(id => id != Guid.Empty).Distinct().ToList();
+            if (ids.Count > ProductionStageRules.MaxEmployees)
+            {
+                return ([], string.Format(ConstantHelper.Message.StageTooManyEmployees, ProductionStageRules.MaxEmployees));
+            }
+            if (ids.Count == 0)
+            {
+                return (ids, null);
+            }
+            var employees = await _unitOfWork.DbContext.Employee.AsNoTracking().Where(e => ids.Contains(e.Id) && !e.IsDeleted).ToListAsync();
+            var missing = ids.Where(id => employees.All(e => e.Id != id)).ToList();
+            if (missing.Count != 0)
+            {
+                return ([], string.Format(ConstantHelper.Message.StageEmployeeNotFound, string.Join(", ", missing)));
+            }
+            if (team != null)
+            {
+                foreach (var e in employees.Where(e => e.OrganizationUnitId != null && e.OrganizationUnitId != team.Id))
+                {
+                    warnings.Add(string.Format(ConstantHelper.Message.StageEmployeeNotInTeam, e.FullName ?? e.Code, team.Name ?? team.Code));
+                }
+            }
+            return (ids, null);
+        }
+
+        private void AddStageEvent(FoodSafetyChecklist checklist, FoodSafetyChecklistItem item, ProductionBatch batch, ProductionOrder order, ActorInfo actor,
+            string resultCode, DateTime at, ProductionStageRules.StagePayload payload, Guid? workstationId)
+            => _unitOfWork.FoodSafetyChecklistResultRepository.Add(new FoodSafetyChecklistResult
+            {
+                Id = Guid.NewGuid(),
+                ChecklistId = checklist.Id,
+                ChecklistItemId = item.Id,
+                CheckDate = at.Date,
+                ShiftId = order.ShiftId,
+                ProductionBatchId = batch.Id,
+                WorkstationId = workstationId,
+                ResultCode = resultCode,
+                ActualValue = ProductionStageRules.WritePayload(payload),
+                CheckedBy = actor.UserId,
+                CheckedAt = at,
+            });
+
+        /// <summary>
+        /// BE2.4: tiến độ bếp theo tổ của 1 ngày sản xuất – mỗi mẻ (không hủy) kèm công đoạn + công đoạn hiện tại; tổng hợp theo (công đoạn, tổ): chờ / đang làm / đã xong
+        /// (+ số phần). Lọc ca / tổ.
+        /// </summary>
+        public async Task<IResult<ProductionStageBoardModel>> GetStageBoard(ProductionStageBoardRequest request)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                DateTime date = request.ProductionDate.Date, next = date.AddDays(1);
+                var planIds = await db.ProductionPlan.AsNoTracking().Where(p => !p.IsDeleted && p.ProductionDate >= date && p.ProductionDate < next).Select(p => p.Id).ToListAsync();
+                var orderIds = await db.ProductionOrder.AsNoTracking()
+                    .Where(o => !o.IsDeleted && planIds.Contains(o.ProductionPlanId) && o.Status != ProductionOrderStatus.Cancelled
+                        && (request.ShiftId == null || request.ShiftId == Guid.Empty || o.ShiftId == request.ShiftId))
+                    .Select(o => o.Id).ToListAsync();
+                var batches = await db.ProductionBatch.AsNoTracking()
+                    .Where(b => !b.IsDeleted && orderIds.Contains(b.ProductionOrderId) && b.Status != ProductionBatchStatus.Cancelled).ToListAsync();
+                var briefs = await ProductionRules.BatchBriefsAsync(db, batches, _rules);
+                var stages = await ProductionStageRules.StagesAsync(db, [.. batches.Select(b => b.Id)], _rules);
+                var model = new ProductionStageBoardModel { ProductionDate = date };
+                if (stages.Values.All(s => s.Count == 0) && batches.Count != 0)
+                {
+                    model.ListWarning.Add(ConstantHelper.Message.StageChecklistMissing);
+                }
+                bool teamFilter = request.TeamId is { } t && t != Guid.Empty;
+                foreach (var brief in briefs)
+                {
+                    var mine = stages.GetValueOrDefault(brief.Id) ?? [];
+                    if (teamFilter && !mine.Any(s => s.TeamId == request.TeamId))
+                    {
+                        continue;
+                    }
+                    model.ListBatch.Add(new ProductionStageBoardBatchModel { Batch = brief, ListStage = mine, CurrentStageCode = ProductionStageRules.Current(mine) });
+                }
+                model.ListTeam = [.. model.ListBatch
+                    .SelectMany(b => b.ListStage.Select(s => (Batch: b, Stage: s)))
+                    .GroupBy(x => (x.Stage.StageCode, x.Stage.TeamId))
+                    .Where(g => !teamFilter || g.Key.TeamId == request.TeamId)
+                    .Select(g =>
+                    {
+                        var first = g.First().Stage;
+                        return new ProductionTeamProgressModel
+                        {
+                            StageCode = g.Key.StageCode,
+                            StageName = first.StageName,
+                            TeamId = g.Key.TeamId,
+                            TeamCode = first.TeamCode,
+                            TeamName = first.TeamName,
+                            Waiting = g.Count(x => x.Stage.Status == ProductionStageStatus.NotStarted && x.Batch.CurrentStageCode == x.Stage.StageCode),
+                            InProgress = g.Count(x => x.Stage.Status == ProductionStageStatus.InProgress),
+                            Done = g.Count(x => x.Stage.Status == ProductionStageStatus.Done),
+                            InProgressPortions = g.Where(x => x.Stage.Status == ProductionStageStatus.InProgress).Sum(x => x.Batch.Batch.PlannedQuantity),
+                            DonePortions = g.Where(x => x.Stage.Status == ProductionStageStatus.Done).Sum(x => x.Batch.Batch.PlannedQuantity),
+                        };
+                    })
+                    .OrderBy(t => g0(t.StageCode)).ThenBy(t => t.TeamCode)];
+                return Result<ProductionStageBoardModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+
+                int g0(string code) => model.ListBatch.SelectMany(b => b.ListStage).FirstOrDefault(s => s.StageCode == code)?.SortOrder ?? int.MaxValue;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetStageBoard: ", ex.ToString()));
                 throw;
             }
         }

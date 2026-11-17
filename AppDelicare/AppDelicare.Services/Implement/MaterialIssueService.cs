@@ -342,6 +342,16 @@ namespace AppDelicare.Services.Implement
                 {
                     s = (await InventoryLotRules.LoadAsync(db, today, _rules.ExpiringLotDays, request.WarehouseId, item.IngredientId),
                         await InventoryLotRules.UseFefoAsync(db, request.WarehouseId, item.IngredientId));
+                    // BE2.4: xuất cho lệnh SX đã giữ chỗ → được dùng phần lệnh đã giữ (khả dụng = tồn − giữ chỗ của lệnh khác).
+                    var own = await ReservationRules.AvailableForOrderAsync(db, [item.IngredientId], today, request.ProductionOrderId);
+                    if (own != null)
+                    {
+                        foreach (var row in s.Rows.Where(r => own.ContainsKey(r.BalanceId)))
+                        {
+                            row.AvailableQuantity = own[row.BalanceId];
+                            row.ReservedQuantity = row.OnHandQuantity - row.AvailableQuantity;
+                        }
+                    }
                     stock[item.IngredientId] = s;
                     allocated[item.IngredientId] = [];
                 }
@@ -444,6 +454,8 @@ namespace AppDelicare.Services.Implement
                     return Result<MaterialIssueDetailModel>.Fail(ConstantHelper.Message.IssueNeedsLine);
                 }
                 DateTime today = _clock.Today;
+                // BE2.4: phiếu của lệnh SX đã giữ chỗ → khả dụng = tồn − giữ chỗ của lệnh khác (phần lệnh đã giữ được xuất).
+                var own = await ReservationRules.AvailableForOrderAsync(db, [.. lines.Select(l => l.IngredientId).Distinct()], today, issue.ProductionOrderId);
                 // 1) Kiểm toàn bộ trước khi ghi: lô, tồn khả dụng theo (nguyên liệu, lô) cộng dồn các dòng, đơn vị.
                 var plan = new List<(MaterialIssueLine Line, MaterialLot? Lot, List<(Guid? StorageLocationId, Guid UnitId, decimal Quantity)> Chunks)>();
                 foreach (var group in lines.GroupBy(l => (l.IngredientId, l.MaterialLotId)))
@@ -453,6 +465,13 @@ namespace AppDelicare.Services.Implement
                     var balances = await db.InventoryBalance.AsNoTracking()
                         .Where(b => !b.IsDeleted && b.WarehouseId == issue.WarehouseId && b.IngredientId == group.Key.IngredientId && b.MaterialLotId == group.Key.MaterialLotId)
                         .ToListAsync();
+                    if (own != null)
+                    {
+                        foreach (var b in balances.Where(b => own.ContainsKey(b.Id)))
+                        {
+                            b.AvailableQuantity = own[b.Id];
+                        }
+                    }
                     decimal need = group.Sum(l => l.Quantity);
                     decimal available = balances.Sum(b => Math.Max(b.AvailableQuantity, 0));
                     if (error == null && available < need)
@@ -515,7 +534,14 @@ namespace AppDelicare.Services.Implement
                     issue.Note = string.IsNullOrWhiteSpace(issue.Note) ? request.Note.Trim() : $"{issue.Note}\n{request.Note.Trim()}";
                 }
                 _unitOfWork.MaterialIssueRepository.Update(issue);
+                // BE2.4 (spec 7.7 material-issues): giảm giữ chỗ của lệnh theo số đã xuất → Đã xuất / Đã xuất một phần, rồi phân bổ lại tồn giữ chỗ.
+                var consumed = issue.ProductionOrderId == Guid.Empty ? []
+                    : await ReservationRules.ConsumeAsync(db, issue.ProductionOrderId, lines.Select(l => (l.IngredientId, l.UnitId, l.Quantity)));
                 await _unitOfWork.MaterialIssueRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                if (consumed.Count != 0)
+                {
+                    await ReservationRules.ReallocateAsync(db, consumed, today);
+                }
                 _unitOfWork.CommitTransaction();
                 return Result<MaterialIssueDetailModel>.Success(await DetailAsync(issue.Id), ConstantHelper.Message.SaveSuccess);
             }

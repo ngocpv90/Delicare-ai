@@ -157,3 +157,4 @@ DB/seed/ObjectMenu_disable_legacy.sql
 DB/seed/UserRole_seed.sql
 DB/seed/Shift_seed.sql
 DB/seed/FoodSafetyChecklist_seed.sql
+DB/seed/ProductionStage_seed.sql
