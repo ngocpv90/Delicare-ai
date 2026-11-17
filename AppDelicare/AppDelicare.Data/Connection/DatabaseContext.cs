@@ -129,6 +129,8 @@ namespace AppDelicare.Data.Connection
 
         private static readonly HashSet<string> SensitiveProperties = new(StringComparer.OrdinalIgnoreCase) { "PassWord", "Password", "PasswordHash" };
 
+        private static readonly HashSet<string> PersonalLocationProperties = new(StringComparer.OrdinalIgnoreCase) { "Latitude", "Longitude" };
+
         private static string GetChanges(EntityEntry entity, EntityState state)
         {
             StringBuilder changes = new();
@@ -142,6 +144,12 @@ namespace AppDelicare.Data.Connection
                     if (SensitiveProperties.Contains(property.Name))
                     {
                         changes.AppendLine($"- {property.Name}: (đã thay đổi – không lưu giá trị) {ConstantHelper.Break}");
+                        continue;
+                    }
+                    // BE2.6: tọa độ GPS lúc chấm công là dữ liệu cá nhân – chỉ lưu ở AttendanceEvent, không chép thêm vào nhật ký.
+                    if (entity.Entity is AttendanceEvent && PersonalLocationProperties.Contains(property.Name))
+                    {
+                        changes.AppendLine($"- {property.Name}: (vị trí cá nhân – không lưu giá trị) {ConstantHelper.Break}");
                         continue;
                     }
                     if (state == EntityState.Added && !string.IsNullOrEmpty(currentValue?.ToString()?.Trim()))

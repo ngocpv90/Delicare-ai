@@ -738,6 +738,22 @@ namespace AppDelicare.Services.Implement
                     model.Table = "MenuChangeRequest";
                     model.Record = await db.MenuChangeRequest.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
                     break;
+                case LeaveRequestStatus.BusinessType:
+                    // BE2.6: đơn nghỉ + các ca đang phân trong khoảng nghỉ (sẽ bỏ khi duyệt).
+                    model.Table = "LeaveRequest";
+                    var leave = await db.LeaveRequest.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    model.Record = leave;
+                    model.Lines = leave == null ? null : await db.ShiftAssignment.AsNoTracking()
+                        .Where(x => !x.IsDeleted && x.EmployeeId == leave.EmployeeId && x.WorkDate >= leave.FromDate && x.WorkDate <= leave.ToDate).OrderBy(x => x.WorkDate).ToListAsync();
+                    break;
+                case ShiftSwapStatus.BusinessType:
+                    // BE2.6: đơn đổi ca + 2 ca (hiện tại, đề xuất).
+                    model.Table = "ShiftSwapRequest";
+                    var swap = await db.ShiftSwapRequest.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    model.Record = swap;
+                    model.Lines = swap == null ? null : await db.ShiftAssignment.AsNoTracking()
+                        .Where(x => x.Id == swap.CurrentShiftAssignmentId || x.Id == swap.ProposedShiftAssignmentId).ToListAsync();
+                    break;
                 case OrderStatus.DeviationBusinessType:
                 case OrderStatus.ChangeAfterCutoffBusinessType:
                     model.Table = "Order";
