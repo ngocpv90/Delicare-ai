@@ -1,95 +1,58 @@
-<div class="authincation h-100 dc-login">
-  <div class="container-fluid h-100">
-    <div class="row h-100">
-      <div class="col-lg-6 col-md-12 col-sm-12 mx-auto align-self-center">
-        <div class="login-form">
-          <div class="text-center">
-            <img class="dc-login-logo mb-3" [src]="logoName" alt="DELI-CARE" />
-            <h3 class="title">Đăng nhập</h3>
-            <p class="mb-1"><b>{{ shortName }}</b> – hệ thống quản lý suất ăn</p>
-            <p class="dc-login-legal">{{ projectName }}</p>
-          </div>
-          <form [formGroup]="signinForm" (ngSubmit)="submitForm()" novalidate>
-            <div class="mb-4">
-              <label class="mb-1 text-dark" for="userName">Tên đăng nhập</label>
-              <input
-                id="userName"
-                type="text"
-                class="form-control"
-                [class.is-invalid]="isInvalid('userName')"
-                formControlName="userName"
-                placeholder="Tên đăng nhập"
-                autocomplete="on"
-              />
-              <div class="invalid-feedback">Vui lòng nhập tên đăng nhập</div>
-            </div>
-            <div class="mb-4">
-              <label class="mb-1 text-dark" for="passWord">Mật khẩu</label>
-              <div class="position-relative">
-                <input
-                  id="passWord"
-                  class="form-control"
-                  [class.is-invalid]="isInvalid('passWord')"
-                  [type]="showPassword ? 'text' : 'password'"
-                  formControlName="passWord"
-                  placeholder="Mật khẩu"
-                  autocomplete="on"
-                />
-                <span
-                  class="show-pass eye"
-                  [ngClass]="{ active: showPassword }"
-                  (click)="showPassword = !showPassword"
-                >
-                  <i class="fa fa-eye-slash"></i>
-                  <i class="fa fa-eye"></i>
-                </span>
-                <div class="invalid-feedback">Vui lòng nhập mật khẩu</div>
-              </div>
-            </div>
-            <div class="row mb-4">
-              <div class="col-7">
-                <label class="mb-1 text-dark" for="captch">Mã xác nhận</label>
-                <input
-                  id="captch"
-                  type="text"
-                  class="form-control"
-                  [class.is-invalid]="isInvalid('captch')"
-                  formControlName="captch"
-                  placeholder="Mã xác nhận"
-                  maxlength="4"
-                />
-                <div class="invalid-feedback">Vui lòng nhập mã xác nhận</div>
-              </div>
-              <div class="col-5">
-                <label class="mb-1 text-dark" for="code">&nbsp;</label>
-                <input
-                  id="code"
-                  type="text"
-                  class="form-control captcha"
-                  formControlName="code"
-                />
-              </div>
-            </div>
-            <div class="text-center mb-4">
-              <button type="submit" class="btn btn-primary btn-block w-100">
-                Đăng nhập
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-      <div class="col-xl-6 col-sm-6 d-none d-sm-block">
-        <div class="pages-left h-100">
-          <div class="login-content">
-            <h3 class="mb-2">{{ shortName }}</h3>
-            <p>{{ projectName }}</p>
-          </div>
-          <div class="login-media text-center">
-            <img src="assets/images/login.png" alt="" />
-          </div>
-        </div>
-      </div>
+<!-- Đăng nhập theo nhận diện giao diện DELICARE (docs/mockup): xanh #91AF42 / cam #F07825 -->
+<div class="dc-login">
+  <section class="dc-login-hero" aria-hidden="true">
+    <div class="brand">
+      <div class="brand-mark">🥕</div>
+      <div class="brand-copy"><div class="brand-name">DELI-CARE</div><div class="brand-sub">ENTERPRISE MANAGEMENT</div></div>
     </div>
-  </div>
+    <div class="dc-login-copy">
+      <h2>Điều hành nhà máy suất ăn công nghiệp</h2>
+      <p>Đơn hàng · Thực đơn & công thức · Mua hàng & kho · Sản xuất · QC an toàn thực phẩm · Giao nhận · Nhân sự ca kíp.</p>
+      <ul>
+        <li><b>20.000</b><span>suất / ngày mục tiêu</span></li>
+        <li><b>119</b><span>chức năng nghiệp vụ</span></li>
+        <li><b>9</b><span>luồng end-to-end</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="dc-login-panel">
+    <form class="card dc-login-card" [formGroup]="signinForm" (ngSubmit)="submitForm()" novalidate>
+      <div class="eyebrow">Đăng nhập hệ thống</div>
+      <h1>Chào mừng trở lại</h1>
+      <p class="muted">{{ projectName }}</p>
+
+      <div class="field" [class.invalid]="isInvalid('userName')">
+        <label for="userName">Tên đăng nhập <span class="req">*</span></label>
+        <input id="userName" class="input" type="text" formControlName="userName" placeholder="Tên đăng nhập" autocomplete="username" />
+        @if (isInvalid('userName')) { <span class="err">Vui lòng nhập tên đăng nhập</span> }
+      </div>
+
+      <div class="field" [class.invalid]="isInvalid('passWord')">
+        <label for="passWord">Mật khẩu <span class="req">*</span></label>
+        <div class="dc-pass">
+          <input id="passWord" class="input" [type]="showPassword ? 'text' : 'password'" formControlName="passWord" placeholder="Mật khẩu" autocomplete="current-password" />
+          <button type="button" class="btn ghost xs" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">{{ showPassword ? 'Ẩn' : 'Hiện' }}</button>
+        </div>
+        @if (isInvalid('passWord')) { <span class="err">Vui lòng nhập mật khẩu</span> }
+      </div>
+
+      <div class="dc-captcha">
+        <div class="field" [class.invalid]="isInvalid('captch')">
+          <label for="captch">Mã xác nhận <span class="req">*</span></label>
+          <input id="captch" class="input" type="text" formControlName="captch" placeholder="Nhập 4 ký tự" maxlength="4" autocomplete="off" />
+          @if (isInvalid('captch')) { <span class="err">Vui lòng nhập mã xác nhận</span> }
+        </div>
+        <div class="field">
+          <label for="code">&nbsp;</label>
+          <input id="code" class="input dc-code" type="text" formControlName="code" aria-label="Mã xác nhận cần nhập" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn primary dc-submit" [disabled]="isLoading">
+        {{ isLoading ? 'Đang đăng nhập…' : 'Đăng nhập' }}
+      </button>
+    </form>
+    <div class="footer-note">DELI-CARE · ENTERPRISE MANAGEMENT</div>
+  </section>
 </div>
-<app-loading *ngIf="isLoading"></app-loading>
