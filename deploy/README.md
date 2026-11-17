@@ -112,6 +112,11 @@ Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệ
 - **Docker (cách C):** volume `delicare-docs` (đã khai báo trong `docker-compose.staging.yml`). Kestrel / IIS mặc định nhận request tới ~28–30 MB – tăng `MaxFileSizeMb` quá 25 thì phải tăng giới hạn request.
 - Mẫu in (BE2.7.1): **PDF mặc định** (PDFsharp-MigraDoc 6.2.4, MIT) + xlsx / docx. Font PDF **Noto Sans nhúng trong `AppDelicare.Services.dll`** (giấy phép `Fonts/NotoSans-OFL.txt` đi kèm bản publish) → IIS và Docker **không cần cài font** (không thêm gói apt). Đổi mặc định: `BusinessRules__Common__PrintDefaultFormat=xlsx`. Word cần `Licenses__GemBox` (thiếu → bản dùng thử của GemBox).
 
+### Cảm biến nhiệt độ IoT (BE3.2)
+- API `POST api/IotTemperature/Receive` dùng **khóa riêng** (header `X-Api-Key`), không dùng đăng nhập. Khóa là **bí mật**: đặt biến môi trường cho API `Iot__ApiKeys__0=<khóa ≥ 32 ký tự>` (thêm `Iot__ApiKeys__1`… khi đổi khóa / nhiều cổng). Không đặt = API IoT tắt (401).
+- Khai báo thiết bị → khu vực kho: `Iot__Devices__<MÃ-THIẾT-BỊ>__StorageZoneCode=<mã khu vực>` (hoặc `__StorageZoneId`), tùy chọn `__MeasurementType`, `__Enabled=false`. Docker: thêm vào `environment` của service `api`; IIS: `environmentVariables` của site.
+- Chi tiết + giới hạn: `docs/frontend-handoff/BE3.2.md`.
+
 ### Job tự động (T23 – `AppDelicare.Job`, D-48)
 Tiến trình **riêng** (không chạy trong WebApi – IIS tự tắt app khi không có truy cập). Chạy **đúng 1 bản**; nếu lỡ chạy 2 bản, khóa `sp_getapplock` theo mã job chặn chạy trùng.
 

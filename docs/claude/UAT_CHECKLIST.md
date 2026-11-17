@@ -99,6 +99,15 @@ Trước khi thử trên staging: chạy `DB/seed/ObjectMenu_disable_legacy.sql`
 
 Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1-flow-gaps.http` (đóng gói, xếp xe, đơn giao), `be2.2-contract-forecast.http` (hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt), `be2.3-multilevel-approval.http` (duyệt nhiều cấp, kiểm kê), `be2.4-inventory-production.http` (giữ chỗ, hủy lệnh, công đoạn, giá thành), `be2.5-foodsafety-packaging.http` (ATTP, vệ sinh, hộp / khay, sự cố NCC), `be2.6-hr.http` (nhân sự), `be2.7-common-print.http` (in / xuất / tệp / lịch sử).
 
+## IOT NHIỆT ĐỘ (BE3.2, 2026-11-17) · file thử: `docs/api-tests/be3.2-iot.http` · test: `AppDelicare.Tests/Iot/IotTemperatureTests.cs`
+Cần: `Iot__ApiKeys__0` + 1 thiết bị `Iot__Devices__<mã>__StorageZoneCode` (biến môi trường của API – deploy/README.md).
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Khóa API | Gửi không khóa / sai khóa | HTTP 401 | [ ] | |
+| 2 | Nhận lô | Gửi 1 lô (đạt, vượt ngưỡng, thiết bị lạ) | Đạt + vượt ngưỡng được ghi (IOT, người ghi system); thiết bị lạ trong `rejected` | [ ] | |
+| 3 | Gửi lại | Gửi lại cùng lô | `accepted = 0`, `duplicate` = số đã ghi | [ ] | |
+| 4 | Biểu đồ | `TemperatureLog/GetSeries` khu vực của thiết bị | Thấy lần đo IoT, lần vượt ngưỡng đỏ | [ ] | |
+
 ## BIỂU ĐỒ + SỰ KIỆN GIAO (BE3.1, 2026-11-17) · file thử: `docs/api-tests/be3.1-charts.http` · test: `AppDelicare.Tests/Charts/ChartTests.cs`
 | # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
 |---|---|---|---|---|---|
