@@ -1,0 +1,62 @@
+### DELICARE – T23: JOB TỰ ĐỘNG (AppDelicare.Job, D-48) – khung cũ D-30.
+### Job chạy theo giờ trong tiến trình AppDelicare.Job (container / Task Scheduler riêng). API dưới đây chỉ để XEM và CHẠY TAY (admin):
+###   Job/GetAll  – danh sách job, bật / tắt, giờ chạy (giờ VN), lần chạy kế tiếp, lần chạy gần nhất (AnalyticsRefreshLog)
+###   Job/Run     – chạy 1 job ngay (form jobCode), dưới tài khoản người bấm; đang chạy ở nơi khác → 400
+###   Contract/ExpireOverdue – nút tay của job ContractExpiry (Catalog 81), preview = chỉ liệt kê
+### Mã job: LockOrders (20:00), Mrp (20:30), LotExpiry (00:15), ContractExpiry (00:30), MarkAbsent (08:00) – PROPOSED D-57.
+### File này chỉ CHẠY THẬT job ContractExpiry (an toàn trên DB dev: chỉ hợp đồng Hiệu lực đã quá ngày hết hiệu lực). Các job khác đổi dữ liệu
+### (khóa đơn, MRP, hao hụt lô, đánh vắng) – chạy tay khi cần: POST Job/Run với jobCode tương ứng.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Dòng "# @expect …" là kiểm số liệu cho trình chạy tự động (REST Client bỏ qua).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+### 1. Danh sách job (admin)
+# @expect totalRecords == 5
+# @expect listData[jobCode=LockOrders].at == 20:00
+# @expect listData[jobCode=Mrp].at == 20:30
+# @expect listData[jobCode=ContractExpiry].enabled == true
+GET {{base}}/api/Job/GetAll
+Authorization: Bearer {{token}}
+
+### 2. Xem trước hợp đồng sẽ hết hạn (không đổi dữ liệu)
+# @expect data.preview == true
+POST {{base}}/api/Contract/ExpireOverdue
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+preview=true
+
+### 3. Chạy tay job ContractExpiry (ghi AnalyticsRefreshLog, trigger MANUAL, người chạy = admin)
+# @name run
+# @expect data.jobCode == ContractExpiry
+# @expect data.trigger == MANUAL
+# @expect data.runStatus == Succeeded
+POST {{base}}/api/Job/Run
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=ContractExpiry
+
+### 4. Lần chạy gần nhất hiện trong danh sách
+# @expect listData[jobCode=ContractExpiry].lastRun.runId == {{run.response.body.data.runId}}
+# @expect listData[jobCode=ContractExpiry].lastRun.trigger == MANUAL
+GET {{base}}/api/Job/GetAll
+Authorization: Bearer {{token}}
+
+### 5. → 400 (mã job không có – báo danh sách mã hợp lệ)
+POST {{base}}/api/Job/Run
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KHONG_CO

@@ -63,6 +63,24 @@ services:
       - "8080:8080"
     restart: unless-stopped
 
+  # T23 (D-48): job tự động – container riêng, ĐÚNG 1 bản (không scale). Lịch: Jobs:<mã> trong appsettings.json của WebApi (giờ VN);
+  # tắt 1 job: Jobs__LockOrders__Enabled: "false". Xem / chạy tay: api/Job/GetAll, api/Job/Run (admin).
+  job:
+    build:
+      context: ../../AppDelicare
+      dockerfile: AppDelicare.Job/Dockerfile
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      DOTNET_ENVIRONMENT: Staging
+      ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=sa;Password=${SA_PASSWORD};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+      Licenses__GemBox: ${GEMBOX_LICENSE:-}
+      DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+    volumes:
+      - delicare-docs:/app/App_Data/DocumentFiles
+    restart: unless-stopped
+
 volumes:
   delicare-sql:
   delicare-docs:

@@ -45,7 +45,7 @@ Mục tiêu: dev FE `git pull` xong là DB trên server có đủ SP / seed mớ
 - **Báo cáo:** báo cáo NCR, báo cáo truy xuất, báo cáo hao hụt / giá thành tổng hợp, bảng công dạng báo cáo (T18 phần báo cáo).
 - **Bot / tích hợp:** 214–220, 166 IoT, gửi PO cho NCC qua email / Zalo (113), nhắc khách 19:00, gửi Telegram phân ca / duyệt (T30–T51, T23.2).
 - **Refresh token (D-47):** phương án đề xuất ở GAP-AUTH-01 (không lưu DB).
-- **Job tự động (D-45):** khóa đơn 20:00, tính nhu cầu 20:30, đề xuất mua 21:00, hết hạn lô / hợp đồng / duyệt, theo dõi SLA, nhắc khách 19:00, KPI 22:00 (T23.1, T23.2; cần chốt D-05 nơi lưu lịch job).
+- **Job tự động (D-45)** – **T23.1 lõi `DONE` 2026-11-17** (khóa đơn 20:00, MRP + đề nghị mua 20:30, hết hạn lô / hợp đồng, chốt vắng); phần còn lại cùng đợt bot / KPI: khóa đơn 20:00, tính nhu cầu 20:30, đề xuất mua 21:00, hết hạn lô / hợp đồng / duyệt, theo dõi SLA, nhắc khách 19:00, KPI 22:00 (T23.1, T23.2; cần chốt D-05 nơi lưu lịch job).
 - **Hermes + quản lý agent:** Tool Gateway / MCP, 12 agent theo phòng ban (`docs/claude/AGENTS.md`), lịch chạy agent, Mission Control, Obsidian second brain (T30–T35, T40, T41, T43, T50, T51, T60, T61).
 
 **Frontend (D-49, 2026-11-16): dev FE khác làm FE-ALL và commit lên git. Claude Code KHÔNG tự làm FE-x – kể cả khi `/next`.** Việc của em về frontend chỉ là: viết handoff `docs/frontend-handoff/` cho mỗi API mới, và task GHEP-FE khi anh yêu cầu.
@@ -329,7 +329,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Seed KpiMetricDefinition (BUSINESS_RULES §12). Tính KpiDailySnapshot / KpiMonthlySnapshot. API dashboard theo spec mục 12.
 - AC: test công thức cho từng KPI.
 
-### T23 – Job tự động (`AppDelicare.Job`, D-48) · ĐỂ SAU (D-45) · phụ thuộc T13, T14 · `TODO` (R1: T23.1 = LockOrders 20:00, Mrp 20:30, PurchaseProposal 21:00, ApprovalExpiry, ComplaintSlaWatch; T23.2 = KpiDailySnapshot 22:00, RemindUnconfirmedOrders 19:00 – trong R1 chỉ tạo danh sách + thông báo trong app, chưa gửi Zalo/Telegram)
+### T23 – Job tự động (`AppDelicare.Job`, D-48) · phụ thuộc T13, T14 · **T23.1 `DONE` 2026-11-17** (anh chọn làm sau BE-2; nhánh `feat/T23-jobs`; 5 job LockOrders / Mrp (+ đề nghị mua) / LotExpiry / ContractExpiry / MarkAbsent, `api/Job/GetAll` / `Run`, `Contract/ExpireOverdue`; ApprovalExpiry / ComplaintSla không làm – cờ `isOverdue` đã có, chờ bot; PROPOSED D-57) · T23.2 `TODO` (cùng đợt bot / KPI) (R1: T23.1 = LockOrders 20:00, Mrp 20:30, PurchaseProposal 21:00, ApprovalExpiry, ComplaintSlaWatch; T23.2 = KpiDailySnapshot 22:00, RemindUnconfirmedOrders 19:00 – trong R1 chỉ tạo danh sách + thông báo trong app, chưa gửi Zalo/Telegram)
 - Project / container riêng `AppDelicare.Job` theo **ARCHITECTURE.md mục 1b** (Worker Service, không Hangfire, không thêm bảng, khóa `sp_getapplock`, DI dùng chung với WebApi, tài khoản `system`). Lịch theo AGENTS.md §2, múi giờ Asia/Ho_Chi_Minh. Mỗi lần chạy ghi `AnalyticsRefreshLog` (JobCode, RunId, Started / Completed, RunStatus, RowsProcessed).
 - `JobController` (khung cũ) trong WebApi: `GetAll` (job, bật / tắt, lần chạy kế tiếp), `Run` (chỉ admin, gọi thẳng Service). docker-compose thêm service `job`; IIS: Windows Service.
 - AC: chạy tay từng job được; job idempotent (chạy 2 lần không nhân đôi dữ liệu).

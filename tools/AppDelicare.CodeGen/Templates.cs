@@ -830,7 +830,7 @@ public sealed class Templates(Dictionary<string, Table> tables, Metadata meta)
         sb.AppendLine("using AppDelicare.Model.Request;");
         sb.AppendLine("using AutoMapper;");
         sb.AppendLine();
-        sb.AppendLine("namespace AppDelicare.WebApi.Infrastructure");
+        sb.AppendLine("namespace AppDelicare.Services.Mapping");
         sb.AppendLine("{");
         sb.AppendLine("    /// <summary>Map Request → Entity cho các bảng chưa có trong AutoMapperConfiguraion (mã cũ).</summary>");
         sb.AppendLine("    public class AutoMapperGeneratedProfile : Profile");

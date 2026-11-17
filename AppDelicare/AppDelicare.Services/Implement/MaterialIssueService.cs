@@ -651,7 +651,12 @@ namespace AppDelicare.Services.Implement
                 MaterialIssue = issue,
                 StatusName = MaterialIssueStatus.Label(issue.Status),
                 WarehouseName = await db.Warehouse.AsNoTracking().Where(w => w.Id == issue.WarehouseId).Select(w => w.Name).FirstOrDefaultAsync(),
-                ListLine = [.. lines.OrderBy(l => ingredients.GetValueOrDefault(l.IngredientId)?.Name).Select(l =>
+                // T23: cùng nguyên liệu → theo hạn lô (FEFO, lô không hạn cuối) rồi số lô – trước đây thứ tự lô phụ thuộc DB trả về (test toàn luồng chập chờn).
+                ListLine = [.. lines
+                    .OrderBy(l => ingredients.GetValueOrDefault(l.IngredientId)?.Name)
+                    .ThenBy(l => (l.MaterialLotId != null ? lots.GetValueOrDefault(l.MaterialLotId.Value)?.ExpiryDate : null) ?? DateTime.MaxValue)
+                    .ThenBy(l => l.MaterialLotId != null ? lots.GetValueOrDefault(l.MaterialLotId.Value)?.LotNumber : null, StringComparer.Ordinal)
+                    .Select(l =>
                 {
                     var lot = l.MaterialLotId != null ? lots.GetValueOrDefault(l.MaterialLotId.Value) : null;
                     return new MaterialIssueLineDetailModel

@@ -4,7 +4,7 @@ using AppDelicare.Model.Entity;
 using AppDelicare.Model.Request;
 using AutoMapper;
 
-namespace AppDelicare.WebApi.Infrastructure
+namespace AppDelicare.Services.Mapping
 {
     /// <summary>Map Request → Entity cho các bảng chưa có trong AutoMapperConfiguraion (mã cũ).</summary>
     public class AutoMapperGeneratedProfile : Profile

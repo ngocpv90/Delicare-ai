@@ -112,6 +112,33 @@ Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệ
 - **Docker (cách C):** volume `delicare-docs` (đã khai báo trong `docker-compose.staging.yml`). Kestrel / IIS mặc định nhận request tới ~28–30 MB – tăng `MaxFileSizeMb` quá 25 thì phải tăng giới hạn request.
 - Mẫu in (BE2.7.1): **PDF mặc định** (PDFsharp-MigraDoc 6.2.4, MIT) + xlsx / docx. Font PDF **Noto Sans nhúng trong `AppDelicare.Services.dll`** (giấy phép `Fonts/NotoSans-OFL.txt` đi kèm bản publish) → IIS và Docker **không cần cài font** (không thêm gói apt). Đổi mặc định: `BusinessRules__Common__PrintDefaultFormat=xlsx`. Word cần `Licenses__GemBox` (thiếu → bản dùng thử của GemBox).
 
+### Job tự động (T23 – `AppDelicare.Job`, D-48)
+Tiến trình **riêng** (không chạy trong WebApi – IIS tự tắt app khi không có truy cập). Chạy **đúng 1 bản**; nếu lỡ chạy 2 bản, khóa `sp_getapplock` theo mã job chặn chạy trùng.
+
+| Job | Giờ (VN) | Việc (gọi đúng Service của nút bấm tay) |
+|---|---|---|
+| `LockOrders` | 20:00 | Khóa đơn Đã xác nhận của ngày mai (`Order/LockByMealDate`) |
+| `Mrp` | 20:30 | MRP ngày sản xuất mai + đề nghị mua Nháp (`MaterialRequirement/Calculate`) |
+| `LotExpiry` | 00:15 | Lô quá hạn → Hết hạn + hao hụt (`MaterialLot/ProcessExpired`) |
+| `ContractExpiry` | 00:30 | Hợp đồng quá ngày hết hiệu lực → Hết hạn (`Contract/ExpireOverdue`) |
+| `MarkAbsent` | 08:00 | Chốt vắng ca của hôm qua (`ShiftAssignment/MarkAbsent`) |
+
+- **Lịch / bật tắt:** mục `Jobs` trong `appsettings.json` **của WebApi** (Job đọc file này dưới tên `appsettings.shared.json`), ví dụ biến môi trường `Jobs__Mrp__At=21:00`, `Jobs__LockOrders__Enabled=false`. Lỡ giờ (máy tắt) → chạy bù ngay khi bật lại, **trong cùng ngày**.
+- **Tài khoản ghi:** `system` (seed `DB/seed/SystemUser_seed.sql`, Id cố định = `SystemUsers:JobUserId`, không đăng nhập được). Chạy tay `api/Job/Run` ghi dưới admin bấm.
+- **Lịch sử chạy:** bảng `AnalyticsRefreshLog` (Succeeded / Skipped = nghiệp vụ từ chối hoặc không có gì / Failed / Locked) + log file `Logs/AppDelicare.Job*.log`. Xem: `GET api/Job/GetAll` (admin).
+- **Bí mật:** chỉ cần `ConnectionStrings__MainConnectionString` (+ `Licenses__GemBox` nếu có). Môi trường: `DOTNET_ENVIRONMENT=Staging` / `Production`.
+- **Docker (cách C):** service `job` trong `docker-compose.staging.yml` (đã khai báo, không scale).
+- **Windows / IIS (cách A, B):**
+  ```powershell
+  dotnet publish AppDelicare/AppDelicare.Job/AppDelicare.Job.csproj -c Release -o C:\Deploy\delicare-job
+  # chạy thử: liệt kê job, chạy 1 job rồi thoát
+  $env:DOTNET_ENVIRONMENT = "Staging"; $env:ConnectionStrings__MainConnectionString = "<chuỗi kết nối>"
+  dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll --list
+  dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll --run ContractExpiry
+  ```
+  Chạy liên tục: **Task Scheduler** → tác vụ "At startup", tài khoản dịch vụ, chạy `dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll`, biến môi trường đặt ở cấp máy / tài khoản đó, bật "Restart on failure". (Chạy dạng **Windows Service** cần thêm gói `Microsoft.Extensions.Hosting.WindowsServices` (MIT) – **chờ anh duyệt gói mới**, xem DECISIONS D-57.)
+- Cập nhật bản build Job: dừng tác vụ / container → publish đè → chạy lại. Deploy API không làm dừng Job và ngược lại.
+
 ## 6. Kiểm tra sau triển khai
 
 | Bước | Lệnh / thao tác | Kỳ vọng |

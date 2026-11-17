@@ -481,6 +481,11 @@
             public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
             public static readonly string ApprovalCancelOnlyRequester = "Chỉ người gửi yêu cầu được hủy";
             public static readonly string ApprovalCancelReasonRequired = "Phải ghi lý do hủy yêu cầu duyệt";
+            // T23 – job tự động (D-48).
+            public static readonly string JobNotFound = "Không có job '{0}'. Các job: {1}";
+            public static readonly string JobUserMissing = "Chưa cấu hình tài khoản chạy job (SystemUsers:JobUserId) – job không được ghi dữ liệu";
+            public static readonly string JobAlreadyRunning = "Job đang chạy ở nơi khác – lần này bỏ qua";
+            public static readonly string JobFailed = "Job {0} lỗi: {1}";
             // BE2.2 – hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt.
             public static readonly string ContractNotFound = "Không tìm thấy hợp đồng";
             public static readonly string ContractCustomerNotFound = "Khách hàng không tồn tại";

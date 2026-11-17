@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-17: T23.1 DONE – Job tự động** trên nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ f648505, chưa push / chưa gộp): project mới `AppDelicare.Job` (D-48) + 5 job LockOrders 20:00 / Mrp 20:30 (+ đề nghị mua) / LotExpiry 00:15 / ContractExpiry 00:30 / MarkAbsent 08:00, `api/Job/GetAll` / `Run` (admin), `Contract/ExpireOverdue`; seed user `system`; test **258 / 258**; `t23-jobs.http` 6 / 6 trên DB dev. PROPOSED D-57. Anh chỉ đạo 2026-11-17: **chỉ làm backend** (không FE).
 - **2026-11-17: Đã gộp + push** BE2.9 và BE2.7.1 vào `release/pilot` = `main` (`81bcf3a`); test 245 / 245. **Staging cập nhật bản có PDF** (`Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging`): `full-flow.http` **217 / 217** trên staging (`@key=B272`, `@day=2026-12-15` – ngày 2026-12-01 đã dùng ở lần chạy BE2.9, kế hoạch SX đã Hoàn thành nên không chạy lại được), 6 mẫu in + `Common/PrintBatch` trả `application/pdf`; chạy xong đã dừng API staging. Dữ liệu thử còn lại trên staging: mã `DEMOB29S…`, `DEMOB271…` (lần chạy lỗi giữa chừng vì trùng ngày), `DEMOB272…`. **Còn 0 task backend BE-2**; tiếp theo: GHEP-FE (khi anh yêu cầu) → UAT toàn luồng → T48.2.
 - **2026-11-17: BE2.9 DONE – ĐỢT BE-2 XONG (BE2.1–BE2.7 + BE2.9; BE2.8 để sau D-45). Dừng, chờ anh duyệt** – nhánh `feat/BE2.9-full-flow` (worktree `wt-BE29`, từ `release/pilot` @ 7b0fc43, chưa push / chưa gộp `main`): `full-flow.http` (toàn luồng R1, 216 request / 22 chốt / 60 kiểm số liệu) **216 / 216 trên DB dev và trên staging**; chạy lại `pilot-flow` + `be2.1…be2.7` đều đạt; test **243 / 243** (+ FullFlowSqlServerTests, MissingDateParameterTests); sửa 1 lỗi (6 bảng điều hành thiếu ngày → HTTP 500); staging `AppDelicare_Staging` / `http://localhost:5200` đã cập nhật + smoke 49 / 49 rồi **dừng**. Danh sách PROPOSED / GAP cần anh chốt (thư viện PDF, cột `DeliveryOrder.MealQuantity`, User ↔ Employee, cột liên kết DocumentFile, D-53…D-56): mục BE2.9 cuối file.
 - **2026-11-17: BE2.7.1 DONE** trên nhánh `feat/BE2.7.1-pdf` (worktree `wt-PDF`, từ `release/pilot` @ 7b0fc43, chưa push / chưa gộp): mẫu in **PDF** (anh chốt 2026-11-17 – PDFsharp-MigraDoc 6.2.4 MIT + font Noto Sans OFL nhúng) cho 6 phiếu + in hàng loạt (1 PDF, mỗi phiếu trang mới); **PDF mặc định** (PROPOSED D-56 k, cấu hình `BusinessRules:Common:PrintDefaultFormat`). GAP-PRINT-01 / D-56 (b) đã xử lý. Test 236/236, `be2.7-common-print.http` 47/47 trên DB dev. Chi tiết: mục BE2.7.1 cuối file.
@@ -1754,3 +1755,27 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`): STT **24�
 PROPOSED chờ anh: **D-56 (k)** – PDF là định dạng mặc định khi FE không gửi `format` (đổi lại Excel bằng `BusinessRules:Common:PrintDefaultFormat=xlsx`, không cần sửa code). FE chưa gọi API in (đã kiểm `app-delicare-client`) nên chưa ảnh hưởng; handoff đã ghi.
 
 Cần anh: không có việc DB. Khi gộp BE2.7.1 lên staging chỉ cần build lại (font đi theo DLL).
+
+### T23.1 – Job tự động (AppDelicare.Job, D-48) · 2026-11-17 · DONE
+Nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ `f648505`, chưa push / chưa gộp). Anh chọn 2026-11-17 ("T23 Job tự động") sau khi Catalog R1 đã làm hết; chỉ làm backend.
+
+**Đã làm**
+- **DI dùng chung (D-48):** `AppDelicare.Services/Ioc/ServiceRegistration.AddDelicareCore` (ConfigurationCommon, IClock, Options nghiệp vụ, DbContext, AutoMapper) + `DelicareServicesModule` (Autofac – quy tắc cũ của `WebApi/Ioc/ComponentRegistrar`, thêm `IScheduledJob`). WebApi `Startup` / `ComponentRegistrar` gọi lại 2 hàm này (bỏ `InitConnection`). AutoMapper profile chuyển `WebApi/Infrastructure` → `Services/Mapping` (CodeGen `Program.cs` / `Templates.cs` / README ghi vào chỗ mới). Gói: chỉ thêm tham chiếu **Autofac 6.5.0 (đã có trong solution)** cho Services – không gói NuGet mới.
+- **Lõi job (`Services/Jobs`):** `IScheduledJob` + `JobOutcome` (Result 200 → Succeeded, 400 → Skipped), `JobSchedule` (HH:mm giờ VN, chạy bù trong ngày, lần kế tiếp), `JobRunService` (khóa `sp_getapplock` Session theo mã job → ghi `AnalyticsRefreshLog` Running → chạy trong `ICurrentActor.BeginScope` (SCHEDULE = user `system`, MANUAL = người bấm) → cập nhật Succeeded / Skipped / Failed / Locked; SourceWatermark = `<trigger>|<ngày nghiệp vụ>`).
+- **5 job (`DailyJobs.cs`)**, mỗi job gọi đúng Service của nút bấm tay: `LockOrders` (Order.LockByMealDate D+1), `Mrp` (MaterialRequirement.Calculate D+1 – đã tạo đề nghị mua → gộp PurchaseProposal 21:00), `LotExpiry` (MaterialLot.ProcessExpired), `ContractExpiry` (**mới** `ContractService.ExpireOverdue`), `MarkAbsent` (ShiftAssignment.MarkAbsent hôm qua).
+- **`AppDelicare.Job`** (Microsoft.NET.Sdk + framework ASP.NET Core, Autofac, Serilog – gói đã có): `Program.cs` (cấu hình = `appsettings.shared*.json` link từ WebApi + `appsettings.json` riêng + biến môi trường; `--list`, `--run <mã>`), `JobSchedulerService` (mỗi `JobHost:PollSeconds` = 30 giây), `Dockerfile`; docker-compose thêm service `job`.
+- **API (khung cũ):** `JobController` `GetAll` / `Run` – `[AdminOnly]`; `Contract/ExpireOverdue` (preview) – quyền Sửa `crm-contract`.
+- **Seed:** `DB/seed/SystemUser_seed.sql` – user `system` Id cố định `061877ad-…f467` (không đăng nhập được), thêm cuối `deploy/db/scripts.order`, DB/README mục 14; `appsettings.json` WebApi: `SystemUsers:JobUserId` + mục `Jobs`. **Đã chạy seed trên DB dev 2 lần** (lần 2 "đã có – giữ nguyên"). Không bảng / cột / SP mới.
+- **Sửa lỗi có sẵn:** `MaterialIssue` chi tiết – dòng cùng nguyên liệu trả theo hạn lô (FEFO) rồi số lô; trước đây thứ tự phụ thuộc DB → `FullFlowSqlServerTests` chập chờn (gặp 3 / 4 lần chạy cả bộ khi thêm test mới).
+
+**Kiểm tra:** build 0 lỗi; test **258 / 258** (+13: lịch giờ, DI WebApi + DI host Job không có phần web, quyền admin, ContractExpire, JobRunService trên SQL Server – user system, log, khóa chống trùng, job lỗi, mã sai), cả bộ chạy 3 lần liên tiếp xanh; `docs/api-tests/t23-jobs.http` **6 / 6** trên DB dev (chạy thật ContractExpiry – 0 hợp đồng quá hạn); `AppDelicare.Job --list` / `--run ContractExpiry` (ghi log dưới `system`, ngày VN) / vòng hẹn giờ 25 giây với mọi job tắt; `dotnet publish` Job + chạy bản publish môi trường Staging. **Chưa** chạy Docker (máy không có Docker), chưa cài Task Scheduler trên staging.
+
+**PROPOSED D-57 (a)–(h)** – xem DECISIONS. Cần anh: duyệt gói `Microsoft.Extensions.Hosting.WindowsServices` nếu muốn chạy dạng Windows Service (D-57 g).
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`):
+| STT | Trạng thái (J) | API thực tế | Task (M) |
+|---|---|---|---|
+| 81 | Đã xong | Job `ContractExpiry` 00:30 + `POST api/Contract/ExpireOverdue` | T23 |
+| 121 | Đã xong | Job `LotExpiry` 00:15 (`MaterialLot/ProcessExpired`) | T23 |
+| 97 (phần job 20:00) | Đã xong | Job `LockOrders` 20:00 (`Order/LockByMealDate`) | T23 |
+| 106 / 107 (phần job 20:30 / 21:00) | Đã xong | Job `Mrp` 20:30 (`MaterialRequirement/Calculate` – tạo đề nghị mua) | T23 |
