@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- T23 (D-48): cửa vào thứ hai – Worker hẹn giờ gọi Service cũ. Chạy container / tiến trình riêng, KHÔNG chạy trong WebApi.
+       Chỉ dùng gói đã có trong solution (Autofac, Serilog) + framework ASP.NET Core (Data / Services đã cần IHttpContextAccessor). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Cùng user-secrets với WebApi (máy dev): chuỗi kết nối đặt 1 lần dùng cho cả 2. -->
+    <UserSecretsId>ad53db9f-706b-403a-aece-bf7333200eba</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppDelicare.Services\AppDelicare.Services.csproj" />
+  </ItemGroup>
+
+  <!-- Cấu hình nghiệp vụ (BusinessRules, ReferenceLists, …) dùng CHUNG file của WebApi – 1 nguồn, không chép tay.
+       Thứ tự nạp (Program.cs): appsettings.shared.json → appsettings.shared.{Env}.json → appsettings.json (Jobs, log) → appsettings.{Env}.json → biến môi trường. -->
+  <ItemGroup>
+    <None Include="..\AppDelicare.WebApi\appsettings.json" Link="appsettings.shared.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\AppDelicare.WebApi\appsettings.Staging.json" Link="appsettings.shared.Staging.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\AppDelicare.WebApi\appsettings.Production.json" Link="appsettings.shared.Production.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Như AppDelicare.Services: lỗ hổng AutoMapper 13.0.1 chờ anh chốt D-22 (cảnh báo vẫn hiện ở AppDelicare.WebApi). -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-rvv3-g6hj-g44x" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gpwp-5797-mjff" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-6vhm-j9h7-f9gh" />
+  </ItemGroup>
+
+</Project>

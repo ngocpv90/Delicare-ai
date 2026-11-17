@@ -1,39 +1,17 @@
 ﻿using Autofac;
-using Microsoft.EntityFrameworkCore;
-using AppDelicare.Data.Interface;
-using AppDelicare.Data.Repositories;
-using AppDelicare.Model.Option;
-using AppDelicare.Services.Interface;
-using System.Reflection;
 
 namespace AppDelicare.WebApi.Ioc
 {
+    /// <summary>
+    /// T23 (D-48): quy tắc đăng ký chuyển sang <see cref="AppDelicare.Services.Ioc.DelicareServicesModule"/> để AppDelicare.Job dùng chung.
+    /// Giữ lớp này làm điểm vào cho Startup.ConfigureContainer (đăng ký riêng của web thêm ở đây nếu cần).
+    /// </summary>
     public class ComponentRegistrar : Autofac.Module
     {
         protected override void Load(ContainerBuilder builder)
         {
             base.Load(builder);
-            var assembly = Assembly.GetExecutingAssembly();
-#pragma warning disable CS8601 // Possible null reference assignment.
-            builder.RegisterAssemblyTypes([Assembly.GetAssembly(typeof(ILoginService))]).Where(x => x.IsClass && x.Name.EndsWith("Service")).As(t => t.GetInterfaces().Length != 0 ? t.GetInterfaces()[0] : t);
-#pragma warning restore CS8601 // Possible null reference assignment.
-#pragma warning disable CS8601 // Possible null reference assignment.
-            builder.RegisterAssemblyTypes([Assembly.GetAssembly(typeof(IDapperRepository))]).Where(x => x.IsClass && x.Name.EndsWith("Repository")).As(t => t.GetInterfaces().Length != 0 ? t.GetInterfaces()[0] : t);
-#pragma warning restore CS8601 // Possible null reference assignment.
-#pragma warning disable CS8601 // Possible null reference assignment.
-            builder.RegisterAssemblyTypes([Assembly.GetAssembly(typeof(JwtIssuerOptions))]).Where(x => x.IsClass && x.Name.EndsWith("Options")).As(t => t.GetInterfaces().Length != 0 ? t.GetInterfaces()[0] : t);
-#pragma warning restore CS8601 // Possible null reference assignment.
-
-            // T12: bộ xử lý duyệt theo BusinessType (IApprovalHandler) – registry cho ApprovalRequestService.
-            builder.RegisterAssemblyTypes([Assembly.GetAssembly(typeof(ILoginService))!])
-                .Where(x => x.IsClass && !x.IsAbstract && typeof(IApprovalHandler).IsAssignableFrom(x)).As<IApprovalHandler>();
-
-            //----------------------Common-----------------------------------------------
-            builder.RegisterType<UnitOfWork>().As<IUnitOfWork>();
-            builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>().SingleInstance();
-            builder.RegisterType<DbContext>().As<DbContext>();
-            builder.RegisterType<Data.Share.CurrentActor>().As<Data.Share.ICurrentActor>();
-            builder.RegisterType<Data.Share.AuthenticatedService>().As<Data.Share.IAuthenticatedService>();
+            builder.RegisterModule<AppDelicare.Services.Ioc.DelicareServicesModule>();
         }
     }
 }

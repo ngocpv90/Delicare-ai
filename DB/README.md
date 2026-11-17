@@ -31,6 +31,7 @@ So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** 
 | 11 | `seed/FoodSafetyChecklist_seed.sql` (mới) | T17 | Bộ `PRD_BATCH`: `SAMPLE_RETAINED` (lưu mẫu – bắt buộc trước khi giao, D-42), `CORE_TEMP` |
 | 12 | `seed/ProductionStage_seed.sql` (mới) | BE2.4 | Bộ `PRD_STAGE` "Công đoạn sản xuất theo tổ": `SO_CHE` → `NAU` → `CHIA_SUAT` (PROPOSED – D-53 e). Chỉ thêm khi chưa có (theo Code / ItemCode), không ghi đè |
 | 13 | `seed/FoodSafetyQa_seed.sql` (mới) | BE2.5 | Bộ checklist `QA_FG` (thành phẩm), `PREP`, `PREP_AREA_CLEAN`, `BLAST_CHILL`, `KITCHEN_CLEAN` (5S), `VS-KHAY` (vệ sinh khay 6 bước) – PROPOSED D-54. Chỉ thêm khi chưa có (theo Code / ItemCode), không ghi đè |
+| 14 | `seed/SystemUser_seed.sql` (mới) | T23 | Tài khoản dịch vụ `system` (Id cố định `061877ad-396c-4386-8868-25d4940bf467` = `SystemUsers:JobUserId`) cho job tự động – không đăng nhập được (mật khẩu không phải hash hợp lệ), không cấp nhóm quyền. Chỉ thêm khi chưa có |
 
 T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **không có SP / seed mới** (đọc / ghi qua EF + SP `usp*_GetAll` sẵn có).
 

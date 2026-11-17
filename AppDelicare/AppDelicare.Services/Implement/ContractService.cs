@@ -471,6 +471,51 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// T23 (Catalog 81, spec 6.1 ContractExpiryJob – PROPOSED D-59): hợp đồng <b>Hiệu lực</b> có <c>EffectiveTo</c> &lt; hôm nay → <b>Hết hạn</b>,
+        /// ghi chú "Hết hạn ngày dd/MM/yyyy". Chạy lại không đổi gì thêm (chỉ chọn hợp đồng còn Hiệu lực). Không đụng đơn hàng
+        /// (đơn sau ngày hết hiệu lực đã bị chặn lúc tạo / sửa theo hiệu lực hợp đồng).
+        /// </summary>
+        public async Task<IResult<ContractExpireResultModel>> ExpireOverdue(ContractExpireRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                DateTime today = _clock.Today;
+                var contracts = await _unitOfWork.DbContext.Contract
+                    .Where(c => !c.IsDeleted && c.Status == ContractStatus.Active && c.EffectiveTo != null && c.EffectiveTo < today)
+                    .OrderBy(c => c.EffectiveTo).ThenBy(c => c.ContractNumber)
+                    .ToListAsync();
+                var result = new ContractExpireResultModel
+                {
+                    Preview = request.Preview,
+                    Today = today,
+                    ExpiredCount = contracts.Count,
+                    ListContractNumber = contracts.Select(c => c.ContractNumber ?? c.ContractNo ?? c.Id.ToString()).ToList(),
+                };
+                if (request.Preview || contracts.Count == 0)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<ContractExpireResultModel>.Success(result, ConstantHelper.Message.GetAllSuccessfully);
+                }
+                foreach (var contract in contracts)
+                {
+                    contract.Status = ContractStatus.Expired;
+                    contract.Note = AppendNote(contract.Note, $"Hết hạn ngày {contract.EffectiveTo!.Value:dd/MM/yyyy}");
+                    _unitOfWork.ContractRepository.Update(contract);
+                }
+                await _unitOfWork.ContractRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                return Result<ContractExpireResultModel>.Success(result, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExpireOverdue: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
         /// <summary>Chi tiết hợp đồng (spec 6.1) – loại suất, thao tác được phép, yêu cầu duyệt đang chờ, số đơn chưa giao.</summary>
         public async Task<IResult<ContractDetailModel>> GetDetail(Guid id)
         {

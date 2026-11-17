@@ -89,6 +89,8 @@ AppDelicare.Job        Worker Service .NET 8 (MỚI)
 5. Triển khai: **Docker** = container `job` riêng (1 bản, API chạy bao nhiêu bản tùy ý); **IIS / Windows** = Windows Service. Deploy API không làm dừng job và ngược lại.
 6. **Không** chạy job bên trong WebApi (IIS tự tắt app khi không có truy cập → job không chạy đúng giờ).
 
+**Đã cài (T23, 2026-11-17 – PROPOSED D-59):** khác sơ đồ trên ở chỗ job nằm trong `AppDelicare.Services/Jobs/` (`IScheduledJob`, `JobSchedule`, `JobRunService` = khóa + log + actor, `DailyJobs.cs` = 5 job) để `JobController` của WebApi chạy tay cùng code; `AppDelicare.Job` chỉ có `Program.cs` (host, `--list`, `--run <mã>`) + `JobSchedulerService` (mỗi 30 giây). DI dùng chung: `AppDelicare.Services/Ioc/ServiceRegistration.AddDelicareCore` + `DelicareServicesModule` (Autofac); AutoMapper profile chuyển sang `AppDelicare.Services/Mapping/` (CodeGen ghi vào đó). Tài khoản job: user `system` (Id cố định, seed `SystemUser_seed.sql`). Lịch `Jobs:<mã>` ở `appsettings.json` của WebApi (Job đọc qua link `appsettings.shared.json`). Windows: Task Scheduler (Windows Service chờ duyệt gói – D-59 g). Deploy: `deploy/README.md` mục "Job tự động".
+
 ## 2. Lớp 2 – Tool Gateway
 - **Danh bạ công cụ** (`tools.json` hoặc attribute): `name`, `description` (tiếng Việt, rõ khi nào dùng), `inputSchema`, `mode` = read | write, `domain`, `allowedAgents`, `allowedRoles`, `risk` = low | medium | high, `confirm` = none | requester | role:<code>.
 - **Đọc:** gọi Application query rồi trả JSON gọn. Có giới hạn số dòng và không trả dữ liệu cá nhân (SĐT, MST, email) trừ khi vai trò cho phép.

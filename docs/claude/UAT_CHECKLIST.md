@@ -99,6 +99,22 @@ Trước khi thử trên staging: chạy `DB/seed/ObjectMenu_disable_legacy.sql`
 
 Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1-flow-gaps.http` (đóng gói, xếp xe, đơn giao), `be2.2-contract-forecast.http` (hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt), `be2.3-multilevel-approval.http` (duyệt nhiều cấp, kiểm kê), `be2.4-inventory-production.http` (giữ chỗ, hủy lệnh, công đoạn, giá thành), `be2.5-foodsafety-packaging.http` (ATTP, vệ sinh, hộp / khay, sự cố NCC), `be2.6-hr.http` (nhân sự), `be2.7-common-print.http` (in / xuất / tệp / lịch sử).
 
+## JOB TỰ ĐỘNG (T23, 2026-11-17) · file thử: `docs/api-tests/t23-jobs.http` · test tự động: `AppDelicare.Tests/Jobs/JobTests.cs`
+Chạy `AppDelicare.Job` cạnh API (deploy/README.md mục "Job tự động"). Kiểm bằng admin; giờ theo giờ Việt Nam.
+
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Danh sách job | `dotnet AppDelicare.Job.dll --list` và `GET api/Job/GetAll` | 5 job, giờ 20:00 / 20:30 / 00:15 / 00:30 / 08:00, lần chạy kế tiếp đúng giờ VN | [ ] | |
+| 2 | Khóa đơn 20:00 | Có đơn Đã xác nhận ngày mai → chờ 20:00 (hoặc `Job/Run` LockOrders sau 20:00) | Đơn → Đã khóa; `lastRun.message` liệt kê đơn chưa xác nhận / chờ duyệt | [ ] | Trước 20:00 → Skipped "chưa đến giờ chốt" |
+| 3 | MRP 20:30 | Sau bước 2 | Kế hoạch KH- ngày mai, đề nghị mua Nháp cho nguyên liệu thiếu | [ ] | |
+| 4 | Lô hết hạn 00:15 | Có lô Khả dụng hạn hôm qua | Lô → Hết hạn, phiếu hao hụt PH- | [ ] | |
+| 5 | Hợp đồng hết hạn 00:30 | Hợp đồng Hiệu lực hết hiệu lực hôm qua (`Contract/ExpireOverdue` preview trước) | Hợp đồng → Hết hạn, ghi chú "Hết hạn ngày …" | [ ] | |
+| 6 | Chốt vắng 08:00 | Ca hôm qua không chấm vào | Phân ca → Vắng | [ ] | |
+| 7 | Lỡ giờ | Tắt Job qua 20:00, bật lại trước 24:00 | Chạy bù LockOrders / Mrp ngay khi bật | [ ] | |
+| 8 | Chống chạy trùng | Chạy 2 bản Job cùng lúc / bấm `Job/Run` khi job đang chạy | Bản thứ 2: Locked "đang chạy ở nơi khác" | [ ] | |
+| 9 | Quyền | User thường gọi `api/Job/GetAll` | HTTP 403 | [ ] | |
+| 10 | Người ghi | Xem lịch sử bản ghi (`Common/GetHistory`) của đơn do job khóa | Người thao tác = `system` | [ ] | |
+
 ## PILOT – Luồng P3 → P8 bằng API (T50R1, 2026-11-17) – **ĐÃ THAY bằng mục TOÀN LUỒNG R1 ở trên (BE2.9)**, giữ để đối chiếu · file thử: `docs/api-tests/pilot-flow.http` · test tự động: `AppDelicare.Tests/Pilot/PilotFlowSqlServerTests.cs`
 Thử trên **staging** (`http://localhost:5200`, deploy/README.md mục 9) hoặc dev. Chạy `pilot-flow.http` **từ trên xuống** (đổi `@key`, `@day`, `@dow` mỗi lần). Lỗi nghiệp vụ = HTTP 200 + `responseCode 400` + thông báo tiếng Việt; không có quyền màn hình = HTTP 403.
 **Vai trò / token:** chạy lần 1 bằng `admin` (mọi quyền) để thấy luồng thông suốt; lần 2 đăng nhập **đúng người** từng bước (cột "Vai trò") – quyền = ma trận `UserRole` × mục menu (D-31), nhóm gợi ý theo ORG_STRUCTURE (PROPOSED – anh chỉnh trên màn phân quyền). Quyền duyệt = `AllowEdit` trên mục "Duyệt – …" (`#/wf-inbox?type=<màn>`).

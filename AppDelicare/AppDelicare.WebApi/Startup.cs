@@ -11,7 +11,7 @@ using AppDelicare.WebApi.Ioc;
 
 namespace AppDelicare.WebApi
 {
-    public class Startup(IConfiguration configuration)
+    public class Startup(IConfiguration configuration, IWebHostEnvironment environment)
     {
         public const string CorsPolicyName = "Default";
 
@@ -22,8 +22,9 @@ namespace AppDelicare.WebApi
         {
             // T01: thiếu bí mật bắt buộc thì dừng ngay, báo rõ khóa nào thiếu.
             StartupSecrets.Validate(Configuration);
-            // Cho các lớp cũ đọc cấu hình tĩnh (DapperRepository, UnitOfWork) thấy cả user-secrets / biến môi trường.
-            AppDelicare.Model.Common.ConfigurationCommon.Initialize(Configuration);
+            // T23 (D-48): phần dùng chung với AppDelicare.Job (AppDelicare.Services/Ioc): ConfigurationCommon cho lớp cũ, HttpContextAccessor, MemoryCache,
+            // IClock + BusinessRules / Permission / ReferenceLists / DocumentStorage options, IReferenceGuard, DbContext, AutoMapper.
+            AppDelicare.Services.Ioc.ServiceRegistration.AddDelicareCore(services, Configuration, environment.ContentRootPath);
 
             services.AddApplicationInsightsTelemetry();
             string? quickPulseApiKey = Configuration[StartupSecrets.QuickPulseApiKey];
@@ -53,36 +54,11 @@ namespace AppDelicare.WebApi
                     InvariantCultureValueProviderFactory.Apply(options.ValueProviderFactories);
                 })
                 .AddJsonOptions(options => ApiJson.Configure(options.JsonSerializerOptions));
-            services.AddHttpContextAccessor();
-            services.AddMemoryCache();
             services.AddDelicareHealthChecks(); // T48.1
-            // T45R: IClock, BusinessRules, quyền ở tầng cũ (PermissionService trong AppDelicare.Services – Autofac đăng ký).
-            services.Configure<AppDelicare.Model.Option.BusinessRulesOptions>(Configuration.GetSection(AppDelicare.Model.Option.BusinessRulesOptions.Section));
-            services.AddSingleton<AppDelicare.Data.Share.IClock, AppDelicare.Data.Share.SystemClock>();
-            services.Configure<AppDelicare.Model.Option.PermissionOptions>(Configuration.GetSection(AppDelicare.Model.Option.PermissionOptions.Section));
-            services.Configure<AppDelicare.Model.Option.ReferenceListsOptions>(Configuration.GetSection(AppDelicare.Model.Option.ReferenceListsOptions.Section)); // T45B.5
-            // BE2.7: tệp đính kèm lưu NGOÀI wwwroot; đường dẫn tương đối tính từ ContentRoot (Docker / IIS: gắn volume / thư mục có quyền ghi – deploy/README.md).
-            services.AddOptions<AppDelicare.Model.Option.DocumentStorageOptions>()
-                .Bind(Configuration.GetSection(AppDelicare.Model.Option.DocumentStorageOptions.Section))
-                .PostConfigure<IWebHostEnvironment>((o, env) =>
-                {
-                    string root = string.IsNullOrWhiteSpace(o.RootPath) ? "App_Data/DocumentFiles" : o.RootPath;
-                    o.RootPath = Path.GetFullPath(Path.IsPathRooted(root) ? root : Path.Combine(env.ContentRootPath, root));
-                });
-            services.AddScoped<AppDelicare.Data.Share.IReferenceGuard, AppDelicare.Data.Share.ReferenceGuard>();
             // T03: mọi ProblemDetails do MVC sinh (400 validation, Problem()) mang traceId = CorrelationId.
             services.AddProblemDetails(options => options.CustomizeProblemDetails = ctx =>
                 ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.Items[AppDelicare.Data.Share.CurrentActor.CorrelationIdItemKey] as string ?? ctx.HttpContext.TraceIdentifier);
-            services.InitConnection(Configuration);
             services.InitAuthentication(Configuration);
-            var autoMapper = new MapperConfiguration(x =>
-            {
-                x.AddProfile(new AutoMapperConfiguraion());
-                x.AddProfile(new AutoMapperCustomConfiguraion());
-                x.AddProfile(new AutoMapperGeneratedProfile()); // T05: CodeGen
-            });
-            IMapper mapper = autoMapper.CreateMapper();
-            services.AddSingleton(mapper);
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo

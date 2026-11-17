@@ -115,12 +115,12 @@ if (Layer("unitofwork"))
 }
 if (Layer("automapper"))
 {
-    string legacyProfile = File.ReadAllText(P("AppDelicare.WebApi", "Infrastructure", "AutoMapperConfiguraion.cs"));
+    string legacyProfile = File.ReadAllText(P("AppDelicare.Services", "Mapping", "AutoMapperConfiguraion.cs"));
     var mapped = all.Where(t => !Metadata.IsStandalone(t) && !Metadata.IsLegacyReadOnly(t))
         .Select(t => Metadata.ClassOf(t.Name))
         .Where(c => !Regex.IsMatch(legacyProfile, $@"CreateMap<{c}Request,\s*{c}>"))
         .ToList();
-    Write(P("AppDelicare.WebApi", "Infrastructure", "AutoMapperGeneratedProfile.cs"), Templates.AutoMapperProfile(mapped), true);
+    Write(P("AppDelicare.Services", "Mapping", "AutoMapperGeneratedProfile.cs"), Templates.AutoMapperProfile(mapped), true);
 }
 
 // T45R (D-30): bỏ layer "crud" (metadata cho CRUD v1 generic) – lớp v1 đã chuyển vào _obsolete/v1.
