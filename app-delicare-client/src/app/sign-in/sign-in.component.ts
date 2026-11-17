@@ -22,11 +22,13 @@ import {
   SOURCE,
   STRING_EMPTY,
 } from '../helpers/constant-helper';
+import { ThemeService } from '../delicare/theme.service';
 import { AuthenticationService } from '../services/authentication.service';
 
 @Component({
   selector: 'app-sign-in',
   templateUrl: './sign-in.component.html',
+  styleUrls: ['./sign-in.component.css'],
 })
 export class SignInComponent implements OnInit {
   public isLoading = false;
@@ -44,8 +46,10 @@ export class SignInComponent implements OnInit {
     private formBuilder: UntypedFormBuilder,
     private route: ActivatedRoute,
     private notifyService: NotifyService,
-    private renderer: Renderer2
+    private renderer: Renderer2,
+    theme: ThemeService
   ) {
+    theme.use('delicare');
     if (this.authenticationService.userValue) {
       this.router.navigate([SOURCE.concat(DOMAIN_ROUTER, SOURCE, HOME_ROUTE)]);
     }

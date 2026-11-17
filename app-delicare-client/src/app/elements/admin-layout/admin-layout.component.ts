@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
+import { ThemeService } from '../../delicare/theme.service';
 import { NavHeaderComponent } from '../nav-header/nav-header.component';
 import { HeaderComponent } from '../header/header.component';
 import { ChatboxComponent } from '../chatbox/chatbox.component';
@@ -27,7 +28,8 @@ export class AdminLayoutComponent {
   toggleVal: boolean = false;
   mouseOvered: boolean = false;
   currentUrl: string = '';
-  constructor(private router: Router) {
+  constructor(private router: Router, theme: ThemeService) {
+    theme.use('w3crm'); // trang demo của template W3CRM dùng CSS gốc
     router.events.subscribe(() => {
       setTimeout(() => {
         this.handleMinHeight();

@@ -14,7 +14,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
 	<!-- Template theme. DELI-CARE overrides (assets/css/custom.css, clinic.css) are bundled via angular.json and load after this -->
-	<link href="assets/css/style.css" rel="stylesheet">
+	<link id="w3crm-theme" href="assets/css/style.css" rel="stylesheet">
+	<!-- custom.css + clinic.css (bundle "w3crm", inject: false trong angular.json). ThemeService tắt 2 file này ở giao diện DELICARE -->
+	<link id="w3crm-custom" href="w3crm.css" rel="stylesheet">
 
 	<!-- Be Vietnam Pro (D-36). No local copy in the repo yet: loaded from Google Fonts, system font fallback offline -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
