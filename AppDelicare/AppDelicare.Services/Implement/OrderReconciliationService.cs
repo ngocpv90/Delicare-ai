@@ -463,7 +463,7 @@ namespace AppDelicare.Services.Implement
                 BillingBasis = note?.BillingBasis,
                 BillingQuantity = note?.BillingQuantity ?? served,
                 ListPod = pods,
-                AllowedActions = reconciliation.Status is ReconciliationStatus.Matched or ReconciliationStatus.Variance ? ["reconcile", "close"] : [],
+                AllowedActions = (reconciliation.Status is ReconciliationStatus.Matched or ReconciliationStatus.Variance) ? ["reconcile", "close"] : [],
             };
         }
 
