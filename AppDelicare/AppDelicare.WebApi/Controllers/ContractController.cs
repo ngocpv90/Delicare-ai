@@ -227,7 +227,7 @@ namespace AppDelicare.WebApi.Controllers
 
         /// <summary>
         /// T23 (Catalog 81): hợp đồng Hiệu lực có ngày hết hiệu lực &lt; hôm nay → Hết hạn (form: <c>preview</c> = chỉ liệt kê).
-        /// Job ContractExpiry 00:30 gọi cùng hàm. Quyền Sửa trên crm-contract (PROPOSED D-57).
+        /// Job ContractExpiry 00:30 gọi cùng hàm. Quyền Sửa trên crm-contract (PROPOSED D-59).
         /// </summary>
         [HttpPost("ExpireOverdue")]
         public async Task<IActionResult> ExpireOverdue([FromForm] ContractExpireRequest request)

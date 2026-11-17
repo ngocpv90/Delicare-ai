@@ -346,9 +346,9 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 ## T23 – Job tự động (AppDelicare.Job, D-48): câu hỏi kèm đề xuất (khối riêng để dễ gộp)
 | Mã | Câu hỏi | Đề xuất của em | Ảnh hưởng |
 |---|---|---|---|
-| D-57 | **T23 – job tự động: các quy tắc PROPOSED đã cài (mẫu hỏi D-49, bảng D-57 ngay dưới).** Không mục nào BLOCKED; em đã làm theo "Đề xuất". Ghi chú: **D-05** ("job chạy ngay trong backend, hosted service") đã được **D-48** (anh chốt sau, cùng ngày) thay – job chạy ở tiến trình riêng `AppDelicare.Job`, các ý còn lại của D-05 giữ nguyên (không bảng mới, lịch trong cấu hình, Serilog + `AnalyticsRefreshLog`, `sp_getapplock`). | Anh trả lời "đồng ý D-57" hoặc sửa từng mục | Job, deploy |
+| D-59 | **T23 – job tự động: các quy tắc PROPOSED đã cài (mẫu hỏi D-49, bảng D-59 ngay dưới).** Không mục nào BLOCKED; em đã làm theo "Đề xuất". Ghi chú: **D-05** ("job chạy ngay trong backend, hosted service") đã được **D-48** (anh chốt sau, cùng ngày) thay – job chạy ở tiến trình riêng `AppDelicare.Job`, các ý còn lại của D-05 giữ nguyên (không bảng mới, lịch trong cấu hình, Serilog + `AnalyticsRefreshLog`, `sp_getapplock`). | Anh trả lời "đồng ý D-59" hoặc sửa từng mục | Job, deploy |
 
-#### D-57 – T23: câu hỏi kèm đề xuất (PROPOSED – BA/PO CONFIRM, đã cài theo "Đề xuất")
+#### D-59 – T23: câu hỏi kèm đề xuất (PROPOSED – BA/PO CONFIRM, đã cài theo "Đề xuất")
 | # | Vấn đề | Đề xuất (em chọn) + lý do | Phương án khác |
 |---|---|---|---|
 | (a) | Job nào trong R1 (AGENTS.md §2 có 7 job + 2 job đợt bot). | **5 job:** `LockOrders` 20:00 (khóa đơn D+1), `Mrp` 20:30 (MRP D+1 **+ đề nghị mua** – gộp PurchaseProposal 21:00 vì `MaterialRequirement/Calculate` đã tạo đề nghị mua Nháp), `LotExpiry` 00:15, `ContractExpiry` 00:30, `MarkAbsent` 08:00. **Không làm** ApprovalExpiry / ComplaintSlaWatch: quá hạn đã là cờ `isOverdue` tính lúc đọc (D-52 e, BE2.1), chưa có kênh thông báo (bot để sau) → job chỉ đếm, không có giá trị. RemindUnconfirmedOrders 19:00 / KpiDailySnapshot 22:00 → đợt bot / KPI. | Thêm job "nhắc" ghi danh sách vào log mỗi giờ (không ai đọc khi chưa có bot). |

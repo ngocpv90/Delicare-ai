@@ -136,7 +136,7 @@ Tiến trình **riêng** (không chạy trong WebApi – IIS tự tắt app khi 
   dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll --list
   dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll --run ContractExpiry
   ```
-  Chạy liên tục: **Task Scheduler** → tác vụ "At startup", tài khoản dịch vụ, chạy `dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll`, biến môi trường đặt ở cấp máy / tài khoản đó, bật "Restart on failure". (Chạy dạng **Windows Service** cần thêm gói `Microsoft.Extensions.Hosting.WindowsServices` (MIT) – **chờ anh duyệt gói mới**, xem DECISIONS D-57.)
+  Chạy liên tục: **Task Scheduler** → tác vụ "At startup", tài khoản dịch vụ, chạy `dotnet C:\Deploy\delicare-job\AppDelicare.Job.dll`, biến môi trường đặt ở cấp máy / tài khoản đó, bật "Restart on failure". (Chạy dạng **Windows Service** cần thêm gói `Microsoft.Extensions.Hosting.WindowsServices` (MIT) – **chờ anh duyệt gói mới**, xem DECISIONS D-59.)
 - Cập nhật bản build Job: dừng tác vụ / container → publish đè → chạy lại. Deploy API không làm dừng Job và ngược lại.
 
 ## 6. Kiểm tra sau triển khai

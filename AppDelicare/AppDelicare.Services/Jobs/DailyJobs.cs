@@ -4,7 +4,7 @@ using AppDelicare.Services.Interface;
 namespace AppDelicare.Services.Jobs
 {
     // T23 (D-48, AGENTS.md §2, spec 6.1 / 6.6 / 7.1 / 7.5 / 11.2): mỗi job = 1 lớp mỏng gọi Service cũ – cùng code với nút bấm tay.
-    // Giờ mặc định ghi ở DefaultAt; đổi giờ / tắt bằng cấu hình Jobs:<Code> (PROPOSED D-57).
+    // Giờ mặc định ghi ở DefaultAt; đổi giờ / tắt bằng cấu hình Jobs:<Code> (PROPOSED D-59).
 
     /// <summary>20:00 – khóa đơn ngày mai (Confirmed → Locked). Đơn chưa xác nhận / chờ duyệt được liệt kê, không khóa.</summary>
     public sealed class LockOrdersJob(IOrderService orderService) : IScheduledJob

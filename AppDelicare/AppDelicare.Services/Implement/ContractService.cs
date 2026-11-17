@@ -472,7 +472,7 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
-        /// T23 (Catalog 81, spec 6.1 ContractExpiryJob – PROPOSED D-57): hợp đồng <b>Hiệu lực</b> có <c>EffectiveTo</c> &lt; hôm nay → <b>Hết hạn</b>,
+        /// T23 (Catalog 81, spec 6.1 ContractExpiryJob – PROPOSED D-59): hợp đồng <b>Hiệu lực</b> có <c>EffectiveTo</c> &lt; hôm nay → <b>Hết hạn</b>,
         /// ghi chú "Hết hạn ngày dd/MM/yyyy". Chạy lại không đổi gì thêm (chỉ chọn hợp đồng còn Hiệu lực). Không đụng đơn hàng
         /// (đơn sau ngày hết hiệu lực đã bị chặn lúc tạo / sửa theo hiệu lực hợp đồng).
         /// </summary>

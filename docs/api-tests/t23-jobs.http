@@ -3,7 +3,7 @@
 ###   Job/GetAll  – danh sách job, bật / tắt, giờ chạy (giờ VN), lần chạy kế tiếp, lần chạy gần nhất (AnalyticsRefreshLog)
 ###   Job/Run     – chạy 1 job ngay (form jobCode), dưới tài khoản người bấm; đang chạy ở nơi khác → 400
 ###   Contract/ExpireOverdue – nút tay của job ContractExpiry (Catalog 81), preview = chỉ liệt kê
-### Mã job: LockOrders (20:00), Mrp (20:30), LotExpiry (00:15), ContractExpiry (00:30), MarkAbsent (08:00) – PROPOSED D-57.
+### Mã job: LockOrders (20:00), Mrp (20:30), LotExpiry (00:15), ContractExpiry (00:30), MarkAbsent (08:00) – PROPOSED D-59.
 ### File này chỉ CHẠY THẬT job ContractExpiry (an toàn trên DB dev: chỉ hợp đồng Hiệu lực đã quá ngày hết hiệu lực). Các job khác đổi dữ liệu
 ### (khóa đơn, MRP, hao hụt lô, đánh vắng) – chạy tay khi cần: POST Job/Run với jobCode tương ứng.
 ### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
