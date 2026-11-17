@@ -96,6 +96,7 @@ namespace AppDelicare.Tests.Common
                 doc.Data!.ListRow.Single().Should().Contain("500.000");
                 (await print.Print("GOODS_RECEIPT", gr, "xlsx")).Data!.Content.Length.Should().BeGreaterThan(1000);
                 (await print.Print("GOODS_RECEIPT", gr, "docx")).Data!.Content.Length.Should().BeGreaterThan(1000);
+                PdfText.Read((await print.Print("GOODS_RECEIPT", gr, "pdf")).Data!.Content).Has("PHIẾU NHẬP KHO").Should().BeTrue("BE2.7.1: PDF từ GetDetail thật");
                 await tx.RollbackAsync();
             }
 

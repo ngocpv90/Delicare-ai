@@ -365,7 +365,9 @@ namespace AppDelicare.Tests.Pilot
                 (await Post("/api/GoodsReceipt/Post", ("Id", Id(grDk.GetProperty("goodsReceipt"))), ("Note", "[DEMO]"))).Ok();
                 await GetFile($"/api/GoodsReceipt/Print?id={grId}");
                 await GetFile($"/api/GoodsReceipt/Print?id={grId}&format=docx");
-                (await Get($"/api/GoodsReceipt/Print?id={grId}&format=pdf")).Fail(); // D-56 b
+                Encoding.ASCII.GetString((await GetFile($"/api/GoodsReceipt/Print?id={grId}&format=pdf")).Take(5).ToArray())
+                    .Should().Be("%PDF-"); // BE2.7.1: PDF (D-56 b, anh chốt 2026-11-17)
+                (await Get($"/api/GoodsReceipt/Print?id={grId}&format=html")).Fail();
 
                 // ===== 8. Kho: xuất tay đích danh lô hết hạn → chặn
                 (await PostJson("/api/MaterialIssue/Create", new

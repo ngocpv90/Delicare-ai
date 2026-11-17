@@ -16,6 +16,7 @@ RUN dotnet publish AppDelicare.WebApi/AppDelicare.WebApi.csproj -c Release -o /a
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 # Giờ Việt Nam (D-18) + thư viện cho xử lý tài liệu (GemBox / Syncfusion).
+# PDF mẫu in (BE2.7.1, PDFsharp-MigraDoc): font Noto Sans nhúng trong AppDelicare.Services.dll → không cần gói font apt.
 ENV TZ=Asia/Ho_Chi_Minh \
     ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Staging \

@@ -13,7 +13,7 @@ namespace AppDelicare.Tests.Common
 {
     /// <summary>
     /// BE2.7 – mẫu in (spec 2.5, Catalog 24–30): phiếu nhập (chỉ khi QC đã kết luận), phiếu xuất (chỉ Đã xuất), kiểm kê (chưa ghi sổ → BẢN NHÁP), phiếu giao,
-    /// biên bản POD, đối soát (không in khi Mở) – xlsx (mặc định) / docx (GemBox), PDF → 400 (D-56 b); in hàng loạt theo danh sách + theo chuyến, tối đa 100, quyền In từng loại phiếu.
+    /// biên bản POD, đối soát (không in khi Mở) – PDF (mặc định, BE2.7.1 – PDFsharp-MigraDoc + Noto Sans, D-56 k) / xlsx / docx (GemBox); in hàng loạt theo danh sách + theo chuyến, tối đa 100, quyền In từng loại phiếu.
     /// </summary>
     public class PrintTests : IClassFixture<InMemoryApiFactory>
     {
@@ -24,6 +24,18 @@ namespace AppDelicare.Tests.Common
         private static readonly byte[] ZipMagic = [0x50, 0x4B, 0x03, 0x04];
         private const string XlsxType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         private const string DocxType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        private const string PdfType = "application/pdf";
+
+        /// <summary>BE2.7.1: tải PDF, kiểm Content-Type + %PDF- + font nhúng, đọc lại chữ.</summary>
+        private static async Task<PdfText> PdfAsync(HttpResponseMessage response, string because)
+        {
+            response.StatusCode.Should().Be(HttpStatusCode.OK, because);
+            response.Content.Headers.ContentType!.MediaType.Should().Be(PdfType, because);
+            var pdf = PdfText.Read(await response.Content.ReadAsByteArrayAsync());
+            pdf.PageCount.Should().BeGreaterThan(0, because);
+            pdf.FontsEmbedded.Should().BeTrue(because);
+            return pdf;
+        }
 
         private async Task<IPrintService> PrintAsync(Func<IPrintService, Task> use)
         {
@@ -76,15 +88,22 @@ namespace AppDelicare.Tests.Common
             word.Content.Headers.ContentType!.MediaType.Should().Be(DocxType);
             (await word.Content.ReadAsByteArrayAsync()).Take(4).Should().Equal(ZipMagic);
 
-            var xlsx = await admin.GetAsync($"api/GoodsReceipt/Print?id={gr}");
-            xlsx.Content.Headers.ContentType!.MediaType.Should().Be(XlsxType, "mặc định Excel");
+            // BE2.7.1: không gửi format → PDF (spec 2.5; BusinessRules:Common:PrintDefaultFormat – D-56 k).
+            var pdf = await PdfAsync(await admin.GetAsync($"api/GoodsReceipt/Print?id={gr}"), "mặc định PDF");
+            foreach (var text in new[] { "PHIẾU NHẬP KHO", "[DEMO] CÔNG TY THỬ IN B27", "Mẫu số 01 - VT", "[DEMO] Thịt gà " + key, "LOT-" + key, "720.000", "Thủ kho", "PN-" + key, "[DEMO] dòng 1" })
+            {
+                pdf.Has(text).Should().BeTrue($"PDF phiếu nhập phải có \"{text}\"");
+            }
+            (await PdfAsync(await admin.GetAsync($"api/GoodsReceipt/Print?id={gr}&format=PDF"), "format=PDF")).Has("PHIẾU NHẬP KHO").Should().BeTrue();
+
+            var xlsx = await admin.GetAsync($"api/GoodsReceipt/Print?id={gr}&format=xlsx");
+            xlsx.Content.Headers.ContentType!.MediaType.Should().Be(XlsxType);
             using (var wb = new XLWorkbook(new MemoryStream(await xlsx.Content.ReadAsByteArrayAsync())))
             {
                 var ws = wb.Worksheets.Single();
                 ws.Name.Should().Be("PN-" + key);
                 ws.CellsUsed().Select(c => c.GetString()).Should().Contain(["PHIẾU NHẬP KHO", "[DEMO] CÔNG TY THỬ IN B27", "[DEMO] Thịt gà " + key, "720.000", "Thủ kho"]);
             }
-            (await admin.GetResultAsync($"api/GoodsReceipt/Print?id={gr}&format=pdf")).Fail("Chưa xuất được PDF");
             (await admin.GetResultAsync($"api/GoodsReceipt/Print?id={gr}&format=html")).Fail("không hỗ trợ");
 
             await PrintAsync(async p =>
@@ -97,7 +116,7 @@ namespace AppDelicare.Tests.Common
 
             // Quyền In theo màn #/scm-gr (PermissionConvention: Print*).
             Guid viewer = await CommonTestUsers.UserAsync(_factory, ("scm-gr", "V"));
-            (await _factory.CreateAuthorizedClient(viewer).GetAsync($"api/GoodsReceipt/Print?id={gr}")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            (await _factory.CreateAuthorizedClient(viewer).GetAsync($"api/GoodsReceipt/Print?id={gr}&format=pdf")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
             Guid printer = await CommonTestUsers.UserAsync(_factory, ("scm-gr", "VP"));
             (await _factory.CreateAuthorizedClient(printer).GetAsync($"api/GoodsReceipt/Print?id={gr}")).StatusCode.Should().Be(HttpStatusCode.OK);
         }
@@ -132,12 +151,25 @@ namespace AppDelicare.Tests.Common
                 (await db.MaterialIssue.SingleAsync(x => x.Id == issue)).Status = "Issued";
                 (await db.OrderReconciliation.SingleAsync(x => x.Id == rec)).Status = "Closed";
             });
-            foreach (var url in new[] { $"api/MaterialIssue/Print?id={issue}", $"api/StockCount/Print?id={count}", $"api/OrderReconciliation/Print?id={rec}" })
+            foreach (var url in new[] { $"api/MaterialIssue/Print?id={issue}&format=xlsx", $"api/StockCount/Print?id={count}&format=xlsx", $"api/OrderReconciliation/Print?id={rec}&format=xlsx" })
             {
                 var r = await admin.GetAsync(url);
                 r.Content.Headers.ContentType!.MediaType.Should().Be(XlsxType, url);
                 (await r.Content.ReadAsByteArrayAsync()).Take(4).Should().Equal(ZipMagic);
             }
+            // BE2.7.1: PDF (mặc định) của 3 phiếu – tiêu đề, số chứng từ, nội dung dòng tiếng Việt; kiểm kê chưa ghi sổ có BẢN NHÁP.
+            var issuePdf = await PdfAsync(await admin.GetAsync($"api/MaterialIssue/Print?id={issue}"), "phiếu xuất");
+            issuePdf.Has("PHIẾU XUẤT KHO").Should().BeTrue();
+            issuePdf.Has("LSX-" + key + " – [DEMO] Gà kho " + key).Should().BeTrue();
+            issuePdf.Has("12,5").Should().BeTrue();
+            var countPdf = await PdfAsync(await admin.GetAsync($"api/StockCount/Print?id={count}&format=pdf"), "kiểm kê");
+            countPdf.Has("BIÊN BẢN KIỂM KÊ KHO").Should().BeTrue();
+            countPdf.Has("BẢN NHÁP – CHƯA CÓ GIÁ TRỊ PHÁP LÝ").Should().BeTrue("chưa ghi sổ → BẢN NHÁP");
+            countPdf.Has("[DEMO] hao hụt").Should().BeTrue();
+            var recPdf = await PdfAsync(await admin.GetAsync($"api/OrderReconciliation/Print?id={rec}"), "đối soát");
+            recPdf.Has("BIÊN BẢN ĐỐI SOÁT SUẤT ĂN").Should().BeTrue();
+            recPdf.Has("1.920.000").Should().BeTrue();
+            recPdf.Has("% chênh lệch").Should().BeTrue();
             await PrintAsync(async p =>
             {
                 var issueDoc = (await p.Build("MATERIAL_ISSUE", issue)).Data!;
@@ -153,6 +185,7 @@ namespace AppDelicare.Tests.Common
             });
             await _factory.SeedAsync(async db => (await db.StockCount.SingleAsync(x => x.Id == count)).Status = "Posted");
             await PrintAsync(async p => (await p.Build("STOCK_COUNT", count)).Data!.IsDraft.Should().BeFalse());
+            (await PdfAsync(await admin.GetAsync($"api/StockCount/Print?id={count}"), "kiểm kê đã ghi sổ")).Has("BẢN NHÁP").Should().BeFalse("đã ghi sổ → không còn BẢN NHÁP");
         }
 
         private async Task<(Guid Route, Guid[] DeliveryOrders, Guid Pod)> RouteAsync(string key)
@@ -192,11 +225,20 @@ namespace AppDelicare.Tests.Common
             await MasterAsync(key);
             var (route, dos, pod) = await RouteAsync(key);
             var admin = _factory.CreateAuthorizedClient();
-            foreach (var url in new[] { $"api/DeliveryOrder/Print?id={dos[0]}", $"api/ProofOfDelivery/Print?id={pod}" })
+            foreach (var url in new[] { $"api/DeliveryOrder/Print?id={dos[0]}&format=xlsx", $"api/ProofOfDelivery/Print?id={pod}&format=xlsx" })
             {
                 var r = await admin.GetAsync(url);
                 r.Content.Headers.ContentType!.MediaType.Should().Be(XlsxType, url);
             }
+            // BE2.7.1: PDF (mặc định) phiếu giao + POD.
+            var notePdf = await PdfAsync(await admin.GetAsync($"api/DeliveryOrder/Print?id={dos[0]}"), "phiếu giao");
+            notePdf.Has("PHIẾU GIAO HÀNG").Should().BeTrue();
+            notePdf.Has("10:30 – 11:15").Should().BeTrue();
+            notePdf.Has("[DEMO] Tài xế " + key).Should().BeTrue();
+            notePdf.Has("Trưa").Should().BeTrue();
+            var podPdf = await PdfAsync(await admin.GetAsync($"api/ProofOfDelivery/Print?id={pod}"), "POD");
+            podPdf.Has("BIÊN BẢN GIAO NHẬN SUẤT ĂN").Should().BeTrue();
+            podPdf.Has("[DEMO] Anh Nam – 0900000002").Should().BeTrue();
             await PrintAsync(async p =>
             {
                 var note = (await p.Build("DELIVERY_ORDER", dos[0])).Data!;
@@ -218,7 +260,17 @@ namespace AppDelicare.Tests.Common
             }
             var docx = await admin.PostAsJsonAsync("api/Common/PrintBatch", new { deliveryRouteId = route, format = "docx" });
             docx.Content.Headers.ContentType!.MediaType.Should().Be(DocxType);
-            (await LegacyResult.ReadAsync(await admin.PostAsJsonAsync("api/Common/PrintBatch", new { deliveryRouteId = route, format = "pdf" }))).Fail("PDF");
+            // BE2.7.1: cùng lô in ra 1 PDF (mặc định) – mỗi phiếu bắt đầu trang mới, số trang đếm lại theo phiếu ("Trang 1 / …" đúng 3 lần), đúng thứ tự.
+            var batchPdf = await PdfAsync(await admin.PostAsJsonAsync("api/Common/PrintBatch", new { items = new[] { new { type = "POD", id = pod } }, deliveryRouteId = route }), "in hàng loạt PDF");
+            batchPdf.PageCount.Should().BeGreaterThanOrEqualTo(3, "≥ số phiếu");
+            var starts = batchPdf.Pages.Where(p => p.Contains(PdfText.Squash("Trang 1 /"))).ToList();
+            starts.Should().HaveCount(3);
+            // Thứ tự như Excel: phiếu chọn (POD) → phiếu giao của chuyến theo điểm dừng (PG-1 dừng 1, PG-0 dừng 2).
+            starts[0].Should().Contain(PdfText.Squash("BIÊN BẢN GIAO NHẬN SUẤT ĂN")).And.Contain(PdfText.Squash("[DEMO] Anh Nam"));
+            starts[1].Should().Contain(PdfText.Squash("PHIẾU GIAO HÀNG")).And.Contain($"PG-{key}-1").And.NotContain($"PG-{key}-0");
+            starts[2].Should().Contain(PdfText.Squash("PHIẾU GIAO HÀNG")).And.Contain($"PG-{key}-0").And.NotContain($"PG-{key}-1");
+            (await PdfAsync(await admin.PostAsJsonAsync("api/Common/PrintBatch", new { deliveryRouteId = route, format = "pdf" }), "format=pdf")).PageCount.Should().BeGreaterThanOrEqualTo(2);
+            (await LegacyResult.ReadAsync(await admin.PostAsJsonAsync("api/Common/PrintBatch", new { deliveryRouteId = route, format = "html" }))).Fail("không hỗ trợ");
 
             var tooMany = Enumerable.Range(0, 101).Select(_ => new { type = "DELIVERY_ORDER", id = Guid.NewGuid() }).ToArray();
             (await LegacyResult.ReadAsync(await admin.PostAsJsonAsync("api/Common/PrintBatch", new { items = tooMany }))).Fail("tối đa 100");

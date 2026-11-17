@@ -5,7 +5,7 @@
 ###
 ### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Dùng dữ liệu [DEMO] đã có trên DB dev (chạy full-flow.http, pilot-flow.http hoặc be2.1…be2.6 trước ít nhất 1 lần):
 ### phiếu nhập Đã ghi sổ, phiếu xuất Đã xuất, kiểm kê, đơn giao, POD, đối soát Đóng, chuyến Hoàn tất. Không cần SP / seed mới.
-### Mẫu in trả tệp .xlsx (mặc định) hoặc .docx (format=docx); format=pdf → 400 (D-56 b). Tệp đính kèm lưu trong DocumentStorage:RootPath (mặc định
+### Mẫu in trả tệp .pdf (mặc định – BE2.7.1, D-56 k), .xlsx (format=xlsx) hoặc .docx (format=docx). Tệp đính kèm lưu trong DocumentStorage:RootPath (mặc định
 ### App_Data/DocumentFiles cạnh WebApi, NGOÀI wwwroot, đã gitignore) – tên tệp trên đĩa = SHA-256, tải lại cùng nội dung → isDuplicate = true.
 ### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
 ### Quyền theo màn của danh sách (Xem / Xuất / Sửa / In → HTTP 403) kiểm trong AppDelicare.Tests/Common/*.cs (admin ở đây có mọi quyền).
@@ -253,8 +253,8 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/Common/GetHistory?resource=User&id={{podId}}
 Authorization: Bearer {{token}}
 
-########## 6. MẪU IN (Catalog 24–29) – .xlsx mặc định, format=docx = Word
-### 6.1 Phiếu nhập kho (QC đã kết luận)
+########## 6. MẪU IN (Catalog 24–29) – PDF mặc định (BE2.7.1: A4, font Noto Sans nhúng), format=xlsx = Excel, format=docx = Word
+### 6.1 Phiếu nhập kho (QC đã kết luận) – PDF (mặc định)
 GET {{base}}/api/GoodsReceipt/Print?id={{grId}}
 Authorization: Bearer {{token}}
 
@@ -262,15 +262,23 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=docx
 Authorization: Bearer {{token}}
 
-### 6.3 → 400 PDF chưa hỗ trợ (D-56 b)
+### 6.3 Phiếu nhập kho – PDF ghi rõ format (BE2.7.1)
 GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=pdf
+Authorization: Bearer {{token}}
+
+### 6.3b Phiếu nhập kho – Excel
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=xlsx
+Authorization: Bearer {{token}}
+
+### 6.3c → 400 định dạng không hỗ trợ (chỉ pdf, xlsx, docx)
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=html
 Authorization: Bearer {{token}}
 
 ### 6.4 Phiếu xuất kho (Đã xuất)
 GET {{base}}/api/MaterialIssue/Print?id={{issueId}}
 Authorization: Bearer {{token}}
 
-### 6.5 Biên bản kiểm kê (chưa ghi sổ → chữ BẢN NHÁP)
+### 6.5 Biên bản kiểm kê (chưa ghi sổ → chữ BẢN NHÁP + chữ chìm mỗi trang PDF)
 GET {{base}}/api/StockCount/Print?id={{countId}}
 Authorization: Bearer {{token}}
 
@@ -291,12 +299,26 @@ GET {{base}}/api/GoodsReceipt/Print?id=00000000-0000-0000-0000-000000000001
 Authorization: Bearer {{token}}
 
 ########## 7. IN HÀNG LOẠT (Catalog 30) – JSON, tối đa 100 phiếu, quyền In từng loại
-### 7.1 Mọi phiếu giao của chuyến (theo thứ tự điểm dừng) + POD → 1 tệp Excel nhiều sheet
+### 7.1 Mọi phiếu giao của chuyến (theo thứ tự điểm dừng) + POD → 1 tệp PDF (mặc định – BE2.7.1), mỗi phiếu sang trang mới
 POST {{base}}/api/Common/PrintBatch
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "deliveryRouteId": "{{routeId}}", "items": [ { "type": "POD", "id": "{{podId}}" } ] }
+
+### 7.1b Như 7.1 → 1 tệp Excel nhiều sheet
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "format": "xlsx", "deliveryRouteId": "{{routeId}}", "items": [ { "type": "POD", "id": "{{podId}}" } ] }
+
+### 7.1c Danh sách hỗn hợp 6 loại phiếu → 1 tệp PDF (format ghi rõ)
+POST {{base}}/api/Common/PrintBatch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "format": "pdf", "items": [ { "type": "GOODS_RECEIPT", "id": "{{grId}}" }, { "type": "MATERIAL_ISSUE", "id": "{{issueId}}" }, { "type": "STOCK_COUNT", "id": "{{countId}}" }, { "type": "DELIVERY_ORDER", "id": "{{podDeliveryId}}" }, { "type": "POD", "id": "{{podId}}" }, { "type": "RECONCILIATION", "id": "{{recId}}" } ] }
 
 ### 7.2 Danh sách hỗn hợp → Word (mỗi phiếu 1 trang)
 POST {{base}}/api/Common/PrintBatch

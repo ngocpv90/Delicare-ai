@@ -792,8 +792,12 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=docx
 Authorization: Bearer {{token}}
 
-### → 400 (PDF chưa có thư viện)
+### PDF (BE2.7.1 – mặc định khi không gửi format)
 GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=pdf
+Authorization: Bearer {{token}}
+
+### → 400 (định dạng không hỗ trợ)
+GET {{base}}/api/GoodsReceipt/Print?id={{grId}}&format=html
 Authorization: Bearer {{token}}
 
 ########## 8. KHO: TỒN + CHẶN XUẤT LÔ HẾT HẠN

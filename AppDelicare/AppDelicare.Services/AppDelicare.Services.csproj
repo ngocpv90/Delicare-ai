@@ -9,7 +9,17 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <!-- BE2.7.1 (anh chốt 2026-11-17): PDF cho mẫu in – PDFsharp-MigraDoc bản Core (đa nền tảng), MIT. KHÔNG nâng lên 6.5+ (đổi sang AGPL-3.0). -->
+    <PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+  </ItemGroup>
+
+  <!-- BE2.7.1: font Noto Sans (SIL OFL 1.1, notofonts) nhúng vào DLL cho PDF (PdfFontResolver) – không phụ thuộc font của hệ điều hành / Docker.
+       OFL.txt đi kèm bản build / publish (điều kiện của OFL khi phân phối lại font). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\NotoSans-Regular.ttf" LogicalName="AppDelicare.Fonts.NotoSans-Regular.ttf" />
+    <EmbeddedResource Include="Fonts\NotoSans-Bold.ttf" LogicalName="AppDelicare.Fonts.NotoSans-Bold.ttf" />
+    <None Update="Fonts\OFL.txt" Link="Fonts\NotoSans-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
