@@ -127,4 +127,4 @@ POST {{base}}/api/DeliveryEvent/RecordPosition
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-routeId={{dorder.response.body.listData[0].deliveryRouteId}}&latitude=95&longitude=106.700
+routeId=00000000-0000-0000-0000-000000000001&latitude=95&longitude=106.700
