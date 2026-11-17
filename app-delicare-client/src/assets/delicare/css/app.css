@@ -336,3 +336,7 @@ body.dc-live .gap-dot,
 body.dc-live .footer-note,
 body.dc-live #helpLink,
 body.dc-live #helpBtn{display:none !important}
+
+/* Logo DELI-CARE thật ở đầu sidebar (thay biểu tượng tạm của mockup). */
+.brand-mark.brand-logo{width:44px;height:44px;background:#fff;box-shadow:none;border-radius:50%;overflow:hidden;padding:0}
+.brand-mark.brand-logo img{width:100%;height:100%;object-fit:cover;display:block}
