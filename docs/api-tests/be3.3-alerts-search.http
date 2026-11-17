@@ -1,0 +1,176 @@
+### DELICARE – BE3.3: CHUÔNG CẢNH BÁO + TÌM KIẾM TOÀN CỤC + TAB LIÊN QUAN (đợt BE-3, D-57 h / i, D-58) – khung cũ D-30.
+### Chuông cảnh báo (Catalog 18, spec 12.1) → tìm kiếm toàn cục (17) → tab "Liên quan" của 9 loại bản ghi (16).
+###
+### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Dùng dữ liệu đã có trên DB dev (chạy full-flow.http trước ít nhất 1 lần).
+### Chỉ đọc – không ghi DB. Không cần SP / seed mới.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
+### Dòng "# @expect …" là kiểm số liệu cho trình chạy tự động (REST Client bỏ qua).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@none = 00000000-0000-0000-0000-000000000001
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+
+########## 1. CHUÔNG CẢNH BÁO (Catalog 18)
+### 1.1 Mọi chi nhánh – chỉ cảnh báo có số > 0, cao (HIGH) trước; FE hỏi lại mỗi 60 giây (server cache 60 giây theo người + chi nhánh)
+# @expect listData length >= 0
+# @expect . !contains "count":0
+GET {{base}}/api/Common/GetAlerts
+Authorization: Bearer {{token}}
+
+### 1.2 Lấy 1 đơn vị (DB dev chưa có đơn vị loại BRANCH – GetBranches rỗng; FE dùng OrganizationUnit/GetBranches)
+# @name branch
+GET {{base}}/api/OrganizationUnit/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 1.3 Theo chi nhánh (gồm đơn vị con; dữ liệu không xác định được chi nhánh vẫn tính)
+# @expect listData length >= 0
+GET {{base}}/api/Common/GetAlerts?branchId={{branch.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 1.4 → 400 (chi nhánh không có)
+GET {{base}}/api/Common/GetAlerts?branchId={{none}}
+Authorization: Bearer {{token}}
+
+########## 2. TÌM KIẾM TOÀN CỤC (Catalog 17)
+### 2.1 → 400 (từ khóa < 2 ký tự)
+GET {{base}}/api/Common/GlobalSearch?q=a
+Authorization: Bearer {{token}}
+
+### 2.2 → 400 (thiếu từ khóa)
+GET {{base}}/api/Common/GlobalSearch
+Authorization: Bearer {{token}}
+
+### 2.3 Màn hình theo menu được Xem – không dấu / không phân biệt hoa thường ("don" khớp "Đơn …")
+# @expect data.screens length >= 1
+# @expect data.screens[0].route ~ ^#/
+GET {{base}}/api/Common/GlobalSearch?q=don
+Authorization: Bearer {{token}}
+
+### 2.4 Lấy 1 khách hàng
+# @name customer
+GET {{base}}/api/Customer/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 2.5 Tìm theo mã khách → bản ghi loại Customer (mỗi loại ≤ 5; không trả tên bảng / cột – D-58)
+# @expect data.records length >= 1
+# @expect data.records[type=Customer].route == #/crm-customer
+# @expect . !contains Dishe
+# @expect . !contains "table"
+GET {{base}}/api/Common/GlobalSearch?q={{customer.response.body.listData[0].code}}
+Authorization: Bearer {{token}}
+
+### 2.6 Tìm theo tiền tố số đơn "PH-" (số chứng từ) – tối đa 5 bản ghi mỗi loại
+# @expect data.q == PH-
+GET {{base}}/api/Common/GlobalSearch?q=PH-
+Authorization: Bearer {{token}}
+
+########## 3. TAB LIÊN QUAN (Catalog 16) – mỗi nhóm = 1 màn hình (tên + route), ≤ 8 dòng + tổng
+### 3.1 Khách hàng → hợp đồng, đơn đặt, đơn giao, phản ánh
+# @expect listData length == 4
+# @expect listData[0].key == Contract
+# @expect listData[1].route == #/crm-order
+# @expect . !contains CustomerId
+GET {{base}}/api/Common/GetRelated?resource=Customer&id={{customer.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.2 Lấy 1 đơn đặt
+# @name order
+GET {{base}}/api/Order/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.3 Đơn đặt → đơn giao, đối soát, phản ánh, yêu cầu đổi món
+# @expect listData length == 4
+GET {{base}}/api/Common/GetRelated?resource=Order&id={{order.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.4 Lấy 1 hợp đồng
+# @name contract
+GET {{base}}/api/Contract/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.5 Hợp đồng → đơn đặt
+# @expect listData length == 1
+GET {{base}}/api/Common/GetRelated?resource=Contract&id={{contract.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.6 Lấy 1 nhà cung cấp
+# @name supplier
+GET {{base}}/api/Supplier/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.7 NCC → đơn mua, phiếu nhập, nguyên liệu NCC, lô, sự cố NCC
+# @expect listData length == 5
+GET {{base}}/api/Common/GetRelated?resource=Supplier&id={{supplier.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.8 Lấy 1 nguyên liệu
+# @name ingredient
+GET {{base}}/api/Ingredient/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.9 Nguyên liệu → lô, NCC cung cấp, công thức dùng nguyên liệu
+# @expect listData length == 3
+GET {{base}}/api/Common/GetRelated?resource=Ingredient&id={{ingredient.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.10 Lấy 1 đơn mua
+# @name po
+GET {{base}}/api/PurchaseOrder/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.11 Đơn mua → phiếu nhập, đề nghị mua, sự cố NCC
+# @expect listData length == 3
+GET {{base}}/api/Common/GetRelated?resource=PurchaseOrder&id={{po.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.12 Lấy 1 lô nguyên liệu
+# @name lot
+GET {{base}}/api/MaterialLot/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.13 Lô → phiếu nhập, phiếu xuất, mẻ sản xuất dùng lô (truy xuất xuôi)
+# @expect listData length == 3
+# @expect listData[2].key == ProductionBatch
+GET {{base}}/api/Common/GetRelated?resource=MaterialLot&id={{lot.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.14 Lấy 1 món
+# @name dish
+GET {{base}}/api/Dish/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.15 Món → công thức, giá thành chuẩn
+# @expect listData length == 2
+GET {{base}}/api/Common/GetRelated?resource=Dish&id={{dish.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.16 Lấy 1 nhân viên
+# @name employee
+GET {{base}}/api/Employee/GetAll?Page=1&PageSize=1
+Authorization: Bearer {{token}}
+
+### 3.17 Nhân viên → phân ca, đơn nghỉ
+# @expect listData length == 2
+GET {{base}}/api/Common/GetRelated?resource=Employee&id={{employee.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.18 → 400 (tên bảng / danh sách không thuộc danh sách trắng)
+GET {{base}}/api/Common/GetRelated?resource=Dishe&id={{dish.response.body.listData[0].id}}
+Authorization: Bearer {{token}}
+
+### 3.19 → 400 (danh sách có trong API dùng chung nhưng không có tab Liên quan)
+GET {{base}}/api/Common/GetRelated?resource=Warehouse&id={{none}}
+Authorization: Bearer {{token}}
+
+### 3.20 → 400 (bản ghi không có)
+GET {{base}}/api/Common/GetRelated?resource=Customer&id={{none}}
+Authorization: Bearer {{token}}

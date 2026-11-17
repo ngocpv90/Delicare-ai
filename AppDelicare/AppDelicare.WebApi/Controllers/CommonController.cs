@@ -102,6 +102,58 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>
+        /// BE3.3 – Catalog 18: chuông cảnh báo trên header (spec 12.1) → [{ code, severity, title, detail, route, count }], chỉ cảnh báo có số &gt; 0.
+        /// FE hỏi định kỳ 60 giây; server cache 60 giây theo (người, chi nhánh). Mỗi cảnh báo chỉ trả khi có quyền Xem màn của nó (duyệt = hộp duyệt của chính người dùng).
+        /// </summary>
+        [Security.SkipPermission] // service lọc theo quyền Xem từng màn của cảnh báo
+        [HttpGet("GetAlerts")]
+        public async Task<IActionResult> GetAlerts(Guid? branchId)
+        {
+            try
+            {
+                return Ok(await _service.GetAlerts(branchId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetAlerts: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE3.3 – Catalog 17: tìm kiếm toàn cục (q ≥ 2 ký tự) → { screens, records } – chỉ màn / loại người dùng được Xem, không trả tên bảng / cột (D-58).</summary>
+        [Security.SkipPermission] // service lọc theo quyền Xem từng màn / loại bản ghi
+        [HttpGet("GlobalSearch")]
+        public async Task<IActionResult> GlobalSearch(string? q)
+        {
+            try
+            {
+                return Ok(await _service.GlobalSearch(q));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GlobalSearch: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE3.3 – Catalog 16: tab "Liên quan" của 1 bản ghi → [{ key, title, route, count, items }], mỗi nhóm ≤ 8 dòng. Quyền Xem màn của bản ghi (403); bỏ nhóm không được Xem.</summary>
+        [Security.SkipPermission] // service kiểm quyền Xem trên màn của resource và của từng nhóm
+        [HttpGet("GetRelated")]
+        public async Task<IActionResult> GetRelated(string? resource, Guid id)
+        {
+            try
+            {
+                var result = await _service.GetRelated(resource, id);
+                return result.ResponseCode == Forbidden ? StatusCode(Forbidden, result) : Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetRelated: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>Catalog 30: in hàng loạt (tối đa 100 phiếu) → 1 tệp pdf (mặc định, mỗi phiếu sang trang mới – BE2.7.1) / xlsx (mỗi phiếu 1 sheet) / docx; quyền In theo từng loại phiếu. JSON vì có danh sách phiếu.</summary>
         [Security.SkipPermission] // service kiểm quyền In trên màn của từng loại phiếu
         [HttpPost("PrintBatch")]

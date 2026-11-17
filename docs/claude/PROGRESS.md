@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-17: BE3.3 DONE – chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan** (Catalog 16, 17, 18) trên nhánh `feat/BE3.3-alerts-search` (worktree `wt-BE33`, từ `release/pilot` @ 5aeaf30, chưa push): `Common/GetAlerts`, `Common/GlobalSearch`, `Common/GetRelated`; test **274 / 274**; `be3.3-alerts-search.http` **31 / 31** trên DB dev. PROPOSED D-57 p–u. Handoff `docs/frontend-handoff/BE3.3.md`.
 - **2026-11-17: BE3.2 DONE – IoT nhiệt độ** (Catalog 166) trên nhánh `feat/BE3.2-iot` (từ `release/pilot` @ 2aeb84a, chưa push): `POST api/IotTemperature/Receive` (khóa API riêng, không JWT), test **268 / 268**, `be3.2-iot.http` 3 / 3 trên DB dev (khóa đặt lúc chạy, không commit). PROPOSED D-57 f, o. Tiếp theo: BE3.3 cảnh báo, tìm kiếm, tab Liên quan.
 - **2026-11-17: BE3.1 DONE – biểu đồ + sự kiện giao** (đợt BE-3, D-57) trên nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ 8e12696, chưa push): Catalog 100 / 157 / 163 / 192 / 193; test **264 / 264**; `be3.1-charts.http` **22 / 22** trên DB dev. PROPOSED D-57 (j)–(n). Tiếp theo: BE3.2 IoT nhiệt độ.
 - **2026-11-17: T23.1 DONE – Job tự động** trên nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ f648505, chưa push / chưa gộp): project mới `AppDelicare.Job` (D-48) + 5 job LockOrders 20:00 / Mrp 20:30 (+ đề nghị mua) / LotExpiry 00:15 / ContractExpiry 00:30 / MarkAbsent 08:00, `api/Job/GetAll` / `Run` (admin), `Contract/ExpireOverdue`; seed user `system`; test **258 / 258**; `t23-jobs.http` 6 / 6 trên DB dev. PROPOSED D-59. Anh chỉ đạo 2026-11-17: **chỉ làm backend** (không FE).
@@ -1819,3 +1820,21 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
 | STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
 |---|---|---|---|
 | 166 | Đã xong | `POST api/IotTemperature/Receive` (header `X-Api-Key`) | BE3.2 |
+
+### BE3.3 – Chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan (Catalog 16, 17, 18) · 2026-11-17 · DONE
+Nhánh `feat/BE3.3-alerts-search` (worktree `wt-BE33`, từ `release/pilot` @ `5aeaf30`), chưa push.
+
+**Đã làm (khung cũ, thêm vào `CommonController` / `CommonService` của BE2.7; không bảng / cột / SP / seed mới)**
+- `Common/GetAlerts` (branchId?): 9 mã – `STOCK_BELOW_MIN`, `APPROVAL_PENDING` (dùng lại `ApprovalRequestService.GetMyPending`), `QC_INCOMING_PENDING`, `LOT_ON_HOLD`, `TEMPERATURE_OUT_OF_RANGE` (48 giờ, cả IoT), `COMPLAINT_OVERDUE`, `COMPLAINT_OPEN`, `OUTBOUND_FAILED`, `LOT_EXPIRING` (2 ngày, còn tồn); chỉ count > 0, HIGH trước; quyền Xem màn của từng cảnh báo; lọc chi nhánh + đơn vị con qua kho / khách; cache `IMemoryCache` 60 giây theo (người, chi nhánh).
+- `Common/GlobalSearch` (q 2…100 ký tự, sai → 400): màn hình theo `ObjectMenu` được Xem (không dấu), ≤ 10; bản ghi 8 loại danh sách trắng (`CommonRelations.SearchTypes`), ≤ 5 / loại, chỉ loại được Xem; không trả tên bảng / cột (D-58).
+- `Common/GetRelated` (resource, id): 9 nguồn, quan hệ viết cứng (`CommonRelations.Related`, theo LOGICAL_RELATIONS.md), mỗi nhóm = tên màn + route + tổng + ≤ 8 dòng mới nhất (nhãn + trạng thái + tên trạng thái); bỏ nhóm không được Xem; không Xem nguồn → 403; resource ngoài danh sách / bản ghi không có → 400.
+- File: `Services/Implement/CommonService.Alerts.cs`, `CommonRelations.cs`, `Model/Model/AlertSearchModels.cs`, `Model/Option/AlertRulesOptions.cs` (`BusinessRules:Alerts`), thông báo `ConstantHelper` khối BE3.3, appsettings.
+
+**Kiểm tra:** build 0 lỗi; test **274 / 274** (+6 `Common/AlertsSearchRelatedTests.cs`: danh sách trắng khớp ScreenMap; từng quy tắc cảnh báo + chi nhánh / đơn vị con / dữ liệu không gắn chi nhánh + quyền + cache; duyệt chỉ hộp của mình; tìm kiếm ≥ 2 ký tự, ≤ 5 / loại, chỉ loại được Xem, màn không dấu, không tên bảng; Liên quan ≤ 8 + count, bỏ nhóm, 403 / 400; truy xuất lô → phiếu nhập / phiếu xuất / mẻ). `docs/api-tests/be3.3-alerts-search.http` **31 / 31** trên DB dev (đủ 9 nguồn Liên quan – truy vấn EF dịch được sang SQL Server; DB dev chưa có đơn vị loại BRANCH nên bước lọc chi nhánh lấy 1 đơn vị bất kỳ).
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 16 | Đã xong | `GET api/Common/GetRelated?resource=&id=` | BE3.3 |
+| 17 | Đã xong | `GET api/Common/GlobalSearch?q=` | BE3.3 |
+| 18 | Đã xong | `GET api/Common/GetAlerts?branchId=` | BE3.3 |

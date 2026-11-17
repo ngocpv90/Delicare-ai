@@ -481,6 +481,28 @@
             public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
             public static readonly string ApprovalCancelOnlyRequester = "Chỉ người gửi yêu cầu được hủy";
             public static readonly string ApprovalCancelReasonRequired = "Phải ghi lý do hủy yêu cầu duyệt";
+            // BE3.3 – chuông cảnh báo, tìm kiếm toàn cục, tab Liên quan.
+            public static readonly string AlertBranchNotFound = "Không tìm thấy chi nhánh / đơn vị";
+            public static readonly string AlertStockBelowMinTitle = "Nguyên liệu dưới tồn tối thiểu";
+            public static readonly string AlertStockBelowMinDetail = "{0} nguyên liệu có tồn khả dụng dưới mức tối thiểu";
+            public static readonly string AlertApprovalTitle = "Yêu cầu chờ bạn duyệt";
+            public static readonly string AlertApprovalDetail = "{0} yêu cầu đang chờ bạn duyệt, {1} đã quá hạn";
+            public static readonly string AlertQcPendingTitle = "Phiếu nhập chờ kết luận QC";
+            public static readonly string AlertQcPendingDetail = "{0} phiếu nhập ({1} dòng) chưa kết luận QC đầu vào";
+            public static readonly string AlertLotOnHoldTitle = "Lô nguyên liệu đang tạm giữ";
+            public static readonly string AlertLotOnHoldDetail = "{0} lô còn tồn đang tạm giữ / QC HOLD – chưa được xuất dùng";
+            public static readonly string AlertTemperatureTitle = "Nhiệt độ ngoài ngưỡng";
+            public static readonly string AlertTemperatureDetail = "{0} lần đo ngoài ngưỡng trong {1} giờ qua (kể cả cảm biến IoT)";
+            public static readonly string AlertComplaintOverdueTitle = "Phản ánh quá hạn xử lý";
+            public static readonly string AlertComplaintOverdueDetail = "{0} phản ánh đã quá hạn SLA";
+            public static readonly string AlertComplaintOpenTitle = "Phản ánh đang mở";
+            public static readonly string AlertComplaintOpenDetail = "{0} phản ánh mới / đang xử lý (chưa quá hạn)";
+            public static readonly string AlertOutboundFailedTitle = "Tin nhắn gửi lỗi";
+            public static readonly string AlertOutboundFailedDetail = "{0} tin nhắn gửi ra ngoài bị lỗi";
+            public static readonly string AlertLotExpiringTitle = "Lô sắp hết hạn";
+            public static readonly string AlertLotExpiringDetail = "{0} lô còn tồn hết hạn trong {1} ngày tới";
+            public static readonly string SearchTextLength = "Từ khóa tìm kiếm phải từ {0} đến {1} ký tự";
+            public static readonly string RelatedResourceNotSupported = "Danh sách '{0}' không có tab Liên quan";
             // BE3.2 – IoT nhiệt độ.
             public static readonly string IotEmpty = "Không có lần đo nào";
             public static readonly string IotTooMany = "Tối đa {0} lần đo mỗi lần gửi";

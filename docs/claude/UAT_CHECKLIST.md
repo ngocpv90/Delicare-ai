@@ -99,6 +99,16 @@ Trước khi thử trên staging: chạy `DB/seed/ObjectMenu_disable_legacy.sql`
 
 Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1-flow-gaps.http` (đóng gói, xếp xe, đơn giao), `be2.2-contract-forecast.http` (hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt), `be2.3-multilevel-approval.http` (duyệt nhiều cấp, kiểm kê), `be2.4-inventory-production.http` (giữ chỗ, hủy lệnh, công đoạn, giá thành), `be2.5-foodsafety-packaging.http` (ATTP, vệ sinh, hộp / khay, sự cố NCC), `be2.6-hr.http` (nhân sự), `be2.7-common-print.http` (in / xuất / tệp / lịch sử).
 
+## CHUÔNG CẢNH BÁO + TÌM KIẾM + LIÊN QUAN (BE3.3, 2026-11-17) · file thử: `docs/api-tests/be3.3-alerts-search.http` · test: `AppDelicare.Tests/Common/AlertsSearchRelatedTests.cs`
+| # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Chuông theo quyền | Đăng nhập thủ kho (chỉ Xem kho / lô) → `Common/GetAlerts` | Chỉ cảnh báo tồn / lô; không thấy phản ánh / nhiệt độ | [ ] | |
+| 2 | Chuông theo chi nhánh | Chọn chi nhánh trên header | Số tồn / lô / phiếu nhập / phản ánh chỉ của chi nhánh (dữ liệu chưa gắn chi nhánh vẫn hiện) | [ ] | |
+| 3 | Nhiệt độ IoT | Gửi 1 lần đo vượt ngưỡng qua `IotTemperature/Receive`, đợi ≤ 60 giây | `TEMPERATURE_OUT_OF_RANGE` tăng 1 | [ ] | cache 60 giây |
+| 4 | Duyệt | Gửi duyệt 1 công thức; người có quyền Duyệt mở chuông | `APPROVAL_PENDING` = 1, bấm → `#/wf-inbox` | [ ] | |
+| 5 | Tìm kiếm | Gõ "don hang", mã khách, số PO | Thấy màn hình đúng quyền; bản ghi ≤ 5 / loại; không có tên bảng | [ ] | |
+| 6 | Liên quan | Mở khách hàng / lô → tab Liên quan | Đơn / hợp đồng / phản ánh; lô → phiếu nhập, phiếu xuất, mẻ dùng lô | [ ] | |
+
 ## IOT NHIỆT ĐỘ (BE3.2, 2026-11-17) · file thử: `docs/api-tests/be3.2-iot.http` · test: `AppDelicare.Tests/Iot/IotTemperatureTests.cs`
 Cần: `Iot__ApiKeys__0` + 1 thiết bị `Iot__Devices__<mã>__StorageZoneCode` (biến môi trường của API – deploy/README.md).
 | # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |
