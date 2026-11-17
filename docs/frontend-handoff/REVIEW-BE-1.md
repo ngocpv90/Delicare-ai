@@ -9,3 +9,10 @@
 | `POST api/ProductionBatch/RecordCoreTemperature`, nhiệt độ chuyến (`DeliveryRoute` – xuất phát / điểm giao) | `MeasuredAt` chỉ nhận trong **24 giờ trước → 5 phút sau** giờ hiện tại; ngoài khoảng → 400. Bỏ trống = giờ hiện tại. | Mặc định để trống; nếu cho chọn giờ thì giới hạn khoảng trên. |
 | `GET api/MealCost/GetList` | Không có `OrderId` → bắt buộc khoảng ngày ăn: mặc định 31 ngày gần nhất, tối đa 92 ngày (quá → 400). | Màn giá vốn suất luôn gửi `From` / `To`. |
 | SP danh sách `User`, `UserGroup`, `UserClaim`, `Person`, `ObjectMenu`, `AuditChange`, `LocationTracking` (`GetAll`) | `PageSize` tối đa 1000. | Không gửi PageSize > 1000. |
+
+## Cập nhật server test sau `git pull`
+
+- **Không có bảng / cột mới** (DB vẫn 124 bảng, 2264 cột) → không cần migration bảng.
+- **7 SP sửa** (`usp…_GetAll` ở bảng trên) → chạy lại cập nhật DB: Docker `docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init` (hoặc `bash deploy/docker/update-db.sh`); SQL Server thường `./deploy/db/Deploy-Database.ps1 -Server "<server>" -Database <db>`.
+- **Code backend đổi** → build lại API: `docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env up -d --build api`.
+- Không có khóa cấu hình bắt buộc mới. Tùy chọn: `Swagger:Enabled=true` nếu muốn bật Swagger khi chạy môi trường `Production`.

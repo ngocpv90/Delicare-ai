@@ -54,6 +54,20 @@ T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **kh�
 
 **BE2.9 (2026-11-17) – kiểm tra cuối đợt BE-2:** `deploy/db/scripts.order` (140 dòng: 131 SP + `00_Admin_seed.sql` + 8 seed) **khớp đúng** với `DB/sp/*.sql` + `DB/seed/*.sql` (so bằng `diff`, không thiếu / không thừa); không SP / seed mới trong BE2.9. Đã chạy `Deploy-Database.ps1` trên staging `AppDelicare_Staging` (0 lỗi, `Repair-VietnameseText.ps1` chạy thử: 0 giá trị lỗi font).
 
+**T48.5 (2026-11-17): không bảng / cột / SP / seed mới** – thêm `deploy/db/compat-level.sql` (đặt mức tương thích về 160 nếu DB đang > 160), `Deploy-Database.ps1` và `db-init.sh` tự gọi, không cần chạy tay.
+
+**REVIEW-BE-1 (2026-11-17): sửa 7 SP, không bảng / cột / seed mới** – `uspAuditChange_GetAll`, `uspUser_GetAll`, `uspUserClaim_GetAll`, `uspUserGroup_GetAll`, `uspPerson_GetAll`, `uspObjectMenu_GetAll`, `uspLocationTracking_GetAll`: chặn `Page` ≥ 1, `PageSize` 1–1000. Cả 7 đã có trong `scripts.order` (không thêm dòng). **Đã chạy trên DB dev và staging** (`Deploy-Database.ps1`).
+
+### Kiểm tra lược đồ (2026-11-17)
+
+Toàn bộ lịch sử git: lệnh tạo bảng / thêm cột **chỉ có** trong `migrations/20261113_restore_structure_db_appdelicare.sql` (PO, T00). Mọi task sau đó (T01 … BE-3, T48.x, REVIEW-BE-1) **không** tạo bảng, thêm cột, FK hay index. DB dev và staging: **124 bảng / 2264 cột, khớp từng cột** với `docs/reference/20261113_structure_db_appdelicare.sql` (bảng thứ 125 `sysdiagrams` do SSMS tự tạo, không thuộc ứng dụng).
+
+→ **Dev FE / server test sau `git pull`:** không có migration bảng nào phải chạy. Chỉ cần cập nhật SP + seed và build lại API:
+- Docker: `docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init`, rồi `... up -d --build api` (hoặc `bash deploy/docker/update-db.sh`) – xem `deploy/docker/README.md` mục 2.
+- SQL Server thường: `./deploy/db/Deploy-Database.ps1 -Server "<server>" -Database <db>` rồi publish lại API (`deploy/README.md` mục 9).
+
+Cả hai chạy lại bao nhiêu lần cũng được và không đụng bảng / dữ liệu nghiệp vụ. Khi nào có thay đổi bảng / cột (phải được anh duyệt), script sẽ nằm trong `migrations/` và được ghi rõ ở mục này.
+
 ### Khóa cấu hình mới của đợt BE-2 (appsettings.json – có giá trị mặc định, PROPOSED; staging / Docker kế thừa từ appsettings.json khi publish)
 
 | Khóa | Mặc định | Task | Ý nghĩa ngắn |
