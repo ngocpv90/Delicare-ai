@@ -334,3 +334,10 @@ Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ g
 |---|---|---|---|---|
 | GAP-DOC-01 | (BE2.7, = GAP-F-09) `DocumentFile` không có cột liên kết chứng từ / loại tài liệu / SHA-256. | Khóa lưu trữ trong `FileNameHas` = `<Resource>/<RecordId:N>/<category>/<sha256>.<ext>`. Xem D-56 (a). | PROPOSED – BA/PO CONFIRM | BE2.7 |
 | GAP-PRINT-01 | (BE2.7) Không có thư viện xuất PDF chạy được trên .NET 8 trong solution (GemBox.Document bản .NET Framework; Syncfusion / EvoPdf chưa có license). | Mẫu in xlsx / docx; `format=pdf` → 400. Xem D-56 (b). | PROPOSED – cần anh chọn thư viện | BE2.7 |
+
+## BE2.9 – Gộp, kiểm tra, deploy (2026-11-17)
+Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất: PROGRESS mục BE2.9 (D-53 … D-56, GAP-PRINT-01, GAP-DLV-08, GAP-HR-02, GAP-DOC-01).
+| Mã | Mô tả | Cách tạm | Trạng thái | Task |
+|---|---|---|---|---|
+| GAP-DOC-01 (trùng mã) | Mã GAP-DOC-01 đang dùng cho 2 việc: (1) T50R1 – số đơn giao PH- theo ngày giao / nhiệt độ cùng giây lấy thấp nhất; (2) BE2.7 – DocumentFile thiếu cột liên kết chứng từ. | Giữ nguyên cả 2 (handoff đang tham chiếu); đề xuất đổi mục (1) thành **GAP-DOC-00** khi anh chốt. | PROPOSED – BA/PO CONFIRM | BE2.9 |
+| (sửa lỗi, không phải GAP) | 6 bảng điều hành theo ngày (DeliveryExecution / DeliveryRoute GetBoard, GetReadyOrders, ProductionBatch GetBoard / GetStageBoard, Forecast GetMatrix) thiếu ngày → HTTP 500. | Nay 400 + thông báo (như MaterialRequirement/GetByDate). | Đã sửa | BE2.9 |

@@ -1,4 +1,5 @@
 ### DELICARE – BE2.1: LẤP CHỖ THIẾU CỦA LUỒNG (khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29G, ngày 07/12/2026): 147 / 147 đúng kỳ vọng.
 ### Bảng đơn + thực đơn (90, 82) → kế hoạch sinh theo ca (137) → đề nghị mua chọn dòng + dự phòng (107) → chi tiết / hủy yêu cầu duyệt (211, 213)
 ### → mẻ → đóng gói từ mẻ (171–175) → hao hụt (156) + nhiệt độ tự do (165) → đơn giao tay / tách (184, 185) → lập chuyến nhiều xe theo khu vực (177)
 ### → đổi thứ tự điểm (179) → gán / chuyển chuyến, hủy đơn giao (186, 187) → xếp hàng lên xe (180) → xuất phát → thực hiện giao (188)

@@ -1,4 +1,5 @@
 ### DELICARE – BE2.6: NHÂN SỰ (T21, khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29H): 65 / 65 đúng kỳ vọng.
 ### Lưới ca (201) → phân / đổi / bỏ ca (202, UNIQUE kể cả dòng xóa mềm → dùng lại dòng) → phân ca hàng loạt (203) → xác nhận (204, không gửi Telegram)
 ### → vào / ra ca GPS theo bán kính trạm bếp, chống trùng ExternalEventId, ngoài bán kính (205) → bảng công dạng danh sách + chi tiết (206) → đánh vắng
 ### → đơn nghỉ + duyệt qua engine LEAVE_REQUEST (207) → nhường ca / đổi ca + duyệt SHIFT_SWAP (208) → hủy đơn (209).

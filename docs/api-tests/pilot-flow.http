@@ -1,3 +1,5 @@
+### ⚠ ĐÃ THAY BẰNG full-flow.http (BE2.9, 2026-11-17) – toàn luồng R1 (hợp đồng / dự báo / hàng sắp về / công đoạn theo tổ / checklist / in / tệp / nhân sự).
+### File này giữ lại để đối chiếu với T50R1 và các handoff cũ; vẫn chạy được (BE2.9: key B29P, ngày 30/11/2026 – 141 / 141 đúng kỳ vọng).
 ### DELICARE – T50R1: LUỒNG PILOT P3 → P8 END-TO-END (khung cũ D-30), 1 bộ dữ liệu [DEMO].
 ### Danh mục → thực đơn tuần → đơn hàng → chốt → MRP → đề nghị mua → PO → duyệt Giám đốc (≥ 50 triệu) → nhận hàng + QC (nhiệt độ 3 vùng) → nhập kho
 ### → kế hoạch → duyệt → phát hành theo ca → mẻ ME- → xuất NL (FEFO, bỏ lô hết hạn / KHONG_DAT) → nhiệt độ lõi ≥ 70 °C → lưu mẫu → đạt → đóng gói

@@ -445,6 +445,10 @@ namespace AppDelicare.Services.Implement
         /// <summary>T19: đơn hàng chờ xếp chuyến của ngày giao (+ ca).</summary>
         public async Task<IResults<DeliveryReadyOrderModel>> GetReadyOrders(DeliveryDateRequest request)
         {
+            if (request.DeliveryDate == default)
+            {
+                return Results<DeliveryReadyOrderModel>.Fail(ConstantHelper.Message.DeliveryDateRequired);
+            }
             try
             {
                 var db = _unitOfWork.DbContext;
@@ -1039,6 +1043,10 @@ namespace AppDelicare.Services.Implement
         /// <summary>T19 (spec 10.2 GET routes): chuyến của ngày giao – xe, tài xế, điểm dừng, tải / % tải, đếm theo trạng thái.</summary>
         public async Task<IResult<DeliveryBoardModel>> GetBoard(DeliveryDateRequest request)
         {
+            if (request.DeliveryDate == default)
+            {
+                return Result<DeliveryBoardModel>.Fail(ConstantHelper.Message.DeliveryDateRequired);
+            }
             try
             {
                 var db = _unitOfWork.DbContext;

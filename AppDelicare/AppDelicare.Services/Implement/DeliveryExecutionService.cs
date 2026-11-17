@@ -149,6 +149,10 @@ namespace AppDelicare.Services.Implement
         /// </summary>
         public async Task<IResult<DeliveryExecutionBoardModel>> GetBoard(DeliveryExecutionBoardRequest request)
         {
+            if (request.DeliveryDate == default)
+            {
+                return Result<DeliveryExecutionBoardModel>.Fail(ConstantHelper.Message.DeliveryDateRequired);
+            }
             try
             {
                 var db = _unitOfWork.DbContext;

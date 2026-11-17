@@ -1,7 +1,8 @@
 ### DELICARE – BE2.4: KHO & SẢN XUẤT MỞ RỘNG (khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29B, ngày 14/12/2026): 125 / 125 đúng kỳ vọng.
 ### Danh mục + đơn + kế hoạch + MRP (chép từ be2.1-flow-gaps.http mục 0–2.2) → duyệt / phát hành kế hoạch + GIỮ CHỖ NGUYÊN LIỆU (126) → chặn xuất tay phần đã giữ
 ### → HỦY LỆNH SX (145) → phát hành lại → CÔNG ĐOẠN THEO TỔ (Sơ chế → Nấu → Chia suất) + ATTP → GIÁ THÀNH THỰC TẾ (152, 153) → ĐÓNG LỆNH (144)
-### + CHÊNH LỆCH TIÊU HAO (135) → giá vốn suất (154 – chốt trạng thái; luồng đủ ở pilot-flow.http bước cuối) → XỬ LÝ LÔ HẾT HẠN (thao tác tay, D-45).
+### + CHÊNH LỆCH TIÊU HAO (135) → giá vốn suất (154 – chốt trạng thái; luồng đủ ở full-flow.http mục 14) → XỬ LÝ LÔ HẾT HẠN (thao tác tay, D-45).
 ###
 ### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Mỗi lần chạy lại đổi @key và @day (ngày ăn tương lai ≤ hôm nay + 60 ngày, chưa qua 20:00 ngày trước;
 ### @dow = thứ của @day, 1 = Thứ 2 … 7 = Chủ nhật). Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
@@ -848,7 +849,7 @@ Content-Type: application/x-www-form-urlencoded
 
 ProductionBatchId={{batchId}}&TotalCost=1
 
-### 5.5 CHỐT AN TOÀN → 400: giá vốn suất chỉ cho đơn Đã giao / Đã đối soát (luồng giao + đối soát: pilot-flow.http bước cuối)
+### 5.5 CHỐT AN TOÀN → 400: giá vốn suất chỉ cho đơn Đã giao / Đã đối soát (luồng giao + đối soát: full-flow.http mục 12–14)
 POST {{base}}/api/MealCost/Calculate
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded

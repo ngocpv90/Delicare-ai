@@ -1,4 +1,5 @@
 ### DELICARE – BE2.3: DUYỆT NHIỀU CẤP (T12 mở rộng, khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
+### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29E): 58 / 58 đúng kỳ vọng.
 ### Đề nghị mua 2 cấp (D-46: scm-pr-l1 → scm-pr-l2) – từ chối cấp 2 về Nháp – gửi lại – hủy giữa chừng – duyệt đủ 2 cấp → lập PO;
 ### điều chỉnh tồn tay qua duyệt STOCK_ADJUSTMENT (scm-adjustment); kiểm kê lệch > 2% → Submit → 2 cấp (scm-stockcount → scm-stockcount-l2) → ghi sổ;
 ### hộp duyệt theo cấp (GetMyPending?type=…), chi tiết yêu cầu (listStepInfo, currentStepNo, dueAt / isOverdue).

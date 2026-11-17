@@ -1,0 +1,589 @@
+using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using AppDelicare.Data.Connection;
+using AppDelicare.Data.Share;
+using AppDelicare.Tests.Integration;
+using FluentAssertions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace AppDelicare.Tests.Pilot
+{
+    /// <summary>
+    /// BE2.9 – TOÀN LUỒNG R1 qua HTTP API thật (routing, model binding, PermissionFilter, controller → service) trên SQL Server dev, cùng thứ tự với
+    /// <c>docs/api-tests/full-flow.http</c>, trong 1 transaction ngoài rồi ROLLBACK (không để lại dữ liệu; tệp đính kèm ghi vào thư mục tạm rồi xóa).
+    /// Hợp đồng (Create → Submit → Approve) → dự báo (Import → Publish) → đơn (mẫu gợi ý → Create → Confirm → Lock) → PO định kỳ (hàng sắp về)
+    /// → MRP → đề nghị 2 cấp → PO ≥ 50 triệu Giám đốc → nhận hàng + QC → giữ chỗ + xuất FEFO → công đoạn SO_CHE → NAU → CHIA_SUAT, lõi ≥ 70 °C, lưu mẫu
+    /// → checklist lỗi trọng yếu giữ mẻ → đóng gói → xếp xe → xuất phát → bàn giao + POD → hộp OUT / thu hồi / kiểm tra / vệ sinh → đối soát → phản ánh
+    /// → đóng lệnh + giá thành + giá vốn suất → in / tệp / lịch sử / truy xuất → lô hết hạn → nhân sự (phân ca, vào ca GPS).
+    /// Không gọi các danh sách đọc bằng Dapper (kết nối riêng – sẽ chờ khóa của transaction ngoài); Id lấy bằng DbContext dùng chung.
+    /// Cách giữ transaction qua nhiều request: như <see cref="PilotFlowSqlServerTests"/> (scope DI dùng chung qua IStartupFilter).
+    /// </summary>
+    [Collection(ApiCollection.Name)]
+    public class FullFlowSqlServerTests(ApiFactory factory)
+    {
+        private sealed class SharedScope
+        {
+            public IServiceProvider? Provider { get; set; }
+        }
+
+        private sealed class SharedScopeStartupFilter : IStartupFilter
+        {
+            public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+            {
+                app.Use(async (context, nextMiddleware) =>
+                {
+                    if (context.RequestServices.GetService<SharedScope>()?.Provider is { } shared)
+                    {
+                        context.RequestServices = shared;
+                    }
+                    await nextMiddleware();
+                });
+                next(app);
+            };
+        }
+
+        [SkippableFact]
+        public async Task Full_R1_flow_through_http_api_on_sql_server_inside_outer_transaction()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            var shared = new SharedScope();
+            string storage = Path.Combine(Path.GetTempPath(), "delicare-fullflow-" + Guid.NewGuid().ToString("N"));
+            using var app = factory.WithWebHostBuilder(b =>
+            {
+                b.UseSetting("DocumentStorage:RootPath", storage);
+                b.ConfigureServices(s =>
+                {
+                    s.AddSingleton(shared);
+                    s.AddTransient<IStartupFilter, SharedScopeStartupFilter>();
+                });
+            });
+            using var http = app.CreateClient();
+            var login = await http.PostAsJsonAsync("/api/Authentication/Login", new
+            {
+                userName = Environment.GetEnvironmentVariable("DELICARE_TEST_USER") ?? "admin",
+                passWord = Environment.GetEnvironmentVariable("DELICARE_TEST_PASSWORD") ?? "admin",
+            });
+            using (var doc = JsonDocument.Parse(await login.Content.ReadAsStringAsync()))
+            {
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", doc.RootElement.GetProperty("data").GetProperty("token").GetString());
+            }
+
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+            var clock = scope.ServiceProvider.GetRequiredService<IClock>();
+            async Task<int[]> CountsAsync() =>
+            [
+                await db.Order.CountAsync(), await db.Contract.CountAsync(), await db.Forecast.CountAsync(), await db.PurchaseOrder.CountAsync(),
+                await db.MaterialLot.CountAsync(), await db.InventoryTransaction.CountAsync(), await db.ProductionBatch.CountAsync(),
+                await db.DeliveryRoute.CountAsync(), await db.CustomerComplaint.CountAsync(), await db.TemperatureLog.CountAsync(),
+                await db.PackagingLedger.CountAsync(), await db.DocumentFile.CountAsync(), await db.AttendanceEvent.CountAsync(), await db.ApprovalRequest.CountAsync(),
+            ];
+            int[] before = await CountsAsync();
+
+            string k = Guid.NewGuid().ToString("N")[..5].ToUpperInvariant();
+            DateTime day = new(2099, 12, 22); // Thứ 3
+            var flow = new FullFlow(http, db, clock, k, day);
+
+            try
+            {
+                await using (var tx = await db.Database.BeginTransactionAsync())
+                {
+                    shared.Provider = scope.ServiceProvider;
+                    try
+                    {
+                        try
+                        {
+                            await flow.RunAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidOperationException("Toàn luồng lỗi ở bước: " + flow.LastUrl, ex);
+                        }
+                    }
+                    finally
+                    {
+                        shared.Provider = null;
+                        await tx.RollbackAsync();
+                    }
+                }
+
+                db.ChangeTracker.Clear();
+                (await CountsAsync()).Should().Equal(before, "rollback không để lại dữ liệu");
+            }
+            finally
+            {
+                if (Directory.Exists(storage))
+                {
+                    Directory.Delete(storage, true);
+                }
+            }
+        }
+
+        /// <summary>Các bước của luồng – đúng thứ tự, tham số và kết quả mong đợi như full-flow.http / UAT_CHECKLIST mục TOÀN LUỒNG R1.</summary>
+        private sealed class FullFlow(HttpClient http, DatabaseContext db, IClock clock, string k, DateTime day)
+        {
+            private static string D(DateTime d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            private static string T(DateTime d) => d.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
+
+            public string? LastUrl { get; private set; }
+
+            private async Task<LegacyResult> Get(string url) => await http.GetResultAsync(LastUrl = url);
+            private async Task<LegacyResult> Post(string url, params (string, object?)[] f) => await http.PostFormAsync(LastUrl = url, f);
+            private async Task<LegacyResult> Put(string url, params (string, object?)[] f) => await http.PutFormAsync(LastUrl = url, f);
+            private async Task<LegacyResult> PostJson(string url, object body) => await LegacyResult.ReadAsync(await http.PostAsJsonAsync(LastUrl = url, body));
+
+            /// <summary>Tệp trả về (mẫu in / xuất Excel / tải tệp): HTTP 200, không phải JSON, có nội dung.</summary>
+            private async Task<byte[]> GetFile(string url)
+            {
+                using var response = await http.GetAsync(LastUrl = url);
+                byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+                response.StatusCode.Should().Be(HttpStatusCode.OK, Encoding.UTF8.GetString(bytes.Take(300).ToArray()));
+                (response.Content.Headers.ContentType?.MediaType ?? string.Empty).Should().NotContain("json", url);
+                bytes.Should().NotBeEmpty();
+                return bytes;
+            }
+
+            private async Task<Guid> Insert<T>(string controller, Func<IQueryable<T>, Task<Guid>> find, params (string, object?)[] f) where T : class
+            {
+                (await Post($"/api/{controller}/Insert", f)).Ok();
+                db.ChangeTracker.Clear();
+                return await find(db.Set<T>().AsNoTracking());
+            }
+
+            private static Guid Id(JsonElement e) => e.GetProperty("id").GetGuid();
+
+            private static JsonElement ByIngredient(JsonElement list, Guid ingredient)
+                => list.EnumerateArray().Single(l => l.GetProperty("ingredientId").GetGuid() == ingredient);
+
+            public async Task RunAsync()
+            {
+                string code = "DEMO" + k;
+                DateTime today = clock.Today;
+                int dow = day.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)day.DayOfWeek;
+
+                // ===== 0. Danh mục tối thiểu
+                Guid kg = await Insert<Model.Entity.UnitMeasure>("UnitMeasure", q => q.Where(x => x.Code == code + "KG").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "KG"), ("Name", "[DEMO] kg " + k), ("Symbol", "kg"), ("Status", "Active"));
+                Guid warehouse = await Insert<Model.Entity.Warehouse>("Warehouse", q => q.Where(x => x.Code == code + "K").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "K"), ("Name", "[DEMO] Kho bếp " + k), ("WarehouseType", "KITCHEN"), ("Status", "Active"));
+                Guid beef = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Code == code + "BO").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "BO"), ("Name", "[DEMO] Thịt bò " + k), ("BaseUnitId", kg), ("StorageType", "CHILLED"), ("ShelfLifeDays", 5),
+                    ("IsExpiryManaged", true), ("QcRequired", true), ("Status", "Active"));
+                Guid rice = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Code == code + "GAO").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "GAO"), ("Name", "[DEMO] Gạo " + k), ("BaseUnitId", kg), ("StorageType", "DRY"), ("ShelfLifeDays", 180),
+                    ("IsExpiryManaged", true), ("QcRequired", true), ("Status", "Active"));
+                Guid supplier = await Insert<Model.Entity.Supplier>("Supplier", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
+                    ("Code", code), ("Name", "[DEMO] NCC toàn luồng " + k), ("Status", "Active"));
+                foreach (var (ingredient, price) in new[] { (beef, 300_000m), (rice, 20_000m) })
+                {
+                    (await Post("/api/SupplierMaterial/Insert", ("SupplierId", supplier), ("IngredientId", ingredient), ("UnitPrice", price), ("MinimumOrderQuantity", 0m),
+                        ("LeadTimeDays", 1), ("EffectiveFrom", today.AddDays(-1)), ("IsPreferred", true), ("Status", "Active"))).Ok();
+                }
+                Guid dishBeef = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Code == code + "BOKHO").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "BOKHO"), ("Name", "[DEMO] Bò kho " + k), ("StandardServingSize", 150m), ("Status", "Active"));
+                Guid dishRice = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Code == code + "COM").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "COM"), ("Name", "[DEMO] Cơm trắng " + k), ("StandardServingSize", 200m), ("Status", "Active"));
+                foreach (var (dish, ingredient, qty) in new[] { (dishBeef, beef, 20m), (dishRice, rice, 12m) })
+                {
+                    Guid recipe = Id((await Post("/api/Recipe/CreateVersion", ("DishId", dish))).Ok());
+                    (await Post("/api/RecipeLine/Insert", ("RecipeId", recipe), ("IngredientId", ingredient), ("Quantity", qty), ("UnitId", kg), ("SequenceNo", 1))).Ok();
+                    (await Post("/api/Recipe/Submit", ("id", recipe))).Ok();
+                    (await Post("/api/Recipe/Approve", ("Id", recipe), ("Note", "[DEMO]"))).Ok();
+                    (await Post("/api/Recipe/Lock", ("Id", recipe), ("EffectiveFrom", today))).Ok();
+                }
+                Guid customer = await Insert<Model.Entity.Customer>("Customer", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
+                    ("Code", code), ("CIF", code), ("Name", "[DEMO] Khách toàn luồng " + k), ("DisplayName", "[DEMO] Khách toàn luồng " + k), ("CustomerType", "FACTORY"), ("Status", "Active"));
+                Guid location = await Insert<Model.Entity.CustomerDeliveryLocation>("CustomerDeliveryLocation", q => q.Where(x => x.Code == code + "CT").Select(x => x.Id).SingleAsync(),
+                    ("CustomerId", customer), ("Code", code + "CT"), ("Name", "[DEMO] Căng tin " + k), ("Address", "[DEMO] KCN Tân Bình"), ("DeliveryWindowFrom", "11:00"),
+                    ("DeliveryWindowTo", "12:00"), ("Status", "Active"));
+                Guid vehicle = await Insert<Model.Entity.Vehicle>("Vehicle", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
+                    ("Code", code), ("LicensePlate", "[DEMO] 51C-" + k), ("VehicleType", "TRUCK"), ("Capacity", 1200m), ("Status", "Active"));
+                Guid line = await Insert<Model.Entity.ProductionLine>("ProductionLine", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
+                    ("Code", code), ("Name", "[DEMO] Dây chuyền " + k), ("CapacityMealPerBatch", 1000m), ("MinutesPerBatch", 60m), ("Status", "Active"));
+                // Lô bị chặn có sẵn: bò hết hạn hôm qua 50 kg, bò QC KHONG_DAT 30 kg – tồn đầu kỳ qua điều chỉnh + duyệt STOCK_ADJUSTMENT.
+                Guid lotExpired = Guid.Empty;
+                foreach (var (suffix, expiry, qc, qty) in new[] { ("HH", today.AddDays(-1), "DAT", 50m), ("KD", day.AddDays(5), "KHONG_DAT", 30m) })
+                {
+                    Guid lot = await Insert<Model.Entity.MaterialLot>("MaterialLot", q => q.Where(x => x.LotNumber == code + "-" + suffix).Select(x => x.Id).SingleAsync(),
+                        ("IngredientId", beef), ("SupplierId", supplier), ("LotNumber", code + "-" + suffix), ("ExpiryDate", expiry), ("ReceivedDate", today.AddDays(-10)),
+                        ("QcStatus", qc), ("UnitCost", 300_000m), ("Note", "[DEMO] lô bị chặn"));
+                    lotExpired = suffix == "HH" ? lot : lotExpired;
+                    var adjust = (await Post("/api/InventoryTransaction/Adjust", ("WarehouseId", warehouse), ("IngredientId", beef), ("MaterialLotId", lot), ("Quantity", qty),
+                        ("Reason", "[DEMO] Tồn đầu kỳ (lô bị chặn)"))).Ok();
+                    adjust.GetProperty("pendingApproval").GetBoolean().Should().BeTrue();
+                    (await Post("/api/ApprovalRequest/Decide", ("Id", adjust.GetProperty("approvalRequestId").GetGuid()), ("Approve", true), ("Note", "[DEMO]"))).Ok();
+                }
+
+                // ===== 1. Hợp đồng: Create (kèm suất) → Submit → Approve
+                var ct = (await PostJson("/api/Contract/Create", new
+                {
+                    customerId = customer, name = "[DEMO] HĐ suất ăn " + k, signedDate = D(today.AddDays(-1)), effectiveFrom = D(today.AddDays(-1)), note = "[DEMO]",
+                    listMeal = new[] { new { mealType = "TRUA", mealName = "[DEMO] Suất trưa", serviceType = "SUAT", unitPrice = 35_000m } },
+                })).Ok();
+                Guid contract = Id(ct.GetProperty("contract"));
+                Guid contractMeal = Id(ct.GetProperty("listMeal")[0]);
+                ct.GetProperty("contract").GetProperty("status").GetString().Should().Be("Draft");
+                ct.GetProperty("contract").GetProperty("contractNumber").GetString().Should().MatchRegex(@"^HD-\d{6}-\d{3}$");
+                (await Post("/api/Contract/Submit", ("Id", contract))).Ok();
+                (await Post("/api/Contract/Approve", ("Id", contract), ("Note", "[DEMO]"))).Ok();
+                (await Get($"/api/Contract/GetDetail?id={contract}")).Ok().GetProperty("contract").GetProperty("status").GetString().Should().Be("Active");
+                (await Post("/api/ContractMeal/Insert", ("ContractId", contract), ("MealType", "TOI"), ("MealName", "[DEMO] Suất tối"), ("UnitPrice", 38_000m))).Fail();
+
+                // ===== 2. Dự báo: Import → Publish → GetMatrix
+                (await PostJson("/api/Forecast/Import", new
+                {
+                    note = "[DEMO]", listItem = new[] { new { customerId = customer, deliveryLocationId = location, forecastDate = D(day), mealType = "TRUA", forecastQuantity = 1000m } },
+                })).Ok();
+                (await Post("/api/Forecast/Publish", ("From", day), ("To", day), ("ListCustomerId", customer))).Ok();
+                (await Get($"/api/Forecast/GetMatrix?From={D(day)}&To={D(day)}&CustomerId={customer}")).Ok();
+
+                // ===== 3. Thực đơn → phân công → đơn (mẫu có gợi ý) → gửi → xác nhận → chốt
+                Guid menu = await Insert<Model.Entity.Menu>("Menu", q => q.Where(x => x.Code == code + "TD").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "TD"), ("Name", "[DEMO] Thực đơn tuần " + k), ("EffectiveFrom", day), ("EffectiveTo", day));
+                foreach (var (dish, sort) in new[] { (dishBeef, 1), (dishRice, 2) })
+                {
+                    (await Post("/api/MenuLine/Insert", ("MenuId", menu), ("DishId", dish), ("MealType", "TRUA"), ("DayOfWeek", dow), ("SequenceNo", 1), ("SortOrder", sort))).Ok();
+                }
+                (await Get($"/api/Menu/GetCalendar?id={menu}&mealType=TRUA&sellingPrice=35000")).Ok();
+                (await Post("/api/Menu/Approve", ("Id", menu))).Ok();
+                (await Post("/api/MenuAssignment/Insert", ("CustomerId", customer), ("ContractId", contract), ("MenuId", menu), ("MealType", "TRUA"),
+                    ("EffectiveFrom", day), ("EffectiveTo", day))).Ok();
+                var template = (await Get($"/api/Order/GetNewTemplate?customerId={customer}&mealDate={D(day)}")).Ok();
+                template.GetProperty("contractId").GetGuid().Should().Be(contract);
+                template.GetProperty("listLocation")[0].GetProperty("listLine")[0].GetProperty("suggestedQuantity").GetDecimal().Should().Be(1000m, "gợi ý = dự báo đã công bố");
+                var order = (await PostJson("/api/Order/Create", new
+                {
+                    customerId = customer, contractId = contract, deliveryLocationId = location, mealDate = D(day), note = "[DEMO] đơn toàn luồng",
+                    listLine = new[] { new { contractMealId = contractMeal, quantity = 1000 } },
+                })).Ok();
+                Guid orderId = order.GetProperty("order").GetProperty("id").GetGuid();
+                string orderNumber = order.GetProperty("order").GetProperty("orderNumber").GetString()!;
+                orderNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                order.GetProperty("order").GetProperty("totalAmount").GetDecimal().Should().Be(35_000_000m);
+                (await Post("/api/Order/Submit", ("Id", orderId))).Ok();
+                (await Post("/api/Order/Confirm", ("Id", orderId), ("Note", "[DEMO] khách xác nhận"))).Ok();
+                var orderDetail = (await Get($"/api/Order/GetDetail?id={orderId}")).Ok();
+                orderDetail.GetProperty("forecastQuantity").GetDecimal().Should().Be(1000m);
+                orderDetail.GetProperty("forecastVarianceExceeded").GetBoolean().Should().BeFalse();
+                (await Post("/api/Order/Lock", ("Id", orderId))).Ok();
+
+                // ===== 4. Hàng sắp về: đề nghị mua định kỳ gạo 50 kg → 2 cấp → PO 1.000.000 (1 cấp) → gửi NCC (chưa nhận)
+                Guid prDk = await Insert<Model.Entity.PurchaseRequest>("PurchaseRequest", q => q.Where(x => x.RequestNumber == code + "-DK").Select(x => x.Id).SingleAsync(),
+                    ("RequestNumber", code + "-DK"), ("RequestDate", today), ("RequiredDate", day), ("Note", "[DEMO] mua gạo định kỳ"));
+                (await Post("/api/PurchaseRequestLine/Insert", ("PurchaseRequestId", prDk), ("IngredientId", rice), ("Quantity", 50m), ("UnitId", kg), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/PurchaseRequest/Submit", ("Id", prDk), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/PurchaseRequest/Approve", ("Id", prDk), ("Note", "[DEMO] cấp 1"))).Ok();
+                (await Post("/api/PurchaseRequest/Approve", ("Id", prDk), ("Note", "[DEMO] cấp 2"))).Ok();
+                Guid poDk = Id((await Post("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", prDk), ("Note", "[DEMO]"))).Ok().GetProperty("listPurchaseOrder")[0]);
+                var poDkDetail = (await Get($"/api/PurchaseOrder/GetDetail?id={poDk}")).Ok();
+                poDkDetail.GetProperty("purchaseOrder").GetProperty("totalAmount").GetDecimal().Should().Be(1_000_000m);
+                poDkDetail.GetProperty("needsDirectorApproval").GetBoolean().Should().BeFalse();
+                (await Post("/api/PurchaseOrder/Submit", ("Id", poDk), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/PurchaseOrder/Approve", ("Id", poDk), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/PurchaseOrder/Send", ("Id", poDk))).Ok();
+
+                // ===== 5. MRP: bò 200 (bị chặn 80, mua 200); gạo 120 − hàng sắp về 50 = mua 70
+                var mrp = (await Post("/api/MaterialRequirement/Calculate", ("ProductionDate", day), ("WarehouseId", warehouse), ("Note", "[DEMO]"))).Ok();
+                Guid planId = mrp.GetProperty("productionPlanId").GetGuid();
+                Guid prId = Id(mrp.GetProperty("purchaseRequest"));
+                var beefLine = ByIngredient(mrp.GetProperty("listItem"), beef);
+                beefLine.GetProperty("requiredQuantity").GetDecimal().Should().Be(200m, "1000 suất × 20 kg / 100 suất");
+                beefLine.GetProperty("blockedQuantity").GetDecimal().Should().Be(80m, "lô hết hạn 50 + lô KHONG_DAT 30");
+                beefLine.GetProperty("purchaseQuantity").GetDecimal().Should().Be(200m);
+                var riceLine = ByIngredient(mrp.GetProperty("listItem"), rice);
+                riceLine.GetProperty("requiredQuantity").GetDecimal().Should().Be(120m);
+                riceLine.GetProperty("expectedIncomingQuantity").GetDecimal().Should().Be(50m, "PO định kỳ đã gửi, giao trước ngày SX");
+                riceLine.GetProperty("purchaseQuantity").GetDecimal().Should().Be(70m);
+                await GetFile($"/api/MaterialRequirement/ExportPreProduction?id={planId}");
+
+                // ===== 6. Đề nghị 2 cấp (D-46) → PO ≥ 50 triệu → hộp Giám đốc → duyệt → gửi
+                (await Post("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", prId))).Fail("Đã duyệt");
+                (await Post("/api/PurchaseRequest/Submit", ("Id", prId), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/PurchaseRequest/Approve", ("Id", prId), ("Note", "[DEMO] cấp 1"))).Ok();
+                (await Get($"/api/PurchaseRequest/GetDetail?id={prId}")).Ok().GetProperty("pendingApproval").GetProperty("stepNo").GetInt32().Should().Be(2);
+                (await Post("/api/PurchaseRequest/Approve", ("Id", prId), ("Note", "[DEMO] cấp 2"))).Ok();
+                Guid poId = Id((await Post("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", prId), ("Note", "[DEMO]"))).Ok().GetProperty("listPurchaseOrder")[0]);
+                var po = (await Get($"/api/PurchaseOrder/GetDetail?id={poId}")).Ok();
+                po.GetProperty("purchaseOrder").GetProperty("totalAmount").GetDecimal().Should().Be(61_400_000m, "200 × 300.000 + 70 × 20.000");
+                po.GetProperty("needsDirectorApproval").GetBoolean().Should().BeTrue();
+                (await Post("/api/PurchaseOrder/Submit", ("Id", poId), ("Note", "[DEMO] gửi duyệt"))).Ok();
+                (await Get("/api/ApprovalRequest/GetMyPending?type=scm-po")).ListData.EnumerateArray()
+                    .Should().NotContain(a => a.GetProperty("businessId").GetGuid() == poId, "PO ≥ 50 triệu chỉ nằm ở hộp duyệt Giám đốc");
+                (await Get("/api/ApprovalRequest/GetMyPending?type=scm-po-director")).ListData.EnumerateArray()
+                    .Should().Contain(a => a.GetProperty("businessId").GetGuid() == poId);
+                (await Post("/api/PurchaseOrder/Approve", ("Id", poId), ("Note", "[DEMO] GĐ duyệt"))).Ok();
+                (await Post("/api/PurchaseOrder/Send", ("Id", poId))).Ok();
+                await GetFile($"/api/PurchaseOrder/ExportOrder?id={poId}");
+
+                // ===== 7. Nhận hàng + QC (hàng mát 9 °C bị chặn) → ghi sổ; nhận PO định kỳ (lô gạo hạn sớm hơn)
+                po = (await Get($"/api/PurchaseOrder/GetDetail?id={poId}")).Ok();
+                var gr = (await PostJson("/api/GoodsReceipt/Create", new
+                {
+                    purchaseOrderId = poId, warehouseId = warehouse, note = "[DEMO] nhận hàng",
+                    listLine = new object[]
+                    {
+                        new { purchaseOrderLineId = Id(ByIngredient(po.GetProperty("listLine"), beef)), receivedQuantity = 200, supplierLotNumber = "[DEMO]-BO-01", manufactureDate = D(today), expiryDate = D(day.AddDays(3)) },
+                        new { purchaseOrderLineId = Id(ByIngredient(po.GetProperty("listLine"), rice)), receivedQuantity = 70, supplierLotNumber = "[DEMO]-GAO-01", manufactureDate = D(today), expiryDate = D(day.AddDays(180)) },
+                    },
+                })).Ok();
+                Guid grId = Id(gr.GetProperty("goodsReceipt"));
+                Guid qcId = gr.GetProperty("qcInspectionId").GetGuid();
+                Guid grBeef = Id(ByIngredient(gr.GetProperty("listLine"), beef));
+                Guid grRice = Id(ByIngredient(gr.GetProperty("listLine"), rice));
+                (await Post("/api/GoodsReceipt/Post", ("Id", grId))).Fail();
+                (await PostJson("/api/QcInspection/Conclude", new
+                {
+                    id = qcId, listLine = new object[] { new { goodsReceiptLineId = grBeef, result = "DAT", temperature = 9 }, new { goodsReceiptLineId = grRice, result = "DAT" } },
+                })).Fail();
+                (await PostJson("/api/QcInspection/Conclude", new
+                {
+                    id = qcId, note = "[DEMO] QC đầu vào", listLine = new object[]
+                    {
+                        new { goodsReceiptLineId = grBeef, result = "DAT", temperature = 3.5, appearance = "Tươi", packaging = "Nguyên" },
+                        new { goodsReceiptLineId = grRice, result = "DAT", appearance = "Khô", packaging = "Nguyên" },
+                    },
+                })).Ok();
+                (await Post("/api/GoodsReceipt/Post", ("Id", grId), ("Note", "[DEMO] ghi sổ"))).Ok();
+                poDkDetail = (await Get($"/api/PurchaseOrder/GetDetail?id={poDk}")).Ok();
+                var grDk = (await PostJson("/api/GoodsReceipt/Create", new
+                {
+                    purchaseOrderId = poDk, warehouseId = warehouse, note = "[DEMO] nhận gạo định kỳ",
+                    listLine = new[] { new { purchaseOrderLineId = Id(poDkDetail.GetProperty("listLine")[0]), receivedQuantity = 50, supplierLotNumber = "[DEMO]-GAO-DK", manufactureDate = D(today), expiryDate = D(day.AddDays(20)) } },
+                })).Ok();
+                (await PostJson("/api/QcInspection/Conclude", new
+                {
+                    id = grDk.GetProperty("qcInspectionId").GetGuid(), note = "[DEMO]",
+                    listLine = new[] { new { goodsReceiptLineId = Id(grDk.GetProperty("listLine")[0]), result = "DAT", appearance = "Khô", packaging = "Nguyên" } },
+                })).Ok();
+                (await Post("/api/GoodsReceipt/Post", ("Id", Id(grDk.GetProperty("goodsReceipt"))), ("Note", "[DEMO]"))).Ok();
+                await GetFile($"/api/GoodsReceipt/Print?id={grId}");
+                await GetFile($"/api/GoodsReceipt/Print?id={grId}&format=docx");
+                (await Get($"/api/GoodsReceipt/Print?id={grId}&format=pdf")).Fail(); // D-56 b
+
+                // ===== 8. Kho: xuất tay đích danh lô hết hạn → chặn
+                (await PostJson("/api/MaterialIssue/Create", new
+                {
+                    warehouseId = warehouse, note = "[DEMO]", listLine = new[] { new { ingredientId = beef, materialLotId = lotExpired, quantity = 5m } },
+                })).Fail();
+
+                // ===== 9. Kế hoạch → duyệt → phát hành (giữ chỗ)
+                (await Post("/api/ProductionPlan/Approve", ("Id", planId), ("Note", "[DEMO]"))).Ok();
+                var released = (await Post("/api/ProductionPlan/Release", ("Id", planId), ("ProductionLineId", line), ("Note", "[DEMO]"))).Ok();
+                var batches = released.GetProperty("listBatch").EnumerateArray().ToList();
+                batches.Should().HaveCount(2);
+                batches.Should().OnlyContain(b => System.Text.RegularExpressions.Regex.IsMatch(b.GetProperty("batchNumber").GetString()!, @"^ME-991222-[A-Z0-9]+-\d{2}$"));
+                var batchBeefBrief = batches.Single(b => b.GetProperty("dishId").GetGuid() == dishBeef);
+                Guid batchBeef = Id(batchBeefBrief);
+                Guid batchRice = Id(batches.Single(b => b.GetProperty("dishId").GetGuid() == dishRice));
+                var poBeef = (await Get($"/api/ProductionOrder/GetDetail?id={batchBeefBrief.GetProperty("productionOrderId").GetGuid()}")).Ok();
+                poBeef.GetProperty("listReservation")[0].GetProperty("reservedQuantity").GetDecimal().Should().Be(200m, "giữ chỗ đủ bò khi phát hành");
+
+                // ===== 10. Mẻ Bò kho theo tổ: SO_CHE → NAU → CHIA_SUAT, lõi ≥ 70 °C, lưu mẫu
+                (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "NAU"))).Fail();
+                (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "SO_CHE"))).Ok();
+                (await Post("/api/ProductionBatch/FinishStage", ("Id", batchBeef), ("StageCode", "SO_CHE"))).Ok();
+                var issueBeef = (await Post("/api/ProductionBatch/CreateMaterialIssue", ("Id", batchBeef), ("WarehouseId", warehouse), ("Post", true), ("Note", "[DEMO]"))).Ok();
+                issueBeef.GetRawText().Should().NotContain(code + "-HH").And.NotContain(code + "-KD");
+                Guid issueBeefId = Id(issueBeef.GetProperty("materialIssue"));
+                (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "NAU"))).Ok();
+                (await Post("/api/ProductionBatch/Finish", ("Id", batchBeef), ("ActualQuantity", 1000m))).Fail();
+                (await Post("/api/ProductionBatch/FinishStage", ("Id", batchBeef), ("StageCode", "NAU"))).Ok();
+                (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchBeef), ("TemperatureC", 65m))).Fail();
+                (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchBeef), ("TemperatureC", 65m), ("CorrectiveAction", "[DEMO] nấu thêm 10 phút"),
+                    ("MeasuredAt", T(clock.Now.AddMinutes(-15))))).Ok();
+                (await Post("/api/ProductionBatch/Finish", ("Id", batchBeef), ("ActualQuantity", 1000m))).Ok();
+                (await Post("/api/ProductionBatch/RecordOutput", ("Id", batchBeef), ("ProducedQuantity", 1000m), ("RejectedQuantity", 0m))).Ok();
+                (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Fail("70");
+                (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchBeef), ("TemperatureC", 75.5m), ("DeviceCode", "[DEMO]-NK"))).Ok();
+                (await Post("/api/ProductionBatch/RecordSampleRetained", ("Id", batchBeef), ("ActualValue", "[DEMO] tủ mẫu 150 g"))).Ok();
+                (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Fail();
+                (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Ok();
+                (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
+
+                // ===== 11. Đóng gói theo lệnh (Bò kho); mẻ Cơm: FEFO 2 lô + checklist lỗi trọng yếu giữ mẻ
+                var packing = (await Post("/api/PackingOrder/GenerateFromBatch", ("ProductionBatchId", batchBeef), ("Note", "[DEMO]"))).Ok();
+                Guid packingId = Id(packing.GetProperty("listPackingOrder")[0].GetProperty("packingOrder"));
+                (await Post("/api/ProductionBatch/Pack", ("Id", batchBeef))).Fail();
+                (await Post("/api/ProductionBatch/FinishStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
+                (await Post("/api/PackingOrder/Start", ("Id", packingId))).Ok();
+                (await Post("/api/PackingOrder/RecordResult", ("Id", packingId), ("PackedQuantity", 1000m), ("PackagingType", "[DEMO] hộp giữ nhiệt"))).Ok();
+                var beefDetail = (await Get($"/api/ProductionBatch/GetDetail?id={batchBeef}")).Ok();
+                beefDetail.GetProperty("batch").GetProperty("status").GetString().Should().Be("Packed");
+                beefDetail.GetProperty("listStage").GetArrayLength().Should().Be(3);
+
+                var issueRice = (await Post("/api/ProductionBatch/CreateMaterialIssue", ("Id", batchRice), ("WarehouseId", warehouse), ("Post", true), ("Note", "[DEMO]"))).Ok();
+                var riceIssueLines = issueRice.GetProperty("listLine").EnumerateArray().ToList();
+                riceIssueLines.Should().HaveCount(2, "FEFO: lô gạo định kỳ (hạn sớm) 50 + lô PO chính 70");
+                riceIssueLines[0].GetProperty("quantity").GetDecimal().Should().Be(50m, "lô hết hạn sớm hơn xuất trước");
+                (await Post("/api/ProductionBatch/Start", ("Id", batchRice))).Ok();
+                (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchRice), ("TemperatureC", 82m), ("DeviceCode", "[DEMO]-NK"))).Ok();
+                (await Post("/api/ProductionBatch/Finish", ("Id", batchRice), ("ActualQuantity", 1000m))).Ok();
+                (await Post("/api/ProductionBatch/RecordOutput", ("Id", batchRice), ("ProducedQuantity", 1000m), ("RejectedQuantity", 0m))).Ok();
+                (await Post("/api/ProductionBatch/Release", ("Id", batchRice))).Ok();
+                db.ChangeTracker.Clear();
+                Guid fg = await db.FoodSafetyChecklist.AsNoTracking().Where(c => c.Code == "QA_FG" && !c.IsDeleted).Select(c => c.Id).FirstAsync();
+                var failed = (await PostJson("/api/FoodSafetyChecklistResult/Record", new
+                {
+                    checklistId = fg, productionBatchId = batchRice, checkDate = D(day), listItem = new object[]
+                    {
+                        new { itemCode = "CAM_QUAN", resultCode = "FAIL", actualValue = "[DEMO] cơm hơi khô", correctiveAction = "[DEMO] bếp trưởng nếm lại" },
+                        new { itemCode = "TRONG_LUONG_SUAT", resultCode = "PASS", actualValue = "200 g" },
+                        new { itemCode = "LUU_MAU_KY", resultCode = "PASS", actualValue = "[DEMO] đã ký" },
+                    },
+                })).Ok();
+                failed.GetProperty("listCriticalFailure").GetArrayLength().Should().BeGreaterThan(0);
+                (await Post("/api/ProductionBatch/Release", ("Id", batchRice))).Fail();
+                (await PostJson("/api/FoodSafetyChecklistResult/Record", new
+                {
+                    checklistId = fg, productionBatchId = batchRice, checkDate = D(day), listItem = new[] { new { itemCode = "CAM_QUAN", resultCode = "PASS", actualValue = "[DEMO] đạt" } },
+                })).Ok();
+                (await Post("/api/ProductionBatch/Release", ("Id", batchRice))).Ok();
+                (await Post("/api/ProductionBatch/Pack", ("Id", batchRice))).Ok();
+                (await Get($"/api/ProductionPlan/GetDetail?id={planId}")).Ok().GetProperty("productionPlan").GetProperty("status").GetString().Should().Be("Completed");
+                (await Post("/api/MealCost/Calculate", ("OrderId", orderId))).Fail();
+
+                // ===== 12. Chuyến → xếp xe → xuất phát (≥ 60 °C, đã lưu mẫu, đã xếp) → bàn giao (≥ 60 °C) + POD → in / tệp
+                (await Get($"/api/DeliveryRoute/GetReadyOrders?DeliveryDate={D(day)}")).Ok();
+                var route = (await PostJson("/api/DeliveryRoute/Create", new
+                {
+                    deliveryDate = D(day), vehicleId = vehicle, description = "[DEMO] chuyến toàn luồng", listOrderId = new[] { orderId },
+                })).Ok();
+                Guid routeId = Id(route.GetProperty("route"));
+                route.GetProperty("route").GetProperty("routeNo").GetString().Should().MatchRegex($@"^CX-991222-{code}-\d{{2}}$");
+                Guid stopId = Id(route.GetProperty("listStop")[0]);
+                Guid deliveryOrderId = route.GetProperty("listStop")[0].GetProperty("deliveryOrderId").GetGuid();
+                (await Post("/api/DeliveryRoute/RecordTemperature", ("Id", routeId), ("TemperatureC", 55m), ("CorrectiveAction", "[DEMO] hâm lại thùng"), ("DeviceCode", "[DEMO]-NK"),
+                    ("MeasuredAt", T(clock.Now.AddMinutes(-10))))).Ok();
+                (await Post("/api/DeliveryRoute/Dispatch", ("Id", routeId))).Fail("60");
+                (await Post("/api/DeliveryRoute/Dispatch", ("Id", routeId), ("TemperatureC", 65m), ("DeviceCode", "[DEMO]-NK"))).Fail("ME-");
+                (await Post("/api/ProductionBatch/RecordSampleRetained", ("Id", batchRice), ("ActualValue", "[DEMO] tủ mẫu 150 g"))).Ok();
+                (await Post("/api/DeliveryRoute/Dispatch", ("Id", routeId), ("TemperatureC", 65m), ("DeviceCode", "[DEMO]-NK"))).Fail(); // chưa xếp hàng
+                (await PostJson("/api/DeliveryRoute/Load", new { id = routeId, note = "[DEMO]" })).Ok();
+                (await Post("/api/DeliveryRoute/Dispatch", ("Id", routeId), ("TemperatureC", 65m), ("DeviceCode", "[DEMO]-NK"), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/DeliveryStop/Arrive", ("Id", stopId))).Ok();
+                (await Post("/api/DeliveryStop/Deliver", ("Id", stopId), ("TemperatureC", 58m), ("DeliveredQuantity", 1000m), ("AcceptedQuantity", 998m),
+                    ("ReceiverName", "[DEMO] Chị Lan"))).Fail("60");
+                var delivered = (await Post("/api/DeliveryStop/Deliver", ("Id", stopId), ("TemperatureC", 63m), ("DeliveredQuantity", 1000m), ("AcceptedQuantity", 998m),
+                    ("ReceiverName", "[DEMO] Chị Lan"), ("Remark", "[DEMO] 2 suất móp hộp"))).Ok();
+                delivered.GetProperty("route").GetProperty("status").GetString().Should().Be("Completed");
+                db.ChangeTracker.Clear();
+                Guid podId = await db.ProofOfDelivery.AsNoTracking().Where(p => p.DeliveryOrderId == deliveryOrderId && !p.IsDeleted).Select(p => p.Id).SingleAsync();
+                await GetFile($"/api/DeliveryRoute/ExportDeliveryNote?id={routeId}");
+                await GetFile($"/api/DeliveryOrder/Print?id={deliveryOrderId}");
+                await GetFile($"/api/ProofOfDelivery/Print?id={podId}");
+                byte[] pdf = Encoding.ASCII.GetBytes("%PDF-1.4\n% [DEMO] BE2.9 bien ban giao nhan " + k + "\n");
+                using (var form = new MultipartFormDataContent())
+                {
+                    form.Add(new StringContent("evidence"), "Category");
+                    form.Add(new StringContent("ProofOfDelivery"), "Resource");
+                    form.Add(new StringContent(podId.ToString()), "RecordId");
+                    var file = new ByteArrayContent(pdf);
+                    file.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+                    form.Add(file, "File", "[DEMO] bien ban " + k + ".pdf");
+                    var uploaded = (await LegacyResult.ReadAsync(await http.PostAsync(LastUrl = "/api/DocumentFile/Upload", form))).Ok();
+                    Guid fileId = Id(uploaded);
+                    (await GetFile($"/api/DocumentFile/Download?id={fileId}")).Should().Equal(pdf);
+                    (await Get($"/api/Common/GetHistory?resource=ProofOfDelivery&id={podId}")).ListData.GetRawText().Should().Contain(fileId.ToString());
+                }
+
+                // ===== 13. Hộp / khay: thu hồi → kiểm tra → vệ sinh 6 bước → số dư; đối soát; phản ánh
+                var ret = (await Post("/api/ContainerReturn/Record", ("DeliveryOrderId", deliveryOrderId), ("ReturnedQuantity", 990), ("DamagedQuantity", 5), ("Note", "[DEMO]"))).Ok();
+                var insp = (await Post("/api/ContainerReturn/Inspect", ("Id", Id(ret.GetProperty("return"))), ("InspectionResult", "DIRTY"), ("Note", "[DEMO] dính dầu"))).Ok();
+                Guid cleaning = Id(insp.GetProperty("listCleaningBatch")[0]);
+                string[] steps = ["NHAN_QR", "PHAN_LOAI", "RUA_SO", "RUA_MAY", "KHU_KHUAN", "KIEM_TRA_NHAP_KHO"];
+                (await PostJson("/api/CleaningBatch/RecordResults", new
+                {
+                    id = cleaning, listItem = steps.Take(5).Select(s => new { itemCode = s, resultCode = "PASS" }).ToArray(),
+                })).Fail(); // khử khuẩn thiếu hóa chất
+                (await PostJson("/api/CleaningBatch/RecordResults", new
+                {
+                    id = cleaning, listItem = steps.Select(s => new { itemCode = s, resultCode = "PASS", chemicalUsed = s == "KHU_KHUAN" ? "[DEMO] Chlorine 200 ppm" : null }).ToArray(),
+                })).Ok();
+                (await Post("/api/CleaningBatch/Complete", ("Id", cleaning), ("QcResult", "PASS"))).Ok();
+                var balance = (await Get($"/api/PackagingLedger/GetBalance?CustomerId={customer}")).Ok();
+                balance.GetProperty("listItem")[0].GetProperty("outQuantity").GetDecimal().Should().Be(998m);
+                balance.GetProperty("listItem")[0].GetProperty("inQuantity").GetDecimal().Should().Be(990m);
+                balance.GetProperty("totalOutstanding").GetDecimal().Should().Be(8m);
+
+                (await Get($"/api/OrderReconciliation/GetPendingOrders?MealDate={D(day)}")).ListData.EnumerateArray()
+                    .Should().Contain(o => o.GetProperty("orderId").GetGuid() == orderId);
+                var rec = (await Post("/api/OrderReconciliation/Reconcile", ("OrderId", orderId), ("ServedQuantity", 990m), ("ReturnedQuantity", 5m), ("WastedQuantity", 3m),
+                    ("Remark", "[DEMO]"))).Ok();
+                rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_650_000m, "35.000.000 × 990 ÷ 1000");
+                Guid recId = Id(rec.GetProperty("reconciliation"));
+                (await Post("/api/OrderReconciliation/Close", ("Id", recId), ("Remark", "[DEMO] chốt"))).Ok();
+                await GetFile($"/api/OrderReconciliation/Print?id={recId}");
+                var complaint = (await Post("/api/CustomerComplaint/Create", ("CustomerId", customer), ("DeliveryStopId", stopId), ("Severity", "High"),
+                    ("SourceChannel", "ZALO"), ("CategoryCode", "QUALITY"), ("Description", "[DEMO] Cơm hơi khô"))).Ok();
+                Guid complaintId = Id(complaint.GetProperty("complaint"));
+                complaint.GetProperty("complaint").GetProperty("complaintNo").GetString().Should().MatchRegex(@"^PA-\d{6}-\d{4}$");
+                (await Post("/api/CustomerComplaint/Assign", ("Id", complaintId), ("Comment", "[DEMO]"))).Ok();
+                (await Post("/api/CustomerComplaint/Resolve", ("Id", complaintId), ("Comment", "[DEMO]"))).Ok();
+                (await Post("/api/CustomerComplaint/Close", ("Id", complaintId))).Ok();
+                db.ChangeTracker.Clear();
+                (await db.CustomerComplaint.AsNoTracking().CountAsync(c => c.CustomerId == customer)).Should().Be(2, "1 tự động (2 suất từ chối) + 1 tạo tay");
+                (await Get($"/api/Order/GetDetail?id={orderId}")).Ok().GetProperty("order").GetProperty("status").GetString().Should().Be("Reconciled");
+
+                // ===== 14. Đóng lệnh SX → giá thành thực tế → giá vốn suất
+                db.ChangeTracker.Clear();
+                var productionOrders = await db.ProductionOrder.AsNoTracking().Where(o => o.ProductionPlanId == planId && !o.IsDeleted).Select(o => o.Id).ToListAsync();
+                productionOrders.Should().HaveCount(2);
+                foreach (Guid productionOrder in productionOrders)
+                {
+                    (await Post("/api/ProductionOrder/Close", ("Id", productionOrder), ("Note", "[DEMO]"))).Ok();
+                }
+                (await Post("/api/ProductionOrder/Close", ("Id", productionOrders[0]))).Fail();
+                var cost = (await Get($"/api/ActualCost/GetList?From={D(day)}&To={D(day)}")).Ok();
+                cost.GetProperty("breakdown").GetProperty("materialCost").GetDecimal().Should().Be(62_400_000m, "bò 200 × 300.000 + gạo (50 + 70) × 20.000");
+                (await Post("/api/MealCost/Calculate", ("OrderId", orderId))).Ok();
+                var mealCost = (await Get($"/api/MealCost/GetList?OrderId={orderId}")).ListData[0];
+                mealCost.GetProperty("acceptedMeals").GetDecimal().Should().Be(990m);
+                mealCost.GetProperty("totalActualCost").GetDecimal().Should().Be(62_400_000m);
+                mealCost.GetProperty("revenue").GetDecimal().Should().Be(35_000_000m);
+
+                // ===== 15. Kiểm điểm: phiếu xuất, in hàng loạt, thống kê / xuất danh sách, lịch sử, truy xuất
+                await GetFile($"/api/MaterialIssue/Print?id={issueBeefId}");
+                using (var batchPrint = await http.PostAsJsonAsync(LastUrl = "/api/Common/PrintBatch", new
+                {
+                    deliveryRouteId = routeId, items = new object[] { new { type = "POD", id = podId }, new { type = "GOODS_RECEIPT", id = grId } },
+                }))
+                {
+                    batchPrint.StatusCode.Should().Be(HttpStatusCode.OK);
+                    (batchPrint.Content.Headers.ContentType?.MediaType ?? string.Empty).Should().NotContain("json");
+                }
+                (await Get($"/api/Common/GetStatusSummary?Resource=Order&SearchText={orderNumber}")).Ok().GetProperty("total").GetInt32().Should().Be(1);
+                await GetFile($"/api/Common/ExportList?Resource=Order&SearchText={orderNumber}");
+                (await Get($"/api/Common/GetHistory?resource=PurchaseOrder&id={poId}")).ListData.GetArrayLength().Should().BeGreaterThan(0);
+                (await Get($"/api/ProductionBatch/Trace?id={batchBeef}")).Ok().GetRawText().Should().Contain(customer.ToString());
+
+                // ===== 16. Lô hết hạn (thao tác tay): xem trước → xử lý → chạy lại 0
+                (await Post("/api/MaterialLot/ProcessExpired", ("WarehouseId", warehouse), ("Preview", true))).Ok().GetRawText().Should().Contain(code + "-HH");
+                (await Post("/api/MaterialLot/ProcessExpired", ("WarehouseId", warehouse))).Ok();
+                (await Post("/api/MaterialLot/ProcessExpired", ("WarehouseId", warehouse))).Ok().GetProperty("expiredLotCount").GetInt32().Should().Be(0);
+
+                // ===== 17. Nhân sự (smoke): phân ca hôm nay → vào ca GPS trong bán kính → bảng công
+                db.ChangeTracker.Clear();
+                Guid trua = await db.Shift.AsNoTracking().Where(s => s.Code == "TRUA" && !s.IsDeleted).Select(s => s.Id).FirstAsync();
+                Guid employee = await Insert<Model.Entity.Employee>("Employee", q => q.Where(x => x.Code == code + "-NV1").Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "-NV1"), ("FullName", "[DEMO] Nguyễn Văn Bếp " + k), ("Phone", "0900000091"), ("Status", "Active"));
+                (await Post("/api/KitchenWorkstation/Insert", ("Code", code + "-KW"), ("Name", "[DEMO] Cổng bếp " + k), ("AreaName", "[DEMO]"),
+                    ("Latitude", 10.8231m), ("Longitude", 106.6297m), ("RadiusMeters", 100), ("Status", "Active"))).Ok();
+                DateTime now = clock.Now;
+                (await Put("/api/ShiftAssignment/Assign", ("EmployeeId", employee), ("WorkDate", now.AddMinutes(-10).Date), ("ShiftId", trua),
+                    ("PlannedStart", T(now.AddMinutes(-10))), ("PlannedEnd", T(now.AddMinutes(120))), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/AttendanceEvent/CheckIn", ("EmployeeId", employee), ("SourceChannel", "PROXY"))).Fail();
+                var checkIn = (await Post("/api/AttendanceEvent/CheckIn", ("EmployeeId", employee), ("SourceChannel", "GPS"), ("Latitude", 10.8233m), ("Longitude", 106.6297m),
+                    ("ExternalEventId", code + "-IN"), ("Note", "[DEMO]"))).Ok();
+                checkIn.GetRawText().Should().NotContain("10.8233", "không trả lại tọa độ");
+                (await Get($"/api/AttendanceEvent/GetTimesheet?FromDate={D(now.AddMinutes(-10))}&ToDate={D(now)}&SearchText={code}&Page=1&PageSize=50")).Ok();
+            }
+        }
+    }
+}
