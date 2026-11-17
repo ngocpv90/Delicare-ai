@@ -5,6 +5,12 @@
   // Màn hình điều hướng (không phải bảng) – bổ sung vào menu
   FN['flow-e2e'] = { ph: '—', grp: 'Tổng quan điều hành', fn: 'Luồng nghiệp vụ End-to-End', id: 'flow-e2e', name: 'Luồng nghiệp vụ E2E (9 luồng)', types: ['DB'], table: null, rel: [], st: 'NAV', note: '' };
   const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal']);
+  // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
+  //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
+  //  - Tích hợp bot (kênh, bot, định danh, tin vào / ra, nhật ký): backend mới có CRUD thô, nghiệp vụ bot làm sau (D-44).
+  const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap',
+    'int-channel', 'int-bot', 'int-identity', 'int-inbound', 'int-outbound', 'int-log']);
+  const hiddenNow = id => Store.isLive && HIDDEN_LIVE.has(id);
   const SCREENS = {};
   const APP = { FN, SCREENS, current: null, params: {} };
   APP.register = (id, fn) => SCREENS[id] = fn;
@@ -16,7 +22,7 @@
   function buildNav() {
     const nav = document.getElementById('navGroups');
     const order = CAT.menuOrder; const groups = {};
-    Object.values(FN).forEach(f => { if (CHILD.has(f.id)) return; (groups[f.grp] = groups[f.grp] || []).push(f); });
+    Object.values(FN).forEach(f => { if (CHILD.has(f.id) || hiddenNow(f.id)) return; (groups[f.grp] = groups[f.grp] || []).push(f); });
     const dash = groups['Tổng quan điều hành'] || []; dash.sort((a, b) => a.id === 'dash-exec' ? -1 : 1);
     nav.innerHTML = order.filter(g => groups[g]).map((g, gi) => {
       const items = groups[g].filter(f => Store.perm(f.id).access !== false);
@@ -337,7 +343,7 @@
   }
   // Bỏ dấu tiếng Việt để tìm "don hang" khớp "Đơn hàng".
   const fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
-  const screenHits = q => { const k = fold(q); return Object.values(FN).filter(f => !CHILD.has(f.id) && Store.perm(f.id).access !== false && fold(f.name + ' ' + f.fn + ' ' + f.id).includes(k)).map(f => ({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.grp, i: 'clipboard' })); };
+  const screenHits = q => { const k = fold(q); return Object.values(FN).filter(f => !CHILD.has(f.id) && !hiddenNow(f.id) && Store.perm(f.id).access !== false && fold(f.name + ' ' + f.fn + ' ' + f.id).includes(k)).map(f => ({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.grp, i: 'clipboard' })); };
   function showResults(res, note) {
     const box = document.getElementById('searchResults');
     box.innerHTML = (res.slice(0, 30).map((r, i) => `<a href="${r.h || 'javascript:void 0'}" data-i="${i}">${I(r.i)}<span>${esc(r.t)}</span><small>${esc(r.s)}</small></a>`).join('') || (note ? '' : '<div class="empty">Không tìm thấy</div>')) + (note ? `<div class="empty">${esc(note)}</div>` : '');
