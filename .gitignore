@@ -34,3 +34,6 @@ deploy/docker/staging.env
 
 # Log ứng dụng (ngoài wwwroot – T21.1)
 AppDelicare/AppDelicare.WebApi/Logs/
+
+# BE2.7: tệp đính kèm người dùng tải lên (DocumentStorage:RootPath) – KHÔNG commit
+**/App_Data/

@@ -96,7 +96,7 @@ docker compose -f deploy/docker/docker-compose.staging.yml logs -f db-init   # x
 
 - `db`: SQL Server 2022 (cổng máy 14333).
 - `db-init`: tạo DB, 124 bảng (lần đầu), SP, admin (lần đầu, PBKDF2), seed rồi dừng – theo `deploy/db/scripts.order`, chạy lại được.
-- `api`: chạy ở cổng 8080.
+- `api`: chạy ở cổng 8080. Tệp đính kèm (BE2.7) nằm ở volume `delicare-docs` → `/app/App_Data/DocumentFiles` (`DocumentStorage__RootPath`); `down -v` xóa cả tệp.
 
 **Cập nhật DB sau `git pull` (T48.3, server Docker của dev FE):**
 ```bash
@@ -105,6 +105,12 @@ git pull && docker compose -f deploy/docker/docker-compose.staging.yml --env-fil
 hoặc `bash deploy/docker/update-db.sh` (chỉ chạy khi có thay đổi DB, ghi log, cron 5 phút tùy chọn). Chi tiết + phương án dự phòng (`Deploy-Database.ps1 -Server "<ip>,14333" -TrustServerCertificate` từ máy dev FE): `deploy/docker/README.md`.
 
 Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệu.
+
+### Thư mục tệp đính kèm (BE2.7 – `DocumentStorage`)
+- Tệp người dùng tải lên (`DocumentFile/Upload`) lưu **ngoài wwwroot**, tên = SHA-256, tại `DocumentStorage:RootPath` (mặc định `App_Data/DocumentFiles` cạnh `AppDelicare.WebApi.dll`). Giới hạn `DocumentStorage:MaxFileSizeMb` (20), đuôi `AllowedExtensions` (pdf, jpg, png, xlsx, docx – tệp chạy được luôn bị chặn).
+- **IIS (cách B):** cấp quyền ghi thư mục `App_Data\DocumentFiles` cho `IIS AppPool\delicare-api` (như `Logs`), hoặc đặt biến môi trường `DocumentStorage__RootPath=D:\DelicareData\DocumentFiles` ra ổ dữ liệu riêng; **sao lưu thư mục này cùng DB** (DB chỉ giữ khóa lưu trữ). Không chép đè thư mục này khi cập nhật bản build.
+- **Docker (cách C):** volume `delicare-docs` (đã khai báo trong `docker-compose.staging.yml`). Kestrel / IIS mặc định nhận request tới ~28–30 MB – tăng `MaxFileSizeMb` quá 25 thì phải tăng giới hạn request.
+- Mẫu in trả xlsx / docx (chưa PDF – D-56 b). Word cần `Licenses__GemBox` (thiếu → bản dùng thử của GemBox).
 
 ## 6. Kiểm tra sau triển khai
 

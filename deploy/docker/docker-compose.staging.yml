@@ -55,9 +55,14 @@ services:
       ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=sa;Password=${SA_PASSWORD};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?Đặt JWT_SIGNING_KEY (>= 32 ký tự) trong staging.env}
       Licenses__GemBox: ${GEMBOX_LICENSE:-}
+      # BE2.7: tệp đính kèm (DocumentFile) lưu ngoài wwwroot, giữ qua lần build lại image.
+      DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+    volumes:
+      - delicare-docs:/app/App_Data/DocumentFiles
     ports:
       - "8080:8080"
     restart: unless-stopped
 
 volumes:
   delicare-sql:
+  delicare-docs:

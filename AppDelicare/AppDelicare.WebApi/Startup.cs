@@ -61,6 +61,14 @@ namespace AppDelicare.WebApi
             services.AddSingleton<AppDelicare.Data.Share.IClock, AppDelicare.Data.Share.SystemClock>();
             services.Configure<AppDelicare.Model.Option.PermissionOptions>(Configuration.GetSection(AppDelicare.Model.Option.PermissionOptions.Section));
             services.Configure<AppDelicare.Model.Option.ReferenceListsOptions>(Configuration.GetSection(AppDelicare.Model.Option.ReferenceListsOptions.Section)); // T45B.5
+            // BE2.7: tệp đính kèm lưu NGOÀI wwwroot; đường dẫn tương đối tính từ ContentRoot (Docker / IIS: gắn volume / thư mục có quyền ghi – deploy/README.md).
+            services.AddOptions<AppDelicare.Model.Option.DocumentStorageOptions>()
+                .Bind(Configuration.GetSection(AppDelicare.Model.Option.DocumentStorageOptions.Section))
+                .PostConfigure<IWebHostEnvironment>((o, env) =>
+                {
+                    string root = string.IsNullOrWhiteSpace(o.RootPath) ? "App_Data/DocumentFiles" : o.RootPath;
+                    o.RootPath = Path.GetFullPath(Path.IsPathRooted(root) ? root : Path.Combine(env.ContentRootPath, root));
+                });
             services.AddScoped<AppDelicare.Data.Share.IReferenceGuard, AppDelicare.Data.Share.ReferenceGuard>();
             // T03: mọi ProblemDetails do MVC sinh (400 validation, Problem()) mang traceId = CorrelationId.
             services.AddProblemDetails(options => options.CustomizeProblemDetails = ctx =>

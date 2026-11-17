@@ -8,6 +8,8 @@ namespace AppDelicare.Model.Option
         public string TimeZone { get; set; } = "Asia/Ho_Chi_Minh";
         /// <summary>BE2.6 (T21): quy tắc nhân sự – section <c>BusinessRules:Hr</c> (PROPOSED – D-55).</summary>
         public HrRulesOptions Hr { get; set; } = new();
+        /// <summary>BE2.7: giới hạn API dùng chung (xuất danh sách, in hàng loạt, lịch sử) – section <c>BusinessRules:Common</c> (PROPOSED – D-56).</summary>
+        public CommonRulesOptions Common { get; set; } = new();
         public int OrderCutoffHourPreviousDay { get; set; } = 20;
         public string OrderLockJobTime { get; set; } = "20:00";
         public string MrpJobTime { get; set; } = "20:30";

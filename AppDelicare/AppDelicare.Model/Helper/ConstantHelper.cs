@@ -50,6 +50,30 @@
 
         public static class Message
         {
+            // ---------------------------------------------------------------- BE2.7 – API dùng chung: thống kê, xuất, lịch sử, đính kèm, mẫu in
+            public static readonly string CommonResourceNotSupported = "Danh sách '{0}' không hỗ trợ chức năng này (xem Common/GetResources)";
+            public static readonly string CommonNoRight = "Bạn không có quyền {0} trên màn hình {1}";
+            public static readonly string CommonNoStatusColumn = "Danh sách '{0}' không có cột trạng thái";
+            public static readonly string CommonFormatInvalid = "Định dạng '{0}' không hỗ trợ (chỉ {1})";
+            public static readonly string CommonExportTruncated = "Chỉ xuất {0} dòng đầu (giới hạn BusinessRules:Common:ExportMaxRows) – lọc hẹp hơn để xuất phần còn lại";
+            public static readonly string CommonRecordNotFound = "Không tìm thấy bản ghi {0} (hoặc đã xóa)";
+            public static readonly string FileTooLarge = "Tệp vượt quá {0} MB";
+            public static readonly string FileExtensionNotAllowed = "Không nhận tệp '{0}' – chỉ nhận {1}";
+            public static readonly string FileContentMismatch = "Nội dung tệp không khớp đuôi '{0}' (tệp hỏng hoặc đổi đuôi)";
+            public static readonly string FileCategoryInvalid = "Loại tài liệu '{0}' không hợp lệ – chỉ nhận {1}";
+            public static readonly string FileRecordRequired = "Đính kèm vào chứng từ phải có cả Resource và RecordId";
+            public static readonly string FileNotFound = "Không tìm thấy tệp đính kèm (hoặc đã xóa)";
+            public static readonly string FileLegacyNotSupported = "Tệp này lưu theo cách cũ (wwwroot) – không tải qua chức năng đính kèm";
+            public static readonly string FileMissingOnDisk = "Tệp không còn trên máy chủ – báo quản trị kiểm tra thư mục DocumentStorage:RootPath";
+            public static readonly string PrintTypeInvalid = "Loại phiếu in '{0}' không hợp lệ – chỉ nhận {1}";
+            public static readonly string PrintNotFound = "Không tìm thấy {0} để in (hoặc đã xóa)";
+            public static readonly string PrintGoodsReceiptNoQc = "Phiếu nhập {0} chưa có kết luận QC – chưa in được";
+            public static readonly string PrintIssueNotIssued = "Phiếu xuất {0} chưa ở trạng thái Đã xuất – chưa in được";
+            public static readonly string PrintReconciliationOpen = "Đối soát của đơn {0} còn Mở – chốt đối soát rồi mới in biên bản";
+            public static readonly string PrintBatchEmpty = "Chưa chọn phiếu nào để in";
+            public static readonly string PrintBatchTooMany = "In hàng loạt tối đa {0} phiếu / lần (đang chọn {1})";
+            public static readonly string PrintBatchFailed = "Không in được: {0}";
+            public static readonly string PrintPdfNotSupported = "Chưa xuất được PDF (thư viện PDF hiện có không chạy trên .NET 8 – D-56 b): dùng format=xlsx (mặc định) hoặc docx rồi in / lưu PDF từ Excel / Word";
             // ---------------------------------------------------------------- BE2.6 – nhân sự (T21): phân ca, chấm công, nghỉ, đổi ca
             public static readonly string HrAssignmentCrudBlocked = "Phân ca chỉ qua lưới ca (ShiftAssignment/Assign, BulkAssign) – không thêm / sửa / xóa trực tiếp";
             public static readonly string HrAttendanceCrudBlocked = "Chấm công chỉ qua vào ca / ra ca (AttendanceEvent/CheckIn, CheckOut) – không ghi trực tiếp";

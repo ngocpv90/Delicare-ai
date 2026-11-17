@@ -9,9 +9,10 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class OrderReconciliationController(IOrderReconciliationService service) : BaseController
+    public class OrderReconciliationController(IOrderReconciliationService service, IPrintService printService) : BaseController
     {
         private readonly IOrderReconciliationService _service = service;
+        private readonly IPrintService _printService = printService;
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] OrderReconciliationSearchRequest request)
@@ -196,6 +197,26 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " Close: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.7 (Catalog 29): in biên bản đối soát (không in khi còn Mở) – Excel (mặc định) hoặc format=docx (Word); PDF chưa hỗ trợ (D-56 b). Quyền In #/crm-reconciliation (PermissionConvention). Lỗi / chưa đủ điều kiện → JSON Result.</summary>
+        [HttpGet("Print")]
+        public async Task<IActionResult> Print(Guid id, string? format = null)
+        {
+            try
+            {
+                var result = await _printService.Print("RECONCILIATION", id, format);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data.Content, result.Data.ContentType, result.Data.FileName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Print: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
