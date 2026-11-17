@@ -28,7 +28,7 @@
     nav.innerHTML = order.filter(g => groups[g]).map((g, gi) => {
       const items = groups[g].filter(f => Store.perm(f.id).access !== false);
       if (!items.length) return '';
-      return `<section class="group ${gi > 1 ? 'closed' : ''}" data-g="${esc(g)}"><button class="group-toggle">${I(U.GROUP_ICON[g] || 'clipboard')}<span>${esc(g)}</span><span class="chev">⌄</span></button><div class="group-items">${items.map(f => `<a class="nav-link" href="${APP.href(f.id)}" data-nav="${f.id}" title="${esc(f.name)}">${I(U.SCREEN_ICON[f.id.split('-')[0]] || 'clipboard')}<span>${esc(f.fn)}</span>${f.st === 'GAP' ? '<i class="gap-dot">GAP</i>' : ''}${f.id === 'wf-inbox' ? `<i class="count" id="inboxCount"></i>` : ''}</a>`).join('')}</div></section>`;
+      return `<section class="group ${gi > 1 ? 'closed' : ''}" data-g="${esc(g)}"><button class="group-toggle">${I(U.GROUP_ICON[g] || 'clipboard')}<span>${esc(g)}</span><span class="chev">⌄</span></button><div class="group-items">${items.map(f => `<a class="nav-link" href="${APP.href(f.id)}" data-nav="${f.id}" title="${esc(f.name)}">${I((U.MENU_ICON && U.MENU_ICON[f.id]) || U.SCREEN_ICON[f.id.split('-')[0]] || 'clipboard')}<span>${esc(f.fn)}</span>${f.st === 'GAP' ? '<i class="gap-dot">GAP</i>' : ''}${f.id === 'wf-inbox' ? `<i class="count" id="inboxCount"></i>` : ''}</a>`).join('')}</div></section>`;
     }).join('');
     nav.querySelectorAll('.group-toggle').forEach(b => b.onclick = () => b.parentElement.classList.toggle('closed'));
     updateCounts();

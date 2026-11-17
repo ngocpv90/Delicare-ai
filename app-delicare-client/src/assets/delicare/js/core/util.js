@@ -66,6 +66,21 @@
   };
   UTIL.icon = (n, cls) => `<svg class="i ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || P.clipboard}</svg>`;
   UTIL.GROUP_ICON = { 'Tổng quan điều hành': 'home', 'Kinh doanh & Đơn hàng': 'building', 'Thực đơn & Món ăn': 'utensils', 'Mua hàng & Kho': 'warehouse', 'Sản xuất & Giá thành': 'factory', 'QC & An toàn thực phẩm': 'shield', 'Đóng gói & Giao nhận': 'truck', 'Nhân sự & Phê duyệt': 'users', 'Tích hợp & KPI': 'bot', 'Quản trị hệ thống': 'settings', 'Database Architecture': 'database' };
+  // Icon riêng cho từng mục menu con (khác icon của nhóm cha). Màn chưa khai báo ở đây → rơi về SCREEN_ICON theo tiền tố.
+  UTIL.MENU_ICON = {
+    'dash-exec': 'chart', 'flow-e2e': 'flow',
+    'crm-customer': 'users', 'crm-contact': 'msg', 'crm-location': 'pin', 'crm-price-policy': 'calc', 'crm-contract': 'link', 'crm-forecast': 'calendar', 'crm-order': 'clipboard', 'crm-reconciliation': 'check',
+    'menu-dish-cat': 'layers', 'menu-dish': 'chef', 'menu-recipe': 'clipboard', 'menu-menu': 'calendar', 'menu-assignment': 'link', 'menu-change-request': 'recycle',
+    'scm-supplier': 'building', 'scm-ingredient': 'package', 'scm-ingredient-cat': 'layers', 'scm-supplier-material': 'link', 'scm-uom': 'calc', 'scm-uom-conversion': 'recycle', 'scm-warehouse': 'home', 'scm-zone': 'panel', 'scm-location': 'pin', 'scm-inv-policy': 'settings',
+    'scm-requirement': 'chart', 'scm-pr': 'edit', 'scm-po': 'clipboard', 'scm-gr': 'down', 'scm-lot': 'lot', 'scm-inv-txn': 'history', 'scm-inv-balance': 'eye', 'scm-transfer': 'route', 'scm-adjustment': 'edit', 'scm-issue': 'up', 'scm-reservation': 'key', 'scm-stockcount': 'check', 'scm-consumption-var': 'alert',
+    'cost-standard': 'calc', 'prod-line': 'route', 'prod-workstation': 'panel', 'prod-plan': 'calendar', 'prod-order': 'clipboard', 'prod-batch': 'chef', 'prod-output': 'package', 'cost-actual': 'chart', 'cost-meal': 'utensils', 'prod-waste': 'trash',
+    'qc-checklist': 'clipboard', 'qc-inspection': 'eye', 'qc-checklist-result': 'check', 'qc-temperature': 'thermo', 'qc-cleaning': 'recycle', 'qc-cleaning-result': 'ok', 'qc-supplier-issue': 'alert',
+    'log-vehicle': 'key', 'log-delivery-order': 'clipboard', 'log-packing-order': 'package', 'log-route': 'route', 'log-loading': 'up', 'log-execution': 'play', 'log-pod': 'check', 'log-container-return': 'recycle', 'log-return-inspection': 'eye', 'log-packaging-ledger': 'history', 'log-packing-result': 'layers', 'log-gps': 'pin', 'log-complaint': 'msg',
+    'hr-shift': 'calendar', 'hr-shift-assign': 'panel', 'hr-attendance': 'check', 'hr-leave': 'export', 'hr-swap': 'recycle', 'wf-inbox': 'approve',
+    'int-channel': 'link', 'int-bot': 'play', 'int-identity': 'key', 'int-inbound': 'down', 'int-outbound': 'up', 'int-log': 'history', 'kpi-definition': 'settings', 'kpi-daily': 'chart', 'kpi-monthly': 'calendar', 'kpi-refresh': 'reset',
+    'adm-company': 'building', 'adm-orgunit': 'flow', 'adm-employee': 'users', 'adm-person': 'panel', 'adm-user': 'key', 'adm-permission': 'shield', 'adm-usergroup': 'layers', 'adm-objectmenu': 'menu', 'adm-position': 'up', 'adm-admin-unit': 'pin', 'adm-document': 'clipboard', 'adm-audit': 'history', 'adm-access-log': 'eye', 'adm-merge-conflict': 'alert', 'adm-reference': 'link',
+    'dbx-explorer': 'search', 'dbx-gap': 'alert'
+  };
   UTIL.SCREEN_ICON = { crm: 'building', menu: 'utensils', scm: 'warehouse', prod: 'factory', cost: 'calc', qc: 'shield', log: 'truck', hr: 'users', wf: 'approve', int: 'bot', kpi: 'chart', adm: 'settings', dbx: 'database', dash: 'home', flow: 'flow' };
   // Nhãn tiếng Việt cho cột (hiển thị kèm tên cột SQL)
   UTIL.LABEL = {
