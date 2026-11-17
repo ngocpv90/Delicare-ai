@@ -242,5 +242,63 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.1 (spec 10.2 plan): lập chuyến nhiều xe theo khu vực – JSON vì có danh sách xe. Quyền Thêm log-route.</summary>
+        [Security.Permission("log-route", PermissionAction.Add)]
+        [HttpPost("Plan")]
+        public async Task<IActionResult> Plan([FromBody] DeliveryRoutePlanRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Plan(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Plan: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 10.2 PUT routes/{id}/stops): đổi thứ tự / giờ dự kiến điểm dừng khi chuyến Kế hoạch – JSON vì có danh sách điểm.</summary>
+        [HttpPut("UpdateStops")]
+        public async Task<IActionResult> UpdateStops([FromBody] DeliveryRouteStopsRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.UpdateStops(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " UpdateStops: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 10.2 load): xếp hàng lên xe (DeliveryLoading + DeliveryExecution LOADED), chuyến → Đang xếp – JSON vì có danh sách đơn giao.</summary>
+        [HttpPost("Load")]
+        public async Task<IActionResult> Load([FromBody] DeliveryRouteLoadRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Load(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Load: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

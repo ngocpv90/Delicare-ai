@@ -50,8 +50,135 @@ namespace AppDelicare.Model.Model
         /// <summary>Nhiệt độ bàn giao đo gần nhất tại điểm.</summary>
         public decimal? HandoverTemperatureC { get; set; }
         public ProofOfDelivery? Pod { get; set; }
+        /// <summary>BE2.1: số suất đã xếp lên xe (DeliveryLoading Loaded) – null = chưa xếp.</summary>
+        public decimal? LoadedQty { get; set; }
+        /// <summary>BE2.1: trạng thái thực hiện giao (DeliveryExecution): READY / LOADED / DISPATCHED / ARRIVED / DELIVERED / FAILED.</summary>
+        public string? ExecutionStatus { get; set; }
         public string? Note { get; set; }
         public List<string> AllowedActions { get; set; } = [];
+    }
+
+    /// <summary>BE2.1 (spec 10.2 GET delivery-orders): đơn giao + số suất, chuyến, điểm giao, đã xếp lên xe.</summary>
+    public class DeliveryOrderItemModel
+    {
+        public DeliveryOrder DeliveryOrder { get; set; } = null!;
+        public string? StatusName { get; set; }
+        public decimal MealQuantity { get; set; }
+        public string? OrderNumber { get; set; }
+        public string? OrderStatus { get; set; }
+        public string? CustomerName { get; set; }
+        public string? LocationName { get; set; }
+        public string? Address { get; set; }
+        public string? Area { get; set; }
+        public Guid? DeliveryRouteId { get; set; }
+        public string? RouteNo { get; set; }
+        public string? RouteStatus { get; set; }
+        public Guid? DeliveryStopId { get; set; }
+        public int? SequenceNo { get; set; }
+        public decimal? LoadedQty { get; set; }
+        public bool IsLoaded { get; set; }
+        public string? NoteText { get; set; }
+        public List<string> AllowedActions { get; set; } = [];
+    }
+
+    /// <summary>BE2.1: kết quả thao tác đơn giao (tạo / tách / gán chuyến / hủy) – các đơn giao liên quan + chuyến bị ảnh hưởng + cảnh báo.</summary>
+    public class DeliveryOrderActionModel
+    {
+        public List<DeliveryOrderItemModel> ListDeliveryOrder { get; set; } = [];
+        public List<DeliveryRouteDetailModel> ListRoute { get; set; } = [];
+        public List<string> ListWarning { get; set; } = [];
+    }
+
+    /// <summary>BE2.1 (spec 10.2 plan): kết quả lập chuyến nhiều xe theo khu vực.</summary>
+    public class DeliveryRoutePlanModel
+    {
+        public DateTime DeliveryDate { get; set; }
+        public List<DeliveryRouteDetailModel> ListRoute { get; set; } = [];
+        /// <summary>Khu vực → xe (mã) đã xếp.</summary>
+        public List<DeliveryPlanAreaModel> ListArea { get; set; } = [];
+        public List<string> ListWarning { get; set; } = [];
+    }
+
+    public class DeliveryPlanAreaModel
+    {
+        public string Area { get; set; } = string.Empty;
+        public decimal MealQuantity { get; set; }
+        public int StopCount { get; set; }
+        public List<string> ListVehicleCode { get; set; } = [];
+    }
+
+    /// <summary>BE2.1 (spec 10.2 load): kết quả xếp hàng lên xe.</summary>
+    public class DeliveryLoadModel
+    {
+        public DeliveryRouteDetailModel Route { get; set; } = null!;
+        public List<DeliveryLoading> ListLoading { get; set; } = [];
+        public List<DeliveryExecution> ListExecution { get; set; } = [];
+    }
+
+    /// <summary>BE2.1 (spec 10.3 GET executions): 1 dòng thực hiện giao.</summary>
+    public class DeliveryExecutionItemModel
+    {
+        public Guid DeliveryOrderId { get; set; }
+        public string? DeliveryNumber { get; set; }
+        public string? DeliveryOrderStatus { get; set; }
+        public decimal MealQuantity { get; set; }
+        public Guid OrderId { get; set; }
+        public string? OrderNumber { get; set; }
+        public Guid CustomerId { get; set; }
+        public string? CustomerName { get; set; }
+        public Guid? DeliveryLocationId { get; set; }
+        public string? LocationName { get; set; }
+        public string? Address { get; set; }
+        public Guid? DeliveryRouteId { get; set; }
+        public string? RouteNo { get; set; }
+        public string? RouteStatus { get; set; }
+        public string? VehicleCode { get; set; }
+        public string? DriverName { get; set; }
+        public Guid? DeliveryStopId { get; set; }
+        public int? SequenceNo { get; set; }
+        public string? StopStatus { get; set; }
+        public DateTime? PlannedArrival { get; set; }
+        public DateTime? ActualArrival { get; set; }
+        public decimal? LoadedQty { get; set; }
+        /// <summary>READY / LOADED / DISPATCHED / ARRIVED / DELIVERED / FAILED (không có dòng DeliveryExecution → suy theo đơn giao / điểm dừng).</summary>
+        public string Status { get; set; } = Helper.DeliveryExecutionStatus.Ready;
+        public string? StatusName { get; set; }
+        public DeliveryExecution? Execution { get; set; }
+        public ProofOfDelivery? Pod { get; set; }
+    }
+
+    public class DeliveryExecutionBoardModel
+    {
+        public DateTime DeliveryDate { get; set; }
+        public List<DeliveryExecutionItemModel> ListItem { get; set; } = [];
+        public Dictionary<string, int> StatusCounts { get; set; } = [];
+    }
+
+    /// <summary>BE2.1 (spec 10.1): lệnh đóng gói + kết quả, mẻ, đơn.</summary>
+    public class PackingOrderDetailModel
+    {
+        public PackingOrder PackingOrder { get; set; } = null!;
+        public string? StatusName { get; set; }
+        public string? BatchNumber { get; set; }
+        public string? BatchStatus { get; set; }
+        public string? DishName { get; set; }
+        public string? OrderNumber { get; set; }
+        public string? CustomerName { get; set; }
+        public List<PackingResult> ListResult { get; set; } = [];
+        public List<string> AllowedActions { get; set; } = [];
+    }
+
+    /// <summary>BE2.1: các lệnh đóng gói của 1 mẻ + số phần đạt / đã chia / còn lại.</summary>
+    public class PackingBatchModel
+    {
+        public Guid ProductionBatchId { get; set; }
+        public string? BatchNumber { get; set; }
+        public string? BatchStatus { get; set; }
+        public decimal AcceptedQuantity { get; set; }
+        public decimal AllocatedQuantity { get; set; }
+        public decimal RemainingQuantity { get; set; }
+        public List<PackingOrderDetailModel> ListPackingOrder { get; set; } = [];
+        public List<string> ListWarning { get; set; } = [];
     }
 
     public class DeliveryBatchBriefModel

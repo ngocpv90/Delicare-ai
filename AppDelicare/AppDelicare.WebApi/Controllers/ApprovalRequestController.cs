@@ -147,5 +147,41 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.1 (spec 11.5 GET approvals/{id}): yêu cầu + bước + quyết định + mục + bản ghi nghiệp vụ (kèm dòng), canDecide / canCancel.</summary>
+        [Security.SkipPermission] // như GetMyPending: service kiểm người gửi / người có quyền Duyệt mục của yêu cầu / admin
+        [HttpGet("GetDetail")]
+        public async Task<IActionResult> GetDetail(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetDetail(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.1 (spec 11.5 cancel): người gửi hủy yêu cầu còn chờ duyệt (bản ghi nghiệp vụ về Nháp) – quyền Xem hộp duyệt, service kiểm đúng người gửi / admin.</summary>
+        [Security.SkipPermission] // như GetMyPending / Decide: service kiểm đúng người gửi / admin
+        [HttpPost("Cancel")]
+        public async Task<IActionResult> Cancel([FromForm] ApprovalCancelRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Cancel(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Cancel: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

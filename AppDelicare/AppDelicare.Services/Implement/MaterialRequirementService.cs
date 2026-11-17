@@ -1212,6 +1212,156 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BE2.1 (spec 7.1 create-purchase-request, Catalog 107) – lập / làm lại đề nghị mua <b>Nháp</b> của kế hoạch chỉ từ các dòng thiếu được chọn, cộng % dự phòng, trong 1 transaction:
+        /// <list type="bullet">
+        /// <item>Dòng chọn phải thuộc kế hoạch và có số mua &gt; 0 (trống = mọi dòng thiếu). Số đề nghị = Ceil4(số mua × (1 + BufferPercent / 100)) – spec ghi ceil;
+        /// em làm tròn lên 4 số lẻ như MRP (PROPOSED – BA/PO CONFIRM: làm tròn lên số nguyên theo đơn vị mua nếu anh muốn).</item>
+        /// <item>Đề nghị chính của kế hoạch (PlanNote.PurchaseRequestId) còn Nháp → cập nhật tại chỗ (giữ số PH-), dòng không chọn xóa mềm; Chờ duyệt / Đã duyệt / Đã lập PO → chặn
+        /// (dùng CalculateTopUp); Từ chối / Hủy hoặc chưa có → lập đề nghị Nháp PH- mới.</item>
+        /// <item>Dòng nhu cầu được chọn → Đã đề nghị mua; dòng thiếu không chọn → Thiếu. Duyệt đề nghị mua 2 cấp (D-46) làm ở BE2.3 – chưa gọi ApprovalService ở đây.</item>
+        /// </list>
+        /// </summary>
+        public async Task<IResult<MaterialRequirementResultModel>> CreatePurchaseRequest(MaterialRequirementPurchaseRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                if (request.BufferPercent < 0 || request.BufferPercent > 100)
+                {
+                    return Fail(ConstantHelper.Message.MrpBufferInvalid);
+                }
+                var plan = _unitOfWork.ProductionPlanRepository.GetSingle(p => p.Id == request.ProductionPlanId && !p.IsDeleted);
+                if (plan == null)
+                {
+                    return Fail(ConstantHelper.Message.MrpPlanNotFound);
+                }
+                var rows = _unitOfWork.MaterialRequirementRepository.GetAll().Where(r => r.ProductionPlanId == plan.Id && !r.IsDeleted).ToList();
+                List<MaterialRequirement> selected;
+                if (request.ListRequirementId.Count == 0)
+                {
+                    selected = [.. rows.Where(r => r.PurchaseQuantity > 0)];
+                }
+                else
+                {
+                    selected = [];
+                    foreach (var id in request.ListRequirementId.Distinct())
+                    {
+                        var row = rows.FirstOrDefault(r => r.Id == id);
+                        if (row == null)
+                        {
+                            return Fail(ConstantHelper.Message.MrpRequirementNotInPlan);
+                        }
+                        if (row.PurchaseQuantity > 0)
+                        {
+                            selected.Add(row);
+                        }
+                    }
+                }
+                if (selected.Count == 0)
+                {
+                    return Fail(ConstantHelper.Message.MrpNoShortageSelected);
+                }
+                var planNote = ReadJson<PlanNote>(plan.Note) ?? new PlanNote { CalculatedAt = _clock.Now, CalculatedBy = actor.UserId };
+                PurchaseRequest? purchaseRequest = planNote.PurchaseRequestId is { } prId ? _unitOfWork.PurchaseRequestRepository.GetSingle(p => p.Id == prId && !p.IsDeleted) : null;
+                if (purchaseRequest != null && purchaseRequest.Status != PurchaseRequestStatus.Draft)
+                {
+                    if (IsMovedOn(purchaseRequest.Status))
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.MrpPurchaseRequestLocked, purchaseRequest.RequestNumber ?? purchaseRequest.RequestNo,
+                            PurchaseRequestStatus.Label(purchaseRequest.Status)));
+                    }
+                    purchaseRequest = null;
+                }
+                var selectedIngredients = selected.Select(r => r.IngredientId).ToHashSet();
+                var oldLines = purchaseRequest == null ? [] : _unitOfWork.PurchaseRequestLineRepository.GetAll()
+                    .Where(l => l.PurchaseRequestId == purchaseRequest.Id && !l.IsDeleted).ToList();
+                await SoftDeleteAsync([.. oldLines.Where(l => !selectedIngredients.Contains(l.IngredientId))]);
+
+                DateTime now = _clock.Now;
+                DateTime date = plan.ProductionDate.Date;
+                if (purchaseRequest == null)
+                {
+                    string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                    purchaseRequest = new PurchaseRequest
+                    {
+                        Id = Guid.NewGuid(),
+                        RequestNumber = number,
+                        RequestNo = number,
+                        RequestDate = now,
+                        RequiredDate = date,
+                        Status = PurchaseRequestStatus.Draft,
+                    };
+                    _unitOfWork.PurchaseRequestRepository.Add(purchaseRequest);
+                }
+                else
+                {
+                    purchaseRequest.RequiredDate = date;
+                    _unitOfWork.PurchaseRequestRepository.Update(purchaseRequest);
+                }
+                purchaseRequest.Note = $"Từ nhu cầu NL ngày {Day(date)} – kế hoạch {plan.PlanNumber ?? plan.PlanNo} – {selected.Count} dòng chọn, dự phòng {Num(request.BufferPercent)}%"
+                    + (string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim());
+                decimal rate = 1m + request.BufferPercent / 100m;
+                foreach (var row in rows)
+                {
+                    var rowNote = ReadJson<RowNote>(row.Note) ?? new RowNote();
+                    if (!selectedIngredients.Contains(row.IngredientId) || !selected.Contains(row))
+                    {
+                        if (row.PurchaseQuantity > 0 && rowNote.PurchaseRequestId == purchaseRequest.Id)
+                        {
+                            rowNote.PurchaseRequestId = null;
+                            rowNote.PurchaseRequestLineId = null;
+                            row.Status = MaterialRequirementStatus.Shortage;
+                            row.Note = JsonConvert.SerializeObject(rowNote);
+                            _unitOfWork.MaterialRequirementRepository.Update(row);
+                        }
+                        continue;
+                    }
+                    var line = oldLines.FirstOrDefault(l => l.IngredientId == row.IngredientId);
+                    if (line == null)
+                    {
+                        line = new PurchaseRequestLine { Id = Guid.NewGuid(), PurchaseRequestId = purchaseRequest.Id, IngredientId = row.IngredientId };
+                        _unitOfWork.PurchaseRequestLineRepository.Add(line);
+                    }
+                    else
+                    {
+                        _unitOfWork.PurchaseRequestLineRepository.Update(line);
+                    }
+                    line.Quantity = Ceil4(row.PurchaseQuantity * rate);
+                    line.UnitId = row.UnitId;
+                    line.UomId = row.UnitId;
+                    line.RequiredDate = date;
+                    var supplier = rowNote.Supplier;
+                    line.Note = (supplier == null ? ConstantHelper.Message.MrpNoSupplier : $"NCC gợi ý: {supplier.SupplierName}")
+                        + (request.BufferPercent > 0 ? $" – gồm dự phòng {Num(request.BufferPercent)}% (số mua {Num(row.PurchaseQuantity)})" : string.Empty);
+                    rowNote.PurchaseRequestId = purchaseRequest.Id;
+                    rowNote.PurchaseRequestLineId = line.Id;
+                    row.Status = MaterialRequirementStatus.Requested;
+                    row.Note = JsonConvert.SerializeObject(rowNote);
+                    _unitOfWork.MaterialRequirementRepository.Update(row);
+                }
+                planNote.PurchaseRequestId = purchaseRequest.Id;
+                plan.Note = JsonConvert.SerializeObject(planNote);
+                _unitOfWork.ProductionPlanRepository.Update(plan);
+                await _unitOfWork.MaterialRequirementRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                return Result<MaterialRequirementResultModel>.Success((await DetailAsync(plan.Id))!, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreatePurchaseRequest: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+
+            IResult<MaterialRequirementResultModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                return Result<MaterialRequirementResultModel>.Fail(message);
+            }
+        }
+
         /// <summary>T14: kết quả đã lưu của ngày sản xuất (+ chi nhánh). Chưa tính → ResponseCode 200, Data = null kèm thông báo.</summary>
         public async Task<IResult<MaterialRequirementResultModel>> GetByDate(MaterialRequirementByDateRequest request)
         {

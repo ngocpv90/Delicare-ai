@@ -12,6 +12,19 @@ namespace AppDelicare.Model.Request.Custom
     }
 
     /// <summary>
+    /// BE2.1 (spec 8.1 generate): sinh / làm lại kế hoạch sản xuất Nháp của ngày (KH- theo ngày – GAP-MRP-01 anh chốt) từ đơn Đã xác nhận / Đã chốt,
+    /// dòng theo món kèm số phần từng ca (form).
+    /// </summary>
+    public class ProductionPlanGenerateRequest
+    {
+        [Required]
+        public DateTime ProductionDate { get; set; }
+        public Guid? OrganizationUnitId { get; set; }
+        [MaxLength(1000)]
+        public string? Note { get; set; }
+    }
+
+    /// <summary>
     /// T17 (spec 8.1 release, Pilot P7): phát hành kế hoạch Đã duyệt → lệnh SX (PH-) theo món + mẻ (ME-yyMMdd-&lt;CA&gt;-NN), lập lịch ngược từ giờ xuất bếp.
     /// T17.1: kế hoạch ngày chia theo ca của đơn Đã chốt – ShiftId = chỉ phát hành ca đó, bỏ trống = mọi ca chưa phát hành;
     /// ProductionLineId = dây chuyền chia mẻ (năng lực / phút mỗi mẻ);

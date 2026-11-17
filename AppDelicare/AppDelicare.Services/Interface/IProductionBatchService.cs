@@ -16,6 +16,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(ProductionBatchRequest request, string typeSave);
         public IResults<ProductionBatch> GetAllData();
         public Task<IResult<ProductionBatch>> GetById(Guid id);
+        /// <summary>BE2.1 (spec 7.5 trace – chiều ngược từ mẻ).</summary>
+        public Task<IResult<AppDelicare.Model.Model.TraceModel>> Trace(Guid id);
         // T17 (Pilot P7): bảng mẻ, chi tiết, xuất NL cho mẻ (FEFO), bắt đầu / xong, nhiệt độ lõi, lưu mẫu, sản lượng, hao hụt, QC đạt / giữ / loại, đóng gói, in Phiếu sản xuất.
         public Task<IResult<ProductionBoardModel>> GetBoard(ProductionBoardRequest request);
         public Task<IResult<ProductionBatchDetailModel>> GetDetail(Guid id);

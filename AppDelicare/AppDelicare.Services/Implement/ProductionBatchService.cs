@@ -177,6 +177,21 @@ namespace AppDelicare.Services.Implement
         private Task<string> Delete(Guid? id, string typeSave)
             => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Mẻ nấu", "không xóa – Reject nếu không đạt"));
 
+        /// <summary>BE2.1 (spec 7.5 trace, Catalog 118 / 119 – chiều ngược): mẻ → phiếu xuất → lô NL → phiếu nhập → PO → NCC (+ nhiệt độ), kèm xuôi mẻ → đóng gói → đơn → đơn giao → khách.</summary>
+        public async Task<IResult<TraceModel>> Trace(Guid id)
+        {
+            try
+            {
+                var model = await TraceRules.FromBatchAsync(_unitOfWork.DbContext, id, _rules);
+                return model == null ? Result<TraceModel>.Fail(ConstantHelper.Message.BatchNotFound) : Result<TraceModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Trace: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResult<ProductionBatch>> GetById(Guid id)
         {
             try
@@ -659,39 +674,23 @@ namespace AppDelicare.Services.Implement
                 {
                     return string.Format(ConstantHelper.Message.BatchCannotPack, Number(batch), string.Join("; ", blockers));
                 }
+                // BE2.1: mẻ còn lệnh đóng gói chưa xong (Kế hoạch / Đang đóng gói) → hoàn tất bằng PackingOrder/RecordResult (mẻ tự Đã đóng gói khi chia hết và mọi lệnh
+                // đã đóng gói). Mọi lệnh đã xong mà mẻ còn phần dư chưa chia → được đóng gói mẻ trực tiếp (phần dư ghi hao hụt nấu dư nếu bỏ).
+                var packing = await _unitOfWork.DbContext.PackingOrder.AsNoTracking()
+                    .Where(p => !p.IsDeleted && p.ProductionBatchId == batch.Id && (p.Status == PackingOrderStatus.Planned || p.Status == PackingOrderStatus.Packing))
+                    .Select(p => p.PackingOrderNumber).ToListAsync();
+                if (packing.Count != 0)
+                {
+                    return string.Format(ConstantHelper.Message.BatchPackViaPackingOrders, Number(batch), string.Join(", ", packing));
+                }
                 batch.Status = ProductionBatchStatus.Packed;
                 await CompleteOrderIfDoneAsync(batch, order);
                 return null;
             });
 
-        /// <summary>Lệnh SX hoàn thành khi mọi mẻ (kể cả mẻ đang xử lý) đã đóng gói / không đạt; kế hoạch hoàn thành khi mọi lệnh hoàn thành.</summary>
-        private async Task CompleteOrderIfDoneAsync(ProductionBatch current, ProductionOrder order)
-        {
-            var db = _unitOfWork.DbContext;
-            var others = await db.ProductionBatch.AsNoTracking().Where(b => b.ProductionOrderId == order.Id && !b.IsDeleted && b.Id != current.Id).ToListAsync();
-            var all = others.Append(current).ToList();
-            if (!all.All(b => ProductionBatchStatus.Closed.Contains(b.Status)))
-            {
-                return;
-            }
-            order.Status = ProductionOrderStatus.Completed;
-            order.ActualQty = all.Where(b => b.Status == ProductionBatchStatus.Packed).Sum(b => b.AcceptedQty ?? b.ActualQuantity ?? b.ActualQty ?? 0m);
-            order.ActualEndDate = _clock.Now;
-            _unitOfWork.ProductionOrderRepository.Update(order);
-            var plan = _unitOfWork.ProductionPlanRepository.GetSingle(p => p.Id == order.ProductionPlanId && !p.IsDeleted);
-            if (plan == null || plan.Status != ProductionPlanStatus.Released)
-            {
-                return;
-            }
-            bool otherOrdersDone = !await db.ProductionOrder.AsNoTracking()
-                .AnyAsync(o => o.ProductionPlanId == plan.Id && !o.IsDeleted && o.Id != order.Id
-                    && o.Status != ProductionOrderStatus.Completed && o.Status != ProductionOrderStatus.Closed && o.Status != ProductionOrderStatus.Cancelled);
-            if (otherOrdersDone)
-            {
-                plan.Status = ProductionPlanStatus.Completed;
-                _unitOfWork.ProductionPlanRepository.Update(plan);
-            }
-        }
+        /// <summary>Lệnh SX hoàn thành khi mọi mẻ (kể cả mẻ đang xử lý) đã đóng gói / không đạt; kế hoạch hoàn thành khi mọi lệnh hoàn thành (dùng chung với PackingOrderService – BE2.1).</summary>
+        private Task CompleteOrderIfDoneAsync(ProductionBatch current, ProductionOrder order)
+            => ProductionRules.CompleteOrderIfDoneAsync(_unitOfWork, _clock.Now, current, order);
 
         /// <summary>T17 (spec 8.3 batch-board): mẻ của 1 ngày sản xuất (theo kế hoạch của ngày) + đếm theo trạng thái, số phần kế hoạch / đạt.</summary>
         public async Task<IResult<ProductionBoardModel>> GetBoard(ProductionBoardRequest request)

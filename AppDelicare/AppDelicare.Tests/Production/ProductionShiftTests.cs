@@ -180,6 +180,8 @@ namespace AppDelicare.Tests.Production
 
             var sampled = (await c.PostFormAsync("/api/ProductionBatch/RecordSampleRetained", ("Id", eveningBatch))).Ok();
             sampled.GetProperty("allowedActions").EnumerateArray().Select(a => a.GetString()).Should().NotContain("recordSampleRetained");
+            // BE2.1: xếp hàng lên xe trước khi xuất phát (DeliveryRequireLoading).
+            (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/DeliveryRoute/Load", new { id = routeId }))).Ok();
             var dispatched = (await c.PostFormAsync("/api/DeliveryRoute/Dispatch", ("Id", routeId))).Ok();
             dispatched.GetProperty("route").GetProperty("status").GetString().Should().Be("InTransit");
             (await _factory.QueryAsync(db => db.ProductionBatch.AsNoTracking().CountAsync(b => b.BatchNumber!.StartsWith("ME-261221-TRUAS2-") && b.Status == "Planned")))

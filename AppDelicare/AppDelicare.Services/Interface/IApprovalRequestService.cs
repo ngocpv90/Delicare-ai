@@ -23,5 +23,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResults<ApprovalPendingModel>> GetMyPending(string? type);
         /// <summary>T12: duyệt / từ chối 1 cấp và thực thi nghiệp vụ.</summary>
         public Task<IResult<bool>> Decide(ApprovalDecideRequest request);
+
+        // BE2.1 (spec 11.5) – chi tiết + hủy yêu cầu duyệt.
+        public Task<IResult<AppDelicare.Model.Model.ApprovalDetailModel>> GetDetail(Guid id);
+        public Task<IResult<bool>> Cancel(AppDelicare.Model.Request.Custom.ApprovalCancelRequest request);
     }
 }

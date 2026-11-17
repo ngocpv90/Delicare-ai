@@ -319,7 +319,7 @@ namespace AppDelicare.Services.Implement
                                    join p in _unitOfWork.PersonRepository.GetAll() on u.PersonId equals p.Id into pp
                                    from p in pp.DefaultIfEmpty()
                                    where userIds.Contains(u.Id)
-                                   select new { u.Id, Name = p != null && p.FullName != null ? p.FullName : u.UserName }).ToDictionaryAsync(x => x.Id, x => x.Name);
+                                   select new { u.Id, Name = p != null && p.FullName != null ? p.FullName : u.UserName }).ToDictionaryAsync(x => x.Id, x => (string?)x.Name);
                 var list = new List<ApprovalPendingModel>();
                 foreach (var r in rows)
                 {
@@ -450,6 +450,192 @@ namespace AppDelicare.Services.Implement
             }
             await _unitOfWork.ApprovalRequestRepository.CommitAsync(ConstantHelper.TypeSave.Update);
             return null;
+        }
+
+        // ============================================================ BE2.1 (spec 11.5) – chi tiết + hủy yêu cầu duyệt
+        public const string Cancelled = "Cancelled";
+
+        private async Task<Dictionary<Guid, string?>> UserNamesAsync(IEnumerable<Guid> ids)
+        {
+            var list = ids.Distinct().ToList();
+            return await (from u in _unitOfWork.UserRepository.GetAll()
+                          join p in _unitOfWork.PersonRepository.GetAll() on u.PersonId equals p.Id into pp
+                          from p in pp.DefaultIfEmpty()
+                          where list.Contains(u.Id)
+                          select new { u.Id, Name = p != null && p.FullName != null ? p.FullName : u.UserName }).ToDictionaryAsync(x => x.Id, x => (string?)x.Name);
+        }
+
+        private static string StatusLabel(string? status) => status switch
+        {
+            Pending => "Chờ duyệt",
+            Approved => "Đã duyệt",
+            Rejected => "Từ chối",
+            Cancelled => "Đã hủy",
+            _ => status ?? string.Empty,
+        };
+
+        /// <summary>Bản ghi nghiệp vụ được duyệt (theo BusinessType → bảng, mục 2.3 spec): PO + dòng, công thức + dòng, đơn hàng + dòng.</summary>
+        private async Task<ApprovalBusinessModel> BusinessAsync(string? businessType, Guid? businessId)
+        {
+            var db = _unitOfWork.DbContext;
+            var model = new ApprovalBusinessModel { Id = businessId };
+            if (businessId is not { } id)
+            {
+                return model;
+            }
+            switch (businessType)
+            {
+                case PurchaseOrderStatus.BusinessType:
+                    model.Table = "PurchaseOrder";
+                    model.Record = await db.PurchaseOrder.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    model.Lines = await db.PurchaseOrderLine.AsNoTracking().Where(x => x.PurchaseOrderId == id && !x.IsDeleted).ToListAsync();
+                    break;
+                case RecipeStatus.BusinessType:
+                    model.Table = "Recipe";
+                    model.Record = await db.Recipe.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    model.Lines = await db.RecipeLine.AsNoTracking().Where(x => x.RecipeId == id && !x.IsDeleted).OrderBy(x => x.SortOrder).ToListAsync();
+                    break;
+                case OrderStatus.DeviationBusinessType:
+                    model.Table = "Order";
+                    model.Record = await db.Order.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                    model.Lines = await db.OrderLine.AsNoTracking().Where(x => x.OrderId == id && !x.IsDeleted).ToListAsync();
+                    break;
+                default:
+                    model.Table = businessType;
+                    break;
+            }
+            return model;
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 11.5 GET approvals/{id}, Catalog 211): yêu cầu + bước + quyết định (tên người quyết định) + mục + bản ghi nghiệp vụ (kèm dòng) + đề xuất,
+        /// <c>canDecide</c> (còn chờ duyệt và có quyền Duyệt mục của yêu cầu), <c>canCancel</c> (còn chờ duyệt và là người gửi / admin).
+        /// </summary>
+        public async Task<IResult<ApprovalDetailModel>> GetDetail(Guid id)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var approval = await db.ApprovalRequest.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
+                if (approval == null)
+                {
+                    return Result<ApprovalDetailModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                Guid actor = _currentActor.RequireActor().UserId;
+                var perms = await _permissionService.GetAsync(actor);
+                var handler = HandlerOf(approval.BusinessType);
+                string? screen = handler == null ? null : approval.BusinessId is { } bid ? await handler.RequiredScreenIdAsync(bid) : handler.ScreenId;
+                bool canApprove = screen != null && _permissionService.IsAllowed(perms, screen, PermissionAction.Approve);
+                // Xem được: người gửi, người có quyền Duyệt mục của yêu cầu, admin, hoặc người có quyền Xem hộp duyệt chung #/wf-inbox.
+                if (approval.RequestedBy != actor && !perms.IsAdmin && !canApprove && !_permissionService.IsAllowed(perms, "wf-inbox", PermissionAction.View))
+                {
+                    return Result<ApprovalDetailModel>.Fail(ConstantHelper.Message.ApprovalNoRight);
+                }
+                var decisions = await db.ApprovalDecision.AsNoTracking().Where(d => d.ApprovalRequestId == id && !d.IsDeleted).OrderBy(d => d.DecidedAt).ToListAsync();
+                var names = await UserNamesAsync(decisions.Select(d => d.DecidedBy).Concat(approval.RequestedBy is { } rb ? [rb] : []));
+                bool pending = approval.RequestStatus == Pending;
+                return Result<ApprovalDetailModel>.Success(new ApprovalDetailModel
+                {
+                    Request = approval,
+                    StatusName = StatusLabel(approval.RequestStatus),
+                    RequestedByName = approval.RequestedBy is { } r ? names.GetValueOrDefault(r) : null,
+                    ScreenId = screen,
+                    Title = handler != null && approval.BusinessId is { } b2 ? await handler.DescribeAsync(b2) : null,
+                    ListStep = await db.ApprovalStep.AsNoTracking().Where(s => s.ApprovalRequestId == id && !s.IsDeleted).OrderBy(s => s.StepNo).ToListAsync(),
+                    ListDecision = [.. decisions.Select(d => new ApprovalDecisionItemModel { Decision = d, DecidedByName = names.GetValueOrDefault(d.DecidedBy) })],
+                    ListItem = await db.ApprovalItem.AsNoTracking().Where(i => i.ApprovalRequestId == id && !i.IsDeleted).ToListAsync(),
+                    Business = await BusinessAsync(approval.BusinessType, approval.BusinessId),
+                    ProposalJson = UnwrapPayload(approval.PayloadJson).Proposal,
+                    CanDecide = pending && canApprove,
+                    CanCancel = pending && (approval.RequestedBy == actor || perms.IsAdmin),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// BE2.1 (spec 11.5 cancel, Catalog 213): người gửi (hoặc admin) hủy yêu cầu còn Chờ duyệt, lý do bắt buộc – 1 transaction: bản ghi nghiệp vụ về Nháp qua handler
+        /// (<see cref="IApprovalHandler.CancelAsync"/>), bước đang chờ → Cancelled, ghi thêm ApprovalDecision <c>CANCEL</c> (sổ chỉ ghi thêm, PayloadHash nội dung đã gửi),
+        /// yêu cầu → Cancelled (PROPOSED – BA/PO CONFIRM: STATUS_CATALOG ApprovalRequest chưa có Cancelled).
+        /// </summary>
+        public async Task<IResult<bool>> Cancel(ApprovalCancelRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var approval = _unitOfWork.ApprovalRequestRepository.GetSingle(a => a.Id == request.Id && !a.IsDeleted);
+                if (approval == null)
+                {
+                    return Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                if (approval.RequestStatus != Pending)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ApprovalNotPending, approval.RequestStatus));
+                }
+                Guid actor = _currentActor.RequireActor().UserId;
+                var perms = await _permissionService.GetAsync(actor);
+                if (approval.RequestedBy != actor && !perms.IsAdmin)
+                {
+                    return Fail(ConstantHelper.Message.ApprovalCancelOnlyRequester);
+                }
+                string? reason = request.Reason?.Trim();
+                if (string.IsNullOrEmpty(reason))
+                {
+                    return Fail(ConstantHelper.Message.ApprovalCancelReasonRequired);
+                }
+                var handler = HandlerOf(approval.BusinessType);
+                if (handler == null || approval.BusinessId is not { } businessId)
+                {
+                    return Fail($"Chưa khai báo xử lý duyệt cho loại {approval.BusinessType}.");
+                }
+                string? executed = await handler.CancelAsync(businessId, actor, reason);
+                if (executed != null)
+                {
+                    return Fail(executed);
+                }
+                DateTime now = _clock.Now;
+                var step = _unitOfWork.ApprovalStepRepository.GetAll().Where(s => s.ApprovalRequestId == approval.Id && !s.IsDeleted)
+                    .OrderBy(s => s.StepNo).FirstOrDefault(s => s.DecisionStatus == "Waiting");
+                if (step == null)
+                {
+                    step = new ApprovalStep { Id = Guid.NewGuid(), ApprovalRequestId = approval.Id, StepNo = approval.CurrentStepNo ?? 1, AssignedAt = approval.RequestedAt };
+                    _unitOfWork.ApprovalStepRepository.Add(step);
+                }
+                else
+                {
+                    _unitOfWork.ApprovalStepRepository.Update(step);
+                }
+                step.DecisionStatus = Cancelled;
+                step.DecidedAt = now;
+                step.DecisionNote = "Người gửi hủy: " + reason;
+                _unitOfWork.ApprovalDecisionRepository.Add(new ApprovalDecision
+                {
+                    Id = Guid.NewGuid(), ApprovalRequestId = approval.Id, ApprovalStepId = step.Id, DecisionCode = "CANCEL",
+                    DecidedBy = actor, DecidedAt = now, Comment = reason, PayloadHash = Hash(UnwrapPayload(approval.PayloadJson).State),
+                });
+                approval.RequestStatus = Cancelled;
+                approval.CompletedAt = now;
+                _unitOfWork.ApprovalRequestRepository.Update(approval);
+                await _unitOfWork.ApprovalRequestRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                return Result<bool>.Success(true, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Cancel: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+
+            IResult<bool> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                return Result<bool>.Fail(message, false);
+            }
         }
     }
 }

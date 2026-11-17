@@ -25,5 +25,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<DeliveryRouteDetailModel>> RecordTemperature(DeliveryTemperatureRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> Dispatch(DeliveryRouteDispatchRequest request);
         public Task<IResult<byte[]>> ExportDeliveryNote(Guid id);
+
+        // BE2.1 – lập chuyến nhiều xe theo khu vực, đổi thứ tự điểm dừng, xếp hàng lên xe.
+        public Task<IResult<DeliveryRoutePlanModel>> Plan(DeliveryRoutePlanRequest request);
+        public Task<IResult<DeliveryRouteDetailModel>> UpdateStops(DeliveryRouteStopsRequest request);
+        public Task<IResult<DeliveryLoadModel>> Load(DeliveryRouteLoadRequest request);
     }
 }

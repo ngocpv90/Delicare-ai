@@ -15,6 +15,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(CustomerComplaintRequest request, string typeSave);
         public IResults<CustomerComplaint> GetAllData();
         public Task<IResult<CustomerComplaint>> GetById(Guid id);
+        /// <summary>BE2.1 (spec 10.5 GET complaints): danh sách đủ trường + isOverdue + statusCounts.</summary>
+        public Task<IResult<AppDelicare.Model.Model.CustomerComplaintListModel>> GetList(AppDelicare.Model.Request.Custom.ComplaintListRequest request);
 
         // T19 (Pilot P8) – phản ánh PA- cơ bản: tạo / giao xử lý / đã xử lý / đóng / từ chối / ghi chú.
         public Task<IResult<CustomerComplaintDetailModel>> Create(ComplaintCreateRequest request);

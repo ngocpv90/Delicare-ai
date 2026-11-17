@@ -42,5 +42,12 @@ namespace AppDelicare.Services.Interface
 
         /// <summary>Xử lý khi bị từ chối (lý do bắt buộc).</summary>
         Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note);
+
+        /// <summary>
+        /// BE2.1 (spec 11.5 cancel): người gửi hủy yêu cầu còn chờ duyệt – trả bản ghi nghiệp vụ về Nháp. Mặc định dùng đúng xử lý từ chối (mọi handler hiện có
+        /// đều trả về Nháp / không đổi khi từ chối) với ghi chú "Người gửi hủy: …" – handler cũ không phải sửa.
+        /// </summary>
+        Task<string?> CancelAsync(Guid businessId, Guid actorUserId, string reason)
+            => RejectAsync(businessId, actorUserId, "Người gửi hủy: " + reason);
     }
 }

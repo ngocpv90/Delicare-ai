@@ -83,6 +83,7 @@ namespace AppDelicare.Tests.Delivery
                 var low = await routes.Dispatch(new DeliveryRouteDispatchRequest { Id = routeId });
                 low.ResponseCode.Should().Be(400);
                 low.ResponseMessage.Should().Contain("57.5 °C dưới ngưỡng 60 °C");
+                (await routes.Load(new DeliveryRouteLoadRequest { Id = routeId, Note = "[DEMO]" })).ResponseCode.Should().Be(200); // BE2.1
                 var dispatched = await routes.Dispatch(new DeliveryRouteDispatchRequest { Id = routeId, TemperatureC = 65m, DeviceCode = "[DEMO]" });
                 dispatched.ResponseCode.Should().Be(200, dispatched.ResponseMessage);
                 (await stops.Arrive(new DeliveryStopArriveRequest { Id = stop.Id })).ResponseCode.Should().Be(200);
@@ -109,7 +110,7 @@ namespace AppDelicare.Tests.Delivery
                 db.ChangeTracker.Clear();
                 (await db.Order.AsNoTracking().SingleAsync(o => o.Id == order)).Status.Should().Be("Reconciled");
                 (await db.TemperatureLog.AsNoTracking().CountAsync(t => t.MeasurementType == "DELIVERY" && t.DeviceCode == "[DEMO]")).Should().BeGreaterThan(0);
-                (await db.DeliveryEvent.AsNoTracking().CountAsync(e => e.DeliveryRouteId == routeId)).Should().Be(6, "TEMP 57,5 + TEMP 65 + DISPATCHED + ARRIVED + TEMP 64 + DELIVERED");
+                (await db.DeliveryEvent.AsNoTracking().CountAsync(e => e.DeliveryRouteId == routeId)).Should().Be(7, "TEMP 57,5 + LOADED (BE2.1) + TEMP 65 + DISPATCHED + ARRIVED + TEMP 64 + DELIVERED");
                 (await db.ComplaintHistory.AsNoTracking().CountAsync(h => h.ComplaintId == complaintId)).Should().Be(4);
                 await tx.RollbackAsync();
             }
