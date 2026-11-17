@@ -1,0 +1,52 @@
+### DELICARE – BE3.2: IOT NHIỆT ĐỘ (Catalog 166, đợt BE-3, D-57 f) – khung cũ D-30.
+### Cảm biến gửi lô lần đo → POST api/IotTemperature/Receive (JSON mảng, ≤ 500 dòng). KHÔNG dùng đăng nhập người dùng: header X-Api-Key.
+###
+### CẦN TRƯỚC KHI CHẠY (KHÔNG ghi khóa thật vào repo – chỉ đặt lúc chạy API, ví dụ PowerShell):
+###   $env:Iot__ApiKeys__0 = "<khóa tự sinh, ≥ 32 ký tự>"
+###   $env:Iot__Devices__DEMO-SENSOR-01__StorageZoneCode = "<mã 1 khu vực kho có ngưỡng, vd. DEMOB21HKL trên DB dev>"
+###   dotnet run --project AppDelicare/AppDelicare.WebApi --urls http://localhost:5125
+### và đặt biến môi trường DELICARE_IOT_KEY = cùng khóa cho REST Client ({{$processEnv DELICARE_IOT_KEY}}).
+### Khu vực DEMOB21HKL ngưỡng 0–5 °C. Giờ đo = hôm nay (đổi @day nếu chạy ngày khác; lần đo cũ hơn 7 ngày bị từ chối).
+### Chạy lại cùng file: các lần đo đã gửi tính là TRÙNG (duplicate), không ghi thêm – an toàn.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN (responseCode 400, HTTP 200). Dòng "# @expect …" cho trình chạy tự động.
+@base = http://localhost:5125
+@apiKey = {{$processEnv DELICARE_IOT_KEY}}
+@day = 2026-11-17
+
+### 1. Lô hỗn hợp: 1 đạt, 1 vượt ngưỡng, 1 giờ UTC, 1 trùng trong lô, 1 thiết bị lạ, 1 lỗi cảm biến
+# @name rx
+# @expect data.received == 6
+# @expect data.rejected length == 2
+POST {{base}}/api/IotTemperature/Receive
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+[
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T08:00:00", "temperatureC": 3.4 },
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T08:05:00", "temperatureC": 7.1 },
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T01:10:00Z", "temperatureC": 2.9 },
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T08:00:00", "temperatureC": 3.4 },
+  { "deviceCode": "THIET-BI-LA", "measuredAt": "{{day}}T08:00:00", "temperatureC": 3.0 },
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T08:20:00", "temperatureC": 999 }
+]
+
+### 2. Gửi lại đúng lô (mất mạng gửi bù) → không ghi thêm
+# @expect data.accepted == 0
+# @expect data.duplicate == 4
+POST {{base}}/api/IotTemperature/Receive
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+[
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T08:00:00", "temperatureC": 3.4 },
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T08:05:00", "temperatureC": 7.1 },
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T01:10:00Z", "temperatureC": 2.9 },
+  { "deviceCode": "DEMO-SENSOR-01", "measuredAt": "{{day}}T08:00:00", "temperatureC": 3.4 }
+]
+
+### 3. → 400 (lô rỗng)
+POST {{base}}/api/IotTemperature/Receive
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+[]

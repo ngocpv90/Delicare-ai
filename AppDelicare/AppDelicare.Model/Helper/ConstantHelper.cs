@@ -481,6 +481,20 @@
             public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
             public static readonly string ApprovalCancelOnlyRequester = "Chỉ người gửi yêu cầu được hủy";
             public static readonly string ApprovalCancelReasonRequired = "Phải ghi lý do hủy yêu cầu duyệt";
+            // BE3.2 – IoT nhiệt độ.
+            public static readonly string IotEmpty = "Không có lần đo nào";
+            public static readonly string IotTooMany = "Tối đa {0} lần đo mỗi lần gửi";
+            public static readonly string IotDeviceRequired = "Thiếu mã thiết bị";
+            public static readonly string IotDeviceUnknown = "Thiết bị chưa khai báo trong cấu hình Iot:Devices";
+            public static readonly string IotDeviceDisabled = "Thiết bị đang tạm ngưng";
+            public static readonly string IotDeviceZoneMissing = "Khu vực kho của thiết bị không tồn tại";
+            public static readonly string IotDeviceZoneAmbiguous = "Mã khu vực kho của thiết bị trùng ở nhiều kho – khai báo StorageZoneId";
+            public static readonly string IotMeasuredAtRequired = "Thiếu giờ đo";
+            public static readonly string IotMeasuredAtOutOfRange = "Giờ đo không hợp lệ (cũ hơn {0} ngày hoặc ở tương lai quá {1} phút)";
+            public static readonly string IotTemperatureOutOfRange = "Nhiệt độ ngoài khoảng cảm biến ({0} … {1} °C)";
+            public static readonly string IotReceived = "Đã ghi {0} lần đo, trùng {1}, từ chối {2}";
+            public static readonly string IotApiKeyInvalid = "Khóa API không hợp lệ";
+            public static readonly string IotRateLimited = "Gửi quá nhiều – thử lại sau 1 phút";
             // BE3.1 – biểu đồ, sự kiện giao, vị trí xe.
             public static readonly string ChartRangeInvalid = "Khoảng thời gian không hợp lệ: từ phải trước đến, tối đa {0} ngày";
             public static readonly string ChartGroupByInvalid = "Nhóm theo không hợp lệ ({0}) – dùng wasteType, dish, shift hoặc date";

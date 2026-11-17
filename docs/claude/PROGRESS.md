@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-17: BE3.2 DONE – IoT nhiệt độ** (Catalog 166) trên nhánh `feat/BE3.2-iot` (từ `release/pilot` @ 2aeb84a, chưa push): `POST api/IotTemperature/Receive` (khóa API riêng, không JWT), test **268 / 268**, `be3.2-iot.http` 3 / 3 trên DB dev (khóa đặt lúc chạy, không commit). PROPOSED D-57 f, o. Tiếp theo: BE3.3 cảnh báo, tìm kiếm, tab Liên quan.
 - **2026-11-17: BE3.1 DONE – biểu đồ + sự kiện giao** (đợt BE-3, D-57) trên nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ 8e12696, chưa push): Catalog 100 / 157 / 163 / 192 / 193; test **264 / 264**; `be3.1-charts.http` **22 / 22** trên DB dev. PROPOSED D-57 (j)–(n). Tiếp theo: BE3.2 IoT nhiệt độ.
 - **2026-11-17: T23.1 DONE – Job tự động** trên nhánh `feat/T23-jobs` (worktree `wt-T23`, từ `release/pilot` @ f648505, chưa push / chưa gộp): project mới `AppDelicare.Job` (D-48) + 5 job LockOrders 20:00 / Mrp 20:30 (+ đề nghị mua) / LotExpiry 00:15 / ContractExpiry 00:30 / MarkAbsent 08:00, `api/Job/GetAll` / `Run` (admin), `Contract/ExpireOverdue`; seed user `system`; test **258 / 258**; `t23-jobs.http` 6 / 6 trên DB dev. PROPOSED D-59. Anh chỉ đạo 2026-11-17: **chỉ làm backend** (không FE).
 - **2026-11-17: Đã gộp + push** BE2.9 và BE2.7.1 vào `release/pilot` = `main` (`81bcf3a`); test 245 / 245. **Staging cập nhật bản có PDF** (`Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging`): `full-flow.http` **217 / 217** trên staging (`@key=B272`, `@day=2026-12-15` – ngày 2026-12-01 đã dùng ở lần chạy BE2.9, kế hoạch SX đã Hoàn thành nên không chạy lại được), 6 mẫu in + `Common/PrintBatch` trả `application/pdf`; chạy xong đã dừng API staging. Dữ liệu thử còn lại trên staging: mã `DEMOB29S…`, `DEMOB271…` (lần chạy lỗi giữa chừng vì trùng ngày), `DEMOB272…`. **Còn 0 task backend BE-2**; tiếp theo: GHEP-FE (khi anh yêu cầu) → UAT toàn luồng → T48.2.
@@ -1802,3 +1803,19 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`, cột N = 
 | 163 | Đã xong | `GET api/TemperatureLog/GetSeries` | BE3.1 |
 | 192 | Đã xong | `GET api/DeliveryOrder/GetEvents` | BE3.1 |
 | 193 | Đã xong | `GET api/DeliveryEvent/GetVehiclePositions` + `POST api/DeliveryEvent/RecordPosition` | BE3.1 |
+
+### BE3.2 – IoT nhiệt độ (Catalog 166) · 2026-11-17 · DONE
+Nhánh `feat/BE3.2-iot` (worktree `wt-BE32`, từ `release/pilot` @ `2aeb84a`), chưa push.
+
+**Đã làm (khung cũ, không bảng / cột / SP / seed mới)**
+- `IotTemperatureController.Receive` (`[AllowAnonymous]` + `[SkipPermission]` + `[IotApiKey]`): JSON mảng `[{ deviceCode, measuredAt, temperatureC }]` ≤ 500.
+- `Security/IotApiKeyFilter`: header `X-Api-Key` so với `Iot:ApiKeys` (băm SHA-256, thời gian hằng; không log khóa – chỉ 8 ký tự băm), trống = tắt (401), giới hạn `RateLimitPerMinute` / khóa (429, IMemoryCache).
+- `IotTemperatureService`: thiết bị → khu vực (`Iot:Devices`: StorageZoneId / StorageZoneCode, StorageLocationId, MeasurementType, Enabled), kiểm giờ đo / nhiệt độ, chống trùng (DeviceCode, MeasuredAt) trong DB + trong lô, ngưỡng khu vực → IsWithinRange, ghi `TemperatureLog` SourceChannel `IOT` trong `ICurrentActor.BeginScope(system)`; dòng lỗi → `rejected` + log cảnh báo.
+- Cấu hình `Iot` trong appsettings (ApiKeys rỗng – bí mật đặt bằng biến môi trường), `IotOptions` đăng ký trong `AddDelicareCore`.
+
+**Kiểm tra:** build 0 lỗi; test **268 / 268** (+4 `Iot/IotTemperatureTests.cs`: khóa sai / thiếu / token người dùng → 401; lô 12 dòng – 3 ghi, 1 trùng, 8 từ chối đúng lý do; gửi lại không ghi thêm; giờ UTC → VN; system là người ghi; biểu đồ BE3.1 thấy lần đo IoT; lô rỗng / > 500; 429). `docs/api-tests/be3.2-iot.http` **3 / 3** trên DB dev (khóa ngẫu nhiên đặt lúc chạy API, thiết bị `DEMO-SENSOR-01` → khu vực `DEMOB21HKL`): 3 dòng IOT trong `TemperatureLog` (08:00 đạt, 08:05 7,1 °C vượt ngưỡng, 01:10Z → 08:10), CreatedBy = system; không khóa → 401.
+
+Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
+| STT | Trạng thái (J) | API thực tế (K / L) | Task (M) |
+|---|---|---|---|
+| 166 | Đã xong | `POST api/IotTemperature/Receive` (header `X-Api-Key`) | BE3.2 |
