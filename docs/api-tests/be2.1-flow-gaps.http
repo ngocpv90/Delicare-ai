@@ -7,6 +7,7 @@
 ### Cách chạy: VS Code REST Client, LẦN LƯỢT từ trên xuống. Mỗi lần chạy lại đổi @key và @day (ngày ăn tương lai, chưa qua 20:00 ngày trước; @dow = thứ của @day).
 ### Bước đánh dấu "→ 400" là CHỐT AN TOÀN: kỳ vọng responseCode = 400 kèm thông báo tiếng Việt (HTTP vẫn 200).
 ### Đã chạy trên DB dev 2026-11-17 (key B21J, ngày 06/01/2027): 138 / 138 request đúng kỳ vọng (11 chốt an toàn trả 400); số chứng từ ở PROGRESS mục BE2.1.
+### BE2.2 (2026-11-17): thêm bước gửi duyệt + duyệt 2 hợp đồng (CRUD Insert luôn Nháp). Đã chạy lại trên DB dev (key B22C, ngày 09/12/2026): 142 / 142 đúng kỳ vọng (11 chốt). Lưu ý: @day ≤ hôm nay + 60 ngày (lô tồn đầu kỳ hạn dùng +60 ngày – quá hạn thì MRP đề nghị cả gà, không có NCC).
 @base = http://localhost:5125
 @user = admin
 @password = admin
@@ -343,6 +344,34 @@ Authorization: Bearer {{token}}
 # @name cmB
 GET {{base}}/api/ContractMeal/GetAll?ContractId={{contractB}}&Page=1&PageSize=5
 Authorization: Bearer {{token}}
+
+### BE2.2: hợp đồng tạo ra luôn Nháp → gửi duyệt → duyệt (engine CONTRACT) mới Hiệu lực
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}
+
+###
+POST {{base}}/api/Contract/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractA}}&Note=[DEMO] duyệt
+
+###
+POST {{base}}/api/Contract/Submit
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}
+
+###
+POST {{base}}/api/Contract/Approve
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{contractB}}&Note=[DEMO] duyệt
 
 ### 0.7 2 xe (tải 400 / 300 suất), tài xế = nhân viên, dây chuyền 1000 suất / mẻ
 POST {{base}}/api/Vehicle/Insert

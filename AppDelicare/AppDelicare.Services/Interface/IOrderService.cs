@@ -32,5 +32,11 @@ namespace AppDelicare.Services.Interface
         public Task<string?> ApplyLinesAsync(Guid orderId, IReadOnlyCollection<AppDelicare.Model.Request.Custom.OrderLineQuantityRequest> changes);
         /// <summary>Nội bộ: nội dung được duyệt của ORDER_DEVIATION (trạng thái + số suất từng dòng).</summary>
         public Task<string?> BuildDeviationStateAsync(Guid orderId);
+        /// <summary>BE2.2 (BUSINESS_RULES §2): xin sửa đơn sau giờ chốt – tạo yêu cầu duyệt ORDER_CHANGE_AFTER_CUTOFF kèm đề xuất.</summary>
+        public Task<IResult<AppDelicare.Model.Model.OrderDetailModel>> RequestChange(AppDelicare.Model.Request.Custom.OrderChangeAfterCutoffRequest request);
+        /// <summary>Nội bộ (handler ORDER_CHANGE_AFTER_CUTOFF) – chạy trong transaction của engine.</summary>
+        public Task<string?> BuildChangeAfterCutoffStateAsync(Guid orderId);
+        public Task<string?> ApplyChangeAfterCutoffAsync(Guid orderId, string? proposalJson, string? note);
+        public Task<string?> RejectChangeAfterCutoffAsync(Guid orderId, string note);
     }
 }

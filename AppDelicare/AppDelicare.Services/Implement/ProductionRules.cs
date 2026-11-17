@@ -72,7 +72,57 @@ namespace AppDelicare.Services.Implement
                     demands.Add(new DishDemand(line.OrderId, line.Id, shiftId.Value, dish.Key, qty));
                 }
             }
+            // BE2.2: đổi món đã duyệt (MenuChangeRequest) áp lên nhu cầu – kế hoạch sinh lại / chia mẻ / truy xuất không mất đổi món.
+            var changes = demands.Count == 0 ? [] : await ApprovedMenuChangesAsync(db, day);
+            if (changes.Count != 0)
+            {
+                demands = ApplyMenuChanges(demands, changes);
+            }
             return (demands, orders, skipped, fallback);
+        }
+
+        /// <summary>BE2.2 (spec 6.4): yêu cầu đổi món Đã duyệt – đổi <see cref="Quantity"/> suất (null = tất cả) món cũ → món mới, trong phạm vi đơn / ca nếu có.</summary>
+        public sealed record MenuChange(Guid? OrderId, Guid? ShiftId, Guid OriginalDishId, Guid RequestedDishId, decimal? Quantity);
+
+        /// <summary>BE2.2: yêu cầu đổi món Đã duyệt (MenuChangeRequest.RequestStatus = Approved) của ngày ăn, theo thứ tự duyệt.</summary>
+        public static async Task<List<MenuChange>> ApprovedMenuChangesAsync(DatabaseContext db, DateTime date)
+        {
+            DateTime day = date.Date, next = day.AddDays(1);
+            var rows = await db.MenuChangeRequest.AsNoTracking()
+                .Where(r => !r.IsDeleted && r.RequestStatus == MenuChangeStatus.Approved && r.MealDate >= day && r.MealDate < next
+                    && r.OriginalDishId != null && r.RequestedDishId != null)
+                .ToListAsync();
+            return [.. rows.OrderBy(r => r.ApprovedAt).ThenBy(r => r.RequestNo, StringComparer.Ordinal)
+                .Select(r => new MenuChange(r.OrderId, r.ShiftId, r.OriginalDishId!.Value, r.RequestedDishId!.Value, r.Quantity))];
+        }
+
+        /// <summary>
+        /// BE2.2 (spec 6.4): áp yêu cầu đổi món đã duyệt lên nhu cầu món theo dòng đơn – lần lượt từng yêu cầu: lấy tối đa <c>Quantity</c> suất của món cũ
+        /// (trong đơn / ca của yêu cầu nếu có, theo thứ tự dòng) chuyển sang món mới cùng đơn / dòng / ca. Không đủ suất món cũ → chuyển phần đang có (PROPOSED – D-51).
+        /// Dùng chung cho kế hoạch sinh tự động, MRP, chia mẻ đóng gói, truy xuất → đổi món không bị mất khi tính lại.
+        /// </summary>
+        public static List<DishDemand> ApplyMenuChanges(IReadOnlyList<DishDemand> demands, IReadOnlyCollection<MenuChange> changes)
+        {
+            var result = demands.ToList();
+            foreach (var change in changes)
+            {
+                decimal remaining = change.Quantity ?? decimal.MaxValue;
+                int count = result.Count;
+                for (int i = 0; i < count && remaining > 0; i++)
+                {
+                    var d = result[i];
+                    if (d.DishId != change.OriginalDishId || d.Quantity <= 0 || (change.OrderId != null && d.OrderId != change.OrderId)
+                        || (change.ShiftId != null && d.ShiftId != change.ShiftId))
+                    {
+                        continue;
+                    }
+                    decimal moved = Math.Min(d.Quantity, remaining);
+                    remaining -= moved;
+                    result[i] = d with { Quantity = d.Quantity - moved };
+                    result.Add(d with { DishId = change.RequestedDishId, Quantity = moved });
+                }
+            }
+            return [.. result.Where(d => d.Quantity > 0)];
         }
 
         /// <summary>

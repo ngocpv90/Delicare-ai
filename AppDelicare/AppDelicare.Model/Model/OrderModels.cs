@@ -42,7 +42,7 @@ namespace AppDelicare.Model.Model
         public string? PriceSource { get; set; }
         public Guid? MenuId { get; set; }
         public string? MenuCode { get; set; }
-        /// <summary>Số lượng gợi ý: Pilot = 0 (dự báo Forecast → DEFERRED(PILOT)).</summary>
+        /// <summary>BE2.2: số lượng gợi ý = dự báo Đã công bố mới nhất của (khách, điểm giao, ngày, loại suất); dự báo cấp khách chia đều cho các điểm chưa có dự báo riêng (PROPOSED).</summary>
         public decimal SuggestedQuantity { get; set; }
     }
 
@@ -66,6 +66,14 @@ namespace AppDelicare.Model.Model
         public decimal? MaxDeviationPercent { get; set; }
         /// <summary>Cảnh báo không chặn (vd. dòng chưa có thực đơn được gán).</summary>
         public List<string> ListWarning { get; set; } = [];
+        /// <summary>BE2.2: loại yêu cầu duyệt đang chờ (ORDER_DEVIATION / ORDER_CHANGE_AFTER_CUTOFF).</summary>
+        public string? PendingApprovalType { get; set; }
+        /// <summary>BE2.2 (spec 6.6): tổng dự báo Đã công bố của (khách, điểm giao, ngày ăn) theo các loại suất của đơn; null = không có dự báo.</summary>
+        public decimal? ForecastQuantity { get; set; }
+        /// <summary>BE2.2 (spec 6.6 confirm): (đặt − dự báo) / dự báo × 100, làm tròn 2 số lẻ; null = không có dự báo.</summary>
+        public decimal? ForecastVariancePercent { get; set; }
+        /// <summary>|lệch dự báo| &gt; BusinessRules:ForecastVariancePctWarning.</summary>
+        public bool ForecastVarianceExceeded { get; set; }
     }
 
     public class OrderLineDetailModel
@@ -82,6 +90,8 @@ namespace AppDelicare.Model.Model
         public decimal? UnitPrice { get; set; }
         public decimal LineAmount { get; set; }
         public string? Note { get; set; }
+        /// <summary>BE2.2 (spec 6.6 GET {id}): dự báo Đã công bố của loại suất tại điểm giao / ngày ăn (null = không có).</summary>
+        public decimal? ForecastQuantity { get; set; }
     }
 
     /// <summary>T13: kết quả nút chốt đơn theo ngày ăn.</summary>

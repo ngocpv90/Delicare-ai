@@ -253,7 +253,8 @@ namespace AppDelicare.Services.Implement
         {
             DateTime day = mealDate.Date;
             return _unitOfWork.ContractRepository.GetAll().AsNoTracking()
-                .Where(c => !c.IsDeleted && c.CustomerId == customerId && c.Status == ActiveStatus
+                // BE2.2: hợp đồng Chấm dứt vẫn nhận đơn tới hết ngày chấm dứt (EffectiveTo) – PROPOSED D-51.
+                .Where(c => !c.IsDeleted && c.CustomerId == customerId && (c.Status == ActiveStatus || c.Status == ContractStatus.Terminated)
                     && c.EffectiveFrom <= day && (c.EffectiveTo == null || c.EffectiveTo >= day)
                     && (contractId == null || c.Id == contractId))
                 .OrderByDescending(c => c.EffectiveFrom).FirstOrDefaultAsync();
@@ -269,9 +270,10 @@ namespace AppDelicare.Services.Implement
             return await _unitOfWork.ShiftRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(s => s.Code == code && !s.IsDeleted);
         }
 
+        /// <summary>Yêu cầu duyệt đang chờ của đơn (lệch suất ORDER_DEVIATION hoặc sửa sau giờ chốt ORDER_CHANGE_AFTER_CUTOFF – BE2.2).</summary>
         private async Task<ApprovalRequest?> PendingDeviationAsync(Guid orderId)
             => await _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking()
-                .Where(a => !a.IsDeleted && a.BusinessType == OrderStatus.DeviationBusinessType && a.BusinessId == orderId && a.RequestStatus == "Pending")
+                .Where(a => !a.IsDeleted && OrderStatus.ApprovalBusinessTypes.Contains(a.BusinessType) && a.BusinessId == orderId && a.RequestStatus == "Pending")
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
         /// <summary>Spec 6.6 new-template: hợp đồng Active tại ngày ăn (không có → lỗi), ContractMeal × điểm giao, ca mặc định, đơn giá, thực đơn.</summary>
@@ -311,6 +313,9 @@ namespace AppDelicare.Services.Implement
                     var price = await _pricePolicyService.Resolve(new PriceResolveRequest { CustomerId = customerId, ContractId = contract.Id, MealType = meal.MealType, Date = day });
                     prices[meal.MealType!] = price.ResponseCode == (int)HttpStatusCode.OK ? price.Data : null;
                 }
+                // BE2.2 (spec 6.6 new-template, Catalog 92): số gợi ý = dự báo Đã công bố mới nhất (ForecastRules.ForLocation).
+                var forecasts = await ForecastRules.LatestPublishedAsync(_unitOfWork.DbContext, day, day, [customerId]);
+                var locationIds = locations.Select(l => l.Id).ToList();
                 foreach (var location in locations)
                 {
                     var order = existing.FirstOrDefault(o => o.DeliveryLocationId == location.Id);
@@ -329,6 +334,7 @@ namespace AppDelicare.Services.Implement
                             ContractMealId = meal.Id, MealType = meal.MealType, MealName = meal.MealName, ServiceType = meal.ServiceType,
                             ShiftId = shift?.Id, ShiftCode = shift?.Code, ShiftName = shift?.Name,
                             UnitPrice = price?.UnitPrice, PriceSource = price?.Source, MenuId = menu?.MenuId, MenuCode = menu?.MenuCode,
+                            SuggestedQuantity = ForecastRules.ForLocation(forecasts, customerId, location.Id, locationIds, meal.MealType, shift?.Id) ?? 0m,
                         });
                     }
                     model.ListLocation.Add(item);
@@ -369,10 +375,25 @@ namespace AppDelicare.Services.Implement
                     _unitOfWork.OrderLineRepository.Add(line);
                 }
                 await _unitOfWork.OrderRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                string message = ConstantHelper.Message.SaveSuccess;
+                bool afterCutoff = IsAfterCutoff(order.MealDate);
+                if (afterCutoff)
+                {
+                    // BE2.2 (ORDER_CHANGE_AFTER_CUTOFF): thêm đơn sau giờ chốt – đơn Nháp + yêu cầu duyệt; duyệt → Đã chốt, từ chối / hủy → Hủy.
+                    var (approval, approvalError) = await _approvalRequestService.CreateAsync(OrderStatus.ChangeAfterCutoffBusinessType, order.Id,
+                        JsonConvert.SerializeObject(new AfterCutoffProposal { Kind = AfterCutoffProposal.Create, Reason = request.AfterCutoffReason!.Trim() }));
+                    if (approvalError != null)
+                    {
+                        _unitOfWork.RollbackTransaction();
+                        return Result<OrderDetailModel>.Fail(approvalError);
+                    }
+                    message = string.Format(ConstantHelper.Message.OrderCreateAfterCutoffRequested, number, approval!.RequestNo);
+                }
                 _unitOfWork.CommitTransaction();
                 var detail = await DetailAsync(order.Id);
                 detail!.ListWarning.AddRange(warnings);
-                return Result<OrderDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
+                detail.ApprovalRequested = afterCutoff;
+                return Result<OrderDetailModel>.Success(detail, message);
             }
             catch (Exception ex)
             {
@@ -385,9 +406,13 @@ namespace AppDelicare.Services.Implement
         private async Task<(Order? Order, List<OrderLine>? Lines, string? Error)> BuildOrderAsync(OrderCreateRequest request, List<string> warnings)
         {
             DateTime day = request.MealDate.Date;
-            if (IsAfterCutoff(day))
+            if (IsAfterCutoff(day) && string.IsNullOrWhiteSpace(request.AfterCutoffReason))
             {
                 return (null, null, AfterCutoff(day, "tạo đơn"));
+            }
+            if (IsAfterCutoff(day) && request.AfterCutoffReason!.Trim().Length < 3)
+            {
+                return (null, null, ConstantHelper.Message.OrderChangeReasonRequired);
             }
             if (!await _unitOfWork.CustomerRepository.GetAll().AnyAsync(c => c.Id == request.CustomerId && !c.IsDeleted))
             {
@@ -566,7 +591,7 @@ namespace AppDelicare.Services.Implement
                     : null;
                 if (error == null && await PendingDeviationAsync(order!.Id) is { } pending)
                 {
-                    error = string.Format(ConstantHelper.Message.OrderDeviationPending, pending.RequestNo);
+                    error = string.Format(ConstantHelper.Message.OrderApprovalPending, pending.RequestNo);
                 }
                 if (error != null)
                 {
@@ -679,9 +704,63 @@ namespace AppDelicare.Services.Implement
                     : null;
             });
 
-        /// <summary>Spec 6.6 confirm: Submitted → Confirmed, trước giờ chốt. Lệch dự báo &gt; 10%: DEFERRED(PILOT) (chưa dùng Forecast).</summary>
-        public Task<IResult<OrderDetailModel>> Confirm(OrderActionRequest request)
-            => ChangeStatus(request.Id, [OrderStatus.Submitted], OrderStatus.Confirmed, "xác nhận đơn", true, request.Note, null);
+        /// <summary>
+        /// Spec 6.6 confirm (Catalog 96): Submitted → Confirmed, trước giờ chốt. BE2.2: lệch dự báo |đặt − dự báo| / dự báo × 100 &gt;
+        /// <c>BusinessRules:ForecastVariancePctWarning</c> (10%) → cảnh báo (không chặn) + ghi nhận vào Note đơn dạng <c>[LECH_DU_BAO] …</c> (AuditChange tự ghi lần sửa đơn).
+        /// Kết quả trả <c>forecastQuantity</c> / <c>forecastVariancePercent</c> / <c>forecastVarianceExceeded</c>.
+        /// </summary>
+        public async Task<IResult<OrderDetailModel>> Confirm(OrderActionRequest request)
+        {
+            string? warning = null;
+            var current = await _unitOfWork.OrderRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(o => o.Id == request.Id && !o.IsDeleted);
+            if (current != null && current.Status == OrderStatus.Submitted)
+            {
+                var lines = await _unitOfWork.OrderLineRepository.GetAll().AsNoTracking().Where(l => l.OrderId == current.Id && !l.IsDeleted).ToListAsync();
+                var forecast = await ForecastOfAsync(current, lines);
+                if (forecast.Variance is { } v && Math.Abs(v) > _rules.ForecastVariancePctWarning)
+                {
+                    warning = string.Format(ConstantHelper.Message.ForecastVarianceWarning, v.ToString("+0.##;-0.##", CultureInfo.InvariantCulture),
+                        forecast.Ordered.ToString("0.##", CultureInfo.InvariantCulture), forecast.Total!.Value.ToString("0.##", CultureInfo.InvariantCulture),
+                        _rules.ForecastVariancePctWarning.ToString("0.##", CultureInfo.InvariantCulture));
+                }
+            }
+            string? note = warning == null ? request.Note : string.IsNullOrWhiteSpace(request.Note) ? "[LECH_DU_BAO] " + warning : $"{request.Note.Trim()}\n[LECH_DU_BAO] {warning}";
+            var result = await ChangeStatus(request.Id, [OrderStatus.Submitted], OrderStatus.Confirmed, "xác nhận đơn", true, note, null);
+            if (warning != null && result.ResponseCode == (int)HttpStatusCode.OK && result.Data != null)
+            {
+                result.ResponseMessage = $"{result.ResponseMessage} – {warning}";
+                result.Data.ListWarning.Add(warning);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// BE2.2: dự báo của đơn = Σ dự báo từng dòng (<see cref="ForecastRules.ForLocation"/> theo điểm giao / loại suất / ca); lệch tính trên các dòng có dự báo
+        /// (PROPOSED – D-51). Không có dự báo → Total / Variance null.
+        /// </summary>
+        private async Task<(decimal? Total, decimal Ordered, decimal? Variance, Dictionary<Guid, decimal?> ByLine)> ForecastOfAsync(Order order, IReadOnlyCollection<OrderLine> lines)
+        {
+            var rows = await ForecastRules.LatestPublishedAsync(_unitOfWork.DbContext, order.MealDate, order.MealDate, [order.CustomerId]);
+            var byLine = new Dictionary<Guid, decimal?>();
+            if (rows.Count == 0)
+            {
+                return (null, 0m, null, byLine);
+            }
+            var locationIds = await _unitOfWork.CustomerDeliveryLocationRepository.GetAll().AsNoTracking()
+                .Where(l => l.CustomerId == order.CustomerId && !l.IsDeleted && (l.Status == null || l.Status == ActiveStatus))
+                .OrderBy(l => l.Code).ThenBy(l => l.Name).Select(l => l.Id).ToListAsync();
+            foreach (var line in lines)
+            {
+                byLine[line.Id] = order.DeliveryLocationId is { } lid ? ForecastRules.ForLocation(rows, order.CustomerId, lid, locationIds, line.MealType, line.ShiftId) : null;
+            }
+            var withForecast = lines.Where(l => byLine[l.Id] != null).ToList();
+            if (withForecast.Count == 0)
+            {
+                return (null, 0m, null, byLine);
+            }
+            decimal total = withForecast.Sum(l => byLine[l.Id]!.Value), ordered = withForecast.Sum(l => l.Quantity);
+            return (total, ordered, ForecastRules.VariancePercent(ordered, total), byLine);
+        }
 
         /// <summary>Spec 6.6 lock: Confirmed → Locked (bấm tay, được bấm bất kỳ lúc nào – thay job 20h cho từng đơn).</summary>
         public Task<IResult<OrderDetailModel>> Lock(OrderActionRequest request)
@@ -896,19 +975,250 @@ namespace AppDelicare.Services.Implement
                     if (!afterCutoff) actions.Add("cancel");
                     break;
             }
+            // BE2.2: sau giờ chốt, đơn Nháp / Đã gửi / Đã xác nhận / Đã chốt xin sửa qua duyệt ORDER_CHANGE_AFTER_CUTOFF.
+            if (afterCutoff && pending == null && AfterCutoffChangeStatuses.Contains(order.Status))
+            {
+                actions.Add("requestChange");
+            }
+            var forecast = await ForecastOfAsync(order, lines);
             return new OrderDetailModel
             {
                 Order = order, StatusName = OrderStatus.Label(order.Status), CustomerName = customer, LocationName = location, ContractNumber = contract,
                 CutoffAt = CutoffOf(order.MealDate), IsAfterCutoff = afterCutoff, AllowedActions = actions,
-                PendingApprovalId = pending?.Id, PendingApprovalNo = pending?.RequestNo,
+                PendingApprovalId = pending?.Id, PendingApprovalNo = pending?.RequestNo, PendingApprovalType = pending?.BusinessType,
+                ForecastQuantity = forecast.Total, ForecastVariancePercent = forecast.Variance,
+                ForecastVarianceExceeded = forecast.Variance is { } v && Math.Abs(v) > _rules.ForecastVariancePctWarning,
                 ListLine = lines.OrderBy(l => l.MealType).ThenBy(l => l.CreatedDate).Select(l => new OrderLineDetailModel
                 {
                     Id = l.Id, ContractMealId = l.ContractMealId, MealType = l.MealType, MealName = l.ContractMealId is { } m ? meals.GetValueOrDefault(m) : null,
                     ShiftId = l.ShiftId, ShiftName = l.ShiftId is { } s ? shifts.GetValueOrDefault(s) : null,
                     MenuId = l.MenuId, MenuCode = l.MenuId is { } mn ? menus.GetValueOrDefault(mn) : null,
                     Quantity = l.Quantity, UnitPrice = l.UnitPrice, LineAmount = l.LineAmount, Note = l.Note,
+                    ForecastQuantity = forecast.ByLine.GetValueOrDefault(l.Id),
                 }).ToList(),
             };
+        }
+
+        // ============================================================ BE2.2 – thêm / sửa đơn sau giờ chốt qua duyệt (ORDER_CHANGE_AFTER_CUTOFF, BUSINESS_RULES §2)
+        /// <summary>Trạng thái đơn được xin sửa sau giờ chốt (Nháp / Đã gửi = xin nhận muộn; Đã xác nhận / Đã chốt = xin đổi số suất).</summary>
+        private static readonly string[] AfterCutoffChangeStatuses = [OrderStatus.Draft, OrderStatus.Submitted, OrderStatus.Confirmed, OrderStatus.Locked];
+
+        /// <summary>Đề xuất lưu kèm yêu cầu duyệt (PayloadJson.proposal).</summary>
+        private sealed class AfterCutoffProposal
+        {
+            public const string Create = "CREATE";
+            public const string Change = "CHANGE";
+            public string Kind { get; set; } = Change;
+            public string? Reason { get; set; }
+            public List<OrderLineQuantityRequest> Lines { get; set; } = [];
+            public List<OrderCreateLineRequest> NewLines { get; set; } = [];
+        }
+
+        /// <summary>Kiểm 1 dòng thêm mới: suất thuộc hợp đồng của đơn, ca (mặc định theo loại suất), không trùng (suất, ca) với dòng đang có, tra được giá.</summary>
+        private async Task<(OrderLine? Line, string? Error)> BuildNewLineAsync(Order order, OrderCreateLineRequest input, IReadOnlyCollection<OrderLine> existing)
+        {
+            if (input.Quantity <= 0)
+            {
+                return (null, ConstantHelper.Message.OrderQuantityNegative);
+            }
+            var meal = await _unitOfWork.ContractMealRepository.GetAll().AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == input.ContractMealId && m.ContractId == order.ContractId && !m.IsDeleted);
+            if (meal == null)
+            {
+                return (null, ConstantHelper.Message.OrderContractMealInvalid);
+            }
+            Guid? shiftId = input.ShiftId ?? (await DefaultShiftAsync(meal.MealType))?.Id;
+            if (shiftId == null)
+            {
+                return (null, string.Format(ConstantHelper.Message.OrderShiftNotFound, meal.MealType));
+            }
+            if (existing.Any(l => l.ContractMealId == meal.Id && l.ShiftId == shiftId))
+            {
+                return (null, ConstantHelper.Message.OrderLineDuplicate);
+            }
+            var price = await _pricePolicyService.Resolve(new PriceResolveRequest { CustomerId = order.CustomerId, ContractId = order.ContractId, MealType = meal.MealType, Date = order.MealDate.Date });
+            if (price.ResponseCode != (int)HttpStatusCode.OK || price.Data == null)
+            {
+                return (null, $"{price.ResponseMessage} ({meal.MealType})");
+            }
+            var menu = order.DeliveryLocationId is { } lid ? await _menuAssignmentService.ResolveAsync(order.CustomerId, lid, meal.MealType, order.MealDate.Date) : null;
+            decimal amount = Math.Round(input.Quantity * price.Data.UnitPrice, 2);
+            return (new OrderLine
+            {
+                Id = Guid.NewGuid(), OrderId = order.Id, ContractMealId = meal.Id, MealType = meal.MealType, ShiftId = shiftId, MenuId = menu?.MenuId,
+                Quantity = input.Quantity, UnitPrice = price.Data.UnitPrice, LineAmount = amount, Amount = amount, Note = input.Note,
+            }, null);
+        }
+
+        /// <summary>
+        /// BE2.2 (BUSINESS_RULES §2): xin sửa đơn sau giờ chốt – chỉ khi đã tới giờ chốt; đơn Nháp / Đã gửi / Đã xác nhận / Đã chốt; lý do bắt buộc; không có yêu cầu duyệt khác
+        /// đang chờ. Không ghi gì vào đơn: tạo ApprovalRequest ORDER_CHANGE_AFTER_CUTOFF (quyền mục <c>#/wf-inbox?type=crm-order</c>) kèm đề xuất (số suất mới / dòng mới).
+        /// Đơn Đã xác nhận / Đã chốt phải có ít nhất 1 thay đổi; đơn Nháp / Đã gửi được gửi không đổi số (= xin nhận đơn muộn). Duyệt → ghi số, đơn → Đã chốt (PROPOSED – D-51).
+        /// </summary>
+        public async Task<IResult<OrderDetailModel>> RequestChange(OrderChangeAfterCutoffRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var order = await _unitOfWork.OrderRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(o => o.Id == request.Id && !o.IsDeleted);
+                string? reason = request.Reason?.Trim();
+                string? error = order == null ? ConstantHelper.Message.RecordNotFoundMessage
+                    : !AfterCutoffChangeStatuses.Contains(order.Status) ? string.Format(ConstantHelper.Message.OrderChangeStatusInvalid, order.OrderNumber ?? order.OrderNo, OrderStatus.Label(order.Status))
+                    : !IsAfterCutoff(order.MealDate) ? string.Format(ConstantHelper.Message.OrderChangeBeforeCutoff, CutoffOf(order.MealDate).ToString("HH:mm dd/MM/yyyy", CultureInfo.InvariantCulture))
+                    : string.IsNullOrEmpty(reason) || reason.Length < 3 ? ConstantHelper.Message.OrderChangeReasonRequired
+                    : null;
+                if (error == null && await PendingDeviationAsync(order!.Id) is { } pending)
+                {
+                    error = string.Format(ConstantHelper.Message.OrderApprovalPending, pending.RequestNo);
+                }
+                if (error != null)
+                {
+                    return Fail(error);
+                }
+                var current = await _unitOfWork.OrderLineRepository.GetAll().AsNoTracking().Where(l => l.OrderId == order!.Id && !l.IsDeleted).ToListAsync();
+                var changes = (request.ListLine ?? []).GroupBy(l => l.Id).Select(g => g.Last()).ToList();
+                var notInOrder = changes.FirstOrDefault(c => current.All(l => l.Id != c.Id));
+                if (notInOrder != null)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.OrderLineNotInOrder, notInOrder.Id));
+                }
+                if (changes.Any(c => c.Quantity < 0))
+                {
+                    return Fail(ConstantHelper.Message.OrderQuantityNegative);
+                }
+                changes = [.. changes.Where(c => current.First(l => l.Id == c.Id).Quantity != c.Quantity)];
+                var newLines = new List<OrderCreateLineRequest>();
+                var probe = current.ToList();
+                foreach (var input in request.ListNewLine ?? [])
+                {
+                    var (line, lineError) = await BuildNewLineAsync(order!, input, probe);
+                    if (lineError != null)
+                    {
+                        return Fail(lineError);
+                    }
+                    probe.Add(line!);
+                    newLines.Add(new OrderCreateLineRequest { ContractMealId = input.ContractMealId, ShiftId = line!.ShiftId, Quantity = input.Quantity, Note = input.Note });
+                }
+                bool mustChange = order!.Status is OrderStatus.Confirmed or OrderStatus.Locked;
+                if (mustChange && changes.Count == 0 && newLines.Count == 0)
+                {
+                    return Fail(ConstantHelper.Message.OrderChangeNothing);
+                }
+                decimal remaining = current.Sum(l => changes.FirstOrDefault(c => c.Id == l.Id)?.Quantity ?? l.Quantity) + newLines.Sum(l => l.Quantity);
+                if (remaining <= 0)
+                {
+                    return Fail(ConstantHelper.Message.OrderNeedsLine);
+                }
+                var proposal = new AfterCutoffProposal { Kind = AfterCutoffProposal.Change, Reason = reason, Lines = changes, NewLines = newLines };
+                var (approval, approvalError) = await _approvalRequestService.CreateAsync(OrderStatus.ChangeAfterCutoffBusinessType, order.Id, JsonConvert.SerializeObject(proposal));
+                if (approvalError != null)
+                {
+                    return Fail(approvalError);
+                }
+                _unitOfWork.CommitTransaction();
+                var detail = (await DetailAsync(order.Id))!;
+                detail.ApprovalRequested = true;
+                return Result<OrderDetailModel>.Success(detail, string.Format(ConstantHelper.Message.OrderChangeRequested, approval!.RequestNo));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RequestChange: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+
+            IResult<OrderDetailModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                return Result<OrderDetailModel>.Fail(message);
+            }
+        }
+
+        /// <summary>
+        /// Nội dung được duyệt của ORDER_CHANGE_AFTER_CUTOFF: giai đoạn + số suất từng dòng. Đã xác nhận ↔ Đã chốt coi là cùng giai đoạn (nút chốt 20h chạy trong lúc
+        /// chờ duyệt không làm hỏng yêu cầu); sửa số / hủy / vào sản xuất sau khi gửi → không duyệt được.
+        /// </summary>
+        public async Task<string?> BuildChangeAfterCutoffStateAsync(Guid orderId)
+        {
+            var order = await _unitOfWork.OrderRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId && !o.IsDeleted);
+            if (order == null)
+            {
+                return null;
+            }
+            var lines = await _unitOfWork.OrderLineRepository.GetAll().AsNoTracking().Where(l => l.OrderId == orderId && !l.IsDeleted)
+                .OrderBy(l => l.Id).Select(l => new { l.Id, l.Quantity }).ToListAsync();
+            string phase = order.Status is OrderStatus.Confirmed or OrderStatus.Locked ? "CONFIRMED_OR_LOCKED" : order.Status ?? string.Empty;
+            return JsonConvert.SerializeObject(new { order.Id, Phase = phase, Lines = lines.Select(l => new { l.Id, Quantity = l.Quantity.ToString("0.######", CultureInfo.InvariantCulture) }) });
+        }
+
+        /// <summary>
+        /// Nội bộ (duyệt ORDER_CHANGE_AFTER_CUTOFF, trong transaction của engine): thêm dòng mới (giá / thực đơn tra lại lúc duyệt), ghi số suất mới + tính lại tiền,
+        /// đơn → Đã chốt; ghi chú "[SAU_GIO_CHOT] …" (kế hoạch sản xuất / MRP của ngày đã lập → nhắc tính bổ sung). Thêm đơn (CREATE) → Đã chốt.
+        /// </summary>
+        public async Task<string?> ApplyChangeAfterCutoffAsync(Guid orderId, string? proposalJson, string? note)
+        {
+            var order = _unitOfWork.OrderRepository.GetSingle(o => o.Id == orderId && !o.IsDeleted);
+            if (order == null || !AfterCutoffChangeStatuses.Contains(order.Status))
+            {
+                return string.Format(ConstantHelper.Message.OrderChangeStatusInvalid, order?.OrderNumber ?? order?.OrderNo, OrderStatus.Label(order?.Status));
+            }
+            var proposal = string.IsNullOrEmpty(proposalJson) ? new AfterCutoffProposal() : JsonConvert.DeserializeObject<AfterCutoffProposal>(proposalJson) ?? new AfterCutoffProposal();
+            if (proposal.NewLines.Count != 0)
+            {
+                var existing = _unitOfWork.OrderLineRepository.GetAll().Where(l => l.OrderId == orderId && !l.IsDeleted).ToList();
+                foreach (var input in proposal.NewLines)
+                {
+                    var (line, error) = await BuildNewLineAsync(order, input, existing);
+                    if (error != null)
+                    {
+                        return error;
+                    }
+                    _unitOfWork.OrderLineRepository.Add(line!);
+                    existing.Add(line!);
+                }
+                await _unitOfWork.OrderLineRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+            }
+            string? applyError = await ApplyLinesAsync(orderId, proposal.Lines);
+            if (applyError != null)
+            {
+                return applyError;
+            }
+            order.Status = OrderStatus.Locked;
+            string text = proposal.Kind == AfterCutoffProposal.Create ? "Duyệt thêm đơn sau giờ chốt" : "Duyệt sửa đơn sau giờ chốt";
+            text = $"[SAU_GIO_CHOT] {text}: {proposal.Reason}" + (string.IsNullOrWhiteSpace(note) ? string.Empty : $" – {note.Trim()}");
+            DateTime day = order.MealDate.Date, next = day.AddDays(1);
+            var plan = await _unitOfWork.DbContext.ProductionPlan.AsNoTracking().Where(p => !p.IsDeleted && p.ProductionDate >= day && p.ProductionDate < next).FirstOrDefaultAsync();
+            if (plan != null)
+            {
+                text += $" (kế hoạch {plan.PlanNumber ?? plan.PlanNo} đã lập – tính nhu cầu NL bổ sung: MaterialRequirement/CalculateTopUp)";
+            }
+            order.Note = string.IsNullOrWhiteSpace(order.Note) ? text : $"{order.Note}\n{text}";
+            _unitOfWork.OrderRepository.Update(order);
+            return null;
+        }
+
+        /// <summary>Nội bộ (từ chối / hủy ORDER_CHANGE_AFTER_CUTOFF): sửa đơn → không đổi số (ghi chú); thêm đơn (đơn Nháp tạo sau giờ chốt) → Hủy.</summary>
+        public async Task<string?> RejectChangeAfterCutoffAsync(Guid orderId, string note)
+        {
+            var order = _unitOfWork.OrderRepository.GetSingle(o => o.Id == orderId && !o.IsDeleted);
+            if (order == null)
+            {
+                return null;
+            }
+            var approval = await _unitOfWork.DbContext.ApprovalRequest.AsNoTracking()
+                .Where(a => !a.IsDeleted && a.BusinessType == OrderStatus.ChangeAfterCutoffBusinessType && a.BusinessId == orderId && a.RequestStatus == "Pending")
+                .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
+            string? proposalJson = approval == null ? null : ApprovalRequestService.UnwrapPayload(approval.PayloadJson).Proposal;
+            var proposal = string.IsNullOrEmpty(proposalJson) ? null : JsonConvert.DeserializeObject<AfterCutoffProposal>(proposalJson);
+            bool created = proposal?.Kind == AfterCutoffProposal.Create && order.Status == OrderStatus.Draft;
+            string text = created ? $"[SAU_GIO_CHOT] Từ chối thêm đơn sau giờ chốt: {note}" : $"[SAU_GIO_CHOT] Từ chối sửa đơn sau giờ chốt: {note}";
+            if (created)
+            {
+                order.Status = OrderStatus.Cancelled;
+            }
+            order.Note = string.IsNullOrWhiteSpace(order.Note) ? text : $"{order.Note}\n{text}";
+            _unitOfWork.OrderRepository.Update(order);
+            return null;
         }
     }
 }

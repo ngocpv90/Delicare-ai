@@ -299,5 +299,24 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>BE2.2 (ORDER_CHANGE_AFTER_CUTOFF): xin sửa đơn sau giờ chốt – gửi duyệt kèm số suất mới / dòng mới, chỉ ghi khi được duyệt. JSON body vì có danh sách dòng lồng nhau. Quyền Sửa trên crm-order.</summary>
+        [HttpPost("RequestChange")]
+        public async Task<IActionResult> RequestChange([FromBody] OrderChangeAfterCutoffRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.RequestChange(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RequestChange: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

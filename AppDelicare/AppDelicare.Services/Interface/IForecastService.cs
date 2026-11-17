@@ -14,5 +14,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(ForecastRequest request, string typeSave);
         public IResults<Forecast> GetAllData();
         public Task<IResult<Forecast>> GetById(Guid id);
+        // BE2.2 (spec 6.5): ma trận, nhập hàng loạt (phiên bản), công bố.
+        public Task<IResult<AppDelicare.Model.Model.ForecastMatrixModel>> GetMatrix(AppDelicare.Model.Request.Custom.ForecastMatrixRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ForecastImportResultModel>> Import(AppDelicare.Model.Request.Custom.ForecastImportRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ForecastPublishResultModel>> Publish(AppDelicare.Model.Request.Custom.ForecastPublishRequest request);
     }
 }

@@ -179,6 +179,9 @@ namespace AppDelicare.Tests.Pilot
                     ("CustomerId", customer), ("ContractNumber", code + "HD"), ("Name", "[DEMO] HĐ suất ăn " + k), ("EffectiveFrom", today.AddDays(-1)), ("Status", "Active"));
                 Guid contractMeal = await Insert<Model.Entity.ContractMeal>("ContractMeal", q => q.Where(x => x.ContractId == contract).Select(x => x.Id).SingleAsync(),
                     ("ContractId", contract), ("MealType", "TRUA"), ("MealName", "[DEMO] Suất trưa"), ("UnitPrice", 35_000m), ("Status", "Active"));
+                // BE2.2: hợp đồng tạo ra luôn Nháp → gửi duyệt → duyệt (engine CONTRACT) mới Hiệu lực.
+                (await Post("/api/Contract/Submit", ("Id", contract))).Ok();
+                (await Post("/api/Contract/Approve", ("Id", contract), ("Note", "[DEMO]"))).Ok();
                 Guid vehicle = await Insert<Model.Entity.Vehicle>("Vehicle", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
                     ("Code", code), ("LicensePlate", "[DEMO] 51C-" + k), ("VehicleType", "TRUCK"), ("Capacity", 1200m), ("Status", "Active"));
                 Guid line = await Insert<Model.Entity.ProductionLine>("ProductionLine", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),

@@ -142,7 +142,7 @@
             public static readonly string MenuNotAssigned = "Không có thực đơn được gán cho khách / điểm giao / loại suất / ngày này";
             public static readonly string NoActiveContract = "Khách hàng không có hợp đồng đang hiệu lực tại ngày {0}";
             public static readonly string ContractNotActiveOnDate = "Hợp đồng không ở trạng thái hiệu lực tại ngày {0}";
-            public static readonly string OrderAfterCutoff = "Đã quá giờ chốt đơn ({0}) cho ngày ăn {1} – không {2} được. Cần thay đổi sau giờ chốt: liên hệ điều phối";
+            public static readonly string OrderAfterCutoff = "Đã quá giờ chốt đơn ({0}) cho ngày ăn {1} – không {2} được. Cần thay đổi sau giờ chốt: gửi duyệt bằng Order/RequestChange (thêm đơn: Order/Create kèm lý do)";
             public static readonly string OrderCutoffNotReached = "Chưa tới giờ chốt đơn ({0}) cho ngày ăn {1}";
             public static readonly string OrderNeedsLine = "Đơn phải có ít nhất 1 dòng số suất lớn hơn 0";
             public static readonly string OrderQuantityNegative = "Số suất không được âm";
@@ -388,6 +388,50 @@
             public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
             public static readonly string ApprovalCancelOnlyRequester = "Chỉ người gửi yêu cầu được hủy";
             public static readonly string ApprovalCancelReasonRequired = "Phải ghi lý do hủy yêu cầu duyệt";
+            // BE2.2 – hợp đồng, dự báo, đổi món, sửa đơn sau giờ chốt.
+            public static readonly string ContractNotFound = "Không tìm thấy hợp đồng";
+            public static readonly string ContractCustomerNotFound = "Khách hàng không tồn tại";
+            public static readonly string ContractDateRangeInvalid = "Ngày hiệu lực từ phải nhỏ hơn hoặc bằng ngày hiệu lực đến";
+            public static readonly string ContractNeedsMeal = "Hợp đồng phải có ít nhất 1 loại suất";
+            public static readonly string ContractMealTypeRequired = "Mỗi dòng suất phải có loại suất (MealType)";
+            public static readonly string ContractMealTypeDuplicate = "Loại suất {0} xuất hiện nhiều lần – mỗi loại suất chỉ 1 dòng";
+            public static readonly string ContractMealPriceInvalid = "Đơn giá suất {0} phải lớn hơn 0";
+            public static readonly string ContractNumberDuplicate = "Số hợp đồng {0} đã tồn tại";
+            public static readonly string ContractEditOnlyDraft = "Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp (hiện tại: {0}) – hợp đồng đã duyệt chỉ chấm dứt bằng Contract/Terminate";
+            public static readonly string ContractStatusViaAction = "Trạng thái hợp đồng chỉ đổi qua Contract/Submit → duyệt → Contract/Terminate (giá trị gửi lên được bỏ qua)";
+            public static readonly string ContractSubmitted = "Đã gửi duyệt hợp đồng (yêu cầu {0})";
+            public static readonly string ContractNotPending = "Hợp đồng không có yêu cầu duyệt đang chờ";
+            public static readonly string ContractTerminateReasonRequired = "Chấm dứt hợp đồng phải ghi lý do";
+            public static readonly string ContractTerminateDateInvalid = "Ngày chấm dứt phải trong thời gian hiệu lực của hợp đồng (từ {0})";
+            public static readonly string ContractHasOpenOrders = "Còn {0} đơn hàng chưa giao có ngày ăn sau {1}: {2} – hủy / giao xong trước khi chấm dứt";
+            public static readonly string ContractExpiredOnApprove = "Hợp đồng đã hết hạn ({0}) – không duyệt được, sửa ngày hiệu lực rồi gửi lại";
+            public static readonly string ForecastNeedsItem = "Danh sách dự báo trống";
+            public static readonly string ForecastItemInvalid = "Dòng {0}: {1}";
+            public static readonly string ForecastQuantityNegative = "số suất dự báo không được âm";
+            public static readonly string ForecastLocationMismatch = "điểm giao không thuộc khách hàng";
+            public static readonly string ForecastDuplicateKey = "trùng (khách, điểm giao, ngày, ca, loại suất) với dòng {0}";
+            public static readonly string ForecastRangeInvalid = "Khoảng ngày không hợp lệ (từ ≤ đến, tối đa {0} ngày)";
+            public static readonly string ForecastInsertViaImport = "Thêm dự báo qua Forecast/Import (đánh phiên bản, thay bản cũ)";
+            public static readonly string ForecastEditOnlyDraft = "Chỉ sửa / xóa dự báo Nháp (hiện tại: {0}); trạng thái / phiên bản đổi qua Forecast/Import và Forecast/Publish";
+            public static readonly string ForecastNothingToPublish = "Không có dự báo Nháp nào trong khoảng ngày đã chọn";
+            public static readonly string ForecastVarianceWarning = "Lệch dự báo {0}% (đặt {1} / dự báo {2} suất) vượt ngưỡng {3}% – đã ghi nhận";
+            public static readonly string MenuChangeNotFound = "Không tìm thấy yêu cầu đổi món";
+            public static readonly string MenuChangeReasonRequired = "Yêu cầu đổi món phải ghi lý do";
+            public static readonly string MenuChangeDishRequired = "Chọn món cũ và món mới (khác nhau, đang dùng)";
+            public static readonly string MenuChangeQuantityInvalid = "Số suất đổi phải lớn hơn 0";
+            public static readonly string MenuChangeOrderInvalid = "Đơn {0} đang {1} – chỉ đổi món cho đơn chưa giao / chưa hủy";
+            public static readonly string MenuChangeDateMismatch = "Ngày ăn phải trùng ngày ăn của đơn ({0})";
+            public static readonly string MenuChangeDishNotInMenu = "Món cũ không có trong thực đơn của đơn / thực đơn đã chọn cho ngày {0}";
+            public static readonly string MenuChangeCrudBlocked = "Yêu cầu đổi món tạo qua MenuChangeRequest/Create, duyệt / từ chối / hủy qua hộp duyệt – không sửa trực tiếp";
+            public static readonly string MenuChangeNotPending = "Yêu cầu đổi món không còn chờ duyệt";
+            public static readonly string MenuChangeSubmitted = "Đã tạo yêu cầu đổi món {0} và gửi duyệt ({1})";
+            public static readonly string OrderChangeBeforeCutoff = "Chưa tới giờ chốt đơn ({0}) – sửa trực tiếp bằng Order/UpdateLines";
+            public static readonly string OrderChangeStatusInvalid = "Đơn {0} đang {1} – chỉ xin sửa sau giờ chốt cho đơn Nháp / Đã gửi / Đã xác nhận / Đã chốt";
+            public static readonly string OrderChangeReasonRequired = "Sửa / thêm đơn sau giờ chốt phải ghi lý do";
+            public static readonly string OrderChangeNothing = "Không có thay đổi số suất nào (đơn đã xác nhận / đã chốt phải có ít nhất 1 thay đổi)";
+            public static readonly string OrderChangeRequested = "Đã gửi duyệt sửa đơn sau giờ chốt ({0}) – số mới chỉ ghi khi được duyệt";
+            public static readonly string OrderCreateAfterCutoffRequested = "Đã tạo đơn {0} (Nháp) và gửi duyệt thêm đơn sau giờ chốt ({1}) – duyệt xong đơn chuyển Đã chốt";
+            public static readonly string OrderApprovalPending = "Đơn đang có yêu cầu duyệt {0} – chờ duyệt / từ chối trước khi sửa tiếp";
         }
 
         public class TypeSave

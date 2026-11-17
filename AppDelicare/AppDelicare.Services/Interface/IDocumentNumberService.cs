@@ -23,6 +23,8 @@ namespace AppDelicare.Services.Interface
         ProductionPlan,
         /// <summary>Lô vệ sinh – <c>VS-YYMMDD-&lt;CA&gt;</c>, lần sau cùng ca: <c>-2</c>… (hậu tố = mã ca, bắt buộc).</summary>
         CleaningBatch,
+        /// <summary>BE2.2: hợp đồng – <c>HD-YYMMDD-NNN</c> (PROPOSED – BA/PO CONFIRM, D-51; BUSINESS_RULES §11 chưa có mẫu cho hợp đồng).</summary>
+        Contract,
     }
 
     /// <summary>
