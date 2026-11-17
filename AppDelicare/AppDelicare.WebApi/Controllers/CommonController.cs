@@ -102,7 +102,7 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>Catalog 30: in hàng loạt (tối đa 100 phiếu) → 1 tệp xlsx (mỗi phiếu 1 sheet) / docx; quyền In theo từng loại phiếu. JSON vì có danh sách phiếu.</summary>
+        /// <summary>Catalog 30: in hàng loạt (tối đa 100 phiếu) → 1 tệp pdf (mặc định, mỗi phiếu sang trang mới – BE2.7.1) / xlsx (mỗi phiếu 1 sheet) / docx; quyền In theo từng loại phiếu. JSON vì có danh sách phiếu.</summary>
         [Security.SkipPermission] // service kiểm quyền In trên màn của từng loại phiếu
         [HttpPost("PrintBatch")]
         public async Task<IActionResult> PrintBatch([FromBody] PrintBatchRequest request)

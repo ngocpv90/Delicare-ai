@@ -73,7 +73,6 @@
             public static readonly string PrintBatchEmpty = "Chưa chọn phiếu nào để in";
             public static readonly string PrintBatchTooMany = "In hàng loạt tối đa {0} phiếu / lần (đang chọn {1})";
             public static readonly string PrintBatchFailed = "Không in được: {0}";
-            public static readonly string PrintPdfNotSupported = "Chưa xuất được PDF (thư viện PDF hiện có không chạy trên .NET 8 – D-56 b): dùng format=xlsx (mặc định) hoặc docx rồi in / lưu PDF từ Excel / Word";
             // ---------------------------------------------------------------- BE2.6 – nhân sự (T21): phân ca, chấm công, nghỉ, đổi ca
             public static readonly string HrAssignmentCrudBlocked = "Phân ca chỉ qua lưới ca (ShiftAssignment/Assign, BulkAssign) – không thêm / sửa / xóa trực tiếp";
             public static readonly string HrAttendanceCrudBlocked = "Chấm công chỉ qua vào ca / ra ca (AttendanceEvent/CheckIn, CheckOut) – không ghi trực tiếp";

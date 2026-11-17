@@ -11,6 +11,9 @@ namespace AppDelicare.Model.Option
         /// <summary>In hàng loạt: tối đa N phiếu / lần (spec 2.5: 100).</summary>
         public int PrintBatchMaxItems { get; set; } = 100;
 
+        /// <summary>BE2.7.1: mẫu in khi client không gửi <c>format</c> (pdf | xlsx | docx). Spec 2.5 = PDF → mặc định "pdf" (PROPOSED – D-56 k).</summary>
+        public string PrintDefaultFormat { get; set; } = "pdf";
+
         /// <summary>Lịch sử bản ghi: tối đa N mục (mới nhất trước).</summary>
         public int HistoryMaxItems { get; set; } = 500;
     }

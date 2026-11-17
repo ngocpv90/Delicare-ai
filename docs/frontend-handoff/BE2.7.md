@@ -55,7 +55,7 @@ Gộp: AuditChange của bản ghi **và dòng con** (dòng đơn, dòng phiếu
 Mật khẩu / token / khóa bí mật / tọa độ GPS → `to = "(đã ẩn)"`, `masked = true`. Cột hệ thống (CreatedDate, ModifiedBy…) không hiện. Bản ghi đã xóa mềm vẫn xem được lịch sử.
 
 ## 6. Mẫu in (Catalog 24–29) – nút "In" trên chi tiết chứng từ
-`GET <Controller>/Print?id=&format=xlsx|docx` → **tệp** (mặc định **Excel .xlsx**, khổ A4; `format=docx` = Word, mỗi phiếu 1 trang). `format=pdf` → **400** (chưa có thư viện PDF chạy được – D-56 b).
+`GET <Controller>/Print?id=&format=pdf|xlsx|docx` → **tệp**. **BE2.7.1: mặc định PDF** (`application/pdf`, A4 – dọc, > 8 cột thì ngang; font Noto Sans nhúng, tiếng Việt đúng; chân trang "Trang x / y"; kiểm kê chưa ghi sổ có chữ chìm "BẢN NHÁP" mỗi trang). `format=xlsx` = Excel, `format=docx` = Word (mỗi phiếu 1 trang). Định dạng khác → 400. Mặc định đổi được bằng cấu hình `BusinessRules:Common:PrintDefaultFormat` (PROPOSED D-56 k) → **FE nên luôn gửi `format` rõ ràng**. Gợi ý FE: nút "In" = PDF mở tab mới / xem trước (`URL.createObjectURL(blob)` – tải bằng `HttpClient` có token, `responseType: 'blob'`), menu phụ "Tải Excel" / "Tải Word". Tên tệp trong `Content-Disposition` (`<LOẠI>_<số phiếu>.pdf`).
 | Phiếu | Action | Điều kiện | Nội dung |
 |---|---|---|---|
 | Phiếu nhập kho (Mẫu 01-VT tham khảo) | `GoodsReceipt/Print` | QC đã kết luận | NCC, đơn mua, kho, kết luận QC; dòng: mã / tên NL, ĐVT, số lô NCC, NSX, HSD, SL đặt / nhận / đạt / loại, đơn giá, thành tiền (đạt × giá), QC; ký: lập phiếu, giao hàng, QC, thủ kho, kế toán |
@@ -67,13 +67,13 @@ Mật khẩu / token / khóa bí mật / tọa độ GPS → `to = "(đã ẩn)"
 Đầu trang = pháp nhân trong bảng `Company` (tên, địa chỉ, ĐT, MST). Lỗi / chưa đủ điều kiện → JSON Result 400.
 
 ## 7. In hàng loạt (Catalog 30)
-`POST Common/PrintBatch` (**JSON**): `{ "items": [ { "type": "DELIVERY_ORDER", "id": "…" }, … ], "deliveryRouteId": "…"?, "format": "xlsx" | "docx" }`
+`POST Common/PrintBatch` (**JSON**): `{ "items": [ { "type": "DELIVERY_ORDER", "id": "…" }, … ], "deliveryRouteId": "…"?, "format": "pdf" | "xlsx" | "docx" }` (không gửi `format` → PDF – BE2.7.1)
 - `type`: `GOODS_RECEIPT`, `MATERIAL_ISSUE`, `STOCK_COUNT`, `DELIVERY_ORDER`, `POD`, `RECONCILIATION` (nhận cả tên controller `GoodsReceipt`…).
 - `deliveryRouteId` → thêm **mọi phiếu giao của chuyến** theo thứ tự điểm dừng (in phiếu giao theo tuyến). Trùng bị bỏ.
 - Tối đa 100 phiếu (`BusinessRules:Common:PrintBatchMaxItems`); 1 phiếu lỗi (không tìm thấy / chưa đủ điều kiện) → 400 liệt kê, không in nửa chừng.
-- Kết quả 1 tệp: Excel mỗi phiếu 1 sheet (tên sheet = số phiếu), Word mỗi phiếu 1 trang.
+- Kết quả 1 tệp: **PDF gộp** (mặc định – mỗi phiếu bắt đầu trang mới, số trang đếm lại theo phiếu), Excel mỗi phiếu 1 sheet (tên sheet = số phiếu), Word mỗi phiếu 1 trang.
 
 ## ⚠ Thay đổi hành vi
 1. Không đổi API cũ. `DocumentFileService` nhận thêm cấu hình `DocumentStorage` (không ảnh hưởng TestDemo).
 2. API dùng chung trả **HTTP 403 có body Result** khi thiếu quyền (mục đầu file).
-3. Mẫu in trả **Excel / Word**, chưa có PDF (spec 2.5 ghi PDF) – PROPOSED D-56 b; FE hiển thị nút "In (Excel)" / "In (Word)".
+3. **BE2.7.1 (2026-11-17): mẫu in có PDF và PDF là mặc định** (trước đây mặc định Excel, `format=pdf` → 400). FE đã gọi `Print` / `PrintBatch` **không** kèm `format` mà muốn Excel phải thêm `format=xlsx`. Nút "In" nên dùng PDF; "In (Excel)" / "In (Word)" là tùy chọn.

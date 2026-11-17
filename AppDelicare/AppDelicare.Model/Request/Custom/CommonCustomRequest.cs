@@ -54,7 +54,7 @@ namespace AppDelicare.Model.Request.Custom
         public List<PrintItemRequest>? Items { get; set; }
         /// <summary>Tùy chọn: thêm mọi phiếu giao (DELIVERY_ORDER) của chuyến theo thứ tự điểm dừng.</summary>
         public Guid? DeliveryRouteId { get; set; }
-        /// <summary>xlsx (mặc định) / docx; pdf chưa hỗ trợ (D-56 b).</summary>
+        /// <summary>pdf (mặc định – BusinessRules:Common:PrintDefaultFormat, D-56 k) / xlsx / docx (BE2.7.1).</summary>
         public string? Format { get; set; }
     }
 

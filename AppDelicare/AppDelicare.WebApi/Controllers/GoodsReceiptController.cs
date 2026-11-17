@@ -186,7 +186,7 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>BE2.7 (Catalog 24): in phiếu nhập kho (chỉ khi QC đã kết luận) – Excel (mặc định) hoặc format=docx (Word); PDF chưa hỗ trợ (D-56 b). Quyền In #/scm-gr (PermissionConvention). Lỗi / chưa đủ điều kiện → JSON Result.</summary>
+        /// <summary>BE2.7 (Catalog 24): in phiếu nhập kho (chỉ khi QC đã kết luận) – PDF (mặc định, BE2.7.1 – cấu hình BusinessRules:Common:PrintDefaultFormat, D-56 k), format=xlsx (Excel) hoặc docx (Word). Quyền In #/scm-gr (PermissionConvention). Lỗi / chưa đủ điều kiện → JSON Result.</summary>
         [HttpGet("Print")]
         public async Task<IActionResult> Print(Guid id, string? format = null)
         {

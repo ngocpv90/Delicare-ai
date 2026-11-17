@@ -110,7 +110,7 @@ Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệ
 - Tệp người dùng tải lên (`DocumentFile/Upload`) lưu **ngoài wwwroot**, tên = SHA-256, tại `DocumentStorage:RootPath` (mặc định `App_Data/DocumentFiles` cạnh `AppDelicare.WebApi.dll`). Giới hạn `DocumentStorage:MaxFileSizeMb` (20), đuôi `AllowedExtensions` (pdf, jpg, png, xlsx, docx – tệp chạy được luôn bị chặn).
 - **IIS (cách B):** cấp quyền ghi thư mục `App_Data\DocumentFiles` cho `IIS AppPool\delicare-api` (như `Logs`), hoặc đặt biến môi trường `DocumentStorage__RootPath=D:\DelicareData\DocumentFiles` ra ổ dữ liệu riêng; **sao lưu thư mục này cùng DB** (DB chỉ giữ khóa lưu trữ). Không chép đè thư mục này khi cập nhật bản build.
 - **Docker (cách C):** volume `delicare-docs` (đã khai báo trong `docker-compose.staging.yml`). Kestrel / IIS mặc định nhận request tới ~28–30 MB – tăng `MaxFileSizeMb` quá 25 thì phải tăng giới hạn request.
-- Mẫu in trả xlsx / docx (chưa PDF – D-56 b). Word cần `Licenses__GemBox` (thiếu → bản dùng thử của GemBox).
+- Mẫu in (BE2.7.1): **PDF mặc định** (PDFsharp-MigraDoc 6.2.4, MIT) + xlsx / docx. Font PDF **Noto Sans nhúng trong `AppDelicare.Services.dll`** (giấy phép `Fonts/NotoSans-OFL.txt` đi kèm bản publish) → IIS và Docker **không cần cài font** (không thêm gói apt). Đổi mặc định: `BusinessRules__Common__PrintDefaultFormat=xlsx`. Word cần `Licenses__GemBox` (thiếu → bản dùng thử của GemBox).
 
 ## 6. Kiểm tra sau triển khai
 

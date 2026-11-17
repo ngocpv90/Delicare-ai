@@ -107,14 +107,14 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private static string? Format(string? format, out string normalized)
+        private static string? Normalize(string? format) => string.IsNullOrWhiteSpace(format) ? null : format.Trim().TrimStart('.').ToLowerInvariant();
+
+        /// <summary>pdf / xlsx / docx; không gửi → <c>BusinessRules:Common:PrintDefaultFormat</c> (cấu hình sai → pdf như spec 2.5) – BE2.7.1, PROPOSED D-56 k.</summary>
+        private string? Format(string? format, out string normalized)
         {
-            normalized = string.IsNullOrWhiteSpace(format) ? PrintRenderer.Xlsx : format.Trim().TrimStart('.').ToLowerInvariant();
-            if (normalized == PrintRenderer.Pdf)
-            {
-                return ConstantHelper.Message.PrintPdfNotSupported;
-            }
-            return normalized is PrintRenderer.Xlsx or PrintRenderer.Docx ? null : string.Format(ConstantHelper.Message.CommonFormatInvalid, format, "xlsx, docx");
+            string? fallback = Normalize(_rules.PrintDefaultFormat);
+            normalized = Normalize(format) ?? (fallback != null && PrintRenderer.Formats.Contains(fallback) ? fallback : PrintRenderer.Pdf);
+            return PrintRenderer.Formats.Contains(normalized) ? null : string.Format(ConstantHelper.Message.CommonFormatInvalid, format, string.Join(", ", PrintRenderer.Formats));
         }
 
         private static FileContentModel File(IReadOnlyList<PrintDocumentModel> docs, string format, string baseName)

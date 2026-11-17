@@ -8,10 +8,11 @@ using GemBox.Document.Tables;
 namespace AppDelicare.Services.Implement
 {
     /// <summary>
-    /// BE2.7 (spec 2.5, Catalog 24–30): vẽ phiếu in từ <see cref="PrintDocumentModel"/> – Excel bằng ClosedXML (mặc định, như các mẫu in T15 / T17 / T19),
-    /// Word bằng GemBox.Document (thư viện đã có, license <c>Licenses:GemBox</c>; thiếu license → bản dùng thử). PDF: GemBox.Document trong <c>Library/</c> là bản
-    /// .NET Framework (lưu PDF cần WPF – lỗi trên .NET 8) và không có thư viện PDF khác dùng được → chưa xuất PDF (PROPOSED – D-56 b).
-    /// Nhiều phiếu → 1 tệp (Excel: mỗi phiếu 1 sheet; Word: mỗi phiếu 1 section / trang mới).
+    /// BE2.7 (spec 2.5, Catalog 24–30): vẽ phiếu in từ <see cref="PrintDocumentModel"/> – Excel bằng ClosedXML (như các mẫu in T15 / T17 / T19),
+    /// Word bằng GemBox.Document (thư viện đã có, license <c>Licenses:GemBox</c>; thiếu license → bản dùng thử), PDF bằng PDFsharp-MigraDoc
+    /// (<see cref="PrintPdfRenderer"/>, BE2.7.1 – anh chốt 2026-11-17; GemBox.Document trong <c>Library/</c> là bản .NET Framework, lưu PDF lỗi trên .NET 8).
+    /// Định dạng mặc định: <c>BusinessRules:Common:PrintDefaultFormat</c> (pdf – PROPOSED D-56 k).
+    /// Nhiều phiếu → 1 tệp (Excel: mỗi phiếu 1 sheet; Word / PDF: mỗi phiếu 1 section / trang mới).
     /// Bố cục: đầu trang pháp nhân (bảng Company) + ký hiệu mẫu, tiêu đề, số / ngày, thông tin chung, bảng dòng, dòng tổng, ghi chú, ô ký.
     /// </summary>
     public static class PrintRenderer
@@ -20,12 +21,24 @@ namespace AppDelicare.Services.Implement
         public const string Xlsx = "xlsx";
         public const string Pdf = "pdf";
         public const string DocxContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        public const string PdfContentType = "application/pdf";
+        public static readonly string[] Formats = [Pdf, Xlsx, Docx];
         private const string Brand = "#91AF42";
         private const string FontName = "Arial";
 
-        public static string ContentTypeOf(string format) => format == Docx ? DocxContentType : AppDelicare.Model.Helper.ConstantHelper.DownloadExcel;
+        public static string ContentTypeOf(string format) => format switch
+        {
+            Docx => DocxContentType,
+            Pdf => PdfContentType,
+            _ => AppDelicare.Model.Helper.ConstantHelper.DownloadExcel,
+        };
 
-        public static byte[] Render(IReadOnlyList<PrintDocumentModel> docs, string format) => format == Docx ? ToDocx(docs) : ToXlsx(docs);
+        public static byte[] Render(IReadOnlyList<PrintDocumentModel> docs, string format) => format switch
+        {
+            Docx => ToDocx(docs),
+            Pdf => PrintPdfRenderer.ToPdf(docs),
+            _ => ToXlsx(docs),
+        };
 
         public static string DateLine(DateTime? date)
             => date is { } d ? $"Ngày {d:dd} tháng {d:MM} năm {d:yyyy}" : "Ngày ...... tháng ...... năm ......";
