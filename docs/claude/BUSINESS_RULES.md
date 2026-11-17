@@ -73,6 +73,7 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - Tồn lô = nhập − trả lại − xuất + điều chỉnh kiểm kê đã duyệt. Tất cả đi qua `InventoryTransaction` (`QuantityIn` / `QuantityOut`, `ReferenceType` / `ReferenceId`). `InventoryBalance` chỉ là bảng tổng hợp, tính lại từ sổ.
 - Xuất theo **FEFO** (mặc định) hoặc **FIFO** theo `InventoryPolicie.UseFefo` của nguyên liệu (D-24; sơ đồ vận hành của nhà máy ghi FIFO). **Chặn** xuất lô đã hết hạn. Còn lô cùng nguyên liệu hạn gần hơn thì chỉ **cảnh báo**, không chặn.
 - Kiểm kê: chênh lệch > **2%** thì cần duyệt rồi mới ghi điều chỉnh.
+- **BE2.3 (PROPOSED – D-52):** kiểm kê lệch > 2% → `StockCount/Submit` → duyệt STOCK_COUNT 2 cấp (Quản lý kho `scm-stockcount` → Kế toán `scm-stockcount-l2`, spec 2.3) → `Post` (admin không ghi sổ thẳng nữa); điều chỉnh tồn tay → duyệt STOCK_ADJUSTMENT 1 cấp (`scm-adjustment`) rồi mới ghi bút toán; đề nghị mua (kể cả MRP lập) duyệt 2 cấp `scm-pr-l1` → `scm-pr-l2` (D-46) rồi mới lập PO. Mỗi cấp hạn 48 giờ (cờ quá hạn, không job); một người không duyệt 2 cấp của cùng yêu cầu (admin miễn). Số cấp theo `BusinessRules:ApprovalSteps`.
 - Sửa hoặc hủy bút toán: ghi bút toán đảo (`TransactionType` = `REVERSAL`, hoặc ADJUSTMENT kèm `ReferenceId` trỏ về dòng gốc, có `Reason`). Không Update/Delete.
 
 ## 6. Sản xuất
