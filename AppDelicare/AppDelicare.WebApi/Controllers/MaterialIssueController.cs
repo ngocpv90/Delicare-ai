@@ -9,9 +9,10 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class MaterialIssueController(IMaterialIssueService service) : BaseController
+    public class MaterialIssueController(IMaterialIssueService service, IPrintService printService) : BaseController
     {
         private readonly IMaterialIssueService _service = service;
+        private readonly IPrintService _printService = printService;
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] MaterialIssueSearchRequest request)
@@ -200,6 +201,26 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " Cancel: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BE2.7 (Catalog 25): in phiếu xuất kho (chỉ khi Đã xuất) – Excel (mặc định) hoặc format=docx (Word); PDF chưa hỗ trợ (D-56 b). Quyền In #/scm-issue (PermissionConvention). Lỗi / chưa đủ điều kiện → JSON Result.</summary>
+        [HttpGet("Print")]
+        public async Task<IActionResult> Print(Guid id, string? format = null)
+        {
+            try
+            {
+                var result = await _printService.Print("MATERIAL_ISSUE", id, format);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data.Content, result.Data.ContentType, result.Data.FileName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Print: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
