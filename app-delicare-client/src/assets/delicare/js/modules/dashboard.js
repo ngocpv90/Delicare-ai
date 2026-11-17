@@ -4,10 +4,74 @@
   const st = { date: null, shift: '' };
   const ORDER_OK = o => !['Draft', 'Cancelled'].includes(o.Status);
   function custOk(cid) { if (!Store.ctx.branch) return true; const c = Store.get('Customer', cid); return c && c.BranchId === Store.ctx.branch; }
+  // ---------- Chế độ API (BE3.5): Dashboard/GetExecutive – server tính theo ngày / ca / chi nhánh, cache 60 giây ----------
+  const ex = { key: null, data: null, at: 0, busy: false, failed: false, error: '' };
+  const EX_TTL = 60000;
+  const dateOptions = date => Array.from({ length: 10 }, (_, i) => U.addDays(Store.ctx.date, i - 6)).map(d => `<option value="${d}" ${d === date ? 'selected' : ''}>${d === Store.ctx.date ? 'Hôm nay, ' : ''}${U.date(d)}</option>`).join('');
+  const headActions = (date, sh, shifts) => `<select class="select" id="dDate">${dateOptions(date)}</select><select class="select" id="dShift"><option value="">Tất cả ca</option>${shifts.map(s => `<option value="${s.Id}" ${s.Id === sh ? 'selected' : ''}>${esc(s.Name)}</option>`).join('')}</select><a class="btn" href="#/flow-e2e">${I('flow')} 9 luồng nghiệp vụ</a>`;
+  function bindFilters(el) {
+    el.querySelector('#dDate').onchange = e => { st.date = e.target.value; APP.refresh(); };
+    el.querySelector('#dShift').onchange = e => { st.shift = e.target.value; APP.refresh(); };
+  }
+  const pad2 = n => String(n || 0).padStart(2, '0');
+  // Trả true khi đã vẽ (hoặc đang chờ) bằng số liệu server; false → backend chưa có API, vẽ cách cũ.
+  function renderLive(el, f, date, sh, shifts) {
+    const key = [date, sh, Store.ctx.branch || ''].join('|');
+    if ((ex.key !== key || Date.now() - ex.at > EX_TTL) && !ex.busy) {
+      ex.busy = true;
+      Store.query('Dashboard/GetExecutive', { date, shiftId: sh, branchId: Store.ctx.branch }).then(x => {
+        ex.busy = false; ex.key = key; ex.at = Date.now();
+        ex.failed = !x.ok && /404/.test(x.message || ''); ex.error = x.ok ? '' : (x.message || 'Lỗi API');
+        ex.data = x.ok ? x.data : null;
+        if (APP.current === 'dash-exec') APP.refresh();
+      });
+    }
+    if (ex.failed) return false;
+    const head = APP.header(f, headActions(date, sh, shifts), { sub: 'Theo dõi toàn bộ hoạt động bếp trung tâm, kho, QC, giao nhận và nhân sự theo ngày / ca / đơn vị. Số liệu do máy chủ tính, làm mới sau 60 giây.' });
+    if (ex.key !== key || !ex.data) {
+      el.innerHTML = head + (ex.key === key && ex.error ? `<div class="notice gap">${I('alert')}<div><b>Không tải được số liệu điều hành</b>${esc(ex.error)}</div></div>` : `<div class="card panel empty">${I('chart')}<h2 class="mt">Đang tải số liệu điều hành…</h2></div>`);
+      bindFilters(el); return true;
+    }
+    const d = ex.data, k = d.kpi || {};
+    const od = k.orders || {}, pp = k.productionProgress || {}, dl = k.delivery || {}, qd = k.qcDetail || {}, sf = k.staffing || {};
+    const bs = od.byStatus || {}, okOrders = (od.total || 0) - (bs.Draft || 0) - (bs.Cancelled || 0);
+    const series = (d.chart && d.chart.meals7d) || [];
+    const alerts = (d.alerts || []).map(a => ({ c: a.severity === 'HIGH' ? 'red' : a.severity === 'LOW' ? 'blue' : 'orange', t: a.title, s: a.detail, go: String(a.route || '').replace(/^#\//, '') }));
+    el.innerHTML = head + `
+    <div class="kpis">
+      ${UI.kpi('Suất ăn kế hoạch', U.num(k.plannedMeals || 0), `${okOrders} đơn hợp lệ của ngày ăn`, 'utensils', 'green', 'crm-order')}
+      ${UI.kpi('Đơn hàng trong ngày', U.num(od.total || 0), (od.listStatus || []).map(s => s.count + ' ' + esc(String(s.statusName || s.status).toLowerCase())).join(' · ') || 'Chưa có đơn', 'clipboard', 'orange', 'crm-order')}
+      ${UI.kpi('Tiến độ sản xuất', pp.percent === null || pp.percent === undefined ? '–' : U.pct(pp.percent, 0), `${U.num(pp.donePortions || 0)} / ${U.num(pp.plannedPortions || 0)} phần món · ${pp.batchCount || 0} mẻ`, 'factory', 'blue', 'prod-batch')}
+      ${UI.kpi('Giao hàng hoàn tất', `${dl.delivered || 0}/${dl.total || 0}`, `${dl.total || 0} đơn giao trong ngày`, 'truck', 'purple', 'log-execution')}
+      ${UI.kpi('Cảnh báo tồn kho', pad2(k.stockAlerts), k.stockAlerts ? '<span class="warn">Cần xử lý</span> nguyên liệu dưới tồn tối thiểu' : 'Không có nguyên liệu dưới tồn tối thiểu', 'alert', 'red', 'scm-inv-balance')}
+      ${UI.kpi('QC tạm giữ / loại', pad2(k.qcHoldReject), `${qd.batchHold || 0} mẻ giữ · ${qd.batchReject || 0} mẻ loại · ${qd.lotOnHold || 0} lô tạm giữ`, 'shield', 'red', 'prod-batch')}
+      ${UI.kpi('Nhân sự theo ca', `${sf.checkedIn || 0}/${sf.assigned || 0}`, 'Đã vào ca / được phân ca', 'users', 'green', 'hr-shift-assign')}
+      ${UI.kpi('Khiếu nại đang mở', pad2(k.openComplaints), 'Phản ánh mới / đang xử lý', 'msg', 'orange', 'log-complaint')}
+    </div>
+    <div class="grid g-main mb">
+      <article class="card panel"><div class="panel-head"><div><div class="panel-title">Sản lượng suất ăn 7 ngày</div><div class="panel-desc">Suất kế hoạch theo ngày ăn so với suất khách đã nhận</div></div><div class="chart-legend"><span><i class="legend-dot" style="background:#B9CE8B"></i>Kế hoạch</span><span><i class="legend-dot" style="background:#F5B17E"></i>Thực nhận</span></div></div>
+        ${UI.bars(series.map(p => U.date(p.date).slice(0, 5)), [{ name: 'Kế hoạch', values: series.map(p => p.planned || 0), color: '#B9CE8B' }, { name: 'Thực nhận', values: series.map(p => p.accepted || 0), color: '#F5B17E' }])}</article>
+      <article class="card panel"><div class="panel-head"><div><div class="panel-title">Tiến độ theo ca sản xuất</div><div class="panel-desc">Phần món đạt / đã đóng gói so với kế hoạch của mẻ</div></div></div>
+        ${(d.shiftProgress || []).map(s => { const p = s.percent; return `<div class="progress-row"><span class="name">${esc(s.name || s.code)} <span class="muted small">${s.batchCount || 0} mẻ</span></span><span class="value">${p === null || p === undefined ? '–' : U.pct(p, 0)}</span><div class="track"><div class="fill ${p >= 95 ? '' : p >= 60 ? 'orange' : 'blue'}" style="width:${Math.min(100, p || 0)}%"></div></div></div>`; }).join('') || '<div class="muted small">Chưa có ca sản xuất</div>'}
+        <div class="panel-title mt">KPI ngày</div>${(d.kpiSnapshot || []).map(m => `<div class="spread small" style="padding:5px 0;border-bottom:1px solid #F0F2ED"><span>${esc(m.name || m.metricCode)}${m.target !== null && m.target !== undefined ? ` <span class="muted">· mục tiêu ${m.lowerIsBetter ? '≤' : '≥'} ${U.num(m.target, 1)}${m.unitCode === '%' ? '%' : ''}</span>` : ''}</span><b class="${m.met === false ? 'warn' : m.met === true ? 'up' : 'muted'}">${m.value === null || m.value === undefined ? '–' : U.num(m.value, 1) + (m.unitCode === '%' ? '%' : '')}</b></div>`).join('')}
+      </article></div>
+    <div class="grid g-main">
+      <article class="card panel"><div class="panel-head"><div><div class="panel-title">Tình hình đơn hàng & giao nhận</div><div class="panel-desc">Đơn hàng ngày ${U.date(date)}${d.ordersTotal > (d.orders || []).length ? ` · hiện ${(d.orders || []).length} / ${d.ordersTotal} đơn` : ''}</div></div><a class="btn" href="#/crm-order">Xem tất cả →</a></div><div id="dOrders"></div></article>
+      <article class="card panel"><div class="panel-head"><div><div class="panel-title">Cảnh báo & công việc</div><div class="panel-desc">Theo quyền của tài khoản đang đăng nhập</div></div><span class="badge orange">${alerts.length} việc</span></div><div class="alert-list">${alerts.slice(0, 7).map(a => `<div class="alert"><div class="alert-ico ${a.c}">${I('alert')}</div><div class="alert-copy"><b>${esc(a.t)}</b><small>${esc(a.s)}</small></div><a class="btn xs" href="#/${a.go}">Mở</a></div>`).join('') || '<div class="empty">Không có cảnh báo</div>'}</div></article>
+    </div>`;
+    bindFilters(el);
+    UI.table(el.querySelector('#dOrders'), {
+      pageSize: 6, toolbar: false, rows: (d.orders || []).map(o => Object.assign({ Id: o.id }, o)), onRow: id => APP.go('crm-order?id=' + id),
+      cols: [{ k: 'orderNumber', label: 'Mã đơn' }, { k: 'customerName', label: 'Khách hàng' }, { k: 'totalQuantity', label: 'Suất ăn', num: true, render: r => U.num(r.totalQuantity || 0) }, { k: 'status', label: 'Đơn hàng', render: r => UI.badge(r.status, 'Order', 'Status') },
+        { k: 'x', label: 'Giao hàng', nosort: true, render: r => (r.listDelivery || []).length ? r.listDelivery.map(x => UI.badge(x.status, 'DeliveryExecution', 'Status')).join(' ') : '<span class="muted small">Chưa giao</span>' }]
+    });
+    return true;
+  }
   APP.register('dash-exec', (el, f) => {
     const date = st.date || Store.ctx.date; st.date = date;
     const shifts = Store.rows('Shift');
     const sh = st.shift;
+    if (Store.isLive && renderLive(el, f, date, sh, shifts)) return;
     const orders = Store.rows('Order').filter(o => U.day(o.MealDate) === date && custOk(o.CustomerId));
     const lines = Store.rows('OrderLine').filter(l => orders.some(o => o.Id === l.OrderId) && (!sh || l.ShiftId === sh));
     const okOrders = orders.filter(ORDER_OK);

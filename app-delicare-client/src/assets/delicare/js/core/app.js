@@ -27,13 +27,39 @@
     updateCounts();
   }
   function updateCounts() {
-    const n = Store.rows('ApprovalRequest').filter(a => ['Pending', 'InProgress'].includes(a.RequestStatus)).length;
+    const list = APP.alerts();
+    // Chế độ API có kết quả chuông: số chờ duyệt = cảnh báo APPROVAL_PENDING (đúng hộp duyệt của người đăng nhập), không cần tải bảng ApprovalRequest.
+    const pendAlert = live.alerts && list.find(a => a.code === 'APPROVAL_PENDING');
+    const n = live.alerts ? (pendAlert ? pendAlert.n : 0) : Store.rows('ApprovalRequest').filter(a => ['Pending', 'InProgress'].includes(a.RequestStatus)).length;
     const c = document.getElementById('inboxCount'); if (c) { c.textContent = n; c.style.display = n ? '' : 'none'; }
-    const al = APP.alerts().length; document.getElementById('notifyCount').textContent = al;
+    const nc = document.getElementById('notifyCount'); if (nc) nc.textContent = live.alerts ? list.reduce((s, a) => s + (a.n || 0), 0) : list.length;
   }
   APP.updateCounts = updateCounts;
-  // ---------- Cảnh báo (tính từ dữ liệu demo) ----------
+  // ---------- Cảnh báo ----------
+  // Chế độ API (BE3.3): Common/GetAlerts – server tính theo quyền Xem + chi nhánh đang chọn, cache 60 giây; giao diện hỏi lại mỗi 60 giây.
+  // Chưa có kết quả → danh sách rỗng (không kéo 7 bảng về trình duyệt). API lỗi / backend cũ chưa có → tính cục bộ như mockup.
+  const SEV_COLOR = { HIGH: 'red', MEDIUM: 'orange', LOW: 'blue' };
+  const ALERT_ICON = { STOCK_BELOW_MIN: 'alert', APPROVAL_PENDING: 'approve', QC_INCOMING_PENDING: 'shield', LOT_ON_HOLD: 'shield', TEMPERATURE_OUT_OF_RANGE: 'thermo', COMPLAINT_OVERDUE: 'msg', COMPLAINT_OPEN: 'msg', OUTBOUND_FAILED: 'bot', LOT_EXPIRING: 'lot' };
+  const live = { alerts: null, at: 0, busy: false, branch: null, failed: false };
+  const ALERT_TTL = 60000;
+  function pullAlerts() {
+    if (!Store.isLive || live.busy) return;
+    const br = Store.ctx.branch || '';
+    if (live.branch === br && Date.now() - live.at < ALERT_TTL) return;
+    live.busy = true;
+    Store.query('Common/GetAlerts', { branchId: br }).then(x => {
+      live.busy = false; live.at = Date.now(); live.branch = br; live.failed = !x.ok;
+      live.alerts = x.ok ? x.list.map(a => ({ code: a.code, c: SEV_COLOR[a.severity] || 'orange', i: ALERT_ICON[a.code] || 'alert', t: a.title || a.code, s: a.detail || '', go: String(a.route || '').replace(/^#\//, ''), n: a.count || 0 })) : null;
+      updateCounts();
+      if (APP.current === 'dash-exec' && !overlayOpen() && !cycleActive) APP.refresh();
+    });
+  }
   APP.alerts = () => {
+    if (Store.isLive) {
+      pullAlerts();
+      if (live.alerts) return live.alerts;
+      if (!live.failed) return [];
+    }
     const a = [];
     const bal = U.group(Store.rows('InventoryBalance'), 'IngredientId');
     const low = Store.rows('InventoryPolicie').filter(p => U.sum(bal[p.IngredientId] || [], 'AvailableQuantity') < (p.MinimumStock || 0));
@@ -295,7 +321,7 @@
   }
   function notifications() {
     const a = APP.alerts();
-    UI.drawer({ title: 'Cảnh báo & công việc', sub: a.length + ' mục · tính từ dữ liệu DEMO', width: 480, tabs: [{ label: 'Tất cả', html: `<div class="alert-list">${a.map((x, i) => `<div class="alert"><div class="alert-ico ${x.c}">${I(x.i)}</div><div class="alert-copy"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></div><button class="btn sm" data-go2="${x.go}">Xử lý →</button></div>`).join('') || '<div class="empty">Không có cảnh báo</div>'}</div>` }],
+    UI.drawer({ title: 'Cảnh báo & công việc', sub: a.length + (live.alerts ? ' loại cảnh báo · cập nhật mỗi 60 giây' : ' mục · tính từ dữ liệu DEMO'), width: 480, tabs: [{ label: 'Tất cả', html: `<div class="alert-list">${a.map((x, i) => `<div class="alert"><div class="alert-ico ${x.c}">${I(x.i)}</div><div class="alert-copy"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></div><button class="btn sm" data-go2="${x.go}">Xử lý →</button></div>`).join('') || '<div class="empty">Không có cảnh báo</div>'}</div>` }],
       onMount: (d, close) => d.querySelectorAll('[data-go2]').forEach(b => b.onclick = () => { close(); APP.go(b.dataset.go2); }) });
   }
   function help() {
@@ -308,22 +334,51 @@
         const sw = m.querySelector('#swMode'); if (sw) sw.onclick = () => Store.setMode(live ? 'demo' : 'api');
       } });
   }
-  function search(q) {
-    const box = document.getElementById('searchResults'); q = q.trim().toLowerCase();
-    if (!q) { box.classList.remove('show'); return; }
+  // Bỏ dấu tiếng Việt để tìm "don hang" khớp "Đơn hàng".
+  const fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+  const screenHits = q => { const k = fold(q); return Object.values(FN).filter(f => !CHILD.has(f.id) && Store.perm(f.id).access !== false && fold(f.name + ' ' + f.fn + ' ' + f.id).includes(k)).map(f => ({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.grp, i: 'clipboard' })); };
+  function showResults(res, note) {
+    const box = document.getElementById('searchResults');
+    box.innerHTML = (res.slice(0, 30).map((r, i) => `<a href="${r.h || 'javascript:void 0'}" data-i="${i}">${I(r.i)}<span>${esc(r.t)}</span><small>${esc(r.s)}</small></a>`).join('') || (note ? '' : '<div class="empty">Không tìm thấy</div>')) + (note ? `<div class="empty">${esc(note)}</div>` : '');
+    box.classList.add('show');
+    box.querySelectorAll('a').forEach(a => a.onclick = () => {
+      const r = res[+a.dataset.i]; box.classList.remove('show'); document.getElementById('globalSearch').value = '';
+      if (r.open) { const [t, id, sid] = r.open; APP.go(sid); Store.ensure(t).then(() => setTimeout(() => UI.detail(t, id, { screen: sid }), 60)); }
+    });
+  }
+  function localSearch(q) {
     const res = [];
     Object.values(FN).forEach(f => { if ((f.name + ' ' + f.fn + ' ' + f.id).toLowerCase().includes(q)) res.push({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.ph, i: 'clipboard' }); });
     Object.keys(Store.schema.tables).forEach(t => { if (t.toLowerCase().includes(q)) res.push({ h: APP.href('dbx-explorer?t=' + t), t: 'dbo.' + t, s: 'Bảng DB', i: 'database' }); });
     [['Customer', 'crm-customer'], ['Order', 'crm-order'], ['Ingredient', 'scm-ingredient'], ['Dishe', 'menu-dish'], ['Supplier', 'scm-supplier'], ['MaterialLot', 'scm-lot'], ['Employee', 'adm-employee'], ['PurchaseOrder', 'scm-po']].forEach(([t, sid]) => Store.rows(t).forEach(r => { const l = Store.label(t, r); if (l.toLowerCase().includes(q) && res.length < 40) res.push({ t: l, s: t + ' · mở chi tiết', i: 'eye', open: [t, r.Id, sid] }); }));
-    box.innerHTML = res.slice(0, 30).map((r, i) => `<a href="${r.h || 'javascript:void 0'}" data-i="${i}">${I(r.i)}<span>${esc(r.t)}</span><small>${esc(r.s)}</small></a>`).join('') || '<div class="empty">Không tìm thấy</div>';
-    box.classList.add('show');
-    box.querySelectorAll('a').forEach(a => a.onclick = () => { const r = res[+a.dataset.i]; box.classList.remove('show'); document.getElementById('globalSearch').value = ''; if (r.open) { APP.go(r.open[2]); setTimeout(() => UI.detail(r.open[0], r.open[1], { screen: r.open[2] }), 60); } });
+    showResults(res);
+  }
+  // Chế độ API (BE3.3): Common/GlobalSearch – server tìm 8 loại bản ghi theo quyền Xem (mỗi loại ≤ 5). Màn hình lọc tại chỗ theo quyền.
+  // Loại bản ghi của API → bảng của giao diện (bảng legacy giữ tên cũ).
+  const SEARCH_TABLE = { Dish: 'Dishe' };
+  let searchTimer = null, searchSeq = 0, searchLiveOff = false;
+  function search(q) {
+    const box = document.getElementById('searchResults'); q = q.trim();
+    clearTimeout(searchTimer); const seq = ++searchSeq;
+    if (!q) { box.classList.remove('show'); return; }
+    if (!Store.isLive || searchLiveOff) return localSearch(q.toLowerCase());
+    const screens = screenHits(q);
+    if (q.length < 2) return showResults(screens, 'Nhập từ 2 ký tự để tìm bản ghi');
+    showResults(screens, 'Đang tìm…');
+    searchTimer = setTimeout(() => Store.query('Common/GlobalSearch', { q }).then(x => {
+      if (seq !== searchSeq) return;
+      // Backend cũ chưa có API tìm kiếm → dùng cách tìm tại chỗ cho cả phiên.
+      if (!x.ok) { if (/404/.test(x.message || '')) { searchLiveOff = true; return localSearch(q.toLowerCase()); } return showResults(screens, x.message || 'Không tìm được'); }
+      const recs = ((x.data && x.data.records) || []).map(r => { const sid = String(r.route || '').replace(/^#\//, ''); return { t: (r.code ? r.code + ' · ' : '') + (r.label || ''), s: (r.typeTitle || r.type) + (r.statusName ? ' · ' + r.statusName : ''), i: 'eye', open: [SEARCH_TABLE[r.type] || r.type, r.id, sid] }; });
+      showResults(screens.concat(recs));
+    }), 300);
   }
   APP._buildNav = () => buildNav(); APP._setUserUi = () => setUserUi();
   // Gỡ toàn bộ sự kiện gắn vào document/window – Angular gọi khi rời màn hình chính (đăng xuất).
   const docHandlers = [];
   const onDoc = (target, ev, fn, cap) => { target.addEventListener(ev, fn, !!cap); docHandlers.push([target, ev, fn, !!cap]); };
-  APP.stop = () => { routeSeq++; docHandlers.splice(0).forEach(([t, ev, fn, cap]) => t.removeEventListener(ev, fn, cap)); document.querySelectorAll('.overlay, .drawer-wrap').forEach(x => x.remove()); };
+  let alertTimer = null;
+  APP.stop = () => { routeSeq++; clearInterval(alertTimer); clearTimeout(searchTimer); docHandlers.splice(0).forEach(([t, ev, fn, cap]) => t.removeEventListener(ev, fn, cap)); document.querySelectorAll('.overlay, .drawer-wrap').forEach(x => x.remove()); };
   APP.start = () => {
     if (Store.hasHost && Store.mode === 'api') {
       const u = window.DC_HOST.user || {};
@@ -348,6 +403,8 @@
       const href = a.getAttribute('href'), base = APP.base(); if (base === '#/' || href.startsWith(base)) return;
       e.preventDefault(); location.hash = base + href.slice(2);
     }, true);
+    // Chuông cảnh báo: hỏi lại mỗi 60 giây khi người dùng đứng yên trên một màn hình.
+    if (Store.isLive) alertTimer = setInterval(() => { if (!document.hidden) pullAlerts(); }, ALERT_TTL);
     onDoc(window, 'hashchange', route); route();
   };
   window.APP = APP;
