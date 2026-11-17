@@ -315,6 +315,8 @@ Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ g
 | Mã | Câu hỏi | Đề xuất của em | Ảnh hưởng |
 |---|---|---|---|
 | D-56 | **BE2.7 – API dùng chung + mẫu in: các quy tắc PROPOSED đã cài (mẫu hỏi D-49, bảng D-56 ngay dưới).** Không mục nào BLOCKED; em đã làm theo "Đề xuất". **(b) ĐÃ CHỐT** – anh chốt 2026-11-17: PDFsharp-MigraDoc MIT + font OFL (BE2.7.1). **(k) mới (BE2.7.1): PDF làm định dạng mặc định.** | Anh chốt các mục còn lại (a), (c)–(k). | BE2.7, BE2.7.1 |
+| D-57 | **Đợt BE-3 (anh chốt 2026-11-17):** đưa KPI 221–225, dashboard + E2E 231–232, biểu đồ 100 / 157 / 163, tìm kiếm / Liên quan / chuông 16–18, vị trí xe 193, IoT 166 (+ làm nốt 192) vào làm ngay, chỉ backend, không bảng / cột mới, không job (làm action bấm tay – D-45, D-48), không gửi bot. Đề xuất chi tiết từng mục: mục "BE-3 – đề xuất" cuối file. | 2026-11-17 (anh chốt) |
+| D-58 | **Không cho phép tra cứu cấu trúc database** (anh chốt 2026-11-17): bỏ DB Explorer + GAP (Catalog 226–230, 233, 234 = Không làm, bỏ task BE3.6). Không API nào trả tên bảng / cột / quan hệ / dữ liệu mẫu / nội dung Gap Register; tìm kiếm toàn cục không trả loại "bảng"; tab Liên quan trả tên màn hình + chứng từ, không trả tên bảng / cột. | 2026-11-17 (anh chốt) |
 
 #### D-56 – BE2.7: câu hỏi kèm đề xuất (PROPOSED – BA/PO CONFIRM, đã cài theo "Đề xuất")
 | # | Vấn đề | Đề xuất (em chọn) + lý do | Phương án khác |
@@ -342,3 +344,16 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 |---|---|---|---|---|
 | GAP-DOC-01 (trùng mã) | Mã GAP-DOC-01 đang dùng cho 2 việc: (1) T50R1 – số đơn giao PH- theo ngày giao / nhiệt độ cùng giây lấy thấp nhất; (2) BE2.7 – DocumentFile thiếu cột liên kết chứng từ. | Giữ nguyên cả 2 (handoff đang tham chiếu); đề xuất đổi mục (1) thành **GAP-DOC-00** khi anh chốt. | PROPOSED – BA/PO CONFIRM | BE2.9 |
 | (sửa lỗi, không phải GAP) | 6 bảng điều hành theo ngày (DeliveryExecution / DeliveryRoute GetBoard, GetReadyOrders, ProductionBatch GetBoard / GetStageBoard, Forecast GetMatrix) thiếu ngày → HTTP 500. | Nay 400 + thông báo (như MaterialRequirement/GetByDate). | Đã sửa | BE2.9 |
+
+## BE-3 – đề xuất (D-57, mẫu D-49 – Claude Code làm theo "Đề xuất" khi anh chưa trả lời)
+| # | Vấn đề | Đề xuất (em chọn) + lý do | Phương án khác |
+|---|---|---|---|
+| (a) | KPI: spec là job 17:00 / 23:30, nhưng job để sau (D-45). | **Nút `KpiSnapshot/Refresh` bấm tay** + Service dùng lại được cho `AppDelicare.Job`; chạy lại không nhân đôi. Lý do: có số KPI ngay, không đợi job. | Đợi làm job rồi mới có KPI (chậm). |
+| (b) | Công thức + mục tiêu KPI chưa được BA / PO xác nhận. | Dùng công thức spec 11.7, mục tiêu tạm trong seed, gắn `PROPOSED – BA/PO CONFIRM`; đổi bằng phiên bản mới, không sửa số cũ. | Để trống mục tiêu (dashboard không có "đạt / không đạt"). |
+| (c) | ~~(DB Explorer / GAP)~~ | **Bỏ – D-58** (anh không cho phép tra cứu cấu trúc database). | – |
+| (d) | ~~(DB Explorer / GAP)~~ | **Bỏ – D-58** (anh không cho phép tra cứu cấu trúc database). | – |
+| (e) | ~~(DB Explorer / GAP)~~ | **Bỏ – D-58** (anh không cho phép tra cứu cấu trúc database). | – |
+| (f) | IoT: xác thực thiết bị + ánh xạ khu vực. | API key trong header (biến môi trường, không commit), ánh xạ `Iot:Devices` trong cấu hình, chống trùng (DeviceCode, MeasuredAt), ghi bằng tài khoản `system`. | Bảng thiết bị riêng (cần tạo bảng – không được). |
+| (g) | Vị trí xe: không có GPS liên tục (GAP-F-05). | Vị trí = điểm theo sự kiện trong `DeliveryEvent` + action tài xế ghi vị trí (`POSITION`). | Tích hợp GPS hộp đen (R2, cần nhà cung cấp). |
+| (h) | Chuông cảnh báo: đẩy hay hỏi định kỳ. | **FE hỏi định kỳ** (vd. 60 giây), server cache 60 giây; chỉ cảnh báo thuộc màn có quyền. | SignalR đẩy realtime (thêm thư viện, khác khung cũ). |
+| (i) | Tìm kiếm toàn cục / tab Liên quan: phạm vi. | Danh sách trắng (8 loại bản ghi của spec; quan hệ viết cứng trong code), lọc theo quyền Xem, chống SQL injection; **không trả tên bảng / cột** (D-58). | Tìm mọi bảng (chậm, lộ dữ liệu ngoài quyền). |
