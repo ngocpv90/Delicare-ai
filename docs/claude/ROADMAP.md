@@ -8,7 +8,58 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 > **⚠ ĐỔI HƯỚNG 2026-11-15 (D-30):** **khung chuẩn là code cũ**, không sinh thêm API `/api/v1`. Mọi task dưới đây hiểu là: rà soát code cũ → bổ sung method vào Service cũ + action vào Controller cũ theo CLAUDE.md mục 4. Spec API chỉ là danh sách yêu cầu nghiệp vụ. Chỗ nào trong file này còn ghi `/api/v1/...` thì đọc là "chức năng đó, viết thành action kiểu cũ `api/<Entity>/<Action>`". (T45R đã DONE 2026-11-15.) **Từ 2026-11-16: làm theo bảng LÁT PILOT ngay dưới đây.**
 
-## ★★ LÁT PILOT – ƯU TIÊN SỐ 1 (anh chốt 2026-11-16, D-34)
+## ★★★ ĐỢT BE-2 – HOÀN THIỆN API BACKEND (anh chốt 2026-11-16, D-43, D-44) – ƯU TIÊN SỐ 1 HIỆN TẠI
+
+> **⚠ D-44 (2026-11-16): KHÔNG CHẠY PILOT.** Mục tiêu là **hoàn thiện toàn bộ luồng nghiệp vụ R1**. Mọi mục `DEFERRED(PILOT)` (bảng trong mục ★★ bên dưới và trong từng task) **trở thành TODO** và nằm trong BE-2, **trừ** nhóm "Để sau" cuối mục này. Không còn giới hạn "1–2 khách, 1 bếp, ca trưa", không có UAT-PILOT riêng: kiểm thử theo **toàn luồng**. Thứ tự sau BE-2: **FE toàn bộ màn hình luồng (FE-ALL)** → **UAT toàn luồng** → production (T48.2) → mới làm nhóm "Để sau".
+
+**Mục tiêu:** làm nốt mọi API backend còn thiếu theo `DELICARE_API_Specification.md` / `DELICARE_API_Catalog.xlsx`, **trừ** tích hợp bot, dashboard / KPI, báo cáo (để sau). Khung code cũ (D-30), phân quyền cũ (D-31), không thêm bảng / cột (thiếu → GAP).
+**Frontend:** Claude Code **chưa làm FE** trong đợt này (D-40 kéo dài tới hết BE-2). Bạn frontend làm song song dựa trên `docs/frontend-handoff/` → **mỗi task phải cập nhật handoff** (route, request / response mẫu, quyền, trạng thái) và `.http`.
+**Câu hỏi PROPOSED chưa được anh chốt:** làm theo phương án PROPOSED đang ghi trong DECISIONS, ghi rõ trong PROGRESS; chỉ dừng (BLOCKED) với mục ghi "cần anh".
+**Catalog:** máy không có openpyxl → cuối mỗi task ghi trong PROGRESS bảng "STT catalog → Trạng thái / API thực tế / Task" để em cập nhật Excel.
+
+**Làm đúng thứ tự:**
+
+| # | Task | Phạm vi (STT dòng trong Catalog) |
+|---|---|---|
+| BE2.1 | **Lấp chỗ thiếu của luồng Pilot** | Đóng gói: `PackingOrder` / `PackingResult` sinh từ mẻ, start / result / cancel (171–175); xếp hàng lên xe `DeliveryLoading` + trạng thái Loading (180); đơn giao tay / gán – chuyển tuyến / tách / hủy (184–187); lập chuyến **nhiều xe, theo khu vực** (177–179); `DeliveryExecution` GET (188); kế hoạch SX **sinh theo ca** (137); đề nghị mua chọn dòng + bufferPercent (107); ghi nhiệt độ tự do `TemperatureLog` (165); danh sách đơn dạng board + statusCounts (90), thực đơn có orderedMeals / assignedCustomerCount (82); hao hụt đủ nghiệp vụ (156); danh sách phản ánh đủ trường + isOverdue (197); chi tiết + hủy yêu cầu duyệt (211, 213); truy xuất lô 2 chiều dạng API (118, 119) |
+| BE2.2 | **Hợp đồng, dự báo, đổi món** (T13 mở rộng) | Tạo hợp đồng kèm suất + sinh số / gửi duyệt / chấm dứt (78–80); dự báo: ma trận / nhập hàng loạt / công bố + gợi ý số suất trong mẫu tạo đơn, lệch dự báo > 10% (87–89, 92, 96); yêu cầu đổi món `MenuChangeRequest` (104); sửa đơn sau giờ chốt qua duyệt `ORDER_CHANGE_AFTER_CUTOFF` |
+| BE2.3 | **Duyệt nhiều cấp** (T12 mở rộng) + áp vào nghiệp vụ | Engine nhiều bước theo `ApprovalStep`, hết hạn (cờ), hủy; áp cho: hợp đồng (79), kiểm kê lệch > 2% submit / post (131, 132), điều chỉnh kho tay, PO nhiều cấp theo ngưỡng. **Đề nghị mua 2 cấp (110) theo D-46** – làm đầu tiên trong BE2.3 (cấp 1 Trưởng mua hàng, cấp 2 COO; `ConvertToPurchaseOrder` chỉ khi Đã duyệt; cập nhật `pilot-flow.http` / test cho bước duyệt) |
+| BE2.4 | **Kho & sản xuất mở rộng** | Giữ chỗ `MaterialReservation` khi phát hành / xuất (126); hàng sắp về từ PO cho MRP; chênh lệch tiêu hao (135); xử lý lô hết hạn (logic gọi được bằng action, job ở BE2.8); đóng / hủy lệnh SX (144, 145); giá thành thực tế + giá vốn suất (152–154); công đoạn theo tổ bếp (Sơ chế → Nấu → Chia suất, người / tổ) |
+| BE2.5 | **ATTP, vệ sinh, hộp / khay** (T18 phần nghiệp vụ, T20) | Chạy checklist + ghi kết quả, lỗi trọng yếu (161, 162); mẻ vệ sinh khay 6 bước (167–169); chuyển trạng thái sự cố NCC (170); thu hồi hộp / khay + kiểm tra + sổ bao bì `PackagingLedger` OUT / IN khi giao / thu (190, 194–196) |
+| BE2.6 | **Nhân sự** (T21) | Lưới ca, phân ca, phân ca hàng loạt, xác nhận (201–204, **không gửi Telegram**); chấm công check-in / out GPS (KitchenWorkstation lat / long / bán kính) (205); bảng công (206 – dạng danh sách, không làm báo cáo); nghỉ phép, đổi ca, hủy + duyệt qua engine (207–209) |
+| BE2.7 | **API dùng chung + mẫu in** | Thống kê theo trạng thái (2); xuất Excel danh sách (8); tệp đính kèm: tải lên / danh sách / tải xuống `DocumentFile` (19–21); lịch sử bản ghi gộp AuditChange + ApprovalDecision (15); mẫu in: phiếu nhập, phiếu xuất, phiếu kiểm kê, phiếu giao, biên bản POD, biên bản đối soát, in hàng loạt (24–30) – theo mẫu thật trong `BUSINESS_DOCS.md`. Refresh token (32): **ĐỂ SAU (D-47)** – không làm trong BE-2 |
+| BE2.8 | ~~Job tự động lõi~~ → **ĐỂ SAU (D-45)** | Không làm job trong BE-2. Giữ các nút bấm tay đã có (`Order/LockByMealDate`, `MaterialRequirement/Calculate` / `CalculateTopUp`); các kiểm tra hết hạn làm **tại lúc thao tác** (chặn xuất lô hết hạn – đã có; `isOverdue` phản ánh – đã có; hợp đồng / yêu cầu duyệt quá hạn: kiểm khi tạo đơn / khi duyệt). D-05 không còn chặn. |
+| BE2.9 | **Gộp, kiểm tra, deploy** | Mỗi task: build 0 lỗi, toàn bộ test xanh, `.http` mới chạy được trên DB dev, cập nhật `DB/README.md` + `Deploy-Database.ps1` + `db-init.sh` nếu có SP / seed mới. Cuối đợt: đổi `pilot-flow.http` thành `full-flow.http` – luồng đầy đủ (hợp đồng → dự báo → đơn → MRP → mua → nhận + QC → kho → sản xuất theo tổ / ca → đóng gói → xếp xe → giao → thu hộp / khay → đối soát → giá thành) chạy hết; deploy staging; **dừng, báo anh** (không push / gộp `main` khi anh chưa duyệt) |
+
+### T48.3 – Tự cập nhật DB cho server Docker của dev FE · làm **ngay sau BE2.1** · `TODO` (anh chốt 2026-11-16)
+Mục tiêu: dev FE `git pull` xong là DB trên server có đủ SP / seed mới, không phải tự chạy file SQL.
+1. **Một danh sách thứ tự script duy nhất:** `deploy/db/scripts.order` (SP, seed theo thứ tự). `Deploy-Database.ps1` và `deploy/docker/db-init.sh` cùng đọc file này – bỏ danh sách lặp trong 2 file.
+2. **`db-init.sh` idempotent như PS1:** SP `CREATE OR ALTER`, seed chỉ thêm (add-only), sqlcmd `-f 65001`; chạy nhiều lần không sai dữ liệu. Sửa hash mật khẩu admin dev từ MD5 sang `PBKDF2$100000$salt$hash` (cùng hàm với T48.0). Không `CREATE/ALTER/DROP TABLE`, không xóa dữ liệu.
+3. **Lệnh cho dev FE** (ghi vào `deploy/docker/README.md` + `docs/frontend-handoff/README.md`): `git pull && docker compose -f deploy/docker/docker-compose.staging.yml run --rm db-init`. Thêm `deploy/docker/update-db.sh` gói lệnh này + ghi log; tùy chọn cron mỗi 5 phút (`*/5 * * * * /path/update-db.sh >> update-db.log 2>&1`), chỉ chạy khi `git pull` có commit mới đụng `DB/` hoặc `deploy/db/`.
+4. **Dự phòng server không ra Internet:** `Deploy-Database.ps1 -Server <ip,port>` chạy từ máy dev FE trỏ vào DB server (ghi cách dùng, không ghi mật khẩu vào repo – lấy từ biến môi trường).
+5. **Kiểm tra:** chạy `db-init` 2 lần liên tiếp trên DB dev Docker sạch và DB đã có dữ liệu → 0 lỗi, số dòng seed không đổi ở lần 2; đăng nhập admin dev được.
+6. Báo anh; không chạy lên DB server của dev FE (không phải DB dev của em) – anh / dev FE tự chạy lệnh ở bước 3.
+
+**Để sau – làm SAU KHI hoàn thiện luồng (KHÔNG làm trong BE-2 / FE-ALL):**
+- **Dashboard / KPI / cảnh báo:** 16–18 (tab Liên quan, tìm kiếm toàn cục, chuông cảnh báo), 100 biểu đồ đối soát, 157 tổng hợp hao hụt, 163 chuỗi nhiệt độ cho biểu đồ, 221–225 KPI, 231–234 dashboard, 226–230 DB Explorer (T22, T47B.3).
+- **Báo cáo:** báo cáo NCR, báo cáo truy xuất, báo cáo hao hụt / giá thành tổng hợp, bảng công dạng báo cáo (T18 phần báo cáo).
+- **Bot / tích hợp:** 214–220, 166 IoT, gửi PO cho NCC qua email / Zalo (113), nhắc khách 19:00, gửi Telegram phân ca / duyệt (T30–T51, T23.2).
+- **Refresh token (D-47):** phương án đề xuất ở GAP-AUTH-01 (không lưu DB).
+- **Job tự động (D-45):** khóa đơn 20:00, tính nhu cầu 20:30, đề xuất mua 21:00, hết hạn lô / hợp đồng / duyệt, theo dõi SLA, nhắc khách 19:00, KPI 22:00 (T23.1, T23.2; cần chốt D-05 nơi lưu lịch job).
+- **Hermes + quản lý agent:** Tool Gateway / MCP, 12 agent theo phòng ban (`docs/claude/AGENTS.md`), lịch chạy agent, Mission Control, Obsidian second brain (T30–T35, T40, T41, T43, T50, T51, T60, T61).
+
+**Frontend (D-49, 2026-11-16): dev FE khác làm FE-ALL và commit lên git. Claude Code KHÔNG tự làm FE-x – kể cả khi `/next`.** Việc của em về frontend chỉ là: viết handoff `docs/frontend-handoff/` cho mỗi API mới, và task GHEP-FE khi anh yêu cầu.
+
+### GHEP-FE – Ghép luồng frontend + backend · **CHỈ LÀM KHI ANH YÊU CẦU** · `TODO`
+1. `git fetch`; xem commit / nhánh FE mới (`git log --stat -- app-delicare-client/`). Không sửa code FE của bạn kia khi chưa có yêu cầu; không rebase / force-push nhánh của người khác.
+2. Gộp vào nhánh `ghep/<ngày>` (không gộp thẳng `main`); xung đột → giữ phần của người sửa file đó, báo anh chỗ nào.
+3. Soát FE gọi API: URL `Controller/Action` đúng khung cũ, tham số `[FromForm]`, `Result<T>`, quyền (`permission()` / ScreenMap, menu `#/<screen-id>`). Lệch → **sửa phía backend nếu backend sai**; FE sai → ghi danh sách cho dev FE (file / dòng / sửa thế nào), chỉ sửa FE nếu anh đồng ý.
+4. Chạy `npm run build` + backend build + test; chạy luồng `full-flow.http` và đi tay luồng trên giao diện (staging) theo `UAT_CHECKLIST.md`.
+5. Báo anh: màn hình nào chạy hết luồng, lỗi nào thuộc BE (đã sửa) / FE (cần bạn kia sửa), đề xuất bước tiếp. Không push / gộp `main` khi anh chưa duyệt.
+
+Sau GHEP-FE đủ luồng → UAT toàn luồng theo `UAT_CHECKLIST.md` → T48.2 production.
+
+## ★★ LÁT PILOT – LỊCH SỬ (backend P0–P9 đã xong; **D-44 bỏ chạy Pilot** – các mục DEFERRED(PILOT) dưới đây chuyển vào BE-2) (D-34)
 
 **Mục tiêu:** chạy thử sớm **một luồng thông suốt** Đơn hàng → Nhu cầu NL → Mua → Nhận + QC → Kho → Sản xuất → Giao + đối soát suất, với danh mục thật, 1–2 khách, 1 bếp. Mỗi bước làm **bản tối thiểu** (bấm nút thay job, duyệt 1 cấp). **Giữ ngay** mọi kiểm soát ATTP: nhiệt độ lõi ≥ 70°C, nhiệt độ giao ≥ 60°C, lưu mẫu, chặn lô hết hạn / KHONG_DAT.
 
@@ -278,9 +329,9 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Seed KpiMetricDefinition (BUSINESS_RULES §12). Tính KpiDailySnapshot / KpiMonthlySnapshot. API dashboard theo spec mục 12.
 - AC: test công thức cho từng KPI.
 
-### T23 – Jobs (Hangfire) · phụ thuộc T13, T14 · `TODO` (R1: T23.1 = LockOrders 20:00, Mrp 20:30, PurchaseProposal 21:00, ApprovalExpiry, ComplaintSlaWatch; T23.2 = KpiDailySnapshot 22:00, RemindUnconfirmedOrders 19:00 – trong R1 chỉ tạo danh sách + thông báo trong app, chưa gửi Zalo/Telegram)
-- Project `AppDelicare.Jobs`. Lịch theo AGENTS.md §2, múi giờ Asia/Ho_Chi_Minh. Storage: theo D-05 (chưa chốt thì InMemory). Mỗi lần chạy ghi `AnalyticsRefreshLog` (JobCode, RunId, Started / Completed, RunStatus, RowsProcessed).
-- Dashboard Hangfire chỉ cho admin.
+### T23 – Job tự động (`AppDelicare.Job`, D-48) · ĐỂ SAU (D-45) · phụ thuộc T13, T14 · `TODO` (R1: T23.1 = LockOrders 20:00, Mrp 20:30, PurchaseProposal 21:00, ApprovalExpiry, ComplaintSlaWatch; T23.2 = KpiDailySnapshot 22:00, RemindUnconfirmedOrders 19:00 – trong R1 chỉ tạo danh sách + thông báo trong app, chưa gửi Zalo/Telegram)
+- Project / container riêng `AppDelicare.Job` theo **ARCHITECTURE.md mục 1b** (Worker Service, không Hangfire, không thêm bảng, khóa `sp_getapplock`, DI dùng chung với WebApi, tài khoản `system`). Lịch theo AGENTS.md §2, múi giờ Asia/Ho_Chi_Minh. Mỗi lần chạy ghi `AnalyticsRefreshLog` (JobCode, RunId, Started / Completed, RunStatus, RowsProcessed).
+- `JobController` (khung cũ) trong WebApi: `GetAll` (job, bật / tắt, lần chạy kế tiếp), `Run` (chỉ admin, gọi thẳng Service). docker-compose thêm service `job`; IIS: Windows Service.
 - AC: chạy tay từng job được; job idempotent (chạy 2 lần không nhân đôi dữ liệu).
 
 ---

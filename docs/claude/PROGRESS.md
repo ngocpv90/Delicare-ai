@@ -1,6 +1,8 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-16 (D-44): KHÔNG CHẠY PILOT – hoàn thiện toàn bộ luồng R1.** Mọi mục DEFERRED(PILOT) vào BE-2. Để sau khi xong luồng: bot, Hermes + quản lý agent, dashboard / KPI, báo cáo.
+- **2026-11-16 (D-43): ĐỢT BE-2 – hoàn thiện toàn bộ API backend** (trừ bot, dashboard / KPI, báo cáo). Task kế tiếp: **BE2.1** (lấp chỗ thiếu luồng Pilot: đóng gói, xếp xe, đơn giao, lập chuyến nhiều xe…) → BE2.2 → … → BE2.9 (ROADMAP mục ★★★). FE của Claude Code tạm dừng; bạn frontend dùng `docs/frontend-handoff/`. Catalog đã cập nhật 2026-11-16: 124/234 xong, Pilot 114/140.
 - **2026-11-17: BACKEND PILOT XONG (P0 → P9) – dừng, chờ anh UAT-PILOT** (ROADMAP P9 `DONE(PILOT)`, mục T50R1 + T48.1 cuối file). Luồng P3 → P8 chạy thật bằng API trên DB dev (`docs/api-tests/pilot-flow.http`, 117 request / 8 chốt an toàn đúng) + test end-to-end qua HTTP (`Pilot/PilotFlowSqlServerTests`). Staging (LocalDB `AppDelicare_Staging`, `http://localhost:5200`) đã cập nhật backend Pilot + bản build Angular.
 - Nhánh: `feat/T50R1-pilot-flow` (từ `release/pilot` = T11 … T19 + T17.1 đã gộp, D-41). Chưa push / chưa gộp `main` – chờ anh duyệt.
 - Build: `dotnet build --no-incremental` 0 lỗi, 10 cảnh báo; `dotnet test` **173/173** (baseline 169 + 4); `npm run build` 0 lỗi.

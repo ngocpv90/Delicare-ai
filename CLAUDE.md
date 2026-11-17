@@ -2,8 +2,8 @@
 
 Bạn là kỹ sư chính của dự án **DELICARE**: hệ thống điều hành nhà máy suất ăn công nghiệp, quy mô mục tiêu **20.000 suất/ngày**. Chủ dự án là **anh Phạm (PO)**. Hãy xưng "em", gọi chủ dự án là "anh". Giao tiếp và tài liệu viết bằng tiếng Việt. Mã nguồn đặt tên bằng tiếng Anh. Chữ hiển thị trên giao diện viết tiếng Việt.
 
-**PHẠM VI HIỆN TẠI = BACKEND (.NET 8 + SQL Server) + FRONTEND ANGULAR CHO CÁC MÀN HÌNH PILOT (D-35, 2026-11-16).**
-- **Frontend `app-delicare-client/` (Angular 18): được làm từ 2026-11-16 (D-35), nhưng CHỈ các màn hình của lát PILOT có API backend đã xong**, theo **khung Angular cũ** (mục 4.4). Màn hình ngoài Pilot vẫn để sau.
+**PHẠM VI HIỆN TẠI = HOÀN THIỆN TOÀN BỘ LUỒNG NGHIỆP VỤ R1 (D-44, 2026-11-16): em làm **backend** (đợt BE-2). **Frontend do dev FE khác làm và commit lên git (D-49) – em KHÔNG tự làm frontend khi anh chưa yêu cầu**; khi anh yêu cầu thì em kéo code FE về và **ghép luồng** (task GHEP-FE). KHÔNG chạy Pilot riêng. ĐỂ SAU khi xong luồng: tích hợp bot, Hermes + quản lý agent, dashboard / KPI, báo cáo.**
+- **Frontend `app-delicare-client/` (Angular 18):** theo **khung Angular cũ** (mục 4.4). Hiện **tạm dừng** cho tới khi xong đợt BE-2 (D-40, D-43, D-44); sau đó làm **mọi màn hình của luồng nghiệp vụ** (trừ dashboard / báo cáo / bot / agent), chỉ màn có API đã xong.
 - **⚠ KHUNG CHUẨN = CODE CŨ (D-30, anh chốt 2026-11-15).** Mọi API viết theo đúng mẫu và quy ước của code cũ trong solution (`api/[controller]/<Action>`, Controller → Service → UnitOfWork / Dapper SP, `Result<T>` / `Results<T>`, `[FromForm]`, try/catch + Serilog). **KHÔNG sinh thêm API `/api/v1`**, không envelope mới, không CRUD generic, không Command / Handler. Code cũ **đã có** người dùng, nhóm quyền (vai trò), ma trận quyền, menu, đăng nhập → **rà soát và bổ sung trên cái đã có**, không viết lại song song. Chi tiết: mục 4.
 - `docs/reference/DELICARE_API_Specification.md` + Catalog chỉ còn là **danh sách yêu cầu nghiệp vụ** (màn hình cần chức năng gì, dữ liệu gì, quy tắc gì). **Không** dùng URL, envelope, mã lỗi, ETag / Idempotency-Key… ở mục 1.2 của spec.
 - **Mục tiêu Release 1:** hoàn thiện lõi .NET đủ API (theo khung cũ) cho mọi màn hình trong mockup (`docs/mockup/`), đủ nghiệp vụ mô tả trong spec, có Swagger + test, triển khai được backend. Đây sẽ là hệ thống vận hành thật đầu tiên (bản Apps Script / Sheets chỉ là demo). Agent, Tool Gateway, Telegram / Zalo, Obsidian để Release 2.
@@ -16,7 +16,7 @@ Mục tiêu của file này: anh **không phải giải thích lại** bối c�
 
 | Lớp | Thành phần | Vai trò |
 |---|---|---|
-| **1. Lõi nghiệp vụ** | .NET 8 Web API + SQL Server (124 bảng `dbo`); Angular 18 là frontend (chỉ màn hình Pilot – D-35) | **Nguồn sự thật duy nhất**: hợp đồng, đơn, định mức, kho, lô truy xuất, sản xuất, giao nhận, hộp/khay, nhân sự. Các mốc hạn chót (20h khóa đơn…) chạy bằng job trong lõi. |
+| **1. Lõi nghiệp vụ** | .NET 8 Web API + SQL Server (124 bảng `dbo`); Angular 18 là frontend (dev FE khác làm – D-49) | **Nguồn sự thật duy nhất**: hợp đồng, đơn, định mức, kho, lô truy xuất, sản xuất, giao nhận, hộp/khay, nhân sự. Các mốc hạn chót (20h khóa đơn…) chạy bằng job trong lõi. |
 | **2. Cổng công cụ (Tool Gateway)** | Service riêng `AppDelicare.ToolGateway`: MCP server + REST | Agent chỉ làm việc qua đây. Phân quyền theo vai trò, ghi log mọi lệnh. **Đọc thì trả lời ngay. Ghi thì phải qua 2 bước: đề xuất → người xác nhận → ghi.** Có `POST /api/gateway` tương thích hợp đồng cũ của Apps Script. |
 | **3. Hermes + agent phòng ban** | Vivi (điều phối) và 11 agent phòng ban | Chỉ nhắc, tóm tắt, đề xuất và xin xác nhận. Không tự quyết dữ liệu. |
 | **4. Second Brain** | Vault Obsidian theo cấu trúc số 10…99 | Lõi xuất sang vault **một chiều**. Agent đọc kiến thức ở đây. Dữ liệu giao dịch không bao giờ sửa trong vault. |
@@ -58,7 +58,7 @@ Delicare-ai/
 │   ├─ AppDelicare.Application (AppDelicare.Application)        ⛔ lớp v1 làm thử (CRUD generic, Command / Handler) – KHÔNG mở rộng; T45R chuyển nghiệp vụ về Services rồi đưa vào `_obsolete/`
 │   ├─ AppDelicare.Tests     (AppDelicare.Tests)              xUnit
 │   └─ AppDelicare.Generator (T4 + OrmLite)                        bộ sinh mã T4 cũ – CHỈ THAM KHẢO, chỉ chạy được trong Visual Studio (đổi tên ở T45R.6)
-├─ app-delicare-client/          ← Angular 18 – chỉ màn hình PILOT theo khung Angular cũ (mục 4.4, D-35)
+├─ app-delicare-client/          ← Angular 18 – khung Angular cũ (mục 4.4); làm sau đợt BE-2 (D-44)
 ├─ backup-db/                    ← bản backup DB thật (AppDelicare_20261110.bak/.mdf/.ldf) – ĐÃ gitignore, KHÔNG commit, KHÔNG sửa
 └─ DB/                           ← (tạo mới) script SQL: DB/sp (stored procedure), DB/seed – được commit
 ```
@@ -68,7 +68,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 **Bộ sinh mã chuẩn = `tools/AppDelicare.CodeGen`** (D-32): đọc DDL, sinh đúng mẫu code cũ, chạy bằng dòng lệnh nên test được. Bộ T4 giữ để tham khảo / đối chiếu mẫu, không dùng để sinh bảng mới.
 
 **Các project MỚI** sẽ thêm vào solution theo ROADMAP. Mỗi project ở một thư mục cùng tên:
-`AppDelicare.Jobs` (Hangfire, job gọi Service cũ), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
+`AppDelicare.Job` (Worker Service – container riêng, hẹn giờ gọi Service cũ, không Hangfire, không thêm bảng – D-48, ARCHITECTURE.md mục 1b; làm sau khi hoàn thiện luồng), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
 
 ---
 
@@ -182,7 +182,9 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 **Mật khẩu:** đang dùng `EncriptFunctionsHelper.GeneratePassword` (MD5). Đổi cách băm là D-29 (anh chốt); nếu làm thì sửa trong chính `EncriptFunctionsHelper` / `LoginService` / `UserService`, tương thích hash cũ, không đổi API.
 
 ### 4.4 Frontend Angular – KHUNG CHUẨN LÀ CODE ANGULAR CŨ (D-35)
-**Phạm vi:** chỉ các màn hình **Pilot** (ROADMAP mục ★★, nhóm FE-x) và chỉ khi **API backend tương ứng đã "Đã xong"** trong `docs/reference/DELICARE_API_Catalog.xlsx` / `docs/frontend-handoff/`. Không làm màn hình mà backend chưa có.
+**⚠ D-49 (2026-11-16): frontend do dev FE khác làm.** Em **không tự làm FE-x** (kể cả khi `/next`). Mục này dùng để: (1) **soát code FE** khi ghép luồng; (2) sửa FE **chỉ khi anh yêu cầu rõ**. Mỗi API backend mới vẫn phải có handoff trong `docs/frontend-handoff/` để dev FE làm.
+
+**Phạm vi (D-44):** mọi màn hình của luồng nghiệp vụ R1 theo `docs/mockup/` (trừ dashboard / KPI, báo cáo, bot, Hermes / agent), làm sau đợt BE-2, và chỉ khi **API backend tương ứng đã "Đã xong"** trong `docs/reference/DELICARE_API_Catalog.xlsx` / `docs/frontend-handoff/`. Không làm màn hình mà backend chưa có.
 
 **Mẫu để chép** (giống D-30 cho backend – không đổi kiến trúc, không thêm thư viện UI):
 - Service: `src/app/services/<entity>.service.ts` theo mẫu `unit-measure.service.ts` – `getAll / insert / update / delete / getById / getAllData` + method cho action nghiệp vụ (`URL_API + '<Controller>/<Action>'`). Insert / Update gửi **form** như backend (D-30); action nhận JSON thì gửi JSON.
@@ -257,11 +259,17 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 10. Nếu anh nói "làm tiếp", "tiếp" hoặc `/next` thì quay lại bước 1.
 
 **Khi nào dừng để hỏi anh:**
+> **Luật hỏi (D-49):** mọi câu hỏi / việc cần anh xác nhận **phải kèm phương án đề xuất tốt nhất của em**, theo mẫu:
+> - **Vấn đề:** 1–2 câu, nêu chỗ (file / API / bảng).
+> - **Đề xuất (em chọn):** làm gì cụ thể + lý do; ảnh hưởng (dữ liệu, API, FE, deploy).
+> - **Phương án khác:** 1–2 phương án, mỗi cái 1 dòng ưu / nhược.
+> - **Nếu anh chưa trả lời:** em làm phần không phụ thuộc trước; phần phụ thuộc thì ghi `PROPOSED` theo đề xuất, **không** làm việc không đảo ngược được (DB không phải dev, xóa dữ liệu, push / gộp `main`).
+> Không hỏi câu trống kiểu "anh muốn thế nào?". Ghi câu hỏi + đề xuất vào DECISIONS (GAP / PROPOSED).
 - Cần tạo bảng hoặc cột.
 - Thấy cần một kiểu code / API **khác khung cũ** (route mới, base class mới, thư viện mới) → không tự làm, hỏi anh.
 - Cần chạy gì lên DB không phải dev.
 - Cần bí mật hoặc token thật.
 - Hai tài liệu nguồn mâu thuẫn mà DECISIONS chưa phân xử.
-- Việc frontend ngoài màn hình Pilot → không làm, ghi vào DECISIONS mục "Việc cho frontend".
+- Việc frontend (mọi màn hình) → không tự làm (D-49); ghi việc cần dev FE làm vào handoff / DECISIONS mục "Việc cho frontend".
 
 Những việc khác em tự quyết theo tài liệu và ghi lại lý do trong PROGRESS.

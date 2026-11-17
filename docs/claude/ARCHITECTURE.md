@@ -14,7 +14,7 @@
 │          /api/v1/... (mới)  │   │  OutboundMessage worker → gửi tin         │
 │  Application (nghiệp vụ)    │   │  Obsidian exporter (một chiều → vault)    │
 │  Data (EF Core + Dapper)    │   └──────────────────────────────────────────┘
-│  Jobs (Hangfire: 20h, 20h30,│                 ▲
+│  Job (container riêng: 20h, 20h30,│                 ▲
 │        21h, 5h30, 7h, 17h)  │                 │ sự kiện nghiệp vụ
 │  SQL Server – 124 bảng dbo  │                 │
 └──────────────▲──────────────┘                 │
@@ -45,7 +45,7 @@
 | AppDelicare.Services | Data, Model | CRUD danh mục (sinh mã) |
 | **AppDelicare.Application** (mới) | Data, Model | Use case nghiệp vụ theo miền: `Orders`, `Planning`, `Procurement`, `Inventory`, `Production`, `Quality`, `Logistics`, `Packaging`, `HR`, `Finance`, `Approval`, `Kpi`, `Common` (DocumentNumber, Clock, BusinessRules) |
 | AppDelicare.WebApi | tất cả | Controller cũ + controller `/api/v1` mới, permission filter, ProblemDetails |
-| **AppDelicare.Jobs** (mới) | Application | Hangfire job theo giờ VN. Host trong WebApi (dev) hoặc Worker riêng (prod) |
+| **AppDelicare.Job** (mới, D-48) | Services | Worker Service riêng (container `job`), hẹn giờ theo giờ VN, gọi Service cũ. Xem mục 1b |
 | **AppDelicare.Integration** (mới) | Application | Telegram, Zalo, Obsidian exporter, outbound worker |
 | **AppDelicare.ToolGateway** (mới) | Application | Host riêng: MCP + REST cho agent |
 | **AppDelicare.Tests** (mới) | Application, Data | xUnit: unit test quy tắc + integration test trên DB dev |
@@ -57,7 +57,37 @@
 - **Sự kiện:** dispatcher chạy trong tiến trình (MediatR notifications hoặc tự viết). Thông báo ra ngoài được lưu thành `OutboundMessage` rồi worker gửi đi. Không cần bảng outbox mới.
 - **Duyệt:** `ApprovalService` dùng `ApprovalRequest` / `ApprovalStep` / `ApprovalItem` / `ApprovalDecision`. `BusinessType` ví dụ: `ORDER_CHANGE_AFTER_CUTOFF`, `PORTION_DEVIATION`, `STOCK_COUNT_VARIANCE`, `PURCHASE_ORDER`, `PRODUCTION_PLAN`, `MENU_CHANGE`, `AGENT_WRITE` (xác nhận lệnh ghi của agent).
 - **Phân quyền:** `[Permission("<ObjectMenu.MetaLink>", PermissionAction.Add)]` + filter đọc `UserRole` (UserGroupId × ObjectMenuId). Cache 5 phút.
-- **Lưu trữ Hangfire:** chưa chốt (D-05). Khi chưa chốt thì dùng `Hangfire.InMemory`. Không tạo bảng Hangfire trong DB nghiệp vụ.
+- **Job:** không dùng Hangfire (D-05 đã chốt) – xem mục 1b.
+
+## 1b. AppDelicare.Job – job tự động (D-48, anh chốt 2026-11-16; làm sau khi hoàn thiện luồng – D-45)
+
+**Nguyên tắc:** `AppDelicare.Job` là **cửa vào thứ hai** (giống `AppDelicare.WebApi`), chạy **container / tiến trình riêng**, dùng chung `AppDelicare.Services` / `Data` / `Model`. **Job không chứa nghiệp vụ** – chỉ hẹn giờ và gọi method Service cũ (nút bấm tay trên web và job chạy cùng một code). **Không Hangfire, không thêm bảng / database** (D-05).
+
+```
+AppDelicare.Model      Option/JobOptions.cs           cấu hình giờ chạy từng job
+AppDelicare.Data       Share/SystemActor.cs           ICurrentActor = tài khoản "system" (seed dữ liệu, không thêm bảng)
+AppDelicare.Services   (đã có) OrderService.LockByMealDate, MaterialRequirementService.Calculate, …  ← logic
+                       Ioc/ServiceRegistration.cs     đăng ký DI dùng chung cho WebApi + Job (tách từ WebApi/Ioc)
+AppDelicare.WebApi     Controllers/JobController.cs   (khung cũ) GetAll: job + lần chạy kế tiếp; Run: chạy tay (chỉ admin, gọi thẳng Service)
+AppDelicare.Job        Worker Service .NET 8 (MỚI)
+  ├─ Program.cs                    Host + Serilog + chuỗi kết nối + DI dùng chung; UseWindowsService() khi chạy IIS / Windows
+  ├─ Scheduling/IScheduledJob.cs   Name, RunAsync(now, ct)
+  ├─ Scheduling/JobSchedulerService.cs  BackgroundService, mỗi phút kiểm job đến giờ (giờ VN qua IClock), chạy bù job lỡ giờ trong ngày
+  ├─ Scheduling/JobLock.cs         sp_getapplock theo tên job → không bao giờ chạy trùng (kể cả nhiều instance)
+  ├─ Jobs/LockOrdersJob.cs 20:00 · MrpJob.cs 20:30 · PurchaseProposalJob.cs 21:00 · LotExpiryJob.cs 00:15
+  │       ContractExpiryJob.cs 00:30 · ApprovalExpiryJob.cs mỗi giờ · ComplaintSlaJob.cs 15′
+  │       (sau, cùng đợt bot) RemindUnconfirmedOrdersJob 19:00, KpiDailySnapshotJob 22:00 – gửi qua OutboundMessage
+  ├─ appsettings.json              "Jobs": { "LockOrders": { "Enabled": true, "At": "20:00" }, … }
+  └─ Dockerfile                    image riêng; docker-compose thêm service `job` (1 bản), phụ thuộc `db-init`
+```
+
+**Quy ước:**
+1. Mỗi job = 1 file mỏng; job **chạy lại không sai dữ liệu** (idempotent: đơn đã khóa thì bỏ qua…).
+2. Lịch sử chạy: Serilog + ghi `AnalyticsRefreshLog` (bảng có sẵn: JobCode, RunId, Started / Completed, RunStatus, RowsProcessed).
+3. Mọi ghi dữ liệu qua Service → AuditChange ghi người thực hiện = `system`.
+4. Test: đồng hồ giả (`IClock`) để chạy job ở mọi mốc giờ; test khóa chống trùng.
+5. Triển khai: **Docker** = container `job` riêng (1 bản, API chạy bao nhiêu bản tùy ý); **IIS / Windows** = Windows Service. Deploy API không làm dừng job và ngược lại.
+6. **Không** chạy job bên trong WebApi (IIS tự tắt app khi không có truy cập → job không chạy đúng giờ).
 
 ## 2. Lớp 2 – Tool Gateway
 - **Danh bạ công cụ** (`tools.json` hoặc attribute): `name`, `description` (tiếng Việt, rõ khi nào dùng), `inputSchema`, `mode` = read | write, `domain`, `allowedAgents`, `allowedRoles`, `risk` = low | medium | high, `confirm` = none | requester | role:<code>.
@@ -98,5 +128,5 @@
 
 ## 6. Hạ tầng (đề xuất)
 - Prod: Windows Server / IIS hoặc Docker. SQL Server 2019+. Backup full hằng đêm + log 15′.
-- ToolGateway và Jobs tách tiến trình khỏi WebApi khi lên production.
+- ToolGateway và AppDelicare.Job chạy tiến trình / container riêng, tách khỏi WebApi.
 - Giám sát: Serilog → file + Seq (tùy chọn). Health check `/health`.
