@@ -75,6 +75,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 ## 2b. Môi trường dev trên máy anh
 - DB dev: **AppDelicare** trên SQL Server local. Tài khoản app dev và các đường dẫn máy nằm trong `docs/claude/LOCAL_DEV.local.md` (gitignored, không commit, không in mật khẩu ra báo cáo).
 - Script nâng cấp DB chính thức của PO (91 → 124 bảng): `DB/migrations/20261113_restore_structure_db_appdelicare.sql`. Đây là **ngoại lệ duy nhất** của luật "không tạo bảng / cột": chỉ chạy khi anh đồng ý (D-14), trên DB dev, sau khi backup.
+- **Cấu trúc bảng = MIGRATION (2026-11-18):** `DB/migrations/*.sql` là nguồn duy nhất, chạy theo thứ tự tên, mỗi file 1 lần (`deploy/db/Migrations.ps1` + `deploy/db/migrations.sh`, ghi nhận bằng extended property `DelicareMigration:<file>`). Thay đổi bảng / cột anh đã duyệt = file mới `YYYYMMDD_NN_<tên>.sql` chạy lại được; **không sửa file đã có** – xem `DB/README.md` mục Migration.
 - Tài liệu nghiệp vụ thật (menu, phiếu sản xuất, phiếu trước sản xuất, báo giá / PO, tổng hợp suất): **`docs/claude/BUSINESS_DOCS.md`**. File gốc nằm ngoài repo, chỉ đọc, có dữ liệu mật.
 - Pháp nhân, màu thương hiệu, logo: BUSINESS_DOCS.md mục đầu.
 

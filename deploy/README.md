@@ -35,7 +35,7 @@ Sinh khóa JWT (PowerShell):
 ## 2. Dựng database (chung cho A và B)
 
 Script `deploy/db/Deploy-Database.ps1` chạy được nhiều lần, không nhân bản dữ liệu:
-1. DB **rỗng** + có cờ `-CreateSchemaIfEmpty` → tạo 124 bảng từ DDL chuẩn của PO. DB đã có bảng → **không đụng tới bảng**.
+1. **Migration cấu trúc bảng** (2026-11-18 – `DB/README.md` mục Migration): chạy `DB/migrations/*.sql` theo thứ tự tên, mỗi file 1 lần. DB **rỗng** → baseline 124 bảng (cần cờ `-CreateSchemaIfEmpty`); DB đã đủ bảng → chỉ ghi nhận; migration mới → chạy 1 lần. `-ListMigrations`: xem trước (không đổi gì); `-MigrationsOnly`: chỉ đồng bộ bảng, không chạy SP / seed.
 2. Chạy đúng thứ tự trong **`deploy/db/scripts.order`** (T48.3 – nguồn thứ tự **duy nhất**, `deploy/docker/db-init.sh` đọc cùng file): mọi stored procedure `DB/sp/` → tài khoản `admin` (nếu truyền `-AdminPassword` / biến `DELICARE_ADMIN_PASSWORD` và chưa có user này; hash PBKDF2) → seed cơ cấu tổ chức, menu, nhóm quyền, ca, checklist (`DB/seed/`, chỉ thêm phần chưa có).
 3. **Mức tương thích (T48.5, D-61):** ngay sau khi mở DB, chạy `deploy/db/compat-level.sql` – mức > 160 (DB tạo trên SQL Server 2025) → đặt về **160** (SQL Server 2022) và ghi log; = 160 → giữ; < 160 → chỉ cảnh báo, không tự nâng. `deploy/docker/db-init.sh` làm y hệt.
 4. `-ListOnly`: chỉ in thứ tự script, không kết nối DB. Tài khoản SQL có thể lấy từ biến môi trường `DELICARE_SQL_USER` / `DELICARE_SQL_PASSWORD` (mật khẩu đưa cho sqlcmd qua `SQLCMDPASSWORD`, không nằm trên dòng lệnh). `-TrustServerCertificate` cho SQL Server dùng chứng chỉ tự ký (Docker).
@@ -184,7 +184,7 @@ Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): 
 
 ## 9. Cập nhật staging (lặp lại mỗi đợt; đã làm 2026-11-17 sau backend Pilot và sau BE2.9)
 
-1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (chạy mọi SP + seed theo `deploy/db/scripts.order`; không đụng bảng / dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
+1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (migration bảng chưa chạy – mỗi file 1 lần – rồi mọi SP + seed theo `deploy/db/scripts.order`; không đụng dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
 2. Dừng bản API đang chạy (cửa sổ `dotnet AppDelicare.WebApi.dll`), rồi publish đè: `./deploy/iis/Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging` (hoặc lệnh `dotnet publish` ở mục 3).
 3. Build + chép Angular (mục 8).
 4. Chạy: `. ./deploy/staging.local.env.ps1; cd C:\Deploy\delicare-staging; dotnet AppDelicare.WebApi.dll --urls http://localhost:5200`.

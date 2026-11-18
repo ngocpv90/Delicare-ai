@@ -472,3 +472,13 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 **GAP mới (khối C):** GAP-INT-02 unique index có lọc `InboundMessage.IdempotencyKey` / `OutboundMessage.IdempotencyKey` · GAP-INT-03 cột `OutboundMessage.ScheduledAt` · GAP-INT-04 chỗ lưu bền dòng thời gian sự việc liên phòng – cả ba `PROPOSED – BA/PO CONFIRM`, R1 dùng cách tạm ở bảng trên.
 
 **Việc cho frontend (khối E, ghi lại – làm khi anh giao):** nút "Liên kết Telegram" (hồ sơ cá nhân) + "Cấp mã liên kết" (hồ sơ nhân viên); màn `int-channel` / `int-bot` / `int-identity` / `int-outbound` (thử lại) / hộp thư hội thoại; ảnh QR trên phiếu in và QR cổng.
+
+## DB-MIGRATIONS – Cấu trúc bảng bằng migration (anh yêu cầu 2026-11-18)
+
+| # | Điểm | Đã làm (đề xuất) | Phương án khác |
+|---|---|---|---|
+| (m1) | Nguồn cấu trúc bảng cho mọi môi trường | `DB/migrations/*.sql` duy nhất, thứ tự tên file `YYYYMMDD_NN_<tên>.sql`, mỗi file 1 lần; baseline = nguyên văn DDL chuẩn 124 bảng của PO (test giữ khớp `docs/reference`). | Giữ tạo bảng từ `docs/reference` + so lệch (cũ – không có lịch sử, không biết máy nào đã chạy gì) |
+| (m2) | Ghi nhận migration đã chạy ở đâu | Extended property cấp database `DelicareMigration:<file>` (RUN / ADOPT, giờ UTC, sha256) – **không thêm bảng**, đúng luật "chỉ 124 bảng". | Bảng `__MigrationHistory` (rõ hơn nhưng là bảng thứ 125 – cần anh duyệt); EF Core Migrations (mâu thuẫn D-30 khung cũ + DDL của PO) |
+| (m3) | DB đã có sẵn bảng (dev, staging, server test) | baseline / legacy-upgrade → **ADOPT** (ghi nhận, không chạy) khi DB đã đủ 124 bảng – không đụng bảng có sẵn. legacy-upgrade chỉ chạy khi còn thiếu bảng (DB cũ 91 bảng). | Bắt buộc dựng lại DB từ đầu (mất dữ liệu test) |
+| (m4) | Migration mới trên DB đã có bảng ở compose gốc (dev FE) | Giữ chốt cũ: cần `DB_AUTO_MIGRATE=1` (backup trước), không thì dừng + in danh sách. `db-init` / `Deploy-Database.ps1` chạy luôn (người chạy là người phụ trách DB). | Tự chạy mọi nơi (nhanh nhưng đổi cấu trúc server test không ai biết) |
+| (m5) | File đã chạy bị sửa | Cảnh báo, không chạy lại; thay đổi = file mới. Migration `normal` phải chạy lại được, không DROP / TRUNCATE / DELETE (test chặn). | Chạy lại khi mã băm đổi (nguy hiểm với script ALTER) |
