@@ -178,6 +178,42 @@ namespace AppDelicare.Tests.Notifications
         }
 
         [Fact]
+        public async Task New_high_complaint_goes_to_cs_with_add_right_on_dh_except_creator_and_viewers()
+        {
+            using var f = new InMemoryApiFactory();
+            f.Clock.FixedNow = Now;
+            await SeedBotsAsync(f);
+            Guid creator = await UserAsync(f, [], ["log-complaint"]);
+            Guid cs = await UserAsync(f, [], ["log-complaint"]);
+            Guid csDh = await UserAsync(f, [], ["log-complaint"]);
+            Guid viewer = Guid.NewGuid(), group = Guid.NewGuid(), customer = Guid.NewGuid();
+            await f.SeedAsync(async db =>
+            {
+                db.User.Add(new User { Id = viewer, UserName = "viewer-nt", IsActive = true });
+                db.UserGroup.Add(new UserGroup { Id = group, Name = "VIEW-NT" });
+                db.UserClaim.Add(new UserClaim { Id = Guid.NewGuid(), UserId = viewer, UserGroupId = group });
+                var menu = await db.ObjectMenu.FirstAsync(m => m.MetaLink == "#/log-complaint");
+                db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = group, ObjectMenuId = menu.Id, AllowAccess = true });
+                db.Customer.Add(new Customer { Id = customer, Code = "KH-NT", Name = "Trường NT", DisplayName = "Trường NT", CIF = "KH-NT", CustomerType = "Business", Status = "Active" });
+            });
+            await LinkAsync(f, Vh, "9201", creator);
+            await LinkAsync(f, Vh, "9202", cs);
+            await LinkAsync(f, Vh, "9203", csDh);
+            await LinkAsync(f, Dh, "9213", csDh);
+            await LinkAsync(f, Vh, "9204", viewer);
+            using var client = f.CreateAuthorizedClient(creator);
+
+            var created = (await client.PostFormAsync("/api/CustomerComplaint/Create", ("CustomerId", customer), ("Severity", "High"), ("Description", "Cơm nguội"))).Ok();
+            Guid id = created.GetProperty("complaint").GetProperty("id").GetGuid();
+            var sent = await OutboxAsync(f, NotificationCatalog.ComplaintNew);
+            sent.Select(m => m.RecipientExternalId).Should().BeEquivalentTo(["9202", "9213"], "CSKH có quyền Thêm; người tạo / người chỉ xem không nhận; mức cao → DH (không có DH → VH)");
+            var m = MessageTemplates.Render(sent[0].PayloadJson);
+            m.Title.Should().Be("📣 Phản ánh mới");
+            m.Lines.Should().Contain(l => l.Contains("Trường NT")).And.Contain("Cơm nguội").And.Contain("Mức: Cao");
+            m.Buttons.Should().ContainSingle().Which.Callback.Should().Be("cmp:v:" + id.ToString("N"));
+        }
+
+        [Fact]
         public void Every_catalog_template_has_its_own_wording_and_buttons_render()
         {
             foreach (var t in NotificationCatalog.All)

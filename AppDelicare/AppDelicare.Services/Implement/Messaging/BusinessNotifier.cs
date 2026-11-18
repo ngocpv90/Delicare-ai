@@ -33,16 +33,17 @@ namespace AppDelicare.Services.Implement.Messaging
             }
         }
 
-        /// <summary>Gửi cho người có quyền vào các menu (hợp các nhóm, không kèm admin), trừ <paramref name="except"/> (người vừa thao tác).</summary>
+        /// <summary>Gửi cho người có quyền vào các menu (hợp các nhóm, không kèm admin), trừ <paramref name="except"/> (người vừa thao tác).
+        /// <paramref name="requireAdd"/> = chỉ người có quyền Thêm (người làm việc đó, không phải chỉ xem); <paramref name="botCode"/> = ép bot đích.</summary>
         public static async Task ToMenusAsync(INotificationService notifications, DatabaseContext db, string template, string[] menus, object data,
-            string idempotencyKey, string? correlationId = null, IEnumerable<NotificationButton>? buttons = null, Guid? except = null)
+            string idempotencyKey, string? correlationId = null, IEnumerable<NotificationButton>? buttons = null, Guid? except = null, bool requireAdd = false, string? botCode = null)
         {
             try
             {
                 var users = new HashSet<Guid>();
                 foreach (string menu in menus)
                 {
-                    users.UnionWith(await RecipientResolver.UsersWithMenuOnlyAsync(db, menu));
+                    users.UnionWith(await RecipientResolver.UsersWithMenuOnlyAsync(db, menu, requireAdd));
                 }
                 if (except is { } e)
                 {
@@ -50,7 +51,7 @@ namespace AppDelicare.Services.Implement.Messaging
                 }
                 await SafeEnqueueAsync(notifications, new NotificationRequest
                 {
-                    Template = template, UserIds = [.. users], Data = data, Buttons = buttons?.ToList(), IdempotencyKey = idempotencyKey, CorrelationId = correlationId ?? idempotencyKey,
+                    Template = template, UserIds = [.. users], Data = data, Buttons = buttons?.ToList(), IdempotencyKey = idempotencyKey, CorrelationId = correlationId ?? idempotencyKey, BotCode = botCode,
                 });
             }
             catch (Exception ex)

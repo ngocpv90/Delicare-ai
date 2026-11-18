@@ -11,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Serilog;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     /// <summary>
@@ -20,8 +22,9 @@ namespace AppDelicare.Services.Implement
     /// đã có (hoặc lặp trong cùng lần gửi) → bỏ qua. Lần đo lỗi → <c>rejected</c> kèm lý do, phần còn lại vẫn ghi. Không gửi tin (ngoài ngưỡng → chuông BE3.3).
     /// </summary>
     public class IotTemperatureService(IUnitOfWork unitOfWork, IClock clock, ICurrentActor currentActor, IConfiguration configuration
-        , IOptionsMonitor<IotOptions> iot) : IIotTemperatureService
+        , IOptionsMonitor<IotOptions> iot, INotificationService notifications) : IIotTemperatureService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7
         public const string SourceIot = "IOT";
 
         public async Task<IResult<IotReceiveResultModel>> Receive(List<IotTemperatureItem>? items)
@@ -163,6 +166,18 @@ namespace AppDelicare.Services.Implement
                     }
                 }
                 result.Accepted = logs.Count;
+                // BOT-1.7: IOT_OUT_OF_RANGE → QA (mục nhiệt độ), tối đa 1 tin / khu / giờ (khóa chống trùng theo giờ).
+                foreach (var zone in logs.Where(l => l.IsWithinRange == false).GroupBy(l => l.StorageZoneId))
+                {
+                    var info = valid.First(v => v.Zone.Id == zone.Key).Zone;
+                    var last = zone.OrderBy(l => l.MeasuredAt).Last();
+                    using (currentActor.BeginScope(ActorInfo.ForSystem(systemUser)))
+                    {
+                        await BusinessNotifier.ToMenusAsync(_notifications, db, NotificationCatalog.IotOutOfRange, ["#/qc-temperature"],
+                            new { title = info.Name ?? info.Code, detail = $"{zone.Count()} lần đo ngoài ngưỡng {info.TemperatureMin:0.#}…{info.TemperatureMax:0.#} °C – gần nhất {last.TemperatureC:0.#} °C lúc {last.MeasuredAt:HH:mm} ({last.DeviceCode})" },
+                            $"{NotificationCatalog.IotOutOfRange}:{zone.Key:N}:{now:yyyyMMddHH}");
+                    }
+                }
                 if (result.OutOfRange > 0)
                 {
                     Log.Warning("[IoT] {Count} lần đo vượt ngưỡng khu vực ({Devices})", result.OutOfRange,

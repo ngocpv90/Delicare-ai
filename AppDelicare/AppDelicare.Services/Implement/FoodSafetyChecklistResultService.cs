@@ -19,11 +19,14 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     public class FoodSafetyChecklistResultService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IFoodSafetyChecklistResultService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IFoodSafetyChecklistResultService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -436,6 +439,19 @@ namespace AppDelicare.Services.Implement
                 })];
                 // Update: dòng thêm vẫn được gán CreatedDate / CreatedBy, mẻ bị giữ được gán ModifiedDate / ModifiedBy.
                 await _unitOfWork.FoodSafetyChecklistResultRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                if (critical.Count != 0)
+                {
+                    // BOT-1.7 (D-54 d, Catalog 162): FOODSAFETY_CRITICAL → QA + trưởng ca (mục checklist / mẻ), bot DH (người không có DH → VH).
+                    await BusinessNotifier.ToMenusAsync(_notifications, db, NotificationCatalog.FoodSafetyCritical, ["#/qc-checklist-result", "#/prod-batch"],
+                        new
+                        {
+                            title = checklist.Name ?? checklist.Code,
+                            detail = batchNumber == null ? null : $"Mẻ {batchNumber}" + (string.IsNullOrEmpty(batchAction) ? string.Empty : ": " + batchAction),
+                            lines = critical.Select(r => "❗ " + (r.Item.ItemName ?? r.Item.ItemCode) + (FoodSafetyRules.Clean(r.Input.ActualValue) is { } v ? ": " + v : string.Empty)).ToList(),
+                        },
+                        $"{NotificationCatalog.FoodSafetyCritical}:{checklist.Id:N}:{batchInfo?.Id:N}:{string.Join(".", critical.Select(r => r.Item.Id.ToString("N")[..6]))}:{_clock.Now:yyyyMMddHHmm}",
+                        buttons: batchInfo == null ? null : [new NotificationButton("🔍 Xem mẻ", BusinessNotifier.Callback("bat", "view", batchInfo.Id))], except: actor.UserId);
+                }
                 _unitOfWork.CommitTransaction();
                 var freshBatch = batchInfo == null ? null : await db.ProductionBatch.AsNoTracking().FirstOrDefaultAsync(x => x.Id == batchInfo.Id);
                 model.Run = await BuildRunAsync(checklist, date, shiftId, freshBatch);

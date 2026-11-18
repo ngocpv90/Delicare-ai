@@ -18,12 +18,15 @@ using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     public class MenuService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IRecipeService recipeService
         , IPricePolicyService pricePolicyService, IClock clock, IOptions<BusinessRulesOptions> rules
-        , IAuditChangeService auditChangeService) : IMenuService
+        , IAuditChangeService auditChangeService, INotificationService notifications) : IMenuService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -505,6 +508,13 @@ namespace AppDelicare.Services.Implement
                     .Select(m => (Meal: m, Days: days.Where(d => !lines.Any(l => l.MealType == m && l.DayOfWeek == d)).ToList()))
                     .Where(x => x.Days.Count > 0)
                     .Select(x => $"{MealLabel(x.Meal)}: {string.Join(", ", x.Days.Select(DayLabel))}").ToList();
+                if (missing.Count == 0)
+                {
+                    // BOT-1.7 (Catalog 85): MENU_PUBLISHED (tổng hợp) → kế hoạch, kinh doanh, bếp.
+                    await BusinessNotifier.ToMenusAsync(_notifications, _unitOfWork.DbContext, NotificationCatalog.MenuPublished, ["#/menu-menu", "#/crm-order", "#/prod-batch"],
+                        new { title = menu.Name ?? menu.Code, detail = $"Áp dụng {menu.EffectiveFrom:dd/MM/yyyy}" + (menu.EffectiveTo is { } to ? $" – {to:dd/MM/yyyy}" : string.Empty) },
+                        $"{NotificationCatalog.MenuPublished}:{menu.Id:N}");
+                }
                 return missing.Count == 0 ? string.Empty : string.Format(ConstantHelper.Message.MenuPublishMissingDays, string.Join("; ", missing));
             });
 

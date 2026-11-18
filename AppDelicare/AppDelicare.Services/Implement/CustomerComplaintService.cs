@@ -18,6 +18,8 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     /// <summary>
@@ -25,8 +27,9 @@ namespace AppDelicare.Services.Implement
     /// → Close (Đóng); Reject (Mới / Đang xử lý → Từ chối); AddComment. Mọi bước ghi ComplaintHistory (sổ chỉ ghi thêm). Cảnh báo / leo thang SLA tự động → sau Pilot.
     /// </summary>
     public class CustomerComplaintService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : ICustomerComplaintService
+        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : ICustomerComplaintService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -247,6 +250,13 @@ namespace AppDelicare.Services.Implement
                 var complaint = await DeliveryRules.NewComplaintAsync(_unitOfWork, _documentNumberService, _rules, actor, request.ReceivedAt ?? _clock.Now,
                     request.CustomerId, orderId, deliveryOrderId, routeId, request.SourceChannel, request.CategoryCode, severity, description);
                 await _unitOfWork.CustomerComplaintRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                // BOT-1.7: COMPLAINT_NEW → CSKH (quyền Thêm trên phản ánh); mức cao → bot DH (liên phòng).
+                string? customerName = await _unitOfWork.DbContext.Customer.AsNoTracking().Where(c => c.Id == request.CustomerId).Select(c => c.Name).FirstOrDefaultAsync();
+                await BusinessNotifier.ToMenusAsync(_notifications, _unitOfWork.DbContext, NotificationCatalog.ComplaintNew, ["#/log-complaint"],
+                    new { title = $"{complaint.ComplaintNo} – {customerName}", detail = description, lines = new[] { "Mức: " + ComplaintSeverity.Label(severity) } },
+                    $"{NotificationCatalog.ComplaintNew}:{complaint.Id:N}",
+                    buttons: [new NotificationButton("📋 Xem phản ánh", BusinessNotifier.Callback("cmp", "v", complaint.Id))], except: actor.UserId, requireAdd: true,
+                    botCode: severity == ComplaintSeverity.High ? AppDelicare.Model.Helper.MessagingCode.BotDieuHanh : null);
                 _unitOfWork.CommitTransaction();
                 return Result<CustomerComplaintDetailModel>.Success((await DetailAsync(complaint.Id))!, ConstantHelper.Message.SaveSuccess);
             }
