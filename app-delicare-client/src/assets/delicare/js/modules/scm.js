@@ -4,9 +4,128 @@
   const avail = iid => U.sum(Store.by('InventoryBalance', 'IngredientId', iid), 'AvailableQuantity');
   const ing = id => Store.get('Ingredient', id) || {};
   const prefPrice = id => { const s = Store.rows('SupplierMaterial').find(x => x.IngredientId === id && x.IsPreferred); return s ? s.UnitPrice : 0; };
+  // ================= CHẾ ĐỘ DỮ LIỆU THẬT – Mua hàng theo docs/frontend-handoff/P5.md + BE2.3.md =================
+  // Mọi thao tác đi qua action nghiệp vụ của backend (CRUD thô bị chặn): MaterialRequirement/Calculate · CalculateTopUp,
+  // PurchaseRequest/Submit · ConvertToPurchaseOrder · Cancel, PurchaseOrder/Submit · Send · Cancel · Close · ExportOrder,
+  // GoodsReceipt/Create · Post · Cancel. Duyệt đề nghị mua / PO thực hiện ở Hộp phê duyệt.
+  const PUR_TABLES = ['MaterialRequirement', 'ProductionPlan', 'ProductionPlanLine', 'PurchaseRequest', 'PurchaseRequestLine', 'PurchaseOrder', 'PurchaseOrderLine', 'GoodsReceipt', 'GoodsReceiptLine', 'QCInspection', 'QCInspectionLine', 'MaterialLot', 'InventoryBalance', 'InventoryTransaction', 'ApprovalRequest', 'SupplierIssue'];
+  const run = (path, form, okMsg) => Store.act(path, { form, tables: PUR_TABLES }).then(r => { if (r.ok) { const m = r.res && r.res.responseMessage; UI.toast(esc(m && m !== 'Lưu thông tin thành công' ? m : okMsg), 'ok'); APP.refresh(); } return r; });
+  const askReason = (title, fn) => UI.confirm(title, note => fn(note), { input: 'Lý do', required: true, ok: 'Xác nhận', danger: true });
+  const rowBtn = (td, cls, text, fn) => { const b = document.createElement('button'); b.className = 'btn xs ' + cls; b.textContent = text; b.onclick = e => { e.stopPropagation(); fn(); }; td.insertBefore(document.createTextNode(' '), td.firstChild); td.insertBefore(b, td.firstChild); };
+
+  // ---------- Nhu cầu nguyên liệu: kết quả do máy chủ tính theo ngày sản xuất ----------
+  const rq = { date: null, data: {}, busy: {} };
+  function reqLive(el, f) {
+    if (!rq.date) rq.date = U.addDays(Store.ctx.date, 1);
+    const date = rq.date;
+    el.innerHTML = APP.header(f, `<input type="date" class="input" id="rqDate" value="${date}" style="width:auto"><button class="btn primary" id="rqCalc">${I('calc')} Tính nhu cầu</button><button class="btn" id="rqTop" style="display:none">${I('plus')} Tính bổ sung</button><button class="btn" id="rqPrint" style="display:none">${I('export')} In phiếu trước sản xuất</button>`,
+      { noNote: true, sub: 'Chọn ngày sản xuất rồi bấm Tính nhu cầu. Hệ thống lấy các đơn đã chốt của ngày, tính nguyên liệu theo công thức, so với tồn kho và tự lập đề nghị mua nháp cho phần thiếu.' }) + `<div id="rqBody"><div class="card panel empty">${I('calc')}<h2 class="mt">Đang tải…</h2></div></div>`;
+    const body = el.querySelector('#rqBody');
+    const draw = x => {
+      if (!body.isConnected) return;
+      if (!x.ok) { body.innerHTML = `<div class="notice gap">${I('alert')}<div><b>Không tải được nhu cầu nguyên liệu</b>${esc(x.message || '')}</div></div>`; return; }
+      const d = x.data;
+      if (!d) { body.innerHTML = `<div class="card panel empty">${I('calc')}<h2 class="mt">Chưa tính nhu cầu cho ngày ${U.date(date)}</h2><p class="muted">${esc((x.res && x.res.responseMessage) || 'Bấm "Tính nhu cầu" để tính từ các đơn đã chốt của ngày này.')}</p></div>`; return; }
+      const pr = d.purchaseRequest, tops = d.listTopUpPurchaseRequest || [];
+      const locked = [pr].concat(tops).filter(Boolean).some(p => ['PendingApproval', 'InProgress', 'Approved', 'Converted'].includes(p.status));
+      const bt = el.querySelector('#rqTop'), bp = el.querySelector('#rqPrint');
+      if (bt) bt.style.display = locked ? '' : 'none';
+      if (bp) { bp.style.display = d.productionPlanId ? '' : 'none'; bp.onclick = () => Store.download('MaterialRequirement/ExportPreProduction', { id: d.productionPlanId }).then(r => { if (r.ok) UI.toast('Đã tải ' + esc(r.fileName || 'phiếu trước sản xuất'), 'ok'); }); }
+      const prRow = p => `<div class="spread" style="padding:6px 0;border-bottom:1px solid #F0F2ED"><span><b>${esc(p.requestNumber || '')}</b> · ${p.lineCount || 0} dòng · ước tính ${U.money(p.estimatedAmount || 0)}</span><span>${UI.badge(p.status, 'PurchaseRequest', 'Status')}</span></div>`;
+      const itemRow = r => {
+        const p = Math.min(100, r.coveragePercent === null || r.coveragePercent === undefined ? 100 : r.coveragePercent);
+        return `<tr${r.incomplete ? ' style="background:#FFF8E6"' : ''}><td><b>${esc(r.ingredientName || '')}</b><span class="sub">${esc(r.ingredientCode || '')}${r.warning ? ' · ' + esc(r.warning) : ''}</span></td><td class="num">${U.num(r.requiredQuantity, 2)}</td><td class="num">${U.num(r.availableQuantity, 2)}${r.blockedQuantity ? `<span class="sub">bị chặn ${U.num(r.blockedQuantity, 2)}</span>` : ''}</td><td class="num">${U.num(r.expectedIncomingQuantity || 0, 2)}</td><td class="num">${r.purchaseQuantity > 0 ? `<b class="bad">${U.num(r.purchaseQuantity, 2)}</b>` : '<span class="up">0</span>'}</td><td>${esc(r.unitName || '')}</td><td><div class="track" style="width:110px"><div class="fill ${p >= 100 ? '' : p > 50 ? 'orange' : 'red'}" style="width:${p}%"></div></div></td><td>${r.supplier ? esc(r.supplier.supplierName || '') : '<span class="muted">Chưa có NCC</span>'}</td><td><span class="badge ${r.status === 'Sufficient' ? 'green' : r.status === 'Shortage' ? 'red' : 'orange'}">${esc(r.statusName || r.status || '')}</span></td></tr>`;
+      };
+      const dishRow = m => `<tr><td><b>${esc(m.dishName || '')}</b><span class="sub">${esc(m.dishCode || '')}</span></td><td class="num">${U.num(m.portions, 1)}${m.bufferPortions ? `<span class="sub">+${U.num(m.bufferPortions, 1)} dự phòng</span>` : ''}</td><td>${m.recipeVersion ? 'Phiên bản ' + esc(m.recipeVersion) : '<span class="muted">–</span>'}</td><td>${m.warning ? `<span class="warn">${esc(m.warning)}</span>` : ''}</td></tr>`;
+      body.innerHTML = `
+        <div class="kpis">${UI.kpi('Đơn đã chốt', U.num(d.orderCount || 0), `Kế hoạch ${esc(d.planNumber || '–')} · ${esc(d.planStatusName || '')}`, 'clipboard', 'green')}${UI.kpi('Tổng suất', U.num(d.totalMeals || 0), `${d.dishCount || 0} món`, 'utensils', 'blue')}${UI.kpi('Nguyên liệu cần mua', U.num(d.shortageCount || 0), d.shortageCount ? '<span class="bad">Thiếu hàng</span>' : 'Đủ hàng', 'alert', d.shortageCount ? 'red' : 'green')}${UI.kpi('Giá trị mua ước tính', U.money(d.estimatedAmount || 0), d.calculatedAt ? 'Tính lúc ' + U.dt(String(d.calculatedAt).replace(/\.\d+$/, '')) : '', 'calc', 'orange')}</div>
+        ${(d.listWarning || []).length ? `<div class="notice warn">${I('alert')}<div><b>Lưu ý</b>${d.listWarning.map(w => esc(w)).join('<br>')}</div></div>` : ''}
+        <div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Đề nghị mua của kế hoạch</div><div class="panel-desc">Đề nghị nháp được lập tự động cho phần thiếu. Gửi duyệt và lập PO ở màn Đề nghị mua.</div></div><a class="btn" href="#/scm-pr">Mở Đề nghị mua →</a></div>${pr ? prRow(pr) : '<div class="muted small">Không thiếu nguyên liệu – không có đề nghị mua.</div>'}${tops.map(prRow).join('')}</div>
+        <div class="card panel mb"><div class="panel-title mb">Nguyên liệu</div><div class="table-wrap"><table class="dt"><thead><tr><th>Nguyên liệu</th><th class="num">Nhu cầu</th><th class="num">Tồn xuất được</th><th class="num">Hàng sắp về</th><th class="num">Cần mua</th><th>ĐVT</th><th>Độ phủ</th><th>NCC gợi ý</th><th>Trạng thái</th></tr></thead><tbody>${(d.listItem || []).map(itemRow).join('') || '<tr><td colspan="9" class="empty">Không có nguyên liệu</td></tr>'}</tbody></table></div></div>
+        <div class="card panel"><div class="panel-title mb">Món và số suất</div><div class="table-wrap"><table class="dt"><thead><tr><th>Món</th><th class="num">Số suất</th><th>Công thức</th><th>Ghi chú</th></tr></thead><tbody>${(d.listDish || []).map(dishRow).join('') || '<tr><td colspan="4" class="empty">Không có món</td></tr>'}</tbody></table></div></div>`;
+    };
+    el.querySelector('#rqDate').onchange = e => { if (e.target.value) { rq.date = e.target.value; APP.refresh(); } };
+    const calc = path => Store.act(path, { form: { ProductionDate: date, OrganizationUnitId: Store.ctx.branch }, tables: PUR_TABLES }).then(r => { if (!r.ok) return; delete rq.data[date]; UI.toast(esc((r.res && r.res.responseMessage) || 'Đã tính nhu cầu nguyên liệu'), 'ok'); APP.refresh(); });
+    el.querySelector('#rqCalc').onclick = () => calc('MaterialRequirement/Calculate');
+    el.querySelector('#rqTop').onclick = () => calc('MaterialRequirement/CalculateTopUp');
+    if (rq.data[date]) return draw(rq.data[date]);
+    if (rq.busy[date]) return;
+    rq.busy[date] = true;
+    Store.query('MaterialRequirement/GetByDate', { productionDate: date, organizationUnitId: Store.ctx.branch }).then(x => { rq.busy[date] = false; rq.data[date] = x; if (rq.date === date && APP.current === 'scm-requirement') { const b = document.getElementById('rqBody'); if (b) APP.refresh(); } });
+  }
+
+  // ---------- Đề nghị mua ----------
+  function prLive(el) {
+    APP.rowExtra(el, tr => {
+      const r = Store.get('PurchaseRequest', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td || td.dataset.live) return; td.dataset.live = '1';
+      const no = esc(r.RequestNumber || '');
+      if (['Draft', 'Approved'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => askReason(`Hủy đề nghị mua <b>${no}</b>?`, note => run('PurchaseRequest/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy đề nghị mua')));
+      if (r.Status === 'Approved') rowBtn(td, 'primary', 'Lập PO', () => UI.confirm(`Lập đơn mua (PO) từ đề nghị <b>${no}</b>? Mỗi nhà cung cấp gợi ý sẽ có một PO nháp.`, () => Store.act('PurchaseRequest/ConvertToPurchaseOrder', { form: { Id: r.Id }, tables: PUR_TABLES }).then(x => {
+        if (!x.ok) return; const d = x.data || {}, pos = d.listPurchaseOrder || [], w = d.listWarning || [];
+        UI.toast('Đã lập ' + pos.length + ' PO: ' + pos.map(p => esc(p.purchaseOrderNumber)).join(', ') + (w.length ? '<br><span class="small">' + w.map(s => esc(s)).join('<br>') + '</span>' : ''), w.length ? 'warn' : 'ok'); APP.go('scm-po');
+      }), { ok: 'Lập PO' }));
+      if (r.Status === 'Draft') rowBtn(td, 'orange', 'Gửi duyệt', () => UI.confirm(`Gửi duyệt đề nghị mua <b>${no}</b>?`, () => run('PurchaseRequest/Submit', { Id: r.Id }, 'Đã gửi duyệt đề nghị mua'), { ok: 'Gửi duyệt' }));
+    });
+  }
+
+  // ---------- Đơn mua (PO) ----------
+  function poLive(el) {
+    APP.rowExtra(el, tr => {
+      const r = Store.get('PurchaseOrder', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td || td.dataset.live) return; td.dataset.live = '1';
+      const no = esc(r.PurchaseOrderNumber || '');
+      rowBtn(td, '', 'In', () => Store.download('PurchaseOrder/ExportOrder', { id: r.Id }).then(x => { if (x.ok) UI.toast('Đã tải ' + esc(x.fileName || 'đơn đặt hàng'), 'ok'); }));
+      if (['Draft', 'Approved', 'Sent'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => askReason(`Hủy đơn mua <b>${no}</b>?`, note => run('PurchaseOrder/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy đơn mua')));
+      if (['PartiallyReceived', 'Received'].includes(r.Status)) rowBtn(td, '', 'Đóng', () => UI.confirm(`Đóng đơn mua <b>${no}</b>?`, () => run('PurchaseOrder/Close', { Id: r.Id }, 'Đã đóng đơn mua'), { ok: 'Đóng PO' }));
+      if (['Approved', 'Sent', 'PartiallyReceived'].includes(r.Status)) rowBtn(td, 'primary', 'Nhận hàng', () => receiveLive(r));
+      if (r.Status === 'Approved') rowBtn(td, 'orange', 'Gửi NCC', () => UI.confirm(`Đánh dấu đã gửi đơn <b>${no}</b> cho nhà cung cấp?`, () => run('PurchaseOrder/Send', { Id: r.Id }, 'Đã gửi nhà cung cấp'), { ok: 'Gửi NCC' }));
+      if (r.Status === 'Draft') rowBtn(td, 'orange', 'Gửi duyệt', () => UI.confirm(`Gửi duyệt đơn mua <b>${no}</b>?`, () => run('PurchaseOrder/Submit', { Id: r.Id }, 'Đã gửi duyệt đơn mua'), { ok: 'Gửi duyệt' }));
+    });
+  }
+  // Nhận hàng theo PO: số nhận, số lô NCC, hạn dùng, nhiệt độ từng dòng → GoodsReceipt/Create (JSON) → sinh phiếu QC.
+  function receiveLive(po) {
+    Promise.all([Store.query('PurchaseOrder/GetDetail', { id: po.Id }), Store.ensure('Warehouse')]).then(([x]) => {
+      if (!x.ok) return UI.toast(esc(x.message || 'Không tải được đơn mua'), 'err');
+      const d = x.data || {};
+      const remain = l => (l.remainingQuantity === undefined || l.remainingQuantity === null ? l.quantity : l.remainingQuantity);
+      const lines = (d.listLine || []).filter(l => remain(l) > 0);
+      if (!lines.length) return UI.toast('Đơn mua này không còn dòng nào chờ nhận', 'warn');
+      const whs = Store.rows('Warehouse'), defWh = APP.rawWarehouseId();
+      UI.modal({
+        title: 'Nhận hàng – ' + esc(po.PurchaseOrderNumber || ''), sub: esc(d.supplierName || ''), size: 'lg',
+        body: `<div class="field mb"><label>Kho nhận</label><select class="select" id="grWh">${whs.map(w => `<option value="${w.Id}" ${w.Id === defWh ? 'selected' : ''}>${esc(Store.label('Warehouse', w))}</option>`).join('')}</select></div>
+          <div class="table-wrap"><table class="dt"><thead><tr><th>Nguyên liệu</th><th class="num">Còn lại</th><th>Số nhận</th><th>Số lô NCC</th><th>Hạn dùng</th><th>Nhiệt độ °C</th></tr></thead><tbody>${lines.map(l => `<tr data-l="${l.id}"><td><b>${esc(l.ingredientName || '')}</b><span class="sub">${esc(l.unitName || '')}</span></td><td class="num">${U.num(remain(l), 2)}</td><td><input class="input" type="number" step="0.01" min="0" data-f="q" value="${remain(l)}" style="width:100px"></td><td><input class="input" data-f="lot" placeholder="Số lô" style="width:130px"></td><td><input class="input" type="date" data-f="exp" style="width:150px"></td><td><input class="input" type="number" step="0.1" data-f="t" style="width:90px"></td></tr>`).join('')}</tbody></table></div>
+          <div class="small muted mt">Dòng không nhận lần này: nhập số nhận = 0. Hạn dùng để trống = ngày nhận + hạn bảo quản của nguyên liệu.</div>`,
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="grSave">Tạo phiếu nhập</button>',
+        onMount: (m, close) => m.querySelector('#grSave').onclick = () => {
+          const listLine = [...m.querySelectorAll('tr[data-l]')].map(tr => {
+            const v = k => tr.querySelector('[data-f="' + k + '"]').value; const q = Number(v('q')) || 0;
+            return q > 0 ? { purchaseOrderLineId: tr.dataset.l, receivedQuantity: q, supplierLotNumber: v('lot') || null, expiryDate: v('exp') || null, temperatureC: v('t') === '' ? null : Number(v('t')) } : null;
+          }).filter(Boolean);
+          if (!listLine.length) return UI.toast('Nhập số nhận cho ít nhất một dòng', 'err');
+          Store.act('GoodsReceipt/Create', { json: { purchaseOrderId: po.Id, warehouseId: m.querySelector('#grWh').value, receiptDate: U.iso(new Date()), listLine }, tables: PUR_TABLES }).then(r => {
+            if (!r.ok) return; close(); const w = (r.data && r.data.listWarning) || [];
+            UI.toast('Đã tạo phiếu nhập – chờ QC kết luận' + (w.length ? '<br><span class="small">' + w.map(s => esc(s)).join('<br>') + '</span>' : ''), w.length ? 'warn' : 'ok'); APP.go('qc-inspection');
+          });
+        }
+      });
+    });
+  }
+
+  // ---------- Phiếu nhập kho: ghi sổ sau khi QC kết luận ----------
+  function grLive(el) {
+    APP.rowExtra(el, tr => {
+      const r = Store.get('GoodsReceipt', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td || td.dataset.live) return; td.dataset.live = '1';
+      const no = esc(r.ReceiptNumber || '');
+      if (!['Posted', 'Cancelled'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => askReason(`Hủy phiếu nhập <b>${no}</b>?`, note => run('GoodsReceipt/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy phiếu nhập')));
+      if (['Accepted', 'PartiallyAccepted', 'Rejected'].includes(r.Status)) rowBtn(td, 'primary', 'Ghi sổ', () => UI.confirm(`Ghi sổ phiếu nhập <b>${no}</b>? Hệ thống tạo lô, nhập kho phần đạt QC và cập nhật đơn mua.`, () => run('GoodsReceipt/Post', { Id: r.Id }, 'Đã ghi sổ nhập kho'), { ok: 'Ghi sổ nhập kho' }));
+      if (r.Status === 'QCPending') rowBtn(td, 'orange', 'Mở QC', () => APP.go('qc-inspection'));
+    });
+  }
+
   // ---------- Nhu cầu vật tư (MRP) ----------
   const ms = { plan: null };
   APP.register('scm-requirement', (el, f) => {
+    if (Store.isLive) return reqLive(el, f);
     const plans = Store.rows('ProductionPlan').filter(p => U.day(p.ProductionDate) >= Store.ctx.date).sort((a, b) => (a.ProductionDate + a.PlanNumber).localeCompare(b.ProductionDate + b.PlanNumber));
     if (!ms.plan) ms.plan = (plans.find(p => Store.by('MaterialRequirement', 'ProductionPlanId', p.Id).some(r => r.Status === 'Shortage')) || plans.find(p => Store.by('MaterialRequirement', 'ProductionPlanId', p.Id).length) || plans[0]).Id;
     const pl = Store.get('ProductionPlan', ms.plan);
@@ -43,6 +162,7 @@
   // ---------- Đề nghị mua ----------
   APP.register('scm-pr', (el, f) => {
     APP.genericList(el, f, { noTransit: true, cols: [{ k: 'RequestNumber', label: 'Số đề nghị' }, { k: 'RequestDate', label: 'Ngày' }, { k: 'RequiredDate', label: 'Ngày cần' }, { k: 'RequestedByEmployeeId', label: 'Người đề nghị', render: r => esc(Store.label('Employee', r.RequestedByEmployeeId)) }, { k: 'n', label: 'Số dòng', col: false, num: true, render: r => Store.by('PurchaseRequestLine', 'PurchaseRequestId', r.Id).length }, { k: 'v', label: 'Giá trị ước tính', col: false, num: true, render: r => U.money(U.sum(Store.by('PurchaseRequestLine', 'PurchaseRequestId', r.Id), l => l.Quantity * prefPrice(l.IngredientId))) }, { k: 'Status', label: 'Trạng thái' }] });
+    if (Store.isLive) return prLive(el);
     APP.rowExtra(el, tr => { const r = Store.get('PurchaseRequest', tr.dataset.row); const td = tr.querySelector('.actions');
       if (r.Status === 'Draft') { td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-s>Gửi duyệt</button> `); td.querySelector('[data-s]').onclick = () => { Store.update('PurchaseRequest', r.Id, { Status: 'PendingApproval' }); APP.submitApproval('PURCHASE_REQUEST', 'PurchaseRequest', r.Id, [['Quản lý kho'], ['Ban giám đốc']], 'Duyệt ' + r.RequestNumber); APP.refresh(); }; }
       if (r.Status === 'Approved') { td.insertAdjacentHTML('afterbegin', `<button class="btn xs primary" data-po>Lập PO</button> `); td.querySelector('[data-po]').onclick = () => makePO(r); }
@@ -53,7 +173,7 @@
     if (t === 'PurchaseRequest' || t === 'PurchaseOrder' || t === 'GoodsReceipt' || t === 'StockCount' || t === 'MaterialIssue') {
       const lt = { PurchaseRequest: ['PurchaseRequestLine', 'PurchaseRequestId'], PurchaseOrder: ['PurchaseOrderLine', 'PurchaseOrderId'], GoodsReceipt: ['GoodsReceiptLine', 'GoodsReceiptId'], StockCount: ['StockCountLine', 'StockCountId'], MaterialIssue: ['MaterialIssueLine', 'MaterialIssueId'] }[t];
       const lines = Store.by(lt[0], lt[1], id); const cols = APP.pickCols(lt[0], 9).filter(c => c.k !== lt[1]);
-      return UI.detail(t, id, { screen: f && f.id, onChange: () => APP.refresh(), top: '', tabs: [{ label: `Chi tiết dòng (${lines.length})`, html: `<div class="table-wrap"><table class="dt"><thead><tr>${cols.map(c => `<th class="${c.num ? 'num' : ''}">${c.label}<small>${c.k}</small></th>`).join('')}</tr></thead><tbody>${lines.map(l => `<tr>${cols.map(c => `<td class="${c.num ? 'num' : ''}">${UI.val(lt[0], c.k, l[c.k], l)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="small muted mt">dbo.${lt[0]} · ${lt[1]} = ${id.slice(0, 8)}…</div>` }] });
+      return UI.detail(t, id, { screen: f && f.id, onChange: () => APP.refresh(), top: '', tabs: [{ label: `Chi tiết dòng (${lines.length})`, html: `<div class="table-wrap"><table class="dt"><thead><tr>${cols.map(c => `<th class="${c.num ? 'num' : ''}">${c.label}<small>${c.k}</small></th>`).join('')}</tr></thead><tbody>${lines.map(l => `<tr>${cols.map(c => `<td class="${c.num ? 'num' : ''}">${UI.val(lt[0], c.k, l[c.k], l)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${Store.isLive ? '' : `<div class="small muted mt">dbo.${lt[0]} · ${lt[1]} = ${id.slice(0, 8)}…</div>`}` }] });
     }
     return baseOpen(t, id, f, opt);
   };
@@ -73,6 +193,7 @@
   // ---------- Đơn mua: nhận hàng ----------
   APP.register('scm-po', (el, f) => {
     APP.genericList(el, f, { cols: [{ k: 'PurchaseOrderNumber', label: 'Số PO' }, { k: 'SupplierId', label: 'Nhà cung cấp' }, { k: 'PurchaseRequestId', label: 'Đề nghị mua' }, { k: 'OrderDate', label: 'Ngày đặt' }, { k: 'ExpectedDeliveryDate', label: 'Giao dự kiến' }, { k: 'TotalAmount', label: 'Giá trị', num: true }, { k: 'Status', label: 'Trạng thái' }] });
+    if (Store.isLive) return poLive(el);
     APP.rowExtra(el, tr => { const r = Store.get('PurchaseOrder', tr.dataset.row); const td = tr.querySelector('.actions');
       if (['Sent', 'Approved'].includes(r.Status)) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs primary" data-gr>Nhận hàng</button> `); td.querySelector('[data-gr]').onclick = () => receive(r); } });
   });
@@ -87,8 +208,9 @@
   }
   // ---------- Nhập kho: cổng QC ----------
   APP.register('scm-gr', (el, f) => {
-    APP.genericList(el, f, { noTransit: true, top: `<div class="notice info">${I('shield')}<div><b>Cổng kiểm soát QC (Luồng 3)</b>Chỉ được <b>Ghi sổ</b> khi phiếu QC đầu vào có kết quả PASS cho các dòng. Ghi sổ sinh <code>MaterialLot</code> + <code>InventoryTransaction</code> (RECEIPT) và cập nhật <code>InventoryBalance</code>.</div></div>`,
+    APP.genericList(el, f, { noTransit: true, top: Store.isLive ? `<div class="notice info">${I('shield')}<div><b>Cổng kiểm soát QC</b>Chỉ ghi sổ được sau khi phiếu QC đầu vào đã kết luận. Ghi sổ tạo lô và nhập kho phần đạt.</div></div>` : `<div class="notice info">${I('shield')}<div><b>Cổng kiểm soát QC (Luồng 3)</b>Chỉ được <b>Ghi sổ</b> khi phiếu QC đầu vào có kết quả PASS cho các dòng. Ghi sổ sinh <code>MaterialLot</code> + <code>InventoryTransaction</code> (RECEIPT) và cập nhật <code>InventoryBalance</code>.</div></div>`,
       cols: [{ k: 'ReceiptNumber', label: 'Số phiếu' }, { k: 'SupplierId', label: 'Nhà cung cấp' }, { k: 'PurchaseOrderId', label: 'PO' }, { k: 'WarehouseId', label: 'Kho' }, { k: 'ReceiptDate', label: 'Ngày nhập' }, { k: 'qc', label: 'Kết quả QC', col: false, nosort: true, render: r => { const q = Store.one('QCInspection', 'GoodsReceiptId', r.Id); return q ? (q.Result ? UI.badge(q.Result, 'QCInspection', 'Result') : '<span class="badge orange">Đang kiểm</span>') : '<span class="muted">–</span>'; } }, { k: 'Status', label: 'Trạng thái' }] });
+    if (Store.isLive) return grLive(el);
     APP.rowExtra(el, tr => { const r = Store.get('GoodsReceipt', tr.dataset.row); const td = tr.querySelector('.actions'); if (['QCPending', 'Accepted', 'PartiallyAccepted'].includes(r.Status)) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs primary" data-post>Ghi sổ</button> `); td.querySelector('[data-post]').onclick = () => post(r); } });
   });
   function post(gr) {

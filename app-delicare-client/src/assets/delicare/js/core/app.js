@@ -82,9 +82,11 @@
   // ---------- Header ----------
   // Chế độ API: bỏ các câu "dữ liệu demo" cố định trong mô tả màn hình của mockup.
   APP.liveText = html => (Store.hasHost && Store.mode === 'api') ? html.replace(/\s*\(DỮ LIỆU DEMO\)/g, '').replace(/;?\s*số liệu trên mockup là DEMO\.?/g, '.') : html;
+  // Chế độ dữ liệu thật: bỏ các phần chỉ để trình diễn của mockup (tên bảng / cột, ghi chú GAP, truy vết DB) – CLAUDE.md 4.4.
+  const LIVE = () => Store.isLive;
   APP.header = (f, actions, opt = {}) => APP.liveText(APP._header(f, actions, opt));
   APP._header = (f, actions, opt = {}) => `<div class="breadcrumb"><a href="${APP.href('dash-exec')}">Trang chủ</a><span>›</span><span>${esc(f.grp)}</span><span>›</span><strong>${esc(f.name)}</strong></div>
-    <div class="page-heading"><div><div class="eyebrow">${f.ph !== '—' ? f.ph + ' · ' : ''}${esc(f.grp)}${f.table ? ' · dbo.' + f.table : ''}</div><h1>${esc(opt.title || f.name)}</h1><div class="subtitle">${opt.sub || esc(f.fn) + (f.rel && f.rel.length ? ' · Liên quan: ' + f.rel.join(', ') : '')}</div></div><div class="heading-actions">${actions || ''}${f.table ? `<button class="btn" data-trace="${f.table}">${I('database')} Truy vết DB</button>` : ''}</div></div>${opt.noNote ? '' : UI.gapNote(f)}`;
+    <div class="page-heading"><div><div class="eyebrow">${LIVE() ? esc(f.grp) : (f.ph !== '—' ? f.ph + ' · ' : '') + esc(f.grp) + (f.table ? ' · dbo.' + f.table : '')}</div><h1>${esc(opt.title || f.name)}</h1><div class="subtitle">${opt.sub || esc(f.fn) + (!LIVE() && f.rel && f.rel.length ? ' · Liên quan: ' + f.rel.join(', ') : '')}</div></div><div class="heading-actions">${actions || ''}${f.table && !LIVE() ? `<button class="btn" data-trace="${f.table}">${I('database')} Truy vết DB</button>` : ''}</div></div>${opt.noNote || LIVE() ? '' : UI.gapNote(f)}`;
   // ---------- Màn hình chung theo schema (dùng cho chức năng chưa có màn hình chuyên biệt) ----------
   const PREF_NO = ['OrderNumber', 'ContractNumber', 'RequestNumber', 'PurchaseOrderNumber', 'ReceiptNumber', 'LotNumber', 'IssueNumber', 'CountNumber', 'PlanNumber', 'ProductionOrderNumber', 'BatchNumber', 'PackingOrderNumber', 'DeliveryNumber', 'RouteNo', 'InspectionNumber', 'CleaningBatchNumber', 'TransactionNumber', 'RequirementNo', 'RequestNo', 'ComplaintNo', 'Code', 'MetricCode', 'ChannelCode', 'BotCode', 'ItemCode', 'LicensePlate', 'VersionCode', 'UserName'];
   APP.pickCols = (t, max = 8) => {
@@ -106,25 +108,25 @@
     const cols = opt.cols || APP.pickCols(t);
     const stat = sc ? U.group(rowsFn(), sc) : {};
     const statusChips = sc ? Object.entries(stat).sort((a, b) => b[1].length - a[1].length) : [];
-    el.innerHTML = APP.header(f, `${perm.exp !== false ? `<button class="btn" data-act="export">${I('export')} Xuất CSV</button>` : ''}${opt.noAdd ? '' : `<button class="btn primary" data-act="add" ${perm.add === false ? 'disabled title="Vai trò hiện tại không có quyền AllowAdd"' : ''}>${I('plus')} Tạo mới</button>`}`) + (opt.top || '') +
-      `<div class="kpis">${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), 'dbo.' + t + ' · ' + APP.srcText(t), 'database', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), `${sc} = ${k || 'NULL'}`, 'layers', ['blue', 'orange', 'purple'][i])).join('')}</div>
-      <div class="card panel">${sc ? `<div class="row-flex mb"><span class="small muted">Lọc nhanh ${sc}:</span><button class="chip active" data-st="">Tất cả</button>${statusChips.map(([k, v]) => `<button class="chip" data-st="${esc(k)}">${esc(UI.statusVi(t, sc, k) || '(trống)')} · ${v.length}</button>`).join('')}</div>` : ''}<div id="gt"></div></div>`;
+    el.innerHTML = APP.header(f, `${perm.exp !== false ? `<button class="btn" data-act="export">${I('export')} Xuất CSV</button>` : ''}${opt.noAdd ? '' : `<button class="btn primary" data-act="add" ${perm.add === false ? 'disabled title="Tài khoản không có quyền Thêm"' : ''}>${I('plus')} Tạo mới</button>`}`) + (opt.top || '') +
+      `<div class="kpis">${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), LIVE() ? esc(f.fn) : 'dbo.' + t + ' · ' + APP.srcText(t), 'clipboard', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), LIVE() ? 'Theo trạng thái' : `${sc} = ${k || 'NULL'}`, 'layers', ['blue', 'orange', 'purple'][i])).join('')}</div>
+      <div class="card panel">${sc ? `<div class="row-flex mb"><span class="small muted">${LIVE() ? 'Lọc nhanh:' : 'Lọc nhanh ' + sc + ':'}</span><button class="chip active" data-st="">Tất cả</button>${statusChips.map(([k, v]) => `<button class="chip" data-st="${esc(k)}">${esc(UI.statusVi(t, sc, k) || '(trống)')} · ${v.length}</button>`).join('')}</div>` : ''}<div id="gt"></div></div>`;
     const fks = cols.filter(c => Store.target(t, c.k)).slice(0, 1).map(c => { const vals = [...new Set(rowsFn().map(r => r[c.k]).filter(Boolean))]; return { k: c.k, label: c.label, options: vals.map(v => ({ v, l: Store.label(Store.target(t, c.k), v) })).sort((a, b) => a.l.localeCompare(b.l)) }; });
     const ref = {}; APP._lastTbl = ref;
     const tbl = UI.table(el.querySelector('#gt'), {
       table: t, cols, rows: rowsFn, filters: fks, pageSize: 10, onRow: id => APP.openDetail(t, id, f),
-      actions: r => { const nx = sc && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button> <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>${nx && !opt.noTransit ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
+      actions: r => { const nx = sc && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button> <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>${nx && !opt.noTransit && !LIVE() ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
       after: tb => {
         tb.querySelectorAll('[data-view]').forEach(b => b.onclick = () => APP.openDetail(t, b.dataset.view, f));
         tb.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => UI.form(t, Store.get(t, b.dataset.edit), { title: f.name, onSave: () => APP.refresh() }));
         tb.querySelectorAll('[data-next]').forEach(b => b.onclick = () => { const r = Store.get(t, b.dataset.next); UI.confirm(`Chuyển <b>${esc(Store.label(t, r))}</b> từ ${UI.badge(r[sc], t, sc)} sang ${UI.badge(b.dataset.to, t, sc)}?<div class="small muted mt">Ghi vào <code>${t}.${sc}</code> và <code>AuditChange</code>. Trạng thái PROPOSED – BA/PO CONFIRM.</div>`, note => { Store.update(t, r.Id, { [sc]: b.dataset.to }, note); UI.toast('Đã chuyển trạng thái (DEMO)', 'ok'); APP.refresh(); }, { input: 'Ghi chú', ok: 'Chuyển trạng thái' }); });
-        tb.querySelectorAll('[data-del]').forEach(b => b.onclick = () => UI.confirm('Xóa mềm bản ghi này? (IsDeleted = 1)', () => { Store.remove(t, b.dataset.del); UI.toast('Đã xóa mềm (DEMO)', 'ok'); APP.refresh(); }, { danger: true, ok: 'Xóa' }));
+        tb.querySelectorAll('[data-del]').forEach(b => b.onclick = () => UI.confirm(LIVE() ? 'Xóa bản ghi này?' : 'Xóa mềm bản ghi này? (IsDeleted = 1)', () => { Store.remove(t, b.dataset.del); UI.toast(LIVE() ? 'Đã xóa' : 'Đã xóa mềm (DEMO)', 'ok'); APP.refresh(); }, { danger: true, ok: 'Xóa' }));
         if (ref.extra) tb.querySelectorAll('tr[data-row]').forEach(ref.extra);
       }
     });
     el.querySelectorAll('[data-st]').forEach(c => c.onclick = () => { el.querySelectorAll('[data-st]').forEach(x => x.classList.toggle('active', x === c)); tbl.setFilter(sc, c.dataset.st); });
     el.querySelector('[data-act="add"]') && (el.querySelector('[data-act="add"]').onclick = () => UI.form(t, null, { title: f.name, defaults: opt.defaults, onSave: () => APP.refresh() }));
-    el.querySelector('[data-act="export"]') && (el.querySelector('[data-act="export"]').onclick = () => { U.csv(rowsFn(), cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => UI.text(t, c.k, r[c.k]) })), `DELICARE_DEMO_${t}.csv`); UI.toast('Đã xuất CSV ' + rowsFn().length + ' dòng (DỮ LIỆU DEMO)', 'ok'); });
+    el.querySelector('[data-act="export"]') && (el.querySelector('[data-act="export"]').onclick = () => { U.csv(rowsFn(), cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => UI.text(t, c.k, r[c.k]) })), `DELICARE_${LIVE() ? '' : 'DEMO_'}${t}.csv`); UI.toast('Đã xuất CSV ' + rowsFn().length + ' dòng' + (LIVE() ? '' : ' (DỮ LIỆU DEMO)'), 'ok'); });
     // Chế độ API: Common/ExportList xuất Excel từ server (đủ dòng, đúng quyền Xuất) cho các bảng backend có đăng ký.
     if (Store.isLive && perm.exp !== false) APP.resources().then(set => {
       const b = el.querySelector('[data-act="export"]'), key = Store.controllerOf(t);
@@ -242,7 +244,31 @@
     if (errs.length) el.insertAdjacentHTML('afterbegin', `<div class="notice gap">${I('alert')}<div><b>Không tải được dữ liệu từ API</b>${errs.map(t => `<code>${esc(Store.controllerOf(t))}</code>: ${esc(Store.errorOf(t))}`).join('<br>')}</div></div>`);
     finish(el);
   }
+  // Chế độ dữ liệu thật: dọn phần chữ kỹ thuật của mockup còn nằm trong các màn riêng (CLAUDE.md 4.4) –
+  // khung ghi chú GAP / PARTIAL / PROPOSED, tên Bảng.Cột trong ngoặc, hậu tố "PROPOSED – BA/PO CONFIRM".
+  const TECH_NOTICE = /^\s*(GAP-[A-Z]|DATABASE GAP|PARTIAL\s*[–-])|BA\/PO CONFIRM|SQL DEFAULT|SQL (chưa|không) có|Mockup/;
+  const TECH_PAREN = /\s*\((?:dbo\.)?[A-Z][A-Za-z0-9_]*\.[A-Z][A-Za-z0-9_]*(?:\s*[=<>!]+\s*[^()]*)?\)/g;
+  const TECH_WORD = /PROPOSED|BA\/PO CONFIRM|BRD\s*:/;
+  function cleanDemoText(root) {
+    if (!API_MODE() || !root) return;
+    root.querySelectorAll('.notice').forEach(n => { if (TECH_NOTICE.test(n.textContent || '') && !/Không tải được|Lỗi/.test(n.textContent || '')) n.remove(); });
+    // Chú thích dưới thẻ số liệu / mô tả khối mà nội dung là tên cột kiểu "QcStatus = PASS", "Σ PlannedQuantity" → bỏ chú thích đó.
+    root.querySelectorAll('.kpi-foot, .panel-desc').forEach(n => { if (!n.children.length && /\b[A-Z][a-z]+[A-Z][A-Za-z]+\b/.test(n.textContent || '')) n.textContent = ''; });
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const edits = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode, p = node.parentElement;
+      if (!p || p.closest('script,style,textarea,input,select,svg,code,.mono')) continue;
+      const v = node.nodeValue; if (!v || v.length < 6) continue;
+      // Bỏ cả câu có nhãn kỹ thuật (tách câu theo dấu chấm + khoảng trắng để không cắt nhầm "Order.Status").
+      const nv = (TECH_WORD.test(v) ? v.split(/(?<=[.!?])\s+/).filter(s => !TECH_WORD.test(s)).join(' ') : v).replace(TECH_PAREN, '');
+      if (nv !== v) edits.push([node, nv]);
+    }
+    edits.forEach(([node, nv]) => { const p = node.parentElement; node.nodeValue = nv; if (p && !p.textContent.trim() && !p.children.length && p !== root) p.remove(); });
+  }
+  APP.cleanDemoText = cleanDemoText;
   function finish(el) {
+    cleanDemoText(el);
     el.insertAdjacentHTML('beforeend', API_MODE()
       ? '<div class="footer-note">DELI-CARE · ENTERPRISE MANAGEMENT · Dữ liệu đọc / ghi qua API (bảng chưa có API hiển thị dữ liệu DEMO) · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>'
       : '<div class="footer-note">DELI-CARE · ENTERPRISE MOCKUP · DỮ LIỆU DEMO – KHÔNG PHẢI DỮ LIỆU THẬT · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>');
@@ -328,7 +354,7 @@
   }
   function chooseBranch() {
     const br = Store.rows('OrganizationUnit').filter(o => o.UnitType === 'BRANCH');
-    UI.modal({ title: 'Chọn đơn vị làm việc', sub: 'dbo.OrganizationUnit (UnitType = BRANCH) · PO xác nhận là nguồn Chi nhánh', size: 'sm', body: `<div class="grid"><button class="btn ${!Store.ctx.branch ? 'primary' : ''}" data-b="">Tất cả đơn vị</button>${br.map(b => `<button class="btn ${Store.ctx.branch === b.Id ? 'primary' : ''}" data-b="${b.Id}">${esc(b.Name)} <span class="small muted">${b.Code}</span></button>`).join('')}</div>`,
+    UI.modal({ title: 'Chọn đơn vị làm việc', sub: LIVE() ? 'Số liệu trên các màn hình sẽ lọc theo đơn vị đã chọn' : 'dbo.OrganizationUnit (UnitType = BRANCH) · PO xác nhận là nguồn Chi nhánh', size: 'sm', body: `<div class="grid"><button class="btn ${!Store.ctx.branch ? 'primary' : ''}" data-b="">Tất cả đơn vị</button>${br.map(b => `<button class="btn ${Store.ctx.branch === b.Id ? 'primary' : ''}" data-b="${b.Id}">${esc(b.Name)} <span class="small muted">${b.Code}</span></button>`).join('')}</div>`,
       onMount: (m, close) => m.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { Store.ctx.branch = x.dataset.b || null; const nm = x.dataset.b ? Store.get('OrganizationUnit', x.dataset.b).Name : 'Tất cả đơn vị'; document.getElementById('topBranch').textContent = nm; document.getElementById('sideBranch').textContent = nm; close(); route(); UI.toast('Đã chuyển ngữ cảnh: ' + esc(nm), 'ok'); }) });
   }
   function notifications() {
@@ -390,7 +416,7 @@
   const docHandlers = [];
   const onDoc = (target, ev, fn, cap) => { target.addEventListener(ev, fn, !!cap); docHandlers.push([target, ev, fn, !!cap]); };
   let alertTimer = null;
-  APP.stop = () => { routeSeq++; clearInterval(alertTimer); clearTimeout(searchTimer); docHandlers.splice(0).forEach(([t, ev, fn, cap]) => t.removeEventListener(ev, fn, cap)); document.querySelectorAll('.overlay, .drawer-wrap').forEach(x => x.remove()); };
+  APP.stop = () => { routeSeq++; clearInterval(alertTimer); clearTimeout(searchTimer); docHandlers.splice(0).forEach(([t, ev, fn, cap]) => t.removeEventListener(ev, fn, cap)); document.body.classList.remove('dc-live'); document.querySelectorAll('.overlay, .drawer-wrap').forEach(x => x.remove()); };
   APP.start = () => {
     if (Store.hasHost && Store.mode === 'api') {
       const u = window.DC_HOST.user || {};
@@ -399,6 +425,7 @@
       const g = Store.one('UserGroup', 'Name', 'Quản trị hệ thống'); const uc = g && Store.one('UserClaim', 'UserGroupId', g.Id); Store.user.id = uc ? uc.UserId : null; Store.user.label = 'admin';
     }
     const roleOrAccount = () => (Store.hasHost ? accountMenu() : chooseRole());
+    document.body.classList.toggle('dc-live', Store.isLive);
     buildNav(); setUserUi();
     document.getElementById('collapseBtn').onclick = () => document.getElementById('app').classList.toggle('collapsed');
     document.getElementById('mobileMenu').onclick = () => { document.getElementById('sidebar').classList.add('mobile-open'); document.getElementById('backdrop').classList.add('show'); };
@@ -419,7 +446,16 @@
     if (Store.isLive) alertTimer = setInterval(() => { if (!document.hidden) pullAlerts(); }, ALERT_TTL);
     onDoc(window, 'hashchange', route);
     // Dò API của mọi màn hình trước khi vẽ màn đầu tiên: backend đang nối thiếu controller nào thì ẩn menu của nó.
-    Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => { buildNav(); route(); });
+    // Vẽ màn hình đầu tiên NGAY; dò API chạy nền, xong thì dựng lại menu (và vẽ lại nếu màn đang xem thuộc bảng vừa bị ẩn).
+    route();
+    Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => {
+      const before = document.querySelectorAll('[data-nav]').length;
+      buildNav();
+      document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === APP.current));
+      const act = document.querySelector(`[data-nav="${APP.current}"]`); if (act) act.closest('.group').classList.remove('closed');
+      const cur = FN[APP.current];
+      if (document.querySelectorAll('[data-nav]').length !== before && cur && cur.table && Store.isMissing(cur.table) && !overlayOpen()) route();
+    });
   };
   window.APP = APP;
 })();

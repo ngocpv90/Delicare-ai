@@ -11,7 +11,7 @@
   const CMAP = {}; Object.entries(COLOR).forEach(([c, s]) => s.split(' ').forEach(k => CMAP[k] = c));
   const UI = {};
   UI.statusVi = (t, col, v) => { const d = Store.statusDef(t, col); if (d) { const i = d.codes.indexOf(v); if (i >= 0 && d.vi[i]) return d.vi[i]; } return v; };
-  UI.badge = (v, t, col) => v === null || v === undefined || v === '' ? '<span class="muted">–</span>' : `<span class="badge ${CMAP[v] || 'gray'}" title="${esc(t ? t + '.' + col + ' = ' + v : v)}">${esc(t ? UI.statusVi(t, col, v) : v)}</span>`;
+  UI.badge = (v, t, col) => v === null || v === undefined || v === '' ? '<span class="muted">–</span>' : `<span class="badge ${CMAP[v] || 'gray'}" title="${esc(t && !Store.isLive ? t + '.' + col + ' = ' + v : (t ? UI.statusVi(t, col, v) : v))}">${esc(t ? UI.statusVi(t, col, v) : v)}</span>`;
   UI.tag = (v, c) => `<span class="tag ${c || ''}">${esc(v)}</span>`;
   // ---------- Hiển thị giá trị theo kiểu cột ----------
   UI.val = (t, col, v, row) => {
@@ -199,10 +199,10 @@
     const tabs = [{ label: 'Thông tin', html: (opt.top || '') + UI.kvHtml(t, row) }].concat(opt.tabs || []).concat(UI.liveTabs ? UI.liveTabs(t, id) : []).concat([
       { label: 'Liên quan', html: p => (UI.related ? UI.related(t, id, p) : UI.children(t, id)) },
       { label: 'Lịch sử xử lý', html: p => UI.history(t, id, p) },
-      { label: 'Truy vết DB', html: () => UI.traceHtml(t, opt.screen) }]);
+      { label: 'Truy vết DB', html: () => UI.traceHtml(t, opt.screen) }]).filter(x => !(Store.isLive && x.label === 'Truy vết DB'));
     UI.drawer({
-      title: esc(Store.label(t, row)), sub: 'dbo.' + t + (opt.screen ? ' · #/' + opt.screen : ''), badge: sc ? UI.badge(row[sc], t, sc) : '', tabs,
-      foot: (opt.foot ? opt.foot(row) : '') + (opt.noEdit ? '' : `<button class="btn" data-act="edit" ${perm.edit === false ? 'disabled title="Không có quyền AllowEdit"' : ''}>${I('edit')} Chỉnh sửa</button>`) + '<button class="btn primary" data-close>Đóng</button>',
+      title: esc(Store.label(t, row)), sub: Store.isLive ? esc((opt.screen && window.APP && APP.FN[opt.screen] && APP.FN[opt.screen].name) || '') : 'dbo.' + t + (opt.screen ? ' · #/' + opt.screen : ''), badge: sc ? UI.badge(row[sc], t, sc) : '', tabs,
+      foot: (opt.foot ? opt.foot(row) : '') + (opt.noEdit ? '' : `<button class="btn" data-act="edit" ${perm.edit === false ? 'disabled title="Tài khoản không có quyền Sửa"' : ''}>${I('edit')} Chỉnh sửa</button>`) + '<button class="btn primary" data-close>Đóng</button>',
       onMount: (d, close) => { d.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; if (b.dataset.act === 'edit') { close(); UI.form(t, row, { onSave: () => { opt.onChange && opt.onChange(); APP.refresh(); } }); } else if (opt.onAct) opt.onAct(b.dataset.act, row, close, b); }); }
     });
   };

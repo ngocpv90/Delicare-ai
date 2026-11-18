@@ -34,11 +34,13 @@
     });
   }
   // ---------- Đơn hàng ----------
-  const os = { view: 'board', date: '' };
+  const os = { view: 'board', date: null };   // date: null = chưa chọn, '' = Tất cả
   APP.register('crm-order', (el, f, params) => {
     const perm = Store.perm(f.id);
     const dates = [...new Set(Store.rows('Order').map(o => U.day(o.MealDate)))].sort();
-    if (!os.date) os.date = U.addDays(Store.ctx.date, 1);
+    // Ngày mặc định (chỉ đặt 1 lần, khi đã có dữ liệu): ngày mai nếu có đơn, không thì ngày gần nhất từ hôm nay có đơn, không có thì Tất cả.
+    // Bấm "Tất cả" (date = '') được giữ nguyên, không bị đặt lại.
+    if (os.date === null && dates.length) { const tm = U.addDays(Store.ctx.date, 1); os.date = dates.includes(tm) ? tm : (dates.find(d => d >= Store.ctx.date) || ''); }
     const rows = Store.rows('Order').filter(o => (!os.date || U.day(o.MealDate) === os.date) && (!Store.ctx.branch || (Store.get('Customer', o.CustomerId) || {}).BranchId === Store.ctx.branch));
     el.innerHTML = APP.header(f, `<button class="btn" id="oView">${I(os.view === 'board' ? 'clipboard' : 'layers')} ${os.view === 'board' ? 'Dạng bảng' : 'Dạng Kanban'}</button><button class="btn primary" id="oNew" ${perm.add === false ? 'disabled' : ''}>${I('plus')} Tạo đơn hàng</button>`) + `
     <div class="card panel mb"><div class="row-flex"><span class="small muted">Ngày ăn (Order.MealDate):</span><button class="chip ${!os.date ? 'active' : ''}" data-d="">Tất cả</button>${dates.map(d => `<button class="chip ${d === os.date ? 'active' : ''}" data-d="${d}">${U.date(d).slice(0, 5)}${d === Store.ctx.date ? ' · hôm nay' : ''}</button>`).join('')}</div>

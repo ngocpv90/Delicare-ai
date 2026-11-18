@@ -28,7 +28,6 @@ import { AuthenticationService } from '../services/authentication.service';
 @Component({
   selector: 'app-sign-in',
   templateUrl: './sign-in.component.html',
-  styleUrls: ['./sign-in.component.css'],
 })
 export class SignInComponent implements OnInit {
   public isLoading = false;
@@ -49,7 +48,8 @@ export class SignInComponent implements OnInit {
     private renderer: Renderer2,
     theme: ThemeService
   ) {
-    theme.use('delicare');
+    // Trang đăng nhập giữ giao diện cũ (form + logo của khung Angular): bật lại CSS của template, tắt CSS giao diện mockup.
+    theme.use('w3crm');
     if (this.authenticationService.userValue) {
       this.router.navigate([SOURCE.concat(DOMAIN_ROUTER, SOURCE, HOME_ROUTE)]);
     }
