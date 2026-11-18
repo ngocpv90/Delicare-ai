@@ -388,7 +388,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - Seed Shift (TRUA, TOI, DEM_23H, SANG_6H). ShiftAssignment, AttendanceEvent (GPS so với KitchenWorkstation, QR, máy, chấm hộ), LeaveRequest, ShiftSwapRequest (duyệt).
 - AC: test hợp lệ theo bán kính; chấm hộ phải ghi rõ SourceChannel.
 
-### T22 – KPI · phụ thuộc T13–T21 · `TODO`
+### T22 – KPI · phụ thuộc T13–T21 · `DONE` 2026-11-17 qua **BE3.4** (seed 11 chỉ tiêu, snapshot ngày / tháng, test công thức đủ 11 KPI trong `Kpi/KpiTests`; rà lại 2026-11-18)
 - Seed KpiMetricDefinition (BUSINESS_RULES §12). Tính KpiDailySnapshot / KpiMonthlySnapshot. API dashboard theo spec mục 12.
 - AC: test công thức cho từng KPI.
 
@@ -557,12 +557,12 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
 - **T45B.5 (`DONE` 2026-11-15):** `docs/frontend-handoff/P0-P2.md` (265 action sinh từ code), `MetaData/GetStatuses` (47 bộ, CodeGen từ STATUS_CATALOG), `MetaData/GetReferenceLists` (appsettings ReferenceLists), `.http`, UAT R1.1. Nội dung gốc: `docs/frontend-handoff/P0-P2.md` (màn hình → chức năng spec → action cũ, request / response mẫu) + `.http`; danh mục trạng thái (STATUS_CATALOG) và danh sách tham chiếu cho dropdown viết thành action kiểu cũ (vd. controller không gắn bảng theo mẫu `DashboardController`).
 - AC: bảng đối chiếu `docs/frontend-handoff/P0-P2.md` (màn hình → endpoint → trạng thái); test tích hợp cho mỗi nhóm; file `.http`.
 
-### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `TODO` (T46B.1 `DONE(PILOT)` 2026-11-16: thực đơn tuần + FC%, phân công, đơn hàng, in Thực đơn gửi khách; hợp đồng Submit / Terminate, dự báo, đổi món → sau Pilot)
+### T46B – API màn hình P3–P5 · phụ thuộc T13–T17 · `DONE` qua T13–T17, BE2.1–BE2.4, BE2.7 / BE2.7.1 (rà 2026-11-18: Catalog P3, P5 đủ; P4 còn 1 dòng `Một phần` – STT 113 gửi PO cho NCC qua email / Zalo, làm cùng kênh tin nhắn D-62 / R2; 4 mẫu in Menu/ExportForCustomer, ExportPreProduction, ExportProductionSheet, PurchaseOrder/ExportOrder) (T46B.1 `DONE(PILOT)` 2026-11-16: thực đơn tuần + FC%, phân công, đơn hàng, in Thực đơn gửi khách; hợp đồng Submit / Terminate, dự báo, đổi món → sau Pilot)
 - T46B.1 P3 (hợp đồng, thực đơn tuần buổi × lựa chọn + giá vốn / FC, đơn hàng theo khách → địa điểm → vị trí). T46B.2 P4 (mua hàng: báo giá → so sánh → PO; kho). T46B.3 P5 (kế hoạch sản xuất, giá thành).
 - **API in / xuất file** theo mẫu thật (BUSINESS_DOCS.md), dùng GemBox / Excel export có sẵn: Thực đơn gửi khách, Phiếu trước sản xuất, Phiếu sản xuất, Đơn đặt hàng NCC. Header pháp nhân lấy từ cấu hình. Trả file (docx / xlsx / pdf).
 - AC: như T45B cho P3–P5 (khung cũ, D-30); mỗi mẫu in có test sinh file không lỗi. In / xuất file: action `Print*` / `Export*` trên controller của chứng từ, dùng `ExportToExcelHelper` / `TemplateExcelHelper` / GemBox có sẵn.
 
-### T47B – API màn hình P6–P8 · phụ thuộc T18–T22 · `TODO`
+### T47B – API màn hình P6–P8 · phụ thuộc T18–T22 · `DONE` phần API nghiệp vụ qua T18–T21, BE2.1, BE2.3, BE2.5, BE2.6, BE3.3–BE3.5 (rà 2026-11-18: Catalog P6, P7 đủ; P8 duyệt / nhân sự / KPI đủ; dashboard 231–232 xong ở BE3.5). Phần bot / kênh tin nhắn (STT 214–220) chuyển sang **ĐỢT BOT** (D-62)
 - T47B.1 P6 (QC / ATTP, checklist, nhiệt độ, truy xuất). T47B.2 P7 (đóng gói, giao vận, POD, phản ánh, hộp / khay, vệ sinh). T47B.3 P8 (nhân sự, KPI, **API dashboard điều hành**, hộp duyệt ApprovalRequest của user, cảnh báo nghiệp vụ).
 - AC: như T45B cho P6–P8 (khung cũ, D-30).
 
@@ -599,7 +599,7 @@ Nguyên tắc chung cho mọi FE-x: chỉ làm màn hình có API "Đã xong" tr
 - Kiểm tra trùng mã, báo lỗi từng dòng, idempotent theo mã.
 - AC: nạp file mẫu thành công; nạp lại không trùng; dòng lỗi được báo rõ.
 
-### T50R1 – Tài liệu API và UAT backend · song song các lát · `TODO` (phần Pilot `DONE(PILOT)` 2026-11-17: `docs/api-tests/pilot-flow.http`, `UAT_CHECKLIST.md` mục PILOT, `docs/frontend-handoff/README.md`, test `Pilot/PilotFlowSqlServerTests`; các lát R1 khác sau Pilot)
+### T50R1 – Tài liệu API và UAT backend · song song các lát · `DONE` cho BE-2 / BE-3 (rà 2026-11-18: mỗi đợt có `docs/api-tests/*.http` + mục UAT_CHECKLIST + handoff; toàn luồng `full-flow.http`) – đợt BOT tự thêm `bot-*.http` + UAT (phần Pilot `DONE(PILOT)` 2026-11-17: `docs/api-tests/pilot-flow.http`, `UAT_CHECKLIST.md` mục PILOT, `docs/frontend-handoff/README.md`, test `Pilot/PilotFlowSqlServerTests`; các lát R1 khác sau Pilot)
 - `docs/claude/UAT_CHECKLIST.md`: mỗi lát có kịch bản thử **bằng API** (vai trò / token, request theo thứ tự, kết quả mong đợi), lấy từ luồng trong `DELICARE_Business_Workflow.md`.
 - `docs/api-tests/*.http` (hoặc Postman collection): chạy được từng luồng end-to-end.
 - `docs/frontend-handoff/`: mỗi màn hình mockup ↔ danh sách endpoint, input / output mẫu, để team Angular dùng khi anh giao frontend.
