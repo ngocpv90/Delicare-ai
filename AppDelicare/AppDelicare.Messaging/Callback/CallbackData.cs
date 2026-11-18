@@ -21,6 +21,10 @@ namespace AppDelicare.Messaging.Callback
             public const string Menu = "menu";
             public const string Number = "num";
             public const string Undo = "undo";
+            /// <summary>BOT-1.5b: chuyến / điểm dừng / hộp khay (GiaoVanActions).</summary>
+            public const string Delivery = "dlv";
+            /// <summary>BOT-1.5b: đối soát suất tại điểm phát (DiemPhatActions).</summary>
+            public const string Reconciliation = "rcn";
         }
 
         public static string Build(string kind, string action, string? id = null)

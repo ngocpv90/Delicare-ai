@@ -19,6 +19,8 @@ namespace AppDelicare.Services.Interface
 
         // T19 (Pilot P8) – chuyến xe CX-, nhiệt độ giao ≥ 60 °C, xuất phát.
         public Task<IResult<DeliveryBoardModel>> GetBoard(DeliveryDateRequest request);
+        /// <summary>BOT-1.5b: chuyến của chính tài xế (DriverId = nhân viên của tài khoản) trong ngày giao.</summary>
+        public Task<IResult<DeliveryBoardModel>> GetMine(DateTime? deliveryDate);
         public Task<IResults<DeliveryReadyOrderModel>> GetReadyOrders(DeliveryDateRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> GetDetail(Guid id);
         public Task<IResult<DeliveryRouteDetailModel>> Create(DeliveryRouteCreateRequest request);

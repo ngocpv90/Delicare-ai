@@ -113,6 +113,22 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>BOT-1.5b: chuyến của chính tài xế (DriverId = nhân viên của tài khoản) trong ngày giao (mặc định hôm nay) – tự phục vụ, không cần quyền màn chuyến xe.</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetMine")]
+        public async Task<IActionResult> GetMine(DateTime? deliveryDate = null)
+        {
+            try
+            {
+                return Ok(await _service.GetMine(deliveryDate));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetMine: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T19 (spec 10.2): chuyến của ngày giao – xe, tài xế, điểm dừng, tải, đếm theo trạng thái.</summary>
         [HttpGet("GetBoard")]
         public async Task<IActionResult> GetBoard([FromQuery] DeliveryDateRequest request)

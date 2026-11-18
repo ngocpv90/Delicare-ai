@@ -229,6 +229,14 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## BOT VẬN HÀNH – GIAO VẬN, ĐIỂM PHÁT (BOT-1.5b, 2026-11-18) · thử: `tools/bot-smoke/flow-giaovan.mjs` · test: `AppDelicare.Tests/Messaging/MessagingGiaoVanTests.cs`
+- [ ] Tài xế (nhân viên gắn với tài khoản, được phân chuyến hôm nay): 🚚 Chuyến của tôi → thẻ chuyến đúng xe / giờ / điểm; ⛔ điều kiện xuất phát còn thiếu giống web.
+- [ ] 🚀 Xuất phát → chọn nhiệt độ → web màn chuyến xe: Đang giao, có lần đo nhiệt độ; đã đo đạt trước đó → nút xuất phát 1 chạm.
+- [ ] Tại điểm: 📍 Đã đến → ✅ Giao (số suất điền sẵn = đã xếp) → nhiệt độ → tên người nhận → web: điểm Đã giao, có biên bản giao (POD); ❌ Không giao được → lý do hiện trên web.
+- [ ] 📥 Nhận hộp về → gõ số → web màn thu hồi hộp khay có phiếu mới.
+- [ ] Điều phối: 🗺 Giao vận hôm nay khớp màn chuyến xe. Điểm phát: 🚚 Xe đến hôm nay; 🧮 Đối soát suất (điền sẵn số khách nhận) → web màn đối soát cập nhật.
+- [ ] Người không có quyền màn chuyến / điểm dừng / đối soát không thấy các chức năng này.
+
 ## BOT VẬN HÀNH – CHUNG, BẾP, ATTP (BOT-1.5a, 2026-11-18) · thử: `tools/bot-smoke/flow-vanhanh.mjs` · test: `AppDelicare.Tests/Messaging/MessagingVanHanhTests.cs`
 - [ ] Quét QR cổng khi đã liên kết → bot xin vị trí chấm công ngay.
 - [ ] 📅 Lịch ca 7 ngày đúng như màn phân ca; 🏖 Xin nghỉ bằng nút (loại → ngày → số ngày → lý do) → đơn hiện trên web màn Đơn xin nghỉ, chờ duyệt.
