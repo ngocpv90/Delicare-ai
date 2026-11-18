@@ -228,3 +228,10 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] ⏳ Chờ tôi duyệt chỉ có việc mình đúng là người duyệt; đơn nghỉ / đổi ca: 1 chạm + Hoàn tác 10″ (hoàn tác → không duyệt); PO / PR / hợp đồng: xác nhận 2 bước; Từ chối bắt buộc lý do.
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
+
+## BOT VẬN HÀNH – CHUNG, BẾP, ATTP (BOT-1.5a, 2026-11-18) · thử: `tools/bot-smoke/flow-vanhanh.mjs` · test: `AppDelicare.Tests/Messaging/MessagingVanHanhTests.cs`
+- [ ] Quét QR cổng khi đã liên kết → bot xin vị trí chấm công ngay.
+- [ ] 📅 Lịch ca 7 ngày đúng như màn phân ca; 🏖 Xin nghỉ bằng nút (loại → ngày → số ngày → lý do) → đơn hiện trên web màn Đơn xin nghỉ, chờ duyệt.
+- [ ] Tổ trưởng bếp: 🍳 Mẻ cần làm → Bắt đầu → Nhiệt độ lõi (nút / gõ; < 70 °C bị báo) → Lưu mẫu → Xong mẻ (số suất điền sẵn) → trên web mẻ đổi trạng thái đúng.
+- [ ] QA: 🧽 Checklist trong 1 tin → Hoàn tất → web màn kết quả checklist có đủ dòng; lỗi trọng yếu → mẻ bị giữ / cảnh báo như web.
+- [ ] Người không có quyền màn Bếp / ATTP không thấy các chức năng này trên bot.

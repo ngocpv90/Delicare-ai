@@ -19,6 +19,8 @@ namespace AppDelicare.Messaging.Core
         Task<ApiResult<T>> PostInternalAsync<T>(string action, object body, CancellationToken ct = default);
         Task<ApiResult<T>> GetAsUserAsync<T>(string path, string bearerToken, CancellationToken ct = default);
         Task<ApiResult<T>> PostFormAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, string bearerToken, CancellationToken ct = default);
+        /// <summary>BOT-1.5a: action nghiệp vụ nhận [FromBody] JSON (vd. FoodSafetyChecklistResult/Record).</summary>
+        Task<ApiResult<T>> PostJsonAsUserAsync<T>(string path, object body, string bearerToken, CancellationToken ct = default);
     }
 
     public sealed class DelicareApiClient(HttpClient http, IOptionsMonitor<MessagingHostOptions> options) : IDelicareApiClient
@@ -43,6 +45,13 @@ namespace AppDelicare.Messaging.Core
         public async Task<ApiResult<T>> PostFormAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, string bearerToken, CancellationToken ct = default)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, Url(path)) { Content = new FormUrlEncodedContent(form) };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            return await SendAsync<T>(request, ct);
+        }
+
+        public async Task<ApiResult<T>> PostJsonAsUserAsync<T>(string path, object body, string bearerToken, CancellationToken ct = default)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, Url(path)) { Content = JsonContent.Create(body, options: Json) };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
             return await SendAsync<T>(request, ct);
         }

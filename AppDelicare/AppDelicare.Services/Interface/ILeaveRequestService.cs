@@ -19,6 +19,8 @@ namespace AppDelicare.Services.Interface
 
         // BE2.6 (spec 11.3, Catalog 207, 209) – đơn nghỉ + duyệt qua engine LEAVE_REQUEST.
         public Task<IResult<LeaveRequestDetailModel>> Create(LeaveCreateRequest request);
+        /// <summary>BOT-1.5a: đơn nghỉ cho nhân viên lấy từ định danh bot.</summary>
+        public Task<IResult<LeaveRequestDetailModel>> CreateForEmployee(Guid employeeId, LeaveCreateRequest request);
         public Task<IResult<bool>> Decide(HrDecisionRequest request, bool approve);
         public Task<IResult<bool>> Cancel(HrCancelRequest request);
         public Task<IResult<LeaveRequestDetailModel>> GetDetail(Guid id);

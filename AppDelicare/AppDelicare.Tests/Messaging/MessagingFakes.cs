@@ -95,6 +95,10 @@ namespace AppDelicare.Tests.Messaging
         public Task<ApiResult<MyAttendanceModel>> EmployeeGetTodayAsync(BotIdentityRequest request, CancellationToken ct = default)
             => Task.FromResult(Record(request, new ApiResult<MyAttendanceModel> { ResponseCode = 200, Data = Today }));
 
+        public List<ReferenceItemModel> LeaveTypes { get; } = [new() { Code = "ANNUAL", Label = "Nghỉ phép năm" }, new() { Code = "SICK", Label = "Nghỉ ốm" }];
+
+        public Task<List<ReferenceItemModel>> GetLeaveTypesAsync(CancellationToken ct = default) => Task.FromResult(LeaveTypes.ToList());
+
         public Task<List<BotCorrelatedMessageModel>> GetCorrelatedAsync(string correlationId, CancellationToken ct = default)
         {
             Guard();
