@@ -3,6 +3,43 @@
   const U = UTIL, I = U.icon, esc = U.esc;
   const ps = { g: null };
   const FLAGS = [['AllowAccess', 'Truy cập'], ['AllowAdd', 'Thêm'], ['AllowEdit', 'Sửa'], ['AllowDelete', 'Xóa'], ['AllowPrint', 'In'], ['AllowExport', 'Xuất'], ['AllowImport', 'Nhập']];
+  const LIVE = () => Store.isLive;
+  // Tài khoản đang đăng nhập có cờ quản trị (User.IsAdmin) – một số action backend chỉ cho quản trị gọi.
+  const isAdmin = () => !!(window.DC_HOST && window.DC_HOST.user && window.DC_HOST.user.isAdmin);
+  // Action ghi dùng HTTP GET của khung cũ (User/SaveIsActive, User/ResetPassword): Store.act chỉ gửi POST / PUT / DELETE nên đi qua Store.query.
+  // opt: { tables: bảng tải lại khi thành công, demo: thao tác thay thế ở chế độ DEMO }. Lỗi đã hiện toast.
+  const getAct = (path, params, opt = {}) => {
+    if (!Store.isLive) { if (opt.demo) opt.demo(); return Promise.resolve({ ok: true, demo: true }); }
+    return Store.query(path, params).then(x => {
+      if (!x.ok) { UI.toast(`<b>${esc(path)}</b>: ${esc(x.message || 'Lỗi API')}`, 'err'); return x; }
+      return Store.reload(opt.tables).then(() => x);
+    });
+  };
+  // Kết quả đọc qua action riêng giữ 60 giây theo khóa + dấu dữ liệu (màn hình vẽ lại nhiều lần khi các bảng tải xong).
+  const cache = {};
+  const cached = (key, sig, load) => {
+    const c = cache[key]; if (c && c.sig === sig && Date.now() - c.at < 60000) return c.p;
+    const p = load(); cache[key] = { sig, at: Date.now(), p };
+    p.then(x => { if (!x.ok && cache[key] && cache[key].p === p) delete cache[key]; });
+    return p;
+  };
+  // Bảng quyền chỉ đọc từ cây menu của API (UserRole/GetPreview, UserRole/GetByUserId): [{ objectMenuName, allowAccess…, children }]
+  const flagKey = k => k.charAt(0).toLowerCase() + k.slice(1);
+  const permTable = list => {
+    const row = (m, lvl) => `<tr><td class="l" style="${lvl ? 'padding-left:24px' : 'font-weight:800;background:#F3F6EF'}">${esc(m.objectMenuName || m.shortName || '')}</td>${FLAGS.map(fl => `<td ${lvl ? '' : 'style="background:#F3F6EF"'}>${m[flagKey(fl[0])] ? '<b>✓</b>' : '<span class="muted">–</span>'}</td>`).join('')}</tr>` + (m.children || []).map(c => row(c, 1)).join('');
+    return list && list.length ? `<div class="table-wrap" style="max-height:460px"><table class="matrix" style="width:100%"><thead><tr><th class="l">Chức năng</th>${FLAGS.map(x => `<th>${x[1]}</th>`).join('')}</tr></thead><tbody>${list.map(m => row(m, 0)).join('')}</tbody></table></div>` : '<div class="empty">Chưa được cấp quyền truy cập chức năng nào</div>';
+  };
+  // Xem trước menu + quyền một nhóm nhận được và thành viên của nhóm (chỉ quản trị).
+  const openGroupPreview = g => Store.query('UserRole/GetPreview', { userGroupId: g.Id }).then(x => {
+    if (!x.ok) { UI.toast(esc(x.message || 'Không tải được quyền của nhóm'), 'err'); return; }
+    const d = x.data || {}, us = d.listUser || [];
+    UI.modal({ title: 'Xem trước quyền – ' + esc(d.userGroupName || g.Name || ''), sub: `${d.screenCount || 0} màn hình được truy cập · ${us.length} tài khoản`, size: 'lg', body: `<div class="small muted mb">Tài khoản thuộc nhóm: ${us.map(u => esc(u.userName || '')).join(', ') || '—'}</div>${permTable(d.listMenu)}` });
+  });
+  // Quyền hiệu lực của một tài khoản (cộng dồn mọi nhóm; quản trị = mọi quyền).
+  const openUserPermission = u => Store.query('UserRole/GetByUserId', { userId: u.Id }).then(x => {
+    if (!x.ok) { UI.toast(esc(x.message || 'Không tải được quyền của tài khoản'), 'err'); return; }
+    UI.modal({ title: 'Quyền hiệu lực – ' + esc(u.UserName || ''), sub: u.IsAdmin ? 'Tài khoản quản trị: có mọi quyền' : 'Cộng dồn quyền của mọi nhóm tài khoản thuộc về', size: 'lg', body: permTable((x.data || {}).listMenu) });
+  });
   APP.register('adm-permission', (el, f) => {
     const groups = Store.rows('UserGroup'); if (!ps.g || !Store.get('UserGroup', ps.g)) ps.g = (Store.one('UserGroup', 'Name', 'Bếp trưởng') || groups[0] || {}).Id;
     if (!ps.g) { el.innerHTML = APP.header(f, '') + UI.emptyData(['UserGroup'], 'Chưa có nhóm người dùng nào – tạo nhóm ở màn hình Nhóm người dùng trước khi phân quyền.'); return; }
@@ -10,21 +47,149 @@
     const menus = Store.rows('ObjectMenu'); const roots = menus.filter(m => !m.ParentId).sort((a, b) => a.OrderShow - b.OrderShow);
     const ur = Store.by('UserRole', 'UserGroupId', g.Id);
     const users = Store.by('UserClaim', 'UserGroupId', g.Id).map(c => Store.get('User', c.UserId)).filter(Boolean);
-    el.innerHTML = APP.header(f, `<button class="btn" id="pView">${I('eye')} Xem mockup với vai trò này</button>`, { sub: 'PO xác nhận: Vai trò = UserGroup · Quyền = UserRole (AllowAccess/Add/Edit/Delete/Print/Export/Import) trên từng chức năng ObjectMenu (menu hệ thống). Tick ô để cấp/thu hồi quyền – có hiệu lực ngay cho menu & nút bấm.' }) + `
+    const canEdit = Store.perm(f.id).edit !== false;
+    el.innerHTML = APP.header(f, LIVE() ? `${canEdit && groups.length > 1 ? `<button class="btn" id="pCopy">${I('layers')} Sao chép quyền từ nhóm khác</button>` : ''}${isAdmin() ? `<button class="btn" id="pPreview">${I('eye')} Xem trước quyền của nhóm</button>` : ''}` : `<button class="btn" id="pView">${I('eye')} Xem mockup với vai trò này</button>`, { sub: 'PO xác nhận: Vai trò = UserGroup · Quyền = UserRole (AllowAccess/Add/Edit/Delete/Print/Export/Import) trên từng chức năng ObjectMenu (menu hệ thống). Tick ô để cấp/thu hồi quyền – có hiệu lực ngay cho menu & nút bấm.' }) + `
     <div class="grid" style="grid-template-columns:260px minmax(0,1fr)"><div class="card panel"><div class="panel-title mb">Nhóm người dùng (UserGroup)</div>${groups.map(x => `<div class="titem ${x.Id === g.Id ? 'active' : ''}" data-g="${x.Id}"><div><b style="font-family:inherit">${esc(x.Name)}</b><small>${Store.by('UserRole', 'UserGroupId', x.Id).filter(r => r.AllowAccess).length} chức năng · ${Store.by('UserClaim', 'UserGroupId', x.Id).length} tài khoản</small></div></div>`).join('')}</div>
       <div class="card panel"><div class="spread mb"><div><h2>${esc(g.Name)}</h2><div class="small muted">Tài khoản (UserClaim): ${users.map(u => esc(Store.label('User', u))).join(', ') || '—'}</div></div><div class="row-flex"><button class="btn sm" data-all="1">Cấp toàn bộ truy cập</button><button class="btn sm danger" data-all="0">Thu hồi toàn bộ</button></div></div>
         <div class="table-wrap" style="max-height:600px"><table class="matrix" style="width:100%"><thead><tr><th class="l">Chức năng (ObjectMenu)</th><th class="l">MetaLink</th>${FLAGS.map(x => `<th>${x[1]}<br><small class="mono" style="font-weight:400">${x[0]}</small></th>`).join('')}</tr></thead><tbody>${roots.map(r => `<tr><td class="l" colspan="${FLAGS.length + 2}" style="background:#F3F6EF;font-weight:800">${esc(r.Name)}</td></tr>${menus.filter(m => m.ParentId === r.Id).sort((a, b) => a.OrderShow - b.OrderShow).map(m => { const x = ur.find(u => u.ObjectMenuId === m.Id) || {}; return `<tr><td class="l">${esc(m.Name)}</td><td class="l mono small">${esc(m.MetaLink)}</td>${FLAGS.map(fl => `<td><input type="checkbox" data-m="${m.Id}" data-fl="${fl[0]}" ${x[fl[0]] ? 'checked' : ''} aria-label="${fl[1]} ${esc(m.Name)}"></td>`).join('')}</tr>`; }).join('')}`).join('')}</tbody></table></div></div></div>`;
     el.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { ps.g = b.dataset.g; APP.refresh(); });
     const setFlag = (mid, fl, v) => { let x = Store.rows('UserRole').find(u => u.UserGroupId === g.Id && u.ObjectMenuId === mid); if (!x) x = Store.add('UserRole', { UserGroupId: g.Id, ObjectMenuId: mid, AllowAccess: 0, AllowAdd: 0, AllowEdit: 0, AllowDelete: 0, AllowPrint: 0, AllowExport: 0, AllowImport: 0 }); const patch = { [fl]: v }; if (fl === 'AllowAccess' && !v) FLAGS.forEach(f2 => patch[f2[0]] = 0); if (fl !== 'AllowAccess' && v) patch.AllowAccess = 1; Store.update('UserRole', x.Id, patch, 'Phân quyền ' + g.Name); };
     el.querySelectorAll('input[data-m]').forEach(c => c.onchange = () => { setFlag(c.dataset.m, c.dataset.fl, c.checked ? 1 : 0); UI.toast(`${c.checked ? 'Cấp' : 'Thu hồi'} ${c.dataset.fl} – UserRole (ghi AuditChange)`, 'ok'); APP.refresh(); });
-    el.querySelectorAll('[data-all]').forEach(b => b.onclick = () => UI.confirm(`${b.dataset.all === '1' ? 'Cấp' : 'Thu hồi'} quyền truy cập toàn bộ ${menus.filter(m => m.ParentId).length} chức năng cho "${esc(g.Name)}"?`, () => { menus.filter(m => m.ParentId).forEach(m => setFlag(m.Id, 'AllowAccess', +b.dataset.all)); UI.toast('Đã cập nhật ma trận quyền', 'ok'); APP.refresh(); }, { danger: b.dataset.all === '0' }));
-    el.querySelector('#pView').onclick = () => { Store.user.group = g.Name; const uc = Store.one('UserClaim', 'UserGroupId', g.Id); Store.user.id = uc ? uc.UserId : null; Store.user.label = uc && Store.get('User', uc.UserId) ? Store.get('User', uc.UserId).UserName : 'demo'; APP._setUserUi(); APP._buildNav(); APP.go('dash-exec'); UI.toast('Đang xem với vai trò ' + esc(g.Name) + ' – menu đã lọc theo UserRole. Bấm avatar để đổi lại.', 'ok'); };
+    el.querySelectorAll('[data-all]').forEach(b => b.onclick = () => UI.confirm(`${b.dataset.all === '1' ? 'Cấp' : 'Thu hồi'} quyền truy cập toàn bộ ${menus.filter(m => m.ParentId).length} chức năng cho "${esc(g.Name)}"?${b.dataset.all === '0' ? '<div class="small muted mt">Mọi quyền Thêm / Sửa / Xóa / In / Xuất / Nhập của nhóm cũng bị tắt.</div>' : ''}`, () => Store.act('UserRole/SaveAccessAll', { form: { UserGroupId: g.Id, AllowAccess: b.dataset.all === '1' }, tables: ['UserRole'], demo: () => menus.filter(m => m.ParentId).forEach(m => setFlag(m.Id, 'AllowAccess', +b.dataset.all)) }).then(x => { if (!x.ok) return; UI.toast('Đã cập nhật ma trận quyền', 'ok'); APP.refresh(); }), { danger: b.dataset.all === '0' }));
+    const pPreview = el.querySelector('#pPreview'); if (pPreview) pPreview.onclick = () => openGroupPreview(g);
+    const pCopy = el.querySelector('#pCopy'); if (pCopy) pCopy.onclick = () => UI.modal({
+      title: 'Sao chép quyền sang nhóm ' + esc(g.Name), size: 'sm',
+      body: `<div class="field"><label>Lấy quyền từ nhóm</label><select class="select" id="cpSrc">${groups.filter(x => x.Id !== g.Id).map(x => `<option value="${esc(x.Id)}">${esc(x.Name)}</option>`).join('')}</select></div><div class="small muted mt">Toàn bộ quyền hiện tại của nhóm "${esc(g.Name)}" sẽ được thay bằng quyền của nhóm nguồn.</div>`,
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="cpOk">Sao chép</button>',
+      onMount: (m, close) => m.querySelector('#cpOk').onclick = () => {
+        const src = Store.get('UserGroup', m.querySelector('#cpSrc').value); if (!src) return; close();
+        UI.confirm(`Thay toàn bộ quyền của nhóm <b>${esc(g.Name)}</b> bằng quyền của nhóm <b>${esc(src.Name)}</b>?`, () => Store.act('UserRole/CopyFromUserGroup', { form: { SourceUserGroupId: src.Id, TargetUserGroupId: g.Id }, tables: ['UserRole'] }).then(x => { if (!x.ok) return; UI.toast('Đã sao chép quyền từ nhóm ' + esc(src.Name), 'ok'); APP.refresh(); }), { danger: true, ok: 'Sao chép' });
+      }
+    });
+    const pView = el.querySelector('#pView'); if (pView) pView.onclick = () => { Store.user.group = g.Name; const uc = Store.one('UserClaim', 'UserGroupId', g.Id); Store.user.id = uc ? uc.UserId : null; Store.user.label = uc && Store.get('User', uc.UserId) ? Store.get('User', uc.UserId).UserName : 'demo'; APP._setUserUi(); APP._buildNav(); APP.go('dash-exec'); UI.toast('Đang xem với vai trò ' + esc(g.Name) + ' – menu đã lọc theo UserRole. Bấm avatar để đổi lại.', 'ok'); };
   });
   // ---------- Cây đơn vị tổ chức ----------
   APP.register('adm-orgunit', (el, f) => {
     const ous = Store.rows('OrganizationUnit');
     const node = p => ous.filter(o => (o.ParentId || null) === p).map(o => `<div class="tl ${o.UnitType === 'BRANCH' ? 'blue' : o.UnitType === 'WAREHOUSE' ? 'orange' : ''}"><b><a href="javascript:void 0" data-open="OrganizationUnit" data-id="${o.Id}">${esc(o.Name)}</a> ${UI.tag(o.UnitType)} <span class="mono small muted">${esc(o.Code)}</span></b><small>Quản lý: ${esc(o.ManagerId ? Store.label('Employee', o.ManagerId) : '—')} · ${Store.by('Employee', 'OrganizationUnitId', o.Id).length} nhân viên · ${Store.by('Warehouse', 'OrganizationUnitId', o.Id).length} kho</small>${ous.some(c => c.ParentId === o.Id) ? `<div class="timeline" style="margin-top:8px">${node(o.Id)}</div>` : ''}</div>`).join('');
+    if (LIVE()) {
+      // Chế độ dữ liệu thật: cây + tên quản lý + số nhân viên / số kho do server tính (không kéo bảng Employee, Warehouse về trình duyệt).
+      const color = t => t === 'BRANCH' ? 'blue' : t === 'WAREHOUSE' ? 'orange' : '';
+      const liveNode = list => (list || []).map(o => `<div class="tl ${color(o.unitType)}"><b><a href="javascript:void 0" data-open="OrganizationUnit" data-id="${esc(o.id)}">${esc(o.name || '')}</a> ${o.unitType ? UI.tag(o.unitType) : ''} <span class="mono small muted">${esc(o.code || '')}</span></b><small>Quản lý: ${esc(o.managerName || '—')} · ${o.employeeCount || 0} nhân viên · ${o.warehouseCount || 0} kho</small>${o.children && o.children.length ? `<div class="timeline" style="margin-top:8px">${liveNode(o.children)}</div>` : ''}</div>`).join('');
+      APP.genericList(el, f, { top: `<div class="card panel mb"><div class="panel-title mb">${esc((Store.rows('Company')[0] || {}).Name || 'Công ty')} – cây đơn vị</div><div class="timeline" id="ouTree"><div class="muted small">Đang tải cây đơn vị…</div></div></div>` });
+      const sig = ous.map(o => o.Id + '|' + (o.ParentId || '') + '|' + (o.ManagerId || '') + '|' + (o.ModifiedDate || '')).join(',');
+      cached('orgTree', sig, () => Store.query('OrganizationUnit/GetTree')).then(x => {
+        const host = el.querySelector('#ouTree'); if (!host || !host.isConnected) return;
+        const tree = x.ok ? (Array.isArray(x.data) ? x.data : x.list) : null;
+        host.innerHTML = (tree ? liveNode(tree) : node(null)) || '<div class="muted small">Chưa có đơn vị nào</div>';
+      });
+      return;
+    }
     APP.genericList(el, f, { top: `<div class="card panel mb"><div class="panel-title mb">${esc((Store.rows('Company')[0] || {}).Name || 'Công ty')} – cây đơn vị (OrganizationUnit.ParentId)</div><div class="notice warn small">${I('alert')}<div>ParentId → OrganizationUnit và ManagerId → Employee là quan hệ ĐỀ XUẤT (chưa có trong danh sách quan hệ xác nhận). PO xác nhận OrganizationUnit là nguồn Chi nhánh / Phòng ban.</div></div><div class="timeline">${node(null)}</div></div>` });
+  });
+  // ---------- Tài khoản người dùng: khóa / mở, đặt lại mật khẩu, quyền hiệu lực ----------
+  APP.register('adm-user', (el, f) => {
+    const canEdit = Store.perm(f.id).edit !== false;
+    APP.genericList(el, f);
+    APP.rowExtra(el, tr => {
+      const r = Store.get('User', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td) return;
+      const name = esc(r.UserName || ''), active = !!r.IsActive;
+      let h = '';
+      if (LIVE()) h += `<button class="btn xs" data-eff title="Quyền hiệu lực của tài khoản">${I('shield')}</button> `;
+      // Không tự khóa tài khoản đang đăng nhập (backend cũng chặn).
+      if (canEdit && r.Id !== Store.user.id) h += active ? '<button class="btn xs danger" data-lock>Khóa</button> ' : '<button class="btn xs" data-lock>Mở khóa</button> ';
+      if (LIVE() && isAdmin()) h += `<button class="btn xs orange" data-reset title="Đặt lại mật khẩu">${I('key')}</button> `;
+      td.insertAdjacentHTML('afterbegin', h);
+      const eff = td.querySelector('[data-eff]'); if (eff) eff.onclick = () => openUserPermission(r);
+      const lock = td.querySelector('[data-lock]'); if (lock) lock.onclick = () => UI.confirm(active ? `Khóa tài khoản <b>${name}</b>? Người dùng sẽ không đăng nhập được cho tới khi mở lại.` : `Mở khóa tài khoản <b>${name}</b>?`,
+        () => getAct('User/SaveIsActive', { id: r.Id }, { tables: ['User'], demo: () => Store.update('User', r.Id, { IsActive: active ? 0 : 1 }, active ? 'Khóa tài khoản' : 'Mở khóa tài khoản') }).then(x => { if (!x.ok) return; UI.toast((active ? 'Đã khóa tài khoản ' : 'Đã mở khóa tài khoản ') + name, 'ok'); APP.refresh(); }),
+        { danger: active, ok: active ? 'Khóa' : 'Mở khóa' });
+      const reset = td.querySelector('[data-reset]'); if (reset) reset.onclick = () => UI.confirm(`Đặt lại mật khẩu của tài khoản <b>${name}</b>? Mật khẩu hiện tại sẽ không dùng được nữa.`,
+        () => getAct('User/ResetPassword', { id: r.Id }).then(x => {
+          if (!x.ok) return;
+          // Mật khẩu tạm chỉ hiện đúng một lần trong hộp thoại này – không lưu, không ghi log.
+          const pw = typeof x.data === 'string' ? x.data : '';
+          if (!pw) { UI.toast('Đã đặt lại mật khẩu tài khoản ' + name, 'ok'); return; }
+          UI.modal({
+            title: 'Mật khẩu tạm', size: 'sm',
+            body: `<p style="margin-top:0">Mật khẩu tạm của <b>${name}</b> – hết hạn sau 24 giờ, người dùng phải đổi khi đăng nhập:</p><div class="row-flex"><input class="input mono" id="tmpPw" readonly value="${esc(pw)}" style="flex:1"><button class="btn" id="tmpCopy">Sao chép</button></div><div class="notice warn small mt">${I('alert')}<div>Mật khẩu chỉ hiện một lần. Đóng hộp thoại là không xem lại được.</div></div>`,
+            onMount: m => m.querySelector('#tmpCopy').onclick = () => {
+              const inp = m.querySelector('#tmpPw'); inp.select();
+              const done = () => UI.toast('Đã sao chép mật khẩu tạm', 'ok');
+              const legacy = () => { try { if (document.execCommand('copy')) done(); } catch (e) { /* người dùng tự chép từ ô đã bôi đen */ } };
+              if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(inp.value).then(done, legacy); else legacy();
+            }
+          });
+        }), { danger: true, ok: 'Đặt lại mật khẩu' });
+    });
+  });
+  // ---------- Nhóm người dùng: sang ma trận quyền, xem trước quyền của nhóm ----------
+  APP.register('adm-usergroup', (el, f) => {
+    APP.genericList(el, f);
+    APP.rowExtra(el, tr => {
+      const r = Store.get('UserGroup', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td) return;
+      td.insertAdjacentHTML('afterbegin', `${Store.perm('adm-permission').access !== false ? '<button class="btn xs" data-mx>Phân quyền</button> ' : ''}${LIVE() && isAdmin() ? `<button class="btn xs" data-pv title="Xem trước quyền của nhóm">${I('shield')}</button> ` : ''}`);
+      const mx = td.querySelector('[data-mx]'); if (mx) mx.onclick = () => { ps.g = r.Id; APP.go('adm-permission'); };
+      const pv = td.querySelector('[data-pv]'); if (pv) pv.onclick = () => openGroupPreview(r);
+    });
+  });
+  // ---------- Menu chức năng: cây 2 cấp, sắp xếp thứ tự, chuyển nhóm ----------
+  APP.register('adm-objectmenu', (el, f) => {
+    const canEdit = Store.perm(f.id).edit !== false;
+    const ms = Store.rows('ObjectMenu');
+    const byOrder = (a, b) => (a.OrderShow || 0) - (b.OrderShow || 0) || String(a.Name || '').localeCompare(String(b.Name || ''));
+    const localTree = () => { const mk = m => ({ id: m.Id, name: m.Name, parentId: m.ParentId || null, orderShow: m.OrderShow, isActive: m.IsActive !== 0 && m.IsActive !== false, children: ms.filter(c => c.ParentId === m.Id).sort(byOrder).map(mk) }); return ms.filter(m => !m.ParentId).sort(byOrder).map(mk); };
+    APP.genericList(el, f, { top: `<div class="card panel mb"><div class="panel-title">Cây menu chức năng</div><div class="small muted mb">Thứ tự hiển thị trên thanh menu. Thay đổi có hiệu lực với người dùng từ lần đăng nhập sau.</div><div id="omTree" style="max-height:420px;overflow:auto"><div class="muted small">Đang tải cây menu…</div></div></div>` });
+    const draw = tree => {
+      const host = el.querySelector('#omTree'); if (!host || !host.isConnected) return;
+      const pos = {};                                   // id -> { node, sibs, i }
+      const line = (m, sibs, i, lvl) => {
+        pos[m.id] = { node: m, sibs, i };
+        const kids = m.children || [];
+        return `<div class="spread" style="padding:5px 0 5px ${lvl * 24}px;border-bottom:1px solid #F0F2ED${lvl ? '' : ';background:#F3F6EF'}"><div>${lvl ? esc(m.name || '') : '<b>' + esc(m.name || '') + '</b>'}${m.isActive === false ? ' <span class="tag">Đang tắt</span>' : ''}${lvl ? '' : ` <span class="small muted">${kids.length} mục</span>`}</div>${canEdit ? `<div class="row-flex" style="flex-wrap:nowrap;padding-right:6px">${lvl && tree.length > 1 ? `<button class="btn xs" data-par="${esc(m.id)}" title="Chuyển sang nhóm menu khác">Chuyển nhóm</button>` : ''}<button class="btn xs" data-mv="-1" data-id="${esc(m.id)}" ${i === 0 ? 'disabled' : ''} title="Lên trên">${I('up')}</button><button class="btn xs" data-mv="1" data-id="${esc(m.id)}" ${i === sibs.length - 1 ? 'disabled' : ''} title="Xuống dưới">${I('down')}</button></div>` : ''}</div>${kids.map((c, k) => line(c, kids, k, 1)).join('')}`;
+      };
+      host.innerHTML = tree.length ? tree.map((m, i) => line(m, tree, i, 0)).join('') : '<div class="muted small">Chưa có menu nào</div>';
+      // Gửi danh sách [{ id, parentId, orderShow }] – body JSON vì là danh sách.
+      const save = (payload, msg) => Store.act('ObjectMenu/UpdateOrder', { method: 'PUT', json: payload, tables: ['ObjectMenu'], demo: () => payload.forEach(p => Store.update('ObjectMenu', p.id, { ParentId: p.parentId, OrderShow: p.orderShow }, 'Sắp xếp menu')) }).then(x => { if (!x.ok) return; delete cache.menuTree; UI.toast(msg, 'ok'); APP.refresh(); });
+      host.querySelectorAll('[data-mv]').forEach(b => b.onclick = () => {
+        const p = pos[b.dataset.id]; if (!p) return;
+        const j = p.i + (+b.dataset.mv); if (j < 0 || j >= p.sibs.length) return;
+        const list = p.sibs.slice(); list[p.i] = p.sibs[j]; list[j] = p.node;
+        save(list.map((s, k) => ({ id: s.id, parentId: s.parentId || null, orderShow: k + 1 })), 'Đã đổi thứ tự menu');
+      });
+      host.querySelectorAll('[data-par]').forEach(b => b.onclick = () => {
+        const p = pos[b.dataset.par]; if (!p) return; const m = p.node;
+        UI.modal({
+          title: 'Chuyển nhóm menu', size: 'sm',
+          body: `<div class="field"><label>Chuyển "${esc(m.name || '')}" sang nhóm</label><select class="select" id="omPar">${tree.filter(r => r.id !== m.parentId).map(r => `<option value="${esc(r.id)}">${esc(r.name || '')}</option>`).join('')}</select></div>`,
+          foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="omOk">Chuyển</button>',
+          onMount: (md, close) => md.querySelector('#omOk').onclick = () => {
+            const to = tree.find(r => r.id === md.querySelector('#omPar').value); if (!to) return; close();
+            const last = (to.children || []).reduce((mx, c) => Math.max(mx, c.orderShow || 0), 0);
+            save([{ id: m.id, parentId: to.id, orderShow: last + 1 }], 'Đã chuyển menu sang nhóm ' + esc(to.name || ''));
+          }
+        });
+      });
+    };
+    if (!LIVE()) { draw(localTree()); return; }
+    const sig = ms.map(m => m.Id + '|' + (m.ParentId || '') + '|' + (m.OrderShow || 0) + '|' + (m.IsActive ? 1 : 0) + '|' + (m.Name || '')).join(',');
+    cached('menuTree', sig, () => Store.query('ObjectMenu/GetTree', { includeInactive: true })).then(x => draw(x.ok ? (Array.isArray(x.data) ? x.data : x.list) : localTree()));
+  });
+  // ---------- Xung đột chuẩn hóa dữ liệu lõi: đánh dấu đã xử lý ----------
+  APP.register('adm-merge-conflict', (el, f) => {
+    const canEdit = Store.perm(f.id).edit !== false;
+    // Backend chỉ có đọc + Resolve cho bảng này → chế độ dữ liệu thật không có Tạo mới / Sửa / Xóa.
+    APP.genericList(el, f, { noAdd: LIVE(), noTransit: true });
+    APP.rowExtra(el, tr => {
+      const r = Store.get('CoreDataMergeConflict', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td) return;
+      if (LIVE()) td.querySelectorAll('[data-edit],[data-del]').forEach(b => b.remove());
+      if (r.ResolvedAt || !canEdit) return;
+      td.insertAdjacentHTML('afterbegin', '<button class="btn xs orange" data-res>Xử lý</button> ');
+      td.querySelector('[data-res]').onclick = () => UI.confirm(`Đánh dấu đã xử lý xung đột <b>${esc(r.EntityName || '')}</b> · ${esc(r.FieldName || '')}? Sau khi lưu không sửa lại được.`, note => {
+        if (note.length > 1000) { UI.toast('Cách xử lý tối đa 1000 ký tự', 'err'); return; }
+        Store.act('CoreDataMergeConflict/Resolve', { form: { Id: r.Id, ResolutionNote: note }, tables: ['CoreDataMergeConflict'], demo: () => Store.update('CoreDataMergeConflict', r.Id, { ResolvedAt: U.iso(new Date()), ResolutionNote: note }, 'Xử lý xung đột') }).then(x => { if (!x.ok) return; UI.toast('Đã đánh dấu xử lý xung đột', 'ok'); APP.refresh(); });
+      }, { input: 'Cách xử lý', required: true, ok: 'Đã xử lý' });
+    });
   });
 
 })();

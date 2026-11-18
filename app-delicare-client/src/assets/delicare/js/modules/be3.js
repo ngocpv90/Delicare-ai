@@ -192,4 +192,37 @@
     };
   }
   ['kpi-daily', 'kpi-monthly'].forEach((id, i) => { const base = APP.SCREENS[id]; if (base) APP.register(id, kpiLive(i === 1, base)); });
+
+  // ---------- Kho tài liệu (#/adm-document): tải lên / tải xuống tệp đính kèm – docs/frontend-handoff/BE2.7.md ----------
+  // Backend: tối đa 20 MB; chỉ nhận pdf, jpg, png, xlsx, docx. Tệp gửi multipart nên FormData đi thẳng qua Store.act (không qua objForm).
+  const DOC_MAX = 20 * 1024 * 1024, DOC_EXT = ['pdf', 'jpg', 'jpeg', 'png', 'xlsx', 'docx'];
+  APP.register('adm-document', (el, f) => {
+    const perm = Store.perm(f.id);
+    APP.genericList(el, f, { noAdd: Store.isLive });   // chế độ thật: thêm tài liệu = tải tệp lên (không nhập tay dòng DocumentFile)
+    if (!Store.isLive) return;
+    const bar = el.querySelector('.heading-actions');
+    if (bar && perm.add !== false) {
+      bar.insertAdjacentHTML('beforeend', `<button class="btn primary" data-act="upload">${I('plus')} Tải tệp lên</button><input type="file" data-file hidden accept="${DOC_EXT.map(x => '.' + x).join(',')}">`);
+      const inp = bar.querySelector('[data-file]');
+      bar.querySelector('[data-act="upload"]').onclick = () => inp.click();
+      inp.onchange = () => {
+        const file = inp.files && inp.files[0]; inp.value = '';
+        if (!file) return;
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        if (!DOC_EXT.includes(ext)) return UI.toast('Chỉ nhận tệp ' + DOC_EXT.join(', '), 'err');
+        if (file.size > DOC_MAX) return UI.toast('Tệp vượt quá 20 MB', 'err');
+        const fd = new FormData(); fd.append('File', file); fd.append('Category', 'other');
+        Store.act('DocumentFile/Upload', { json: fd, tables: ['DocumentFile'] }).then(r => {
+          if (!r.ok) return;
+          UI.toast(r.data && r.data.isDuplicate ? 'Tệp này đã có trong kho tài liệu' : 'Đã tải lên ' + esc(file.name), r.data && r.data.isDuplicate ? 'warn' : 'ok');
+          APP.refresh();
+        });
+      };
+    }
+    APP.rowExtra(el, tr => {
+      const td = tr.querySelector('.actions'); if (!td || td.querySelector('[data-dl]')) return;
+      td.insertAdjacentHTML('afterbegin', `<button class="btn xs" data-dl title="Tải xuống">${I('download')}</button> `);
+      td.querySelector('[data-dl]').onclick = e => { e.stopPropagation(); Store.download('DocumentFile/Download', { id: tr.dataset.row }); };
+    });
+  });
 })();
