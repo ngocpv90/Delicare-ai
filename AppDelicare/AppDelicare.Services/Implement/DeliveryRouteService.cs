@@ -1100,11 +1100,17 @@ namespace AppDelicare.Services.Implement
                     .Where(r => !r.IsDeleted && r.DriverId == employee.Id && r.DeliveryDate >= date && r.DeliveryDate < next)
                     .OrderBy(r => r.PlannedStart).ThenBy(r => r.RouteNo).ToListAsync();
                 var list = await DeliveryRules.RouteDetailsAsync(db, routes, _rules, withBatches: false);
+                // BOT-2.4: điểm bếp có tọa độ (như chấm công GPS) – RadiusMeters = 0 → bot dùng bán kính mặc định của mình.
+                var kitchens = await db.KitchenWorkstation.AsNoTracking()
+                    .Where(w => !w.IsDeleted && w.Latitude != null && w.Longitude != null)
+                    .Select(w => new DeliveryGeoPointModel { Code = w.Code, Latitude = w.Latitude!.Value, Longitude = w.Longitude!.Value, RadiusMeters = w.RadiusMeters ?? 0m })
+                    .ToListAsync();
                 return Result<DeliveryBoardModel>.Success(new DeliveryBoardModel
                 {
                     DeliveryDate = date,
                     ListRoute = list,
                     StatusCounts = list.GroupBy(r => r.Route.Status ?? string.Empty).ToDictionary(g => g.Key, g => g.Count()),
+                    ListKitchen = kitchens,
                 }, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

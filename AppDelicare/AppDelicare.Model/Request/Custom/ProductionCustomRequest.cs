@@ -136,6 +136,9 @@ namespace AppDelicare.Model.Request.Custom
         public DateTime ProductionDate { get; set; }
         public Guid? ShiftId { get; set; }
         public string? Status { get; set; }
+        /// <summary>BOT-2.4 (QR <c>start=LINE_&lt;mã&gt;</c>): chỉ mẻ của dây chuyền (ProductionLine.Code của lệnh SX) hoặc bàn nấu (KitchenWorkstation.Code của mẻ) có mã này.</summary>
+        [MaxLength(50)]
+        public string? LineCode { get; set; }
     }
 
     /// <summary>BE2.4 (spec 8.2 cancel, Catalog 145): hủy lệnh SX chưa nấu / chưa xuất kho (form) – lý do bắt buộc.</summary>

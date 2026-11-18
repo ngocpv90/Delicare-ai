@@ -37,6 +37,9 @@ namespace AppDelicare.Model.Model
         public Guid? DeliveryLocationId { get; set; }
         public string? LocationName { get; set; }
         public string? Address { get; set; }
+        /// <summary>BOT-2.4: tọa độ điểm giao (CustomerDeliveryLocation) – bot tự ghi đến điểm khi tài xế vào bán kính.</summary>
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
         public Guid? OrderId { get; set; }
         public string? OrderNumber { get; set; }
         public Guid? DeliveryOrderId { get; set; }
@@ -199,6 +202,17 @@ namespace AppDelicare.Model.Model
         public DateTime DeliveryDate { get; set; }
         public List<DeliveryRouteDetailModel> ListRoute { get; set; } = [];
         public Dictionary<string, int> StatusCounts { get; set; } = [];
+        /// <summary>BOT-2.4: điểm bếp (bàn / trạm có tọa độ) – bot nhận biết tài xế rời bếp khi chia sẻ vị trí trực tiếp. Chỉ GetMine điền.</summary>
+        public List<DeliveryGeoPointModel> ListKitchen { get; set; } = [];
+    }
+
+    /// <summary>BOT-2.4: 1 điểm có tọa độ + bán kính (m).</summary>
+    public class DeliveryGeoPointModel
+    {
+        public string? Code { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public decimal RadiusMeters { get; set; }
     }
 
     /// <summary>T19: đơn hàng Đang sản xuất của ngày giao chưa có chuyến (chọn khi lập chuyến).</summary>

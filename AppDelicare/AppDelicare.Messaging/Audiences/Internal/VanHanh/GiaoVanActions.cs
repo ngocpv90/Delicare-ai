@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using AppDelicare.Messaging.Callback;
@@ -5,6 +6,7 @@ using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Conversations;
 using AppDelicare.Messaging.Core;
 using AppDelicare.Messaging.Presentation;
+using Microsoft.Extensions.Configuration;
 
 namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
 {
@@ -16,7 +18,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     /// 🗺 Giao vận hôm nay (điều phối – <c>GetBoard</c>). Nút hiện theo <c>AllowedActions</c> của api; api kiểm quyền khi ghi.
     /// Callback <c>dlv:&lt;hành động&gt;:&lt;Id N&gt;[.giá trị…]</c> (≤ 64 byte). Ảnh ký nhận / đổi xe / vị trí trực tiếp: BOT-1.5c / BOT-2.4.
     /// </summary>
-    public sealed class GiaoVanActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time)
+    public sealed class GiaoVanActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, IConfiguration configuration)
         : WebActions(web, tokens, sender, replies), IBotActionProvider
     {
         public const string Kind = CallbackData.Kinds.Delivery;
@@ -94,6 +96,180 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 Buttons = [.. stops.Take(12).Select(s => new NeutralButton($"📦 {S(s, "customerName") ?? S(s, "deliveryNumber")}", CallbackData.Build(Kind, "bx", Guid.Parse(S(s, "deliveryOrderId")!))))],
             }, ct);
         }
+
+        /// <summary>BOT-2.4 (QR <c>start=VEH_&lt;mã&gt;</c> dán trên xe): chuyến hôm nay của xe – chuyến của tôi trước, không có thì bảng giao vận (nếu có quyền) → thẻ chuyến [🚀 Xuất phát].</summary>
+        public async Task VehicleAsync(BotActionContext ctx, string code, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            // Mã xe hoặc biển số (bỏ dấu - . khoảng trắng: QR chỉ chứa chữ / số).
+            static string Plain(string? v) => new((v ?? string.Empty).Where(char.IsAsciiLetterOrDigit).ToArray());
+            bool Match(JsonElement r) => string.Equals(S(r, "vehicleCode"), code, StringComparison.OrdinalIgnoreCase)
+                || (Plain(S(r, "licensePlate")) is { Length: > 0 } plate && string.Equals(plate, Plain(code), StringComparison.OrdinalIgnoreCase));
+            var routes = new List<JsonElement>();
+            foreach (string path in new[] { "api/DeliveryRoute/GetMine?deliveryDate=" + Today, "api/DeliveryRoute/GetBoard?DeliveryDate=" + Today })
+            {
+                var r = await Web.GetAsUserAsync<JsonElement>(path, token, ct);
+                if (r.IsOk && r.Data.ValueKind == JsonValueKind.Object)
+                {
+                    routes = [.. Arr(r.Data, "listRoute").Where(Match)];
+                }
+                if (routes.Count > 0)
+                {
+                    break;
+                }
+            }
+            if (routes.Count == 1)
+            {
+                await RouteCardAsync(ctx, RouteId(routes[0]), token, $"🚐 Xe {code}", ct);
+                return;
+            }
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"🚐 Xe {code} – chuyến hôm nay ({routes.Count})",
+                Lines = routes.Count == 0 ? ["Hôm nay xe này không có chuyến (trong phạm vi bạn được xem)."] : [.. routes.Select(RouteLine)],
+                Buttons = [.. routes.Take(8).Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
+            }, ct);
+        }
+
+        // ---------- BOT-2.4: vị trí trực tiếp tài xế ----------
+
+        private sealed class LiveSession
+        {
+            public readonly SemaphoreSlim Gate = new(1, 1);
+            public DateTimeOffset LoadedAt = DateTimeOffset.MinValue;
+            public JsonElement Board;
+            public bool InKitchen;
+            public readonly HashSet<Guid> Arrived = [];
+            public readonly HashSet<Guid> Departed = [];
+        }
+
+        private readonly ConcurrentDictionary<string, LiveSession> _live = new();
+
+        /// <summary>Bán kính mặc định (m) – <c>Messaging:LiveLocation:RadiusMeters</c> (PROPOSED 150 m, BOT_TELEGRAM §6); bếp có RadiusMeters riêng thì dùng của bếp.</summary>
+        private double Radius => double.TryParse(configuration["Messaging:LiveLocation:RadiusMeters"], NumberStyles.Number, CultureInfo.InvariantCulture, out var m) && m > 0 ? m : 150;
+
+        /// <summary>
+        /// BOT-2.4 (BOT_TELEGRAM §6): tài xế chia sẻ vị trí trực tiếp → mỗi cập nhật so với điểm giao của chuyến đang giao (tọa độ CustomerDeliveryLocation) và các bếp
+        /// (KitchenWorkstation có tọa độ – DeliveryRoute/GetMine). Chỉ gọi api khi VÀO bán kính điểm giao (ghi Đã đến 1 lần – DeliveryStop/Arrive kèm tọa độ, gửi thẻ điểm
+        /// [✅ Giao] [❌ Không giao được]) hoặc RA khỏi bếp (chuyến chưa xuất phát: đã đo nhiệt độ đạt → ghi xuất phát; chưa đo → hỏi nhiệt độ). KHÔNG lưu từng điểm vị trí.
+        /// Mất tín hiệu / không chia sẻ → nút 📍 Đã đến / 🚀 Xuất phát vẫn dùng như cũ. Quyền: JWT của chính tài xế (như bấm nút).
+        /// </summary>
+        public async Task LiveLocationAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (ctx.Event.Location is not { } loc)
+            {
+                return;
+            }
+            string key = ctx.Bot + ":" + ctx.Event.FromId;
+            if (!ctx.Event.Edited)
+            {
+                _live.TryRemove(key, out _); // tin vị trí trực tiếp mới = bắt đầu chia sẻ lại
+            }
+            bool first = !_live.ContainsKey(key);
+            var session = _live.GetOrAdd(key, _ => new LiveSession());
+            if (!await session.Gate.WaitAsync(0, ct))
+            {
+                return; // đang xử lý cập nhật trước – bỏ cập nhật này (cập nhật sau sẽ tới)
+            }
+            try
+            {
+                string? token = first ? await TokenAsync(ctx, ct) : await QuietTokenAsync(ctx, ct);
+                if (token == null)
+                {
+                    return;
+                }
+                var now = time.GetUtcNow();
+                if (now - session.LoadedAt > TimeSpan.FromMinutes(2))
+                {
+                    var r = await Web.GetAsUserAsync<JsonElement>("api/DeliveryRoute/GetMine?deliveryDate=" + Today, token, ct);
+                    if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object)
+                    {
+                        if (first)
+                        {
+                            await SayAsync(ctx, Problem(r), ct);
+                        }
+                        return;
+                    }
+                    session.Board = r.Data.Clone();
+                    session.LoadedAt = now;
+                }
+                var routes = Arr(session.Board, "listRoute");
+                if (first)
+                {
+                    await SayAsync(ctx, routes.Count == 0
+                        ? "Hôm nay bạn chưa có chuyến – vị trí trực tiếp không được dùng."
+                        : $"📡 Đã nhận vị trí trực tiếp. Bot tự ghi xuất phát khi xe rời bếp và ghi đã đến khi vào bán kính {Radius:0} m của điểm giao. Nút 📍 Đã đến vẫn dùng được khi mất tín hiệu.", ct);
+                }
+                bool inKitchen = Arr(session.Board, "listKitchen")
+                    .Any(k => Distance(loc.Latitude, loc.Longitude, Dec(k, "latitude"), Dec(k, "longitude")) <= (Dec(k, "radiusMeters") > 0 ? (double)Dec(k, "radiusMeters") : Radius));
+                bool leftKitchen = session.InKitchen && !inKitchen;
+                session.InKitchen = inKitchen;
+                bool changed = false;
+                if (leftKitchen)
+                {
+                    foreach (var route in routes.Where(r => S(Route(r), "status") is "Planned" or "Loading"))
+                    {
+                        Guid id = RouteId(route);
+                        if (!session.Departed.Add(id))
+                        {
+                            continue;
+                        }
+                        changed = true;
+                        decimal min = Dec(route, "deliveryTempMinC") > 0 ? Dec(route, "deliveryTempMinC") : 60m;
+                        if (S(route, "departureTemperatureC") != null && Dec(route, "departureTemperatureC") >= min)
+                        {
+                            var form = new List<KeyValuePair<string, string>> { new("Id", id.ToString()), new("Note", "Telegram – vị trí trực tiếp"), new("Latitude", Coord(loc.Latitude)), new("Longitude", Coord(loc.Longitude)) };
+                            var d = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryRoute/Dispatch", form, token, ct);
+                            await RouteCardAsync(ctx, id, token, d.IsOk ? "📡 Xe đã rời bếp – đã tự ghi xuất phát." : "📡 Xe đã rời bếp nhưng chưa ghi được xuất phát: " + Problem(d), ct);
+                        }
+                        else
+                        {
+                            await SayAsync(ctx, $"📡 Xe đã rời bếp – chuyến {RouteNo(route)} chưa ghi xuất phát (chưa đo nhiệt độ). Chọn nhiệt độ để ghi:", ct);
+                            await DispatchAskAsync(ctx, id, token, ct);
+                        }
+                    }
+                }
+                foreach (var route in routes.Where(r => S(Route(r), "status") == "InTransit"))
+                {
+                    foreach (var stop in Arr(route, "listStop").Where(s => S(s, "stopStatus") == "Planned" && S(s, "latitude") != null && S(s, "longitude") != null))
+                    {
+                        if (!Guid.TryParse(S(stop, "id"), out Guid stopId) || session.Arrived.Contains(stopId)
+                            || Distance(loc.Latitude, loc.Longitude, Dec(stop, "latitude"), Dec(stop, "longitude")) > Radius)
+                        {
+                            continue;
+                        }
+                        session.Arrived.Add(stopId);
+                        changed = true;
+                        var form = new List<KeyValuePair<string, string>> { new("Id", stopId.ToString()), new("Latitude", Coord(loc.Latitude)), new("Longitude", Coord(loc.Longitude)), new("Note", "Telegram – vị trí trực tiếp") };
+                        var a = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryStop/Arrive", form, token, ct);
+                        await StopCardAsync(ctx, stopId, token, a.IsOk ? $"📡 Đã tự ghi đến điểm lúc {VnTime.Now(time):HH:mm} (vị trí trực tiếp)." : "📡 Đã tới điểm nhưng chưa ghi được: " + Problem(a), ct);
+                    }
+                }
+                if (changed)
+                {
+                    session.LoadedAt = DateTimeOffset.MinValue; // trạng thái đổi → lần sau tải lại
+                }
+            }
+            finally
+            {
+                session.Gate.Release();
+            }
+        }
+
+        /// <summary>Khoảng cách (m) giữa 2 tọa độ – công thức haversine.</summary>
+        public static double Distance(double lat1, double lng1, decimal lat2, decimal lng2)
+        {
+            const double R = 6371000;
+            double la2 = (double)lat2, lo2 = (double)lng2;
+            double dLat = (la2 - lat1) * Math.PI / 180, dLng = (lo2 - lng1) * Math.PI / 180;
+            double h = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(la2 * Math.PI / 180) * Math.Sin(dLng / 2) * Math.Sin(dLng / 2);
+            return 2 * R * Math.Asin(Math.Min(1, Math.Sqrt(h)));
+        }
+
+        private static string Coord(double v) => v.ToString("0.0000000", CultureInfo.InvariantCulture);
 
         public async Task HandleAsync(BotActionContext ctx, CallbackData data, CancellationToken ct)
         {

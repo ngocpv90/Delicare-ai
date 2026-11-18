@@ -734,12 +734,22 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 DateTime date = request.ProductionDate.Date, next = date.AddDays(1);
                 var planIds = await db.ProductionPlan.AsNoTracking().Where(p => !p.IsDeleted && p.ProductionDate >= date && p.ProductionDate < next).Select(p => p.Id).ToListAsync();
-                var orderIds = await db.ProductionOrder.AsNoTracking()
+                var orders = await db.ProductionOrder.AsNoTracking()
                     .Where(o => !o.IsDeleted && planIds.Contains(o.ProductionPlanId) && (request.ShiftId == null || request.ShiftId == Guid.Empty || o.ShiftId == request.ShiftId))
-                    .Select(o => o.Id).ToListAsync();
+                    .Select(o => new { o.Id, o.ProductionLineId }).ToListAsync();
+                var orderIds = orders.Select(o => o.Id).ToList();
                 var batches = await db.ProductionBatch.AsNoTracking()
                     .Where(b => !b.IsDeleted && orderIds.Contains(b.ProductionOrderId) && (string.IsNullOrEmpty(request.Status) || b.Status == request.Status))
                     .ToListAsync();
+                if (!string.IsNullOrWhiteSpace(request.LineCode))
+                {
+                    // BOT-2.4: QR dây chuyền / bàn nấu – mã dây chuyền của lệnh SX hoặc mã bàn nấu của mẻ.
+                    string code = request.LineCode.Trim();
+                    var lines = await db.ProductionLine.AsNoTracking().Where(l => !l.IsDeleted && l.Code == code).Select(l => l.Id).ToListAsync();
+                    var stations = await db.KitchenWorkstation.AsNoTracking().Where(w => !w.IsDeleted && w.Code == code).Select(w => w.Id).ToListAsync();
+                    var lineOrders = orders.Where(o => o.ProductionLineId != null && lines.Contains(o.ProductionLineId.Value)).Select(o => o.Id).ToHashSet();
+                    batches = [.. batches.Where(b => lineOrders.Contains(b.ProductionOrderId) || (b.KitchenWorkstationId != null && stations.Contains(b.KitchenWorkstationId.Value)))];
+                }
                 var list = await ProductionRules.BatchBriefsAsync(db, batches, _rules);
                 return Result<ProductionBoardModel>.Success(new ProductionBoardModel
                 {

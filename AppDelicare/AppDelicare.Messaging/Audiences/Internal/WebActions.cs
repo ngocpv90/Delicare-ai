@@ -33,6 +33,17 @@ namespace AppDelicare.Messaging.Audiences.Internal
             return token?.Token;
         }
 
+        /// <summary>BOT-2.4: lấy token KHÔNG nhắn lỗi (vị trí trực tiếp – tránh nhắn lỗi mỗi lần cập nhật).</summary>
+        protected async Task<string?> QuietTokenAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (!ctx.Identity.HasWebAccount)
+            {
+                return null;
+            }
+            var (token, _) = await tokens.GetAsync(ctx.Bot, ctx.Event.FromId, ct);
+            return token?.Token;
+        }
+
         protected static string Problem<T>(ApiResult<T> r)
             => r.ResponseCode is 401 or 403 ? "Bạn chưa có quyền làm việc này (quyền trên web áp dụng y hệt cho bot)." : r.ResponseMessage ?? "Không thực hiện được.";
 

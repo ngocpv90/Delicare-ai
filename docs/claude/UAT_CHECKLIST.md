@@ -229,6 +229,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## QR VẬT THỂ + VỊ TRÍ TRỰC TIẾP (BOT-2.4, 2026-11-18) · test: `MessagingQrLiveTests`, `QrLiveApiTests`
+- [ ] In QR `?start=LINE_<mã bàn>` dán ở bàn nấu: quét → mẻ đang chạy tại bàn, bấm ▶️ Bắt đầu / ✅ Xong mẻ ghi như web.
+- [ ] QR trên xe (`VEH_<biển số>`) → chuyến hôm nay của xe, 🚀 Xuất phát; QR kệ (`LOC_<mã>`) → tồn + lô cận date; QR khu vệ sinh (`CLEAN`) → lô vệ sinh hôm nay; người chưa liên kết quét → được hướng dẫn liên kết.
+- [ ] Tài xế bật chia sẻ vị trí trực tiếp tại bếp: rời bếp → bot ghi xuất phát (hoặc hỏi nhiệt độ nếu chưa đo); tới gần điểm giao (≤ 150 m) → bot tự ghi Đã đến 1 lần và gửi thẻ Giao / Không giao được; tắt chia sẻ → nút 📍 Đã đến vẫn dùng được.
+
 ## GIỜ YÊN LẶNG + TIN THEO LỊCH (BOT-2.3, 2026-11-18) · test: `Notifications/ScheduledNotificationTests`
 - [ ] Nhân viên ca chiều không nhận tin 🟡 buổi sáng – tin tới lúc 60′ trước ca; người văn phòng không nhận tin 🟡 sau 21:00 (tới 07:00 sáng sau); tin 🔴 vẫn tới người đang trực.
 - [ ] 07:00 / 17:00 lãnh đạo (Dashboard điều hành, bot Điều hành) nhận bản tin sáng / báo cáo cuối ngày khớp số liệu Dashboard; 19:00 NV KD nhận danh sách khách chưa chốt đơn ngày mai; 21:00 thủ kho nhận nguyên liệu ngày mai.

@@ -48,6 +48,8 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<UpdateIngestor>();
             builder.Services.AddSingleton<SendRateLimiter>();
             builder.Services.AddSingleton<OnboardingActions>();
+            // BOT-2.4: QR vật thể.
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.Chung.QrActions>();
             builder.Services.AddSingleton<HelpActions>();
             // BOT-1.4: khung trải nghiệm + duyệt.
             builder.Services.AddSingleton<ReplyContextStore>();

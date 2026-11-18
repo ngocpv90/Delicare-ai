@@ -57,6 +57,34 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }, ct);
         }
 
+        /// <summary>BOT-2.4 (QR <c>start=LINE_&lt;mã&gt;</c>): mẻ đang nấu / chờ nấu hôm nay tại dây chuyền / bàn nấu → 1 mẻ thì mở thẻ ([▶️ Bắt đầu] [✅ Xong mẻ]), nhiều mẻ thì chọn.</summary>
+        public async Task LineAsync(BotActionContext ctx, string code, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            var r = await Web.GetAsUserAsync<JsonElement>($"api/ProductionBatch/GetBoard?ProductionDate={VnTime.Today(time):yyyy-MM-dd}&LineCode={Uri.EscapeDataString(code)}", token, ct);
+            if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object)
+            {
+                await SayAsync(ctx, Problem(r), ct);
+                return;
+            }
+            var open = (r.Data.TryGetProperty("listBatch", out var list) && list.ValueKind == JsonValueKind.Array ? [.. list.EnumerateArray()] : new List<JsonElement>())
+                .Where(b => S(b, "status") is "Planned" or "Cooking").OrderBy(b => S(b, "status") == "Cooking" ? 0 : 1).ThenBy(b => S(b, "plannedStart")).Take(12).ToList();
+            if (open.Count == 1 && Guid.TryParseExact(G(open[0]), "N", out Guid id))
+            {
+                await CardAsync(ctx, id, token, $"📟 {code}", ct);
+                return;
+            }
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"📟 {code} – mẻ hôm nay ({open.Count})",
+                Lines = open.Count == 0 ? ["Không có mẻ đang nấu / chờ nấu tại đây hôm nay."] : [.. open.Select(Line)],
+                Buttons = [.. open.Select(b => new NeutralButton($"{Icon(b)} {S(b, "batchNumber")}", CallbackData.Build(Kind, "view", G(b))))],
+            }, ct);
+        }
+
         public async Task ProgressAsync(BotActionContext ctx, CancellationToken ct)
         {
             if (await TokenAsync(ctx, ct) is not { } token)
