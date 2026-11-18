@@ -19,7 +19,7 @@ namespace AppDelicare.WebApi.Controllers
     [SkipPermission]
     [ClientKey(MessagingCode.ClientMessaging)]
     public class BotChannelController(IBotChannelService service, ITelegramLinkService link, IUserTokenIssuer tokens, IBotEmployeeService employee,
-        IShiftCardService shiftCards) : BaseController
+        IShiftCardService shiftCards, IIncidentService incidents) : BaseController
     {
         private readonly IBotChannelService _service = service;
 
@@ -107,6 +107,14 @@ namespace AppDelicare.WebApi.Controllers
         /// <summary>BOT-2.1: ⚡ Ca của tôi – thẻ ca hiện tại / kế tiếp của người dùng bot.</summary>
         [HttpPost("MyShiftCard")]
         public Task<IActionResult> MyShiftCard([FromBody] BotIdentityRequest request) => Run(nameof(MyShiftCard), () => shiftCards.Mine(request));
+
+        /// <summary>BOT-2.2: Nhận xử lý / Ghi chú / Đã xử lý trên tin sự việc – trả danh sách tin cần sửa ở mọi người liên quan.</summary>
+        [HttpPost("IncidentAction")]
+        public Task<IActionResult> IncidentAction([FromBody] IncidentActionRequest request) => Run(nameof(IncidentAction), () => incidents.Act(request));
+
+        /// <summary>BOT-2.2: leo thang sự việc chưa ai nhận (messaging gọi mỗi phút).</summary>
+        [HttpPost("RunEscalation")]
+        public Task<IActionResult> RunEscalation() => Run(nameof(RunEscalation), () => incidents.RunEscalation());
 
         private async Task<IActionResult> Run<T>(string action, Func<Task<T>> call)
         {

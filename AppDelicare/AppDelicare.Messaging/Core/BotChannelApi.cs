@@ -22,6 +22,8 @@ namespace AppDelicare.Messaging.Core
         Task<ApiResult<System.Text.Json.JsonElement>> EmployeeCallAsync(string action, object request, CancellationToken ct = default);
         Task<List<ShiftCardItemModel>> SyncShiftCardsAsync(CancellationToken ct = default);
         Task<ApiResult<ShiftCardItemModel>> MyShiftCardAsync(BotIdentityRequest request, CancellationToken ct = default);
+        Task<ApiResult<IncidentResultModel>> IncidentActionAsync(IncidentActionRequest request, CancellationToken ct = default);
+        Task<ApiResult<int>> RunEscalationAsync(CancellationToken ct = default);
     }
 
     public sealed class BotChannelApi(IDelicareApiClient api) : IBotChannelApi
@@ -78,5 +80,12 @@ namespace AppDelicare.Messaging.Core
 
         public Task<ApiResult<ShiftCardItemModel>> MyShiftCardAsync(BotIdentityRequest request, CancellationToken ct = default)
             => api.PostInternalAsync<ShiftCardItemModel>("MyShiftCard", request, ct);
+
+        /// <summary>BOT-2.2: Nhận xử lý / Ghi chú / Đã xử lý; leo thang.</summary>
+        public Task<ApiResult<IncidentResultModel>> IncidentActionAsync(IncidentActionRequest request, CancellationToken ct = default)
+            => api.PostInternalAsync<IncidentResultModel>("IncidentAction", request, ct);
+
+        public Task<ApiResult<int>> RunEscalationAsync(CancellationToken ct = default)
+            => api.PostInternalAsync<int>("RunEscalation", new { }, ct);
     }
 }

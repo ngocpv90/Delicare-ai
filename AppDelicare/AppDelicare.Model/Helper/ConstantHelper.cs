@@ -529,6 +529,12 @@
             public static readonly string ClientKeyInvalid = "Khóa client không hợp lệ";
             public static readonly string BotUnknown = "Bot chưa khai báo hoặc đang tắt: {0}";
             public static readonly string BotNoShiftToday = "Hôm nay bạn không có ca.";
+            public static readonly string IncidentNotFound = "Tin này không còn trong hệ thống – mở trên web để xử lý.";
+            public static readonly string IncidentAlreadyClaimed = "{0} đã nhận xử lý lúc {1}.";
+            public static readonly string IncidentClaimed = "Bạn đã nhận xử lý – mọi người liên quan đã thấy tên bạn.";
+            public static readonly string IncidentResolved = "Đã ghi: xử lý xong.";
+            public static readonly string IncidentAlreadyResolved = "Sự việc đã được xử lý xong.";
+            public static readonly string IncidentNoted = "Đã thêm ghi chú vào thẻ của mọi người.";
             public static readonly string BotUpdateInvalid = "Update thiếu mã bot / update_id";
             public static readonly string BotUpdateTooLarge = "Update quá lớn (tối đa {0} ký tự)";
             public static readonly string BotUpdateReceived = "Đã nhận update";

@@ -49,7 +49,7 @@ namespace AppDelicare.Tests.Jobs
     public class JobDependencyInjectionTests(InMemoryApiFactory factory) : IClassFixture<InMemoryApiFactory>
     {
         // BE3.4: + KPI_DAILY / KPI_MONTHLY (cấu hình Enabled = false).
-        private static readonly string[] Codes = ["ContractExpiry", "DayCard", "KPI_DAILY", "KPI_MONTHLY", "LockOrders", "LotExpiry", "MarkAbsent", "Mrp"];
+        private static readonly string[] Codes = ["ContractExpiry", "DayCard", "KPI_DAILY", "KPI_MONTHLY", "LeaveHandover", "LockOrders", "LotExpiry", "MarkAbsent", "Mrp"];
 
         [Fact]
         public void WebApi_container_resolves_all_jobs_and_runner()

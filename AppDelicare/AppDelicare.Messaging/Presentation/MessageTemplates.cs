@@ -58,6 +58,7 @@ namespace AppDelicare.Messaging.Presentation
             ["SYSTEM_JOB_FAILED"] = "🖥 Job tự động lỗi",
             ["OUTBOUND_FAILING"] = "🖥 Tin gửi lỗi nhiều lần",
             ["INCIDENT_UNCLAIMED"] = "🚨 Sự việc chưa ai nhận",
+            ["LEAVE_HANDOVER"] = "🏖 Sắp nghỉ – còn việc chờ bạn duyệt",
         };
 
         /// <summary>BOT-2.1: mẫu được ghim đầu chat sau khi gửi.</summary>
@@ -66,7 +67,7 @@ namespace AppDelicare.Messaging.Presentation
         public static NeutralMessage Render(string? payloadJson)
         {
             string? template = null, level = null;
-            JsonElement data = default, buttons = default;
+            JsonElement data = default, buttons = default, incident = default;
             try
             {
                 using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(payloadJson) ? "{}" : payloadJson);
@@ -80,6 +81,10 @@ namespace AppDelicare.Messaging.Presentation
                 if (root.TryGetProperty("buttons", out var b))
                 {
                     buttons = b;
+                }
+                if (root.TryGetProperty("incident", out var inc))
+                {
+                    incident = inc;
                 }
             }
             catch (JsonException)
@@ -112,7 +117,31 @@ namespace AppDelicare.Messaging.Presentation
             };
             m.Level = level;
             m.Buttons.AddRange(Buttons(buttons));
+            Incident(m, incident);
             return m;
+        }
+
+        /// <summary>BOT-2.2: trạng thái sự việc (PayloadJson.incident) – người nhận, ghi chú, đã xử lý; bỏ nút không còn hợp lệ (đã nhận → bỏ 🙋; xong → bỏ mọi nút sự việc).</summary>
+        private static void Incident(NeutralMessage m, JsonElement incident)
+        {
+            if (incident.ValueKind != JsonValueKind.Object)
+            {
+                return;
+            }
+            if (Str(incident, "claimedBy") is { } by)
+            {
+                m.Lines.Add($"🙋 {by} đã nhận xử lý lúc {Str(incident, "claimedAt")}");
+                m.Buttons.RemoveAll(b => b.Callback == "inc:claim");
+            }
+            if (incident.TryGetProperty("notes", out var notes) && notes.ValueKind == JsonValueKind.Array)
+            {
+                m.Lines.AddRange(notes.EnumerateArray().Select(n => $"💬 {Str(n, "at")} {Str(n, "by")}: {Str(n, "text")}"));
+            }
+            if (Str(incident, "resolvedBy") is { } done)
+            {
+                m.Lines.Add($"✅ Đã xử lý – {done} lúc {Str(incident, "resolvedAt")}");
+                m.Buttons.RemoveAll(b => b.Callback?.StartsWith("inc:", StringComparison.Ordinal) == true);
+            }
         }
 
         /// <summary>Nút của tin: bỏ nút không hợp lệ (thiếu chữ, callback &gt; 64 byte, không có callback / link).</summary>

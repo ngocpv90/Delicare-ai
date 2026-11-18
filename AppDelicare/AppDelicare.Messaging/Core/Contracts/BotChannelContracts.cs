@@ -136,6 +136,32 @@ namespace AppDelicare.Messaging.Core.Contracts
         public string PayloadJson { get; set; } = "{}";
     }
 
+    /// <summary>BOT-2.2: thao tác trên tin sự việc.</summary>
+    public sealed class IncidentActionRequest
+    {
+        public string? BotCode { get; set; }
+        public string? ExternalUserId { get; set; }
+        public string? ChatId { get; set; }
+        public string? ProviderMessageId { get; set; }
+        public string? Action { get; set; }
+        public string? Text { get; set; }
+    }
+
+    public sealed class BotMessageEditModel
+    {
+        public string? BotCode { get; set; }
+        public string? ChatId { get; set; }
+        public string? ProviderMessageId { get; set; }
+        public string PayloadJson { get; set; } = "{}";
+    }
+
+    public sealed class IncidentResultModel
+    {
+        public bool Changed { get; set; }
+        public string? Note { get; set; }
+        public List<BotMessageEditModel> ListEdit { get; set; } = [];
+    }
+
     public sealed class BotCorrelatedMessageModel
     {
         public Guid Id { get; set; }

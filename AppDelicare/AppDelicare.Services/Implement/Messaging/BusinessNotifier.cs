@@ -51,7 +51,8 @@ namespace AppDelicare.Services.Implement.Messaging
                 }
                 await SafeEnqueueAsync(notifications, new NotificationRequest
                 {
-                    Template = template, UserIds = [.. users], Data = data, Buttons = buttons?.ToList(), IdempotencyKey = idempotencyKey, CorrelationId = correlationId ?? idempotencyKey, BotCode = botCode,
+                    Template = template, UserIds = [.. users], Data = data,
+                    Buttons = NotificationCatalog.IsIncident(template) ? [.. buttons ?? [], .. IncidentButtons] : buttons?.ToList(), IdempotencyKey = idempotencyKey, CorrelationId = correlationId ?? idempotencyKey, BotCode = botCode,
                 });
             }
             catch (Exception ex)
@@ -59,6 +60,10 @@ namespace AppDelicare.Services.Implement.Messaging
                 Log.Warning(ex, "[Notification] {Template} {Key}: không tìm được người nhận", template, idempotencyKey);
             }
         }
+
+        /// <summary>BOT-2.2: nút sự việc (messaging tìm sự việc qua chính tin được bấm).</summary>
+        public static readonly NotificationButton[] IncidentButtons =
+            [new("🙋 Nhận xử lý", "inc:claim"), new("💬 Ghi chú", "inc:note"), new("✅ Đã xử lý", "inc:done")];
 
         /// <summary>Callback mở thẻ trên bot (quy ước CallbackData của AppDelicare.Messaging): &lt;kind&gt;:&lt;action&gt;:&lt;Id N&gt;.</summary>
         public static string Callback(string kind, string action, Guid id) => $"{kind}:{action}:{id:N}";

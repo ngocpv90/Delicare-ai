@@ -110,6 +110,25 @@ namespace AppDelicare.Tests.Messaging
         public List<ShiftCardItemModel> ShiftCards { get; } = [];
         public ApiResult<ShiftCardItemModel> MyCard { get; set; } = new() { ResponseCode = 400, ResponseMessage = "Hôm nay bạn không có ca." };
 
+        // BOT-2.2: sự việc.
+        public ConcurrentQueue<IncidentActionRequest> IncidentCalls { get; } = new();
+        public Func<IncidentActionRequest, ApiResult<IncidentResultModel>> IncidentResult { get; set; } = _ => new() { ResponseCode = 400, ResponseMessage = "Không có sự việc" };
+        public int EscalationRuns;
+
+        public Task<ApiResult<IncidentResultModel>> IncidentActionAsync(IncidentActionRequest request, CancellationToken ct = default)
+        {
+            Guard();
+            IncidentCalls.Enqueue(request);
+            return Task.FromResult(IncidentResult(request));
+        }
+
+        public Task<ApiResult<int>> RunEscalationAsync(CancellationToken ct = default)
+        {
+            Guard();
+            Interlocked.Increment(ref EscalationRuns);
+            return Task.FromResult(new ApiResult<int> { ResponseCode = 200, Data = 0 });
+        }
+
         public Task<List<ShiftCardItemModel>> SyncShiftCardsAsync(CancellationToken ct = default)
         {
             Guard();

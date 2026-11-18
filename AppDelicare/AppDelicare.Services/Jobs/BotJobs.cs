@@ -13,6 +13,53 @@ namespace AppDelicare.Services.Jobs
     /// BOT-2.1 (BOT_TELEGRAM §1.1 – Thẻ ngày): 07:00 gửi quản lý (có mục #/dash-exec, đã liên kết bot DH) 1 thẻ ghim: việc chờ CHÍNH MÌNH duyệt (GetMyPending explicitOnly),
     /// cảnh báo đang mở (chuông – theo quyền của người đó), số liệu chính hôm nay (Dashboard/GetExecutive). Chống trùng theo ngày + người (chạy lại không gửi lại).
     /// </summary>
+    /// <summary>
+    /// BOT-2.2 (BOT_TELEGRAM §5.2): 16:00 – người có đơn nghỉ ĐÃ DUYỆT bắt đầu ngày mai mà còn việc chờ CHÍNH MÌNH duyệt → nhắc "Anh/chị nghỉ từ … còn N việc chờ duyệt".
+    /// Người ↔ tài khoản qua định danh bot (UserId + EmployeeId). Ủy quyền duyệt thật = quy định nghiệp vụ, chưa làm (chờ BA).
+    /// </summary>
+    public sealed class LeaveHandoverJob(IUnitOfWork unitOfWork, ICurrentActor currentActor, IApprovalRequestService approvals, INotificationService notifications) : IScheduledJob
+    {
+        public string Code => "LeaveHandover";
+        public string Name => "Nhắc người duyệt trước ngày nghỉ";
+        public string Description => "16:00 – người có đơn nghỉ đã duyệt từ ngày mai mà còn việc chờ mình duyệt → nhắc qua bot.";
+        public string DefaultAt => "16:00";
+
+        public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
+        {
+            var db = unitOfWork.DbContext;
+            DateTime tomorrow = now.Date.AddDays(1);
+            var leaves = await db.LeaveRequest.AsNoTracking()
+                .Where(l => !l.IsDeleted && l.RequestStatus == LeaveRequestStatus.Approved && l.FromDate >= tomorrow && l.FromDate < tomorrow.AddDays(1))
+                .Select(l => new { l.Id, l.EmployeeId, l.FromDate, l.ToDate }).ToListAsync(cancellationToken);
+            int sent = 0;
+            foreach (var leave in leaves)
+            {
+                var users = await db.UserExternalIdentity.AsNoTracking().Where(i => !i.IsDeleted && i.EmployeeId == leave.EmployeeId && i.UserId != null)
+                    .Select(i => i.UserId!.Value).Distinct().ToListAsync(cancellationToken);
+                foreach (Guid user in users)
+                {
+                    int pending;
+                    using (currentActor.BeginScope(ActorInfo.ForUser(user)))
+                    {
+                        pending = ((await approvals.GetMyPending(null, explicitOnly: true)).ListData ?? []).Count;
+                    }
+                    if (pending == 0)
+                    {
+                        continue;
+                    }
+                    sent += await BusinessNotifier.SafeEnqueueAsync(notifications, new NotificationRequest
+                    {
+                        Template = NotificationCatalog.LeaveHandover, UserIds = [user],
+                        Data = new { title = $"Bạn nghỉ từ {leave.FromDate:dd/MM} đến {leave.ToDate:dd/MM}", detail = $"Còn {pending} việc chờ bạn duyệt – xử lý trước khi nghỉ hoặc báo cấp trên." },
+                        Buttons = new[] { new NotificationButton("⏳ Chờ tôi duyệt", "sc:run:approvals") },
+                        IdempotencyKey = $"{NotificationCatalog.LeaveHandover}:{leave.Id:N}",
+                    });
+                }
+            }
+            return new JobOutcome(JobRunStatus.Succeeded, sent, tomorrow, $"Nhắc {sent} người duyệt sắp nghỉ");
+        }
+    }
+
     public sealed class DayCardJob(IUnitOfWork unitOfWork, ICurrentActor currentActor, IApprovalRequestService approvals, ICommonService common,
         IDashboardService dashboard, INotificationService notifications) : IScheduledJob
     {

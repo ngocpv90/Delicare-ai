@@ -82,6 +82,8 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<BotActionRegistry>();
             // BOT-2.1: Thẻ ca (làm mới mỗi phút).
             builder.Services.AddSingleton<ShiftCards>();
+            // BOT-2.2: sự việc liên phòng.
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.Chung.IncidentActions>();
             builder.Services.AddSingleton(sp => new Lazy<ShiftCards>(() => sp.GetRequiredService<ShiftCards>()));
             builder.Services.AddSingleton<MenuNavigator>();
             builder.Services.AddSingleton<CodeSearch>();
@@ -90,6 +92,7 @@ namespace AppDelicare.Messaging
             builder.Services.AddHostedService<InboundPump>();
             builder.Services.AddHostedService<OutboundPump>();
             builder.Services.AddHostedService<ShiftCardPump>();
+            builder.Services.AddHostedService<AppDelicare.Messaging.Audiences.Internal.Chung.EscalationPump>();
             builder.Services.AddHostedService<TelegramPollingService>();
             builder.Services.AddHostedService<TelegramStartupService>();
             configure?.Invoke(builder);

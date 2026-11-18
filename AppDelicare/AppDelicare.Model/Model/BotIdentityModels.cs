@@ -65,6 +65,31 @@ namespace AppDelicare.Model.Model
         public string PayloadJson { get; set; } = "{}";
     }
 
+    /// <summary>BOT-2.2: thao tác trên tin sự việc (tin được bấm: bot + chat + mã tin Telegram). Action = claim / note / done.</summary>
+    public class IncidentActionRequest : BotIdentityRequest
+    {
+        public string? ChatId { get; set; }
+        public string? ProviderMessageId { get; set; }
+        public string? Action { get; set; }
+        public string? Text { get; set; }
+    }
+
+    /// <summary>Tin cần sửa sau thao tác (nội dung mới – PayloadJson như outbox).</summary>
+    public class BotMessageEditModel
+    {
+        public string? BotCode { get; set; }
+        public string? ChatId { get; set; }
+        public string? ProviderMessageId { get; set; }
+        public string PayloadJson { get; set; } = "{}";
+    }
+
+    public class IncidentResultModel
+    {
+        public bool Changed { get; set; }
+        public string? Note { get; set; }
+        public List<BotMessageEditModel> ListEdit { get; set; } = [];
+    }
+
     public class BotCorrelatedMessageModel
     {
         public Guid Id { get; set; }

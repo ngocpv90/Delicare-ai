@@ -229,6 +229,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## SỰ VIỆC LIÊN PHÒNG + LEO THANG (BOT-2.2, 2026-11-18) · test: `IncidentServiceTests`, `MessagingIncidentTests`
+- [ ] Lỗi trọng yếu ATTP → QA nhận tin có 🙋 Nhận xử lý; người bấm trước được ghi, người khác thấy "X đã nhận xử lý"; ghi chú / ✅ hiện trên tin của mọi người.
+- [ ] Không ai nhận 10′ → COO nhận "Sự việc chưa ai nhận" ở bot Điều hành; nhận xong → không leo thang tiếp.
+- [ ] Người duyệt có đơn nghỉ từ ngày mai còn việc chờ duyệt → 16:00 nhận nhắc.
+
 ## THẺ CA / THẺ NGÀY (BOT-2.1, 2026-11-18) · test: `MessagingShiftCardTests`, `ShiftCardServiceTests`
 - [ ] 15′ trước ca, nhân viên (đã liên kết bot) nhận 1 Thẻ ca được ghim; vào ca → thẻ tự đổi "Đã vào ca" (không có tin mới), nút đổi theo giai đoạn ca.
 - [ ] ⚡ Ca của tôi làm mới thẻ ghim; bấm nút trên thẻ mở chức năng thành tin mới (thẻ vẫn còn).

@@ -23,7 +23,7 @@ namespace AppDelicare.Messaging.Processing
     /// · 📂 Chức năng · gõ mã chứng từ / chữ → tra cứu · còn lại → trợ giúp.
     /// </summary>
     public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender,
-        BotActionRegistry registry, MenuNavigator menu, ShiftCards shiftCards, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
+        BotActionRegistry registry, MenuNavigator menu, ShiftCards shiftCards, IncidentActions incidents, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
         AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu)
@@ -91,6 +91,9 @@ namespace AppDelicare.Messaging.Processing
                     case ApprovalActions.RejectFlow:
                         await approvals.ReplyAsync(ctx, pending, ct);
                         break;
+                    case IncidentActions.ReplyNote:
+                        await incidents.ReplyAsync(ctx, pending, ct);
+                        break;
                     case AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyDate or AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyDays
                         or AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyReason:
                         await leave.ReplyAsync(ctx, pending, ct);
@@ -128,6 +131,9 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case ShiftCards.Kind:
                         await shiftCards.HandleAsync(ctx, data, ct);
+                        break;
+                    case IncidentActions.Kind:
+                        await incidents.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Approval:
                         await approvals.HandleAsync(ctx, data, ct);
