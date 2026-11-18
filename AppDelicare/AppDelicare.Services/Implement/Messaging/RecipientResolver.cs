@@ -70,5 +70,36 @@ namespace AppDelicare.Services.Implement.Messaging
             var admins = db.User.AsNoTracking().Where(u => !u.IsDeleted && u.IsActive && u.IsAdmin).Select(u => u.Id);
             return await byGroup.Union(admins).Distinct().ToListAsync(ct);
         }
+
+        /// <summary>
+        /// BOT-1.7: người có quyền VÀO menu theo nhóm quyền – KHÔNG kèm admin (tin vận hành tới đúng người làm việc đó; admin không bị ngập).
+        /// Dùng cho thông báo theo phòng / liên phòng (BOT_TELEGRAM §5.1 – người nhận theo quyền ObjectMenu).
+        /// </summary>
+        public static async Task<List<Guid>> UsersWithMenuOnlyAsync(DatabaseContext db, string metaLink, CancellationToken ct = default)
+            => await (from uc in db.UserClaim.AsNoTracking()
+                      join g in db.UserGroup.AsNoTracking() on uc.UserGroupId equals g.Id
+                      join r in db.UserRole.AsNoTracking() on g.Id equals r.UserGroupId
+                      join m in db.ObjectMenu.AsNoTracking() on r.ObjectMenuId equals m.Id
+                      join u in db.User.AsNoTracking() on uc.UserId equals u.Id
+                      where !uc.IsDeleted && !g.IsDeleted && !r.IsDeleted && !m.IsDeleted && m.IsActive && r.AllowAccess && m.MetaLink == metaLink
+                            && !u.IsDeleted && u.IsActive
+                      select u.Id).Distinct().ToListAsync(ct);
+
+        /// <summary>
+        /// BOT-1.7: người DUYỆT được bước có mục quyền <paramref name="screenId"/> – nhóm quyền có Vào + Sửa trên mục "#/wf-inbox?type=&lt;màn&gt;"
+        /// (như PermissionService Approve, D-31). Không kèm admin (BOT_TELEGRAM §3.3 – chỉ người đúng là người duyệt).
+        /// </summary>
+        public static async Task<List<Guid>> UsersWithApproveAsync(DatabaseContext db, string screenId, CancellationToken ct = default)
+        {
+            string link = AppDelicare.Services.Interface.IPermissionService.ApproveMenuPrefix + screenId;
+            return await (from uc in db.UserClaim.AsNoTracking()
+                          join g in db.UserGroup.AsNoTracking() on uc.UserGroupId equals g.Id
+                          join r in db.UserRole.AsNoTracking() on g.Id equals r.UserGroupId
+                          join m in db.ObjectMenu.AsNoTracking() on r.ObjectMenuId equals m.Id
+                          join u in db.User.AsNoTracking() on uc.UserId equals u.Id
+                          where !uc.IsDeleted && !g.IsDeleted && !r.IsDeleted && !m.IsDeleted && m.IsActive && r.AllowAccess && r.AllowEdit && m.MetaLink == link
+                                && !u.IsDeleted && u.IsActive
+                          select u.Id).Distinct().ToListAsync(ct);
+        }
     }
 }

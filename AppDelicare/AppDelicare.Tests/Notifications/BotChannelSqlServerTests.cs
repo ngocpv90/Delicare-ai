@@ -137,12 +137,12 @@ namespace AppDelicare.Tests.Notifications
                 await db.SaveChangesAsync();
                 var ids = await notifications.EnqueueAsync(new NotificationRequest
                 {
-                    Template = NotificationCatalog.ShiftAssigned, UserIds = [user], Data = new { shift = "SANG_6H" }, IdempotencyKey = key,
+                    Template = NotificationCatalog.ShiftConfirmed, UserIds = [user], Data = new { shift = "SANG_6H" }, IdempotencyKey = key,
                 });
                 ids.Should().HaveCount(1);
                 (await db.OutboundMessage.CountAsync(m => m.RecipientExternalId == key)).Should().Be(1, "trong transaction thấy tin");
                 // Gọi lại cùng khóa sự kiện → không nhân bản.
-                (await notifications.EnqueueAsync(new NotificationRequest { Template = NotificationCatalog.ShiftAssigned, UserIds = [user], IdempotencyKey = key }))
+                (await notifications.EnqueueAsync(new NotificationRequest { Template = NotificationCatalog.ShiftConfirmed, UserIds = [user], IdempotencyKey = key }))
                     .Should().BeEmpty();
                 await tx.RollbackAsync();
             }

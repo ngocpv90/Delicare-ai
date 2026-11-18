@@ -19,11 +19,13 @@ using AppDelicare.Services.Interface;
 using Serilog;
 using System.Net;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     public class ApprovalRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
         , IServiceProvider serviceProvider, IPermissionService permissionService, ICurrentActor currentActor, IClock clock
-        , IDocumentNumberService documentNumberService, IOptions<BusinessRulesOptions> rules) : IApprovalRequestService
+        , IDocumentNumberService documentNumberService, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IApprovalRequestService
     {
         private readonly BusinessRulesOptions _rules = rules.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -36,6 +38,7 @@ namespace AppDelicare.Services.Implement
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly IClock _clock = clock;
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        private readonly INotificationService _notifications = notifications;
 
         public async Task<IResults<ApprovalRequestViewModel>> GetAll(ApprovalRequestSearchRequest request)
         {
@@ -414,6 +417,8 @@ namespace AppDelicare.Services.Implement
                 PayloadJson = Newtonsoft.Json.JsonConvert.SerializeObject(new { steps }),
             });
             await _unitOfWork.ApprovalRequestRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+            // BOT-1.7: báo người duyệt cấp 1 (APPROVAL_PENDING) – cùng transaction, lỗi không làm hỏng việc gửi duyệt.
+            await NotifyPendingAsync(request, handler, 1, steps, []);
             return (request, null);
         }
 
@@ -565,6 +570,8 @@ namespace AppDelicare.Services.Implement
             }
             var steps = _unitOfWork.ApprovalStepRepository.GetAll().Where(s => s.ApprovalRequestId == approval.Id && !s.IsDeleted).OrderBy(s => s.StepNo).ToList();
             var route = (await RoutesAsync([approval.Id]))[approval.Id];
+            (int StepNo, List<Guid> Exclude)? pending = null; // BOT-1.7
+            bool decided = false;
             int stepCount = Math.Max(route?.Count ?? 0, Math.Max(steps.Count, 1));
             var step = CurrentStep(steps);
             int stepNo = step?.StepNo ?? approval.CurrentStepNo ?? 1;
@@ -641,6 +648,8 @@ namespace AppDelicare.Services.Implement
                 string nextScreen = await StepScreenAsync(handler, businessId, next.StepNo, route);
                 message = string.Format(ConstantHelper.Message.ApprovalStepApproved, stepNo, stepCount, next.StepNo,
                     (await StepNamesAsync([nextScreen])).GetValueOrDefault(nextScreen, nextScreen));
+                // BOT-1.7: báo người duyệt cấp kế (trừ người đã quyết cấp trước khi bật ApprovalRequireDistinctApprovers).
+                pending = (next.StepNo, steps.Where(s => s.ApproverUserId != null).Select(s => s.ApproverUserId!.Value).Append(actor).ToList());
             }
             else
             {
@@ -662,9 +671,92 @@ namespace AppDelicare.Services.Implement
                 {
                     return (executed, null);
                 }
+                decided = true;
             }
             await _unitOfWork.ApprovalRequestRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+            if (pending is { } p)
+            {
+                await NotifyPendingAsync(approval, handler, p.StepNo, route, _rules.ApprovalRequireDistinctApprovers ? p.Exclude : []);
+            }
+            if (decided)
+            {
+                await NotifyResultAsync(approval, handler, request.Approve, note);
+            }
             return (null, message);
+        }
+
+        // ============================================================ BOT-1.7 – thông báo duyệt (BOT_TELEGRAM §5.1)
+
+        /// <summary>APPROVAL_PENDING → người duyệt được cấp <paramref name="stepNo"/> (quyền Duyệt cấp rõ qua nhóm – không kèm admin), trừ người gửi / người đã quyết.</summary>
+        private async Task NotifyPendingAsync(ApprovalRequest r, IApprovalHandler handler, int stepNo, List<string>? route, List<Guid> exclude)
+        {
+            try
+            {
+                if (r.BusinessId is not { } bid)
+                {
+                    return;
+                }
+                string screen = await StepScreenAsync(handler, bid, stepNo, route);
+                var approvers = (await RecipientResolver.UsersWithApproveAsync(_unitOfWork.DbContext, screen))
+                    .Where(u => u != r.RequestedBy && !exclude.Contains(u)).ToList();
+                var requester = r.RequestedBy is { } uid ? (await UserNamesAsync([uid])).GetValueOrDefault(uid) : null;
+                await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                {
+                    Template = NotificationCatalog.ApprovalPending,
+                    UserIds = approvers,
+                    Data = new
+                    {
+                        title = await handler.DescribeAsync(bid), requestNo = r.RequestNo, requester,
+                        step = (await StepNamesAsync([screen])).GetValueOrDefault(screen, screen), dueAt = r.DueAt,
+                    },
+                    Buttons = new[] { new NotificationButton("📄 Xem & duyệt", BusinessNotifier.Callback("apv", "view", r.Id)) },
+                    IdempotencyKey = $"{NotificationCatalog.ApprovalPending}:{r.Id:N}:{stepNo}",
+                    CorrelationId = "APR:" + r.Id.ToString("N"),
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[ApprovalRequestService] NotifyPending {Id}", r.Id);
+            }
+        }
+
+        /// <summary>APPROVAL_RESULT → người gửi (tài khoản) + nhân viên của đơn nghỉ / đổi ca (người chỉ có EmployeeId – gửi qua bot VH).</summary>
+        private async Task NotifyResultAsync(ApprovalRequest r, IApprovalHandler handler, bool approved, string? note)
+        {
+            try
+            {
+                if (r.BusinessId is not { } bid)
+                {
+                    return;
+                }
+                var db = _unitOfWork.DbContext;
+                var employees = new List<Guid>();
+                if (r.BusinessType == LeaveRequestStatus.BusinessType)
+                {
+                    employees.AddRange(await db.LeaveRequest.AsNoTracking().Where(x => x.Id == bid).Select(x => x.EmployeeId).ToListAsync());
+                }
+                else if (r.BusinessType == ShiftSwapStatus.BusinessType)
+                {
+                    var swap = await db.ShiftSwapRequest.AsNoTracking().Where(x => x.Id == bid).Select(x => new { x.RequesterEmployeeId, x.TargetEmployeeId }).FirstOrDefaultAsync();
+                    if (swap != null)
+                    {
+                        employees.AddRange([swap.RequesterEmployeeId, swap.TargetEmployeeId]);
+                    }
+                }
+                await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                {
+                    Template = NotificationCatalog.ApprovalResult,
+                    UserIds = r.RequestedBy is { } uid ? [uid] : [],
+                    EmployeeIds = employees,
+                    Data = new { title = await handler.DescribeAsync(bid), requestNo = r.RequestNo, decision = approved ? "Đã duyệt" : "Từ chối", approved, comment = note },
+                    IdempotencyKey = $"{NotificationCatalog.ApprovalResult}:{r.Id:N}",
+                    CorrelationId = "APR:" + r.Id.ToString("N"),
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[ApprovalRequestService] NotifyResult {Id}", r.Id);
+            }
         }
 
         /// <summary>Cập nhật ItemStatus của dòng ApprovalItem lưu quy trình theo kết quả yêu cầu (không phải sổ chỉ ghi thêm).</summary>
