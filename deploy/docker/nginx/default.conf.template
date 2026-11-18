@@ -28,6 +28,12 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # BOT-1.1 (D-62): API nội bộ cho container messaging – chỉ gọi trong mạng Docker (http://api:8080), từ ngoài trả 404.
+    # Regex không phân biệt hoa thường (routing ASP.NET cũng vậy); location regex được ưu tiên hơn prefix /api/ bên dưới.
+    location ~* ^/api/BotChannel(/|$) {
+        return 404;
+    }
+
     location /api/ {
         proxy_pass http://api:8080;
         proxy_http_version 1.1;

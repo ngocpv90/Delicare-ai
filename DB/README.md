@@ -6,6 +6,7 @@
 | `sp/` | Stored procedure (`CREATE OR ALTER`), một file mỗi SP: `usp<Entity>_GetAll.sql`… Gồm SP lấy ra từ DB dev (T00) và SP mới do CodeGen sinh. | Claude Code chạy trên DB dev |
 | `sp/_MISSING_FROM_DB.md` | Danh sách 74 SP mà code gọi nhưng DB dev chưa có (T00). | – |
 | `_ssms_diagrams/` | 7 SP `sp_*diagram*` + `fn_diagramobjects` do SSMS tự tạo khi vẽ sơ đồ. Chỉ lưu tham khảo, **không phải** SP nghiệp vụ, không cần chạy. | – |
+| `proposed/` | Script thay đổi lược đồ **đề xuất** (GAP – vd. index), KHÔNG nằm trong `scripts.order`, không tự chạy | Anh / DBA duyệt rồi chạy tay |
 | `seed/` | Dữ liệu cấu hình (Shift, ObjectMenu, UserGroup, KpiMetricDefinition…). Dữ liệu demo gắn `[DEMO]`. | Claude Code chạy trên DB dev |
 
 Không có script tạo bảng / cột ngoài `migrations/` đã được PO duyệt.
@@ -57,6 +58,8 @@ T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **kh�
 **T48.5 (2026-11-17): không bảng / cột / SP / seed mới** – thêm `deploy/db/compat-level.sql` (đặt mức tương thích về 160 nếu DB đang > 160), `Deploy-Database.ps1` và `db-init.sh` tự gọi, không cần chạy tay.
 
 **REVIEW-BE-1 (2026-11-17): sửa 7 SP, không bảng / cột / seed mới** – `uspAuditChange_GetAll`, `uspUser_GetAll`, `uspUserClaim_GetAll`, `uspUserGroup_GetAll`, `uspPerson_GetAll`, `uspObjectMenu_GetAll`, `uspLocationTracking_GetAll`: chặn `Page` ≥ 1, `PageSize` 1–1000. Cả 7 đã có trong `scripts.order` (không thêm dòng). **Đã chạy trên DB dev và staging** (`Deploy-Database.ps1`).
+
+**BOT-1.1 (2026-11-18, D-62): 1 seed mới `seed/Integration_Telegram_seed.sql`** – thêm vào cuối nhóm seed của `deploy/db/scripts.order`: kênh + cấu hình bot Telegram (`IntegrationChannel` `TELEGRAM_VH` / `TELEGRAM_DH` / `TELEGRAM_TRO_LY`, `BotConfiguration` VH / DH / TRO_LY – **không chứa token**, `SecretReference` = tên biến môi trường), menu quyền `#/bot-van-hanh`, `#/bot-dieu-hanh` + UserRole PROPOSED. Chỉ thêm, chạy lại không đổi. **Đã chạy DB dev 2 lần.** Không SP mới, không bảng / cột. `proposed/GAP_INT_02_idempotency_index.sql` = đề xuất index (GAP-INT-02) – **không tự chạy**, chờ anh duyệt.
 
 ### Kiểm tra lược đồ (2026-11-17)
 

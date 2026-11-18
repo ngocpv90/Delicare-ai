@@ -1,0 +1,191 @@
+### DELICARE – BOT-1.2: ĐỊNH DANH, LIÊN KẾT, TOKEN (D-62, BOT_TELEGRAM §2, Catalog 220) – khung cũ D-30.
+### API nội bộ api/BotChannel/* (header X-Client-Key): ResolveIdentity · LinkByPhone · LinkByCode · TouchIdentity · IssueUserToken · Employee*
+### API web: TelegramLink/CreateCode (chính mình) · CreateCodeForEmployee (HR – Sửa #/adm-employee) · GetMine · Unlink; UserExternalIdentity/Link, Unlink (admin).
+###
+### CẦN TRƯỚC KHI CHẠY (KHÔNG ghi khóa thật vào repo – chỉ đặt lúc chạy API, ví dụ PowerShell 5.1):
+###   $key = "<khóa client tự sinh, ≥ 32 ký tự>"
+###   $sha = [Security.Cryptography.SHA256]::Create()
+###   $env:Clients__MESSAGING__KeyHash = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($key)) | ForEach-Object { $_.ToString("X2") })
+###   $env:Messaging__LinkSigningKey = "<chuỗi ngẫu nhiên ≥ 32 ký tự>"
+###   dotnet run --project AppDelicare/AppDelicare.WebApi --urls http://localhost:5125
+### rồi chạy file với @clientKey = cùng $key. DB dev đã chạy DB/seed/Integration_Telegram_seed.sql.
+### Mỗi lần chạy dùng Telegram id mới theo @run; cuối file admin gỡ 2 liên kết thử. "→ 400" = CHỐT AN TOÀN (responseCode 400, HTTP 200).
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@clientKey = dat-khoa-client-luc-chay
+@run = {{$localDatetime "YYYYMMDDHHmmss"}}
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+@me = {{login.response.body.data.userId}}
+
+### 1. Web: mã liên kết cho chính mình (hạn 15′) + link mở bot
+# @name code
+# @expect data.code ~ ^[A-Za-z0-9_-]{20,64}$
+POST {{base}}/api/TelegramLink/CreateCode
+Authorization: Bearer {{token}}
+
+### 2. Bot: /start <mã> → liên kết, Active (admin = phải có mã – đã có)
+# @name linkMe
+# @expect data.linked == true
+# @expect data.userId == {{me}}
+# @expect data.status == Active
+# @expect data.hasWebAccount == true
+POST {{base}}/api/BotChannel/LinkByCode
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}", "displayName": "Thu BOT12", "code": "{{code.response.body.data.code}}" }
+
+### 3. Dùng lại mã → 400
+POST {{base}}/api/BotChannel/LinkByCode
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}", "code": "{{code.response.body.data.code}}" }
+
+### 4. Mã sửa chữ ký → 400
+POST {{base}}/api/BotChannel/LinkByCode
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12X-{{run}}", "code": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }
+
+### 5. Bot: tra định danh
+# @expect data.linked == true
+# @expect data.canUseBot == true
+POST {{base}}/api/BotChannel/ResolveIdentity
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}" }
+
+### 6. Bot: JWT 10′ của chính user
+# @name botToken
+# @expect data.limited == false
+# @expect data.userId == {{me}}
+POST {{base}}/api/BotChannel/IssueUserToken
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}" }
+
+### 7. Gọi API nghiệp vụ bằng JWT bot (quyền như web)
+GET {{base}}/api/TelegramLink/GetMine
+Authorization: Bearer {{botToken.response.body.data.token}}
+
+### 8. Số điện thoại không phải của chính tài khoản đang chat → 400
+POST {{base}}/api/BotChannel/LinkByPhone
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12P-{{run}}", "contactUserId": "khac", "phone": "0901234567" }
+
+### 9. Số không khớp hồ sơ nào → 400 (gợi ý liên hệ Nhân sự)
+POST {{base}}/api/BotChannel/LinkByPhone
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12P-{{run}}", "contactUserId": "HTTP12P-{{run}}", "phone": "0999000111" }
+
+### 10. Người dùng chặn bot → định danh Blocked
+# @expect data.linked == false
+POST {{base}}/api/BotChannel/TouchIdentity
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}", "blocked": true }
+
+### 11. Đang chặn bot → không cấp token → 400
+POST {{base}}/api/BotChannel/IssueUserToken
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}" }
+
+### 12. /start lại → Active (đã xác nhận mã trước đó)
+# @expect data.status == Active
+POST {{base}}/api/BotChannel/TouchIdentity
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}", "blocked": false }
+
+### 13. HR: danh sách nhân viên (lấy 1 nhân viên đang làm)
+# @name employees
+GET {{base}}/api/Employee/GetAllData
+Authorization: Bearer {{token}}
+
+### 14. HR cấp mã cho nhân viên (hạn 72 giờ)
+# @name empCode
+POST {{base}}/api/TelegramLink/CreateCodeForEmployee
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+EmployeeId={{employees.response.body.listData[status=Active].id}}
+
+### 15. Nhân viên /start <mã> → liên kết theo EmployeeId
+# @name linkEmp
+# @expect data.employeeId == {{employees.response.body.listData[status=Active].id}}
+# @expect data.hasWebAccount == false
+POST {{base}}/api/BotChannel/LinkByCode
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12E-{{run}}", "code": "{{empCode.response.body.data.code}}" }
+
+### 16. Nhân viên không có tài khoản web → không cấp JWT → 400
+POST {{base}}/api/BotChannel/IssueUserToken
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12E-{{run}}" }
+
+### 17. Nhân viên: lịch ca 7 ngày / ca hôm nay / đơn của mình (API hẹp, chỉ dữ liệu của chính mình)
+POST {{base}}/api/BotChannel/EmployeeGetMyShifts
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12E-{{run}}" }
+
+###
+POST {{base}}/api/BotChannel/EmployeeGetToday
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12E-{{run}}" }
+
+###
+POST {{base}}/api/BotChannel/EmployeeGetMyRequests
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12E-{{run}}" }
+
+### 18. Dọn: admin gỡ 2 liên kết thử (Catalog 220)
+POST {{base}}/api/UserExternalIdentity/Unlink
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+id={{linkMe.response.body.data.identityId}}
+
+###
+POST {{base}}/api/UserExternalIdentity/Unlink
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+id={{linkEmp.response.body.data.identityId}}
+
+### 19. Đã gỡ → không cấp token → 400
+POST {{base}}/api/BotChannel/IssueUserToken
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "externalUserId": "HTTP12-{{run}}" }

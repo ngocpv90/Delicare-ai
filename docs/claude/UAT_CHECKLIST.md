@@ -199,3 +199,17 @@ Kết quả chạy thật trên DB dev (2026-11-17): luồng PowerShell 88/88 b�
 
 ### PILOT-FE – thao tác trên giao diện (để sau)
 Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 hộp duyệt, FE-P3 thực đơn / đơn hàng, FE-P4 kho, FE-P5 mua hàng – nhận hàng – QC, FE-P7 mẻ sản xuất, FE-P8 giao – đối soát – phản ánh) **viết và thử sau khi làm xong đợt FE** (thứ tự FE-3 → FE của T45R.8 → FE-P2 … FE-P8 → UAT-PILOT trên giao diện). Hiện staging đã có bản build Angular (FE-0, FE-1, FE-2, FE-3 WIP) – chỉ thử được các màn ở bảng PILOT-FE phía trên.
+
+## KÊNH TIN NHẮN – LÕI (BOT-1.1, 2026-11-18) · file thử: `docs/api-tests/bot-1.1-channel.http` · test: `AppDelicare.Tests/Notifications/BotChannel*Tests.cs`
+- [ ] Không có / sai `X-Client-Key` → `api/BotChannel/*` trả HTTP 401; từ internet qua nginx → 404.
+- [ ] Gửi 2 lần cùng update (bot + update_id) → 1 dòng `InboundMessage`, lần 2 `duplicate = true`.
+- [ ] ClaimInbound → Đang xử lý; CompleteInbound Đã xử lý; kết thúc lần 2 → 400; màn Tin nhắn vào: Xử lý lại chỉ với Lỗi / Bỏ qua.
+- [ ] Màn Tin nhắn ra: gửi tay cho người đã liên kết → Chờ gửi; người chưa liên kết → báo lỗi; gửi lỗi → tự thử lại sau 1′; nút Gửi lại; người dùng chặn bot → Blocked, định danh Blocked.
+- [ ] Màn Kênh: ConfigJson không lộ token / secret / key (hiện `***`); sửa kênh không làm mất bí mật.
+
+## LIÊN KẾT TELEGRAM (BOT-1.2, 2026-11-18) · file thử: `docs/api-tests/bot-1.2-identity.http` · test: `AppDelicare.Tests/Notifications/BotIdentityTests.cs`
+- [ ] Nhân viên quét QR → chia sẻ số → khớp đúng 1 hồ sơ → liên kết; số không khớp / trùng nhiều → bot báo liên hệ Nhân sự.
+- [ ] Trưởng ca / người có quyền duyệt chỉ chia sẻ số → dùng bot nhưng không duyệt được; lấy mã trên web (hồ sơ cá nhân) → /start <mã> → duyệt được.
+- [ ] HR cấp mã cho nhân viên (hạn 72 giờ) → nhân viên /start <mã> → liên kết; dùng lại mã → từ chối; mã quá hạn → từ chối.
+- [ ] Khóa tài khoản trên web → bot ngừng cấp token (log TOKEN Failed). Admin gỡ liên kết → bot coi như chưa liên kết.
+- [ ] Nhân viên không có tài khoản web: xem lịch ca, ca hôm nay, vào / ra ca (đúng quy tắc ca + bán kính), xem đơn của mình.
