@@ -18,7 +18,8 @@ namespace AppDelicare.WebApi.Controllers
     [AllowAnonymous]
     [SkipPermission]
     [ClientKey(MessagingCode.ClientMessaging)]
-    public class BotChannelController(IBotChannelService service, ITelegramLinkService link, IUserTokenIssuer tokens, IBotEmployeeService employee) : BaseController
+    public class BotChannelController(IBotChannelService service, ITelegramLinkService link, IUserTokenIssuer tokens, IBotEmployeeService employee,
+        IShiftCardService shiftCards) : BaseController
     {
         private readonly IBotChannelService _service = service;
 
@@ -98,6 +99,14 @@ namespace AppDelicare.WebApi.Controllers
         /// <summary>BOT-1.4: tin đã gửi cùng CorrelationId (mã sự việc) – sửa đồng loạt thẻ.</summary>
         [HttpPost("GetCorrelated")]
         public Task<IActionResult> GetCorrelated([FromBody] BotCorrelatedRequest request) => Run(nameof(GetCorrelated), () => _service.GetCorrelated(request));
+
+        /// <summary>BOT-2.1: xếp Thẻ ca tới hạn (idempotent) + trả thẻ đã gửi kèm nội dung mới nhất (messaging gọi mỗi phút, sửa tin khi đổi).</summary>
+        [HttpPost("SyncShiftCards")]
+        public Task<IActionResult> SyncShiftCards() => Run(nameof(SyncShiftCards), () => shiftCards.Sync());
+
+        /// <summary>BOT-2.1: ⚡ Ca của tôi – thẻ ca hiện tại / kế tiếp của người dùng bot.</summary>
+        [HttpPost("MyShiftCard")]
+        public Task<IActionResult> MyShiftCard([FromBody] BotIdentityRequest request) => Run(nameof(MyShiftCard), () => shiftCards.Mine(request));
 
         private async Task<IActionResult> Run<T>(string action, Func<Task<T>> call)
         {

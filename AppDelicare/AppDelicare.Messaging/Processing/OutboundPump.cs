@@ -145,6 +145,11 @@ namespace AppDelicare.Messaging.Processing
             {
                 case ChannelSendStatus.Sent:
                     mark.Status = "Sent";
+                    // BOT-2.1: Thẻ ca / Thẻ ngày → ghim đầu chat (lỗi ghim không làm hỏng tin).
+                    if (MessageTemplates.IsPinned(item.MessageType) && result.ProviderMessageId != null)
+                    {
+                        await sender.PinAsync(bot, chat, result.ProviderMessageId, ct);
+                    }
                     break;
                 case ChannelSendStatus.Blocked:
                     mark.Status = "Blocked";

@@ -528,6 +528,7 @@
             // BOT-1.1 (D-62) – kênh tin nhắn.
             public static readonly string ClientKeyInvalid = "Khóa client không hợp lệ";
             public static readonly string BotUnknown = "Bot chưa khai báo hoặc đang tắt: {0}";
+            public static readonly string BotNoShiftToday = "Hôm nay bạn không có ca.";
             public static readonly string BotUpdateInvalid = "Update thiếu mã bot / update_id";
             public static readonly string BotUpdateTooLarge = "Update quá lớn (tối đa {0} ký tự)";
             public static readonly string BotUpdateReceived = "Đã nhận update";

@@ -60,6 +60,9 @@ namespace AppDelicare.Messaging.Presentation
             ["INCIDENT_UNCLAIMED"] = "🚨 Sự việc chưa ai nhận",
         };
 
+        /// <summary>BOT-2.1: mẫu được ghim đầu chat sau khi gửi.</summary>
+        public static bool IsPinned(string? template) => template?.ToUpperInvariant() is "SHIFT_CARD" or "DAY_CARD";
+
         public static NeutralMessage Render(string? payloadJson)
         {
             string? template = null, level = null;
@@ -100,6 +103,7 @@ namespace AppDelicare.Messaging.Presentation
                 "APPROVAL_DECIDED" => new NeutralMessage { Title = "Yêu cầu của bạn đã có kết quả", Lines = Lines(data, "title", "requestNo", "decision", "comment") },
                 "SHIFT_CONFIRMED" => new NeutralMessage { Title = $"📅 Lịch ca đã xác nhận ({Str(data, "count") ?? "0"} ca)", Lines = Array(data, "lines") },
                 "SHIFT_ASSIGNED" => new NeutralMessage { Title = "Bạn được phân ca", Lines = Lines(data, "workDate", "shift", "location") },
+                "SHIFT_CARD" or "DAY_CARD" => new NeutralMessage { Title = Str(data, "title") ?? "🗓 Thẻ ca", Lines = Array(data, "lines") },
                 _ => new NeutralMessage
                 {
                     Title = Titles.GetValueOrDefault(code, "Có thông báo mới"),

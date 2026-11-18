@@ -23,7 +23,7 @@ namespace AppDelicare.Messaging.Processing
     /// · 📂 Chức năng · gõ mã chứng từ / chữ → tra cứu · còn lại → trợ giúp.
     /// </summary>
     public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender,
-        BotActionRegistry registry, MenuNavigator menu, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
+        BotActionRegistry registry, MenuNavigator menu, ShiftCards shiftCards, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
         AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu)
@@ -125,6 +125,9 @@ namespace AppDelicare.Messaging.Processing
                 {
                     case CallbackData.Kinds.Menu:
                         await menu.HandleAsync(ctx, data, ct);
+                        break;
+                    case ShiftCards.Kind:
+                        await shiftCards.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Approval:
                         await approvals.HandleAsync(ctx, data, ct);

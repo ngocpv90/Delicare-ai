@@ -126,6 +126,16 @@ namespace AppDelicare.Messaging.Core.Contracts
         public bool IsAdmin { get; set; }
     }
 
+    /// <summary>BOT-2.1: Thẻ ca – nội dung mới nhất (PayloadJson như outbox) + tin đã gửi.</summary>
+    public sealed class ShiftCardItemModel
+    {
+        public Guid AssignmentId { get; set; }
+        public string? BotCode { get; set; }
+        public string? ChatId { get; set; }
+        public string? ProviderMessageId { get; set; }
+        public string PayloadJson { get; set; } = "{}";
+    }
+
     public sealed class BotCorrelatedMessageModel
     {
         public Guid Id { get; set; }

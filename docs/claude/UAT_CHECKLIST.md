@@ -229,6 +229,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## THẺ CA / THẺ NGÀY (BOT-2.1, 2026-11-18) · test: `MessagingShiftCardTests`, `ShiftCardServiceTests`
+- [ ] 15′ trước ca, nhân viên (đã liên kết bot) nhận 1 Thẻ ca được ghim; vào ca → thẻ tự đổi "Đã vào ca" (không có tin mới), nút đổi theo giai đoạn ca.
+- [ ] ⚡ Ca của tôi làm mới thẻ ghim; bấm nút trên thẻ mở chức năng thành tin mới (thẻ vẫn còn).
+- [ ] 07:00 quản lý (có Dashboard điều hành, bot Điều hành) nhận Thẻ ngày ghim: chờ tôi duyệt, cảnh báo, số liệu hôm nay.
+
 ## THÔNG BÁO NGHIỆP VỤ QUA BOT (BOT-1.7, 2026-11-18) · test: `Notifications/BusinessNotificationTests`
 - [ ] Gửi duyệt đề nghị mua / PO / đơn nghỉ → người duyệt cấp hiện tại nhận tin ⏳ kèm nút Xem & duyệt (admin không nhận); duyệt cấp 1 → cấp 2 nhận; xong → người gửi nhận ✅ / ❌.
 - [ ] Xác nhận phân ca → mỗi nhân viên (đã liên kết bot) nhận 1 tin 📅 liệt kê ca; xác nhận lại không gửi trùng.

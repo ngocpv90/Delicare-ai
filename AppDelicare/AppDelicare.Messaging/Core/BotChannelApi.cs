@@ -20,6 +20,8 @@ namespace AppDelicare.Messaging.Core
         Task<List<BotCorrelatedMessageModel>> GetCorrelatedAsync(string correlationId, CancellationToken ct = default);
         Task<List<ReferenceItemModel>> GetLeaveTypesAsync(CancellationToken ct = default);
         Task<ApiResult<System.Text.Json.JsonElement>> EmployeeCallAsync(string action, object request, CancellationToken ct = default);
+        Task<List<ShiftCardItemModel>> SyncShiftCardsAsync(CancellationToken ct = default);
+        Task<ApiResult<ShiftCardItemModel>> MyShiftCardAsync(BotIdentityRequest request, CancellationToken ct = default);
     }
 
     public sealed class BotChannelApi(IDelicareApiClient api) : IBotChannelApi
@@ -69,5 +71,12 @@ namespace AppDelicare.Messaging.Core
         /// <summary>BOT-1.4: action Employee* khác (EmployeeCheckIn / CheckOut / GetMyRequests / GetMyShifts) – kết quả thô.</summary>
         public Task<ApiResult<System.Text.Json.JsonElement>> EmployeeCallAsync(string action, object request, CancellationToken ct = default)
             => api.PostInternalAsync<System.Text.Json.JsonElement>(action, request, ct);
+
+        /// <summary>BOT-2.1: xếp Thẻ ca tới hạn + thẻ đã gửi kèm nội dung mới nhất.</summary>
+        public async Task<List<ShiftCardItemModel>> SyncShiftCardsAsync(CancellationToken ct = default)
+            => (await api.PostInternalAsync<ShiftCardItemModel>("SyncShiftCards", new { }, ct)).ListData ?? [];
+
+        public Task<ApiResult<ShiftCardItemModel>> MyShiftCardAsync(BotIdentityRequest request, CancellationToken ct = default)
+            => api.PostInternalAsync<ShiftCardItemModel>("MyShiftCard", request, ct);
     }
 }
