@@ -270,7 +270,7 @@
   function finish(el) {
     cleanDemoText(el);
     el.insertAdjacentHTML('beforeend', API_MODE()
-      ? '<div class="footer-note">DELI-CARE · ENTERPRISE MANAGEMENT · Dữ liệu đọc / ghi qua API (bảng chưa có API hiển thị dữ liệu DEMO) · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>'
+      ? '<div class="footer-note">DELI-CARE · ENTERPRISE MANAGEMENT</div>'
       : '<div class="footer-note">DELI-CARE · ENTERPRISE MOCKUP · DỮ LIỆU DEMO – KHÔNG PHẢI DỮ LIỆU THẬT · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>');
     el.querySelectorAll('[data-trace]').forEach(b => b.onclick = () => UI.trace(b.dataset.trace, APP.current));
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => APP.go(b.dataset.go));
@@ -332,7 +332,9 @@
         if (n !== n2) errs.push('Mật khẩu nhập lại chưa khớp');
         if (n && n.length < 9) errs.push('Mật khẩu mới phải từ 9 ký tự');
         if (errs.length) return UI.toast(errs.join('<br>'), 'err');
-        const fd = new FormData(); fd.append('passWordOld', o); fd.append('passWordNew', n);
+        // Backend tìm tài khoản theo Id trong form (ChangePasswordRequest : BaseRequest) – thiếu Id → "Tài khoản của bạn không tồn tại".
+        const me = H.user || {};
+        const fd = new FormData(); fd.append('Id', me.userId || me.id || ''); fd.append('passWordOld', o); fd.append('passWordNew', n);
         try {
           const res = await H.send('PUT', 'User/ChangePassword', fd);
           if (res && res.responseCode !== undefined && res.responseCode !== 200) return UI.toast(esc(res.responseMessage || 'Không đổi được mật khẩu'), 'err');
