@@ -7,9 +7,9 @@
 #   API  : http://<server>:5125/swagger   (đổi bằng API_PORT trong .env; trong mạng Docker là api:8080)
 #
 # ĐỒNG BỘ DATABASE TỰ ĐỘNG: mỗi lần "up", dịch vụ db-sync chạy TRƯỚC api (deploy/db/migrate.sh), xong mới khởi động api:
-#   - DB trống → tạo đủ 124 bảng từ DDL chuẩn;
+#   - cấu trúc bảng = migration DB/migrations (mỗi file 1 lần): DB trống → baseline 124 bảng;
 #   - cập nhật stored procedure + thêm seed còn thiếu (chạy lại an toàn);
-#   - DB thiếu bảng / cột so với bản code → DỪNG và in danh sách; đặt DB_AUTO_MIGRATE=1 để tự nâng cấp bằng DB/migrations (backup trước).
+#   - DB đã có bảng mà có migration MỚI đang chờ → DỪNG và in danh sách; đặt DB_AUTO_MIGRATE=1 để tự chạy (backup trước).
 # Tắt đồng bộ: DB_AUTO_SYNC=0 trong .env. Chạy riêng:  docker compose run --rm db-sync
 # Bộ đầy đủ có SQL Server riêng trong Docker: deploy/docker/docker-compose.staging.yml; production (HTTPS): docker-compose.production.yml.
 services:
@@ -28,6 +28,9 @@ services:
       Licenses__GemBox: ${GEMBOX_LICENSE:-}
       DocumentStorage__RootPath: /app/App_Data/DocumentFiles
       Logging__ConsoleOnly: "true"
+      # BOT-1.1 / 1.2 (D-62): khóa client messaging (SHA-256 hex) + khóa ký mã liên kết Telegram – trống = tắt.
+      Clients__MESSAGING__KeyHash: ${MESSAGING_CLIENT_KEY_HASH:-}
+      Messaging__LinkSigningKey: ${MESSAGING_LINK_SIGNING_KEY:-}
     volumes:
       - api-import:/app/wwwroot/Import            # ảnh đại diện / tệp nhập Excel
       - api-docs:/app/App_Data/DocumentFiles      # tệp đính kèm (DocumentFile)
@@ -91,6 +94,29 @@ services:
       - ./deploy/docker/db-init.sh:/db-init.sh:ro
     entrypoint: ["/bin/bash", "/repo/deploy/db/migrate.sh"]
     restart: "no"
+
+  # BOT-1.3 (D-62): container messaging – TẤT CẢ bot (Telegram VH / DH), ĐÚNG 1 bản. Không chuỗi kết nối DB – gọi api qua mạng Docker.
+  messaging:
+    build:
+      context: ./AppDelicare
+      dockerfile: AppDelicare.Messaging/Dockerfile
+    depends_on:
+      - api
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      Messaging__ApiBaseUrl: http://api:8080
+      Messaging__ClientKey: ${MESSAGING_CLIENT_KEY:-}
+      Messaging__Mode: ${MESSAGING_MODE:-Polling}
+      Messaging__WebhookBaseUrl: ${MESSAGING_WEBHOOK_BASE_URL:-}
+      Telegram__Bots__VH__Token: ${TELEGRAM_VH_TOKEN:-}
+      Telegram__Bots__VH__WebhookSecret: ${TELEGRAM_VH_WEBHOOK_SECRET:-}
+      Telegram__Bots__VH__Username: ${TELEGRAM_VH_USERNAME:-}
+      Telegram__Bots__DH__Token: ${TELEGRAM_DH_TOKEN:-}
+      Telegram__Bots__DH__WebhookSecret: ${TELEGRAM_DH_WEBHOOK_SECRET:-}
+      Telegram__Bots__DH__Username: ${TELEGRAM_DH_USERNAME:-}
+    expose:
+      - "8080"
+    restart: unless-stopped
 
 volumes:
   api-import:

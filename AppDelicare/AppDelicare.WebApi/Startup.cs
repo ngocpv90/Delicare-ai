@@ -111,12 +111,16 @@ namespace AppDelicare.WebApi
             app.UseMiddleware<CorrelationIdMiddleware>();
             app.UseExceptionHandler(errorApp => errorApp.Run(ProblemDetailsExceptionHandler.HandleAsync));
             app.UseHttpsRedirection();
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            // Rà soát BE: Production tắt Swagger (lộ toàn bộ danh sách API) – bật lại bằng Swagger:Enabled=true nếu cần. Dev / Staging giữ như cũ.
+            if (!env.IsProduction() || Configuration.GetValue<bool>("Swagger:Enabled"))
             {
-                string swaggerJsonBasePath = string.IsNullOrWhiteSpace(c.RoutePrefix) ? "." : "..";
-                c.SwaggerEndpoint($"{swaggerJsonBasePath}" + "/swagger/v1/swagger.json", Configuration["AppSettingHelper:ApiName"]?.ToString());
-            });
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    string swaggerJsonBasePath = string.IsNullOrWhiteSpace(c.RoutePrefix) ? "." : "..";
+                    c.SwaggerEndpoint($"{swaggerJsonBasePath}" + "/swagger/v1/swagger.json", Configuration["AppSettingHelper:ApiName"]?.ToString());
+                });
+            }
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseRouting();

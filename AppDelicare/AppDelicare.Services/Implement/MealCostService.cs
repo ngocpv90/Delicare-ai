@@ -426,6 +426,23 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var db = _unitOfWork.DbContext;
+                // Rà soát BE: không lọc đơn → bắt buộc khoảng ngày ăn (mặc định 31 ngày gần nhất, tối đa 92 ngày) – trước đây tải mọi đơn
+                // có giá vốn rồi tính lại từng đơn (5+ truy vấn / đơn).
+                if (request.OrderId == null)
+                {
+                    DateTime to = (request.To ?? _clock.Today).Date;
+                    DateTime from = (request.From ?? to.AddDays(-30)).Date;
+                    if (from > to || (to - from).TotalDays > 91)
+                    {
+                        return new Results<MealCostResultModel>
+                        {
+                            ResponseCode = Convert.ToInt32(HttpStatusCode.BadRequest),
+                            ResponseMessage = "Khoảng ngày ăn không hợp lệ: Từ ngày ≤ Đến ngày, tối đa 92 ngày (hoặc lọc theo đơn – OrderId).",
+                        };
+                    }
+                    request.From = from;
+                    request.To = to;
+                }
                 var orderIds = await db.MealCost.AsNoTracking().Where(m => !m.IsDeleted && (request.OrderId == null || m.OrderId == request.OrderId))
                     .Select(m => m.OrderId).Distinct().ToListAsync();
                 var orders = await db.Order.AsNoTracking()

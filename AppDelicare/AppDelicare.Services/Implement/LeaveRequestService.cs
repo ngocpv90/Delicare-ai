@@ -209,14 +209,25 @@ namespace AppDelicare.Services.Implement
         /// không trùng ngày đã chấm công. Số <c>DN-YYMMDD-NNNN</c> (BUSINESS_RULES §11), Chờ duyệt, ApprovalRequest LEAVE_REQUEST (engine BE2.3, mặc định 1 cấp mục
         /// <c>#/wf-inbox?type=hr-leave</c>), ghi <c>ApprovalRequestId</c>.
         /// </summary>
-        public async Task<IResult<LeaveRequestDetailModel>> Create(LeaveCreateRequest request)
+        public Task<IResult<LeaveRequestDetailModel>> Create(LeaveCreateRequest request) => CreateCore(request, null);
+
+        /// <summary>BOT-1.5a (D-62 p8): người chỉ có EmployeeId lập đơn nghỉ qua bot – nhân viên lấy từ định danh (không theo người thao tác = system), mọi quy tắc như Create.</summary>
+        public Task<IResult<LeaveRequestDetailModel>> CreateForEmployee(Guid employeeId, LeaveCreateRequest request)
+        {
+            request.EmployeeId = null;
+            return CreateCore(request, employeeId);
+        }
+
+        private async Task<IResult<LeaveRequestDetailModel>> CreateCore(LeaveCreateRequest request, Guid? botEmployeeId)
         {
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
                 var db = _unitOfWork.DbContext;
                 Guid actor = _currentActor.RequireActor().UserId;
-                var self = await HrRules.ResolveEmployeeAsync(db, actor);
+                var self = botEmployeeId is { } botEmp
+                    ? await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == botEmp && !e.IsDeleted)
+                    : await HrRules.ResolveEmployeeAsync(db, actor);
                 Employee? employee;
                 if (request.EmployeeId is { } wanted && wanted != Guid.Empty && wanted != self?.Id)
                 {

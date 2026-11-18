@@ -927,8 +927,12 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(ConstantHelper.Message.RouteDepartureTempInvalid);
                 }
+                if (TemperatureTime.Resolve(request.MeasuredAt, _clock, out DateTime measuredAt) is string timeError)
+                {
+                    return Fail(timeError); // Rà soát BE: giờ đo ngoài khoảng → không ghi (chống "che" lần đo thật).
+                }
                 var warnings = new List<string>();
-                string? error = DeliveryRules.AddTemperature(_unitOfWork, _rules, actor, request.MeasuredAt ?? _clock.Now, route.Id, stopRef, deliveryOrderId,
+                string? error = DeliveryRules.AddTemperature(_unitOfWork, _rules, actor, measuredAt, route.Id, stopRef, deliveryOrderId,
                     request.TemperatureC, request.CorrectiveAction, request.DeviceCode, request.EvidenceUrl, warnings, out _);
                 if (error != null)
                 {

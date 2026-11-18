@@ -1,0 +1,162 @@
+using AppDelicare.Messaging.Audiences.Internal;
+using AppDelicare.Messaging.Audiences.Internal.Chung;
+using AppDelicare.Messaging.Callback;
+using AppDelicare.Messaging.Channels;
+using AppDelicare.Messaging.Channels.Telegram;
+using AppDelicare.Messaging.Conversations;
+using AppDelicare.Messaging.Core;
+using AppDelicare.Messaging.Core.Contracts;
+using AppDelicare.Messaging.Experience;
+
+namespace AppDelicare.Messaging.Processing
+{
+    /// <summary>Kết quả xử lý 1 update → BotChannel/CompleteInbound.</summary>
+    public sealed record DispatchResult(string Status, string? Error = null)
+    {
+        public static readonly DispatchResult Processed = new("Processed");
+        public static readonly DispatchResult Ignored = new("Ignored");
+    }
+
+    /// <summary>
+    /// BOT-1.3 / 1.4: update → hành động. Thứ tự: chặn / mở bot (my_chat_member) · nhóm chat → bỏ (BOT-2.x) · đăng ký (liên hệ, /start, /huylienket, gõ mã liên kết)
+    /// · chưa liên kết → xin số · trả lời ForceReply (lý do từ chối…) · nút trong tin (menu / apv / undo) · vị trí (chấm công) · nút / lệnh của danh mục chức năng
+    /// · 📂 Chức năng · gõ mã chứng từ / chữ → tra cứu · còn lại → trợ giúp.
+    /// </summary>
+    public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender,
+        BotActionRegistry registry, MenuNavigator menu, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
+        AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp)
+    {
+        public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
+        {
+            string bot = item.BotCode ?? string.Empty;
+            var e = TelegramUpdateParser.Parse(TelegramUpdateParser.Deserialize(item.PayloadJson));
+            if (e == null)
+            {
+                return DispatchResult.Ignored;
+            }
+            if (e.Kind == IncomingKind.ChatMember)
+            {
+                // kicked = người dùng chặn bot; member = mở lại.
+                bool? blocked = e.MemberStatus == "kicked" ? true : e.MemberStatus == "member" ? false : null;
+                if (blocked != null)
+                {
+                    await api.TouchIdentityAsync(new BotTouchRequest { BotCode = bot, ExternalUserId = e.FromId, Blocked = blocked }, ct);
+                    users.Invalidate(bot, e.FromId);
+                }
+                return DispatchResult.Processed;
+            }
+            if (e.ChatType is not (null or "private"))
+            {
+                return DispatchResult.Ignored; // nhóm chat: BOT-2.x
+            }
+            if (e.Kind == IncomingKind.Callback && e.CallbackId != null)
+            {
+                await sender.AnswerCallbackAsync(bot, e.CallbackId, null, ct);
+            }
+            switch (e.Kind)
+            {
+                case IncomingKind.Contact:
+                    await onboarding.ContactAsync(bot, e, ct);
+                    return DispatchResult.Processed;
+                case IncomingKind.Command when e.Command == "start":
+                    await onboarding.StartAsync(bot, e, ct);
+                    return DispatchResult.Processed;
+                case IncomingKind.Command when e.Command == "huylienket":
+                    await onboarding.UnlinkAsync(bot, e, ct);
+                    return DispatchResult.Processed;
+                case IncomingKind.Text when OnboardingActions.LooksLikeLinkCode(e.Text):
+                    await onboarding.StartAsync(bot, e with { Argument = e.Text }, ct);
+                    return DispatchResult.Processed;
+            }
+            var identity = await users.GetAsync(bot, e.FromId, ct);
+            if (!identity.Linked)
+            {
+                await onboarding.AskPhoneAsync(bot, e, ct);
+                return DispatchResult.Processed;
+            }
+            if (!identity.CanUseBot)
+            {
+                await BotReply.TextAsync(sender, bot, e.ChatId, "Tài khoản chưa được cấp quyền dùng bot này – liên hệ quản trị hệ thống.", KeyboardBuilder.Remove(), ct);
+                return DispatchResult.Processed;
+            }
+            var ctx = new BotActionContext(bot, e, identity);
+
+            // Trả lời câu hỏi ForceReply (vd. lý do từ chối duyệt).
+            if (e.Kind == IncomingKind.Text && replies.Take(bot, e.ChatId, e.ReplyToMessageId?.ToString()) is { } pending)
+            {
+                switch (pending.Flow)
+                {
+                    case ApprovalActions.RejectFlow:
+                        await approvals.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyDate or AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyDays
+                        or AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyReason:
+                        await leave.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty:
+                        await bep.ReplyAsync(ctx, pending, ct);
+                        break;
+                }
+                return DispatchResult.Processed;
+            }
+            if (e.Kind == IncomingKind.Callback)
+            {
+                var data = CallbackData.Parse(e.CallbackData);
+                switch (data?.Kind)
+                {
+                    case CallbackData.Kinds.Menu:
+                        await menu.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Approval:
+                        await approvals.HandleAsync(ctx, data, ct);
+                        break;
+                    case AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.Kind:
+                        await leave.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Batch:
+                        await bep.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Checklist:
+                        await attp.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Undo when data.Action == "apv":
+                        await approvals.UndoAsync(ctx, data, ct);
+                        break;
+                    default:
+                        await BotReply.TextAsync(sender, bot, e.ChatId, "Nút đã hết hạn.", ct: ct);
+                        break;
+                }
+                return DispatchResult.Processed;
+            }
+            if (e.Kind == IncomingKind.Location)
+            {
+                await self.LocationAsync(ctx, ct);
+                return DispatchResult.Processed;
+            }
+            var action = e.Kind == IncomingKind.Command ? registry.ByCommand(bot, identity, e.Command) : registry.ByLabel(bot, identity, e.Text);
+            if (action != null)
+            {
+                await action.Handler(ctx, ct);
+                return DispatchResult.Processed;
+            }
+            if ((e.Kind == IncomingKind.Command && e.Command == "menu") || e.Text == KeyboardBuilder.Functions)
+            {
+                await menu.OpenAsync(ctx, ct);
+                return DispatchResult.Processed;
+            }
+            if (e.Kind == IncomingKind.Text && e.Text == ContextKeyboard.Exit)
+            {
+                await BotReply.TextAsync(sender, bot, e.ChatId, "Đã thoát.", KeyboardBuilder.ForActions(registry.Available(bot, identity)), ct);
+                return DispatchResult.Processed;
+            }
+            if (e.Kind == IncomingKind.Text && (search.LooksLikeCode(e.Text) || CodeSearch.LooksLikeSearch(e.Text)))
+            {
+                await search.SearchAsync(ctx, e.Text!, ct);
+                return DispatchResult.Processed;
+            }
+            await help.HelpAsync(bot, e, ct);
+            return DispatchResult.Processed;
+        }
+    }
+}

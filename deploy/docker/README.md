@@ -20,7 +20,7 @@ Lần đầu `db-init` tạo DB, 124 bảng (chỉ khi DB chưa có bảng nào)
 git pull && docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env run --rm db-init
 ```
 
-- `db-init` **chạy lại bao nhiêu lần cũng được**: SP `CREATE OR ALTER`; seed **chỉ thêm** phần chưa có (không ghi đè chỉnh sửa trên màn hình); tài khoản admin đã có thì giữ nguyên; DB đã có bảng thì **không đụng tới bảng / dữ liệu nghiệp vụ**.
+- `db-init` **chạy lại bao nhiêu lần cũng được**: migration cấu trúc bảng (`DB/migrations`, 2026-11-18) chạy **mỗi file 1 lần** – DB trống → baseline 124 bảng, DB đã có bảng → chỉ ghi nhận, migration mới → chạy 1 lần (xem `DB/README.md` mục Migration); sau đó kiểm thiếu bảng / cột so với baseline (thiếu → dừng, tạm bỏ qua bằng `DB_ALLOW_SCHEMA_DRIFT=1`); SP `CREATE OR ALTER`; seed **chỉ thêm** phần chưa có (không ghi đè chỉnh sửa trên màn hình); tài khoản admin đã có thì giữ nguyên; không đụng dữ liệu nghiệp vụ.
 - `--env-file` bắt buộc: compose đọc mật khẩu SA từ `staging.env` (không có thì báo lỗi biến chưa đặt).
 - Thứ tự script lấy từ `deploy/db/scripts.order` – cùng file mà `deploy/db/Deploy-Database.ps1` dùng.
 - Nếu commit mới có cả code backend (`AppDelicare/`), build lại API: `docker compose -f deploy/docker/docker-compose.staging.yml --env-file deploy/docker/staging.env up -d --build api`.

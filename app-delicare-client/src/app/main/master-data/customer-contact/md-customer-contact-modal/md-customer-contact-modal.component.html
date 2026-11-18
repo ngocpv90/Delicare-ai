@@ -1,0 +1,66 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-xl-12 mb-3">
+        <label class="form-label" for="md_customerId">Khách hàng<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="customerId"
+          [items]="items['customerId']"
+          [loading]="loadingLookup['customerId']"
+          [invalid]="isInvalid('customerId')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('customerId')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_fullName">Họ tên<span class="text-danger">*</span></label>
+        <input id="md_fullName" type="text" class="form-control" [class.is-invalid]="isInvalid('fullName')" formControlName="fullName" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('fullName')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_position">Chức vụ</label>
+        <input id="md_position" type="text" class="form-control" [class.is-invalid]="isInvalid('position')" formControlName="position" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_phone">Điện thoại</label>
+        <input id="md_phone" type="text" class="form-control" [class.is-invalid]="isInvalid('phone')" formControlName="phone" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_email">Email</label>
+        <input id="md_email" type="email" class="form-control" [class.is-invalid]="isInvalid('email')" formControlName="email" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('email')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập email hợp lệ</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3 d-flex align-items-end">
+        <div class="form-check form-switch mb-2">
+          <input id="md_isPrimary" class="form-check-input" type="checkbox" formControlName="isPrimary" />
+          <label class="form-check-label" for="md_isPrimary">Liên hệ chính</label>
+        </div>
+      </div>
+      <div class="col-xl-12 mb-3">
+        <label class="form-label" for="md_note">Ghi chú</label>
+        <textarea id="md_note" class="form-control" [class.is-invalid]="isInvalid('note')" formControlName="note" placeholder="Nhập dữ liệu" rows="3"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
+      <i class="fa-solid fa-xmark me-1"></i>Thoát
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+    </button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

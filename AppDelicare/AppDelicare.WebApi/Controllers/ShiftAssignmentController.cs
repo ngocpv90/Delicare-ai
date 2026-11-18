@@ -113,6 +113,22 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>BE2.6 (spec 11.1, Catalog 201): lưới ca nhân viên × ngày (mặc định 7 ngày) + số liệu hôm nay theo ca.</summary>
+        /// <summary>BOT-1.5a: lịch ca của chính tài khoản đang đăng nhập (nhân viên nối theo HrRules), từ hôm nay tới hôm nay + days (mặc định 7, tối đa 31).</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetMine")]
+        public async Task<IActionResult> GetMine(int days = 7)
+        {
+            try
+            {
+                return Ok(await _service.GetMine(days));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetMine: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetGrid")]
         public async Task<IActionResult> GetGrid([FromQuery] ShiftGridRequest request)
         {

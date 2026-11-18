@@ -35,9 +35,10 @@ Sinh khóa JWT (PowerShell):
 ## 2. Dựng database (chung cho A và B)
 
 Script `deploy/db/Deploy-Database.ps1` chạy được nhiều lần, không nhân bản dữ liệu:
-1. DB **rỗng** + có cờ `-CreateSchemaIfEmpty` → tạo 124 bảng từ DDL chuẩn của PO. DB đã có bảng → **không đụng tới bảng**.
+1. **Migration cấu trúc bảng** (2026-11-18 – `DB/README.md` mục Migration): chạy `DB/migrations/*.sql` theo thứ tự tên, mỗi file 1 lần. DB **rỗng** → baseline 124 bảng (cần cờ `-CreateSchemaIfEmpty`); DB đã đủ bảng → chỉ ghi nhận; migration mới → chạy 1 lần. `-ListMigrations`: xem trước (không đổi gì); `-MigrationsOnly`: chỉ đồng bộ bảng, không chạy SP / seed.
 2. Chạy đúng thứ tự trong **`deploy/db/scripts.order`** (T48.3 – nguồn thứ tự **duy nhất**, `deploy/docker/db-init.sh` đọc cùng file): mọi stored procedure `DB/sp/` → tài khoản `admin` (nếu truyền `-AdminPassword` / biến `DELICARE_ADMIN_PASSWORD` và chưa có user này; hash PBKDF2) → seed cơ cấu tổ chức, menu, nhóm quyền, ca, checklist (`DB/seed/`, chỉ thêm phần chưa có).
-3. `-ListOnly`: chỉ in thứ tự script, không kết nối DB. Tài khoản SQL có thể lấy từ biến môi trường `DELICARE_SQL_USER` / `DELICARE_SQL_PASSWORD` (mật khẩu đưa cho sqlcmd qua `SQLCMDPASSWORD`, không nằm trên dòng lệnh). `-TrustServerCertificate` cho SQL Server dùng chứng chỉ tự ký (Docker).
+3. **Mức tương thích (T48.5, D-61):** ngay sau khi mở DB, chạy `deploy/db/compat-level.sql` – mức > 160 (DB tạo trên SQL Server 2025) → đặt về **160** (SQL Server 2022) và ghi log; = 160 → giữ; < 160 → chỉ cảnh báo, không tự nâng. `deploy/docker/db-init.sh` làm y hệt.
+4. `-ListOnly`: chỉ in thứ tự script, không kết nối DB. Tài khoản SQL có thể lấy từ biến môi trường `DELICARE_SQL_USER` / `DELICARE_SQL_PASSWORD` (mật khẩu đưa cho sqlcmd qua `SQLCMDPASSWORD`, không nằm trên dòng lệnh). `-TrustServerCertificate` cho SQL Server dùng chứng chỉ tự ký (Docker).
 
 ```powershell
 # DB staging mới trên SQL Server (Windows Authentication)
@@ -51,6 +52,8 @@ Script `deploy/db/Deploy-Database.ps1` chạy được nhiều lần, không nh�
 ```
 
 > ⚠️ Không chạy lên DB production khi chưa có checklist go-live (T48.2: backup trước, phương án quay lui).
+
+> ⚠️ **D-61:** chuẩn là **SQL Server 2022** (mức 160). **Không chuyển dữ liệu giữa các máy bằng `.bak`** – bản sao lưu từ SQL Server 2025 không khôi phục được trên 2022; chỉ dựng / cập nhật DB bằng script (`scripts.order`). Xem mục 11.
 
 ## 3. Cách A – chạy trên máy anh
 
@@ -181,7 +184,7 @@ Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): 
 
 ## 9. Cập nhật staging (lặp lại mỗi đợt; đã làm 2026-11-17 sau backend Pilot và sau BE2.9)
 
-1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (chạy mọi SP + seed theo `deploy/db/scripts.order`; không đụng bảng / dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
+1. DB: `./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare_Staging` (migration bảng chưa chạy – mỗi file 1 lần – rồi mọi SP + seed theo `deploy/db/scripts.order`; không đụng dữ liệu nghiệp vụ). Nếu tên tiếng Việt từng bị lỗi font (seed chạy tay thiếu `-f 65001`): `./deploy/db/Repair-VietnameseText.ps1 -Server … -Database … [-Apply]`.
 2. Dừng bản API đang chạy (cửa sổ `dotnet AppDelicare.WebApi.dll`), rồi publish đè: `./deploy/iis/Publish-Iis.ps1 -Output C:\Deploy\delicare-staging -Environment Staging` (hoặc lệnh `dotnet publish` ở mục 3).
 3. Build + chép Angular (mục 8).
 4. Chạy: `. ./deploy/staging.local.env.ps1; cd C:\Deploy\delicare-staging; dotnet AppDelicare.WebApi.dll --urls http://localhost:5200`.
@@ -218,3 +221,39 @@ docker compose -f deploy/docker/docker-compose.production.yml ps        # api / 
 **Bí mật** (chỉ trong `production.env` trên server): mật khẩu SQL quản trị + ứng dụng, `JWT_SIGNING_KEY`, `ADMIN_PASSWORD` (lần đầu), `GEMBOX_LICENSE`, `IOT_API_KEY_0/1`.
 
 Máy dev hiện chưa có Docker → compose production **chưa chạy thật**; đã kiểm: build, test, `db-init.sh` (cú pháp + dry-run), `app-login.sql` trên LocalDB (tạo / chạy lại / quyền / đăng nhập SQL), `--healthcheck` + file nhịp, `/health` dbclock (PROGRESS T48.4).
+
+## 11. Tương thích SQL Server 2022 (T48.5, D-61) – bắt buộc trước mỗi lần gộp `main`
+
+- **Chuẩn:** SQL Server 2022, mức tương thích **160**. Máy anh giữ SQL Server 2025 cho DB dev nhưng DB đặt mức 160 (đã hạ 2026-11-17); máy dev FE, server test, production dùng 2022.
+- **Script deploy giữ mức 160:** `deploy/db/compat-level.sql` (gọi từ `Deploy-Database.ps1` và `db-init.sh`) – xem mục 2 bước 3.
+- **Chốt chặn cú pháp:** test `AppDelicare.Tests/Schema/SqlServer2022CompatibilityTests` quét `DB/**/*.sql`, `deploy/db/**/*.sql` và chuỗi SQL trong `AppDelicare.*/**/*.cs`; gặp cú pháp chỉ có từ 2025 (danh sách cấm ở CLAUDE.md mục 3.1, quy tắc 0) → test đỏ. Mức 160 không chặn hết các hàm này nên test là chốt chặn chính.
+- **Kiểm trên SQL Server 2022 thật** (cổng riêng 14339, không đụng DB dev; cần Docker):
+
+```bash
+# 1) SQL Server 2022 tạm (giờ VN), mật khẩu chỉ trong phiên shell
+export SA_PASSWORD='<mật khẩu mạnh tạm>'
+docker run -d --name delicare-sql2022-check -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD="$SA_PASSWORD" -e TZ=Asia/Ho_Chi_Minh \
+  -p 14339:1433 mcr.microsoft.com/mssql/server:2022-latest
+# 2) db-init 2 lần trên DB trống (lần 2 không được đổi số dòng seed)
+for i in 1 2; do REPO_ROOT=. DB_SERVER=localhost,14339 DB_NAME=AppDelicare_Check ADMIN_PASSWORD='<mật khẩu admin tạm>' \
+  SQLCMD_BIN=sqlcmd bash deploy/docker/db-init.sh; done
+# 3) Chạy WebApi trỏ vào DB này rồi chạy docs/api-tests/full-flow.http (phải đạt hết)
+# 4) Dọn: docker rm -f delicare-sql2022-check
+```
+
+  Kết quả (số SP, số dòng seed lần 1 / lần 2, `full-flow.http`) ghi vào PROGRESS mục của đợt gộp.
+- Máy dev hiện chưa có Docker → bước "kiểm trên SQL Server 2022 thật" **chưa chạy** (PROGRESS T48.5).
+
+## 12. Bot Telegram – container `messaging` (BOT-1.3, D-62)
+
+`AppDelicare/AppDelicare.Messaging` – tất cả bot (VH, DH), **không chạm DB**, gọi api qua HTTP (khóa client). Đã có trong 3 compose: `deploy/docker/docker-compose.production.yml` (Webhook, `https://${SERVER_NAME}/tg/<BOT>`), `deploy/docker/docker-compose.staging.yml` và `docker-compose.yml` gốc (mặc định **Polling** – không cần domain). Token để trống → bot tắt, web / api không ảnh hưởng.
+
+1. **Tạo bot** bằng @BotFather – mỗi môi trường 1 bộ (DEV / TEST / PROD): VH ("Delicare Vận hành"), DH ("Delicare Điều hành"). Ghi token + tên bot (không @).
+2. **Khóa** (sinh trên server, KHÔNG commit): `MESSAGING_CLIENT_KEY` = `openssl rand -hex 32`; `MESSAGING_CLIENT_KEY_HASH` = `printf %s "<khóa>" | sha256sum` (api so khóa bằng hash); `MESSAGING_LINK_SIGNING_KEY` = `openssl rand -hex 32`; Webhook: `TELEGRAM_VH_WEBHOOK_SECRET`, `TELEGRAM_DH_WEBHOOK_SECRET` = `openssl rand -hex 24`.
+3. Điền vào `production.env` / `staging.env` / `.env` (biến mẫu đã có trong `*.env.example`), `docker compose … up -d --build`.
+4. **Webhook (production)**: messaging tự `setWebhook` khi khởi động; nginx `/tg/` → `messaging:8080` (resolver Docker – messaging tắt thì `/tg/` trả 502, nginx vẫn chạy, Telegram tự gửi lại). `/api/BotChannel/` từ ngoài → 404.
+5. **Kiểm**: `GET http://messaging:8080/health` (trong mạng Docker) hoặc `docker compose ps` (HEALTHCHECK `--healthcheck`); trên Telegram: quét QR cổng / gửi `/start` → nút chia sẻ số điện thoại → liên kết.
+
+**Máy dev (Polling, bộ bot DEV):** `dotnet user-secrets set "Telegram:Bots:VH:Token" "<token DEV>" --project AppDelicare/AppDelicare.Messaging` (+ `Messaging:ClientKey`), api đặt `Clients:MESSAGING:KeyHash` + `Messaging:LinkSigningKey` (user-secrets của WebApi), chạy `dotnet run --project AppDelicare/AppDelicare.Messaging --urls http://localhost:5130`.
+
+**Thử không cần Telegram thật** (`tools/bot-smoke/`): `node tools/bot-smoke/fake-telegram.mjs 18081` (Telegram giả) → chạy messaging với `Telegram__ApiBaseUrl=http://localhost:18081`, `Telegram__Bots__VH__Token=FAKE`, `Messaging__Mode=Polling` → `node tools/bot-smoke/flow.mjs <số điện thoại không trùng>` (BOT-1.3) / `node tools/bot-smoke/flow-experience.mjs` (BOT-1.4 – menu, /cho, chấm công, tra mã; không ghi quyết định duyệt) / `node tools/bot-smoke/flow-vanhanh.mjs` (BOT-1.5a – Bếp, ATTP, lịch ca, xin nghỉ; không ghi dữ liệu): QR cổng → chia sẻ số (của người khác bị từ chối, số trùng bị từ chối) → chào → ⚡ Ca của tôi → web gửi tay qua outbox → bot gửi → `/huylienket`.

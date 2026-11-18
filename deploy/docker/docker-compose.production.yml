@@ -4,7 +4,7 @@
 #   đặt chứng chỉ HTTPS: deploy/docker/certs/fullchain.pem + privkey.pem (KHÔNG commit)
 #   docker compose -f deploy/docker/docker-compose.production.yml --env-file deploy/docker/production.env run --rm db-init   (lần đầu / sau mỗi bản mới)
 #   docker compose -f deploy/docker/docker-compose.production.yml --env-file deploy/docker/production.env up -d --build
-# Thành phần: nginx (Angular build + HTTPS + /api → api), api (scale được), job (ĐÚNG 1 bản), db-init (chạy tay, dùng tài khoản quản trị SQL).
+# Thành phần: nginx (Angular build + HTTPS + /api → api, /tg/ → messaging), api (scale được), job (ĐÚNG 1 bản), messaging (bot – ĐÚNG 1 bản), db-init (chạy tay, dùng tài khoản quản trị SQL).
 # Bí mật chỉ nằm trong production.env trên server. api / job dùng tài khoản SQL riêng (APP_DB_USER – đọc / ghi / EXECUTE, không DDL), không dùng sa.
 name: delicare-prod
 
@@ -22,6 +22,10 @@ x-app-env: &app-env
   Logging__ConsoleOnly: "true"
   Iot__ApiKeys__0: ${IOT_API_KEY_0:-}
   Iot__ApiKeys__1: ${IOT_API_KEY_1:-}
+  # BOT-1.1 (D-62): SHA-256 (hex) của khóa client container messaging – trống = tắt api/BotChannel (401).
+  Clients__MESSAGING__KeyHash: ${MESSAGING_CLIENT_KEY_HASH:-}
+  # BOT-1.2: khóa ký mã liên kết Telegram (≥ 32 ký tự) – trống = tắt liên kết bằng mã.
+  Messaging__LinkSigningKey: ${MESSAGING_LINK_SIGNING_KEY:-}
 
 services:
   # Chạy tay khi cài lần đầu / cập nhật bản mới (SP + seed theo deploy/db/scripts.order; tạo tài khoản SQL ứng dụng).
@@ -73,6 +77,30 @@ services:
       DOTNET_ENVIRONMENT: Production
     volumes:
       - delicare-docs:/app/App_Data/DocumentFiles
+    restart: unless-stopped
+    logging: *logging
+
+  # BOT-1.3 (D-62): container messaging – TẤT CẢ bot (Telegram VH / DH), ĐÚNG 1 bản. Không chuỗi kết nối DB – gọi api qua mạng Docker.
+  messaging:
+    build:
+      context: ../../AppDelicare
+      dockerfile: AppDelicare.Messaging/Dockerfile
+    depends_on:
+      - api
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      Messaging__ApiBaseUrl: http://api:8080
+      Messaging__ClientKey: ${MESSAGING_CLIENT_KEY:-}
+      Messaging__Mode: Webhook
+      Messaging__WebhookBaseUrl: https://${SERVER_NAME:?Đặt SERVER_NAME (domain)}
+      Telegram__Bots__VH__Token: ${TELEGRAM_VH_TOKEN:-}
+      Telegram__Bots__VH__WebhookSecret: ${TELEGRAM_VH_WEBHOOK_SECRET:-}
+      Telegram__Bots__VH__Username: ${TELEGRAM_VH_USERNAME:-}
+      Telegram__Bots__DH__Token: ${TELEGRAM_DH_TOKEN:-}
+      Telegram__Bots__DH__WebhookSecret: ${TELEGRAM_DH_WEBHOOK_SECRET:-}
+      Telegram__Bots__DH__Username: ${TELEGRAM_DH_USERNAME:-}
+    expose:
+      - "8080"
     restart: unless-stopped
     logging: *logging
 

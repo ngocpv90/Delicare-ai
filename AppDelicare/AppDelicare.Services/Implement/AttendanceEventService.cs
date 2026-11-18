@@ -169,6 +169,17 @@ namespace AppDelicare.Services.Implement
 
         public Task<IResult<AttendanceResultModel>> CheckOut(AttendanceCheckRequest request) => CheckAsync(request, false);
 
+        /// <summary>
+        /// BOT-1.2 (D-62, BOT_TELEGRAM §2.6): người chỉ có EmployeeId (không tài khoản web) chấm công qua bot – cùng quy tắc tự chấm (GPS / QR, ca, bán kính, chống trùng),
+        /// nhân viên lấy từ định danh (không theo người thao tác = system), Note ghi nguồn "Telegram – &lt;tên&gt;".
+        /// </summary>
+        public Task<IResult<AttendanceResultModel>> CheckForEmployee(Guid employeeId, AttendanceCheckRequest request, bool checkIn, string sourceNote)
+        {
+            request.EmployeeId = null;
+            request.Note = string.IsNullOrWhiteSpace(request.Note) ? sourceNote : sourceNote + "; " + request.Note.Trim();
+            return CheckAsync(request, checkIn, employeeId);
+        }
+
         private static int Minutes(TimeSpan span) => span <= TimeSpan.Zero ? 0 : (int)Math.Floor(span.TotalMinutes);
 
         /// <summary>
@@ -186,7 +197,7 @@ namespace AppDelicare.Services.Implement
         /// </list>
         /// Tọa độ chỉ lưu ở AttendanceEvent (không ghi log, AuditChange che giá trị, không trả lại trong kết quả) – dữ liệu cá nhân.
         /// </summary>
-        private async Task<IResult<AttendanceResultModel>> CheckAsync(AttendanceCheckRequest request, bool checkIn)
+        private async Task<IResult<AttendanceResultModel>> CheckAsync(AttendanceCheckRequest request, bool checkIn, Guid? botEmployeeId = null)
         {
             using var tran = await _unitOfWork.OpenTransaction();
             try
@@ -195,7 +206,9 @@ namespace AppDelicare.Services.Implement
                 Guid actor = _currentActor.RequireActor().UserId;
                 DateTime now = _clock.Now, today = now.Date;
                 string eventType = checkIn ? AttendanceEventType.CheckIn : AttendanceEventType.CheckOut;
-                var self = await HrRules.ResolveEmployeeAsync(db, actor);
+                var self = botEmployeeId is { } botEmp
+                    ? await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == botEmp && !e.IsDeleted)
+                    : await HrRules.ResolveEmployeeAsync(db, actor);
                 bool forOther = request.EmployeeId is { } wanted && wanted != Guid.Empty && wanted != self?.Id;
                 Employee? employee;
                 if (forOther)
@@ -607,13 +620,19 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>BE2.6: ca hôm nay (+ ca đêm hôm qua) của nhân viên đang đăng nhập và hành động làm được (vào / ra ca) – màn chấm công tự phục vụ.</summary>
-        public async Task<IResult<MyAttendanceModel>> GetMine()
+        public Task<IResult<MyAttendanceModel>> GetMine() => GetMineCore(null);
+
+        /// <summary>BOT-1.2: như GetMine cho nhân viên lấy từ định danh bot (người chỉ có EmployeeId).</summary>
+        public Task<IResult<MyAttendanceModel>> GetForEmployee(Guid employeeId) => GetMineCore(employeeId);
+
+        private async Task<IResult<MyAttendanceModel>> GetMineCore(Guid? employeeId)
         {
             try
             {
                 var db = _unitOfWork.DbContext;
-                Guid actor = _currentActor.RequireActor().UserId;
-                var employee = await HrRules.ResolveEmployeeAsync(db, actor);
+                var employee = employeeId is { } eid
+                    ? await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == eid && !e.IsDeleted)
+                    : await HrRules.ResolveEmployeeAsync(db, _currentActor.RequireActor().UserId);
                 if (employee == null)
                 {
                     return Result<MyAttendanceModel>.Fail(ConstantHelper.Message.HrUserNoEmployee);

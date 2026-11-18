@@ -15,13 +15,25 @@ export class MedicalExaminationService {
     sortField: any;
     sortOrder: any;
     searchText: any;
+    priceFrom?: number | null;
+    priceTo?: number | null;
+    createdDateFrom?: string | null;
+    createdDateTo?: string | null;
   }): Observable<any> {
+    // Optional filters: only sent when set, so the API receives null (no filter) otherwise
+    const filters = (
+      ['priceFrom', 'priceTo', 'createdDateFrom', 'createdDateTo'] as const
+    )
+      .filter((key) => request[key] !== null && request[key] !== undefined && request[key] !== '')
+      .map((key) => `&${key}=${encodeURIComponent(String(request[key]))}`)
+      .join('');
     const params = QUESTION_MARK.concat(
       `page=${request.page}`,
       `&pageSize=${request.pageSize}`,
       `&sortField=${request.sortField}`,
       `&sortOrder=${request.sortOrder}`,
-      `&searchText=${request.searchText}`
+      `&searchText=${request.searchText}`,
+      filters
     );
     return this.httpClient.get<any>(
       `${URL_API}MedicalExamination/GetAll${params}`

@@ -152,11 +152,55 @@ export const mainRoutes: Routes = [
         loadChildren: () =>
           import('./uom-conversion/uom-conversion.module').then((m) => m.UomConversionModule),
       },
+      // <master-data-routes>
+      {
+        path: 'dm-cong-ty',
+        loadChildren: () =>
+          import('./master-data/company/md-company.module').then(
+            (m) => m.MdCompanyModule
+          ),
+      },
+      {
+        path: 'dm-don-vi-to-chuc',
+        loadChildren: () =>
+          import('./master-data/organization-unit/md-organization-unit.module').then(
+            (m) => m.MdOrganizationUnitModule
+          ),
+      },
+      {
+        path: 'dm-dia-diem-van-hanh',
+        loadChildren: () =>
+          import('./master-data/operational-location/md-operational-location.module').then(
+            (m) => m.MdOperationalLocationModule
+          ),
+      },
+      {
+        path: 'dm-khach-hang',
+        loadChildren: () =>
+          import('./master-data/customer/md-customer.module').then(
+            (m) => m.MdCustomerModule
+          ),
+      },
+      {
+        path: 'dm-lien-he-khach-hang',
+        loadChildren: () =>
+          import('./master-data/customer-contact/md-customer-contact.module').then(
+            (m) => m.MdCustomerContactModule
+          ),
+      },
+      {
+        path: 'dm-dia-diem-giao-hang',
+        loadChildren: () =>
+          import('./master-data/customer-delivery-location/md-customer-delivery-location.module').then(
+            (m) => m.MdCustomerDeliveryLocationModule
+          ),
+      },
       {
         path: 'scm-warehouse',
         loadChildren: () =>
           import('./warehouse/warehouse.module').then((m) => m.WarehouseModule),
       },
+      // </master-data-routes>
       {
         path: 'scm-zone',
         loadChildren: () =>

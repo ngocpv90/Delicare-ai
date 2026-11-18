@@ -12,7 +12,7 @@ namespace AppDelicare.Services.Implement
     /// Ghi song song cột deprecated NOT NULL (DEPRECATED_COLUMNS: UomId ↔ UnitId, LotId ↔ MaterialLotId, TransactionNo ↔ TransactionNumber,
     /// OnHandQty / ReservedQty / AvailableQty ↔ *Quantity).
     /// </summary>
-    public sealed class InventoryLedgerService(DatabaseContext db) : IInventoryLedgerService
+    public sealed class InventoryLedgerService(DatabaseContext db, IClock? clock = null) : IInventoryLedgerService
     {
         public const string ReversalReferenceType = "REVERSAL";
         public const string AdjustmentType = "ADJUSTMENT";
@@ -44,7 +44,9 @@ namespace AppDelicare.Services.Implement
             // Đã có transaction ngoài (vd. [Idempotent]) thì dùng chung, không mở lồng.
             await using var transaction = db.Database.IsRelational() && db.Database.CurrentTransaction == null ? await db.Database.BeginTransactionAsync(cancellationToken) : null;
 
-            var original = await db.InventoryTransaction.AsNoTracking()
+            // Rà soát BE: khóa theo bút toán gốc – 2 lần đảo cùng lúc không cùng qua bước kiểm "đã đảo".
+            await DbLocks.DocumentAsync(db, "InventoryReverse", transactionId, cancellationToken);
+            var original =await db.InventoryTransaction.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == transactionId && !x.IsDeleted, cancellationToken)
                 ?? throw new BusinessRuleException(404, "NOT_FOUND", "Không tìm thấy bút toán kho.");
             if (original.ReferenceType == ReversalReferenceType)
@@ -91,7 +93,7 @@ namespace AppDelicare.Services.Implement
         public async Task<(int Rows, int Changed)> RebuildBalancesAsync(Guid? warehouseId, CancellationToken cancellationToken = default)
         {
             await using var transaction = db.Database.IsRelational() && db.Database.CurrentTransaction == null ? await db.Database.BeginTransactionAsync(cancellationToken) : null;
-            DateTime now = DateTime.Now;
+            DateTime now = clock?.Now ?? DateTime.Now; // Rà soát BE: giờ nghiệp vụ VN (IClock); null chỉ khi test tạo trực tiếp
             var sums = (await db.InventoryTransaction.AsNoTracking()
                     .Where(t => !t.IsDeleted && (warehouseId == null || t.WarehouseId == warehouseId))
                     .Select(t => new { t.WarehouseId, t.StorageLocationId, t.IngredientId, t.MaterialLotId, t.UnitId, t.QuantityIn, t.QuantityOut, t.CreatedDate })
@@ -167,8 +169,11 @@ namespace AppDelicare.Services.Implement
 
         private async Task<InventoryTransaction> PostCoreAsync(InventoryPostRequest r, CancellationToken cancellationToken)
         {
-            DateTime now = DateTime.Now;
+            DateTime now = clock?.Now ?? DateTime.Now; // Rà soát BE: giờ nghiệp vụ VN (IClock); null chỉ khi test tạo trực tiếp
             decimal delta = r.QuantityIn - r.QuantityOut;
+
+            // Rà soát BE: khóa dòng tồn TRƯỚC khi đọc – 2 bút toán cùng dòng tồn chạy lần lượt (không mất số, không âm tồn, không tạo 2 dòng tồn).
+            await DbLocks.BalanceAsync(db, r.WarehouseId, r.StorageLocationId, r.IngredientId, r.MaterialLotId, cancellationToken);
 
             var balance = await db.InventoryBalance.FirstOrDefaultAsync(b => !b.IsDeleted
                 && b.WarehouseId == r.WarehouseId && b.StorageLocationId == r.StorageLocationId

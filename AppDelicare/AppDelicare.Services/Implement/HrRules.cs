@@ -48,7 +48,7 @@ namespace AppDelicare.Services.Implement
         public static async Task<Employee?> ResolveEmployeeAsync(DatabaseContext db, Guid userId)
         {
             var linked = await db.UserExternalIdentity.AsNoTracking()
-                .Where(x => !x.IsDeleted && x.UserId == userId && x.EmployeeId != null && (x.IdentityStatus == null || x.IdentityStatus == "Active"))
+                .Where(x => !x.IsDeleted && x.UserId == userId && x.EmployeeId != null && (x.IdentityStatus == null || x.IdentityStatus == "Active" || x.IdentityStatus == "PendingCode"))
                 .Select(x => x.EmployeeId).FirstOrDefaultAsync();
             if (linked is { } eid)
             {

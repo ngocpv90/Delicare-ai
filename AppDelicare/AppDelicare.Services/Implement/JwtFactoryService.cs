@@ -20,7 +20,11 @@ namespace AppDelicare.Services.Implement
             ]);
         }
 
-        public async Task<string> GenerateEncodedToken(string userName, ClaimsIdentity identity, List<Claim> additionalClaims)
+        public Task<string> GenerateEncodedToken(string userName, ClaimsIdentity identity, List<Claim> additionalClaims)
+            => GenerateEncodedToken(userName, identity, additionalClaims, _jwtOptions.ValidFor);
+
+        /// <summary>BOT-1.2: cùng khóa / issuer / audience với đăng nhập web, hạn riêng (token bot 10′).</summary>
+        public async Task<string> GenerateEncodedToken(string userName, ClaimsIdentity identity, List<Claim> additionalClaims, TimeSpan validFor)
         {
             List<Claim> claims =
             [
@@ -39,7 +43,7 @@ namespace AppDelicare.Services.Implement
                audience: _jwtOptions.Audience,
                claims: claims,
                notBefore: _jwtOptions.NotBefore,
-               expires: _jwtOptions.Expiration,
+               expires: _jwtOptions.IssuedAt.Add(validFor),
                signingCredentials: _jwtOptions.SigningCredentials);
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }

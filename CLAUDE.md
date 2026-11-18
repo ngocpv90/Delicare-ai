@@ -68,19 +68,21 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 **Bộ sinh mã chuẩn = `tools/AppDelicare.CodeGen`** (D-32): đọc DDL, sinh đúng mẫu code cũ, chạy bằng dòng lệnh nên test được. Bộ T4 giữ để tham khảo / đối chiếu mẫu, không dùng để sinh bảng mới.
 
 **Các project MỚI** sẽ thêm vào solution theo ROADMAP. Mỗi project ở một thư mục cùng tên:
-`AppDelicare.Job` (Worker Service – container riêng, hẹn giờ gọi Service cũ, không Hangfire, không thêm bảng – D-48, ARCHITECTURE.md mục 1b; **triển khai Linux + Docker – D-60**, không Windows Service; làm sau khi hoàn thiện luồng), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
+`AppDelicare.Job` (Worker Service – container riêng, hẹn giờ gọi Service cũ, không Hangfire, không thêm bảng – D-48, ARCHITECTURE.md mục 1b; **triển khai Linux + Docker – D-60**, không Windows Service; làm sau khi hoàn thiện luồng), `AppDelicare.Messaging` (**D-62**: container `messaging` riêng chứa **tất cả bot** – Telegram Vận hành / Điều hành, sau này Zalo / Facebook; **không tham chiếu Services / Data / Model, không chạm DB**, gọi `api` qua HTTP – BOT_SOURCE_ARCHITECTURE.md; Obsidian exporter nằm trong Services + Job, không còn `AppDelicare.Integration`), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
 
 ---
 
 ## 2b. Môi trường dev trên máy anh
 - DB dev: **AppDelicare** trên SQL Server local. Tài khoản app dev và các đường dẫn máy nằm trong `docs/claude/LOCAL_DEV.local.md` (gitignored, không commit, không in mật khẩu ra báo cáo).
 - Script nâng cấp DB chính thức của PO (91 → 124 bảng): `DB/migrations/20261113_restore_structure_db_appdelicare.sql`. Đây là **ngoại lệ duy nhất** của luật "không tạo bảng / cột": chỉ chạy khi anh đồng ý (D-14), trên DB dev, sau khi backup.
+- **Cấu trúc bảng = MIGRATION (2026-11-18):** `DB/migrations/*.sql` là nguồn duy nhất, chạy theo thứ tự tên, mỗi file 1 lần (`deploy/db/Migrations.ps1` + `deploy/db/migrations.sh`, ghi nhận bằng extended property `DelicareMigration:<file>`). Thay đổi bảng / cột anh đã duyệt = file mới `YYYYMMDD_NN_<tên>.sql` chạy lại được; **không sửa file đã có** – xem `DB/README.md` mục Migration.
 - Tài liệu nghiệp vụ thật (menu, phiếu sản xuất, phiếu trước sản xuất, báo giá / PO, tổng hợp suất): **`docs/claude/BUSINESS_DOCS.md`**. File gốc nằm ngoài repo, chỉ đọc, có dữ liệu mật.
 - Pháp nhân, màu thương hiệu, logo: BUSINESS_DOCS.md mục đầu.
 
 ## 3. LUẬT CỨNG – không bao giờ vi phạm
 
 ### 3.1 Cơ sở dữ liệu (yêu cầu gốc của PO, giữ nguyên văn)
+0. **Phiên bản chuẩn = SQL Server 2022, mức tương thích 160 (D-61).** Máy anh chạy SQL Server 2025 nhưng DB dev đặt `COMPATIBILITY_LEVEL = 160`; máy dev FE, server test, production là 2022. **Chỉ dùng cú pháp có trong 2022** – cấm (trong SQL, SP, seed và SQL inline trong C#): kiểu `json`, `vector`; `REGEXP_*`; `JSON_OBJECTAGG` / `JSON_ARRAYAGG` / `JSON_CONTAINS`; `EDIT_DISTANCE*`, `JARO_WINKLER_*`; `UNISTR`, `PRODUCT()`, `BASE64_ENCODE` / `BASE64_DECODE`, `CURRENT_DATE`, toán tử nối `||`; `AI_GENERATE_*`, `VECTOR_*`, `sp_invoke_external_rest_endpoint`. Mức 160 **không chặn hết** các hàm này (một số hàm regex vẫn chạy ở mọi mức) → test quét mã (T48.5) là chốt chặn. **Không chuyển dữ liệu giữa các máy bằng `.bak`** (bản 2025 không khôi phục được trên 2022) – chỉ bằng script (`deploy/db/scripts.order`).
 1. SQL Server, **chỉ schema `dbo`**. **"Không tự tạo schema dm, vh, ht, bc"**.
 2. **"Không tự tạo Foreign Key vật lý"**. Quan hệ kiểm tra ở tầng Service.
 3. **"Không tạo bảng RecipeVersion"**.
@@ -238,6 +240,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 | 34 hàm gateway cũ | `docs/claude/LEGACY_GATEWAY.md` |
 | Sheets → bảng dbo | `docs/claude/MIGRATION_SHEETS_TO_DBO.md` |
 | Agent, công cụ, lịch chạy | `docs/claude/AGENTS.md` |
+| Bot Telegram / kênh tin nhắn: kiến trúc source + tính năng, trải nghiệm, thông báo (D-62) | `docs/claude/BOT_SOURCE_ARCHITECTURE.md`, `docs/claude/BOT_TELEGRAM.md` |
 
 ---
 
@@ -249,6 +252,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 4. Viết kế hoạch ngắn (3–8 bước) vào PROGRESS dưới tiêu đề task, rồi làm.
 5. **Rà soát code cũ trước khi viết** (mục 4.1): tìm Controller / Service / SP / Request / ViewModel của entity và các service liên quan; ghi vào kế hoạch "đã có gì – bổ sung gì – ở file nào". Có rồi thì dùng lại / bổ sung vào đúng file đó. Đối chiếu bảng/cột với `DB_SCHEMA_124.md` **trước khi** viết entity, query hay DTO.
 6. Build và test. Sửa tới khi xanh. Không tắt test để cho qua.
+   - **Trước mỗi lần gộp `main` (D-61, T48.5):** test `SqlServer2022CompatibilityTests` xanh **và** kiểm trên SQL Server 2022 thật (Docker – `deploy/README.md` mục 11: DB trống → `db-init` 2 lần → `full-flow.http` đạt); ghi kết quả vào PROGRESS. Máy chưa có Docker → ghi rõ "chưa kiểm 2022 thật" khi báo anh.
 7. Tự rà lại theo **tiêu chí nghiệm thu** của task. Đánh dấu từng tiêu chí đạt hay chưa.
 8. Cập nhật:
    - ROADMAP: đổi trạng thái task (`TODO` → `DONE` / `BLOCKED`).

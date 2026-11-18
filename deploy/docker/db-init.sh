@@ -74,20 +74,31 @@ scalar() { "${SQL[@]}" -d "$1" -r1 -h -1 -W -Q "SET NOCOUNT ON; $2" | tr -d '[:s
 run_file() { "${SQL[@]}" -d "$DB_NAME" -i "$REPO/$1" || die "Lỗi khi chạy $1"; }
 
 TMP_DIR=$(mktemp -d)
+# Git Bash trên Windows: sqlcmd của Windows hiểu "/tmp/…" là tùy chọn "/t…" → đổi sang đường dẫn C:… (Linux / Docker không có cygpath – giữ nguyên).
+command -v cygpath >/dev/null 2>&1 && TMP_DIR=$(cygpath -w "$TMP_DIR")
 trap 'rm -rf "$TMP_DIR"' EXIT
 chmod 700 "$TMP_DIR"
 
 echo "== DELICARE db-init → $DB_NAME"
 "${SQL[@]}" -d master -Q "IF DB_ID(N'$(sql_str "$DB_NAME")') IS NULL CREATE DATABASE [${DB_NAME//]/]]}];" || die "Không tạo được database $DB_NAME"
+# T48.5 (D-61): mức tương thích DB = 160 (SQL Server 2022): > 160 → đặt về 160; < 160 → chỉ cảnh báo, không tự nâng.
+"${SQL[@]}" -d "$DB_NAME" -i "$REPO/deploy/db/compat-level.sql" || die "Lỗi khi kiểm mức tương thích"
 
-TABLES=$(scalar "$DB_NAME" "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0")
-if [ "$TABLES" = "0" ]; then
-  sed -E 's/^USE \[[^]]+\][[:space:]]*$//' "$REPO/docs/reference/20261113_structure_db_appdelicare.sql" > "$TMP_DIR/ddl.sql"
-  "${SQL[@]}" -d "$DB_NAME" -i "$TMP_DIR/ddl.sql" || die "Lỗi khi tạo schema"
-  echo "  + Đã tạo schema: $(scalar "$DB_NAME" "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0") bảng"
+# 2026-11-18: cấu trúc bảng = MIGRATION (DB/migrations, deploy/db/migrations.sh – cùng quy tắc Deploy-Database.ps1): DB trống → baseline 124 bảng;
+# DB cũ 91 bảng → script nâng cấp của PO; migration mới → chạy 1 lần; đã chạy ghi ở extended property DelicareMigration:<file>.
+# shellcheck source=../db/migrations.sh
+. "$REPO/deploy/db/migrations.sh"
+if [ "${MIGRATIONS_SKIP:-0}" = "1" ]; then
+  echo "  ! MIGRATIONS_SKIP=1 – không chạy migration (đã chọn DB_ALLOW_SCHEMA_DRIFT ở migrate.sh)"
 else
-  echo "  = Schema đã có ($TABLES bảng) – không đụng tới bảng"
+  mig_apply
 fi
+DRIFT=$(mig_drift)
+if [ "$DRIFT" != "0" ]; then
+  echo "  ! Cấu trúc còn thiếu $DRIFT bảng / cột so với baseline:"; head -n 40 "$TMP_DIR/drift.txt" | sed 's/^/      /'
+  [ "${DB_ALLOW_SCHEMA_DRIFT:-0}" = "1" ] || die "Cấu trúc DB chưa khớp migration – cần thêm file DB/migrations (backend). Tạm bỏ qua: DB_ALLOW_SCHEMA_DRIFT=1"
+fi
+echo "  = Cấu trúc: $(mig_table_count) bảng"
 
 SP_COUNT=0
 for rel in "${ORDER[@]}" "${EXTRA[@]}"; do

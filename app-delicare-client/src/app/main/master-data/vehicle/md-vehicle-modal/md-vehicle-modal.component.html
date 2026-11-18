@@ -1,0 +1,134 @@
+<form [formGroup]="formGroup" (ngSubmit)="submitForm()" novalidate class="position-relative">
+  <div class="modal-header">
+    <h5 class="modal-title">{{ title }}</h5>
+    <button type="button" class="btn-close" aria-label="Đóng" (click)="destroyModal(false)"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_companyId">Công ty<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="companyId"
+          [items]="items['companyId']"
+          [loading]="loadingLookup['companyId']"
+          [invalid]="isInvalid('companyId')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('companyId')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_organizationUnitId">Đơn vị quản lý</label>
+        <app-select
+          formControlName="organizationUnitId"
+          [items]="items['organizationUnitId']"
+          [loading]="loadingLookup['organizationUnitId']"
+          [invalid]="isInvalid('organizationUnitId')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_code">Mã phương tiện<span class="text-danger">*</span></label>
+        <input id="md_code" type="text" class="form-control" [class.is-invalid]="isInvalid('code')" formControlName="code" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('code')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_licensePlate">Biển số<span class="text-danger">*</span></label>
+        <input id="md_licensePlate" type="text" class="form-control" [class.is-invalid]="isInvalid('licensePlate')" formControlName="licensePlate" placeholder="Nhập dữ liệu" autocomplete="off" />
+        @if (isInvalid('licensePlate')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_name">Tên phương tiện</label>
+        <input id="md_name" type="text" class="form-control" [class.is-invalid]="isInvalid('name')" formControlName="name" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_vehicleType">Loại phương tiện<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="vehicleType"
+          [items]="options['vehicleType']"
+          [invalid]="isInvalid('vehicleType')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('vehicleType')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_brand">Hãng / model</label>
+        <input id="md_brand" type="text" class="form-control" [class.is-invalid]="isInvalid('brand')" formControlName="brand" placeholder="Nhập dữ liệu" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_defaultDriverId">Tài xế mặc định</label>
+        <app-select
+          formControlName="defaultDriverId"
+          [items]="items['defaultDriverId']"
+          [loading]="loadingLookup['defaultDriverId']"
+          [invalid]="isInvalid('defaultDriverId')"
+          bindValue="id"
+          bindLabel="fullName"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_loadCapacityKg">Tải trọng (kg)</label>
+        <input id="md_loadCapacityKg" type="text" class="form-control text-end" appNumberInput [decimals]="2" [min]="0" formControlName="loadCapacityKg" placeholder="Nhập số" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_volumeM3">Thể tích thùng (m³)</label>
+        <input id="md_volumeM3" type="text" class="form-control text-end" appNumberInput [decimals]="2" [min]="0" formControlName="volumeM3" placeholder="Nhập số" autocomplete="off" />
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_registrationExpiryDate">Hạn đăng kiểm</label>
+        <app-date-picker inputId="md_registrationExpiryDate" formControlName="registrationExpiryDate" [invalid]="isInvalid('registrationExpiryDate')"></app-date-picker>
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_insuranceExpiryDate">Hạn bảo hiểm</label>
+        <app-date-picker inputId="md_insuranceExpiryDate" formControlName="insuranceExpiryDate" [invalid]="isInvalid('insuranceExpiryDate')"></app-date-picker>
+      </div>
+      <div class="col-xl-6 mb-3">
+        <label class="form-label" for="md_status">Trạng thái<span class="text-danger">*</span></label>
+        <app-select
+          formControlName="status"
+          [items]="options['status']"
+          [invalid]="isInvalid('status')"
+          bindValue="id"
+          bindLabel="name"
+          placeholder="Chọn dữ liệu"
+        ></app-select>
+        @if (isInvalid('status')) {
+          <div class="invalid-feedback d-block">Vui lòng nhập dữ liệu</div>
+        }
+      </div>
+      <div class="col-xl-6 mb-3 d-flex align-items-end">
+        <div class="form-check form-switch mb-2">
+          <input id="md_isRefrigerated" class="form-check-input" type="checkbox" formControlName="isRefrigerated" />
+          <label class="form-check-label" for="md_isRefrigerated">Xe có thùng lạnh</label>
+        </div>
+      </div>
+      <div class="col-xl-12 mb-3">
+        <label class="form-label" for="md_note">Ghi chú</label>
+        <textarea id="md_note" class="form-control" [class.is-invalid]="isInvalid('note')" formControlName="note" placeholder="Nhập dữ liệu" rows="3"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger light btn-sm" (click)="destroyModal(false)">
+      <i class="fa-solid fa-xmark me-1"></i>Thoát
+    </button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Lưu
+    </button>
+  </div>
+  <app-loading-modal *ngIf="isLoading"></app-loading-modal>
+</form>

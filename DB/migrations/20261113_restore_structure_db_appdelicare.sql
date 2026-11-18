@@ -1,3 +1,6 @@
+-- delicare-migration: legacy-upgrade
+-- (Dòng trên do bộ chạy migration đọc – thêm 2026-11-18. Nội dung script của PO bên dưới GIỮ NGUYÊN.) Chỉ CHẠY trên DB cũ còn thiếu bảng so với baseline (DB 91 bảng);
+-- DB tạo từ baseline hoặc đã đủ 124 bảng → chỉ ghi nhận (adopt), không chạy (script có bước gộp dữ liệu dành cho DB cũ).
 /*
 ================================================================================
 DELICARE - DATABASE EVOLUTION SCRIPT (CORRECTED FROM REAL APPDELICARE SCHEMA)

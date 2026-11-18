@@ -1,3 +1,4 @@
+using AppDelicare.Data.Share;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Dapper;
@@ -17,7 +18,7 @@ using AppDelicare.Model.Request.Custom;
 namespace AppDelicare.Services.Implement
 {
     public class PricePolicyService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IPricePolicyService
+        , IAuditChangeService auditChangeService, IClock clock) : IPricePolicyService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -256,7 +257,7 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
-                DateTime day = (request.Date ?? DateTime.Today).Date;
+                DateTime day = (request.Date ?? clock.Today /* Rà soát BE: giờ nghiệp vụ VN */).Date;
                 IQueryable<PricePolicy> Effective() => _unitOfWork.PricePolicyRepository.GetAll().AsNoTracking().Where(p => !p.IsDeleted
                     && (p.Status == null || p.Status == ActiveStatus)
                     && (p.EffectiveFrom == null || p.EffectiveFrom <= day) && (p.EffectiveTo == null || p.EffectiveTo >= day)

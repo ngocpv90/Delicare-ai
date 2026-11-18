@@ -197,7 +197,7 @@ namespace AppDelicare.Tests.Common
                         Changes = header + "- OrderNumber: 'PH-1' <br />\r\n- CreatedDate: '01/12/2026' <br />\r\n- Status: 'Draft' <br />\r\n" },
                     // Dòng cũ (trước khi DbContext che) còn giá trị mật khẩu / tọa độ – khi đọc vẫn phải che.
                     new AuditChange { Id = Guid.NewGuid(), IdChange = order, EntityName = "Order", Action = "Modified", CreatedDate = t0.AddHours(1), CreatedBy = InMemoryApiFactory.UserId,
-                        Changes = header + "- Status: From 'Draft' to 'Confirmed' <br />\r\n- PassWord: From 'abc' to 'xyz' <br />\r\n- Latitude: From '10.1' to '10.2' <br />\r\n- BotToken: 'tk-123' <br />\r\n" },
+                        Changes = header + "- Status: From 'Draft' to 'Confirmed' <br />\r\n- PassWord: From 'mk-cu-qwz' to 'xyz' <br />\r\n- Latitude: From '10.1' to '10.2' <br />\r\n- BotToken: 'tk-123' <br />\r\n" },
                     new AuditChange { Id = Guid.NewGuid(), IdChange = line, EntityName = "OrderLine", Action = "Modified", CreatedDate = t0.AddHours(2), CreatedBy = InMemoryApiFactory.UserId,
                         Changes = header + "- Quantity: From '5' to '6' <br />\r\n" },
                     new AuditChange { Id = Guid.NewGuid(), IdChange = order, EntityName = "Order", Action = "Modified", CreatedDate = t0.AddHours(5), CreatedBy = InMemoryApiFactory.UserId,
@@ -229,7 +229,8 @@ namespace AppDelicare.Tests.Common
                 modified[secret].GetProperty("to").GetString().Should().Be("(đã ẩn)");
             }
             string raw = JsonSerializer.Serialize(result.ListData);
-            raw.Should().NotContain("abc").And.NotContain("xyz").And.NotContain("10.2").And.NotContain("tk-123").And.NotContain("CorrelationId");
+            // Không dùng chuỗi hex (vd. "abc") làm bí mật mẫu: Id ngẫu nhiên có thể chứa → test lúc đỏ lúc xanh.
+            raw.Should().NotContain("mk-cu-qwz").And.NotContain("xyz").And.NotContain("10.2").And.NotContain("tk-123").And.NotContain("CorrelationId");
             items[5].GetProperty("listChange").EnumerateArray().Select(c => c.GetProperty("field").GetString()).Should().NotContain("CreatedDate");
             items[1].GetProperty("comment").GetString().Should().Be("[DEMO] đồng ý");
             items[1].GetProperty("byName").GetString().Should().Be("test-admin");

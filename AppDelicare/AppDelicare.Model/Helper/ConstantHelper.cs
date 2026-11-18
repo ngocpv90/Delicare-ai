@@ -525,6 +525,40 @@
             public static readonly string IotReceived = "Đã ghi {0} lần đo, trùng {1}, từ chối {2}";
             public static readonly string IotApiKeyInvalid = "Khóa API không hợp lệ";
             public static readonly string IotRateLimited = "Gửi quá nhiều – thử lại sau 1 phút";
+            // BOT-1.1 (D-62) – kênh tin nhắn.
+            public static readonly string ClientKeyInvalid = "Khóa client không hợp lệ";
+            public static readonly string BotUnknown = "Bot chưa khai báo hoặc đang tắt: {0}";
+            public static readonly string BotUpdateInvalid = "Update thiếu mã bot / update_id";
+            public static readonly string BotUpdateTooLarge = "Update quá lớn (tối đa {0} ký tự)";
+            public static readonly string BotUpdateReceived = "Đã nhận update";
+            public static readonly string BotUpdateDuplicate = "Update đã nhận trước đó";
+            public static readonly string BotStatusInvalid = "Trạng thái không hợp lệ: {0}";
+            public static readonly string BotMessageNotClaimed = "Tin không ở trạng thái đang xử lý / đang gửi";
+            public static readonly string BotReprocessInvalid = "Chỉ xử lý lại được tin Lỗi / Bỏ qua";
+            public static readonly string BotRetryInvalid = "Chỉ gửi lại được tin Lỗi / Hủy";
+            public static readonly string BotTextRequired = "Nhập nội dung tin (tối đa {0} ký tự)";
+            public static readonly string BotRecipientRequired = "Chọn người nhận (tài khoản hoặc nhân viên)";
+            public static readonly string BotRecipientNotLinked = "Người nhận chưa liên kết bot {0}";
+            public static readonly string BotEnqueued = "Đã xếp {0} tin chờ gửi";
+            public static readonly string BotConversationFilterRequired = "Chọn định danh, tài khoản hoặc nhân viên";
+            public static readonly string BotTemplateUnknown = "Mẫu tin chưa khai báo: {0}";
+            // BOT-1.2 (D-62) – liên kết, token.
+            public static readonly string BotIdentityInvalid = "Thiếu mã bot / Telegram user id";
+            public static readonly string BotPhoneNotOwn = "Chỉ xác nhận được số điện thoại của chính tài khoản Telegram đang chat";
+            public static readonly string BotPhoneNoMatch = "Không tìm thấy (hoặc trùng nhiều) hồ sơ theo số điện thoại này – vui lòng liên hệ phòng Nhân sự để được cấp mã liên kết";
+            public static readonly string BotLinkKeyMissing = "Chưa cấu hình khóa ký mã liên kết (Messaging:LinkSigningKey, ≥ 32 ký tự)";
+            public static readonly string BotLinkCodeInvalid = "Mã liên kết không hợp lệ";
+            public static readonly string BotLinkCodeExpired = "Mã liên kết đã hết hạn – lấy mã mới trên web";
+            public static readonly string BotLinkCodeUsed = "Mã liên kết đã được dùng – lấy mã mới trên web";
+            public static readonly string BotUserInactive = "Tài khoản không còn hoạt động";
+            public static readonly string BotLinked = "Đã liên kết";
+            public static readonly string BotUnlinked = "Đã gỡ liên kết";
+            public static readonly string BotCodeCreated = "Đã tạo mã liên kết";
+            public static readonly string BotNotLinked = "Tài khoản Telegram chưa liên kết";
+            public static readonly string BotNoWebAccount = "Người dùng chưa có tài khoản web – dùng chức năng nhân viên của bot";
+            public static readonly string BotNoBotAccess = "Chưa được cấp quyền dùng bot {0}";
+            public static readonly string BotTokenIssued = "Đã cấp token";
+            public static readonly string BotEmployeeOnly = "Chức năng dành cho nhân viên đã liên kết bot";
             // BE3.1 – biểu đồ, sự kiện giao, vị trí xe.
             public static readonly string ChartRangeInvalid = "Khoảng thời gian không hợp lệ: từ phải trước đến, tối đa {0} ngày";
             public static readonly string ChartGroupByInvalid = "Nhóm theo không hợp lệ ({0}) – dùng wasteType, dish, shift hoặc date";

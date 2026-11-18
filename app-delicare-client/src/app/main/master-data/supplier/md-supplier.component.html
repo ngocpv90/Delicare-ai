@@ -1,0 +1,123 @@
+@if (permission?.allowAccess) {
+  <div class="row">
+    <div class="col-xl-12">
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive active-projects style-1 dataTables_wrapper">
+            <form [formGroup]="searchForm" (ngSubmit)="search()">
+              <div class="tbl-caption">
+                <h4 class="heading mb-0">Danh sách nhà cung cấp</h4>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                  @if (permission.allowAdd) {
+                    <button type="button" class="btn btn-primary btn-sm" title="Thêm mới dữ liệu" (click)="openModal()">+ Thêm mới</button>
+                  }
+                </div>
+              </div>
+              <div class="row g-3 align-items-end clinic-tbl-filter">
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                  <label class="form-label" for="searchText">Tìm kiếm</label>
+                  <input id="searchText" class="form-control" placeholder="Mã, tên, MST, liên hệ" formControlName="searchText" />
+                </div>
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                  <label class="form-label">Công ty</label>
+                  <app-select
+                    formControlName="companyId"
+                    [items]="lookup['companyId']"
+                    [loading]="loadingLookup['companyId']"
+                    bindValue="id"
+                    bindLabel="name"
+                    placeholder="Tất cả"
+                  ></app-select>
+                </div>
+                <div class="col-xl-3 col-lg-4 col-md-6 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary">Áp dụng</button>
+                  <button type="button" class="btn btn-danger light" (click)="resetSearch()">Đặt lại</button>
+                </div>
+              </div>
+            </form>
+            <table class="table clinic-table mb-0">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width: 70px">STT</th>
+                  <th class="sortable" (click)="sort('code')">
+                    Mã
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('code')"></i>
+                  </th>
+                  <th class="sortable" (click)="sort('name')">
+                    Tên nhà cung cấp
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('name')"></i>
+                  </th>
+                  <th class="sortable" (click)="sort('taxCode')">
+                    Mã số thuế
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('taxCode')"></i>
+                  </th>
+                  <th class="sortable" (click)="sort('contactName')">
+                    Người liên hệ
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('contactName')"></i>
+                  </th>
+                  <th class="sortable" (click)="sort('phone')">
+                    Điện thoại
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('phone')"></i>
+                  </th>
+                  <th class="sortable" (click)="sort('email')">
+                    Email
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('email')"></i>
+                  </th>
+                  <th class="sortable" (click)="sort('status')">
+                    Trạng thái
+                    <i class="fa-solid ms-1" [ngClass]="table.sortIcon('status')"></i>
+                  </th>
+                  <th class="text-end" style="width: 110px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (data of listData; track data.id) {
+                  <tr>
+                    <td class="text-center">{{ data.stt }}</td>
+                    <td><span class="text-primary fw-semibold">{{ data.code }}</span></td>
+                    <td><span>{{ data.name }}</span></td>
+                    <td><span>{{ data.taxCode }}</span></td>
+                    <td><span>{{ data.contactName }}</span></td>
+                    <td><span>{{ data.phone }}</span></td>
+                    <td><a [href]="'mailto:' + data.email" class="text-primary">{{ data.email }}</a></td>
+                    <td>
+                      @if (data.status) {
+                        <span class="badge light border-0" [ngClass]="data.status === 'Active' ? 'badge-success' : 'badge-danger'">{{ label('status', data.status) }}</span>
+                      }
+                    </td>
+                    <td class="text-end text-nowrap">
+                      @if (permission.allowEdit) {
+                        <button type="button" class="btn btn-primary light btn-xs sharp me-1" title="Sửa dữ liệu" (click)="openModal(data)">
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+                      }
+                      @if (permission.allowDelete) {
+                        <button type="button" class="btn btn-danger light btn-xs sharp" title="Xóa dữ liệu" (click)="delete(data.id)">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="9" class="text-center text-muted py-4">Không có dữ liệu</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-table-pager
+            [page]="table.page"
+            [pageSize]="table.pageSize"
+            [total]="table.total"
+            (pageChange)="changePage($event)"
+            (pageSizeChange)="changePageSize($event)"
+          ></app-table-pager>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <app-not-found isFullPage="false"></app-not-found>
+}
+<app-loading *ngIf="isLoading"></app-loading>

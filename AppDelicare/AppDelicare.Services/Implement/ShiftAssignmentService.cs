@@ -645,5 +645,16 @@ namespace AppDelicare.Services.Implement
                 throw;
             }
         }
+
+        /// <summary>BOT-1.5a: lịch ca của chính tài khoản (nhân viên nối theo HrRules.ResolveEmployeeAsync – định danh / mã = tên đăng nhập / số điện thoại).</summary>
+        public async Task<IResults<BotEmployeeShiftModel>> GetMine(int days)
+        {
+            var employee = await HrRules.ResolveEmployeeAsync(_unitOfWork.DbContext, _currentActor.RequireActor().UserId);
+            if (employee == null)
+            {
+                return Results<BotEmployeeShiftModel>.Fail(ConstantHelper.Message.HrUserNoEmployee);
+            }
+            return Results<BotEmployeeShiftModel>.Success(await Identity.BotEmployeeService.ShiftsAsync(_unitOfWork, _clock, employee.Id, days), ConstantHelper.Message.GetAllSuccessfully);
+        }
     }
 }

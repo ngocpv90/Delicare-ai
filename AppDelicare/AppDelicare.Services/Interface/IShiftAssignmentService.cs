@@ -20,6 +20,8 @@ namespace AppDelicare.Services.Interface
         // BE2.6 (spec 11.1, Catalog 201–204) – phân ca.
         /// <summary>Lưới ca nhân viên × ngày + số liệu hôm nay theo ca.</summary>
         public Task<IResult<ShiftGridModel>> GetGrid(ShiftGridRequest request);
+        /// <summary>BOT-1.5a: lịch ca của chính tài khoản đang đăng nhập.</summary>
+        public Task<IResults<BotEmployeeShiftModel>> GetMine(int days);
         /// <summary>Phân / đổi / bỏ ca 1 nhân viên 1 ngày (upsert).</summary>
         public Task<IResult<ShiftAssignResultModel>> Assign(ShiftAssignRequest request);
         /// <summary>Phân ca hàng loạt (nhân viên × khoảng ngày).</summary>

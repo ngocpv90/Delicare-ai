@@ -199,3 +199,39 @@ Kết quả chạy thật trên DB dev (2026-11-17): luồng PowerShell 88/88 b�
 
 ### PILOT-FE – thao tác trên giao diện (để sau)
 Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 hộp duyệt, FE-P3 thực đơn / đơn hàng, FE-P4 kho, FE-P5 mua hàng – nhận hàng – QC, FE-P7 mẻ sản xuất, FE-P8 giao – đối soát – phản ánh) **viết và thử sau khi làm xong đợt FE** (thứ tự FE-3 → FE của T45R.8 → FE-P2 … FE-P8 → UAT-PILOT trên giao diện). Hiện staging đã có bản build Angular (FE-0, FE-1, FE-2, FE-3 WIP) – chỉ thử được các màn ở bảng PILOT-FE phía trên.
+
+## KÊNH TIN NHẮN – LÕI (BOT-1.1, 2026-11-18) · file thử: `docs/api-tests/bot-1.1-channel.http` · test: `AppDelicare.Tests/Notifications/BotChannel*Tests.cs`
+- [ ] Không có / sai `X-Client-Key` → `api/BotChannel/*` trả HTTP 401; từ internet qua nginx → 404.
+- [ ] Gửi 2 lần cùng update (bot + update_id) → 1 dòng `InboundMessage`, lần 2 `duplicate = true`.
+- [ ] ClaimInbound → Đang xử lý; CompleteInbound Đã xử lý; kết thúc lần 2 → 400; màn Tin nhắn vào: Xử lý lại chỉ với Lỗi / Bỏ qua.
+- [ ] Màn Tin nhắn ra: gửi tay cho người đã liên kết → Chờ gửi; người chưa liên kết → báo lỗi; gửi lỗi → tự thử lại sau 1′; nút Gửi lại; người dùng chặn bot → Blocked, định danh Blocked.
+- [ ] Màn Kênh: ConfigJson không lộ token / secret / key (hiện `***`); sửa kênh không làm mất bí mật.
+
+## LIÊN KẾT TELEGRAM (BOT-1.2, 2026-11-18) · file thử: `docs/api-tests/bot-1.2-identity.http` · test: `AppDelicare.Tests/Notifications/BotIdentityTests.cs`
+- [ ] Nhân viên quét QR → chia sẻ số → khớp đúng 1 hồ sơ → liên kết; số không khớp / trùng nhiều → bot báo liên hệ Nhân sự.
+- [ ] Trưởng ca / người có quyền duyệt chỉ chia sẻ số → dùng bot nhưng không duyệt được; lấy mã trên web (hồ sơ cá nhân) → /start <mã> → duyệt được.
+- [ ] HR cấp mã cho nhân viên (hạn 72 giờ) → nhân viên /start <mã> → liên kết; dùng lại mã → từ chối; mã quá hạn → từ chối.
+- [ ] Khóa tài khoản trên web → bot ngừng cấp token (log TOKEN Failed). Admin gỡ liên kết → bot coi như chưa liên kết.
+- [ ] Nhân viên không có tài khoản web: xem lịch ca, ca hôm nay, vào / ra ca (đúng quy tắc ca + bán kính), xem đơn của mình.
+
+## BOT TELEGRAM – CONTAINER MESSAGING (BOT-1.3, 2026-11-18) · thử: `tools/bot-smoke/` (Telegram giả) hoặc bộ bot DEV thật · test: `AppDelicare.Tests/Messaging/MessagingHostTests.cs`
+- [ ] Quét QR cổng (`/start CHAMCONG`) khi chưa liên kết → bot hiện nút "📱 Xác nhận số điện thoại".
+- [ ] Chia sẻ số → liên kết, bot chào theo tên + 3 nút; người có quyền duyệt được nhắc lấy mã web; người có quyền bot DH nhận nút mở bot Điều hành.
+- [ ] "⚡ Ca của tôi" hiện ca hôm nay; `/huylienket` gỡ liên kết.
+- [ ] Gửi tay trên màn Tin nhắn ra → tin tới Telegram trong vài giây (tin thường không rung chuông).
+- [ ] Production: webhook sai secret → 401; tắt api → Telegram tự gửi lại, không mất tin; `docker compose ps` messaging healthy.
+
+## BOT – MENU, CHẤM CÔNG, DUYỆT (BOT-1.4, 2026-11-18) · thử: `tools/bot-smoke/flow-experience.mjs` · test: `AppDelicare.Tests/Messaging/MessagingExperienceTests.cs`
+- [ ] Người ít chức năng (≤ 6) thấy các nút chức năng ngay; người nhiều chức năng / admin chỉ 3 nút, 📂 Chức năng → phân hệ → chức năng (≤ 2 lần bấm, sửa cùng tin, có ⬅️).
+- [ ] Danh sách lệnh "/" của mỗi người chỉ gồm lệnh được dùng (người không duyệt không thấy /cho).
+- [ ] 📍 Chấm công: gửi vị trí → vào / ra ca; vị trí chuyển tiếp hoặc cũ > 2 phút bị từ chối.
+- [ ] ⏳ Chờ tôi duyệt chỉ có việc mình đúng là người duyệt; đơn nghỉ / đổi ca: 1 chạm + Hoàn tác 10″ (hoàn tác → không duyệt); PO / PR / hợp đồng: xác nhận 2 bước; Từ chối bắt buộc lý do.
+- [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
+- [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
+
+## BOT VẬN HÀNH – CHUNG, BẾP, ATTP (BOT-1.5a, 2026-11-18) · thử: `tools/bot-smoke/flow-vanhanh.mjs` · test: `AppDelicare.Tests/Messaging/MessagingVanHanhTests.cs`
+- [ ] Quét QR cổng khi đã liên kết → bot xin vị trí chấm công ngay.
+- [ ] 📅 Lịch ca 7 ngày đúng như màn phân ca; 🏖 Xin nghỉ bằng nút (loại → ngày → số ngày → lý do) → đơn hiện trên web màn Đơn xin nghỉ, chờ duyệt.
+- [ ] Tổ trưởng bếp: 🍳 Mẻ cần làm → Bắt đầu → Nhiệt độ lõi (nút / gõ; < 70 °C bị báo) → Lưu mẫu → Xong mẻ (số suất điền sẵn) → trên web mẻ đổi trạng thái đúng.
+- [ ] QA: 🧽 Checklist trong 1 tin → Hoàn tất → web màn kết quả checklist có đủ dòng; lỗi trọng yếu → mẻ bị giữ / cảnh báo như web.
+- [ ] Người không có quyền màn Bếp / ATTP không thấy các chức năng này trên bot.

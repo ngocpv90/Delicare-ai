@@ -28,5 +28,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResults<TimesheetDetailModel>> GetTimesheetDetail(TimesheetRequest request);
         /// <summary>Ca hôm nay của nhân viên đang đăng nhập + vào / ra ca được không.</summary>
         public Task<IResult<MyAttendanceModel>> GetMine();
+        /// <summary>BOT-1.2: ca hôm nay của nhân viên lấy từ định danh bot.</summary>
+        public Task<IResult<MyAttendanceModel>> GetForEmployee(Guid employeeId);
+        /// <summary>BOT-1.2: chấm công qua bot cho người chỉ có EmployeeId (quy tắc tự chấm, Note ghi nguồn).</summary>
+        public Task<IResult<AttendanceResultModel>> CheckForEmployee(Guid employeeId, AttendanceCheckRequest request, bool checkIn, string sourceNote);
     }
 }
