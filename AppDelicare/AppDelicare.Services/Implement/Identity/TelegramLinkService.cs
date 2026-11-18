@@ -148,6 +148,23 @@ namespace AppDelicare.Services.Implement.Identity
             return Result<BotIdentityModel>.Success(await ModelAsync(identity, request.BotCode!), ConstantHelper.Message.SaveSuccess);
         }
 
+        /// <summary>BOT-1.3: người dùng gõ /huylienket – định danh của chính Telegram id đó trên bot đó → Revoked (ghi dưới system).</summary>
+        public async Task<IResult<bool>> UnlinkByBot(BotIdentityRequest request)
+        {
+            var (channel, error) = await ChannelAsync(request);
+            if (error != null)
+            {
+                return Result<bool>.Fail(error);
+            }
+            var identity = await FindAsync(channel, request.ExternalUserId!, tracking: true);
+            if (identity == null || identity.IdentityStatus == MessagingCode.Identity.Revoked)
+            {
+                return Result<bool>.Fail(ConstantHelper.Message.BotNotLinked);
+            }
+            using var scope = SystemScope(out string? missing);
+            return missing != null ? Result<bool>.Fail(missing) : await RevokeAsync(identity);
+        }
+
         // ================================================================ phía web (JWT user)
 
         public async Task<IResult<LinkCodeModel>> CreateCode()

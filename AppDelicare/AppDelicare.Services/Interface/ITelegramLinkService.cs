@@ -10,6 +10,8 @@ namespace AppDelicare.Services.Interface
         Task<IResult<BotIdentityModel>> LinkByPhone(BotLinkByPhoneRequest request);
         Task<IResult<BotIdentityModel>> LinkByCode(BotLinkByCodeRequest request);
         Task<IResult<BotIdentityModel>> Touch(BotTouchRequest request);
+        /// <summary>BOT-1.3: /huylienket trên bot (cả người chỉ có EmployeeId – không JWT).</summary>
+        Task<IResult<bool>> UnlinkByBot(BotIdentityRequest request);
         Task<IResult<LinkCodeModel>> CreateCode();
         Task<IResult<LinkCodeModel>> CreateCodeForEmployee(Guid? employeeId);
         Task<IResults<MyIdentityModel>> GetMine();
