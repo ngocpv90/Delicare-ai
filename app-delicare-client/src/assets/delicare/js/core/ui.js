@@ -45,6 +45,8 @@
     el.className = 'toast ' + (kind || ''); el.innerHTML = I(kind === 'err' ? 'alert' : kind === 'warn' ? 'alert' : 'ok') + '<div>' + msg + '</div>';
     box.appendChild(el); setTimeout(() => el.remove(), 3600);
   };
+  // Chế độ thật: hộp thoại / ngăn chi tiết cũng bỏ chữ kỹ thuật của mockup như vùng nội dung chính (APP.cleanDemoText nạp sau ui.js).
+  const cleanTech = root => { try { if (window.APP && APP.cleanDemoText) APP.cleanDemoText(root); } catch (e) { console.warn(e); } };
   // ---------- Modal ----------
   UI.modal = ({ title, sub, body, foot, size, onMount }) => {
     const ov = document.createElement('div'); ov.className = 'overlay show';
@@ -53,6 +55,7 @@
     const close = () => ov.remove();
     ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
     onMount && onMount(ov.querySelector('.modal'), close);
+    cleanTech(ov);
     return close;
   };
   UI.confirm = (msg, onOk, opt = {}) => UI.modal({
@@ -68,7 +71,7 @@
     document.body.appendChild(w);
     const close = () => w.remove();
     const loaded = {};
-    const show = i => { w.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', +b.dataset.tab === i)); w.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('hide', +p.dataset.pane !== i)); if (typeof tabs[i].html === 'function' && !loaded[i]) { loaded[i] = 1; const p = w.querySelector(`[data-pane="${i}"]`); p.innerHTML = tabs[i].html(p); } };
+    const show = i => { w.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', +b.dataset.tab === i)); w.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('hide', +p.dataset.pane !== i)); if (typeof tabs[i].html === 'function' && !loaded[i]) { loaded[i] = 1; const p = w.querySelector(`[data-pane="${i}"]`); p.innerHTML = tabs[i].html(p); } cleanTech(w); };
     w.addEventListener('click', e => { if (e.target === w || e.target.closest('[data-close]')) close(); const tb = e.target.closest('[data-tab]'); if (tb) show(+tb.dataset.tab); });
     show(0); onMount && onMount(w.querySelector('.drawer'), close);
     return close;
@@ -124,10 +127,11 @@
   UI.form = (t, row, opt = {}) => {
     const editing = !!(row && row.Id), rec = Object.assign({}, opt.defaults || {}, row || {});
     const fields = (opt.fields ? opt.fields.map(f => Store.colmeta[t][f]).filter(Boolean) : UI.formFields(t));
-    const body = `<div class="notice info">${I('database')}<div><b>Form sinh từ cấu trúc bảng <code>dbo.${t}</code></b>Trường bắt buộc (<span class="req" style="color:var(--red)">*</span>) = cột NOT NULL không có DEFAULT trong SQL. Tên cột SQL hiển thị cạnh nhãn. Cột deprecated không hiển thị.</div></div>
+    // Chế độ thật: không hiện ghi chú kỹ thuật của mockup (tên bảng, cột SQL) – CLAUDE.md 4.4.
+    const body = `${Store.isLive ? '' : `<div class="notice info">${I('database')}<div><b>Form sinh từ cấu trúc bảng <code>dbo.${t}</code></b>Trường bắt buộc (<span class="req" style="color:var(--red)">*</span>) = cột NOT NULL không có DEFAULT trong SQL. Tên cột SQL hiển thị cạnh nhãn. Cột deprecated không hiển thị.</div></div>`}
       <form class="form-grid" novalidate>${fields.map(m => { const req = !m.nullable && !m.def; const wide = /max\)$/.test(m.type) && /Note|Description|Instructions|Reason|Resolution|Address/.test(m.name); return `<div class="field ${wide ? 'full' : ''}"><label for="f_${m.name}">${esc(U.colLabel(m.name))}${req ? ' <span class="req">*</span>' : ''} <code>${m.name} · ${m.type}</code></label>${UI.input(t, m, rec[m.name])}${m.def ? `<span class="hint">DEFAULT ${esc(m.def)}</span>` : ''}<span class="err hide"></span></div>`; }).join('')}</form>`;
     UI.modal({
-      title: (editing ? 'Chỉnh sửa – ' : 'Tạo mới – ') + (opt.title || t), sub: `dbo.${t} · ${fields.length} trường`, size: 'lg', body,
+      title: (editing ? 'Chỉnh sửa – ' : 'Tạo mới – ') + (opt.title || t), sub: Store.isLive ? '' : `dbo.${t} · ${fields.length} trường`, size: 'lg', body,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="frmSave">${I('ok')} ${editing ? 'Lưu thay đổi' : 'Tạo mới'}</button>`,
       onMount: (m, close) => m.querySelector('#frmSave').onclick = () => {
         let ok = true; const out = {};
@@ -170,7 +174,8 @@
   UI.history = (t, id, pane) => {
     // Chế độ API: Common/GetHistory gộp AuditChange + quyết định duyệt + lịch sử phản ánh + tệp đính kèm (đã che dữ liệu nhạy cảm).
     // Vẽ ngay bản cục bộ, có kết quả server thì thay; bảng backend không hỗ trợ thì giữ bản cục bộ.
-    if (pane && Store.isLive) Store.query('Common/GetHistory', { resource: Store.controllerOf(t), id }).then(x => {
+    // Chỉ gọi cho danh sách backend có đăng ký (Common/GetResources) – bảng khác trả 400 "không hỗ trợ chức năng này".
+    if (pane && Store.isLive) (window.APP && APP.resources ? APP.resources() : Promise.resolve(null)).then(set => (set && set.size && !set.has(Store.controllerOf(t).toLowerCase())) ? { ok: false } : Store.query('Common/GetHistory', { resource: Store.controllerOf(t), id })).then(x => {
       if (!x.ok || !pane.isConnected) return;
       pane.innerHTML = x.list.length ? `<div class="timeline">${x.list.map(h => `<div class="tl ${/DELETE|REJECT/i.test(h.action || '') ? 'red' : /INSERT|CREATE/i.test(h.action || '') ? '' : 'orange'}"><b>${esc(h.actionName || h.action || '')}${h.referenceNo ? ' · ' + esc(h.referenceNo) : ''}</b><small>${esc(U.dt(String(h.at || '').replace(/\.\d+$/, '')))} · ${esc(h.byName || '')}${h.comment ? ' · ' + esc(h.comment) : ''} · ${esc(h.source || '')}</small></div>`).join('')}</div>` : '<div class="empty">Chưa có lịch sử</div>';
     });
@@ -178,9 +183,9 @@
     const extra = [];
     if (t === 'CustomerComplaint') Store.by('ComplaintHistory', 'ComplaintId', id).forEach(h => extra.push({ at: h.EventAt, b: (h.OldStatus ? h.OldStatus + ' → ' : '') + (h.NewStatus || h.EventType), s: h.Comment + ' · dbo.ComplaintHistory' }));
     const appr = Store.by('ApprovalRequest', 'BusinessId', id);
-    appr.forEach(ar => { extra.push({ at: ar.RequestedAt, b: 'Gửi phê duyệt ' + ar.RequestNo, s: 'dbo.ApprovalRequest · ' + ar.RequestStatus }); Store.by('ApprovalDecision', 'ApprovalRequestId', ar.Id).forEach(dc => extra.push({ at: dc.DecidedAt, b: dc.DecisionCode + ' – ' + (dc.Comment || ''), s: 'dbo.ApprovalDecision · ' + Store.label('User', dc.DecidedBy) })); });
+    appr.forEach(ar => { extra.push({ at: ar.RequestedAt, b: 'Gửi phê duyệt ' + ar.RequestNo, s: (Store.isLive ? '' : 'dbo.ApprovalRequest · ') + (Store.isLive ? UI.statusVi('ApprovalRequest', 'RequestStatus', ar.RequestStatus) || ar.RequestStatus : ar.RequestStatus) }); Store.by('ApprovalDecision', 'ApprovalRequestId', ar.Id).forEach(dc => extra.push({ at: dc.DecidedAt, b: dc.DecisionCode + ' – ' + (dc.Comment || ''), s: (Store.isLive ? '' : 'dbo.ApprovalDecision · ') + Store.label('User', dc.DecidedBy) })); });
     const row = Store.get(t, id);
-    const items = a.map(x => { let s = ''; try { s = JSON.parse(x.Changes).summary; } catch (e) { s = x.Changes; } return { at: x.CreatedDate, b: x.Action, s: s + ' · dbo.AuditChange', c: x.Action === 'SOFT_DELETE' ? 'red' : x.Action === 'INSERT' ? '' : 'orange' }; }).concat(extra);
+    const items = a.map(x => { let s = ''; try { s = JSON.parse(x.Changes).summary; } catch (e) { s = x.Changes; } return { at: x.CreatedDate, b: x.Action, s: s + (Store.isLive ? '' : ' · dbo.AuditChange'), c: x.Action === 'SOFT_DELETE' ? 'red' : x.Action === 'INSERT' ? '' : 'orange' }; }).concat(extra);
     if (row && row.CreatedDate) items.push({ at: row.CreatedDate, b: 'Tạo bản ghi', s: 'CreatedDate / CreatedBy', c: 'blue' });
     items.sort((x, y) => (y.at || '').localeCompare(x.at || ''));
     return items.length ? `<div class="timeline">${items.map(x => `<div class="tl ${x.c || ''}"><b>${esc(x.b)}</b><small>${esc(U.dt(x.at))} · ${esc(x.s)}</small></div>`).join('')}</div>` : '<div class="empty">Chưa có lịch sử</div>';
