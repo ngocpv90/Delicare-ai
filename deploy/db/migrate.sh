@@ -1,14 +1,13 @@
 #!/bin/bash
 # DELICARE – ĐỒNG BỘ DATABASE khi khởi động Docker (dùng cho docker-compose.yml ở gốc repo). Chạy lại bao nhiêu lần cũng được.
 #
-#   1. So cấu trúc DB với DDL chuẩn (docs/reference/20261113_structure_db_appdelicare.sql): thiếu bảng / cột nào thì liệt kê.
-#   2. Có thiếu + DB_AUTO_MIGRATE=1 → backup rồi chạy lần lượt các script trong DB/migrations/*.sql (theo tên file),
-#      mỗi script CHỈ CHẠY 1 LẦN (đánh dấu bằng extended property của database – không thêm bảng theo dõi).
-#      Có thiếu + không bật DB_AUTO_MIGRATE → DỪNG kèm danh sách (thay vì để API lỗi 500).
-#   3. Gọi deploy/docker/db-init.sh: DB trống thì tạo 124 bảng; cập nhật stored procedure (CREATE OR ALTER) + seed còn thiếu.
+#   1. Xem trước migration cấu trúc bảng (DB/migrations – deploy/db/migrations.sh): DB đã có bảng mà có migration THAY ĐỔI cấu trúc đang chờ
+#      → cần DB_AUTO_MIGRATE=1 (+ backup trước); không thì DỪNG kèm danh sách (thay vì để API lỗi 500).
+#   2. Gọi deploy/docker/db-init.sh: chạy migration (DB trống → baseline 124 bảng; DB cũ 91 bảng → nâng cấp; migration mới → 1 lần),
+#      kiểm cấu trúc so với baseline, rồi cập nhật stored procedure (CREATE OR ALTER) + seed còn thiếu.
 #
-# Script này KHÔNG tự nghĩ ra bảng / cột: cấu trúc chỉ đến từ DDL chuẩn và các script chính thức trong DB/migrations/.
-# Backend thêm thay đổi cấu trúc mới = thêm 1 file DB/migrations/<yyyymmdd>_<tên>.sql (chạy lại được) + cập nhật DDL chuẩn.
+# Script này KHÔNG tự nghĩ ra bảng / cột: cấu trúc chỉ đến từ DB/migrations/ (baseline = DDL chuẩn của PO + các migration chính thức).
+# Backend thêm thay đổi cấu trúc mới = thêm 1 file DB/migrations/<yyyymmdd>_<nn>_<tên>.sql (chạy lại được) – xem DB/README.md mục Migration.
 #
 # Biến môi trường:
 #   DB_AUTO_SYNC=1               bật đồng bộ (0 = bỏ qua toàn bộ, API chạy với DB hiện có)
@@ -40,6 +39,8 @@ SQL=("$SQLCMD_BIN" -S "${DB_SERVER:-db,1433}" "${AUTH[@]}" -C -b -I -f 65001)
 scalar() { "${SQL[@]}" -d "$1" -r1 -h -1 -W -Q "SET NOCOUNT ON; $2" | tr -d '[:space:]'; }
 
 TMP_DIR=$(mktemp -d)
+# Git Bash trên Windows: sqlcmd của Windows hiểu "/tmp/…" là tùy chọn "/t…" → đổi sang đường dẫn C:… (Linux / Docker không có cygpath – giữ nguyên).
+command -v cygpath >/dev/null 2>&1 && TMP_DIR=$(cygpath -w "$TMP_DIR")
 trap 'rm -rf "$TMP_DIR"' EXIT
 chmod 700 "$TMP_DIR"
 
@@ -50,94 +51,38 @@ DB_EXISTS=$(scalar master "SELECT CASE WHEN DB_ID(N'$(sql_str "$DB_NAME")') IS N
 TABLES=0
 [ "$DB_EXISTS" = "1" ] && TABLES=$(scalar "$DB_NAME" "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0")
 
-# ---- Danh sách bảng / cột chuẩn lấy từ DDL (CREATE TABLE [dbo].[T]( … dòng "<tab>[Cột] [kiểu]") ----
-DDL="$REPO/docs/reference/20261113_structure_db_appdelicare.sql"
-[ -f "$DDL" ] || die "Không thấy $DDL"
-build_check() {
-  # In ra 1 batch T-SQL trả về các dòng "TABLE <bảng>" / "COLUMN <bảng>.<cột>" còn thiếu trong DB.
-  echo "SET NOCOUNT ON; DECLARE @e TABLE (t sysname NOT NULL, c sysname NOT NULL);"
-  tr -d '\r' < "$DDL" | awk '
-    /^CREATE TABLE \[dbo\]\.\[/ { t = $0; sub(/^CREATE TABLE \[dbo\]\.\[/, "", t); sub(/\]\(.*$/, "", t); next }
-    t != "" && /^[ \t]+\[[^]]+\] \[/ { c = $0; sub(/^[ \t]+\[/, "", c); sub(/\].*$/, "", c); n++; rows[n] = "(N\x27" t "\x27,N\x27" c "\x27)"; next }
-    t != "" && /^(\) ON|\)|[ \t]*CONSTRAINT|[ \t]*PRIMARY KEY|GO)/ { t = "" }
-    END { for (i = 1; i <= n; i++) { if ((i - 1) % 500 == 0) printf "%sINSERT @e (t, c) VALUES ", (i > 1 ? ";\n" : ""); else printf ","; printf "%s", rows[i] } print ";" }'
-  cat <<'SQL'
-SELECT x FROM (
-  SELECT 1 AS o, N'TABLE ' + d.t AS x FROM (SELECT DISTINCT t FROM @e) d WHERE OBJECT_ID(N'dbo.' + QUOTENAME(d.t), N'U') IS NULL
-  UNION ALL
-  SELECT 2, N'COLUMN ' + e.t + N'.' + e.c FROM @e e WHERE OBJECT_ID(N'dbo.' + QUOTENAME(e.t), N'U') IS NOT NULL AND COL_LENGTH(N'dbo.' + QUOTENAME(e.t), e.c) IS NULL
-) q ORDER BY o, x;
-SQL
-}
-MISSING_FILE="$TMP_DIR/missing.txt"
-check_drift() {
-  build_check > "$TMP_DIR/check.sql"
-  "${SQL[@]}" -d "$DB_NAME" -h -1 -W -i "$TMP_DIR/check.sql" | tr -d '\r' | grep -E '^(TABLE|COLUMN) ' > "$MISSING_FILE" || true
-  MISSING_TABLES=$(grep -c '^TABLE ' "$MISSING_FILE" || true)
-  MISSING_COLUMNS=$(grep -c '^COLUMN ' "$MISSING_FILE" || true)
-}
-print_missing() {
-  echo "  ! Thiếu $MISSING_TABLES bảng, $MISSING_COLUMNS cột so với DDL chuẩn:"
-  head -n 40 "$MISSING_FILE" | sed 's/^/      /'
-  TOTAL=$(wc -l < "$MISSING_FILE")
-  [ "$TOTAL" -le 40 ] || echo "      … và $((TOTAL - 40)) dòng khác"
-}
-
+# ---- 2026-11-18: cấu trúc bảng = MIGRATION (DB/migrations) – bộ chạy chung deploy/db/migrations.sh (db-init.sh chạy thật).
+# Ở đây chỉ XEM TRƯỚC kế hoạch để giữ chốt an toàn của server dev / test: có migration THAY ĐỔI cấu trúc (RUN) trên DB đã có bảng
+# → cần DB_AUTO_MIGRATE=1 (người phụ trách DB đồng ý) + backup trước. Chỉ ghi nhận (ADOPT) / DB trống → không cần.
+DB_NAME_SAVED="$DB_NAME"
+# shellcheck source=migrations.sh
+. "$REPO/deploy/db/migrations.sh"
 if [ "$TABLES" != "0" ]; then
-  EXPECTED=$(tr -d '\r' < "$DDL" | grep -c '^CREATE TABLE \[dbo\]\.\[' || true)
-  check_drift
-  if [ "$MISSING_TABLES" = "0" ] && [ "$MISSING_COLUMNS" = "0" ]; then
-    echo "  = Cấu trúc khớp DDL chuẩn ($EXPECTED bảng) – không cần migrate"
-  else
-    print_missing
-    if [ "${DB_AUTO_MIGRATE:-0}" = "1" ]; then
-      shopt -s nullglob
-      PENDING=()
-      for f in "$REPO"/DB/migrations/*.sql; do
-        name="${f##*/}"
-        prop="DelicareMigration:${name:0:100}"
-        done_flag=$(scalar "$DB_NAME" "SELECT COUNT(*) FROM sys.extended_properties WHERE class = 0 AND name = N'$(sql_str "$prop")'")
-        [ "$done_flag" = "0" ] && PENDING+=("$f")
-      done
-      if [ "${#PENDING[@]}" = "0" ]; then
-        echo "  ! Mọi script trong DB/migrations đã chạy trên DB này nhưng cấu trúc vẫn thiếu."
-      else
-        if [ "${DB_BACKUP_BEFORE_MIGRATE:-1}" = "1" ]; then
-          BAK="${DB_NAME}_premigrate_$(date +%Y%m%d_%H%M%S).bak"
-          echo "  + Backup trước khi migrate → $BAK (thư mục backup mặc định của SQL Server)"
-          "${SQL[@]}" -d master -Q "BACKUP DATABASE [${DB_NAME//]/]]}] TO DISK = N'$(sql_str "$BAK")' WITH COPY_ONLY, INIT, NAME = N'DELICARE pre-migrate';" \
-            || die "Backup thất bại – KHÔNG migrate. Sửa quyền / dung lượng backup, hoặc tự backup rồi đặt DB_BACKUP_BEFORE_MIGRATE=0."
-        else
-          echo "  ! DB_BACKUP_BEFORE_MIGRATE=0 – migrate không có backup tự động"
-        fi
-        for f in "${PENDING[@]}"; do
-          name="${f##*/}"
-          prop="DelicareMigration:${name:0:100}"
-          echo "  + Migrate: DB/migrations/$name"
-          # Bỏ "USE [AppDelicare]" để chạy được với tên DB khác (như db-init.sh làm với DDL).
-          tr -d '\r' < "$f" | sed -E 's/^USE \[[^]]+\];?[[:space:]]*$//' > "$TMP_DIR/migration.sql"
-          "${SQL[@]}" -d "$DB_NAME" -i "$TMP_DIR/migration.sql" || die "Lỗi khi chạy DB/migrations/$name – DB giữ nguyên trạng thái sau lỗi, xem thông báo phía trên (có backup nếu đã bật)."
-          "${SQL[@]}" -d "$DB_NAME" -Q "EXEC sys.sp_addextendedproperty @name = N'$(sql_str "$prop")', @value = N'$(date +%Y-%m-%dT%H:%M:%S)';" \
-            || die "Không ghi được dấu đã chạy cho $name"
-        done
-      fi
-      check_drift
-      if [ "$MISSING_TABLES" != "0" ] || [ "$MISSING_COLUMNS" != "0" ]; then
-        echo "  ! Sau migrate vẫn còn thiếu:"
-        print_missing
-        [ "${DB_ALLOW_SCHEMA_DRIFT:-0}" = "1" ] || die "Cấu trúc DB chưa khớp DDL chuẩn. Cần thêm script trong DB/migrations (bên backend), hoặc dùng DB mới (đổi DB_NAME). Tạm bỏ qua: DB_ALLOW_SCHEMA_DRIFT=1."
-      else
-        echo "  = Sau migrate: cấu trúc khớp DDL chuẩn"
-      fi
-    elif [ "${DB_ALLOW_SCHEMA_DRIFT:-0}" = "1" ]; then
-      echo "  ! DB_ALLOW_SCHEMA_DRIFT=1 – chạy tiếp dù thiếu cấu trúc (API sẽ lỗi ở các màn liên quan)"
+  PLAN=$(mig_plan)
+  PENDING=$(printf '%s\n' "$PLAN" | awk '$1 == "RUN" { print $2 }')
+  if [ -z "$PENDING" ]; then
+    echo "  = Cấu trúc: không có migration thay đổi bảng đang chờ"
+  elif [ "${DB_AUTO_MIGRATE:-0}" = "1" ]; then
+    echo "  ! Migration sẽ chạy:"; printf '%s\n' "$PENDING" | sed 's/^/      /'
+    if [ "${DB_BACKUP_BEFORE_MIGRATE:-1}" = "1" ]; then
+      BAK="${DB_NAME}_premigrate_$(date +%Y%m%d_%H%M%S).bak"
+      echo "  + Backup trước khi migrate → $BAK (thư mục backup mặc định của SQL Server)"
+      "${SQL[@]}" -d master -Q "BACKUP DATABASE [${DB_NAME//]/]]}] TO DISK = N'$(sql_str "$BAK")' WITH COPY_ONLY, INIT, NAME = N'DELICARE pre-migrate';" \
+        || die "Backup thất bại – KHÔNG migrate. Sửa quyền / dung lượng backup, hoặc tự backup rồi đặt DB_BACKUP_BEFORE_MIGRATE=0."
     else
-      die "DB $DB_NAME thiếu bảng / cột so với bản code này. Chọn 1 cách: (a) đặt DB_AUTO_MIGRATE=1 trong .env để tự nâng cấp bằng DB/migrations (có backup trước); (b) đổi DB_NAME sang một DB mới để tạo đủ 124 bảng; (c) DB_ALLOW_SCHEMA_DRIFT=1 để chạy tạm."
+      echo "  ! DB_BACKUP_BEFORE_MIGRATE=0 – migrate không có backup tự động"
     fi
+  elif [ "${DB_ALLOW_SCHEMA_DRIFT:-0}" = "1" ]; then
+    echo "  ! DB_ALLOW_SCHEMA_DRIFT=1 – bỏ qua migration chờ (API có thể lỗi ở các màn liên quan):"; printf '%s\n' "$PENDING" | sed 's/^/      /'
+    export MIGRATIONS_SKIP=1
+  else
+    echo "  ! Migration thay đổi cấu trúc đang chờ:"; printf '%s\n' "$PENDING" | sed 's/^/      /'
+    die "Chọn 1 cách: (a) DB_AUTO_MIGRATE=1 trong .env để tự chạy migration (có backup trước); (b) đổi DB_NAME sang DB mới (tạo từ baseline); (c) DB_ALLOW_SCHEMA_DRIFT=1 để chạy tạm."
   fi
 else
-  echo "  = Database trống / chưa có – sẽ tạo đủ bảng từ DDL chuẩn"
+  echo "  = Database trống / chưa có – db-init tạo cấu trúc từ migration baseline"
 fi
+DB_NAME="$DB_NAME_SAVED"
 
 # ---- Stored procedure + seed (và tạo bảng nếu DB trống) ----
 INIT="${DB_INIT_SCRIPT:-/db-init.sh}"

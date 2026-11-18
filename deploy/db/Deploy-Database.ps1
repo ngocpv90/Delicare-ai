@@ -3,8 +3,9 @@
   Triển khai / cập nhật DB DELICARE (T48.1, T48.3) – idempotent, chạy lại nhiều lần an toàn.
 .DESCRIPTION
   Thứ tự:
-    1. (tùy chọn -CreateSchemaIfEmpty) DB chưa có bảng nào → tạo 124 bảng từ DDL chuẩn của PO
-       (docs/reference/20261113_structure_db_appdelicare.sql). DB đã có bảng → BỎ QUA (không bao giờ sửa bảng có sẵn).
+    1. MIGRATION CẤU TRÚC BẢNG (2026-11-18): chạy DB/migrations/*.sql theo thứ tự tên file, mỗi file 1 lần (deploy/db/Migrations.ps1 –
+       cùng quy tắc với deploy/db/migrations.sh): baseline 124 bảng chỉ chạy trên DB trống (cần -CreateSchemaIfEmpty), DB đã có bảng → ghi nhận;
+       nâng cấp DB cũ 91 bảng chỉ chạy khi còn thiếu bảng; migration mới chạy 1 lần. Đã chạy lưu ở extended property DelicareMigration:<file>.
     2. Đúng thứ tự trong deploy/db/scripts.order (NGUỒN DUY NHẤT, dùng chung với deploy/docker/db-init.sh):
        mọi stored procedure DB/sp (CREATE OR ALTER) → tài khoản admin (00_Admin_seed.sql, chỉ khi có -AdminPassword)
        → seed cấu hình (chỉ thêm phần chưa có).
@@ -26,6 +27,12 @@
 .EXAMPLE
   # Chỉ in thứ tự script sẽ chạy (không kết nối DB)
   ./deploy/db/Deploy-Database.ps1 -ListOnly
+.EXAMPLE
+  # Xem migration nào sẽ chạy / ghi nhận trên 1 DB (không đổi gì)
+  ./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare -ListMigrations
+.EXAMPLE
+  # Chỉ đồng bộ cấu trúc bảng (không chạy SP / seed)
+  ./deploy/db/Deploy-Database.ps1 -Server "(localdb)\MSSQLLocalDB" -Database AppDelicare -MigrationsOnly
 #>
 [CmdletBinding()]
 param(
@@ -38,7 +45,9 @@ param(
     [switch] $CreateSchemaIfEmpty,
     [string] $AdminUserName = "admin",
     [SecureString] $AdminPassword,
-    [switch] $ListOnly
+    [switch] $ListOnly,
+    [switch] $ListMigrations,
+    [switch] $MigrationsOnly
 )
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
@@ -113,19 +122,18 @@ try {
     # T48.5 (D-61): mức tương thích DB = 160 (SQL Server 2022): > 160 → đặt về 160; < 160 → chỉ cảnh báo.
     Invoke-Sql $Database (Join-Path $PSScriptRoot "compat-level.sql")
 
-    $tables = Query-Scalar $Database "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0"
-    if ($tables -eq "0") {
-        if (-not $CreateSchemaIfEmpty) { throw "Database rỗng. Thêm -CreateSchemaIfEmpty để tạo 124 bảng từ DDL chuẩn." }
-        $ddl = Join-Path $root "docs/reference/20261113_structure_db_appdelicare.sql"
-        $tmp = Join-Path ([IO.Path]::GetTempPath()) "delicare_ddl_$([Guid]::NewGuid().ToString('N')).sql"
-        # Bỏ "USE [AppDelicare]" để chạy được với tên DB khác.
-        (Get-Content $ddl -Raw -Encoding UTF8) -replace '(?m)^USE \[[^\]]+\]\s*$', '' | Set-Content $tmp -Encoding UTF8
-        try { Invoke-Sql $Database $tmp } finally { Remove-Item $tmp -ErrorAction SilentlyContinue }
-        $tables = Query-Scalar $Database "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0"
-        Write-Host "  + Đã tạo schema: $tables bảng"
-    } else {
-        Write-Host "  = Schema đã có ($tables bảng) – không đụng tới bảng."
+    # 2026-11-18: cấu trúc bảng = migration (DB/migrations) – cùng 1 bộ file cho mọi môi trường.
+    . (Join-Path $PSScriptRoot "Migrations.ps1")
+    if ($ListMigrations) {
+        $plan = Get-MigrationPlan
+        if ($plan.Count -eq 0) { Write-Host "  = Không có migration nào chờ – cấu trúc đã đồng bộ" }
+        $plan | ForEach-Object { Write-Output ("{0,-6} {1}" -f $_.Action, $_.File.Name) }
+        return
     }
+    Invoke-Migrations -AllowCreateSchema:$CreateSchemaIfEmpty
+    $tables = Query-Scalar $Database "SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0 AND name <> N'sysdiagrams'"
+    Write-Host "  = Cấu trúc: $tables bảng"
+    if ($MigrationsOnly) { Write-Host "== Xong (chỉ migration)."; return }
 
     $spCount = 0
     foreach ($rel in $order) {

@@ -7,9 +7,9 @@
 #   API  : http://<server>:5125/swagger   (đổi bằng API_PORT trong .env; trong mạng Docker là api:8080)
 #
 # ĐỒNG BỘ DATABASE TỰ ĐỘNG: mỗi lần "up", dịch vụ db-sync chạy TRƯỚC api (deploy/db/migrate.sh), xong mới khởi động api:
-#   - DB trống → tạo đủ 124 bảng từ DDL chuẩn;
+#   - cấu trúc bảng = migration DB/migrations (mỗi file 1 lần): DB trống → baseline 124 bảng;
 #   - cập nhật stored procedure + thêm seed còn thiếu (chạy lại an toàn);
-#   - DB thiếu bảng / cột so với bản code → DỪNG và in danh sách; đặt DB_AUTO_MIGRATE=1 để tự nâng cấp bằng DB/migrations (backup trước).
+#   - DB đã có bảng mà có migration MỚI đang chờ → DỪNG và in danh sách; đặt DB_AUTO_MIGRATE=1 để tự chạy (backup trước).
 # Tắt đồng bộ: DB_AUTO_SYNC=0 trong .env. Chạy riêng:  docker compose run --rm db-sync
 # Bộ đầy đủ có SQL Server riêng trong Docker: deploy/docker/docker-compose.staging.yml; production (HTTPS): docker-compose.production.yml.
 services:
