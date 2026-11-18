@@ -32,6 +32,18 @@ namespace AppDelicare.Model.Option
 
         /// <summary>Kích thước tối đa PayloadJson của 1 update nhận vào (ký tự) – quá → từ chối.</summary>
         public int MaxUpdateLength { get; set; } = 64000;
+
+        /// <summary>BOT-1.2: khóa ký mã liên kết (HMAC-SHA256) – BÍ MẬT ở env <c>Messaging__LinkSigningKey</c> (≥ 32 ký tự); trống = không tạo / nhận mã.</summary>
+        public string? LinkSigningKey { get; set; }
+
+        /// <summary>BOT-1.2 (D-62 p10): hạn mã user tự tạo (phút).</summary>
+        public int UserCodeMinutes { get; set; } = 15;
+
+        /// <summary>BOT-1.2 (D-62 p10): hạn mã HR cấp cho nhân viên (giờ).</summary>
+        public int EmployeeCodeHours { get; set; } = 72;
+
+        /// <summary>BOT-1.2: hạn JWT cấp thay mặt user cho bot (phút).</summary>
+        public int UserTokenMinutes { get; set; } = 10;
     }
 
     /// <summary>

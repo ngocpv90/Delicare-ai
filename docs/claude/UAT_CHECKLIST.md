@@ -206,3 +206,10 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] ClaimInbound → Đang xử lý; CompleteInbound Đã xử lý; kết thúc lần 2 → 400; màn Tin nhắn vào: Xử lý lại chỉ với Lỗi / Bỏ qua.
 - [ ] Màn Tin nhắn ra: gửi tay cho người đã liên kết → Chờ gửi; người chưa liên kết → báo lỗi; gửi lỗi → tự thử lại sau 1′; nút Gửi lại; người dùng chặn bot → Blocked, định danh Blocked.
 - [ ] Màn Kênh: ConfigJson không lộ token / secret / key (hiện `***`); sửa kênh không làm mất bí mật.
+
+## LIÊN KẾT TELEGRAM (BOT-1.2, 2026-11-18) · file thử: `docs/api-tests/bot-1.2-identity.http` · test: `AppDelicare.Tests/Notifications/BotIdentityTests.cs`
+- [ ] Nhân viên quét QR → chia sẻ số → khớp đúng 1 hồ sơ → liên kết; số không khớp / trùng nhiều → bot báo liên hệ Nhân sự.
+- [ ] Trưởng ca / người có quyền duyệt chỉ chia sẻ số → dùng bot nhưng không duyệt được; lấy mã trên web (hồ sơ cá nhân) → /start <mã> → duyệt được.
+- [ ] HR cấp mã cho nhân viên (hạn 72 giờ) → nhân viên /start <mã> → liên kết; dùng lại mã → từ chối; mã quá hạn → từ chối.
+- [ ] Khóa tài khoản trên web → bot ngừng cấp token (log TOKEN Failed). Admin gỡ liên kết → bot coi như chưa liên kết.
+- [ ] Nhân viên không có tài khoản web: xem lịch ca, ca hôm nay, vào / ra ca (đúng quy tắc ca + bán kính), xem đơn của mình.

@@ -41,6 +41,7 @@ namespace AppDelicare.Services.Ioc
             services.Configure<IotOptions>(configuration.GetSection(IotOptions.Section));
             // BOT-1.1 (D-62): kênh tin nhắn (khóa client Clients:<code>:KeyHash đọc thẳng IConfiguration ở ClientKeyFilter).
             services.Configure<MessagingOptions>(configuration.GetSection(MessagingOptions.Section));
+            services.AddScoped<AppDelicare.Services.Interface.IUserTokenIssuer, AppDelicare.Services.Implement.Identity.UserTokenIssuer>(); // BOT-1.2 (tên không đuôi Service)
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString(ConnectionHelper.DatabaseName.MainConnectionString.ToString())));
             var mapperConfiguration = new MapperConfiguration(x =>

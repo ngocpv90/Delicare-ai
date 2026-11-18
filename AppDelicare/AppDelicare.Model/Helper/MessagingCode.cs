@@ -47,6 +47,27 @@ namespace AppDelicare.Model.Helper
             public const string Revoked = "Revoked";
             /// <summary>Người dùng chặn bot.</summary>
             public const string Blocked = "Blocked";
+            /// <summary>BOT-1.2 (PROPOSED D-62 p17): người có quyền duyệt / admin mới khớp số điện thoại – dùng bot nhưng CHƯA được duyệt / quản trị tới khi nhập mã web.</summary>
+            public const string PendingCode = "PendingCode";
+
+            /// <summary>Định danh còn dùng được (nhận tin, xin token).</summary>
+            public static bool IsUsable(string? status) => status is Active or PendingCode;
+        }
+
+        /// <summary>BOT-1.2: claim trong JWT cấp thay mặt user cho container messaging.</summary>
+        public static class Claims
+        {
+            /// <summary>Khách gọi (MESSAGING).</summary>
+            public const string Client = "client";
+            /// <summary>"1" = token hạn chế (định danh PendingCode): PermissionService bỏ quyền admin + quyền duyệt.</summary>
+            public const string BotLimited = "bot_limited";
+        }
+
+        /// <summary>Loại mã liên kết.</summary>
+        public static class LinkKind
+        {
+            public const char User = 'U';
+            public const char Employee = 'E';
         }
 
         public const string StatusActive = "Active";
@@ -60,6 +81,11 @@ namespace AppDelicare.Model.Helper
             public const string Link = "LINK";
             public const string OpReceive = "RECEIVE_UPDATE";
             public const string OpSend = "SEND";
+            public const string OpLinkPhone = "LINK_PHONE";
+            public const string OpLinkCode = "LINK_CODE";
+            public const string OpLinkAdmin = "LINK_ADMIN";
+            public const string OpUnlink = "UNLINK";
+            public const string OpIssueToken = "ISSUE_USER_TOKEN";
             public const string StatusSuccess = "Success";
             public const string StatusDuplicate = "Duplicate";
             public const string StatusFailed = "Failed";

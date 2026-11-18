@@ -38,7 +38,7 @@ namespace AppDelicare.Services.Implement.Messaging
             var channelIds = bots.Values.ToList();
             var botOfChannel = bots.ToDictionary(kv => kv.Value, kv => kv.Key);
             var identities = await db.UserExternalIdentity.AsNoTracking()
-                .Where(i => !i.IsDeleted && i.IdentityStatus == MessagingCode.Identity.Active && channelIds.Contains(i.IntegrationChannelId)
+                .Where(i => !i.IsDeleted && (i.IdentityStatus == MessagingCode.Identity.Active || i.IdentityStatus == MessagingCode.Identity.PendingCode) && channelIds.Contains(i.IntegrationChannelId)
                             && ((i.UserId != null && userIds.Contains(i.UserId.Value)) || (i.EmployeeId != null && employeeIds.Contains(i.EmployeeId.Value))))
                 .ToListAsync(ct);
             // Gom theo người: ưu tiên khóa UserId (người có tài khoản web), không có thì EmployeeId.

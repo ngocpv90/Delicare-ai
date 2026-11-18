@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using AppDelicare.Data.Interface;
+using AppDelicare.Model.Helper;
+using Microsoft.AspNetCore.Http;
 using AppDelicare.Model.Option;
 using AppDelicare.Services.Interface;
 using Microsoft.EntityFrameworkCore;
@@ -11,8 +14,10 @@ namespace AppDelicare.Services.Implement
     /// T07 / T45R: UserRole × ObjectMenu theo UserGroup của user (qua UserClaim), cache theo <c>Permissions:CacheMinutes</c> (mặc định 5′).
     /// <c>User.IsAdmin</c> bỏ qua kiểm tra. User không tồn tại / không hoạt động / đã xóa → không có quyền.
     /// Quyền duyệt (D-31) = AllowEdit trên mục menu <c>#/wf-inbox?type=&lt;screen-id&gt;</c>.
+    /// BOT-1.2 (D-62): request mang JWT bot hạn chế (claim <c>bot_limited = 1</c> – người có quyền duyệt / admin mới khớp số điện thoại, chưa nhập mã web)
+    /// của CHÍNH user đó → bỏ quyền admin + mọi mục duyệt (bản cache giữ nguyên quyền đầy đủ cho web).
     /// </summary>
-    public class PermissionService(IUnitOfWork unitOfWork, IMemoryCache cache, IOptions<PermissionOptions> options) : IPermissionService
+    public class PermissionService(IUnitOfWork unitOfWork, IMemoryCache cache, IOptions<PermissionOptions> options, IHttpContextAccessor? httpContextAccessor = null) : IPermissionService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly PermissionOptions _options = options.Value;
@@ -31,7 +36,7 @@ namespace AppDelicare.Services.Implement
             string key = CacheKey(userId);
             if (cache.TryGetValue(key, out UserPermissions? cached) && cached != null)
             {
-                return cached;
+                return Restrict(cached, userId);
             }
             var db = _unitOfWork.DbContext;
             var user = await db.User.AsNoTracking()
@@ -68,7 +73,20 @@ namespace AppDelicare.Services.Implement
                 result = new UserPermissions(user.IsAdmin, new HashSet<string>(groups, StringComparer.OrdinalIgnoreCase), menus);
             }
             cache.Set(key, result, TimeSpan.FromMinutes(Math.Max(0, _options.CacheMinutes)));
-            return result;
+            return Restrict(result, userId);
+        }
+
+        private UserPermissions Restrict(UserPermissions full, Guid userId)
+        {
+            var principal = httpContextAccessor?.HttpContext?.User;
+            if (principal?.FindFirstValue(MessagingCode.Claims.BotLimited) != "1"
+                || !Guid.TryParse(principal.FindFirstValue(ConstantHelper.JwtClaimIdentifiers.Id), out Guid tokenUser) || tokenUser != userId)
+            {
+                return full;
+            }
+            var menus = full.Menus.Where(m => !m.Key.StartsWith(IPermissionService.ApproveMenuPrefix, StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(m => m.Key, m => m.Value, StringComparer.OrdinalIgnoreCase);
+            return new UserPermissions(false, full.Groups, menus);
         }
 
         public bool IsAllowed(UserPermissions permissions, string screenId, PermissionAction action)
