@@ -25,7 +25,7 @@ namespace AppDelicare.Messaging.Processing
     public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender,
         BotActionRegistry registry, MenuNavigator menu, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
         AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
-        AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp)
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -97,6 +97,13 @@ namespace AppDelicare.Messaging.Processing
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty:
                         await bep.ReplyAsync(ctx, pending, ct);
                         break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDispatchTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyQty
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyReceiver or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyBoxes:
+                        await giaoVan.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions.ReplyServed:
+                        await diemPhat.ReplyAsync(ctx, pending, ct);
+                        break;
                 }
                 return DispatchResult.Processed;
             }
@@ -119,6 +126,12 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case CallbackData.Kinds.Checklist:
                         await attp.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Delivery:
+                        await giaoVan.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Reconciliation:
+                        await diemPhat.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Undo when data.Action == "apv":
                         await approvals.UndoAsync(ctx, data, ct);

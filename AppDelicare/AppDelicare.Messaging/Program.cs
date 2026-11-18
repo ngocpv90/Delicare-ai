@@ -63,6 +63,11 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions>());
             builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions>();
             builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions>());
+            // BOT-1.5b: Giao vận (điều phối + tài xế) + Điểm phát.
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions>());
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions>());
             builder.Services.AddSingleton<BotActionRegistry>();
             builder.Services.AddSingleton<MenuNavigator>();
             builder.Services.AddSingleton<CodeSearch>();

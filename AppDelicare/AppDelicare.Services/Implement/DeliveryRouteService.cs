@@ -1073,6 +1073,39 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BOT-1.5b (bot Vận hành – tài xế "🚚 Chuyến của tôi"): chuyến của ngày giao (mặc định hôm nay) có DriverId = nhân viên của tài khoản đang gọi
+        /// (HrRules.ResolveEmployeeAsync – như ShiftAssignment/GetMine). Không cần quyền màn chuyến xe để XEM chuyến của mình; thao tác ghi vẫn qua action có quyền.
+        /// </summary>
+        public async Task<IResult<DeliveryBoardModel>> GetMine(DateTime? deliveryDate)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var employee = await HrRules.ResolveEmployeeAsync(db, _currentActor.RequireActor().UserId);
+                if (employee == null)
+                {
+                    return Result<DeliveryBoardModel>.Fail(ConstantHelper.Message.HrUserNoEmployee);
+                }
+                DateTime date = (deliveryDate ?? _clock.Now).Date, next = date.AddDays(1);
+                var routes = await db.DeliveryRoute.AsNoTracking()
+                    .Where(r => !r.IsDeleted && r.DriverId == employee.Id && r.DeliveryDate >= date && r.DeliveryDate < next)
+                    .OrderBy(r => r.PlannedStart).ThenBy(r => r.RouteNo).ToListAsync();
+                var list = await DeliveryRules.RouteDetailsAsync(db, routes, _rules, withBatches: false);
+                return Result<DeliveryBoardModel>.Success(new DeliveryBoardModel
+                {
+                    DeliveryDate = date,
+                    ListRoute = list,
+                    StatusCounts = list.GroupBy(r => r.Route.Status ?? string.Empty).ToDictionary(g => g.Key, g => g.Count()),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetMine: ", ex.ToString()));
+                throw;
+            }
+        }
+
         /// <summary>T19: chi tiết chuyến – điểm dừng + POD, sự kiện / nhiệt độ, mẻ của ngày / ca, điều kiện xuất phát còn thiếu, thao tác được phép.</summary>
         public async Task<IResult<DeliveryRouteDetailModel>> GetDetail(Guid id)
         {
