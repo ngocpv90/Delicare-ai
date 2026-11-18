@@ -277,6 +277,13 @@ namespace AppDelicare.Services.Implement
                 {
                     rows = [.. rows.Where(r => r.DaysToExpiry != null && r.DaysToExpiry <= days)];
                 }
+                if (!string.IsNullOrWhiteSpace(request.StorageLocationCode))
+                {
+                    // BOT-2.4: QR kệ / vị trí kho.
+                    string code = request.StorageLocationCode.Trim();
+                    var locations = await _unitOfWork.DbContext.StorageLocation.AsNoTracking().Where(l => !l.IsDeleted && l.Code == code).Select(l => l.Id).ToListAsync();
+                    rows = [.. rows.Where(r => r.StorageLocationId != null && locations.Contains(r.StorageLocationId.Value))];
+                }
                 int i = 0;
                 rows.ForEach(x => x.STT = ++i);
                 return Results<InventoryLotBalanceModel>.Success(rows, ConstantHelper.Message.GetAllSuccessfully);

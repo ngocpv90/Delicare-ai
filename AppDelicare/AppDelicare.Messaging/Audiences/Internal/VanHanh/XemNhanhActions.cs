@@ -111,6 +111,30 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             await ReplyListAsync(ctx, "⌛ Lô cận / hết hạn (7 ngày)", lines, "Không có lô nào cận hạn.", ct);
         }
 
+        /// <summary>BOT-2.4 (QR <c>start=LOC_&lt;mã&gt;</c>): tồn theo lô tại kệ / vị trí kho – lô hết hạn / cận hạn lên đầu.</summary>
+        public async Task LocationStockAsync(BotActionContext ctx, string code, CancellationToken ct)
+        {
+            if (await GetAsync(ctx, "api/InventoryBalance/GetByLot?storageLocationCode=" + Uri.EscapeDataString(code), ct) is not { } r)
+            {
+                return;
+            }
+            var lines = r.Items.OrderBy(i => Flag(i, "isExpired") ? 0 : 1).ThenBy(i => S(i, "daysToExpiry") == null ? int.MaxValue : Dec(i, "daysToExpiry"))
+                .Select(i => $"{(Flag(i, "isExpired") ? "⛔" : Flag(i, "isExpiring") ? "⌛" : "•")} {S(i, "ingredientName")} · lô {S(i, "lotNumber") ?? "-"} · HSD {Day(S(i, "expiryDate"))} · còn {N(i, "availableQuantity")} {S(i, "unitName")}").ToList();
+            await ReplyListAsync(ctx, $"🗄 Vị trí {code}", lines, "Vị trí này không còn tồn (hoặc mã vị trí không đúng).", ct);
+        }
+
+        /// <summary>BOT-2.4 (QR <c>start=CLEAN</c> ở khu vệ sinh hộp khay): lô vệ sinh hôm nay. Ghi kết quả vệ sinh: trên web (#/qc-cleaning-result).</summary>
+        public async Task CleaningTodayAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await GetAsync(ctx, "api/CleaningBatch/GetAll?page=1&pageSize=100", ct) is not { } r)
+            {
+                return;
+            }
+            var lines = r.Items.Where(c => Date(S(c, "startDate"))?.Date == Today)
+                .Select(c => $"🧼 {S(c, "cleaningBatchNumber") ?? S(c, "cleaningNo")} · {S(c, "containerQuantity") ?? "0"} hộp · {S(c, "status") ?? "-"}{(S(c, "qualityStatus") is { } q ? " · QC " + q : "")}").ToList();
+            await ReplyListAsync(ctx, "🧼 Lô vệ sinh hộp khay hôm nay", lines, "Chưa có lô vệ sinh nào hôm nay.", ct, "Ghi kết quả vệ sinh trên web (Vệ sinh hộp khay).");
+        }
+
         public async Task RequirementAsync(BotActionContext ctx, CancellationToken ct)
         {
             DateTime day = Today.AddDays(1);

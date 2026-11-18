@@ -35,6 +35,8 @@ namespace AppDelicare.Messaging.Channels.Telegram
         public long Date { get; init; }
         /// <summary>Tin chuyển tiếp.</summary>
         public bool Forwarded { get; init; }
+        /// <summary>BOT-2.4: update là edited_message (vị trí trực tiếp cập nhật bằng cách sửa tin vị trí ban đầu).</summary>
+        public bool Edited { get; init; }
     }
 
     /// <summary>BOT-1.3: update Telegram → <see cref="IncomingEvent"/> (lệnh / chữ / liên hệ / vị trí (kể cả trực tiếp) / nút / ảnh / tệp / trả lời).</summary>
@@ -84,6 +86,7 @@ namespace AppDelicare.Messaging.Channels.Telegram
             {
                 MessageId = m.MessageId, ReplyToMessageId = m.ReplyToMessage?.MessageId, Date = m.Date,
                 Forwarded = m.ForwardOrigin is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined },
+                Edited = update.Message == null && update.EditedMessage != null,
             };
             if (m.Contact != null)
             {

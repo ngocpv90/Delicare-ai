@@ -79,6 +79,9 @@ namespace AppDelicare.Model.Request.Custom
         public Guid? WarehouseId { get; set; }
         public Guid? IngredientId { get; set; }
         public Guid? MaterialLotId { get; set; }
+        /// <summary>BOT-2.4 (QR <c>start=LOC_&lt;mã&gt;</c>): chỉ tồn tại vị trí kho có mã này.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(50)]
+        public string? StorageLocationCode { get; set; }
         /// <summary>Chỉ lô hết hạn trong N ngày tới (kể cả đã hết hạn). Bỏ trống = không lọc.</summary>
         public int? ExpiringWithinDays { get; set; }
         /// <summary>Có lấy dòng tồn = 0 không (mặc định không).</summary>
