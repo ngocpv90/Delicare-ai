@@ -936,12 +936,16 @@ namespace AppDelicare.Services.Implement
                 }
                 var warnings = new List<string>();
                 string? error = DeliveryRules.AddTemperature(_unitOfWork, _rules, actor, measuredAt, route.Id, stopRef, deliveryOrderId,
-                    request.TemperatureC, request.CorrectiveAction, request.DeviceCode, request.EvidenceUrl, warnings, out _);
+                    request.TemperatureC, request.CorrectiveAction, request.DeviceCode, request.EvidenceUrl, warnings, out bool within);
                 if (error != null)
                 {
                     return Fail(error);
                 }
                 await _unitOfWork.DeliveryEventRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                if (!within)
+                {
+                    await DeliveryRules.NotifyTempLowAsync(_notifications, db, route, stopRef, request.TemperatureC, _rules, request.CorrectiveAction, measuredAt, actor.UserId);
+                }
                 _unitOfWork.CommitTransaction();
                 var detail = await DeliveryRules.RouteDetailAsync(db, route.Id, _rules);
                 detail!.ListWarning.InsertRange(0, warnings);
@@ -991,12 +995,16 @@ namespace AppDelicare.Services.Implement
                 if (request.TemperatureC is { } temperature)
                 {
                     string? error = DeliveryRules.AddTemperature(_unitOfWork, _rules, actor, now, route.Id, null, null,
-                        temperature, request.CorrectiveAction, request.DeviceCode, null, warnings, out _);
+                        temperature, request.CorrectiveAction, request.DeviceCode, null, warnings, out bool within);
                     if (error != null)
                     {
                         return Fail(error);
                     }
                     await _unitOfWork.DeliveryEventRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                    if (!within)
+                    {
+                        await DeliveryRules.NotifyTempLowAsync(_notifications, db, route, null, temperature, _rules, request.CorrectiveAction, now, actor.UserId);
+                    }
                     recorded = true;
                 }
                 var blockers = await DeliveryRules.DispatchBlockersAsync(db, route, _rules);

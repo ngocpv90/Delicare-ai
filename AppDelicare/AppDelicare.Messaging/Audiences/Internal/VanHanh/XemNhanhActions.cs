@@ -135,6 +135,26 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             await ReplyListAsync(ctx, "🧼 Lô vệ sinh hộp khay hôm nay", lines, "Chưa có lô vệ sinh nào hôm nay.", ct, "Ghi kết quả vệ sinh trên web (Vệ sinh hộp khay).");
         }
 
+        /// <summary>BOT-1.7d (QR <c>start=DOC_&lt;mã&gt;_&lt;Id N&gt;</c> in trên phiếu): nội dung phiếu (Common/GetPrintDocument – quyền Xem màn của loại phiếu): số, ngày, thông tin chính, dòng hàng.</summary>
+        public async Task DocumentAsync(BotActionContext ctx, string type, Guid id, CancellationToken ct)
+        {
+            if (await GetAsync(ctx, $"api/Common/GetPrintDocument?type={type}&id={id}", ct) is not { } r || r.Data.ValueKind != JsonValueKind.Object)
+            {
+                return;
+            }
+            var d = r.Data;
+            var m = new NeutralMessage { Title = "📄 " + (S(d, "title") ?? "Phiếu") };
+            m.Lines.Add($"Số {S(d, "documentNo") ?? "-"} · ngày {Day(S(d, "documentDate"))}{(Flag(d, "isDraft") ? " · NHÁP" : "")}");
+            m.Lines.AddRange(GiaoVanActions.Arr(d, "listInfo").Where(i => !string.IsNullOrWhiteSpace(S(i, "value"))).Take(8).Select(i => $"{S(i, "label")}: {S(i, "value")}"));
+            var rows = GiaoVanActions.Arr(d, "listRow");
+            m.Lines.AddRange(rows.Take(MaxLines).Select(row => "• " + string.Join(" · ", row.EnumerateArray().Skip(1).Select(c => c.ToString()).Where(c => c.Length > 0))));
+            if (rows.Count > MaxLines)
+            {
+                m.Lines.Add($"… và {rows.Count - MaxLines} dòng nữa – xem đủ trên web.");
+            }
+            await SendAsync(ctx, m, ct);
+        }
+
         public async Task RequirementAsync(BotActionContext ctx, CancellationToken ct)
         {
             DateTime day = Today.AddDays(1);

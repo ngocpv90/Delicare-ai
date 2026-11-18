@@ -47,25 +47,69 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 await AskAsync(ctx, "Ghi chú quá ngắn – gõ lại:", ReplyNote, pending.Key, ct);
                 return;
             }
-            await ActAsync(ctx, pending.Key, "note", text, ct);
+            // Khóa = "<mã tin>" (tin trong chat riêng) hoặc "<chat nhóm>|<mã tin>" (tin trong nhóm – BOT-1.7d).
+            string[] key = pending.Key.Split('|', 2);
+            await ActAsync(ctx, key.Length == 2 ? key[0] : ctx.Event.ChatId, key[^1], "note", text, ct);
         }
 
-        private async Task ActAsync(BotActionContext ctx, string providerMessageId, string action, string? text, CancellationToken ct)
+        /// <summary>
+        /// BOT-1.7d: nút sự việc trên tin gửi vào NHÓM chat – 🙋 / ✅ ghi ngay (tin của nhóm + mọi người được sửa), kết quả hiện dạng thông báo nhỏ cho người bấm;
+        /// 💬 Ghi chú hỏi trong chat riêng của người bấm (không nhắn vào nhóm).
+        /// </summary>
+        public async Task GroupAsync(BotActionContext ctx, CallbackData data, CancellationToken ct)
+        {
+            string group = ctx.Event.ChatId;
+            if (ctx.Event.MessageId is not { } mid || ctx.Event.CallbackId is not { } callback)
+            {
+                return;
+            }
+            var self = ctx with { Event = ctx.Event with { ChatId = ctx.Event.FromId, ChatType = "private", MessageId = null, CallbackId = null } };
+            if (data.Action == "note")
+            {
+                await Sender.AnswerCallbackAsync(ctx.Bot, callback, "Gõ ghi chú trong chat riêng với bot.", ct);
+                await AskAsync(self, "💬 Ghi chú cho sự việc (mọi người liên quan sẽ thấy):", ReplyNote, group + "|" + mid, ct);
+                return;
+            }
+            if (data.Action is not ("claim" or "done"))
+            {
+                await Sender.AnswerCallbackAsync(ctx.Bot, callback, "Nút đã hết hạn.", ct);
+                return;
+            }
+            var r = await api.IncidentActionAsync(new IncidentActionRequest
+            {
+                BotCode = ctx.Bot, ExternalUserId = ctx.Event.FromId, ChatId = group, ProviderMessageId = mid.ToString(), Action = data.Action,
+            }, ct);
+            if (r.IsOk && r.Data != null)
+            {
+                await EditAllAsync(r.Data, ct);
+            }
+            await Sender.AnswerCallbackAsync(ctx.Bot, callback, r.IsOk ? r.Data?.Note : r.ResponseMessage ?? "Không thực hiện được.", ct);
+        }
+
+        private async Task EditAllAsync(IncidentResultModel result, CancellationToken ct)
+        {
+            foreach (var m in result.ListEdit.Where(m => m.BotCode != null && m.ChatId != null && m.ProviderMessageId != null))
+            {
+                var (html, kb) = TelegramFormatter.Render(MessageTemplates.Render(m.PayloadJson));
+                await Sender.EditAsync(m.BotCode!, m.ChatId!, m.ProviderMessageId!, html, kb, ct);
+            }
+        }
+
+        private Task ActAsync(BotActionContext ctx, string providerMessageId, string action, string? text, CancellationToken ct)
+            => ActAsync(ctx, ctx.Event.ChatId, providerMessageId, action, text, ct);
+
+        private async Task ActAsync(BotActionContext ctx, string chatId, string providerMessageId, string action, string? text, CancellationToken ct)
         {
             var r = await api.IncidentActionAsync(new IncidentActionRequest
             {
-                BotCode = ctx.Bot, ExternalUserId = ctx.Event.FromId, ChatId = ctx.Event.ChatId, ProviderMessageId = providerMessageId, Action = action, Text = text,
+                BotCode = ctx.Bot, ExternalUserId = ctx.Event.FromId, ChatId = chatId, ProviderMessageId = providerMessageId, Action = action, Text = text,
             }, ct);
             if (!r.IsOk || r.Data == null)
             {
                 await SayAsync(ctx, r.ResponseMessage ?? "Không thực hiện được.", ct);
                 return;
             }
-            foreach (var m in r.Data.ListEdit.Where(m => m.BotCode != null && m.ChatId != null && m.ProviderMessageId != null))
-            {
-                var (html, kb) = TelegramFormatter.Render(MessageTemplates.Render(m.PayloadJson));
-                await Sender.EditAsync(m.BotCode!, m.ChatId!, m.ProviderMessageId!, html, kb, ct);
-            }
+            await EditAllAsync(r.Data, ct);
             if (r.Data.Note != null)
             {
                 await SayAsync(ctx, (r.Data.Changed ? "✅ " : "ℹ️ ") + r.Data.Note, ct);

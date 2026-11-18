@@ -154,6 +154,23 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>BOT-1.7d: nội dung 1 phiếu dạng dữ liệu (bot mở phiếu khi quét QR DOC_ trên phiếu in). type = GOODS_RECEIPT / MATERIAL_ISSUE / STOCK_COUNT / DELIVERY_ORDER / POD / RECONCILIATION (hoặc mã ngắn GR / MI / SC / DO / POD / RC); quyền Xem màn của loại phiếu (service kiểm).</summary>
+        [Security.SkipPermission] // service kiểm quyền Xem trên màn của loại phiếu
+        [HttpGet("GetPrintDocument")]
+        public async Task<IActionResult> GetPrintDocument(string type, Guid id)
+        {
+            try
+            {
+                var result = await _printService.GetDocument(AppDelicare.Services.Implement.PrintService.TypeOfQrCode(type) ?? type, id);
+                return result.ResponseCode == Forbidden ? StatusCode(Forbidden, result) : Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetPrintDocument: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>Catalog 30: in hàng loạt (tối đa 100 phiếu) → 1 tệp pdf (mặc định, mỗi phiếu sang trang mới – BE2.7.1) / xlsx (mỗi phiếu 1 sheet) / docx; quyền In theo từng loại phiếu. JSON vì có danh sách phiếu.</summary>
         [Security.SkipPermission] // service kiểm quyền In trên màn của từng loại phiếu
         [HttpPost("PrintBatch")]

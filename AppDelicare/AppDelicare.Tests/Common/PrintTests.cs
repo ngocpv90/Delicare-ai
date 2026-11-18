@@ -119,6 +119,27 @@ namespace AppDelicare.Tests.Common
             (await _factory.CreateAuthorizedClient(viewer).GetAsync($"api/GoodsReceipt/Print?id={gr}&format=pdf")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
             Guid printer = await CommonTestUsers.UserAsync(_factory, ("scm-gr", "VP"));
             (await _factory.CreateAuthorizedClient(printer).GetAsync($"api/GoodsReceipt/Print?id={gr}")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+            // BOT-1.7d: bot Vận hành có username → phiếu kèm link mở trên bot (QR DOC_); bot đọc phiếu qua Common/GetPrintDocument (quyền Xem màn của loại phiếu, mã ngắn GR).
+            await _factory.SeedAsync(async db =>
+            {
+                if (!await db.BotConfiguration.AnyAsync(b => b.BotCode == "VH"))
+                {
+                    var channel = Guid.NewGuid();
+                    db.IntegrationChannel.Add(new IntegrationChannel { Id = channel, ChannelCode = "TELEGRAM_VH_PRINT", ChannelName = "VH", ProviderCode = "TELEGRAM", EnvironmentCode = "Development", ChannelStatus = "Active", ConfigJson = "{}" });
+                    db.BotConfiguration.Add(new BotConfiguration { Id = Guid.NewGuid(), IntegrationChannelId = channel, BotCode = "VH", BotName = "Vận hành", BotUsername = "@delicare_vh_bot", BotStatus = "Active" });
+                }
+            });
+            await PrintAsync(async p =>
+            {
+                var doc = (await p.Build("GoodsReceipt", gr)).Data!;
+                doc.BotLink.Should().Be($"https://t.me/delicare_vh_bot?start=DOC_GR_{gr:N}");
+                doc.ListNote.Should().Contain(n => n.Contains(doc.BotLink!), "in kèm link (ảnh QR do FE vẽ)");
+            });
+            var viewed = (await _factory.CreateAuthorizedClient(viewer).GetResultAsync($"api/Common/GetPrintDocument?type=GR&id={gr}")).Ok();
+            viewed.GetProperty("documentNo").GetString().Should().Be("PN-" + key);
+            Guid stranger = await CommonTestUsers.UserAsync(_factory, ("scm-issue", "V"));
+            (await _factory.CreateAuthorizedClient(stranger).GetAsync($"api/Common/GetPrintDocument?type=GR&id={gr}")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
 
         [Fact]
