@@ -114,6 +114,14 @@ namespace AppDelicare.Tests.Messaging
         public ConcurrentQueue<IncidentActionRequest> IncidentCalls { get; } = new();
         public Func<IncidentActionRequest, ApiResult<IncidentResultModel>> IncidentResult { get; set; } = _ => new() { ResponseCode = 400, ResponseMessage = "Không có sự việc" };
         public int EscalationRuns;
+        public int WatchRuns;
+
+        public Task<ApiResult<int>> RunWatchAsync(CancellationToken ct = default)
+        {
+            Guard();
+            Interlocked.Increment(ref WatchRuns);
+            return Task.FromResult(new ApiResult<int> { ResponseCode = 200, Data = 0 });
+        }
 
         public Task<ApiResult<IncidentResultModel>> IncidentActionAsync(IncidentActionRequest request, CancellationToken ct = default)
         {

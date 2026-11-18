@@ -73,6 +73,35 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
         }
     }
 
+    /// <summary>BOT-2.3: gọi kiểm tra định kỳ mỗi <c>Messaging:WatchIntervalSeconds</c> giây (mặc định 300; 0 = tắt) – api quyết định việc nào cần báo, chống trùng ở api.</summary>
+    public sealed class WatchPump(IBotChannelApi api, IConfiguration configuration, ILogger<WatchPump> logger) : BackgroundService
+    {
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            int seconds = int.TryParse(configuration["Messaging:WatchIntervalSeconds"], out var s) ? s : 300;
+            if (seconds <= 0)
+            {
+                return;
+            }
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    var r = await api.RunWatchAsync(stoppingToken);
+                    if (r.IsOk && r.Data > 0)
+                    {
+                        logger.LogInformation("Kiểm tra định kỳ: {Count} tin", r.Data);
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "Kiểm tra định kỳ: lỗi");
+                }
+                await Task.Delay(TimeSpan.FromSeconds(seconds), stoppingToken);
+            }
+        }
+    }
+
     /// <summary>BOT-2.2: gọi leo thang mỗi <c>Messaging:Escalation:IntervalSeconds</c> giây (mặc định 60; 0 = tắt) – api quyết định bậc / người nhận, tin đi qua outbox.</summary>
     public sealed class EscalationPump(IBotChannelApi api, IConfiguration configuration, ILogger<EscalationPump> logger) : BackgroundService
     {

@@ -59,6 +59,8 @@ namespace AppDelicare.Messaging.Presentation
             ["OUTBOUND_FAILING"] = "🖥 Tin gửi lỗi nhiều lần",
             ["INCIDENT_UNCLAIMED"] = "🚨 Sự việc chưa ai nhận",
             ["LEAVE_HANDOVER"] = "🏖 Sắp nghỉ – còn việc chờ bạn duyệt",
+            ["APPROVAL_OVERDUE"] = "⏰ Việc duyệt quá hạn",
+            ["INGREDIENTS_TONIGHT"] = "🥬 Nguyên liệu cho ngày mai",
         };
 
         /// <summary>BOT-2.1: mẫu được ghim đầu chat sau khi gửi.</summary>

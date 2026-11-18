@@ -4,8 +4,10 @@ using AppDelicare.Data.Share;
 using AppDelicare.Model.Entity;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Model;
+using AppDelicare.Model.Option;
 using AppDelicare.Services.Interface;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace AppDelicare.Services.Implement.Messaging
@@ -15,8 +17,9 @@ namespace AppDelicare.Services.Implement.Messaging
     /// (rollback → không có OutboundMessage). Lưu mã mẫu + dữ liệu (không câu chữ): <c>PayloadJson = { template, data, buttons, scope, level, notBefore? }</c>.
     /// Mỗi người nhận đã liên kết 1 dòng (bot theo phạm vi mẫu – <see cref="NotificationCatalog.BotFor"/>), chống trùng theo <c>IdempotencyKey:IdentityId</c>.
     /// Người chưa liên kết bot → bỏ qua (ghi log), không làm hỏng nghiệp vụ.
+    /// BOT-2.3: giờ yên lặng theo ca (<see cref="QuietHours"/>) – mỗi người nhận có notBefore riêng; 🔴 không tới người ngoài ca (trừ leo thang).
     /// </summary>
-    public class NotificationService(IUnitOfWork unitOfWork, IClock clock) : INotificationService
+    public class NotificationService(IUnitOfWork unitOfWork, IClock clock, IOptionsMonitor<MessagingOptions> options) : INotificationService
     {
         public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -34,22 +37,34 @@ namespace AppDelicare.Services.Implement.Messaging
                 return [];
             }
             DateTime now = clock.Now;
-            string payload = JsonSerializer.Serialize(new
+            var quiet = await QuietHours.PlanAsync(db, recipients, template.Level, now, options.CurrentValue.QuietHours, request.Escalation, ct);
+            var payloads = new Dictionary<DateTime, string>();
+            string PayloadFor(ResolvedRecipient r)
             {
-                template = template.Code,
-                data = request.Data,
-                buttons = request.Buttons,
-                scope = template.Scope,
-                level = template.Level,
-                // GAP-INT-03: chưa có cột ScheduledAt → hẹn giờ trong PayloadJson (ClaimOutbound lọc bằng JSON_VALUE).
-                notBefore = request.NotBefore?.ToString("yyyy-MM-ddTHH:mm:ss"),
-            }, Json);
+                DateTime? at = quiet.For(r.IdentityId) is { } q && (request.NotBefore == null || q > request.NotBefore) ? q : request.NotBefore;
+                DateTime key = at ?? DateTime.MinValue;
+                if (!payloads.TryGetValue(key, out var json))
+                {
+                    json = JsonSerializer.Serialize(new
+                    {
+                        template = template.Code,
+                        data = request.Data,
+                        buttons = request.Buttons,
+                        scope = template.Scope,
+                        level = template.Level,
+                        // GAP-INT-03: chưa có cột ScheduledAt → hẹn giờ trong PayloadJson (ClaimOutbound lọc bằng JSON_VALUE).
+                        notBefore = at?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    }, Json);
+                    payloads[key] = json;
+                }
+                return json;
+            }
             var keys = recipients.Select(r => KeyFor(request.IdempotencyKey, r.IdentityId)).Where(k => k != null).Cast<string>().ToList();
             var existing = keys.Count == 0 ? [] : await db.OutboundMessage.AsNoTracking()
                 .Where(m => !m.IsDeleted && m.IdempotencyKey != null && keys.Contains(m.IdempotencyKey))
                 .Select(m => m.IdempotencyKey!).ToListAsync(ct);
             var ids = new List<Guid>();
-            foreach (var r in recipients)
+            foreach (var r in recipients.Where(r => !quiet.Skip.Contains(r.IdentityId)))
             {
                 string? key = KeyFor(request.IdempotencyKey, r.IdentityId);
                 if (key != null && existing.Contains(key))
@@ -63,7 +78,7 @@ namespace AppDelicare.Services.Implement.Messaging
                     ExternalConversationId = r.ExternalUserId,
                     RecipientExternalId = r.ExternalUserId,
                     MessageType = template.Code,
-                    PayloadJson = payload,
+                    PayloadJson = PayloadFor(r),
                     QueuedAt = now,
                     MessageStatus = MessagingCode.Outbound.Queued,
                     RetryCount = 0,

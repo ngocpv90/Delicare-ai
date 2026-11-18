@@ -39,6 +39,9 @@ namespace AppDelicare.Services.Implement.Messaging
             [NotificationCatalog.QcIncomingFail] = [new() { AfterMinutes = 10, Groups = ["COO"] }, new() { AfterMinutes = 30, Groups = ["CEO-PMO"] }],
             [NotificationCatalog.DeliveryTempLow] = [new() { AfterMinutes = 10, Groups = ["COO"] }, new() { AfterMinutes = 30, Groups = ["CEO-PMO"] }],
             [NotificationCatalog.ShortageReported] = [new() { AfterMinutes = 15, Groups = ["COO"] }, new() { AfterMinutes = 45, Groups = ["CEO"] }],
+            // BOT-2.3: xe chưa rời / điểm trễ (BOT_TELEGRAM §5.2 – bậc 3 = COO; chưa có nhóm "trưởng điều phối").
+            [NotificationCatalog.TripNotDeparted] = [new() { AfterMinutes = 10, Groups = ["COO"] }],
+            [NotificationCatalog.StopLate] = [new() { AfterMinutes = 10, Groups = ["COO"] }],
         };
 
         private Dictionary<string, List<EscalationTier>> Tiers
@@ -206,7 +209,7 @@ namespace AppDelicare.Services.Implement.Messaging
                             lines = (original?["lines"] as JsonArray)?.Select(x => x?.ToString()).ToList(),
                         },
                         Buttons = BusinessNotifier.IncidentButtons,
-                        IdempotencyKey = $"ESC:{g.Key}:{i + 2}", CorrelationId = g.Key,
+                        IdempotencyKey = $"ESC:{g.Key}:{i + 2}", CorrelationId = g.Key, Escalation = true,
                     });
                 }
             }

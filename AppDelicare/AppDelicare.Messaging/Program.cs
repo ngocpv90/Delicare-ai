@@ -93,6 +93,7 @@ namespace AppDelicare.Messaging
             builder.Services.AddHostedService<OutboundPump>();
             builder.Services.AddHostedService<ShiftCardPump>();
             builder.Services.AddHostedService<AppDelicare.Messaging.Audiences.Internal.Chung.EscalationPump>();
+            builder.Services.AddHostedService<AppDelicare.Messaging.Audiences.Internal.Chung.WatchPump>();
             builder.Services.AddHostedService<TelegramPollingService>();
             builder.Services.AddHostedService<TelegramStartupService>();
             configure?.Invoke(builder);

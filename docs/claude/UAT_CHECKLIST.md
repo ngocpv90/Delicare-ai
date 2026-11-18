@@ -229,6 +229,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## GIỜ YÊN LẶNG + TIN THEO LỊCH (BOT-2.3, 2026-11-18) · test: `Notifications/ScheduledNotificationTests`
+- [ ] Nhân viên ca chiều không nhận tin 🟡 buổi sáng – tin tới lúc 60′ trước ca; người văn phòng không nhận tin 🟡 sau 21:00 (tới 07:00 sáng sau); tin 🔴 vẫn tới người đang trực.
+- [ ] 07:00 / 17:00 lãnh đạo (Dashboard điều hành, bot Điều hành) nhận bản tin sáng / báo cáo cuối ngày khớp số liệu Dashboard; 19:00 NV KD nhận danh sách khách chưa chốt đơn ngày mai; 21:00 thủ kho nhận nguyên liệu ngày mai.
+- [ ] Xe quá giờ xuất phát 10′ → điều phối nhận 🚚 có 🙋 Nhận xử lý; mẻ trễ 15′ → bếp nhận; ca bắt đầu 10′ còn người chưa vào → chấm công nhận danh sách; phản ánh sắp quá hạn / quá hạn, PO trễ, duyệt quá hạn → đúng người; không nhận trùng.
+- [ ] Đổi giờ / tắt từng bản tin trong `Jobs` (appsettings) → `api/Job/GetAll` hiện đúng giờ mới sau khi khởi động lại.
+
 ## SỰ VIỆC LIÊN PHÒNG + LEO THANG (BOT-2.2, 2026-11-18) · test: `IncidentServiceTests`, `MessagingIncidentTests`
 - [ ] Lỗi trọng yếu ATTP → QA nhận tin có 🙋 Nhận xử lý; người bấm trước được ghi, người khác thấy "X đã nhận xử lý"; ghi chú / ✅ hiện trên tin của mọi người.
 - [ ] Không ai nhận 10′ → COO nhận "Sự việc chưa ai nhận" ở bot Điều hành; nhận xong → không leo thang tiếp.

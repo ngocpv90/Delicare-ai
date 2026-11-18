@@ -55,6 +55,9 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string DayCard = "DAY_CARD";
         // BOT-2.2: nhắc người duyệt trước ngày nghỉ.
         public const string LeaveHandover = "LEAVE_HANDOVER";
+        // BOT-2.3: tin theo lịch.
+        public const string ApprovalOverdue = "APPROVAL_OVERDUE";
+        public const string IngredientsTonight = "INGREDIENTS_TONIGHT";
 
         private const string P = MessagingCode.Scope.Personal, D = MessagingCode.Scope.Department, X = MessagingCode.Scope.CrossDepartment,
             A = MessagingCode.Scope.Approval, C = MessagingCode.Scope.Critical;
@@ -98,6 +101,8 @@ namespace AppDelicare.Services.Implement.Messaging
             new(ShiftCard, P, Normal, "Thẻ ca (15′ trước ca, ghim, cập nhật trong ca) – BOT-2.1"),
             new(DayCard, X, Digest, "Thẻ ngày 07:00 cho quản lý (bot DH, ghim) – BOT-2.1"),
             new(LeaveHandover, P, Normal, "Người duyệt sắp nghỉ: còn việc chờ duyệt – BOT-2.2"),
+            new(ApprovalOverdue, A, Normal, "Duyệt quá hạn – người duyệt của cấp; quá thêm 1 ngày → COO (bot DH) – BOT-2.3"),
+            new(IngredientsTonight, D, Normal, "21:00 nguyên liệu cho sản xuất ngày mai – thủ kho – BOT-2.3"),
         }.ToDictionary(t => t.Code, StringComparer.OrdinalIgnoreCase);
 
         public static NotificationTemplate? Find(string? code)

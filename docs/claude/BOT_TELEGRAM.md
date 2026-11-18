@@ -173,7 +173,7 @@ Mã loại lấy từ hằng `BusinessType` của các `Services/Implement/Appro
 | Duyệt quá hạn (`DueAt`) | Người duyệt | hạn | Cấp trên trực tiếp | +1 ngày | COO |
 - Người duyệt có đơn nghỉ đã duyệt: **trước ngày nghỉ 1 ngày** bot nhắc "Anh nghỉ … còn N việc chờ anh duyệt" (BOT-2.2). Ủy quyền duyệt thực sự = quy định nghiệp vụ, **chưa làm** (chờ BA).
 
-### 5.3 Giờ yên lặng theo ca (BOT-2.3) – PROPOSED
+### 5.3 Giờ yên lặng theo ca (BOT-2.3) – PROPOSED, cấu hình `Messaging:QuietHours` (chi tiết DECISIONS p37)
 - 🟡 / ⚪ chỉ gửi khi người nhận **đang trong ca hoặc trong 60′ trước ca**; ngoài ca → `notBefore` = đầu ca kế tiếp (hoặc 07:00 với người không có phân ca). 🔴 gửi ngay cho người **đang trực**; người ngoài ca chỉ nhận 🔴 khi là bậc leo thang.
 - Tạm lưu `notBefore` trong `PayloadJson` (GAP-INT-03 đề xuất cột `ScheduledAt`).
 
