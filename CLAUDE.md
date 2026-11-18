@@ -68,7 +68,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 **Bộ sinh mã chuẩn = `tools/AppDelicare.CodeGen`** (D-32): đọc DDL, sinh đúng mẫu code cũ, chạy bằng dòng lệnh nên test được. Bộ T4 giữ để tham khảo / đối chiếu mẫu, không dùng để sinh bảng mới.
 
 **Các project MỚI** sẽ thêm vào solution theo ROADMAP. Mỗi project ở một thư mục cùng tên:
-`AppDelicare.Job` (Worker Service – container riêng, hẹn giờ gọi Service cũ, không Hangfire, không thêm bảng – D-48, ARCHITECTURE.md mục 1b; **triển khai Linux + Docker – D-60**, không Windows Service; làm sau khi hoàn thiện luồng), `AppDelicare.Integration` (Telegram/Zalo/Obsidian), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
+`AppDelicare.Job` (Worker Service – container riêng, hẹn giờ gọi Service cũ, không Hangfire, không thêm bảng – D-48, ARCHITECTURE.md mục 1b; **triển khai Linux + Docker – D-60**, không Windows Service; làm sau khi hoàn thiện luồng), `AppDelicare.Messaging` (**D-62**: container `messaging` riêng chứa **tất cả bot** – Telegram Vận hành / Điều hành, sau này Zalo / Facebook; **không tham chiếu Services / Data / Model, không chạm DB**, gọi `api` qua HTTP – BOT_SOURCE_ARCHITECTURE.md; Obsidian exporter nằm trong Services + Job, không còn `AppDelicare.Integration`), `AppDelicare.ToolGateway` (MCP + REST cho agent), `AppDelicare.Tests` (xUnit), `tools/AppDelicare.CodeGen` (bộ sinh mã mới đọc DDL).
 
 ---
 
@@ -239,6 +239,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 | 34 hàm gateway cũ | `docs/claude/LEGACY_GATEWAY.md` |
 | Sheets → bảng dbo | `docs/claude/MIGRATION_SHEETS_TO_DBO.md` |
 | Agent, công cụ, lịch chạy | `docs/claude/AGENTS.md` |
+| Bot Telegram / kênh tin nhắn: kiến trúc source + tính năng, trải nghiệm, thông báo (D-62) | `docs/claude/BOT_SOURCE_ARCHITECTURE.md`, `docs/claude/BOT_TELEGRAM.md` |
 
 ---
 

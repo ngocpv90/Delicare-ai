@@ -2,6 +2,8 @@
 
 > **⚠ D-30 (2026-11-15): khung chuẩn của lớp 1 là code cũ.** Mọi chỗ trong file này nói `/api/v1/...` hoặc `AppDelicare.Application` (Command / Handler) **không còn áp dụng**: nghiệp vụ nằm trong `AppDelicare.Services` (Service theo entity + service nghiệp vụ cùng mẫu), API là controller `api/[controller]/<Action>`. Jobs, Integration, ToolGateway (R2) gọi các Service này thay cho Application. Chi tiết: CLAUDE.md mục 4.
 
+> **⚠ D-62 (2026-11-18): kênh tin nhắn.** Bỏ project `AppDelicare.Integration`: **mọi bot / kênh** (Telegram Vận hành + Điều hành, sau này Zalo OA, Facebook) nằm trong **`AppDelicare.Messaging`** – container `messaging` riêng, **không tham chiếu Services / Data / Model, không chạm DB**, gọi `api` qua HTTP bằng JWT của chính user; Obsidian exporter → `AppDelicare.Services` + `AppDelicare.Job` (T50). Hermes chạy riêng (container `hermes` trên server). Chỗ nào trong sơ đồ dưới ghi `AppDelicare.Integration` thì đọc theo D-62. Chi tiết: `docs/claude/BOT_SOURCE_ARCHITECTURE.md`, `docs/claude/BOT_TELEGRAM.md`.
+
 ```
              Quản lý (web)              Nội bộ               Khách
           Mission Control (Angular)   Telegram (3 bot)     Zalo OA
@@ -46,7 +48,8 @@
 | **AppDelicare.Application** (mới) | Data, Model | Use case nghiệp vụ theo miền: `Orders`, `Planning`, `Procurement`, `Inventory`, `Production`, `Quality`, `Logistics`, `Packaging`, `HR`, `Finance`, `Approval`, `Kpi`, `Common` (DocumentNumber, Clock, BusinessRules) |
 | AppDelicare.WebApi | tất cả | Controller cũ + controller `/api/v1` mới, permission filter, ProblemDetails |
 | **AppDelicare.Job** (mới, D-48) | Services | Worker Service riêng (container `job`), hẹn giờ theo giờ VN, gọi Service cũ. Xem mục 1b |
-| **AppDelicare.Integration** (mới) | Application | Telegram, Zalo, Obsidian exporter, outbound worker |
+| ~~AppDelicare.Integration~~ | – | **Bỏ (D-62)** – thay bằng dòng dưới |
+| **AppDelicare.Messaging** (mới, D-62) | **không** (gọi WebApi qua HTTP) | Container `messaging`: tất cả bot / kênh (Telegram VH + DH; Zalo, Facebook sau), xử lý tin đến, gửi tin đi. Xem BOT_SOURCE_ARCHITECTURE.md |
 | **AppDelicare.ToolGateway** (mới) | Application | Host riêng: MCP + REST cho agent |
 | **AppDelicare.Tests** (mới) | Application, Data | xUnit: unit test quy tắc + integration test trên DB dev |
 | **tools/AppDelicare.CodeGen** (mới) | – | Console đọc DDL → sinh Entity / Request / SearchRequest / ViewModel / Repository / Service / Controller / SP `uspXxx_GetAll` theo mẫu cũ |
@@ -108,7 +111,7 @@ AppDelicare.Job        Worker Service .NET 8 (MỚI)
 
 ## 4. Lớp 4 – Obsidian
 - Vault: `10 Ban GĐ · 20 Kinh doanh & Hợp đồng · 30 Thực đơn & Công thức · 40 Kho & Truy xuất · 45 ATTP · 50 Sản xuất · 55 Giao vận · 60 Kế toán · 70 Nhân sự · 80 Đào tạo · 95 Nguồn BOT · 96 Nhật ký · 97 Tương tác · 98 Công việc · 99 Mẫu · BOD Bảo mật`.
-- **Exporter** trong `AppDelicare.Integration` ghi markdown và frontmatter (`id`, `type`, `source: delicare-core`, `generated_at`, `link` về Mission Control). Chạy hằng đêm và khi có sự kiện lớn (đơn đã chốt, sự cố ATTP, báo cáo ngày).
+- **Exporter** trong `AppDelicare.Services` + job `AppDelicare.Job` (D-62) ghi markdown và frontmatter (`id`, `type`, `source: delicare-core`, `generated_at`, `link` về Mission Control). Chạy hằng đêm và khi có sự kiện lớn (đơn đã chốt, sự cố ATTP, báo cáo ngày).
   - 10: bản tin, KPI.
   - 20: hồ sơ khách / hợp đồng (tóm tắt, không có số tài khoản).
   - 30: thực đơn tuần, định mức đã khóa.
@@ -125,8 +128,8 @@ AppDelicare.Job        Worker Service .NET 8 (MỚI)
 
 ## 5. Kênh
 - **Mission Control** (Angular, route `/mission-control`): hộp duyệt (ApprovalRequest đang chờ người dùng hiện tại), hàng chờ xác nhận lệnh agent, dòng hoạt động agent (IntegrationLog), trạng thái job, bảng KPI ngày, cảnh báo (nhiệt độ, trễ, thiếu NL, phản ánh quá hạn).
-- **Telegram:** webhook `/api/integration/telegram/{botCode}` **trả 200 ngay** (Telegram coi 302 là lỗi và gửi lại mãi), lưu `InboundMessage` rồi xử lý bất đồng bộ. Người dùng được định danh qua `UserExternalIdentity` (`ExternalUserId` = telegram id).
-- **Zalo OA:** webhook `/api/integration/zalo`. Khách chỉ được: xem đơn / thực đơn, chốt số suất (thành đề xuất, nhân viên kinh doanh xác nhận), báo thiếu suất, gửi phản ánh. Liên kết khách: GAP-INT-01 (`UserExternalIdentity` cần `UserId`; khách không phải User → tạm dùng `ExternalUserId` + `CustomerContact` qua `Note` / `ExternalData`, chờ PO chốt).
+- **Telegram (D-62):** 3 bot – **Vận hành** (mọi nhân viên), **Điều hành** (quản lý), **Trợ lý** (Hermes). Webhook `/tg/{botCode}` vào container `messaging` (nginx), kiểm header secret, chuyển `api` lưu `InboundMessage` rồi **trả 200 ngay**, xử lý bất đồng bộ. Định danh qua `UserExternalIdentity` (1 dòng / người / bot; đăng ký bằng QR + chia sẻ số điện thoại). Tin chủ động: outbox `OutboundMessage`. Chi tiết: BOT_SOURCE_ARCHITECTURE.md, BOT_TELEGRAM.md.
+- **Zalo OA:** (chưa làm) kênh `Channels/Zalo` + `Audiences/Customer` trong `AppDelicare.Messaging`, webhook `/zalo/…` qua nginx. Khách chỉ được: xem đơn / thực đơn, chốt số suất (thành đề xuất, nhân viên kinh doanh xác nhận), báo thiếu suất, gửi phản ánh – qua API riêng cho khách (`api` tự tra định danh → `CustomerContact` → `CustomerId`, chỉ trả dữ liệu của khách đó). Liên kết khách: GAP-INT-01 / D-06 (`UserExternalIdentity.UserId` cho phép trống; thiếu cột nối `CustomerContact` – chốt khi làm Zalo).
 
 ## 6. Hạ tầng (đề xuất)
 - **Prod = test = Linux + Docker (D-60, anh chốt 2026-11-17):**
@@ -136,4 +139,5 @@ AppDelicare.Job        Worker Service .NET 8 (MỚI)
   - Backup full hằng đêm + log 15′; tệp đính kèm (`DocumentStorage`) nằm trên volume riêng, backup cùng DB.
   - `deploy/iis/` chỉ còn dùng chạy thử trên máy dev Windows.
 - ToolGateway và AppDelicare.Job chạy tiến trình / container riêng, tách khỏi WebApi.
+- **`messaging` (D-62):** container riêng (1 bản, `restart: unless-stopped`), nginx chuyển `/tg/` vào; chặn `/api/BotChannel/` từ ngoài. **`hermes`** (đợt agent): container riêng trên server test / production; dev chạy trên máy anh.
 - Giám sát: Serilog → file + Seq (tùy chọn). Health check `/health`.

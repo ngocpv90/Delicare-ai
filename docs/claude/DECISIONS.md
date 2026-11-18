@@ -177,12 +177,18 @@ PROPOSED (T17.1, chờ anh xác nhận): (a) số phần món theo ca = dòng k�
 | GAP-CRM-01 | Lead / cơ hội bán hàng / marketing (code cũ Leads, Opportunity không có bảng) | Chưa làm | R2 – D-22 |
 | GAP-QA-01 | Sổ NCR / CAPA riêng (người chịu trách nhiệm, hạn đóng, hiệu lực) | R1: báo cáo tổng hợp từ SupplierIssue, CustomerComplaint, CorrectiveAction của checklist / nhiệt độ | R2 – D-22 |
 | GAP-ACC-01 | Kết nối / xuất dữ liệu sang MISA | Chưa làm | R2 – D-23 |
+| GAP-INT-02 | Không có unique index cho `InboundMessage` / `OutboundMessage.IdempotencyKey` | Chống trùng trong code (`UPDLOCK, HOLDLOCK`); script đề xuất ở `DB/proposed/` (D-62 p1) | PROPOSED – BA/PO CONFIRM |
+| GAP-INT-03 | `OutboundMessage` không có cột hẹn giờ gửi | `PayloadJson.notBefore` (D-62 p3) | PROPOSED – BA/PO CONFIRM |
+| GAP-INT-04 | Không có chỗ lưu bền dòng thời gian sự việc liên phòng (không phải phản ánh khách) | `PayloadJson` tin gốc theo `CorrelationId`; Obsidian khi có T50 (D-62 p4) | PROPOSED – BA/PO CONFIRM |
 | (thêm mới ở dưới) | | | |
 
 Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ giai đoạn phân tích).
 
 ## E. Việc cho frontend (ghi lại, KHÔNG làm – chờ anh giao)
 <!-- Mẫu: | FE-NN | màn hình / file Angular | việc cần đổi | lý do (API mới / thay đổi) | -->
+| FE-BOT-1 | Hồ sơ cá nhân · hồ sơ nhân viên | Nút "Liên kết Telegram" (mã + link `t.me`) · "Cấp mã liên kết" cho nhân viên | D-62 f, BOT-1.2 |
+| FE-BOT-2 | `int-channel`, `int-bot`, `int-identity`, `int-outbound`, hộp thư hội thoại | Màn quản trị kênh / bot / định danh / tin gửi (thử lại) / timeline | D-62, BOT-1.1, Catalog 216–220 |
+| FE-BOT-3 | Màn in phiếu · QR cổng | Vẽ ảnh QR từ link `start=…` do BE trả | D-62 p12, BOT-1.7 |
 
 ## D. GAP mới phát sinh khi code (Claude Code ghi tiếp vào đây)
 <!-- Mẫu: | GAP-XXX-NN | mô tả | cách tạm | PROPOSED – BA/PO CONFIRM | task |  -->
@@ -402,7 +408,7 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (f) | Lỡ giờ (máy / container tắt) và lỗi. | **Chạy bù trong ngày** khi bật lại (mốc hôm nay đã qua mà chưa có lần chạy nào); **không thử lại tự động** khi Failed (xem `api/Job/GetAll`, bấm `Job/Run`). Nghiệp vụ từ chối (Result 400, vd. chưa có đơn đã khóa) = **Skipped**, không phải lỗi. | Thử lại mỗi 15′ khi Failed; chạy bù cả ngày hôm trước. |
 | (g) | ~~Chạy trên Windows / IIS.~~ **BỎ – D-60 (2026-11-17): server Linux + Docker, KHÔNG dùng Windows Service / Task Scheduler, KHÔNG thêm gói `WindowsServices`.** (Ghi chú cũ:) | **Task Scheduler** ("At startup", restart on failure) chạy `dotnet AppDelicare.Job.dll` – không cần gói mới. Chạy dạng **Windows Service** cần gói `Microsoft.Extensions.Hosting.WindowsServices` 8.x (Microsoft, MIT) → **chờ anh duyệt** gói mới (CLAUDE.md). Docker: service `job` 1 bản. | Duyệt gói WindowsServices ngay (em thêm `UseWindowsService()` – 1 dòng). |
 | (h) | Cấu hình nghiệp vụ của Job. | Job đọc **chính `appsettings*.json` của WebApi** (link → `appsettings.shared*.json`) rồi `appsettings.json` riêng (log, `JobHost:PollSeconds`) → BusinessRules / lịch `Jobs` chỉ có 1 nguồn; `api/Job/GetAll` và Job thấy cùng lịch. | Chép cấu hình sang Job (dễ lệch). |
-
+
 ## T48.4 – Production Linux + Docker (D-60): đề xuất đã cài (mẫu D-49 – làm theo "Đề xuất" khi anh chưa trả lời)
 
 > ✅ **Anh chốt 2026-11-17 ("đồng ý và tiếp tục"): đồng ý toàn bộ (a)–(e).** Cùng lúc anh đồng ý đề xuất T48.5: hạ `AppDelicare_Staging` về mức 160 (đã làm 2026-11-17) và push các commit T48.5.
@@ -425,3 +431,32 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (f) | `InventoryBalance/RebuildBalances` nạp toàn bộ sổ cái vào bộ nhớ. | `GroupBy + Sum` trên SQL. | Giữ (chỉ admin bấm tay, ít dùng) |
 | (g) | Code mẫu template `Patient*` / `MedicalExamination` / `MedicineWarehouse` / `TestDemo` còn API (có `.GetAwaiter().GetResult()`, PageSize 1e9). | **Ẩn khỏi route** (AdminOnly + đánh dấu cũ), chưa xóa file. | Xóa hẳn controller / service mẫu |
 | (h) | Token cũ còn dùng được (tới 120 phút) sau khi khóa tài khoản / reset mật khẩu với API SkipPermission. | Kiểm `IsActive` + "mật khẩu đổi sau thời điểm phát token" trong PermissionFilter cho cả API tự phục vụ (dùng cache quyền sẵn có). | Rút thời hạn token còn 30 phút + refresh token (D-47) |
+
+## BOT – Bot Telegram nội bộ và kênh tin nhắn (D-62, anh chốt 2026-11-18)
+
+> Chi tiết: `docs/claude/BOT_SOURCE_ARCHITECTURE.md` (kiến trúc ứng dụng + source), `docs/claude/BOT_TELEGRAM.md` (tính năng, trải nghiệm, thông báo). Task: ROADMAP mục "ĐỢT BOT". Thay T40; **D-06 / GAP-INT-01 (khách Zalo) vẫn mở** – chốt khi làm Zalo.
+
+| Mã | Quyết định | Ngày |
+|---|---|---|
+| D-62 | ✅ **Anh chốt 2026-11-18 – kiến trúc và trải nghiệm bot.** (a) **Container `messaging` / project `AppDelicare.Messaging` chứa TẤT CẢ bot** (Telegram Vận hành, Điều hành; sau này Zalo OA, Facebook), **không ProjectReference nào**, **không chuỗi kết nối DB**, gọi `api` qua HTTP; bỏ project `AppDelicare.Integration` (kênh → Messaging; Obsidian exporter → Services + Job khi làm T50); Tool Gateway giữ T30. (b) Bot gọi API nghiệp vụ bằng **JWT của chính user** (token exchange `BotChannel/IssueUserToken`, hạn 10′, khóa client `MESSAGING`); API nội bộ `api/BotChannel/*` chặn từ ngoài ở nginx. (c) **Outbox:** Service ghi `OutboundMessage` = mã mẫu tin + dữ liệu trong cùng transaction; câu chữ chỉ ở `Messaging/Presentation`; `IntegrationLog` chỉ `api` ghi. (d) **3 bot:** `VH` Vận hành (mọi nhân viên), `DH` Điều hành (quản lý), `TRO_LY` Trợ lý (Hermes – chạy riêng); mỗi bot 1 `IntegrationChannel` + 1 `BotConfiguration`; 3 bộ bot DEV / TEST / PROD. Quyền vào bot = ObjectMenu `#/bot-van-hanh`, `#/bot-dieu-hanh`; chức năng = quyền ObjectMenu của màn tương ứng. (e) **Trải nghiệm = 4 thứ:** Thẻ ca (ghim, cập nhật trong ca), Thẻ việc (mọi thông báo có nút; 3 mức 🔴 / 🟡 im lặng / ⚪ gom; sửa đồng loạt; nhận xử lý; leo thang), QR "quét để làm", Menu dự phòng (3 nút cố định, ≤ 6 chức năng thì phẳng, phân hệ → chức năng, bàn phím theo việc, gõ mã, lệnh "/" theo chat). Duyệt theo mức rủi ro (thấp: 1 chạm + hoàn tác 10″; cao và mọi từ chối: 2 bước). Nhập liệu điền sẵn / nút chọn. Giờ yên lặng theo ca. (f) **Đăng ký:** QR cổng → chia sẻ số điện thoại (Telegram xác thực) → khớp duy nhất `Employee.Phone` / `Person.PhoneNumber`; người có quyền duyệt / quản trị thêm mã web; HR cấp mã khi không khớp. (g) **Hermes chạy riêng:** cấu hình ở `agents/hermes/` cùng repo; dev chạy trên máy anh; server test / production = container `hermes`. Vault Obsidian = volume trên server. (h) Chuẩn bị Zalo: `Channels/` + `Audiences/`, mọi API / outbox dùng `channelCode`; phía khách dùng API riêng lọc theo khách (làm khi mở Zalo). (i) Phân pha: R1 cốt lõi BOT-1.1–1.7, R1 hoàn thiện BOT-2.1–2.4 + 2.9, sau go-live BOT-3.x. | 2026-11-18 (anh chốt) |
+
+#### D-62 – Giá trị PROPOSED để Claude Code làm theo (mẫu D-49 – BA/PO chỉnh khi UAT)
+| # | Vấn đề | Đề xuất (em chọn) + lý do | Phương án khác |
+|---|---|---|---|
+| (p1) | Chống trùng update khi chưa có unique index. | `INSERT … WHERE NOT EXISTS` với `UPDLOCK, HOLDLOCK` theo `IdempotencyKey` trong 1 transaction; **GAP-INT-02** đề xuất DBA thêm unique index có lọc (script `DB/proposed/`, không tự chạy). | Tạo index ngay (cần anh duyệt DDL). |
+| (p2) | Trạng thái mới. | Inbound: `Processing`, `Ignored`; Outbound: `Sending`, `Blocked` (người dùng chặn bot), `Cancelled` (hoàn tác / hết hạn); Identity: `Blocked`. Ghi PROPOSED vào STATUS_CATALOG khi BA rà (không sửa `docs/reference`). | Chỉ dùng giá trị có sẵn (không phân biệt đang xử lý / bị chặn). |
+| (p3) | Gửi chậm (giờ yên lặng) khi `OutboundMessage` không có cột hẹn giờ. | `PayloadJson.notBefore`; `ClaimOutbound` lọc `JSON_VALUE(PayloadJson,'$.notBefore')` (SQL 2022 có); **GAP-INT-03** đề xuất cột `ScheduledAt`. | Job tự giữ tin trong bộ nhớ (mất khi khởi động lại). |
+| (p4) | Dòng thời gian của sự việc liên phòng không phải phản ánh. | Lưu trong `PayloadJson` tin gốc (theo `CorrelationId`); khi có T50 thì ghi Obsidian `20_Su_co` lúc đóng; **GAP-INT-04** (chỗ lưu bền để tra cứu). Phản ánh khách → `ComplaintHistory`. | Tạo phản ánh nội bộ cho mọi sự việc (sai nghĩa bảng). |
+| (p5) | Mức rủi ro duyệt. | Theo BOT_TELEGRAM §4, cấu hình `Messaging:ApprovalRisk`; loại chưa liệt kê = Cao. | Mọi duyệt 2 bước (chậm, quản lý bỏ bot). |
+| (p6) | Leo thang 🔴. | Theo BOT_TELEGRAM §5.2 (VD ATTP 10′ → 20′), cấu hình `Messaging:Escalation`. | Không leo thang (cảnh báo có thể "chết" trong chat). |
+| (p7) | Giờ yên lặng. | Theo phân ca (trong ca hoặc ≤ 60′ trước ca); người không có phân ca: 07:00–21:00. 🔴 gửi ngay cho người đang trực. | Giờ cố định 22:00–06:00 (sai với ca đêm). |
+| (p8) | Người chỉ có `EmployeeId` (không tài khoản web). | Không cấp JWT; dùng `BotChannel/Employee*` (chỉ dữ liệu / đơn của chính mình), ghi dưới `system` + ghi chú nguồn "Telegram – <tên>". | Bắt buộc mọi nhân viên có tài khoản web (tốn công tạo vài trăm tài khoản). |
+| (p9) | Khớp số điện thoại. | Chuẩn hóa VN (`+84` / `84` / `0`), so `Employee.Phone` và `Person.PhoneNumber`; khớp **đúng 1** hồ sơ mới liên kết; người có quyền duyệt / IsAdmin thêm mã web. | Khớp theo số cuối / cho chọn hồ sơ (dễ nhầm người). |
+| (p10) | Hạn mã liên kết. | Mã user tự tạo: 15′; mã HR cấp cho nhân viên: 72 giờ; dùng 1 lần (ghi vào `IntegrationLog` LINK để chặn dùng lại). | Không hạn. |
+| (p11) | Vị trí trực tiếp tài xế. | Chỉ báo `api` khi vào / ra bán kính 150 m; không lưu từng điểm; nút tay luôn còn. | Lưu mọi điểm vị trí (phình `InboundMessage`). |
+| (p12) | Ảnh QR. | BE chỉ sinh **link** `t.me/<bot>?start=…`; ảnh QR do FE sinh ở màn in hoặc in sẵn – **không thêm thư viện vẽ QR** ở BE. | Thêm gói QR cho BE (cần anh duyệt gói mới). |
+| (p13) | Thẻ ca cập nhật bao lâu một lần. | Khi có sự kiện, tối đa 1 lần / 5′ / người (giới hạn tốc độ Telegram). | Cập nhật theo lịch cố định 15′. |
+
+**GAP mới (khối C):** GAP-INT-02 unique index có lọc `InboundMessage.IdempotencyKey` / `OutboundMessage.IdempotencyKey` · GAP-INT-03 cột `OutboundMessage.ScheduledAt` · GAP-INT-04 chỗ lưu bền dòng thời gian sự việc liên phòng – cả ba `PROPOSED – BA/PO CONFIRM`, R1 dùng cách tạm ở bảng trên.
+
+**Việc cho frontend (khối E, ghi lại – làm khi anh giao):** nút "Liên kết Telegram" (hồ sơ cá nhân) + "Cấp mã liên kết" (hồ sơ nhân viên); màn `int-channel` / `int-bot` / `int-identity` / `int-outbound` (thử lại) / hộp thư hội thoại; ảnh QR trên phiếu in và QR cổng.
