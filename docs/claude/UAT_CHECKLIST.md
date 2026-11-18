@@ -229,6 +229,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## THÔNG BÁO NGHIỆP VỤ QUA BOT (BOT-1.7, 2026-11-18) · test: `Notifications/BusinessNotificationTests`
+- [ ] Gửi duyệt đề nghị mua / PO / đơn nghỉ → người duyệt cấp hiện tại nhận tin ⏳ kèm nút Xem & duyệt (admin không nhận); duyệt cấp 1 → cấp 2 nhận; xong → người gửi nhận ✅ / ❌.
+- [ ] Xác nhận phân ca → mỗi nhân viên (đã liên kết bot) nhận 1 tin 📅 liệt kê ca; xác nhận lại không gửi trùng.
+- [ ] Checklist ATTP lỗi trọng yếu / nhiệt độ lõi < 70 °C / IoT ngoài ngưỡng → QA + trưởng ca nhận tin có chuông.
+- [ ] Xe xuất phát → điểm phát nhận 🚚; phản ánh mới → CSKH nhận 📣 (mức cao ở bot Điều hành); công bố thực đơn, QC đầu vào không đạt, khóa đơn 20h, MRP thiếu NL, job lỗi → đúng người nhận.
+
 ## BOT ĐIỀU HÀNH (BOT-1.6, 2026-11-18) · thử: `tools/bot-smoke/flow-dieuhanh.mjs` · test: `MessagingDieuHanhTests`
 - [ ] CEO / COO (có mục #/bot-dieu-hanh) liên kết bot DH; bot VH gửi nút mở bot DH.
 - [ ] 📊 Tổng quan khớp màn Dashboard điều hành; 🎯 KPI / 📅 KPI tháng khớp màn KPI; 🚨 Việc đang mở khớp chuông cảnh báo trên web.

@@ -23,8 +23,9 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     public class ShiftAssignmentService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IShiftAssignmentService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IShiftAssignmentService
     {
+        private readonly INotificationService _notifications = notifications;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -574,8 +575,8 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
-        /// Spec 11.1 POST confirm (Catalog 204): ca Kế hoạch của ngày (đến <c>ToDate</c>, theo đơn vị / ca) → Xác nhận. Spec "gửi Telegram cho nhân viên" → để sau (tích hợp bot,
-        /// D-44 / BE2.6 không gửi): <c>notificationSent = false</c>.
+        /// Spec 11.1 POST confirm (Catalog 204): ca Kế hoạch của ngày (đến <c>ToDate</c>, theo đơn vị / ca) → Xác nhận. BOT-1.7: "gửi Telegram cho nhân viên" –
+        /// mỗi nhân viên 1 tin SHIFT_CONFIRMED gom các ca vừa xác nhận (người chưa liên kết bot bỏ qua); <c>notificationSent</c> = đã xếp ít nhất 1 tin.
         /// </summary>
         public async Task<IResult<ShiftConfirmResultModel>> Confirm(ShiftConfirmRequest request)
         {
@@ -590,6 +591,7 @@ namespace AppDelicare.Services.Implement
                 }
                 var rows = await RowsAsync(from, to, request.OrganizationUnitId, request.ShiftId);
                 var result = new ShiftConfirmResultModel { FromDate = from, ToDate = to };
+                var confirmed = new List<ShiftAssignment>();
                 foreach (var row in rows)
                 {
                     if (row.AssignmentStatus != ShiftAssignmentStatus.Planned)
@@ -600,8 +602,10 @@ namespace AppDelicare.Services.Implement
                     row.AssignmentStatus = ShiftAssignmentStatus.Confirmed;
                     _unitOfWork.ShiftAssignmentRepository.Update(row);
                     result.Confirmed++;
+                    confirmed.Add(row);
                 }
                 await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                result.NotificationSent = await NotifyConfirmedAsync(confirmed) > 0;
                 _unitOfWork.CommitTransaction();
                 return Result<ShiftConfirmResultModel>.Success(result, string.Format(ConstantHelper.Message.HrConfirmDone, result.Confirmed));
             }
@@ -713,6 +717,44 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetSwapCandidates: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>BOT-1.7: SHIFT_CONFIRMED – mỗi nhân viên 1 tin liệt kê các ca vừa xác nhận (chống trùng theo nhân viên + danh sách ca). Trả số tin đã xếp.</summary>
+        private async Task<int> NotifyConfirmedAsync(List<ShiftAssignment> confirmed)
+        {
+            if (confirmed.Count == 0)
+            {
+                return 0;
+            }
+            int queued = 0;
+            try
+            {
+                var shiftIds = confirmed.Select(a => a.ShiftId).Distinct().ToList();
+                var names = await _unitOfWork.DbContext.Shift.AsNoTracking().Where(x => shiftIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, x => x.Name ?? x.Code);
+                foreach (var g in confirmed.GroupBy(a => a.EmployeeId))
+                {
+                    var rows = g.OrderBy(a => a.WorkDate).ThenBy(a => a.PlannedStart).ToList();
+                    string ids = string.Join(",", rows.Select(a => a.Id.ToString("N")).OrderBy(x => x));
+                    string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ids)))[..12];
+                    queued += await AppDelicare.Services.Implement.Messaging.BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                    {
+                        Template = AppDelicare.Services.Implement.Messaging.NotificationCatalog.ShiftConfirmed,
+                        EmployeeIds = [g.Key],
+                        Data = new
+                        {
+                            count = rows.Count,
+                            lines = rows.Select(a => $"{a.WorkDate:dd/MM} {names.GetValueOrDefault(a.ShiftId)} {a.PlannedStart:HH:mm}–{a.PlannedEnd:HH:mm}").ToList(),
+                        },
+                        IdempotencyKey = $"SHIFT_CONFIRMED:{g.Key:N}:{hash}",
+                        CorrelationId = $"SHIFT:{g.Key:N}",
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[ShiftAssignmentService] NotifyConfirmed");
+            }
+            return queued;
         }
     }
 }

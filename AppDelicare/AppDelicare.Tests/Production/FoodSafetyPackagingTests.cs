@@ -113,7 +113,7 @@ namespace AppDelicare.Tests.Production
             failure.GetProperty("itemCode").GetString().Should().Be("CAM_QUAN");
             failure.GetProperty("batchAction").GetString().Should().Be("Đạt → Chờ QC, tạm giữ");
             Warnings(recorded).Should().Contain(w => w!.StartsWith($"Mẻ {s.BatchNumber}: tiêu chí trọng yếu KHÔNG ĐẠT (Cảm quan)"));
-            Warnings(recorded).Should().Contain(w => w!.Contains("Release 2"));
+            Warnings(recorded).Should().Contain(w => w!.Contains("bot Telegram"));
             recorded.GetProperty("run").GetProperty("listCriticalFailure").EnumerateArray().Select(x => x.GetString()).Should().Equal("Cảm quan");
             var held = await _factory.QueryAsync(db => db.ProductionBatch.AsNoTracking().SingleAsync(b => b.Id == s.Batch));
             (held.Status, held.QcStatus).Should().Be(("QCPending", "HOLD"));

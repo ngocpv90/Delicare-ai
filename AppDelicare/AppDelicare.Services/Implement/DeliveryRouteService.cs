@@ -17,6 +17,8 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     /// <summary>
@@ -26,8 +28,9 @@ namespace AppDelicare.Services.Implement
     /// </summary>
     public class DeliveryRouteService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IDeliveryRouteService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IDeliveryRouteService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -1023,6 +1026,11 @@ namespace AppDelicare.Services.Implement
                     "Xuất phát chuyến " + DeliveryRules.RouteNumber(route) + (string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim()),
                     request.Latitude, request.Longitude);
                 await _unitOfWork.DeliveryRouteRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                // BOT-1.7 (Catalog 181): TRIP_DEPARTED → điểm phát suất (quyền Thêm trên đối soát – DECISIONS p32).
+                await BusinessNotifier.ToMenusAsync(_notifications, db, NotificationCatalog.TripDeparted, ["#/crm-reconciliation"],
+                    new { title = "Chuyến " + DeliveryRules.RouteNumber(route), detail = $"Xe {vehicle?.LicensePlate ?? vehicle?.Code} · tài xế {driverName} · xuất phát {now:HH:mm}" },
+                    $"{NotificationCatalog.TripDeparted}:{route.Id:N}",
+                    buttons: [new NotificationButton("🚚 Xem chuyến", BusinessNotifier.Callback("dlv", "r", route.Id))], except: actor.UserId, requireAdd: true);
                 _unitOfWork.CommitTransaction();
                 var detail = await DeliveryRules.RouteDetailAsync(db, route.Id, _rules);
                 detail!.ListWarning.InsertRange(0, warnings);

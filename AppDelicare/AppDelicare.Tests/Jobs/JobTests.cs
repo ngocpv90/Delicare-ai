@@ -185,7 +185,8 @@ namespace AppDelicare.Tests.Jobs
             var configuration = new ConfigurationBuilder().AddConfiguration(baseConfig)
                 .AddInMemoryCollection(new Dictionary<string, string?> { [$"Jobs:{fail}:Enabled"] = "false" }).Build();
             var clock = new TestClock { FixedNow = new DateTime(2099, 12, 1, 10, 0, 0) };
-            var runner = new JobRunService(jobs, configuration, clock, actor);
+            // BOT-1.7: thông báo job lỗi tắt trong test (không xếp tin thật vào DB dev).
+            var runner = new JobRunService(jobs, configuration, clock, actor, scope.ServiceProvider.GetRequiredService<AppDelicare.Data.Interface.IUnitOfWork>(), new NoNotifications());
             try
             {
                 (await runner.GetDueJobCodes()).Should().Equal([ok], "đã tới 09:00; job TẮT và job 23:59 không chạy");
@@ -245,6 +246,12 @@ namespace AppDelicare.Tests.Jobs
                 await using var cleanup = new SqlConnection(connectionString);
                 await cleanup.ExecuteAsync("DELETE FROM dbo.AnalyticsRefreshLog WHERE JobCode IN @Codes", new { Codes = new[] { ok, fail, later } });
             }
+        }
+
+        /// <summary>BOT-1.7: bỏ qua thông báo (test chạy trên DB dev).</summary>
+        private sealed class NoNotifications : AppDelicare.Services.Interface.INotificationService
+        {
+            public Task<List<Guid>> EnqueueAsync(AppDelicare.Model.Model.NotificationRequest request, CancellationToken ct = default) => Task.FromResult(new List<Guid>());
         }
     }
 }

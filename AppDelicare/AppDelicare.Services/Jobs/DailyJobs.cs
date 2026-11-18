@@ -1,4 +1,6 @@
+using AppDelicare.Data.Interface;
 using AppDelicare.Model.Request.Custom;
+using AppDelicare.Services.Implement.Messaging;
 using AppDelicare.Services.Interface;
 
 namespace AppDelicare.Services.Jobs
@@ -7,7 +9,7 @@ namespace AppDelicare.Services.Jobs
     // Giờ mặc định ghi ở DefaultAt; đổi giờ / tắt bằng cấu hình Jobs:<Code> (PROPOSED D-59).
 
     /// <summary>20:00 – khóa đơn ngày mai (Confirmed → Locked). Đơn chưa xác nhận / chờ duyệt được liệt kê, không khóa.</summary>
-    public sealed class LockOrdersJob(IOrderService orderService) : IScheduledJob
+    public sealed class LockOrdersJob(IOrderService orderService, IUnitOfWork unitOfWork, INotificationService notifications) : IScheduledJob
     {
         public string Code => "LockOrders";
         public string Name => "Khóa đơn ngày mai";
@@ -18,6 +20,21 @@ namespace AppDelicare.Services.Jobs
         {
             DateTime mealDate = now.Date.AddDays(1);
             var result = await orderService.LockByMealDate(new OrderLockByMealDateRequest { MealDate = mealDate });
+            if (result.ResponseCode == 200 && result.Data is { } locked)
+            {
+                // BOT-1.7: PLAN_READY → kế hoạch vận hành, điều phối (quyền Thêm) – đơn đã khóa, việc tiếp theo là kế hoạch / lịch xe.
+                await BusinessNotifier.ToMenusAsync(notifications, unitOfWork.DbContext, NotificationCatalog.PlanReady, ["#/prod-plan", "#/log-route"],
+                    new
+                    {
+                        title = $"Đơn ngày {mealDate:dd/MM} đã khóa: {locked.LockedCount} đơn",
+                        lines = new[]
+                        {
+                            locked.ListNotConfirmedNumber.Count > 0 ? "Chưa xác nhận: " + string.Join(", ", locked.ListNotConfirmedNumber.Take(10)) : null,
+                            locked.ListPendingApprovalNumber.Count > 0 ? "Chờ duyệt: " + string.Join(", ", locked.ListPendingApprovalNumber.Take(10)) : null,
+                        }.Where(x => x != null).ToList(),
+                    },
+                    $"{NotificationCatalog.PlanReady}:{mealDate:yyyyMMdd}", requireAdd: true);
+            }
             return JobOutcome.From(result, mealDate, r => r.LockedCount,
                 r => $"Khóa {r.LockedCount} đơn ngày {mealDate:dd/MM/yyyy}"
                      + (r.ListNotConfirmedNumber.Count > 0 ? $"; chưa xác nhận: {string.Join(", ", r.ListNotConfirmedNumber)}" : string.Empty)
@@ -29,7 +46,7 @@ namespace AppDelicare.Services.Jobs
     /// 20:30 – tính nhu cầu vật tư ngày mai từ đơn đã khóa, thiếu hụt → đề nghị mua Nháp + gợi ý NCC.
     /// Gộp luôn PurchaseProposalJob 21:00 của AGENTS.md vì <c>MaterialRequirement/Calculate</c> đã tạo đề nghị mua (T14).
     /// </summary>
-    public sealed class MrpJob(IMaterialRequirementService materialRequirementService) : IScheduledJob
+    public sealed class MrpJob(IMaterialRequirementService materialRequirementService, IUnitOfWork unitOfWork, INotificationService notifications) : IScheduledJob
     {
         public string Code => "Mrp";
         public string Name => "Tính nhu cầu vật tư + đề nghị mua";
@@ -44,6 +61,19 @@ namespace AppDelicare.Services.Jobs
                 ProductionDate = productionDate,
                 Note = "Job tự động",
             });
+            if (result.ResponseCode == 200 && result.Data is { ShortageCount: > 0 } mrp)
+            {
+                // BOT-1.7: SHORTAGE_MRP → mua hàng, thủ kho (quyền Thêm trên nhu cầu vật tư / đề nghị mua).
+                await BusinessNotifier.ToMenusAsync(notifications, unitOfWork.DbContext, NotificationCatalog.ShortageMrp, ["#/scm-requirement", "#/scm-pr"],
+                    new
+                    {
+                        title = $"Kế hoạch {mrp.PlanNumber} ngày {productionDate:dd/MM}: thiếu {mrp.ShortageCount} nguyên liệu",
+                        detail = mrp.PurchaseRequest is { } pr ? $"Đã lập đề nghị mua {pr.RequestNumber} (Nháp)" : null,
+                        lines = mrp.ListItem.Where(i => i.ShortageQuantity > 0).OrderByDescending(i => i.ShortageQuantity).Take(10)
+                            .Select(i => $"⚠️ {i.IngredientName}: thiếu {i.ShortageQuantity:0.##} {i.UnitName}").ToList(),
+                    },
+                    $"{NotificationCatalog.ShortageMrp}:{mrp.ProductionPlanId:N}:{productionDate:yyyyMMdd}", requireAdd: true);
+            }
             return JobOutcome.From(result, productionDate, r => r.OrderCount,
                 r => $"Kế hoạch {r.PlanNumber}: {r.OrderCount} đơn, {r.TotalMeals:0.##} suất, {r.DishCount} món, thiếu {r.ShortageCount} nguyên liệu");
         }
