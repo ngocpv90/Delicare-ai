@@ -23,7 +23,9 @@ namespace AppDelicare.Messaging.Processing
     /// · 📂 Chức năng · gõ mã chứng từ / chữ → tra cứu · còn lại → trợ giúp.
     /// </summary>
     public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender,
-        BotActionRegistry registry, MenuNavigator menu, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies)
+        BotActionRegistry registry, MenuNavigator menu, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
+        AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -83,9 +85,18 @@ namespace AppDelicare.Messaging.Processing
             // Trả lời câu hỏi ForceReply (vd. lý do từ chối duyệt).
             if (e.Kind == IncomingKind.Text && replies.Take(bot, e.ChatId, e.ReplyToMessageId?.ToString()) is { } pending)
             {
-                if (pending.Flow == ApprovalActions.RejectFlow)
+                switch (pending.Flow)
                 {
-                    await approvals.ReplyAsync(ctx, pending, ct);
+                    case ApprovalActions.RejectFlow:
+                        await approvals.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyDate or AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyDays
+                        or AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyReason:
+                        await leave.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty:
+                        await bep.ReplyAsync(ctx, pending, ct);
+                        break;
                 }
                 return DispatchResult.Processed;
             }
@@ -99,6 +110,15 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case CallbackData.Kinds.Approval:
                         await approvals.HandleAsync(ctx, data, ct);
+                        break;
+                    case AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.Kind:
+                        await leave.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Batch:
+                        await bep.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Checklist:
+                        await attp.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Undo when data.Action == "apv":
                         await approvals.UndoAsync(ctx, data, ct);

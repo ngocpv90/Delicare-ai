@@ -283,6 +283,7 @@ namespace AppDelicare.Tests.Messaging
             public Task<ApiResult<T>> PostInternalAsync<T>(string action, object body, CancellationToken ct = default) => throw new NotSupportedException();
             public Task<ApiResult<T>> GetAsUserAsync<T>(string path, string bearerToken, CancellationToken ct = default) => throw new NotSupportedException();
             public Task<ApiResult<T>> PostFormAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, string bearerToken, CancellationToken ct = default) => throw new NotSupportedException();
+            public Task<ApiResult<T>> PostJsonAsUserAsync<T>(string path, object body, string bearerToken, CancellationToken ct = default) => throw new NotSupportedException();
         }
     }
 

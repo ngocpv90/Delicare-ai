@@ -189,6 +189,28 @@ namespace AppDelicare.Tests.Notifications
             return (await c.PostAsync("/api/ProductionPlan/Approve", LegacyHttp.Form(("Id", Guid.NewGuid())))).StatusCode;
         }
 
+        /// <summary>BOT-1.5a: người chỉ có EmployeeId xin nghỉ qua bot (quy tắc LeaveRequest/Create, ghi dưới system); loại nghỉ; ShiftAssignment/GetMine của tài khoản web.</summary>
+        [Fact]
+        public async Task Employee_only_leave_via_bot_and_my_shifts_for_web_user()
+        {
+            await SeedAsync();
+            using var bot = Bot();
+            (await Post(bot, "LinkByPhone", new { botCode = "VH", externalUserId = "9701", contactUserId = "9701", phone = "0911222333" })).Ok();
+            var types = await Post(bot, "GetLeaveTypes", new { });
+            types.Ok();
+            string type = types.ListData.EnumerateArray().First().GetProperty("code").GetString()!;
+            DateTime from = new(2031, 6, 5);
+            var created = await Post(bot, "EmployeeCreateLeave", new { botCode = "VH", externalUserId = "9701", fromDate = from, toDate = from, leaveTypeCode = type, reason = "Việc gia đình" });
+            created.Ok().GetProperty("request").GetProperty("requestNo").GetString().Should().StartWith("DN-");
+            var leave = await _factory.QueryAsync(db => db.LeaveRequest.AsNoTracking().SingleAsync(l => l.EmployeeId == Worker && l.FromDate == from));
+            leave.Reason.Should().Be("[Telegram] Việc gia đình");
+            leave.RequestStatus.Should().NotBeNullOrEmpty();
+            (await Post(bot, "EmployeeCreateLeave", new { botCode = "VH", externalUserId = "chua-lien-ket", fromDate = from, leaveTypeCode = type, reason = "x" })).Fail("chưa liên kết");
+
+            using var staff = _factory.CreateAuthorizedClient(Staff);
+            (await staff.GetResultAsync("/api/ShiftAssignment/GetMine")).Fail();
+        }
+
         [Fact]
         public async Task Code_expired_tampered_locked_user_and_admin_link_unlink()
         {

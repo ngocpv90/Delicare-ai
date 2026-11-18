@@ -126,6 +126,15 @@ namespace AppDelicare.Model.Model
         public string? ExternalEventId { get; set; }
     }
 
+    /// <summary>BOT-1.5a: xin nghỉ qua bot (người chỉ có EmployeeId).</summary>
+    public class BotEmployeeLeaveRequest : BotIdentityRequest
+    {
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public string? LeaveTypeCode { get; set; }
+        public string? Reason { get; set; }
+    }
+
     public class BotEmployeeShiftModel
     {
         public Guid AssignmentId { get; set; }

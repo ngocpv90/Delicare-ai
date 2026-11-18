@@ -19,7 +19,7 @@ namespace AppDelicare.Services.Implement.Identity
     /// đơn nghỉ / đổi ca 60 ngày. Ghi dưới tài khoản <c>system</c>, Note ghi nguồn "Telegram – &lt;tên&gt;".
     /// </summary>
     public class BotEmployeeService(IUnitOfWork unitOfWork, ICurrentActor currentActor, IConfiguration configuration, IClock clock,
-        IAttendanceEventService attendance) : IBotEmployeeService
+        IAttendanceEventService attendance, ILeaveRequestService leaves, Microsoft.Extensions.Options.IOptionsMonitor<ReferenceListsOptions> references) : IBotEmployeeService
     {
         public async Task<IResults<BotEmployeeShiftModel>> GetMyShifts(BotIdentityRequest request)
         {
@@ -28,19 +28,51 @@ namespace AppDelicare.Services.Implement.Identity
             {
                 return Results<BotEmployeeShiftModel>.Fail(error!);
             }
-            DateTime today = clock.Today, to = today.AddDays(7);
+            return Results<BotEmployeeShiftModel>.Success(await ShiftsAsync(unitOfWork, clock, employee.Id, 7), ConstantHelper.Message.GetAllSuccessfully);
+        }
+
+        /// <summary>BOT-1.5a: ca từ hôm nay tới hôm nay + <paramref name="days"/> (dùng chung bot nhân viên + ShiftAssignment/GetMine của tài khoản web).</summary>
+        public static async Task<List<BotEmployeeShiftModel>> ShiftsAsync(IUnitOfWork unitOfWork, IClock clock, Guid employeeId, int days)
+        {
+            DateTime today = clock.Today, to = today.AddDays(Math.Clamp(days, 1, 31));
             var db = unitOfWork.DbContext;
             var rows = await (from a in db.ShiftAssignment.AsNoTracking()
                               join s in db.Shift.AsNoTracking() on a.ShiftId equals s.Id into sj
                               from s in sj.DefaultIfEmpty()
-                              where !a.IsDeleted && a.EmployeeId == employee.Id && a.WorkDate >= today && a.WorkDate < to
+                              where !a.IsDeleted && a.EmployeeId == employeeId && a.WorkDate >= today && a.WorkDate < to
                               orderby a.WorkDate, a.PlannedStart
                               select new BotEmployeeShiftModel
                               {
                                   AssignmentId = a.Id, WorkDate = a.WorkDate, ShiftCode = s.Code, ShiftName = s.Name,
                                   PlannedStart = a.PlannedStart, PlannedEnd = a.PlannedEnd, AssignmentStatus = a.AssignmentStatus,
                               }).ToListAsync();
-            return Results<BotEmployeeShiftModel>.Success(rows, ConstantHelper.Message.GetAllSuccessfully);
+            return rows;
+        }
+
+        /// <summary>BOT-1.5a: loại nghỉ (ReferenceLists:LeaveType) cho nút chọn trên bot.</summary>
+        public IResults<ReferenceItem> GetLeaveTypes()
+            => Results<ReferenceItem>.Success(references.CurrentValue.Lists.TryGetValue("LeaveType", out var list) ? list : [], ConstantHelper.Message.GetAllSuccessfully);
+
+        /// <summary>BOT-1.5a: xin nghỉ qua bot cho người chỉ có EmployeeId (quy tắc LeaveRequestService.Create, ghi dưới system).</summary>
+        public async Task<IResult<LeaveRequestDetailModel>> CreateLeave(BotEmployeeLeaveRequest request)
+        {
+            var (employee, error) = await EmployeeAsync(request);
+            if (employee == null)
+            {
+                return Result<LeaveRequestDetailModel>.Fail(error!);
+            }
+            if (!Guid.TryParse(configuration[$"{SystemUsersOptions.Section}:{nameof(SystemUsersOptions.JobUserId)}"], out Guid system) || system == Guid.Empty)
+            {
+                return Result<LeaveRequestDetailModel>.Fail(ConstantHelper.Message.JobUserMissing);
+            }
+            using (currentActor.BeginScope(ActorInfo.ForSystem(system)))
+            {
+                return await leaves.CreateForEmployee(employee.Id, new LeaveCreateRequest
+                {
+                    FromDate = request.FromDate ?? clock.Today, ToDate = request.ToDate ?? request.FromDate ?? clock.Today, LeaveTypeCode = request.LeaveTypeCode,
+                    Reason = MessagingRules.Truncate("[Telegram] " + request.Reason, 1000),
+                });
+            }
         }
 
         public async Task<IResult<MyAttendanceModel>> GetToday(BotIdentityRequest request)

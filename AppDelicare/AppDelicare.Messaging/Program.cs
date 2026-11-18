@@ -56,6 +56,13 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<SelfServiceActions>();
             builder.Services.AddSingleton<ApprovalActions>();
             builder.Services.AddSingleton<IBotActionProvider, ChungActionProvider>();
+            // BOT-1.5a: luồng nhiều bước + phân hệ Bếp, ATTP (mỗi lớp vừa là provider chức năng vừa xử lý nút của mình – 1 instance).
+            builder.Services.AddSingleton<ConversationStore>();
+            builder.Services.AddSingleton<AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow>();
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions>());
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions>());
             builder.Services.AddSingleton<BotActionRegistry>();
             builder.Services.AddSingleton<MenuNavigator>();
             builder.Services.AddSingleton<CodeSearch>();

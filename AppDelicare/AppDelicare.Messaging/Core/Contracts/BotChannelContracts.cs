@@ -140,6 +140,13 @@ namespace AppDelicare.Messaging.Core.Contracts
         public string? CorrelationId { get; set; }
     }
 
+    /// <summary>ReferenceLists (Code / Label).</summary>
+    public sealed class ReferenceItemModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+    }
+
     /// <summary>ApprovalRequest/GetMyPending (chỉ trường bot hiển thị).</summary>
     public sealed class ApprovalPendingModel
     {

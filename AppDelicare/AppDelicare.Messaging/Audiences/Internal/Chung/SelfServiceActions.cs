@@ -91,6 +91,41 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             }, ct: ct);
         }
 
+        /// <summary>BOT-1.5a: 📅 Lịch ca 7 ngày – web: ShiftAssignment/GetMine; chỉ EmployeeId: BotChannel/EmployeeGetMyShifts.</summary>
+        public async Task MyShiftsAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            ApiResult<JsonElement> r;
+            if (ctx.Identity.HasWebAccount)
+            {
+                var (token, error) = await tokens.GetAsync(ctx.Bot, ctx.Event.FromId, ct);
+                if (token == null)
+                {
+                    await SayAsync(ctx, error ?? "Không lấy được quyền truy cập.", ct);
+                    return;
+                }
+                r = await web.GetAsUserAsync<JsonElement>("api/ShiftAssignment/GetMine?days=7", token.Token, ct);
+            }
+            else
+            {
+                r = await api.EmployeeCallAsync("EmployeeGetMyShifts", new BotIdentityRequest { BotCode = ctx.Bot, ExternalUserId = ctx.Event.FromId }, ct);
+            }
+            if (!r.IsOk)
+            {
+                await SayAsync(ctx, r.ResponseMessage ?? "Không xem được lịch ca.", ct);
+                return;
+            }
+            var rows = (r.ListData ?? []).ToList();
+            await BotReply.SendAsync(sender, ctx.Bot, ctx.Event.ChatId, new NeutralMessage
+            {
+                Title = "📅 Lịch ca 7 ngày",
+                Lines = rows.Count == 0 ? ["Chưa có ca trong 7 ngày tới."]
+                    : [.. rows.Select(x => $"{Date(x, null, "workDate")} {Str(x, null, "shiftName") ?? Str(x, null, "shiftCode")}: {Time(x, "plannedStart")}–{Time(x, "plannedEnd")}")],
+            }, ct: ct);
+        }
+
+        private static string Time(JsonElement e, string key)
+            => DateTime.TryParse(Str(e, null, key), CultureInfo.InvariantCulture, DateTimeStyles.None, out var t) ? t.ToString("HH:mm") : "?";
+
         public async Task MyRequestsAsync(BotActionContext ctx, CancellationToken ct)
         {
             var lines = new List<string>();

@@ -87,6 +87,14 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("EmployeeGetMyRequests")]
         public Task<IActionResult> EmployeeGetMyRequests([FromBody] BotIdentityRequest request) => Run(nameof(EmployeeGetMyRequests), () => employee.GetMyRequests(request));
 
+        /// <summary>BOT-1.5a: loại nghỉ (ReferenceLists:LeaveType).</summary>
+        [HttpPost("GetLeaveTypes")]
+        public Task<IActionResult> GetLeaveTypes() => Run(nameof(GetLeaveTypes), () => Task.FromResult(employee.GetLeaveTypes()));
+
+        /// <summary>BOT-1.5a: xin nghỉ qua bot cho người chỉ có EmployeeId (quy tắc LeaveRequest/Create).</summary>
+        [HttpPost("EmployeeCreateLeave")]
+        public Task<IActionResult> EmployeeCreateLeave([FromBody] BotEmployeeLeaveRequest request) => Run(nameof(EmployeeCreateLeave), () => employee.CreateLeave(request));
+
         /// <summary>BOT-1.4: tin đã gửi cùng CorrelationId (mã sự việc) – sửa đồng loạt thẻ.</summary>
         [HttpPost("GetCorrelated")]
         public Task<IActionResult> GetCorrelated([FromBody] BotCorrelatedRequest request) => Run(nameof(GetCorrelated), () => _service.GetCorrelated(request));

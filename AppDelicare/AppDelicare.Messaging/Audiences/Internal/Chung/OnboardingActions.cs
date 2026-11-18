@@ -17,7 +17,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
     /// Bot không tự quyết: kết quả và câu báo lỗi lấy từ api.
     /// </summary>
     public sealed class OnboardingActions(IBotChannelApi api, BotUserContext users, UserTokenCache tokens, IChannelSender sender, IOptionsMonitor<TelegramOptions> telegram,
-        BotActionRegistry registry, CommandScopeSync commands)
+        BotActionRegistry registry, CommandScopeSync commands, SelfServiceActions self)
     {
         /// <summary>Tham số /start không phải mã liên kết (QR cổng chấm công; QR vật thể ở BOT-2.4).</summary>
         private static readonly HashSet<string> StartKeywords = new(StringComparer.OrdinalIgnoreCase) { "CHAMCONG" };
@@ -38,6 +38,12 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             if (identity.Linked)
             {
                 users.Set(bot, e.FromId, identity);
+                if (string.Equals(arg, "CHAMCONG", StringComparison.OrdinalIgnoreCase) && identity.CanUseBot)
+                {
+                    // BOT-1.5a: quét QR cổng khi đã liên kết → mở thẳng chấm công (BOT_TELEGRAM §1.3).
+                    await self.PromptLocationAsync(new BotActionContext(bot, e, identity), ct);
+                    return;
+                }
                 await WelcomeAsync(bot, e, identity, ct);
                 return;
             }

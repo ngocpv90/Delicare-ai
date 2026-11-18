@@ -11,5 +11,7 @@ namespace AppDelicare.Services.Interface
         Task<IResult<AttendanceResultModel>> CheckIn(BotEmployeeCheckRequest request);
         Task<IResult<AttendanceResultModel>> CheckOut(BotEmployeeCheckRequest request);
         Task<IResults<BotEmployeeRequestItemModel>> GetMyRequests(BotIdentityRequest request);
+        IResults<AppDelicare.Model.Option.ReferenceItem> GetLeaveTypes();
+        Task<IResult<LeaveRequestDetailModel>> CreateLeave(BotEmployeeLeaveRequest request);
     }
 }
