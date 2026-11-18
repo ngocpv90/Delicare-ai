@@ -265,13 +265,13 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         }
 
         /// <summary>Chuông cảnh báo (<c>Common/GetAlerts</c> – chỉ màn người dùng có quyền xem) lọc theo mã.</summary>
-        public async Task AlertsAsync(BotActionContext ctx, string title, string[] codes, CancellationToken ct)
+        public async Task AlertsAsync(BotActionContext ctx, string title, string[]? codes, CancellationToken ct)
         {
             if (await GetAsync(ctx, "api/Common/GetAlerts", ct) is not { } r)
             {
                 return;
             }
-            var lines = r.Items.Where(a => codes.Contains(S(a, "code")))
+            var lines = r.Items.Where(a => codes == null || codes.Contains(S(a, "code")))
                 .Select(a => $"{(S(a, "severity") is "High" or "Critical" ? "🔴" : "🟡")} {S(a, "title")}: {S(a, "count")}{(S(a, "detail") is { } d ? " – " + d : "")}").ToList();
             await ReplyListAsync(ctx, title, lines, "Không có cảnh báo nào.", ct);
         }

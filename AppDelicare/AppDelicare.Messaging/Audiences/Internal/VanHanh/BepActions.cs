@@ -28,7 +28,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public IEnumerable<BotAction> GetActions() =>
         [
             new BotAction { Code = "bep_batches", Module = "BEP", Label = "🍳 Mẻ cần làm", Command = "me", CommandDescription = "Mẻ cần làm hôm nay", Bots = ["VH"], MenuMetaLink = Menu, Order = 1, Handler = BatchesAsync },
-            new BotAction { Code = "bep_progress", Module = "BEP", Label = "📈 Tiến độ ca", Command = "tiendo", CommandDescription = "Tiến độ sản xuất hôm nay", MenuMetaLink = Menu, Order = 2, Handler = ProgressAsync },
+            new BotAction { Code = "bep_progress", Module = "BEP", Bots = ["VH"], Label = "📈 Tiến độ ca", Command = "tiendo", CommandDescription = "Tiến độ sản xuất hôm nay", MenuMetaLink = Menu, Order = 2, Handler = ProgressAsync },
         ];
 
         private async Task<List<JsonElement>?> BoardAsync(BotActionContext ctx, string token, CancellationToken ct)

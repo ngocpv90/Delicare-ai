@@ -229,6 +229,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## BOT ĐIỀU HÀNH (BOT-1.6, 2026-11-18) · thử: `tools/bot-smoke/flow-dieuhanh.mjs` · test: `MessagingDieuHanhTests`
+- [ ] CEO / COO (có mục #/bot-dieu-hanh) liên kết bot DH; bot VH gửi nút mở bot DH.
+- [ ] 📊 Tổng quan khớp màn Dashboard điều hành; 🎯 KPI / 📅 KPI tháng khớp màn KPI; 🚨 Việc đang mở khớp chuông cảnh báo trên web.
+- [ ] ⏳ Chờ tôi duyệt chỉ hiện việc mình đúng là người duyệt; bot DH không có phân hệ Bếp / Giao vận… (chỉ ở bot VH).
+
 ## BOT VẬN HÀNH – PHẦN CÒN LẠI (BOT-1.5c, 2026-11-18) · thử: `tools/bot-smoke/flow-15c.mjs` · test: `MessagingSwapTests`, `MessagingPhanAnhNhanSuTests`, `MessagingXemNhanhTests`
 - [ ] 🔁 Đổi ca: chọn ca → thấy ca đồng nghiệp cùng đơn vị → đổi chéo / nhường ca → lý do → web màn Đơn đổi ca có đơn chờ duyệt; duyệt xong ca đổi đúng.
 - [ ] CSKH: 📋 Phản ánh đang mở khớp màn phản ánh; 🙋 Nhận xử lý / ✅ Đã xử lý → lịch sử phản ánh trên web; 📣 Ghi phản ánh (tìm khách → mức độ → mô tả) → phản ánh mới có hạn xử lý.
