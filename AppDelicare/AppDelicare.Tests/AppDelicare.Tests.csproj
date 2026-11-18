@@ -25,9 +25,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- BOT-1.3: test container messaging (client Telegram giả + api giả). Cả 2 có appsettings.json – target KeepWebApiAppSettings bên dưới giữ bản của WebApi. -->
+    <ProjectReference Include="..\AppDelicare.Messaging\AppDelicare.Messaging.csproj" />
     <ProjectReference Include="..\AppDelicare.WebApi\AppDelicare.WebApi.csproj" />
     <ProjectReference Include="..\AppDelicare.Data\AppDelicare.Data.csproj" />
     <ProjectReference Include="..\AppDelicare.Model\AppDelicare.Model.csproj" />
   </ItemGroup>
+
+  <!-- BOT-1.3: AppDelicare.Messaging cũng có appsettings.json – luôn giữ bản của WebApi trong thư mục test (WebApplicationFactory / cấu hình test). -->
+  <Target Name="KeepWebApiAppSettings" AfterTargets="Build">
+    <Copy SourceFiles="..\AppDelicare.WebApi\appsettings.json" DestinationFolder="$(OutDir)" />
+  </Target>
 
 </Project>

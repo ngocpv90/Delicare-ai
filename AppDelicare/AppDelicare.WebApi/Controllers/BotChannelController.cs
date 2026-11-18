@@ -59,6 +59,10 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("TouchIdentity")]
         public Task<IActionResult> TouchIdentity([FromBody] BotTouchRequest request) => Run(nameof(TouchIdentity), () => link.Touch(request));
 
+        /// <summary>BOT-1.3: /huylienket – gỡ liên kết của chính Telegram id trên bot (→ Revoked).</summary>
+        [HttpPost("UnlinkIdentity")]
+        public Task<IActionResult> UnlinkIdentity([FromBody] BotIdentityRequest request) => Run(nameof(UnlinkIdentity), () => link.UnlinkByBot(request));
+
         /// <summary>BOT-1.2: JWT 10′ của chính user đã liên kết (User hoạt động + quyền vào bot); PendingCode → token hạn chế (không duyệt / quản trị). Ghi IntegrationLog TOKEN.</summary>
         [HttpPost("IssueUserToken")]
         public Task<IActionResult> IssueUserToken([FromBody] BotIdentityRequest request) => Run(nameof(IssueUserToken), () => tokens.Issue(request));

@@ -213,3 +213,10 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] HR cấp mã cho nhân viên (hạn 72 giờ) → nhân viên /start <mã> → liên kết; dùng lại mã → từ chối; mã quá hạn → từ chối.
 - [ ] Khóa tài khoản trên web → bot ngừng cấp token (log TOKEN Failed). Admin gỡ liên kết → bot coi như chưa liên kết.
 - [ ] Nhân viên không có tài khoản web: xem lịch ca, ca hôm nay, vào / ra ca (đúng quy tắc ca + bán kính), xem đơn của mình.
+
+## BOT TELEGRAM – CONTAINER MESSAGING (BOT-1.3, 2026-11-18) · thử: `tools/bot-smoke/` (Telegram giả) hoặc bộ bot DEV thật · test: `AppDelicare.Tests/Messaging/MessagingHostTests.cs`
+- [ ] Quét QR cổng (`/start CHAMCONG`) khi chưa liên kết → bot hiện nút "📱 Xác nhận số điện thoại".
+- [ ] Chia sẻ số → liên kết, bot chào theo tên + 3 nút; người có quyền duyệt được nhắc lấy mã web; người có quyền bot DH nhận nút mở bot Điều hành.
+- [ ] "⚡ Ca của tôi" hiện ca hôm nay; `/huylienket` gỡ liên kết.
+- [ ] Gửi tay trên màn Tin nhắn ra → tin tới Telegram trong vài giây (tin thường không rung chuông).
+- [ ] Production: webhook sai secret → 401; tắt api → Telegram tự gửi lại, không mất tin; `docker compose ps` messaging healthy.

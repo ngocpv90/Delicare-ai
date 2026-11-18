@@ -243,3 +243,17 @@ for i in 1 2; do REPO_ROOT=. DB_SERVER=localhost,14339 DB_NAME=AppDelicare_Check
 
   Kết quả (số SP, số dòng seed lần 1 / lần 2, `full-flow.http`) ghi vào PROGRESS mục của đợt gộp.
 - Máy dev hiện chưa có Docker → bước "kiểm trên SQL Server 2022 thật" **chưa chạy** (PROGRESS T48.5).
+
+## 12. Bot Telegram – container `messaging` (BOT-1.3, D-62)
+
+`AppDelicare/AppDelicare.Messaging` – tất cả bot (VH, DH), **không chạm DB**, gọi api qua HTTP (khóa client). Đã có trong 3 compose: `deploy/docker/docker-compose.production.yml` (Webhook, `https://${SERVER_NAME}/tg/<BOT>`), `deploy/docker/docker-compose.staging.yml` và `docker-compose.yml` gốc (mặc định **Polling** – không cần domain). Token để trống → bot tắt, web / api không ảnh hưởng.
+
+1. **Tạo bot** bằng @BotFather – mỗi môi trường 1 bộ (DEV / TEST / PROD): VH ("Delicare Vận hành"), DH ("Delicare Điều hành"). Ghi token + tên bot (không @).
+2. **Khóa** (sinh trên server, KHÔNG commit): `MESSAGING_CLIENT_KEY` = `openssl rand -hex 32`; `MESSAGING_CLIENT_KEY_HASH` = `printf %s "<khóa>" | sha256sum` (api so khóa bằng hash); `MESSAGING_LINK_SIGNING_KEY` = `openssl rand -hex 32`; Webhook: `TELEGRAM_VH_WEBHOOK_SECRET`, `TELEGRAM_DH_WEBHOOK_SECRET` = `openssl rand -hex 24`.
+3. Điền vào `production.env` / `staging.env` / `.env` (biến mẫu đã có trong `*.env.example`), `docker compose … up -d --build`.
+4. **Webhook (production)**: messaging tự `setWebhook` khi khởi động; nginx `/tg/` → `messaging:8080` (resolver Docker – messaging tắt thì `/tg/` trả 502, nginx vẫn chạy, Telegram tự gửi lại). `/api/BotChannel/` từ ngoài → 404.
+5. **Kiểm**: `GET http://messaging:8080/health` (trong mạng Docker) hoặc `docker compose ps` (HEALTHCHECK `--healthcheck`); trên Telegram: quét QR cổng / gửi `/start` → nút chia sẻ số điện thoại → liên kết.
+
+**Máy dev (Polling, bộ bot DEV):** `dotnet user-secrets set "Telegram:Bots:VH:Token" "<token DEV>" --project AppDelicare/AppDelicare.Messaging` (+ `Messaging:ClientKey`), api đặt `Clients:MESSAGING:KeyHash` + `Messaging:LinkSigningKey` (user-secrets của WebApi), chạy `dotnet run --project AppDelicare/AppDelicare.Messaging --urls http://localhost:5130`.
+
+**Thử không cần Telegram thật** (`tools/bot-smoke/`): `node tools/bot-smoke/fake-telegram.mjs 18081` (Telegram giả) → chạy messaging với `Telegram__ApiBaseUrl=http://localhost:18081`, `Telegram__Bots__VH__Token=FAKE`, `Messaging__Mode=Polling` → `node tools/bot-smoke/flow.mjs <số điện thoại không trùng>`: QR cổng → chia sẻ số (của người khác bị từ chối, số trùng bị từ chối) → chào → ⚡ Ca của tôi → web gửi tay qua outbox → bot gửi → `/huylienket`.
