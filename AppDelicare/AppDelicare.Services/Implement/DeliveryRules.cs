@@ -540,6 +540,8 @@ namespace AppDelicare.Services.Implement
                         DeliveryLocationId = stop.DeliveryLocationId,
                         LocationName = location?.Name,
                         Address = location?.Address,
+                        Latitude = location?.Latitude,
+                        Longitude = location?.Longitude,
                         OrderId = order?.Id,
                         OrderNumber = order?.OrderNumber ?? order?.OrderNo,
                         DeliveryOrderId = deliveryOrder?.Id,

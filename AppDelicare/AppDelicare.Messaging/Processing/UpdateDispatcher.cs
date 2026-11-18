@@ -171,6 +171,12 @@ namespace AppDelicare.Messaging.Processing
                 }
                 return DispatchResult.Processed;
             }
+            if (e.Kind == IncomingKind.Location && (e.Location?.LivePeriod > 0 || e.Edited))
+            {
+                // BOT-2.4: vị trí trực tiếp (tin vị trí có live_period / cập nhật bằng edited_message) → giao vận; vị trí gửi 1 lần → chấm công như cũ.
+                await giaoVan.LiveLocationAsync(ctx, ct);
+                return DispatchResult.Processed;
+            }
             if (e.Kind == IncomingKind.Location)
             {
                 await self.LocationAsync(ctx, ct);
