@@ -164,3 +164,5 @@ DB/seed/FoodSafetyQa_seed.sql
 DB/seed/SystemUser_seed.sql
 # BE3.4 (spec 11.7): 11 chỉ tiêu KPI phiên bản 1 (công thức + mục tiêu PROPOSED – D-57 b, w–ab); chỉ thêm mã chưa có
 DB/seed/KpiMetricDefinition_seed.sql
+# BOT-1.1 (D-62): kênh + cấu hình bot Telegram (IntegrationChannel, BotConfiguration), menu quyền #/bot-van-hanh, #/bot-dieu-hanh – chỉ thêm
+DB/seed/Integration_Telegram_seed.sql

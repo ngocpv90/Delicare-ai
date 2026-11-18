@@ -456,6 +456,9 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (p11) | Vị trí trực tiếp tài xế. | Chỉ báo `api` khi vào / ra bán kính 150 m; không lưu từng điểm; nút tay luôn còn. | Lưu mọi điểm vị trí (phình `InboundMessage`). |
 | (p12) | Ảnh QR. | BE chỉ sinh **link** `t.me/<bot>?start=…`; ảnh QR do FE sinh ở màn in hoặc in sẵn – **không thêm thư viện vẽ QR** ở BE. | Thêm gói QR cho BE (cần anh duyệt gói mới). |
 | (p13) | Thẻ ca cập nhật bao lâu một lần. | Khi có sự kiện, tối đa 1 lần / 5′ / người (giới hạn tốc độ Telegram). | Cập nhật theo lịch cố định 15′. |
+| (p14) | BOT-1.1: `IntegrationChannel.EnvironmentCode` khi seed (seed không biết đang chạy môi trường nào). | Seed ghi `Development`; staging / production sửa trên màn `#/int-channel` (cột chỉ để hiển thị – token lấy theo env của container). | Thêm biến sqlcmd `EnvironmentCode` cho Deploy-Database / db-init |
+| (p15) | BOT-1.1: ai có bot Điều hành (`#/bot-dieu-hanh`) – trưởng phòng dùng chung nhóm quyền với nhân viên. | Seed cấp DH cho CEO, CEO-PMO, COO, FIN-ACC; trưởng phòng do admin cấp thêm trên ma trận quyền. | Tạo nhóm quyền "Trưởng phòng" riêng (thêm dữ liệu UserGroup) |
+| (p16) | BOT-1.1: giờ thử lại tin gửi lỗi (không có cột hẹn giờ). | `QueuedAt` = giờ được phép gửi lần kế (giờ tạo gốc = `CreatedDate`); hết 5 lượt → giữ Failed, gửi lại bằng nút Retry. | Tính từ `ModifiedDate` (audit ghi giờ máy, không theo IClock) |
 
 **GAP mới (khối C):** GAP-INT-02 unique index có lọc `InboundMessage.IdempotencyKey` / `OutboundMessage.IdempotencyKey` · GAP-INT-03 cột `OutboundMessage.ScheduledAt` · GAP-INT-04 chỗ lưu bền dòng thời gian sự việc liên phòng – cả ba `PROPOSED – BA/PO CONFIRM`, R1 dùng cách tạm ở bảng trên.
 

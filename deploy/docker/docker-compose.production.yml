@@ -22,6 +22,8 @@ x-app-env: &app-env
   Logging__ConsoleOnly: "true"
   Iot__ApiKeys__0: ${IOT_API_KEY_0:-}
   Iot__ApiKeys__1: ${IOT_API_KEY_1:-}
+  # BOT-1.1 (D-62): SHA-256 (hex) của khóa client container messaging – trống = tắt api/BotChannel (401).
+  Clients__MESSAGING__KeyHash: ${MESSAGING_CLIENT_KEY_HASH:-}
 
 services:
   # Chạy tay khi cài lần đầu / cập nhật bản mới (SP + seed theo deploy/db/scripts.order; tạo tài khoản SQL ứng dụng).

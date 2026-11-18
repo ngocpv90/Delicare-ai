@@ -525,6 +525,23 @@
             public static readonly string IotReceived = "Đã ghi {0} lần đo, trùng {1}, từ chối {2}";
             public static readonly string IotApiKeyInvalid = "Khóa API không hợp lệ";
             public static readonly string IotRateLimited = "Gửi quá nhiều – thử lại sau 1 phút";
+            // BOT-1.1 (D-62) – kênh tin nhắn.
+            public static readonly string ClientKeyInvalid = "Khóa client không hợp lệ";
+            public static readonly string BotUnknown = "Bot chưa khai báo hoặc đang tắt: {0}";
+            public static readonly string BotUpdateInvalid = "Update thiếu mã bot / update_id";
+            public static readonly string BotUpdateTooLarge = "Update quá lớn (tối đa {0} ký tự)";
+            public static readonly string BotUpdateReceived = "Đã nhận update";
+            public static readonly string BotUpdateDuplicate = "Update đã nhận trước đó";
+            public static readonly string BotStatusInvalid = "Trạng thái không hợp lệ: {0}";
+            public static readonly string BotMessageNotClaimed = "Tin không ở trạng thái đang xử lý / đang gửi";
+            public static readonly string BotReprocessInvalid = "Chỉ xử lý lại được tin Lỗi / Bỏ qua";
+            public static readonly string BotRetryInvalid = "Chỉ gửi lại được tin Lỗi / Hủy";
+            public static readonly string BotTextRequired = "Nhập nội dung tin (tối đa {0} ký tự)";
+            public static readonly string BotRecipientRequired = "Chọn người nhận (tài khoản hoặc nhân viên)";
+            public static readonly string BotRecipientNotLinked = "Người nhận chưa liên kết bot {0}";
+            public static readonly string BotEnqueued = "Đã xếp {0} tin chờ gửi";
+            public static readonly string BotConversationFilterRequired = "Chọn định danh, tài khoản hoặc nhân viên";
+            public static readonly string BotTemplateUnknown = "Mẫu tin chưa khai báo: {0}";
             // BE3.1 – biểu đồ, sự kiện giao, vị trí xe.
             public static readonly string ChartRangeInvalid = "Khoảng thời gian không hợp lệ: từ phải trước đến, tối đa {0} ngày";
             public static readonly string ChartGroupByInvalid = "Nhóm theo không hợp lệ ({0}) – dùng wasteType, dish, shift hoặc date";

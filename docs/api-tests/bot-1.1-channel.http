@@ -1,0 +1,174 @@
+### DELICARE – BOT-1.1: LÕI KÊNH TIN NHẮN (D-62, Catalog 214–219) – khung cũ D-30.
+### API NỘI BỘ api/BotChannel/* cho container messaging: KHÔNG JWT người dùng – header X-Client-Key (nginx chặn từ ngoài, 404).
+###   ReceiveUpdate (chống trùng TG:{bot}:{update_id}) · ClaimInbound / CompleteInbound · ClaimOutbound / MarkOutbound
+### API web (quyền ObjectMenu): InboundMessage/Reprocess (216) · OutboundMessage/Enqueue (217) · Retry (218) · GetConversation (219).
+###
+### CẦN TRƯỚC KHI CHẠY (KHÔNG ghi khóa thật vào repo – chỉ đặt lúc chạy API, ví dụ PowerShell):
+###   $key = "<khóa tự sinh, ≥ 32 ký tự>"
+###   $sha = [Security.Cryptography.SHA256]::Create()   # chạy được cả PowerShell 5.1
+###   $env:Clients__MESSAGING__KeyHash = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($key)) | ForEach-Object { $_.ToString("X2") })
+###   dotnet run --project AppDelicare/AppDelicare.WebApi --urls http://localhost:5125
+### rồi chạy file với @clientKey = cùng $key. DB dev đã chạy DB/seed/Integration_Telegram_seed.sql (bot VH / DH Active).
+### Mỗi lần chạy dùng update_id / định danh mới theo @run (giờ máy – trình chạy tự động truyền run=<số cố định>) – chạy lại an toàn. Cuối file xóa mềm định danh thử.
+### Bước đánh dấu "→ 400" là CHỐT AN TOÀN (responseCode 400, HTTP 200). Dòng "# @expect …" cho trình chạy tự động.
+@base = http://localhost:5125
+@user = admin
+@password = admin
+@clientKey = dat-khoa-client-luc-chay
+@run = {{$localDatetime "YYYYMMDDHHmmss"}}
+
+# @name login
+POST {{base}}/api/Authentication/Login
+Content-Type: application/json
+
+{ "userName": "{{user}}", "passWord": "{{password}}" }
+
+###
+@token = {{login.response.body.data.token}}
+@me = {{login.response.body.data.userId}}
+
+### 1. Kênh bot đã seed – ConfigJson đã che khóa bí mật
+# @name channels
+# @expect listData[channelCode=TELEGRAM_VH].channelStatus == Active
+# @expect listData[channelCode=TELEGRAM_VH].secretReference == Telegram__Bots__VH__Token
+GET {{base}}/api/IntegrationChannel/GetAllData
+Authorization: Bearer {{token}}
+
+### 2. Nhận 1 update (bot gửi qua webhook / polling)
+# @name rx
+# @expect data.duplicate == false
+# @expect data.processingStatus == Received
+POST {{base}}/api/BotChannel/ReceiveUpdate
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "updateId": {{run}}, "externalUserId": "HTTP-{{run}}", "externalConversationId": "HTTP-{{run}}", "messageType": "message",
+  "payloadJson": "{\"update_id\":{{run}},\"message\":{\"text\":\"/start\"}}" }
+
+### 3. Telegram gửi lại đúng update → không tạo dòng mới
+# @expect data.duplicate == true
+# @expect data.id == {{rx.response.body.data.id}}
+POST {{base}}/api/BotChannel/ReceiveUpdate
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "updateId": {{run}}, "externalUserId": "HTTP-{{run}}", "messageType": "message", "payloadJson": "{}" }
+
+### 4. Bot chưa khai báo → 400
+POST {{base}}/api/BotChannel/ReceiveUpdate
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "KHONG_CO", "updateId": 1 }
+
+### 5. Lấy update chờ xử lý (Received → Processing)
+# @expect listData[id={{rx.response.body.data.id}}].botCode == VH
+POST {{base}}/api/BotChannel/ClaimInbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "max": 20 }
+
+### 6. Xử lý xong
+POST {{base}}/api/BotChannel/CompleteInbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "id": "{{rx.response.body.data.id}}", "status": "Processed" }
+
+### 7. Kết thúc lần 2 (không còn ở trạng thái đang xử lý) → 400
+POST {{base}}/api/BotChannel/CompleteInbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "id": "{{rx.response.body.data.id}}", "status": "Processed" }
+
+### 8. Web: xử lý lại tin đã Processed → 400 (chỉ tin Lỗi / Bỏ qua)
+POST {{base}}/api/InboundMessage/Reprocess
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+id={{rx.response.body.data.id}}
+
+### 9. Web: gửi tay cho người CHƯA liên kết bot → 400
+POST {{base}}/api/OutboundMessage/Enqueue
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+BotCode=VH&UserId={{me}}&Text=Thu+gui+tay
+
+### 10. Liên kết thử (CRUD cũ của màn #/int-identity – BOT-1.2 sẽ liên kết qua /start + số điện thoại)
+POST {{base}}/api/UserExternalIdentity/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+UserId={{me}}&IntegrationChannelId={{channels.response.body.listData[channelCode=TELEGRAM_VH].id}}&ExternalUserId=HTTP-{{run}}&DisplayName=Thu+BOT11&LinkedAt=2026-11-18T08:00:00&IdentityStatus=Active
+
+### 11. Web: gửi tay 1 tin (outbox)
+# @name tx
+# @expect data.queued == 1
+POST {{base}}/api/OutboundMessage/Enqueue
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+BotCode=VH&UserId={{me}}&Text=Tin+thu+BOT-1.1
+
+### 12. messaging lấy tin cần gửi (Queued → Sending)
+# @expect listData[id={{tx.response.body.data.messageIds[0]}}].recipientExternalId == HTTP-{{run}}
+# @expect listData[id={{tx.response.body.data.messageIds[0]}}].payloadJson contains MANUAL_TEXT
+POST {{base}}/api/BotChannel/ClaimOutbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "max": 20 }
+
+### 13. Gửi lỗi lần 1 → Failed, thử lại sau 1 phút (Messaging:RetryDelaysMinutes)
+POST {{base}}/api/BotChannel/MarkOutbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "id": "{{tx.response.body.data.messageIds[0]}}", "status": "Failed", "error": "HTTP 502 (thử)", "httpStatus": 502 }
+
+### 14. Web: gửi lại ngay (không chờ giãn cách) → Queued
+POST {{base}}/api/OutboundMessage/Retry
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+id={{tx.response.body.data.messageIds[0]}}
+
+### 15. Lấy lại + báo đã gửi
+# @expect listData[id={{tx.response.body.data.messageIds[0]}}].retryCount == 0
+POST {{base}}/api/BotChannel/ClaimOutbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "botCode": "VH", "max": 20 }
+
+###
+POST {{base}}/api/BotChannel/MarkOutbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "id": "{{tx.response.body.data.messageIds[0]}}", "status": "Sent", "providerMessageId": "{{run}}", "httpStatus": 200 }
+
+### 16. Báo kết quả lần 2 (đã Sent) → 400
+POST {{base}}/api/BotChannel/MarkOutbound
+X-Client-Key: {{clientKey}}
+Content-Type: application/json
+
+{ "id": "{{tx.response.body.data.messageIds[0]}}", "status": "Sent" }
+
+### 17. Web: hội thoại của tài khoản trên bot VH (tin ra mới nhất)
+# @expect data.items[id={{tx.response.body.data.messageIds[0]}}].status == Sent
+# @expect data.items[id={{tx.response.body.data.messageIds[0]}}].direction == OUT
+GET {{base}}/api/OutboundMessage/GetConversation?UserId={{me}}&BotCode=VH&PageSize=20
+Authorization: Bearer {{token}}
+
+### 18. Định danh hiện có (lấy Id định danh thử để dọn)
+# @name identities
+GET {{base}}/api/UserExternalIdentity/GetAllData
+Authorization: Bearer {{token}}
+
+### 19. Dọn: xóa mềm định danh thử
+DELETE {{base}}/api/UserExternalIdentity/Delete?id={{identities.response.body.listData[displayName=Thu BOT11].id}}
+Authorization: Bearer {{token}}
