@@ -46,7 +46,7 @@ namespace AppDelicare.Tests.Messaging
         }
 
         private static string Item(Guid id, string no, string status, decimal hours, string severity = "High")
-            => JsonSerializer.Serialize(new { complaint = new { id, complaintNo = no, status, severity }, customerName = "Trường A", severityName = "Cao", statusName = status, hoursToDue = hours });
+            => JsonSerializer.Serialize(new { complaint = new { id, complaintNo = no, complaintStatus = status, severity }, customerName = "Trường A", severityName = "Cao", statusName = status, hoursToDue = hours });
 
         [Fact]
         public async Task Open_complaints_sorted_by_due_then_assign_and_resolve_with_typed_resolution()
@@ -56,7 +56,7 @@ namespace AppDelicare.Tests.Messaging
                 + "," + Item(Guid.NewGuid(), "PA-0", "Closed", 1) + "]}", null);
             string detail = JsonSerializer.Serialize(new
             {
-                complaint = new { id = Complaint, complaintNo = "PA-1", status = "Open", severity = "High", description = "Cơm nguội", slaDueAt = "2031-06-02T12:00:00" },
+                complaint = new { id = Complaint, complaintNo = "PA-1", complaintStatus = "Open", severity = "High", description = "Cơm nguội", slaDueAt = "2031-06-02T12:00:00" },
                 statusName = "Mới", severityName = "Cao", customerName = "Trường A", allowedActions = new[] { "assign", "resolve", "addComment" },
             });
             h.Web.Routes["api/CustomerComplaint/GetDetail"] = (_, _) => (200, null, detail, null);

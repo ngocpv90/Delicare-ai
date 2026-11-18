@@ -55,12 +55,12 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await SayAsync(ctx, Problem(r), ct);
                 return;
             }
-            var items = GiaoVanActions.Arr(r.Data, "listItem").Where(i => S(C(i), "status") is "Open" or "InProgress").ToList();
+            var items = GiaoVanActions.Arr(r.Data, "listItem").Where(i => S(C(i), "complaintStatus") is "Open" or "InProgress").ToList();
             if (dueOnly)
             {
                 // Đã quá hạn (overdue=true trả cả quá hạn) + còn ≤ 4 giờ.
                 var soon = await Web.GetAsUserAsync<JsonElement>("api/CustomerComplaint/GetList?page=1&pageSize=100", token, ct);
-                items = [.. items, .. GiaoVanActions.Arr(soon.Data, "listItem").Where(i => S(C(i), "status") is "Open" or "InProgress" && Dec(i, "hoursToDue") is >= 0 and <= 4
+                items = [.. items, .. GiaoVanActions.Arr(soon.Data, "listItem").Where(i => S(C(i), "complaintStatus") is "Open" or "InProgress" && Dec(i, "hoursToDue") is >= 0 and <= 4
                     && !items.Any(x => S(C(x), "id") == S(C(i), "id")))];
             }
             items = [.. items.OrderBy(i => Dec(i, "hoursToDue") ?? decimal.MaxValue)];

@@ -229,6 +229,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## BOT VẬN HÀNH – PHẦN CÒN LẠI (BOT-1.5c, 2026-11-18) · thử: `tools/bot-smoke/flow-15c.mjs` · test: `MessagingSwapTests`, `MessagingPhanAnhNhanSuTests`, `MessagingXemNhanhTests`
+- [ ] 🔁 Đổi ca: chọn ca → thấy ca đồng nghiệp cùng đơn vị → đổi chéo / nhường ca → lý do → web màn Đơn đổi ca có đơn chờ duyệt; duyệt xong ca đổi đúng.
+- [ ] CSKH: 📋 Phản ánh đang mở khớp màn phản ánh; 🙋 Nhận xử lý / ✅ Đã xử lý → lịch sử phản ánh trên web; 📣 Ghi phản ánh (tìm khách → mức độ → mô tả) → phản ánh mới có hạn xử lý.
+- [ ] Nhân sự: 👥 Ai chưa vào ca đúng người (không tính người nghỉ phép / chưa tới giờ); ✍️ Chấm hộ có lý do → web màn chấm công ghi "Chấm hộ", hình thức PROXY.
+- [ ] Kho / Kế hoạch / Kinh doanh / Kế toán / QA: mỗi lệnh xem khớp số liệu màn web tương ứng; người không có quyền màn không thấy chức năng; /hethong chỉ admin.
+
 ## BOT VẬN HÀNH – GIAO VẬN, ĐIỂM PHÁT (BOT-1.5b, 2026-11-18) · thử: `tools/bot-smoke/flow-giaovan.mjs` · test: `AppDelicare.Tests/Messaging/MessagingGiaoVanTests.cs`
 - [ ] Tài xế (nhân viên gắn với tài khoản, được phân chuyến hôm nay): 🚚 Chuyến của tôi → thẻ chuyến đúng xe / giờ / điểm; ⛔ điều kiện xuất phát còn thiếu giống web.
 - [ ] 🚀 Xuất phát → chọn nhiệt độ → web màn chuyến xe: Đang giao, có lần đo nhiệt độ; đã đo đạt trước đó → nút xuất phát 1 chạm.
