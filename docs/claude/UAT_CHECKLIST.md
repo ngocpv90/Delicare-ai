@@ -220,3 +220,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] "⚡ Ca của tôi" hiện ca hôm nay; `/huylienket` gỡ liên kết.
 - [ ] Gửi tay trên màn Tin nhắn ra → tin tới Telegram trong vài giây (tin thường không rung chuông).
 - [ ] Production: webhook sai secret → 401; tắt api → Telegram tự gửi lại, không mất tin; `docker compose ps` messaging healthy.
+
+## BOT – MENU, CHẤM CÔNG, DUYỆT (BOT-1.4, 2026-11-18) · thử: `tools/bot-smoke/flow-experience.mjs` · test: `AppDelicare.Tests/Messaging/MessagingExperienceTests.cs`
+- [ ] Người ít chức năng (≤ 6) thấy các nút chức năng ngay; người nhiều chức năng / admin chỉ 3 nút, 📂 Chức năng → phân hệ → chức năng (≤ 2 lần bấm, sửa cùng tin, có ⬅️).
+- [ ] Danh sách lệnh "/" của mỗi người chỉ gồm lệnh được dùng (người không duyệt không thấy /cho).
+- [ ] 📍 Chấm công: gửi vị trí → vào / ra ca; vị trí chuyển tiếp hoặc cũ > 2 phút bị từ chối.
+- [ ] ⏳ Chờ tôi duyệt chỉ có việc mình đúng là người duyệt; đơn nghỉ / đổi ca: 1 chạm + Hoàn tác 10″ (hoàn tác → không duyệt); PO / PR / hợp đồng: xác nhận 2 bước; Từ chối bắt buộc lý do.
+- [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
+- [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.

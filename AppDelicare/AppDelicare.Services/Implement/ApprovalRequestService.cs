@@ -448,12 +448,17 @@ namespace AppDelicare.Services.Implement
         /// Yêu cầu đang mở mà người đăng nhập duyệt được ở **cấp đang chờ** (quyền Duyệt trên mục của bước – D-31; admin thấy hết). type = mục quyền (screen-id) để lọc.
         /// BE2.3: người đã quyết định 1 cấp của yêu cầu không thấy cấp sau (trừ admin) khi bật <c>ApprovalRequireDistinctApprovers</c>.
         /// </summary>
-        public async Task<IResults<ApprovalPendingModel>> GetMyPending(string? type)
+        public async Task<IResults<ApprovalPendingModel>> GetMyPending(string? type, bool explicitOnly = false)
         {
             try
             {
                 Guid me = _currentActor.RequireActor().UserId;
                 var perms = await _permissionService.GetAsync(me);
+                if (explicitOnly && perms.IsAdmin)
+                {
+                    // BOT-1.4 (BOT_TELEGRAM §3.3): "Chờ tôi duyệt" trên bot chỉ gồm bước người đó đúng là người duyệt – admin không bị ngập.
+                    perms = new UserPermissions(false, perms.Groups, perms.Menus);
+                }
                 var handlers = Handlers
                     .Where(h => string.IsNullOrEmpty(type) || ScreensOf(h).Contains(type, StringComparer.OrdinalIgnoreCase))
                     .Where(h => ScreensOf(h).Any(screen => _permissionService.IsAllowed(perms, screen, PermissionAction.Approve)))

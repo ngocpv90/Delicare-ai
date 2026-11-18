@@ -31,6 +31,10 @@ namespace AppDelicare.Messaging.Channels.Telegram
         public long? ReplyToMessageId { get; init; }
         public string? FileId { get; init; }
         public string? MemberStatus { get; init; }
+        /// <summary>Giờ gửi (Unix giây) – chấm công: vị trí cũ hơn 120″ bị coi là cũ.</summary>
+        public long Date { get; init; }
+        /// <summary>Tin chuyển tiếp.</summary>
+        public bool Forwarded { get; init; }
     }
 
     /// <summary>BOT-1.3: update Telegram → <see cref="IncomingEvent"/> (lệnh / chữ / liên hệ / vị trí (kể cả trực tiếp) / nút / ảnh / tệp / trả lời).</summary>
@@ -78,7 +82,8 @@ namespace AppDelicare.Messaging.Channels.Telegram
             }
             var e = new IncomingEvent(IncomingKind.Other, update.UpdateId, m.From.Id.ToString(), m.Chat.Id.ToString(), m.Chat.Type, m.From.Username, Name(m.From))
             {
-                MessageId = m.MessageId, ReplyToMessageId = m.ReplyToMessage?.MessageId,
+                MessageId = m.MessageId, ReplyToMessageId = m.ReplyToMessage?.MessageId, Date = m.Date,
+                Forwarded = m.ForwardOrigin is { ValueKind: not JsonValueKind.Null and not JsonValueKind.Undefined },
             };
             if (m.Contact != null)
             {

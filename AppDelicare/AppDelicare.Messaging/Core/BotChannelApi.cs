@@ -17,6 +17,8 @@ namespace AppDelicare.Messaging.Core
         Task<ApiResult<bool>> UnlinkIdentityAsync(BotIdentityRequest request, CancellationToken ct = default);
         Task<ApiResult<UserTokenModel>> IssueUserTokenAsync(BotIdentityRequest request, CancellationToken ct = default);
         Task<ApiResult<MyAttendanceModel>> EmployeeGetTodayAsync(BotIdentityRequest request, CancellationToken ct = default);
+        Task<List<BotCorrelatedMessageModel>> GetCorrelatedAsync(string correlationId, CancellationToken ct = default);
+        Task<ApiResult<System.Text.Json.JsonElement>> EmployeeCallAsync(string action, object request, CancellationToken ct = default);
     }
 
     public sealed class BotChannelApi(IDelicareApiClient api) : IBotChannelApi
@@ -56,5 +58,12 @@ namespace AppDelicare.Messaging.Core
 
         public Task<ApiResult<MyAttendanceModel>> EmployeeGetTodayAsync(BotIdentityRequest request, CancellationToken ct = default)
             => api.PostInternalAsync<MyAttendanceModel>("EmployeeGetToday", request, ct);
+
+        public async Task<List<BotCorrelatedMessageModel>> GetCorrelatedAsync(string correlationId, CancellationToken ct = default)
+            => (await api.PostInternalAsync<BotCorrelatedMessageModel>("GetCorrelated", new BotCorrelatedRequest { CorrelationId = correlationId }, ct)).ListData ?? [];
+
+        /// <summary>BOT-1.4: action Employee* khác (EmployeeCheckIn / CheckOut / GetMyRequests / GetMyShifts) – kết quả thô.</summary>
+        public Task<ApiResult<System.Text.Json.JsonElement>> EmployeeCallAsync(string action, object request, CancellationToken ct = default)
+            => api.PostInternalAsync<System.Text.Json.JsonElement>(action, request, ct);
     }
 }

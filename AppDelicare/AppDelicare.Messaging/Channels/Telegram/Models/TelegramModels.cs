@@ -50,6 +50,8 @@ namespace AppDelicare.Messaging.Channels.Telegram.Models
         public TgMessage? ReplyToMessage { get; set; }
         public List<TgPhotoSize>? Photo { get; set; }
         public TgDocument? Document { get; set; }
+        /// <summary>Có = tin chuyển tiếp (chấm công: chặn vị trí chuyển tiếp).</summary>
+        public JsonElement? ForwardOrigin { get; set; }
     }
 
     public sealed class TgUser

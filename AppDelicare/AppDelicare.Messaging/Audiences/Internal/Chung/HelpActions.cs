@@ -10,7 +10,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
 {
     /// <summary>
     /// BOT-1.3 (khung): <c>/help</c>, <c>/menu</c>, 3 nút cố định. "⚡ Ca của tôi" gọi API nghiệp vụ bằng JWT của chính user (AttendanceEvent/GetMine) –
-    /// người chỉ có EmployeeId dùng BotChannel/EmployeeGetToday. Menu chức năng theo quyền làm ở BOT-1.4.
+    /// người chỉ có EmployeeId dùng BotChannel/EmployeeGetToday. Menu chức năng theo quyền: MenuNavigator (BOT-1.4).
     /// </summary>
     public sealed class HelpActions(IBotChannelApi api, IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender)
     {
@@ -21,14 +21,13 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 Lines =
                 [
                     KeyboardBuilder.MyShift + " – ca hôm nay của bạn",
-                    KeyboardBuilder.Functions + " – chức năng theo quyền",
+                    KeyboardBuilder.CheckIn + " – gửi vị trí để vào / ra ca (/chamcong)",
+                    KeyboardBuilder.Functions + " – chức năng theo quyền (/menu)",
+                    "Gõ mã chứng từ (vd. ME-…, CX-…, PO-…) để tra nhanh",
                     "/start – liên kết / mở lại bot",
                     "/huylienket – hủy liên kết tài khoản",
                 ],
-            }, KeyboardBuilder.MainMenu(), ct);
-
-        public Task FunctionsAsync(string bot, IncomingEvent e, CancellationToken ct)
-            => BotReply.TextAsync(sender, bot, e.ChatId, "Danh sách chức năng theo quyền đang được hoàn thiện.", KeyboardBuilder.MainMenu(), ct);
+            }, ct: ct);
 
         public async Task MyShiftAsync(string bot, IncomingEvent e, BotIdentityModel identity, CancellationToken ct)
         {
@@ -49,7 +48,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             }
             if (!r.IsOk || r.Data == null)
             {
-                await BotReply.TextAsync(sender, bot, e.ChatId, r.ResponseMessage ?? "Không xem được ca.", KeyboardBuilder.MainMenu(), ct);
+                await BotReply.TextAsync(sender, bot, e.ChatId, r.ResponseMessage ?? "Không xem được ca.", ct: ct);
                 return;
             }
             var lines = r.Data.ListAssignment.Select(a =>
@@ -66,7 +65,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             {
                 lines.Add("Đang trong ca – có thể ra ca.");
             }
-            await BotReply.SendAsync(sender, bot, e.ChatId, new NeutralMessage { Title = "Ca của tôi – " + (r.Data.EmployeeName ?? ""), Lines = lines }, KeyboardBuilder.MainMenu(), ct);
+            await BotReply.SendAsync(sender, bot, e.ChatId, new NeutralMessage { Title = "Ca của tôi – " + (r.Data.EmployeeName ?? ""), Lines = lines }, ct: ct);
         }
 
         private static string? Str(JsonElement e, string key)

@@ -119,6 +119,41 @@ namespace AppDelicare.Messaging.Core.Contracts
         public bool HasWebAccount { get; set; }
         public bool CanUseDieuHanh { get; set; }
         public bool CanUseBot { get; set; }
+        /// <summary>BOT-1.4: MetaLink các menu được vào.</summary>
+        public List<string> Menus { get; set; } = [];
+        /// <summary>BOT-1.4: screen-id được Duyệt rõ (PendingCode → rỗng).</summary>
+        public List<string> ApproveScreens { get; set; } = [];
+        public bool IsAdmin { get; set; }
+    }
+
+    public sealed class BotCorrelatedMessageModel
+    {
+        public Guid Id { get; set; }
+        public string? BotCode { get; set; }
+        public string? ExternalConversationId { get; set; }
+        public string? ProviderMessageId { get; set; }
+        public string? MessageType { get; set; }
+    }
+
+    public sealed class BotCorrelatedRequest
+    {
+        public string? CorrelationId { get; set; }
+    }
+
+    /// <summary>ApprovalRequest/GetMyPending (chỉ trường bot hiển thị).</summary>
+    public sealed class ApprovalPendingModel
+    {
+        public Guid Id { get; set; }
+        public string? RequestNo { get; set; }
+        public string? BusinessType { get; set; }
+        public string? ScreenId { get; set; }
+        public string? Title { get; set; }
+        public string? RequestedByName { get; set; }
+        public string? StepName { get; set; }
+        public int StepNo { get; set; }
+        public int StepCount { get; set; }
+        public DateTime? DueAt { get; set; }
+        public bool IsOverdue { get; set; }
     }
 
     public sealed class UserTokenModel

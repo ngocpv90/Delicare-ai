@@ -372,6 +372,13 @@ namespace AppDelicare.Services.Implement.Identity
                 var full = await permissionService.GetAsync(uid);
                 model.CanUseBot = CanUseBot(full, botCode);
                 model.CanUseDieuHanh = CanUseBot(full, MessagingCode.BotDieuHanh);
+                // BOT-1.4: quyền để bot dựng menu – menu được vào + mục được Duyệt rõ (không tính admin); PendingCode → không có mục duyệt.
+                bool pending = identity.IdentityStatus == MessagingCode.Identity.PendingCode;
+                model.IsAdmin = full.IsAdmin && !pending;
+                model.Menus = [.. full.Menus.Where(m => m.Value.Access && !m.Key.StartsWith(IPermissionService.ApproveMenuPrefix, StringComparison.OrdinalIgnoreCase)).Select(m => m.Key)];
+                model.ApproveScreens = pending ? []
+                    : [.. full.Menus.Where(m => m.Key.StartsWith(IPermissionService.ApproveMenuPrefix, StringComparison.OrdinalIgnoreCase) && m.Value.Access && m.Value.Edit)
+                        .Select(m => m.Key[IPermissionService.ApproveMenuPrefix.Length..])];
                 model.FullName = await (from u in Db.User.AsNoTracking() join p in Db.Person.AsNoTracking() on u.PersonId equals p.Id
                                         where u.Id == uid select p.FullName).FirstOrDefaultAsync();
             }

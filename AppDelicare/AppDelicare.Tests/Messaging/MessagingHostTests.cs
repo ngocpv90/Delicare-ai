@@ -170,32 +170,10 @@ namespace AppDelicare.Tests.Messaging
             }
         }
 
-        private sealed class Fixture
-        {
-            public FakeBotChannelApi Api { get; } = new();
-            public FakeSender Sender { get; } = new();
-            public UpdateDispatcher Dispatcher { get; }
-            public InboundPump Inbound { get; }
-
-            public Fixture()
-            {
-                var host = new StaticOptions<MessagingHostOptions>(new MessagingHostOptions { IdentityCacheSeconds = 0 });
-                var tg = new StaticOptions<TelegramOptions>(new TelegramOptions { Bots = { ["VH"] = new() { Token = "t" }, ["DH"] = new() { Token = "t2", Username = "delicare_dh_bot" } } });
-                var users = new BotUserContext(Api, host, TimeProvider.System);
-                var tokens = new UserTokenCache(Api, TimeProvider.System);
-                var onboarding = new OnboardingActions(Api, users, tokens, Sender, tg);
-                var help = new HelpActions(Api, new NoWebApi(), tokens, Sender);
-                Dispatcher = new UpdateDispatcher(onboarding, help, users, Api, Sender);
-                Inbound = new InboundPump(Api, Dispatcher, new InboundSignal(), host, NullLogger<InboundPump>.Instance);
-            }
-
-            public BotInboundItemModel Item(string json) => new() { Id = Guid.NewGuid(), BotCode = "VH", PayloadJson = json };
-        }
-
         [Fact]
         public async Task Onboarding_phone_share_full_flow_and_code_and_unlink()
         {
-            var f = new Fixture();
+            await using var f = new MessagingTestHost();
             // QR cổng: /start CHAMCONG, chưa liên kết → nút chia sẻ số điện thoại (request_contact).
             (await f.Dispatcher.HandleAsync(f.Item(Update(1, "/start CHAMCONG")), default)).Status.Should().Be("Processed");
             f.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Which.Keyboard[0][0].RequestContact.Should().BeTrue();
@@ -214,7 +192,8 @@ namespace AppDelicare.Tests.Messaging
             link.Phone.Should().Be("+84901234567");
             var sent = f.Sender.Sent.ToArray();
             sent[^2].Message.Text.Should().Contain("Xin chào Nguyễn An").And.Contain("quyền duyệt");
-            sent[^2].Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Which.Keyboard[0].Should().HaveCount(3);
+            // ≤ 6 chức năng → bàn phím phẳng (BOT-1.4): ⚡ Ca của tôi, 📍 Chấm công, 📝 Đơn của tôi, ❓ Trợ giúp (chưa có mục duyệt).
+            sent[^2].Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Which.Keyboard.SelectMany(r => r).Select(b => b.Text).Should().Contain(["⚡ Ca của tôi", "📍 Chấm công", "❓ Trợ giúp"]);
             sent[^1].Message.ReplyMarkup.Should().BeOfType<TgInlineKeyboard>().Which.InlineKeyboard[0][0].Url.Should().StartWith("https://t.me/delicare_dh_bot");
             // Không khớp số → câu báo của api.
             f.Api.LinkResult = _ => new ApiResult<BotIdentityModel> { ResponseCode = 400, ResponseMessage = "Không tìm thấy … liên hệ phòng Nhân sự" };
@@ -230,7 +209,7 @@ namespace AppDelicare.Tests.Messaging
         [Fact]
         public async Task Inbound_pump_scans_claimed_updates_after_restart_and_marks_results()
         {
-            var f = new Fixture();
+            await using var f = new MessagingTestHost();
             f.Api.Identity = new BotIdentityModel { Linked = true, CanUseBot = true, EmployeeId = Guid.NewGuid() };
             var ok = f.Item(Update(10, "❓ Trợ giúp"));
             var broken = f.Item("{không phải json");

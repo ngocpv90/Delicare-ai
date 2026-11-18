@@ -88,8 +88,26 @@ namespace AppDelicare.Tests.Messaging
         public Task<ApiResult<UserTokenModel>> IssueUserTokenAsync(BotIdentityRequest request, CancellationToken ct = default)
             => Task.FromResult(Record(request, Token));
 
+        public MyAttendanceModel Today { get; set; } = new() { EmployeeName = "NV thử" };
+        public List<BotCorrelatedMessageModel> Correlated { get; } = [];
+        public ConcurrentQueue<(string Action, string Json)> EmployeeCalls { get; } = new();
+
         public Task<ApiResult<MyAttendanceModel>> EmployeeGetTodayAsync(BotIdentityRequest request, CancellationToken ct = default)
-            => Task.FromResult(Record(request, new ApiResult<MyAttendanceModel> { ResponseCode = 200, Data = new MyAttendanceModel { EmployeeName = "NV thử" } }));
+            => Task.FromResult(Record(request, new ApiResult<MyAttendanceModel> { ResponseCode = 200, Data = Today }));
+
+        public Task<List<BotCorrelatedMessageModel>> GetCorrelatedAsync(string correlationId, CancellationToken ct = default)
+        {
+            Guard();
+            Calls.Enqueue("corr:" + correlationId);
+            return Task.FromResult(Correlated.ToList());
+        }
+
+        public Task<ApiResult<System.Text.Json.JsonElement>> EmployeeCallAsync(string action, object request, CancellationToken ct = default)
+        {
+            Guard();
+            EmployeeCalls.Enqueue((action, System.Text.Json.JsonSerializer.Serialize(request)));
+            return Task.FromResult(new ApiResult<System.Text.Json.JsonElement> { ResponseCode = 200, ResponseMessage = "Đã ghi (giả)", ListData = [] });
+        }
 
         private Task<ApiResult<BotIdentityModel>> Ok(object request, BotIdentityModel identity)
         {
@@ -109,6 +127,7 @@ namespace AppDelicare.Tests.Messaging
     public sealed class FakeSender : IChannelSender
     {
         public ConcurrentQueue<(string Bot, OutgoingMessage Message)> Sent { get; } = new();
+        public ConcurrentQueue<(string Bot, string Chat, string MessageId, string Text, object? Markup)> Edits { get; } = new();
         public Queue<ChannelSendResult> Next { get; } = new();
         public int Answered;
         private int _id = 100;
@@ -120,7 +139,10 @@ namespace AppDelicare.Tests.Messaging
         }
 
         public Task<ChannelSendResult> EditAsync(string botCode, string chatId, string providerMessageId, string text, object? replyMarkup, CancellationToken ct = default)
-            => Task.FromResult(ChannelSendResult.Sent(providerMessageId));
+        {
+            Edits.Enqueue((botCode, chatId, providerMessageId, text, replyMarkup));
+            return Task.FromResult(ChannelSendResult.Sent(providerMessageId));
+        }
 
         public Task<ChannelSendResult> PinAsync(string botCode, string chatId, string providerMessageId, CancellationToken ct = default)
             => Task.FromResult(ChannelSendResult.Sent(providerMessageId));

@@ -1,4 +1,7 @@
+using AppDelicare.Messaging.Audiences.Internal;
 using AppDelicare.Messaging.Audiences.Internal.Chung;
+using AppDelicare.Messaging.Conversations;
+using AppDelicare.Messaging.Experience;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Channels.Telegram;
 using AppDelicare.Messaging.Core;
@@ -46,6 +49,17 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<SendRateLimiter>();
             builder.Services.AddSingleton<OnboardingActions>();
             builder.Services.AddSingleton<HelpActions>();
+            // BOT-1.4: khung trải nghiệm + duyệt.
+            builder.Services.AddSingleton<ReplyContextStore>();
+            builder.Services.AddSingleton<UndoWindow>();
+            builder.Services.AddSingleton<TaskCard>();
+            builder.Services.AddSingleton<SelfServiceActions>();
+            builder.Services.AddSingleton<ApprovalActions>();
+            builder.Services.AddSingleton<IBotActionProvider, ChungActionProvider>();
+            builder.Services.AddSingleton<BotActionRegistry>();
+            builder.Services.AddSingleton<MenuNavigator>();
+            builder.Services.AddSingleton<CodeSearch>();
+            builder.Services.AddSingleton<CommandScopeSync>();
             builder.Services.AddSingleton<UpdateDispatcher>();
             builder.Services.AddHostedService<InboundPump>();
             builder.Services.AddHostedService<OutboundPump>();

@@ -1,6 +1,9 @@
+using AppDelicare.Messaging.Audiences.Internal;
 using AppDelicare.Messaging.Audiences.Internal.Chung;
+using AppDelicare.Messaging.Callback;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Channels.Telegram;
+using AppDelicare.Messaging.Conversations;
 using AppDelicare.Messaging.Core;
 using AppDelicare.Messaging.Core.Contracts;
 using AppDelicare.Messaging.Experience;
@@ -15,10 +18,12 @@ namespace AppDelicare.Messaging.Processing
     }
 
     /// <summary>
-    /// BOT-1.3 (khung): update → hành động. Lệnh / nút / liên hệ / gõ mã → Onboarding / Help; my_chat_member → chặn / mở bot; nhóm chat → bỏ qua (BOT-2.x).
-    /// BOT-1.4 thêm: menu theo quyền, nút trong tin (CallbackData), ForceReply, vị trí, ảnh.
+    /// BOT-1.3 / 1.4: update → hành động. Thứ tự: chặn / mở bot (my_chat_member) · nhóm chat → bỏ (BOT-2.x) · đăng ký (liên hệ, /start, /huylienket, gõ mã liên kết)
+    /// · chưa liên kết → xin số · trả lời ForceReply (lý do từ chối…) · nút trong tin (menu / apv / undo) · vị trí (chấm công) · nút / lệnh của danh mục chức năng
+    /// · 📂 Chức năng · gõ mã chứng từ / chữ → tra cứu · còn lại → trợ giúp.
     /// </summary>
-    public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender)
+    public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender,
+        BotActionRegistry registry, MenuNavigator menu, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -73,22 +78,64 @@ namespace AppDelicare.Messaging.Processing
                 await BotReply.TextAsync(sender, bot, e.ChatId, "Tài khoản chưa được cấp quyền dùng bot này – liên hệ quản trị hệ thống.", KeyboardBuilder.Remove(), ct);
                 return DispatchResult.Processed;
             }
-            if (e.Kind == IncomingKind.Command && e.Command is "help" or "menu" || e.Text == KeyboardBuilder.Help)
+            var ctx = new BotActionContext(bot, e, identity);
+
+            // Trả lời câu hỏi ForceReply (vd. lý do từ chối duyệt).
+            if (e.Kind == IncomingKind.Text && replies.Take(bot, e.ChatId, e.ReplyToMessageId?.ToString()) is { } pending)
             {
-                await help.HelpAsync(bot, e, ct);
+                if (pending.Flow == ApprovalActions.RejectFlow)
+                {
+                    await approvals.ReplyAsync(ctx, pending, ct);
+                }
+                return DispatchResult.Processed;
             }
-            else if (e.Text == KeyboardBuilder.MyShift)
+            if (e.Kind == IncomingKind.Callback)
             {
-                await help.MyShiftAsync(bot, e, identity, ct);
+                var data = CallbackData.Parse(e.CallbackData);
+                switch (data?.Kind)
+                {
+                    case CallbackData.Kinds.Menu:
+                        await menu.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Approval:
+                        await approvals.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Undo when data.Action == "apv":
+                        await approvals.UndoAsync(ctx, data, ct);
+                        break;
+                    default:
+                        await BotReply.TextAsync(sender, bot, e.ChatId, "Nút đã hết hạn.", ct: ct);
+                        break;
+                }
+                return DispatchResult.Processed;
             }
-            else if (e.Text == KeyboardBuilder.Functions || e.Kind == IncomingKind.Callback)
+            if (e.Kind == IncomingKind.Location)
             {
-                await help.FunctionsAsync(bot, e, ct);
+                await self.LocationAsync(ctx, ct);
+                return DispatchResult.Processed;
             }
-            else
+            var action = e.Kind == IncomingKind.Command ? registry.ByCommand(bot, identity, e.Command) : registry.ByLabel(bot, identity, e.Text);
+            if (action != null)
             {
-                await help.HelpAsync(bot, e, ct);
+                await action.Handler(ctx, ct);
+                return DispatchResult.Processed;
             }
+            if ((e.Kind == IncomingKind.Command && e.Command == "menu") || e.Text == KeyboardBuilder.Functions)
+            {
+                await menu.OpenAsync(ctx, ct);
+                return DispatchResult.Processed;
+            }
+            if (e.Kind == IncomingKind.Text && e.Text == ContextKeyboard.Exit)
+            {
+                await BotReply.TextAsync(sender, bot, e.ChatId, "Đã thoát.", KeyboardBuilder.ForActions(registry.Available(bot, identity)), ct);
+                return DispatchResult.Processed;
+            }
+            if (e.Kind == IncomingKind.Text && (search.LooksLikeCode(e.Text) || CodeSearch.LooksLikeSearch(e.Text)))
+            {
+                await search.SearchAsync(ctx, e.Text!, ct);
+                return DispatchResult.Processed;
+            }
+            await help.HelpAsync(bot, e, ct);
             return DispatchResult.Processed;
         }
     }

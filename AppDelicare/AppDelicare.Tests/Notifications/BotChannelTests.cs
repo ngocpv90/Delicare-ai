@@ -232,6 +232,29 @@ namespace AppDelicare.Tests.Notifications
 
         private const string MessagingRulesMasked = "***";
 
+        /// <summary>BOT-1.4: tin đã gửi cùng CorrelationId (sửa đồng loạt thẻ) – chỉ tin Sent có message_id.</summary>
+        [Fact]
+        public async Task Correlated_returns_only_sent_messages_of_same_incident()
+        {
+            await SeedAsync();
+            DateTime now = _factory.Clock.FixedNow!.Value;
+            string corr = "APR:" + Guid.NewGuid().ToString("N");
+            await _factory.SeedAsync(db =>
+            {
+                db.OutboundMessage.AddRange(
+                    new OutboundMessage { Id = Guid.NewGuid(), IntegrationChannelId = DhChannel, RecipientExternalId = "8101", PayloadJson = "{}", QueuedAt = now, MessageStatus = "Sent", ProviderMessageId = "11", CorrelationId = corr },
+                    new OutboundMessage { Id = Guid.NewGuid(), IntegrationChannelId = DhChannel, RecipientExternalId = "8102", PayloadJson = "{}", QueuedAt = now, MessageStatus = "Sent", ProviderMessageId = "12", CorrelationId = corr },
+                    new OutboundMessage { Id = Guid.NewGuid(), IntegrationChannelId = DhChannel, RecipientExternalId = "8103", PayloadJson = "{}", QueuedAt = now, MessageStatus = "Queued", CorrelationId = corr },
+                    new OutboundMessage { Id = Guid.NewGuid(), IntegrationChannelId = DhChannel, RecipientExternalId = "8104", PayloadJson = "{}", QueuedAt = now, MessageStatus = "Sent", ProviderMessageId = "14", CorrelationId = "APR:khac" });
+                return Task.CompletedTask;
+            });
+            using var bot = Bot();
+            var r = await Post(bot, "GetCorrelated", new { correlationId = corr });
+            r.Ok();
+            r.ListData.EnumerateArray().Select(x => x.GetProperty("providerMessageId").GetString()).Should().BeEquivalentTo(["11", "12"]);
+            r.ListData.EnumerateArray().Should().OnlyContain(x => x.GetProperty("botCode").GetString() == "DH");
+        }
+
         [Fact]
         public async Task Integration_log_is_read_only()
         {
