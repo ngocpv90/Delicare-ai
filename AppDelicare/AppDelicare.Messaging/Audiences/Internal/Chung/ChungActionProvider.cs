@@ -6,7 +6,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
     /// BOT-1.4: chức năng phần chung (VH và DH – BOT_TELEGRAM §3.1). ⏳ Chờ tôi duyệt chỉ hiện khi có ít nhất 1 mục Duyệt được cấp rõ (PendingCode → không hiện).
     /// Phân hệ nghiệp vụ (Bếp, Kho, Giao vận…) thêm ở BOT-1.5 / 1.6 bằng provider riêng.
     /// </summary>
-    public sealed class ChungActionProvider(HelpActions help, SelfServiceActions self, ApprovalActions approvals, AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave) : IBotActionProvider
+    public sealed class ChungActionProvider(HelpActions help, SelfServiceActions self, ApprovalActions approvals, AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave,
+        AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap) : IBotActionProvider
     {
         public IEnumerable<BotAction> GetActions() =>
         [
@@ -14,6 +15,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             new BotAction { Code = "check_in", Module = "CHUNG", Label = KeyboardBuilder.CheckIn, Command = "chamcong", CommandDescription = "Chấm công vào / ra", Order = 2, Handler = self.PromptLocationAsync },
             new BotAction { Code = "my_schedule", Module = "CHUNG", Label = "📅 Lịch ca", Command = "lichca", CommandDescription = "Lịch ca 7 ngày", Order = 3, Handler = self.MyShiftsAsync },
             new BotAction { Code = "leave", Module = "CHUNG", Label = "🏖 Xin nghỉ", Command = "nghi", CommandDescription = "Xin nghỉ", Order = 4, Handler = leave.StartAsync },
+            // BOT-1.5c: đổi ca (tài khoản web – JWT của chính mình; DECISIONS p24).
+            new BotAction { Code = "swap", Module = "CHUNG", Label = "🔁 Đổi ca", Command = "doica", CommandDescription = "Đổi / nhường ca", Order = 5, Visible = i => i.HasWebAccount, Handler = swap.StartAsync },
             new BotAction { Code = "my_requests", Module = "CHUNG", Label = "📝 Đơn của tôi", Command = "donct", CommandDescription = "Đơn nghỉ / đổi ca của tôi", Order = 5, Handler = self.MyRequestsAsync },
             new BotAction
             {

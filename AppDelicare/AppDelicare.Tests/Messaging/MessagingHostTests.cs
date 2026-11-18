@@ -192,8 +192,8 @@ namespace AppDelicare.Tests.Messaging
             link.Phone.Should().Be("+84901234567");
             var sent = f.Sender.Sent.ToArray();
             sent[^2].Message.Text.Should().Contain("Xin chào Nguyễn An").And.Contain("quyền duyệt");
-            // ≤ 6 chức năng → bàn phím phẳng (BOT-1.4): ⚡ Ca của tôi, 📍 Chấm công, 📝 Đơn của tôi, ❓ Trợ giúp (chưa có mục duyệt).
-            sent[^2].Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Which.Keyboard.SelectMany(r => r).Select(b => b.Text).Should().Contain(["⚡ Ca của tôi", "📍 Chấm công", "❓ Trợ giúp"]);
+            // > 6 chức năng phần chung (BOT-1.5c thêm 🔁 Đổi ca) → 3 nút cố định (BOT-1.4 KeyboardBuilder): ⚡ Ca của tôi, 📍 Chấm công, 📂 Chức năng; ❓ Trợ giúp qua /help và menu.
+            sent[^2].Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Which.Keyboard.SelectMany(r => r).Select(b => b.Text).Should().BeEquivalentTo(["⚡ Ca của tôi", "📍 Chấm công", "📂 Chức năng"]);
             sent[^1].Message.ReplyMarkup.Should().BeOfType<TgInlineKeyboard>().Which.InlineKeyboard[0][0].Url.Should().StartWith("https://t.me/delicare_dh_bot");
             // Không khớp số → câu báo của api.
             f.Api.LinkResult = _ => new ApiResult<BotIdentityModel> { ResponseCode = 400, ResponseMessage = "Không tìm thấy … liên hệ phòng Nhân sự" };

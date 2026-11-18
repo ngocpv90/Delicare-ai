@@ -30,8 +30,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
 
         public IEnumerable<BotAction> GetActions() =>
         [
-            new BotAction { Code = "attp_checklist", Module = "ATTP", Label = "🧽 Checklist ATTP", Command = "checklist", CommandDescription = "Checklist an toàn thực phẩm", MenuMetaLink = "#/qc-checklist-result", Order = 1, Handler = ChecklistsAsync },
-            new BotAction { Code = "attp_hold", Module = "ATTP", Label = "⛔ Mẻ đang giữ", Command = "giu", CommandDescription = "Mẻ đang giữ / không đạt hôm nay", MenuMetaLink = "#/prod-batch", Order = 2, Handler = HoldAsync },
+            new BotAction { Code = "attp_checklist", Module = "ATTP", Bots = ["VH"], Label = "🧽 Checklist ATTP", Command = "checklist", CommandDescription = "Checklist an toàn thực phẩm", MenuMetaLink = "#/qc-checklist-result", Order = 1, Handler = ChecklistsAsync },
+            new BotAction { Code = "attp_hold", Module = "ATTP", Bots = ["VH"], Label = "⛔ Mẻ đang giữ", Command = "giu", CommandDescription = "Mẻ đang giữ / không đạt hôm nay", MenuMetaLink = "#/prod-batch", Order = 2, Handler = HoldAsync },
         ];
 
         public async Task ChecklistsAsync(BotActionContext ctx, CancellationToken ct)

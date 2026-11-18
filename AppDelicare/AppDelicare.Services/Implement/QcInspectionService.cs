@@ -18,11 +18,14 @@ using Serilog;
 using System.Globalization;
 using System.Net;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     public class QcInspectionService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IGoodsReceiptService goodsReceiptService, IClock clock, IOptions<BusinessRulesOptions> rules) : IQcInspectionService
+        , IAuditChangeService auditChangeService, IGoodsReceiptService goodsReceiptService, IClock clock, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IQcInspectionService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -342,6 +345,13 @@ namespace AppDelicare.Services.Implement
                 };
                 _unitOfWork.GoodsReceiptRepository.Update(receipt);
                 await _unitOfWork.QcInspectionRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                if (overall != IncomingQcResult.Dat)
+                {
+                    // BOT-1.7: QC_INCOMING_FAIL → thủ kho, mua hàng, QA đầu vào.
+                    await BusinessNotifier.ToMenusAsync(_notifications, _unitOfWork.DbContext, NotificationCatalog.QcIncomingFail, ["#/scm-gr", "#/scm-po", "#/qc-inspection"],
+                        new { title = "Phiếu nhập " + receipt.ReceiptNumber, detail = overall == IncomingQcResult.KhongDat ? "QC không đạt – từ chối cả phiếu" : "QC đạt một phần", lines = new[] { inspection.Note } },
+                        $"{NotificationCatalog.QcIncomingFail}:{receipt.Id:N}");
+                }
                 _unitOfWork.CommitTransaction();
                 return Result<GoodsReceiptDetailModel>.Success(await _goodsReceiptService.DetailAsync(receipt.Id), ConstantHelper.Message.SaveSuccess);
             }

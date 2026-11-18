@@ -129,6 +129,22 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>BOT-1.5c (DECISIONS p24): ca có thể đổi với 1 ca của chính tài khoản – ca còn mở của đồng nghiệp cùng đơn vị (± 7 ngày) + đồng nghiệp để nhường ca. Chỉ tên + ca.</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetSwapCandidates")]
+        public async Task<IActionResult> GetSwapCandidates(Guid assignmentId)
+        {
+            try
+            {
+                return Ok(await _service.GetSwapCandidates(assignmentId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSwapCandidates: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetGrid")]
         public async Task<IActionResult> GetGrid([FromQuery] ShiftGridRequest request)
         {

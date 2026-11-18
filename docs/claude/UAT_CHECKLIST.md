@@ -229,6 +229,31 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## THÔNG BÁO NGHIỆP VỤ QUA BOT (BOT-1.7, 2026-11-18) · test: `Notifications/BusinessNotificationTests`
+- [ ] Gửi duyệt đề nghị mua / PO / đơn nghỉ → người duyệt cấp hiện tại nhận tin ⏳ kèm nút Xem & duyệt (admin không nhận); duyệt cấp 1 → cấp 2 nhận; xong → người gửi nhận ✅ / ❌.
+- [ ] Xác nhận phân ca → mỗi nhân viên (đã liên kết bot) nhận 1 tin 📅 liệt kê ca; xác nhận lại không gửi trùng.
+- [ ] Checklist ATTP lỗi trọng yếu / nhiệt độ lõi < 70 °C / IoT ngoài ngưỡng → QA + trưởng ca nhận tin có chuông.
+- [ ] Xe xuất phát → điểm phát nhận 🚚; phản ánh mới → CSKH nhận 📣 (mức cao ở bot Điều hành); công bố thực đơn, QC đầu vào không đạt, khóa đơn 20h, MRP thiếu NL, job lỗi → đúng người nhận.
+
+## BOT ĐIỀU HÀNH (BOT-1.6, 2026-11-18) · thử: `tools/bot-smoke/flow-dieuhanh.mjs` · test: `MessagingDieuHanhTests`
+- [ ] CEO / COO (có mục #/bot-dieu-hanh) liên kết bot DH; bot VH gửi nút mở bot DH.
+- [ ] 📊 Tổng quan khớp màn Dashboard điều hành; 🎯 KPI / 📅 KPI tháng khớp màn KPI; 🚨 Việc đang mở khớp chuông cảnh báo trên web.
+- [ ] ⏳ Chờ tôi duyệt chỉ hiện việc mình đúng là người duyệt; bot DH không có phân hệ Bếp / Giao vận… (chỉ ở bot VH).
+
+## BOT VẬN HÀNH – PHẦN CÒN LẠI (BOT-1.5c, 2026-11-18) · thử: `tools/bot-smoke/flow-15c.mjs` · test: `MessagingSwapTests`, `MessagingPhanAnhNhanSuTests`, `MessagingXemNhanhTests`
+- [ ] 🔁 Đổi ca: chọn ca → thấy ca đồng nghiệp cùng đơn vị → đổi chéo / nhường ca → lý do → web màn Đơn đổi ca có đơn chờ duyệt; duyệt xong ca đổi đúng.
+- [ ] CSKH: 📋 Phản ánh đang mở khớp màn phản ánh; 🙋 Nhận xử lý / ✅ Đã xử lý → lịch sử phản ánh trên web; 📣 Ghi phản ánh (tìm khách → mức độ → mô tả) → phản ánh mới có hạn xử lý.
+- [ ] Nhân sự: 👥 Ai chưa vào ca đúng người (không tính người nghỉ phép / chưa tới giờ); ✍️ Chấm hộ có lý do → web màn chấm công ghi "Chấm hộ", hình thức PROXY.
+- [ ] Kho / Kế hoạch / Kinh doanh / Kế toán / QA: mỗi lệnh xem khớp số liệu màn web tương ứng; người không có quyền màn không thấy chức năng; /hethong chỉ admin.
+
+## BOT VẬN HÀNH – GIAO VẬN, ĐIỂM PHÁT (BOT-1.5b, 2026-11-18) · thử: `tools/bot-smoke/flow-giaovan.mjs` · test: `AppDelicare.Tests/Messaging/MessagingGiaoVanTests.cs`
+- [ ] Tài xế (nhân viên gắn với tài khoản, được phân chuyến hôm nay): 🚚 Chuyến của tôi → thẻ chuyến đúng xe / giờ / điểm; ⛔ điều kiện xuất phát còn thiếu giống web.
+- [ ] 🚀 Xuất phát → chọn nhiệt độ → web màn chuyến xe: Đang giao, có lần đo nhiệt độ; đã đo đạt trước đó → nút xuất phát 1 chạm.
+- [ ] Tại điểm: 📍 Đã đến → ✅ Giao (số suất điền sẵn = đã xếp) → nhiệt độ → tên người nhận → web: điểm Đã giao, có biên bản giao (POD); ❌ Không giao được → lý do hiện trên web.
+- [ ] 📥 Nhận hộp về → gõ số → web màn thu hồi hộp khay có phiếu mới.
+- [ ] Điều phối: 🗺 Giao vận hôm nay khớp màn chuyến xe. Điểm phát: 🚚 Xe đến hôm nay; 🧮 Đối soát suất (điền sẵn số khách nhận) → web màn đối soát cập nhật.
+- [ ] Người không có quyền màn chuyến / điểm dừng / đối soát không thấy các chức năng này.
+
 ## BOT VẬN HÀNH – CHUNG, BẾP, ATTP (BOT-1.5a, 2026-11-18) · thử: `tools/bot-smoke/flow-vanhanh.mjs` · test: `AppDelicare.Tests/Messaging/MessagingVanHanhTests.cs`
 - [ ] Quét QR cổng khi đã liên kết → bot xin vị trí chấm công ngay.
 - [ ] 📅 Lịch ca 7 ngày đúng như màn phân ca; 🏖 Xin nghỉ bằng nút (loại → ngày → số ngày → lý do) → đơn hiện trên web màn Đơn xin nghỉ, chờ duyệt.

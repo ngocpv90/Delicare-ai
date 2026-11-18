@@ -703,7 +703,7 @@
             public static readonly string ChecklistBatchClosed = "Mẻ {0} đã hủy – không ghi checklist";
             public static readonly string CriticalFailHoldBatch = "Mẻ {0}: tiêu chí trọng yếu KHÔNG ĐẠT ({1}) – {2}; đạt QC / đóng gói / xuất chuyến bị chặn tới khi kiểm lại ĐẠT";
             public static readonly string CriticalFailNoBatch = "Tiêu chí trọng yếu KHÔNG ĐẠT: {0} – QA xử lý ngay";
-            public static readonly string CriticalFailAlertLater = "Cảnh báo Telegram cho QA làm ở Release 2 – hiện xem trong danh sách lỗi trọng yếu";
+            public static readonly string CriticalFailAlertLater = "Đã gửi cảnh báo qua bot Telegram cho QA / trưởng ca (người đã liên kết bot) – chi tiết trong danh sách lỗi trọng yếu";
             public static readonly string CriticalFailOpen = "Tiêu chí ATTP trọng yếu chưa đạt (kiểm lại sau khắc phục): {0}";
             public static readonly string BatchesCriticalFailOpen = "Mẻ có tiêu chí ATTP trọng yếu chưa đạt: {0}";
             public static readonly string CleaningInspectionNotFound = "Không tìm thấy phiếu kiểm tra vật dụng thu hồi";

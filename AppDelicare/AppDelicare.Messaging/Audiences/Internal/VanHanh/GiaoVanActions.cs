@@ -1,0 +1,440 @@
+using System.Globalization;
+using System.Text.Json;
+using AppDelicare.Messaging.Callback;
+using AppDelicare.Messaging.Channels;
+using AppDelicare.Messaging.Conversations;
+using AppDelicare.Messaging.Core;
+using AppDelicare.Messaging.Presentation;
+
+namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
+{
+    /// <summary>
+    /// BOT-1.5b (BOT_TELEGRAM §3.2 – điều phối giao nhận + tài xế, OPS-LOG):
+    /// 🚚 Chuyến của tôi (<c>DeliveryRoute/GetMine</c> – DriverId = nhân viên của tài khoản) → thẻ chuyến (<c>GetDetail</c>): điểm dừng, điều kiện xuất phát còn thiếu,
+    /// [🚀 Xuất phát] kèm nhiệt độ (nút ≥ 60 °C / gõ – <c>Dispatch</c>) → thẻ điểm: [📍 Đã đến] (<c>DeliveryStop/Arrive</c>), [✅ Giao] (số suất điền sẵn = đã xếp / kế hoạch
+    /// → nhiệt độ bàn giao → tên người nhận gõ tay – <c>Deliver</c>), [❌ Không giao được] (lý do chọn sẵn – <c>Fail</c>); 📥 Nhận hộp về (<c>ContainerReturn/Record</c>, số hộp gõ tay);
+    /// 🗺 Giao vận hôm nay (điều phối – <c>GetBoard</c>). Nút hiện theo <c>AllowedActions</c> của api; api kiểm quyền khi ghi.
+    /// Callback <c>dlv:&lt;hành động&gt;:&lt;Id N&gt;[.giá trị…]</c> (≤ 64 byte). Ảnh ký nhận / đổi xe / vị trí trực tiếp: BOT-1.5c / BOT-2.4.
+    /// </summary>
+    public sealed class GiaoVanActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time)
+        : WebActions(web, tokens, sender, replies), IBotActionProvider
+    {
+        public const string Kind = CallbackData.Kinds.Delivery;
+        public const string ReplyDispatchTemp = "dlv-dtemp";
+        public const string ReplyQty = "dlv-qty";
+        public const string ReplyReceiver = "dlv-recv";
+        public const string ReplyBoxes = "dlv-box";
+        public static readonly decimal[] Temps = [60m, 62m, 65m, 68m, 70m, 75m];
+        public static readonly string[] FailReasons = ["Khách không nhận hàng", "Không liên lạc được người nhận", "Sai / không tìm thấy địa chỉ", "Xe hỏng / trễ quá giờ"];
+
+        public IEnumerable<BotAction> GetActions() =>
+        [
+            new BotAction { Code = "gv_mine", Module = "GIAOVAN", Label = "🚚 Chuyến của tôi", Command = "chuyen", CommandDescription = "Chuyến giao hôm nay của tôi", Bots = ["VH"], MenuMetaLink = "#/log-stop", Order = 1, Handler = MineAsync },
+            new BotAction { Code = "gv_board", Module = "GIAOVAN", Label = "🗺 Giao vận hôm nay", Command = "giaovan", CommandDescription = "Mọi chuyến giao hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-route", Order = 2, Handler = BoardAsync },
+            new BotAction { Code = "gv_box", Module = "GIAOVAN", Label = "📥 Nhận hộp về", Command = "hop", CommandDescription = "Ghi số hộp khay nhận về", Bots = ["VH"], MenuMetaLink = "#/log-container-return", Order = 3, Handler = BoxesAsync },
+        ];
+
+        private string Today => VnTime.Today(time).ToString("yyyy-MM-dd");
+
+        private async Task<List<JsonElement>?> RoutesAsync(BotActionContext ctx, string token, string path, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>(path, token, ct);
+            if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object)
+            {
+                await SayAsync(ctx, Problem(r), ct);
+                return null;
+            }
+            return Arr(r.Data, "listRoute");
+        }
+
+        public async Task MineAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token || await RoutesAsync(ctx, token, "api/DeliveryRoute/GetMine?deliveryDate=" + Today, ct) is not { } routes)
+            {
+                return;
+            }
+            if (routes.Count == 1)
+            {
+                await RouteCardAsync(ctx, RouteId(routes[0]), token, null, ct);
+                return;
+            }
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"🚚 Chuyến của tôi hôm nay ({routes.Count})",
+                Lines = routes.Count == 0 ? ["Hôm nay bạn chưa được phân chuyến nào."] : [.. routes.Select(RouteLine)],
+                Buttons = [.. routes.Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
+            }, ct);
+        }
+
+        public async Task BoardAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token || await RoutesAsync(ctx, token, "api/DeliveryRoute/GetBoard?DeliveryDate=" + Today, ct) is not { } routes)
+            {
+                return;
+            }
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"🗺 Giao vận {VnTime.Today(time):dd/MM} ({routes.Count} chuyến)",
+                Lines = routes.Count == 0 ? ["Chưa có chuyến nào hôm nay."] : [.. routes.Take(15).Select(r => RouteLine(r) + (S(r, "driverName") is { } d ? " · " + d : ""))],
+                Buttons = [.. routes.Take(12).Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
+            }, ct);
+        }
+
+        public async Task BoxesAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token || await RoutesAsync(ctx, token, "api/DeliveryRoute/GetMine?deliveryDate=" + Today, ct) is not { } routes)
+            {
+                return;
+            }
+            var stops = routes.SelectMany(r => Arr(r, "listStop")).Where(s => S(s, "stopStatus") == "Delivered" && Guid.TryParse(S(s, "deliveryOrderId"), out _)).ToList();
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = "📥 Nhận hộp khay về",
+                Lines = stops.Count == 0 ? ["Chưa có điểm nào đã giao hôm nay trên chuyến của bạn."] : ["Chọn điểm đã giao để ghi số hộp nhận về:"],
+                Buttons = [.. stops.Take(12).Select(s => new NeutralButton($"📦 {S(s, "customerName") ?? S(s, "deliveryNumber")}", CallbackData.Build(Kind, "bx", Guid.Parse(S(s, "deliveryOrderId")!))))],
+            }, ct);
+        }
+
+        public async Task HandleAsync(BotActionContext ctx, CallbackData data, CancellationToken ct)
+        {
+            string[] parts = (data.Id ?? string.Empty).Split('.');
+            if (!Guid.TryParseExact(parts[0], "N", out Guid id) || await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            string? v1 = parts.Length > 1 ? parts[1] : null, v2 = parts.Length > 2 ? parts[2] : null;
+            switch (data.Action)
+            {
+                case "r":
+                    await RouteCardAsync(ctx, id, token, null, ct);
+                    break;
+                case "dsp":
+                    await DispatchAskAsync(ctx, id, token, ct);
+                    break;
+                case "dt" when v1 != null:
+                    await DispatchAsync(ctx, id, token, v1 == "-" ? null : v1, ct);
+                    break;
+                case "dtx":
+                    await AskAsync(ctx, "Nhập nhiệt độ thức ăn lúc xuất phát (°C), vd. 66.5:", ReplyDispatchTemp, id.ToString("N"), ct);
+                    break;
+                case "s":
+                    await StopCardAsync(ctx, id, token, null, ct);
+                    break;
+                case "arr":
+                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Arrive", [new("Id", id.ToString())], ct);
+                    break;
+                case "dl":
+                    await DeliverQtyAsync(ctx, id, token, ct);
+                    break;
+                case "dq" when v1 != null:
+                    await DeliverTempAsync(ctx, id, v1, ct);
+                    break;
+                case "dqx":
+                    await AskAsync(ctx, "Nhập số suất giao thực tế:", ReplyQty, id.ToString("N"), ct);
+                    break;
+                case "dv" when v1 != null && v2 != null:
+                    await AskAsync(ctx, "Tên người nhận hàng (gõ tên):", ReplyReceiver, $"{id:N}.{v1}.{v2}", ct);
+                    break;
+                case "fl":
+                    await ShowAsync(ctx, new NeutralMessage
+                    {
+                        Title = "❌ Không giao được – lý do",
+                        Buttons = [.. FailReasons.Select((r, i) => new NeutralButton(r, CallbackData.Build(Kind, "fr", $"{id:N}.{i}"))), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "s", id))],
+                    }, ct);
+                    break;
+                case "fr" when int.TryParse(v1, out int reason) && reason >= 0 && reason < FailReasons.Length:
+                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Fail", [new("Id", id.ToString()), new("Reason", FailReasons[reason] + " (Telegram)")], ct);
+                    break;
+                case "bx":
+                    await AskAsync(ctx, "Số hộp / khay nhận về (gõ số):", ReplyBoxes, id.ToString("N"), ct);
+                    break;
+                default:
+                    await SayAsync(ctx, "Nút đã hết hạn.", ct);
+                    break;
+            }
+        }
+
+        /// <summary>Trả lời gõ tay: nhiệt độ xuất phát / số suất giao / tên người nhận / số hộp nhận về.</summary>
+        public async Task ReplyAsync(BotActionContext ctx, PendingReply pending, CancellationToken ct)
+        {
+            string[] parts = pending.Key.Split('.');
+            if (!Guid.TryParseExact(parts[0], "N", out Guid id) || await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            string text = (ctx.Event.Text ?? string.Empty).Trim();
+            if (pending.Flow == ReplyReceiver)
+            {
+                if (text.Length < 2 || parts.Length < 3)
+                {
+                    await AskAsync(ctx, "Tên người nhận quá ngắn – gõ lại:", pending.Flow, pending.Key, ct);
+                    return;
+                }
+                var form = new List<KeyValuePair<string, string>> { new("Id", id.ToString()), new("DeliveredQuantity", parts[1]), new("ReceiverName", text[..Math.Min(text.Length, 100)]), new("Remark", "Telegram") };
+                if (parts[2] != "-")
+                {
+                    form.Add(new("TemperatureC", parts[2]));
+                }
+                await StopPostAsync(ctx, id, token, "api/DeliveryStop/Deliver", form, ct);
+                return;
+            }
+            if (!decimal.TryParse(text.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out var v) || v < 0)
+            {
+                await AskAsync(ctx, "Chưa đúng số – nhập lại:", pending.Flow, pending.Key, ct);
+                return;
+            }
+            string num = v.ToString("0.##", CultureInfo.InvariantCulture);
+            switch (pending.Flow)
+            {
+                case ReplyDispatchTemp:
+                    await DispatchAsync(ctx, id, token, num, ct);
+                    break;
+                case ReplyQty:
+                    // Suất là số nguyên (khóa callback tách bằng dấu chấm).
+                    await DeliverTempAsync(ctx, id, ((int)Math.Round(v)).ToString(CultureInfo.InvariantCulture), ct);
+                    break;
+                case ReplyBoxes:
+                    var r = await Web.PostFormAsUserAsync<JsonElement>("api/ContainerReturn/Record",
+                        [new("DeliveryOrderId", id.ToString()), new("ReturnedQuantity", ((int)Math.Round(v)).ToString(CultureInfo.InvariantCulture)), new("Note", "Telegram")], token, ct);
+                    await SayAsync(ctx, r.IsOk ? $"✅ Đã ghi nhận {(int)Math.Round(v)} hộp / khay về." : "⚠️ " + Problem(r), ct);
+                    break;
+            }
+        }
+
+        // ---------- Chuyến ----------
+
+        private async Task<JsonElement?> DetailAsync(BotActionContext ctx, Guid routeId, string token, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>("api/DeliveryRoute/GetDetail?id=" + routeId, token, ct);
+            if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object)
+            {
+                await SayAsync(ctx, Problem(r), ct);
+                return null;
+            }
+            return r.Data;
+        }
+
+        private async Task RouteCardAsync(BotActionContext ctx, Guid routeId, string token, string? note, CancellationToken ct)
+        {
+            if (await DetailAsync(ctx, routeId, token, ct) is not { } d)
+            {
+                return;
+            }
+            var route = d.TryGetProperty("route", out var rt) ? rt : default;
+            var stops = Arr(d, "listStop");
+            var allowed = Strings(d, "allowedActions");
+            var m = new NeutralMessage
+            {
+                Title = $"{RouteIcon(d)} {RouteNo(d)} – {S(d, "statusName") ?? S(route, "status")}",
+                Lines =
+                [
+                    $"Xe {S(d, "licensePlate") ?? S(d, "vehicleCode") ?? "-"} · tài xế {S(d, "driverName") ?? "-"} · xuất phát {Time(S(route, "plannedStart"))}",
+                    $"Suất: {N(d, "loadMeals")} · nhiệt độ xuất phát: {(S(d, "departureTemperatureC") is { } t ? Num(t) + " °C" : "chưa đo")} (tối thiểu {N(d, "deliveryTempMinC")} °C)",
+                    .. stops.Select(StopLine),
+                ],
+            };
+            foreach (string b in Strings(d, "listBlocker"))
+            {
+                m.Lines.Add("⛔ " + b);
+            }
+            if (note != null)
+            {
+                m.Lines.Insert(0, note);
+            }
+            if (allowed.Contains("dispatch"))
+            {
+                m.Buttons.Add(new NeutralButton("🚀 Xuất phát", CallbackData.Build(Kind, "dsp", routeId)));
+            }
+            foreach (var s in stops.Where(s => Strings(s, "allowedActions").Count > 0).Take(8))
+            {
+                m.Buttons.Add(new NeutralButton($"📍 #{S(s, "sequenceNo")} {S(s, "customerName") ?? S(s, "locationName")}", CallbackData.Build(Kind, "s", Guid.Parse(S(s, "id")!))));
+            }
+            m.Buttons.Add(new NeutralButton("🔄 Làm mới", CallbackData.Build(Kind, "r", routeId)));
+            await ShowAsync(ctx, m, ct);
+        }
+
+        private async Task DispatchAskAsync(BotActionContext ctx, Guid routeId, string token, CancellationToken ct)
+        {
+            if (await DetailAsync(ctx, routeId, token, ct) is not { } d)
+            {
+                return;
+            }
+            decimal min = decimal.TryParse(S(d, "deliveryTempMinC"), NumberStyles.Number, CultureInfo.InvariantCulture, out var mn) ? mn : 60m;
+            var m = new NeutralMessage { Title = "🚀 Xuất phát – nhiệt độ thức ăn (°C)", Lines = [$"Tối thiểu {min:0.##} °C. Thấp hơn → xử lý trên web (cần ghi hành động khắc phục)."] };
+            // Đã đo đạt ngưỡng → cho xuất phát 1 chạm (không đo lại).
+            if (decimal.TryParse(S(d, "departureTemperatureC"), NumberStyles.Number, CultureInfo.InvariantCulture, out var last) && last >= min)
+            {
+                m.Buttons.Add(new NeutralButton($"✅ Xuất phát (đã đo {last:0.##} °C)", CallbackData.Build(Kind, "dt", $"{routeId:N}.-")));
+            }
+            m.Buttons.AddRange(Temps.Where(t => t >= min).Select(t => new NeutralButton(t.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "dt", $"{routeId:N}.{t.ToString("0.##", CultureInfo.InvariantCulture)}"))));
+            m.Buttons.Add(new NeutralButton("Khác…", CallbackData.Build(Kind, "dtx", routeId)));
+            m.Buttons.Add(new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId)));
+            await ShowAsync(ctx, m, ct);
+        }
+
+        private async Task DispatchAsync(BotActionContext ctx, Guid routeId, string token, string? temperature, CancellationToken ct)
+        {
+            var form = new List<KeyValuePair<string, string>> { new("Id", routeId.ToString()), new("Note", "Telegram") };
+            if (temperature != null)
+            {
+                form.Add(new("TemperatureC", temperature));
+            }
+            var r = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryRoute/Dispatch", form, token, ct);
+            await RouteCardAsync(ctx, routeId, token, r.IsOk ? "✅ " + (r.ResponseMessage ?? "Đã xuất phát") : "⚠️ " + Problem(r), ct);
+        }
+
+        // ---------- Điểm dừng ----------
+
+        private async Task<(Guid RouteId, JsonElement Stop)?> StopAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
+        {
+            var s = await Web.GetAsUserAsync<JsonElement>("api/DeliveryStop/GetById?id=" + stopId, token, ct);
+            if (!s.IsOk || !Guid.TryParse(S(s.Data, "deliveryRouteId"), out Guid routeId))
+            {
+                await SayAsync(ctx, s.IsOk ? "Không tìm thấy điểm dừng." : Problem(s), ct);
+                return null;
+            }
+            if (await DetailAsync(ctx, routeId, token, ct) is not { } d)
+            {
+                return null;
+            }
+            var stop = Arr(d, "listStop").FirstOrDefault(x => Guid.TryParse(S(x, "id"), out var g) && g == stopId);
+            if (stop.ValueKind != JsonValueKind.Object)
+            {
+                await SayAsync(ctx, "Không tìm thấy điểm dừng.", ct);
+                return null;
+            }
+            return (routeId, stop);
+        }
+
+        private async Task StopCardAsync(BotActionContext ctx, Guid stopId, string token, string? note, CancellationToken ct)
+        {
+            if (await StopAsync(ctx, stopId, token, ct) is not { } x)
+            {
+                if (note != null)
+                {
+                    await SayAsync(ctx, note, ct);
+                }
+                return;
+            }
+            var s = x.Stop;
+            var allowed = Strings(s, "allowedActions");
+            var m = new NeutralMessage
+            {
+                Title = $"{StopIcon(s)} #{S(s, "sequenceNo")} {S(s, "customerName")} – {S(s, "statusName")}",
+                Lines =
+                [
+                    $"{S(s, "locationName")}{(S(s, "address") is { } a ? " · " + a : "")}",
+                    $"Giờ đến dự kiến {Time(S(s, "plannedArrival"))}{(S(s, "actualArrival") is { } aa ? " · đã đến " + Time(aa) : "")}",
+                    $"Suất: kế hoạch {N(s, "plannedMealQty")}{(S(s, "loadedQty") is { } l ? " · đã xếp " + Num(l) : "")}{(S(s, "deliveredMealQty") is { } dq ? " · đã giao " + Num(dq) : "")}",
+                ],
+            };
+            if (S(s, "handoverTemperatureC") is { } ht)
+            {
+                m.Lines.Add($"Nhiệt độ bàn giao: {Num(ht)} °C");
+            }
+            if (note != null)
+            {
+                m.Lines.Insert(0, note);
+            }
+            string n = stopId.ToString("N");
+            if (allowed.Contains("arrive"))
+            {
+                m.Buttons.Add(new NeutralButton("📍 Đã đến", CallbackData.Build(Kind, "arr", n)));
+            }
+            if (allowed.Contains("deliver"))
+            {
+                m.Buttons.Add(new NeutralButton("✅ Giao", CallbackData.Build(Kind, "dl", n)));
+            }
+            if (allowed.Contains("fail"))
+            {
+                m.Buttons.Add(new NeutralButton("❌ Không giao được", CallbackData.Build(Kind, "fl", n)));
+            }
+            m.Buttons.Add(new NeutralButton("⬅️ Chuyến", CallbackData.Build(Kind, "r", x.RouteId)));
+            await ShowAsync(ctx, m, ct);
+        }
+
+        private async Task StopPostAsync(BotActionContext ctx, Guid stopId, string token, string path, List<KeyValuePair<string, string>> form, CancellationToken ct)
+        {
+            var r = await Web.PostFormAsUserAsync<JsonElement>(path, form, token, ct);
+            await StopCardAsync(ctx, stopId, token, r.IsOk ? "✅ " + (r.ResponseMessage ?? "Đã ghi") : "⚠️ " + Problem(r), ct);
+        }
+
+        private async Task DeliverQtyAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
+        {
+            if (await StopAsync(ctx, stopId, token, ct) is not { } x)
+            {
+                return;
+            }
+            // Điền sẵn số đã biết: đã xếp lên xe (nếu có) rồi kế hoạch – bấm 1 chạm nếu đúng.
+            decimal planned = Dec(x.Stop, "plannedMealQty"), loaded = Dec(x.Stop, "loadedQty");
+            decimal known = loaded > 0 ? loaded : planned;
+            var presets = new[] { known, planned, Math.Floor(known * 0.98m), Math.Floor(known * 0.95m) }.Where(q => q > 0).Distinct().ToList();
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = "✅ Giao – số suất thực tế",
+                Lines = [$"Kế hoạch {planned:0.##}{(loaded > 0 ? $" · đã xếp {loaded:0.##}" : "")} suất"],
+                Buttons = [.. presets.Select(q => new NeutralButton((q == known ? "✅ Đúng " : "") + q.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "dq", $"{stopId:N}.{q.ToString("0.##", CultureInfo.InvariantCulture)}"))),
+                    new NeutralButton("Khác…", CallbackData.Build(Kind, "dqx", stopId)), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "s", stopId))],
+            }, ct);
+        }
+
+        private Task DeliverTempAsync(BotActionContext ctx, Guid stopId, string qty, CancellationToken ct)
+            => ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"🌡 Nhiệt độ bàn giao (°C) – {qty} suất",
+                Lines = ["Chọn nhiệt độ đo lúc bàn giao (thấp hơn ngưỡng → ghi trên web kèm hành động khắc phục)."],
+                Buttons = [.. Temps.Select(t => new NeutralButton(t.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "dv", $"{stopId:N}.{qty}.{t.ToString("0.##", CultureInfo.InvariantCulture)}"))),
+                    new NeutralButton("Không đo", CallbackData.Build(Kind, "dv", $"{stopId:N}.{qty}.-")), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "s", stopId))],
+            }, ct);
+
+        // ---------- Hiển thị ----------
+
+        private static string RouteLine(JsonElement r)
+        {
+            var stops = Arr(r, "listStop");
+            int done = stops.Count(s => S(s, "stopStatus") is "Delivered" or "Failed");
+            return $"{RouteIcon(r)} {RouteNo(r)} · {S(r, "licensePlate") ?? S(r, "vehicleCode") ?? "-"} · {Time(S(Route(r), "plannedStart"))} · {S(r, "statusName")} · {done}/{stops.Count} điểm";
+        }
+
+        private static string StopLine(JsonElement s)
+            => $"{StopIcon(s)} #{S(s, "sequenceNo")} {S(s, "customerName") ?? S(s, "locationName")} · {Time(S(s, "plannedArrival"))} · {N(s, "plannedMealQty")} suất";
+
+        private static string RouteIcon(JsonElement r) => S(Route(r), "status") switch
+        {
+            "Planned" => "⏳",
+            "Loading" => "📦",
+            "InTransit" => "🚚",
+            "Completed" => "✅",
+            _ => "•",
+        };
+
+        private static string StopIcon(JsonElement s) => S(s, "stopStatus") switch
+        {
+            "Arrived" => "📍",
+            "Delivered" => "✅",
+            "Failed" => "❌",
+            _ => "⏳",
+        };
+
+        private static JsonElement Route(JsonElement r) => r.ValueKind == JsonValueKind.Object && r.TryGetProperty("route", out var x) ? x : default;
+
+        private static string RouteNo(JsonElement r) => S(Route(r), "routeNo") ?? S(Route(r), "code") ?? "Chuyến";
+
+        private static Guid RouteId(JsonElement r) => Guid.TryParse(S(Route(r), "id"), out var g) ? g : Guid.Empty;
+
+        public static List<JsonElement> Arr(JsonElement e, string k)
+            => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Array ? [.. v.EnumerateArray()] : [];
+
+        private static List<string> Strings(JsonElement e, string k) => [.. Arr(e, k).Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()!)];
+
+        private static string? S(JsonElement e, string k) => BepActions.S(e, k);
+
+        private static decimal Dec(JsonElement e, string k) => decimal.TryParse(S(e, k), NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d : 0m;
+
+        private static string N(JsonElement e, string k) => Dec(e, k).ToString("0.##", CultureInfo.InvariantCulture);
+
+        private static string Num(string s) => decimal.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d.ToString("0.##", CultureInfo.InvariantCulture) : s;
+
+        private static string Time(string? s) => DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var t) ? t.ToString("HH:mm") : "--:--";
+    }
+}

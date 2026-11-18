@@ -6,6 +6,7 @@ using AppDelicare.Model.Model;
 using AppDelicare.Model.Option;
 using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
@@ -27,7 +28,8 @@ namespace AppDelicare.Services.Jobs
     }
 
     /// <summary>T23 (D-48): điều phối job – dùng chung cho AppDelicare.Job (hẹn giờ) và <c>api/Job/Run</c> (bấm tay).</summary>
-    public sealed class JobRunService(IEnumerable<IScheduledJob> jobs, IConfiguration configuration, IClock clock, ICurrentActor currentActor) : IJobRunService
+    public sealed class JobRunService(IEnumerable<IScheduledJob> jobs, IConfiguration configuration, IClock clock, ICurrentActor currentActor,
+        IUnitOfWork unitOfWork, AppDelicare.Services.Interface.INotificationService notifications) : IJobRunService
     {
         private readonly List<IScheduledJob> _jobs = jobs.OrderBy(j => j.Code, StringComparer.Ordinal).ToList();
         private readonly IConfiguration _configuration = configuration;
@@ -77,6 +79,29 @@ namespace AppDelicare.Services.Jobs
                               && !(last.GetValueOrDefault(job.Code) is { } run && run.StartedAt >= slot))
                 .Select(job => job.Code)
                 .ToList();
+        }
+
+        /// <summary>BOT-1.7: SYSTEM_JOB_FAILED → quản trị (admin – màn job chỉ admin), 1 tin / lần chạy lỗi.</summary>
+        private async Task NotifyFailedAsync(IScheduledJob job, JobRunResultModel run, ActorInfo actor)
+        {
+            try
+            {
+                var admins = await unitOfWork.DbContext.User.AsNoTracking().Where(u => !u.IsDeleted && u.IsActive && u.IsAdmin).Select(u => u.Id).ToListAsync();
+                using (currentActor.BeginScope(actor))
+                {
+                    await AppDelicare.Services.Implement.Messaging.BusinessNotifier.SafeEnqueueAsync(notifications, new NotificationRequest
+                    {
+                        Template = AppDelicare.Services.Implement.Messaging.NotificationCatalog.SystemJobFailed,
+                        UserIds = admins,
+                        Data = new { title = $"{job.Name} ({job.Code})", detail = run.Message, lines = new[] { $"Lúc {run.StartedAt:HH:mm dd/MM} · {run.Trigger}" } },
+                        IdempotencyKey = $"SYSTEM_JOB_FAILED:{job.Code}:{run.RunId:N}",
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[Job] {JobCode}: không gửi được cảnh báo job lỗi", job.Code);
+            }
         }
 
         public async Task<IResult<JobRunResultModel>> Run(string jobCode, string trigger, CancellationToken cancellationToken = default)
@@ -141,6 +166,10 @@ namespace AppDelicare.Services.Jobs
             run.Message = outcome.Message;
             run.CompletedAt = _clock.Now;
             await UpdateLogAsync(run, actor.UserId);
+            if (run.RunStatus == JobRunStatus.Failed)
+            {
+                await NotifyFailedAsync(job, run, actor);
+            }
             Log.Information("[Job] {JobCode} xong: {RunStatus}, {Rows} dòng, ngày {TargetDate:dd/MM/yyyy} – {Message}",
                 job.Code, run.RunStatus, run.RowsProcessed, run.TargetDate, run.Message);
             return run.RunStatus == JobRunStatus.Failed

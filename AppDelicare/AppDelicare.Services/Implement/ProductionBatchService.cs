@@ -17,6 +17,8 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
 
+using AppDelicare.Services.Implement.Messaging;
+
 namespace AppDelicare.Services.Implement
 {
     /// <summary>
@@ -25,8 +27,9 @@ namespace AppDelicare.Services.Implement
     /// </summary>
     public class ProductionBatchService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IMaterialIssueService materialIssueService, IUomConversionService uomConversionService
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IProductionBatchService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IProductionBatchService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -443,18 +446,18 @@ namespace AppDelicare.Services.Implement
         /// Dưới ngưỡng → bắt buộc hành động khắc phục, mẻ bị chặn đạt QC / đóng gói tới khi đo lại đạt (lần đo gần nhất quyết định).
         /// </summary>
         public Task<IResult<ProductionBatchDetailModel>> RecordCoreTemperature(ProductionBatchTemperatureRequest request)
-            => RunAsync(request.Id, "ghi nhiệt độ lõi", [ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed], (batch, order, actor, warnings) =>
+            => RunAsync(request.Id, "ghi nhiệt độ lõi", [ProductionBatchStatus.Cooking, ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed], async (batch, order, actor, warnings) =>
             {
                 if (TemperatureTime.Resolve(request.MeasuredAt, _clock, out DateTime measuredAt) is string timeError)
                 {
-                    return Task.FromResult<string?>(timeError); // Rà soát BE: giờ đo ngoài khoảng → không ghi (chống "che" lần đo thật).
+                    return timeError; // Rà soát BE: giờ đo ngoài khoảng → không ghi (chống "che" lần đo thật).
                 }
                 decimal min = _rules.CoreTempMinC;
                 bool within = request.TemperatureC >= min;
                 string? corrective = string.IsNullOrWhiteSpace(request.CorrectiveAction) ? null : request.CorrectiveAction.Trim();
                 if (!within && corrective == null)
                 {
-                    return Task.FromResult<string?>(string.Format(ConstantHelper.Message.CoreTempCorrectiveRequired, ProductionRules.Num(request.TemperatureC), ProductionRules.Num(min)));
+                    return string.Format(ConstantHelper.Message.CoreTempCorrectiveRequired, ProductionRules.Num(request.TemperatureC), ProductionRules.Num(min));
                 }
                 _unitOfWork.TemperatureLogRepository.Add(new TemperatureLog
                 {
@@ -474,8 +477,13 @@ namespace AppDelicare.Services.Implement
                 if (!within)
                 {
                     warnings.Add(string.Format(ConstantHelper.Message.CoreTempBelowWarning, ProductionRules.Num(request.TemperatureC), ProductionRules.Num(min)));
+                    // BOT-1.7: CORE_TEMP_LOW → trưởng ca, QA (liên phòng – bot DH / VH).
+                    await BusinessNotifier.ToMenusAsync(_notifications, _unitOfWork.DbContext, NotificationCatalog.CoreTempLow, ["#/prod-batch", "#/qc-checklist-result"],
+                        new { title = "Mẻ " + (batch.BatchNumber ?? batch.BatchNo), detail = $"Lõi {ProductionRules.Num(request.TemperatureC)} °C < {ProductionRules.Num(min)} °C lúc {measuredAt:HH:mm} – khắc phục: {corrective}" },
+                        $"{NotificationCatalog.CoreTempLow}:{batch.Id:N}:{measuredAt:yyyyMMddHHmmss}",
+                        buttons: [new NotificationButton("🔍 Xem mẻ", BusinessNotifier.Callback("bat", "view", batch.Id))], except: actor.UserId);
                 }
-                return Task.FromResult<string?>(null);
+                return null;
             });
 
         /// <summary>
