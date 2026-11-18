@@ -59,6 +59,7 @@ namespace AppDelicare.Messaging
             // BOT-1.5a: luồng nhiều bước + phân hệ Bếp, ATTP (mỗi lớp vừa là provider chức năng vừa xử lý nút của mình – 1 instance).
             builder.Services.AddSingleton<ConversationStore>();
             builder.Services.AddSingleton<AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow>();
+            builder.Services.AddSingleton<AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow>();
             builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions>();
             builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions>());
             builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions>();
@@ -68,6 +69,16 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions>());
             builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions>();
             builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions>());
+            // BOT-1.5c: phản ánh (CSKH + điểm phát), nhân sự (ai chưa vào ca, chấm hộ).
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions>());
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions>());
+            // BOT-1.5c-2: chức năng chỉ xem (Kho, Kế hoạch, Kinh doanh, Kế toán, QA, Quản trị).
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.XemNhanhActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.XemNhanhActions>());
+            // BOT-1.6: bot Điều hành (DH).
+            builder.Services.AddSingleton<IBotActionProvider, AppDelicare.Messaging.Audiences.Internal.DieuHanh.DieuHanhActions>();
             builder.Services.AddSingleton<BotActionRegistry>();
             builder.Services.AddSingleton<MenuNavigator>();
             builder.Services.AddSingleton<CodeSearch>();

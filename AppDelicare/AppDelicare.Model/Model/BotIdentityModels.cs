@@ -146,6 +146,27 @@ namespace AppDelicare.Model.Model
         public string? AssignmentStatus { get; set; }
     }
 
+    /// <summary>BOT-1.5c (DECISIONS p24): ca có thể đổi với ca của tôi – chỉ tên đồng nghiệp cùng đơn vị + ca (không lộ dữ liệu khác).</summary>
+    public class BotSwapCandidatesModel
+    {
+        public BotEmployeeShiftModel Current { get; set; } = null!;
+        /// <summary>Ca còn mở của đồng nghiệp (đổi chéo).</summary>
+        public List<BotSwapCandidateModel> ListShift { get; set; } = [];
+        /// <summary>Đồng nghiệp đang làm cùng đơn vị (nhường ca).</summary>
+        public List<BotSwapCandidateModel> ListColleague { get; set; } = [];
+    }
+
+    public class BotSwapCandidateModel
+    {
+        public Guid EmployeeId { get; set; }
+        public string? EmployeeName { get; set; }
+        public Guid? AssignmentId { get; set; }
+        public DateTime? WorkDate { get; set; }
+        public string? ShiftName { get; set; }
+        public DateTime? PlannedStart { get; set; }
+        public DateTime? PlannedEnd { get; set; }
+    }
+
     public class BotEmployeeRequestItemModel
     {
         public Guid Id { get; set; }
