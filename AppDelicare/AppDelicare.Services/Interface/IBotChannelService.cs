@@ -15,5 +15,6 @@ namespace AppDelicare.Services.Interface
         Task<IResult<bool>> RetryOutbound(Guid id);
         Task<IResult<OutboundEnqueueResultModel>> EnqueueManual(OutboundMessageEnqueueRequest request);
         Task<IResult<ConversationResultModel>> GetConversation(ConversationSearchRequest request);
+        Task<IResults<BotCorrelatedMessageModel>> GetCorrelated(BotCorrelatedRequest request);
     }
 }

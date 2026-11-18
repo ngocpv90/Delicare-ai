@@ -20,7 +20,7 @@ namespace AppDelicare.Services.Interface
         /// <param name="proposalJson">T13 (tùy chọn): thay đổi đề xuất, thực thi khi được duyệt. Có giá trị → PayloadJson = {"state": "&lt;nội dung&gt;", "proposal": "&lt;đề xuất&gt;"}; null → giữ định dạng cũ.</param>
         public Task<(ApprovalRequest? Request, string? Error)> CreateAsync(string businessType, Guid businessId, string? proposalJson = null);
         /// <summary>T12: yêu cầu chờ người đang đăng nhập duyệt; type = screen-id.</summary>
-        public Task<IResults<ApprovalPendingModel>> GetMyPending(string? type);
+        public Task<IResults<ApprovalPendingModel>> GetMyPending(string? type, bool explicitOnly = false);
         /// <summary>T12: duyệt / từ chối 1 cấp và thực thi nghiệp vụ.</summary>
         public Task<IResult<bool>> Decide(ApprovalDecideRequest request);
 

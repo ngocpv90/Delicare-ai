@@ -451,6 +451,26 @@ namespace AppDelicare.Services.Implement.Messaging
             }, ConstantHelper.Message.GetAllSuccessfully);
         }
 
+        /// <summary>BOT-1.4: tin đã gửi (có message_id) cùng sự việc – messaging sửa đồng loạt thẻ ở mọi người nhận (đã duyệt / đã nhận xử lý).</summary>
+        public async Task<IResults<BotCorrelatedMessageModel>> GetCorrelated(BotCorrelatedRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.CorrelationId))
+            {
+                return Results<BotCorrelatedMessageModel>.Success([], ConstantHelper.Message.GetAllSuccessfully);
+            }
+            var db = unitOfWork.DbContext;
+            var botOf = (await RecipientResolver.ActiveBotsAsync(db)).ToDictionary(kv => kv.Value, kv => kv.Key);
+            string corr = request.CorrelationId.Trim();
+            var rows = await db.OutboundMessage.AsNoTracking()
+                .Where(m => !m.IsDeleted && m.CorrelationId == corr && m.MessageStatus == MessagingCode.Outbound.Sent && m.ProviderMessageId != null)
+                .OrderBy(m => m.SentAt).Take(200).ToListAsync();
+            return Results<BotCorrelatedMessageModel>.Success(rows.Where(m => botOf.ContainsKey(m.IntegrationChannelId)).Select(m => new BotCorrelatedMessageModel
+            {
+                Id = m.Id, BotCode = botOf[m.IntegrationChannelId], ExternalConversationId = m.ExternalConversationId ?? m.RecipientExternalId,
+                ProviderMessageId = m.ProviderMessageId, MessageType = m.MessageType,
+            }).ToList(), ConstantHelper.Message.GetAllSuccessfully);
+        }
+
         // ---------------------------------------------------------------- nội bộ
 
         /// <summary>Đọc dòng cùng khóa với khóa phạm vi giữ tới hết transaction (SQL Server) – request thứ 2 chờ request 1 commit rồi thấy dòng đã có.</summary>

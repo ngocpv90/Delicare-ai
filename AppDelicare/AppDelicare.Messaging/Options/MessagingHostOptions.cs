@@ -31,5 +31,25 @@ namespace AppDelicare.Messaging.Options
 
         /// <summary>Cache định danh (ResolveIdentity) N giây.</summary>
         public int IdentityCacheSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// BOT-1.4 (BOT_TELEGRAM §4, PROPOSED): mức rủi ro duyệt theo BusinessType (hằng trong *ApprovalHandler). Thấp = 1 chạm + hoàn tác + duyệt hàng loạt;
+        /// loại không có trong <c>Low</c> = Cao (xác nhận 2 bước). Rỗng = mặc định trong code.
+        /// </summary>
+        public List<string> ApprovalRiskLow { get; set; } = [];
+
+        public static readonly IReadOnlyList<string> DefaultApprovalRiskLow = ["LEAVE_REQUEST", "SHIFT_SWAP", "MENU_CHANGE"];
+
+        public IReadOnlyList<string> EffectiveRiskLow => ApprovalRiskLow.Count > 0 ? ApprovalRiskLow : DefaultApprovalRiskLow;
+
+        /// <summary>
+        /// BOT-1.4 (BOT_TELEGRAM §1.4): tiền tố mã chứng từ ĐANG SINH trong DocumentNumberService (PH, XN, PA, PO, DN, NL, ME, CX, KH, VS, HD) → gõ mã là tra.
+        /// Rỗng = mặc định trong code (không đặt tiền tố mới).
+        /// </summary>
+        public List<string> CodePrefixes { get; set; } = [];
+
+        public static readonly IReadOnlyList<string> DefaultCodePrefixes = ["PH", "XN", "PA", "PO", "DN", "NL", "ME", "CX", "KH", "VS", "HD"];
+
+        public IReadOnlyList<string> EffectiveCodePrefixes => CodePrefixes.Count > 0 ? CodePrefixes : DefaultCodePrefixes;
     }
 }

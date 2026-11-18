@@ -115,11 +115,12 @@ namespace AppDelicare.WebApi.Controllers
         /// <summary>T12: yêu cầu chờ tôi duyệt (hộp duyệt). type = screen-id để lọc, vd. menu-recipe. Chỉ trả loại mà người đang đăng nhập có quyền duyệt (mục menu "Duyệt – …").</summary>
         [Security.SkipPermission]
         [HttpGet("GetMyPending")]
-        public async Task<IActionResult> GetMyPending(string? type)
+        public async Task<IActionResult> GetMyPending(string? type, bool explicitOnly = false)
         {
             try
             {
-                return Ok(await _service.GetMyPending(type));
+                // BOT-1.4: explicitOnly = chỉ bước có quyền Duyệt được cấp rõ (không tính quyền admin) – bot "Chờ tôi duyệt" không ngập việc của admin.
+                return Ok(await _service.GetMyPending(type, explicitOnly));
             }
             catch (Exception ex)
             {

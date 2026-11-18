@@ -46,6 +46,27 @@ namespace AppDelicare.Model.Model
         public bool CanUseDieuHanh { get; set; }
         /// <summary>Có quyền vào bot đang gọi (#/bot-van-hanh / #/bot-dieu-hanh). false → bot chỉ trả lời "chưa được cấp quyền".</summary>
         public bool CanUseBot { get; set; }
+        /// <summary>BOT-1.4: MetaLink các menu được vào (AllowAccess) – bot dựng menu chức năng theo quyền.</summary>
+        public List<string> Menus { get; set; } = [];
+        /// <summary>BOT-1.4: screen-id các mục được Duyệt rõ (AllowEdit trên #/wf-inbox?type=…) – PendingCode → rỗng.</summary>
+        public List<string> ApproveScreens { get; set; } = [];
+        /// <summary>BOT-1.4: admin (PendingCode → false).</summary>
+        public bool IsAdmin { get; set; }
+    }
+
+    /// <summary>BOT-1.4: 1 tin đã gửi cùng sự việc (CorrelationId) – messaging sửa đồng loạt (đã duyệt / đã nhận).</summary>
+    public class BotCorrelatedMessageModel
+    {
+        public Guid Id { get; set; }
+        public string? BotCode { get; set; }
+        public string? ExternalConversationId { get; set; }
+        public string? ProviderMessageId { get; set; }
+        public string? MessageType { get; set; }
+    }
+
+    public class BotCorrelatedRequest
+    {
+        public string? CorrelationId { get; set; }
     }
 
     public class UserTokenModel

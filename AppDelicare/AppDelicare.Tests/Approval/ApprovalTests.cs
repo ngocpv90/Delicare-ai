@@ -81,6 +81,19 @@ namespace AppDelicare.Tests.Approval
             (await RequestOfAsync(recipe)).RequestStatus.Should().Be("Pending");
         }
 
+        /// <summary>BOT-1.4: explicitOnly (bot "Chờ tôi duyệt") – admin không có quyền Duyệt được cấp rõ thì không thấy (không ngập); người được cấp vẫn thấy.</summary>
+        [Fact]
+        public async Task Explicit_only_pending_excludes_admin_bypass_but_keeps_real_approver()
+        {
+            var recipe = await SubmittedRecipeAsync("AP-EXPL");
+            var request = await RequestOfAsync(recipe);
+            using var admin = _factory.CreateAuthorizedClient();
+            (await admin.GetResultAsync("/api/ApprovalRequest/GetMyPending")).ListData.EnumerateArray().Should().Contain(x => x.GetProperty("id").GetGuid() == request.Id);
+            (await admin.GetResultAsync("/api/ApprovalRequest/GetMyPending?explicitOnly=true")).ListData.EnumerateArray().Should().NotContain(x => x.GetProperty("id").GetGuid() == request.Id);
+            using var approver = _factory.CreateAuthorizedClient(await UserAsync(withApprove: true));
+            (await approver.GetResultAsync("/api/ApprovalRequest/GetMyPending?explicitOnly=true")).ListData.EnumerateArray().Should().Contain(x => x.GetProperty("id").GetGuid() == request.Id);
+        }
+
         [Fact]
         public async Task Approve_executes_the_business_action_and_writes_an_append_only_decision()
         {

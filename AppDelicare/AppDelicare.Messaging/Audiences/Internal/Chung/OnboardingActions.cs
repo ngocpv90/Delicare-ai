@@ -1,3 +1,4 @@
+using AppDelicare.Messaging.Audiences.Internal;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Channels.Telegram;
 using AppDelicare.Messaging.Channels.Telegram.Models;
@@ -15,7 +16,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
     /// <c>/start &lt;mã&gt;</c> (mã web / HR) → LinkByCode; liên hệ chia sẻ → chỉ nhận số của chính người gửi → LinkByPhone; <c>/huylienket</c> → gỡ.
     /// Bot không tự quyết: kết quả và câu báo lỗi lấy từ api.
     /// </summary>
-    public sealed class OnboardingActions(IBotChannelApi api, BotUserContext users, UserTokenCache tokens, IChannelSender sender, IOptionsMonitor<TelegramOptions> telegram)
+    public sealed class OnboardingActions(IBotChannelApi api, BotUserContext users, UserTokenCache tokens, IChannelSender sender, IOptionsMonitor<TelegramOptions> telegram,
+        BotActionRegistry registry, CommandScopeSync commands)
     {
         /// <summary>Tham số /start không phải mã liên kết (QR cổng chấm công; QR vật thể ở BOT-2.4).</summary>
         private static readonly HashSet<string> StartKeywords = new(StringComparer.OrdinalIgnoreCase) { "CHAMCONG" };
@@ -109,14 +111,17 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             }
             else
             {
-                lines.Add("Dùng 3 nút bên dưới: " + KeyboardBuilder.MyShift + " · " + KeyboardBuilder.Functions + " · " + KeyboardBuilder.Help + ".");
+                lines.Add("Dùng các nút bên dưới; gõ /menu để xem mọi chức năng.");
             }
             if (identity.NeedsCode)
             {
                 lines.Add("Bạn có quyền duyệt: để duyệt trên bot, lấy mã liên kết trên web (Hồ sơ cá nhân → Liên kết Telegram) rồi gửi /start <mã>.");
             }
             var message = new NeutralMessage { Title = "Xin chào " + (identity.FullName ?? e.DisplayName ?? "bạn"), Lines = lines };
-            await BotReply.SendAsync(sender, bot, e.ChatId, message, identity.CanUseBot ? KeyboardBuilder.MainMenu() : KeyboardBuilder.Remove(), ct);
+            // BOT-1.4: bàn phím theo số chức năng (≤ 6 → phẳng; nhiều hơn → 3 nút cố định) + lệnh "/" riêng cho chat này theo quyền.
+            var actions = registry.Available(bot, identity);
+            await BotReply.SendAsync(sender, bot, e.ChatId, message, identity.CanUseBot ? KeyboardBuilder.ForActions(actions) : KeyboardBuilder.Remove(), ct);
+            await commands.SyncAsync(bot, e.ChatId, identity, ct);
             // Người có quyền bot Điều hành: bot VH gửi nút mở bot DH (Telegram bắt buộc /start bot DH một lần – BOT_TELEGRAM §2.4).
             string? dh = telegram.CurrentValue.Bots.TryGetValue("DH", out var d) ? d.Username : null;
             if (identity.CanUseDieuHanh && string.Equals(bot, "VH", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(dh))

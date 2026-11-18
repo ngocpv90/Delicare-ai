@@ -87,6 +87,10 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("EmployeeGetMyRequests")]
         public Task<IActionResult> EmployeeGetMyRequests([FromBody] BotIdentityRequest request) => Run(nameof(EmployeeGetMyRequests), () => employee.GetMyRequests(request));
 
+        /// <summary>BOT-1.4: tin đã gửi cùng CorrelationId (mã sự việc) – sửa đồng loạt thẻ.</summary>
+        [HttpPost("GetCorrelated")]
+        public Task<IActionResult> GetCorrelated([FromBody] BotCorrelatedRequest request) => Run(nameof(GetCorrelated), () => _service.GetCorrelated(request));
+
         private async Task<IActionResult> Run<T>(string action, Func<Task<T>> call)
         {
             try
