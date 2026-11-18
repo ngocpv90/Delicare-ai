@@ -656,5 +656,63 @@ namespace AppDelicare.Services.Implement
             }
             return Results<BotEmployeeShiftModel>.Success(await Identity.BotEmployeeService.ShiftsAsync(_unitOfWork, _clock, employee.Id, days), ConstantHelper.Message.GetAllSuccessfully);
         }
+
+        /// <summary>
+        /// BOT-1.5c (DECISIONS p24 – 🔁 Đổi ca trên bot): với 1 ca CÒN MỞ của chính tài khoản, trả ca còn mở của đồng nghiệp cùng đơn vị (± 7 ngày quanh ca đó, từ hôm nay)
+        /// để đổi chéo, và danh sách đồng nghiệp để nhường ca. Chỉ tên + ca. Quy tắc đổi (đã chấm công, trùng giờ, đơn đang chờ…) vẫn kiểm ở ShiftSwapRequest/Create.
+        /// </summary>
+        public async Task<IResult<BotSwapCandidatesModel>> GetSwapCandidates(Guid assignmentId)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var employee = await HrRules.ResolveEmployeeAsync(db, _currentActor.RequireActor().UserId);
+                if (employee == null)
+                {
+                    return Result<BotSwapCandidatesModel>.Fail(ConstantHelper.Message.HrUserNoEmployee);
+                }
+                var mine = await db.ShiftAssignment.AsNoTracking().FirstOrDefaultAsync(a => a.Id == assignmentId && !a.IsDeleted && a.EmployeeId == employee.Id);
+                if (mine == null || !ShiftAssignmentStatus.Open.Contains(mine.AssignmentStatus))
+                {
+                    return Result<BotSwapCandidatesModel>.Fail(ConstantHelper.Message.HrSwapAssignmentNotFound);
+                }
+                var shiftNames = await db.Shift.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s.Name ?? s.Code);
+                var colleagues = employee.OrganizationUnitId is not { } unit ? []
+                    : (await db.Employee.AsNoTracking().Where(e => !e.IsDeleted && e.Id != employee.Id && e.OrganizationUnitId == unit)
+                        .Select(e => new { e.Id, e.FullName, e.Code, e.Status }).ToListAsync())
+                        .Where(e => EmployeeStatus.IsWorking(e.Status)).OrderBy(e => e.FullName).ToList();
+                var names = colleagues.ToDictionary(e => e.Id, e => e.FullName ?? e.Code);
+                var ids = names.Keys.ToList();
+                DateTime today = _clock.Today, from = mine.WorkDate.Date.AddDays(-7), to = mine.WorkDate.Date.AddDays(8);
+                if (from < today)
+                {
+                    from = today;
+                }
+                var open = ShiftAssignmentStatus.Open.ToList();
+                var shifts = ids.Count == 0 ? []
+                    : await db.ShiftAssignment.AsNoTracking()
+                        .Where(a => !a.IsDeleted && ids.Contains(a.EmployeeId) && a.WorkDate >= from && a.WorkDate < to && open.Contains(a.AssignmentStatus!))
+                        .OrderBy(a => a.WorkDate).ThenBy(a => a.PlannedStart).Take(60).ToListAsync();
+                return Result<BotSwapCandidatesModel>.Success(new BotSwapCandidatesModel
+                {
+                    Current = new BotEmployeeShiftModel
+                    {
+                        AssignmentId = mine.Id, WorkDate = mine.WorkDate, ShiftName = shiftNames.GetValueOrDefault(mine.ShiftId),
+                        PlannedStart = mine.PlannedStart, PlannedEnd = mine.PlannedEnd, AssignmentStatus = mine.AssignmentStatus,
+                    },
+                    ListShift = [.. shifts.Where(a => !(a.ShiftId == mine.ShiftId && a.WorkDate.Date == mine.WorkDate.Date)).Take(30).Select(a => new BotSwapCandidateModel
+                    {
+                        EmployeeId = a.EmployeeId, EmployeeName = names.GetValueOrDefault(a.EmployeeId), AssignmentId = a.Id, WorkDate = a.WorkDate,
+                        ShiftName = shiftNames.GetValueOrDefault(a.ShiftId), PlannedStart = a.PlannedStart, PlannedEnd = a.PlannedEnd,
+                    })],
+                    ListColleague = [.. colleagues.Take(30).Select(e => new BotSwapCandidateModel { EmployeeId = e.Id, EmployeeName = e.FullName ?? e.Code })],
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSwapCandidates: ", ex.ToString()));
+                throw;
+            }
+        }
     }
 }

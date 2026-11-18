@@ -22,6 +22,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<ShiftGridModel>> GetGrid(ShiftGridRequest request);
         /// <summary>BOT-1.5a: lịch ca của chính tài khoản đang đăng nhập.</summary>
         public Task<IResults<BotEmployeeShiftModel>> GetMine(int days);
+        public Task<IResult<BotSwapCandidatesModel>> GetSwapCandidates(Guid assignmentId);
         /// <summary>Phân / đổi / bỏ ca 1 nhân viên 1 ngày (upsert).</summary>
         public Task<IResult<ShiftAssignResultModel>> Assign(ShiftAssignRequest request);
         /// <summary>Phân ca hàng loạt (nhân viên × khoảng ngày).</summary>

@@ -24,8 +24,9 @@ namespace AppDelicare.Messaging.Processing
     /// </summary>
     public sealed class UpdateDispatcher(OnboardingActions onboarding, HelpActions help, BotUserContext users, IBotChannelApi api, IChannelSender sender,
         BotActionRegistry registry, MenuNavigator menu, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
-        AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
-        AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat)
+        AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat,
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -94,6 +95,9 @@ namespace AppDelicare.Messaging.Processing
                         or AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.ReplyReason:
                         await leave.ReplyAsync(ctx, pending, ct);
                         break;
+                    case AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow.ReplyReason:
+                        await swap.ReplyAsync(ctx, pending, ct);
+                        break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty:
                         await bep.ReplyAsync(ctx, pending, ct);
                         break;
@@ -103,6 +107,13 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions.ReplyServed:
                         await diemPhat.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions.ReplyCustomer or AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions.ReplyDescription
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions.ReplyResolve or AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions.ReplyComment:
+                        await phanAnh.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions.ReplyProxy:
+                        await nhanSu.ReplyAsync(ctx, pending, ct);
                         break;
                 }
                 return DispatchResult.Processed;
@@ -121,6 +132,9 @@ namespace AppDelicare.Messaging.Processing
                     case AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow.Kind:
                         await leave.HandleAsync(ctx, data, ct);
                         break;
+                    case AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow.Kind:
+                        await swap.HandleAsync(ctx, data, ct);
+                        break;
                     case CallbackData.Kinds.Batch:
                         await bep.HandleAsync(ctx, data, ct);
                         break;
@@ -132,6 +146,12 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case CallbackData.Kinds.Reconciliation:
                         await diemPhat.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Complaint:
+                        await phanAnh.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Hr:
+                        await nhanSu.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Undo when data.Action == "apv":
                         await approvals.UndoAsync(ctx, data, ct);
