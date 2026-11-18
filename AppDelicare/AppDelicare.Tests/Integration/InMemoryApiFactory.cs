@@ -52,6 +52,8 @@ namespace AppDelicare.Tests.Integration
                     ["Jwt:AccessTokenMinutes"] = "30",
                     ["JwtIssuerOptions:Issuer"] = Issuer,
                     ["JwtIssuerOptions:Audience"] = Audience,
+                    // BOT-2.3: giờ yên lặng theo ca TẮT mặc định trong test (test cũ chạy theo giờ thật) – test giờ yên lặng bật qua Settings.
+                    ["Messaging:QuietHours:Enabled"] = "false",
                 });
                 // BE2.3: cấu hình riêng của 1 test (vd. BusinessRules:ApprovalSteps:CONTRACT:0) – đặt trước lần gọi CreateClient đầu tiên.
                 if (Settings.Count > 0)

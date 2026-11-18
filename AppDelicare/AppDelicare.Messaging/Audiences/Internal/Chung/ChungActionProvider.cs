@@ -7,11 +7,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
     /// Phân hệ nghiệp vụ (Bếp, Kho, Giao vận…) thêm ở BOT-1.5 / 1.6 bằng provider riêng.
     /// </summary>
     public sealed class ChungActionProvider(HelpActions help, SelfServiceActions self, ApprovalActions approvals, AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave,
-        AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap) : IBotActionProvider
+        AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap, Lazy<ShiftCards> shiftCards) : IBotActionProvider
     {
         public IEnumerable<BotAction> GetActions() =>
         [
-            new BotAction { Code = "my_shift", Module = "CHUNG", Label = KeyboardBuilder.MyShift, Order = 1, Handler = (c, ct) => help.MyShiftAsync(c.Bot, c.Event, c.Identity, ct) },
+            new BotAction { Code = "my_shift", Module = "CHUNG", Label = KeyboardBuilder.MyShift, Order = 1, Handler = (c, ct) => shiftCards.Value.MyCardAsync(c, ct) }, // BOT-2.1: ⚡ = làm mới Thẻ ca
             new BotAction { Code = "check_in", Module = "CHUNG", Label = KeyboardBuilder.CheckIn, Command = "chamcong", CommandDescription = "Chấm công vào / ra", Order = 2, Handler = self.PromptLocationAsync },
             new BotAction { Code = "my_schedule", Module = "CHUNG", Label = "📅 Lịch ca", Command = "lichca", CommandDescription = "Lịch ca 7 ngày", Order = 3, Handler = self.MyShiftsAsync },
             new BotAction { Code = "leave", Module = "CHUNG", Label = "🏖 Xin nghỉ", Command = "nghi", CommandDescription = "Xin nghỉ", Order = 4, Handler = leave.StartAsync },

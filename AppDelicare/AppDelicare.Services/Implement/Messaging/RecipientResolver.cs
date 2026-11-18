@@ -85,6 +85,21 @@ namespace AppDelicare.Services.Implement.Messaging
                             && !u.IsDeleted && u.IsActive
                       select u.Id).Distinct().ToListAsync(ct);
 
+        /// <summary>BOT-2.2 / 2.3: tài khoản đang hoạt động thuộc các nhóm quyền theo TÊN (bậc leo thang – vd. "COO").</summary>
+        public static async Task<List<Guid>> UsersInGroupsAsync(DatabaseContext db, IReadOnlyCollection<string> groups, CancellationToken ct = default)
+        {
+            if (groups.Count == 0)
+            {
+                return [];
+            }
+            var names = groups.ToList();
+            return await (from uc in db.UserClaim.AsNoTracking()
+                          join ug in db.UserGroup.AsNoTracking() on uc.UserGroupId equals ug.Id
+                          join u in db.User.AsNoTracking() on uc.UserId equals u.Id
+                          where !uc.IsDeleted && !ug.IsDeleted && names.Contains(ug.Name!) && !u.IsDeleted && u.IsActive
+                          select u.Id).Distinct().ToListAsync(ct);
+        }
+
         /// <summary>
         /// BOT-1.7: người DUYỆT được bước có mục quyền <paramref name="screenId"/> – nhóm quyền có Vào + Sửa trên mục "#/wf-inbox?type=&lt;màn&gt;"
         /// (như PermissionService Approve, D-31). Không kèm admin (BOT_TELEGRAM §3.3 – chỉ người đúng là người duyệt).

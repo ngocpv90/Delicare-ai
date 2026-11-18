@@ -720,6 +720,65 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BOT-2.3 (BOT_TELEGRAM §5.2 "Duyệt quá hạn"): yêu cầu mở có hạn của cấp đang chờ (ApprovalStep.DueAt, không có thì ApprovalRequest.DueAt) đã qua →
+        /// APPROVAL_OVERDUE tới người duyệt của cấp (1 lần / cấp); quá thêm N giờ → nhóm quyền cấu hình (chưa có dữ liệu "cấp trên trực tiếp" – PROPOSED COO), bot DH.
+        /// </summary>
+        public async Task<int> NotifyOverdueAsync(int escalateHours, IReadOnlyCollection<string> escalateGroups)
+        {
+            DateTime now = _clock.Now;
+            var db = _unitOfWork.DbContext;
+            var open = await db.ApprovalRequest.AsNoTracking().Where(a => !a.IsDeleted && OpenStatuses.Contains(a.RequestStatus) && a.BusinessId != null).ToListAsync();
+            if (open.Count == 0)
+            {
+                return 0;
+            }
+            var ids = open.Select(a => a.Id).ToList();
+            var steps = (await db.ApprovalStep.AsNoTracking().Where(s => ids.Contains(s.ApprovalRequestId) && !s.IsDeleted).ToListAsync())
+                .GroupBy(s => s.ApprovalRequestId).ToDictionary(g => g.Key, g => g.ToList());
+            var overdue = open.Select(r => (Request: r, Step: CurrentStep(steps.GetValueOrDefault(r.Id) ?? [])))
+                .Select(x => (x.Request, x.Step, Due: x.Step?.DueAt ?? x.Request.DueAt))
+                .Where(x => x.Due != null && x.Due < now).ToList();
+            if (overdue.Count == 0)
+            {
+                return 0;
+            }
+            var routes = await RoutesAsync(overdue.Select(x => x.Request.Id));
+            var groupUsers = await RecipientResolver.UsersInGroupsAsync(db, escalateGroups);
+            int sent = 0;
+            foreach (var (r, step, due) in overdue)
+            {
+                var handler = HandlerOf(r.BusinessType);
+                if (handler == null)
+                {
+                    continue;
+                }
+                Guid bid = r.BusinessId!.Value;
+                int stepNo = step?.StepNo ?? r.CurrentStepNo ?? 1;
+                string screen = await StepScreenAsync(handler, bid, stepNo, routes.GetValueOrDefault(r.Id));
+                string? title = await handler.DescribeAsync(bid);
+                string stepName = (await StepNamesAsync([screen])).GetValueOrDefault(screen, screen);
+                var buttons = new[] { new NotificationButton("📄 Xem & duyệt", BusinessNotifier.Callback("apv", "view", r.Id)) };
+                var approvers = (await RecipientResolver.UsersWithApproveAsync(db, screen)).Where(u => u != r.RequestedBy).ToList();
+                sent += await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                {
+                    Template = NotificationCatalog.ApprovalOverdue, UserIds = approvers,
+                    Data = new { title, requestNo = r.RequestNo, step = stepName, detail = $"Quá hạn duyệt từ {due:HH:mm dd/MM}" },
+                    Buttons = buttons, IdempotencyKey = $"{NotificationCatalog.ApprovalOverdue}:{r.Id:N}:{stepNo}:1", CorrelationId = "APR:" + r.Id.ToString("N"),
+                });
+                if (now >= due!.Value.AddHours(Math.Max(0, escalateHours)) && groupUsers.Count > 0)
+                {
+                    sent += await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                    {
+                        Template = NotificationCatalog.ApprovalOverdue, UserIds = groupUsers, BotCode = MessagingCode.BotDieuHanh,
+                        Data = new { title, requestNo = r.RequestNo, step = stepName, detail = $"Quá hạn duyệt từ {due:HH:mm dd/MM} – người duyệt chưa xử lý (bậc 2)" },
+                        IdempotencyKey = $"{NotificationCatalog.ApprovalOverdue}:{r.Id:N}:{stepNo}:2", CorrelationId = "APR:" + r.Id.ToString("N"),
+                    });
+                }
+            }
+            return sent;
+        }
+
         /// <summary>APPROVAL_RESULT → người gửi (tài khoản) + nhân viên của đơn nghỉ / đổi ca (người chỉ có EmployeeId – gửi qua bot VH).</summary>
         private async Task NotifyResultAsync(ApprovalRequest r, IApprovalHandler handler, bool approved, string? note)
         {

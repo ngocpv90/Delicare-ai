@@ -50,6 +50,14 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string SystemJobFailed = "SYSTEM_JOB_FAILED";
         public const string OutboundFailing = "OUTBOUND_FAILING";
         public const string IncidentUnclaimed = "INCIDENT_UNCLAIMED";
+        // BOT-2.1: thẻ ghim đầu chat (messaging ghim sau khi gửi, sửa khi nội dung đổi).
+        public const string ShiftCard = "SHIFT_CARD";
+        public const string DayCard = "DAY_CARD";
+        // BOT-2.2: nhắc người duyệt trước ngày nghỉ.
+        public const string LeaveHandover = "LEAVE_HANDOVER";
+        // BOT-2.3: tin theo lịch.
+        public const string ApprovalOverdue = "APPROVAL_OVERDUE";
+        public const string IngredientsTonight = "INGREDIENTS_TONIGHT";
 
         private const string P = MessagingCode.Scope.Personal, D = MessagingCode.Scope.Department, X = MessagingCode.Scope.CrossDepartment,
             A = MessagingCode.Scope.Approval, C = MessagingCode.Scope.Critical;
@@ -90,12 +98,24 @@ namespace AppDelicare.Services.Implement.Messaging
             new(SystemJobFailed, D, Urgent, "Job tự động lỗi – IT"),
             new(OutboundFailing, D, Urgent, "Tin gửi lỗi nhiều lần – IT"),
             new(IncidentUnclaimed, X, Urgent, "Sự việc liên phòng quá hạn chưa ai nhận – COO, PMO"),
+            new(ShiftCard, P, Normal, "Thẻ ca (15′ trước ca, ghim, cập nhật trong ca) – BOT-2.1"),
+            new(DayCard, X, Digest, "Thẻ ngày 07:00 cho quản lý (bot DH, ghim) – BOT-2.1"),
+            new(LeaveHandover, P, Normal, "Người duyệt sắp nghỉ: còn việc chờ duyệt – BOT-2.2"),
+            new(ApprovalOverdue, A, Normal, "Duyệt quá hạn – người duyệt của cấp; quá thêm 1 ngày → COO (bot DH) – BOT-2.3"),
+            new(IngredientsTonight, D, Normal, "21:00 nguyên liệu cho sản xuất ngày mai – thủ kho – BOT-2.3"),
         }.ToDictionary(t => t.Code, StringComparer.OrdinalIgnoreCase);
 
         public static NotificationTemplate? Find(string? code)
             => code != null && Templates.TryGetValue(code, out var t) ? t : null;
 
         public static IReadOnlyCollection<NotificationTemplate> All => Templates.Values;
+
+        /// <summary>Mẫu được ghim đầu chat sau khi gửi (BOT-2.1).</summary>
+        public static bool IsPinned(string? code) => code is ShiftCard or DayCard;
+
+        /// <summary>BOT-2.2: mẫu là "sự việc" – tin có nút Nhận xử lý / Ghi chú / Đã xử lý, có leo thang.</summary>
+        public static bool IsIncident(string? code) => code is FoodSafetyCritical or CoreTempLow or IotOutOfRange or QcIncomingFail or DeliveryTempLow or StopLate
+            or TripNotDeparted or ShortageReported or IncidentUnclaimed;
 
         /// <summary>Bot đích theo phạm vi (BOT_TELEGRAM §0): cá nhân / trong phòng → VH; liên phòng / duyệt / nghiêm trọng → DH (người không có DH → bot họ có).</summary>
         public static string BotFor(string scope) => scope switch
