@@ -21,6 +21,29 @@ namespace AppDelicare.Services.Implement
     {
         public static string Num(decimal value) => ProductionRules.Num(value);
 
+        /// <summary>
+        /// BOT-1.7d (BOT_TELEGRAM §5.1 DELIVERY_TEMP_LOW): lần đo nhiệt độ giao dưới ngưỡng (đã ghi kèm hành động khắc phục) → 🔴 điều phối (quyền Thêm chuyến xe),
+        /// sự việc (nút Nhận xử lý, leo thang 10′ → COO). Gọi TRONG transaction nghiệp vụ, lỗi không làm hỏng nghiệp vụ. Trừ người vừa đo.
+        /// </summary>
+        public static async Task NotifyTempLowAsync(INotificationService notifications, DatabaseContext db, DeliveryRoute route, Guid? stopId, decimal temperature,
+            BusinessRulesOptions rules, string? corrective, DateTime at, Guid? except)
+        {
+            string? customer = stopId == null ? null : await (from s in db.DeliveryStop.AsNoTracking()
+                                                              join c in db.Customer.AsNoTracking() on s.CustomerId equals c.Id
+                                                              where s.Id == stopId
+                                                              select c.Name).FirstOrDefaultAsync();
+            await AppDelicare.Services.Implement.Messaging.BusinessNotifier.ToMenusAsync(notifications, db, AppDelicare.Services.Implement.Messaging.NotificationCatalog.DeliveryTempLow, ["#/log-route"],
+                new
+                {
+                    title = $"Chuyến {RouteNumber(route)}" + (customer != null ? " – " + customer : string.Empty),
+                    detail = (stopId == null ? "Nhiệt độ xuất phát " : "Nhiệt độ bàn giao ") + Num(temperature) + " °C < " + Num(rules.DeliveryTempMinC) + " °C",
+                    lines = string.IsNullOrWhiteSpace(corrective) ? null : new[] { "Khắc phục: " + corrective.Trim() },
+                },
+                $"{AppDelicare.Services.Implement.Messaging.NotificationCatalog.DeliveryTempLow}:{route.Id:N}:{(stopId is { } sid ? sid.ToString("N") : "depart")}:{at:yyyyMMddHHmmss}",
+                buttons: [new AppDelicare.Services.Implement.Messaging.NotificationButton("🚚 Mở chuyến", AppDelicare.Services.Implement.Messaging.BusinessNotifier.Callback("dlv", "r", route.Id))],
+                except: except, requireAdd: true);
+        }
+
         public static string RouteNumber(DeliveryRoute route) => route.RouteNo ?? route.Code ?? route.Id.ToString("N")[..8];
 
         public static string StopName(DeliveryStop stop, string? locationName) => $"#{stop.SequenceNo} {locationName}".Trim();

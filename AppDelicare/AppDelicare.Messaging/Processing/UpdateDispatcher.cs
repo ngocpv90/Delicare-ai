@@ -49,7 +49,24 @@ namespace AppDelicare.Messaging.Processing
             }
             if (e.ChatType is not (null or "private"))
             {
-                return DispatchResult.Ignored; // nhóm chat: BOT-2.x
+                // BOT-1.7d: nhóm chat chỉ nhận tin thông báo; bấm nút trên tin trong nhóm → sự việc ghi ngay (thông báo nhỏ), nút khác mở trong chat riêng của người bấm.
+                if (e.Kind != IncomingKind.Callback || e.CallbackId == null)
+                {
+                    return DispatchResult.Ignored;
+                }
+                var member = await users.GetAsync(bot, e.FromId, ct);
+                if (!member.Linked || !member.CanUseBot)
+                {
+                    await sender.AnswerCallbackAsync(bot, e.CallbackId, "Bạn chưa liên kết bot – mở chat riêng với bot để liên kết.", ct);
+                    return DispatchResult.Processed;
+                }
+                if (CallbackData.Parse(e.CallbackData) is { Kind: IncidentActions.Kind } incident)
+                {
+                    await incidents.GroupAsync(new BotActionContext(bot, e, member), incident, ct);
+                    return DispatchResult.Processed;
+                }
+                await sender.AnswerCallbackAsync(bot, e.CallbackId, "Đã mở trong chat riêng với bot.", ct);
+                e = e with { ChatId = e.FromId, ChatType = "private", MessageId = null, CallbackId = null };
             }
             if (e.Kind == IncomingKind.Callback && e.CallbackId != null)
             {

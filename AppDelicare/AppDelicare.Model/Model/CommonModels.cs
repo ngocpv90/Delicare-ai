@@ -117,6 +117,8 @@ namespace AppDelicare.Model.Model
         public List<List<string>> ListFooter { get; set; } = [];
         public List<string> ListNote { get; set; } = [];
         public List<string> ListSignature { get; set; } = [];
+        /// <summary>BOT-1.7d (BOT_TELEGRAM §1.3): link mở đúng phiếu trên bot Vận hành – <c>https://t.me/&lt;bot&gt;?start=DOC_&lt;mã loại&gt;_&lt;Id N&gt;</c>; FE vẽ QR từ link. Null = chưa cấu hình bot (BotUsername).</summary>
+        public string? BotLink { get; set; }
     }
 
     public class PrintInfoRowModel

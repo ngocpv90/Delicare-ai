@@ -229,6 +229,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bấm Duyệt 2 lần chỉ ghi 1 quyết định; người không có quyền / chưa nhập mã web → bot báo rõ.
 - [ ] Gõ mã chứng từ (ME-…, CX-…, PO-…) → kết quả tra cứu theo quyền.
 
+## QR PHIẾU IN + NHÓM CHAT + NHIỆT ĐỘ GIAO (BOT-1.7d, 2026-11-18) · test: `MessagingDocGroupTests`, `GroupAndTempTests`, `PrintTests`
+- [ ] Nhập BotUsername cho bot Vận hành → phiếu in có dòng "Mở phiếu trên Telegram"; quét QR (FE vẽ) → bot hiện đúng phiếu; người không có quyền xem màn phiếu → báo không có quyền.
+- [ ] Cấu hình nhóm "Bếp – ATTP" cho FOODSAFETY_CRITICAL / CORE_TEMP_LOW → cảnh báo vào nhóm (không gửi riêng); bấm 🙋 trong nhóm → tin của nhóm hiện tên người nhận; tin duyệt không bao giờ vào nhóm.
+- [ ] Đo nhiệt độ xuất phát / bàn giao < 60 °C (có khắc phục) → điều phối nhận 🌡 có nút Nhận xử lý; đo đạt → không báo.
+
 ## QR VẬT THỂ + VỊ TRÍ TRỰC TIẾP (BOT-2.4, 2026-11-18) · test: `MessagingQrLiveTests`, `QrLiveApiTests`
 - [ ] In QR `?start=LINE_<mã bàn>` dán ở bàn nấu: quét → mẻ đang chạy tại bàn, bấm ▶️ Bắt đầu / ✅ Xong mẻ ghi như web.
 - [ ] QR trên xe (`VEH_<biển số>`) → chuyến hôm nay của xe, 🚀 Xuất phát; QR kệ (`LOC_<mã>`) → tồn + lô cận date; QR khu vệ sinh (`CLEAN`) → lô vệ sinh hôm nay; người chưa liên kết quét → được hướng dẫn liên kết.

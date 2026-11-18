@@ -177,6 +177,8 @@ namespace AppDelicare.Tests.Messaging
         public ConcurrentQueue<(string Bot, string Chat, string MessageId, string Text, object? Markup)> Edits { get; } = new();
         public Queue<ChannelSendResult> Next { get; } = new();
         public int Answered;
+        /// <summary>BOT-1.7d: chữ trả lời nút (thông báo nhỏ) – nút trên tin trong nhóm.</summary>
+        public ConcurrentQueue<string?> AnswerTexts { get; } = new();
         private int _id = 100;
 
         public Task<ChannelSendResult> SendAsync(string botCode, OutgoingMessage message, CancellationToken ct = default)
@@ -202,6 +204,7 @@ namespace AppDelicare.Tests.Messaging
         public Task AnswerCallbackAsync(string botCode, string callbackId, string? text = null, CancellationToken ct = default)
         {
             Interlocked.Increment(ref Answered);
+            AnswerTexts.Enqueue(text);
             return Task.CompletedTask;
         }
     }

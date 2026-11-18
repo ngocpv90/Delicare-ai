@@ -26,8 +26,9 @@ namespace AppDelicare.Services.Implement
     /// CRUD: chỉ sửa ghi chú / thứ tự / giờ dự kiến khi chuyến + điểm còn Kế hoạch (điểm dừng sinh từ DeliveryRoute/Create).
     /// </summary>
     public class DeliveryStopService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IDeliveryStopService
+        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IDeliveryStopService
     {
+        private readonly INotificationService _notifications = notifications; // BOT-1.7d
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -276,13 +277,18 @@ namespace AppDelicare.Services.Implement
             {
                 return null;
             }
-            string? error = DeliveryRules.AddTemperature(_unitOfWork, _rules, actor, _clock.Now, route.Id, stop.Id, stop.DeliveryOrderId,
-                t, corrective, deviceCode, evidenceUrl, ctx.Warnings, out _);
+            DateTime at = _clock.Now;
+            string? error = DeliveryRules.AddTemperature(_unitOfWork, _rules, actor, at, route.Id, stop.Id, stop.DeliveryOrderId,
+                t, corrective, deviceCode, evidenceUrl, ctx.Warnings, out bool within);
             if (error != null)
             {
                 return error;
             }
             await _unitOfWork.DeliveryEventRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+            if (!within)
+            {
+                await DeliveryRules.NotifyTempLowAsync(_notifications, _unitOfWork.DbContext, route, stop.Id, t, _rules, corrective, at, actor.UserId);
+            }
             ctx.KeepOnError = true;
             return null;
         }
