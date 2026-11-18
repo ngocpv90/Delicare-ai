@@ -16,6 +16,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<PrintDocumentModel>> Build(string type, Guid id);
         /// <summary>In 1 phiếu (format: pdf – mặc định / xlsx / docx).</summary>
         public Task<IResult<FileContentModel>> Print(string type, Guid id, string? format);
+
+        /// <summary>BOT-1.7d: nội dung phiếu dạng dữ liệu (bot mở phiếu qua QR <c>DOC_</c>) – quyền Xem trên màn của loại phiếu.</summary>
+        public Task<IResult<PrintDocumentModel>> GetDocument(string type, Guid id);
         /// <summary>In hàng loạt (tối đa BusinessRules:Common:PrintBatchMaxItems) → 1 tệp gộp; quyền In theo từng loại phiếu.</summary>
         public Task<IResult<FileContentModel>> PrintBatch(PrintBatchRequest request);
     }

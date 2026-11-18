@@ -37,6 +37,15 @@ namespace AppDelicare.Services.Implement
             [DeliveryOrder] = "log-delivery-order", [Pod] = "log-pod", [Reconciliation] = "crm-reconciliation",
         };
 
+        /// <summary>BOT-1.7d: mã loại ngắn trong QR <c>start=DOC_&lt;mã&gt;_&lt;Id N&gt;</c> (tham số start ≤ 64 ký tự).</summary>
+        public static readonly IReadOnlyDictionary<string, string> QrCodes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [GoodsReceipt] = "GR", [MaterialIssue] = "MI", [StockCount] = "SC", [DeliveryOrder] = "DO", [Pod] = "POD", [Reconciliation] = "RC",
+        };
+
+        /// <summary>Mã QR ngắn → loại phiếu.</summary>
+        public static string? TypeOfQrCode(string? code) => QrCodes.FirstOrDefault(kv => kv.Value.Equals(code, StringComparison.OrdinalIgnoreCase)).Key;
+
         /// <summary>Tên controller → loại phiếu (client gửi được cả hai).</summary>
         private static readonly Dictionary<string, string> Aliases = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -77,11 +86,23 @@ namespace AppDelicare.Services.Implement
         private async Task<PrintDocumentModel> NewDocAsync(string type, Guid id, string title, string formCode, string? no, DateTime? date)
         {
             var company = await _unitOfWork.DbContext.Company.AsNoTracking().Where(c => !c.IsDeleted).OrderBy(c => c.CreatedDate).FirstOrDefaultAsync();
-            return new PrintDocumentModel
+            var doc = new PrintDocumentModel
             {
                 Type = type, Id = id, Title = title, FormCode = formCode, DocumentNo = no, DocumentDate = date,
                 CompanyName = company?.Name ?? "DELICARE", CompanyAddress = company?.Address, CompanyPhone = company?.Phone, CompanyTaxCode = company?.TaxCode,
             };
+            // BOT-1.7d: link mở phiếu trên bot Vận hành (in kèm dòng chữ; ảnh QR do FE vẽ từ BotLink – BE không thêm thư viện QR).
+            string? bot = await (from b in _unitOfWork.DbContext.BotConfiguration.AsNoTracking()
+                                 join c in _unitOfWork.DbContext.IntegrationChannel.AsNoTracking() on b.IntegrationChannelId equals c.Id
+                                 where !b.IsDeleted && !c.IsDeleted && b.BotCode == MessagingCode.BotVanHanh && b.BotStatus == MessagingCode.StatusActive
+                                       && c.ChannelStatus == MessagingCode.StatusActive && b.BotUsername != null && b.BotUsername != ""
+                                 select b.BotUsername).FirstOrDefaultAsync();
+            if (bot != null && QrCodes.TryGetValue(type, out var code))
+            {
+                doc.BotLink = $"https://t.me/{bot.Trim().TrimStart('@')}?start=DOC_{code}_{id:N}";
+                doc.ListNote.Add("Mở phiếu trên Telegram: " + doc.BotLink);
+            }
+            return doc;
         }
 
         public async Task<IResult<PrintDocumentModel>> Build(string type, Guid id)
@@ -124,6 +145,20 @@ namespace AppDelicare.Services.Implement
                 ContentType = PrintRenderer.ContentTypeOf(format),
                 FileName = DocumentStorageRules.SafeFileName(baseName + "." + format),
             };
+
+        public async Task<IResult<PrintDocumentModel>> GetDocument(string type, Guid id)
+        {
+            string? t = NormalizeType(type);
+            if (t == null)
+            {
+                return Result<PrintDocumentModel>.Fail(string.Format(ConstantHelper.Message.PrintTypeInvalid, type, string.Join(", ", Screens.Keys)));
+            }
+            if (await CommonAccess.DenyAsync(_permissionService, _currentActor, Screens[t], PermissionAction.View) is { } deny)
+            {
+                return new Result<PrintDocumentModel> { ResponseCode = CommonAccess.Forbidden, ResponseMessage = deny };
+            }
+            return await Build(t, id);
+        }
 
         public async Task<IResult<FileContentModel>> Print(string type, Guid id, string? format)
         {

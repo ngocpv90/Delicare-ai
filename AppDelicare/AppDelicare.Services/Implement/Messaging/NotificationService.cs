@@ -30,7 +30,17 @@ namespace AppDelicare.Services.Implement.Messaging
             var db = unitOfWork.DbContext;
             string botCode = string.IsNullOrWhiteSpace(request.BotCode) ? NotificationCatalog.BotFor(template.Scope) : request.BotCode.Trim().ToUpperInvariant();
             var recipients = await RecipientResolver.ResolveAsync(db, botCode, request.UserIds.Distinct().ToList(), request.EmployeeIds.Distinct().ToList(), ct);
-            if (recipients.Count == 0)
+            // BOT-1.7d: nhóm chat theo ConfigJson.groups của bot (mẫu không cá nhân / không duyệt) – mode replace: người trên cùng bot không nhận tin riêng.
+            var bots = await RecipientResolver.ActiveBotsAsync(db, ct);
+            var channels = recipients.Select(r => r.ChannelId).ToHashSet();
+            if (bots.TryGetValue(botCode, out Guid target))
+            {
+                channels.Add(target);
+            }
+            var groups = await ChatGroups.ForTemplateAsync(db, channels, template, ct);
+            var replaced = groups.Where(g => g.Value.Any(x => !x.Copy)).Select(g => g.Key).ToHashSet();
+            recipients = [.. recipients.Where(r => !replaced.Contains(r.ChannelId))];
+            if (recipients.Count == 0 && groups.Count == 0)
             {
                 Log.Information("[Notification] {Template}: không có người nhận đã liên kết bot (users {Users}, employees {Employees})",
                     template.Code, request.UserIds.Count, request.EmployeeIds.Count);
@@ -39,9 +49,9 @@ namespace AppDelicare.Services.Implement.Messaging
             DateTime now = clock.Now;
             var quiet = await QuietHours.PlanAsync(db, recipients, template.Level, now, options.CurrentValue.QuietHours, request.Escalation, ct);
             var payloads = new Dictionary<DateTime, string>();
-            string PayloadFor(ResolvedRecipient r)
+            string PayloadFor(ResolvedRecipient? r)
             {
-                DateTime? at = quiet.For(r.IdentityId) is { } q && (request.NotBefore == null || q > request.NotBefore) ? q : request.NotBefore;
+                DateTime? at = r != null && quiet.For(r.IdentityId) is { } q && (request.NotBefore == null || q > request.NotBefore) ? q : request.NotBefore;
                 DateTime key = at ?? DateTime.MinValue;
                 if (!payloads.TryGetValue(key, out var json))
                 {
@@ -59,7 +69,9 @@ namespace AppDelicare.Services.Implement.Messaging
                 }
                 return json;
             }
-            var keys = recipients.Select(r => KeyFor(request.IdempotencyKey, r.IdentityId)).Where(k => k != null).Cast<string>().ToList();
+            var groupMessages = groups.SelectMany(g => g.Value.Select(x => (Channel: g.Key, Group: x))).ToList();
+            var keys = recipients.Select(r => KeyFor(request.IdempotencyKey, r.IdentityId))
+                .Concat(groupMessages.Select(g => GroupKeyFor(request.IdempotencyKey, g.Group))).Where(k => k != null).Cast<string>().ToList();
             var existing = keys.Count == 0 ? [] : await db.OutboundMessage.AsNoTracking()
                 .Where(m => !m.IsDeleted && m.IdempotencyKey != null && keys.Contains(m.IdempotencyKey))
                 .Select(m => m.IdempotencyKey!).ToListAsync(ct);
@@ -88,6 +100,23 @@ namespace AppDelicare.Services.Implement.Messaging
                 unitOfWork.OutboundMessageRepository.Add(message);
                 ids.Add(message.Id);
             }
+            foreach (var (channel, group) in groupMessages)
+            {
+                string? key = GroupKeyFor(request.IdempotencyKey, group);
+                if (key != null && existing.Contains(key))
+                {
+                    continue;
+                }
+                // Nhóm: không xét giờ yên lặng theo ca (tin chung của bộ phận); chỉ hẹn giờ người gọi truyền.
+                var message = new OutboundMessage
+                {
+                    Id = Guid.NewGuid(), IntegrationChannelId = channel, ExternalConversationId = group.ChatId, RecipientExternalId = group.ChatId,
+                    MessageType = template.Code, PayloadJson = PayloadFor(null), QueuedAt = now, MessageStatus = MessagingCode.Outbound.Queued, RetryCount = 0,
+                    IdempotencyKey = key, CorrelationId = MessagingRules.Truncate(request.CorrelationId, 100),
+                };
+                unitOfWork.OutboundMessageRepository.Add(message);
+                ids.Add(message.Id);
+            }
             if (ids.Count > 0)
             {
                 // Cùng transaction của người gọi (UnitOfWork dùng chung kết nối DbContext).
@@ -95,6 +124,9 @@ namespace AppDelicare.Services.Implement.Messaging
             }
             return ids;
         }
+
+        private static string? GroupKeyFor(string? key, ChatGroup group)
+            => string.IsNullOrWhiteSpace(key) ? null : MessagingRules.Truncate(key.Trim(), 160) + ":G:" + MessagingRules.Truncate(group.Code, 32);
 
         private static string? KeyFor(string? key, Guid identityId)
             => string.IsNullOrWhiteSpace(key) ? null : MessagingRules.Truncate(key.Trim(), 160) + ":" + identityId.ToString("N");
