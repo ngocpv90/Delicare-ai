@@ -106,6 +106,49 @@ namespace AppDelicare.Tests.Messaging
             return Task.FromResult(Correlated.ToList());
         }
 
+        // BOT-2.1: Thẻ ca.
+        public List<ShiftCardItemModel> ShiftCards { get; } = [];
+        public ApiResult<ShiftCardItemModel> MyCard { get; set; } = new() { ResponseCode = 400, ResponseMessage = "Hôm nay bạn không có ca." };
+
+        // BOT-2.2: sự việc.
+        public ConcurrentQueue<IncidentActionRequest> IncidentCalls { get; } = new();
+        public Func<IncidentActionRequest, ApiResult<IncidentResultModel>> IncidentResult { get; set; } = _ => new() { ResponseCode = 400, ResponseMessage = "Không có sự việc" };
+        public int EscalationRuns;
+        public int WatchRuns;
+
+        public Task<ApiResult<int>> RunWatchAsync(CancellationToken ct = default)
+        {
+            Guard();
+            Interlocked.Increment(ref WatchRuns);
+            return Task.FromResult(new ApiResult<int> { ResponseCode = 200, Data = 0 });
+        }
+
+        public Task<ApiResult<IncidentResultModel>> IncidentActionAsync(IncidentActionRequest request, CancellationToken ct = default)
+        {
+            Guard();
+            IncidentCalls.Enqueue(request);
+            return Task.FromResult(IncidentResult(request));
+        }
+
+        public Task<ApiResult<int>> RunEscalationAsync(CancellationToken ct = default)
+        {
+            Guard();
+            Interlocked.Increment(ref EscalationRuns);
+            return Task.FromResult(new ApiResult<int> { ResponseCode = 200, Data = 0 });
+        }
+
+        public Task<List<ShiftCardItemModel>> SyncShiftCardsAsync(CancellationToken ct = default)
+        {
+            Guard();
+            return Task.FromResult(ShiftCards.ToList());
+        }
+
+        public Task<ApiResult<ShiftCardItemModel>> MyShiftCardAsync(BotIdentityRequest request, CancellationToken ct = default)
+        {
+            Guard();
+            return Task.FromResult(MyCard);
+        }
+
         public Task<ApiResult<System.Text.Json.JsonElement>> EmployeeCallAsync(string action, object request, CancellationToken ct = default)
         {
             Guard();
@@ -148,8 +191,13 @@ namespace AppDelicare.Tests.Messaging
             return Task.FromResult(ChannelSendResult.Sent(providerMessageId));
         }
 
+        public ConcurrentQueue<(string Bot, string Chat, string MessageId)> Pins { get; } = new();
+
         public Task<ChannelSendResult> PinAsync(string botCode, string chatId, string providerMessageId, CancellationToken ct = default)
-            => Task.FromResult(ChannelSendResult.Sent(providerMessageId));
+        {
+            Pins.Enqueue((botCode, chatId, providerMessageId));
+            return Task.FromResult(ChannelSendResult.Sent(providerMessageId));
+        }
 
         public Task AnswerCallbackAsync(string botCode, string callbackId, string? text = null, CancellationToken ct = default)
         {

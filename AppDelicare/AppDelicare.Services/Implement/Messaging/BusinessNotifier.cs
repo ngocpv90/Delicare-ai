@@ -35,7 +35,7 @@ namespace AppDelicare.Services.Implement.Messaging
 
         /// <summary>Gửi cho người có quyền vào các menu (hợp các nhóm, không kèm admin), trừ <paramref name="except"/> (người vừa thao tác).
         /// <paramref name="requireAdd"/> = chỉ người có quyền Thêm (người làm việc đó, không phải chỉ xem); <paramref name="botCode"/> = ép bot đích.</summary>
-        public static async Task ToMenusAsync(INotificationService notifications, DatabaseContext db, string template, string[] menus, object data,
+        public static async Task<int> ToMenusAsync(INotificationService notifications, DatabaseContext db, string template, string[] menus, object data,
             string idempotencyKey, string? correlationId = null, IEnumerable<NotificationButton>? buttons = null, Guid? except = null, bool requireAdd = false, string? botCode = null)
         {
             try
@@ -49,16 +49,22 @@ namespace AppDelicare.Services.Implement.Messaging
                 {
                     users.Remove(e);
                 }
-                await SafeEnqueueAsync(notifications, new NotificationRequest
+                return await SafeEnqueueAsync(notifications, new NotificationRequest
                 {
-                    Template = template, UserIds = [.. users], Data = data, Buttons = buttons?.ToList(), IdempotencyKey = idempotencyKey, CorrelationId = correlationId ?? idempotencyKey, BotCode = botCode,
+                    Template = template, UserIds = [.. users], Data = data,
+                    Buttons = NotificationCatalog.IsIncident(template) ? [.. buttons ?? [], .. IncidentButtons] : buttons?.ToList(), IdempotencyKey = idempotencyKey, CorrelationId = correlationId ?? idempotencyKey, BotCode = botCode,
                 });
             }
             catch (Exception ex)
             {
                 Log.Warning(ex, "[Notification] {Template} {Key}: không tìm được người nhận", template, idempotencyKey);
+                return 0;
             }
         }
+
+        /// <summary>BOT-2.2: nút sự việc (messaging tìm sự việc qua chính tin được bấm).</summary>
+        public static readonly NotificationButton[] IncidentButtons =
+            [new("🙋 Nhận xử lý", "inc:claim"), new("💬 Ghi chú", "inc:note"), new("✅ Đã xử lý", "inc:done")];
 
         /// <summary>Callback mở thẻ trên bot (quy ước CallbackData của AppDelicare.Messaging): &lt;kind&gt;:&lt;action&gt;:&lt;Id N&gt;.</summary>
         public static string Callback(string kind, string action, Guid id) => $"{kind}:{action}:{id:N}";

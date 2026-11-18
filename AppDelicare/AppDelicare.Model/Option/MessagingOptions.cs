@@ -44,6 +44,49 @@ namespace AppDelicare.Model.Option
 
         /// <summary>BOT-1.2: hạn JWT cấp thay mặt user cho bot (phút).</summary>
         public int UserTokenMinutes { get; set; } = 10;
+
+        /// <summary>BOT-2.3 (BOT_TELEGRAM §5.3): giờ yên lặng theo ca.</summary>
+        public QuietHoursOptions QuietHours { get; set; } = new();
+
+        /// <summary>BOT-2.3: ngưỡng các việc kiểm tra định kỳ (BotChannel/RunWatch).</summary>
+        public WatchOptions Watch { get; set; } = new();
+    }
+
+    /// <summary>
+    /// BOT-2.3 (PROPOSED – BOT_TELEGRAM §5.3): tin 🟡 / ⚪ chỉ gửi khi người nhận đang trong ca hoặc trong <see cref="LeadMinutes"/> phút trước ca;
+    /// ngoài ca → hẹn (notBefore) tới <see cref="LeadMinutes"/> phút trước ca kế tiếp. Người không có phân ca: chỉ gửi trong [<see cref="DayStart"/>, <see cref="DayEnd"/>),
+    /// ngoài khung → hẹn tới <see cref="DayStart"/> kế tiếp. 🔴 gửi ngay cho người đang trong ca / không có phân ca; người có phân ca nhưng ngoài ca không nhận
+    /// (trừ tin leo thang, hoặc khi không còn ai khác nhận – không để mất tin khẩn).
+    /// </summary>
+    public sealed class QuietHoursOptions
+    {
+        public bool Enabled { get; set; } = true;
+        public int LeadMinutes { get; set; } = 60;
+        public string DayStart { get; set; } = "07:00";
+        public string DayEnd { get; set; } = "21:00";
+        /// <summary>Tìm ca kế tiếp trong N ngày; không có → coi như người không có phân ca.</summary>
+        public int LookaheadDays { get; set; } = 3;
+    }
+
+    /// <summary>BOT-2.3 (PROPOSED): ngưỡng phút của các việc kiểm tra định kỳ – BOT_TELEGRAM §5.1.</summary>
+    public sealed class WatchOptions
+    {
+        /// <summary>Mẻ chưa bắt đầu / chưa xong quá N phút so với kế hoạch → BATCH_LATE.</summary>
+        public int BatchLateMinutes { get; set; } = 15;
+        /// <summary>Xe chưa xuất phát quá N phút so với giờ dự kiến → TRIP_NOT_DEPARTED.</summary>
+        public int TripLateMinutes { get; set; } = 10;
+        /// <summary>Điểm giao chưa đến quá N phút so với giờ dự kiến → STOP_LATE.</summary>
+        public int StopLateMinutes { get; set; } = 15;
+        /// <summary>Chưa vào ca quá N phút sau giờ bắt đầu → NOT_CHECKED_IN (1 tin / ca, gom danh sách).</summary>
+        public int NotCheckedInMinutes { get; set; } = 10;
+        /// <summary>Phản ánh còn ≤ N phút tới hạn SLA → COMPLAINT_SLA (lần 2 khi đã quá hạn).</summary>
+        public int ComplaintSlaWarnMinutes { get; set; } = 60;
+        /// <summary>Duyệt quá hạn: quá hạn → người duyệt của cấp; quá thêm N giờ → nhóm <see cref="ApprovalOverdueGroups"/> (bot DH).</summary>
+        public int ApprovalOverdueEscalateHours { get; set; } = 24;
+        /// <summary>Chưa có dữ liệu "cấp trên trực tiếp" → nhóm quyền theo tên (PROPOSED: COO). Khởi tạo rỗng (binder nối mảng).</summary>
+        public List<string> ApprovalOverdueGroups { get; set; } = [];
+        public static readonly IReadOnlyList<string> DefaultApprovalOverdueGroups = ["COO"];
+        public IReadOnlyList<string> EffectiveApprovalOverdueGroups => ApprovalOverdueGroups.Count > 0 ? ApprovalOverdueGroups : DefaultApprovalOverdueGroups;
     }
 
     /// <summary>

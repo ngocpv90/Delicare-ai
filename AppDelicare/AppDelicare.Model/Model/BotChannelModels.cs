@@ -144,5 +144,7 @@ namespace AppDelicare.Model.Model
         public string? IdempotencyKey { get; set; }
         /// <summary>Không gửi trước thời điểm này (giờ yên lặng – GAP-INT-03, lưu PayloadJson.notBefore).</summary>
         public DateTime? NotBefore { get; set; }
+        /// <summary>BOT-2.3: tin leo thang – bỏ qua giờ yên lặng theo ca (BOT_TELEGRAM §5.3: người ngoài ca vẫn nhận 🔴 khi là bậc leo thang).</summary>
+        public bool Escalation { get; set; }
     }
 }
