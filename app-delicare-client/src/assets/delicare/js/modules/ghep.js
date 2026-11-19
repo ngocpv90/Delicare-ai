@@ -9,7 +9,7 @@
  * Nút đầu màn hình: Order/LockByMealDate · ProductionBatch/GetStageBoard · InventoryTransaction/GetLedger · AnalyticsRefreshLog/GetList ·
  *                UserExternalIdentity/Link · OutboundMessage/Enqueue · Common/GetStatusSummary (số trên chip lọc nhanh)
  * Màn hình mới:  hr-my "Việc của tôi" (ShiftAssignment/GetMine · GetSwapCandidates · LeaveRequest/GetMine · ShiftSwapRequest/GetMine ·
- *                DeliveryRoute/GetMine · TelegramLink/GetMine · CreateCode · Unlink) · adm-job "Job tự động" (Job/GetAll · Run)
+ *                DeliveryRoute/GetMine · TelegramLink/GetMine · CreateCode · Unlink) · adm-job "Job tự động" (Job/GetAll · Run) · sys-import "Nhập dữ liệu gốc" (ImportExcel/GetTemplateList · GetTemplate · Import)
  * Tài liệu: docs/frontend-handoff (P3, P4, P5, P7, P8, BE2.1, BE2.2, BE2.3, BE2.4, BE2.7, BE3.4, BOT-1.1, BOT-1.2, BOT-1.5a–c, T23). */
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
@@ -411,5 +411,38 @@
       fill(el, 'jobList', 'Job/GetAll', null, x => (x.list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Job</th><th>Giờ chạy</th><th>Lần kế tiếp</th><th>Lần gần nhất</th><th>Kết quả</th><th></th></tr></thead><tbody>${x.list.map(j => { const l = j.lastRun || {}; return `<tr><td><b>${esc(j.jobName || j.jobCode)}</b><span class="sub" style="white-space:normal;max-width:420px">${esc(j.description || '')}</span></td><td>${esc(j.at || '')}${j.enabled === false ? ' <span class="tag">Tắt</span>' : ''}</td><td>${esc(dtx(j.nextRunAt))}</td><td>${esc(dtx(l.startedAt))}</td><td>${l.runStatus ? `<span class="badge ${/Succeeded|Success/i.test(l.runStatus) ? 'green' : /Fail/i.test(l.runStatus) ? 'red' : 'orange'}">${esc(l.runStatus)}</span>` : ''}<span class="sub" style="white-space:normal;max-width:320px">${esc(l.message || '')}</span></td><td class="actions"><button class="btn xs primary" data-job="${esc(j.jobCode)}" data-name="${esc(j.jobName || j.jobCode)}">Chạy ngay</button></td></tr>`; }).join('')}</tbody></table></div>` : ''), 'Chưa có job nào được khai báo');
     };
     load();
+  });
+
+  // UG-1 C-03: nhập dữ liệu gốc từ Excel (ImportExcel/GetTemplateList · GetTemplate · Import). Chỉ hiện loại file tài khoản có quyền Nhập (Import) ở màn đích.
+  APP.FN['sys-import'] = { extra: true, ph: 'P0', grp: 'Quản trị hệ thống', fn: 'Nhập dữ liệu gốc (Excel)', id: 'sys-import', name: 'Nhập dữ liệu gốc (Excel)', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
+  const importResult = (title, d) => {
+    const errs = (d && d.listError) || [], notes = (d && d.listNote) || [];
+    UI.modal({ title: 'Kết quả nạp – ' + title, size: 'lg', body: `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">${[['Số dòng đọc', d.totalRows], ['Thêm mới', d.inserted], ['Cập nhật', d.updated], ['Bỏ qua (không đổi)', d.skipped], ['Dòng lỗi', errs.length]].map(([k, v]) => `<div><span class="muted small">${k}</span><div><b>${esc(v == null ? 0 : v)}</b></div></div>`).join('')}</div>`
+      + (notes.length ? `<div class="mt"><b>Ghi chú</b><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>` : '')
+      + (errs.length ? `<div class="mt"><b>Dòng lỗi (bị bỏ qua – sửa trong file rồi nạp lại)</b><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Dòng</th><th>Lý do</th></tr></thead><tbody>${errs.map(e => `<tr><td>${esc(e.row)}</td><td>${esc(e.message)}</td></tr>`).join('')}</tbody></table></div></div>` : '') });
+  };
+  APP.register('sys-import', (el, f) => {
+    if (!Store.isLive) return onlyLive(el, f);
+    el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Nạp danh mục từ file Excel: tải file mẫu, điền dữ liệu, rồi Nạp file. Nạp lại cùng file không tạo trùng (khớp theo mã); dòng lỗi bị bỏ qua và liệt kê sau khi nạp. Mã trống → hệ thống tự cấp mã.' }) + `<div class="card panel"><div id="impList">${LOADING}</div><input type="file" id="impFile" hidden accept=".xlsx,.xlsm"></div>`;
+    const inp = el.querySelector('#impFile'); let cur = null;
+    inp.onchange = () => {
+      const file = inp.files && inp.files[0]; inp.value = ''; const t = cur;
+      if (!file || !t) return;
+      if (!/\.(xlsx|xlsm)$/i.test(file.name)) return UI.toast('Chỉ nhận tệp .xlsx / .xlsm', 'err');
+      UI.confirm(`Nạp <b>${esc(file.name)}</b> vào <b>${esc(t.title)}</b>?`, () => {
+        const fd = new FormData(); fd.append('TableName', t.tableName); fd.append('File', file);
+        Store.act('ImportExcel/Import', { json: fd, tables: [t.tableName] }).then(r => { if (r.ok && !r.demo) importResult(t.title, r.data || {}); });
+      }, { ok: 'Nạp file' });
+    };
+    const o = el.querySelector('#impList');
+    o._bind = x => {
+      const by = {}; (x.list || []).forEach(t => by[t.tableName] = t);
+      o.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => Store.download('ImportExcel/GetTemplate', { tableName: b.dataset.tpl }).then(r => { if (r.ok) UI.toast('Đã tải ' + esc(r.fileName || 'file mẫu'), 'ok'); }));
+      o.querySelectorAll('[data-imp]').forEach(b => b.onclick = () => { cur = by[b.dataset.imp]; inp.click(); });
+    };
+    fill(el, 'impList', 'ImportExcel/GetTemplateList', null, x => {
+      const list = (x.list || []).filter(t => Store.perm(t.screen).imp);
+      return list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Danh mục</th><th>Cột trong file (* bắt buộc)</th><th></th></tr></thead><tbody>${list.map(t => `<tr><td><b>${esc(t.title)}</b><span class="sub">${esc(t.hasTemplate ? 'Theo file mẫu' : 'File vận hành' + (t.sheetName ? ' – sheet ' + t.sheetName : ''))}</span></td><td style="white-space:normal">${(t.listColumn || []).map(c => `<span class="tag" title="${esc(c.note || '')}">${esc(c.header)}${c.required ? ' *' : ''}</span>`).join(' ')}</td><td class="actions" style="white-space:nowrap">${t.hasTemplate ? `<button class="btn xs" data-tpl="${esc(t.tableName)}">${I('download')} File mẫu</button> ` : ''}<button class="btn xs primary" data-imp="${esc(t.tableName)}">${I('plus')} Nạp file</button></td></tr>`).join('')}</tbody></table></div>` : '';
+    }, 'Tài khoản chưa có quyền Nhập (Import) ở danh mục nào');
   });
 })();

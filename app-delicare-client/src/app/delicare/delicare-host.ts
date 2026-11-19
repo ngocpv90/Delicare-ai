@@ -41,7 +41,7 @@ export interface DelicareHost {
 }
 
 // Màn hình điều hướng / tổng quan không gắn bảng: ai đăng nhập cũng xem được.
-const OPEN_SCREENS = new Set(['dash-exec', 'flow-e2e', 'hr-my']);
+const OPEN_SCREENS = new Set(['dash-exec', 'flow-e2e', 'hr-my', 'sys-import']); // sys-import: danh sách lọc theo quyền Nhập của màn đích (UG-1 C-03)
 const FULL: ScreenPermission = { access: true, add: true, edit: true, del: true, exp: true, print: true, imp: true };
 
 export function createDelicareHost(http: HttpClient, user: User | null, logout: () => void): DelicareHost {
