@@ -1,7 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
-- **2026-11-19: MA-1 (D-63) DOING – phần backend xong** trên nhánh `feat/MA-1-code-rules` (từ `main` @ bd71007, chưa push / gộp): sinh mã danh mục + tách tiền tố chứng từ §11, khách hàng theo loại, danh mục G1 tự sinh mã, bảng phân nhóm G1/G2/G3 + `Common/GetCodeRules` + test chặn, bot nhận mã mới, script đánh lại mã KH / NCC (chưa chạy thật). Test **472 / 472**; `full-flow.http` **218 / 218** trên DB dev. Còn: MA-1.3 import, MA-1.7 kiểm G2, MA-1.8 FE, các `.http` khác, Catalog. Chi tiết: mục MA-1 cuối nhật ký.
+- **2026-11-19: MA-1 (D-63) DOING – phần backend xong** trên nhánh `feat/MA-1-code-rules` (từ `main` @ bd71007, chưa push / gộp): sinh mã danh mục + tách tiền tố chứng từ §11, khách hàng theo loại, danh mục G1 tự sinh mã, bảng phân nhóm G1/G2/G3 + `Common/GetCodeRules` + test chặn, bot nhận mã mới, script đánh lại mã KH / NCC (chưa chạy thật). Test **472 / 472**; `full-flow.http` **218 / 218** trên DB dev. Bổ sung cùng ngày: MA-1.3 import (ô mã trống → sinh mã) và MA-1.7 (2) kiểm mã G2 ở 15 service – xong, test 473 / 473. Còn: MA-1.8 FE (dừng chờ anh xác nhận – xung đột luật "chỉ backend"), các `.http` khác, Catalog. Chi tiết: mục MA-1 cuối nhật ký.
 - **2026-11-18: BOT-1.7d DONE – QR trên phiếu in, nhóm chat, cảnh báo nhiệt độ giao thấp** trên nhánh `feat/BOT-1.7d-qr-phieu-nhom` (từ `release/pilot` @ 114aed4, chưa push / gộp – chờ anh duyệt); test **437 / 437**. Phần tích hợp bot còn BOT-2.9 (cần server test + token bot thật).
 - **2026-11-18: BOT-2.4 DONE – QR vật thể + vị trí trực tiếp tài xế** trên nhánh `feat/BOT-2.4-qr-vitri` (từ `release/pilot` @ 97cbd52, chưa push / gộp – chờ anh duyệt); test **431 / 431**. Tiếp theo: BOT-2.9 (tích hợp, triển khai server test) hoặc 1.7d.
 - **2026-11-18: BOT-2.3 DONE – giờ yên lặng theo ca + tin theo lịch** (bản tin 7h, báo cáo 17h, khách chưa chốt 19h, nguyên liệu 21h, kiểm tra định kỳ: mẻ trễ, xe chưa rời, điểm trễ, chưa vào ca, phản ánh sắp / quá SLA, PO trễ, duyệt quá hạn) trên nhánh `feat/BOT-2.1-the-ca` (cùng BOT-2.1, 2.2 – chưa push / gộp, chờ anh duyệt); test **424 / 424**. Tiếp theo: BOT-2.4.
@@ -1797,7 +1797,7 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`):
 | 121 | Đã xong | Job `LotExpiry` 00:15 (`MaterialLot/ProcessExpired`) | T23 |
 | 97 (phần job 20:00) | Đã xong | Job `LockOrders` 20:00 (`Order/LockByMealDate`) | T23 |
 | 106 / 107 (phần job 20:30 / 21:00) | Đã xong | Job `Mrp` 20:30 (`MaterialRequirement/Calculate` – tạo đề nghị mua) | T23 |
-
+
 ### BE3.1 – Biểu đồ + sự kiện giao (Catalog 100, 157, 163, 192, 193) · 2026-11-17 · DONE
 Nhánh `feat/BE3.1-charts` (worktree `wt-BE31`, từ `release/pilot` @ `8e12696` = sau gộp T23), chưa push. Đợt BE-3 theo CLAUDE.md / ROADMAP (anh chốt D-57; D-58 không tra cứu cấu trúc DB – BE3.1 không trả tên bảng / cột).
 
@@ -1819,7 +1819,7 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx` (sheet `API_Catalog`, cột N = 
 | 163 | Đã xong | `GET api/TemperatureLog/GetSeries` | BE3.1 |
 | 192 | Đã xong | `GET api/DeliveryOrder/GetEvents` | BE3.1 |
 | 193 | Đã xong | `GET api/DeliveryEvent/GetVehiclePositions` + `POST api/DeliveryEvent/RecordPosition` | BE3.1 |
-
+
 ### BE3.2 – IoT nhiệt độ (Catalog 166) · 2026-11-17 · DONE
 Nhánh `feat/BE3.2-iot` (worktree `wt-BE32`, từ `release/pilot` @ `2aeb84a`), chưa push.
 
@@ -1894,7 +1894,7 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
 |---|---|---|---|
 | 231 | Đã xong | `GET api/Dashboard/GetExecutive?date=&shiftId=&branchId=` | BE3.5 |
 | 232 | Đã xong | `GET api/Dashboard/GetOrderJourney?orderId=` | BE3.5 |
-
+
 ### BE3.7 – Gộp, kiểm tra, deploy đợt BE-3 · 2026-11-17 · DONE (chờ anh duyệt)
 - **Gộp** (`--no-ff`, xung đột tài liệu giữ cả 2 bên): T23 (8e12696) → BE3.1 (2aeb84a) → BE3.2 (5aeaf30) → BE3.3 (af24e5c) → BE3.4 (a15322d) → tài liệu D-60 của anh → BE3.5 (4cbabee). BE3.3 / BE3.4 / BE3.5 do agent làm trên worktree riêng, em rà diff (không DDL / `sys.*` / SQL ghép chuỗi / bí mật) rồi gộp, build + test lại sau mỗi lần gộp.
 - **Test D-58 mới** `Security/NoDatabaseStructureApiTests`: không controller / action tên kiểu tra cứu cấu trúc; mã nguồn WebApi / Services / Data / Model / Job không đọc `INFORMATION_SCHEMA` / `sys.*`. Lưu ý: `MetaData/GetStatuses` (T45B.5) trả khóa bộ trạng thái dạng `Order.Status` (tên thực thể.cột) – **hỏi anh** có coi là vi phạm D-58 không (FE đang dùng để lấy nhãn trạng thái).
@@ -1902,7 +1902,7 @@ Bảng cập nhật `DELICARE_API_Catalog.xlsx`:
 - **`.http` trên DB dev** (WebApi Development, cổng 5125): `full-flow.http` **217 / 217** (`@key=B37C`, `@day=2026-12-05`, `@dow=6` – ngày trống gần nhất; ngày xa như 2028 làm bước giữ chỗ #111 = 0 vì lô thử hạn hôm nay + 20 / 30 ngày); be2.1 **147 / 147** (2026-11-28, dow 6), be2.2 **73 / 73**, be2.3 **58 / 58**, be2.4 **125 / 125** (2026-11-29, dow 7), be2.5 **142 / 142** (2026-12-06, dow 7), be2.6 **65 / 65**, be2.7 **47 / 47**, t23 **6 / 6**, be3.1 **22 / 22** (sửa bước 5.4 dùng Id chuyến cố định – đơn giao đầu danh sách không còn gắn chuyến), be3.2 **3 / 3** (khóa IoT sinh lúc chạy), be3.3 **31 / 31**, be3.4 **33 / 33**, be3.5 **13 / 13**.
 - **Staging** (`AppDelicare_Staging`, cổng 5200): `Deploy-Database.ps1` → 131 SP + seed (thêm `SystemUser_seed` – tạo user system, `KpiMetricDefinition_seed` – 11 chỉ tiêu); publish đè `C:\Deploy\delicare-staging` (giữ Angular cũ trong wwwroot); `full-flow.http` **217 / 217** (`@key=B37S`, `@day=2026-11-28`, `@dow=6`), t23 6 / 6, be3.3 31 / 31, be3.4 33 / 33; be3.1 19 / 22 và be3.5 8 / 13 chỉ sai ở bước `@expect` gắn dữ liệu riêng DB dev (số suất 1650, Id chi nhánh dev, khu vực kho đầu danh sách) – API đều trả 200. Chạy xong đã dừng API staging. Job (`AppDelicare.Job`) chưa chạy trên staging (chờ T48.4 Docker – D-60).
 - Bí mật: agent BE3.5 lỡ in `dotnet user-secrets list` (khóa JWT dev + license GemBox) ra nhật ký làm việc – không có trong commit; **đề xuất anh đổi khóa JWT dev / staging** (cùng mật khẩu admin staging đã nêu trước).
-
+
 ### T48.4 – Production Linux + Docker (D-60) · 2026-11-17 · DONE (Docker chưa chạy thật)
 Nhánh `feat/T48.4-docker` (worktree `wt-T484`).
 - **Compose production** `deploy/docker/docker-compose.production.yml`: `nginx` (Dockerfile 2 giai đoạn build Angular + `default.conf.template`: HTTP → HTTPS, `/api`, `/Import`, `/health` → api, `client_max_body_size` theo `MAX_UPLOAD_MB`, header bảo mật, cache file tĩnh), `api`, `job` (1 bản), `db-init` (profile tools, tài khoản quản trị SQL); không SQL Server; bí mật qua `production.env` (`production.env.example` không giá trị thật; `.gitignore` thêm `production.env`, `certs/`); log `json-file` 20 MB × 10.
@@ -2075,5 +2075,10 @@ Rà soát code cũ: `DocumentNumberService` (T11) đã có sp_getapplock + MAX �
 Kiểm tra: `dotnet build` 0 lỗi; `dotnet test` **472 / 472** (build ra `AppDelicare/ma1art` – API dev của anh đang chạy khóa dll trong bin). API bản mới chạy cổng 5299 trên DB dev: `seed-demo` (full-flow.http) **218 / 218** (DEMOMA1E, ngày 2026-12-12; các lần MA1A–MA1D thử trước đó để lại dữ liệu [DEMO]). Script MA-1.4 trên DB dev: chạy thử → 80 khách (FACTORY) + 53 NCC; thử "chạy thật + chạy lại" trong 1 giao dịch rồi ROLLBACK → lần 2 = 0 / 0 / 0, DB dev không đổi. **Chưa kiểm SQL Server 2022 thật (máy không có Docker).**
 AC: [x] 2 khách cùng loại → mã liên tiếp (sp_getapplock như T11) · [x] KHB thiếu MST / KHC thiếu Họ → lỗi rõ trường · [x] Code / CIF gửi lên bị bỏ qua, CIF = Code · [x] đổi loại khi đã có đơn → lỗi · [x] chứng từ mới ra tiền tố §11, số cũ vẫn tìm được (bot nhận PH / KH) · [x] script chạy thử in bảng đối chiếu, lần 2 không đổi · [x] entity mới có cột mã chưa xếp nhóm → test đỏ · [ ] form chung không cho gõ mã G1 (MA-1.8) · [x] test xanh, full-flow xanh · [ ] build FE.
 PROPOSED – BA/PO CONFIRM (chưa ghi DECISIONS vì file đang có thay đổi chưa commit của anh): (1) "Chi nhánh phục vụ" chỉ bắt buộc khi đã có OrganizationUnit loại BRANCH (DB dev chưa có chi nhánh nào); (2) lô nhập tay không có NCC → hậu tố `TDK`; (3) số hợp đồng giấy của khách không còn lưu ở ContractNumber → ghi vào Ghi chú / Tên; (4) bộ lọc `QualityStatus` của `uspMaterialLot_GetAll` dùng LIKE ("DAT" khớp cả "KHONG_DAT") – chưa sửa.
-Còn lại: MA-1.3 import (`MasterDataImportService`: dòng mới không mã → sinh mã); MA-1.7 (2) kiểm G2 ở Service Insert / Update (chữ hoa không dấu, khóa sửa khi đã dùng – đã có `CodeRules.NormalizeUserCode`); MA-1.8 FE; các `.http` khác (be2.x, p3–p8, r1.x… còn gửi mã tự đặt / kỳ vọng PH-); MA-1.6 tài liệu (user-guide 91 / 02 / 20 là file của anh); Catalog xlsx (máy không có python); ROADMAP đổi trạng thái MA-1.
+Bổ sung (lần 2, cùng ngày):
+- **MA-1.3 import** `MasterDataImportService`: cột mã của 8 danh mục G1 không còn bắt buộc – trống → máy chủ sinh mã, có mã → khớp theo mã như cũ; khách: loại cũ → Industry + BUSINESS, CIF = Code (bỏ cột CIF riêng).
+- **MA-1.7 (2) G2**: 15 service (Company, OrganizationUnit, Position, Shift, DishCategory, IngredientCategory, ProductionLine, KitchenWorkstation, StorageZone, StorageLocation, BotConfiguration, IntegrationChannel, AdministrativeProvince / District / Ward) chuẩn hóa mã chữ hoa không dấu A–Z 0–9 - _ khi thêm / sửa; sửa mã khi bản ghi đã được tham chiếu (ReferenceGuard / IsReferencedAsync) → lỗi "đã được dùng". Chưa áp: UnitMeasure, SupplierMaterial, FoodSafetyChecklist / Item, KpiMetricDefinition (không có mẫu kiểm trùng mã chuẩn – KPI đã tự viết hoa).
+- Test **473 / 473**.
+- **MA-1.8 FE – DỪNG:** bắt đầu sửa `core/store.js` (quy tắc mã từ `Common/GetCodeRules`, danh mục loại khách, `Store.save` ghi chờ API – chưa commit, chưa build) thì thao tác sửa FE bị chặn: luật "chỉ backend, không sửa app-delicare-client" (anh dặn 2026-11-17) mâu thuẫn D-63 l (giao làm FE cho MA-1). Chờ anh xác nhận.
+Còn lại: MA-1.8 FE; các `.http` khác (be2.x, p3–p8, r1.x… còn gửi mã tự đặt / kỳ vọng PH-); MA-1.6 tài liệu (user-guide 91 / 02 / 20 là file của anh); Catalog xlsx (máy không có python); ROADMAP đổi trạng thái MA-1.
 Cần anh: duyệt nhánh; chốt 4 điểm PROPOSED; backup rồi chạy `MA1_renumber_customer_supplier.sql -v DryRun=0` trên DB dev / staging khi đồng ý.
