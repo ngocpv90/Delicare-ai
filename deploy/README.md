@@ -194,6 +194,8 @@ Mở `http://localhost:5200/` → trang đăng nhập DELI-CARE. IIS (cách B): 
 
 Lần cập nhật gần nhất: **2026-11-17 – BE3.7** (T23 + BE3.1–BE3.5: DB 131 SP + seed SystemUser, KpiMetricDefinition; publish đè; `full-flow.http` 217 / 217 trên staging). Lần trước: **2026-11-17 – BE2.9** (toàn bộ BE-2: BE2.1–BE2.7 + sửa lỗi BE2.9): DB 131 SP + 8 seed theo `scripts.order` (không đụng bảng), publish đè (giữ bản build Angular cũ trong `wwwroot`), smoke 49 / 49, `full-flow.http` 216 / 216 trên staging (dữ liệu `[DEMO]` key B29S). Sau đó đã **dừng** API staging.
 
+**Dữ liệu thử [DEMO] cho máy FE / server test:** `node tools/seed-demo/seed-demo.mjs --base <địa chỉ API> --password <mật khẩu admin>` – chạy lại toàn luồng `full-flow.http` qua API, mỗi lần 1 bộ mới (xem `tools/seed-demo/README.md`).
+
 ## 10. Production Linux + Docker (T48.4, D-60)
 
 **Thành phần** (`deploy/docker/docker-compose.production.yml`): `nginx` (build Angular từ `app-delicare-client` + HTTPS + chuyển `/api`, `/Import` → `api`), `api` (AppDelicare.WebApi), `job` (AppDelicare.Job – **đúng 1 bản**), `db-init` (chạy tay). **SQL Server không nằm trong compose production** – server / container riêng có ổ dữ liệu + backup.
