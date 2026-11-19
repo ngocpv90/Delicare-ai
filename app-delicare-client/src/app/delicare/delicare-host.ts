@@ -14,9 +14,21 @@ export interface ScreenPermission {
   imp?: boolean;
 }
 
+export interface HostMenuItem {
+  name: string;
+  /** MetaLink đã bỏ tiền tố '#/' (vd. 'crm-order', 'wf-inbox?type=scm-po'). */
+  link: string;
+}
+export interface HostMenuGroup {
+  name: string;
+  items: HostMenuItem[];
+}
+
 /** Cầu nối Angular ↔ engine giao diện DELICARE (assets/delicare/js) – gán vào window.DC_HOST. */
 export interface DelicareHost {
   user: User | null;
+  /** Menu theo database (ObjectMenu × UserRole, đã lọc mục không được xem), xếp theo OrderShow – engine dựng sidebar từ đây. */
+  menu: HostMenuGroup[];
   hashBase: string;
   get(path: string): Promise<any>;
   /** body: FormData ([FromForm]) hoặc object thường (gửi JSON cho action [FromBody]). */
@@ -43,9 +55,22 @@ export function createDelicareHost(http: HttpClient, user: User | null, logout: 
     }
   });
   const url = (path: string) => URL_API + path;
+  const byOrder = (a: any, b: any) => (a.orderShow ?? 0) - (b.orderShow ?? 0);
+  const menu: HostMenuGroup[] = [...(user?.listMenu ?? [])]
+    .sort(byOrder)
+    .map((g: any) => ({
+      name: String(g.objectMenuName ?? ''),
+      items: [...(g.children ?? [])]
+        .filter((c: any) => !!c.allowAccess)
+        .sort(byOrder)
+        .map((c: any) => ({ name: String(c.objectMenuName ?? ''), link: String(c.metaLink ?? '').trim().replace(/^#\//, '') }))
+        .filter((i: HostMenuItem) => !!i.link),
+    }))
+    .filter((g) => g.items.length > 0);
 
   return {
     user,
+    menu,
     hashBase: `#/${DOMAIN_ROUTER}/`,
     get: (path) => firstValueFrom(http.get<any>(url(path))),
     send: (method, path, body) => {

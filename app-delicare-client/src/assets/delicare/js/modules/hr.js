@@ -258,8 +258,12 @@
   const ws = { tab: 'mine' };
   const isOpen = r => ['Pending', 'InProgress'].includes(r.RequestStatus);
   const approvalTables = r => ['ApprovalRequest', 'ApprovalStep', 'ApprovalDecision', 'ApprovalItem'].concat(BT[r.BusinessType] ? [BT[r.BusinessType][0]] : []);
-  APP.register('wf-inbox', (el, f) => {
-    const all = Store.rows('ApprovalRequest').slice().sort((a, b) => (b.RequestedAt || '').localeCompare(a.RequestedAt || ''));
+  // Mục menu duyệt theo loại (ObjectMenu '#/wf-inbox?type=<screen-id>[-l1|-l2|-director]'): lọc hộp duyệt theo màn hình của nghiệp vụ.
+  const TYPE_SCREEN = { PURCHASE_ORDER: 'scm-po', ORDER: 'crm-order', ORDER_QUANTITY_CHANGE: 'crm-order', ORDER_CHANGE_AFTER_CUTOFF: 'crm-order', PRODUCTION_PLAN: 'prod-plan', INVENTORY_ADJUSTMENT: 'scm-adjustment', PRICE_POLICY: 'crm-price-policy', MENU: 'menu-menu', MENU_VERSION: 'menu-menu', QC_INSPECTION: 'qc-inspection' };
+  const screenOf = a => (BT[a.BusinessType] && BT[a.BusinessType][4]) || TYPE_SCREEN[a.BusinessType] || '';
+  APP.register('wf-inbox', (el, f, p) => {
+    const typ = p && p.type && p.type !== 'wf-inbox' ? String(p.type).replace(/-(l\d+|director)$/, '') : '';
+    const all = Store.rows('ApprovalRequest').filter(a => !typ || screenOf(a) === typ).sort((a, b) => (b.RequestedAt || '').localeCompare(a.RequestedAt || ''));
     const pend = all.filter(isOpen);
     const cur = a => Store.by('ApprovalStep', 'ApprovalRequestId', a.Id).find(s => s.DecisionStatus === 'Waiting');
     // Chế độ API: "Chờ tôi duyệt" lấy từ ApprovalRequest/GetMyPending (đúng người duyệt của bước hiện tại), làm mới sau 30 giây.
@@ -275,6 +279,7 @@
     <div class="notice warn">${I('alert')}<div><b>GAP-F-08:</b> SQL không có bảng mẫu quy trình (số cấp, vai trò, hạn mức theo BusinessType). Mockup dùng cấu hình cố định: Đề nghị mua 2 cấp (Quản lý kho → Ban giám đốc), các nghiệp vụ khác 1 cấp.</div></div>
     <div class="kpis">${UI.kpi('Chờ tôi duyệt', mine.length, 'Theo vai trò: ' + esc(Store.user.group), 'approve', 'orange')}${UI.kpi('Đang chờ (tất cả)', pend.length, 'RequestStatus = Pending/InProgress', 'clipboard', 'blue')}${UI.kpi('Đã duyệt', all.filter(a => a.RequestStatus === 'Approved').length, 'Approved', 'ok', 'green')}${UI.kpi('Từ chối', all.filter(a => a.RequestStatus === 'Rejected').length, 'Rejected', 'x', 'red')}</div>
     <div class="card panel"><div class="row-flex mb">${[['mine', 'Chờ tôi duyệt'], ['pending', 'Đang chờ'], ['all', 'Tất cả']].map(([k, l]) => `<button class="chip ${ws.tab === k ? 'active' : ''}" data-tab2="${k}">${l}</button>`).join('')}</div><div id="wT"></div></div>`;
+    if (typ) { const bar = el.querySelector('[data-tab2]'); if (bar) bar.parentElement.insertAdjacentHTML('beforeend', `<span class="grow"></span><span class="tag orange">Đang lọc: ${esc((APP.FN[typ] && APP.FN[typ].fn) || typ)}</span><a class="btn xs" href="${APP.href('wf-inbox')}">Bỏ lọc</a>`); }
     el.querySelectorAll('[data-tab2]').forEach(b => b.onclick = () => { ws.tab = b.dataset.tab2; APP.refresh(); });
     UI.table(el.querySelector('#wT'), { table: 'ApprovalRequest', rows: rowsOf, onRow: id => openReq(id),
       cols: [{ k: 'RequestNo', label: 'Số yêu cầu' }, { k: 'BusinessType', label: 'Loại nghiệp vụ' }, { k: 'BusinessId', label: 'Bản ghi nghiệp vụ', render: r => { const m = BT[r.BusinessType]; const row = m && Store.get(m[0], r.BusinessId); return row ? `<a href="javascript:void 0" data-open="${m[0]}" data-id="${row.Id}">${esc(Store.label(m[0], row))}</a><span class="sub">dbo.${m[0]}</span>` : '<span class="muted">–</span>'; } }, { k: 'RequestedBy', label: 'Người yêu cầu', render: r => esc(Store.label('User', r.RequestedBy)) }, { k: 'RequestedAt', label: 'Gửi lúc' }, { k: 'step', label: 'Bước / Vai trò duyệt', col: false, nosort: true, render: r => { const st = Store.by('ApprovalStep', 'ApprovalRequestId', r.Id).sort((a, b) => a.StepNo - b.StepNo); return st.map(s => `<span class="tag ${s.DecisionStatus === 'Approved' ? 'green' : s.DecisionStatus === 'Rejected' ? 'red' : 'orange'}">${s.StepNo}. ${esc(s.ApproverRoleCode)}</span>`).join(' '); } }, { k: 'RequestStatus', label: 'Trạng thái' }],

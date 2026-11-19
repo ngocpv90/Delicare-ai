@@ -22,17 +22,38 @@
   // ---------- Sidebar ----------
   function buildNav() {
     const nav = document.getElementById('navGroups');
-    const order = CAT.menuOrder; const groups = {};
-    Object.values(FN).forEach(f => { if (CHILD.has(f.id) || hiddenNow(f.id)) return; (groups[f.grp] = groups[f.grp] || []).push(f); });
-    const dash = groups['Tổng quan điều hành'] || []; dash.sort((a, b) => a.id === 'dash-exec' ? -1 : 1);
-    nav.innerHTML = order.filter(g => groups[g]).map((g, gi) => {
-      const items = groups[g].filter(f => Store.perm(f.id).access !== false);
-      if (!items.length) return '';
-      return `<li class="dc-group" data-g="${esc(g)}"><a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a><ul class="mm-collapse" aria-expanded="false">${items.map(f => `<li><a href="${APP.href(f.id)}" data-nav="${f.id}" title="${esc(f.name)}">${esc(f.fn)}${f.st === 'GAP' ? '<i class="gap-dot">GAP</i>' : ''}${f.id === 'wf-inbox' ? `<span class="badge badge-sm badge-secondary ms-2" id="inboxCount"></span>` : ''}</a></li>`).join('')}</ul></li>`;
-    }).join('');
+    const db = dbNav(), list = db || catalogNav();
+    // Tìm kiếm chức năng dùng cùng danh sách với sidebar (chế độ menu theo DB).
+    APP._navIds = db ? new Set(db.flatMap(g => g.items.map(i => i.f.id))) : null;
+    nav.innerHTML = list.map(({ name: g, items }) => `<li class="dc-group" data-g="${esc(g)}"><a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a><ul class="mm-collapse" aria-expanded="false">${items.map(({ f, label, link }) => `<li><a href="${APP.href(link || f.id)}" data-nav="${esc(link || f.id)}" title="${esc(label)}">${esc(label)}${f.st === 'GAP' && !Store.isLive ? '<i class="gap-dot">GAP</i>' : ''}${(link || f.id) === 'wf-inbox' ? `<span class="badge badge-sm badge-secondary ms-2" id="inboxCount"></span>` : ''}</a></li>`).join('')}</ul></li>`).join('');
     nav.querySelectorAll('li.dc-group > a').forEach(a => a.onclick = () => openGroup(a.parentElement, !a.nextElementSibling.classList.contains('mm-show')));
     markNav(APP.current);
     updateCounts();
+  }
+  // Menu theo danh mục cứng của mockup (chế độ DEMO, hoặc khi máy chủ không trả menu).
+  function catalogNav() {
+    const groups = {};
+    Object.values(FN).forEach(f => { if (CHILD.has(f.id) || hiddenNow(f.id) || Store.perm(f.id).access === false) return; (groups[f.grp] = groups[f.grp] || []).push({ f, label: f.fn }); });
+    const dash = groups['Tổng quan điều hành'] || []; dash.sort(a => (a.f.id === 'dash-exec' ? -1 : 1));
+    return CAT.menuOrder.filter(g => groups[g]).map(g => ({ name: g, items: groups[g] }));
+  }
+  // Menu theo DATABASE (ObjectMenu × UserRole – api/User/GetCurrent → DC_HOST.menu): nhóm, tên mục, thứ tự, hiện / ẩn theo cấu hình ở màn
+  // "Menu chức năng" (IsActive) + ma trận quyền (AllowAccess). FE KHÔNG tự ẩn mục nào: mọi mục máy chủ trả về đều lên sidebar,
+  // kể cả màn dòng chi tiết, mục duyệt theo loại (wf-inbox?type=…) và mục chưa có màn hình (hiện trang báo "chưa có trên giao diện").
+  function dbNav() {
+    const menu = Store.isLive && window.DC_HOST && window.DC_HOST.menu;
+    if (!menu || !menu.length) return null;
+    const used = new Set();
+    const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !used.has(i.link)).map(i => {
+      used.add(i.link); const id = i.link.split('?')[0]; used.add(id);
+      // Mục DB có mà FE chưa có màn: đăng ký màn giữ chỗ để bấm vào không rơi về trang tổng quan.
+      if (!FN[id]) { FN[id] = { id, fn: i.name, name: i.name, grp: g.name, ph: '', types: [], table: null, rel: [], st: 'MAPPED', note: '' }; SCREENS[id] = (el, f) => { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel empty">${I('clipboard')}<h2 class="mt">Mục này chưa có màn hình trên giao diện</h2><p class="muted">Mục menu được cấu hình trong hệ thống nhưng giao diện chưa có màn hình tương ứng.</p></div>`; }; }
+      return { f: FN[id], label: i.name || FN[id].fn, link: i.link };
+    }) }));
+    // Màn FE đã có mà DB chưa có mục menu (f.extra – "Việc của tôi", "Job tự động"): tạm thêm vào nhóm của nó khi tài khoản được vào,
+    // cho tới khi backend bổ sung dòng ObjectMenu (khi đó mục lấy theo DB như mọi mục khác).
+    Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false) return; let g = out.find(x => x.name === f.grp); if (!g) out.push(g = { name: f.grp, items: [] }); g.items.push({ f, label: f.fn, link: f.id }); });
+    return out.filter(g => g.items.length);
   }
   // Mở một nhóm menu (đóng các nhóm khác – kiểu metismenu của theme).
   function openGroup(li, on) {
@@ -42,7 +63,11 @@
   function markNav(id) {
     if (!id) return;
     let act = null;
-    document.querySelectorAll('#navGroups [data-nav]').forEach(a => { const on = a.dataset.nav === id; a.classList.toggle('mm-active', on); a.parentElement.classList.toggle('mm-active', on); if (on) act = a; });
+    // Mục có tham số (wf-inbox?type=…): tô đúng mục theo tham số đang mở; không có mục khớp thì tô mục cùng màn hình.
+    const links = [...document.querySelectorAll('#navGroups [data-nav]')];
+    const typed = APP.params && APP.params.type ? id + '?type=' + APP.params.type : id;
+    const key = links.some(a => a.dataset.nav === typed) ? typed : links.some(a => a.dataset.nav === id) ? id : ((links.find(a => a.dataset.nav.split('?')[0] === id) || {}).dataset || {}).nav;
+    links.forEach(a => { const on = a.dataset.nav === key; a.classList.toggle('mm-active', on); a.parentElement.classList.toggle('mm-active', on); if (on) act = a; });
     document.querySelectorAll('#navGroups > li.dc-group').forEach(li => { const on = !!act && li.contains(act); li.classList.toggle('mm-active', on); if (on) openGroup(li, true); });
   }
   // Kiểu sidebar theo bề rộng (giống main.component): đầy đủ / thu nhỏ (máy tính bảng) / phủ (điện thoại).
@@ -396,7 +421,7 @@
   }
   // Bỏ dấu tiếng Việt để tìm "don hang" khớp "Đơn hàng".
   const fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
-  const screenHits = q => { const k = fold(q); return Object.values(FN).filter(f => !CHILD.has(f.id) && !hiddenNow(f.id) && Store.perm(f.id).access !== false && fold(f.name + ' ' + f.fn + ' ' + f.id).includes(k)).map(f => ({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.grp, i: 'clipboard' })); };
+  const screenHits = q => { const k = fold(q); return Object.values(FN).filter(f => (APP._navIds ? APP._navIds.has(f.id) : (!CHILD.has(f.id) && !hiddenNow(f.id))) && Store.perm(f.id).access !== false && fold(f.name + ' ' + f.fn + ' ' + f.id).includes(k)).map(f => ({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.grp, i: 'clipboard' })); };
   function showResults(res, note) {
     const box = document.getElementById('searchResults');
     box.innerHTML = (res.slice(0, 30).map((r, i) => `<a href="${r.h || 'javascript:void 0'}" data-i="${i}">${I(r.i)}<span>${esc(r.t)}</span><small>${esc(r.s)}</small></a>`).join('') || (note ? '' : '<div class="empty">Không tìm thấy</div>')) + (note ? `<div class="empty">${esc(note)}</div>` : '');

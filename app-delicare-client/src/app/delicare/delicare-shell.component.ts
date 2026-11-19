@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, NgZone, OnDestroy, ViewEncapsulation } from '@angular/core';
-import { LEGAL_NAME } from '../helpers/constant-helper';
+import { firstValueFrom } from 'rxjs';
+import { LEGAL_NAME, URL_API } from '../helpers/constant-helper';
+import { User } from '../helpers/user';
 import { AuthenticationService } from '../services/authentication.service';
 import { createDelicareHost } from './delicare-host';
 import { ThemeService } from './theme.service';
@@ -60,8 +62,19 @@ export class DelicareShellComponent implements AfterViewInit, OnDestroy {
   }
 
   public ngAfterViewInit(): void {
+    // Menu + quyền lấy mới từ database mỗi lần mở khung (api/User/GetCurrent): đổi cấu hình ở màn "Menu chức năng" / ma trận quyền
+    // là có hiệu lực sau khi tải lại trang. Lỗi mạng → dùng menu đã lưu lúc đăng nhập.
+    const stored = this.auth.userValue;
+    firstValueFrom(this.http.get<any>(`${URL_API}User/GetCurrent`))
+      .then((res) => (Array.isArray(res?.data?.listMenu) && stored ? { ...stored, listMenu: res.data.listMenu, isAdmin: res.data.user?.isAdmin ?? stored.isAdmin } : stored))
+      .catch(() => stored)
+      .then((user) => this.startEngine(user));
+  }
+
+  private startEngine(user: User | null): void {
+    if (this.destroyed) return;
     const w = window as any;
-    w.DC_HOST = createDelicareHost(this.http, this.auth.userValue, () => this.logout());
+    w.DC_HOST = createDelicareHost(this.http, user, () => this.logout());
     // Engine thao tác DOM trực tiếp: chạy ngoài Angular zone để không kích change detection liên tục.
     this.zone.runOutsideAngular(() => {
       this.loadScripts()

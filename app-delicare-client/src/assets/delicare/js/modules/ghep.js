@@ -284,7 +284,7 @@
   const fill = (el, id, path, params, render, empty) => Store.query(path, params).then(x => { const o = el.querySelector('#' + id); if (!o || !o.isConnected) return; o.innerHTML = x.ok ? (render(x) || `<div class="muted small">${empty}</div>`) : `<div class="muted small">${esc(failText(x))}</div>`; if (o._bind) o._bind(x); });
 
   // Việc của tôi: ca, đơn nghỉ, đổi ca, chuyến giao của chính người đăng nhập + liên kết Telegram.
-  APP.FN['hr-my'] = { ph: 'P8', grp: 'Nhân sự & Phê duyệt', fn: 'Việc của tôi', id: 'hr-my', name: 'Việc của tôi', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN['hr-my'] = { extra: true, ph: 'P8', grp: 'Nhân sự & Phê duyệt', fn: 'Việc của tôi', id: 'hr-my', name: 'Việc của tôi', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
   function swapShift(a, done) {
     Store.query('ShiftAssignment/GetSwapCandidates', { assignmentId: a.assignmentId }).then(x => {
       if (!x.ok) return UI.toast(esc(failText(x)), 'err');
@@ -323,7 +323,7 @@
   });
 
   // Job tự động (chỉ quản trị): danh sách job, lần chạy gần nhất / kế tiếp, chạy tay.
-  APP.FN['adm-job'] = { ph: 'P0', grp: 'Quản trị hệ thống', fn: 'Job tự động', id: 'adm-job', name: 'Job tự động', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN['adm-job'] = { extra: true, ph: 'P0', grp: 'Quản trị hệ thống', fn: 'Job tự động', id: 'adm-job', name: 'Job tự động', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
   APP.register('adm-job', (el, f) => {
     if (!Store.isLive) return onlyLive(el, f);
     el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Các job chạy theo giờ (khóa đơn, tính nhu cầu nguyên liệu, làm mới KPI…). Chạy tay khi cần – chỉ quản trị.' }) + `<div class="card panel"><div id="jobList">${LOADING}</div></div>`;
