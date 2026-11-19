@@ -25,6 +25,7 @@ const SCRIPTS = [
   'modules/production.js',
   'modules/qc.js',
   'modules/supplier360.js',
+  'modules/employee360.js',
   'modules/logistics.js',
   'modules/hr.js',
   'modules/admin.js',

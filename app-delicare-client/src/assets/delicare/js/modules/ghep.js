@@ -142,6 +142,7 @@
     const links = (d && d.deepLinks) || {};
     UI.modal({ title: 'Mã liên kết Telegram', size: 'sm', onMount: m => UI.fillQr(m), body: `<div class="kv"><div style="grid-column:1/-1"><label>Mã liên kết</label><span style="font-size:22px;font-weight:800;letter-spacing:2px">${esc((d && d.code) || '')}</span></div><div style="grid-column:1/-1"><label>Hết hạn</label><span>${esc(dtx(d && d.expiresAt))}</span></div></div><div class="grid mt">${Object.keys(links).map(k => `<div class="tg-link">${qrOf(links[k])}<a class="btn primary" href="${esc(links[k])}" target="_blank" rel="noopener">Mở bot ${esc(k === 'VH' ? 'Vận hành' : k === 'DH' ? 'Điều hành' : k)}</a><div class="small muted mono" style="word-break:break-all">${esc(links[k])}</div></div>`).join('')}</div><div class="small muted mt">Mã dùng một lần. Mở bot bằng nút trên hoặc gửi mã cho bot để liên kết.</div>` });
   }
+  APP.showTelegramCode = showTelegramCode;   // UI-4: màn chi tiết nhân viên
   function sendMessage(preset) {
     const users = Store.rows('User'), emps = Store.rows('Employee');
     dialog('Gửi tin qua bot', (preset ? '' : fld('Người nhận (nhân viên) *', `<select class="select" id="smE"><option value="">— Chọn —</option>${emps.slice(0, 500).map(e => `<option value="${esc(e.Id)}">${esc(Store.label('Employee', e))}</option>`).join('')}</select>`) + fld('hoặc tài khoản', `<select class="select" id="smU"><option value="">— Chọn —</option>${users.slice(0, 500).map(u => `<option value="${esc(u.Id)}">${esc(Store.label('User', u))}</option>`).join('')}</select>`)) +
@@ -372,7 +373,7 @@
   });
   // adm-employee: nút "Tạo mã liên kết bot" trên dòng – chỉ khi có quyền Sửa màn hồ sơ nhân viên (mã 72 giờ).
   APP.register('adm-employee', (el, f) => {
-    APP.genericList(el, f);
+    APP.genericList(el, f, { onRow: id => APP.go('adm-employee-360?id=' + encodeURIComponent(id)) });   // UI-4 (D-68 a): bấm dòng → hồ sơ nhân viên
     if (!Store.isLive || Store.perm('adm-employee').edit === false) return;
     APP.rowExtra(el, tr => {
       const cell = tr.lastElementChild; if (!cell || cell.querySelector('[data-tgemp]')) return;

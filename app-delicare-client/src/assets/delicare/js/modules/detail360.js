@@ -91,15 +91,16 @@
     load();
   };
   // Tab Lịch sử + Liên quan (Common/GetHistory · Common/GetRelated).
-  D.historyTab = resource => (box, d, id) => {
+  D.historyTab = (resource, noRelated) => (box, d, id) => {
     if (!Store.isLive) { box.innerHTML = UI.history ? '' : D.demoNote; if (UI.history) UI.history(resource, id, box); return; }
-    box.innerHTML = `<h3>Lịch sử</h3><div data-his>${D.loading}</div><h3 class="mt">Liên quan</h3><div data-rel>${D.loading}</div>`;
+    box.innerHTML = `<h3>Lịch sử</h3><div data-his>${D.loading}</div>${noRelated ? '' : `<h3 class="mt">Liên quan</h3><div data-rel>${D.loading}</div>`}`;
     const his = box.querySelector('[data-his]'), rel = box.querySelector('[data-rel]');
     D.run(his, Store.query('Common/GetHistory', { resource, id }), x => {
       const rows = x.list || [];
       his.innerHTML = rows.length ? rows.map(h => `<div class="c360-rows"><div class="r"><label>${esc(U.dt ? U.dt(h.at) : D.dmy(h.at))} · ${esc(h.byName || h.by || '')}</label><span><b>${esc(h.actionName || h.action || '')}</b>${h.referenceNo ? ' · ' + esc(h.referenceNo) : ''}</span></div>
         ${(h.listChange || []).map(c => `<div class="small muted" style="padding-left:12px">${esc(c.field)}: ${esc(c.masked ? '***' : c.from ?? '∅')} → ${esc(c.masked ? '***' : c.to ?? '∅')}</div>`).join('')}${h.comment ? `<div class="small" style="padding-left:12px">${esc(h.comment)}</div>` : ''}</div>`).join('') : D.none;
     });
+    if (noRelated) return;
     D.run(rel, Store.query('Common/GetRelated', { resource, id }), x => {
       const groups = (x.list || []).filter(g => g.count);
       rel.innerHTML = groups.length ? groups.map(g => `<div class="mb"><div class="spread"><b>${esc(g.title)} · ${U.num(g.count)}</b>${g.route && D.can(g.route) ? `<a href="javascript:void 0" data-go="${esc(g.route)}" class="small">Mở màn</a>` : ''}</div>

@@ -14,7 +14,7 @@
   const hiddenNow = id => Store.isLive && (HIDDEN_LIVE.has(id) || !!(FN[id] && FN[id].table && Store.isBroken(FN[id].table)));
   const SCREENS = {};
   // Màn đọc id trên URL để vẽ (không phải mở-bản-ghi-rồi-dọn) → giữ ?id= khi tải lại (UI-2).
-  const KEEP_ID = new Set(['crm-customer-360', 'scm-supplier-360']);
+  const KEEP_ID = new Set(['crm-customer-360', 'scm-supplier-360', 'adm-employee-360']);
   const APP = { FN, SCREENS, current: null, params: {} };
   APP.register = (id, fn) => SCREENS[id] = fn;
   // Tiền tố hash: '#/' khi chạy độc lập, '#/quan-tri/' khi chạy trong Angular (Angular cũng dùng hash routing).

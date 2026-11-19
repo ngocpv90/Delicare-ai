@@ -175,20 +175,22 @@
       }, () => { btn.disabled = false; UI.toast('Không lấy được vị trí – hãy cho phép trình duyệt dùng định vị rồi thử lại', 'err'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
     }, { ok: isIn ? 'Vào ca' : 'Ra ca' });
   }
-  function proxyCheck() {
+  // UI-4: eid → chọn sẵn nhân viên (màn chi tiết nhân viên).
+  function proxyCheck(eid) {
     UI.modal({ title: 'Chấm công hộ', sub: 'Ghi thêm một lần chấm cho nhân viên – không sửa, không xóa được', size: 'sm',
       body: `<div class="field"><label>Nhân viên <span class="req">*</span></label><select class="select" id="pE"><option value="">— Chọn nhân viên —</option>${Store.rows('Employee').map(e => `<option value="${e.Id}">${esc(Store.label('Employee', e))}</option>`).join('')}</select></div>
         <div class="field"><label>Loại <span class="req">*</span></label><select class="select" id="pT"><option value="in">Vào ca</option><option value="out">Ra ca</option></select></div>
         <div class="field"><label>Lý do chấm hộ <span class="req">*</span></label><textarea class="input" rows="3" id="pN" maxlength="500"></textarea></div>`,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="pOk">${I('ok')} Ghi nhận</button>`,
-      onMount: (md, close) => md.querySelector('#pOk').onclick = () => {
+      onMount: (md, close) => { if (typeof eid === 'string') md.querySelector('#pE').value = eid; md.querySelector('#pOk').onclick = () => {
         const eid = md.querySelector('#pE').value, isIn = md.querySelector('#pT').value === 'in', note = md.querySelector('#pN').value.trim();
         if (!eid) return UI.toast('Chưa chọn nhân viên', 'err');
         if (!note) return UI.toast('Vui lòng nhập lý do chấm hộ', 'err');
         const form = { EmployeeId: eid, SourceChannel: 'PROXY', Note: note }, btn = md.querySelector('#pOk'); btn.disabled = true;
         (isIn ? Store.act('AttendanceEvent/CheckIn', { form, tables: AT }) : Store.act('AttendanceEvent/CheckOut', { form, tables: AT })).then(r => { btn.disabled = false; if (!r.ok) return; close(); checkDone(r.data, isIn); });
-      } });
+      }; } });
   }
+  APP.proxyCheck = proxyCheck;
   function markAbsent() {
     const ou = at.ou && Store.get('OrganizationUnit', at.ou);
     UI.modal({ title: 'Chốt vắng', size: 'sm',
@@ -401,6 +403,12 @@
       p.querySelectorAll('[data-x]').forEach(bt => bt.onclick = () => { const a = bt.dataset.x; closeDrawerOf(p); if (a === 'cancel') cancelHr(leave, t, id, rq.requestNo); else decideHr(leave, t, id, rq.requestNo, a === 'approve'); });
     });
   }
+  // UI-4: mở đơn nghỉ / đổi ca (tab Xử lý đơn: duyệt / từ chối / hủy theo quyền) từ màn khác.
+  APP.openHrRequest = (leave, rid) => {
+    const f = APP.FN[leave ? 'hr-leave' : 'hr-swap'], t = f.table;
+    APP.openDetail(t, rid, f, { noEdit: true, tabs: [{ label: 'Xử lý đơn', html: p => { loadHrDetail(leave, t, rid, p); return LOADING; } }] });
+    const w = [...document.querySelectorAll('.drawer-wrap')].pop(), tb = w && w.querySelector('[data-tab="1"]'); if (tb) tb.click();
+  };
   ['hr-leave', 'hr-swap'].forEach(id => APP.register(id, (el, f) => {
     const t = f.table, leave = id === 'hr-leave';
     APP.genericList(el, f, { noTransit: true, noAdd: true, top: `<div class="card panel mb spread"><div><div class="panel-title">${leave ? 'Tạo đơn xin nghỉ' : 'Tạo đơn đổi ca'}</div><div class="panel-desc">${Store.isLive ? 'Đơn được gửi duyệt ngay sau khi tạo – người duyệt xử lý tại Hộp phê duyệt' : `Đơn sinh kèm ApprovalRequest (BusinessType = ${leave ? 'LEAVE_REQUEST' : 'SHIFT_SWAP'}) → duyệt tại Hộp phê duyệt`}</div></div><button class="btn primary" id="nReq">${I('plus')} Tạo đơn</button></div>` });
