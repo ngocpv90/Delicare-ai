@@ -49,6 +49,8 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@ReceiptDate", request.ReceiptDate);
                 dynamicParameters.Add("@WarehouseId", request.WarehouseId == Guid.Empty ? null : request.WarehouseId);
                 dynamicParameters.Add("@Status", request.Status);
+                dynamicParameters.Add("@FromReceiptDate", request.FromReceiptDate?.Date);
+                dynamicParameters.Add("@ToReceiptDate", request.ToReceiptDate?.Date);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);

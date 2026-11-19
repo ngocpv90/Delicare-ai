@@ -13,6 +13,8 @@ CREATE OR ALTER PROCEDURE [dbo].[uspPurchaseOrder_GetAll] (
 	, @ExpectedDeliveryDate DATETIME2 = NULL
 	, @TotalAmount DECIMAL(18,2) = NULL
 	, @Note NVARCHAR(MAX) = NULL
+	, @FromOrderDate DATE = NULL -- UI-3 (D-67 f3): lọc theo ngày đặt từ – đến
+	, @ToOrderDate DATE = NULL
 	, @Page INT = 1
 	, @PageSize INT = 10
 	, @SortField NVARCHAR(100) = NULL
@@ -48,6 +50,8 @@ BEGIN
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (ISNULL(@PurchaseOrderNumber, '') = '' OR t.[PurchaseOrderNumber] LIKE CONCAT('%', @PurchaseOrderNumber, '%'))
 			AND (@OrderDate IS NULL OR t.[OrderDate] = @OrderDate)
+			AND (@FromOrderDate IS NULL OR t.[OrderDate] >= @FromOrderDate)
+			AND (@ToOrderDate IS NULL OR t.[OrderDate] < DATEADD(DAY, 1, @ToOrderDate))
 			AND (@ExpectedDeliveryDate IS NULL OR t.[ExpectedDeliveryDate] = @ExpectedDeliveryDate)
 			AND (@TotalAmount IS NULL OR t.[TotalAmount] = @TotalAmount)
 			AND (ISNULL(@Note, '') = '' OR t.[Note] LIKE CONCAT('%', @Note, '%'))

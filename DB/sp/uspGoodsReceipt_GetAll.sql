@@ -12,6 +12,8 @@ CREATE OR ALTER PROCEDURE [dbo].[uspGoodsReceipt_GetAll] (
 	, @ReceiptNumber NVARCHAR(MAX) = NULL
 	, @ReceiptDate DATETIME = NULL
 	, @Note NVARCHAR(MAX) = NULL
+	, @FromReceiptDate DATE = NULL -- UI-3 (D-67 f3): lọc theo ngày nhận từ – đến
+	, @ToReceiptDate DATE = NULL
 	, @Page INT = 1
 	, @PageSize INT = 10
 	, @SortField NVARCHAR(100) = NULL
@@ -49,6 +51,8 @@ BEGIN
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (ISNULL(@ReceiptNumber, '') = '' OR t.[ReceiptNumber] LIKE CONCAT('%', @ReceiptNumber, '%'))
 			AND (@ReceiptDate IS NULL OR t.[ReceiptDate] = @ReceiptDate)
+			AND (@FromReceiptDate IS NULL OR t.[ReceiptDate] >= @FromReceiptDate)
+			AND (@ToReceiptDate IS NULL OR t.[ReceiptDate] < DATEADD(DAY, 1, @ToReceiptDate))
 			AND (ISNULL(@Note, '') = '' OR t.[Note] LIKE CONCAT('%', @Note, '%'))
 			AND t.IsDeleted = 0
 	),

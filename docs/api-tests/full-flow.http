@@ -1533,6 +1533,25 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/Order/GetAll?CustomerId={{customerId}}&FromMealDate={{day}}&ToMealDate={{day}}&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
+########## 15c. NHÀ CUNG CẤP CHI TIẾT (UI-3, D-67): hồ sơ + cảnh báo, xu hướng theo tháng, lọc PO / phiếu nhập theo ngày
+### 15c.1 Hồ sơ NCC: thẻ chỉ số (PO mở, đúng hạn, bị loại, sự cố), khối Cần chú ý (listAlert)
+# @expect data.receiptCount90d >= 0
+GET {{base}}/api/Supplier/GetOverview?id={{supplierId}}
+Authorization: Bearer {{token}}
+
+### 15c.2 Xu hướng mua 6 tháng gần nhất (giá trị PO, giá trị đã nhận, % đúng hạn, % bị loại)
+# @expect data.listMonth[5].month contains {{$datetime "YYYY-MM"}}
+GET {{base}}/api/Supplier/GetTrend?id={{supplierId}}
+Authorization: Bearer {{token}}
+
+### 15c.3 PO của NCC đặt từ 30 ngày trước tới hôm nay · phiếu nhập cùng khoảng
+GET {{base}}/api/PurchaseOrder/GetAll?SupplierId={{supplierId}}&FromOrderDate={{$datetime "YYYY-MM-DD" -30 d}}&ToOrderDate={{$datetime "YYYY-MM-DD"}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+GET {{base}}/api/GoodsReceipt/GetAll?SupplierId={{supplierId}}&FromReceiptDate={{$datetime "YYYY-MM-DD" -30 d}}&ToReceiptDate={{$datetime "YYYY-MM-DD"}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
 ########## 16. XỬ LÝ LÔ HẾT HẠN (thao tác tay thay job – D-45, BE2.4)
 ### 16.1 Xem trước (không ghi): lô bò -HH hết hạn hôm qua
 # @expect . contains {{lotHH.response.body.listData[qcStatus=DAT].lotNumber}}

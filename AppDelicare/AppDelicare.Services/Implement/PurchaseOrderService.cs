@@ -46,6 +46,8 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@SupplierId", request.SupplierId == Guid.Empty ? null : request.SupplierId);
                 dynamicParameters.Add("@PurchaseRequestId", request.PurchaseRequestId == Guid.Empty ? null : request.PurchaseRequestId);
                 dynamicParameters.Add("@Status", request.Status);
+                dynamicParameters.Add("@FromOrderDate", request.FromOrderDate?.Date);
+                dynamicParameters.Add("@ToOrderDate", request.ToOrderDate?.Date);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);

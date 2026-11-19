@@ -782,6 +782,12 @@
             public static readonly string CustomerAlertNoLocation = "Chưa có điểm giao";
             public static readonly string CustomerAlertNoPrimaryContact = "Chưa có người liên hệ chính";
             public static readonly string CustomerTrendRangeInvalid = "Khoảng ngày không hợp lệ (từ ≤ đến, tối đa 366 ngày)";
+            public static readonly string SupplierTrendRangeInvalid = "Khoảng tháng không hợp lệ (từ ≤ đến, tối đa 24 tháng)";
+            public static readonly string SupplierAlertPoOverdue = "{0} đơn mua trễ hạn giao: {1}";
+            public static readonly string SupplierAlertIssueOverdue = "{0} sự cố quá hạn xử lý";
+            public static readonly string SupplierAlertPriceExpiring = "{0} giá nguyên liệu hết hiệu lực trong {1} ngày";
+            public static readonly string SupplierAlertLotOnHold = "{0} lô nguyên liệu của NCC đang tạm giữ";
+            public static readonly string SupplierAlertLotExpiring = "{0} lô nguyên liệu của NCC hết hạn trong {1} ngày";
             // ---------------------------------------------------------------- FE-E.2 – mã QR
             public static readonly string QrBatchSizeInvalid = "Cần 1–200 nội dung để vẽ mã QR";
             public static readonly string QrTextInvalid = "Nội dung mã QR trống hoặc dài quá 512 ký tự";

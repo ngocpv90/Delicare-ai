@@ -163,5 +163,65 @@ namespace AppDelicare.Tests.MasterData
             overview.GetProperty("listMaterial")[0].GetProperty("ingredientName").GetString().Should().Be("Rau");
             overview.GetProperty("listOpenPurchaseOrder").GetArrayLength().Should().Be(1);
         }
+
+        [Fact]
+        public async Task Supplier_overview_profile_alerts_and_monthly_trend()
+        {
+            // UI-3 (D-67 f1, f2): thẻ chỉ số, đánh giá, khối Cần chú ý và xu hướng theo tháng của 1 NCC.
+            DateTime today = DateTime.UtcNow.AddHours(7).Date, now = DateTime.UtcNow.AddHours(7);
+            Guid supplier = Guid.NewGuid(), ingredient = Guid.NewGuid(), warehouse = Guid.NewGuid(), unit = Guid.NewGuid();
+            Guid poLate = Guid.NewGuid(), poDone = Guid.NewGuid(), gr = Guid.NewGuid(), lotHold = Guid.NewGuid(), lotSoon = Guid.NewGuid(), lotEmpty = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                db.Supplier.Add(new Supplier { Id = supplier, Code = "NC-UI3", Name = "NCC chi tiết" });
+                db.Ingredient.Add(new Ingredient { Id = ingredient, Code = "NL-UI3", Name = "Thịt" });
+                db.SupplierMaterial.Add(new SupplierMaterial { Id = Guid.NewGuid(), SupplierId = supplier, IngredientId = ingredient, UnitPrice = 100, EffectiveFrom = today.AddDays(-30), EffectiveTo = today.AddDays(10) });
+                db.SupplierMaterial.Add(new SupplierMaterial { Id = Guid.NewGuid(), SupplierId = supplier, IngredientId = ingredient, UnitPrice = 90, EffectiveTo = today.AddDays(40) });
+                db.PurchaseOrder.Add(new PurchaseOrder { Id = poLate, SupplierId = supplier, PurchaseOrderNumber = "PO-UI3-LATE", Status = "Sent", OrderDate = today.AddDays(-5), ExpectedDeliveryDate = today.AddDays(-1), TotalAmount = 1_000_000 });
+                db.PurchaseOrder.Add(new PurchaseOrder { Id = Guid.NewGuid(), SupplierId = supplier, PurchaseOrderNumber = "PO-UI3-DRAFT", Status = "Draft", OrderDate = today, ExpectedDeliveryDate = today.AddDays(-3), TotalAmount = 500_000 });
+                db.PurchaseOrder.Add(new PurchaseOrder { Id = poDone, SupplierId = supplier, PurchaseOrderNumber = "PO-UI3-DONE", Status = "Received", OrderDate = today.AddDays(-3), ExpectedDeliveryDate = today.AddDays(-2), TotalAmount = 2_000_000 });
+                db.GoodsReceipt.Add(new GoodsReceipt { Id = gr, SupplierId = supplier, PurchaseOrderId = poDone, WarehouseId = warehouse, ReceiptDate = today.AddDays(-2), Status = "Posted", ReceiptNumber = "NK-UI3" });
+                db.GoodsReceiptLine.Add(new GoodsReceiptLine { Id = Guid.NewGuid(), GoodsReceiptId = gr, IngredientId = ingredient, ReceivedQuantity = 100, AcceptedQuantity = 90, RejectedQuantity = 10, UnitCost = 20_000, UnitId = unit, UomId = unit });
+                db.SupplierIssue.Add(new SupplierIssue { Id = Guid.NewGuid(), SupplierId = supplier, IssueType = "LATE", IssueStatus = "Open", ReportedAt = now.AddDays(-3), DueAt = now.AddDays(-1), Description = "Giao thiếu" });
+                db.SupplierIssue.Add(new SupplierIssue { Id = Guid.NewGuid(), SupplierId = supplier, IssueType = "QUALITY", IssueStatus = "Closed", ReportedAt = now.AddDays(-10), DueAt = now.AddDays(-5), ClosedAt = now.AddDays(-6), Description = "Sai quy cách" });
+                db.MaterialLot.Add(new MaterialLot { Id = lotHold, SupplierId = supplier, IngredientId = ingredient, Status = "OnHold", LotNumber = "L-HOLD", LotNo = "L-HOLD" });
+                db.MaterialLot.Add(new MaterialLot { Id = lotSoon, SupplierId = supplier, IngredientId = ingredient, Status = "Available", ExpiryDate = today.AddDays(1), LotNumber = "L-SOON", LotNo = "L-SOON" });
+                db.MaterialLot.Add(new MaterialLot { Id = lotEmpty, SupplierId = supplier, IngredientId = ingredient, Status = "OnHold", LotNumber = "L-EMPTY", LotNo = "L-EMPTY" });
+                foreach (var lot in new[] { lotHold, lotSoon })
+                {
+                    db.InventoryBalance.Add(new InventoryBalance { Id = Guid.NewGuid(), WarehouseId = warehouse, IngredientId = ingredient, MaterialLotId = lot, OnHandQuantity = 5, UnitId = unit });
+                }
+                return Task.CompletedTask;
+            });
+            using var c = _factory.CreateAuthorizedClient();
+
+            var o = (await c.GetResultAsync($"/api/Supplier/GetOverview?id={supplier}")).Ok();
+            o.GetProperty("openPoCount").GetInt32().Should().Be(2, "Draft + Sent; Received không còn mở");
+            o.GetProperty("openPoAmount").GetDecimal().Should().Be(1_500_000);
+            o.GetProperty("overduePoCount").GetInt32().Should().Be(1, "PO Nháp chưa gửi NCC không tính trễ");
+            o.GetProperty("receiptCount90d").GetInt32().Should().Be(1);
+            o.GetProperty("onTimeRate").GetDecimal().Should().Be(100);
+            o.GetProperty("rejectRate").GetDecimal().Should().Be(10);
+            o.GetProperty("qcPassRate").GetDecimal().Should().Be(90);
+            o.GetProperty("openIssueCount").GetInt32().Should().Be(1);
+            o.GetProperty("overdueIssueCount").GetInt32().Should().Be(1);
+            o.GetProperty("issueOnTimePct").GetDecimal().Should().Be(50);
+            o.GetProperty("lotOnHoldCount").GetInt32().Should().Be(1, "lô hết tồn không tính");
+            o.GetProperty("lotNearExpiryCount").GetInt32().Should().Be(1);
+            o.GetProperty("priceExpiringCount").GetInt32().Should().Be(1, "chỉ giá hết hiệu lực trong 15 ngày");
+            var alerts = o.GetProperty("listAlert").EnumerateArray().ToList();
+            alerts.Select(a => a.GetProperty("code").GetString()).Should().Equal("PO_OVERDUE", "ISSUE_OVERDUE", "LOT_ON_HOLD", "PRICE_EXPIRING", "LOT_EXPIRING");
+            alerts[0].GetProperty("message").GetString().Should().Contain("PO-UI3-LATE");
+            alerts[0].GetProperty("screen").GetString().Should().Be("scm-po");
+
+            var trend = (await c.GetResultAsync($"/api/Supplier/GetTrend?id={supplier}")).Ok();
+            var months = trend.GetProperty("listMonth").EnumerateArray().ToList();
+            months.Should().HaveCount(6);
+            months.Sum(m => m.GetProperty("poAmount").GetDecimal()).Should().Be(3_500_000);
+            months.Sum(m => m.GetProperty("receivedAmount").GetDecimal()).Should().Be(1_800_000, "90 đạt × 20.000");
+            months.Sum(m => m.GetProperty("receiptCount").GetInt32()).Should().Be(1);
+            (await c.GetResultAsync($"/api/Supplier/GetTrend?id={supplier}&from={today:yyyy-MM-dd}&to={today.AddMonths(-1):yyyy-MM-dd}")).Fail("Khoảng tháng");
+            (await c.GetResultAsync($"/api/Supplier/GetTrend?id={supplier}&from={today.AddMonths(-30):yyyy-MM-dd}")).Fail("Khoảng tháng");
+        }
     }
 }

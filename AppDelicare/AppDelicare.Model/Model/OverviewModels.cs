@@ -130,6 +130,59 @@ namespace AppDelicare.Model.Model
         public decimal? OnTimeRate { get; set; }
         /// <summary>Tỷ lệ trả hàng 90 ngày (% số lượng), null nếu chưa nhập.</summary>
         public decimal? RejectRate { get; set; }
+
+        // ---- UI-3 (D-67 f1): thẻ chỉ số + khối Cần chú ý + Đánh giá NCC ----
+        /// <summary>PO đang mở (chưa Nhận đủ / Đóng / Hủy) và tổng giá trị.</summary>
+        public int OpenPoCount { get; set; }
+        public decimal OpenPoAmount { get; set; }
+        /// <summary>PO đã duyệt / đã gửi / nhận một phần mà hẹn giao &lt; hôm nay.</summary>
+        public int OverduePoCount { get; set; }
+        /// <summary>Số phiếu nhập 90 ngày (số phụ thẻ "Giao đúng hạn").</summary>
+        public int ReceiptCount90d { get; set; }
+        /// <summary>% số lượng đạt QC 90 ngày (= 100 − tỷ lệ trả hàng), null nếu chưa nhập.</summary>
+        public decimal? QcPassRate { get; set; }
+        /// <summary>Ngày nhận hàng gần nhất.</summary>
+        public DateTime? LastReceiptDate { get; set; }
+        public int IssueCount { get; set; }
+        /// <summary>Sự cố Mới / Đang xử lý.</summary>
+        public int OpenIssueCount { get; set; }
+        /// <summary>Sự cố chưa xử lý xong (Mới / Đang xử lý) đã quá hạn.</summary>
+        public int OverdueIssueCount { get; set; }
+        /// <summary>% sự cố đúng hạn trên các sự cố có hạn: Đóng trước hạn, hoặc chưa đóng mà chưa tới hạn; null nếu không có sự cố có hạn.</summary>
+        public decimal? IssueOnTimePct { get; set; }
+        /// <summary>Lô của NCC đang tạm giữ (còn tồn).</summary>
+        public int LotOnHoldCount { get; set; }
+        /// <summary>Lô của NCC khả dụng, còn tồn, hết hạn trong <see cref="LotExpiryDays"/> ngày.</summary>
+        public int LotNearExpiryCount { get; set; }
+        public int LotExpiryDays { get; set; }
+        /// <summary>Giá nguyên liệu đang hiệu lực mà hết hiệu lực trong <see cref="PriceExpiryDays"/> ngày.</summary>
+        public int PriceExpiringCount { get; set; }
+        public int PriceExpiryDays { get; set; }
+        /// <summary>Khối "Cần chú ý" (D-67 d) – cùng dạng với khách hàng (Code, Severity, Message, Screen).</summary>
+        public List<CustomerAlertModel> ListAlert { get; set; } = [];
+    }
+
+    /// <summary>UI-3 (D-67 f2): xu hướng mua của 1 NCC theo tháng.</summary>
+    public class SupplierTrendModel
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+        public List<SupplierTrendMonthModel> ListMonth { get; set; } = [];
+    }
+
+    public class SupplierTrendMonthModel
+    {
+        /// <summary>Ngày đầu tháng.</summary>
+        public DateTime Month { get; set; }
+        /// <summary>Σ giá trị PO (chưa hủy) đặt trong tháng.</summary>
+        public decimal PoAmount { get; set; }
+        /// <summary>Σ số lượng đạt × đơn giá của phiếu nhập Đã ghi sổ trong tháng.</summary>
+        public decimal ReceivedAmount { get; set; }
+        public int ReceiptCount { get; set; }
+        /// <summary>% phiếu nhập (gắn PO có hẹn giao) nhận đúng hạn; null nếu không có.</summary>
+        public decimal? OnTimePct { get; set; }
+        /// <summary>% số lượng bị loại; null nếu không nhận.</summary>
+        public decimal? RejectPct { get; set; }
     }
 
     public class SupplierMaterialBriefModel

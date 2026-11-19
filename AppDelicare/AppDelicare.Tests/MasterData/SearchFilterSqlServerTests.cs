@@ -98,6 +98,26 @@ namespace AppDelicare.Tests.MasterData
                 .Should().Be(expected);
         }
 
+        /// <summary>UI-3 (D-67 f3): PurchaseOrder/GetAll lọc ngày đặt, GoodsReceipt/GetAll lọc ngày nhận từ – đến (gồm 2 đầu) trên SQL Server dev – chỉ đọc.</summary>
+        [SkippableFact]
+        public async Task Purchase_order_and_goods_receipt_lists_filter_by_date_range()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            using var scope = factory.Services.CreateScope();
+            var sp = scope.ServiceProvider;
+            var db = sp.GetRequiredService<DatabaseContext>();
+            var poDay = await db.PurchaseOrder.Where(x => !x.IsDeleted).Select(x => x.OrderDate).OrderByDescending(x => x).FirstOrDefaultAsync();
+            var grDay = await db.GoodsReceipt.Where(x => !x.IsDeleted).Select(x => x.ReceiptDate).OrderByDescending(x => x).FirstOrDefaultAsync();
+            Skip.If(poDay == default || grDay == default, "DB dev chưa có PO / phiếu nhập");
+            DateTime poFrom = poDay.Date.AddDays(-7), poTo = poDay.Date, grFrom = grDay.Date.AddDays(-7), grTo = grDay.Date;
+            int poExpected = await db.PurchaseOrder.CountAsync(x => !x.IsDeleted && x.OrderDate >= poFrom && x.OrderDate < poTo.AddDays(1));
+            int grExpected = await db.GoodsReceipt.CountAsync(x => !x.IsDeleted && x.ReceiptDate >= grFrom && x.ReceiptDate < grTo.AddDays(1));
+            (await sp.GetRequiredService<IPurchaseOrderService>().GetAll(new PurchaseOrderSearchRequest { PageSize = 1, FromOrderDate = poFrom, ToOrderDate = poTo })).TotalRecords
+                .Should().Be(poExpected);
+            (await sp.GetRequiredService<IGoodsReceiptService>().GetAll(new GoodsReceiptSearchRequest { PageSize = 1, FromReceiptDate = grFrom, ToReceiptDate = grTo })).TotalRecords
+                .Should().Be(grExpected);
+        }
+
         /// <summary>T50R1: chặn tái phát – mọi thuộc tính lọc *Id kiểu Guid trong SearchRequest phải là Guid? (bỏ trống = không lọc).</summary>
         [Fact]
         public void Every_guid_filter_of_search_requests_is_nullable()

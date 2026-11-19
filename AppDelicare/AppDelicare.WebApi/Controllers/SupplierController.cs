@@ -113,6 +113,21 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>T45R: tổng quan NCC – bảng giá, PO đang mở, sự cố, tỷ lệ đúng hạn / trả hàng 90 ngày.</summary>
+        /// <summary>UI-3 (D-67 f2): xu hướng mua theo tháng của 1 NCC (from / to là ngày bất kỳ trong tháng; mặc định 6 tháng gần nhất, tối đa 24 tháng).</summary>
+        [HttpGet("GetTrend")]
+        public async Task<IActionResult> GetTrend(Guid id, DateTime? from, DateTime? to)
+        {
+            try
+            {
+                return Ok(await _service.GetTrend(id, from, to));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTrend: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetOverview")]
         public async Task<IActionResult> GetOverview(Guid id)
         {
