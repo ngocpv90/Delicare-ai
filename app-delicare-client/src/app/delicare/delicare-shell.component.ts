@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, NgZone, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { LEGAL_NAME } from '../helpers/constant-helper';
 import { AuthenticationService } from '../services/authentication.service';
 import { createDelicareHost } from './delicare-host';
 import { ThemeService } from './theme.service';
@@ -25,12 +26,14 @@ const SCRIPTS = [
   'modules/integration.js',
   'modules/explorer.js',
   'modules/be3.js',
+  'modules/ghep.js',
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';
 const SCRIPT_ATTR = 'data-delicare';
 
 /**
- * Khung ứng dụng DELICARE theo mockup đã duyệt (docs/mockup/index.html): sidebar, topbar, nội dung.
+ * Khung ứng dụng DELICARE trên theme W3CRM (nav-header, header, deznav, content-body – như main.component):
+ * chức năng theo mockup đã duyệt (docs/mockup), giao diện theo theme W3CRM + màu DELI-CARE (clinic.css, D-36).
  * Toàn bộ màn hình nghiệp vụ do engine của mockup vẽ (assets/delicare/js); dữ liệu đọc / ghi qua API cũ
  * (api/<Controller>/GetAllData · Insert · Update · Delete), bảng chưa có API dùng dữ liệu DEMO.
  */
@@ -43,6 +46,8 @@ const SCRIPT_ATTR = 'data-delicare';
 export class DelicareShellComponent implements AfterViewInit, OnDestroy {
   public loading = true;
   public loadError = '';
+  public legalName = LEGAL_NAME;
+  public currentYear = new Date().getFullYear();
   private destroyed = false;
 
   constructor(

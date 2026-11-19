@@ -42,19 +42,19 @@
     // Chế độ API: thao tác ghi thật xuống database → bỏ hậu tố "DEMO" của mockup.
     if (Store.hasHost && Store.mode === 'api') msg = String(msg).replace(/\s*\((DỮ LIỆU )?DEMO\)/g, '').replace(/\s*·\s*DEMO\)/g, ')').replace(/\s*<small>\(dbo\.[^)]*\)<\/small>/g, '');
     let box = document.getElementById('toasts'); const el = document.createElement('div');
-    el.className = 'toast ' + (kind || ''); el.innerHTML = I(kind === 'err' ? 'alert' : kind === 'warn' ? 'alert' : 'ok') + '<div>' + msg + '</div>';
+    el.className = 'dc-toast ' + (kind || ''); el.innerHTML = I(kind === 'err' ? 'alert' : kind === 'warn' ? 'alert' : 'ok') + '<div>' + msg + '</div>';
     box.appendChild(el); setTimeout(() => el.remove(), 3600);
   };
   // Chế độ thật: hộp thoại / ngăn chi tiết cũng bỏ chữ kỹ thuật của mockup như vùng nội dung chính (APP.cleanDemoText nạp sau ui.js).
   const cleanTech = root => { try { if (window.APP && APP.cleanDemoText) APP.cleanDemoText(root); } catch (e) { console.warn(e); } };
   // ---------- Modal ----------
   UI.modal = ({ title, sub, body, foot, size, onMount }) => {
-    const ov = document.createElement('div'); ov.className = 'overlay show';
-    ov.innerHTML = `<div class="modal ${size || ''}" role="dialog" aria-modal="true"><div class="modal-head"><div style="flex:1"><h2>${title}</h2>${sub ? `<div class="panel-desc">${sub}</div>` : ''}</div><button class="icon-btn" data-close aria-label="Đóng">${I('x')}</button></div><div class="modal-body">${body || ''}</div>${foot !== false ? `<div class="modal-foot">${foot || '<button class="btn" data-close>Đóng</button>'}</div>` : ''}</div>`;
+    const ov = document.createElement('div'); ov.className = 'modal overlay show'; ov.style.display = 'block'; ov.tabIndex = -1;
+    ov.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ${size === 'lg' ? 'modal-xl' : size === 'sm' ? '' : 'modal-lg'}" role="dialog" aria-modal="true"><div class="modal-content"><div class="modal-header"><div style="flex:1;min-width:0"><h5 class="modal-title">${title}</h5>${sub ? `<div class="panel-desc">${sub}</div>` : ''}</div><button type="button" class="btn-close" data-close aria-label="Đóng"></button></div><div class="modal-body">${body || ''}</div>${foot !== false ? `<div class="modal-footer">${foot || '<button class="btn" data-close>Đóng</button>'}</div>` : ''}</div></div>`;
     document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
-    onMount && onMount(ov.querySelector('.modal'), close);
+    onMount && onMount(ov.querySelector('.modal-content'), close);
     cleanTech(ov);
     return close;
   };
@@ -67,7 +67,7 @@
   // ---------- Drawer ----------
   UI.drawer = ({ title, sub, badge, tabs, foot, onMount, width }) => {
     const w = document.createElement('div'); w.className = 'drawer-wrap show';
-    w.innerHTML = `<aside class="drawer" ${width ? `style="width:min(${width}px,100%)"` : ''}><div class="drawer-head"><div class="t"><div class="eyebrow">${sub || ''}</div><h2 style="margin-top:3px">${title} ${badge || ''}</h2></div><button class="icon-btn" data-close aria-label="Đóng">${I('x')}</button></div><div class="drawer-body"><div class="tabs">${tabs.map((t, i) => `<button class="tab ${i ? '' : 'active'}" data-tab="${i}">${t.label}</button>`).join('')}</div>${tabs.map((t, i) => `<div class="tabpane ${i ? 'hide' : ''}" data-pane="${i}">${typeof t.html === 'function' ? '' : t.html}</div>`).join('')}</div>${foot ? `<div class="drawer-foot">${foot}</div>` : ''}</aside>`;
+    w.innerHTML = `<aside class="drawer" ${width ? `style="width:min(${width}px,100%)"` : ''}><div class="drawer-head"><div class="t"><div class="eyebrow">${sub || ''}</div><h2 style="margin-top:3px">${title} ${badge || ''}</h2></div><button type="button" class="btn-close" data-close aria-label="Đóng"></button></div><div class="drawer-body"><div class="tabs">${tabs.map((t, i) => `<button class="tab ${i ? '' : 'active'}" data-tab="${i}">${t.label}</button>`).join('')}</div>${tabs.map((t, i) => `<div class="tabpane ${i ? 'hide' : ''}" data-pane="${i}">${typeof t.html === 'function' ? '' : t.html}</div>`).join('')}</div>${foot ? `<div class="drawer-foot">${foot}</div>` : ''}</aside>`;
     document.body.appendChild(w);
     const close = () => w.remove();
     const loaded = {};
@@ -88,7 +88,7 @@
       const view = rows.slice((st.page - 1) * st.size, st.page * st.size);
       const filters = (cfg.filters || []).map(f => `<select class="select" data-f="${f.k}"><option value="">${f.label}: Tất cả</option>${f.options.map(o => `<option value="${esc(o.v)}" ${st.f[f.k] === String(o.v) ? 'selected' : ''}>${esc(o.l)}</option>`).join('')}</select>`).join('');
       el.innerHTML = `${cfg.toolbar === false ? '' : `<div class="toolbar"><input class="input search-in" placeholder="Tìm trong ${total} dòng…" value="${esc(st.q)}" data-q>${filters}<span class="grow"></span>${cfg.tools || ''}</div>`}
-      <div class="table-wrap"><table class="dt"><thead><tr>${cfg.cols.map(c => `<th class="${c.num ? 'num' : ''} ${c.nosort ? '' : 'sortable'}" data-sort="${c.k}">${c.label}${st.sort === c.k ? (st.dir > 0 ? ' ▲' : ' ▼') : ''}${c.col !== false && cfg.table && Store.colmeta[cfg.table][c.col || c.k] ? `<small>${c.col || c.k}</small>` : ''}</th>`).join('')}${cfg.actions ? '<th></th>' : ''}</tr></thead>
+      <div class="table-wrap table-responsive"><table class="table dc-table dt"><thead><tr>${cfg.cols.map(c => `<th class="${c.num ? 'num' : ''} ${c.nosort ? '' : 'sortable'}" data-sort="${c.k}">${c.label}${st.sort === c.k ? (st.dir > 0 ? ' ▲' : ' ▼') : ''}${c.col !== false && cfg.table && Store.colmeta[cfg.table][c.col || c.k] ? `<small>${c.col || c.k}</small>` : ''}</th>`).join('')}${cfg.actions ? '<th></th>' : ''}</tr></thead>
       <tbody>${view.length ? view.map(r => `<tr class="${cfg.onRow ? 'clickable' : ''}" data-row="${esc(r.Id)}">${cfg.cols.map(c => `<td class="${c.num ? 'num' : ''}">${c.render ? c.render(r) : (cfg.table ? UI.val(cfg.table, c.k, r[c.k], r) : esc(r[c.k]))}</td>`).join('')}${cfg.actions ? `<td class="actions">${cfg.actions(r)}</td>` : ''}</tr>`).join('') : `<tr><td colspan="${cfg.cols.length + 1}" class="empty">Không có dữ liệu phù hợp bộ lọc</td></tr>`}</tbody></table></div>
       ${cfg.pager === false ? '' : `<div class="pager"><span>Hiển thị ${total ? (st.page - 1) * st.size + 1 : 0}–${Math.min(st.page * st.size, total)} / ${total} dòng · <select class="select" data-size style="min-height:26px;padding:2px 6px">${[5, 10, 20, 50].map(s => `<option ${s === st.size ? 'selected' : ''}>${s}</option>`).join('')}</select> dòng/trang</span><span class="pages"><button data-pg="${st.page - 1}" ${st.page <= 1 ? 'disabled' : ''}>‹</button>${Array.from({ length: pages }, (_, i) => i + 1).filter(p => p === 1 || p === pages || Math.abs(p - st.page) <= 1).map((p, i, a) => (i && p - a[i - 1] > 1 ? '<span>…</span>' : '') + `<button data-pg="${p}" class="${p === st.page ? 'active' : ''}">${p}</button>`).join('')}<button data-pg="${st.page + 1}" ${st.page >= pages ? 'disabled' : ''}>›</button></span></div>`}`;
       const qi = el.querySelector('[data-q]'); if (qi) { qi.oninput = e => { st.q = e.target.value; st.page = 1; const pos = e.target.selectionStart; render(); const n = el.querySelector('[data-q]'); n.focus(); n.setSelectionRange(pos, pos); }; }
@@ -196,6 +196,9 @@
     if (!inn.length) return '<div class="empty">Không có bản ghi liên quan</div>';
     return inn.map(r => { const rows = Store.by(r.src, r.col, id); return `<div class="mb"><div class="spread"><h3 style="margin:0">${r.src} <span class="muted small">qua ${r.col} · ${rows.length} dòng</span></h3></div>${rows.slice(0, 8).map(x => `<div class="spread" style="padding:6px 0;border-bottom:1px solid #F0F2ED"><a href="javascript:void 0" data-open="${r.src}" data-id="${x.Id}">${esc(Store.label(r.src, x))}</a>${Store.statusCol(r.src) ? UI.badge(x[Store.statusCol(r.src)], r.src, Store.statusCol(r.src)) : ''}</div>`).join('')}${rows.length > 8 ? `<div class="muted small">… và ${rows.length - 8} dòng khác</div>` : ''}</div>`; }).join('');
   };
+  // Sổ chỉ ghi thêm (CLAUDE.md 3.3): dữ liệu thật không Sửa / Xóa – muốn sửa thì ghi bút toán đảo / điều chỉnh.
+  UI.APPEND_ONLY = new Set(['InventoryTransaction', 'PackagingLedger', 'TemperatureLog', 'AuditChange', 'IntegrationLog', 'ApprovalDecision', 'AttendanceEvent', 'DeliveryEvent', 'ComplaintHistory']);
+  UI.readOnly = t => Store.isLive && UI.APPEND_ONLY.has(t);
   UI.detail = (t, id, opt = {}) => {
     const row = Store.get(t, id); if (!row) { UI.toast('Không tìm thấy bản ghi', 'err'); return; }
     const sc = Store.statusCol(t);
@@ -207,8 +210,8 @@
       { label: 'Truy vết DB', html: () => UI.traceHtml(t, opt.screen) }]).filter(x => !(Store.isLive && x.label === 'Truy vết DB'));
     UI.drawer({
       title: esc(Store.label(t, row)), sub: Store.isLive ? esc((opt.screen && window.APP && APP.FN[opt.screen] && APP.FN[opt.screen].name) || '') : 'dbo.' + t + (opt.screen ? ' · #/' + opt.screen : ''), badge: sc ? UI.badge(row[sc], t, sc) : '', tabs,
-      foot: (opt.foot ? opt.foot(row) : '') + (opt.noEdit ? '' : `<button class="btn" data-act="edit" ${perm.edit === false ? 'disabled title="Tài khoản không có quyền Sửa"' : ''}>${I('edit')} Chỉnh sửa</button>`) + '<button class="btn primary" data-close>Đóng</button>',
-      onMount: (d, close) => { d.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; if (b.dataset.act === 'edit') { close(); UI.form(t, row, { onSave: () => { opt.onChange && opt.onChange(); APP.refresh(); } }); } else if (opt.onAct) opt.onAct(b.dataset.act, row, close, b); }); }
+      foot: (opt.foot ? opt.foot(row) : '') + (UI.liveFoot ? UI.liveFoot(t, row, perm) : '') + (opt.noEdit || UI.readOnly(t) ? '' : `<button class="btn" data-act="edit" ${perm.edit === false ? 'disabled title="Tài khoản không có quyền Sửa"' : ''}>${I('edit')} Chỉnh sửa</button>`) + '<button class="btn primary" data-close>Đóng</button>',
+      onMount: (d, close) => { d.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; if (b.dataset.act === 'edit') { close(); UI.form(t, row, { onSave: () => { opt.onChange && opt.onChange(); APP.refresh(); } }); } else if (UI.liveAct && UI.liveAct(b.dataset.act, row, close, t)) { /* action nghiệp vụ ghép thêm (modules/ghep.js) */ } else if (opt.onAct) opt.onAct(b.dataset.act, row, close, b); }); }
     });
   };
   // mở chi tiết khi click link tham chiếu
