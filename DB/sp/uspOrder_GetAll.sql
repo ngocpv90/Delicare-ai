@@ -15,6 +15,8 @@ CREATE OR ALTER PROCEDURE [dbo].[uspOrder_GetAll] (
 	, @TotalQuantity DECIMAL(18,6) = NULL
 	, @TotalAmount DECIMAL(18,2) = NULL
 	, @Note NVARCHAR(MAX) = NULL
+	, @FromMealDate DATE = NULL -- UI-2 (D-66 f3): lọc theo ngày ăn từ – đến
+	, @ToMealDate DATE = NULL
 	, @Page INT = 1
 	, @PageSize INT = 10
 	, @SortField NVARCHAR(100) = NULL
@@ -58,6 +60,8 @@ BEGIN
 			AND (@TotalQuantity IS NULL OR t.[TotalQuantity] = @TotalQuantity)
 			AND (@TotalAmount IS NULL OR t.[TotalAmount] = @TotalAmount)
 			AND (ISNULL(@Note, '') = '' OR t.[Note] LIKE CONCAT('%', @Note, '%'))
+			AND (@FromMealDate IS NULL OR t.[MealDate] >= @FromMealDate)
+			AND (@ToMealDate IS NULL OR t.[MealDate] < DATEADD(DAY, 1, @ToMealDate))
 			AND t.IsDeleted = 0
 	),
 	TempCount (TotalRow) AS (SELECT COUNT(*) FROM TempResult)

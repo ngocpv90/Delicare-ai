@@ -18,6 +18,7 @@ const SCRIPTS = [
   'core/app.js',
   'modules/dashboard.js',
   'modules/sales.js',
+  'modules/customer360.js',
   'modules/menu.js',
   'modules/scm.js',
   'modules/production.js',

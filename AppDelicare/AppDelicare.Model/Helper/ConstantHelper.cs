@@ -772,6 +772,15 @@
             public static readonly string UserCodeRequired = "Chưa nhập mã";
             public static readonly string UserCodeInvalid = "Mã {0} chỉ được gồm chữ hoa không dấu A–Z, số 0–9, dấu - và _ (tối đa 50 ký tự)";
             public static readonly string UserCodeLocked = "Mã {0} đã được dùng – không sửa mã được";
+            // ---------------------------------------------------------------- UI-2 (D-66) – khách hàng 360
+            public static readonly string CustomerAlertContractExpiring = "Hợp đồng {0} hết hạn sau {1} ngày";
+            public static readonly string CustomerAlertComplaintOverdue = "{0} phản ánh quá hạn xử lý (SLA)";
+            public static readonly string CustomerAlertPackagingLoss = "Tỷ lệ thất thoát khay / hộp {0:0.#}% (ngưỡng {1:0.#}%)";
+            public static readonly string CustomerAlertNoOrderTomorrow = "Chưa có đơn cho ngày ăn {0} – hạn chốt {1}:00 hôm nay";
+            public static readonly string CustomerAlertOrderNotConfirmed = "Đơn ngày ăn {0} chưa xác nhận – hạn chốt {1}:00 hôm nay";
+            public static readonly string CustomerAlertNoLocation = "Chưa có điểm giao";
+            public static readonly string CustomerAlertNoPrimaryContact = "Chưa có người liên hệ chính";
+            public static readonly string CustomerTrendRangeInvalid = "Khoảng ngày không hợp lệ (từ ≤ đến, tối đa 366 ngày)";
         }
 
         public class TypeSave

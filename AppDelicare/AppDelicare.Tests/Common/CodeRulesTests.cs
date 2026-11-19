@@ -191,6 +191,33 @@ namespace AppDelicare.Tests.Common
             ov.GetProperty("openComplaintCount").GetInt32().Should().Be(1);
             ov.GetProperty("complaintOnTimePct").GetDecimal().Should().Be(50);
             ov.GetProperty("reconciledOrderCount").GetInt32().Should().Be(1);
+
+            // UI-2 (D-66 d, f1): khối "Cần chú ý" – phản ánh quá hạn, chưa có điểm giao, chưa có liên hệ chính.
+            ov.GetProperty("overdueComplaintCount").GetInt32().Should().Be(1);
+            var codes = ov.GetProperty("listAlert").EnumerateArray().Select(a => a.GetProperty("code").GetString()).ToList();
+            codes.Should().Contain("COMPLAINT_OVERDUE").And.Contain("NO_DELIVERY_LOCATION").And.Contain("NO_PRIMARY_CONTACT");
+
+            // UI-2 (D-66 f2): xu hướng theo ngày – đặt / giao / nhận / phục vụ + cơ cấu loại suất.
+            await _factory.SeedAsync(db =>
+            {
+                Guid o = Guid.NewGuid(), d = Guid.NewGuid();
+                db.Order.Add(new Order { Id = o, CustomerId = c1, OrderNumber = "DH-UI2-1", MealDate = today.AddDays(-4), DeliveryDate = today.AddDays(-4), TotalQuantity = 100, Status = "Reconciled" });
+                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = o, MealType = "TRUA", Quantity = 60 });
+                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = o, MealType = "TOI", Quantity = 40 });
+                db.DeliveryOrder.Add(new DeliveryOrder { Id = d, OrderId = o, CustomerId = c1, DeliveryDate = today.AddDays(-4), Status = "Delivered" });
+                db.ProofOfDelivery.Add(new ProofOfDelivery { Id = Guid.NewGuid(), DeliveryOrderId = d, DeliveredQuantity = 100, AcceptedQuantity = 98, ConfirmedAt = today.AddDays(-4) });
+                db.OrderReconciliation.Add(new OrderReconciliation { Id = Guid.NewGuid(), OrderId = o, AcceptedQuantity = 97, ReconciliationDate = today.AddDays(-3) });
+                return Task.CompletedTask;
+            });
+            var trend = (await c.GetResultAsync($"/api/Customer/GetTrend?id={c1}&from={today.AddDays(-6):yyyy-MM-dd}&to={today:yyyy-MM-dd}")).Ok();
+            trend.GetProperty("listDay").GetArrayLength().Should().Be(7);
+            var day4 = trend.GetProperty("listDay").EnumerateArray().Single(x => x.GetProperty("date").GetDateTime().Date == today.AddDays(-4));
+            day4.GetProperty("ordered").GetDecimal().Should().Be(100);
+            day4.GetProperty("delivered").GetDecimal().Should().Be(100);
+            day4.GetProperty("accepted").GetDecimal().Should().Be(98);
+            day4.GetProperty("served").GetDecimal().Should().Be(97);
+            trend.GetProperty("listMealType")[0].GetProperty("mealType").GetString().Should().Be("TRUA");
+            (await c.GetResultAsync($"/api/Customer/GetTrend?id={c1}&from={today:yyyy-MM-dd}&to={today.AddDays(-1):yyyy-MM-dd}")).Fail("Khoảng ngày");
         }
 
         [Fact]

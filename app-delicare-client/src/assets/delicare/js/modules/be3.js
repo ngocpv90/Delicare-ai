@@ -196,6 +196,7 @@
   // ---------- Kho tài liệu (#/adm-document): tải lên / tải xuống tệp đính kèm – docs/frontend-handoff/BE2.7.md ----------
   // Backend: tối đa 20 MB; chỉ nhận pdf, jpg, png, xlsx, docx. Tệp gửi multipart nên FormData đi thẳng qua Store.act (không qua objForm).
   const DOC_MAX = 20 * 1024 * 1024, DOC_EXT = ['pdf', 'jpg', 'jpeg', 'png', 'xlsx', 'docx'];
+  APP.docRules = { DOC_MAX, DOC_EXT };   // UI-2: tab Tài liệu của màn khách hàng 360 dùng chung quy tắc
   APP.register('adm-document', (el, f) => {
     const perm = Store.perm(f.id);
     APP.genericList(el, f, { noAdd: Store.isLive });   // chế độ thật: thêm tài liệu = tải tệp lên (không nhập tay dòng DocumentFile)

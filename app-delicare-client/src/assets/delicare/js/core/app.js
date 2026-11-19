@@ -13,6 +13,8 @@
   // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).
   const hiddenNow = id => Store.isLive && (HIDDEN_LIVE.has(id) || !!(FN[id] && FN[id].table && Store.isBroken(FN[id].table)));
   const SCREENS = {};
+  // Màn đọc id trên URL để vẽ (không phải mở-bản-ghi-rồi-dọn) → giữ ?id= khi tải lại (UI-2).
+  const KEEP_ID = new Set(['crm-customer-360']);
   const APP = { FN, SCREENS, current: null, params: {} };
   APP.register = (id, fn) => SCREENS[id] = fn;
   // Tiền tố hash: '#/' khi chạy độc lập, '#/quan-tri/' khi chạy trong Angular (Angular cũng dùng hash routing).
@@ -160,7 +162,7 @@
     const fks = cols.filter(c => Store.target(t, c.k)).slice(0, 1).map(c => { const vals = [...new Set(rowsFn().map(r => r[c.k]).filter(Boolean))]; return { k: c.k, label: c.label, options: vals.map(v => ({ v, l: Store.label(Store.target(t, c.k), v) })).sort((a, b) => a.l.localeCompare(b.l)) }; });
     const ref = {}; APP._lastTbl = ref;
     const tbl = UI.table(el.querySelector('#gt'), {
-      table: t, cols, rows: rowsFn, filters: fks, pageSize: 10, onRow: id => APP.openDetail(t, id, f),
+      table: t, cols, rows: rowsFn, filters: fks, pageSize: 10, onRow: id => (opt.onRow ? opt.onRow(id) : APP.openDetail(t, id, f)),
       actions: r => { const nx = sc && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button>${UI.readOnly(t) ? '' : ` <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>`}${nx && !opt.noTransit && !LIVE() ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del && !UI.readOnly(t) ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
       after: tb => {
         tb.querySelectorAll('[data-view]').forEach(b => b.onclick = () => APP.openDetail(t, b.dataset.view, f));
@@ -321,7 +323,7 @@
       : '<div class="footer-note">DELI-CARE · ENTERPRISE MOCKUP · DỮ LIỆU DEMO – KHÔNG PHẢI DỮ LIỆU THẬT · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>');
     el.querySelectorAll('[data-trace]').forEach(b => b.onclick = () => UI.trace(b.dataset.trace, APP.current));
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => APP.go(b.dataset.go));
-    if (APP.params.id) { history.replaceState(history.state, '', location.pathname + location.search + APP.href(APP.current)); APP.params = {}; }
+    if (APP.params.id && !KEEP_ID.has(APP.current)) { history.replaceState(history.state, '', location.pathname + location.search + APP.href(APP.current)); APP.params = {}; }
     closeMobile();
     updateCounts();
     setRibbon();

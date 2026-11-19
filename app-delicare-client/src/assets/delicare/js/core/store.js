@@ -183,6 +183,7 @@
   // G2: chữ hoa không dấu, chỉ A–Z 0–9 - _ (giống CodeRules.NormalizeUserCode ở máy chủ).
   const userCode = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
+  const PERM_ALIAS = { 'crm-customer-360': 'crm-customer' };
   const NAME_FIELDS = ['DisplayName', 'Name', 'FullName', 'MetricName', 'ChannelName', 'BotName', 'ItemName', 'NameVN', 'MealName', 'FileName', 'UserName'];
   const NO_FIELDS = ['OrderNumber', 'ContractNumber', 'RequestNumber', 'PurchaseOrderNumber', 'ReceiptNumber', 'LotNumber', 'IssueNumber', 'CountNumber', 'PlanNumber', 'ProductionOrderNumber', 'BatchNumber', 'PackingOrderNumber', 'DeliveryNumber', 'RouteNo', 'InspectionNumber', 'CleaningBatchNumber', 'TransactionNumber', 'RequirementNo', 'RequestNo', 'ComplaintNo', 'LicensePlate', 'VersionCode', 'MetricCode', 'BotCode', 'ChannelCode', 'Code', 'ItemCode', 'IdempotencyKey', 'JobCode'];
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -358,6 +359,8 @@
     reset() { load(); Store.audit('System', 'reset', 'RESET', mode === 'api' ? 'Tải lại dữ liệu từ API' : 'Khôi phục dữ liệu demo'); notify(null); },
     // Phân quyền theo UserRole × ObjectMenu (MetaLink = '#/screen-id')
     perm(screen) {
+      // Màn con không có mục menu riêng → dùng quyền của màn cha (UI-2: crm-customer-360 = quyền crm-customer).
+      screen = PERM_ALIAS[screen] || screen;
       if (HOST && mode === 'api') return HOST.perm(screen);
       const g = Store.one('UserGroup', 'Name', Store.user.group);
       const om = Store.rows('ObjectMenu').find(o => o.MetaLink === '#/' + screen);

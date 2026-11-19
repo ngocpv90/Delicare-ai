@@ -343,3 +343,27 @@ body.dc-live [data-trace],
 body.dc-live .demo-ribbon,
 body.dc-live .gap-dot,
 body.dc-live #helpBtn{display:none !important}
+
+/* ===== UI-2 (D-66): màn khách hàng 360 (crm-customer-360) ===== */
+.c360-head{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px}
+.c360-avatar{width:64px;height:64px;border-radius:16px;display:grid;place-items:center;font-size:22px;font-weight:800;flex:none}
+.c360-avatar.biz{background:var(--green-soft);color:var(--green-dark)}.c360-avatar.ind{background:var(--blue-soft);color:#2F64A0}
+.c360-id{flex:1;min-width:240px}
+.c360-id h1{font-size:22px;font-weight:800;margin:0 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.c360-meta{font-size:13px;color:var(--muted);display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:4px}
+.c360-meta span{display:inline-flex;gap:5px;align-items:center}.c360-meta svg.i{width:15px;height:15px}
+.c360-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;position:relative}
+.c360-more{position:absolute;right:0;top:42px;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);min-width:200px;z-index:30;padding:6px 0}
+.c360-more button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:9px 14px;font-size:13px}.c360-more button:hover{background:var(--green-soft)}
+.c360-grid{display:grid;gap:20px;grid-template-columns:5fr 4fr 3fr;margin-bottom:20px}
+.c360-grid.two{grid-template-columns:5fr 7fr}
+@media(max-width:1199.98px){.c360-grid,.c360-grid.two{grid-template-columns:1fr 1fr}}
+@media(max-width:767.98px){.c360-grid,.c360-grid.two{grid-template-columns:1fr}}
+.c360-alert{display:flex;gap:10px;align-items:flex-start;border:1px solid #F5C9A6;background:#FDF0E6;color:#8F4A12;border-radius:12px;padding:12px 14px;margin-bottom:20px;font-size:13px}
+.c360-alert ul{margin:0;padding-left:18px}.c360-alert a{color:inherit;text-decoration:underline;cursor:pointer}
+.c360-alert .sev-HIGH{font-weight:700}
+.c360-rows .r{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #F0F2ED;font-size:13px}
+.c360-rows .r:last-child{border-bottom:0}.c360-rows .r label{color:var(--muted);flex:none}.c360-rows .r span{text-align:right;overflow-wrap:anywhere}
+.c360-legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}.c360-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.c360-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+@media print{.dc-engine .deznav,.dc-engine .header,.c360-actions,.c360-tabs{display:none !important}}

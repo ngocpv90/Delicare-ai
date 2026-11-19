@@ -127,6 +127,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-2 (D-66 f2): suất đặt / giao / nhận / phục vụ theo ngày + cơ cấu loại suất của 1 khách (mặc định 30 ngày tới hôm nay, tối đa 366 ngày).</summary>
+        [HttpGet("GetTrend")]
+        public async Task<IActionResult> GetTrend(Guid id, DateTime? from, DateTime? to)
+        {
+            try
+            {
+                return Ok(await _service.GetTrend(id, from, to));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTrend: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T45R: hồ sơ khách hàng 360° – liên hệ, điểm giao, hợp đồng + suất, 15 đơn gần nhất, KPI.</summary>
         [HttpGet("GetOverview")]
         public async Task<IActionResult> GetOverview(Guid id)

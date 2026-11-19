@@ -82,6 +82,22 @@ namespace AppDelicare.Tests.MasterData
                 .Should().Be(await db.MenuAssignment.CountAsync(x => !x.IsDeleted));
         }
 
+        /// <summary>UI-2 (D-66 f3): Order/GetAll lọc ngày ăn từ – đến (gồm 2 đầu) trên SQL Server dev – chỉ đọc.</summary>
+        [SkippableFact]
+        public async Task Order_list_filters_by_meal_date_range()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            using var scope = factory.Services.CreateScope();
+            var sp = scope.ServiceProvider;
+            var db = sp.GetRequiredService<DatabaseContext>();
+            var day = await db.Order.Where(x => !x.IsDeleted).Select(x => x.MealDate).OrderByDescending(x => x).FirstOrDefaultAsync();
+            Skip.If(day == default, "DB dev chưa có đơn");
+            DateTime from = day.Date.AddDays(-2), to = day.Date;
+            int expected = await db.Order.CountAsync(x => !x.IsDeleted && x.MealDate >= from && x.MealDate < to.AddDays(1));
+            (await sp.GetRequiredService<IOrderService>().GetAll(new OrderSearchRequest { PageSize = 1, FromMealDate = from, ToMealDate = to })).TotalRecords
+                .Should().Be(expected);
+        }
+
         /// <summary>T50R1: chặn tái phát – mọi thuộc tính lọc *Id kiểu Guid trong SearchRequest phải là Guid? (bỏ trống = không lọc).</summary>
         [Fact]
         public void Every_guid_filter_of_search_requests_is_nullable()

@@ -15,11 +15,14 @@ using System.Net;
 using AppDelicare.Model.Model;
 using AppDelicare.Model.Request.Custom;
 using System.Text.RegularExpressions;
+using AppDelicare.Model.Option;
+using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
     public partial class CustomerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IClock clock, IDocumentNumberService documentNumberService, ICurrentActor currentActor) : ICustomerService
+        , IAuditChangeService auditChangeService, IClock clock, IDocumentNumberService documentNumberService, ICurrentActor currentActor
+        , IPackagingLedgerService packagingLedgerService, IOptions<BusinessRulesOptions> rules) : ICustomerService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -27,6 +30,7 @@ namespace AppDelicare.Services.Implement
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         private readonly ICurrentActor _currentActor = currentActor;
+        private readonly BusinessRulesOptions _rules = rules.Value;
 
         /// <summary>MA-1.2: mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công (D-63 j).</summary>
         private string? _createdCode;
@@ -434,6 +438,132 @@ namespace AppDelicare.Services.Implement
         [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
         private static partial Regex Email();
 
+        /// <summary>
+        /// UI-2 (D-66 b, d, f1): tên chi nhánh / NV phụ trách, hạn hợp đồng gần nhất, phản ánh quá hạn, khay ở khách + thất thoát, khối "Cần chú ý".
+        /// Ngưỡng: hợp đồng còn ≤ 30 ngày; thất thoát khay theo ngưỡng sổ bao bì; chưa chốt đơn ngày mai từ (giờ chốt – 1) giờ (mặc định 19:00).
+        /// </summary>
+        private async Task FillProfileAsync(CustomerOverviewModel model, Customer customer, List<Contract> contracts,
+            List<(string? Status, DateTime? SlaDueAt)> complaints, DateTime today, DateTime now)
+        {
+            var db = _unitOfWork.DbContext;
+            if (customer.BranchId is { } branchId)
+            {
+                model.BranchName = await db.OrganizationUnit.AsNoTracking().Where(x => x.Id == branchId).Select(x => x.Name).FirstOrDefaultAsync();
+            }
+            if (customer.UserAssignId is { } userId)
+            {
+                var user = await db.User.AsNoTracking().Where(x => x.Id == userId).Select(x => new { x.UserName, x.PersonId }).FirstOrDefaultAsync();
+                string? person = user?.PersonId is { } pid ? await db.Person.AsNoTracking().Where(p => p.Id == pid).Select(p => p.FullName).FirstOrDefaultAsync() : null;
+                model.UserAssignName = person ?? user?.UserName;
+            }
+            var active = contracts.Where(c => IsActiveContract(c, today)).ToList();
+            model.NearestContractEndDate = active.Where(c => c.EffectiveTo != null).Select(c => c.EffectiveTo!.Value.Date).OrderBy(d => d).Cast<DateTime?>().FirstOrDefault();
+            model.DaysToContractEnd = model.NearestContractEndDate is { } end ? (int)(end - today).TotalDays : null;
+            model.OverdueComplaintCount = complaints.Count(c => !ComplaintStatus.Done.Contains(c.Status) && c.SlaDueAt != null && c.SlaDueAt < now);
+
+            var balance = await packagingLedgerService.GetBalance(new PackagingBalanceRequest { CustomerId = customer.Id });
+            var items = balance.Data?.ListItem ?? [];
+            model.ContainersAtCustomer = items.Sum(i => i.Outstanding);
+            model.PackagingLossRatePct = items.Where(i => i.LossRatePct != null).Select(i => i.LossRatePct).DefaultIfEmpty(null).Max();
+            model.PackagingLossThresholdPct = items.Select(i => i.LossThresholdPct).DefaultIfEmpty(0m).Max();
+
+            var alerts = model.ListAlert;
+            foreach (var c in active.Where(c => c.EffectiveTo != null && (c.EffectiveTo.Value.Date - today).TotalDays <= 30).OrderBy(c => c.EffectiveTo))
+            {
+                int days = (int)(c.EffectiveTo!.Value.Date - today).TotalDays;
+                alerts.Add(new CustomerAlertModel
+                {
+                    Code = "CONTRACT_EXPIRING", Severity = days <= 7 ? "HIGH" : "MEDIUM", Screen = "crm-contract",
+                    Message = string.Format(ConstantHelper.Message.CustomerAlertContractExpiring, c.ContractNumber ?? c.ContractNo, days),
+                });
+            }
+            if (model.OverdueComplaintCount > 0)
+            {
+                alerts.Add(new CustomerAlertModel { Code = "COMPLAINT_OVERDUE", Severity = "HIGH", Screen = "log-complaint",
+                    Message = string.Format(ConstantHelper.Message.CustomerAlertComplaintOverdue, model.OverdueComplaintCount) });
+            }
+            if (items.Any(i => i.IsOverThreshold))
+            {
+                alerts.Add(new CustomerAlertModel { Code = "PACKAGING_LOSS", Severity = "MEDIUM", Screen = "log-container-return",
+                    Message = string.Format(ConstantHelper.Message.CustomerAlertPackagingLoss, model.PackagingLossRatePct, model.PackagingLossThresholdPct) });
+            }
+            if (active.Count > 0 && now.Hour >= Math.Max(0, _rules.OrderCutoffHourPreviousDay - 1))
+            {
+                DateTime tomorrow = today.AddDays(1);
+                var tomorrowOrders = await db.Order.AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.CustomerId == customer.Id && o.MealDate >= tomorrow && o.MealDate < tomorrow.AddDays(1) && o.Status != OrderStatus.Cancelled)
+                    .Select(o => o.Status).ToListAsync();
+                if (tomorrowOrders.Count == 0 || tomorrowOrders.Any(s => s is OrderStatus.Draft or OrderStatus.Submitted))
+                {
+                    alerts.Add(new CustomerAlertModel { Code = "ORDER_NOT_LOCKED", Severity = "HIGH", Screen = "crm-order",
+                        Message = string.Format(tomorrowOrders.Count == 0 ? ConstantHelper.Message.CustomerAlertNoOrderTomorrow : ConstantHelper.Message.CustomerAlertOrderNotConfirmed,
+                            tomorrow.ToString("dd/MM", System.Globalization.CultureInfo.InvariantCulture), _rules.OrderCutoffHourPreviousDay) });
+                }
+            }
+            if (model.ListLocation.Count == 0)
+            {
+                alerts.Add(new CustomerAlertModel { Code = "NO_DELIVERY_LOCATION", Severity = "MEDIUM", Screen = "crm-location", Message = ConstantHelper.Message.CustomerAlertNoLocation });
+            }
+            if (!model.ListContact.Any(x => x.IsPrimary == true))
+            {
+                alerts.Add(new CustomerAlertModel { Code = "NO_PRIMARY_CONTACT", Severity = "LOW", Screen = "crm-contact", Message = ConstantHelper.Message.CustomerAlertNoPrimaryContact });
+            }
+        }
+
+        /// <summary>UI-2 (D-66 f2): suất đặt / giao / nhận / phục vụ theo ngày ăn + cơ cấu loại suất.</summary>
+        public async Task<IResult<CustomerTrendModel>> GetTrend(Guid id, DateTime? from, DateTime? to)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                if (!await db.Customer.AsNoTracking().AnyAsync(x => x.Id == id && !x.IsDeleted))
+                {
+                    return Result<CustomerTrendModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                DateTime end = (to ?? clock.Today).Date, start = (from ?? end.AddDays(-29)).Date;
+                if (start > end || (end - start).TotalDays > 366)
+                {
+                    return Result<CustomerTrendModel>.Fail(ConstantHelper.Message.CustomerTrendRangeInvalid);
+                }
+                DateTime endExcl = end.AddDays(1);
+                var orders = await db.Order.AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.CustomerId == id && o.MealDate >= start && o.MealDate < endExcl && o.Status != OrderStatus.Cancelled)
+                    .Select(o => new { o.Id, o.MealDate }).ToListAsync();
+                var orderIds = orders.Select(o => o.Id).ToList();
+                var dayOf = orders.ToDictionary(o => o.Id, o => o.MealDate.Date);
+                var lines = await db.OrderLine.AsNoTracking().Where(l => !l.IsDeleted && orderIds.Contains(l.OrderId))
+                    .Select(l => new { l.OrderId, l.MealType, l.Quantity }).ToListAsync();
+                var pods = await (from p in db.ProofOfDelivery.AsNoTracking()
+                                  join d in db.DeliveryOrder.AsNoTracking() on p.DeliveryOrderId equals d.Id
+                                  where !p.IsDeleted && !d.IsDeleted && orderIds.Contains(d.OrderId)
+                                  select new { d.OrderId, Delivered = p.DeliveredQuantity ?? p.DeliveredQty ?? 0m, Accepted = p.AcceptedQuantity ?? p.AcceptedQty ?? 0m }).ToListAsync();
+                var recs = await db.OrderReconciliation.AsNoTracking().Where(r => !r.IsDeleted && orderIds.Contains(r.OrderId))
+                    .Select(r => new { r.OrderId, r.AcceptedQuantity }).ToListAsync();
+                var model = new CustomerTrendModel { From = start, To = end };
+                for (DateTime d = start; d <= end; d = d.AddDays(1))
+                {
+                    var ids = dayOf.Where(x => x.Value == d).Select(x => x.Key).ToHashSet();
+                    model.ListDay.Add(new CustomerTrendDayModel
+                    {
+                        Date = d,
+                        Ordered = lines.Where(l => ids.Contains(l.OrderId)).Sum(l => l.Quantity),
+                        Delivered = pods.Where(p => ids.Contains(p.OrderId)).Sum(p => p.Delivered),
+                        Accepted = pods.Where(p => ids.Contains(p.OrderId)).Sum(p => p.Accepted),
+                        Served = recs.Where(r => ids.Contains(r.OrderId)).Sum(r => r.AcceptedQuantity),
+                    });
+                }
+                model.ListMealType = lines.GroupBy(l => string.IsNullOrWhiteSpace(l.MealType) ? "(khác)" : l.MealType!)
+                    .Select(g => new CustomerTrendMealTypeModel { MealType = g.Key, Quantity = g.Sum(x => x.Quantity) })
+                    .OrderByDescending(x => x.Quantity).ToList();
+                return Result<CustomerTrendModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTrend: ", ex.ToString()));
+                throw;
+            }
+        }
+
         /// <summary>Hợp đồng hiệu lực tại ngày: Active và trong khoảng hiệu lực.</summary>
         private static bool IsActiveContract(Contract c, DateTime day)
             => c.Status == ContractStatus.Active && c.EffectiveFrom.Date <= day && (c.EffectiveTo == null || c.EffectiveTo.Value.Date >= day);
@@ -539,6 +669,7 @@ namespace AppDelicare.Services.Implement
                                                     join o in db.Order.AsNoTracking() on r.OrderId equals o.Id
                                                     where !r.IsDeleted && !o.IsDeleted && o.CustomerId == id
                                                     select r.OrderId).Distinct().CountAsync();
+                await FillProfileAsync(model, customer, contracts, complaints.Select(c => (c.ComplaintStatus, c.SlaDueAt)).ToList(), today, now);
                 return Result<CustomerOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

@@ -52,6 +52,8 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@Status", request.Status);
                 dynamicParameters.Add("@TotalQuantity", request.TotalQuantity);
                 dynamicParameters.Add("@TotalAmount", request.TotalAmount);
+                dynamicParameters.Add("@FromMealDate", request.FromMealDate?.Date);
+                dynamicParameters.Add("@ToMealDate", request.ToMealDate?.Date);
                 //dynamicParameters.Add("@Note", request.Note);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);

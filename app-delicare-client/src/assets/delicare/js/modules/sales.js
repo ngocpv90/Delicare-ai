@@ -29,6 +29,12 @@
     const ords = Store.rows('Order').filter(o => (!cusIds || cusIds.has(o.CustomerId)) && ['Delivered', 'Reconciled'].includes(o.Status) && U.day(o.MealDate) >= since && U.day(o.MealDate) < today);
     return U.sum(ords, 'TotalQuantity') / 7;
   };
+  // UI-1.3 (D-64): Hợp đồng hiệu lực (còn N ngày) · Suất TB/ngày (7 ngày) · Doanh thu đã đối soát (N đơn) · Khiếu nại đang mở (/ tổng · % đúng hạn).
+  APP.customerKpis = d => UI.kpi('Hợp đồng hiệu lực', d ? U.num(d.activeContractCount || 0) : '–', d && d.daysToContractEnd !== null && d.daysToContractEnd !== undefined ? `còn ${d.daysToContractEnd} ngày` : '', 'file', 'green', 'crm-contract')
+    + UI.kpi('Suất TB/ngày (7 ngày)', d ? U.num(d.avgMealsPerDay7d || 0, 0) : '–', '', 'utensils', 'orange')
+    + UI.kpi('Doanh thu đã đối soát', d ? U.money(d.reconciledRevenue || 0) : '–', d ? `${U.num(d.reconciledOrderCount || 0)} đơn` : '', 'calc', 'blue', 'crm-reconciliation')
+    + UI.kpi('Khiếu nại đang mở', d ? U.num(d.openComplaintCount || 0) : '–', d ? `/ ${U.num(d.complaintCount || 0)}${d.complaintOnTimePct === null || d.complaintOnTimePct === undefined ? '' : ' · ' + U.num(d.complaintOnTimePct, 0) + '% đúng hạn'}` : '', 'msg', 'red', 'log-complaint');
+  APP.customerAvgMeals7d = ids => avgMeals7d(ids);
   APP.register('crm-customer', (el, f) => {
     const listRows = () => Store.rows('Customer').filter(c => !Store.ctx.branch || c.BranchId === Store.ctx.branch);
     const localSummary = () => {
@@ -40,6 +46,7 @@
       };
     };
     APP.genericList(el, f, {
+      onRow: id => APP.go('crm-customer-360?id=' + encodeURIComponent(id)),
       kpis: customerCards(Store.isLive ? null : localSummary()),
       afterKpis: box => {
         if (!Store.isLive || !box) return;
@@ -78,11 +85,7 @@
     const L = Store.isLive, tech = s => (L ? '' : s);
     const ords = Store.by('Order', 'CustomerId', id).sort((a, b) => b.MealDate.localeCompare(a.MealDate));
     const none = '<div class="muted small">Chưa có dữ liệu</div>';
-    // UI-1.3 (D-64): Hợp đồng hiệu lực · Suất TB/ngày (7 ngày) · Doanh thu đã đối soát (N đơn) · Khiếu nại đang mở (/ tổng · % đúng hạn).
-    const kpiHtml = d => UI.kpi('Hợp đồng hiệu lực', d ? U.num(d.activeContractCount || 0) : '–', '', 'file', 'green')
-      + UI.kpi('Suất TB/ngày (7 ngày)', d ? U.num(d.avgMealsPerDay7d || 0, 0) : '–', '', 'utensils', 'orange')
-      + UI.kpi('Doanh thu đã đối soát', d ? U.money(d.reconciledRevenue || 0) : '–', d ? `${U.num(d.reconciledOrderCount || 0)} đơn` : '', 'calc', 'blue')
-      + UI.kpi('Khiếu nại đang mở', d ? U.num(d.openComplaintCount || 0) : '–', d ? `/ ${U.num(d.complaintCount || 0)}${d.complaintOnTimePct === null || d.complaintOnTimePct === undefined ? '' : ' · ' + U.num(d.complaintOnTimePct, 0) + '% đúng hạn'}` : '', 'msg', 'red');
+    const kpiHtml = APP.customerKpis;
     const localKpi = () => {
       const today = Store.ctx.date, cpl = Store.by('CustomerComplaint', 'CustomerId', id);
       const recon = ords.filter(o => Store.by('OrderReconciliation', 'OrderId', o.Id).length);
@@ -101,6 +104,8 @@
     const late = (p, fn) => { if (ov) ov.then(x => { if (x.ok && x.data && p && p.isConnected) p.innerHTML = fn(x.data); }); };
     UI.detail('Customer', id, {
       screen: 'crm-customer',
+      foot: () => `<button class="btn" data-act="open360">${I('eye')} Mở hồ sơ đầy đủ</button>`,
+      onAct: (act, row, close) => { if (act === 'open360') { close(); APP.go('crm-customer-360?id=' + encodeURIComponent(id)); } },
       top: `<div class="kpis" data-c360="${esc(id)}">${kpiHtml(L ? null : localKpi())}</div>`,
       tabs: [
         { label: 'Liên hệ & điểm giao', html: p => { late(p, d => contactHtml((d.listContact || []).map(pas), (d.listLocation || []).map(pas))); return contactHtml(Store.by('CustomerContact', 'CustomerId', id), Store.by('CustomerDeliveryLocation', 'CustomerId', id)); } },

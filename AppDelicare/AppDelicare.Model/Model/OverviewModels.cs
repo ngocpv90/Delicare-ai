@@ -26,6 +26,62 @@ namespace AppDelicare.Model.Model
         public decimal? ComplaintOnTimePct { get; set; }
         /// <summary>Số đơn đã đối soát (có OrderReconciliation).</summary>
         public int ReconciledOrderCount { get; set; }
+        // ---- UI-2 (D-66 f1): màn khách hàng 360 ----
+        public string? BranchName { get; set; }
+        /// <summary>Tên NV phụ trách (User → Person.FullName, không có thì tên đăng nhập).</summary>
+        public string? UserAssignName { get; set; }
+        /// <summary>Ngày hết hạn gần nhất của các hợp đồng hiệu lực (null = không hạn / không có).</summary>
+        public DateTime? NearestContractEndDate { get; set; }
+        public int? DaysToContractEnd { get; set; }
+        /// <summary>Phản ánh chưa xong đã quá hạn SLA.</summary>
+        public int OverdueComplaintCount { get; set; }
+        /// <summary>Khay / hộp đang ở khách (sổ bao bì – tổng còn phải thu).</summary>
+        public decimal ContainersAtCustomer { get; set; }
+        /// <summary>Tỷ lệ thất thoát khay / hộp cao nhất theo loại (%); ngưỡng cảnh báo (%).</summary>
+        public decimal? PackagingLossRatePct { get; set; }
+        public decimal PackagingLossThresholdPct { get; set; }
+        /// <summary>Khối "Cần chú ý" (D-66 d).</summary>
+        public List<CustomerAlertModel> ListAlert { get; set; } = [];
+    }
+
+    /// <summary>UI-2 (D-66 d): 1 mục "Cần chú ý" của khách hàng.</summary>
+    public class CustomerAlertModel
+    {
+        /// <summary>CONTRACT_EXPIRING · COMPLAINT_OVERDUE · PACKAGING_LOSS · ORDER_NOT_LOCKED · NO_DELIVERY_LOCATION · NO_PRIMARY_CONTACT.</summary>
+        public string Code { get; set; } = string.Empty;
+        /// <summary>HIGH / MEDIUM / LOW.</summary>
+        public string Severity { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        /// <summary>Màn mở khi bấm (screen-id).</summary>
+        public string? Screen { get; set; }
+    }
+
+    /// <summary>UI-2 (D-66 f2): xu hướng suất của 1 khách theo ngày ăn + cơ cấu loại suất.</summary>
+    public class CustomerTrendModel
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+        public List<CustomerTrendDayModel> ListDay { get; set; } = [];
+        public List<CustomerTrendMealTypeModel> ListMealType { get; set; } = [];
+    }
+
+    public class CustomerTrendDayModel
+    {
+        public DateTime Date { get; set; }
+        /// <summary>Suất đặt: Σ dòng đơn (đơn chưa hủy).</summary>
+        public decimal Ordered { get; set; }
+        /// <summary>Suất giao: Σ POD DeliveredQuantity.</summary>
+        public decimal Delivered { get; set; }
+        /// <summary>Suất khách nhận: Σ POD AcceptedQuantity.</summary>
+        public decimal Accepted { get; set; }
+        /// <summary>Suất phục vụ (tính tiền): Σ đối soát AcceptedQuantity.</summary>
+        public decimal Served { get; set; }
+    }
+
+    public class CustomerTrendMealTypeModel
+    {
+        public string MealType { get; set; } = string.Empty;
+        public decimal Quantity { get; set; }
     }
 
     /// <summary>UI-1.2 (D-64): 4 thẻ chỉ số của danh sách khách hàng – theo đơn vị làm việc (chi nhánh) và bộ lọc.</summary>

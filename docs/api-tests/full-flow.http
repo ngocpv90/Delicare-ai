@@ -1515,6 +1515,24 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/ProductionBatch/Trace?id={{batch1}}
 Authorization: Bearer {{token}}
 
+########## 15b. KHÁCH HÀNG 360 (UI-2, D-66): hồ sơ + cảnh báo, xu hướng suất theo ngày ăn
+### 15b.1 Hồ sơ: hợp đồng hiệu lực, đơn đã đối soát, khối Cần chú ý
+# @expect data.activeContractCount == 1
+# @expect data.reconciledOrderCount == 1
+GET {{base}}/api/Customer/GetOverview?id={{customerId}}
+Authorization: Bearer {{token}}
+
+### 15b.2 Xu hướng suất ngày ăn @day: đặt 1000, có cơ cấu loại suất TRUA
+# @expect data.listDay[0].ordered == 1000
+# @expect data.listMealType[0].mealType == TRUA
+GET {{base}}/api/Customer/GetTrend?id={{customerId}}&from={{day}}&to={{day}}
+Authorization: Bearer {{token}}
+
+### 15b.3 Đơn của khách theo ngày ăn từ – đến
+# @expect totalRecords == 1
+GET {{base}}/api/Order/GetAll?CustomerId={{customerId}}&FromMealDate={{day}}&ToMealDate={{day}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
 ########## 16. XỬ LÝ LÔ HẾT HẠN (thao tác tay thay job – D-45, BE2.4)
 ### 16.1 Xem trước (không ghi): lô bò -HH hết hạn hôm qua
 # @expect . contains {{lotHH.response.body.listData[qcStatus=DAT].lotNumber}}
