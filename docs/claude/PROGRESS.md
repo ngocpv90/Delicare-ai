@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-19: UG-1 C-15 (bot) DONE** – thẻ mẻ trên bot `/me` (mẻ Đang nấu): dòng tiến độ công đoạn + nút ▶️ Bắt đầu / ⏹ Xong công đoạn hiện tại (`ProductionBatch/GetDetail.listStage` → `StartStage` / `FinishStage`, callback `bat:ss|sf:<Id>.<StageCode>`). Test **478 / 478**. UG-1 còn UG-1.5 chờ anh (C-17, C-18, C-19, C-22, C-23).
 - **2026-11-19: UG-1.4 DONE** – C-03, C-04, C-10, C-14, C-21 trên nhánh `feat/MA-1-code-rules`. Test **477 / 477**, build FE xanh. Còn của UG-1: C-15 nút công đoạn trên bot; UG-1.5 chờ anh (C-17, C-18, C-19, C-22, C-23); `docs/reference/STATUS_CATALOG.md` cần anh cập nhật theo `StatusCatalogEffective` (em không sửa docs/reference).
 - **2026-11-19: UG-1.3 (mục TB) DONE** – C-05, C-09, C-11, C-12, C-13, C-15 (web), C-16, C-20 trên nhánh `feat/MA-1-code-rules`. Test **475 / 475**, build FE xanh. Còn của UG-1: C-15 nút công đoạn trên bot; UG-1.4 (C-10, C-03, C-04, C-14, C-21, REVIEW_BUSINESS_FLOWS); UG-1.5 chờ anh (C-17, C-18, C-19, C-22, C-23).
 - **2026-11-19: UG-1 mục Cao (C-01, C-06, C-07, C-08) DONE** trên nhánh `feat/MA-1-code-rules` (BE + FE). Test **475 / 475**, build FE xanh. Tiếp theo: UG-1.3 mục TB (C-09, C-11, C-12, C-15, C-16, C-20, C-05, C-13).

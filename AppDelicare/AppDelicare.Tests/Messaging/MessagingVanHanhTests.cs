@@ -170,6 +170,42 @@ namespace AppDelicare.Tests.Messaging
         }
 
         [Fact]
+        public async Task Kitchen_batch_card_shows_current_stage_button_start_then_finish()
+        {
+            // UG-1 C-15: mẻ Đang nấu có công đoạn → nút Bắt đầu công đoạn kế tiếp / Xong công đoạn đang làm.
+            await using var h = KitchenHost();
+            string cook = Cooking.ToString("N"), state = "NotStarted";
+            h.Web.Routes["api/ProductionBatch/GetDetail"] = (_, _) => (200, null, JsonSerializer.Serialize(new
+            {
+                id = Cooking,
+                listStage = new object[]
+                {
+                    new { stageCode = "PREP", stageName = "Sơ chế", status = "Done" },
+                    new { stageCode = "COOK", stageName = "Nấu", status = state },
+                    new { stageCode = "PORTION", stageName = "Chia suất", status = "NotStarted" },
+                },
+            }), null);
+            h.Web.Routes["api/ProductionBatch/StartStage"] = (_, _) => { state = "InProgress"; return (200, "Đã bắt đầu công đoạn", "{}", null); };
+            h.Web.Routes["api/ProductionBatch/FinishStage"] = (_, _) => { state = "Done"; return (200, "Đã xong công đoạn", "{}", null); };
+
+            await h.SendAsync(Tap("bat:view:" + cook));
+            var card = h.Sender.Edits.Last();
+            card.Text.Should().Contain("Công đoạn: Sơ chế ✅ → Nấu → Chia suất");
+            var buttons = ((TgInlineKeyboard)card.Markup!).InlineKeyboard.SelectMany(r => r).ToList();
+            buttons.Should().Contain(b => b.Text == "▶️ Bắt đầu Nấu" && b.CallbackData == "bat:ss:" + cook + ".COOK");
+
+            await h.SendAsync(Tap("bat:ss:" + cook + ".COOK"));
+            Last(h, "api/ProductionBatch/StartStage").Form.Should().Contain(new KeyValuePair<string, string>("StageCode", "COOK")).And.Contain(new KeyValuePair<string, string>("Id", Cooking.ToString()));
+            card = h.Sender.Edits.Last();
+            card.Text.Should().Contain("Nấu ⏳");
+            ((TgInlineKeyboard)card.Markup!).InlineKeyboard.SelectMany(r => r).Should().Contain(b => b.Text == "⏹ Xong Nấu" && b.CallbackData == "bat:sf:" + cook + ".COOK");
+
+            await h.SendAsync(Tap("bat:sf:" + cook + ".COOK"));
+            Last(h, "api/ProductionBatch/FinishStage").Form["StageCode"].Should().Be("COOK");
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Should().Contain(b => b.Text == "▶️ Bắt đầu Chia suất");
+        }
+
+        [Fact]
         public async Task Kitchen_write_denied_is_reported_and_functions_hidden_without_screen_right()
         {
             await using var h = KitchenHost(writeCode: 403);

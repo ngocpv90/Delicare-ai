@@ -13,6 +13,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     /// BOT-1.5a (BOT_TELEGRAM §3.2 – tổ trưởng / trưởng ca bếp, OPS-KIT): 🍳 Mẻ cần làm hôm nay (<c>ProductionBatch/GetBoard</c>) → thẻ mẻ theo trạng thái:
     /// Kế hoạch [▶️ Bắt đầu] (<c>Start</c>); Đang nấu [🌡 Nhiệt độ lõi] (nút số 70–80 / gõ – <c>RecordCoreTemperature</c>, ngưỡng ≥ 70 °C kiểm ở api)
     /// [🧪 Lưu mẫu] (<c>RecordSampleRetained</c>) [✅ Xong mẻ] (số suất điền sẵn theo kế hoạch – <c>Finish</c>); 📈 Tiến độ ca (đếm theo trạng thái, suất đạt / kế hoạch).
+    /// UG-1 C-15: mẻ Đang nấu có công đoạn (<c>GetDetail.listStage</c>) → dòng tiến độ công đoạn + nút công đoạn hiện tại
+    /// [▶️ Bắt đầu &lt;công đoạn&gt;] (<c>StartStage</c>) / [⏹ Xong &lt;công đoạn&gt;] (<c>FinishStage</c>) – thứ tự kiểm ở api.
     /// Quyền: mục <c>#/prod-batch</c> (hiện nút) + api kiểm lại khi ghi. Callback <c>bat:&lt;hành động&gt;:&lt;Id N&gt;[.giá trị]</c>.
     /// Ai chưa vào / chấm hộ / truy xuất mẻ / chia suất: BOT-1.5c (cần API "của tổ tôi").
     /// </summary>
@@ -149,6 +151,12 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "fx":
                     await AskAsync(ctx, "Nhập số suất thực tế của mẻ:", ReplyQty, id.ToString("N"), ct);
                     break;
+                case "ss" when value != null:
+                    await PostAsync(ctx, id, token, "api/ProductionBatch/StartStage", [new("Id", id.ToString()), new("StageCode", value)], ct);
+                    break;
+                case "sf" when value != null:
+                    await PostAsync(ctx, id, token, "api/ProductionBatch/FinishStage", [new("Id", id.ToString()), new("StageCode", value)], ct);
+                    break;
                 default:
                     await SayAsync(ctx, "Nút đã hết hạn.", ct);
                     break;
@@ -283,6 +291,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             if (status == "Cooking")
             {
+                await StagesAsync(m, id, token, ct);
                 m.Buttons.Add(new NeutralButton("🌡 Nhiệt độ lõi", CallbackData.Build(Kind, "t", n)));
                 m.Buttons.Add(new NeutralButton("✅ Xong mẻ", CallbackData.Build(Kind, "fin", n)));
             }
@@ -292,6 +301,34 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             m.Buttons.Add(new NeutralButton("🔄 Làm mới", CallbackData.Build(Kind, "view", n)));
             await ShowAsync(ctx, m, ct);
+        }
+
+        /// <summary>
+        /// UG-1 C-15: công đoạn của mẻ (Sơ chế → Nấu → Chia suất…): 1 dòng tiến độ + nút cho công đoạn đang làm (Xong) hoặc công đoạn kế tiếp (Bắt đầu).
+        /// Mẻ không theo dõi công đoạn / api lỗi → bỏ qua (thẻ vẫn hiện như cũ).
+        /// </summary>
+        private async Task StagesAsync(NeutralMessage m, Guid id, string token, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>("api/ProductionBatch/GetDetail?id=" + id, token, ct);
+            if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object || !r.Data.TryGetProperty("listStage", out var list) || list.ValueKind != JsonValueKind.Array || list.GetArrayLength() == 0)
+            {
+                return;
+            }
+            var stages = list.EnumerateArray().ToList();
+            string Name(JsonElement s) => S(s, "stageName") ?? S(s, "stageCode") ?? "?";
+            m.Lines.Add("Công đoạn: " + string.Join(" → ", stages.Select(s => Name(s) + (S(s, "status") switch { "Done" => " ✅", "InProgress" => " ⏳", _ => "" }))));
+            var cur = stages.FirstOrDefault(s => S(s, "status") == "InProgress");
+            bool doing = cur.ValueKind == JsonValueKind.Object;
+            var target = doing ? cur : stages.FirstOrDefault(s => S(s, "status") != "Done");
+            if (target.ValueKind != JsonValueKind.Object || S(target, "stageCode") is not { Length: > 0 } code)
+            {
+                return;
+            }
+            string data = id.ToString("N") + "." + code;
+            if (System.Text.Encoding.UTF8.GetByteCount(Kind + ":ss:" + data) <= CallbackData.MaxBytes)
+            {
+                m.Buttons.Add(doing ? new NeutralButton("⏹ Xong " + Name(target), CallbackData.Build(Kind, "sf", data)) : new NeutralButton("▶️ Bắt đầu " + Name(target), CallbackData.Build(Kind, "ss", data)));
+            }
         }
 
         private static string Line(JsonElement b) => $"{Icon(b)} {S(b, "batchNumber")} {S(b, "dishName")} · {Time(S(b, "plannedStart"))} · {S(b, "statusName")}";
