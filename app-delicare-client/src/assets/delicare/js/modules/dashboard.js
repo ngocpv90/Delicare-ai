@@ -136,11 +136,11 @@
     const w = W.find(x => x.id === fs.sel) || W[0];
     el.innerHTML = APP.header(f, `<a class="btn" href="docs/DELICARE_Business_Workflow.md" target="_blank">${I('export')} Tải đặc tả .md</a>`, { sub: '9 luồng nghiệp vụ có thể trình diễn. Mỗi bước mở đúng màn hình thao tác và hiển thị bảng Database liên quan. Đặc tả chi tiết: DELICARE_Business_Workflow.md.' }) + `
     <div class="row-flex mb">${W.map(x => `<button class="chip ${x.id === w.id ? 'active' : ''}" data-w="${x.id}">${x.id}. ${esc(x.name)}</button>`).join('')}</div>
-    <article class="card flow-card"><div class="spread"><div><div class="eyebrow">Luồng ${w.id}</div><h2>${esc(w.name)}</h2></div><button class="btn primary" data-start>${I('play')} Bắt đầu demo từ bước 1</button></div><div class="meta">Người thực hiện: ${esc(w.actors)}</div>
+    <article class="card flow-card"><div class="spread"><div><div class="eyebrow">Luồng ${w.id}</div><h2>${esc(w.name)}</h2></div>${Store.isLive ? '' : `<button class="btn primary" data-start>${I('play')} Bắt đầu demo từ bước 1</button>`}</div><div class="meta">Người thực hiện: ${esc(w.actors)}</div>
       <div class="stepper">${w.steps.map((s, i) => `<div class="step done"><a href="#/${s.screen}"><div class="dot">${i + 1}</div><div class="lbl">${esc(s.label)}</div><small>#/${s.screen}</small></a></div>`).join('')}</div></article>
     <div class="card panel"><div class="panel-title mb">Chi tiết từng bước – màn hình & bảng Database</div><div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>#</th><th>Bước</th><th>Màn hình</th><th>Phase</th><th>Bảng / cột Database</th><th>Trạng thái mapping</th><th></th></tr></thead><tbody>${w.steps.map((s, i) => { const fn = APP.FN[s.screen]; return `<tr><td>${i + 1}</td><td><b>${esc(s.label)}</b></td><td>${esc(fn.name)}<span class="sub mono">#/${s.screen}</span></td><td>${fn.ph}</td><td class="mono" style="white-space:normal">${esc(s.tables)}</td><td>${UI.badge(fn.st === 'MAPPED' ? 'Matched' : fn.st === 'PARTIAL' ? 'PARTIAL' : 'Failed')} <span class="small muted">${fn.st}</span></td><td><a class="btn xs" href="#/${s.screen}">Mở →</a></td></tr>`; }).join('')}</tbody></table></div></div>
     <div class="notice info mt">${I('alert')}<div><b>Trạng thái & quy tắc chuyển bước</b>Giá trị theo SQL DEFAULT / BRD được giữ nguyên; các giá trị còn lại là PROPOSED – BA/PO CONFIRM (xem Gap Register sheet 07).</div></div>`;
     el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { fs.sel = +b.dataset.w; APP.refresh(); });
-    el.querySelector('[data-start]').onclick = () => APP.go(w.steps[0].screen);
+    const st = el.querySelector('[data-start]'); if (st) st.onclick = () => APP.go(w.steps[0].screen);
   });
 })();

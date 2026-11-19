@@ -370,6 +370,13 @@
       if (!ur) return { access: false };
       return { access: !!ur.AllowAccess, add: !!ur.AllowAdd, edit: !!ur.AllowEdit, del: !!ur.AllowDelete, exp: !!ur.AllowExport, print: !!ur.AllowPrint, imp: !!ur.AllowImport, ur };
     },
+    // UG-1 C-16: quyền Duyệt màn (giống máy chủ PermissionAction.Approve): mục menu wf-inbox?type=<màn> có Xem + Sửa; quản trị luôn có.
+    canApprove(screen) {
+      if (!(HOST && mode === 'api')) return true;
+      if (HOST.user && HOST.user.isAdmin) return true;
+      const p = HOST.perm('wf-inbox?type=' + screen);
+      return p.access === true && p.edit === true;
+    },
     branchOk(row, col) { return !Store.ctx.branch || !row[col] || row[col] === Store.ctx.branch; }
   };
   loadCodeRules();   // MA-1: DC_HOST gán sau khi đăng nhập (delicare-shell) → tải quy tắc mã ngay
