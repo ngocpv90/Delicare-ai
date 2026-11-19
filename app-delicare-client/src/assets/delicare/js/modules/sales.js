@@ -204,6 +204,8 @@
         if (box && info.length) box.innerHTML = `<div class="notice ${d.isAfterCutoff || d.pendingApprovalNo || (d.listWarning || []).length ? 'warn' : 'info'} mt">${I('alert')}<div>${info.join('<br>')}</div></div>`;
         (d.listLine || []).forEach(l => { const td = [...dw.querySelectorAll('[data-fq]')].find(n => n.dataset.fq === String(l.id)); if (td) td.textContent = has(l.forecastQuantity) ? U.num(l.forecastQuantity) : '–'; });
         const need = { saveq: 'updateLines', submit: 'submit', confirm: 'confirm', lock: 'lock', cancel: 'cancel' };
+        // UG-1 C-01: 'Yêu cầu sửa sau chốt' (modules/ghep.js gx-order-change) chỉ khi máy chủ cho phép (đã quá giờ chốt).
+        need['gx-order-change'] = 'requestChange';
         dw.querySelectorAll('.drawer-foot [data-act]').forEach(b => { const k = need[b.dataset.act]; if (k && !acts.includes(k)) b.remove(); });
         if (!acts.includes('updateLines')) dw.querySelectorAll('[data-ql]').forEach(inp => { inp.disabled = true; });
       });

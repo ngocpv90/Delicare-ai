@@ -142,7 +142,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     await FinishAskAsync(ctx, id, token, ct);
                     break;
                 case "fq" when value != null:
-                    await PostAsync(ctx, id, token, "api/ProductionBatch/Finish", [new("Id", id.ToString()), new("ActualQuantity", value)], ct);
+                    await FinishAsync(ctx, id, token, value, ct);
                     break;
                 case "fx":
                     await AskAsync(ctx, "Nhập số suất thực tế của mẻ:", ReplyQty, id.ToString("N"), ct);
@@ -172,7 +172,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             else
             {
-                await PostAsync(ctx, id, token, "api/ProductionBatch/Finish", [new("Id", id.ToString()), new("ActualQuantity", v.ToString(CultureInfo.InvariantCulture))], ct);
+                await FinishAsync(ctx, id, token, v.ToString(CultureInfo.InvariantCulture), ct);
             }
         }
 
@@ -192,6 +192,22 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 Buttons = [.. presets.Select(q => new NeutralButton((q == planned ? "✅ Đúng " : "") + q.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "fq", id.ToString("N") + "." + q.ToString("0.##", CultureInfo.InvariantCulture)))),
                     new NeutralButton("Khác…", CallbackData.Build(Kind, "fx", id)), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "view", id))],
             }, ct);
+        }
+
+        /// <summary>
+        /// UG-1 C-07: "✅ Xong mẻ" = Finish (Chờ QC) rồi RecordOutput (ProductionOutput) cùng số suất – như web (production.js).
+        /// Trước đây bot chỉ gọi Finish → không có sản lượng → cho Đạt / đóng gói bị chặn "Chưa ghi sản lượng mẻ". Finish lỗi thì dừng.
+        /// </summary>
+        private async Task FinishAsync(BotActionContext ctx, Guid id, string token, string quantity, CancellationToken ct)
+        {
+            var fin = await Web.PostFormAsUserAsync<JsonElement>("api/ProductionBatch/Finish", [new("Id", id.ToString()), new("ActualQuantity", quantity)], token, ct);
+            if (!fin.IsOk)
+            {
+                await CardAsync(ctx, id, token, "⚠️ " + Problem(fin), ct);
+                return;
+            }
+            var output = await Web.PostFormAsUserAsync<JsonElement>("api/ProductionBatch/RecordOutput", [new("Id", id.ToString()), new("ProducedQuantity", quantity)], token, ct);
+            await CardAsync(ctx, id, token, output.IsOk ? "✅ Đã kết thúc mẻ và ghi sản lượng " + quantity + " suất – chờ QC" : "⚠️ Đã kết thúc mẻ nhưng chưa ghi được sản lượng: " + Problem(output), ct);
         }
 
         private async Task PostAsync(BotActionContext ctx, Guid id, string token, string path, List<KeyValuePair<string, string>> form, CancellationToken ct)

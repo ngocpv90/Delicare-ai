@@ -316,7 +316,12 @@ namespace AppDelicare.Services.Implement
             // Rà soát BE: KHÔNG ghi IsAdmin từ form Update (người có quyền Sửa màn adm-user tự nâng thành admin được) – chỉ qua User/SaveIsAdmin (AdminOnly).
             _unitOfWork.UserRepository.Update(update);
             await _unitOfWork.UserRepository.CommitAsync(typeSave);
-            await _userClaimService.SaveAfterUser(update.Id, request.ListUserGroupId);
+            // UG-1 C-06: không gửi ListUserGroupId (form sửa chung) = GIỮ nhóm hiện có – trước đây null làm mất hết nhóm của tài khoản.
+            // Đổi nhóm: gửi danh sách Id nhóm cách nhau dấu phẩy (FE: nút Gán nhóm trên dòng adm-user).
+            if (request.ListUserGroupId != null)
+            {
+                await _userClaimService.SaveAfterUser(update.Id, NormalizeGroupIds(request.ListUserGroupId));
+            }
             return string.Empty;
         }
 

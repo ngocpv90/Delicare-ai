@@ -88,9 +88,78 @@
     APP.genericList(el, f, { top: `<div class="card panel mb"><div class="panel-title mb">${esc((Store.rows('Company')[0] || {}).Name || 'Công ty')} – cây đơn vị (OrganizationUnit.ParentId)</div><div class="notice warn small">${I('alert')}<div>ParentId → OrganizationUnit và ManagerId → Employee là quan hệ ĐỀ XUẤT (chưa có trong danh sách quan hệ xác nhận). PO xác nhận OrganizationUnit là nguồn Chi nhánh / Phòng ban.</div></div><div class="timeline">${node(null)}</div></div>` });
   });
   // ---------- Tài khoản người dùng: khóa / mở, đặt lại mật khẩu, quyền hiệu lực ----------
+  // UG-1 C-06: mật khẩu tạm hiện MỘT lần (không lưu, không ghi log) + nút sao chép – dùng cho Tạo người dùng và Đặt lại mật khẩu.
+  function showTempPassword(name, pw) {
+    UI.modal({
+      title: 'Mật khẩu tạm', size: 'sm',
+      body: `<p style="margin-top:0">Mật khẩu tạm của <b>${name}</b> – hết hạn sau 24 giờ, người dùng phải đổi khi đăng nhập. Hộp này chỉ hiện một lần:</p><div class="row-flex"><input class="input mono" id="tmpPw" readonly value="${esc(pw)}" style="flex:1"><button class="btn primary" id="tmpCopy">Sao chép</button></div>`,
+      onMount: m => m.querySelector('#tmpCopy').onclick = () => {
+        const inp = m.querySelector('#tmpPw'); inp.select();
+        const done = () => UI.toast('Đã sao chép mật khẩu tạm', 'ok');
+        const legacy = () => { try { if (document.execCommand('copy')) done(); } catch (e) { /* người dùng tự chép từ ô đã bôi đen */ } };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(inp.value).then(done, legacy); else legacy();
+      }
+    });
+  }
+  // UG-1 C-06: chọn nhiều nhóm quyền (UserGroup) – ô tick.
+  const groupPicker = selected => {
+    const sel = new Set((selected || []).map(String));
+    const groups = Store.rows('UserGroup').slice().sort((a, b) => String(a.Name || '').localeCompare(String(b.Name || '')));
+    return `<div class="field full"><label>Nhóm quyền</label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px">${groups.map(g => `<label class="row-flex small" style="gap:6px;font-weight:400"><input type="checkbox" data-grp value="${esc(g.Id)}" ${sel.has(String(g.Id)) ? 'checked' : ''}> ${esc(g.Name || '')}${g.Description ? ` <span class="muted">· ${esc(g.Description)}</span>` : ''}</label>`).join('') || '<span class="muted small">Chưa có nhóm người dùng</span>'}</div></div>`;
+  };
+  const pickedGroups = m => [...m.querySelectorAll('[data-grp]:checked')].map(i => i.value).join(',');
+  function createUser() {
+    const persons = Store.rows('Person').slice(0, 1000);
+    UI.modal({
+      title: 'Tạo người dùng', size: 'md',
+      body: `<div class="form-grid">
+        <div class="field"><label>Tên đăng nhập <span class="req">*</span></label><input class="input" id="nuName" maxlength="50" placeholder="vd. an.nguyen"><span class="hint">Chữ thường, không dấu; trùng sẽ báo lỗi.</span></div>
+        <div class="field"><label>Hồ sơ người</label><select class="select" id="nuPerson"><option value="">— Không gắn —</option>${persons.map(x => `<option value="${esc(x.Id)}">${esc(x.FullName || x.Id)}</option>`).join('')}</select></div>
+        ${groupPicker([])}
+        <div class="field"><label class="row-flex" style="gap:6px"><input type="checkbox" id="nuActive" checked> Hoạt động</label></div></div><div id="nuErr" class="notice warn hide"></div>`,
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="nuOk">Tạo người dùng</button>',
+      onMount: (m, close) => m.querySelector('#nuOk').onclick = () => {
+        const name = m.querySelector('#nuName').value.trim(), err = m.querySelector('#nuErr');
+        if (!name) { err.textContent = 'Nhập tên đăng nhập'; err.classList.remove('hide'); return; }
+        const btn = m.querySelector('#nuOk'); btn.disabled = true;
+        Store.act('User/Insert', { form: { UserName: name, PersonId: m.querySelector('#nuPerson').value, IsActive: m.querySelector('#nuActive').checked, ListUserGroupId: pickedGroups(m) }, tables: ['User', 'UserClaim'], quiet: true }).then(r => {
+          btn.disabled = false;
+          if (!r.ok) { err.textContent = r.message || 'Không tạo được người dùng'; err.classList.remove('hide'); return; }
+          close(); APP.refresh();
+          const d = r.data || {};
+          if (d.tempPassword) showTempPassword(esc(d.userName || name), d.tempPassword); else UI.toast('Đã tạo người dùng ' + esc(name), 'ok');
+        });
+      }
+    });
+  }
+  function assignGroups(r) {
+    Store.query('User/GetById', { id: r.Id }).then(x => {
+      if (!x.ok || !x.data) { UI.toast(esc(x.message || 'Không đọc được tài khoản'), 'err'); return; }
+      const u = x.data, cur = String(u.listUserGroupId || '').split(',').filter(Boolean);
+      UI.modal({
+        title: 'Gán nhóm – ' + esc(r.UserName || ''), size: 'md', body: groupPicker(cur) + '<div id="agErr" class="notice warn hide"></div>',
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="agOk">Lưu nhóm</button>',
+        onMount: (m, close) => m.querySelector('#agOk').onclick = () => {
+          const ids = pickedGroups(m), err = m.querySelector('#agErr');
+          if (!ids) { err.textContent = 'Chọn ít nhất 1 nhóm (muốn chặn đăng nhập thì dùng Khóa).'; err.classList.remove('hide'); return; }
+          const fd = new FormData();
+          [['Id', r.Id], ['UserName', u.userName || r.UserName], ['PersonId', u.personId || ''], ['IsActive', u.isActive ? 'true' : 'false'], ['ListUserGroupId', ids]].forEach(([k, v]) => { if (v !== '' && v !== null && v !== undefined) fd.append(k, v); });
+          Store.act('User/Update', { method: 'PUT', json: fd, tables: ['UserClaim'], quiet: true }).then(res => {
+            if (!res.ok) { err.textContent = res.message || 'Không lưu được'; err.classList.remove('hide'); return; }
+            close(); UI.toast('Đã cập nhật nhóm quyền của ' + esc(r.UserName || ''), 'ok'); APP.refresh();
+          });
+        }
+      });
+    });
+  }
   APP.register('adm-user', (el, f) => {
     const canEdit = Store.perm(f.id).edit !== false;
-    APP.genericList(el, f);
+    APP.genericList(el, f, { noAdd: LIVE() });
+    // UG-1 C-06: chế độ thật – tạo người dùng qua User/Insert (gán nhóm + mật khẩu tạm), không nhập tay dòng User.
+    if (LIVE() && Store.perm(f.id).add !== false) {
+      const bar = el.querySelector('.heading-actions');
+      if (bar) { bar.insertAdjacentHTML('beforeend', `<button class="btn primary" data-newuser>${I('plus')} Tạo người dùng</button>`); bar.querySelector('[data-newuser]').onclick = () => Store.reload(['UserGroup', 'Person']).then(createUser); }
+    }
     APP.rowExtra(el, tr => {
       const r = Store.get('User', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td) return;
       const name = esc(r.UserName || ''), active = !!r.IsActive;
@@ -99,8 +168,10 @@
       // Không tự khóa tài khoản đang đăng nhập (backend cũng chặn).
       if (canEdit && r.Id !== Store.user.id) h += active ? '<button class="btn xs danger" data-lock>Khóa</button> ' : '<button class="btn xs" data-lock>Mở khóa</button> ';
       if (LIVE() && isAdmin()) h += `<button class="btn xs orange" data-reset title="Đặt lại mật khẩu">${I('key')}</button> `;
+      if (LIVE() && canEdit) h += `<button class="btn xs" data-groups title="Gán nhóm quyền">${I('users')}</button> `;
       td.insertAdjacentHTML('afterbegin', h);
       const eff = td.querySelector('[data-eff]'); if (eff) eff.onclick = () => openUserPermission(r);
+      const grp = td.querySelector('[data-groups]'); if (grp) grp.onclick = e => { e.stopPropagation(); Store.reload(['UserGroup']).then(() => assignGroups(r)); };
       const lock = td.querySelector('[data-lock]'); if (lock) lock.onclick = () => UI.confirm(active ? `Khóa tài khoản <b>${name}</b>? Người dùng sẽ không đăng nhập được cho tới khi mở lại.` : `Mở khóa tài khoản <b>${name}</b>?`,
         () => getAct('User/SaveIsActive', { id: r.Id }, { tables: ['User'], demo: () => Store.update('User', r.Id, { IsActive: active ? 0 : 1 }, active ? 'Khóa tài khoản' : 'Mở khóa tài khoản') }).then(x => { if (!x.ok) return; UI.toast((active ? 'Đã khóa tài khoản ' : 'Đã mở khóa tài khoản ') + name, 'ok'); APP.refresh(); }),
         { danger: active, ok: active ? 'Khóa' : 'Mở khóa' });
@@ -110,16 +181,7 @@
           // Mật khẩu tạm chỉ hiện đúng một lần trong hộp thoại này – không lưu, không ghi log.
           const pw = typeof x.data === 'string' ? x.data : '';
           if (!pw) { UI.toast('Đã đặt lại mật khẩu tài khoản ' + name, 'ok'); return; }
-          UI.modal({
-            title: 'Mật khẩu tạm', size: 'sm',
-            body: `<p style="margin-top:0">Mật khẩu tạm của <b>${name}</b> – hết hạn sau 24 giờ, người dùng phải đổi khi đăng nhập:</p><div class="row-flex"><input class="input mono" id="tmpPw" readonly value="${esc(pw)}" style="flex:1"><button class="btn" id="tmpCopy">Sao chép</button></div><div class="notice warn small mt">${I('alert')}<div>Mật khẩu chỉ hiện một lần. Đóng hộp thoại là không xem lại được.</div></div>`,
-            onMount: m => m.querySelector('#tmpCopy').onclick = () => {
-              const inp = m.querySelector('#tmpPw'); inp.select();
-              const done = () => UI.toast('Đã sao chép mật khẩu tạm', 'ok');
-              const legacy = () => { try { if (document.execCommand('copy')) done(); } catch (e) { /* người dùng tự chép từ ô đã bôi đen */ } };
-              if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(inp.value).then(done, legacy); else legacy();
-            }
-          });
+          showTempPassword(name, pw);
         }), { danger: true, ok: 'Đặt lại mật khẩu' });
     });
   });

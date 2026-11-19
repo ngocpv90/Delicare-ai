@@ -124,7 +124,7 @@
     if (APPROVABLE[t] && isPending(st)) h += btn('gx-approve', 'Duyệt', 'primary') + btn('gx-reject', 'Từ chối', 'danger');
     if (t === 'InventoryTransaction') h += btn('gx-reverse', 'Đảo bút toán', 'danger', ro);
     if (t === 'PurchaseOrder' && st === 'Draft') h += btn('gx-po-lines', 'Sửa dòng hàng', '', ro);
-    if (t === 'Order' && ['Draft', 'Submitted', 'Confirmed', 'Locked'].includes(st)) h += btn('gx-order-change', 'Xin sửa sau giờ chốt', '', ro);
+    if (t === 'Order' && ['Draft', 'Submitted', 'Confirmed', 'Locked'].includes(st)) h += btn('gx-order-change', 'Yêu cầu sửa sau chốt', 'orange', ro);
     if (t === 'DeliveryRoute') h += btn('gx-route-temp', 'Ghi nhiệt độ', '', ro);
     if (t === 'CustomerComplaint') h += btn('gx-comment', 'Thêm ghi chú', '', ro);
     if (t === 'ProductionBatche' && !(perm && perm.exp === false)) h += btn('gx-sheet', 'Phiếu sản xuất (Excel)', '');
@@ -168,7 +168,7 @@
   }
   function orderChange(row) {
     const lines = Store.by('OrderLine', 'OrderId', row.Id);
-    dialog('Xin sửa sau giờ chốt – ' + esc(Store.label('Order', row)), `<div class="small muted mb">Chỉ dùng khi đã tới giờ chốt của ngày ăn (trước giờ chốt hãy sửa số suất trực tiếp). Thay đổi chưa ghi ngay – tạo yêu cầu chờ duyệt.</div>
+    dialog('Yêu cầu sửa sau chốt – ' + esc(Store.label('Order', row)), `<div class="small muted mb">Chỉ dùng khi đã tới giờ chốt của ngày ăn (trước giờ chốt hãy sửa số suất trực tiếp). Thay đổi chưa ghi ngay – tạo yêu cầu chờ duyệt.</div>
       <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Suất ăn</th><th class="num">Đang đặt</th><th>Số mới</th></tr></thead><tbody>${lines.map(l => `<tr><td>${esc(Store.label('ContractMeal', l.ContractMealId) || Store.label('OrderLine', l))}</td><td class="num">${U.num(l.Quantity)}</td><td><input type="number" min="0" class="input gxQ" data-l="${esc(l.Id)}" data-o="${l.Quantity}" style="width:120px" value="${l.Quantity}"></td></tr>`).join('')}</tbody></table></div>
       <div class="mt">${fld('Lý do *', '<textarea class="input" id="gxR" rows="2"></textarea>')}</div>`, 'Gửi yêu cầu', (m, close) => {
         const reason = val(m, 'gxR'); if (!reason) return UI.toast('Nhập lý do', 'err');

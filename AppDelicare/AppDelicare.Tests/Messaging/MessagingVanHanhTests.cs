@@ -148,6 +148,8 @@ namespace AppDelicare.Tests.Messaging
             ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).First().Text.Should().Be("✅ Đúng 100", "điền sẵn số kế hoạch");
             await h.SendAsync(Tap("bat:fq:" + cook + ".100"));
             Last(h, "api/ProductionBatch/Finish").Form["ActualQuantity"].Should().Be("100");
+            // UG-1 C-07: xong mẻ trên bot ghi luôn sản lượng (ProductionOutput) – không còn kẹt "Chưa ghi sản lượng mẻ" khi cho Đạt.
+            Last(h, "api/ProductionBatch/RecordOutput").Form.Should().Contain(new KeyValuePair<string, string>("ProducedQuantity", "100")).And.Contain(new KeyValuePair<string, string>("Id", Cooking.ToString()));
             await h.SendAsync(Tap("bat:smp:" + cook));
             Last(h, "api/ProductionBatch/RecordSampleRetained").Form["Id"].Should().Be(Cooking.ToString());
             await h.SendAsync(Tap("bat:start:" + plan));
