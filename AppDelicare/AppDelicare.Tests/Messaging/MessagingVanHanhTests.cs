@@ -144,6 +144,17 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("bat:tx:" + cook));
             await h.SendAsync(Text("73,5", replyTo: LastSentId(h)));
             Last(h, "api/ProductionBatch/RecordCoreTemperature").Form["TemperatureC"].Should().Be("73.5");
+
+            // UG-1 C-09: dưới ngưỡng → máy chủ đòi hành động khắc phục → bot hỏi, người dùng gõ → ghi lại kèm CorrectiveAction.
+            h.Web.Routes["api/ProductionBatch/RecordCoreTemperature"] = (_, form) => form.ContainsKey("CorrectiveAction")
+                ? (200, "Đã ghi nhiệt độ (dưới ngưỡng)", "{}", null)
+                : (400, "Nhiệt độ lõi 65 °C dưới ngưỡng 70 °C – phải ghi hành động khắc phục", null, null);
+            await h.SendAsync(Tap("bat:tx:" + cook));
+            await h.SendAsync(Text("65", replyTo: LastSentId(h)));
+            h.Sender.Sent.Last().Message.Text.Should().Contain("Nhập hành động khắc phục");
+            await h.SendAsync(Text("Gia nhiệt lại 10 phút", replyTo: LastSentId(h)));
+            Last(h, "api/ProductionBatch/RecordCoreTemperature").Form.Should().Contain(new KeyValuePair<string, string>("CorrectiveAction", "Gia nhiệt lại 10 phút"))
+                .And.Contain(new KeyValuePair<string, string>("TemperatureC", "65"));
             await h.SendAsync(Tap("bat:fin:" + cook));
             ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).First().Text.Should().Be("✅ Đúng 100", "điền sẵn số kế hoạch");
             await h.SendAsync(Tap("bat:fq:" + cook + ".100"));

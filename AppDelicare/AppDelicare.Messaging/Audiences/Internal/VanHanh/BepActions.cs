@@ -22,6 +22,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public const string Kind = CallbackData.Kinds.Batch;
         public const string ReplyTemp = "bat-temp";
         public const string ReplyQty = "bat-qty";
+        /// <summary>UG-1 C-09: nhiệt độ lõi dưới ngưỡng → hỏi hành động khắc phục (khóa = "&lt;Id N&gt;.&lt;nhiệt độ&gt;").</summary>
+        public const string ReplyCorrective = "bat-fix";
         public const string Menu = "#/prod-batch";
         private static readonly decimal[] CoreTemps = [70m, 72m, 75m, 78m, 80m, 85m];
 
@@ -156,6 +158,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         /// <summary>Trả lời gõ tay: nhiệt độ lõi / số suất.</summary>
         public async Task ReplyAsync(BotActionContext ctx, PendingReply pending, CancellationToken ct)
         {
+            if (pending.Flow == ReplyCorrective)
+            {
+                await CorrectiveReplyAsync(ctx, pending, ct);
+                return;
+            }
             if (!Guid.TryParseExact(pending.Key, "N", out Guid id) || await TokenAsync(ctx, ct) is not { } token)
             {
                 return;
@@ -176,8 +183,37 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
         }
 
-        private Task TemperatureAsync(BotActionContext ctx, Guid id, string token, string value, CancellationToken ct)
-            => PostAsync(ctx, id, token, "api/ProductionBatch/RecordCoreTemperature", [new("Id", id.ToString()), new("TemperatureC", value)], ct);
+        /// <summary>
+        /// Ghi nhiệt độ lõi. UG-1 C-09: dưới ngưỡng (máy chủ báo cần hành động khắc phục – CoreTempCorrectiveRequired) → hỏi người dùng gõ
+        /// hành động khắc phục rồi ghi lại kèm CorrectiveAction (trước đây bot chỉ báo lỗi, không ghi được lần đo dưới ngưỡng).
+        /// </summary>
+        private async Task TemperatureAsync(BotActionContext ctx, Guid id, string token, string value, CancellationToken ct)
+        {
+            var r = await Web.PostFormAsUserAsync<JsonElement>("api/ProductionBatch/RecordCoreTemperature", [new("Id", id.ToString()), new("TemperatureC", value)], token, ct);
+            if (!r.IsOk && (r.ResponseMessage ?? string.Empty).Contains("khắc phục", StringComparison.OrdinalIgnoreCase))
+            {
+                await AskAsync(ctx, "⚠️ " + r.ResponseMessage + "\nNhập hành động khắc phục (vd. gia nhiệt lại 10 phút, đo lại):", ReplyCorrective, id.ToString("N") + "." + value, ct);
+                return;
+            }
+            await CardAsync(ctx, id, token, r.IsOk ? "✅ " + (r.ResponseMessage ?? "Đã ghi") : "⚠️ " + Problem(r), ct);
+        }
+
+        private async Task CorrectiveReplyAsync(BotActionContext ctx, PendingReply pending, CancellationToken ct)
+        {
+            int dot = pending.Key.IndexOf('.');
+            if (dot <= 0 || !Guid.TryParseExact(pending.Key[..dot], "N", out Guid id) || await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            string action = (ctx.Event.Text ?? string.Empty).Trim();
+            if (action.Length < 3)
+            {
+                await AskAsync(ctx, "Nhập rõ hành động khắc phục (ít nhất 3 ký tự):", ReplyCorrective, pending.Key, ct);
+                return;
+            }
+            await PostAsync(ctx, id, token, "api/ProductionBatch/RecordCoreTemperature",
+                [new("Id", id.ToString()), new("TemperatureC", pending.Key[(dot + 1)..]), new("CorrectiveAction", action.Length > 500 ? action[..500] : action)], ct);
+        }
 
         private async Task FinishAskAsync(BotActionContext ctx, Guid id, string token, CancellationToken ct)
         {

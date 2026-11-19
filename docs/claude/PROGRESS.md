@@ -1,6 +1,7 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-19: UG-1.3 (mục TB) DONE** – C-05, C-09, C-11, C-12, C-13, C-15 (web), C-16, C-20 trên nhánh `feat/MA-1-code-rules`. Test **475 / 475**, build FE xanh. Còn của UG-1: C-15 nút công đoạn trên bot; UG-1.4 (C-10, C-03, C-04, C-14, C-21, REVIEW_BUSINESS_FLOWS); UG-1.5 chờ anh (C-17, C-18, C-19, C-22, C-23).
 - **2026-11-19: UG-1 mục Cao (C-01, C-06, C-07, C-08) DONE** trên nhánh `feat/MA-1-code-rules` (BE + FE). Test **475 / 475**, build FE xanh. Tiếp theo: UG-1.3 mục TB (C-09, C-11, C-12, C-15, C-16, C-20, C-05, C-13).
 - **2026-11-19: FE-E.1 → FE-E.3 DONE** trên nhánh `feat/MA-1-code-rules`: liên kết Telegram ở menu tài khoản + nút cấp mã trên dòng hồ sơ nhân viên; QR do máy chủ vẽ (QRCoder – D-67): ảnh QR hộp mã liên kết, PDF phiếu in, In QR hiện trường; bỏ ẩn int-channel / int-bot / int-log + Gửi lại trên dòng tin lỗi. Test **475 / 475**, build FE xanh. Chờ anh: D-68 (siết quyền màn tích hợp), khóa `Messaging:LinkSigningKey` cho máy chạy thử. Tiếp theo: giao diện UG-1 (FE-E.4).
 - **2026-11-19: UI-2 DONE (chờ anh mở thử) – màn khách hàng 360 cả trang** trên nhánh `feat/MA-1-code-rules`: `GetOverview` + cảnh báo, `Customer/GetTrend`, `Order/GetAll` lọc ngày ăn; màn `crm-customer-360` 10 tab. Test **475 / 475**, `full-flow.http` **221 / 221** trên DB dev (DEMOUI2A, 2026-12-13), build FE xanh. Tiếp theo: FE-E (FE-BOT-1 → FE-BOT-3 → FE-BOT-2).
@@ -2111,3 +2112,14 @@ Chưa: mở thử trình duyệt (DN + CN, 3 cỡ màn); nút Tạo đơn / Ghi 
 - **C-07:** bot `BepActions.FinishAsync` = Finish rồi RecordOutput (dừng nếu Finish lỗi); web mẻ Chờ QC chưa có sản lượng có nút **Ghi sản lượng**; test MessagingVanHanh mở rộng.
 - **C-08:** hộp kết luận QC đầu vào: ô **Số lượng đạt** khi chọn HOLD (kiểm > 0 và < số nhận trước khi gửi), ô **Xác nhận không rã đông** cho hàng FROZEN; gửi acceptedQuantity / noThawConfirmed.
 - HDSD 01, 02, 06, 07, 12, 20 + `90_CHENH_LECH.md` đánh ✅.
+
+### UG-1.3 – mục TB (C-05, C-09, C-11, C-12, C-13, C-15, C-16, C-20) · DONE 2026-11-19 (nhánh `feat/MA-1-code-rules`)
+- **C-05:** crm-order nút **Chốt đơn theo ngày** (quyền Sửa, xác nhận 2 lần) → `Order/LockByMealDate`, báo số đã chốt / chưa xác nhận / chờ duyệt.
+- **C-09:** hộp kết thúc nấu: ngưỡng lấy `ProductionBatch/GetDetail.coreTempMinC`, bỏ mặc định 82,5, ô **Hành động khắc phục** khi dưới ngưỡng (gửi CorrectiveAction); bot: máy chủ báo cần khắc phục → hỏi (flow `bat-fix`) → ghi lại kèm CorrectiveAction; test MessagingVanHanh mở rộng.
+- **C-11:** hộp phê duyệt thêm PURCHASE_ORDER, ORDER_DEVIATION, ORDER_CHANGE_AFTER_CUTOFF, STOCK_ADJUSTMENT; chi tiết yêu cầu sửa đơn sau chốt có bảng **Đề xuất sửa đơn** (đọc PayloadJson).
+- **C-12:** đề nghị mua Nháp → **Sửa dòng nguyên liệu** (Insert / Update / Delete PurchaseRequestLine tuần tự, dừng ở lỗi đầu); PO Nháp đã có Sửa dòng hàng (GHEP-FE).
+- **C-13:** đã xử lý ở FE-E.3 (int-* hiện lại theo ma trận); siết quyền D-68 chờ anh.
+- **C-15:** ngăn mẻ thêm tab **Công đoạn** (Bắt đầu / Xong theo thứ tự – StartStage / FinishStage). **Chưa:** nút công đoạn trên bot `/me`.
+- **C-16:** `Store.canApprove(màn)` = mục `wf-inbox?type=<màn>` Xem + Sửa (giống PermissionService Approve); ẩn Duyệt kế hoạch (prod-plan), chuyển thực đơn sang Đã duyệt (menu-menu), Khóa & áp dụng công thức (menu-recipe).
+- **C-20:** nút chuyển DEMO trong hộp Hướng dẫn chỉ cho quản trị; flow-e2e ẩn nút demo ở chế độ thật.
+- HDSD 00, 02, 04, 07, 08, 12, 13 + 90 (✅).

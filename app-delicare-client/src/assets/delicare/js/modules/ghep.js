@@ -124,6 +124,7 @@
     if (APPROVABLE[t] && isPending(st)) h += btn('gx-approve', 'Duyệt', 'primary') + btn('gx-reject', 'Từ chối', 'danger');
     if (t === 'InventoryTransaction') h += btn('gx-reverse', 'Đảo bút toán', 'danger', ro);
     if (t === 'PurchaseOrder' && st === 'Draft') h += btn('gx-po-lines', 'Sửa dòng hàng', '', ro);
+    if (t === 'PurchaseRequest' && st === 'Draft') h += btn('gx-pr-lines', 'Sửa dòng nguyên liệu', '', ro);
     if (t === 'Order' && ['Draft', 'Submitted', 'Confirmed', 'Locked'].includes(st)) h += btn('gx-order-change', 'Yêu cầu sửa sau chốt', 'orange', ro);
     if (t === 'DeliveryRoute') h += btn('gx-route-temp', 'Ghi nhiệt độ', '', ro);
     if (t === 'CustomerComplaint') h += btn('gx-comment', 'Thêm ghi chú', '', ro);
@@ -150,6 +151,37 @@
         if (!form.EmployeeId && !form.UserId) return UI.toast('Chọn người nhận', 'err');
         run('OutboundMessage/Enqueue', { form, tables: ['OutboundMessage'] }, 'Đã xếp tin vào hàng gửi').then(r => { if (r.ok) close(); });
       });
+  }
+  // UG-1 C-12: dòng đề nghị mua Nháp – thêm / sửa / xóa qua PurchaseRequestLine (Insert / Update / Delete; máy chủ chỉ cho khi phiếu Nháp).
+  function prLines(row) {
+    const lines = Store.by('PurchaseRequestLine', 'PurchaseRequestId', row.Id);
+    const ings = Store.rows('Ingredient'), units = Store.rows('UnitMeasure');
+    const unitOpts = sel => units.map(u => `<option value="${esc(u.Id)}" ${u.Id === sel ? 'selected' : ''}>${esc(u.Name || u.Code || '')}</option>`).join('');
+    const tr = l => `<tr data-l="${esc(l.Id || '')}"><td><select class="select gxI" style="min-width:200px">${ings.map(i => `<option value="${esc(i.Id)}" data-bu="${esc(i.BaseUnitId || '')}" ${i.Id === l.IngredientId ? 'selected' : ''}>${esc(Store.label('Ingredient', i))}</option>`).join('')}</select></td>
+      <td><input type="number" min="0" step="any" class="input gxQ" style="width:110px" value="${l.Quantity ?? ''}"></td><td><select class="select gxU">${unitOpts(l.UnitId)}</select></td>
+      <td><input type="date" class="input gxR" value="${esc(U.day(l.RequiredDate || row.RequiredDate))}"></td><td><input class="input gxN" value="${esc(l.Note || '')}"></td><td><button class="btn xs danger gxD" type="button">${I('trash')}</button></td></tr>`;
+    dialog('Sửa dòng nguyên liệu – ' + esc(Store.label('PurchaseRequest', row)), `<div class="small muted mb">Mỗi nguyên liệu một dòng. Dòng xóa ở đây sẽ bị xóa khỏi đề nghị.</div>
+      <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Nguyên liệu</th><th>Số lượng</th><th>Đơn vị</th><th>Ngày cần</th><th>Ghi chú</th><th></th></tr></thead><tbody id="gxB">${lines.map(tr).join('')}</tbody></table></div><button class="btn sm mt" id="gxAdd" type="button">${I('plus')} Thêm dòng</button>`, 'Lưu', (m, close) => {
+        const rows = [...m.querySelectorAll('#gxB tr')].map(t => ({ id: t.dataset.l || null, ingredientId: t.querySelector('.gxI').value, quantity: Number(t.querySelector('.gxQ').value), unitId: t.querySelector('.gxU').value, requiredDate: t.querySelector('.gxR').value || null, note: t.querySelector('.gxN').value || null }));
+        if (!rows.length) return UI.toast('Đề nghị mua phải có ít nhất một dòng', 'err');
+        if (rows.some(l => !(l.quantity > 0))) return UI.toast('Số lượng phải lớn hơn 0', 'err');
+        if (rows.some(l => !l.unitId)) return UI.toast('Chọn đơn vị cho mọi dòng', 'err');
+        if (new Set(rows.map(l => l.ingredientId)).size !== rows.length) return UI.toast('Mỗi nguyên liệu chỉ một dòng', 'err');
+        const keep = new Set(rows.filter(l => l.id).map(l => l.id));
+        const form = l => Object.assign({ PurchaseRequestId: row.Id, IngredientId: l.ingredientId, Quantity: l.quantity, UnitId: l.unitId, RequiredDate: l.requiredDate, Note: l.note }, l.id ? { Id: l.id } : {});
+        const changed = l => { const o = lines.find(x => x.Id === l.id); return !o || o.IngredientId !== l.ingredientId || Number(o.Quantity) !== l.quantity || o.UnitId !== l.unitId || U.day(o.RequiredDate || '') !== (l.requiredDate || '') || (o.Note || null) !== l.note; };
+        const ops = [...lines.filter(o => !keep.has(o.Id)).map(o => () => Store.act('PurchaseRequestLine/Delete?id=' + encodeURIComponent(o.Id), { method: 'DELETE', quiet: true })),
+          ...rows.filter(l => l.id && changed(l)).map(l => () => Store.act('PurchaseRequestLine/Update', { method: 'PUT', form: form(l), quiet: true })),
+          ...rows.filter(l => !l.id).map(l => () => Store.act('PurchaseRequestLine/Insert', { form: form(l), quiet: true }))];
+        if (!ops.length) { close(); return; }
+        ops.reduce((pr, op) => pr.then(res => (res && !res.ok ? res : op())), Promise.resolve(null)).then(res => {
+          if (res && !res.ok) return UI.toast('Không lưu được: ' + esc(res.message || ''), 'err');
+          Store.reload(['PurchaseRequest', 'PurchaseRequestLine']).then(() => { close(); UI.toast('Đã lưu dòng nguyên liệu', 'ok'); APP.refresh(); });
+        });
+      }, 'lg', m => m.addEventListener('click', e => {
+        if (e.target.closest('.gxD')) e.target.closest('tr').remove();
+        if (e.target.closest('#gxAdd') && ings.length) m.querySelector('#gxB').insertAdjacentHTML('beforeend', tr({ IngredientId: ings[0].Id, UnitId: ings[0].BaseUnitId }));
+      }));
   }
   function poLines(row) {
     const lines = Store.by('PurchaseOrderLine', 'PurchaseOrderId', row.Id);
@@ -201,6 +233,7 @@
     if (act === 'gx-tg-code') Store.act('TelegramLink/CreateCodeForEmployee', { form: { EmployeeId: id } }).then(r => { if (r.ok && !r.demo) showTelegramCode(r.data); });
     if (act === 'gx-send') sendMessage({ EmployeeId: id });
     if (act === 'gx-sheet') Store.download('ProductionBatch/ExportProductionSheet', { id }).then(r => { if (r.ok) UI.toast('Đã tải ' + esc(r.fileName || 'phiếu sản xuất'), 'ok'); });
+    if (act === 'gx-pr-lines') { close(); Store.reload(['PurchaseRequestLine', 'Ingredient', 'UnitMeasure']).then(() => prLines(row)); }
     if (act === 'gx-po-lines') { close(); Store.reload(['PurchaseOrderLine', 'Ingredient']).then(() => poLines(row)); }
     if (act === 'gx-order-change') { close(); Store.reload(['OrderLine', 'ContractMeal']).then(() => orderChange(row)); }
     if (act === 'gx-route-temp') { close(); Store.reload(['DeliveryStop']).then(() => routeTemp(row)); }

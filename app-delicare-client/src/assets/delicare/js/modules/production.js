@@ -87,6 +87,24 @@
     const dp = el.querySelector('[data-dp]'); if (dp) dp.onchange = () => { if (dp.value) { bs.date = dp.value; APP.refresh(); } };
     el.querySelectorAll('[data-b]').forEach(c => c.onclick = () => batchAct(c.dataset.b));
   });
+  // UG-1 C-15: công đoạn của mẻ (Sơ chế → Nấu → Chia suất…) – ProductionBatch/GetDetail.listStage; nút Bắt đầu / Xong gọi StartStage / FinishStage.
+  // Máy chủ chặn bắt đầu khi công đoạn trước chưa xong và chặn kết thúc nấu khi công đoạn bắt buộc chưa xong.
+  function stagePane(p, id) {
+    Store.query('ProductionBatch/GetDetail', { id }).then(x => {
+      if (!p.isConnected) return;
+      if (!x.ok || !x.data) { p.innerHTML = failHtml(x, 'công đoạn'); return; }
+      const st = x.data.listStage || [], canEdit = Store.perm('prod-batch').edit !== false;
+      if (!st.length) { p.innerHTML = '<div class="muted small">Mẻ này không theo dõi công đoạn.</div>'; return; }
+      const cur = st.findIndex(s => s.status === 'InProgress');
+      const next = cur >= 0 ? -1 : st.findIndex(s => s.status !== 'Done');
+      p.innerHTML = `<table class="table dc-table dt"><thead><tr><th>Công đoạn</th><th>Trạng thái</th><th>Tổ / người làm</th><th>Bắt đầu</th><th>Xong</th><th></th></tr></thead><tbody>${st.map((s, i) => `<tr>
+        <td><b>${esc(s.stageName || s.stageCode)}</b>${s.isRequired ? ' <span class="muted small">bắt buộc</span>' : ''}</td><td>${UI.tag(s.statusName || s.status, s.status === 'Done' ? 'green' : s.status === 'InProgress' ? 'orange' : 'gray')}</td>
+        <td class="small">${esc([s.teamName || s.teamCode, (s.employeeNames || []).join(', ')].filter(Boolean).join(' · '))}</td><td class="small">${esc(U.dt(s.startedAt))}</td><td class="small">${esc(U.dt(s.finishedAt))}</td>
+        <td>${canEdit && i === cur ? `<button class="btn xs primary" data-stg="FinishStage" data-code="${esc(s.stageCode)}">Xong</button>` : canEdit && i === next ? `<button class="btn xs orange" data-stg="StartStage" data-code="${esc(s.stageCode)}">Bắt đầu</button>` : ''}</td></tr>`).join('')}</tbody></table>`;
+      p.querySelectorAll('[data-stg]').forEach(b => b.onclick = () => Store.act('ProductionBatch/' + b.dataset.stg, { form: { Id: id, StageCode: b.dataset.code }, tables: ['ProductionBatche'] })
+        .then(res => { if (res.ok) { UI.toast(b.dataset.stg === 'StartStage' ? 'Đã bắt đầu công đoạn' : 'Đã xong công đoạn', 'ok'); stagePane(p, id); } }));
+    });
+  }
   function batchAct(id) {
     const b = Store.get('ProductionBatche', id); if (!b) return UI.toast('Đang tải dữ liệu mẻ – thử lại sau giây lát.', 'warn');
     const po = poOf(b);
@@ -95,7 +113,8 @@
     const fsr = Store.by('FoodSafetyChecklistResult', 'ProductionBatchId', id);
     UI.detail('ProductionBatche', id, { screen: 'prod-batch',
       // Chế độ API: ProductionBatch/GetDetail – điều kiện còn thiếu, công đoạn, nguyên liệu theo định lượng, phiếu xuất, nhiệt độ, lưu mẫu, sản lượng, hao hụt.
-      tabs: Store.isLive ? [{ label: 'Nguyên liệu & an toàn', html: p => { Store.query('ProductionBatch/GetDetail', { id }).then(x => { if (p.isConnected) p.innerHTML = x.ok && x.data ? batchDetailHtml(x.data) : failHtml(x, 'chi tiết mẻ'); }); return LOADING; } }] : [],
+      tabs: Store.isLive ? [{ label: 'Nguyên liệu & an toàn', html: p => { Store.query('ProductionBatch/GetDetail', { id }).then(x => { if (p.isConnected) p.innerHTML = x.ok && x.data ? batchDetailHtml(x.data) : failHtml(x, 'chi tiết mẻ'); }); return LOADING; } },
+        { label: 'Công đoạn', html: p => { stagePane(p, id); return LOADING; } }] : [],
       top: `${UI.stepper(BFLOW.map(s => UI.statusVi('ProductionBatche', 'Status', s)), b.Status === 'Failed' ? 3 : i, b.Status === 'Failed')}
         <div class="kv mt mb"><div><label>Lệnh sản xuất</label><span>${esc(po.ProductionOrderNumber)} · ${esc(Store.label('Shift', po.ShiftId))}</span></div><div><label>Công thức (phiên bản khóa)</label><span>${esc(Store.label('Recipe', b.RecipeId))}</span></div><div><label>Nhiệt độ lõi (TemperatureLog)</label><span>${temps.map(t => `${U.num(t.TemperatureC)}°C ${t.IsWithinRange ? '✓' : '✗'}`).join(', ') || '<span class="muted">Chưa đo</span>'}</span></div><div><label>Checklist ATTP theo mẻ</label><span>${fsr.length ? fsr.filter(x => x.ResultCode === 'PASS').length + '/' + fsr.length + ' đạt' : '<span class="muted">–</span>'}</span></div></div>`,
       foot: () => ({ Planned: `<button class="btn orange" data-act="cook">${I('play')} Bắt đầu nấu</button>`, Cooking: `<button class="btn orange" data-act="finish">Kết thúc nấu → Chờ QC</button>`, QCPending: `${Store.isLive && !Store.by('ProductionOutput', 'ProductionBatchId', id).length ? `<button class="btn orange" data-act="output">Ghi sản lượng</button>` : ''}${Store.isLive ? `<button class="btn" data-act="sample">Ghi lưu mẫu</button>` : ''}<button class="btn primary" data-act="pass">QC: PASS</button><button class="btn" data-act="hold">HOLD</button><button class="btn danger" data-act="reject">REJECT</button>`, Passed: `<button class="btn primary" data-act="pack">Tạo lệnh đóng gói</button>${Store.isLive ? `<button class="btn danger" data-act="reject">Loại mẻ</button>` : ''}` }[b.Status] || '') + (Store.isLive && ['Cooking', 'QCPending', 'Passed', 'Packed', 'Failed'].includes(b.Status) ? `<button class="btn" data-act="waste">Ghi hao hụt</button>` : ''),
@@ -110,15 +129,39 @@
         if (a === 'output') UI.modal({ title: 'Ghi sản lượng mẻ', size: 'sm', body: `<div class="field"><label>Số suất thực tế <span class="req">*</span></label><input type="number" min="0" class="input" id="oq" value="${b.ActualQuantity || b.PlannedQuantity || ''}"></div><div class="field mt"><label>Số suất hỏng / loại</label><input type="number" min="0" class="input" id="orj" value="0"></div>`, foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="oOk">Ghi sản lượng</button>',
           onMount: (m, cl) => m.querySelector('#oOk').onclick = () => { const q = m.querySelector('#oq').value; if (q === '' || Number(q) <= 0) return UI.toast('Nhập số suất thực tế', 'err'); call('RecordOutput', { ProducedQuantity: q, RejectedQuantity: m.querySelector('#orj').value || 0 }).then(r => { if (r.ok) { cl(); close(); UI.toast('Đã ghi sản lượng mẻ', 'ok'); APP.refresh(); batchAct(id); } }); } });
         if (a === 'sample') call('RecordSampleRetained', { ActualValue: 'Đã lưu mẫu' }).then(r => { if (r.ok) { close(); UI.toast('Đã ghi lưu mẫu thức ăn', 'ok'); APP.refresh(); batchAct(id); } });
-        if (a === 'finish') UI.modal({ title: 'Ghi nhận sản lượng & nhiệt độ lõi', size: 'sm', body: `<div class="field"><label>Sản lượng thực tế <code>ActualQuantity</code></label><input type="number" class="input" id="aq" value="${b.PlannedQuantity}"></div><div class="field mt"><label>Nhiệt độ lõi °C <code>TemperatureLog.TemperatureC</code> (≥ 75°C)</label><input type="number" step="0.1" class="input" id="tc" value="82.5"></div>`, foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="ok">Lưu</button>', onMount: (m, c2) => m.querySelector('#ok').onclick = () => { const aq = +m.querySelector('#aq').value, tc = +m.querySelector('#tc').value;
-          if (Store.isLive) {
-            // Đo nhiệt độ lõi → kết thúc nấu (Chờ QC) → ghi sản lượng. Dừng ở bước đầu tiên bị backend từ chối.
-            return call('RecordCoreTemperature', { TemperatureC: tc, DeviceCode: 'PROBE-01' })
-              .then(r => r.ok ? call('Finish', { ActualQuantity: aq }) : r)
-              .then(r => r.ok ? call('RecordOutput', { ProducedQuantity: aq }) : r)
-              .then(r => { if (r.ok) { c2(); fin('Đã ghi nhiệt độ lõi + sản lượng – chờ QC'); } });
-          }
-          Store.update('ProductionBatche', id, { Status: 'QCPending', ActualQuantity: aq, EndDate: U.iso(new Date()) }); Store.add('TemperatureLog', { ProductionBatchId: id, MeasurementType: 'CORE_TEMP', TemperatureC: tc, MinAllowedC: 75, IsWithinRange: tc >= 75 ? 1 : 0, MeasuredAt: U.iso(new Date()), DeviceCode: 'PROBE-01', SourceChannel: 'WEB', RecordedBy: Store.user.id, CorrectiveAction: tc < 75 ? 'Cần gia nhiệt lại' : null }); c2(); fin(tc < 75 ? 'Nhiệt độ lõi < 75°C – cảnh báo QC' : 'Đã ghi sản lượng – chờ QC'); } });
+        // UG-1 C-09: ngưỡng nhiệt độ lõi lấy từ máy chủ (BusinessRules:CoreTempMinC – mặc định 70 °C), không điền sẵn nhiệt độ;
+        // dưới ngưỡng bắt buộc nhập Hành động khắc phục (máy chủ cũng chặn – CoreTempCorrectiveRequired).
+        if (a === 'finish') {
+          let minC = 70;
+          UI.modal({ title: 'Ghi nhận sản lượng & nhiệt độ lõi', size: 'sm',
+            body: `<div class="field"><label>Sản lượng thực tế (suất) <span class="req">*</span></label><input type="number" min="0" class="input" id="aq" value="${b.PlannedQuantity || ''}"></div>
+              <div class="field mt"><label>Nhiệt độ lõi °C <span class="req">*</span> <span class="muted small" id="tcMin">(đạt khi ≥ ${minC} °C)</span></label><input type="number" step="0.1" class="input" id="tc" placeholder="Đo bằng nhiệt kế que"></div>
+              <div class="field mt hide" id="caBox"><label>Hành động khắc phục <span class="req">*</span></label><textarea class="input" id="ca" rows="2" placeholder="vd. Gia nhiệt lại 10 phút, đo lại"></textarea><span class="hint">Nhiệt độ dưới ngưỡng – mẻ chưa cho Đạt QC được tới khi đo lại đạt.</span></div>`,
+            foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="ok">Lưu</button>',
+            onMount: (m, c2) => {
+              const tcIn = m.querySelector('#tc'), caBox = m.querySelector('#caBox');
+              const sync = () => caBox.classList.toggle('hide', !(tcIn.value !== '' && Number(tcIn.value) < minC));
+              tcIn.oninput = sync;
+              if (Store.isLive) Store.query('ProductionBatch/GetDetail', { id }).then(x => { if (x.ok && x.data && x.data.coreTempMinC) { minC = Number(x.data.coreTempMinC); const l = m.querySelector('#tcMin'); if (l) l.textContent = `(đạt khi ≥ ${U.num(minC, 1)} °C)`; sync(); } });
+              m.querySelector('#ok').onclick = () => {
+                const aqv = m.querySelector('#aq').value, tcv = tcIn.value, ca = m.querySelector('#ca').value.trim();
+                if (aqv === '' || Number(aqv) <= 0) return UI.toast('Nhập sản lượng thực tế', 'err');
+                if (tcv === '') return UI.toast('Nhập nhiệt độ lõi đã đo', 'err');
+                const aq = Number(aqv), tc = Number(tcv), low = tc < minC;
+                if (low && !ca) return UI.toast(`Nhiệt độ ${U.num(tc, 1)} °C dưới ngưỡng ${U.num(minC, 1)} °C – nhập hành động khắc phục`, 'err');
+                if (Store.isLive) {
+                  // Đo nhiệt độ lõi → kết thúc nấu (Chờ QC) → ghi sản lượng. Dừng ở bước đầu tiên bị backend từ chối.
+                  return call('RecordCoreTemperature', { TemperatureC: tc, DeviceCode: 'PROBE-01', CorrectiveAction: low ? ca : null })
+                    .then(r => r.ok ? call('Finish', { ActualQuantity: aq }) : r)
+                    .then(r => r.ok ? call('RecordOutput', { ProducedQuantity: aq }) : r)
+                    .then(r => { if (r.ok) { c2(); fin(low ? 'Đã ghi – nhiệt độ lõi dưới ngưỡng, cần đo lại trước khi cho Đạt QC' : 'Đã ghi nhiệt độ lõi + sản lượng – chờ QC'); } });
+                }
+                Store.update('ProductionBatche', id, { Status: 'QCPending', ActualQuantity: aq, EndDate: U.iso(new Date()) });
+                Store.add('TemperatureLog', { ProductionBatchId: id, MeasurementType: 'CORE_TEMP', TemperatureC: tc, MinAllowedC: minC, IsWithinRange: low ? 0 : 1, MeasuredAt: U.iso(new Date()), DeviceCode: 'PROBE-01', SourceChannel: 'WEB', RecordedBy: Store.user.id, CorrectiveAction: low ? ca : null });
+                c2(); fin(low ? 'Nhiệt độ lõi dưới ngưỡng – cảnh báo QC' : 'Đã ghi sản lượng – chờ QC');
+              };
+            } });
+        }
         if (a === 'pass' || a === 'hold' || a === 'reject') {
           const qc = { pass: 'PASS', hold: 'HOLD', reject: 'REJECT' }[a];
           const bad = Store.by('TemperatureLog', 'ProductionBatchId', id).some(t => t.IsWithinRange === 0);

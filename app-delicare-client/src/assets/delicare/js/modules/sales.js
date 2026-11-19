@@ -124,13 +124,14 @@
     // Bấm "Tất cả" (date = '') được giữ nguyên, không bị đặt lại.
     if (os.date === null && dates.length) { const tm = U.addDays(Store.ctx.date, 1); os.date = dates.includes(tm) ? tm : (dates.find(d => d >= Store.ctx.date) || ''); }
     const rows = Store.rows('Order').filter(o => (!os.date || U.day(o.MealDate) === os.date) && (!Store.ctx.branch || (Store.get('Customer', o.CustomerId) || {}).BranchId === Store.ctx.branch));
-    el.innerHTML = APP.header(f, `<button class="btn" id="oView">${I(os.view === 'board' ? 'clipboard' : 'layers')} ${os.view === 'board' ? 'Dạng bảng' : 'Dạng Kanban'}</button><button class="btn primary" id="oNew" ${perm.add === false ? 'disabled' : ''}>${I('plus')} Tạo đơn hàng</button>`) + `
+    el.innerHTML = APP.header(f, `${Store.isLive && perm.edit !== false ? `<button class="btn" id="oLock" title="Chốt mọi đơn Đã xác nhận của 1 ngày ăn (khi đã tới giờ chốt)">${I('key')} Chốt đơn theo ngày</button>` : ''}<button class="btn" id="oView">${I(os.view === 'board' ? 'clipboard' : 'layers')} ${os.view === 'board' ? 'Dạng bảng' : 'Dạng Kanban'}</button><button class="btn primary" id="oNew" ${perm.add === false ? 'disabled' : ''}>${I('plus')} Tạo đơn hàng</button>`) + `
     <div class="card panel mb"><div class="row-flex"><span class="small muted">Ngày ăn (Order.MealDate):</span><button class="chip ${!os.date ? 'active' : ''}" data-d="">Tất cả</button>${dates.map(d => `<button class="chip ${d === os.date ? 'active' : ''}" data-d="${d}">${U.date(d).slice(0, 5)}${d === Store.ctx.date ? ' · hôm nay' : ''}</button>`).join('')}</div>
     <div class="mt">${UI.stepper(ORDER_FLOW.map(s => ({ l: UI.statusVi('Order', 'Status', s), s: rows.filter(o => o.Status === s).length + ' đơn' })), -1)}</div><div class="small muted mt">Luồng trạng thái Order.Status – PROPOSED – BA/PO CONFIRM. BRD: chỉ đơn Confirmed mới vào kế hoạch sản xuất.</div></div>
     <div id="oBody"></div>`;
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { os.date = b.dataset.d; APP.refresh(); });
     el.querySelector('#oView').onclick = () => { os.view = os.view === 'board' ? 'list' : 'board'; APP.refresh(); };
     el.querySelector('#oNew').onclick = newOrder;
+    const lk = el.querySelector('#oLock'); if (lk) lk.onclick = lockByDay;
     const body = el.querySelector('#oBody');
     if (os.view === 'board') {
       const paint = (box, cols) => {
@@ -212,6 +213,23 @@
     }
   }
   APP.orderDetail = orderDetail;
+  // UG-1 C-05: chốt đơn theo ngày ăn (Order/LockByMealDate – thay job 20:00 khi cần chốt tay): chọn ngày → xác nhận lần 2 → báo số đơn đã chốt / chưa xác nhận / chờ duyệt.
+  function lockByDay() {
+    const def = U.addDays(Store.ctx.date, 1);
+    UI.modal({ title: 'Chốt đơn theo ngày ăn', size: 'sm',
+      body: `<div class="field"><label>Ngày ăn <span class="req">*</span></label><input type="date" class="input" id="lkDay" value="${def}"></div><div class="small muted mt">Khóa mọi đơn <b>Đã xác nhận</b> của ngày ăn – chỉ làm được khi đã tới giờ chốt (20:00 hôm trước). Đơn đã chốt chỉ sửa được qua Yêu cầu sửa sau chốt.</div>`,
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn orange" id="lkOk">Chốt đơn</button>',
+      onMount: (m, close) => m.querySelector('#lkOk').onclick = () => {
+        const day = m.querySelector('#lkDay').value; if (!day) return UI.toast('Chọn ngày ăn', 'err');
+        close();
+        UI.confirm(`Chốt mọi đơn Đã xác nhận của ngày ăn <b>${esc(U.date(day))}</b>? Thao tác không hoàn tác.`, () => Store.act('Order/LockByMealDate', { form: { MealDate: day }, tables: ['Order', 'OrderLine'] }).then(res => {
+          if (!res.ok) return;
+          const d = res.data || {}, nc = (d.listNotConfirmedNumber || []).length, pa = (d.listPendingApprovalNumber || []).length;
+          const extra = [nc ? nc + ' đơn chưa xác nhận' : '', pa ? pa + ' đơn đang chờ duyệt' : ''].filter(Boolean).join(' · ');
+          UI.toast('Đã chốt ' + U.num(d.lockedCount || 0) + ' đơn ngày ' + esc(U.date(day)) + (extra ? ' – còn ' + extra : ''), extra ? 'warn' : 'ok'); bust(); APP.refresh();
+        }), { danger: true, ok: 'Chốt đơn' });
+      } });
+  }
   function newOrder() {
     const cus = Store.rows('Customer').filter(c => c.Status === 'Active');
     UI.modal({

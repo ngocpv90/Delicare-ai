@@ -118,7 +118,8 @@ namespace AppDelicare.Messaging.Processing
                     case AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow.ReplyReason:
                         await swap.ReplyAsync(ctx, pending, ct);
                         break;
-                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty:
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyCorrective:
                         await bep.ReplyAsync(ctx, pending, ct);
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDispatchTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyQty
