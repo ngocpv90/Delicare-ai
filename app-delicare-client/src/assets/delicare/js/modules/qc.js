@@ -91,12 +91,13 @@
     const live = Store.isLive, perm = Store.perm(f.id);
     const used = Store.rows('StorageZone').filter(z => Store.by('TemperatureLog', 'StorageZoneId', z.Id).length);
     const zones = used.length || !live ? used : Store.rows('StorageZone');   // chế độ thật chưa có lần đo nào: vẫn hiện các khu vực để ghi lần đầu
-    if (!ts.zone || !zones.some(x => x.Id === ts.zone)) ts.zone = zones[0].Id;
-    const z = Store.get('StorageZone', ts.zone);
-    const logs = Store.by('TemperatureLog', 'StorageZoneId', ts.zone).sort((a, b) => a.MeasuredAt.localeCompare(b.MeasuredAt));
+    // Chưa có khu vực bảo quản nào (vd. mới chỉ có nhiệt độ lõi của mẻ): bỏ khối biểu đồ theo khu vực, vẫn hiện danh sách lần đo.
+    if (zones.length && (!ts.zone || !zones.some(x => x.Id === ts.zone))) ts.zone = zones[0].Id;
+    const z = zones.length ? Store.get('StorageZone', ts.zone) : null;
+    const logs = !z ? [] : Store.by('TemperatureLog', 'StorageZoneId', ts.zone).sort((a, b) => a.MeasuredAt.localeCompare(b.MeasuredAt));
     const out = Store.rows('TemperatureLog').filter(offRange);
     APP.genericList(el, f, { noAdd: live,   // chế độ thật: ghi qua TemperatureLog/Record (nút "Ghi nhiệt độ")
-      top: `<div class="card panel mb"><div class="row-flex mb"><span class="small muted">Khu vực bảo quản:</span>${zones.map(x => `<button class="chip ${x.Id === ts.zone ? 'active' : ''}" data-z="${x.Id}">${esc(x.Name)}</button>`).join('')}</div>
+      top: !z ? '' : `<div class="card panel mb"><div class="row-flex mb"><span class="small muted">Khu vực bảo quản:</span>${zones.map(x => `<button class="chip ${x.Id === ts.zone ? 'active' : ''}" data-z="${x.Id}">${esc(x.Name)}</button>`).join('')}</div>
         <div class="panel-head"><div><div class="panel-title">${esc(z.Name)} – 48 giờ gần nhất</div><div class="panel-desc">TemperatureLog.TemperatureC · ngưỡng StorageZone.TemperatureMin/Max = ${U.num(z.TemperatureMin)}…${U.num(z.TemperatureMax)}°C · điểm đỏ = IsWithinRange = 0</div></div><span class="badge ${logs.some(offRange) ? 'red' : 'green'}">${logs.filter(offRange).length} lần vượt ngưỡng</span></div>
         ${UI.lines(logs.map(l => U.dt(l.MeasuredAt).slice(6)), [{ name: z.Name, values: logs.map(l => +l.TemperatureC), color: '#4C83B6' }], { bands: [[+z.TemperatureMin, +z.TemperatureMax]], badFn: v => v < z.TemperatureMin || v > z.TemperatureMax, min: Math.min(z.TemperatureMin, ...logs.map(l => +l.TemperatureC)) - 1, max: Math.max(z.TemperatureMax, ...logs.map(l => +l.TemperatureC)) + 1 })}
         ${out.length ? `<div class="notice warn mt">${I('thermo')}<div><b>${out.length} lần đo ngoài ngưỡng</b>${out.slice(0, 3).map(o => `${U.dt(o.MeasuredAt)} · ${esc(Store.label('StorageZone', o.StorageZoneId) || Store.label('ProductionBatche', o.ProductionBatchId))}: ${U.num(o.TemperatureC)}°C → ${esc(o.CorrectiveAction || 'Chưa có hành động khắc phục')}`).join('<br>')}</div></div>` : ''}</div>`,
