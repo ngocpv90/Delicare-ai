@@ -297,6 +297,10 @@ namespace AppDelicare.Services.Implement
             var missing = new List<string>();
             void Need(string? value, string label) { if (string.IsNullOrWhiteSpace(value)) missing.Add(label); }
             DateTime today = clock.Today;
+            // D-63 g: chi nhánh phục vụ bắt buộc – chỉ khi hệ thống đã khai báo chi nhánh (OrganizationUnit.UnitType = BRANCH).
+            // Chưa có chi nhánh nào (1 pháp nhân, 1 bếp) → không bắt buộc (PROPOSED – BA/PO CONFIRM).
+            bool branchRequired = await _unitOfWork.DbContext.OrganizationUnit.AsNoTracking()
+                .AnyAsync(x => !x.IsDeleted && x.UnitType == OrganizationUnitService.BranchType);
 
             if (type == CustomerTypes.Business)
             {
@@ -315,7 +319,7 @@ namespace AppDelicare.Services.Implement
                 Need(request.ContactPersonPhone, "SĐT người liên hệ");
                 Need(request.Address, "Địa chỉ");
                 Need(request.PhoneNumber, "Điện thoại");
-                if (request.BranchId == null) missing.Add("Chi nhánh phục vụ");
+                if (request.BranchId == null && branchRequired) missing.Add("Chi nhánh phục vụ");
                 if (missing.Count > 0)
                 {
                     return string.Format(ConstantHelper.Message.CustomerFieldRequired, title.ToLowerInvariant(), string.Join(", ", missing));
@@ -351,7 +355,7 @@ namespace AppDelicare.Services.Implement
                 Need(request.FirstName, "Tên");
                 Need(request.Address, "Địa chỉ");
                 Need(request.PhoneNumber, "Điện thoại");
-                if (request.BranchId == null) missing.Add("Chi nhánh phục vụ");
+                if (request.BranchId == null && branchRequired) missing.Add("Chi nhánh phục vụ");
                 if (missing.Count > 0)
                 {
                     return string.Format(ConstantHelper.Message.CustomerFieldRequired, title.ToLowerInvariant(), string.Join(", ", missing));
@@ -401,7 +405,10 @@ namespace AppDelicare.Services.Implement
                     return string.Format(ConstantHelper.Message.CustomerEmailInvalid, label, email);
                 }
             }
-            Guid branchId = request.BranchId!.Value;
+            if (request.BranchId is not { } branchId)
+            {
+                return string.Empty;
+            }
             if (!await _unitOfWork.DbContext.OrganizationUnit.AsNoTracking().AnyAsync(x => x.Id == branchId && !x.IsDeleted))
             {
                 return ConstantHelper.Message.CustomerBranchNotFound;

@@ -55,7 +55,7 @@ POST {{base}}/api/Warehouse/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}K&Name=[DEMO] Kho bếp {{key}}&WarehouseType=KITCHEN&Status=Active
+Code={{code}}K&Name=[DEMO] Kho bếp {{code}}K&WarehouseType=KITCHEN&Status=Active
 
 ###
 # @name wh
@@ -70,14 +70,14 @@ POST {{base}}/api/Ingredient/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}BO&Name=[DEMO] Thịt bò {{key}}&BaseUnitId={{kgId}}&StorageType=CHILLED&ShelfLifeDays=5&IsExpiryManaged=true&QcRequired=true&Status=Active
+Code={{code}}BO&Name=[DEMO] Thịt bò {{code}}BO&BaseUnitId={{kgId}}&StorageType=CHILLED&ShelfLifeDays=5&IsExpiryManaged=true&QcRequired=true&Status=Active
 
 ###
 POST {{base}}/api/Ingredient/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}GAO&Name=[DEMO] Gạo {{key}}&BaseUnitId={{kgId}}&StorageType=DRY&ShelfLifeDays=180&IsExpiryManaged=true&QcRequired=true&Status=Active
+Code={{code}}GAO&Name=[DEMO] Gạo {{code}}GAO&BaseUnitId={{kgId}}&StorageType=DRY&ShelfLifeDays=180&IsExpiryManaged=true&QcRequired=true&Status=Active
 
 ###
 # @name beef
@@ -98,7 +98,7 @@ POST {{base}}/api/Supplier/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}&Name=[DEMO] NCC toàn luồng {{key}}&Status=Active
+Code={{code}}&Name=[DEMO] NCC toàn luồng {{code}}&Status=Active
 
 ###
 # @name sup
@@ -127,14 +127,14 @@ POST {{base}}/api/Dish/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}BOKHO&Name=[DEMO] Bò kho {{key}}&StandardServingSize=150&Status=Active
+Code={{code}}BOKHO&Name=[DEMO] Bò kho {{code}}BOKHO&StandardServingSize=150&Status=Active
 
 ###
 POST {{base}}/api/Dish/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}COM&Name=[DEMO] Cơm trắng {{key}}&StandardServingSize=200&Status=Active
+Code={{code}}COM&Name=[DEMO] Cơm trắng {{code}}COM&StandardServingSize=200&Status=Active
 
 ###
 # @name dishBeef
@@ -229,11 +229,19 @@ Content-Type: application/x-www-form-urlencoded
 Id={{recipeRiceId}}&EffectiveFrom={{$datetime "YYYY-MM-DD"}}
 
 ### 0.8 Khách + điểm giao (khung giờ 11:00 – lập lịch ngược giờ xuất bếp / giờ xuất phát)
+# @name branches
+GET {{base}}/api/OrganizationUnit/GetBranches
+Authorization: Bearer {{token}}
+
+###
+@branchId = {{branches.response.body.listData[0].id}}
+
+### Khách doanh nghiệp (D-63): mã KHB-NNNNN và CIF do máy chủ sinh – không gửi Code / CIF; tên chứa {{code}} để tìm lại
 POST {{base}}/api/Customer/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}&CIF={{code}}&Name=[DEMO] Khách toàn luồng {{key}}&DisplayName=[DEMO] Khách toàn luồng {{key}}&CustomerType=FACTORY&Status=Active
+CustomerType=BUSINESS&LegalName=[DEMO] Khách toàn luồng {{code}}&DisplayName=[DEMO] Khách toàn luồng {{code}}&TaxCode={{$datetime "MMDDHHmmss"}}&LegalRepresentativeName=[DEMO] Ông Đại Diện&ContactPersonName=[DEMO] Chị Liên Hệ&ContactPersonPhone=0901234567&Address=[DEMO] KCN Tân Bình&PhoneNumber=0281234567&BranchId={{branchId}}&Industry=FACTORY&Status=Active
 
 ###
 # @name cus
@@ -248,7 +256,7 @@ POST {{base}}/api/CustomerDeliveryLocation/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-CustomerId={{customerId}}&Code={{code}}CT&Name=[DEMO] Căng tin {{key}}&Address=[DEMO] KCN Tân Bình&DeliveryWindowFrom=11:00&DeliveryWindowTo=12:00&Status=Active
+CustomerId={{customerId}}&Code={{code}}CT&Name=[DEMO] Căng tin {{code}}CT&Address=[DEMO] KCN Tân Bình&DeliveryWindowFrom=11:00&DeliveryWindowTo=12:00&Status=Active
 
 ###
 # @name loc
@@ -267,7 +275,7 @@ Code={{code}}&LicensePlate=[DEMO] 51C-{{key}}&VehicleType=TRUCK&Capacity=1200&St
 
 ###
 # @name veh
-GET {{base}}/api/Vehicle/GetAll?SearchText={{code}}&Page=1&PageSize=5
+GET {{base}}/api/Vehicle/GetAll?SearchText=51C-{{key}}&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
 ###
@@ -304,12 +312,12 @@ IngredientId={{beefId}}&SupplierId={{supplierId}}&LotNumber={{code}}-KD&ExpiryDa
 
 ###
 # @name lotHH
-GET {{base}}/api/MaterialLot/GetAll?SearchText={{code}}-HH&Page=1&PageSize=5
+GET {{base}}/api/MaterialLot/GetAll?IngredientId={{beefId}}&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
 ###
 # @name lotKD
-GET {{base}}/api/MaterialLot/GetAll?SearchText={{code}}-KD&Page=1&PageSize=5
+GET {{base}}/api/MaterialLot/GetAll?IngredientId={{beefId}}&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
 ### 0.11 Tồn đầu kỳ qua điều chỉnh tay → yêu cầu duyệt STOCK_ADJUSTMENT (BE2.3) → duyệt mới ghi bút toán
@@ -319,7 +327,7 @@ POST {{base}}/api/InventoryTransaction/Adjust
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-WarehouseId={{warehouseId}}&IngredientId={{beefId}}&MaterialLotId={{lotHH.response.body.listData[0].id}}&Quantity=50&Reason=[DEMO] Tồn đầu kỳ (lô hết hạn)
+WarehouseId={{warehouseId}}&IngredientId={{beefId}}&MaterialLotId={{lotHH.response.body.listData[qcStatus=DAT].id}}&Quantity=50&Reason=[DEMO] Tồn đầu kỳ (lô hết hạn)
 
 ###
 POST {{base}}/api/ApprovalRequest/Decide
@@ -334,7 +342,7 @@ POST {{base}}/api/InventoryTransaction/Adjust
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-WarehouseId={{warehouseId}}&IngredientId={{beefId}}&MaterialLotId={{lotKD.response.body.listData[0].id}}&Quantity=30&Reason=[DEMO] Tồn đầu kỳ (lô KHONG_DAT)
+WarehouseId={{warehouseId}}&IngredientId={{beefId}}&MaterialLotId={{lotKD.response.body.listData[qcStatus=KHONG_DAT].id}}&Quantity=30&Reason=[DEMO] Tồn đầu kỳ (lô KHONG_DAT)
 
 ###
 POST {{base}}/api/ApprovalRequest/Decide
@@ -409,7 +417,7 @@ POST {{base}}/api/Menu/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}TD&Name=[DEMO] Thực đơn tuần {{key}}&EffectiveFrom={{day}}&EffectiveTo={{day}}
+Code={{code}}TD&Name=[DEMO] Thực đơn tuần {{code}}TD&EffectiveFrom={{day}}&EffectiveTo={{day}}
 
 ###
 # @name menu
@@ -460,7 +468,7 @@ Authorization: Bearer {{token}}
 
 ### 3.5 Tạo đơn 1000 suất → số PH-YYMMDD-NNNN, tổng 35.000.000
 # @name order
-# @expect data.order.orderNumber ~ ^PH-\d{6}-\d{4}$
+# @expect data.order.orderNumber ~ ^DH-\d{6}-\d{4}$
 # @expect data.order.totalAmount == 35000000
 POST {{base}}/api/Order/Create
 Authorization: Bearer {{token}}
@@ -505,11 +513,11 @@ POST {{base}}/api/PurchaseRequest/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-RequestNumber={{code}}-DK&RequestDate={{$datetime "YYYY-MM-DD"}}&RequiredDate={{day}}&Note=[DEMO] mua gạo định kỳ
+RequestNumber={{code}}-DK&RequestDate={{$datetime "YYYY-MM-DD"}}&RequiredDate={{day}}&Note=[DEMO] {{code}}-DK mua gạo định kỳ
 
 ###
 # @name prDk
-GET {{base}}/api/PurchaseRequest/GetAll?SearchText={{code}}-DK&Page=1&PageSize=5
+GET {{base}}/api/PurchaseRequest/GetAll?Note={{code}}-DK&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
 ###
@@ -811,7 +819,7 @@ POST {{base}}/api/MaterialIssue/Create
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{ "warehouseId": "{{warehouseId}}", "note": "[DEMO] thử xuất lô hết hạn", "listLine": [ { "ingredientId": "{{beefId}}", "materialLotId": "{{lotHH.response.body.listData[0].id}}", "quantity": 5 } ] }
+{ "warehouseId": "{{warehouseId}}", "note": "[DEMO] thử xuất lô hết hạn", "listLine": [ { "ingredientId": "{{beefId}}", "materialLotId": "{{lotHH.response.body.listData[qcStatus=DAT].id}}", "quantity": 5 } ] }
 
 ########## 9. KẾ HOẠCH → DUYỆT → PHÁT HÀNH THEO CA (GIỮ CHỖ NGUYÊN LIỆU FEFO – Catalog 126, 140)
 ### 9.1 Duyệt kế hoạch (mục "Duyệt – Kế hoạch sản xuất")
@@ -873,8 +881,8 @@ Id={{batch1}}&StageCode=SO_CHE
 
 ### 10.3 Xuất NL cho mẻ (dùng phần đã giữ, FEFO) + ghi sổ – KHÔNG lấy lô -HH / -KD
 # @name issue1
-# @expect . !contains {{code}}-HH
-# @expect . !contains {{code}}-KD
+# @expect . !contains {{lotHH.response.body.listData[qcStatus=DAT].lotNumber}}
+# @expect . !contains {{lotKD.response.body.listData[qcStatus=KHONG_DAT].lotNumber}}
 POST {{base}}/api/ProductionBatch/CreateMaterialIssue
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -1024,7 +1032,7 @@ Authorization: Bearer {{token}}
 
 ### 11.4 Mẻ Cơm (không ghi công đoạn – ProductionRequireStages = false): xuất NL FEFO (lô gạo định kỳ hạn sớm 50 + lô PO chính 70 → 2 dòng)
 # @expect data.listLine length == 2
-# @expect . !contains {{code}}-HH
+# @expect . !contains {{lotHH.response.body.listData[qcStatus=DAT].lotNumber}}
 POST {{base}}/api/ProductionBatch/CreateMaterialIssue
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -1133,7 +1141,7 @@ Authorization: Bearer {{token}}
 
 ###
 # @name route
-# @expect data.route.routeNo ~ ^CX-\d{6}-{{code}}-\d{2}$
+# @expect data.route.routeNo ~ ^CX-\d{6}-XE\d{5,6}-\d{2}$
 POST {{base}}/api/DeliveryRoute/Create
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -1509,7 +1517,7 @@ Authorization: Bearer {{token}}
 
 ########## 16. XỬ LÝ LÔ HẾT HẠN (thao tác tay thay job – D-45, BE2.4)
 ### 16.1 Xem trước (không ghi): lô bò -HH hết hạn hôm qua
-# @expect . contains {{code}}-HH
+# @expect . contains {{lotHH.response.body.listData[qcStatus=DAT].lotNumber}}
 POST {{base}}/api/MaterialLot/ProcessExpired
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -1542,7 +1550,7 @@ POST {{base}}/api/Employee/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}-NV1&FullName=[DEMO] Nguyễn Văn Bếp {{key}}&Phone=0900000091&Status=Active
+Code={{code}}-NV1&FullName=[DEMO] Nguyễn Văn Bếp {{code}}-NV1&Phone=0900000091&Status=Active
 
 ###
 # @name nv1

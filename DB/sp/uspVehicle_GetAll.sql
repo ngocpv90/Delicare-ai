@@ -31,7 +31,8 @@ BEGIN
 			, t.[CreatedDate]
 		FROM [dbo].[Vehicle] AS t
 		
-		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%'))
+		-- MA-1 (D-63): mã xe XE-NNNNN do máy chủ sinh → tìm được cả theo biển số.
+		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[LicensePlate] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@VehicleType, '') = '' OR t.[VehicleType] = @VehicleType)
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND t.IsDeleted = 0
