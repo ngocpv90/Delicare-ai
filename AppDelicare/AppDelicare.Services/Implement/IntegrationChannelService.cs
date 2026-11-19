@@ -129,6 +129,13 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(IntegrationChannelRequest request, string typeSave)
         {
+            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
+            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.ChannelCode);
+            if (codeError != null)
+            {
+                return codeError;
+            }
+            request.ChannelCode = normalizedCode;
             if (_unitOfWork.IntegrationChannelRepository.GetSingle(x => x.ChannelCode == request.ChannelCode && !x.IsDeleted) != null)
             {
                 return "Dữ liệu trùng (ChannelCode) – vi phạm UQ_IntegrationChannel_Code.";
@@ -148,6 +155,17 @@ namespace AppDelicare.Services.Implement
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
+            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.ChannelCode);
+            if (codeError != null)
+            {
+                return codeError;
+            }
+            request.ChannelCode = normalizedCode;
+            if (!string.IsNullOrEmpty(exist.ChannelCode) && !string.Equals(exist.ChannelCode, request.ChannelCode, StringComparison.Ordinal) && (await _referenceGuard.FindUsagesAsync(nameof(IntegrationChannel), exist.Id)).Count > 0)
+            {
+                return string.Format(ConstantHelper.Message.UserCodeLocked, exist.ChannelCode);
             }
             if (_unitOfWork.IntegrationChannelRepository.GetSingle(x => x.Id != request.Id && x.ChannelCode == request.ChannelCode && !x.IsDeleted) != null)
             {

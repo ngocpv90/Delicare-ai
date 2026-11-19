@@ -158,6 +158,26 @@ namespace AppDelicare.Tests.Common
         }
 
         [Fact]
+        public async Task G2_user_code_is_normalized_rejected_when_invalid_and_locked_once_used()
+        {
+            using var c = _factory.CreateAuthorizedClient();
+            (await c.PostFormAsync("/api/Shift/Insert", ("Code", "ca chiều"), ("Name", "[DEMO] Ca lỗi"), ("StartTime", "13:00:00"), ("EndTime", "17:00:00"))).Fail("chữ hoa không dấu");
+            (await c.PostFormAsync("/api/Shift/Insert", ("Code", "cạ-g2"), ("Name", "[DEMO] Ca G2"), ("StartTime", "13:00:00"), ("EndTime", "17:00:00"))).Ok();
+            var shift = await _factory.QueryAsync(db => db.Shift.AsNoTracking().SingleAsync(x => x.Name == "[DEMO] Ca G2"));
+            shift.Code.Should().Be("CA-G2", "G2: chuyển chữ hoa không dấu");
+
+            // Chưa dùng → sửa mã được; đã có phân ca tham chiếu → khóa sửa mã (vẫn sửa tên được).
+            (await c.PutFormAsync("/api/Shift/Update", ("Id", shift.Id), ("Code", "ca-g2b"), ("Name", "[DEMO] Ca G2"), ("StartTime", "13:00:00"), ("EndTime", "17:00:00"))).Ok();
+            await _factory.SeedAsync(db =>
+            {
+                db.ShiftAssignment.Add(new ShiftAssignment { Id = Guid.NewGuid(), ShiftId = shift.Id, EmployeeId = Guid.NewGuid(), WorkDate = DateTime.Today.AddDays(30) });
+                return Task.CompletedTask;
+            });
+            (await c.PutFormAsync("/api/Shift/Update", ("Id", shift.Id), ("Code", "CA-KHAC"), ("Name", "[DEMO] Ca G2"), ("StartTime", "13:00:00"), ("EndTime", "17:00:00"))).Fail("đã được dùng");
+            (await c.PutFormAsync("/api/Shift/Update", ("Id", shift.Id), ("Code", "CA-G2B"), ("Name", "[DEMO] Ca G2 đổi tên"), ("StartTime", "13:00:00"), ("EndTime", "17:00:00"))).Ok();
+        }
+
+        [Fact]
         public async Task Catalog_insert_ignores_sent_code_and_update_keeps_it()
         {
             using var c = _factory.CreateAuthorizedClient();
