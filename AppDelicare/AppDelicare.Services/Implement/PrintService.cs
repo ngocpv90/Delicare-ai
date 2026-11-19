@@ -91,15 +91,11 @@ namespace AppDelicare.Services.Implement
                 Type = type, Id = id, Title = title, FormCode = formCode, DocumentNo = no, DocumentDate = date,
                 CompanyName = company?.Name ?? "DELICARE", CompanyAddress = company?.Address, CompanyPhone = company?.Phone, CompanyTaxCode = company?.TaxCode,
             };
-            // BOT-1.7d: link mở phiếu trên bot Vận hành (in kèm dòng chữ; ảnh QR do FE vẽ từ BotLink – BE không thêm thư viện QR).
-            string? bot = await (from b in _unitOfWork.DbContext.BotConfiguration.AsNoTracking()
-                                 join c in _unitOfWork.DbContext.IntegrationChannel.AsNoTracking() on b.IntegrationChannelId equals c.Id
-                                 where !b.IsDeleted && !c.IsDeleted && b.BotCode == MessagingCode.BotVanHanh && b.BotStatus == MessagingCode.StatusActive
-                                       && c.ChannelStatus == MessagingCode.StatusActive && b.BotUsername != null && b.BotUsername != ""
-                                 select b.BotUsername).FirstOrDefaultAsync();
+            // BOT-1.7d: link mở phiếu trên bot Vận hành; FE-E.2: PDF in kèm ảnh QR của link này (PrintPdfRenderer – QRCoder).
+            string? bot = await QrCodeRenderer.VanHanhBotAsync(_unitOfWork.DbContext);
             if (bot != null && QrCodes.TryGetValue(type, out var code))
             {
-                doc.BotLink = $"https://t.me/{bot.Trim().TrimStart('@')}?start=DOC_{code}_{id:N}";
+                doc.BotLink = QrCodeRenderer.StartLink(bot, $"DOC_{code}_{id:N}");
                 doc.ListNote.Add("Mở phiếu trên Telegram: " + doc.BotLink);
             }
             return doc;

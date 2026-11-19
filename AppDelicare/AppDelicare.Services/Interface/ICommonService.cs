@@ -15,6 +15,12 @@ namespace AppDelicare.Services.Interface
 
         /// <summary>MA-1.7 (D-63 k): quy tắc mọi cột mã G1 / G2 / G3 – giao diện khóa ô Mã G1, chuẩn hóa G2.</summary>
         public IResults<CodeRuleModel> GetCodeRules(string? entity);
+
+        /// <summary>FE-E.2 (D-65): vẽ nhiều mã QR (SVG) – hộp mã liên kết Telegram, QR phiếu, in QR hàng loạt.</summary>
+        public IResults<QrCodeModel> GetQrBatch(QrBatchRequest request);
+
+        /// <summary>FE-E.2 (FE-BOT-3): danh sách QR hiện trường (cổng chấm công, dây chuyền / bàn nấu, xe, vị trí kho, khu vệ sinh) theo quyền xem màn.</summary>
+        public Task<IResults<FieldQrModel>> GetFieldQrList(string? group, bool withSvg);
         /// <summary>Catalog 2: tổng + số bản ghi theo trạng thái (cùng bộ lọc với danh sách). Quyền Xem.</summary>
         public Task<IResult<StatusSummaryModel>> GetStatusSummary(CommonListRequest request);
         /// <summary>Catalog 8: xuất danh sách ra xlsx / csv (cột cố định theo danh sách). Quyền Xuất.</summary>

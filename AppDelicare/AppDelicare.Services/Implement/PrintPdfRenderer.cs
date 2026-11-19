@@ -32,15 +32,27 @@ namespace AppDelicare.Services.Implement
             normal.Font.Name = PdfFontResolver.FamilyName;
             normal.Font.Size = 9.5;
             normal.ParagraphFormat.SpaceAfter = 1;
-            foreach (var doc in docs)
+            // FE-E.2: ảnh QR ghi ra tệp PNG tạm (MigraDoc / PDFsharp 6 Core: không vẽ nguồn "base64:", không đọc PNG – dùng BMP, đã thử), xóa sau khi render.
+            var tempFiles = new List<string>();
+            try
             {
-                WriteSection(document, document.AddSection(), doc);
+                foreach (var doc in docs)
+                {
+                    WriteSection(document, document.AddSection(), doc, tempFiles);
+                }
+                var renderer = new PdfDocumentRenderer { Document = document };
+                renderer.RenderDocument();
+                using var stream = new MemoryStream();
+                renderer.PdfDocument.Save(stream, false);
+                return stream.ToArray();
             }
-            var renderer = new PdfDocumentRenderer { Document = document };
-            renderer.RenderDocument();
-            using var stream = new MemoryStream();
-            renderer.PdfDocument.Save(stream, false);
-            return stream.ToArray();
+            finally
+            {
+                foreach (string f in tempFiles)
+                {
+                    try { File.Delete(f); } catch (IOException) { /* tệp tạm – bỏ qua */ }
+                }
+            }
         }
 
         private static string Join(string a, string? b) => string.IsNullOrEmpty(b) ? a : a + " " + b;
@@ -96,7 +108,7 @@ namespace AppDelicare.Services.Implement
             return table;
         }
 
-        private static void WriteSection(Document document, Section s, PrintDocumentModel doc)
+        private static void WriteSection(Document document, Section s, PrintDocumentModel doc, List<string> tempFiles)
         {
             bool landscape = doc.ListHeader.Count > 8;
             s.PageSetup = document.DefaultPageSetup.Clone();
@@ -201,6 +213,21 @@ namespace AppDelicare.Services.Implement
             foreach (var note in doc.ListNote)
             {
                 Text(s.Elements, note, italic: true, size: 8.5).Format.SpaceBefore = 3;
+            }
+
+            // FE-E.2 (FE-BOT-3): ảnh QR mở phiếu trên bot Vận hành (quét bằng điện thoại) – 2,4 cm, căn phải.
+            if (!string.IsNullOrWhiteSpace(doc.BotLink))
+            {
+                var qr = s.AddParagraph();
+                qr.Format.Alignment = ParagraphAlignment.Right;
+                qr.Format.SpaceBefore = 4;
+                string png = Path.Combine(Path.GetTempPath(), "delicare-qr-" + Guid.NewGuid().ToString("N") + ".bmp");
+                File.WriteAllBytes(png, QrCodeRenderer.Bmp(doc.BotLink, 6));
+                tempFiles.Add(png);
+                var img = qr.AddImage(png);
+                img.Width = Unit.FromCentimeter(2.4);
+                img.LockAspectRatio = true;
+                Text(s.Elements, "Quét để mở phiếu trên Telegram", italic: true, size: 7.5, align: ParagraphAlignment.Right);
             }
 
             if (doc.ListSignature.Count > 0)

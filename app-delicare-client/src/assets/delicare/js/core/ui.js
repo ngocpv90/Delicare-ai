@@ -235,6 +235,42 @@
       }
     });
   };
+  // ---------- FE-E.2 (D-65): mã QR do máy chủ vẽ (Common/GetQrBatch – QRCoder) ----------
+  // UI.qrSlot(text) → ô chờ; UI.fillQr(root) gom mọi ô chưa vẽ trong root, gọi 1 lần API rồi chèn SVG. Chế độ DEMO: hiện link chữ.
+  UI.qrSlot = (text, size) => `<div class="qr-box" data-qr="${esc(text)}" style="width:${size || 160}px;height:${size || 160}px"><span class="muted small">QR…</span></div>`;
+  UI.fillQr = root => {
+    const slots = [...(root || document).querySelectorAll('[data-qr]:not([data-qr-done])')];
+    if (!slots.length) return Promise.resolve();
+    slots.forEach(s => s.dataset.qrDone = '1');
+    if (!Store.isLive) { slots.forEach(s => { s.innerHTML = `<span class="small mono" style="word-break:break-all">${esc(s.dataset.qr)}</span>`; }); return Promise.resolve(); }
+    const texts = [...new Set(slots.map(s => s.dataset.qr))];
+    return Store.act('Common/GetQrBatch', { json: { listText: texts }, quiet: true }).then(r => {
+      const list = (r.ok && r.res && (r.res.listData || r.res.ListData)) || [];
+      const svgOf = {}; list.forEach(x => { if (x.svg) svgOf[x.text] = x.svg; });
+      slots.forEach(s => { s.innerHTML = svgOf[s.dataset.qr] || '<span class="muted small">Không vẽ được mã QR</span>'; });
+    });
+  };
+  // In QR hiện trường (Common/GetFieldQrList): mở cửa sổ in, mỗi QR 1 thẻ (tên, mã, link), khổ A4 nhiều thẻ / trang.
+  UI.printFieldQr = (group, title) => {
+    if (!Store.isLive) { UI.toast('Chế độ DEMO không in được QR – chuyển sang dữ liệu API.', 'warn'); return; }
+    const w = window.open('', '_blank');   // mở ngay khi bấm (tránh bị chặn cửa sổ bật lên)
+    if (!w) { UI.toast('Trình duyệt chặn cửa sổ in – cho phép cửa sổ bật lên rồi thử lại.', 'err'); return; }
+    w.document.write('<p style="font-family:sans-serif">Đang tạo mã QR…</p>');
+    Store.query('Common/GetFieldQrList', { group: group || '', withSvg: true }).then(x => {
+      if (!x.ok) { w.close(); UI.toast(esc(x.message || 'Không lấy được danh sách QR'), 'err'); return; }
+      const list = x.list || [];
+      if (!list.length) { w.close(); UI.toast('Không có mã QR nào để in (chưa có dữ liệu hoặc không có quyền xem).', 'warn'); return; }
+      const card = q => `<div class="c"><div class="q">${q.svg || ''}</div><b>${esc(q.label)}</b><div class="g">${esc(q.groupName)}${q.code ? ' · ' + esc(q.code) : ''}</div><div class="l">${esc(q.link)}</div></div>`;
+      w.document.open();
+      w.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${esc(title || 'Mã QR hiện trường')}</title><style>
+        body{font-family:"Be Vietnam Pro",Arial,sans-serif;margin:12mm;color:#263238}h1{font-size:16px;margin:0 0 8mm}
+        .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}.c{border:1px dashed #9AA39A;border-radius:6px;padding:5mm;text-align:center;break-inside:avoid}
+        .q svg{width:42mm;height:42mm}.c b{display:block;font-size:13px;margin-top:2mm}.g{font-size:11px;color:#5F6B66}.l{font-size:8px;color:#7B857F;word-break:break-all;margin-top:1mm}
+        @media print{body{margin:8mm}h1{display:none}}</style></head><body><h1>${esc(title || 'Mã QR hiện trường')} – ${list.length} mã · bấm Ctrl+P để in</h1><div class="grid">${list.map(card).join('')}</div></body></html>`);
+      w.document.close();
+      setTimeout(() => { try { w.focus(); w.print(); } catch (e) { /* người dùng tự in */ } }, 300);
+    });
+  };
   // ---------- Truy vết DB: Module → Function → Screen → Table → Column ----------
   UI.traceHtml = (t, screenId) => {
     const T = Store.schema.tables[t]; if (!T) return '<div class="notice gap">Không có bảng vật lý tương ứng (GAP).</div>';

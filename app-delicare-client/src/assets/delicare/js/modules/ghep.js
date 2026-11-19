@@ -136,10 +136,10 @@
     return h;
   };
   // FE-E.1: link + ảnh QR (UI.qr nếu engine có bộ vẽ QR) để quét bằng điện thoại.
-  const qrOf = link => (UI.qr && link ? `<div class="tg-qr">${UI.qr(link, { size: 180 })}</div>` : '');
+  const qrOf = link => (link ? `<div class="tg-qr">${UI.qrSlot(link, 170)}</div>` : '');
   function showTelegramCode(d) {
     const links = (d && d.deepLinks) || {};
-    UI.modal({ title: 'Mã liên kết Telegram', size: 'sm', body: `<div class="kv"><div style="grid-column:1/-1"><label>Mã liên kết</label><span style="font-size:22px;font-weight:800;letter-spacing:2px">${esc((d && d.code) || '')}</span></div><div style="grid-column:1/-1"><label>Hết hạn</label><span>${esc(dtx(d && d.expiresAt))}</span></div></div><div class="grid mt">${Object.keys(links).map(k => `<div class="tg-link">${qrOf(links[k])}<a class="btn primary" href="${esc(links[k])}" target="_blank" rel="noopener">Mở bot ${esc(k === 'VH' ? 'Vận hành' : k === 'DH' ? 'Điều hành' : k)}</a><div class="small muted mono" style="word-break:break-all">${esc(links[k])}</div></div>`).join('')}</div><div class="small muted mt">Mã dùng một lần. Mở bot bằng nút trên hoặc gửi mã cho bot để liên kết.</div>` });
+    UI.modal({ title: 'Mã liên kết Telegram', size: 'sm', onMount: m => UI.fillQr(m), body: `<div class="kv"><div style="grid-column:1/-1"><label>Mã liên kết</label><span style="font-size:22px;font-weight:800;letter-spacing:2px">${esc((d && d.code) || '')}</span></div><div style="grid-column:1/-1"><label>Hết hạn</label><span>${esc(dtx(d && d.expiresAt))}</span></div></div><div class="grid mt">${Object.keys(links).map(k => `<div class="tg-link">${qrOf(links[k])}<a class="btn primary" href="${esc(links[k])}" target="_blank" rel="noopener">Mở bot ${esc(k === 'VH' ? 'Vận hành' : k === 'DH' ? 'Điều hành' : k)}</a><div class="small muted mono" style="word-break:break-all">${esc(links[k])}</div></div>`).join('')}</div><div class="small muted mt">Mã dùng một lần. Mở bot bằng nút trên hoặc gửi mã cho bot để liên kết.</div>` });
   }
   function sendMessage(preset) {
     const users = Store.rows('User'), emps = Store.rows('Employee');
@@ -300,6 +300,18 @@
         });
     });
   }
+  // FE-E.2 (FE-BOT-3): màn → nhóm QR hiện trường được in ở màn đó.
+  const FIELD_QR = {
+    'prod-line': [['LINE', 'In QR dây chuyền']], 'prod-workstation': [['LINE', 'In QR bàn nấu / dây chuyền'], ['CHAMCONG', 'In QR cổng chấm công']],
+    'log-vehicle': [['VEH', 'In QR xe']], 'scm-location': [['LOC', 'In QR vị trí kho']], 'qc-cleaning': [['CLEAN', 'In QR khu vệ sinh']],
+  };
+  APP.afterRender = (el, screen) => {
+    const btns = FIELD_QR[screen];
+    if (!btns || !Store.isLive || Store.perm(screen).print === false) return;
+    const bar = el.querySelector('.heading-actions'); if (!bar || bar.querySelector('[data-fqr]')) return;
+    bar.insertAdjacentHTML('afterbegin', btns.map(([g, l]) => `<button class="btn" data-fqr="${g}">${I('print')} ${l}</button>`).join(''));
+    bar.querySelectorAll('[data-fqr]').forEach(b => b.onclick = () => UI.printFieldQr(b.dataset.fqr, b.textContent.trim()));
+  };
   // FE-E.1 (FE-BOT-1): danh sách bot đã liên kết (TelegramLink/GetMine) + gỡ liên kết (Unlink) trong khung #myTg của el.
   UI.telegramBox = el => {
     const o = el.querySelector('#myTg'); if (!o) return Promise.resolve();

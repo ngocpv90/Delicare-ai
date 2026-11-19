@@ -54,6 +54,38 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>FE-E.2 (D-65): vẽ nhiều mã QR (SVG, mức sửa lỗi M) – body { listText: [...] } ≤ 200 mục, mỗi mục ≤ 512 ký tự. Chỉ cần đăng nhập.</summary>
+        [Security.SkipPermission]
+        [HttpPost("GetQrBatch")]
+        public IActionResult GetQrBatch([FromBody] AppDelicare.Model.Model.QrBatchRequest request) // [FromBody]: danh sách chuỗi
+        {
+            try
+            {
+                return Ok(_service.GetQrBatch(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetQrBatch: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>FE-E.2 (FE-BOT-3): QR hiện trường mở bot Vận hành (CHAMCONG, LINE_, VEH_, LOC_, CLEAN) – lọc nhóm, kèm SVG; service kiểm quyền Xem từng màn.</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetFieldQrList")]
+        public async Task<IActionResult> GetFieldQrList(string? group, bool withSvg = true)
+        {
+            try
+            {
+                return Ok(await _service.GetFieldQrList(group, withSvg));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetFieldQrList: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>Catalog 2: tổng + số bản ghi theo trạng thái (thẻ KPI, chip "Lọc nhanh"). Quyền Xem màn của danh sách.</summary>
         [Security.SkipPermission] // service kiểm quyền Xem trên màn của resource
         [HttpGet("GetStatusSummary")]

@@ -80,6 +80,101 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>FE-E.2 (D-65, anh chọn backend vẽ QR): ≤ 200 mục / lần; mục lỗi trả Error, không làm hỏng cả lô. Chỉ cần đăng nhập.</summary>
+        public IResults<QrCodeModel> GetQrBatch(QrBatchRequest request)
+        {
+            try
+            {
+                var texts = request?.ListText ?? [];
+                if (texts.Count == 0 || texts.Count > 200)
+                {
+                    return Results<QrCodeModel>.Fail(ConstantHelper.Message.QrBatchSizeInvalid);
+                }
+                var list = texts.Select(t => string.IsNullOrWhiteSpace(t) ? new QrCodeModel { Text = t ?? string.Empty, Error = ConstantHelper.Message.QrTextInvalid }
+                    : t.Length > QrCodeRenderer.MaxLength ? new QrCodeModel { Text = t, Error = ConstantHelper.Message.QrTextInvalid }
+                    : new QrCodeModel { Text = t, Svg = QrCodeRenderer.Svg(t) }).ToList();
+                return Results<QrCodeModel>.Success(list, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetQrBatch: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// FE-E.2 (FE-BOT-3, BOT_TELEGRAM §6): QR hiện trường mở bot Vận hành – CHAMCONG (cổng chấm công, theo trạm bếp), LINE_&lt;mã&gt; (dây chuyền + bàn nấu),
+        /// VEH_&lt;mã xe&gt;, LOC_&lt;mã vị trí kho&gt;, CLEAN (khu vệ sinh). Mỗi nhóm chỉ trả khi người dùng có quyền Xem màn của bảng đó.
+        /// Bot Vận hành chưa khai báo username → lỗi rõ (không lập được link).
+        /// </summary>
+        public async Task<IResults<FieldQrModel>> GetFieldQrList(string? group, bool withSvg)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                string? bot = await QrCodeRenderer.VanHanhBotAsync(db);
+                if (bot == null)
+                {
+                    return Results<FieldQrModel>.Fail(ConstantHelper.Message.QrBotMissing);
+                }
+                var perms = await _permissionService.GetAsync(_currentActor.RequireActor().UserId);
+                bool Can(string screen) => _permissionService.IsAllowed(perms, screen, PermissionAction.View);
+                string? g = string.IsNullOrWhiteSpace(group) ? null : group.Trim().ToUpperInvariant();
+                bool Want(string key, string screen) => (g == null || g == key) && Can(screen);
+                static bool SafeCode(string? c) => !string.IsNullOrWhiteSpace(c) && c.Length <= 50 && c.All(ch => char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_');
+                var list = new List<FieldQrModel>();
+                void Add(string grp, string grpName, string? code, string label, string payload)
+                    => list.Add(new FieldQrModel { Group = grp, GroupName = grpName, Code = code, Label = label, Payload = payload, Link = QrCodeRenderer.StartLink(bot, payload) });
+
+                if (Want("CHAMCONG", "prod-workstation"))
+                {
+                    Add("CHAMCONG", "Cổng chấm công", null, "Chấm công vào / ra ca", "CHAMCONG");
+                }
+                if (Want("LINE", "prod-line"))
+                {
+                    foreach (var x in await db.ProductionLine.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => new { x.Code, x.Name }).ToListAsync())
+                    {
+                        if (SafeCode(x.Code)) Add("LINE", "Dây chuyền / bàn nấu", x.Code, x.Name ?? x.Code!, "LINE_" + x.Code);
+                    }
+                }
+                if (Want("LINE", "prod-workstation"))
+                {
+                    foreach (var x in await db.KitchenWorkstation.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => new { x.Code, x.Name }).ToListAsync())
+                    {
+                        if (SafeCode(x.Code)) Add("LINE", "Dây chuyền / bàn nấu", x.Code, x.Name ?? x.Code!, "LINE_" + x.Code);
+                    }
+                }
+                if (Want("VEH", "log-vehicle"))
+                {
+                    foreach (var x in await db.Vehicle.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => new { x.Code, x.LicensePlate }).ToListAsync())
+                    {
+                        if (SafeCode(x.Code)) Add("VEH", "Xe", x.Code, string.IsNullOrWhiteSpace(x.LicensePlate) ? x.Code! : x.LicensePlate!, "VEH_" + x.Code);
+                    }
+                }
+                if (Want("LOC", "scm-location"))
+                {
+                    foreach (var x in await db.StorageLocation.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => new { x.Code, x.Name }).ToListAsync())
+                    {
+                        if (SafeCode(x.Code)) Add("LOC", "Vị trí kho", x.Code, x.Name ?? x.Code!, "LOC_" + x.Code);
+                    }
+                }
+                if (Want("CLEAN", "qc-cleaning"))
+                {
+                    Add("CLEAN", "Khu vệ sinh khay hộp", null, "Lô vệ sinh hôm nay", "CLEAN");
+                }
+                if (withSvg)
+                {
+                    list.ForEach(x => x.Svg = QrCodeRenderer.Svg(x.Link));
+                }
+                return Results<FieldQrModel>.Success(list, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetFieldQrList: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResults<CommonResourceModel>> GetResources()
         {
             try

@@ -318,6 +318,7 @@
   APP.cleanDemoText = cleanDemoText;
   function finish(el) {
     cleanDemoText(el);
+    if (APP.afterRender) { try { APP.afterRender(el, APP.current); } catch (e) { console.error(e); } }   // FE-E.2: nút In QR theo màn (modules/ghep.js)
     el.insertAdjacentHTML('beforeend', API_MODE()
       ? '<div class="footer-note">DELI-CARE · ENTERPRISE MANAGEMENT</div>'
       : '<div class="footer-note">DELI-CARE · ENTERPRISE MOCKUP · DỮ LIỆU DEMO – KHÔNG PHẢI DỮ LIỆU THẬT · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>');

@@ -781,6 +781,10 @@
             public static readonly string CustomerAlertNoLocation = "Chưa có điểm giao";
             public static readonly string CustomerAlertNoPrimaryContact = "Chưa có người liên hệ chính";
             public static readonly string CustomerTrendRangeInvalid = "Khoảng ngày không hợp lệ (từ ≤ đến, tối đa 366 ngày)";
+            // ---------------------------------------------------------------- FE-E.2 – mã QR
+            public static readonly string QrBatchSizeInvalid = "Cần 1–200 nội dung để vẽ mã QR";
+            public static readonly string QrTextInvalid = "Nội dung mã QR trống hoặc dài quá 512 ký tự";
+            public static readonly string QrBotMissing = "Chưa khai báo bot Vận hành (username) đang hoạt động – không lập được link QR";
         }
 
         public class TypeSave
