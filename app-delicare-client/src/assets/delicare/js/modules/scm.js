@@ -372,7 +372,8 @@
 
   // ---------- Nhà cung cấp: tổng quan (bảng giá, PO đang mở, sự cố, tỷ lệ 90 ngày) ----------
   APP.register('scm-supplier', (el, f) => {
-    baseList(el, f);
+    // UI-3 (D-67 a): bấm dòng → màn chi tiết NCC cả trang; nút Tổng quan giữ hộp xem nhanh.
+    baseList(el, f, { onRow: id => APP.go('scm-supplier-360?id=' + encodeURIComponent(id)) });
     if (Store.isLive && f.table) liveRow(el, (id, td) => rowBtn(td, '', 'Tổng quan', () => supplierOverview(id)));
   });
   function supplierOverview(id) {
@@ -382,6 +383,8 @@
       const pct = v => (has(v) ? U.num(v, 1) + '%' : '–');
       UI.modal({
         title: 'Tổng quan nhà cung cấp – ' + esc(s.name || ''), sub: esc(s.code || ''), size: 'lg',
+        foot: `<button class="btn" data-close>Đóng</button><button class="btn primary" data-open360>${I('settings')} Mở hồ sơ đầy đủ</button>`,
+        onMount: (m, close) => { const b = m.querySelector('[data-open360]'); if (b) b.onclick = () => { close(); APP.go('scm-supplier-360?id=' + encodeURIComponent(id)); }; },
         body: `<div class="kpis">${UI.kpi('Giao đúng hạn', pct(d.onTimeRate), '90 ngày', 'check', 'green')}${UI.kpi('Tỷ lệ trả hàng', pct(d.rejectRate), '90 ngày', 'alert', d.rejectRate > 0 ? 'red' : 'green')}${UI.kpi('Đơn mua đang mở', pos.length, '', 'clipboard', 'blue')}${UI.kpi('Sự cố gần đây', iss.length, '', 'alert', 'orange')}</div>
           <h3>Bảng giá nguyên liệu</h3>${tbl([['Nguyên liệu'], ['Đơn giá', 1], ['Hiệu lực từ'], ['Đến'], ['Ưu tiên'], ['Trạng thái']], mats.map(r => `<tr><td>${esc(r.ingredientName || '')}</td><td class="num">${U.money(r.unitPrice)}</td><td>${U.date(r.effectiveFrom)}</td><td>${U.date(r.effectiveTo)}</td><td>${r.isPreferred ? '<span class="tag green">Ưu tiên</span>' : ''}</td><td>${UI.badge(r.status, 'SupplierMaterial', 'Status')}</td></tr>`), 'Chưa có bảng giá')}
           <h3 class="mt">Đơn mua đang mở</h3>${tbl([['Số PO'], ['Ngày đặt'], ['Giao dự kiến'], ['Giá trị', 1], ['Trạng thái']], pos.map(r => `<tr><td><b>${esc(r.purchaseOrderNumber || '')}</b></td><td>${U.date(r.orderDate)}</td><td>${U.dt(r.expectedDeliveryDate)}</td><td class="num">${U.money(r.totalAmount)}</td><td>${UI.badge(r.status, 'PurchaseOrder', 'Status')}</td></tr>`), 'Không có đơn mua đang mở')}

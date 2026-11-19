@@ -6,20 +6,9 @@
   const ID = 'crm-customer-360';
   APP.FN[ID] = { ph: 'P1', grp: 'Kinh doanh & Đơn hàng', fn: 'Hồ sơ khách hàng 360', id: ID, name: 'Hồ sơ khách hàng 360', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
 
-  const pas = o => { const r = {}; Object.entries(o || {}).forEach(([k, v]) => { r[k.charAt(0).toUpperCase() + k.slice(1)] = v; }); return r; };
-  const failBox = msg => `<div class="notice warn">${I('alert')}<div>${esc(msg || 'Không tải được dữ liệu')}</div></div>`;
-  const loading = '<div class="muted small">Đang tải…</div>';
-  const none = '<div class="muted small">Chưa có dữ liệu</div>';
-  const can = (screen, act) => { const p = Store.perm(screen); return p.access !== false && (!act || p[act] !== false); };
-  const initials = name => String(name || '?').replace(/\[DEMO\]\s*/i, '').trim().split(/\s+/).filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase() || '?';
-  const dmy = v => (v ? U.date(v) : '');
+  // Thành phần chung (modules/detail360.js – UI-3 tách từ UI-2).
+  const { pas, failBox, loading, none, can, initials, dmy, table, bindRows, filterBar, statusOpts, run, demoNote } = APP.D360;
   const statusBadge = (t, col, v, name) => (v ? UI.badge(v, t, col).replace(esc(UI.statusVi(t, col, v)), esc(name || UI.statusVi(t, col, v))) : '');
-  // Bảng gọn cho các tab: cols = [{ label, html(row), num }]; onRow(row) → mở chứng từ.
-  function table(rows, cols, onRow) {
-    if (!rows.length) return none;
-    return `<div class="table-wrap"><table class="table dc-table dt"><thead><tr>${cols.map(c => `<th class="${c.num ? 'num' : ''}">${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${rows.map((r, i) => `<tr ${onRow ? `data-r="${i}" style="cursor:pointer"` : ''}>${cols.map(c => `<td class="${c.num ? 'num' : ''}">${c.html(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-  }
-  function bindRows(box, rows, onRow) { if (onRow) box.querySelectorAll('tr[data-r]').forEach(tr => tr.onclick = () => onRow(rows[+tr.dataset.r])); }
 
   APP.register(ID, (el, f, params) => {
     const id = params && params.id;
@@ -85,24 +74,7 @@
   }
 
   // ---------- Hàng tab (D-66 c) – chỉ tab có quyền xem màn tương ứng ----------
-  function buildTabs(el, d, id) {
-    const tabs = TABS.filter(t => !t.screen || can(t.screen));
-    const bar = el.querySelector('[data-c360tabs]'), pane = el.querySelector('[data-c360pane]');
-    bar.innerHTML = tabs.map((t, i) => `<button class="tab ${i === 0 ? 'active' : ''}" data-t="${i}">${esc(t.label)}</button>`).join('');
-    const panes = tabs.map(() => null);
-    const show = i => {
-      bar.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', +b.dataset.t === i));
-      pane.querySelectorAll('[data-p]').forEach(p => p.classList.add('hide'));
-      if (!panes[i]) {   // tải khi mở tab lần đầu
-        panes[i] = document.createElement('div'); panes[i].dataset.p = i; pane.appendChild(panes[i]);
-        panes[i].innerHTML = loading;
-        Promise.resolve(tabs[i].render(panes[i], d, id)).catch(e => { panes[i].innerHTML = failBox(e && e.message); });
-      }
-      panes[i].classList.remove('hide');
-    };
-    bar.onclick = e => { const b = e.target.closest('[data-t]'); if (b) show(+b.dataset.t); };
-    show(0);
-  }
+  function buildTabs(el, d, id) { APP.D360.buildTabs(el.querySelector('[data-c360tabs]'), el.querySelector('[data-c360pane]'), TABS, d, id); }
 
   // ---------- Tab Tổng quan (D-66 d) ----------
   function overview(box, d, id) {
@@ -184,20 +156,8 @@
 
   // ---------- Các tab còn lại (D-66 e) – mỗi tab gọi API đã có, lọc theo khách ----------
   const live = () => Store.isLive;
-  const demoNote = '<div class="muted small">Chế độ DEMO: tab này đọc số liệu từ máy chủ – chuyển sang dữ liệu API để xem.</div>';
   const iso = d => U.day(d);
   const addD = (d, n) => U.addDays(d, n);
-  // Bộ lọc ngày (từ – đến) + trạng thái dùng chung; onChange(state) vẽ lại.
-  function filterBar(box, opt, onChange) {
-    const st = { from: opt.from || '', to: opt.to || '', status: '' };
-    box.innerHTML = `<div class="c360-filter">${opt.dates === false ? '' : `<label class="small muted">Từ</label><input type="date" class="input" data-f="from" value="${st.from}" style="width:auto"><label class="small muted">đến</label><input type="date" class="input" data-f="to" value="${st.to}" style="width:auto">`}
-      ${opt.statuses ? `<select class="select" data-f="status" style="width:auto"><option value="">Mọi trạng thái</option>${opt.statuses.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>` : ''}</div><div data-body>${loading}</div>`;
-    const body = box.querySelector('[data-body]');
-    box.querySelectorAll('[data-f]').forEach(i => i.onchange = () => { st[i.dataset.f] = i.value; onChange(st, body); });
-    onChange(st, body);
-  }
-  const statusOpts = (t, col, codes) => codes.map(c => [c, UI.statusVi(t, col, c)]);
-  const run = (body, q, draw) => q.then(x => { if (!body.isConnected) return; if (!x.ok) { body.innerHTML = failBox(x.message); return; } draw(x); });
 
   function contractsTab(box, d, id) {
     if (!live()) { box.innerHTML = demoNote; return; }
@@ -305,50 +265,8 @@
         { label: 'Hiệu lực', html: r => `${dmy(r.effectiveFrom)} – ${r.effectiveTo ? dmy(r.effectiveTo) : 'không hạn'}` }, { label: 'Trạng thái', html: r => UI.tag(r.status || '', 'green') }]);
     });
   }
-  function documentsTab(box, d, id) {
-    if (!live()) { box.innerHTML = demoNote; return; }
-    // Giống màn adm-document: ≤ 20 MB, loại tệp cho phép (APP.docRules từ modules/be3.js).
-    const rules = APP.docRules || { DOC_MAX: 20 * 1024 * 1024, DOC_EXT: ['pdf', 'jpg', 'jpeg', 'png', 'xlsx', 'docx'] };
-    const canUp = Store.perm('crm-customer').edit !== false;
-    box.innerHTML = `${canUp ? `<div class="c360-filter"><button class="btn primary" data-up>${I('plus')} Tải tệp lên</button><input type="file" data-file hidden accept="${rules.DOC_EXT.map(x => '.' + x).join(',')}"><span class="small muted">≤ 20 MB · ${rules.DOC_EXT.join(', ')}</span></div>` : ''}<div data-docs>${loading}</div>`;
-    const docs = box.querySelector('[data-docs]');
-    const load = () => run(docs, Store.query('DocumentFile/GetList', { resource: 'Customer', recordId: id, page: 1, pageSize: 100 }), x => {
-      const rows = x.list || [];
-      docs.innerHTML = table(rows, [{ label: 'Tệp', html: r => `<b>${esc(r.fileName || '')}</b>` }, { label: 'Loại', html: r => esc(r.category || r.fileType || '') },
-        { label: 'Dung lượng', num: true, html: r => U.num((r.fileSize || 0) / 1024, 0) + ' KB' }, { label: 'Người tải', html: r => esc(r.createdByName || '') }, { label: 'Ngày', html: r => dmy(r.createdDate) }], true);
-      bindRows(docs, rows, r => Store.download('DocumentFile/Download', { id: r.id }));
-    });
-    if (canUp) {
-      const inp = box.querySelector('[data-file]');
-      box.querySelector('[data-up]').onclick = () => inp.click();
-      inp.onchange = () => {
-        const file = inp.files && inp.files[0]; inp.value = '';
-        if (!file) return;
-        const ext = (file.name.split('.').pop() || '').toLowerCase();
-        if (!rules.DOC_EXT.includes(ext)) return UI.toast('Chỉ nhận tệp ' + rules.DOC_EXT.join(', '), 'err');
-        if (file.size > rules.DOC_MAX) return UI.toast('Tệp vượt quá 20 MB', 'err');
-        const fd = new FormData(); fd.append('File', file); fd.append('Category', 'other'); fd.append('Resource', 'Customer'); fd.append('RecordId', id);
-        Store.act('DocumentFile/Upload', { json: fd }).then(r => { if (!r.ok) return; UI.toast(r.data && r.data.isDuplicate ? 'Tệp này đã có trong kho tài liệu' : 'Đã tải lên ' + esc(file.name), r.data && r.data.isDuplicate ? 'warn' : 'ok'); load(); });
-      };
-    }
-    load();
-  }
-  function historyTab(box, d, id) {
-    if (!live()) { box.innerHTML = UI.history ? '' : demoNote; if (UI.history) UI.history('Customer', id, box); return; }
-    box.innerHTML = `<h3>Lịch sử</h3><div data-his>${loading}</div><h3 class="mt">Liên quan</h3><div data-rel>${loading}</div>`;
-    const his = box.querySelector('[data-his]'), rel = box.querySelector('[data-rel]');
-    run(his, Store.query('Common/GetHistory', { resource: 'Customer', id }), x => {
-      const rows = x.list || [];
-      his.innerHTML = rows.length ? rows.map(h => `<div class="c360-rows"><div class="r"><label>${esc(U.dt ? U.dt(h.at) : dmy(h.at))} · ${esc(h.byName || h.by || '')}</label><span><b>${esc(h.actionName || h.action || '')}</b>${h.referenceNo ? ' · ' + esc(h.referenceNo) : ''}</span></div>
-        ${(h.listChange || []).map(c => `<div class="small muted" style="padding-left:12px">${esc(c.field)}: ${esc(c.masked ? '***' : c.from ?? '∅')} → ${esc(c.masked ? '***' : c.to ?? '∅')}</div>`).join('')}${h.comment ? `<div class="small" style="padding-left:12px">${esc(h.comment)}</div>` : ''}</div>`).join('') : none;
-    });
-    run(rel, Store.query('Common/GetRelated', { resource: 'Customer', id }), x => {
-      const groups = (x.list || []).filter(g => g.count);
-      rel.innerHTML = groups.length ? groups.map(g => `<div class="mb"><div class="spread"><b>${esc(g.title)} · ${U.num(g.count)}</b>${g.route && can(g.route) ? `<a href="javascript:void 0" data-go="${esc(g.route)}" class="small">Mở màn</a>` : ''}</div>
-        <div class="small">${(g.items || []).slice(0, 8).map(i => `${esc(i.label || '')}${i.statusName ? ' (' + esc(i.statusName) + ')' : ''}`).join(' · ')}</div></div>`).join('') : none;
-      rel.querySelectorAll('[data-go]').forEach(a => a.onclick = () => APP.go(a.dataset.go));
-    });
-  }
+  const documentsTab = (box, d, id) => APP.D360.documentsTab('Customer', Store.perm('crm-customer').edit !== false)(box, d, id);
+  const historyTab = APP.D360.historyTab('Customer');
 
   const TABS = [
     { label: 'Tổng quan', render: overview },

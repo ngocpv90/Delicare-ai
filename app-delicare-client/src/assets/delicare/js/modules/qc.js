@@ -347,6 +347,7 @@
     if (r.IssueStatus === 'Resolved') return UI.confirm(`<b>Mở lại</b> sự cố của <b>${who}</b> để xử lý tiếp?`, () => run(), { ok: 'Mở lại' });
     UI.confirm(`Nhận xử lý sự cố của <b>${who}</b>? Bạn sẽ là người phụ trách.`, () => run(), { ok: 'Nhận xử lý' });
   }
+  APP.supplierIssueTransit = issueTransit;   // UI-3: dùng lại ở tab Sự cố của màn chi tiết NCC
   APP.register('qc-supplier-issue', (el, f) => {
     if (!Store.isLive) return APP.genericList(el, f);
     const perm = Store.perm(f.id);

@@ -365,6 +365,7 @@ body.dc-live #helpBtn{display:none !important}
 .c360-rows .r{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #F0F2ED;font-size:13px}
 .c360-rows .r:last-child{border-bottom:0}.c360-rows .r label{color:var(--muted);flex:none}.c360-rows .r span{text-align:right;overflow-wrap:anywhere}
 .c360-legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}.c360-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.d360-meter{margin:10px 0 14px}.d360-meter .bar{height:8px;border-radius:6px;background:#EEF1EA;overflow:hidden;margin:6px 0 4px}.d360-meter .bar i{display:block;height:100%;border-radius:6px}
 .c360-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 @media print{.dc-engine .deznav,.dc-engine .header,.c360-actions,.c360-tabs{display:none !important}}
 
