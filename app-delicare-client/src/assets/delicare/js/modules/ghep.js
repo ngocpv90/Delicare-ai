@@ -256,6 +256,16 @@
   // Tích hợp bot: danh sách thật + thao tác qua action nghiệp vụ (không dùng khối trình diễn của mockup).
   const liveList = (id, opt) => { const base = APP.SCREENS[id]; APP.register(id, (el, f, p) => { if (!Store.isLive) return base ? base(el, f, p) : APP.genericList(el, f, opt); APP.genericList(el, f, Object.assign({ noAdd: true, noTransit: true }, opt)); }); };
   liveList('int-inbound'); liveList('int-outbound'); liveList('int-identity');
+  // FE-E.3: nút Gửi lại ngay trên dòng tin Lỗi / Đã hủy (OutboundMessage/Retry).
+  extend('int-outbound', el => {
+    if (!canEdit('int-outbound')) return;
+    APP.rowExtra(el, tr => {
+      const m = Store.get('OutboundMessage', tr.dataset.row); const cell = tr.lastElementChild;
+      if (!m || !cell || cell.querySelector('[data-retry]') || !['Failed', 'Cancelled'].includes(m.MessageStatus)) return;
+      cell.insertAdjacentHTML('beforeend', ` <button class="btn xs orange" data-retry title="Gửi lại tin">${I('reset')}</button>`);
+      cell.querySelector('[data-retry]').onclick = e => { e.stopPropagation(); UI.confirm('Gửi lại tin này?', () => Store.act('OutboundMessage/Retry', { form: { id: m.Id }, tables: ['OutboundMessage'] }).then(r => { if (r.ok) { UI.toast('Đã đưa tin vào hàng gửi lại', 'ok'); APP.refresh(); } }), { ok: 'Gửi lại' }); };
+    });
+  });
   extend('int-outbound', el => { if (canEdit('int-outbound')) headBtn(el, `<button class="btn primary">${I('msg')} Gửi tin</button>`, () => Store.reload(['User', 'Employee']).then(() => sendMessage())); });
   extend('int-identity', el => { if (!canEdit('int-identity')) return; headBtn(el, `<button class="btn primary">${I('plus')} Liên kết tay</button>`, () => Store.reload(['User', 'Employee']).then(() => dialog('Liên kết tài khoản bot (đã xác minh trực tiếp)',
     fld('Bot *', '<select class="select" id="gxB"><option value="VH">Vận hành (VH)</option><option value="DH">Điều hành (DH)</option></select>') +

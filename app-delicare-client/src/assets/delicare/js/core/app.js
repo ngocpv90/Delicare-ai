@@ -8,8 +8,8 @@
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
-  const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap',
-    'int-channel', 'int-bot', 'int-log']);
+  // FE-E.3 (D-65): int-channel / int-bot / int-log đã hiện lại – quyền theo ma trận UserRole (khóa bí mật trong ConfigJson máy chủ đã che).
+  const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap']);
   // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).
   const hiddenNow = id => Store.isLive && (HIDDEN_LIVE.has(id) || !!(FN[id] && FN[id].table && Store.isBroken(FN[id].table)));
   const SCREENS = {};
