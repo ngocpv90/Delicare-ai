@@ -364,9 +364,15 @@
   // UI-1 (D-64 c): thẻ chỉ số – ô biểu tượng bên trái; nhãn, số chính + số phụ bên phải; không còn dòng chú thích chân.
   // Giữ chữ ký cũ: tham số thứ 3 (trước là chú thích chân) nay là SỐ PHỤ ngắn hiện cùng dòng sau số chính (vd "/ 2 · 100%").
   // value rỗng / null / undefined → "–" (đang tải). color: green | lime | blue | orange | red | purple | gray.
+  // UI-1R (D-64 c): số phụ ngắn (≤ 20 ký tự, vd. "/ 2 · 100%", "96 đơn"); câu dài / chữ kỹ thuật (tên bảng, cột, mã tiếng Anh) → chú thích khi rê chuột.
+  const KPI_TECH = /\b[A-Z][a-z]+[A-Z][A-Za-z]*\b|\bdbo\.|Σ|=\s*[A-Z_]{3,}|\b[A-Z]{2,}_[A-Z_]+\b/;
   UI.kpi = (label, value, sub, icon, color, link) => {
     const v = value === null || value === undefined || value === '' ? '–' : value;
-    return `<article class="card kpi ${link ? 'link' : ''}" ${link ? `data-go="${link}" role="link" tabindex="0"` : ''}><span class="kpi-icon ${color || 'green'}">${I(icon || 'chart')}</span><div class="kpi-body"><div class="kpi-label">${label}</div><div class="kpi-line"><span class="kpi-value">${v}</span>${sub ? `<span class="kpi-sub">${sub}</span>` : ''}</div></div></article>`;
+    const plain = String(sub || '').replace(/<[^>]*>/g, '').replace(/&[a-z]+;/g, ' ').trim();
+    const long = plain.length > 20 || KPI_TECH.test(plain);
+    const tip = String(label).replace(/<[^>]*>/g, '') + (plain && long && !KPI_TECH.test(plain) ? ' – ' + plain : '');
+    if (long) sub = '';
+    return `<article class="card kpi ${link ? 'link' : ''}" title="${esc(tip)}" ${link ? `data-go="${link}" role="link" tabindex="0"` : ''}><span class="kpi-icon ${color || 'green'}">${I(icon || 'chart')}</span><div class="kpi-body"><div class="kpi-label">${label}</div><div class="kpi-line"><span class="kpi-value">${v}</span>${sub ? `<span class="kpi-sub">${sub}</span>` : ''}</div></div></article>`;
   };
   UI.gapNote = f => f && f.st !== 'MAPPED' && f.note ? `<div class="notice ${f.st === 'GAP' ? 'gap' : 'warn'}">${I('alert')}<div><b>${f.st === 'GAP' ? 'DATABASE GAP – chưa có bảng hỗ trợ' : 'PARTIAL – có bảng nhưng thiếu cột/quan hệ'} · BA/PO CONFIRM</b>${esc(f.note)}</div></div>` : (f && f.note ? `<div class="notice info">${I('database')}<div>${esc(f.note)}</div></div>` : '');
   UI.stepper = (steps, cur, failed) => `<div class="stepper">${steps.map((s, i) => `<div class="step ${i < cur ? 'done' : i === cur ? (failed ? 'fail' : 'current') : ''}"><div class="dot">${i < cur ? '✓' : i + 1}</div><div class="lbl">${s.l || s}</div>${s.s ? `<small>${s.s}</small>` : ''}</div>`).join('')}</div>`;

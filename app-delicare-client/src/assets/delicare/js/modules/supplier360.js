@@ -17,7 +17,7 @@
   // 4 thẻ chỉ số (D-67 b, chuẩn thẻ D-64 c).
   APP.supplierKpis = d => UI.kpi('PO đang mở', d ? U.num(d.openPoCount || 0) : '–', d ? U.money(d.openPoAmount || 0) : '', 'clipboard', 'blue', can('scm-po') ? 'scm-po' : '')
     + UI.kpi('Giao đúng hạn 90 ngày', d ? pct(d.onTimeRate) : '–', d ? `${U.num(d.receiptCount90d || 0)} lần nhận` : '', 'truck', 'green')
-    + UI.kpi('Hàng bị loại 90 ngày', d ? pct(d.rejectRate) : '–', d && d.lastReceiptDate ? 'nhận gần nhất ' + dmy(d.lastReceiptDate) : '', 'alert', d && d.rejectRate > 0 ? 'red' : 'green')
+    + UI.kpi('Hàng bị loại 90 ngày', d ? pct(d.rejectRate) : '–', d && d.lastReceiptDate ? 'gần nhất ' + dmy(d.lastReceiptDate) : '', 'alert', d && d.rejectRate > 0 ? 'red' : 'green')
     + UI.kpi('Sự cố đang mở', d ? U.num(d.openIssueCount || 0) : '–', d ? `/ ${U.num(d.issueCount || 0)}${d.overdueIssueCount ? ' · ' + U.num(d.overdueIssueCount) + ' quá hạn' : ''}` : '', 'shield', d && d.overdueIssueCount ? 'red' : 'orange', can('qc-supplier-issue') ? 'qc-supplier-issue' : '');
 
   APP.register(ID, (el, f, params) => {
