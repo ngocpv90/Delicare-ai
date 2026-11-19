@@ -13,12 +13,13 @@ namespace AppDelicare.Tests.Admin
         public MetaDataTests(InMemoryApiFactory factory) => _factory = factory;
 
         [Fact]
-        public async Task Statuses_have_47_sets_and_filter_by_key()
+        public async Task Statuses_cover_the_reference_catalog_plus_code_status_classes_and_filter_by_key()
         {
             using var c = _factory.CreateAuthorizedClient();
 
             var all = await c.GetResultAsync("/api/MetaData/GetStatuses");
-            all.ListData.GetArrayLength().Should().Be(47);
+            // UG-1 C-10: 47 bộ của STATUS_CATALOG.md + cột có lớp *Status.cs mà tài liệu chưa có (DeliveryOrder, CleaningBatche…).
+            all.ListData.GetArrayLength().Should().Be(AppDelicare.Model.Helper.StatusCatalogEffective.All.Count).And.BeGreaterThan(47);
 
             var recipe = (await c.GetResultAsync("/api/MetaData/GetStatuses?key=Recipe.Status")).ListData[0];
             recipe.GetProperty("listItem").EnumerateArray().Select(x => x.GetProperty("code").GetString())

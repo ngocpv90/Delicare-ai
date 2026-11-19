@@ -607,7 +607,7 @@ namespace AppDelicare.Services.Implement
                 await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 result.NotificationSent = await NotifyConfirmedAsync(confirmed) > 0;
                 _unitOfWork.CommitTransaction();
-                return Result<ShiftConfirmResultModel>.Success(result, string.Format(ConstantHelper.Message.HrConfirmDone, result.Confirmed));
+                return Result<ShiftConfirmResultModel>.Success(result, string.Format(ConstantHelper.Message.HrConfirmDone, result.Confirmed, result.NotificationSent ? ConstantHelper.Message.HrConfirmNotified : string.Empty));
             }
             catch (Exception ex)
             {

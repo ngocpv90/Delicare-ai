@@ -200,7 +200,7 @@ namespace AppDelicare.Services.Implement
                 return code;
             }
             string table = entityType.GetCustomAttribute<TableAttribute>()?.Name ?? entityType.Name;
-            var set = StatusCatalog.All.FirstOrDefault(s => s.Table.Equals(table, StringComparison.OrdinalIgnoreCase) && s.Column.Equals(column, StringComparison.OrdinalIgnoreCase));
+            var set = StatusCatalogEffective.All.FirstOrDefault(s => s.Table.Equals(table, StringComparison.OrdinalIgnoreCase) && s.Column.Equals(column, StringComparison.OrdinalIgnoreCase));
             int i = set == null ? -1 : Array.FindIndex(set.Codes, c => c.Equals(code, StringComparison.OrdinalIgnoreCase));
             return i >= 0 && i < set!.Labels.Length ? set.Labels[i] : code;
         }

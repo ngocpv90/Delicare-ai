@@ -380,5 +380,18 @@
     branchOk(row, col) { return !Store.ctx.branch || !row[col] || row[col] === Store.ctx.branch; }
   };
   loadCodeRules();   // MA-1: DC_HOST gán sau khi đăng nhập (delicare-shell) → tải quy tắc mã ngay
+  // UG-1 C-10: chế độ thật – danh mục trạng thái lấy từ máy chủ (MetaData/GetStatuses = theo các lớp *Status.cs), đè lên data/catalog.js
+  // (giữ màu / luồng sẵn có của mục cũ). Tải xong vẽ lại màn đang mở để nhãn trạng thái khớp máy chủ.
+  if (mode === 'api' && HOST) {
+    HOST.get('MetaData/GetStatuses').then(res => {
+      if (typeof res === 'string' || failOf(res)) return;
+      listOf(res).forEach(x => {
+        const items = x.listItem || [];
+        if (!x.key || !items.length) return;
+        CAT.status[x.key] = Object.assign({}, CAT.status[x.key] || {}, { codes: items.map(i => i.code), vi: items.map(i => i.label || i.code), src: x.source || 'API' });
+      });
+      if (window.APP && APP.refresh && document.getElementById('content')) APP.refresh();
+    }).catch(e => console.warn('[DELICARE] Không tải được danh mục trạng thái', e));
+  }
   window.Store = Store;
 })();

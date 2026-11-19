@@ -202,13 +202,13 @@ namespace AppDelicare.Services.Implement
             {
                 return code;
             }
-            var set = StatusCatalog.All.FirstOrDefault(s => s.Table.Equals(TableName, StringComparison.OrdinalIgnoreCase) && s.Column.Equals(StatusColumn, StringComparison.OrdinalIgnoreCase));
+            var set = StatusCatalogEffective.All.FirstOrDefault(s => s.Table.Equals(TableName, StringComparison.OrdinalIgnoreCase) && s.Column.Equals(StatusColumn, StringComparison.OrdinalIgnoreCase));
             int i = set == null ? -1 : Array.FindIndex(set.Codes, c => c.Equals(code, StringComparison.OrdinalIgnoreCase));
             return i >= 0 && i < set!.Labels.Length ? set.Labels[i] : code;
         }
 
         public IReadOnlyList<string> CatalogStatuses()
-            => StatusCatalog.All.FirstOrDefault(s => StatusColumn != null && s.Table.Equals(TableName, StringComparison.OrdinalIgnoreCase)
+            => StatusCatalogEffective.All.FirstOrDefault(s => StatusColumn != null && s.Table.Equals(TableName, StringComparison.OrdinalIgnoreCase)
                 && s.Column.Equals(StatusColumn, StringComparison.OrdinalIgnoreCase))?.Codes ?? [];
     }
 

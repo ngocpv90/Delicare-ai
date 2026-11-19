@@ -94,7 +94,8 @@
             public static readonly string HrBulkDone = "Phân ca hàng loạt: tạo {0} ca, bỏ qua {1}";
             public static readonly string HrBulkSkipAssigned = "Đã có ca {0}";
             public static readonly string HrBulkSkipLeave = "Nghỉ phép (đơn {0})";
-            public static readonly string HrConfirmDone = "Đã xác nhận {0} ca (chưa gửi thông báo cho nhân viên – tích hợp bot để sau)";
+            public static readonly string HrConfirmDone = "Đã xác nhận {0} ca{1}"; // UG-1 C-21: SHIFT_CONFIRMED đã gửi qua bot (BOT-1.7)
+            public static readonly string HrConfirmNotified = " – đã gửi thông báo qua bot cho nhân viên đã liên kết";
             public static readonly string HrMarkAbsentDone = "Đã đánh Vắng {0} ca hết giờ mà không vào ca";
             public static readonly string HrUserNoEmployee = "Tài khoản chưa gắn với nhân viên (Employee) – nhân sự đặt mã nhân viên = tên đăng nhập hoặc liên kết tài khoản (GAP-HR-02)";
             public static readonly string HrNoRightOther = "Không có quyền {0} cho nhân viên khác (cần quyền Thêm trên màn \"{1}\")";

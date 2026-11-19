@@ -28,7 +28,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.DieuHanh
             A("dh_kitchen", "📈 Tiến độ bếp", "tiendobep", "Tiến độ sản xuất hôm nay", BepActions.Menu, 5, bep.ProgressAsync),
             A("dh_delivery", "🗺 Giao vận trực tiếp", "giaovantt", "Chuyến giao hôm nay", "#/log-route", 6, giaoVan.BoardAsync),
             A("dh_stock", "📦 Tồn & thiếu hụt", "tonthieu", "Tồn dưới mức + thiếu hụt ngày mai", "#/scm-inv-balance", 7, StockAsync),
-            A("dh_trace", "🔍 Truy xuất", "truyxuat", "Tra mã chứng từ", null, 8, (c, ct) => SayAsync(c, "🔍 Gõ mã chứng từ để tra (vd. ME-261118-…, NL-…, DH-…, PO-…, CX-…) – hoặc gõ tên để tìm.", ct)),
+            A("dh_trace", "🔍 Truy xuất", "truyxuat", "Tra mã chứng từ", null, 8, (c, ct) => SayAsync(c, "🔍 Gõ mã để tra (vd. DH-261118-…, ME-261118-…, LO-…, PO-…, CX-…, khách KHB-… – số cũ PH-… / NL-… vẫn tra được) – hoặc gõ tên để tìm.", ct)),
         ];
 
         private static BotAction A(string code, string label, string command, string description, string? menu, int order, Func<BotActionContext, CancellationToken, Task> handler)
