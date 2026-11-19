@@ -359,9 +359,10 @@
     UI.modal({
       title: 'Tài khoản', sub: (u.userName || '') + (u.userGroupName ? ' · ' + u.userGroupName : ''), size: 'sm',
       body: `<div class="kv"><div><label>Họ tên</label><span>${esc(u.fullName || '–')}</span></div><div><label>Tên đăng nhập</label><span>${esc(u.userName || '–')}</span></div><div><label>Nhóm người dùng</label><span>${esc(u.userGroupName || (u.isAdmin ? 'Quản trị hệ thống' : '–'))}</span></div><div><label>Quản trị</label><span>${u.isAdmin ? UI.badge('Active') : 'Không'}</span></div></div>
-        <div class="grid mt">${Store.mode === 'demo' ? `<button class="btn" id="accRole">${I('users')} Đổi vai trò xem (DEMO)</button>` : ''}<button class="btn" id="accPwd">${I('key')} Đổi mật khẩu</button><button class="btn danger" id="accOut">${I('reset')} Đăng xuất</button></div>`,
+        <div class="grid mt">${Store.mode === 'demo' ? `<button class="btn" id="accRole">${I('users')} Đổi vai trò xem (DEMO)</button>` : ''}${UI.telegramLink && Store.isLive ? `<button class="btn" id="accTg">${I('msg')} Liên kết Telegram</button>` : ''}<button class="btn" id="accPwd">${I('key')} Đổi mật khẩu</button><button class="btn danger" id="accOut">${I('reset')} Đăng xuất</button></div>`,
       onMount: (m, close) => {
         const r = m.querySelector('#accRole'); if (r) r.onclick = () => { close(); chooseRole(); };
+        const tg = m.querySelector('#accTg'); if (tg) tg.onclick = () => { close(); UI.telegramLink(); };
         m.querySelector('#accPwd').onclick = () => { close(); changePassword(); };
         m.querySelector('#accOut').onclick = () => { close(); H.logout(); };
       }

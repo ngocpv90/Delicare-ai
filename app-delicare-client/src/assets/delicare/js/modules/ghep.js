@@ -132,12 +132,14 @@
     if (t === 'OutboundMessage' && ['Failed', 'Cancelled'].includes(st)) h += btn('gx-retry', 'Gửi lại', 'orange', ro);
     if (t === 'InboundMessage' && ['Failed', 'Ignored'].includes(st)) h += btn('gx-reprocess', 'Xử lý lại', 'orange', ro);
     if (t === 'UserExternalIdentity' && st !== 'Revoked') h += btn('gx-unlink', 'Gỡ liên kết', 'danger', ro);
-    if (t === 'Employee') h += btn('gx-tg-code', 'Mã liên kết Telegram', '', ro) + btn('gx-send', 'Gửi tin qua bot', '');
+    if (t === 'Employee') h += (Store.perm('adm-employee').edit !== false ? btn('gx-tg-code', 'Tạo mã liên kết bot', '') : '') + btn('gx-send', 'Gửi tin qua bot', '');
     return h;
   };
+  // FE-E.1: link + ảnh QR (UI.qr nếu engine có bộ vẽ QR) để quét bằng điện thoại.
+  const qrOf = link => (UI.qr && link ? `<div class="tg-qr">${UI.qr(link, { size: 180 })}</div>` : '');
   function showTelegramCode(d) {
     const links = (d && d.deepLinks) || {};
-    UI.modal({ title: 'Mã liên kết Telegram', size: 'sm', body: `<div class="kv"><div style="grid-column:1/-1"><label>Mã liên kết</label><span style="font-size:22px;font-weight:800;letter-spacing:2px">${esc((d && d.code) || '')}</span></div><div style="grid-column:1/-1"><label>Hết hạn</label><span>${esc(dtx(d && d.expiresAt))}</span></div></div><div class="grid mt">${Object.keys(links).map(k => `<a class="btn primary" href="${esc(links[k])}" target="_blank" rel="noopener">Mở bot ${esc(k === 'VH' ? 'Vận hành' : k === 'DH' ? 'Điều hành' : k)}</a>`).join('')}</div><div class="small muted mt">Mã dùng một lần. Mở bot bằng nút trên hoặc gửi mã cho bot để liên kết.</div>` });
+    UI.modal({ title: 'Mã liên kết Telegram', size: 'sm', body: `<div class="kv"><div style="grid-column:1/-1"><label>Mã liên kết</label><span style="font-size:22px;font-weight:800;letter-spacing:2px">${esc((d && d.code) || '')}</span></div><div style="grid-column:1/-1"><label>Hết hạn</label><span>${esc(dtx(d && d.expiresAt))}</span></div></div><div class="grid mt">${Object.keys(links).map(k => `<div class="tg-link">${qrOf(links[k])}<a class="btn primary" href="${esc(links[k])}" target="_blank" rel="noopener">Mở bot ${esc(k === 'VH' ? 'Vận hành' : k === 'DH' ? 'Điều hành' : k)}</a><div class="small muted mono" style="word-break:break-all">${esc(links[k])}</div></div>`).join('')}</div><div class="small muted mt">Mã dùng một lần. Mở bot bằng nút trên hoặc gửi mã cho bot để liên kết.</div>` });
   }
   function sendMessage(preset) {
     const users = Store.rows('User'), emps = Store.rows('Employee');
@@ -298,6 +300,31 @@
         });
     });
   }
+  // FE-E.1 (FE-BOT-1): danh sách bot đã liên kết (TelegramLink/GetMine) + gỡ liên kết (Unlink) trong khung #myTg của el.
+  UI.telegramBox = el => {
+    const o = el.querySelector('#myTg'); if (!o) return Promise.resolve();
+    o._bind = () => o.querySelectorAll('[data-un]').forEach(b => b.onclick = () => UI.confirm('Gỡ liên kết Telegram này? Bot sẽ ngừng phục vụ tài khoản của bạn.', () => Store.act('TelegramLink/Unlink', { form: { id: b.dataset.un } }).then(r => { if (r.ok) { UI.toast('Đã gỡ liên kết', 'ok'); UI.telegramBox(el); } }), { danger: true, ok: 'Gỡ liên kết' }));
+    return fill(el, 'myTg', 'TelegramLink/GetMine', null, x => (x.list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Bot</th><th>Tài khoản Telegram</th><th>Trạng thái</th><th>Liên kết lúc</th><th></th></tr></thead><tbody>${x.list.map(l => `<tr><td>${esc(l.botCode === 'VH' ? 'Vận hành' : l.botCode === 'DH' ? 'Điều hành' : l.botCode || '')}</td><td>${esc(l.externalUsername ? '@' + l.externalUsername : l.displayName || '')}</td><td>${esc(l.identityStatus === 'Active' ? 'Đã liên kết' : l.identityStatus === 'PendingCode' ? 'Chờ xác nhận' : l.identityStatus || '')}</td><td>${esc(dtx(l.linkedAt))}</td><td><button class="btn xs danger" data-un="${esc(l.id)}">Gỡ</button></td></tr>`).join('')}</tbody></table></div>` : ''), 'Chưa liên kết bot nào – bấm Tạo mã liên kết');
+  };
+  // Menu tài khoản (góc phải) → Liên kết Telegram: trạng thái + Tạo mã (15′) + Hủy liên kết.
+  UI.telegramLink = () => UI.modal({
+    title: 'Liên kết Telegram', sub: 'Nhận thông báo và thao tác qua bot', size: 'md',
+    body: `<div id="myTg">${LOADING}</div><div class="grid mt"><button class="btn primary" data-tgnew>${I('plus')} Tạo mã liên kết</button></div><div class="small muted mt">Mã dùng một lần, hết hạn sau 15 phút. Mở bot bằng nút hoặc quét QR, bot tự liên kết với tài khoản này.</div>`,
+    onMount: (m, close) => {
+      UI.telegramBox(m);
+      m.querySelector('[data-tgnew]').onclick = () => Store.act('TelegramLink/CreateCode', {}).then(r => { if (r.ok && !r.demo) { close(); showTelegramCode(r.data); } });
+    }
+  });
+  // adm-employee: nút "Tạo mã liên kết bot" trên dòng – chỉ khi có quyền Sửa màn hồ sơ nhân viên (mã 72 giờ).
+  APP.register('adm-employee', (el, f) => {
+    APP.genericList(el, f);
+    if (!Store.isLive || Store.perm('adm-employee').edit === false) return;
+    APP.rowExtra(el, tr => {
+      const cell = tr.lastElementChild; if (!cell || cell.querySelector('[data-tgemp]')) return;
+      cell.insertAdjacentHTML('beforeend', ` <button class="btn xs" data-tgemp title="Tạo mã liên kết bot (hạn 72 giờ)">${I('msg')}</button>`);
+      cell.querySelector('[data-tgemp]').onclick = e => { e.stopPropagation(); Store.act('TelegramLink/CreateCodeForEmployee', { form: { EmployeeId: tr.dataset.row } }).then(r => { if (r.ok && !r.demo) showTelegramCode(r.data); }); };
+    });
+  });
   APP.register('hr-my', (el, f) => {
     if (!Store.isLive) return onlyLive(el, f);
     el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Ca làm việc, đơn nghỉ, đơn đổi ca, chuyến giao của tài khoản đang đăng nhập và liên kết bot Telegram.' }) +
@@ -313,11 +340,7 @@
     shiftsAndSwaps();
     fill(el, 'myLeave', 'LeaveRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn nghỉ');
     fill(el, 'myRoute', 'DeliveryRoute/GetMine', null, x => { const lr = (x.data && x.data.listRoute) || []; return lr.length ? lr.map(r => `<div class="mb"><div class="spread"><b>${esc((r.route && (r.route.routeNo || r.route.routeNumber)) || '')} · ${esc(r.licensePlate || '')}</b><span class="badge gray">${esc(r.statusName || '')}</span></div><div class="small muted">${U.num(r.loadMeals || 0)} suất${r.departureTemperatureC !== null && r.departureTemperatureC !== undefined ? ' · xuất phát ' + U.num(r.departureTemperatureC, 1) + ' °C' : ''}</div>${listHtml(r.listStop || [], 6)}</div>`).join('') + `<a class="btn sm" href="#/log-route">Mở màn Tuyến giao hàng →</a>` : ''; }, 'Hôm nay không có chuyến giao nào của bạn');
-    const tg = () => {
-      const o = el.querySelector('#myTg');
-      o._bind = () => o.querySelectorAll('[data-un]').forEach(b => b.onclick = () => UI.confirm('Gỡ liên kết Telegram này? Bot sẽ ngừng phục vụ tài khoản của bạn.', () => Store.act('TelegramLink/Unlink', { form: { id: b.dataset.un } }).then(r => { if (r.ok) { UI.toast('Đã gỡ liên kết', 'ok'); tg(); } }), { danger: true, ok: 'Gỡ liên kết' }));
-      return fill(el, 'myTg', 'TelegramLink/GetMine', null, x => (x.list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Bot</th><th>Tài khoản Telegram</th><th>Trạng thái</th><th>Liên kết lúc</th><th>Hoạt động gần nhất</th><th></th></tr></thead><tbody>${x.list.map(l => `<tr><td>${esc(l.botCode || '')}</td><td>${esc(l.displayName || '')}${l.externalUsername ? ' · @' + esc(l.externalUsername) : ''}</td><td>${UI.badge(l.identityStatus)}</td><td>${esc(dtx(l.linkedAt))}</td><td>${esc(dtx(l.lastSeenAt))}</td><td class="actions">${l.identityStatus === 'Revoked' ? '' : `<button class="btn xs danger" data-un="${esc(l.id)}">Gỡ</button>`}</td></tr>`).join('')}</tbody></table></div>` : ''), 'Chưa liên kết Telegram – bấm "Tạo mã liên kết"');
-    };
+    const tg = () => UI.telegramBox(el);
     tg();
     el.querySelector('#myTgNew').onclick = () => Store.act('TelegramLink/CreateCode', {}).then(r => { if (r.ok && !r.demo) showTelegramCode(r.data); });
   });
