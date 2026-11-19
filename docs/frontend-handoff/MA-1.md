@@ -1,6 +1,8 @@
 # MA-1 – Quy tắc mã toàn hệ thống + khách hàng theo loại (D-63) – thay đổi API cho dev FE
 
-Không bảng / cột mới. Sau `git pull`: build lại API, chạy lại `DB/sp/uspVehicle_GetAll.sql` (hoặc `db-init`).
+> **Giao diện đã làm (Claude Code, D-63 l):** `core/store.js` (`Store.codeRule`, `Store.userCode`, `Store.save` ghi chờ API, danh mục `Customer.CustomerType`), `core/ui.js` (`UI.form`: ô Mã G1 chỉ đọc "(tự sinh khi lưu)", G2 tự chữ hoa không dấu, lỗi API hiện trong form, form khách hàng theo loại, ẩn CIF qua `UI.hidden`), `modules/menu.js` (nhân bản thực đơn không nhập mã), `modules/sales.js` (số hợp đồng tự sinh, cột Loại tiếng Việt). Màn hình dùng `Store.add / update` riêng (không qua form chung) vẫn ghi lạc quan như cũ – máy chủ bỏ qua mã G1 gửi lên.
+
+Không bảng / cột mới. Sau `git pull`: build lại API, chạy lại `DB/sp/uspVehicle_GetAll.sql`, `DB/sp/uspMaterialLot_GetAll.sql` (hoặc `db-init`).
 
 ## 1. Mã do máy chủ sinh (nhóm G1) – ô Mã chỉ đọc
 | Màn / API Insert | Mã mới | Ghi chú |

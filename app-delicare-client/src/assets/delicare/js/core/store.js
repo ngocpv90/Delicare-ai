@@ -159,6 +159,30 @@
     return writeQueue;
   }
 
+  // ---------- MA-1 (D-63): quy tắc mã + loại khách hàng ----------
+  // Danh mục loại khách hàng (D-63 f) – chỉ 2 giá trị; giá trị cũ (HOSPITAL…) hiện nguyên văn tới khi chạy script MA-1.4.
+  CAT.status = CAT.status || {};
+  CAT.status['Customer.CustomerType'] = { codes: ['BUSINESS', 'INDIVIDUAL'], vi: ['Doanh nghiệp', 'Cá nhân'], src: 'D-63', conf: 'D-63 f' };
+  // Quy tắc cột mã: api/Common/GetCodeRules → { 'Table.Column': { group: G1|G2|G3, prefix, pattern } }.
+  // Chế độ DEMO / chưa tải xong → dùng bảng tối thiểu của D-63 để form vẫn khóa đúng ô Mã danh mục G1.
+  const CODE_RULES_FALLBACK = {
+    'Customer.Code': 'KHB / KHC', 'Supplier.Code': 'NC', 'Ingredient.Code': 'NL', 'Dishe.Code': 'MA', 'Warehouse.Code': 'KO', 'Vehicle.Code': 'XE',
+    'Employee.Code': 'NV', 'Employee.EmployeeCode': 'NV', 'CustomerDeliveryLocation.Code': 'DP', 'PricePolicie.Code': 'BG', 'Menu.Code': 'NU',
+  };
+  const codeRules = {};
+  Object.entries(CODE_RULES_FALLBACK).forEach(([k, p]) => { codeRules[k] = { group: 'G1', prefix: p }; });
+  let codeRulesLoaded = null;
+  function loadCodeRules() {
+    if (codeRulesLoaded || mode !== 'api' || !HOST) return codeRulesLoaded || Promise.resolve();
+    codeRulesLoaded = HOST.get('Common/GetCodeRules').then(res => {
+      if (typeof res === 'string' || failOf(res)) { codeRulesLoaded = null; return; }   // chưa đăng nhập / lỗi → lần sau thử lại
+      listOf(res).forEach(r => { codeRules[r.table + '.' + r.column] = { group: r.group, prefix: r.prefix, pattern: r.pattern, catalog: r.catalog }; });
+    }).catch(e => { codeRulesLoaded = null; console.warn('[DELICARE] Không tải được quy tắc mã', e); });
+    return codeRulesLoaded;
+  }
+  // G2: chữ hoa không dấu, chỉ A–Z 0–9 - _ (giống CodeRules.NormalizeUserCode ở máy chủ).
+  const userCode = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+
   const NAME_FIELDS = ['DisplayName', 'Name', 'FullName', 'MetricName', 'ChannelName', 'BotName', 'ItemName', 'NameVN', 'MealName', 'FileName', 'UserName'];
   const NO_FIELDS = ['OrderNumber', 'ContractNumber', 'RequestNumber', 'PurchaseOrderNumber', 'ReceiptNumber', 'LotNumber', 'IssueNumber', 'CountNumber', 'PlanNumber', 'ProductionOrderNumber', 'BatchNumber', 'PackingOrderNumber', 'DeliveryNumber', 'RouteNo', 'InspectionNumber', 'CleaningBatchNumber', 'TransactionNumber', 'RequirementNo', 'RequestNo', 'ComplaintNo', 'LicensePlate', 'VersionCode', 'MetricCode', 'BotCode', 'ChannelCode', 'Code', 'ItemCode', 'IdempotencyKey', 'JobCode'];
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -240,6 +264,31 @@
         .catch(e => { const m = HOST.errorText(e); toast(`<b>${UTIL.esc(path)}</b>: ${UTIL.esc(m)}`, 'err'); return { ok: false, message: m }; });
     },
     get isLive() { return mode === 'api' && !!HOST; },
+    // ---- MA-1 (D-63): quy tắc mã ----
+    loadCodeRules,
+    codeRule(t, col) { return codeRules[t + '.' + col] || null; },
+    userCode,
+    // ---- MA-1.8: ghi CHỜ API (form chung) – chỉ báo thành công khi máy chủ xác nhận ----
+    // Resolve { ok, message, row }: ok = API trả 200 (message = thông báo máy chủ, có mã mới); lỗi → giữ form, hiện message tại chỗ.
+    // Cột mã nhóm G1 không gửi (máy chủ sinh). Chế độ DEMO: ghi bộ nhớ như cũ.
+    save(t, action, row) {
+      if (!isApi(t) || !HOST) {
+        const saved = action === 'Update' ? Store.update(t, row.Id, row) : Store.add(t, row);
+        return Promise.resolve({ ok: true, row: saved, demo: true });
+      }
+      const body = Object.assign({}, row);
+      if (action === 'Insert') delete body.Id;
+      Object.keys(body).forEach(k => { const r = codeRules[t + '.' + k]; if (r && r.group === 'G1') delete body[k]; });
+      const c = ctrlOf(t);
+      const run = () => HOST.send(action === 'Insert' ? 'POST' : 'PUT', `${c}/${action}`, toForm(t, body)).then(res => {
+        if (typeof res === 'string') return { ok: false, message: res };   // JwtInterceptor nuốt 401 / 403
+        const fail = failOf(res); if (fail) return { ok: false, message: fail };
+        return Store.reload([t]).then(() => ({ ok: true, message: res && res.responseMessage, row: action === 'Update' ? idx[t][row.Id] : null }));
+      }).catch(e => ({ ok: false, message: HOST.errorText(e) }));
+      const p = writeQueue.then(run);
+      writeQueue = p.then(() => { }, () => { });
+      return p;
+    },
     idle() { const p = Object.values(inflight); return p.length ? Promise.all(p).then(() => Store.idle()) : Promise.resolve(); },
     // ---- Đọc ----
     rows(t, withDeleted) { Store.ensure(t); return (data[t] || []).filter(r => withDeleted || !r.IsDeleted); },
@@ -320,5 +369,6 @@
     },
     branchOk(row, col) { return !Store.ctx.branch || !row[col] || row[col] === Store.ctx.branch; }
   };
+  loadCodeRules();   // MA-1: DC_HOST gán sau khi đăng nhập (delicare-shell) → tải quy tắc mã ngay
   window.Store = Store;
 })();

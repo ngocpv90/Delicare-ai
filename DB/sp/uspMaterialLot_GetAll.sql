@@ -59,7 +59,7 @@ BEGIN
 			AND (@ManufactureDate IS NULL OR t.[ManufactureDate] = @ManufactureDate)
 			AND (@ExpiryDate IS NULL OR t.[ExpiryDate] = @ExpiryDate)
 			AND (@ReceivedDate IS NULL OR t.[ReceivedDate] = @ReceivedDate)
-			AND (ISNULL(@QualityStatus, '') = '' OR t.[QualityStatus] LIKE CONCAT('%', @QualityStatus, '%'))
+			AND (ISNULL(@QualityStatus, '') = '' OR t.[QualityStatus] = @QualityStatus) -- MA-1 (D-63 p): so khớp đúng – LIKE làm "DAT" khớp cả "KHONG_DAT"
 			AND t.IsDeleted = 0
 	),
 	TempCount (TotalRow) AS (SELECT COUNT(*) FROM TempResult)

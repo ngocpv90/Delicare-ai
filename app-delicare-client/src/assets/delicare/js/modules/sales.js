@@ -16,7 +16,7 @@
   // ---------- Khách hàng 360° ----------
   APP.register('crm-customer', (el, f) => {
     APP.genericList(el, f, {
-      cols: [{ k: 'Code', label: 'Mã' }, { k: 'DisplayName', label: 'Khách hàng' }, { k: 'CustomerType', label: 'Loại' }, { k: 'BranchId', label: 'Chi nhánh phục vụ' },
+      cols: [{ k: 'Code', label: 'Mã' }, { k: 'DisplayName', label: 'Khách hàng' }, { k: 'CustomerType', label: 'Loại', render: r => esc(UI.statusVi('Customer', 'CustomerType', r.CustomerType) || '') }, { k: 'BranchId', label: 'Chi nhánh phục vụ' },
         { k: 'x1', label: 'Hợp đồng hiệu lực', col: false, nosort: true, render: r => { const c = Store.by('Contract', 'CustomerId', r.Id); return c.map(x => `${esc(x.ContractNumber)} ${UI.badge(x.Status, 'Contract', 'Status')}`).join('<br>'); } },
         { k: 'x2', label: 'Điểm giao', col: false, num: true, nosort: true, render: r => Store.by('CustomerDeliveryLocation', 'CustomerId', r.Id).length },
         { k: 'x3', label: 'Suất TB/ngày (7 ngày)', col: false, num: true, nosort: true, render: r => U.num(U.sum(Store.by('Order', 'CustomerId', r.Id).filter(o => o.Status === 'Reconciled'), 'TotalQuantity') / 5, 0) },
@@ -293,7 +293,7 @@
       body: `<div class="form-grid">
           <div class="field"><label>Khách hàng <span class="req">*</span></label><select class="select" id="ctCus">${opts(cus, c => c.DisplayName || c.Code, '— Chọn —')}</select></div>
           <div class="field"><label>Tên hợp đồng <span class="req">*</span></label><input class="input" id="ctName" maxlength="250"></div>
-          <div class="field"><label>Số hợp đồng</label><input class="input" id="ctNo" maxlength="50" placeholder="Để trống = tự sinh"></div>
+          <div class="field"><label>Số hợp đồng</label><input class="input mono" id="ctNo" placeholder="(tự sinh khi lưu)" readonly title="MA-1 (D-63): HD-YYMMDD-NNN – số hợp đồng giấy của khách ghi vào Ghi chú"></div>
           <div class="field"><label>Ngày ký</label><input type="date" class="input" id="ctSigned"></div>
           <div class="field"><label>Hiệu lực từ <span class="req">*</span></label><input type="date" class="input" id="ctFrom" value="${Store.ctx.date}"></div>
           <div class="field"><label>Hiệu lực đến</label><input type="date" class="input" id="ctTo"></div>
@@ -320,7 +320,7 @@
           if (new Set(meals.map(x => x.mealType.toLowerCase())).size !== meals.length) return UI.toast('Mỗi loại suất chỉ được xuất hiện một lần', 'err');
           if (meals.some(x => x.unitPrice !== null && !(x.unitPrice > 0))) return UI.toast('Đơn giá phải lớn hơn 0', 'err');
           // JSON vì có danh sách loại suất lồng trong hợp đồng.
-          Store.act('Contract/Create', { json: { customerId: v('#ctCus'), contractNumber: v('#ctNo') || null, name: v('#ctName'), signedDate: v('#ctSigned') || null, effectiveFrom: v('#ctFrom'), effectiveTo: v('#ctTo') || null, paymentTerm: v('#ctPay') || null, contractValue: v('#ctVal') === '' ? null : Number(v('#ctVal')), note: v('#ctNote') || null, listMeal: meals }, tables: ['Contract', 'ContractMeal'] })
+          Store.act('Contract/Create', { json: { customerId: v('#ctCus'), name: v('#ctName'), signedDate: v('#ctSigned') || null, effectiveFrom: v('#ctFrom'), effectiveTo: v('#ctTo') || null, paymentTerm: v('#ctPay') || null, contractValue: v('#ctVal') === '' ? null : Number(v('#ctVal')), note: v('#ctNote') || null, listMeal: meals }, tables: ['Contract', 'ContractMeal'] })
             .then(r => { if (!r.ok) return; bust(); close(); const ct = r.data && r.data.contract; UI.toast('Đã tạo hợp đồng ' + esc(ct ? ct.contractNumber || '' : '') + ' (Nháp)', 'ok'); APP.refresh(); });
         };
       }
