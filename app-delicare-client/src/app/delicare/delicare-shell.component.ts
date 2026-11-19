@@ -1,5 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, NgZone, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { LEGAL_NAME, URL_API } from '../helpers/constant-helper';
+import { User } from '../helpers/user';
 import { AuthenticationService } from '../services/authentication.service';
 import { createDelicareHost } from './delicare-host';
 import { ThemeService } from './theme.service';
@@ -25,12 +28,14 @@ const SCRIPTS = [
   'modules/integration.js',
   'modules/explorer.js',
   'modules/be3.js',
+  'modules/ghep.js',
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';
 const SCRIPT_ATTR = 'data-delicare';
 
 /**
- * Khung ứng dụng DELICARE theo mockup đã duyệt (docs/mockup/index.html): sidebar, topbar, nội dung.
+ * Khung ứng dụng DELICARE trên theme W3CRM (nav-header, header, deznav, content-body – như main.component):
+ * chức năng theo mockup đã duyệt (docs/mockup), giao diện theo theme W3CRM + màu DELI-CARE (clinic.css, D-36).
  * Toàn bộ màn hình nghiệp vụ do engine của mockup vẽ (assets/delicare/js); dữ liệu đọc / ghi qua API cũ
  * (api/<Controller>/GetAllData · Insert · Update · Delete), bảng chưa có API dùng dữ liệu DEMO.
  */
@@ -43,6 +48,8 @@ const SCRIPT_ATTR = 'data-delicare';
 export class DelicareShellComponent implements AfterViewInit, OnDestroy {
   public loading = true;
   public loadError = '';
+  public legalName = LEGAL_NAME;
+  public currentYear = new Date().getFullYear();
   private destroyed = false;
 
   constructor(
@@ -55,8 +62,19 @@ export class DelicareShellComponent implements AfterViewInit, OnDestroy {
   }
 
   public ngAfterViewInit(): void {
+    // Menu + quyền lấy mới từ database mỗi lần mở khung (api/User/GetCurrent): đổi cấu hình ở màn "Menu chức năng" / ma trận quyền
+    // là có hiệu lực sau khi tải lại trang. Lỗi mạng → dùng menu đã lưu lúc đăng nhập.
+    const stored = this.auth.userValue;
+    firstValueFrom(this.http.get<any>(`${URL_API}User/GetCurrent`))
+      .then((res) => (Array.isArray(res?.data?.listMenu) && stored ? { ...stored, listMenu: res.data.listMenu, isAdmin: res.data.user?.isAdmin ?? stored.isAdmin } : stored))
+      .catch(() => stored)
+      .then((user) => this.startEngine(user));
+  }
+
+  private startEngine(user: User | null): void {
+    if (this.destroyed) return;
     const w = window as any;
-    w.DC_HOST = createDelicareHost(this.http, this.auth.userValue, () => this.logout());
+    w.DC_HOST = createDelicareHost(this.http, user, () => this.logout());
     // Engine thao tác DOM trực tiếp: chạy ngoài Angular zone để không kích change detection liên tục.
     this.zone.runOutsideAngular(() => {
       this.loadScripts()

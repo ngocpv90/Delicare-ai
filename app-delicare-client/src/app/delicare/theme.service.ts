@@ -4,13 +4,12 @@ export type AppTheme = 'delicare' | 'w3crm';
 
 const DELICARE_CSS_ID = 'dc-theme';
 const DELICARE_CSS_HREF = 'assets/delicare/css/app.css';
-// Stylesheet của template W3CRM (khai báo trong src/index.html) – xung đột class với giao diện DELICARE.
-const W3CRM_CSS_IDS = ['w3crm-theme', 'w3crm-custom'];
 
 /**
- * Bật / tắt bộ CSS theo khu vực:
- * - 'delicare': giao diện theo mockup đã duyệt (docs/mockup) – đăng nhập + toàn bộ màn hình nghiệp vụ.
- * - 'w3crm': trang demo cũ của template (/admin/…).
+ * Toàn bộ ứng dụng dùng theme W3CRM (style.css + custom.css + clinic.css khai báo trong src/index.html).
+ * - 'delicare': màn hình nghiệp vụ do engine vẽ – nạp THÊM assets/delicare/css/app.css (lớp bổ sung cho các
+ *   thành phần của engine: thẻ số liệu, ngăn kéo, kanban, lưới ca…), KHÔNG tắt CSS của theme.
+ * - 'w3crm': trang đăng nhập / trang của template – chỉ CSS của theme.
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
@@ -22,12 +21,6 @@ export class ThemeService {
     }
     this.current = theme;
     const isDelicare = theme === 'delicare';
-    W3CRM_CSS_IDS.forEach((id) => {
-      const link = document.getElementById(id) as HTMLLinkElement | null;
-      if (link) {
-        link.disabled = isDelicare;
-      }
-    });
     let dc = document.getElementById(DELICARE_CSS_ID) as HTMLLinkElement | null;
     if (!dc && isDelicare) {
       dc = document.createElement('link');

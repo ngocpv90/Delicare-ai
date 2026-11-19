@@ -7,9 +7,9 @@
   const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal']);
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
-  //  - Tích hợp bot (kênh, bot, định danh, tin vào / ra, nhật ký): backend mới có CRUD thô, nghiệp vụ bot làm sau (D-44).
+  //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
   const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap',
-    'int-channel', 'int-bot', 'int-identity', 'int-inbound', 'int-outbound', 'int-log']);
+    'int-channel', 'int-bot', 'int-log']);
   // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).
   const hiddenNow = id => Store.isLive && (HIDDEN_LIVE.has(id) || !!(FN[id] && FN[id].table && Store.isBroken(FN[id].table)));
   const SCREENS = {};
@@ -22,16 +22,62 @@
   // ---------- Sidebar ----------
   function buildNav() {
     const nav = document.getElementById('navGroups');
-    const order = CAT.menuOrder; const groups = {};
-    Object.values(FN).forEach(f => { if (CHILD.has(f.id) || hiddenNow(f.id)) return; (groups[f.grp] = groups[f.grp] || []).push(f); });
-    const dash = groups['Tổng quan điều hành'] || []; dash.sort((a, b) => a.id === 'dash-exec' ? -1 : 1);
-    nav.innerHTML = order.filter(g => groups[g]).map((g, gi) => {
-      const items = groups[g].filter(f => Store.perm(f.id).access !== false);
-      if (!items.length) return '';
-      return `<section class="group ${gi > 1 ? 'closed' : ''}" data-g="${esc(g)}"><button class="group-toggle">${I(U.GROUP_ICON[g] || 'clipboard')}<span>${esc(g)}</span><span class="chev">⌄</span></button><div class="group-items">${items.map(f => `<a class="nav-link" href="${APP.href(f.id)}" data-nav="${f.id}" title="${esc(f.name)}">${I((U.MENU_ICON && U.MENU_ICON[f.id]) || U.SCREEN_ICON[f.id.split('-')[0]] || 'clipboard')}<span>${esc(f.fn)}</span>${f.st === 'GAP' ? '<i class="gap-dot">GAP</i>' : ''}${f.id === 'wf-inbox' ? `<i class="count" id="inboxCount"></i>` : ''}</a>`).join('')}</div></section>`;
-    }).join('');
-    nav.querySelectorAll('.group-toggle').forEach(b => b.onclick = () => b.parentElement.classList.toggle('closed'));
+    const db = dbNav(), list = db || catalogNav();
+    // Tìm kiếm chức năng dùng cùng danh sách với sidebar (chế độ menu theo DB).
+    APP._navIds = db ? new Set(db.flatMap(g => g.items.map(i => i.f.id))) : null;
+    nav.innerHTML = list.map(({ name: g, items }) => `<li class="dc-group" data-g="${esc(g)}"><a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a><ul class="mm-collapse" aria-expanded="false">${items.map(({ f, label, link }) => `<li><a href="${APP.href(link || f.id)}" data-nav="${esc(link || f.id)}" title="${esc(label)}">${esc(label)}${f.st === 'GAP' && !Store.isLive ? '<i class="gap-dot">GAP</i>' : ''}${(link || f.id) === 'wf-inbox' ? `<span class="badge badge-sm badge-secondary ms-2" id="inboxCount"></span>` : ''}</a></li>`).join('')}</ul></li>`).join('');
+    nav.querySelectorAll('li.dc-group > a').forEach(a => a.onclick = () => openGroup(a.parentElement, !a.nextElementSibling.classList.contains('mm-show')));
+    markNav(APP.current);
     updateCounts();
+  }
+  // Menu theo danh mục cứng của mockup (chế độ DEMO, hoặc khi máy chủ không trả menu).
+  function catalogNav() {
+    const groups = {};
+    Object.values(FN).forEach(f => { if (CHILD.has(f.id) || hiddenNow(f.id) || Store.perm(f.id).access === false) return; (groups[f.grp] = groups[f.grp] || []).push({ f, label: f.fn }); });
+    const dash = groups['Tổng quan điều hành'] || []; dash.sort(a => (a.f.id === 'dash-exec' ? -1 : 1));
+    return CAT.menuOrder.filter(g => groups[g]).map(g => ({ name: g, items: groups[g] }));
+  }
+  // Menu theo DATABASE (ObjectMenu × UserRole – api/User/GetCurrent → DC_HOST.menu): nhóm, tên mục, thứ tự, hiện / ẩn theo cấu hình ở màn
+  // "Menu chức năng" (IsActive) + ma trận quyền (AllowAccess). FE KHÔNG tự ẩn mục nào: mọi mục máy chủ trả về đều lên sidebar,
+  // kể cả màn dòng chi tiết, mục duyệt theo loại (wf-inbox?type=…) và mục chưa có màn hình (hiện trang báo "chưa có trên giao diện").
+  function dbNav() {
+    const menu = Store.isLive && window.DC_HOST && window.DC_HOST.menu;
+    if (!menu || !menu.length) return null;
+    const used = new Set();
+    const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !used.has(i.link)).map(i => {
+      used.add(i.link); const id = i.link.split('?')[0]; used.add(id);
+      // Mục DB có mà FE chưa có màn: đăng ký màn giữ chỗ để bấm vào không rơi về trang tổng quan.
+      if (!FN[id]) { FN[id] = { id, fn: i.name, name: i.name, grp: g.name, ph: '', types: [], table: null, rel: [], st: 'MAPPED', note: '' }; SCREENS[id] = (el, f) => { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel empty">${I('clipboard')}<h2 class="mt">Mục này chưa có màn hình trên giao diện</h2><p class="muted">Mục menu được cấu hình trong hệ thống nhưng giao diện chưa có màn hình tương ứng.</p></div>`; }; }
+      return { f: FN[id], label: i.name || FN[id].fn, link: i.link };
+    }) }));
+    // Màn FE đã có mà DB chưa có mục menu (f.extra – "Việc của tôi", "Job tự động"): tạm thêm vào nhóm của nó khi tài khoản được vào,
+    // cho tới khi backend bổ sung dòng ObjectMenu (khi đó mục lấy theo DB như mọi mục khác).
+    Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false) return; let g = out.find(x => x.name === f.grp); if (!g) out.push(g = { name: f.grp, items: [] }); g.items.push({ f, label: f.fn, link: f.id }); });
+    return out.filter(g => g.items.length);
+  }
+  // Mở một nhóm menu (đóng các nhóm khác – kiểu metismenu của theme).
+  function openGroup(li, on) {
+    document.querySelectorAll('#navGroups > li.dc-group').forEach(x => { const o = x === li && on; x.querySelector('ul').classList.toggle('mm-show', o); x.firstElementChild.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+  }
+  // Tô mục đang mở + mở nhóm chứa nó.
+  function markNav(id) {
+    if (!id) return;
+    let act = null;
+    // Mục có tham số (wf-inbox?type=…): tô đúng mục theo tham số đang mở; không có mục khớp thì tô mục cùng màn hình.
+    const links = [...document.querySelectorAll('#navGroups [data-nav]')];
+    const typed = APP.params && APP.params.type ? id + '?type=' + APP.params.type : id;
+    const key = links.some(a => a.dataset.nav === typed) ? typed : links.some(a => a.dataset.nav === id) ? id : ((links.find(a => a.dataset.nav.split('?')[0] === id) || {}).dataset || {}).nav;
+    links.forEach(a => { const on = a.dataset.nav === key; a.classList.toggle('mm-active', on); a.parentElement.classList.toggle('mm-active', on); if (on) act = a; });
+    document.querySelectorAll('#navGroups > li.dc-group').forEach(li => { const on = !!act && li.contains(act); li.classList.toggle('mm-active', on); if (on) openGroup(li, true); });
+  }
+  // Kiểu sidebar theo bề rộng (giống main.component): đầy đủ / thu nhỏ (máy tính bảng) / phủ (điện thoại).
+  const wrapEl = () => document.getElementById('main-wrapper');
+  function syncSidebar() {
+    const w = innerWidth, el = wrapEl(); if (!el) return;
+    const style = w <= 768 ? 'overlay' : w < 1200 ? 'mini' : 'full';
+    document.body.setAttribute('data-sidebar-style', style);
+    el.classList.toggle('menu-toggle', style === 'mini');
+    const cb = document.querySelector('.content-body'); if (cb) cb.style.minHeight = (innerHeight - 75) + 'px';
   }
   function updateCounts() {
     const list = APP.alerts();
@@ -115,7 +161,7 @@
     const ref = {}; APP._lastTbl = ref;
     const tbl = UI.table(el.querySelector('#gt'), {
       table: t, cols, rows: rowsFn, filters: fks, pageSize: 10, onRow: id => APP.openDetail(t, id, f),
-      actions: r => { const nx = sc && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button> <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>${nx && !opt.noTransit && !LIVE() ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
+      actions: r => { const nx = sc && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button>${UI.readOnly(t) ? '' : ` <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>`}${nx && !opt.noTransit && !LIVE() ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del && !UI.readOnly(t) ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
       after: tb => {
         tb.querySelectorAll('[data-view]').forEach(b => b.onclick = () => APP.openDetail(t, b.dataset.view, f));
         tb.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => UI.form(t, Store.get(t, b.dataset.edit), { title: f.name, onSave: () => APP.refresh() }));
@@ -185,7 +231,7 @@
     rb.title = (api.length ? 'Đọc từ API: ' + api.map(Store.controllerOf).join(', ') + '\n' : '') + (demo.length ? 'Dữ liệu DEMO (chưa có API): ' + demo.join(', ') + '\n' : '') + (err.length ? 'Lỗi API: ' + err.map(t => t + ' – ' + Store.errorOf(t)).join('; ') : '');
   }
   const overlayOpen = () => !!document.querySelector('#content ~ * .overlay, .overlay, .drawer-wrap');
-  function setLoading(on) { document.getElementById('app').classList.toggle('dc-loading', !!on); }
+  function setLoading(on) { document.getElementById('main-wrapper').classList.toggle('dc-loading', !!on); }
   // ---------- Router ----------
   let routeSeq = 0, cycleActive = false, navErrKey = '';
   function route() {
@@ -210,8 +256,7 @@
   function renderScreen(id, params) {
     const f = FN[id] || FN['dash-exec'];
     APP.current = f.id; APP.params = params;
-    document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === f.id));
-    const act = document.querySelector(`[data-nav="${f.id}"]`); if (act) { act.closest('.group').classList.remove('closed'); }
+    markNav(f.id);
     const el = document.getElementById('content');
     document.title = f.name + ' | DELI-CARE';
     const p = Store.perm(f.id);
@@ -239,7 +284,7 @@
     // Chỉ báo lỗi khi chính bảng của màn hình đang xem bị lỗi thật. Bảng phụ lỗi / backend chưa có API (404) → bỏ qua (menu của bảng đó đã ẩn), ghi console.
     const failed = screenTables.filter(t => Store.srcOf(t) === 'error');
     const errs = failed.filter(t => t === f.table && !Store.isMissing(t));
-    if (failed.length) { const key = failed.join(','); if (key !== navErrKey) { navErrKey = key; buildNav(); document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === f.id)); const act2 = document.querySelector(`[data-nav="${f.id}"]`); if (act2) act2.closest('.group').classList.remove('closed'); } }
+    if (failed.length) { const key = failed.join(','); if (key !== navErrKey) { navErrKey = key; buildNav(); } }
     if (f.table && Store.isMissing(f.table)) el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel empty">${I('database')}<h2 class="mt">Chức năng này chưa có trên máy chủ đang kết nối</h2><p class="muted">Máy chủ chưa có API cho màn hình này nên mục menu đã được ẩn.</p></div>`;
     if (errs.length) el.insertAdjacentHTML('afterbegin', `<div class="notice gap">${I('alert')}<div><b>Không tải được dữ liệu từ API</b>${errs.map(t => `<code>${esc(Store.controllerOf(t))}</code>: ${esc(Store.errorOf(t))}`).join('<br>')}</div></div>`);
     finish(el);
@@ -275,7 +320,7 @@
     el.querySelectorAll('[data-trace]').forEach(b => b.onclick = () => UI.trace(b.dataset.trace, APP.current));
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => APP.go(b.dataset.go));
     if (APP.params.id) { history.replaceState(history.state, '', location.pathname + location.search + APP.href(APP.current)); APP.params = {}; }
-    if (innerWidth <= 760) closeMobile();
+    closeMobile();
     updateCounts();
     setRibbon();
     if (!cycleActive) window.scrollTo(0, 0);
@@ -289,7 +334,7 @@
     lateTimer = setTimeout(() => { if (!cycleActive && !Store.pendingCount() && !overlayOpen()) APP.refresh(); else updateCounts(); }, 120);
   });
   // ---------- Header controls ----------
-  function closeMobile() { document.getElementById('sidebar').classList.remove('mobile-open'); document.getElementById('backdrop').classList.remove('show'); }
+  function closeMobile() { if (document.body.getAttribute('data-sidebar-style') === 'overlay') { const el = wrapEl(); if (el) el.classList.remove('menu-toggle'); } }
   function setUserUi() {
     if (Store.hasHost) {
       const u = window.DC_HOST.user || {};
@@ -357,7 +402,7 @@
   function chooseBranch() {
     const br = Store.rows('OrganizationUnit').filter(o => o.UnitType === 'BRANCH');
     UI.modal({ title: 'Chọn đơn vị làm việc', sub: LIVE() ? 'Số liệu trên các màn hình sẽ lọc theo đơn vị đã chọn' : 'dbo.OrganizationUnit (UnitType = BRANCH) · PO xác nhận là nguồn Chi nhánh', size: 'sm', body: `<div class="grid"><button class="btn ${!Store.ctx.branch ? 'primary' : ''}" data-b="">Tất cả đơn vị</button>${br.map(b => `<button class="btn ${Store.ctx.branch === b.Id ? 'primary' : ''}" data-b="${b.Id}">${esc(b.Name)} <span class="small muted">${b.Code}</span></button>`).join('')}</div>`,
-      onMount: (m, close) => m.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { Store.ctx.branch = x.dataset.b || null; const nm = x.dataset.b ? Store.get('OrganizationUnit', x.dataset.b).Name : 'Tất cả đơn vị'; document.getElementById('topBranch').textContent = nm; document.getElementById('sideBranch').textContent = nm; close(); route(); UI.toast('Đã chuyển ngữ cảnh: ' + esc(nm), 'ok'); }) });
+      onMount: (m, close) => m.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { Store.ctx.branch = x.dataset.b || null; const nm = x.dataset.b ? Store.get('OrganizationUnit', x.dataset.b).Name : 'Tất cả đơn vị'; document.getElementById('topBranch').textContent = nm; close(); route(); UI.toast('Đã chuyển ngữ cảnh: ' + esc(nm), 'ok'); }) });
   }
   function notifications() {
     const a = APP.alerts();
@@ -376,7 +421,7 @@
   }
   // Bỏ dấu tiếng Việt để tìm "don hang" khớp "Đơn hàng".
   const fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
-  const screenHits = q => { const k = fold(q); return Object.values(FN).filter(f => !CHILD.has(f.id) && !hiddenNow(f.id) && Store.perm(f.id).access !== false && fold(f.name + ' ' + f.fn + ' ' + f.id).includes(k)).map(f => ({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.grp, i: 'clipboard' })); };
+  const screenHits = q => { const k = fold(q); return Object.values(FN).filter(f => (APP._navIds ? APP._navIds.has(f.id) : (!CHILD.has(f.id) && !hiddenNow(f.id))) && Store.perm(f.id).access !== false && fold(f.name + ' ' + f.fn + ' ' + f.id).includes(k)).map(f => ({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.grp, i: 'clipboard' })); };
   function showResults(res, note) {
     const box = document.getElementById('searchResults');
     box.innerHTML = (res.slice(0, 30).map((r, i) => `<a href="${r.h || 'javascript:void 0'}" data-i="${i}">${I(r.i)}<span>${esc(r.t)}</span><small>${esc(r.s)}</small></a>`).join('') || (note ? '' : '<div class="empty">Không tìm thấy</div>')) + (note ? `<div class="empty">${esc(note)}</div>` : '');
@@ -429,13 +474,16 @@
     const roleOrAccount = () => (Store.hasHost ? accountMenu() : chooseRole());
     document.body.classList.toggle('dc-live', Store.isLive);
     buildNav(); setUserUi();
-    document.getElementById('collapseBtn').onclick = () => document.getElementById('app').classList.toggle('collapsed');
-    document.getElementById('mobileMenu').onclick = () => { document.getElementById('sidebar').classList.add('mobile-open'); document.getElementById('backdrop').classList.add('show'); };
-    document.getElementById('backdrop').onclick = closeMobile;
-    document.getElementById('branchSelect').onclick = chooseBranch; document.getElementById('sideContext').onclick = chooseBranch;
-    document.getElementById('notificationBtn').onclick = notifications; document.getElementById('helpBtn').onclick = help; document.getElementById('helpLink').onclick = help;
+    // Khung W3CRM: nút hamburger thu gọn / mở menu (class menu-toggle), rê chuột vào menu thu nhỏ thì bung ra (iconhover-toggle).
+    syncSidebar(); onDoc(window, 'resize', syncSidebar);
+    document.getElementById('collapseBtn').onclick = () => { const el = wrapEl(); el.classList.toggle('menu-toggle'); el.querySelector('.hamburger').classList.toggle('is-active', el.classList.contains('menu-toggle')); };
+    const side = document.getElementById('sidebar');
+    side.onmouseover = () => wrapEl().classList.add('iconhover-toggle'); side.onmouseout = () => wrapEl().classList.remove('iconhover-toggle');
+    document.getElementById('brandLink').onclick = () => APP.go('dash-exec');
+    document.getElementById('branchSelect').onclick = chooseBranch;
+    document.getElementById('notificationBtn').onclick = notifications; document.getElementById('helpBtn').onclick = help;
     document.querySelectorAll('[data-role-btn]').forEach(b => b.onclick = roleOrAccount);
-    onDoc(document, 'click', e => { if (e.target.closest('[data-role]')) chooseRole(); const sr = document.getElementById('searchResults'); if (sr && !e.target.closest('.search')) sr.classList.remove('show'); });
+    onDoc(document, 'click', e => { if (e.target.closest('[data-role]')) chooseRole(); const sr = document.getElementById('searchResults'); if (sr && !e.target.closest('.dc-search-area')) sr.classList.remove('show'); });
     const gs = document.getElementById('globalSearch'); gs.oninput = e => search(e.target.value); gs.onkeydown = e => { if (e.key === 'Escape') { gs.value = ''; search(''); } };
     onDoc(document, 'keydown', e => { if (e.key === 'Escape') { const d = document.querySelector('.drawer-wrap:last-of-type, .overlay:last-of-type'); if (d) d.remove(); } });
     // Liên kết '#/screen-id' trong HTML của mockup → đổi sang tiền tố hash của Angular.
@@ -453,8 +501,6 @@
     Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => {
       const before = document.querySelectorAll('[data-nav]').length;
       buildNav();
-      document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === APP.current));
-      const act = document.querySelector(`[data-nav="${APP.current}"]`); if (act) act.closest('.group').classList.remove('closed');
       const cur = FN[APP.current];
       if (document.querySelectorAll('[data-nav]').length !== before && cur && cur.table && Store.isMissing(cur.table) && !overlayOpen()) route();
     });
