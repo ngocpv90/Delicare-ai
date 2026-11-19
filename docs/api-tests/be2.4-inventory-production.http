@@ -1,3 +1,5 @@
+### ⚠ MA-1 (D-63, 2026-11-19): file này viết TRƯỚC quy tắc mã mới – còn gửi mã danh mục tự đặt (Code=…) / số chứng từ tự đặt và kỳ vọng số PH- / KH- / NL-.
+### Máy chủ nay bỏ qua mã G1 gửi lên và sinh mã (KHB- / NC- / DH- / PN- / LO- / KS-…) → các bước tìm lại theo mã có thể hỏng. Kiểm hồi quy toàn luồng: full-flow.http (đã cập nhật).
 ### DELICARE – BE2.4: KHO & SẢN XUẤT MỞ RỘNG (khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
 ### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29B, ngày 14/12/2026): 125 / 125 đúng kỳ vọng.
 ### Danh mục + đơn + kế hoạch + MRP (chép từ be2.1-flow-gaps.http mục 0–2.2) → duyệt / phát hành kế hoạch + GIỮ CHỖ NGUYÊN LIỆU (126) → chặn xuất tay phần đã giữ

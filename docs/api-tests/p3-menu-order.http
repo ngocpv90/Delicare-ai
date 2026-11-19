@@ -1,3 +1,5 @@
+### ⚠ MA-1 (D-63, 2026-11-19): file này viết TRƯỚC quy tắc mã mới – còn gửi mã danh mục tự đặt (Code=…) / số chứng từ tự đặt và kỳ vọng số PH- / KH- / NL-.
+### Máy chủ nay bỏ qua mã G1 gửi lên và sinh mã (KHB- / NC- / DH- / PN- / LO- / KS-…) → các bước tìm lại theo mã có thể hỏng. Kiểm hồi quy toàn luồng: full-flow.http (đã cập nhật).
 ### DELICARE – Pilot P3 (T13 + T46B.1, khung cũ D-30): thực đơn tuần, phân công thực đơn, đơn hàng, chốt 20h D-1, lệch suất > 30%, in thực đơn gửi khách.
 ### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
 ### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.

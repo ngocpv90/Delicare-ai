@@ -1,3 +1,5 @@
+### ⚠ MA-1 (D-63, 2026-11-19): file này viết TRƯỚC quy tắc mã mới – còn gửi mã danh mục tự đặt (Code=…) / số chứng từ tự đặt và kỳ vọng số PH- / KH- / NL-.
+### Máy chủ nay bỏ qua mã G1 gửi lên và sinh mã (KHB- / NC- / DH- / PN- / LO- / KS-…) → các bước tìm lại theo mã có thể hỏng. Kiểm hồi quy toàn luồng: full-flow.http (đã cập nhật).
 ### DELICARE – BE2.6: NHÂN SỰ (T21, khung cũ D-30), 1 bộ dữ liệu [DEMO] tự đủ.
 ### BE2.9 (2026-11-17): chạy lại trên code đã gộp BE2.1–BE2.7 (key B29H): 65 / 65 đúng kỳ vọng.
 ### Lưới ca (201) → phân / đổi / bỏ ca (202, UNIQUE kể cả dòng xóa mềm → dùng lại dòng) → phân ca hàng loạt (203) → xác nhận (204, không gửi Telegram)

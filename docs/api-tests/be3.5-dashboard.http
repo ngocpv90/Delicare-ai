@@ -1,3 +1,5 @@
+### ⚠ MA-1 (D-63, 2026-11-19): file này viết TRƯỚC quy tắc mã mới – còn gửi mã danh mục tự đặt (Code=…) / số chứng từ tự đặt và kỳ vọng số PH- / KH- / NL-.
+### Máy chủ nay bỏ qua mã G1 gửi lên và sinh mã (KHB- / NC- / DH- / PN- / LO- / KS-…) → các bước tìm lại theo mã có thể hỏng. Kiểm hồi quy toàn luồng: full-flow.http (đã cập nhật).
 ### DELICARE – BE3.5: DASHBOARD ĐIỀU HÀNH + HÀNH TRÌNH ĐƠN HÀNG (đợt BE-3, D-57) – khung cũ D-30.
 ### Dashboard điều hành theo ngày / ca / chi nhánh (Catalog 231, spec 12.1) → hành trình 1 đơn qua các chặng (Catalog 232, spec 12.2).
 ###
