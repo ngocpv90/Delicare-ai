@@ -162,6 +162,61 @@ namespace AppDelicare.Model.Model
         public List<CustomerAlertModel> ListAlert { get; set; } = [];
     }
 
+    /// <summary>UI-4 (D-68 g1): hồ sơ nhân viên – ngày sinh / giới tính / địa chỉ chỉ có khi người xem có quyền Sửa adm-employee (D-68 e).</summary>
+    public class EmployeeOverviewModel
+    {
+        public Employee? Employee { get; set; }
+        /// <summary>true = người xem có quyền Sửa adm-employee → có thông tin cá nhân.</summary>
+        public bool CanViewPersonal { get; set; }
+        public string? OrganizationUnitName { get; set; }
+        public string? PositionName { get; set; }
+        /// <summary>Thâm niên (tháng tròn) tính từ ngày vào làm.</summary>
+        public int? TenureMonths { get; set; }
+        // Tài khoản web (liên kết bot có UserId, hoặc tên đăng nhập = mã NV) + nhóm quyền.
+        public Guid? UserId { get; set; }
+        public string? UserName { get; set; }
+        public bool? UserIsActive { get; set; }
+        public List<string> ListUserGroupName { get; set; } = [];
+        // Liên kết bot Telegram.
+        public bool BotLinked { get; set; }
+        public string? BotStatus { get; set; }
+        public string? BotUsername { get; set; }
+        public DateTime? BotLinkedAt { get; set; }
+        // Chỉ số tháng này (theo bảng công).
+        public int MonthShifts { get; set; }
+        public decimal MonthWorkedHours { get; set; }
+        /// <summary>% ca có vào ca mà không muộn, trên số ca đã vào ca; null nếu chưa vào ca nào.</summary>
+        public decimal? MonthOnTimePct { get; set; }
+        public int MonthAbsent { get; set; }
+        public int MonthLate { get; set; }
+        // Nghỉ phép năm nay (đơn Đã duyệt) + đơn chờ duyệt (nghỉ + đổi ca).
+        public int YearLeaveDays { get; set; }
+        public List<EmployeeLeaveTypeModel> ListLeaveByType { get; set; } = [];
+        public int PendingRequestCount { get; set; }
+        /// <summary>Ca hôm nay → 7 ngày tới (giờ vào / ra nếu đã chấm).</summary>
+        public List<TimesheetDetailModel> ListUpcomingShift { get; set; } = [];
+        /// <summary>Ngày nghỉ (đơn Đã duyệt) trong 7 ngày tới – tô màu lịch.</summary>
+        public List<DateTime> ListLeaveDate { get; set; } = [];
+        /// <summary>Giờ công 30 ngày gần nhất theo ngày.</summary>
+        public List<EmployeeDayHoursModel> ListDayHours { get; set; } = [];
+        /// <summary>10 ca gần nhất đã chấm công (giờ vào / ra, hình thức, hợp lệ, muộn).</summary>
+        public List<TimesheetDetailModel> ListRecentAttendance { get; set; } = [];
+        /// <summary>Khối "Cần chú ý" (D-68 d).</summary>
+        public List<CustomerAlertModel> ListAlert { get; set; } = [];
+    }
+
+    public class EmployeeLeaveTypeModel
+    {
+        public string? LeaveTypeCode { get; set; }
+        public int Days { get; set; }
+    }
+
+    public class EmployeeDayHoursModel
+    {
+        public DateTime Date { get; set; }
+        public decimal Hours { get; set; }
+    }
+
     /// <summary>UI-3 (D-67 f2): xu hướng mua của 1 NCC theo tháng.</summary>
     public class SupplierTrendModel
     {

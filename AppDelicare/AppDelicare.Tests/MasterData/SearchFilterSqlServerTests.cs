@@ -118,6 +118,22 @@ namespace AppDelicare.Tests.MasterData
                 .Should().Be(grExpected);
         }
 
+        /// <summary>UI-4 (D-68 g2): ShiftAssignment/GetAll lọc ngày làm từ – đến (gồm 2 đầu) trên SQL Server dev – chỉ đọc.</summary>
+        [SkippableFact]
+        public async Task Shift_assignment_list_filters_by_work_date_range()
+        {
+            Skip.If(factory.SkipReason != null, factory.SkipReason);
+            using var scope = factory.Services.CreateScope();
+            var sp = scope.ServiceProvider;
+            var db = sp.GetRequiredService<DatabaseContext>();
+            var day = await db.ShiftAssignment.Where(x => !x.IsDeleted).Select(x => x.WorkDate).OrderByDescending(x => x).FirstOrDefaultAsync();
+            Skip.If(day == default, "DB dev chưa có ca được phân");
+            DateTime from = day.Date.AddDays(-6), to = day.Date;
+            int expected = await db.ShiftAssignment.CountAsync(x => !x.IsDeleted && x.WorkDate >= from && x.WorkDate < to.AddDays(1));
+            (await sp.GetRequiredService<IShiftAssignmentService>().GetAll(new ShiftAssignmentSearchRequest { PageSize = 1, FromDate = from, ToDate = to })).TotalRecords
+                .Should().Be(expected);
+        }
+
         /// <summary>T50R1: chặn tái phát – mọi thuộc tính lọc *Id kiểu Guid trong SearchRequest phải là Guid? (bỏ trống = không lọc).</summary>
         [Fact]
         public void Every_guid_filter_of_search_requests_is_nullable()

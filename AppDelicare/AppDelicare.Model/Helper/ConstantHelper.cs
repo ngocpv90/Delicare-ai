@@ -782,6 +782,11 @@
             public static readonly string CustomerAlertNoLocation = "Chưa có điểm giao";
             public static readonly string CustomerAlertNoPrimaryContact = "Chưa có người liên hệ chính";
             public static readonly string CustomerTrendRangeInvalid = "Khoảng ngày không hợp lệ (từ ≤ đến, tối đa 366 ngày)";
+            public static readonly string EmployeeAlertNoBot = "Chưa liên kết bot Telegram – không nhận được thông báo ca, duyệt đơn";
+            public static readonly string EmployeeAlertPending = "{0} đơn nghỉ / đổi ca đang chờ duyệt";
+            public static readonly string EmployeeAlertNotCheckedIn = "Có ca hôm nay ({0}) đã tới giờ mà chưa vào ca";
+            public static readonly string EmployeeAlertOutOfRadius = "{0} lần chấm công ngoài bán kính trong 7 ngày";
+            public static readonly string EmployeeAlertNoPhone = "Thiếu số điện thoại – không liên kết bot bằng SĐT được";
             public static readonly string SupplierTrendRangeInvalid = "Khoảng tháng không hợp lệ (từ ≤ đến, tối đa 24 tháng)";
             public static readonly string SupplierAlertPoOverdue = "{0} đơn mua trễ hạn giao: {1}";
             public static readonly string SupplierAlertIssueOverdue = "{0} sự cố quá hạn xử lý";

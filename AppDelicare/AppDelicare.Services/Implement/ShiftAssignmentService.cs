@@ -43,6 +43,8 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@EmployeeId", request.EmployeeId);
                 dynamicParameters.Add("@ShiftId", request.ShiftId);
                 dynamicParameters.Add("@AssignmentStatus", request.AssignmentStatus);
+                dynamicParameters.Add("@FromDate", request.FromDate?.Date);
+                dynamicParameters.Add("@ToDate", request.ToDate?.Date);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);

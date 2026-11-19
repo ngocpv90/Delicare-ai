@@ -1633,3 +1633,13 @@ EmployeeId={{e1}}&SourceChannel=GPS&Latitude=10.8233000&Longitude=106.6297000&Ex
 ### 17.4 Bảng công hôm nay
 GET {{base}}/api/AttendanceEvent/GetTimesheet?FromDate={{$datetime "YYYY-MM-DD" 410 m}}&ToDate={{$datetime "YYYY-MM-DD" 7 h}}&SearchText={{code}}&Page=1&PageSize=50
 Authorization: Bearer {{token}}
+
+### 17.5 Hồ sơ nhân viên (UI-4, D-68): ca hôm nay đã vào ca, chỉ số tháng, tài khoản / bot, Cần chú ý (quản trị thấy thông tin cá nhân)
+# @expect data.canViewPersonal == true
+GET {{base}}/api/Employee/GetOverview?id={{e1}}
+Authorization: Bearer {{token}}
+
+### 17.6 Ca được phân của nhân viên theo ngày làm từ – đến
+# @expect totalRecords >= 1
+GET {{base}}/api/ShiftAssignment/GetAll?EmployeeId={{e1}}&FromDate={{$datetime "YYYY-MM-DD" -1 d}}&ToDate={{$datetime "YYYY-MM-DD" 1 d}}&Page=1&PageSize=20
+Authorization: Bearer {{token}}
