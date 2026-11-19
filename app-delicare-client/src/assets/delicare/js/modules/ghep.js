@@ -383,7 +383,7 @@
   APP.register('hr-my', (el, f) => {
     if (!Store.isLive) return onlyLive(el, f);
     el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Ca làm việc, đơn nghỉ, đơn đổi ca, chuyến giao của tài khoản đang đăng nhập và liên kết bot Telegram.' }) +
-      box('myShift', 'Ca của tôi', '14 ngày tới') + `<div class="grid g2">${box('myLeave', 'Đơn nghỉ của tôi', '', `<a class="btn sm" href="#/hr-leave">Tạo đơn nghỉ →</a>`)}${box('mySwap', 'Đơn đổi ca của tôi', '', `<a class="btn sm" href="#/hr-swap">Màn đổi ca →</a>`)}</div>` +
+      box('myAtt', 'Chấm công hôm nay', 'Vào ca / ra ca bằng vị trí hiện tại của thiết bị') + box('myShift', 'Ca của tôi', '14 ngày tới') + `<div class="grid g2">${box('myLeave', 'Đơn nghỉ của tôi', '', `<button class="btn sm primary" id="myLeaveNew">${I('plus')} Tạo đơn nghỉ</button>`)}${box('mySwap', 'Đơn đổi ca của tôi', '', `<a class="btn sm" href="#/hr-swap">Màn đổi ca →</a>`)}</div>` +
       box('myRoute', 'Chuyến giao của tôi', 'Hôm nay – dành cho tài xế') + box('myTg', 'Liên kết Telegram', 'Nhận thông báo và thao tác qua bot', `<button class="btn sm primary" id="myTgNew">${I('plus')} Tạo mã liên kết</button>`);
     const shifts = () => {
       const o = el.querySelector('#myShift'); let list = [];
@@ -393,7 +393,13 @@
     const swaps = () => fill(el, 'mySwap', 'ShiftSwapRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn đổi ca');
     const shiftsAndSwaps = () => { shifts(); swaps(); };
     shiftsAndSwaps();
-    fill(el, 'myLeave', 'LeaveRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn nghỉ');
+    const leaves = () => fill(el, 'myLeave', 'LeaveRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn nghỉ');
+    leaves();
+    // UG-1 C-18: tự lập đơn nghỉ cho chính mình (LeaveRequest/Create không gửi EmployeeId – máy chủ lấy nhân viên của tài khoản; không cần quyền màn hr-leave).
+    el.querySelector('#myLeaveNew').onclick = () => UI.form('LeaveRequest', null, { title: 'Tạo đơn nghỉ', fields: ['FromDate', 'ToDate', 'LeaveTypeCode', 'Reason'],
+      validate: o => o.FromDate && o.ToDate && o.ToDate < o.FromDate ? 'Đến ngày phải ≥ Từ ngày' : null,
+      submit: (o, close) => Store.act('LeaveRequest/Create', { form: o, tables: ['LeaveRequest'] }).then(x => { if (!x.ok) return; close(); UI.toast(okMsg(x, 'Đã gửi đơn nghỉ – chờ duyệt'), 'ok'); leaves(); }) });
+    if (APP.myAttendance) APP.myAttendance(el.querySelector('#myAtt'));
     fill(el, 'myRoute', 'DeliveryRoute/GetMine', null, x => { const lr = (x.data && x.data.listRoute) || []; return lr.length ? lr.map(r => `<div class="mb"><div class="spread"><b>${esc((r.route && (r.route.routeNo || r.route.routeNumber)) || '')} · ${esc(r.licensePlate || '')}</b><span class="badge gray">${esc(r.statusName || '')}</span></div><div class="small muted">${U.num(r.loadMeals || 0)} suất${r.departureTemperatureC !== null && r.departureTemperatureC !== undefined ? ' · xuất phát ' + U.num(r.departureTemperatureC, 1) + ' °C' : ''}</div>${listHtml(r.listStop || [], 6)}</div>`).join('') + `<a class="btn sm" href="#/log-route">Mở màn Tuyến giao hàng →</a>` : ''; }, 'Hôm nay không có chuyến giao nào của bạn');
     const tg = () => UI.telegramBox(el);
     tg();

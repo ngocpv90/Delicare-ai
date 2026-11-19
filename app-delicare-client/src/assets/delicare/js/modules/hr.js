@@ -209,6 +209,19 @@
         b.innerHTML = x.list.length ? `<div class="table-wrap" style="max-height:460px"><table class="table dc-table dt"><thead><tr><th>Ngày</th><th>Ca</th><th>Giờ kế hoạch</th><th>Vào ca</th><th>Ra ca</th><th class="num">Muộn (phút)</th><th class="num">Sớm (phút)</th><th class="num">Giờ công</th><th>Trạng thái</th></tr></thead><tbody>${x.list.map(r => `<tr><td>${U.date(r.workDate)}</td><td><span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode)}</span></td><td>${r.plannedStart ? U.time(r.plannedStart) + '–' + U.time(r.plannedEnd) : '–'}</td><td>${r.checkInAt ? U.time(r.checkInAt) + validTag(r.checkInValid) : '–'}</td><td>${r.checkOutAt ? U.time(r.checkOutAt) + validTag(r.checkOutValid) : (r.missingCheckOut ? '<span class="tag orange">Thiếu ra ca</span>' : '–')}</td><td class="num">${r.lateMinutes || ''}</td><td class="num">${r.earlyLeaveMinutes || ''}</td><td class="num">${r.workedMinutes ? U.num(r.workedMinutes / 60, 1) : ''}</td><td>${r.isAbsent ? UI.badge('Absent', 'ShiftAssignment', 'AssignmentStatus') : UI.badge(r.status, 'ShiftAssignment', 'AssignmentStatus')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Không có ca nào trong khoảng ngày này</div>';
       }) });
   }
+  // Ca hôm nay của tôi + nút Vào ca / Ra ca (AttendanceEvent/GetMine · CheckIn · CheckOut – API tự phục vụ, không cần quyền màn).
+  // Dùng ở hr-attendance và hr-my "Việc của tôi" (UG-1 C-18: mọi người tự chấm công mà không cần quyền xem bảng công của người khác).
+  function myAttendance(mine) {
+    feed('AttendanceEvent/GetMine', null, mine, x => {
+      if (!x.ok || !x.data) { mine.innerHTML = `<div class="small muted">${esc(x.message || 'Tài khoản chưa gắn với nhân viên nên không tự chấm công được.')}</div>`; return; }
+      const d = x.data, acts = list(d.allowedActions), rows = list(d.listAssignment);
+      mine.innerHTML = `<div class="row-flex"><b>${esc(d.employeeName || '')}</b>${d.employeeCode ? `<span class="small muted">${esc(d.employeeCode)}</span>` : ''}<span class="grow"></span>${acts.includes('checkIn') ? `<button class="btn primary" data-ck="in">${I('ok')} Vào ca</button>` : ''}${acts.includes('checkOut') ? `<button class="btn primary" data-ck="out">${I('ok')} Ra ca</button>` : ''}</div>`
+        + (rows.length ? `<div class="table-wrap mt"><table class="table dc-table dt"><thead><tr><th>Ngày</th><th>Ca</th><th>Giờ kế hoạch</th><th>Vào ca</th><th>Ra ca</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(r => `<tr><td>${U.date(r.workDate)}</td><td><span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode)}</span> ${esc(r.shiftName || '')}</td><td>${r.plannedStart ? U.time(r.plannedStart) + '–' + U.time(r.plannedEnd) : '–'}</td><td>${r.checkInAt ? U.time(r.checkInAt) + validTag(r.checkInValid) + (r.lateMinutes ? ` <span class="small muted">muộn ${r.lateMinutes}′</span>` : '') : '–'}</td><td>${r.checkOutAt ? U.time(r.checkOutAt) + validTag(r.checkOutValid) + (r.earlyLeaveMinutes ? ` <span class="small muted">sớm ${r.earlyLeaveMinutes}′</span>` : '') : '–'}</td><td>${UI.badge(r.status, 'ShiftAssignment', 'AssignmentStatus')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="small muted mt">Hôm nay bạn không có ca được phân.</div>');
+      mine.querySelectorAll('[data-ck]').forEach(b => b.onclick = () => selfCheck(b.dataset.ck === 'in', b));
+    }, 15000);
+  }
+  APP.myAttendance = myAttendance;
+
   APP.register('hr-attendance', (el, f) => {
     if (!Store.isLive) return APP.genericList(el, f);
     const perm = Store.perm(f.id), today = Store.ctx.date, canAbsent = !!Store.perm('hr-shift-assign').edit;
@@ -225,13 +238,7 @@
       const v = tr.querySelector('[data-view]'); if (v) v.onclick = open;
     });
     const mine = el.querySelector('#aMine'), ts = el.querySelector('#aTs');
-    feed('AttendanceEvent/GetMine', null, mine, x => {
-      if (!x.ok || !x.data) { mine.innerHTML = `<div class="small muted">${esc(x.message || 'Tài khoản chưa gắn với nhân viên nên không tự chấm công được.')}</div>`; return; }
-      const d = x.data, acts = list(d.allowedActions), rows = list(d.listAssignment);
-      mine.innerHTML = `<div class="row-flex"><b>${esc(d.employeeName || '')}</b>${d.employeeCode ? `<span class="small muted">${esc(d.employeeCode)}</span>` : ''}<span class="grow"></span>${acts.includes('checkIn') ? `<button class="btn primary" data-ck="in">${I('ok')} Vào ca</button>` : ''}${acts.includes('checkOut') ? `<button class="btn primary" data-ck="out">${I('ok')} Ra ca</button>` : ''}</div>`
-        + (rows.length ? `<div class="table-wrap mt"><table class="table dc-table dt"><thead><tr><th>Ngày</th><th>Ca</th><th>Giờ kế hoạch</th><th>Vào ca</th><th>Ra ca</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(r => `<tr><td>${U.date(r.workDate)}</td><td><span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode)}</span> ${esc(r.shiftName || '')}</td><td>${r.plannedStart ? U.time(r.plannedStart) + '–' + U.time(r.plannedEnd) : '–'}</td><td>${r.checkInAt ? U.time(r.checkInAt) + validTag(r.checkInValid) + (r.lateMinutes ? ` <span class="small muted">muộn ${r.lateMinutes}′</span>` : '') : '–'}</td><td>${r.checkOutAt ? U.time(r.checkOutAt) + validTag(r.checkOutValid) + (r.earlyLeaveMinutes ? ` <span class="small muted">sớm ${r.earlyLeaveMinutes}′</span>` : '') : '–'}</td><td>${UI.badge(r.status, 'ShiftAssignment', 'AssignmentStatus')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="small muted mt">Hôm nay bạn không có ca được phân.</div>');
-      mine.querySelectorAll('[data-ck]').forEach(b => b.onclick = () => selfCheck(b.dataset.ck === 'in', b));
-    }, 15000);
+    myAttendance(mine);
     feed('AttendanceEvent/GetTimesheet', { FromDate: at.from, ToDate: at.to, OrganizationUnitId: at.ou, Page: 1, PageSize: 1000 }, ts, x => {
       if (!x.ok) { ts.innerHTML = `<div class="empty">${esc(x.message || 'Không tải được bảng công')}</div>`; return; }
       const rows = x.list.map(r => Object.assign({ Id: r.employeeId }, r)), n = k => ({ k, num: true, render: r => r[k] ? U.num(r[k]) : '<span class="muted">0</span>' });

@@ -10,6 +10,7 @@ BEGIN TRAN;
 -- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.
 -- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh trên ma trận.
 -- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục "Duyệt …" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.
+-- D-69: ngoại lệ theo từng màn (Seeds.RightOverrides – đóng gói cho OPS-KIT, FIN-HR sửa hồ sơ nhân viên).
 IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'CEO' AND IsDeleted = 0)
     INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'CEO', 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'CEO-PMO' AND IsDeleted = 0)
@@ -692,7 +693,7 @@ INSERT INTO @R VALUES
     (N'OPS-KIT', N'#/crm-order-line', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/crm-reconciliation', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-delivery-order', 1, 0, 0, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/log-packing-order', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-KIT', N'#/log-packing-order', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/scm-requirement', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/scm-pr', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/scm-pr-line', 1, 0, 0, 0, 0, 0, 0),
@@ -735,7 +736,7 @@ INSERT INTO @R VALUES
     (N'OPS-KIT', N'#/log-container-return', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-return-inspection', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-packaging-ledger', 1, 0, 0, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/log-packing-result', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-KIT', N'#/log-packing-result', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-gps', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-complaint', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-complaint-history', 1, 0, 0, 0, 0, 0, 0),
@@ -1597,7 +1598,7 @@ INSERT INTO @R VALUES
     (N'FIN-ACC', N'#/dbx-gap', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/adm-company', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/adm-orgunit', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-HR', N'#/adm-employee', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-HR', N'#/adm-employee', 1, 1, 1, 0, 0, 0, 0),
     (N'FIN-HR', N'#/adm-person', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/adm-user', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/adm-permission', 1, 0, 0, 0, 0, 0, 0),

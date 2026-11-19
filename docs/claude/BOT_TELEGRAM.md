@@ -105,13 +105,13 @@ Menu chung (lọc theo quyền): ⏳ Chờ tôi duyệt · 🚨 Việc liên ph�
 |---|---|---|
 | CEO | PO ≥ 50 triệu, các mục CEO có quyền A | 🔴 sự cố cấp công ty · ⚪ bản tin 7h, báo cáo 17h, tuần / tháng |
 | PMO | – | ⚪ bản tin · 🟡 việc liên phòng quá hạn chưa ai nhận |
-| COO | PR cấp 2, PO dưới ngưỡng, kế hoạch SX, lịch xe, xuất kho, kiểm kê lệch > 2% | 🔴 mọi sự cố vận hành liên phòng · 🟡 thiếu hụt NL · ⚪ bản tin |
-| Bếp trưởng | Kế hoạch SX, xuất kho, kiểm kê, nghỉ / đổi ca của bếp | 🔴 thiếu suất cần nấu bù · 🔴 phản ánh món ăn · 🟡 thiếu NL ảnh hưởng ca · 🟡 thiếu người · 🟡 đổi món chờ |
+| COO | PR cấp 2, PO dưới ngưỡng, kế hoạch SX, công thức / thực đơn / đổi món, điều chỉnh tồn, kiểm kê, nghỉ / đổi ca | 🔴 mọi sự cố vận hành liên phòng · 🟡 thiếu hụt NL · ⚪ bản tin |
+| Bếp trưởng | – (D-69: chưa có quyền duyệt; kế hoạch SX do COO / CEO, nghỉ / đổi ca do Nhân sự / COO duyệt) | 🔴 thiếu suất cần nấu bù · 🔴 phản ánh món ăn · 🟡 thiếu NL ảnh hưởng ca · 🟡 thiếu người · 🟡 đổi món chờ |
 | Trưởng mua hàng – kho | PR cấp 1 | 🟡 thiếu hụt MRP · 🔴 NCC trễ / QC không đạt ảnh hưởng SX · 🟡 PO chờ GĐ |
-| Trưởng điều phối | Lịch xe | 🔴 giao trễ · 🔴 thiếu suất tại điểm · 🔴 nhiệt độ giao thấp · 🟡 phản ánh giờ giao |
-| TP kinh doanh | Sửa đơn sau 20h, lệch > 30%, hợp đồng | 🔴 thiếu suất · 🔴 phản ánh mức cao · 🟡 hộp thất thoát · 🟡 đổi món cần khách chấp thuận |
-| Trưởng QA | Kết quả QC, giữ / thả lô | 🔴 sự cố ATTP · 🔴 lô không đạt · 🔴 phản ánh món ăn |
-| Kế toán trưởng | (R2) phí thất thoát hộp | ⚪ doanh thu, NL / doanh thu, giá thành |
+| Trưởng điều phối | – (D-69: không có loại duyệt lịch xe) | 🔴 giao trễ · 🔴 thiếu suất tại điểm · 🔴 nhiệt độ giao thấp · 🟡 phản ánh giờ giao |
+| TP kinh doanh | – (D-69: sửa đơn sau 20h, lệch > 30%, hợp đồng do CEO duyệt) | 🔴 thiếu suất · 🔴 phản ánh mức cao · 🟡 hộp thất thoát · 🟡 đổi món cần khách chấp thuận |
+| Trưởng QA | Kết quả QC đầu vào (giữ / thả lô là thao tác QA trực tiếp trên `scm-lot`, không qua duyệt – D-69) | 🔴 sự cố ATTP · 🔴 lô không đạt · 🔴 phản ánh món ăn |
+| Kế toán trưởng | Kiểm kê lệch cấp 2; (R2) phí thất thoát hộp | ⚪ doanh thu, NL / doanh thu, giá thành |
 | Trưởng nhân sự | Nghỉ / đổi ca theo phân cấp | 🟡 thiếu người ảnh hưởng SX · ⚪ công tháng |
 
 Người duyệt / người nhận cụ thể lấy theo `ApprovalStep` (người / nhóm của cấp hiện tại) và quyền ObjectMenu – **"Chờ tôi duyệt" chỉ gồm bước mà người đó đúng là người duyệt**, không phải mọi thứ người đó có quyền xem (admin không bị ngập).
@@ -144,7 +144,7 @@ Mã loại lấy từ hằng `BusinessType` của các `Services/Implement/Appro
 | `FOODSAFETY_CRITICAL` | Lỗi trọng yếu checklist (D-54 d, Catalog 162) | Liên phòng | 🔴 | QA, trưởng ca | Trưởng QA, bếp trưởng, COO |
 | `IOT_OUT_OF_RANGE` | Nhiệt độ kho / khu ngoài ngưỡng (IoT) | Phòng | 🔴 | QA, thủ kho khu đó | Trưởng QA nếu kéo dài > 30′ |
 | `CHECKLIST_DUE` | Checklist sắp đến hạn | Phòng | 🟡 | Trưởng ca | – |
-| `PLAN_READY` | Khóa đơn 20h → kế hoạch / lịch xe chờ duyệt (LockOrders) | Liên phòng | 🟡 | Kế hoạch vận hành | Bếp trưởng, trưởng điều phối, COO |
+| `PLAN_READY` | Khóa đơn 20h → kế hoạch chờ duyệt (LockOrders) | Liên phòng | 🟡 | Kế hoạch vận hành | Bếp trưởng, trưởng điều phối, COO |
 | `SHORTAGE_MRP` | Thiếu NL sau MRP (Mrp) | Liên phòng | 🟡 | Mua hàng, thủ kho | Trưởng mua hàng – kho, bếp trưởng, COO |
 | `STOCK_LOW`, `LOT_EXPIRING` | Dưới tồn tối thiểu / cận hạn (LotExpiry) | Phòng | 🟡 | Thủ kho | – |
 | `PO_LATE`, `QC_INCOMING_FAIL` | PO trễ / QC đầu vào không đạt | Liên phòng | 🟡 / 🔴 | Thủ kho, QA đầu vào | Trưởng mua hàng – kho, bếp trưởng, trưởng QA |
