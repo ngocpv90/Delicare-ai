@@ -24,38 +24,71 @@ namespace AppDelicare.Tests.Common
         }
 
         [Theory]
-        [InlineData(DocumentKind.Voucher, null, "PH-261116-0001")]
+        [InlineData(DocumentKind.Order, null, "DH-261116-0001")]
+        [InlineData(DocumentKind.MenuChange, null, "DM-261116-0001")]
+        [InlineData(DocumentKind.PurchaseRequest, null, "MH-261116-0001")]
+        [InlineData(DocumentKind.GoodsReceipt, null, "PN-261116-0001")]
+        [InlineData(DocumentKind.MaterialIssue, null, "PX-261116-0001")]
+        [InlineData(DocumentKind.StockCount, null, "KK-261116-0001")]
+        [InlineData(DocumentKind.InventoryTransaction, null, "GD-261116-0001")]
+        [InlineData(DocumentKind.ProductionOrder, null, "LS-261116-0001")]
+        [InlineData(DocumentKind.PackingOrder, null, "DG-261116-0001")]
+        [InlineData(DocumentKind.DeliveryOrder, null, "GH-261116-0001")]
+        [InlineData(DocumentKind.ShiftSwap, null, "DC-261116-0001")]
+        [InlineData(DocumentKind.Menu, null, "NU-261116-001")]
+        [InlineData(DocumentKind.QcInspection, null, "QC-261116-0001")]
+        [InlineData(DocumentKind.MaterialRequirement, null, "MR-261116-001")]
+        [InlineData(DocumentKind.Contract, null, "HD-261116-001")]
         [InlineData(DocumentKind.Approval, null, "XN-261116-001")]
         [InlineData(DocumentKind.Complaint, null, "PA-261116-0001")]
         [InlineData(DocumentKind.PurchaseOrder, null, "PO-261116-0001")]
         [InlineData(DocumentKind.Leave, null, "DN-261116-0001")]
-        [InlineData(DocumentKind.MaterialLot, "ncc-01", "NL-261116-NCC01-01")]
+        [InlineData(DocumentKind.MaterialLot, "ncc-01", "LO-261116-NCC01-01")]
         [InlineData(DocumentKind.ProductionBatch, "TRUA", "ME-261116-TRUA-01")]
         [InlineData(DocumentKind.DeliveryRoute, "29C 123.45", "CX-261116-29C12345-01")]
-        [InlineData(DocumentKind.ProductionPlan, null, "KH-261116")]
+        [InlineData(DocumentKind.ProductionPlan, null, "KS-261116")]
         [InlineData(DocumentKind.CleaningBatch, "Tối", "VS-261116-TOI")]
         public async Task First_number_of_the_day_has_the_right_format(DocumentKind kind, string? suffix, string expected)
             => (await NextAsync(kind, new DateTime(2026, 11, 16), suffix)).Should().Be(expected);
 
         [Fact]
-        public async Task Next_number_continues_from_existing_rows_including_deprecated_column_and_other_voucher_tables()
+        public async Task Next_number_continues_from_existing_rows_including_deprecated_column_and_ignores_pre_D63_prefixes()
         {
             var day = new DateTime(2026, 11, 17);
             await _factory.SeedAsync(db =>
             {
-                db.Order.Add(new Order { Id = Guid.NewGuid(), OrderNumber = "PH-261117-0007", CustomerId = Guid.NewGuid(), MealDate = day, DeliveryDate = day });
-                db.GoodsReceipt.Add(new GoodsReceipt { Id = Guid.NewGuid(), ReceiptNo = "PH-261117-0012", SupplierId = Guid.NewGuid(), ReceiptDate = day }); // cột cũ
-                db.ProductionPlan.Add(new ProductionPlan { Id = Guid.NewGuid(), PlanNumber = "KH-261117" });
-                db.ProductionPlan.Add(new ProductionPlan { Id = Guid.NewGuid(), PlanNumber = "KH-261117-2" });
-                db.MaterialLot.Add(new MaterialLot { Id = Guid.NewGuid(), LotNumber = "NL-261117-NCC01-09", LotNo = "NL-261117-NCC01-09" });
+                db.Order.Add(new Order { Id = Guid.NewGuid(), OrderNumber = "DH-261117-0007", CustomerId = Guid.NewGuid(), MealDate = day, DeliveryDate = day });
+                db.Order.Add(new Order { Id = Guid.NewGuid(), OrderNumber = "PH-261117-0050", CustomerId = Guid.NewGuid(), MealDate = day, DeliveryDate = day }); // số cũ trước D-63
+                db.GoodsReceipt.Add(new GoodsReceipt { Id = Guid.NewGuid(), ReceiptNo = "PN-261117-0012", SupplierId = Guid.NewGuid(), ReceiptDate = day }); // cột cũ
+                db.ProductionPlan.Add(new ProductionPlan { Id = Guid.NewGuid(), PlanNumber = "KS-261117" });
+                db.ProductionPlan.Add(new ProductionPlan { Id = Guid.NewGuid(), PlanNumber = "KS-261117-2" });
+                db.MaterialLot.Add(new MaterialLot { Id = Guid.NewGuid(), LotNumber = "LO-261117-NCC01-09", LotNo = "LO-261117-NCC01-09" });
                 return Task.CompletedTask;
             });
 
-            (await NextAsync(DocumentKind.Voucher, day)).Should().Be("PH-261117-0013", "PH dùng chung nhiều bảng phiếu, đọc cả cột cũ ReceiptNo");
-            (await NextAsync(DocumentKind.ProductionPlan, day)).Should().Be("KH-261117-3");
-            (await NextAsync(DocumentKind.MaterialLot, day, "NCC01")).Should().Be("NL-261117-NCC01-10");
-            (await NextAsync(DocumentKind.MaterialLot, day, "NCC02")).Should().Be("NL-261117-NCC02-01", "đếm riêng theo hậu tố");
-            (await NextAsync(DocumentKind.Voucher, day.AddDays(1))).Should().Be("PH-261118-0001", "đếm lại theo ngày");
+            (await NextAsync(DocumentKind.Order, day)).Should().Be("DH-261117-0008", "số cũ PH- không tính vào dãy DH-");
+            (await NextAsync(DocumentKind.GoodsReceipt, day)).Should().Be("PN-261117-0013", "đọc cả cột cũ ReceiptNo");
+            (await NextAsync(DocumentKind.ProductionPlan, day)).Should().Be("KS-261117-3");
+            (await NextAsync(DocumentKind.MaterialLot, day, "NCC01")).Should().Be("LO-261117-NCC01-10");
+            (await NextAsync(DocumentKind.MaterialLot, day, "NCC02")).Should().Be("LO-261117-NCC02-01", "đếm riêng theo hậu tố");
+            (await NextAsync(DocumentKind.Order, day.AddDays(1))).Should().Be("DH-261118-0001", "đếm lại theo ngày");
+        }
+
+        [Theory]
+        [InlineData(DocumentKind.CustomerBusiness, "KHB-00001")]
+        [InlineData(DocumentKind.CustomerIndividual, "KHC-00001")]
+        [InlineData(DocumentKind.Supplier, "NC-00001")]
+        [InlineData(DocumentKind.Ingredient, "NL-00001")]
+        [InlineData(DocumentKind.Dish, "MA-00001")]
+        [InlineData(DocumentKind.Warehouse, "KO-00001")]
+        [InlineData(DocumentKind.Vehicle, "XE-00001")]
+        [InlineData(DocumentKind.Employee, "NV-00001")]
+        [InlineData(DocumentKind.DeliveryLocation, "DP-00001")]
+        [InlineData(DocumentKind.PricePolicy, "BG-00001")]
+        public async Task First_catalog_code_has_the_right_format(DocumentKind kind, string expected)
+        {
+            using var scope = _factory.Services.CreateScope();
+            (await scope.ServiceProvider.GetRequiredService<IDocumentNumberService>().NextCodeAsync(kind)).Should().Be(expected);
         }
 
         [Fact]
@@ -146,7 +179,7 @@ namespace AppDelicare.Tests.Common
                 lots.Add(no);
                 unitOfWork.MaterialLotRepository.Add(new MaterialLot { Id = Guid.NewGuid(), LotNumber = no, LotNo = no, IngredientId = Guid.NewGuid(), Status = "Available", Note = "[DEMO]" });
             }
-            lots.Should().Equal("NL-991230-T50R1-01", "NL-991230-T50R1-02", "NL-991230-T50R1-03");
+            lots.Should().Equal("LO-991230-T50R1-01", "LO-991230-T50R1-02", "LO-991230-T50R1-03");
             await tx.RollbackAsync();
         }
     }

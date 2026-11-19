@@ -86,7 +86,7 @@ namespace AppDelicare.Tests.Delivery
             var list = Packings(generated);
             list.Select(p => (p.GetProperty("orderNumber").GetString(), p.GetProperty("packingOrder").GetProperty("plannedQty").GetDecimal()))
                 .Should().BeEquivalentTo([("PH-AP1", 60m), ("PH-BP1", 40m)]);
-            list.Should().OnlyContain(p => p.GetProperty("packingOrder").GetProperty("packingOrderNumber").GetString()!.StartsWith("PH-261214-"));
+            list.Should().OnlyContain(p => p.GetProperty("packingOrder").GetProperty("packingOrderNumber").GetString()!.StartsWith("DG-261214-"));
             Guid poA = list.Single(p => p.GetProperty("orderNumber").GetString() == "PH-AP1").GetProperty("packingOrder").GetProperty("id").GetGuid();
             Guid poB = list.Single(p => p.GetProperty("orderNumber").GetString() == "PH-BP1").GetProperty("packingOrder").GetProperty("id").GetGuid();
 
@@ -185,7 +185,7 @@ namespace AppDelicare.Tests.Delivery
             do1.GetProperty("mealQuantity").GetDecimal().Should().Be(25);
             do1.GetProperty("locationName").GetString().Should().Be("Xưởng A2");
             do1.GetProperty("area").GetString().Should().Be("Quận 7");
-            do1.GetProperty("deliveryOrder").GetProperty("deliveryNumber").GetString().Should().MatchRegex(@"^PH-261216-\d{4}$");
+            do1.GetProperty("deliveryOrder").GetProperty("deliveryNumber").GetString().Should().MatchRegex(@"^GH-261216-\d{4}$");
             do1.GetProperty("allowedActions").EnumerateArray().Select(a => a.GetString()).Should().BeEquivalentTo(["split", "assignRoute", "cancel"]);
             created.GetProperty("listWarning")[0].GetString().Should().Contain("còn 35 suất");
             (await PostJson(c, "/api/DeliveryOrder/Create", new { orderId = k.OrderA, mealQuantity = 36m })).Fail("còn 35 suất");

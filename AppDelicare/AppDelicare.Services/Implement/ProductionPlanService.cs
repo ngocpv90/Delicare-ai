@@ -368,7 +368,7 @@ namespace AppDelicare.Services.Implement
                 // 2) Mỗi ca: giờ xuất bếp riêng → lệnh SX (PH-) theo món + mẻ (ME-yyMMdd-<CA>-NN) lịch ngược riêng.
                 // Sinh mã đầu rồi cộng dần (sp_getapplock giữ tới khi commit); PH- cộng dần qua mọi ca, ME- theo từng ca.
                 string planNo = plan.PlanNumber ?? plan.PlanNo ?? string.Empty;
-                string firstOrderNo = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                string firstOrderNo = await _documentNumberService.NextAsync(DocumentKind.ProductionOrder, _clock.Today);
                 int orderIndex = 0;
                 var newOrders = new List<ProductionOrder>();
                 foreach (var part in toRelease)

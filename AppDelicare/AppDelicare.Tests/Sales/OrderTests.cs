@@ -94,7 +94,7 @@ namespace AppDelicare.Tests.Sales
             var created = (await CreateAsync(c, s, s.LocA, trua: 100, sang: 0)).Ok();
             Guid id = IdOf(created);
             var order = await OrderAsync(id);
-            order.OrderNumber.Should().MatchRegex(@"^PH-261208-\d{4}$");
+            order.OrderNumber.Should().MatchRegex(@"^DH-261208-\d{4}$");
             order.OrderNo.Should().Be(order.OrderNumber, "ghi song song cột cũ OrderNo (DEPRECATED_COLUMNS)");
             order.Status.Should().Be("Draft");
             order.TotalQuantity.Should().Be(100);

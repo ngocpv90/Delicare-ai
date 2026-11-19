@@ -366,7 +366,7 @@ namespace AppDelicare.Services.Implement
                     _unitOfWork.RollbackTransaction();
                     return Result<OrderDetailModel>.Fail(error);
                 }
-                string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                string number = await _documentNumberService.NextAsync(DocumentKind.Order, _clock.Today);
                 order!.OrderNumber = number;
                 order.OrderNo = number;
                 _unitOfWork.OrderRepository.Add(order);

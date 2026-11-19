@@ -148,7 +148,7 @@ namespace AppDelicare.Tests.Inventory
             // Chọn lô hạn xa (I-A) khi còn I-B hạn gần hơn → cảnh báo, không chặn.
             var created = (await CreateIssue(c, s, new { ingredientId = s.Ingredient, materialLotId = s.Lots["I-A"], quantity = 10m })).Ok();
             created.GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().ContainSingle(w => w!.Contains("I-B") && w.Contains("FEFO"));
-            created.GetProperty("materialIssue").GetProperty("issueNumber").GetString().Should().MatchRegex(@"^PH-261208-\d{4}$");
+            created.GetProperty("materialIssue").GetProperty("issueNumber").GetString().Should().MatchRegex(@"^PX-261208-\d{4}$");
             created.GetProperty("materialIssue").GetProperty("status").GetString().Should().Be("Draft");
             Guid id1 = IssueId(created);
             (await OnHandAsync(s.Warehouse, s.Ingredient, s.Lots["I-A"])).Should().Be(50, "Nháp chưa ghi sổ");
@@ -229,7 +229,7 @@ namespace AppDelicare.Tests.Inventory
             (await c.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", pendingPlus.GetProperty("approvalRequestId").GetGuid()), ("Approve", true), ("Note", "ok"))).Ok();
             var plus = await _factory.QueryAsync(db => db.InventoryTransaction.AsNoTracking().SingleAsync(t => t.ReferenceId == plusRef));
             plus.TransactionType.Should().Be("ADJUSTMENT");
-            plus.TransactionNumber.Should().MatchRegex(@"^PH-261208-\d{4}$");
+            plus.TransactionNumber.Should().MatchRegex(@"^GD-261208-\d{4}$");
             plus.ReferenceType.Should().Be("ManualAdjustment");
             plus.Reason.Should().Be("Tồn đầu kỳ bổ sung");
             Guid minusRef = await c.AdjustAndApproveAsync(("WarehouseId", s.Warehouse), ("IngredientId", s.Ingredient), ("MaterialLotId", lot),
@@ -298,7 +298,7 @@ namespace AppDelicare.Tests.Inventory
             (await keeper.PostFormAsync("/api/StockCount/Create", ("WarehouseId", s.Warehouse), ("CountType", "YEARLY"))).Fail("DAILY");
             var created = (await keeper.PostFormAsync("/api/StockCount/Create", ("WarehouseId", s.Warehouse), ("CountType", "DAILY"))).Ok();
             Guid id = created.GetProperty("stockCount").GetProperty("id").GetGuid();
-            created.GetProperty("stockCount").GetProperty("countNumber").GetString().Should().MatchRegex(@"^PH-261208-\d{4}$");
+            created.GetProperty("stockCount").GetProperty("countNumber").GetString().Should().MatchRegex(@"^KK-261208-\d{4}$");
             var lines = created.GetProperty("listLine").EnumerateArray().ToList();
             lines.Should().HaveCount(2);
             Guid lineA = lines.Single(l => l.GetProperty("lotNumber").GetString() == "S-A").GetProperty("id").GetGuid();
@@ -378,15 +378,18 @@ namespace AppDelicare.Tests.Inventory
             (await c.DeleteResultAsync($"/api/MaterialLot/Delete?id={s.Lots["R-A"]}")).Fail();
 
             // Thêm lô tay: ghi song song cột cũ, trạng thái Available; sửa không đổi trạng thái.
-            (await c.PostFormAsync("/api/MaterialLot/Insert", ("IngredientId", s.Ingredient), ("ExpiryDate", Today.AddDays(5)))).Fail("số lô");
+            // MA-1 (D-63 c): số lô luôn do máy chủ sinh (số gửi lên bị bỏ qua); không có NCC → hậu tố TDK (tồn đầu kỳ).
             (await c.PostFormAsync("/api/MaterialLot/Insert", ("IngredientId", s.Ingredient), ("LotNumber", "TAY-01"), ("QcStatus", "DAT"),
-                ("Status", "Consumed"), ("ExpiryDate", Today.AddDays(5)))).Ok();
-            var lot = await _factory.QueryAsync(db => db.MaterialLot.AsNoTracking().SingleAsync(l => l.LotNumber == "TAY-01"));
-            lot.LotNo.Should().Be("TAY-01");
+                ("Status", "Consumed"), ("ExpiryDate", Today.AddDays(5)), ("Note", "[DEMO] TAY-01"))).Ok();
+            var lot = await _factory.QueryAsync(db => db.MaterialLot.AsNoTracking().SingleAsync(l => l.Note == "[DEMO] TAY-01"));
+            lot.LotNumber.Should().MatchRegex(@"^LO-\d{6}-TDK-\d{2}$");
+            lot.LotNo.Should().Be(lot.LotNumber);
             lot.QualityStatus.Should().Be("DAT");
             lot.Status.Should().Be("Available");
-            (await c.PutFormAsync("/api/MaterialLot/Update", ("Id", lot.Id), ("IngredientId", s.Ingredient), ("LotNumber", "TAY-01"), ("QcStatus", "DAT"), ("Status", "Expired"))).Ok();
-            (await _factory.QueryAsync(db => db.MaterialLot.AsNoTracking().SingleAsync(l => l.Id == lot.Id))).Status.Should().Be("Available");
+            (await c.PutFormAsync("/api/MaterialLot/Update", ("Id", lot.Id), ("IngredientId", s.Ingredient), ("LotNumber", "DOI-SO"), ("QcStatus", "DAT"), ("Status", "Expired"))).Ok();
+            var after = await _factory.QueryAsync(db => db.MaterialLot.AsNoTracking().SingleAsync(l => l.Id == lot.Id));
+            after.Status.Should().Be("Available");
+            after.LotNumber.Should().Be(lot.LotNumber, "MA-1: số lô không đổi sau khi cấp");
             (await c.PostFormAsync("/api/MaterialLot/Release", ("Id", lot.Id))).Fail("tạm giữ");
             (await c.PostFormAsync("/api/MaterialLot/Hold", ("Id", lot.Id))).Fail("Lý do");
         }

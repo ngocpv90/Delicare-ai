@@ -139,7 +139,7 @@ namespace AppDelicare.Tests.Production
             var orders = await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().Where(o => o.ProductionPlanId == s.Plan).ToListAsync());
             orders.Select(o => (o.ShiftId, o.DishId, o.PlannedQty)).Should().BeEquivalentTo(
                 [(s.Evening, s.DishMeat, 100m), (s.Noon, s.DishMeat, 250m), (s.Noon, s.DishSoup, 80m)]);
-            orders.Select(o => o.ProductionOrderNumber).Should().OnlyHaveUniqueItems().And.OnlyContain(n => n!.StartsWith("PH-261220-"));
+            orders.Select(o => o.ProductionOrderNumber).Should().OnlyHaveUniqueItems().And.OnlyContain(n => n!.StartsWith("LS-261220-"));
             orders.Single(o => o.ShiftId == s.Noon && o.DishId == s.DishMeat).EndTime.Should().Be(Day.AddHours(10));
             var planLines = await _factory.QueryAsync(db => db.ProductionPlanLine.AsNoTracking().Where(l => l.ProductionPlanId == s.Plan).ToListAsync());
             planLines.Should().OnlyContain(l => l.Status == "Released");

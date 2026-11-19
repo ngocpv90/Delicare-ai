@@ -351,7 +351,7 @@ namespace AppDelicare.Services.Implement
                     return Fail(string.Format(ConstantHelper.Message.DeliveryOrderOverQuantity, OrderNumber(order), DeliveryRules.Num(remaining), DeliveryRules.Num(quantity)));
                 }
                 DateTime date = order.MealDate.Date;
-                string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, date);
+                string number = await _documentNumberService.NextAsync(DocumentKind.DeliveryOrder, date);
                 var deliveryOrder = new DeliveryOrder
                 {
                     Id = Guid.NewGuid(),
@@ -474,7 +474,7 @@ namespace AppDelicare.Services.Implement
                     stop.PlannedArrival = first.PlannedDeliveryTime ?? stop.PlannedArrival;
                     _unitOfWork.DeliveryStopRepository.Update(stop);
                 }
-                string firstNumber = await _documentNumberService.NextAsync(DocumentKind.Voucher, date);
+                string firstNumber = await _documentNumberService.NextAsync(DocumentKind.DeliveryOrder, date);
                 var ids = new List<Guid> { deliveryOrder.Id };
                 for (int i = 1; i < request.ListPart.Count; i++)
                 {

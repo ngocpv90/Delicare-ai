@@ -16,10 +16,23 @@ namespace AppDelicare.Tests.MasterData
         public async Task Customer_cif_is_unique_and_overview_aggregates_contacts_contracts_orders()
         {
             using var c = _factory.CreateAuthorizedClient();
-            (await c.PostFormAsync("/api/Customer/Insert", ("Code", "KH-360"), ("Name", "Trường Ánh Dương"), ("DisplayName", "Trường Ánh Dương"), ("CustomerType", "SCHOOL"), ("Status", "Active"), ("CIF", "CIF-360"))).Ok();
-            (await c.PostFormAsync("/api/Customer/Insert", ("Code", "KH-361"), ("Name", "Trùng CIF"), ("DisplayName", "Trùng CIF"), ("CustomerType", "SCHOOL"), ("Status", "Active"), ("CIF", "CIF-360"))).Fail("CIF");
-            var customer = await _factory.QueryAsync(db => db.Customer.AsNoTracking().SingleAsync(x => x.Code == "KH-360"));
-            customer.CIF.Should().Be("CIF-360", "cột mới của DDL đã có trong CustomerRequest (CodeGen --merge)");
+            Guid branch = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                db.OrganizationUnit.Add(new OrganizationUnit { Id = branch, CompanyId = Guid.NewGuid(), Code = "CN-360", Name = "[DEMO] Chi nhánh 360" });
+                return Task.CompletedTask;
+            });
+            // MA-1.2 (D-63): Code / CIF gửi lên bị bỏ qua; CIF = Code; MST không trùng trong khách doanh nghiệp (thay luật CIF không trùng cũ).
+            (await c.PostFormAsync("/api/Customer/Insert", ("Code", "KH-360"), ("CIF", "CIF-360"), ("CustomerType", "BUSINESS"), ("LegalName", "Trường Ánh Dương"),
+                ("DisplayName", "Trường Ánh Dương"), ("TaxCode", "0312345360"), ("LegalRepresentativeName", "Ông A"), ("ContactPersonName", "Cô Lan"),
+                ("ContactPersonPhone", "0901 234 360"), ("Address", "[DEMO] Q1"), ("PhoneNumber", "0281234360"), ("BranchId", branch))).Ok();
+            (await c.PostFormAsync("/api/Customer/Insert", ("CustomerType", "BUSINESS"), ("LegalName", "Trùng MST"), ("DisplayName", "Trùng MST"), ("TaxCode", "0312345360"),
+                ("LegalRepresentativeName", "Ông B"), ("ContactPersonName", "Cô B"), ("ContactPersonPhone", "0901234361"), ("Address", "[DEMO] Q1"),
+                ("PhoneNumber", "0281234361"), ("BranchId", branch))).Fail("Mã số thuế");
+            var customer = await _factory.QueryAsync(db => db.Customer.AsNoTracking().SingleAsync(x => x.TaxCode == "0312345360"));
+            customer.Code.Should().MatchRegex(@"^KHB-\d{5}$");
+            customer.CIF.Should().Be(customer.Code, "D-63 h: CIF = Code");
+            customer.Name.Should().Be("Trường Ánh Dương");
             Guid contract = Guid.NewGuid();
             await _factory.SeedAsync(db =>
             {
@@ -50,7 +63,8 @@ namespace AppDelicare.Tests.MasterData
             (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", customer), ("Code", "DG-1"), ("Name", "Cổng A"), ("Latitude", 91m))).Fail("Vĩ độ");
             (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", customer), ("Code", "DG-1"), ("Name", "Cổng A"),
                 ("DeliveryWindowFrom", "10:00:00"), ("DeliveryWindowTo", "11:00:00"), ("Status", "Active"))).Ok();
-            var location = await _factory.QueryAsync(db => db.CustomerDeliveryLocation.AsNoTracking().SingleAsync(x => x.Code == "DG-1"));
+            var location = await _factory.QueryAsync(db => db.CustomerDeliveryLocation.AsNoTracking().SingleAsync(x => x.CustomerId == customer));
+            location.Code.Should().MatchRegex(@"^DP-\d{5}$", "MA-1.7: mã điểm giao máy chủ sinh");
             await _factory.SeedAsync(db =>
             {
                 db.DeliveryOrder.Add(new DeliveryOrder { Id = Guid.NewGuid(), CustomerDeliveryLocationId = location.Id, Status = "PLANNED" });
@@ -68,8 +82,8 @@ namespace AppDelicare.Tests.MasterData
             (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-Y"), ("Name", "Sai thu hồi"), ("YieldPercent", 0m))).Fail("thu hồi");
             (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-W"), ("Name", "Sai hao hụt"), ("StandardWastePercent", 100m))).Fail("hao hụt");
             (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-H"), ("Name", "Thiếu hạn"), ("IsExpiryManaged", true))).Fail("hạn dùng");
-            (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-OK"), ("Name", "Thịt"), ("IsExpiryManaged", true), ("ShelfLifeDays", 3), ("MinimumStock", 50m))).Ok();
-            var id = await _factory.QueryAsync(db => db.Ingredient.Where(x => x.Code == "NL-OK").Select(x => x.Id).SingleAsync());
+            (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-OK"), ("Name", "Thịt NL-OK"), ("IsExpiryManaged", true), ("ShelfLifeDays", 3), ("MinimumStock", 50m))).Ok();
+            var id = await _factory.QueryAsync(db => db.Ingredient.Where(x => x.Name == "Thịt NL-OK").Select(x => x.Id).SingleAsync());
             await _factory.SeedAsync(db =>
             {
                 db.InventoryBalance.Add(new InventoryBalance { Id = Guid.NewGuid(), IngredientId = id, WarehouseId = Guid.NewGuid(), AvailableQuantity = 20 });

@@ -407,7 +407,7 @@ namespace AppDelicare.Tests.Production
             var run = (await c.PostFormAsync("/api/MaterialLot/ProcessExpired", ("WarehouseId", warehouse))).Ok();
             run.GetProperty("expiredLotCount").GetInt32().Should().Be(1);
             run.GetProperty("totalWasteValue").GetDecimal().Should().Be(10000m);
-            run.GetProperty("transactionNumber").GetString().Should().StartWith("PH-");
+            run.GetProperty("transactionNumber").GetString().Should().StartWith("GD-");
             var waste = await _factory.QueryAsync(db => db.InventoryTransaction.AsNoTracking().SingleAsync(t => t.MaterialLotId == expired && t.TransactionType == "WASTE"));
             (waste.QuantityOut, waste.ReferenceType, waste.ReferenceId, waste.Reason).Should().Be((5m, "LotExpiry", expired, "Hết hạn sử dụng 18/12/2026"));
             (await _factory.QueryAsync(db => db.MaterialLot.AsNoTracking().SingleAsync(l => l.Id == expired))).Status.Should().Be("Expired");

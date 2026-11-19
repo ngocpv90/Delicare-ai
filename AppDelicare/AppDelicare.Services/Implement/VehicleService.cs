@@ -16,8 +16,11 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class VehicleService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard) : IVehicleService
+    public class VehicleService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard, IDocumentNumberService documentNumberService) : IVehicleService
     {
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
+        private string? _createdCode;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -110,7 +113,9 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess,
+                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
+                        : _createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "phương tiện", _createdCode)
+                        : ConstantHelper.Message.SaveSuccess,
                     Data = true
                 };
             }
@@ -124,11 +129,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(VehicleRequest request, string typeSave)
         {
-            if (_unitOfWork.VehicleRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted) != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
             var insert = _mapper.Map<Vehicle>(request);
+            // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
+            insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.Vehicle);
+            _createdCode = insert.Code;
             var entity = insert;
             _unitOfWork.VehicleRepository.Add(insert);
             await _unitOfWork.VehicleRepository.CommitAsync(typeSave);
@@ -142,10 +146,8 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            if (_unitOfWork.VehicleRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted) != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
+            // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
+            request.Code = exist.Code;
             var entity = _mapper.Map(request, exist);
             _unitOfWork.VehicleRepository.Update(entity);
             await _unitOfWork.VehicleRepository.CommitAsync(typeSave);

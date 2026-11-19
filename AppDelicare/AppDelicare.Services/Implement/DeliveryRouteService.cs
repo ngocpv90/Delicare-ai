@@ -393,7 +393,7 @@ namespace AppDelicare.Services.Implement
             };
             _unitOfWork.DeliveryRouteRepository.Add(route);
             int newCount = plannedStops.Count(s => s.Item.Existing == null);
-            string first = newCount == 0 ? string.Empty : await _documentNumberService.NextAsync(DocumentKind.Voucher, date);
+            string first = newCount == 0 ? string.Empty : await _documentNumberService.NextAsync(DocumentKind.DeliveryOrder, date);
             int seq = 0, created = 0;
             foreach (var s in plannedStops)
             {

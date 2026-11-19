@@ -256,9 +256,9 @@ namespace AppDelicare.Tests.Purchasing
                 listLine = new[] { ReceiveLine(s.Meat, 10m, 3m, 5), ReceiveLine(s.Veg, 20m, 8m, 4), ReceiveLine(s.Fish, 5m, -10m, 60) },
             })).Ok();
             Guid receiptId = created.GetProperty("goodsReceipt").GetProperty("id").GetGuid();
-            created.GetProperty("goodsReceipt").GetProperty("receiptNumber").GetString().Should().MatchRegex(@"^PH-261220-\d{4}$");
+            created.GetProperty("goodsReceipt").GetProperty("receiptNumber").GetString().Should().MatchRegex(@"^PN-261220-\d{4}$");
             created.GetProperty("goodsReceipt").GetProperty("status").GetString().Should().Be("QCPending");
-            created.GetProperty("inspectionNumber").GetString().Should().Be(created.GetProperty("goodsReceipt").GetProperty("receiptNumber").GetString());
+            created.GetProperty("inspectionNumber").GetString().Should().MatchRegex(@"^QC-261220-\d{4}$", "MA-1.7: phiếu QC có số QC- riêng");
             created.GetProperty("listWarning").EnumerateArray().Select(x => x.GetString()).Should().Contain(w => w!.Contains("Rau PUR3") && w.Contains("8 °C"));
             // T15.1: mát 8 °C = vùng nhận có điều kiện (5 < t ≤ 8) → gợi ý DAT kèm lý do; đông lạnh −10 °C > −15 °C = vùng loại.
             Line(created, s.Veg).GetProperty("suggestedResult").GetString().Should().Be("DAT");
@@ -294,7 +294,7 @@ namespace AppDelicare.Tests.Purchasing
             // Lô NL-YYMMDD-<mã NCC>-NN cho cả 3 dòng; KHONG_DAT tạm giữ; số lô NCC ghi trong Note.
             var lots = await _factory.QueryAsync(db => db.MaterialLot.AsNoTracking().Where(l => l.SupplierId == s.SupplierA).ToListAsync());
             lots.Should().HaveCount(3);
-            lots.Should().OnlyContain(l => System.Text.RegularExpressions.Regex.IsMatch(l.LotNumber!, @"^NL-261220-SAPUR3-\d{2}$") && l.LotNo == l.LotNumber && l.QualityStatus == l.QcStatus);
+            lots.Should().OnlyContain(l => System.Text.RegularExpressions.Regex.IsMatch(l.LotNumber!, @"^LO-261220-SAPUR3-\d{2}$") && l.LotNo == l.LotNumber && l.QualityStatus == l.QcStatus);
             var meatLot = lots.Single(l => l.IngredientId == s.Meat);
             var vegLot = lots.Single(l => l.IngredientId == s.Veg);
             var fishLot = lots.Single(l => l.IngredientId == s.Fish);

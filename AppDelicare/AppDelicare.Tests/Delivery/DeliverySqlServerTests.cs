@@ -74,7 +74,7 @@ namespace AppDelicare.Tests.Delivery
                 created.ResponseCode.Should().Be(200, created.ResponseMessage);
                 created.Data!.Route.RouteNo.Should().MatchRegex($@"^CX-991229-{vehicleCode}-\d{{2}}$");
                 var stop = created.Data.ListStop.Single();
-                stop.DeliveryNumber.Should().MatchRegex(@"^PH-991229-\d{4}$");
+                stop.DeliveryNumber.Should().MatchRegex(@"^GH-991229-\d{4}$");
                 Guid routeId = created.Data.Route.Id;
 
                 var clock = scope.ServiceProvider.GetRequiredService<IClock>();

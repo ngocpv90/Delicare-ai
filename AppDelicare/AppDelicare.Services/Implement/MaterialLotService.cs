@@ -141,7 +141,7 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
-        /// T16: thêm lô tay (tồn đầu kỳ / lô chưa qua luồng nhập T15 – PROPOSED). Số lô bỏ trống + có NCC → sinh <c>NL-YYMMDD-&lt;mã NCC&gt;-NN</c> (T11).
+        /// T16: thêm lô tay (tồn đầu kỳ / lô chưa qua luồng nhập T15 – PROPOSED). Số lô máy chủ sinh <c>LO-YYMMDD-&lt;mã NCC | TDK&gt;-NN</c> (T11 / D-63).
         /// Trạng thái chỉ Available / OnHold (mặc định Available). Ghi song song cột cũ LotNo / QualityStatus (DEPRECATED_COLUMNS).
         /// </summary>
         private async Task<string> Insert(MaterialLotRequest request, string typeSave)
@@ -151,17 +151,12 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.IngredientNotFound;
             }
-            string? number = request.LotNumber?.Trim();
-            if (string.IsNullOrEmpty(number))
-            {
-                string? supplierCode = request.SupplierId == null ? null
-                    : await _unitOfWork.DbContext.Supplier.AsNoTracking().Where(s => s.Id == request.SupplierId).Select(s => s.Code).FirstOrDefaultAsync();
-                if (string.IsNullOrWhiteSpace(supplierCode))
-                {
-                    return ConstantHelper.Message.LotNumberRequired;
-                }
-                number = await _documentNumberService.NextAsync(DocumentKind.MaterialLot, (request.ReceivedDate ?? _clock.Today).Date, supplierCode);
-            }
+            // MA-1 (D-63 c): số lô LO-YYMMDD-<mã NCC>-NN luôn do máy chủ sinh – số gửi lên bị bỏ qua.
+            // Lô không có NCC (tồn đầu kỳ) → hậu tố TDK (PROPOSED – BA/PO CONFIRM).
+            string? supplierCode = request.SupplierId == null ? null
+                : await _unitOfWork.DbContext.Supplier.AsNoTracking().Where(s => s.Id == request.SupplierId).Select(s => s.Code).FirstOrDefaultAsync();
+            string number = await _documentNumberService.NextAsync(DocumentKind.MaterialLot, (request.ReceivedDate ?? _clock.Today).Date,
+                string.IsNullOrWhiteSpace(supplierCode) ? "TDK" : supplierCode);
             insert.LotNumber = insert.LotNo = number;
             insert.QcStatus = insert.QualityStatus = string.IsNullOrWhiteSpace(request.QcStatus) ? request.QualityStatus : request.QcStatus;
             insert.Status = string.Equals(request.Status, MaterialLotStatus.OnHold, StringComparison.OrdinalIgnoreCase) ? MaterialLotStatus.OnHold : MaterialLotStatus.Available;
@@ -199,7 +194,7 @@ namespace AppDelicare.Services.Implement
             }
             var update = _mapper.Map(request, exist);
             update.Status = status;
-            update.LotNumber = update.LotNo = string.IsNullOrWhiteSpace(request.LotNumber) ? oldNumber : request.LotNumber.Trim();
+            update.LotNumber = update.LotNo = oldNumber; // MA-1 (D-63 c): số lô không đổi sau khi cấp
             update.QcStatus = update.QualityStatus = newQc;
             _unitOfWork.MaterialLotRepository.Update(update);
             await _unitOfWork.MaterialLotRepository.CommitAsync(typeSave);
@@ -462,7 +457,7 @@ namespace AppDelicare.Services.Implement
                     string reason = string.Format(ConstantHelper.Message.LotExpiryReason, lot.ExpiryDate?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture));
                     foreach (var row in mine)
                     {
-                        number ??= await _documentNumberService.NextAsync(DocumentKind.Voucher, today);
+                        number ??= await _documentNumberService.NextAsync(DocumentKind.InventoryTransaction, today);
                         await inventoryLedgerService.PostAsync(new InventoryPostRequest
                         {
                             TransactionType = "WASTE",

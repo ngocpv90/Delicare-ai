@@ -69,7 +69,7 @@ namespace AppDelicare.Tests.Inventory
                 });
                 created.ResponseCode.Should().Be(200, created.ResponseMessage);
                 Guid id = created.Data!.MaterialIssue!.Id;
-                created.Data.MaterialIssue.IssueNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                created.Data.MaterialIssue.IssueNumber.Should().MatchRegex(@"^PX-\d{6}-\d{4}$");
                 created.Data.ListLine.Select(l => (l.MaterialLotId, l.Quantity)).Should().BeEquivalentTo([(soon, 20m), (later, 5m)], "FEFO: lô hạn gần trước, bỏ lô hết hạn");
 
                 var posted = await issues.Post(new InventoryDocumentActionRequest { Id = id });

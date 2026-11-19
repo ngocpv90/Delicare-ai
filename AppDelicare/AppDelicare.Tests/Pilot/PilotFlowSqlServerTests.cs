@@ -142,24 +142,24 @@ namespace AppDelicare.Tests.Pilot
                 // ===== 0. Danh mục tối thiểu (P1 / P2)
                 Guid kg = await Insert<Model.Entity.UnitMeasure>("UnitMeasure", q => q.Where(x => x.Code == code + "KG").Select(x => x.Id).SingleAsync(),
                     ("Code", code + "KG"), ("Name", "[DEMO] kg " + k), ("Symbol", "kg"), ("Status", "Active"));
-                Guid warehouse = await Insert<Model.Entity.Warehouse>("Warehouse", q => q.Where(x => x.Code == code + "K").Select(x => x.Id).SingleAsync(),
+                Guid warehouse = await Insert<Model.Entity.Warehouse>("Warehouse", q => q.Where(x => x.Name == "[DEMO] Kho bếp " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "K"), ("Name", "[DEMO] Kho bếp " + k), ("WarehouseType", "KITCHEN"), ("Status", "Active"));
-                Guid beef = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Code == code + "BO").Select(x => x.Id).SingleAsync(),
+                Guid beef = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Name == "[DEMO] Thịt bò " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "BO"), ("Name", "[DEMO] Thịt bò " + k), ("BaseUnitId", kg), ("StorageType", "CHILLED"), ("ShelfLifeDays", 5),
                     ("IsExpiryManaged", true), ("QcRequired", true), ("Status", "Active"));
-                Guid rice = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Code == code + "GAO").Select(x => x.Id).SingleAsync(),
+                Guid rice = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Name == "[DEMO] Gạo " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "GAO"), ("Name", "[DEMO] Gạo " + k), ("BaseUnitId", kg), ("StorageType", "DRY"), ("ShelfLifeDays", 180),
                     ("IsExpiryManaged", true), ("QcRequired", true), ("Status", "Active"));
-                Guid supplier = await Insert<Model.Entity.Supplier>("Supplier", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
+                Guid supplier = await Insert<Model.Entity.Supplier>("Supplier", q => q.Where(x => x.Name == "[DEMO] NCC Pilot " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code), ("Name", "[DEMO] NCC Pilot " + k), ("Status", "Active"));
                 foreach (var (ingredient, price) in new[] { (beef, 300_000m), (rice, 20_000m) })
                 {
                     (await Post("/api/SupplierMaterial/Insert", ("SupplierId", supplier), ("IngredientId", ingredient), ("UnitPrice", price), ("MinimumOrderQuantity", 0m),
                         ("LeadTimeDays", 1), ("EffectiveFrom", today.AddDays(-1)), ("IsPreferred", true), ("Status", "Active"))).Ok();
                 }
-                Guid dishBeef = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Code == code + "BOKHO").Select(x => x.Id).SingleAsync(),
+                Guid dishBeef = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Name == "[DEMO] Bò kho " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "BOKHO"), ("Name", "[DEMO] Bò kho " + k), ("StandardServingSize", 150m), ("Status", "Active"));
-                Guid dishRice = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Code == code + "COM").Select(x => x.Id).SingleAsync(),
+                Guid dishRice = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Name == "[DEMO] Cơm trắng " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "COM"), ("Name", "[DEMO] Cơm trắng " + k), ("StandardServingSize", 200m), ("Status", "Active"));
                 // Công thức: định lượng cho 100 suất – bò 20 kg, gạo 12 kg → gửi duyệt → duyệt → khóa.
                 foreach (var (dish, ingredient, qty) in new[] { (dishBeef, beef, 20m), (dishRice, rice, 12m) })
@@ -170,29 +170,35 @@ namespace AppDelicare.Tests.Pilot
                     (await Post("/api/Recipe/Approve", ("Id", recipe), ("Note", "[DEMO]"))).Ok();
                     (await Post("/api/Recipe/Lock", ("Id", recipe), ("EffectiveFrom", today))).Ok();
                 }
-                Guid customer = await Insert<Model.Entity.Customer>("Customer", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
-                    ("Code", code), ("CIF", code), ("Name", "[DEMO] Khách Pilot " + k), ("DisplayName", "[DEMO] Khách Pilot " + k), ("CustomerType", "FACTORY"), ("Status", "Active"));
-                Guid location = await Insert<Model.Entity.CustomerDeliveryLocation>("CustomerDeliveryLocation", q => q.Where(x => x.Code == code + "CT").Select(x => x.Id).SingleAsync(),
+                Guid branch = await db.OrganizationUnit.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => x.Id).FirstAsync();
+                Guid customer = await Insert<Model.Entity.Customer>("Customer", q => q.Where(x => x.LegalName == "[DEMO] Khách Pilot " + k).Select(x => x.Id).SingleAsync(),
+                    ("CustomerType", "BUSINESS"), ("LegalName", "[DEMO] Khách Pilot " + k), ("DisplayName", "[DEMO] Khách Pilot " + k),
+                    ("TaxCode", "03" + (Math.Abs(k.GetHashCode()) % 100_000_000).ToString("00000000", CultureInfo.InvariantCulture)), ("LegalRepresentativeName", "[DEMO] Ông Đại Diện"),
+                    ("ContactPersonName", "[DEMO] Chị Liên Hệ"), ("ContactPersonPhone", "0901234567"), ("Address", "[DEMO] KCN Tân Bình"), ("PhoneNumber", "0281234567"),
+                    ("BranchId", branch), ("Industry", "FACTORY"), ("Status", "Active"));
+                Guid location = await Insert<Model.Entity.CustomerDeliveryLocation>("CustomerDeliveryLocation", q => q.Where(x => x.CustomerId == customer).Select(x => x.Id).SingleAsync(),
                     ("CustomerId", customer), ("Code", code + "CT"), ("Name", "[DEMO] Căng tin " + k), ("Address", "[DEMO] KCN"), ("DeliveryWindowFrom", "11:00"),
                     ("DeliveryWindowTo", "12:00"), ("Status", "Active"));
-                Guid contract = await Insert<Model.Entity.Contract>("Contract", q => q.Where(x => x.ContractNumber == code + "HD").Select(x => x.Id).SingleAsync(),
+                Guid contract = await Insert<Model.Entity.Contract>("Contract", q => q.Where(x => x.CustomerId == customer).Select(x => x.Id).SingleAsync(),
                     ("CustomerId", customer), ("ContractNumber", code + "HD"), ("Name", "[DEMO] HĐ suất ăn " + k), ("EffectiveFrom", today.AddDays(-1)), ("Status", "Active"));
                 Guid contractMeal = await Insert<Model.Entity.ContractMeal>("ContractMeal", q => q.Where(x => x.ContractId == contract).Select(x => x.Id).SingleAsync(),
                     ("ContractId", contract), ("MealType", "TRUA"), ("MealName", "[DEMO] Suất trưa"), ("UnitPrice", 35_000m), ("Status", "Active"));
                 // BE2.2: hợp đồng tạo ra luôn Nháp → gửi duyệt → duyệt (engine CONTRACT) mới Hiệu lực.
                 (await Post("/api/Contract/Submit", ("Id", contract))).Ok();
                 (await Post("/api/Contract/Approve", ("Id", contract), ("Note", "[DEMO]"))).Ok();
-                Guid vehicle = await Insert<Model.Entity.Vehicle>("Vehicle", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
+                Guid vehicle = await Insert<Model.Entity.Vehicle>("Vehicle", q => q.Where(x => x.LicensePlate == "[DEMO] 51C-" + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code), ("LicensePlate", "[DEMO] 51C-" + k), ("VehicleType", "TRUCK"), ("Capacity", 1200m), ("Status", "Active"));
                 Guid line = await Insert<Model.Entity.ProductionLine>("ProductionLine", q => q.Where(x => x.Code == code).Select(x => x.Id).SingleAsync(),
                     ("Code", code), ("Name", "[DEMO] Dây chuyền " + k), ("CapacityMealPerBatch", 1000m), ("MinutesPerBatch", 60m), ("Status", "Active"));
 
                 // Lô bị chặn có sẵn trong kho (chốt an toàn): bò hết hạn hôm qua 50 kg, bò QC KHONG_DAT 30 kg.
+                var blockedLots = new List<string>(); // MA-1: số lô do máy chủ sinh → [0] = hết hạn, [1] = QC không đạt
                 foreach (var (suffix, expiry, qc, qty) in new[] { ("HH", today.AddDays(-1), "DAT", 50m), ("KD", day.AddDays(5), "KHONG_DAT", 30m) })
                 {
-                    Guid lot = await Insert<Model.Entity.MaterialLot>("MaterialLot", q => q.Where(x => x.LotNumber == code + "-" + suffix).Select(x => x.Id).SingleAsync(),
+                    Guid lot = await Insert<Model.Entity.MaterialLot>("MaterialLot", q => q.Where(x => x.Note == "[DEMO] lô bị chặn " + suffix + " " + k).Select(x => x.Id).SingleAsync(),
                         ("IngredientId", beef), ("SupplierId", supplier), ("LotNumber", code + "-" + suffix), ("ExpiryDate", expiry), ("ReceivedDate", today.AddDays(-10)),
-                        ("QcStatus", qc), ("UnitCost", 300_000m), ("Note", "[DEMO] lô bị chặn"));
+                        ("QcStatus", qc), ("UnitCost", 300_000m), ("Note", "[DEMO] lô bị chặn " + suffix + " " + k));
+                    blockedLots.Add(await db.MaterialLot.AsNoTracking().Where(x => x.Id == lot).Select(x => x.LotNumber!).SingleAsync());
                     // BE2.3 (GAP-F-04): điều chỉnh tồn tay → yêu cầu STOCK_ADJUSTMENT, duyệt (admin) mới ghi sổ.
                     var adjust = (await Post("/api/InventoryTransaction/Adjust", ("WarehouseId", warehouse), ("IngredientId", beef), ("MaterialLotId", lot), ("Quantity", qty),
                         ("Reason", "[DEMO] Tồn đầu kỳ (lô bị chặn)"))).Ok();
@@ -201,7 +207,7 @@ namespace AppDelicare.Tests.Pilot
                 }
 
                 // ===== P3. Thực đơn tuần → phân công → đơn hàng → chốt
-                Guid menu = await Insert<Model.Entity.Menu>("Menu", q => q.Where(x => x.Code == code + "TD").Select(x => x.Id).SingleAsync(),
+                Guid menu = await Insert<Model.Entity.Menu>("Menu", q => q.Where(x => x.Name == "[DEMO] Thực đơn tuần " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "TD"), ("Name", "[DEMO] Thực đơn tuần " + k), ("EffectiveFrom", day), ("EffectiveTo", day.AddDays(6)));
                 foreach (var (dish, sort) in new[] { (dishBeef, 1), (dishRice, 2) })
                 {
@@ -218,7 +224,7 @@ namespace AppDelicare.Tests.Pilot
                     listLine = new[] { new { contractMealId = contractMeal, quantity = 1000 } },
                 })).Ok();
                 Guid orderId = order.GetProperty("order").GetProperty("id").GetGuid();
-                order.GetProperty("order").GetProperty("orderNumber").GetString().Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                order.GetProperty("order").GetProperty("orderNumber").GetString().Should().MatchRegex(@"^DH-\d{6}-\d{4}$");
                 order.GetProperty("order").GetProperty("totalAmount").GetDecimal().Should().Be(35_000_000m);
                 (await Post("/api/Order/Submit", ("Id", orderId))).Ok();
                 (await Post("/api/Order/Confirm", ("Id", orderId), ("Note", "[DEMO] khách xác nhận"))).Ok();
@@ -292,8 +298,8 @@ namespace AppDelicare.Tests.Pilot
                 })).Ok();
                 (await Post("/api/GoodsReceipt/Post", ("Id", grId), ("Note", "[DEMO] ghi sổ"))).Ok();
                 var grDetail = (await Get($"/api/GoodsReceipt/GetDetail?id={grId}")).Ok();
-                System.Text.RegularExpressions.Regex.Matches(grDetail.GetRawText(), $"NL-\\d{{6}}-{code}-\\d{{2}}").Select(m => m.Value).Distinct()
-                    .Should().HaveCount(2, "mỗi dòng phiếu nhập 1 lô NL- riêng, không trùng số (lỗi T50R1)");
+                System.Text.RegularExpressions.Regex.Matches(grDetail.GetRawText(), "LO-\\d{6}-NC\\d{5,6}-\\d{2}").Select(m => m.Value).Distinct()
+                    .Should().HaveCount(2, "mỗi dòng phiếu nhập 1 lô LO- riêng, không trùng số (lỗi T50R1)");
 
                 // ===== P7. Kế hoạch → duyệt → phát hành theo ca → mẻ ME- → xuất NL → nấu → nhiệt độ lõi → lưu mẫu → sản lượng → đạt → đóng gói
                 (await Post("/api/ProductionPlan/Approve", ("Id", planId), ("Note", "[DEMO]"))).Ok();
@@ -306,7 +312,7 @@ namespace AppDelicare.Tests.Pilot
                 foreach (Guid batch in new[] { batchBeef, batchRice })
                 {
                     var issue = (await Post("/api/ProductionBatch/CreateMaterialIssue", ("Id", batch), ("WarehouseId", warehouse), ("Post", true), ("Note", "[DEMO]"))).Ok();
-                    issue.GetRawText().Should().NotContain(code + "-HH").And.NotContain(code + "-KD");
+                    issue.GetRawText().Should().NotContain(blockedLots[0]).And.NotContain(blockedLots[1]);
                     (await Post("/api/ProductionBatch/Start", ("Id", batch))).Ok();
                 }
                 // Bò kho: 65 °C (có khắc phục) → chặn đạt QC; 75,5 °C → đạt; lưu mẫu.
@@ -335,7 +341,7 @@ namespace AppDelicare.Tests.Pilot
                     deliveryDate = D(day), vehicleId = vehicle, description = "[DEMO] chuyến Pilot", listOrderId = new[] { orderId },
                 })).Ok();
                 Guid routeId = Id(route.GetProperty("route"));
-                route.GetProperty("route").GetProperty("routeNo").GetString().Should().MatchRegex($@"^CX-991221-{code}-\d{{2}}$");
+                route.GetProperty("route").GetProperty("routeNo").GetString().Should().MatchRegex(@"^CX-991221-XE\d{5,6}-\d{2}$", "MA-1: hậu tố = mã xe XE-NNNNN bỏ dấu gạch");
                 Guid stopId = Id(route.GetProperty("listStop")[0]);
                 (await Post("/api/DeliveryRoute/RecordTemperature", ("Id", routeId), ("TemperatureC", 55m), ("CorrectiveAction", "[DEMO] hâm lại thùng"), ("DeviceCode", "[DEMO]-NK"),
                     ("MeasuredAt", DateTime.Now.AddMinutes(-10).ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)))).Ok(); // đo trước 10 phút

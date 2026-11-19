@@ -285,7 +285,7 @@ namespace AppDelicare.Services.Implement
                     ResponsibleEmployeeId = request.ResponsibleEmployeeId,
                     Note = request.Note,
                 };
-                string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                string number = await _documentNumberService.NextAsync(DocumentKind.StockCount, _clock.Today);
                 count.CountNumber = number;
                 count.CountNo = number;
                 _unitOfWork.StockCountRepository.Add(count);

@@ -160,7 +160,7 @@ namespace AppDelicare.Services.Implement
             return string.Empty;
         }
 
-        /// <summary>BE2.2: CRUD Update chỉ cho hợp đồng Nháp; giữ trạng thái (và số nếu không gửi số mới).</summary>
+        /// <summary>BE2.2: CRUD Update chỉ cho hợp đồng Nháp; giữ trạng thái và số (MA-1 – số không đổi sau khi cấp).</summary>
         private async Task<string> Update(ContractRequest request, string typeSave)
         {
             var exist = _unitOfWork.ContractRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
@@ -172,7 +172,7 @@ namespace AppDelicare.Services.Implement
             {
                 return string.Format(ConstantHelper.Message.ContractEditOnlyDraft, ContractStatus.Label(exist.Status));
             }
-            string? number = string.IsNullOrWhiteSpace(request.ContractNumber) ? exist.ContractNumber : request.ContractNumber.Trim();
+            string? number = exist.ContractNumber ?? exist.ContractNo; // MA-1 (D-63): số không đổi sau khi cấp
             string? error = await HeaderErrorAsync(request.CustomerId, request.EffectiveFrom, request.EffectiveTo, number, exist.Id);
             if (error != null)
             {
@@ -278,10 +278,14 @@ namespace AppDelicare.Services.Implement
             return null;
         }
 
-        /// <summary>Số hợp đồng: giữ số gửi lên (số hợp đồng giấy), trống → HD-YYMMDD-NNN (PROPOSED – D-51); ghi song song ContractNumber / ContractNo (cột cũ).</summary>
+        /// <summary>
+        /// Số hợp đồng HD-YYMMDD-NNN do máy chủ sinh (MA-1, D-63 c: số gửi lên bị bỏ qua – số hợp đồng giấy của khách ghi ở Ghi chú / Tên);
+        /// ghi song song ContractNumber / ContractNo (cột cũ).
+        /// </summary>
         private async Task AssignNumberAsync(Contract contract, string? requested)
         {
-            string number = string.IsNullOrWhiteSpace(requested) ? await _documentNumberService.NextAsync(DocumentKind.Contract, _clock.Today) : requested.Trim();
+            _ = requested;
+            string number = await _documentNumberService.NextAsync(DocumentKind.Contract, _clock.Today);
             contract.ContractNumber = number;
             contract.ContractNo = number;
         }

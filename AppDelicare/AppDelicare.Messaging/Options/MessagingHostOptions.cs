@@ -43,12 +43,20 @@ namespace AppDelicare.Messaging.Options
         public IReadOnlyList<string> EffectiveRiskLow => ApprovalRiskLow.Count > 0 ? ApprovalRiskLow : DefaultApprovalRiskLow;
 
         /// <summary>
-        /// BOT-1.4 (BOT_TELEGRAM §1.4): tiền tố mã chứng từ ĐANG SINH trong DocumentNumberService (PH, XN, PA, PO, DN, NL, ME, CX, KH, VS, HD) → gõ mã là tra.
+        /// BOT-1.4 (BOT_TELEGRAM §1.4) + MA-1.5 (D-63): tiền tố mã ĐANG SINH trong DocumentNumberService (BUSINESS_RULES §11 – chứng từ + danh mục)
+        /// cộng tiền tố cũ trước D-63 (PH, KH – chứng từ cũ giữ số) → gõ mã là tra.
         /// Rỗng = mặc định trong code (không đặt tiền tố mới).
         /// </summary>
         public List<string> CodePrefixes { get; set; } = [];
 
-        public static readonly IReadOnlyList<string> DefaultCodePrefixes = ["PH", "XN", "PA", "PO", "DN", "NL", "ME", "CX", "KH", "VS", "HD"];
+        public static readonly IReadOnlyList<string> DefaultCodePrefixes = [
+            // Chứng từ (dạng B) – D-63.
+            "DH", "HD", "NU", "DM", "MH", "PO", "PN", "PX", "KK", "GD", "LO", "KS", "LS", "ME", "DG", "GH", "CX", "VS", "PA", "XN", "DN", "DC", "QC", "MR",
+            // Danh mục (dạng A) – D-63.
+            "KHB", "KHC", "NC", "NL", "MA", "KO", "XE", "NV", "DP", "BG",
+            // Trước D-63 (chứng từ cũ giữ số).
+            "PH", "KH",
+        ];
 
         public IReadOnlyList<string> EffectiveCodePrefixes => CodePrefixes.Count > 0 ? CodePrefixes : DefaultCodePrefixes;
     }

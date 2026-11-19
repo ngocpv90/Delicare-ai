@@ -137,13 +137,12 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>T15: đề nghị mua tay – luôn Nháp, số PH- (T11) khi bỏ trống, ghi song song RequestNo. Dòng thêm qua PurchaseRequestLine (khi Nháp).</summary>
+        /// <summary>T15: đề nghị mua tay – luôn Nháp, số MH- (T11 / D-63) máy chủ sinh, ghi song song RequestNo. Dòng thêm qua PurchaseRequestLine (khi Nháp).</summary>
         private async Task<string> Insert(PurchaseRequestRequest request, string typeSave)
         {
             var insert = _mapper.Map<PurchaseRequest>(request);
-            string number = string.IsNullOrWhiteSpace(request.RequestNumber)
-                ? await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today)
-                : request.RequestNumber.Trim();
+            // MA-1 (D-63 c): số MH-YYMMDD-NNNN luôn do máy chủ sinh – số gửi lên bị bỏ qua.
+            string number = await _documentNumberService.NextAsync(DocumentKind.PurchaseRequest, _clock.Today);
             insert.RequestNumber = insert.RequestNo = number;
             insert.Status = PurchaseRequestStatus.Draft;
             if (insert.RequestDate == default)

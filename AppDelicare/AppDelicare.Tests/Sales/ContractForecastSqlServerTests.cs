@@ -94,7 +94,7 @@ namespace AppDelicare.Tests.Sales
                 var changes = sp.GetRequiredService<IMenuChangeRequestService>();
                 var change = await changes.Create(new MenuChangeCreateRequest { OrderId = orderId, OriginalDishId = chicken, RequestedDishId = fish, Quantity = 40, Reason = "[DEMO] dị ứng" });
                 change.ResponseCode.Should().Be(200, change.ResponseMessage);
-                change.Data!.Request!.RequestNo.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                change.Data!.Request!.RequestNo.Should().MatchRegex(@"^DM-\d{6}-\d{4}$");
                 var changeApproved = await changes.Decide(new MenuChangeActionRequest { Id = change.Data.Request.Id }, true);
                 changeApproved.ResponseCode.Should().Be(200, changeApproved.ResponseMessage);
 

@@ -35,6 +35,25 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>
+        /// MA-1.7 (D-63 k): quy tắc mã của mọi bảng – G1 tự sinh (giao diện chỉ đọc "(tự sinh khi lưu)"), G2 mã người đặt (chữ hoa không dấu), G3 không áp quy tắc.
+        /// <paramref name="entity"/> (tùy chọn): tên entity hoặc bảng (vd. <c>Customer</c>, <c>Dishe</c>). Chỉ cần đăng nhập.
+        /// </summary>
+        [Security.SkipPermission]
+        [HttpGet("GetCodeRules")]
+        public IActionResult GetCodeRules(string? entity)
+        {
+            try
+            {
+                return Ok(_service.GetCodeRules(entity));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCodeRules: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>Catalog 2: tổng + số bản ghi theo trạng thái (thẻ KPI, chip "Lọc nhanh"). Quyền Xem màn của danh sách.</summary>
         [Security.SkipPermission] // service kiểm quyền Xem trên màn của resource
         [HttpGet("GetStatusSummary")]

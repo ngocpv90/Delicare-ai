@@ -12,6 +12,9 @@ namespace AppDelicare.Services.Interface
     {
         /// <summary>Danh sách được hỗ trợ (chỉ những màn người dùng có quyền Xem; admin thấy hết).</summary>
         public Task<IResults<CommonResourceModel>> GetResources();
+
+        /// <summary>MA-1.7 (D-63 k): quy tắc mọi cột mã G1 / G2 / G3 – giao diện khóa ô Mã G1, chuẩn hóa G2.</summary>
+        public IResults<CodeRuleModel> GetCodeRules(string? entity);
         /// <summary>Catalog 2: tổng + số bản ghi theo trạng thái (cùng bộ lọc với danh sách). Quyền Xem.</summary>
         public Task<IResult<StatusSummaryModel>> GetStatusSummary(CommonListRequest request);
         /// <summary>Catalog 8: xuất danh sách ra xlsx / csv (cột cố định theo danh sách). Quyền Xuất.</summary>

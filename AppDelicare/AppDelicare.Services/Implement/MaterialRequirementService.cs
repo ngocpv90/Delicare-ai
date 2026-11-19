@@ -287,6 +287,14 @@ namespace AppDelicare.Services.Implement
         private static bool IsMovedOn(string? status)
             => status is PurchaseRequestStatus.PendingApproval or PurchaseRequestStatus.Approved or PurchaseRequestStatus.Converted;
 
+        /// <summary>
+        /// MA-1.7 (D-63, BUSINESS_RULES §11.3): số lần tính nhu cầu <c>MR-YYMMDD-NNN</c> – cấp 1 lần cho kế hoạch ở lần tính đầu, các lần tính lại giữ số đó.
+        /// Dòng tính trước D-63 (RequirementNo = số kế hoạch) được gán số MR- ở lần tính sau.
+        /// </summary>
+        private async Task<string> RequirementNumberAsync(IEnumerable<MaterialRequirement> rows)
+            => rows.Select(r => r.RequirementNo).FirstOrDefault(n => n != null && n.StartsWith("MR-", StringComparison.Ordinal))
+                ?? await _documentNumberService.NextAsync(DocumentKind.MaterialRequirement, _clock.Today);
+
         private static T? ReadJson<T>(string? json) where T : class
         {
             if (string.IsNullOrWhiteSpace(json) || !json.TrimStart().StartsWith('{'))
@@ -894,7 +902,7 @@ namespace AppDelicare.Services.Implement
 
                 if (needPurchase && purchaseRequest == null)
                 {
-                    string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                    string number = await _documentNumberService.NextAsync(DocumentKind.PurchaseRequest, _clock.Today);
                     purchaseRequest = new PurchaseRequest
                     {
                         Id = Guid.NewGuid(),
@@ -916,6 +924,7 @@ namespace AppDelicare.Services.Implement
                     purchaseRequest!.Note = $"Tự động từ tính nhu cầu NL ngày {Day(date)} – kế hoạch {plan.PlanNumber ?? plan.PlanNo}";
                 }
 
+                string? requirementNo = null; // MA-1.7: 1 số MR- cho mỗi kế hoạch (giữ số đã cấp)
                 foreach (var item in items.Values)
                 {
                     PurchaseRequestLine? prLine = null;
@@ -958,7 +967,7 @@ namespace AppDelicare.Services.Implement
                     {
                         _unitOfWork.MaterialRequirementRepository.Update(row);
                     }
-                    row.RequirementNo = plan.PlanNumber ?? plan.PlanNo;
+                    row.RequirementNo = requirementNo ??= await RequirementNumberAsync(oldRows);
                     row.UnitId = item.UnitId;
                     row.RequiredQuantity = item.Required;
                     row.RequiredQty = item.Required;
@@ -1167,7 +1176,7 @@ namespace AppDelicare.Services.Implement
                 PurchaseRequest? topUpPr = null;
                 if (needTopUp)
                 {
-                    string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                    string number = await _documentNumberService.NextAsync(DocumentKind.PurchaseRequest, _clock.Today);
                     string userNote = string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim();
                     topUpPr = new PurchaseRequest
                     {
@@ -1181,6 +1190,7 @@ namespace AppDelicare.Services.Implement
                     };
                     _unitOfWork.PurchaseRequestRepository.Add(topUpPr);
                 }
+                string? requirementNo = null; // MA-1.7: 1 số MR- cho mỗi kế hoạch (giữ số đã cấp)
                 foreach (var item in items.Values)
                 {
                     PurchaseRequestLine? prLine = null;
@@ -1228,7 +1238,7 @@ namespace AppDelicare.Services.Implement
                     }
                     // Số đề nghị mua của dòng = Σ đã đề nghị (chưa hủy / từ chối) + bổ sung lần này.
                     decimal purchaseTotal = Round4(requestedTotal + (prLine != null ? item.Purchase : 0m));
-                    row.RequirementNo = planNo;
+                    row.RequirementNo = requirementNo ??= await RequirementNumberAsync(oldRows);
                     row.UnitId = item.UnitId;
                     row.RequiredQuantity = item.Required;
                     row.RequiredQty = item.Required;
@@ -1360,7 +1370,7 @@ namespace AppDelicare.Services.Implement
                 DateTime date = plan.ProductionDate.Date;
                 if (purchaseRequest == null)
                 {
-                    string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                    string number = await _documentNumberService.NextAsync(DocumentKind.PurchaseRequest, _clock.Today);
                     purchaseRequest = new PurchaseRequest
                     {
                         Id = Guid.NewGuid(),

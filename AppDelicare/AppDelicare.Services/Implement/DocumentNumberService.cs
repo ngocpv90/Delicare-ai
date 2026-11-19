@@ -20,52 +20,94 @@ namespace AppDelicare.Services.Implement
 
         private sealed record Target(Type Entity, string[] Properties);
 
-        /// <param name="Prefix">Tiền tố (PH, XN…).</param>
-        /// <param name="Digits">Số chữ số phần đếm; 0 = mã gốc không có số (KH, VS), lần sau thêm "-2", "-3"…</param>
-        private sealed record Spec(string Prefix, int Digits, bool SuffixRequired, Target[] Targets);
+        /// <param name="Prefix">Tiền tố (DH, XN, KHB…).</param>
+        /// <param name="Digits">Số chữ số phần đếm; 0 = mã gốc không có số (KS, VS), lần sau thêm "-2", "-3"…</param>
+        /// <param name="Catalog">true = danh mục (dạng A, không phần ngày, không hậu tố).</param>
+        private sealed record Spec(string Prefix, int Digits, bool SuffixRequired, Target[] Targets, bool Catalog = false);
 
+        /// <summary>
+        /// D-63 / BUSINESS_RULES §11 – nơi DUY NHẤT đăng ký tiền tố. Không tiền tố nào là phần đầu của tiền tố khác (test <c>CodeRulesTests</c> chặn).
+        /// Chứng từ phát sinh trước D-63 giữ số cũ (PH-, KH-, NL-…) – số cũ khác tiền tố nên không tính vào dãy mới.
+        /// </summary>
         private static readonly Dictionary<DocumentKind, Spec> Specs = new()
         {
-            [DocumentKind.Voucher] = new("PH", 4, false,
-            [
-                new(typeof(Order), ["OrderNumber", "OrderNo"]),
-                new(typeof(GoodsReceipt), ["ReceiptNumber", "ReceiptNo"]),
-                new(typeof(MaterialIssue), ["IssueNumber", "IssueNo"]),
-                new(typeof(StockCount), ["CountNumber", "CountNo"]),
-                // T16: bút toán điều chỉnh / chuyển kho tay (không có phiếu riêng – GAP-F-03 / F-04) lấy số PH- trên sổ cái.
-                new(typeof(InventoryTransaction), ["TransactionNumber", "TransactionNo"]),
-                new(typeof(PurchaseRequest), ["RequestNumber", "RequestNo"]),
-                // BE2.6: đơn đổi ca (spec 11.3 – RequestNo tự sinh; BUSINESS_RULES §11 chưa có mẫu riêng → PH-, PROPOSED D-55 h).
-                new(typeof(ShiftSwapRequest), ["RequestNo"]),
-                new(typeof(ProductionOrder), ["ProductionOrderNumber", "ProductionOrderNo"]),
-                new(typeof(PackingOrder), ["PackingOrderNumber", "PackingNo"]),
-                new(typeof(DeliveryOrder), ["DeliveryNumber", "DeliveryNo"]),
-                // BE2.2: phiếu yêu cầu đổi món (spec 6.4 – RequestNo tự sinh).
-                new(typeof(MenuChangeRequest), ["RequestNo"]),
-            ]),
-            [DocumentKind.Approval] = new("XN", 3, false, [new(typeof(ApprovalRequest), ["RequestNo"])]),
-            [DocumentKind.Complaint] = new("PA", 4, false, [new(typeof(CustomerComplaint), ["ComplaintNo"])]),
-            [DocumentKind.PurchaseOrder] = new("PO", 4, false, [new(typeof(PurchaseOrder), ["PurchaseOrderNumber", "PONo"])]),
-            [DocumentKind.Leave] = new("DN", 4, false, [new(typeof(LeaveRequest), ["RequestNo"])]),
-            [DocumentKind.MaterialLot] = new("NL", 2, true, [new(typeof(MaterialLot), ["LotNumber", "LotNo"])]),
-            [DocumentKind.ProductionBatch] = new("ME", 2, true, [new(typeof(ProductionBatch), ["BatchNumber", "BatchNo"])]),
-            [DocumentKind.DeliveryRoute] = new("CX", 2, true, [new(typeof(DeliveryRoute), ["RouteNo"])]),
-            [DocumentKind.ProductionPlan] = new("KH", 0, false, [new(typeof(ProductionPlan), ["PlanNumber", "PlanNo"])]),
-            [DocumentKind.CleaningBatch] = new("VS", 0, true, [new(typeof(CleaningBatch), ["CleaningBatchNumber", "CleaningNo"])]),
-            // BE2.2 (spec 6.1 – số hợp đồng tự sinh, PROPOSED – D-51): HD-YYMMDD-NNN; ghi song song ContractNumber / ContractNo (cột cũ).
+            // ---------- Chứng từ (dạng B) ----------
+            [DocumentKind.Order] = new("DH", 4, false, [new(typeof(Order), ["OrderNumber", "OrderNo"])]),
+            // BE2.2 (spec 6.1): HD-YYMMDD-NNN; ghi song song ContractNumber / ContractNo (cột cũ).
             [DocumentKind.Contract] = new("HD", 3, false, [new(typeof(Contract), ["ContractNumber", "ContractNo"])]),
+            [DocumentKind.Menu] = new("NU", 3, false, [new(typeof(Menu), ["Code"])]),
+            [DocumentKind.MenuChange] = new("DM", 4, false, [new(typeof(MenuChangeRequest), ["RequestNo"])]),
+            [DocumentKind.PurchaseRequest] = new("MH", 4, false, [new(typeof(PurchaseRequest), ["RequestNumber", "RequestNo"])]),
+            [DocumentKind.PurchaseOrder] = new("PO", 4, false, [new(typeof(PurchaseOrder), ["PurchaseOrderNumber", "PONo"])]),
+            [DocumentKind.GoodsReceipt] = new("PN", 4, false, [new(typeof(GoodsReceipt), ["ReceiptNumber", "ReceiptNo"])]),
+            [DocumentKind.MaterialIssue] = new("PX", 4, false, [new(typeof(MaterialIssue), ["IssueNumber", "IssueNo"])]),
+            [DocumentKind.StockCount] = new("KK", 4, false, [new(typeof(StockCount), ["CountNumber", "CountNo"])]),
+            // T16: bút toán điều chỉnh / chuyển kho tay (không có phiếu riêng – GAP-F-03 / F-04) lấy số GD- trên sổ cái.
+            [DocumentKind.InventoryTransaction] = new("GD", 4, false, [new(typeof(InventoryTransaction), ["TransactionNumber", "TransactionNo"])]),
+            [DocumentKind.MaterialLot] = new("LO", 2, true, [new(typeof(MaterialLot), ["LotNumber", "LotNo"])]),
+            [DocumentKind.ProductionPlan] = new("KS", 0, false, [new(typeof(ProductionPlan), ["PlanNumber", "PlanNo"])]),
+            [DocumentKind.ProductionOrder] = new("LS", 4, false, [new(typeof(ProductionOrder), ["ProductionOrderNumber", "ProductionOrderNo"])]),
+            [DocumentKind.ProductionBatch] = new("ME", 2, true, [new(typeof(ProductionBatch), ["BatchNumber", "BatchNo"])]),
+            [DocumentKind.PackingOrder] = new("DG", 4, false, [new(typeof(PackingOrder), ["PackingOrderNumber", "PackingNo"])]),
+            [DocumentKind.DeliveryOrder] = new("GH", 4, false, [new(typeof(DeliveryOrder), ["DeliveryNumber", "DeliveryNo"])]),
+            [DocumentKind.DeliveryRoute] = new("CX", 2, true, [new(typeof(DeliveryRoute), ["RouteNo"])]),
+            [DocumentKind.CleaningBatch] = new("VS", 0, true, [new(typeof(CleaningBatch), ["CleaningBatchNumber", "CleaningNo"])]),
+            [DocumentKind.Complaint] = new("PA", 4, false, [new(typeof(CustomerComplaint), ["ComplaintNo"])]),
+            [DocumentKind.Approval] = new("XN", 3, false, [new(typeof(ApprovalRequest), ["RequestNo"])]),
+            [DocumentKind.Leave] = new("DN", 4, false, [new(typeof(LeaveRequest), ["RequestNo"])]),
+            [DocumentKind.ShiftSwap] = new("DC", 4, false, [new(typeof(ShiftSwapRequest), ["RequestNo"])]),
+            [DocumentKind.QcInspection] = new("QC", 4, false, [new(typeof(QcInspection), ["InspectionNumber"])]),
+            [DocumentKind.MaterialRequirement] = new("MR", 3, false, [new(typeof(MaterialRequirement), ["RequirementNo"])]),
+
+            // ---------- Danh mục (dạng A) ----------
+            // KHB / KHC dùng chung cột Customer.Code nhưng đếm riêng theo tiền tố (mã gốc khác nhau).
+            [DocumentKind.CustomerBusiness] = new("KHB", 5, false, [new(typeof(Customer), ["Code"])], Catalog: true),
+            [DocumentKind.CustomerIndividual] = new("KHC", 5, false, [new(typeof(Customer), ["Code"])], Catalog: true),
+            [DocumentKind.Supplier] = new("NC", 5, false, [new(typeof(Supplier), ["Code"])], Catalog: true),
+            [DocumentKind.Ingredient] = new("NL", 5, false, [new(typeof(Ingredient), ["Code"])], Catalog: true),
+            [DocumentKind.Dish] = new("MA", 5, false, [new(typeof(Dish), ["Code"])], Catalog: true),
+            [DocumentKind.Warehouse] = new("KO", 5, false, [new(typeof(Warehouse), ["Code"])], Catalog: true),
+            [DocumentKind.Vehicle] = new("XE", 5, false, [new(typeof(Vehicle), ["Code"])], Catalog: true),
+            [DocumentKind.Employee] = new("NV", 5, false, [new(typeof(Employee), ["EmployeeCode", "Code"])], Catalog: true),
+            [DocumentKind.DeliveryLocation] = new("DP", 5, false, [new(typeof(CustomerDeliveryLocation), ["Code"])], Catalog: true),
+            [DocumentKind.PricePolicy] = new("BG", 5, false, [new(typeof(PricePolicy), ["Code"])], Catalog: true),
         };
+
+        /// <summary>Thông tin tiền tố cho API quy tắc mã / test (không lộ cấu trúc nội bộ).</summary>
+        public sealed record KindInfo(DocumentKind Kind, string Prefix, bool Catalog, int Digits, bool SuffixRequired, IReadOnlyList<(Type Entity, string[] Properties)> Targets)
+        {
+            /// <summary>Mẫu hiển thị: <c>KHB-NNNNN</c>, <c>DH-YYMMDD-NNNN</c>, <c>ME-YYMMDD-&lt;HẬU TỐ&gt;-NN</c>, <c>KS-YYMMDD</c>.</summary>
+            public string Pattern => Catalog ? $"{Prefix}-{new string('N', Digits)}"
+                : string.Join("-", new[] { Prefix, "YYMMDD", SuffixRequired ? "<HẬU TỐ>" : null, Digits > 0 ? new string('N', Digits) : null }.Where(x => x != null));
+        }
+
+        public static IReadOnlyList<KindInfo> Kinds { get; } = Specs
+            .Select(x => new KindInfo(x.Key, x.Value.Prefix, x.Value.Catalog, x.Value.Digits, x.Value.SuffixRequired,
+                x.Value.Targets.Select(t => (t.Entity, t.Properties)).ToList()))
+            .ToList();
+
+        public static KindInfo Info(DocumentKind kind) => Kinds.Single(k => k.Kind == kind);
+
+        public Task<string> NextCodeAsync(DocumentKind kind, CancellationToken cancellationToken = default)
+        {
+            if (!Specs[kind].Catalog)
+            {
+                throw new ArgumentException($"{kind} là chứng từ – dùng NextAsync(kind, date).", nameof(kind));
+            }
+            return NextAsync(kind, DateTime.MinValue, null, cancellationToken);
+        }
 
         public async Task<string> NextAsync(DocumentKind kind, DateTime date, string? suffix = null, CancellationToken cancellationToken = default)
         {
             var spec = Specs[kind];
-            string? cleanSuffix = CleanSuffix(suffix);
+            string? cleanSuffix = spec.Catalog ? null : CleanSuffix(suffix);
             if (spec.SuffixRequired && cleanSuffix == null)
             {
                 throw new ArgumentException($"Mã {spec.Prefix} cần hậu tố (mã NCC / ca / xe).", nameof(suffix));
             }
-            // Mã gốc: PH-261116 / NL-261116-NCC01 / KH-261116 …
-            string root = string.Join("-", new[] { spec.Prefix, date.ToString("yyMMdd", CultureInfo.InvariantCulture), cleanSuffix }.Where(x => !string.IsNullOrEmpty(x)));
+            // Mã gốc: DH-261116 / LO-261116-NCC01 / KS-261116 … ; danh mục: KHB / NC …
+            string root = spec.Catalog ? spec.Prefix
+                : string.Join("-", new[] { spec.Prefix, date.ToString("yyMMdd", CultureInfo.InvariantCulture), cleanSuffix }.Where(x => !string.IsNullOrEmpty(x)));
             var db = _unitOfWork.DbContext;
             int? current;
             if (db.Database.IsRelational())

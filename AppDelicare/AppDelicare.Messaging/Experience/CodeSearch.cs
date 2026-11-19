@@ -24,7 +24,7 @@ namespace AppDelicare.Messaging.Experience
                 return false;
             }
             string prefixes = string.Join('|', options.CurrentValue.EffectiveCodePrefixes.Select(Regex.Escape));
-            return Regex.IsMatch(text.Trim(), $"^({prefixes})-\\d{{6}}", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(text.Trim(), $"^({prefixes})-\\d{{5,6}}", RegexOptions.IgnoreCase);
         }
 
         public static bool LooksLikeSearch(string? text) => text != null && text.Trim().Length >= 3 && !text.TrimStart().StartsWith('/');

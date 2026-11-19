@@ -59,6 +59,27 @@ namespace AppDelicare.Services.Implement
 
         private static Result<T> Forbid<T>(string message) => new() { ResponseCode = CommonAccess.Forbidden, ResponseMessage = message };
 
+        /// <summary>
+        /// MA-1.7 (D-63 k, BUSINESS_RULES §11.3): bảng phân nhóm cột mã (<see cref="CodeRules"/>) cho giao diện. Lọc theo entity / bảng nếu có.
+        /// Dữ liệu cấu hình tĩnh, không chứa dữ liệu nghiệp vụ → chỉ cần đăng nhập.
+        /// </summary>
+        public IResults<CodeRuleModel> GetCodeRules(string? entity)
+        {
+            try
+            {
+                string? e = string.IsNullOrWhiteSpace(entity) ? null : entity.Trim();
+                var list = CodeRules.All
+                    .Where(x => e == null || string.Equals(x.Entity, e, StringComparison.OrdinalIgnoreCase) || string.Equals(x.Table, e, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(x => x.Group).ThenBy(x => x.Entity).ThenBy(x => x.Column).ToList();
+                return Results<CodeRuleModel>.Success(list, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCodeRules: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResults<CommonResourceModel>> GetResources()
         {
             try

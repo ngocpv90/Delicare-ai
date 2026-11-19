@@ -24,8 +24,11 @@ namespace AppDelicare.Services.Implement
 {
     public class MenuService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IRecipeService recipeService
         , IPricePolicyService pricePolicyService, IClock clock, IOptions<BusinessRulesOptions> rules
-        , IAuditChangeService auditChangeService, INotificationService notifications) : IMenuService
+        , IAuditChangeService auditChangeService, INotificationService notifications, IDocumentNumberService documentNumberService) : IMenuService
     {
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
+        private string? _createdCode;
         private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -134,7 +137,9 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess,
+                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
+                        : _createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "thực đơn", _createdCode)
+                        : ConstantHelper.Message.SaveSuccess,
                     Data = true
                 };
             }
@@ -148,16 +153,14 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(MenuRequest request, string typeSave)
         {
-            var checkDuplicate = _unitOfWork.MenuRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
             if (request.EffectiveTo != null && request.EffectiveTo.Value.Date < request.EffectiveFrom.Date)
             {
                 return ConstantHelper.Message.EffectiveRangeInvalid;
             }
             var insert = _mapper.Map<Menu>(request);
+            // MA-1.3 (D-63): mã thực đơn NU-YYMMDD-NNN (ngày = ngày bắt đầu áp dụng) máy chủ tự sinh, bỏ qua giá trị gửi lên.
+            insert.Code = await _documentNumberService.NextAsync(DocumentKind.Menu, request.EffectiveFrom.Date);
+            _createdCode = insert.Code;
             // T13 (STATUS_CATALOG): thực đơn mới luôn là Nháp; trạng thái chỉ đổi qua Approve / Publish / Expire.
             insert.Status = MenuStatus.Draft;
             insert.VersionNo = request.VersionNo is > 0 ? request.VersionNo.Value : 1;
@@ -173,11 +176,8 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var checkDuplicate = _unitOfWork.MenuRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
+            // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
+            request.Code = exist.Code;
             // T13: chỉ sửa khi Nháp / Đã duyệt; không đổi trạng thái qua Update.
             if (exist.Status is not (null or MenuStatus.Draft or MenuStatus.Approved))
             {
@@ -530,8 +530,6 @@ namespace AppDelicare.Services.Implement
             {
                 var source = await _unitOfWork.MenuRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(m => m.Id == request.Id && !m.IsDeleted);
                 string error = source == null ? ConstantHelper.Message.RecordNotFoundMessage
-                    : string.IsNullOrWhiteSpace(request.Code) ? ConstantHelper.Message.ModelStateMessage
-                    : await _unitOfWork.MenuRepository.GetAll().AnyAsync(m => m.Code == request.Code && !m.IsDeleted) ? string.Format(ConstantHelper.Message.CodeExist, request.Code)
                     : request.EffectiveTo != null && request.EffectiveTo.Value.Date < request.EffectiveFrom.Date ? ConstantHelper.Message.EffectiveRangeInvalid
                     : string.Empty;
                 if (!string.IsNullOrEmpty(error))
@@ -539,9 +537,11 @@ namespace AppDelicare.Services.Implement
                     _unitOfWork.RollbackTransaction();
                     return Result<Menu>.Fail(error);
                 }
+                // MA-1.3 (D-63): bản sao lấy mã mới NU-YYMMDD-NNN theo ngày bắt đầu áp dụng; Code gửi lên bị bỏ qua.
+                string code = await _documentNumberService.NextAsync(DocumentKind.Menu, request.EffectiveFrom.Date);
                 var copy = new Menu
                 {
-                    Id = Guid.NewGuid(), Code = request.Code!.Trim(), Name = request.Name ?? source!.Name, VersionNo = 1, EffectiveFrom = request.EffectiveFrom.Date,
+                    Id = Guid.NewGuid(), Code = code, Name = request.Name ?? source!.Name, VersionNo = 1, EffectiveFrom = request.EffectiveFrom.Date,
                     EffectiveTo = request.EffectiveTo?.Date, Status = MenuStatus.Draft, CompanyId = source!.CompanyId, MenuType = source.MenuType,
                     Note = $"Sao chép từ {source.Code}",
                 };
@@ -556,7 +556,7 @@ namespace AppDelicare.Services.Implement
                 }
                 await _unitOfWork.MenuRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
                 _unitOfWork.CommitTransaction();
-                return Result<Menu>.Success(copy, ConstantHelper.Message.SaveSuccess);
+                return Result<Menu>.Success(copy, string.Format(ConstantHelper.Message.SaveSuccessWithCode, "thực đơn", copy.Code));
             }
             catch (Exception ex)
             {

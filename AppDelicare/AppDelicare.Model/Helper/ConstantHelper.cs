@@ -751,6 +751,27 @@
             public static readonly string SupplierIssueSeverityInvalid = "Mức độ phải là High / Medium / Low";
             public static readonly string SupplierIssueClosedLocked = "Sự cố đã Đóng – không sửa";
             public static readonly string SupplierIssueStatusViaTransition = "Trạng thái / cách xử lý sự cố chỉ đổi qua SupplierIssue/Transition";
+            // ---------------------------------------------------------------- MA-1 (D-63) – quy tắc mã + khách hàng theo loại
+            public static readonly string SaveSuccessWithCode = "Đã tạo {0} – mã {1}";
+            public static readonly string CustomerTypeInvalid = "Loại khách hàng phải là Doanh nghiệp (BUSINESS) hoặc Cá nhân (INDIVIDUAL)";
+            public static readonly string CustomerFieldRequired = "Khách hàng {0}: thiếu {1}";
+            public static readonly string CustomerTaxCodeInvalid = "Mã số thuế {0} không hợp lệ (10 số hoặc 10-3 số)";
+            public static readonly string CustomerPersonalTaxCodeInvalid = "Mã số thuế cá nhân {0} không hợp lệ (10 số)";
+            public static readonly string CustomerTaxCodeExist = "Mã số thuế {0} đã có ở khách hàng doanh nghiệp {1}";
+            public static readonly string CustomerIdentityInvalid = "Số CCCD {0} không hợp lệ (12 số)";
+            public static readonly string CustomerIdentityExist = "Số CCCD {0} đã có ở khách hàng cá nhân {1}";
+            public static readonly string CustomerPhoneInvalid = "{0} {1} không hợp lệ (0 + 9 số hoặc +84 + 9 số)";
+            public static readonly string CustomerEmailInvalid = "{0} {1} không đúng định dạng";
+            public static readonly string CustomerDateInFuture = "{0} không được sau ngày hôm nay";
+            public static readonly string CustomerIdentityDateInvalid = "Ngày cấp CCCD phải từ ngày sinh tới hôm nay";
+            public static readonly string CustomerStatusInvalid = "Trạng thái khách hàng phải là Active hoặc Inactive";
+            public static readonly string CustomerBranchNotFound = "Không tìm thấy chi nhánh phục vụ";
+            public static readonly string CustomerTypeLocked = "Khách hàng {0} đã có hợp đồng / đơn hàng – không đổi loại được. Ngừng hoạt động khách này và tạo khách mới";
+            public static readonly string CustomerTypeChanged = "Đổi loại khách hàng: mã {0} → {1}";
+            public static readonly string CodeGeneratedNote = "(tự sinh khi lưu)";
+            public static readonly string UserCodeRequired = "Chưa nhập mã";
+            public static readonly string UserCodeInvalid = "Mã {0} chỉ được gồm chữ hoa không dấu A–Z, số 0–9, dấu - và _ (tối đa 50 ký tự)";
+            public static readonly string UserCodeLocked = "Mã {0} đã được dùng – không sửa mã được";
         }
 
         public class TypeSave
