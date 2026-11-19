@@ -18,5 +18,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<Customer>> GetById(Guid id);
         // <summary>T45R: hồ sơ khách hàng 360°.</summary>
         public Task<IResult<CustomerOverviewModel>> GetOverview(Guid id);
+        /// <summary>UI-1.2 (D-64): số liệu 4 thẻ của danh sách khách hàng theo chi nhánh / loại / tìm kiếm.</summary>
+        public Task<IResult<CustomerSummaryModel>> GetSummary(Guid? branchId, string? customerType, string? searchText);
     }
 }

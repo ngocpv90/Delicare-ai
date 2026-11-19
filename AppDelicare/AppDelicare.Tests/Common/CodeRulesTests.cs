@@ -157,6 +157,42 @@ namespace AppDelicare.Tests.Common
                 ("PhoneNumber", "0901234569"), ("BranchId", branch))).Fail("không đổi loại");
         }
 
+        /// <summary>UI-1.2 / UI-1.3 (D-64): số liệu thẻ chỉ số danh sách khách hàng + hồ sơ 360.</summary>
+        [Fact]
+        public async Task Customer_summary_and_overview_cards_count_active_contracts_meals_and_complaints()
+        {
+            Guid branch = Guid.NewGuid(), c1 = Guid.NewGuid(), c2 = Guid.NewGuid();
+            DateTime today = DateTime.Today;
+            await _factory.SeedAsync(db =>
+            {
+                db.Customer.Add(new Customer { Id = c1, Code = "KHB-UI1A", CIF = "KHB-UI1A", Name = "[DEMO] UI1 A", DisplayName = "[DEMO] UI1 A", CustomerType = "BUSINESS", Status = "Active", BranchId = branch });
+                db.Customer.Add(new Customer { Id = c2, Code = "KHB-UI1B", CIF = "KHB-UI1B", Name = "[DEMO] UI1 B", DisplayName = "[DEMO] UI1 B", CustomerType = "BUSINESS", Status = "Inactive", BranchId = branch });
+                db.Contract.Add(new Contract { Id = Guid.NewGuid(), CustomerId = c1, ContractNumber = "HD-UI1-1", Status = "Active", EffectiveFrom = today.AddDays(-30) });
+                db.Contract.Add(new Contract { Id = Guid.NewGuid(), CustomerId = c1, ContractNumber = "HD-UI1-2", Status = "Active", EffectiveFrom = today.AddDays(-60), EffectiveTo = today.AddDays(-1) }); // hết hiệu lực
+                db.Contract.Add(new Contract { Id = Guid.NewGuid(), CustomerId = c2, ContractNumber = "HD-UI1-3", Status = "Draft", EffectiveFrom = today });
+                Guid o1 = Guid.NewGuid();
+                db.Order.Add(new Order { Id = o1, CustomerId = c1, OrderNumber = "DH-UI1-1", MealDate = today.AddDays(-2), DeliveryDate = today.AddDays(-2), TotalQuantity = 700, Status = "Reconciled" });
+                db.Order.Add(new Order { Id = Guid.NewGuid(), CustomerId = c1, OrderNumber = "DH-UI1-2", MealDate = today.AddDays(-3), DeliveryDate = today.AddDays(-3), TotalQuantity = 700, Status = "Delivered" });
+                db.Order.Add(new Order { Id = Guid.NewGuid(), CustomerId = c1, OrderNumber = "DH-UI1-3", MealDate = today.AddDays(-1), DeliveryDate = today.AddDays(-1), TotalQuantity = 999, Status = "Confirmed" }); // chưa giao
+                db.OrderReconciliation.Add(new OrderReconciliation { Id = Guid.NewGuid(), OrderId = o1, FinalAmount = 1000 });
+                db.CustomerComplaint.Add(new CustomerComplaint { Id = Guid.NewGuid(), CustomerId = c1, ComplaintNo = "PA-UI1-1", Description = "[DEMO]", ReceivedAt = today.AddDays(-5), SlaDueAt = today.AddDays(-4), ComplaintStatus = "Closed", ResolvedAt = today.AddDays(-5) });
+                db.CustomerComplaint.Add(new CustomerComplaint { Id = Guid.NewGuid(), CustomerId = c1, ComplaintNo = "PA-UI1-2", Description = "[DEMO]", ReceivedAt = today.AddDays(-3), SlaDueAt = today.AddDays(-2), ComplaintStatus = "Open" }); // quá hạn
+                return Task.CompletedTask;
+            });
+            using var c = _factory.CreateAuthorizedClient();
+            var sum = (await c.GetResultAsync($"/api/Customer/GetSummary?branchId={branch}")).Ok();
+            sum.GetProperty("totalCount").GetInt32().Should().Be(2);
+            sum.GetProperty("activeCount").GetInt32().Should().Be(1);
+            sum.GetProperty("activeContractCount").GetInt32().Should().Be(1, "hợp đồng hết hạn / Nháp không tính");
+            sum.GetProperty("avgMealsPerDay7d").GetDecimal().Should().Be(200, "(700 + 700) / 7, đơn chưa giao không tính");
+
+            var ov = (await c.GetResultAsync($"/api/Customer/GetOverview?id={c1}")).Ok();
+            ov.GetProperty("activeContractCount").GetInt32().Should().Be(1);
+            ov.GetProperty("openComplaintCount").GetInt32().Should().Be(1);
+            ov.GetProperty("complaintOnTimePct").GetDecimal().Should().Be(50);
+            ov.GetProperty("reconciledOrderCount").GetInt32().Should().Be(1);
+        }
+
         [Fact]
         public async Task G2_user_code_is_normalized_rejected_when_invalid_and_locked_once_used()
         {

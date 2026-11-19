@@ -155,7 +155,7 @@
     const stat = sc ? U.group(rowsFn(), sc) : {};
     const statusChips = sc ? Object.entries(stat).sort((a, b) => b[1].length - a[1].length) : [];
     el.innerHTML = APP.header(f, `${perm.exp !== false ? `<button class="btn" data-act="export">${I('export')} Xuất CSV</button>` : ''}${opt.noAdd ? '' : `<button class="btn primary" data-act="add" ${perm.add === false ? 'disabled title="Tài khoản không có quyền Thêm"' : ''}>${I('plus')} Tạo mới</button>`}`) + (opt.top || '') +
-      `<div class="kpis">${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), LIVE() ? esc(f.fn) : 'dbo.' + t + ' · ' + APP.srcText(t), 'clipboard', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), LIVE() ? 'Theo trạng thái' : `${sc} = ${k || 'NULL'}`, 'layers', ['blue', 'orange', 'purple'][i])).join('')}</div>
+      `<div class="kpis" data-kpis>${opt.kpis !== undefined ? opt.kpis : `${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), '', 'clipboard', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), '', 'layers', ['blue', 'orange', 'purple'][i])).join('')}`}</div>
       <div class="card panel">${sc ? `<div class="row-flex mb"><span class="small muted">${LIVE() ? 'Lọc nhanh:' : 'Lọc nhanh ' + sc + ':'}</span><button class="chip active" data-st="">Tất cả</button>${statusChips.map(([k, v]) => `<button class="chip" data-st="${esc(k)}">${esc(UI.statusVi(t, sc, k) || '(trống)')} · ${v.length}</button>`).join('')}</div>` : ''}<div id="gt"></div></div>`;
     const fks = cols.filter(c => Store.target(t, c.k)).slice(0, 1).map(c => { const vals = [...new Set(rowsFn().map(r => r[c.k]).filter(Boolean))]; return { k: c.k, label: c.label, options: vals.map(v => ({ v, l: Store.label(Store.target(t, c.k), v) })).sort((a, b) => a.l.localeCompare(b.l)) }; });
     const ref = {}; APP._lastTbl = ref;
@@ -170,6 +170,8 @@
         if (ref.extra) tb.querySelectorAll('tr[data-row]').forEach(ref.extra);
       }
     });
+    // UI-1.2: màn tự nạp số liệu dải thẻ từ máy chủ (vd. Customer/GetSummary).
+    if (opt.afterKpis) opt.afterKpis(el.querySelector('[data-kpis]'));
     el.querySelectorAll('[data-st]').forEach(c => c.onclick = () => { el.querySelectorAll('[data-st]').forEach(x => x.classList.toggle('active', x === c)); tbl.setFilter(sc, c.dataset.st); });
     el.querySelector('[data-act="add"]') && (el.querySelector('[data-act="add"]').onclick = () => UI.form(t, null, { title: f.name, defaults: opt.defaults, onSave: () => APP.refresh() }));
     el.querySelector('[data-act="export"]') && (el.querySelector('[data-act="export"]').onclick = () => { U.csv(rowsFn(), cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => UI.text(t, c.k, r[c.k]) })), `DELICARE_${LIVE() ? '' : 'DEMO_'}${t}.csv`); UI.toast('Đã xuất CSV ' + rowsFn().length + ' dòng' + (LIVE() ? '' : ' (DỮ LIỆU DEMO)'), 'ok'); });

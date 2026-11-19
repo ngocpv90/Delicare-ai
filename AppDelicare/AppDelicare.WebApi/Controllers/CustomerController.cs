@@ -112,6 +112,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-1.2 (D-64): số liệu 4 thẻ của danh sách khách hàng (tổng, đang hoạt động, hợp đồng hiệu lực, suất TB / ngày 7 ngày) theo chi nhánh / loại / tìm kiếm.</summary>
+        [HttpGet("GetSummary")]
+        public async Task<IActionResult> GetSummary(Guid? branchId, string? customerType, string? searchText)
+        {
+            try
+            {
+                return Ok(await _service.GetSummary(branchId, customerType, searchText));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSummary: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T45R: hồ sơ khách hàng 360° – liên hệ, điểm giao, hợp đồng + suất, 15 đơn gần nhất, KPI.</summary>
         [HttpGet("GetOverview")]
         public async Task<IActionResult> GetOverview(Guid id)

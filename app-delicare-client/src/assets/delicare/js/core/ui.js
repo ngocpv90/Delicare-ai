@@ -325,7 +325,13 @@
     parts.forEach(p => { const a1 = a0 + 2 * Math.PI * p.v / tot, large = a1 - a0 > Math.PI ? 1 : 0, r = 54, R = 70, c = 80; const P = (a, rr) => (c + rr * Math.cos(a)) + ',' + (c + rr * Math.sin(a)); if (p.v > 0) g += `<path d="M${P(a0, R)} A${R},${R} 0 ${large} 1 ${P(a1, R)} L${P(a1, r)} A${r},${r} 0 ${large} 0 ${P(a0, r)}Z" fill="${p.c}"><title>${esc(p.l)}: ${p.v}</title></path>`; a0 = a1; });
     return `<div class="row-flex" style="gap:16px"><svg viewBox="0 0 160 160" width="${opt.size || 130}" height="${opt.size || 130}">${g}<text x="80" y="78" text-anchor="middle" style="font-size:20px;font-weight:800;fill:#29352D">${U.num(tot)}</text><text x="80" y="96" text-anchor="middle" style="font-size:9px;fill:#98A198">${esc(opt.label || 'tổng')}</text></svg><div>${parts.map(p => `<div class="small" style="margin:4px 0"><i class="legend-dot" style="background:${p.c}"></i>${esc(p.l)} <b>${U.num(p.v)}</b></div>`).join('')}</div></div>`;
   };
-  UI.kpi = (label, value, foot, icon, color, link) => `<article class="card kpi ${link ? 'link' : ''}" ${link ? `data-go="${link}"` : ''}><div class="kpi-top"><span>${label}</span><span class="kpi-icon ${color || 'green'}">${I(icon || 'chart')}</span></div><div class="kpi-value">${value}</div><div class="kpi-foot">${foot || ''}</div></article>`;
+  // UI-1 (D-64 c): thẻ chỉ số – ô biểu tượng bên trái; nhãn, số chính + số phụ bên phải; không còn dòng chú thích chân.
+  // Giữ chữ ký cũ: tham số thứ 3 (trước là chú thích chân) nay là SỐ PHỤ ngắn hiện cùng dòng sau số chính (vd "/ 2 · 100%").
+  // value rỗng / null / undefined → "–" (đang tải). color: green | lime | blue | orange | red | purple | gray.
+  UI.kpi = (label, value, sub, icon, color, link) => {
+    const v = value === null || value === undefined || value === '' ? '–' : value;
+    return `<article class="card kpi ${link ? 'link' : ''}" ${link ? `data-go="${link}" role="link" tabindex="0"` : ''}><span class="kpi-icon ${color || 'green'}">${I(icon || 'chart')}</span><div class="kpi-body"><div class="kpi-label">${label}</div><div class="kpi-line"><span class="kpi-value">${v}</span>${sub ? `<span class="kpi-sub">${sub}</span>` : ''}</div></div></article>`;
+  };
   UI.gapNote = f => f && f.st !== 'MAPPED' && f.note ? `<div class="notice ${f.st === 'GAP' ? 'gap' : 'warn'}">${I('alert')}<div><b>${f.st === 'GAP' ? 'DATABASE GAP – chưa có bảng hỗ trợ' : 'PARTIAL – có bảng nhưng thiếu cột/quan hệ'} · BA/PO CONFIRM</b>${esc(f.note)}</div></div>` : (f && f.note ? `<div class="notice info">${I('database')}<div>${esc(f.note)}</div></div>` : '');
   UI.stepper = (steps, cur, failed) => `<div class="stepper">${steps.map((s, i) => `<div class="step ${i < cur ? 'done' : i === cur ? (failed ? 'fail' : 'current') : ''}"><div class="dot">${i < cur ? '✓' : i + 1}</div><div class="lbl">${s.l || s}</div>${s.s ? `<small>${s.s}</small>` : ''}</div>`).join('')}</div>`;
   window.UI = UI;

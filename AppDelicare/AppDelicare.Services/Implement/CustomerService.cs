@@ -434,6 +434,53 @@ namespace AppDelicare.Services.Implement
         [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
         private static partial Regex Email();
 
+        /// <summary>Hợp đồng hiệu lực tại ngày: Active và trong khoảng hiệu lực.</summary>
+        private static bool IsActiveContract(Contract c, DateTime day)
+            => c.Status == ContractStatus.Active && c.EffectiveFrom.Date <= day && (c.EffectiveTo == null || c.EffectiveTo.Value.Date >= day);
+
+        /// <summary>UI-1.2 (D-64): 4 thẻ của danh sách khách hàng – lọc giống danh sách (chi nhánh, loại, tìm theo mã / tên / SĐT / MST).</summary>
+        public async Task<IResult<CustomerSummaryModel>> GetSummary(Guid? branchId, string? customerType, string? searchText)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var q = db.Customer.AsNoTracking().Where(x => !x.IsDeleted);
+                if (branchId is { } b && b != Guid.Empty)
+                {
+                    q = q.Where(x => x.BranchId == b);
+                }
+                if (!string.IsNullOrWhiteSpace(customerType))
+                {
+                    string t = customerType.Trim();
+                    q = q.Where(x => x.CustomerType == t);
+                }
+                if (!string.IsNullOrWhiteSpace(searchText))
+                {
+                    string s = searchText.Trim();
+                    q = q.Where(x => x.Code!.Contains(s) || x.Name!.Contains(s) || x.DisplayName!.Contains(s) || x.PhoneNumber!.Contains(s) || x.TaxCode!.Contains(s));
+                }
+                var rows = await q.Select(x => new { x.Id, x.Status }).ToListAsync();
+                var idList = rows.Select(x => x.Id).ToList();
+                DateTime today = clock.Today, since = today.AddDays(-7);
+                var contracts = await db.Contract.AsNoTracking().Where(c => !c.IsDeleted && idList.Contains(c.CustomerId) && c.Status == ContractStatus.Active).ToListAsync();
+                decimal meals = await db.Order.AsNoTracking()
+                    .Where(o => !o.IsDeleted && idList.Contains(o.CustomerId) && o.MealDate >= since && o.MealDate < today && CompletedOrderStatuses.Contains(o.Status!))
+                    .SumAsync(o => o.TotalQuantity) ?? 0m;
+                return Result<CustomerSummaryModel>.Success(new CustomerSummaryModel
+                {
+                    TotalCount = rows.Count,
+                    ActiveCount = rows.Count(x => x.Status == "Active"),
+                    ActiveContractCount = contracts.Count(c => IsActiveContract(c, today)),
+                    AvgMealsPerDay7d = Math.Round(meals / 7m, 1),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSummary: ", ex.ToString()));
+                throw;
+            }
+        }
+
         /// <summary>Đơn đã giao xong – dùng tính số suất trung bình 7 ngày.</summary>
         private static readonly string[] CompletedOrderStatuses = ["Delivered", "Reconciled"];
 
@@ -453,7 +500,9 @@ namespace AppDelicare.Services.Implement
                 var meals = await db.ContractMeal.AsNoTracking().Where(m => !m.IsDeleted && contractIds.Contains(m.ContractId)).ToListAsync();
                 var orders = db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.CustomerId == id);
                 DateTime since = clock.Today /* Rà soát BE: giờ nghiệp vụ VN */.AddDays(-7);
-                decimal meals7d = await orders.Where(o => o.MealDate >= since && CompletedOrderStatuses.Contains(o.Status!)).SumAsync(o => o.TotalQuantity) ?? 0m;
+                // UI-1: 7 ngày ĐÃ QUA (không gồm hôm nay / ngày tương lai) – khớp Customer/GetSummary.
+                DateTime until = clock.Today;
+                decimal meals7d = await orders.Where(o => o.MealDate >= since && o.MealDate < until && CompletedOrderStatuses.Contains(o.Status!)).SumAsync(o => o.TotalQuantity) ?? 0m;
                 var model = new CustomerOverviewModel
                 {
                     Customer = customer,
@@ -477,6 +526,19 @@ namespace AppDelicare.Services.Implement
                     ComplaintCount = await db.CustomerComplaint.AsNoTracking().CountAsync(x => !x.IsDeleted && x.CustomerId == id),
                     AvgMealsPerDay7d = Math.Round(meals7d / 7m, 1),
                 };
+                // UI-1.3 (D-64): thẻ chỉ số hồ sơ 360.
+                DateTime today = clock.Today, now = clock.Now;
+                model.ActiveContractCount = contracts.Count(c => IsActiveContract(c, today));
+                var complaints = await db.CustomerComplaint.AsNoTracking().Where(x => !x.IsDeleted && x.CustomerId == id)
+                    .Select(x => new { x.ComplaintStatus, x.SlaDueAt, x.ResolvedAt }).ToListAsync();
+                model.OpenComplaintCount = complaints.Count(c => !ComplaintStatus.Done.Contains(c.ComplaintStatus));
+                var withSla = complaints.Where(c => c.SlaDueAt != null).ToList();
+                model.ComplaintOnTimePct = withSla.Count == 0 ? null : Math.Round(100m * withSla.Count(c =>
+                    ComplaintStatus.Done.Contains(c.ComplaintStatus) ? c.ResolvedAt == null || c.ResolvedAt <= c.SlaDueAt : c.SlaDueAt >= now) / withSla.Count, 1);
+                model.ReconciledOrderCount = await (from r in db.OrderReconciliation.AsNoTracking()
+                                                    join o in db.Order.AsNoTracking() on r.OrderId equals o.Id
+                                                    where !r.IsDeleted && !o.IsDeleted && o.CustomerId == id
+                                                    select r.OrderId).Distinct().CountAsync();
                 return Result<CustomerOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

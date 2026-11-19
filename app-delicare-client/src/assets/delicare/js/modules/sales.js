@@ -14,14 +14,44 @@
   const opts = (list, lbl, first) => `<option value="">${first}</option>${list.map(r => `<option value="${esc(r.Id)}">${esc(lbl(r))}</option>`).join('')}`;
   const failBox = msg => `<div class="notice warn">${I('alert')}<div>${esc(msg || 'Không tải được dữ liệu')}</div></div>`;
   // ---------- Khách hàng 360° ----------
+  // UI-1.2 (D-64): 4 thẻ của danh sách khách hàng. s = { totalCount, activeCount, activeContractCount, avgMealsPerDay7d } (null = đang tải).
+  const customerCards = s => {
+    const n = v => (s ? U.num(v || 0, 0) : '–');
+    const pct = s && s.totalCount ? Math.round(100 * s.activeCount / s.totalCount) : 0;
+    return UI.kpi('Tổng khách hàng', n(s && s.totalCount), '', 'users', 'green')
+      + UI.kpi('Đang hoạt động', n(s && s.activeCount), s ? `/ ${U.num(s.totalCount)} · ${pct}%` : '', 'check-circle', 'lime')
+      + UI.kpi('Hợp đồng hiệu lực', n(s && s.activeContractCount), '', 'file', 'blue', 'crm-contract')
+      + UI.kpi('Suất TB/ngày (7 ngày)', n(s && s.avgMealsPerDay7d), '', 'utensils', 'orange');
+  };
+  // Đơn Đã giao / Đã đối soát 7 ngày gần nhất (không gồm hôm nay) ÷ 7 – giống Customer/GetSummary.
+  const avgMeals7d = cusIds => {
+    const today = Store.ctx.date, since = U.addDays(today, -7);
+    const ords = Store.rows('Order').filter(o => (!cusIds || cusIds.has(o.CustomerId)) && ['Delivered', 'Reconciled'].includes(o.Status) && U.day(o.MealDate) >= since && U.day(o.MealDate) < today);
+    return U.sum(ords, 'TotalQuantity') / 7;
+  };
   APP.register('crm-customer', (el, f) => {
+    const listRows = () => Store.rows('Customer').filter(c => !Store.ctx.branch || c.BranchId === Store.ctx.branch);
+    const localSummary = () => {
+      const rows = listRows(), ids = new Set(rows.map(r => r.Id)), today = Store.ctx.date;
+      return {
+        totalCount: rows.length, activeCount: rows.filter(r => r.Status === 'Active').length,
+        activeContractCount: Store.rows('Contract').filter(c => ids.has(c.CustomerId) && c.Status === 'Active' && U.day(c.EffectiveFrom) <= today && (!c.EffectiveTo || U.day(c.EffectiveTo) >= today)).length,
+        avgMealsPerDay7d: avgMeals7d(ids),
+      };
+    };
     APP.genericList(el, f, {
+      kpis: customerCards(Store.isLive ? null : localSummary()),
+      afterKpis: box => {
+        if (!Store.isLive || !box) return;
+        cq('cus-sum|' + (Store.ctx.branch || ''), () => Store.query('Customer/GetSummary', { branchId: Store.ctx.branch || '' }))
+          .then(x => { if (box.isConnected) box.innerHTML = customerCards(x.ok && x.data ? x.data : localSummary()); });
+      },
       cols: [{ k: 'Code', label: 'Mã' }, { k: 'DisplayName', label: 'Khách hàng' }, { k: 'CustomerType', label: 'Loại', render: r => esc(UI.statusVi('Customer', 'CustomerType', r.CustomerType) || '') }, { k: 'BranchId', label: 'Chi nhánh phục vụ' },
         { k: 'x1', label: 'Hợp đồng hiệu lực', col: false, nosort: true, render: r => { const c = Store.by('Contract', 'CustomerId', r.Id); return c.map(x => `${esc(x.ContractNumber)} ${UI.badge(x.Status, 'Contract', 'Status')}`).join('<br>'); } },
         { k: 'x2', label: 'Điểm giao', col: false, num: true, nosort: true, render: r => Store.by('CustomerDeliveryLocation', 'CustomerId', r.Id).length },
-        { k: 'x3', label: 'Suất TB/ngày (7 ngày)', col: false, num: true, nosort: true, render: r => U.num(U.sum(Store.by('Order', 'CustomerId', r.Id).filter(o => o.Status === 'Reconciled'), 'TotalQuantity') / 5, 0) },
+        { k: 'x3', label: 'Suất TB/ngày (7 ngày)', col: false, num: true, nosort: true, render: r => U.num(avgMeals7d(new Set([r.Id])), 0) },
         { k: 'Status', label: 'Trạng thái' }],
-      rows: () => Store.rows('Customer').filter(c => !Store.ctx.branch || c.BranchId === Store.ctx.branch)
+      rows: listRows
     });
   });
   // drawer 360 khi mở Customer từ bất kỳ đâu
@@ -48,7 +78,21 @@
     const L = Store.isLive, tech = s => (L ? '' : s);
     const ords = Store.by('Order', 'CustomerId', id).sort((a, b) => b.MealDate.localeCompare(a.MealDate));
     const none = '<div class="muted small">Chưa có dữ liệu</div>';
-    const kpiHtml = (n, rev, cpl, avg) => `${UI.kpi('Đơn hàng', U.num(n), tech('dbo.Order'), 'clipboard', 'green')}${UI.kpi('Doanh thu đã đối soát', U.money(rev), tech('OrderReconciliation.FinalAmount'), 'calc', 'blue')}${UI.kpi('Khiếu nại', U.num(cpl), tech('CustomerComplaint'), 'msg', 'orange')}${avg === undefined ? '' : UI.kpi('Suất TB/ngày (7 ngày)', U.num(avg, 0), '', 'utensils', 'purple')}`;
+    // UI-1.3 (D-64): Hợp đồng hiệu lực · Suất TB/ngày (7 ngày) · Doanh thu đã đối soát (N đơn) · Khiếu nại đang mở (/ tổng · % đúng hạn).
+    const kpiHtml = d => UI.kpi('Hợp đồng hiệu lực', d ? U.num(d.activeContractCount || 0) : '–', '', 'file', 'green')
+      + UI.kpi('Suất TB/ngày (7 ngày)', d ? U.num(d.avgMealsPerDay7d || 0, 0) : '–', '', 'utensils', 'orange')
+      + UI.kpi('Doanh thu đã đối soát', d ? U.money(d.reconciledRevenue || 0) : '–', d ? `${U.num(d.reconciledOrderCount || 0)} đơn` : '', 'calc', 'blue')
+      + UI.kpi('Khiếu nại đang mở', d ? U.num(d.openComplaintCount || 0) : '–', d ? `/ ${U.num(d.complaintCount || 0)}${d.complaintOnTimePct === null || d.complaintOnTimePct === undefined ? '' : ' · ' + U.num(d.complaintOnTimePct, 0) + '% đúng hạn'}` : '', 'msg', 'red');
+    const localKpi = () => {
+      const today = Store.ctx.date, cpl = Store.by('CustomerComplaint', 'CustomerId', id);
+      const recon = ords.filter(o => Store.by('OrderReconciliation', 'OrderId', o.Id).length);
+      return {
+        activeContractCount: Store.by('Contract', 'CustomerId', id).filter(c => c.Status === 'Active' && U.day(c.EffectiveFrom) <= today && (!c.EffectiveTo || U.day(c.EffectiveTo) >= today)).length,
+        avgMealsPerDay7d: avgMeals7d(new Set([id])),
+        reconciledRevenue: U.sum(ords.flatMap(o => Store.by('OrderReconciliation', 'OrderId', o.Id)), 'FinalAmount'), reconciledOrderCount: recon.length,
+        openComplaintCount: cpl.filter(c => !['Resolved', 'Closed', 'Rejected'].includes(c.ComplaintStatus)).length, complaintCount: cpl.length, complaintOnTimePct: null,
+      };
+    };
     const contactHtml = (cts, locs) => `<h3>Người liên hệ${tech(' (CustomerContact)')}</h3>${cts.map(x => `<div class="spread" style="padding:7px 0;border-bottom:1px solid #F0F2ED"><span><b>${esc(x.FullName)}</b> · ${esc(x.Position || '')}${x.IsPrimary ? ' <span class="tag green">Chính</span>' : ''}</span><span class="small muted">${esc(x.Phone || '')} · ${esc(x.Email || '')}</span></div>`).join('') || (L ? none : '')}<h3 class="mt">Điểm giao hàng${tech(' (CustomerDeliveryLocation)')}</h3>${locs.map(x => `<div style="padding:7px 0;border-bottom:1px solid #F0F2ED"><b>${esc(x.Name)}</b> ${UI.badge(x.Status, 'CustomerDeliveryLocation', 'Status')}<div class="small muted">${esc(x.Address)} · Nhận ${U.time(x.DeliveryWindowFrom)}–${U.time(x.DeliveryWindowTo)} · ${esc(x.ContactName)} ${esc(x.ContactPhone)}</div></div>`).join('') || (L ? none : '')}`;
     const contractHtml = list => list.map(({ ct, meals }) => `<div class="card panel mb"><div class="spread"><b>${esc(ct.ContractNumber)} · ${esc(ct.Name)}</b>${UI.badge(ct.Status, 'Contract', 'Status')}</div><div class="small muted">${['Hiệu lực ' + U.date(ct.EffectiveFrom) + ' – ' + U.date(ct.EffectiveTo), esc(ct.PaymentTerm || ''), 'Giá trị ' + U.money(ct.ContractValue)].filter(Boolean).join(' · ')}</div><table class="table dc-table dt mt"><thead><tr><th>Loại suất${tech('<small>ContractMeal.MealType</small>')}</th><th>Tên</th><th class="num">Đơn giá</th><th>Trạng thái</th></tr></thead><tbody>${meals.map(m => `<tr><td>${UI.tag(m.MealType)}</td><td>${esc(m.MealName)}</td><td class="num">${U.money(m.UnitPrice)}</td><td>${UI.badge(m.Status, 'ContractMeal', 'Status')}</td></tr>`).join('')}</tbody></table></div>`).join('') || (L ? none : '');
     const orderHtml = list => `<table class="table dc-table dt"><thead><tr><th>Số đơn</th><th>Ngày ăn</th><th class="num">Suất</th><th class="num">Thành tiền</th><th>Trạng thái</th></tr></thead><tbody>${list.map(o => `<tr><td><a href="javascript:void 0" data-open="Order" data-id="${o.Id}">${esc(o.OrderNumber)}</a></td><td>${U.date(o.MealDate)}</td><td class="num">${U.num(o.TotalQuantity)}</td><td class="num">${U.money(o.TotalAmount)}</td><td>${UI.badge(o.Status, 'Order', 'Status')}</td></tr>`).join('')}</tbody></table>`;
@@ -57,14 +101,14 @@
     const late = (p, fn) => { if (ov) ov.then(x => { if (x.ok && x.data && p && p.isConnected) p.innerHTML = fn(x.data); }); };
     UI.detail('Customer', id, {
       screen: 'crm-customer',
-      top: `<div class="kpis" data-c360="${esc(id)}">${kpiHtml(ords.length, U.sum(ords.flatMap(o => Store.by('OrderReconciliation', 'OrderId', o.Id)), 'FinalAmount'), Store.by('CustomerComplaint', 'CustomerId', id).length)}</div>`,
+      top: `<div class="kpis" data-c360="${esc(id)}">${kpiHtml(L ? null : localKpi())}</div>`,
       tabs: [
         { label: 'Liên hệ & điểm giao', html: p => { late(p, d => contactHtml((d.listContact || []).map(pas), (d.listLocation || []).map(pas))); return contactHtml(Store.by('CustomerContact', 'CustomerId', id), Store.by('CustomerDeliveryLocation', 'CustomerId', id)); } },
         { label: 'Hợp đồng & giá', html: p => { late(p, d => contractHtml((d.listContract || []).map(x => ({ ct: Object.assign(pas(x), { EffectiveFrom: x.startDate, EffectiveTo: x.endDate }), meals: (x.listMeal || []).map(pas) })))); return contractHtml(Store.by('Contract', 'CustomerId', id).map(ct => ({ ct, meals: Store.by('ContractMeal', 'ContractId', ct.Id) }))); } },
         { label: 'Đơn hàng', html: p => { late(p, d => orderHtml((d.listRecentOrder || []).map(pas))); return orderHtml(ords.slice(0, 15)); } }
       ]
     });
-    if (ov) ov.then(x => { const k = [...document.querySelectorAll('[data-c360]')].find(n => n.dataset.c360 === String(id)); if (x.ok && x.data && k) k.innerHTML = kpiHtml(x.data.orderCount, x.data.reconciledRevenue, x.data.complaintCount, x.data.avgMealsPerDay7d); });
+    if (ov) ov.then(x => { const k = [...document.querySelectorAll('[data-c360]')].find(n => n.dataset.c360 === String(id)); if (x.ok && x.data && k) k.innerHTML = kpiHtml(x.ok && x.data ? x.data : localKpi()); });
   }
   // ---------- Đơn hàng ----------
   const os = { view: 'board', date: null };   // date: null = chưa chọn, '' = Tất cả
@@ -117,7 +161,7 @@
     const actions = { Draft: ['submit', 'Gửi đơn (Submitted)'], Submitted: ['confirm', 'Xác nhận (Confirmed)'], Confirmed: ['lock', 'Chốt số lượng (Locked)'] }[o.Status];
     UI.detail('Order', id, {
       screen: 'crm-order', noEdit: !editable,
-      top: `${UI.stepper(ORDER_FLOW.map(s => UI.statusVi('Order', 'Status', s)), i, o.Status === 'Cancelled')}<div data-odlive></div><div class="kpis mt">${UI.kpi('Khách hàng', esc(c.DisplayName).slice(0, 26), esc(c.CustomerType), 'building', 'green')}${UI.kpi('Tổng suất', U.num(o.TotalQuantity), 'Σ OrderLine.Quantity', 'utensils', 'blue')}${UI.kpi('Thành tiền', U.money(o.TotalAmount), 'Σ OrderLine.LineAmount', 'calc', 'orange')}</div>
+      top: `${UI.stepper(ORDER_FLOW.map(s => UI.statusVi('Order', 'Status', s)), i, o.Status === 'Cancelled')}<div data-odlive></div><div class="kpis mt">${UI.kpi('Khách hàng', esc(c.DisplayName).slice(0, 26), esc(UI.statusVi('Customer', 'CustomerType', c.CustomerType) || ''), 'building', 'green')}${UI.kpi('Tổng suất', U.num(o.TotalQuantity), '', 'utensils', 'blue')}${UI.kpi('Thành tiền', U.money(o.TotalAmount), '', 'calc', 'orange')}</div>
         <h3>Chi tiết theo ca / loại suất / điểm giao (OrderLine)</h3><table class="table dc-table dt"><thead><tr><th>Ca<small>ShiftId</small></th><th>Loại suất<small>MealType</small></th><th>Điểm giao<small>Note</small></th><th class="num">Số lượng<small>Quantity</small></th><th class="num">Dự báo<small>Forecast</small></th><th class="num">Đơn giá</th><th class="num">Thành tiền<small>LineAmount</small></th></tr></thead><tbody>${lines.map(l => { const fq = U.sum(fc.filter(x => x.MealType === l.MealType), 'ForecastQuantity'); return `<tr><td>${esc(Store.label('Shift', l.ShiftId))}</td><td>${UI.tag(l.MealType)}</td><td class="small">${esc(l.Note || '')}</td><td class="num">${editable ? `<input type="number" class="input" style="width:90px;text-align:right" data-ql="${l.Id}" value="${l.Quantity}">` : U.num(l.Quantity)}</td><td class="num muted" data-fq="${l.Id}">${fq ? U.num(fq) : '–'}</td><td class="num">${U.money(l.UnitPrice)}</td><td class="num">${U.money(l.LineAmount)}</td></tr>`; }).join('')}</tbody></table>
         ${editable ? '<div class="small muted mt">Có thể sửa số lượng khi đơn ở trạng thái Nháp / Đã gửi. Sau khi chốt, thay đổi phải qua Yêu cầu đổi món / phê duyệt.</div>' : ''}
         ${dvs.length ? `<h3 class="mt">Đơn giao hàng (DeliveryOrder)</h3>${dvs.map(d => `<div class="spread" style="padding:6px 0;border-bottom:1px solid #F0F2ED"><a href="javascript:void 0" data-open="DeliveryOrder" data-id="${d.Id}">${esc(d.DeliveryNumber)}</a><span class="small">${esc(Store.label('CustomerDeliveryLocation', d.CustomerDeliveryLocationId))}</span>${UI.badge(d.Status, 'DeliveryOrder', 'Status')}</div>`).join('')}` : ''}
