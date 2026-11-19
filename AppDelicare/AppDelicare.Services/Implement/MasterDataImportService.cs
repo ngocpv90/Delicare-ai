@@ -26,8 +26,16 @@ namespace AppDelicare.Services.Implement
     /// </list>
     /// Không ghi file lên đĩa server (đọc từ stream) – file thật chứa giá mua.
     /// </summary>
-    public partial class MasterDataImportService(IUnitOfWork unitOfWork, IRecipeService recipeService, IOptions<BusinessRulesOptions> rules) : IMasterDataImportService
+    public partial class MasterDataImportService(IUnitOfWork unitOfWork, IRecipeService recipeService, IOptions<BusinessRulesOptions> rules,
+        IDocumentNumberService documentNumberService) : IMasterDataImportService
     {
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+
+        /// <summary>MA-1.3 (D-63): ô mã trống → máy chủ sinh mã danh mục (G1); có mã → khớp theo mã như cũ (dữ liệu đã có giữ mã).</summary>
+        private async Task<string> CodeOrNewAsync(string? code, DocumentKind kind)
+            => string.IsNullOrWhiteSpace(code) ? await _documentNumberService.NextCodeAsync(kind) : code.Trim();
+
+        private const string GeneratedCodeNote = "Trống = máy chủ tự sinh mã (D-63); có mã = cập nhật bản ghi có mã đó";
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IRecipeService _recipeService = recipeService;
         private readonly BusinessRulesOptions _rules = rules.Value;
@@ -43,20 +51,20 @@ namespace AppDelicare.Services.Implement
         [
             new("Customer", "Khách hàng", "crm-customer",
             [
-                new("Mã khách hàng", true, null, "[DEMO]-KH01"), new("Tên khách hàng", true, null, "[DEMO] Trường Ánh Dương"),
-                new("Loại khách", true, "MetaData/GetReferenceLists?name=CustomerType", "SCHOOL"), new("Tên hiển thị", false, "Trống = tên khách hàng"),
-                new("CIF", false, "Trống = mã khách hàng (cột bắt buộc của bảng)"), new("Mã số thuế"), new("Điện thoại"), new("Email"), new("Địa chỉ"),
+                new("Mã khách hàng", false, GeneratedCodeNote, "[DEMO]-KH01"), new("Tên khách hàng", true, null, "[DEMO] Trường Ánh Dương"),
+                new("Loại khách", true, "BUSINESS (doanh nghiệp) / INDIVIDUAL (cá nhân); giá trị khác (ngành) → Doanh nghiệp + ghi vào Ngành", "BUSINESS"), new("Tên hiển thị", false, "Trống = tên khách hàng"),
+                new("CIF", false, "Bỏ qua – CIF = mã khách hàng (D-63)"), new("Mã số thuế"), new("Điện thoại"), new("Email"), new("Địa chỉ"),
                 new("Trạng thái", false, "Active / Inactive, trống = Active"),
             ]),
             new("CustomerDeliveryLocation", "Điểm giao hàng", "crm-location",
             [
-                new("Mã khách hàng", true, null, "[DEMO]-KH01"), new("Mã điểm giao", true, null, "[DEMO]-DG01"), new("Tên điểm giao", true, null, "[DEMO] Cổng A"),
+                new("Mã khách hàng", true, null, "[DEMO]-KH01"), new("Mã điểm giao", false, GeneratedCodeNote, "[DEMO]-DG01"), new("Tên điểm giao", true, null, "[DEMO] Cổng A"),
                 new("Địa chỉ"), new("Người nhận"), new("SĐT người nhận"), new("Giờ nhận từ", false, "HH:mm", "10:30"), new("Giờ nhận đến", false, "HH:mm", "11:15"),
                 new("Vĩ độ"), new("Kinh độ"), new("Hướng dẫn giao"),
             ]),
             new("Supplier", "Nhà cung cấp", "scm-supplier",
             [
-                new("Mã NCC", true, null, "[DEMO]-NCC01"), new("Tên NCC", true, null, "[DEMO] NCC rau sạch"), new("Loại NCC", false, "MetaData/GetReferenceLists?name=SupplierType", "VEGETABLE"),
+                new("Mã NCC", false, GeneratedCodeNote, "[DEMO]-NCC01"), new("Tên NCC", true, null, "[DEMO] NCC rau sạch"), new("Loại NCC", false, "MetaData/GetReferenceLists?name=SupplierType", "VEGETABLE"),
                 new("Mã số thuế"), new("Điện thoại"), new("Email"), new("Địa chỉ"), new("Người liên hệ"), new("SĐT liên hệ"),
             ]),
             new("UnitMeasure", "Đơn vị tính", "scm-uom",
@@ -65,7 +73,7 @@ namespace AppDelicare.Services.Implement
             ]),
             new("Ingredient", "Nguyên liệu", "scm-ingredient",
             [
-                new("Mã nguyên liệu", true, null, "[DEMO]-NL01"), new("Tên nguyên liệu", true, null, "[DEMO] Thịt ba chỉ"),
+                new("Mã nguyên liệu", false, GeneratedCodeNote, "[DEMO]-NL01"), new("Tên nguyên liệu", true, null, "[DEMO] Thịt ba chỉ"),
                 new("Nhóm nguyên liệu", false, "Tên nhóm; chưa có thì tạo mới", "[DEMO] Thịt"), new("ĐVT", false, "Mã hoặc tên ĐVT; chưa có thì tạo mới", "kg"),
                 new("Kiểu bảo quản", false, "MetaData/GetReferenceLists?name=StorageType", "CHILLED"), new("Tỷ lệ thu hồi (%)", false, "(0, 100]"),
                 new("Hao hụt chuẩn (%)", false, "[0, 100)", "5"), new("Quản lý hạn dùng", false, "Có / Không", "Có"), new("Số ngày hạn dùng", false, "Bắt buộc > 0 nếu quản lý hạn", "3"),
@@ -73,21 +81,21 @@ namespace AppDelicare.Services.Implement
             ]),
             new("Warehouse", "Kho", "scm-warehouse",
             [
-                new("Mã kho", true, null, "[DEMO]-KHO01"), new("Tên kho", true, null, "[DEMO] Kho lạnh"), new("Loại kho", false, "MetaData/GetReferenceLists?name=WarehouseType", "COLD"),
+                new("Mã kho", false, GeneratedCodeNote, "[DEMO]-KHO01"), new("Tên kho", true, null, "[DEMO] Kho lạnh"), new("Loại kho", false, "MetaData/GetReferenceLists?name=WarehouseType", "COLD"),
                 new("Địa chỉ"), new("Mã đơn vị", false, "OrganizationUnit.Code"),
             ]),
             new("Employee", "Nhân viên", "adm-employee",
             [
-                new("Mã nhân viên", true, null, "[DEMO]-NV01"), new("Họ tên", true, null, "[DEMO] Nguyễn Văn A"), new("Mã đơn vị", false, "OrganizationUnit.Code"),
+                new("Mã nhân viên", false, GeneratedCodeNote, "[DEMO]-NV01"), new("Họ tên", true, null, "[DEMO] Nguyễn Văn A"), new("Mã đơn vị", false, "OrganizationUnit.Code"),
                 new("Mã chức vụ", false, "Position.Code"), new("Điện thoại"), new("Email"), new("Ngày vào làm", false, "yyyy-MM-dd"),
             ]),
             new("Vehicle", "Phương tiện", "log-vehicle",
             [
-                new("Mã xe", true, null, "[DEMO]-XE01"), new("Biển số", true, null, "29C-000.00"), new("Loại xe", false, null, "Xe tải lạnh"), new("Tải trọng (kg)", false, null, "1500"),
+                new("Mã xe", false, GeneratedCodeNote, "[DEMO]-XE01"), new("Biển số", true, null, "29C-000.00"), new("Loại xe", false, null, "Xe tải lạnh"), new("Tải trọng (kg)", false, null, "1500"),
             ]),
             new("Dish", "Món ăn", "menu-dish",
             [
-                new("Mã món", true, null, "[DEMO]-MON01"), new("Tên món", true, null, "[DEMO] Thịt kho trứng"), new("Nhóm món", false, "Tên nhóm; chưa có thì tạo mới", "[DEMO] Món chính"),
+                new("Mã món", false, GeneratedCodeNote, "[DEMO]-MON01"), new("Tên món", true, null, "[DEMO] Thịt kho trứng"), new("Nhóm món", false, "Tên nhóm; chưa có thì tạo mới", "[DEMO] Món chính"),
                 new("Định lượng chuẩn (g/suất)"), new("Mô tả"),
             ]),
             new("RecipeLine", "Định mức công thức (dòng định lượng)", "menu-recipe",
@@ -293,17 +301,18 @@ namespace AppDelicare.Services.Implement
         // ------------------------------------------------------------ từng danh mục (mẫu)
         private async Task<string?> CustomerAsync(TemplateRow r, Ctx ctx)
         {
-            string code = r["Mã khách hàng"]!;
-            string cif = r["CIF"] ?? code;
+            // D-63 f: loại chỉ BUSINESS / INDIVIDUAL; giá trị cũ (HOSPITAL, SCHOOL…) là ngành → Doanh nghiệp + Industry.
+            string? type = CustomerTypes.Normalize(r["Loại khách"]);
+            string? industry = type == null ? r["Loại khách"] : null;
+            type ??= CustomerTypes.Business;
+            string code = await CodeOrNewAsync(r["Mã khách hàng"],
+                type == CustomerTypes.Individual ? DocumentKind.CustomerIndividual : DocumentKind.CustomerBusiness);
             var e = await FindAsync<Customer>(x => x.Code == code && !x.IsDeleted);
-            if (await AnyAsync<Customer>(x => x.CIF == cif && x.Code != code && !x.IsDeleted))
-            {
-                return string.Format(ConstantHelper.Message.CifExist, cif);
-            }
             bool isNew = e == null;
             e ??= Add(_unitOfWork.CustomerRepository, new Customer { Id = Guid.NewGuid(), Code = code });
-            bool changed = Set(e, x => x.Name, r["Tên khách hàng"]) | Set(e, x => x.CustomerType, r["Loại khách"]) | Set(e, x => x.DisplayName, r["Tên hiển thị"] ?? r["Tên khách hàng"])
-                | Set(e, x => x.CIF, cif) | Set(e, x => x.TaxCode, r["Mã số thuế"]) | Set(e, x => x.PhoneNumber, r["Điện thoại"]) | Set(e, x => x.Email, r["Email"])
+            bool changed = Set(e, x => x.Name, r["Tên khách hàng"]) | Set(e, x => x.CustomerType, type) | Set(e, x => x.DisplayName, r["Tên hiển thị"] ?? r["Tên khách hàng"])
+                | Set(e, x => x.Industry, industry ?? e.Industry) | Set(e, x => x.LegalName, type == CustomerTypes.Business ? r["Tên khách hàng"] : e.LegalName)
+                | Set(e, x => x.CIF, e.CIF ?? code) | Set(e, x => x.TaxCode, r["Mã số thuế"]) | Set(e, x => x.PhoneNumber, r["Điện thoại"]) | Set(e, x => x.Email, r["Email"])
                 | Set(e, x => x.Address, r["Địa chỉ"]) | Set(e, x => x.Status, r["Trạng thái"] ?? e.Status ?? Active);
             return Finish(e, isNew, changed, ctx);
         }
@@ -331,7 +340,7 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.LongitudeInvalid;
             }
-            string code = r["Mã điểm giao"]!;
+            string code = await CodeOrNewAsync(r["Mã điểm giao"], DocumentKind.DeliveryLocation);
             var e = await FindAsync<CustomerDeliveryLocation>(x => x.CustomerId == customer.Id && x.Code == code && !x.IsDeleted);
             bool isNew = e == null;
             e ??= Add(_unitOfWork.CustomerDeliveryLocationRepository, new CustomerDeliveryLocation { Id = Guid.NewGuid(), CustomerId = customer.Id, Code = code, Status = Active });
@@ -343,7 +352,7 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string?> SupplierAsync(TemplateRow r, Ctx ctx)
         {
-            var (e, isNew) = await SupplierByCodeAsync(r["Mã NCC"]!, r["Tên NCC"]!, ctx);
+            var (e, isNew) = await SupplierByCodeAsync(await CodeOrNewAsync(r["Mã NCC"], DocumentKind.Supplier), r["Tên NCC"]!, ctx);
             bool changed = Set(e, x => x.Name, r["Tên NCC"]) | Set(e, x => x.SupplierType, r["Loại NCC"]) | Set(e, x => x.TaxCode, r["Mã số thuế"])
                 | Set(e, x => x.Phone, r["Điện thoại"]) | Set(e, x => x.Email, r["Email"]) | Set(e, x => x.Address, r["Địa chỉ"])
                 | Set(e, x => x.ContactName, r["Người liên hệ"]) | Set(e, x => x.ContactPhone, r["SĐT liên hệ"]);
@@ -386,7 +395,7 @@ namespace AppDelicare.Services.Implement
             }
             var unit = r["ĐVT"] == null ? null : await UnitAsync(r["ĐVT"]!, ctx);
             var category = r["Nhóm nguyên liệu"] == null ? null : await IngredientCategoryAsync(r["Nhóm nguyên liệu"]!, ctx);
-            var (e, isNew) = await IngredientByCodeAsync(r["Mã nguyên liệu"]!, r["Tên nguyên liệu"]!, unit, ctx);
+            var (e, isNew) = await IngredientByCodeAsync(await CodeOrNewAsync(r["Mã nguyên liệu"], DocumentKind.Ingredient), r["Tên nguyên liệu"]!, unit, ctx);
             bool changed = Set(e, x => x.Name, r["Tên nguyên liệu"]) | Set(e, x => x.StorageType, r["Kiểu bảo quản"]) | Set(e, x => x.YieldPercent, yield)
                 | Set(e, x => x.StandardWastePercent, waste) | Set(e, x => x.IsExpiryManaged, expiry) | Set(e, x => x.ShelfLifeDays, shelf) | Set(e, x => x.MinimumStock, min);
             if (unit != null)
@@ -411,7 +420,7 @@ namespace AppDelicare.Services.Implement
                     return string.Format(ConstantHelper.Message.NotExist, "Đơn vị " + orgCode);
                 }
             }
-            string code = r["Mã kho"]!;
+            string code = await CodeOrNewAsync(r["Mã kho"], DocumentKind.Warehouse);
             var e = await FindAsync<Warehouse>(x => x.Code == code && !x.IsDeleted);
             bool isNew = e == null;
             e ??= Add(_unitOfWork.WarehouseRepository, new Warehouse { Id = Guid.NewGuid(), Code = code, Status = Active });
@@ -435,7 +444,7 @@ namespace AppDelicare.Services.Implement
             {
                 return "Ngày vào làm phải dạng yyyy-MM-dd.";
             }
-            string code = r["Mã nhân viên"]!;
+            string code = await CodeOrNewAsync(r["Mã nhân viên"], DocumentKind.Employee);
             var e = await FindAsync<Employee>(x => (x.Code == code || x.EmployeeCode == code) && !x.IsDeleted);
             bool isNew = e == null;
             e ??= Add(_unitOfWork.EmployeeRepository, new Employee { Id = Guid.NewGuid(), Code = code, Status = Active });
@@ -451,7 +460,7 @@ namespace AppDelicare.Services.Implement
             {
                 return "Tải trọng phải là số.";
             }
-            string code = r["Mã xe"]!;
+            string code = await CodeOrNewAsync(r["Mã xe"], DocumentKind.Vehicle);
             var e = await FindAsync<Vehicle>(x => x.Code == code && !x.IsDeleted);
             bool isNew = e == null;
             e ??= Add(_unitOfWork.VehicleRepository, new Vehicle { Id = Guid.NewGuid(), Code = code, Status = Active });
@@ -466,7 +475,7 @@ namespace AppDelicare.Services.Implement
                 return "Định lượng chuẩn phải là số.";
             }
             var category = r["Nhóm món"] == null ? null : await DishCategoryAsync(r["Nhóm món"]!, ctx);
-            string code = r["Mã món"]!;
+            string code = await CodeOrNewAsync(r["Mã món"], DocumentKind.Dish);
             var e = await FindAsync<Dish>(x => x.Code == code && !x.IsDeleted);
             bool isNew = e == null;
             e ??= Add(_unitOfWork.DishRepository, new Dish { Id = Guid.NewGuid(), Code = code, Status = Active });

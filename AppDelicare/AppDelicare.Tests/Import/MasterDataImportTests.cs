@@ -59,7 +59,7 @@ namespace AppDelicare.Tests.Import
             var response = await c.GetAsync("/api/ImportExcel/GetTemplate?tableName=Customer");
             response.Content.Headers.ContentType!.MediaType.Should().Contain("spreadsheetml");
             using var wb = new XLWorkbook(new MemoryStream(await response.Content.ReadAsByteArrayAsync()));
-            wb.Worksheet("DuLieu").Cell(1, 1).GetString().Should().Be("Mã khách hàng *");
+            wb.Worksheet("DuLieu").Cell(1, 1).GetString().Should().Be("Mã khách hàng", "MA-1.3: mã trống → máy chủ sinh");
         }
 
         [Fact]
@@ -71,26 +71,29 @@ namespace AppDelicare.Tests.Import
                 ["[DEMO]-IMP-KH1", "[DEMO] Trường A", "SCHOOL"],
                 ["[DEMO]-IMP-KH2", "[DEMO] Bệnh viện B", "HOSPITAL", null, "[DEMO]-CIF-B"],
                 ["[DEMO]-IMP-KH3", null, "SCHOOL"],
-                ["[DEMO]-IMP-KH4", "[DEMO] Trùng CIF", "FACTORY", null, "[DEMO]-CIF-B"]);
+                [null, "[DEMO] Khách không mã IMP", "INDIVIDUAL"]);
 
             var first = await ImportAsync(c, "Customer", file);
 
             var data = first.Ok();
-            data.GetProperty("inserted").GetInt32().Should().Be(2);
+            data.GetProperty("inserted").GetInt32().Should().Be(3);
             var errors = data.GetProperty("listError");
-            errors.GetArrayLength().Should().Be(2);
+            errors.GetArrayLength().Should().Be(1);
             errors[0].GetProperty("row").GetInt32().Should().Be(4);
             errors[0].GetProperty("message").GetString().Should().Contain("Tên khách hàng");
-            errors[1].GetProperty("row").GetInt32().Should().Be(5);
-            errors[1].GetProperty("message").GetString().Should().Contain("CIF");
             var kh1 = await _factory.QueryAsync(db => db.Customer.AsNoTracking().SingleAsync(x => x.Code == "[DEMO]-IMP-KH1"));
-            kh1.CIF.Should().Be("[DEMO]-IMP-KH1", "CIF trống = mã");
+            kh1.CIF.Should().Be("[DEMO]-IMP-KH1", "CIF = mã (D-63 h)");
+            kh1.CustomerType.Should().Be("BUSINESS", "D-63 f: giá trị cũ là ngành");
+            kh1.Industry.Should().Be("SCHOOL");
+            var noCode = await _factory.QueryAsync(db => db.Customer.AsNoTracking().SingleAsync(x => x.Name == "[DEMO] Khách không mã IMP"));
+            noCode.Code.Should().MatchRegex(@"^KHC-\d{5}$", "MA-1.3: mã trống → máy chủ sinh theo loại");
+            noCode.CIF.Should().Be(noCode.Code);
             kh1.DisplayName.Should().Be("[DEMO] Trường A");
             kh1.Status.Should().Be("Active");
 
             var second = (await ImportAsync(c, "Customer", file)).Ok();
-            second.GetProperty("inserted").GetInt32().Should().Be(0);
-            second.GetProperty("skipped").GetInt32().Should().Be(2);
+            second.GetProperty("inserted").GetInt32().Should().Be(1, "dòng không mã luôn là bản ghi mới");
+            second.GetProperty("skipped").GetInt32().Should().Be(2, "dòng có mã khớp theo mã");
             (await _factory.QueryAsync(db => db.Customer.CountAsync(x => x.Code!.StartsWith("[DEMO]-IMP-KH")))).Should().Be(2);
         }
 
