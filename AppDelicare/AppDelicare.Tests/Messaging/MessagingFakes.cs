@@ -207,5 +207,11 @@ namespace AppDelicare.Tests.Messaging
             AnswerTexts.Enqueue(text);
             return Task.CompletedTask;
         }
+
+        /// <summary>BOT-3.3: file người dùng gửi cho bot (file_id → nội dung).</summary>
+        public ConcurrentDictionary<string, byte[]> Files { get; } = new();
+
+        public Task<byte[]?> DownloadFileAsync(string botCode, string fileId, CancellationToken ct = default)
+            => Task.FromResult(Files.TryGetValue(fileId, out var b) ? b : null);
     }
 }

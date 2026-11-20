@@ -127,6 +127,8 @@
     if (t === 'PurchaseRequest' && st === 'Draft') h += btn('gx-pr-lines', 'Sửa dòng nguyên liệu', '', ro);
     if (t === 'Order' && ['Draft', 'Submitted', 'Confirmed', 'Locked'].includes(st)) h += btn('gx-order-change', 'Yêu cầu sửa sau chốt', 'orange', ro);
     if (t === 'DeliveryRoute') h += btn('gx-route-temp', 'Ghi nhiệt độ', '', ro);
+    if (t === 'DeliveryRoute' && ['Planned', 'Loading'].includes(st)) h += btn('gx-route-reassign', 'Đổi xe / tài xế', '', ro);   // BOT-3.2 (D-72): DeliveryRoute/Reassign
+    if (t === 'ProductionBatche' && ['Cooking', 'QCPending', 'Passed', 'Packed', 'Failed'].includes(st)) h += btn('gx-batch-extra', 'Nấu thêm', 'orange', perm && perm.add === false);   // BOT-3.3: ProductionBatch/CreateExtra
     if (t === 'CustomerComplaint') h += btn('gx-comment', 'Thêm ghi chú', '', ro);
     if (t === 'ProductionBatche' && !(perm && perm.exp === false)) h += btn('gx-sheet', 'Phiếu sản xuất (Excel)', '');
     if (t === 'ProductionBatche' && st === 'Passed') h += btn('gx-pack', 'Đã đóng gói xong', '', ro);
@@ -238,8 +240,39 @@
     if (act === 'gx-po-lines') { close(); Store.reload(['PurchaseOrderLine', 'Ingredient']).then(() => poLines(row)); }
     if (act === 'gx-order-change') { close(); Store.reload(['OrderLine', 'ContractMeal']).then(() => orderChange(row)); }
     if (act === 'gx-route-temp') { close(); Store.reload(['DeliveryStop']).then(() => routeTemp(row)); }
+    if (act === 'gx-route-reassign') { close(); Store.reload(['Vehicle', 'Employee']).then(() => routeReassign(row)); }
+    if (act === 'gx-batch-extra') { close(); batchExtra(row); }
     return true;
   };
+  // BOT-3.2 (D-72): đổi xe / tài xế của chuyến chưa xuất phát – trống = giữ nguyên; cảnh báo xe trùng chuyến khác trong ngày hiện kèm kết quả.
+  function routeReassign(row) {
+    const vehicles = Store.rows('Vehicle').filter(v => v.Status !== 'Inactive'), drivers = Store.rows('Employee').filter(e => !['Inactive', 'Resigned'].includes(e.Status));
+    dialog('Đổi xe / tài xế – ' + esc(Store.label('DeliveryRoute', row)),
+      fld('Xe mới', `<select class="select" id="gxV"><option value="">— Giữ xe hiện tại (${esc(Store.label('Vehicle', row.VehicleId) || 'chưa có')}) —</option>${vehicles.filter(v => v.Id !== row.VehicleId).map(v => `<option value="${esc(v.Id)}">${esc(v.LicensePlate || v.Code || '')}${v.Capacity ? ' · ' + U.num(v.Capacity) + ' kg' : ''}</option>`).join('')}</select>`)
+      + fld('Tài xế mới', `<select class="select" id="gxDr"><option value="">— Giữ tài xế hiện tại (${esc(Store.label('Employee', row.DriverId) || 'chưa có')}) —</option>${drivers.filter(e => e.Id !== row.DriverId).map(e => `<option value="${esc(e.Id)}">${esc(Store.label('Employee', e))}</option>`).join('')}</select>`)
+      + fld('Lý do', '<input class="input" id="gxN" maxlength="500" placeholder="vd. xe hỏng, tài xế nghỉ">'), 'Đổi', (m, close) => {
+        const v = val(m, 'gxV'), d = val(m, 'gxDr');
+        if (!v && !d) return UI.toast('Chọn xe hoặc tài xế mới', 'err');
+        run('DeliveryRoute/Reassign', { form: { Id: row.Id, VehicleId: v, DriverId: d, Note: val(m, 'gxN') }, tables: ['DeliveryRoute', 'DeliveryEvent'] }, 'Đã đổi xe / tài xế').then(r => {
+          if (!r.ok) return; close();
+          const w = (r.data && r.data.listWarning) || []; if (w.length) UI.toast(w.map(esc).join('<br>'), 'warn');
+        });
+      });
+  }
+  // BOT-3.3 (D-72): nấu thêm – mẻ bổ sung cùng lệnh / món (thiếu suất, mẻ hỏng); nhắc lập phiếu xuất nguyên liệu cho mẻ mới.
+  function batchExtra(row) {
+    dialog('Nấu thêm – ' + esc(Store.label('ProductionBatche', row)),
+      `<div class="small muted mb">Tạo mẻ mới (Kế hoạch) cùng lệnh sản xuất và món với mẻ này. Nguyên liệu cho mẻ thêm cần lập phiếu xuất (nút Xuất NL của mẻ mới).</div>`
+      + fld('Số suất nấu thêm *', '<input type="number" min="1" step="1" class="input" id="gxQ">') + fld('Lý do *', '<textarea class="input" id="gxR" rows="2" maxlength="500" placeholder="vd. thiếu 20 suất khách A, mẻ không đạt QC"></textarea>'), 'Tạo mẻ nấu thêm', (m, close) => {
+        const q = Number(val(m, 'gxQ')), reason = val(m, 'gxR');
+        if (!(q > 0)) return UI.toast('Số suất phải > 0', 'err');
+        if (!reason) return UI.toast('Nhập lý do', 'err');
+        run('ProductionBatch/CreateExtra', { form: { Id: row.Id, Quantity: q, Reason: reason }, tables: BATCH_TABLES }, 'Đã tạo mẻ nấu thêm').then(r => {
+          if (!r.ok) return; close();
+          const w = (r.data && r.data.listWarning) || []; if (w.length) UI.toast(w.map(esc).join('<br>'), 'warn');
+        });
+      });
+  }
 
   // ---------- Nút / khối thêm trên các màn hình đã có ----------
   function extend(id, after) {

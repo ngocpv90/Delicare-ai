@@ -54,7 +54,7 @@ namespace AppDelicare.Tests.Import
             using var c = _factory.CreateAuthorizedClient();
 
             var list = await c.GetResultAsync("/api/ImportExcel/GetTemplateList");
-            list.ListData.GetArrayLength().Should().Be(14);
+            list.ListData.GetArrayLength().Should().Be(15);   // + AttendanceMachine (BOT-3.3)
 
             var response = await c.GetAsync("/api/ImportExcel/GetTemplate?tableName=Customer");
             response.Content.Headers.ContentType!.MediaType.Should().Contain("spreadsheetml");

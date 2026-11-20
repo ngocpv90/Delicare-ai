@@ -18,6 +18,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     {
         public const string Kind = CallbackData.Kinds.Reconciliation;
         public const string ReplyServed = "rcn-served";
+        public const string ReplyReceive = "rcn-receive";
         public const string Menu = "#/crm-reconciliation";
 
         public IEnumerable<BotAction> GetActions() =>
@@ -43,11 +44,44 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             var stops = GiaoVanActions.Arr(r.Data, "listRoute")
                 .SelectMany(route => GiaoVanActions.Arr(route, "listStop").Select(s => (Route: route, Stop: s)))
                 .OrderBy(x => S(x.Stop, "plannedArrival")).ToList();
+            // BOT-3.2 (D-72): ✅ Nhận hàng / ký nhận tại điểm – điểm chưa giao xong có nút (quyền ghi kiểm ở api DeliveryStop/Deliver).
+            var open = stops.Where(x => S(x.Stop, "stopStatus") is not ("Delivered" or "Failed") && Guid.TryParse(S(x.Stop, "id"), out _)).Take(10).ToList();
             await SendAsync(ctx, new NeutralMessage
             {
                 Title = $"🚚 Xe đến hôm nay {VnTime.Today(time):dd/MM} ({stops.Count} điểm)",
                 Lines = stops.Count == 0 ? ["Chưa có chuyến giao nào hôm nay."] : [.. stops.Take(20).Select(x => Line(x.Route, x.Stop))],
+                Buttons = [.. open.Select(x => new NeutralButton($"✅ Nhận {S(x.Stop, "customerName") ?? S(x.Stop, "locationName")}", CallbackData.Build(Kind, "rv", Guid.Parse(S(x.Stop, "id")!))))],
             }, ct);
+        }
+
+        /// <summary>BOT-3.2: chọn số suất nhận (điền sẵn số kế hoạch của điểm) → DeliveryStop/Deliver, người nhận = người dùng bot.</summary>
+        private async Task AskReceiveAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>("api/DeliveryRoute/GetBoard?DeliveryDate=" + Today, token, ct);
+            var stop = GiaoVanActions.Arr(r.Data, "listRoute").SelectMany(route => GiaoVanActions.Arr(route, "listStop"))
+                .FirstOrDefault(s => Guid.TryParse(S(s, "id"), out var g) && g == stopId);
+            if (stop.ValueKind != JsonValueKind.Object)
+            {
+                await SayAsync(ctx, r.IsOk ? "Điểm giao không còn trong danh sách hôm nay." : Problem(r), ct);
+                return;
+            }
+            decimal planned = Dec(stop, "plannedMealQty");
+            var presets = new[] { planned, Math.Floor(planned * 0.98m), Math.Floor(planned * 0.95m) }.Where(q => q > 0).Distinct().ToList();
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"✅ Nhận hàng – {S(stop, "customerName") ?? S(stop, "locationName")}",
+                Lines = [$"Kế hoạch {planned:0.##} suất · {S(stop, "statusName")}", "Số suất điểm đã nhận:"],
+                Buttons = [.. presets.Select(q => new NeutralButton((q == planned ? "✅ Đủ " : "") + q.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "rq", $"{stopId:N}.{q.ToString("0.##", CultureInfo.InvariantCulture)}"))),
+                    new NeutralButton("Khác…", CallbackData.Build(Kind, "rx", stopId))],
+            }, ct);
+        }
+
+        private async Task ReceiveAsync(BotActionContext ctx, Guid stopId, string token, string quantity, CancellationToken ct)
+        {
+            string receiver = string.IsNullOrWhiteSpace(ctx.Identity.FullName) ? "Điểm phát" : ctx.Identity.FullName!;
+            var r = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryStop/Deliver",
+                [new("Id", stopId.ToString()), new("DeliveredQuantity", quantity), new("AcceptedQuantity", quantity), new("ReceiverName", receiver[..Math.Min(receiver.Length, 100)]), new("Remark", "Ký nhận tại điểm (Telegram)")], token, ct);
+            await SayAsync(ctx, r.IsOk ? $"✅ {r.ResponseMessage ?? "Đã ký nhận"} – {quantity} suất, người nhận {receiver}." : "⚠️ " + Problem(r), ct);
         }
 
         public async Task PendingAsync(BotActionContext ctx, CancellationToken ct)
@@ -81,6 +115,15 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             switch (data.Action)
             {
+                case "rv":
+                    await AskReceiveAsync(ctx, orderId, token, ct);   // id ở đây là DeliveryStop
+                    break;
+                case "rq" when parts.Length > 1:
+                    await ReceiveAsync(ctx, orderId, token, parts[1], ct);
+                    break;
+                case "rx":
+                    await AskAsync(ctx, "Nhập số suất điểm đã nhận:", ReplyReceive, orderId.ToString("N"), ct);
+                    break;
                 case "o":
                     await AskServedAsync(ctx, orderId, token, ct);
                     break;
@@ -106,6 +149,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) || v < 0)
             {
                 await AskAsync(ctx, "Chưa đúng số – nhập lại:", pending.Flow, pending.Key, ct);
+                return;
+            }
+            if (pending.Flow == ReplyReceive)
+            {
+                await ReceiveAsync(ctx, orderId, token, v.ToString("0.##", CultureInfo.InvariantCulture), ct);
                 return;
             }
             await ReconcileAsync(ctx, orderId, token, v.ToString("0.##", CultureInfo.InvariantCulture), ct);

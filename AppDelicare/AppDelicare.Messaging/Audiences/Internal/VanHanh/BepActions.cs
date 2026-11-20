@@ -26,6 +26,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public const string ReplyQty = "bat-qty";
         /// <summary>UG-1 C-09: nhiệt độ lõi dưới ngưỡng → hỏi hành động khắc phục (khóa = "&lt;Id N&gt;.&lt;nhiệt độ&gt;").</summary>
         public const string ReplyCorrective = "bat-fix";
+        /// <summary>BOT-3.2 / 3.3 (D-72): số suất nấu thêm → lý do; số suất thừa.</summary>
+        public const string ReplyExtraQty = "bat-exq";
+        public const string ReplyExtraReason = "bat-exr";
+        public const string ReplyWaste = "bat-waste";
         public const string Menu = "#/prod-batch";
         private static readonly decimal[] CoreTemps = [70m, 72m, 75m, 78m, 80m, 85m];
 
@@ -151,6 +155,15 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "fx":
                     await AskAsync(ctx, "Nhập số suất thực tế của mẻ:", ReplyQty, id.ToString("N"), ct);
                     break;
+                case "ex":
+                    await AskAsync(ctx, "➕ Nấu thêm bao nhiêu suất?", ReplyExtraQty, id.ToString("N"), ct);
+                    break;
+                case "wx":
+                    await AskAsync(ctx, "♻️ Số suất thừa (nấu dư, không giao):", ReplyWaste, id.ToString("N"), ct);
+                    break;
+                case "pk":
+                    await PostAsync(ctx, id, token, "api/ProductionBatch/Pack", [new("Id", id.ToString()), new("Note", "Chia suất xong – Telegram")], ct);
+                    break;
                 case "ss" when value != null:
                     await PostAsync(ctx, id, token, "api/ProductionBatch/StartStage", [new("Id", id.ToString()), new("StageCode", value)], ct);
                     break;
@@ -171,11 +184,34 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await CorrectiveReplyAsync(ctx, pending, ct);
                 return;
             }
+            if (pending.Flow == ReplyExtraReason)
+            {
+                await ExtraReasonAsync(ctx, pending, ct);
+                return;
+            }
             if (!Guid.TryParseExact(pending.Key, "N", out Guid id) || await TokenAsync(ctx, ct) is not { } token)
             {
                 return;
             }
             string text = (ctx.Event.Text ?? string.Empty).Trim().Replace(',', '.');
+            if (pending.Flow is ReplyExtraQty or ReplyWaste)
+            {
+                if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var q) || q <= 0)
+                {
+                    await AskAsync(ctx, "Số suất phải > 0 – nhập lại:", pending.Flow, pending.Key, ct);
+                    return;
+                }
+                string qty = q.ToString("0.##", CultureInfo.InvariantCulture);
+                if (pending.Flow == ReplyWaste)
+                {
+                    await PostAsync(ctx, id, token, "api/ProductionBatch/RecordWaste", [new("Id", id.ToString()), new("QuantityMeals", qty), new("Note", "Suất thừa – Telegram")], ct);
+                }
+                else
+                {
+                    await AskAsync(ctx, $"➕ Nấu thêm {qty} suất – lý do (vd. thiếu suất khách A, mẻ hỏng):", ReplyExtraReason, $"{id:N}.{qty}", ct);
+                }
+                return;
+            }
             if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var v))
             {
                 await AskAsync(ctx, "Chưa đúng số – nhập lại:", pending.Flow, pending.Key, ct);
@@ -189,6 +225,32 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 await FinishAsync(ctx, id, token, v.ToString(CultureInfo.InvariantCulture), ct);
             }
+        }
+
+        /// <summary>BOT-3.3 (D-72): ➕ nấu thêm – ProductionBatch/CreateExtra (khóa = "&lt;Id mẻ gốc N&gt;.&lt;số suất&gt;"), mở thẻ mẻ mới.</summary>
+        private async Task ExtraReasonAsync(BotActionContext ctx, PendingReply pending, CancellationToken ct)
+        {
+            string[] parts = pending.Key.Split('.', 2);
+            if (parts.Length < 2 || !Guid.TryParseExact(parts[0], "N", out Guid id) || await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            string reason = (ctx.Event.Text ?? string.Empty).Trim();
+            if (reason.Length < 3)
+            {
+                await AskAsync(ctx, "Lý do quá ngắn – gõ lại:", ReplyExtraReason, pending.Key, ct);
+                return;
+            }
+            var r = await Web.PostFormAsUserAsync<JsonElement>("api/ProductionBatch/CreateExtra",
+                [new("Id", id.ToString()), new("Quantity", parts[1]), new("Reason", reason[..Math.Min(reason.Length, 500)])], token, ct);
+            if (!r.IsOk)
+            {
+                await SayAsync(ctx, "⚠️ " + Problem(r), ct);
+                return;
+            }
+            var lines = new List<string> { $"{S(r.Data.TryGetProperty("batch", out var b) ? b : default, "batchNumber")} · {parts[1]} suất · Kế hoạch" };
+            lines.AddRange(GiaoVanActions.Arr(r.Data, "listWarning").Select(w => "⚠️ " + (w.ValueKind == JsonValueKind.String ? w.GetString() : w.ToString())));
+            await SendAsync(ctx, new NeutralMessage { Title = "✅ " + (r.ResponseMessage ?? "Đã tạo mẻ nấu thêm"), Lines = lines }, ct);
         }
 
         /// <summary>
@@ -294,6 +356,19 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await StagesAsync(m, id, token, ct);
                 m.Buttons.Add(new NeutralButton("🌡 Nhiệt độ lõi", CallbackData.Build(Kind, "t", n)));
                 m.Buttons.Add(new NeutralButton("✅ Xong mẻ", CallbackData.Build(Kind, "fin", n)));
+            }
+            // BOT-3.2 / 3.3 (D-72): chia suất xong (mẻ đạt QC → Đã đóng gói), ghi suất thừa, nấu thêm (mẻ bổ sung cùng lệnh).
+            if (status == "Passed")
+            {
+                m.Buttons.Add(new NeutralButton("🍱 Chia suất xong", CallbackData.Build(Kind, "pk", n)));
+            }
+            if (status is "Passed" or "Packed")
+            {
+                m.Buttons.Add(new NeutralButton("♻️ Ghi thừa", CallbackData.Build(Kind, "wx", n)));
+            }
+            if (status is "Cooking" or "QCPending" or "Passed" or "Packed" or "Failed")
+            {
+                m.Buttons.Add(new NeutralButton("➕ Nấu thêm", CallbackData.Build(Kind, "ex", n)));
             }
             if (status is "Cooking" or "QCPending" or "Passed" && B(b, "sampleRetained") != true)
             {

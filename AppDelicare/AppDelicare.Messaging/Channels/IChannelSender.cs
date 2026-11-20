@@ -15,5 +15,7 @@ namespace AppDelicare.Messaging.Channels
         Task<ChannelSendResult> PinAsync(string botCode, string chatId, string providerMessageId, CancellationToken ct = default);
 
         Task AnswerCallbackAsync(string botCode, string callbackId, string? text = null, CancellationToken ct = default);
+        /// <summary>BOT-3.3: tải file người dùng gửi cho bot (Telegram file_id) – null khi kênh không hỗ trợ / lỗi. File ≤ 20 MB (giới hạn Bot API).</summary>
+        Task<byte[]?> DownloadFileAsync(string botCode, string fileId, CancellationToken ct = default) => Task.FromResult<byte[]?>(null);
     }
 }

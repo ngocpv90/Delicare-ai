@@ -21,6 +21,8 @@ namespace AppDelicare.Messaging.Channels.Telegram
         /// <summary>Trả update THÔ (JsonElement) để lưu nguyên vẹn vào InboundMessage.PayloadJson.</summary>
         Task<List<JsonElement>> GetUpdatesAsync(string botCode, long offset, int timeoutSeconds, IEnumerable<string> allowedUpdates, CancellationToken ct = default);
         Task<TgFile> GetFileAsync(string botCode, string fileId, CancellationToken ct = default);
+        /// <summary>BOT-3.3: tải nội dung file đã gửi cho bot (đường dẫn từ getFile) – vd. file Excel máy chấm công.</summary>
+        Task<byte[]> DownloadFileAsync(string botCode, string filePath, CancellationToken ct = default) => throw new NotSupportedException();
     }
 
     public sealed class TelegramClient(HttpClient http, IOptionsMonitor<TelegramOptions> options) : ITelegramClient
@@ -64,6 +66,15 @@ namespace AppDelicare.Messaging.Channels.Telegram
 
         public Task<TgFile> GetFileAsync(string botCode, string fileId, CancellationToken ct = default)
             => CallAsync<TgFile>(botCode, "getFile", new { file_id = fileId }, ct);
+
+        public async Task<byte[]> DownloadFileAsync(string botCode, string filePath, CancellationToken ct = default)
+        {
+            var o = options.CurrentValue;
+            var bot = o.Find(botCode) ?? throw new InvalidOperationException($"Bot {botCode} chưa có token (Telegram:Bots:{botCode}:Token)");
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(60));
+            return await http.GetByteArrayAsync($"{o.ApiBaseUrl.TrimEnd('/')}/file/bot{bot.Token}/{filePath.TrimStart('/')}", cts.Token);
+        }
 
         private async Task<T> CallAsync<T>(string botCode, string method, object payload, CancellationToken ct, TimeSpan? timeout = null)
         {

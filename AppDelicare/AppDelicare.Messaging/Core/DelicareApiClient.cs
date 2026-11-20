@@ -21,6 +21,9 @@ namespace AppDelicare.Messaging.Core
         Task<ApiResult<T>> PostFormAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, string bearerToken, CancellationToken ct = default);
         /// <summary>BOT-1.5a: action nghiệp vụ nhận [FromBody] JSON (vd. FoodSafetyChecklistResult/Record).</summary>
         Task<ApiResult<T>> PostJsonAsUserAsync<T>(string path, object body, string bearerToken, CancellationToken ct = default);
+        /// <summary>BOT-3.3: gửi form multipart có 1 file (field "File") bằng JWT người dùng – vd. ImportExcel/Import.</summary>
+        Task<ApiResult<T>> PostFileAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, byte[] file, string fileName, string bearerToken, CancellationToken ct = default)
+            => throw new NotSupportedException();
     }
 
     public sealed class DelicareApiClient(HttpClient http, IOptionsMonitor<MessagingHostOptions> options) : IDelicareApiClient
@@ -52,6 +55,21 @@ namespace AppDelicare.Messaging.Core
         public async Task<ApiResult<T>> PostJsonAsUserAsync<T>(string path, object body, string bearerToken, CancellationToken ct = default)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, Url(path)) { Content = JsonContent.Create(body, options: Json) };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            return await SendAsync<T>(request, ct);
+        }
+
+        public async Task<ApiResult<T>> PostFileAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, byte[] file, string fileName, string bearerToken, CancellationToken ct = default)
+        {
+            var content = new MultipartFormDataContent();
+            foreach (var (k, v) in form)
+            {
+                content.Add(new StringContent(v), k);
+            }
+            var bytes = new ByteArrayContent(file);
+            bytes.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            content.Add(bytes, "File", fileName);
+            using var request = new HttpRequestMessage(HttpMethod.Post, Url(path)) { Content = content };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
             return await SendAsync<T>(request, ct);
         }

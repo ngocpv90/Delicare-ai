@@ -1643,3 +1643,18 @@ Authorization: Bearer {{token}}
 # @expect totalRecords >= 1
 GET {{base}}/api/ShiftAssignment/GetAll?EmployeeId={{e1}}&FromDate={{$datetime "YYYY-MM-DD" -1 d}}&ToDate={{$datetime "YYYY-MM-DD" 1 d}}&Page=1&PageSize=20
 Authorization: Bearer {{token}}
+
+########## 18. BOT-3 (D-72): API mới cho chức năng bot
+### 18.1 CHỐT AN TOÀN → 400: nấu thêm khi lệnh SX đã Đóng (cuối luồng) – nấu thêm chỉ khi lệnh còn mở (test BE: Bot3BackendTests)
+POST {{base}}/api/ProductionBatch/CreateExtra
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{batch1}}&Quantity=10&Reason=[DEMO] Thiếu 10 suất
+
+### 18.2 CHỐT AN TOÀN → 400: đổi xe chuyến đã giao xong (chỉ đổi được khi Kế hoạch / Đang xếp)
+POST {{base}}/api/DeliveryRoute/Reassign
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Id={{routeId}}&Note=[DEMO] thử đổi xe

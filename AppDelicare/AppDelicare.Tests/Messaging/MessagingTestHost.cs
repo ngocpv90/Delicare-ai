@@ -36,6 +36,14 @@ namespace AppDelicare.Tests.Messaging
         public Task<ApiResult<T>> PostJsonAsUserAsync<T>(string path, object body, string bearerToken, CancellationToken ct = default)
             => Answer<T>("JSON", path, new Dictionary<string, string> { ["__json"] = JsonSerializer.Serialize(body) }, bearerToken);
 
+        public Task<ApiResult<T>> PostFileAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, byte[] file, string fileName, string bearerToken, CancellationToken ct = default)
+        {
+            var f = form.ToDictionary(k => k.Key, k => k.Value);
+            f["__file"] = fileName;
+            f["__bytes"] = file.Length.ToString();
+            return Answer<T>("FILE", path, f, bearerToken);
+        }
+
         private Task<ApiResult<T>> Answer<T>(string method, string path, Dictionary<string, string> form, string token)
         {
             Calls.Enqueue((method, path, form, token));

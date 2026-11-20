@@ -27,7 +27,7 @@ namespace AppDelicare.Messaging.Processing
         AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu,
-        AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions traCuu)
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions traCuu, AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions thaoTac)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -113,7 +113,8 @@ namespace AppDelicare.Messaging.Processing
             var ctx = new BotActionContext(bot, e, identity);
 
             // Trả lời câu hỏi ForceReply (vd. lý do từ chối duyệt).
-            if (e.Kind == IncomingKind.Text && replies.Take(bot, e.ChatId, e.ReplyToMessageId?.ToString()) is { } pending)
+            // BOT-3.3: trả lời tin hỏi bằng FILE (vd. Excel máy chấm công) cũng là trả lời.
+            if (e.Kind is IncomingKind.Text or IncomingKind.Document && replies.Take(bot, e.ChatId, e.ReplyToMessageId?.ToString()) is { } pending)
             {
                 switch (pending.Flow)
                 {
@@ -131,14 +132,16 @@ namespace AppDelicare.Messaging.Processing
                         await swap.ReplyAsync(ctx, pending, ct);
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty
-                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyCorrective:
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyCorrective or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyExtraQty
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyExtraReason or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyWaste:
                         await bep.ReplyAsync(ctx, pending, ct);
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDispatchTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyQty
-                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyReceiver or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyBoxes:
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyReceiver or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyBoxes
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDriver:
                         await giaoVan.ReplyAsync(ctx, pending, ct);
                         break;
-                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions.ReplyServed:
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions.ReplyServed or AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions.ReplyReceive:
                         await diemPhat.ReplyAsync(ctx, pending, ct);
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions.ReplyCustomer or AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions.ReplyDescription
@@ -150,6 +153,11 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions.ReplyTrace:
                         await traCuu.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyDishFrom or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyDishTo
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyChangeReason or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyCleanReject
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyAttendanceFile:
+                        await thaoTac.ReplyAsync(ctx, pending, ct);
                         break;
                 }
                 return DispatchResult.Processed;
@@ -194,6 +202,9 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case CallbackData.Kinds.Hr:
                         await nhanSu.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Op:
+                        await thaoTac.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Undo when data.Action == "apv":
                         await approvals.UndoAsync(ctx, data, ct);

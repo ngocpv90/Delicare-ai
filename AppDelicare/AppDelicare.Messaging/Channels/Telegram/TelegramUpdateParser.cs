@@ -30,6 +30,8 @@ namespace AppDelicare.Messaging.Channels.Telegram
         public long? MessageId { get; init; }
         public long? ReplyToMessageId { get; init; }
         public string? FileId { get; init; }
+        /// <summary>BOT-3.3: tên file của document (kiểm tra đuôi .xlsx khi nhập file máy chấm công).</summary>
+        public string? FileName { get; init; }
         public string? MemberStatus { get; init; }
         /// <summary>Giờ gửi (Unix giây) – chấm công: vị trí cũ hơn 120″ bị coi là cũ.</summary>
         public long Date { get; init; }
@@ -102,7 +104,7 @@ namespace AppDelicare.Messaging.Channels.Telegram
             }
             if (m.Document != null)
             {
-                return e with { Kind = IncomingKind.Document, FileId = m.Document.FileId, Text = m.Caption };
+                return e with { Kind = IncomingKind.Document, FileId = m.Document.FileId, FileName = m.Document.FileName, Text = m.Caption };
             }
             string text = (m.Text ?? string.Empty).Trim();
             if (text.StartsWith('/'))
