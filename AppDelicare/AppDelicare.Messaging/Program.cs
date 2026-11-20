@@ -43,7 +43,12 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<IBotChannelApi, BotChannelApi>();
             builder.Services.AddSingleton<UserTokenCache>();
             builder.Services.AddSingleton<BotUserContext>();
-            builder.Services.AddSingleton<IChannelSender, TelegramSender>();
+            // BOT-UX-1: bảng điều khiển bọc kênh gửi – ngoài phiên panel (tin hệ thống, nhóm) chuyển thẳng tới Telegram.
+            builder.Services.Configure<PanelOptions>(builder.Configuration.GetSection(PanelOptions.Section));
+            builder.Services.AddSingleton<PanelRegistry>();
+            builder.Services.AddSingleton<TelegramSender>();
+            builder.Services.AddSingleton<IChannelSender>(sp => ActivatorUtilities.CreateInstance<PanelSender>(sp, (IChannelSender)sp.GetRequiredService<TelegramSender>()));
+            builder.Services.AddSingleton<PanelController>();
             builder.Services.AddSingleton<InboundSignal>();
             builder.Services.AddSingleton<UpdateIngestor>();
             builder.Services.AddSingleton<SendRateLimiter>();

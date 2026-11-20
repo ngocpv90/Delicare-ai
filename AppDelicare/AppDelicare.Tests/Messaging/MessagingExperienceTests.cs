@@ -121,20 +121,22 @@ namespace AppDelicare.Tests.Messaging
         }
 
         [Fact]
-        public async Task Slash_commands_per_chat_only_allowed_and_synced_once()
+        public async Task Slash_commands_per_chat_are_the_four_panel_commands_and_synced_once()
         {
             await using var h = ApprovalHost();
             await h.SendAsync(Text("/start"));
             await h.SendAsync(Text("/start"));
             var call = h.Telegram.CommandCalls.Should().ContainSingle().Subject;
             call.Scope.Should().Contain("\"chat\"").And.Contain("7001");
-            call.Commands.Select(c => c.Command).Should().Contain(["start", "menu", "chamcong", "donct", "cho", "help", "huylienket"]);
+            // BOT-UX-1 (mục 8): mọi chat chỉ 4 lệnh – lệnh / mã chức năng khác gõ vẫn chạy nhưng không liệt kê.
+            call.Commands.Select(c => c.Command).Should().Equal("menu", "ca", "chamcong", "help");
 
             h.Api.Identity = new BotIdentityModel { Linked = true, CanUseBot = true, Status = "Active", EmployeeId = Guid.NewGuid() };
             await h.SendAsync(Text("/start", from: 7002));
-            h.Telegram.CommandCalls.Last().Commands.Select(c => c.Command).Should().NotContain("cho", "không có quyền duyệt → không có lệnh /cho");
-            h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Which.Keyboard.SelectMany(r => r).Select(b => b.Text)
-                .Should().NotContain("⏳ Chờ tôi duyệt");
+            h.Telegram.CommandCalls.Last().Commands.Select(c => c.Command).Should().Equal("menu", "ca", "chamcong", "help");
+            var kb = h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Subject;
+            kb.IsPersistent.Should().BeTrue();
+            kb.Keyboard.SelectMany(r => r).Select(b => b.Text).Should().Equal(KeyboardBuilder.MyShift, KeyboardBuilder.Functions, KeyboardBuilder.CheckIn);
         }
 
         [Fact]

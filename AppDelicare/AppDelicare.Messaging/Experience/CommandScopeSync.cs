@@ -8,33 +8,22 @@ using Microsoft.Extensions.Logging;
 namespace AppDelicare.Messaging.Experience
 {
     /// <summary>
-    /// BOT-1.4 (BOT_TELEGRAM §1.4): danh sách lệnh "/" RIÊNG cho từng chat (<c>setMyCommands</c> scope chat) – mỗi người chỉ thấy lệnh mình dùng được
-    /// (chức năng có <see cref="BotAction.Command"/> trong quyền + /start /menu /help /huylienket). Chỉ gọi Telegram khi danh sách đổi (nhớ theo chat).
+    /// BOT-1.4 (BOT_TELEGRAM §1.4): danh sách lệnh "/" cho từng chat (<c>setMyCommands</c> scope chat). Chỉ gọi Telegram khi danh sách đổi (nhớ theo chat).
+    /// BOT-UX-1 (mục 8): mọi chat chỉ 4 lệnh /menu /ca /chamcong /help – mỗi lệnh mở cùng bảng điều khiển. Lệnh / mã chức năng khác (/nlca, /cho…) gõ vẫn chạy nhưng không liệt kê.
     /// </summary>
     public sealed class CommandScopeSync(BotActionRegistry registry, ITelegramClient telegram, ILogger<CommandScopeSync> logger)
     {
         private readonly ConcurrentDictionary<string, string> _last = new();
 
-        public static readonly TgBotCommand[] Base =
+        public static readonly TgBotCommand[] Panel =
         [
-            new() { Command = "start", Description = "Liên kết / mở lại bot" },
-            new() { Command = "menu", Description = "Chức năng" },
-        ];
-
-        public static readonly TgBotCommand[] Tail =
-        [
+            new() { Command = "menu", Description = "Mở bảng chức năng" },
+            new() { Command = "ca", Description = "Ca của tôi" },
+            new() { Command = "chamcong", Description = "Chấm công vào / ra" },
             new() { Command = "help", Description = "Trợ giúp" },
-            new() { Command = "huylienket", Description = "Hủy liên kết tài khoản" },
         ];
 
-        public List<TgBotCommand> CommandsFor(string bot, BotIdentityModel identity)
-        {
-            var list = new List<TgBotCommand>(Base);
-            list.AddRange(registry.Available(bot, identity).Where(a => a.Command != null && a.Command != "help")
-                .Select(a => new TgBotCommand { Command = a.Command!, Description = a.CommandDescription ?? a.Label }));
-            list.AddRange(Tail);
-            return [.. list.GroupBy(c => c.Command).Select(g => g.First())];
-        }
+        public List<TgBotCommand> CommandsFor(string bot, BotIdentityModel identity) => [.. Panel];
 
         /// <summary>true = đã gọi setMyCommands (danh sách đổi).</summary>
         public async Task<bool> SyncAsync(string bot, string chatId, BotIdentityModel identity, CancellationToken ct)

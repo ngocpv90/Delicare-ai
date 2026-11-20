@@ -23,6 +23,8 @@ namespace AppDelicare.Messaging.Channels.Telegram
         Task<TgFile> GetFileAsync(string botCode, string fileId, CancellationToken ct = default);
         /// <summary>BOT-3.3: tải nội dung file đã gửi cho bot (đường dẫn từ getFile) – vd. file Excel máy chấm công.</summary>
         Task<byte[]> DownloadFileAsync(string botCode, string filePath, CancellationToken ct = default) => throw new NotSupportedException();
+        /// <summary>BOT-UX-1: deleteMessage (bot chỉ xóa được tin trong 48 giờ ở chat riêng).</summary>
+        Task DeleteMessageAsync(string botCode, string chatId, long messageId, CancellationToken ct = default) => throw new NotSupportedException();
     }
 
     public sealed class TelegramClient(HttpClient http, IOptionsMonitor<TelegramOptions> options) : ITelegramClient
@@ -42,6 +44,9 @@ namespace AppDelicare.Messaging.Channels.Telegram
 
         public Task EditMessageReplyMarkupAsync(string botCode, string chatId, long messageId, object? replyMarkup, CancellationToken ct = default)
             => CallAsync<JsonElement>(botCode, "editMessageReplyMarkup", new { chat_id = chatId, message_id = messageId, reply_markup = replyMarkup }, ct);
+
+        public Task DeleteMessageAsync(string botCode, string chatId, long messageId, CancellationToken ct = default)
+            => CallAsync<bool>(botCode, "deleteMessage", new { chat_id = chatId, message_id = messageId }, ct);
 
         public Task PinChatMessageAsync(string botCode, string chatId, long messageId, CancellationToken ct = default)
             => CallAsync<bool>(botCode, "pinChatMessage", new { chat_id = chatId, message_id = messageId, disable_notification = true }, ct);

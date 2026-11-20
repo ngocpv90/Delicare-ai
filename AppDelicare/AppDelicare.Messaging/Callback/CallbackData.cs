@@ -31,6 +31,8 @@ namespace AppDelicare.Messaging.Callback
             public const string Hr = "hr";
             /// <summary>BOT-3.2 / 3.3: thao tác ghi bổ sung (lập lại kế hoạch, đổi món, lô vệ sinh) – ThaoTacActions.</summary>
             public const string Op = "op";
+            /// <summary>BOT-UX-1: điều hướng bảng điều khiển – Quay lại / Menu / Đóng / Tiếp tục.</summary>
+            public const string Nav = "nav";
         }
 
         public static string Build(string kind, string action, string? id = null)

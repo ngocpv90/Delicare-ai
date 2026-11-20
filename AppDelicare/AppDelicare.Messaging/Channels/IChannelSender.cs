@@ -17,5 +17,7 @@ namespace AppDelicare.Messaging.Channels
         Task AnswerCallbackAsync(string botCode, string callbackId, string? text = null, CancellationToken ct = default);
         /// <summary>BOT-3.3: tải file người dùng gửi cho bot (Telegram file_id) – null khi kênh không hỗ trợ / lỗi. File ≤ 20 MB (giới hạn Bot API).</summary>
         Task<byte[]?> DownloadFileAsync(string botCode, string fileId, CancellationToken ct = default) => Task.FromResult<byte[]?>(null);
+        /// <summary>BOT-UX-1: xóa 1 tin (panel cũ, tin lệnh của người dùng, câu hỏi / trả lời đã xong). Kênh không hỗ trợ → Failed.</summary>
+        Task<ChannelSendResult> DeleteAsync(string botCode, string chatId, string providerMessageId, CancellationToken ct = default) => Task.FromResult(ChannelSendResult.Failed("Kênh không hỗ trợ xóa tin"));
     }
 }
