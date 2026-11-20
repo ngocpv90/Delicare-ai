@@ -27,8 +27,77 @@ namespace AppDelicare.Services.Implement
     /// </summary>
     public class ProductionBatchService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IMaterialIssueService materialIssueService, IUomConversionService uomConversionService
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IProductionBatchService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications
+        , IDocumentNumberService documentNumberService) : IProductionBatchService
     {
+        /// <summary>
+        /// BOT-3.3 (D-72): nấu thêm – mẻ bổ sung (Kế hoạch) cùng lệnh SX / món / công thức với mẻ gốc; số mẻ cấp mới theo ngày + ca của lệnh (ME-YYMMDD-CA-NN).
+        /// Phần kế hoạch của lệnh tăng thêm; nguyên liệu cho mẻ thêm phải lập phiếu xuất (nút Xuất NL của mẻ) – cảnh báo kèm kết quả. Lý do ghi vào ghi chú lệnh.
+        /// </summary>
+        public async Task<IResult<ProductionBatchDetailModel>> CreateExtra(ProductionBatchExtraRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var source = await db.ProductionBatch.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted);
+                if (source == null)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<ProductionBatchDetailModel>.Fail(ConstantHelper.Message.BatchNotFound);
+                }
+                var order = _unitOfWork.ProductionOrderRepository.GetSingle(x => x.Id == source.ProductionOrderId && !x.IsDeleted);
+                if (order == null || order.Status is ProductionOrderStatus.Closed or ProductionOrderStatus.Cancelled)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<ProductionBatchDetailModel>.Fail(order == null ? ConstantHelper.Message.ProductionOrderNotFound : ConstantHelper.Message.BatchExtraOrderClosed);
+                }
+                if (request.Quantity <= 0 || string.IsNullOrWhiteSpace(request.Reason))
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<ProductionBatchDetailModel>.Fail(ConstantHelper.Message.BatchExtraInvalid);
+                }
+                DateTime now = _clock.Now;
+                string? shiftCode = order.ShiftId is { } sid ? await db.Shift.AsNoTracking().Where(s => s.Id == sid).Select(s => s.Code).FirstOrDefaultAsync() : null;
+                string number = await documentNumberService.NextAsync(DocumentKind.ProductionBatch, source.StartDate.Date, shiftCode);
+                TimeSpan duration = source.EndDate is { } e && e > source.StartDate ? e - source.StartDate : TimeSpan.FromHours(1);
+                var extra = new ProductionBatch
+                {
+                    Id = Guid.NewGuid(),
+                    BatchNumber = number,
+                    BatchNo = number,
+                    ProductionOrderId = order.Id,
+                    DishId = source.DishId,
+                    RecipeId = source.RecipeId,
+                    PlannedQty = request.Quantity,
+                    PlannedQuantity = request.Quantity,
+                    StartDate = now,
+                    EndDate = now + duration,
+                    KitchenWorkstationId = source.KitchenWorkstationId,
+                    Status = ProductionBatchStatus.Planned,
+                };
+                _unitOfWork.ProductionBatchRepository.Add(extra);
+                order.PlannedQty += request.Quantity;
+                if (order.Status is ProductionOrderStatus.Completed)
+                {
+                    order.Status = ProductionOrderStatus.InProgress;
+                }
+                order.Note = HrRules.AppendNote(order.Note, $"Nấu thêm {number} ({request.Quantity:0.##} suất, từ mẻ {source.BatchNumber ?? source.BatchNo}): {request.Reason.Trim()}");
+                _unitOfWork.ProductionOrderRepository.Update(order);
+                await _unitOfWork.ProductionBatchRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                _unitOfWork.CommitTransaction();
+                var detail = await DetailAsync(extra.Id);
+                detail!.ListWarning.Add(string.Format(ConstantHelper.Message.BatchExtraIssueHint, number));
+                return Result<ProductionBatchDetailModel>.Success(detail, string.Format(ConstantHelper.Message.BatchExtraCreated, number, request.Quantity.ToString("0.##")));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateExtra: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
         private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;

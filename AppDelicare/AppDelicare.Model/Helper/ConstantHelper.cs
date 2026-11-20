@@ -97,7 +97,8 @@
             public static readonly string HrConfirmDone = "Đã xác nhận {0} ca{1}"; // UG-1 C-21: SHIFT_CONFIRMED đã gửi qua bot (BOT-1.7)
             public static readonly string HrConfirmNotified = " – đã gửi thông báo qua bot cho nhân viên đã liên kết";
             public static readonly string HrMarkAbsentDone = "Đã đánh Vắng {0} ca hết giờ mà không vào ca";
-            public static readonly string HrUserNoEmployee = "Tài khoản chưa gắn với nhân viên (Employee) – nhân sự đặt mã nhân viên = tên đăng nhập hoặc liên kết tài khoản (GAP-HR-02)";
+            public static readonly string HrUserNoUnit = "Tài khoản chưa gắn với nhân viên có đơn vị / tổ – không lọc được \"tổ tôi\"";
+            public static readonly string HrUserNoEmployee ="Tài khoản chưa gắn với nhân viên (Employee) – nhân sự đặt mã nhân viên = tên đăng nhập hoặc liên kết tài khoản (GAP-HR-02)";
             public static readonly string HrNoRightOther = "Không có quyền {0} cho nhân viên khác (cần quyền Thêm trên màn \"{1}\")";
             public static readonly string HrSourceInvalid = "Hình thức chấm công không hợp lệ (GPS / QR / MACHINE / PROXY)";
             public static readonly string HrSourceRequiredForOther = "Chấm công cho nhân viên khác phải ghi rõ hình thức (SourceChannel: MACHINE / QR / PROXY / GPS)";
@@ -370,6 +371,10 @@
             public static readonly string ReleaseDispatchNeedsShift = "Giờ xuất bếp nhập tay chỉ dùng khi phát hành 1 ca – chọn ca (ShiftId); còn {0} ca chưa phát hành: {1}";
             public static readonly string ProductionCrudBlocked = "{0} chỉ tạo / đổi trạng thái qua thao tác nghiệp vụ ({1})";
             public static readonly string BatchNotFound = "Không tìm thấy mẻ nấu";
+            public static readonly string BatchExtraOrderClosed = "Lệnh sản xuất đã đóng / hủy – không nấu thêm được";
+            public static readonly string BatchExtraInvalid = "Số suất nấu thêm phải > 0 và phải có lý do";
+            public static readonly string BatchExtraCreated = "Đã tạo mẻ nấu thêm {0} ({1} suất)";
+            public static readonly string BatchExtraIssueHint = "Mẻ {0}: lập phiếu xuất nguyên liệu (Xuất NL) trước khi bắt đầu nấu";
             public static readonly string BatchIssueExists = "Mẻ {0} đã có phiếu xuất {1} ({2}) – xuất thêm qua MaterialIssue/Create (ghi lệnh SX) hoặc hủy phiếu cũ";
             public static readonly string BatchIssueNoMaterial = "Lệnh SX không có ảnh chụp định lượng – không tính được nguyên liệu của mẻ";
             public static readonly string BatchIssueUnitMissing = "Nguyên liệu {0} thiếu quy đổi đơn vị {1} → {2} (đơn vị tồn kho)";
@@ -413,6 +418,9 @@
             public static readonly string BatchesNotPacked = "Mẻ chưa đóng gói xong: {0}";
             public static readonly string BatchesNoSample = "Mẻ chưa lưu mẫu thức ăn (bắt buộc trước khi giao): {0}";
             public static readonly string RouteCannotDispatch = "Chuyến {0} chưa được xuất phát: {1}";
+            public static readonly string RouteReassignNothing = "Chưa chọn xe hoặc tài xế mới";
+            public static readonly string RouteReassignDone = "Đã đổi {0} của chuyến {1}";
+            public static readonly string VehicleInactive = "Xe {0} đang ngừng sử dụng";
             public static readonly string RouteCannotDeliver = "Điểm {0} chưa bàn giao được: {1}";
             public static readonly string PodQuantityInvalid = "Số giao phải lớn hơn 0; số nhận từ 0 tới số giao";
             public static readonly string PodReceiverRequired = "Phải ghi tên người nhận";

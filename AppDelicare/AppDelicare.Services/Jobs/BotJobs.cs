@@ -179,6 +179,69 @@ namespace AppDelicare.Services.Jobs
     }
 
     /// <summary>
+    /// BOT-3.3 (D-72, BOT_TELEGRAM §3.3 "báo cáo tuần / tháng"): 07:30 – thứ Hai gửi báo cáo TUẦN trước (KPI trung bình 7 ngày so mục tiêu, KpiSnapshot/GetDaily),
+    /// ngày 1 gửi báo cáo THÁNG trước (KpiSnapshot/GetMonthly) ⚪ cho người có mục Dashboard điều hành, bot DH. Ngày khác: không gửi. Chống trùng theo kỳ.
+    /// </summary>
+    public sealed class PeriodReportJob(IUnitOfWork unitOfWork, IKpiSnapshotService kpi, INotificationService notifications) : IScheduledJob
+    {
+        public string Code => "PeriodReport";
+        public string Name => "Báo cáo tuần / tháng (bot Điều hành)";
+        public string Description => "07:30 – thứ Hai: KPI tuần trước; ngày 1: KPI tháng trước – cho người có mục Dashboard điều hành (bot DH).";
+        public string DefaultAt => "07:30";
+
+        public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
+        {
+            DateTime today = now.Date;
+            int sent = 0;
+            var notes = new List<string>();
+            if (today.DayOfWeek == DayOfWeek.Monday)
+            {
+                DateTime from = today.AddDays(-7), to = today.AddDays(-1);
+                var d = (await kpi.GetDaily(new AppDelicare.Model.Request.Custom.KpiDailyRequest { From = from, To = to })).Data;
+                var lines = Lines(d, weekly: true);
+                sent += await SendAsync($"Báo cáo tuần {from:dd/MM}–{to:dd/MM}", lines, $"{NotificationCatalog.PeriodReport}:W:{from:yyyyMMdd}");
+                notes.Add("tuần");
+            }
+            if (today.Day == 1)
+            {
+                DateTime month = today.AddMonths(-1);
+                string key = month.ToString("yyyy-MM");
+                var d = (await kpi.GetMonthly(new AppDelicare.Model.Request.Custom.KpiMonthlyRequest { FromMonth = key, ToMonth = key })).Data;
+                sent += await SendAsync($"Báo cáo tháng {month:MM/yyyy}", Lines(d, weekly: false), $"{NotificationCatalog.PeriodReport}:M:{month:yyyyMM}");
+                notes.Add("tháng");
+            }
+            return new JobOutcome(JobRunStatus.Succeeded, sent, today, notes.Count == 0 ? "Hôm nay không phải kỳ báo cáo (thứ Hai / ngày 1)" : $"Báo cáo {string.Join(" + ", notes)}: {sent} tin");
+        }
+
+        /// <summary>Mỗi chỉ tiêu 1 dòng: tuần = trung bình các ngày có số liệu; tháng = giá trị tháng. ✅ đạt / ⚠️ chưa đạt theo hướng mục tiêu.</summary>
+        public static List<string> Lines(KpiDashboardModel? d, bool weekly)
+        {
+            var lines = new List<string>();
+            foreach (var m in d?.Metrics ?? [])
+            {
+                var values = m.Series.Where(p => p.Value != null).Select(p => p.Value!.Value).ToList();
+                decimal? value = weekly ? (values.Count > 0 ? Math.Round(values.Average(), 2) : null) : m.Latest?.Value ?? (values.Count > 0 ? values.Last() : null);
+                decimal? target = m.Latest?.Target ?? m.Definition.TargetValue;
+                bool? met = value == null || target == null ? null
+                    : string.Equals(m.Definition.TargetDirection, "LOWER", StringComparison.OrdinalIgnoreCase) ? value <= target : value >= target;
+                string icon = met switch { true => "✅", false => "⚠️", _ => "•" };
+                lines.Add($"{icon} {m.Definition.MetricName ?? m.Definition.MetricCode}: {(value == null ? "chưa có" : value.Value.ToString("#,0.##"))}"
+                    + (target == null ? string.Empty : $" / mục tiêu {target.Value:#,0.##}") + (m.Definition.UnitCode is { } u ? " " + u : string.Empty));
+            }
+            if (lines.Count == 0)
+            {
+                lines.Add("Chưa có số liệu KPI cho kỳ này (job KPI chưa chạy hoặc chưa khai báo chỉ tiêu).");
+            }
+            return lines;
+        }
+
+        private Task<int> SendAsync(string title, List<string> lines, string key)
+            => BusinessNotifier.ToMenusAsync(notifications, unitOfWork.DbContext, NotificationCatalog.PeriodReport, [BotReports.ExecutiveMenu],
+                new { title, lines }, key, buttons: [new NotificationButton("🎯 KPI", "sc:run:dh_kpi"), new NotificationButton("📅 KPI tháng", "sc:run:dh_kpi_month")],
+                botCode: MessagingCode.BotDieuHanh);
+    }
+
+    /// <summary>
     /// BOT-2.3 (§5.1 ORDERS_UNCONFIRMED – thay phần gửi tin của T23.2 RemindUnconfirmedOrders): 19:00 – đơn ngày mai còn Nháp / Đã gửi (chưa xác nhận)
     /// → 🔴 NV KD phụ trách khách (Customer.UserAssignId), 1 tin / người / ngày, kèm danh sách; khách chưa có người phụ trách → người có quyền Thêm trên đơn hàng.
     /// Khách CHƯA có đơn ngày mai không tính (cần lịch giao theo hợp đồng – chờ BA).

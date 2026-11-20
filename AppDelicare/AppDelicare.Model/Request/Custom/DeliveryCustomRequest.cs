@@ -201,6 +201,17 @@ namespace AppDelicare.Model.Request.Custom
     /// T19: xuất phát chuyến (form) – Kế hoạch / Đang xếp → Đang giao. Có <c>TemperatureC</c> thì ghi lần đo xuất phát trước khi kiểm.
     /// Chặn khi nhiệt độ xuất phát gần nhất &lt; 60 °C / chưa đo, mẻ của ngày / ca chưa đóng gói xong, mẻ chưa lưu mẫu.
     /// </summary>
+    /// <summary>BOT-3.2 (D-72): đổi xe và / hoặc tài xế của chuyến chưa xuất phát (Kế hoạch / Đang xếp). Bỏ trống = giữ nguyên.</summary>
+    public class DeliveryRouteReassignRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        public Guid? VehicleId { get; set; }
+        public Guid? DriverId { get; set; }
+        [MaxLength(500)]
+        public string? Note { get; set; }
+    }
+
     public class DeliveryRouteDispatchRequest
     {
         [Required]

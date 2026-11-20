@@ -110,6 +110,12 @@ namespace AppDelicare.Services.Implement
                 new("ĐVT mua", false, "Mã hoặc tên ĐVT", "kg"), new("Hiệu lực từ", false, "yyyy-MM-dd"), new("Hiệu lực đến", false, "yyyy-MM-dd"),
                 new("Ưu tiên", false, "Có / Không – mỗi nguyên liệu 1 NCC ưu tiên", "Có"), new("Số lượng đặt tối thiểu"),
             ]),
+            // BOT-3.3 (D-72): dữ liệu máy chấm công → AttendanceEvent (hình thức Máy chấm công), khớp ca được phân; nạp lại không trùng.
+            new("AttendanceMachine", "Dữ liệu máy chấm công", "hr-attendance",
+            [
+                new("Mã nhân viên", true, "Mã NV trên hệ thống", "[DEMO]-NV01"), new("Thời điểm", true, "yyyy-MM-dd HH:mm hoặc dd/MM/yyyy HH:mm", "2026-11-20 06:02"),
+                new("Loại", false, "Vào / Ra – trống = lần đầu của ca là Vào, sau đó là Ra", "Vào"), new("Mã máy", false, "Ghi chú máy chấm công", "MCC-BEP1"),
+            ]),
             // ---- File vận hành thật (BUSINESS_DOCS.md) – cột cố định, không có file mẫu
             new("RuleMenu_DishBank", "Rule Menu.xlsx – Ngân hàng món", "menu-dish",
                 [new("Mỗi cột = 1 nhóm món (tiêu đề), mỗi ô = 1 món", true)], "Ngân hàng món"),
@@ -230,6 +236,9 @@ namespace AppDelicare.Services.Implement
             public Dictionary<string, DishCategory> DishCategories { get; } = new(StringComparer.OrdinalIgnoreCase);
             public Dictionary<string, IngredientCategory> IngredientCategories { get; } = new(StringComparer.OrdinalIgnoreCase);
             public Dictionary<string, Dish> Dishes { get; } = new(StringComparer.OrdinalIgnoreCase);
+            /// <summary>Máy chấm công: khóa lần chấm đã ghi trong file này + ca đã có lượt Vào (xác định Vào / Ra khi cột Loại trống).</summary>
+            public HashSet<string> AttendanceKeys { get; } = new(StringComparer.OrdinalIgnoreCase);
+            public HashSet<Guid> CheckedInAssignments { get; } = [];
             public void Count(bool isNew, bool changed)
             {
                 if (isNew) Result.Inserted++;
@@ -288,6 +297,7 @@ namespace AppDelicare.Services.Implement
                     "Dish" => await DishAsync(row, ctx),
                     "RecipeLine" => await RecipeLineAsync(row, ctx),
                     "SupplierMaterial" => await SupplierMaterialAsync(row, ctx),
+                    "AttendanceMachine" => await AttendanceMachineAsync(row, ctx),
                     _ => "Loại file chưa hỗ trợ.",
                 };
                 if (err != null)
@@ -452,6 +462,86 @@ namespace AppDelicare.Services.Implement
                 | Set(e, x => x.OrganizationUnitId, unitId ?? e.OrganizationUnitId) | Set(e, x => x.PositionId, positionId ?? e.PositionId)
                 | Set(e, x => x.Phone, r["Điện thoại"]) | Set(e, x => x.Email, r["Email"]) | Set(e, x => x.HireDate, hire ?? e.HireDate);
             return Finish(e, isNew, changed, ctx);
+        }
+
+        /// <summary>
+        /// BOT-3.3 (D-72): 1 dòng máy chấm công → AttendanceEvent (SourceChannel MACHINE, hợp lệ – máy đặt tại bếp). Khớp ca được phân của nhân viên trong ngày
+        /// (hoặc hôm trước – ca đêm) có khung [giờ bắt đầu − 3 giờ, giờ kết thúc + 3 giờ] chứa thời điểm. Chống trùng theo ExternalEventId MACHINE:mã:yyyyMMddHHmm.
+        /// Vào ca → ca Đã vào ca; Ra ca → ca Hoàn thành (giống chấm GPS / QR).
+        /// </summary>
+        private async Task<string?> AttendanceMachineAsync(TemplateRow r, Ctx ctx)
+        {
+            string code = r["Mã nhân viên"]!.Trim();
+            string raw = r["Thời điểm"]!.Trim();
+            if (!DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var at)
+                && !DateTime.TryParseExact(raw, ["dd/MM/yyyy HH:mm", "d/M/yyyy H:mm", "dd/MM/yyyy HH:mm:ss"], CultureInfo.InvariantCulture, DateTimeStyles.None, out at))
+            {
+                return "Thời điểm phải dạng yyyy-MM-dd HH:mm hoặc dd/MM/yyyy HH:mm.";
+            }
+            string? type = (r["Loại"] ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "" => null,
+                "vào" or "vao" or "in" or "check_in" => AttendanceEventType.CheckIn,
+                "ra" or "out" or "check_out" => AttendanceEventType.CheckOut,
+                _ => "?",
+            };
+            if (type == "?")
+            {
+                return "Loại phải là Vào hoặc Ra (hoặc để trống).";
+            }
+            var db = _unitOfWork.DbContext;
+            var employee = await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => (e.Code == code || e.EmployeeCode == code) && !e.IsDeleted);
+            if (employee == null)
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Nhân viên " + code);
+            }
+            string key = $"{AttendanceSource.Machine}:{code}:{at:yyyyMMddHHmm}";
+            if (ctx.AttendanceKeys.Contains(key) || await db.AttendanceEvent.AsNoTracking().AnyAsync(e => !e.IsDeleted && e.ExternalEventId == key))
+            {
+                ctx.Result.Skipped++;
+                return null;
+            }
+            DateTime day = at.Date;
+            var assignment = (await db.ShiftAssignment
+                    .Where(a => !a.IsDeleted && a.EmployeeId == employee.Id && a.WorkDate >= day.AddDays(-1) && a.WorkDate <= day && a.AssignmentStatus != ShiftAssignmentStatus.Absent)
+                    .ToListAsync())
+                .Where(a => a.PlannedStart is { } s && a.PlannedEnd is { } e2 && at >= s.AddHours(-3) && at <= e2.AddHours(3))
+                .OrderBy(a => Math.Abs((at - a.PlannedStart!.Value).TotalMinutes))
+                .FirstOrDefault();
+            if (assignment == null)
+            {
+                return $"Nhân viên {code} không có ca được phân quanh {at:dd/MM HH:mm}.";
+            }
+            bool hasIn = ctx.CheckedInAssignments.Contains(assignment.Id)
+                || await db.AttendanceEvent.AsNoTracking().AnyAsync(e => !e.IsDeleted && e.ShiftAssignmentId == assignment.Id && e.EventType == AttendanceEventType.CheckIn);
+            type ??= hasIn ? AttendanceEventType.CheckOut : AttendanceEventType.CheckIn;
+            db.AttendanceEvent.Add(new AttendanceEvent
+            {
+                Id = Guid.NewGuid(),
+                EmployeeId = employee.Id,
+                ShiftAssignmentId = assignment.Id,
+                EventType = type,
+                EventAt = at,
+                IsValid = true,
+                SourceChannel = AttendanceSource.Machine,
+                ExternalEventId = key,
+                Note = "Máy chấm công" + (r["Mã máy"] is { } m && m.Length > 0 ? " " + m.Trim() : string.Empty),
+            });
+            if (type == AttendanceEventType.CheckIn)
+            {
+                ctx.CheckedInAssignments.Add(assignment.Id);
+                if (ShiftAssignmentStatus.Open.Contains(assignment.AssignmentStatus))
+                {
+                    assignment.AssignmentStatus = ShiftAssignmentStatus.CheckedIn;
+                }
+            }
+            else if (assignment.AssignmentStatus == ShiftAssignmentStatus.CheckedIn)
+            {
+                assignment.AssignmentStatus = ShiftAssignmentStatus.Completed;
+            }
+            ctx.AttendanceKeys.Add(key);
+            ctx.Result.Inserted++;
+            return null;
         }
 
         private async Task<string?> VehicleAsync(TemplateRow r, Ctx ctx)

@@ -26,6 +26,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<DeliveryRouteDetailModel>> Create(DeliveryRouteCreateRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> RecordTemperature(DeliveryTemperatureRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> Dispatch(DeliveryRouteDispatchRequest request);
+        /// <summary>BOT-3.2 (D-72): đổi xe / tài xế của chuyến chưa xuất phát.</summary>
+        public Task<IResult<DeliveryRouteDetailModel>> Reassign(DeliveryRouteReassignRequest request);
         public Task<IResult<byte[]>> ExportDeliveryNote(Guid id);
 
         // BE2.1 – lập chuyến nhiều xe theo khu vực, đổi thứ tự điểm dừng, xếp hàng lên xe.

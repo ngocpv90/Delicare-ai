@@ -11,6 +11,8 @@ namespace AppDelicare.Model.Request.Custom
         public int? Days { get; set; }
         /// <summary>Đơn vị / tổ (OrganizationUnit) – gồm cả đơn vị con; trống = mọi nhân viên.</summary>
         public Guid? OrganizationUnitId { get; set; }
+        /// <summary>BOT-3.2 (D-72): true = đơn vị của nhân viên gắn với tài khoản đang gọi (tổ trưởng xem "tổ tôi"); bỏ qua khi đã truyền OrganizationUnitId.</summary>
+        public bool? MyUnit { get; set; }
         /// <summary>Tìm theo mã / tên nhân viên.</summary>
         [MaxLength(200)]
         public string? SearchText { get; set; }

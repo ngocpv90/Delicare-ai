@@ -221,6 +221,25 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>T19: xuất phát – chặn khi nhiệt độ &lt; 60 °C / chưa đo, mẻ chưa đóng gói, mẻ chưa lưu mẫu.</summary>
+        /// <summary>BOT-3.2 (D-72): đổi xe / tài xế của chuyến chưa xuất phát (quyền Sửa log-route).</summary>
+        [HttpPost("Reassign")]
+        public async Task<IActionResult> Reassign([FromForm] DeliveryRouteReassignRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Reassign(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reassign: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPost("Dispatch")]
         public async Task<IActionResult> Dispatch([FromForm] DeliveryRouteDispatchRequest request)
         {
