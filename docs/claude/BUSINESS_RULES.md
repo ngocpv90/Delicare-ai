@@ -116,23 +116,69 @@ Mức độ HIGH / MEDIUM / LOW, hạn xử lý 4 / 24 / 72 giờ (`CustomerComp
 Chấm công hợp lệ khi nằm trong bán kính bếp (GPS), hoặc quét QR tại bếp, hoặc từ máy chấm công, hoặc chấm hộ (phải ghi rõ hình thức). Lưu ở `AttendanceEvent` (`IsValid`, `SourceChannel` = GPS / QR / MACHINE / PROXY, `DistanceMeters`). Tọa độ và bán kính bếp lấy từ `KitchenWorkstation.Latitude` / `Longitude` / `RadiusMeters`. Có đơn nghỉ (`LeaveRequest`) và đổi ca (`ShiftSwapRequest`).
 - **BE2.6 đã cài (PROPOSED – D-55, GAP-HR-02…05; ngưỡng ở `BusinessRules:Hr`):** lưới ca 1 nhân viên 1 ca / ngày, không phân ca ngày đã qua / ngày nghỉ phép Đã duyệt / ca đã chấm công (dùng đơn đổi ca); bỏ ca = xóa mềm, phân lại dùng lại dòng cũ (UNIQUE tính cả dòng xóa). Xác nhận lịch Kế hoạch → Xác nhận, chưa gửi Telegram. Vào ca từ 120′ trước giờ ca tới hết ca; GPS hợp lệ khi cách trạm bếp Hoạt động gần nhất ≤ `RadiusMeters` (trống = 150 m) – ngoài bán kính vẫn ghi `IsValid = false` + cảnh báo (`RejectOutsideRadius` = true thì chặn); đi muộn / về sớm > 5′ ghi Note; tự chấm chỉ GPS / QR, chấm cho người khác cần quyền Thêm `#/hr-attendance` + ghi rõ hình thức (PROXY bắt buộc lý do). Vắng = ca hết giờ chưa vào ca (bảng công tự tính; `MarkAbsent` chốt trạng thái – không job). Đơn nghỉ `DN-` (≤ 30 ngày, lùi ≤ 7 ngày, lý do bắt buộc, không chồng đơn) và đổi / nhường ca `PH-` duyệt 1 cấp qua engine (mục `hr-leave` / `hr-swap`); duyệt nghỉ bỏ ca Kế hoạch / Xác nhận trong khoảng nghỉ + cảnh báo ca thiếu người; duyệt đổi ca hoán đổi nhân viên của 2 ca (kiểm lại chưa chấm công, không 2 ca / ngày, không nghỉ phép).
 
-## 11. Mã chứng từ (sinh theo ngày, không trùng, an toàn khi chạy đồng thời)
-| Loại | Mẫu | Ghi vào cột |
-|---|---|---|
-| Phiếu (đơn / nhập / xuất / kiểm kê) | `PH-YYMMDD-NNNN` | OrderNumber / ReceiptNo / IssueNo / CountNo… |
-| Hợp đồng (BE2.2, PROPOSED – D-51) | `HD-YYMMDD-NNN` | Contract.ContractNumber / ContractNo |
-| Xác nhận | `XN-YYMMDD-NNN` | ApprovalRequest.RequestNo |
-| Phản ánh | `PA-YYMMDD-NNNN` | CustomerComplaint |
-| PO NCC | `PO-YYMMDD-NNNN` | PurchaseOrder |
-| Chấm công | `CC-YYMMDD-NNNN` | AttendanceEvent |
-| Đơn nghỉ | `DN-YYMMDD-NNNN` | LeaveRequest |
-| Lô nhập | `NL-YYMMDD-<NCC>-NN` | MaterialLot |
-| Mẻ nấu | `ME-YYMMDD-<CA>-NN` | ProductionBatche |
-| Chuyến xe | `CX-YYMMDD-<XE>-NN` | DeliveryRoute |
-| Kế hoạch | `KH-YYMMDD` (+ phiên bản) | ProductionPlan |
-| Lô vệ sinh | `VS-YYMMDD-<CA>` | CleaningBatche |
+## 11. Mã chứng từ và mã danh mục (D-63 – sinh tự động, không trùng, an toàn khi chạy đồng thời)
 
-Cách cài: `IDocumentNumberService.Next(kind, date, suffix)`. Dùng `sp_getapplock` theo khóa `kind+date+suffix`, đọc MAX số hiện có trong cột đích, rồi +1. **Không tạo bảng đếm và không tạo SEQUENCE** (luật DB).
+**Luật chung**
+1. Chỉ chữ hoa không dấu, số và `-`.
+2. Tiền tố: 2 chữ = đối tượng, chữ thứ 3 (tùy chọn) = phân loại (`KH` + `B` / `C`). Mỗi tiền tố duy nhất, không là phần đầu của tiền tố khác; đăng ký ở một chỗ (`DocumentNumberService.Specs` + bảng dưới).
+3. **Danh mục:** `TIỀNTỐ-NNNNN` – 5 chữ số, tăng liên tục, không quay về 1; quá 99.999 tự sang 6 chữ số.
+4. **Chứng từ:** `TIỀNTỐ-YYMMDD-NNNN` – YYMMDD là ngày lập, số quay về 1 mỗi ngày; có hậu tố: `TIỀNTỐ-YYMMDD-<HẬU TỐ>-NN` (hậu tố bỏ dấu, bỏ ký tự khác A–Z 0–9, tối đa 20 ký tự).
+5. Máy chủ sinh khi lưu lần đầu, trong transaction; người dùng không nhập / không sửa; không đổi sau khi cấp; không cấp lại số đã dùng.
+6. Chứng từ phát sinh trước D-63 giữ số cũ; tìm kiếm, bot, in nhận cả mẫu cũ (cột "Trước D-63").
+
+**Danh mục (dạng A)**
+
+| Tiền tố | Đối tượng | Ghi vào cột | Ghi chú |
+|---|---|---|---|
+| `KHB` | Khách hàng doanh nghiệp (`CustomerType = BUSINESS`) | Customer.Code (+ CIF = Code) | khách cũ đánh lại một lần |
+| `KHC` | Khách hàng cá nhân (`CustomerType = INDIVIDUAL`) | Customer.Code (+ CIF = Code) | khách cũ đánh lại một lần |
+| `NC` | Nhà cung cấp | Supplier.Code | NCC cũ đánh lại một lần |
+| `NL` | Nguyên liệu | Ingredient.Code | bản ghi cũ giữ mã |
+| `MA` | Món ăn | Dishe.Code | bản ghi cũ giữ mã |
+| `KO` | Kho | Warehouse.Code | bản ghi cũ giữ mã (QR `LOC_`) |
+| `XE` | Phương tiện | Vehicle.Code | bản ghi cũ giữ mã (QR `VEH_`) |
+| `NV` | Nhân viên | Employee.EmployeeCode / Code (= tên đăng nhập) | chỉ nhân viên mới |
+
+**Chứng từ (dạng B)**
+
+| Tiền tố | Mẫu | Chứng từ | Ghi vào cột | Trước D-63 |
+|---|---|---|---|---|
+| `DH` | `DH-YYMMDD-NNNN` | Đơn hàng | Order.OrderNumber / OrderNo | PH |
+| `HD` | `HD-YYMMDD-NNN` | Hợp đồng | Contract.ContractNumber / ContractNo | HD |
+| `NU` | `NU-YYMMDD-NNN` (ngày bắt đầu áp dụng) | Thực đơn | Menu.Code | – |
+| `DM` | `DM-YYMMDD-NNNN` | Đề xuất đổi món | MenuChangeRequest.RequestNo | PH |
+| `MH` | `MH-YYMMDD-NNNN` | Đề nghị mua | PurchaseRequest.RequestNumber / RequestNo | PH |
+| `PO` | `PO-YYMMDD-NNNN` | Đơn mua NCC | PurchaseOrder | PO |
+| `PN` | `PN-YYMMDD-NNNN` | Phiếu nhập | GoodsReceipt.ReceiptNumber / ReceiptNo | PH |
+| `PX` | `PX-YYMMDD-NNNN` | Phiếu xuất | MaterialIssue.IssueNumber / IssueNo | PH |
+| `KK` | `KK-YYMMDD-NNNN` | Kiểm kê | StockCount.CountNumber / CountNo | PH |
+| `GD` | `GD-YYMMDD-NNNN` | Giao dịch kho tay (điều chỉnh, chuyển kho) | InventoryTransaction | PH |
+| `LO` | `LO-YYMMDD-<NCC>-NN` | Lô nguyên liệu | MaterialLot.LotNumber / LotNo | NL |
+| `KS` | `KS-YYMMDD` (+ `-2`, `-3`…) | Kế hoạch sản xuất | ProductionPlan.PlanNumber / PlanNo | KH |
+| `LS` | `LS-YYMMDD-NNNN` | Lệnh sản xuất | ProductionOrder | PH |
+| `ME` | `ME-YYMMDD-<CA>-NN` | Mẻ nấu | ProductionBatche | ME |
+| `DG` | `DG-YYMMDD-NNNN` | Lệnh đóng gói | PackingOrder | PH |
+| `GH` | `GH-YYMMDD-NNNN` | Đơn giao hàng | DeliveryOrder | PH |
+| `CX` | `CX-YYMMDD-<XE>-NN` | Chuyến xe | DeliveryRoute.RouteNo | CX |
+| `VS` | `VS-YYMMDD-<CA>` | Mẻ vệ sinh | CleaningBatche | VS |
+| `PA` | `PA-YYMMDD-NNNN` | Phản ánh khách hàng | CustomerComplaint | PA |
+| `XN` | `XN-YYMMDD-NNN` | Yêu cầu duyệt | ApprovalRequest.RequestNo | XN |
+| `DN` | `DN-YYMMDD-NNNN` | Đơn nghỉ | LeaveRequest | DN |
+| `DC` | `DC-YYMMDD-NNNN` | Đơn đổi ca | ShiftSwapRequest.RequestNo | PH |
+| `CC` | `CC-YYMMDD-NNNN` | Chấm công | AttendanceEvent – **chưa có cột số** (GAP, giữ như trước D-63, chưa sinh) | CC |
+
+Cách cài: `IDocumentNumberService.Next(kind, date, suffix)`. Dùng `sp_getapplock` theo khóa mã gốc (`TIỀNTỐ` cho danh mục, `TIỀNTỐ-YYMMDD[-HẬU TỐ]` cho chứng từ), đọc MAX số hiện có trong cột đích (cả cột cũ), rồi +1. **Không tạo bảng đếm và không tạo SEQUENCE** (luật DB).
+
+**11.3 Phân nhóm mọi cột mã (D-63 k)** – mỗi cột mã định danh thuộc đúng 1 nhóm; bảng / cột mới phải xếp nhóm (test chặn).
+
+| Nhóm | Quy tắc | Bảng.cột |
+|---|---|---|
+| **G1 – tự sinh, danh mục (dạng A)** | Máy chủ sinh, giao diện chỉ đọc | Customer.Code (`KHB` / `KHC`) · Supplier.Code (`NC`) · Ingredient.Code (`NL`) · Dishe.Code (`MA`) · Warehouse.Code (`KO`) · Vehicle.Code (`XE`) · Employee.EmployeeCode / Code (`NV`, chỉ người mới) · CustomerDeliveryLocation.Code (`DP` – điểm phát / giao) · PricePolicie.Code (`BG` – bảng giá) |
+| **G1 – tự sinh, chứng từ (dạng B)** | Máy chủ sinh, giao diện chỉ đọc | Bảng chứng từ ở §11 (Order, Contract, Menu `NU`, MenuChangeRequest, PurchaseRequest, PurchaseOrder, GoodsReceipt, MaterialIssue, StockCount, InventoryTransaction, MaterialLot, ProductionPlan, ProductionOrder, ProductionBatche, PackingOrder, DeliveryOrder, DeliveryRoute.RouteNo, CleaningBatche, CustomerComplaint, ApprovalRequest, LeaveRequest, ShiftSwapRequest) · QCInspection.InspectionNumber (`QC-YYMMDD-NNNN`) · MaterialRequirement.RequirementNo (`MR-YYMMDD-NNN`) |
+| **G2 – mã nghiệp vụ người đặt** | Nhập tay; chữ hoa không dấu, A–Z 0–9 `-` `_`; không trùng; không sửa khi đã được dùng (QR, hậu tố, công thức, cấu hình) | Company · OrganizationUnit · Position · Shift (`CA1`… – hậu tố mẻ / vệ sinh) · UnitMeasure (`KG`…) · DishCategorie · IngredientCategorie · ProductionLine (QR `LINE_`) · KitchenWorkstation · StorageZone · StorageLocation (QR `LOC_`) · FoodSafetyChecklist.Code · FoodSafetyChecklistItem.ItemCode · SupplierMaterial.SupplierMaterialCode (mã hàng của NCC) · BotConfiguration.BotCode · IntegrationChannel.ChannelCode · KpiMetricDefinition.MetricCode · AdministrativeProvince / District / Ward.Code (mã hành chính nhà nước) |
+| **G3 – không phải mã định danh** | Không áp quy tắc | Cột mã loại / trạng thái / tiền tệ / đơn vị (`…TypeCode`, `CurrencyCode`, `UnitCode`, `CategoryCode`, `ConditionCode`, `PriorityCode`, `ResultCode`, `DecisionCode`, `ActionCode`, `ApproverRoleCode`, `DomainCode`, `AggregationCode`, `FrequencyCode`, `AreaCode`, `DirectionCode`, `OperationCode`, `ErrorCode`, `ProviderCode`, `EnvironmentCode`, `JobCode`, `MigrationCode`, `DeviceCode`) · cột sao chép / tham chiếu (`DeliveryExecution` / `DeliveryLoading.VehicleCode`, `PackagingLedger.ReferenceNo`, `GoodsReceiptLine.LotNumber`, `KpiDaily` / `MonthlySnapshot.MetricCode`, `DeliveryRoute.Code`) · số thứ tự (`StepNo`, `SequenceNo`, `CurrentStepNo`) · phiên bản (`Menu` / `Recipe.VersionCode`) · bảng cũ / ngoài phạm vi (`*_Legacy_*`, `TestDemo`, `Patient`) |
+
+**Khách hàng theo loại (D-63 f–i):** danh mục `CustomerType` = `BUSINESS` / `INDIVIDUAL`; trường bắt buộc / tùy chọn theo loại, CIF = Code và không hiển thị, khóa đổi loại – xem DECISIONS D-63.
 
 ## 12. Mục tiêu KPI (seed vào `KpiMetricDefinition`)
 | Mã | Chỉ số | Mục tiêu |
