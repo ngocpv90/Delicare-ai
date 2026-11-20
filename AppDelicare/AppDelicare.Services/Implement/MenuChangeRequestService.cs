@@ -298,7 +298,7 @@ namespace AppDelicare.Services.Implement
                 var entity = new MenuChangeRequest
                 {
                     Id = Guid.NewGuid(),
-                    RequestNo = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today),
+                    RequestNo = await _documentNumberService.NextAsync(DocumentKind.MenuChange, _clock.Today),
                     OrderId = request.OrderId is { } oid && oid != Guid.Empty ? oid : null,
                     MenuId = menuId,
                     OriginalDishId = request.OriginalDishId,

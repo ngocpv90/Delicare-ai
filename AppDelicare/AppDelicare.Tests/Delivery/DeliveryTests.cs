@@ -108,7 +108,7 @@ namespace AppDelicare.Tests.Delivery
             stops.Select(x => (x.GetProperty("sequenceNo").GetInt32(), x.GetProperty("orderId").GetGuid(), x.GetProperty("plannedMealQty").GetDecimal()))
                 .Should().Equal((1, s.OrderB, 40m), (2, s.OrderA, 60m));
             string do1 = stops[0].GetProperty("deliveryNumber").GetString()!, do2 = stops[1].GetProperty("deliveryNumber").GetString()!;
-            do1.Should().MatchRegex(@"^PH-261221-\d{4}$");
+            do1.Should().MatchRegex(@"^GH-261221-\d{4}$");
             int.Parse(do2[^4..]).Should().Be(int.Parse(do1[^4..]) + 1);
             Warnings(route).Should().Contain(w => w!.Contains("chưa lưu mẫu") && w.Contains(s.BatchNoSampleNumber));
             // Đơn đã có chuyến không xếp lại được.

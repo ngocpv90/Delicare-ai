@@ -24,9 +24,13 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public IEnumerable<BotAction> GetActions() =>
         [
             new BotAction { Code = "hr_absent", Module = "NHANSU", Label = "👥 Ai chưa vào ca", Command = "chuavao", CommandDescription = "Ai chưa vào ca hôm nay", Bots = ["VH"], MenuMetaLink = "#/hr-shift-assign", Order = 1, Handler = AbsentAsync },
+            // BOT-3.2 (D-72): tổ trưởng bếp – chỉ tổ của mình (GetGrid myUnit = đơn vị của nhân viên gắn với tài khoản) + ✍️ chấm hộ.
+            new BotAction { Code = "bep_absent", Module = "BEP", Label = "👥 Ai chưa vào (tổ)", Bots = ["VH"], MenuMetaLink = "#/hr-shift-assign", Order = 22, Handler = (c, t) => AbsentAsync(c, true, t) },
         ];
 
-        public async Task AbsentAsync(BotActionContext ctx, CancellationToken ct)
+        public Task AbsentAsync(BotActionContext ctx, CancellationToken ct) => AbsentAsync(ctx, false, ct);
+
+        public async Task AbsentAsync(BotActionContext ctx, bool myUnit, CancellationToken ct)
         {
             if (await TokenAsync(ctx, ct) is not { } token)
             {
@@ -34,7 +38,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             DateTime now = VnTime.Now(time);
             string key = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            var r = await Web.GetAsUserAsync<JsonElement>($"api/ShiftAssignment/GetGrid?fromDate={key}&days=1", token, ct);
+            var r = await Web.GetAsUserAsync<JsonElement>($"api/ShiftAssignment/GetGrid?fromDate={key}&days=1{(myUnit ? "&myUnit=true" : "")}", token, ct);
             if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object)
             {
                 await SayAsync(ctx, Problem(r), ct);
@@ -58,7 +62,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             bool canProxy = ctx.Identity.IsAdmin || ctx.Identity.Menus.Contains(AttendanceMenu, StringComparer.OrdinalIgnoreCase);
             await SendAsync(ctx, new NeutralMessage
             {
-                Title = $"👥 Chưa vào ca {now:HH:mm} ({absent.Count})",
+                Title = $"👥 Chưa vào ca{(myUnit ? " – tổ tôi" : "")} {now:HH:mm} ({absent.Count})",
                 Lines = absent.Count == 0 ? ["Mọi người có ca đã vào ca đủ."] : [.. absent.Take(25).Select(a => a.Line)],
                 Buttons = canProxy ? [.. absent.Take(10).Select(a => new NeutralButton("✍️ " + a.Name, CallbackData.Build(Kind, "px", a.Id)))] : [],
             }, ct);

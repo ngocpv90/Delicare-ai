@@ -43,6 +43,8 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@EmployeeId", request.EmployeeId);
                 dynamicParameters.Add("@ShiftId", request.ShiftId);
                 dynamicParameters.Add("@AssignmentStatus", request.AssignmentStatus);
+                dynamicParameters.Add("@FromDate", request.FromDate?.Date);
+                dynamicParameters.Add("@ToDate", request.ToDate?.Date);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);
@@ -210,7 +212,18 @@ namespace AppDelicare.Services.Implement
                 DateTime from = (request.FromDate is { } f && f != default ? f : _clock.Today).Date;
                 int days = Math.Clamp(request.Days ?? _hr.GridDays, 1, 31);
                 DateTime to = from.AddDays(days - 1);
-                var employees = await EmployeesAsync(request.OrganizationUnitId, request.SearchText);
+                Guid? unit = request.OrganizationUnitId;
+                if (unit == null && request.MyUnit == true)
+                {
+                    // BOT-3.2: "tổ tôi" = đơn vị của nhân viên gắn với tài khoản; tài khoản chưa gắn nhân viên / nhân viên chưa có đơn vị → báo rõ.
+                    var self = await HrRules.ResolveEmployeeAsync(db, _currentActor.RequireActor().UserId);
+                    if (self?.OrganizationUnitId is not { } myUnit)
+                    {
+                        return Result<ShiftGridModel>.Fail(ConstantHelper.Message.HrUserNoUnit);
+                    }
+                    unit = myUnit;
+                }
+                var employees = await EmployeesAsync(unit, request.SearchText);
                 var empIds = employees.Select(e => e.Id).ToList();
                 DateTime today = _clock.Today;
                 DateTime lo = from < today ? from : today, hi = to > today ? to : today;
@@ -607,7 +620,7 @@ namespace AppDelicare.Services.Implement
                 await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 result.NotificationSent = await NotifyConfirmedAsync(confirmed) > 0;
                 _unitOfWork.CommitTransaction();
-                return Result<ShiftConfirmResultModel>.Success(result, string.Format(ConstantHelper.Message.HrConfirmDone, result.Confirmed));
+                return Result<ShiftConfirmResultModel>.Success(result, string.Format(ConstantHelper.Message.HrConfirmDone, result.Confirmed, result.NotificationSent ? ConstantHelper.Message.HrConfirmNotified : string.Empty));
             }
             catch (Exception ex)
             {

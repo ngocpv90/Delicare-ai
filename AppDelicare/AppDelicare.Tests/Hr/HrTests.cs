@@ -395,7 +395,7 @@ namespace AppDelicare.Tests.Hr
             var swap = (await staff1.PostFormAsync("/api/ShiftSwapRequest/Create", ("CurrentShiftAssignmentId", a), ("ProposedShiftAssignmentId", b), ("Reason", "Bận việc gia đình"))).Ok();
             Guid swapId = swap.GetProperty("request").GetProperty("id").GetGuid();
             swap.GetProperty("swapType").GetString().Should().Be("SWAP");
-            swap.GetProperty("request").GetProperty("requestNo").GetString().Should().StartWith("PH-261210-");
+            swap.GetProperty("request").GetProperty("requestNo").GetString().Should().StartWith("DC-261210-");
             swap.GetProperty("targetName").GetString().Should().Be("NV 2 S1");
             (await staff1.PostFormAsync("/api/ShiftSwapRequest/Create", ("CurrentShiftAssignmentId", a), ("TargetEmployeeId", e3), ("Reason", "Bận"))).Fail("đơn đổi ca khác");
             (await Assign(admin, e1, Monday, w.Toi)).Fail("đơn đổi ca chờ duyệt");
@@ -405,14 +405,14 @@ namespace AppDelicare.Tests.Hr
             var approval = await _factory.QueryAsync(db => db.ApprovalRequest.AsNoTracking().SingleAsync(x => x.BusinessId == swapId));
             approval.BusinessType.Should().Be("SHIFT_SWAP");
             var inbox = (await hr.GetResultAsync("/api/ApprovalRequest/GetMyPending?type=hr-swap")).ListData.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == approval.Id);
-            inbox.GetProperty("title").GetString().Should().Contain("Đổi ca PH-").And.Contain("S1-TRUA 14/12/2026").And.Contain("S1-TOI 15/12/2026");
+            inbox.GetProperty("title").GetString().Should().Contain("Đổi ca DC-").And.Contain("S1-TRUA 14/12/2026").And.Contain("S1-TOI 15/12/2026");
             (await staff2.GetResultAsync($"/api/ShiftSwapRequest/GetDetail?id={swapId}")).Ok(); // người nhận xem được
             (await hr.PostFormAsync("/api/ShiftSwapRequest/Approve", ("Id", swapId), ("Note", "OK"))).Ok();
             var rowA = await _factory.QueryAsync(db => db.ShiftAssignment.AsNoTracking().SingleAsync(x => x.Id == a));
             var rowB = await _factory.QueryAsync(db => db.ShiftAssignment.AsNoTracking().SingleAsync(x => x.Id == b));
             rowA.EmployeeId.Should().Be(e2);
             rowB.EmployeeId.Should().Be(e1);
-            rowA.Note.Should().Contain("Đổi ca theo đơn PH-");
+            rowA.Note.Should().Contain("Đổi ca theo đơn DC-");
             (await _factory.QueryAsync(db => db.ShiftSwapRequest.AsNoTracking().SingleAsync(x => x.Id == swapId))).RequestStatus.Should().Be("Approved");
 
             // Nhường ca: người nhận đã có ca khác cùng ngày → 400.

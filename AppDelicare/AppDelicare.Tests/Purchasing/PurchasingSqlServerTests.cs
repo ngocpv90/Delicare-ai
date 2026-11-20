@@ -82,7 +82,7 @@ namespace AppDelicare.Tests.Purchasing
                     ListLine = [new GoodsReceiptLineInput { PurchaseOrderLineId = detail.ListLine.Single().Id, ReceivedQuantity = 10, ExpiryDate = clock.Today.AddDays(5), TemperatureC = 4, SupplierLotNumber = "[DEMO]" }],
                 });
                 created.ResponseCode.Should().Be(200, created.ResponseMessage);
-                created.Data!.GoodsReceipt.ReceiptNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                created.Data!.GoodsReceipt.ReceiptNumber.Should().MatchRegex(@"^PN-\d{6}-\d{4}$");
 
                 var concluded = await qcService.Conclude(new QcInspectionConcludeRequest
                 {
@@ -96,7 +96,7 @@ namespace AppDelicare.Tests.Purchasing
 
                 db.ChangeTracker.Clear();
                 var lot = await db.MaterialLot.AsNoTracking().SingleAsync(l => l.IngredientId == ingredient);
-                lot.LotNumber.Should().MatchRegex($@"^NL-\d{{6}}-{supplierCode}-\d{{2}}$");
+                lot.LotNumber.Should().MatchRegex($@"^LO-\d{{6}}-{supplierCode}-\d{{2}}$");
                 lot.QcStatus.Should().Be("DAT_MOT_PHAN");
                 var txn = await db.InventoryTransaction.AsNoTracking().SingleAsync(t => t.MaterialLotId == lot.Id);
                 txn.QuantityIn.Should().Be(8, "chỉ nhập phần đạt");

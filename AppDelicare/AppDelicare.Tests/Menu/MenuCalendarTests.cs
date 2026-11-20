@@ -50,7 +50,8 @@ namespace AppDelicare.Tests.Menu
             return Guid.Empty;
         }
 
-        private Task<Model.Entity.Menu> MenuByCodeAsync(string code) => _factory.QueryAsync(db => db.Menu.AsNoTracking().SingleAsync(m => m.Code == code && !m.IsDeleted));
+        /// <summary>MA-1.3 (D-63): mã thực đơn do máy chủ sinh (NU-…) → tìm theo tên "Thực đơn &lt;khóa&gt;".</summary>
+        private Task<Model.Entity.Menu> MenuByCodeAsync(string code) => _factory.QueryAsync(db => db.Menu.AsNoTracking().SingleAsync(m => m.Name == "Thực đơn " + code && !m.IsDeleted && (m.Note == null || !m.Note.StartsWith("Sao chép"))));
 
         private static Task<LegacyResult> AddLine(HttpClient c, Guid menu, Guid dish, int day, int option = 1, string meal = "TRUA", int sort = 0)
             => c.PostFormAsync("/api/MenuLine/Insert", ("MenuId", menu), ("DishId", dish), ("MealType", meal), ("DayOfWeek", day), ("SequenceNo", option), ("SortOrder", sort));
@@ -123,11 +124,14 @@ namespace AppDelicare.Tests.Menu
             (await AddLine(c, menu.Id, dish, day: 3)).Fail("Nháp / Đã duyệt");
             (await c.PostFormAsync("/api/Menu/Approve", ("Id", menu.Id))).Fail("trạng thái");
 
+            menu.Code.Should().MatchRegex(@"^NU-\d{6}-\d{3}$", "MA-1.3: mã thực đơn máy chủ sinh, bỏ qua mã gửi lên");
             var clone = (await c.PostFormAsync("/api/Menu/Clone", ("Id", menu.Id), ("Code", "TD-ST-2"), ("EffectiveFrom", new DateTime(2026, 12, 14)))).Ok();
             clone.GetProperty("status").GetString().Should().Be("Draft");
+            clone.GetProperty("code").GetString().Should().MatchRegex(@"^NU-261214-\d{3}$", "bản sao lấy mã mới theo ngày áp dụng");
             Guid cloneId = clone.GetProperty("id").GetGuid();
             (await _factory.QueryAsync(db => db.MenuLine.CountAsync(l => l.MenuId == cloneId && !l.IsDeleted))).Should().Be(2);
-            (await c.PostFormAsync("/api/Menu/Clone", ("Id", menu.Id), ("Code", "TD-ST-2"), ("EffectiveFrom", new DateTime(2026, 12, 14)))).Fail("đã tồn tại");
+            var clone2 = (await c.PostFormAsync("/api/Menu/Clone", ("Id", menu.Id), ("Code", "TD-ST-2"), ("EffectiveFrom", new DateTime(2026, 12, 14)))).Ok();
+            clone2.GetProperty("code").GetString().Should().NotBe(clone.GetProperty("code").GetString(), "mã gửi lên bị bỏ qua, không trùng");
 
             (await c.PostFormAsync("/api/Menu/Expire", ("Id", menu.Id))).Ok();
             (await MenuByCodeAsync("TD-ST")).Status.Should().Be("Expired");
@@ -189,7 +193,7 @@ namespace AppDelicare.Tests.Menu
             Guid dish = await DishWithRecipeAsync("EXP-MON", 10, 10000);
             Guid breakfast = await DishWithoutRecipeAsync("EXP-SANG");
             using var c = _factory.CreateAuthorizedClient();
-            (await c.PostFormAsync("/api/Menu/Insert", ("Code", "TD-EXP"), ("Name", "Thực đơn in"), ("EffectiveFrom", new DateTime(2026, 12, 7)), ("CompanyId", company))).Ok();
+            (await c.PostFormAsync("/api/Menu/Insert", ("Code", "TD-EXP"), ("Name", "Thực đơn TD-EXP"), ("EffectiveFrom", new DateTime(2026, 12, 7)), ("CompanyId", company))).Ok();
             var menu = await MenuByCodeAsync("TD-EXP");
             (await AddLine(c, menu.Id, dish, day: 1)).Ok();
             (await AddLine(c, menu.Id, dish, day: 7, option: 2)).Ok();
@@ -213,7 +217,7 @@ namespace AppDelicare.Tests.Menu
             text.Should().Contain("120 g");
 
             // Thực đơn không có món → lỗi nghiệp vụ dạng JSON.
-            (await c.PostFormAsync("/api/Menu/Insert", ("Code", "TD-EXP-EMPTY"), ("EffectiveFrom", new DateTime(2026, 12, 7)))).Ok();
+            (await c.PostFormAsync("/api/Menu/Insert", ("Code", "TD-EXP-EMPTY"), ("Name", "Thực đơn TD-EXP-EMPTY"), ("EffectiveFrom", new DateTime(2026, 12, 7)))).Ok();
             var empty = await MenuByCodeAsync("TD-EXP-EMPTY");
             (await c.GetResultAsync($"/api/Menu/ExportForCustomer?id={empty.Id}")).Fail("ít nhất 1 món");
         }

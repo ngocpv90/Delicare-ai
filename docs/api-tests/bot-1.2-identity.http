@@ -16,6 +16,9 @@
 @clientKey = dat-khoa-client-luc-chay
 @run = {{$localDatetime "YYYYMMDDHHmmss"}}
 
+### ⚠ File này liên kết THỬ tài khoản admin với bot VH bằng mã: mỗi tài khoản chỉ giữ 1 liên kết / kênh nên liên kết THẬT đang có của admin trên bot VH
+###   sẽ bị thu hồi (Revoked). Chạy trên DB thử, hoặc sau khi chạy gõ /start trên bot VH để liên kết lại (đã gặp 2026-11-19 trên DB dev).
+### 0. Đăng nhập (admin)
 # @name login
 POST {{base}}/api/Authentication/Login
 Content-Type: application/json

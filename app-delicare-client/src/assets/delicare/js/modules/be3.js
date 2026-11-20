@@ -183,7 +183,7 @@
           const met = la ? la.met : null, tg = la && la.target !== null && la.target !== undefined ? la.target : df.targetValue;
           const badge = !la ? '<span class="badge gray">Chưa có số</span>' : la.value === null || la.value === undefined ? '<span class="badge orange">Thiếu dữ liệu</span>' : met === true ? '<span class="badge green">Đạt</span>' : met === false ? '<span class="badge red">Chưa đạt</span>' : '<span class="badge gray">Không có mục tiêu</span>';
           return `<div class="card panel"><div class="spread"><div><div class="eyebrow">${esc((DOMS.find(x => x[0] === df.domainCode) || [0, df.domainCode || ''])[1])}</div><b title="${esc(String(df.formula || '').replace(/s*[A-Z_]{6,}[^.]*./g, '').replace(/s*PROPOSED[^.]*.?/g, '').trim())}">${esc(df.metricName || '')}</b></div>${badge}</div>
-            <div class="kpi-value">${la ? fmt(la.value, unit) : '–'}</div>
+            <div class="kpi-mini-value">${la ? fmt(la.value, unit) : '–'}</div>
             <div class="kpi-foot">${tg !== null && tg !== undefined ? 'Mục tiêu ' + (df.targetDirection === 'LOWER' ? '≤ ' : '≥ ') + fmt(tg, unit) + ' · ' : ''}${la ? (monthly ? 'tháng ' + U.date(la.date).slice(3) : 'ngày ' + U.date(la.date)) : 'chưa làm mới'}${la && la.dataQualityStatus === 'INCOMPLETE' && la.value !== null && la.value !== undefined ? ' · <span class="warn">chưa đủ dữ liệu</span>' : ''}${df.hasCalculator === false ? ' · <span class="warn">chưa có công thức tính</span>' : ''}</div>
             
             ${ser.length > 1 ? UI.lines(ser.map(s => monthly ? U.date(s.date).slice(3, 8) : U.date(s.date).slice(0, 5)), [{ name: df.metricName, values: ser.map(s => s.value), color: met === false ? '#F07825' : '#91AF42' }], { h: 110, refs: tg !== null && tg !== undefined ? [{ v: tg, color: '#D95C4F', label: 'Mục tiêu' }] : [] }) : ''}</div>`;
@@ -196,6 +196,7 @@
   // ---------- Kho tài liệu (#/adm-document): tải lên / tải xuống tệp đính kèm – docs/frontend-handoff/BE2.7.md ----------
   // Backend: tối đa 20 MB; chỉ nhận pdf, jpg, png, xlsx, docx. Tệp gửi multipart nên FormData đi thẳng qua Store.act (không qua objForm).
   const DOC_MAX = 20 * 1024 * 1024, DOC_EXT = ['pdf', 'jpg', 'jpeg', 'png', 'xlsx', 'docx'];
+  APP.docRules = { DOC_MAX, DOC_EXT };   // UI-2: tab Tài liệu của màn khách hàng 360 dùng chung quy tắc
   APP.register('adm-document', (el, f) => {
     const perm = Store.perm(f.id);
     APP.genericList(el, f, { noAdd: Store.isLive });   // chế độ thật: thêm tài liệu = tải tệp lên (không nhập tay dòng DocumentFile)

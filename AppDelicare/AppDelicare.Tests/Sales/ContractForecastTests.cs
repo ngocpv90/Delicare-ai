@@ -161,9 +161,8 @@ namespace AppDelicare.Tests.Sales
             using var c = _factory.CreateAuthorizedClient();
             Guid id = (await PostJson(c, "/api/Contract/Create", new { customerId = s.Customer, contractNumber = "GIAY-01/2026", effectiveFrom = "2026-12-01", listMeal = new[] { new { mealType = "TOI", unitPrice = 30000m } } }))
                 .Ok().GetProperty("contract").GetProperty("id").GetGuid();
-            (await Q(db => db.Contract.AsNoTracking().SingleAsync(x => x.Id == id))).ContractNumber.Should().Be("GIAY-01/2026", "giữ số hợp đồng giấy");
-            (await PostJson(c, "/api/Contract/Create", new { customerId = s.Customer, contractNumber = "GIAY-01/2026", effectiveFrom = "2026-12-01", listMeal = new[] { new { mealType = "TOI", unitPrice = 1m } } }))
-                .Fail("đã tồn tại");
+            (await Q(db => db.Contract.AsNoTracking().SingleAsync(x => x.Id == id))).ContractNumber.Should().MatchRegex(@"^HD-\d{6}-\d{3}$", "MA-1 (D-63 c): số hợp đồng máy chủ sinh, số gửi lên bị bỏ qua");
+            // MA-1 (D-63 c): số gửi lên bị bỏ qua → không còn lỗi trùng số hợp đồng giấy.
             (await c.PostFormAsync("/api/Contract/Submit", ("Id", id))).Ok();
             (await c.PostFormAsync("/api/Contract/Reject", ("Id", id))).Fail("lý do");
             (await c.PostFormAsync("/api/Contract/Reject", ("Id", id), ("Note", "Sai giá"))).Ok();
@@ -298,7 +297,7 @@ namespace AppDelicare.Tests.Sales
             var detail = created.Ok();
             created.Message.Should().Contain("XN-");
             Guid id = detail.GetProperty("request").GetProperty("id").GetGuid();
-            detail.GetProperty("request").GetProperty("requestNo").GetString().Should().MatchRegex(@"^PH-261208-\d{4}$");
+            detail.GetProperty("request").GetProperty("requestNo").GetString().Should().MatchRegex(@"^DM-261208-\d{4}$");
             detail.GetProperty("request").GetProperty("requestStatus").GetString().Should().Be("Pending");
             detail.GetProperty("request").GetProperty("menuId").GetGuid().Should().Be(s.Menu);
             detail.GetProperty("planNeedsManualAction").GetBoolean().Should().BeFalse();

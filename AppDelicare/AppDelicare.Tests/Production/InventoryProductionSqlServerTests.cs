@@ -86,7 +86,7 @@ namespace AppDelicare.Tests.Production
                 var expiry = await lotService.ProcessExpired(new MaterialLotExpireRequest { WarehouseId = warehouse, Note = "[DEMO]" });
                 expiry.ResponseCode.Should().Be(200, expiry.ResponseMessage);
                 expiry.Data!.ExpiredLotCount.Should().Be(1);
-                expiry.Data.TransactionNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                expiry.Data.TransactionNumber.Should().MatchRegex(@"^GD-\d{6}-\d{4}$");
                 (await db.InventoryBalance.AsNoTracking().Where(b => b.MaterialLotId == expiredLot).SumAsync(b => b.OnHandQuantity)).Should().Be(0);
 
                 // 2) Phát hành → giữ chỗ 5 kg (10 kg / 100 suất × 50 phần) trên lô còn hạn.

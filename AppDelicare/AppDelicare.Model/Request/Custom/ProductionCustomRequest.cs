@@ -115,6 +115,18 @@ namespace AppDelicare.Model.Request.Custom
     }
 
     /// <summary>T17: ghi hao hụt / suất thừa của mẻ (MealWasteRecord – thêm dòng).</summary>
+    /// <summary>BOT-3.3 (D-72): nấu thêm – mẻ bổ sung cùng lệnh sản xuất / món với mẻ gốc (thiếu suất, mẻ hỏng…).</summary>
+    public class ProductionBatchExtraRequest
+    {
+        /// <summary>Mẻ gốc (lấy lệnh SX, món, công thức).</summary>
+        [Required]
+        public Guid Id { get; set; }
+        [Range(1, 100000)]
+        public decimal Quantity { get; set; }
+        [Required, MaxLength(500)]
+        public string Reason { get; set; } = string.Empty;
+    }
+
     public class ProductionBatchWasteRequest
     {
         [Required]

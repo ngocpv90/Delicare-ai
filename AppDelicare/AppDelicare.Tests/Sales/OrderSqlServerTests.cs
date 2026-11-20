@@ -49,7 +49,7 @@ namespace AppDelicare.Tests.Sales
                 });
                 created.ResponseCode.Should().Be(200, created.ResponseMessage);
                 Guid id = created.Data!.Order!.Id;
-                created.Data.Order.OrderNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                created.Data.Order.OrderNumber.Should().MatchRegex(@"^DH-\d{6}-\d{4}$");
                 (await orders.Submit(new OrderActionRequest { Id = id })).ResponseCode.Should().Be(200);
                 (await orders.Confirm(new OrderActionRequest { Id = id })).ResponseCode.Should().Be(200);
                 var locked = await orders.Lock(new OrderActionRequest { Id = id });

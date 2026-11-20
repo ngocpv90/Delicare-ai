@@ -73,6 +73,46 @@ public static partial class Seeds
     public sealed record ExtraApproval(string Id, string Name, string Phase, string[] Roles);
 
     /// <summary>
+    /// D-69 (UG-1 C-17, C-23 – anh chốt 2026-11-19): quyền theo TỪNG MÀN bổ sung cho ma trận theo nhóm màn (ORG_STRUCTURE §2 chỉ chia theo nhóm).
+    /// Chỉ NÂNG quyền (OR với ma trận), không hạ. Roles = ["*"] → mọi nhóm. DB đang chạy: DB/scripts/UG1_D69_permissions.sql.
+    /// </summary>
+    public sealed record RightOverride(string Screen, string[] Roles, bool Add, bool Edit);
+
+    public static readonly IReadOnlyList<RightOverride> RightOverrides =
+    [
+        new("log-packing-order", ["OPS-KIT"], Add: true, Edit: true),    // C-17: tổ Chia suất / Đóng gói thuộc Bếp
+        new("log-packing-result", ["OPS-KIT"], Add: true, Edit: true),
+        // C-18 (tự chấm công / lập đơn nghỉ – đổi ca của mình): KHÔNG cấp quyền màn hr-* – quyền Thêm = lập hộ người khác, Truy cập = xem của mọi người.
+        // Tự phục vụ đi qua API SkipPermission (CheckIn / CheckOut / LeaveRequest.Create / ShiftSwapRequest.Create) trên màn hr-my (mở cho mọi người).
+        new("adm-employee", ["FIN-HR"], Add: true, Edit: true),          // C-23: Nhân sự sửa hồ sơ (SĐT = khóa liên kết bot), tạo mã liên kết Telegram
+    ];
+
+    /// <summary>
+    /// D-71 (PROPOSED, làm theo quy tắc ROADMAP – mục PROPOSED chưa chốt thì làm theo đề xuất): màn GIỚI HẠN – chỉ nhóm liệt kê có quyền, nhóm khác = 0
+    /// (khác RightOverrides chỉ nâng). Màn tích hợp bot (cấu hình kênh / bot, định danh, nhật ký tin) chỉ quản trị FIN-IT; CEO / COO xem tin gửi đi để thấy tin lỗi.
+    /// DB đang chạy: DB/scripts/D71_revoke_int_screens.sql.
+    /// </summary>
+    public sealed record ScreenRight(bool Add, bool Edit, bool Delete, bool Export);
+
+    public static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ScreenRight>> RestrictedScreens = BuildRestricted();
+
+    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, ScreenRight>> BuildRestricted()
+    {
+        var admin = new ScreenRight(Add: true, Edit: true, Delete: false, Export: true);
+        var view = new ScreenRight(false, false, false, false);
+        var map = new Dictionary<string, IReadOnlyDictionary<string, ScreenRight>>();
+        foreach (string s in new[] { "int-channel", "int-bot", "int-identity", "int-inbound", "int-log" })
+        {
+            map[s] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin };
+        }
+        map["int-outbound"] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin, ["CEO"] = view, ["COO"] = view };
+        return map;
+    }
+
+    private static RightOverride? OverrideOf(string screen, string role)
+        => RightOverrides.FirstOrDefault(o => o.Screen == screen && (o.Roles.Contains("*") || o.Roles.Contains(role)));
+
+    /// <summary>
     /// T15.1 (D-11, anh chốt 2026-11-16): PO tổng ≥ <c>BusinessRules:PurchaseOrderDirectorApprovalAmount</c> do Giám đốc duyệt → mục
     /// <c>#/wf-inbox?type=scm-po-director</c>, chỉ seed quyền cho nhóm CEO (admin đổi trên ma trận quyền).
     /// <para>BE2.3 (D-46, anh chốt 2026-11-16 – nhóm duyệt từng cấp PROPOSED): đề nghị mua 2 cấp <c>scm-pr-l1</c> (Trưởng bộ phận Mua hàng → seed OPS-SCM) →
@@ -331,6 +371,7 @@ public static partial class Seeds
         sb.AppendLine("-- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.");
         sb.AppendLine("-- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh trên ma trận.");
         sb.AppendLine("-- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục \"Duyệt …\" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.");
+        sb.AppendLine("-- D-69: ngoại lệ theo từng màn (Seeds.RightOverrides – đóng gói cho OPS-KIT, FIN-HR sửa hồ sơ nhân viên). D-71: màn tích hợp int-* chỉ FIN-IT (CEO / COO xem int-outbound) – Seeds.RestrictedScreens.");
         foreach (var (role, _, _) in matrix)
         {
             sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = {Sql(role)} AND IsDeleted = 0)");
@@ -344,6 +385,14 @@ public static partial class Seeds
             foreach (var s in screens)
             {
                 var f = Flags(rights[GroupToMatrix[s.Group]]);
+                if (OverrideOf(s.Id, role) is { } o)
+                {
+                    f = (true, f.Add || o.Add, f.Edit || o.Edit, f.Delete, f.Print, f.Export, f.Import, f.Approve);   // D-69: chỉ nâng
+                }
+                if (RestrictedScreens.TryGetValue(s.Id, out var allowed))   // D-71: màn giới hạn – đặt đúng quyền, nhóm khác = 0
+                {
+                    f = allowed.TryGetValue(role, out var r) ? (true, r.Add, r.Edit, r.Delete, r.Export, r.Export, false, false) : (false, false, false, false, false, false, false, false);
+                }
                 string b(bool v) => v ? "1" : "0";
                 rows.Add($"({Sql(role)}, {Sql("#/" + s.Id)}, {b(f.Access)}, {b(f.Add)}, {b(f.Edit)}, {b(f.Delete)}, {b(f.Print)}, {b(f.Export)}, {b(f.Import)})");
             }

@@ -1,3 +1,5 @@
+### ⚠ MA-1 (D-63, 2026-11-19): file này viết TRƯỚC quy tắc mã mới – còn gửi mã danh mục tự đặt (Code=…) / số chứng từ tự đặt và kỳ vọng số PH- / KH- / NL-.
+### Máy chủ nay bỏ qua mã G1 gửi lên và sinh mã (KHB- / NC- / DH- / PN- / LO- / KS-…) → các bước tìm lại theo mã có thể hỏng. Kiểm hồi quy toàn luồng: full-flow.http (đã cập nhật).
 ### DELICARE – Pilot P7 (T17 + T17.1 phát hành theo ca, khung cũ D-30): kế hoạch KH- → duyệt → phát hành (lệnh SX PH- + mẻ ME-, lịch ngược từ giờ xuất bếp) → xuất NL cho mẻ (FEFO)
 ### → bắt đầu → nhiệt độ lõi (≥ 70 °C) → lưu mẫu → xong → sản lượng → đạt QC → đóng gói; in Phiếu sản xuất.
 ### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.

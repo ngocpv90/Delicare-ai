@@ -49,6 +49,8 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@ReceiptDate", request.ReceiptDate);
                 dynamicParameters.Add("@WarehouseId", request.WarehouseId == Guid.Empty ? null : request.WarehouseId);
                 dynamicParameters.Add("@Status", request.Status);
+                dynamicParameters.Add("@FromReceiptDate", request.FromReceiptDate?.Date);
+                dynamicParameters.Add("@ToReceiptDate", request.ToReceiptDate?.Date);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);
@@ -268,14 +270,16 @@ namespace AppDelicare.Services.Implement
                     return Result<GoodsReceiptDetailModel>.Fail(error);
                 }
 
-                string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, receiptDate.Date);
+                string number = await _documentNumberService.NextAsync(DocumentKind.GoodsReceipt, receiptDate.Date);
                 var receipt = new GoodsReceipt
                 {
                     Id = Guid.NewGuid(), ReceiptNumber = number, ReceiptNo = number, PurchaseOrderId = po!.Id, SupplierId = po.SupplierId, WarehouseId = request.WarehouseId,
                     ReceiptDate = receiptDate, Status = GoodsReceiptStatus.QcPending,
                     Note = PurchasingRules.AppendNote($"Nhận theo PO {po.PurchaseOrderNumber ?? po.PONo}", request.Note),
                 };
-                var inspection = new QcInspection { Id = Guid.NewGuid(), GoodsReceiptId = receipt.Id, InspectionDate = receiptDate, InspectionNumber = number };
+                // MA-1.7 (D-63): phiếu QC có số riêng QC-YYMMDD-NNNN (trước đây dùng chung số phiếu nhập).
+                string inspectionNumber = await _documentNumberService.NextAsync(DocumentKind.QcInspection, receiptDate.Date);
+                var inspection = new QcInspection { Id = Guid.NewGuid(), GoodsReceiptId = receipt.Id, InspectionDate = receiptDate, InspectionNumber = inspectionNumber };
                 _unitOfWork.GoodsReceiptRepository.Add(receipt);
                 _unitOfWork.QcInspectionRepository.Add(inspection);
                 bool allAuto = true;

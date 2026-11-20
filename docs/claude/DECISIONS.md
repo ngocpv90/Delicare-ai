@@ -78,7 +78,7 @@ PROPOSED (T17.1, chờ anh xác nhận): (a) số phần món theo ca = dòng k�
 | D-46 | **Đề nghị mua duyệt 2 cấp** (GAP-PUR-06): `PurchaseRequest/Submit` → cấp 1 **Trưởng bộ phận Mua hàng (OPS-SCM)** → cấp 2 **Giám đốc vận hành (COO)** → Đã duyệt mới được `ConvertToPurchaseOrder`. Quyền duyệt theo D-31: 2 mục menu `#/wf-inbox?type=scm-pr-l1` / `scm-pr-l2` + UserRole (nhóm duyệt từng cấp là PROPOSED, anh sửa trên ma trận quyền). Từ chối ở cấp nào → về Nháp kèm lý do. Đề nghị do MRP tạo cũng phải duyệt. PO vẫn duyệt riêng như T15.1. | 2026-11-16 (anh chốt; người duyệt từng cấp PROPOSED) |
 | D-47 | **Refresh token để sau** (sau khi hoàn thiện luồng). Giữ access token 120 phút, hết hạn đăng nhập lại. Phương án khi làm: GAP-AUTH-01 (không lưu DB). | 2026-11-16 (anh chốt) |
 | D-48 | **Job tự động = project / container riêng `AppDelicare.Job`** (Worker Service .NET 8), dùng chung Services / Data / Model, chỉ hẹn giờ và gọi Service cũ; không chạy job trong WebApi; không Hangfire, không thêm bảng. Chi tiết ARCHITECTURE.md mục 1b. Làm sau khi hoàn thiện luồng (D-45). | 2026-11-16 (anh chốt) |
-| D-49 | **Frontend do dev FE khác làm** và commit lên git; Claude Code **không tự làm FE** khi anh chưa yêu cầu (FE-ALL bỏ khỏi việc của Claude Code). Khi anh yêu cầu: kéo code về và **ghép luồng** (ROADMAP task GHEP-FE). Claude Code vẫn viết handoff `docs/frontend-handoff/` cho mỗi API mới. **Luật hỏi:** mọi việc cần anh xác nhận phải kèm phương án đề xuất tốt nhất + lý do + phương án khác (mẫu ở CLAUDE.md "Khi nào dừng để hỏi anh"). | 2026-11-16 (anh chốt) |
+| D-49 | ⛔ **Thay bằng D-65 (2026-11-19): Claude Code làm toàn bộ FE.** ~~**Frontend do dev FE khác làm** và commit lên git; Claude Code **không tự làm FE** khi anh chưa yêu cầu (FE-ALL bỏ khỏi việc của Claude Code). Khi anh yêu cầu: kéo code về và **ghép luồng** (ROADMAP task GHEP-FE). Claude Code vẫn viết handoff `docs/frontend-handoff/` cho mỗi API mới. **Luật hỏi:** mọi việc cần anh xác nhận phải kèm phương án đề xuất tốt nhất + lý do + phương án khác (mẫu ở CLAUDE.md "Khi nào dừng để hỏi anh").~~ | 2026-11-16 (anh chốt) |
 
 ## B. Chờ anh chốt (Claude Code: task phụ thuộc thì để BLOCKED, làm task khác)
 | Mã | Câu hỏi | Đề xuất của em | Ảnh hưởng |
@@ -180,15 +180,23 @@ PROPOSED (T17.1, chờ anh xác nhận): (a) số phần món theo ca = dòng k�
 | GAP-INT-02 | Không có unique index cho `InboundMessage` / `OutboundMessage.IdempotencyKey` | Chống trùng trong code (`UPDLOCK, HOLDLOCK`); script đề xuất ở `DB/proposed/` (D-62 p1) | PROPOSED – BA/PO CONFIRM |
 | GAP-INT-03 | `OutboundMessage` không có cột hẹn giờ gửi | `PayloadJson.notBefore` (D-62 p3) | PROPOSED – BA/PO CONFIRM |
 | GAP-INT-04 | Không có chỗ lưu bền dòng thời gian sự việc liên phòng (không phải phản ánh khách) | `PayloadJson` tin gốc theo `CorrelationId`; Obsidian khi có T50 (D-62 p4) | PROPOSED – BA/PO CONFIRM |
+| GAP-HR-06 | Không có chỗ lưu **số ngày phép được hưởng / phép năm còn lại** của nhân viên | Màn chi tiết nhân viên (D-68) hiện "đã nghỉ trong năm theo loại", không tính phép còn lại | PROPOSED – BA/PO CONFIRM (2026-11-19) |
+| GAP-HR-07 | Không có chỗ lưu **giấy khám sức khỏe định kỳ** của nhân viên (bắt buộc người làm bếp – ATTP); `MedicalExamination` thuộc phần bệnh nhân cũ, không dùng cho nhân viên | Tải giấy khám lên tab Tài liệu của nhân viên (`DocumentFile`, loại "Giấy khám sức khỏe", ngày hết hạn ghi trong ghi chú); chưa tự cảnh báo hết hạn | PROPOSED – BA/PO CONFIRM (2026-11-19) |
 | (thêm mới ở dưới) | | | |
 
 Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ giai đoạn phân tích).
 
-## E. Việc cho frontend (ghi lại, KHÔNG làm – chờ anh giao)
+## E. Việc frontend – **Claude Code làm (D-65)**, theo thứ tự ROADMAP
 <!-- Mẫu: | FE-NN | màn hình / file Angular | việc cần đổi | lý do (API mới / thay đổi) | -->
 | FE-BOT-1 | Hồ sơ cá nhân · hồ sơ nhân viên | Nút "Liên kết Telegram" (mã + link `t.me`) · "Cấp mã liên kết" cho nhân viên | D-62 f, BOT-1.2 |
 | FE-BOT-2 | `int-channel`, `int-bot`, `int-identity`, `int-outbound`, hộp thư hội thoại | Màn quản trị kênh / bot / định danh / tin gửi (thử lại) / timeline | D-62, BOT-1.1, Catalog 216–220 |
 | FE-BOT-3 | Màn in phiếu · QR cổng | Vẽ ảnh QR từ link `start=…` do BE trả | D-62 p12, BOT-1.7 |
+| FE-UI-1 | `core/ui.js` UI.kpi · `css/app.css` · `crm-customer` (danh sách + hồ sơ 360) | Thẻ chỉ số kiểu mới cho mọi màn; 4 thẻ danh sách khách hàng; 4 thẻ hồ sơ 360 | D-64, UI-1 – **anh giao Claude Code làm** |
+| FE-UI-2 | `crm-customer-360` (màn mới, sales.js) · ngăn xem nhanh khách hàng | Màn chi tiết khách hàng 360 theo D-66 | D-66, UI-2 – Claude Code làm (D-65) |
+| FE-UI-3 | `scm-supplier-360` (màn mới, scm.js) · hộp Tổng quan NCC | Màn chi tiết nhà cung cấp theo D-67 | D-67, UI-3 – Claude Code làm (D-65) |
+| FE-UI-4 | `adm-employee-360` (màn mới) · danh sách nhân viên | Màn chi tiết nhân viên theo D-68 | D-68, UI-4 – Claude Code làm (D-65) |
+| FE-MA-2 | Form chung (`core/ui.js` UI.form, `core/store.js`) · mọi màn danh mục / chứng từ | Ô Mã của bảng nhóm G1 chỉ đọc "(tự sinh khi lưu)" theo API quy tắc mã; G2 kiểm chữ hoa không dấu, khóa sửa khi đã dùng; báo thành công sau API + hiện mã | D-63 k–l, MA-1 – **anh giao Claude Code làm** |
+| FE-MA-1 | `crm-customer` (sales.js) · ô Mã mọi màn danh mục / chứng từ | Form khách hàng theo loại (BUSINESS / INDIVIDUAL), ẩn CIF, ô Mã chỉ đọc "(tự sinh khi lưu)", báo thành công sau khi API xác nhận + hiện mã | D-63, MA-1 – **anh giao Claude Code làm (D-63 l)** |
 
 ## D. GAP mới phát sinh khi code (Claude Code ghi tiếp vào đây)
 <!-- Mẫu: | GAP-XXX-NN | mô tả | cách tạm | PROPOSED – BA/PO CONFIRM | task |  -->
@@ -497,3 +505,132 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (m3) | DB đã có sẵn bảng (dev, staging, server test) | baseline / legacy-upgrade → **ADOPT** (ghi nhận, không chạy) khi DB đã đủ 124 bảng – không đụng bảng có sẵn. legacy-upgrade chỉ chạy khi còn thiếu bảng (DB cũ 91 bảng). | Bắt buộc dựng lại DB từ đầu (mất dữ liệu test) |
 | (m4) | Migration mới trên DB đã có bảng ở compose gốc (dev FE) | Giữ chốt cũ: cần `DB_AUTO_MIGRATE=1` (backup trước), không thì dừng + in danh sách. `db-init` / `Deploy-Database.ps1` chạy luôn (người chạy là người phụ trách DB). | Tự chạy mọi nơi (nhanh nhưng đổi cấu trúc server test không ai biết) |
 | (m5) | File đã chạy bị sửa | Cảnh báo, không chạy lại; thay đổi = file mới. Migration `normal` phải chạy lại được, không DROP / TRUNCATE / DELETE (test chặn). | Chạy lại khi mã băm đổi (nguy hiểm với script ALTER) |
+
+## D-63 – Quy tắc mã toàn hệ thống + loại khách hàng (anh chốt 2026-11-19)
+
+✅ **Anh chốt 2026-11-19** (chat tài liệu, rà soát màn `crm-customer`): đồng ý toàn bộ đề xuất, gồm 3 điểm (1) đổi tiền tố chứng từ đang chạy – chỉ cho chứng từ mới; (2) đánh lại mã khách hàng / NCC đã có một lần; (3) áp dụng `NV-NNNNN` cho nhân viên tạo mới. Việc làm: ROADMAP **MA-1**. Chi tiết quy tắc: BUSINESS_RULES §11.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Hai dạng mã | **A – Danh mục** `TIỀNTỐ-NNNNN` (5 chữ số, tăng liên tục toàn hệ thống, không quay về 1; quá 99.999 tự sang 6 chữ số). **B – Chứng từ** `TIỀNTỐ-YYMMDD-NNNN` (YYMMDD = ngày lập, số quay về 1 mỗi ngày; số chữ số giữ như hiện tại từng loại); biến thể có hậu tố `TIỀNTỐ-YYMMDD-<HẬU TỐ>-NN` (lô / mẻ / chuyến). |
+| (b) | Tiền tố | 2 chữ = đối tượng, chữ thứ 3 (tùy chọn) = phân loại. Duy nhất, đăng ký một chỗ (`DocumentNumberService.Specs` + BUSINESS_RULES §11); không tiền tố nào là phần đầu của tiền tố khác – họ `KH*` dành cho khách hàng (kế hoạch SX đổi `KH` → `KS`). |
+| (c) | Ai sinh mã | Máy chủ, khi lưu lần đầu, trong transaction (`sp_getapplock` + MAX như hiện tại). Người dùng không nhập / không sửa; giá trị mã gửi lên bị bỏ qua. Mã không đổi sau khi cấp, không cấp lại số đã dùng (kể cả bản ghi đã xóa). **Không bảng đếm, không SEQUENCE, không thêm cột.** |
+| (d) | Bảng tiền tố | Danh mục: `KHB` KH doanh nghiệp · `KHC` KH cá nhân · `NC` NCC · `NL` nguyên liệu · `MA` món ăn · `KO` kho · `XE` phương tiện · `NV` nhân viên (chỉ nhân viên mới). Chứng từ: `DH` đơn hàng · `HD` hợp đồng · `NU` thực đơn (ngày = ngày bắt đầu áp dụng) · `DM` đề xuất đổi món · `MH` đề nghị mua · `PO` đơn mua · `PN` phiếu nhập · `PX` phiếu xuất · `KK` kiểm kê · `GD` giao dịch kho tay · `LO` lô NL (+NCC) · `KS` kế hoạch SX · `LS` lệnh SX · `ME` mẻ (+ca) · `DG` lệnh đóng gói · `GH` đơn giao · `CX` chuyến (+xe) · `VS` vệ sinh · `PA` phản ánh · `XN` yêu cầu duyệt · `DN` đơn nghỉ · `DC` đơn đổi ca · `CC` chấm công (AttendanceEvent chưa có cột số – giữ như trước, chưa sinh). |
+| (e) | Dữ liệu cũ | Chứng từ đã phát sinh **giữ số cũ** (`PH-…`, `KH-…`, `NL-…`); tìm kiếm / bot / in nhận cả mẫu cũ lẫn mới. **Khách hàng và NCC đã có: đánh lại mã một lần** theo (a) (script chỉ cập nhật dữ liệu, chạy sau backup, có bản đối chiếu mã cũ → mới xuất ra file; thay đổi vào lịch sử AuditChange). Nguyên liệu, món, kho, xe đã có **giữ mã cũ** (mã kho / xe đang in trên QR `LOC_` / `VEH_`), chỉ bản ghi mới theo quy tắc. Nhân viên cũ giữ mã (đang là tên đăng nhập); nhân viên mới `NV-NNNNN` và tên đăng nhập = mã. |
+| (f) | Loại khách hàng | Chỉ chọn trong danh mục, lưu ở cột có sẵn `Customer.CustomerType`: `BUSINESS` (Doanh nghiệp → `KHB`), `INDIVIDUAL` (Cá nhân → `KHC`). Giá trị cũ (HOSPITAL, …) chuyển sang `Industry`, loại = `BUSINESS`. |
+| (g) | Trường theo loại | **Doanh nghiệp** bắt buộc: Tên doanh nghiệp (`LegalName`), Tên giao dịch (`DisplayName`), MST (`TaxCode`, 10 số hoặc 10-3 số, không trùng trong KHB), Người đại diện PL, Người liên hệ + SĐT liên hệ, Địa chỉ, Điện thoại, Chi nhánh phục vụ (`BranchId`); tùy chọn: số ĐKKD (trống = MST) / ngày / nơi cấp, Email, Email liên hệ, Ngành (danh mục), Quy mô (danh mục), Phân khúc, Nguồn, NV phụ trách, Ghi chú. **Cá nhân** bắt buộc: Họ (`LastName`), Tên (`FirstName`), Địa chỉ, Điện thoại, Chi nhánh phục vụ; tùy chọn: Giới tính, Ngày sinh (≤ hôm nay), CCCD (12 số, không trùng trong KHC) / ngày cấp (ngày sinh ≤ … ≤ hôm nay) / nơi cấp, Nghề nghiệp, Email, MST cá nhân (10 số), Nguồn, NV phụ trách, Ghi chú. Trường không thuộc loại → máy chủ xóa trống khi lưu. |
+| (h) | Máy chủ tự gán | `Code` theo loại; **`CIF = Code`** (cột NOT NULL, **không hiển thị ở giao diện** – chỉ dùng cho môi trường ngân hàng); `Name` = `LegalName` (DN) / "Họ Tên" (CN); `DisplayName` (CN) = "Họ Tên"; `CompanyId` = công ty của người tạo. Điện thoại: `0` + 9 số hoặc `+84` + 9 số; email đúng định dạng. Kiểm hết ở máy chủ (không dựa vào giao diện). |
+| (i) | Đổi loại | Khóa sau khi lưu. Khách **chưa có hợp đồng / đơn hàng**: người có quyền Sửa đổi được → cấp mã mới theo loại mới, mã cũ ghi lịch sử. Đã có hợp đồng / đơn: không đổi – ngừng hoạt động và tạo khách mới. |
+| (j) | Giao diện | Form riêng `crm-customer`: chọn loại trước, hiện ô theo loại, ô Mã chỉ đọc "(tự sinh khi lưu)", ẩn CIF ở form / danh sách / hồ sơ; báo thành công **sau** khi máy chủ xác nhận, kèm mã mới. |
+| (k) | Phủ toàn hệ thống (anh đồng ý 2026-11-19) | Mọi cột mã định danh của mọi bảng thuộc **đúng 1 trong 3 nhóm** (BUSINESS_RULES §11.3): **G1 – tự sinh** (dạng A / B), **G2 – mã nghiệp vụ người đặt** (nhập tay, chữ hoa không dấu A–Z 0–9 `-` `_`, không trùng, không sửa sau khi đã dùng), **G3 – không phải mã định danh** (mã loại / tham chiếu / thứ tự / bảng cũ). Danh sách nhóm nằm trong code (một chỗ, cạnh `DocumentNumberService.Specs`) và có API trả cho giao diện. **Test chặn:** bảng / cột mã mới chưa xếp nhóm → test đỏ. Luật ghi vào `CLAUDE.md` §3.3 để mọi tính năng thêm sau tự tuân theo. |
+| (l) | Ai làm | **Anh giao Claude Code làm cả backend và frontend cho MA-1** (ngoại lệ D-49 cho việc này): form chung tự khóa ô Mã của bảng G1 theo API, form khách hàng theo loại, ẩn CIF, hiện mã sau khi lưu. |
+| (m) | Chi nhánh phục vụ | ✅ Anh đồng ý 2026-11-19 (đề xuất khi làm MA-1): bắt buộc **chỉ khi** hệ thống đã có `OrganizationUnit` loại `BRANCH`; chưa có chi nhánh nào (1 pháp nhân, 1 bếp – như DB dev) → không bắt buộc. |
+| (n) | Lô không có NCC | ✅ Anh đồng ý 2026-11-19: lô nhập tay không có NCC (tồn đầu kỳ) lấy hậu tố `TDK` – `LO-YYMMDD-TDK-NN`. |
+| (o) | Số hợp đồng giấy | ✅ Anh đồng ý 2026-11-19: `ContractNumber` luôn là `HD-YYMMDD-NNN` do máy chủ sinh; số hợp đồng giấy của khách ghi ở Ghi chú / Tên hợp đồng. |
+| (p) | Lọc lô theo kết quả QC | ✅ Anh đồng ý 2026-11-19: `uspMaterialLot_GetAll` lọc `QualityStatus` đang dùng LIKE (`DAT` khớp cả `KHONG_DAT`) – sửa thành so khớp đúng (MA-1). |
+| (q) | Import danh mục | MA-1.3: ô mã của danh mục G1 trong file import không bắt buộc – trống → máy chủ sinh mã, có mã → khớp theo mã như cũ. |
+
+## D-64 – Claude Code làm frontend khi anh giao + chuẩn thẻ chỉ số (anh chốt 2026-11-19)
+
+✅ **Anh chốt 2026-11-19** (chat tài liệu): "đồng ý và giao thành task để Claude Code làm luôn cả FE".
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Phạm vi sửa FE | **Ngoại lệ D-49 / luật "chỉ backend" (ROADMAP – luật chung):** Claude Code **được sửa `app-delicare-client/`** (engine `src/assets/delicare/js/**`, `src/assets/delicare/css/app.css`, `src/app/delicare/**`) cho các task anh giao FE: **MA-1.8** (gỡ chặn – D-63 l), **UI-1**, và các mục giao diện của **UG-1**. Ngoài các task này vẫn giữ D-49. Mỗi task FE: `npm run build` xanh, không nâng phiên bản Angular / thư viện, không sửa màn ngoài phạm vi task. Claude Code được cập nhật `docs/user-guide/*` cho đúng thay đổi của task. |
+| (b) | Tên gọi | Khối số liệu đầu trang = **dải thẻ chỉ số** (`.kpis`), mỗi ô = **thẻ chỉ số** (`UI.kpi`). |
+| (c) | Chuẩn thẻ chỉ số (mẫu `docs/frontend-handoff/assets/kpi-card-standard.png`) | Nền trắng, viền 1px xám nhạt, bo ~16px, không bóng, đệm ~24px, căn giữa dọc. **Ô biểu tượng bên trái** 56×56, bo ~14px, nền pastel + biểu tượng nét ~28px cùng tông đậm (xanh lá / xanh lá nhạt / xanh dương / cam / đỏ / tím – dùng biến màu có sẵn). **Bên phải:** nhãn ~15px đậm vừa màu xám xanh; **số chính** ~32–36px rất đậm gần đen; **số phụ** (tùy chọn) cùng dòng sau số chính, ~15px xám (vd "/ 2 · 100%"). **Không còn dòng chú thích chân thẻ.** Dải: 4 cột ≥ 1200px, 2 cột 768–1199px, 1 cột < 768px, khoảng cách ~24px. Hỗ trợ giao diện tối (theme.service) qua biến CSS. Thẻ có liên kết: rê chuột viền đậm, bấm mở màn đích. Đang tải: hiện "–". |
+| (d) | Áp dụng | **Toàn bộ** màn dùng `UI.kpi` (một chỗ sửa – mọi màn đổi theo). Riêng trang danh sách khách hàng và hồ sơ khách hàng 360 có bộ thẻ riêng (ROADMAP UI-1). |
+
+## D-65 – Claude Code làm toàn bộ frontend (anh chốt 2026-11-19)
+
+✅ **Anh chốt 2026-11-19** (chat tài liệu): "yêu cầu Claude Code thực hiện hết cả task của FE". **Thay D-49** (FE do dev khác làm) và mở rộng D-64 a.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Ai làm FE | **Claude Code làm mọi việc frontend**: các mục ở **mục E** (FE-BOT-1, FE-BOT-2, FE-BOT-3, FE-MA-1, FE-MA-2, FE-UI-1), phần giao diện của **UG-1** (`docs/user-guide/90_CHENH_LECH.md`), và mọi việc FE phát sinh từ task backend sau này (API mới / đổi → sửa luôn giao diện trong cùng task, không còn ghi "chờ anh giao"). Mục E từ nay là **danh sách việc FE của Claude Code**, không phải việc chờ. |
+| (b) | Làm ở đâu | Giao diện thật hiện tại = **engine** `app-delicare-client/src/assets/delicare/js/**` (+ `css/app.css`, `src/app/delicare/**`): mỗi `APP.register('<screen-id>')` là một màn. **Không** viết lại màn trong khung Angular cũ `src/app/main/*` (giữ nguyên, không xóa); CLAUDE.md §4.4 (khung Angular cũ) chỉ áp cho phần còn dùng Angular (đăng nhập, shell). |
+| (c) | Kiểm tra mỗi task FE | `npm run build` xanh; không nâng phiên bản Angular / thư viện; không đưa phần trình diễn mockup (DEMO, tên cột DB, GAP…) vào chế độ dữ liệu thật; chữ hiển thị tiếng Việt; mở thử màn đã sửa (cỡ màn hình lớn / nhỏ); quyền theo `Store.perm` + máy chủ; cập nhật `docs/user-guide/*` đúng phần đã đổi. Task chạm cả BE + FE: build BE, test BE, `full-flow.http` vẫn xanh. |
+| (d) | Thứ tự | Theo ROADMAP: việc đang DOING trước (MA-1 còn lại) → UI-1 → **FE-E** (FE-BOT-1 → FE-BOT-3 → FE-BOT-2) → giao diện UG-1. BOT-2.9 / Docker không đổi chỗ. |
+
+## D-66 – Màn chi tiết khách hàng 360 (anh chốt 2026-11-19)
+
+✅ **Anh chốt 2026-11-19** (chat tài liệu): đồng ý thiết kế màn chi tiết khách hàng 360 theo bố cục trang `account-overview` của template, và để phần lãi gộp theo khách sang giai đoạn sau. Việc làm: ROADMAP **UI-2** (Claude Code làm cả BE + FE – D-65). Mô phỏng: `docs/frontend-handoff/assets/customer-360-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Dạng màn | **Màn riêng cả trang** `crm-customer-360` (`#/quan-tri/crm-customer-360?id=…`), mở khi bấm dòng ở danh sách khách hàng; đầu trang có ← về danh sách. Mở khách từ màn khác (liên kết, tìm kiếm) vẫn là **ngăn xem nhanh** hiện tại + nút **Mở hồ sơ đầy đủ**. Màn ẩn khỏi menu, quyền = quyền xem `crm-customer`. |
+| (b) | Phần đầu | Ô chữ viết tắt (màu theo loại), tên, mã KHB/KHC, nhãn loại + trạng thái, ngành, chi nhánh phục vụ, NV phụ trách, địa chỉ, điện thoại, MST (DN) / CCCD (CN); nút **Sửa**, **Tạo đơn**, **Ghi phản ánh**, ⋯ (**Tạo hợp đồng**, **In hồ sơ**, **Ngừng hoạt động**) – hiện theo quyền; dải **4 thẻ chỉ số** của UI-1.3; hàng tab. |
+| (c) | Tab | **Tổng quan** · Hợp đồng và giá · Đơn hàng · Giao nhận · Đối soát · Khay hộp · Phản ánh · Dự báo và thực đơn · Tài liệu · Lịch sử (+ Liên quan). Tab chỉ hiện khi có quyền xem màn tương ứng; tải dữ liệu khi mở tab lần đầu. |
+| (d) | Tab Tổng quan | Khối **Cần chú ý** (hợp đồng còn ≤ 30 ngày, phản ánh quá hạn SLA, khay thất thoát > ngưỡng, chưa chốt đơn ngày mai sau 19:00, thiếu điểm giao / liên hệ chính) · **Thông tin khách hàng** (ô theo loại – D-63 g) · **Điểm giao và liên hệ** (khung giờ nhận, suất TB / điểm, thêm nhanh) · **Hợp đồng hiện hành** (số, thời hạn, đơn giá theo loại suất, Xem / Gia hạn) · biểu đồ **Suất đặt – giao – nhận 30 ngày** · **Đơn hàng gần đây** (lọc trạng thái, Xem tất cả). |
+| (e) | API dùng lại | `Customer/GetOverview`, `Contract/GetDetail`, `PricePolicy/Resolve`, `Order/GetAll`, `DeliveryOrder/GetList`, `OrderReconciliation/GetList`, `PackagingLedger/GetBalance`, `ContainerReturn/GetList`, `CustomerComplaint/GetList`, `Forecast/GetMatrix`, `MenuAssignment/Resolve`, `DocumentFile/GetList` + `Upload`, `Common/GetHistory`, `Common/GetRelated` (đều đã có lọc theo khách). |
+| (f) | API bổ sung | (1) `Customer/GetOverview` thêm trường (không đổi trường cũ): tên chi nhánh, tên NV phụ trách, số hợp đồng hiệu lực + ngày hết hạn gần nhất, phản ánh đang mở / quá hạn / % đúng hạn, số đơn đã đối soát, khay đang ở khách + tỷ lệ thất thoát, danh sách cảnh báo; (2) **mới** `Customer/GetTrend(id, from, to)` – chuỗi theo ngày suất đặt / giao / nhận / phục vụ + cơ cấu theo loại suất; (3) `Order/GetAll` thêm lọc **từ ngày – đến ngày** (theo ngày ăn). Khung cũ, `Result<T>`, quyền xem `crm-customer`; không thêm bảng / cột. |
+| (g) | Để sau | Doanh thu – giá vốn – lãi gộp theo khách (`MealCost/GetList` thêm `CustomerId` hoặc `Customer/GetProfit`) – chờ giá thành thực tế được tính đều. |
+
+## D-67 – Màn chi tiết nhà cung cấp (anh chốt 2026-11-19)
+
+✅ **Anh chốt 2026-11-19** (chat tài liệu): đồng ý thiết kế màn chi tiết nhà cung cấp cùng khung với khách hàng 360 (D-66). Việc làm: ROADMAP **UI-3** (Claude Code làm cả BE + FE – D-65). Mô phỏng: `docs/frontend-handoff/assets/supplier-360-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Dạng màn | **Màn riêng cả trang** `scm-supplier-360` (`#/quan-tri/scm-supplier-360?id=…`), mở khi bấm dòng ở danh sách NCC; ← về danh sách. Mở NCC từ màn khác vẫn là hộp **Tổng quan** hiện tại + nút **Mở hồ sơ đầy đủ**. Ẩn khỏi menu, quyền = quyền xem `scm-supplier`. |
+| (b) | Phần đầu | Ô chữ viết tắt, tên, mã `NC-…`, loại NCC, trạng thái, MST, người liên hệ + SĐT, địa chỉ, email; nút **Sửa**, **Thêm giá NL**, **Ghi sự cố**, ⋯ (**In hồ sơ**, **Ngừng giao dịch**) theo quyền. **Không** có "Tạo PO" (PO chỉ lập từ đề nghị mua). 4 thẻ chỉ số (D-64 c): **PO đang mở** (số phụ: tổng giá trị) · **Giao đúng hạn 90 ngày** (số phụ: số lần nhận) · **Hàng bị loại 90 ngày** · **Sự cố đang mở** (số phụ: "/ tổng · N quá hạn"). |
+| (c) | Tab | **Tổng quan** · Bảng giá nguyên liệu · Đơn mua · Nhận hàng và QC · Lô nguyên liệu · Sự cố · Tài liệu · Lịch sử (+ Liên quan). Tab hiện theo quyền xem màn tương ứng; tải khi mở lần đầu. |
+| (d) | Tab Tổng quan | **Cần chú ý** (PO trễ hạn giao, sự cố quá hạn, giá NL hết hiệu lực ≤ 15 ngày, lô của NCC đang tạm giữ / cận date) · **Thông tin NCC** · **Nguyên liệu cung cấp** (giá hiện hành, hạn hiệu lực, nhãn Ưu tiên) · **Đánh giá NCC** (3 thanh: giao đúng hạn, đạt QC, sự cố xử lý đúng hạn) · biểu đồ **Giá trị mua 6 tháng** (theo phiếu nhập đã ghi sổ) · **Đơn mua đang mở** (hẹn giao, giá trị, trạng thái / trễ N ngày). |
+| (e) | API dùng lại | `Supplier/GetOverview`, `SupplierMaterial/GetAll` (lọc NCC / nguyên liệu / hiệu lực – kể cả so giá NCC khác cùng NL), `PurchaseOrder/GetAll` + `GetDetail`, `GoodsReceipt/GetAll` + `QcInspection/GetDetail`, `MaterialLot/GetAll` + `Trace`, `SupplierIssue/GetAll` + `Transition`, `DocumentFile`, `Common/GetHistory`, `Common/GetRelated`. |
+| (f) | API bổ sung | (1) `Supplier/GetOverview` thêm trường (không đổi trường cũ): số PO đang mở + tổng giá trị + số PO trễ hạn, sự cố đang mở / quá hạn / % đúng hạn, số lô tạm giữ / cận date, ngày nhận gần nhất, giá hết hiệu lực trong 15 ngày, danh sách cảnh báo; (2) **mới** `Supplier/GetTrend(id, from, to)` – theo tháng: giá trị PO, giá trị đã nhận, % đúng hạn, % hàng bị loại; (3) lọc **từ ngày – đến ngày** cho `PurchaseOrder/GetAll` (ngày đặt) và `GoodsReceipt/GetAll` (ngày nhận). Khung cũ, `Result<T>`, quyền xem `scm-supplier`; không thêm bảng / cột. |
+| (g) | Ngoài phạm vi | Công nợ / thanh toán NCC (hệ thống chưa có phân hệ). |
+
+## D-68 – Màn chi tiết nhân viên (anh chốt 2026-11-19)
+
+✅ **Anh chốt 2026-11-19** (chat tài liệu): đồng ý thiết kế màn chi tiết nhân viên cùng khung với D-66 / D-67, và ghi 2 khoảng trống dữ liệu thành GAP-HR-06 (phép năm còn lại), GAP-HR-07 (giấy khám sức khỏe). Việc làm: ROADMAP **UI-4** (Claude Code làm cả BE + FE – D-65). Mô phỏng: `docs/frontend-handoff/assets/employee-360-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Dạng màn | **Màn riêng cả trang** `adm-employee-360` (`#/quan-tri/adm-employee-360?id=…`), mở khi bấm dòng ở danh sách nhân viên; ← về danh sách; ẩn menu; quyền = quyền xem `adm-employee`. |
+| (b) | Phần đầu | Ô chữ viết tắt, họ tên, mã `NV-…`, chức danh, đơn vị, ngày vào làm + thâm niên, trạng thái, nhãn **Đã / Chưa liên kết bot**, SĐT, email; nút **Sửa**, **Phân ca**, **Chấm công hộ**, ⋯ (**Tạo mã liên kết bot**, **Tạo đơn nghỉ thay**, **In hồ sơ**, **Cho nghỉ việc**) theo quyền. 4 thẻ chỉ số (D-64 c): **Ca tháng này** (số phụ: giờ công) · **Đúng giờ (tháng)** · **Ngày nghỉ năm nay** (số phụ: đơn chờ) · **Vắng / muộn (tháng)**. |
+| (c) | Tab | **Tổng quan** · Lịch ca · Chấm công · Nghỉ phép · Đổi ca · **Công việc** (theo vai trò – chuyến xe, mẻ… qua `Common/GetRelated`) · Tài khoản và bot · Tài liệu · Lịch sử. Tab hiện theo quyền xem màn tương ứng (`hr-*`, `wf-inbox`…); tải khi mở lần đầu. |
+| (d) | Tab Tổng quan | **Cần chú ý** (chưa liên kết bot, đơn chờ duyệt, có ca hôm nay chưa vào ca, chấm công ngoài bán kính ≥ 2 lần / 7 ngày, thiếu SĐT) · **Thông tin nhân viên** · **Ca 7 ngày tới** (ngày nghỉ phép tô màu) + ca hôm nay · **Tài khoản và bot** (tài khoản web, nhóm quyền, Telegram, nút tạo mã) · biểu đồ **Giờ công 30 ngày** · **Chấm công gần đây** (giờ vào / ra, hình thức, hợp lệ / muộn / ngoài bán kính). |
+| (e) | Thông tin cá nhân | Ngày sinh, địa chỉ, giới tính **chỉ trả về / hiện** với người có quyền **Sửa** `adm-employee` (NS, quản trị); người khác chỉ thấy thông tin công việc. Máy chủ lọc, không chỉ ẩn ở giao diện. |
+| (f) | API dùng lại | `Employee/GetById`, `ShiftAssignment/GetAll`, `AttendanceEvent/GetTimesheet` + `GetTimesheetDetail` (nhân viên + khoảng ngày), `LeaveRequest/GetAll` / `ShiftSwapRequest/GetAll` + Duyệt / Từ chối, `TelegramLink/CreateCodeForEmployee`, `Common/GetRelated`, `DocumentFile`, `Common/GetHistory`. |
+| (g) | API bổ sung | (1) **mới** `Employee/GetOverview(id)`: hồ sơ + tên đơn vị / chức danh + thâm niên; tài khoản web (theo quy tắc mã NV = tên đăng nhập) + nhóm quyền; trạng thái liên kết Telegram; chỉ số tháng (số ca, giờ công, % đúng giờ, vắng, muộn); ngày nghỉ trong năm theo loại + số đơn chờ; ca 7 ngày tới + ca hôm nay; danh sách cảnh báo; áp (e); (2) `ShiftAssignment/GetAll` thêm lọc **từ ngày – đến ngày**. Khung cũ, `Result<T>`, quyền xem `adm-employee`; không thêm bảng / cột. |
+| (h) | GAP | GAP-HR-06 phép năm còn lại, GAP-HR-07 giấy khám sức khỏe (mục C) – chờ anh duyệt riêng. |
+
+## D-70 – Vẽ mã QR ở máy chủ (anh chọn 2026-11-19; trước ghi nhầm số D-67, đánh lại 2026-11-19)
+
+✅ **Anh chọn 2026-11-19** (hỏi theo D-65 b – engine chưa có bộ vẽ QR): **backend vẽ QR bằng NuGet QRCoder 1.6.0** (MIT, thuần .NET, chạy Docker Linux). Phương án khác đã nêu: tự viết bộ vẽ QR trong engine; thêm thư viện JS qrcode-generator.
+
+| # | Điểm | Cách làm |
+|---|---|---|
+| (a) | API | `POST api/Common/GetQrBatch` { listText } → SVG từng mục (≤ 200 mục, ≤ 512 ký tự); `GET api/Common/GetFieldQrList?group=&withSvg=` → QR hiện trường CHAMCONG / LINE_ / VEH_ / LOC_ / CLEAN mở bot Vận hành, lọc theo quyền Xem màn của từng nhóm. Chỉ cần đăng nhập. |
+| (b) | Phiếu in PDF | Ảnh QR của link `DOC_…` (BOT-1.7d) in cuối phiếu, 2,4 cm. PDFsharp 6 bản Core không đọc PNG / nguồn base64 → ghi BMP tạm rồi xóa sau khi dựng PDF. |
+| (c) | Giao diện | `UI.qrSlot` / `UI.fillQr` (gom 1 lần gọi), `UI.printFieldQr` (cửa sổ in A4); hộp mã liên kết Telegram có ảnh QR. |
+
+## D-71 – Quyền các màn tích hợp bot chỉ cho nhóm quản trị (PROPOSED, đã làm theo đề xuất 2026-11-19; trước ghi nhầm số D-68)
+
+**Vấn đề:** FE-E.3 yêu cầu `int-channel`, `int-bot`, `int-identity`, `int-inbound`, `int-outbound`, `int-log` chỉ nhóm quản trị (FIN-IT) dùng; nhưng `DB/seed/UserRole_seed.sql` (sinh từ ORG_STRUCTURE.md) đang cấp **Xem** cho hầu hết nhóm (CEO, COO, OPS-*, SAL-*…), seed không ghi đè quyền đã có, và giao diện không được gán quyền theo tên nhóm (CLAUDE §4.3).
+
+**Đề xuất (em chọn):** (1) sửa ma trận nguồn (ORG_STRUCTURE.md) + sinh lại seed: 6 màn trên chỉ FIN-IT (Xem + Sửa), CEO / COO chỉ Xem `int-outbound` (để thấy cảnh báo tin lỗi); (2) script dữ liệu một lần `DB/scripts/D68_revoke_int_screens.sql` (chạy thử / chạy thật, sau backup) đặt AllowAccess = 0 cho các nhóm còn lại trên DB đã có; admin vẫn chỉnh lại được trên màn ma trận quyền.
+**Phương án khác:** chỉ để admin tự bỏ quyền trên màn ma trận (không cần script, nhưng dễ sót); giữ nguyên quyền Xem cho mọi nhóm (đơn giản, nhưng lộ cấu hình kênh / nhật ký cho nhiều người).
+**Hiện tại:** 3 màn kênh / bot / nhật ký đã hiện lại; ai thấy là theo ma trận đang có.
+**2026-11-19 – đã làm theo đề xuất (quy tắc ROADMAP: mục PROPOSED chưa chốt thì làm theo đề xuất; anh vẫn đổi được):** `tools/AppDelicare.CodeGen` `Seeds.RestrictedScreens` (màn giới hạn – nhóm không liệt kê = 0) → sinh lại `UserRole_seed.sql` (FIN-IT Xem + Thêm + Sửa + In + Xuất 6 màn; CEO / COO chỉ Xem `int-outbound`); script DB đang chạy `DB/scripts/D71_revoke_int_screens.sql` (-v DryRun=1 / 0, 16 nhóm chuẩn) – chạy thử trên DB dev: 82 ô thu hồi + 8 ô đặt lại; **chạy thật chờ anh backup**. Không đổi ORG_STRUCTURE §2 (ma trận theo nhóm màn, không ghi được ngoại lệ từng màn).
+
+## D-69 – Quyền theo từng màn sau rà soát HDSD (UG-1 C-17, C-18, C-19, C-23 – anh chốt 2026-11-19)
+
+| # | Nội dung | Cách làm |
+|---|---|---|
+| (a) | C-17: OPS-KIT (tổ Chia suất / Đóng gói) **Truy cập + Thêm + Sửa** `log-packing-order`, `log-packing-result` | `tools/AppDelicare.CodeGen` `Seeds.RightOverrides` (quyền theo từng màn, chỉ nâng) → sinh lại `DB/seed/UserRole_seed.sql`; DB đang chạy: `DB/scripts/UG1_D69_permissions.sql` (-v DryRun=1 / 0, chỉ nâng cờ, 16 nhóm chuẩn) |
+| (b) | C-23: FIN-HR **Truy cập + Thêm + Sửa** `adm-employee` (không cấp `adm-user`, `adm-permission`) | Như (a) |
+| (c) | C-19: giữ quyền duyệt theo seed (CEO / COO / FIN-HR / QA…); sửa BOT_TELEGRAM §3.3: bỏ "duyệt lịch xe", giữ / thả lô là thao tác QA trực tiếp, bếp trưởng / TP KD / trưởng điều phối chưa có mục duyệt | Chỉ tài liệu |
+| (d) | C-18: anh chọn "cấp quyền cho mọi nhóm tự chấm công / lập đơn". Khi làm, em phát hiện: quyền **Thêm** `hr-leave` / `hr-swap` = lập đơn **hộ người khác**, quyền **Truy cập** `hr-attendance` / `hr-leave` = xem bảng công / đơn của **mọi người** → cấp rộng là lộ dữ liệu. Tự phục vụ vốn không cần quyền màn (API `CheckIn` / `CheckOut` / `LeaveRequest/Create` / `ShiftSwapRequest/Create` / `GetMine` đều SkipPermission, máy chủ lấy nhân viên của tài khoản) | **Không cấp quyền `hr-*`**; màn **Việc của tôi** (`hr-my`, mở cho mọi người) thêm **Chấm công hôm nay** (Vào / Ra ca) và **Tạo đơn nghỉ**; đổi ca đã có trên từng ca. Anh muốn cấp quyền màn như phương án gốc thì báo em |
+
+**Ghi chú đánh số (anh chốt 2026-11-19):** 2 mục em ghi trùng số với mục của anh đã đánh lại – QR **D-70** (trước D-67), quyền màn tích hợp **D-71** (trước D-68). Commit cũ vẫn ghi số cũ.
+
+## D-72 – Chức năng bot còn thiếu: làm cả 4 nhóm (UG-1 C-22 – anh chọn 2026-11-19)
+
+| # | Nội dung |
+|---|---|
+| (a) | Anh chọn làm tiếp **cả 4 nhóm**: Bếp (tổ trưởng) · Giao vận + Điểm phát · Kho + QA truy xuất · Kinh doanh + Nhân sự + Kế toán. Việc làm: ROADMAP **ĐỢT BOT-3** (3.1 xem nhanh → 3.2 thao tác ghi → 3.3 cần API mới). |
+| (b) | Cách làm: mỗi chức năng gọi API web có sẵn bằng JWT của chính người dùng (quyền như web, nút ẩn khi không có mục menu); chỉ thêm BE khi thiếu (vd. `CustomerComplaint/GetList?mine=true`). |
+| (c) | Lệnh gõ (`/…`) duy nhất toàn bot: chức năng giống nhau ở nhiều phân hệ chỉ 1 chức năng giữ lệnh, còn lại là nút (`/truyxuatlo`, `/congthang`). |
+| (d) | `/chatid` trong nhóm: chỉ tài khoản quản trị được trả lời (người khác gõ → bot im lặng, không lộ mã nhóm). |
+| (e) | Anh cũng chốt: siết thông tin cá nhân ở `Employee/GetAll` / `GetAllData` / `GetById` (như D-68 e); đánh lại số mục DECISIONS của Claude: QR D-70, quyền tích hợp D-71. |

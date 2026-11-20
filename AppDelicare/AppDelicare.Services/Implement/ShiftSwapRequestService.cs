@@ -326,7 +326,7 @@ namespace AppDelicare.Services.Implement
                 var entity = new ShiftSwapRequest
                 {
                     Id = Guid.NewGuid(),
-                    RequestNo = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today),
+                    RequestNo = await _documentNumberService.NextAsync(DocumentKind.ShiftSwap, _clock.Today),
                     RequesterEmployeeId = current.EmployeeId,
                     TargetEmployeeId = targetId,
                     CurrentShiftAssignmentId = current.Id,

@@ -48,12 +48,14 @@
   // Chế độ thật: hộp thoại / ngăn chi tiết cũng bỏ chữ kỹ thuật của mockup như vùng nội dung chính (APP.cleanDemoText nạp sau ui.js).
   const cleanTech = root => { try { if (window.APP && APP.cleanDemoText) APP.cleanDemoText(root); } catch (e) { console.warn(e); } };
   // ---------- Modal ----------
-  UI.modal = ({ title, sub, body, foot, size, onMount }) => {
+  // locked (T45R.8): hộp thoại bắt buộc (vd. đổi mật khẩu tạm) – không có nút X, không đóng bằng bấm nền / Esc.
+  UI.modal = ({ title, sub, body, foot, size, onMount, locked }) => {
     const ov = document.createElement('div'); ov.className = 'modal overlay show'; ov.style.display = 'block'; ov.tabIndex = -1;
-    ov.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ${size === 'lg' ? 'modal-xl' : size === 'sm' ? '' : 'modal-lg'}" role="dialog" aria-modal="true"><div class="modal-content"><div class="modal-header"><div style="flex:1;min-width:0"><h5 class="modal-title">${title}</h5>${sub ? `<div class="panel-desc">${sub}</div>` : ''}</div><button type="button" class="btn-close" data-close aria-label="Đóng"></button></div><div class="modal-body">${body || ''}</div>${foot !== false ? `<div class="modal-footer">${foot || '<button class="btn" data-close>Đóng</button>'}</div>` : ''}</div></div>`;
+    ov.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ${size === 'lg' ? 'modal-xl' : size === 'sm' ? '' : 'modal-lg'}" role="dialog" aria-modal="true"><div class="modal-content"><div class="modal-header"><div style="flex:1;min-width:0"><h5 class="modal-title">${title}</h5>${sub ? `<div class="panel-desc">${sub}</div>` : ''}</div>${locked ? '' : '<button type="button" class="btn-close" data-close aria-label="Đóng"></button>'}</div><div class="modal-body">${body || ''}</div>${foot !== false ? `<div class="modal-footer">${foot || '<button class="btn" data-close>Đóng</button>'}</div>` : ''}</div></div>`;
+    if (locked) ov.dataset.locked = '1';
     document.body.appendChild(ov);
     const close = () => ov.remove();
-    ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
+    ov.addEventListener('click', e => { if (locked) return; if (e.target === ov || e.target.closest('[data-close]')) close(); });
     onMount && onMount(ov.querySelector('.modal-content'), close);
     cleanTech(ov);
     return close;
@@ -104,7 +106,7 @@
   };
   // ---------- Form sinh từ schema ----------
   const SKIP = new Set(['Id', 'CreatedDate', 'CreatedBy', 'ModifiedDate', 'ModifiedBy', 'DeletedDate', 'DeletedBy', 'DeleteddBy', 'IsDeleted']);
-  UI.formFields = t => Object.values(Store.colmeta[t]).filter(m => !SKIP.has(m.name) && !Store.isDeprecated(t, m.name) && m.usage !== 'Kỹ thuật' && m.usage !== 'Ẩn (bảo mật)' && m.usage !== 'Hệ thống (PK)');
+  UI.formFields = t => Object.values(Store.colmeta[t]).filter(m => !SKIP.has(m.name) && !Store.isDeprecated(t, m.name) && !UI.hidden(t, m.name) && m.usage !== 'Kỹ thuật' && m.usage !== 'Ẩn (bảo mật)' && m.usage !== 'Hệ thống (PK)');
   UI.input = (t, m, v) => {
     const id = 'f_' + m.name, req = !m.nullable && !m.def;
     if (m.name.endsWith('Id')) {
@@ -124,35 +126,151 @@
     const ml = (m.type.match(/\((\d+)\)/) || [])[1];
     return `<input class="input" id="${id}" name="${m.name}" value="${esc(v || '')}" ${ml ? `maxlength="${ml}"` : ''} ${req ? 'required' : ''}>`;
   };
+  // ---------- MA-1 (D-63): cột ẩn + form khách hàng theo loại ----------
+  // CIF = Code (máy chủ gán) – chỉ dùng cho môi trường ngân hàng, KHÔNG hiển thị ở form / danh sách / hồ sơ (D-63 h, j).
+  const HIDDEN = { Customer: new Set(['CIF']) };
+  UI.hidden = (t, col) => !!(HIDDEN[t] && HIDDEN[t].has(col));
+  // D-63 g: trường theo loại khách hàng. req = bắt buộc trên giao diện (máy chủ kiểm lại; Chi nhánh chỉ bắt buộc khi đã có chi nhánh).
+  const CUSTOMER_FIELDS = {
+    BUSINESS: {
+      req: ['LegalName', 'DisplayName', 'TaxCode', 'LegalRepresentativeName', 'ContactPersonName', 'ContactPersonPhone', 'Address', 'PhoneNumber'],
+      opt: ['BranchId', 'BusinessRegistrationNumber', 'RegistrationDate', 'RegistrationPlace', 'Email', 'ContactPersonEmail', 'Industry', 'CompanySize', 'Segment', 'Source', 'UserAssignId', 'Status', 'Note'],
+    },
+    INDIVIDUAL: {
+      req: ['LastName', 'FirstName', 'Address', 'PhoneNumber'],
+      opt: ['BranchId', 'Gender', 'DateOfBirth', 'IdentityNumber', 'IdentityDate', 'IdentityPlace', 'Occupation', 'Email', 'TaxCode', 'Source', 'UserAssignId', 'Status', 'Note'],
+    },
+  };
+  const CUSTOMER_LABEL = {
+    LegalName: 'Tên doanh nghiệp', DisplayName: 'Tên giao dịch', TaxCode: 'Mã số thuế', LegalRepresentativeName: 'Người đại diện pháp luật',
+    ContactPersonName: 'Người liên hệ', ContactPersonPhone: 'SĐT người liên hệ', ContactPersonEmail: 'Email người liên hệ', PhoneNumber: 'Điện thoại',
+    BranchId: 'Chi nhánh phục vụ', BusinessRegistrationNumber: 'Số ĐKKD (trống = MST)', RegistrationDate: 'Ngày cấp ĐKKD', RegistrationPlace: 'Nơi cấp ĐKKD',
+    Industry: 'Ngành', CompanySize: 'Quy mô', Segment: 'Phân khúc', Source: 'Nguồn', UserAssignId: 'NV phụ trách', LastName: 'Họ', FirstName: 'Tên',
+    Gender: 'Giới tính', DateOfBirth: 'Ngày sinh', IdentityNumber: 'Số CCCD (12 số)', IdentityDate: 'Ngày cấp CCCD', IdentityPlace: 'Nơi cấp CCCD', Occupation: 'Nghề nghiệp',
+  };
+  const customerType = v => (String(v || '').toUpperCase() === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'BUSINESS');
   UI.form = (t, row, opt = {}) => {
     const editing = !!(row && row.Id), rec = Object.assign({}, opt.defaults || {}, row || {});
-    const fields = (opt.fields ? opt.fields.map(f => Store.colmeta[t][f]).filter(Boolean) : UI.formFields(t));
+    const isCustomer = t === 'Customer' && !opt.fields;
+    let cusType = customerType(rec.CustomerType);
+    // Trường của form: khách hàng theo loại (D-63 g); bảng khác sinh từ schema như cũ.
+    const fieldsOf = () => {
+      if (!isCustomer) return (opt.fields ? opt.fields.map(f => Store.colmeta[t][f]).filter(Boolean) : UI.formFields(t));
+      const d = CUSTOMER_FIELDS[cusType];
+      return ['Code', 'CustomerType'].concat(d.req, d.opt).map(f => Store.colmeta[t][f]).filter(Boolean);
+    };
+    const isReq = m => isCustomer ? CUSTOMER_FIELDS[cusType].req.includes(m.name) || m.name === 'CustomerType' : (!m.nullable && !m.def);
+    const labelOf = m => (isCustomer && CUSTOMER_LABEL[m.name]) || U.colLabel(m.name);
+    // MA-1 (D-63 k): nhóm mã từ api/Common/GetCodeRules – G1 chỉ đọc "(tự sinh khi lưu)", G2 chữ hoa không dấu.
+    const ruleOf = m => Store.codeRule(t, m.name);
+    const inputOf = m => {
+      const r = ruleOf(m), v = rec[m.name];
+      if (r && r.group === 'G1') return `<input class="input mono" id="f_${m.name}" name="${m.name}" value="${esc(v || '')}" placeholder="(tự sinh khi lưu)" readonly data-g1="1" title="Mã do máy chủ tự sinh${r.prefix ? ' – ' + esc(r.prefix) : ''}">`;
+      if (isCustomer && m.name === 'CustomerType') {
+        // Loại khách khóa sau khi lưu (D-63 i) – đổi loại chỉ khi chưa có hợp đồng / đơn, máy chủ kiểm và cấp mã mới.
+        return `<select class="select" id="f_CustomerType" name="CustomerType" required ${editing && !opt.allowTypeChange ? 'data-locked="1"' : ''}>${['BUSINESS', 'INDIVIDUAL'].map(c => `<option value="${c}" ${c === cusType ? 'selected' : ''}>${c === 'BUSINESS' ? 'Doanh nghiệp' : 'Cá nhân'}</option>`).join('')}</select>`;
+      }
+      const html = UI.input(t, m, v);
+      return r && r.group === 'G2' ? html.replace('<input ', '<input data-g2="1" ') : html;
+    };
+    const fieldHtml = m => {
+      const req = isReq(m) && !(ruleOf(m) && ruleOf(m).group === 'G1');
+      const wide = /max\)$/.test(m.type) && /Note|Description|Instructions|Reason|Resolution|Address/.test(m.name);
+      return `<div class="field ${wide ? 'full' : ''}"><label for="f_${m.name}">${esc(labelOf(m))}${req ? ' <span class="req">*</span>' : ''}${Store.isLive ? '' : ` <code>${m.name} · ${m.type}</code>`}</label>${inputOf(m)}${m.def && !Store.isLive ? `<span class="hint">DEFAULT ${esc(m.def)}</span>` : ''}<span class="err hide"></span></div>`;
+    };
+    let fields = fieldsOf();
+    const formHtml = () => `<div id="frmErr" class="notice warn hide"></div><form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}</form>`;
     // Chế độ thật: không hiện ghi chú kỹ thuật của mockup (tên bảng, cột SQL) – CLAUDE.md 4.4.
-    const body = `${Store.isLive ? '' : `<div class="notice info">${I('database')}<div><b>Form sinh từ cấu trúc bảng <code>dbo.${t}</code></b>Trường bắt buộc (<span class="req" style="color:var(--red)">*</span>) = cột NOT NULL không có DEFAULT trong SQL. Tên cột SQL hiển thị cạnh nhãn. Cột deprecated không hiển thị.</div></div>`}
-      <form class="form-grid" novalidate>${fields.map(m => { const req = !m.nullable && !m.def; const wide = /max\)$/.test(m.type) && /Note|Description|Instructions|Reason|Resolution|Address/.test(m.name); return `<div class="field ${wide ? 'full' : ''}"><label for="f_${m.name}">${esc(U.colLabel(m.name))}${req ? ' <span class="req">*</span>' : ''} <code>${m.name} · ${m.type}</code></label>${UI.input(t, m, rec[m.name])}${m.def ? `<span class="hint">DEFAULT ${esc(m.def)}</span>` : ''}<span class="err hide"></span></div>`; }).join('')}</form>`;
+    const body = `${Store.isLive ? '' : `<div class="notice info">${I('database')}<div><b>Form sinh từ cấu trúc bảng <code>dbo.${t}</code></b>Trường bắt buộc (<span class="req" style="color:var(--red)">*</span>) = cột NOT NULL không có DEFAULT trong SQL. Tên cột SQL hiển thị cạnh nhãn. Cột deprecated không hiển thị.</div></div>`}<div id="frmBody">${formHtml()}</div>`;
     UI.modal({
       title: (editing ? 'Chỉnh sửa – ' : 'Tạo mới – ') + (opt.title || t), sub: Store.isLive ? '' : `dbo.${t} · ${fields.length} trường`, size: 'lg', body,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="frmSave">${I('ok')} ${editing ? 'Lưu thay đổi' : 'Tạo mới'}</button>`,
-      onMount: (m, close) => m.querySelector('#frmSave').onclick = () => {
-        let ok = true; const out = {};
-        fields.forEach(f => {
-          const el = m.querySelector('#f_' + f.name), fld = el.closest('.field'), err = fld.querySelector('.err');
-          let v = el.value; fld.classList.remove('invalid'); err.classList.add('hide');
-          if (v === '') v = null;
-          else if (f.type === 'bit') v = +v;
-          else if (/decimal|int|bigint/.test(f.type)) v = Number(v);
-          if ((!f.nullable && !f.def) && (v === null)) { ok = false; fld.classList.add('invalid'); err.textContent = 'Bắt buộc (NOT NULL)'; err.classList.remove('hide'); }
-          out[f.name] = v;
-        });
-        const v2 = opt.validate && opt.validate(out); if (v2) { ok = false; UI.toast(v2, 'err'); }
-        if (!ok) return;
-        // opt.submit: màn hình tự lưu qua action nghiệp vụ (vd. LeaveRequest/Create) thay cho Insert / Update chung.
-        if (opt.submit) return opt.submit(out, close);
-        let saved;
-        if (editing) saved = Store.update(t, row.Id, out, opt.note); else saved = Store.add(t, Object.assign({}, opt.defaults || {}, out));
-        close(); UI.toast((editing ? 'Đã cập nhật ' : 'Đã tạo ') + esc(Store.label(t, saved)) + ` <small>(dbo.${t} · DEMO)</small>`, 'ok');
-        opt.onSave && opt.onSave(saved);
+      onMount: (m, close) => {
+        const host = m.querySelector('#frmBody');
+        const showErr = msg => { const box = m.querySelector('#frmErr'); box.innerHTML = I('alert') + '<div>' + esc(msg) + '</div>'; box.classList.remove('hide'); box.scrollIntoView({ block: 'nearest' }); };
+        // Giữ giá trị đã nhập khi vẽ lại form (đổi loại khách).
+        const collect = () => { fields.forEach(f => { const el = m.querySelector('#f_' + f.name); if (el && !el.dataset.g1) rec[f.name] = el.value === '' ? null : el.value; }); };
+        const wire = () => {
+          host.querySelectorAll('[data-g2]').forEach(el => el.addEventListener('input', () => { const p = el.selectionStart, v = Store.userCode(el.value); if (v !== el.value) { el.value = v; try { el.setSelectionRange(p, p); } catch (e) { /* bỏ qua */ } } }));
+          const ct = host.querySelector('#f_CustomerType');
+          if (ct && isCustomer) {
+            if (ct.dataset.locked) { ct.disabled = true; ct.title = 'Loại khách hàng khóa sau khi lưu (D-63 i)'; }
+            ct.onchange = () => { collect(); cusType = customerType(ct.value); rec.CustomerType = cusType; fields = fieldsOf(); host.innerHTML = formHtml(); wire(); };
+          }
+        };
+        wire();
+        // Mã quy tắc chưa tải xong lúc mở form → vẽ lại khi có (không mất dữ liệu đã nhập).
+        if (Store.isLive) Store.loadCodeRules().then(() => { if (host.isConnected) { collect(); host.innerHTML = formHtml(); wire(); } });
+        const btn = m.querySelector('#frmSave');
+        btn.onclick = () => {
+          let ok = true; const out = {};
+          m.querySelector('#frmErr').classList.add('hide');
+          fields.forEach(f => {
+            const el = m.querySelector('#f_' + f.name); if (!el) return;
+            const fld = el.closest('.field'), err = fld.querySelector('.err');
+            fld.classList.remove('invalid'); err.classList.add('hide');
+            if (el.dataset.g1) return;   // G1: máy chủ sinh – không gửi
+            let v = el.value;
+            if (v === '') v = null;
+            else if (f.type === 'bit') v = +v;
+            else if (/decimal|int|bigint/.test(f.type)) v = Number(v);
+            if (isReq(f) && v === null) { ok = false; fld.classList.add('invalid'); err.textContent = 'Bắt buộc'; err.classList.remove('hide'); }
+            out[f.name] = v;
+          });
+          if (isCustomer) out.CustomerType = cusType;
+          const v2 = opt.validate && opt.validate(out); if (v2) { ok = false; showErr(v2); }
+          if (!ok) return;
+          // opt.submit: màn hình tự lưu qua action nghiệp vụ (vd. LeaveRequest/Create) thay cho Insert / Update chung.
+          if (opt.submit) return opt.submit(out, close);
+          // MA-1.8: ghi CHỜ API – đóng form + báo thành công chỉ khi máy chủ xác nhận; lỗi → giữ form, hiện lỗi tại chỗ.
+          const payload = editing ? Object.assign({}, row, out) : Object.assign({}, opt.defaults || {}, out);
+          btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = 'Đang lưu…';
+          Store.save(t, editing ? 'Update' : 'Insert', payload).then(r => {
+            btn.disabled = false; btn.innerHTML = old;
+            if (!r.ok) { showErr(r.message || 'Không lưu được'); return; }
+            close();
+            const saved = r.row || payload;
+            UI.toast(esc(r.message || ((editing ? 'Đã cập nhật ' : 'Đã tạo ') + (Store.label(t, saved) || ''))) + (r.demo ? ` <small>(dbo.${t} · DEMO)</small>` : ''), 'ok');
+            opt.onSave && opt.onSave(saved);
+          });
+        };
       }
+    });
+  };
+  // ---------- FE-E.2 (D-65): mã QR do máy chủ vẽ (Common/GetQrBatch – QRCoder) ----------
+  // UI.qrSlot(text) → ô chờ; UI.fillQr(root) gom mọi ô chưa vẽ trong root, gọi 1 lần API rồi chèn SVG. Chế độ DEMO: hiện link chữ.
+  UI.qrSlot = (text, size) => `<div class="qr-box" data-qr="${esc(text)}" style="width:${size || 160}px;height:${size || 160}px"><span class="muted small">QR…</span></div>`;
+  UI.fillQr = root => {
+    const slots = [...(root || document).querySelectorAll('[data-qr]:not([data-qr-done])')];
+    if (!slots.length) return Promise.resolve();
+    slots.forEach(s => s.dataset.qrDone = '1');
+    if (!Store.isLive) { slots.forEach(s => { s.innerHTML = `<span class="small mono" style="word-break:break-all">${esc(s.dataset.qr)}</span>`; }); return Promise.resolve(); }
+    const texts = [...new Set(slots.map(s => s.dataset.qr))];
+    return Store.act('Common/GetQrBatch', { json: { listText: texts }, quiet: true }).then(r => {
+      const list = (r.ok && r.res && (r.res.listData || r.res.ListData)) || [];
+      const svgOf = {}; list.forEach(x => { if (x.svg) svgOf[x.text] = x.svg; });
+      slots.forEach(s => { s.innerHTML = svgOf[s.dataset.qr] || '<span class="muted small">Không vẽ được mã QR</span>'; });
+    });
+  };
+  // In QR hiện trường (Common/GetFieldQrList): mở cửa sổ in, mỗi QR 1 thẻ (tên, mã, link), khổ A4 nhiều thẻ / trang.
+  UI.printFieldQr = (group, title) => {
+    if (!Store.isLive) { UI.toast('Chế độ DEMO không in được QR – chuyển sang dữ liệu API.', 'warn'); return; }
+    const w = window.open('', '_blank');   // mở ngay khi bấm (tránh bị chặn cửa sổ bật lên)
+    if (!w) { UI.toast('Trình duyệt chặn cửa sổ in – cho phép cửa sổ bật lên rồi thử lại.', 'err'); return; }
+    w.document.write('<p style="font-family:sans-serif">Đang tạo mã QR…</p>');
+    Store.query('Common/GetFieldQrList', { group: group || '', withSvg: true }).then(x => {
+      if (!x.ok) { w.close(); UI.toast(esc(x.message || 'Không lấy được danh sách QR'), 'err'); return; }
+      const list = x.list || [];
+      if (!list.length) { w.close(); UI.toast('Không có mã QR nào để in (chưa có dữ liệu hoặc không có quyền xem).', 'warn'); return; }
+      const card = q => `<div class="c"><div class="q">${q.svg || ''}</div><b>${esc(q.label)}</b><div class="g">${esc(q.groupName)}${q.code ? ' · ' + esc(q.code) : ''}</div><div class="l">${esc(q.link)}</div></div>`;
+      w.document.open();
+      w.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${esc(title || 'Mã QR hiện trường')}</title><style>
+        body{font-family:"Be Vietnam Pro",Arial,sans-serif;margin:12mm;color:#263238}h1{font-size:16px;margin:0 0 8mm}
+        .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}.c{border:1px dashed #9AA39A;border-radius:6px;padding:5mm;text-align:center;break-inside:avoid}
+        .q svg{width:42mm;height:42mm}.c b{display:block;font-size:13px;margin-top:2mm}.g{font-size:11px;color:#5F6B66}.l{font-size:8px;color:#7B857F;word-break:break-all;margin-top:1mm}
+        @media print{body{margin:8mm}h1{display:none}}</style></head><body><h1>${esc(title || 'Mã QR hiện trường')} – ${list.length} mã · bấm Ctrl+P để in</h1><div class="grid">${list.map(card).join('')}</div></body></html>`);
+      w.document.close();
+      setTimeout(() => { try { w.focus(); w.print(); } catch (e) { /* người dùng tự in */ } }, 300);
     });
   };
   // ---------- Truy vết DB: Module → Function → Screen → Table → Column ----------
@@ -190,7 +308,7 @@
     items.sort((x, y) => (y.at || '').localeCompare(x.at || ''));
     return items.length ? `<div class="timeline">${items.map(x => `<div class="tl ${x.c || ''}"><b>${esc(x.b)}</b><small>${esc(U.dt(x.at))} · ${esc(x.s)}</small></div>`).join('')}</div>` : '<div class="empty">Chưa có lịch sử</div>';
   };
-  UI.kvHtml = (t, row, only) => `<div class="kv">${(only ? only.map(c => Store.colmeta[t][c]).filter(Boolean) : Object.values(Store.colmeta[t])).filter(m => !Store.isDeprecated(t, m.name) && m.usage !== 'Ẩn (bảo mật)' && (only || !['ModifiedBy', 'DeletedBy', 'DeleteddBy', 'DeletedDate'].includes(m.name))).map(m => `<div ${/max\)$/.test(m.type) && /Note|Description|Instructions|Json|Changes/.test(m.name) ? 'style="grid-column:1/-1"' : ''}><label>${esc(U.colLabel(m.name))}<code>${m.name}</code></label><span>${UI.val(t, m.name, row[m.name], row)}</span></div>`).join('')}</div>`;
+  UI.kvHtml = (t, row, only) => `<div class="kv">${(only ? only.map(c => Store.colmeta[t][c]).filter(Boolean) : Object.values(Store.colmeta[t])).filter(m => !Store.isDeprecated(t, m.name) && !UI.hidden(t, m.name) && m.usage !== 'Ẩn (bảo mật)' && (only || !['ModifiedBy', 'DeletedBy', 'DeleteddBy', 'DeletedDate'].includes(m.name))).map(m => `<div ${/max\)$/.test(m.type) && /Note|Description|Instructions|Json|Changes/.test(m.name) ? 'style="grid-column:1/-1"' : ''}><label>${esc(U.colLabel(m.name))}<code>${m.name}</code></label><span>${UI.val(t, m.name, row[m.name], row)}</span></div>`).join('')}</div>`;
   UI.children = (t, id) => {
     const inn = (Store.relIn[t] || []).filter(r => Store.data[r.src] && Store.data[r.src].some(x => x[r.col] === id));
     if (!inn.length) return '<div class="empty">Không có bản ghi liên quan</div>';
@@ -245,7 +363,19 @@
     parts.forEach(p => { const a1 = a0 + 2 * Math.PI * p.v / tot, large = a1 - a0 > Math.PI ? 1 : 0, r = 54, R = 70, c = 80; const P = (a, rr) => (c + rr * Math.cos(a)) + ',' + (c + rr * Math.sin(a)); if (p.v > 0) g += `<path d="M${P(a0, R)} A${R},${R} 0 ${large} 1 ${P(a1, R)} L${P(a1, r)} A${r},${r} 0 ${large} 0 ${P(a0, r)}Z" fill="${p.c}"><title>${esc(p.l)}: ${p.v}</title></path>`; a0 = a1; });
     return `<div class="row-flex" style="gap:16px"><svg viewBox="0 0 160 160" width="${opt.size || 130}" height="${opt.size || 130}">${g}<text x="80" y="78" text-anchor="middle" style="font-size:20px;font-weight:800;fill:#29352D">${U.num(tot)}</text><text x="80" y="96" text-anchor="middle" style="font-size:9px;fill:#98A198">${esc(opt.label || 'tổng')}</text></svg><div>${parts.map(p => `<div class="small" style="margin:4px 0"><i class="legend-dot" style="background:${p.c}"></i>${esc(p.l)} <b>${U.num(p.v)}</b></div>`).join('')}</div></div>`;
   };
-  UI.kpi = (label, value, foot, icon, color, link) => `<article class="card kpi ${link ? 'link' : ''}" ${link ? `data-go="${link}"` : ''}><div class="kpi-top"><span>${label}</span><span class="kpi-icon ${color || 'green'}">${I(icon || 'chart')}</span></div><div class="kpi-value">${value}</div><div class="kpi-foot">${foot || ''}</div></article>`;
+  // UI-1 (D-64 c): thẻ chỉ số – ô biểu tượng bên trái; nhãn, số chính + số phụ bên phải; không còn dòng chú thích chân.
+  // Giữ chữ ký cũ: tham số thứ 3 (trước là chú thích chân) nay là SỐ PHỤ ngắn hiện cùng dòng sau số chính (vd "/ 2 · 100%").
+  // value rỗng / null / undefined → "–" (đang tải). color: green | lime | blue | orange | red | purple | gray.
+  // UI-1R (D-64 c): số phụ ngắn (≤ 20 ký tự, vd. "/ 2 · 100%", "96 đơn"); câu dài / chữ kỹ thuật (tên bảng, cột, mã tiếng Anh) → chú thích khi rê chuột.
+  const KPI_TECH = /\b[A-Z][a-z]+[A-Z][A-Za-z]*\b|\bdbo\.|Σ|=\s*[A-Z_]{3,}|\b[A-Z]{2,}_[A-Z_]+\b/;
+  UI.kpi = (label, value, sub, icon, color, link) => {
+    const v = value === null || value === undefined || value === '' ? '–' : value;
+    const plain = String(sub || '').replace(/<[^>]*>/g, '').replace(/&[a-z]+;/g, ' ').trim();
+    const long = plain.length > 20 || KPI_TECH.test(plain);
+    const tip = String(label).replace(/<[^>]*>/g, '') + (plain && long && !KPI_TECH.test(plain) ? ' – ' + plain : '');
+    if (long) sub = '';
+    return `<article class="card kpi ${link ? 'link' : ''}" title="${esc(tip)}" ${link ? `data-go="${link}" role="link" tabindex="0"` : ''}><span class="kpi-icon ${color || 'green'}">${I(icon || 'chart')}</span><div class="kpi-body"><div class="kpi-label">${label}</div><div class="kpi-line"><span class="kpi-value">${v}</span>${sub ? `<span class="kpi-sub">${sub}</span>` : ''}</div></div></article>`;
+  };
   UI.gapNote = f => f && f.st !== 'MAPPED' && f.note ? `<div class="notice ${f.st === 'GAP' ? 'gap' : 'warn'}">${I('alert')}<div><b>${f.st === 'GAP' ? 'DATABASE GAP – chưa có bảng hỗ trợ' : 'PARTIAL – có bảng nhưng thiếu cột/quan hệ'} · BA/PO CONFIRM</b>${esc(f.note)}</div></div>` : (f && f.note ? `<div class="notice info">${I('database')}<div>${esc(f.note)}</div></div>` : '');
   UI.stepper = (steps, cur, failed) => `<div class="stepper">${steps.map((s, i) => `<div class="step ${i < cur ? 'done' : i === cur ? (failed ? 'fail' : 'current') : ''}"><div class="dot">${i < cur ? '✓' : i + 1}</div><div class="lbl">${s.l || s}</div>${s.s ? `<small>${s.s}</small>` : ''}</div>`).join('')}</div>`;
   window.UI = UI;

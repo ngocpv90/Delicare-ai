@@ -32,6 +32,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<ProductionBatchDetailModel>> RecordSampleRetained(ProductionBatchSampleRequest request);
         public Task<IResult<ProductionBatchDetailModel>> RecordOutput(ProductionBatchOutputRequest request);
         public Task<IResult<ProductionBatchDetailModel>> RecordWaste(ProductionBatchWasteRequest request);
+        /// <summary>BOT-3.3 (D-72): nấu thêm – mẻ bổ sung cùng lệnh / món với mẻ gốc.</summary>
+        public Task<IResult<ProductionBatchDetailModel>> CreateExtra(ProductionBatchExtraRequest request);
         public Task<IResult<ProductionBatchDetailModel>> Release(ProductionActionRequest request);
         public Task<IResult<ProductionBatchDetailModel>> Hold(ProductionActionRequest request);
         public Task<IResult<ProductionBatchDetailModel>> Reject(ProductionActionRequest request);

@@ -17,8 +17,11 @@ using AppDelicare.Model.Request.Custom;
 namespace AppDelicare.Services.Implement
 {
     public class IngredientService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IIngredientService
+        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService) : IIngredientService
     {
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
+        private string? _createdCode;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -113,7 +116,9 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess,
+                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
+                        : _createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "nguyên liệu", _createdCode)
+                        : ConstantHelper.Message.SaveSuccess,
                     Data = true
                 };
             }
@@ -133,12 +138,10 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
-            var checkDuplicate = _unitOfWork.IngredientRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
             var insert = _mapper.Map<Ingredient>(request);
+            // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
+            insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.Ingredient);
+            _createdCode = insert.Code;
             _unitOfWork.IngredientRepository.Add(insert);
             await _unitOfWork.IngredientRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -157,11 +160,8 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var checkDuplicate = _unitOfWork.IngredientRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
+            // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
+            request.Code = exist.Code;
             var update = _mapper.Map(request, exist);
             _unitOfWork.IngredientRepository.Update(update);
             await _unitOfWork.IngredientRepository.CommitAsync(typeSave);

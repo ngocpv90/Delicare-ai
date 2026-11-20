@@ -124,6 +124,13 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(BotConfigurationRequest request, string typeSave)
         {
+            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
+            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.BotCode);
+            if (codeError != null)
+            {
+                return codeError;
+            }
+            request.BotCode = normalizedCode;
             if (_unitOfWork.BotConfigurationRepository.GetSingle(x => x.BotCode == request.BotCode && !x.IsDeleted) != null)
             {
                 return "Dữ liệu trùng (BotCode) – vi phạm UQ_BotConfiguration_BotCode.";
@@ -142,6 +149,17 @@ namespace AppDelicare.Services.Implement
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
+            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.BotCode);
+            if (codeError != null)
+            {
+                return codeError;
+            }
+            request.BotCode = normalizedCode;
+            if (!string.IsNullOrEmpty(exist.BotCode) && !string.Equals(exist.BotCode, request.BotCode, StringComparison.Ordinal) && (await _referenceGuard.FindUsagesAsync(nameof(BotConfiguration), exist.Id)).Count > 0)
+            {
+                return string.Format(ConstantHelper.Message.UserCodeLocked, exist.BotCode);
             }
             if (_unitOfWork.BotConfigurationRepository.GetSingle(x => x.Id != request.Id && x.BotCode == request.BotCode && !x.IsDeleted) != null)
             {

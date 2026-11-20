@@ -39,14 +39,14 @@
     const alerts = (d.alerts || []).map(a => ({ c: a.severity === 'HIGH' ? 'red' : a.severity === 'LOW' ? 'blue' : 'orange', t: a.title, s: a.detail, go: String(a.route || '').replace(/^#\//, '') }));
     el.innerHTML = head + `
     <div class="kpis">
-      ${UI.kpi('Suất ăn kế hoạch', U.num(k.plannedMeals || 0), `${okOrders} đơn hợp lệ của ngày ăn`, 'utensils', 'green', 'crm-order')}
+      ${UI.kpi('Suất ăn kế hoạch', U.num(k.plannedMeals || 0), `${okOrders} đơn`, 'utensils', 'green', 'crm-order')}
       ${UI.kpi('Đơn hàng trong ngày', U.num(od.total || 0), (od.listStatus || []).map(s => s.count + ' ' + esc(String(s.statusName || s.status).toLowerCase())).join(' · ') || 'Chưa có đơn', 'clipboard', 'orange', 'crm-order')}
-      ${UI.kpi('Tiến độ sản xuất', pp.percent === null || pp.percent === undefined ? '–' : U.pct(pp.percent, 0), `${U.num(pp.donePortions || 0)} / ${U.num(pp.plannedPortions || 0)} phần món · ${pp.batchCount || 0} mẻ`, 'factory', 'blue', 'prod-batch')}
-      ${UI.kpi('Giao hàng hoàn tất', `${dl.delivered || 0}/${dl.total || 0}`, `${dl.total || 0} đơn giao trong ngày`, 'truck', 'purple', 'log-execution')}
-      ${UI.kpi('Cảnh báo tồn kho', pad2(k.stockAlerts), k.stockAlerts ? '<span class="warn">Cần xử lý</span> nguyên liệu dưới tồn tối thiểu' : 'Không có nguyên liệu dưới tồn tối thiểu', 'alert', 'red', 'scm-inv-balance')}
+      ${UI.kpi('Tiến độ sản xuất', pp.percent === null || pp.percent === undefined ? '–' : U.pct(pp.percent, 0), `${U.num(pp.donePortions || 0)} / ${U.num(pp.plannedPortions || 0)} phần`, 'factory', 'blue', 'prod-batch')}
+      ${UI.kpi('Giao hàng hoàn tất', `${dl.delivered || 0}/${dl.total || 0}`, '', 'truck', 'purple', 'log-execution')}
+      ${UI.kpi('Cảnh báo tồn kho', pad2(k.stockAlerts), k.stockAlerts ? '<span class="warn">Cần xử lý</span>' : '', 'alert', 'red', 'scm-inv-balance')}
       ${UI.kpi('QC tạm giữ / loại', pad2(k.qcHoldReject), `${qd.batchHold || 0} mẻ giữ · ${qd.batchReject || 0} mẻ loại · ${qd.lotOnHold || 0} lô tạm giữ`, 'shield', 'red', 'prod-batch')}
-      ${UI.kpi('Nhân sự theo ca', `${sf.checkedIn || 0}/${sf.assigned || 0}`, 'Đã vào ca / được phân ca', 'users', 'green', 'hr-shift-assign')}
-      ${UI.kpi('Khiếu nại đang mở', pad2(k.openComplaints), 'Phản ánh mới / đang xử lý', 'msg', 'orange', 'log-complaint')}
+      ${UI.kpi('Nhân sự theo ca', `${sf.checkedIn || 0}/${sf.assigned || 0}`, 'đã vào ca', 'users', 'green', 'hr-shift-assign')}
+      ${UI.kpi('Khiếu nại đang mở', pad2(k.openComplaints), '', 'msg', 'orange', 'log-complaint')}
     </div>
     <div class="grid g-main mb">
       <article class="card panel"><div class="panel-head"><div><div class="panel-title">Sản lượng suất ăn 7 ngày</div><div class="panel-desc">Suất kế hoạch theo ngày ăn so với suất khách đã nhận</div></div><div class="chart-legend"><span><i class="legend-dot" style="background:#B9CE8B"></i>Kế hoạch</span><span><i class="legend-dot" style="background:#F5B17E"></i>Thực nhận</span></div></div>
@@ -96,14 +96,14 @@
     const kpiDef = Store.rows('KpiMetricDefinition');
     el.innerHTML = APP.header(f, `<select class="select" id="dDate">${Array.from({ length: 10 }, (_, i) => U.addDays(Store.ctx.date, i - 6)).map(d => `<option value="${d}" ${d === date ? 'selected' : ''}>${d === Store.ctx.date ? 'Hôm nay, ' : ''}${U.date(d)}</option>`).join('')}</select><select class="select" id="dShift"><option value="">Tất cả ca</option>${shifts.map(s => `<option value="${s.Id}" ${s.Id === sh ? 'selected' : ''}>${esc(s.Name)}</option>`).join('')}</select><a class="btn" href="#/flow-e2e">${I('flow')} 9 luồng nghiệp vụ</a>`, { sub: 'Theo dõi toàn bộ hoạt động bếp trung tâm, kho, QC, giao nhận và nhân sự theo ngày / ca / đơn vị. Bộ lọc thay đổi toàn bộ số liệu (DỮ LIỆU DEMO).' }) + `
     <div class="kpis">
-      ${UI.kpi('Suất ăn kế hoạch', U.num(meals), `${okOrders.length} đơn hợp lệ · Σ OrderLine.Quantity`, 'utensils', 'green', 'crm-order')}
+      ${UI.kpi('Suất ăn kế hoạch', U.num(meals), `${okOrders.length} đơn`, 'utensils', 'green', 'crm-order')}
       ${UI.kpi('Đơn hàng trong ngày', U.num(orders.length), Object.entries(U.group(orders, 'Status')).map(([k, v]) => v.length + ' ' + UI.statusVi('Order', 'Status', k).toLowerCase()).join(' · '), 'clipboard', 'orange', 'crm-order')}
-      ${UI.kpi('Tiến độ sản xuất', U.pct(prog, 0), `${U.num(doneQ)} / ${U.num(planQ)} phần món · ${batches.length} mẻ`, 'factory', 'blue', 'prod-batch')}
-      ${UI.kpi('Giao hàng hoàn tất', `${delivered}/${exe.length || dvs.length}`, `${dvs.length} đơn giao · DeliveryExecution`, 'truck', 'purple', 'log-execution')}
-      ${UI.kpi('Cảnh báo tồn kho', String(under).padStart(2, '0'), '<span class="warn">Cần xử lý</span> nguyên liệu dưới định mức', 'alert', 'red', 'scm-inv-balance')}
-      ${UI.kpi('QC tạm giữ / loại', String(qcHold).padStart(2, '0'), 'Lô nhập & mẻ có HOLD/REJECT', 'shield', 'red', 'qc-inspection')}
-      ${UI.kpi('Nhân sự theo ca', `${sa.filter(a => ['CheckedIn', 'Completed'].includes(a.AssignmentStatus)).length}/${sa.length}`, 'Đã chấm công / được phân ca', 'users', 'green', 'hr-shift-assign')}
-      ${UI.kpi('Khiếu nại đang mở', String(cmp.length).padStart(2, '0'), 'CustomerComplaint · theo SLA', 'msg', 'orange', 'log-complaint')}
+      ${UI.kpi('Tiến độ sản xuất', U.pct(prog, 0), `${U.num(doneQ)} / ${U.num(planQ)} phần`, 'factory', 'blue', 'prod-batch')}
+      ${UI.kpi('Giao hàng hoàn tất', `${delivered}/${exe.length || dvs.length}`, '', 'truck', 'purple', 'log-execution')}
+      ${UI.kpi('Cảnh báo tồn kho', String(under).padStart(2, '0'), '<span class="warn">Cần xử lý</span>', 'alert', 'red', 'scm-inv-balance')}
+      ${UI.kpi('QC tạm giữ / loại', String(qcHold).padStart(2, '0'), '', 'shield', 'red', 'qc-inspection')}
+      ${UI.kpi('Nhân sự theo ca', `${sa.filter(a => ['CheckedIn', 'Completed'].includes(a.AssignmentStatus)).length}/${sa.length}`, 'đã chấm công', 'users', 'green', 'hr-shift-assign')}
+      ${UI.kpi('Khiếu nại đang mở', String(cmp.length).padStart(2, '0'), '', 'msg', 'orange', 'log-complaint')}
     </div>
     <div class="grid g-main mb">
       <article class="card panel"><div class="panel-head"><div><div class="panel-title">Sản lượng suất ăn 7 ngày</div><div class="panel-desc">Kế hoạch (Σ OrderLine.Quantity) so với Khách hàng nhận (Σ ProofOfDeliverie.AcceptedQuantity)</div></div><div class="chart-legend"><span><i class="legend-dot" style="background:#B9CE8B"></i>Kế hoạch</span><span><i class="legend-dot" style="background:#F5B17E"></i>Thực nhận</span></div></div>
@@ -136,11 +136,11 @@
     const w = W.find(x => x.id === fs.sel) || W[0];
     el.innerHTML = APP.header(f, `<a class="btn" href="docs/DELICARE_Business_Workflow.md" target="_blank">${I('export')} Tải đặc tả .md</a>`, { sub: '9 luồng nghiệp vụ có thể trình diễn. Mỗi bước mở đúng màn hình thao tác và hiển thị bảng Database liên quan. Đặc tả chi tiết: DELICARE_Business_Workflow.md.' }) + `
     <div class="row-flex mb">${W.map(x => `<button class="chip ${x.id === w.id ? 'active' : ''}" data-w="${x.id}">${x.id}. ${esc(x.name)}</button>`).join('')}</div>
-    <article class="card flow-card"><div class="spread"><div><div class="eyebrow">Luồng ${w.id}</div><h2>${esc(w.name)}</h2></div><button class="btn primary" data-start>${I('play')} Bắt đầu demo từ bước 1</button></div><div class="meta">Người thực hiện: ${esc(w.actors)}</div>
+    <article class="card flow-card"><div class="spread"><div><div class="eyebrow">Luồng ${w.id}</div><h2>${esc(w.name)}</h2></div>${Store.isLive ? '' : `<button class="btn primary" data-start>${I('play')} Bắt đầu demo từ bước 1</button>`}</div><div class="meta">Người thực hiện: ${esc(w.actors)}</div>
       <div class="stepper">${w.steps.map((s, i) => `<div class="step done"><a href="#/${s.screen}"><div class="dot">${i + 1}</div><div class="lbl">${esc(s.label)}</div><small>#/${s.screen}</small></a></div>`).join('')}</div></article>
     <div class="card panel"><div class="panel-title mb">Chi tiết từng bước – màn hình & bảng Database</div><div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>#</th><th>Bước</th><th>Màn hình</th><th>Phase</th><th>Bảng / cột Database</th><th>Trạng thái mapping</th><th></th></tr></thead><tbody>${w.steps.map((s, i) => { const fn = APP.FN[s.screen]; return `<tr><td>${i + 1}</td><td><b>${esc(s.label)}</b></td><td>${esc(fn.name)}<span class="sub mono">#/${s.screen}</span></td><td>${fn.ph}</td><td class="mono" style="white-space:normal">${esc(s.tables)}</td><td>${UI.badge(fn.st === 'MAPPED' ? 'Matched' : fn.st === 'PARTIAL' ? 'PARTIAL' : 'Failed')} <span class="small muted">${fn.st}</span></td><td><a class="btn xs" href="#/${s.screen}">Mở →</a></td></tr>`; }).join('')}</tbody></table></div></div>
     <div class="notice info mt">${I('alert')}<div><b>Trạng thái & quy tắc chuyển bước</b>Giá trị theo SQL DEFAULT / BRD được giữ nguyên; các giá trị còn lại là PROPOSED – BA/PO CONFIRM (xem Gap Register sheet 07).</div></div>`;
     el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { fs.sel = +b.dataset.w; APP.refresh(); });
-    el.querySelector('[data-start]').onclick = () => APP.go(w.steps[0].screen);
+    const st = el.querySelector('[data-start]'); if (st) st.onclick = () => APP.go(w.steps[0].screen);
   });
 })();

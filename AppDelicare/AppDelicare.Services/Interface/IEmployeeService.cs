@@ -10,6 +10,8 @@ namespace AppDelicare.Services.Interface
 {
     public interface IEmployeeService
     {
+        /// <summary>UI-4 (D-68 g1): hồ sơ nhân viên cho màn chi tiết – thông tin cá nhân chỉ khi người xem có quyền Sửa adm-employee.</summary>
+        public Task<IResult<AppDelicare.Model.Model.EmployeeOverviewModel>> GetOverview(Guid id);
         public Task<IResults<EmployeeViewModel>> GetAll(EmployeeSearchRequest request);
         public Task<IResult<bool>> Save(EmployeeRequest request, string typeSave);
         public IResults<Employee> GetAllData();

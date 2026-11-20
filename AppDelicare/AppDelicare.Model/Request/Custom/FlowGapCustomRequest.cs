@@ -95,6 +95,8 @@ namespace AppDelicare.Model.Request.Custom
         public Guid? CustomerId { get; set; }
         /// <summary>true = chỉ phản ánh quá hạn SLA.</summary>
         public bool? Overdue { get; set; }
+        /// <summary>BOT-3.1 (Việc tôi đã báo): true = chỉ phản ánh do chính người gọi ghi (CreatedBy).</summary>
+        public bool? Mine { get; set; }
         public DateTime? From { get; set; }
         public DateTime? To { get; set; }
         [MaxLength(200)]

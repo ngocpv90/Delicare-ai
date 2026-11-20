@@ -131,6 +131,13 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
+            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
+            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.Code);
+            if (codeError != null)
+            {
+                return codeError;
+            }
+            request.Code = normalizedCode;
             var checkDuplicate = _unitOfWork.ShiftRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -154,6 +161,17 @@ namespace AppDelicare.Services.Implement
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
+            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.Code);
+            if (codeError != null)
+            {
+                return codeError;
+            }
+            request.Code = normalizedCode;
+            if (!string.IsNullOrEmpty(exist.Code) && !string.Equals(exist.Code, request.Code, StringComparison.Ordinal) && await _auditChangeService.IsReferencedAsync(nameof(Shift), exist.Id))
+            {
+                return string.Format(ConstantHelper.Message.UserCodeLocked, exist.Code);
             }
             var checkDuplicate = _unitOfWork.ShiftRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)

@@ -262,6 +262,25 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>T17: ghi hao hụt / suất thừa của mẻ (MealWasteRecord).</summary>
+        /// <summary>BOT-3.3 (D-72): nấu thêm – mẻ bổ sung cùng lệnh / món với mẻ gốc (quyền Thêm prod-batch).</summary>
+        [HttpPost("CreateExtra")]
+        public async Task<IActionResult> CreateExtra([FromForm] ProductionBatchExtraRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CreateExtra(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateExtra: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPost("RecordWaste")]
         public async Task<IActionResult> RecordWaste([FromForm] ProductionBatchWasteRequest request)
         {

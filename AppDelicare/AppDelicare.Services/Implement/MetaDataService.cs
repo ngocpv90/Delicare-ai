@@ -19,7 +19,7 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
-                var list = StatusCatalog.All
+                var list = StatusCatalogEffective.All
                     .Where(x => string.IsNullOrWhiteSpace(key) || x.Key.Equals(key, StringComparison.OrdinalIgnoreCase) || x.Table.Equals(key, StringComparison.OrdinalIgnoreCase))
                     .Select(x => new StatusSetModel
                     {

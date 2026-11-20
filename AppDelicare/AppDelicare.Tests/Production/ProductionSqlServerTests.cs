@@ -86,7 +86,7 @@ namespace AppDelicare.Tests.Production
                 var batchBrief = released.Data!.ListBatch.Single();
                 batchBrief.BatchNumber.Should().MatchRegex($@"^ME-{day:yyMMdd}-{shiftCode}-\d{{2}}$");
                 batchBrief.PlannedStart.Should().Be(day.AddHours(9), "xuất bếp 10:30 − 30′ đóng gói − 60′ mẻ");
-                released.Data.ListOrder.Single().ProductionOrderNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                released.Data.ListOrder.Single().ProductionOrderNumber.Should().MatchRegex(@"^LS-\d{6}-\d{4}$");
                 released.Data.ProductionPlan.Status.Should().Be("Released");
                 released.Data.ListShift.Should().ContainSingle(x => x.ShiftId == shift && x.Released && x.Portions == 50);
                 (await db.Order.AsNoTracking().SingleAsync(o => o.Id == order)).Status.Should().Be("InProduction");

@@ -67,7 +67,7 @@
     const paint = m => {
       model = m;
       box.innerHTML = `
-    <div class="kpis">${m.kpi.map((k, i) => UI.kpi(esc(k.s.Name), `${k.checkedIn}/${k.assigned}`, `Hôm nay: đã chấm công / được phân · ${U.time(k.s.StartTime)}–${U.time(k.s.EndTime)}`, 'users', ['blue', 'green', 'orange', 'purple'][i])).join('')}</div>
+    <div class="kpis">${m.kpi.map((k, i) => UI.kpi(esc(k.s.Name), `${k.checkedIn}/${k.assigned}`, `${U.time(k.s.StartTime)}–${U.time(k.s.EndTime)}`, 'users', ['blue', 'green', 'orange', 'purple'][i])).join('')}</div>
     <div class="card panel"><div class="row-flex mb"><select class="select" id="hOu"><option value="">Tất cả đơn vị (${Store.rows('Employee').length} NV)</option>${ous.map(o => `<option value="${o.Id}" ${o.Id === hs.ou ? 'selected' : ''}>${esc(o.Name)}</option>`).join('')}</select><span class="grow"></span>${m.shifts.map(s => `<span class="scode ${esc(s.Code)}">${esc(s.Code)}</span> <span class="small muted">${esc(String(s.Name || '').split('·')[1] || '')}</span>`).join(' ')}<span class="scode Absent">Vắng</span><span class="scode off">Nghỉ</span></div>
       <div class="table-wrap" style="max-height:560px"><table class="matrix shiftgrid" style="width:100%"><thead><tr><th class="l">Nhân viên</th><th class="l">Chức vụ</th>${m.days.map(d => `<th>${['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][new Date(d + 'T00:00').getDay()]} ${U.date(d).slice(0, 5)}${d === Store.ctx.date ? ' ●' : ''}</th>`).join('')}</tr></thead><tbody>${m.emps.map((e, i) => `<tr><td class="l"><a href="javascript:void 0" data-open="Employee" data-id="${e.Id}">${esc(e.FullName)}</a></td><td class="l small muted">${esc(e.Position)}</td>${m.days.map(d => { const c = e.cells[d] || {}; return `<td class="sc" data-i="${i}" data-d="${d}" title="${esc(cellTitle(c))}">${cellHtml(c)}</td>`; }).join('')}</tr>`).join('') || `<tr><td class="l muted" colspan="${m.days.length + 2}">Không có nhân viên phù hợp</td></tr>`}</tbody></table></div></div>`;
       box.querySelector('#hOu').onchange = e => { hs.ou = e.target.value; APP.refresh(); };
@@ -175,20 +175,22 @@
       }, () => { btn.disabled = false; UI.toast('Không lấy được vị trí – hãy cho phép trình duyệt dùng định vị rồi thử lại', 'err'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
     }, { ok: isIn ? 'Vào ca' : 'Ra ca' });
   }
-  function proxyCheck() {
+  // UI-4: eid → chọn sẵn nhân viên (màn chi tiết nhân viên).
+  function proxyCheck(eid) {
     UI.modal({ title: 'Chấm công hộ', sub: 'Ghi thêm một lần chấm cho nhân viên – không sửa, không xóa được', size: 'sm',
       body: `<div class="field"><label>Nhân viên <span class="req">*</span></label><select class="select" id="pE"><option value="">— Chọn nhân viên —</option>${Store.rows('Employee').map(e => `<option value="${e.Id}">${esc(Store.label('Employee', e))}</option>`).join('')}</select></div>
         <div class="field"><label>Loại <span class="req">*</span></label><select class="select" id="pT"><option value="in">Vào ca</option><option value="out">Ra ca</option></select></div>
         <div class="field"><label>Lý do chấm hộ <span class="req">*</span></label><textarea class="input" rows="3" id="pN" maxlength="500"></textarea></div>`,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="pOk">${I('ok')} Ghi nhận</button>`,
-      onMount: (md, close) => md.querySelector('#pOk').onclick = () => {
+      onMount: (md, close) => { if (typeof eid === 'string') md.querySelector('#pE').value = eid; md.querySelector('#pOk').onclick = () => {
         const eid = md.querySelector('#pE').value, isIn = md.querySelector('#pT').value === 'in', note = md.querySelector('#pN').value.trim();
         if (!eid) return UI.toast('Chưa chọn nhân viên', 'err');
         if (!note) return UI.toast('Vui lòng nhập lý do chấm hộ', 'err');
         const form = { EmployeeId: eid, SourceChannel: 'PROXY', Note: note }, btn = md.querySelector('#pOk'); btn.disabled = true;
         (isIn ? Store.act('AttendanceEvent/CheckIn', { form, tables: AT }) : Store.act('AttendanceEvent/CheckOut', { form, tables: AT })).then(r => { btn.disabled = false; if (!r.ok) return; close(); checkDone(r.data, isIn); });
-      } });
+      }; } });
   }
+  APP.proxyCheck = proxyCheck;
   function markAbsent() {
     const ou = at.ou && Store.get('OrganizationUnit', at.ou);
     UI.modal({ title: 'Chốt vắng', size: 'sm',
@@ -209,6 +211,19 @@
         b.innerHTML = x.list.length ? `<div class="table-wrap" style="max-height:460px"><table class="table dc-table dt"><thead><tr><th>Ngày</th><th>Ca</th><th>Giờ kế hoạch</th><th>Vào ca</th><th>Ra ca</th><th class="num">Muộn (phút)</th><th class="num">Sớm (phút)</th><th class="num">Giờ công</th><th>Trạng thái</th></tr></thead><tbody>${x.list.map(r => `<tr><td>${U.date(r.workDate)}</td><td><span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode)}</span></td><td>${r.plannedStart ? U.time(r.plannedStart) + '–' + U.time(r.plannedEnd) : '–'}</td><td>${r.checkInAt ? U.time(r.checkInAt) + validTag(r.checkInValid) : '–'}</td><td>${r.checkOutAt ? U.time(r.checkOutAt) + validTag(r.checkOutValid) : (r.missingCheckOut ? '<span class="tag orange">Thiếu ra ca</span>' : '–')}</td><td class="num">${r.lateMinutes || ''}</td><td class="num">${r.earlyLeaveMinutes || ''}</td><td class="num">${r.workedMinutes ? U.num(r.workedMinutes / 60, 1) : ''}</td><td>${r.isAbsent ? UI.badge('Absent', 'ShiftAssignment', 'AssignmentStatus') : UI.badge(r.status, 'ShiftAssignment', 'AssignmentStatus')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Không có ca nào trong khoảng ngày này</div>';
       }) });
   }
+  // Ca hôm nay của tôi + nút Vào ca / Ra ca (AttendanceEvent/GetMine · CheckIn · CheckOut – API tự phục vụ, không cần quyền màn).
+  // Dùng ở hr-attendance và hr-my "Việc của tôi" (UG-1 C-18: mọi người tự chấm công mà không cần quyền xem bảng công của người khác).
+  function myAttendance(mine) {
+    feed('AttendanceEvent/GetMine', null, mine, x => {
+      if (!x.ok || !x.data) { mine.innerHTML = `<div class="small muted">${esc(x.message || 'Tài khoản chưa gắn với nhân viên nên không tự chấm công được.')}</div>`; return; }
+      const d = x.data, acts = list(d.allowedActions), rows = list(d.listAssignment);
+      mine.innerHTML = `<div class="row-flex"><b>${esc(d.employeeName || '')}</b>${d.employeeCode ? `<span class="small muted">${esc(d.employeeCode)}</span>` : ''}<span class="grow"></span>${acts.includes('checkIn') ? `<button class="btn primary" data-ck="in">${I('ok')} Vào ca</button>` : ''}${acts.includes('checkOut') ? `<button class="btn primary" data-ck="out">${I('ok')} Ra ca</button>` : ''}</div>`
+        + (rows.length ? `<div class="table-wrap mt"><table class="table dc-table dt"><thead><tr><th>Ngày</th><th>Ca</th><th>Giờ kế hoạch</th><th>Vào ca</th><th>Ra ca</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(r => `<tr><td>${U.date(r.workDate)}</td><td><span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode)}</span> ${esc(r.shiftName || '')}</td><td>${r.plannedStart ? U.time(r.plannedStart) + '–' + U.time(r.plannedEnd) : '–'}</td><td>${r.checkInAt ? U.time(r.checkInAt) + validTag(r.checkInValid) + (r.lateMinutes ? ` <span class="small muted">muộn ${r.lateMinutes}′</span>` : '') : '–'}</td><td>${r.checkOutAt ? U.time(r.checkOutAt) + validTag(r.checkOutValid) + (r.earlyLeaveMinutes ? ` <span class="small muted">sớm ${r.earlyLeaveMinutes}′</span>` : '') : '–'}</td><td>${UI.badge(r.status, 'ShiftAssignment', 'AssignmentStatus')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="small muted mt">Hôm nay bạn không có ca được phân.</div>');
+      mine.querySelectorAll('[data-ck]').forEach(b => b.onclick = () => selfCheck(b.dataset.ck === 'in', b));
+    }, 15000);
+  }
+  APP.myAttendance = myAttendance;
+
   APP.register('hr-attendance', (el, f) => {
     if (!Store.isLive) return APP.genericList(el, f);
     const perm = Store.perm(f.id), today = Store.ctx.date, canAbsent = !!Store.perm('hr-shift-assign').edit;
@@ -225,13 +240,7 @@
       const v = tr.querySelector('[data-view]'); if (v) v.onclick = open;
     });
     const mine = el.querySelector('#aMine'), ts = el.querySelector('#aTs');
-    feed('AttendanceEvent/GetMine', null, mine, x => {
-      if (!x.ok || !x.data) { mine.innerHTML = `<div class="small muted">${esc(x.message || 'Tài khoản chưa gắn với nhân viên nên không tự chấm công được.')}</div>`; return; }
-      const d = x.data, acts = list(d.allowedActions), rows = list(d.listAssignment);
-      mine.innerHTML = `<div class="row-flex"><b>${esc(d.employeeName || '')}</b>${d.employeeCode ? `<span class="small muted">${esc(d.employeeCode)}</span>` : ''}<span class="grow"></span>${acts.includes('checkIn') ? `<button class="btn primary" data-ck="in">${I('ok')} Vào ca</button>` : ''}${acts.includes('checkOut') ? `<button class="btn primary" data-ck="out">${I('ok')} Ra ca</button>` : ''}</div>`
-        + (rows.length ? `<div class="table-wrap mt"><table class="table dc-table dt"><thead><tr><th>Ngày</th><th>Ca</th><th>Giờ kế hoạch</th><th>Vào ca</th><th>Ra ca</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(r => `<tr><td>${U.date(r.workDate)}</td><td><span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode)}</span> ${esc(r.shiftName || '')}</td><td>${r.plannedStart ? U.time(r.plannedStart) + '–' + U.time(r.plannedEnd) : '–'}</td><td>${r.checkInAt ? U.time(r.checkInAt) + validTag(r.checkInValid) + (r.lateMinutes ? ` <span class="small muted">muộn ${r.lateMinutes}′</span>` : '') : '–'}</td><td>${r.checkOutAt ? U.time(r.checkOutAt) + validTag(r.checkOutValid) + (r.earlyLeaveMinutes ? ` <span class="small muted">sớm ${r.earlyLeaveMinutes}′</span>` : '') : '–'}</td><td>${UI.badge(r.status, 'ShiftAssignment', 'AssignmentStatus')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="small muted mt">Hôm nay bạn không có ca được phân.</div>');
-      mine.querySelectorAll('[data-ck]').forEach(b => b.onclick = () => selfCheck(b.dataset.ck === 'in', b));
-    }, 15000);
+    myAttendance(mine);
     feed('AttendanceEvent/GetTimesheet', { FromDate: at.from, ToDate: at.to, OrganizationUnitId: at.ou, Page: 1, PageSize: 1000 }, ts, x => {
       if (!x.ok) { ts.innerHTML = `<div class="empty">${esc(x.message || 'Không tải được bảng công')}</div>`; return; }
       const rows = x.list.map(r => Object.assign({ Id: r.employeeId }, r)), n = k => ({ k, num: true, render: r => r[k] ? U.num(r[k]) : '<span class="muted">0</span>' });
@@ -254,7 +263,18 @@
   });
 
   // ---------- Hộp phê duyệt ----------
-  const BT = { PURCHASE_REQUEST: ['PurchaseRequest', 'Status', 'Approved', 'Rejected', 'scm-pr'], LEAVE_REQUEST: ['LeaveRequest', 'RequestStatus', 'Approved', 'Rejected', 'hr-leave'], SHIFT_SWAP: ['ShiftSwapRequest', 'RequestStatus', 'Approved', 'Rejected', 'hr-swap'], RECIPE_VERSION: ['Recipe', 'Status', 'Approved', 'Draft', 'menu-recipe'], STOCK_COUNT: ['StockCount', 'Status', 'PendingApproval', 'Draft', 'scm-stockcount'], CONTRACT: ['Contract', 'Status', 'Active', 'Draft', 'crm-contract'], MENU_CHANGE: ['MenuChangeRequest', 'RequestStatus', 'Approved', 'Rejected', 'menu-change-request'] };
+  const BT = { PURCHASE_REQUEST: ['PurchaseRequest', 'Status', 'Approved', 'Rejected', 'scm-pr'], LEAVE_REQUEST: ['LeaveRequest', 'RequestStatus', 'Approved', 'Rejected', 'hr-leave'], SHIFT_SWAP: ['ShiftSwapRequest', 'RequestStatus', 'Approved', 'Rejected', 'hr-swap'], RECIPE_VERSION: ['Recipe', 'Status', 'Approved', 'Draft', 'menu-recipe'], STOCK_COUNT: ['StockCount', 'Status', 'PendingApproval', 'Draft', 'scm-stockcount'], CONTRACT: ['Contract', 'Status', 'Active', 'Draft', 'crm-contract'], MENU_CHANGE: ['MenuChangeRequest', 'RequestStatus', 'Approved', 'Rejected', 'menu-change-request'],
+    // UG-1 C-11: 4 loại còn thiếu – cột Bản ghi nghiệp vụ mở được chứng từ (STOCK_ADJUSTMENT chưa có bản ghi tới khi duyệt → chỉ mở màn tồn kho).
+    PURCHASE_ORDER: ['PurchaseOrder', 'Status', 'Approved', 'Draft', 'scm-po'], ORDER_DEVIATION: ['Order', 'Status', 'Confirmed', 'Submitted', 'crm-order'],
+    ORDER_CHANGE_AFTER_CUTOFF: ['Order', 'Status', 'Locked', 'Locked', 'crm-order'], STOCK_ADJUSTMENT: ['InventoryTransaction', 'TransactionType', 'ADJUSTMENT', 'ADJUSTMENT', 'scm-inv-balance'] };
+  // UG-1 C-11: nội dung đề xuất của yêu cầu sửa đơn sau giờ chốt (PayloadJson: Lines [{Id, Quantity}], NewLines, Reason).
+  function proposalHtml(r) {
+    if (r.BusinessType !== 'ORDER_CHANGE_AFTER_CUTOFF' || !r.PayloadJson) return '';
+    let p; try { p = JSON.parse(r.PayloadJson); } catch (e) { return ''; }
+    const lines = p.Lines || p.lines || [], added = p.NewLines || p.newLines || [];
+    const row = l => { const ol = Store.get('OrderLine', l.Id || l.id) || {}; return `<tr><td>${esc(Store.label('ContractMeal', ol.ContractMealId) || ol.MealType || '')}</td><td class="num">${U.num(ol.Quantity || 0)}</td><td class="num"><b>${U.num(l.Quantity ?? l.quantity ?? 0)}</b></td></tr>`; };
+    return `<div class="card panel mt"><h3>Đề xuất sửa đơn</h3>${p.Reason || p.reason ? `<div class="small mb">Lý do: ${esc(p.Reason || p.reason)}</div>` : ''}<table class="table dc-table dt"><thead><tr><th>Suất ăn</th><th class="num">Đang đặt</th><th class="num">Đề xuất</th></tr></thead><tbody>${lines.map(row).join('')}${added.map(l => `<tr><td>${esc(Store.label('ContractMeal', l.ContractMealId || l.contractMealId) || 'Dòng mới')}</td><td class="num">–</td><td class="num"><b>${U.num(l.Quantity ?? l.quantity ?? 0)}</b></td></tr>`).join('')}</tbody></table></div>`;
+  }
   const ws = { tab: 'mine' };
   const isOpen = r => ['Pending', 'InProgress'].includes(r.RequestStatus);
   const approvalTables = r => ['ApprovalRequest', 'ApprovalStep', 'ApprovalDecision', 'ApprovalItem'].concat(BT[r.BusinessType] ? [BT[r.BusinessType][0]] : []);
@@ -277,7 +297,7 @@
     const rowsOf = ws.tab === 'mine' ? mine : ws.tab === 'pending' ? pend : all;
     el.innerHTML = APP.header(f, '', { sub: 'Hộp phê duyệt tập trung cho mọi nghiệp vụ: ApprovalRequest (BusinessType, BusinessId) → ApprovalStep (StepNo, ApproverRoleCode) → ApprovalDecision. Duyệt bước cuối sẽ cập nhật trạng thái bản ghi nghiệp vụ.' }) + `
     <div class="notice warn">${I('alert')}<div><b>GAP-F-08:</b> SQL không có bảng mẫu quy trình (số cấp, vai trò, hạn mức theo BusinessType). Mockup dùng cấu hình cố định: Đề nghị mua 2 cấp (Quản lý kho → Ban giám đốc), các nghiệp vụ khác 1 cấp.</div></div>
-    <div class="kpis">${UI.kpi('Chờ tôi duyệt', mine.length, 'Theo vai trò: ' + esc(Store.user.group), 'approve', 'orange')}${UI.kpi('Đang chờ (tất cả)', pend.length, 'RequestStatus = Pending/InProgress', 'clipboard', 'blue')}${UI.kpi('Đã duyệt', all.filter(a => a.RequestStatus === 'Approved').length, 'Approved', 'ok', 'green')}${UI.kpi('Từ chối', all.filter(a => a.RequestStatus === 'Rejected').length, 'Rejected', 'x', 'red')}</div>
+    <div class="kpis">${UI.kpi('Chờ tôi duyệt', mine.length, '', 'approve', 'orange')}${UI.kpi('Đang chờ (tất cả)', pend.length, '', 'clipboard', 'blue')}${UI.kpi('Đã duyệt', all.filter(a => a.RequestStatus === 'Approved').length, '', 'ok', 'green')}${UI.kpi('Từ chối', all.filter(a => a.RequestStatus === 'Rejected').length, '', 'x', 'red')}</div>
     <div class="card panel"><div class="row-flex mb">${[['mine', 'Chờ tôi duyệt'], ['pending', 'Đang chờ'], ['all', 'Tất cả']].map(([k, l]) => `<button class="chip ${ws.tab === k ? 'active' : ''}" data-tab2="${k}">${l}</button>`).join('')}</div><div id="wT"></div></div>`;
     if (typ) { const bar = el.querySelector('[data-tab2]'); if (bar) bar.parentElement.insertAdjacentHTML('beforeend', `<span class="grow"></span><span class="tag orange">Đang lọc: ${esc((APP.FN[typ] && APP.FN[typ].fn) || typ)}</span><a class="btn xs" href="${APP.href('wf-inbox')}">Bỏ lọc</a>`); }
     el.querySelectorAll('[data-tab2]').forEach(b => b.onclick = () => { ws.tab = b.dataset.tab2; APP.refresh(); });
@@ -286,12 +306,14 @@
       actions: r => (mine.includes(r) ? `<button class="btn xs primary" data-ap="${r.Id}">Duyệt</button> <button class="btn xs danger" data-rj="${r.Id}">Từ chối</button>` : '') + (canCancel(r) ? ` <button class="btn xs" data-cc="${r.Id}">Hủy yêu cầu</button>` : ''),
       after: t => { t.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => decide(b.dataset.ap, true)); t.querySelectorAll('[data-rj]').forEach(b => b.onclick = () => decide(b.dataset.rj, false)); t.querySelectorAll('[data-cc]').forEach(b => b.onclick = () => cancelReq(b.dataset.cc)); } });
   });
-  function openReq(id) {
+  function openReq(id, loaded) {
     const r = Store.get('ApprovalRequest', id), m = BT[r.BusinessType];
+    // UG-1 C-11: đề xuất sửa đơn cần dòng đơn + loại suất → tải trước rồi mở.
+    if (!loaded && Store.isLive && r.BusinessType === 'ORDER_CHANGE_AFTER_CUTOFF') return Store.reload(['OrderLine', 'ContractMeal']).then(() => openReq(id, true));
     const steps = Store.by('ApprovalStep', 'ApprovalRequestId', id).sort((a, b) => a.StepNo - b.StepNo);
     const biz = m && Store.get(m[0], r.BusinessId);
     UI.detail('ApprovalRequest', id, { screen: 'wf-inbox', noEdit: true,
-      top: `${UI.stepper(steps.map(s => ({ l: s.ApproverRoleCode, s: s.DecisionStatus })), steps.findIndex(s => s.DecisionStatus === 'Waiting') < 0 ? steps.length : steps.findIndex(s => s.DecisionStatus === 'Waiting'), steps.some(s => s.DecisionStatus === 'Rejected'))}${biz ? `<div class="card panel mt mb"><div class="eyebrow">Bản ghi nghiệp vụ · dbo.${m[0]}</div><h3>${esc(Store.label(m[0], biz))}</h3>${UI.kvHtml(m[0], biz, Object.keys(biz).filter(k => !Store.AUDIT.has(k) && k !== 'Id' && !k.endsWith('Json')).slice(0, 10))}${m[0] === 'PurchaseRequest' ? `<table class="table dc-table dt mt"><thead><tr><th>Nguyên liệu</th><th class="num">SL</th></tr></thead><tbody>${Store.by('PurchaseRequestLine', 'PurchaseRequestId', biz.Id).map(l => `<tr><td>${esc(Store.label('Ingredient', l.IngredientId))}</td><td class="num">${U.num(l.Quantity)}</td></tr>`).join('')}</tbody></table>` : ''}<a class="btn sm mt" href="#/${m[4]}">Mở màn hình ${esc(APP.FN[m[4]].name)} →</a></div>` : ''}`,
+      top: proposalHtml(r) + `${UI.stepper(steps.map(s => ({ l: s.ApproverRoleCode, s: s.DecisionStatus })), steps.findIndex(s => s.DecisionStatus === 'Waiting') < 0 ? steps.length : steps.findIndex(s => s.DecisionStatus === 'Waiting'), steps.some(s => s.DecisionStatus === 'Rejected'))}${biz ? `<div class="card panel mt mb"><div class="eyebrow">Bản ghi nghiệp vụ · dbo.${m[0]}</div><h3>${esc(Store.label(m[0], biz))}</h3>${UI.kvHtml(m[0], biz, Object.keys(biz).filter(k => !Store.AUDIT.has(k) && k !== 'Id' && !k.endsWith('Json')).slice(0, 10))}${m[0] === 'PurchaseRequest' ? `<table class="table dc-table dt mt"><thead><tr><th>Nguyên liệu</th><th class="num">SL</th></tr></thead><tbody>${Store.by('PurchaseRequestLine', 'PurchaseRequestId', biz.Id).map(l => `<tr><td>${esc(Store.label('Ingredient', l.IngredientId))}</td><td class="num">${U.num(l.Quantity)}</td></tr>`).join('')}</tbody></table>` : ''}<a class="btn sm mt" href="#/${m[4]}">Mở màn hình ${esc(APP.FN[m[4]].name)} →</a></div>` : ''}`,
       // Chế độ API: tab "Tiến trình duyệt" đọc ApprovalRequest/GetDetail (các cấp, người quyết định, hạn xử lý, quyền duyệt / hủy của tôi).
       tabs: (Store.isLive ? [{ label: 'Tiến trình duyệt', html: p => { loadApproval(id, p); return LOADING; } }] : []).concat([{ label: 'Quyết định', html: `<div class="timeline">${Store.by('ApprovalDecision', 'ApprovalRequestId', id).map(dc => `<div class="tl ${dc.DecisionCode === 'REJECT' ? 'red' : ''}"><b>${esc(dc.DecisionCode)} · ${esc(Store.label('User', dc.DecidedBy))}</b><small>${U.dt(dc.DecidedAt)} · ${esc(dc.Comment || '')}</small></div>`).join('') || '<div class="empty">Chưa có quyết định</div>'}</div>` }]),
       foot: () => isOpen(r) ? `${Store.isLive && !!Store.user.id && r.RequestedBy === Store.user.id ? '<button class="btn" data-act="cx">Hủy yêu cầu</button>' : ''}<button class="btn danger" data-act="rj">Từ chối</button><button class="btn primary" data-act="ap">${I('approve')} Duyệt bước hiện tại</button>` : '',
@@ -381,6 +403,12 @@
       p.querySelectorAll('[data-x]').forEach(bt => bt.onclick = () => { const a = bt.dataset.x; closeDrawerOf(p); if (a === 'cancel') cancelHr(leave, t, id, rq.requestNo); else decideHr(leave, t, id, rq.requestNo, a === 'approve'); });
     });
   }
+  // UI-4: mở đơn nghỉ / đổi ca (tab Xử lý đơn: duyệt / từ chối / hủy theo quyền) từ màn khác.
+  APP.openHrRequest = (leave, rid) => {
+    const f = APP.FN[leave ? 'hr-leave' : 'hr-swap'], t = f.table;
+    APP.openDetail(t, rid, f, { noEdit: true, tabs: [{ label: 'Xử lý đơn', html: p => { loadHrDetail(leave, t, rid, p); return LOADING; } }] });
+    const w = [...document.querySelectorAll('.drawer-wrap')].pop(), tb = w && w.querySelector('[data-tab="1"]'); if (tb) tb.click();
+  };
   ['hr-leave', 'hr-swap'].forEach(id => APP.register(id, (el, f) => {
     const t = f.table, leave = id === 'hr-leave';
     APP.genericList(el, f, { noTransit: true, noAdd: true, top: `<div class="card panel mb spread"><div><div class="panel-title">${leave ? 'Tạo đơn xin nghỉ' : 'Tạo đơn đổi ca'}</div><div class="panel-desc">${Store.isLive ? 'Đơn được gửi duyệt ngay sau khi tạo – người duyệt xử lý tại Hộp phê duyệt' : `Đơn sinh kèm ApprovalRequest (BusinessType = ${leave ? 'LEAVE_REQUEST' : 'SHIFT_SWAP'}) → duyệt tại Hộp phê duyệt`}</div></div><button class="btn primary" id="nReq">${I('plus')} Tạo đơn</button></div>` });

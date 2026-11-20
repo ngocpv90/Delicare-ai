@@ -67,8 +67,8 @@ namespace AppDelicare.Tests.Purchasing
                 item.RequiredQuantity.Should().Be(42);
                 item.AvailableQuantity.Should().Be(12);
                 item.PurchaseQuantity.Should().Be(30);
-                first.Data.PlanNumber.Should().MatchRegex(@"^KH-\d{6}(-\d+)?$");
-                first.Data.PurchaseRequest!.RequestNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                first.Data.PlanNumber.Should().MatchRegex(@"^KS-\d{6}(-\d+)?$");
+                first.Data.PurchaseRequest!.RequestNumber.Should().MatchRegex(@"^MH-\d{6}-\d{4}$");
 
                 var second = await mrp.Calculate(new MaterialRequirementCalculateRequest { ProductionDate = date, WarehouseId = warehouse });
                 second.ResponseCode.Should().Be(200, second.ResponseMessage);

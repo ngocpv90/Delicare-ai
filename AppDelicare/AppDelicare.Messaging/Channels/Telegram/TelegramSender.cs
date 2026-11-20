@@ -33,6 +33,20 @@ namespace AppDelicare.Messaging.Channels.Telegram
                 return ChannelSendResult.Sent(callbackId);
             });
 
+        public async Task<byte[]?> DownloadFileAsync(string botCode, string fileId, CancellationToken ct = default)
+        {
+            try
+            {
+                var file = await client.GetFileAsync(botCode, fileId, ct);
+                return string.IsNullOrWhiteSpace(file.FilePath) ? null : await client.DownloadFileAsync(botCode, file.FilePath, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning("Tải file Telegram {FileId} lỗi: {Error}", fileId, ex.Message);
+                return null;
+            }
+        }
+
         private async Task<ChannelSendResult> Guard(Func<Task<ChannelSendResult>> call)
         {
             try

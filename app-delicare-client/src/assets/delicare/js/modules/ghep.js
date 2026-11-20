@@ -9,7 +9,7 @@
  * Nút đầu màn hình: Order/LockByMealDate · ProductionBatch/GetStageBoard · InventoryTransaction/GetLedger · AnalyticsRefreshLog/GetList ·
  *                UserExternalIdentity/Link · OutboundMessage/Enqueue · Common/GetStatusSummary (số trên chip lọc nhanh)
  * Màn hình mới:  hr-my "Việc của tôi" (ShiftAssignment/GetMine · GetSwapCandidates · LeaveRequest/GetMine · ShiftSwapRequest/GetMine ·
- *                DeliveryRoute/GetMine · TelegramLink/GetMine · CreateCode · Unlink) · adm-job "Job tự động" (Job/GetAll · Run)
+ *                DeliveryRoute/GetMine · TelegramLink/GetMine · CreateCode · Unlink) · adm-job "Job tự động" (Job/GetAll · Run) · sys-import "Nhập dữ liệu gốc" (ImportExcel/GetTemplateList · GetTemplate · Import)
  * Tài liệu: docs/frontend-handoff (P3, P4, P5, P7, P8, BE2.1, BE2.2, BE2.3, BE2.4, BE2.7, BE3.4, BOT-1.1, BOT-1.2, BOT-1.5a–c, T23). */
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
@@ -124,21 +124,27 @@
     if (APPROVABLE[t] && isPending(st)) h += btn('gx-approve', 'Duyệt', 'primary') + btn('gx-reject', 'Từ chối', 'danger');
     if (t === 'InventoryTransaction') h += btn('gx-reverse', 'Đảo bút toán', 'danger', ro);
     if (t === 'PurchaseOrder' && st === 'Draft') h += btn('gx-po-lines', 'Sửa dòng hàng', '', ro);
-    if (t === 'Order' && ['Draft', 'Submitted', 'Confirmed', 'Locked'].includes(st)) h += btn('gx-order-change', 'Xin sửa sau giờ chốt', '', ro);
+    if (t === 'PurchaseRequest' && st === 'Draft') h += btn('gx-pr-lines', 'Sửa dòng nguyên liệu', '', ro);
+    if (t === 'Order' && ['Draft', 'Submitted', 'Confirmed', 'Locked'].includes(st)) h += btn('gx-order-change', 'Yêu cầu sửa sau chốt', 'orange', ro);
     if (t === 'DeliveryRoute') h += btn('gx-route-temp', 'Ghi nhiệt độ', '', ro);
+    if (t === 'DeliveryRoute' && ['Planned', 'Loading'].includes(st)) h += btn('gx-route-reassign', 'Đổi xe / tài xế', '', ro);   // BOT-3.2 (D-72): DeliveryRoute/Reassign
+    if (t === 'ProductionBatche' && ['Cooking', 'QCPending', 'Passed', 'Packed', 'Failed'].includes(st)) h += btn('gx-batch-extra', 'Nấu thêm', 'orange', perm && perm.add === false);   // BOT-3.3: ProductionBatch/CreateExtra
     if (t === 'CustomerComplaint') h += btn('gx-comment', 'Thêm ghi chú', '', ro);
     if (t === 'ProductionBatche' && !(perm && perm.exp === false)) h += btn('gx-sheet', 'Phiếu sản xuất (Excel)', '');
     if (t === 'ProductionBatche' && st === 'Passed') h += btn('gx-pack', 'Đã đóng gói xong', '', ro);
     if (t === 'OutboundMessage' && ['Failed', 'Cancelled'].includes(st)) h += btn('gx-retry', 'Gửi lại', 'orange', ro);
     if (t === 'InboundMessage' && ['Failed', 'Ignored'].includes(st)) h += btn('gx-reprocess', 'Xử lý lại', 'orange', ro);
     if (t === 'UserExternalIdentity' && st !== 'Revoked') h += btn('gx-unlink', 'Gỡ liên kết', 'danger', ro);
-    if (t === 'Employee') h += btn('gx-tg-code', 'Mã liên kết Telegram', '', ro) + btn('gx-send', 'Gửi tin qua bot', '');
+    if (t === 'Employee') h += (Store.perm('adm-employee').edit !== false ? btn('gx-tg-code', 'Tạo mã liên kết bot', '') : '') + btn('gx-send', 'Gửi tin qua bot', '');
     return h;
   };
+  // FE-E.1: link + ảnh QR (UI.qr nếu engine có bộ vẽ QR) để quét bằng điện thoại.
+  const qrOf = link => (link ? `<div class="tg-qr">${UI.qrSlot(link, 170)}</div>` : '');
   function showTelegramCode(d) {
     const links = (d && d.deepLinks) || {};
-    UI.modal({ title: 'Mã liên kết Telegram', size: 'sm', body: `<div class="kv"><div style="grid-column:1/-1"><label>Mã liên kết</label><span style="font-size:22px;font-weight:800;letter-spacing:2px">${esc((d && d.code) || '')}</span></div><div style="grid-column:1/-1"><label>Hết hạn</label><span>${esc(dtx(d && d.expiresAt))}</span></div></div><div class="grid mt">${Object.keys(links).map(k => `<a class="btn primary" href="${esc(links[k])}" target="_blank" rel="noopener">Mở bot ${esc(k === 'VH' ? 'Vận hành' : k === 'DH' ? 'Điều hành' : k)}</a>`).join('')}</div><div class="small muted mt">Mã dùng một lần. Mở bot bằng nút trên hoặc gửi mã cho bot để liên kết.</div>` });
+    UI.modal({ title: 'Mã liên kết Telegram', size: 'sm', onMount: m => UI.fillQr(m), body: `<div class="kv"><div style="grid-column:1/-1"><label>Mã liên kết</label><span style="font-size:22px;font-weight:800;letter-spacing:2px">${esc((d && d.code) || '')}</span></div><div style="grid-column:1/-1"><label>Hết hạn</label><span>${esc(dtx(d && d.expiresAt))}</span></div></div><div class="grid mt">${Object.keys(links).map(k => `<div class="tg-link">${qrOf(links[k])}<a class="btn primary" href="${esc(links[k])}" target="_blank" rel="noopener">Mở bot ${esc(k === 'VH' ? 'Vận hành' : k === 'DH' ? 'Điều hành' : k)}</a><div class="small muted mono" style="word-break:break-all">${esc(links[k])}</div></div>`).join('')}</div><div class="small muted mt">Mã dùng một lần. Mở bot bằng nút trên hoặc gửi mã cho bot để liên kết.</div>` });
   }
+  APP.showTelegramCode = showTelegramCode;   // UI-4: màn chi tiết nhân viên
   function sendMessage(preset) {
     const users = Store.rows('User'), emps = Store.rows('Employee');
     dialog('Gửi tin qua bot', (preset ? '' : fld('Người nhận (nhân viên) *', `<select class="select" id="smE"><option value="">— Chọn —</option>${emps.slice(0, 500).map(e => `<option value="${esc(e.Id)}">${esc(Store.label('Employee', e))}</option>`).join('')}</select>`) + fld('hoặc tài khoản', `<select class="select" id="smU"><option value="">— Chọn —</option>${users.slice(0, 500).map(u => `<option value="${esc(u.Id)}">${esc(Store.label('User', u))}</option>`).join('')}</select>`)) +
@@ -148,6 +154,37 @@
         if (!form.EmployeeId && !form.UserId) return UI.toast('Chọn người nhận', 'err');
         run('OutboundMessage/Enqueue', { form, tables: ['OutboundMessage'] }, 'Đã xếp tin vào hàng gửi').then(r => { if (r.ok) close(); });
       });
+  }
+  // UG-1 C-12: dòng đề nghị mua Nháp – thêm / sửa / xóa qua PurchaseRequestLine (Insert / Update / Delete; máy chủ chỉ cho khi phiếu Nháp).
+  function prLines(row) {
+    const lines = Store.by('PurchaseRequestLine', 'PurchaseRequestId', row.Id);
+    const ings = Store.rows('Ingredient'), units = Store.rows('UnitMeasure');
+    const unitOpts = sel => units.map(u => `<option value="${esc(u.Id)}" ${u.Id === sel ? 'selected' : ''}>${esc(u.Name || u.Code || '')}</option>`).join('');
+    const tr = l => `<tr data-l="${esc(l.Id || '')}"><td><select class="select gxI" style="min-width:200px">${ings.map(i => `<option value="${esc(i.Id)}" data-bu="${esc(i.BaseUnitId || '')}" ${i.Id === l.IngredientId ? 'selected' : ''}>${esc(Store.label('Ingredient', i))}</option>`).join('')}</select></td>
+      <td><input type="number" min="0" step="any" class="input gxQ" style="width:110px" value="${l.Quantity ?? ''}"></td><td><select class="select gxU">${unitOpts(l.UnitId)}</select></td>
+      <td><input type="date" class="input gxR" value="${esc(U.day(l.RequiredDate || row.RequiredDate))}"></td><td><input class="input gxN" value="${esc(l.Note || '')}"></td><td><button class="btn xs danger gxD" type="button">${I('trash')}</button></td></tr>`;
+    dialog('Sửa dòng nguyên liệu – ' + esc(Store.label('PurchaseRequest', row)), `<div class="small muted mb">Mỗi nguyên liệu một dòng. Dòng xóa ở đây sẽ bị xóa khỏi đề nghị.</div>
+      <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Nguyên liệu</th><th>Số lượng</th><th>Đơn vị</th><th>Ngày cần</th><th>Ghi chú</th><th></th></tr></thead><tbody id="gxB">${lines.map(tr).join('')}</tbody></table></div><button class="btn sm mt" id="gxAdd" type="button">${I('plus')} Thêm dòng</button>`, 'Lưu', (m, close) => {
+        const rows = [...m.querySelectorAll('#gxB tr')].map(t => ({ id: t.dataset.l || null, ingredientId: t.querySelector('.gxI').value, quantity: Number(t.querySelector('.gxQ').value), unitId: t.querySelector('.gxU').value, requiredDate: t.querySelector('.gxR').value || null, note: t.querySelector('.gxN').value || null }));
+        if (!rows.length) return UI.toast('Đề nghị mua phải có ít nhất một dòng', 'err');
+        if (rows.some(l => !(l.quantity > 0))) return UI.toast('Số lượng phải lớn hơn 0', 'err');
+        if (rows.some(l => !l.unitId)) return UI.toast('Chọn đơn vị cho mọi dòng', 'err');
+        if (new Set(rows.map(l => l.ingredientId)).size !== rows.length) return UI.toast('Mỗi nguyên liệu chỉ một dòng', 'err');
+        const keep = new Set(rows.filter(l => l.id).map(l => l.id));
+        const form = l => Object.assign({ PurchaseRequestId: row.Id, IngredientId: l.ingredientId, Quantity: l.quantity, UnitId: l.unitId, RequiredDate: l.requiredDate, Note: l.note }, l.id ? { Id: l.id } : {});
+        const changed = l => { const o = lines.find(x => x.Id === l.id); return !o || o.IngredientId !== l.ingredientId || Number(o.Quantity) !== l.quantity || o.UnitId !== l.unitId || U.day(o.RequiredDate || '') !== (l.requiredDate || '') || (o.Note || null) !== l.note; };
+        const ops = [...lines.filter(o => !keep.has(o.Id)).map(o => () => Store.act('PurchaseRequestLine/Delete?id=' + encodeURIComponent(o.Id), { method: 'DELETE', quiet: true })),
+          ...rows.filter(l => l.id && changed(l)).map(l => () => Store.act('PurchaseRequestLine/Update', { method: 'PUT', form: form(l), quiet: true })),
+          ...rows.filter(l => !l.id).map(l => () => Store.act('PurchaseRequestLine/Insert', { form: form(l), quiet: true }))];
+        if (!ops.length) { close(); return; }
+        ops.reduce((pr, op) => pr.then(res => (res && !res.ok ? res : op())), Promise.resolve(null)).then(res => {
+          if (res && !res.ok) return UI.toast('Không lưu được: ' + esc(res.message || ''), 'err');
+          Store.reload(['PurchaseRequest', 'PurchaseRequestLine']).then(() => { close(); UI.toast('Đã lưu dòng nguyên liệu', 'ok'); APP.refresh(); });
+        });
+      }, 'lg', m => m.addEventListener('click', e => {
+        if (e.target.closest('.gxD')) e.target.closest('tr').remove();
+        if (e.target.closest('#gxAdd') && ings.length) m.querySelector('#gxB').insertAdjacentHTML('beforeend', tr({ IngredientId: ings[0].Id, UnitId: ings[0].BaseUnitId }));
+      }));
   }
   function poLines(row) {
     const lines = Store.by('PurchaseOrderLine', 'PurchaseOrderId', row.Id);
@@ -166,7 +203,7 @@
   }
   function orderChange(row) {
     const lines = Store.by('OrderLine', 'OrderId', row.Id);
-    dialog('Xin sửa sau giờ chốt – ' + esc(Store.label('Order', row)), `<div class="small muted mb">Chỉ dùng khi đã tới giờ chốt của ngày ăn (trước giờ chốt hãy sửa số suất trực tiếp). Thay đổi chưa ghi ngay – tạo yêu cầu chờ duyệt.</div>
+    dialog('Yêu cầu sửa sau chốt – ' + esc(Store.label('Order', row)), `<div class="small muted mb">Chỉ dùng khi đã tới giờ chốt của ngày ăn (trước giờ chốt hãy sửa số suất trực tiếp). Thay đổi chưa ghi ngay – tạo yêu cầu chờ duyệt.</div>
       <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Suất ăn</th><th class="num">Đang đặt</th><th>Số mới</th></tr></thead><tbody>${lines.map(l => `<tr><td>${esc(Store.label('ContractMeal', l.ContractMealId) || Store.label('OrderLine', l))}</td><td class="num">${U.num(l.Quantity)}</td><td><input type="number" min="0" class="input gxQ" data-l="${esc(l.Id)}" data-o="${l.Quantity}" style="width:120px" value="${l.Quantity}"></td></tr>`).join('')}</tbody></table></div>
       <div class="mt">${fld('Lý do *', '<textarea class="input" id="gxR" rows="2"></textarea>')}</div>`, 'Gửi yêu cầu', (m, close) => {
         const reason = val(m, 'gxR'); if (!reason) return UI.toast('Nhập lý do', 'err');
@@ -199,11 +236,43 @@
     if (act === 'gx-tg-code') Store.act('TelegramLink/CreateCodeForEmployee', { form: { EmployeeId: id } }).then(r => { if (r.ok && !r.demo) showTelegramCode(r.data); });
     if (act === 'gx-send') sendMessage({ EmployeeId: id });
     if (act === 'gx-sheet') Store.download('ProductionBatch/ExportProductionSheet', { id }).then(r => { if (r.ok) UI.toast('Đã tải ' + esc(r.fileName || 'phiếu sản xuất'), 'ok'); });
+    if (act === 'gx-pr-lines') { close(); Store.reload(['PurchaseRequestLine', 'Ingredient', 'UnitMeasure']).then(() => prLines(row)); }
     if (act === 'gx-po-lines') { close(); Store.reload(['PurchaseOrderLine', 'Ingredient']).then(() => poLines(row)); }
     if (act === 'gx-order-change') { close(); Store.reload(['OrderLine', 'ContractMeal']).then(() => orderChange(row)); }
     if (act === 'gx-route-temp') { close(); Store.reload(['DeliveryStop']).then(() => routeTemp(row)); }
+    if (act === 'gx-route-reassign') { close(); Store.reload(['Vehicle', 'Employee']).then(() => routeReassign(row)); }
+    if (act === 'gx-batch-extra') { close(); batchExtra(row); }
     return true;
   };
+  // BOT-3.2 (D-72): đổi xe / tài xế của chuyến chưa xuất phát – trống = giữ nguyên; cảnh báo xe trùng chuyến khác trong ngày hiện kèm kết quả.
+  function routeReassign(row) {
+    const vehicles = Store.rows('Vehicle').filter(v => v.Status !== 'Inactive'), drivers = Store.rows('Employee').filter(e => !['Inactive', 'Resigned'].includes(e.Status));
+    dialog('Đổi xe / tài xế – ' + esc(Store.label('DeliveryRoute', row)),
+      fld('Xe mới', `<select class="select" id="gxV"><option value="">— Giữ xe hiện tại (${esc(Store.label('Vehicle', row.VehicleId) || 'chưa có')}) —</option>${vehicles.filter(v => v.Id !== row.VehicleId).map(v => `<option value="${esc(v.Id)}">${esc(v.LicensePlate || v.Code || '')}${v.Capacity ? ' · ' + U.num(v.Capacity) + ' kg' : ''}</option>`).join('')}</select>`)
+      + fld('Tài xế mới', `<select class="select" id="gxDr"><option value="">— Giữ tài xế hiện tại (${esc(Store.label('Employee', row.DriverId) || 'chưa có')}) —</option>${drivers.filter(e => e.Id !== row.DriverId).map(e => `<option value="${esc(e.Id)}">${esc(Store.label('Employee', e))}</option>`).join('')}</select>`)
+      + fld('Lý do', '<input class="input" id="gxN" maxlength="500" placeholder="vd. xe hỏng, tài xế nghỉ">'), 'Đổi', (m, close) => {
+        const v = val(m, 'gxV'), d = val(m, 'gxDr');
+        if (!v && !d) return UI.toast('Chọn xe hoặc tài xế mới', 'err');
+        run('DeliveryRoute/Reassign', { form: { Id: row.Id, VehicleId: v, DriverId: d, Note: val(m, 'gxN') }, tables: ['DeliveryRoute', 'DeliveryEvent'] }, 'Đã đổi xe / tài xế').then(r => {
+          if (!r.ok) return; close();
+          const w = (r.data && r.data.listWarning) || []; if (w.length) UI.toast(w.map(esc).join('<br>'), 'warn');
+        });
+      });
+  }
+  // BOT-3.3 (D-72): nấu thêm – mẻ bổ sung cùng lệnh / món (thiếu suất, mẻ hỏng); nhắc lập phiếu xuất nguyên liệu cho mẻ mới.
+  function batchExtra(row) {
+    dialog('Nấu thêm – ' + esc(Store.label('ProductionBatche', row)),
+      `<div class="small muted mb">Tạo mẻ mới (Kế hoạch) cùng lệnh sản xuất và món với mẻ này. Nguyên liệu cho mẻ thêm cần lập phiếu xuất (nút Xuất NL của mẻ mới).</div>`
+      + fld('Số suất nấu thêm *', '<input type="number" min="1" step="1" class="input" id="gxQ">') + fld('Lý do *', '<textarea class="input" id="gxR" rows="2" maxlength="500" placeholder="vd. thiếu 20 suất khách A, mẻ không đạt QC"></textarea>'), 'Tạo mẻ nấu thêm', (m, close) => {
+        const q = Number(val(m, 'gxQ')), reason = val(m, 'gxR');
+        if (!(q > 0)) return UI.toast('Số suất phải > 0', 'err');
+        if (!reason) return UI.toast('Nhập lý do', 'err');
+        run('ProductionBatch/CreateExtra', { form: { Id: row.Id, Quantity: q, Reason: reason }, tables: BATCH_TABLES }, 'Đã tạo mẻ nấu thêm').then(r => {
+          if (!r.ok) return; close();
+          const w = (r.data && r.data.listWarning) || []; if (w.length) UI.toast(w.map(esc).join('<br>'), 'warn');
+        });
+      });
+  }
 
   // ---------- Nút / khối thêm trên các màn hình đã có ----------
   function extend(id, after) {
@@ -254,6 +323,16 @@
   // Tích hợp bot: danh sách thật + thao tác qua action nghiệp vụ (không dùng khối trình diễn của mockup).
   const liveList = (id, opt) => { const base = APP.SCREENS[id]; APP.register(id, (el, f, p) => { if (!Store.isLive) return base ? base(el, f, p) : APP.genericList(el, f, opt); APP.genericList(el, f, Object.assign({ noAdd: true, noTransit: true }, opt)); }); };
   liveList('int-inbound'); liveList('int-outbound'); liveList('int-identity');
+  // FE-E.3: nút Gửi lại ngay trên dòng tin Lỗi / Đã hủy (OutboundMessage/Retry).
+  extend('int-outbound', el => {
+    if (!canEdit('int-outbound')) return;
+    APP.rowExtra(el, tr => {
+      const m = Store.get('OutboundMessage', tr.dataset.row); const cell = tr.lastElementChild;
+      if (!m || !cell || cell.querySelector('[data-retry]') || !['Failed', 'Cancelled'].includes(m.MessageStatus)) return;
+      cell.insertAdjacentHTML('beforeend', ` <button class="btn xs orange" data-retry title="Gửi lại tin">${I('reset')}</button>`);
+      cell.querySelector('[data-retry]').onclick = e => { e.stopPropagation(); UI.confirm('Gửi lại tin này?', () => Store.act('OutboundMessage/Retry', { form: { id: m.Id }, tables: ['OutboundMessage'] }).then(r => { if (r.ok) { UI.toast('Đã đưa tin vào hàng gửi lại', 'ok'); APP.refresh(); } }), { ok: 'Gửi lại' }); };
+    });
+  });
   extend('int-outbound', el => { if (canEdit('int-outbound')) headBtn(el, `<button class="btn primary">${I('msg')} Gửi tin</button>`, () => Store.reload(['User', 'Employee']).then(() => sendMessage())); });
   extend('int-identity', el => { if (!canEdit('int-identity')) return; headBtn(el, `<button class="btn primary">${I('plus')} Liên kết tay</button>`, () => Store.reload(['User', 'Employee']).then(() => dialog('Liên kết tài khoản bot (đã xác minh trực tiếp)',
     fld('Bot *', '<select class="select" id="gxB"><option value="VH">Vận hành (VH)</option><option value="DH">Điều hành (DH)</option></select>') +
@@ -298,10 +377,47 @@
         });
     });
   }
+  // FE-E.2 (FE-BOT-3): màn → nhóm QR hiện trường được in ở màn đó.
+  const FIELD_QR = {
+    'prod-line': [['LINE', 'In QR dây chuyền']], 'prod-workstation': [['LINE', 'In QR bàn nấu / dây chuyền'], ['CHAMCONG', 'In QR cổng chấm công']],
+    'log-vehicle': [['VEH', 'In QR xe']], 'scm-location': [['LOC', 'In QR vị trí kho']], 'qc-cleaning': [['CLEAN', 'In QR khu vệ sinh']],
+  };
+  APP.afterRender = (el, screen) => {
+    const btns = FIELD_QR[screen];
+    if (!btns || !Store.isLive || Store.perm(screen).print === false) return;
+    const bar = el.querySelector('.heading-actions'); if (!bar || bar.querySelector('[data-fqr]')) return;
+    bar.insertAdjacentHTML('afterbegin', btns.map(([g, l]) => `<button class="btn" data-fqr="${g}">${I('print')} ${l}</button>`).join(''));
+    bar.querySelectorAll('[data-fqr]').forEach(b => b.onclick = () => UI.printFieldQr(b.dataset.fqr, b.textContent.trim()));
+  };
+  // FE-E.1 (FE-BOT-1): danh sách bot đã liên kết (TelegramLink/GetMine) + gỡ liên kết (Unlink) trong khung #myTg của el.
+  UI.telegramBox = el => {
+    const o = el.querySelector('#myTg'); if (!o) return Promise.resolve();
+    o._bind = () => o.querySelectorAll('[data-un]').forEach(b => b.onclick = () => UI.confirm('Gỡ liên kết Telegram này? Bot sẽ ngừng phục vụ tài khoản của bạn.', () => Store.act('TelegramLink/Unlink', { form: { id: b.dataset.un } }).then(r => { if (r.ok) { UI.toast('Đã gỡ liên kết', 'ok'); UI.telegramBox(el); } }), { danger: true, ok: 'Gỡ liên kết' }));
+    return fill(el, 'myTg', 'TelegramLink/GetMine', null, x => (x.list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Bot</th><th>Tài khoản Telegram</th><th>Trạng thái</th><th>Liên kết lúc</th><th></th></tr></thead><tbody>${x.list.map(l => `<tr><td>${esc(l.botCode === 'VH' ? 'Vận hành' : l.botCode === 'DH' ? 'Điều hành' : l.botCode || '')}</td><td>${esc(l.externalUsername ? '@' + l.externalUsername : l.displayName || '')}</td><td>${esc(l.identityStatus === 'Active' ? 'Đã liên kết' : l.identityStatus === 'PendingCode' ? 'Chờ xác nhận' : l.identityStatus || '')}</td><td>${esc(dtx(l.linkedAt))}</td><td><button class="btn xs danger" data-un="${esc(l.id)}">Gỡ</button></td></tr>`).join('')}</tbody></table></div>` : ''), 'Chưa liên kết bot nào – bấm Tạo mã liên kết');
+  };
+  // Menu tài khoản (góc phải) → Liên kết Telegram: trạng thái + Tạo mã (15′) + Hủy liên kết.
+  UI.telegramLink = () => UI.modal({
+    title: 'Liên kết Telegram', sub: 'Nhận thông báo và thao tác qua bot', size: 'md',
+    body: `<div id="myTg">${LOADING}</div><div class="grid mt"><button class="btn primary" data-tgnew>${I('plus')} Tạo mã liên kết</button></div><div class="small muted mt">Mã dùng một lần, hết hạn sau 15 phút. Mở bot bằng nút hoặc quét QR, bot tự liên kết với tài khoản này.</div>`,
+    onMount: (m, close) => {
+      UI.telegramBox(m);
+      m.querySelector('[data-tgnew]').onclick = () => Store.act('TelegramLink/CreateCode', {}).then(r => { if (r.ok && !r.demo) { close(); showTelegramCode(r.data); } });
+    }
+  });
+  // adm-employee: nút "Tạo mã liên kết bot" trên dòng – chỉ khi có quyền Sửa màn hồ sơ nhân viên (mã 72 giờ).
+  APP.register('adm-employee', (el, f) => {
+    APP.genericList(el, f, { onRow: id => APP.go('adm-employee-360?id=' + encodeURIComponent(id)) });   // UI-4 (D-68 a): bấm dòng → hồ sơ nhân viên
+    if (!Store.isLive || Store.perm('adm-employee').edit === false) return;
+    APP.rowExtra(el, tr => {
+      const cell = tr.lastElementChild; if (!cell || cell.querySelector('[data-tgemp]')) return;
+      cell.insertAdjacentHTML('beforeend', ` <button class="btn xs" data-tgemp title="Tạo mã liên kết bot (hạn 72 giờ)">${I('msg')}</button>`);
+      cell.querySelector('[data-tgemp]').onclick = e => { e.stopPropagation(); Store.act('TelegramLink/CreateCodeForEmployee', { form: { EmployeeId: tr.dataset.row } }).then(r => { if (r.ok && !r.demo) showTelegramCode(r.data); }); };
+    });
+  });
   APP.register('hr-my', (el, f) => {
     if (!Store.isLive) return onlyLive(el, f);
     el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Ca làm việc, đơn nghỉ, đơn đổi ca, chuyến giao của tài khoản đang đăng nhập và liên kết bot Telegram.' }) +
-      box('myShift', 'Ca của tôi', '14 ngày tới') + `<div class="grid g2">${box('myLeave', 'Đơn nghỉ của tôi', '', `<a class="btn sm" href="#/hr-leave">Tạo đơn nghỉ →</a>`)}${box('mySwap', 'Đơn đổi ca của tôi', '', `<a class="btn sm" href="#/hr-swap">Màn đổi ca →</a>`)}</div>` +
+      box('myAtt', 'Chấm công hôm nay', 'Vào ca / ra ca bằng vị trí hiện tại của thiết bị') + box('myShift', 'Ca của tôi', '14 ngày tới') + `<div class="grid g2">${box('myLeave', 'Đơn nghỉ của tôi', '', `<button class="btn sm primary" id="myLeaveNew">${I('plus')} Tạo đơn nghỉ</button>`)}${box('mySwap', 'Đơn đổi ca của tôi', '', `<a class="btn sm" href="#/hr-swap">Màn đổi ca →</a>`)}</div>` +
       box('myRoute', 'Chuyến giao của tôi', 'Hôm nay – dành cho tài xế') + box('myTg', 'Liên kết Telegram', 'Nhận thông báo và thao tác qua bot', `<button class="btn sm primary" id="myTgNew">${I('plus')} Tạo mã liên kết</button>`);
     const shifts = () => {
       const o = el.querySelector('#myShift'); let list = [];
@@ -311,13 +427,15 @@
     const swaps = () => fill(el, 'mySwap', 'ShiftSwapRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn đổi ca');
     const shiftsAndSwaps = () => { shifts(); swaps(); };
     shiftsAndSwaps();
-    fill(el, 'myLeave', 'LeaveRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn nghỉ');
+    const leaves = () => fill(el, 'myLeave', 'LeaveRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn nghỉ');
+    leaves();
+    // UG-1 C-18: tự lập đơn nghỉ cho chính mình (LeaveRequest/Create không gửi EmployeeId – máy chủ lấy nhân viên của tài khoản; không cần quyền màn hr-leave).
+    el.querySelector('#myLeaveNew').onclick = () => UI.form('LeaveRequest', null, { title: 'Tạo đơn nghỉ', fields: ['FromDate', 'ToDate', 'LeaveTypeCode', 'Reason'],
+      validate: o => o.FromDate && o.ToDate && o.ToDate < o.FromDate ? 'Đến ngày phải ≥ Từ ngày' : null,
+      submit: (o, close) => Store.act('LeaveRequest/Create', { form: o, tables: ['LeaveRequest'] }).then(x => { if (!x.ok) return; close(); UI.toast(okMsg(x, 'Đã gửi đơn nghỉ – chờ duyệt'), 'ok'); leaves(); }) });
+    if (APP.myAttendance) APP.myAttendance(el.querySelector('#myAtt'));
     fill(el, 'myRoute', 'DeliveryRoute/GetMine', null, x => { const lr = (x.data && x.data.listRoute) || []; return lr.length ? lr.map(r => `<div class="mb"><div class="spread"><b>${esc((r.route && (r.route.routeNo || r.route.routeNumber)) || '')} · ${esc(r.licensePlate || '')}</b><span class="badge gray">${esc(r.statusName || '')}</span></div><div class="small muted">${U.num(r.loadMeals || 0)} suất${r.departureTemperatureC !== null && r.departureTemperatureC !== undefined ? ' · xuất phát ' + U.num(r.departureTemperatureC, 1) + ' °C' : ''}</div>${listHtml(r.listStop || [], 6)}</div>`).join('') + `<a class="btn sm" href="#/log-route">Mở màn Tuyến giao hàng →</a>` : ''; }, 'Hôm nay không có chuyến giao nào của bạn');
-    const tg = () => {
-      const o = el.querySelector('#myTg');
-      o._bind = () => o.querySelectorAll('[data-un]').forEach(b => b.onclick = () => UI.confirm('Gỡ liên kết Telegram này? Bot sẽ ngừng phục vụ tài khoản của bạn.', () => Store.act('TelegramLink/Unlink', { form: { id: b.dataset.un } }).then(r => { if (r.ok) { UI.toast('Đã gỡ liên kết', 'ok'); tg(); } }), { danger: true, ok: 'Gỡ liên kết' }));
-      return fill(el, 'myTg', 'TelegramLink/GetMine', null, x => (x.list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Bot</th><th>Tài khoản Telegram</th><th>Trạng thái</th><th>Liên kết lúc</th><th>Hoạt động gần nhất</th><th></th></tr></thead><tbody>${x.list.map(l => `<tr><td>${esc(l.botCode || '')}</td><td>${esc(l.displayName || '')}${l.externalUsername ? ' · @' + esc(l.externalUsername) : ''}</td><td>${UI.badge(l.identityStatus)}</td><td>${esc(dtx(l.linkedAt))}</td><td>${esc(dtx(l.lastSeenAt))}</td><td class="actions">${l.identityStatus === 'Revoked' ? '' : `<button class="btn xs danger" data-un="${esc(l.id)}">Gỡ</button>`}</td></tr>`).join('')}</tbody></table></div>` : ''), 'Chưa liên kết Telegram – bấm "Tạo mã liên kết"');
-    };
+    const tg = () => UI.telegramBox(el);
     tg();
     el.querySelector('#myTgNew').onclick = () => Store.act('TelegramLink/CreateCode', {}).then(r => { if (r.ok && !r.demo) showTelegramCode(r.data); });
   });
@@ -333,5 +451,38 @@
       fill(el, 'jobList', 'Job/GetAll', null, x => (x.list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Job</th><th>Giờ chạy</th><th>Lần kế tiếp</th><th>Lần gần nhất</th><th>Kết quả</th><th></th></tr></thead><tbody>${x.list.map(j => { const l = j.lastRun || {}; return `<tr><td><b>${esc(j.jobName || j.jobCode)}</b><span class="sub" style="white-space:normal;max-width:420px">${esc(j.description || '')}</span></td><td>${esc(j.at || '')}${j.enabled === false ? ' <span class="tag">Tắt</span>' : ''}</td><td>${esc(dtx(j.nextRunAt))}</td><td>${esc(dtx(l.startedAt))}</td><td>${l.runStatus ? `<span class="badge ${/Succeeded|Success/i.test(l.runStatus) ? 'green' : /Fail/i.test(l.runStatus) ? 'red' : 'orange'}">${esc(l.runStatus)}</span>` : ''}<span class="sub" style="white-space:normal;max-width:320px">${esc(l.message || '')}</span></td><td class="actions"><button class="btn xs primary" data-job="${esc(j.jobCode)}" data-name="${esc(j.jobName || j.jobCode)}">Chạy ngay</button></td></tr>`; }).join('')}</tbody></table></div>` : ''), 'Chưa có job nào được khai báo');
     };
     load();
+  });
+
+  // UG-1 C-03: nhập dữ liệu gốc từ Excel (ImportExcel/GetTemplateList · GetTemplate · Import). Chỉ hiện loại file tài khoản có quyền Nhập (Import) ở màn đích.
+  APP.FN['sys-import'] = { extra: true, ph: 'P0', grp: 'Quản trị hệ thống', fn: 'Nhập dữ liệu gốc (Excel)', id: 'sys-import', name: 'Nhập dữ liệu gốc (Excel)', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
+  const importResult = (title, d) => {
+    const errs = (d && d.listError) || [], notes = (d && d.listNote) || [];
+    UI.modal({ title: 'Kết quả nạp – ' + title, size: 'lg', body: `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">${[['Số dòng đọc', d.totalRows], ['Thêm mới', d.inserted], ['Cập nhật', d.updated], ['Bỏ qua (không đổi)', d.skipped], ['Dòng lỗi', errs.length]].map(([k, v]) => `<div><span class="muted small">${k}</span><div><b>${esc(v == null ? 0 : v)}</b></div></div>`).join('')}</div>`
+      + (notes.length ? `<div class="mt"><b>Ghi chú</b><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>` : '')
+      + (errs.length ? `<div class="mt"><b>Dòng lỗi (bị bỏ qua – sửa trong file rồi nạp lại)</b><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Dòng</th><th>Lý do</th></tr></thead><tbody>${errs.map(e => `<tr><td>${esc(e.row)}</td><td>${esc(e.message)}</td></tr>`).join('')}</tbody></table></div></div>` : '') });
+  };
+  APP.register('sys-import', (el, f) => {
+    if (!Store.isLive) return onlyLive(el, f);
+    el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Nạp danh mục từ file Excel: tải file mẫu, điền dữ liệu, rồi Nạp file. Nạp lại cùng file không tạo trùng (khớp theo mã); dòng lỗi bị bỏ qua và liệt kê sau khi nạp. Mã trống → hệ thống tự cấp mã.' }) + `<div class="card panel"><div id="impList">${LOADING}</div><input type="file" id="impFile" hidden accept=".xlsx,.xlsm"></div>`;
+    const inp = el.querySelector('#impFile'); let cur = null;
+    inp.onchange = () => {
+      const file = inp.files && inp.files[0]; inp.value = ''; const t = cur;
+      if (!file || !t) return;
+      if (!/\.(xlsx|xlsm)$/i.test(file.name)) return UI.toast('Chỉ nhận tệp .xlsx / .xlsm', 'err');
+      UI.confirm(`Nạp <b>${esc(file.name)}</b> vào <b>${esc(t.title)}</b>?`, () => {
+        const fd = new FormData(); fd.append('TableName', t.tableName); fd.append('File', file);
+        Store.act('ImportExcel/Import', { json: fd, tables: [t.tableName] }).then(r => { if (r.ok && !r.demo) importResult(t.title, r.data || {}); });
+      }, { ok: 'Nạp file' });
+    };
+    const o = el.querySelector('#impList');
+    o._bind = x => {
+      const by = {}; (x.list || []).forEach(t => by[t.tableName] = t);
+      o.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => Store.download('ImportExcel/GetTemplate', { tableName: b.dataset.tpl }).then(r => { if (r.ok) UI.toast('Đã tải ' + esc(r.fileName || 'file mẫu'), 'ok'); }));
+      o.querySelectorAll('[data-imp]').forEach(b => b.onclick = () => { cur = by[b.dataset.imp]; inp.click(); });
+    };
+    fill(el, 'impList', 'ImportExcel/GetTemplateList', null, x => {
+      const list = (x.list || []).filter(t => Store.perm(t.screen).imp);
+      return list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Danh mục</th><th>Cột trong file (* bắt buộc)</th><th></th></tr></thead><tbody>${list.map(t => `<tr><td><b>${esc(t.title)}</b><span class="sub">${esc(t.hasTemplate ? 'Theo file mẫu' : 'File vận hành' + (t.sheetName ? ' – sheet ' + t.sheetName : ''))}</span></td><td style="white-space:normal">${(t.listColumn || []).map(c => `<span class="tag" title="${esc(c.note || '')}">${esc(c.header)}${c.required ? ' *' : ''}</span>`).join(' ')}</td><td class="actions" style="white-space:nowrap">${t.hasTemplate ? `<button class="btn xs" data-tpl="${esc(t.tableName)}">${I('download')} File mẫu</button> ` : ''}<button class="btn xs primary" data-imp="${esc(t.tableName)}">${I('plus')} Nạp file</button></td></tr>`).join('')}</tbody></table></div>` : '';
+    }, 'Tài khoản chưa có quyền Nhập (Import) ở danh mục nào');
   });
 })();

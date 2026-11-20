@@ -43,7 +43,16 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             // QA
             A("qa_incoming", "ATTP", "🧪 Lô chờ QC đầu vào", "chokiem", "Phiếu nhập chờ kiểm QC", "#/qc-inspection", 3, QcPendingAsync),
             A("qa_alerts", "ATTP", "🌡 Cảnh báo ATTP", "canhbao", "Nhiệt độ ngoài ngưỡng, lô giữ / cận date", "#/qc-temperature", 4, (c, ct) => AlertsAsync(c, "🌡 Cảnh báo ATTP", ["TEMPERATURE_OUT_OF_RANGE", "QC_INCOMING_PENDING", "LOT_ON_HOLD", "LOT_EXPIRING"], ct)),
+            // BOT-3.1 (UG-1 C-22, anh chọn 2026-11-19): chức năng chỉ xem dùng API có sẵn.
+            A("bep_mat", "BEP", "🥬 NL của ca", "nlca", "Nguyên liệu cần cho sản xuất hôm nay", "#/scm-requirement", 20, (c, ct) => RequirementAsync(c, 0, false, ct)),
+            A("kho_short", "KHO", "⚠️ Thiếu hụt", "thieuhut", "Nguyên liệu thiếu cho ngày mai", "#/scm-requirement", 6, (c, ct) => RequirementAsync(c, 1, true, ct)),
+            A("kd_menu", "KINHDOANH", "📅 Thực đơn tuần", "thucdontuan", "Thực đơn đang áp dụng", "#/menu-menu", 3, MenusAsync),
+            A("kd_mine", "KINHDOANH", "📋 Việc tôi đã báo", "viecdabao", "Phản ánh / báo thiếu suất do tôi ghi", "#/log-complaint", 4, MyComplaintsAsync),
+            A("kt_timesheet", "KETOAN", "🧾 Công tháng", "congthang", "Bảng công tháng này (chỉ xem)", "#/hr-attendance", 3, TimesheetAsync),
+            new BotAction { Code = "ns_timesheet", Module = "NHANSU", Label = "🧾 Công tháng", Bots = ["VH"], MenuMetaLink = "#/hr-attendance", Order = 3, Handler = TimesheetAsync },   // /congthang thuộc kt_timesheet (lệnh không trùng)
+            A("ns_pending", "NHANSU", "⏳ Đơn đang chờ", "donchoduyet", "Đơn nghỉ / đổi ca đang chờ duyệt", "#/hr-leave", 4, PendingRequestsAsync),
             // Quản trị
+            new BotAction { Code = "it_chatid", Module = "QUANTRI", Label = "🆔 Mã chat (chatid)", Command = "chatid", CommandDescription = "Mã chat để cấu hình nhóm nhận thông báo", Bots = ["VH", "DH"], Order = 2, Visible = i => i.IsAdmin, Handler = ChatIdAsync },
             new BotAction { Code = "it_status", Module = "QUANTRI", Label = "🖥 Tình trạng hệ thống", Command = "hethong", CommandDescription = "Job tự động + tin gửi lỗi", Bots = ["VH"], Order = 1, Visible = i => i.IsAdmin, Handler = SystemAsync },
         ];
 
@@ -155,18 +164,26 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             await SendAsync(ctx, m, ct);
         }
 
-        public async Task RequirementAsync(BotActionContext ctx, CancellationToken ct)
+        public Task RequirementAsync(BotActionContext ctx, CancellationToken ct) => RequirementAsync(ctx, 1, false, ct);
+
+        /// <summary>Nhu cầu nguyên liệu của 1 ngày sản xuất (dayOffset 0 = hôm nay – "NL của ca" cho bếp; 1 = ngày mai); shortageOnly = chỉ dòng thiếu (BOT-3.1).</summary>
+        public async Task RequirementAsync(BotActionContext ctx, int dayOffset, bool shortageOnly, CancellationToken ct)
         {
-            DateTime day = Today.AddDays(1);
+            DateTime day = Today.AddDays(dayOffset);
             if (await GetAsync(ctx, "api/MaterialRequirement/GetByDate?productionDate=" + D(day), ct) is not { } r)
             {
                 return;
             }
-            var items = r.Items.OrderByDescending(i => Dec(i, "shortageQuantity")).ToList();
+            var items = r.Items.Where(i => !shortageOnly || Dec(i, "shortageQuantity") > 0).OrderByDescending(i => Dec(i, "shortageQuantity")).ToList();
+            if (shortageOnly && items.Count == 0)
+            {
+                await SayAsync(ctx, $"✅ Ngày {day:dd/MM} không thiếu nguyên liệu nào (kế hoạch {S(r.Data, "planNumber") ?? "-"}).", ct);
+                return;
+            }
             var lines = items.Select(i => (Dec(i, "shortageQuantity") > 0 ? "⚠️ " : "• ") + $"{S(i, "ingredientName")}: cần {N(i, "requiredQuantity")} {S(i, "unitName")} · có {N(i, "availableQuantity")}"
                 + (Dec(i, "shortageQuantity") > 0 ? $" · thiếu {N(i, "shortageQuantity")}" : "")).ToList();
             string head = $"Kế hoạch {S(r.Data, "planNumber") ?? "-"} · {N(r.Data, "totalMeals")} suất · thiếu {N(r.Data, "shortageCount")} NL";
-            await ReplyListAsync(ctx, $"🥬 NL ngày {day:dd/MM}", [head, .. lines], "Chưa tính nhu cầu nguyên liệu cho ngày mai.", ct);
+            await ReplyListAsync(ctx, $"{(shortageOnly ? "⚠️ Thiếu hụt" : "🥬 NL")} ngày {day:dd/MM}", [head, .. lines], $"Chưa tính nhu cầu nguyên liệu cho ngày {day:dd/MM}.", ct);
         }
 
         private async Task<List<JsonElement>?> PurchaseOrdersAsync(BotActionContext ctx, string[] statuses, CancellationToken ct)
@@ -339,6 +356,61 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         }
 
         // ---------- Đọc JSON ----------
+
+        /// <summary>BOT-3.1: phản ánh / báo thiếu suất do chính người dùng ghi (CustomerComplaint/GetList mine=true), mới nhất trước.</summary>
+        public async Task MyComplaintsAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await GetAsync(ctx, "api/CustomerComplaint/GetList?mine=true&page=1&pageSize=30", ct) is not { } r)
+            {
+                return;
+            }
+            var lines = r.Items.Select(x =>
+            {
+                var c = Obj(x, "complaint");
+                return $"{(Flag(x, "isOverdue") ? "🔴" : "•")} {S(c, "complaintNo")} {S(x, "customerName")} · {Day(S(c, "receivedAt"))} · {S(x, "statusName")}"
+                    + (S(x, "assignedToName") is { } a ? " · " + a : "");
+            }).ToList();
+            await ReplyListAsync(ctx, "📋 Việc tôi đã báo", lines, "Bạn chưa ghi phản ánh nào.", ct);
+        }
+
+        /// <summary>BOT-3.1: bảng công từ đầu tháng tới hôm nay (AttendanceEvent/GetTimesheet) – tổng + người vắng / muộn nhiều nhất.</summary>
+        public async Task TimesheetAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            DateTime from = new(Today.Year, Today.Month, 1);
+            if (await GetAsync(ctx, $"api/AttendanceEvent/GetTimesheet?FromDate={D(from)}&ToDate={D(Today)}&Page=1&PageSize=1000", ct) is not { } r)
+            {
+                return;
+            }
+            var rows = r.Items;
+            decimal Sum(string k) => rows.Sum(x => Dec(x, k));
+            string head = $"{rows.Count} người · {Sum("assignedShifts"):#,0} ca · có mặt {Sum("present"):#,0} · vắng {Sum("absent"):#,0} · muộn {Sum("late"):#,0} · nghỉ phép {Sum("leaveDays"):#,0} ngày · {Sum("workedHours"):#,0.#} giờ công";
+            var lines = rows.Where(x => Dec(x, "absent") > 0 || Dec(x, "late") > 0)
+                .OrderByDescending(x => Dec(x, "absent")).ThenByDescending(x => Dec(x, "late"))
+                .Select(x => $"• {S(x, "fullName")} · vắng {N(x, "absent")} · muộn {N(x, "late")} · {N(x, "workedHours")} giờ").ToList();
+            await ReplyListAsync(ctx, $"🧾 Công {from:MM/yyyy} (tới {Today:dd/MM})", [head, .. lines], "Chưa có ca nào trong tháng.", ct);
+        }
+
+        /// <summary>BOT-3.1: đơn nghỉ + đơn đổi ca đang chờ duyệt (LeaveRequest / ShiftSwapRequest GetAll RequestStatus = Pending) – xem; duyệt ở ⏳ Chờ tôi duyệt.</summary>
+        public async Task PendingRequestsAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await GetAsync(ctx, "api/LeaveRequest/GetAll?RequestStatus=Pending&Page=1&PageSize=100", ct) is not { } leave)
+            {
+                return;
+            }
+            var lines = leave.Items.Select(x => $"🏖 {S(x, "requestNo")} {S(x, "employeeName")} · {Day(S(x, "fromDate"))}–{Day(S(x, "toDate"))} · {S(x, "leaveTypeCode")}").ToList();
+            if (ctx.Identity.IsAdmin || ctx.Identity.Menus.Contains("#/hr-swap", StringComparer.OrdinalIgnoreCase))
+            {
+                if (await GetAsync(ctx, "api/ShiftSwapRequest/GetAll?RequestStatus=Pending&Page=1&PageSize=100", ct) is { } swap)
+                {
+                    lines.AddRange(swap.Items.Select(x => $"🔁 {S(x, "requestNo")} đổi ca · gửi {Day(S(x, "submittedAt"))}"));
+                }
+            }
+            await ReplyListAsync(ctx, "⏳ Đơn đang chờ duyệt", lines, "Không có đơn nào đang chờ.", ct, "Duyệt ở ⏳ Chờ tôi duyệt (nếu bạn là người duyệt).");
+        }
+
+        /// <summary>BOT-3.1: mã chat hiện tại (chat riêng). Trong nhóm: thêm bot vào nhóm rồi gõ /chatid – UpdateDispatcher trả lời ngay trong nhóm (chỉ quản trị).</summary>
+        public Task ChatIdAsync(BotActionContext ctx, CancellationToken ct)
+            => SayAsync(ctx, $"🆔 Mã chat này: {ctx.Event.ChatId}\nĐể lấy mã nhóm: thêm bot vào nhóm rồi gõ /chatid trong nhóm (chỉ tài khoản quản trị).", ct);
 
         private static JsonElement Obj(JsonElement e, string k) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v) ? v : default;
 

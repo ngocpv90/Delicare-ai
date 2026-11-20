@@ -18,10 +18,14 @@ const SCRIPTS = [
   'core/app.js',
   'modules/dashboard.js',
   'modules/sales.js',
+  'modules/detail360.js',
+  'modules/customer360.js',
   'modules/menu.js',
   'modules/scm.js',
   'modules/production.js',
   'modules/qc.js',
+  'modules/supplier360.js',
+  'modules/employee360.js',
   'modules/logistics.js',
   'modules/hr.js',
   'modules/admin.js',
@@ -66,7 +70,7 @@ export class DelicareShellComponent implements AfterViewInit, OnDestroy {
     // là có hiệu lực sau khi tải lại trang. Lỗi mạng → dùng menu đã lưu lúc đăng nhập.
     const stored = this.auth.userValue;
     firstValueFrom(this.http.get<any>(`${URL_API}User/GetCurrent`))
-      .then((res) => (Array.isArray(res?.data?.listMenu) && stored ? { ...stored, listMenu: res.data.listMenu, isAdmin: res.data.user?.isAdmin ?? stored.isAdmin } : stored))
+      .then((res) => (Array.isArray(res?.data?.listMenu) && stored ? { ...stored, listMenu: res.data.listMenu, isAdmin: res.data.user?.isAdmin ?? stored.isAdmin, mustChangePassword: res.data.mustChangePassword ?? stored.mustChangePassword } : stored))
       .catch(() => stored)
       .then((user) => this.startEngine(user));
   }

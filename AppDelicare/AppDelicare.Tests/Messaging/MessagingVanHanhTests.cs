@@ -144,16 +144,65 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("bat:tx:" + cook));
             await h.SendAsync(Text("73,5", replyTo: LastSentId(h)));
             Last(h, "api/ProductionBatch/RecordCoreTemperature").Form["TemperatureC"].Should().Be("73.5");
+
+            // UG-1 C-09: dưới ngưỡng → máy chủ đòi hành động khắc phục → bot hỏi, người dùng gõ → ghi lại kèm CorrectiveAction.
+            h.Web.Routes["api/ProductionBatch/RecordCoreTemperature"] = (_, form) => form.ContainsKey("CorrectiveAction")
+                ? (200, "Đã ghi nhiệt độ (dưới ngưỡng)", "{}", null)
+                : (400, "Nhiệt độ lõi 65 °C dưới ngưỡng 70 °C – phải ghi hành động khắc phục", null, null);
+            await h.SendAsync(Tap("bat:tx:" + cook));
+            await h.SendAsync(Text("65", replyTo: LastSentId(h)));
+            h.Sender.Sent.Last().Message.Text.Should().Contain("Nhập hành động khắc phục");
+            await h.SendAsync(Text("Gia nhiệt lại 10 phút", replyTo: LastSentId(h)));
+            Last(h, "api/ProductionBatch/RecordCoreTemperature").Form.Should().Contain(new KeyValuePair<string, string>("CorrectiveAction", "Gia nhiệt lại 10 phút"))
+                .And.Contain(new KeyValuePair<string, string>("TemperatureC", "65"));
             await h.SendAsync(Tap("bat:fin:" + cook));
             ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).First().Text.Should().Be("✅ Đúng 100", "điền sẵn số kế hoạch");
             await h.SendAsync(Tap("bat:fq:" + cook + ".100"));
             Last(h, "api/ProductionBatch/Finish").Form["ActualQuantity"].Should().Be("100");
+            // UG-1 C-07: xong mẻ trên bot ghi luôn sản lượng (ProductionOutput) – không còn kẹt "Chưa ghi sản lượng mẻ" khi cho Đạt.
+            Last(h, "api/ProductionBatch/RecordOutput").Form.Should().Contain(new KeyValuePair<string, string>("ProducedQuantity", "100")).And.Contain(new KeyValuePair<string, string>("Id", Cooking.ToString()));
             await h.SendAsync(Tap("bat:smp:" + cook));
             Last(h, "api/ProductionBatch/RecordSampleRetained").Form["Id"].Should().Be(Cooking.ToString());
             await h.SendAsync(Tap("bat:start:" + plan));
             Last(h, "api/ProductionBatch/Start").Form["Id"].Should().Be(Planned.ToString());
             await h.SendAsync(Text("/tiendo"));
             h.Sender.Sent.Last().Message.Text.Should().Contain("0 / 300").And.Contain("Đang nấu: 1");
+        }
+
+        [Fact]
+        public async Task Kitchen_batch_card_shows_current_stage_button_start_then_finish()
+        {
+            // UG-1 C-15: mẻ Đang nấu có công đoạn → nút Bắt đầu công đoạn kế tiếp / Xong công đoạn đang làm.
+            await using var h = KitchenHost();
+            string cook = Cooking.ToString("N"), state = "NotStarted";
+            h.Web.Routes["api/ProductionBatch/GetDetail"] = (_, _) => (200, null, JsonSerializer.Serialize(new
+            {
+                id = Cooking,
+                listStage = new object[]
+                {
+                    new { stageCode = "PREP", stageName = "Sơ chế", status = "Done" },
+                    new { stageCode = "COOK", stageName = "Nấu", status = state },
+                    new { stageCode = "PORTION", stageName = "Chia suất", status = "NotStarted" },
+                },
+            }), null);
+            h.Web.Routes["api/ProductionBatch/StartStage"] = (_, _) => { state = "InProgress"; return (200, "Đã bắt đầu công đoạn", "{}", null); };
+            h.Web.Routes["api/ProductionBatch/FinishStage"] = (_, _) => { state = "Done"; return (200, "Đã xong công đoạn", "{}", null); };
+
+            await h.SendAsync(Tap("bat:view:" + cook));
+            var card = h.Sender.Edits.Last();
+            card.Text.Should().Contain("Công đoạn: Sơ chế ✅ → Nấu → Chia suất");
+            var buttons = ((TgInlineKeyboard)card.Markup!).InlineKeyboard.SelectMany(r => r).ToList();
+            buttons.Should().Contain(b => b.Text == "▶️ Bắt đầu Nấu" && b.CallbackData == "bat:ss:" + cook + ".COOK");
+
+            await h.SendAsync(Tap("bat:ss:" + cook + ".COOK"));
+            Last(h, "api/ProductionBatch/StartStage").Form.Should().Contain(new KeyValuePair<string, string>("StageCode", "COOK")).And.Contain(new KeyValuePair<string, string>("Id", Cooking.ToString()));
+            card = h.Sender.Edits.Last();
+            card.Text.Should().Contain("Nấu ⏳");
+            ((TgInlineKeyboard)card.Markup!).InlineKeyboard.SelectMany(r => r).Should().Contain(b => b.Text == "⏹ Xong Nấu" && b.CallbackData == "bat:sf:" + cook + ".COOK");
+
+            await h.SendAsync(Tap("bat:sf:" + cook + ".COOK"));
+            Last(h, "api/ProductionBatch/FinishStage").Form["StageCode"].Should().Be("COOK");
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Should().Contain(b => b.Text == "▶️ Bắt đầu Chia suất");
         }
 
         [Fact]

@@ -8,11 +8,13 @@
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
-  const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap',
-    'int-channel', 'int-bot', 'int-log']);
+  // FE-E.3 (D-65): int-channel / int-bot / int-log đã hiện lại – quyền theo ma trận UserRole (khóa bí mật trong ConfigJson máy chủ đã che).
+  const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap']);
   // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).
   const hiddenNow = id => Store.isLive && (HIDDEN_LIVE.has(id) || !!(FN[id] && FN[id].table && Store.isBroken(FN[id].table)));
   const SCREENS = {};
+  // Màn đọc id trên URL để vẽ (không phải mở-bản-ghi-rồi-dọn) → giữ ?id= khi tải lại (UI-2).
+  const KEEP_ID = new Set(['crm-customer-360', 'scm-supplier-360', 'adm-employee-360']);
   const APP = { FN, SCREENS, current: null, params: {} };
   APP.register = (id, fn) => SCREENS[id] = fn;
   // Tiền tố hash: '#/' khi chạy độc lập, '#/quan-tri/' khi chạy trong Angular (Angular cũng dùng hash routing).
@@ -155,12 +157,12 @@
     const stat = sc ? U.group(rowsFn(), sc) : {};
     const statusChips = sc ? Object.entries(stat).sort((a, b) => b[1].length - a[1].length) : [];
     el.innerHTML = APP.header(f, `${perm.exp !== false ? `<button class="btn" data-act="export">${I('export')} Xuất CSV</button>` : ''}${opt.noAdd ? '' : `<button class="btn primary" data-act="add" ${perm.add === false ? 'disabled title="Tài khoản không có quyền Thêm"' : ''}>${I('plus')} Tạo mới</button>`}`) + (opt.top || '') +
-      `<div class="kpis">${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), LIVE() ? esc(f.fn) : 'dbo.' + t + ' · ' + APP.srcText(t), 'clipboard', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), LIVE() ? 'Theo trạng thái' : `${sc} = ${k || 'NULL'}`, 'layers', ['blue', 'orange', 'purple'][i])).join('')}</div>
+      `<div class="kpis" data-kpis>${opt.kpis !== undefined ? opt.kpis : `${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), '', 'clipboard', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), '', 'layers', ['blue', 'orange', 'purple'][i])).join('')}`}</div>
       <div class="card panel">${sc ? `<div class="row-flex mb"><span class="small muted">${LIVE() ? 'Lọc nhanh:' : 'Lọc nhanh ' + sc + ':'}</span><button class="chip active" data-st="">Tất cả</button>${statusChips.map(([k, v]) => `<button class="chip" data-st="${esc(k)}">${esc(UI.statusVi(t, sc, k) || '(trống)')} · ${v.length}</button>`).join('')}</div>` : ''}<div id="gt"></div></div>`;
     const fks = cols.filter(c => Store.target(t, c.k)).slice(0, 1).map(c => { const vals = [...new Set(rowsFn().map(r => r[c.k]).filter(Boolean))]; return { k: c.k, label: c.label, options: vals.map(v => ({ v, l: Store.label(Store.target(t, c.k), v) })).sort((a, b) => a.l.localeCompare(b.l)) }; });
     const ref = {}; APP._lastTbl = ref;
     const tbl = UI.table(el.querySelector('#gt'), {
-      table: t, cols, rows: rowsFn, filters: fks, pageSize: 10, onRow: id => APP.openDetail(t, id, f),
+      table: t, cols, rows: rowsFn, filters: fks, pageSize: 10, onRow: id => (opt.onRow ? opt.onRow(id) : APP.openDetail(t, id, f)),
       actions: r => { const nx = sc && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button>${UI.readOnly(t) ? '' : ` <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>`}${nx && !opt.noTransit && !LIVE() ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del && !UI.readOnly(t) ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
       after: tb => {
         tb.querySelectorAll('[data-view]').forEach(b => b.onclick = () => APP.openDetail(t, b.dataset.view, f));
@@ -170,6 +172,8 @@
         if (ref.extra) tb.querySelectorAll('tr[data-row]').forEach(ref.extra);
       }
     });
+    // UI-1.2: màn tự nạp số liệu dải thẻ từ máy chủ (vd. Customer/GetSummary).
+    if (opt.afterKpis) opt.afterKpis(el.querySelector('[data-kpis]'));
     el.querySelectorAll('[data-st]').forEach(c => c.onclick = () => { el.querySelectorAll('[data-st]').forEach(x => x.classList.toggle('active', x === c)); tbl.setFilter(sc, c.dataset.st); });
     el.querySelector('[data-act="add"]') && (el.querySelector('[data-act="add"]').onclick = () => UI.form(t, null, { title: f.name, defaults: opt.defaults, onSave: () => APP.refresh() }));
     el.querySelector('[data-act="export"]') && (el.querySelector('[data-act="export"]').onclick = () => { U.csv(rowsFn(), cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => UI.text(t, c.k, r[c.k]) })), `DELICARE_${LIVE() ? '' : 'DEMO_'}${t}.csv`); UI.toast('Đã xuất CSV ' + rowsFn().length + ' dòng' + (LIVE() ? '' : ' (DỮ LIỆU DEMO)'), 'ok'); });
@@ -314,12 +318,13 @@
   APP.cleanDemoText = cleanDemoText;
   function finish(el) {
     cleanDemoText(el);
+    if (APP.afterRender) { try { APP.afterRender(el, APP.current); } catch (e) { console.error(e); } }   // FE-E.2: nút In QR theo màn (modules/ghep.js)
     el.insertAdjacentHTML('beforeend', API_MODE()
       ? '<div class="footer-note">DELI-CARE · ENTERPRISE MANAGEMENT</div>'
       : '<div class="footer-note">DELI-CARE · ENTERPRISE MOCKUP · DỮ LIỆU DEMO – KHÔNG PHẢI DỮ LIỆU THẬT · Cấu trúc theo 20261113_structure_db_appdelicare.sql</div>');
     el.querySelectorAll('[data-trace]').forEach(b => b.onclick = () => UI.trace(b.dataset.trace, APP.current));
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => APP.go(b.dataset.go));
-    if (APP.params.id) { history.replaceState(history.state, '', location.pathname + location.search + APP.href(APP.current)); APP.params = {}; }
+    if (APP.params.id && !KEEP_ID.has(APP.current)) { history.replaceState(history.state, '', location.pathname + location.search + APP.href(APP.current)); APP.params = {}; }
     closeMobile();
     updateCounts();
     setRibbon();
@@ -355,21 +360,23 @@
     UI.modal({
       title: 'Tài khoản', sub: (u.userName || '') + (u.userGroupName ? ' · ' + u.userGroupName : ''), size: 'sm',
       body: `<div class="kv"><div><label>Họ tên</label><span>${esc(u.fullName || '–')}</span></div><div><label>Tên đăng nhập</label><span>${esc(u.userName || '–')}</span></div><div><label>Nhóm người dùng</label><span>${esc(u.userGroupName || (u.isAdmin ? 'Quản trị hệ thống' : '–'))}</span></div><div><label>Quản trị</label><span>${u.isAdmin ? UI.badge('Active') : 'Không'}</span></div></div>
-        <div class="grid mt">${Store.mode === 'demo' ? `<button class="btn" id="accRole">${I('users')} Đổi vai trò xem (DEMO)</button>` : ''}<button class="btn" id="accPwd">${I('key')} Đổi mật khẩu</button><button class="btn danger" id="accOut">${I('reset')} Đăng xuất</button></div>`,
+        <div class="grid mt">${Store.mode === 'demo' ? `<button class="btn" id="accRole">${I('users')} Đổi vai trò xem (DEMO)</button>` : ''}${UI.telegramLink && Store.isLive ? `<button class="btn" id="accTg">${I('msg')} Liên kết Telegram</button>` : ''}<button class="btn" id="accPwd">${I('key')} Đổi mật khẩu</button><button class="btn danger" id="accOut">${I('reset')} Đăng xuất</button></div>`,
       onMount: (m, close) => {
         const r = m.querySelector('#accRole'); if (r) r.onclick = () => { close(); chooseRole(); };
+        const tg = m.querySelector('#accTg'); if (tg) tg.onclick = () => { close(); UI.telegramLink(); };
         m.querySelector('#accPwd').onclick = () => { close(); changePassword(); };
         m.querySelector('#accOut').onclick = () => { close(); H.logout(); };
       }
     });
   }
-  function changePassword() {
+  // forced (T45R.8 / D-39): đăng nhập bằng mật khẩu tạm → bắt buộc đổi trước khi dùng (máy chủ cũng chặn mọi API khác).
+  function changePassword(forced) {
     const H = window.DC_HOST;
     UI.modal({
-      title: 'Đổi mật khẩu', sub: 'API User/ChangePassword', size: 'sm',
+      title: 'Đổi mật khẩu', sub: forced ? 'Bạn đang dùng mật khẩu tạm – đặt mật khẩu mới để tiếp tục' : 'API User/ChangePassword', size: 'sm', locked: !!forced,
       body: `<div class="form-grid" style="grid-template-columns:1fr"><div class="field"><label for="pwOld">Mật khẩu hiện tại</label><input class="input" type="password" id="pwOld" autocomplete="current-password"></div><div class="field"><label for="pwNew">Mật khẩu mới (từ 9 ký tự)</label><input class="input" type="password" id="pwNew" autocomplete="new-password"></div><div class="field"><label for="pwNew2">Nhập lại mật khẩu mới</label><input class="input" type="password" id="pwNew2" autocomplete="new-password"></div></div>`,
-      foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="pwSave">Lưu</button>`,
-      onMount: (m, close) => m.querySelector('#pwSave').onclick = async () => {
+      foot: forced ? `<button class="btn" id="pwOut">Đăng xuất</button><button class="btn primary" id="pwSave">Lưu</button>` : `<button class="btn" data-close>Hủy</button><button class="btn primary" id="pwSave">Lưu</button>`,
+      onMount: (m, close) => { const out = m.querySelector('#pwOut'); if (out) out.onclick = () => H.logout(); m.querySelector('#pwSave').onclick = async () => {
         const o = m.querySelector('#pwOld').value, n = m.querySelector('#pwNew').value, n2 = m.querySelector('#pwNew2').value;
         const errs = [];
         if (!o || !n) errs.push('Nhập đủ mật khẩu hiện tại và mật khẩu mới');
@@ -384,8 +391,9 @@
           const res = await H.send('PUT', 'User/ChangePassword', fd);
           if (res && res.responseCode !== undefined && res.responseCode !== 200) return UI.toast(esc(res.responseMessage || 'Không đổi được mật khẩu'), 'err');
           close(); UI.toast('Đã đổi mật khẩu', 'ok');
+          if (forced) { if (H.user) H.user.mustChangePassword = false; setTimeout(() => window.location.reload(), 600); }
         } catch (e) { UI.toast(esc(H.errorText(e)), 'err'); }
-      }
+      }; }
     });
   }
   function chooseRole() {
@@ -411,7 +419,7 @@
   }
   function help() {
     const live = API_MODE();
-    UI.modal({ title: 'Hướng dẫn sử dụng', size: 'lg', body: (Store.hasHost ? `<div class="notice ${live ? 'info' : 'warn'}">${I('database')}<div><b>Nguồn dữ liệu: ${live ? 'API thật (backend .NET)' : 'DỮ LIỆU DEMO trong trình duyệt'}</b>${live ? 'Bảng có API được đọc / ghi qua <code>api/&lt;Controller&gt;/GetAllData · Insert · Update · Delete</code>. Bảng chưa có API hiển thị dữ liệu DEMO. Nhãn góc trên cho biết nguồn dữ liệu của màn hình đang xem.' : 'Thao tác chỉ lưu trong bộ nhớ trình duyệt, mất khi tải lại trang. Không ghi gì xuống database.'}<div class="mt"><button class="btn sm" id="swMode">${live ? 'Chuyển sang dữ liệu DEMO (trình diễn)' : 'Chuyển về dữ liệu thật (API)'}</button></div></div></div>` : `<div class="notice warn">${I('alert')}<div><b>Toàn bộ số liệu là DỮ LIỆU DEMO</b>Sinh tự động theo đúng tên bảng/cột trong SQL nguồn; lưu trong bộ nhớ trình duyệt và mất khi tải lại trang.</div></div>`) + `
+    UI.modal({ title: 'Hướng dẫn sử dụng', size: 'lg', body: (Store.hasHost ? `<div class="notice ${live ? 'info' : 'warn'}">${I('database')}<div><b>Nguồn dữ liệu: ${live ? 'API thật (backend .NET)' : 'DỮ LIỆU DEMO trong trình duyệt'}</b>${live ? 'Bảng có API được đọc / ghi qua <code>api/&lt;Controller&gt;/GetAllData · Insert · Update · Delete</code>. Bảng chưa có API hiển thị dữ liệu DEMO. Nhãn góc trên cho biết nguồn dữ liệu của màn hình đang xem.' : 'Thao tác chỉ lưu trong bộ nhớ trình duyệt, mất khi tải lại trang. Không ghi gì xuống database.'}${!live || (window.DC_HOST && window.DC_HOST.user && window.DC_HOST.user.isAdmin) ? `<div class="mt"><button class="btn sm" id="swMode">${live ? 'Chuyển sang dữ liệu DEMO (trình diễn)' : 'Chuyển về dữ liệu thật (API)'}</button></div>` : ''}</div></div>` : `<div class="notice warn">${I('alert')}<div><b>Toàn bộ số liệu là DỮ LIỆU DEMO</b>Sinh tự động theo đúng tên bảng/cột trong SQL nguồn; lưu trong bộ nhớ trình duyệt và mất khi tải lại trang.</div></div>`) + `
       <h3>Kịch bản demo gợi ý</h3><ol class="small" style="line-height:1.9"><li><b>Tổng quan điều hành</b>: đổi ngày / ca / đơn vị → KPI thay đổi.</li><li><b>Luồng nghiệp vụ E2E</b>: chọn 1 trong 9 luồng, bấm từng bước để mở màn hình.</li><li><b>Đơn hàng</b>: mở đơn Submitted → Xác nhận → Chốt số lượng.</li><li><b>Nhu cầu vật tư (MRP)</b>: tính thiếu hụt → Tạo đề nghị mua → <b>Hộp phê duyệt</b> duyệt 2 cấp.</li><li><b>Nhập kho</b>: phiếu chờ QC → <b>Phiếu QC</b> kết luận PASS/HOLD/REJECT → Ghi sổ nhập kho sinh Lô + Giao dịch kho.</li><li><b>Mẻ sản xuất</b>: bảng điều độ ca × dây chuyền, chuyển trạng thái mẻ, QC thành phẩm.</li><li><b>Thực hiện giao hàng</b>: READY → … → DELIVERED và ghi POD.</li><li><b>Phân ca</b>: bấm ô để phân ca; <b>Phân quyền</b>: tick quyền, sau đó đổi vai trò (bấm avatar) để thấy menu thay đổi.</li><li><b>Database Architecture Explorer</b>: 124 bảng, 2.264 cột, quan hệ logic & GAP.</li></ol>
       <h3>Phím tắt</h3><p class="small">Ô tìm kiếm trên cùng: tìm chức năng, bảng DB, khách hàng, đơn hàng, nguyên liệu, lô.</p>`,
       foot: `<button class="btn danger" id="rst">${I('reset')} ${live ? 'Tải lại dữ liệu từ API' : 'Khôi phục dữ liệu demo'}</button><button class="btn primary" data-close>Đã hiểu</button>`, onMount: (m, close) => {
@@ -485,13 +493,15 @@
     document.querySelectorAll('[data-role-btn]').forEach(b => b.onclick = roleOrAccount);
     onDoc(document, 'click', e => { if (e.target.closest('[data-role]')) chooseRole(); const sr = document.getElementById('searchResults'); if (sr && !e.target.closest('.dc-search-area')) sr.classList.remove('show'); });
     const gs = document.getElementById('globalSearch'); gs.oninput = e => search(e.target.value); gs.onkeydown = e => { if (e.key === 'Escape') { gs.value = ''; search(''); } };
-    onDoc(document, 'keydown', e => { if (e.key === 'Escape') { const d = document.querySelector('.drawer-wrap:last-of-type, .overlay:last-of-type'); if (d) d.remove(); } });
+    onDoc(document, 'keydown', e => { if (e.key === 'Escape') { const d = document.querySelector('.drawer-wrap:last-of-type, .overlay:last-of-type'); if (d && !d.dataset.locked) d.remove(); } });
     // Liên kết '#/screen-id' trong HTML của mockup → đổi sang tiền tố hash của Angular.
     onDoc(document, 'click', e => {
       const a = e.target.closest && e.target.closest('a[href^="#/"]'); if (!a || a.onclick) return;
       const href = a.getAttribute('href'), base = APP.base(); if (base === '#/' || href.startsWith(base)) return;
       e.preventDefault(); location.hash = base + href.slice(2);
     }, true);
+    // T45R.8 (D-39): mật khẩu tạm → chỉ hiện hộp đổi mật khẩu bắt buộc; không vẽ màn / dò API (máy chủ trả 403 cho mọi API khác).
+    if (Store.isLive && (window.DC_HOST.user || {}).mustChangePassword) { changePassword(true); return; }
     // Chuông cảnh báo: hỏi lại mỗi 60 giây khi người dùng đứng yên trên một màn hình.
     if (Store.isLive) alertTimer = setInterval(() => { if (!document.hidden) pullAlerts(); }, ALERT_TTL);
     onDoc(window, 'hashchange', route);

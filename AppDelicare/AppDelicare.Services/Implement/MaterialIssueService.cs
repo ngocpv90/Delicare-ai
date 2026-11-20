@@ -271,7 +271,7 @@ namespace AppDelicare.Services.Implement
                     _unitOfWork.RollbackTransaction();
                     return Result<MaterialIssueDetailModel>.Fail(error);
                 }
-                string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                string number = await _documentNumberService.NextAsync(DocumentKind.MaterialIssue, _clock.Today);
                 issue!.IssueNumber = number;
                 issue.IssueNo = number;
                 _unitOfWork.MaterialIssueRepository.Add(issue);

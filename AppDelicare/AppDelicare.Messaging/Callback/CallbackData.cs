@@ -29,6 +29,8 @@ namespace AppDelicare.Messaging.Callback
             public const string Complaint = "cmp";
             /// <summary>BOT-1.5c: nhân sự – chấm hộ (NhanSuActions).</summary>
             public const string Hr = "hr";
+            /// <summary>BOT-3.2 / 3.3: thao tác ghi bổ sung (lập lại kế hoạch, đổi món, lô vệ sinh) – ThaoTacActions.</summary>
+            public const string Op = "op";
         }
 
         public static string Build(string kind, string action, string? id = null)

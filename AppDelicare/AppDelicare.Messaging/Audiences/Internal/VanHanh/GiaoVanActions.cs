@@ -25,6 +25,65 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public const string ReplyDispatchTemp = "dlv-dtemp";
         public const string ReplyQty = "dlv-qty";
         public const string ReplyReceiver = "dlv-recv";
+        /// <summary>BOT-3.2: tìm tài xế mới theo tên / mã (khóa = Id chuyến N).</summary>
+        public const string ReplyDriver = "dlv-driver";
+        /// <summary>BOT-3.2: danh sách xe / tài xế vừa hiện theo chat (nút mang số thứ tự – callback ≤ 64 byte).</summary>
+        private readonly ConcurrentDictionary<string, List<(Guid Id, string Label)>> _picks = new();
+
+        private async Task PickVehicleAsync(BotActionContext ctx, Guid routeId, string token, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>("api/Vehicle/GetAll?Status=Active&Page=1&PageSize=30", token, ct);
+            if (!r.IsOk)
+            {
+                await SayAsync(ctx, Problem(r), ct);
+                return;
+            }
+            var list = (r.ListData ?? []).Where(v => Guid.TryParse(S(v, "id"), out _))
+                .Select(v => (Id: Guid.Parse(S(v, "id")!), Label: $"{S(v, "licensePlate") ?? S(v, "code")}{(S(v, "capacity") is { } c ? " · " + Num(c) + " kg" : "")}")).Take(20).ToList();
+            _picks[ctx.Event.ChatId] = list;
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = "🔁 Chọn xe mới",
+                Lines = list.Count == 0 ? ["Không có xe đang hoạt động."] : ["Chọn xe thay cho chuyến:"],
+                Buttons = [.. list.Select((v, i) => new NeutralButton("🚚 " + v.Label, CallbackData.Build(Kind, "pv", $"{routeId:N}.{i}"))), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId))],
+            }, ct);
+        }
+
+        private async Task PickDriverAsync(BotActionContext ctx, Guid routeId, string token, string search, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>("api/Employee/GetAll?Status=Active&Page=1&PageSize=8&SearchText=" + Uri.EscapeDataString(search), token, ct);
+            if (!r.IsOk)
+            {
+                await SayAsync(ctx, Problem(r), ct);
+                return;
+            }
+            var list = (r.ListData ?? []).Where(e => Guid.TryParse(S(e, "id"), out _))
+                .Select(e => (Id: Guid.Parse(S(e, "id")!), Label: $"{S(e, "fullName")} · {S(e, "code")}")).ToList();
+            if (list.Count == 0)
+            {
+                await AskAsync(ctx, $"Không tìm thấy \"{search}\" – gõ lại tên / mã tài xế:", ReplyDriver, routeId.ToString("N"), ct);
+                return;
+            }
+            _picks[ctx.Event.ChatId] = list;
+            await SendAsync(ctx, new NeutralMessage
+            {
+                Title = "👤 Chọn tài xế mới",
+                Buttons = [.. list.Select((v, i) => new NeutralButton("👤 " + v.Label, CallbackData.Build(Kind, "pd", $"{routeId:N}.{i}"))), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId))],
+            }, ct);
+        }
+
+        private async Task ReassignPickedAsync(BotActionContext ctx, Guid routeId, string token, int index, string field, CancellationToken ct)
+        {
+            if (!_picks.TryGetValue(ctx.Event.ChatId, out var list) || index < 0 || index >= list.Count)
+            {
+                await SayAsync(ctx, "Danh sách đã hết hạn – bấm lại 🔁 Đổi xe / 👤 Đổi tài xế.", ct);
+                return;
+            }
+            var r = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryRoute/Reassign", [new("Id", routeId.ToString()), new(field, list[index].Id.ToString()), new("Note", "Đổi qua Telegram")], token, ct);
+            string note = r.IsOk ? "✅ " + (r.ResponseMessage ?? "Đã đổi") + string.Concat(Arr(r.Data, "listWarning").Select(w => "\n⚠️ " + (w.ValueKind == JsonValueKind.String ? w.GetString() : w.ToString())))
+                : "⚠️ " + Problem(r);
+            await RouteCardAsync(ctx, routeId, token, note, ct);
+        }
         public const string ReplyBoxes = "dlv-box";
         public static readonly decimal[] Temps = [60m, 62m, 65m, 68m, 70m, 75m];
         public static readonly string[] FailReasons = ["Khách không nhận hàng", "Không liên lạc được người nhận", "Sai / không tìm thấy địa chỉ", "Xe hỏng / trễ quá giờ"];
@@ -34,9 +93,50 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             new BotAction { Code = "gv_mine", Module = "GIAOVAN", Label = "🚚 Chuyến của tôi", Command = "chuyen", CommandDescription = "Chuyến giao hôm nay của tôi", Bots = ["VH"], MenuMetaLink = "#/log-stop", Order = 1, Handler = MineAsync },
             new BotAction { Code = "gv_board", Module = "GIAOVAN", Label = "🗺 Giao vận hôm nay", Command = "giaovan", CommandDescription = "Mọi chuyến giao hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-route", Order = 2, Handler = BoardAsync },
             new BotAction { Code = "gv_box", Module = "GIAOVAN", Label = "📥 Nhận hộp về", Command = "hop", CommandDescription = "Ghi số hộp khay nhận về", Bots = ["VH"], MenuMetaLink = "#/log-container-return", Order = 3, Handler = BoxesAsync },
+            // BOT-3.1 (UG-1 C-22): lịch xe ngày mai, hộp khay hôm nay ("Chuyến trực tiếp" = 🗺 Giao vận hôm nay → thẻ chuyến).
+            new BotAction { Code = "gv_schedule", Module = "GIAOVAN", Label = "🧭 Lịch xe", Command = "lichxe", CommandDescription = "Lịch xe ngày mai", Bots = ["VH"], MenuMetaLink = "#/log-route", Order = 4, Handler = ScheduleAsync },
+            new BotAction { Code = "gv_boxes_today", Module = "GIAOVAN", Label = "📦 Hộp khay hôm nay", Command = "hopkhay", CommandDescription = "Hộp khay phải thu / đã thu hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-container-return", Order = 5, Handler = BoxesTodayAsync },
         ];
 
         private string Today => VnTime.Today(time).ToString("yyyy-MM-dd");
+
+        /// <summary>BOT-3.1 (UG-1 C-22): 🧭 Lịch xe ngày mai – xe, tài xế, giờ, số điểm / suất (DeliveryRoute/GetBoard ngày mai); bấm mở thẻ chuyến.</summary>
+        public async Task ScheduleAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            DateTime day = VnTime.Today(time).AddDays(1);
+            if (await TokenAsync(ctx, ct) is not { } token || await RoutesAsync(ctx, token, "api/DeliveryRoute/GetBoard?DeliveryDate=" + day.ToString("yyyy-MM-dd"), ct) is not { } routes)
+            {
+                return;
+            }
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"🧭 Lịch xe {day:dd/MM} ({routes.Count} chuyến)",
+                Lines = routes.Count == 0 ? ["Chưa lập chuyến nào cho ngày mai."]
+                    : [.. routes.Take(15).Select(r => $"{RouteLine(r)} · {S(r, "licensePlate") ?? S(r, "vehicleCode") ?? "chưa có xe"} · {S(r, "driverName") ?? "chưa có tài xế"}")],
+                Buttons = [.. routes.Take(12).Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
+            }, ct);
+        }
+
+        /// <summary>BOT-3.1: 📦 Hộp khay hôm nay – phải thu / đã thu / hỏng theo đơn giao (ContainerReturn/GetList hôm nay).</summary>
+        public async Task BoxesTodayAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            var r = await Web.GetAsUserAsync<JsonElement>($"api/ContainerReturn/GetList?from={Today}&to={Today}&page=1&pageSize=100", token, ct);
+            if (!r.IsOk)
+            {
+                await SayAsync(ctx, Problem(r), ct);
+                return;
+            }
+            var items = Arr(r.Data, "listItem");
+            decimal Q(JsonElement x, string k) => decimal.TryParse(S(x.TryGetProperty("return", out var rt) ? rt : x, k), NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d : 0m;
+            decimal expected = items.Sum(x => Q(x, "expectedQuantity")), returned = items.Sum(x => Q(x, "returnedQuantity")), damaged = items.Sum(x => Q(x, "damagedQuantity"));
+            var lines = new List<string> { $"Phải thu {expected:#,0} · đã thu {returned:#,0} · hỏng {damaged:#,0} · còn thiếu {Math.Max(0, expected - returned):#,0}" };
+            lines.AddRange(items.Take(14).Select(x => $"• {S(x, "customerName") ?? S(x, "deliveryNumber")} · {S(x, "packagingType")} {Q(x, "returnedQuantity"):#,0}/{Q(x, "expectedQuantity"):#,0} · {S(x, "statusName")}"));
+            await ShowAsync(ctx, new NeutralMessage { Title = $"📦 Hộp khay hôm nay ({items.Count} lượt)", Lines = items.Count == 0 ? ["Chưa có lượt thu hồi hộp khay nào hôm nay."] : lines }, ct);
+        }
 
         private async Task<List<JsonElement>?> RoutesAsync(BotActionContext ctx, string token, string path, CancellationToken ct)
         {
@@ -284,6 +384,18 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "r":
                     await RouteCardAsync(ctx, id, token, null, ct);
                     break;
+                case "rv":
+                    await PickVehicleAsync(ctx, id, token, ct);
+                    break;
+                case "rd":
+                    await AskAsync(ctx, "👤 Gõ tên hoặc mã tài xế mới để tìm:", ReplyDriver, id.ToString("N"), ct);
+                    break;
+                case "pv" when int.TryParse(v1, out int vi):
+                    await ReassignPickedAsync(ctx, id, token, vi, "VehicleId", ct);
+                    break;
+                case "pd" when int.TryParse(v1, out int di):
+                    await ReassignPickedAsync(ctx, id, token, di, "DriverId", ct);
+                    break;
                 case "dsp":
                     await DispatchAskAsync(ctx, id, token, ct);
                     break;
@@ -339,6 +451,16 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 return;
             }
             string text = (ctx.Event.Text ?? string.Empty).Trim();
+            if (pending.Flow == ReplyDriver)
+            {
+                if (text.Length < 2)
+                {
+                    await AskAsync(ctx, "Gõ ít nhất 2 ký tự tên / mã tài xế:", pending.Flow, pending.Key, ct);
+                    return;
+                }
+                await PickDriverAsync(ctx, id, token, text, ct);
+                return;
+            }
             if (pending.Flow == ReplyReceiver)
             {
                 if (text.Length < 2 || parts.Length < 3)
@@ -420,6 +542,12 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             if (allowed.Contains("dispatch"))
             {
                 m.Buttons.Add(new NeutralButton("🚀 Xuất phát", CallbackData.Build(Kind, "dsp", routeId)));
+            }
+            // BOT-3.2 (D-72): đổi xe / tài xế khi chuyến chưa xuất phát – người điều phối (mục #/log-route; api kiểm quyền Sửa).
+            if (S(route, "status") is "Planned" or "Loading" && (ctx.Identity.IsAdmin || ctx.Identity.Menus.Contains("#/log-route", StringComparer.OrdinalIgnoreCase)))
+            {
+                m.Buttons.Add(new NeutralButton("🔁 Đổi xe", CallbackData.Build(Kind, "rv", routeId)));
+                m.Buttons.Add(new NeutralButton("👤 Đổi tài xế", CallbackData.Build(Kind, "rd", routeId)));
             }
             foreach (var s in stops.Where(s => Strings(s, "allowedActions").Count > 0).Take(8))
             {

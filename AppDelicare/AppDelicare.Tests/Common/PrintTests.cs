@@ -140,6 +140,34 @@ namespace AppDelicare.Tests.Common
             viewed.GetProperty("documentNo").GetString().Should().Be("PN-" + key);
             Guid stranger = await CommonTestUsers.UserAsync(_factory, ("scm-issue", "V"));
             (await _factory.CreateAuthorizedClient(stranger).GetAsync($"api/Common/GetPrintDocument?type=GR&id={gr}")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+            // FE-E.2 (D-65 – backend vẽ QR, QRCoder): PDF phiếu có ảnh QR của link bot.
+            var qrPdf = await _factory.CreateAuthorizedClient(printer).GetAsync($"api/GoodsReceipt/Print?id={gr}&format=pdf");
+            qrPdf.StatusCode.Should().Be(HttpStatusCode.OK);
+            var qrBytes = await qrPdf.Content.ReadAsByteArrayAsync();
+            System.Text.Encoding.Latin1.GetString(qrBytes).Should().MatchRegex(@"/Subtype\s*/Image", "PDF nhúng ảnh QR");
+
+            // Common/GetQrBatch: SVG cho từng nội dung; mục lỗi không làm hỏng cả lô.
+            using var qrAdmin = _factory.CreateAuthorizedClient();
+            var batch = await LegacyResult.ReadAsync(await qrAdmin.PostAsJsonAsync("/api/Common/GetQrBatch", new { listText = new[] { "https://t.me/delicare_vh_bot?start=CLEAN", "" } }));
+            var items = batch.ListData.EnumerateArray().ToList();
+            items[0].GetProperty("svg").GetString().Should().Contain("<svg");
+            items[1].GetProperty("error").GetString().Should().NotBeNullOrEmpty();
+            (await LegacyResult.ReadAsync(await qrAdmin.PostAsJsonAsync("/api/Common/GetQrBatch", new { listText = Array.Empty<string>() }))).Fail("1–200");
+
+            // Common/GetFieldQrList: QR hiện trường mở bot Vận hành theo quyền xem màn.
+            await _factory.SeedAsync(db =>
+            {
+                db.ProductionLine.Add(new ProductionLine { Id = Guid.NewGuid(), Code = "DC-" + key.ToUpperInvariant(), Name = "[DEMO] Dây chuyền " + key, Status = "Active" });
+                return Task.CompletedTask;
+            });
+            var field = (await qrAdmin.GetResultAsync("/api/Common/GetFieldQrList?group=LINE")).ListData.EnumerateArray().ToList();
+            var line = field.Single(x => x.GetProperty("code").GetString() == "DC-" + key.ToUpperInvariant());
+            line.GetProperty("link").GetString().Should().Be($"https://t.me/delicare_vh_bot?start=LINE_DC-{key.ToUpperInvariant()}");
+            line.GetProperty("svg").GetString().Should().Contain("<svg");
+            var all = (await qrAdmin.GetResultAsync("/api/Common/GetFieldQrList?withSvg=false")).ListData.EnumerateArray().Select(x => x.GetProperty("group").GetString()).ToHashSet();
+            all.Should().Contain(["CHAMCONG", "LINE", "CLEAN"]);
+            (await _factory.CreateAuthorizedClient(stranger).GetResultAsync("/api/Common/GetFieldQrList?withSvg=false")).ListData.GetArrayLength().Should().Be(0, "không có quyền xem màn nào của QR hiện trường");
         }
 
         [Fact]

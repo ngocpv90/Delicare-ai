@@ -18,8 +18,12 @@ using AppDelicare.Model.Request.Custom;
 namespace AppDelicare.Services.Implement
 {
     public class SupplierService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IClock clock) : ISupplierService
+        , IAuditChangeService auditChangeService, IClock clock, IDocumentNumberService documentNumberService
+        , Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.AlertRulesOptions> alertRules) : ISupplierService
     {
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
+        private string? _createdCode;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -116,7 +120,9 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess,
+                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
+                        : _createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "nhà cung cấp", _createdCode)
+                        : ConstantHelper.Message.SaveSuccess,
                     Data = true
                 };
             }
@@ -130,12 +136,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(SupplierRequest request, string typeSave)
         {
-            var checkDuplicate = _unitOfWork.SupplierRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
             var insert = _mapper.Map<Supplier>(request);
+            // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
+            insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.Supplier);
+            _createdCode = insert.Code;
             _unitOfWork.SupplierRepository.Add(insert);
             await _unitOfWork.SupplierRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -148,11 +152,8 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            var checkDuplicate = _unitOfWork.SupplierRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
+            // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
+            request.Code = exist.Code;
             var update = _mapper.Map(request, exist);
             _unitOfWork.SupplierRepository.Update(update);
             await _unitOfWork.SupplierRepository.CommitAsync(typeSave);
@@ -251,12 +252,127 @@ namespace AppDelicare.Services.Implement
                     ListIssue = await db.SupplierIssue.AsNoTracking().Where(x => !x.IsDeleted && x.SupplierId == id).OrderByDescending(x => x.ReportedAt).Take(20).ToListAsync(),
                     RejectRate = received > 0 ? Math.Round(lines.Sum(l => l.RejectedQuantity) / received * 100, 2) : null,
                     OnTimeRate = withExpected.Count > 0 ? Math.Round(withExpected.Count(r => r.ReceiptDate.Date <= r.Expected!.Value.Date) * 100m / withExpected.Count, 2) : null,
+                    ReceiptCount90d = await db.GoodsReceipt.AsNoTracking().CountAsync(r => !r.IsDeleted && r.SupplierId == id && r.ReceiptDate >= since),
                 };
+                model.QcPassRate = model.RejectRate is { } rr ? 100 - rr : null;
+                await FillProfileAsync(model, id);
                 return Result<SupplierOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>PO đã cam kết với NCC – tính "trễ hạn giao" khi hẹn giao &lt; hôm nay.</summary>
+        private static readonly string[] CommittedPoStatuses = [PurchaseOrderStatus.Approved, PurchaseOrderStatus.Sent, PurchaseOrderStatus.PartiallyReceived];
+        private const int PriceExpiryDays = 15;
+
+        /// <summary>UI-3 (D-67 f1): số liệu thẻ chỉ số, đánh giá và khối Cần chú ý của NCC.</summary>
+        private async Task FillProfileAsync(SupplierOverviewModel m, Guid id)
+        {
+            var db = _unitOfWork.DbContext;
+            DateTime today = clock.Today, now = clock.Now;
+            var open = m.ListOpenPurchaseOrder;
+            m.OpenPoCount = open.Count;
+            m.OpenPoAmount = open.Sum(p => p.TotalAmount ?? 0);
+            var overdue = open.Where(p => CommittedPoStatuses.Contains(p.Status) && (p.ExpectedDeliveryDate ?? p.ExpectedDate) is { } d && d.Date < today).ToList();
+            m.OverduePoCount = overdue.Count;
+            m.LastReceiptDate = await db.GoodsReceipt.AsNoTracking().Where(r => !r.IsDeleted && r.SupplierId == id).MaxAsync(r => (DateTime?)r.ReceiptDate);
+
+            var issues = await db.SupplierIssue.AsNoTracking().Where(x => !x.IsDeleted && x.SupplierId == id)
+                .Select(x => new { x.IssueStatus, x.DueAt, x.ClosedAt }).ToListAsync();
+            bool IsOpen(string? s) => s is SupplierIssueStatus.Open or SupplierIssueStatus.InProgress;
+            m.IssueCount = issues.Count;
+            m.OpenIssueCount = issues.Count(x => IsOpen(x.IssueStatus));
+            m.OverdueIssueCount = issues.Count(x => IsOpen(x.IssueStatus) && x.DueAt != null && x.DueAt < now);
+            var withDue = issues.Where(x => x.DueAt != null).ToList();
+            m.IssueOnTimePct = withDue.Count > 0
+                ? Math.Round(withDue.Count(x => x.ClosedAt != null ? x.ClosedAt <= x.DueAt : x.DueAt >= now) * 100m / withDue.Count, 2) : null;
+
+            var stock = db.InventoryBalance.AsNoTracking().Where(b => !b.IsDeleted && b.OnHandQuantity > 0);
+            var lots = db.MaterialLot.AsNoTracking().Where(l => !l.IsDeleted && l.SupplierId == id && stock.Any(b => b.MaterialLotId == l.Id));
+            m.LotOnHoldCount = await lots.CountAsync(l => l.QcStatus == LotQcStatus.Hold || l.Status == MaterialLotStatus.OnHold);
+            m.LotExpiryDays = Math.Max(0, alertRules.Value.LotExpiryDays);
+            DateTime lotUntil = today.AddDays(m.LotExpiryDays + 1);
+            m.LotNearExpiryCount = await lots.CountAsync(l => l.Status == MaterialLotStatus.Available && l.ExpiryDate != null && l.ExpiryDate >= today && l.ExpiryDate < lotUntil);
+
+            m.PriceExpiryDays = PriceExpiryDays;
+            DateTime priceUntil = today.AddDays(PriceExpiryDays + 1);
+            m.PriceExpiringCount = m.ListMaterial.Count(x => (x.EffectiveFrom == null || x.EffectiveFrom.Value.Date <= today)
+                && x.EffectiveTo != null && x.EffectiveTo.Value.Date >= today && x.EffectiveTo.Value.Date < priceUntil);
+
+            void Add(int n, string code, string severity, string message, string screen)
+            {
+                if (n > 0)
+                {
+                    m.ListAlert.Add(new CustomerAlertModel { Code = code, Severity = severity, Message = message, Screen = screen });
+                }
+            }
+            Add(m.OverduePoCount, "PO_OVERDUE", "HIGH", string.Format(ConstantHelper.Message.SupplierAlertPoOverdue, m.OverduePoCount,
+                string.Join(", ", overdue.Take(3).Select(p => p.PurchaseOrderNumber ?? p.PONo)) + (overdue.Count > 3 ? "…" : "")), "scm-po");
+            Add(m.OverdueIssueCount, "ISSUE_OVERDUE", "HIGH", string.Format(ConstantHelper.Message.SupplierAlertIssueOverdue, m.OverdueIssueCount), "qc-supplier-issue");
+            Add(m.LotOnHoldCount, "LOT_ON_HOLD", "MEDIUM", string.Format(ConstantHelper.Message.SupplierAlertLotOnHold, m.LotOnHoldCount), "scm-lot");
+            Add(m.PriceExpiringCount, "PRICE_EXPIRING", "MEDIUM", string.Format(ConstantHelper.Message.SupplierAlertPriceExpiring, m.PriceExpiringCount, PriceExpiryDays), "scm-supplier-material");
+            Add(m.LotNearExpiryCount, "LOT_EXPIRING", "LOW", string.Format(ConstantHelper.Message.SupplierAlertLotExpiring, m.LotNearExpiryCount, m.LotExpiryDays), "scm-lot");
+        }
+
+        /// <summary>UI-3 (D-67 f2): theo tháng – giá trị PO đặt, giá trị đã nhận (phiếu Đã ghi sổ: SL đạt × đơn giá), % đúng hạn, % bị loại.</summary>
+        public async Task<IResult<SupplierTrendModel>> GetTrend(Guid id, DateTime? from, DateTime? to)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                if (!await db.Supplier.AsNoTracking().AnyAsync(x => x.Id == id && !x.IsDeleted))
+                {
+                    return Result<SupplierTrendModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                DateTime last = to ?? clock.Today;
+                DateTime end = new(last.Year, last.Month, 1);
+                DateTime start = from is { } f ? new DateTime(f.Year, f.Month, 1) : end.AddMonths(-5);
+                int months = (end.Year - start.Year) * 12 + end.Month - start.Month + 1;
+                if (months < 1 || months > 24)
+                {
+                    return Result<SupplierTrendModel>.Fail(ConstantHelper.Message.SupplierTrendRangeInvalid);
+                }
+                DateTime endExcl = end.AddMonths(1);
+                var pos = await db.PurchaseOrder.AsNoTracking()
+                    .Where(p => !p.IsDeleted && p.SupplierId == id && p.OrderDate >= start && p.OrderDate < endExcl && p.Status != PurchaseOrderStatus.Cancelled)
+                    .Select(p => new { p.OrderDate, p.TotalAmount }).ToListAsync();
+                var receipts = await (from r in db.GoodsReceipt.AsNoTracking()
+                                      join p in db.PurchaseOrder.AsNoTracking() on r.PurchaseOrderId equals p.Id into pj
+                                      from p in pj.DefaultIfEmpty()
+                                      where !r.IsDeleted && r.SupplierId == id && r.ReceiptDate >= start && r.ReceiptDate < endExcl && r.Status != GoodsReceiptStatus.Cancelled
+                                      select new { r.Id, r.ReceiptDate, r.Status, Expected = p == null ? null : p.ExpectedDeliveryDate ?? p.ExpectedDate }).ToListAsync();
+                var ids = receipts.Select(r => r.Id).ToList();
+                var lines = await db.GoodsReceiptLine.AsNoTracking().Where(l => !l.IsDeleted && ids.Contains(l.GoodsReceiptId))
+                    .Select(l => new { l.GoodsReceiptId, l.ReceivedQuantity, l.AcceptedQuantity, l.RejectedQuantity, l.UnitCost }).ToListAsync();
+                var model = new SupplierTrendModel { From = start, To = endExcl.AddDays(-1) };
+                for (DateTime mo = start; mo < endExcl; mo = mo.AddMonths(1))
+                {
+                    DateTime next = mo.AddMonths(1);
+                    var rs = receipts.Where(r => r.ReceiptDate >= mo && r.ReceiptDate < next).ToList();
+                    var rIds = rs.Select(r => r.Id).ToHashSet();
+                    var posted = rs.Where(r => r.Status == GoodsReceiptStatus.Posted).Select(r => r.Id).ToHashSet();
+                    var ls = lines.Where(l => rIds.Contains(l.GoodsReceiptId)).ToList();
+                    decimal received = ls.Sum(l => l.ReceivedQuantity);
+                    var withExp = rs.Where(r => r.Expected != null).ToList();
+                    model.ListMonth.Add(new SupplierTrendMonthModel
+                    {
+                        Month = mo,
+                        PoAmount = pos.Where(p => p.OrderDate >= mo && p.OrderDate < next).Sum(p => p.TotalAmount ?? 0),
+                        ReceivedAmount = Math.Round(ls.Where(l => posted.Contains(l.GoodsReceiptId)).Sum(l => l.AcceptedQuantity * (l.UnitCost ?? 0)), 0),
+                        ReceiptCount = rs.Count,
+                        OnTimePct = withExp.Count > 0 ? Math.Round(withExp.Count(r => r.ReceiptDate.Date <= r.Expected!.Value.Date) * 100m / withExp.Count, 2) : null,
+                        RejectPct = received > 0 ? Math.Round(ls.Sum(l => l.RejectedQuantity) / received * 100, 2) : null,
+                    });
+                }
+                return Result<SupplierTrendModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTrend: ", ex.ToString()));
                 throw;
             }
         }

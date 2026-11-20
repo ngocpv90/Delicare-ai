@@ -7,5 +7,8 @@ namespace AppDelicare.Model.SearchRequest
 		public Guid? EmployeeId { get; set; }
 		public Guid? ShiftId { get; set; }
 		public string? AssignmentStatus { get; set; }
+		/// <summary>UI-4 (D-68 g2): ngày làm từ – đến (gồm cả 2 đầu).</summary>
+		public DateTime? FromDate { get; set; }
+		public DateTime? ToDate { get; set; }
 	}
 }

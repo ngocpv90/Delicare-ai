@@ -393,7 +393,7 @@ namespace AppDelicare.Services.Implement
             };
             _unitOfWork.DeliveryRouteRepository.Add(route);
             int newCount = plannedStops.Count(s => s.Item.Existing == null);
-            string first = newCount == 0 ? string.Empty : await _documentNumberService.NextAsync(DocumentKind.Voucher, date);
+            string first = newCount == 0 ? string.Empty : await _documentNumberService.NextAsync(DocumentKind.DeliveryOrder, date);
             int seq = 0, created = 0;
             foreach (var s in plannedStops)
             {
@@ -973,6 +973,95 @@ namespace AppDelicare.Services.Implement
         /// (<c>DeliveryRequirePackedBatches</c>); mẻ chưa lưu mẫu (<c>DeliveryRequireSampleRetained</c> – anh chốt 2026-11-16). Bị chặn mà đã ghi nhiệt độ ở lần gọi này
         /// (dưới ngưỡng kèm khắc phục) → vẫn lưu lần đo (sổ ATTP) và trả lỗi nghiệp vụ.
         /// </summary>
+        /// <summary>
+        /// BOT-3.2 (D-72): đổi xe và / hoặc tài xế của chuyến chưa xuất phát (Kế hoạch / Đang xếp). Xe phải đang dùng được; xe đã có chuyến khác chưa xong trong ngày
+        /// → cảnh báo (giống lập chuyến). Ghi DeliveryEvent REASSIGNED (lịch sử chuyến) + đồng bộ tài xế / xe ở thực hiện giao.
+        /// </summary>
+        public async Task<IResult<DeliveryRouteDetailModel>> Reassign(DeliveryRouteReassignRequest request)
+        {
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                var actor = _currentActor.RequireActor();
+                var db = _unitOfWork.DbContext;
+                var route = _unitOfWork.DeliveryRouteRepository.GetSingle(r => r.Id == request.Id && !r.IsDeleted);
+                if (route == null)
+                {
+                    return Fail(ConstantHelper.Message.RouteNotFound);
+                }
+                if (route.Status is not (DeliveryRouteStatus.Planned or DeliveryRouteStatus.Loading))
+                {
+                    return Fail(InvalidStatus(route, "đổi xe / tài xế", DeliveryRouteStatus.Planned, DeliveryRouteStatus.Loading));
+                }
+                bool newVehicle = request.VehicleId is { } nv && nv != Guid.Empty && nv != route.VehicleId;
+                bool newDriver = request.DriverId is { } nd && nd != Guid.Empty && nd != route.DriverId;
+                if (!newVehicle && !newDriver)
+                {
+                    return Fail(ConstantHelper.Message.RouteReassignNothing);
+                }
+                var warnings = new List<string>();
+                var changes = new List<string>();
+                if (newVehicle)
+                {
+                    var oldVehicle = route.VehicleId is { } ov ? await db.Vehicle.AsNoTracking().FirstOrDefaultAsync(v => v.Id == ov) : null;
+                    var vehicle = await db.Vehicle.AsNoTracking().FirstOrDefaultAsync(v => v.Id == request.VehicleId && !v.IsDeleted);
+                    if (vehicle == null)
+                    {
+                        return Fail(ConstantHelper.Message.VehicleNotFound);
+                    }
+                    string code = vehicle.LicensePlate ?? vehicle.Code ?? string.Empty;
+                    if (string.Equals(vehicle.Status, "Inactive", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.VehicleInactive, code));
+                    }
+                    DateTime date = route.DeliveryDate.Date, next = date.AddDays(1);
+                    var busy = await db.DeliveryRoute.AsNoTracking()
+                        .Where(r => !r.IsDeleted && r.Id != route.Id && r.VehicleId == vehicle.Id && r.DeliveryDate >= date && r.DeliveryDate < next && r.Status != DeliveryRouteStatus.Completed)
+                        .Select(r => r.RouteNo).ToListAsync();
+                    if (busy.Count != 0)
+                    {
+                        warnings.Add(string.Format(ConstantHelper.Message.RouteVehicleBusy, code, string.Join(", ", busy)));
+                    }
+                    changes.Add($"xe {oldVehicle?.LicensePlate ?? oldVehicle?.Code ?? "–"} → {code}");
+                    route.VehicleId = vehicle.Id;
+                }
+                if (newDriver)
+                {
+                    var driver = await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == request.DriverId && !e.IsDeleted);
+                    if (driver == null || !EmployeeStatus.IsWorking(driver.Status))
+                    {
+                        return Fail(ConstantHelper.Message.DriverNotFound);
+                    }
+                    string? oldName = route.DriverId is { } od ? await db.Employee.AsNoTracking().Where(e => e.Id == od).Select(e => e.FullName).FirstOrDefaultAsync() : null;
+                    changes.Add($"tài xế {oldName ?? "–"} → {driver.FullName}");
+                    route.DriverId = driver.Id;
+                }
+                DateTime now = _clock.Now;
+                _unitOfWork.DeliveryRouteRepository.Update(route);
+                DeliveryRules.AddEvent(_unitOfWork, actor, now, route.Id, null, null, DeliveryCode.EventReassigned,
+                    "Đổi " + string.Join("; ", changes) + (string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim()), null, null);
+                await _unitOfWork.DeliveryRouteRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                var detail = await DeliveryRules.RouteDetailAsync(db, route.Id, _rules);
+                detail!.ListWarning.InsertRange(0, warnings);
+                return Result<DeliveryRouteDetailModel>.Success(detail, string.Format(ConstantHelper.Message.RouteReassignDone,
+                    newVehicle && newDriver ? "xe và tài xế" : newVehicle ? "xe" : "tài xế", DeliveryRules.RouteNumber(route)));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reassign: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+
+            IResult<DeliveryRouteDetailModel> Fail(string message)
+            {
+                _unitOfWork.RollbackTransaction();
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+                return Result<DeliveryRouteDetailModel>.Fail(message);
+            }
+        }
+
         public async Task<IResult<DeliveryRouteDetailModel>> Dispatch(DeliveryRouteDispatchRequest request)
         {
             using var tran = await _unitOfWork.OpenTransaction();

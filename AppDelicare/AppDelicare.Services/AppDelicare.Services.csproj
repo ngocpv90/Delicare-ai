@@ -12,6 +12,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <!-- BE2.7.1 (anh chốt 2026-11-17): PDF cho mẫu in – PDFsharp-MigraDoc bản Core (đa nền tảng), MIT. KHÔNG nâng lên 6.5+ (đổi sang AGPL-3.0). -->
     <PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
   </ItemGroup>
 

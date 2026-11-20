@@ -59,7 +59,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             }
             if (r.Data.AllowedActions.Contains("checkIn"))
             {
-                lines.Add("Có thể vào ca (chấm công bằng vị trí – bản tới).");
+                lines.Add("Có thể vào ca: bấm 📍 Vào ca và gửi vị trí (hoặc quét QR cổng chấm công)."); // UG-1 C-21: chấm công vị trí đã có
             }
             else if (r.Data.AllowedActions.Contains("checkOut"))
             {

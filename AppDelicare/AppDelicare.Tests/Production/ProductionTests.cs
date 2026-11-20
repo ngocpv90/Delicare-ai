@@ -153,7 +153,7 @@ namespace AppDelicare.Tests.Production
             detail.GetProperty("dispatchAt").GetDateTime().Should().Be(Day.AddHours(10).AddMinutes(30), "11:30 − 60′ vận chuyển");
             var orders = detail.GetProperty("listOrder").EnumerateArray().ToList();
             orders.Should().HaveCount(2);
-            orders.Should().OnlyContain(o => o.GetProperty("productionOrderNumber").GetString()!.StartsWith("PH-261220-") && o.GetProperty("status").GetString() == "Released");
+            orders.Should().OnlyContain(o => o.GetProperty("productionOrderNumber").GetString()!.StartsWith("LS-261220-") && o.GetProperty("status").GetString() == "Released");
             var meatOrder = await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().SingleAsync(o => o.ProductionPlanId == s.Plan && o.DishId == s.DishMeat));
             meatOrder.PlannedQty.Should().Be(250);
             meatOrder.PlannedStartDate.Should().Be(Day.AddHours(7));
@@ -210,7 +210,7 @@ namespace AppDelicare.Tests.Production
 
             var issue = (await c.PostFormAsync("/api/ProductionBatch/CreateMaterialIssue", ("Id", first), ("WarehouseId", s.Warehouse), ("Post", true))).Ok();
             issue.GetProperty("materialIssue").GetProperty("status").GetString().Should().Be("Issued");
-            issue.GetProperty("materialIssue").GetProperty("issueNumber").GetString().Should().MatchRegex(@"^PH-261220-\d{4}$");
+            issue.GetProperty("materialIssue").GetProperty("issueNumber").GetString().Should().MatchRegex(@"^PX-261220-\d{4}$");
             var lines = issue.GetProperty("listLine").EnumerateArray()
                 .Select(l => (l.GetProperty("materialLotId").GetGuid(), l.GetProperty("quantity").GetDecimal())).ToList();
             lines.Should().BeEquivalentTo([(s.Lots["L1"], 10m), (s.Lots["L2"], 1.088m)], "FEFO: lô hạn gần trước, bỏ lô hết hạn / KHONG_DAT");

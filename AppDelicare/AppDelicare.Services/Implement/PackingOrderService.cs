@@ -370,7 +370,7 @@ namespace AppDelicare.Services.Implement
                 decimal total = targets.Sum(t => t.Value);
                 var shares = Allocate(remaining, targets.Select(t => t.Value / total).ToList());
                 DateTime packingDate = request.PackingDate ?? _clock.Now;
-                string first = await _documentNumberService.NextAsync(DocumentKind.Voucher, packingDate);
+                string first = await _documentNumberService.NextAsync(DocumentKind.PackingOrder, packingDate);
                 int n = 0;
                 for (int i = 0; i < targets.Count; i++)
                 {
@@ -470,7 +470,7 @@ namespace AppDelicare.Services.Implement
                     return Fail(string.Format(ConstantHelper.Message.PackingOverAllocated, BatchNo(batch), DeliveryRules.Num(allocated), DeliveryRules.Num(Accepted(batch))));
                 }
                 DateTime packingDate = request.PackingDate ?? _clock.Now;
-                NewPackingOrder(await _documentNumberService.NextAsync(DocumentKind.Voucher, packingDate), batch, order, request.PlannedQty, packingDate, request.Note);
+                NewPackingOrder(await _documentNumberService.NextAsync(DocumentKind.PackingOrder, packingDate), batch, order, request.PlannedQty, packingDate, request.Note);
                 await _unitOfWork.PackingOrderRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
                 _unitOfWork.CommitTransaction();
                 return Result<PackingBatchModel>.Success(await BatchModelAsync(batch.Id, []), ConstantHelper.Message.SaveSuccess);

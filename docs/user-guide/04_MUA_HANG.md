@@ -1,0 +1,120 @@
+# 04 – Mua hàng (nhu cầu nguyên liệu, đề nghị mua, đơn mua, nhà cung cấp)
+
+## 1. Bạn là ai
+
+- Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – dùng chung với thủ kho (`05_KHO.md`). Trưởng bộ phận mua hàng được cấp thêm **"Duyệt – Đề nghị mua hàng (cấp 1)"**.
+- Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); trưởng bộ phận được cấp thêm bot **Điều hành**.
+- Việc chính: tính nhu cầu nguyên liệu (MRP) cho ngày sản xuất, lập và gửi duyệt đề nghị mua, chuyển thành đơn mua (PO) theo NCC, gửi NCC, theo dõi hàng về, quản lý bảng giá NCC.
+
+## 2. Màn hình được dùng
+
+| screen-id | Menu › Mục | Quyền |
+|---|---|---|
+| `scm-requirement` | Mua hàng & Kho › Nhu cầu vật tư | Xem, sửa, xuất |
+| `scm-pr` | … › Yêu cầu mua hàng | Xem, sửa, xuất |
+| `scm-po` | … › Đơn mua hàng | Xem, sửa, xuất |
+| `scm-supplier` | … › Nhà cung cấp | Xem, sửa, xuất |
+| `scm-supplier-material` | … › Nhà cung cấp nguyên liệu (bảng giá) | Xem, sửa, xuất |
+| `scm-ingredient`, `scm-ingredient-cat` | … › Nguyên liệu, Nhóm nguyên liệu | Xem, sửa, xuất |
+| `scm-uom`, `scm-uom-conversion` | … › Đơn vị tính, Quy đổi đơn vị | Xem, sửa, xuất |
+| `scm-gr` | … › Nhập kho | Xem, sửa, xuất (xem `05_KHO.md`) |
+| `qc-supplier-issue` | QC & ATTP › Sự cố nhà cung cấp | Xem |
+| `wf-inbox` | Nhân sự & Phê duyệt › Yêu cầu phê duyệt | Theo mục Duyệt được cấp |
+
+## 3. Việc trong ngày
+
+| Giờ | Việc | Màn |
+|---|---|---|
+| 20:00 | Đơn ngày mai được chốt (tự động) | – |
+| 20:30 | Hệ thống tự **tính nhu cầu** ngày mai + lập **đề nghị mua Nháp** phần thiếu | tự động |
+| Sau 20:30 | Kiểm tra nhu cầu, chọn dòng thiếu, lập / gửi duyệt đề nghị mua | `scm-requirement`, `scm-pr` |
+| Khi đề nghị được duyệt | **Lập PO** → gửi duyệt PO → **Gửi NCC** → in đơn đặt hàng | `scm-pr`, `scm-po` |
+| Khi hàng về | Thủ kho **Nhận hàng** theo PO (xem `05_KHO.md`) | `scm-po` |
+| Khi có thêm đơn sau MRP | **Tính bổ sung** | `scm-requirement` |
+
+## 4. Thao tác từng bước
+
+### 4.1 Nhu cầu nguyên liệu (MRP) – `scm-requirement`
+1. Chọn **ngày sản xuất** (mặc định ngày mai) ở đầu trang.
+2. **Tính nhu cầu**: hệ thống lấy các đơn **Đã chốt** của ngày, nhân định lượng công thức, so với tồn **xuất được** và **hàng sắp về** (PO đã duyệt có ngày giao ≤ ngày SX), cộng tồn an toàn, rồi tự lập **đề nghị mua Nháp** cho phần thiếu.
+3. Kết quả trên màn:
+   - Thẻ: Đơn đã chốt (kế hoạch `KS-…`), Tổng suất / số món, **Nguyên liệu cần mua**, Giá trị mua ước tính (tính lúc …).
+   - Khối **Lưu ý**: cảnh báo (đơn chưa chốt, đơn chưa gắn thực đơn, món chưa có công thức khóa, thiếu quy đổi đơn vị, NCC giao không kịp…).
+   - Khối **Đề nghị mua của kế hoạch**: số đề nghị, số dòng, giá trị, trạng thái + **Mở Đề nghị mua →**.
+   - Bảng **Nguyên liệu**: Nhu cầu, Tồn xuất được (+ "bị chặn" nếu có lô giữ / hết hạn), Hàng sắp về, **Cần mua**, ĐVT, Độ phủ (thanh màu), NCC gợi ý, Trạng thái (Đủ / Thiếu / Đã đề nghị mua).
+   - Bảng **Món và số suất**: món, số suất (+ dự phòng khi thực đơn nhiều lựa chọn), phiên bản công thức.
+4. **Lập đề nghị mua theo dòng chọn** (khi đề nghị chưa gửi duyệt): tick các nguyên liệu, nhập **Dự phòng thêm (%)** (0–100, mặc định 5), Ghi chú → **Lập đề nghị mua**. Số đề nghị = cần mua × (1 + % dự phòng); đề nghị Nháp của kế hoạch được cập nhật lại.
+5. **Tính bổ sung** (chỉ hiện khi đề nghị mua của kế hoạch đã gửi duyệt / đã duyệt / đã lập PO): tính lại phần thiếu thêm và lập **đề nghị mua bổ sung**, không đụng đề nghị cũ.
+6. **In phiếu trước sản xuất**: tải phiếu nguyên liệu cần cho ngày.
+
+### 4.2 Đề nghị mua – `scm-pr`
+Danh sách: Số đề nghị, Ngày, Ngày cần, Người đề nghị, Số dòng, Giá trị ước tính, Trạng thái. Bấm dòng → tab **Chi tiết dòng** (nguyên liệu, số lượng, ĐVT, ngày cần).
+
+| Nút trên dòng | Khi nào | Kết quả |
+|---|---|---|
+| **Gửi duyệt** | Nháp | Gửi duyệt **2 cấp**: cấp 1 Trưởng mua hàng → cấp 2 Giám đốc vận hành |
+| **Lập PO** | Đã duyệt | Mỗi NCC gợi ý một **PO Nháp**; báo danh sách PO + cảnh báo; chuyển sang màn Đơn mua |
+| **Hủy** | Nháp / Đã duyệt | Bắt buộc lý do |
+
+Đề nghị mua thường được **sinh từ MRP**. Tạo tay bằng **Tạo mới** tạo phần đầu phiếu, rồi mở phiếu (Nháp) → **Sửa dòng nguyên liệu**: thêm / sửa / xóa dòng (nguyên liệu, số lượng, đơn vị, ngày cần, ghi chú; mỗi nguyên liệu một dòng).
+
+### 4.3 Đơn mua (PO) – `scm-po`
+Danh sách: Số PO, NCC, Đề nghị mua, Ngày đặt, Giao dự kiến, Giá trị, Trạng thái. Bấm dòng → tab **Chi tiết dòng**.
+
+| Nút trên dòng | Khi nào | Kết quả |
+|---|---|---|
+| **In** | Mọi lúc | Tải Đơn đặt hàng NCC (có VAT theo cấu hình) |
+| **Gửi duyệt** | Nháp | PO < 50 triệu: duyệt mục "Duyệt – Đơn mua hàng"; PO ≥ 50 triệu: "Duyệt – Đơn mua hàng (Giám đốc)". PO dưới ngưỡng tự duyệt (nếu cấu hình) được duyệt ngay |
+| **Gửi NCC** | Đã duyệt | Chỉ **đánh dấu** đã gửi (hệ thống chưa tự gửi email / Zalo) → Đã gửi NCC. Gửi tệp in cho NCC bằng kênh thường dùng |
+| **Nhận hàng** | Đã duyệt / Đã gửi NCC / Nhận một phần | Thủ kho lập phiếu nhập (xem `05_KHO.md` mục 4.1) |
+| **Đóng** | Nhận một phần / Đã nhận đủ | → Đóng (không nhận thêm) |
+| **Hủy** | Nháp / Đã duyệt / Đã gửi NCC | Bắt buộc lý do; PO đã có phiếu nhập không hủy được |
+
+Sửa dòng PO Nháp: mở PO → **Sửa dòng hàng** (nguyên liệu, số lượng, đơn giá – trống = theo bảng giá NCC, ngày giao dự kiến).
+
+### 4.4 Nhà cung cấp – `scm-supplier`, bảng giá – `scm-supplier-material`
+- **Bấm vào dòng NCC** → mở **hồ sơ nhà cung cấp** cả trang (← về danh sách). Nút **Tổng quan** trên dòng vẫn mở hộp xem nhanh (tỷ lệ giao đúng hạn, tỷ lệ trả hàng 90 ngày, bảng giá, PO đang mở, sự cố gần đây); hộp có nút **Mở hồ sơ đầy đủ**.
+- **Phần đầu hồ sơ:** tên, mã `NC-…`, loại NCC, trạng thái, MST, người liên hệ, điện thoại, địa chỉ; nút **Sửa**, **Thêm giá NL**, **Ghi sự cố**, ⋯ **In hồ sơ** / **Ngừng giao dịch** (nút hiện theo quyền). Không có "Tạo PO" – PO chỉ lập từ đề nghị mua.
+- **4 thẻ chỉ số:** PO đang mở (số phụ: tổng giá trị) · Giao đúng hạn 90 ngày (số lần nhận) · Hàng bị loại 90 ngày (ngày nhận gần nhất) · Sự cố đang mở (/ tổng · số quá hạn).
+- **Tab Tổng quan:** khối **Cần chú ý** (PO trễ hạn giao, sự cố quá hạn, lô của NCC đang tạm giữ / cận date, giá nguyên liệu hết hiệu lực trong 15 ngày – bấm để mở màn), thông tin NCC, nguyên liệu cung cấp (giá đang hiệu lực, nhãn **Ưu tiên**), **Đánh giá NCC** (giao đúng hạn, đạt QC, sự cố xử lý đúng hạn), biểu đồ **Giá trị mua 6 tháng** (giá trị PO đặt và giá trị đã nhận – phiếu nhập đã ghi sổ, đơn vị triệu đồng), đơn mua đang mở (hẹn giao, "trễ N ngày").
+- **Các tab khác** (chỉ hiện khi có quyền xem màn tương ứng): **Bảng giá nguyên liệu** (lọc *Đang hiệu lực / Tất cả*, cột **Thấp nhất NCC khác** cùng nguyên liệu – tô đỏ khi NCC khác rẻ hơn, nút **Thêm giá NL**, **Ưu tiên**, **Sửa**) · **Đơn mua** (lọc ngày đặt, trạng thái) · **Nhận hàng và QC** (lọc ngày nhận) · **Lô nguyên liệu** (hạn dùng, QC, "cận date") · **Sự cố** (nút **Nhận xử lý / Đã xử lý / Đóng / Mở lại** như màn `qc-supplier-issue`) · **Tài liệu** · **Lịch sử** (+ Liên quan). Bấm dòng để mở chứng từ.
+- Bảng giá NCC (`scm-supplier-material`): mỗi dòng NCC × nguyên liệu × đơn giá × hiệu lực; đánh dấu **Ưu tiên** để MRP / Lập PO chọn NCC này và để tính giá vốn công thức.
+
+### 4.5 Nguyên liệu, đơn vị – `scm-ingredient`, `scm-uom`, `scm-uom-conversion`
+Danh mục chung. Lưu ý khi nhập nguyên liệu: kiểu bảo quản (Mát / Đông lạnh / thường – dùng để kiểm nhiệt độ nhận hàng), số ngày hạn dùng, tỷ lệ thu hồi, tồn an toàn. Quy đổi đơn vị phải có cho mọi cặp đơn vị công thức ↔ đơn vị tồn kho, thiếu thì MRP bỏ qua phần đó.
+- *Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0*, *Tỷ lệ thu hồi phải trong (0, 100]*, *Hệ số quy đổi phải lớn hơn 0*, *Cặp quy đổi đơn vị này đã tồn tại*.
+
+## 5. Trạng thái
+
+| Chứng từ | Luồng |
+|---|---|
+| Nhu cầu nguyên liệu (từng dòng) | Đã tính → Thiếu / Đủ → Đã đề nghị mua |
+| Đề nghị mua | Nháp → Chờ duyệt → Đã duyệt / Từ chối → Đã lập PO; Hủy |
+| Đơn mua (PO) | Nháp → Chờ duyệt → Đã duyệt → Đã gửi NCC → Nhận một phần → Đã nhận đủ → Đóng; Hủy |
+
+## 6. Lỗi / cảnh báo thường gặp
+
+| Thông báo | Cách xử lý |
+|---|---|
+| Không có đơn Đã chốt cho ngày … – chốt đơn trước khi tính nhu cầu | Chờ 20:00 hoặc nhờ KD chốt đơn |
+| Kế hoạch sản xuất … đã ở trạng thái … – không tính lại nhu cầu | Kế hoạch đã duyệt – dùng **Tính bổ sung** |
+| Đề nghị mua … của lần tính trước đang ở trạng thái … – không tính lại được… | Dùng **Tính bổ sung**, hoặc từ chối / hủy đề nghị cũ |
+| Không thiếu thêm so với các đề nghị mua đã lập – không lập đề nghị mua bổ sung | Đủ hàng |
+| Cảnh báo: nguyên liệu … thiếu quy đổi đơn vị … | Thêm quy đổi đơn vị rồi tính lại |
+| Cảnh báo: NCC … cần … ngày giao – đặt hôm nay không kịp ngày … | Đổi NCC ưu tiên / mua ngoài |
+| Chưa có NCC đang hiệu lực cho: … – thêm bảng giá NCC rồi lập PO | Thêm dòng ở `scm-supplier-material` |
+| PO tổng … đ ≥ 50.000.000 đ – cần Giám đốc duyệt | Bình thường – chờ Giám đốc |
+| PO đã có phiếu nhập … – không hủy được (đóng PO bằng Close) | Dùng **Đóng** |
+| PO còn phiếu nhập chưa ghi sổ: … | Thủ kho ghi sổ / hủy phiếu trước khi đóng |
+| Nhà cung cấp đang ngừng giao dịch | Chọn NCC khác |
+| Tỷ lệ dự phòng từ 0 tới 100 (%) / Chọn ít nhất một nguyên liệu | Sửa ô dự phòng / tick dòng |
+
+## 7. Trên bot Telegram
+
+Phân hệ **📦 Kho & mua hàng** (bot Vận hành):
+- 🥬 **NL ngày mai** (`/nlmai`) – nhu cầu + thiếu hụt ngày mai.
+- 🧾 **PO sắp về / trễ** (`/po`).
+- 🚛 **Hàng về hôm nay** (`/hangve`).
+- 📦 **Tồn dưới mức** (`/ton`), ⌛ **Cận date** (`/candate`).
+- Thông báo: thiếu nguyên liệu sau MRP, PO trễ hẹn, 🔴 QC đầu vào không đạt.
+- Duyệt đề nghị mua (cấp 1) trên bot: **⏳ Chờ tôi duyệt** – mức rủi ro **cao**, xác nhận 2 bước (xem `20_BOT_TELEGRAM.md`).

@@ -2,7 +2,7 @@
 
 Bạn là kỹ sư chính của dự án **DELICARE**: hệ thống điều hành nhà máy suất ăn công nghiệp, quy mô mục tiêu **20.000 suất/ngày**. Chủ dự án là **anh Phạm (PO)**. Hãy xưng "em", gọi chủ dự án là "anh". Giao tiếp và tài liệu viết bằng tiếng Việt. Mã nguồn đặt tên bằng tiếng Anh. Chữ hiển thị trên giao diện viết tiếng Việt.
 
-**PHẠM VI HIỆN TẠI = HOÀN THIỆN TOÀN BỘ LUỒNG NGHIỆP VỤ R1 (D-44, 2026-11-16): em làm **backend** (BE-2 đã xong; **hiện tại: đợt BE-3** – biểu đồ, cảnh báo, tìm kiếm, IoT, KPI, dashboard – D-57, ROADMAP mục BE-3; **không** làm tra cứu cấu trúc database – D-58). **Frontend do dev FE khác làm và commit lên git (D-49) – em KHÔNG tự làm frontend khi anh chưa yêu cầu**; khi anh yêu cầu thì em kéo code FE về và **ghép luồng** (task GHEP-FE). KHÔNG chạy Pilot riêng. ĐỂ SAU: tích hợp bot, Hermes + quản lý agent, báo cáo, job tự động (D-45), refresh token (D-47).**
+**PHẠM VI HIỆN TẠI = HOÀN THIỆN TOÀN BỘ LUỒNG NGHIỆP VỤ R1 (D-44, 2026-11-16): em làm **backend** (BE-2 đã xong; **hiện tại: đợt BE-3** – biểu đồ, cảnh báo, tìm kiếm, IoT, KPI, dashboard – D-57, ROADMAP mục BE-3; **không** làm tra cứu cấu trúc database – D-58). **Frontend: em làm toàn bộ (D-65, 2026-11-19 – thay D-49)** – giao diện thật là engine `app-delicare-client/src/assets/delicare/js` (mỗi `APP.register('<screen-id>')` là một màn); task BE có đổi API thì sửa luôn giao diện trong cùng task; việc FE tồn đọng ở ROADMAP FE-E / DECISIONS mục E. KHÔNG chạy Pilot riêng. ĐỂ SAU: tích hợp bot, Hermes + quản lý agent, báo cáo, job tự động (D-45), refresh token (D-47).**
 - **Frontend `app-delicare-client/` (Angular 18):** theo **khung Angular cũ** (mục 4.4). Hiện **tạm dừng** cho tới khi xong đợt BE-2 (D-40, D-43, D-44); sau đó làm **mọi màn hình của luồng nghiệp vụ** (trừ dashboard / báo cáo / bot / agent), chỉ màn có API đã xong.
 - **⚠ KHUNG CHUẨN = CODE CŨ (D-30, anh chốt 2026-11-15).** Mọi API viết theo đúng mẫu và quy ước của code cũ trong solution (`api/[controller]/<Action>`, Controller → Service → UnitOfWork / Dapper SP, `Result<T>` / `Results<T>`, `[FromForm]`, try/catch + Serilog). **KHÔNG sinh thêm API `/api/v1`**, không envelope mới, không CRUD generic, không Command / Handler. Code cũ **đã có** người dùng, nhóm quyền (vai trò), ma trận quyền, menu, đăng nhập → **rà soát và bổ sung trên cái đã có**, không viết lại song song. Chi tiết: mục 4.
 - `docs/reference/DELICARE_API_Specification.md` + Catalog chỉ còn là **danh sách yêu cầu nghiệp vụ** (màn hình cần chức năng gì, dữ liệu gì, quy tắc gì). **Không** dùng URL, envelope, mã lỗi, ETag / Idempotency-Key… ở mục 1.2 của spec.
@@ -106,6 +106,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 - **Sổ chỉ ghi thêm (append-only):** `InventoryTransaction`, `PackagingLedger`, `TemperatureLog`, `AuditChange`, `IntegrationLog`, `ApprovalDecision`, `AttendanceEvent`, `DeliveryEvent`, `ComplaintHistory`. Không Update/Delete. Muốn sửa thì ghi **bút toán đảo / điều chỉnh** tham chiếu dòng gốc (dùng `ReferenceType` / `ReferenceId` / `Reason` có sẵn).
 - Các bảng trạng thái tiến trình được cập nhật tại chỗ, nhưng **chỉ theo máy trạng thái** (`docs/reference/STATUS_CATALOG.md`).
 - Hạn chót và ngưỡng duyệt nằm trong `docs/claude/BUSINESS_RULES.md`. Giá trị đọc từ cấu hình `BusinessRules` trong appsettings, không hard-code trong logic.
+- **Mã định danh (D-63, BUSINESS_RULES §11):** mọi cột mã thuộc 1 trong 3 nhóm – G1 máy chủ tự sinh qua `IDocumentNumberService` (danh mục `TIỀNTỐ-NNNNN`, chứng từ `TIỀNTỐ-YYMMDD-NNNN`; bỏ qua giá trị gửi lên, không đổi sau khi cấp), G2 mã người đặt (chữ hoa không dấu, không trùng, khóa khi đã dùng), G3 không phải mã định danh. **Thêm bảng / cột mã / màn mới → xếp nhóm trong bảng phân nhóm (test chặn) và đăng ký tiền tố G1 không trùng ở §11**; giao diện đọc `Common/GetCodeRules`, không cho gõ mã G1. Không bảng đếm, không SEQUENCE.
 - Agent **không bao giờ** ghi trực tiếp vào DB. Agent chỉ ghi qua ToolGateway, và chỉ sau khi có xác nhận.
 
 ### 3.4 Git và phạm vi
@@ -184,7 +185,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 **Mật khẩu:** đang dùng `EncriptFunctionsHelper.GeneratePassword` (MD5). Đổi cách băm là D-29 (anh chốt); nếu làm thì sửa trong chính `EncriptFunctionsHelper` / `LoginService` / `UserService`, tương thích hash cũ, không đổi API.
 
 ### 4.4 Frontend Angular – KHUNG CHUẨN LÀ CODE ANGULAR CŨ (D-35)
-**⚠ D-49 (2026-11-16): frontend do dev FE khác làm.** Em **không tự làm FE-x** (kể cả khi `/next`). Mục này dùng để: (1) **soát code FE** khi ghép luồng; (2) sửa FE **chỉ khi anh yêu cầu rõ**. Mỗi API backend mới vẫn phải có handoff trong `docs/frontend-handoff/` để dev FE làm.
+**⚠ D-65 (2026-11-19, thay D-49): em làm toàn bộ FE, ở engine `src/assets/delicare/js` (không viết lại màn trong `src/app/main/*`); mục 4.4 dưới đây chỉ áp cho phần Angular còn dùng (đăng nhập, shell) và phần "Giao diện (D-36)" về màu / cỡ chữ. Kiểm tra mỗi task FE theo D-65 c.** ~~Em **không tự làm FE-x** (kể cả khi `/next`).~~ Mục này dùng để: (1) **soát code FE** khi ghép luồng; (2) sửa FE **chỉ khi anh yêu cầu rõ**. Mỗi API backend mới vẫn phải có handoff trong `docs/frontend-handoff/` để dev FE làm.
 
 **Phạm vi (D-44):** mọi màn hình của luồng nghiệp vụ R1 theo `docs/mockup/` (trừ dashboard / KPI, báo cáo, bot, Hermes / agent), làm sau đợt BE-2, và chỉ khi **API backend tương ứng đã "Đã xong"** trong `docs/reference/DELICARE_API_Catalog.xlsx` / `docs/frontend-handoff/`. Không làm màn hình mà backend chưa có.
 
@@ -212,7 +213,7 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 
 **Kiểm tra trước khi báo xong:**
 - `dotnet build AppDelicare/AppDelicare.sln` không lỗi; `dotnet test` xanh.
-- Task backend: `git status` không có thay đổi trong `app-delicare-client/`. Task frontend (FE-x): `npm run build` trong `app-delicare-client/` không lỗi; chỉ sửa file thuộc màn hình của task + helper / route / service dùng chung cần thiết.
+- Task chỉ backend (không đổi API giao diện dùng): `git status` không có thay đổi trong `app-delicare-client/`. Task frontend (FE-x): `npm run build` trong `app-delicare-client/` không lỗi; chỉ sửa file thuộc màn hình của task + helper / route / service dùng chung cần thiết.
 - Phân quyền: không bảng / cột / cấu hình quyền mới; không API quản trị user / quyền ngoài controller cũ (mục 4.3).
 - Không có file mới trong `Controllers/V1/`, `Api/`, `AppDelicare.Application/`; `grep -rn "api/v1" AppDelicare --include=*.cs` không tăng (sau T45R phải bằng 0).
 - Controller / Service mới hoặc sửa đúng mẫu 4.2 (so với `WarehouseController` / `WarehouseService`).

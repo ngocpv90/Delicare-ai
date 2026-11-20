@@ -104,6 +104,14 @@ namespace AppDelicare.Tests.Admin
             var login = await LoginAsync("t45r8.one", data.GetProperty("tempPassword").GetString()!);
             login.Code.Should().Be(200);
             login.MustChangePassword.Should().BeTrue();
+
+            // UG-1 C-06: sửa tài khoản không gửi ListUserGroupId (form chung) → giữ nhóm; gửi danh sách mới → thay đúng danh sách đó.
+            (await admin.PutFormAsync("/api/User/Update", ("Id", userId), ("UserName", "t45r8.one"), ("PersonId", personId), ("IsActive", true))).Ok();
+            (await _factory.QueryAsync(db => db.UserClaim.Where(c => c.UserId == userId && !c.IsDeleted).Select(c => c.UserGroupId).ToListAsync()))
+                .Should().BeEquivalentTo(new Guid?[] { g1, g2 }, "không gửi nhóm = giữ nguyên");
+            (await admin.PutFormAsync("/api/User/Update", ("Id", userId), ("UserName", "t45r8.one"), ("PersonId", personId), ("IsActive", true), ("ListUserGroupId", g2.ToString()))).Ok();
+            (await _factory.QueryAsync(db => db.UserClaim.Where(c => c.UserId == userId && !c.IsDeleted).Select(c => c.UserGroupId).ToListAsync()))
+                .Should().BeEquivalentTo(new Guid?[] { g2 });
         }
 
         [Fact]

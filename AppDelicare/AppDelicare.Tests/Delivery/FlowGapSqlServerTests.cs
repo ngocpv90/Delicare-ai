@@ -78,7 +78,7 @@ namespace AppDelicare.Tests.Delivery
                 generated.ResponseCode.Should().Be(200, generated.ResponseMessage);
                 var po = generated.Data!.ListPackingOrder.Single();
                 po.PackingOrder.PlannedQty.Should().Be(60);
-                po.PackingOrder.PackingOrderNumber.Should().MatchRegex(@"^PH-991228-\d{4}$");
+                po.PackingOrder.PackingOrderNumber.Should().MatchRegex(@"^DG-991228-\d{4}$");
                 (await packing.Start(new PackingOrderActionRequest { Id = po.PackingOrder.Id })).ResponseCode.Should().Be(200);
                 var packed = await packing.RecordResult(new PackingOrderResultRequest { Id = po.PackingOrder.Id, PackedQuantity = 60, Note = "[DEMO]" });
                 packed.ResponseCode.Should().Be(200, packed.ResponseMessage);

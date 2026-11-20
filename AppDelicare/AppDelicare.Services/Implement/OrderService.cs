@@ -52,6 +52,8 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@Status", request.Status);
                 dynamicParameters.Add("@TotalQuantity", request.TotalQuantity);
                 dynamicParameters.Add("@TotalAmount", request.TotalAmount);
+                dynamicParameters.Add("@FromMealDate", request.FromMealDate?.Date);
+                dynamicParameters.Add("@ToMealDate", request.ToMealDate?.Date);
                 //dynamicParameters.Add("@Note", request.Note);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
@@ -366,7 +368,7 @@ namespace AppDelicare.Services.Implement
                     _unitOfWork.RollbackTransaction();
                     return Result<OrderDetailModel>.Fail(error);
                 }
-                string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                string number = await _documentNumberService.NextAsync(DocumentKind.Order, _clock.Today);
                 order!.OrderNumber = number;
                 order.OrderNo = number;
                 _unitOfWork.OrderRepository.Add(order);

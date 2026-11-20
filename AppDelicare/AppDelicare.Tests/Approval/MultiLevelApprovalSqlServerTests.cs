@@ -55,7 +55,7 @@ namespace AppDelicare.Tests.Approval
                 db.ChangeTracker.Clear();
                 var txn = await db.InventoryTransaction.AsNoTracking().SingleAsync(t => t.ReferenceId == reference);
                 txn.QuantityIn.Should().Be(100);
-                txn.TransactionNumber.Should().MatchRegex(@"^PH-\d{6}-\d{4}$");
+                txn.TransactionNumber.Should().MatchRegex(@"^GD-\d{6}-\d{4}$");
 
                 // 2) Kiểm kê: đếm 80 (lệch 20% > 2%) → Post chặn → Submit → cấp 1 → cấp 2 → ghi sổ.
                 var counts = sp.GetRequiredService<IStockCountService>();

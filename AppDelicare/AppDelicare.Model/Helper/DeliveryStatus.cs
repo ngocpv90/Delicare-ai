@@ -223,6 +223,8 @@ namespace AppDelicare.Model.Helper
         public const string EventFailed = "FAILED";
         /// <summary>BE3.1 (Catalog 193, GAP-F-05): tài xế ghi vị trí hiện tại (DeliveryEvent/RecordPosition) – không có GPS liên tục.</summary>
         public const string EventPosition = "POSITION";
+        /// <summary>BOT-3.2 (D-72): đổi xe / tài xế của chuyến chưa xuất phát (DeliveryRoute/Reassign).</summary>
+        public const string EventReassigned = "REASSIGNED";
 
         /// <summary>BE3.1: nhãn DeliveryEvent.EventType cho timeline / bản đồ.</summary>
         public static string EventLabel(string? type) => type switch
@@ -234,6 +236,7 @@ namespace AppDelicare.Model.Helper
             EventDelivered => "Bàn giao",
             EventFailed => "Giao không thành công",
             EventPosition => "Vị trí xe",
+            EventReassigned => "Đổi xe / tài xế",
             _ => type ?? string.Empty,
         };
         /// <summary>Tiền tố DeliveryEvent.ExternalEventId trỏ tới dòng TemperatureLog cùng lần đo (TemperatureLog không có cột chuyến / điểm – GAP-DLV-01).</summary>

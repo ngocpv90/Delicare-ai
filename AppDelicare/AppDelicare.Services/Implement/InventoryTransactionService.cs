@@ -364,7 +364,7 @@ namespace AppDelicare.Services.Implement
 
         private async Task<InventoryTransaction> PostAdjustmentAsync(AdjustProposal p, Guid? referenceId, string? approvalNote)
         {
-            string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+            string number = await _documentNumberService.NextAsync(DocumentKind.InventoryTransaction, _clock.Today);
             return await _inventoryLedgerService.PostAsync(new InventoryPostRequest
             {
                 TransactionType = InventoryLedgerService.AdjustmentType,
@@ -483,7 +483,7 @@ namespace AppDelicare.Services.Implement
                     _unitOfWork.RollbackTransaction();
                     return Results<InventoryTransaction>.Fail(error);
                 }
-                string number = await _documentNumberService.NextAsync(DocumentKind.Voucher, _clock.Today);
+                string number = await _documentNumberService.NextAsync(DocumentKind.InventoryTransaction, _clock.Today);
                 Guid reference = Guid.NewGuid();
                 InventoryPostRequest Leg(string type, Guid warehouse, Guid? location, decimal qtyIn, decimal qtyOut) => new()
                 {

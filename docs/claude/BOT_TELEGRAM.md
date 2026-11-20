@@ -82,20 +82,22 @@ Ký hiệu mức tin: 🔴 KHẨN · 🟡 THƯỜNG · ⚪ TỔNG HỢP. API: d�
 Thông báo cá nhân: 🟡 phân ca đã xác nhận · 🟡 nhắc ca (nằm trong Thẻ ca) · 🟡 kết quả đơn nghỉ / đổi ca · 🟡 quên chấm ra.
 
 ### 3.2 Bot Vận hành – theo nhóm (phân hệ trong 📂 Chức năng)
+> Mọi chức năng trong bảng đã có trên bot (ĐỢT BOT-3, D-72 – 2026-11-20). Quyền như web: nút chỉ hiện khi tài khoản có mục menu tương ứng, máy chủ kiểm lại khi ghi.
+
 | Nhóm (UserGroup) | Chức năng | Thông báo nhận trên VH |
 |---|---|---|
 | Công nhân các tổ bếp | Phần chung | Cá nhân |
-| Tổ trưởng / trưởng ca bếp (OPS-KIT) | 🍳 Mẻ cần làm (bắt đầu / xong: nhiệt độ lõi, lưu mẫu) · 📈 Tiến độ ca · 🧽 Checklist ATTP · 🍱 Chia suất / nấu thêm / thừa · 🥬 NL của ca · 👥 Ai chưa vào (tổ) · ✍️ Chấm hộ · 🔍 Truy xuất mẻ · 🧼 Lô vệ sinh hộp khay | 🔴 mẻ trễ · 🔴 lõi < 70°C / chưa lưu mẫu · 🟡 checklist sắp hạn · 🟡 người tổ chưa vào ca · 🟡 kế hoạch ca đã duyệt |
+| Tổ trưởng / trưởng ca bếp (OPS-KIT) | 🍳 Mẻ cần làm (bắt đầu / xong: nhiệt độ lõi, lưu mẫu) · 📈 Tiến độ ca · 🧽 Checklist ATTP · 🍱 Chia suất xong / ➕ nấu thêm / ♻️ thừa (nút trên thẻ mẻ) · 🥬 NL của ca · 👥 Ai chưa vào (tổ) · ✍️ Chấm hộ · 🔍 Truy xuất mẻ · 🧼 Lô vệ sinh hộp khay | 🔴 mẻ trễ · 🔴 lõi < 70°C / chưa lưu mẫu · 🟡 checklist sắp hạn · 🟡 người tổ chưa vào ca · 🟡 kế hoạch ca đã duyệt |
 | QA / QC (OPS-KIT-QA, QA) | 🧽 Checklist / kiểm thành phẩm · 🧪 Lô chờ QC đầu vào · ⛔ Lô / mẻ đang giữ · 🌡 Nhiệt độ · 🔍 Truy xuất | 🔴 lỗi trọng yếu · 🔴 nhiệt độ ngoài ngưỡng · 🟡 hàng về chờ kiểm · 🟡 phản ánh về món ăn |
-| Điều phối giao nhận (OPS-LOG) | 🗺 Giao vận hôm nay · 🚚 Chuyến trực tiếp · 🧭 Lịch xe · 🔁 Đổi xe / tài xế · 📦 Hộp khay hôm nay | 🔴 xe chưa rời bếp · 🔴 điểm sắp / đã trễ · 🔴 nhiệt độ giao < 60°C · 🔴 giao thiếu |
+| Điều phối giao nhận (OPS-LOG) | 🗺 Giao vận hôm nay · 🚚 Chuyến trực tiếp (= 🗺 Giao vận hôm nay → thẻ chuyến) · 🧭 Lịch xe · 🔁 Đổi xe / tài xế (nút trên thẻ chuyến) · 📦 Hộp khay hôm nay | 🔴 xe chưa rời bếp · 🔴 điểm sắp / đã trễ · 🔴 nhiệt độ giao < 60°C · 🔴 giao thiếu |
 | Tài xế | 🚚 Chuyến của tôi: xuất phát, 📍 đến điểm, số suất + nhiệt độ giao, 📷 ảnh ký nhận · 📥 Nhận hộp về | 🟡 được phân / đổi chuyến · 🟡 nhắc giờ xuất phát |
 | Điểm phát suất (OPS-POS) | ✅ Nhận hàng / ký nhận · 🧮 Đối soát suất thực tế · 📣 Ghi phản ánh tại điểm | 🟡 xe đã xuất phát / sắp đến |
 | Thủ kho / mua hàng (OPS-SCM) | 📦 Tồn · ⌛ Cận date · ⚠️ Thiếu hụt · 🥬 NL ngày mai · 🧾 PO (sắp về, trễ) · 🚛 Hàng về hôm nay · 🔍 Truy xuất lô | 🟡 thiếu hụt sau MRP · 🟡 dưới tồn tối thiểu · 🟡 cận / hết hạn · 🟡 PO trễ · 🔴 lô QC không đạt |
-| Kế hoạch vận hành & Cost (OPS-PLAN) | 📋 Kế hoạch ngày mai · 🔄 Lập lại · 📅 Thực đơn tuần · ✏️ Đề xuất đổi món / NVL · ♻️ Hao hụt · 💰 Giá thành suất | 🟡 khóa đơn → kế hoạch đã lập · 🟡 thiếu NL · 🟡 kết quả duyệt thực đơn / đổi món |
+| Kế hoạch vận hành & Cost (OPS-PLAN) | 📋 Kế hoạch ngày mai · 🔄 Lập lại · 📅 Thực đơn tuần · ✏️ Đề xuất đổi món · ♻️ Hao hụt · 💰 Giá thành suất | 🟡 khóa đơn → kế hoạch đã lập · 🟡 thiếu NL · 🟡 kết quả duyệt thực đơn / đổi món |
 | Kinh doanh / hợp đồng (SAL-SALES, SAL-CON) | 📦 Đơn ngày mai (khách phụ trách) · ⏰ Khách chưa chốt · 📅 Thực đơn tuần · 🔄 Đổi món – ý kiến khách · 📣 Báo thiếu suất / phản ánh thay khách · 📋 Việc tôi đã báo | 🔴 19:00 khách chưa chốt · 🟡 kết quả sửa đơn sau 20h · 🟡 phản ánh khách mình đã xử lý · 🟡 việc mình báo đã có người nhận |
 | CSKH (SAL-CS) | 📣 Ghi phản ánh · 📋 Phản ánh đang mở (nhận / xong) · ⏱ Sắp quá hạn | 🔴 phản ánh mức cao · 🔴 sắp quá hạn · 🟡 phản ánh mới |
 | NV kế toán (FIN-ACC) | 📦 Hộp khay thất thoát · 🧾 PO đã nhận · 🧾 Công tháng (chỉ xem) | ⚪ thất thoát vượt ngưỡng |
-| NV nhân sự (FIN-HR) | 👥 Ai chưa vào ca (toàn công ty) · ✍️ Chấm hộ · 📥 Nhập file máy chấm công · 🧾 Công tháng · ⏳ Đơn đang chờ (xem) | 🟡 chưa vào ca > 10′ · 🟡 chấm ngoài bán kính |
+| NV nhân sự (FIN-HR) | 👥 Ai chưa vào ca (toàn công ty) · ✍️ Chấm hộ · 📥 Nhập file máy chấm công (trả lời tin bot bằng file Excel) · 🧾 Công tháng · ⏳ Đơn đang chờ (xem) | 🟡 chưa vào ca > 10′ · 🟡 chấm ngoài bán kính |
 | IT / quản trị (FIN-IT) | 🖥 Tình trạng hệ thống (job, tin lỗi) · `/chatid` nhóm | 🔴 job lỗi · 🔴 tin gửi thất bại nhiều lần |
 
 ### 3.3 Bot Điều hành
@@ -103,15 +105,15 @@ Menu chung (lọc theo quyền): ⏳ Chờ tôi duyệt · 🚨 Việc liên ph�
 
 | Người dùng | Duyệt trên DH | Tin liên phòng |
 |---|---|---|
-| CEO | PO ≥ 50 triệu, các mục CEO có quyền A | 🔴 sự cố cấp công ty · ⚪ bản tin 7h, báo cáo 17h, tuần / tháng |
+| CEO | PO ≥ 50 triệu, các mục CEO có quyền A | 🔴 sự cố cấp công ty · ⚪ bản tin 7h, báo cáo 17h, báo cáo tuần (thứ Hai) / tháng (ngày 1) 07:30 |
 | PMO | – | ⚪ bản tin · 🟡 việc liên phòng quá hạn chưa ai nhận |
-| COO | PR cấp 2, PO dưới ngưỡng, kế hoạch SX, lịch xe, xuất kho, kiểm kê lệch > 2% | 🔴 mọi sự cố vận hành liên phòng · 🟡 thiếu hụt NL · ⚪ bản tin |
-| Bếp trưởng | Kế hoạch SX, xuất kho, kiểm kê, nghỉ / đổi ca của bếp | 🔴 thiếu suất cần nấu bù · 🔴 phản ánh món ăn · 🟡 thiếu NL ảnh hưởng ca · 🟡 thiếu người · 🟡 đổi món chờ |
+| COO | PR cấp 2, PO dưới ngưỡng, kế hoạch SX, công thức / thực đơn / đổi món, điều chỉnh tồn, kiểm kê, nghỉ / đổi ca | 🔴 mọi sự cố vận hành liên phòng · 🟡 thiếu hụt NL · ⚪ bản tin |
+| Bếp trưởng | – (D-69: chưa có quyền duyệt; kế hoạch SX do COO / CEO, nghỉ / đổi ca do Nhân sự / COO duyệt) | 🔴 thiếu suất cần nấu bù · 🔴 phản ánh món ăn · 🟡 thiếu NL ảnh hưởng ca · 🟡 thiếu người · 🟡 đổi món chờ |
 | Trưởng mua hàng – kho | PR cấp 1 | 🟡 thiếu hụt MRP · 🔴 NCC trễ / QC không đạt ảnh hưởng SX · 🟡 PO chờ GĐ |
-| Trưởng điều phối | Lịch xe | 🔴 giao trễ · 🔴 thiếu suất tại điểm · 🔴 nhiệt độ giao thấp · 🟡 phản ánh giờ giao |
-| TP kinh doanh | Sửa đơn sau 20h, lệch > 30%, hợp đồng | 🔴 thiếu suất · 🔴 phản ánh mức cao · 🟡 hộp thất thoát · 🟡 đổi món cần khách chấp thuận |
-| Trưởng QA | Kết quả QC, giữ / thả lô | 🔴 sự cố ATTP · 🔴 lô không đạt · 🔴 phản ánh món ăn |
-| Kế toán trưởng | (R2) phí thất thoát hộp | ⚪ doanh thu, NL / doanh thu, giá thành |
+| Trưởng điều phối | – (D-69: không có loại duyệt lịch xe) | 🔴 giao trễ · 🔴 thiếu suất tại điểm · 🔴 nhiệt độ giao thấp · 🟡 phản ánh giờ giao |
+| TP kinh doanh | – (D-69: sửa đơn sau 20h, lệch > 30%, hợp đồng do CEO duyệt) | 🔴 thiếu suất · 🔴 phản ánh mức cao · 🟡 hộp thất thoát · 🟡 đổi món cần khách chấp thuận |
+| Trưởng QA | Kết quả QC đầu vào (giữ / thả lô là thao tác QA trực tiếp trên `scm-lot`, không qua duyệt – D-69) | 🔴 sự cố ATTP · 🔴 lô không đạt · 🔴 phản ánh món ăn |
+| Kế toán trưởng | Kiểm kê lệch cấp 2; (R2) phí thất thoát hộp | ⚪ doanh thu, NL / doanh thu, giá thành |
 | Trưởng nhân sự | Nghỉ / đổi ca theo phân cấp | 🟡 thiếu người ảnh hưởng SX · ⚪ công tháng |
 
 Người duyệt / người nhận cụ thể lấy theo `ApprovalStep` (người / nhóm của cấp hiện tại) và quyền ObjectMenu – **"Chờ tôi duyệt" chỉ gồm bước mà người đó đúng là người duyệt**, không phải mọi thứ người đó có quyền xem (admin không bị ngập).
@@ -144,7 +146,7 @@ Mã loại lấy từ hằng `BusinessType` của các `Services/Implement/Appro
 | `FOODSAFETY_CRITICAL` | Lỗi trọng yếu checklist (D-54 d, Catalog 162) | Liên phòng | 🔴 | QA, trưởng ca | Trưởng QA, bếp trưởng, COO |
 | `IOT_OUT_OF_RANGE` | Nhiệt độ kho / khu ngoài ngưỡng (IoT) | Phòng | 🔴 | QA, thủ kho khu đó | Trưởng QA nếu kéo dài > 30′ |
 | `CHECKLIST_DUE` | Checklist sắp đến hạn | Phòng | 🟡 | Trưởng ca | – |
-| `PLAN_READY` | Khóa đơn 20h → kế hoạch / lịch xe chờ duyệt (LockOrders) | Liên phòng | 🟡 | Kế hoạch vận hành | Bếp trưởng, trưởng điều phối, COO |
+| `PLAN_READY` | Khóa đơn 20h → kế hoạch chờ duyệt (LockOrders) | Liên phòng | 🟡 | Kế hoạch vận hành | Bếp trưởng, trưởng điều phối, COO |
 | `SHORTAGE_MRP` | Thiếu NL sau MRP (Mrp) | Liên phòng | 🟡 | Mua hàng, thủ kho | Trưởng mua hàng – kho, bếp trưởng, COO |
 | `STOCK_LOW`, `LOT_EXPIRING` | Dưới tồn tối thiểu / cận hạn (LotExpiry) | Phòng | 🟡 | Thủ kho | – |
 | `PO_LATE`, `QC_INCOMING_FAIL` | PO trễ / QC đầu vào không đạt | Liên phòng | 🟡 / 🔴 | Thủ kho, QA đầu vào | Trưởng mua hàng – kho, bếp trưởng, trưởng QA |

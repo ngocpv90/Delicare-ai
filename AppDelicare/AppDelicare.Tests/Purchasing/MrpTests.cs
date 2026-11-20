@@ -162,7 +162,7 @@ namespace AppDelicare.Tests.Purchasing
             before.Data.ValueKind.Should().Be(JsonValueKind.Null, "chưa tính");
 
             var result = (await Calculate(c, s)).Ok();
-            result.GetProperty("planNumber").GetString().Should().Be("KH-261215");
+            result.GetProperty("planNumber").GetString().Should().Be("KS-261215");
             result.GetProperty("planStatus").GetString().Should().Be("Draft");
             result.GetProperty("orderCount").GetInt32().Should().Be(2, "chỉ đơn Đã chốt");
             result.GetProperty("totalMeals").GetDecimal().Should().Be(300);
@@ -212,7 +212,7 @@ namespace AppDelicare.Tests.Purchasing
             warnings.Should().Contain(w => w!.Contains("NCC rau") && w.Contains("3 ngày"));
 
             var pr = result.GetProperty("purchaseRequest");
-            pr.GetProperty("requestNumber").GetString().Should().MatchRegex(@"^PH-261214-\d{4}$");
+            pr.GetProperty("requestNumber").GetString().Should().MatchRegex(@"^MH-261214-\d{4}$");
             pr.GetProperty("status").GetString().Should().Be("Draft");
             pr.GetProperty("lineCount").GetInt32().Should().Be(3);
             Guid prId = pr.GetProperty("id").GetGuid();
@@ -240,7 +240,7 @@ namespace AppDelicare.Tests.Purchasing
             rice2.GetProperty("status").GetString().Should().Be("Sufficient");
             rice2.GetProperty("purchaseQuantity").GetDecimal().Should().Be(0);
             (await _factory.QueryAsync(db => db.MaterialRequirement.CountAsync(r => r.ProductionPlanId == planId && !r.IsDeleted))).Should().Be(3);
-            (await _factory.QueryAsync(db => db.PurchaseRequest.CountAsync(p => p.Note != null && p.Note.Contains("KH-261215") && !p.IsDeleted))).Should().Be(1);
+            (await _factory.QueryAsync(db => db.PurchaseRequest.CountAsync(p => p.Note != null && p.Note.Contains("KS-261215") && !p.IsDeleted))).Should().Be(1);
 
             var byDate = (await c.GetResultAsync($"/api/MaterialRequirement/GetByDate?productionDate=2026-12-15")).Ok();
             byDate.GetProperty("productionPlanId").GetGuid().Should().Be(planId);
@@ -397,7 +397,7 @@ namespace AppDelicare.Tests.Purchasing
             Task<LegacyResult> Calc() => c.PostFormAsync("/api/MaterialRequirement/Calculate", ("ProductionDate", date), ("WarehouseId", warehouse));
             Task<LegacyResult> TopUp() => c.PostFormAsync("/api/MaterialRequirement/CalculateTopUp", ("ProductionDate", date), ("WarehouseId", warehouse), ("Note", "[DEMO] thêm suất"));
             Task SetOrderQuantity(decimal quantity) => _factory.SeedAsync(async db => (await db.OrderLine.SingleAsync(l => l.Id == orderLine)).Quantity = quantity);
-            Task<int> PlanRequests() => _factory.QueryAsync(db => db.PurchaseRequest.CountAsync(p => p.Note != null && p.Note.Contains("KH-261223") && !p.IsDeleted));
+            Task<int> PlanRequests() => _factory.QueryAsync(db => db.PurchaseRequest.CountAsync(p => p.Note != null && p.Note.Contains("KS-261223") && !p.IsDeleted));
 
             (await TopUp()).Fail("Tính nhu cầu (Calculate)"); // chưa tính
             var first = (await Calc()).Ok();
@@ -424,7 +424,7 @@ namespace AppDelicare.Tests.Purchasing
             Guid pr2 = newPr.GetProperty("id").GetGuid();
             pr2.Should().NotBe(pr1);
             newPr.GetProperty("status").GetString().Should().Be("Draft");
-            newPr.GetProperty("requestNumber").GetString().Should().MatchRegex(@"^PH-261214-\d{4}$").And.NotBe(pr1No);
+            newPr.GetProperty("requestNumber").GetString().Should().MatchRegex(@"^MH-261214-\d{4}$").And.NotBe(pr1No);
             newPr.GetProperty("lineCount").GetInt32().Should().Be(1);
             newPr.GetProperty("estimatedAmount").GetDecimal().Should().Be(300_000);
             var meatLine = t.GetProperty("listLine").EnumerateArray().Single(l => l.GetProperty("ingredientId").GetGuid() == meat);

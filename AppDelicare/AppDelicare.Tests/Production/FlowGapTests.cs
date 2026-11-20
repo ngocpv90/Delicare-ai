@@ -58,9 +58,9 @@ namespace AppDelicare.Tests.Production
             using var c = _factory.CreateAuthorizedClient();
 
             var plan = (await c.PostFormAsync("/api/ProductionPlan/Generate", ("ProductionDate", day))).Ok();
-            plan.GetProperty("productionPlan").GetProperty("planNumber").GetString().Should().Be("KH-261130");
+            plan.GetProperty("productionPlan").GetProperty("planNumber").GetString().Should().Be("KS-261130");
             plan.GetProperty("productionPlan").GetProperty("status").GetString().Should().Be("Draft");
-            plan.GetProperty("productionPlan").GetProperty("shiftId").ValueKind.Should().Be(JsonValueKind.Null, "1 KH- / ngày (GAP-MRP-01)");
+            plan.GetProperty("productionPlan").GetProperty("shiftId").ValueKind.Should().Be(JsonValueKind.Null, "1 KS- / ngày (GAP-MRP-01)");
             var lines = plan.GetProperty("listLine").EnumerateArray().ToDictionary(l => l.GetProperty("dishCode").GetString()!);
             lines["COMG1"].GetProperty("plannedQuantity").GetDecimal().Should().Be(150);
             lines["COMG1"].GetProperty("shiftId").ValueKind.Should().Be(JsonValueKind.Null, "cơm thuộc 2 ca");

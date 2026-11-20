@@ -8,6 +8,8 @@ CREATE OR ALTER PROCEDURE [dbo].[uspShiftAssignment_GetAll] (
 	, @EmployeeId UNIQUEIDENTIFIER = NULL
 	, @ShiftId UNIQUEIDENTIFIER = NULL
 	, @AssignmentStatus NVARCHAR(MAX) = NULL
+	, @FromDate DATE = NULL -- UI-4 (D-68 g2): lọc ngày làm từ – đến
+	, @ToDate DATE = NULL
 	, @Page INT = 1
 	, @PageSize INT = 10
 	, @SortField NVARCHAR(100) = NULL
@@ -41,6 +43,8 @@ BEGIN
 			AND (@EmployeeId IS NULL OR t.[EmployeeId] = @EmployeeId)
 			AND (@ShiftId IS NULL OR t.[ShiftId] = @ShiftId)
 			AND (ISNULL(@AssignmentStatus, '') = '' OR t.[AssignmentStatus] = @AssignmentStatus)
+			AND (@FromDate IS NULL OR t.[WorkDate] >= @FromDate)
+			AND (@ToDate IS NULL OR t.[WorkDate] < DATEADD(DAY, 1, @ToDate))
 			AND t.IsDeleted = 0
 	),
 	TempCount (TotalRow) AS (SELECT COUNT(*) FROM TempResult)

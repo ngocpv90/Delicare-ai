@@ -41,6 +41,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             new BotAction { Code = "cs_due", Module = "CSKH", Label = "⏱ Sắp quá hạn", Command = "saphan", CommandDescription = "Phản ánh sắp / đã quá hạn", Bots = ["VH"], MenuMetaLink = Menu, Order = 2, Handler = (c, ct) => ListAsync(c, true, ct) },
             new BotAction { Code = "cs_new", Module = "CSKH", Label = "📣 Ghi phản ánh", Command = "ghiphananh", CommandDescription = "Ghi phản ánh của khách", Bots = ["VH"], MenuMetaLink = Menu, Order = 3, Handler = NewAsync },
             new BotAction { Code = "dp_complaint", Module = "DIEMPHAT", Label = "📣 Phản ánh tại điểm", Bots = ["VH"], MenuMetaLink = Menu, Order = 3, Handler = NewAsync },
+            // BOT-3.2 (D-72): Kinh doanh báo thiếu suất / phản ánh thay khách – cùng luồng ghi phản ánh (chọn khách, loại, mô tả); xem lại ở 📋 Việc tôi đã báo.
+            new BotAction { Code = "kd_complaint", Module = "KINHDOANH", Label = "📣 Báo thiếu suất / phản ánh", Bots = ["VH"], MenuMetaLink = Menu, Order = 5, Handler = NewAsync },
         ];
 
         public async Task ListAsync(BotActionContext ctx, bool dueOnly, CancellationToken ct)

@@ -29,7 +29,8 @@ namespace AppDelicare.Model.Request.Custom
     {
         [Required]
         public Guid Id { get; set; }
-        [Required, MaxLength(255)]
+        /// <summary>MA-1.3 (D-63): bỏ qua – máy chủ sinh mã NU-YYMMDD-NNN theo ngày bắt đầu áp dụng. Giữ để không vỡ form cũ.</summary>
+        [MaxLength(255)]
         public string? Code { get; set; }
         public string? Name { get; set; }
         [Required]

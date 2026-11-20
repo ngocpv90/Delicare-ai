@@ -141,7 +141,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 await BotReply.SendAsync(sender, bot, e.ChatId, new NeutralMessage
                 {
                     Lines = ["Bạn dùng được bot Điều hành (việc liên phòng, duyệt, bản tin)."],
-                    Buttons = [new NeutralButton("Mở bot Điều hành", Url: $"https://t.me/{dh.TrimStart('@')}?start=CHAMCONG")],
+                    Buttons = [new NeutralButton("Mở bot Điều hành", Url: $"https://t.me/{dh.TrimStart('@')}")], // UG-1 C-21: mở bot, không mở thẳng chấm công
                 }, ct: ct);
             }
         }

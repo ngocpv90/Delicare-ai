@@ -4,6 +4,17 @@
 
 Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghiệm thu (AC)**. Chỉ đánh `DONE` khi mọi AC đạt, build xanh và test xanh. Task lớn được phép tách thành Txx.1, Txx.2… ngay trong file này.
 
+## ▶ THỨ TỰ LÀM TIẾP (anh chốt 2026-11-19 – Claude Code đọc mục này trước)
+
+1. **Làm xong task đang dở** (theo PROGRESS – trạng thái `DOING`), không bỏ ngang.
+2. **UI-1R – sửa thẻ chỉ số cho đúng D-64 c** (mục UI-1 bên dưới; 7 điểm + AC có ảnh chụp so với `docs/frontend-handoff/assets/kpi-card-standard.png`). Lỗi chính: biểu tượng đang nằm giữa do `.card` của Bootstrap xếp dọc – phải nằm **bên trái**.
+3. **UI-3** màn chi tiết nhà cung cấp (D-67) → **UI-4** màn chi tiết nhân viên (D-68) – dùng thẻ chỉ số đã sửa ở bước 2.
+4. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
+5. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
+6. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
+
+Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/user-guide/*` liên quan; xong bước nào báo anh mở thử giao diện bước đó.
+
 ## ★ ƯU TIÊN CỦA ANH (2026-11-14): RELEASE 1 = CHỈ BACKEND (.NET + SQL) đủ API cho mockup
 
 > **⚠ ĐỔI HƯỚNG 2026-11-15 (D-30):** **khung chuẩn là code cũ**, không sinh thêm API `/api/v1`. Mọi task dưới đây hiểu là: rà soát code cũ → bổ sung method vào Service cũ + action vào Controller cũ theo CLAUDE.md mục 4. Spec API chỉ là danh sách yêu cầu nghiệp vụ. Chỗ nào trong file này còn ghi `/api/v1/...` thì đọc là "chức năng đó, viết thành action kiểu cũ `api/<Entity>/<Action>`". (T45R đã DONE 2026-11-15.) **Từ 2026-11-16: làm theo bảng LÁT PILOT ngay dưới đây.**
@@ -11,7 +22,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 ## ★★★★ ĐỢT BE-3 – BIỂU ĐỒ, CẢNH BÁO, IOT, KPI, DASHBOARD (anh chốt 2026-11-17, D-57) · `DONE` 2026-11-17 (BE3.1–BE3.5, BE3.7; BE3.6 không làm – D-58)
 
 > Anh đưa các mục sau vào làm tiếp (trước đây ở nhóm "Để sau"): KPI 221–225, dashboard + luồng E2E 231–232, biểu đồ 100 / 157 / 163, tìm kiếm toàn cục / tab Liên quan / chuông cảnh báo 16–18, vị trí xe 193, IoT nhiệt độ 166. Kèm dòng **192** (sự kiện giao – còn "Một phần" sau BE-2).
-> **Luật chung:** chỉ backend (D-49), khung cũ (D-30: `api/<Controller>/<Action>`, Service, `Result<T>`, quyền ObjectMenu – D-31), **không tạo bảng / cột / FK / schema**, không job tự động (D-45 – mọi "job" trong spec làm thành **action bấm tay**, viết Service sao cho `AppDelicare.Job` sau này gọi lại – D-48), không gửi bot / Telegram / Zalo. Mỗi task: build 0 lỗi, test xanh, file `.http` mới chạy được trên DB dev, handoff `docs/frontend-handoff/`, cập nhật Catalog cột J / K / L / M (cột N của các dòng này đã đổi thành `BE-3`). Câu hỏi → mẫu D-49 (có đề xuất), làm theo đề xuất, ghi DECISIONS mục BE-3.
+> **Luật chung:** ~~chỉ backend (D-49)~~ → **Claude Code làm cả backend và frontend (D-65)**, khung cũ (D-30: `api/<Controller>/<Action>`, Service, `Result<T>`, quyền ObjectMenu – D-31), **không tạo bảng / cột / FK / schema**, không job tự động (D-45 – mọi "job" trong spec làm thành **action bấm tay**, viết Service sao cho `AppDelicare.Job` sau này gọi lại – D-48), không gửi bot / Telegram / Zalo. Mỗi task: build 0 lỗi, test xanh, file `.http` mới chạy được trên DB dev, handoff `docs/frontend-handoff/`, cập nhật Catalog cột J / K / L / M (cột N của các dòng này đã đổi thành `BE-3`). Câu hỏi → mẫu D-49 (có đề xuất), làm theo đề xuất, ghi DECISIONS mục BE-3.
 > **⛔ Anh chốt 2026-11-17 (D-58): KHÔNG làm tra cứu cấu trúc database** – bỏ DB Explorer + GAP (Catalog 226–230, 233, 234 = "Không làm"). Không API nào được trả tên bảng / cột / quan hệ / dữ liệu mẫu, không đọc `sys.*` / `INFORMATION_SCHEMA` để trả ra ngoài, không nhúng metadata cấu trúc DB vào WebApi.
 > **Thứ tự:** BE3.1 → BE3.2 → BE3.3 → BE3.4 → BE3.5 → BE3.7 (BE3.5 cần cảnh báo của BE3.3 và snapshot của BE3.4).
 
@@ -41,6 +52,112 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 4. **Kiểm tra trên SQL Server 2022 thật** (Docker `mcr.microsoft.com/mssql/server:2022-latest` – cổng riêng, không đụng DB dev): DB trống → `db-init` 2 lần (lần 2 không đổi số dòng seed) → `full-flow.http` đạt. Ghi lệnh vào `deploy/README.md`, thêm thành **bước bắt buộc trước mỗi lần gộp `main`** (CLAUDE.md quy trình) – kết quả ghi vào PROGRESS.
 5. Báo anh; không push / gộp `main` khi anh chưa duyệt.
 
+## ★ MA-1 – QUY TẮC MÃ TOÀN HỆ THỐNG + KHÁCH HÀNG THEO LOẠI (D-63, anh chốt 2026-11-19) · `DONE` 2026-11-19 (nhánh `feat/MA-1-code-rules`; .http cũ ghi chú – kiểm hồi quy bằng full-flow; script MA-1.4 chờ anh chạy thật sau backup)
+
+> Nguồn: DECISIONS **D-63**, BUSINESS_RULES **§11**. Làm sau BOT-2.9 đang dở. Không thêm bảng / cột / SEQUENCE / FK; script dữ liệu chỉ UPDATE, chạy sau backup. **Anh giao làm cả backend và frontend** (D-63 l – ngoại lệ D-49 cho việc này).
+
+- **MA-1.1 Sinh mã:** `DocumentNumberService` thêm dạng **danh mục** (không phần ngày, `TIỀNTỐ-NNNNN`, khóa `sp_getapplock` theo tiền tố, quá 99.999 → 6 chữ số) và `DocumentKind` mới: `CustomerBusiness` (KHB), `CustomerIndividual` (KHC), `Supplier` (NC), `Ingredient` (NL), `Dish` (MA), `Warehouse` (KO), `Vehicle` (XE), `Employee` (NV), `Menu` (NU). Tách `Voucher` (PH) thành các loại riêng theo §11: DH, DM, MH, PN, PX, KK, GD, LS, DG, GH, DC; đổi `MaterialLot` NL → **LO**, `ProductionPlan` KH → **KS**. MAX vẫn đọc cả cột cũ; số cũ (`PH-…`) không tính vào dãy mới.
+- **MA-1.2 Khách hàng (BE):** `CustomerService` Insert: bỏ qua `Code` / `CIF` gửi lên → sinh `Code` theo `CustomerType`, `CIF = Code`, gán `Name` / `DisplayName` / `CompanyId` (D-63 h); `CheckRules` kiểm bắt buộc + định dạng theo loại (D-63 g: MST, CCCD, điện thoại, email, ngày), không trùng MST (KHB) / CCCD (KHC); xóa trống trường không thuộc loại. Update: `Code`, `CIF` không đổi; đổi loại theo D-63 i (chưa có hợp đồng / đơn → mã mới, ghi lịch sử; có rồi → báo lỗi). Bỏ kiểm trùng `Code` khi rỗng (lỗi null = IS NULL ở `CustomerService.cs:147`). Thông báo mới thêm vào `ConstantHelper.Message`. `CustomerType` nhận đúng 2 giá trị (hằng `CustomerTypes`).
+- **MA-1.3 Danh mục khác (BE):** Supplier, Ingredient, Dish, Warehouse, Vehicle, Employee Insert: sinh mã khi `Code` trống hoặc luôn sinh (bỏ qua giá trị gửi lên) – chọn **luôn sinh**; Update không đổi `Code`. Employee mới: tên đăng nhập = mã khi tạo tài khoản từ nhân viên. Import dữ liệu gốc (`MasterDataImportService`): dòng mới không có mã → sinh mã; dòng có mã → khớp theo mã như cũ.
+- **MA-1.4 Script dữ liệu (một lần):** `DB/scripts/` (không phải migration cấu trúc): (1) `Customer.CustomerType` cũ (HOSPITAL…) → `Industry`, loại = `BUSINESS`; (2) đánh lại mã khách hàng (`KHB`/`KHC`, theo ngày tạo) và NCC (`NC`), `CIF = Code`; xuất file đối chiếu mã cũ → mới; idempotent, có chế độ chạy thử (in trước, không ghi). Ghi rõ cần chạy lại import nào dùng mã cũ.
+- **MA-1.5 Nhận dạng mã:** bot (mẫu tìm `XX-\d{6}` → `[A-Z]{2,3}-\d{5,6}…`, nhận cả mẫu cũ; gợi ý `DH-…` ở 🔍 Truy xuất), tìm kiếm toàn cục, mẫu in / QR, test (đổi kỳ vọng `PH-` / `KH-` / `NL-`), `full-flow.http`.
+- **MA-1.6 Tài liệu:** STATUS / Catalog API, `docs/user-guide/91_PHU_LUC.md` §2, `02_KINH_DOANH.md` mục khách hàng, bot (`20_BOT_TELEGRAM.md` tìm nhanh), `docs/frontend-handoff/` ghi lại thay đổi giao diện MA-1.8 cho dev FE biết; `CLAUDE.md` §3.3 (đã có luật D-63 k).
+- **MA-1.7 Phủ toàn hệ thống (D-63 k):** (1) bảng phân nhóm G1 / G2 / G3 trong code (một chỗ, cạnh `Specs`), theo BUSINESS_RULES §11.3; bổ sung tiền tố G1 còn thiếu (`DP` điểm giao, `BG` bảng giá, `QC` phiếu QC, `MR` lần tính MRP); (2) G2: kiểm chữ hoa không dấu / không trùng / khóa sửa khi đã dùng ở Service Insert / Update; (3) API `Common/GetCodeRules` (khung cũ, `Result<T>`, quyền đăng nhập) trả `{ bảng, cột, nhóm, tiền tố, mẫu }` cho giao diện; (4) **test chặn**: quét mọi entity có thuộc tính tên kết thúc `Code` / `No` / `Number` → phải có trong bảng phân nhóm, thiếu → đỏ; mọi bảng G1 → Insert bỏ qua giá trị gửi lên và sinh mã (test theo từng Service).
+- **MA-1.8 Frontend:** (1) form chung (`core/ui.js` UI.form + `core/store.js`): đọc `Common/GetCodeRules`; cột G1 → ô chỉ đọc "(tự sinh khi lưu)", không gửi; G2 → tự chuyển chữ hoa không dấu, khóa ở chế độ sửa nếu máy chủ báo đã dùng; (2) **ghi chờ API**: chỉ đóng form và báo "Đã tạo … <mã>" khi API trả thành công, lỗi thì giữ form và hiện lỗi tại chỗ (bỏ báo thành công trước); (3) form riêng `crm-customer` theo D-63 g / j (chọn loại → ô theo loại, ẩn CIF ở form / danh sách / hồ sơ; danh mục `Customer.CustomerType` trong `data/catalog.js`); (4) danh sách / tìm kiếm / in hiện mã mới, nhận cả mẫu cũ; (5) build FE xanh.
+
+**AC:** tạo 2 khách đồng thời cùng loại → 2 mã liên tiếp không trùng; KHB thiếu MST / KHC thiếu Họ-Tên → lỗi tiếng Việt rõ trường; gửi `Code` / `CIF` bất kỳ → bị bỏ qua; CIF = Code; đổi loại khi đã có đơn → lỗi; chứng từ mới ra tiền tố §11, chứng từ cũ vẫn tìm / in / mở bằng bot được; script chạy thử in đúng bảng đối chiếu, chạy thật lần 2 không đổi gì; thêm entity mới có cột `Code` chưa xếp nhóm → test đỏ; form chung không cho gõ mã bảng G1; test xanh, `full-flow.http` xanh, build FE xanh.
+
+## ★ UI-1 – THẺ CHỈ SỐ KIỂU MỚI + DẢI THẺ KHÁCH HÀNG (D-64, anh chốt 2026-11-19) · `DONE` 2026-11-19 (UI-1R xong – ảnh so chuẩn ở `docs/frontend-handoff/ui1r/`)
+
+> **UI-1R – SỬA THẺ CHỈ SỐ CHO ĐÚNG D-64 c (anh báo 2026-11-19; làm ngay sau task đang làm, trước các task TODO khác).** Phạm vi: mọi dải thẻ chỉ số, kể cả màn khách hàng 360 (UI-2) và các màn 360 làm sau (UI-3, UI-4) – sửa ở thành phần chung `UI.kpi` / `app.css` rồi rà từng chỗ gọi. Rà soát của chat tài liệu trên nhánh `feat/MA-1-code-rules`:
+> 1. **Biểu tượng đang nằm giữa, phải nằm bên trái (lỗi anh thấy).** Nguyên nhân: thẻ dùng class `card` của template – Bootstrap đặt `.card{display:flex;flex-direction:column}`; `app.css` chỉ thêm `display:flex;align-items:center` cho `.card.kpi` nên thẻ vẫn xếp **dọc** và `align-items:center` đẩy biểu tượng + chữ ra **giữa**. Sửa: `.card.kpi{flex-direction:row;justify-content:flex-start;align-items:center;text-align:left}` (hoặc bỏ class `card`, dùng class riêng `dc-kpi` không kế thừa template). `.kpi-body` căn trái.
+> 2. **Số phụ đang chứa chú thích cũ:** ~50 chỗ gọi `UI.kpi` (dashboard, hr, scm, production, logistics, menu, explorer, `app.js` danh sách chung) vẫn truyền câu dài làm tham số thứ 3 → hiện như dòng chú thích chân thẻ; nhiều chỗ còn chữ kỹ thuật trong chế độ dữ liệu thật ("Σ OrderLine.Quantity", "DeliveryExecution.Status = …", "RequestStatus = Pending/InProgress", "CustomerComplaint · theo SLA", "QcStatus = PASS", "dbo.…"). Sửa từng chỗ: số phụ **≤ 20 ký tự**, dạng "/ 2 · 100%", "· 96 đơn", "· còn 42 ngày"; câu giải thích → `title` (rê chuột) hoặc bỏ; bỏ hết chữ kỹ thuật.
+> 3. **Thẻ trong ngăn trượt / hộp thoại bị bóp:** lưới chia cột theo bề rộng màn hình nên ngăn 720px vẫn 4 cột (~150px / thẻ, nhãn bị cắt, số tràn). Sửa: `.drawer .kpis, .modal .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}` (hoặc container query theo khung chứa).
+> 4. **Số chính bị thu nhỏ trong `.panel`:** quy tắc cũ `.panel .kpi-value` (26px, có lề) đứng sau quy tắc mới nên đè. Sửa: đổi class ô chỉ số tùy biến cũ (be3.js, integration.js) sang `kpi-mini-value` hoặc giới hạn `.panel .kpi-value:not(.kpi .kpi-value)`.
+> 5. **Số phụ quá đậm:** `.kpi-sub` 15px / 500 như nhãn → 14–15px, **400**, màu xám nhạt.
+> 6. **Thẻ dùng chữ làm số chính** (chi tiết đơn: "Khách hàng" = tên khách; thực đơn: "Thực đơn" = tên): thẻ chỉ số chỉ cho **con số**; thông tin chữ chuyển vào khối thông tin.
+> 7. Nhãn dài bị cắt "…" → thêm `title` = nhãn đầy đủ.
+>
+> **AC UI-1R:** biểu tượng ở **bên trái**, nhãn + số chính + số phụ ở bên phải, căn giữa dọc, chữ căn trái; không số phụ nào > 20 ký tự hoặc chứa tên bảng / cột / mã trạng thái tiếng Anh; ngăn trượt / hộp thoại 2 cột; số chính 32–36px ở mọi nơi (kể cả trong `.panel`); `npm run build` xanh; **chụp ảnh** dải thẻ ở dashboard, danh sách khách hàng, hồ sơ khách hàng (ngăn trượt) ở 3 cỡ màn hình, đặt cạnh `docs/frontend-handoff/assets/kpi-card-standard.png` để so trước khi báo xong (ghi đường dẫn ảnh trong PROGRESS).
+
+> Nguồn: DECISIONS **D-64** (c)–(d), mẫu `docs/frontend-handoff/assets/kpi-card-standard.png`. Anh giao Claude Code làm cả FE (D-64 a). Làm sau MA-1.8 (cùng sửa `core/ui.js`, `app.css`). Không thêm bảng / cột.
+
+- **UI-1.1 Thành phần chung:** `UI.kpi` vẽ theo chuẩn D-64 c, thêm tham số **số phụ** (`sub`) – giữ chữ ký cũ để các chỗ gọi không vỡ. `app.css`: `.kpi` / `.kpi-icon` / `.kpi-value` / `.kpi-sub` mới, lưới 4 / 2 / 1 cột, biến màu cho giao diện tối. Rà **mọi chỗ gọi** `UI.kpi` (≈ 33 chỗ: dashboard 16, scm 6, sales 2, hr 2, production 2, explorer 2, menu 1, logistics 1, app.js 1): chú thích chân thẻ có nghĩa → chuyển thành số phụ ngắn; chú thích kỹ thuật (tên bảng, `tech(...)`) → bỏ.
+- **UI-1.2 Danh sách khách hàng (`crm-customer`)** – thay dải "Tổng bản ghi" chung bằng 4 thẻ: **Tổng khách hàng** (người, xanh lá) · **Đang hoạt động** (dấu tích, xanh lá nhạt) số phụ "/ tổng · %" · **Hợp đồng hiệu lực** (văn bản, xanh dương) · **Suất TB/ngày (7 ngày)** (dao nĩa, cam) = tổng suất đơn Đã giao / Đã đối soát 7 ngày gần nhất ÷ 7 (sửa luôn cột "Suất TB/ngày" đang chia 5). Số liệu lấy từ máy chủ theo **đơn vị làm việc** và bộ lọc: thêm `Customer/GetSummary` (khung cũ, `Result<T>`, quyền xem `crm-customer`) nếu API hiện có chưa đủ.
+- **UI-1.3 Hồ sơ khách hàng 360** – thay 4 thẻ cũ bằng: **Hợp đồng hiệu lực** (xanh lá) · **Suất TB/ngày (7 ngày)** (cam) · **Doanh thu đã đối soát** (xanh dương, số phụ "N đơn") · **Khiếu nại đang mở** (đỏ, số phụ "/ tổng · % đúng hạn"). Bổ sung trường còn thiếu vào `Customer/GetOverview` (`activeContractCount`, `openComplaintCount`, `complaintOnTimePct`, `reconciledOrderCount`) – chỉ thêm trường trả về, không đổi trường cũ.
+- **UI-1.4 Kiểm tra:** `npm run build` xanh; test BE xanh (+ test cho `GetSummary` / trường mới của `GetOverview`); mở thử dashboard, danh sách / hồ sơ khách hàng, 1 màn kho, 1 màn nhân sự ở 3 cỡ màn hình và giao diện tối; cập nhật `docs/user-guide/02_KINH_DOANH.md` (khách hàng) + `13_BAN_DIEU_HANH.md` (dashboard) nếu nội dung thẻ đổi.
+
+**AC:** mọi dải thẻ chỉ số hiển thị đúng chuẩn D-64 c (biểu tượng trái, nhãn + số chính + số phụ, không chú thích chân); danh sách khách hàng và hồ sơ 360 đúng 4 thẻ như trên, số khớp dữ liệu máy chủ theo đơn vị làm việc; không màn nào vỡ bố cục; build FE xanh, test BE xanh.
+
+## ★ UI-2 – MÀN CHI TIẾT KHÁCH HÀNG 360 (D-66, anh chốt 2026-11-19) · `DONE` 2026-11-19 (nhánh `feat/MA-1-code-rules`; chờ anh mở thử trên trình duyệt)
+
+> Nguồn: DECISIONS **D-66**; mô phỏng `docs/frontend-handoff/assets/customer-360-mockup.html`; bố cục tham khảo `src/app/pages/account-pages/account-overview` + `elements/short-cods/profile-account/account-overview-head`. Làm sau UI-1 (dùng thẻ chỉ số mới). Claude Code làm cả BE + FE (D-65). Không thêm bảng / cột.
+
+- **UI-2.1 BE:** `Customer/GetOverview` thêm trường theo D-66 f(1) (kể cả danh sách cảnh báo – mỗi cảnh báo: mã, mức, nội dung tiếng Việt, liên kết màn); **mới** `Customer/GetTrend` (D-66 f(2)); `Order/GetAll` thêm `FromMealDate` / `ToMealDate`. Test cho từng phần; `full-flow.http` thêm bước gọi 2 API mới.
+- **UI-2.2 FE – khung màn:** đăng ký `crm-customer-360` (ẩn menu), mở từ dòng danh sách khách hàng; phần đầu + nút theo quyền + 4 thẻ chỉ số (UI-1.3) + hàng tab theo D-66 b–c; ngăn xem nhanh hiện tại thêm nút **Mở hồ sơ đầy đủ**.
+- **UI-2.3 FE – tab Tổng quan:** 6 khối theo D-66 d (bố cục 3 cột 5 / 4 / 3 rồi 5 / 7 như mô phỏng; màn hẹp xếp dọc); biểu đồ dùng thư viện biểu đồ engine đang có.
+- **UI-2.4 FE – các tab còn lại:** gọi API theo D-66 e, tải khi mở tab; bảng có lọc ngày / trạng thái, bấm dòng mở chứng từ; tab Tài liệu có tải lên (≤ 20 MB, loại cho phép như `adm-document`); tab Lịch sử / Liên quan dùng `Common/GetHistory` / `GetRelated`.
+- **UI-2.5 Kiểm tra + tài liệu:** build FE xanh, test BE xanh; mở thử với 1 khách doanh nghiệp + 1 khách cá nhân trên DB dev, 3 cỡ màn hình; người không có quyền một màn thì không thấy tab đó; cập nhật `docs/user-guide/02_KINH_DOANH.md` (mục khách hàng) và `10_DIEM_PHAT.md` nếu liên quan.
+
+**AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
+
+## ★ UI-3 – MÀN CHI TIẾT NHÀ CUNG CẤP (D-67, anh chốt 2026-11-19) · `DONE` 2026-11-19 (nhánh `feat/MA-1-code-rules`; đã mở thử bằng Chrome headless trên DB dev – 1440px + 390px)
+
+> Nguồn: DECISIONS **D-67**; mô phỏng `docs/frontend-handoff/assets/supplier-360-mockup.html`. Cùng khung với UI-2 (dùng lại thành phần phần đầu / thẻ chỉ số / hàng tab / khối Cần chú ý của UI-2 – tách thành hàm dùng chung). Làm sau UI-2. Claude Code làm cả BE + FE (D-65). Không thêm bảng / cột.
+
+- **UI-3.1 BE:** `Supplier/GetOverview` thêm trường theo D-67 f(1) (cảnh báo: mã, mức, nội dung tiếng Việt, liên kết màn); **mới** `Supplier/GetTrend`; `PurchaseOrder/GetAll` thêm `FromOrderDate` / `ToOrderDate`, `GoodsReceipt/GetAll` thêm `FromReceiptDate` / `ToReceiptDate`. Test từng phần; `full-flow.http` thêm bước gọi API mới.
+- **UI-3.2 FE – khung màn:** đăng ký `scm-supplier-360` (ẩn menu), mở từ dòng danh sách NCC; phần đầu + nút theo quyền + 4 thẻ chỉ số + hàng tab (D-67 b–c); hộp Tổng quan hiện tại thêm nút **Mở hồ sơ đầy đủ**.
+- **UI-3.3 FE – tab Tổng quan:** 6 khối theo D-67 d (bố cục như mô phỏng; màn hẹp xếp dọc).
+- **UI-3.4 FE – các tab còn lại:** theo D-67 e; tab Bảng giá có lọc "đang hiệu lực / tất cả", cột so giá thấp nhất của NCC khác cùng nguyên liệu, nút **Thêm giá NL** / **Ưu tiên** (theo quyền sửa); tab Sự cố có nút chuyển trạng thái như `qc-supplier-issue`; bấm dòng mở chứng từ.
+- **UI-3.5 Kiểm tra + tài liệu:** build FE xanh, test BE xanh; mở thử 1 NCC có PO trễ / sự cố / lô tạm giữ trên DB dev, 3 cỡ màn hình; tab ẩn theo quyền; cập nhật `docs/user-guide/04_MUA_HANG.md` (mục NCC).
+
+**AC:** bấm NCC ở danh sách → mở màn chi tiết; số liệu khớp màn gốc (PO, phiếu nhập, lô, sự cố); khối Cần chú ý đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
+
+## ★ UI-4 – MÀN CHI TIẾT NHÂN VIÊN (D-68, anh chốt 2026-11-19) · `DONE` 2026-11-19 (nhánh `feat/MA-1-code-rules`; mở thử Chrome headless trên DB dev – 1440px + 390px)
+
+> Nguồn: DECISIONS **D-68**; mô phỏng `docs/frontend-handoff/assets/employee-360-mockup.html`. Dùng lại thành phần chung tách ở UI-2 / UI-3. Làm sau UI-3. Claude Code làm cả BE + FE (D-65). Không thêm bảng / cột (GAP-HR-06, GAP-HR-07 chờ anh).
+
+- **UI-4.1 BE:** **mới** `Employee/GetOverview` theo D-68 g(1) – thông tin cá nhân lọc theo quyền Sửa `adm-employee` ở máy chủ (D-68 e); `ShiftAssignment/GetAll` thêm `FromDate` / `ToDate`. Test (kể cả test người không có quyền Sửa không nhận ngày sinh / địa chỉ); `full-flow.http` thêm bước gọi.
+- **UI-4.2 FE – khung màn:** đăng ký `adm-employee-360` (ẩn menu), mở từ dòng danh sách nhân viên; phần đầu + nút theo quyền + 4 thẻ chỉ số + hàng tab (D-68 b–c). Nút **Tạo mã liên kết bot** dùng chung thành phần của FE-E.1 (hiện mã + hạn 72 giờ + link / QR).
+- **UI-4.3 FE – tab Tổng quan:** 6 khối theo D-68 d.
+- **UI-4.4 FE – các tab còn lại:** Lịch ca (lưới tuần, ‹ › , bấm ô mở phân ca như `hr-shift-assign`), Chấm công (bảng công + chi tiết theo khoảng ngày), Nghỉ phép / Đổi ca (danh sách + Duyệt / Từ chối / Hủy theo quyền), Công việc (`Common/GetRelated`), Tài khoản và bot, Tài liệu (loại "Giấy khám sức khỏe" có sẵn trong danh sách loại – GAP-HR-07), Lịch sử.
+- **UI-4.5 Kiểm tra + tài liệu:** build FE xanh, test BE xanh; mở thử với 1 nhân viên bếp + 1 tài xế trên DB dev bằng tài khoản NS và tài khoản tổ trưởng (không thấy thông tin cá nhân); cập nhật `docs/user-guide/11_NHAN_SU.md`.
+
+**AC:** bấm nhân viên ở danh sách → mở màn chi tiết; số ca / giờ công / vắng / muộn khớp bảng công; thông tin cá nhân chỉ người có quyền Sửa hồ sơ thấy (kiểm cả API); tab ẩn theo quyền; build FE + test BE xanh.
+
+## ★ FE-E – VIỆC FRONTEND TỒN ĐỌNG (D-65, anh chốt 2026-11-19) · `DONE` 2026-11-19 (FE-E.4 làm cùng UG-1) – FE-E.1 → FE-E.3 xong 2026-11-19 (QR: D-70; quyền màn tích hợp: D-71 chờ anh); còn FE-E.4 (giao diện UG-1)
+
+> Claude Code làm toàn bộ FE (D-65). Làm sau UI-1. Giao diện ở engine `src/assets/delicare/js` (D-65 b). Kiểm tra theo D-65 c.
+
+- **FE-E.1 = FE-BOT-1 (+ UG-1 C-02, C-23 phần giao diện):** menu người dùng (góc phải) thêm **Liên kết Telegram**: trạng thái (`TelegramLink/GetMine`), **Tạo mã** (mã + hạn 15′ + link `t.me/<bot>?start=<mã>` + ảnh QR), **Hủy liên kết** (`Unlink`). `adm-employee`: nút **Tạo mã liên kết bot** trên dòng (`CreateCodeForEmployee`, mã 72 giờ) – chỉ hiện khi có quyền Sửa `adm-employee`.
+- **FE-E.2 = FE-BOT-3:** ảnh QR trên phiếu in (nhập, xuất, kiểm kê, giao, POD, đối soát) và **in QR hàng loạt** cho cổng / dây chuyền / xe / khu kho / khu vệ sinh (`CHAMCONG`, `LINE_`, `VEH_`, `LOC_`, `CLEAN`) từ link `start=…` do BE trả; vẽ QR phía trình duyệt (không thêm thư viện ngoài nếu engine đã có; nếu chưa có → hỏi theo mẫu D-49).
+- **FE-E.3 = FE-BOT-2 (+ UG-1 C-13):** bỏ ẩn và hoàn thiện `int-channel`, `int-bot`, `int-identity`, `int-outbound` (nút **Gửi lại** tin lỗi), `int-log` – chỉ nhóm quản trị (FIN-IT); cảnh báo OUTBOUND_FAILED mở đúng `int-outbound`. Hộp thư hội thoại / dòng thời gian: làm khi BE có API (Catalog 216–220), chưa có → ghi GAP, không tự thêm bảng.
+- **FE-E.4 = phần giao diện UG-1:** các mục C-xx của `docs/user-guide/90_CHENH_LECH.md` có sửa giao diện (C-01, C-06, C-07 web, C-08, C-09, C-11, C-12, C-15, C-16, C-20, C-05) – làm cùng phần BE của từng mục trong UG-1; đánh ✅ trong file 90 khi xong.
+
+**AC:** mỗi mục: `npm run build` xanh, mở thử được trên dữ liệu thật (DB dev), quyền đúng (ẩn nút khi không có quyền, máy chủ vẫn chặn), HDSD cập nhật; mục BE kèm theo: test xanh, `full-flow.http` xanh.
+
+## ★ UG-1 – RÀ SOÁT VÀ SỬA CHÊNH LỆCH TÀI LIỆU – CODE (từ hướng dẫn sử dụng, 2026-11-19) · `DONE` 2026-11-19 trừ C-22 (anh chọn chức năng bot làm tiếp)
+
+> Nguồn: `docs/user-guide/90_CHENH_LECH.md` (C-01 … C-23, có file:dòng và đề xuất). Bộ hướng dẫn sử dụng theo vai trò ở `docs/user-guide/` (README, 00–13, 20, 91) viết theo code ngày 2026-11-19.
+> **Thứ tự:** làm sau BOT-2.9 đang dở, trừ các mục **Cao** (C-01, C-02, C-06, C-07, C-08) được chen ngay khi anh đồng ý. Mục ghi **Anh** (C-17, C-18, C-19, C-22, C-23) **chỉ làm khi anh chốt** (ghi D-63 trở đi vào DECISIONS.md). Không tạo bảng / cột / FK / schema; quyền chỉ sửa bằng seed `UserRole_seed.sql`.
+
+- **UG-1.1 (Cao, code):** C-07 bot "Xong mẻ" ghi sản lượng + nút **Ghi sản lượng** cho mẻ Chờ QC trên web; C-08 hộp QC đầu vào thêm **Số lượng đạt** (HOLD) và **Xác nhận không rã đông** (FROZEN có điều kiện).
+- **UG-1.2 (Cao, code):** C-02 giao diện liên kết Telegram (menu người dùng: tạo mã / trạng thái / hủy liên kết; `adm-employee`: tạo mã cho nhân viên); C-06 form người dùng có **Nhóm quyền** + hiện mật khẩu tạm một lần; C-01 nút **Yêu cầu sửa sau chốt** gọi `Order/RequestChange`.
+- **UG-1.3 (TB, code):** C-09, C-11, C-12, C-15, C-16, C-20, C-05, C-13 (theo đề xuất từng mục).
+- ✅ **UG-1.4 (code + tài liệu) – DONE 2026-11-19 (STATUS_CATALOG.md chờ anh):** C-10 đồng bộ `data/catalog.js` và `STATUS_CATALOG.md` theo `*Status.cs`; C-03, C-04, C-14, C-21; sửa REVIEW_BUSINESS_FLOWS.md cho khớp code.
+- ✅ **UG-1.5:** C-17, C-18, C-19, C-23 xong (D-69); **C-22 chờ anh** chọn chức năng bot.
+
+**AC:** mỗi mục C-xx đã xử lý được đánh ✅ trong `90_CHENH_LECH.md` kèm commit / ghi chú; đoạn hướng dẫn liên quan (cột "Ảnh hưởng HDSD") được sửa cho khớp; build FE / BE xanh, test xanh, full-flow không giảm; mục chờ anh có số D-xx trước khi làm.
+
+
+## ★ ĐỢT BOT-3 – CHỨC NĂNG BOT CÒN THIẾU (UG-1 C-22, anh chọn cả 4 nhóm 2026-11-19 – D-72) · `DONE` 2026-11-20
+
+> Nguồn: BOT_TELEGRAM §3.2 / §3.3 (mục ghi *(kế hoạch)*). Mỗi chức năng = API web có sẵn gọi bằng JWT của chính người dùng (quyền như web); chỗ thiếu API mới thêm BE.
+
+- ✅ **BOT-3.1 – Xem nhanh (API có sẵn) · DONE 2026-11-19:** 🥬 NL của ca (`/nlca`), ⚠️ Thiếu hụt (`/thieuhut`), 🔍 Truy xuất lô / mẻ (`/truyxuatlo` + nút ở Bếp / QA – GlobalSearch → MaterialLot/Trace · ProductionBatch/Trace), 🧭 Lịch xe (`/lichxe`), 📦 Hộp khay hôm nay (`/hopkhay`), 📅 Thực đơn tuần (`/thucdontuan`), 📋 Việc tôi đã báo (`/viecdabao` – thêm `CustomerComplaint/GetList?mine=true`), 🧾 Công tháng (`/congthang`, KT + NS), ⏳ Đơn đang chờ (`/donchoduyet`), 🆔 `/chatid` (chat riêng + trong nhóm, chỉ quản trị). "Chuyến trực tiếp" = 🗺 Giao vận hôm nay → thẻ chuyến (đã có). Test `MessagingBot3Tests`.
+- ✅ **BOT-3.2 – Thao tác ghi · DONE 2026-11-20 (thêm API `DeliveryRoute/Reassign`, `ShiftAssignment/GetGrid myUnit`):** 🔁 Đổi xe / tài xế (`DeliveryRoute/Update` khi chuyến Kế hoạch); ✅ Điểm phát nhận hàng / ký nhận (`DeliveryStop/Deliver`); 🧼 Lô vệ sinh hộp khay (`CleaningBatch/Create · RecordResults · Complete`); 🔄 Lập lại kế hoạch (`ProductionPlan/Generate`, xác nhận 2 bước); ✏️ / 🔄 Đề xuất đổi món – ý kiến khách (`MenuChangeRequest/Create`); 📣 Báo thiếu suất / phản ánh thay khách (luồng 📣 Ghi phản ánh cho Kinh doanh); 🍱 Chia suất / thừa (`PackingOrder/RecordResult`, `ProductionBatch/RecordWaste`); 👥 Ai chưa vào **tổ tôi** + ✍️ Chấm hộ cho tổ trưởng (lọc theo đơn vị của người dùng).
+- ✅ **BOT-3.3 – Cần API mới · DONE 2026-11-20 (`ImportExcel` loại AttendanceMachine + bot nhận file, `ProductionBatch/CreateExtra`, job `PeriodReport`):** 📥 Nhập file máy chấm công (chưa có API nhập – thêm loại nhập ImportExcel cho AttendanceEvent); 🍲 Nấu thêm (chưa có API tạo mẻ bổ sung); 📊 Báo cáo tuần / tháng gửi CEO (job + nội dung bản tin).
+
 ## ★ ĐỢT BOT – BOT TELEGRAM NỘI BỘ (anh chốt 2026-11-18, D-62) · `DOING` – ƯU TIÊN HIỆN TẠI (BOT-1.1 → 1.7 (gồm 1.7d), 2.1 → 2.4 DONE; còn BOT-2.9 – cần server test + token bot thật)
 
 > **Tài liệu bắt buộc đọc trước:** `docs/claude/BOT_SOURCE_ARCHITECTURE.md` (kiến trúc ứng dụng + source – **làm đúng cây thư mục, tên project, tên container**) và `docs/claude/BOT_TELEGRAM.md` (tính năng theo bot / người dùng, trải nghiệm, danh mục thông báo, mức rủi ro duyệt, leo thang). Thay T40 (bỏ phụ thuộc T33) và phần Telegram của T23.2.
@@ -66,7 +183,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 | **BOT-2.2** · **`DONE`** 2026-11-18 (nhánh `feat/BOT-2.1-the-ca`, commit riêng; PROGRESS BOT-2.2) · Sự việc liên phòng: nhận xử lý, ghi chú, leo thang | `Chung/IncidentActions`: [Nhận xử lý] / [Đã xử lý xong], trả lời vào thẻ → nối ghi chú vào thẻ mọi người (phản ánh → `ComplaintHistory`; khác → `PayloadJson`, GAP-INT-04). Job `Escalation` (mỗi phút) theo `Messaging:Escalation` (BOT_TELEGRAM §5.2). Job `LeaveHandover`: nhắc người duyệt trước ngày nghỉ. `INCIDENT_UNCLAIMED` cho COO / PMO. | Người bấm trước được ghi, người sau thấy tên người nhận; ghi chú hiện ở mọi người liên quan; 🔴 không ai nhận → leo thang đúng bậc và thời gian (đồng hồ giả); test xanh |
 | **BOT-2.3** · **`DONE`** 2026-11-18 (nhánh `feat/BOT-2.1-the-ca`; ShiftReminder = Thẻ ca BOT-2.1; PERIOD_REPORT tuần / tháng để sau – PROGRESS BOT-2.3) · Giờ yên lặng theo ca + lịch thông báo | `MessagingRules` giờ yên lặng theo phân ca (BOT_TELEGRAM §5.3, `notBefore`); `BotJobs`: MorningBrief 07:00, DailyReport 17:00, RemindUnconfirmedOrders 19:00 (Telegram cho NV KD – thay phần bot của T23.2), IngredientsTonight 21:00, ProgressWatch 15′ (mẻ trễ, xe chưa rời, điểm trễ), ShiftReminder + NotCheckedIn mỗi giờ, ApprovalOverdue, ComplaintSla (mở lại D-59 a). | Tin 🟡 / ⚪ không tới người ngoài ca (trừ bậc leo thang 🔴); chạy lại job không gửi trùng; lịch đúng giờ VN; test xanh |
 | **BOT-2.4** · **`DONE`** 2026-11-18 (nhánh `feat/BOT-2.4-qr-vitri`; vị trí xử lý ở messaging bằng JWT tài xế qua Service giao vận cũ thay cho `BotChannel/ReportLocation` – DECISIONS p39) · QR vật thể + vị trí trực tiếp tài xế | `start=LINE_…`, `VEH_…`, `LOC_…`, `CLEAN` (mở đúng việc tại chỗ). Vị trí trực tiếp: `messaging` nhận cập nhật vị trí, **chỉ gọi `BotChannel/ReportLocation` khi vào / ra bán kính** (mặc định 150 m, so `CustomerDeliveryLocation.Latitude / Longitude` và vị trí bếp) → `api` ghi xuất phát / giờ đến qua Service giao vận cũ, gửi thẻ [📷 Ảnh ký nhận] [Giao thiếu]; nút 📍 Đến điểm luôn còn. Không lưu từng điểm vị trí. | Vào bán kính → ghi giờ đến 1 lần; mất tín hiệu → bấm tay vẫn được; QR mở đúng việc theo quyền; test xanh |
-| **BOT-2.9** · `TODO` · Gộp, kiểm thử, triển khai TEST | Chạy lại mọi `bot-*.http`, test xanh; dựng `messaging` trên server test (bộ bot TEST, webhook); smoke theo từng vai BOT_TELEGRAM §3; cập nhật `deploy/README.md`, UAT_CHECKLIST mục bot; **dừng, báo anh** (không push / gộp `main` khi chưa duyệt). | Mọi vai làm được luồng chính trên bot TEST; báo cáo kết quả cho anh |
+| **BOT-2.9** · `DOING` – phần chạy được ở máy xong 2026-11-19 (test 482 / 482 gồm 73 test messaging; `bot-1.2-identity.http` 23 / 23 trên API thử với khóa tạm; `bot-1.1-channel.http` 12 / 21 do DB dev có liên kết bot thật của admin + hàng đợi tin tồn – không phải lỗi code); **còn: server test + token bot thật (cần anh)** · Gộp, kiểm thử, triển khai TEST | Chạy lại mọi `bot-*.http`, test xanh; dựng `messaging` trên server test (bộ bot TEST, webhook); smoke theo từng vai BOT_TELEGRAM §3; cập nhật `deploy/README.md`, UAT_CHECKLIST mục bot; **dừng, báo anh** (không push / gộp `main` khi chưa duyệt). | Mọi vai làm được luồng chính trên bot TEST; báo cáo kết quả cho anh |
 | BOT-3.x · `DEFERRED(sau go-live)` | 3.1 Bàn giao ca trong Thẻ ca (lưu Obsidian khi có T50) · 3.2 Công tuần của tôi + nút góp ý · 3.3 Đo số liệu (thời gian nhận cảnh báo, số lần bấm, chức năng không dùng) · 3.4 Mini App (FE) cho biểu mẫu dài / bảng điều hành | – |
 
 **Việc của anh (không phải Claude Code):** tạo bot qua @BotFather – bộ DEV trước (VH, DH, TRO_LY), sau đó TEST, PROD; đặt token vào user-secrets / env; in QR cổng; cấp số điện thoại trong hồ sơ nhân viên.
@@ -461,7 +578,7 @@ Danh sách màn hình mỗi pha lấy theo `docs/mockup/js/data/catalog.js` (c�
 - QC / ATTP, đóng gói / giao vận / phản ánh / hộp, nhân sự, KPI dashboard.
 
 
-### T45R.8 – Hoàn thiện quản trị người dùng (D-37, D-38, D-39) · phụ thuộc T48.0, FE-1 · **Backend `DONE` (2026-11-16), FE `TODO`** (D-40 – làm cùng đợt FE)
+### T45R.8 – Hoàn thiện quản trị người dùng (D-37, D-38, D-39) · phụ thuộc T48.0, FE-1 · **Backend `DONE` (2026-11-16), FE `DONE` 2026-11-20** (tạo người dùng + nhóm + mật khẩu tạm: UG-1 C-06; nút **Lấy từ nhân viên** → Person/Insert; mật khẩu tạm → hộp **đổi mật khẩu bắt buộc** khi mở web)
 Theo cơ chế cũ (D-30, D-31): chỉ sửa `PersonService`, `UserService`, `LoginService`, `EncriptFunctionsHelper`, controller cùng tên, DTO Custom; **không thêm bảng / cột**.
 
 - **D-37 – Tắt menu cũ:** script `DB/seed/ObjectMenu_disable_legacy.sql` (idempotent) đặt `IsActive = 0` cho các mục ObjectMenu của app cũ (MetaLink kiểu cũ như `quan-ly-dang-nhap`, `quan-ly-vung`… – liệt kê đúng 26 mục đã phát hiện ở FE-0 theo Id + MetaLink trong comment). Không xóa, không đụng `UserRole`. Chạy trên DB dev, đưa vào `deploy` cho staging. Nhóm menu cấp 1 chỉ tắt khi không còn con đang bật.

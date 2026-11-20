@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><title>Mô phỏng – Chi tiết nhân viên (D-68, UI-4)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--surface-2:#fff;--border:#E8ECE5;--text-primary:#263238;--text-secondary:#6b756e;--bg-success:#EFF5E5;--text-success:#6F9131;--bg-accent:#E6F1FB;--text-accent:#185FA5;--bg-warning:#FDF0E6;--text-warning:#B85A16;--border-warning:#F5C9A6;--bg-danger:#FCEBEB;--text-danger:#A32D2D;--bg-neutral:#F1EFE8}
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F6F8F4;color:var(--text-primary);margin:24px auto;max-width:1200px}
+button{border:1px solid #cfd6cc;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px}
+.c{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.l{font-size:12px;color:var(--text-secondary)}.v{font-size:13px}
+.k{display:flex;gap:10px;align-items:center}
+.ki{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px;flex:none}
+.tab{font-size:13px;padding:8px 2px;color:var(--text-secondary)}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.b{font-size:11px;padding:2px 8px;border-radius:6px}
+.d{border:1px solid var(--border);border-radius:8px;padding:6px;text-align:center;font-size:12px}
+</style></head><body>
+<p class="l">Mô phỏng bố cục tab Tổng quan – số liệu minh họa. Thẻ chỉ số theo D-64 c. Ngày sinh / địa chỉ / giới tính chỉ hiện với người có quyền sửa hồ sơ nhân viên.</p>
+<div style="display:grid;gap:12px">
+<div class="l"><i class="ti ti-arrow-left"></i> Nhân viên / NV-00231</div>
+<div class="c">
+ <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+  <div style="width:56px;height:56px;border-radius:50%;background:var(--bg-accent);color:var(--text-accent);display:grid;place-items:center;font-weight:600;font-size:18px">TH</div>
+  <div style="flex:1;min-width:220px">
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:18px;font-weight:600">Trần Thị Hoa</span><span class="b" style="background:var(--bg-success);color:var(--text-success)">Đang làm việc</span><span class="b" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-brand-telegram"></i> Đã liên kết bot</span></div>
+   <div class="l" style="margin-top:4px">NV-00231 · Tổ trưởng tổ Nấu · Bếp trung tâm · vào làm 03/2024 (2 năm 8 tháng)</div>
+   <div class="l" style="margin-top:2px"><i class="ti ti-phone"></i> 0987 654 321 &nbsp; <i class="ti ti-mail"></i> hoa.tt@delicare.vn</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><button>Sửa</button><button>Phân ca</button><button>Chấm công hộ</button><button><i class="ti ti-dots"></i></button></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px">
+  <div class="c k"><div class="ki" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-calendar-time"></i></div><div><div class="l">Ca tháng này</div><div style="font-size:26px;font-weight:800">18 <span class="l">· 142 giờ</span></div></div></div>
+  <div class="c k"><div class="ki" style="background:var(--bg-success);color:var(--text-success)"><i class="ti ti-clock-check"></i></div><div><div class="l">Đúng giờ (tháng)</div><div style="font-size:26px;font-weight:800">94%</div></div></div>
+  <div class="c k"><div class="ki" style="background:var(--bg-warning);color:var(--text-warning)"><i class="ti ti-beach"></i></div><div><div class="l">Ngày nghỉ năm nay</div><div style="font-size:26px;font-weight:800">7 <span class="l">· 1 đơn chờ</span></div></div></div>
+  <div class="c k"><div class="ki" style="background:var(--bg-danger);color:var(--text-danger)"><i class="ti ti-user-x"></i></div><div><div class="l">Vắng / muộn (tháng)</div><div style="font-size:26px;font-weight:800">0 <span class="l">/ 1 muộn</span></div></div></div>
+ </div>
+ <div style="display:flex;gap:18px;margin-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
+  <span class="tab" style="color:var(--text-primary);border-bottom:2px solid var(--text-success)">Tổng quan</span><span class="tab">Lịch ca</span><span class="tab">Chấm công</span><span class="tab">Nghỉ phép</span><span class="tab">Đổi ca</span><span class="tab">Công việc</span><span class="tab">Tài khoản và bot</span><span class="tab">Tài liệu</span><span class="tab">Lịch sử</span>
+ </div>
+</div>
+<div class="c" style="background:var(--bg-warning);border-color:var(--border-warning);color:var(--text-warning);font-size:13px"><i class="ti ti-alert-triangle"></i> Cần chú ý: 1 đơn nghỉ 25–26/11 đang chờ duyệt · 2 lần chấm công ngoài bán kính trong 7 ngày</div>
+<div style="display:grid;grid-template-columns:4fr 5fr 3fr;gap:12px">
+ <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:6px">Thông tin nhân viên <span class="l" style="float:right">Sửa</span></div>
+  <div class="row"><span class="l">Chức danh</span><span class="v">Tổ trưởng tổ Nấu</span></div>
+  <div class="row"><span class="l">Đơn vị</span><span class="v">Bếp trung tâm</span></div>
+  <div class="row"><span class="l">Ngày sinh</span><span class="v">12/05/1990</span></div>
+  <div class="row"><span class="l">Giới tính</span><span class="v">Nữ</span></div>
+  <div class="row" style="border:0"><span class="l">Địa chỉ</span><span class="v">Mỹ Hào, Hưng Yên</span></div></div>
+ <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:8px">Ca 7 ngày tới</div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+   <div class="d"><div class="l">T5</div>CA1</div><div class="d"><div class="l">T6</div>CA1</div><div class="d"><div class="l">T7</div>CA2</div><div class="d"><div class="l">CN</div>–</div><div class="d"><div class="l">T2</div>CA1</div><div class="d" style="background:var(--bg-warning);color:var(--text-warning)"><div>T3</div>Nghỉ</div><div class="d" style="background:var(--bg-warning);color:var(--text-warning)"><div>T4</div>Nghỉ</div>
+  </div>
+  <div class="l" style="margin-top:8px">Hôm nay: CA1 06:00–14:00 · vào ca 05:52</div></div>
+ <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:6px">Tài khoản và bot</div>
+  <div class="row"><span class="l">Tài khoản web</span><span class="v">NV-00231</span></div>
+  <div class="row"><span class="l">Nhóm quyền</span><span class="v">OPS-KIT</span></div>
+  <div class="row" style="border:0"><span class="l">Telegram</span><span class="v">Đã liên kết</span></div>
+  <div style="margin-top:8px"><button>Tạo mã liên kết bot</button></div></div>
+</div>
+<div style="display:grid;grid-template-columns:5fr 7fr;gap:12px">
+ <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:8px">Giờ công 30 ngày</div>
+  <svg viewBox="0 0 300 90" width="100%"><g fill="#85B7EB"><rect x="5" y="30" width="7" height="60"/><rect x="15" y="30" width="7" height="60"/><rect x="25" y="32" width="7" height="58"/><rect x="45" y="30" width="7" height="60"/><rect x="55" y="30" width="7" height="60"/><rect x="65" y="34" width="7" height="56"/><rect x="85" y="30" width="7" height="60"/><rect x="95" y="30" width="7" height="60"/><rect x="105" y="30" width="7" height="60"/><rect x="125" y="31" width="7" height="59"/><rect x="135" y="30" width="7" height="60"/><rect x="165" y="30" width="7" height="60"/><rect x="175" y="30" width="7" height="60"/><rect x="185" y="38" width="7" height="52"/><rect x="205" y="30" width="7" height="60"/><rect x="215" y="30" width="7" height="60"/><rect x="245" y="30" width="7" height="60"/><rect x="255" y="30" width="7" height="60"/><rect x="265" y="30" width="7" height="60"/><rect x="285" y="30" width="7" height="60"/></g></svg>
+  <div class="l">Mỗi cột một ngày · cột thấp = về sớm / vào muộn</div></div>
+ <div class="c"><div style="display:flex;justify-content:space-between"><span style="font-weight:600;font-size:14px">Chấm công gần đây</span><span class="l">Xem bảng công</span></div>
+  <div class="row"><span class="v">19/11 · CA1 · vào 05:52 – ra 14:05</span><span class="b" style="background:var(--bg-success);color:var(--text-success)">GPS · hợp lệ</span></div>
+  <div class="row"><span class="v">18/11 · CA1 · vào 06:07 – ra 14:00</span><span class="b" style="background:var(--bg-warning);color:var(--text-warning)">Muộn 7′</span></div>
+  <div class="row" style="border:0"><span class="v">17/11 · CA2 · vào 13:55 – ra 22:02</span><span class="b" style="background:var(--bg-danger);color:var(--text-danger)">Ngoài bán kính</span></div></div>
+</div>
+</div></body></html>

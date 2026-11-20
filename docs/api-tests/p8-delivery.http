@@ -1,3 +1,5 @@
+### ⚠ MA-1 (D-63, 2026-11-19): file này viết TRƯỚC quy tắc mã mới – còn gửi mã danh mục tự đặt (Code=…) / số chứng từ tự đặt và kỳ vọng số PH- / KH- / NL-.
+### Máy chủ nay bỏ qua mã G1 gửi lên và sinh mã (KHB- / NC- / DH- / PN- / LO- / KS-…) → các bước tìm lại theo mã có thể hỏng. Kiểm hồi quy toàn luồng: full-flow.http (đã cập nhật).
 ### DELICARE – Pilot P8 (T19, khung cũ D-30): chuyến CX- (đơn giao PH- + điểm dừng) → nhiệt độ xuất phát (≥ 60 °C) → xuất phát
 ### (chặn khi mẻ chưa đóng gói / chưa lưu mẫu – D-42) → đến điểm → bàn giao + POD (nhiệt độ ≥ 60 °C) → đối soát suất phục vụ → đóng; phản ánh PA-.
 ### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
