@@ -17,6 +17,7 @@
 @clientKey = dat-khoa-client-luc-chay
 @run = {{$localDatetime "YYYYMMDDHHmmss"}}
 
+### 0. Đăng nhập (admin)
 # @name login
 POST {{base}}/api/Authentication/Login
 Content-Type: application/json
