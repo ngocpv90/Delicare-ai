@@ -48,12 +48,14 @@
   // Chế độ thật: hộp thoại / ngăn chi tiết cũng bỏ chữ kỹ thuật của mockup như vùng nội dung chính (APP.cleanDemoText nạp sau ui.js).
   const cleanTech = root => { try { if (window.APP && APP.cleanDemoText) APP.cleanDemoText(root); } catch (e) { console.warn(e); } };
   // ---------- Modal ----------
-  UI.modal = ({ title, sub, body, foot, size, onMount }) => {
+  // locked (T45R.8): hộp thoại bắt buộc (vd. đổi mật khẩu tạm) – không có nút X, không đóng bằng bấm nền / Esc.
+  UI.modal = ({ title, sub, body, foot, size, onMount, locked }) => {
     const ov = document.createElement('div'); ov.className = 'modal overlay show'; ov.style.display = 'block'; ov.tabIndex = -1;
-    ov.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ${size === 'lg' ? 'modal-xl' : size === 'sm' ? '' : 'modal-lg'}" role="dialog" aria-modal="true"><div class="modal-content"><div class="modal-header"><div style="flex:1;min-width:0"><h5 class="modal-title">${title}</h5>${sub ? `<div class="panel-desc">${sub}</div>` : ''}</div><button type="button" class="btn-close" data-close aria-label="Đóng"></button></div><div class="modal-body">${body || ''}</div>${foot !== false ? `<div class="modal-footer">${foot || '<button class="btn" data-close>Đóng</button>'}</div>` : ''}</div></div>`;
+    ov.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ${size === 'lg' ? 'modal-xl' : size === 'sm' ? '' : 'modal-lg'}" role="dialog" aria-modal="true"><div class="modal-content"><div class="modal-header"><div style="flex:1;min-width:0"><h5 class="modal-title">${title}</h5>${sub ? `<div class="panel-desc">${sub}</div>` : ''}</div>${locked ? '' : '<button type="button" class="btn-close" data-close aria-label="Đóng"></button>'}</div><div class="modal-body">${body || ''}</div>${foot !== false ? `<div class="modal-footer">${foot || '<button class="btn" data-close>Đóng</button>'}</div>` : ''}</div></div>`;
+    if (locked) ov.dataset.locked = '1';
     document.body.appendChild(ov);
     const close = () => ov.remove();
-    ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
+    ov.addEventListener('click', e => { if (locked) return; if (e.target === ov || e.target.closest('[data-close]')) close(); });
     onMount && onMount(ov.querySelector('.modal-content'), close);
     cleanTech(ov);
     return close;

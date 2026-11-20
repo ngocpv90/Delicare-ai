@@ -114,21 +114,64 @@
       title: 'Tạo người dùng', size: 'md',
       body: `<div class="form-grid">
         <div class="field"><label>Tên đăng nhập <span class="req">*</span></label><input class="input" id="nuName" maxlength="50" placeholder="vd. an.nguyen"><span class="hint">Chữ thường, không dấu; trùng sẽ báo lỗi.</span></div>
-        <div class="field"><label>Hồ sơ người</label><select class="select" id="nuPerson"><option value="">— Không gắn —</option>${persons.map(x => `<option value="${esc(x.Id)}">${esc(x.FullName || x.Id)}</option>`).join('')}</select></div>
+        <div class="field"><label>Hồ sơ người</label><select class="select" id="nuPerson"><option value="">— Không gắn —</option>${persons.map(x => `<option value="${esc(x.Id)}">${esc(x.FullName || x.Id)}</option>`).join('')}</select>${LIVE() ? `<button type="button" class="btn sm mt" id="nuFromEmp">${I('users')} Lấy từ nhân viên</button>` : ''}</div>
+        <div class="field full hide" id="nuEmpBox"></div>
         ${groupPicker([])}
         <div class="field"><label class="row-flex" style="gap:6px"><input type="checkbox" id="nuActive" checked> Hoạt động</label></div></div><div id="nuErr" class="notice warn hide"></div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="nuOk">Tạo người dùng</button>',
-      onMount: (m, close) => m.querySelector('#nuOk').onclick = () => {
+      onMount: (m, close) => {
+        // T45R.8 (D-38): "Lấy từ nhân viên" – chọn Employee để tạo hồ sơ người mới (Person/Insert tạo kèm đúng 1 tài khoản);
+        // chỉ điền dữ liệu, không lưu liên kết Employee ↔ Person (DB không có cột – GAP-ADM-03).
+        let emp = null;
+        const box = m.querySelector('#nuEmpBox'), selPerson = m.querySelector('#nuPerson');
+        const showEmp = () => {
+          if (!emp) { box.classList.add('hide'); box.innerHTML = ''; selPerson.disabled = false; return; }
+          selPerson.value = ''; selPerson.disabled = true;
+          box.classList.remove('hide');
+          box.innerHTML = `<div class="notice info small">${I('users')}<div><b>Tạo hồ sơ mới từ nhân viên ${esc(emp.code || '')} – ${esc(emp.fullName || '')}</b>SĐT: ${esc(emp.phone || '–')} · Ngày sinh: ${emp.dateOfBirth ? esc(String(emp.dateOfBirth).slice(0, 10)) : '–'} · Giới tính: ${esc(emp.gender || '–')} · Địa chỉ: ${esc(emp.address || '–')} <button type="button" class="btn sm" id="nuEmpClr">Bỏ chọn</button></div></div>`;
+          box.querySelector('#nuEmpClr').onclick = () => { emp = null; showEmp(); };
+        };
+        const suggest = full => { const w = String(full || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, 'd').toLowerCase().split(/\s+/).filter(Boolean).map(x => x.replace(/[^a-z0-9]/g, '')).filter(Boolean); return w.length > 1 ? w[w.length - 1] + '.' + w[0] : (w[0] || ''); };
+        const fromEmp = m.querySelector('#nuFromEmp');
+        if (fromEmp) fromEmp.onclick = () => UI.modal({
+          title: 'Lấy từ nhân viên', size: 'md',
+          body: `<div class="row-flex"><input class="input" id="feQ" placeholder="Gõ mã hoặc tên nhân viên (từ 2 ký tự)" style="flex:1"><button class="btn primary" id="feGo">Tìm</button></div><div id="feList" class="mt"></div>`,
+          onMount: (mm, close2) => {
+            const go = () => {
+              const q = mm.querySelector('#feQ').value.trim(), list = mm.querySelector('#feList');
+              if (q.length < 2) { list.innerHTML = '<div class="muted small">Nhập ít nhất 2 ký tự</div>'; return; }
+              list.innerHTML = '<div class="muted small">Đang tìm…</div>';
+              Store.query('Employee/GetAll', { SearchText: q, PageSize: 20, PageIndex: 1 }).then(r => {
+                const rows = r.ok ? (r.list || []) : [];
+                if (!r.ok) { list.innerHTML = `<div class="notice warn small">${esc(r.message || 'Không tìm được nhân viên')}</div>`; return; }
+                list.innerHTML = rows.length ? `<div class="grid">${rows.map((e, i) => `<button class="btn" data-ei="${i}" style="justify-content:space-between">${esc(e.fullName || '')}<span class="small muted">${esc(e.code || '')}${e.phone ? ' · ' + esc(e.phone) : ''}</span></button>`).join('')}</div>` : '<div class="muted small">Không có nhân viên phù hợp</div>';
+                list.querySelectorAll('[data-ei]').forEach(b => b.onclick = () => {
+                  emp = rows[+b.dataset.ei]; close2(); showEmp();
+                  const un = m.querySelector('#nuName'); if (!un.value.trim()) un.value = suggest(emp.fullName);
+                });
+              });
+            };
+            mm.querySelector('#feGo').onclick = go;
+            mm.querySelector('#feQ').onkeydown = e => { if (e.key === 'Enter') go(); };
+            mm.querySelector('#feQ').focus();
+          }
+        });
+        m.querySelector('#nuOk').onclick = () => {
         const name = m.querySelector('#nuName').value.trim(), err = m.querySelector('#nuErr');
         if (!name) { err.textContent = 'Nhập tên đăng nhập'; err.classList.remove('hide'); return; }
         const btn = m.querySelector('#nuOk'); btn.disabled = true;
-        Store.act('User/Insert', { form: { UserName: name, PersonId: m.querySelector('#nuPerson').value, IsActive: m.querySelector('#nuActive').checked, ListUserGroupId: pickedGroups(m) }, tables: ['User', 'UserClaim'], quiet: true }).then(r => {
+        const common = { UserName: name, IsActive: m.querySelector('#nuActive').checked, ListUserGroupId: pickedGroups(m) };
+        const call = emp
+          ? Store.act('Person/Insert', { form: Object.assign({ FullName: emp.fullName || '', PhoneNumber: emp.phone || '', DateOfBirth: emp.dateOfBirth ? String(emp.dateOfBirth).slice(0, 10) : '', Sex: emp.gender || '', Address: emp.address || '' }, common), tables: ['Person', 'User', 'UserClaim'], quiet: true })
+          : Store.act('User/Insert', { form: Object.assign({ PersonId: selPerson.value }, common), tables: ['User', 'UserClaim'], quiet: true });
+        call.then(r => {
           btn.disabled = false;
           if (!r.ok) { err.textContent = r.message || 'Không tạo được người dùng'; err.classList.remove('hide'); return; }
           close(); APP.refresh();
           const d = r.data || {};
           if (d.tempPassword) showTempPassword(esc(d.userName || name), d.tempPassword); else UI.toast('Đã tạo người dùng ' + esc(name), 'ok');
         });
+        };
       }
     });
   }

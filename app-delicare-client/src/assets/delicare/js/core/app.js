@@ -369,13 +369,14 @@
       }
     });
   }
-  function changePassword() {
+  // forced (T45R.8 / D-39): đăng nhập bằng mật khẩu tạm → bắt buộc đổi trước khi dùng (máy chủ cũng chặn mọi API khác).
+  function changePassword(forced) {
     const H = window.DC_HOST;
     UI.modal({
-      title: 'Đổi mật khẩu', sub: 'API User/ChangePassword', size: 'sm',
+      title: 'Đổi mật khẩu', sub: forced ? 'Bạn đang dùng mật khẩu tạm – đặt mật khẩu mới để tiếp tục' : 'API User/ChangePassword', size: 'sm', locked: !!forced,
       body: `<div class="form-grid" style="grid-template-columns:1fr"><div class="field"><label for="pwOld">Mật khẩu hiện tại</label><input class="input" type="password" id="pwOld" autocomplete="current-password"></div><div class="field"><label for="pwNew">Mật khẩu mới (từ 9 ký tự)</label><input class="input" type="password" id="pwNew" autocomplete="new-password"></div><div class="field"><label for="pwNew2">Nhập lại mật khẩu mới</label><input class="input" type="password" id="pwNew2" autocomplete="new-password"></div></div>`,
-      foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="pwSave">Lưu</button>`,
-      onMount: (m, close) => m.querySelector('#pwSave').onclick = async () => {
+      foot: forced ? `<button class="btn" id="pwOut">Đăng xuất</button><button class="btn primary" id="pwSave">Lưu</button>` : `<button class="btn" data-close>Hủy</button><button class="btn primary" id="pwSave">Lưu</button>`,
+      onMount: (m, close) => { const out = m.querySelector('#pwOut'); if (out) out.onclick = () => H.logout(); m.querySelector('#pwSave').onclick = async () => {
         const o = m.querySelector('#pwOld').value, n = m.querySelector('#pwNew').value, n2 = m.querySelector('#pwNew2').value;
         const errs = [];
         if (!o || !n) errs.push('Nhập đủ mật khẩu hiện tại và mật khẩu mới');
@@ -390,8 +391,9 @@
           const res = await H.send('PUT', 'User/ChangePassword', fd);
           if (res && res.responseCode !== undefined && res.responseCode !== 200) return UI.toast(esc(res.responseMessage || 'Không đổi được mật khẩu'), 'err');
           close(); UI.toast('Đã đổi mật khẩu', 'ok');
+          if (forced) { if (H.user) H.user.mustChangePassword = false; setTimeout(() => window.location.reload(), 600); }
         } catch (e) { UI.toast(esc(H.errorText(e)), 'err'); }
-      }
+      }; }
     });
   }
   function chooseRole() {
@@ -491,13 +493,15 @@
     document.querySelectorAll('[data-role-btn]').forEach(b => b.onclick = roleOrAccount);
     onDoc(document, 'click', e => { if (e.target.closest('[data-role]')) chooseRole(); const sr = document.getElementById('searchResults'); if (sr && !e.target.closest('.dc-search-area')) sr.classList.remove('show'); });
     const gs = document.getElementById('globalSearch'); gs.oninput = e => search(e.target.value); gs.onkeydown = e => { if (e.key === 'Escape') { gs.value = ''; search(''); } };
-    onDoc(document, 'keydown', e => { if (e.key === 'Escape') { const d = document.querySelector('.drawer-wrap:last-of-type, .overlay:last-of-type'); if (d) d.remove(); } });
+    onDoc(document, 'keydown', e => { if (e.key === 'Escape') { const d = document.querySelector('.drawer-wrap:last-of-type, .overlay:last-of-type'); if (d && !d.dataset.locked) d.remove(); } });
     // Liên kết '#/screen-id' trong HTML của mockup → đổi sang tiền tố hash của Angular.
     onDoc(document, 'click', e => {
       const a = e.target.closest && e.target.closest('a[href^="#/"]'); if (!a || a.onclick) return;
       const href = a.getAttribute('href'), base = APP.base(); if (base === '#/' || href.startsWith(base)) return;
       e.preventDefault(); location.hash = base + href.slice(2);
     }, true);
+    // T45R.8 (D-39): mật khẩu tạm → chỉ hiện hộp đổi mật khẩu bắt buộc; không vẽ màn / dò API (máy chủ trả 403 cho mọi API khác).
+    if (Store.isLive && (window.DC_HOST.user || {}).mustChangePassword) { changePassword(true); return; }
     // Chuông cảnh báo: hỏi lại mỗi 60 giây khi người dùng đứng yên trên một màn hình.
     if (Store.isLive) alertTimer = setInterval(() => { if (!document.hidden) pullAlerts(); }, ALERT_TTL);
     onDoc(window, 'hashchange', route);

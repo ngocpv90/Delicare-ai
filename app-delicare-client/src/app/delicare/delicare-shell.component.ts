@@ -70,7 +70,7 @@ export class DelicareShellComponent implements AfterViewInit, OnDestroy {
     // là có hiệu lực sau khi tải lại trang. Lỗi mạng → dùng menu đã lưu lúc đăng nhập.
     const stored = this.auth.userValue;
     firstValueFrom(this.http.get<any>(`${URL_API}User/GetCurrent`))
-      .then((res) => (Array.isArray(res?.data?.listMenu) && stored ? { ...stored, listMenu: res.data.listMenu, isAdmin: res.data.user?.isAdmin ?? stored.isAdmin } : stored))
+      .then((res) => (Array.isArray(res?.data?.listMenu) && stored ? { ...stored, listMenu: res.data.listMenu, isAdmin: res.data.user?.isAdmin ?? stored.isAdmin, mustChangePassword: res.data.mustChangePassword ?? stored.mustChangePassword } : stored))
       .catch(() => stored)
       .then((user) => this.startEngine(user));
   }
