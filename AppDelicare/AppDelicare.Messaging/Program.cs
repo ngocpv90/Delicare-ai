@@ -79,6 +79,9 @@ namespace AppDelicare.Messaging
             // BOT-1.5c-2: chức năng chỉ xem (Kho, Kế hoạch, Kinh doanh, Kế toán, QA, Quản trị).
             builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.XemNhanhActions>();
             builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.XemNhanhActions>());
+            // BOT-3.1: 🔍 Truy xuất lô / mẻ (Bếp, QA, Kho).
+            builder.Services.AddSingleton<AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions>();
+            builder.Services.AddSingleton<IBotActionProvider>(sp => sp.GetRequiredService<AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions>());
             // BOT-1.6: bot Điều hành (DH).
             builder.Services.AddSingleton<IBotActionProvider, AppDelicare.Messaging.Audiences.Internal.DieuHanh.DieuHanhActions>();
             builder.Services.AddSingleton<BotActionRegistry>();

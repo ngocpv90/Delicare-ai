@@ -34,9 +34,50 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             new BotAction { Code = "gv_mine", Module = "GIAOVAN", Label = "🚚 Chuyến của tôi", Command = "chuyen", CommandDescription = "Chuyến giao hôm nay của tôi", Bots = ["VH"], MenuMetaLink = "#/log-stop", Order = 1, Handler = MineAsync },
             new BotAction { Code = "gv_board", Module = "GIAOVAN", Label = "🗺 Giao vận hôm nay", Command = "giaovan", CommandDescription = "Mọi chuyến giao hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-route", Order = 2, Handler = BoardAsync },
             new BotAction { Code = "gv_box", Module = "GIAOVAN", Label = "📥 Nhận hộp về", Command = "hop", CommandDescription = "Ghi số hộp khay nhận về", Bots = ["VH"], MenuMetaLink = "#/log-container-return", Order = 3, Handler = BoxesAsync },
+            // BOT-3.1 (UG-1 C-22): lịch xe ngày mai, hộp khay hôm nay ("Chuyến trực tiếp" = 🗺 Giao vận hôm nay → thẻ chuyến).
+            new BotAction { Code = "gv_schedule", Module = "GIAOVAN", Label = "🧭 Lịch xe", Command = "lichxe", CommandDescription = "Lịch xe ngày mai", Bots = ["VH"], MenuMetaLink = "#/log-route", Order = 4, Handler = ScheduleAsync },
+            new BotAction { Code = "gv_boxes_today", Module = "GIAOVAN", Label = "📦 Hộp khay hôm nay", Command = "hopkhay", CommandDescription = "Hộp khay phải thu / đã thu hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-container-return", Order = 5, Handler = BoxesTodayAsync },
         ];
 
         private string Today => VnTime.Today(time).ToString("yyyy-MM-dd");
+
+        /// <summary>BOT-3.1 (UG-1 C-22): 🧭 Lịch xe ngày mai – xe, tài xế, giờ, số điểm / suất (DeliveryRoute/GetBoard ngày mai); bấm mở thẻ chuyến.</summary>
+        public async Task ScheduleAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            DateTime day = VnTime.Today(time).AddDays(1);
+            if (await TokenAsync(ctx, ct) is not { } token || await RoutesAsync(ctx, token, "api/DeliveryRoute/GetBoard?DeliveryDate=" + day.ToString("yyyy-MM-dd"), ct) is not { } routes)
+            {
+                return;
+            }
+            await ShowAsync(ctx, new NeutralMessage
+            {
+                Title = $"🧭 Lịch xe {day:dd/MM} ({routes.Count} chuyến)",
+                Lines = routes.Count == 0 ? ["Chưa lập chuyến nào cho ngày mai."]
+                    : [.. routes.Take(15).Select(r => $"{RouteLine(r)} · {S(r, "licensePlate") ?? S(r, "vehicleCode") ?? "chưa có xe"} · {S(r, "driverName") ?? "chưa có tài xế"}")],
+                Buttons = [.. routes.Take(12).Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
+            }, ct);
+        }
+
+        /// <summary>BOT-3.1: 📦 Hộp khay hôm nay – phải thu / đã thu / hỏng theo đơn giao (ContainerReturn/GetList hôm nay).</summary>
+        public async Task BoxesTodayAsync(BotActionContext ctx, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            var r = await Web.GetAsUserAsync<JsonElement>($"api/ContainerReturn/GetList?from={Today}&to={Today}&page=1&pageSize=100", token, ct);
+            if (!r.IsOk)
+            {
+                await SayAsync(ctx, Problem(r), ct);
+                return;
+            }
+            var items = Arr(r.Data, "listItem");
+            decimal Q(JsonElement x, string k) => decimal.TryParse(S(x.TryGetProperty("return", out var rt) ? rt : x, k), NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d : 0m;
+            decimal expected = items.Sum(x => Q(x, "expectedQuantity")), returned = items.Sum(x => Q(x, "returnedQuantity")), damaged = items.Sum(x => Q(x, "damagedQuantity"));
+            var lines = new List<string> { $"Phải thu {expected:#,0} · đã thu {returned:#,0} · hỏng {damaged:#,0} · còn thiếu {Math.Max(0, expected - returned):#,0}" };
+            lines.AddRange(items.Take(14).Select(x => $"• {S(x, "customerName") ?? S(x, "deliveryNumber")} · {S(x, "packagingType")} {Q(x, "returnedQuantity"):#,0}/{Q(x, "expectedQuantity"):#,0} · {S(x, "statusName")}"));
+            await ShowAsync(ctx, new NeutralMessage { Title = $"📦 Hộp khay hôm nay ({items.Count} lượt)", Lines = items.Count == 0 ? ["Chưa có lượt thu hồi hộp khay nào hôm nay."] : lines }, ct);
+        }
 
         private async Task<List<JsonElement>?> RoutesAsync(BotActionContext ctx, string token, string path, CancellationToken ct)
         {

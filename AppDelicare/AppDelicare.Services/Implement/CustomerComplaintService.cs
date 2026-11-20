@@ -452,6 +452,11 @@ namespace AppDelicare.Services.Implement
             {
                 var db = _unitOfWork.DbContext;
                 var query = db.CustomerComplaint.AsNoTracking().Where(c => !c.IsDeleted);
+                if (request.Mine == true)
+                {
+                    Guid me = _currentActor.RequireActor().UserId;
+                    query = query.Where(c => c.CreatedBy == me);
+                }
                 if (!string.IsNullOrWhiteSpace(request.Status))
                 {
                     query = query.Where(c => c.ComplaintStatus == request.Status);

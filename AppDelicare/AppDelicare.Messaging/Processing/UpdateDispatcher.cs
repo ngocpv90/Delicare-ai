@@ -26,7 +26,8 @@ namespace AppDelicare.Messaging.Processing
         BotActionRegistry registry, MenuNavigator menu, ShiftCards shiftCards, IncidentActions incidents, ApprovalActions approvals, SelfServiceActions self, CodeSearch search, ReplyContextStore replies,
         AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat,
-        AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu)
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu,
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions traCuu)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -50,6 +51,17 @@ namespace AppDelicare.Messaging.Processing
             if (e.ChatType is not (null or "private"))
             {
                 // BOT-1.7d: nhóm chat chỉ nhận tin thông báo; bấm nút trên tin trong nhóm → sự việc ghi ngay (thông báo nhỏ), nút khác mở trong chat riêng của người bấm.
+                // BOT-3.1: ngoại lệ /chatid – quản trị gõ trong nhóm để lấy mã nhóm cấu hình nhận thông báo (người khác: bỏ qua, không lộ mã).
+                if (e.Kind == IncomingKind.Command && e.Command == "chatid")
+                {
+                    var admin = await users.GetAsync(bot, e.FromId, ct);
+                    if (admin.Linked && admin.CanUseBot && admin.IsAdmin)
+                    {
+                        await BotReply.TextAsync(sender, bot, e.ChatId, $"🆔 Mã nhóm này: {e.ChatId}", ct: ct);
+                        return DispatchResult.Processed;
+                    }
+                    return DispatchResult.Ignored;
+                }
                 if (e.Kind != IncomingKind.Callback || e.CallbackId == null)
                 {
                     return DispatchResult.Ignored;
@@ -135,6 +147,9 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions.ReplyProxy:
                         await nhanSu.ReplyAsync(ctx, pending, ct);
+                        break;
+                    case AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions.ReplyTrace:
+                        await traCuu.ReplyAsync(ctx, pending, ct);
                         break;
                 }
                 return DispatchResult.Processed;
