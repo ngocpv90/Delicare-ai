@@ -10,7 +10,7 @@ BEGIN TRAN;
 -- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.
 -- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh trên ma trận.
 -- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục "Duyệt …" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.
--- D-69: ngoại lệ theo từng màn (Seeds.RightOverrides – đóng gói cho OPS-KIT, FIN-HR sửa hồ sơ nhân viên). D-68: màn tích hợp int-* chỉ FIN-IT (CEO / COO xem int-outbound) – Seeds.RestrictedScreens.
+-- D-69: ngoại lệ theo từng màn (Seeds.RightOverrides – đóng gói cho OPS-KIT, FIN-HR sửa hồ sơ nhân viên). D-71: màn tích hợp int-* chỉ FIN-IT (CEO / COO xem int-outbound) – Seeds.RestrictedScreens.
 IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'CEO' AND IsDeleted = 0)
     INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'CEO', 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'CEO-PMO' AND IsDeleted = 0)

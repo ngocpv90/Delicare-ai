@@ -62,6 +62,19 @@ namespace AppDelicare.Tests.Hr
             e.GetProperty("address").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
             e.GetProperty("dateOfBirth").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
             e.GetProperty("gender").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+            // API cũ cũng lọc (anh chốt 2026-11-19): GetById / GetAllData.
+            var byId = (await viewer.GetResultAsync($"/api/Employee/GetById?id={emp}")).Ok();
+            byId.GetProperty("fullName").GetString().Should().Be("Nguyễn Văn UI4");
+            byId.GetProperty("address").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+            byId.GetProperty("dateOfBirth").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+            (await admin.GetResultAsync($"/api/Employee/GetById?id={emp}")).Ok().GetProperty("address").GetString().Should().Be("Số 1 Phố Bí Mật");
+            using (var all = System.Text.Json.JsonDocument.Parse(await viewer.GetStringAsync("/api/Employee/GetAllData")))
+            {
+                var mine = all.RootElement.GetProperty("listData").EnumerateArray().Single(x => x.GetProperty("id").GetString() == emp.ToString());
+                mine.GetProperty("address").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
+            }
+            // Dữ liệu trong DB không bị đổi (chỉ lọc khi trả).
+            (await _factory.QueryAsync(db => db.Employee.AsNoTracking().SingleAsync(x => x.Id == emp))).Address.Should().Be("Số 1 Phố Bí Mật");
             (await viewer.GetResultAsync($"/api/Employee/GetOverview?id={Guid.NewGuid()}")).Fail("Không tìm thấy");
         }
 

@@ -88,9 +88,9 @@ public static partial class Seeds
     ];
 
     /// <summary>
-    /// D-68 (PROPOSED, làm theo quy tắc ROADMAP – mục PROPOSED chưa chốt thì làm theo đề xuất): màn GIỚI HẠN – chỉ nhóm liệt kê có quyền, nhóm khác = 0
+    /// D-71 (PROPOSED, làm theo quy tắc ROADMAP – mục PROPOSED chưa chốt thì làm theo đề xuất): màn GIỚI HẠN – chỉ nhóm liệt kê có quyền, nhóm khác = 0
     /// (khác RightOverrides chỉ nâng). Màn tích hợp bot (cấu hình kênh / bot, định danh, nhật ký tin) chỉ quản trị FIN-IT; CEO / COO xem tin gửi đi để thấy tin lỗi.
-    /// DB đang chạy: DB/scripts/D68_revoke_int_screens.sql.
+    /// DB đang chạy: DB/scripts/D71_revoke_int_screens.sql.
     /// </summary>
     public sealed record ScreenRight(bool Add, bool Edit, bool Delete, bool Export);
 
@@ -371,7 +371,7 @@ public static partial class Seeds
         sb.AppendLine("-- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.");
         sb.AppendLine("-- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh trên ma trận.");
         sb.AppendLine("-- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục \"Duyệt …\" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.");
-        sb.AppendLine("-- D-69: ngoại lệ theo từng màn (Seeds.RightOverrides – đóng gói cho OPS-KIT, FIN-HR sửa hồ sơ nhân viên). D-68: màn tích hợp int-* chỉ FIN-IT (CEO / COO xem int-outbound) – Seeds.RestrictedScreens.");
+        sb.AppendLine("-- D-69: ngoại lệ theo từng màn (Seeds.RightOverrides – đóng gói cho OPS-KIT, FIN-HR sửa hồ sơ nhân viên). D-71: màn tích hợp int-* chỉ FIN-IT (CEO / COO xem int-outbound) – Seeds.RestrictedScreens.");
         foreach (var (role, _, _) in matrix)
         {
             sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = {Sql(role)} AND IsDeleted = 0)");
@@ -389,7 +389,7 @@ public static partial class Seeds
                 {
                     f = (true, f.Add || o.Add, f.Edit || o.Edit, f.Delete, f.Print, f.Export, f.Import, f.Approve);   // D-69: chỉ nâng
                 }
-                if (RestrictedScreens.TryGetValue(s.Id, out var allowed))   // D-68: màn giới hạn – đặt đúng quyền, nhóm khác = 0
+                if (RestrictedScreens.TryGetValue(s.Id, out var allowed))   // D-71: màn giới hạn – đặt đúng quyền, nhóm khác = 0
                 {
                     f = allowed.TryGetValue(role, out var r) ? (true, r.Add, r.Edit, r.Delete, r.Export, r.Export, false, false) : (false, false, false, false, false, false, false, false);
                 }

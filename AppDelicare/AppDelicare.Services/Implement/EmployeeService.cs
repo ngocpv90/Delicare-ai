@@ -26,6 +26,26 @@ namespace AppDelicare.Services.Implement
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
 
+        /// <summary>
+        /// D-68 e (anh chốt mở rộng 2026-11-19 cho cả API cũ): ngày sinh, giới tính, địa chỉ chỉ trả cho người có quyền Sửa adm-employee
+        /// (NS, quản trị). Không có người dùng (job / hệ thống) → giữ nguyên.
+        /// </summary>
+        private async Task<bool> CanViewPersonalAsync()
+        {
+            if (currentActor.Actor is not { } actor)
+            {
+                return true;
+            }
+            return permissionService.IsAllowed(await permissionService.GetAsync(actor.UserId), "adm-employee", PermissionAction.Edit);
+        }
+
+        private static void MaskPersonal(Employee e)
+        {
+            e.DateOfBirth = null;
+            e.Gender = null;
+            e.Address = null;
+        }
+
         public async Task<IResults<EmployeeViewModel>> GetAll(EmployeeSearchRequest request)
         {
             try
@@ -49,6 +69,10 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);
                 dynamicParameters.Add(ConstantHelper.SortOrder, request.SortOrder);
                 var list = (await _dapperRepository.QueryMultipleUsingStoreProcAsync<EmployeeViewModel>("uspEmployee_GetAll", dynamicParameters)).ToList();
+                if (list.Count != 0 && !await CanViewPersonalAsync())
+                {
+                    list.ForEach(x => { x.DateOfBirth = null; x.Gender = null; x.Address = null; });
+                }
                 if (list.Count != 0)
                 {
                     int i = 0;
@@ -77,7 +101,11 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
-                var list = _unitOfWork.EmployeeRepository.GetAll().Where(x => !x.IsDeleted).ToList();
+                var list = Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(_unitOfWork.DbContext.Employee).Where(x => !x.IsDeleted).ToList();
+                if (list.Count != 0 && !CanViewPersonalAsync().GetAwaiter().GetResult())
+                {
+                    list.ForEach(MaskPersonal);
+                }
                 return new Results<Employee>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
@@ -193,7 +221,12 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
-                var data = await _unitOfWork.EmployeeRepository.GetSingleAsync(x => x.Id == id && !x.IsDeleted);
+                var data = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                    Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(_unitOfWork.DbContext.Employee), x => x.Id == id && !x.IsDeleted);
+                if (data != null && !await CanViewPersonalAsync())
+                {
+                    MaskPersonal(data);
+                }
                 if (data == null)
                 {
                     return new Result<Employee>
@@ -232,12 +265,10 @@ namespace AppDelicare.Services.Implement
                 {
                     return Result<AppDelicare.Model.Model.EmployeeOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
                 }
-                bool personal = permissionService.IsAllowed(await permissionService.GetAsync(currentActor.RequireActor().UserId), "adm-employee", PermissionAction.Edit);
+                bool personal = await CanViewPersonalAsync();
                 if (!personal)
                 {
-                    e.DateOfBirth = null;
-                    e.Gender = null;
-                    e.Address = null;
+                    MaskPersonal(e);
                 }
                 DateTime today = clock.Today, now = clock.Now;
                 var m = new AppDelicare.Model.Model.EmployeeOverviewModel { Employee = e, CanViewPersonal = personal };

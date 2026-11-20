@@ -1,5 +1,5 @@
 /*
-  D-68 (PROPOSED – làm theo quy tắc ROADMAP: mục PROPOSED chưa chốt thì làm theo đề xuất) – script DỮ LIỆU một lần cho DB đang chạy
+  D-71 (PROPOSED – làm theo quy tắc ROADMAP: mục PROPOSED chưa chốt thì làm theo đề xuất) – script DỮ LIỆU một lần cho DB đang chạy
   (không tạo / sửa bảng, cột; không DELETE).
   Màn tích hợp bot chỉ cho quản trị:
     int-channel, int-bot, int-identity, int-inbound, int-log : FIN-IT Truy cập + Thêm + Sửa + In + Xuất; nhóm khác = không quyền
@@ -10,8 +10,8 @@
 
   Bắt buộc truyền -v DryRun=1 (chạy thử) hoặc -v DryRun=0 (chạy thật) – không có giá trị mặc định để tránh ghi nhầm.
   CÁCH CHẠY (chỉ sau khi backup; SQL Server 2022, mức tương thích 160):
-    sqlcmd -S <server> -d <db> -E -f 65001 -v DryRun=1 -i DB/scripts/D68_revoke_int_screens.sql -W
-    sqlcmd -S <server> -d <db> -E -f 65001 -v DryRun=0 -i DB/scripts/D68_revoke_int_screens.sql -W
+    sqlcmd -S <server> -d <db> -E -f 65001 -v DryRun=1 -i DB/scripts/D71_revoke_int_screens.sql -W
+    sqlcmd -S <server> -d <db> -E -f 65001 -v DryRun=0 -i DB/scripts/D71_revoke_int_screens.sql -W
   Người dùng đang đăng nhập cần đăng nhập lại để menu / quyền mới có hiệu lực.
 */
 SET NOCOUNT ON;
