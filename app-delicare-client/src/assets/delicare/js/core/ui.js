@@ -386,6 +386,51 @@
       }
     });
   };
+  // ---------- UI-2R (D-69 b): khối thông tin rút gọn – thành phần chung của mọi màn chi tiết ----------
+  // UI.infoPanel(cfg) → HTML; UI.wireInfoPanel(root, cfg) gắn sự kiện (gập / mở, nhớ nhóm mở, sao chép, Sửa, Bổ sung).
+  // cfg = { key: 'customer' (nhớ nhóm mở theo loại màn), title, canEdit, onEdit(),
+  //         core: [{ icon, html }]                     – dòng cốt lõi luôn hiện, html rỗng → ẩn,
+  //         groups: [{ key, title, summary, rows: [[nhãn, giá trị html]], html, locked, open }] – nhóm gập; dòng giá trị rỗng → ẩn; nhóm rỗng → "Chưa có thông tin · Bổ sung" }
+  const infoOpenKey = key => 'dc-info-open:' + key;
+  const infoOpenGet = (key, def) => { try { const v = localStorage.getItem(infoOpenKey(key)); return v ? JSON.parse(v) : def; } catch (e) { return def; } };
+  const infoOpenSet = (key, list) => { try { localStorage.setItem(infoOpenKey(key), JSON.stringify(list)); } catch (e) { /* trình duyệt chặn lưu – bỏ qua */ } };
+  const filled = v => v !== null && v !== undefined && String(v).replace(/<[^>]*>/g, '').trim() !== '';
+  // Điện thoại / email bấm được; sao chép.
+  UI.tel = (phone, note) => (filled(phone) ? `<a href="tel:${esc(String(phone).replace(/[^\d+]/g, ''))}">${esc(phone)}</a>${note ? ` <span class="ip-muted">(${esc(note)})</span>` : ''}` : '');
+  UI.mail = email => (filled(email) ? `<a href="mailto:${esc(email)}">${esc(email)}</a>` : '');
+  UI.copyBtn = text => (filled(text) ? `<button type="button" class="ip-copy" data-copy="${esc(text)}" title="Sao chép" aria-label="Sao chép ${esc(text)}">${I('copy')}</button>` : '');
+  UI.infoPanel = cfg => {
+    const open = infoOpenGet(cfg.key, (cfg.groups || []).filter(g => g.open).map(g => g.key));
+    const core = (cfg.core || []).filter(c => filled(c.html));
+    const group = g => {
+      const rows = (g.rows || []).filter(r => filled(r[1]));
+      const body = rows.map(([l, v]) => `<div class="ip-r"><span>${esc(l)}</span><span>${v}</span></div>`).join('') + (filled(g.html) ? `<div class="ip-text">${g.html}</div>` : '');
+      if (!body) {
+        return `<div class="ip-sec ip-empty"><div class="ip-sh" aria-disabled="true"><span>${esc(g.title)}<small>Chưa có thông tin${cfg.canEdit ? ' · <a href="javascript:void 0" data-ip-edit>Bổ sung</a>' : ''}</small></span></div></div>`;
+      }
+      const isOpen = open.includes(g.key);
+      return `<div class="ip-sec ${isOpen ? 'open' : ''}" data-ipk="${esc(g.key)}"><button type="button" class="ip-sh" aria-expanded="${isOpen}" aria-controls="ip-${esc(cfg.key)}-${esc(g.key)}">
+        <span>${g.locked ? `<span class="ip-lock" title="Chỉ người có quyền xem">${I('lock')}</span>` : ''}${esc(g.title)}${filled(g.summary) ? `<small>${esc(g.summary)}</small>` : ''}</span>${I('chevron', 'ip-ch')}</button>
+        <div class="ip-sb" id="ip-${esc(cfg.key)}-${esc(g.key)}">${body}</div></div>`;
+    };
+    return `<div class="card panel ip" data-ip="${esc(cfg.key)}"><div class="ip-h"><h3>${esc(cfg.title)}</h3>${cfg.canEdit ? `<button class="btn xs" data-ip-edit>${I('edit')} Sửa</button>` : ''}</div>
+      ${core.length ? `<div class="ip-core">${core.map(c => `<div class="ip-row">${I(c.icon || 'clipboard')}<span>${c.html}</span></div>`).join('')}</div>` : ''}
+      ${(cfg.groups || []).map(group).join('')}</div>`;
+  };
+  UI.wireInfoPanel = (root, cfg) => {
+    const panel = root.querySelector(`[data-ip="${cfg.key}"]`); if (!panel) return;
+    panel.querySelectorAll('.ip-sec[data-ipk] > .ip-sh').forEach(btn => btn.onclick = () => {
+      const sec = btn.parentElement, now = !sec.classList.contains('open');
+      sec.classList.toggle('open', now); btn.setAttribute('aria-expanded', String(now));
+      infoOpenSet(cfg.key, [...panel.querySelectorAll('.ip-sec.open[data-ipk]')].map(s => s.dataset.ipk));
+    });
+    panel.querySelectorAll('[data-ip-edit]').forEach(b => b.onclick = e => { e.preventDefault(); cfg.onEdit && cfg.onEdit(); });
+    panel.querySelectorAll('[data-copy]').forEach(b => b.onclick = e => {
+      e.stopPropagation();
+      const done = () => { b.classList.add('done'); b.innerHTML = I('check'); UI.toast('Đã sao chép ' + esc(b.dataset.copy), 'ok'); };
+      try { navigator.clipboard.writeText(b.dataset.copy).then(done, () => UI.toast('Trình duyệt không cho sao chép', 'warn')); } catch (x) { UI.toast('Trình duyệt không cho sao chép', 'warn'); }
+    });
+  };
   // ---------- FE-E.2 (D-65): mã QR do máy chủ vẽ (Common/GetQrBatch – QRCoder) ----------
   // UI.qrSlot(text) → ô chờ; UI.fillQr(root) gom mọi ô chưa vẽ trong root, gọi 1 lần API rồi chèn SVG. Chế độ DEMO: hiện link chữ.
   UI.qrSlot = (text, size) => `<div class="qr-box" data-qr="${esc(text)}" style="width:${size || 160}px;height:${size || 160}px"><span class="muted small">QR…</span></div>`;

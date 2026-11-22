@@ -9,9 +9,11 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 1. **Làm xong task đang dở** (theo PROGRESS – trạng thái `DOING`), không bỏ ngang.
 2. ~~UI-1R~~ ✅ · ~~UI-3~~ ✅ · ~~UI-4~~ ✅ (xong 2026-11-19).
 3. ~~UI-5~~ ✅ hoàn thiện form khách hàng (xong 2026-11-21, nhánh `feat/UI-5-customer-form` – chờ anh duyệt).
-4. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
-5. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
-6. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
+4. ~~UI-2R~~ ✅ bố cục 1/3 – 2/3 + khối thông tin rút gọn (xong 2026-11-21).
+5. **MENU-1 – bỏ tiền tố "Duyệt – " ở 19 mục menu nhóm Phê duyệt** (anh yêu cầu 2026-11-22; việc nhỏ, làm cùng UI-2R hoặc ngay sau).
+6. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
+7. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
+8. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
 
 Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/user-guide/*` liên quan; xong bước nào báo anh mở thử giao diện bước đó.
 
@@ -100,6 +102,52 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 - **UI-2.5 Kiểm tra + tài liệu:** build FE xanh, test BE xanh; mở thử với 1 khách doanh nghiệp + 1 khách cá nhân trên DB dev, 3 cỡ màn hình; người không có quyền một màn thì không thấy tab đó; cập nhật `docs/user-guide/02_KINH_DOANH.md` (mục khách hàng) và `10_DIEM_PHAT.md` nếu liên quan.
 
 **AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
+
+## ★ MENU-1 – BỎ TIỀN TỐ "DUYỆT – " Ở MENU NHÓM PHÊ DUYỆT (anh yêu cầu 2026-11-22) · `TODO`
+
+> Nhóm menu **Phê duyệt** (`#/group/approve`) đã nói rõ là duyệt → tên mục con bỏ tiền tố "Duyệt – ". Chỉ đổi **ObjectMenu.Name**; giữ nguyên Id, MetaLink, ShortName, OrderShow, quyền đã gán (UserRole). Không thêm bảng / cột.
+
+| OrderShow | MetaLink | Tên cũ | Tên mới |
+|---|---|---|---|
+| 9901 | `#/wf-inbox?type=menu-recipe` | Duyệt – Công thức & phiên bản | **Công thức & phiên bản** |
+| 9902 | `#/wf-inbox?type=crm-price-policy` | Duyệt – Chính sách giá theo KH/HĐ | **Chính sách giá theo KH/HĐ** |
+| 9903 | `#/wf-inbox?type=crm-contract` | Duyệt – Hợp đồng suất ăn | **Hợp đồng suất ăn** |
+| 9904 | `#/wf-inbox?type=menu-menu` | Duyệt – Thực đơn & phiên bản | **Thực đơn & phiên bản** |
+| 9905 | `#/wf-inbox?type=menu-change-request` | Duyệt – Yêu cầu đổi món | **Yêu cầu đổi món** |
+| 9906 | `#/wf-inbox?type=crm-order` | Duyệt – Đơn đặt suất ăn | **Đơn đặt suất ăn** |
+| 9907 | `#/wf-inbox?type=scm-pr` | Duyệt – Đề nghị mua hàng | **Đề nghị mua hàng** |
+| 9908 | `#/wf-inbox?type=scm-po` | Duyệt – Đơn mua hàng | **Đơn mua hàng** |
+| 9909 | `#/wf-inbox?type=scm-adjustment` | Duyệt – Phiếu điều chỉnh tồn | **Phiếu điều chỉnh tồn** |
+| 9910 | `#/wf-inbox?type=scm-stockcount` | Duyệt – Phiếu kiểm kê | **Phiếu kiểm kê** |
+| 9911 | `#/wf-inbox?type=prod-plan` | Duyệt – Kế hoạch sản xuất theo ngày/ca | **Kế hoạch sản xuất theo ngày/ca** |
+| 9912 | `#/wf-inbox?type=qc-inspection` | Duyệt – Phiếu QC đầu vào | **Phiếu QC đầu vào** |
+| 9913 | `#/wf-inbox?type=hr-leave` | Duyệt – Đơn xin nghỉ | **Đơn xin nghỉ** |
+| 9914 | `#/wf-inbox?type=hr-swap` | Duyệt – Đơn đổi ca | **Đơn đổi ca** |
+| 9915 | `#/wf-inbox?type=wf-inbox` | Duyệt – Hộp phê duyệt tập trung | **Hộp phê duyệt tập trung** |
+| 9916 | `#/wf-inbox?type=scm-po-director` | Duyệt – Đơn mua hàng (Giám đốc) | **Đơn mua hàng (Giám đốc)** |
+| 9917 | `#/wf-inbox?type=scm-pr-l1` | Duyệt – Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng) | **Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng)** |
+| 9918 | `#/wf-inbox?type=scm-pr-l2` | Duyệt – Đề nghị mua hàng (cấp 2 – Giám đốc vận hành) | **Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)** |
+| 9919 | `#/wf-inbox?type=scm-stockcount-l2` | Duyệt – Phiếu kiểm kê (cấp 2 – Kế toán) | **Phiếu kiểm kê (cấp 2 – Kế toán)** |
+
+- **MENU-1.1 Seed:** `DB/seed/ObjectMenu_seed.sql` – 19 câu INSERT dùng tên mới; thêm khối **UPDATE idempotent** cho DB đã có: `UPDATE dbo.ObjectMenu SET Name = SUBSTRING(Name, 9, 500), ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink LIKE N'#/wf-inbox?type=%' AND Name LIKE N'Duyệt – %' AND IsDeleted = 0` (chạy lại không đổi gì; kiểm đúng độ dài tiền tố "Duyệt – " gồm dấu gạch dài + khoảng trắng; không đụng mục ngoài nhóm Phê duyệt). Ghi script dữ liệu riêng `DB/scripts/MENU1_rename_approve_menu.sql` (chế độ chạy thử in trước / sau).
+- **MENU-1.2 Code nhắc tên cũ:** rà `"Duyệt – "` trong BE (vd `ApprovalRequestService` – tên bước duyệt = tên mục menu, chú thích dòng 343), FE (`hr.js` wf-inbox, ma trận quyền `adm-permission`, `catalog.js`), bot (`ApprovalActions` …), test (kỳ vọng tên bước) → dùng tên mới; tên bước của **yêu cầu duyệt đã tạo trước** giữ nguyên (không sửa dữ liệu lịch sử), chỉ yêu cầu mới mang tên mới. Hộp phê duyệt / bot hiển thị cột "Bước duyệt" vẫn rõ nghĩa (có thể ghép "Duyệt: " khi hiển thị nếu cần – không lưu vào tên menu).
+- **MENU-1.3 Trùng tên:** sau khi bỏ tiền tố, một số tên trùng tên màn nghiệp vụ ở nhóm khác (vd "Đơn mua hàng", "Đề nghị mua hàng", "Phiếu kiểm kê", "Đơn đổi ca") – ma trận phân quyền `adm-permission` phải hiện **nhóm cha** (Phê duyệt / Mua hàng & Kho …) cạnh tên để không nhầm; kiểm tra màn tìm menu / tìm kiếm toàn cục cũng hiện nhóm cha.
+- **MENU-1.4 Tài liệu:** sửa "Duyệt – …" trong `docs/user-guide/01_QUAN_TRI.md`, `12_QUAN_LY_DUYET.md`, `13_BAN_DIEU_HANH.md`, `20_BOT_TELEGRAM.md`, `90_CHENH_LECH.md`, `README.md`; ORG_STRUCTURE / BOT_TELEGRAM nếu có.
+
+**AC:** menu nhóm Phê duyệt hiện đúng 19 tên mới (không còn "Duyệt – "); quyền của các nhóm không đổi (so số dòng UserRole trước / sau = nhau); script chạy lại lần 2 không đổi gì; ma trận phân quyền phân biệt được mục trùng tên nhờ nhóm cha; test xanh; HDSD cập nhật.
+
+## ★ UI-2R – BỐ CỤC 1/3 – 2/3 + KHỐI THÔNG TIN RÚT GỌN CHO 3 MÀN CHI TIẾT (D-69, anh chốt 2026-11-22) · `DONE` 2026-11-21 (ảnh: `docs/frontend-handoff/assets/ui-2r/`)
+
+> Nguồn: DECISIONS **D-69**; mô phỏng (mở bằng trình duyệt, bấm được nhóm gập): `docs/frontend-handoff/assets/customer-360-mockup.html`, `supplier-360-mockup.html`, `employee-360-mockup.html`. Chỉ sửa **tab Tổng quan** của `crm-customer-360` (UI-2), `scm-supplier-360` (UI-3), `adm-employee-360` (UI-4); phần đầu, thẻ chỉ số, các tab khác giữ nguyên. Claude Code làm FE (D-65); BE không đổi (dữ liệu đã có trong `GetOverview` / `GetById` – thiếu trường nào thì chỉ **thêm** trường trả về, không đổi trường cũ). Không thêm bảng / cột.
+
+- **UI-2R.1 Thành phần chung khối thông tin** (`core/ui.js`, vd `UI.infoPanel({ key, title, onEdit, core: [{icon, html}], groups: [{key, title, summary, rows: [[label, value]], locked, open}] })` + `app.css`): theo D-69 b – 6 dòng cốt lõi, nhóm gập có dòng tóm tắt, nhớ nhóm mở theo `key` màn (localStorage trong try/catch), ẩn ô trống, nhóm trống "Chưa có thông tin · Bổ sung" (chỉ khi có quyền sửa), `tel:` / `mailto:`, nút sao chép, sticky; bàn phím: tiêu đề nhóm là `button` (Enter / Space mở gập, `aria-expanded`).
+- **UI-2R.2 Bố cục hai cột chung** (`app.css`): `.dc-two{grid 1fr 2fr; gap 24px}`, `.dc-pair{grid 2 cột}`; < 1200px xếp dọc, tắt sticky.
+- **UI-2R.3 Khách hàng 360** – tab Tổng quan theo D-69 c–d (khách cá nhân: nhóm Pháp lý theo D-69 c; ngày sinh / CCCD theo quyền). Bỏ khối thông tin / bố cục cũ.
+- **UI-2R.4 Nhà cung cấp** – tab Tổng quan theo D-69 e–f.
+- **UI-2R.5 Nhân viên** – tab Tổng quan theo D-69 g–h (nhóm Cá nhân chỉ hiện khi API trả dữ liệu cá nhân; không có thì không hiện nhóm, không hiện ô trống).
+- **UI-2R.6 Kiểm tra + tài liệu:** build FE xanh; mở thử 3 màn trên DB dev (1 khách DN + 1 khách CN, 1 NCC có PO trễ, 1 nhân viên bếp bằng tài khoản NS và tài khoản tổ trưởng) ở 3 cỡ màn hình; **chụp ảnh** tab Tổng quan 3 màn đặt cạnh 3 file mô phỏng để so (ghi đường dẫn ảnh trong PROGRESS); cập nhật `docs/user-guide/02_KINH_DOANH.md`, `04_MUA_HANG.md`, `11_NHAN_SU.md` (mục màn chi tiết).
+
+**AC:** tab Tổng quan 3 màn đúng bố cục 1/3 – 2/3 và thứ tự khối như mô phỏng; cột trái mặc định ≤ ~10 dòng (6 cốt lõi + tiêu đề nhóm), nhóm gập / mở được và được nhớ sau khi tải lại; không có dòng "–" / ô trống; thông tin cá nhân chỉ người có quyền thấy (kiểm cả API); màn < 1200px xếp dọc không vỡ; cả 3 màn dùng **cùng một** thành phần khối thông tin; build FE xanh, test BE xanh.
 
 ## ★ UI-5 – HOÀN THIỆN FORM KHÁCH HÀNG (D-63 r, anh chốt 2026-11-22) · `DONE` 2026-11-21 (nhánh `feat/UI-5-customer-form`, chưa push – chờ anh duyệt; script `DB/scripts/UI5_customer_catalogs.sql` anh chạy sau backup)
 

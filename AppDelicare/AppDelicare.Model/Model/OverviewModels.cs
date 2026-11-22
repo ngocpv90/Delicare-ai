@@ -40,6 +40,14 @@ namespace AppDelicare.Model.Model
         /// <summary>Tỷ lệ thất thoát khay / hộp cao nhất theo loại (%); ngưỡng cảnh báo (%).</summary>
         public decimal? PackagingLossRatePct { get; set; }
         public decimal PackagingLossThresholdPct { get; set; }
+        // ---- UI-2R (D-69 c–d): khối thông tin rút gọn ----
+        /// <summary>true = người xem có quyền Sửa crm-customer → có ngày sinh / CCCD của khách cá nhân (D-69 c); false → các trường đó null.</summary>
+        public bool CanViewPersonal { get; set; }
+        /// <summary>Tên người tạo / cập nhật gần nhất (họ tên hồ sơ, không có thì tên đăng nhập).</summary>
+        public string? CreatedByName { get; set; }
+        public string? ModifiedByName { get; set; }
+        /// <summary>Suất trung bình / ngày theo điểm giao – đơn Đã giao / Đã đối soát 30 ngày đã qua ÷ 30.</summary>
+        public List<CustomerLocationStatModel> ListLocationStat { get; set; } = [];
         /// <summary>Khối "Cần chú ý" (D-66 d).</summary>
         public List<CustomerAlertModel> ListAlert { get; set; } = [];
     }
@@ -117,6 +125,13 @@ namespace AppDelicare.Model.Model
         public string? Hint { get; set; }
     }
 
+    /// <summary>UI-2R (D-69 d): suất / ngày của 1 điểm giao.</summary>
+    public class CustomerLocationStatModel
+    {
+        public Guid LocationId { get; set; }
+        public decimal AvgMealsPerDay { get; set; }
+    }
+
     public class ContractOverviewModel
     {
         public Guid Id { get; set; }
@@ -126,6 +141,8 @@ namespace AppDelicare.Model.Model
         public DateTime? EndDate { get; set; }
         public string? Status { get; set; }
         public decimal? ContractValue { get; set; }
+        /// <summary>UI-2R (D-69 d): điều khoản thanh toán.</summary>
+        public string? PaymentTerm { get; set; }
         public List<ContractMeal> ListMeal { get; set; } = [];
     }
 
@@ -182,6 +199,14 @@ namespace AppDelicare.Model.Model
         public int PriceExpiryDays { get; set; }
         /// <summary>Khối "Cần chú ý" (D-67 d) – cùng dạng với khách hàng (Code, Severity, Message, Screen).</summary>
         public List<CustomerAlertModel> ListAlert { get; set; } = [];
+
+        // ---- UI-2R (D-69 e–f): khối thông tin rút gọn ----
+        /// <summary>Số phiếu nhập gần nhất (đi kèm <see cref="LastReceiptDate"/>).</summary>
+        public string? LastReceiptNumber { get; set; }
+        /// <summary>Bắt đầu giao dịch = ngày PO hoặc phiếu nhập sớm nhất (không có → null).</summary>
+        public DateTime? FirstTradeDate { get; set; }
+        public string? CreatedByName { get; set; }
+        public string? ModifiedByName { get; set; }
     }
 
     /// <summary>UI-4 (D-68 g1): hồ sơ nhân viên – ngày sinh / giới tính / địa chỉ chỉ có khi người xem có quyền Sửa adm-employee (D-68 e).</summary>
@@ -225,6 +250,33 @@ namespace AppDelicare.Model.Model
         public List<TimesheetDetailModel> ListRecentAttendance { get; set; } = [];
         /// <summary>Khối "Cần chú ý" (D-68 d).</summary>
         public List<CustomerAlertModel> ListAlert { get; set; } = [];
+
+        // ---- UI-2R (D-69 g–h): khối thông tin rút gọn ----
+        /// <summary>Ca thường làm = ca được phân nhiều nhất 30 ngày qua → 7 ngày tới (mã + giờ bắt đầu / kết thúc theo ca gần nhất).</summary>
+        public string? UsualShiftCode { get; set; }
+        public DateTime? UsualShiftStart { get; set; }
+        public DateTime? UsualShiftEnd { get; set; }
+        public string? CreatedByName { get; set; }
+        public string? ModifiedByName { get; set; }
+        /// <summary>Đơn nghỉ / đổi ca gần đây (chờ duyệt trước, rồi mới nhất), tối đa 5.</summary>
+        public List<EmployeeRequestBriefModel> ListRecentRequest { get; set; } = [];
+    }
+
+    /// <summary>UI-2R (D-69 h): 1 đơn nghỉ phép / đổi ca.</summary>
+    public class EmployeeRequestBriefModel
+    {
+        /// <summary>LEAVE · SWAP.</summary>
+        public string Kind { get; set; } = string.Empty;
+        public Guid Id { get; set; }
+        public string? RequestNo { get; set; }
+        public string? LeaveTypeCode { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public int Days { get; set; }
+        /// <summary>Đổi ca: tên người đổi cùng.</summary>
+        public string? OtherEmployeeName { get; set; }
+        public string? RequestStatus { get; set; }
+        public DateTime SubmittedAt { get; set; }
     }
 
     public class EmployeeLeaveTypeModel
@@ -272,6 +324,9 @@ namespace AppDelicare.Model.Model
         public DateTime? EffectiveFrom { get; set; }
         public DateTime? EffectiveTo { get; set; }
         public string? Status { get; set; }
+        /// <summary>UI-2R (D-69 f): số NCC đang có giá hiệu lực hôm nay cho nguyên liệu này (gồm NCC này) và NCC này có giá thấp nhất không.</summary>
+        public int SupplierCount { get; set; }
+        public bool IsLowest { get; set; }
     }
 
     /// <summary>T45R (spec 4.6): sơ đồ kho – khu bảo quản → vị trí.</summary>

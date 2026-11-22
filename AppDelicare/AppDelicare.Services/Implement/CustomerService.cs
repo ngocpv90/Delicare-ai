@@ -22,7 +22,7 @@ namespace AppDelicare.Services.Implement
 {
     public partial class CustomerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IClock clock, IDocumentNumberService documentNumberService, ICurrentActor currentActor
-        , IPackagingLedgerService packagingLedgerService, IOptions<BusinessRulesOptions> rules) : ICustomerService
+        , IPackagingLedgerService packagingLedgerService, IOptions<BusinessRulesOptions> rules, IPermissionService permissionService) : ICustomerService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -726,6 +726,33 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// UI-2R (D-69 c–d): quyền xem thông tin cá nhân (ngày sinh, CCCD + ngày / nơi cấp của khách cá nhân – chỉ người có quyền Sửa crm-customer;
+        /// lọc ở máy chủ), tên người tạo / cập nhật, suất / ngày theo điểm giao (30 ngày đã qua).
+        /// </summary>
+        private async Task FillInfoPanelAsync(CustomerOverviewModel model, Customer customer, IQueryable<Order> orders, DateTime today)
+        {
+            var db = _unitOfWork.DbContext;
+            model.CanViewPersonal = _currentActor.Actor is not { } actor
+                || permissionService.IsAllowed(await permissionService.GetAsync(actor.UserId), "crm-customer", PermissionAction.Edit);
+            if (!model.CanViewPersonal)
+            {
+                // Bản sao tách khỏi DbContext – không đụng bản ghi đang theo dõi.
+                db.Entry(customer).State = EntityState.Detached;
+                customer.DateOfBirth = null;
+                customer.IdentityNumber = null;
+                customer.IdentityDate = null;
+                customer.IdentityPlace = null;
+            }
+            var names = await InfoPanelRules.UserNamesAsync(db, [customer.CreatedBy, customer.ModifiedBy]);
+            model.CreatedByName = names.NameOf(customer.CreatedBy);
+            model.ModifiedByName = names.NameOf(customer.ModifiedBy);
+            DateTime since = today.AddDays(-30);
+            var perLocation = await orders.Where(o => o.DeliveryLocationId != null && o.MealDate >= since && o.MealDate < today && CompletedOrderStatuses.Contains(o.Status!))
+                .GroupBy(o => o.DeliveryLocationId!.Value).Select(g => new { g.Key, Total = g.Sum(o => o.TotalQuantity) ?? 0m }).ToListAsync();
+            model.ListLocationStat = [.. perLocation.Select(x => new CustomerLocationStatModel { LocationId = x.Key, AvgMealsPerDay = Math.Round(x.Total / 30m, 0) })];
+        }
+
         /// <summary>Đơn đã giao xong – dùng tính số suất trung bình 7 ngày.</summary>
         private static readonly string[] CompletedOrderStatuses = ["Delivered", "Reconciled"];
 
@@ -756,7 +783,7 @@ namespace AppDelicare.Services.Implement
                     ListContract = contracts.Select(x => new ContractOverviewModel
                     {
                         Id = x.Id, ContractNumber = x.ContractNumber, Name = x.Name, StartDate = x.StartDate, EndDate = x.EndDate, Status = x.Status,
-                        ContractValue = x.ContractValue, ListMeal = meals.Where(m => m.ContractId == x.Id).ToList(),
+                        ContractValue = x.ContractValue, PaymentTerm = x.PaymentTerm, ListMeal = meals.Where(m => m.ContractId == x.Id).ToList(),
                     }).ToList(),
                     ListRecentOrder = await orders.OrderByDescending(o => o.MealDate).Take(15).Select(o => new OrderBriefModel
                     {
@@ -785,6 +812,7 @@ namespace AppDelicare.Services.Implement
                                                     where !r.IsDeleted && !o.IsDeleted && o.CustomerId == id
                                                     select r.OrderId).Distinct().CountAsync();
                 await FillProfileAsync(model, customer, contracts, complaints.Select(c => (c.ComplaintStatus, c.SlaDueAt)).ToList(), today, now);
+                await FillInfoPanelAsync(model, customer, orders, today);
                 return Result<CustomerOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

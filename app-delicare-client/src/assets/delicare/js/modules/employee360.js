@@ -31,8 +31,10 @@
       <div class="tabs c360-tabs" data-e360tabs></div><div data-e360pane></div>`;
     el.querySelector('[data-back]').onclick = () => APP.go('adm-employee');
     const ov = live() ? Store.query('Employee/GetOverview', { id }) : Promise.resolve({ ok: true, data: { employee: local || {}, listAlert: [] } });
+    // UI-2R: màn có thể được vẽ lại trước khi API trả về – chỉ lần vẽ mới nhất dựng tab (tránh 2 bộ tab chồng nhau).
+    const tok = el.dataset.d360 = String(Date.now() + Math.random());
     ov.then(x => {
-      if (!el.isConnected) return;
+      if (!el.isConnected || el.dataset.d360 !== tok) return;
       if (!x.ok || !x.data) { el.querySelector('[data-e360head]').innerHTML = failBox(x.message); return; }
       const d = x.data;
       el.querySelector('[data-e360head]').innerHTML = headHtml(d, false);
@@ -80,44 +82,76 @@
     });
   }
 
-  // ---------- Tab Tổng quan (D-68 d) ----------
-  function overview(box, d, id) {
+  // ---------- Tab Tổng quan (D-68 d → UI-2R, D-69 g–h): trái 1/3 khối thông tin rút gọn, phải 2/3 khối nghiệp vụ ----------
+  const GENDER_VI = { MALE: 'Nam', FEMALE: 'Nữ', OTHER: 'Khác', Male: 'Nam', Female: 'Nữ', M: 'Nam', F: 'Nữ' };
+  function infoCfg(d, id) {
     const e = emp(d);
-    const rows = list => `<div class="c360-rows">${list.filter(x => x[1]).map(([l, v]) => `<div class="r"><label>${esc(l)}</label><span>${v}</span></div>`).join('') || none}</div>`;
-    const info = [['Họ tên', esc(e.FullName)], ['Mã nhân viên', esc(e.Code || e.EmployeeCode)], ['Chức danh', esc(d.positionName)], ['Đơn vị', esc(d.organizationUnitName)],
-      ['Ngày vào làm', e.HireDate ? `${dmy(e.HireDate)}${d.tenureMonths !== null && d.tenureMonths !== undefined ? ' · ' + tenure(d.tenureMonths) : ''}` : ''], ['Điện thoại', esc(e.Phone)], ['Email', esc(e.Email)]]
-      .concat(d.canViewPersonal ? [['Ngày sinh', dmy(e.DateOfBirth)], ['Giới tính', esc(e.Gender)], ['Địa chỉ', esc(e.Address)]] : []);
-    // Ca 7 ngày tới (ngày nghỉ phép tô màu).
+    const join = (...a) => a.filter(Boolean).join(' · ');
+    const at = (dt, by) => join(dt && U.date(dt), by);
+    const groups = (d.listUserGroupName || []).join(', ');
+    const hire = e.HireDate ? U.day(e.HireDate).slice(5, 7) + '/' + U.day(e.HireDate).slice(0, 4) : '';
+    const personal = live() && d.canViewPersonal;
+    return {
+      key: 'employee', title: 'Thông tin nhân viên', canEdit: Store.perm('adm-employee').edit !== false,
+      onEdit: () => UI.form('Employee', Object.assign({}, e, Store.get('Employee', id) || {}), { title: 'Nhân viên', onSave: () => APP.refresh() }),
+      core: [
+        { icon: 'building', html: esc(join(d.positionName, d.organizationUnitName)) },
+        { icon: 'phone', html: UI.tel(e.Phone) },
+        { icon: 'mail', html: UI.mail(e.Email) },
+        { icon: 'calendar', html: hire ? `Vào làm ${esc(hire)}${d.tenureMonths !== null && d.tenureMonths !== undefined ? ` <span class="ip-muted">· ${esc(tenure(d.tenureMonths))}</span>` : ''}` : '' },
+        { icon: 'clock', html: d.usualShiftCode ? `Ca thường làm: <b>${esc(d.usualShiftCode)}</b> ${d.usualShiftStart ? `<span class="ip-muted">${tm(d.usualShiftStart)}–${tm(d.usualShiftEnd)}</span>` : ''}` : '' },
+        { icon: 'msg', html: live() ? `${d.botLinked ? 'Đã liên kết bot' + (d.botUsername ? ' · ' + esc(d.botUsername) : '') : '<span class="dc-warn">Chưa liên kết bot</span>'}${d.userName ? ` <span class="ip-muted">· tài khoản web ${esc(d.userName)}${d.userIsActive === false ? ' (đã khóa)' : ''}</span>` : ''}` : '' },
+      ],
+      groups: [
+        // D-68 e: máy chủ chỉ trả ngày sinh / giới tính / địa chỉ cho người có quyền Sửa adm-employee – không có quyền thì không hiện nhóm.
+        ...(personal ? [{ key: 'personal', title: 'Cá nhân', locked: true, summary: join(GENDER_VI[e.Gender] || e.Gender, e.DateOfBirth && U.date(e.DateOfBirth)),
+          rows: [['Ngày sinh', dmy(e.DateOfBirth)], ['Giới tính', esc(GENDER_VI[e.Gender] || e.Gender || '')], ['Địa chỉ', esc(e.Address)]] }] : []),
+        { key: 'work', title: 'Công việc', open: true, summary: join(groups, d.organizationUnitName, d.tenureMonths !== null && d.tenureMonths !== undefined ? tenure(d.tenureMonths) : ''),
+          rows: [['Chức danh', esc(d.positionName)], ['Đơn vị', esc(d.organizationUnitName)], ['Nhóm quyền', esc(groups)], ['Ngày vào làm', dmy(e.HireDate)]] },
+        { key: 'docs', title: 'Giấy tờ', summary: 'Giấy khám sức khỏe, hợp đồng lao động',
+          html: live() ? `Giấy khám sức khỏe, hợp đồng lao động lưu ở tab <a href="javascript:void 0" data-tabdocs>Tài liệu</a>.` : '' },
+        { key: 'sys', title: 'Hệ thống', rows: [['Tạo lúc / bởi', esc(at(e.CreatedDate, d.createdByName))], ['Cập nhật gần nhất', esc(at(e.ModifiedDate, d.modifiedByName))]],
+          summary: e.ModifiedDate ? 'Cập nhật ' + at(e.ModifiedDate, d.modifiedByName) : e.CreatedDate ? 'Tạo ' + at(e.CreatedDate, d.createdByName) : '' },
+      ],
+    };
+  }
+  function overview(box, d, id) {
+    const join = (...a) => a.filter(Boolean).join(' · ');
+    // Ca 7 ngày tới (ngày nghỉ phép tô cam).
     const leaveDays = new Set((d.listLeaveDate || []).map(x => U.day(x)));
     const shifts = d.listUpcomingShift || [];
-    const days = []; for (let i = 0; i <= 7; i++) days.push(U.addDays(today(), i));
-    const weekHtml = live() ? `<div class="e360-week">${days.map(dt => {
+    const days = []; for (let i = 0; i < 7; i++) days.push(U.addDays(today(), i));
+    const WD = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const weekHtml = live() ? `<div class="e360-week seven">${days.map(dt => {
       const ss = shifts.filter(s => U.day(s.workDate) === dt), off = leaveDays.has(dt);
-      return `<div class="e360-day ${off ? 'off' : ''} ${dt === today() ? 'today' : ''}"><b>${esc(U.date(dt).slice(0, 5))}</b>${off ? '<span class="small">Nghỉ phép</span>' : ''}${ss.map(s => `<span class="small"><span class="scode ${esc(s.shiftCode)}">${esc(s.shiftCode || '')}</span> ${tm(s.plannedStart)}–${tm(s.plannedEnd)}${s.checkInAt ? ' ✓' : ''}</span>`).join('') || (off ? '' : '<span class="small muted">–</span>')}</div>`;
+      return `<div class="e360-day ${off ? 'off' : ''} ${dt === today() ? 'today' : ''}"><b>${WD[new Date(dt).getDay()]} <span class="ip-muted">${esc(U.date(dt).slice(0, 5))}</span></b>${off ? '<span class="small">Nghỉ</span>' : ''}${ss.map(s => `<span class="small"><span class="scode ${esc(s.shiftCode)}">${esc(s.shiftCode || '')}</span>${s.checkInAt ? ' ✓' : ''}</span>`).join('') || (off ? '' : '<span class="small muted">–</span>')}</div>`;
     }).join('')}</div>` : demoNote;
-    const acc = live() ? rows([['Tài khoản web', d.userName ? `${esc(d.userName)}${d.userIsActive === false ? ' ' + UI.tag('Đã khóa', 'gray') : ''}` : '<span class="muted">Chưa có</span>'],
-      ['Nhóm quyền', esc((d.listUserGroupName || []).join(', '))], ['Bot Telegram', d.botLinked ? `${UI.tag('Đã liên kết', 'green')}${d.botUsername ? ' ' + esc(d.botUsername) : ''}${d.botLinkedAt ? ' · ' + dmy(d.botLinkedAt) : ''}` : UI.tag('Chưa liên kết', 'orange')]])
-      + (Store.perm('adm-employee').edit !== false ? `<div class="row-flex mt"><button class="btn xs" data-tg>${I('msg')} Tạo mã liên kết bot</button></div>` : '') : demoNote;
-    box.innerHTML = `${alertBox(d.listAlert)}
-      <div class="c360-grid">
-        <div class="card panel"><div class="spread"><h3>Thông tin nhân viên</h3>${Store.perm('adm-employee').edit !== false ? `<button class="btn xs" data-edit>${I('settings')} Sửa</button>` : ''}</div>${rows(info)}${live() && !d.canViewPersonal ? '<div class="small muted mt">Ngày sinh, giới tính, địa chỉ chỉ hiện với người có quyền sửa hồ sơ nhân viên.</div>' : ''}</div>
-        <div class="card panel"><div class="spread"><h3>Ca 7 ngày tới</h3>${can('hr-shift-assign') ? `<a href="javascript:void 0" data-go="hr-shift-assign" class="small">Phân ca</a>` : ''}</div>${weekHtml}</div>
-        <div class="card panel"><h3>Tài khoản và bot</h3>${acc}</div>
+    const now = shifts.find(s => U.day(s.workDate) === today());
+    const todayLine = now ? `<div class="ip-muted mt">Hôm nay: <b>${esc(now.shiftCode || '')}</b> ${tm(now.plannedStart)}–${tm(now.plannedEnd)}${now.checkInAt ? ` · đã vào ca ${tm(now.checkInAt)}${now.checkInSource ? ' (' + esc(now.checkInSource) + (now.checkInValid === false ? ', ngoài bán kính' : ', hợp lệ') + ')' : ''}` : ' · chưa vào ca'}</div>` : '';
+    // Nghỉ phép và đơn từ.
+    const reqs = d.listRecentRequest || [];
+    const reqHtml = !live() ? demoNote : (reqs.length ? reqs.map(r => `<div class="dc-it"><div class="top"><b>${r.kind === 'SWAP' ? 'Đổi ca' + (r.otherEmployeeName ? ' với ' + esc(r.otherEmployeeName) : '') : esc(leaveName(r.leaveTypeCode) || 'Nghỉ') + (r.fromDate ? ' · ' + esc(U.date(r.fromDate).slice(0, 5)) + (r.toDate && U.day(r.toDate) !== U.day(r.fromDate) ? '–' + esc(U.date(r.toDate).slice(0, 5)) : '') : '')}</b>${r.kind === 'LEAVE' && r.days ? `<span class="ip-muted">${U.num(r.days)} ngày</span>` : ''}</div>
+        <div class="sub">${UI.statusVi(r.kind === 'SWAP' ? 'ShiftSwapRequest' : 'LeaveRequest', 'RequestStatus', r.requestStatus) || esc(r.requestStatus || '')} · gửi ${esc(U.date(r.submittedAt).slice(0, 5))}</div></div>`).join('') : '<div class="muted small">Chưa có đơn</div>')
+      + (live() && (d.listLeaveByType || []).length ? `<div class="ip-muted mt">Đã nghỉ năm nay: ${(d.listLeaveByType || []).map(x => esc(leaveName(x.leaveTypeCode)).toLowerCase() + ' ' + U.num(x.days)).join(' · ')}</div>` : '');
+    const cfg = infoCfg(d, id);
+    box.innerHTML = `<div class="dc-two">${UI.infoPanel(cfg)}<div class="dc-col">${alertBox(d.listAlert)}
+      <div class="dc-pair">
+        <div class="card panel"><div class="spread"><h3>Ca 7 ngày tới</h3>${can('hr-shift-assign') ? `<button class="btn xs" data-go="hr-shift-assign">${I('calendar')} Phân ca</button>` : ''}</div>${weekHtml}${todayLine}</div>
+        <div class="card panel"><div class="spread"><h3>Nghỉ phép và đơn từ</h3>${can('hr-leave') ? `<button class="btn xs" data-go="hr-leave">Xem đơn</button>` : ''}</div>${reqHtml}</div>
       </div>
-      <div class="c360-grid two">
-        <div class="card panel"><h3>Giờ công 30 ngày</h3><div data-hours></div></div>
-        <div class="card panel"><div class="spread"><h3>Chấm công gần đây</h3>${can('hr-attendance') ? `<a href="javascript:void 0" data-go="hr-attendance" class="small">Bảng công</a>` : ''}</div><div data-att></div></div>
-      </div>`;
+      <div class="card panel"><h3>Giờ công 30 ngày</h3><div data-hours></div></div>
+      <div class="card panel"><div class="spread"><h3>Chấm công gần đây</h3>${can('hr-attendance') ? `<button class="btn xs" data-go="hr-attendance">Xem bảng công</button>` : ''}</div><div data-att></div></div>
+    </div></div>`;
+    UI.wireInfoPanel(box, cfg);
     bindGo(box);
-    const ed = box.querySelector('[data-edit]'); if (ed) ed.onclick = () => UI.form('Employee', Object.assign({}, e, Store.get('Employee', id) || {}), { title: 'Nhân viên', onSave: () => APP.refresh() });
-    const tg = box.querySelector('[data-tg]'); if (tg) tg.onclick = () => tgCode(id);
+    const docs = box.querySelector('[data-tabdocs]'); if (docs) docs.onclick = () => { const b = [...document.querySelectorAll('.c360-tabs .tab')].find(x => /Tài liệu/.test(x.textContent)); if (b) b.click(); };
     const hrs = d.listDayHours || [], hBox = box.querySelector('[data-hours]');
-    hBox.innerHTML = !live() ? demoNote : hrs.some(h => h.hours) ? `${UI.bars(hrs.map(h => U.date(h.date).slice(0, 5)), [{ name: 'Giờ công', values: hrs.map(h => h.hours || 0), color: '#91AF42' }], { h: 200, title: 'Giờ công 30 ngày' })}<div class="small muted">Tổng ${U.num(U.sum(hrs, 'hours'), 1)} giờ</div>` : none;
+    hBox.innerHTML = !live() ? demoNote : hrs.some(h => h.hours) ? `${UI.bars(hrs.map(h => U.date(h.date).slice(0, 5)), [{ name: 'Giờ công', values: hrs.map(h => h.hours || 0), color: '#91AF42' }], { h: 180, title: 'Giờ công 30 ngày' })}<div class="ip-muted">${U.num(U.sum(hrs, 'hours'), 1)} giờ / 30 ngày · ${U.num(d.monthWorkedHours || 0, 1)} giờ / ${U.num(d.monthShifts || 0)} ca trong tháng</div>` : none;
     const att = d.listRecentAttendance || [], aBox = box.querySelector('[data-att]');
-    aBox.innerHTML = !live() ? demoNote : table(att, [{ label: 'Ngày', html: r => dmy(r.workDate) }, { label: 'Ca', html: r => `<span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode || '')}</span>` },
-      { label: 'Vào', html: r => `${tm(r.checkInAt)}${r.checkInValid === false ? ' <span class="bad">ngoài bán kính</span>' : ''}${r.lateMinutes ? ` <span class="bad">muộn ${r.lateMinutes}′</span>` : ''}` },
-      { label: 'Ra', html: r => `${tm(r.checkOutAt)}${r.earlyLeaveMinutes ? ` <span class="bad">sớm ${r.earlyLeaveMinutes}′</span>` : ''}` }, { label: 'Hình thức', html: r => esc(r.checkInSource || r.checkOutSource || '') },
-      { label: 'Giờ công', num: true, html: r => U.num((r.workedMinutes || 0) / 60, 1) }]);
+    const result = r => r.checkInValid === false || r.checkOutValid === false ? UI.tag('Ngoài bán kính', 'red') : r.lateMinutes ? UI.tag(`Muộn ${r.lateMinutes}′`, 'orange') : r.earlyLeaveMinutes ? UI.tag(`Về sớm ${r.earlyLeaveMinutes}′`, 'orange') : UI.tag('Hợp lệ', 'green');
+    aBox.innerHTML = !live() ? demoNote : table(att, [{ label: 'Ngày', html: r => esc(U.date(r.workDate).slice(0, 5)) }, { label: 'Ca', html: r => `<span class="scode ${esc(r.shiftCode)}">${esc(r.shiftCode || '')}</span>` },
+      { label: 'Vào – ra', html: r => `${tm(r.checkInAt)} – ${tm(r.checkOutAt)}` }, { label: 'Hình thức', html: r => esc(r.checkInSource || r.checkOutSource || '') },
+      { label: 'Kết quả', num: true, html: result }]);
   }
 
   // ---------- Các tab còn lại (D-68 c, UI-4.4) ----------
