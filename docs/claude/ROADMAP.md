@@ -7,8 +7,8 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 ## ▶ THỨ TỰ LÀM TIẾP (anh chốt 2026-11-19 – Claude Code đọc mục này trước)
 
 1. **Làm xong task đang dở** (theo PROGRESS – trạng thái `DOING`), không bỏ ngang.
-2. **UI-1R – sửa thẻ chỉ số cho đúng D-64 c** (mục UI-1 bên dưới; 7 điểm + AC có ảnh chụp so với `docs/frontend-handoff/assets/kpi-card-standard.png`). Lỗi chính: biểu tượng đang nằm giữa do `.card` của Bootstrap xếp dọc – phải nằm **bên trái**.
-3. **UI-3** màn chi tiết nhà cung cấp (D-67) → **UI-4** màn chi tiết nhân viên (D-68) – dùng thẻ chỉ số đã sửa ở bước 2.
+2. ~~UI-1R~~ ✅ · ~~UI-3~~ ✅ · ~~UI-4~~ ✅ (xong 2026-11-19).
+3. ~~UI-5~~ ✅ hoàn thiện form khách hàng (xong 2026-11-21, nhánh `feat/UI-5-customer-form` – chờ anh duyệt).
 4. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
 5. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
 6. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
@@ -100,6 +100,23 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 - **UI-2.5 Kiểm tra + tài liệu:** build FE xanh, test BE xanh; mở thử với 1 khách doanh nghiệp + 1 khách cá nhân trên DB dev, 3 cỡ màn hình; người không có quyền một màn thì không thấy tab đó; cập nhật `docs/user-guide/02_KINH_DOANH.md` (mục khách hàng) và `10_DIEM_PHAT.md` nếu liên quan.
 
 **AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
+
+## ★ UI-5 – HOÀN THIỆN FORM KHÁCH HÀNG (D-63 r, anh chốt 2026-11-22) · `DONE` 2026-11-21 (nhánh `feat/UI-5-customer-form`, chưa push – chờ anh duyệt; script `DB/scripts/UI5_customer_catalogs.sql` anh chạy sau backup)
+
+> Nguồn: rà soát form tạo mới khách hàng của chat tài liệu 2026-11-22 (form theo loại ở `core/ui.js` `CUSTOMER_FIELDS`, kiểm ở `CustomerService.CheckRules`). Claude Code làm cả BE + FE (D-65). Không thêm bảng / cột. Làm ngay sau task đang dở (mục ▶ THỨ TỰ LÀM TIẾP).
+
+- **UI-5.1 NV phụ trách:** `UserAssignId` đang là ô gõ GUID ("Tham chiếu chưa xác định bảng đích (GAP)") → ô chọn **người dùng / nhân viên đang hoạt động** có tìm kiếm (xác định bảng đích của `Customer.UserAssignId` theo code cũ – User hoặc Employee – ghi vào `Store.target` / schema meta; máy chủ kiểm tồn tại).
+- **UI-5.2 Ô ngày:** Ngày sinh, Ngày cấp CCCD, Ngày cấp ĐKKD (cột `datetime`) → ô **chỉ chọn ngày** (`type="date"`), gửi `yyyy-MM-dd`. Áp chung: cột datetime có tên `*Date` / `DateOfBirth` mà nghiệp vụ là ngày → ô ngày (danh sách cột trong một chỗ).
+- **UI-5.3 Danh mục (D-63 r):** Ngành, Quy mô, Giới tính, Nguồn → ô chọn từ danh mục (catalog FE + hằng số BE dùng chung mã); máy chủ từ chối mã ngoài danh mục (thông báo tiếng Việt mới trong `ConstantHelper.Message`); chuẩn hóa dữ liệu cũ bằng script dữ liệu idempotent (chạy thử in trước).
+- **UI-5.4 Chi nhánh phục vụ:** chỉ liệt kê đơn vị **loại chi nhánh** (`UnitType = BRANCH`), chữ "— Chọn chi nhánh —" (bỏ tên bảng tiếng Anh ở **mọi** ô chọn tham chiếu: dùng nhãn tiếng Việt của bảng); hiện dấu \* khi hệ thống đã có chi nhánh (lấy từ API – vd thêm cờ `branchRequired` vào `Common/GetCodeRules` hoặc API cấu hình form); có đúng 1 chi nhánh → chọn sẵn.
+- **UI-5.5 Trạng thái:** *Đang hoạt động / Ngừng hoạt động* (`Active` / `Inactive`), mặc định Đang hoạt động, bỏ lựa chọn trống. Áp chung cho ô Status Active/Inactive của form sinh tự động.
+- **UI-5.6 Chọn loại trước:** form tạo mới mở ra với **2 nút lớn Doanh nghiệp / Cá nhân**, chưa chọn sẵn; chọn xong mới hiện các ô theo loại (đổi loại vẫn được trước khi lưu, giữ dữ liệu đã nhập như hiện tại). Form sửa: giữ khóa loại (D-63 i).
+- **UI-5.7 Kiểm tại ô:** kiểm MST (10 số / 10-3 số; cá nhân 10 số), CCCD 12 số, SĐT (`0`+9 số / `+84`+9 số, cho phép dấu cách / chấm / gạch), email, ngày (không sau hôm nay; ngày cấp CCCD ≥ ngày sinh) **khi rời ô**, lỗi đỏ dưới đúng ô; lỗi máy chủ trả về vẫn hiện đầu form và tô đỏ ô liên quan nếu nhận ra tên trường. Quy tắc giống hệt máy chủ (một bộ regex, ghi chú nguồn).
+- **UI-5.8 Liên hệ chính + điểm giao đầu tiên (D-63 r):** BE – `Customer/Insert` (khách doanh nghiệp) tự tạo `CustomerContact` IsPrimary từ Người liên hệ / SĐT / email người liên hệ; nhận thêm khối tùy chọn `firstLocation` (tên, địa chỉ, giờ nhận từ – đến; từ < đến) → tạo `CustomerDeliveryLocation` trong **cùng transaction**. FE – khối **Điểm giao đầu tiên** (thu gọn, mở khi bấm "Thêm điểm giao ngay"). Sau khi lưu, báo "Đã tạo KHB-… · 1 liên hệ chính · 1 điểm giao".
+- **UI-5.9 Nhỏ:** nhập Tên doanh nghiệp → tự điền Tên giao dịch khi ô này còn trống (vẫn sửa được).
+- **UI-5.10 Kiểm tra + tài liệu:** test BE (danh mục sai mã, tạo liên hệ chính, điểm giao lỗi giờ → không tạo khách – rollback); build FE xanh; mở thử tạo 1 khách doanh nghiệp + 1 khách cá nhân trên DB dev; cập nhật `docs/user-guide/02_KINH_DOANH.md` (mục tạo khách hàng: thao tác, bảng trường bắt buộc / tùy chọn theo loại, lỗi thường gặp).
+
+**AC:** không còn ô gõ GUID / chữ tiếng Anh / tên bảng trên form khách hàng; ô ngày chỉ chọn ngày; Ngành / Quy mô / Giới tính / Nguồn chỉ chọn trong danh mục (máy chủ chặn mã lạ); chi nhánh chỉ hiện chi nhánh, có dấu \* đúng điều kiện; phải chọn loại trước khi thấy các ô; lỗi định dạng hiện ngay tại ô; tạo khách doanh nghiệp sinh liên hệ chính, có điểm giao đầu tiên thì sinh điểm giao cùng lúc; test BE + build FE xanh; HDSD cập nhật.
 
 ## ★ UI-3 – MÀN CHI TIẾT NHÀ CUNG CẤP (D-67, anh chốt 2026-11-19) · `DONE` 2026-11-19 (nhánh `feat/MA-1-code-rules`; đã mở thử bằng Chrome headless trên DB dev – 1440px + 390px)
 

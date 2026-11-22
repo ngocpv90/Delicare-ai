@@ -20,6 +20,12 @@
   S.rels.forEach(r => { REL[r.src + '.' + r.col] = r; (REL_IN[r.dst] = REL_IN[r.dst] || []).push(r); });
   const DEP = {}; S.dep.forEach(d => { DEP[d.table + '.' + d.col] = d.use; });
   const UNRES = {}; S.unres.forEach(u => { UNRES[u.src + '.' + u.col] = u; });
+  // UI-5.1 (D-63 r): Customer.UserAssignId → User.Id (theo code cũ: CustomerService đọc db.User; schema sinh tự động chưa xác định bảng đích).
+  [{ src: 'Customer', col: 'UserAssignId', dst: 'User', dcol: 'Id', basis: 'UI-5.1: code cũ CustomerService (User.Id) – máy chủ kiểm tồn tại', level: 'PO XÁC NHẬN' }].forEach(r => {
+    if (REL[r.src + '.' + r.col]) return;
+    REL[r.src + '.' + r.col] = r; (REL_IN[r.dst] = REL_IN[r.dst] || []).push(r); delete UNRES[r.src + '.' + r.col];
+    S.unres = S.unres.filter(u => !(u.src === r.src && u.col === r.col));
+  });
 
   // ---------- Ánh xạ bảng → controller API cũ ----------
   // Tên bảng legacy → tên class / controller (tools/AppDelicare.CodeGen/Metadata.cs ClassNames).
@@ -163,6 +169,14 @@
   // Danh mục loại khách hàng (D-63 f) – chỉ 2 giá trị; giá trị cũ (HOSPITAL…) hiện nguyên văn tới khi chạy script MA-1.4.
   CAT.status = CAT.status || {};
   CAT.status['Customer.CustomerType'] = { codes: ['BUSINESS', 'INDIVIDUAL'], vi: ['Doanh nghiệp', 'Cá nhân'], src: 'D-63', conf: 'D-63 f' };
+  // UI-5.3 (D-63 r): danh mục trường khách hàng – lưu MÃ, hiện tiếng Việt. Bản sao của CustomerCatalogs.cs (máy chủ) – sửa cả hai chỗ;
+  // chế độ API: form lấy danh mục từ Customer/GetFormOptions (máy chủ là nguồn chuẩn). plain = ô chọn chỉ hiện chữ tiếng Việt (không kèm mã).
+  Object.assign(CAT.status, {
+    'Customer.Industry': { codes: ['HOSPITAL', 'FACTORY', 'CONSTRUCTION', 'SCHOOL', 'OFFICE', 'OTHER'], vi: ['Bệnh viện', 'Nhà máy', 'Công trường', 'Trường học', 'Văn phòng', 'Khác'], src: 'D-63 r', plain: true },
+    'Customer.CompanySize': { codes: ['LT200', '200_500', '500_1000', 'GT1000'], vi: ['Dưới 200 suất / ngày', '200 – 500 suất / ngày', '500 – 1.000 suất / ngày', 'Trên 1.000 suất / ngày'], src: 'D-63 r', plain: true },
+    'Customer.Gender': { codes: ['MALE', 'FEMALE', 'OTHER'], vi: ['Nam', 'Nữ', 'Khác'], src: 'D-63 r', plain: true },
+    'Customer.Source': { codes: ['REFERRAL', 'TENDER', 'SELF', 'OTHER'], vi: ['Giới thiệu', 'Đấu thầu', 'Tự tìm', 'Khác'], src: 'D-63 r', plain: true },
+  });
   // Quy tắc cột mã: api/Common/GetCodeRules → { 'Table.Column': { group: G1|G2|G3, prefix, pattern } }.
   // Chế độ DEMO / chưa tải xong → dùng bảng tối thiểu của D-63 để form vẫn khóa đúng ô Mã danh mục G1.
   const CODE_RULES_FALLBACK = {

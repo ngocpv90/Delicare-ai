@@ -8,6 +8,8 @@
 
   // Thành phần chung (modules/detail360.js – UI-3 tách từ UI-2).
   const { pas, failBox, loading, none, can, initials, dmy, table, bindRows, filterBar, statusOpts, run, demoNote } = APP.D360;
+  // UI-5.3: mã danh mục (Ngành, Quy mô, Giới tính, Nguồn) → chữ tiếng Việt; giá trị cũ ngoài danh mục hiện nguyên văn.
+  const vi = (col, v) => (v ? UI.statusVi('Customer', col, v) : v);
   const statusBadge = (t, col, v, name) => (v ? UI.badge(v, t, col).replace(esc(UI.statusVi(t, col, v)), esc(name || UI.statusVi(t, col, v))) : '');
 
   APP.register(ID, (el, f, params) => {
@@ -39,7 +41,7 @@
     const c = d.customer ? (d.customer.Code !== undefined ? d.customer : pas(d.customer)) : {};
     const ind = String(c.CustomerType || '').toUpperCase() === 'INDIVIDUAL';
     const name = c.DisplayName || c.Name || '';
-    const meta = [c.Code, c.Industry, d.branchName && 'Chi nhánh ' + d.branchName, d.userAssignName && 'Phụ trách: ' + d.userAssignName].filter(Boolean).map(esc).join(' · ');
+    const meta = [c.Code, vi('Industry', c.Industry), d.branchName && 'Chi nhánh ' + d.branchName, d.userAssignName && 'Phụ trách: ' + d.userAssignName].filter(Boolean).map(esc).join(' · ');
     const contact = [c.Address && `<span>${I('pin')}${esc(c.Address)}</span>`, c.PhoneNumber && `<span>${I('msg')}${esc(c.PhoneNumber)}</span>`,
       ind ? c.IdentityNumber && `<span>CCCD ${esc(c.IdentityNumber)}</span>` : c.TaxCode && `<span>MST ${esc(c.TaxCode)}</span>`].filter(Boolean).join('');
     const p = Store.perm('crm-customer');
@@ -81,11 +83,11 @@
     const c = pas(d.customer), ind = String(c.CustomerType || '').toUpperCase() === 'INDIVIDUAL';
     const rows = list => `<div class="c360-rows">${list.filter(x => x[1]).map(([l, v]) => `<div class="r"><label>${esc(l)}</label><span>${v}</span></div>`).join('') || none}</div>`;
     const info = ind
-      ? [['Họ tên', esc(c.Name)], ['Giới tính', esc(c.Gender)], ['Ngày sinh', dmy(c.DateOfBirth)], ['CCCD', esc([c.IdentityNumber, c.IdentityDate && 'cấp ' + U.date(c.IdentityDate), c.IdentityPlace].filter(Boolean).join(' · '))],
-        ['Nghề nghiệp', esc(c.Occupation)], ['Điện thoại', esc(c.PhoneNumber)], ['Email', esc(c.Email)], ['MST cá nhân', esc(c.TaxCode)], ['Nguồn', esc(c.Source)], ['Ghi chú', esc(c.Note)]]
+      ? [['Họ tên', esc(c.Name)], ['Giới tính', esc(vi('Gender', c.Gender))], ['Ngày sinh', dmy(c.DateOfBirth)], ['CCCD', esc([c.IdentityNumber, c.IdentityDate && 'cấp ' + U.date(c.IdentityDate), c.IdentityPlace].filter(Boolean).join(' · '))],
+        ['Nghề nghiệp', esc(c.Occupation)], ['Điện thoại', esc(c.PhoneNumber)], ['Email', esc(c.Email)], ['MST cá nhân', esc(c.TaxCode)], ['Nguồn', esc(vi('Source', c.Source))], ['Ghi chú', esc(c.Note)]]
       : [['Tên pháp lý', esc(c.LegalName || c.Name)], ['Tên giao dịch', esc(c.DisplayName)], ['Mã số thuế', esc(c.TaxCode)], ['Người đại diện pháp luật', esc(c.LegalRepresentativeName)],
-        ['Người liên hệ', esc([c.ContactPersonName, c.ContactPersonPhone].filter(Boolean).join(' · '))], ['Ngành / quy mô', esc([c.Industry, c.CompanySize].filter(Boolean).join(' · '))],
-        ['Phân khúc / nguồn', esc([c.Segment, c.Source].filter(Boolean).join(' · '))], ['Email', esc(c.Email)], ['Ghi chú', esc(c.Note)]];
+        ['Người liên hệ', esc([c.ContactPersonName, c.ContactPersonPhone].filter(Boolean).join(' · '))], ['Ngành / quy mô', esc([vi('Industry', c.Industry), vi('CompanySize', c.CompanySize)].filter(Boolean).join(' · '))],
+        ['Phân khúc / nguồn', esc([c.Segment, vi('Source', c.Source)].filter(Boolean).join(' · '))], ['Email', esc(c.Email)], ['Ghi chú', esc(c.Note)]];
     const locs = (d.listLocation || []).map(pas), contacts = (d.listContact || []).map(pas);
     const locHtml = locs.map(l => `<div class="r"><label>${esc(l.Name || l.Code || '')}${l.DeliveryWindowFrom ? ' · ' + esc(U.time(l.DeliveryWindowFrom)) + '–' + esc(U.time(l.DeliveryWindowTo)) : ''}</label><span>${esc(l.Address || '')}</span></div>`).join('');
     const ctHtml = contacts.map(x => `<div class="r"><label>${esc(x.FullName || '')}${x.IsPrimary ? ' · liên hệ chính' : ''}</label><span>${esc(x.Phone || x.Email || '')}</span></div>`).join('');

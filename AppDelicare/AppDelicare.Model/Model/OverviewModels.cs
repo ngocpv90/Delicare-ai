@@ -95,6 +95,28 @@ namespace AppDelicare.Model.Model
         public decimal AvgMealsPerDay7d { get; set; }
     }
 
+    /// <summary>UI-5 (D-63 r): dữ liệu cho form tạo / sửa khách hàng – 1 lần gọi <c>Customer/GetFormOptions</c>.</summary>
+    public class CustomerFormOptionsModel
+    {
+        /// <summary>Hệ thống đã khai báo chi nhánh (OrganizationUnit.UnitType = BRANCH) → Chi nhánh phục vụ bắt buộc.</summary>
+        public bool BranchRequired { get; set; }
+        /// <summary>Chỉ đơn vị loại chi nhánh, chưa xóa.</summary>
+        public List<CustomerFormOptionItem> ListBranch { get; set; } = [];
+        /// <summary>NV phụ trách (<c>Customer.UserAssignId</c> → <c>User.Id</c>): tài khoản đang hoạt động, tên lấy từ hồ sơ Person.</summary>
+        public List<CustomerFormOptionItem> ListAssignee { get; set; } = [];
+        /// <summary>Danh mục theo tên cột: Industry, CompanySize, Gender, Source, Status.</summary>
+        public Dictionary<string, List<CustomerFormOptionItem>> Catalogs { get; set; } = [];
+    }
+
+    public class CustomerFormOptionItem
+    {
+        /// <summary>Id (chi nhánh / người dùng) hoặc mã danh mục.</summary>
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        /// <summary>Thông tin phụ để tìm kiếm (mã chi nhánh / tên đăng nhập).</summary>
+        public string? Hint { get; set; }
+    }
+
     public class ContractOverviewModel
     {
         public Guid Id { get; set; }

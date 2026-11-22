@@ -67,5 +67,19 @@ namespace AppDelicare.Model.Request
 		public string? ExternalData { get; set; }
 		[MaxLength(500, ErrorMessage = "ExternalValue tối đa 500 ký tự.")]
 		public string? ExternalValue { get; set; }
+		/// <summary>UI-5.8 (D-63 r): chỉ khi thêm mới – điểm giao đầu tiên tạo cùng transaction (khóa form <c>FirstLocation.Name</c>…); bỏ qua khi sửa.</summary>
+		public CustomerFirstLocationRequest? FirstLocation { get; set; }
+	}
+
+	/// <summary>UI-5.8: điểm giao đầu tiên của khách mới – tên, địa chỉ, khung giờ nhận (từ &lt; đến).</summary>
+	public class CustomerFirstLocationRequest
+	{
+		[MaxLength(255, ErrorMessage = "Tên điểm giao tối đa 255 ký tự.")]
+		public string? Name { get; set; }
+		public string? Address { get; set; }
+		public TimeSpan? DeliveryWindowFrom { get; set; }
+		public TimeSpan? DeliveryWindowTo { get; set; }
+
+		public bool IsEmpty => string.IsNullOrWhiteSpace(Name) && string.IsNullOrWhiteSpace(Address) && DeliveryWindowFrom == null && DeliveryWindowTo == null;
 	}
 }

@@ -36,7 +36,6 @@ namespace AppDelicare.Tests.MasterData
             Guid contract = Guid.NewGuid();
             await _factory.SeedAsync(db =>
             {
-                db.CustomerContact.Add(new CustomerContact { Id = Guid.NewGuid(), CustomerId = customer.Id, FullName = "Cô Lan" });
                 db.Contract.Add(new Contract { Id = contract, CustomerId = customer.Id, ContractNumber = "HD-360", Status = "Active" });
                 db.ContractMeal.Add(new ContractMeal { Id = Guid.NewGuid(), ContractId = contract, MealType = "TRUA", UnitPrice = 30000 });
                 db.Order.Add(new Order { Id = Guid.NewGuid(), CustomerId = customer.Id, OrderNumber = "DH-1", MealDate = DateTime.Today.AddDays(-1), DeliveryDate = DateTime.Today.AddDays(-1), TotalQuantity = 140, Status = "Delivered" });
@@ -45,7 +44,8 @@ namespace AppDelicare.Tests.MasterData
 
             var overview = (await c.GetResultAsync($"/api/Customer/GetOverview?id={customer.Id}")).Ok();
 
-            overview.GetProperty("listContact").GetArrayLength().Should().Be(1);
+            overview.GetProperty("listContact").GetArrayLength().Should().Be(1, "UI-5.8: liên hệ chính tự tạo khi thêm khách doanh nghiệp");
+            overview.GetProperty("listContact")[0].GetProperty("isPrimary").GetBoolean().Should().BeTrue();
             overview.GetProperty("listContract")[0].GetProperty("listMeal").GetArrayLength().Should().Be(1);
             overview.GetProperty("orderCount").GetInt32().Should().Be(1);
             overview.GetProperty("avgMealsPerDay7d").GetDecimal().Should().Be(20);

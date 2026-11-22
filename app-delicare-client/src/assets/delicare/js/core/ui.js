@@ -107,18 +107,36 @@
   // ---------- Form sinh từ schema ----------
   const SKIP = new Set(['Id', 'CreatedDate', 'CreatedBy', 'ModifiedDate', 'ModifiedBy', 'DeletedDate', 'DeletedBy', 'DeleteddBy', 'IsDeleted']);
   UI.formFields = t => Object.values(Store.colmeta[t]).filter(m => !SKIP.has(m.name) && !Store.isDeprecated(t, m.name) && !UI.hidden(t, m.name) && m.usage !== 'Kỹ thuật' && m.usage !== 'Ẩn (bảo mật)' && m.usage !== 'Hệ thống (PK)');
+  // UI-5.4: nhãn tiếng Việt của bảng cho chữ "— Chọn … —" của ô chọn tham chiếu (không hiện tên bảng tiếng Anh).
+  const TABLE_VI = {
+    OrganizationUnit: 'đơn vị', User: 'người dùng', Employee: 'nhân viên', Person: 'hồ sơ', Company: 'công ty', Customer: 'khách hàng', Supplier: 'nhà cung cấp',
+    Ingredient: 'nguyên liệu', Dishe: 'món ăn', Menu: 'thực đơn', Warehouse: 'kho', Vehicle: 'xe', Contract: 'hợp đồng', Order: 'đơn hàng', Shift: 'ca',
+    CustomerDeliveryLocation: 'điểm giao', CustomerContact: 'người liên hệ', UnitOfMeasure: 'đơn vị tính', MaterialLot: 'lô nguyên liệu', Recipe: 'công thức',
+  };
+  UI.tableVi = t => TABLE_VI[t] || String(((Store.cat.funcs || []).find(f => f.table === t) || {}).name || 'giá trị').toLowerCase();
+  // UI-5.2: cột datetime mà nghiệp vụ là NGÀY (tên kết thúc bằng Date / DateOfBirth) → ô chỉ chọn ngày, gửi yyyy-MM-dd.
+  // Danh sách duy nhất – cột *Date cần cả giờ thì thêm vào DATETIME_KEEP.
+  const DATETIME_KEEP = new Set([]);
+  UI.isDateOnly = (t, name) => !DATETIME_KEEP.has(t + '.' + name) && /(Date|DateOfBirth)$/.test(name) && !/^(Created|Modified|Deleted)Date$/.test(name);
+  // UI-5.5: trạng thái Active / Inactive → chữ tiếng Việt, mặc định Đang hoạt động, không có lựa chọn trống.
+  const ACTIVE_VI = { Active: 'Đang hoạt động', Inactive: 'Ngừng hoạt động' };
+  const isActiveInactive = codes => codes.length === 2 && codes.includes('Active') && codes.includes('Inactive');
+  const activeSelect = (id, name, v) => `<select class="select" id="${id}" name="${name}">${['Active', 'Inactive'].concat(v && !ACTIVE_VI[v] ? [v] : []).map(c => `<option value="${esc(c)}" ${c === (v || 'Active') ? 'selected' : ''}>${esc(ACTIVE_VI[c] || c)}</option>`).join('')}</select>`;
+  // Ô chọn từ danh mục: chỉ chữ tiếng Việt; giá trị cũ ngoài danh mục vẫn hiện (chọn sẵn) để không mất khi lưu.
+  UI.catalogSelect = (id, name, items, v, req, placeholder) => `<select class="select" id="${id}" name="${name}" ${req ? 'required' : ''}><option value="">${esc(placeholder || '— Chọn —')}</option>${items.map(x => `<option value="${esc(x.code)}" ${x.code === v ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}${v && !items.some(x => x.code === v) ? `<option value="${esc(v)}" selected>${esc(v)} (giá trị cũ)</option>` : ''}</select>`;
   UI.input = (t, m, v) => {
     const id = 'f_' + m.name, req = !m.nullable && !m.def;
     if (m.name.endsWith('Id')) {
       const dst = Store.target(t, m.name);
-      if (dst) return `<select class="select" id="${id}" name="${m.name}" ${req ? 'required' : ''}><option value="">— Chọn ${esc(dst)} —</option>${Store.rows(dst).slice(0, 400).map(r => `<option value="${esc(r.Id)}" ${r.Id === v ? 'selected' : ''}>${esc(Store.label(dst, r))}</option>`).join('')}</select>`;
+      if (dst) return `<select class="select" id="${id}" name="${m.name}" ${req ? 'required' : ''}><option value="">— Chọn ${esc(UI.tableVi(dst))} —</option>${Store.rows(dst).slice(0, 400).map(r => `<option value="${esc(r.Id)}" ${r.Id === v ? 'selected' : ''}>${esc(Store.label(dst, r))}</option>`).join('')}</select>`;
       return `<input class="input mono" id="${id}" name="${m.name}" value="${esc(v || '')}" placeholder="Tham chiếu chưa xác định bảng đích (GAP)" ${req ? 'required' : ''}>`;
     }
     const sd = Store.statusDef(t, m.name);
-    if (sd) return `<select class="select" id="${id}" name="${m.name}" ${req ? 'required' : ''}><option value="">—</option>${sd.codes.map((c, i) => `<option value="${c}" ${c === v ? 'selected' : ''}>${esc(sd.vi[i] || c)} (${c})</option>`).join('')}</select>`;
-    if (m.name === 'Status' || m.name.endsWith('Status')) return `<select class="select" id="${id}" name="${m.name}"><option value="">—</option>${['Active', 'Inactive'].concat(v && !['Active', 'Inactive'].includes(v) ? [v] : []).map(c => `<option ${c === v ? 'selected' : ''}>${c}</option>`).join('')}</select>`;
+    if (sd && isActiveInactive(sd.codes)) return activeSelect(id, m.name, v);
+    if (sd) return `<select class="select" id="${id}" name="${m.name}" ${req ? 'required' : ''}><option value="">${sd.plain ? '— Chọn —' : '—'}</option>${sd.codes.map((c, i) => `<option value="${c}" ${c === v ? 'selected' : ''}>${esc(sd.vi[i] || c)}${sd.plain ? '' : ` (${c})`}</option>`).join('')}${sd.plain && v && !sd.codes.includes(v) ? `<option value="${esc(v)}" selected>${esc(v)} (giá trị cũ)</option>` : ''}</select>`;
+    if (m.name === 'Status' || m.name.endsWith('Status')) return activeSelect(id, m.name, v);
     if (m.type === 'bit') return `<select class="select" id="${id}" name="${m.name}"><option value="1" ${v ? 'selected' : ''}>Có</option><option value="0" ${!v ? 'selected' : ''}>Không</option></select>`;
-    if (m.type === 'date') return `<input type="date" class="input" id="${id}" name="${m.name}" value="${esc(U.day(v))}" ${req ? 'required' : ''}>`;
+    if (m.type === 'date' || (/^datetime/.test(m.type) && UI.isDateOnly(t, m.name))) return `<input type="date" class="input" id="${id}" name="${m.name}" value="${esc(U.day(v))}" ${req ? 'required' : ''}>`;
     if (/^datetime/.test(m.type)) return `<input type="datetime-local" class="input" id="${id}" name="${m.name}" value="${esc(v ? String(v).slice(0, 16) : '')}" ${req ? 'required' : ''}>`;
     if (m.type.startsWith('time')) return `<input type="time" class="input" id="${id}" name="${m.name}" value="${esc(U.time(v))}">`;
     if (/decimal|int|bigint/.test(m.type)) return `<input type="number" step="any" class="input" id="${id}" name="${m.name}" value="${v ?? ''}" ${req ? 'required' : ''}>`;
@@ -149,20 +167,73 @@
     Gender: 'Giới tính', DateOfBirth: 'Ngày sinh', IdentityNumber: 'Số CCCD (12 số)', IdentityDate: 'Ngày cấp CCCD', IdentityPlace: 'Nơi cấp CCCD', Occupation: 'Nghề nghiệp',
   };
   const customerType = v => (String(v || '').toUpperCase() === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'BUSINESS');
+  // UI-5.7: kiểm tại ô – CÙNG quy tắc với máy chủ (nguồn: AppDelicare.Services/Implement/CustomerService.cs – CheckRules + các GeneratedRegex).
+  const CUS_RX = { bizTax: /^\d{10}(-\d{3})?$/, personTax: /^\d{10}$/, identity: /^\d{12}$/, phone: /^(0\d{9}|\+84\d{9})$/, phoneSep: /[\s.\-()]/g, email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/ };
+  const CUS_DATE_NOT_FUTURE = new Set(['DateOfBirth', 'IdentityDate', 'RegistrationDate']);
+  /** Lỗi của 1 ô khách hàng ('' = hợp lệ). vals = giá trị đang nhập của cả form (kiểm chéo ngày cấp CCCD ≥ ngày sinh). */
+  UI.customerFieldError = (name, value, cusType, vals) => {
+    const v = value === null || value === undefined ? '' : String(value).trim();
+    if (!v) return '';
+    if (name === 'TaxCode') return (cusType === 'INDIVIDUAL' ? CUS_RX.personTax : CUS_RX.bizTax).test(v) ? '' : (cusType === 'INDIVIDUAL' ? 'Mã số thuế cá nhân gồm 10 số' : 'Mã số thuế gồm 10 số hoặc 10-3 số (vd. 0312345678-001)');
+    if (name === 'IdentityNumber') return CUS_RX.identity.test(v) ? '' : 'Số CCCD gồm đúng 12 số';
+    if (name === 'PhoneNumber' || name === 'ContactPersonPhone') return CUS_RX.phone.test(v.replace(CUS_RX.phoneSep, '')) ? '' : 'Số điện thoại: 0 + 9 số hoặc +84 + 9 số';
+    if (name === 'Email' || name === 'ContactPersonEmail') return CUS_RX.email.test(v) ? '' : 'Email không đúng định dạng';
+    if (CUS_DATE_NOT_FUTURE.has(name)) {
+      if (v > Store.ctx.date) return 'Không được sau hôm nay';
+      if (name === 'IdentityDate' && vals && vals.DateOfBirth && v < String(vals.DateOfBirth)) return 'Ngày cấp CCCD phải từ ngày sinh trở đi';
+    }
+    return '';
+  };
+  // UI-5 (D-63 r): dữ liệu form khách hàng – chế độ API lấy Customer/GetFormOptions; DEMO dựng từ dữ liệu cục bộ + catalog.
+  const localCustomerOptions = () => {
+    const cat = c => { const d = Store.statusDef('Customer', c); return d ? d.codes.map((code, i) => ({ code, name: d.vi[i] || code })) : []; };
+    const branches = Store.rows('OrganizationUnit').filter(u => u.UnitType === 'BRANCH');
+    return {
+      branchRequired: branches.length > 0,
+      listBranch: branches.map(u => ({ code: u.Id, name: u.Name || u.Code, hint: u.Code })),
+      listAssignee: Store.rows('User').filter(u => u.IsActive !== false && u.IsActive !== 0).map(u => ({ code: u.Id, name: Store.label('User', u), hint: u.UserName })),
+      catalogs: { Industry: cat('Industry'), CompanySize: cat('CompanySize'), Gender: cat('Gender'), Source: cat('Source') },
+    };
+  };
+  UI.customerOptions = () => (Store.isLive ? Store.query('Customer/GetFormOptions').then(x => (x.ok && x.data ? x.data : localCustomerOptions())) : Promise.resolve(localCustomerOptions()));
+  // UI-5.8: khối Điểm giao đầu tiên (chỉ khi tạo mới) – khóa gửi lên FirstLocation.* (CustomerRequest.FirstLocation).
+  const FIRST_LOC = [['Name', 'Tên điểm giao', 'text'], ['Address', 'Địa chỉ điểm giao', 'text'], ['DeliveryWindowFrom', 'Giờ nhận từ', 'time'], ['DeliveryWindowTo', 'Giờ nhận đến', 'time']];
   UI.form = (t, row, opt = {}) => {
     const editing = !!(row && row.Id), rec = Object.assign({}, opt.defaults || {}, row || {});
     const isCustomer = t === 'Customer' && !opt.fields;
     let cusType = customerType(rec.CustomerType);
+    // UI-5.6: tạo mới khách hàng → chọn loại trước (2 nút lớn), chưa chọn sẵn; sửa → giữ loại (D-63 i).
+    let typeChosen = !isCustomer || editing || !!(opt.defaults && opt.defaults.CustomerType);
+    let cusOpt = isCustomer ? localCustomerOptions() : null;
+    const firstLoc = { open: false, Name: '', Address: '', DeliveryWindowFrom: '', DeliveryWindowTo: '' };
+    let autoDisplay = rec.DisplayName && rec.DisplayName === rec.LegalName ? rec.DisplayName : null;   // UI-5.9
     // Trường của form: khách hàng theo loại (D-63 g); bảng khác sinh từ schema như cũ.
     const fieldsOf = () => {
       if (!isCustomer) return (opt.fields ? opt.fields.map(f => Store.colmeta[t][f]).filter(Boolean) : UI.formFields(t));
+      if (!typeChosen) return [];
       const d = CUSTOMER_FIELDS[cusType];
       return ['Code', 'CustomerType'].concat(d.req, d.opt).map(f => Store.colmeta[t][f]).filter(Boolean);
     };
-    const isReq = m => isCustomer ? CUSTOMER_FIELDS[cusType].req.includes(m.name) || m.name === 'CustomerType' : (!m.nullable && !m.def);
+    const isReq = m => isCustomer ? CUSTOMER_FIELDS[cusType].req.includes(m.name) || m.name === 'CustomerType' || (m.name === 'BranchId' && !!cusOpt.branchRequired) : (!m.nullable && !m.def);
     const labelOf = m => (isCustomer && CUSTOMER_LABEL[m.name]) || U.colLabel(m.name);
     // MA-1 (D-63 k): nhóm mã từ api/Common/GetCodeRules – G1 chỉ đọc "(tự sinh khi lưu)", G2 chữ hoa không dấu.
     const ruleOf = m => Store.codeRule(t, m.name);
+    const searchable = (id, selectHtml, placeholder) => `<div class="pick-search"><input type="search" class="input" data-search-for="${id}" placeholder="${esc(placeholder)}" autocomplete="off">${selectHtml}</div>`;
+    const customerInput = m => {
+      const v = rec[m.name], id = 'f_' + m.name, cats = cusOpt.catalogs || {};
+      if (m.name === 'BranchId') {
+        const items = (cusOpt.listBranch || []).map(x => ({ code: x.code, name: x.name + (x.hint && x.hint !== x.name ? ' · ' + x.hint : '') }));
+        const html = UI.catalogSelect(id, m.name, items, v, isReq(m), '— Chọn chi nhánh —');
+        return items.length > 8 ? searchable(id, html, 'Tìm chi nhánh…') : html;
+      }
+      if (m.name === 'UserAssignId') {
+        const items = (cusOpt.listAssignee || []).map(x => ({ code: x.code, name: x.name + (x.hint && x.hint !== x.name ? ' (' + x.hint + ')' : '') }));
+        return searchable(id, UI.catalogSelect(id, m.name, items, v, false, '— Chọn nhân viên phụ trách —'), 'Tìm theo tên / tên đăng nhập…');
+      }
+      if (m.name === 'Status') return null;   // UI-5.5: UI.input → Đang hoạt động / Ngừng hoạt động, mặc định Đang hoạt động, không có ô trống
+      if (cats[m.name]) return UI.catalogSelect(id, m.name, cats[m.name], v, isReq(m), '— Chọn ' + labelOf(m).toLowerCase() + ' —');
+      return null;
+    };
     const inputOf = m => {
       const r = ruleOf(m), v = rec[m.name];
       if (r && r.group === 'G1') return `<input class="input mono" id="f_${m.name}" name="${m.name}" value="${esc(v || '')}" placeholder="(tự sinh khi lưu)" readonly data-g1="1" title="Mã do máy chủ tự sinh${r.prefix ? ' – ' + esc(r.prefix) : ''}">`;
@@ -170,7 +241,7 @@
         // Loại khách khóa sau khi lưu (D-63 i) – đổi loại chỉ khi chưa có hợp đồng / đơn, máy chủ kiểm và cấp mã mới.
         return `<select class="select" id="f_CustomerType" name="CustomerType" required ${editing && !opt.allowTypeChange ? 'data-locked="1"' : ''}>${['BUSINESS', 'INDIVIDUAL'].map(c => `<option value="${c}" ${c === cusType ? 'selected' : ''}>${c === 'BUSINESS' ? 'Doanh nghiệp' : 'Cá nhân'}</option>`).join('')}</select>`;
       }
-      const html = UI.input(t, m, v);
+      const html = (isCustomer && customerInput(m)) || UI.input(t, m, v);
       return r && r.group === 'G2' ? html.replace('<input ', '<input data-g2="1" ') : html;
     };
     const fieldHtml = m => {
@@ -178,8 +249,14 @@
       const wide = /max\)$/.test(m.type) && /Note|Description|Instructions|Reason|Resolution|Address/.test(m.name);
       return `<div class="field ${wide ? 'full' : ''}"><label for="f_${m.name}">${esc(labelOf(m))}${req ? ' <span class="req">*</span>' : ''}${Store.isLive ? '' : ` <code>${m.name} · ${m.type}</code>`}</label>${inputOf(m)}${m.def && !Store.isLive ? `<span class="hint">DEFAULT ${esc(m.def)}</span>` : ''}<span class="err hide"></span></div>`;
     };
+    const typePickHtml = () => `<div class="type-pick"><p class="muted">Chọn loại khách hàng trước – mỗi loại có bộ thông tin riêng (mã KHB- / KHC- do máy chủ cấp).</p><div class="type-pick-grid">
+      <button type="button" class="type-pick-btn" data-pick="BUSINESS"><b>Doanh nghiệp</b><span>Công ty, bệnh viện, nhà máy, trường học… – có mã số thuế, người đại diện, người liên hệ</span></button>
+      <button type="button" class="type-pick-btn" data-pick="INDIVIDUAL"><b>Cá nhân</b><span>Khách lẻ / hộ gia đình – họ tên, CCCD, ngày sinh</span></button></div></div>`;
+    const firstLocHtml = () => (!isCustomer || editing || !Store.isLive) ? '' : `<div class="first-loc mt" id="flBox"><div class="spread"><span><b>Điểm giao đầu tiên</b> <span class="muted small">(tùy chọn – tạo cùng lúc với khách hàng)</span></span>
+      <button type="button" class="btn xs" id="flToggle">${firstLoc.open ? 'Bỏ điểm giao' : I('plus') + ' Thêm điểm giao ngay'}</button></div>
+      <div class="form-grid ${firstLoc.open ? '' : 'hide'}" id="flBody">${FIRST_LOC.map(([k, l, type]) => `<div class="field ${k === 'Address' ? 'full' : ''}"><label for="fl_${k}">${l}${k === 'Name' || k === 'Address' ? ' <span class="req">*</span>' : ''}</label><input class="input" type="${type}" id="fl_${k}" value="${esc(firstLoc[k] || '')}"><span class="err hide"></span></div>`).join('')}</div></div>`;
     let fields = fieldsOf();
-    const formHtml = () => `<div id="frmErr" class="notice warn hide"></div><form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}</form>`;
+    const formHtml = () => (isCustomer && !typeChosen) ? typePickHtml() : `<div id="frmErr" class="notice warn hide"></div><form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}</form>${firstLocHtml()}`;
     // Chế độ thật: không hiện ghi chú kỹ thuật của mockup (tên bảng, cột SQL) – CLAUDE.md 4.4.
     const body = `${Store.isLive ? '' : `<div class="notice info">${I('database')}<div><b>Form sinh từ cấu trúc bảng <code>dbo.${t}</code></b>Trường bắt buộc (<span class="req" style="color:var(--red)">*</span>) = cột NOT NULL không có DEFAULT trong SQL. Tên cột SQL hiển thị cạnh nhãn. Cột deprecated không hiển thị.</div></div>`}<div id="frmBody">${formHtml()}</div>`;
     UI.modal({
@@ -187,49 +264,106 @@
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="frmSave">${I('ok')} ${editing ? 'Lưu thay đổi' : 'Tạo mới'}</button>`,
       onMount: (m, close) => {
         const host = m.querySelector('#frmBody');
-        const showErr = msg => { const box = m.querySelector('#frmErr'); box.innerHTML = I('alert') + '<div>' + esc(msg) + '</div>'; box.classList.remove('hide'); box.scrollIntoView({ block: 'nearest' }); };
-        // Giữ giá trị đã nhập khi vẽ lại form (đổi loại khách).
-        const collect = () => { fields.forEach(f => { const el = m.querySelector('#f_' + f.name); if (el && !el.dataset.g1) rec[f.name] = el.value === '' ? null : el.value; }); };
+        const btn = m.querySelector('#frmSave');
+        const showErr = msg => { const box = m.querySelector('#frmErr'); if (!box) return; box.innerHTML = I('alert') + '<div>' + esc(msg) + '</div>'; box.classList.remove('hide'); box.scrollIntoView({ block: 'nearest' }); };
+        const setErr = (el, msg) => { const fld = el && el.closest('.field'); if (!fld) return; const err = fld.querySelector('.err'); fld.classList.toggle('invalid', !!msg); err.textContent = msg || ''; err.classList.toggle('hide', !msg); };
+        const valueOf = name => { const el = m.querySelector('#f_' + name); return el ? el.value : rec[name]; };
+        const valuesNow = () => { const o = {}; fields.forEach(f => { o[f.name] = valueOf(f.name); }); return o; };
+        // UI-5.7: lỗi định dạng hiện ngay khi rời ô (cùng quy tắc máy chủ).
+        const checkField = name => { const el = m.querySelector('#f_' + name); if (!el || !isCustomer) return ''; const msg = UI.customerFieldError(name, el.value, cusType, valuesNow()); setErr(el, msg); return msg; };
+        const checkFirstLoc = full => {
+          if (!firstLoc.open) return true;
+          let ok = true;
+          const el = k => m.querySelector('#fl_' + k);
+          ['Name', 'Address'].forEach(k => { const miss = full && !el(k).value.trim(); setErr(el(k), miss ? 'Bắt buộc' : ''); if (miss) ok = false; });
+          const from = el('DeliveryWindowFrom').value, to = el('DeliveryWindowTo').value, bad = from && to && from >= to;
+          setErr(el('DeliveryWindowTo'), bad ? 'Giờ nhận từ phải nhỏ hơn giờ nhận đến' : '');
+          return ok && !bad;
+        };
+        // Giữ giá trị đã nhập khi vẽ lại form (đổi loại khách / tải xong dữ liệu form).
+        const collect = () => {
+          fields.forEach(f => { const el = m.querySelector('#f_' + f.name); if (el && !el.dataset.g1) rec[f.name] = el.value === '' ? null : el.value; });
+          FIRST_LOC.forEach(([k]) => { const el = m.querySelector('#fl_' + k); if (el) firstLoc[k] = el.value; });
+        };
+        const redraw = () => { fields = fieldsOf(); host.innerHTML = formHtml(); wire(); };
         const wire = () => {
+          btn.disabled = isCustomer && !typeChosen;
+          host.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { cusType = b.dataset.pick; rec.CustomerType = cusType; typeChosen = true; redraw(); const first = host.querySelector('.form-grid input:not([readonly]), .form-grid select:not([disabled])'); first && first.focus(); });
           host.querySelectorAll('[data-g2]').forEach(el => el.addEventListener('input', () => { const p = el.selectionStart, v = Store.userCode(el.value); if (v !== el.value) { el.value = v; try { el.setSelectionRange(p, p); } catch (e) { /* bỏ qua */ } } }));
+          // Ô chọn có tìm kiếm: gõ để lọc danh sách (bỏ dấu, không phân biệt hoa thường).
+          const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+          host.querySelectorAll('[data-search-for]').forEach(inp => inp.addEventListener('input', () => {
+            const sel = host.querySelector('#' + inp.dataset.searchFor), q = fold(inp.value.trim());
+            [...sel.options].forEach((o, i) => { o.hidden = i > 0 && !!q && !fold(o.textContent).includes(q) && !o.selected; });
+            const hits = [...sel.options].filter((o, i) => i > 0 && !o.hidden);
+            if (q && hits.length === 1) { sel.value = hits[0].value; }
+          }));
+          if (isCustomer) {
+            fields.forEach(f => { const el = host.querySelector('#f_' + f.name); if (el) el.addEventListener('blur', () => checkField(f.name)); });
+            const dob = host.querySelector('#f_DateOfBirth'); if (dob) dob.addEventListener('change', () => checkField('IdentityDate'));
+            // UI-5.9: nhập Tên doanh nghiệp → tự điền Tên giao dịch khi ô này còn trống (hoặc vẫn là giá trị tự điền).
+            const legal = host.querySelector('#f_LegalName'), disp = host.querySelector('#f_DisplayName');
+            if (legal && disp) legal.addEventListener('input', () => { if (!disp.value || disp.value === autoDisplay) { disp.value = legal.value; autoDisplay = legal.value; } });
+            const tg = host.querySelector('#flToggle');
+            if (tg) tg.onclick = () => { collect(); firstLoc.open = !firstLoc.open; if (firstLoc.open && !firstLoc.Address) firstLoc.Address = valueOf('Address') || ''; redraw(); if (firstLoc.open) { const n = host.querySelector('#fl_Name'); n && n.focus(); } };
+            host.querySelectorAll('#flBody input').forEach(el => el.addEventListener('blur', () => checkFirstLoc(false)));
+          }
           const ct = host.querySelector('#f_CustomerType');
           if (ct && isCustomer) {
             if (ct.dataset.locked) { ct.disabled = true; ct.title = 'Loại khách hàng khóa sau khi lưu (D-63 i)'; }
-            ct.onchange = () => { collect(); cusType = customerType(ct.value); rec.CustomerType = cusType; fields = fieldsOf(); host.innerHTML = formHtml(); wire(); };
+            ct.onchange = () => { collect(); cusType = customerType(ct.value); rec.CustomerType = cusType; redraw(); };
           }
         };
+        // UI-5.4: chi nhánh đúng 1 → chọn sẵn khi tạo mới.
+        const applyOptions = o => {
+          cusOpt = o || cusOpt;
+          if (!editing && !rec.BranchId && (cusOpt.listBranch || []).length === 1) rec.BranchId = cusOpt.listBranch[0].code;
+        };
+        if (isCustomer) applyOptions(cusOpt);
         wire();
-        // Mã quy tắc chưa tải xong lúc mở form → vẽ lại khi có (không mất dữ liệu đã nhập).
-        if (Store.isLive) Store.loadCodeRules().then(() => { if (host.isConnected) { collect(); host.innerHTML = formHtml(); wire(); } });
-        const btn = m.querySelector('#frmSave');
+        // Quy tắc mã / dữ liệu form tải xong sau khi mở form → vẽ lại (không mất dữ liệu đã nhập).
+        if (Store.isLive) Promise.all([Store.loadCodeRules(), isCustomer ? UI.customerOptions().then(applyOptions) : null]).then(() => { if (host.isConnected) { collect(); redraw(); } });
+        // Lỗi máy chủ: hiện đầu form + tô đỏ ô có nhãn nằm trong thông báo (nhãn dài khớp trước, tránh "Email" ăn vào "Email người liên hệ").
+        const markServer = msg => {
+          let rest = String(msg || '');
+          fields.map(f => ({ f, l: labelOf(f).replace(/\s*\(.*\)$/, '') })).sort((a, b) => b.l.length - a.l.length).forEach(({ f, l }) => {
+            if (l && rest.includes(l)) { rest = rest.split(l).join(' '); setErr(m.querySelector('#f_' + f.name), ' '); }
+          });
+          if (/^Điểm giao đầu tiên/.test(String(msg || ''))) FIRST_LOC.forEach(([k]) => { const el = m.querySelector('#fl_' + k); if (el && (!el.value || /giờ/.test(msg))) setErr(el, ' '); });
+        };
         btn.onclick = () => {
+          if (isCustomer && !typeChosen) return;
           let ok = true; const out = {};
-          m.querySelector('#frmErr').classList.add('hide');
+          const box = m.querySelector('#frmErr'); box && box.classList.add('hide');
           fields.forEach(f => {
             const el = m.querySelector('#f_' + f.name); if (!el) return;
-            const fld = el.closest('.field'), err = fld.querySelector('.err');
-            fld.classList.remove('invalid'); err.classList.add('hide');
+            setErr(el, '');
             if (el.dataset.g1) return;   // G1: máy chủ sinh – không gửi
             let v = el.value;
             if (v === '') v = null;
             else if (f.type === 'bit') v = +v;
             else if (/decimal|int|bigint/.test(f.type)) v = Number(v);
-            if (isReq(f) && v === null) { ok = false; fld.classList.add('invalid'); err.textContent = 'Bắt buộc'; err.classList.remove('hide'); }
+            if (isReq(f) && v === null) { ok = false; setErr(el, 'Bắt buộc'); }
+            else if (isCustomer && checkField(f.name)) ok = false;
             out[f.name] = v;
           });
           if (isCustomer) out.CustomerType = cusType;
+          if (isCustomer && !checkFirstLoc(true)) ok = false;
           const v2 = opt.validate && opt.validate(out); if (v2) { ok = false; showErr(v2); }
-          if (!ok) return;
+          if (!ok) { const bad = m.querySelector('.field.invalid'); bad && bad.scrollIntoView({ block: 'nearest' }); return; }
           // opt.submit: màn hình tự lưu qua action nghiệp vụ (vd. LeaveRequest/Create) thay cho Insert / Update chung.
           if (opt.submit) return opt.submit(out, close);
           // MA-1.8: ghi CHỜ API – đóng form + báo thành công chỉ khi máy chủ xác nhận; lỗi → giữ form, hiện lỗi tại chỗ.
           const payload = editing ? Object.assign({}, row, out) : Object.assign({}, opt.defaults || {}, out);
+          if (isCustomer && !editing && firstLoc.open) FIRST_LOC.forEach(([k]) => { const el = m.querySelector('#fl_' + k); if (el && el.value.trim()) payload['FirstLocation.' + k] = el.value.trim(); });
           btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = 'Đang lưu…';
           Store.save(t, editing ? 'Update' : 'Insert', payload).then(r => {
             btn.disabled = false; btn.innerHTML = old;
-            if (!r.ok) { showErr(r.message || 'Không lưu được'); return; }
+            if (!r.ok) { showErr(r.message || 'Không lưu được'); markServer(r.message); return; }
             close();
             const saved = r.row || payload;
+            // UI-5.8: khách mới có liên hệ chính / điểm giao do máy chủ tạo → tải lại 2 bảng con.
+            if (isCustomer && !editing && Store.isLive) Store.reload(['CustomerContact', 'CustomerDeliveryLocation']);
             UI.toast(esc(r.message || ((editing ? 'Đã cập nhật ' : 'Đã tạo ') + (Store.label(t, saved) || ''))) + (r.demo ? ` <small>(dbo.${t} · DEMO)</small>` : ''), 'ok');
             opt.onSave && opt.onSave(saved);
           });
