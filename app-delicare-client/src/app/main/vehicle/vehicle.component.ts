@@ -5,7 +5,7 @@ import { VehicleService } from 'src/app/services/vehicle.service';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { VehicleModalComponent } from './vehicle-modal/vehicle-modal.component';
 
-// log-vehicle – Danh mục phương tiện giao hàng (FE-2).
+// log-vehicle – Xe giao hàng giao hàng (FE-2).
 @Component({
   selector: 'app-vehicle',
   templateUrl: './vehicle.component.html',

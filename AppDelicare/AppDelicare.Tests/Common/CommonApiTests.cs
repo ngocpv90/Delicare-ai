@@ -135,7 +135,7 @@ namespace AppDelicare.Tests.Common
             using (var wb = new XLWorkbook(new MemoryStream(await response.Content.ReadAsByteArrayAsync())))
             {
                 var ws = wb.Worksheets.First();
-                ws.Cell(1, 1).GetString().Should().Be("ĐƠN ĐẶT SUẤT ĂN");
+                ws.Cell(1, 1).GetString().Should().Be("ĐƠN ĐẶT SUẤT");
                 var headers = ws.Row(4).CellsUsed().Select(c => c.GetString()).ToList();
                 headers.Should().StartWith(["STT", "Số đơn"]).And.Contain(["Khách hàng", "Trạng thái", "Ghi chú"]);
                 int customerCol = headers.IndexOf("Khách hàng") + 1, statusCol = headers.IndexOf("Trạng thái") + 1, noteCol = headers.IndexOf("Ghi chú") + 1;

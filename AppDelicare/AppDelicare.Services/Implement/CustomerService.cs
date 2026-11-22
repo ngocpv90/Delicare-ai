@@ -404,7 +404,7 @@ namespace AppDelicare.Services.Implement
             {
                 // Trường của doanh nghiệp → xóa trống.
                 request.LegalName = request.BusinessRegistrationNumber = request.RegistrationPlace = request.LegalRepresentativeName = null;
-                request.ContactPersonName = request.ContactPersonPhone = request.ContactPersonEmail = request.Industry = request.CompanySize = request.Segment = null;
+                request.ContactPersonName = request.ContactPersonPhone = request.ContactPersonEmail = request.Industry = request.CompanySize = null;
                 request.RegistrationDate = null;
                 request.LastName = Clean(request.LastName);
                 request.FirstName = Clean(request.FirstName);

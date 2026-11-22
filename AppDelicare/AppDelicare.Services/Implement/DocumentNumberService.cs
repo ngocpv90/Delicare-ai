@@ -71,6 +71,8 @@ namespace AppDelicare.Services.Implement
             [DocumentKind.Employee] = new("NV", 5, false, [new(typeof(Employee), ["EmployeeCode", "Code"])], Catalog: true),
             [DocumentKind.DeliveryLocation] = new("DP", 5, false, [new(typeof(CustomerDeliveryLocation), ["Code"])], Catalog: true),
             [DocumentKind.PricePolicy] = new("BG", 5, false, [new(typeof(PricePolicy), ["Code"])], Catalog: true),
+            [DocumentKind.DishCategory] = new("NM", 5, false, [new(typeof(DishCategory), ["Code"])], Catalog: true),
+            [DocumentKind.IngredientCategory] = new("NN", 5, false, [new(typeof(IngredientCategory), ["Code"])], Catalog: true),
         };
 
         /// <summary>Thông tin tiền tố cho API quy tắc mã / test (không lộ cấu trúc nội bộ).</summary>

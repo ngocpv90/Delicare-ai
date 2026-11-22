@@ -55,6 +55,11 @@ namespace AppDelicare.Model.Option
         /// % dự phòng này cho mỗi lựa chọn (0 = tắt). Thực đơn 1 lựa chọn không cộng.
         /// </summary>
         public decimal MrpOptionBufferPct { get; set; } = 15m;
+        /// <summary>
+        /// ORD-OPT-1.6 (D-74 e, anh chốt 2026-11-22): % dự phòng cho dòng đơn ĐÃ đăng ký theo lựa chọn (<c>OrderLine.MenuOptionNo</c>) –
+        /// suất món = suất lựa chọn × (1 + % ÷ 100). Mặc định 0 (số khách đăng ký là số thật). Dòng cũ NULL vẫn theo <see cref="MrpOptionBufferPct"/>.
+        /// </summary>
+        public decimal MrpOptionQtyBufferPct { get; set; }
         /// <summary>T15: PO có tổng tiền ≤ ngưỡng này được tự duyệt khi gửi (0 = mọi PO phải duyệt) – PROPOSED – BA/PO CONFIRM (GAP-PUR-03).</summary>
         public decimal PurchaseOrderAutoApproveMaxAmount { get; set; }
         /// <summary>

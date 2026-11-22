@@ -10,14 +10,14 @@
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `log-route` | Đóng gói & Giao nhận › Tuyến giao hàng | Lập chuyến, sắp điểm dừng, xếp xe, xuất bến, in phiếu, đơn giao trong ngày |
+| `log-route` | Đóng gói & Giao hàng › Tuyến giao hàng | Lập chuyến, sắp điểm dừng, xếp xe, xuất bến, in phiếu, đơn giao trong ngày |
 | `log-delivery-order` | … › Đơn giao hàng | Lập, gán / chuyển chuyến, tách, hủy đơn giao |
 | `log-execution` | … › Thực hiện giao hàng | Đã đến, bàn giao + POD, giao thất bại, ghi vị trí, in |
 | `log-gps` | … › Theo dõi vị trí xe (GPS) | Vị trí xe hôm nay theo sự kiện |
-| `log-container-return` | … › Thu hồi khay/hộp | Ghi thu hồi, kiểm tra |
+| `log-container-return` | … › Thu hồi khay hộp | Ghi thu hồi, kiểm tra |
 | `log-return-inspection` | … › Kiểm tra hàng trả về | Kiểm tra phiếu thu hồi |
 | `log-packaging-ledger` | … › Sổ theo dõi bao bì | Khay hộp còn ở khách, ghi sổ tay |
-| `log-complaint` | … › Khiếu nại khách hàng | Tạo / xử lý phản ánh |
+| `log-complaint` | … › Phản ánh khách hàng | Tạo / xử lý phản ánh |
 | `log-packing-order`, `log-packing-result` | … › Đơn / Kết quả đóng gói | Xem `08_DONG_GOI.md` |
 | `log-vehicle` | … › Phương tiện | Danh mục xe (biển số, loại, sức chở, trạng thái) |
 

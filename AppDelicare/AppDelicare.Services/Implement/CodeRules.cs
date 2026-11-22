@@ -28,8 +28,6 @@ namespace AppDelicare.Services.Implement
             (typeof(Position), "Code", "chức danh"),
             (typeof(Shift), "Code", "ca – hậu tố mã mẻ / vệ sinh (CA1…)"),
             (typeof(UnitMeasure), "Code", "đơn vị tính (KG…)"),
-            (typeof(DishCategory), "Code", "nhóm món"),
-            (typeof(IngredientCategory), "Code", "nhóm nguyên liệu"),
             (typeof(ProductionLine), "Code", "dây chuyền – QR LINE_"),
             (typeof(KitchenWorkstation), "Code", "trạm bếp"),
             (typeof(StorageZone), "Code", "khu kho"),
@@ -48,6 +46,8 @@ namespace AppDelicare.Services.Implement
         /// <summary>G3 – không phải mã định danh (mã loại / trạng thái / tham chiếu / thứ tự / phiên bản / bảng cũ).</summary>
         private static readonly (Type Entity, string Property)[] NotIdentifiers =
         [
+            // ORD-OPT-1 (D-74): số lựa chọn của thực đơn trên dòng đơn – không phải mã định danh.
+            (typeof(OrderLine), "MenuOptionNo"),
             // Mã loại / trạng thái / tiền tệ / đơn vị.
             (typeof(ApprovalItem), "ActionCode"), (typeof(KpiMetricDefinition), "AggregationCode"), (typeof(ApprovalStep), "ApproverRoleCode"),
             (typeof(FoodSafetyChecklist), "AreaCode"), (typeof(CustomerComplaint), "CategoryCode"), (typeof(PackagingLedger), "ConditionCode"),

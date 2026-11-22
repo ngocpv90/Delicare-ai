@@ -182,7 +182,7 @@
           const ser = (m.series || []).filter(s => s.value !== null && s.value !== undefined);
           const met = la ? la.met : null, tg = la && la.target !== null && la.target !== undefined ? la.target : df.targetValue;
           const badge = !la ? '<span class="badge gray">Chưa có số</span>' : la.value === null || la.value === undefined ? '<span class="badge orange">Thiếu dữ liệu</span>' : met === true ? '<span class="badge green">Đạt</span>' : met === false ? '<span class="badge red">Chưa đạt</span>' : '<span class="badge gray">Không có mục tiêu</span>';
-          return `<div class="card panel"><div class="spread"><div><div class="eyebrow">${esc((DOMS.find(x => x[0] === df.domainCode) || [0, df.domainCode || ''])[1])}</div><b title="${esc(String(df.formula || '').replace(/s*[A-Z_]{6,}[^.]*./g, '').replace(/s*PROPOSED[^.]*.?/g, '').trim())}">${esc(df.metricName || '')}</b></div>${badge}</div>
+          return `<div class="card panel"><div class="spread"><div><b title="${esc(String(df.formula || '').replace(/s*[A-Z_]{6,}[^.]*./g, '').replace(/s*PROPOSED[^.]*.?/g, '').trim())}">${esc(df.metricName || '')}</b></div>${badge}</div>
             <div class="kpi-mini-value">${la ? fmt(la.value, unit) : '–'}</div>
             <div class="kpi-foot">${tg !== null && tg !== undefined ? 'Mục tiêu ' + (df.targetDirection === 'LOWER' ? '≤ ' : '≥ ') + fmt(tg, unit) + ' · ' : ''}${la ? (monthly ? 'tháng ' + U.date(la.date).slice(3) : 'ngày ' + U.date(la.date)) : 'chưa làm mới'}${la && la.dataQualityStatus === 'INCOMPLETE' && la.value !== null && la.value !== undefined ? ' · <span class="warn">chưa đủ dữ liệu</span>' : ''}${df.hasCalculator === false ? ' · <span class="warn">chưa có công thức tính</span>' : ''}</div>
             

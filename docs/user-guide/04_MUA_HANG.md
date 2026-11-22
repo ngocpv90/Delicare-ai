@@ -19,7 +19,7 @@
 | `scm-uom`, `scm-uom-conversion` | … › Đơn vị tính, Quy đổi đơn vị | Xem, sửa, xuất |
 | `scm-gr` | … › Nhập kho | Xem, sửa, xuất (xem `05_KHO.md`) |
 | `qc-supplier-issue` | QC & ATTP › Sự cố nhà cung cấp | Xem |
-| `wf-inbox` | Nhân sự & Phê duyệt › Yêu cầu phê duyệt | Theo mục Duyệt được cấp |
+| `wf-inbox` | Nhân sự › Yêu cầu phê duyệt | Theo mục Duyệt được cấp |
 
 ## 3. Việc trong ngày
 

@@ -76,11 +76,11 @@
     file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>', play: '<path d="M6 4l14 8-14 8z"/>', layers: '<path d="m12 2 10 6-10 6L2 8z"/><path d="m2 16 10 6 10-6M2 12l10 6 10-6"/>', key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3"/>'
   };
   UTIL.icon = (n, cls) => `<svg class="i ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || P.clipboard}</svg>`;
-  UTIL.GROUP_ICON = { 'Tổng quan điều hành': 'home', 'Kinh doanh & Đơn hàng': 'building', 'Thực đơn & Món ăn': 'utensils', 'Mua hàng & Kho': 'warehouse', 'Sản xuất & Giá thành': 'factory', 'QC & An toàn thực phẩm': 'shield', 'Đóng gói & Giao nhận': 'truck', 'Nhân sự & Phê duyệt': 'users', 'Tích hợp & KPI': 'bot', 'Quản trị hệ thống': 'settings', 'Database Architecture': 'database' };
+  UTIL.GROUP_ICON = { 'Điều hành': 'home', 'Kinh doanh': 'building', 'Thực đơn & Món ăn': 'utensils', 'Mua hàng & Kho': 'warehouse', 'Sản xuất & Giá thành': 'factory', 'Chất lượng & ATTP': 'shield', 'Đóng gói & Giao hàng': 'truck', 'Nhân sự': 'users', 'Tích hợp & Chỉ số': 'bot', 'Quản trị hệ thống': 'settings', 'Database Architecture': 'database' };
   // Icon riêng cho từng mục menu con (khác icon của nhóm cha). Màn chưa khai báo ở đây → rơi về SCREEN_ICON theo tiền tố.
   UTIL.MENU_ICON = {
     'dash-exec': 'chart', 'flow-e2e': 'flow',
-    'crm-customer': 'users', 'crm-contact': 'msg', 'crm-location': 'pin', 'crm-price-policy': 'calc', 'crm-contract': 'link', 'crm-forecast': 'calendar', 'crm-order': 'clipboard', 'crm-reconciliation': 'check',
+    'crm-customer': 'users', 'crm-contact': 'msg', 'crm-location': 'pin', 'crm-price-policy': 'calc', 'crm-contract': 'link', 'crm-forecast': 'calendar', 'crm-order': 'clipboard', 'crm-order-week': 'calendar', 'crm-reconciliation': 'check',
     'menu-dish-cat': 'layers', 'menu-dish': 'chef', 'menu-recipe': 'clipboard', 'menu-menu': 'calendar', 'menu-assignment': 'link', 'menu-change-request': 'recycle',
     'scm-supplier': 'building', 'scm-ingredient': 'package', 'scm-ingredient-cat': 'layers', 'scm-supplier-material': 'link', 'scm-uom': 'calc', 'scm-uom-conversion': 'recycle', 'scm-warehouse': 'home', 'scm-zone': 'panel', 'scm-location': 'pin', 'scm-inv-policy': 'settings',
     'scm-requirement': 'chart', 'scm-pr': 'edit', 'scm-po': 'clipboard', 'scm-gr': 'down', 'scm-lot': 'lot', 'scm-inv-txn': 'history', 'scm-inv-balance': 'eye', 'scm-transfer': 'route', 'scm-adjustment': 'edit', 'scm-issue': 'up', 'scm-reservation': 'key', 'scm-stockcount': 'check', 'scm-consumption-var': 'alert',

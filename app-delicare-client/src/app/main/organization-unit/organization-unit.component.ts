@@ -18,7 +18,7 @@ interface TreeRow {
   hasChildren: boolean;
 }
 
-// adm-orgunit – Cây đơn vị tổ chức (FE-1). Tree = OrganizationUnit/GetTree (any depth, with manager name,
+// adm-orgunit – Sơ đồ tổ chức (FE-1). Tree = OrganizationUnit/GetTree (any depth, with manager name,
 // employee / warehouse counts). Rendered as an indented table; search keeps the matching units and their parents.
 @Component({
   selector: 'app-organization-unit',

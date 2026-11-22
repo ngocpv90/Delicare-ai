@@ -25,5 +25,11 @@ namespace AppDelicare.Model.Entity
         public Guid? ContractMealId { get; set; }
         [Column(TypeName = "decimal(18,4)")]
         public decimal LineAmount { get; set; }
+        /// <summary>
+        /// ORD-OPT-1 (D-74 d) – cột thêm bằng migration <c>DB/migrations/20261122_01_orderline_menu_option.sql</c> (không có trong DDL chuẩn docs/reference):
+        /// số lựa chọn 1–9 (= <c>MenuLine.SequenceNo</c> của thực đơn áp dụng); NULL = dòng cũ không theo lựa chọn.
+        /// Chạy lại CodeGen từ DDL chuẩn phải giữ thuộc tính này.
+        /// </summary>
+        public int? MenuOptionNo { get; set; }
     }
 }

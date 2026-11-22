@@ -10,12 +10,12 @@
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `hr-shift-assign` | Nhân sự & Phê duyệt › Phân ca | Lưới phân ca tuần, phân hàng loạt, xác nhận lịch |
+| `hr-shift-assign` | Nhân sự › Phân ca | Lưới phân ca tuần, phân hàng loạt, xác nhận lịch |
 | `hr-attendance` | … › Chấm công | Ca hôm nay của tôi (vào / ra ca), chấm hộ, bảng công, chốt vắng |
 | `hr-leave` | … › Đơn nghỉ phép | Tạo, hủy, xem / duyệt đơn |
 | `hr-swap` | … › Đơn đổi ca | Tạo, hủy, xem / duyệt đơn |
 | `hr-shift` | … › Ca làm việc | Danh mục ca (mã, giờ bắt đầu / kết thúc) |
-| `adm-employee` | Quản trị hệ thống › Nhân viên | Hồ sơ nhân viên (mã, họ tên, đơn vị, chức danh, SĐT – SĐT dùng để liên kết bot): FIN-HR **thêm / sửa** được (D-69), tạo mã liên kết Telegram cho nhân viên |
+| `adm-employee` | Quản trị hệ thống › Nhân viên | Nhân viên (mã, họ tên, đơn vị, chức danh, SĐT – SĐT dùng để liên kết bot): FIN-HR **thêm / sửa** được (D-69), tạo mã liên kết Telegram cho nhân viên |
 | `wf-inbox` | … › Hộp phê duyệt | Duyệt đơn (xem `12_QUAN_LY_DUYET.md`) |
 
 ## 3. Việc trong tuần / ngày
@@ -32,7 +32,7 @@
 
 ## 4. Thao tác từng bước
 
-### 4.0 Hồ sơ nhân viên – `adm-employee` › bấm dòng nhân viên
+### 4.0 Nhân viên – `adm-employee` › bấm dòng nhân viên
 Mở **hồ sơ nhân viên** cả trang (← về danh sách). Ai xem được danh sách nhân viên thì mở được hồ sơ; **ngày sinh, giới tính, địa chỉ** chỉ hiện với người có quyền **Sửa** hồ sơ nhân viên (NS, quản trị) – máy chủ không gửi các trường này cho người khác.
 - **Phần đầu:** họ tên, mã, chức danh, đơn vị, ngày vào làm + thâm niên, trạng thái, nhãn **Đã / Chưa liên kết bot**, SĐT, email. Nút **Sửa**, **Phân ca** (mở màn phân ca), **Chấm công hộ** (chọn sẵn nhân viên), ⋯ **Tạo mã liên kết bot** (hạn 72 giờ), **Tạo đơn nghỉ thay**, **In hồ sơ**, **Cho nghỉ việc** – nút hiện theo quyền.
 - **4 thẻ chỉ số:** Ca tháng này (giờ công) · Đúng giờ (tháng) · Ngày nghỉ năm nay (số đơn chờ duyệt) · Vắng / muộn (tháng) – cùng cách tính với **Bảng công**.
@@ -108,7 +108,7 @@ Mở **hồ sơ nhân viên** cả trang (← về danh sách). Ai xem được 
 | Không lấy được vị trí – hãy cho phép trình duyệt dùng định vị rồi thử lại | Bật định vị |
 
 ### 6.2 Ai tự chấm công được trên web?
-Mọi tài khoản đã gắn với nhân viên: menu **Nhân sự & Phê duyệt › Việc của tôi** (`hr-my`) có **Chấm công hôm nay** (Vào ca / Ra ca), **Tạo đơn nghỉ**, và nút **Đổi ca** trên từng ca của mình – không cần quyền màn `hr-attendance` / `hr-leave` / `hr-swap` (D-69). Các màn `hr-*` (xem bảng công, đơn của mọi người, lập hộ) vẫn theo ma trận quyền. Ngoài web vẫn chấm được bằng bot (📍 Chấm công).
+Mọi tài khoản đã gắn với nhân viên: menu **Nhân sự › Việc của tôi** (`hr-my`) có **Chấm công hôm nay** (Vào ca / Ra ca), **Tạo đơn nghỉ**, và nút **Đổi ca** trên từng ca của mình – không cần quyền màn `hr-attendance` / `hr-leave` / `hr-swap` (D-69). Các màn `hr-*` (xem bảng công, đơn của mọi người, lập hộ) vẫn theo ma trận quyền. Ngoài web vẫn chấm được bằng bot (📍 Chấm công).
 
 ## 7. Trên bot Telegram
 

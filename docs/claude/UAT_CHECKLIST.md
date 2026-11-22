@@ -106,7 +106,7 @@ Kịch bản chi tiết từng phân hệ (nhiều nhánh / chốt hơn): `be2.1
 | 2 | Lọc ca / chi nhánh | Chọn 1 ca, 1 chi nhánh | Suất / đơn / mẻ / ca làm chỉ của ca / chi nhánh (gồm đơn vị con); giao không lọc ca | [ ] | |
 | 3 | Cache 60 giây | Tạo 1 đơn mới cho ngày đang xem, tải lại ngay rồi sau 60 giây | Lần đầu số cũ, sau 60 giây số mới (`generatedAt` đổi) | [ ] | |
 | 4 | Cảnh báo theo người | Mở dashboard bằng admin rồi bằng người chỉ có quyền Xem dashboard | Thẻ số giống nhau; khối cảnh báo của người thứ 2 chỉ theo quyền của họ | [ ] | |
-| 5 | KPI ngày | Bấm KPI Refresh (BE3.4) cho 1 ngày rồi mở dashboard ngày đó | 4 chỉ tiêu có giá trị / mục tiêu / đạt (chi phí càng thấp càng tốt) | [ ] | chưa tính → trống |
+| 5 | Chỉ số theo ngày | Bấm KPI Refresh (BE3.4) cho 1 ngày rồi mở dashboard ngày đó | 4 chỉ tiêu có giá trị / mục tiêu / đạt (chi phí càng thấp càng tốt) | [ ] | chưa tính → trống |
 | 6 | Hành trình đơn | Bấm 1 đơn đã đối soát → `Dashboard/GetOrderJourney` | 8 chặng, số KH / lệnh SX / mẻ / đóng gói / đơn giao / chuyến / POD / đối soát / phản ánh đúng; chặng hiện tại đúng | [ ] | KH- dùng chung cả ngày |
 | 7 | Quyền hành trình | Người chỉ Xem đơn hàng mở hành trình | Thấy trạng thái mọi chặng nhưng chỉ chứng từ đơn; người không có quyền → 403 | [ ] | |
 
@@ -125,10 +125,10 @@ Cần: đã chạy `DB/seed/KpiMetricDefinition_seed.sql`; tài khoản admin đ
 |---|---|---|---|---|---|
 | 1 | Danh sách chỉ tiêu | `#/kpi-definition` | 11 chỉ tiêu, có mục tiêu + chiều (≥ / ≤); công thức + mục tiêu đúng ý BA / PO (PROPOSED D-57 y) | [ ] | |
 | 2 | Phiên bản | Sửa mục tiêu 1 chỉ tiêu | Có phiên bản mới hiệu lực từ hôm nay, bản cũ đóng hôm qua, số KPI cũ giữ mục tiêu cũ; sửa bản cũ → báo lỗi | [ ] | |
-| 3 | Làm mới KPI ngày | Admin bấm làm mới 1 ngày có đơn giao / mẻ | Số khớp tay (vd. giao đúng giờ = đơn trễ ≤ 15′ ÷ đơn đã giao + thất bại); bấm lại không nhân đôi | [ ] | |
+| 3 | Làm mới Chỉ số theo ngày | Admin bấm làm mới 1 ngày có đơn giao / mẻ | Số khớp tay (vd. giao đúng giờ = đơn trễ ≤ 15′ ÷ đơn đã giao + thất bại); bấm lại không nhân đôi | [ ] | |
 | 4 | Thiếu dữ liệu | Làm mới ngày không có dữ liệu | Chỉ tiêu hiện "Thiếu dữ liệu" (INCOMPLETE), không đỏ / xanh | [ ] | |
-| 5 | Đạt / không đạt | KPI ngày / tháng | Hao hụt, thất thoát, food cost: thấp hơn mục tiêu = đạt; giao đúng giờ, lưu mẫu: cao hơn = đạt | [ ] | |
-| 6 | KPI tháng | Làm mới tháng này | Số tính trên cả tháng tới hôm nay | [ ] | |
+| 5 | Đạt / không đạt | Chỉ số theo ngày / tháng | Hao hụt, thất thoát, food cost: thấp hơn mục tiêu = đạt; giao đúng giờ, lưu mẫu: cao hơn = đạt | [ ] | |
+| 6 | Chỉ số theo tháng | Làm mới tháng này | Số tính trên cả tháng tới hôm nay | [ ] | |
 | 7 | Quyền | User không phải admin | Không bấm được làm mới (403); xem KPI theo quyền Xem màn | [ ] | |
 | 8 | Nhật ký | `#/kpi-refresh` | Mỗi lần bấm 1 dòng Thành công, người chạy, số dòng; đang chạy trùng → "Đang chạy ở nơi khác" | [ ] | |
 
@@ -174,7 +174,7 @@ Thử trên **staging** (`http://localhost:5200`, deploy/README.md mục 9) ho�
 |---|---|---|---|---|---|
 | 1 | Danh mục: đơn vị, kho, NL (bò MÁT, gạo KHÔ), NCC + bảng giá, món + công thức (CreateVersion → RecipeLine → Submit → Approve → Lock), khách + điểm giao (giao 11:00), hợp đồng Active + suất TRUA 35.000, xe, dây chuyền 1000 suất / mẻ (`pilot-flow.http` mục 0) | OPS-SCM, OPS-PLAN, SAL-SALES; duyệt công thức: mục "Duyệt – Công thức" | Mỗi Insert `responseCode 200`; công thức Locked; danh sách `GetAll` không lọc vẫn thấy dòng | [ ] | |
 | 2 | **Chốt an toàn – lô bị chặn**: lô bò hết hạn hôm qua 50 kg + lô QC `KHONG_DAT` 30 kg (`MaterialLot/Insert` + `InventoryTransaction/Adjust`) | OPS-SCM | Ghi được tồn; các bước sau **không** dùng 2 lô này | [ ] | |
-| 3 | P3 Thực đơn tuần: `Menu/Insert` → `MenuLine/Insert` ×2 → `Menu/GetCalendar` (FC%) → `Menu/Approve` → `MenuAssignment/Insert` | OPS-PLAN; duyệt: mục "Duyệt – Thực đơn & phiên bản" | Lịch có giá vốn / FC%; thực đơn Approved; `MenuAssignment/Resolve` ra thực đơn | [ ] | |
+| 3 | P3 Thực đơn tuần: `Menu/Insert` → `MenuLine/Insert` ×2 → `Menu/GetCalendar` (FC%) → `Menu/Approve` → `MenuAssignment/Insert` | OPS-PLAN; duyệt: mục "Duyệt – Thực đơn tuần" | Lịch có giá vốn / FC%; thực đơn Approved; `MenuAssignment/Resolve` ra thực đơn | [ ] | |
 | 4 | P3 Đơn hàng: `Order/GetNewTemplate` → `Order/Create` 1000 suất → `Submit` → `Confirm` → `Lock` | SAL-CS | Số `PH-YYMMDD-NNNN`, tổng 35.000.000; trạng thái Draft → Submitted → Confirmed → Locked. Sau 20:00 ngày trước ngày ăn: tạo / sửa / xác nhận → 400 (giờ chốt) | [ ] | |
 | 5 | P5 MRP: `MaterialRequirement/Calculate` (ngày ăn, kho bếp) → `ExportPreProduction` | OPS-PLAN | Kế hoạch `KH-YYMMDD` Nháp + đề nghị mua `PH-` Nháp; bò cần 200 kg, `blockedQuantity` 80 (lô hết hạn + KHONG_DAT không tính), mua 200; gạo 120; file Phiếu trước SX mở được | [ ] | |
 | 6 | P6 PO: `PurchaseRequest/ConvertToPurchaseOrder` → `PurchaseOrder/GetDetail` → `Submit` | OPS-SCM | PO `PO-YYMMDD-NNNN` 62.400.000, `needsDirectorApproval = true`, `approvalScreenId = scm-po-director`; Submit → Chờ duyệt (PO ≥ 50 triệu không tự duyệt) | [ ] | |
@@ -203,8 +203,8 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 ## KÊNH TIN NHẮN – LÕI (BOT-1.1, 2026-11-18) · file thử: `docs/api-tests/bot-1.1-channel.http` · test: `AppDelicare.Tests/Notifications/BotChannel*Tests.cs`
 - [ ] Không có / sai `X-Client-Key` → `api/BotChannel/*` trả HTTP 401; từ internet qua nginx → 404.
 - [ ] Gửi 2 lần cùng update (bot + update_id) → 1 dòng `InboundMessage`, lần 2 `duplicate = true`.
-- [ ] ClaimInbound → Đang xử lý; CompleteInbound Đã xử lý; kết thúc lần 2 → 400; màn Tin nhắn vào: Xử lý lại chỉ với Lỗi / Bỏ qua.
-- [ ] Màn Tin nhắn ra: gửi tay cho người đã liên kết → Chờ gửi; người chưa liên kết → báo lỗi; gửi lỗi → tự thử lại sau 1′; nút Gửi lại; người dùng chặn bot → Blocked, định danh Blocked.
+- [ ] ClaimInbound → Đang xử lý; CompleteInbound Đã xử lý; kết thúc lần 2 → 400; màn Tin nhắn đến: Xử lý lại chỉ với Lỗi / Bỏ qua.
+- [ ] Màn Tin nhắn đi: gửi tay cho người đã liên kết → Chờ gửi; người chưa liên kết → báo lỗi; gửi lỗi → tự thử lại sau 1′; nút Gửi lại; người dùng chặn bot → Blocked, định danh Blocked.
 - [ ] Màn Kênh: ConfigJson không lộ token / secret / key (hiện `***`); sửa kênh không làm mất bí mật.
 
 ## LIÊN KẾT TELEGRAM (BOT-1.2, 2026-11-18) · file thử: `docs/api-tests/bot-1.2-identity.http` · test: `AppDelicare.Tests/Notifications/BotIdentityTests.cs`
@@ -218,7 +218,7 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Quét QR cổng (`/start CHAMCONG`) khi chưa liên kết → bot hiện nút "📱 Xác nhận số điện thoại".
 - [ ] Chia sẻ số → liên kết, bot chào theo tên + 3 nút; người có quyền duyệt được nhắc lấy mã web; người có quyền bot DH nhận nút mở bot Điều hành.
 - [ ] "⚡ Ca của tôi" hiện ca hôm nay; `/huylienket` gỡ liên kết.
-- [ ] Gửi tay trên màn Tin nhắn ra → tin tới Telegram trong vài giây (tin thường không rung chuông).
+- [ ] Gửi tay trên màn Tin nhắn đi → tin tới Telegram trong vài giây (tin thường không rung chuông).
 - [ ] Production: webhook sai secret → 401; tắt api → Telegram tự gửi lại, không mất tin; `docker compose ps` messaging healthy.
 
 ## BOT – MENU, CHẤM CÔNG, DUYỆT (BOT-1.4, 2026-11-18) · thử: `tools/bot-smoke/flow-experience.mjs` · test: `AppDelicare.Tests/Messaging/MessagingExperienceTests.cs`
@@ -263,7 +263,7 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 
 ## BOT ĐIỀU HÀNH (BOT-1.6, 2026-11-18) · thử: `tools/bot-smoke/flow-dieuhanh.mjs` · test: `MessagingDieuHanhTests`
 - [ ] CEO / COO (có mục #/bot-dieu-hanh) liên kết bot DH; bot VH gửi nút mở bot DH.
-- [ ] 📊 Tổng quan khớp màn Dashboard điều hành; 🎯 KPI / 📅 KPI tháng khớp màn KPI; 🚨 Việc đang mở khớp chuông cảnh báo trên web.
+- [ ] 📊 Tổng quan khớp màn Dashboard điều hành; 🎯 KPI / 📅 Chỉ số theo tháng khớp màn KPI; 🚨 Việc đang mở khớp chuông cảnh báo trên web.
 - [ ] ⏳ Chờ tôi duyệt chỉ hiện việc mình đúng là người duyệt; bot DH không có phân hệ Bếp / Giao vận… (chỉ ở bot VH).
 
 ## BOT VẬN HÀNH – PHẦN CÒN LẠI (BOT-1.5c, 2026-11-18) · thử: `tools/bot-smoke/flow-15c.mjs` · test: `MessagingSwapTests`, `MessagingPhanAnhNhanSuTests`, `MessagingXemNhanhTests`

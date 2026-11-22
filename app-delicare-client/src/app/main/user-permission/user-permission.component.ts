@@ -14,7 +14,7 @@ import { NotifyService } from 'src/app/shared/notify.service';
 import { isApprovalMenu, PERMISSION_FLAGS } from './permission-flags';
 import { UserPermissionCopyModalComponent } from './user-permission-copy-modal/user-permission-copy-modal.component';
 
-// adm-permission – Ma trận quyền Nhóm × Chức năng (FE-1).
+// adm-permission – Phân quyền (FE-1).
 // Matrix = UserRole/GetMatrix (every active menu, rows without a UserRole have id 00000000-…).
 // Changes are kept locally and sent together: UserRole/Update, form field ListPermission = JSON array.
 // Same rules as the API (spec 3.3): ticking any flag ticks Access; unticking Access clears the row.

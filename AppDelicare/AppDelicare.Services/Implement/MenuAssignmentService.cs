@@ -1,4 +1,5 @@
 using AutoMapper;
+using AppDelicare.Data.Connection;
 using Dapper;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
@@ -286,6 +287,7 @@ namespace AppDelicare.Services.Implement
         /// <summary>
         /// Spec 6.3: phân công Active hiệu lực tại ngày, đúng loại suất (dòng không ghi loại suất áp cho mọi loại – ưu tiên thấp hơn);
         /// cấp điểm giao trước, rồi cấp khách (DeliveryLocationId trống). Chỉ thực đơn Approved / Published (PROPOSED – BA/PO CONFIRM).
+        /// ORD-OPT-1.2 (D-74 f): không có phân công → <b>thực đơn chung</b> (<c>MenuType = COMMON</c>) Đã công bố, hiệu lực tại ngày ăn, có món cho loại suất (nếu có loại suất).
         /// </summary>
         public async Task<MenuResolveModel?> ResolveAsync(Guid customerId, Guid? deliveryLocationId, string? mealType, DateTime date)
         {
@@ -304,11 +306,32 @@ namespace AppDelicare.Services.Implement
                 .ThenByDescending(r => r.MealType != null)
                 .ThenByDescending(r => r.EffectiveFrom)
                 .FirstOrDefault();
-            return best == null ? null : new MenuResolveModel
+            if (best != null)
             {
-                MenuId = best.MenuId, MenuCode = best.Code, MenuName = best.Name, MenuAssignmentId = best.Id,
-                Level = best.DeliveryLocationId != null ? "LOCATION" : "CUSTOMER",
-            };
+                return new MenuResolveModel
+                {
+                    MenuId = best.MenuId, MenuCode = best.Code, MenuName = best.Name, MenuAssignmentId = best.Id,
+                    Level = best.DeliveryLocationId != null ? "LOCATION" : "CUSTOMER",
+                };
+            }
+            var common = await CommonMenuAsync(_unitOfWork.DbContext, mealType, day);
+            return common == null ? null : new MenuResolveModel { MenuId = common.Id, MenuCode = common.Code, MenuName = common.Name, Level = "COMMON" };
+        }
+
+        /// <summary>ORD-OPT-1.2 (D-74 f): thực đơn chung Đã công bố hiệu lực tại ngày (mới nhất trước); có loại suất thì phải có món cho loại suất đó.</summary>
+        public static async Task<Menu?> CommonMenuAsync(DatabaseContext db, string? mealType, DateTime day)
+        {
+            var menus = await db.Menu.AsNoTracking()
+                .Where(m => !m.IsDeleted && m.MenuType == MenuScope.Common && m.Status == MenuStatus.Published
+                    && (m.EffectiveFrom == null || m.EffectiveFrom <= day) && (m.EffectiveTo == null || m.EffectiveTo >= day))
+                .OrderByDescending(m => m.EffectiveFrom).ToListAsync();
+            if (string.IsNullOrWhiteSpace(mealType) || menus.Count == 0)
+            {
+                return menus.FirstOrDefault();
+            }
+            var ids = menus.Select(m => m.Id).ToList();
+            var withMeal = await db.MenuLine.AsNoTracking().Where(l => ids.Contains(l.MenuId) && !l.IsDeleted && l.MealType == mealType).Select(l => l.MenuId).Distinct().ToListAsync();
+            return menus.FirstOrDefault(m => withMeal.Contains(m.Id));
         }
     }
 }

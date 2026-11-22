@@ -11,6 +11,8 @@ namespace AppDelicare.Tests.Schema
     /// <summary>
     /// T05 – model EF khớp DDL chuẩn 124 bảng (docs/reference/20261113_structure_db_appdelicare.sql):
     /// mọi DbSet map tới bảng có thật, mọi property map tới cột có thật, và ngược lại mọi bảng / cột đều có trong model.
+    /// DDL chuẩn + cột do migration <c>normal</c> trong <c>DB/migrations</c> thêm (<c>ALTER TABLE [dbo].[X] ADD [Cột] [kiểu]</c> – DB-MIGRATIONS m1,
+    /// vd ORD-OPT-1.1 <c>OrderLine.MenuOptionNo</c>); docs/reference giữ nguyên.
     /// Dựng model bằng provider SQL Server nhưng KHÔNG kết nối DB.
     /// </summary>
     public partial class SchemaMappingTests
@@ -53,8 +55,27 @@ namespace AppDelicare.Tests.Schema
                     current[col.Groups[1].Value] = col.Groups[2].Value.ToLowerInvariant();
                 }
             }
+            // Cột do migration normal thêm (DB-MIGRATIONS m1: DB/migrations là nguồn cấu trúc).
+            foreach (string file in Directory.GetFiles(Path.Combine(dir!, "DB", "migrations"), "*.sql").Order(StringComparer.Ordinal))
+            {
+                string sql = File.ReadAllText(file);
+                if (!Regex.IsMatch(sql, @"^--\s*delicare-migration:\s*normal", RegexOptions.Multiline))
+                {
+                    continue;
+                }
+                foreach (Match add in AddColumn().Matches(sql))
+                {
+                    if (tables.TryGetValue(add.Groups[1].Value, out var cols))
+                    {
+                        cols[add.Groups[2].Value] = add.Groups[3].Value.ToLowerInvariant();
+                    }
+                }
+            }
             return tables;
         }
+
+        [GeneratedRegex(@"ALTER\s+TABLE\s+\[dbo\]\.\[(\w+)\]\s+ADD\s+\[(\w+)\]\s+\[(\w+)\]", RegexOptions.IgnoreCase)]
+        private static partial Regex AddColumn();
 
         private static IModel BuildModel()
         {

@@ -51,7 +51,6 @@ button.dc-branch-select{text-align:left}
 .content .breadcrumb a{color:#9AA39A;text-decoration:none}.content .breadcrumb a:hover{color:var(--green-dark)}
 .content .breadcrumb strong{color:#5F6B60;font-weight:600}
 .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
-.eyebrow{font-size:11px;font-weight:800;color:var(--green-dark);letter-spacing:.6px;text-transform:uppercase}
 .content h1{font-size:20px;letter-spacing:-.3px;margin:4px 0;font-weight:800;color:#29352D;line-height:1.3}
 .content h2,.drawer h2,.modal-content h2{font-size:16px;margin:0;font-weight:800;color:#344138;line-height:1.35}
 .content h3,.drawer h3,.modal-content h3{font-size:14px;margin:0 0 8px;font-weight:800;color:#344138;line-height:1.35}
@@ -427,3 +426,25 @@ body.dc-live #helpBtn{display:none !important}
 .qr-box{display:grid;place-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;margin:0 auto}
 .qr-box svg{width:100%;height:100%;display:block}
 .tg-link{display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center}
+
+/* ===== ORD-OPT-1.8 – Đăng ký suất tuần (crm-order-week) ===== */
+.ow-filter{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ow-two{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.ow-grid{min-width:980px;width:100%;table-layout:fixed}
+.ow-grid th,.ow-grid td,.ow-grid th *,.ow-grid td *{white-space:normal!important;word-break:break-word}
+.ow-grid .ow-dish{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ow-grid th .ow-ord{display:block;font-size:11px;font-weight:600;margin-top:2px}
+.ow-grid col.ow-c0{width:120px}
+.ow-grid th,.ow-grid td{vertical-align:top}
+.ow-grid .ow-first{position:sticky;left:0;background:var(--card,#fff);z-index:1}
+.ow-grid td.ow-cell{padding:6px}
+.ow-dish{font-size:11px;line-height:1.35;color:var(--muted,#6b7280);margin-bottom:4px;min-height:15px}
+.ow-qty{width:100%;text-align:right;padding:4px 6px}
+.ow-grid .ow-lock,.ow-grid .ow-lock .ow-first{background:#F6F7F4}
+.ow-grid .ow-lock .ow-qty{background:#EEF0EA;color:#8a8f84}
+.ow-grid tr.ow-meal td{background:#F3F7EC;font-weight:700}
+.ow-grid tr.ow-sum td{font-weight:600;background:#FAFBF8}
+.ow-grid tr.ow-tot td{font-weight:800}
+.ow-kv{grid-template-columns:1fr 1fr}
+@media (max-width:1200px){.ow-two{grid-template-columns:1fr}}
+@media (max-width:700px){.ow-filter{grid-template-columns:1fr}.ow-grid{min-width:960px}}

@@ -7,7 +7,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { CustomerDeliveryLocationModalComponent } from './customer-delivery-location-modal/customer-delivery-location-modal.component';
 
-// crm-location – Điểm giao hàng & khung giờ nhận (FE-2).
+// crm-location – Điểm giao hàng (FE-2).
 @Component({
   selector: 'app-customer-delivery-location',
   templateUrl: './customer-delivery-location.component.html',

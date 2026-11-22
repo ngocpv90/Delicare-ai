@@ -7,7 +7,7 @@ import { DrawerTab } from 'src/app/shared/detail-drawer/detail-drawer.component'
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { SupplierModalComponent } from './supplier-modal/supplier-modal.component';
 
-// scm-supplier – Hồ sơ nhà cung cấp. FE-2: list from Supplier/GetAllData (uspSupplier_GetAll only returns
+// scm-supplier – Nhà cung cấp. FE-2: list from Supplier/GetAllData (uspSupplier_GetAll only returns
 // Id / Name / Note) + ngăn kéo tổng quan (Supplier/GetOverview: bảng giá, PO đang mở, sự cố, tỷ lệ 90 ngày).
 @Component({
   selector: 'app-supplier',

@@ -256,6 +256,22 @@ namespace AppDelicare.Model.Model
         public List<ProofOfDelivery> ListPod { get; set; } = [];
         public List<string> AllowedActions { get; set; } = [];
         public List<string> ListWarning { get; set; } = [];
+        /// <summary>ORD-OPT-1.7 (D-74 i): suất theo dòng đơn (loại suất × lựa chọn) – đặt, giá, suất phục vụ đã ghi theo dòng (null = ghi theo tổng).</summary>
+        public List<ReconciliationLineModel> ListLine { get; set; } = [];
+    }
+
+    public class ReconciliationLineModel
+    {
+        public Guid OrderLineId { get; set; }
+        public string? MealType { get; set; }
+        public string? ShiftName { get; set; }
+        public int? MenuOptionNo { get; set; }
+        public string? OptionDishText { get; set; }
+        public decimal OrderedQuantity { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public decimal? ServedQuantity { get; set; }
+        /// <summary>Σ suất phục vụ × giá dòng (khi có số theo dòng).</summary>
+        public decimal? Amount { get; set; }
     }
 
     /// <summary>T19: đơn Đã giao chờ đối soát (hoặc đã có đối soát chưa đóng).</summary>

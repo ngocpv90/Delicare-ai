@@ -85,6 +85,8 @@ namespace AppDelicare.Tests.Common
         [InlineData(DocumentKind.Employee, "NV-00001")]
         [InlineData(DocumentKind.DeliveryLocation, "DP-00001")]
         [InlineData(DocumentKind.PricePolicy, "BG-00001")]
+        [InlineData(DocumentKind.DishCategory, "NM-00001")]
+        [InlineData(DocumentKind.IngredientCategory, "NN-00001")]
         public async Task First_catalog_code_has_the_right_format(DocumentKind kind, string expected)
         {
             using var scope = _factory.Services.CreateScope();

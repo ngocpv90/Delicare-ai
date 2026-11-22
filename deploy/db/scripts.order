@@ -166,3 +166,5 @@ DB/seed/SystemUser_seed.sql
 DB/seed/KpiMetricDefinition_seed.sql
 # BOT-1.1 (D-62): kênh + cấu hình bot Telegram (IntegrationChannel, BotConfiguration), menu quyền #/bot-van-hanh, #/bot-dieu-hanh – chỉ thêm
 DB/seed/Integration_Telegram_seed.sql
+# ORD-OPT-1.8 (D-74 g): menu #/crm-order-week "Đăng ký suất tuần" + quyền chép từ #/crm-order – chỉ thêm
+DB/seed/ObjectMenu_crm_order_week_seed.sql

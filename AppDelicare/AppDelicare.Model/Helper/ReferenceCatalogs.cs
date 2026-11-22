@@ -31,6 +31,8 @@ namespace AppDelicare.Model.Helper
             ["PackagingLedger.TransactionType"] = ("PackagingTransactionType", "Loại phát sinh bao bì"),
             ["CustomerComplaint.SourceChannel"] = ("ComplaintChannel", "Kênh tiếp nhận"),
             ["CustomerComplaint.CategoryCode"] = ("ComplaintCategory", "Phân loại phản ánh"),
+            // ORD-OPT-1.2 (D-74 f): loại thực đơn – COMMON = thực đơn chung của tuần; trống / CUSTOMER = thực đơn riêng (gán qua Phân công thực đơn).
+            ["Menu.MenuType"] = ("MenuType", "Loại thực đơn"),
         };
 
         /// <summary>Các cột (Thực thể.Cột) dùng danh mục <paramref name="list"/>.</summary>

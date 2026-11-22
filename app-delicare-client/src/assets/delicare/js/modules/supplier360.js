@@ -4,7 +4,7 @@
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const ID = 'scm-supplier-360';
-  APP.FN[ID] = { ph: 'P4', grp: 'Mua hàng & Kho', fn: 'Hồ sơ nhà cung cấp', id: ID, name: 'Hồ sơ nhà cung cấp', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN[ID] = { ph: 'P4', grp: 'Mua hàng & Kho', fn: 'Nhà cung cấp', id: ID, name: 'Nhà cung cấp', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
   const { pas, failBox, loading, none, can, initials, dmy, pct, table, bindRows, filterBar, statusOpts, run, demoNote, alertBox, bindGo, meter } = APP.D360;
   const live = () => Store.isLive;
   const today = () => Store.ctx.date;

@@ -9,7 +9,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { CustomerModalComponent } from './customer-modal/customer-modal.component';
 
-// crm-customer – Hồ sơ khách hàng 360° (FE-2). List: Customer/GetAllData + hợp đồng hiệu lực / số điểm giao
+// crm-customer – Khách hàng (FE-2). List: Customer/GetAllData + hợp đồng hiệu lực / số điểm giao
 // (Contract, CustomerDeliveryLocation GetAllData). Ngăn kéo 360°: Customer/GetOverview.
 @Component({
   selector: 'app-customer',

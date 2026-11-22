@@ -312,6 +312,130 @@ public static partial class Seeds
         return sb.ToString();
     }
 
+    // ---------------------------------------------------------------- MENU-2 (D-75, anh chốt 2026-11-22)
+    /// <summary>MENU-2: đổi tên 110 mục menu (khóa theo MetaLink, bảng ROADMAP MENU-2). INSERT dùng tên mới; DB đã có: UPDATE chỉ khi tên đang là tên cũ hoặc "Duyệt – " + tên cũ (không ghi đè tên admin tự sửa). Màn mới sau này đặt tên theo D-75 (a).</summary>
+    public static readonly (string Link, string Old, string New)[] MenuRenames =
+    [
+        ("#/group/01", "Tổng quan điều hành", "Điều hành"),
+        ("#/dash-exec", "Tổng quan điều hành", "Bảng điều hành"),
+        ("#/group/02", "Kinh doanh & Đơn hàng", "Kinh doanh"),
+        ("#/crm-customer", "Hồ sơ khách hàng 360°", "Khách hàng"),
+        ("#/crm-contact", "Đầu mối liên hệ khách hàng", "Người liên hệ"),
+        ("#/crm-location", "Điểm giao hàng & khung giờ nhận", "Điểm giao hàng"),
+        ("#/crm-price-policy", "Chính sách giá theo KH/HĐ", "Chính sách giá"),
+        ("#/crm-contract", "Hợp đồng suất ăn", "Hợp đồng"),
+        ("#/crm-contract-meal", "Loại suất theo hợp đồng", "Loại suất & đơn giá"),
+        ("#/crm-order", "Đơn đặt suất ăn", "Đơn đặt suất"),
+        ("#/crm-order-line", "Số lượng theo ca / loại suất", "Chi tiết đơn đặt suất"),
+        ("#/crm-reconciliation", "Đối soát Đặt–SX–Đóng–Giao–Nhận", "Đối soát suất ăn"),
+        ("#/menu-dish", "Danh mục món ăn", "Món ăn"),
+        ("#/menu-recipe", "Công thức & phiên bản", "Công thức chế biến"),
+        ("#/menu-recipe-line", "Định lượng nguyên liệu", "Chi tiết định lượng"),
+        ("#/menu-menu", "Thực đơn & phiên bản", "Thực đơn tuần"),
+        ("#/menu-menu-line", "Lịch món theo ngày/bữa", "Chi tiết thực đơn"),
+        ("#/menu-assignment", "Gán thực đơn cho KH / điểm giao / loại suất", "Thực đơn riêng cho khách"),
+        ("#/scm-supplier", "Hồ sơ nhà cung cấp", "Nhà cung cấp"),
+        ("#/scm-ingredient", "Danh mục nguyên liệu", "Nguyên liệu"),
+        ("#/scm-supplier-material", "Bảng giá & MOQ theo NCC", "Bảng giá nhà cung cấp"),
+        ("#/scm-warehouse", "Danh mục kho", "Kho"),
+        ("#/scm-zone", "Khu vực bảo quản & ngưỡng nhiệt", "Khu bảo quản"),
+        ("#/scm-location", "Vị trí lưu trữ (bin)", "Vị trí kệ"),
+        ("#/scm-inv-policy", "Min / Max / Safety / Reorder", "Định mức tồn kho"),
+        ("#/scm-requirement", "Tính nhu cầu nguyên liệu (MRP)", "Tính nhu cầu nguyên liệu"),
+        ("#/scm-pr-line", "Dòng đề nghị mua", "Chi tiết đề nghị mua"),
+        ("#/scm-po-line", "Dòng đơn mua", "Chi tiết đơn mua"),
+        ("#/scm-gr-line", "Dòng nhập – lô, HSD", "Chi tiết phiếu nhập"),
+        ("#/scm-lot", "Lô & hạn sử dụng (FEFO)", "Lô hàng & hạn dùng"),
+        ("#/scm-inv-txn", "Sổ cái kho (ledger)", "Sổ kho"),
+        ("#/scm-inv-balance", "Tồn kho theo kho / lô", "Tồn kho"),
+        ("#/scm-issue", "Phiếu xuất cho sản xuất", "Phiếu xuất sản xuất"),
+        ("#/scm-issue-line", "Dòng xuất theo lô", "Chi tiết phiếu xuất"),
+        ("#/scm-stockcount-line", "Dòng kiểm kê & chênh lệch", "Chi tiết kiểm kê"),
+        ("#/scm-consumption-var", "Tiêu hao lý thuyết vs thực tế", "Chênh lệch tiêu hao"),
+        ("#/cost-standard", "Giá thành chuẩn theo công thức", "Giá thành chuẩn"),
+        ("#/prod-line", "Dây chuyền & năng lực", "Dây chuyền bếp"),
+        ("#/prod-workstation", "Trạm làm việc bếp", "Trạm bếp"),
+        ("#/prod-plan", "Kế hoạch sản xuất theo ngày/ca", "Kế hoạch sản xuất"),
+        ("#/prod-plan-line", "Dòng kế hoạch theo món", "Chi tiết kế hoạch sản xuất"),
+        ("#/prod-batch", "Bảng điều độ mẻ (ca × dây chuyền)", "Mẻ nấu"),
+        ("#/prod-output", "Ghi nhận sản lượng", "Sản lượng"),
+        ("#/cost-actual", "Giá thành thực tế theo mẻ/lệnh", "Giá thành thực tế"),
+        ("#/cost-meal", "Giá thành mỗi suất & Margin", "Giá vốn suất ăn"),
+        ("#/prod-waste", "Ghi nhận hao hụt", "Hao hụt"),
+        ("#/group/06", "QC & An toàn thực phẩm", "Chất lượng & ATTP"),
+        ("#/qc-checklist", "Bộ checklist ATTP", "Bộ kiểm tra ATTP"),
+        ("#/qc-checklist-item", "Tiêu chí checklist", "Tiêu chí kiểm tra"),
+        ("#/qc-inspection", "Phiếu QC đầu vào", "Kiểm tra hàng nhập"),
+        ("#/qc-inspection-line", "Tiêu chí QC theo dòng nhập", "Chi tiết kiểm tra hàng nhập"),
+        ("#/qc-checklist-result", "Thực hiện checklist theo ca/mẻ", "Kiểm tra theo ca / mẻ"),
+        ("#/qc-temperature", "Nhật ký nhiệt độ kho/mẻ", "Nhật ký nhiệt độ"),
+        ("#/qc-cleaning", "Mẻ vệ sinh khay/hộp", "Vệ sinh khay hộp"),
+        ("#/qc-cleaning-result", "Checklist vệ sinh", "Kiểm tra vệ sinh"),
+        ("#/qc-supplier-issue", "Sự cố / NCR nhà cung cấp", "Sự cố nhà cung cấp"),
+        ("#/group/07", "Đóng gói & Giao nhận", "Đóng gói & Giao hàng"),
+        ("#/log-vehicle", "Danh mục phương tiện", "Xe giao hàng"),
+        ("#/log-packing-order", "Lệnh đóng suất", "Lệnh đóng gói"),
+        ("#/log-route", "Lập tuyến & điều phối", "Chuyến giao hàng"),
+        ("#/log-stop", "Thứ tự điểm dừng", "Điểm dừng"),
+        ("#/log-event", "Timeline sự kiện giao hàng", "Diễn biến giao hàng"),
+        ("#/log-pod", "Xác nhận giao hàng (POD)", "Xác nhận đã giao"),
+        ("#/log-container-return", "Thu hồi khay/hộp", "Thu hồi khay hộp"),
+        ("#/log-return-inspection", "Kiểm tra vật dụng thu hồi", "Kiểm tra khay hộp thu hồi"),
+        ("#/log-packaging-ledger", "Sổ bao bì theo khách hàng", "Khay hộp theo khách"),
+        ("#/log-packing-result", "Kết quả đóng suất", "Kết quả đóng gói"),
+        ("#/log-gps", "Bản đồ vị trí xe", "Vị trí xe"),
+        ("#/log-complaint", "Khiếu nại khách hàng", "Phản ánh khách hàng"),
+        ("#/log-complaint-history", "Lịch sử xử lý khiếu nại", "Lịch sử xử lý phản ánh"),
+        ("#/group/08", "Nhân sự & Phê duyệt", "Nhân sự"),
+        ("#/hr-shift", "Danh mục ca làm việc (4 ca)", "Ca làm việc"),
+        ("#/hr-shift-assign", "Lịch phân ca nhân sự", "Phân ca"),
+        ("#/hr-attendance", "Chấm công theo ca", "Chấm công"),
+        ("#/wf-inbox", "Hộp phê duyệt tập trung", "Hộp phê duyệt"),
+        ("#/wf-step", "Bước phê duyệt", "Các bước duyệt"),
+        ("#/wf-decision", "Quyết định phê duyệt", "Lịch sử duyệt"),
+        ("#/wf-item", "Đối tượng gắn với yêu cầu", "Chứng từ trong yêu cầu duyệt"),
+        ("#/group/09", "Tích hợp & KPI", "Tích hợp & Chỉ số"),
+        ("#/int-channel", "Kênh Zalo / Telegram / Facebook", "Kênh nhắn tin"),
+        ("#/int-bot", "Cấu hình Bot", "Bot"),
+        ("#/int-identity", "Liên kết tài khoản Zalo/Telegram", "Liên kết tài khoản chat"),
+        ("#/int-inbound", "Tin nhắn vào", "Tin nhắn đến"),
+        ("#/int-outbound", "Tin nhắn ra", "Tin nhắn đi"),
+        ("#/kpi-definition", "Định nghĩa KPI", "Danh mục chỉ số"),
+        ("#/kpi-daily", "KPI ngày", "Chỉ số theo ngày"),
+        ("#/kpi-monthly", "KPI tháng", "Chỉ số theo tháng"),
+        ("#/kpi-refresh", "Nhật ký làm mới KPI", "Nhật ký tính chỉ số"),
+        ("#/adm-company", "Công ty / Pháp nhân", "Công ty"),
+        ("#/adm-orgunit", "Cây đơn vị tổ chức", "Sơ đồ tổ chức"),
+        ("#/adm-employee", "Hồ sơ nhân viên", "Nhân viên"),
+        ("#/adm-person", "Thông tin cá nhân của tài khoản", "Thông tin cá nhân"),
+        ("#/adm-user", "Tài khoản người dùng", "Tài khoản"),
+        ("#/adm-permission", "Ma trận quyền Nhóm × Chức năng", "Phân quyền"),
+        ("#/adm-usergroup", "Nhóm người dùng (Vai trò)", "Nhóm quyền"),
+        ("#/adm-objectmenu", "Cấu hình menu chức năng (ObjectMenu)", "Cấu hình menu"),
+        ("#/adm-position", "Danh mục chức vụ", "Chức vụ"),
+        ("#/adm-admin-unit", "Vùng / Tỉnh / Huyện / Xã", "Địa giới hành chính"),
+        ("#/adm-document", "Kho tài liệu đính kèm", "Tài liệu đính kèm"),
+        ("#/adm-access-log", "Nhật ký máy truy cập (IP/PC)", "Nhật ký truy cập"),
+        ("#/adm-merge-conflict", "Xung đột chuẩn hóa dữ liệu lõi", "Dữ liệu trùng cần gộp"),
+        ("#/adm-reference", "Danh mục tham chiếu (Meal Type, lý do, loại…)", "Danh mục dùng chung"),
+        ("#/wf-inbox?type=menu-recipe", "Công thức & phiên bản", "Công thức chế biến"),
+        ("#/wf-inbox?type=crm-price-policy", "Chính sách giá theo KH/HĐ", "Chính sách giá"),
+        ("#/wf-inbox?type=crm-contract", "Hợp đồng suất ăn", "Hợp đồng"),
+        ("#/wf-inbox?type=menu-menu", "Thực đơn & phiên bản", "Thực đơn tuần"),
+        ("#/wf-inbox?type=crm-order", "Đơn đặt suất ăn", "Đơn đặt suất"),
+        ("#/wf-inbox?type=prod-plan", "Kế hoạch sản xuất theo ngày/ca", "Kế hoạch sản xuất"),
+        ("#/wf-inbox?type=qc-inspection", "Phiếu QC đầu vào", "Kiểm tra hàng nhập"),
+        ("#/wf-inbox?type=wf-inbox", "Hộp phê duyệt tập trung", "Tất cả yêu cầu duyệt"),
+    ];
+
+    /// <summary>MENU-2 / D-58: nhóm Database Architecture + 2 màn tra cứu cấu trúc DB → IsActive = 0 (không xóa dòng).</summary>
+    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap"];
+
+    /// <summary>Tên hiển thị của mục menu theo MENU-2 (không có trong bảng → giữ tên catalog).</summary>
+    public static string MenuName(string link, string name) => MenuRenames.FirstOrDefault(r => r.Link == link).New ?? name;
+
+    private static int MenuActive(string link) => HiddenMenuLinks.Contains(link) ? 0 : 1;
+
     public static string ObjectMenuSeed(List<Screen> screens, List<string> menuOrder)
     {
         var sb = new StringBuilder(SeedHeader);
@@ -324,7 +448,7 @@ public static partial class Seeds
             g++;
             string groupLink = $"#/group/{g:00}";
             sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(groupLink)} AND IsDeleted = 0)");
-            sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(group)}, {Sql(GroupToMatrix[group])}, {Sql(groupLink)}, NULL, 1, {g * 100}, 1, 0, @Now, @SeedBy, 0);");
+            sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(MenuName(groupLink, group))}, {Sql(GroupToMatrix[group])}, {Sql(groupLink)}, NULL, 1, {g * 100}, {MenuActive(groupLink)}, 0, @Now, @SeedBy, 0);");
             int i = 0;
             foreach (var s in screens.Where(s => s.Group == group))
             {
@@ -333,7 +457,7 @@ public static partial class Seeds
                 string parent = $"(SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(groupLink)} AND IsDeleted = 0)";
                 int order = g * 100 + i;
                 sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(link)} AND IsDeleted = 0)");
-                sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(s.Name)}, {Sql(s.Phase)}, {Sql(link)}, {parent}, 2, {order}, 1, 0, @Now, @SeedBy, 0);");
+                sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(MenuName(link, s.Name))}, {Sql(s.Phase)}, {Sql(link)}, {parent}, 2, {order}, {MenuActive(link)}, 0, @Now, @SeedBy, 0);");
             }
         }
         sb.AppendLine();
@@ -349,7 +473,7 @@ public static partial class Seeds
             string link = ApprovalLinkPrefix + s.Id;
             string parent = $"(SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(ApprovalGroupLink)} AND IsDeleted = 0)";
             sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = {Sql(link)} AND IsDeleted = 0)");
-            sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(s.Name)}, {Sql(s.Phase)}, {Sql(link)}, {parent}, 2, {9900 + a}, 1, 0, @Now, @SeedBy, 0);");
+            sb.AppendLine($"    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(MenuName(link, s.Name))}, {Sql(s.Phase)}, {Sql(link)}, {parent}, 2, {9900 + a}, 1, 0, @Now, @SeedBy, 0);");
         }
         sb.AppendLine("-- T15.1: mục quyền duyệt không gắn màn hình catalog (PO ≥ ngưỡng Giám đốc duyệt – D-11).");
         foreach (var x in ExtraApprovals)
@@ -363,6 +487,14 @@ public static partial class Seeds
         // MENU-1 (anh yêu cầu 2026-11-22): nhóm Phê duyệt đã nói rõ là duyệt → tên mục con không có tiền tố "Duyệt – ". DB đã có: bỏ tiền tố (idempotent, chỉ nhóm Phê duyệt).
         sb.AppendLine("-- MENU-1: bỏ tiền tố \"Duyệt – \" ở tên mục nhóm Phê duyệt (giữ Id / MetaLink / quyền). Chạy lại không đổi gì.");
         sb.AppendLine("UPDATE [dbo].[ObjectMenu] SET Name = SUBSTRING(Name, 9, 500), ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink LIKE N'#/wf-inbox?type=%' AND Name LIKE N'Duyệt – %' AND IsDeleted = 0;");
+        // MENU-2 (D-75): đổi tên 110 mục theo MetaLink – chỉ khi tên đang là tên cũ (hoặc "Duyệt – " + tên cũ); ẩn nhóm Database Architecture. Chạy lại không đổi gì.
+        sb.AppendLine("-- MENU-2 (D-75): đổi tên 110 mục menu theo MetaLink – chỉ khi tên đang là tên cũ / \"Duyệt – \" + tên cũ (không ghi đè tên admin tự sửa); giữ Id / MetaLink / thứ tự / quyền.");
+        foreach (var (link, oldName, newName) in MenuRenames)
+        {
+            sb.AppendLine($"UPDATE [dbo].[ObjectMenu] SET Name = {Sql(newName)}, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = {Sql(link)} AND IsDeleted = 0 AND Name IN ({Sql(oldName)}, {Sql("Duyệt – " + oldName)});");
+        }
+        sb.AppendLine("-- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB (IsActive = 0, không xóa).");
+        sb.AppendLine($"UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN ({string.Join(", ", HiddenMenuLinks.Select(Sql))}) AND IsDeleted = 0 AND IsActive = 1;");
         sb.AppendLine("COMMIT;");
         return sb.ToString();
     }

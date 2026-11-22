@@ -317,7 +317,7 @@ namespace AppDelicare.Services.Implement
 
         public static string DayLabel(int dayOfWeek) => dayOfWeek == 7 ? "Chủ nhật" : $"Thứ {dayOfWeek + 1}";
 
-        private static int MealRank(string? mealType)
+        public static int MealRank(string? mealType)
         {
             int i = Array.FindIndex(MealOrder, m => m.Equals(mealType, StringComparison.OrdinalIgnoreCase));
             return i < 0 ? MealOrder.Length : i;
@@ -491,6 +491,19 @@ namespace AppDelicare.Services.Implement
                 if (lines.Count == 0)
                 {
                     return ConstantHelper.Message.MenuNeedsLine;
+                }
+                // ORD-OPT-1.2 (D-74 f): không cho 2 thực đơn chung Đã công bố chồng hiệu lực.
+                if (MenuScope.IsCommon(menu.MenuType))
+                {
+                    DateTime from = menu.EffectiveFrom?.Date ?? DateTime.MinValue, to = menu.EffectiveTo?.Date ?? DateTime.MaxValue.Date;
+                    var clash = await _unitOfWork.MenuRepository.GetAll().AsNoTracking()
+                        .Where(m => !m.IsDeleted && m.Id != menu.Id && m.MenuType == MenuScope.Common && m.Status == MenuStatus.Published
+                            && (m.EffectiveFrom == null || m.EffectiveFrom <= to) && (m.EffectiveTo == null || m.EffectiveTo >= from))
+                        .Select(m => m.Code ?? m.Name).FirstOrDefaultAsync();
+                    if (clash != null)
+                    {
+                        return string.Format(ConstantHelper.Message.MenuCommonOverlap, clash);
+                    }
                 }
                 var mealTypes = await _unitOfWork.MenuAssignmentRepository.GetAll().AsNoTracking()
                     .Where(a => a.MenuId == menu.Id && !a.IsDeleted && (a.Status == null || a.Status == "Active") && a.MealType != null)

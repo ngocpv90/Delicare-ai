@@ -37,7 +37,6 @@ namespace AppDelicare.Model.ViewModels
 		public string? ContactPersonName { get; set; }
 		public string? ContactPersonPhone { get; set; }
 		public string? ContactPersonEmail { get; set; }
-		public string? Segment { get; set; }
 		public string? Source { get; set; }
 		public Guid? RegionId { get; set; }
 		public Guid? AreaId { get; set; }

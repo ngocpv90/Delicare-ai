@@ -24,7 +24,7 @@ export class CustomerModalComponent extends MasterModalBase {
     'displayName', 'phoneNumber', 'firstName', 'lastName', 'gender', 'dateOfBirth', 'identityNumber', 'identityDate',
     'identityPlace', 'occupation', 'legalName', 'businessRegistrationNumber', 'registrationDate', 'registrationPlace',
     'companySize', 'industry', 'legalRepresentativeName', 'contactPersonName', 'contactPersonPhone',
-    'contactPersonEmail', 'segment', 'source', 'regionId', 'areaId', 'branchId', 'departmentId', 'userAssignId',
+    'contactPersonEmail', 'source', 'regionId', 'areaId', 'branchId', 'departmentId', 'userAssignId',
     'externalData', 'externalValue',
   ];
 
@@ -43,7 +43,6 @@ export class CustomerModalComponent extends MasterModalBase {
       displayName: [''],
       legalName: [''],
       customerType: [null, [Validators.required]],
-      segment: [''],
       taxCode: [''],
       businessRegistrationNumber: [''],
       phone: [''],
