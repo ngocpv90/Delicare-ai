@@ -783,7 +783,7 @@ POST {{base}}/api/PackingOrder/RecordResult
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{packing1}}&PackedQuantity=1000&PackagingType=[DEMO] hộp giữ nhiệt
+Id={{packing1}}&PackedQuantity=1000&PackagingType=HOP_GIU_NHIET
 
 ### P7.10 Mẻ 2: lõi 82 °C → xong → sản lượng → đạt (CHƯA lưu mẫu → chỉ cảnh báo, D-42) → đóng gói
 POST {{base}}/api/ProductionBatch/RecordCoreTemperature
@@ -902,7 +902,7 @@ Content-Type: application/x-www-form-urlencoded
 Id={{stopId}}&TemperatureC=58&DeliveredQuantity=1000&AcceptedQuantity=998&ReceiverName=[DEMO] Chị Lan
 
 ### P8.8 Bàn giao 63 °C, giao 1000 / nhận 998 (2 suất từ chối → phản ánh PA- tự động) → đơn Đã giao, chuyến Hoàn thành
-### BE2.5: bàn giao tự ghi sổ bao bì OUT 998 "[DEMO] hộp giữ nhiệt" (loại của kết quả đóng gói P7.9b, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi (P10)
+### BE2.5: bàn giao tự ghi sổ bao bì OUT 998 "HOP_GIU_NHIET" (Hộp giữ nhiệt) (loại của kết quả đóng gói P7.9b, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi (P10)
 POST {{base}}/api/DeliveryStop/Deliver
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded

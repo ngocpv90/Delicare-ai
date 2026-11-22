@@ -318,7 +318,7 @@ namespace AppDelicare.Tests.Production
             over.GetProperty("listItem").EnumerateArray().Should().Contain(x => x.GetProperty("customerId").GetGuid() == s.Customer);
 
             // Chốt: sổ bao bì / phiếu thu hồi / kiểm tra / mẻ vệ sinh không ghi qua CRUD; phiếu đã ghi sổ không xóa.
-            (await c.PostFormAsync("/api/PackagingLedger/Insert", ("CustomerId", s.Customer), ("TransactionType", "IN"), ("PackagingType", s.Type), ("Quantity", 1m))).Fail("PackagingLedger/Record");
+            (await c.PostFormAsync("/api/PackagingLedger/Insert", ("CustomerId", s.Customer), ("TransactionType", "IN"), ("PackagingType", "KHAY"), ("Quantity", 1m))).Fail("PackagingLedger/Record");
             (await c.PostFormAsync("/api/ContainerReturn/Insert", ("DeliveryOrderId", s.DeliveryOrder), ("ReturnDate", Day))).Fail("ContainerReturn/Record");
             (await c.DeleteResultAsync($"/api/ContainerReturn/Delete?id={returnId}")).Fail("đã ghi sổ bao bì");
             (await c.PostFormAsync("/api/CleaningBatch/Insert", ("ReturnInspectionId", inspectionId), ("StartDate", Day))).Fail("CleaningBatch/Create");
@@ -340,8 +340,12 @@ namespace AppDelicare.Tests.Production
             (await c.PostFormAsync("/api/ContainerReturn/Record", ("DeliveryOrderId", s.DeliveryOrder), ("ReturnedQuantity", 1))).Fail("chưa ghi sổ bao bì giao cho khách");
             // Tồn đầu kỳ khay đang ở khách (ghi tay OUT) → thu hồi được theo loại chọn.
             (await c.PostFormAsync("/api/PackagingLedger/Record", ("CustomerId", s.Customer), ("TransactionType", "OUT"), ("PackagingType", "THUNG"), ("Quantity", 5m),
+                ("Reason", "Tồn đầu kỳ"))).Fail("không có trong danh mục");
+            // Lỗi UAT 2026-11-21: loại khay / hộp lấy từ danh mục; nhận nhãn → lưu mã.
+            (await c.PostFormAsync("/api/PackagingLedger/Record", ("CustomerId", s.Customer), ("TransactionType", "OUT"), ("PackagingType", "Thùng giữ nhiệt"), ("Quantity", 5m),
                 ("Reason", "Tồn đầu kỳ"))).Ok();
-            var r = (await c.PostFormAsync("/api/ContainerReturn/Record", ("DeliveryOrderId", s.DeliveryOrder), ("ReturnedQuantity", 2), ("PackagingType", "THUNG"))).Ok();
+            (await c.PostFormAsync("/api/ContainerReturn/Record", ("DeliveryOrderId", s.DeliveryOrder), ("ReturnedQuantity", 2), ("PackagingType", "THUNG"))).Fail("không có trong danh mục");
+            var r = (await c.PostFormAsync("/api/ContainerReturn/Record", ("DeliveryOrderId", s.DeliveryOrder), ("ReturnedQuantity", 2), ("PackagingType", "THUNG_GIU_NHIET"))).Ok();
             r.GetProperty("return").GetProperty("expectedQuantity").GetInt32().Should().Be(0, "đơn giao này không giao thùng");
             Warnings(r).Should().Contain("Thu hồi 2 nhiều hơn số phải thu 0 của đơn giao (trả khay của chuyến trước)");
             r.GetProperty("outstandingOfCustomer").GetDecimal().Should().Be(3);

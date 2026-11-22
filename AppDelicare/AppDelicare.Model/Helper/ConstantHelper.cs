@@ -615,6 +615,8 @@
             public static readonly string ContractMealTypeRequired = "Mỗi dòng suất phải có loại suất (MealType)";
             public static readonly string ContractMealTypeDuplicate = "Loại suất {0} xuất hiện nhiều lần – mỗi loại suất chỉ 1 dòng";
             public static readonly string ContractMealPriceInvalid = "Đơn giá suất {0} phải lớn hơn 0";
+            /// <summary>Lỗi UAT 2026-11-21: {0} nhãn cột, {1} giá trị gửi lên, {2} danh sách mã – nhãn hợp lệ (ReferenceCatalogs).</summary>
+            public static readonly string ReferenceValueNotInCatalog = "{0} «{1}» không có trong danh mục ({2})";
             public static readonly string ContractNumberDuplicate = "Số hợp đồng {0} đã tồn tại";
             public static readonly string ContractEditOnlyDraft = "Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp (hiện tại: {0}) – hợp đồng đã duyệt chỉ chấm dứt bằng Contract/Terminate";
             public static readonly string ContractStatusViaAction = "Trạng thái hợp đồng chỉ đổi qua Contract/Submit → duyệt → Contract/Terminate (giá trị gửi lên được bỏ qua)";

@@ -23,5 +23,7 @@ namespace AppDelicare.Model.Model
     {
         public string Name { get; set; } = string.Empty;
         public List<StatusItemModel> ListItem { get; set; } = [];
+        /// <summary>Lỗi UAT 2026-11-21: cột (Thực thể.Cột, tên class C#) lấy giá trị từ danh mục này – ReferenceCatalogs.</summary>
+        public List<string> ListColumn { get; set; } = [];
     }
 }

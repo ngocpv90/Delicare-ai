@@ -421,7 +421,7 @@ namespace AppDelicare.Tests.Pilot
                 (await Post("/api/ProductionBatch/Pack", ("Id", batchBeef))).Fail();
                 (await Post("/api/ProductionBatch/FinishStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
                 (await Post("/api/PackingOrder/Start", ("Id", packingId))).Ok();
-                (await Post("/api/PackingOrder/RecordResult", ("Id", packingId), ("PackedQuantity", 1000m), ("PackagingType", "[DEMO] hộp giữ nhiệt"))).Ok();
+                (await Post("/api/PackingOrder/RecordResult", ("Id", packingId), ("PackedQuantity", 1000m), ("PackagingType", "HOP_GIU_NHIET"))).Ok();
                 var beefDetail = (await Get($"/api/ProductionBatch/GetDetail?id={batchBeef}")).Ok();
                 beefDetail.GetProperty("batch").GetProperty("status").GetString().Should().Be("Packed");
                 beefDetail.GetProperty("listStage").GetArrayLength().Should().Be(3);

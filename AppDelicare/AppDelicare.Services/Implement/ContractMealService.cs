@@ -15,8 +15,9 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     public class ContractMealService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IContractMealService
+        , IAuditChangeService auditChangeService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists) : IContractMealService
     {
+        private readonly AppDelicare.Model.Option.ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -133,7 +134,7 @@ namespace AppDelicare.Services.Implement
         /// BE2.2: loại suất chỉ thêm / sửa / xóa khi hợp đồng còn Nháp (hợp đồng đã gửi duyệt / hiệu lực: giá đã duyệt không đổi tay – đổi giá qua chính sách giá
         /// hoặc hợp đồng mới). MealType bắt buộc, không trùng trong hợp đồng; đơn giá (nếu có) &gt; 0. PROPOSED – BA/PO CONFIRM (D-51).
         /// </summary>
-        private async Task<string?> RuleErrorAsync(Guid contractId, string? mealType, decimal? unitPrice, Guid? selfId)
+        private async Task<string?> RuleErrorAsync(Guid contractId, string? mealType, decimal? unitPrice, Guid? selfId, string? storedMealType = null)
         {
             var contract = await _unitOfWork.DbContext.Contract.AsNoTracking().FirstOrDefaultAsync(c => c.Id == contractId && !c.IsDeleted);
             if (contract == null)
@@ -152,11 +153,17 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.ContractMealTypeRequired;
             }
+            // Lỗi UAT 2026-11-21: loại suất lấy từ danh mục ReferenceLists:MealType (giá trị cũ ngoài danh mục giữ được khi không đổi).
+            var (code, catalogError) = ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", mealType, storedMealType);
+            if (catalogError != null)
+            {
+                return catalogError;
+            }
             if (unitPrice is <= 0)
             {
                 return string.Format(ConstantHelper.Message.ContractMealPriceInvalid, mealType);
             }
-            string meal = mealType.Trim().ToUpper();
+            string meal = (code ?? mealType).Trim().ToUpper();
             bool duplicate = await _unitOfWork.DbContext.ContractMeal.AsNoTracking()
                 .AnyAsync(m => m.ContractId == contractId && !m.IsDeleted && m.Id != selfId && m.MealType != null && m.MealType.Trim().ToUpper() == meal);
             return duplicate ? string.Format(ConstantHelper.Message.ContractMealTypeDuplicate, mealType.Trim()) : null;
@@ -169,7 +176,7 @@ namespace AppDelicare.Services.Implement
                 return error;
             }
             var insert = _mapper.Map<ContractMeal>(request);
-            insert.MealType = request.MealType!.Trim();
+            insert.MealType = ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", request.MealType).Code ?? request.MealType!.Trim();
             insert.Status ??= ContractStatus.Active;
             _unitOfWork.ContractMealRepository.Add(insert);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);
@@ -183,14 +190,15 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            if (await RuleErrorAsync(exist.ContractId, request.MealType, request.UnitPrice, exist.Id) is { } error)
+            string? storedMealType = exist.MealType;
+            if (await RuleErrorAsync(exist.ContractId, request.MealType, request.UnitPrice, exist.Id, storedMealType) is { } error)
             {
                 return error;
             }
             Guid contractId = exist.ContractId;
             var update = _mapper.Map(request, exist);
             update.ContractId = contractId; // không chuyển loại suất sang hợp đồng khác
-            update.MealType = request.MealType!.Trim();
+            update.MealType = ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", request.MealType, storedMealType).Code ?? request.MealType!.Trim();
             _unitOfWork.ContractMealRepository.Update(update);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);
             return string.Empty;

@@ -21,8 +21,12 @@
   const DEP = {}; S.dep.forEach(d => { DEP[d.table + '.' + d.col] = d.use; });
   const UNRES = {}; S.unres.forEach(u => { UNRES[u.src + '.' + u.col] = u; });
   // UI-5.1 (D-63 r): Customer.UserAssignId → User.Id (theo code cũ: CustomerService đọc db.User; schema sinh tự động chưa xác định bảng đích).
-  [{ src: 'Customer', col: 'UserAssignId', dst: 'User', dcol: 'Id', basis: 'UI-5.1: code cũ CustomerService (User.Id) – máy chủ kiểm tồn tại', level: 'PO XÁC NHẬN' }].forEach(r => {
-    if (REL[r.src + '.' + r.col]) return;
+  [{ src: 'Customer', col: 'UserAssignId', dst: 'User', dcol: 'Id', basis: 'UI-5.1: code cũ CustomerService (User.Id) – máy chủ kiểm tồn tại', level: 'PO XÁC NHẬN' }].concat(
+    // Lỗi UAT 2026-11-21 (rà soát danh mục): cột tham chiếu schema chưa xác định bảng đích (S.unres) – bảng đích theo đề xuất của từ điển dữ liệu
+    // (S.unres.proposal) + code máy chủ (DriverId → Employee, LotId → MaterialLot…). Không xác định → form hiện ô gõ mã; có bảng đích → ô chọn.
+    [['ApprovalStep', 'ApproverUserId', 'User'], ['CleaningBatche', 'ResponsibleEmployeeId', 'Employee'], ['CleaningChecklistResult', 'ChecklistId', 'FoodSafetyChecklist'], ['CleaningChecklistResult', 'ChecklistItemId', 'FoodSafetyChecklistItem'], ['CleaningChecklistResult', 'WorkstationId', 'KitchenWorkstation'], ['ComplaintHistory', 'ActorId', 'User'], ['ComplaintHistory', 'ComplaintId', 'CustomerComplaint'], ['DeliveryOrder', 'DeliveryLocationId', 'CustomerDeliveryLocation'], ['DeliveryStop', 'DeliveryLocationId', 'CustomerDeliveryLocation'], ['Forecast', 'DeliveryLocationId', 'CustomerDeliveryLocation'], ['MenuAssignment', 'DeliveryLocationId', 'CustomerDeliveryLocation'], ['Order', 'DeliveryLocationId', 'CustomerDeliveryLocation'], ['PackagingLedger', 'DeliveryLocationId', 'CustomerDeliveryLocation'], ['DeliveryRoute', 'DriverId', 'Employee'], ['DishCategorie', 'ParentId', 'DishCategorie'], ['IngredientCategorie', 'ParentId', 'IngredientCategorie'], ['OrganizationUnit', 'ParentId', 'OrganizationUnit'], ['ObjectMenu', 'ParentId', 'ObjectMenu'], ['Dishe', 'CategoryId', 'DishCategorie'], ['Ingredient', 'CategoryId', 'IngredientCategorie'], ['FoodSafetyChecklistItem', 'ChecklistId', 'FoodSafetyChecklist'], ['FoodSafetyChecklistResult', 'ChecklistId', 'FoodSafetyChecklist'], ['FoodSafetyChecklistResult', 'ChecklistItemId', 'FoodSafetyChecklistItem'], ['FoodSafetyChecklistResult', 'WorkstationId', 'KitchenWorkstation'], ['GoodsReceiptLine', 'LotId', 'MaterialLot'], ['InventoryBalance', 'LotId', 'MaterialLot'], ['InventoryTransaction', 'LotId', 'MaterialLot'], ['MaterialIssueLine', 'LotId', 'MaterialLot'], ['StockCountLine', 'LotId', 'MaterialLot'], ['Ingredient', 'PurchaseUomId', 'UnitMeasure'], ['Ingredient', 'IssueUomId', 'UnitMeasure'], ['SupplierMaterial', 'PurchaseUomId', 'UnitMeasure'], ['IntegrationChannel', 'OwnerUserId', 'User'], ['MenuChangeRequest', 'OriginalDishId', 'Dishe'], ['MenuChangeRequest', 'RequestedDishId', 'Dishe'], ['OrganizationUnit', 'ManagerId', 'Employee'], ['ProductionOrder', 'ResponsibleEmployeeId', 'Employee'], ['StockCount', 'ResponsibleEmployeeId', 'Employee'], ['PurchaseRequest', 'RequestedByEmployeeId', 'Employee'], ['PurchaseRequest', 'RequesterId', 'Employee'], ['QCInspection', 'InspectorEmployeeId', 'Employee'], ['QCInspection', 'InspectorId', 'Employee'], ['ReturnInspection', 'InspectorEmployeeId', 'Employee'], ['ShiftSwapRequest', 'RequesterEmployeeId', 'Employee'], ['ShiftSwapRequest', 'TargetEmployeeId', 'Employee'], ['ShiftSwapRequest', 'CurrentShiftAssignmentId', 'ShiftAssignment'], ['ShiftSwapRequest', 'ProposedShiftAssignmentId', 'ShiftAssignment'], ['StorageLocation', 'ZoneId', 'StorageZone'], ['SupplierIssue', 'OwnerId', 'User']].map(([src, col, dst]) => ({ src, col, dst, dcol: 'Id', basis: 'UAT 2026-11-21: S.unres.proposal + code máy chủ', level: 'PO XÁC NHẬN' }))
+  ).forEach(r => {
+    if (REL[r.src + '.' + r.col] || !S.tables[r.src] || !S.tables[r.dst]) return;
     REL[r.src + '.' + r.col] = r; (REL_IN[r.dst] = REL_IN[r.dst] || []).push(r); delete UNRES[r.src + '.' + r.col];
     S.unres = S.unres.filter(u => !(u.src === r.src && u.col === r.col));
   });
@@ -186,6 +190,29 @@
   const codeRules = {};
   Object.entries(CODE_RULES_FALLBACK).forEach(([k, p]) => { codeRules[k] = { group: 'G1', prefix: p }; });
   let codeRulesLoaded = null;
+  // Lỗi UAT 2026-11-21 (rà soát danh mục): cột mã danh mục tham chiếu lấy từ ReferenceLists (MetaData/GetReferenceLists – máy chủ trả kèm
+  // listColumn "Thực thể.Cột" = ReferenceCatalogs, cùng nguồn với kiểm ở máy chủ). Gắn CAT.status '<Bảng>.<Cột>' (plain) → form chung vẽ ô chọn,
+  // giá trị cũ ngoài danh mục hiện "(giá trị cũ)". Form riêng dùng Store.refList(tên danh mục).
+  const REF_LISTS = {}, REF_COLS = new Set();
+  let refListsLoaded = null;
+  function loadRefLists() {
+    if (refListsLoaded || mode !== 'api' || !HOST) return refListsLoaded || Promise.resolve();
+    const tableOf = {}; Object.entries(CLASS).forEach(([t, c]) => { tableOf[c] = t; });
+    refListsLoaded = HOST.get('MetaData/GetReferenceLists').then(res => {
+      if (typeof res === 'string' || failOf(res)) { refListsLoaded = null; return; }
+      listOf(res).forEach(l => {
+        const items = l.listItem || [];
+        if (!l.name || !items.length) return;
+        REF_LISTS[l.name] = items.map(i => ({ code: i.code, name: i.label || i.code }));
+        (l.listColumn || []).forEach(key => {
+          const [ent, col] = key.split('.'), t = tableOf[ent] || ent, k = t + '.' + col;
+          CAT.status[k] = Object.assign({}, CAT.status[k] || {}, { codes: items.map(i => i.code), vi: items.map(i => i.label || i.code), src: 'ReferenceLists:' + l.name, plain: true });
+          REF_COLS.add(k);
+        });
+      });
+    }).catch(e => { refListsLoaded = null; console.warn('[DELICARE] Không tải được danh mục tham chiếu', e); });
+    return refListsLoaded;
+  }
   function loadCodeRules() {
     if (codeRulesLoaded || mode !== 'api' || !HOST) return codeRulesLoaded || Promise.resolve();
     codeRulesLoaded = HOST.get('Common/GetCodeRules').then(res => {
@@ -281,6 +308,13 @@
     get isLive() { return mode === 'api' && !!HOST; },
     // ---- MA-1 (D-63): quy tắc mã ----
     loadCodeRules,
+    loadRefLists,
+    loadMealTypes: loadRefLists,
+    /** Danh mục tham chiếu (ReferenceLists) theo tên – [{ code, name }]; rỗng khi chưa tải / chế độ DEMO. */
+    refList(name) { return REF_LISTS[name] || []; },
+    /** Cột '<Bảng>.<Cột>' lấy giá trị từ ReferenceLists (form chung vẽ lại ô khi danh mục tải xong). */
+    isRefCol(t, col) { return REF_COLS.has(t + '.' + col); },
+    mealTypes() { return REF_LISTS.MealType || []; },
     codeRule(t, col) { return codeRules[t + '.' + col] || null; },
     userCode,
     // ---- MA-1.8: ghi CHỜ API (form chung) – chỉ báo thành công khi máy chủ xác nhận ----
@@ -393,6 +427,7 @@
     },
     branchOk(row, col) { return !Store.ctx.branch || !row[col] || row[col] === Store.ctx.branch; }
   };
+  loadRefLists();
   loadCodeRules();   // MA-1: DC_HOST gán sau khi đăng nhập (delicare-shell) → tải quy tắc mã ngay
   // UG-1 C-10: chế độ thật – danh mục trạng thái lấy từ máy chủ (MetaData/GetStatuses = theo các lớp *Status.cs), đè lên data/catalog.js
   // (giữ màu / luồng sẵn có của mục cũ). Tải xong vẽ lại màn đang mở để nhãn trạng thái khớp máy chủ.

@@ -122,6 +122,9 @@ button.dc-branch-select{text-align:left}
 .input,.select,textarea.input{border:1px solid var(--line);border-radius:9px;padding:.375rem .75rem;background:#fff;font-size:14px;min-height:36px;outline:none;color:var(--ink);line-height:1.5;transition:border-color .15s,box-shadow .15s}
 .input:focus,.select:focus,textarea.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(145,175,66,.15)}
 .input:disabled,.select:disabled{background:#F6F8F4;opacity:.8}
+/* Lỗi UAT 2026-11-21: assets/css/style.css (theme cũ) đặt ::-webkit-calendar-picker-indicator của MỌI input[type=date] là position:absolute + inset 0, chỉ input.form-control có position:relative → nút lịch phủ cả hộp thoại: bấm ô khác vẫn trúng ô ngày, không rời ô được, hộp chọn ngày cứ bật lại. Giữ lớp phủ trong khung ô ngày. */
+input[type=date]{position:relative}
+.input[type=date]::-webkit-calendar-picker-indicator,.input[type=datetime-local]::-webkit-calendar-picker-indicator{position:static;background:revert;color:revert;width:revert;height:revert;cursor:pointer;opacity:.65}
 .field label,.kv label{margin-bottom:0}
 
 /* ---------- Bảng: .table của theme (clinic.css định kiểu trong .content-body; lặp lại cho ngăn kéo / modal) ---------- */

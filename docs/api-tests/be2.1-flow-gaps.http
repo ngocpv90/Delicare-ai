@@ -818,21 +818,21 @@ POST {{base}}/api/PackingOrder/RecordResult
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{pk1}}&PackedQuantity={{pk1Qty}}&DamagedQty=0&PackagingType=[DEMO] hộp giữ nhiệt
+Id={{pk1}}&PackedQuantity={{pk1Qty}}&DamagedQty=0&PackagingType=HOP_GIU_NHIET
 
 ###
 POST {{base}}/api/PackingOrder/RecordResult
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{pk2}}&PackedQuantity={{pk2Qty}}&PackagingType=[DEMO] hộp giữ nhiệt
+Id={{pk2}}&PackedQuantity={{pk2Qty}}&PackagingType=HOP_GIU_NHIET
 
 ###
 POST {{base}}/api/PackingOrder/RecordResult
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{pk3}}&PackedQuantity={{pk3Qty}}&PackagingType=[DEMO] hộp giữ nhiệt
+Id={{pk3}}&PackedQuantity={{pk3Qty}}&PackagingType=HOP_GIU_NHIET
 
 ###
 GET {{base}}/api/PackingOrder/GetByBatch?id={{batchId}}

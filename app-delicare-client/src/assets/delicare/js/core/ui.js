@@ -18,6 +18,8 @@
     const m = Store.colmeta[t] && Store.colmeta[t][col];
     if (v === null || v === undefined || v === '') return '<span class="muted">–</span>';
     if (!m) return esc(v);
+    // Lỗi UAT 2026-11-21: cột mã danh mục tham chiếu (ReferenceLists) hiện nhãn tiếng Việt.
+    if (Store.isRefCol(t, col)) return UI.tag(UI.statusVi(t, col, v));
     if (m.usage.startsWith('Trạng thái') || ['MealType', 'TransactionType', 'CountType', 'WasteType', 'Severity', 'EventType', 'CustomerType', 'SupplierType', 'WarehouseType', 'StorageType', 'UnitType', 'BusinessType', 'DomainCode', 'LeaveTypeCode', 'DirectionCode', 'MeasurementType', 'PriorityCode', 'CategoryCode', 'IssueType', 'DataQualityStatus'].includes(col)) return m.usage.startsWith('Trạng thái') ? UI.badge(v, t, col) : UI.tag(v);
     if (col.endsWith('Id') && col !== 'Id') {
       const dst = Store.target(t, col);
@@ -123,6 +125,13 @@
   const isActiveInactive = codes => codes.length === 2 && codes.includes('Active') && codes.includes('Inactive');
   const activeSelect = (id, name, v) => `<select class="select" id="${id}" name="${name}">${['Active', 'Inactive'].concat(v && !ACTIVE_VI[v] ? [v] : []).map(c => `<option value="${esc(c)}" ${c === (v || 'Active') ? 'selected' : ''}>${esc(ACTIVE_VI[c] || c)}</option>`).join('')}</select>`;
   // Ô chọn từ danh mục: chỉ chữ tiếng Việt; giá trị cũ ngoài danh mục vẫn hiện (chọn sẵn) để không mất khi lưu.
+  // Lỗi UAT 2026-11-21 (rà soát danh mục): ô chọn từ danh mục tham chiếu ReferenceLists (Store.refList) cho form riêng; giá trị cũ ngoài danh mục
+  // hiện "(giá trị cũ)". Danh mục chưa tải (DEMO / lỗi mạng) → ô gõ thường để không chặn thao tác (máy chủ vẫn kiểm).
+  UI.refSelect = (id, list, opt = {}) => {
+    const items = Store.refList(list);
+    if (!items.length) return `<input class="input" id="${id}" value="${esc(opt.value || '')}" maxlength="100" placeholder="${esc(opt.placeholder || '')}">`;
+    return UI.catalogSelect(id, id, items, opt.value || '', !!opt.required, opt.placeholder || '— Chọn —');
+  };
   UI.catalogSelect = (id, name, items, v, req, placeholder) => `<select class="select" id="${id}" name="${name}" ${req ? 'required' : ''}><option value="">${esc(placeholder || '— Chọn —')}</option>${items.map(x => `<option value="${esc(x.code)}" ${x.code === v ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}${v && !items.some(x => x.code === v) ? `<option value="${esc(v)}" selected>${esc(v)} (giá trị cũ)</option>` : ''}</select>`;
   UI.input = (t, m, v) => {
     const id = 'f_' + m.name, req = !m.nullable && !m.def;
@@ -328,7 +337,7 @@
         const OPTION_FIELDS = new Set(['BranchId', 'UserAssignId', 'Industry', 'CompanySize', 'Gender', 'Source']);
         const softRefresh = () => {
           if (!host.isConnected || (isCustomer && !typeChosen)) return;
-          fields.filter(f => ruleOf(f) || (isCustomer && OPTION_FIELDS.has(f.name))).forEach(f => {
+          fields.filter(f => ruleOf(f) || (isCustomer && OPTION_FIELDS.has(f.name)) || Store.isRefCol(t, f.name) || (f.name.endsWith('Id') && !!Store.target(t, f.name))).forEach(f => {
             const el = m.querySelector('#f_' + f.name), fld = el && el.closest('.field');
             if (!fld || fld.contains(document.activeElement)) return;
             if (!el.dataset.g1) rec[f.name] = el.value === '' ? null : el.value;
@@ -337,7 +346,9 @@
           });
           wire();
         };
-        if (Store.isLive) Promise.all([Store.loadCodeRules(), isCustomer ? UI.customerOptions().then(applyOptions) : null]).then(softRefresh);
+        // Lỗi UAT 2026-11-21: tải sẵn bảng đích của các ô tham chiếu (…Id) – ô chọn vẽ khi bảng chưa tải sẽ trống, tải xong vẽ lại ô đó.
+        const fkTables = [...new Set(fields.filter(f => f.name.endsWith('Id') && Store.target(t, f.name)).map(f => Store.target(t, f.name)))];
+        if (Store.isLive) Promise.all([Store.loadCodeRules(), Store.loadRefLists(), Promise.all(fkTables.map(x => Store.ensure(x))), isCustomer ? UI.customerOptions().then(applyOptions) : null]).then(softRefresh);
         // Lỗi máy chủ: hiện đầu form + tô đỏ ô có nhãn nằm trong thông báo (nhãn dài khớp trước, tránh "Email" ăn vào "Email người liên hệ").
         const markServer = msg => {
           let rest = String(msg || '');
