@@ -880,7 +880,7 @@ namespace AppDelicare.Services.Implement
                 return cached;
             }
             var e = await FindAsync<IngredientCategory>(x => !x.IsDeleted && (x.Name == name || x.Code == name))
-                ?? Add(_unitOfWork.IngredientCategoryRepository, new IngredientCategory { Id = Guid.NewGuid(), Code = Slug(name, 50), Name = name, Status = Active });
+                ?? Add(_unitOfWork.IngredientCategoryRepository, new IngredientCategory { Id = Guid.NewGuid(), Code = await _documentNumberService.NextCodeAsync(DocumentKind.IngredientCategory), Name = name, Status = Active });
             return ctx.IngredientCategories[name] = e;
         }
 
@@ -893,7 +893,7 @@ namespace AppDelicare.Services.Implement
             var e = await FindAsync<DishCategory>(x => !x.IsDeleted && (x.Name == name || x.Code == name));
             if (e == null)
             {
-                e = Add(_unitOfWork.DishCategoryRepository, new DishCategory { Id = Guid.NewGuid(), Code = Slug(name, 50), Name = name, Status = Active });
+                e = Add(_unitOfWork.DishCategoryRepository, new DishCategory { Id = Guid.NewGuid(), Code = await _documentNumberService.NextCodeAsync(DocumentKind.DishCategory), Name = name, Status = Active });
                 ctx.Result.Inserted++;
             }
             return ctx.DishCategories[name] = e;

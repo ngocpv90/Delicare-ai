@@ -21,7 +21,7 @@ Không bảng / cột mới. Sau `git pull`: build lại API, chạy lại `DB/s
 ## 2. API mới `GET api/Common/GetCodeRules?entity=<Entity hoặc bảng>` (chỉ cần đăng nhập)
 `listData[] { entity, table, column, group: G1|G2|G3, kind, prefix, pattern, catalog, note }`
 - `G1` → ô Mã chỉ đọc, hiện "(tự sinh khi lưu)", **không gửi**.
-- `G2` (ca, đơn vị tính, kho/khu/vị trí, dây chuyền, nhóm món / NL…) → tự chuyển chữ hoa không dấu, chỉ A–Z 0–9 `-` `_`.
+- `G2` (ca, đơn vị tính, kho/khu/vị trí, dây chuyền…; nhóm món / nhóm NL chuyển sang G1 `NM-` / `NN-` từ 2026-11-22) → tự chuyển chữ hoa không dấu, chỉ A–Z 0–9 `-` `_`.
 - `G3` → không áp quy tắc.
 
 ## 3. Khách hàng theo loại (`crm-customer`)

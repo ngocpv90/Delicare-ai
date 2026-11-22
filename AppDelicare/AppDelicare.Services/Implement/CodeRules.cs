@@ -28,8 +28,6 @@ namespace AppDelicare.Services.Implement
             (typeof(Position), "Code", "chức danh"),
             (typeof(Shift), "Code", "ca – hậu tố mã mẻ / vệ sinh (CA1…)"),
             (typeof(UnitMeasure), "Code", "đơn vị tính (KG…)"),
-            (typeof(DishCategory), "Code", "nhóm món"),
-            (typeof(IngredientCategory), "Code", "nhóm nguyên liệu"),
             (typeof(ProductionLine), "Code", "dây chuyền – QR LINE_"),
             (typeof(KitchenWorkstation), "Code", "trạm bếp"),
             (typeof(StorageZone), "Code", "khu kho"),

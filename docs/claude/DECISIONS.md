@@ -664,3 +664,10 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (g) | Nhân viên – cột trái | Cốt lõi: chức danh + đơn vị · điện thoại · email · ngày vào làm + thâm niên · ca thường làm · liên kết bot + tài khoản web. Nhóm: **Cá nhân** (ngày sinh, giới tính, địa chỉ – biểu tượng khóa; **máy chủ chỉ trả cho người có quyền Sửa `adm-employee`**, D-68 e) · **Công việc** (chức danh, đơn vị, nhóm quyền, ngày vào làm) · **Giấy tờ** (giấy khám sức khỏe, hợp đồng lao động – file ở tab Tài liệu, GAP-HR-07) · **Hệ thống**. Khối "Tài khoản và bot" cũ bên phải bỏ (đã thành dòng cốt lõi; chi tiết ở tab). |
 | (h) | Nhân viên – cột phải | Cần chú ý → **Ca 7 ngày tới** (ngày nghỉ tô cam, ca hôm nay + giờ vào; nút Phân ca) cạnh **Nghỉ phép và đơn từ** (đơn chờ duyệt, đơn gần đây, ngày đã nghỉ trong năm theo loại) → **Giờ công 30 ngày** → **Chấm công gần đây** dạng bảng (ngày, ca, vào – ra, hình thức, kết quả hợp lệ / muộn / ngoài bán kính; Xem bảng công). |
 | (i) | Không làm | Nhóm "Tài khoản ngân hàng" (chưa có chỗ lưu – khi cần ghi GAP riêng). |
+
+## D-73 – Nhóm món / nhóm nguyên liệu: giữ tính năng, mã máy chủ tự sinh (anh chốt 2026-11-22)
+
+- **Bối cảnh (UAT):** màn Nhóm món ăn không có dữ liệu, ô Mã cho gõ chữ; anh hỏi có cần tính năng không.
+- **Chốt:** giữ – thực đơn tuần (`Menu/GetCalendar`) chia dòng theo nhóm món, nhập Excel `Rule Menu.xlsx` tạo nhóm + gán món, phân món → dây chuyền theo nhóm (GAP-PRD-02) cần nhóm.
+- **Mã:** chuyển từ G2 (người đặt) sang **G1 máy chủ tự sinh** – `DocumentKind.DishCategory` `NM-NNNNN`, `DocumentKind.IngredientCategory` `NN-NNNNN`. Insert bỏ qua mã gửi lên; Update giữ nguyên mã đang có (nhóm cũ mã người đặt giữ mã cũ). Nhập Excel tạo nhóm mới cũng dùng mã tự sinh (trước: mã = tên bỏ dấu). Không đổi lược đồ.
+- **Dữ liệu dev:** đã nạp sheet Ngân hàng món (`RuleMenu_DishBank`) qua chức năng nhập Excel → 8 nhóm `NM-00001…08`, 562 món mới có nhóm; 111 món `[DEMO]` chưa có nhóm (thực đơn demo vẫn hiện dòng "Khác").

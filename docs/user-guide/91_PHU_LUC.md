@@ -55,6 +55,8 @@ Mã và số chứng từ do **máy chủ tự sinh khi lưu** – trên form ô
 | `NV-` | Nhân viên (người mới; mã = tên đăng nhập) |
 | `DP-` | Điểm giao / điểm phát |
 | `BG-` | Bảng giá |
+| `NM-` | Nhóm món ăn (từ 22/11/2026; nhóm tạo trước đó giữ mã cũ) |
+| `NN-` | Nhóm nguyên liệu (từ 22/11/2026; nhóm tạo trước đó giữ mã cũ) |
 
 **Chứng từ** – dạng `TIỀNTỐ-YYMMDD-NNNN` (YYMMDD = ngày lập, số đếm lại mỗi ngày):
 
@@ -85,7 +87,7 @@ Mã và số chứng từ do **máy chủ tự sinh khi lưu** – trên form ô
 
 Chứng từ lập **trước 19/11/2026** giữ số cũ (`PH-…`, `KH-…`, `NL-…-<NCC>-NN`) – vẫn tìm, in, mở trên bot bình thường.
 
-**Mã do người đặt** (ca `CA1`, đơn vị tính `KG`, khu / vị trí kho, dây chuyền, nhóm món…): tự chuyển chữ hoa không dấu, chỉ gồm A–Z, 0–9, `-`, `_`; mã đã được dùng (đã có phân ca, mẻ, tồn kho…) thì không sửa được.
+**Mã do người đặt** (ca `CA1`, đơn vị tính `KG`, khu / vị trí kho, dây chuyền…): tự chuyển chữ hoa không dấu, chỉ gồm A–Z, 0–9, `-`, `_`; mã đã được dùng (đã có phân ca, mẻ, tồn kho…) thì không sửa được.
 
 Gõ mã / số trên bot hoặc ô tìm kiếm toàn cục để mở nhanh.
 
