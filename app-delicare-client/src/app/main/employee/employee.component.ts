@@ -18,7 +18,7 @@ import { TableState } from 'src/app/shared/table/table-state';
 import { EMPLOYEE_STATUSES, labelOf } from '../organization-unit/org-options';
 import { EmployeeModalComponent } from './employee-modal/employee-modal.component';
 
-// adm-employee – Hồ sơ nhân viên (FE-1). Filters: search, unit, position, status (Employee/GetAll query).
+// adm-employee – Nhân viên (FE-1). Filters: search, unit, position, status (Employee/GetAll query).
 @Component({
   selector: 'app-employee',
   templateUrl: './employee.component.html',

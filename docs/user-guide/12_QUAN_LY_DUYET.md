@@ -10,7 +10,7 @@
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `wf-inbox` | Nhân sự & Phê duyệt › Hộp phê duyệt | Duyệt / từ chối / hủy mọi loại yêu cầu |
+| `wf-inbox` | Nhân sự › Hộp phê duyệt | Duyệt / từ chối / hủy mọi loại yêu cầu |
 | `wf-step` | (màn con, ẩn) | Các cấp duyệt của yêu cầu – xem trong tab Tiến trình duyệt |
 | `prod-plan` | Sản xuất › Kế hoạch sản xuất | Nút **Duyệt** kế hoạch (cần quyền Phê duyệt › CEO / COO) |
 | `menu-menu` | Thực đơn › Thực đơn | Nút **Duyệt** thực đơn (CEO / COO) |

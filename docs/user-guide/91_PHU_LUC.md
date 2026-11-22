@@ -96,7 +96,7 @@ Gõ mã / số trên bot hoặc ô tìm kiếm toàn cục để mở nhanh.
 | Nội dung | Giá trị |
 |---|---|
 | Giờ chốt đơn | 20:00 ngày D-1 (job tự chốt) |
-| Tính nhu cầu nguyên liệu (MRP) | 20:30 |
+| Tính nhu cầu nguyên liệu | 20:30 |
 | Đơn lệch cần duyệt | > 30% |
 | Dự báo: cảnh báo lệch / tối đa | 10% / 62 ngày |
 | Kiểm kê cần duyệt 2 cấp | chênh > 2% |
@@ -130,7 +130,7 @@ Gõ mã / số trên bot hoặc ô tìm kiếm toàn cục để mở nhanh.
 | 20:00 | Chốt đơn ngày mai |
 | 20:30 | MRP |
 | 21:00 | Nguyên liệu cho tối nay / mai |
-| (tắt) | KPI ngày / tháng – quản trị bấm **Làm mới số liệu** |
+| (tắt) | Chỉ số theo ngày / tháng – quản trị bấm **Làm mới số liệu** |
 
 ## 5. Thuật ngữ
 
@@ -141,7 +141,7 @@ Gõ mã / số trên bot hoặc ô tìm kiếm toàn cục để mở nhanh.
 | MRP | Tính nhu cầu nguyên liệu từ kế hoạch SX trừ tồn |
 | POD | Biên bản giao nhận (Proof of Delivery) – số giao, số nhận, người nhận, nhiệt độ |
 | Lưu mẫu | Giữ mẫu thức ăn của mẻ theo quy định ATTP (bắt buộc trước khi xe chạy) |
-| Tiêu chí trọng yếu | Tiêu chí checklist ATTP mà FAIL thì chặn đạt QC / đóng gói / xuất chuyến |
+| Tiêu chí trọng yếu | Tiêu chí kiểm tra ATTP mà FAIL thì chặn đạt QC / đóng gói / xuất chuyến |
 | Sổ chỉ ghi thêm | Sổ không sửa / xóa; sai thì ghi dòng ngược lại |
 | Chấm hộ | Người có quyền ghi vào / ra ca thay nhân viên, bắt buộc lý do |
 | Leo thang | Sự cố chưa ai nhận sau N phút được gửi lên cấp cao hơn |

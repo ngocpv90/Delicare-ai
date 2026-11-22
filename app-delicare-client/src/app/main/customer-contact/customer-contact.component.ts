@@ -7,7 +7,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { CustomerContactModalComponent } from './customer-contact-modal/customer-contact-modal.component';
 
-// crm-contact – Đầu mối liên hệ khách hàng (FE-2).
+// crm-contact – Người liên hệ (FE-2).
 @Component({
   selector: 'app-customer-contact',
   templateUrl: './customer-contact.component.html',

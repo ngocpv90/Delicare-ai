@@ -18,7 +18,7 @@
 | `cost-actual`, `cost-meal`, `cost-standard` | … giá thành | Xem, sửa |
 | `qc-checklist-result`, `qc-temperature`, `qc-cleaning`, `qc-cleaning-result` | QC & ATTP | Xem, sửa (xem `06_QC_ATTP.md`) |
 | `scm-issue`, `scm-reservation`, `scm-inv-balance` | Mua hàng & Kho | Xem |
-| `hr-shift-assign`, `hr-attendance` | Nhân sự & Phê duyệt › Phân ca, Chấm công | Xem |
+| `hr-shift-assign`, `hr-attendance` | Nhân sự › Phân ca, Chấm công | Xem |
 
 ## 3. Việc trong ca
 

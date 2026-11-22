@@ -4,7 +4,7 @@
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const ID = 'crm-customer-360';
-  APP.FN[ID] = { ph: 'P1', grp: 'Kinh doanh & Đơn hàng', fn: 'Hồ sơ khách hàng 360', id: ID, name: 'Hồ sơ khách hàng 360', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN[ID] = { ph: 'P1', grp: 'Kinh doanh', fn: 'Khách hàng', id: ID, name: 'Khách hàng', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
 
   // Thành phần chung (modules/detail360.js – UI-3 tách từ UI-2).
   const { pas, failBox, loading, none, can, initials, dmy, table, bindRows, filterBar, statusOpts, run, demoNote } = APP.D360;

@@ -9,7 +9,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { WarehouseModalComponent } from './warehouse-modal/warehouse-modal.component';
 
-// scm-warehouse – Danh mục kho (FE-2) + ngăn kéo "Sơ đồ kho" (Warehouse/GetLayout: khu bảo quản -> vị trí).
+// scm-warehouse – Kho (FE-2) + ngăn kéo "Sơ đồ kho" (Warehouse/GetLayout: khu bảo quản -> vị trí).
 @Component({
   selector: 'app-warehouse',
   templateUrl: './warehouse.component.html',

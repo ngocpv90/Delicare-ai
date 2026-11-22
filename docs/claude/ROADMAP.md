@@ -105,7 +105,7 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 
 **AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
 
-## ★ MENU-2 – ĐỔI TÊN TOÀN BỘ MENU CHO NGẮN, DỄ HIỂU (D-75, anh chốt 2026-11-22) · `TODO`
+## ★ MENU-2 – ĐỔI TÊN TOÀN BỘ MENU CHO NGẮN, DỄ HIỂU (D-75, anh chốt 2026-11-22) · `DONE (2026-11-22)` – chi tiết PROGRESS
 
 > Nguồn: chat tài liệu 2026-11-22, danh sách lấy từ `DB/seed/ObjectMenu_seed.sql` (11 nhóm, 150 mục). **Chỉ đổi tên + ẩn nhóm Database Architecture** – không đổi MetaLink, thứ tự, nhóm cha, quyền đã gán. Không sắp xếp lại nhóm. Claude Code làm BE + FE (D-65). Không đổi cấu trúc bảng.
 

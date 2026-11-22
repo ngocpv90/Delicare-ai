@@ -88,7 +88,7 @@ Danh sách chỗ **code chưa có** hoặc **khác tài liệu** phát hiện kh
 - **Code:** `UI/modules/hr.js:257` bảng `BT` chỉ có PURCHASE_REQUEST, LEAVE_REQUEST, SHIFT_SWAP, RECIPE_VERSION, STOCK_COUNT, CONTRACT, MENU_CHANGE; thiếu **PURCHASE_ORDER, ORDER_DEVIATION, ORDER_CHANGE_AFTER_CUTOFF, STOCK_ADJUSTMENT** → cột "Bản ghi nghiệp vụ" hiện "–", không có liên kết mở chứng từ.
 - **Đề xuất:** bổ sung 4 loại (bảng, cột trạng thái, màn mở: `scm-po`, `crm-order`, `crm-order`, `scm-inv-balance`/điều chỉnh) và hiện nội dung đề xuất (số mới) cho ORDER_CHANGE_AFTER_CUTOFF.
 
-### C-12 – Dòng đề nghị mua / đơn mua (TB, CC-code) · ✅ **Đã sửa 2026-11-19** (Sửa dòng nguyên liệu (PR Nháp); PO Nháp đã có Sửa dòng hàng)
+### C-12 – Chi tiết đề nghị mua / đơn mua (TB, CC-code) · ✅ **Đã sửa 2026-11-19** (Sửa dòng nguyên liệu (PR Nháp); PO Nháp đã có Sửa dòng hàng)
 - **Code:** PR tạo tay chỉ tạo đầu phiếu, màn dòng `scm-pr-line` bị ẩn; API sửa dòng PO Nháp có nhưng giao diện không gọi.
 - **Đề xuất:** ngăn chi tiết PR Nháp / PO Nháp thêm bảng dòng sửa được (nguyên liệu, số lượng, đơn vị, đơn giá, ngày cần), lưu qua API dòng.
 

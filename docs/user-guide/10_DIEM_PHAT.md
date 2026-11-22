@@ -10,11 +10,11 @@
 
 | screen-id | Menu › Mục | OPS-POS | SAL-CS |
 |---|---|---|---|
-| `crm-reconciliation` | Kinh doanh & Đơn hàng › Đối soát đơn hàng | Sửa | Xem |
-| `log-complaint` | Đóng gói & Giao nhận › Khiếu nại khách hàng | Sửa | Sửa |
+| `crm-reconciliation` | Kinh doanh › Đối soát đơn hàng | Sửa | Xem |
+| `log-complaint` | Đóng gói & Giao hàng › Phản ánh khách hàng | Sửa | Sửa |
 | `log-execution` | … › Thực hiện giao hàng | Sửa | Sửa |
-| `log-container-return`, `log-packaging-ledger` | … › Thu hồi khay/hộp, Sổ bao bì | Sửa | Sửa |
-| `crm-customer`, `crm-order` | Kinh doanh & Đơn hàng | Sửa | Xem |
+| `log-container-return`, `log-packaging-ledger` | … › Thu hồi khay hộp, Sổ bao bì | Sửa | Sửa |
+| `crm-customer`, `crm-order` | Kinh doanh | Sửa | Xem |
 
 ## 3. Việc trong ngày
 

@@ -10,7 +10,7 @@
 
 | screen-id | Menu › Mục | Quyền |
 |---|---|---|
-| `menu-dish-cat` | Thực đơn & Món ăn › Danh mục món ăn | Xem, sửa |
+| `menu-dish-cat` | Thực đơn & Món ăn › Món ăn | Xem, sửa |
 | `menu-dish` | … › Món ăn | Xem, sửa |
 | `menu-recipe` | … › Công thức chế biến (version) | Xem, sửa |
 | `menu-menu` | … › Thực đơn | Xem, sửa |
@@ -45,7 +45,7 @@ Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & á
 ### 4.1 Món ăn – `menu-dish`
 Danh sách: Mã, Món ăn, Nhóm món, Giá thành chuẩn, **Công thức đang dùng** (phiên bản + trạng thái, hoặc "Chưa có công thức hiệu lực"), CP NVL ước tính, Trạng thái. Thêm / sửa món bằng form chung.
 
-### 4.2 Công thức & phiên bản – `menu-recipe`
+### 4.2 Công thức chế biến – `menu-recipe`
 Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản, nhãn "chờ" nếu có bản Nháp / Chờ duyệt); phải là các phiên bản của món đang chọn.
 
 **Tạo phiên bản mới**

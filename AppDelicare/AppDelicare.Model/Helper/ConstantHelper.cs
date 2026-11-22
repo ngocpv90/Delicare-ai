@@ -354,7 +354,7 @@
             public static readonly string GoodsReceiptDuplicateLine = "Dòng PO {0} xuất hiện nhiều lần trong phiếu nhập";
             public static readonly string GoodsReceiptDateInvalid = "{0}: ngày sản xuất sau hạn dùng";
             public static readonly string GoodsReceiptNotConcluded = "Phiếu nhập chưa kết luận QC (QcInspection/Conclude) – chưa ghi sổ được";
-            public static readonly string QcInspectionCrudBlocked = "Phiếu QC đầu vào chỉ tạo cùng phiếu nhập và ghi kết quả qua QcInspection/Conclude";
+            public static readonly string QcInspectionCrudBlocked = "Phiếu kiểm tra hàng nhập chỉ tạo cùng phiếu nhập và ghi kết quả qua QcInspection/Conclude";
             public static readonly string QcResultInvalid = "{0}: kết quả QC phải là DAT / DAT_MOT_PHAN / KHONG_DAT";
             public static readonly string QcLineMissing = "Chưa có kết quả QC cho dòng: {0}";
             public static readonly string QcPartialQuantityInvalid = "{0}: DAT_MOT_PHAN cần số lượng đạt > 0 và < số nhận ({1})";

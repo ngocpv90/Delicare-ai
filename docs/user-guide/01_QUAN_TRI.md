@@ -14,13 +14,13 @@ Menu **Quản trị hệ thống** (FIN-IT: xem + sửa + xuất):
 |---|---|---|
 | `adm-user` | Người dùng | Tài khoản: tạo, khóa / mở, đặt lại mật khẩu, xem quyền hiệu lực |
 | `adm-usergroup` | Nhóm người dùng | Nhóm quyền (vai trò) |
-| `adm-permission` | Vai trò & phân quyền | Ma trận quyền Nhóm × Chức năng |
+| `adm-permission` | Vai trò & phân quyền | Phân quyền |
 | `adm-objectmenu` | Menu chức năng hệ thống | Thứ tự, nhóm của mục menu |
 | `adm-orgunit` | Chi nhánh, đơn vị tổ chức | Cây đơn vị |
-| `adm-employee` | Nhân sự | Hồ sơ nhân viên (danh mục chung với Nhân sự) |
-| `adm-position` | Chức vụ | Danh mục chức vụ |
+| `adm-employee` | Nhân sự | Nhân viên (danh mục chung với Nhân sự) |
+| `adm-position` | Chức vụ | Chức vụ |
 | `adm-company` | Công ty | Pháp nhân |
-| `adm-person` | Cá nhân (Person) | Thông tin cá nhân của tài khoản |
+| `adm-person` | Cá nhân (Person) | Thông tin cá nhân |
 | `adm-admin-unit` | Đơn vị hành chính | Vùng / tỉnh / huyện / xã |
 | `adm-document` | Quản lý tài liệu | Tải lên / tải xuống tệp đính kèm |
 | `adm-audit` | Audit log | Nhật ký thay đổi dữ liệu |
@@ -39,7 +39,7 @@ Các màn `adm-reference`, `dbx-explorer`, `dbx-gap` **đang ẩn** ở chế đ
 | Nhân viên nghỉ / mất máy | Khóa tài khoản |
 | Quên mật khẩu | Đặt lại mật khẩu |
 | Hằng ngày | Xem bot 🖥 Tình trạng hệ thống (job lỗi, tin gửi lỗi); xử lý xung đột dữ liệu |
-| Khi cần | Làm mới KPI (màn KPI ngày / tháng – xem `13_BAN_DIEU_HANH.md`) |
+| Khi cần | Làm mới KPI (màn Chỉ số theo ngày / tháng – xem `13_BAN_DIEU_HANH.md`) |
 
 ## 4. Thao tác từng bước
 
@@ -81,20 +81,20 @@ Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòn
 
 | Mục quyền | Duyệt gì |
 |---|---|
-| Phê duyệt › Hợp đồng suất ăn (`crm-contract`) | Hợp đồng |
-| Phê duyệt › Đơn đặt suất ăn (`crm-order`) | Lệch suất > 30% và sửa / thêm đơn sau giờ chốt |
-| Phê duyệt › Chính sách giá theo KH/HĐ (`crm-price-policy`) | (có mục quyền) |
-| Phê duyệt › Công thức & phiên bản (`menu-recipe`) | Phiên bản công thức |
-| Phê duyệt › Thực đơn & phiên bản (`menu-menu`) | (có mục quyền) |
+| Phê duyệt › Hợp đồng (`crm-contract`) | Hợp đồng |
+| Phê duyệt › Đơn đặt suất (`crm-order`) | Lệch suất > 30% và sửa / thêm đơn sau giờ chốt |
+| Phê duyệt › Chính sách giá (`crm-price-policy`) | (có mục quyền) |
+| Phê duyệt › Công thức chế biến (`menu-recipe`) | Phiên bản công thức |
+| Phê duyệt › Thực đơn tuần (`menu-menu`) | (có mục quyền) |
 | Phê duyệt › Yêu cầu đổi món (`menu-change-request`) | Đổi món |
 | Phê duyệt › Đề nghị mua hàng cấp 1 / cấp 2 (`scm-pr-l1`, `scm-pr-l2`) | Đề nghị mua 2 cấp |
 | Phê duyệt › Đơn mua hàng (`scm-po`) / (Giám đốc) (`scm-po-director`) | PO dưới / từ 50 triệu |
 | Phê duyệt › Phiếu kiểm kê / (cấp 2 – Kế toán) | Kiểm kê lệch > 2% |
 | Phê duyệt › Phiếu điều chỉnh tồn (`scm-adjustment`) | Điều chỉnh tồn tay |
-| Phê duyệt › Kế hoạch sản xuất theo ngày/ca (`prod-plan`) | Nút **Duyệt** kế hoạch SX |
-| Phê duyệt › Phiếu QC đầu vào (`qc-inspection`) | (có mục quyền) |
+| Phê duyệt › Kế hoạch sản xuất (`prod-plan`) | Nút **Duyệt** kế hoạch SX |
+| Phê duyệt › Kiểm tra hàng nhập (`qc-inspection`) | (có mục quyền) |
 | Phê duyệt › Đơn xin nghỉ / Đơn đổi ca | Nghỉ, đổi ca |
-| Phê duyệt › Hộp phê duyệt tập trung (`wf-inbox`) | Xem hộp duyệt |
+| Phê duyệt › Tất cả yêu cầu duyệt (`wf-inbox`) | Xem hộp duyệt |
 
 Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và **Bot Telegram – Điều hành** (`#/bot-dieu-hanh`). Chức năng trong bot đi theo quyền của màn web tương ứng.
 
@@ -105,7 +105,7 @@ Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và
 4. Thay đổi có hiệu lực với người dùng **từ lần đăng nhập sau**.
 - Lỗi: *Menu chỉ có 2 cấp…*, *Mục menu đang có mục con nên phải là mục cấp 1*, *Sắp xếp tạo vòng lặp cha – con*.
 
-### 4.7 Cây đơn vị tổ chức – `adm-orgunit`
+### 4.7 Sơ đồ tổ chức – `adm-orgunit`
 - Khối trên: cây đơn vị (tên, loại, mã, quản lý, số nhân viên, số kho). Bấm tên để mở chi tiết.
 - Thêm / sửa đơn vị bằng **Tạo mới** / **Sửa** ở bảng dưới. Lỗi: *Đơn vị cha không được là chính nó hoặc đơn vị con của nó*.
 - Đơn vị loại **BRANCH** xuất hiện trong hộp **Đơn vị làm việc** ở đầu trang.

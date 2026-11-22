@@ -7,7 +7,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { StorageLocationModalComponent } from './storage-location-modal/storage-location-modal.component';
 
-// scm-location – Vị trí lưu trữ (bin) theo kho / khu (FE-2).
+// scm-location – Vị trí kệ theo kho / khu (FE-2).
 @Component({
   selector: 'app-storage-location',
   templateUrl: './storage-location.component.html',

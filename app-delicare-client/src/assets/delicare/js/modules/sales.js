@@ -242,7 +242,7 @@
   function newOrder() {
     const cus = Store.rows('Customer').filter(c => c.Status === 'Active');
     UI.modal({
-      title: 'Tạo đơn đặt suất ăn', sub: Store.isLive ? 'Loại suất theo hợp đồng hiệu lực · mỗi điểm giao một đơn · số lượng gợi ý từ dự báo đã công bố' : 'Order + OrderLine · lấy loại suất từ ContractMeal, điểm giao từ CustomerDeliveryLocation, gợi ý số lượng từ Forecast', size: 'lg',
+      title: 'Tạo đơn đặt suất', sub: Store.isLive ? 'Loại suất theo hợp đồng hiệu lực · mỗi điểm giao một đơn · số lượng gợi ý từ dự báo đã công bố' : 'Order + OrderLine · lấy loại suất từ ContractMeal, điểm giao từ CustomerDeliveryLocation, gợi ý số lượng từ Forecast', size: 'lg',
       body: `<div class="form-grid"><div class="field"><label>Khách hàng <span class="req">*</span><code>CustomerId</code></label><select class="select" id="nC"><option value="">— Chọn —</option>${cus.map(c => `<option value="${c.Id}">${esc(c.DisplayName)}</option>`).join('')}</select></div><div class="field"><label>Ngày ăn <span class="req">*</span><code>MealDate</code></label><input type="date" class="input" id="nD" value="${U.addDays(Store.ctx.date, 4)}"></div></div><div id="nLines" class="mt"></div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="nSave">Tạo đơn (Nháp)</button>',
       onMount: (m, close) => {

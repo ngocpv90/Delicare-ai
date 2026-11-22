@@ -4,7 +4,7 @@
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const ID = 'adm-employee-360';
-  APP.FN[ID] = { ph: 'P0', grp: 'Quản trị hệ thống', fn: 'Hồ sơ nhân viên', id: ID, name: 'Hồ sơ nhân viên', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN[ID] = { ph: 'P0', grp: 'Quản trị hệ thống', fn: 'Nhân viên', id: ID, name: 'Nhân viên', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
   const { pas, failBox, loading, none, can, initials, dmy, pct, table, bindRows, filterBar, statusOpts, run, demoNote, alertBox, bindGo } = APP.D360;
   const live = () => Store.isLive;
   const today = () => Store.ctx.date;

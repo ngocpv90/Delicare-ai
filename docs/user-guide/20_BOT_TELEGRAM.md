@@ -18,7 +18,7 @@ Quyền bấm nút = quyền vào màn tương ứng trên web: nút chỉ hiệ
 
 ### 2.2 Người có tài khoản web (người duyệt, quản lý)
 - Để **duyệt** và dùng chức năng theo quyền web, tài khoản Telegram phải gắn với **tài khoản web**: lấy mã trên web, gõ `/start <mã>` (mã người dùng hết hạn sau 15 phút; mã NS tạo cho nhân viên hết hạn sau 72 giờ).
-- **Lấy mã trên web:** bấm tên tài khoản (góc phải) → **Liên kết Telegram** → **Tạo mã liên kết** (hoặc màn *Việc của tôi* → khối Liên kết Telegram). Màn hiện mã + nút **Mở bot Vận hành / Điều hành** (link mở thẳng bot kèm mã); cùng chỗ đó xem bot đã liên kết và **Gỡ** liên kết. Nhân viên không có tài khoản web: Nhân sự mở *Hồ sơ nhân viên* (`adm-employee`) → nút **Tạo mã liên kết bot** trên dòng / trong ngăn chi tiết (mã 72 giờ, cần quyền Sửa).
+- **Lấy mã trên web:** bấm tên tài khoản (góc phải) → **Liên kết Telegram** → **Tạo mã liên kết** (hoặc màn *Việc của tôi* → khối Liên kết Telegram). Màn hiện mã + nút **Mở bot Vận hành / Điều hành** (link mở thẳng bot kèm mã); cùng chỗ đó xem bot đã liên kết và **Gỡ** liên kết. Nhân viên không có tài khoản web: Nhân sự mở *Nhân viên* (`adm-employee`) → nút **Tạo mã liên kết bot** trên dòng / trong ngăn chi tiết (mã 72 giờ, cần quyền Sửa).
 - `/huylienket` – hủy liên kết.
 
 ## 3. Bàn phím và lệnh chung
@@ -67,7 +67,7 @@ Bàn phím dưới cố định (mọi người): **[⚡ Ca của tôi] [📂 Ch
 | ⏳ Phê duyệt | ⏳ Chờ tôi duyệt (`/cho`) | Người duyệt | `12_QUAN_LY_DUYET.md` §7 |
 
 ## 5. Bot Điều hành
-Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở, 🎯 KPI 7 ngày, 📅 KPI tháng, 📈 Tiến độ bếp, 🗺 Giao vận trực tiếp, 📦 Tồn & thiếu hụt, 🔍 Truy xuất.
+Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở, 🎯 KPI 7 ngày, 📅 Chỉ số theo tháng, 📈 Tiến độ bếp, 🗺 Giao vận trực tiếp, 📦 Tồn & thiếu hụt, 🔍 Truy xuất.
 
 ## 6. Mã QR dán tại hiện trường
 

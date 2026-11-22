@@ -707,3 +707,5 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (a) | Quy tắc đặt tên (áp cho mọi màn mới) | Ngắn, từ nghiệp vụ quen thuộc; không tiếng Anh / thuật ngữ kỹ thuật (ledger, bin, MOQ, NCR, POD, KPI, ObjectMenu, 360°…); màn bảng con = "Chi tiết …"; mục Phê duyệt = tên màn gốc; "Khiếu nại" → "Phản ánh" (khớp hướng dẫn sử dụng). |
 | (b) | Tên nhóm | Điều hành · Kinh doanh · Thực đơn & Món ăn · Mua hàng & Kho · Sản xuất & Giá thành · Chất lượng & ATTP · Đóng gói & Giao hàng · Nhân sự · Tích hợp & Chỉ số · Quản trị hệ thống · Phê duyệt. |
 | (c) | Phạm vi đổi | Tên menu + tiêu đề màn hình + tài liệu cùng lúc; yêu cầu duyệt mới mang tên mới, yêu cầu cũ giữ tên cũ. Script không ghi đè tên admin đã tự sửa. |
+
+**Đã làm 2026-11-22 (MENU-2 DONE – PROGRESS).** Ghi chú: bảng đổi tên nằm trong bộ sinh seed (`Seeds.MenuRenames`), catalog mockup giữ tên cũ; tên bước duyệt không lưu trong yêu cầu duyệt mà đọc theo tên menu hiện tại – dữ liệu yêu cầu cũ không bị sửa, nhưng màn xem hiện tên mới. Quyền UserRole trước / sau trên DB dev khớp 100% (2.418 dòng).

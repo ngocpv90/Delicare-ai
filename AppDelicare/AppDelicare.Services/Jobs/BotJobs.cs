@@ -237,7 +237,7 @@ namespace AppDelicare.Services.Jobs
 
         private Task<int> SendAsync(string title, List<string> lines, string key)
             => BusinessNotifier.ToMenusAsync(notifications, unitOfWork.DbContext, NotificationCatalog.PeriodReport, [BotReports.ExecutiveMenu],
-                new { title, lines }, key, buttons: [new NotificationButton("🎯 KPI", "sc:run:dh_kpi"), new NotificationButton("📅 KPI tháng", "sc:run:dh_kpi_month")],
+                new { title, lines }, key, buttons: [new NotificationButton("🎯 KPI", "sc:run:dh_kpi"), new NotificationButton("📅 Chỉ số tháng", "sc:run:dh_kpi_month")],
                 botCode: MessagingCode.BotDieuHanh);
     }
 

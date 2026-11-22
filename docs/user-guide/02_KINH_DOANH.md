@@ -10,7 +10,7 @@
 
 | screen-id | Menu › Mục | Quyền |
 |---|---|---|
-| `crm-customer` | Kinh doanh & Đơn hàng › Khách hàng | Xem, sửa, xuất |
+| `crm-customer` | Kinh doanh › Khách hàng | Xem, sửa, xuất |
 | `crm-contact` | … › Người liên hệ | Xem, sửa, xuất |
 | `crm-location` | … › Điểm giao hàng | Xem, sửa, xuất |
 | `crm-contract` | … › Hợp đồng | Xem, sửa, xuất |
@@ -20,7 +20,7 @@
 | `crm-order-week` | … › Đăng ký suất tuần | Như `crm-order` (xem, sửa, xuất phiếu, tải phiếu lên) |
 | `crm-reconciliation` | … › Đối soát đơn hàng | Xem, sửa, xuất |
 | `menu-menu`, `menu-assignment`, `menu-dish`, `menu-change-request` | Thực đơn & Món ăn | Chỉ xem |
-| `log-*`, `prod-*`, `cost-*` | Đóng gói & Giao nhận, Sản xuất & Giá thành | Chỉ xem |
+| `log-*`, `prod-*`, `cost-*` | Đóng gói & Giao hàng, Sản xuất & Giá thành | Chỉ xem |
 | `dash-exec`, `kpi-daily`, `kpi-monthly` | Tổng quan / KPI | Xem |
 
 Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơn sau giờ chốt, hợp đồng do Ban điều hành duyệt – xem `12_QUAN_LY_DUYET.md`).

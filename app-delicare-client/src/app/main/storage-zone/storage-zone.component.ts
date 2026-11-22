@@ -7,7 +7,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { StorageZoneModalComponent } from './storage-zone-modal/storage-zone-modal.component';
 
-// scm-zone – Khu vực bảo quản & ngưỡng nhiệt (FE-2).
+// scm-zone – Khu bảo quản (FE-2).
 @Component({
   selector: 'app-storage-zone',
   templateUrl: './storage-zone.component.html',

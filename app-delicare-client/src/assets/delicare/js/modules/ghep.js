@@ -363,7 +363,7 @@
   const fill = (el, id, path, params, render, empty) => Store.query(path, params).then(x => { const o = el.querySelector('#' + id); if (!o || !o.isConnected) return; o.innerHTML = x.ok ? (render(x) || `<div class="muted small">${empty}</div>`) : `<div class="muted small">${esc(failText(x))}</div>`; if (o._bind) o._bind(x); });
 
   // Việc của tôi: ca, đơn nghỉ, đổi ca, chuyến giao của chính người đăng nhập + liên kết Telegram.
-  APP.FN['hr-my'] = { extra: true, ph: 'P8', grp: 'Nhân sự & Phê duyệt', fn: 'Việc của tôi', id: 'hr-my', name: 'Việc của tôi', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN['hr-my'] = { extra: true, ph: 'P8', grp: 'Nhân sự', fn: 'Việc của tôi', id: 'hr-my', name: 'Việc của tôi', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
   function swapShift(a, done) {
     Store.query('ShiftAssignment/GetSwapCandidates', { assignmentId: a.assignmentId }).then(x => {
       if (!x.ok) return UI.toast(esc(failText(x)), 'err');

@@ -295,7 +295,7 @@
     // Chế độ API: người gửi được hủy yêu cầu còn chờ duyệt (ApprovalRequest/Cancel) – backend kiểm tra lại.
     const canCancel = r => Store.isLive && isOpen(r) && !!Store.user.id && r.RequestedBy === Store.user.id;
     const rowsOf = ws.tab === 'mine' ? mine : ws.tab === 'pending' ? pend : all;
-    el.innerHTML = APP.header(f, '', { sub: 'Hộp phê duyệt tập trung cho mọi nghiệp vụ: ApprovalRequest (BusinessType, BusinessId) → ApprovalStep (StepNo, ApproverRoleCode) → ApprovalDecision. Duyệt bước cuối sẽ cập nhật trạng thái bản ghi nghiệp vụ.' }) + `
+    el.innerHTML = APP.header(f, '', { sub: 'Hộp phê duyệt cho mọi nghiệp vụ: ApprovalRequest (BusinessType, BusinessId) → ApprovalStep (StepNo, ApproverRoleCode) → ApprovalDecision. Duyệt bước cuối sẽ cập nhật trạng thái bản ghi nghiệp vụ.' }) + `
     <div class="notice warn">${I('alert')}<div><b>GAP-F-08:</b> SQL không có bảng mẫu quy trình (số cấp, vai trò, hạn mức theo BusinessType). Mockup dùng cấu hình cố định: Đề nghị mua 2 cấp (Quản lý kho → Ban giám đốc), các nghiệp vụ khác 1 cấp.</div></div>
     <div class="kpis">${UI.kpi('Chờ tôi duyệt', mine.length, '', 'approve', 'orange')}${UI.kpi('Đang chờ (tất cả)', pend.length, '', 'clipboard', 'blue')}${UI.kpi('Đã duyệt', all.filter(a => a.RequestStatus === 'Approved').length, '', 'ok', 'green')}${UI.kpi('Từ chối', all.filter(a => a.RequestStatus === 'Rejected').length, '', 'x', 'red')}</div>
     <div class="card panel"><div class="row-flex mb">${[['mine', 'Chờ tôi duyệt'], ['pending', 'Đang chờ'], ['all', 'Tất cả']].map(([k, l]) => `<button class="chip ${ws.tab === k ? 'active' : ''}" data-tab2="${k}">${l}</button>`).join('')}</div><div id="wT"></div></div>`;

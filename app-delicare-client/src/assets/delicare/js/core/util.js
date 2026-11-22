@@ -76,7 +76,7 @@
     file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>', play: '<path d="M6 4l14 8-14 8z"/>', layers: '<path d="m12 2 10 6-10 6L2 8z"/><path d="m2 16 10 6 10-6M2 12l10 6 10-6"/>', key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3"/>'
   };
   UTIL.icon = (n, cls) => `<svg class="i ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || P.clipboard}</svg>`;
-  UTIL.GROUP_ICON = { 'Tổng quan điều hành': 'home', 'Kinh doanh & Đơn hàng': 'building', 'Thực đơn & Món ăn': 'utensils', 'Mua hàng & Kho': 'warehouse', 'Sản xuất & Giá thành': 'factory', 'QC & An toàn thực phẩm': 'shield', 'Đóng gói & Giao nhận': 'truck', 'Nhân sự & Phê duyệt': 'users', 'Tích hợp & KPI': 'bot', 'Quản trị hệ thống': 'settings', 'Database Architecture': 'database' };
+  UTIL.GROUP_ICON = { 'Điều hành': 'home', 'Kinh doanh': 'building', 'Thực đơn & Món ăn': 'utensils', 'Mua hàng & Kho': 'warehouse', 'Sản xuất & Giá thành': 'factory', 'Chất lượng & ATTP': 'shield', 'Đóng gói & Giao hàng': 'truck', 'Nhân sự': 'users', 'Tích hợp & Chỉ số': 'bot', 'Quản trị hệ thống': 'settings', 'Database Architecture': 'database' };
   // Icon riêng cho từng mục menu con (khác icon của nhóm cha). Màn chưa khai báo ở đây → rơi về SCREEN_ICON theo tiền tố.
   UTIL.MENU_ICON = {
     'dash-exec': 'chart', 'flow-e2e': 'flow',
