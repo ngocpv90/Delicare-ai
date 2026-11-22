@@ -296,13 +296,14 @@ Mục tiêu: dev FE `git pull` xong là DB trên server có đủ SP / seed mớ
 
 **Frontend (D-49, 2026-11-16): dev FE khác làm FE-ALL và commit lên git. Claude Code KHÔNG tự làm FE-x – kể cả khi `/next`.** Việc của em về frontend chỉ là: viết handoff `docs/frontend-handoff/` cho mỗi API mới, và task GHEP-FE khi anh yêu cầu.
 
-### GHEP-FE – Ghép luồng frontend + backend · **CHỈ LÀM KHI ANH YÊU CẦU** · `TODO`
+### GHEP-FE – Ghép luồng frontend + backend · **CHỈ LÀM KHI ANH YÊU CẦU** · `DONE (2026-11-21, anh yêu cầu – nhánh ghep/2026-11-21 → main)`
 1. `git fetch`; xem commit / nhánh FE mới (`git log --stat -- app-delicare-client/`). Không sửa code FE của bạn kia khi chưa có yêu cầu; không rebase / force-push nhánh của người khác.
 2. Gộp vào nhánh `ghep/<ngày>` (không gộp thẳng `main`); xung đột → giữ phần của người sửa file đó, báo anh chỗ nào.
 3. Soát FE gọi API: URL `Controller/Action` đúng khung cũ, tham số `[FromForm]`, `Result<T>`, quyền (`permission()` / ScreenMap, menu `#/<screen-id>`). Lệch → **sửa phía backend nếu backend sai**; FE sai → ghi danh sách cho dev FE (file / dòng / sửa thế nào), chỉ sửa FE nếu anh đồng ý.
 4. Chạy `npm run build` + backend build + test; chạy luồng `full-flow.http` và đi tay luồng trên giao diện (staging) theo `UAT_CHECKLIST.md`.
 5. Báo anh: màn hình nào chạy hết luồng, lỗi nào thuộc BE (đã sửa) / FE (cần bạn kia sửa), đề xuất bước tiếp. Không push / gộp `main` khi anh chưa duyệt.
 
+   - **Kết quả 2026-11-21:** ghép 5 commit develop (14–17/11). 19 file engine / shell giao diện của develop trùng bản mockup đã ghép (8ba62901) → giữ main; 14 service xung đột do kiểm "Mã không được để trống" – đã có quy tắc mã D-63 → giữ main; lấy thêm kiểm SupplierMaterial / CustomerContact / danh mục, ImportController, màn master-data Angular, `AppDelicare/Database/*.sql` (CHƯA chạy – trùng vai trò seed / SP của `DB/`, cần rà trước khi dùng). Test 514 / 514, build FE xanh.
 Sau GHEP-FE đủ luồng → UAT toàn luồng theo `UAT_CHECKLIST.md` → T48.2 production.
 
 ## ★★ LÁT PILOT – LỊCH SỬ (backend P0–P9 đã xong; **D-44 bỏ chạy Pilot** – các mục DEFERRED(PILOT) dưới đây chuyển vào BE-2) (D-34)

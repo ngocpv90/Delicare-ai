@@ -27,8 +27,7 @@ namespace AppDelicare.Services.Implement
             {
                 DynamicParameters dynamicParameters = new();
                 dynamicParameters.Add("@SearchText", request.SearchText);
-                //dynamicParameters.Add("@AdministrativeProvinceId", request.AdministrativeProvinceId);
-                //dynamicParameters.Add("@AdministrativeUnitId", request.AdministrativeUnitId);
+                dynamicParameters.Add("@RegionId", request.RegionId);
                 dynamicParameters.Add(ConstantHelper.Page, request.Page);
                 dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);

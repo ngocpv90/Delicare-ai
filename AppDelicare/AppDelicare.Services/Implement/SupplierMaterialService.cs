@@ -135,6 +135,52 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        private string Validate(SupplierMaterialRequest request)
+        {
+            if (_unitOfWork.SupplierRepository.GetSingle(x => x.Id == request.SupplierId && !x.IsDeleted) == null)
+            {
+                return "Nhà cung cấp không tồn tại.";
+            }
+            if (_unitOfWork.IngredientRepository.GetSingle(x => x.Id == request.IngredientId && !x.IsDeleted) == null)
+            {
+                return "Nguyên liệu không tồn tại.";
+            }
+            if (request.EffectiveFrom.HasValue && request.EffectiveTo.HasValue && request.EffectiveFrom.Value.Date > request.EffectiveTo.Value.Date)
+            {
+                return "Ngày hiệu lực đến phải sau ngày hiệu lực từ.";
+            }
+            if ((request.UnitPrice ?? 0) < 0 || (request.MinimumOrderQuantity ?? 0) < 0 || (request.LeadTimeDays ?? 0) < 0)
+            {
+                return "Đơn giá, MOQ và lead time không được âm.";
+            }
+            // Cung NCC + nguyen lieu: khong duoc trung khoang thoi gian hieu luc (null = khong gioi han)
+            var overlap = _unitOfWork.SupplierMaterialRepository
+                .FindBy(x => x.SupplierId == request.SupplierId && x.IngredientId == request.IngredientId && x.Id != request.Id && !x.IsDeleted)
+                .Any(x => (!request.EffectiveFrom.HasValue || !x.EffectiveTo.HasValue || request.EffectiveFrom.Value.Date <= x.EffectiveTo.Value.Date)
+                       && (!x.EffectiveFrom.HasValue || !request.EffectiveTo.HasValue || x.EffectiveFrom.Value.Date <= request.EffectiveTo.Value.Date));
+            if (overlap)
+            {
+                return "Nhà cung cấp đã có thông tin cho nguyên liệu này trong khoảng thời gian hiệu lực đã chọn.";
+            }
+            return string.Empty;
+        }
+
+        // Moi nguyen lieu chi co 1 nha cung cap uu tien
+        private void ClearOtherPreferred(SupplierMaterialRequest request)
+        {
+            if (!request.IsPreferred)
+            {
+                return;
+            }
+            var others = _unitOfWork.SupplierMaterialRepository
+                .FindBy(x => x.IngredientId == request.IngredientId && x.Id != request.Id && x.IsPreferred && !x.IsDeleted).ToList();
+            foreach (var item in others)
+            {
+                item.IsPreferred = false;
+                _unitOfWork.SupplierMaterialRepository.Update(item);
+            }
+        }
+
         private async Task<string> Insert(SupplierMaterialRequest request, string typeSave)
         {
             // T45R: luật nghiệp vụ (spec) – trước khi ghi.
@@ -143,6 +189,7 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
+            ClearOtherPreferred(request);
             var insert = _mapper.Map<SupplierMaterial>(request);
             _unitOfWork.SupplierMaterialRepository.Add(insert);
             await _unitOfWork.SupplierMaterialRepository.CommitAsync(typeSave);
@@ -151,17 +198,18 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(SupplierMaterialRequest request, string typeSave)
         {
+            var exist = _unitOfWork.SupplierMaterialRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
+            if (request.Id == null || exist == null)
+            {
+                return ConstantHelper.Message.RecordNotFoundMessage;
+            }
             // T45R: luật nghiệp vụ (spec) – trước khi ghi.
             var invalid = await CheckRules(request);
             if (!string.IsNullOrEmpty(invalid))
             {
                 return invalid;
             }
-            var exist = _unitOfWork.SupplierMaterialRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
+            ClearOtherPreferred(request);
             var update = _mapper.Map(request, exist);
             _unitOfWork.SupplierMaterialRepository.Update(update);
             await _unitOfWork.SupplierMaterialRepository.CommitAsync(typeSave);
@@ -218,27 +266,12 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
-        /// T45R (spec 4.3): mỗi nguyên liệu chỉ 1 NCC ưu tiên – bật IsPreferred thì bỏ ưu tiên các dòng khác cùng nguyên liệu
-        /// (ghi trong cùng transaction với lần lưu).
+        /// T45R (spec 4.3): kiểm tra luật nghiệp vụ, KHÔNG ghi DB. Việc bỏ ưu tiên các NCC khác (mỗi nguyên liệu chỉ 1 NCC ưu tiên)
+        /// làm ở ClearOtherPreferred và được commit chung với lần lưu chính, để validate lỗi thì không đổi dữ liệu.
         /// </summary>
-        private async Task<string> CheckRules(SupplierMaterialRequest request)
+        private Task<string> CheckRules(SupplierMaterialRequest request)
         {
-            if (!request.IsPreferred)
-            {
-                return string.Empty;
-            }
-            var others = await _unitOfWork.SupplierMaterialRepository.GetAll()
-                .Where(x => x.IngredientId == request.IngredientId && x.IsPreferred && x.Id != request.Id && !x.IsDeleted).ToListAsync();
-            if (others.Count != 0)
-            {
-                others.ForEach(o =>
-                {
-                    o.IsPreferred = false;
-                    _unitOfWork.SupplierMaterialRepository.Update(o);
-                });
-                await _unitOfWork.SupplierMaterialRepository.CommitAsync(ConstantHelper.TypeSave.Update);
-            }
-            return string.Empty;
+            return Task.FromResult(Validate(request));
         }
     }
 }

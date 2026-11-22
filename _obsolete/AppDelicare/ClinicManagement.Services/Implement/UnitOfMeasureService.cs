@@ -124,6 +124,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(UnitOfMeasureRequest request, string typeSave)
         {
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
+            }
             var checkDuplicate = _unitOfWork.UnitOfMeasureRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -141,6 +145,10 @@ namespace AppDelicare.Services.Implement
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            if (string.IsNullOrWhiteSpace(request.Code))
+            {
+                return "Mã không được để trống.";
             }
             var checkDuplicate = _unitOfWork.UnitOfMeasureRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
             if (checkDuplicate != null)
@@ -160,7 +168,11 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
             var checkForeignKey = (await _auditChangeService.GetColumnNameForeignKey()).ListData
-                .Where(x => (x.ColumnName ?? string.Empty).Contains(nameof(UnitOfMeasure))).ToList();
+                .Where(x => (x.ColumnName ?? string.Empty).Contains(nameof(UnitOfMeasure))
+                    // UOM duoc tham chieu qua cac cot ...UnitId (UnitId, BaseUnitId, DefaultUnitId, YieldUnitId, FromUnitId, ToUnitId)
+                    || ((x.ColumnName ?? string.Empty).EndsWith("UnitId")
+                        && !(x.ColumnName ?? string.Empty).Contains("OrganizationUnit")
+                        && !(x.ColumnName ?? string.Empty).Contains("AdministrativeUnit"))).ToList();
             if (checkForeignKey.Count != 0)
             {
                 foreach (var item in checkForeignKey)
