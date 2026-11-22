@@ -68,6 +68,11 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);
                 dynamicParameters.Add(ConstantHelper.SortOrder, request.SortOrder);
                 var list = (await _dapperRepository.QueryMultipleUsingStoreProcAsync<OrderReconciliationViewModel>("uspOrderReconciliation_GetAll", dynamicParameters)).ToList();
+                // Bản đối soát lập trước 2026-11-22 chưa lưu suất SX / đóng gói → tính khi xem (không ghi lại).
+                foreach (var x in list.Where(x => x.ProducedQty == null && x.PackedQty == null))
+                {
+                    (x.ProducedQty, x.PackedQty) = await ReconciliationChain.ComputeAsync(_unitOfWork.DbContext, x.OrderId);
+                }
                 if (list.Count != 0)
                 {
                     int i = 0;
@@ -92,11 +97,16 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        public IResults<OrderReconciliation> GetAllData()
+        public async Task<IResults<OrderReconciliation>> GetAllData()
         {
             try
             {
-                var list = _unitOfWork.OrderReconciliationRepository.GetAll().Where(x => !x.IsDeleted).ToList();
+                var list = await _unitOfWork.DbContext.OrderReconciliation.AsNoTracking().Where(x => !x.IsDeleted).ToListAsync();
+                // Bản đối soát lập trước 2026-11-22 chưa lưu suất SX / đóng gói → tính khi xem (AsNoTracking – không ghi lại).
+                foreach (var x in list.Where(x => x.ProducedQty == null && x.PackedQty == null))
+                {
+                    (x.ProducedQty, x.PackedQty) = await ReconciliationChain.ComputeAsync(_unitOfWork.DbContext, x.OrderId);
+                }
                 return new Results<OrderReconciliation>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
@@ -185,7 +195,7 @@ namespace AppDelicare.Services.Implement
         /// OrderedQuantity = tổng suất đơn; DeliveredQuantity / suất nhận = Σ POD; AcceptedQuantity = suất phục vụ (0 ≤ phục vụ ≤ suất nhận; phục vụ + trả về + hủy ≤ suất nhận);
         /// VarianceQty = phục vụ − đặt; VariancePercent = VarianceQty ÷ đặt × 100 (2 số lẻ); Status = Khớp nếu chênh 0, ngược lại Chênh lệch;
         /// FinalAmount = giá trị đơn × số suất tính tiền ÷ suất đặt (làm tròn đồng) – số suất tính tiền theo <c>BusinessRules:ReconciliationBillingBasis</c>
-        /// (mặc định SERVED, PROPOSED – GAP-DLV-05). ProducedQty / PackedQty để trống (mẻ không gắn đơn – GAP-DLV-05). Ghi lại được khi chưa đóng.
+        /// (mặc định SERVED, PROPOSED – GAP-DLV-05). ProducedQty / PackedQty tính theo <see cref="ReconciliationChain"/> (UAT 2026-11-22). Ghi lại được khi chưa đóng.
         /// </summary>
         public async Task<IResult<OrderReconciliationDetailModel>> Reconcile(OrderReconcileRequest request)
         {
@@ -241,6 +251,7 @@ namespace AppDelicare.Services.Implement
                 reconciliation.OrderedQty = ordered;
                 reconciliation.DeliveredQuantity = delivered;
                 reconciliation.DeliveredQty = delivered;
+                (reconciliation.ProducedQty, reconciliation.PackedQty) = await ReconciliationChain.ComputeAsync(_unitOfWork.DbContext, order.Id);
                 reconciliation.AcceptedQuantity = served;
                 reconciliation.AcceptedQty = served;
                 reconciliation.VarianceQty = variance;
@@ -314,6 +325,8 @@ namespace AppDelicare.Services.Implement
                 }
                 reconciliation.Status = ReconciliationStatus.Closed;
                 reconciliation.Remark = remark;
+                // Chốt: lấy số sản xuất / đóng gói cuối cùng của đơn.
+                (reconciliation.ProducedQty, reconciliation.PackedQty) = await ReconciliationChain.ComputeAsync(_unitOfWork.DbContext, reconciliation.OrderId);
                 _unitOfWork.OrderReconciliationRepository.Update(reconciliation);
                 var order = _unitOfWork.OrderRepository.GetSingle(o => o.Id == reconciliation.OrderId && !o.IsDeleted);
                 if (order != null && order.Status == OrderStatus.Delivered)
@@ -517,6 +530,11 @@ namespace AppDelicare.Services.Implement
                 return null;
             }
             var (ordered, delivered, accepted, pods, amount) = await FiguresAsync(order);
+            if (reconciliation.ProducedQty == null && reconciliation.PackedQty == null)
+            {
+                // Bản lập trước 2026-11-22: tính khi xem / in (bản ghi AsNoTracking – không lưu).
+                (reconciliation.ProducedQty, reconciliation.PackedQty) = await ReconciliationChain.ComputeAsync(db, order.Id);
+            }
             ReconcileNote? note = null;
             try
             {
