@@ -2,7 +2,7 @@
 
 ## 1. Bạn là ai
 
-- Nhóm quyền: **QA** (Khối QA/QC và ATTP 4.1–4.5) và QA/QC bếp (**OPS-KIT-QA**, dùng nhóm **OPS-KIT**). QA được cấp thêm **"Duyệt – Phiếu QC đầu vào"**.
+- Nhóm quyền: **QA** (Khối QA/QC và ATTP 4.1–4.5) và QA/QC bếp (**OPS-KIT-QA**, dùng nhóm **OPS-KIT**). QA được cấp thêm **"Phê duyệt › Phiếu QC đầu vào"**.
 - Bot dùng: **Vận hành** (phân hệ 🧽 ATTP / QC); trưởng QA được cấp thêm bot **Điều hành**.
 - Việc chính: QC nguyên liệu đầu vào, sự cố NCC, checklist ATTP theo ca / mẻ, nhật ký nhiệt độ, QC thành phẩm (mẻ), vệ sinh khay / hộp 6 bước.
 

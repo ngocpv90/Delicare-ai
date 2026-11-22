@@ -441,7 +441,7 @@
   }
   function localSearch(q) {
     const res = [];
-    Object.values(FN).forEach(f => { if ((f.name + ' ' + f.fn + ' ' + f.id).toLowerCase().includes(q)) res.push({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + f.ph, i: 'clipboard' }); });
+    Object.values(FN).forEach(f => { if ((f.name + ' ' + f.fn + ' ' + f.id).toLowerCase().includes(q)) res.push({ h: APP.href(f.id), t: f.name, s: 'Chức năng · ' + (f.grp || f.ph), i: 'clipboard' }); });
     Object.keys(Store.schema.tables).forEach(t => { if (t.toLowerCase().includes(q)) res.push({ h: APP.href('dbx-explorer?t=' + t), t: 'dbo.' + t, s: 'Bảng DB', i: 'database' }); });
     [['Customer', 'crm-customer'], ['Order', 'crm-order'], ['Ingredient', 'scm-ingredient'], ['Dishe', 'menu-dish'], ['Supplier', 'scm-supplier'], ['MaterialLot', 'scm-lot'], ['Employee', 'adm-employee'], ['PurchaseOrder', 'scm-po']].forEach(([t, sid]) => Store.rows(t).forEach(r => { const l = Store.label(t, r); if (l.toLowerCase().includes(q) && res.length < 40) res.push({ t: l, s: t + ' · mở chi tiết', i: 'eye', open: [t, r.Id, sid] }); }));
     showResults(res);

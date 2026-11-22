@@ -5,7 +5,7 @@ Form: số `10.8231`, ngày `yyyy-MM-dd`, ngày giờ `yyyy-MM-ddTHH:mm:ss`, dan
 Mọi action ghi nhận **form**, đọc = GET query. Thử nhanh cả luồng (1 bộ `[DEMO]` tự đủ, đã chạy trên DB dev): `docs/api-tests/be2.6-hr.http`.
 
 Màn hình (đã có trong seed menu / quyền T07 – **không seed mới**): `#/hr-shift-assign` (Lịch phân ca), `#/hr-attendance` (Chấm công theo ca), `#/hr-leave` (Đơn xin nghỉ),
-`#/hr-swap` (Đơn đổi ca); hộp duyệt `#/wf-inbox?type=hr-leave` ("Duyệt – Đơn xin nghỉ"), `#/wf-inbox?type=hr-swap` ("Duyệt – Đơn đổi ca") – seed cho CEO / COO / FIN-HR.
+`#/hr-swap` (Đơn đổi ca); hộp duyệt `#/wf-inbox?type=hr-leave` ("Phê duyệt › Đơn xin nghỉ"), `#/wf-inbox?type=hr-swap` ("Phê duyệt › Đơn đổi ca") – seed cho CEO / COO / FIN-HR.
 Danh mục: `GET MetaData/GetReferenceLists?name=LeaveType` (loại nghỉ), `name=AttendanceSource` (hình thức chấm công); trạng thái: `MetaData/GetStatuses` (`ShiftAssignment.AssignmentStatus`,
 `LeaveRequest.RequestStatus`, `ShiftSwapRequest.RequestStatus`, `AttendanceEvent.EventType`).
 
@@ -102,7 +102,7 @@ Số đơn `DN-YYMMDD-NNNN`. Chặn: trùng khoảng ngày với đơn Chờ duy
 { "request": { "id": "…", "requestNo": "DN-261117-0004", "employeeId": "…", "fromDate": "2027-01-12T00:00:00", "toDate": "2027-01-13T00:00:00", "leaveTypeCode": "ANNUAL",
     "reason": "[DEMO] về quê", "requestStatus": "Pending", "approvalRequestId": "…", "submittedAt": "…" },
   "employeeCode": "DEMOB26B-NV2", "employeeName": "[DEMO] Trần Thị Bình", "leaveTypeName": "Nghỉ phép năm", "statusName": "Chờ duyệt", "days": 2, "approvalRequestNo": "XN-261117-…",
-  "pendingApproval": { "id": "…", "requestNo": "XN-…", "stepNo": 1, "stepCount": 1, "screenId": "hr-leave", "stepName": "Duyệt – Đơn xin nghỉ", "dueAt": "…", "isOverdue": false },
+  "pendingApproval": { "id": "…", "requestNo": "XN-…", "stepNo": 1, "stepCount": 1, "screenId": "hr-leave", "stepName": "Phê duyệt › Đơn xin nghỉ", "dueAt": "…", "isOverdue": false },
   "listAffectedAssignment": [ { "id": "…", "workDate": "2027-01-12T00:00:00", "shiftCode": "TRUA", "status": "Planned", "isDeleted": false } ],
   "listWarning": [ "Duyệt đơn sẽ bỏ ca TRUA ngày 12/01/2027 đã phân" ], "allowedActions": [ "cancel", "approve", "reject" ] }
 ```

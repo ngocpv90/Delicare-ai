@@ -48,7 +48,7 @@ So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** 
 | 4 | `sp/uspUser_GetAll.sql` (sửa) | T45R.8 | Thêm `@IsActive` |
 | 5 | `seed/00_Admin_seed.sql` (sửa) | T48.0 | Tạo `admin` nếu chưa có – nhận hash **PBKDF2** (biến sqlcmd `AdminUserName`, `AdminPasswordHash` – truyền bằng `:setvar`, không dùng `-v`, T48.3); chỉ chạy qua `Deploy-Database.ps1 -AdminPassword` hoặc `db-init.sh` (`ADMIN_PASSWORD`, khi chưa có admin) |
 | 6 | `seed/OrganizationUnit_seed.sql` (không đổi) | T07 | Cơ cấu tổ chức (chạy trước để các seed sau có công ty) |
-| 7 | `seed/ObjectMenu_seed.sql` (sửa) | T13, T15.1 | + mục "Duyệt – Đơn đặt suất ăn" (`#/wf-inbox?type=crm-order`), "Duyệt – Đơn mua hàng (Giám đốc)" (`#/wf-inbox?type=scm-po-director`) |
+| 7 | `seed/ObjectMenu_seed.sql` (sửa) | T13, T15.1 | + mục "Phê duyệt › Đơn đặt suất ăn" (`#/wf-inbox?type=crm-order`), "Phê duyệt › Đơn mua hàng (Giám đốc)" (`#/wf-inbox?type=scm-po-director`) |
 | 8 | `seed/ObjectMenu_disable_legacy.sql` (mới) | T45R.8 (D-37) | Tắt 26 menu app cũ (không xóa) |
 | 9 | `seed/UserRole_seed.sql` (sửa) | T13, T15.1 | Quyền duyệt 2 mục trên cho nhóm CEO |
 | 10 | `seed/Shift_seed.sql` (không đổi) | T21.1 | 4 ca `SANG_6H` / `TRUA` / `TOI` / `DEM_23H` (Pilot chạy 4 ca – T17.1) |
@@ -109,4 +109,4 @@ Cả hai chạy lại bao nhiêu lần cũng được: migration đã chạy th�
 | `DocumentStorage:RootPath`, `MaxFileSizeMb`, `AllowedExtensions`, `Categories` | `App_Data/DocumentFiles`, 20, pdf/jpg/jpeg/png/xlsx/docx, signature/photo/evidence/contract/other | BE2.7 | Tệp đính kèm ngoài wwwroot (biến môi trường `DocumentStorage__RootPath` để đổi chỗ) |
 | `Licenses:GemBox` (bí mật – user-secrets / biến môi trường `Licenses__GemBox`) | – | BE2.7 | Mẫu in Word đủ trang (thiếu → bản dùng thử) |
 
-Đã chạy: DB dev `AppDelicare` (2026-11-17, mục 1–4, 6–11 theo thứ tự trên, `-f 65001`) và staging `AppDelicare_Staging` (qua `Deploy-Database.ps1`). Tên tiếng Việt bị lỗi font từ lần chạy seed trước (thiếu `-f 65001`: tên ca, ghi chú đơn vị, tên công ty, mục "Duyệt – Đơn đặt suất ăn") đã sửa bằng `deploy/db/Repair-VietnameseText.ps1` (dev 44 giá trị, staging 9).
+Đã chạy: DB dev `AppDelicare` (2026-11-17, mục 1–4, 6–11 theo thứ tự trên, `-f 65001`) và staging `AppDelicare_Staging` (qua `Deploy-Database.ps1`). Tên tiếng Việt bị lỗi font từ lần chạy seed trước (thiếu `-f 65001`: tên ca, ghi chú đơn vị, tên công ty, mục "Phê duyệt › Đơn đặt suất ăn") đã sửa bằng `deploy/db/Repair-VietnameseText.ps1` (dev 44 giá trị, staging 9).

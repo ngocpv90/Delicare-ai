@@ -18,7 +18,7 @@ namespace AppDelicare.Model.Model
         /// <summary>BE2.3: cấp đang chờ / tổng số cấp.</summary>
         public int StepNo { get; set; } = 1;
         public int StepCount { get; set; } = 1;
-        /// <summary>BE2.3: tên bước = tên mục menu "Duyệt – …" của bước.</summary>
+        /// <summary>BE2.3: tên bước = tên mục menu "Phê duyệt › …" của bước.</summary>
         public string? StepName { get; set; }
         /// <summary>BE2.3: hạn của bước đang chờ; quá hạn → <see cref="IsOverdue"/> (cờ, không job – D-45).</summary>
         public DateTime? DueAt { get; set; }

@@ -350,7 +350,7 @@
             public static readonly string ReceivingTempOutOfRange = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C – vùng loại, chỉ kết luận KHONG_DAT";
             public static readonly string ReceivingTempConditional = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C (≤ {3} °C: nhận có điều kiện – cần lý do, lô ưu tiên dùng trước)";
             public static readonly string ReceivingTempMissingWarning = "Cảnh báo: {0} ({1}) chưa có nhiệt độ nhận – bắt buộc đo trước khi kết luận QC";
-            public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Duyệt – Đơn mua hàng (Giám đốc)\")";
+            public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Phê duyệt › Đơn mua hàng (Giám đốc)\")";
             // T17 – sản xuất theo mẻ (P7)
             public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất được tạo bằng MaterialRequirement/Calculate (KH- theo ngày sản xuất)";
             public static readonly string PlanUpdateBlocked = "Trạng thái / số / ngày kế hoạch chỉ đổi qua thao tác nghiệp vụ (Approve / Release) – dòng món sửa qua ProductionPlanLine khi kế hoạch còn Nháp";

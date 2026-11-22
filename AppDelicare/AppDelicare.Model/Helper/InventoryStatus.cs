@@ -87,7 +87,7 @@ namespace AppDelicare.Model.Helper
     public static class StockAdjustmentStatus
     {
         public const string BusinessType = "STOCK_ADJUSTMENT";
-        /// <summary>Mục quyền duyệt <c>#/wf-inbox?type=scm-adjustment</c> "Duyệt – Phiếu điều chỉnh tồn" (đã có từ T07).</summary>
+        /// <summary>Mục quyền duyệt <c>#/wf-inbox?type=scm-adjustment</c> "Phê duyệt › Phiếu điều chỉnh tồn" (đã có từ T07).</summary>
         public const string ScreenId = "scm-adjustment";
     }
 

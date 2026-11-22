@@ -5,10 +5,10 @@ namespace AppDelicare.Services.Implement.Approval
 {
     /// <summary>
     /// T15 – duyệt đơn mua NCC 1 cấp (BusinessType PURCHASE_ORDER, màn scm-po; quyền duyệt = mục menu <c>#/wf-inbox?type=scm-po</c>
-    /// "Duyệt – Đơn mua hàng", D-31). Nội dung được duyệt = trạng thái + NCC + tổng tiền + dòng (sửa sau khi gửi → không duyệt được).
+    /// "Phê duyệt › Đơn mua hàng", D-31). Nội dung được duyệt = trạng thái + NCC + tổng tiền + dòng (sửa sau khi gửi → không duyệt được).
     /// Duyệt → Đã duyệt; từ chối → về Nháp (lý do ghi vào PO).
     /// T15.1 (D-11, anh chốt 2026-11-16): PO tổng ≥ <c>BusinessRules:PurchaseOrderDirectorApprovalAmount</c> chỉ người có quyền mục
-    /// <c>#/wf-inbox?type=scm-po-director</c> "Duyệt – Đơn mua hàng (Giám đốc)" duyệt được (vẫn 1 cấp).
+    /// <c>#/wf-inbox?type=scm-po-director</c> "Phê duyệt › Đơn mua hàng (Giám đốc)" duyệt được (vẫn 1 cấp).
     /// </summary>
     public class PurchaseOrderApprovalHandler(IPurchaseOrderService purchaseOrderService) : IApprovalHandler
     {

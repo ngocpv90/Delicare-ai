@@ -4,8 +4,8 @@
 ### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
 ### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
 ### Chuẩn bị: đề nghị mua Nháp từ MaterialRequirement/Calculate (docs/api-tests/p5-mrp.http) hoặc PurchaseRequest/Insert + PurchaseRequestLine/Insert;
-### bảng giá NCC (SupplierMaterial) cho mọi nguyên liệu; người duyệt có quyền mục "Duyệt – Đơn mua hàng" (#/wf-inbox?type=scm-po) hoặc admin;
-### T15.1: PO ≥ 50 triệu cần quyền mục "Duyệt – Đơn mua hàng (Giám đốc)" (#/wf-inbox?type=scm-po-director).
+### bảng giá NCC (SupplierMaterial) cho mọi nguyên liệu; người duyệt có quyền mục "Phê duyệt › Đơn mua hàng" (#/wf-inbox?type=scm-po) hoặc admin;
+### T15.1: PO ≥ 50 triệu cần quyền mục "Phê duyệt › Đơn mua hàng (Giám đốc)" (#/wf-inbox?type=scm-po-director).
 @base = http://localhost:5125
 @user = admin
 @password = admin

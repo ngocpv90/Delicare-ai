@@ -2,7 +2,7 @@
 
 ## 1. Bạn là ai
 
-- Nhóm quyền: **FIN-HR** (3.2 Nhân sự – trưởng phòng / chuyên viên). Nhóm này có quyền sửa mọi màn `hr-*`, `wf-*` và được cấp **"Duyệt – Đơn nghỉ phép"**, **"Duyệt – Đơn đổi ca"**, **"Duyệt – Hộp phê duyệt"**.
+- Nhóm quyền: **FIN-HR** (3.2 Nhân sự – trưởng phòng / chuyên viên). Nhóm này có quyền sửa mọi màn `hr-*`, `wf-*` và được cấp **"Phê duyệt › Đơn nghỉ phép"**, **"Phê duyệt › Đơn đổi ca"**, **"Phê duyệt › Hộp phê duyệt"**.
 - Mọi nhân viên có tài khoản web tự chấm công và lập đơn nghỉ / đổi ca ở màn **Việc của tôi** (`hr-my`, không cần quyền màn nào – xem 6.2).
 - Bot: **Vận hành** (👥 Nhân sự: Ai chưa vào ca, chấm hộ; 👤 Cá nhân: chấm công, lịch ca, xin nghỉ, đổi ca). Trưởng phòng NS được cấp thêm bot **Điều hành**.
 

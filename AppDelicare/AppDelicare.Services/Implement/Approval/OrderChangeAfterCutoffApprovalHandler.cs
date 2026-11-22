@@ -7,7 +7,7 @@ namespace AppDelicare.Services.Implement.Approval
 {
     /// <summary>
     /// BE2.2 – thêm / sửa đơn sau giờ chốt (BusinessType ORDER_CHANGE_AFTER_CUTOFF, BUSINESS_RULES §2 "chỉ ghi khi đã được duyệt").
-    /// Quyền duyệt = mục menu <c>#/wf-inbox?type=crm-order</c> "Duyệt – Đơn đặt suất ăn" (dùng chung với lệch suất ORDER_DEVIATION – không thêm mục menu, PROPOSED D-51).
+    /// Quyền duyệt = mục menu <c>#/wf-inbox?type=crm-order</c> "Phê duyệt › Đơn đặt suất ăn" (dùng chung với lệch suất ORDER_DEVIATION – không thêm mục menu, PROPOSED D-51).
     /// Engine 1 cấp T12; BE2.3 có thể chuyển nhiều cấp (handler không đổi). Đề xuất (số suất mới / dòng mới) lưu trong PayloadJson.proposal.
     /// </summary>
     public class OrderChangeAfterCutoffApprovalHandler(IUnitOfWork unitOfWork, IOrderService orderService) : IApprovalHandler

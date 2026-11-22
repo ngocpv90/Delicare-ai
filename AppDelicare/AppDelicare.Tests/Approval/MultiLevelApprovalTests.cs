@@ -39,7 +39,7 @@ namespace AppDelicare.Tests.Approval
                         ?? db.ObjectMenu.Local.FirstOrDefault(m => m.MetaLink == link);
                     if (menu == null)
                     {
-                        menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Duyệt – " + link, MetaLink = link, IsActive = true, LevelShow = 2 };
+                        menu = new ObjectMenu { Id = Guid.NewGuid(), Name = link, MetaLink = link, IsActive = true, LevelShow = 2 };
                         db.ObjectMenu.Add(menu);
                     }
                     db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = group, ObjectMenuId = menu.Id, AllowAccess = true, AllowAdd = true, AllowEdit = true });

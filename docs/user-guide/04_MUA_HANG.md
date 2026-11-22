@@ -2,7 +2,7 @@
 
 ## 1. Bạn là ai
 
-- Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – dùng chung với thủ kho (`05_KHO.md`). Trưởng bộ phận mua hàng được cấp thêm **"Duyệt – Đề nghị mua hàng (cấp 1)"**.
+- Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – dùng chung với thủ kho (`05_KHO.md`). Trưởng bộ phận mua hàng được cấp thêm **"Phê duyệt › Đề nghị mua hàng (cấp 1)"**.
 - Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); trưởng bộ phận được cấp thêm bot **Điều hành**.
 - Việc chính: tính nhu cầu nguyên liệu (MRP) cho ngày sản xuất, lập và gửi duyệt đề nghị mua, chuyển thành đơn mua (PO) theo NCC, gửi NCC, theo dõi hàng về, quản lý bảng giá NCC.
 
@@ -64,7 +64,7 @@ Danh sách: Số PO, NCC, Đề nghị mua, Ngày đặt, Giao dự kiến, Giá
 | Nút trên dòng | Khi nào | Kết quả |
 |---|---|---|
 | **In** | Mọi lúc | Tải Đơn đặt hàng NCC (có VAT theo cấu hình) |
-| **Gửi duyệt** | Nháp | PO < 50 triệu: duyệt mục "Duyệt – Đơn mua hàng"; PO ≥ 50 triệu: "Duyệt – Đơn mua hàng (Giám đốc)". PO dưới ngưỡng tự duyệt (nếu cấu hình) được duyệt ngay |
+| **Gửi duyệt** | Nháp | PO < 50 triệu: duyệt mục "Phê duyệt › Đơn mua hàng"; PO ≥ 50 triệu: "Phê duyệt › Đơn mua hàng (Giám đốc)". PO dưới ngưỡng tự duyệt (nếu cấu hình) được duyệt ngay |
 | **Gửi NCC** | Đã duyệt | Chỉ **đánh dấu** đã gửi (hệ thống chưa tự gửi email / Zalo) → Đã gửi NCC. Gửi tệp in cho NCC bằng kênh thường dùng |
 | **Nhận hàng** | Đã duyệt / Đã gửi NCC / Nhận một phần | Thủ kho lập phiếu nhập (xem `05_KHO.md` mục 4.1) |
 | **Đóng** | Nhận một phần / Đã nhận đủ | → Đóng (không nhận thêm) |

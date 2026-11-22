@@ -129,7 +129,7 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T13: Nháp → Đã duyệt. Quyền duyệt = mục "Duyệt – Thực đơn &amp; phiên bản" (#/wf-inbox?type=menu-menu, D-31).</summary>
+        /// <summary>T13: Nháp → Đã duyệt. Quyền duyệt = mục "Phê duyệt › Thực đơn &amp; phiên bản" (#/wf-inbox?type=menu-menu, D-31).</summary>
         [Security.Permission("menu-menu", PermissionAction.Approve)]
         [HttpPost("Approve")]
         public async Task<IActionResult> Approve([FromForm] MenuActionRequest request)
