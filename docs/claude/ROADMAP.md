@@ -11,9 +11,11 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 3. ~~UI-5~~ ✅ hoàn thiện form khách hàng (xong 2026-11-21, đã gộp `main`).
 4. ~~UI-2R~~ ✅ bố cục 1/3 – 2/3 + khối thông tin rút gọn (xong 2026-11-21).
 5. ~~MENU-1~~ ✅ bỏ tiền tố "Duyệt – " ở 19 mục menu Phê duyệt (xong 2026-11-21; DB có sẵn: anh chạy `DB/scripts/MENU1_rename_approve_menu.sql` sau backup).
-6. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
-7. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
-8. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
+6. **ORD-OPT-1** đăng ký suất theo lựa chọn + thực đơn chung (D-74) – làm ngay sau task đang dở.
+7. **MENU-2** đổi tên toàn bộ menu + ẩn nhóm Database Architecture (D-75).
+8. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
+9. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
+10. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
 
 Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/user-guide/*` liên quan; xong bước nào báo anh mở thử giao diện bước đó.
 
@@ -102,6 +104,153 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 - **UI-2.5 Kiểm tra + tài liệu:** build FE xanh, test BE xanh; mở thử với 1 khách doanh nghiệp + 1 khách cá nhân trên DB dev, 3 cỡ màn hình; người không có quyền một màn thì không thấy tab đó; cập nhật `docs/user-guide/02_KINH_DOANH.md` (mục khách hàng) và `10_DIEM_PHAT.md` nếu liên quan.
 
 **AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
+
+## ★ MENU-2 – ĐỔI TÊN TOÀN BỘ MENU CHO NGẮN, DỄ HIỂU (D-75, anh chốt 2026-11-22) · `TODO`
+
+> Nguồn: chat tài liệu 2026-11-22, danh sách lấy từ `DB/seed/ObjectMenu_seed.sql` (11 nhóm, 150 mục). **Chỉ đổi tên + ẩn nhóm Database Architecture** – không đổi MetaLink, thứ tự, nhóm cha, quyền đã gán. Không sắp xếp lại nhóm. Claude Code làm BE + FE (D-65). Không đổi cấu trúc bảng.
+
+**Quy tắc đặt tên (cho mọi màn mới sau này):** ngắn, từ nghiệp vụ quen thuộc; **không tiếng Anh / thuật ngữ kỹ thuật** (ledger, bin, MOQ, NCR, POD, KPI, ObjectMenu, 360°…); màn bảng con = "Chi tiết …"; tên mục Phê duyệt = tên màn gốc. Mục không có trong bảng dưới **giữ tên**.
+
+**Bảng đổi tên (110 mục, khóa theo MetaLink):**
+
+| # | MetaLink | Tên cũ | Tên mới |
+|---|---|---|---|
+| 1 | `#/group/01` | Tổng quan điều hành | **Điều hành** |
+| 2 | `#/dash-exec` | Tổng quan điều hành | **Bảng điều hành** |
+| 3 | `#/group/02` | Kinh doanh & Đơn hàng | **Kinh doanh** |
+| 4 | `#/crm-customer` | Hồ sơ khách hàng 360° | **Khách hàng** |
+| 5 | `#/crm-contact` | Đầu mối liên hệ khách hàng | **Người liên hệ** |
+| 6 | `#/crm-location` | Điểm giao hàng & khung giờ nhận | **Điểm giao hàng** |
+| 7 | `#/crm-price-policy` | Chính sách giá theo KH/HĐ | **Chính sách giá** |
+| 8 | `#/crm-contract` | Hợp đồng suất ăn | **Hợp đồng** |
+| 9 | `#/crm-contract-meal` | Loại suất theo hợp đồng | **Loại suất & đơn giá** |
+| 10 | `#/crm-order` | Đơn đặt suất ăn | **Đơn đặt suất** |
+| 11 | `#/crm-order-line` | Số lượng theo ca / loại suất | **Chi tiết đơn đặt suất** |
+| 12 | `#/crm-reconciliation` | Đối soát Đặt–SX–Đóng–Giao–Nhận | **Đối soát suất ăn** |
+| 13 | `#/menu-dish` | Danh mục món ăn | **Món ăn** |
+| 14 | `#/menu-recipe` | Công thức & phiên bản | **Công thức chế biến** |
+| 15 | `#/menu-recipe-line` | Định lượng nguyên liệu | **Chi tiết định lượng** |
+| 16 | `#/menu-menu` | Thực đơn & phiên bản | **Thực đơn tuần** |
+| 17 | `#/menu-menu-line` | Lịch món theo ngày/bữa | **Chi tiết thực đơn** |
+| 18 | `#/menu-assignment` | Gán thực đơn cho KH / điểm giao / loại suất | **Thực đơn riêng cho khách** |
+| 19 | `#/scm-supplier` | Hồ sơ nhà cung cấp | **Nhà cung cấp** |
+| 20 | `#/scm-ingredient` | Danh mục nguyên liệu | **Nguyên liệu** |
+| 21 | `#/scm-supplier-material` | Bảng giá & MOQ theo NCC | **Bảng giá nhà cung cấp** |
+| 22 | `#/scm-warehouse` | Danh mục kho | **Kho** |
+| 23 | `#/scm-zone` | Khu vực bảo quản & ngưỡng nhiệt | **Khu bảo quản** |
+| 24 | `#/scm-location` | Vị trí lưu trữ (bin) | **Vị trí kệ** |
+| 25 | `#/scm-inv-policy` | Min / Max / Safety / Reorder | **Định mức tồn kho** |
+| 26 | `#/scm-requirement` | Tính nhu cầu nguyên liệu (MRP) | **Tính nhu cầu nguyên liệu** |
+| 27 | `#/scm-pr-line` | Dòng đề nghị mua | **Chi tiết đề nghị mua** |
+| 28 | `#/scm-po-line` | Dòng đơn mua | **Chi tiết đơn mua** |
+| 29 | `#/scm-gr-line` | Dòng nhập – lô, HSD | **Chi tiết phiếu nhập** |
+| 30 | `#/scm-lot` | Lô & hạn sử dụng (FEFO) | **Lô hàng & hạn dùng** |
+| 31 | `#/scm-inv-txn` | Sổ cái kho (ledger) | **Sổ kho** |
+| 32 | `#/scm-inv-balance` | Tồn kho theo kho / lô | **Tồn kho** |
+| 33 | `#/scm-issue` | Phiếu xuất cho sản xuất | **Phiếu xuất sản xuất** |
+| 34 | `#/scm-issue-line` | Dòng xuất theo lô | **Chi tiết phiếu xuất** |
+| 35 | `#/scm-stockcount-line` | Dòng kiểm kê & chênh lệch | **Chi tiết kiểm kê** |
+| 36 | `#/scm-consumption-var` | Tiêu hao lý thuyết vs thực tế | **Chênh lệch tiêu hao** |
+| 37 | `#/cost-standard` | Giá thành chuẩn theo công thức | **Giá thành chuẩn** |
+| 38 | `#/prod-line` | Dây chuyền & năng lực | **Dây chuyền bếp** |
+| 39 | `#/prod-workstation` | Trạm làm việc bếp | **Trạm bếp** |
+| 40 | `#/prod-plan` | Kế hoạch sản xuất theo ngày/ca | **Kế hoạch sản xuất** |
+| 41 | `#/prod-plan-line` | Dòng kế hoạch theo món | **Chi tiết kế hoạch sản xuất** |
+| 42 | `#/prod-batch` | Bảng điều độ mẻ (ca × dây chuyền) | **Mẻ nấu** |
+| 43 | `#/prod-output` | Ghi nhận sản lượng | **Sản lượng** |
+| 44 | `#/cost-actual` | Giá thành thực tế theo mẻ/lệnh | **Giá thành thực tế** |
+| 45 | `#/cost-meal` | Giá thành mỗi suất & Margin | **Giá vốn suất ăn** |
+| 46 | `#/prod-waste` | Ghi nhận hao hụt | **Hao hụt** |
+| 47 | `#/group/06` | QC & An toàn thực phẩm | **Chất lượng & ATTP** |
+| 48 | `#/qc-checklist` | Bộ checklist ATTP | **Bộ kiểm tra ATTP** |
+| 49 | `#/qc-checklist-item` | Tiêu chí checklist | **Tiêu chí kiểm tra** |
+| 50 | `#/qc-inspection` | Phiếu QC đầu vào | **Kiểm tra hàng nhập** |
+| 51 | `#/qc-inspection-line` | Tiêu chí QC theo dòng nhập | **Chi tiết kiểm tra hàng nhập** |
+| 52 | `#/qc-checklist-result` | Thực hiện checklist theo ca/mẻ | **Kiểm tra theo ca / mẻ** |
+| 53 | `#/qc-temperature` | Nhật ký nhiệt độ kho/mẻ | **Nhật ký nhiệt độ** |
+| 54 | `#/qc-cleaning` | Mẻ vệ sinh khay/hộp | **Vệ sinh khay hộp** |
+| 55 | `#/qc-cleaning-result` | Checklist vệ sinh | **Kiểm tra vệ sinh** |
+| 56 | `#/qc-supplier-issue` | Sự cố / NCR nhà cung cấp | **Sự cố nhà cung cấp** |
+| 57 | `#/group/07` | Đóng gói & Giao nhận | **Đóng gói & Giao hàng** |
+| 58 | `#/log-vehicle` | Danh mục phương tiện | **Xe giao hàng** |
+| 59 | `#/log-packing-order` | Lệnh đóng suất | **Lệnh đóng gói** |
+| 60 | `#/log-route` | Lập tuyến & điều phối | **Chuyến giao hàng** |
+| 61 | `#/log-stop` | Thứ tự điểm dừng | **Điểm dừng** |
+| 62 | `#/log-event` | Timeline sự kiện giao hàng | **Diễn biến giao hàng** |
+| 63 | `#/log-pod` | Xác nhận giao hàng (POD) | **Xác nhận đã giao** |
+| 64 | `#/log-container-return` | Thu hồi khay/hộp | **Thu hồi khay hộp** |
+| 65 | `#/log-return-inspection` | Kiểm tra vật dụng thu hồi | **Kiểm tra khay hộp thu hồi** |
+| 66 | `#/log-packaging-ledger` | Sổ bao bì theo khách hàng | **Khay hộp theo khách** |
+| 67 | `#/log-packing-result` | Kết quả đóng suất | **Kết quả đóng gói** |
+| 68 | `#/log-gps` | Bản đồ vị trí xe | **Vị trí xe** |
+| 69 | `#/log-complaint` | Khiếu nại khách hàng | **Phản ánh khách hàng** |
+| 70 | `#/log-complaint-history` | Lịch sử xử lý khiếu nại | **Lịch sử xử lý phản ánh** |
+| 71 | `#/group/08` | Nhân sự & Phê duyệt | **Nhân sự** |
+| 72 | `#/hr-shift` | Danh mục ca làm việc (4 ca) | **Ca làm việc** |
+| 73 | `#/hr-shift-assign` | Lịch phân ca nhân sự | **Phân ca** |
+| 74 | `#/hr-attendance` | Chấm công theo ca | **Chấm công** |
+| 75 | `#/wf-inbox` | Hộp phê duyệt tập trung | **Hộp phê duyệt** |
+| 76 | `#/wf-step` | Bước phê duyệt | **Các bước duyệt** |
+| 77 | `#/wf-decision` | Quyết định phê duyệt | **Lịch sử duyệt** |
+| 78 | `#/wf-item` | Đối tượng gắn với yêu cầu | **Chứng từ trong yêu cầu duyệt** |
+| 79 | `#/group/09` | Tích hợp & KPI | **Tích hợp & Chỉ số** |
+| 80 | `#/int-channel` | Kênh Zalo / Telegram / Facebook | **Kênh nhắn tin** |
+| 81 | `#/int-bot` | Cấu hình Bot | **Bot** |
+| 82 | `#/int-identity` | Liên kết tài khoản Zalo/Telegram | **Liên kết tài khoản chat** |
+| 83 | `#/int-inbound` | Tin nhắn vào | **Tin nhắn đến** |
+| 84 | `#/int-outbound` | Tin nhắn ra | **Tin nhắn đi** |
+| 85 | `#/kpi-definition` | Định nghĩa KPI | **Danh mục chỉ số** |
+| 86 | `#/kpi-daily` | KPI ngày | **Chỉ số theo ngày** |
+| 87 | `#/kpi-monthly` | KPI tháng | **Chỉ số theo tháng** |
+| 88 | `#/kpi-refresh` | Nhật ký làm mới KPI | **Nhật ký tính chỉ số** |
+| 89 | `#/adm-company` | Công ty / Pháp nhân | **Công ty** |
+| 90 | `#/adm-orgunit` | Cây đơn vị tổ chức | **Sơ đồ tổ chức** |
+| 91 | `#/adm-employee` | Hồ sơ nhân viên | **Nhân viên** |
+| 92 | `#/adm-person` | Thông tin cá nhân của tài khoản | **Thông tin cá nhân** |
+| 93 | `#/adm-user` | Tài khoản người dùng | **Tài khoản** |
+| 94 | `#/adm-permission` | Ma trận quyền Nhóm × Chức năng | **Phân quyền** |
+| 95 | `#/adm-usergroup` | Nhóm người dùng (Vai trò) | **Nhóm quyền** |
+| 96 | `#/adm-objectmenu` | Cấu hình menu chức năng (ObjectMenu) | **Cấu hình menu** |
+| 97 | `#/adm-position` | Danh mục chức vụ | **Chức vụ** |
+| 98 | `#/adm-admin-unit` | Vùng / Tỉnh / Huyện / Xã | **Địa giới hành chính** |
+| 99 | `#/adm-document` | Kho tài liệu đính kèm | **Tài liệu đính kèm** |
+| 100 | `#/adm-access-log` | Nhật ký máy truy cập (IP/PC) | **Nhật ký truy cập** |
+| 101 | `#/adm-merge-conflict` | Xung đột chuẩn hóa dữ liệu lõi | **Dữ liệu trùng cần gộp** |
+| 102 | `#/adm-reference` | Danh mục tham chiếu (Meal Type, lý do, loại…) | **Danh mục dùng chung** |
+| 103 | `#/wf-inbox?type=menu-recipe` | Công thức & phiên bản | **Công thức chế biến** |
+| 104 | `#/wf-inbox?type=crm-price-policy` | Chính sách giá theo KH/HĐ | **Chính sách giá** |
+| 105 | `#/wf-inbox?type=crm-contract` | Hợp đồng suất ăn | **Hợp đồng** |
+| 106 | `#/wf-inbox?type=menu-menu` | Thực đơn & phiên bản | **Thực đơn tuần** |
+| 107 | `#/wf-inbox?type=crm-order` | Đơn đặt suất ăn | **Đơn đặt suất** |
+| 108 | `#/wf-inbox?type=prod-plan` | Kế hoạch sản xuất theo ngày/ca | **Kế hoạch sản xuất** |
+| 109 | `#/wf-inbox?type=qc-inspection` | Phiếu QC đầu vào | **Kiểm tra hàng nhập** |
+| 110 | `#/wf-inbox?type=wf-inbox` | Hộp phê duyệt tập trung | **Tất cả yêu cầu duyệt** |
+
+**Ẩn:** nhóm `#/group/11` "Database Architecture" + `#/dbx-explorer`, `#/dbx-gap` → `IsActive = 0` (D-58: không làm tra cứu cấu trúc DB). Không xóa dòng.
+
+- **MENU-2.1 Seed + script:** sửa tên trong 150 câu INSERT của `DB/seed/ObjectMenu_seed.sql`; thêm khối **UPDATE idempotent theo MetaLink** (chỉ đổi khi `Name` đang là tên cũ trong bảng trên hoặc tên cũ "Duyệt – …" – không ghi đè tên admin đã tự sửa khác), ghi `ModifiedDate` / `ModifiedBy`; ẩn nhóm 11. Script dữ liệu riêng `DB/scripts/MENU2_rename_all_menu.sql` (chạy thử in trước / sau, anh chạy sau backup).
+- **MENU-2.2 Tiêu đề màn hình:** tiêu đề trang, breadcrumb, tên tab / nút "Mở …" và tiêu đề trong `catalog.js` (FE engine + `docs/mockup/js/data/catalog.js` nếu còn dùng để sinh seed) khớp tên mới; tìm kiếm toàn cục, tab Liên quan, chuông cảnh báo, thông báo bot (`/thucdon`, tin duyệt) không còn tên cũ.
+- **MENU-2.3 Phê duyệt:** tên bước duyệt lấy theo tên menu → yêu cầu mới mang tên mới; yêu cầu cũ giữ tên cũ (không sửa lịch sử). Ma trận phân quyền hiện nhóm cha cạnh tên (tên trùng như "Đơn mua hàng", "Kế hoạch sản xuất" ở nhóm Phê duyệt).
+- **MENU-2.4 Tài liệu:** `docs/user-guide/*` (bảng screen-id › Menu › Mục, các bước thao tác), `ORG_STRUCTURE.md`, `UAT_CHECKLIST.md` thay tên cũ; PROGRESS.
+- **MENU-2.5 Kiểm tra:** build + test xanh; mở thử menu bằng tài khoản admin + 1 tài khoản nhóm Kinh doanh (Chrome headless 1440px + 390px), chụp ảnh `docs/frontend-handoff/assets/menu-2/`; grep code / tài liệu không còn tên cũ ở giao diện.
+
+**Xong khi:** menu và tiêu đề màn hiện đúng 110 tên mới, nhóm Database Architecture không còn hiện, quyền mọi nhóm người dùng không đổi.
+
+## ★ ORD-OPT-1 – ĐĂNG KÝ SUẤT THEO LỰA CHỌN + THỰC ĐƠN CHUNG (D-74, anh chốt 2026-11-22) · `DONE (2026-11-22)` – chi tiết PROGRESS
+
+> Nguồn: thảo luận chat tài liệu 2026-11-22 + file thật `New_Menu_Delicare_202611_W3.xlsx` (sheet 1. Menu, Thứ 2…CN, 4. Menu_Sent, 5. Plan_Order). Mô phỏng: `docs/frontend-handoff/assets/order-by-option-mockup.html` (5 tab). Claude Code làm BE + FE (D-65). **Ngoại lệ luật "không thêm cột": anh duyệt đúng 1 cột `OrderLine.MenuOptionNo` (D-74 d)** – không thêm gì khác; cần thêm nữa thì ghi GAP.
+
+- **ORD-OPT-1.1 Migration:** `DB/migrations/YYYYMMDD_NN_orderline_menu_option.sql` – `ALTER TABLE dbo.OrderLine ADD MenuOptionNo int NULL` (+ CHECK 1–9 nếu phù hợp), chạy lại được (kiểm cột đã có); cập nhật entity / DTO; test migration theo DB-MIGRATIONS. Kiểm ràng buộc UNIQUE / chỉ mục của `OrderLine` (nếu có theo đơn + loại suất + ca) → báo trong PROGRESS, đề xuất cách xử lý, không tự đổi ràng buộc khi chưa hỏi.
+- **ORD-OPT-1.2 Thực đơn chung (D-74 f):** đánh dấu bằng cột loại thực đơn có sẵn (kiểm `Menu`); tra thực đơn áp dụng (`MenuAssignment` resolve + mẫu tạo đơn + MRP) thêm bước cuối = thực đơn chung Đã công bố hiệu lực tại ngày ăn; chặn công bố 2 thực đơn chung chồng hiệu lực; `menu-assignment` "Tra thực đơn áp dụng" hiện cấp *Thực đơn chung*. Không có cột phù hợp → GAP + dừng phần này, làm phần còn lại.
+- **ORD-OPT-1.3 Đơn hàng theo lựa chọn (D-74 b, c):** `Order/GetTemplate` (mẫu tạo đơn) trả theo từng loại suất danh sách lựa chọn của ngày ăn + món trong set; Create / Update dòng nhận `menuOptionNo`; kiểm: lựa chọn có trong thực đơn áp dụng ngày đó, không trùng (loại suất, ca, lựa chọn) trong một đơn, số suất ≥ 0 (0 = bỏ dòng); buổi 1 lựa chọn → 1. Đơn giá = giá loại suất như hiện tại (không đổi `PricePolicy/Resolve`).
+- **ORD-OPT-1.4 Đăng ký suất tuần (API):** `Order/GetWeek` (khách, điểm giao, thứ Hai của tuần → lưới buổi × lựa chọn × ngày + món trong set + số đã có + trạng thái từng ngày) · `Order/SaveWeek` (lưu nháp / xác nhận: tạo hoặc cập nhật mỗi ngày 1 đơn; ngày đã chốt / đang SX bỏ qua và báo lại; xác nhận = Đã xác nhận; cảnh báo lệch dự báo như cũ) · `Order/CopyPreviousWeek` (chỉ trả số gợi ý, không lưu). Quyền theo màn `crm-order`.
+- **ORD-OPT-1.5 Phiếu đăng ký (D-74 h):** bản in / Excel "Phiếu đăng ký suất" theo khách + điểm giao + tuần (từ mẫu Thực đơn gửi khách, thêm ô Số suất); Excel có mã ẩn (ngày, loại suất, lựa chọn) → `Order/ImportWeekSlip` đọc vào lưới (trả về để người dùng xem lại, chưa lưu; sai mẫu / sai tuần / lựa chọn không còn trong thực đơn → báo dòng lỗi).
+- **ORD-OPT-1.6 MRP / kế hoạch SX / chia mẻ / đóng gói (D-74 e):** dòng có `MenuOptionNo` → số phần món = suất lựa chọn × món của set (không chia đều); `BusinessRules:MrpOptionQtyBufferPct` = 0; dòng NULL giữ cách cũ (GAP-MRP-03). Áp cho `MaterialRequirement/Calculate` (+ TopUp), `ProductionPlan/Generate`, `Release` (tỉ lệ ca), `PackingOrder/GenerateFromBatch`. Yêu cầu đổi món đã duyệt vẫn áp như cũ.
+- **ORD-OPT-1.7 Đối soát / giao (D-74 i):** đơn giao, POD, đối soát hiển thị và cộng theo lựa chọn; tiền = Σ suất tính tiền × giá buổi.
+- **ORD-OPT-1.8 FE:** màn mới `crm-order-week` "Đăng ký suất tuần" (menu Kinh doanh, bố cục theo tab 3 mô phỏng: lưới, ô khóa ngày đã chốt, tổng tự cộng, khối Tổng tuần bên phải, 4 nút); `crm-order` tạo / xem đơn: dòng hiện *Lựa chọn N* + món trong set; `menu-menu`: nhãn **Thực đơn chung**, nút **In phiếu đăng ký**; `menu-assignment`: cấp tra *Thực đơn chung*. Seed `ObjectMenu` cho `crm-order-week` (nhóm Kinh doanh, quyền như `crm-order`). Mở thử Chrome headless 1440px + 390px, lưu ảnh `docs/frontend-handoff/assets/ord-opt-1/`.
+- **ORD-OPT-1.9 Tài liệu + test:** test service (đơn theo lựa chọn, tuần, thực đơn chung, MRP không chia đều, dòng cũ NULL không đổi kết quả), full-flow; cập nhật `BUSINESS_RULES.md` §0 / MRP, `docs/user-guide/02_KINH_DOANH.md` (mục đơn hàng + màn mới), `03_KE_HOACH.md` (thực đơn chung, phân công), `20_BOT_TELEGRAM.md` nếu lệnh `/thucdon` đổi; PROGRESS.
+
+**Xong khi:** nhập tuần cho 1 điểm giao (Sáng 3 lựa chọn khác số, Trưa, Tối, Đêm) → 7 đơn đúng số theo lựa chọn; chốt → kế hoạch SX / MRP ra đúng số phần từng món như sheet 5. Plan_Order (vd 2.000 suất LC1 → 4.000 bánh mì Hữu Nghị); khách không phân công riêng dùng thực đơn chung; build + test xanh.
 
 ## ★ MENU-1 – BỎ TIỀN TỐ "DUYỆT – " Ở MENU NHÓM PHÊ DUYỆT (anh yêu cầu 2026-11-22) · `DONE` 2026-11-21
 

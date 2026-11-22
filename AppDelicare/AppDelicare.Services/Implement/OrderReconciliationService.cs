@@ -44,6 +44,14 @@ namespace AppDelicare.Services.Implement
             public string? BillingBasis { get; set; }
             public decimal BillingQuantity { get; set; }
             public decimal OrderAmount { get; set; }
+            /// <summary>ORD-OPT-1.7: suất phục vụ theo dòng đơn (lựa chọn) – null = ghi theo tổng.</summary>
+            public List<ReconcileNoteLine>? Lines { get; set; }
+        }
+
+        private sealed class ReconcileNoteLine
+        {
+            public Guid Id { get; set; }
+            public decimal Served { get; set; }
         }
 
         private static readonly JsonSerializerOptions NoteJson = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -224,7 +232,18 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(string.Format(ConstantHelper.Message.ReconcileNoPod, orderNo));
                 }
-                decimal served = request.ServedQuantity;
+                // ORD-OPT-1.7 (D-74 i): ghi theo dòng đơn (lựa chọn) → suất phục vụ = Σ dòng.
+                var orderLines = await _unitOfWork.DbContext.OrderLine.AsNoTracking().Where(l => l.OrderId == order.Id && !l.IsDeleted).ToListAsync();
+                var perLine = (request.ListLine ?? []).GroupBy(l => l.OrderLineId).Select(g => g.Last()).ToList();
+                if (perLine.Any(l => orderLines.All(o => o.Id != l.OrderLineId)))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.OrderLineNotInOrder, perLine.First(l => orderLines.All(o => o.Id != l.OrderLineId)).OrderLineId));
+                }
+                if (perLine.Any(l => l.ServedQuantity < 0))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ReconcileQuantityInvalid, DeliveryRules.Num(podAccepted)));
+                }
+                decimal served = perLine.Count != 0 ? perLine.Sum(l => l.ServedQuantity) : request.ServedQuantity;
                 decimal returned = request.ReturnedQuantity ?? 0m, wasted = request.WastedQuantity ?? 0m;
                 if (served < 0 || served > podAccepted || returned < 0 || wasted < 0 || served + returned + wasted > podAccepted)
                 {
@@ -245,6 +264,11 @@ namespace AppDelicare.Services.Implement
                     basis = DeliveryCode.BillingServed;
                 }
                 decimal finalAmount = ordered > 0 ? Math.Round(amount * billingQuantity / ordered, 0, MidpointRounding.AwayFromZero) : 0m;
+                if (perLine.Count != 0 && basis == DeliveryCode.BillingServed)
+                {
+                    // D-74 i: tiền = Σ suất tính tiền từng dòng × giá buổi của dòng.
+                    finalAmount = Math.Round(perLine.Sum(l => l.ServedQuantity * (orderLines.First(o => o.Id == l.OrderLineId).UnitPrice ?? 0m)), 0, MidpointRounding.AwayFromZero);
+                }
 
                 var reconciliation = existing ?? new OrderReconciliation { Id = Guid.NewGuid(), OrderId = order.Id };
                 reconciliation.OrderedQuantity = ordered;
@@ -269,6 +293,7 @@ namespace AppDelicare.Services.Implement
                     BillingBasis = basis,
                     BillingQuantity = billingQuantity,
                     OrderAmount = amount,
+                    Lines = perLine.Count == 0 ? null : perLine.Select(l => new ReconcileNoteLine { Id = l.OrderLineId, Served = l.ServedQuantity }).ToList(),
                 }, NoteJson);
                 if (existing == null)
                 {
@@ -546,6 +571,22 @@ namespace AppDelicare.Services.Implement
             }
             var customer = await db.Customer.AsNoTracking().FirstOrDefaultAsync(c => c.Id == order.CustomerId);
             decimal served = reconciliation.AcceptedQuantity;
+            // ORD-OPT-1.7: suất theo dòng đơn (loại suất × lựa chọn).
+            var orderLines = await db.OrderLine.AsNoTracking().Where(l => l.OrderId == order.Id && !l.IsDeleted).ToListAsync();
+            var shiftIds = orderLines.Where(l => l.ShiftId != null).Select(l => l.ShiftId!.Value).Distinct().ToList();
+            var shiftNames = await db.Shift.AsNoTracking().Where(s => shiftIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
+            var optionMap = await MenuOptionRules.ForMenusAsync(db, orderLines.Where(l => l.MenuId != null).Select(l => l.MenuId!.Value), order.MealDate);
+            var listLine = orderLines.OrderBy(l => MenuService.MealRank(l.MealType)).ThenBy(l => l.MenuOptionNo ?? 0).Select(l =>
+            {
+                decimal? lineServed = note?.Lines?.FirstOrDefault(x => x.Id == l.Id)?.Served;
+                return new ReconciliationLineModel
+                {
+                    OrderLineId = l.Id, MealType = l.MealType, ShiftName = l.ShiftId is { } s ? shiftNames.GetValueOrDefault(s) : null, MenuOptionNo = l.MenuOptionNo,
+                    OptionDishText = l.MenuOptionNo is { } no ? MenuOptionRules.Of(optionMap, l.MenuId, l.MealType).FirstOrDefault(o => o.OptionNo == no)?.DishText : null,
+                    OrderedQuantity = l.Quantity, UnitPrice = l.UnitPrice, ServedQuantity = lineServed,
+                    Amount = lineServed is { } q ? Math.Round(q * (l.UnitPrice ?? 0m), 0, MidpointRounding.AwayFromZero) : null,
+                };
+            }).ToList();
             return new OrderReconciliationDetailModel
             {
                 Reconciliation = reconciliation,
@@ -566,6 +607,7 @@ namespace AppDelicare.Services.Implement
                 BillingBasis = note?.BillingBasis,
                 BillingQuantity = note?.BillingQuantity ?? served,
                 ListPod = pods,
+                ListLine = listLine,
                 AllowedActions = (reconciliation.Status is ReconciliationStatus.Matched or ReconciliationStatus.Variance) ? ["reconcile", "close"] : [],
             };
         }

@@ -37,6 +37,15 @@ namespace AppDelicare.Model.Helper
     }
 
     /// <summary>T13 – trạng thái thực đơn (STATUS_CATALOG: Menu.Status, PROPOSED – BA/PO CONFIRM).</summary>
+    /// <summary>ORD-OPT-1.2 (D-74 f): loại thực đơn (<c>Menu.MenuType</c>, ReferenceLists:MenuType). Trống = thực đơn riêng (dữ liệu cũ).</summary>
+    public static class MenuScope
+    {
+        public const string Common = "COMMON";
+        public const string Customer = "CUSTOMER";
+
+        public static bool IsCommon(string? menuType) => string.Equals(menuType?.Trim(), Common, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static class MenuStatus
     {
         public const string Draft = "Draft";

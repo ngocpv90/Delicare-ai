@@ -1,6 +1,8 @@
 /* P1/P3 – Khách hàng 360°, Đơn hàng, Đối soát, Hợp đồng, Dự báo */
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
+  // Thứ tự buổi (BUSINESS_RULES §0): Sáng, Trưa, Tối, Đêm.
+  const mealRank = t => { const i = ['SANG', 'TRUA', 'TOI', 'DEM'].indexOf(String(t || '').toUpperCase()); return i < 0 ? 9 : i; };
   const ORDER_FLOW = ['Draft', 'Submitted', 'Confirmed', 'Locked', 'InProduction', 'Delivered', 'Reconciled'];
   // ---------- Tiện ích cục bộ cho chế độ API ----------
   // API trả camelCase → đổi sang tên cột PascalCase để dùng chung hàm vẽ với dữ liệu trong Store.
@@ -168,7 +170,7 @@
     UI.detail('Order', id, {
       screen: 'crm-order', noEdit: !editable,
       top: `${UI.stepper(ORDER_FLOW.map(s => UI.statusVi('Order', 'Status', s)), i, o.Status === 'Cancelled')}<div data-odlive></div><div class="small muted mt">Khách hàng: <b>${esc(c.DisplayName || c.Name || '')}</b>${c.CustomerType ? ' · ' + esc(UI.statusVi('Customer', 'CustomerType', c.CustomerType) || '') : ''}</div><div class="kpis mt">${UI.kpi('Số dòng suất', U.num(Store.by('OrderLine', 'OrderId', id).length), '', 'clipboard', 'green')}${UI.kpi('Tổng suất', U.num(o.TotalQuantity), '', 'utensils', 'blue')}${UI.kpi('Thành tiền', U.money(o.TotalAmount), '', 'calc', 'orange')}</div>
-        <h3>Chi tiết theo ca / loại suất / điểm giao (OrderLine)</h3><table class="table dc-table dt"><thead><tr><th>Ca<small>ShiftId</small></th><th>Loại suất<small>MealType</small></th><th>Điểm giao<small>Note</small></th><th class="num">Số lượng<small>Quantity</small></th><th class="num">Dự báo<small>Forecast</small></th><th class="num">Đơn giá</th><th class="num">Thành tiền<small>LineAmount</small></th></tr></thead><tbody>${lines.map(l => { const fq = U.sum(fc.filter(x => x.MealType === l.MealType), 'ForecastQuantity'); return `<tr><td>${esc(Store.label('Shift', l.ShiftId))}</td><td>${UI.tag(l.MealType)}</td><td class="small">${esc(l.Note || '')}</td><td class="num">${editable ? `<input type="number" class="input" style="width:90px;text-align:right" data-ql="${l.Id}" value="${l.Quantity}">` : U.num(l.Quantity)}</td><td class="num muted" data-fq="${l.Id}">${fq ? U.num(fq) : '–'}</td><td class="num">${U.money(l.UnitPrice)}</td><td class="num">${U.money(l.LineAmount)}</td></tr>`; }).join('')}</tbody></table>
+        <h3>Chi tiết theo ca / loại suất / điểm giao (OrderLine)</h3><table class="table dc-table dt"><thead><tr><th>Ca<small>ShiftId</small></th><th>Loại suất<small>MealType</small></th><th>Lựa chọn<small>MenuOptionNo</small></th><th>Điểm giao<small>Note</small></th><th class="num">Số lượng<small>Quantity</small></th><th class="num">Dự báo<small>Forecast</small></th><th class="num">Đơn giá</th><th class="num">Thành tiền<small>LineAmount</small></th></tr></thead><tbody>${lines.slice().sort((a, b) => mealRank(a.MealType) - mealRank(b.MealType) || (a.MenuOptionNo || 0) - (b.MenuOptionNo || 0)).map(l => { const fq = U.sum(fc.filter(x => x.MealType === l.MealType), 'ForecastQuantity'); return `<tr><td>${esc(Store.label('Shift', l.ShiftId))}</td><td>${UI.tag(l.MealType)}</td><td data-op="${l.Id}">${l.MenuOptionNo ? `<b>Lựa chọn ${l.MenuOptionNo}</b>` : '<span class="muted">–</span>'}</td><td class="small">${esc(l.Note || '')}</td><td class="num">${editable ? `<input type="number" class="input" style="width:90px;text-align:right" data-ql="${l.Id}" value="${l.Quantity}">` : U.num(l.Quantity)}</td><td class="num muted" data-fq="${l.Id}">${fq ? U.num(fq) : '–'}</td><td class="num">${U.money(l.UnitPrice)}</td><td class="num">${U.money(l.LineAmount)}</td></tr>`; }).join('')}</tbody></table>
         ${editable ? '<div class="small muted mt">Có thể sửa số lượng khi đơn ở trạng thái Nháp / Đã gửi. Sau khi chốt, thay đổi phải qua Yêu cầu đổi món / phê duyệt.</div>' : ''}
         ${dvs.length ? `<h3 class="mt">Đơn giao hàng (DeliveryOrder)</h3>${dvs.map(d => `<div class="spread" style="padding:6px 0;border-bottom:1px solid #F0F2ED"><a href="javascript:void 0" data-open="DeliveryOrder" data-id="${d.Id}">${esc(d.DeliveryNumber)}</a><span class="small">${esc(Store.label('CustomerDeliveryLocation', d.CustomerDeliveryLocationId))}</span>${UI.badge(d.Status, 'DeliveryOrder', 'Status')}</div>`).join('')}` : ''}
         ${rec ? `<h3 class="mt">Đối soát (OrderReconciliation)</h3><div class="kv"><div><label>Đặt</label><span>${U.num(rec.OrderedQuantity)}</span></div><div><label>Sản xuất</label><span>${U.num(rec.ProducedQty)}</span></div><div><label>Giao</label><span>${U.num(rec.DeliveredQuantity)}</span></div><div><label>Nhận</label><span>${U.num(rec.AcceptedQuantity)} (${U.pct(rec.VariancePercent, 2)})</span></div></div>` : ''}`,
@@ -203,7 +205,14 @@
         (d.listWarning || []).forEach(w => info.push(esc(w)));
         const box = dw.querySelector('[data-odlive]');
         if (box && info.length) box.innerHTML = `<div class="notice ${d.isAfterCutoff || d.pendingApprovalNo || (d.listWarning || []).length ? 'warn' : 'info'} mt">${I('alert')}<div>${info.join('<br>')}</div></div>`;
-        (d.listLine || []).forEach(l => { const td = [...dw.querySelectorAll('[data-fq]')].find(n => n.dataset.fq === String(l.id)); if (td) td.textContent = has(l.forecastQuantity) ? U.num(l.forecastQuantity) : '–'; });
+        // Bảng OrderLine chưa tải về (mở ngay sau khi tạo đơn / từ màn khác) → dựng dòng từ Order/GetDetail.
+        if (!lines.length && (d.listLine || []).length) {
+          const tb = [...dw.querySelectorAll('table')].find(t => t.querySelector('th') && /Lựa chọn/.test(t.querySelector('thead').innerText));
+          if (tb) tb.querySelector('tbody').innerHTML = d.listLine.map(l => `<tr><td>${esc(l.shiftName || '')}</td><td>${UI.tag(l.mealType)}</td><td data-op="${l.id}">${l.menuOptionNo ? `<b>Lựa chọn ${l.menuOptionNo}</b>` : '<span class="muted">–</span>'}</td><td class="small">${esc(l.note || '')}</td><td class="num">${acts.includes('updateLines') ? `<input type="number" class="input" style="width:90px;text-align:right" data-ql="${l.id}" value="${l.quantity}">` : U.num(l.quantity)}</td><td class="num muted" data-fq="${l.id}">–</td><td class="num">${U.money(l.unitPrice)}</td><td class="num">${U.money(l.lineAmount)}</td></tr>`).join('');
+        }
+        (d.listLine || []).forEach(l => { const td = [...dw.querySelectorAll('[data-fq]')].find(n => n.dataset.fq === String(l.id)); if (td) td.textContent = has(l.forecastQuantity) ? U.num(l.forecastQuantity) : '–';
+          // ORD-OPT-1.8: dòng theo lựa chọn hiện món trong set.
+          const op = [...dw.querySelectorAll('[data-op]')].find(n => n.dataset.op === String(l.id)); if (op && l.menuOptionNo) op.innerHTML = `<b>Lựa chọn ${l.menuOptionNo}</b>${l.optionDishText ? `<div class="small muted">${esc(l.optionDishText)}</div>` : ''}`; });
         const need = { saveq: 'updateLines', submit: 'submit', confirm: 'confirm', lock: 'lock', cancel: 'cancel' };
         // UG-1 C-01: 'Yêu cầu sửa sau chốt' (modules/ghep.js gx-order-change) chỉ khi máy chủ cho phép (đã quá giờ chốt).
         need['gx-order-change'] = 'requestChange';
@@ -252,7 +261,10 @@
             const locs = tpl.listLocation || [];
             box.innerHTML = `<div class="notice ok">${I('ok')}<div>Hợp đồng ${esc(tpl.contractNumber || '')}${tpl.contractName ? ' · ' + esc(tpl.contractName) : ''} · hạn chốt đơn ${esc(U.dt(tpl.cutoffAt))}</div></div>
               ${tpl.isAfterCutoff ? `<div class="notice warn">${I('alert')}<div>Đã quá giờ chốt của ngày ăn này. Đơn tạo mới sẽ ở trạng thái Nháp và được gửi duyệt.</div></div><div class="field"><label>Lý do thêm đơn sau giờ chốt <span class="req">*</span></label><textarea class="input" rows="2" id="nReason"></textarea></div>` : ''}
-              ${locs.map(l => `<h3 class="mt">${esc(l.locationName || l.locationCode || 'Điểm giao')}</h3>${l.existingOrderId ? `<div class="small muted">Điểm giao này đã có đơn <b>${esc(l.existingOrderNumber || '')}</b> cho ngày ăn đã chọn – mở đơn đó để sửa số lượng.</div>` : `<table class="table dc-table dt"><thead><tr><th>Loại suất</th><th>Ca</th><th class="num">Đơn giá</th><th class="num">Dự báo</th><th class="num">Số lượng</th></tr></thead><tbody>${(l.listLine || []).map(ln => `<tr><td>${UI.tag(ln.mealType || '')} ${esc(ln.mealName || '')}</td><td>${esc(ln.shiftName || ln.shiftCode || '')}</td><td class="num">${U.money(ln.unitPrice)}</td><td class="num muted">${ln.suggestedQuantity ? U.num(ln.suggestedQuantity) : '–'}</td><td class="num"><input type="number" min="0" class="input" style="width:90px;text-align:right" data-m="${esc(ln.contractMealId)}" data-l="${esc(l.deliveryLocationId)}" data-s="${esc(ln.shiftId || '')}" value="${Number(ln.suggestedQuantity) || 0}"></td></tr>`).join('')}</tbody></table>`}`).join('') || '<div class="muted small">Khách hàng chưa có điểm giao hàng.</div>'}`;
+              ${locs.map(l => `<h3 class="mt">${esc(l.locationName || l.locationCode || 'Điểm giao')}</h3>${l.existingOrderId ? `<div class="small muted">Điểm giao này đã có đơn <b>${esc(l.existingOrderNumber || '')}</b> cho ngày ăn đã chọn – mở đơn đó để sửa số lượng.</div>` : `<table class="table dc-table dt"><thead><tr><th>Loại suất</th><th>Ca</th><th class="num">Đơn giá</th><th class="num">Dự báo</th><th class="num">Số lượng</th></tr></thead><tbody>${(l.listLine || []).map(ln => { const ops = ln.listOption || []; const inp = (o, v) => `<input type="number" min="0" class="input" style="width:90px;text-align:right" data-m="${esc(ln.contractMealId)}" data-l="${esc(l.deliveryLocationId)}" data-s="${esc(ln.shiftId || '')}" data-o="${o || ''}" value="${v}">`;
+                // ORD-OPT-1.3 / 1.8: buổi nhiều lựa chọn → mỗi lựa chọn 1 ô số suất (món trong set); dự báo là của cả buổi.
+                if (ops.length > 1) return ops.map((op, k) => `<tr><td>${k ? '' : `${UI.tag(ln.mealType || '')} ${esc(ln.mealName || '')}`}<div><b>Lựa chọn ${op.optionNo}</b> <span class="small muted">${esc(op.dishText || '')}</span></div></td><td>${esc(ln.shiftName || ln.shiftCode || '')}</td><td class="num">${U.money(ln.unitPrice)}</td><td class="num muted">${!k && ln.suggestedQuantity ? U.num(ln.suggestedQuantity) + ' (cả buổi)' : ''}</td><td class="num">${inp(op.optionNo, 0)}</td></tr>`).join('');
+                return `<tr><td>${UI.tag(ln.mealType || '')} ${esc(ln.mealName || '')}${ops.length === 1 && ops[0].dishText ? `<div class="small muted">${esc(ops[0].dishText)}</div>` : ''}</td><td>${esc(ln.shiftName || ln.shiftCode || '')}</td><td class="num">${U.money(ln.unitPrice)}</td><td class="num muted">${ln.suggestedQuantity ? U.num(ln.suggestedQuantity) : '–'}</td><td class="num">${inp(ops.length === 1 ? ops[0].optionNo : '', Number(ln.suggestedQuantity) || 0)}</td></tr>`; }).join('')}</tbody></table>`}`).join('') || '<div class="muted small">Khách hàng chưa có điểm giao hàng.</div>'}`;
           });
         };
         const drawDemo = () => {
@@ -275,7 +287,7 @@
             if (tpl && tpl.isAfterCutoff && !reason) return UI.toast('Nhập lý do thêm đơn sau giờ chốt', 'err');
             const byLoc = {}; ins.forEach(x => { (byLoc[x.dataset.l] = byLoc[x.dataset.l] || []).push(x); });
             const btn = m.querySelector('#nSave'), made = []; btn.disabled = true;
-            return Object.entries(byLoc).reduce((p, [locId, list]) => p.then(() => Store.act('Order/Create', { json: { customerId: cid, contractId: box.dataset.ct, deliveryLocationId: locId, mealDate: dte, listLine: list.map(x => ({ contractMealId: x.dataset.m, shiftId: x.dataset.s || null, quantity: +x.value, deliveryLocationId: locId })), afterCutoffReason: reason || null }, tables: ['Order', 'OrderLine', 'ApprovalRequest'] }).then(r => { if (r.ok && r.data && r.data.order) made.push(r.data.order); })), Promise.resolve())
+            return Object.entries(byLoc).reduce((p, [locId, list]) => p.then(() => Store.act('Order/Create', { json: { customerId: cid, contractId: box.dataset.ct, deliveryLocationId: locId, mealDate: dte, listLine: list.map(x => ({ contractMealId: x.dataset.m, shiftId: x.dataset.s || null, menuOptionNo: x.dataset.o ? +x.dataset.o : null, quantity: +x.value, deliveryLocationId: locId })), afterCutoffReason: reason || null }, tables: ['Order', 'OrderLine', 'ApprovalRequest'] }).then(r => { if (r.ok && r.data && r.data.order) made.push(r.data.order); })), Promise.resolve())
               .then(() => {
                 btn.disabled = false; if (!made.length) return;
                 bust(); close(); os.date = dte;
@@ -338,20 +350,31 @@
   function reconcileForm(o) {
     const has = v => v !== null && v !== undefined;
     const def = has(o.served) ? o.served : (has(o.pod) ? o.pod : '');
+    // ORD-OPT-1.7 (D-74 i): đơn đặt theo lựa chọn → ghi suất phục vụ từng dòng (loại suất × lựa chọn); tổng tự cộng, tiền = Σ suất × giá buổi.
+    const optLines = Store.by('OrderLine', 'OrderId', o.orderId).filter(l => !l.IsDeleted).sort((a, b) => mealRank(a.MealType) - mealRank(b.MealType) || (a.MenuOptionNo || 0) - (b.MenuOptionNo || 0));
+    const byLine = Store.isLive && optLines.length > 1 && optLines.some(l => l.MenuOptionNo);
+    const lineHtml = byLine ? `<h3 class="mt">Suất phục vụ theo lựa chọn</h3><table class="table dc-table dt"><thead><tr><th>Loại suất</th><th>Lựa chọn</th><th class="num">Đặt</th><th class="num">Đơn giá</th><th class="num">Phục vụ</th></tr></thead><tbody>${optLines.map(l => `<tr><td>${UI.tag(l.MealType)}</td><td>${l.MenuOptionNo ? 'Lựa chọn ' + l.MenuOptionNo : '–'}</td><td class="num">${U.num(l.Quantity)}</td><td class="num">${U.money(l.UnitPrice)}</td><td class="num"><input type="number" min="0" step="any" class="input" style="width:100px;text-align:right" data-rcl="${l.Id}" value="${l.Quantity}"></td></tr>`).join('')}</tbody></table>` : '';
     UI.modal({
-      title: 'Ghi suất thực tế phục vụ', sub: 'Đơn ' + esc(o.label || ''),
+      title: 'Ghi suất thực tế phục vụ', sub: 'Đơn ' + esc(o.label || ''), size: byLine ? 'lg' : undefined,
       body: `<div class="kv mb"><div><label>Suất đặt</label><span>${U.num(o.ordered)}</span></div><div><label>Suất giao</label><span>${U.num(o.delivered)}</span></div>${has(o.pod) ? `<div><label>Khách nhận khi bàn giao</label><span>${U.num(o.pod)}</span></div>` : ''}</div>
-        <div class="form-grid"><div class="field"><label>Suất phục vụ thực tế <span class="req">*</span></label><input type="number" min="0" step="any" class="input" id="rcServed" value="${def}"></div><div class="field"><label>Suất trả về</label><input type="number" min="0" step="any" class="input" id="rcRet"></div><div class="field"><label>Suất hủy</label><input type="number" min="0" step="any" class="input" id="rcWaste"></div><div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="rcNote" maxlength="2000"></textarea></div></div>
-        <div class="small muted mt">Số suất tính tiền và chênh lệch được tính lại theo số liệu này. Có thể ghi lại cho tới khi chốt đối soát.</div>`,
+        <div class="form-grid"><div class="field"><label>Suất phục vụ thực tế <span class="req">*</span></label><input type="number" min="0" step="any" class="input" id="rcServed" value="${def}"></div><div class="field"><label>Suất trả về</label><input type="number" min="0" step="any" class="input" id="rcRet"></div><div class="field"><label>Suất hủy</label><input type="number" min="0" step="any" class="input" id="rcWaste"></div><div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="rcNote" maxlength="2000"></textarea></div></div>${lineHtml}
+        <div class="small muted mt">Số suất tính tiền và chênh lệch được tính lại theo số liệu này.${byLine ? ' Suất phục vụ = tổng các lựa chọn; tiền = Σ suất phục vụ × giá buổi.' : ''} Có thể ghi lại cho tới khi chốt đối soát.</div>`,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="rcSave">${I('ok')} Lưu đối soát</button>`,
-      onMount: (m, close) => m.querySelector('#rcSave').onclick = () => {
+      onMount: (m, close) => {
+        const lineInputs = [...m.querySelectorAll('[data-rcl]')];
+        const sumLines = () => { m.querySelector('#rcServed').value = lineInputs.reduce((a, x) => a + (Number(x.value) || 0), 0); };
+        if (lineInputs.length) { m.querySelector('#rcServed').readOnly = true; lineInputs.forEach(x => x.addEventListener('input', sumLines)); sumLines(); }
+        m.querySelector('#rcSave').onclick = () => {
         const val = sel => { const v = m.querySelector(sel).value; return v === '' ? null : Number(v); };
         const served = val('#rcServed'), ret = val('#rcRet'), waste = val('#rcWaste');
         if (served === null || isNaN(served) || served < 0) return UI.toast('Nhập số suất phục vụ thực tế (≥ 0)', 'err');
         if ((ret !== null && ret < 0) || (waste !== null && waste < 0)) return UI.toast('Suất trả về / hủy không được âm', 'err');
         if (has(o.pod) && served + (ret || 0) + (waste || 0) > Number(o.pod)) return UI.toast('Phục vụ + trả về + hủy không được vượt số suất khách nhận (' + U.num(o.pod) + ')', 'err');
-        Store.act('OrderReconciliation/Reconcile', { form: { OrderId: o.orderId, ServedQuantity: served, ReturnedQuantity: ret, WastedQuantity: waste, Remark: m.querySelector('#rcNote').value.trim() }, tables: ['OrderReconciliation', 'Order'] })
+        const form = { OrderId: o.orderId, ServedQuantity: served, ReturnedQuantity: ret, WastedQuantity: waste, Remark: m.querySelector('#rcNote').value.trim() };
+        lineInputs.forEach((x, k) => { form[`ListLine[${k}].OrderLineId`] = x.dataset.rcl; form[`ListLine[${k}].ServedQuantity`] = Math.max(0, Number(x.value) || 0); });
+        Store.act('OrderReconciliation/Reconcile', { form, tables: ['OrderReconciliation', 'Order'] })
           .then(r => { if (!r.ok) return; bust(); close(); UI.toast('Đã ghi đối soát đơn ' + esc(o.label || ''), 'ok'); APP.refresh(); });
+        };
       }
     });
   }

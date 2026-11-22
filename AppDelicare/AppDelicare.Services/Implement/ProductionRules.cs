@@ -30,6 +30,62 @@ namespace AppDelicare.Services.Implement
         /// <summary>1 mẻ trong lịch: số phần, giờ bắt đầu / kết thúc kế hoạch.</summary>
         public readonly record struct ScheduledBatch(int Index, decimal Quantity, DateTime Start, DateTime End);
 
+        /// <summary>Suất 1 món của 1 dòng đơn: Quantity = suất tính, Even = phần chưa cộng dự phòng.</summary>
+        public readonly record struct LinePortion(Guid DishId, decimal Quantity, decimal Even);
+
+        /// <summary>
+        /// ORD-OPT-1.6 (D-74 e) – suất từng món của 1 dòng đơn, MỘT chỗ cho MRP (Calculate / TopUp), kế hoạch SX (DishDemandsAsync), chia ca (SplitByShiftAsync).
+        /// <list type="bullet">
+        /// <item>Dòng có <c>MenuOptionNo</c> (khách đăng ký theo lựa chọn): chỉ các món của lựa chọn đó (<c>MenuLine.SequenceNo</c>) × số suất dòng × <c>PortionQty</c> (trống = 1) – không chia đều;
+        /// dự phòng <c>BusinessRules:MrpOptionQtyBufferPct</c> (mặc định 0).</item>
+        /// <item>Dòng cũ NULL (hoặc lựa chọn không còn trong thực đơn → <paramref name="optionMissing"/> = true): cách cũ GAP-MRP-03 – chia đều số suất cho các lựa chọn,
+        /// cộng <c>MrpOptionBufferPct</c> khi ≥ 2 lựa chọn (món chung mọi lựa chọn không vượt số suất dòng).</item>
+        /// </list>
+        /// <paramref name="menuLines"/>: MenuLine của thực đơn đúng thứ trong tuần. Không có món cho loại suất → danh sách rỗng.
+        /// </summary>
+        public static List<LinePortion> LinePortions(OrderLine line, IEnumerable<MenuLine> menuLines, BusinessRulesOptions rules, out bool optionMissing)
+        {
+            optionMissing = false;
+            var result = new List<LinePortion>();
+            if (line.MenuId == null)
+            {
+                return result;
+            }
+            var options = menuLines.Where(m => m.MenuId == line.MenuId && !m.IsDeleted
+                    && string.Equals((m.MealType ?? string.Empty).Trim(), (line.MealType ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
+                .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
+            if (options.Count == 0)
+            {
+                return result;
+            }
+            if (line.MenuOptionNo is int optionNo)
+            {
+                var option = options.FirstOrDefault(o => o.Key == optionNo);
+                if (option != null)
+                {
+                    decimal rate = Math.Max(0m, rules.MrpOptionQtyBufferPct) / 100m;
+                    foreach (var dish in option.GroupBy(m => m.DishId))
+                    {
+                        // Số phần món / suất = MenuLine.PortionQty (trống / ≤ 0 = 1) – vd bánh mì 2 cái / suất → 2.000 suất LC1 = 4.000 cái.
+                        decimal exact = line.Quantity * dish.Sum(m => m.PortionQty is > 0 ? m.PortionQty.Value : 1m);
+                        result.Add(new LinePortion(dish.Key, exact * (1 + rate), exact));
+                    }
+                    return result;
+                }
+                optionMissing = true;
+            }
+            decimal bufferRate = Math.Max(0m, rules.MrpOptionBufferPct) / 100m;
+            decimal perOption = line.Quantity / options.Count;
+            bool buffered = options.Count >= 2 && bufferRate > 0;
+            foreach (var dish in options.SelectMany(o => o).GroupBy(m => m.DishId))
+            {
+                decimal even = perOption * dish.Count();
+                decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
+                result.Add(new LinePortion(dish.Key, qty, even));
+            }
+            return result;
+        }
+
         /// <summary>BE2.1: nhu cầu 1 món của 1 dòng đơn (đã quy ca – dòng chưa gán ca = ca mặc định).</summary>
         public sealed record DishDemand(Guid OrderId, Guid OrderLineId, Guid ShiftId, Guid DishId, decimal Quantity);
 
@@ -49,27 +105,20 @@ namespace AppDelicare.Services.Implement
             var menuIds = orderLines.Where(l => l.MenuId != null).Select(l => l.MenuId!.Value).Distinct().ToList();
             int dayOfWeek = MenuService.MenuDayOf(day);
             var menuLines = await db.MenuLine.AsNoTracking().Where(m => menuIds.Contains(m.MenuId) && !m.IsDeleted && m.DayOfWeek == dayOfWeek).ToListAsync();
-            decimal bufferRate = Math.Max(0m, rules.MrpOptionBufferPct) / 100m;
             var demands = new List<DishDemand>();
             var skipped = new List<OrderLine>();
             foreach (var line in orderLines)
             {
                 Guid? shiftId = line.ShiftId ?? fallback?.Id;
-                var options = line.MenuId == null ? []
-                    : menuLines.Where(m => m.MenuId == line.MenuId && string.Equals((m.MealType ?? string.Empty).Trim(), (line.MealType ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
-                        .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
-                if (shiftId == null || options.Count == 0)
+                var portions = LinePortions(line, menuLines, rules, out _);
+                if (shiftId == null || portions.Count == 0)
                 {
                     skipped.Add(line);
                     continue;
                 }
-                decimal perOption = line.Quantity / options.Count;
-                bool buffered = options.Count >= 2 && bufferRate > 0;
-                foreach (var dish in options.SelectMany(o => o).GroupBy(m => m.DishId))
+                foreach (var p in portions)
                 {
-                    decimal even = perOption * dish.Count();
-                    decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
-                    demands.Add(new DishDemand(line.OrderId, line.Id, shiftId.Value, dish.Key, qty));
+                    demands.Add(new DishDemand(line.OrderId, line.Id, shiftId.Value, p.DishId, p.Quantity));
                 }
             }
             // BE2.2: đổi món đã duyệt (MenuChangeRequest) áp lên nhu cầu – kế hoạch sinh lại / chia mẻ / truy xuất không mất đổi món.
@@ -218,16 +267,14 @@ namespace AppDelicare.Services.Implement
             var menuIds = orderLines.Select(l => l.MenuId!.Value).Distinct().ToList();
             int dayOfWeek = MenuService.MenuDayOf(date.Date);
             var menuLines = await db.MenuLine.AsNoTracking().Where(m => menuIds.Contains(m.MenuId) && !m.IsDeleted && m.DayOfWeek == dayOfWeek).ToListAsync();
-            decimal bufferRate = Math.Max(0m, rules.MrpOptionBufferPct) / 100m;
-            // weights[món][ca] = suất của món trong ca (cùng công thức MRP).
+            // weights[món][ca] = suất của món trong ca (cùng công thức MRP – ProductionRules.LinePortions).
             var weights = new Dictionary<Guid, Dictionary<Guid, decimal>>();
             int unassigned = 0;
             foreach (var line in orderLines)
             {
                 Guid? shiftId = line.ShiftId ?? fallback?.Id;
-                var options = menuLines.Where(m => m.MenuId == line.MenuId && string.Equals((m.MealType ?? string.Empty).Trim(), (line.MealType ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
-                    .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
-                if (shiftId == null || options.Count == 0)
+                var portions = LinePortions(line, menuLines, rules, out _);
+                if (shiftId == null || portions.Count == 0)
                 {
                     continue;
                 }
@@ -235,18 +282,14 @@ namespace AppDelicare.Services.Implement
                 {
                     unassigned++;
                 }
-                decimal perOption = line.Quantity / options.Count;
-                bool buffered = options.Count >= 2 && bufferRate > 0;
-                foreach (var dish in options.SelectMany(o => o).GroupBy(m => m.DishId))
+                foreach (var p in portions)
                 {
-                    decimal even = perOption * dish.Count();
-                    decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
-                    if (!weights.TryGetValue(dish.Key, out var byShift))
+                    if (!weights.TryGetValue(p.DishId, out var byShift))
                     {
                         byShift = [];
-                        weights[dish.Key] = byShift;
+                        weights[p.DishId] = byShift;
                     }
-                    byShift[shiftId.Value] = byShift.GetValueOrDefault(shiftId.Value) + qty;
+                    byShift[shiftId.Value] = byShift.GetValueOrDefault(shiftId.Value) + p.Quantity;
                 }
             }
             if (unassigned > 0 && fallback != null)

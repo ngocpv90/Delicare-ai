@@ -404,11 +404,18 @@ namespace AppDelicare.Services.Implement
                 I("Xe", Join(vehicle?.Code ?? execution?.VehicleCode, vehicle?.LicensePlate)),
                 I("Tài xế", driver ?? execution?.DriverName),
             ]);
+            // ORD-OPT-1.7 (D-74 i): đơn giao hiện theo lựa chọn (LC n – món trong set).
+            var optionMap = order == null ? [] : await MenuOptionRules.ForMenusAsync(_unitOfWork.DbContext, lines.Where(l => l.MenuId != null).Select(l => l.MenuId!.Value), order.MealDate);
             doc.ListHeader.AddRange(["STT", "Bữa", "Ca", "Số suất đặt", "Ghi chú"]);
             int i = 0;
-            foreach (var l in lines.OrderBy(l => l.MealType).ThenBy(l => l.CreatedDate))
+            foreach (var l in lines.OrderBy(l => MenuService.MealRank(l.MealType)).ThenBy(l => l.MenuOptionNo ?? 0).ThenBy(l => l.CreatedDate))
             {
                 string meal = mealTypes.FirstOrDefault(m => m.Code.Equals(l.MealType ?? string.Empty, StringComparison.OrdinalIgnoreCase))?.Label ?? l.MealType ?? string.Empty;
+                if (l.MenuOptionNo is { } option)
+                {
+                    string? dishes = MenuOptionRules.Of(optionMap, l.MenuId, l.MealType).FirstOrDefault(o => o.OptionNo == option)?.DishText;
+                    meal += $" – LC {option}" + (string.IsNullOrEmpty(dishes) ? string.Empty : $" ({dishes})");
+                }
                 doc.ListRow.Add([(++i).ToString(CultureInfo.InvariantCulture), meal, l.ShiftId is { } sid ? shifts.GetValueOrDefault(sid) ?? string.Empty : string.Empty,
                     N(l.Quantity), l.Note ?? string.Empty]);
             }

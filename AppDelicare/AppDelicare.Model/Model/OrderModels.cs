@@ -44,6 +44,24 @@ namespace AppDelicare.Model.Model
         public string? MenuCode { get; set; }
         /// <summary>BE2.2: số lượng gợi ý = dự báo Đã công bố mới nhất của (khách, điểm giao, ngày, loại suất); dự báo cấp khách chia đều cho các điểm chưa có dự báo riêng (PROPOSED).</summary>
         public decimal SuggestedQuantity { get; set; }
+        /// <summary>ORD-OPT-1.3 (D-74 c): lựa chọn (set món) của thực đơn áp dụng cho loại suất / ngày ăn – mỗi lựa chọn nhập 1 số suất (rỗng = chưa có thực đơn).</summary>
+        public List<MenuOptionModel> ListOption { get; set; } = [];
+    }
+
+    /// <summary>ORD-OPT-1 (D-74 a): 1 lựa chọn = 1 set món (MenuLine.SequenceNo).</summary>
+    public class MenuOptionModel
+    {
+        public int OptionNo { get; set; }
+        /// <summary>Tên món nối bằng " · ".</summary>
+        public string? DishText { get; set; }
+        public List<MenuOptionDishModel> ListDish { get; set; } = [];
+    }
+
+    public class MenuOptionDishModel
+    {
+        public Guid DishId { get; set; }
+        public string? DishCode { get; set; }
+        public string? DishName { get; set; }
     }
 
     /// <summary>T13: chi tiết đơn + dòng + thao tác được phép + yêu cầu duyệt lệch suất đang chờ.</summary>
@@ -90,8 +108,13 @@ namespace AppDelicare.Model.Model
         public decimal? UnitPrice { get; set; }
         public decimal LineAmount { get; set; }
         public string? Note { get; set; }
-        /// <summary>BE2.2 (spec 6.6 GET {id}): dự báo Đã công bố của loại suất tại điểm giao / ngày ăn (null = không có).</summary>
+        /// <summary>BE2.2 (spec 6.6 GET {id}): dự báo Đã công bố của loại suất tại điểm giao / ngày ăn (null = không có).
+        /// ORD-OPT-1: bữa tách nhiều dòng lựa chọn → dự báo của (loại suất, ca) ghi ở dòng đầu, các dòng sau null.</summary>
         public decimal? ForecastQuantity { get; set; }
+        /// <summary>ORD-OPT-1.3: số lựa chọn (null = dòng cũ không theo lựa chọn).</summary>
+        public int? MenuOptionNo { get; set; }
+        /// <summary>Món trong set của lựa chọn (theo thực đơn của dòng, thứ của ngày ăn).</summary>
+        public string? OptionDishText { get; set; }
     }
 
     /// <summary>T13: kết quả nút chốt đơn theo ngày ăn.</summary>

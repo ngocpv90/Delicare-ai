@@ -398,7 +398,6 @@ namespace AppDelicare.Services.Implement
             var orderNo = lockedOrders.ToDictionary(o => o.Id, o => o.OrderNumber ?? o.OrderNo ?? o.Id.ToString("N")[..8]);
             var portions = c.Portions;
             var bufferPortions = new Dictionary<Guid, decimal>();
-            decimal bufferRate = Math.Max(0m, _rules.MrpOptionBufferPct) / 100m;
             var lineDemands = new List<ProductionRules.DishDemand>();
             foreach (var line in orderLines.OrderBy(l => orderNo[l.OrderId]).ThenBy(l => l.MealType))
             {
@@ -407,27 +406,25 @@ namespace AppDelicare.Services.Implement
                     warnings.Add(string.Format(ConstantHelper.Message.MrpOrderLineNoMenu, orderNo[line.OrderId], line.MealType, Round4(line.Quantity)));
                     continue;
                 }
-                var options = menuLines.Where(m => m.MenuId == line.MenuId && SameText(m.MealType, line.MealType))
-                    .GroupBy(m => m.SequenceNo is > 0 ? m.SequenceNo.Value : 1).ToList();
-                if (options.Count == 0)
+                var linePortions = ProductionRules.LinePortions(line, menuLines, _rules, out bool optionMissing);
+                if (linePortions.Count == 0)
                 {
                     warnings.Add(string.Format(ConstantHelper.Message.MrpMenuNoDish, menuNames.GetValueOrDefault(line.MenuId.Value), line.MealType, dayOfWeek == 7 ? "CN" : (dayOfWeek + 1).ToString(CultureInfo.InvariantCulture),
                         Round4(line.Quantity), orderNo[line.OrderId]));
                     continue;
                 }
-                // Anh chốt 2026-11-16 (GAP-MRP-03): chưa có số suất theo lựa chọn → chia đều số suất của dòng đơn cho các lựa chọn,
-                // rồi cộng dự phòng BusinessRules:MrpOptionBufferPct cho mỗi lựa chọn khi có ≥ 2 lựa chọn.
-                // PROPOSED – BA/PO CONFIRM: món nằm trong nhiều lựa chọn không vượt quá số suất của dòng đơn (món chung mọi lựa chọn, ví dụ cơm, không cộng dự phòng).
-                decimal perOption = line.Quantity / options.Count;
-                bool buffered = options.Count >= 2 && bufferRate > 0;
-                foreach (var dish in options.SelectMany(o => o).GroupBy(m => m.DishId))
+                // ORD-OPT-1.6 (D-74 e): dòng theo lựa chọn → đúng món của lựa chọn × số suất (dự phòng MrpOptionQtyBufferPct, mặc định 0);
+                // dòng cũ NULL → GAP-MRP-03 (chia đều + MrpOptionBufferPct khi ≥ 2 lựa chọn) – ProductionRules.LinePortions.
+                if (optionMissing)
                 {
-                    decimal even = perOption * dish.Count();
-                    decimal qty = buffered ? Math.Max(even, Math.Min(even * (1 + bufferRate), line.Quantity)) : even;
-                    lineDemands.Add(new ProductionRules.DishDemand(line.OrderId, line.Id, line.ShiftId ?? Guid.Empty, dish.Key, qty));
-                    if (qty > even)
+                    warnings.Add(string.Format(ConstantHelper.Message.MrpOptionNotInMenu, orderNo[line.OrderId], line.MealType, line.MenuOptionNo, menuNames.GetValueOrDefault(line.MenuId.Value)));
+                }
+                foreach (var p in linePortions)
+                {
+                    lineDemands.Add(new ProductionRules.DishDemand(line.OrderId, line.Id, line.ShiftId ?? Guid.Empty, p.DishId, p.Quantity));
+                    if (p.Quantity > p.Even)
                     {
-                        bufferPortions[dish.Key] = bufferPortions.GetValueOrDefault(dish.Key) + qty - even;
+                        bufferPortions[p.DishId] = bufferPortions.GetValueOrDefault(p.DishId) + p.Quantity - p.Even;
                     }
                 }
             }

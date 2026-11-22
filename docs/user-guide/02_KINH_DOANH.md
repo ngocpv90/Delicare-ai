@@ -17,6 +17,7 @@
 | `crm-price-policy` | … › Chính sách giá | Xem, sửa, xuất |
 | `crm-forecast` | … › Dự báo | Xem, sửa, xuất |
 | `crm-order` | … › Đơn hàng | Xem, sửa, xuất |
+| `crm-order-week` | … › Đăng ký suất tuần | Như `crm-order` (xem, sửa, xuất phiếu, tải phiếu lên) |
 | `crm-reconciliation` | … › Đối soát đơn hàng | Xem, sửa, xuất |
 | `menu-menu`, `menu-assignment`, `menu-dish`, `menu-change-request` | Thực đơn & Món ăn | Chỉ xem |
 | `log-*`, `prod-*`, `cost-*` | Đóng gói & Giao nhận, Sản xuất & Giá thành | Chỉ xem |
@@ -108,13 +109,14 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 **Tạo đơn**
 1. **Tạo đơn hàng** → chọn **Khách hàng***, **Ngày ăn*** (mặc định hôm nay + 4).
 2. Hệ thống tải mẫu: hợp đồng hiệu lực, **hạn chốt đơn**, mỗi **điểm giao** một bảng: Loại suất, Ca, Đơn giá, Dự báo, **Số lượng** (điền sẵn = dự báo).
+   - Buổi có **nhiều lựa chọn** (vd Sáng LC1 / LC2 / LC3): mỗi lựa chọn 1 hàng – *Lựa chọn N* + món trong set + ô **Số lượng** riêng (dự báo ghi ở hàng đầu, là của cả buổi). Buổi 1 lựa chọn: 1 ô như cũ, món trong set hiện dưới tên suất.
    - Điểm giao đã có đơn cho ngày này → báo *"Điểm giao này đã có đơn … – mở đơn đó để sửa số lượng"*.
 3. Sửa số lượng → **Tạo đơn (Nháp)**. Mỗi điểm giao có số > 0 thành **1 đơn** riêng (số `DH-…`).
 4. Nếu **đã quá giờ chốt**: hộp báo vàng + ô **Lý do thêm đơn sau giờ chốt*** → đơn tạo ở Nháp và **tự gửi duyệt**; duyệt xong đơn chuyển **Đã chốt**.
 
 **Xử lý đơn (bấm vào thẻ / dòng)** – ngăn chi tiết:
 - Đầu ngăn: thanh tiến trình trạng thái; hộp thông tin: **Hạn chốt đơn**, "đã quá giờ chốt", **Đang chờ duyệt** (lệch suất / thay đổi sau giờ chốt), dự báo + % lệch.
-- Bảng dòng: Ca, Loại suất, Điểm giao, **Số lượng** (ô sửa được khi cho phép), Dự báo, Đơn giá, Thành tiền.
+- Bảng dòng: Ca, Loại suất, **Lựa chọn** (*Lựa chọn N* + món trong set; "–" = đơn cũ không theo lựa chọn), Điểm giao, **Số lượng** (ô sửa được khi cho phép), Dự báo, Đơn giá, Thành tiền. Mọi lựa chọn cùng buổi cùng đơn giá.
 - Nút (chỉ hiện nút máy chủ cho phép):
 
 | Nút | Khi nào | Kết quả |
@@ -130,6 +132,25 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 
 - **Chốt đơn theo ngày** (đầu màn `crm-order`, cần quyền Sửa): chọn ngày ăn → **Chốt đơn** → xác nhận → khóa mọi đơn **Đã xác nhận** của ngày (chỉ khi đã tới giờ chốt 20:00 hôm trước; bình thường job 20:00 tự chốt). Màn báo số đơn đã chốt và số đơn còn chưa xác nhận / đang chờ duyệt.
 
+### 4.5b Đăng ký suất tuần – `crm-order-week` (ORD-OPT-1)
+Dùng khi khách đăng ký **số suất theo từng lựa chọn cho cả tuần** (bếp gửi thực đơn tuần, khách điền số rồi gửi lại).
+1. Chọn **Khách hàng***, **Điểm giao***, **Tuần*** (T2 – CN). Ô *Thực đơn áp dụng* cho biết thực đơn đang dùng: *(thực đơn chung)* = khách không có phân công riêng.
+2. Lưới **Buổi / lựa chọn × T2…CN**: mỗi ô có món trong set + ô **số suất**; tự cộng *Tổng sáng* (khi nhiều lựa chọn), **Tổng suất**, **Thành tiền** từng ngày. Khối **Tổng tuần** bên phải: tổng suất, thành tiền (chưa VAT), giá theo hợp đồng, hạn gửi phiếu. Ô trống / 0 = không đặt; ô "–" = lựa chọn không có trong thực đơn ngày đó.
+3. Nút:
+
+| Nút | Kết quả |
+|---|---|
+| **Chép số tuần trước** | Điền số tuần trước (cùng thứ, buổi, lựa chọn) vào ô còn sửa được – **chưa lưu** |
+| **Tải phiếu đăng ký** | Tải *Phiếu đăng ký suất* (Excel) có ô Số suất dưới mỗi lựa chọn – gửi khách điền |
+| **Tải phiếu đăng ký lên** | Đọc phiếu khách đã điền vào lưới – **chưa lưu**; phiếu khác khách / điểm giao / tuần bị từ chối; ô lựa chọn không còn / ngày đã khóa báo ở khối *Lỗi đọc phiếu* |
+| **Lưu nháp** | Mỗi ngày có số → 1 đơn **Nháp** (đã có đơn thì sửa đơn đó) |
+| **Xác nhận cả tuần** | Như Lưu nháp rồi chuyển đơn → **Đã xác nhận** (hiện cảnh báo lệch dự báo nếu có) |
+
+4. Khối **Kết quả lưu**: từng ngày *Tạo đơn / Sửa đơn / Không đổi / Bỏ qua / Chờ duyệt / Lỗi* + số đơn; bấm số đơn ở đầu cột ngày để mở đơn.
+- **Ngày bị khóa** (ô xám, nhãn *Khóa*): đã qua 20:00 hôm trước, đơn đã chốt / đang sản xuất, hoặc đang chờ duyệt → sửa qua mục 4.6.
+- Sửa số của đơn **Đã xác nhận** lệch > 30% → ngày đó **Chờ duyệt** (như sửa trên đơn).
+- **Kho / bếp nhận đúng số**: sau chốt, kế hoạch sản xuất và nhu cầu nguyên liệu tính **số suất lựa chọn × món trong set** (vd 2.000 suất LC1 → 2.000 phần mỗi món của LC1; món 2 cái / suất như bánh mì → 4.000 cái) – không còn chia đều + 15%.
+
 ### 4.6 Thay đổi đơn sau giờ chốt
 - Trên web: sau giờ chốt (20:00 D-1), ngăn chi tiết đơn có nút **Yêu cầu sửa sau chốt** (chỉ hiện khi đã quá giờ chốt): nhập số suất mới từng dòng + **Lý do*** → **Gửi yêu cầu** → yêu cầu duyệt ORDER_CHANGE_AFTER_CUTOFF (số `XN-…`) chờ CEO duyệt; duyệt xong số lượng mới mới được ghi.
 - Cách làm hiện có:
@@ -143,7 +164,7 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 - Lỗi: *Chồng thời gian hiệu lực với chính sách giá khác…*, *Đơn giá phải lớn hơn 0*, *Không tìm thấy đơn giá áp dụng…*.
 
 ### 4.8 Đối soát suất – `crm-reconciliation`
-Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2.
+Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn đặt **theo lựa chọn**: hộp **Ghi suất phục vụ** có bảng *Suất phục vụ theo lựa chọn* (từng loại suất × lựa chọn); ô *Suất phục vụ thực tế* tự cộng; tiền = Σ suất phục vụ × giá buổi. Phiếu giao hàng in thêm *LC n (món)* ở cột Bữa.
 
 ## 5. Trạng thái chứng từ
 
@@ -167,6 +188,10 @@ Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2.
 | Đơn đang có yêu cầu duyệt … – chờ duyệt / từ chối trước khi sửa tiếp | Đợi người duyệt; hoặc người gửi **Hủy yêu cầu** ở hộp duyệt |
 | Lệch dự báo …% … vượt ngưỡng 10% – đã ghi nhận | Chỉ cảnh báo, không chặn |
 | Hủy đơn phải ghi lý do | Nhập lý do |
+| Lựa chọn N không có trong thực đơn áp dụng của … ngày … (lựa chọn đang có: …) | Thực đơn đã đổi → chọn lựa chọn đang có / báo bếp |
+| Chưa có thực đơn áp dụng cho … ngày … – không chọn được lựa chọn | Gán thực đơn cho khách hoặc nhờ Kế hoạch công bố thực đơn chung |
+| Trùng dòng suất (cùng suất hợp đồng, ca và lựa chọn) | Mỗi lựa chọn chỉ 1 dòng |
+| Không phải phiếu đăng ký suất của hệ thống / Phiếu không đúng khách / điểm giao / tuần | Tải lại phiếu từ màn Đăng ký suất tuần đúng khách, điểm giao, tuần; không sửa hàng / cột ẩn |
 | Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp | Hợp đồng đã duyệt chỉ Thanh lý; muốn đổi giá → chính sách giá hoặc hợp đồng mới |
 | Số hợp đồng … đã tồn tại | Để trống ô số để tự sinh |
 | Hợp đồng đã hết hạn (…) – không duyệt được | Sửa ngày hiệu lực rồi gửi lại |

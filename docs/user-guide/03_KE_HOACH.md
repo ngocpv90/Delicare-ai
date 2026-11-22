@@ -77,13 +77,15 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
    - Nháp → **Đã duyệt** (cần quyền "Phê duyệt › Thực đơn"),
    - Đã duyệt → **Đã công bố** (kiểm đủ món mọi ngày, công thức hiệu lực),
    - Đã công bố → **Hết hiệu lực**.
-4. **Xuất gửi khách**: tải tệp thực đơn gửi khách.
+4. **Xuất gửi khách**: tải tệp thực đơn gửi khách. **In phiếu đăng ký**: chọn khách + điểm giao → tải *Phiếu đăng ký suất* (Excel, ô Số suất dưới mỗi lựa chọn, tuần bắt đầu hiệu lực của thực đơn) – khách điền rồi gửi lại cho Kinh doanh tải lên (`02_KINH_DOANH.md` mục 4.5b).
+5. **Thực đơn chung** (ORD-OPT-1, D-74 f): ô **Loại thực đơn** = *Thực đơn chung* → mọi khách **không có phân công riêng** tự dùng thực đơn này khi đã **Đã công bố** và hiệu lực tại ngày ăn (nhãn cam *Thực đơn chung* ở đầu lịch). Mỗi tuần một thực đơn chung (thường **Nhân bản** từ tuần trước). Không công bố được 2 thực đơn chung chồng ngày hiệu lực.
+6. **Lựa chọn** (1–9) = set món: Sáng LC1 = bánh mì + trứng + sữa… Khách đặt số suất theo từng lựa chọn; **Số phần** = số phần của món trong 1 suất (vd bánh mì 2 cái / suất; trống = 1) – dùng để tính số phần nấu / mua.
 
-Lỗi: *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để công bố – thiếu: …*, *Cảnh báo: món … chưa có công thức đang khóa – chưa tính được giá vốn*, *Thứ phải trong khoảng 1 (Thứ 2) – 7 (Chủ nhật)*, *Lựa chọn (SequenceNo) phải trong khoảng 1 – 9*, *Dòng thực đơn phải có loại suất*.
+Lỗi: *Đã có thực đơn chung … Đã công bố chồng thời gian hiệu lực…* (cho thực đơn chung cũ hết hiệu lực hoặc đổi ngày), *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để công bố – thiếu: …*, *Cảnh báo: món … chưa có công thức đang khóa – chưa tính được giá vốn*, *Thứ phải trong khoảng 1 (Thứ 2) – 7 (Chủ nhật)*, *Lựa chọn (SequenceNo) phải trong khoảng 1 – 9*, *Dòng thực đơn phải có loại suất*.
 
 ### 4.5 Phân công thực đơn – `menu-assignment`
-- Danh sách phân công (khách / điểm giao / loại suất / thực đơn / hiệu lực) – thêm / sửa bằng form chung.
-- **Tra thực đơn áp dụng**: chọn **Khách hàng***, Điểm giao, **Loại suất***, **Ngày ăn*** → **Tra cứu** → thực đơn + cấp phân công (*Gán theo điểm giao* / *Gán theo khách hàng*); bấm mã thực đơn để mở lịch.
+- Danh sách phân công (khách / điểm giao / loại suất / thực đơn / hiệu lực) – thêm / sửa bằng form chung. **Chỉ cần cho khách ngoại lệ** (trường học, bệnh viện… có thực đơn riêng); khách khác dùng **thực đơn chung** của tuần.
+- **Tra thực đơn áp dụng**: chọn **Khách hàng***, Điểm giao, **Loại suất***, **Ngày ăn*** → **Tra cứu** → thực đơn + cấp phân công (*Gán theo điểm giao* / *Gán theo khách hàng* / *Thực đơn chung* khi khách không có phân công); bấm mã thực đơn để mở lịch.
 - Lỗi: *Chồng thời gian hiệu lực với phân công thực đơn khác…*, *Loại suất … không có trong suất của hợp đồng*, *Điểm giao không thuộc khách hàng này*, *Không có thực đơn được gán…*.
 
 ### 4.6 Yêu cầu đổi món – `menu-change-request`
