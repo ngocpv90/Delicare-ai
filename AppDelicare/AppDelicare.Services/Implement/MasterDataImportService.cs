@@ -27,8 +27,25 @@ namespace AppDelicare.Services.Implement
     /// Không ghi file lên đĩa server (đọc từ stream) – file thật chứa giá mua.
     /// </summary>
     public partial class MasterDataImportService(IUnitOfWork unitOfWork, IRecipeService recipeService, IOptions<BusinessRulesOptions> rules,
-        IDocumentNumberService documentNumberService) : IMasterDataImportService
+        IDocumentNumberService documentNumberService, IOptions<ReferenceListsOptions> referenceLists) : IMasterDataImportService
     {
+        private readonly ReferenceListsOptions _referenceLists = referenceLists.Value;
+
+        /// <summary>
+        /// GAP-REF-01 (anh chốt 2026-11-22): cột mã danh mục (Loại NCC, Kiểu bảo quản, Loại kho) của file nhập phải có trong ReferenceLists – nhận mã hoặc nhãn → mã.
+        /// Giá trị cũ ngoài danh mục giữ được khi bản ghi cùng mã đang có đúng giá trị đó. Kiểm TRƯỚC khi thêm bản ghi (dòng lỗi không để lại bản ghi dở).
+        /// </summary>
+        private async Task<(string? Code, string? Error)> RefAsync<T>(string column, string? value, System.Linq.Expressions.Expression<Func<T, bool>> sameRecord,
+            System.Linq.Expressions.Expression<Func<T, string?>> stored) where T : class
+        {
+            var (code, error) = ReferenceCatalogs.CheckColumn(_referenceLists, column, value);
+            if (error == null)
+            {
+                return (code, null);
+            }
+            string? old = await _unitOfWork.DbContext.Set<T>().AsNoTracking().Where(sameRecord).Select(stored).FirstOrDefaultAsync();
+            return ReferenceCatalogs.CheckColumn(_referenceLists, column, value, old);
+        }
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
 
         /// <summary>MA-1.3 (D-63): ô mã trống → máy chủ sinh mã danh mục (G1); có mã → khớp theo mã như cũ (dữ liệu đã có giữ mã).</summary>
@@ -362,8 +379,14 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string?> SupplierAsync(TemplateRow r, Ctx ctx)
         {
-            var (e, isNew) = await SupplierByCodeAsync(await CodeOrNewAsync(r["Mã NCC"], DocumentKind.Supplier), r["Tên NCC"]!, ctx);
-            bool changed = Set(e, x => x.Name, r["Tên NCC"]) | Set(e, x => x.SupplierType, r["Loại NCC"]) | Set(e, x => x.TaxCode, r["Mã số thuế"])
+            string supplierCode = await CodeOrNewAsync(r["Mã NCC"], DocumentKind.Supplier);
+            var (supplierType, supplierTypeError) = await RefAsync<Supplier>("Supplier.SupplierType", r["Loại NCC"], x => x.Code == supplierCode && !x.IsDeleted, x => x.SupplierType);
+            if (supplierTypeError != null)
+            {
+                return supplierTypeError;
+            }
+            var (e, isNew) = await SupplierByCodeAsync(supplierCode, r["Tên NCC"]!, ctx);
+            bool changed = Set(e, x => x.Name, r["Tên NCC"]) | Set(e, x => x.SupplierType, supplierType) | Set(e, x => x.TaxCode, r["Mã số thuế"])
                 | Set(e, x => x.Phone, r["Điện thoại"]) | Set(e, x => x.Email, r["Email"]) | Set(e, x => x.Address, r["Địa chỉ"])
                 | Set(e, x => x.ContactName, r["Người liên hệ"]) | Set(e, x => x.ContactPhone, r["SĐT liên hệ"]);
             return Finish(e, isNew, changed, ctx);
@@ -405,8 +428,14 @@ namespace AppDelicare.Services.Implement
             }
             var unit = r["ĐVT"] == null ? null : await UnitAsync(r["ĐVT"]!, ctx);
             var category = r["Nhóm nguyên liệu"] == null ? null : await IngredientCategoryAsync(r["Nhóm nguyên liệu"]!, ctx);
-            var (e, isNew) = await IngredientByCodeAsync(await CodeOrNewAsync(r["Mã nguyên liệu"], DocumentKind.Ingredient), r["Tên nguyên liệu"]!, unit, ctx);
-            bool changed = Set(e, x => x.Name, r["Tên nguyên liệu"]) | Set(e, x => x.StorageType, r["Kiểu bảo quản"]) | Set(e, x => x.YieldPercent, yield)
+            string ingredientCode = await CodeOrNewAsync(r["Mã nguyên liệu"], DocumentKind.Ingredient);
+            var (storageType, storageTypeError) = await RefAsync<Ingredient>("Ingredient.StorageType", r["Kiểu bảo quản"], x => x.Code == ingredientCode && !x.IsDeleted, x => x.StorageType);
+            if (storageTypeError != null)
+            {
+                return storageTypeError;
+            }
+            var (e, isNew) = await IngredientByCodeAsync(ingredientCode, r["Tên nguyên liệu"]!, unit, ctx);
+            bool changed = Set(e, x => x.Name, r["Tên nguyên liệu"]) | Set(e, x => x.StorageType, storageType) | Set(e, x => x.YieldPercent, yield)
                 | Set(e, x => x.StandardWastePercent, waste) | Set(e, x => x.IsExpiryManaged, expiry) | Set(e, x => x.ShelfLifeDays, shelf) | Set(e, x => x.MinimumStock, min);
             if (unit != null)
             {
@@ -431,10 +460,15 @@ namespace AppDelicare.Services.Implement
                 }
             }
             string code = await CodeOrNewAsync(r["Mã kho"], DocumentKind.Warehouse);
+            var (warehouseType, warehouseTypeError) = await RefAsync<Warehouse>("Warehouse.WarehouseType", r["Loại kho"], x => x.Code == code && !x.IsDeleted, x => x.WarehouseType);
+            if (warehouseTypeError != null)
+            {
+                return warehouseTypeError;
+            }
             var e = await FindAsync<Warehouse>(x => x.Code == code && !x.IsDeleted);
             bool isNew = e == null;
             e ??= Add(_unitOfWork.WarehouseRepository, new Warehouse { Id = Guid.NewGuid(), Code = code, Status = Active });
-            bool changed = Set(e, x => x.Name, r["Tên kho"]) | Set(e, x => x.WarehouseType, r["Loại kho"]) | Set(e, x => x.Address, r["Địa chỉ"])
+            bool changed = Set(e, x => x.Name, r["Tên kho"]) | Set(e, x => x.WarehouseType, warehouseType) | Set(e, x => x.Address, r["Địa chỉ"])
                 | Set(e, x => x.OrganizationUnitId, unitId ?? e.OrganizationUnitId);
             return Finish(e, isNew, changed, ctx);
         }

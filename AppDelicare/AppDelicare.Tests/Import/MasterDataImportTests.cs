@@ -98,6 +98,21 @@ namespace AppDelicare.Tests.Import
         }
 
         [Fact]
+        public async Task Warehouse_import_type_must_come_from_catalog()
+        {
+            // GAP-REF-01 (anh chốt 2026-11-22): Loại kho trong file nhập phải có trong ReferenceLists:WarehouseType – nhận nhãn → mã; dòng sai không tạo kho.
+            using var c = _factory.CreateAuthorizedClient();
+            var file = await FillTemplateAsync(c, "Warehouse",
+                ["[DEMO]-IMP-KO1", "[DEMO] Kho nhập 1", "Kho bếp"],
+                ["[DEMO]-IMP-KO2", "[DEMO] Kho nhập 2", "KHO_TONG"]);
+            var data = (await ImportAsync(c, "Warehouse", file)).Ok();
+            data.GetProperty("inserted").GetInt32().Should().Be(1);
+            data.GetProperty("listError")[0].GetProperty("message").GetString().Should().Contain("Loại kho «KHO_TONG» không có trong danh mục");
+            (await _factory.QueryAsync(db => db.Warehouse.AsNoTracking().SingleAsync(x => x.Code == "[DEMO]-IMP-KO1"))).WarehouseType.Should().Be("KITCHEN");
+            (await _factory.QueryAsync(db => db.Warehouse.CountAsync(x => x.Code == "[DEMO]-IMP-KO2"))).Should().Be(0);
+        }
+
+        [Fact]
         public async Task Ingredient_dish_recipe_line_and_price_chain()
         {
             using var c = _factory.CreateAuthorizedClient();
