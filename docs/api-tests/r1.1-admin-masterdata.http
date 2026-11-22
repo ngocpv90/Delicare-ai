@@ -51,7 +51,7 @@ Content-Type: application/x-www-form-urlencoded
 
 ListPermission=[{"id":"00000000-0000-0000-0000-000000000000","userGroupId":"<UserGroupId>","objectMenuId":"<ObjectMenuId>","allowEdit":true}]
 
-### Quyền duyệt (D-31): cấp allowEdit trên mục "Duyệt – …" (MetaLink #/wf-inbox?type=<screen-id>) ở ma trận trên.
+### Quyền duyệt (D-31): cấp allowEdit trên mục "Phê duyệt › …" (MetaLink #/wf-inbox?type=<screen-id>) ở ma trận trên.
 
 ### Xem trước quyền của nhóm (chỉ admin)
 GET {{base}}/api/UserRole/GetPreview?userGroupId=<UserGroupId>
@@ -113,7 +113,7 @@ RecipeId=<RecipeId>&IngredientId=<IngredientId>&Quantity=12000&UnitId=<GId>&Sequ
 GET {{base}}/api/Recipe/CalculateCost?id=<RecipeId>&mealCount=50
 Authorization: Bearer {{token}}
 
-### Gửi duyệt → duyệt (quyền "Duyệt – Công thức") → khóa
+### Gửi duyệt → duyệt (quyền "Phê duyệt › Công thức") → khóa
 POST {{base}}/api/Recipe/Submit
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded

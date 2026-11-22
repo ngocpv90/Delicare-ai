@@ -207,7 +207,7 @@ namespace AppDelicare.Services.Implement
                 string.Join(" / ", expected.Select(ProductionPlanStatus.Label)), ProductionPlanStatus.Label(plan.Status));
 
         /// <summary>
-        /// T17 (spec 8.1 approve, Pilot P7): xác nhận kế hoạch KH- của ngày – Nháp → Đã duyệt (1 cấp, quyền Duyệt trên mục "Duyệt – Kế hoạch sản xuất").
+        /// T17 (spec 8.1 approve, Pilot P7): xác nhận kế hoạch KH- của ngày – Nháp → Đã duyệt (1 cấp, quyền Duyệt trên mục "Phê duyệt › Kế hoạch sản xuất").
         /// Từ lúc này MRP không tính lại kế hoạch (T14). Người duyệt = ModifiedBy (ProductionPlan không có cột ApprovedBy – GAP-PRD-06).
         /// </summary>
         public async Task<IResult<ProductionPlanDetailModel>> Approve(ProductionActionRequest request)

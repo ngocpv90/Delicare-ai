@@ -22,5 +22,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<CustomerSummaryModel>> GetSummary(Guid? branchId, string? customerType, string? searchText);
         /// <summary>UI-2 (D-66 f2): suất đặt / giao / nhận / phục vụ theo ngày ăn + cơ cấu loại suất; mặc định 30 ngày tới hôm nay.</summary>
         public Task<IResult<CustomerTrendModel>> GetTrend(Guid id, DateTime? from, DateTime? to);
+        /// <summary>UI-5 (D-63 r): chi nhánh (loại BRANCH), NV phụ trách đang hoạt động, danh mục, cờ chi nhánh bắt buộc – cho form khách hàng.</summary>
+        public Task<IResult<CustomerFormOptionsModel>> GetFormOptions();
     }
 }

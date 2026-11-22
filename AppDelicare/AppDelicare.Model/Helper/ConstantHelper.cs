@@ -350,7 +350,7 @@
             public static readonly string ReceivingTempOutOfRange = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C – vùng loại, chỉ kết luận KHONG_DAT";
             public static readonly string ReceivingTempConditional = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C (≤ {3} °C: nhận có điều kiện – cần lý do, lô ưu tiên dùng trước)";
             public static readonly string ReceivingTempMissingWarning = "Cảnh báo: {0} ({1}) chưa có nhiệt độ nhận – bắt buộc đo trước khi kết luận QC";
-            public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Duyệt – Đơn mua hàng (Giám đốc)\")";
+            public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Phê duyệt › Đơn mua hàng (Giám đốc)\")";
             // T17 – sản xuất theo mẻ (P7)
             public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất được tạo bằng MaterialRequirement/Calculate (KH- theo ngày sản xuất)";
             public static readonly string PlanUpdateBlocked = "Trạng thái / số / ngày kế hoạch chỉ đổi qua thao tác nghiệp vụ (Approve / Release) – dòng món sửa qua ProductionPlanLine khi kế hoạch còn Nháp";
@@ -773,8 +773,15 @@
             public static readonly string CustomerEmailInvalid = "{0} {1} không đúng định dạng";
             public static readonly string CustomerDateInFuture = "{0} không được sau ngày hôm nay";
             public static readonly string CustomerIdentityDateInvalid = "Ngày cấp CCCD phải từ ngày sinh tới hôm nay";
-            public static readonly string CustomerStatusInvalid = "Trạng thái khách hàng phải là Active hoặc Inactive";
+            public static readonly string CustomerStatusInvalid = "Trạng thái khách hàng phải là Đang hoạt động hoặc Ngừng hoạt động";
             public static readonly string CustomerBranchNotFound = "Không tìm thấy chi nhánh phục vụ";
+            // ---------------------------------------------------------------- UI-5 (D-63 r) – hoàn thiện form khách hàng
+            public static readonly string CustomerCatalogInvalid = "{0} \"{1}\" không có trong danh mục – chọn một trong: {2}";
+            public static readonly string CustomerAssigneeNotFound = "Không tìm thấy nhân viên phụ trách (tài khoản người dùng đang hoạt động)";
+            public static readonly string CustomerFirstLocationRequired = "Điểm giao đầu tiên: thiếu {0}";
+            public static readonly string CustomerFirstLocationWindowInvalid = "Điểm giao đầu tiên: giờ nhận từ phải nhỏ hơn giờ nhận đến";
+            public static readonly string CustomerCreatedPrimaryContact = "1 liên hệ chính";
+            public static readonly string CustomerCreatedLocation = "1 điểm giao {0}";
             public static readonly string CustomerTypeLocked = "Khách hàng {0} đã có hợp đồng / đơn hàng – không đổi loại được. Ngừng hoạt động khách này và tạo khách mới";
             public static readonly string CustomerTypeChanged = "Đổi loại khách hàng: mã {0} → {1}";
             public static readonly string CodeGeneratedNote = "(tự sinh khi lưu)";

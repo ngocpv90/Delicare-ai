@@ -77,24 +77,24 @@ Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòn
 4. **Sao chép quyền từ nhóm khác**: chọn nhóm nguồn → **Sao chép** → xác nhận *"Thay toàn bộ quyền của nhóm … bằng quyền của nhóm …?"*.
 5. **Xem trước quyền của nhóm** (quản trị): kiểm lại kết quả.
 
-**Quyền Duyệt** không phải cột riêng: mỗi loại duyệt là một mục menu **"Duyệt – …"** (nhóm Phê duyệt). Cấp **Truy cập + Sửa** trên mục đó = được duyệt loại đó. Danh sách mục duyệt:
+**Quyền Duyệt** không phải cột riêng: mỗi loại duyệt là một mục menu **"Phê duyệt › …"** (nhóm Phê duyệt). Cấp **Truy cập + Sửa** trên mục đó = được duyệt loại đó. Danh sách mục duyệt:
 
 | Mục quyền | Duyệt gì |
 |---|---|
-| Duyệt – Hợp đồng suất ăn (`crm-contract`) | Hợp đồng |
-| Duyệt – Đơn đặt suất ăn (`crm-order`) | Lệch suất > 30% và sửa / thêm đơn sau giờ chốt |
-| Duyệt – Chính sách giá theo KH/HĐ (`crm-price-policy`) | (có mục quyền) |
-| Duyệt – Công thức & phiên bản (`menu-recipe`) | Phiên bản công thức |
-| Duyệt – Thực đơn & phiên bản (`menu-menu`) | (có mục quyền) |
-| Duyệt – Yêu cầu đổi món (`menu-change-request`) | Đổi món |
-| Duyệt – Đề nghị mua hàng cấp 1 / cấp 2 (`scm-pr-l1`, `scm-pr-l2`) | Đề nghị mua 2 cấp |
-| Duyệt – Đơn mua hàng (`scm-po`) / (Giám đốc) (`scm-po-director`) | PO dưới / từ 50 triệu |
-| Duyệt – Phiếu kiểm kê / (cấp 2 – Kế toán) | Kiểm kê lệch > 2% |
-| Duyệt – Phiếu điều chỉnh tồn (`scm-adjustment`) | Điều chỉnh tồn tay |
-| Duyệt – Kế hoạch sản xuất theo ngày/ca (`prod-plan`) | Nút **Duyệt** kế hoạch SX |
-| Duyệt – Phiếu QC đầu vào (`qc-inspection`) | (có mục quyền) |
-| Duyệt – Đơn xin nghỉ / Đơn đổi ca | Nghỉ, đổi ca |
-| Duyệt – Hộp phê duyệt tập trung (`wf-inbox`) | Xem hộp duyệt |
+| Phê duyệt › Hợp đồng suất ăn (`crm-contract`) | Hợp đồng |
+| Phê duyệt › Đơn đặt suất ăn (`crm-order`) | Lệch suất > 30% và sửa / thêm đơn sau giờ chốt |
+| Phê duyệt › Chính sách giá theo KH/HĐ (`crm-price-policy`) | (có mục quyền) |
+| Phê duyệt › Công thức & phiên bản (`menu-recipe`) | Phiên bản công thức |
+| Phê duyệt › Thực đơn & phiên bản (`menu-menu`) | (có mục quyền) |
+| Phê duyệt › Yêu cầu đổi món (`menu-change-request`) | Đổi món |
+| Phê duyệt › Đề nghị mua hàng cấp 1 / cấp 2 (`scm-pr-l1`, `scm-pr-l2`) | Đề nghị mua 2 cấp |
+| Phê duyệt › Đơn mua hàng (`scm-po`) / (Giám đốc) (`scm-po-director`) | PO dưới / từ 50 triệu |
+| Phê duyệt › Phiếu kiểm kê / (cấp 2 – Kế toán) | Kiểm kê lệch > 2% |
+| Phê duyệt › Phiếu điều chỉnh tồn (`scm-adjustment`) | Điều chỉnh tồn tay |
+| Phê duyệt › Kế hoạch sản xuất theo ngày/ca (`prod-plan`) | Nút **Duyệt** kế hoạch SX |
+| Phê duyệt › Phiếu QC đầu vào (`qc-inspection`) | (có mục quyền) |
+| Phê duyệt › Đơn xin nghỉ / Đơn đổi ca | Nghỉ, đổi ca |
+| Phê duyệt › Hộp phê duyệt tập trung (`wf-inbox`) | Xem hộp duyệt |
 
 Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và **Bot Telegram – Điều hành** (`#/bot-dieu-hanh`). Chức năng trong bot đi theo quyền của màn web tương ứng.
 
@@ -149,7 +149,7 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 | Đường dẫn … đã tồn tại | MetaLink menu trùng – sửa đường dẫn |
 | Người dùng báo "không có quyền truy cập màn hình này" | Cấp **Truy cập** cho nhóm của họ ở `adm-permission`; người dùng tải lại trang |
 | Người dùng có quyền mà nút vẫn mờ | Thiếu quyền Thêm / Sửa / Xuất của màn đó |
-| Người dùng không duyệt được | Cấp mục **Duyệt – …** đúng loại (Truy cập + Sửa) |
+| Người dùng không duyệt được | Cấp mục **Phê duyệt › …** đúng loại (Truy cập + Sửa) |
 
 ## 7. Trên bot Telegram
 

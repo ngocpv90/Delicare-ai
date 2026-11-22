@@ -339,7 +339,7 @@ namespace AppDelicare.Services.Implement
                 .Where(a => !a.IsDeleted && a.BusinessType == MenuChangeStatus.BusinessType && a.BusinessId == id && (!pendingOnly || ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus)))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
-        /// <summary>Duyệt / từ chối qua engine T12 (<c>ApprovalRequestService.Decide</c>: quyền mục "Duyệt – Yêu cầu đổi món", hash, ApprovalDecision).</summary>
+        /// <summary>Duyệt / từ chối qua engine T12 (<c>ApprovalRequestService.Decide</c>: quyền mục "Phê duyệt › Yêu cầu đổi món", hash, ApprovalDecision).</summary>
         public async Task<IResult<bool>> Decide(MenuChangeActionRequest request, bool approve)
         {
             try

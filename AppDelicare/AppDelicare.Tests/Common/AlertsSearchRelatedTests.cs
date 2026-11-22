@@ -216,7 +216,7 @@ namespace AppDelicare.Tests.Common
                 var menu = await db.ObjectMenu.FirstOrDefaultAsync(m => m.MetaLink == "#/wf-inbox?type=menu-recipe");
                 if (menu == null)
                 {
-                    menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Duyệt – Công thức", MetaLink = "#/wf-inbox?type=menu-recipe", IsActive = true, LevelShow = 2 };
+                    menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Công thức", MetaLink = "#/wf-inbox?type=menu-recipe", IsActive = true, LevelShow = 2 };
                     db.ObjectMenu.Add(menu);
                 }
                 db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = group, ObjectMenuId = menu.Id, AllowAccess = true, AllowEdit = true });

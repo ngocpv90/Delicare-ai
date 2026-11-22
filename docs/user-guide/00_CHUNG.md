@@ -146,7 +146,7 @@ Hệ thống tự sinh số, dạng `<tiền tố>-<YYMMDD>-<số>`:
 | Thông báo | Ý nghĩa / cách xử lý |
 |---|---|
 | Bạn không có quyền {thao tác} trên màn hình {màn} | Thiếu quyền Thêm / Sửa / Xóa / In / Xuất – nhờ quản trị cấp trên ma trận quyền |
-| Bạn không có quyền duyệt loại yêu cầu này | Thiếu mục "Duyệt – …" tương ứng |
+| Bạn không có quyền duyệt loại yêu cầu này | Thiếu mục "Phê duyệt › …" tương ứng |
 | Không tìm thấy bản ghi (hoặc đã xóa) | Dữ liệu đã đổi – tải lại trang (F5) |
 | Chỉ {thao tác} khi {chứng từ} ở trạng thái {A} (hiện tại: {B}) | Thao tác không hợp với trạng thái hiện tại – xem bảng trạng thái của màn |
 | … chỉ tạo / đổi trạng thái qua thao tác nghiệp vụ (…) | Không sửa trực tiếp được – dùng nút nghiệp vụ trên màn |

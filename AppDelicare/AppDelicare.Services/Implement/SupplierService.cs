@@ -256,12 +256,45 @@ namespace AppDelicare.Services.Implement
                 };
                 model.QcPassRate = model.RejectRate is { } rr ? 100 - rr : null;
                 await FillProfileAsync(model, id);
+                await FillInfoPanelAsync(model, supplier);
                 return Result<SupplierOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// UI-2R (D-69 e–f): số phiếu nhập gần nhất, ngày bắt đầu giao dịch, tạo / cập nhật bởi; với mỗi giá đang hiệu lực:
+        /// số NCC cùng có giá hiệu lực cho nguyên liệu đó và NCC này có giá thấp nhất không.
+        /// </summary>
+        private async Task FillInfoPanelAsync(SupplierOverviewModel m, Supplier supplier)
+        {
+            var db = _unitOfWork.DbContext;
+            Guid id = supplier.Id;
+            var last = await db.GoodsReceipt.AsNoTracking().Where(r => !r.IsDeleted && r.SupplierId == id)
+                .OrderByDescending(r => r.ReceiptDate).Select(r => new { r.ReceiptNumber, r.ReceiptNo }).FirstOrDefaultAsync();
+            m.LastReceiptNumber = last?.ReceiptNumber ?? last?.ReceiptNo;
+            DateTime? firstPo = await db.PurchaseOrder.AsNoTracking().Where(p => !p.IsDeleted && p.SupplierId == id).MinAsync(p => (DateTime?)p.OrderDate);
+            DateTime? firstGr = await db.GoodsReceipt.AsNoTracking().Where(r => !r.IsDeleted && r.SupplierId == id).MinAsync(r => (DateTime?)r.ReceiptDate);
+            m.FirstTradeDate = new[] { firstPo, firstGr }.Where(x => x != null).Min();
+            var names = await InfoPanelRules.UserNamesAsync(db, [supplier.CreatedBy, supplier.ModifiedBy]);
+            m.CreatedByName = names.NameOf(supplier.CreatedBy);
+            m.ModifiedByName = names.NameOf(supplier.ModifiedBy);
+
+            DateTime today = clock.Today;
+            var ingredientIds = m.ListMaterial.Select(x => x.IngredientId).Distinct().ToList();
+            var prices = await db.SupplierMaterial.AsNoTracking()
+                .Where(x => !x.IsDeleted && ingredientIds.Contains(x.IngredientId) && x.UnitPrice != null
+                    && (x.EffectiveFrom == null || x.EffectiveFrom <= today) && (x.EffectiveTo == null || x.EffectiveTo >= today) && x.Status != "Inactive")
+                .Select(x => new { x.IngredientId, x.SupplierId, x.UnitPrice }).ToListAsync();
+            foreach (var mat in m.ListMaterial)
+            {
+                var same = prices.Where(x => x.IngredientId == mat.IngredientId).ToList();
+                mat.SupplierCount = same.Select(x => x.SupplierId).Distinct().Count();
+                mat.IsLowest = mat.UnitPrice != null && same.Count > 1 && same.Where(x => x.SupplierId != id).All(x => x.UnitPrice >= mat.UnitPrice);
             }
         }
 

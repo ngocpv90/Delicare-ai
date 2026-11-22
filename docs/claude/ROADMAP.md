@@ -7,11 +7,13 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 ## ▶ THỨ TỰ LÀM TIẾP (anh chốt 2026-11-19 – Claude Code đọc mục này trước)
 
 1. **Làm xong task đang dở** (theo PROGRESS – trạng thái `DOING`), không bỏ ngang.
-2. **UI-1R – sửa thẻ chỉ số cho đúng D-64 c** (mục UI-1 bên dưới; 7 điểm + AC có ảnh chụp so với `docs/frontend-handoff/assets/kpi-card-standard.png`). Lỗi chính: biểu tượng đang nằm giữa do `.card` của Bootstrap xếp dọc – phải nằm **bên trái**.
-3. **UI-3** màn chi tiết nhà cung cấp (D-67) → **UI-4** màn chi tiết nhân viên (D-68) – dùng thẻ chỉ số đã sửa ở bước 2.
-4. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
-5. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
-6. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
+2. ~~UI-1R~~ ✅ · ~~UI-3~~ ✅ · ~~UI-4~~ ✅ (xong 2026-11-19).
+3. ~~UI-5~~ ✅ hoàn thiện form khách hàng (xong 2026-11-21, đã gộp `main`).
+4. ~~UI-2R~~ ✅ bố cục 1/3 – 2/3 + khối thông tin rút gọn (xong 2026-11-21).
+5. ~~MENU-1~~ ✅ bỏ tiền tố "Duyệt – " ở 19 mục menu Phê duyệt (xong 2026-11-21; DB có sẵn: anh chạy `DB/scripts/MENU1_rename_approve_menu.sql` sau backup).
+6. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
+7. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
+8. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
 
 Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/user-guide/*` liên quan; xong bước nào báo anh mở thử giao diện bước đó.
 
@@ -101,6 +103,69 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 
 **AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
 
+## ★ MENU-1 – BỎ TIỀN TỐ "DUYỆT – " Ở MENU NHÓM PHÊ DUYỆT (anh yêu cầu 2026-11-22) · `DONE` 2026-11-21
+
+> Nhóm menu **Phê duyệt** (`#/group/approve`) đã nói rõ là duyệt → tên mục con bỏ tiền tố "Duyệt – ". Chỉ đổi **ObjectMenu.Name**; giữ nguyên Id, MetaLink, ShortName, OrderShow, quyền đã gán (UserRole). Không thêm bảng / cột.
+
+| OrderShow | MetaLink | Tên cũ | Tên mới |
+|---|---|---|---|
+| 9901 | `#/wf-inbox?type=menu-recipe` | Duyệt – Công thức & phiên bản | **Công thức & phiên bản** |
+| 9902 | `#/wf-inbox?type=crm-price-policy` | Duyệt – Chính sách giá theo KH/HĐ | **Chính sách giá theo KH/HĐ** |
+| 9903 | `#/wf-inbox?type=crm-contract` | Duyệt – Hợp đồng suất ăn | **Hợp đồng suất ăn** |
+| 9904 | `#/wf-inbox?type=menu-menu` | Duyệt – Thực đơn & phiên bản | **Thực đơn & phiên bản** |
+| 9905 | `#/wf-inbox?type=menu-change-request` | Duyệt – Yêu cầu đổi món | **Yêu cầu đổi món** |
+| 9906 | `#/wf-inbox?type=crm-order` | Duyệt – Đơn đặt suất ăn | **Đơn đặt suất ăn** |
+| 9907 | `#/wf-inbox?type=scm-pr` | Duyệt – Đề nghị mua hàng | **Đề nghị mua hàng** |
+| 9908 | `#/wf-inbox?type=scm-po` | Duyệt – Đơn mua hàng | **Đơn mua hàng** |
+| 9909 | `#/wf-inbox?type=scm-adjustment` | Duyệt – Phiếu điều chỉnh tồn | **Phiếu điều chỉnh tồn** |
+| 9910 | `#/wf-inbox?type=scm-stockcount` | Duyệt – Phiếu kiểm kê | **Phiếu kiểm kê** |
+| 9911 | `#/wf-inbox?type=prod-plan` | Duyệt – Kế hoạch sản xuất theo ngày/ca | **Kế hoạch sản xuất theo ngày/ca** |
+| 9912 | `#/wf-inbox?type=qc-inspection` | Duyệt – Phiếu QC đầu vào | **Phiếu QC đầu vào** |
+| 9913 | `#/wf-inbox?type=hr-leave` | Duyệt – Đơn xin nghỉ | **Đơn xin nghỉ** |
+| 9914 | `#/wf-inbox?type=hr-swap` | Duyệt – Đơn đổi ca | **Đơn đổi ca** |
+| 9915 | `#/wf-inbox?type=wf-inbox` | Duyệt – Hộp phê duyệt tập trung | **Hộp phê duyệt tập trung** |
+| 9916 | `#/wf-inbox?type=scm-po-director` | Duyệt – Đơn mua hàng (Giám đốc) | **Đơn mua hàng (Giám đốc)** |
+| 9917 | `#/wf-inbox?type=scm-pr-l1` | Duyệt – Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng) | **Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng)** |
+| 9918 | `#/wf-inbox?type=scm-pr-l2` | Duyệt – Đề nghị mua hàng (cấp 2 – Giám đốc vận hành) | **Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)** |
+| 9919 | `#/wf-inbox?type=scm-stockcount-l2` | Duyệt – Phiếu kiểm kê (cấp 2 – Kế toán) | **Phiếu kiểm kê (cấp 2 – Kế toán)** |
+
+- **MENU-1.1 Seed:** `DB/seed/ObjectMenu_seed.sql` – 19 câu INSERT dùng tên mới; thêm khối **UPDATE idempotent** cho DB đã có: `UPDATE dbo.ObjectMenu SET Name = SUBSTRING(Name, 9, 500), ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink LIKE N'#/wf-inbox?type=%' AND Name LIKE N'Duyệt – %' AND IsDeleted = 0` (chạy lại không đổi gì; kiểm đúng độ dài tiền tố "Duyệt – " gồm dấu gạch dài + khoảng trắng; không đụng mục ngoài nhóm Phê duyệt). Ghi script dữ liệu riêng `DB/scripts/MENU1_rename_approve_menu.sql` (chế độ chạy thử in trước / sau).
+- **MENU-1.2 Code nhắc tên cũ:** rà `"Duyệt – "` trong BE (vd `ApprovalRequestService` – tên bước duyệt = tên mục menu, chú thích dòng 343), FE (`hr.js` wf-inbox, ma trận quyền `adm-permission`, `catalog.js`), bot (`ApprovalActions` …), test (kỳ vọng tên bước) → dùng tên mới; tên bước của **yêu cầu duyệt đã tạo trước** giữ nguyên (không sửa dữ liệu lịch sử), chỉ yêu cầu mới mang tên mới. Hộp phê duyệt / bot hiển thị cột "Bước duyệt" vẫn rõ nghĩa (có thể ghép "Duyệt: " khi hiển thị nếu cần – không lưu vào tên menu).
+- **MENU-1.3 Trùng tên:** sau khi bỏ tiền tố, một số tên trùng tên màn nghiệp vụ ở nhóm khác (vd "Đơn mua hàng", "Đề nghị mua hàng", "Phiếu kiểm kê", "Đơn đổi ca") – ma trận phân quyền `adm-permission` phải hiện **nhóm cha** (Phê duyệt / Mua hàng & Kho …) cạnh tên để không nhầm; kiểm tra màn tìm menu / tìm kiếm toàn cục cũng hiện nhóm cha.
+- **MENU-1.4 Tài liệu:** sửa "Duyệt – …" trong `docs/user-guide/01_QUAN_TRI.md`, `12_QUAN_LY_DUYET.md`, `13_BAN_DIEU_HANH.md`, `20_BOT_TELEGRAM.md`, `90_CHENH_LECH.md`, `README.md`; ORG_STRUCTURE / BOT_TELEGRAM nếu có.
+
+**AC:** menu nhóm Phê duyệt hiện đúng 19 tên mới (không còn "Duyệt – "); quyền của các nhóm không đổi (so số dòng UserRole trước / sau = nhau); script chạy lại lần 2 không đổi gì; ma trận phân quyền phân biệt được mục trùng tên nhờ nhóm cha; test xanh; HDSD cập nhật.
+
+## ★ UI-2R – BỐ CỤC 1/3 – 2/3 + KHỐI THÔNG TIN RÚT GỌN CHO 3 MÀN CHI TIẾT (D-69, anh chốt 2026-11-22) · `DONE` 2026-11-21 (ảnh: `docs/frontend-handoff/assets/ui-2r/`)
+
+> Nguồn: DECISIONS **D-69**; mô phỏng (mở bằng trình duyệt, bấm được nhóm gập): `docs/frontend-handoff/assets/customer-360-mockup.html`, `supplier-360-mockup.html`, `employee-360-mockup.html`. Chỉ sửa **tab Tổng quan** của `crm-customer-360` (UI-2), `scm-supplier-360` (UI-3), `adm-employee-360` (UI-4); phần đầu, thẻ chỉ số, các tab khác giữ nguyên. Claude Code làm FE (D-65); BE không đổi (dữ liệu đã có trong `GetOverview` / `GetById` – thiếu trường nào thì chỉ **thêm** trường trả về, không đổi trường cũ). Không thêm bảng / cột.
+
+- **UI-2R.1 Thành phần chung khối thông tin** (`core/ui.js`, vd `UI.infoPanel({ key, title, onEdit, core: [{icon, html}], groups: [{key, title, summary, rows: [[label, value]], locked, open}] })` + `app.css`): theo D-69 b – 6 dòng cốt lõi, nhóm gập có dòng tóm tắt, nhớ nhóm mở theo `key` màn (localStorage trong try/catch), ẩn ô trống, nhóm trống "Chưa có thông tin · Bổ sung" (chỉ khi có quyền sửa), `tel:` / `mailto:`, nút sao chép, sticky; bàn phím: tiêu đề nhóm là `button` (Enter / Space mở gập, `aria-expanded`).
+- **UI-2R.2 Bố cục hai cột chung** (`app.css`): `.dc-two{grid 1fr 2fr; gap 24px}`, `.dc-pair{grid 2 cột}`; < 1200px xếp dọc, tắt sticky.
+- **UI-2R.3 Khách hàng 360** – tab Tổng quan theo D-69 c–d (khách cá nhân: nhóm Pháp lý theo D-69 c; ngày sinh / CCCD theo quyền). Bỏ khối thông tin / bố cục cũ.
+- **UI-2R.4 Nhà cung cấp** – tab Tổng quan theo D-69 e–f.
+- **UI-2R.5 Nhân viên** – tab Tổng quan theo D-69 g–h (nhóm Cá nhân chỉ hiện khi API trả dữ liệu cá nhân; không có thì không hiện nhóm, không hiện ô trống).
+- **UI-2R.6 Kiểm tra + tài liệu:** build FE xanh; mở thử 3 màn trên DB dev (1 khách DN + 1 khách CN, 1 NCC có PO trễ, 1 nhân viên bếp bằng tài khoản NS và tài khoản tổ trưởng) ở 3 cỡ màn hình; **chụp ảnh** tab Tổng quan 3 màn đặt cạnh 3 file mô phỏng để so (ghi đường dẫn ảnh trong PROGRESS); cập nhật `docs/user-guide/02_KINH_DOANH.md`, `04_MUA_HANG.md`, `11_NHAN_SU.md` (mục màn chi tiết).
+
+**AC:** tab Tổng quan 3 màn đúng bố cục 1/3 – 2/3 và thứ tự khối như mô phỏng; cột trái mặc định ≤ ~10 dòng (6 cốt lõi + tiêu đề nhóm), nhóm gập / mở được và được nhớ sau khi tải lại; không có dòng "–" / ô trống; thông tin cá nhân chỉ người có quyền thấy (kiểm cả API); màn < 1200px xếp dọc không vỡ; cả 3 màn dùng **cùng một** thành phần khối thông tin; build FE xanh, test BE xanh.
+
+## ★ UI-5 – HOÀN THIỆN FORM KHÁCH HÀNG (D-63 r, anh chốt 2026-11-22) · `DONE` 2026-11-21 (đã gộp `main` 2026-11-21; script `DB/scripts/UI5_customer_catalogs.sql` anh chạy sau backup)
+
+> Nguồn: rà soát form tạo mới khách hàng của chat tài liệu 2026-11-22 (form theo loại ở `core/ui.js` `CUSTOMER_FIELDS`, kiểm ở `CustomerService.CheckRules`). Claude Code làm cả BE + FE (D-65). Không thêm bảng / cột. Làm ngay sau task đang dở (mục ▶ THỨ TỰ LÀM TIẾP).
+
+- **UI-5.1 NV phụ trách:** `UserAssignId` đang là ô gõ GUID ("Tham chiếu chưa xác định bảng đích (GAP)") → ô chọn **người dùng / nhân viên đang hoạt động** có tìm kiếm (xác định bảng đích của `Customer.UserAssignId` theo code cũ – User hoặc Employee – ghi vào `Store.target` / schema meta; máy chủ kiểm tồn tại).
+- **UI-5.2 Ô ngày:** Ngày sinh, Ngày cấp CCCD, Ngày cấp ĐKKD (cột `datetime`) → ô **chỉ chọn ngày** (`type="date"`), gửi `yyyy-MM-dd`. Áp chung: cột datetime có tên `*Date` / `DateOfBirth` mà nghiệp vụ là ngày → ô ngày (danh sách cột trong một chỗ).
+- **UI-5.3 Danh mục (D-63 r):** Ngành, Quy mô, Giới tính, Nguồn → ô chọn từ danh mục (catalog FE + hằng số BE dùng chung mã); máy chủ từ chối mã ngoài danh mục (thông báo tiếng Việt mới trong `ConstantHelper.Message`); chuẩn hóa dữ liệu cũ bằng script dữ liệu idempotent (chạy thử in trước).
+- **UI-5.4 Chi nhánh phục vụ:** chỉ liệt kê đơn vị **loại chi nhánh** (`UnitType = BRANCH`), chữ "— Chọn chi nhánh —" (bỏ tên bảng tiếng Anh ở **mọi** ô chọn tham chiếu: dùng nhãn tiếng Việt của bảng); hiện dấu \* khi hệ thống đã có chi nhánh (lấy từ API – vd thêm cờ `branchRequired` vào `Common/GetCodeRules` hoặc API cấu hình form); có đúng 1 chi nhánh → chọn sẵn.
+- **UI-5.5 Trạng thái:** *Đang hoạt động / Ngừng hoạt động* (`Active` / `Inactive`), mặc định Đang hoạt động, bỏ lựa chọn trống. Áp chung cho ô Status Active/Inactive của form sinh tự động.
+- **UI-5.6 Chọn loại trước:** form tạo mới mở ra với **2 nút lớn Doanh nghiệp / Cá nhân**, chưa chọn sẵn; chọn xong mới hiện các ô theo loại (đổi loại vẫn được trước khi lưu, giữ dữ liệu đã nhập như hiện tại). Form sửa: giữ khóa loại (D-63 i).
+- **UI-5.7 Kiểm tại ô:** kiểm MST (10 số / 10-3 số; cá nhân 10 số), CCCD 12 số, SĐT (`0`+9 số / `+84`+9 số, cho phép dấu cách / chấm / gạch), email, ngày (không sau hôm nay; ngày cấp CCCD ≥ ngày sinh) **khi rời ô**, lỗi đỏ dưới đúng ô; lỗi máy chủ trả về vẫn hiện đầu form và tô đỏ ô liên quan nếu nhận ra tên trường. Quy tắc giống hệt máy chủ (một bộ regex, ghi chú nguồn).
+- **UI-5.8 Liên hệ chính + điểm giao đầu tiên (D-63 r):** BE – `Customer/Insert` (khách doanh nghiệp) tự tạo `CustomerContact` IsPrimary từ Người liên hệ / SĐT / email người liên hệ; nhận thêm khối tùy chọn `firstLocation` (tên, địa chỉ, giờ nhận từ – đến; từ < đến) → tạo `CustomerDeliveryLocation` trong **cùng transaction**. FE – khối **Điểm giao đầu tiên** (thu gọn, mở khi bấm "Thêm điểm giao ngay"). Sau khi lưu, báo "Đã tạo KHB-… · 1 liên hệ chính · 1 điểm giao".
+- **UI-5.9 Nhỏ:** nhập Tên doanh nghiệp → tự điền Tên giao dịch khi ô này còn trống (vẫn sửa được).
+- **UI-5.10 Kiểm tra + tài liệu:** test BE (danh mục sai mã, tạo liên hệ chính, điểm giao lỗi giờ → không tạo khách – rollback); build FE xanh; mở thử tạo 1 khách doanh nghiệp + 1 khách cá nhân trên DB dev; cập nhật `docs/user-guide/02_KINH_DOANH.md` (mục tạo khách hàng: thao tác, bảng trường bắt buộc / tùy chọn theo loại, lỗi thường gặp).
+
+**AC:** không còn ô gõ GUID / chữ tiếng Anh / tên bảng trên form khách hàng; ô ngày chỉ chọn ngày; Ngành / Quy mô / Giới tính / Nguồn chỉ chọn trong danh mục (máy chủ chặn mã lạ); chi nhánh chỉ hiện chi nhánh, có dấu \* đúng điều kiện; phải chọn loại trước khi thấy các ô; lỗi định dạng hiện ngay tại ô; tạo khách doanh nghiệp sinh liên hệ chính, có điểm giao đầu tiên thì sinh điểm giao cùng lúc; test BE + build FE xanh; HDSD cập nhật.
+
 ## ★ UI-3 – MÀN CHI TIẾT NHÀ CUNG CẤP (D-67, anh chốt 2026-11-19) · `DONE` 2026-11-19 (nhánh `feat/MA-1-code-rules`; đã mở thử bằng Chrome headless trên DB dev – 1440px + 390px)
 
 > Nguồn: DECISIONS **D-67**; mô phỏng `docs/frontend-handoff/assets/supplier-360-mockup.html`. Cùng khung với UI-2 (dùng lại thành phần phần đầu / thẻ chỉ số / hàng tab / khối Cần chú ý của UI-2 – tách thành hàm dùng chung). Làm sau UI-2. Claude Code làm cả BE + FE (D-65). Không thêm bảng / cột.
@@ -183,7 +248,7 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 | **BOT-2.2** · **`DONE`** 2026-11-18 (nhánh `feat/BOT-2.1-the-ca`, commit riêng; PROGRESS BOT-2.2) · Sự việc liên phòng: nhận xử lý, ghi chú, leo thang | `Chung/IncidentActions`: [Nhận xử lý] / [Đã xử lý xong], trả lời vào thẻ → nối ghi chú vào thẻ mọi người (phản ánh → `ComplaintHistory`; khác → `PayloadJson`, GAP-INT-04). Job `Escalation` (mỗi phút) theo `Messaging:Escalation` (BOT_TELEGRAM §5.2). Job `LeaveHandover`: nhắc người duyệt trước ngày nghỉ. `INCIDENT_UNCLAIMED` cho COO / PMO. | Người bấm trước được ghi, người sau thấy tên người nhận; ghi chú hiện ở mọi người liên quan; 🔴 không ai nhận → leo thang đúng bậc và thời gian (đồng hồ giả); test xanh |
 | **BOT-2.3** · **`DONE`** 2026-11-18 (nhánh `feat/BOT-2.1-the-ca`; ShiftReminder = Thẻ ca BOT-2.1; PERIOD_REPORT tuần / tháng để sau – PROGRESS BOT-2.3) · Giờ yên lặng theo ca + lịch thông báo | `MessagingRules` giờ yên lặng theo phân ca (BOT_TELEGRAM §5.3, `notBefore`); `BotJobs`: MorningBrief 07:00, DailyReport 17:00, RemindUnconfirmedOrders 19:00 (Telegram cho NV KD – thay phần bot của T23.2), IngredientsTonight 21:00, ProgressWatch 15′ (mẻ trễ, xe chưa rời, điểm trễ), ShiftReminder + NotCheckedIn mỗi giờ, ApprovalOverdue, ComplaintSla (mở lại D-59 a). | Tin 🟡 / ⚪ không tới người ngoài ca (trừ bậc leo thang 🔴); chạy lại job không gửi trùng; lịch đúng giờ VN; test xanh |
 | **BOT-2.4** · **`DONE`** 2026-11-18 (nhánh `feat/BOT-2.4-qr-vitri`; vị trí xử lý ở messaging bằng JWT tài xế qua Service giao vận cũ thay cho `BotChannel/ReportLocation` – DECISIONS p39) · QR vật thể + vị trí trực tiếp tài xế | `start=LINE_…`, `VEH_…`, `LOC_…`, `CLEAN` (mở đúng việc tại chỗ). Vị trí trực tiếp: `messaging` nhận cập nhật vị trí, **chỉ gọi `BotChannel/ReportLocation` khi vào / ra bán kính** (mặc định 150 m, so `CustomerDeliveryLocation.Latitude / Longitude` và vị trí bếp) → `api` ghi xuất phát / giờ đến qua Service giao vận cũ, gửi thẻ [📷 Ảnh ký nhận] [Giao thiếu]; nút 📍 Đến điểm luôn còn. Không lưu từng điểm vị trí. | Vào bán kính → ghi giờ đến 1 lần; mất tín hiệu → bấm tay vẫn được; QR mở đúng việc theo quyền; test xanh |
-| **BOT-UX-1** · `DOING` 2026-11-20 (anh duyệt 2026-11-20; nhánh `feat/BOT-UX-1-panel` – chờ anh duyệt, chưa push / gộp) · Bảng điều khiển duy nhất + điều hướng Quay lại + thống nhất cửa vào | Chỉ `AppDelicare.Messaging` (Experience/, Conversations/, Processing/, Channels/Telegram/), không đổi bảng / cột / API của api, đúng D-62 / BOT_SOURCE_ARCHITECTURE. (1) `PanelRegistry` (bộ nhớ, khóa chat + bot): messageId, giờ tạo, ngăn xếp điều hướng, nháp. (2) Mọi điều hướng = editMessageText trên panel; đầu panel có đường dẫn; hàng cuối [◀ Quay lại] [🏠 Menu] [✖ Đóng]. (3) Xong thao tác → phiếu kết quả + [Tiếp tục] [🏠 Menu]. (4) /menu, /ca, /chamcong, phím bàn phím dưới: xóa tin lệnh, xóa panel cũ (< 48h; quá hạn sửa "Menu đã đóng"), panel mới ở cuối – tối đa 1 panel / chat. (5) Nút trên panel cũ → "Menu này đã cũ" + panel mới. (6) Nhập tự do: ưu tiên nút; bắt buộc gõ → ForceReply, xong xóa câu hỏi + câu trả lời. (7) Tin hệ thống (OutboundPump) không bị panel xóa / sửa. (8) Chỉ 4 lệnh /menu /ca /chamcong /help; bàn phím 3 phím is_persistent khi liên kết và /start. (9) Màn đầu ⭐ Hay dùng 4 chức năng gần nhất. (10) Chỉ chat riêng; nhóm giữ hành vi cũ. | tools/bot-smoke (Telegram giả) + test: 5 lần điều hướng → 1 tin có nút; Quay lại cấp 3 → 2 → 1, đang nhập dở Quay lại → không có bản ghi mới; /menu 3 lần → 1 panel ở cuối, tin lệnh bị xóa; panel cũ → "Menu này đã cũ" + panel mới; thẻ việc / thẻ ca xen giữa không bị xóa / sửa; getMyCommands đúng 4 lệnh, reply keyboard is_persistent; dotnet test xanh; PROGRESS BOT-UX-1; BOT_TELEGRAM §1 |
+| **BOT-UX-1** · `DONE` 2026-11-21 (anh duyệt 2026-11-20; đã gộp `main` 2026-11-21) · Bảng điều khiển duy nhất + điều hướng Quay lại + thống nhất cửa vào | Chỉ `AppDelicare.Messaging` (Experience/, Conversations/, Processing/, Channels/Telegram/), không đổi bảng / cột / API của api, đúng D-62 / BOT_SOURCE_ARCHITECTURE. (1) `PanelRegistry` (bộ nhớ, khóa chat + bot): messageId, giờ tạo, ngăn xếp điều hướng, nháp. (2) Mọi điều hướng = editMessageText trên panel; đầu panel có đường dẫn; hàng cuối [◀ Quay lại] [🏠 Menu] [✖ Đóng]. (3) Xong thao tác → phiếu kết quả + [Tiếp tục] [🏠 Menu]. (4) /menu, /ca, /chamcong, phím bàn phím dưới: xóa tin lệnh, xóa panel cũ (< 48h; quá hạn sửa "Menu đã đóng"), panel mới ở cuối – tối đa 1 panel / chat. (5) Nút trên panel cũ → "Menu này đã cũ" + panel mới. (6) Nhập tự do: ưu tiên nút; bắt buộc gõ → ForceReply, xong xóa câu hỏi + câu trả lời. (7) Tin hệ thống (OutboundPump) không bị panel xóa / sửa. (8) Chỉ 4 lệnh /menu /ca /chamcong /help; bàn phím 3 phím is_persistent khi liên kết và /start. (9) Màn đầu ⭐ Hay dùng 4 chức năng gần nhất. (10) Chỉ chat riêng; nhóm giữ hành vi cũ. | tools/bot-smoke (Telegram giả) + test: 5 lần điều hướng → 1 tin có nút; Quay lại cấp 3 → 2 → 1, đang nhập dở Quay lại → không có bản ghi mới; /menu 3 lần → 1 panel ở cuối, tin lệnh bị xóa; panel cũ → "Menu này đã cũ" + panel mới; thẻ việc / thẻ ca xen giữa không bị xóa / sửa; getMyCommands đúng 4 lệnh, reply keyboard is_persistent; dotnet test xanh; PROGRESS BOT-UX-1; BOT_TELEGRAM §1 |
 | **BOT-2.9** · `DOING` – phần chạy được ở máy xong 2026-11-19 (test 482 / 482 gồm 73 test messaging; `bot-1.2-identity.http` 23 / 23 trên API thử với khóa tạm; `bot-1.1-channel.http` 12 / 21 do DB dev có liên kết bot thật của admin + hàng đợi tin tồn – không phải lỗi code); **còn: server test + token bot thật (cần anh)** · Gộp, kiểm thử, triển khai TEST | Chạy lại mọi `bot-*.http`, test xanh; dựng `messaging` trên server test (bộ bot TEST, webhook); smoke theo từng vai BOT_TELEGRAM §3; cập nhật `deploy/README.md`, UAT_CHECKLIST mục bot; **dừng, báo anh** (không push / gộp `main` khi chưa duyệt). | Mọi vai làm được luồng chính trên bot TEST; báo cáo kết quả cho anh |
 | BOT-3.x · `DEFERRED(sau go-live)` | 3.1 Bàn giao ca trong Thẻ ca (lưu Obsidian khi có T50) · 3.2 Công tuần của tôi + nút góp ý · 3.3 Đo số liệu (thời gian nhận cảnh báo, số lần bấm, chức năng không dùng) · 3.4 Mini App (FE) cho biểu mẫu dài / bảng điều hành | – |
 

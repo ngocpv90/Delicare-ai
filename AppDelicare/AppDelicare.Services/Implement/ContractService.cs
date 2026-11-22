@@ -405,7 +405,7 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>Duyệt / từ chối hợp đồng qua engine T12 (<c>ApprovalRequestService.Decide</c>: quyền mục "Duyệt – Hợp đồng suất ăn", hash nội dung, ApprovalDecision).</summary>
+        /// <summary>Duyệt / từ chối hợp đồng qua engine T12 (<c>ApprovalRequestService.Decide</c>: quyền mục "Phê duyệt › Hợp đồng suất ăn", hash nội dung, ApprovalDecision).</summary>
         public async Task<IResult<bool>> Decide(ContractActionRequest request, bool approve)
         {
             try

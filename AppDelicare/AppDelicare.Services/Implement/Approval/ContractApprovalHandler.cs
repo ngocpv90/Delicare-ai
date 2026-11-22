@@ -5,7 +5,7 @@ namespace AppDelicare.Services.Implement.Approval
 {
     /// <summary>
     /// BE2.2 – duyệt hợp đồng (BusinessType CONTRACT, spec 6.1 "1 cấp Ban giám đốc"; quyền duyệt = mục menu <c>#/wf-inbox?type=crm-contract</c>
-    /// "Duyệt – Hợp đồng suất ăn", D-31). Chạy trên engine 1 cấp T12; BE2.3 (duyệt nhiều cấp) chỉ đổi engine – <see cref="ApproveAsync(Guid, Guid, string?)"/>
+    /// "Phê duyệt › Hợp đồng suất ăn", D-31). Chạy trên engine 1 cấp T12; BE2.3 (duyệt nhiều cấp) chỉ đổi engine – <see cref="ApproveAsync(Guid, Guid, string?)"/>
     /// được gọi ở bước cuối, handler không phải sửa. Nội dung được duyệt = đầu hợp đồng + loại suất (sửa sau khi gửi → không duyệt được).
     /// </summary>
     public class ContractApprovalHandler(IContractService contractService) : IApprovalHandler

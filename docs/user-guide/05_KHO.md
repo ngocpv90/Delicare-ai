@@ -71,7 +71,7 @@ Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) 
 
 ### 4.5 Điều chỉnh tồn – nút **Điều chỉnh tồn**
 1. Chọn Nguyên liệu*, Lô, Kho*, Vị trí, **Số lượng điều chỉnh** (+ tăng / − giảm, khác 0), Đơn giá (khi nhập thêm), **Lý do***, Ghi chú → **Ghi điều chỉnh** → xác nhận.
-2. Mặc định điều chỉnh tay **phải được duyệt** ("Duyệt – Phiếu điều chỉnh tồn") trước khi ghi sổ: *Đã gửi duyệt điều chỉnh tồn (yêu cầu …) – chỉ ghi sổ khi được duyệt*.
+2. Mặc định điều chỉnh tay **phải được duyệt** ("Phê duyệt › Phiếu điều chỉnh tồn") trước khi ghi sổ: *Đã gửi duyệt điều chỉnh tồn (yêu cầu …) – chỉ ghi sổ khi được duyệt*.
 
 ### 4.6 Lô nguyên liệu – `scm-lot`
 - Chip lọc: **Tất cả / Còn tồn / Hết hạn trong 3 ngày / Trong 7 ngày / Trong 30 ngày**.

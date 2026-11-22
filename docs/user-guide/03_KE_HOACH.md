@@ -26,7 +26,7 @@
 | `cost-meal` | … › Giá thành / suất & biên lợi nhuận | Xem, sửa, xuất |
 | `scm-requirement`, `scm-inv-balance`, `crm-order`… | Mua hàng & Kho, Kinh doanh | Chỉ xem |
 
-Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & áp dụng** công thức, **duyệt thực đơn**, **duyệt kế hoạch sản xuất** do COO / CEO (mục "Duyệt – …"). Bấm các nút này khi chưa được cấp → *"Bạn không có quyền …"*.
+Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & áp dụng** công thức, **duyệt thực đơn**, **duyệt kế hoạch sản xuất** do COO / CEO (mục "Phê duyệt › …"). Bấm các nút này khi chưa được cấp → *"Bạn không có quyền …"*.
 
 ## 3. Việc theo thứ tự
 
@@ -74,7 +74,7 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
 1. **Tạo mới** (bảng chung) hoặc **Nhân bản** thực đơn đang xem: nhập Mã, Tên, **Hiệu lực từ*** → **Nhân bản** → thực đơn Nháp mới, chép toàn bộ món.
 2. **Thêm món**: chọn Món, Loại suất, **Thứ** (1 = T2 … 7 = CN), Lựa chọn (1–9), Số phần, Bắt buộc, Ghi chú → **Tạo mới**. Bấm vào món trong lịch để xem / sửa / xóa dòng.
 3. Nút **Chuyển sang …** theo trạng thái:
-   - Nháp → **Đã duyệt** (cần quyền "Duyệt – Thực đơn"),
+   - Nháp → **Đã duyệt** (cần quyền "Phê duyệt › Thực đơn"),
    - Đã duyệt → **Đã công bố** (kiểm đủ món mọi ngày, công thức hiệu lực),
    - Đã công bố → **Hết hiệu lực**.
 4. **Xuất gửi khách**: tải tệp thực đơn gửi khách.
@@ -98,7 +98,7 @@ Lỗi: *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để côn
 2. Hệ thống tổng hợp số phần từng món từ đơn **Đã xác nhận / Đã chốt** của ngày → kế hoạch **Nháp** `KS-…` (1 kế hoạch / ngày). Bấm lại sẽ tính lại kế hoạch Nháp; kế hoạch đã duyệt không đổi.
    - Kế hoạch cũng được tạo khi bộ phận mua hàng / job 20:30 **Tính nhu cầu** (MRP).
 
-**Duyệt:** dòng Nháp có **Duyệt** → xác nhận. Cần quyền "Duyệt – Kế hoạch sản xuất" (mặc định COO / CEO).
+**Duyệt:** dòng Nháp có **Duyệt** → xác nhận. Cần quyền "Phê duyệt › Kế hoạch sản xuất" (mặc định COO / CEO).
 
 **Ra lệnh sản xuất:** dòng **Đã duyệt** chưa có lệnh → **Ra lệnh SX** → xác nhận → hệ thống sinh **lệnh sản xuất** + **mẻ nấu** theo ca và dây chuyền (lịch ngược từ giờ xuất bếp), chụp định lượng công thức và **giữ chỗ nguyên liệu** → chuyển sang màn Lệnh sản xuất. Đơn hàng của ngày → **Đang sản xuất**.
 

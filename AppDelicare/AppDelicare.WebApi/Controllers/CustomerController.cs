@@ -112,6 +112,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-5 (D-63 r): dữ liệu cho form khách hàng – chi nhánh (chỉ loại chi nhánh), NV phụ trách đang hoạt động, danh mục Ngành / Quy mô / Giới tính / Nguồn / Trạng thái, cờ chi nhánh bắt buộc.</summary>
+        [HttpGet("GetFormOptions")]
+        public async Task<IActionResult> GetFormOptions()
+        {
+            try
+            {
+                return Ok(await _service.GetFormOptions());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetFormOptions: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>UI-1.2 (D-64): số liệu 4 thẻ của danh sách khách hàng (tổng, đang hoạt động, hợp đồng hiệu lực, suất TB / ngày 7 ngày) theo chi nhánh / loại / tìm kiếm.</summary>
         [HttpGet("GetSummary")]
         public async Task<IActionResult> GetSummary(Guid? branchId, string? customerType, string? searchText)

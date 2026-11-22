@@ -93,7 +93,7 @@ namespace AppDelicare.Model.Helper
 
         /// <summary>
         /// T15.1 (D-11, anh chốt 2026-11-16): PO có tổng ≥ <c>BusinessRules:PurchaseOrderDirectorApprovalAmount</c> chỉ Giám đốc duyệt – quyền = mục menu
-        /// <c>#/wf-inbox?type=scm-po-director</c> "Duyệt – Đơn mua hàng (Giám đốc)" (không phải màn hình riêng, chỉ là mục quyền duyệt).
+        /// <c>#/wf-inbox?type=scm-po-director</c> "Phê duyệt › Đơn mua hàng (Giám đốc)" (không phải màn hình riêng, chỉ là mục quyền duyệt).
         /// </summary>
         public const string DirectorScreenId = "scm-po-director";
 

@@ -1,5 +1,6 @@
 using AutoMapper;
 using Dapper;
+using Microsoft.EntityFrameworkCore;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
@@ -335,6 +336,36 @@ namespace AppDelicare.Services.Implement
                 }
                 m.PendingRequestCount = db.LeaveRequest.Count(l => !l.IsDeleted && l.EmployeeId == id && l.RequestStatus == LeaveRequestStatus.Pending)
                     + db.ShiftSwapRequest.Count(s => !s.IsDeleted && (s.RequesterEmployeeId == id || s.TargetEmployeeId == id) && s.RequestStatus == ShiftSwapStatus.Pending);
+
+                // UI-2R (D-69 g–h): ca thường làm, tạo / cập nhật bởi, đơn gần đây.
+                var usual = details.Where(d => d.ShiftCode != null).GroupBy(d => d.ShiftCode).OrderByDescending(g => g.Count()).FirstOrDefault();
+                if (usual != null)
+                {
+                    var sample = usual.OrderByDescending(d => d.WorkDate).First();
+                    m.UsualShiftCode = usual.Key;
+                    m.UsualShiftStart = sample.PlannedStart;
+                    m.UsualShiftEnd = sample.PlannedEnd;
+                }
+                var auditNames = await InfoPanelRules.UserNamesAsync(db, [e.CreatedBy, e.ModifiedBy]);
+                m.CreatedByName = auditNames.NameOf(e.CreatedBy);
+                m.ModifiedByName = auditNames.NameOf(e.ModifiedBy);
+                var leaveReqs = await db.LeaveRequest.AsNoTracking().Where(l => !l.IsDeleted && l.EmployeeId == id)
+                    .OrderByDescending(l => l.SubmittedAt).Take(5).ToListAsync();
+                var swaps = await db.ShiftSwapRequest.AsNoTracking().Where(s => !s.IsDeleted && (s.RequesterEmployeeId == id || s.TargetEmployeeId == id))
+                    .OrderByDescending(s => s.SubmittedAt).Take(5).ToListAsync();
+                var otherIds = swaps.Select(s => s.RequesterEmployeeId == id ? s.TargetEmployeeId : s.RequesterEmployeeId).Distinct().ToList();
+                var others = await db.Employee.AsNoTracking().Where(x => otherIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, x => x.FullName);
+                m.ListRecentRequest = [.. leaveReqs.Select(l => new AppDelicare.Model.Model.EmployeeRequestBriefModel
+                    {
+                        Kind = "LEAVE", Id = l.Id, RequestNo = l.RequestNo, LeaveTypeCode = l.LeaveTypeCode, FromDate = l.FromDate, ToDate = l.ToDate,
+                        Days = (int)(l.ToDate.Date - l.FromDate.Date).TotalDays + 1, RequestStatus = l.RequestStatus, SubmittedAt = l.SubmittedAt,
+                    })
+                    .Concat(swaps.Select(s => new AppDelicare.Model.Model.EmployeeRequestBriefModel
+                    {
+                        Kind = "SWAP", Id = s.Id, RequestNo = s.RequestNo, RequestStatus = s.RequestStatus, SubmittedAt = s.SubmittedAt,
+                        OtherEmployeeName = others.TryGetValue(s.RequesterEmployeeId == id ? s.TargetEmployeeId : s.RequesterEmployeeId, out var on) ? on : null,
+                    }))
+                    .OrderByDescending(r => r.RequestStatus == LeaveRequestStatus.Pending).ThenByDescending(r => r.SubmittedAt).Take(5)];
 
                 // Cần chú ý (D-68 d).
                 void Add(bool when, string code2, string severity, string message, string? screen)

@@ -41,15 +41,28 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 ## 4. Thao tác từng bước
 
 ### 4.1 Khách hàng 360° – `crm-customer`
-- **Thêm / sửa khách hàng (D-63):** chọn **Loại khách hàng** trước – *Doanh nghiệp* hoặc *Cá nhân*; form hiện ô theo loại:
-  - *Doanh nghiệp* – bắt buộc: Tên doanh nghiệp, Tên giao dịch, Mã số thuế (10 số hoặc 10-3 số, không trùng), Người đại diện pháp luật, Người liên hệ + SĐT người liên hệ, Địa chỉ, Điện thoại; tùy chọn: Số ĐKKD (trống = MST), ngày / nơi cấp, Email, Ngành, Quy mô, Phân khúc, Nguồn, NV phụ trách, Ghi chú.
-  - *Cá nhân* – bắt buộc: Họ, Tên, Địa chỉ, Điện thoại; tùy chọn: Giới tính, Ngày sinh, CCCD (12 số, không trùng) + ngày / nơi cấp, Nghề nghiệp, Email, MST cá nhân (10 số), Nguồn, NV phụ trách, Ghi chú.
-  - **Chi nhánh phục vụ** bắt buộc khi công ty đã khai báo chi nhánh.
-  - Mã `KHB-…` / `KHC-…` máy chủ tự sinh; điện thoại dạng `0` + 9 số hoặc `+84` + 9 số. Lỗi hiện ngay trên form, form không đóng.
+- **Thêm khách hàng (D-63, UI-5):**
+  1. Bấm **Tạo mới** → form mở ra với 2 nút lớn **Doanh nghiệp** / **Cá nhân** (chưa chọn sẵn). Chọn loại → hiện các ô của loại đó. Trước khi lưu vẫn đổi loại được ở ô *Loại khách hàng*, dữ liệu đã nhập được giữ.
+  2. Nhập các ô (bảng dưới). *Doanh nghiệp*: gõ **Tên doanh nghiệp** → **Tên giao dịch** tự điền giống vậy khi ô này còn trống (sửa lại được).
+  3. Ô chọn: **Ngành**, **Quy mô**, **Giới tính**, **Nguồn** chỉ chọn trong danh mục; **Chi nhánh phục vụ** chỉ liệt kê đơn vị loại chi nhánh (có đúng 1 chi nhánh → chọn sẵn); **NV phụ trách** chọn trong tài khoản đang hoạt động – gõ vào ô tìm phía trên để lọc theo tên / tên đăng nhập; **Trạng thái** mặc định *Đang hoạt động*. Các ô ngày chỉ chọn ngày.
+  4. (Tùy chọn) bấm **Thêm điểm giao ngay** → nhập **Điểm giao đầu tiên**: tên, địa chỉ (gợi ý sẵn địa chỉ khách), giờ nhận từ – đến.
+  5. Bấm **Tạo mới**. Thành công → *"Đã tạo khách hàng – mã KHB-00013 · 1 liên hệ chính · 1 điểm giao DP-00013"*. Khách doanh nghiệp tự có **người liên hệ chính** (từ Người liên hệ + SĐT + email người liên hệ); điểm giao tạo cùng lúc. Lỗi bất kỳ (kể cả ở điểm giao) → không tạo gì, form giữ nguyên.
+
+  | Ô | Doanh nghiệp | Cá nhân |
+  |---|---|---|
+  | Bắt buộc | Tên doanh nghiệp, Tên giao dịch, Mã số thuế, Người đại diện pháp luật, Người liên hệ, SĐT người liên hệ, Địa chỉ, Điện thoại | Họ, Tên, Địa chỉ, Điện thoại |
+  | Bắt buộc khi công ty đã khai báo chi nhánh | Chi nhánh phục vụ | Chi nhánh phục vụ |
+  | Tùy chọn | Số ĐKKD (trống = MST), Ngày / nơi cấp ĐKKD, Email, Email người liên hệ, Ngành, Quy mô, Phân khúc, Nguồn, NV phụ trách, Trạng thái, Ghi chú | Giới tính, Ngày sinh, Số CCCD + ngày / nơi cấp, Nghề nghiệp, Email, Mã số thuế cá nhân, Nguồn, NV phụ trách, Trạng thái, Ghi chú |
+
+  - **Kiểm ngay khi rời ô** (lỗi đỏ dưới đúng ô, giống hệt máy chủ): Mã số thuế 10 số hoặc 10-3 số (cá nhân: 10 số); CCCD đúng 12 số; điện thoại `0` + 9 số hoặc `+84` + 9 số (được gõ dấu cách / chấm / gạch); email đúng dạng; ngày sinh / ngày cấp không sau hôm nay; ngày cấp CCCD từ ngày sinh trở đi; giờ nhận từ < giờ nhận đến. Lỗi máy chủ (vd. MST trùng) hiện ở đầu form và tô đỏ ô liên quan.
+  - Mã `KHB-…` / `KHC-…` máy chủ tự sinh. Dữ liệu cũ có Ngành / Nguồn… ngoài danh mục: form hiện "(giá trị cũ)", lưu lại không đổi thì giữ; muốn đổi thì chọn trong danh mục.
+- **Sửa khách hàng:** nút **Sửa** – cùng form, loại khách giữ nguyên (không có bước chọn loại, không có khối điểm giao – thêm điểm giao ở `crm-location` / tab Điểm giao).
   - Loại khách **khóa sau khi lưu**; khách chưa có hợp đồng / đơn mới đổi loại được (cấp mã mới). Khách đã có hợp đồng / đơn → ngừng hoạt động và tạo khách mới.
 - Danh sách: Mã, Khách hàng, Loại, Chi nhánh phục vụ, Hợp đồng hiệu lực, số điểm giao, Suất TB/ngày, Trạng thái. Lọc theo **Đơn vị làm việc**.
 - Đầu danh sách: 4 thẻ **Tổng khách hàng**, **Đang hoạt động** (kèm "/ tổng · %"), **Hợp đồng hiệu lực** (bấm mở danh sách hợp đồng), **Suất TB/ngày (7 ngày)** = tổng suất đơn Đã giao / Đã đối soát 7 ngày đã qua ÷ 7 – tính theo đơn vị làm việc.
 - **Bấm một dòng → màn Hồ sơ khách hàng 360 (cả trang)** – ← về danh sách: phần đầu (chữ viết tắt, tên, mã, loại, trạng thái, ngành, chi nhánh, NV phụ trách, địa chỉ, điện thoại, MST / CCCD) + nút **Sửa**, **Tạo đơn**, **Ghi phản ánh**, ⋯ (**Tạo hợp đồng**, **In hồ sơ**, **Ngừng hoạt động**) theo quyền; 4 thẻ chỉ số; các tab **Tổng quan** (khối *Cần chú ý*: hợp đồng còn ≤ 30 ngày, phản ánh quá hạn, khay thất thoát vượt ngưỡng, chưa chốt đơn ngày mai sau 19:00, thiếu điểm giao / liên hệ chính · Thông tin khách hàng · Điểm giao và liên hệ · Hợp đồng hiện hành · biểu đồ Suất đặt – giao – nhận 30 ngày · Đơn hàng gần đây), **Hợp đồng và giá**, **Đơn hàng** (lọc ngày ăn từ – đến, trạng thái), **Giao nhận**, **Đối soát**, **Khay hộp**, **Phản ánh**, **Dự báo và thực đơn**, **Tài liệu** (tải lên ≤ 20 MB), **Lịch sử** (+ Liên quan). Tab chỉ hiện khi tài khoản có quyền xem màn tương ứng; bấm dòng trong tab để mở chứng từ.
+- **Tab Tổng quan (UI-2R, D-69):** hai cột – **trái 1/3 "Thông tin khách hàng"**: người liên hệ chính (+ chức vụ) · điện thoại liên hệ + tổng đài · email · địa chỉ · NV phụ trách · chi nhánh phục vụ; nhóm **Pháp lý** (mở sẵn; khách cá nhân: ngày sinh / CCCD chỉ người có quyền Sửa hồ sơ khách mới thấy – có biểu tượng khóa), **Phân loại**, **Ghi chú**, **Hệ thống** (tạo / cập nhật lúc, bởi). **Phải 2/3**: Cần chú ý → **Điểm giao và liên hệ** (suất/ngày từng điểm = TB 30 ngày; nút + Điểm giao, + Liên hệ) cạnh **Hợp đồng hiện hành** (còn N ngày, điều khoản thanh toán, đơn giá theo loại suất, Xem / Gia hạn) → **Suất đặt – giao – nhận 30 ngày** (kèm chênh đặt – nhận trung bình) → **Đơn hàng gần đây** (số đơn, ngày ăn, suất, thành tiền, trạng thái; lọc trạng thái, Xem tất cả).
+  - **Khối thông tin bên trái (UI-2R, dùng chung 3 màn chi tiết):** 6 dòng chính luôn hiện (điện thoại / email bấm để gọi / gửi thư); bên dưới là các **nhóm gập** – bấm tiêu đề nhóm (hoặc Tab + Enter) để mở / gập, dòng xám dưới tiêu đề là tóm tắt; trình duyệt **nhớ nhóm đang mở** cho lần sau. Ô trống không hiện; nhóm chưa có gì ghi "Chưa có thông tin · Bổ sung" (bấm Bổ sung = Sửa, chỉ khi có quyền sửa). Nút sao chép cạnh MST / CCCD. Màn rộng: khối này đứng yên khi cuộn; màn < 1200px: xếp trên cùng.
 - Mở khách từ màn khác (liên kết, tìm kiếm) → ngăn xem nhanh **360°** + nút **Mở hồ sơ đầy đủ**: thẻ **Hợp đồng hiệu lực** / **Suất TB/ngày (7 ngày)** / **Doanh thu đã đối soát** (kèm số đơn) / **Khiếu nại đang mở** (kèm "/ tổng · % đúng hạn"); tab **Liên hệ & điểm giao**, **Hợp đồng & giá**, **Đơn hàng** (15 đơn gần nhất), **Liên quan**, **Lịch sử xử lý**.
 - Thêm / sửa khách bằng **Tạo mới** / **Sửa**.
 
@@ -158,6 +171,10 @@ Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2.
 | Số hợp đồng … đã tồn tại | Để trống ô số để tự sinh |
 | Hợp đồng đã hết hạn (…) – không duyệt được | Sửa ngày hiệu lực rồi gửi lại |
 | Khoảng ngày không hợp lệ (tối đa 62 ngày) | Thu hẹp khoảng ngày dự báo |
+| Ngành "…" không có trong danh mục – chọn một trong: … (tương tự Quy mô / Giới tính / Nguồn) | Chọn giá trị trong ô chọn |
+| Không tìm thấy nhân viên phụ trách (tài khoản người dùng đang hoạt động) | Tài khoản đã khóa / xóa → chọn người khác |
+| Điểm giao đầu tiên: thiếu tên điểm giao / địa chỉ · giờ nhận từ phải nhỏ hơn giờ nhận đến | Sửa khối Điểm giao đầu tiên hoặc bấm **Bỏ điểm giao** |
+| Mã số thuế … đã có ở khách hàng doanh nghiệp KHB-… | Khách đã có – mở khách đó thay vì tạo mới |
 
 ## 7. Trên bot Telegram
 

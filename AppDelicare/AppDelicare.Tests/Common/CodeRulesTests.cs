@@ -113,7 +113,7 @@ namespace AppDelicare.Tests.Common
             // Code / CIF gửi lên bị bỏ qua; thông báo thành công kèm mã.
             var ok = await c.PostFormAsync("/api/Customer/Insert", [.. Business(branch, "[DEMO] Công ty Mã 1", "0311111111"), ("Code", "TU-GO"), ("CIF", "TU-GO")]);
             ok.Ok();
-            ok.Message.Should().MatchRegex(@"khách hàng – mã KHB-\d{5}$");
+            ok.Message.Should().MatchRegex(@"khách hàng – mã KHB-\d{5} · 1 liên hệ chính$", "UI-5.8: khách doanh nghiệp tự có liên hệ chính");
             var b = await _factory.QueryAsync(db => db.Customer.AsNoTracking().SingleAsync(x => x.LegalName == "[DEMO] Công ty Mã 1"));
             b.Code.Should().MatchRegex(@"^KHB-\d{5}$").And.NotBe("TU-GO");
             b.CIF.Should().Be(b.Code);

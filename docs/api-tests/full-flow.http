@@ -150,7 +150,7 @@ Authorization: Bearer {{token}}
 @dishBeefId = {{dishBeef.response.body.listData[0].id}}
 @dishRiceId = {{dishRice.response.body.listData[0].id}}
 
-### 0.6 Công thức Bò kho: 20 kg bò / 100 suất → gửi duyệt → duyệt (mục "Duyệt – Công thức") → khóa
+### 0.6 Công thức Bò kho: 20 kg bò / 100 suất → gửi duyệt → duyệt (mục "Phê duyệt › Công thức") → khóa
 # @name recipeBeef
 POST {{base}}/api/Recipe/CreateVersion
 Authorization: Bearer {{token}}
@@ -822,7 +822,7 @@ Content-Type: application/json
 { "warehouseId": "{{warehouseId}}", "note": "[DEMO] thử xuất lô hết hạn", "listLine": [ { "ingredientId": "{{beefId}}", "materialLotId": "{{lotHH.response.body.listData[qcStatus=DAT].id}}", "quantity": 5 } ] }
 
 ########## 9. KẾ HOẠCH → DUYỆT → PHÁT HÀNH THEO CA (GIỮ CHỖ NGUYÊN LIỆU FEFO – Catalog 126, 140)
-### 9.1 Duyệt kế hoạch (mục "Duyệt – Kế hoạch sản xuất")
+### 9.1 Duyệt kế hoạch (mục "Phê duyệt › Kế hoạch sản xuất")
 POST {{base}}/api/ProductionPlan/Approve
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded

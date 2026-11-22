@@ -325,7 +325,7 @@ namespace AppDelicare.Services.Implement
                 .Where(a => !a.IsDeleted && a.BusinessType == LeaveRequestStatus.BusinessType && a.BusinessId == id && (!openOnly || ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus)))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
-        /// <summary>Duyệt / từ chối qua engine (<c>ApprovalRequestService.Decide</c>: quyền mục "Duyệt – Đơn xin nghỉ", hash, ApprovalDecision, nhiều cấp nếu cấu hình).</summary>
+        /// <summary>Duyệt / từ chối qua engine (<c>ApprovalRequestService.Decide</c>: quyền mục "Phê duyệt › Đơn xin nghỉ", hash, ApprovalDecision, nhiều cấp nếu cấu hình).</summary>
         public async Task<IResult<bool>> Decide(HrDecisionRequest request, bool approve)
         {
             try

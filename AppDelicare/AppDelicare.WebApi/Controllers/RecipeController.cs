@@ -162,7 +162,7 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T45R: duyệt công thức (PendingApproval → Approved). Quyền: mục menu "Duyệt – Công thức" (D-31).</summary>
+        /// <summary>T45R: duyệt công thức (PendingApproval → Approved). Quyền: mục menu "Phê duyệt › Công thức" (D-31).</summary>
         [Security.Permission("menu-recipe", PermissionAction.Approve)]
         [HttpPost("Approve")]
         public async Task<IActionResult> Approve([FromForm] RecipeDecisionRequest request)
