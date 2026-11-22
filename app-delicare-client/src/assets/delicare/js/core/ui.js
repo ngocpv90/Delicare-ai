@@ -286,27 +286,29 @@
           FIRST_LOC.forEach(([k]) => { const el = m.querySelector('#fl_' + k); if (el) firstLoc[k] = el.value; });
         };
         const redraw = () => { fields = fieldsOf(); host.innerHTML = formHtml(); wire(); };
+        // Gắn sự kiện 1 lần cho mỗi phần tử (wire chạy lại sau khi thay từng ô – không gắn trùng).
+        const fresh = el => !!el && !el.dataset.w && !!(el.dataset.w = '1');
         const wire = () => {
           btn.disabled = isCustomer && !typeChosen;
           host.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { cusType = b.dataset.pick; rec.CustomerType = cusType; typeChosen = true; redraw(); const first = host.querySelector('.form-grid input:not([readonly]), .form-grid select:not([disabled])'); first && first.focus(); });
-          host.querySelectorAll('[data-g2]').forEach(el => el.addEventListener('input', () => { const p = el.selectionStart, v = Store.userCode(el.value); if (v !== el.value) { el.value = v; try { el.setSelectionRange(p, p); } catch (e) { /* bỏ qua */ } } }));
+          host.querySelectorAll('[data-g2]').forEach(el => fresh(el) && el.addEventListener('input', () => { const p = el.selectionStart, v = Store.userCode(el.value); if (v !== el.value) { el.value = v; try { el.setSelectionRange(p, p); } catch (e) { /* bỏ qua */ } } }));
           // Ô chọn có tìm kiếm: gõ để lọc danh sách (bỏ dấu, không phân biệt hoa thường).
           const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
-          host.querySelectorAll('[data-search-for]').forEach(inp => inp.addEventListener('input', () => {
+          host.querySelectorAll('[data-search-for]').forEach(inp => fresh(inp) && inp.addEventListener('input', () => {
             const sel = host.querySelector('#' + inp.dataset.searchFor), q = fold(inp.value.trim());
             [...sel.options].forEach((o, i) => { o.hidden = i > 0 && !!q && !fold(o.textContent).includes(q) && !o.selected; });
             const hits = [...sel.options].filter((o, i) => i > 0 && !o.hidden);
             if (q && hits.length === 1) { sel.value = hits[0].value; }
           }));
           if (isCustomer) {
-            fields.forEach(f => { const el = host.querySelector('#f_' + f.name); if (el) el.addEventListener('blur', () => checkField(f.name)); });
-            const dob = host.querySelector('#f_DateOfBirth'); if (dob) dob.addEventListener('change', () => checkField('IdentityDate'));
+            fields.forEach(f => { const el = host.querySelector('#f_' + f.name); if (fresh(el)) el.addEventListener('blur', () => checkField(f.name)); });
+            const dob = host.querySelector('#f_DateOfBirth'); if (dob && !dob.dataset.wd) { dob.dataset.wd = '1'; dob.addEventListener('change', () => checkField('IdentityDate')); }
             // UI-5.9: nhập Tên doanh nghiệp → tự điền Tên giao dịch khi ô này còn trống (hoặc vẫn là giá trị tự điền).
             const legal = host.querySelector('#f_LegalName'), disp = host.querySelector('#f_DisplayName');
-            if (legal && disp) legal.addEventListener('input', () => { if (!disp.value || disp.value === autoDisplay) { disp.value = legal.value; autoDisplay = legal.value; } });
+            if (legal && disp && !legal.dataset.wl) legal.dataset.wl = '1', legal.addEventListener('input', () => { if (!disp.value || disp.value === autoDisplay) { disp.value = legal.value; autoDisplay = legal.value; } });
             const tg = host.querySelector('#flToggle');
             if (tg) tg.onclick = () => { collect(); firstLoc.open = !firstLoc.open; if (firstLoc.open && !firstLoc.Address) firstLoc.Address = valueOf('Address') || ''; redraw(); if (firstLoc.open) { const n = host.querySelector('#fl_Name'); n && n.focus(); } };
-            host.querySelectorAll('#flBody input').forEach(el => el.addEventListener('blur', () => checkFirstLoc(false)));
+            host.querySelectorAll('#flBody input').forEach(el => fresh(el) && el.addEventListener('blur', () => checkFirstLoc(false)));
           }
           const ct = host.querySelector('#f_CustomerType');
           if (ct && isCustomer) {
@@ -321,8 +323,21 @@
         };
         if (isCustomer) applyOptions(cusOpt);
         wire();
-        // Quy tắc mã / dữ liệu form tải xong sau khi mở form → vẽ lại (không mất dữ liệu đã nhập).
-        if (Store.isLive) Promise.all([Store.loadCodeRules(), isCustomer ? UI.customerOptions().then(applyOptions) : null]).then(() => { if (host.isConnected) { collect(); redraw(); } });
+        // Quy tắc mã / dữ liệu form tải xong sau khi mở form → CHỈ thay các ô phụ thuộc dữ liệu đó (ô mã, ô chọn danh mục / chi nhánh / NV phụ trách).
+        // Không vẽ lại cả form: người dùng có thể đang mở hộp chọn ngày / đang gõ – thay ô sẽ làm mất giá trị vừa chọn (lỗi UAT 2026-11-21).
+        const OPTION_FIELDS = new Set(['BranchId', 'UserAssignId', 'Industry', 'CompanySize', 'Gender', 'Source']);
+        const softRefresh = () => {
+          if (!host.isConnected || (isCustomer && !typeChosen)) return;
+          fields.filter(f => ruleOf(f) || (isCustomer && OPTION_FIELDS.has(f.name))).forEach(f => {
+            const el = m.querySelector('#f_' + f.name), fld = el && el.closest('.field');
+            if (!fld || fld.contains(document.activeElement)) return;
+            if (!el.dataset.g1) rec[f.name] = el.value === '' ? null : el.value;
+            const tmp = document.createElement('div'); tmp.innerHTML = fieldHtml(f);
+            fld.replaceWith(tmp.firstElementChild);
+          });
+          wire();
+        };
+        if (Store.isLive) Promise.all([Store.loadCodeRules(), isCustomer ? UI.customerOptions().then(applyOptions) : null]).then(softRefresh);
         // Lỗi máy chủ: hiện đầu form + tô đỏ ô có nhãn nằm trong thông báo (nhãn dài khớp trước, tránh "Email" ăn vào "Email người liên hệ").
         const markServer = msg => {
           let rest = String(msg || '');
