@@ -19,6 +19,20 @@ namespace AppDelicare.Services.Implement
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly string _webRootPath = Path.Combine(webHostEnvironment.WebRootPath, ConstantHelper.Import);
 
+        // Tables that Save() knows how to import. Keep in sync with the switch in Save().
+        private static readonly List<string> ImportTables = [nameof(TestDemo)];
+
+        public IResults<string> GetImportTables()
+        {
+            return new Results<string>
+            {
+                ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
+                ResponseMessage = ConstantHelper.Message.GetAllSuccessfully,
+                ListData = ImportTables,
+                TotalRecords = ImportTables.Count
+            };
+        }
+
         public async Task<IResult<bool>> Save(ImportExcelRequest request)
         {
             var filePath = string.Empty;

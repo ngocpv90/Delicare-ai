@@ -102,7 +102,16 @@ namespace AppDelicare.Tests.MasterData
         public async Task Only_one_preferred_supplier_per_ingredient()
         {
             Guid ingredient = Guid.NewGuid(), s1 = Guid.NewGuid(), s2 = Guid.NewGuid();
+            // develop (17/11): SupplierMaterial kiểm NCC / nguyên liệu phải tồn tại → tạo trước.
+            await _factory.SeedAsync(db =>
+            {
+                db.Ingredient.Add(new Ingredient { Id = ingredient, Code = "NL-PREF", Name = "NL ưu tiên" });
+                db.Supplier.Add(new Supplier { Id = s1, Code = "NCC-PREF1", Name = "NCC ưu tiên 1" });
+                db.Supplier.Add(new Supplier { Id = s2, Code = "NCC-PREF2", Name = "NCC ưu tiên 2" });
+                return Task.CompletedTask;
+            });
             using var c = _factory.CreateAuthorizedClient();
+            (await c.PostFormAsync("/api/SupplierMaterial/Insert", ("SupplierId", Guid.NewGuid()), ("IngredientId", ingredient), ("UnitPrice", 1m))).Fail("không tồn tại");
 
             (await c.PostFormAsync("/api/SupplierMaterial/Insert", ("SupplierId", s1), ("IngredientId", ingredient), ("UnitPrice", 10000m), ("IsPreferred", true))).Ok();
             (await c.PostFormAsync("/api/SupplierMaterial/Insert", ("SupplierId", s2), ("IngredientId", ingredient), ("UnitPrice", 9000m), ("IsPreferred", true))).Ok();
