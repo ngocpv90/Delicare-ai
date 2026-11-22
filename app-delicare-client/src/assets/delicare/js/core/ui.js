@@ -71,7 +71,7 @@
   // ---------- Drawer ----------
   UI.drawer = ({ title, sub, badge, tabs, foot, onMount, width }) => {
     const w = document.createElement('div'); w.className = 'drawer-wrap show';
-    w.innerHTML = `<aside class="drawer" ${width ? `style="width:min(${width}px,100%)"` : ''}><div class="drawer-head"><div class="t"><div class="eyebrow">${sub || ''}</div><h2 style="margin-top:3px">${title} ${badge || ''}</h2></div><button type="button" class="btn-close" data-close aria-label="Đóng"></button></div><div class="drawer-body"><div class="tabs">${tabs.map((t, i) => `<button class="tab ${i ? '' : 'active'}" data-tab="${i}">${t.label}</button>`).join('')}</div>${tabs.map((t, i) => `<div class="tabpane ${i ? 'hide' : ''}" data-pane="${i}">${typeof t.html === 'function' ? '' : t.html}</div>`).join('')}</div>${foot ? `<div class="drawer-foot">${foot}</div>` : ''}</aside>`;
+    w.innerHTML = `<aside class="drawer" ${width ? `style="width:min(${width}px,100%)"` : ''}><div class="drawer-head"><div class="t"><h2 style="margin-top:3px">${title} ${badge || ''}</h2></div><button type="button" class="btn-close" data-close aria-label="Đóng"></button></div><div class="drawer-body"><div class="tabs">${tabs.map((t, i) => `<button class="tab ${i ? '' : 'active'}" data-tab="${i}">${t.label}</button>`).join('')}</div>${tabs.map((t, i) => `<div class="tabpane ${i ? 'hide' : ''}" data-pane="${i}">${typeof t.html === 'function' ? '' : t.html}</div>`).join('')}</div>${foot ? `<div class="drawer-foot">${foot}</div>` : ''}</aside>`;
     document.body.appendChild(w);
     const close = () => w.remove();
     const loaded = {};
