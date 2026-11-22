@@ -296,6 +296,13 @@ Mục tiêu: dev FE `git pull` xong là DB trên server có đủ SP / seed mớ
 
 **Frontend (D-49, 2026-11-16): dev FE khác làm FE-ALL và commit lên git. Claude Code KHÔNG tự làm FE-x – kể cả khi `/next`.** Việc của em về frontend chỉ là: viết handoff `docs/frontend-handoff/` cho mỗi API mới, và task GHEP-FE khi anh yêu cầu.
 
+### REF-1 – Danh mục chọn sẵn đồng nhất (UAT 2026-11-21, anh chốt GAP-REF-01…06 2026-11-22) · `DONE (2026-11-22)`
+- Một nguồn `Model/Helper/ReferenceCatalogs.cs` (Thực thể.Cột → `ReferenceLists`); máy chủ kiểm Insert / Update chung (`ReferenceListFilter`), nghiệp vụ riêng (hợp đồng, đóng gói, sổ bao bì, thu hồi, phản ánh) và **nhập Excel** (Loại NCC / Kiểu bảo quản / Loại kho); `MetaData/GetReferenceLists` trả `listColumn` → giao diện vẽ ô chọn.
+- appsettings: + KITCHEN (Kho bếp), + ComplaintChannel / ComplaintCategory; bỏ CustomerType, AdjustmentReason, QcResult (GAP-REF-06).
+- FE: ô chọn danh mục mọi form; 49 ô tham chiếu chưa xác định bảng đích → ô chọn; form tải sẵn bảng đích.
+- Dữ liệu: `DB/scripts/REF1_normalize_catalog_codes.sql` (DryRun bắt buộc) – mã khác hoa thường / nhãn → mã; giá trị ngoài danh mục chỉ liệt kê. DB dev: 0 dòng cần đổi; ngoài danh mục: HĐ `HD-261122-001` loại suất "01", 132 dòng loại khay "[DEMO] hộp giữ nhiệt" (giữ – thu hồi tính theo chuỗi này).
+- Còn mở: GAP-REF-05 (Hình thức phục vụ, Phân khúc khách chưa có danh mục; Vùng / Khu vực khách chưa có bảng).
+
 ### GHEP-FE – Ghép luồng frontend + backend · **CHỈ LÀM KHI ANH YÊU CẦU** · `DONE (2026-11-21, anh yêu cầu – nhánh ghep/2026-11-21 → main)`
 1. `git fetch`; xem commit / nhánh FE mới (`git log --stat -- app-delicare-client/`). Không sửa code FE của bạn kia khi chưa có yêu cầu; không rebase / force-push nhánh của người khác.
 2. Gộp vào nhánh `ghep/<ngày>` (không gộp thẳng `main`); xung đột → giữ phần của người sửa file đó, báo anh chỗ nào.

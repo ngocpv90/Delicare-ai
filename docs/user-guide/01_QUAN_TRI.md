@@ -123,6 +123,23 @@ Menu **Quản trị hệ thống → Nhập dữ liệu gốc (Excel)**. Mỗi n
 - Nạp lại cùng file không tạo trùng (khớp theo mã). Ô mã để trống → hệ thống tự cấp mã theo quy tắc (`91_PHU_LUC.md` §2).
 - Lỗi: *Chỉ nhận tệp .xlsx / .xlsm*, *Tài khoản không có quyền thao tác này (403)* (thiếu quyền Nhập ở màn danh mục).
 
+### 4.8c Danh mục chọn sẵn (loại suất, loại kho, loại khay…)
+Các trường dưới đây **chỉ chọn trong danh sách**, không gõ chữ tự do – trên mọi form, khi nhập Excel và khi gọi API:
+
+| Danh mục | Dùng ở | Giá trị |
+|---|---|---|
+| Loại suất | Hợp đồng, dự báo, thực đơn, đơn đặt suất, chính sách giá | Sáng · Trưa · Tối · Đêm |
+| Loại kho | Kho | Nguyên liệu · Thành phẩm · Bao bì · Kho lạnh · Kho bếp |
+| Kiểu bảo quản | Nguyên liệu | Nhiệt độ thường · Mát · Đông lạnh · Khô |
+| Loại nhà cung cấp | Nhà cung cấp | Thịt · Rau củ · Hàng khô · Bao bì · Khác |
+| Loại khay / hộp | Kết quả đóng gói, thu hồi khay, sổ bao bì | Khay inox · Hộp giữ nhiệt · Thùng giữ nhiệt |
+| Kênh tiếp nhận / Phân loại | Phản ánh khách hàng | Điện thoại · Zalo · Email · Trực tiếp · Telegram · Biên bản giao nhận / Chất lượng món · Thiếu suất · Giao trễ · Vệ sinh – ATTP · Bao bì · Thái độ phục vụ · Khác |
+| Loại hủy, loại đo nhiệt độ, loại nghỉ, hình thức chấm công, loại phát sinh bao bì | Màn tương ứng | Theo danh sách trên màn hình |
+
+- Thêm / đổi giá trị: **bộ phận IT** sửa mục `ReferenceLists` trong cấu hình máy chủ (`appsettings.json`) rồi khởi động lại – không cần sửa phần mềm. Nhập Excel / API nhận cả **mã** lẫn **tên** (vd. "Kho lạnh" = COLD), lưu mã.
+- Bản ghi cũ có giá trị ngoài danh sách: ô chọn hiện "(giá trị cũ)"; vẫn sửa được các trường khác, chỉ không đổi sang giá trị lạ mới. IT chuẩn hóa một lần bằng script `DB/scripts/REF1_normalize_catalog_codes.sql` (chạy thử trước, sau khi sao lưu).
+- Lỗi: *Loại kho «…» không có trong danh mục (RAW – Nguyên liệu, …)* → chọn lại trong danh sách.
+
 ### 4.9 Xung đột dữ liệu – `adm-merge-conflict`
 1. Dòng chưa xử lý có nút **Xử lý** → nhập **Cách xử lý** (bắt buộc, ≤ 1000 ký tự) → **Đã xử lý**.
 2. Sau khi lưu không sửa lại được. Lỗi: *Xung đột này đã được xử lý*.
@@ -150,6 +167,7 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 | Người dùng báo "không có quyền truy cập màn hình này" | Cấp **Truy cập** cho nhóm của họ ở `adm-permission`; người dùng tải lại trang |
 | Người dùng có quyền mà nút vẫn mờ | Thiếu quyền Thêm / Sửa / Xuất của màn đó |
 | Người dùng không duyệt được | Cấp mục **Phê duyệt › …** đúng loại (Truy cập + Sửa) |
+| … «…» không có trong danh mục (…) | Giá trị phải chọn trong danh sách – xem 4.8c; cần giá trị mới → IT bổ sung danh mục |
 
 ## 7. Trên bot Telegram
 
