@@ -48,12 +48,23 @@ Thứ tự ưu tiên cách thao tác (ít công nhất trước): **hệ thống
 | Khu vệ sinh hộp khay (BOT-2.4) | `?start=CLEAN` | Lô vệ sinh của ca |
 - Tham số `start` ≤ 64 ký tự `[A-Za-z0-9_-]`; dùng **mã** (không dùng Guid khi có mã ngắn). Ảnh QR: FE sinh ở màn in hoặc in sẵn từ link – **BE không thêm thư viện vẽ QR** (nếu cần → hỏi gói mới).
 
-### 1.4 Menu – dự phòng khi cần tra cứu (BOT-1.4)
-- **Bàn phím cố định 3 nút:** [⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công]. Người có **≤ 6 chức năng** → hiện thẳng các chức năng (không tầng).
-- **📂 Chức năng:** lưới phân hệ người đó có quyền → bấm → **sửa cùng tin** thành danh sách chức năng, có [⬅️ Quay lại]. Tối đa 2 lần bấm tới bất kỳ chức năng nào.
+### 1.4 Menu + điều hướng – bảng điều khiển duy nhất (BOT-1.4, BOT-UX-1)
+- **Bàn phím dưới cố định 3 phím** (mọi người, `is_persistent`): [⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công] – gửi khi liên kết tài khoản và khi /start.
+- **Chỉ 4 lệnh "/"** cho mọi chat: `/menu` `/ca` `/chamcong` `/help` – lệnh nào cũng mở cùng bảng điều khiển. Lệnh / mã chức năng khác (`/nlca`, `/cho`, `/truyxuatlo`…) và gõ mã chứng từ **vẫn chạy** nhưng không liệt kê.
+- **Bảng điều khiển (panel) – chat riêng:** mỗi chat **tối đa 1 tin có nút của bot**. Mọi điều hướng / chức năng **sửa chính panel** (không gửi tin mới). Dòng đầu là đường dẫn (vd. *Menu › 🍳 Bếp › 🌡 Ghi nhiệt độ lõi*); hàng nút cuối mọi màn: **[◀ Quay lại] [🏠 Menu] [✖ Đóng]** (màn đầu chỉ có ✖ Đóng).
+  - **Quay lại:** lùi 1 bước (chức năng → phân hệ → màn đầu; từ màn con trong chức năng → màn đầu của chức năng). Đang nhập dở → hủy nháp, xóa câu hỏi, **không ghi gì**.
+  - **Menu:** về màn chọn phân hệ. **Đóng:** xóa panel (quá 48 giờ – Telegram không cho xóa – thì sửa thành "Menu đã đóng" + bỏ nút).
+  - **Màn đầu:** hàng **⭐ Hay dùng** (4 chức năng dùng gần nhất của người đó – bộ nhớ, khởi động lại thì mất) + lưới phân hệ.
+  - **Xong thao tác:** nội dung bắt đầu bằng ✅ (không có nút) → panel thành **phiếu kết quả** (nội dung, mã chứng từ, giờ) + **[▶ Tiếp tục] [🏠 Menu]**; Tiếp tục về đúng màn đầu của chức năng vừa dùng.
+  - **Gõ /menu, /ca, /chamcong hoặc phím bàn phím dưới:** xóa tin lệnh của người dùng, xóa panel cũ, gửi **panel mới ở cuối chat**.
+  - **Bấm nút trên panel cũ** → thông báo nhỏ "Menu này đã cũ", xóa tin đó, mở panel mới ở màn đầu.
+  - **Nhập tự do:** ưu tiên nút chọn sẵn; bắt buộc gõ → panel hiện bước "✏️ …" + câu hỏi ForceReply ngay dưới; trả lời xong bot **xóa câu hỏi + câu trả lời** và cập nhật panel.
+  - **Tin hệ thống** (thẻ việc, Thẻ ca ghim, bản tin, thông báo – OutboundPump) **không bao giờ bị panel xóa / sửa**; nút trên thẻ việc chạy như cũ. Nút ⚡ chạy chức năng trên Thẻ ca → kết quả lên panel mới ở cuối.
+  - **Nhóm chat giữ hành vi cũ** (không panel). Tắt panel: `Messaging:Panel:Enabled = false` (mỗi màn 1 tin như trước).
+- **📂 Chức năng:** lưới phân hệ người đó có quyền → chức năng. Tối đa 2 lần bấm tới bất kỳ chức năng nào (phân hệ chỉ có 1 → hiện thẳng chức năng).
 - **Bàn phím theo việc** (chỉ bàn phím dưới mới gửi được vị trí / mở camera): VD giao hàng [📍 Đến điểm] [📷 Ảnh ký nhận] [✅ Xong điểm] [⬅️ Thoát] – trả về bàn phím thường khi xong.
 - **Gõ mã → mở thẳng:** theo tiền tố mã chứng từ đang sinh (`DocumentNumberService`, BUSINESS_RULES – VD lô, mẻ `ME-`, chuyến `CX-`, `PO-`, phản ánh…). Bảng tiền tố → màn chi tiết để ở cấu hình `Messaging:CodePrefixes`, **lấy đúng tiền tố trong code hiện tại**, không đặt mới. Gõ chữ (VD "tồn gạo") → tìm nguyên liệu / món theo tên. Không dùng AI.
-- **Danh sách lệnh "/" theo từng chat** (`setMyCommands` scope chat): mỗi người chỉ thấy lệnh mình dùng được; giữ lệnh cũ (`/me`, `/tiendo`, `/chuyen`, `/ton`, `/candate`, `/thieuhut`, `/chamcong`, `/lichca`, `/nghi`, `/doica`, `/cho`, `/truyxuat`…).
+- **Danh sách lệnh "/"** (`setMyCommands` scope chat): từ BOT-UX-1 chỉ 4 lệnh /menu /ca /chamcong /help; lệnh cũ (`/me`, `/tiendo`, `/chuyen`, `/ton`, `/candate`, `/thieuhut`, `/lichca`, `/nghi`, `/doica`, `/cho`, `/truyxuatlo`…) gõ vẫn chạy.
 - Nút [💬 Góp ý / báo lỗi] ở cuối menu (sau go-live, BOT-3.2).
 
 ## 2. Đăng ký và liên kết (BOT-1.2)
@@ -181,7 +192,7 @@ Mã loại lấy từ hằng `BusinessType` của các `Services/Implement/Appro
 
 ## 6. Lệnh, callback, mã
 
-- `callback_data` = `<loại>:<hành động>:<id>` ≤ 64 byte, Guid dạng `N`. Loại: `apv` duyệt · `inc` sự việc · `bat` mẻ · `stp` điểm giao · `chk` checklist · `menu` điều hướng · `num` nhập số · `undo` hoàn tác.
+- `callback_data` = `<loại>:<hành động>:<id>` ≤ 64 byte, Guid dạng `N`. Loại: `apv` duyệt · `inc` sự việc · `bat` mẻ · `stp` điểm giao · `chk` checklist · `menu` điều hướng · `nav` điều hướng panel (back / home / close / cont – BOT-UX-1) · `num` nhập số · `undo` hoàn tác.
 - Nút nào cũng **kiểm lại quyền ở API** khi bấm; nút hết hạn (thẻ đã xử lý) → trả lời "Việc này đã được xử lý bởi …".
 - Vị trí: chặn vị trí chuyển tiếp; vị trí cũ hơn 120 giây bị coi là cũ (như Apps Script); ảnh gửi muộn vẫn lấy giờ chụp trong giới hạn 30′ (PROPOSED).
 - **Vị trí trực tiếp tài xế (BOT-2.4):** tài xế bật chia sẻ một lần đầu chuyến; `messaging` chỉ gửi về `api` khi **vào / ra bán kính 150 m** (PROPOSED) của điểm giao / bếp → tự ghi xuất phát / đến điểm, gửi thẻ [📷 Ảnh ký nhận] [Giao thiếu]. **Nút 📍 Đến điểm luôn còn** trên bàn phím giao hàng (khi không bật / mất tín hiệu). Không lưu từng điểm vị trí vào DB.

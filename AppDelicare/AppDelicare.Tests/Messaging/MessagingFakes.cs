@@ -181,10 +181,25 @@ namespace AppDelicare.Tests.Messaging
         public ConcurrentQueue<string?> AnswerTexts { get; } = new();
         private int _id = 100;
 
+        /// <summary>BOT-UX-1: mọi tin đã gửi kèm mã tin (để đếm tin còn trong chat sau khi xóa).</summary>
+        public ConcurrentQueue<(string Id, string Bot, OutgoingMessage Message)> Log { get; } = new();
+        public ConcurrentQueue<(string Bot, string Chat, string MessageId)> Deleted { get; } = new();
+
         public Task<ChannelSendResult> SendAsync(string botCode, OutgoingMessage message, CancellationToken ct = default)
         {
             Sent.Enqueue((botCode, message));
-            return Task.FromResult(Next.Count > 0 ? Next.Dequeue() : ChannelSendResult.Sent((++_id).ToString()));
+            var r = Next.Count > 0 ? Next.Dequeue() : ChannelSendResult.Sent((++_id).ToString());
+            if (r.ProviderMessageId != null)
+            {
+                Log.Enqueue((r.ProviderMessageId, botCode, message));
+            }
+            return Task.FromResult(r);
+        }
+
+        public Task<ChannelSendResult> DeleteAsync(string botCode, string chatId, string providerMessageId, CancellationToken ct = default)
+        {
+            Deleted.Enqueue((botCode, chatId, providerMessageId));
+            return Task.FromResult(ChannelSendResult.Sent(providerMessageId));
         }
 
         public Task<ChannelSendResult> EditAsync(string botCode, string chatId, string providerMessageId, string text, object? replyMarkup, CancellationToken ct = default)

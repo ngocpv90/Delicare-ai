@@ -26,6 +26,13 @@ namespace AppDelicare.Messaging.Channels.Telegram
                 return ChannelSendResult.Sent(providerMessageId);
             });
 
+        public async Task<ChannelSendResult> DeleteAsync(string botCode, string chatId, string providerMessageId, CancellationToken ct = default)
+            => await Guard(async () =>
+            {
+                await client.DeleteMessageAsync(botCode, chatId, long.Parse(providerMessageId), ct);
+                return ChannelSendResult.Sent(providerMessageId);
+            });
+
         public async Task AnswerCallbackAsync(string botCode, string callbackId, string? text = null, CancellationToken ct = default)
             => await Guard(async () =>
             {

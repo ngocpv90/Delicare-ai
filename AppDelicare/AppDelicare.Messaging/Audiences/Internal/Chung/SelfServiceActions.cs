@@ -19,7 +19,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
         public const int MaxLocationAgeSeconds = 120;
 
         public Task PromptLocationAsync(BotActionContext ctx, CancellationToken ct)
-            => BotReply.TextAsync(sender, ctx.Bot, ctx.Event.ChatId, "Bấm nút \"" + KeyboardBuilder.CheckIn + "\" để gửi vị trí hiện tại.", KeyboardBuilder.Location(), ct);
+            => AppDelicare.Messaging.Experience.PanelSession.Current != null
+                // BOT-UX-1: có bảng điều khiển → hướng dẫn trên panel; phím 📍 Chấm công (xin vị trí) luôn có ở bàn phím dưới cố định.
+                ? BotReply.TextAsync(sender, ctx.Bot, ctx.Event.ChatId, "📍 Bấm phím \"" + KeyboardBuilder.CheckIn + "\" ở bàn phím dưới để gửi vị trí hiện tại (vào / ra ca).", ct: ct)
+                : BotReply.TextAsync(sender, ctx.Bot, ctx.Event.ChatId, "Bấm nút \"" + KeyboardBuilder.CheckIn + "\" để gửi vị trí hiện tại.", KeyboardBuilder.Location(), ct);
 
         public async Task LocationAsync(BotActionContext ctx, CancellationToken ct)
         {
