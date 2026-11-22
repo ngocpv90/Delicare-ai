@@ -119,7 +119,6 @@ IF COL_LENGTH(N'dbo.Customer', N'ProvinceId') IS NULL ALTER TABLE [dbo].[Custome
 IF COL_LENGTH(N'dbo.Customer', N'Districtd') IS NULL ALTER TABLE [dbo].[Customer] ADD [Districtd] UNIQUEIDENTIFIER NULL;
 IF COL_LENGTH(N'dbo.Customer', N'WardId') IS NULL ALTER TABLE [dbo].[Customer] ADD [WardId] UNIQUEIDENTIFIER NULL;
 IF COL_LENGTH(N'dbo.Customer', N'Address') IS NULL ALTER TABLE [dbo].[Customer] ADD [Address] NVARCHAR(MAX) NULL;
-IF COL_LENGTH(N'dbo.Customer', N'SegmentId') IS NULL ALTER TABLE [dbo].[Customer] ADD [SegmentId] UNIQUEIDENTIFIER NULL;
 IF COL_LENGTH(N'dbo.Customer', N'SourceId') IS NULL ALTER TABLE [dbo].[Customer] ADD [SourceId] UNIQUEIDENTIFIER NULL;
 IF COL_LENGTH(N'dbo.Customer', N'RegionId') IS NULL ALTER TABLE [dbo].[Customer] ADD [RegionId] UNIQUEIDENTIFIER NULL;
 IF COL_LENGTH(N'dbo.Customer', N'AreaId') IS NULL ALTER TABLE [dbo].[Customer] ADD [AreaId] UNIQUEIDENTIFIER NULL;

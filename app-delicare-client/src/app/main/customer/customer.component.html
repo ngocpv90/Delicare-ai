@@ -141,7 +141,7 @@
               <label>Người liên hệ chính</label>
               <span>{{ drawerRow.contactPersonName || '—' }} {{ drawerRow.contactPersonPhone ? '· ' + drawerRow.contactPersonPhone : '' }}</span>
             </div>
-            <div><label>Phân khúc</label><span>{{ drawerRow.segment || '—' }}</span></div>
+            
             <div>
               <label>Trạng thái</label>
               <span><app-status-badge key="Customer.Status" [code]="drawerRow.status"></app-status-badge></span>

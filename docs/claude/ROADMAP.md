@@ -301,7 +301,8 @@ Mục tiêu: dev FE `git pull` xong là DB trên server có đủ SP / seed mớ
 - appsettings: + KITCHEN (Kho bếp), + ComplaintChannel / ComplaintCategory; bỏ CustomerType, AdjustmentReason, QcResult (GAP-REF-06).
 - FE: ô chọn danh mục mọi form; 49 ô tham chiếu chưa xác định bảng đích → ô chọn; form tải sẵn bảng đích.
 - Dữ liệu: `DB/scripts/REF1_normalize_catalog_codes.sql` (DryRun bắt buộc) – mã khác hoa thường / nhãn → mã; giá trị ngoài danh mục chỉ liệt kê. DB dev: 0 dòng cần đổi; ngoài danh mục: HĐ `HD-261122-001` loại suất "01", 132 dòng loại khay "[DEMO] hộp giữ nhiệt" (giữ – thu hồi tính theo chuỗi này).
-- Còn mở: GAP-REF-05 (Hình thức phục vụ, Phân khúc khách chưa có danh mục; Vùng / Khu vực khách chưa có bảng).
+- Còn mở: GAP-REF-05 (Hình thức phục vụ chưa có danh mục; Vùng / Khu vực khách chưa có bảng).
+- REF-2 `DONE (2026-11-22)`: anh bỏ **Phân khúc khách** khỏi hệ thống – gỡ khỏi API, form, danh sách, hồ sơ 360; cột DB giữ nguyên, không dùng.
 
 ### GHEP-FE – Ghép luồng frontend + backend · **CHỈ LÀM KHI ANH YÊU CẦU** · `DONE (2026-11-21, anh yêu cầu – nhánh ghep/2026-11-21 → main)`
 1. `git fetch`; xem commit / nhánh FE mới (`git log --stat -- app-delicare-client/`). Không sửa code FE của bạn kia khi chưa có yêu cầu; không rebase / force-push nhánh của người khác.

@@ -29,7 +29,7 @@ Không bảng / cột mới. Sau `git pull`: build lại API, chạy lại `DB/s
 
 | Loại | Bắt buộc | Tùy chọn |
 |---|---|---|
-| Doanh nghiệp | `LegalName`, `DisplayName`, `TaxCode` (10 số hoặc 10-3 số), `LegalRepresentativeName`, `ContactPersonName`, `ContactPersonPhone`, `Address`, `PhoneNumber`, `BranchId`* | `BusinessRegistrationNumber` (trống = MST), `RegistrationDate`, `RegistrationPlace`, `Email`, `ContactPersonEmail`, `Industry`, `CompanySize`, `Segment`, `Source`, `UserAssignId`, `Note` |
+| Doanh nghiệp | `LegalName`, `DisplayName`, `TaxCode` (10 số hoặc 10-3 số), `LegalRepresentativeName`, `ContactPersonName`, `ContactPersonPhone`, `Address`, `PhoneNumber`, `BranchId`* | `BusinessRegistrationNumber` (trống = MST), `RegistrationDate`, `RegistrationPlace`, `Email`, `ContactPersonEmail`, `Industry`, `CompanySize`, `Source`, `UserAssignId`, `Note` |
 | Cá nhân | `LastName`, `FirstName`, `Address`, `PhoneNumber`, `BranchId`* | `Gender`, `DateOfBirth` (≤ hôm nay), `IdentityNumber` (12 số), `IdentityDate`, `IdentityPlace`, `Occupation`, `Email`, `TaxCode` (10 số), `Source`, `UserAssignId`, `Note` |
 
 \* `BranchId` (Chi nhánh phục vụ, `api/OrganizationUnit/GetBranches`) chỉ bắt buộc khi hệ thống đã có đơn vị loại BRANCH.

@@ -155,13 +155,14 @@
   };
   // ---------- MA-1 (D-63): cột ẩn + form khách hàng theo loại ----------
   // CIF = Code (máy chủ gán) – chỉ dùng cho môi trường ngân hàng, KHÔNG hiển thị ở form / danh sách / hồ sơ (D-63 h, j).
-  const HIDDEN = { Customer: new Set(['CIF']) };
+  // Segment (Phân khúc) – anh bỏ khỏi hệ thống 2026-11-22 (GAP-REF-05); cột DB giữ nguyên, không dùng.
+  const HIDDEN = { Customer: new Set(['CIF', 'Segment']) };
   UI.hidden = (t, col) => !!(HIDDEN[t] && HIDDEN[t].has(col));
   // D-63 g: trường theo loại khách hàng. req = bắt buộc trên giao diện (máy chủ kiểm lại; Chi nhánh chỉ bắt buộc khi đã có chi nhánh).
   const CUSTOMER_FIELDS = {
     BUSINESS: {
       req: ['LegalName', 'DisplayName', 'TaxCode', 'LegalRepresentativeName', 'ContactPersonName', 'ContactPersonPhone', 'Address', 'PhoneNumber'],
-      opt: ['BranchId', 'BusinessRegistrationNumber', 'RegistrationDate', 'RegistrationPlace', 'Email', 'ContactPersonEmail', 'Industry', 'CompanySize', 'Segment', 'Source', 'UserAssignId', 'Status', 'Note'],
+      opt: ['BranchId', 'BusinessRegistrationNumber', 'RegistrationDate', 'RegistrationPlace', 'Email', 'ContactPersonEmail', 'Industry', 'CompanySize', 'Source', 'UserAssignId', 'Status', 'Note'],
     },
     INDIVIDUAL: {
       req: ['LastName', 'FirstName', 'Address', 'PhoneNumber'],
@@ -172,7 +173,7 @@
     LegalName: 'Tên doanh nghiệp', DisplayName: 'Tên giao dịch', TaxCode: 'Mã số thuế', LegalRepresentativeName: 'Người đại diện pháp luật',
     ContactPersonName: 'Người liên hệ', ContactPersonPhone: 'SĐT người liên hệ', ContactPersonEmail: 'Email người liên hệ', PhoneNumber: 'Điện thoại',
     BranchId: 'Chi nhánh phục vụ', BusinessRegistrationNumber: 'Số ĐKKD (trống = MST)', RegistrationDate: 'Ngày cấp ĐKKD', RegistrationPlace: 'Nơi cấp ĐKKD',
-    Industry: 'Ngành', CompanySize: 'Quy mô', Segment: 'Phân khúc', Source: 'Nguồn', UserAssignId: 'NV phụ trách', LastName: 'Họ', FirstName: 'Tên',
+    Industry: 'Ngành', CompanySize: 'Quy mô', Source: 'Nguồn', UserAssignId: 'NV phụ trách', LastName: 'Họ', FirstName: 'Tên',
     Gender: 'Giới tính', DateOfBirth: 'Ngày sinh', IdentityNumber: 'Số CCCD (12 số)', IdentityDate: 'Ngày cấp CCCD', IdentityPlace: 'Nơi cấp CCCD', Occupation: 'Nghề nghiệp',
   };
   const customerType = v => (String(v || '').toUpperCase() === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'BUSINESS');

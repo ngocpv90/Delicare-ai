@@ -55,8 +55,6 @@ namespace AppDelicare.Model.Request
 		public string? ContactPersonPhone { get; set; }
 		[MaxLength(255, ErrorMessage = "ContactPersonEmail tối đa 255 ký tự.")]
 		public string? ContactPersonEmail { get; set; }
-		[MaxLength(50, ErrorMessage = "Segment tối đa 50 ký tự.")]
-		public string? Segment { get; set; }
 		[MaxLength(100, ErrorMessage = "Source tối đa 100 ký tự.")]
 		public string? Source { get; set; }
 		public Guid? RegionId { get; set; }

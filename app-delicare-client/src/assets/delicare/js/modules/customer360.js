@@ -94,7 +94,7 @@
         ['Nghề nghiệp', esc(c.Occupation)], ['MST cá nhân', c.TaxCode ? esc(c.TaxCode) + UI.copyBtn(c.TaxCode) : '']]
       : [['Tên doanh nghiệp', esc(c.LegalName || c.Name)], ['Tên giao dịch', esc(c.DisplayName)], ['Mã số thuế', c.TaxCode ? esc(c.TaxCode) + UI.copyBtn(c.TaxCode) : ''],
         ['Số ĐKKD', esc(c.BusinessRegistrationNumber)], ['Ngày / nơi cấp', esc(join(c.RegistrationDate && U.date(c.RegistrationDate), c.RegistrationPlace))], ['Người đại diện PL', esc(c.LegalRepresentativeName)]];
-    const cls = [['Ngành', esc(vi('Industry', c.Industry))], ['Quy mô', esc(vi('CompanySize', c.CompanySize))], ['Phân khúc', esc(c.Segment)], ['Nguồn', esc(vi('Source', c.Source))]];
+    const cls = [['Ngành', esc(vi('Industry', c.Industry))], ['Quy mô', esc(vi('CompanySize', c.CompanySize))], ['Nguồn', esc(vi('Source', c.Source))]];
     const at = (dt, by) => join(dt && U.date(dt), by);
     return {
       key: 'customer', title: 'Thông tin khách hàng', canEdit: Store.perm('crm-customer').edit !== false,
