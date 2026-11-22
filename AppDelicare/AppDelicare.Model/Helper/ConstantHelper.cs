@@ -615,6 +615,7 @@
             public static readonly string ContractMealTypeRequired = "Mỗi dòng suất phải có loại suất (MealType)";
             public static readonly string ContractMealTypeDuplicate = "Loại suất {0} xuất hiện nhiều lần – mỗi loại suất chỉ 1 dòng";
             public static readonly string ContractMealPriceInvalid = "Đơn giá suất {0} phải lớn hơn 0";
+            public static readonly string ContractMealTypeNotInCatalog = "Loại suất «{0}» không có trong danh mục loại suất ({1})";
             public static readonly string ContractNumberDuplicate = "Số hợp đồng {0} đã tồn tại";
             public static readonly string ContractEditOnlyDraft = "Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp (hiện tại: {0}) – hợp đồng đã duyệt chỉ chấm dứt bằng Contract/Terminate";
             public static readonly string ContractStatusViaAction = "Trạng thái hợp đồng chỉ đổi qua Contract/Submit → duyệt → Contract/Terminate (giá trị gửi lên được bỏ qua)";

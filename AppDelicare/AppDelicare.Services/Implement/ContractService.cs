@@ -21,8 +21,9 @@ namespace AppDelicare.Services.Implement
 {
     public class ContractService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock
         , IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService
-        , IAuditChangeService auditChangeService) : IContractService
+        , IAuditChangeService auditChangeService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists) : IContractService
     {
+        private readonly AppDelicare.Model.Option.ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -291,7 +292,7 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>Kiểm loại suất: có ít nhất 1, mỗi MealType 1 lần (không phân biệt hoa thường), đơn giá (nếu có) &gt; 0.</summary>
-        private static string? MealsError(IReadOnlyCollection<(string? MealType, decimal? UnitPrice)> meals)
+        private string? MealsError(IReadOnlyCollection<(string? MealType, decimal? UnitPrice)> meals)
         {
             if (meals.Count == 0)
             {
@@ -301,7 +302,13 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.ContractMealTypeRequired;
             }
-            var duplicate = meals.GroupBy(m => m.MealType!.Trim().ToUpperInvariant()).FirstOrDefault(g => g.Count() > 1);
+            // Lỗi UAT 2026-11-21: loại suất phải có trong danh mục ReferenceLists:MealType.
+            var notInCatalog = meals.Select(m => MealTypeCatalog.Check(_referenceLists, m.MealType).Error).FirstOrDefault(e => e != null);
+            if (notInCatalog != null)
+            {
+                return notInCatalog;
+            }
+            var duplicate = meals.GroupBy(m => (MealTypeCatalog.Check(_referenceLists, m.MealType).Code ?? m.MealType!.Trim()).ToUpperInvariant()).FirstOrDefault(g => g.Count() > 1);
             if (duplicate != null)
             {
                 return string.Format(ConstantHelper.Message.ContractMealTypeDuplicate, duplicate.Key);
@@ -344,7 +351,7 @@ namespace AppDelicare.Services.Implement
                 {
                     _unitOfWork.ContractMealRepository.Add(new ContractMeal
                     {
-                        Id = Guid.NewGuid(), ContractId = contract.Id, MealType = m.MealType!.Trim(), MealName = m.MealName?.Trim(), ServiceType = m.ServiceType?.Trim(),
+                        Id = Guid.NewGuid(), ContractId = contract.Id, MealType = MealTypeCatalog.Check(_referenceLists, m.MealType).Code ?? m.MealType!.Trim(), MealName = m.MealName?.Trim(), ServiceType = m.ServiceType?.Trim(),
                         UnitPrice = m.UnitPrice, UnitId = m.UnitId, Status = ContractStatus.Active,
                     });
                 }

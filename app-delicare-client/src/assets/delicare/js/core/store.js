@@ -186,6 +186,18 @@
   const codeRules = {};
   Object.entries(CODE_RULES_FALLBACK).forEach(([k, p]) => { codeRules[k] = { group: 'G1', prefix: p }; });
   let codeRulesLoaded = null;
+  // Lỗi UAT 2026-11-21: loại suất của hợp đồng lấy từ danh mục ReferenceLists:MealType (MetaData/GetReferenceLists) – không cho nhập chữ tự do.
+  // Gắn vào CAT.status 'ContractMeal.MealType' (plain) → form chung tự vẽ ô chọn, giá trị cũ ngoài danh mục hiện "(giá trị cũ)".
+  let mealTypesLoaded = null;
+  function loadMealTypes() {
+    if (mealTypesLoaded || mode !== 'api' || !HOST) return mealTypesLoaded || Promise.resolve();
+    mealTypesLoaded = HOST.get('MetaData/GetReferenceLists?name=MealType').then(res => {
+      if (typeof res === 'string' || failOf(res)) { mealTypesLoaded = null; return; }
+      const items = ((listOf(res)[0] || {}).listItem) || [];
+      if (items.length) CAT.status['ContractMeal.MealType'] = { codes: items.map(i => i.code), vi: items.map(i => i.label || i.code), src: 'ReferenceLists:MealType', plain: true };
+    }).catch(e => { mealTypesLoaded = null; console.warn('[DELICARE] Không tải được danh mục loại suất', e); });
+    return mealTypesLoaded;
+  }
   function loadCodeRules() {
     if (codeRulesLoaded || mode !== 'api' || !HOST) return codeRulesLoaded || Promise.resolve();
     codeRulesLoaded = HOST.get('Common/GetCodeRules').then(res => {
@@ -281,6 +293,9 @@
     get isLive() { return mode === 'api' && !!HOST; },
     // ---- MA-1 (D-63): quy tắc mã ----
     loadCodeRules,
+    loadMealTypes,
+    /** Danh mục loại suất (ReferenceLists:MealType) – [{ code, name }]; rỗng khi chưa tải / chế độ DEMO. */
+    mealTypes() { const d = CAT.status['ContractMeal.MealType']; return d ? d.codes.map((code, i) => ({ code, name: d.vi[i] || code })) : []; },
     codeRule(t, col) { return codeRules[t + '.' + col] || null; },
     userCode,
     // ---- MA-1.8: ghi CHỜ API (form chung) – chỉ báo thành công khi máy chủ xác nhận ----
@@ -393,6 +408,7 @@
     },
     branchOk(row, col) { return !Store.ctx.branch || !row[col] || row[col] === Store.ctx.branch; }
   };
+  loadMealTypes();
   loadCodeRules();   // MA-1: DC_HOST gán sau khi đăng nhập (delicare-shell) → tải quy tắc mã ngay
   // UG-1 C-10: chế độ thật – danh mục trạng thái lấy từ máy chủ (MetaData/GetStatuses = theo các lớp *Status.cs), đè lên data/catalog.js
   // (giữ màu / luồng sẵn có của mục cũ). Tải xong vẽ lại màn đang mở để nhãn trạng thái khớp máy chủ.

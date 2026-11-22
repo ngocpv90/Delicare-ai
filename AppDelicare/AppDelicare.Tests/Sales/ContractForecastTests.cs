@@ -101,6 +101,9 @@ namespace AppDelicare.Tests.Sales
             (await PostJson(c, "/api/Contract/Create", new { customerId = s.Customer, effectiveFrom = "2026-12-01", listMeal = new[] { new { mealType = "TOI", unitPrice = 1m }, new { mealType = "toi", unitPrice = 2m } } }))
                 .Fail("nhiều lần");
             (await PostJson(c, "/api/Contract/Create", new { customerId = s.Customer, effectiveFrom = "2026-12-01", listMeal = new[] { new { mealType = "TOI", unitPrice = 0m } } })).Fail("lớn hơn 0");
+            // Lỗi UAT 2026-11-21: loại suất phải có trong danh mục ReferenceLists:MealType (không nhận chữ tự do).
+            (await PostJson(c, "/api/Contract/Create", new { customerId = s.Customer, effectiveFrom = "2026-12-01", listMeal = new[] { new { mealType = "Suất VIP", unitPrice = 1m } } })).Fail("không có trong danh mục");
+            (await PostJson(c, "/api/Contract/Create", new { customerId = s.Customer, effectiveFrom = "2026-12-01", listMeal = new[] { new { mealType = "Trưa", unitPrice = 1m }, new { mealType = "TRUA", unitPrice = 2m } } })).Fail("nhiều lần");
 
             var created = (await PostJson(c, "/api/Contract/Create", new
             {
@@ -115,7 +118,9 @@ namespace AppDelicare.Tests.Sales
 
             // Loại suất chỉ sửa khi Nháp; MealType không trùng.
             (await c.PostFormAsync("/api/ContractMeal/Insert", ("ContractId", id), ("MealType", "TOI"), ("UnitPrice", 1m))).Fail("nhiều lần");
-            (await c.PostFormAsync("/api/ContractMeal/Insert", ("ContractId", id), ("MealType", "DEM"), ("UnitPrice", 25000m))).Ok();
+            (await c.PostFormAsync("/api/ContractMeal/Insert", ("ContractId", id), ("MealType", "Suất VIP"), ("UnitPrice", 1m))).Fail("không có trong danh mục");
+            (await c.PostFormAsync("/api/ContractMeal/Insert", ("ContractId", id), ("MealType", "dem"), ("UnitPrice", 25000m))).Ok();
+            (await Q(db => db.ContractMeal.AsNoTracking().Where(x => x.ContractId == id).Select(x => x.MealType).ToListAsync())).Should().BeEquivalentTo(["TOI", "SANG", "DEM"], "lưu mã chuẩn của danh mục");
             (await c.PostFormAsync("/api/ContractMeal/Insert", ("ContractId", s.Contract), ("MealType", "DEM"), ("UnitPrice", 25000m))).Fail("Nháp");
 
             // Gửi duyệt → Chờ duyệt + XN-; người không có quyền không duyệt được; admin duyệt → Hiệu lực.

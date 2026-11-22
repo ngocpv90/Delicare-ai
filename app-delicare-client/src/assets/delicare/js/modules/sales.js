@@ -354,9 +354,15 @@
     });
   }
   // Chế độ API: tạo hợp đồng kèm các loại suất trong 1 lần (Contract/Create) – hợp đồng luôn bắt đầu ở Nháp, số tự sinh nếu để trống.
+  // Lỗi UAT 2026-11-21: loại suất chọn từ danh mục ReferenceLists:MealType (không gõ chữ tự do); Tên suất tự điền theo loại suất, sửa được.
   function newContract() {
+    if (Store.isLive && !Store.mealTypes().length) return Store.loadMealTypes().then(() => Store.mealTypes().length ? newContract() : UI.toast('Chưa tải được danh mục loại suất – thử lại sau', 'err'));
     const cus = Store.rows('Customer').filter(c => c.Status !== 'Inactive');
-    const mealRow = () => `<tr><td><input class="input" data-mt list="ctMealTypes" maxlength="50" placeholder="Mã loại suất"></td><td><input class="input" data-mn maxlength="250" placeholder="Tên suất"></td><td><input type="number" min="0" step="any" class="input" data-mp style="text-align:right" placeholder="Đơn giá"></td><td class="actions"><button class="btn xs danger" data-rm title="Bỏ dòng">${I('trash')}</button></td></tr>`;
+    const cat = Store.mealTypes();
+    const mtInput = () => cat.length
+      ? `<select class="select" data-mt><option value="">— Chọn loại suất —</option>${cat.map(x => `<option value="${esc(x.code)}" data-label="${esc(x.name)}">${esc(x.name)} (${esc(x.code)})</option>`).join('')}</select>`
+      : `<input class="input" data-mt list="ctMealTypes" maxlength="50" placeholder="Mã loại suất">`;
+    const mealRow = () => `<tr><td>${mtInput()}</td><td><input class="input" data-mn maxlength="250" placeholder="Tự điền theo loại suất"></td><td><input type="number" min="0" step="any" class="input" data-mp style="text-align:right" placeholder="Đơn giá"></td><td class="actions"><button class="btn xs danger" data-rm title="Bỏ dòng">${I('trash')}</button></td></tr>`;
     UI.modal({
       title: 'Tạo hợp đồng', sub: 'Hợp đồng mới ở trạng thái Nháp – gửi duyệt để có hiệu lực', size: 'lg',
       body: `<div class="form-grid">
@@ -370,14 +376,16 @@
           <div class="field"><label>Giá trị hợp đồng</label><input type="number" min="0" step="any" class="input" id="ctVal"></div>
           <div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="ctNote"></textarea></div></div>
         <div class="spread mt"><h3 style="margin:0">Loại suất & đơn giá <span class="req">*</span></h3><button class="btn xs" id="ctAdd">${I('plus')} Thêm loại suất</button></div>
-        <datalist id="ctMealTypes">${mealTypes().map(t => `<option value="${esc(t)}">`).join('')}</datalist>
+        ${cat.length ? '' : `<datalist id="ctMealTypes">${mealTypes().map(t => `<option value="${esc(t)}">`).join('')}</datalist>`}
         <table class="table dc-table dt mt"><thead><tr><th>Loại suất</th><th>Tên suất</th><th class="num">Đơn giá</th><th></th></tr></thead><tbody id="ctMeals">${mealRow()}</tbody></table>
-        <div class="small muted mt">Mỗi loại suất chỉ xuất hiện một lần trong hợp đồng; đơn giá (nếu nhập) phải lớn hơn 0.</div>`,
+        <div class="small muted mt">Loại suất chọn trong danh mục (Sáng / Trưa / Tối / Đêm – cấu hình ReferenceLists:MealType); mỗi loại suất chỉ một lần trong hợp đồng; đơn giá (nếu nhập) phải lớn hơn 0.</div>`,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="ctSave">${I('ok')} Tạo hợp đồng</button>`,
       onMount: (m, close) => {
         const tb = m.querySelector('#ctMeals'), v = sel => m.querySelector(sel).value.trim();
         m.querySelector('#ctAdd').onclick = () => tb.insertAdjacentHTML('beforeend', mealRow());
         tb.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b && tb.rows.length > 1) b.closest('tr').remove(); });
+        // Chọn loại suất → Tên suất = nhãn danh mục khi ô còn trống / vẫn là giá trị tự điền.
+        tb.addEventListener('change', e => { const s = e.target.closest('select[data-mt]'); if (!s) return; const mn = s.closest('tr').querySelector('[data-mn]'), o = s.selectedOptions[0], lb = o && o.value ? 'Suất ' + (o.dataset.label || o.value).toLowerCase() : ''; if (!mn.value || mn.value === mn.dataset.auto) { mn.value = lb; mn.dataset.auto = lb; } });
         m.querySelector('#ctSave').onclick = () => {
           const meals = [...tb.rows].map(tr => ({ mealType: tr.querySelector('[data-mt]').value.trim(), mealName: tr.querySelector('[data-mn]').value.trim() || null, unitPrice: tr.querySelector('[data-mp]').value === '' ? null : Number(tr.querySelector('[data-mp]').value) })).filter(x => x.mealType || x.mealName || x.unitPrice !== null);
           if (!v('#ctCus')) return UI.toast('Chọn khách hàng', 'err');
@@ -385,7 +393,7 @@
           if (!v('#ctFrom')) return UI.toast('Nhập ngày bắt đầu hiệu lực', 'err');
           if (v('#ctTo') && v('#ctTo') < v('#ctFrom')) return UI.toast('Ngày hết hiệu lực phải sau ngày bắt đầu', 'err');
           if (!meals.length) return UI.toast('Nhập ít nhất 1 loại suất', 'err');
-          if (meals.some(x => !x.mealType)) return UI.toast('Mỗi dòng phải có mã loại suất', 'err');
+          if (meals.some(x => !x.mealType)) return UI.toast('Mỗi dòng phải chọn loại suất', 'err');
           if (new Set(meals.map(x => x.mealType.toLowerCase())).size !== meals.length) return UI.toast('Mỗi loại suất chỉ được xuất hiện một lần', 'err');
           if (meals.some(x => x.unitPrice !== null && !(x.unitPrice > 0))) return UI.toast('Đơn giá phải lớn hơn 0', 'err');
           // JSON vì có danh sách loại suất lồng trong hợp đồng.

@@ -328,7 +328,7 @@
         const OPTION_FIELDS = new Set(['BranchId', 'UserAssignId', 'Industry', 'CompanySize', 'Gender', 'Source']);
         const softRefresh = () => {
           if (!host.isConnected || (isCustomer && !typeChosen)) return;
-          fields.filter(f => ruleOf(f) || (isCustomer && OPTION_FIELDS.has(f.name))).forEach(f => {
+          fields.filter(f => ruleOf(f) || (isCustomer && OPTION_FIELDS.has(f.name)) || (t === 'ContractMeal' && f.name === 'MealType')).forEach(f => {
             const el = m.querySelector('#f_' + f.name), fld = el && el.closest('.field');
             if (!fld || fld.contains(document.activeElement)) return;
             if (!el.dataset.g1) rec[f.name] = el.value === '' ? null : el.value;
@@ -337,7 +337,7 @@
           });
           wire();
         };
-        if (Store.isLive) Promise.all([Store.loadCodeRules(), isCustomer ? UI.customerOptions().then(applyOptions) : null]).then(softRefresh);
+        if (Store.isLive) Promise.all([Store.loadCodeRules(), Store.loadMealTypes(), isCustomer ? UI.customerOptions().then(applyOptions) : null]).then(softRefresh);
         // Lỗi máy chủ: hiện đầu form + tô đỏ ô có nhãn nằm trong thông báo (nhãn dài khớp trước, tránh "Email" ăn vào "Email người liên hệ").
         const markServer = msg => {
           let rest = String(msg || '');
