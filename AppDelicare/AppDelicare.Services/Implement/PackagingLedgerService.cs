@@ -22,8 +22,9 @@ using Microsoft.Extensions.Options;
 namespace AppDelicare.Services.Implement
 {
     public class PackagingLedgerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IPackagingLedgerService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists) : IPackagingLedgerService
     {
+        private readonly AppDelicare.Model.Option.ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -225,6 +226,15 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(ConstantHelper.Message.ModelStateMessage);
                 }
+                // Lỗi UAT 2026-11-21: loại khay / hộp lấy từ danh mục ReferenceLists:PackagingType; loại cũ ngoài danh mục chỉ nhận khi khách đã có trong sổ (đối ứng tồn cũ).
+                string? legacyType = await db.PackagingLedger.AsNoTracking()
+                    .Where(l => !l.IsDeleted && l.CustomerId == request.CustomerId && l.PackagingType == packaging).Select(l => l.PackagingType).FirstOrDefaultAsync();
+                var (packagingCode, packagingError) = ReferenceCatalogs.CheckColumn(_referenceLists, "PackagingLedger.PackagingType", packaging, legacyType);
+                if (packagingError != null)
+                {
+                    return Fail(packagingError);
+                }
+                packaging = packagingCode!;
                 var customer = await db.Customer.AsNoTracking().FirstOrDefaultAsync(c => c.Id == request.CustomerId && !c.IsDeleted);
                 if (customer == null)
                 {

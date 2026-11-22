@@ -303,12 +303,12 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.ContractMealTypeRequired;
             }
             // Lỗi UAT 2026-11-21: loại suất phải có trong danh mục ReferenceLists:MealType.
-            var notInCatalog = meals.Select(m => MealTypeCatalog.Check(_referenceLists, m.MealType).Error).FirstOrDefault(e => e != null);
+            var notInCatalog = meals.Select(m => ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", m.MealType).Error).FirstOrDefault(e => e != null);
             if (notInCatalog != null)
             {
                 return notInCatalog;
             }
-            var duplicate = meals.GroupBy(m => (MealTypeCatalog.Check(_referenceLists, m.MealType).Code ?? m.MealType!.Trim()).ToUpperInvariant()).FirstOrDefault(g => g.Count() > 1);
+            var duplicate = meals.GroupBy(m => (ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", m.MealType).Code ?? m.MealType!.Trim()).ToUpperInvariant()).FirstOrDefault(g => g.Count() > 1);
             if (duplicate != null)
             {
                 return string.Format(ConstantHelper.Message.ContractMealTypeDuplicate, duplicate.Key);
@@ -351,7 +351,7 @@ namespace AppDelicare.Services.Implement
                 {
                     _unitOfWork.ContractMealRepository.Add(new ContractMeal
                     {
-                        Id = Guid.NewGuid(), ContractId = contract.Id, MealType = MealTypeCatalog.Check(_referenceLists, m.MealType).Code ?? m.MealType!.Trim(), MealName = m.MealName?.Trim(), ServiceType = m.ServiceType?.Trim(),
+                        Id = Guid.NewGuid(), ContractId = contract.Id, MealType = ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", m.MealType).Code ?? m.MealType!.Trim(), MealName = m.MealName?.Trim(), ServiceType = m.ServiceType?.Trim(),
                         UnitPrice = m.UnitPrice, UnitId = m.UnitId, Status = ContractStatus.Active,
                     });
                 }

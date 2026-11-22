@@ -27,8 +27,9 @@ namespace AppDelicare.Services.Implement
     /// → Close (Đóng); Reject (Mới / Đang xử lý → Từ chối); AddComment. Mọi bước ghi ComplaintHistory (sổ chỉ ghi thêm). Cảnh báo / leo thang SLA tự động → sau Pilot.
     /// </summary>
     public class CustomerComplaintService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : ICustomerComplaintService
+        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications, IOptions<ReferenceListsOptions> referenceLists) : ICustomerComplaintService
     {
+        private readonly ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -167,8 +168,15 @@ namespace AppDelicare.Services.Implement
                 exist.Severity = severity;
                 exist.SlaDueAt = DeliveryRules.SlaDue(exist.ReceivedAt, severity, _rules);
             }
-            exist.CategoryCode = DeliveryRules.Clean(request.CategoryCode)?.ToUpperInvariant() ?? exist.CategoryCode;
-            exist.SourceChannel = DeliveryRules.Clean(request.SourceChannel)?.ToUpperInvariant() ?? exist.SourceChannel;
+            // Lỗi UAT 2026-11-21: kênh tiếp nhận / phân loại lấy từ danh mục ReferenceLists (giá trị cũ giữ được khi không đổi).
+            var (category, categoryError) = ReferenceCatalogs.CheckColumn(_referenceLists, "CustomerComplaint.CategoryCode", request.CategoryCode, exist.CategoryCode);
+            var (channel, channelError) = ReferenceCatalogs.CheckColumn(_referenceLists, "CustomerComplaint.SourceChannel", request.SourceChannel, exist.SourceChannel);
+            if ((categoryError ?? channelError) is { } catalogError)
+            {
+                return catalogError;
+            }
+            exist.CategoryCode = category ?? exist.CategoryCode;
+            exist.SourceChannel = channel ?? exist.SourceChannel;
             exist.Description = DeliveryRules.Clean(request.Description) ?? exist.Description;
             _unitOfWork.CustomerComplaintRepository.Update(exist);
             await _unitOfWork.CustomerComplaintRepository.CommitAsync(typeSave);
@@ -207,6 +215,13 @@ namespace AppDelicare.Services.Implement
                 if (string.IsNullOrWhiteSpace(request.Description))
                 {
                     return Fail(ConstantHelper.Message.ComplaintCommentRequired);
+                }
+                // Lỗi UAT 2026-11-21: kênh tiếp nhận / phân loại lấy từ danh mục ReferenceLists (nhận mã hoặc nhãn → lưu mã).
+                var (channel, channelError) = ReferenceCatalogs.CheckColumn(_referenceLists, "CustomerComplaint.SourceChannel", request.SourceChannel);
+                var (category, categoryError) = ReferenceCatalogs.CheckColumn(_referenceLists, "CustomerComplaint.CategoryCode", request.CategoryCode);
+                if ((channelError ?? categoryError) is { } catalogError)
+                {
+                    return Fail(catalogError);
                 }
                 Guid? orderId = Empty(request.OrderId), deliveryOrderId = Empty(request.DeliveryOrderId), routeId = Empty(request.DeliveryRouteId);
                 if (Empty(request.DeliveryStopId) is { } stopId)
@@ -248,7 +263,7 @@ namespace AppDelicare.Services.Implement
                     description += " [Mẻ " + (batch.BatchNumber ?? batch.BatchNo) + "]";
                 }
                 var complaint = await DeliveryRules.NewComplaintAsync(_unitOfWork, _documentNumberService, _rules, actor, request.ReceivedAt ?? _clock.Now,
-                    request.CustomerId, orderId, deliveryOrderId, routeId, request.SourceChannel, request.CategoryCode, severity, description);
+                    request.CustomerId, orderId, deliveryOrderId, routeId, channel, category, severity, description);
                 await _unitOfWork.CustomerComplaintRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
                 // BOT-1.7: COMPLAINT_NEW → CSKH (quyền Thêm trên phản ánh); mức cao → bot DH (liên phòng).
                 string? customerName = await _unitOfWork.DbContext.Customer.AsNoTracking().Where(c => c.Id == request.CustomerId).Select(c => c.Name).FirstOrDefaultAsync();

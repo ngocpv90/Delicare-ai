@@ -127,7 +127,7 @@ namespace AppDelicare.Tests.Sales
             var submitted = await c.PostFormAsync("/api/Contract/Submit", ("Id", id));
             submitted.Ok().GetProperty("contract").GetProperty("status").GetString().Should().Be("PendingApproval");
             submitted.Message.Should().Contain("XN-");
-            (await c.PostFormAsync("/api/ContractMeal/Insert", ("ContractId", id), ("MealType", "XX"), ("UnitPrice", 1m))).Fail("Nháp");
+            (await c.PostFormAsync("/api/ContractMeal/Insert", ("ContractId", id), ("MealType", "SANG"), ("UnitPrice", 1m))).Fail("Nháp");
             var pending = (await c.GetResultAsync("/api/ApprovalRequest/GetMyPending?type=crm-contract"));
             pending.ListData.EnumerateArray().Should().Contain(x => x.GetProperty("businessId").GetGuid() == id);
             using (var plain = _factory.CreateAuthorizedClient(await PlainUserAsync()))

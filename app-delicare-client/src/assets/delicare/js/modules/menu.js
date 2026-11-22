@@ -228,7 +228,7 @@
       title: 'Tra thực đơn áp dụng', sub: 'Thực đơn mà khách / điểm giao đang được gán cho một loại suất tại một ngày', size: 'sm',
       body: `<div class="field"><label>Khách hàng <span class="req">*</span></label><select class="select" id="rvCus"><option value="">— Chọn khách hàng —</option>${opts(Store.rows('Customer'), r => Store.label('Customer', r))}</select></div>
         <div class="field mt"><label>Điểm giao</label><select class="select" id="rvLoc"><option value="">— Mọi điểm giao của khách —</option></select></div>
-        <div class="field mt"><label>Loại suất <span class="req">*</span></label><input class="input" id="rvMt" list="rvMtList" value="${esc(ms.mt || '')}"><datalist id="rvMtList">${mealTypes().map(x => `<option value="${esc(x)}">`).join('')}</datalist></div>
+        <div class="field mt"><label>Loại suất <span class="req">*</span></label>${UI.refSelect('rvMt', 'MealType', { required: true, value: ms.mt || '', placeholder: '— Chọn loại suất —' })}</div>
         <div class="field mt"><label>Ngày ăn <span class="req">*</span></label><input type="date" class="input" id="rvDate" value="${esc(Store.ctx.date)}"></div>
         <div class="mt" id="rvOut"></div>`,
       foot: '<button class="btn" data-close>Đóng</button><button class="btn primary" id="rvOk">Tra cứu</button>',

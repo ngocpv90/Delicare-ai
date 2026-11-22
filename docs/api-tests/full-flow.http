@@ -1022,7 +1022,7 @@ POST {{base}}/api/PackingOrder/RecordResult
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{packing1}}&PackedQuantity=1000&PackagingType=[DEMO] hộp giữ nhiệt
+Id={{packing1}}&PackedQuantity=1000&PackagingType=HOP_GIU_NHIET
 
 ###
 # @expect data.batch.status == Packed
@@ -1222,7 +1222,7 @@ Content-Type: application/x-www-form-urlencoded
 Id={{stopId}}&TemperatureC=58&DeliveredQuantity=1000&AcceptedQuantity=998&ReceiverName=[DEMO] Chị Lan
 
 ### 12.10 Bàn giao 63 °C, giao 1000 / nhận 998 (2 suất từ chối → phản ánh PA- tự động) → đơn Đã giao, chuyến Hoàn thành;
-###       sổ bao bì OUT 998 "[DEMO] hộp giữ nhiệt" (loại của kết quả đóng gói, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi
+###       sổ bao bì OUT 998 "HOP_GIU_NHIET" (Hộp giữ nhiệt) (loại của kết quả đóng gói, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi
 # @expect data.route.status == Completed
 POST {{base}}/api/DeliveryStop/Deliver
 Authorization: Bearer {{token}}

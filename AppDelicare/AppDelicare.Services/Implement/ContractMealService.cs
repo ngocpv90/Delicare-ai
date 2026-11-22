@@ -154,7 +154,7 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.ContractMealTypeRequired;
             }
             // Lỗi UAT 2026-11-21: loại suất lấy từ danh mục ReferenceLists:MealType (giá trị cũ ngoài danh mục giữ được khi không đổi).
-            var (code, catalogError) = MealTypeCatalog.Check(_referenceLists, mealType, storedMealType);
+            var (code, catalogError) = ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", mealType, storedMealType);
             if (catalogError != null)
             {
                 return catalogError;
@@ -176,7 +176,7 @@ namespace AppDelicare.Services.Implement
                 return error;
             }
             var insert = _mapper.Map<ContractMeal>(request);
-            insert.MealType = MealTypeCatalog.Check(_referenceLists, request.MealType).Code ?? request.MealType!.Trim();
+            insert.MealType = ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", request.MealType).Code ?? request.MealType!.Trim();
             insert.Status ??= ContractStatus.Active;
             _unitOfWork.ContractMealRepository.Add(insert);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);
@@ -198,7 +198,7 @@ namespace AppDelicare.Services.Implement
             Guid contractId = exist.ContractId;
             var update = _mapper.Map(request, exist);
             update.ContractId = contractId; // không chuyển loại suất sang hợp đồng khác
-            update.MealType = MealTypeCatalog.Check(_referenceLists, request.MealType, storedMealType).Code ?? request.MealType!.Trim();
+            update.MealType = ReferenceCatalogs.CheckColumn(_referenceLists, "ContractMeal.MealType", request.MealType, storedMealType).Code ?? request.MealType!.Trim();
             _unitOfWork.ContractMealRepository.Update(update);
             await _unitOfWork.ContractMealRepository.CommitAsync(typeSave);
             return string.Empty;

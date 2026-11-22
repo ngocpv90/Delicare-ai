@@ -22,8 +22,9 @@ namespace AppDelicare.Services.Implement
     /// <summary>BE2.1 (spec 10.1): lệnh đóng gói PH- sinh từ mẻ Đạt QC / lập tay, bắt đầu, ghi kết quả (PackingResult), hủy; mẻ chia hết + đóng gói xong → mẻ Đã đóng gói.</summary>
     public class PackingOrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
-        , IOptions<BusinessRulesOptions> rules) : IPackingOrderService
+        , IOptions<BusinessRulesOptions> rules, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists) : IPackingOrderService
     {
+        private readonly AppDelicare.Model.Option.ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -579,6 +580,12 @@ namespace AppDelicare.Services.Implement
                 {
                     return string.Format(ConstantHelper.Message.PackingQuantityMismatch, DeliveryRules.Num(request.PackedQuantity + damaged + rejected), DeliveryRules.Num(planned));
                 }
+                // Lỗi UAT 2026-11-21: loại khay / hộp lấy từ danh mục ReferenceLists:PackagingType (trống = không ghi).
+                var (packagingType, packagingError) = ReferenceCatalogs.CheckColumn(_referenceLists, "PackingResult.PackagingType", request.PackagingType);
+                if (packagingError != null)
+                {
+                    return packagingError;
+                }
                 var (batch, productionOrder, error) = await PassedBatchAsync(packing.ProductionBatchId);
                 if (batch == null)
                 {
@@ -600,7 +607,7 @@ namespace AppDelicare.Services.Implement
                     RejectedQuantity = rejected,
                     RejectedQty = rejected,
                     AcceptedQty = request.PackedQuantity,
-                    PackagingType = DeliveryRules.Clean(request.PackagingType),
+                    PackagingType = packagingType,
                     QualityStatus = DeliveryRules.Clean(request.QualityStatus)?.ToUpperInvariant() ?? BatchQcStatus.Pass,
                     Remark = DeliveryRules.Clean(request.Note),
                     Note = $"Ghi lúc {ProductionRules.Time(now)}",

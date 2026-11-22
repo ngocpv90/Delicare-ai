@@ -449,7 +449,7 @@
       body: `<div class="form-grid">
           <div class="field"><label>Khách hàng <span class="req">*</span></label><select class="select" id="fiCus">${opts(cus, c => c.DisplayName || c.Code, '— Chọn —')}</select></div>
           <div class="field"><label>Điểm giao</label><select class="select" id="fiLoc"><option value="">Chung cho khách hàng</option></select></div>
-          <div class="field"><label>Loại suất <span class="req">*</span></label><input class="input" id="fiMeal" list="fiMealTypes" maxlength="50"><datalist id="fiMealTypes"></datalist></div>
+          <div class="field"><label>Loại suất <span class="req">*</span></label>${UI.refSelect('fiMeal', 'MealType', { required: true, placeholder: '— Chọn loại suất —' })}</div>
           <div class="field"><label>Ca</label><select class="select" id="fiShift">${opts(shifts, s => Store.label('Shift', s), 'Mọi ca')}</select></div>
           <div class="field"><label>Từ ngày <span class="req">*</span></label><input type="date" class="input" id="fiFrom" value="${d1}"></div>
           <div class="field"><label>Đến ngày <span class="req">*</span></label><input type="date" class="input" id="fiTo" value="${U.addDays(d1, 6)}"></div>
@@ -466,7 +466,7 @@
           const days = Array.from({ length: dayCount(a, b) }, (_, i) => U.addDays(a, i));
           box.innerHTML = `<div class="row-flex">${days.map(k => `<label class="small" style="display:inline-flex;flex-direction:column;gap:3px">${U.date(k).slice(0, 5)}<input type="number" min="0" class="input" style="width:84px;text-align:right" data-day="${k}" value="${esc(keep[k] || '')}"></label>`).join('')}</div>`;
         };
-        const onCus = () => { const cid = g('#fiCus').value; g('#fiLoc').innerHTML = opts(cid ? Store.by('CustomerDeliveryLocation', 'CustomerId', cid) : [], l => l.Name, 'Chung cho khách hàng'); g('#fiMealTypes').innerHTML = mealTypes(cid).map(t => `<option value="${esc(t)}">`).join(''); };
+        const onCus = () => { const cid = g('#fiCus').value; g('#fiLoc').innerHTML = opts(cid ? Store.by('CustomerDeliveryLocation', 'CustomerId', cid) : [], l => l.Name, 'Chung cho khách hàng'); };
         g('#fiCus').onchange = onCus; g('#fiFrom').onchange = drawDays; g('#fiTo').onchange = drawDays;
         g('#fiAll').oninput = e => g('#fiDays').querySelectorAll('[data-day]').forEach(i => { i.value = e.target.value; });
         onCus(); drawDays();
@@ -531,13 +531,13 @@
       body: `<div class="form-grid">
           <div class="field"><label>Khách hàng <span class="req">*</span></label><select class="select" id="rpCus">${opts(cus, c => c.DisplayName || c.Code, '— Chọn —')}</select></div>
           <div class="field"><label>Hợp đồng</label><select class="select" id="rpCt"><option value="">Không chọn</option></select></div>
-          <div class="field"><label>Loại suất</label><input class="input" id="rpMeal" list="rpMealTypes" maxlength="50" placeholder="Để trống = mọi loại suất"><datalist id="rpMealTypes"></datalist></div>
+          <div class="field"><label>Loại suất</label>${UI.refSelect('rpMeal', 'MealType', { placeholder: '— Mọi loại suất —' })}</div>
           <div class="field"><label>Ngày áp dụng</label><input type="date" class="input" id="rpDate" value="${Store.ctx.date}"></div></div>
         <div id="rpOut" class="mt"></div>`,
       foot: `<button class="btn" data-close>Đóng</button><button class="btn primary" id="rpGo">${I('calc')} Tra giá</button>`,
       onMount: m => {
         const g = sel => m.querySelector(sel);
-        g('#rpCus').onchange = () => { const cid = g('#rpCus').value; g('#rpCt').innerHTML = opts(cid ? Store.by('Contract', 'CustomerId', cid) : [], c => (c.ContractNumber || '') + (c.Name ? ' · ' + c.Name : ''), 'Không chọn'); g('#rpMealTypes').innerHTML = mealTypes(cid).map(t => `<option value="${esc(t)}">`).join(''); g('#rpOut').innerHTML = ''; };
+        g('#rpCus').onchange = () => { const cid = g('#rpCus').value; g('#rpCt').innerHTML = opts(cid ? Store.by('Contract', 'CustomerId', cid) : [], c => (c.ContractNumber || '') + (c.Name ? ' · ' + c.Name : ''), 'Không chọn'); g('#rpOut').innerHTML = ''; };
         g('#rpGo').onclick = () => {
           const cid = g('#rpCus').value, out = g('#rpOut'); if (!cid) return UI.toast('Chọn khách hàng', 'err');
           out.innerHTML = '<div class="muted small">Đang tra…</div>';
