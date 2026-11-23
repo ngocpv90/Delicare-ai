@@ -401,6 +401,7 @@
             public static readonly string AutoPlanAlreadyApproved = "Kế hoạch {0} đã ở trạng thái {1} – hệ thống không tự lập lại";
             public static readonly string AutoPlanEditedByHand = "Kế hoạch {0} đã được sửa tay – giữ bản sửa, chờ COO duyệt / phát hành";
             public static readonly string AutoPlanNoLockedRecipe = "Món chưa có công thức khóa: {0}";
+            public static readonly string ContractBillingBasisInvalid = "Cách tính tiền không hợp lệ (RECEIVED / SERVED / ORDERED / DELIVERED / ACCEPTED hoặc để trống)";
             public static readonly string CompensationCategoryInvalid = "Chỉ tạo đơn bù cho phản ánh loại Thiếu suất / Hỏng – đổ vỡ / Không đạt nhiệt độ";
             public static readonly string CompensationNoSourceOrder = "Phản ánh chưa gắn đơn hàng (hoặc đơn đã hủy) – không tạo được đơn bù";
             public static readonly string CompensationExists = "Phản ánh này đã có đơn bù {0}";

@@ -83,6 +83,10 @@ namespace AppDelicare.Services.Implement
                     return (null, ConstantHelper.Message.RecordNotFoundMessage);
                 }
                 (model.ContractId, model.ContractNumber) = (contract.Id, contract.ContractNumber ?? contract.ContractNo);
+                if (ContractConfig.BillingBasisOf(contract.ConfigJson) is { } own)
+                {
+                    model.BillingBasisName = DeliveryCode.BillingLabel(own) + " (theo hợp đồng)";
+                }
             }
             DateTime end = to.AddDays(1);
             var orders = await db.Order.AsNoTracking()

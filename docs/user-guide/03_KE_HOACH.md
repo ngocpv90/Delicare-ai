@@ -97,6 +97,9 @@ Lỗi: *Đã có thực đơn chung … Đã công bố chồng thời gian hi�
 - Lỗi: *Món thay thế phải khác món hiện tại*, *Yêu cầu không theo đơn cần có ngày ăn và số suất đổi*, *Đơn … đang … – chỉ đổi món cho đơn chưa giao / chưa hủy*, *Món cũ không có trong thực đơn của đơn…*.
 
 ### 4.7 Kế hoạch sản xuất – `prod-plan`
+**Tự lập, tự phát hành (BIZ-2.4):** chốt đơn (job 20:00 hoặc nút **Chốt đơn theo ngày**) → hệ thống tự **lập kế hoạch → duyệt → phát hành** mọi ca có nhu cầu (lịch ngược, mẻ, giữ chỗ như phát hành tay) và tạo **phiếu xuất Nháp theo ca** cho kho (BIZ-2.5). **Không tự phát hành** (kế hoạch giữ Nháp, bot 🔴 báo Kế hoạch + COO kèm lý do) khi: kế hoạch đã **sửa tay**, món **chưa có công thức khóa**, **thiếu nguyên liệu** sau giữ chỗ, mẻ **không kịp giờ xuất bếp**. Kế hoạch đã duyệt / phát hành tay trước đó → hệ thống không lập lại. Ghi chú kế hoạch có dòng "Hệ thống tự …".
+**Đơn chốt muộn (D-78):** đơn được duyệt sửa / thêm sau giờ chốt hoặc đơn bù khi kế hoạch đã phát hành → hệ thống tự sinh **lệnh + mẻ bổ sung** gắn kế hoạch đó (nhãn 🔴 *Bổ sung sau chốt* / *Đơn bù*, xếp đầu ô trên bảng điều độ, không kịp lịch → bắt đầu ngay), giữ chỗ nguyên liệu và tạo phiếu xuất Nháp; bot báo Kế hoạch, bếp, điều phối.
+
 **Lập kế hoạch**
 1. **Lập từ đơn hàng** → chọn **Ngày sản xuất***, Đơn vị, Ghi chú → **Lập kế hoạch**.
 2. Hệ thống tổng hợp số phần từng món từ đơn **Đã xác nhận / Đã chốt** của ngày → kế hoạch **Nháp** `KS-…` (1 kế hoạch / ngày). Bấm lại sẽ tính lại kế hoạch Nháp; kế hoạch đã duyệt không đổi.

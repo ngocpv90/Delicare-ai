@@ -71,8 +71,14 @@
     if (t === 'Contract' && Store.isLive && !opt) return contractDetail(id, f);
     return baseDetail(t, id, f, opt);
   };
+  // D-78 (2) – GAP-BIZ-01: cách tính tiền đối soát theo hợp đồng (Contract.ConfigJson).
+  const BILLING_BASIS = [['', 'Theo cấu hình chung'], ['RECEIVED', 'Theo số khách nhận (trừ suất lỗi Delicare)'], ['SERVED', 'Theo suất ăn thực tế'], ['ORDERED', 'Theo số đặt / chốt']];
+  const billingSelect = (id, v) => `<select class="select" id="${id}">${BILLING_BASIS.map(([c, l]) => `<option value="${c}" ${(v || '') === c ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   // Chế độ API: ngăn chi tiết hợp đồng thêm tab loại suất & đơn giá, yêu cầu duyệt đang chờ, cảnh báo (Contract/GetDetail).
   function contractDetail(id, f) {
+    const canEdit = Store.perm('crm-contract').edit !== false;
+    const billBox = d => `<div class="card panel mt"><div class="spread"><div><div class="small muted">Cách tính tiền đối soát</div><b>${esc(d.billingBasisName || 'Theo cấu hình chung')}</b></div>${canEdit && d.contract && d.contract.status !== 'Expired' ? `<div class="row-flex">${billingSelect('cdBill', d.billingBasis)}<button class="btn sm" id="cdBillOk">Đổi</button></div>` : ''}</div><div class="small muted mt">Áp cho các lần đối soát sau; trống = theo cấu hình chung của hệ thống.</div></div>`;
+    const bindBill = (p, d) => { const b = p && p.querySelector('#cdBillOk'); if (!b || !d) return; b.onclick = () => Store.act('Contract/UpdateBillingBasis', { method: 'PUT', form: { Id: d.contract.id, BillingBasis: p.querySelector('#cdBill').value || null }, tables: ['Contract'] }).then(r => { if (!r.ok) return; UI.toast('Đã đổi cách tính tiền: ' + esc(r.data.billingBasisName || ''), 'ok'); p.innerHTML = html(r.data) + billBox(r.data); bindBill(p, r.data); }); };
     const row = Store.get('Contract', id);
     const q = Store.query('Contract/GetDetail', { id });
     const html = d => `${(d.listWarning || []).map(w => `<div class="notice warn">${I('alert')}<div>${esc(w)}</div></div>`).join('')}
@@ -80,7 +86,7 @@
       <table class="table dc-table dt"><thead><tr><th>Loại suất</th><th>Tên suất</th><th>Hình thức phục vụ</th><th class="num">Đơn giá</th><th>Trạng thái</th></tr></thead><tbody>${(d.listMeal || []).map(m => `<tr><td>${UI.tag(m.mealType || '')}</td><td>${esc(m.mealName || '')}</td><td>${esc(m.serviceType || '')}</td><td class="num">${U.money(m.unitPrice)}</td><td>${UI.badge(m.status, 'ContractMeal', 'Status')}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Hợp đồng chưa có loại suất</td></tr>'}</tbody></table>`;
     return baseDetail('Contract', id, f, {
       noEdit: !row || row.Status !== 'Draft',   // backend chỉ cho sửa hợp đồng Nháp
-      tabs: [{ label: 'Loại suất & đơn giá', html: p => { q.then(x => { if (p && p.isConnected) p.innerHTML = x.ok && x.data ? html(x.data) : failBox(x.message); }); return '<div class="muted small">Đang tải…</div>'; } }]
+      tabs: [{ label: 'Loại suất & đơn giá', html: p => { q.then(x => { if (p && p.isConnected) { p.innerHTML = x.ok && x.data ? html(x.data) + billBox(x.data) : failBox(x.message); bindBill(p, x.data); } }); return '<div class="muted small">Đang tải…</div>'; } }]
     });
   }
   function customer360(id, f) {
@@ -409,6 +415,7 @@
           <div class="field"><label>Hiệu lực từ <span class="req">*</span></label><input type="date" class="input" id="ctFrom" value="${Store.ctx.date}"></div>
           <div class="field"><label>Hiệu lực đến</label><input type="date" class="input" id="ctTo"></div>
           <div class="field"><label>Điều khoản thanh toán</label><input class="input" id="ctPay" maxlength="250"></div>
+          <div class="field"><label>Cách tính tiền đối soát</label>${billingSelect('ctBill', '')}</div>
           <div class="field"><label>Giá trị hợp đồng</label><input type="number" min="0" step="any" class="input" id="ctVal"></div>
           <div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="ctNote"></textarea></div></div>
         <div class="spread mt"><h3 style="margin:0">Loại suất & đơn giá <span class="req">*</span></h3><button class="btn xs" id="ctAdd">${I('plus')} Thêm loại suất</button></div>
@@ -433,7 +440,7 @@
           if (new Set(meals.map(x => x.mealType.toLowerCase())).size !== meals.length) return UI.toast('Mỗi loại suất chỉ được xuất hiện một lần', 'err');
           if (meals.some(x => x.unitPrice !== null && !(x.unitPrice > 0))) return UI.toast('Đơn giá phải lớn hơn 0', 'err');
           // JSON vì có danh sách loại suất lồng trong hợp đồng.
-          Store.act('Contract/Create', { json: { customerId: v('#ctCus'), name: v('#ctName'), signedDate: v('#ctSigned') || null, effectiveFrom: v('#ctFrom'), effectiveTo: v('#ctTo') || null, paymentTerm: v('#ctPay') || null, contractValue: v('#ctVal') === '' ? null : Number(v('#ctVal')), note: v('#ctNote') || null, listMeal: meals }, tables: ['Contract', 'ContractMeal'] })
+          Store.act('Contract/Create', { json: { customerId: v('#ctCus'), name: v('#ctName'), signedDate: v('#ctSigned') || null, effectiveFrom: v('#ctFrom'), effectiveTo: v('#ctTo') || null, paymentTerm: v('#ctPay') || null, billingBasis: v('#ctBill') || null, contractValue: v('#ctVal') === '' ? null : Number(v('#ctVal')), note: v('#ctNote') || null, listMeal: meals }, tables: ['Contract', 'ContractMeal'] })
             .then(r => { if (!r.ok) return; bust(); close(); const ct = r.data && r.data.contract; UI.toast('Đã tạo hợp đồng ' + esc(ct ? ct.contractNumber || '' : '') + ' (Nháp)', 'ok'); APP.refresh(); });
         };
       }

@@ -270,7 +270,11 @@ namespace AppDelicare.Services.Implement
                 }
                 decimal variance = served - ordered;
                 decimal percent = ordered > 0 ? Math.Round(variance / ordered * 100m, 2, MidpointRounding.AwayFromZero) : 0m;
-                string basis = (_rules.ReconciliationBillingBasis ?? DeliveryCode.BillingReceived).Trim().ToUpperInvariant();
+                // D-78 (2): cách tính theo hợp đồng của đơn (Contract.ConfigJson) – trống = cấu hình chung.
+                string? contractBasis = order.ContractId is { } ctId
+                    ? ContractConfig.BillingBasisOf(await _unitOfWork.DbContext.Contract.AsNoTracking().Where(c => c.Id == ctId).Select(c => c.ConfigJson).FirstOrDefaultAsync())
+                    : null;
+                string basis = (contractBasis ?? _rules.ReconciliationBillingBasis ?? DeliveryCode.BillingReceived).Trim().ToUpperInvariant();
                 if (basis is not (DeliveryCode.BillingOrdered or DeliveryCode.BillingDelivered or DeliveryCode.BillingAccepted or DeliveryCode.BillingServed))
                 {
                     basis = DeliveryCode.BillingReceived;

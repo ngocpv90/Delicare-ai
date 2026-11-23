@@ -15,7 +15,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 7. ~~MENU-4~~ ✅ dọn menu (xong 2026-11-23; nhóm E chờ anh quyết – PROGRESS).
 7b. ~~BIZ-1~~ ✅ sửa sai nghiệp vụ (xong 2026-11-23; GAP-BIZ-01 kiểu tính tiền theo hợp đồng chờ anh – PROGRESS).
 7c. ~~FC-1~~ ✅ dự báo tự gợi ý (xong 2026-11-23).
-7d. ~~BIZ-2~~ ✅ bớt bước thừa + tự động hóa (xong 2026-11-23; kế hoạch bổ sung sau phát hành chờ anh – PROGRESS) → 7e. ~~BIZ-3~~ ✅ hoàn thiện luồng (xong 2026-11-23; đơn bù chưa tự sinh lệnh bổ sung, GAP-BIZ-01 – PROGRESS).
+7d. ~~BIZ-2~~ ✅ bớt bước thừa + tự động hóa (xong 2026-11-23; kế hoạch bổ sung sau phát hành chờ anh – PROGRESS) → 7e. ~~BIZ-3~~ ✅ hoàn thiện luồng (xong 2026-11-23). 7f. ~~D-78~~ ✅ lệnh bổ sung, chi phí lỗi, màn kỹ thuật, cách tính tiền theo hợp đồng (xong 2026-11-23).
 8. ~~FE-E~~ ✅ việc frontend tồn đọng (xong 2026-11-19).
 9. ~~UG-1~~ ✅ sửa chênh lệch tài liệu – code (xong 2026-11-19).
 10. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.

@@ -28,5 +28,7 @@ namespace AppDelicare.Model.Entity
         public DateTime? EffectiveTo { get; set; }
         [Column(TypeName = "decimal(18,4)")]
         public decimal? ContractValue { get; set; }
+        /// <summary>D-78 (2) – GAP-BIZ-01: cấu hình theo hợp đồng (JSON), vd. {"billingBasis":"RECEIVED"} – migration 20261123_01.</summary>
+        public string? ConfigJson { get; set; }
     }
 }
