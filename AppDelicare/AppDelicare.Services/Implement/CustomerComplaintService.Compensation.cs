@@ -7,6 +7,7 @@ using AppDelicare.Model.Request.Custom;
 using AppDelicare.Services.Implement.Messaging;
 using AppDelicare.Services.Interface;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AppDelicare.Services.Implement
 {
@@ -106,10 +107,12 @@ namespace AppDelicare.Services.Implement
             });
             if (result.ResponseCode == 200 && orderNumber != null)
             {
-                result.ResponseMessage = string.Format(ConstantHelper.Message.CompensationCreated, orderNumber, string.Empty).TrimEnd(' ', '–') + " – đã chốt, cần sản xuất bổ sung ưu tiên";
-                await BusinessNotifier.ToMenusAsync(_notifications, _unitOfWork.DbContext, NotificationCatalog.PlanReady, ["#/prod-plan", "#/log-route"],
-                    new { title = $"🔴 Đơn bù {orderNumber} – nấu ưu tiên, giao bù", lines = new[] { result.Data?.Complaint?.ComplaintNo ?? string.Empty, result.Data?.Complaint?.Description ?? string.Empty }.Where(s => s.Length > 0).ToList() },
-                    $"{NotificationCatalog.PlanReady}:DON_BU:{orderNumber}", requireAdd: true);
+                result.ResponseMessage = string.Format(ConstantHelper.Message.CompensationCreated, orderNumber, string.Empty).TrimEnd(' ', '–') + " – đã chốt";
+                // D-78 (1): kế hoạch ngày đã duyệt / phát hành → tự sinh lệnh + mẻ bổ sung ưu tiên (bot 🔴 báo bếp + điều phối trong đó).
+                Guid newOrderId = await _unitOfWork.DbContext.Order.AsNoTracking().Where(o => o.OrderNumber == orderNumber).Select(o => o.Id).FirstOrDefaultAsync();
+                var sup = await _services.GetRequiredService<IProductionPlanService>().SupplementForOrderAsync(newOrderId, "phản ánh " + result.Data?.Complaint?.ComplaintNo);
+                result.ResponseMessage += sup.ProductionOrderCount > 0 ? " – " + string.Format(ConstantHelper.Message.SupplementCreated, sup.ProductionOrderCount)
+                    : sup.ListReason.Count != 0 ? " – " + string.Join("; ", sup.ListReason) : " – cần sản xuất bổ sung";
             }
             return result;
         }

@@ -426,6 +426,10 @@
             public static readonly string ShiftIssueDraftFailed = "Không tạo được phiếu xuất nháp cho lệnh {0}: {1} – kho lập phiếu tay";
             public static readonly string ShiftIssueNothing = "Không có phiếu xuất Nháp nào của ca này";
             public static readonly string ShiftIssuePosted = "Đã ghi sổ {0} phiếu xuất của ca{1}";
+            public static readonly string SupplementOrderNotLocked = "Đơn chưa ở trạng thái Đã chốt – không sinh lệnh bổ sung";
+            public static readonly string SupplementExists = "Đơn {0} đã có lệnh sản xuất bổ sung";
+            public static readonly string SupplementNoDemand = "Đơn không có món cần nấu (thiếu thực đơn cho ngày)";
+            public static readonly string SupplementCreated = "đã sinh {0} lệnh sản xuất bổ sung (nấu ưu tiên)";
             public static readonly string AutoPlanError = "Lỗi khi tự lập / phát hành kế hoạch – cần làm tay";
             public static readonly string ReleaseStartInPast = "Cảnh báo: mẻ {0} có giờ bắt đầu kế hoạch {1} đã qua";
             public static readonly string ReleaseLinesWithoutShift = "Cảnh báo: {0} dòng đơn chưa gán ca – tính vào ca mặc định {1}";

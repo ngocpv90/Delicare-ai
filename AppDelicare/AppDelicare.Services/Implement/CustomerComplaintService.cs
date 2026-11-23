@@ -27,8 +27,9 @@ namespace AppDelicare.Services.Implement
     /// → Close (Đóng); Reject (Mới / Đang xử lý → Từ chối); AddComment. Mọi bước ghi ComplaintHistory (sổ chỉ ghi thêm). Cảnh báo / leo thang SLA tự động → sau Pilot.
     /// </summary>
     public partial class CustomerComplaintService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications, IOptions<ReferenceListsOptions> referenceLists) : ICustomerComplaintService
+        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications, IOptions<ReferenceListsOptions> referenceLists, IServiceProvider services) : ICustomerComplaintService
     {
+        private readonly IServiceProvider _services = services;
         private readonly ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;

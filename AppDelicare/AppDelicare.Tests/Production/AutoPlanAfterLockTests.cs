@@ -5,6 +5,7 @@ using AppDelicare.Services.Interface;
 using AppDelicare.Tests.Integration;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AppDelicare.Tests.Production
 {
@@ -80,6 +81,33 @@ namespace AppDelicare.Tests.Production
             issueLine.MaterialLotId.Should().NotBeNull("lô FEFO phân bổ sẵn");
             (await c.PostFormAsync("/api/MaterialIssue/PostShift", ("Tag", tag))).Ok().GetInt32().Should().Be(1);
             (await c.PostFormAsync("/api/MaterialIssue/PostShift", ("Tag", tag))).Fail("Không có phiếu xuất Nháp");
+
+            // D-78 (1): đơn chốt muộn (sau khi kế hoạch đã phát hành) – cùng khách / thực đơn, 40 suất → lệnh + mẻ bổ sung, đơn → Đang sản xuất.
+            var src = await _factory.QueryAsync(db => db.Order.AsNoTracking().SingleAsync(o => o.Id == order));
+            var srcLine = await _factory.QueryAsync(db => db.OrderLine.AsNoTracking().SingleAsync(l => l.OrderId == order));
+            Guid late = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                db.Order.Add(new Order { Id = late, OrderNumber = "DH-AP1-LATE", CustomerId = src.CustomerId, OrderDate = day.AddDays(-1), MealDate = day, DeliveryDate = day, Status = "Locked", TotalQuantity = 40 });
+                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = late, MenuId = srcLine.MenuId, MealType = "TRUA", ShiftId = srcLine.ShiftId, Quantity = 40, LineAmount = 0 });
+                return Task.CompletedTask;
+            });
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var sp = scope.ServiceProvider;
+                using (sp.GetRequiredService<AppDelicare.Data.Share.ICurrentActor>().BeginScope(AppDelicare.Data.Share.ActorInfo.ForSystem(InMemoryApiFactory.UserId)))
+                {
+                    var plans = sp.GetRequiredService<IProductionPlanService>();
+                    var sup = await plans.SupplementForOrderAsync(late, "test");
+                    (sup.Status, sup.ProductionOrderCount).Should().Be(("RELEASED", 1), string.Join("; ", sup.ListReason));
+                    (await plans.SupplementForOrderAsync(late, "test")).ProductionOrderCount.Should().Be(0, "đơn đã Đang sản xuất – không sinh trùng");
+                }
+            }
+            var po = await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().SingleAsync(p => p.Note!.Contains("[BO_SUNG:DH-AP1-LATE]")));
+            (po.PlannedQty, po.ProductionPlanId).Should().Be((40m, plan.Id));
+            po.Note.Should().Contain("Bổ sung sau chốt");
+            (await _factory.QueryAsync(db => db.ProductionBatch.CountAsync(b => b.ProductionOrderId == po.Id))).Should().BeGreaterThan(0);
+            (await _factory.QueryAsync(db => db.Order.AsNoTracking().SingleAsync(o => o.Id == late))).Status.Should().Be("InProduction");
         }
 
         [Fact]

@@ -593,6 +593,8 @@ namespace AppDelicare.Services.Implement
                 return new ProductionBatchBriefModel
                 {
                     Id = b.Id,
+                    PriorityLabel = order?.Note?.Contains("[BO_SUNG:", StringComparison.Ordinal) == true
+                        ? (order.Note.Contains("Đơn bù", StringComparison.Ordinal) ? "🔴 Đơn bù" : "🔴 Bổ sung sau chốt") : null,
                     BatchNumber = b.BatchNumber ?? b.BatchNo,
                     ProductionOrderId = b.ProductionOrderId,
                     ProductionOrderNumber = order?.ProductionOrderNumber ?? order?.ProductionOrderNo,
