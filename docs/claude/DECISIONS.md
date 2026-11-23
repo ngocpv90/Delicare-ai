@@ -744,3 +744,20 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (k) | Kho, đối soát | QC kết luận → tự ghi sổ phần đạt. Giao xong → tự tạo đối soát; khớp → tự chốt sau 24 giờ; chốt → tự tính giá vốn. |
 | (l) | Hoàn thiện | Đơn bù từ phản ánh (giá 0 khi lỗi Delicare, ưu tiên nấu / giao); **Bảng kê thanh toán tháng** (chỉ xem + Excel, VAT bán 8 %, phí thất thoát khay cấu hình); giá thành tự tính lại khi giá NCC đổi + cảnh báo FC; thực đơn tự hết hiệu lực, nhắc thứ Tư công bố thực đơn, nhắc thứ Sáu khách chưa đăng ký; bật tự tính KPI; cấu hình khách / hợp đồng lên form. |
 | (m) | Thứ tự | MENU-4 → **BIZ-1** → FC-1 → BIZ-2 → BIZ-3. FC-1.4 gộp vào BIZ-1.3. |
+
+## D-78 – Các đề xuất sau BIZ-1 → BIZ-3 (anh chốt 2026-11-23: "đồng ý" theo lựa chọn của Claude Code)
+
+| # | Việc | Chốt |
+|---|---|---|
+| 1 | Đơn chốt sau khi kế hoạch đã phát hành (duyệt sau giờ chốt, đơn bù) | Giữ 1 KH / ngày; hệ thống tự sinh **lệnh SX + mẻ bổ sung** gắn kế hoạch đã phát hành, nhãn 🔴 Bổ sung / Đơn bù, ưu tiên trên bảng điều độ, giữ chỗ + phiếu xuất Nháp như phát hành thường. |
+| 2 | GAP-BIZ-01 – cách tính tiền theo hợp đồng | Thêm cột **`Contract.ConfigJson`** (NVARCHAR(MAX) NULL) – migration anh chạy sau backup; form hợp đồng có "Cách tính tiền" (trống = cấu hình chung). |
+| 3 | Giá vốn đơn bù | Tính như thường, gắn nhãn **Chi phí lỗi**; báo cáo giá vốn tách dòng "Chi phí do lỗi Delicare" (không thêm cột). |
+| 4 | Người duyệt sửa đơn sau giờ chốt | SAL-CON (Trưởng KD) + COO, **bỏ CEO** – DB thật chạy `BIZ2_order_approvers.sql` với `RemoveCeo=1`. |
+| 5 | Phí thất thoát khay | Chưa thu (0 đ), bảng kê hiện số khay vượt ngưỡng; anh cho mức phí / khay thì điền `ContainerLossFee`. |
+| 6 | MENU-4 nhóm E – màn kỹ thuật | Chỉ admin / FIN-IT; script DryRun in danh sách nhóm mất quyền trước khi chạy thật. |
+| 7 | Giá bán tính FC thực đơn chung | Giữ đơn giá suất thấp nhất của hợp đồng hiệu lực. |
+| 8 | Nút đóng gói nhanh khi đã có lệnh đóng gói tự sinh | Giữ chặn – đóng gói qua lệnh. |
+| 9 | Thẻ trong ghi chú (GAP-FC-01, GAP-BIZ-02, [DON_BU:]) | Giữ cho Release 1. |
+| 10 | Mặc định BIZ-2 / BIZ-3 | Giữ nguyên. |
+
+Thứ tự làm: 1 → 3 → 6 → 2.

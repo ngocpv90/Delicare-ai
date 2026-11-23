@@ -42,7 +42,7 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 ## 4. Thao tác từng bước
 
 ### 4.1 Khách hàng 360° – `crm-customer`
-**Điều khoản (BIZ-3.6):** form khách hàng có ô **Ngưỡng thất thoát khay (%)** – trống = theo cấu hình chung (3 %); vượt ngưỡng → cảnh báo thất thoát khay và tính phí trên bảng kê (nếu có phí / khay). *Cách tính tiền theo từng hợp đồng* chưa có (GAP-BIZ-01 – cần anh duyệt chỗ lưu).
+**Điều khoản (BIZ-3.6):** form khách hàng có ô **Ngưỡng thất thoát khay (%)** – trống = theo cấu hình chung (3 %); vượt ngưỡng → cảnh báo thất thoát khay và tính phí trên bảng kê (nếu có phí / khay). **Cách tính tiền theo hợp đồng (D-78):** khi tạo hợp đồng chọn *Cách tính tiền đối soát* (Theo cấu hình chung / Theo số khách nhận / Theo suất ăn thực tế / Theo số đặt – chốt); chi tiết hợp đồng có nút **Đổi** (quyền Sửa) – áp cho các lần đối soát sau.
 - **Thêm khách hàng (D-63, UI-5):**
   1. Bấm **Tạo mới** → form mở ra với 2 nút lớn **Doanh nghiệp** / **Cá nhân** (chưa chọn sẵn). Chọn loại → hiện các ô của loại đó. Trước khi lưu vẫn đổi loại được ở ô *Loại khách hàng*, dữ liệu đã nhập được giữ.
   2. Nhập các ô (bảng dưới). *Doanh nghiệp*: gõ **Tên doanh nghiệp** → **Tên giao dịch** tự điền giống vậy khi ô này còn trống (sửa lại được).

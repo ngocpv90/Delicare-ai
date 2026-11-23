@@ -62,5 +62,31 @@ namespace AppDelicare.Tests.Delivery
             var order = await factory.QueryAsync(db => db.Order.AsNoTracking().SingleAsync(o => o.Note!.Contains("|PA-" + k + "]")));
             (order.TotalQuantity, order.TotalAmount).Should().Be((5m, 200_000m));
         }
+        /// <summary>D-78 (3): giá vốn đơn bù giá 0 gắn nhãn Chi phí lỗi (tách khỏi giá vốn suất bán).</summary>
+        [Fact]
+        public async Task Compensation_order_cost_is_reported_as_fault_cost()
+        {
+            string k = Guid.NewGuid().ToString("N")[..5];
+            Guid customer = Guid.NewGuid(), bu = Guid.NewGuid(), normal = Guid.NewGuid(), dish = Guid.NewGuid();
+            DateTime day = new(2032, 7, 2);
+            factory.Clock.FixedNow = day.AddDays(1).AddHours(9);
+            await factory.SeedAsync(db =>
+            {
+                db.Customer.Add(new Customer { Id = customer, Code = "CF" + k, Name = "Khách " + k, DisplayName = "Khách " + k, CIF = "CF" + k, CustomerType = "FACTORY", Status = "Active" });
+                db.Dish.Add(new Dish { Id = dish, Code = "MF" + k, Name = "Món " + k, Status = "Active" });
+                db.Order.AddRange(
+                    new Order { Id = bu, OrderNumber = "DH-BU-" + k, CustomerId = customer, OrderDate = day, MealDate = day, DeliveryDate = day, Status = "Delivered", TotalQuantity = 5, TotalAmount = 0, Note = "[DON_BU:DH-X|PA-" + k + "] Đơn bù" },
+                    new Order { Id = normal, OrderNumber = "DH-N-" + k, CustomerId = customer, OrderDate = day, MealDate = day, DeliveryDate = day, Status = "Delivered", TotalQuantity = 50, TotalAmount = 2_000_000 });
+                foreach (var o in new[] { bu, normal })
+                {
+                    db.MealCost.Add(new MealCost { Id = Guid.NewGuid(), OrderId = o, DishId = dish, MealQty = 5, TotalCost = 100000, TotalActualCost = 100000, AcceptedMealQuantity = 5, CalculatedAt = day.AddHours(20) });
+                }
+                return Task.CompletedTask;
+            });
+            using var c = factory.CreateAuthorizedClient();
+            var list = (await c.GetResultAsync("/api/MealCost/GetList?From=2032-07-02&To=2032-07-02")).ListData.EnumerateArray().ToList();
+            list.Single(x => x.GetProperty("orderNumber").GetString() == "DH-BU-" + k).GetProperty("isFaultCost").GetBoolean().Should().BeTrue();
+            list.Single(x => x.GetProperty("orderNumber").GetString() == "DH-N-" + k).GetProperty("costCategoryName").GetString().Should().Be("Suất bán");
+        }
     }
 }

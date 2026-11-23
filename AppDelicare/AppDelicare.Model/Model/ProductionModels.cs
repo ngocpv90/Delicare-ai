@@ -117,6 +117,8 @@ namespace AppDelicare.Model.Model
     public class ProductionBatchBriefModel
     {
         public Guid Id { get; set; }
+        /// <summary>D-78 (1): nhãn ưu tiên của mẻ bổ sung – "🔴 Đơn bù" / "🔴 Bổ sung sau chốt" (null = mẻ thường).</summary>
+        public string? PriorityLabel { get; set; }
         public string? BatchNumber { get; set; }
         public Guid ProductionOrderId { get; set; }
         public string? ProductionOrderNumber { get; set; }

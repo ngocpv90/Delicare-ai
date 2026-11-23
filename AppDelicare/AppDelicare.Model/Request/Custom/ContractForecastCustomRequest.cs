@@ -21,6 +21,9 @@ namespace AppDelicare.Model.Request.Custom
         [MaxLength(2000)]
         public string? PaymentTerm { get; set; }
         public decimal? ContractValue { get; set; }
+        /// <summary>D-78 (2): cách tính tiền đối soát của hợp đồng (RECEIVED / SERVED / ORDERED …); trống = cấu hình chung.</summary>
+        [MaxLength(20)]
+        public string? BillingBasis { get; set; }
         [MaxLength(2000)]
         public string? Note { get; set; }
         public List<ContractMealCreateRequest> ListMeal { get; set; } = [];
@@ -62,6 +65,15 @@ namespace AppDelicare.Model.Request.Custom
         [MaxLength(1000)]
         public string? Reason { get; set; }
         public DateTime? EffectiveTo { get; set; }
+    }
+
+    /// <summary>D-78 (2): đổi cách tính tiền đối soát của hợp đồng (form) – trống = theo cấu hình chung. Áp cho lần đối soát sau.</summary>
+    public class ContractBillingBasisRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        [MaxLength(20)]
+        public string? BillingBasis { get; set; }
     }
 
     /// <summary>BE2.2 (spec 6.5 GET forecasts/matrix, Catalog 87): ma trận khách × ngày (query).</summary>

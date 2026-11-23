@@ -374,6 +374,7 @@ namespace AppDelicare.Services.Implement
                 OrderNumber = order.OrderNumber ?? order.OrderNo,
                 MealDate = order.MealDate,
                 OrderStatus = order.Status,
+                IsFaultCost = order.Note?.Contains("[DON_BU:", StringComparison.Ordinal) == true && (order.TotalAmount ?? 0m) == 0m,
                 OrderedMeals = lines.Sum(l => l.Quantity),
             };
             foreach (var line in lines)

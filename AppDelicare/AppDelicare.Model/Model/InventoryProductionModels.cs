@@ -184,6 +184,9 @@ namespace AppDelicare.Model.Model
         public string? OrderNumber { get; set; }
         public DateTime MealDate { get; set; }
         public string? OrderStatus { get; set; }
+        /// <summary>D-78 (3): đơn bù do lỗi Delicare (giá 0, ghi chú [DON_BU:]) – giá vốn là <b>Chi phí lỗi</b>, báo cáo tách riêng, không tính vào giá vốn / lãi gộp suất bán.</summary>
+        public bool IsFaultCost { get; set; }
+        public string CostCategoryName => IsFaultCost ? "Chi phí lỗi" : "Suất bán";
         public decimal OrderedMeals { get; set; }
         public decimal AcceptedMeals { get; set; }
         /// <summary>Nguồn số suất nhận: RECONCILIATION (OrderReconciliation) / POD / ORDERED.</summary>

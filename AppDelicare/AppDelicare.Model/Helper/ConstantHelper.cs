@@ -401,6 +401,7 @@
             public static readonly string AutoPlanAlreadyApproved = "Kế hoạch {0} đã ở trạng thái {1} – hệ thống không tự lập lại";
             public static readonly string AutoPlanEditedByHand = "Kế hoạch {0} đã được sửa tay – giữ bản sửa, chờ COO duyệt / phát hành";
             public static readonly string AutoPlanNoLockedRecipe = "Món chưa có công thức khóa: {0}";
+            public static readonly string ContractBillingBasisInvalid = "Cách tính tiền không hợp lệ (RECEIVED / SERVED / ORDERED / DELIVERED / ACCEPTED hoặc để trống)";
             public static readonly string CompensationCategoryInvalid = "Chỉ tạo đơn bù cho phản ánh loại Thiếu suất / Hỏng – đổ vỡ / Không đạt nhiệt độ";
             public static readonly string CompensationNoSourceOrder = "Phản ánh chưa gắn đơn hàng (hoặc đơn đã hủy) – không tạo được đơn bù";
             public static readonly string CompensationExists = "Phản ánh này đã có đơn bù {0}";
@@ -426,6 +427,10 @@
             public static readonly string ShiftIssueDraftFailed = "Không tạo được phiếu xuất nháp cho lệnh {0}: {1} – kho lập phiếu tay";
             public static readonly string ShiftIssueNothing = "Không có phiếu xuất Nháp nào của ca này";
             public static readonly string ShiftIssuePosted = "Đã ghi sổ {0} phiếu xuất của ca{1}";
+            public static readonly string SupplementOrderNotLocked = "Đơn chưa ở trạng thái Đã chốt – không sinh lệnh bổ sung";
+            public static readonly string SupplementExists = "Đơn {0} đã có lệnh sản xuất bổ sung";
+            public static readonly string SupplementNoDemand = "Đơn không có món cần nấu (thiếu thực đơn cho ngày)";
+            public static readonly string SupplementCreated = "đã sinh {0} lệnh sản xuất bổ sung (nấu ưu tiên)";
             public static readonly string AutoPlanError = "Lỗi khi tự lập / phát hành kế hoạch – cần làm tay";
             public static readonly string ReleaseStartInPast = "Cảnh báo: mẻ {0} có giờ bắt đầu kế hoạch {1} đã qua";
             public static readonly string ReleaseLinesWithoutShift = "Cảnh báo: {0} dòng đơn chưa gán ca – tính vào ca mặc định {1}";

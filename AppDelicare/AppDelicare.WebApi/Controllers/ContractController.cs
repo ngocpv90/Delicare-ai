@@ -242,5 +242,23 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+        /// <summary>D-78 (2): đổi cách tính tiền đối soát của hợp đồng – quyền Sửa trên crm-contract.</summary>
+        [HttpPut("UpdateBillingBasis")]
+        public async Task<IActionResult> UpdateBillingBasis([FromForm] ContractBillingBasisRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.UpdateBillingBasis(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " UpdateBillingBasis: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

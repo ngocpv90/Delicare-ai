@@ -94,6 +94,9 @@ public static partial class Seeds
     /// </summary>
     public sealed record ScreenRight(bool Add, bool Edit, bool Delete, bool Export);
 
+    /// <summary>D-78 (6): màn kỹ thuật (MENU-4 nhóm E) ngoài các màn tích hợp D-71.</summary>
+    public static readonly string[] TechScreens = ["adm-audit", "adm-merge-conflict", "kpi-definition", "kpi-refresh"];
+
     public static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ScreenRight>> RestrictedScreens = BuildRestricted();
 
     private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, ScreenRight>> BuildRestricted()
@@ -106,6 +109,12 @@ public static partial class Seeds
             map[s] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin };
         }
         map["int-outbound"] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin, ["CEO"] = view, ["COO"] = view };
+        // D-78 (6) – MENU-4 nhóm E: màn kỹ thuật chỉ admin / FIN-IT. Danh mục chỉ số vẫn ĐỌC được qua quyền xem KPI / bảng điều hành (PermissionConvention.ReadAlsoScreens).
+        // DB đang chạy: DB/scripts/D78_restrict_tech_screens.sql.
+        foreach (string s in TechScreens)
+        {
+            map[s] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin };
+        }
         return map;
     }
 

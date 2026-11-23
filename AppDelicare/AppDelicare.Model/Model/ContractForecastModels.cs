@@ -8,6 +8,9 @@ namespace AppDelicare.Model.Model
         public Contract? Contract { get; set; }
         public string? StatusName { get; set; }
         public string? CustomerName { get; set; }
+        /// <summary>D-78 (2): cách tính tiền đối soát của hợp đồng (null = cấu hình chung).</summary>
+        public string? BillingBasis { get; set; }
+        public string? BillingBasisName { get; set; }
         public List<ContractMeal> ListMeal { get; set; } = [];
         /// <summary>Theo máy trạng thái: update, submit, approve, reject, terminate, delete.</summary>
         public List<string> AllowedActions { get; set; } = [];

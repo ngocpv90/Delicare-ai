@@ -19,7 +19,7 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ContractService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock
+    public partial class ContractService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock
         , IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService
         , IAuditChangeService auditChangeService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists) : IContractService
     {
@@ -179,9 +179,10 @@ namespace AppDelicare.Services.Implement
             {
                 return error;
             }
-            string? status = exist.Status;
+            string? status = exist.Status, config = exist.ConfigJson;
             var update = _mapper.Map(request, exist);
             update.Status = status;
+            update.ConfigJson = config; // D-78 (2): cấu hình đổi qua Contract/UpdateBillingBasis
             update.ContractNumber = number;
             update.ContractNo = number;
             _unitOfWork.ContractRepository.Update(update);
@@ -344,6 +345,7 @@ namespace AppDelicare.Services.Implement
                     Id = Guid.NewGuid(), CustomerId = request.CustomerId, Name = request.Name?.Trim(), SignedDate = request.SignedDate,
                     EffectiveFrom = request.EffectiveFrom.Date, EffectiveTo = request.EffectiveTo?.Date, StartDate = request.EffectiveFrom.Date, EndDate = request.EffectiveTo?.Date,
                     PaymentTerm = request.PaymentTerm, ContractValue = request.ContractValue, Note = request.Note, Status = ContractStatus.Draft,
+                    ConfigJson = ContractConfig.WithBillingBasis(null, request.BillingBasis),
                 };
                 await AssignNumberAsync(contract, request.ContractNumber);
                 _unitOfWork.ContractRepository.Add(contract);
@@ -563,6 +565,8 @@ namespace AppDelicare.Services.Implement
             {
                 Contract = contract,
                 StatusName = ContractStatus.Label(contract.Status),
+                BillingBasis = ContractConfig.BillingBasisOf(contract.ConfigJson),
+                BillingBasisName = ContractConfig.BillingBasisOf(contract.ConfigJson) is { } bb ? DeliveryCode.BillingLabel(bb) : "Theo cấu hình chung",
                 CustomerName = await db.Customer.AsNoTracking().Where(c => c.Id == contract.CustomerId).Select(c => c.DisplayName ?? c.Name).FirstOrDefaultAsync(),
                 ListMeal = await db.ContractMeal.AsNoTracking().Where(m => m.ContractId == id && !m.IsDeleted).OrderBy(m => m.MealType).ToListAsync(),
                 AllowedActions = actions,

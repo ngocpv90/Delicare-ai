@@ -5,6 +5,7 @@ using Dapper;
 using AppDelicare.Model.Request.Custom;
 using AppDelicare.Model.Model;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Data.Share;
@@ -540,6 +541,23 @@ namespace AppDelicare.Services.Implement
                     return Result<bool>.Fail(error, false);
                 }
                 _unitOfWork.CommitTransaction();
+                // D-78 (1): duyệt xong sửa / thêm đơn sau giờ chốt → đơn Đã chốt; kế hoạch ngày đã duyệt / phát hành → tự sinh lệnh + mẻ bổ sung.
+                if (request.Approve)
+                {
+                    var done = await _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(a => a.Id == request.Id);
+                    if (done is { RequestStatus: Approved, BusinessType: OrderStatus.ChangeAfterCutoffBusinessType })
+                    {
+                        var sup = await _serviceProvider.GetRequiredService<IProductionPlanService>().SupplementForOrderAsync(done.BusinessId ?? Guid.Empty, "duyệt sau giờ chốt " + done.RequestNo);
+                        if (sup.ProductionOrderCount > 0)
+                        {
+                            message = (message ?? ConstantHelper.Message.SaveSuccess) + " – " + string.Format(ConstantHelper.Message.SupplementCreated, sup.ProductionOrderCount);
+                        }
+                        else if (sup.Status == ProductionPlanService.AutoHeld && sup.ListReason.Count != 0)
+                        {
+                            message = (message ?? ConstantHelper.Message.SaveSuccess) + " – " + string.Join("; ", sup.ListReason);
+                        }
+                    }
+                }
                 return Result<bool>.Success(true, message ?? ConstantHelper.Message.SaveSuccess);
             }
             catch (Exception ex)
