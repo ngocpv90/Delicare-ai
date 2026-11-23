@@ -1,5 +1,7 @@
 using System.Text.Json;
 using AppDelicare.Model.Entity;
+using AppDelicare.Services.Implement;
+using AppDelicare.Services.Interface;
 using AppDelicare.Tests.Integration;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -19,10 +21,10 @@ namespace AppDelicare.Tests.Production
         private static int MenuDay(DateTime d) => d.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)d.DayOfWeek;
 
         /// <summary>Khách + đơn Đã xác nhận 100 suất TRUA ngày <paramref name="day"/> + món (có / không công thức khóa).</summary>
-        private async Task<(Guid Order, Guid Dish)> SeedAsync(string code, DateTime day, bool lockedRecipe)
+        private async Task<(Guid Order, Guid Dish)> SeedAsync(string code, DateTime day, bool lockedRecipe, decimal stockKg = 0)
         {
             Guid shift = Guid.NewGuid(), dish = Guid.NewGuid(), menu = Guid.NewGuid(), customer = Guid.NewGuid(), order = Guid.NewGuid(), kg = Guid.NewGuid(), ing = Guid.NewGuid();
-            await _factory.SeedAsync(db =>
+            await _factory.SeedAsync(async db =>
             {
                 db.Shift.Add(new Shift { Id = shift, Code = "T" + code, Name = "Trưa " + code, StartTime = new TimeSpan(10, 30, 0), Status = "Active" });
                 db.Dish.Add(new Dish { Id = dish, Code = "M" + code, Name = "Món " + code, Status = "Active" });
@@ -34,11 +36,17 @@ namespace AppDelicare.Tests.Production
                     db.Ingredient.Add(new Ingredient { Id = ing, Code = "NL" + code, Name = "NL " + code, BaseUnitId = kg });
                     db.Recipe.Add(new Recipe { Id = Guid.NewGuid(), DishId = dish, VersionNo = 1, Status = "Locked", IsActive = true, StandardOutputQty = 100, EffectiveFrom = day.AddDays(-30),
                         LockedAt = day.AddDays(-30), SnapshotJson = JsonSerializer.Serialize(new[] { new { IngredientId = ing, Quantity = 10m, UnitId = kg, SequenceNo = 1 } }) });
+                    if (stockKg > 0)
+                    {
+                        Guid warehouse = Guid.NewGuid(), lot = Guid.NewGuid();
+                        db.Warehouse.Add(new Warehouse { Id = warehouse, Code = "W" + code, Name = "Kho " + code, Status = "Active" });
+                        db.MaterialLot.Add(new MaterialLot { Id = lot, IngredientId = ing, LotNumber = "L" + code, LotNo = "L" + code, ExpiryDate = day.AddDays(30), ReceivedDate = day.AddDays(-2), QcStatus = "DAT", QualityStatus = "DAT", Status = "Available" });
+                        await new InventoryLedgerService(db).PostAsync(new InventoryPostRequest { TransactionType = "RECEIPT", TransactionNumber = "NK" + code, WarehouseId = warehouse, IngredientId = ing, MaterialLotId = lot, UnitId = kg, QuantityIn = stockKg });
+                    }
                 }
                 db.Customer.Add(new Customer { Id = customer, Code = "K" + code, Name = "Khách " + code, DisplayName = "Khách " + code, CIF = "K" + code, CustomerType = "FACTORY", Status = "Active" });
                 db.Order.Add(new Order { Id = order, OrderNumber = "DH-" + code, CustomerId = customer, OrderDate = day.AddDays(-3), MealDate = day, DeliveryDate = day, Status = "Confirmed", TotalQuantity = 100 });
                 db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = order, MenuId = menu, MealType = "TRUA", ShiftId = shift, Quantity = 100, LineAmount = 0 });
-                return Task.CompletedTask;
             });
             return (order, dish);
         }
@@ -51,7 +59,7 @@ namespace AppDelicare.Tests.Production
         {
             var day = new DateTime(2027, 6, 14);
             _factory.Clock.FixedNow = day.AddDays(-1).AddHours(20).AddMinutes(5);
-            var (order, _) = await SeedAsync("AP1", day, lockedRecipe: true);
+            var (order, _) = await SeedAsync("AP1", day, lockedRecipe: true, stockKg: 30);
             using var c = _factory.CreateAuthorizedClient();
             var summary = (await c.PostFormAsync("/api/Order/LockByMealDate", ("MealDate", day))).Ok();
             summary.GetProperty("lockedCount").GetInt32().Should().Be(1);
@@ -62,6 +70,16 @@ namespace AppDelicare.Tests.Production
             plan.Status.Should().Be("Released");
             plan.Note.Should().Contain("Hệ thống tự duyệt + phát hành");
             (await _factory.QueryAsync(db => db.Order.AsNoTracking().SingleAsync(o => o.Id == order))).Status.Should().Be("InProduction");
+
+            // BIZ-2.5: phiếu xuất Nháp theo ca (số = giữ chỗ 10 kg) → Ghi sổ cả ca.
+            var group = (await c.GetResultAsync("/api/MaterialIssue/GetShiftGroups?fromDate=2027-06-01")).ListData.EnumerateArray().Single(g => g.GetProperty("shiftCode").GetString() == "TAP1");
+            group.GetProperty("draftCount").GetInt32().Should().Be(1);
+            string tag = group.GetProperty("tag").GetString()!;
+            var issueLine = await _factory.QueryAsync(db => db.MaterialIssueLine.AsNoTracking().SingleAsync(l => db.MaterialIssue.Any(i => i.Id == l.MaterialIssueId && i.Note!.StartsWith(tag))));
+            issueLine.Quantity.Should().Be(10);
+            issueLine.MaterialLotId.Should().NotBeNull("lô FEFO phân bổ sẵn");
+            (await c.PostFormAsync("/api/MaterialIssue/PostShift", ("Tag", tag))).Ok().GetInt32().Should().Be(1);
+            (await c.PostFormAsync("/api/MaterialIssue/PostShift", ("Tag", tag))).Fail("Không có phiếu xuất Nháp");
         }
 
         [Fact]

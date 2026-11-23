@@ -6,6 +6,27 @@ namespace AppDelicare.Model.Model
     /// T17 (spec 8.1, Pilot P7): chi tiết kế hoạch sản xuất – dòng món × phần, lệnh SX + mẻ (lịch ngược từ giờ xuất bếp), thao tác được phép.
     /// </summary>
     /// <summary>BIZ-2.4: kết quả tự lập + tự phát hành kế hoạch sau chốt đơn. Status: RELEASED / HELD (Nháp, chờ COO) / SKIPPED (đã duyệt trước) / NONE (không có đơn chốt).</summary>
+    /// <summary>BIZ-2.5: nhóm phiếu xuất Nháp theo ca (thẻ trong Note).</summary>
+    public class MaterialIssueShiftGroupModel
+    {
+        public string Tag { get; set; } = string.Empty;
+        public string? PlanNumber { get; set; }
+        public string? ShiftCode { get; set; }
+        public DateTime? IssueDate { get; set; }
+        public int DraftCount { get; set; }
+        public int IssuedCount { get; set; }
+        public List<MaterialIssueShiftItemModel> ListIssue { get; set; } = [];
+    }
+
+    public class MaterialIssueShiftItemModel
+    {
+        public Guid Id { get; set; }
+        public string? IssueNumber { get; set; }
+        public string? Status { get; set; }
+        public string? ProductionOrderNumber { get; set; }
+        public int LineCount { get; set; }
+    }
+
     public class ProductionAutoPlanModel
     {
         public DateTime ProductionDate { get; set; }

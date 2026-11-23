@@ -697,6 +697,20 @@
       top: `<div class="card panel mb"><div class="panel-title">Lệnh sản xuất đã giữ chỗ – chờ xuất kho</div><div class="panel-desc">Chọn lệnh để xuất phần nguyên liệu đang giữ. Lô được gợi ý theo hạn dùng gần nhất; phiếu tạo ở trạng thái Nháp, ghi sổ mới trừ tồn.</div><div class="row-flex mt">${wait.map(p => `<button class="btn sm" data-iss="${p.Id}">${esc(p.ProductionOrderNumber || '')} · ${esc(Store.label('Dishe', p.DishId))}</button>`).join('') || '<span class="muted small">Không có lệnh chờ xuất</span>'}</div></div>` });
     headBtn(el, `<button class="btn primary" id="isNew">${I('plus')} Tạo phiếu xuất</button>`);
     el.querySelector('#isNew').onclick = () => issueLive(null);
+    // BIZ-2.5 (D-77 – C4): phiếu xuất Nháp theo ca do hệ thống tạo khi phát hành lệnh → kho kiểm (sửa từng phiếu được) rồi Ghi sổ cả ca.
+    const top = el.querySelector('.card.panel');
+    if (top && !el.querySelector('#isShift')) top.insertAdjacentHTML('beforebegin', '<div class="card panel mb" id="isShift"><div class="panel-title">Phiếu xuất theo ca</div><div class="small muted">Đang tải…</div></div>');
+    Store.query('MaterialIssue/GetShiftGroups', {}).then(x => {
+      const box = el.querySelector('#isShift'); if (!box) return;
+      const rows = (x && (x.list || x.listData || (Array.isArray(x.data) ? x.data : null))) || [];
+      if (!rows.length) { box.innerHTML = '<div class="panel-title">Phiếu xuất theo ca</div><div class="muted small">Chưa có phiếu xuất ca nào – phát hành kế hoạch sản xuất sẽ tự tạo phiếu Nháp theo ca.</div>'; return; }
+      box.innerHTML = `<div class="panel-title mb">Phiếu xuất theo ca – kiểm rồi Ghi sổ cả ca</div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Kế hoạch</th><th>Ca</th><th>Phiếu</th><th class="num">Nháp</th><th class="num">Đã xuất</th><th></th></tr></thead><tbody>${rows.map((g, i) => `<tr><td>${esc(g.planNumber || '')}</td><td><b>${esc(g.shiftCode || '')}</b></td><td class="small">${(g.listIssue || []).map(it => esc(it.issueNumber || '') + ' · ' + esc(it.productionOrderNumber || '') + ' (' + it.lineCount + ' dòng' + (it.status === 'Issued' ? ', đã xuất' : '') + ')').join('<br>')}</td><td class="num">${g.draftCount}</td><td class="num">${g.issuedCount}</td><td class="actions">${g.draftCount ? `<button class="btn xs primary" data-shp="${i}">Ghi sổ cả ca</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+      box.querySelectorAll('[data-shp]').forEach(b => b.onclick = () => {
+        const g = rows[+b.dataset.shp];
+        UI.confirm(`Ghi sổ <b>${g.draftCount}</b> phiếu xuất Nháp của ca <b>${esc(g.shiftCode || '')}</b> (kế hoạch ${esc(g.planNumber || '')})? Tồn kho bị trừ, giữ chỗ giảm theo số xuất.`,
+          () => Store.act('MaterialIssue/PostShift', { form: { Tag: g.tag }, tables: ['MaterialIssue', 'MaterialIssueLine', 'InventoryBalance', 'InventoryTransaction', 'MaterialReservation'] }).then(r => { if (!r.ok) return; UI.toast(esc(r.message || 'Đã ghi sổ cả ca'), 'ok'); APP.refresh(); }), { ok: 'Ghi sổ cả ca' });
+      });
+    });
     el.querySelectorAll('[data-iss]').forEach(b => b.onclick = () => issueLive(b.dataset.iss));
     liveRow(el, (id, td) => {
       const r = Store.get('MaterialIssue', id); if (!r) return;

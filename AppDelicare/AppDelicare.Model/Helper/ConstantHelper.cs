@@ -401,6 +401,9 @@
             public static readonly string AutoPlanAlreadyApproved = "Kế hoạch {0} đã ở trạng thái {1} – hệ thống không tự lập lại";
             public static readonly string AutoPlanEditedByHand = "Kế hoạch {0} đã được sửa tay – giữ bản sửa, chờ COO duyệt / phát hành";
             public static readonly string AutoPlanNoLockedRecipe = "Món chưa có công thức khóa: {0}";
+            public static readonly string ShiftIssueDraftFailed = "Không tạo được phiếu xuất nháp cho lệnh {0}: {1} – kho lập phiếu tay";
+            public static readonly string ShiftIssueNothing = "Không có phiếu xuất Nháp nào của ca này";
+            public static readonly string ShiftIssuePosted = "Đã ghi sổ {0} phiếu xuất của ca{1}";
             public static readonly string AutoPlanError = "Lỗi khi tự lập / phát hành kế hoạch – cần làm tay";
             public static readonly string ReleaseStartInPast = "Cảnh báo: mẻ {0} có giờ bắt đầu kế hoạch {1} đã qua";
             public static readonly string ReleaseLinesWithoutShift = "Cảnh báo: {0} dòng đơn chưa gán ca – tính vào ca mặc định {1}";

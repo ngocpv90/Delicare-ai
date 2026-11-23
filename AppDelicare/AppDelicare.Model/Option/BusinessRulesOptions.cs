@@ -75,6 +75,8 @@ namespace AppDelicare.Model.Option
         public bool PurchaseOrderAutoApproveFromRequest { get; set; } = true;
         /// <summary>BIZ-2.4 (D-77 – B5, C3): sau chốt đơn theo ngày → tự lập kế hoạch SX, tự duyệt + phát hành (trừ trường hợp phải chờ COO).</summary>
         public bool ProductionAutoReleaseAfterLock { get; set; } = true;
+        /// <summary>BIZ-2.5 (D-77 – C4): phát hành lệnh → tự tạo phiếu xuất Nháp theo ca (số = giữ chỗ, lô FEFO).</summary>
+        public bool ProductionAutoDraftIssueOnRelease { get; set; } = true;
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
         /// <summary>

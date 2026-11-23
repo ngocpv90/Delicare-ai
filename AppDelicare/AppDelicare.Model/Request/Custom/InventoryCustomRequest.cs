@@ -117,6 +117,14 @@ namespace AppDelicare.Model.Request.Custom
     /// T16 (spec 7.7 material-issues): tạo phiếu xuất Nháp kèm dòng. Gửi JSON (danh sách dòng lồng nhau – CLAUDE.md 4.2).
     /// Dòng không chọn lô → tự phân bổ theo FEFO / FIFO (có thể tách thành nhiều dòng theo lô).
     /// </summary>
+    /// <summary>BIZ-2.5: ghi sổ mọi phiếu xuất Nháp cùng thẻ ca <c>[XUAT_CA:&lt;số KH&gt;|&lt;mã ca&gt;]</c> (form).</summary>
+    public class MaterialIssueShiftRequest
+    {
+        [Required]
+        [MaxLength(200)]
+        public string Tag { get; set; } = string.Empty;
+    }
+
     public class MaterialIssueCreateRequest
     {
         [Required]

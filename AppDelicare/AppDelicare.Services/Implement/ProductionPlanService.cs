@@ -22,8 +22,9 @@ namespace AppDelicare.Services.Implement
 {
     public partial class ProductionPlanService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
-        , IOptions<BusinessRulesOptions> rules, IUomConversionService uomConversionService, INotificationService notifications) : IProductionPlanService
+        , IOptions<BusinessRulesOptions> rules, IUomConversionService uomConversionService, INotificationService notifications, IServiceProvider services) : IProductionPlanService
     {
+        private readonly IServiceProvider _services = services;
         private readonly INotificationService _notifications = notifications;
         private readonly IUomConversionService _uomConversionService = uomConversionService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -482,6 +483,9 @@ namespace AppDelicare.Services.Implement
                 await _unitOfWork.ProductionPlanRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 await ReservationRules.ReallocateAsync(db, reservedIngredients, _clock.Today);
                 _unitOfWork.CommitTransaction();
+                // BIZ-2.5: phiếu xuất Nháp theo ca (sau khi phát hành đã ghi – lỗi chỉ cảnh báo).
+                var shiftCodes = toRelease.ToDictionary(p => p.Shift.Id, p => p.Shift.Code);
+                warnings.AddRange(await CreateShiftIssueDraftsAsync(planNo, [.. newOrders.Select(o => (o.Id, o.ShiftId ?? Guid.Empty, shiftCodes.GetValueOrDefault(o.ShiftId ?? Guid.Empty), o.ProductionOrderNumber ?? o.ProductionOrderNo))]));
                 var detail = await DetailAsync(plan.Id);
                 detail!.ListWarning.AddRange(warnings);
                 return Result<ProductionPlanDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
