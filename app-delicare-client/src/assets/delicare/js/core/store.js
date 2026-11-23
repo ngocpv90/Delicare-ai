@@ -224,7 +224,12 @@
   // G2: chữ hoa không dấu, chỉ A–Z 0–9 - _ (giống CodeRules.NormalizeUserCode ở máy chủ).
   const userCode = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
-  const PERM_ALIAS = { 'crm-customer-360': 'crm-customer', 'scm-supplier-360': 'scm-supplier', 'adm-employee-360': 'adm-employee' };
+  const PERM_ALIAS = { 'crm-customer-360': 'crm-customer', 'scm-supplier-360': 'scm-supplier', 'adm-employee-360': 'adm-employee',
+    // MENU-4.3 (D-75 e): bảng con không còn mục menu → quyền của màn cha (khớp máy chủ ScreenMap.ParentByClass).
+    'crm-contract-meal': 'crm-contract', 'crm-order-line': 'crm-order', 'menu-recipe-line': 'menu-recipe', 'menu-menu-line': 'menu-menu',
+    'scm-pr-line': 'scm-pr', 'scm-po-line': 'scm-po', 'scm-gr-line': 'scm-gr', 'scm-issue-line': 'scm-issue', 'scm-stockcount-line': 'scm-stockcount',
+    'prod-plan-line': 'prod-plan', 'qc-inspection-line': 'qc-inspection', 'qc-checklist-item': 'qc-checklist', 'log-stop': 'log-route', 'log-event': 'log-execution',
+    'log-complaint-history': 'log-complaint', 'wf-step': 'wf-inbox', 'wf-decision': 'wf-inbox', 'wf-item': 'wf-inbox', 'adm-person': 'adm-user' };
   const NAME_FIELDS = ['DisplayName', 'Name', 'FullName', 'MetricName', 'ChannelName', 'BotName', 'ItemName', 'NameVN', 'MealName', 'FileName', 'UserName'];
   const NO_FIELDS = ['OrderNumber', 'ContractNumber', 'RequestNumber', 'PurchaseOrderNumber', 'ReceiptNumber', 'LotNumber', 'IssueNumber', 'CountNumber', 'PlanNumber', 'ProductionOrderNumber', 'BatchNumber', 'PackingOrderNumber', 'DeliveryNumber', 'RouteNo', 'InspectionNumber', 'CleaningBatchNumber', 'TransactionNumber', 'RequirementNo', 'RequestNo', 'ComplaintNo', 'LicensePlate', 'VersionCode', 'MetricCode', 'BotCode', 'ChannelCode', 'Code', 'ItemCode', 'IdempotencyKey', 'JobCode'];
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };

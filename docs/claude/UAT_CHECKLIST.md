@@ -3,6 +3,20 @@
 Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) hoặc VS Code REST Client (`docs/api-tests/*.http`).
 Đánh dấu [x] khi đạt; ghi lỗi / góp ý vào cột "Ghi chú" hoặc báo Claude Code.
 
+## DỌN MENU (MENU-4, D-75 d, e, f – 2026-11-23) · script: `DB/scripts/MENU4_cleanup_menu.sql` · test: `AppDelicare.Tests/Admin/Menu4Tests.cs`, `Menu4SqlServerTests.cs` · ảnh: `docs/frontend-handoff/assets/menu-4/`
+
+| # | Kịch bản | Thao tác | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Menu thật | Đăng nhập admin, mở từng nhóm menu | Không còn mục "Chi tiết …", Loại suất & đơn giá, Tiêu chí kiểm tra, Điểm dừng, Diễn biến giao hàng, Lịch sử xử lý phản ánh, Các bước / Lịch sử duyệt, Phiếu chuyển kho, Phiếu điều chỉnh tồn, Thông tin cá nhân, Hộp phê duyệt ở nhóm Nhân sự | [ ] | |
+| 2 | Quyền màn cha | Tài khoản Kinh doanh (chỉ quyền Hợp đồng) tạo hợp đồng Nháp 2 loại suất, gửi duyệt, xem tab Loại suất | Chạy như cũ (không 403) | [ ] | |
+| 3 | Dòng chứng từ đã khóa | Gọi `OrderLine` / `PurchaseOrderLine` / `GoodsReceiptLine` / `MaterialIssueLine` / `StockCountLine` / `QcInspectionLine` Insert / Update / Delete | responseCode 400 – chỉ ghi qua action của màn cha (kiểm trạng thái) | [ ] | |
+| 4 | Tiêu chí ATTP | Bộ kiểm tra ATTP → mở bộ → tab Tiêu chí: thêm (để trống mã), ↑ ↓, sửa tiêu chí đã có kết quả | Mã tự cấp TC-nn; thứ tự lưu; sửa nội dung / xóa tiêu chí đã dùng bị chặn với thông báo rõ | [ ] | |
+| 5 | Danh mục dùng chung | Quản trị › Danh mục dùng chung | 14 danh mục tên tiếng Việt, số giá trị, màn / cột đang dùng; bấm xem mã + tên; không có nút thêm / sửa | [ ] | |
+| 6 | Lọc theo nguyên liệu | Đơn mua / Phiếu nhập / Phiếu xuất / Đề nghị mua → chọn nguyên liệu | Chỉ còn chứng từ có nguyên liệu + cột SL nguyên liệu | [ ] | |
+| 7 | Màn chỉ xem | Sản lượng, Xếp hàng lên xe, Xác nhận đã giao, Liên kết tài khoản chat | Không có nút Tạo mới / Sửa; nghiệp vụ (kết thúc mẻ, Load chuyến, xác nhận giao, Liên kết / Gỡ) vẫn chạy | [ ] | |
+| 8 | Link cũ | Mở `#/crm-contract-meal`, `#/scm-adjustment` | Tự chuyển về Hợp đồng / Tồn kho | [ ] | |
+| 9 | Script DB thật | `MENU4_cleanup_menu.sql` DryRun=1 rồi DryRun=0 (sau backup, sau deploy API) | In 21 mục; số dòng UserRole trước = sau; chạy lại không đổi gì | [ ] | **Anh chạy** |
+
 ## R1.0 – Nền móng (2026-11-14) · file thử: `docs/api-tests/r1.0-foundation.http`, `docs/api-tests/r1.1-admin-masterdata.http` (T45R)
 
 | # | Kịch bản | Cách thử | Kỳ vọng | Đạt | Ghi chú |

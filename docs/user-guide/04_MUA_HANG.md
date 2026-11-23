@@ -13,6 +13,7 @@
 | `scm-requirement` | Mua hàng & Kho › Nhu cầu vật tư | Xem, sửa, xuất |
 | `scm-pr` | … › Yêu cầu mua hàng | Xem, sửa, xuất |
 | `scm-po` | … › Đơn mua hàng | Xem, sửa, xuất |
+| (bộ lọc) | Đề nghị mua, Đơn mua, Phiếu nhập, Phiếu xuất: **Lọc theo nguyên liệu** | Chỉ hiện chứng từ có nguyên liệu đó + cột **SL nguyên liệu** (thay mục "Chi tiết …" đã bỏ khỏi menu) |
 | `scm-supplier` | … › Nhà cung cấp | Xem, sửa, xuất |
 | `scm-supplier-material` | … › Nhà cung cấp nguyên liệu (bảng giá) | Xem, sửa, xuất |
 | `scm-ingredient`, `scm-ingredient-cat` | … › Nguyên liệu, Nhóm nguyên liệu | Xem, sửa, xuất |

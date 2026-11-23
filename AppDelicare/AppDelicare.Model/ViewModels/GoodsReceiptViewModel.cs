@@ -2,8 +2,11 @@ using System;
 
 namespace AppDelicare.Model.ViewModels
 {
-	public class GoodsReceiptViewModel : BaseViewModel
+	public class GoodsReceiptViewModel : BaseViewModel, IIngredientQuantityRow
 	{
+		/// <summary>MENU-4.7: tổng số lượng của nguyên liệu đang lọc trên chứng từ (chỉ có khi lọc IngredientId).</summary>
+		public decimal? IngredientQuantity { get; set; }
+		public string? IngredientUnitName { get; set; }
 		public Guid? PurchaseOrderId { get; set; }
 		public string? PurchaseOrderName { get; set; }
 		public Guid SupplierId { get; set; }

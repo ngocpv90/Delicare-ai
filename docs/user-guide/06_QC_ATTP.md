@@ -16,7 +16,7 @@
 | `qc-temperature` | … › Nhật ký nhiệt độ | Ghi nhiệt độ, xem biểu đồ 48 giờ |
 | `qc-cleaning` | … › Mẻ vệ sinh | Kiểm tra khay thu hồi, lập mẻ, ghi 6 bước, kết luận |
 | `qc-cleaning-result` | … › Kết quả checklist vệ sinh | Ghi bước vệ sinh |
-| `qc-checklist` | … › Checklist ATTP (bộ) | Danh mục bộ checklist (mã, phiên bản, tần suất) |
+| `qc-checklist` | … › Bộ kiểm tra ATTP | Danh mục bộ checklist (mã, phiên bản, tần suất); mở bộ → tab **Tiêu chí**: thêm, sửa, xóa, xếp thứ tự (↑ ↓) tiêu chí. Mã tiêu chí để trống → tự cấp TC-nn. Tiêu chí đã có kết quả kiểm tra chỉ đổi thứ tự / mô tả, không sửa nội dung / xóa (muốn thay → thêm tiêu chí mới). Mục riêng "Tiêu chí kiểm tra" đã bỏ khỏi menu (MENU-4) |
 | `prod-batch` | Sản xuất & Giá thành › Mẻ sản xuất | QC thành phẩm: Đạt / Tạm giữ / Loại, lưu mẫu |
 | `scm-lot` | Mua hàng & Kho › Lô nguyên liệu | Tạm giữ / mở giữ lô, truy xuất |
 

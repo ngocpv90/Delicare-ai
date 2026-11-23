@@ -11,6 +11,7 @@ using AppDelicare.Model.Request;
 using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Net;
 
@@ -121,8 +122,42 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        // MENU-4.5 (D-75 f1): tiêu chí nhập / sửa / xếp thứ tự trong màn Bộ kiểm tra ATTP (quyền qc-checklist – ScreenMap.ParentByClass).
+        // Bảng không có cột trạng thái → tiêu chí đã có kết quả kiểm tra không "ngừng dùng" được: chặn xóa và chặn sửa nội dung
+        // (mã, tên, giá trị chuẩn, đơn vị, trọng yếu, bắt buộc); vẫn cho sửa thứ tự và mô tả.
+        private Task<bool> HasResultAsync(Guid itemId)
+            => _unitOfWork.FoodSafetyChecklistResultRepository.GetAll().AnyAsync(r => r.ChecklistItemId == itemId && !r.IsDeleted);
+
+        private static string NextItemCode(IEnumerable<string?> codes)
+        {
+            int max = codes.Select(c => c != null && c.StartsWith("TC-", StringComparison.OrdinalIgnoreCase) && int.TryParse(c[3..], out int n) ? n : 0).DefaultIfEmpty(0).Max();
+            return "TC-" + (max + 1).ToString("00");
+        }
+
         private async Task<string> Insert(FoodSafetyChecklistItemRequest request, string typeSave)
         {
+            var checklist = request.ChecklistId is { } cid && cid != Guid.Empty
+                ? await _unitOfWork.FoodSafetyChecklistRepository.GetSingleAsync(c => c.Id == cid && !c.IsDeleted) : null;
+            if (checklist == null)
+            {
+                return ConstantHelper.Message.ChecklistItemNoChecklist;
+            }
+            if (string.IsNullOrWhiteSpace(request.ItemName))
+            {
+                return ConstantHelper.Message.ChecklistItemNameRequired;
+            }
+            var siblings = await _unitOfWork.FoodSafetyChecklistItemRepository.GetAll().Where(x => x.ChecklistId == checklist.Id && !x.IsDeleted)
+                .Select(x => new { x.ItemCode, x.SortOrder }).ToListAsync();
+            if (string.IsNullOrWhiteSpace(request.ItemCode))
+            {
+                request.ItemCode = NextItemCode(siblings.Select(s => s.ItemCode));
+            }
+            request.ItemCode = request.ItemCode.Trim();
+            request.ItemName = request.ItemName.Trim();
+            if (request.SortOrder is null or 0)
+            {
+                request.SortOrder = siblings.Select(s => s.SortOrder).DefaultIfEmpty(0).Max() + 1;
+            }
             if (_unitOfWork.FoodSafetyChecklistItemRepository.GetSingle(x => x.ChecklistId == request.ChecklistId && x.ItemCode == request.ItemCode && !x.IsDeleted) != null)
             {
                 return "Dữ liệu trùng (ChecklistId, ItemCode) – vi phạm UQ_FoodSafetyChecklistItem_Checklist_Item.";
@@ -142,6 +177,22 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            // MENU-4.5: tiêu chí không chuyển sang bộ khác; trống = giữ giá trị cũ.
+            request.ChecklistId = exist.ChecklistId;
+            request.ItemCode = string.IsNullOrWhiteSpace(request.ItemCode) ? exist.ItemCode : request.ItemCode.Trim();
+            request.ItemName = string.IsNullOrWhiteSpace(request.ItemName) ? exist.ItemName : request.ItemName.Trim();
+            request.SortOrder ??= exist.SortOrder;
+            if (await HasResultAsync(exist.Id))
+            {
+                static bool Diff(string? a, string? b) => !string.Equals((a ?? string.Empty).Trim(), (b ?? string.Empty).Trim(), StringComparison.Ordinal);
+                bool contentChanged = Diff(request.ItemCode, exist.ItemCode) || Diff(request.ItemName, exist.ItemName)
+                    || (request.ExpectedValue != null && Diff(request.ExpectedValue, exist.ExpectedValue)) || (request.UnitCode != null && Diff(request.UnitCode, exist.UnitCode))
+                    || (request.IsCritical is { } c && c != exist.IsCritical) || (request.IsRequired is { } r && r != exist.IsRequired);
+                if (contentChanged)
+                {
+                    return string.Format(ConstantHelper.Message.ChecklistItemUsedLocked, exist.ItemName);
+                }
+            }
             if (_unitOfWork.FoodSafetyChecklistItemRepository.GetSingle(x => x.Id != request.Id && x.ChecklistId == request.ChecklistId && x.ItemCode == request.ItemCode && !x.IsDeleted) != null)
             {
                 return "Dữ liệu trùng (ChecklistId, ItemCode) – vi phạm UQ_FoodSafetyChecklistItem_Checklist_Item.";
@@ -158,6 +209,12 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            // MENU-4.5: đã có kết quả kiểm tra → báo rõ (bảng không có cột ngừng dùng).
+            if (await HasResultAsync((Guid)id))
+            {
+                var used = await _unitOfWork.FoodSafetyChecklistItemRepository.GetSingleAsync(x => x.Id == id && !x.IsDeleted);
+                return string.Format(ConstantHelper.Message.ChecklistItemUsedNoDelete, used?.ItemName);
+            }
             // T07: bản ghi đang được tham chiếu (quan hệ logic, truy vấn có tham số) → không cho xóa.
             if ((await _referenceGuard.FindUsagesAsync("FoodSafetyChecklistItem", (Guid)id)).Count > 0)
             {
@@ -171,6 +228,39 @@ namespace AppDelicare.Services.Implement
             _unitOfWork.FoodSafetyChecklistItemRepository.Update(delete);
             await _unitOfWork.FoodSafetyChecklistItemRepository.CommitAsync(typeSave);
             return string.Empty;
+        }
+
+        /// <summary>MENU-4.5: xếp lại thứ tự tiêu chí của một bộ – <paramref name="itemIds"/> theo thứ tự mới (đủ các tiêu chí đang dùng của bộ), SortOrder = 1..n.</summary>
+        public async Task<IResult<bool>> Reorder(Guid checklistId, IReadOnlyList<Guid> itemIds)
+        {
+            var items = await _unitOfWork.FoodSafetyChecklistItemRepository.GetAll().Where(x => x.ChecklistId == checklistId && !x.IsDeleted).ToListAsync();
+            if (items.Count == 0 || itemIds.Count != items.Count || itemIds.Distinct().Count() != items.Count || itemIds.Any(id => items.All(x => x.Id != id)))
+            {
+                return Result<bool>.Fail(ConstantHelper.Message.ChecklistItemReorderInvalid);
+            }
+            using var tran = await _unitOfWork.OpenTransaction();
+            try
+            {
+                for (int i = 0; i < itemIds.Count; i++)
+                {
+                    var item = items.First(x => x.Id == itemIds[i]);
+                    if (item.SortOrder == i + 1)
+                    {
+                        continue;
+                    }
+                    item.SortOrder = i + 1;
+                    _unitOfWork.FoodSafetyChecklistItemRepository.Update(item);
+                }
+                await _unitOfWork.FoodSafetyChecklistItemRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.CommitTransaction();
+                return new Result<bool> { ResponseCode = Convert.ToInt32(HttpStatusCode.OK), ResponseMessage = ConstantHelper.Message.SaveSuccess, Data = true };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reorder: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
         }
 
         public async Task<IResult<FoodSafetyChecklistItem>> GetById(Guid id)

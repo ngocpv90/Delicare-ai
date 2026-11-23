@@ -9,7 +9,21 @@
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
   // FE-E.3 (D-65): int-channel / int-bot / int-log đã hiện lại – quyền theo ma trận UserRole (khóa bí mật trong ConfigJson máy chủ đã che).
-  const HIDDEN_LIVE = new Set(['adm-reference', 'scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap']);
+  // MENU-4.6: adm-reference = màn chỉ xem danh mục thật (modules/admin.js) – không ẩn nữa. MENU-4 (D-75 e): adm-person ẩn (trùng Tài khoản).
+  const HIDDEN_LIVE = new Set(['scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap', 'adm-person']);
+  // MENU-4.2: màn ẩn (bảng con / chưa làm / trùng) → màn cha; [màn cha, bảng con, cột trỏ về chứng từ cha] để mở đúng bản ghi cha khi link có ?id=.
+  const PARENT_OF = {
+    'crm-contract-meal': ['crm-contract', 'ContractMeal', 'ContractId'], 'crm-order-line': ['crm-order', 'OrderLine', 'OrderId'],
+    'menu-recipe-line': ['menu-recipe', 'RecipeLine', 'RecipeId'], 'menu-menu-line': ['menu-menu', 'MenuLine', 'MenuId'],
+    'scm-pr-line': ['scm-pr', 'PurchaseRequestLine', 'PurchaseRequestId'], 'scm-po-line': ['scm-po', 'PurchaseOrderLine', 'PurchaseOrderId'],
+    'scm-gr-line': ['scm-gr', 'GoodsReceiptLine', 'GoodsReceiptId'], 'scm-issue-line': ['scm-issue', 'MaterialIssueLine', 'MaterialIssueId'],
+    'scm-stockcount-line': ['scm-stockcount', 'StockCountLine', 'StockCountId'], 'prod-plan-line': ['prod-plan', 'ProductionPlanLine', 'ProductionPlanId'],
+    'qc-inspection-line': ['qc-inspection', 'QCInspectionLine', 'QCInspectionId'], 'qc-checklist-item': ['qc-checklist', 'FoodSafetyChecklistItem', 'ChecklistId'],
+    'log-stop': ['log-route', 'DeliveryStop', 'DeliveryRouteId'], 'log-event': ['log-execution'], 'log-complaint-history': ['log-complaint', 'ComplaintHistory', 'ComplaintId'],
+    'wf-step': ['wf-inbox', 'ApprovalStep', 'ApprovalRequestId'], 'wf-decision': ['wf-inbox'], 'wf-item': ['wf-inbox', 'ApprovalItem', 'ApprovalRequestId'],
+    'adm-person': ['adm-user'], 'scm-transfer': ['scm-inv-balance'], 'scm-adjustment': ['scm-inv-balance'],
+  };
+  window.DC_PARENT_OF = PARENT_OF;
   // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).
   const hiddenNow = id => Store.isLive && (HIDDEN_LIVE.has(id) || !!(FN[id] && FN[id].table && Store.isBroken(FN[id].table)));
   const SCREENS = {};
@@ -46,7 +60,11 @@
     const menu = Store.isLive && window.DC_HOST && window.DC_HOST.menu;
     if (!menu || !menu.length) return null;
     const used = new Set();
-    const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !used.has(i.link)).map(i => {
+    // MENU-4.2: bỏ bảng con / màn chưa làm / mục trùng kể cả khi DB chưa chạy script MENU4 (máy chủ vẫn trả mục IsActive = 1).
+    // "Hộp phê duyệt" (#/wf-inbox, nhóm Nhân sự) trùng "Tất cả yêu cầu duyệt" (#/wf-inbox?type=wf-inbox) – giữ dòng ở DB vì là quyền của API duyệt, chỉ bỏ khỏi sidebar.
+    const hasAllInbox = menu.some(g => g.items.some(i => i.link === 'wf-inbox?type=wf-inbox'));
+    const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || (link === 'wf-inbox' && hasAllInbox); };
+    const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !skip(i.link)).filter(i => !used.has(i.link)).map(i => {
       used.add(i.link); const id = i.link.split('?')[0]; used.add(id);
       // Mục DB có mà FE chưa có màn: đăng ký màn giữ chỗ để bấm vào không rơi về trang tổng quan.
       if (!FN[id]) { FN[id] = { id, fn: i.name, name: i.name, grp: g.name, ph: '', types: [], table: null, rel: [], st: 'MAPPED', note: '' }; SCREENS[id] = (el, f) => { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel empty">${I('clipboard')}<h2 class="mt">Mục này chưa có màn hình trên giao diện</h2><p class="muted">Mục menu được cấu hình trong hệ thống nhưng giao diện chưa có màn hình tương ứng.</p></div>`; }; }
@@ -156,7 +174,7 @@
     const cols = opt.cols || APP.pickCols(t);
     const stat = sc ? U.group(rowsFn(), sc) : {};
     const statusChips = sc ? Object.entries(stat).sort((a, b) => b[1].length - a[1].length) : [];
-    el.innerHTML = APP.header(f, `${perm.exp !== false ? `<button class="btn" data-act="export">${I('export')} Xuất CSV</button>` : ''}${opt.noAdd ? '' : `<button class="btn primary" data-act="add" ${perm.add === false ? 'disabled title="Tài khoản không có quyền Thêm"' : ''}>${I('plus')} Tạo mới</button>`}`) + (opt.top || '') +
+    el.innerHTML = APP.header(f, `${perm.exp !== false ? `<button class="btn" data-act="export">${I('export')} Xuất CSV</button>` : ''}${opt.noAdd || UI.viewOnly(t) ? '' : `<button class="btn primary" data-act="add" ${perm.add === false ? 'disabled title="Tài khoản không có quyền Thêm"' : ''}>${I('plus')} Tạo mới</button>`}`) + (opt.top || '') +
       `<div class="kpis" data-kpis>${opt.kpis !== undefined ? opt.kpis : `${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), '', 'clipboard', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), '', 'layers', ['blue', 'orange', 'purple'][i])).join('')}`}</div>
       <div class="card panel">${sc ? `<div class="row-flex mb"><span class="small muted">${LIVE() ? 'Lọc nhanh:' : 'Lọc nhanh ' + sc + ':'}</span><button class="chip active" data-st="">Tất cả</button>${statusChips.map(([k, v]) => `<button class="chip" data-st="${esc(k)}">${esc(UI.statusVi(t, sc, k) || '(trống)')} · ${v.length}</button>`).join('')}</div>` : ''}<div id="gt"></div></div>`;
     const fks = cols.filter(c => Store.target(t, c.k)).slice(0, 1).map(c => { const vals = [...new Set(rowsFn().map(r => r[c.k]).filter(Boolean))]; return { k: c.k, label: c.label, options: vals.map(v => ({ v, l: Store.label(Store.target(t, c.k), v) })).sort((a, b) => a.l.localeCompare(b.l)) }; });
@@ -198,6 +216,8 @@
     const g = (CAT.gaps.func || []).concat(CAT.gaps.col || []).find(x => (x[5] || '').includes(f.id)) || null;
     let extra = '';
     if (f.id === 'adm-reference') extra = `<div class="card panel"><div class="panel-head"><div><div class="panel-title">15 danh mục tham chiếu theo BRD</div><div class="panel-desc">Giá trị PROPOSED dùng cho mockup – lưu dạng text trong các cột liệt kê</div></div></div><div id="rt"></div></div>`;
+    // MENU-4.2: chạy thật – Vị trí xe chỉ còn khung dữ liệu thật DeliveryEvent/GetVehiclePositions (modules/be3.js), bỏ bản đồ minh họa + thông báo GAP.
+    if (f.id === 'log-gps' && Store.isLive) { el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Tọa độ xe theo sự kiện giao hàng (đến điểm, giao không thành công, tài xế ghi vị trí) – không phải định vị liên tục.' }); return; }
     if (f.id === 'log-gps') extra = gpsMock();
     if (f.id === 'scm-transfer' || f.id === 'scm-adjustment') extra = `<div class="card panel"><div class="panel-title mb">Dữ liệu hiện có trong DB: sổ cái InventoryTransaction</div><div id="rt"></div></div>`;
     el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="notice gap">${I('alert')}<div><b>DATABASE GAP${g ? ' · ' + g[0] : ''} – chưa có bảng/cột hỗ trợ trong SQL nguồn</b>${esc(f.note)}${g ? `<div class="mt small"><b>Đề xuất xử lý:</b> ${esc(g[6])} · Ưu tiên: ${esc(g[7])} · Cần xác nhận: ${esc(g[8])}</div>` : ''}<div class="small mt">Mockup KHÔNG giả lập bảng mới. Màn hình chỉ minh họa nhu cầu và dữ liệu sẵn có để BA/PO quyết định.</div></div></div>${extra}`;
@@ -258,6 +278,12 @@
     });
   }
   function renderScreen(id, params) {
+    // MENU-4.2: link cũ tới màn đã ẩn (tìm kiếm, thông báo, đánh dấu trang) → màn cha; có ?id= của dòng con thì mở bản ghi cha.
+    const up = Store.isLive && PARENT_OF[id];
+    if (up) {
+      const row = params.id && up[1] && Store.get(up[1], params.id), pid = row ? row[up[2]] : (up[1] ? null : params.id);
+      location.replace(APP.href(up[0]) + (pid ? '?id=' + encodeURIComponent(pid) : '')); return;
+    }
     const f = FN[id] || FN['dash-exec'];
     APP.current = f.id; APP.params = params;
     markNav(f.id);

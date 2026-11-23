@@ -51,11 +51,21 @@ namespace AppDelicare.Services.Implement
                 dynamicParameters.Add("@Status", request.Status);
                 dynamicParameters.Add("@FromReceiptDate", request.FromReceiptDate?.Date);
                 dynamicParameters.Add("@ToReceiptDate", request.ToReceiptDate?.Date);
-                dynamicParameters.Add(ConstantHelper.Page, request.Page);
-                dynamicParameters.Add(ConstantHelper.PageSize, request.PageSize);
+                // MENU-4.7: lọc theo nguyên liệu (dòng chứng từ) – lấy hết kết quả thủ tục rồi lọc / phân trang ở IngredientDocumentFilter.
+                var byIngredient = request.IngredientId is { } ingredientId && ingredientId != Guid.Empty
+                    ? await IngredientDocumentFilter.SummarizeAsync(_unitOfWork.DbContext, await _unitOfWork.DbContext.GoodsReceiptLine.AsNoTracking()
+                        .Where(l => l.IngredientId == ingredientId && !l.IsDeleted)
+                        .Select(l => new IngredientDocumentFilter.LineQty(l.GoodsReceiptId, l.ReceivedQuantity, l.UnitId)).ToListAsync())
+                    : null;
+                dynamicParameters.Add(ConstantHelper.Page, byIngredient == null ? request.Page : 1);
+                dynamicParameters.Add(ConstantHelper.PageSize, byIngredient == null ? request.PageSize : IngredientDocumentFilter.AllRows);
                 dynamicParameters.Add(ConstantHelper.SortField, request.SortField);
                 dynamicParameters.Add(ConstantHelper.SortOrder, request.SortOrder);
                 var list = (await _dapperRepository.QueryMultipleUsingStoreProcAsync<GoodsReceiptViewModel>("uspGoodsReceipt_GetAll", dynamicParameters)).ToList();
+                if (byIngredient != null)
+                {
+                    list = IngredientDocumentFilter.Apply(list, byIngredient, request.Page, request.PageSize);
+                }
                 if (list.Count != 0)
                 {
                     int i = 0;

@@ -224,7 +224,8 @@
       const d = CUSTOMER_FIELDS[cusType];
       return ['Code', 'CustomerType'].concat(d.req, d.opt).map(f => Store.colmeta[t][f]).filter(Boolean);
     };
-    const isReq = m => isCustomer ? CUSTOMER_FIELDS[cusType].req.includes(m.name) || m.name === 'CustomerType' || (m.name === 'BranchId' && !!cusOpt.branchRequired) : (!m.nullable && !m.def);
+    // opt.optional: cột NOT NULL nhưng máy chủ tự điền khi trống (vd. MENU-4.5 mã / thứ tự tiêu chí ATTP).
+    const isReq = m => isCustomer ? CUSTOMER_FIELDS[cusType].req.includes(m.name) || m.name === 'CustomerType' || (m.name === 'BranchId' && !!cusOpt.branchRequired) : (!m.nullable && !m.def && !(opt.optional || []).includes(m.name));
     const labelOf = m => (isCustomer && CUSTOMER_LABEL[m.name]) || U.colLabel(m.name);
     // MA-1 (D-63 k): nhóm mã từ api/Common/GetCodeRules – G1 chỉ đọc "(tự sinh khi lưu)", G2 chữ hoa không dấu.
     const ruleOf = m => Store.codeRule(t, m.name);
@@ -265,7 +266,8 @@
         // Loại khách khóa sau khi lưu (D-63 i) – đổi loại chỉ khi chưa có hợp đồng / đơn, máy chủ kiểm và cấp mã mới.
         return `<select class="select" id="f_CustomerType" name="CustomerType" required ${editing && !opt.allowTypeChange ? 'data-locked="1"' : ''}>${['BUSINESS', 'INDIVIDUAL'].map(c => `<option value="${c}" ${c === cusType ? 'selected' : ''}>${c === 'BUSINESS' ? 'Doanh nghiệp' : 'Cá nhân'}</option>`).join('')}</select>`;
       }
-      const html = (isCustomer && customerInput(m)) || UI.input(t, m, v);
+      let html = (isCustomer && customerInput(m)) || UI.input(t, m, v);
+      if ((opt.optional || []).includes(m.name)) html = html.replace(' required', '').replace('<input ', `<input placeholder="${m.name === 'SortOrder' ? '(cuối danh sách)' : '(tự sinh khi để trống)'}" `);
       return r && r.group === 'G2' ? html.replace('<input ', '<input data-g2="1" ') : html;
     };
     const fieldHtml = m => {
@@ -547,7 +549,11 @@
   UI.APPEND_ONLY = new Set(['InventoryTransaction', 'PackagingLedger', 'TemperatureLog', 'AuditChange', 'IntegrationLog', 'ApprovalDecision', 'AttendanceEvent', 'DeliveryEvent', 'ComplaintHistory',
     // Đối soát: máy chủ chặn thêm / sửa / xóa thẳng – chỉ ghi qua Ghi suất phục vụ / Ghi lại / Chốt (OrderReconciliation/Reconcile / Close).
     'OrderReconciliation']);
-  UI.readOnly = t => Store.isLive && UI.APPEND_ONLY.has(t);
+  // MENU-4 nhóm C (D-75 e): dữ liệu sinh từ thao tác nghiệp vụ – chỉ xem, không Thêm / Sửa tay: Sản lượng (ghi khi kết thúc mẻ nấu),
+  // Xếp hàng lên xe (DeliveryRoute/Load), Xác nhận đã giao (màn Theo dõi chuyến / bot), Liên kết tài khoản chat (mã liên kết D-62 + nút Liên kết / Gỡ ở modules/ghep.js).
+  UI.VIEW_ONLY = new Set(['ProductionOutput', 'DeliveryLoading', 'ProofOfDeliverie', 'UserExternalIdentity']);
+  UI.viewOnly = t => Store.isLive && UI.VIEW_ONLY.has(t);
+  UI.readOnly = t => Store.isLive && (UI.APPEND_ONLY.has(t) || UI.VIEW_ONLY.has(t));
   UI.detail = (t, id, opt = {}) => {
     const row = Store.get(t, id); if (!row) { UI.toast('Không tìm thấy bản ghi', 'err'); return; }
     const sc = Store.statusCol(t);

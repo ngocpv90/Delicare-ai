@@ -11,8 +11,9 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 3. ~~UI-5~~ ✅ hoàn thiện form khách hàng (xong 2026-11-21, đã gộp `main`).
 4. ~~UI-2R~~ ✅ bố cục 1/3 – 2/3 + khối thông tin rút gọn (xong 2026-11-21).
 5. ~~MENU-1~~ ✅ bỏ tiền tố "Duyệt – " ở 19 mục menu Phê duyệt (xong 2026-11-21; DB có sẵn: anh chạy `DB/scripts/MENU1_rename_approve_menu.sql` sau backup).
-6. **ORD-OPT-1** đăng ký suất theo lựa chọn + thực đơn chung (D-74) – làm ngay sau task đang dở.
-7. **MENU-2** đổi tên toàn bộ menu + ẩn nhóm Database Architecture (D-75).
+6. ~~ORD-OPT-1~~ ✅ · ~~MENU-2~~ ✅ (xong 2026-11-22 theo PROGRESS).
+7. **MENU-4** dọn menu: ẩn bảng con / màn chưa làm / mục trùng, chuyển 4 màn sang chỉ xem (D-75 d, e – **gộp cả MENU-3**) – làm ngay.
+7b. **FC-1** dự báo suất ăn do hệ thống tự gợi ý từ suất thực nhận 4 tuần (D-76) – làm sau MENU-4.
 8. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
 9. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
 10. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
@@ -104,6 +105,75 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 - **UI-2.5 Kiểm tra + tài liệu:** build FE xanh, test BE xanh; mở thử với 1 khách doanh nghiệp + 1 khách cá nhân trên DB dev, 3 cỡ màn hình; người không có quyền một màn thì không thấy tab đó; cập nhật `docs/user-guide/02_KINH_DOANH.md` (mục khách hàng) và `10_DIEM_PHAT.md` nếu liên quan.
 
 **AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
+
+## ★ FC-1 – DỰ BÁO SUẤT ĂN DO HỆ THỐNG TỰ GỢI Ý (D-76, anh chốt 2026-11-23) · `TODO`
+
+> Nguồn: chat tài liệu 2026-11-23. Hiện dự báo **100 % nhập tay** (`crm-forecast`), chỉ dùng làm số gợi ý khi tạo đơn + cảnh báo lệch > 10 %; không dùng cho nguyên liệu. Khách đã đăng ký suất theo tuần (D-74) → nhập tay trùng việc. Chuyển sang: **hệ thống tính → Kinh doanh sửa chỗ cần → Công bố**. Claude Code làm BE + FE (D-65). **Không thêm bảng / cột** (dùng `Forecast` + phiên bản Nháp / Đã công bố như hiện tại – GAP-FC-01); cần thêm thì ghi GAP. Không job tự động (D-45): action bấm tay, Service viết để `AppDelicare.Job` gọi lại được.
+
+- **FC-1.1 Cách tính (`Forecast/Suggest`):** tham số Từ – Đến (≤ 14 ngày, mặc định thứ Hai tuần sau → Chủ nhật tuần kế tiếp), Khách (trống = mọi khách có hợp đồng hiệu lực). Khóa dự báo như hiện tại: (khách, điểm giao, ngày, ca, loại suất). Số gợi ý = **trung bình suất thực nhận cùng thứ trong `BusinessRules:ForecastLookbackWeeks` = 4 tuần gần nhất**, làm tròn lên. Nguồn "thực nhận" theo thứ tự: suất tính tiền / phục vụ trong đối soát (`OrderReconciliation`) → suất khách nhận ở POD → số đặt của đơn Đã chốt / Đang SX / Đã giao. Tuần không có đơn ngày đó (nghỉ lễ, khách nghỉ) **không tính vào trung bình**; < 2 tuần có dữ liệu → không gợi ý, đánh dấu "Thiếu dữ liệu". Chỉ loại suất có trong hợp đồng hiệu lực tại ngày đó; điểm giao đang hoạt động. Dự báo theo **buổi** (Σ các lựa chọn – D-74); không lưu theo lựa chọn.
+- **FC-1.2 Ghi dự báo:** kết quả ghi thành phiên bản **Nháp** (đánh dấu nguồn "Hệ thống gợi ý" trong cột ghi chú có sẵn, vd `[GOI_Y] TB 4 tuần: 120/118/–/125`). Đã có Nháp cho khóa đó → hỏi xác nhận "Ghi đè bản nháp?" (mặc định **không** ghi đè Nháp người đã sửa). Không đụng bản Đã công bố. Kết quả trả: số khóa tạo mới / bỏ qua / thiếu dữ liệu.
+- **FC-1.3 Màn `crm-forecast`:** nút **Tạo dự báo gợi ý** (chọn Từ – Đến, Khách) → ma trận khách × ngày hiện số gợi ý ở Nháp, **ô sửa trực tiếp**, chữ nhỏ cạnh ô: trung bình 4 tuần + cùng thứ tuần trước (tooltip liệt kê 4 số); ô "Thiếu dữ liệu" tô xám; ô người đã sửa khác số gợi ý có dấu chấm. Nút **Công bố** giữ như cũ. Nhập tay giữ nguyên (khách mới chưa có lịch sử).
+- **FC-1.4 Dùng dự báo cho nhu cầu nguyên liệu dự kiến:** màn **Tính nhu cầu nguyên liệu** thêm khối / chế độ **Nhu cầu dự kiến N ngày tới** (`BusinessRules:ShortageForecastDays` = 3, có sẵn): mỗi ngày, mỗi (khách, điểm, buổi) lấy **đăng ký / đơn đã xác nhận** nếu có, **không có thì lấy dự báo Đã công bố**; số suất buổi chia lựa chọn như GAP-MRP-03 (chia đều + `MrpOptionBufferPct`) vì dự báo không theo lựa chọn. Hiện tổng nguyên liệu × ngày, cột nguồn (đăng ký / dự báo), so tồn khả dụng → thiếu; nút **Tạo đề nghị mua nháp** cho phần thiếu (chỉ tạo khi người dùng bấm, đi duyệt PR như cũ). Kế hoạch sản xuất / MRP chính thức **vẫn chỉ theo đơn Đã chốt** (không đổi).
+- **FC-1.5 Độ chính xác dự báo:** khi đối soát, so dự báo Đã công bố với suất thực nhận → chỉ số **Sai số dự báo %** theo khách / tuần (tính khi xem, không thêm bảng) ở `crm-forecast` (cột / khối tổng) và Bảng điều hành nếu có chỗ; thẻ chỉ số theo chuẩn D-64.
+- **FC-1.6 Tài liệu + test:** test tính trung bình (bỏ tuần nghỉ, < 2 tuần, làm tròn, hợp đồng hết hạn giữa kỳ, điểm giao ngừng), không ghi đè Nháp đã sửa, nhu cầu dự kiến lấy đúng nguồn từng ngày; `BUSINESS_RULES.md` (mục dự báo + `ForecastLookbackWeeks`), `docs/user-guide/02_KINH_DOANH.md` §4.4, `04_MUA_HANG.md` / `03_KE_HOACH.md` (nhu cầu dự kiến); PROGRESS.
+
+**Xong khi:** bấm Tạo dự báo gợi ý cho tuần sau → mọi khách có lịch sử ≥ 2 tuần có số Nháp đúng trung bình 4 tuần cùng thứ; sửa vài ô rồi Công bố; màn nhu cầu dự kiến 3 ngày ra đúng nguyên liệu (ngày có đăng ký dùng đăng ký, ngày chưa có dùng dự báo); build + test xanh.
+
+## ★ MENU-4 – DỌN MENU: BỎ MỤC THỪA / DỄ HIỂU LẦM (D-75 d, e – anh chốt 2026-11-23) · `DONE` 2026-11-23 (gộp MENU-3; nhóm E chờ anh quyết – PROGRESS)
+
+> Nguồn: chat tài liệu rà 150 mục menu + code FE 2026-11-23. **Nguyên nhân gốc:** `core/app.js` có sẵn `CHILD` (18 bảng con) và `HIDDEN_LIVE` (màn GAP) nhưng chỉ áp ở `catalogNav()` (chế độ DEMO); khi chạy thật menu lấy từ DB qua `dbNav()` **không lọc** → bảng con và màn GAP hiện ra cho người dùng. Không đổi cấu trúc bảng; ẩn = `ObjectMenu.IsActive = 0` (không xóa dòng), làm cả trong seed / bộ sinh seed (`Seeds.MenuRenames` hoặc chỗ tương ứng) + script idempotent `DB/scripts/MENU4_cleanup_menu.sql` (chạy thử in trước / sau; anh chạy sau backup).
+
+**Nhóm A – ẩn bảng con (đã nhập / xem trong màn chính) – 17 mục:**
+
+| Mục ẩn | MetaLink | Nhập / xem ở |
+|---|---|---|
+| Loại suất & đơn giá | `#/crm-contract-meal` | Form + tab chi tiết Hợp đồng (MENU-3 cũ) |
+| Chi tiết đơn đặt suất | `#/crm-order-line` | Đơn đặt suất / Đăng ký suất tuần |
+| Chi tiết định lượng | `#/menu-recipe-line` | Công thức chế biến |
+| Chi tiết thực đơn | `#/menu-menu-line` | Thực đơn tuần |
+| Chi tiết đề nghị mua | `#/scm-pr-line` | Đề nghị mua hàng |
+| Chi tiết đơn mua | `#/scm-po-line` | Đơn mua hàng |
+| Chi tiết phiếu nhập | `#/scm-gr-line` | Phiếu nhập kho |
+| Chi tiết phiếu xuất | `#/scm-issue-line` | Phiếu xuất sản xuất |
+| Chi tiết kiểm kê | `#/scm-stockcount-line` | Phiếu kiểm kê |
+| Chi tiết kế hoạch sản xuất | `#/prod-plan-line` | Kế hoạch sản xuất |
+| Chi tiết kiểm tra hàng nhập | `#/qc-inspection-line` | Kiểm tra hàng nhập |
+| Điểm dừng | `#/log-stop` | Chuyến giao hàng |
+| Diễn biến giao hàng | `#/log-event` | Theo dõi chuyến giao |
+| Lịch sử xử lý phản ánh | `#/log-complaint-history` | Phản ánh khách hàng |
+| Các bước duyệt · Lịch sử duyệt · Chứng từ trong yêu cầu duyệt | `#/wf-step` · `#/wf-decision` · `#/wf-item` | Chi tiết yêu cầu trong Hộp phê duyệt |
+
+`qc-checklist-item` (Tiêu chí kiểm tra): **làm MENU-4.5 trước rồi mới ẩn** (rà 2026-11-23: màn Bộ kiểm tra ATTP hiện chỉ đọc tiêu chí – `qc.js` chỉ `Store.by('FoodSafetyChecklistItem', …)`).
+
+**Nhóm B – ẩn màn chưa làm (đang hiện thông báo "DATABASE GAP"):** `#/scm-transfer` Phiếu chuyển kho · `#/scm-adjustment` Phiếu điều chỉnh tồn. **`#/adm-reference` Danh mục dùng chung: KHÔNG ẩn** – làm lại thành màn chỉ xem (MENU-4.6). **Giữ** nghiệp vụ thật: nút **Chuyển kho** / **Điều chỉnh tồn** trên màn Tồn kho, Sổ kho, Tồn theo lô; mục **Phê duyệt › Phiếu điều chỉnh tồn** (duyệt điều chỉnh tay) và **Phiếu kiểm kê** (kiểm thực tế so với hệ thống, lệch > 2 % duyệt 2 cấp, ghi sổ = bút toán điều chỉnh) – anh xác nhận cần (2026-11-23). Link tới 2 màn ẩn (tìm kiếm, thông báo, Hộp phê duyệt `TYPE_SCREEN` INVENTORY_ADJUSTMENT → `scm-adjustment`) → mở màn **Tồn kho** / chi tiết yêu cầu duyệt thay vì màn GAP.
+**Vị trí xe** `#/log-gps`: giữ mục; bỏ bản đồ minh họa (`gpsMock`) + thông báo GAP khi chạy thật, chỉ còn khung dữ liệu thật `DeliveryEvent/GetVehiclePositions` (be3.js).
+
+**Nhóm C – chuyển sang chỉ xem (bỏ Thêm / Sửa tay; dữ liệu sinh từ thao tác nghiệp vụ):** `#/prod-output` Sản lượng (ghi ở Mẻ nấu) · `#/log-loading` Xếp hàng lên xe và `#/log-pod` Xác nhận đã giao (ghi ở Theo dõi chuyến / bot) · `#/int-identity` Liên kết tài khoản chat (liên kết bằng mã, D-62). Kiểm từng màn: thao tác nghiệp vụ tương ứng đã có thật → chỉ xem; **chưa có** → giữ nguyên, ghi PROGRESS để anh quyết.
+
+**Nhóm D – trùng / không rõ:** bỏ `#/wf-inbox` "Hộp phê duyệt" khỏi nhóm **Nhân sự** (giữ "Tất cả yêu cầu duyệt" ở nhóm Phê duyệt – cùng màn) · ẩn `#/adm-person` Thông tin cá nhân (trùng Nhân viên / Tài khoản) · `#/adm-access-log` "Nhật ký truy cập": kiểm bảng nguồn (catalog ghi `LocationTracking` = theo dõi vị trí) → đúng nhật ký đăng nhập thì giữ; là vị trí thì đổi tên đúng nội dung hoặc ẩn, báo anh.
+
+**Nhóm E – màn kỹ thuật, chỉ nhóm Quản trị:** Nhật ký tích hợp · Nhật ký tính chỉ số · Danh mục chỉ số · Nhật ký thay đổi dữ liệu · Dữ liệu trùng cần gộp · Kênh nhắn tin · Bot (như D-71) – seed quyền chỉ nhóm Quản trị, không đổi mục menu.
+
+- **MENU-4.1 Menu + seed + script** nhóm A, B, D như trên.
+- **MENU-4.2 FE:** `dbNav()` cũng bỏ mục thuộc `CHILD` / `HIDDEN_LIVE` (phòng DB chưa chạy script); link vào màn ẩn chuyển về màn cha (mở đúng bản ghi cha nếu có Id); `log-gps` bỏ phần minh họa khi chạy thật; nhóm C bỏ nút Thêm / Sửa.
+- **MENU-4.3 Quyền + an toàn dữ liệu (quan trọng):** (a) API bảng con (`ContractMeal`, `OrderLine`, `PurchaseRequestLine`, `PurchaseOrderLine`, `GoodsReceiptLine`, `MaterialIssueLine`, `StockCountLine`, `ProductionPlanLine`, `QCInspectionLine`, `RecipeLine`, `MenuLine`, …) nếu đang kiểm quyền theo màn bảng con → chuyển sang quyền màn cha, để màn cha vẫn chạy. (b) **Kiểm máy chủ có chặn** Insert / Update / Delete dòng con khi chứng từ cha đã khóa (đơn Đã chốt, PO đã duyệt, phiếu nhập / xuất / kiểm kê đã ghi sổ, công thức đã khóa, thực đơn đã công bố, kế hoạch đã duyệt) qua API chung của bảng – chưa chặn thì **thêm kiểm tra ở Service** (không đổi DB), test từng trường hợp. (c) Ma trận phân quyền không hiện mục ẩn; quyền UserRole trước / sau khớp.
+- **MENU-4.5 Tiêu chí kiểm tra ATTP vào màn cha:** màn `qc-checklist` (Bộ kiểm tra ATTP) thêm khối / tab **Tiêu chí** của bộ đang xem: thêm, sửa, xóa mềm, xếp thứ tự (`SortOrder`), các cột đang có ở `FoodSafetyChecklistItem` (không thêm cột); chặn sửa / xóa tiêu chí đã có kết quả kiểm tra (`FoodSafetyChecklistResult`) – chỉ cho ngừng dùng nếu bảng có cột trạng thái, không có thì báo lỗi rõ. Quyền theo `qc-checklist`. Xong mới ẩn `#/qc-checklist-item`.
+- **MENU-4.6 Danh mục dùng chung – màn chỉ xem:** thay màn GAP `adm-reference` bằng màn đọc `MetaData/GetReferenceLists` (nguồn thật `ReferenceLists` / `ReferenceCatalogs`): danh sách danh mục (tên tiếng Việt, đang dùng ở màn / cột nào, số giá trị) → bấm xem giá trị (mã, tên). Ghi chú trên màn: "Muốn thêm / sửa giá trị – liên hệ quản trị hệ thống" (sửa cấu hình máy chủ). Không thêm bảng (cho người dùng tự sửa = GAP-CFG-01, chờ anh duyệt riêng). Bỏ `adm-reference` khỏi `HIDDEN_LIVE`. Quyền: nhóm Quản trị + ai được cấp.
+- **MENU-4.7 Tra cứu chéo thay cho bảng con đã ẩn:** thêm bộ lọc **Nguyên liệu** (và NCC nếu chưa có) vào danh sách `scm-po` Đơn mua hàng, `scm-gr` Phiếu nhập kho, `scm-issue` Phiếu xuất sản xuất, `scm-pr` Đề nghị mua hàng – lọc chứng từ có dòng chứa nguyên liệu đó, hiện thêm cột số lượng của nguyên liệu trên chứng từ. Lọc ở máy chủ (tham số mới của action danh sách có sẵn), không tải hết dòng về trình duyệt.
+- **MENU-4.4 Tài liệu + kiểm tra:** `docs/user-guide/*` (bảng màn hình từng vai trò, bỏ mục ẩn, ghi "nhập trong màn …"), `ORG_STRUCTURE.md`, `UAT_CHECKLIST.md`; mở thử menu bằng admin + tài khoản Kinh doanh, Kho, Bếp (Chrome headless 1440px + 390px), ảnh `docs/frontend-handoff/assets/menu-4/`; test: tạo hợp đồng 2 loại suất, đơn hàng, PO, phiếu nhập, kiểm kê lệch > 2 % → duyệt → ghi sổ, điều chỉnh tồn tay → duyệt, vẫn chạy; PROGRESS.
+
+**Xong khi:** menu thật không còn bảng con, màn GAP, mục trùng; Bộ kiểm tra ATTP sửa được tiêu chí; Danh mục dùng chung hiện giá trị thật; lọc chứng từ kho / mua theo nguyên liệu chạy; mọi nghiệp vụ ở màn cha chạy như cũ; dòng con của chứng từ đã khóa không sửa được qua bất kỳ API nào.
+
+## ★ MENU-3 – BỎ MỤC "LOẠI SUẤT & ĐƠN GIÁ" KHỎI MENU (D-75 d, anh chốt 2026-11-23) · **→ gộp vào MENU-4** (không làm riêng)
+
+> Lý do: mục `#/crm-contract-meal` chỉ liệt kê lại bảng *Loại suất & đơn giá* đã nhập trong form hợp đồng → người dùng dễ nhầm là nơi khai báo giá. Dữ liệu vẫn nhập / xem trong **form hợp đồng** và tab **Loại suất & đơn giá** của chi tiết hợp đồng; đổi giá sau khi duyệt qua **Chính sách giá**. Không đổi cấu trúc bảng.
+
+- **MENU-3.1 Menu:** `#/crm-contract-meal` → `IsActive = 0` (không xóa dòng) trong `DB/seed/ObjectMenu_seed.sql` / bộ sinh seed (`Seeds.MenuRenames` hoặc chỗ tương ứng) + script idempotent `DB/scripts/MENU3_hide_contract_meal.sql` (chạy thử in trước / sau; anh chạy sau backup). Bỏ khỏi `catalog.js` menu FE nếu menu FE lấy từ đó.
+- **MENU-3.2 Quyền – không được làm hỏng form hợp đồng:** kiểm API `ContractMeal/*` và tab Loại suất trong chi tiết hợp đồng đang kiểm quyền theo màn nào. Nếu đang gắn với `crm-contract-meal` → chuyển sang kiểm theo quyền `crm-contract` (Xem / Sửa hợp đồng), để nhóm Kinh doanh vẫn tạo / sửa hợp đồng Nháp bình thường. Ma trận phân quyền không hiện mục ẩn.
+- **MENU-3.3 Liên kết:** tìm kiếm toàn cục, tab Liên quan, link từ màn khác tới `#/crm-contract-meal` → mở chi tiết hợp đồng tương ứng (tab Loại suất & đơn giá).
+- **MENU-3.4 Tài liệu + kiểm tra:** `docs/user-guide/02_KINH_DOANH.md` (bảng màn hình, bỏ mục), `ORG_STRUCTURE.md` nếu có; test quyền: tài khoản Kinh doanh tạo hợp đồng Nháp có 2 loại suất, gửi duyệt, xem tab Loại suất OK; PROGRESS.
+
+**Xong khi:** menu Kinh doanh không còn mục này; tạo / sửa / xem hợp đồng kèm loại suất vẫn chạy với quyền hiện có.
 
 ## ★ MENU-2 – ĐỔI TÊN TOÀN BỘ MENU CHO NGẮN, DỄ HIỂU (D-75, anh chốt 2026-11-22) · `DONE (2026-11-22)` – chi tiết PROGRESS
 

@@ -428,8 +428,20 @@ public static partial class Seeds
         ("#/wf-inbox?type=wf-inbox", "Hộp phê duyệt tập trung", "Tất cả yêu cầu duyệt"),
     ];
 
-    /// <summary>MENU-2 / D-58: nhóm Database Architecture + 2 màn tra cứu cấu trúc DB → IsActive = 0 (không xóa dòng).</summary>
-    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap"];
+    /// <summary>
+    /// MENU-4 (D-75 d, e, f – anh chốt 2026-11-23): ẩn bảng con (nhập / xem ở màn cha – quyền API chuyển sang màn cha, ScreenMap.ParentByClass),
+    /// màn chưa làm (Phiếu chuyển kho, Phiếu điều chỉnh tồn – nghiệp vụ thật ở nút trên màn Tồn kho) và "Thông tin cá nhân" (trùng Tài khoản).
+    /// KHÔNG ẩn #/wf-inbox: dòng này là quyền của cả API duyệt (ApprovalRequest) – chỉ bỏ khỏi sidebar ở FE (core/app.js).
+    /// </summary>
+    public static readonly string[] Menu4HiddenLinks =
+    [
+        "#/crm-contract-meal", "#/crm-order-line", "#/menu-recipe-line", "#/menu-menu-line", "#/scm-pr-line", "#/scm-po-line", "#/scm-gr-line",
+        "#/scm-issue-line", "#/scm-stockcount-line", "#/prod-plan-line", "#/qc-inspection-line", "#/qc-checklist-item", "#/log-stop", "#/log-event",
+        "#/log-complaint-history", "#/wf-step", "#/wf-decision", "#/wf-item", "#/scm-transfer", "#/scm-adjustment", "#/adm-person",
+    ];
+
+    /// <summary>MENU-2 / D-58: nhóm Database Architecture + 2 màn tra cứu cấu trúc DB; MENU-4: thêm Menu4HiddenLinks → IsActive = 0 (không xóa dòng).</summary>
+    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks];
 
     /// <summary>Tên hiển thị của mục menu theo MENU-2 (không có trong bảng → giữ tên catalog).</summary>
     public static string MenuName(string link, string name) => MenuRenames.FirstOrDefault(r => r.Link == link).New ?? name;
@@ -493,7 +505,7 @@ public static partial class Seeds
         {
             sb.AppendLine($"UPDATE [dbo].[ObjectMenu] SET Name = {Sql(newName)}, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = {Sql(link)} AND IsDeleted = 0 AND Name IN ({Sql(oldName)}, {Sql("Duyệt – " + oldName)});");
         }
-        sb.AppendLine("-- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB (IsActive = 0, không xóa).");
+        sb.AppendLine("-- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB; MENU-4 (D-75 e): ẩn bảng con, màn chưa làm, mục trùng (IsActive = 0, không xóa).");
         sb.AppendLine($"UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN ({string.Join(", ", HiddenMenuLinks.Select(Sql))}) AND IsDeleted = 0 AND IsActive = 1;");
         sb.AppendLine("COMMIT;");
         return sb.ToString();

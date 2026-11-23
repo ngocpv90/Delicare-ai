@@ -12,6 +12,9 @@ namespace AppDelicare.WebApi.Security
         public string ScreenId { get; } = screenId;
         public PermissionAction Action { get; } = action;
         public string MetaLink => "#/" + ScreenId;
+
+        /// <summary>MENU-4.3: thao tác thay thế – có MỘT trong các quyền này trên cùng màn cũng được (vd. thêm dòng con = Sửa hoặc Thêm chứng từ cha).</summary>
+        public PermissionAction[] OrActions { get; init; } = [];
     }
 
     /// <summary>Chỉ admin (vd. xóa vật lý dữ liệu, cấp quyền admin).</summary>

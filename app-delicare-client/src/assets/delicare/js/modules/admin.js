@@ -44,7 +44,8 @@
     const groups = Store.rows('UserGroup'); if (!ps.g || !Store.get('UserGroup', ps.g)) ps.g = (Store.one('UserGroup', 'Name', 'Bếp trưởng') || groups[0] || {}).Id;
     if (!ps.g) { el.innerHTML = APP.header(f, '') + UI.emptyData(['UserGroup'], 'Chưa có nhóm người dùng nào – tạo nhóm ở màn hình Nhóm người dùng trước khi phân quyền.'); return; }
     const g = Store.get('UserGroup', ps.g);
-    const menus = Store.rows('ObjectMenu'); const roots = menus.filter(m => !m.ParentId).sort((a, b) => a.OrderShow - b.OrderShow);
+    // MENU-4.3 (c): ma trận không hiện mục menu đã ẩn (IsActive = 0) – quyền của bảng con theo màn cha.
+    const menus = Store.rows('ObjectMenu').filter(m => m.IsActive !== false && m.IsActive !== 0); const roots = menus.filter(m => !m.ParentId).sort((a, b) => a.OrderShow - b.OrderShow);
     const ur = Store.by('UserRole', 'UserGroupId', g.Id);
     const users = Store.by('UserClaim', 'UserGroupId', g.Id).map(c => Store.get('User', c.UserId)).filter(Boolean);
     const canEdit = Store.perm(f.id).edit !== false;
@@ -297,4 +298,31 @@
     });
   });
 
+  // ---------- MENU-4.6 (D-75 f2): Danh mục dùng chung – chỉ xem giá trị thật từ máy chủ (MetaData/GetReferenceLists) ----------
+  // Thêm / sửa giá trị = sửa cấu hình máy chủ (ReferenceLists) – liên hệ quản trị hệ thống. Người dùng tự sửa = GAP-CFG-01 (chờ duyệt).
+  const rs = { sel: null, data: null, busy: false };
+  APP.register('adm-reference', (el, f) => {
+    if (!Store.isLive) return APP.gapScreen(el, f);
+    el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Các giá trị chọn sẵn dùng chung trên nhiều màn (loại suất, loại kho, kênh phản ánh…).' })
+      + `<div class="notice info">${I('key')}<div><b>Chỉ xem</b>Muốn thêm / sửa giá trị – liên hệ quản trị hệ thống (giá trị nằm trong cấu hình máy chủ).</div></div><div id="refBody"><div class="card panel empty">${I('clipboard')}<h2 class="mt">Đang tải…</h2></div></div>`;
+    const body = el.querySelector('#refBody');
+    // Bảng con đã ẩn khỏi menu (MENU-4) → ghi theo màn cha (nơi nhập).
+    const screenOf = ent => { const s = Object.values(APP.FN).find(x => x.table && (x.table === ent || Store.controllerOf(x.table) === ent)); const up = s && (window.DC_PARENT_OF || {})[s.id]; return up ? APP.FN[up[0]] || s : s; };
+    const usedIn = col => { const [ent, c] = col.split('.'); const s = screenOf(ent); return (s ? s.fn || s.name : ent) + ' › ' + U.colLabel(c); };
+    const draw = () => {
+      if (!body.isConnected) return;
+      const x = rs.data; if (!x.ok) { body.innerHTML = `<div class="notice gap">${I('alert')}<div><b>Không tải được danh mục</b>${esc(x.message || '')}</div></div>`; return; }
+      const lists = (Array.isArray(x.data) ? x.data : x.list) || [];
+      if (!rs.sel || !lists.some(l => l.name === rs.sel)) rs.sel = (lists[0] || {}).name;
+      const cur = lists.find(l => l.name === rs.sel) || { listItem: [], listColumn: [] };
+      body.innerHTML = `<div class="grid g2">
+        <div class="card panel"><div class="panel-title mb">${lists.length} danh mục</div>${lists.map(l => `<div class="titem ${l.name === rs.sel ? 'active' : ''}" data-ref="${esc(l.name)}" style="cursor:pointer"><div><b>${esc(l.title || l.name)}</b><div class="small muted">${(l.listColumn || []).length ? esc((l.listColumn || []).map(usedIn).join(' · ')) : 'Cấu hình hệ thống'}</div></div><span class="badge badge-sm badge-secondary">${(l.listItem || []).length}</span></div>`).join('')}</div>
+        <div class="card panel"><div class="panel-title">${esc(cur.title || cur.name || '')}</div><div class="panel-desc mb">${(cur.listColumn || []).length ? 'Đang dùng ở: ' + esc(cur.listColumn.map(usedIn).join(' · ')) : ''}</div>
+          <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th class="num">#</th><th>Mã</th><th>Tên hiển thị</th></tr></thead><tbody>${(cur.listItem || []).map((v, i) => `<tr><td class="num">${i + 1}</td><td class="mono">${esc(v.code)}</td><td>${esc(v.label)}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">Chưa có giá trị</td></tr>'}</tbody></table></div></div></div>`;
+      body.querySelectorAll('[data-ref]').forEach(d => d.onclick = () => { rs.sel = d.dataset.ref; draw(); });
+    };
+    if (rs.data) return draw();
+    if (rs.busy) return; rs.busy = true;
+    Store.query('MetaData/GetReferenceLists').then(x => { rs.busy = false; rs.data = x; draw(); });
+  });
 })();

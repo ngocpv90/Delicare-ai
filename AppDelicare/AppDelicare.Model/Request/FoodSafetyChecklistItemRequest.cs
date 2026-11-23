@@ -8,7 +8,7 @@ namespace AppDelicare.Model.Request
 	{
 		[Required(ErrorMessage = "ChecklistId là bắt buộc.")]
 		public Guid? ChecklistId { get; set; }
-		[Required(ErrorMessage = "ItemCode là bắt buộc.")]
+		// MENU-4.5: trống → máy chủ tự cấp TC-nn (thêm tiêu chí trong màn Bộ kiểm tra ATTP).
 		[MaxLength(50, ErrorMessage = "ItemCode tối đa 50 ký tự.")]
 		public string? ItemCode { get; set; }
 		[Required(ErrorMessage = "ItemName là bắt buộc.")]

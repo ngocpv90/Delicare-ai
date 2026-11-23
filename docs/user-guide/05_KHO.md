@@ -25,7 +25,7 @@
 | `scm-zone`, `scm-location` | … › Khu vực / Vị trí lưu trữ | Danh mục (khu có ngưỡng nhiệt độ) |
 | `scm-inv-policy` | … › Chính sách tồn kho | Tối thiểu ≤ an toàn ≤ điểm đặt hàng ≤ tối đa, FEFO / FIFO |
 
-Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) **ẩn trên menu** – hai việc này làm bằng nút trên `scm-inv-balance` / `scm-inv-txn`.
+Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) **ẩn trên menu** (MENU-4) – hai việc này làm bằng nút trên `scm-inv-balance` / `scm-inv-txn`; link cũ tới hai màn này tự mở màn Tồn kho. Các mục "Chi tiết phiếu nhập / phiếu xuất / kiểm kê" cũng đã bỏ: xem dòng trong chi tiết phiếu, hoặc **Lọc theo nguyên liệu** trên danh sách Phiếu nhập / Phiếu xuất.
 
 ## 3. Việc trong ngày
 

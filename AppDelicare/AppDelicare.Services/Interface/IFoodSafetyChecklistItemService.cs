@@ -14,5 +14,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(FoodSafetyChecklistItemRequest request, string typeSave);
         public IResults<FoodSafetyChecklistItem> GetAllData();
         public Task<IResult<FoodSafetyChecklistItem>> GetById(Guid id);
+        /// <summary>MENU-4.5: xếp lại thứ tự tiêu chí của bộ kiểm tra.</summary>
+        public Task<IResult<bool>> Reorder(Guid checklistId, IReadOnlyList<Guid> itemIds);
     }
 }
