@@ -461,6 +461,49 @@
     APP.rowExtra(el, tr => { const r = Store.get('Contract', tr.dataset.row); if (r.Status === 'Draft') { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-sub="${r.Id}">Gửi duyệt</button> `); td.querySelector('[data-sub]').onclick = () => Store.act('Contract/Submit', { form: { Id: r.Id }, tables: ['Contract', 'ApprovalRequest', 'ApprovalStep', 'ApprovalItem'], demo: () => { APP.submitApproval('CONTRACT', 'Contract', r.Id, [['Ban giám đốc']], 'Duyệt hợp đồng ' + r.ContractNumber); Store.update('Contract', r.Id, { Status: 'PendingApproval' }); } }).then(x => { if (!x.ok) return; if (!x.demo) UI.toast('Đã gửi duyệt hợp đồng ' + esc(r.ContractNumber), 'ok'); APP.refresh(); }); }
       if (r.Status === 'Active' && Store.isLive) { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs danger" data-term="${r.Id}">Thanh lý</button> `); td.querySelector('[data-term]').onclick = () => UI.confirm('Thanh lý hợp đồng <b>' + esc(r.ContractNumber) + '</b>?', note => Store.act('Contract/Terminate', { form: { Id: r.Id, Reason: note }, tables: ['Contract'] }).then(x => { if (x.ok) { UI.toast('Đã thanh lý hợp đồng', 'ok'); APP.refresh(); } }), { input: 'Lý do thanh lý', required: true, danger: true, ok: 'Thanh lý' }); } });
   });
+  // ---------- BIZ-3.2 (D-77 – A7): Bảng kê thanh toán tháng ----------
+  const bk = { cus: '', ct: '', from: '', to: '' };
+  APP.register('crm-billing', (el, f) => {
+    const t = Store.ctx.date, first = t.slice(0, 8) + '01';
+    if (!bk.from) { bk.from = U.addDays(first, -1).slice(0, 8) + '01'; bk.to = U.addDays(first, -1); }
+    const cus = Store.rows('Customer').filter(c => c.Status !== 'Inactive' && (!Store.ctx.branch || c.BranchId === Store.ctx.branch));
+    const perm = Store.perm(f.id);
+    el.innerHTML = `<div class="page-head"><div><h1>Bảng kê thanh toán</h1><div class="muted small">Suất tính tiền đã chốt đối soát × đơn giá cố định lúc chốt + phí thất thoát khay + VAT. Hóa đơn / công nợ ở phần mềm kế toán.</div></div>
+      <div class="heading-actions">${perm.exp !== false ? `<button class="btn" id="bkXls">${I('download')} Xuất Excel</button>` : ''}${perm.print !== false ? `<button class="btn" id="bkPdf">${I('print')} In PDF</button>` : ''}</div></div>
+      <div class="card panel mb"><div class="row-flex" style="gap:10px;flex-wrap:wrap">
+        <div class="field" style="min-width:240px"><label>Khách hàng <span class="req">*</span></label><select class="select" id="bkCus">${opts(cus, c => c.DisplayName || c.Code, '— Chọn khách hàng —')}</select></div>
+        <div class="field" style="min-width:200px"><label>Hợp đồng</label><select class="select" id="bkCt"><option value="">Tất cả</option></select></div>
+        <div class="field"><label>Từ ngày</label><input type="date" class="input" id="bkFrom" value="${bk.from}"></div>
+        <div class="field"><label>Đến ngày</label><input type="date" class="input" id="bkTo" value="${bk.to}"></div>
+        <div class="field" style="align-self:flex-end"><button class="btn primary" id="bkGo">${I('calc')} Lập bảng kê</button></div></div></div>
+      <div id="bkOut"><div class="empty">Chọn khách hàng và kỳ để lập bảng kê</div></div>`;
+    const g = s => el.querySelector(s);
+    const fillCt = () => { g('#bkCt').innerHTML = opts(bk.cus ? Store.by('Contract', 'CustomerId', bk.cus) : [], c => (c.ContractNumber || '') + (c.Name ? ' · ' + c.Name : ''), 'Tất cả'); g('#bkCt').value = bk.ct || ''; };
+    g('#bkCus').value = bk.cus; fillCt();
+    g('#bkCus').onchange = () => { bk.cus = g('#bkCus').value; bk.ct = ''; fillCt(); };
+    const params = () => { bk.cus = g('#bkCus').value; bk.ct = g('#bkCt').value; bk.from = g('#bkFrom').value; bk.to = g('#bkTo').value; return { CustomerId: bk.cus, ContractId: bk.ct || null, From: bk.from, To: bk.to }; };
+    const need = () => { if (!g('#bkCus').value) { UI.toast('Chọn khách hàng', 'err'); return false; } return true; };
+    const draw = () => {
+      if (!need()) return; const out = g('#bkOut'); out.innerHTML = '<div class="muted small">Đang lập…</div>';
+      Store.query('BillingStatement/GetStatement', params()).then(x => {
+        if (!out.isConnected) return; if (!x.ok || !x.data) { out.innerHTML = failBox(x.message); return; }
+        const d = x.data, rows = d.listRow || [];
+        out.innerHTML = `<div class="kpis mb">${UI.kpi('Suất tính tiền', U.num(d.totalBilledQuantity), U.num(rows.length) + ' dòng', 'utensils', 'green')}${UI.kpi('Tiền suất ăn', U.money(d.mealAmount), '', 'calc', 'blue')}${UI.kpi('Phí thất thoát khay', U.money(d.containerFeeAmount), '', 'box', d.containerFeeAmount ? 'orange' : 'gray')}${UI.kpi('Tổng thanh toán', U.money(d.grandTotal), 'gồm VAT ' + U.num(d.vatPct) + '%', 'money', 'purple')}</div>
+          <div class="card panel mb"><div class="panel-title mb">${esc(d.customerName || '')}${d.contractNumber ? ' · HĐ ' + esc(d.contractNumber) : ''} · ${U.date(U.day(d.from))} – ${U.date(U.day(d.to))} <span class="small muted">(${esc(d.billingBasisName || '')})</span></div>
+          ${rows.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Ngày</th><th>Buổi</th><th>Đơn</th><th>Điểm giao</th><th class="num">Suất tính tiền</th><th class="num">Suất lỗi (đã trừ)</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead><tbody>${rows.map(r => `<tr><td>${U.date(U.day(r.mealDate))}</td><td>${esc(r.mealName || r.mealType || '')}</td><td>${esc(r.orderNumber || '')}</td><td>${esc(r.locationName || '')}</td><td class="num">${U.num(r.billedQuantity)}</td><td class="num">${r.faultQuantity ? U.num(r.faultQuantity) : '<span class="muted">–</span>'}</td><td class="num">${U.money(r.unitPrice)}</td><td class="num">${U.money(r.amount)}</td></tr>`).join('')}</tbody>
+            <tfoot><tr><td colspan="4"><b>Cộng tiền suất ăn</b></td><td class="num"><b>${U.num(d.totalBilledQuantity)}</b></td><td class="num">${U.num(d.totalFaultQuantity)}</td><td></td><td class="num"><b>${U.money(d.mealAmount)}</b></td></tr>
+            ${(d.listContainerFee || []).map(c => `<tr><td colspan="4">Phí thất thoát khay ${esc(c.packagingType)} (mất ${U.num(c.periodLossQuantity)} / giao ${U.num(c.periodOutQuantity)}, ngưỡng ${U.num(c.thresholdPct)}%)</td><td class="num">${U.num(c.overQuantity)}</td><td></td><td class="num">${U.money(c.feePerUnit)}</td><td class="num">${U.money(c.amount)}</td></tr>`).join('')}
+            <tr><td colspan="7">Cộng chưa VAT</td><td class="num">${U.money(d.subTotal)}</td></tr><tr><td colspan="7">VAT ${U.num(d.vatPct)}%</td><td class="num">${U.money(d.vatAmount)}</td></tr><tr><td colspan="7"><b>TỔNG THANH TOÁN</b></td><td class="num"><b>${U.money(d.grandTotal)}</b></td></tr></tfoot></table></div>` : '<div class="empty">Chưa có đơn nào đã chốt đối soát trong kỳ</div>'}
+          ${d.compensationOrderCount ? `<div class="small muted mt">${d.compensationOrderCount} đơn bù do lỗi Delicare (giá 0) không tính tiền.</div>` : ''}</div>
+          ${(d.listPending || []).length ? `<div class="card panel"><div class="panel-title mb">Chờ đối soát – chưa tính tiền (${d.listPending.length} đơn)</div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Đơn</th><th>Ngày ăn</th><th>Tình trạng</th><th class="num">Suất đặt</th><th class="num">Giá trị đơn</th></tr></thead><tbody>${d.listPending.map(p => `<tr><td>${esc(p.orderNumber || '')}</td><td>${U.date(U.day(p.mealDate))}</td><td>${esc(p.statusName || '')}</td><td class="num">${U.num(p.orderedQuantity)}</td><td class="num">${U.money(p.orderAmount)}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
+      });
+    };
+    g('#bkGo').onclick = draw;
+    const dl = path => { if (need()) Store.download(path, params()); };
+    if (g('#bkXls')) g('#bkXls').onclick = () => dl('BillingStatement/ExportStatement');
+    if (g('#bkPdf')) g('#bkPdf').onclick = () => dl('BillingStatement/PrintStatement');
+    if (bk.cus) draw();
+  });
   // ---------- Dự báo: pivot ----------
   const fcs = { from: null, to: null };   // khoảng ngày của ma trận (chế độ API)
   const dayCount = (a, b) => Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / 86400000) + 1;

@@ -80,7 +80,7 @@
   // Icon riêng cho từng mục menu con (khác icon của nhóm cha). Màn chưa khai báo ở đây → rơi về SCREEN_ICON theo tiền tố.
   UTIL.MENU_ICON = {
     'dash-exec': 'chart', 'flow-e2e': 'flow',
-    'crm-customer': 'users', 'crm-contact': 'msg', 'crm-location': 'pin', 'crm-price-policy': 'calc', 'crm-contract': 'link', 'crm-forecast': 'calendar', 'crm-order': 'clipboard', 'crm-order-week': 'calendar', 'crm-reconciliation': 'check',
+    'crm-customer': 'users', 'crm-contact': 'msg', 'crm-location': 'pin', 'crm-price-policy': 'calc', 'crm-contract': 'link', 'crm-forecast': 'calendar', 'crm-order': 'clipboard', 'crm-order-week': 'calendar', 'crm-reconciliation': 'check', 'crm-billing': 'calc',
     'menu-dish-cat': 'layers', 'menu-dish': 'chef', 'menu-recipe': 'clipboard', 'menu-menu': 'calendar', 'menu-assignment': 'link', 'menu-change-request': 'recycle',
     'scm-supplier': 'building', 'scm-ingredient': 'package', 'scm-ingredient-cat': 'layers', 'scm-supplier-material': 'link', 'scm-uom': 'calc', 'scm-uom-conversion': 'recycle', 'scm-warehouse': 'home', 'scm-zone': 'panel', 'scm-location': 'pin', 'scm-inv-policy': 'settings',
     'scm-requirement': 'chart', 'scm-pr': 'edit', 'scm-po': 'clipboard', 'scm-gr': 'down', 'scm-lot': 'lot', 'scm-inv-txn': 'history', 'scm-inv-balance': 'eye', 'scm-transfer': 'route', 'scm-adjustment': 'edit', 'scm-issue': 'up', 'scm-reservation': 'key', 'scm-stockcount': 'check', 'scm-consumption-var': 'alert',

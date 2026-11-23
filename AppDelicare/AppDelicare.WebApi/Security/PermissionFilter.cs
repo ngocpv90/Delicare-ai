@@ -101,6 +101,7 @@ namespace AppDelicare.WebApi.Security
         private static readonly Dictionary<string, string> ControllerScreens = new(StringComparer.OrdinalIgnoreCase)
         {
             ["Dashboard"] = "dash-exec",
+            ["BillingStatement"] = "crm-billing", // BIZ-3.2
         };
 
         public void Apply(ControllerModel controller)

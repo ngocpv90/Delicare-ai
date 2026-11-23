@@ -95,6 +95,10 @@ namespace AppDelicare.Model.Option
         public int OrderWeekReminderWeekday { get; set; } = 5;
         /// <summary>BIZ-3.3 (D-77 – C10): lưu bảng giá NCC → tự tính lại giá thành chuẩn món dùng nguyên liệu + cảnh báo FC % thực đơn.</summary>
         public bool StandardCostAutoOnSupplierPrice { get; set; } = true;
+        /// <summary>BIZ-3.2 (D-77 – A7): VAT bán hàng % trên bảng kê thanh toán.</summary>
+        public decimal SalesVatPct { get; set; } = 8m;
+        /// <summary>BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay (PROPOSED – trống = 0, chưa tính).</summary>
+        public Dictionary<string, decimal> ContainerLossFee { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
         /// <summary>
