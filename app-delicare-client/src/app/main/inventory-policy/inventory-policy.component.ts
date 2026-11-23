@@ -7,7 +7,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { InventoryPolicyModalComponent } from './inventory-policy-modal/inventory-policy-modal.component';
 
-// scm-inv-policy – Min / Max / Safety / Reorder theo nguyên liệu × kho (FE-2).
+// scm-inv-policy – Định mức tồn kho theo nguyên liệu × kho (FE-2).
 // Backend: Min ≤ Safety ≤ Reorder ≤ Max; một dòng cho (nguyên liệu, kho) – lỗi 400 hiện nguyên văn.
 @Component({
   selector: 'app-inventory-policy',

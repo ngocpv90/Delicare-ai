@@ -4,10 +4,12 @@
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const ID = 'crm-customer-360';
-  APP.FN[ID] = { ph: 'P1', grp: 'Kinh doanh & Đơn hàng', fn: 'Hồ sơ khách hàng 360', id: ID, name: 'Hồ sơ khách hàng 360', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN[ID] = { ph: 'P1', grp: 'Kinh doanh', fn: 'Khách hàng', id: ID, name: 'Khách hàng', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
 
   // Thành phần chung (modules/detail360.js – UI-3 tách từ UI-2).
   const { pas, failBox, loading, none, can, initials, dmy, table, bindRows, filterBar, statusOpts, run, demoNote } = APP.D360;
+  // UI-5.3: mã danh mục (Ngành, Quy mô, Giới tính, Nguồn) → chữ tiếng Việt; giá trị cũ ngoài danh mục hiện nguyên văn.
+  const vi = (col, v) => (v ? UI.statusVi('Customer', col, v) : v);
   const statusBadge = (t, col, v, name) => (v ? UI.badge(v, t, col).replace(esc(UI.statusVi(t, col, v)), esc(name || UI.statusVi(t, col, v))) : '');
 
   APP.register(ID, (el, f, params) => {
@@ -21,8 +23,10 @@
       <div class="tabs c360-tabs" data-c360tabs></div><div data-c360pane></div>`;
     el.querySelector('[data-back]').onclick = () => APP.go('crm-customer');
     const ov = Store.isLive ? Store.query('Customer/GetOverview', { id }) : Promise.resolve({ ok: true, data: demoOverview(id) });
+    // UI-2R: màn có thể được vẽ lại trước khi API trả về – chỉ lần vẽ mới nhất dựng tab (tránh 2 bộ tab chồng nhau).
+    const tok = el.dataset.d360 = String(Date.now() + Math.random());
     ov.then(x => {
-      if (!el.isConnected) return;
+      if (!el.isConnected || el.dataset.d360 !== tok) return;
       if (!x.ok || !x.data) { el.querySelector('[data-c360head]').innerHTML = failBox(x.message); return; }
       const d = x.data;
       el.querySelector('[data-c360head]').innerHTML = headHtml(d, false);
@@ -39,7 +43,7 @@
     const c = d.customer ? (d.customer.Code !== undefined ? d.customer : pas(d.customer)) : {};
     const ind = String(c.CustomerType || '').toUpperCase() === 'INDIVIDUAL';
     const name = c.DisplayName || c.Name || '';
-    const meta = [c.Code, c.Industry, d.branchName && 'Chi nhánh ' + d.branchName, d.userAssignName && 'Phụ trách: ' + d.userAssignName].filter(Boolean).map(esc).join(' · ');
+    const meta = [c.Code, vi('Industry', c.Industry), d.branchName && 'Chi nhánh ' + d.branchName, d.userAssignName && 'Phụ trách: ' + d.userAssignName].filter(Boolean).map(esc).join(' · ');
     const contact = [c.Address && `<span>${I('pin')}${esc(c.Address)}</span>`, c.PhoneNumber && `<span>${I('msg')}${esc(c.PhoneNumber)}</span>`,
       ind ? c.IdentityNumber && `<span>CCCD ${esc(c.IdentityNumber)}</span>` : c.TaxCode && `<span>MST ${esc(c.TaxCode)}</span>`].filter(Boolean).join('');
     const p = Store.perm('crm-customer');
@@ -76,65 +80,107 @@
   // ---------- Hàng tab (D-66 c) – chỉ tab có quyền xem màn tương ứng ----------
   function buildTabs(el, d, id) { APP.D360.buildTabs(el.querySelector('[data-c360tabs]'), el.querySelector('[data-c360pane]'), TABS, d, id); }
 
-  // ---------- Tab Tổng quan (D-66 d) ----------
-  function overview(box, d, id) {
+  // ---------- Tab Tổng quan (D-66 d → UI-2R, D-69 c–d): trái 1/3 khối thông tin rút gọn, phải 2/3 khối nghiệp vụ ----------
+  function infoCfg(d, id) {
     const c = pas(d.customer), ind = String(c.CustomerType || '').toUpperCase() === 'INDIVIDUAL';
-    const rows = list => `<div class="c360-rows">${list.filter(x => x[1]).map(([l, v]) => `<div class="r"><label>${esc(l)}</label><span>${v}</span></div>`).join('') || none}</div>`;
-    const info = ind
-      ? [['Họ tên', esc(c.Name)], ['Giới tính', esc(c.Gender)], ['Ngày sinh', dmy(c.DateOfBirth)], ['CCCD', esc([c.IdentityNumber, c.IdentityDate && 'cấp ' + U.date(c.IdentityDate), c.IdentityPlace].filter(Boolean).join(' · '))],
-        ['Nghề nghiệp', esc(c.Occupation)], ['Điện thoại', esc(c.PhoneNumber)], ['Email', esc(c.Email)], ['MST cá nhân', esc(c.TaxCode)], ['Nguồn', esc(c.Source)], ['Ghi chú', esc(c.Note)]]
-      : [['Tên pháp lý', esc(c.LegalName || c.Name)], ['Tên giao dịch', esc(c.DisplayName)], ['Mã số thuế', esc(c.TaxCode)], ['Người đại diện pháp luật', esc(c.LegalRepresentativeName)],
-        ['Người liên hệ', esc([c.ContactPersonName, c.ContactPersonPhone].filter(Boolean).join(' · '))], ['Ngành / quy mô', esc([c.Industry, c.CompanySize].filter(Boolean).join(' · '))],
-        ['Phân khúc / nguồn', esc([c.Segment, c.Source].filter(Boolean).join(' · '))], ['Email', esc(c.Email)], ['Ghi chú', esc(c.Note)]];
+    const contacts = (d.listContact || []).map(pas);
+    const main = contacts.find(x => x.IsPrimary) || contacts[0] || null;
+    const mainName = (main && (main.FullName || main.Name)) || (!ind && c.ContactPersonName) || '';
+    const mainPhone = (main && main.Phone) || (!ind && c.ContactPersonPhone) || '';
+    const join = (...a) => a.filter(Boolean).join(' · ');
+    const legal = ind
+      ? [['Họ tên', esc(c.Name)], ['Giới tính', esc(vi('Gender', c.Gender))], ['Ngày sinh', dmy(c.DateOfBirth)],
+        ['Số CCCD', c.IdentityNumber ? esc(c.IdentityNumber) + UI.copyBtn(c.IdentityNumber) : ''], ['Ngày / nơi cấp', esc(join(c.IdentityDate && U.date(c.IdentityDate), c.IdentityPlace))],
+        ['Nghề nghiệp', esc(c.Occupation)], ['MST cá nhân', c.TaxCode ? esc(c.TaxCode) + UI.copyBtn(c.TaxCode) : '']]
+      : [['Tên doanh nghiệp', esc(c.LegalName || c.Name)], ['Tên giao dịch', esc(c.DisplayName)], ['Mã số thuế', c.TaxCode ? esc(c.TaxCode) + UI.copyBtn(c.TaxCode) : ''],
+        ['Số ĐKKD', esc(c.BusinessRegistrationNumber)], ['Ngày / nơi cấp', esc(join(c.RegistrationDate && U.date(c.RegistrationDate), c.RegistrationPlace))], ['Người đại diện PL', esc(c.LegalRepresentativeName)]];
+    const cls = [['Ngành', esc(vi('Industry', c.Industry))], ['Quy mô', esc(vi('CompanySize', c.CompanySize))], ['Nguồn', esc(vi('Source', c.Source))]];
+    const at = (dt, by) => join(dt && U.date(dt), by);
+    return {
+      key: 'customer', title: 'Thông tin khách hàng', canEdit: Store.perm('crm-customer').edit !== false,
+      onEdit: () => UI.form('Customer', Store.get('Customer', id) || c, { title: 'Khách hàng', onSave: () => APP.refresh() }),
+      core: [
+        { icon: 'user', html: mainName ? `<b>${esc(mainName)}</b> <span class="ip-muted">· ${esc(join(main && main.IsPrimary ? 'liên hệ chính' : 'người liên hệ', main && main.Position))}</span>` : '' },
+        { icon: 'phone', html: [UI.tel(mainPhone, ind ? '' : 'liên hệ'), mainPhone !== c.PhoneNumber ? UI.tel(c.PhoneNumber, ind ? '' : 'tổng đài') : ''].filter(Boolean).join(' · ') },
+        { icon: 'mail', html: UI.mail(c.Email || (main && main.Email) || c.ContactPersonEmail) },
+        { icon: 'pin', html: esc(c.Address) },
+        { icon: 'star', html: d.userAssignName ? `${esc(d.userAssignName)} <span class="ip-muted">· NV phụ trách</span>` : '' },
+        { icon: 'building', html: d.branchName ? `${esc(d.branchName)} <span class="ip-muted">· chi nhánh phục vụ</span>` : '' },
+      ],
+      groups: [
+        { key: 'legal', title: 'Pháp lý', open: true, locked: ind && d.canViewPersonal && !!(c.DateOfBirth || c.IdentityNumber), rows: legal,
+          summary: ind ? join(c.IdentityNumber && 'CCCD ' + c.IdentityNumber, vi('Gender', c.Gender)) : join(c.TaxCode && 'MST ' + c.TaxCode, c.LegalRepresentativeName && 'ĐD ' + c.LegalRepresentativeName) },
+        { key: 'class', title: 'Phân loại', rows: cls, summary: join(vi('Industry', c.Industry), vi('CompanySize', c.CompanySize), vi('Source', c.Source)) },
+        { key: 'note', title: 'Ghi chú', html: esc(c.Note || ''), summary: String(c.Note || '').split('\n')[0].slice(0, 60) },
+        { key: 'sys', title: 'Hệ thống', rows: [['Tạo lúc / bởi', esc(at(c.CreatedDate, d.createdByName))], ['Cập nhật gần nhất', esc(at(c.ModifiedDate, d.modifiedByName))]],
+          summary: c.ModifiedDate ? 'Cập nhật ' + at(c.ModifiedDate, d.modifiedByName) : c.CreatedDate ? 'Tạo ' + at(c.CreatedDate, d.createdByName) : '' },
+      ],
+    };
+  }
+  function overview(box, d, id) {
+    const c = pas(d.customer);
     const locs = (d.listLocation || []).map(pas), contacts = (d.listContact || []).map(pas);
-    const locHtml = locs.map(l => `<div class="r"><label>${esc(l.Name || l.Code || '')}${l.DeliveryWindowFrom ? ' · ' + esc(U.time(l.DeliveryWindowFrom)) + '–' + esc(U.time(l.DeliveryWindowTo)) : ''}</label><span>${esc(l.Address || '')}</span></div>`).join('');
-    const ctHtml = contacts.map(x => `<div class="r"><label>${esc(x.FullName || '')}${x.IsPrimary ? ' · liên hệ chính' : ''}</label><span>${esc(x.Phone || x.Email || '')}</span></div>`).join('');
+    const perLoc = {}; (d.listLocationStat || []).forEach(s => { perLoc[String(s.locationId).toLowerCase()] = s.avgMealsPerDay; });
+    const join = (...a) => a.filter(Boolean).join(' · ');
+    const locHtml = locs.map(l => `<div class="dc-it"><div class="top"><b>${esc(l.Name || l.Code || '')}</b>${perLoc[String(l.Id).toLowerCase()] ? `<span class="ip-muted">${U.num(perLoc[String(l.Id).toLowerCase()])} suất/ngày</span>` : ''}</div>
+      <div class="sub">${esc(join(l.Address, l.DeliveryWindowFrom && 'nhận ' + U.time(l.DeliveryWindowFrom) + (l.DeliveryWindowTo ? '–' + U.time(l.DeliveryWindowTo) : ''), join(l.ContactName, l.ContactPhone).replace(' · ', ' ')))}</div></div>`).join('');
+    const ctHtml = contacts.sort((a, b) => (b.IsPrimary === true) - (a.IsPrimary === true)).map(x => `<div class="dc-it"><div class="top"><b>${esc(x.FullName || x.Name || '')}${x.IsPrimary ? ' ' + UI.tag('Chính', 'green') : ''}</b>${x.Phone ? `<span class="ip-muted">${UI.tel(x.Phone)}</span>` : ''}</div>
+      ${x.Position || x.Email ? `<div class="sub">${[esc(x.Position || ''), x.Email ? UI.mail(x.Email) : ''].filter(Boolean).join(' · ')}</div>` : ''}</div>`).join('');
     const today = Store.ctx.date;
     const active = (d.listContract || []).filter(x => x.status === 'Active' && U.day(x.startDate || x.effectiveFrom || '') <= today && (!(x.endDate || x.effectiveTo) || U.day(x.endDate || x.effectiveTo) >= today));
-    const contractHtml = active.length ? active.map(x => `<div class="mb"><div class="spread"><b>${esc(x.contractNumber || '')}</b>${UI.badge(x.status, 'Contract', 'Status')}</div>
-        <div class="small muted">${dmy(x.startDate)} – ${x.endDate ? dmy(x.endDate) : 'không hạn'} · ${(x.listMeal || []).length} loại suất</div>
-        <div class="small">${(x.listMeal || []).map(m => `${esc(m.mealName || m.mealType || '')} ${m.unitPrice ? U.money(m.unitPrice) : ''}`).join(' · ')}</div>
-        <div class="row-flex mt"><button class="btn xs" data-ct="${esc(x.id)}">${I('eye')} Xem</button>${can('crm-contract', 'add') ? `<button class="btn xs" data-renew>Gia hạn</button>` : ''}</div></div>`).join('') : none;
-    const alerts = d.listAlert || [];
-    box.innerHTML = `${alerts.length ? `<div class="c360-alert">${I('alert')}<div><b>Cần chú ý</b><ul>${alerts.map(a => `<li class="sev-${esc(a.severity)}">${a.screen && can(a.screen) ? `<a data-go="${esc(a.screen)}">${esc(a.message)}</a>` : esc(a.message)}</li>`).join('')}</ul></div></div>` : ''}
-      <div class="c360-grid">
-        <div class="card panel"><div class="spread"><h3>Thông tin khách hàng</h3>${Store.perm('crm-customer').edit !== false ? `<button class="btn xs" data-edit>${I('edit')} Sửa</button>` : ''}</div>${rows(info)}</div>
-        <div class="card panel"><h3>Điểm giao và liên hệ</h3><div class="c360-rows">${locHtml || '<div class="muted small">Chưa có điểm giao</div>'}${ctHtml}</div>
-          <div class="row-flex mt">${can('crm-location', 'add') ? `<button class="btn xs" data-add="CustomerDeliveryLocation">${I('plus')} Thêm điểm giao</button>` : ''}${can('crm-contact', 'add') ? `<button class="btn xs" data-add="CustomerContact">${I('plus')} Thêm liên hệ</button>` : ''}</div></div>
-        <div class="card panel"><h3>Hợp đồng hiện hành</h3>${contractHtml}</div>
+    const ct = active[0];
+    const left = ct && ct.endDate ? Math.round((new Date(U.day(ct.endDate)) - new Date(today)) / 86400000) : null;
+    const contractHtml = ct ? `<div class="spread"><h3>Hợp đồng hiện hành</h3>${UI.badge(ct.status, 'Contract', 'Status')}</div>
+        <div style="font-size:15px;font-weight:600">${esc(ct.contractNumber || '')}</div>
+        <div class="ip-muted">${esc(join(ct.startDate || ct.endDate ? (ct.startDate ? dmy(ct.startDate) : '…') + ' – ' + (ct.endDate ? dmy(ct.endDate) : 'không hạn') : 'không thời hạn', left !== null && 'còn ' + left + ' ngày', ct.paymentTerm && 'thanh toán ' + ct.paymentTerm))}</div>
+        ${(ct.listMeal || []).length ? `<div class="dc-sub">Loại suất và đơn giá</div>${(ct.listMeal || []).map(m => `<div class="ip-r"><span>${esc(m.mealName || m.mealType || '')}</span><span>${m.unitPrice ? U.money(m.unitPrice) : ''}</span></div>`).join('')}` : ''}
+        ${active.length > 1 ? `<div class="ip-muted mt">+ ${active.length - 1} hợp đồng hiệu lực khác (tab Hợp đồng và giá)</div>` : ''}
+        <div class="row-flex mt"><button class="btn xs" data-ct="${esc(ct.id)}">${I('eye')} Xem hợp đồng</button>${can('crm-contract', 'add') ? `<button class="btn xs" data-renew>Gia hạn</button>` : ''}</div>`
+      : `<h3>Hợp đồng hiện hành</h3>${none}${can('crm-contract', 'add') ? `<div class="row-flex mt"><button class="btn xs" data-renew>${I('plus')} Tạo hợp đồng</button></div>` : ''}`;
+    const cfg = infoCfg(d, id);
+    box.innerHTML = `<div class="dc-two">${UI.infoPanel(cfg)}<div class="dc-col">${APP.D360.alertBox(d.listAlert)}
+      <div class="dc-pair">
+        <div class="card panel"><div class="spread"><h3>Điểm giao và liên hệ</h3><div class="row-flex">${can('crm-location', 'add') ? `<button class="btn xs" data-add="CustomerDeliveryLocation">${I('plus')} Điểm giao</button>` : ''}${can('crm-contact', 'add') ? `<button class="btn xs" data-add="CustomerContact">${I('plus')} Liên hệ</button>` : ''}</div></div>
+          <div class="dc-sub">Điểm giao (${locs.length})</div>${locHtml || '<div class="muted small">Chưa có điểm giao</div>'}
+          <div class="dc-sub">Người liên hệ (${contacts.length})</div>${ctHtml || '<div class="muted small">Chưa có người liên hệ</div>'}</div>
+        <div class="card panel">${contractHtml}</div>
       </div>
-      <div class="c360-grid two">
-        <div class="card panel"><h3>Suất đặt – giao – nhận 30 ngày</h3><div data-trend>${loading}</div></div>
-        <div class="card panel"><div class="spread"><h3>Đơn hàng gần đây</h3><div class="row-flex"><select class="select" data-ost style="width:auto"><option value="">Mọi trạng thái</option>${['Draft', 'Submitted', 'Confirmed', 'Locked', 'InProduction', 'Delivered', 'Reconciled', 'Cancelled'].map(s => `<option value="${s}">${esc(UI.statusVi('Order', 'Status', s))}</option>`).join('')}</select>${can('crm-order') ? `<a href="javascript:void 0" data-go="crm-order" class="small">Xem tất cả</a>` : ''}</div></div><div data-orders></div></div>
-      </div>`;
+      <div class="card panel"><div class="spread"><h3>Suất đặt – giao – nhận 30 ngày</h3><div class="c360-legend" data-legend></div></div><div data-trend>${loading}</div></div>
+      <div class="card panel"><div class="spread"><h3>Đơn hàng gần đây</h3><div class="row-flex"><select class="select" data-ost style="width:auto"><option value="">Mọi trạng thái</option>${['Draft', 'Submitted', 'Confirmed', 'Locked', 'InProduction', 'Delivered', 'Reconciled', 'Cancelled'].map(s => `<option value="${s}">${esc(UI.statusVi('Order', 'Status', s))}</option>`).join('')}</select>${can('crm-order') ? `<button class="btn xs" data-go="crm-order">Xem tất cả</button>` : ''}</div></div><div data-orders></div></div>
+    </div></div>`;
+    UI.wireInfoPanel(box, cfg);
     box.querySelectorAll('[data-go]').forEach(a => a.onclick = () => APP.go(a.dataset.go));
-    const edit = box.querySelector('[data-edit]'); if (edit) edit.onclick = () => UI.form('Customer', Store.get('Customer', id) || c, { title: 'Khách hàng', onSave: () => APP.refresh() });
     box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => UI.form(b.dataset.add, null, { title: b.dataset.add === 'CustomerContact' ? 'Người liên hệ' : 'Điểm giao', defaults: { CustomerId: id }, onSave: () => APP.refresh() }));
     box.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => APP.openDetail('Contract', b.dataset.ct, APP.FN['crm-contract']));
     box.querySelectorAll('[data-renew]').forEach(b => b.onclick = () => APP.go('crm-contract?customer=' + encodeURIComponent(id)));
-    // Biểu đồ 30 ngày (Customer/GetTrend).
-    const trendBox = box.querySelector('[data-trend]');
+    // Biểu đồ 30 ngày (Customer/GetTrend) + chênh đặt – nhận trung bình.
+    const trendBox = box.querySelector('[data-trend]'), legend = box.querySelector('[data-legend]');
     (Store.isLive ? Store.query('Customer/GetTrend', { id }) : Promise.resolve({ ok: false, message: 'Chế độ DEMO không có số liệu xu hướng' })).then(x => {
       if (!trendBox.isConnected) return;
       if (!x.ok || !x.data) { trendBox.innerHTML = failBox(x.message); return; }
       const days = x.data.listDay || [];
       const labels = days.map(r => U.date(r.date).slice(0, 5));
-      const S = [{ name: 'Đặt', values: days.map(r => r.ordered || 0), color: '#91AF42' }, { name: 'Giao', values: days.map(r => r.delivered || 0), color: '#4C83B6' }, { name: 'Nhận', values: days.map(r => r.accepted || 0), color: '#F07825' }];
+      const S = [{ name: 'Đặt', values: days.map(r => r.ordered || 0), color: '#4C83B6' }, { name: 'Giao', values: days.map(r => r.delivered || 0), color: '#1D9E75' }, { name: 'Nhận', values: days.map(r => r.accepted || 0), color: '#91AF42' }];
+      const ord = U.sum(days, 'ordered'), acc = U.sum(days, 'accepted');
+      const gap = ord > 0 && acc > 0 ? U.num((ord - acc) / ord * 100, 1) + '%' : null;
       const mix = (x.data.listMealType || []).map(m => `${esc(m.mealType)} ${U.num(m.quantity)}`).join(' · ');
-      trendBox.innerHTML = days.some(r => r.ordered || r.delivered || r.accepted) ? `${UI.lines(labels, S, { min: 0, h: 220 })}<div class="c360-legend">${S.map(s => `<span><i style="background:${s.color}"></i>${s.name}</span>`).join('')}</div>${mix ? `<div class="small muted mt">Cơ cấu loại suất: ${mix}</div>` : ''}` : none;
+      if (!days.some(r => r.ordered || r.delivered || r.accepted)) { trendBox.innerHTML = none; return; }
+      legend.innerHTML = S.map(s => `<span><i style="background:${s.color}"></i>${s.name}</span>`).join('');
+      trendBox.innerHTML = `${UI.lines(labels, S, { min: 0, h: 200 })}<div class="ip-muted">${esc(join(labels.length ? labels[0] + ' → ' + labels[labels.length - 1] : '', gap && 'chênh đặt – nhận trung bình ' + gap))}${mix ? ' · cơ cấu: ' + mix : ''}</div>`;
     });
     // Đơn hàng gần đây – lọc trạng thái (Order/GetAll theo khách).
     const ordBox = box.querySelector('[data-orders]'), sel = box.querySelector('[data-ost]');
     const loadOrders = () => {
       ordBox.innerHTML = loading;
       const q = Store.isLive ? Store.query('Order/GetAll', { CustomerId: id, Status: sel.value, Page: 1, PageSize: 8, SortField: 'mealDate', SortOrder: 'descend' })
-        : Promise.resolve({ ok: true, list: Store.by('Order', 'CustomerId', id).filter(o => !sel.value || o.Status === sel.value).sort((a, b) => String(b.MealDate).localeCompare(a.MealDate)).slice(0, 8).map(o => ({ id: o.Id, orderNumber: o.OrderNumber, mealDate: o.MealDate, totalQuantity: o.TotalQuantity, status: o.Status })) });
+        : Promise.resolve({ ok: true, list: Store.by('Order', 'CustomerId', id).filter(o => !sel.value || o.Status === sel.value).sort((a, b) => String(b.MealDate).localeCompare(a.MealDate)).slice(0, 8).map(o => ({ id: o.Id, orderNumber: o.OrderNumber, mealDate: o.MealDate, totalQuantity: o.TotalQuantity, totalAmount: o.TotalAmount, status: o.Status })) });
       q.then(x => {
         if (!ordBox.isConnected) return;
         if (!x.ok) { ordBox.innerHTML = failBox(x.message); return; }
         const list = x.list || [];
         ordBox.innerHTML = table(list, [{ label: 'Số đơn', html: o => `<b>${esc(o.orderNumber || '')}</b>` }, { label: 'Ngày ăn', html: o => dmy(o.mealDate) },
-          { label: 'Suất', num: true, html: o => U.num(o.totalQuantity || 0) }, { label: 'Trạng thái', html: o => UI.badge(o.status, 'Order', 'Status') }], true);
+          { label: 'Suất', num: true, html: o => U.num(o.totalQuantity || 0) }, { label: 'Thành tiền', num: true, html: o => U.money(o.totalAmount || 0) },
+          { label: 'Trạng thái', num: true, html: o => UI.badge(o.status, 'Order', 'Status') }], true);
         bindRows(ordBox, list, o => APP.openDetail('Order', o.id));
       });
     };

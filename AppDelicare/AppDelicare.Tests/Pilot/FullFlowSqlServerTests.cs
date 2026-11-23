@@ -421,7 +421,7 @@ namespace AppDelicare.Tests.Pilot
                 (await Post("/api/ProductionBatch/Pack", ("Id", batchBeef))).Fail();
                 (await Post("/api/ProductionBatch/FinishStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
                 (await Post("/api/PackingOrder/Start", ("Id", packingId))).Ok();
-                (await Post("/api/PackingOrder/RecordResult", ("Id", packingId), ("PackedQuantity", 1000m), ("PackagingType", "[DEMO] hộp giữ nhiệt"))).Ok();
+                (await Post("/api/PackingOrder/RecordResult", ("Id", packingId), ("PackedQuantity", 1000m), ("PackagingType", "HOP_GIU_NHIET"))).Ok();
                 var beefDetail = (await Get($"/api/ProductionBatch/GetDetail?id={batchBeef}")).Ok();
                 beefDetail.GetProperty("batch").GetProperty("status").GetString().Should().Be("Packed");
                 beefDetail.GetProperty("listStage").GetArrayLength().Should().Be(3);
@@ -525,6 +525,9 @@ namespace AppDelicare.Tests.Pilot
                 var rec = (await Post("/api/OrderReconciliation/Reconcile", ("OrderId", orderId), ("ServedQuantity", 990m), ("ReturnedQuantity", 5m), ("WastedQuantity", 3m),
                     ("Remark", "[DEMO]"))).Ok();
                 rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_650_000m, "35.000.000 × 990 ÷ 1000");
+                // Chuỗi Đặt → SX → Đóng: 2 món × 1000 suất – bò kho đóng theo lệnh đóng gói gắn đơn, cơm đóng thẳng theo mẻ.
+                rec.GetProperty("reconciliation").GetProperty("producedQty").GetDecimal().Should().Be(1000m);
+                rec.GetProperty("reconciliation").GetProperty("packedQty").GetDecimal().Should().Be(1000m);
                 Guid recId = Id(rec.GetProperty("reconciliation"));
                 (await Post("/api/OrderReconciliation/Close", ("Id", recId), ("Remark", "[DEMO] chốt"))).Ok();
                 await GetFile($"/api/OrderReconciliation/Print?id={recId}");

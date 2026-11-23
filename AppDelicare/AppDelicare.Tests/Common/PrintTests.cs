@@ -293,7 +293,7 @@ namespace AppDelicare.Tests.Common
                 var note = (await p.Build("DELIVERY_ORDER", dos[0])).Data!;
                 note.ListInfo.Should().Contain(i => i.Label == "Khung giờ nhận" && i.Value == "10:30 – 11:15");
                 note.ListInfo.Should().Contain(i => i.Label == "Tài xế" && i.Value == "[DEMO] Tài xế " + key);
-                note.ListRow.Select(r => r[1]).Should().Equal("Tối", "Trưa");
+                note.ListRow.Select(r => r[1]).Should().Equal(new[] { "Trưa", "Tối" }, "ORD-OPT-1.7: dòng xếp theo thứ tự bữa (Sáng, Trưa, Tối, Đêm) rồi lựa chọn");
                 note.ListFooter.Last().Should().Contain("50", "số suất của đơn giao này (điểm dừng)");
                 var podDoc = (await p.Build("ProofOfDelivery", pod)).Data!;
                 podDoc.ListRow.Single().Should().Contain(["50", "48", "2"]);

@@ -65,7 +65,7 @@ namespace AppDelicare.Services.Implement.Messaging
 
         private static readonly Dictionary<string, NotificationTemplate> Templates = new NotificationTemplate[]
         {
-            new(ManualText, P, Normal, "Tin gửi tay từ màn Tin nhắn ra (#/int-outbound)"),
+            new(ManualText, P, Normal, "Tin gửi tay từ màn Tin nhắn đi (#/int-outbound)"),
             new(SystemTest, P, Normal, "Tin thử kết nối bot"),
             new(ShiftConfirmed, P, Normal, "Phân ca đã xác nhận (ShiftAssignment/Confirm) – nhân viên được phân"),
             new(ApprovalPending, A, Normal, "Cấp duyệt mới (gửi duyệt / chuyển cấp) – người duyệt của cấp"),

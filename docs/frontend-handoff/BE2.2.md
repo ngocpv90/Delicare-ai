@@ -6,7 +6,7 @@ Thử nhanh cả luồng (1 bộ `[DEMO]` tự đủ, đã chạy trên DB dev):
 
 Quyền: theo `PermissionConvention` – `Get*` = Xem, `Create*` = Thêm, `Import*` = Nhập, còn lại = Sửa trên màn hình của controller; ngoại lệ ghi ở cột "Quyền".
 Mục menu **đã có** trong `ObjectMenu` (không thêm seed): `crm-contract`, `crm-forecast`, `menu-change-request`, `crm-order` và các mục duyệt
-`#/wf-inbox?type=crm-contract` (Duyệt – Hợp đồng suất ăn), `#/wf-inbox?type=menu-change-request` (Duyệt – Yêu cầu đổi món), `#/wf-inbox?type=crm-order` (Duyệt – Đơn đặt suất ăn: lệch suất **và** sửa / thêm đơn sau giờ chốt).
+`#/wf-inbox?type=crm-contract` (Phê duyệt › Hợp đồng suất ăn), `#/wf-inbox?type=menu-change-request` (Phê duyệt › Yêu cầu đổi món), `#/wf-inbox?type=crm-order` (Phê duyệt › Đơn đặt suất ăn: lệch suất **và** sửa / thêm đơn sau giờ chốt).
 Quyền duyệt = `AllowEdit` trên mục duyệt (D-31); các action `Approve` / `Reject` gắn `[SkipPermission]` – engine kiểm (người không quyền nhận 400 "Bạn không có quyền duyệt…").
 
 ## ⚠ Thay đổi hành vi (FE đang làm theo P3 cần sửa)

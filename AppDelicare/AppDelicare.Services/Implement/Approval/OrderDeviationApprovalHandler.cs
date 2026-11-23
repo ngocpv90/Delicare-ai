@@ -9,7 +9,7 @@ namespace AppDelicare.Services.Implement.Approval
 {
     /// <summary>
     /// T13 – duyệt sửa số suất của đơn đã xác nhận lệch quá ngưỡng (BusinessType ORDER_DEVIATION, màn crm-order;
-    /// quyền duyệt = mục menu <c>#/wf-inbox?type=crm-order</c> "Duyệt – Đơn hàng / lệch suất", D-31).
+    /// quyền duyệt = mục menu <c>#/wf-inbox?type=crm-order</c> "Phê duyệt › Đơn hàng / lệch suất", D-31).
     /// Nội dung được duyệt = trạng thái đơn + số suất hiện tại từng dòng; đề xuất (số suất mới) lưu kèm trong PayloadJson.
     /// Duyệt → ghi số mới (đơn phải còn Confirmed); từ chối → không đổi gì (ghi chú vào đơn).
     /// </summary>

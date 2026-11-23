@@ -325,7 +325,7 @@ namespace AppDelicare.Tests.Hr
             (await _factory.QueryAsync(db => db.LeaveRequest.AsNoTracking().SingleAsync(l => l.Id == leaveId))).ApprovalRequestId.Should().Be(approval.Id);
             (await staff.PostFormAsync("/api/LeaveRequest/Create", ("FromDate", Monday.AddDays(2)), ("ToDate", Monday.AddDays(3)), ("LeaveTypeCode", "SICK"), ("Reason", "Bị ốm"))).Fail("trùng khoảng ngày");
 
-            // Hộp duyệt "Duyệt – Đơn xin nghỉ": người không có quyền không duyệt được, nhân sự duyệt → ca trong khoảng nghỉ bị bỏ.
+            // Hộp duyệt "Phê duyệt › Đơn xin nghỉ": người không có quyền không duyệt được, nhân sự duyệt → ca trong khoảng nghỉ bị bỏ.
             (await other.PostFormAsync("/api/LeaveRequest/Approve", ("Id", leaveId))).Fail("không có quyền");
             (await other.GetResultAsync($"/api/LeaveRequest/GetDetail?id={leaveId}")).Fail("Không có quyền xem");
             var inbox = (await hr.GetResultAsync("/api/ApprovalRequest/GetMyPending?type=hr-leave")).ListData.EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == approval.Id);

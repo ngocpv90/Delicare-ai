@@ -228,6 +228,7 @@
             public static readonly string MenuNeedsLine = "Thực đơn phải có ít nhất 1 món";
             public static readonly string MenuPublishMissingDays = "Chưa đủ món để công bố – thiếu: {0}";
             public static readonly string EffectiveRangeInvalid = "Ngày hiệu lực từ phải nhỏ hơn hoặc bằng ngày hiệu lực đến";
+            public static readonly string MenuCommonOverlap = "Đã có thực đơn chung {0} Đã công bố chồng thời gian hiệu lực – cho thực đơn đó hết hiệu lực hoặc đổi ngày hiệu lực trước";
             public static readonly string MenuAssignmentOverlap = "Chồng thời gian hiệu lực với phân công thực đơn khác cùng khách / điểm giao / loại suất";
             public static readonly string MenuAssignmentContractMismatch = "Hợp đồng không thuộc khách hàng này";
             public static readonly string MenuAssignmentMealTypeNotInContract = "Loại suất {0} không có trong suất của hợp đồng";
@@ -240,7 +241,22 @@
             public static readonly string OrderNeedsLine = "Đơn phải có ít nhất 1 dòng số suất lớn hơn 0";
             public static readonly string OrderQuantityNegative = "Số suất không được âm";
             public static readonly string OrderLineLocationMismatch = "Mỗi đơn chỉ cho 1 điểm giao – dòng có điểm giao khác đầu đơn";
-            public static readonly string OrderLineDuplicate = "Trùng dòng suất (cùng suất hợp đồng và ca)";
+            public static readonly string OrderLineDuplicate = "Trùng dòng suất (cùng suất hợp đồng, ca và lựa chọn)";
+            public static readonly string OrderWeekDayLockedStatus = "Đơn {0} đang {1} – không sửa ở màn tuần";
+            public static readonly string OrderWeekDayLockedCutoff = "Đã qua giờ chốt {0} – muốn sửa dùng «Yêu cầu thay đổi sau giờ chốt» (cần duyệt)";
+            public static readonly string OrderWeekCellOutside = "Ô số suất phải thuộc tuần {0} – {1}";
+            public static readonly string OrderWeekSaved = "Đã lưu tuần: tạo {0} đơn, sửa {1} đơn, xác nhận {2} đơn, bỏ qua {3} ngày";
+            public static readonly string OrderWeekCopied = "Đã chép số tuần trước vào {0} ô (chưa lưu – bấm Lưu nháp / Xác nhận cả tuần)";
+            public static readonly string OrderWeekNothingToCopy = "Tuần trước không có số suất để chép";
+            public static readonly string OrderSlipInvalid = "Không phải phiếu đăng ký suất của hệ thống (tải phiếu từ màn Đăng ký suất tuần / Thực đơn, không sửa hàng / cột ẩn)";
+            public static readonly string OrderSlipOtherWeek = "Phiếu không đúng khách / điểm giao / tuần đang mở ({0} · {1} · tuần từ {2})";
+            public static readonly string OrderSlipRowInvalid = "Hàng {0}: mã ẩn của phiếu bị sửa – bỏ qua";
+            public static readonly string OrderSlipQuantityInvalid = "Ô {0}: «{1}» không phải số suất hợp lệ";
+            public static readonly string OrderSlipOptionGone = "Ô {0}: {1} ngày {2} không còn trong thực đơn – bỏ qua";
+            public static readonly string OrderSlipDayLocked = "Ô {0}: ngày {1} đã khóa (quá giờ chốt / đơn đã chốt) – giữ số cũ";
+            public static readonly string OrderSlipRead = "Đã đọc {0} ô số suất, {1} dòng lỗi – kiểm tra rồi bấm Lưu nháp / Xác nhận cả tuần";
+            public static readonly string OrderOptionNoMenu = "Chưa có thực đơn áp dụng cho {0} ngày {1} – không chọn được lựa chọn (gán thực đơn hoặc công bố thực đơn chung trước)";
+            public static readonly string OrderOptionNotInMenu = "Lựa chọn {0} không có trong thực đơn áp dụng của {1} ngày {2} (lựa chọn đang có: {3})";
             public static readonly string OrderContractMealInvalid = "Suất hợp đồng không thuộc hợp đồng của đơn";
             public static readonly string OrderLineNotInOrder = "Dòng {0} không thuộc đơn này";
             public static readonly string OrderLineIncomplete = "Mọi dòng phải có loại suất, ca và số suất lớn hơn 0";
@@ -302,7 +318,8 @@
             public static readonly string MrpNotCalculated = "Chưa tính nhu cầu nguyên liệu cho ngày {0}";
             public static readonly string MrpOrdersNotLocked = "Cảnh báo: còn {0} đơn chưa chốt của ngày {1} (không được tính)";
             public static readonly string MrpOrderLineNoMenu = "Cảnh báo: đơn {0} (loại suất {1}) chưa gắn thực đơn – bỏ qua {2} suất";
-            public static readonly string MrpMenuNoDish = "Cảnh báo: thực đơn {0} không có món cho loại suất {1} thứ {2} – bỏ qua {3} suất của đơn {4}";
+            public static readonly string MrpOptionNotInMenu = "Cảnh báo: đơn {0} đặt {1} lựa chọn {2} nhưng thực đơn {3} không còn lựa chọn này – tính theo cách cũ (chia đều các lựa chọn)";
+            public static readonly string MrpMenuNoDish ="Cảnh báo: thực đơn {0} không có món cho loại suất {1} thứ {2} – bỏ qua {3} suất của đơn {4}";
             public static readonly string MrpDishNoRecipe = "Món chưa có công thức đã khóa / đã duyệt – không tính nguyên liệu";
             public static readonly string MrpRecipeNotLocked = "Công thức chưa khóa (Đã duyệt) – dùng dòng định lượng hiện tại";
             public static readonly string MrpUnitMissing = "Cảnh báo: nguyên liệu {0} thiếu quy đổi đơn vị {1} → {2} – phần này không được tính";
@@ -337,7 +354,7 @@
             public static readonly string GoodsReceiptDuplicateLine = "Dòng PO {0} xuất hiện nhiều lần trong phiếu nhập";
             public static readonly string GoodsReceiptDateInvalid = "{0}: ngày sản xuất sau hạn dùng";
             public static readonly string GoodsReceiptNotConcluded = "Phiếu nhập chưa kết luận QC (QcInspection/Conclude) – chưa ghi sổ được";
-            public static readonly string QcInspectionCrudBlocked = "Phiếu QC đầu vào chỉ tạo cùng phiếu nhập và ghi kết quả qua QcInspection/Conclude";
+            public static readonly string QcInspectionCrudBlocked = "Phiếu kiểm tra hàng nhập chỉ tạo cùng phiếu nhập và ghi kết quả qua QcInspection/Conclude";
             public static readonly string QcResultInvalid = "{0}: kết quả QC phải là DAT / DAT_MOT_PHAN / KHONG_DAT";
             public static readonly string QcLineMissing = "Chưa có kết quả QC cho dòng: {0}";
             public static readonly string QcPartialQuantityInvalid = "{0}: DAT_MOT_PHAN cần số lượng đạt > 0 và < số nhận ({1})";
@@ -350,7 +367,7 @@
             public static readonly string ReceivingTempOutOfRange = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C – vùng loại, chỉ kết luận KHONG_DAT";
             public static readonly string ReceivingTempConditional = "Cảnh báo: {0} nhiệt độ nhận {1} °C vượt ngưỡng {2} °C (≤ {3} °C: nhận có điều kiện – cần lý do, lô ưu tiên dùng trước)";
             public static readonly string ReceivingTempMissingWarning = "Cảnh báo: {0} ({1}) chưa có nhiệt độ nhận – bắt buộc đo trước khi kết luận QC";
-            public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Duyệt – Đơn mua hàng (Giám đốc)\")";
+            public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Phê duyệt › Đơn mua hàng (Giám đốc)\")";
             // T17 – sản xuất theo mẻ (P7)
             public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất được tạo bằng MaterialRequirement/Calculate (KH- theo ngày sản xuất)";
             public static readonly string PlanUpdateBlocked = "Trạng thái / số / ngày kế hoạch chỉ đổi qua thao tác nghiệp vụ (Approve / Release) – dòng món sửa qua ProductionPlanLine khi kế hoạch còn Nháp";
@@ -615,6 +632,8 @@
             public static readonly string ContractMealTypeRequired = "Mỗi dòng suất phải có loại suất (MealType)";
             public static readonly string ContractMealTypeDuplicate = "Loại suất {0} xuất hiện nhiều lần – mỗi loại suất chỉ 1 dòng";
             public static readonly string ContractMealPriceInvalid = "Đơn giá suất {0} phải lớn hơn 0";
+            /// <summary>Lỗi UAT 2026-11-21: {0} nhãn cột, {1} giá trị gửi lên, {2} danh sách mã – nhãn hợp lệ (ReferenceCatalogs).</summary>
+            public static readonly string ReferenceValueNotInCatalog = "{0} «{1}» không có trong danh mục ({2})";
             public static readonly string ContractNumberDuplicate = "Số hợp đồng {0} đã tồn tại";
             public static readonly string ContractEditOnlyDraft = "Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp (hiện tại: {0}) – hợp đồng đã duyệt chỉ chấm dứt bằng Contract/Terminate";
             public static readonly string ContractStatusViaAction = "Trạng thái hợp đồng chỉ đổi qua Contract/Submit → duyệt → Contract/Terminate (giá trị gửi lên được bỏ qua)";
@@ -773,8 +792,15 @@
             public static readonly string CustomerEmailInvalid = "{0} {1} không đúng định dạng";
             public static readonly string CustomerDateInFuture = "{0} không được sau ngày hôm nay";
             public static readonly string CustomerIdentityDateInvalid = "Ngày cấp CCCD phải từ ngày sinh tới hôm nay";
-            public static readonly string CustomerStatusInvalid = "Trạng thái khách hàng phải là Active hoặc Inactive";
+            public static readonly string CustomerStatusInvalid = "Trạng thái khách hàng phải là Đang hoạt động hoặc Ngừng hoạt động";
             public static readonly string CustomerBranchNotFound = "Không tìm thấy chi nhánh phục vụ";
+            // ---------------------------------------------------------------- UI-5 (D-63 r) – hoàn thiện form khách hàng
+            public static readonly string CustomerCatalogInvalid = "{0} \"{1}\" không có trong danh mục – chọn một trong: {2}";
+            public static readonly string CustomerAssigneeNotFound = "Không tìm thấy nhân viên phụ trách (tài khoản người dùng đang hoạt động)";
+            public static readonly string CustomerFirstLocationRequired = "Điểm giao đầu tiên: thiếu {0}";
+            public static readonly string CustomerFirstLocationWindowInvalid = "Điểm giao đầu tiên: giờ nhận từ phải nhỏ hơn giờ nhận đến";
+            public static readonly string CustomerCreatedPrimaryContact = "1 liên hệ chính";
+            public static readonly string CustomerCreatedLocation = "1 điểm giao {0}";
             public static readonly string CustomerTypeLocked = "Khách hàng {0} đã có hợp đồng / đơn hàng – không đổi loại được. Ngừng hoạt động khách này và tạo khách mới";
             public static readonly string CustomerTypeChanged = "Đổi loại khách hàng: mã {0} → {1}";
             public static readonly string CodeGeneratedNote = "(tự sinh khi lưu)";

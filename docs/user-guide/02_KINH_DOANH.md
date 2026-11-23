@@ -10,16 +10,17 @@
 
 | screen-id | Menu › Mục | Quyền |
 |---|---|---|
-| `crm-customer` | Kinh doanh & Đơn hàng › Khách hàng | Xem, sửa, xuất |
+| `crm-customer` | Kinh doanh › Khách hàng | Xem, sửa, xuất |
 | `crm-contact` | … › Người liên hệ | Xem, sửa, xuất |
 | `crm-location` | … › Điểm giao hàng | Xem, sửa, xuất |
 | `crm-contract` | … › Hợp đồng | Xem, sửa, xuất |
 | `crm-price-policy` | … › Chính sách giá | Xem, sửa, xuất |
 | `crm-forecast` | … › Dự báo | Xem, sửa, xuất |
 | `crm-order` | … › Đơn hàng | Xem, sửa, xuất |
+| `crm-order-week` | … › Đăng ký suất tuần | Như `crm-order` (xem, sửa, xuất phiếu, tải phiếu lên) |
 | `crm-reconciliation` | … › Đối soát đơn hàng | Xem, sửa, xuất |
 | `menu-menu`, `menu-assignment`, `menu-dish`, `menu-change-request` | Thực đơn & Món ăn | Chỉ xem |
-| `log-*`, `prod-*`, `cost-*` | Đóng gói & Giao nhận, Sản xuất & Giá thành | Chỉ xem |
+| `log-*`, `prod-*`, `cost-*` | Đóng gói & Giao hàng, Sản xuất & Giá thành | Chỉ xem |
 | `dash-exec`, `kpi-daily`, `kpi-monthly` | Tổng quan / KPI | Xem |
 
 Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơn sau giờ chốt, hợp đồng do Ban điều hành duyệt – xem `12_QUAN_LY_DUYET.md`).
@@ -41,15 +42,28 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 ## 4. Thao tác từng bước
 
 ### 4.1 Khách hàng 360° – `crm-customer`
-- **Thêm / sửa khách hàng (D-63):** chọn **Loại khách hàng** trước – *Doanh nghiệp* hoặc *Cá nhân*; form hiện ô theo loại:
-  - *Doanh nghiệp* – bắt buộc: Tên doanh nghiệp, Tên giao dịch, Mã số thuế (10 số hoặc 10-3 số, không trùng), Người đại diện pháp luật, Người liên hệ + SĐT người liên hệ, Địa chỉ, Điện thoại; tùy chọn: Số ĐKKD (trống = MST), ngày / nơi cấp, Email, Ngành, Quy mô, Phân khúc, Nguồn, NV phụ trách, Ghi chú.
-  - *Cá nhân* – bắt buộc: Họ, Tên, Địa chỉ, Điện thoại; tùy chọn: Giới tính, Ngày sinh, CCCD (12 số, không trùng) + ngày / nơi cấp, Nghề nghiệp, Email, MST cá nhân (10 số), Nguồn, NV phụ trách, Ghi chú.
-  - **Chi nhánh phục vụ** bắt buộc khi công ty đã khai báo chi nhánh.
-  - Mã `KHB-…` / `KHC-…` máy chủ tự sinh; điện thoại dạng `0` + 9 số hoặc `+84` + 9 số. Lỗi hiện ngay trên form, form không đóng.
+- **Thêm khách hàng (D-63, UI-5):**
+  1. Bấm **Tạo mới** → form mở ra với 2 nút lớn **Doanh nghiệp** / **Cá nhân** (chưa chọn sẵn). Chọn loại → hiện các ô của loại đó. Trước khi lưu vẫn đổi loại được ở ô *Loại khách hàng*, dữ liệu đã nhập được giữ.
+  2. Nhập các ô (bảng dưới). *Doanh nghiệp*: gõ **Tên doanh nghiệp** → **Tên giao dịch** tự điền giống vậy khi ô này còn trống (sửa lại được).
+  3. Ô chọn: **Ngành**, **Quy mô**, **Giới tính**, **Nguồn** chỉ chọn trong danh mục; **Chi nhánh phục vụ** chỉ liệt kê đơn vị loại chi nhánh (có đúng 1 chi nhánh → chọn sẵn); **NV phụ trách** chọn trong tài khoản đang hoạt động – gõ vào ô tìm phía trên để lọc theo tên / tên đăng nhập; **Trạng thái** mặc định *Đang hoạt động*. Các ô ngày chỉ chọn ngày.
+  4. (Tùy chọn) bấm **Thêm điểm giao ngay** → nhập **Điểm giao đầu tiên**: tên, địa chỉ (gợi ý sẵn địa chỉ khách), giờ nhận từ – đến.
+  5. Bấm **Tạo mới**. Thành công → *"Đã tạo khách hàng – mã KHB-00013 · 1 liên hệ chính · 1 điểm giao DP-00013"*. Khách doanh nghiệp tự có **người liên hệ chính** (từ Người liên hệ + SĐT + email người liên hệ); điểm giao tạo cùng lúc. Lỗi bất kỳ (kể cả ở điểm giao) → không tạo gì, form giữ nguyên.
+
+  | Ô | Doanh nghiệp | Cá nhân |
+  |---|---|---|
+  | Bắt buộc | Tên doanh nghiệp, Tên giao dịch, Mã số thuế, Người đại diện pháp luật, Người liên hệ, SĐT người liên hệ, Địa chỉ, Điện thoại | Họ, Tên, Địa chỉ, Điện thoại |
+  | Bắt buộc khi công ty đã khai báo chi nhánh | Chi nhánh phục vụ | Chi nhánh phục vụ |
+  | Tùy chọn | Số ĐKKD (trống = MST), Ngày / nơi cấp ĐKKD, Email, Email người liên hệ, Ngành, Quy mô, Nguồn, NV phụ trách, Trạng thái, Ghi chú | Giới tính, Ngày sinh, Số CCCD + ngày / nơi cấp, Nghề nghiệp, Email, Mã số thuế cá nhân, Nguồn, NV phụ trách, Trạng thái, Ghi chú |
+
+  - **Kiểm ngay khi rời ô** (lỗi đỏ dưới đúng ô, giống hệt máy chủ): Mã số thuế 10 số hoặc 10-3 số (cá nhân: 10 số); CCCD đúng 12 số; điện thoại `0` + 9 số hoặc `+84` + 9 số (được gõ dấu cách / chấm / gạch); email đúng dạng; ngày sinh / ngày cấp không sau hôm nay; ngày cấp CCCD từ ngày sinh trở đi; giờ nhận từ < giờ nhận đến. Lỗi máy chủ (vd. MST trùng) hiện ở đầu form và tô đỏ ô liên quan.
+  - Mã `KHB-…` / `KHC-…` máy chủ tự sinh. Dữ liệu cũ có Ngành / Nguồn… ngoài danh mục: form hiện "(giá trị cũ)", lưu lại không đổi thì giữ; muốn đổi thì chọn trong danh mục.
+- **Sửa khách hàng:** nút **Sửa** – cùng form, loại khách giữ nguyên (không có bước chọn loại, không có khối điểm giao – thêm điểm giao ở `crm-location` / tab Điểm giao).
   - Loại khách **khóa sau khi lưu**; khách chưa có hợp đồng / đơn mới đổi loại được (cấp mã mới). Khách đã có hợp đồng / đơn → ngừng hoạt động và tạo khách mới.
 - Danh sách: Mã, Khách hàng, Loại, Chi nhánh phục vụ, Hợp đồng hiệu lực, số điểm giao, Suất TB/ngày, Trạng thái. Lọc theo **Đơn vị làm việc**.
 - Đầu danh sách: 4 thẻ **Tổng khách hàng**, **Đang hoạt động** (kèm "/ tổng · %"), **Hợp đồng hiệu lực** (bấm mở danh sách hợp đồng), **Suất TB/ngày (7 ngày)** = tổng suất đơn Đã giao / Đã đối soát 7 ngày đã qua ÷ 7 – tính theo đơn vị làm việc.
 - **Bấm một dòng → màn Hồ sơ khách hàng 360 (cả trang)** – ← về danh sách: phần đầu (chữ viết tắt, tên, mã, loại, trạng thái, ngành, chi nhánh, NV phụ trách, địa chỉ, điện thoại, MST / CCCD) + nút **Sửa**, **Tạo đơn**, **Ghi phản ánh**, ⋯ (**Tạo hợp đồng**, **In hồ sơ**, **Ngừng hoạt động**) theo quyền; 4 thẻ chỉ số; các tab **Tổng quan** (khối *Cần chú ý*: hợp đồng còn ≤ 30 ngày, phản ánh quá hạn, khay thất thoát vượt ngưỡng, chưa chốt đơn ngày mai sau 19:00, thiếu điểm giao / liên hệ chính · Thông tin khách hàng · Điểm giao và liên hệ · Hợp đồng hiện hành · biểu đồ Suất đặt – giao – nhận 30 ngày · Đơn hàng gần đây), **Hợp đồng và giá**, **Đơn hàng** (lọc ngày ăn từ – đến, trạng thái), **Giao nhận**, **Đối soát**, **Khay hộp**, **Phản ánh**, **Dự báo và thực đơn**, **Tài liệu** (tải lên ≤ 20 MB), **Lịch sử** (+ Liên quan). Tab chỉ hiện khi tài khoản có quyền xem màn tương ứng; bấm dòng trong tab để mở chứng từ.
+- **Tab Tổng quan (UI-2R, D-69):** hai cột – **trái 1/3 "Thông tin khách hàng"**: người liên hệ chính (+ chức vụ) · điện thoại liên hệ + tổng đài · email · địa chỉ · NV phụ trách · chi nhánh phục vụ; nhóm **Pháp lý** (mở sẵn; khách cá nhân: ngày sinh / CCCD chỉ người có quyền Sửa hồ sơ khách mới thấy – có biểu tượng khóa), **Phân loại**, **Ghi chú**, **Hệ thống** (tạo / cập nhật lúc, bởi). **Phải 2/3**: Cần chú ý → **Điểm giao và liên hệ** (suất/ngày từng điểm = TB 30 ngày; nút + Điểm giao, + Liên hệ) cạnh **Hợp đồng hiện hành** (còn N ngày, điều khoản thanh toán, đơn giá theo loại suất, Xem / Gia hạn) → **Suất đặt – giao – nhận 30 ngày** (kèm chênh đặt – nhận trung bình) → **Đơn hàng gần đây** (số đơn, ngày ăn, suất, thành tiền, trạng thái; lọc trạng thái, Xem tất cả).
+  - **Khối thông tin bên trái (UI-2R, dùng chung 3 màn chi tiết):** 6 dòng chính luôn hiện (điện thoại / email bấm để gọi / gửi thư); bên dưới là các **nhóm gập** – bấm tiêu đề nhóm (hoặc Tab + Enter) để mở / gập, dòng xám dưới tiêu đề là tóm tắt; trình duyệt **nhớ nhóm đang mở** cho lần sau. Ô trống không hiện; nhóm chưa có gì ghi "Chưa có thông tin · Bổ sung" (bấm Bổ sung = Sửa, chỉ khi có quyền sửa). Nút sao chép cạnh MST / CCCD. Màn rộng: khối này đứng yên khi cuộn; màn < 1200px: xếp trên cùng.
 - Mở khách từ màn khác (liên kết, tìm kiếm) → ngăn xem nhanh **360°** + nút **Mở hồ sơ đầy đủ**: thẻ **Hợp đồng hiệu lực** / **Suất TB/ngày (7 ngày)** / **Doanh thu đã đối soát** (kèm số đơn) / **Khiếu nại đang mở** (kèm "/ tổng · % đúng hạn"); tab **Liên hệ & điểm giao**, **Hợp đồng & giá**, **Đơn hàng** (15 đơn gần nhất), **Liên quan**, **Lịch sử xử lý**.
 - Thêm / sửa khách bằng **Tạo mới** / **Sửa**.
 
@@ -95,13 +109,14 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 **Tạo đơn**
 1. **Tạo đơn hàng** → chọn **Khách hàng***, **Ngày ăn*** (mặc định hôm nay + 4).
 2. Hệ thống tải mẫu: hợp đồng hiệu lực, **hạn chốt đơn**, mỗi **điểm giao** một bảng: Loại suất, Ca, Đơn giá, Dự báo, **Số lượng** (điền sẵn = dự báo).
+   - Buổi có **nhiều lựa chọn** (vd Sáng LC1 / LC2 / LC3): mỗi lựa chọn 1 hàng – *Lựa chọn N* + món trong set + ô **Số lượng** riêng (dự báo ghi ở hàng đầu, là của cả buổi). Buổi 1 lựa chọn: 1 ô như cũ, món trong set hiện dưới tên suất.
    - Điểm giao đã có đơn cho ngày này → báo *"Điểm giao này đã có đơn … – mở đơn đó để sửa số lượng"*.
 3. Sửa số lượng → **Tạo đơn (Nháp)**. Mỗi điểm giao có số > 0 thành **1 đơn** riêng (số `DH-…`).
 4. Nếu **đã quá giờ chốt**: hộp báo vàng + ô **Lý do thêm đơn sau giờ chốt*** → đơn tạo ở Nháp và **tự gửi duyệt**; duyệt xong đơn chuyển **Đã chốt**.
 
 **Xử lý đơn (bấm vào thẻ / dòng)** – ngăn chi tiết:
 - Đầu ngăn: thanh tiến trình trạng thái; hộp thông tin: **Hạn chốt đơn**, "đã quá giờ chốt", **Đang chờ duyệt** (lệch suất / thay đổi sau giờ chốt), dự báo + % lệch.
-- Bảng dòng: Ca, Loại suất, Điểm giao, **Số lượng** (ô sửa được khi cho phép), Dự báo, Đơn giá, Thành tiền.
+- Bảng dòng: Ca, Loại suất, **Lựa chọn** (*Lựa chọn N* + món trong set; "–" = đơn cũ không theo lựa chọn), Điểm giao, **Số lượng** (ô sửa được khi cho phép), Dự báo, Đơn giá, Thành tiền. Mọi lựa chọn cùng buổi cùng đơn giá.
 - Nút (chỉ hiện nút máy chủ cho phép):
 
 | Nút | Khi nào | Kết quả |
@@ -117,6 +132,25 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 
 - **Chốt đơn theo ngày** (đầu màn `crm-order`, cần quyền Sửa): chọn ngày ăn → **Chốt đơn** → xác nhận → khóa mọi đơn **Đã xác nhận** của ngày (chỉ khi đã tới giờ chốt 20:00 hôm trước; bình thường job 20:00 tự chốt). Màn báo số đơn đã chốt và số đơn còn chưa xác nhận / đang chờ duyệt.
 
+### 4.5b Đăng ký suất tuần – `crm-order-week` (ORD-OPT-1)
+Dùng khi khách đăng ký **số suất theo từng lựa chọn cho cả tuần** (bếp gửi thực đơn tuần, khách điền số rồi gửi lại).
+1. Chọn **Khách hàng***, **Điểm giao***, **Tuần*** (T2 – CN). Ô *Thực đơn áp dụng* cho biết thực đơn đang dùng: *(thực đơn chung)* = khách không có phân công riêng.
+2. Lưới **Buổi / lựa chọn × T2…CN**: mỗi ô có món trong set + ô **số suất**; tự cộng *Tổng sáng* (khi nhiều lựa chọn), **Tổng suất**, **Thành tiền** từng ngày. Khối **Tổng tuần** bên phải: tổng suất, thành tiền (chưa VAT), giá theo hợp đồng, hạn gửi phiếu. Ô trống / 0 = không đặt; ô "–" = lựa chọn không có trong thực đơn ngày đó.
+3. Nút:
+
+| Nút | Kết quả |
+|---|---|
+| **Chép số tuần trước** | Điền số tuần trước (cùng thứ, buổi, lựa chọn) vào ô còn sửa được – **chưa lưu** |
+| **Tải phiếu đăng ký** | Tải *Phiếu đăng ký suất* (Excel) có ô Số suất dưới mỗi lựa chọn – gửi khách điền |
+| **Tải phiếu đăng ký lên** | Đọc phiếu khách đã điền vào lưới – **chưa lưu**; phiếu khác khách / điểm giao / tuần bị từ chối; ô lựa chọn không còn / ngày đã khóa báo ở khối *Lỗi đọc phiếu* |
+| **Lưu nháp** | Mỗi ngày có số → 1 đơn **Nháp** (đã có đơn thì sửa đơn đó) |
+| **Xác nhận cả tuần** | Như Lưu nháp rồi chuyển đơn → **Đã xác nhận** (hiện cảnh báo lệch dự báo nếu có) |
+
+4. Khối **Kết quả lưu**: từng ngày *Tạo đơn / Sửa đơn / Không đổi / Bỏ qua / Chờ duyệt / Lỗi* + số đơn; bấm số đơn ở đầu cột ngày để mở đơn.
+- **Ngày bị khóa** (ô xám, nhãn *Khóa*): đã qua 20:00 hôm trước, đơn đã chốt / đang sản xuất, hoặc đang chờ duyệt → sửa qua mục 4.6.
+- Sửa số của đơn **Đã xác nhận** lệch > 30% → ngày đó **Chờ duyệt** (như sửa trên đơn).
+- **Kho / bếp nhận đúng số**: sau chốt, kế hoạch sản xuất và nhu cầu nguyên liệu tính **số suất lựa chọn × món trong set** (vd 2.000 suất LC1 → 2.000 phần mỗi món của LC1; món 2 cái / suất như bánh mì → 4.000 cái) – không còn chia đều + 15%.
+
 ### 4.6 Thay đổi đơn sau giờ chốt
 - Trên web: sau giờ chốt (20:00 D-1), ngăn chi tiết đơn có nút **Yêu cầu sửa sau chốt** (chỉ hiện khi đã quá giờ chốt): nhập số suất mới từng dòng + **Lý do*** → **Gửi yêu cầu** → yêu cầu duyệt ORDER_CHANGE_AFTER_CUTOFF (số `XN-…`) chờ CEO duyệt; duyệt xong số lượng mới mới được ghi.
 - Cách làm hiện có:
@@ -130,7 +164,7 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 - Lỗi: *Chồng thời gian hiệu lực với chính sách giá khác…*, *Đơn giá phải lớn hơn 0*, *Không tìm thấy đơn giá áp dụng…*.
 
 ### 4.8 Đối soát suất – `crm-reconciliation`
-Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2.
+Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn đặt **theo lựa chọn**: hộp **Ghi suất phục vụ** có bảng *Suất phục vụ theo lựa chọn* (từng loại suất × lựa chọn); ô *Suất phục vụ thực tế* tự cộng; tiền = Σ suất phục vụ × giá buổi. Phiếu giao hàng in thêm *LC n (món)* ở cột Bữa.
 
 ## 5. Trạng thái chứng từ
 
@@ -154,10 +188,18 @@ Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2.
 | Đơn đang có yêu cầu duyệt … – chờ duyệt / từ chối trước khi sửa tiếp | Đợi người duyệt; hoặc người gửi **Hủy yêu cầu** ở hộp duyệt |
 | Lệch dự báo …% … vượt ngưỡng 10% – đã ghi nhận | Chỉ cảnh báo, không chặn |
 | Hủy đơn phải ghi lý do | Nhập lý do |
+| Lựa chọn N không có trong thực đơn áp dụng của … ngày … (lựa chọn đang có: …) | Thực đơn đã đổi → chọn lựa chọn đang có / báo bếp |
+| Chưa có thực đơn áp dụng cho … ngày … – không chọn được lựa chọn | Gán thực đơn cho khách hoặc nhờ Kế hoạch công bố thực đơn chung |
+| Trùng dòng suất (cùng suất hợp đồng, ca và lựa chọn) | Mỗi lựa chọn chỉ 1 dòng |
+| Không phải phiếu đăng ký suất của hệ thống / Phiếu không đúng khách / điểm giao / tuần | Tải lại phiếu từ màn Đăng ký suất tuần đúng khách, điểm giao, tuần; không sửa hàng / cột ẩn |
 | Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp | Hợp đồng đã duyệt chỉ Thanh lý; muốn đổi giá → chính sách giá hoặc hợp đồng mới |
 | Số hợp đồng … đã tồn tại | Để trống ô số để tự sinh |
 | Hợp đồng đã hết hạn (…) – không duyệt được | Sửa ngày hiệu lực rồi gửi lại |
 | Khoảng ngày không hợp lệ (tối đa 62 ngày) | Thu hẹp khoảng ngày dự báo |
+| Ngành "…" không có trong danh mục – chọn một trong: … (tương tự Quy mô / Giới tính / Nguồn) | Chọn giá trị trong ô chọn |
+| Không tìm thấy nhân viên phụ trách (tài khoản người dùng đang hoạt động) | Tài khoản đã khóa / xóa → chọn người khác |
+| Điểm giao đầu tiên: thiếu tên điểm giao / địa chỉ · giờ nhận từ phải nhỏ hơn giờ nhận đến | Sửa khối Điểm giao đầu tiên hoặc bấm **Bỏ điểm giao** |
+| Mã số thuế … đã có ở khách hàng doanh nghiệp KHB-… | Khách đã có – mở khách đó thay vì tạo mới |
 
 ## 7. Trên bot Telegram
 

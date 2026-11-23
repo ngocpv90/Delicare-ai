@@ -14,8 +14,10 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     public class IngredientCategoryService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IIngredientCategoryService
+        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService) : IIngredientCategoryService
     {
+        private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        private string? _createdCode;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -111,7 +113,9 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess,
+                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
+                        : _createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "nhóm nguyên liệu", _createdCode)
+                        : ConstantHelper.Message.SaveSuccess,
                     Data = true
                 };
             }
@@ -125,19 +129,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(IngredientCategoryRequest request, string typeSave)
         {
-            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
-            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.Code);
-            if (codeError != null)
-            {
-                return codeError;
-            }
-            request.Code = normalizedCode;
-            var checkDuplicate = _unitOfWork.IngredientCategoryRepository.GetSingle(x => x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
             var insert = _mapper.Map<IngredientCategory>(request);
+            // Anh chốt 2026-11-22: mã nhóm nguyên liệu máy chủ tự sinh (DocumentKind.IngredientCategory), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
+            insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.IngredientCategory);
+            _createdCode = insert.Code;
             _unitOfWork.IngredientCategoryRepository.Add(insert);
             await _unitOfWork.IngredientCategoryRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -150,22 +145,8 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
-            // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
-            var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.Code);
-            if (codeError != null)
-            {
-                return codeError;
-            }
-            request.Code = normalizedCode;
-            if (!string.IsNullOrEmpty(exist.Code) && !string.Equals(exist.Code, request.Code, StringComparison.Ordinal) && await _auditChangeService.IsReferencedAsync(nameof(IngredientCategory), exist.Id))
-            {
-                return string.Format(ConstantHelper.Message.UserCodeLocked, exist.Code);
-            }
-            var checkDuplicate = _unitOfWork.IngredientCategoryRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && !x.IsDeleted);
-            if (checkDuplicate != null)
-            {
-                return string.Format(ConstantHelper.Message.CodeExist, request.Code);
-            }
+            // Mã do máy chủ cấp – giữ nguyên mã đang có (kể cả mã cũ người dùng đặt trước 2026-11-22).
+            request.Code = exist.Code;
             var update = _mapper.Map(request, exist);
             _unitOfWork.IngredientCategoryRepository.Update(update);
             await _unitOfWork.IngredientCategoryRepository.CommitAsync(typeSave);

@@ -1,67 +1,57 @@
 <!DOCTYPE html>
-<html lang="vi"><head><meta charset="utf-8"><title>Mô phỏng – Chi tiết nhà cung cấp (D-67, UI-3)</title>
+<html lang="vi"><head><meta charset="utf-8"><title>Demo – Nhà cung cấp · tab Tổng quan (1/3 – 2/3, thông tin rút gọn)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
-:root{--surface-2:#fff;--border:#E8ECE5;--text-primary:#263238;--text-secondary:#6b756e;--bg-success:#EFF5E5;--text-success:#6F9131;--bg-accent:#E6F1FB;--text-accent:#185FA5;--bg-warning:#FDF0E6;--text-warning:#B85A16;--border-warning:#F5C9A6;--bg-danger:#FCEBEB;--text-danger:#A32D2D;--bg-neutral:#F1EFE8}
-body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F6F8F4;color:var(--text-primary);margin:24px auto;max-width:1200px}
-button{border:1px solid #cfd6cc;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px}
-.c{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
-.l{font-size:12px;color:var(--text-secondary)}.v{font-size:13px}
-.k{display:flex;gap:10px;align-items:center}
-.ki{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px;flex:none}
-.tab{font-size:13px;padding:8px 2px;color:var(--text-secondary)}
-.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
-.b{font-size:11px;padding:2px 8px;border-radius:6px}
-.bar{height:6px;border-radius:3px;background:var(--bg-neutral);margin-top:4px}
+:root{--border:#E8ECE5;--tx:#263238;--tx2:#6b756e;--tx3:#9aa39c;--g-bg:#EFF5E5;--g-tx:#6F9131;--b-bg:#E6F1FB;--b-tx:#185FA5;--o-bg:#FDF0E6;--o-tx:#B85A16;--o-bd:#F5C9A6;--r-bg:#FCEBEB;--r-tx:#A32D2D;--n-bg:#F1EFE8}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F6F8F4;color:var(--tx);margin:24px auto;max-width:1320px;padding:0 16px}
+button{border:1px solid #cfd6cc;background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+.c{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px 20px}
+.h{font-weight:600;font-size:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.g{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--tx3);margin:16px 0 4px}
+.r{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.r span:first-child{color:var(--tx2);flex:none}.r span:last-child{text-align:right}
+.l{font-size:12px;color:var(--tx2)}
+.b{font-size:11px;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.tab{font-size:14px;padding:10px 2px;color:var(--tx2)}
+.kpi{display:flex;flex-direction:row;align-items:center;gap:20px;padding:24px}
+.ki{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:28px;flex:none}
+.kl{font-size:15px;color:#5F6B66;font-weight:500}.kv{font-size:34px;font-weight:800;line-height:1.1}.ks{font-size:15px;color:var(--tx3);font-weight:400}
+.it{padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:24px;align-items:start}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:20px}
+@media(max-width:1199px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.pair{grid-template-columns:1fr}}
+@media(max-width:767px){.kpis{grid-template-columns:1fr}}
+.info{position:sticky;top:16px}
+.core{padding-bottom:6px}
+.row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:13px}
+.row i{font-size:17px;color:var(--tx2);width:18px;margin-top:1px}
+a{color:#185FA5;text-decoration:none}a:hover{text-decoration:underline}
+.sec{border-top:1px solid var(--border)}
+.sh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 0;cursor:pointer;font-size:14px;font-weight:600;background:none;border:0;width:100%;text-align:left;color:var(--tx)}
+.sh[disabled]{cursor:default;font-weight:500;color:var(--tx2)}
+.sh small{display:block;font-weight:400;font-size:12px;color:var(--tx2);margin-top:2px}
+.ch{transition:transform .15s;color:var(--tx2)}
+.sb{display:none;padding:0 0 10px}
+.sec.open .sb{display:block}.sec.open .ch{transform:rotate(180deg)}
+.cp{cursor:pointer;color:var(--tx3);margin-left:4px}
+@media(max-width:1199px){.info{position:static}}
 </style></head><body>
-<p class="l">Mô phỏng bố cục tab Tổng quan – số liệu minh họa. Thẻ chỉ số theo D-64 c; màu dùng biến của app.css.</p>
-<div style="display:grid;gap:12px">
-<div class="l"><i class="ti ti-arrow-left"></i> Nhà cung cấp / NC-00105</div>
-<div class="c">
- <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-  <div style="width:56px;height:56px;border-radius:14px;background:var(--bg-warning);color:var(--text-warning);display:grid;place-items:center;font-weight:600;font-size:18px">TP</div>
-  <div style="flex:1;min-width:220px">
-   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:18px;font-weight:600">Công ty TNHH Thực phẩm Phú An</span><span class="b" style="background:var(--bg-neutral);color:var(--text-secondary)">Rau củ, thịt</span><span class="b" style="background:var(--bg-success);color:var(--text-success)">Đang giao dịch</span></div>
-   <div class="l" style="margin-top:4px">NC-00105 · MST 0109876543 · Liên hệ: Lê Thu Hà · 0912 345 678</div>
-   <div class="l" style="margin-top:2px"><i class="ti ti-map-pin"></i> KCN Phố Nối A, Hưng Yên &nbsp; <i class="ti ti-mail"></i> dathang@phuan.vn</div>
-  </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap"><button>Sửa</button><button>Thêm giá NL</button><button>Ghi sự cố</button><button><i class="ti ti-dots"></i></button></div>
- </div>
- <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px">
-  <div class="c k"><div class="ki" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-file-invoice"></i></div><div><div class="l">PO đang mở</div><div style="font-size:26px;font-weight:800">4 <span class="l">· 186 tr</span></div></div></div>
-  <div class="c k"><div class="ki" style="background:var(--bg-success);color:var(--text-success)"><i class="ti ti-clock-check"></i></div><div><div class="l">Giao đúng hạn (90 ngày)</div><div style="font-size:26px;font-weight:800">94% <span class="l">· 31 lần</span></div></div></div>
-  <div class="c k"><div class="ki" style="background:var(--bg-warning);color:var(--text-warning)"><i class="ti ti-package-off"></i></div><div><div class="l">Hàng bị loại (90 ngày)</div><div style="font-size:26px;font-weight:800">1,8%</div></div></div>
-  <div class="c k"><div class="ki" style="background:var(--bg-danger);color:var(--text-danger)"><i class="ti ti-alert-octagon"></i></div><div><div class="l">Sự cố đang mở</div><div style="font-size:26px;font-weight:800">1 <span class="l">/ 6 · 1 quá hạn</span></div></div></div>
- </div>
- <div style="display:flex;gap:18px;margin-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
-  <span class="tab" style="color:var(--text-primary);border-bottom:2px solid var(--text-success)">Tổng quan</span><span class="tab">Bảng giá nguyên liệu</span><span class="tab">Đơn mua</span><span class="tab">Nhận hàng và QC</span><span class="tab">Lô nguyên liệu</span><span class="tab">Sự cố</span><span class="tab">Tài liệu</span><span class="tab">Lịch sử</span>
- </div>
+<p class="l">Demo màn chi tiết nhà cung cấp – cùng khung khách hàng 360: cột trái thông tin rút gọn (6 dòng cốt lõi + nhóm gập), cột phải: cần chú ý, nguyên liệu cung cấp + đánh giá NCC, giá trị mua 6 tháng, đơn mua đang mở. Số liệu minh họa.</p>
+<div class="l" style="margin-bottom:10px"><i class="ti ti-arrow-left"></i> Nhà cung cấp / NC-00105</div>
+<div class="c"><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><div style="width:64px;height:64px;border-radius:16px;background:var(--o-bg);color:var(--o-tx);display:grid;place-items:center;font-weight:700;font-size:20px">TP</div><div style="flex:1;min-width:260px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:20px;font-weight:700">Công ty TNHH Thực phẩm Phú An</span><span class="b" style="background:var(--n-bg);color:var(--tx2)">Rau củ, thịt</span><span class="b" style="background:var(--g-bg);color:var(--g-tx)">Đang giao dịch</span></div><div class="l" style="margin-top:4px">NC-00105 · MST 0109876543 · Hưng Yên</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button>Sửa</button><button>Thêm giá NL</button><button>Ghi sự cố</button><button><i class="ti ti-dots"></i></button></div></div><div class="kpis"><div class="c kpi"><div class="ki" style="background:var(--b-bg);color:var(--b-tx)"><i class="ti ti-file-invoice"></i></div><div><div class="kl">PO đang mở</div><div class="kv">4 <span class=ks>· 186 tr</span></div></div></div><div class="c kpi"><div class="ki" style="background:var(--g-bg);color:var(--g-tx)"><i class="ti ti-clock-check"></i></div><div><div class="kl">Giao đúng hạn (90 ngày)</div><div class="kv">94% <span class=ks>· 31 lần</span></div></div></div><div class="c kpi"><div class="ki" style="background:var(--o-bg);color:var(--o-tx)"><i class="ti ti-package-off"></i></div><div><div class="kl">Hàng bị loại (90 ngày)</div><div class="kv">1,8%</div></div></div><div class="c kpi"><div class="ki" style="background:var(--r-bg);color:var(--r-tx)"><i class="ti ti-alert-octagon"></i></div><div><div class="kl">Sự cố đang mở</div><div class="kv">1 <span class=ks>/ 6 · 1 quá hạn</span></div></div></div></div>
+ <div style="display:flex;gap:22px;margin-top:16px;border-top:1px solid var(--border);flex-wrap:wrap"><span class="tab" style="color:var(--tx);border-bottom:2px solid var(--g-tx);font-weight:600">Tổng quan</span><span class="tab">Bảng giá nguyên liệu</span><span class="tab">Đơn mua</span><span class="tab">Nhận hàng và QC</span><span class="tab">Lô nguyên liệu</span><span class="tab">Sự cố</span><span class="tab">Tài liệu</span><span class="tab">Lịch sử</span></div></div>
+<div class="two" style="margin-top:24px">
+ <div class="c info"><div class="h">Thông tin nhà cung cấp <button><i class="ti ti-edit"></i> Sửa</button></div><div class="core"><div class="row"><i class="ti ti-user"></i><span><b>Lê Thu Hà</b> <span class="l">· người liên hệ · phụ trách bán hàng</span></span></div><div class="row"><i class="ti ti-phone"></i><span><a href="#">0912 345 678</a> <span class="l">(liên hệ)</span> · <a href="#">0221 3946 888</a> <span class="l">(công ty)</span></span></div><div class="row"><i class="ti ti-mail"></i><span><a href="#">dathang@phuan.vn</a></span></div><div class="row"><i class="ti ti-map-pin"></i><span>KCN Phố Nối A, Văn Lâm, Hưng Yên</span></div><div class="row"><i class="ti ti-category"></i><span>Rau củ, thịt <span class="l">· 12 nguyên liệu · 3 ưu tiên</span></span></div><div class="row"><i class="ti ti-truck-delivery"></i><span>Nhận hàng gần nhất 18/11/2026 <span class="l">· PN-261118-0003</span></span></div></div><div class="sec" data-k="legal"><button class="sh"><span>Pháp lý<small>MST 0109876543</small></span><i class="ti ti-chevron-down ch"></i></button><div class="sb"><div class="r"><span>Tên đầy đủ</span><span>Công ty TNHH Thực phẩm Phú An</span></div><div class="r"><span>Mã số thuế</span><span>0109876543 <i class="ti ti-copy cp"></i></span></div><div class="r" style="border:0"><span>Địa chỉ đăng ký</span><span>KCN Phố Nối A, Hưng Yên</span></div></div></div><div class="sec" data-k="class"><button class="sh"><span>Phân loại<small>Rau củ, thịt · Đang giao dịch</small></span><i class="ti ti-chevron-down ch"></i></button><div class="sb"><div class="r"><span>Loại NCC</span><span>Rau củ, thịt</span></div><div class="r"><span>Trạng thái</span><span>Đang giao dịch</span></div><div class="r" style="border:0"><span>Bắt đầu giao dịch</span><span>03/2024</span></div></div></div><div class="sec" data-k="note"><button class="sh"><span>Ghi chú<small>Giao trước 6h, xe lạnh cho thịt</small></span><i class="ti ti-chevron-down ch"></i></button><div class="sb"><div class="r" style="border:0"><span>Nội dung</span><span>Giao trước 6h; thịt giao bằng xe lạnh, kèm phiếu kiểm dịch.</span></div></div></div><div class="sec" data-k="sys"><button class="sh"><span>Hệ thống<small>Cập nhật 15/11/2026 · scm.tuan</small></span><i class="ti ti-chevron-down ch"></i></button><div class="sb"><div class="r"><span>Tạo lúc / bởi</span><span>10/03/2024 · scm.tuan</span></div><div class="r" style="border:0"><span>Cập nhật gần nhất</span><span>15/11/2026 · scm.tuan</span></div></div></div></div>
+ <div style="display:grid;gap:24px"><div class="c" style="background:var(--o-bg);border-color:var(--o-bd);color:var(--o-tx);font-size:13px;padding:14px 18px"><i class="ti ti-alert-triangle"></i> <b>Cần chú ý:</b> PO-261115-0003 trễ hạn giao 2 ngày · giá thịt heo hết hiệu lực sau 9 ngày · 1 lô đang tạm giữ</div><div class="pair"><div class="c"><div class="h">Nguyên liệu cung cấp<button><i class="ti ti-plus"></i> Thêm giá</button></div><div class="it"><div style="display:flex;justify-content:space-between"><b>Thịt heo nạc <span class="b" style="background:var(--g-bg);color:var(--g-tx)">Ưu tiên</span></b><span class="l">118.000 đ/kg</span></div><div class="l">Hiệu lực đến 28/11/2026 · <span style="color:var(--o-tx)">còn 9 ngày</span></div></div><div class="it"><div style="display:flex;justify-content:space-between"><b>Cải ngọt</b><span class="l">18.000 đ/kg</span></div><div class="l">Hiệu lực đến 31/12/2026 · thấp nhất trong 3 NCC</div></div><div class="it"><div style="display:flex;justify-content:space-between"><b>Cà rốt</b><span class="l">15.500 đ/kg</span></div><div class="l">Hiệu lực đến 31/12/2026</div></div><div class="l" style="margin-top:8px">12 nguyên liệu · <a href="#">Xem bảng giá</a></div></div><div class="c"><div class="h">Đánh giá nhà cung cấp <span class="l" style="font-weight:400">90 ngày</span></div><div class="l" style="margin-top:10px;display:flex;justify-content:space-between"><span>Giao đúng hạn</span><b style="color:var(--tx)">94%</b></div><div style="height:8px;border-radius:4px;background:var(--n-bg);margin-top:4px"><div style="width:94%;height:8px;border-radius:4px;background:#91AF42"></div></div><div class="l" style="margin-top:10px;display:flex;justify-content:space-between"><span>Đạt QC đầu vào</span><b style="color:var(--tx)">98%</b></div><div style="height:8px;border-radius:4px;background:var(--n-bg);margin-top:4px"><div style="width:98%;height:8px;border-radius:4px;background:#91AF42"></div></div><div class="l" style="margin-top:10px;display:flex;justify-content:space-between"><span>Sự cố xử lý đúng hạn</span><b style="color:var(--tx)">83%</b></div><div style="height:8px;border-radius:4px;background:var(--n-bg);margin-top:4px"><div style="width:83%;height:8px;border-radius:4px;background:#F07825"></div></div><div class="l" style="margin-top:12px">31 lần nhận hàng · 6 sự cố (1 đang mở)</div></div></div><div class="c"><div class="h">Giá trị mua 6 tháng</div><svg viewBox="0 0 800 160" width="100%"><g fill="#85B7EB"><rect x="40" y="70" width="70" height="80"/><rect x="170" y="55" width="70" height="95"/><rect x="300" y="62" width="70" height="88"/><rect x="430" y="35" width="70" height="115"/><rect x="560" y="45" width="70" height="105"/></g><rect x="690" y="25" width="70" height="125" fill="#378ADD"/></svg><div class="l">T6 → T11 · theo phiếu nhập đã ghi sổ · tháng này 248 tr</div></div><div class="c"><div class="h">Đơn mua đang mở<button>Xem tất cả</button></div><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:var(--tx2);text-align:left"><th style="padding:6px 0;font-weight:500;">Số PO</th><th style="padding:6px 0;font-weight:500;">Hẹn giao</th><th style="padding:6px 0;font-weight:500;text-align:right">Giá trị</th><th style="padding:6px 0;font-weight:500;text-align:right">Trạng thái</th></tr><tr style="border-top:1px solid var(--border)"><td style="padding:8px 0;">PO-261115-0003</td><td style="padding:8px 0;">17/11/2026</td><td style="padding:8px 0;text-align:right">42 tr</td><td style="padding:8px 0;text-align:right"><span class="b" style="background:var(--r-bg);color:var(--r-tx)">Trễ 2 ngày</span></td></tr><tr style="border-top:1px solid var(--border)"><td style="padding:8px 0;">PO-261118-0001</td><td style="padding:8px 0;">20/11/2026</td><td style="padding:8px 0;text-align:right">65 tr</td><td style="padding:8px 0;text-align:right"><span class="b" style="background:var(--b-bg);color:var(--b-tx)">Đã gửi NCC</span></td></tr><tr style="border-top:1px solid var(--border)"><td style="padding:8px 0;">PO-261119-0002</td><td style="padding:8px 0;">21/11/2026</td><td style="padding:8px 0;text-align:right">79 tr</td><td style="padding:8px 0;text-align:right"><span class="b" style="background:var(--n-bg);color:var(--tx2)">Chờ duyệt</span></td></tr></table></div></div>
 </div>
-<div class="c" style="background:var(--bg-warning);border-color:var(--border-warning);color:var(--text-warning);font-size:13px"><i class="ti ti-alert-triangle"></i> Cần chú ý: PO-261115-0003 trễ hạn giao 2 ngày · giá thịt heo hết hiệu lực sau 9 ngày · 1 lô đang tạm giữ</div>
-<div style="display:grid;grid-template-columns:5fr 4fr 3fr;gap:12px">
- <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:6px">Thông tin nhà cung cấp <span class="l" style="float:right">Sửa</span></div>
-  <div class="row"><span class="l">Loại NCC</span><span class="v">Rau củ, thịt</span></div>
-  <div class="row"><span class="l">Mã số thuế</span><span class="v">0109876543</span></div>
-  <div class="row"><span class="l">Người liên hệ</span><span class="v">Lê Thu Hà · 0912 345 678</span></div>
-  <div class="row"><span class="l">Nhận hàng gần nhất</span><span class="v">18/11/2026</span></div>
-  <div class="row" style="border:0"><span class="l">Ghi chú</span><span class="v">Giao trước 6h</span></div></div>
- <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:6px">Nguyên liệu cung cấp</div>
-  <div class="row"><span class="v">Thịt heo nạc <span class="b" style="background:var(--bg-success);color:var(--text-success)">Ưu tiên</span></span><span class="l">118.000/kg · đến 28/11</span></div>
-  <div class="row"><span class="v">Cải ngọt</span><span class="l">18.000/kg</span></div>
-  <div class="row"><span class="v">Cà rốt</span><span class="l">15.500/kg</span></div>
-  <div class="l" style="margin-top:6px">12 nguyên liệu · Xem bảng giá</div></div>
- <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:6px">Đánh giá nhà cung cấp</div>
-  <div class="l">Giao đúng hạn 94%</div><div class="bar"><div style="width:94%;height:6px;border-radius:3px;background:#91AF42"></div></div>
-  <div class="l" style="margin-top:8px">Đạt QC 98,2%</div><div class="bar"><div style="width:98%;height:6px;border-radius:3px;background:#91AF42"></div></div>
-  <div class="l" style="margin-top:8px">Sự cố xử lý đúng hạn 83%</div><div class="bar"><div style="width:83%;height:6px;border-radius:3px;background:#F07825"></div></div></div>
-</div>
-<div style="display:grid;grid-template-columns:5fr 7fr;gap:12px">
- <div class="c"><div style="font-weight:600;font-size:14px;margin-bottom:8px">Giá trị mua 6 tháng</div>
-  <svg viewBox="0 0 300 90" width="100%"><rect x="10" y="40" width="30" height="50" fill="#85B7EB"/><rect x="60" y="30" width="30" height="60" fill="#85B7EB"/><rect x="110" y="35" width="30" height="55" fill="#85B7EB"/><rect x="160" y="20" width="30" height="70" fill="#85B7EB"/><rect x="210" y="25" width="30" height="65" fill="#85B7EB"/><rect x="260" y="15" width="30" height="75" fill="#378ADD"/></svg>
-  <div class="l">T6 → T11 · theo phiếu nhập đã ghi sổ</div></div>
- <div class="c"><div style="display:flex;justify-content:space-between"><span style="font-weight:600;font-size:14px">Đơn mua đang mở</span><span class="l">Xem tất cả</span></div>
-  <div class="row"><span class="v">PO-261115-0003 · hẹn giao 17/11 · 42 tr</span><span class="b" style="background:var(--bg-danger);color:var(--text-danger)">Trễ 2 ngày</span></div>
-  <div class="row"><span class="v">PO-261118-0001 · hẹn giao 20/11 · 65 tr</span><span class="b" style="background:var(--bg-accent);color:var(--text-accent)">Đã gửi NCC</span></div>
-  <div class="row" style="border:0"><span class="v">PO-261119-0002 · hẹn giao 21/11 · 79 tr</span><span class="b" style="background:var(--bg-neutral);color:var(--text-secondary)">Chờ duyệt</span></div></div>
-</div>
-</div></body></html>
+<script>
+const KEY='s360-open';let open=[];try{open=JSON.parse(localStorage.getItem(KEY)||'["legal"]')}catch(e){open=['legal']}
+document.querySelectorAll('.sec[data-k]').forEach(sec=>{
+ if(open.includes(sec.dataset.k))sec.classList.add('open');
+ sec.querySelector('.sh').addEventListener('click',()=>{sec.classList.toggle('open');
+  const now=[...document.querySelectorAll('.sec.open[data-k]')].map(x=>x.dataset.k);try{localStorage.setItem(KEY,JSON.stringify(now))}catch(e){}});
+});
+document.querySelectorAll('.cp').forEach(c=>c.addEventListener('click',e=>{e.stopPropagation();try{navigator.clipboard.writeText('0165565156')}catch(x){}c.className='ti ti-check cp'}));
+</script>
+</body></html>

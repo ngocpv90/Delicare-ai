@@ -3,23 +3,23 @@
 ## 1. Bạn là ai
 
 - Người duyệt theo seed quyền hiện tại: **CEO**, **COO**, **FIN-HR** (đơn nghỉ / đổi ca), **OPS-SCM** (đề nghị mua cấp 1), **FIN-ACC** (kiểm kê cấp 2), **QA** (phiếu QC đầu vào – duyệt trực tiếp trên màn QC).
-- Quyền duyệt = quyền **Truy cập + Sửa** trên mục menu **"Duyệt – …"** (`#/wf-inbox?type=<màn>`) do quản trị cấp (`01_QUAN_TRI.md`).
+- Quyền duyệt = quyền **Truy cập + Sửa** trên mục menu **"Phê duyệt › …"** (`#/wf-inbox?type=<màn>`) do quản trị cấp (`01_QUAN_TRI.md`).
 - Bot: duyệt trên bot **Điều hành** / **Vận hành** (⏳ Chờ tôi duyệt) – chỉ khi tài khoản Telegram đã **liên kết tài khoản web** (xem 7 và `90_CHENH_LECH.md` C-02).
 
 ## 2. Màn hình được dùng
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `wf-inbox` | Nhân sự & Phê duyệt › Hộp phê duyệt | Duyệt / từ chối / hủy mọi loại yêu cầu |
+| `wf-inbox` | Nhân sự › Hộp phê duyệt | Duyệt / từ chối / hủy mọi loại yêu cầu |
 | `wf-step` | (màn con, ẩn) | Các cấp duyệt của yêu cầu – xem trong tab Tiến trình duyệt |
-| `prod-plan` | Sản xuất › Kế hoạch sản xuất | Nút **Duyệt** kế hoạch (cần quyền Duyệt – CEO / COO) |
+| `prod-plan` | Sản xuất › Kế hoạch sản xuất | Nút **Duyệt** kế hoạch (cần quyền Phê duyệt › CEO / COO) |
 | `menu-menu` | Thực đơn › Thực đơn | Nút **Duyệt** thực đơn (CEO / COO) |
 | `menu-recipe` | Thực đơn › Công thức | **Khóa & áp dụng** phiên bản (CEO / COO) |
 | `qc-inspection` | QC › Phiếu kiểm tra QC | Kết luận QC (QA) |
 
 ## 3. Các loại yêu cầu duyệt
 
-| Loại (Loại nghiệp vụ) | Phát sinh khi | Cấp duyệt (mục "Duyệt – …") | Nhóm có quyền theo seed |
+| Loại (Loại nghiệp vụ) | Phát sinh khi | Cấp duyệt (mục "Phê duyệt › …") | Nhóm có quyền theo seed |
 |---|---|---|---|
 | Hợp đồng (CONTRACT) | KD **Gửi duyệt** hợp đồng | `crm-contract` | CEO |
 | Đơn lệch > 30% (ORDER_DEVIATION) | KD chốt / xác nhận đơn lệch dự báo / lịch sử > 30% | `crm-order` | CEO |
@@ -43,7 +43,7 @@
 3. Bảng: Số yêu cầu `XN-…`, Loại nghiệp vụ, Bản ghi nghiệp vụ, Người yêu cầu, Gửi lúc, Bước / Vai trò duyệt, Trạng thái; nút trên dòng **Duyệt**, **Từ chối**, **Hủy yêu cầu** (chỉ người gửi).
 4. Bấm dòng → ngăn chi tiết:
    - Thanh các cấp (đã duyệt / đang chờ / từ chối), khối **Bản ghi nghiệp vụ** (thông tin chứng từ; với PR có danh sách dòng).
-   - Tab **Tiến trình duyệt**: Người gửi, Trạng thái, Cấp duyệt (n / tổng), Hạn xử lý, Chứng từ; **Các cấp duyệt** (tên bước = tên mục "Duyệt – …", người quyết định, lúc, ý kiến); nút **Duyệt / Từ chối / Hủy yêu cầu** theo quyền của bạn.
+   - Tab **Tiến trình duyệt**: Người gửi, Trạng thái, Cấp duyệt (n / tổng), Hạn xử lý, Chứng từ; **Các cấp duyệt** (tên bước = tên mục "Phê duyệt › …", người quyết định, lúc, ý kiến); nút **Duyệt / Từ chối / Hủy yêu cầu** theo quyền của bạn.
    - Tab **Quyết định**: lịch sử quyết định.
    - Chân ngăn: **Từ chối**, **Duyệt bước hiện tại**.
 5. **Duyệt** → nhập **Ý kiến phê duyệt** (không bắt buộc) → **Duyệt**. Cấp cuối duyệt → chứng từ chuyển trạng thái (vd PR **Đã duyệt**, hợp đồng **Hiệu lực**, đơn nghỉ **Đã duyệt** + bỏ ca).
@@ -62,9 +62,9 @@
 
 | Hiện tượng / thông báo | Cách xử lý |
 |---|---|
-| Không thấy yêu cầu trong "Chờ tôi duyệt" | Chưa tới cấp của bạn, hoặc bạn không có quyền mục "Duyệt – …" tương ứng – xem tab "Đang chờ" |
+| Không thấy yêu cầu trong "Chờ tôi duyệt" | Chưa tới cấp của bạn, hoặc bạn không có quyền mục "Phê duyệt › …" tương ứng – xem tab "Đang chờ" |
 | Bản ghi nghiệp vụ hiện "–" ở yêu cầu điều chỉnh tồn | Điều chỉnh tồn chỉ tạo bút toán sau khi duyệt – xem chi tiết đề xuất trong yêu cầu. Đơn mua / đơn lệch / sửa đơn sau chốt mở được chứng từ; sửa đơn sau chốt hiện bảng **Đề xuất sửa đơn** (đang đặt → đề xuất) |
-| Bạn không có quyền duyệt loại yêu cầu này | Xin quản trị cấp mục "Duyệt – …" |
+| Bạn không có quyền duyệt loại yêu cầu này | Xin quản trị cấp mục "Phê duyệt › …" |
 | Bạn đã quyết định cấp … của yêu cầu này – cấp sau phải do người khác duyệt | Chuyển người khác duyệt |
 | Bước duyệt cấp … đã quá hạn (…) – người gửi hủy yêu cầu và gửi duyệt lại | Báo người gửi hủy và gửi lại |
 | Nội dung chứng từ đã thay đổi sau khi gửi duyệt – gửi duyệt lại | Người gửi gửi duyệt lại |

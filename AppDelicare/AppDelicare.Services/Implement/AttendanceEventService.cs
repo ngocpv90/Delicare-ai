@@ -216,7 +216,7 @@ namespace AppDelicare.Services.Implement
                     var perms = await _permissionService.GetAsync(actor);
                     if (!_permissionService.IsAllowed(perms, HrScreen.Attendance, PermissionAction.Add))
                     {
-                        return Fail(string.Format(ConstantHelper.Message.HrNoRightOther, "chấm công", "Chấm công theo ca"));
+                        return Fail(string.Format(ConstantHelper.Message.HrNoRightOther, "chấm công", "Chấm công"));
                     }
                     employee = await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == request.EmployeeId && !e.IsDeleted);
                 }

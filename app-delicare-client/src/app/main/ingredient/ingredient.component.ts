@@ -9,7 +9,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { IngredientModalComponent } from './ingredient-modal/ingredient-modal.component';
 
-// scm-ingredient – Danh mục nguyên liệu (FE-2) + ngăn kéo: thông tin, tồn khả dụng (Ingredient/GetStock).
+// scm-ingredient – Nguyên liệu (FE-2) + ngăn kéo: thông tin, tồn khả dụng (Ingredient/GetStock).
 @Component({
   selector: 'app-ingredient',
   templateUrl: './ingredient.component.html',

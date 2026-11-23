@@ -128,7 +128,7 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T17: xác nhận kế hoạch KH- (Nháp → Đã duyệt). Quyền duyệt = mục "Duyệt – Kế hoạch sản xuất" (#/wf-inbox?type=prod-plan, D-31).</summary>
+        /// <summary>T17: xác nhận kế hoạch KH- (Nháp → Đã duyệt). Quyền duyệt = mục "Phê duyệt › Kế hoạch sản xuất" (#/wf-inbox?type=prod-plan, D-31).</summary>
         [Security.Permission("prod-plan", PermissionAction.Approve)]
         [HttpPost("Approve")]
         public async Task<IActionResult> Approve([FromForm] ProductionActionRequest request)

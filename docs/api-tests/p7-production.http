@@ -5,7 +5,7 @@
 ### VS Code REST Client. Route api/<Controller>/<Action>; kết quả { responseCode, responseMessage, data | listData }.
 ### Lỗi nghiệp vụ: HTTP 200 + responseCode 400 + thông báo tiếng Việt. Thay các <...> bằng Id thật của dữ liệu [DEMO] trên DB dev / staging.
 ### Chuẩn bị: kế hoạch Nháp từ MaterialRequirement/Calculate (docs/api-tests/p5-mrp.http); món có công thức đã khóa; tồn kho NL (p6-purchasing.http);
-### seed DB/seed/FoodSafetyChecklist_seed.sql (mục SAMPLE_RETAINED); người duyệt có quyền mục "Duyệt – Kế hoạch sản xuất" (#/wf-inbox?type=prod-plan) hoặc admin.
+### seed DB/seed/FoodSafetyChecklist_seed.sql (mục SAMPLE_RETAINED); người duyệt có quyền mục "Phê duyệt › Kế hoạch sản xuất" (#/wf-inbox?type=prod-plan) hoặc admin.
 @base = http://localhost:5125
 @user = admin
 @password = admin

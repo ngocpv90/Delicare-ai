@@ -38,5 +38,11 @@ namespace AppDelicare.Services.Interface
         public Task<string?> BuildChangeAfterCutoffStateAsync(Guid orderId);
         public Task<string?> ApplyChangeAfterCutoffAsync(Guid orderId, string? proposalJson, string? note);
         public Task<string?> RejectChangeAfterCutoffAsync(Guid orderId, string note);
+        /// <summary>ORD-OPT-1.4 / 1.5 (D-74 g, h): đăng ký suất tuần theo lựa chọn + phiếu đăng ký Excel.</summary>
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekModel>> GetWeek(AppDelicare.Model.Request.Custom.OrderWeekRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekSaveModel>> SaveWeek(AppDelicare.Model.Request.Custom.OrderWeekSaveRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekModel>> CopyPreviousWeek(AppDelicare.Model.Request.Custom.OrderWeekRequest request);
+        public Task<IResult<byte[]>> ExportWeekSlip(AppDelicare.Model.Request.Custom.OrderWeekRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekSlipModel>> ImportWeekSlip(Guid customerId, Guid locationId, DateTime weekStart, System.IO.Stream file);
     }
 }

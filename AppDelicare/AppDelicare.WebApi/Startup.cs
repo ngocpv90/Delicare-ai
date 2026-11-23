@@ -49,6 +49,8 @@ namespace AppDelicare.WebApi
                 {
                     // T07: phân quyền UserRole × ObjectMenu; controller CRUD cũ được gắn quyền tự động.
                     options.Filters.Add<PermissionFilter>();
+                    // Lỗi UAT 2026-11-21: cột mã danh mục (ReferenceCatalogs) chỉ nhận giá trị trong ReferenceLists – Insert / Update chung.
+                    options.Filters.Add<ReferenceListFilter>();
                     options.Conventions.Add(new PermissionConvention());
                     // FE-2: form đọc số / ngày theo InvariantCulture (máy chủ vi-VN không biến "12.5" thành 125); dữ liệu ra không đổi.
                     InvariantCultureValueProviderFactory.Apply(options.ValueProviderFactories);

@@ -216,7 +216,7 @@ namespace AppDelicare.Tests.Common
                 var menu = await db.ObjectMenu.FirstOrDefaultAsync(m => m.MetaLink == "#/wf-inbox?type=menu-recipe");
                 if (menu == null)
                 {
-                    menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Duyệt – Công thức", MetaLink = "#/wf-inbox?type=menu-recipe", IsActive = true, LevelShow = 2 };
+                    menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Công thức", MetaLink = "#/wf-inbox?type=menu-recipe", IsActive = true, LevelShow = 2 };
                     db.ObjectMenu.Add(menu);
                 }
                 db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = group, ObjectMenuId = menu.Id, AllowAccess = true, AllowEdit = true });
@@ -267,7 +267,7 @@ namespace AppDelicare.Tests.Common
             }, "mỗi loại ≤ 5; kho không thuộc danh sách tìm kiếm");
             var order = records.Single(r => r.GetProperty("type").GetString() == "Order");
             order.GetProperty("route").GetString().Should().Be("#/crm-order");
-            order.GetProperty("typeTitle").GetString().Should().Be("Đơn đặt suất ăn");
+            order.GetProperty("typeTitle").GetString().Should().Be("Đơn đặt suất");
             order.GetProperty("code").GetString().Should().Be(key + "-DH");
             order.GetProperty("label").GetString().Should().Contain("Khách " + key);
             order.GetProperty("statusName").GetString().Should().NotBeNullOrEmpty();
@@ -315,7 +315,7 @@ namespace AppDelicare.Tests.Common
             groups.Select(g => g.GetProperty("key").GetString()).Should().Equal("Contract", "Order", "DeliveryOrder", "CustomerComplaint");
             var orderGroup = groups.Single(g => g.GetProperty("key").GetString() == "Order");
             orderGroup.GetProperty("count").GetInt32().Should().Be(10);
-            orderGroup.GetProperty("title").GetString().Should().Be("Đơn đặt suất ăn");
+            orderGroup.GetProperty("title").GetString().Should().Be("Đơn đặt suất");
             orderGroup.GetProperty("route").GetString().Should().Be("#/crm-order");
             var items = orderGroup.GetProperty("items").EnumerateArray().ToList();
             items.Should().HaveCount(8, "tối đa 8 dòng / nhóm");

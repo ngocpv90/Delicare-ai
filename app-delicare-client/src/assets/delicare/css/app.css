@@ -51,7 +51,6 @@ button.dc-branch-select{text-align:left}
 .content .breadcrumb a{color:#9AA39A;text-decoration:none}.content .breadcrumb a:hover{color:var(--green-dark)}
 .content .breadcrumb strong{color:#5F6B60;font-weight:600}
 .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
-.eyebrow{font-size:11px;font-weight:800;color:var(--green-dark);letter-spacing:.6px;text-transform:uppercase}
 .content h1{font-size:20px;letter-spacing:-.3px;margin:4px 0;font-weight:800;color:#29352D;line-height:1.3}
 .content h2,.drawer h2,.modal-content h2{font-size:16px;margin:0;font-weight:800;color:#344138;line-height:1.35}
 .content h3,.drawer h3,.modal-content h3{font-size:14px;margin:0 0 8px;font-weight:800;color:#344138;line-height:1.35}
@@ -122,6 +121,9 @@ button.dc-branch-select{text-align:left}
 .input,.select,textarea.input{border:1px solid var(--line);border-radius:9px;padding:.375rem .75rem;background:#fff;font-size:14px;min-height:36px;outline:none;color:var(--ink);line-height:1.5;transition:border-color .15s,box-shadow .15s}
 .input:focus,.select:focus,textarea.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(145,175,66,.15)}
 .input:disabled,.select:disabled{background:#F6F8F4;opacity:.8}
+/* Lỗi UAT 2026-11-21: assets/css/style.css (theme cũ) đặt ::-webkit-calendar-picker-indicator của MỌI input[type=date] là position:absolute + inset 0, chỉ input.form-control có position:relative → nút lịch phủ cả hộp thoại: bấm ô khác vẫn trúng ô ngày, không rời ô được, hộp chọn ngày cứ bật lại. Giữ lớp phủ trong khung ô ngày. */
+input[type=date]{position:relative}
+.input[type=date]::-webkit-calendar-picker-indicator,.input[type=datetime-local]::-webkit-calendar-picker-indicator{position:static;background:revert;color:revert;width:revert;height:revert;cursor:pointer;opacity:.65}
 .field label,.kv label{margin-bottom:0}
 
 /* ---------- Bảng: .table của theme (clinic.css định kiểu trong .content-body; lặp lại cho ngăn kéo / modal) ---------- */
@@ -232,6 +234,18 @@ svg.chart .grid-line{stroke:#EEF1EB;stroke-dasharray:3 3}
 .field .input,.field .select{width:100%}
 .field.invalid .input,.field.invalid .select{border-color:var(--red)}
 .field .err{color:var(--red);font-size:10.5px}
+/* UI-5: form khách hàng – chọn loại trước, ô chọn có tìm kiếm, khối Điểm giao đầu tiên */
+.type-pick p{margin:0 0 12px}
+.type-pick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.type-pick-btn{display:flex;flex-direction:column;gap:6px;text-align:left;padding:20px 18px;border:1.5px solid var(--line);border-radius:var(--radius);background:#fff;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s}
+.type-pick-btn b{font-size:16px}
+.type-pick-btn span{font-size:12px;color:var(--muted);line-height:1.45}
+.type-pick-btn:hover,.type-pick-btn:focus-visible{border-color:var(--green);background:var(--green-soft);outline:none}
+.pick-search{display:flex;flex-direction:column;gap:4px}
+.pick-search input[type=search]{font-size:12px}
+.first-loc{border:1px dashed var(--line);border-radius:var(--radius);padding:12px 14px}
+.first-loc .form-grid{margin-top:10px}
+@media (max-width:560px){.type-pick-grid,.form-grid{grid-template-columns:minmax(0,1fr)}}
 /* ---------- Toast ---------- */
 @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 /* ---------- Kanban / board ---------- */
@@ -373,9 +387,64 @@ body.dc-live #helpBtn{display:none !important}
 .e360-week{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.e360-week.seven{grid-template-columns:repeat(7,1fr)}.e360-day{border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:3px;min-height:64px;font-size:13px}.e360-day.today{border-color:var(--green,#91AF42);box-shadow:0 0 0 1px var(--green,#91AF42) inset}.e360-day.off{background:#FDF0E6}
 @media(max-width:767.98px){.e360-week,.e360-week.seven{grid-template-columns:repeat(2,1fr)}}
 .c360-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+/* ===== UI-2R (D-69): bố cục 1/3 – 2/3 + khối thông tin rút gọn (dùng chung mọi màn chi tiết) ===== */
+.dc-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:24px;align-items:start}
+.dc-two>.dc-col{display:grid;gap:24px;min-width:0}
+.dc-two .card.panel,.dc-col .c360-alert{margin-bottom:0}
+.dc-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.dc-two .card.panel{border-radius:16px}
+.ip{position:sticky;top:84px}
+.ip-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}.ip-h h3{margin:0}
+.ip-core{padding-bottom:6px}
+.ip-row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:13px;line-height:1.45}
+.ip-row>svg.i{width:17px;height:17px;flex:none;color:var(--muted);margin-top:1px}
+.ip-row span{min-width:0;overflow-wrap:anywhere}
+.ip a{color:#185FA5}
+.ip-muted,.ip-row .ip-muted{color:var(--muted);font-size:12px}
+.ip-sec{border-top:1px solid var(--line)}
+.ip-sh{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:11px 0;background:none;border:0;text-align:left;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer}
+.ip-sh small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.ip-sh:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:6px}
+.ip-sec.ip-empty .ip-sh{cursor:default;font-weight:500;color:var(--muted)}
+.ip-ch{width:16px;height:16px;color:var(--muted);transition:transform .15s;flex:none}
+.ip-sec.open .ip-ch{transform:rotate(180deg)}
+.ip-sb{display:none;padding:0 0 10px}.ip-sec.open .ip-sb{display:block}
+.ip-r{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13px;border-bottom:1px solid #F0F2ED}
+.ip-r:last-child{border-bottom:0}.ip-r span:first-child{color:var(--muted);flex:none}.ip-r span:last-child{text-align:right;overflow-wrap:anywhere}
+.ip-text{font-size:13px;white-space:pre-line;line-height:1.5}
+.ip-lock svg.i{width:13px;height:13px;margin-right:5px;vertical-align:-1px;color:var(--muted)}
+.ip-copy{border:0;background:none;padding:0 0 0 4px;cursor:pointer;color:#9AA39C;vertical-align:-2px}.ip-copy svg.i{width:14px;height:14px}.ip-copy.done{color:var(--green-dark)}
+.dc-it{padding:9px 0;border-bottom:1px solid #F0F2ED;font-size:13px}.dc-it:last-child{border-bottom:0}
+.dc-it .top{display:flex;justify-content:space-between;gap:10px}.dc-it .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.dc-sub{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#9AA39C;margin:14px 0 2px}.dc-sub:first-child{margin-top:4px}
+.dc-warn{color:#B85A16}
+.dc-pair .e360-week.seven{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.dc-pair .e360-day{padding:6px 4px;min-height:58px;font-size:12px;text-align:center;align-items:center}.dc-pair .e360-day b{font-size:12px;display:flex;flex-direction:column}
+@media(max-width:1199.98px){.dc-two,.dc-pair{grid-template-columns:minmax(0,1fr)}.ip{position:static}}
 @media print{.dc-engine .deznav,.dc-engine .header,.c360-actions,.c360-tabs{display:none !important}}
 
 /* ===== FE-E.2 (D-65): mã QR do máy chủ vẽ ===== */
 .qr-box{display:grid;place-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;margin:0 auto}
 .qr-box svg{width:100%;height:100%;display:block}
 .tg-link{display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center}
+
+/* ===== ORD-OPT-1.8 – Đăng ký suất tuần (crm-order-week) ===== */
+.ow-filter{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ow-two{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.ow-grid{min-width:980px;width:100%;table-layout:fixed}
+.ow-grid th,.ow-grid td,.ow-grid th *,.ow-grid td *{white-space:normal!important;word-break:break-word}
+.ow-grid .ow-dish{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ow-grid th .ow-ord{display:block;font-size:11px;font-weight:600;margin-top:2px}
+.ow-grid col.ow-c0{width:120px}
+.ow-grid th,.ow-grid td{vertical-align:top}
+.ow-grid .ow-first{position:sticky;left:0;background:var(--card,#fff);z-index:1}
+.ow-grid td.ow-cell{padding:6px}
+.ow-dish{font-size:11px;line-height:1.35;color:var(--muted,#6b7280);margin-bottom:4px;min-height:15px}
+.ow-qty{width:100%;text-align:right;padding:4px 6px}
+.ow-grid .ow-lock,.ow-grid .ow-lock .ow-first{background:#F6F7F4}
+.ow-grid .ow-lock .ow-qty{background:#EEF0EA;color:#8a8f84}
+.ow-grid tr.ow-meal td{background:#F3F7EC;font-weight:700}
+.ow-grid tr.ow-sum td{font-weight:600;background:#FAFBF8}
+.ow-grid tr.ow-tot td{font-weight:800}
+.ow-kv{grid-template-columns:1fr 1fr}
+@media (max-width:1200px){.ow-two{grid-template-columns:1fr}}
+@media (max-width:700px){.ow-filter{grid-template-columns:1fr}.ow-grid{min-width:960px}}

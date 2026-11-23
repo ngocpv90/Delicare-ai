@@ -101,11 +101,11 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         [HttpGet("GetAllData")]
-        public IActionResult GetAllData()
+        public async Task<IActionResult> GetAllData()
         {
             try
             {
-                return Ok(_service.GetAllData());
+                return Ok(await _service.GetAllData());
             }
             catch (Exception ex)
             {

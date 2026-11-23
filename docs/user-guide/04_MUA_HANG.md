@@ -2,7 +2,7 @@
 
 ## 1. Bạn là ai
 
-- Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – dùng chung với thủ kho (`05_KHO.md`). Trưởng bộ phận mua hàng được cấp thêm **"Duyệt – Đề nghị mua hàng (cấp 1)"**.
+- Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – dùng chung với thủ kho (`05_KHO.md`). Trưởng bộ phận mua hàng được cấp thêm **"Phê duyệt › Đề nghị mua hàng (cấp 1)"**.
 - Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); trưởng bộ phận được cấp thêm bot **Điều hành**.
 - Việc chính: tính nhu cầu nguyên liệu (MRP) cho ngày sản xuất, lập và gửi duyệt đề nghị mua, chuyển thành đơn mua (PO) theo NCC, gửi NCC, theo dõi hàng về, quản lý bảng giá NCC.
 
@@ -19,7 +19,7 @@
 | `scm-uom`, `scm-uom-conversion` | … › Đơn vị tính, Quy đổi đơn vị | Xem, sửa, xuất |
 | `scm-gr` | … › Nhập kho | Xem, sửa, xuất (xem `05_KHO.md`) |
 | `qc-supplier-issue` | QC & ATTP › Sự cố nhà cung cấp | Xem |
-| `wf-inbox` | Nhân sự & Phê duyệt › Yêu cầu phê duyệt | Theo mục Duyệt được cấp |
+| `wf-inbox` | Nhân sự › Yêu cầu phê duyệt | Theo mục Duyệt được cấp |
 
 ## 3. Việc trong ngày
 
@@ -64,7 +64,7 @@ Danh sách: Số PO, NCC, Đề nghị mua, Ngày đặt, Giao dự kiến, Giá
 | Nút trên dòng | Khi nào | Kết quả |
 |---|---|---|
 | **In** | Mọi lúc | Tải Đơn đặt hàng NCC (có VAT theo cấu hình) |
-| **Gửi duyệt** | Nháp | PO < 50 triệu: duyệt mục "Duyệt – Đơn mua hàng"; PO ≥ 50 triệu: "Duyệt – Đơn mua hàng (Giám đốc)". PO dưới ngưỡng tự duyệt (nếu cấu hình) được duyệt ngay |
+| **Gửi duyệt** | Nháp | PO < 50 triệu: duyệt mục "Phê duyệt › Đơn mua hàng"; PO ≥ 50 triệu: "Phê duyệt › Đơn mua hàng (Giám đốc)". PO dưới ngưỡng tự duyệt (nếu cấu hình) được duyệt ngay |
 | **Gửi NCC** | Đã duyệt | Chỉ **đánh dấu** đã gửi (hệ thống chưa tự gửi email / Zalo) → Đã gửi NCC. Gửi tệp in cho NCC bằng kênh thường dùng |
 | **Nhận hàng** | Đã duyệt / Đã gửi NCC / Nhận một phần | Thủ kho lập phiếu nhập (xem `05_KHO.md` mục 4.1) |
 | **Đóng** | Nhận một phần / Đã nhận đủ | → Đóng (không nhận thêm) |
@@ -76,7 +76,8 @@ Sửa dòng PO Nháp: mở PO → **Sửa dòng hàng** (nguyên liệu, số l�
 - **Bấm vào dòng NCC** → mở **hồ sơ nhà cung cấp** cả trang (← về danh sách). Nút **Tổng quan** trên dòng vẫn mở hộp xem nhanh (tỷ lệ giao đúng hạn, tỷ lệ trả hàng 90 ngày, bảng giá, PO đang mở, sự cố gần đây); hộp có nút **Mở hồ sơ đầy đủ**.
 - **Phần đầu hồ sơ:** tên, mã `NC-…`, loại NCC, trạng thái, MST, người liên hệ, điện thoại, địa chỉ; nút **Sửa**, **Thêm giá NL**, **Ghi sự cố**, ⋯ **In hồ sơ** / **Ngừng giao dịch** (nút hiện theo quyền). Không có "Tạo PO" – PO chỉ lập từ đề nghị mua.
 - **4 thẻ chỉ số:** PO đang mở (số phụ: tổng giá trị) · Giao đúng hạn 90 ngày (số lần nhận) · Hàng bị loại 90 ngày (ngày nhận gần nhất) · Sự cố đang mở (/ tổng · số quá hạn).
-- **Tab Tổng quan:** khối **Cần chú ý** (PO trễ hạn giao, sự cố quá hạn, lô của NCC đang tạm giữ / cận date, giá nguyên liệu hết hiệu lực trong 15 ngày – bấm để mở màn), thông tin NCC, nguyên liệu cung cấp (giá đang hiệu lực, nhãn **Ưu tiên**), **Đánh giá NCC** (giao đúng hạn, đạt QC, sự cố xử lý đúng hạn), biểu đồ **Giá trị mua 6 tháng** (giá trị PO đặt và giá trị đã nhận – phiếu nhập đã ghi sổ, đơn vị triệu đồng), đơn mua đang mở (hẹn giao, "trễ N ngày").
+- **Tab Tổng quan (UI-2R, D-69):** hai cột – **trái 1/3 "Thông tin nhà cung cấp"**: người liên hệ · điện thoại liên hệ + công ty · email · địa chỉ · loại NCC + số nguyên liệu / số ưu tiên · lần nhận hàng gần nhất (số phiếu); nhóm **Pháp lý** (tên đầy đủ, MST + sao chép, địa chỉ đăng ký), **Phân loại** (loại, trạng thái, bắt đầu giao dịch = PO / phiếu nhập sớm nhất), **Ghi chú**, **Hệ thống**. **Phải 2/3**: **Cần chú ý** (PO trễ hạn giao, sự cố quá hạn, lô tạm giữ / cận date, giá hết hiệu lực trong 15 ngày) → **Nguyên liệu cung cấp** (giá, hạn hiệu lực – tô cam khi còn ≤ 15 ngày, "thấp nhất trong N NCC", nhãn **Ưu tiên**; + Thêm giá, Xem bảng giá) cạnh **Đánh giá NCC** 90 ngày (giao đúng hạn, đạt QC, sự cố đúng hạn + số lần nhận / sự cố) → **Giá trị mua 6 tháng** (PO đặt và đã nhận – ghi sổ, triệu đồng; dòng tháng này) → **Đơn mua đang mở** (hẹn giao, giá trị, trạng thái hoặc "Trễ N ngày").
+  - **Khối thông tin bên trái (UI-2R, dùng chung 3 màn chi tiết):** 6 dòng chính luôn hiện (điện thoại / email bấm để gọi / gửi thư); bên dưới là các **nhóm gập** – bấm tiêu đề nhóm (hoặc Tab + Enter) để mở / gập, dòng xám dưới tiêu đề là tóm tắt; trình duyệt **nhớ nhóm đang mở** cho lần sau. Ô trống không hiện; nhóm chưa có gì ghi "Chưa có thông tin · Bổ sung" (bấm Bổ sung = Sửa, chỉ khi có quyền sửa). Nút sao chép cạnh MST / CCCD. Màn rộng: khối này đứng yên khi cuộn; màn < 1200px: xếp trên cùng.
 - **Các tab khác** (chỉ hiện khi có quyền xem màn tương ứng): **Bảng giá nguyên liệu** (lọc *Đang hiệu lực / Tất cả*, cột **Thấp nhất NCC khác** cùng nguyên liệu – tô đỏ khi NCC khác rẻ hơn, nút **Thêm giá NL**, **Ưu tiên**, **Sửa**) · **Đơn mua** (lọc ngày đặt, trạng thái) · **Nhận hàng và QC** (lọc ngày nhận) · **Lô nguyên liệu** (hạn dùng, QC, "cận date") · **Sự cố** (nút **Nhận xử lý / Đã xử lý / Đóng / Mở lại** như màn `qc-supplier-issue`) · **Tài liệu** · **Lịch sử** (+ Liên quan). Bấm dòng để mở chứng từ.
 - Bảng giá NCC (`scm-supplier-material`): mỗi dòng NCC × nguyên liệu × đơn giá × hiệu lực; đánh dấu **Ưu tiên** để MRP / Lập PO chọn NCC này và để tính giá vốn công thức.
 

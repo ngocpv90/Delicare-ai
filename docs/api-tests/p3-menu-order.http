@@ -56,7 +56,7 @@ MenuId={{menuId}}&DishId={{dishId}}&MealType=TRUA&DayOfWeek=8
 GET {{base}}/api/Menu/GetCalendar?id={{menuId}}&mealType=TRUA&sellingPrice=40000
 Authorization: Bearer {{token}}
 
-### 1.6 Duyệt (quyền: mục "Duyệt – Thực đơn & phiên bản")
+### 1.6 Duyệt (quyền: mục "Phê duyệt › Thực đơn & phiên bản")
 POST {{base}}/api/Menu/Approve
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -155,7 +155,7 @@ Content-Type: application/json
 
 { "id": "{{orderId}}", "listLine": [ { "id": "{{lineId}}", "quantity": 200 } ], "note": "[DEMO] khách tăng ca" }
 
-### 3.8 Hộp duyệt lệch suất (quyền: mục "Duyệt – Đơn đặt suất ăn", #/wf-inbox?type=crm-order)
+### 3.8 Hộp duyệt lệch suất (quyền: mục "Phê duyệt › Đơn đặt suất ăn", #/wf-inbox?type=crm-order)
 # @name pending
 GET {{base}}/api/ApprovalRequest/GetMyPending?type=crm-order
 Authorization: Bearer {{token}}

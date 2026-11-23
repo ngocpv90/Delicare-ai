@@ -81,6 +81,10 @@ namespace AppDelicare.Services.Interface
         DeliveryLocation,
         /// <summary>Bảng giá – <c>BG-NNNNN</c> (PricePolicie.Code).</summary>
         PricePolicy,
+        /// <summary>Nhóm món – <c>NM-NNNNN</c> (DishCategorie.Code; anh chốt 2026-11-22: máy chủ tự sinh, trước đây người dùng đặt).</summary>
+        DishCategory,
+        /// <summary>Nhóm nguyên liệu – <c>NN-NNNNN</c> (IngredientCategorie.Code; anh chốt 2026-11-22).</summary>
+        IngredientCategory,
     }
 
     /// <summary>

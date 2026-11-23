@@ -112,7 +112,7 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T12: yêu cầu chờ tôi duyệt (hộp duyệt). type = screen-id để lọc, vd. menu-recipe. Chỉ trả loại mà người đang đăng nhập có quyền duyệt (mục menu "Duyệt – …").</summary>
+        /// <summary>T12: yêu cầu chờ tôi duyệt (hộp duyệt). type = screen-id để lọc, vd. menu-recipe. Chỉ trả loại mà người đang đăng nhập có quyền duyệt (mục menu "Phê duyệt › …").</summary>
         [Security.SkipPermission]
         [HttpGet("GetMyPending")]
         public async Task<IActionResult> GetMyPending(string? type, bool explicitOnly = false)

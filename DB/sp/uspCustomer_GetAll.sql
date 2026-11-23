@@ -63,7 +63,6 @@ BEGIN
 			, t.[ContactPersonName]
 			, t.[ContactPersonPhone]
 			, t.[ContactPersonEmail]
-			, t.[Segment]
 			, t.[Source]
 			, t.[RegionId]
 			, t.[AreaId]
@@ -159,8 +158,6 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'contactPersonPhone' THEN r.[ContactPersonPhone] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'contactPersonEmail' THEN r.[ContactPersonEmail] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'contactPersonEmail' THEN r.[ContactPersonEmail] END DESC,
-		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'segment' THEN r.[Segment] END ASC,
-		CASE WHEN @SortOrder = 'descend' AND @SortField = 'segment' THEN r.[Segment] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'source' THEN r.[Source] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'source' THEN r.[Source] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'regionId' THEN r.[RegionId] END ASC,

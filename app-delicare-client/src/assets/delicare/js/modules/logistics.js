@@ -40,8 +40,6 @@
   const opt = (v, l, sel) => `<option value="${esc(v)}" ${sel ? 'selected' : ''}>${esc(l)}</option>`;
   const fld = (label, html, full) => `<div class="field ${full ? 'full' : ''}"><label>${label}</label>${html}</div>`;
   const dtOf = (day, time) => time ? day + 'T' + time + ':00' : null;
-  const distinct = (t, col, extra) => [...new Set((extra || []).concat(Store.rows(t).map(r => r[col]).filter(Boolean)))];
-  const dataList = (id, vals) => `<datalist id="${id}">${vals.map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
   const orderLabel = o => (o.OrderNumber || o.OrderNo || '') + ' · ' + Store.label('Customer', o.CustomerId) + ' · ' + U.date(o.DeliveryDate || o.MealDate);
   const doLabel = d => (d.DeliveryNumber || d.DeliveryNo || '') + ' · ' + Store.label('Customer', d.CustomerId) + ' · ' + U.date(d.DeliveryDate);
   function dlg(title, body, ok, onOk, o = {}) {
@@ -67,7 +65,7 @@
   function packResult(r) {
     const plan = Number(r.PlannedQty) || 0;
     dlg('Ghi kết quả đóng gói', fld('Số phần đóng đạt *', `<input type="number" min="0" class="input" id="prP" value="${plan}">`) + fld('Số phần hỏng', '<input type="number" min="0" class="input" id="prD" value="0">') +
-      fld('Số phần bị loại', '<input type="number" min="0" class="input" id="prR" value="0">') + fld('Loại khay / hộp', `<input class="input" id="prT" list="prTL">${dataList('prTL', distinct('PackingResult', 'PackagingType', ['KHAY']))}`) + fld('Ghi chú', '<input class="input" id="prN">', true),
+      fld('Số phần bị loại', '<input type="number" min="0" class="input" id="prR" value="0">') + fld('Loại khay / hộp', UI.refSelect('prT', 'PackagingType', { placeholder: '— Chọn loại khay / hộp —' })) + fld('Ghi chú', '<input class="input" id="prN">', true),
       'Ghi kết quả', (m, close) => {
         const p = Number(val(m, 'prP')) || 0, d = Number(val(m, 'prD')) || 0, j = Number(val(m, 'prR')) || 0;
         if (p < 0 || d < 0 || j < 0) return UI.toast('Số lượng không được âm', 'err');
@@ -239,7 +237,7 @@
     el.innerHTML = APP.header(f, `${Store.isLive && pm.add !== false ? `<button class="btn" id="rtPlan">${I('route')} Lập chuyến theo khu vực</button><button class="btn primary" id="rtNew">${I('plus')} Lập chuyến</button>` : ''}<a class="btn" href="#/log-execution">${I('truck')} Theo dõi giao hàng</a><a class="btn" href="#/log-gps">${I('pin')} Bản đồ${Store.isLive ? '' : ' (GAP)'}</a>`) + `
     <div class="card panel mb"><div class="row-flex"><span class="small muted">Ngày giao:</span>${dates.map(d => `<button class="chip ${d === date ? 'active' : ''}" data-d="${d}">${U.date(d)}${d === Store.ctx.date ? ' · hôm nay' : ''}</button>`).join('')}${Store.isLive ? `<input type="date" class="input" id="rtDate" value="${esc(date)}" style="width:auto">` : ''}</div></div>
     <div class="notice warn">${I('alert')}<div><b>GAP-C-02:</b> BRD yêu cầu điểm đầu/cuối tuyến – SQL chưa có cột. Mockup coi bếp trung tâm là điểm đầu và điểm dừng cuối (DeliveryStop.SequenceNo lớn nhất) là điểm cuối.</div></div>
-    <div class="grid g2">${routes.map(r => { const stops = Store.by('DeliveryStop', 'DeliveryRouteId', r.Id).sort((a, b) => a.SequenceNo - b.SequenceNo); const v = Store.get('Vehicle', r.VehicleId); const b = bm[r.Id]; const meals = b && b.loadMeals != null ? Number(b.loadMeals) : U.sum(stops, 'PlannedMealQty'); const cap = b && b.capacity != null ? Number(b.capacity) : (v ? v.Capacity : 0); const blk = b && ['Planned', 'Loading'].includes(r.Status) ? (b.listBlocker || []) : []; return `<div class="card panel"><div class="spread"><div><div class="eyebrow">${esc(r.RouteNo)}</div><h2>${esc(r.Name)}</h2><div class="small muted">${esc(v ? v.LicensePlate + ' · ' + v.VehicleType : '–')} · Tài xế: ${esc(b && b.driverName ? b.driverName : Store.label('Employee', r.DriverId))}</div></div>${UI.badge(r.Status, 'DeliveryRoute', 'Status')}</div>
+    <div class="grid g2">${routes.map(r => { const stops = Store.by('DeliveryStop', 'DeliveryRouteId', r.Id).sort((a, b) => a.SequenceNo - b.SequenceNo); const v = Store.get('Vehicle', r.VehicleId); const b = bm[r.Id]; const meals = b && b.loadMeals != null ? Number(b.loadMeals) : U.sum(stops, 'PlannedMealQty'); const cap = b && b.capacity != null ? Number(b.capacity) : (v ? v.Capacity : 0); const blk = b && ['Planned', 'Loading'].includes(r.Status) ? (b.listBlocker || []) : []; return `<div class="card panel"><div class="spread"><div><h2>${esc(r.Name)}</h2><div class="small muted">${esc(v ? v.LicensePlate + ' · ' + v.VehicleType : '–')} · Tài xế: ${esc(b && b.driverName ? b.driverName : Store.label('Employee', r.DriverId))}</div></div>${UI.badge(r.Status, 'DeliveryRoute', 'Status')}</div>
       <div class="progress-row mt"><span class="name">Tải trọng: ${U.num(meals)} / ${U.num(cap)} suất</span><span class="value">${cap ? U.pct(meals / cap * 100, 0) : '–'}</span><div class="track"><div class="fill ${meals > cap ? 'red' : meals > cap * .85 ? 'orange' : ''}" style="width:${Math.min(100, cap ? meals / cap * 100 : 0)}%"></div></div></div>
       <div class="timeline mt"><div class="tl blue"><b>Bếp trung tâm (điểm đầu)</b><small>KH xuất phát ${U.time(r.PlannedStart)}${r.ActualStart ? ' · TT ' + U.time(r.ActualStart) : ''}</small></div>${stops.map(s => `<div class="tl ${s.StopStatus === 'Delivered' ? '' : 'orange'}"><b>${s.SequenceNo}. ${esc(Store.label('CustomerDeliveryLocation', s.DeliveryLocationId))}</b><small>${U.num(s.PlannedMealQty)} suất · đến KH ${U.time(s.PlannedArrival)} · ${UI.statusVi('DeliveryStop', 'StopStatus', s.StopStatus)}</small></div>`).join('')}</div>
       ${blk.length ? `<div class="small bad mt">Chưa đủ điều kiện xuất bến: ${blk.map(s => esc(s)).join(' · ')}</div>` : ''}
@@ -304,7 +302,7 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
   function podForm(xid) {
     const x = Store.get('DeliveryExecution', xid), d = Store.get('DeliveryOrder', x.DeliveryOrderId), loc = Store.get('CustomerDeliveryLocation', d.CustomerDeliveryLocationId) || {};
     const q = U.sum(Store.by('DeliveryStop', 'DeliveryOrderId', d.Id), 'PlannedMealQty');
-    UI.modal({ title: 'Xác nhận giao hàng (POD)', sub: esc(d.DeliveryNumber) + ' · dbo.ProofOfDeliverie', size: 'sm',
+    UI.modal({ title: 'Xác nhận đã giao', sub: esc(d.DeliveryNumber) + ' · dbo.ProofOfDeliverie', size: 'sm',
       body: `<div class="form-grid"><div class="field"><label>SL giao <code>DeliveredQuantity</code></label><input type="number" class="input" id="pq" value="${q}"></div><div class="field"><label>SL khách nhận <code>AcceptedQuantity</code></label><input type="number" class="input" id="pa" value="${q}"></div><div class="field full"><label>Người nhận <code>ReceiverName</code> *</label><input class="input" id="pn" value="${esc(loc.ContactName || '')}"></div><div class="field full"><label>Chữ ký / ảnh <code>SignatureUrl · PhotoUrl</code></label><div class="row-flex"><span class="tag green">✓ Chữ ký (demo)</span><span class="tag green">✓ Ảnh bàn giao (demo)</span></div></div><div class="field full"><label>Ghi chú <code>Remark</code></label><input class="input" id="pr"></div>${Store.isLive ? `<div class="field"><label>Nhiệt độ khi giao °C <code>TemperatureC</code></label><input type="number" step="0.1" class="input" id="pt"></div><div class="field"><label>Khắc phục (nếu dưới ngưỡng) <code>CorrectiveAction</code></label><input class="input" id="pc"></div>` : ''}</div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="pOk">Xác nhận POD</button>',
       onMount: (m, close) => m.querySelector('#pOk').onclick = () => {
@@ -333,7 +331,7 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
     const cs = Store.rows('Customer'); if (!cs.length) return UI.toast('Chưa có khách hàng', 'warn');
     const orders = cid => opt('', '— Không gắn đơn hàng —', true) + Store.by('Order', 'CustomerId', cid).sort((a, b) => String(b.DeliveryDate || b.MealDate || '').localeCompare(String(a.DeliveryDate || a.MealDate || ''))).slice(0, 100).map(o => opt(o.Id, (o.OrderNumber || o.OrderNo || '') + ' · ' + U.date(o.DeliveryDate || o.MealDate))).join('');
     dlg('Tạo phản ánh của khách hàng', fld('Khách hàng *', `<select class="select" id="ccC">${cs.map(c => opt(c.Id, Store.label('Customer', c))).join('')}</select>`, true) + fld('Đơn hàng liên quan', `<select class="select" id="ccO">${orders(cs[0].Id)}</select>`, true) +
-      fld('Kênh tiếp nhận', `<input class="input" id="ccS" list="ccSL" maxlength="50">${dataList('ccSL', distinct('CustomerComplaint', 'SourceChannel'))}`) + fld('Phân loại', `<input class="input" id="ccK" list="ccKL" maxlength="50">${dataList('ccKL', distinct('CustomerComplaint', 'CategoryCode'))}`) +
+      fld('Kênh tiếp nhận', UI.refSelect('ccS', 'ComplaintChannel', { placeholder: '— Chọn kênh —' })) + fld('Phân loại', UI.refSelect('ccK', 'ComplaintCategory', { placeholder: '— Chọn phân loại —' })) +
       fld('Mức độ', `<select class="select" id="ccV">${opt('High', 'Cao')}${opt('Medium', 'Trung bình', true)}${opt('Low', 'Thấp')}</select>`, true) + fld('Nội dung phản ánh *', '<textarea class="input" rows="3" id="ccD" maxlength="1800"></textarea>', true),
       'Tạo phản ánh', (m, close) => {
         const desc = val(m, 'ccD'); if (!desc) return UI.toast('Nhập nội dung phản ánh', 'err');
@@ -367,7 +365,7 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
     dlg('Ghi thu hồi khay hộp', fld('Đơn giao đã giao *', `<select class="select" id="crD" ${cr ? 'disabled' : ''}>${ds.map(d => opt(d.Id, doLabel(d), cr && d.Id === cr.DeliveryOrderId)).join('')}</select>`, true) +
       fld('Số phải thu (trống = số còn ở khách)', `<input type="number" min="0" step="1" class="input" id="crE" value="${cr && cr.ExpectedQuantity != null ? esc(cr.ExpectedQuantity) : ''}">`) + fld('Số thu về *', '<input type="number" min="0" step="1" class="input" id="crR">') +
       fld('Trong đó bị hỏng', '<input type="number" min="0" step="1" class="input" id="crG" value="0">') + fld('Ngày thu hồi', `<input type="date" class="input" id="crT" value="${esc(Store.ctx.date)}">`) +
-      fld('Loại khay / hộp (trống = loại đã giao)', `<input class="input" id="crP" list="crPL" maxlength="100">${dataList('crPL', distinct('PackagingLedger', 'PackagingType'))}`, true) + fld('Ghi chú', '<input class="input" id="crN" maxlength="1000">', true),
+      fld('Loại khay / hộp (trống = loại đã giao)', UI.refSelect('crP', 'PackagingType', { placeholder: '— Loại đã giao của đơn —' }), true) + fld('Ghi chú', '<input class="input" id="crN" maxlength="1000">', true),
       'Ghi thu hồi', (m, close) => {
         const rq = val(m, 'crR'), n = Number(rq), g = Number(val(m, 'crG')) || 0, ex = val(m, 'crE');
         if (rq === '' || !Number.isInteger(n) || n < 0) return UI.toast('Nhập số thu về (số nguyên, không âm)', 'err');
@@ -428,7 +426,7 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
     const cs = Store.rows('Customer'); if (!cs.length) return UI.toast('Chưa có khách hàng', 'warn');
     dlg('Ghi sổ bao bì', fld('Khách hàng *', `<select class="select" id="plC">${cs.map(c => opt(c.Id, Store.label('Customer', c))).join('')}</select>`, true) +
       fld('Loại ghi sổ *', `<select class="select" id="plT">${opt('OUT', 'Giao cho khách (tồn đầu kỳ ở khách)')}${opt('IN', 'Khách trả lại')}${opt('LOSS', 'Thất thoát')}</select>`, true) +
-      fld('Loại khay / hộp *', `<input class="input" id="plP" list="plPL" maxlength="100">${dataList('plPL', distinct('PackagingLedger', 'PackagingType', ['KHAY']))}`) + fld('Số lượng *', '<input type="number" min="1" class="input" id="plQ">') +
+      fld('Loại khay / hộp *', UI.refSelect('plP', 'PackagingType', { required: true, placeholder: '— Chọn loại khay / hộp —' })) + fld('Số lượng *', '<input type="number" min="1" class="input" id="plQ">') +
       fld('Tình trạng (khi khách trả)', `<select class="select" id="plK">${opt('', '— Không ghi —', true)}${opt('GOOD', 'Tốt')}${opt('DAMAGED', 'Hỏng')}</select>`, true) + fld('Lý do *', '<textarea class="input" rows="2" id="plR" maxlength="1000"></textarea>', true),
       'Ghi sổ', (m, close) => {
         const q = Number(val(m, 'plQ')), type = val(m, 'plT'), pt = val(m, 'plP'), reason = val(m, 'plR');

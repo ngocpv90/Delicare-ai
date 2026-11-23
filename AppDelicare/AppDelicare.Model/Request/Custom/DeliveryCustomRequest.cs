@@ -307,6 +307,18 @@ namespace AppDelicare.Model.Request.Custom
         public decimal? WastedQuantity { get; set; }
         [MaxLength(2000)]
         public string? Remark { get; set; }
+        /// <summary>
+        /// ORD-OPT-1.7 (D-74 i): suất phục vụ theo từng dòng đơn (lựa chọn) – tùy chọn. Có gửi thì <see cref="ServedQuantity"/> = Σ các dòng (máy chủ tự cộng)
+        /// và tiền (cơ sở SERVED) = Σ suất phục vụ dòng × giá dòng. Lưu trong JSON OrderReconciliation.Note (không thêm cột). Form: ListLine[0].OrderLineId…
+        /// </summary>
+        public List<ReconcileLineRequest> ListLine { get; set; } = [];
+    }
+
+    public class ReconcileLineRequest
+    {
+        [Required]
+        public Guid OrderLineId { get; set; }
+        public decimal ServedQuantity { get; set; }
     }
 
     /// <summary>T19: đóng đối soát (form) – Khớp / Chênh lệch → Đóng; đơn hàng → Đã đối soát.</summary>

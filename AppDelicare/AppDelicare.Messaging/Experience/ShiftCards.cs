@@ -75,10 +75,14 @@ namespace AppDelicare.Messaging.Experience
                     return;
                 }
             }
-            var sent = await sender.SendAsync(ctx.Bot, new OutgoingMessage(ctx.Event.ChatId, html, kb), ct);
-            if (sent.ProviderMessageId != null)
+            // BOT-UX-1 (mục 7): Thẻ ca là tin ghim riêng – không bao giờ thành / bị thay bởi panel.
+            using (PanelSession.Bypass())
             {
-                await sender.PinAsync(ctx.Bot, ctx.Event.ChatId, sent.ProviderMessageId, ct);
+                var sent = await sender.SendAsync(ctx.Bot, new OutgoingMessage(ctx.Event.ChatId, html, kb), ct);
+                if (sent.ProviderMessageId != null)
+                {
+                    await sender.PinAsync(ctx.Bot, ctx.Event.ChatId, sent.ProviderMessageId, ct);
+                }
             }
         }
 

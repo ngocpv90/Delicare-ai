@@ -15,7 +15,7 @@ import { TableState } from 'src/app/shared/table/table-state';
 import { labelOf, RECORD_STATUSES } from '../organization-unit/org-options';
 import { PositionModalComponent } from './position-modal/position-modal.component';
 
-// adm-position – Danh mục chức vụ (FE-1), same structure as scm-uom
+// adm-position – Chức vụ (FE-1), same structure as scm-uom
 @Component({
   selector: 'app-position',
   templateUrl: './position.component.html',

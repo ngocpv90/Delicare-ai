@@ -318,5 +318,111 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>ORD-OPT-1.4 (D-74 g): lưới đăng ký suất tuần (buổi × lựa chọn × 7 ngày) của 1 điểm giao – số đã có, trạng thái / khóa từng ngày.</summary>
+        [HttpGet("GetWeek")]
+        public async Task<IActionResult> GetWeek([FromQuery] OrderWeekRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetWeek(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>ORD-OPT-1.4: lưu nháp / xác nhận cả tuần (mỗi ngày 1 đơn; ngày đã chốt bỏ qua và báo lại). JSON body. Quyền Sửa trên crm-order.</summary>
+        [HttpPost("SaveWeek")]
+        public async Task<IActionResult> SaveWeek([FromBody] OrderWeekSaveRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.SaveWeek(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SaveWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>ORD-OPT-1.4: số tuần trước làm gợi ý (chỉ trả về, không lưu).</summary>
+        [HttpGet("CopyPreviousWeek")]
+        public async Task<IActionResult> CopyPreviousWeek([FromQuery] OrderWeekRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CopyPreviousWeek(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CopyPreviousWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>ORD-OPT-1.5 (D-74 h): phiếu đăng ký suất (Excel, có ô Số suất + mã ẩn để tải lên đọc lại).</summary>
+        [HttpGet("ExportWeekSlip")]
+        public async Task<IActionResult> ExportWeekSlip([FromQuery] OrderWeekRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                var result = await _service.ExportWeekSlip(request);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Phieu_dang_ky_suat_{request.WeekStart:yyyyMMdd}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExportWeekSlip: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>ORD-OPT-1.5: đọc phiếu đăng ký đã điền vào lưới tuần – chưa lưu; trả ô + dòng lỗi.</summary>
+        [HttpPost("ImportWeekSlip")]
+        public async Task<IActionResult> ImportWeekSlip([FromForm] OrderWeekSlipImportRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request || request.File == null)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                string extension = Path.GetExtension(request.File!.FileName).ToLowerInvariant();
+                if (extension is not (".xlsx" or ".xlsm"))
+                {
+                    return BadRequest(ConstantHelper.Message.FileCorrectFormat);
+                }
+                await using var stream = request.File.OpenReadStream();
+                return Ok(await _service.ImportWeekSlip(request.CustomerId, request.DeliveryLocationId, request.WeekStart, stream));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ImportWeekSlip: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

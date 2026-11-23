@@ -10,7 +10,7 @@
 
 | screen-id | Menu › Mục | Quyền |
 |---|---|---|
-| `menu-dish-cat` | Thực đơn & Món ăn › Danh mục món ăn | Xem, sửa |
+| `menu-dish-cat` | Thực đơn & Món ăn › Món ăn | Xem, sửa |
 | `menu-dish` | … › Món ăn | Xem, sửa |
 | `menu-recipe` | … › Công thức chế biến (version) | Xem, sửa |
 | `menu-menu` | … › Thực đơn | Xem, sửa |
@@ -26,7 +26,7 @@
 | `cost-meal` | … › Giá thành / suất & biên lợi nhuận | Xem, sửa, xuất |
 | `scm-requirement`, `scm-inv-balance`, `crm-order`… | Mua hàng & Kho, Kinh doanh | Chỉ xem |
 
-Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & áp dụng** công thức, **duyệt thực đơn**, **duyệt kế hoạch sản xuất** do COO / CEO (mục "Duyệt – …"). Bấm các nút này khi chưa được cấp → *"Bạn không có quyền …"*.
+Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & áp dụng** công thức, **duyệt thực đơn**, **duyệt kế hoạch sản xuất** do COO / CEO (mục "Phê duyệt › …"). Bấm các nút này khi chưa được cấp → *"Bạn không có quyền …"*.
 
 ## 3. Việc theo thứ tự
 
@@ -45,7 +45,7 @@ Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & á
 ### 4.1 Món ăn – `menu-dish`
 Danh sách: Mã, Món ăn, Nhóm món, Giá thành chuẩn, **Công thức đang dùng** (phiên bản + trạng thái, hoặc "Chưa có công thức hiệu lực"), CP NVL ước tính, Trạng thái. Thêm / sửa món bằng form chung.
 
-### 4.2 Công thức & phiên bản – `menu-recipe`
+### 4.2 Công thức chế biến – `menu-recipe`
 Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản, nhãn "chờ" nếu có bản Nháp / Chờ duyệt); phải là các phiên bản của món đang chọn.
 
 **Tạo phiên bản mới**
@@ -74,16 +74,18 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
 1. **Tạo mới** (bảng chung) hoặc **Nhân bản** thực đơn đang xem: nhập Mã, Tên, **Hiệu lực từ*** → **Nhân bản** → thực đơn Nháp mới, chép toàn bộ món.
 2. **Thêm món**: chọn Món, Loại suất, **Thứ** (1 = T2 … 7 = CN), Lựa chọn (1–9), Số phần, Bắt buộc, Ghi chú → **Tạo mới**. Bấm vào món trong lịch để xem / sửa / xóa dòng.
 3. Nút **Chuyển sang …** theo trạng thái:
-   - Nháp → **Đã duyệt** (cần quyền "Duyệt – Thực đơn"),
+   - Nháp → **Đã duyệt** (cần quyền "Phê duyệt › Thực đơn"),
    - Đã duyệt → **Đã công bố** (kiểm đủ món mọi ngày, công thức hiệu lực),
    - Đã công bố → **Hết hiệu lực**.
-4. **Xuất gửi khách**: tải tệp thực đơn gửi khách.
+4. **Xuất gửi khách**: tải tệp thực đơn gửi khách. **In phiếu đăng ký**: chọn khách + điểm giao → tải *Phiếu đăng ký suất* (Excel, ô Số suất dưới mỗi lựa chọn, tuần bắt đầu hiệu lực của thực đơn) – khách điền rồi gửi lại cho Kinh doanh tải lên (`02_KINH_DOANH.md` mục 4.5b).
+5. **Thực đơn chung** (ORD-OPT-1, D-74 f): ô **Loại thực đơn** = *Thực đơn chung* → mọi khách **không có phân công riêng** tự dùng thực đơn này khi đã **Đã công bố** và hiệu lực tại ngày ăn (nhãn cam *Thực đơn chung* ở đầu lịch). Mỗi tuần một thực đơn chung (thường **Nhân bản** từ tuần trước). Không công bố được 2 thực đơn chung chồng ngày hiệu lực.
+6. **Lựa chọn** (1–9) = set món: Sáng LC1 = bánh mì + trứng + sữa… Khách đặt số suất theo từng lựa chọn; **Số phần** = số phần của món trong 1 suất (vd bánh mì 2 cái / suất; trống = 1) – dùng để tính số phần nấu / mua.
 
-Lỗi: *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để công bố – thiếu: …*, *Cảnh báo: món … chưa có công thức đang khóa – chưa tính được giá vốn*, *Thứ phải trong khoảng 1 (Thứ 2) – 7 (Chủ nhật)*, *Lựa chọn (SequenceNo) phải trong khoảng 1 – 9*, *Dòng thực đơn phải có loại suất*.
+Lỗi: *Đã có thực đơn chung … Đã công bố chồng thời gian hiệu lực…* (cho thực đơn chung cũ hết hiệu lực hoặc đổi ngày), *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để công bố – thiếu: …*, *Cảnh báo: món … chưa có công thức đang khóa – chưa tính được giá vốn*, *Thứ phải trong khoảng 1 (Thứ 2) – 7 (Chủ nhật)*, *Lựa chọn (SequenceNo) phải trong khoảng 1 – 9*, *Dòng thực đơn phải có loại suất*.
 
 ### 4.5 Phân công thực đơn – `menu-assignment`
-- Danh sách phân công (khách / điểm giao / loại suất / thực đơn / hiệu lực) – thêm / sửa bằng form chung.
-- **Tra thực đơn áp dụng**: chọn **Khách hàng***, Điểm giao, **Loại suất***, **Ngày ăn*** → **Tra cứu** → thực đơn + cấp phân công (*Gán theo điểm giao* / *Gán theo khách hàng*); bấm mã thực đơn để mở lịch.
+- Danh sách phân công (khách / điểm giao / loại suất / thực đơn / hiệu lực) – thêm / sửa bằng form chung. **Chỉ cần cho khách ngoại lệ** (trường học, bệnh viện… có thực đơn riêng); khách khác dùng **thực đơn chung** của tuần.
+- **Tra thực đơn áp dụng**: chọn **Khách hàng***, Điểm giao, **Loại suất***, **Ngày ăn*** → **Tra cứu** → thực đơn + cấp phân công (*Gán theo điểm giao* / *Gán theo khách hàng* / *Thực đơn chung* khi khách không có phân công); bấm mã thực đơn để mở lịch.
 - Lỗi: *Chồng thời gian hiệu lực với phân công thực đơn khác…*, *Loại suất … không có trong suất của hợp đồng*, *Điểm giao không thuộc khách hàng này*, *Không có thực đơn được gán…*.
 
 ### 4.6 Yêu cầu đổi món – `menu-change-request`
@@ -98,7 +100,7 @@ Lỗi: *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để côn
 2. Hệ thống tổng hợp số phần từng món từ đơn **Đã xác nhận / Đã chốt** của ngày → kế hoạch **Nháp** `KS-…` (1 kế hoạch / ngày). Bấm lại sẽ tính lại kế hoạch Nháp; kế hoạch đã duyệt không đổi.
    - Kế hoạch cũng được tạo khi bộ phận mua hàng / job 20:30 **Tính nhu cầu** (MRP).
 
-**Duyệt:** dòng Nháp có **Duyệt** → xác nhận. Cần quyền "Duyệt – Kế hoạch sản xuất" (mặc định COO / CEO).
+**Duyệt:** dòng Nháp có **Duyệt** → xác nhận. Cần quyền "Phê duyệt › Kế hoạch sản xuất" (mặc định COO / CEO).
 
 **Ra lệnh sản xuất:** dòng **Đã duyệt** chưa có lệnh → **Ra lệnh SX** → xác nhận → hệ thống sinh **lệnh sản xuất** + **mẻ nấu** theo ca và dây chuyền (lịch ngược từ giờ xuất bếp), chụp định lượng công thức và **giữ chỗ nguyên liệu** → chuyển sang màn Lệnh sản xuất. Đơn hàng của ngày → **Đang sản xuất**.
 

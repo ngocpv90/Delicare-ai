@@ -27,7 +27,8 @@ namespace AppDelicare.Messaging.Processing
         AppDelicare.Messaging.Conversations.Flows.LeaveRequestFlow leave, AppDelicare.Messaging.Conversations.Flows.ShiftSwapFlow swap, AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions bep,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu,
-        AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions traCuu, AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions thaoTac)
+        AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions traCuu, AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions thaoTac,
+        PanelController panels, CommandScopeSync commands)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -48,8 +49,10 @@ namespace AppDelicare.Messaging.Processing
                 }
                 return DispatchResult.Processed;
             }
+            bool fromGroup = false;
             if (e.ChatType is not (null or "private"))
             {
+                fromGroup = true;
                 // BOT-1.7d: nhóm chat chỉ nhận tin thông báo; bấm nút trên tin trong nhóm → sự việc ghi ngay (thông báo nhỏ), nút khác mở trong chat riêng của người bấm.
                 // BOT-3.1: ngoại lệ /chatid – quản trị gõ trong nhóm để lấy mã nhóm cấu hình nhận thông báo (người khác: bỏ qua, không lộ mã).
                 if (e.Kind == IncomingKind.Command && e.Command == "chatid")
@@ -80,9 +83,20 @@ namespace AppDelicare.Messaging.Processing
                 await sender.AnswerCallbackAsync(bot, e.CallbackId, "Đã mở trong chat riêng với bot.", ct);
                 e = e with { ChatId = e.FromId, ChatType = "private", MessageId = null, CallbackId = null };
             }
+            // BOT-UX-1: chỉ chat riêng có bảng điều khiển; nhóm chat (và nút bấm từ nhóm) giữ hành vi cũ.
+            bool panelChat = panels.Enabled && !fromGroup;
+            bool stale = false;
             if (e.Kind == IncomingKind.Callback && e.CallbackId != null)
             {
-                await sender.AnswerCallbackAsync(bot, e.CallbackId, null, ct);
+                if (panelChat && panels.IsStale(bot, e))
+                {
+                    stale = true;
+                    await panels.RetireStaleAsync(bot, e, ct);
+                }
+                else
+                {
+                    await sender.AnswerCallbackAsync(bot, e.CallbackId, null, ct);
+                }
             }
             switch (e.Kind)
             {
@@ -111,10 +125,81 @@ namespace AppDelicare.Messaging.Processing
                 return DispatchResult.Processed;
             }
             var ctx = new BotActionContext(bot, e, identity);
+            // Trả lời câu hỏi ForceReply (vd. lý do từ chối duyệt). BOT-3.3: trả lời tin hỏi bằng FILE (vd. Excel máy chấm công) cũng là trả lời.
+            var pending = e.Kind is IncomingKind.Text or IncomingKind.Document ? replies.Take(bot, e.ChatId, e.ReplyToMessageId?.ToString()) : null;
+            var mode = panelChat ? PanelModeOf(bot, e, pending, stale) : null;
+            if (mode == null)
+            {
+                return await RouteAsync(ctx, pending, ct);
+            }
+            var result = DispatchResult.Processed;
+            await panels.RunAsync(bot, e.ChatId, mode.Value, async session =>
+            {
+                await commands.SyncAsync(bot, e.ChatId, identity, ct);
+                if (pending != null)
+                {
+                    // Mục 6: nhận trả lời xong → xóa câu hỏi + câu trả lời, chức năng cập nhật panel.
+                    await panels.AnsweredAsync(bot, e, ct);
+                }
+                else if (e.Kind is IncomingKind.Command || (e.Kind == IncomingKind.Text && IsKeyboardText(bot, identity, e.Text)))
+                {
+                    // Mục 4: lệnh / phím bàn phím dưới → xóa tin của người dùng, panel mới ở cuối chat.
+                    await panels.DeleteAsync(bot, e.ChatId, e.MessageId, ct);
+                }
+                if (stale)
+                {
+                    // Mục 5: nút trên panel cũ → panel mới ở màn đầu.
+                    await menu.OpenAsync(ctx, ct);
+                    return;
+                }
+                if (e.Kind == IncomingKind.Callback && CallbackData.Parse(e.CallbackData) is { } cb)
+                {
+                    if (session.Mode == PanelMode.EditCurrent && cb.Kind is not (CallbackData.Kinds.Menu or CallbackData.Kinds.Nav))
+                    {
+                        session.State.Depth++;
+                    }
+                    else if (cb.Kind == ShiftCards.Kind && registry.ByCode(cb.Id) is { } run && run.IsAllowed(bot, identity))
+                    {
+                        panels.EnterAction(session.State, ctx, run);
+                    }
+                }
+                result = await RouteAsync(ctx, pending, ct);
+            }, ct);
+            return result;
+        }
 
-            // Trả lời câu hỏi ForceReply (vd. lý do từ chối duyệt).
-            // BOT-3.3: trả lời tin hỏi bằng FILE (vd. Excel máy chấm công) cũng là trả lời.
-            if (e.Kind is IncomingKind.Text or IncomingKind.Document && replies.Take(bot, e.ChatId, e.ReplyToMessageId?.ToString()) is { } pending)
+        /// <summary>BOT-UX-1: cách đưa kết quả lên panel – null = không dùng panel (vị trí, liên hệ, ảnh, nút trên thẻ việc / tin hệ thống).</summary>
+        private PanelMode? PanelModeOf(string bot, IncomingEvent e, PendingReply? pending, bool stale)
+        {
+            if (stale)
+            {
+                return PanelMode.NewAtBottom;
+            }
+            if (e.Kind == IncomingKind.Callback)
+            {
+                if (panels.IsCurrentPanel(bot, e))
+                {
+                    return PanelMode.EditCurrent;
+                }
+                // Nút chạy chức năng trên Thẻ ca (tin ghim – không sửa) → kết quả lên panel mới ở cuối.
+                return CallbackData.Parse(e.CallbackData) is { Kind: ShiftCards.Kind, Action: "run" } ? PanelMode.NewAtBottom : null;
+            }
+            if (pending != null)
+            {
+                return PanelMode.EditCurrent;
+            }
+            return e.Kind is IncomingKind.Command or IncomingKind.Text ? PanelMode.NewAtBottom : null;
+        }
+
+        private bool IsKeyboardText(string bot, BotIdentityModel identity, string? text)
+            => text is KeyboardBuilder.MyShift or KeyboardBuilder.Functions or KeyboardBuilder.CheckIn || registry.ByLabel(bot, identity, text) != null;
+
+        private async Task<DispatchResult> RouteAsync(BotActionContext ctx, PendingReply? pending, CancellationToken ct)
+        {
+            string bot = ctx.Bot;
+            var e = ctx.Event;
+            var identity = ctx.Identity;
+            if (pending != null)
             {
                 switch (pending.Flow)
                 {
@@ -169,6 +254,9 @@ namespace AppDelicare.Messaging.Processing
                 {
                     case CallbackData.Kinds.Menu:
                         await menu.HandleAsync(ctx, data, ct);
+                        break;
+                    case CallbackData.Kinds.Nav:
+                        await panels.NavAsync(ctx, data, menu, ct);
                         break;
                     case ShiftCards.Kind:
                         await shiftCards.HandleAsync(ctx, data, ct);
@@ -229,6 +317,10 @@ namespace AppDelicare.Messaging.Processing
             var action = e.Kind == IncomingKind.Command ? registry.ByCommand(bot, identity, e.Command) : registry.ByLabel(bot, identity, e.Text);
             if (action != null)
             {
+                if (PanelSession.Current is { } s)
+                {
+                    panels.EnterAction(s.State, ctx, action);
+                }
                 await action.Handler(ctx, ct);
                 return DispatchResult.Processed;
             }
@@ -239,13 +331,21 @@ namespace AppDelicare.Messaging.Processing
             }
             if (e.Kind == IncomingKind.Text && e.Text == ContextKeyboard.Exit)
             {
-                await BotReply.TextAsync(sender, bot, e.ChatId, "Đã thoát.", KeyboardBuilder.ForActions(registry.Available(bot, identity)), ct);
+                await BotReply.TextAsync(sender, bot, e.ChatId, "Đã thoát.", KeyboardBuilder.MainMenu(), ct);
                 return DispatchResult.Processed;
             }
             if (e.Kind == IncomingKind.Text && (search.LooksLikeCode(e.Text) || CodeSearch.LooksLikeSearch(e.Text)))
             {
+                if (PanelSession.Current is { } ls)
+                {
+                    PanelController.EnterLoose(ls.State, "🔎 Tra cứu");
+                }
                 await search.SearchAsync(ctx, e.Text!, ct);
                 return DispatchResult.Processed;
+            }
+            if (PanelSession.Current is { } hs)
+            {
+                PanelController.EnterLoose(hs.State, "❓ Trợ giúp");
             }
             await help.HelpAsync(bot, e, ct);
             return DispatchResult.Processed;

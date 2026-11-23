@@ -40,6 +40,12 @@ namespace AppDelicare.Model.Request.Custom
         public Guid? DeliveryLocationId { get; set; }
         [MaxLength(1000)]
         public string? Note { get; set; }
+        /// <summary>
+        /// ORD-OPT-1.3 (D-74 c): lựa chọn 1–9 (MenuLine.SequenceNo) của thực đơn áp dụng ngày ăn. Trống: thực đơn chỉ 1 lựa chọn → 1;
+        /// nhiều lựa chọn → dòng cũ không theo lựa chọn (NULL, MRP chia đều – GAP-MRP-03).
+        /// </summary>
+        [Range(1, 9)]
+        public int? MenuOptionNo { get; set; }
     }
 
     /// <summary>T13 (spec 6.6 PUT lines): sửa số suất các dòng đã có. Số lượng 0 = bỏ dòng. Gửi JSON (danh sách lồng nhau).</summary>

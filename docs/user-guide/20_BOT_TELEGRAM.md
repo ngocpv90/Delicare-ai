@@ -18,18 +18,25 @@ Quyền bấm nút = quyền vào màn tương ứng trên web: nút chỉ hiệ
 
 ### 2.2 Người có tài khoản web (người duyệt, quản lý)
 - Để **duyệt** và dùng chức năng theo quyền web, tài khoản Telegram phải gắn với **tài khoản web**: lấy mã trên web, gõ `/start <mã>` (mã người dùng hết hạn sau 15 phút; mã NS tạo cho nhân viên hết hạn sau 72 giờ).
-- **Lấy mã trên web:** bấm tên tài khoản (góc phải) → **Liên kết Telegram** → **Tạo mã liên kết** (hoặc màn *Việc của tôi* → khối Liên kết Telegram). Màn hiện mã + nút **Mở bot Vận hành / Điều hành** (link mở thẳng bot kèm mã); cùng chỗ đó xem bot đã liên kết và **Gỡ** liên kết. Nhân viên không có tài khoản web: Nhân sự mở *Hồ sơ nhân viên* (`adm-employee`) → nút **Tạo mã liên kết bot** trên dòng / trong ngăn chi tiết (mã 72 giờ, cần quyền Sửa).
+- **Lấy mã trên web:** bấm tên tài khoản (góc phải) → **Liên kết Telegram** → **Tạo mã liên kết** (hoặc màn *Việc của tôi* → khối Liên kết Telegram). Màn hiện mã + nút **Mở bot Vận hành / Điều hành** (link mở thẳng bot kèm mã); cùng chỗ đó xem bot đã liên kết và **Gỡ** liên kết. Nhân viên không có tài khoản web: Nhân sự mở *Nhân viên* (`adm-employee`) → nút **Tạo mã liên kết bot** trên dòng / trong ngăn chi tiết (mã 72 giờ, cần quyền Sửa).
 - `/huylienket` – hủy liên kết.
 
 ## 3. Bàn phím và lệnh chung
 
-Bàn phím cố định: **[⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công]**. Người có ≤ 6 chức năng thấy các nút chức năng trực tiếp.
+Bàn phím dưới cố định (mọi người): **[⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công]**. Danh sách lệnh `/` chỉ có 4 lệnh: `/menu`, `/ca`, `/chamcong`, `/help` – các lệnh khác trong bảng dưới gõ vẫn chạy.
+
+**Bảng điều khiển (chat riêng):** bot chỉ giữ **1 tin có nút** – mọi màn mở ra đều hiện trong chính tin đó, dòng đầu là đường dẫn (vd. *Menu › 👤 Cá nhân › 📅 Lịch ca*), hàng cuối **[◀ Quay lại] [🏠 Menu] [✖ Đóng]**.
+- **Quay lại** lùi 1 bước; đang gõ dở (vd. lý do từ chối) mà bấm Quay lại → bỏ, không lưu gì.
+- Xong việc → bảng hiện **✅ kết quả + giờ** và nút **[▶ Tiếp tục]** (làm tiếp cùng chức năng) / **[🏠 Menu]**.
+- Gõ `/menu` hoặc bấm phím dưới → bot xóa tin lệnh của bạn và bảng cũ, mở bảng mới ở cuối chat. Bấm nút trên bảng cũ → báo *"Menu này đã cũ"* và mở bảng mới.
+- Màn đầu có hàng **⭐ Hay dùng** (4 chức năng bạn dùng gần nhất).
+- Thẻ việc, Thẻ ca ghim, bản tin… **không bị bảng điều khiển xóa / sửa**. Nhóm chat không có bảng điều khiển.
 
 | Nút | Lệnh | Làm gì |
 |---|---|---|
-| ⚡ Ca của tôi | | Ca hôm nay, giờ, trạng thái vào / ra, việc chính; **⚡** làm mới |
+| ⚡ Ca của tôi | `/ca` | Ca hôm nay, giờ, trạng thái vào / ra, việc chính; **⚡** làm mới |
 | 📂 Chức năng | `/menu` | Danh sách phân hệ được phép |
-| 📍 Chấm công | `/chamcong` | Gửi vị trí để vào / ra ca (không chuyển tiếp vị trí; vị trí quá 120 giây bị từ chối; bán kính 150 m) |
+| 📍 Chấm công | `/chamcong` | Bấm phím 📍 ở bàn phím dưới để gửi vị trí vào / ra ca (không chuyển tiếp vị trí; vị trí quá 120 giây bị từ chối; bán kính 150 m) |
 | 📅 Lịch ca | `/lichca` | Lịch ca 7 ngày |
 | 🏖 Xin nghỉ | `/nghi` | Loại nghỉ → ngày bắt đầu (Hôm nay / Ngày mai / Ngày kia / Ngày khác…) → số ngày → lý do |
 | 🔁 Đổi ca | `/doica` | Chỉ người có tài khoản web |
@@ -60,7 +67,7 @@ Bàn phím cố định: **[⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm 
 | ⏳ Phê duyệt | ⏳ Chờ tôi duyệt (`/cho`) | Người duyệt | `12_QUAN_LY_DUYET.md` §7 |
 
 ## 5. Bot Điều hành
-Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở, 🎯 KPI 7 ngày, 📅 KPI tháng, 📈 Tiến độ bếp, 🗺 Giao vận trực tiếp, 📦 Tồn & thiếu hụt, 🔍 Truy xuất.
+Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở, 🎯 KPI 7 ngày, 📅 Chỉ số theo tháng, 📈 Tiến độ bếp, 🗺 Giao vận trực tiếp, 📦 Tồn & thiếu hụt, 🔍 Truy xuất.
 
 ## 6. Mã QR dán tại hiện trường
 

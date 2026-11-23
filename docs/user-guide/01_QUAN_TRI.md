@@ -14,13 +14,13 @@ Menu **Quản trị hệ thống** (FIN-IT: xem + sửa + xuất):
 |---|---|---|
 | `adm-user` | Người dùng | Tài khoản: tạo, khóa / mở, đặt lại mật khẩu, xem quyền hiệu lực |
 | `adm-usergroup` | Nhóm người dùng | Nhóm quyền (vai trò) |
-| `adm-permission` | Vai trò & phân quyền | Ma trận quyền Nhóm × Chức năng |
+| `adm-permission` | Vai trò & phân quyền | Phân quyền |
 | `adm-objectmenu` | Menu chức năng hệ thống | Thứ tự, nhóm của mục menu |
 | `adm-orgunit` | Chi nhánh, đơn vị tổ chức | Cây đơn vị |
-| `adm-employee` | Nhân sự | Hồ sơ nhân viên (danh mục chung với Nhân sự) |
-| `adm-position` | Chức vụ | Danh mục chức vụ |
+| `adm-employee` | Nhân sự | Nhân viên (danh mục chung với Nhân sự) |
+| `adm-position` | Chức vụ | Chức vụ |
 | `adm-company` | Công ty | Pháp nhân |
-| `adm-person` | Cá nhân (Person) | Thông tin cá nhân của tài khoản |
+| `adm-person` | Cá nhân (Person) | Thông tin cá nhân |
 | `adm-admin-unit` | Đơn vị hành chính | Vùng / tỉnh / huyện / xã |
 | `adm-document` | Quản lý tài liệu | Tải lên / tải xuống tệp đính kèm |
 | `adm-audit` | Audit log | Nhật ký thay đổi dữ liệu |
@@ -39,7 +39,7 @@ Các màn `adm-reference`, `dbx-explorer`, `dbx-gap` **đang ẩn** ở chế đ
 | Nhân viên nghỉ / mất máy | Khóa tài khoản |
 | Quên mật khẩu | Đặt lại mật khẩu |
 | Hằng ngày | Xem bot 🖥 Tình trạng hệ thống (job lỗi, tin gửi lỗi); xử lý xung đột dữ liệu |
-| Khi cần | Làm mới KPI (màn KPI ngày / tháng – xem `13_BAN_DIEU_HANH.md`) |
+| Khi cần | Làm mới KPI (màn Chỉ số theo ngày / tháng – xem `13_BAN_DIEU_HANH.md`) |
 
 ## 4. Thao tác từng bước
 
@@ -77,24 +77,24 @@ Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòn
 4. **Sao chép quyền từ nhóm khác**: chọn nhóm nguồn → **Sao chép** → xác nhận *"Thay toàn bộ quyền của nhóm … bằng quyền của nhóm …?"*.
 5. **Xem trước quyền của nhóm** (quản trị): kiểm lại kết quả.
 
-**Quyền Duyệt** không phải cột riêng: mỗi loại duyệt là một mục menu **"Duyệt – …"** (nhóm Phê duyệt). Cấp **Truy cập + Sửa** trên mục đó = được duyệt loại đó. Danh sách mục duyệt:
+**Quyền Duyệt** không phải cột riêng: mỗi loại duyệt là một mục menu **"Phê duyệt › …"** (nhóm Phê duyệt). Cấp **Truy cập + Sửa** trên mục đó = được duyệt loại đó. Danh sách mục duyệt:
 
 | Mục quyền | Duyệt gì |
 |---|---|
-| Duyệt – Hợp đồng suất ăn (`crm-contract`) | Hợp đồng |
-| Duyệt – Đơn đặt suất ăn (`crm-order`) | Lệch suất > 30% và sửa / thêm đơn sau giờ chốt |
-| Duyệt – Chính sách giá theo KH/HĐ (`crm-price-policy`) | (có mục quyền) |
-| Duyệt – Công thức & phiên bản (`menu-recipe`) | Phiên bản công thức |
-| Duyệt – Thực đơn & phiên bản (`menu-menu`) | (có mục quyền) |
-| Duyệt – Yêu cầu đổi món (`menu-change-request`) | Đổi món |
-| Duyệt – Đề nghị mua hàng cấp 1 / cấp 2 (`scm-pr-l1`, `scm-pr-l2`) | Đề nghị mua 2 cấp |
-| Duyệt – Đơn mua hàng (`scm-po`) / (Giám đốc) (`scm-po-director`) | PO dưới / từ 50 triệu |
-| Duyệt – Phiếu kiểm kê / (cấp 2 – Kế toán) | Kiểm kê lệch > 2% |
-| Duyệt – Phiếu điều chỉnh tồn (`scm-adjustment`) | Điều chỉnh tồn tay |
-| Duyệt – Kế hoạch sản xuất theo ngày/ca (`prod-plan`) | Nút **Duyệt** kế hoạch SX |
-| Duyệt – Phiếu QC đầu vào (`qc-inspection`) | (có mục quyền) |
-| Duyệt – Đơn xin nghỉ / Đơn đổi ca | Nghỉ, đổi ca |
-| Duyệt – Hộp phê duyệt tập trung (`wf-inbox`) | Xem hộp duyệt |
+| Phê duyệt › Hợp đồng (`crm-contract`) | Hợp đồng |
+| Phê duyệt › Đơn đặt suất (`crm-order`) | Lệch suất > 30% và sửa / thêm đơn sau giờ chốt |
+| Phê duyệt › Chính sách giá (`crm-price-policy`) | (có mục quyền) |
+| Phê duyệt › Công thức chế biến (`menu-recipe`) | Phiên bản công thức |
+| Phê duyệt › Thực đơn tuần (`menu-menu`) | (có mục quyền) |
+| Phê duyệt › Yêu cầu đổi món (`menu-change-request`) | Đổi món |
+| Phê duyệt › Đề nghị mua hàng cấp 1 / cấp 2 (`scm-pr-l1`, `scm-pr-l2`) | Đề nghị mua 2 cấp |
+| Phê duyệt › Đơn mua hàng (`scm-po`) / (Giám đốc) (`scm-po-director`) | PO dưới / từ 50 triệu |
+| Phê duyệt › Phiếu kiểm kê / (cấp 2 – Kế toán) | Kiểm kê lệch > 2% |
+| Phê duyệt › Phiếu điều chỉnh tồn (`scm-adjustment`) | Điều chỉnh tồn tay |
+| Phê duyệt › Kế hoạch sản xuất (`prod-plan`) | Nút **Duyệt** kế hoạch SX |
+| Phê duyệt › Kiểm tra hàng nhập (`qc-inspection`) | (có mục quyền) |
+| Phê duyệt › Đơn xin nghỉ / Đơn đổi ca | Nghỉ, đổi ca |
+| Phê duyệt › Tất cả yêu cầu duyệt (`wf-inbox`) | Xem hộp duyệt |
 
 Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và **Bot Telegram – Điều hành** (`#/bot-dieu-hanh`). Chức năng trong bot đi theo quyền của màn web tương ứng.
 
@@ -105,7 +105,7 @@ Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và
 4. Thay đổi có hiệu lực với người dùng **từ lần đăng nhập sau**.
 - Lỗi: *Menu chỉ có 2 cấp…*, *Mục menu đang có mục con nên phải là mục cấp 1*, *Sắp xếp tạo vòng lặp cha – con*.
 
-### 4.7 Cây đơn vị tổ chức – `adm-orgunit`
+### 4.7 Sơ đồ tổ chức – `adm-orgunit`
 - Khối trên: cây đơn vị (tên, loại, mã, quản lý, số nhân viên, số kho). Bấm tên để mở chi tiết.
 - Thêm / sửa đơn vị bằng **Tạo mới** / **Sửa** ở bảng dưới. Lỗi: *Đơn vị cha không được là chính nó hoặc đơn vị con của nó*.
 - Đơn vị loại **BRANCH** xuất hiện trong hộp **Đơn vị làm việc** ở đầu trang.
@@ -122,6 +122,23 @@ Menu **Quản trị hệ thống → Nhập dữ liệu gốc (Excel)**. Mỗi n
 3. Hộp **Kết quả nạp**: số dòng đọc, thêm mới, cập nhật, bỏ qua, và bảng **Dòng lỗi** (số dòng Excel + lý do). Dòng lỗi không được ghi – sửa trong file rồi nạp lại.
 - Nạp lại cùng file không tạo trùng (khớp theo mã). Ô mã để trống → hệ thống tự cấp mã theo quy tắc (`91_PHU_LUC.md` §2).
 - Lỗi: *Chỉ nhận tệp .xlsx / .xlsm*, *Tài khoản không có quyền thao tác này (403)* (thiếu quyền Nhập ở màn danh mục).
+
+### 4.8c Danh mục chọn sẵn (loại suất, loại kho, loại khay…)
+Các trường dưới đây **chỉ chọn trong danh sách**, không gõ chữ tự do – trên mọi form, khi nhập Excel và khi gọi API:
+
+| Danh mục | Dùng ở | Giá trị |
+|---|---|---|
+| Loại suất | Hợp đồng, dự báo, thực đơn, đơn đặt suất, chính sách giá | Sáng · Trưa · Tối · Đêm |
+| Loại kho | Kho | Nguyên liệu · Thành phẩm · Bao bì · Kho lạnh · Kho bếp |
+| Kiểu bảo quản | Nguyên liệu | Nhiệt độ thường · Mát · Đông lạnh · Khô |
+| Loại nhà cung cấp | Nhà cung cấp | Thịt · Rau củ · Hàng khô · Bao bì · Khác |
+| Loại khay / hộp | Kết quả đóng gói, thu hồi khay, sổ bao bì | Khay inox · Hộp giữ nhiệt · Thùng giữ nhiệt |
+| Kênh tiếp nhận / Phân loại | Phản ánh khách hàng | Điện thoại · Zalo · Email · Trực tiếp · Telegram · Biên bản giao nhận / Chất lượng món · Thiếu suất · Giao trễ · Vệ sinh – ATTP · Bao bì · Thái độ phục vụ · Khác |
+| Loại hủy, loại đo nhiệt độ, loại nghỉ, hình thức chấm công, loại phát sinh bao bì | Màn tương ứng | Theo danh sách trên màn hình |
+
+- Thêm / đổi giá trị: **bộ phận IT** sửa mục `ReferenceLists` trong cấu hình máy chủ (`appsettings.json`) rồi khởi động lại – không cần sửa phần mềm. Nhập Excel / API nhận cả **mã** lẫn **tên** (vd. "Kho lạnh" = COLD), lưu mã.
+- Bản ghi cũ có giá trị ngoài danh sách: ô chọn hiện "(giá trị cũ)"; vẫn sửa được các trường khác, chỉ không đổi sang giá trị lạ mới. IT chuẩn hóa một lần bằng script `DB/scripts/REF1_normalize_catalog_codes.sql` (chạy thử trước, sau khi sao lưu).
+- Lỗi: *Loại kho «…» không có trong danh mục (RAW – Nguyên liệu, …)* → chọn lại trong danh sách.
 
 ### 4.9 Xung đột dữ liệu – `adm-merge-conflict`
 1. Dòng chưa xử lý có nút **Xử lý** → nhập **Cách xử lý** (bắt buộc, ≤ 1000 ký tự) → **Đã xử lý**.
@@ -149,7 +166,8 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 | Đường dẫn … đã tồn tại | MetaLink menu trùng – sửa đường dẫn |
 | Người dùng báo "không có quyền truy cập màn hình này" | Cấp **Truy cập** cho nhóm của họ ở `adm-permission`; người dùng tải lại trang |
 | Người dùng có quyền mà nút vẫn mờ | Thiếu quyền Thêm / Sửa / Xuất của màn đó |
-| Người dùng không duyệt được | Cấp mục **Duyệt – …** đúng loại (Truy cập + Sửa) |
+| Người dùng không duyệt được | Cấp mục **Phê duyệt › …** đúng loại (Truy cập + Sửa) |
+| … «…» không có trong danh mục (…) | Giá trị phải chọn trong danh sách – xem 4.8c; cần giá trị mới → IT bổ sung danh mục |
 
 ## 7. Trên bot Telegram
 

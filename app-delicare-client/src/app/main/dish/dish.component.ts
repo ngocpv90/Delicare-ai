@@ -9,7 +9,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { DishModalComponent } from './dish-modal/dish-modal.component';
 
-// menu-dish – Danh mục món ăn (FE-3). Dish/GetAllData + ngăn kéo: thông tin món, công thức đang hiệu lực
+// menu-dish – Món ăn (FE-3). Dish/GetAllData + ngăn kéo: thông tin món, công thức đang hiệu lực
 // (Dish/GetActiveRecipe: phiên bản đã khóa, dòng định lượng, giá vốn NVL / suất). Nút "Nhập Excel" → sys-import?table=Dish.
 @Component({
   selector: 'app-dish',

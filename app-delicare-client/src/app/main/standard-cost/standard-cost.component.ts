@@ -6,7 +6,7 @@ import { MasterLookupService } from 'src/app/services/master-lookup.service';
 import { StandardCostService } from 'src/app/services/standard-cost.service';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 
-// cost-standard – Giá thành chuẩn theo công thức (FE-3). StandardCost/GetAllData + tên món / mã phiên bản công thức.
+// cost-standard – Giá thành chuẩn (FE-3). StandardCost/GetAllData + tên món / mã phiên bản công thức.
 // Bản ghi do Recipe/Lock và StandardCost/Recalculate sinh ra (vật tư + nhân công + chi phí chung / suất theo BusinessRules),
 // nên màn hình chỉ xem + "Tính lại" (quyền Sửa trên #/cost-standard); không thêm / sửa / xóa tay.
 // Status Active / Inactive (PROPOSED – BA/PO CONFIRM).

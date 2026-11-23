@@ -367,7 +367,7 @@ namespace AppDelicare.Services.Implement
                 .Where(a => !a.IsDeleted && a.BusinessType == ShiftSwapStatus.BusinessType && a.BusinessId == id && (!openOnly || ApprovalRequestService.OpenStatuses.Contains(a.RequestStatus)))
                 .OrderByDescending(a => a.RequestedAt).FirstOrDefaultAsync();
 
-        /// <summary>Duyệt / từ chối qua engine (quyền mục "Duyệt – Đơn đổi ca").</summary>
+        /// <summary>Duyệt / từ chối qua engine (quyền mục "Phê duyệt › Đơn đổi ca").</summary>
         public async Task<IResult<bool>> Decide(HrDecisionRequest request, bool approve)
         {
             try

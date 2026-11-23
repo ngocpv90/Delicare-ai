@@ -21,7 +21,7 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class OrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock
+    public partial class OrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock
         , IOptions<BusinessRulesOptions> rules, IDocumentNumberService documentNumberService, IPricePolicyService pricePolicyService
         , IMenuAssignmentService menuAssignmentService, IApprovalRequestService approvalRequestService
         , IAuditChangeService auditChangeService) : IOrderService
@@ -331,12 +331,14 @@ namespace AppDelicare.Services.Implement
                         var shift = meal.MealType != null ? shifts.GetValueOrDefault(meal.MealType) : null;
                         var price = meal.MealType != null ? prices.GetValueOrDefault(meal.MealType) : null;
                         var menu = await _menuAssignmentService.ResolveAsync(customerId, location.Id, meal.MealType, day);
+                        var options = await MenuOptionRules.OptionsAsync(_unitOfWork.DbContext, menu?.MenuId, meal.MealType, day);
                         item.ListLine.Add(new OrderTemplateLineModel
                         {
                             ContractMealId = meal.Id, MealType = meal.MealType, MealName = meal.MealName, ServiceType = meal.ServiceType,
                             ShiftId = shift?.Id, ShiftCode = shift?.Code, ShiftName = shift?.Name,
                             UnitPrice = price?.UnitPrice, PriceSource = price?.Source, MenuId = menu?.MenuId, MenuCode = menu?.MenuCode,
                             SuggestedQuantity = ForecastRules.ForLocation(forecasts, customerId, location.Id, locationIds, meal.MealType, shift?.Id) ?? 0m,
+                            ListOption = options,
                         });
                     }
                     model.ListLocation.Add(item);
@@ -473,7 +475,18 @@ namespace AppDelicare.Services.Implement
                 {
                     return (null, null, string.Format(ConstantHelper.Message.OrderShiftNotFound, meal.MealType));
                 }
-                if (lines.Any(x => x.ContractMealId == meal.Id && x.ShiftId == shiftId))
+                var menu = await _menuAssignmentService.ResolveAsync(request.CustomerId, request.DeliveryLocationId, meal.MealType, day);
+                if (menu == null)
+                {
+                    warnings.Add($"{ConstantHelper.Message.MenuNotAssigned} ({meal.MealType})");
+                }
+                var (optionNo, optionError) = await OptionOfLineAsync(l.MenuOptionNo, menu?.MenuId, meal.MealType, day);
+                if (optionError != null)
+                {
+                    return (null, null, optionError);
+                }
+                // ORD-OPT-1.3: không trùng (loại suất của hợp đồng, ca, lựa chọn) trong một đơn.
+                if (lines.Any(x => x.ContractMealId == meal.Id && x.ShiftId == shiftId && x.MenuOptionNo == optionNo))
                 {
                     return (null, null, ConstantHelper.Message.OrderLineDuplicate);
                 }
@@ -482,21 +495,39 @@ namespace AppDelicare.Services.Implement
                 {
                     return (null, null, $"{price.ResponseMessage} ({meal.MealType})");
                 }
-                var menu = await _menuAssignmentService.ResolveAsync(request.CustomerId, request.DeliveryLocationId, meal.MealType, day);
-                if (menu == null)
-                {
-                    warnings.Add($"{ConstantHelper.Message.MenuNotAssigned} ({meal.MealType})");
-                }
                 decimal amount = Math.Round(l.Quantity * price.Data.UnitPrice, 2);
                 lines.Add(new OrderLine
                 {
                     Id = Guid.NewGuid(), OrderId = order.Id, ContractMealId = meal.Id, MealType = meal.MealType, ShiftId = shiftId, MenuId = menu?.MenuId,
-                    Quantity = l.Quantity, UnitPrice = price.Data.UnitPrice, LineAmount = amount, Amount = amount, Note = l.Note,
+                    MenuOptionNo = optionNo, Quantity = l.Quantity, UnitPrice = price.Data.UnitPrice, LineAmount = amount, Amount = amount, Note = l.Note,
                 });
             }
             order.TotalQuantity = lines.Sum(x => x.Quantity);
             order.TotalAmount = lines.Sum(x => x.LineAmount);
             return (order, lines, null);
+        }
+
+        /// <summary>
+        /// ORD-OPT-1.3 (D-74 c): lựa chọn của dòng đơn. Có gửi → phải 1–9 và có trong thực đơn áp dụng (loại suất, thứ của ngày ăn);
+        /// không gửi → thực đơn chỉ 1 lựa chọn thì = lựa chọn đó, còn lại NULL (dòng không theo lựa chọn – GAP-MRP-03).
+        /// </summary>
+        private async Task<(int? Option, string? Error)> OptionOfLineAsync(int? requested, Guid? menuId, string? mealType, DateTime day)
+        {
+            var options = await MenuOptionRules.OptionsAsync(_unitOfWork.DbContext, menuId, mealType, day);
+            if (requested == null)
+            {
+                return (options.Count == 1 ? options[0].OptionNo : null, null);
+            }
+            if (menuId == null)
+            {
+                return (null, string.Format(ConstantHelper.Message.OrderOptionNoMenu, mealType, day.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)));
+            }
+            if (!options.Any(o => o.OptionNo == requested))
+            {
+                return (null, string.Format(ConstantHelper.Message.OrderOptionNotInMenu, requested, mealType, day.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+                    options.Count == 0 ? "không có" : string.Join(", ", options.Select(o => o.OptionNo))));
+            }
+            return (requested, null);
         }
 
         /// <summary>
@@ -751,16 +782,28 @@ namespace AppDelicare.Services.Implement
             var locationIds = await _unitOfWork.CustomerDeliveryLocationRepository.GetAll().AsNoTracking()
                 .Where(l => l.CustomerId == order.CustomerId && !l.IsDeleted && (l.Status == null || l.Status == ActiveStatus))
                 .OrderBy(l => l.Code).ThenBy(l => l.Name).Select(l => l.Id).ToListAsync();
-            foreach (var line in lines)
+            // ORD-OPT-1: bữa tách nhiều dòng lựa chọn → dự báo của (loại suất, ca) tính MỘT lần, so với Σ suất các lựa chọn; ghi ở dòng đầu nhóm.
+            decimal total = 0m, ordered = 0m;
+            bool any = false;
+            foreach (var group in lines.GroupBy(l => (Meal: (l.MealType ?? string.Empty).Trim().ToUpperInvariant(), l.ShiftId)))
             {
-                byLine[line.Id] = order.DeliveryLocationId is { } lid ? ForecastRules.ForLocation(rows, order.CustomerId, lid, locationIds, line.MealType, line.ShiftId) : null;
+                var first = group.OrderBy(l => l.MenuOptionNo ?? 0).ThenBy(l => l.CreatedDate).First();
+                decimal? forecast = order.DeliveryLocationId is { } lid ? ForecastRules.ForLocation(rows, order.CustomerId, lid, locationIds, first.MealType, first.ShiftId) : null;
+                foreach (var line in group)
+                {
+                    byLine[line.Id] = line.Id == first.Id ? forecast : null;
+                }
+                if (forecast != null)
+                {
+                    any = true;
+                    total += forecast.Value;
+                    ordered += group.Sum(l => l.Quantity);
+                }
             }
-            var withForecast = lines.Where(l => byLine[l.Id] != null).ToList();
-            if (withForecast.Count == 0)
+            if (!any)
             {
                 return (null, 0m, null, byLine);
             }
-            decimal total = withForecast.Sum(l => byLine[l.Id]!.Value), ordered = withForecast.Sum(l => l.Quantity);
             return (total, ordered, ForecastRules.VariancePercent(ordered, total), byLine);
         }
 
@@ -983,6 +1026,7 @@ namespace AppDelicare.Services.Implement
                 actions.Add("requestChange");
             }
             var forecast = await ForecastOfAsync(order, lines);
+            var optionMap = await MenuOptionRules.ForMenusAsync(_unitOfWork.DbContext, menuIds, order.MealDate);
             return new OrderDetailModel
             {
                 Order = order, StatusName = OrderStatus.Label(order.Status), CustomerName = customer, LocationName = location, ContractNumber = contract,
@@ -990,13 +1034,15 @@ namespace AppDelicare.Services.Implement
                 PendingApprovalId = pending?.Id, PendingApprovalNo = pending?.RequestNo, PendingApprovalType = pending?.BusinessType,
                 ForecastQuantity = forecast.Total, ForecastVariancePercent = forecast.Variance,
                 ForecastVarianceExceeded = forecast.Variance is { } v && Math.Abs(v) > _rules.ForecastVariancePctWarning,
-                ListLine = lines.OrderBy(l => l.MealType).ThenBy(l => l.CreatedDate).Select(l => new OrderLineDetailModel
+                ListLine = lines.OrderBy(l => MenuService.MealRank(l.MealType)).ThenBy(l => l.MenuOptionNo ?? 0).ThenBy(l => l.CreatedDate).Select(l => new OrderLineDetailModel
                 {
                     Id = l.Id, ContractMealId = l.ContractMealId, MealType = l.MealType, MealName = l.ContractMealId is { } m ? meals.GetValueOrDefault(m) : null,
                     ShiftId = l.ShiftId, ShiftName = l.ShiftId is { } s ? shifts.GetValueOrDefault(s) : null,
                     MenuId = l.MenuId, MenuCode = l.MenuId is { } mn ? menus.GetValueOrDefault(mn) : null,
                     Quantity = l.Quantity, UnitPrice = l.UnitPrice, LineAmount = l.LineAmount, Note = l.Note,
                     ForecastQuantity = forecast.ByLine.GetValueOrDefault(l.Id),
+                    MenuOptionNo = l.MenuOptionNo,
+                    OptionDishText = l.MenuOptionNo is { } no ? MenuOptionRules.Of(optionMap, l.MenuId, l.MealType).FirstOrDefault(o => o.OptionNo == no)?.DishText : null,
                 }).ToList(),
             };
         }
@@ -1034,7 +1080,13 @@ namespace AppDelicare.Services.Implement
             {
                 return (null, string.Format(ConstantHelper.Message.OrderShiftNotFound, meal.MealType));
             }
-            if (existing.Any(l => l.ContractMealId == meal.Id && l.ShiftId == shiftId))
+            var menu = order.DeliveryLocationId is { } lid ? await _menuAssignmentService.ResolveAsync(order.CustomerId, lid, meal.MealType, order.MealDate.Date) : null;
+            var (optionNo, optionError) = await OptionOfLineAsync(input.MenuOptionNo, menu?.MenuId, meal.MealType, order.MealDate.Date);
+            if (optionError != null)
+            {
+                return (null, optionError);
+            }
+            if (existing.Any(l => l.ContractMealId == meal.Id && l.ShiftId == shiftId && l.MenuOptionNo == optionNo))
             {
                 return (null, ConstantHelper.Message.OrderLineDuplicate);
             }
@@ -1043,12 +1095,11 @@ namespace AppDelicare.Services.Implement
             {
                 return (null, $"{price.ResponseMessage} ({meal.MealType})");
             }
-            var menu = order.DeliveryLocationId is { } lid ? await _menuAssignmentService.ResolveAsync(order.CustomerId, lid, meal.MealType, order.MealDate.Date) : null;
             decimal amount = Math.Round(input.Quantity * price.Data.UnitPrice, 2);
             return (new OrderLine
             {
                 Id = Guid.NewGuid(), OrderId = order.Id, ContractMealId = meal.Id, MealType = meal.MealType, ShiftId = shiftId, MenuId = menu?.MenuId,
-                Quantity = input.Quantity, UnitPrice = price.Data.UnitPrice, LineAmount = amount, Amount = amount, Note = input.Note,
+                MenuOptionNo = optionNo, Quantity = input.Quantity, UnitPrice = price.Data.UnitPrice, LineAmount = amount, Amount = amount, Note = input.Note,
             }, null);
         }
 

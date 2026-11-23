@@ -340,7 +340,7 @@ namespace AppDelicare.Services.Implement
             => route != null && stepNo >= 1 && stepNo <= route.Count ? route[stepNo - 1]
                 : businessId is { } id ? await handler.RequiredScreenIdAsync(id) : handler.ScreenId;
 
-        /// <summary>Tên bước = tên mục menu "Duyệt – …" (ObjectMenu.MetaLink = <c>#/wf-inbox?type=&lt;screen&gt;</c>); không có mục → screen-id.</summary>
+        /// <summary>Tên bước = tên mục menu "Phê duyệt › …" (ObjectMenu.MetaLink = <c>#/wf-inbox?type=&lt;screen&gt;</c>); không có mục → screen-id.</summary>
         private async Task<Dictionary<string, string>> StepNamesAsync(IEnumerable<string> screens)
         {
             var links = screens.Where(s => !string.IsNullOrEmpty(s)).Distinct(StringComparer.OrdinalIgnoreCase).Select(s => "#/wf-inbox?type=" + s).ToList();

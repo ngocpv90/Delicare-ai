@@ -32,7 +32,7 @@
 
 | Vùng | Nội dung |
 |---|---|
-| Thanh menu trái | Nhóm chức năng (Tổng quan điều hành, Kinh doanh & Đơn hàng, Thực đơn & Món ăn, Mua hàng & Kho, Sản xuất & Giá thành, QC & An toàn thực phẩm, Đóng gói & Giao nhận, Nhân sự & Phê duyệt, Tích hợp & KPI, Quản trị hệ thống). **Chỉ hiện mục bạn có quyền Truy cập.** Nút thu gọn menu ở đầu thanh; trên điện thoại bấm ☰. |
+| Thanh menu trái | Nhóm chức năng (Bảng điều hành, Kinh doanh, Thực đơn & Món ăn, Mua hàng & Kho, Sản xuất & Giá thành, Chất lượng & ATTP, Đóng gói & Giao hàng, Nhân sự, Tích hợp & Chỉ số, Quản trị hệ thống). **Chỉ hiện mục bạn có quyền Truy cập.** Nút thu gọn menu ở đầu thanh; trên điện thoại bấm ☰. |
 | Ô tìm kiếm trên cùng | Tìm chức năng + chứng từ (xem mục 4) |
 | **Đơn vị làm việc** (góc trên) | Chọn chi nhánh / đơn vị → các màn lọc số liệu theo đơn vị đó. "Tất cả đơn vị" = không lọc |
 | Chuông 🔔 | Cảnh báo & công việc (mục 5) |
@@ -89,7 +89,7 @@ Bấm 🔔 → ngăn **Cảnh báo & công việc**, cập nhật mỗi 60 giây
 | Phiếu nhập chờ kết luận QC | Phiếu kiểm tra QC `qc-inspection` |
 | Lô nguyên liệu đang tạm giữ | Lô nguyên liệu `scm-lot` |
 | Nhiệt độ ngoài ngưỡng (kể cả cảm biến IoT) | Nhật ký nhiệt độ `qc-temperature` |
-| Phản ánh quá hạn xử lý / Phản ánh đang mở | Khiếu nại khách hàng `log-complaint` |
+| Phản ánh quá hạn xử lý / Phản ánh đang mở | Phản ánh khách hàng `log-complaint` |
 | Lô sắp hết hạn | Lô nguyên liệu `scm-lot` |
 | Tin nhắn gửi lỗi | (màn tin nhắn ra đang ẩn – báo IT) |
 
@@ -121,7 +121,7 @@ Mọi chứng từ cần duyệt đều đi qua **Yêu cầu phê duyệt** (`wf
 | 20:30 | Tính **nhu cầu nguyên liệu (MRP)** ngày mai + lập đề nghị mua nháp | Kế hoạch, Mua hàng |
 | 21:00 | Gửi thủ kho nguyên liệu cần cho ngày mai (bot) | Kho |
 
-KPI ngày / tháng hiện **không chạy tự động** – quản trị bấm **Làm mới số liệu** trên màn KPI.
+Chỉ số theo ngày / tháng hiện **không chạy tự động** – quản trị bấm **Làm mới số liệu** trên màn KPI.
 
 ## 9. Mã chứng từ
 
@@ -146,7 +146,7 @@ Hệ thống tự sinh số, dạng `<tiền tố>-<YYMMDD>-<số>`:
 | Thông báo | Ý nghĩa / cách xử lý |
 |---|---|
 | Bạn không có quyền {thao tác} trên màn hình {màn} | Thiếu quyền Thêm / Sửa / Xóa / In / Xuất – nhờ quản trị cấp trên ma trận quyền |
-| Bạn không có quyền duyệt loại yêu cầu này | Thiếu mục "Duyệt – …" tương ứng |
+| Bạn không có quyền duyệt loại yêu cầu này | Thiếu mục "Phê duyệt › …" tương ứng |
 | Không tìm thấy bản ghi (hoặc đã xóa) | Dữ liệu đã đổi – tải lại trang (F5) |
 | Chỉ {thao tác} khi {chứng từ} ở trạng thái {A} (hiện tại: {B}) | Thao tác không hợp với trạng thái hiện tại – xem bảng trạng thái của màn |
 | … chỉ tạo / đổi trạng thái qua thao tác nghiệp vụ (…) | Không sửa trực tiếp được – dùng nút nghiệp vụ trên màn |

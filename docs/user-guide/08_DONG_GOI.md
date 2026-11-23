@@ -11,7 +11,7 @@
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `log-packing-order` | Đóng gói & Giao nhận › Đơn đóng gói | Lập lệnh, Bắt đầu, Ghi kết quả, Hủy |
+| `log-packing-order` | Đóng gói & Giao hàng › Đơn đóng gói | Lập lệnh, Bắt đầu, Ghi kết quả, Hủy |
 | `log-packing-result` | … › Kết quả đóng gói | Danh sách kết quả; **Ghi kết quả đóng gói** |
 | `prod-batch` | Sản xuất & Giá thành › Mẻ sản xuất | Nút **Tạo lệnh đóng gói** trên mẻ Đạt |
 

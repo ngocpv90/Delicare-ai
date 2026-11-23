@@ -450,7 +450,7 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>T15: duyệt / từ chối PO qua engine T12 (<c>ApprovalRequestService.Decide</c>: kiểm quyền mục "Duyệt – Đơn mua hàng", hash nội dung, ghi ApprovalDecision).</summary>
+        /// <summary>T15: duyệt / từ chối PO qua engine T12 (<c>ApprovalRequestService.Decide</c>: kiểm quyền mục "Phê duyệt › Đơn mua hàng", hash nội dung, ghi ApprovalDecision).</summary>
         public async Task<IResult<bool>> Decide(PurchaseActionRequest request, bool approve)
         {
             try

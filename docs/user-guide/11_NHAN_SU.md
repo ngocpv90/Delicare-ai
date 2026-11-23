@@ -2,7 +2,7 @@
 
 ## 1. Bạn là ai
 
-- Nhóm quyền: **FIN-HR** (3.2 Nhân sự – trưởng phòng / chuyên viên). Nhóm này có quyền sửa mọi màn `hr-*`, `wf-*` và được cấp **"Duyệt – Đơn nghỉ phép"**, **"Duyệt – Đơn đổi ca"**, **"Duyệt – Hộp phê duyệt"**.
+- Nhóm quyền: **FIN-HR** (3.2 Nhân sự – trưởng phòng / chuyên viên). Nhóm này có quyền sửa mọi màn `hr-*`, `wf-*` và được cấp **"Phê duyệt › Đơn nghỉ phép"**, **"Phê duyệt › Đơn đổi ca"**, **"Phê duyệt › Hộp phê duyệt"**.
 - Mọi nhân viên có tài khoản web tự chấm công và lập đơn nghỉ / đổi ca ở màn **Việc của tôi** (`hr-my`, không cần quyền màn nào – xem 6.2).
 - Bot: **Vận hành** (👥 Nhân sự: Ai chưa vào ca, chấm hộ; 👤 Cá nhân: chấm công, lịch ca, xin nghỉ, đổi ca). Trưởng phòng NS được cấp thêm bot **Điều hành**.
 
@@ -10,12 +10,12 @@
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `hr-shift-assign` | Nhân sự & Phê duyệt › Phân ca | Lưới phân ca tuần, phân hàng loạt, xác nhận lịch |
+| `hr-shift-assign` | Nhân sự › Phân ca | Lưới phân ca tuần, phân hàng loạt, xác nhận lịch |
 | `hr-attendance` | … › Chấm công | Ca hôm nay của tôi (vào / ra ca), chấm hộ, bảng công, chốt vắng |
 | `hr-leave` | … › Đơn nghỉ phép | Tạo, hủy, xem / duyệt đơn |
 | `hr-swap` | … › Đơn đổi ca | Tạo, hủy, xem / duyệt đơn |
 | `hr-shift` | … › Ca làm việc | Danh mục ca (mã, giờ bắt đầu / kết thúc) |
-| `adm-employee` | Quản trị hệ thống › Nhân viên | Hồ sơ nhân viên (mã, họ tên, đơn vị, chức danh, SĐT – SĐT dùng để liên kết bot): FIN-HR **thêm / sửa** được (D-69), tạo mã liên kết Telegram cho nhân viên |
+| `adm-employee` | Quản trị hệ thống › Nhân viên | Nhân viên (mã, họ tên, đơn vị, chức danh, SĐT – SĐT dùng để liên kết bot): FIN-HR **thêm / sửa** được (D-69), tạo mã liên kết Telegram cho nhân viên |
 | `wf-inbox` | … › Hộp phê duyệt | Duyệt đơn (xem `12_QUAN_LY_DUYET.md`) |
 
 ## 3. Việc trong tuần / ngày
@@ -32,11 +32,12 @@
 
 ## 4. Thao tác từng bước
 
-### 4.0 Hồ sơ nhân viên – `adm-employee` › bấm dòng nhân viên
+### 4.0 Nhân viên – `adm-employee` › bấm dòng nhân viên
 Mở **hồ sơ nhân viên** cả trang (← về danh sách). Ai xem được danh sách nhân viên thì mở được hồ sơ; **ngày sinh, giới tính, địa chỉ** chỉ hiện với người có quyền **Sửa** hồ sơ nhân viên (NS, quản trị) – máy chủ không gửi các trường này cho người khác.
 - **Phần đầu:** họ tên, mã, chức danh, đơn vị, ngày vào làm + thâm niên, trạng thái, nhãn **Đã / Chưa liên kết bot**, SĐT, email. Nút **Sửa**, **Phân ca** (mở màn phân ca), **Chấm công hộ** (chọn sẵn nhân viên), ⋯ **Tạo mã liên kết bot** (hạn 72 giờ), **Tạo đơn nghỉ thay**, **In hồ sơ**, **Cho nghỉ việc** – nút hiện theo quyền.
 - **4 thẻ chỉ số:** Ca tháng này (giờ công) · Đúng giờ (tháng) · Ngày nghỉ năm nay (số đơn chờ duyệt) · Vắng / muộn (tháng) – cùng cách tính với **Bảng công**.
-- **Tab Tổng quan:** **Cần chú ý** (có ca hôm nay đã tới giờ mà chưa vào ca, ≥ 2 lần chấm ngoài bán kính trong 7 ngày, đơn chờ duyệt, chưa liên kết bot, thiếu SĐT) · thông tin nhân viên · **Ca 7 ngày tới** (ngày nghỉ phép tô màu, ✓ = đã vào ca) · tài khoản web, nhóm quyền, bot · biểu đồ **Giờ công 30 ngày** · **Chấm công gần đây** (giờ vào / ra, muộn, về sớm, ngoài bán kính, hình thức).
+- **Tab Tổng quan (UI-2R, D-69):** hai cột – **trái 1/3 "Thông tin nhân viên"**: chức danh + đơn vị · điện thoại · email · ngày vào làm + thâm niên · ca thường làm (ca được phân nhiều nhất 30 ngày qua) · liên kết bot + tài khoản web; nhóm **Cá nhân** (ngày sinh, giới tính, địa chỉ – biểu tượng khóa; **chỉ hiện với người có quyền Sửa hồ sơ nhân viên**, máy chủ không trả cho người khác), **Công việc** (chức danh, đơn vị, nhóm quyền, ngày vào làm), **Giấy tờ** (giấy khám sức khỏe, hợp đồng lao động – lưu ở tab Tài liệu), **Hệ thống**. **Phải 2/3**: **Cần chú ý** (ca hôm nay đã tới giờ mà chưa vào ca, ≥ 2 lần chấm ngoài bán kính trong 7 ngày, đơn chờ duyệt, chưa liên kết bot, thiếu SĐT) → **Ca 7 ngày tới** (ngày nghỉ tô cam, ✓ đã vào ca, dòng "Hôm nay"; nút Phân ca) cạnh **Nghỉ phép và đơn từ** (đơn chờ duyệt lên đầu, đơn gần đây, số ngày đã nghỉ năm nay theo loại) → **Giờ công 30 ngày** → **Chấm công gần đây** (ngày, ca, vào – ra, hình thức, kết quả Hợp lệ / Muộn / Về sớm / Ngoài bán kính; Xem bảng công). Tạo mã liên kết bot: menu ⋯ ở phần đầu hoặc tab Tài khoản và bot.
+  - **Khối thông tin bên trái (UI-2R, dùng chung 3 màn chi tiết):** 6 dòng chính luôn hiện (điện thoại / email bấm để gọi / gửi thư); bên dưới là các **nhóm gập** – bấm tiêu đề nhóm (hoặc Tab + Enter) để mở / gập, dòng xám dưới tiêu đề là tóm tắt; trình duyệt **nhớ nhóm đang mở** cho lần sau. Ô trống không hiện; nhóm chưa có gì ghi "Chưa có thông tin · Bổ sung" (bấm Bổ sung = Sửa, chỉ khi có quyền sửa). Nút sao chép cạnh MST / CCCD. Màn rộng: khối này đứng yên khi cuộn; màn < 1200px: xếp trên cùng.
 - **Các tab khác** (theo quyền xem màn `hr-*`): **Lịch ca** (lưới tuần, ‹ › đổi tuần, bấm ngày mở màn phân ca) · **Chấm công** (lọc từ – đến) · **Nghỉ phép** (tổng ngày nghỉ năm theo loại; bấm đơn → tab **Xử lý đơn**: Duyệt / Từ chối / Hủy theo quyền; nút **Tạo đơn nghỉ thay**) · **Đổi ca** (đơn nhân viên đề nghị hoặc được nhận ca) · **Công việc** (chuyến xe, mẻ… gắn nhân viên) · **Tài khoản và bot** · **Tài liệu** · **Lịch sử**.
 - Tài khoản web được nhận theo **tên đăng nhập = mã nhân viên** (hoặc qua liên kết bot); không có thì hiện *Chưa có*. Phép năm còn lại và giấy khám sức khỏe chưa có dữ liệu (GAP-HR-06, GAP-HR-07).
 
@@ -107,7 +108,7 @@ Mở **hồ sơ nhân viên** cả trang (← về danh sách). Ai xem được 
 | Không lấy được vị trí – hãy cho phép trình duyệt dùng định vị rồi thử lại | Bật định vị |
 
 ### 6.2 Ai tự chấm công được trên web?
-Mọi tài khoản đã gắn với nhân viên: menu **Nhân sự & Phê duyệt › Việc của tôi** (`hr-my`) có **Chấm công hôm nay** (Vào ca / Ra ca), **Tạo đơn nghỉ**, và nút **Đổi ca** trên từng ca của mình – không cần quyền màn `hr-attendance` / `hr-leave` / `hr-swap` (D-69). Các màn `hr-*` (xem bảng công, đơn của mọi người, lập hộ) vẫn theo ma trận quyền. Ngoài web vẫn chấm được bằng bot (📍 Chấm công).
+Mọi tài khoản đã gắn với nhân viên: menu **Nhân sự › Việc của tôi** (`hr-my`) có **Chấm công hôm nay** (Vào ca / Ra ca), **Tạo đơn nghỉ**, và nút **Đổi ca** trên từng ca của mình – không cần quyền màn `hr-attendance` / `hr-leave` / `hr-swap` (D-69). Các màn `hr-*` (xem bảng công, đơn của mọi người, lập hộ) vẫn theo ma trận quyền. Ngoài web vẫn chấm được bằng bot (📍 Chấm công).
 
 ## 7. Trên bot Telegram
 

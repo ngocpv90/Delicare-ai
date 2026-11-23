@@ -14,7 +14,7 @@ namespace AppDelicare.Services.Interface
     {
         public Task<IResults<OrderReconciliationViewModel>> GetAll(OrderReconciliationSearchRequest request);
         public Task<IResult<bool>> Save(OrderReconciliationRequest request, string typeSave);
-        public IResults<OrderReconciliation> GetAllData();
+        public Task<IResults<OrderReconciliation>> GetAllData();
         public Task<IResult<OrderReconciliation>> GetById(Guid id);
 
         // T19 (Pilot P8) – đối soát suất thực tế phục vụ.

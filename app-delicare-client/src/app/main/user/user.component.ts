@@ -18,7 +18,7 @@ import { TableState } from 'src/app/shared/table/table-state';
 import { PERMISSION_FLAGS } from '../user-permission/permission-flags';
 import { UserModalComponent } from './user-modal/user-modal.component';
 
-// adm-user – Tài khoản người dùng (FE-1). Lock / unlock = User/SaveIsActive, reset password = User/ResetPassword
+// adm-user – Tài khoản (FE-1). Lock / unlock = User/SaveIsActive, reset password = User/ResetPassword
 // (admin only), effective permissions = UserRole/GetByUserId in the detail drawer.
 @Component({
   selector: 'app-user',

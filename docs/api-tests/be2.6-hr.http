@@ -288,7 +288,7 @@ Content-Type: application/x-www-form-urlencoded
 
 EmployeeId={{e2}}&FromDate={{d3}}&ToDate={{d3}}&LeaveTypeCode=SICK&Reason=[DEMO] bị ốm
 
-### 6.4 Hộp duyệt "Duyệt – Đơn xin nghỉ"
+### 6.4 Hộp duyệt "Phê duyệt › Đơn xin nghỉ"
 GET {{base}}/api/ApprovalRequest/GetMyPending?type=hr-leave
 Authorization: Bearer {{token}}
 
@@ -409,7 +409,7 @@ Content-Type: application/x-www-form-urlencoded
 
 EmployeeId={{e1}}&WorkDate={{d3}}&ShiftId={{toi}}
 
-### 7.4 Hộp duyệt "Duyệt – Đơn đổi ca" + duyệt → ca chuyển sang NV3 (dùng lại dòng NV3 đã xóa mềm)
+### 7.4 Hộp duyệt "Phê duyệt › Đơn đổi ca" + duyệt → ca chuyển sang NV3 (dùng lại dòng NV3 đã xóa mềm)
 GET {{base}}/api/ApprovalRequest/GetMyPending?type=hr-swap
 Authorization: Bearer {{token}}
 

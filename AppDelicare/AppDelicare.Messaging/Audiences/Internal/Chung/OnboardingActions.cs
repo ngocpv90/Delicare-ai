@@ -123,16 +123,15 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             }
             else
             {
-                lines.Add("Dùng các nút bên dưới; gõ /menu để xem mọi chức năng.");
+                lines.Add("Dùng 3 phím bên dưới hoặc gõ /menu để mở bảng chức năng.");
             }
             if (identity.NeedsCode)
             {
                 lines.Add("Bạn có quyền duyệt: để duyệt trên bot, lấy mã liên kết trên web (Hồ sơ cá nhân → Liên kết Telegram) rồi gửi /start <mã>.");
             }
             var message = new NeutralMessage { Title = "Xin chào " + (identity.FullName ?? e.DisplayName ?? "bạn"), Lines = lines };
-            // BOT-1.4: bàn phím theo số chức năng (≤ 6 → phẳng; nhiều hơn → 3 nút cố định) + lệnh "/" riêng cho chat này theo quyền.
-            var actions = registry.Available(bot, identity);
-            await BotReply.SendAsync(sender, bot, e.ChatId, message, identity.CanUseBot ? KeyboardBuilder.ForActions(actions) : KeyboardBuilder.Remove(), ct);
+            // BOT-UX-1 (mục 8): bàn phím dưới luôn 3 phím cố định [⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công] (is_persistent) + 4 lệnh "/" – gửi khi liên kết và khi /start.
+            await BotReply.SendAsync(sender, bot, e.ChatId, message, identity.CanUseBot ? KeyboardBuilder.MainMenu() : KeyboardBuilder.Remove(), ct);
             await commands.SyncAsync(bot, e.ChatId, identity, ct);
             // Người có quyền bot Điều hành: bot VH gửi nút mở bot DH (Telegram bắt buộc /start bot DH một lần – BOT_TELEGRAM §2.4).
             string? dh = telegram.CurrentValue.Bots.TryGetValue("DH", out var d) ? d.Username : null;

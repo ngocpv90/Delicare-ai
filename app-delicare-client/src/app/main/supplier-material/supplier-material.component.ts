@@ -8,7 +8,7 @@ import { labelFrom, labelMap } from 'src/app/shared/master/local-query';
 import { MasterListBase } from 'src/app/shared/master/master-list.base';
 import { SupplierMaterialModalComponent } from './supplier-material-modal/supplier-material-modal.component';
 
-// scm-supplier-material – Bảng giá & MOQ theo NCC (FE-2). Lọc "hiệu lực tại ngày" như SupplierMaterial/GetAll
+// scm-supplier-material – Bảng giá nhà cung cấp (FE-2). Lọc "hiệu lực tại ngày" như SupplierMaterial/GetAll
 // ?EffectiveOn= (EffectiveFrom ≤ ngày ≤ EffectiveTo, đầu mút trống = không giới hạn). Mỗi nguyên liệu chỉ 1 NCC
 // ưu tiên: backend tự bỏ cờ ưu tiên của các dòng khác cùng nguyên liệu khi lưu.
 @Component({

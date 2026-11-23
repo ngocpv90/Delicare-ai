@@ -68,7 +68,7 @@ namespace AppDelicare.Model.Model
         public string? PurchaseRequestNumber { get; set; }
         public Guid? PendingApprovalId { get; set; }
         public string? PendingApprovalNo { get; set; }
-        /// <summary>T15.1 (D-11): tổng tiền ≥ ngưỡng GĐ duyệt → chỉ người có quyền mục "Duyệt – Đơn mua hàng (Giám đốc)" duyệt được.</summary>
+        /// <summary>T15.1 (D-11): tổng tiền ≥ ngưỡng GĐ duyệt → chỉ người có quyền mục "Phê duyệt › Đơn mua hàng (Giám đốc)" duyệt được.</summary>
         public bool NeedsDirectorApproval { get; set; }
         /// <summary>T15.1: mục quyền duyệt áp cho PO này: <c>scm-po</c> hoặc <c>scm-po-director</c> (MetaLink <c>#/wf-inbox?type=…</c>).</summary>
         public string? ApprovalScreenId { get; set; }

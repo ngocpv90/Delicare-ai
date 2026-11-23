@@ -18,10 +18,10 @@
 | `scm-lot` | … › Lô nguyên liệu | Lọc hạn dùng, Tạm giữ / Mở giữ, Xử lý lô hết hạn, Truy xuất |
 | `scm-inv-txn` | … › Giao dịch tồn kho | Sổ cái; Chuyển kho; Điều chỉnh tồn |
 | `scm-reservation` | … › Đặt trước vật tư | Giữ chỗ nguyên liệu theo kế hoạch / lệnh SX |
-| `scm-issue` | … › Xuất vật tư | Phiếu xuất cho sản xuất: gợi ý lô, tạo, ghi sổ, hủy, in |
+| `scm-issue` | … › Xuất vật tư | Phiếu xuất sản xuất: gợi ý lô, tạo, ghi sổ, hủy, in |
 | `scm-stockcount` | … › Kiểm kê | Tạo phiếu, kiểm đếm, gửi duyệt, ghi sổ, in |
 | `scm-consumption-var` | … › Chênh lệch tiêu hao | So định mức với thực xuất (xem) |
-| `scm-warehouse` | … › Kho | Danh mục kho + **Sơ đồ** |
+| `scm-warehouse` | … › Kho | Kho + **Sơ đồ** |
 | `scm-zone`, `scm-location` | … › Khu vực / Vị trí lưu trữ | Danh mục (khu có ngưỡng nhiệt độ) |
 | `scm-inv-policy` | … › Chính sách tồn kho | Tối thiểu ≤ an toàn ≤ điểm đặt hàng ≤ tối đa, FEFO / FIFO |
 
@@ -71,7 +71,7 @@ Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) 
 
 ### 4.5 Điều chỉnh tồn – nút **Điều chỉnh tồn**
 1. Chọn Nguyên liệu*, Lô, Kho*, Vị trí, **Số lượng điều chỉnh** (+ tăng / − giảm, khác 0), Đơn giá (khi nhập thêm), **Lý do***, Ghi chú → **Ghi điều chỉnh** → xác nhận.
-2. Mặc định điều chỉnh tay **phải được duyệt** ("Duyệt – Phiếu điều chỉnh tồn") trước khi ghi sổ: *Đã gửi duyệt điều chỉnh tồn (yêu cầu …) – chỉ ghi sổ khi được duyệt*.
+2. Mặc định điều chỉnh tay **phải được duyệt** ("Phê duyệt › Phiếu điều chỉnh tồn") trước khi ghi sổ: *Đã gửi duyệt điều chỉnh tồn (yêu cầu …) – chỉ ghi sổ khi được duyệt*.
 
 ### 4.6 Lô nguyên liệu – `scm-lot`
 - Chip lọc: **Tất cả / Còn tồn / Hết hạn trong 3 ngày / Trong 7 ngày / Trong 30 ngày**.

@@ -109,6 +109,8 @@ namespace AppDelicare.Tests.Messaging
                     ["Telegram:Bots:DH:Username"] = "delicare_dh_bot",
                     ["Messaging:IdentityCacheSeconds"] = "0",
                     ["Sending:UndoSeconds"] = "1",
+                    // BOT-UX-1: test cũ (BOT-1.x → 3.x) kiểm từng tin gửi → mặc định tắt bảng điều khiển; test panel bật bằng settings.
+                    ["Messaging:Panel:Enabled"] = "false",
                 };
                 foreach (var kv in settings ?? [])
                 {
@@ -119,7 +121,7 @@ namespace AppDelicare.Tests.Messaging
                 b.Services.RemoveAll<IBotChannelApi>();
                 b.Services.AddSingleton<IBotChannelApi>(Api);
                 b.Services.RemoveAll<IChannelSender>();
-                b.Services.AddSingleton<IChannelSender>(Sender);
+                b.Services.AddSingleton<IChannelSender>(sp => ActivatorUtilities.CreateInstance<AppDelicare.Messaging.Experience.PanelSender>(sp, (IChannelSender)Sender));
                 b.Services.RemoveAll<IDelicareApiClient>();
                 b.Services.AddSingleton<IDelicareApiClient>(Web);
                 b.Services.RemoveAll<ITelegramClient>();

@@ -4,7 +4,7 @@
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const ID = 'scm-supplier-360';
-  APP.FN[ID] = { ph: 'P4', grp: 'Mua hàng & Kho', fn: 'Hồ sơ nhà cung cấp', id: ID, name: 'Hồ sơ nhà cung cấp', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
+  APP.FN[ID] = { ph: 'P4', grp: 'Mua hàng & Kho', fn: 'Nhà cung cấp', id: ID, name: 'Nhà cung cấp', types: ['DT'], table: null, rel: [], st: 'MAPPED', note: '' };
   const { pas, failBox, loading, none, can, initials, dmy, pct, table, bindRows, filterBar, statusOpts, run, demoNote, alertBox, bindGo, meter } = APP.D360;
   const live = () => Store.isLive;
   const today = () => Store.ctx.date;
@@ -30,8 +30,10 @@
       <div class="tabs c360-tabs" data-s360tabs></div><div data-s360pane></div>`;
     el.querySelector('[data-back]').onclick = () => APP.go('scm-supplier');
     const ov = live() ? Store.query('Supplier/GetOverview', { id }) : Promise.resolve({ ok: true, data: demoOverview(id) });
+    // UI-2R: màn có thể được vẽ lại trước khi API trả về – chỉ lần vẽ mới nhất dựng tab (tránh 2 bộ tab chồng nhau).
+    const tok = el.dataset.d360 = String(Date.now() + Math.random());
     ov.then(x => {
-      if (!el.isConnected) return;
+      if (!el.isConnected || el.dataset.d360 !== tok) return;
       if (!x.ok || !x.data) { el.querySelector('[data-s360head]').innerHTML = failBox(x.message); return; }
       const d = x.data;
       el.querySelector('[data-s360head]').innerHTML = headHtml(d, false);
@@ -74,49 +76,86 @@
     });
   }
 
-  // ---------- Tab Tổng quan (D-67 d) ----------
+  // ---------- Tab Tổng quan (D-67 d → UI-2R, D-69 e–f): trái 1/3 khối thông tin rút gọn, phải 2/3 khối nghiệp vụ ----------
+  const ST_VI = { Active: 'Đang giao dịch', Inactive: 'Ngừng giao dịch' };
+  function infoCfg(d, id) {
+    const s = sup(d), t = today();
+    const join = (...a) => a.filter(Boolean).join(' · ');
+    const mats = d.listMaterial || [];
+    const current = mats.filter(m => (!m.effectiveFrom || U.day(m.effectiveFrom) <= t) && (!m.effectiveTo || U.day(m.effectiveTo) >= t));
+    const ingCount = new Set(mats.map(m => m.ingredientId)).size, prefCount = new Set(current.filter(m => m.isPreferred).map(m => m.ingredientId)).size;
+    const at = (dt, by) => join(dt && U.date(dt), by);
+    const since = d.firstTradeDate ? U.day(d.firstTradeDate).slice(5, 7) + '/' + U.day(d.firstTradeDate).slice(0, 4) : '';
+    return {
+      key: 'supplier', title: 'Thông tin nhà cung cấp', canEdit: Store.perm('scm-supplier').edit !== false,
+      onEdit: () => UI.form('Supplier', Store.get('Supplier', id) || s, { title: 'Nhà cung cấp', onSave: () => APP.refresh() }),
+      core: [
+        { icon: 'user', html: s.ContactName ? `<b>${esc(s.ContactName)}</b> <span class="ip-muted">· người liên hệ</span>` : '' },
+        { icon: 'phone', html: [UI.tel(s.ContactPhone, 'liên hệ'), s.Phone !== s.ContactPhone ? UI.tel(s.Phone, 'công ty') : ''].filter(Boolean).join(' · ') },
+        { icon: 'mail', html: UI.mail(s.Email) },
+        { icon: 'pin', html: esc(s.Address) },
+        { icon: 'tag', html: s.SupplierType || ingCount ? `${esc(s.SupplierType || 'Chưa phân loại')}${ingCount ? ` <span class="ip-muted">· ${U.num(ingCount)} nguyên liệu${prefCount ? ' · ' + U.num(prefCount) + ' ưu tiên' : ''}</span>` : ''}` : '' },
+        { icon: 'truck', html: d.lastReceiptDate ? `Nhận hàng gần nhất ${dmy(d.lastReceiptDate)}${d.lastReceiptNumber ? ` <span class="ip-muted">· ${esc(d.lastReceiptNumber)}</span>` : ''}` : '' },
+      ],
+      groups: [
+        { key: 'legal', title: 'Pháp lý', open: true, summary: s.TaxCode ? 'MST ' + s.TaxCode : '',
+          rows: [['Tên đầy đủ', esc(s.Name)], ['Mã số thuế', s.TaxCode ? esc(s.TaxCode) + UI.copyBtn(s.TaxCode) : ''], ['Địa chỉ đăng ký', esc(s.Address)]] },
+        { key: 'class', title: 'Phân loại', summary: join(s.SupplierType, ST_VI[s.Status] || s.Status),
+          rows: [['Loại NCC', esc(s.SupplierType)], ['Trạng thái', esc(ST_VI[s.Status] || s.Status || '')], ['Bắt đầu giao dịch', esc(since)]] },
+        { key: 'note', title: 'Ghi chú', html: esc(s.Note || ''), summary: String(s.Note || '').split('\n')[0].slice(0, 60) },
+        { key: 'sys', title: 'Hệ thống', rows: [['Tạo lúc / bởi', esc(at(s.CreatedDate, d.createdByName))], ['Cập nhật gần nhất', esc(at(s.ModifiedDate, d.modifiedByName))]],
+          summary: s.ModifiedDate ? 'Cập nhật ' + at(s.ModifiedDate, d.modifiedByName) : s.CreatedDate ? 'Tạo ' + at(s.CreatedDate, d.createdByName) : '' },
+      ],
+    };
+  }
   function overview(box, d, id) {
-    const s = sup(d);
-    const rows = list => `<div class="c360-rows">${list.filter(x => x[1]).map(([l, v]) => `<div class="r"><label>${esc(l)}</label><span>${v}</span></div>`).join('') || none}</div>`;
-    const info = [['Tên NCC', esc(s.Name)], ['Mã', esc(s.Code)], ['Loại NCC', esc(s.SupplierType)], ['Mã số thuế', esc(s.TaxCode)], ['Người liên hệ', esc([s.ContactName, s.ContactPhone].filter(Boolean).join(' · '))],
-      ['Điện thoại', esc(s.Phone)], ['Email', esc(s.Email)], ['Địa chỉ', esc(s.Address)], ['Ghi chú', esc(s.Note)]];
     const t = today();
+    const daysTo = v => Math.round((new Date(U.day(v)) - new Date(t)) / 86400000);
     const current = (d.listMaterial || []).filter(m => (!m.effectiveFrom || U.day(m.effectiveFrom) <= t) && (!m.effectiveTo || U.day(m.effectiveTo) >= t))
-      .sort((a, b) => (b.isPreferred - a.isPreferred) || String(a.ingredientName || '').localeCompare(b.ingredientName || ''));
-    const matHtml = current.length ? `<div class="c360-rows">${current.slice(0, 12).map(m => `<div class="r"><label>${esc(m.ingredientName || '')}${m.isPreferred ? ' ' + UI.tag('Ưu tiên', 'green') : ''}</label><span><b>${U.money(m.unitPrice || 0)}</b>${m.effectiveTo ? `<span class="small muted"> · đến ${dmy(m.effectiveTo)}</span>` : ''}</span></div>`).join('')}</div>${current.length > 12 ? `<div class="small muted mt">… và ${current.length - 12} nguyên liệu khác (tab Bảng giá)</div>` : ''}` : '<div class="muted small">Chưa có giá đang hiệu lực</div>';
+      .sort((a, b) => (b.isPreferred - a.isPreferred) || ((a.effectiveTo ? daysTo(a.effectiveTo) : 9999) - (b.effectiveTo ? daysTo(b.effectiveTo) : 9999)) || String(a.ingredientName || '').localeCompare(b.ingredientName || ''));
+    const matHtml = current.length ? current.slice(0, 6).map(m => {
+      const left = m.effectiveTo ? daysTo(m.effectiveTo) : null;
+      const sub = [m.effectiveTo ? `Hiệu lực đến ${dmy(m.effectiveTo)}${left !== null && left <= 15 ? ` · <span class="dc-warn">còn ${left} ngày</span>` : ''}` : 'Không thời hạn',
+        m.isLowest && m.supplierCount > 1 ? `thấp nhất trong ${m.supplierCount} NCC` : ''].filter(Boolean).join(' · ');
+      return `<div class="dc-it"><div class="top"><b>${esc(m.ingredientName || '')}${m.isPreferred ? ' ' + UI.tag('Ưu tiên', 'green') : ''}</b><span class="ip-muted">${U.money(m.unitPrice || 0)}</span></div><div class="sub">${sub}</div></div>`;
+    }).join('') + `<div class="ip-muted mt">${U.num(current.length)} giá đang hiệu lực${can('scm-supplier-material') ? ' · <a href="javascript:void 0" data-tabprice>Xem bảng giá</a>' : ''}</div>` : '<div class="muted small">Chưa có giá đang hiệu lực</div>';
     const pos = (d.listOpenPurchaseOrder || []).map(p => (p.PurchaseOrderNumber !== undefined ? p : pas(p)));
-    box.innerHTML = `${alertBox(d.listAlert)}
-      <div class="c360-grid">
-        <div class="card panel"><div class="spread"><h3>Thông tin nhà cung cấp</h3>${Store.perm('scm-supplier').edit !== false ? `<button class="btn xs" data-edit>${I('settings')} Sửa</button>` : ''}</div>${rows(info)}</div>
+    const cfg = infoCfg(d, id);
+    box.innerHTML = `<div class="dc-two">${UI.infoPanel(cfg)}<div class="dc-col">${alertBox(d.listAlert)}
+      <div class="dc-pair">
         <div class="card panel"><div class="spread"><h3>Nguyên liệu cung cấp</h3>${can('scm-supplier-material', 'add') ? `<button class="btn xs" data-price>${I('plus')} Thêm giá</button>` : ''}</div>${matHtml}</div>
-        <div class="card panel"><h3>Đánh giá nhà cung cấp</h3>
-          ${meter('Giao đúng hạn (90 ngày)', d.onTimeRate, d.receiptCount90d ? `${U.num(d.receiptCount90d)} lần nhận` : 'Chưa nhận hàng 90 ngày', 90)}
-          ${meter('Đạt QC (90 ngày, theo số lượng)', d.qcPassRate, '', 95)}
-          ${meter('Sự cố xử lý đúng hạn', d.issueOnTimePct, d.issueCount ? `${U.num(d.issueCount)} sự cố` : 'Chưa có sự cố', 90)}</div>
+        <div class="card panel"><div class="spread"><h3>Đánh giá nhà cung cấp</h3><span class="ip-muted">90 ngày</span></div>
+          ${meter('Giao đúng hạn', d.onTimeRate, '', 90)}
+          ${meter('Đạt QC đầu vào', d.qcPassRate, '', 95)}
+          ${meter('Sự cố xử lý đúng hạn', d.issueOnTimePct, '', 90)}
+          <div class="ip-muted">${U.num(d.receiptCount90d || 0)} lần nhận hàng · ${U.num(d.issueCount || 0)} sự cố${d.openIssueCount ? ` (${U.num(d.openIssueCount)} đang mở)` : ''}</div></div>
       </div>
-      <div class="c360-grid two">
-        <div class="card panel"><h3>Giá trị mua 6 tháng</h3><div data-trend>${loading}</div></div>
-        <div class="card panel"><div class="spread"><h3>Đơn mua đang mở</h3>${can('scm-po') ? `<a href="javascript:void 0" data-go="scm-po" class="small">Xem tất cả</a>` : ''}</div><div data-pos></div></div>
-      </div>`;
+      <div class="card panel"><div class="spread"><h3>Giá trị mua 6 tháng</h3><div class="c360-legend" data-legend></div></div><div data-trend>${loading}</div></div>
+      <div class="card panel"><div class="spread"><h3>Đơn mua đang mở</h3>${can('scm-po') ? `<button class="btn xs" data-go="scm-po">Xem tất cả</button>` : ''}</div><div data-pos></div></div>
+    </div></div>`;
+    UI.wireInfoPanel(box, cfg);
     bindGo(box);
-    const edit = box.querySelector('[data-edit]'); if (edit) edit.onclick = () => UI.form('Supplier', Store.get('Supplier', id) || s, { title: 'Nhà cung cấp', onSave: () => APP.refresh() });
     const addPrice = box.querySelector('[data-price]'); if (addPrice) addPrice.onclick = () => priceForm(id);
+    const tabPrice = box.querySelector('[data-tabprice]'); if (tabPrice) tabPrice.onclick = () => { const b = [...document.querySelectorAll('[data-s360tabs] .tab')].find(x => /Bảng giá/.test(x.textContent)); if (b) b.click(); else APP.go('scm-supplier-material'); };
     const posBox = box.querySelector('[data-pos]');
     posBox.innerHTML = table(pos, [{ label: 'Số PO', html: p => `<b>${esc(p.PurchaseOrderNumber || p.PONo || '')}</b>` },
-      { label: 'Hẹn giao', html: p => { const exp = p.ExpectedDeliveryDate || p.ExpectedDate, late = ['Approved', 'Sent', 'PartiallyReceived'].includes(p.Status) ? daysLate(exp) : 0; return `${dmy(exp)}${late ? ` <span class="bad">trễ ${late} ngày</span>` : ''}`; } },
-      { label: 'Giá trị', num: true, html: p => U.money(p.TotalAmount || 0) }, { label: 'Trạng thái', html: p => UI.badge(p.Status, 'PurchaseOrder', 'Status') }], true);
+      { label: 'Hẹn giao', html: p => dmy(p.ExpectedDeliveryDate || p.ExpectedDate) },
+      { label: 'Giá trị', num: true, html: p => U.money(p.TotalAmount || 0) },
+      { label: 'Trạng thái', num: true, html: p => { const late = ['Approved', 'Sent', 'PartiallyReceived'].includes(p.Status) ? daysLate(p.ExpectedDeliveryDate || p.ExpectedDate) : 0; return late ? `<span class="badge red">Trễ ${late} ngày</span>` : UI.badge(p.Status, 'PurchaseOrder', 'Status'); } }], true);
     bindRows(posBox, pos, p => APP.openDetail('PurchaseOrder', p.Id));
-    // Biểu đồ giá trị mua theo tháng (Supplier/GetTrend): giá trị PO đặt và giá trị đã nhận (phiếu Đã ghi sổ).
-    const trendBox = box.querySelector('[data-trend]');
+    // Giá trị mua theo tháng (Supplier/GetTrend) – cột, tháng hiện tại đậm.
+    const trendBox = box.querySelector('[data-trend]'), legend = box.querySelector('[data-legend]');
     (live() ? Store.query('Supplier/GetTrend', { id }) : Promise.resolve({ ok: false, message: 'Chế độ DEMO không có số liệu xu hướng' })).then(x => {
       if (!trendBox.isConnected) return;
       if (!x.ok || !x.data) { trendBox.innerHTML = failBox(x.message); return; }
       const ms = x.data.listMonth || [];
-      const mil = v => Math.round((v || 0) / 100000) / 10;   // triệu đồng, 1 chữ số thập phân – trục không bị cắt số
-      const S = [{ name: 'Giá trị PO đặt (triệu đ)', values: ms.map(m => mil(m.poAmount)), color: '#4C83B6' }, { name: 'Đã nhận – ghi sổ (triệu đ)', values: ms.map(m => mil(m.receivedAmount)), color: '#91AF42' }];
-      const labels = ms.map(m => { const v = U.day(m.month); return v.slice(5, 7) + '/' + v.slice(2, 4); });
-      const rates = ms.filter(m => m.onTimePct !== null && m.onTimePct !== undefined).map(m => `${U.day(m.month).slice(5, 7)}: ${U.num(m.onTimePct, 0)}%`).join(' · ');
-      trendBox.innerHTML = ms.some(m => m.poAmount || m.receivedAmount) ? `${UI.bars(labels, S, { h: 220, title: 'Giá trị mua 6 tháng' })}<div class="c360-legend">${S.map(v => `<span><i style="background:${v.color}"></i>${v.name}</span>`).join('')}</div>${rates ? `<div class="small muted mt">Đúng hạn theo tháng: ${rates}</div>` : ''}` : none;
+      if (!ms.some(m => m.poAmount || m.receivedAmount)) { trendBox.innerHTML = none; return; }
+      const mil = v => Math.round((v || 0) / 100000) / 10;   // triệu đồng, 1 chữ số thập phân
+      const S = [{ name: 'PO đặt (triệu đ)', values: ms.map(m => mil(m.poAmount)), color: '#4C83B6' }, { name: 'Đã nhận – ghi sổ (triệu đ)', values: ms.map(m => mil(m.receivedAmount)), color: '#91AF42' }];
+      const labels = ms.map(m => { const v = U.day(m.month); return 'T' + (+v.slice(5, 7)); });
+      const cur = ms[ms.length - 1];
+      legend.innerHTML = S.map(v => `<span><i style="background:${v.color}"></i>${v.name}</span>`).join('');
+      trendBox.innerHTML = `${UI.bars(labels, S, { h: 200, title: 'Giá trị mua 6 tháng' })}<div class="ip-muted">${esc(labels[0] + ' → ' + labels[labels.length - 1])} · theo phiếu nhập đã ghi sổ · tháng này <b>${U.money(cur ? cur.receivedAmount || 0 : 0)}</b></div>`;
     });
   }
 

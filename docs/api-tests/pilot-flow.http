@@ -154,7 +154,7 @@ Authorization: Bearer {{token}}
 @dishBeefId = {{dishBeef.response.body.listData[0].id}}
 @dishRiceId = {{dishRice.response.body.listData[0].id}}
 
-### 0.6 Công thức Bò kho: định lượng cho 100 suất = 20 kg bò → gửi duyệt → duyệt (mục "Duyệt – Công thức") → khóa
+### 0.6 Công thức Bò kho: định lượng cho 100 suất = 20 kg bò → gửi duyệt → duyệt (mục "Phê duyệt › Công thức") → khóa
 # @name recipeBeef
 POST {{base}}/api/Recipe/CreateVersion
 Authorization: Bearer {{token}}
@@ -432,7 +432,7 @@ MenuId={{menuId}}&DishId={{dishRiceId}}&MealType=TRUA&DayOfWeek={{dow}}&Sequence
 GET {{base}}/api/Menu/GetCalendar?id={{menuId}}&mealType=TRUA&sellingPrice=35000
 Authorization: Bearer {{token}}
 
-### P3.4 Duyệt thực đơn (mục "Duyệt – Thực đơn & phiên bản")
+### P3.4 Duyệt thực đơn (mục "Phê duyệt › Thực đơn & phiên bản")
 POST {{base}}/api/Menu/Approve
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -567,7 +567,7 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/ApprovalRequest/GetMyPending?type=scm-po-director
 Authorization: Bearer {{token}}
 
-### P6.5 Giám đốc duyệt (người có quyền mục "Duyệt – Đơn mua hàng (Giám đốc)"; người chỉ có quyền scm-po bị từ chối "không có quyền") → gửi NCC
+### P6.5 Giám đốc duyệt (người có quyền mục "Phê duyệt › Đơn mua hàng (Giám đốc)"; người chỉ có quyền scm-po bị từ chối "không có quyền") → gửi NCC
 POST {{base}}/api/PurchaseOrder/Approve
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -645,7 +645,7 @@ GET {{base}}/api/GoodsReceipt/GetDetail?id={{grId}}
 Authorization: Bearer {{token}}
 
 ########## P7. KẾ HOẠCH → DUYỆT → PHÁT HÀNH THEO CA → MẺ ME- → XUẤT NL → NẤU → NHIỆT ĐỘ LÕI → LƯU MẪU → ĐẠT → ĐÓNG GÓI
-### P7.1 Duyệt kế hoạch (mục "Duyệt – Kế hoạch sản xuất")
+### P7.1 Duyệt kế hoạch (mục "Phê duyệt › Kế hoạch sản xuất")
 POST {{base}}/api/ProductionPlan/Approve
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -783,7 +783,7 @@ POST {{base}}/api/PackingOrder/RecordResult
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{packing1}}&PackedQuantity=1000&PackagingType=[DEMO] hộp giữ nhiệt
+Id={{packing1}}&PackedQuantity=1000&PackagingType=HOP_GIU_NHIET
 
 ### P7.10 Mẻ 2: lõi 82 °C → xong → sản lượng → đạt (CHƯA lưu mẫu → chỉ cảnh báo, D-42) → đóng gói
 POST {{base}}/api/ProductionBatch/RecordCoreTemperature
@@ -902,7 +902,7 @@ Content-Type: application/x-www-form-urlencoded
 Id={{stopId}}&TemperatureC=58&DeliveredQuantity=1000&AcceptedQuantity=998&ReceiverName=[DEMO] Chị Lan
 
 ### P8.8 Bàn giao 63 °C, giao 1000 / nhận 998 (2 suất từ chối → phản ánh PA- tự động) → đơn Đã giao, chuyến Hoàn thành
-### BE2.5: bàn giao tự ghi sổ bao bì OUT 998 "[DEMO] hộp giữ nhiệt" (loại của kết quả đóng gói P7.9b, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi (P10)
+### BE2.5: bàn giao tự ghi sổ bao bì OUT 998 "HOP_GIU_NHIET" (Hộp giữ nhiệt) (loại của kết quả đóng gói P7.9b, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi (P10)
 POST {{base}}/api/DeliveryStop/Deliver
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded

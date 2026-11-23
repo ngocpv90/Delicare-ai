@@ -10,9 +10,9 @@ Quyền: `PermissionConvention` (`Get*` = Xem, còn lại = Sửa trên màn hì
 
 | MetaLink | Tên | Nhóm seed |
 |---|---|---|
-| `#/wf-inbox?type=scm-pr-l1` | Duyệt – Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng) | OPS-SCM |
-| `#/wf-inbox?type=scm-pr-l2` | Duyệt – Đề nghị mua hàng (cấp 2 – Giám đốc vận hành) | COO |
-| `#/wf-inbox?type=scm-stockcount-l2` | Duyệt – Phiếu kiểm kê (cấp 2 – Kế toán) | FIN-ACC |
+| `#/wf-inbox?type=scm-pr-l1` | Phê duyệt › Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng) | OPS-SCM |
+| `#/wf-inbox?type=scm-pr-l2` | Phê duyệt › Đề nghị mua hàng (cấp 2 – Giám đốc vận hành) | COO |
+| `#/wf-inbox?type=scm-stockcount-l2` | Phê duyệt › Phiếu kiểm kê (cấp 2 – Kế toán) | FIN-ACC |
 
 Mục cũ dùng tiếp: `scm-stockcount` (kiểm kê cấp 1), `scm-adjustment` (điều chỉnh tồn), `scm-po` / `scm-po-director` (PO). Mục cũ **`#/wf-inbox?type=scm-pr` không còn yêu cầu nào** (đề nghị mua dùng `scm-pr-l1` / `scm-pr-l2`) – sidebar nên ẩn / admin tắt mục này.
 
@@ -40,7 +40,7 @@ Mục cũ dùng tiếp: `scm-stockcount` (kiểm kê cấp 1), `scm-adjustment` 
 { "id": "…", "requestNo": "XN-261117-012", "businessType": "PURCHASE_REQUEST", "businessId": "…", "screenId": "scm-pr-l2",
   "title": "Đề nghị mua PH-261117-0042 – cần ngày 20/11/2026 – 1 dòng – ước tính 3,000,000 đ",
   "requestedAt": "2026-11-17T09:00:00", "requestedByName": "…",
-  "requestStatus": "InProgress", "stepNo": 2, "stepCount": 2, "stepName": "Duyệt – Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)",
+  "requestStatus": "InProgress", "stepNo": 2, "stepCount": 2, "stepName": "Phê duyệt › Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)",
   "dueAt": "2026-11-19T10:15:00", "isOverdue": false }
 ```
 `screenId` = mục quyền của cấp đang chờ (không phải màn nghiệp vụ) – mở chi tiết theo `businessType` (PURCHASE_REQUEST → `scm-pr`, STOCK_COUNT → `scm-stockcount`, STOCK_ADJUSTMENT → `scm-adjustment` / `scm-inv-txn`).
@@ -48,7 +48,7 @@ Mục cũ dùng tiếp: `scm-stockcount` (kiểm kê cấp 1), `scm-adjustment` 
 ### 1.2 `ApprovalDetailModel` (thêm field)
 `currentStepNo` (0 khi đã kết thúc), `stepCount`, `dueAt`, `isOverdue`, `listStepInfo[]`:
 ```json
-{ "stepNo": 1, "screenId": "scm-pr-l1", "stepName": "Duyệt – Đề nghị mua hàng (cấp 1 – …)", "decisionStatus": "Approved", "decisionStatusName": "Đã duyệt",
+{ "stepNo": 1, "screenId": "scm-pr-l1", "stepName": "Phê duyệt › Đề nghị mua hàng (cấp 1 – …)", "decisionStatus": "Approved", "decisionStatusName": "Đã duyệt",
   "isCurrent": false, "approverUserId": "…", "approverName": "…", "assignedAt": "…", "dueAt": "…", "isOverdue": false, "decidedAt": "…", "decisionNote": "Đúng nhu cầu" }
 ```
 `statusName`: Chờ duyệt / **Đang duyệt** / Đã duyệt / Từ chối / Đã hủy. `canDecide` = còn mở + có quyền mục của cấp đang chờ + chưa quyết định cấp khác. `business.table`: thêm `PurchaseRequest` (record + lines), `StockCount` (record + dòng lệch), `InventoryTransaction` (STOCK_ADJUSTMENT: `lines` = bút toán đã ghi sau duyệt; nội dung đề nghị ở `proposalJson`). `listItem[0]` = dòng `ApprovalItem` lưu quy trình (`payloadJson = {"steps":["scm-pr-l1","scm-pr-l2"]}`).

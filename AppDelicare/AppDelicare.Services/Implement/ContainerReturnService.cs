@@ -380,6 +380,18 @@ namespace AppDelicare.Services.Implement
                 }
                 string number = deliveryOrder.DeliveryNumber ?? deliveryOrder.DeliveryNo ?? deliveryOrder.Id.ToString("N")[..8];
                 string? type = DeliveryRules.Clean(request.PackagingType);
+                if (type != null)
+                {
+                    // Lỗi UAT 2026-11-21: loại khay / hộp lấy từ danh mục ReferenceLists:PackagingType; loại cũ ngoài danh mục chỉ nhận khi khách đã có loại đó trong sổ bao bì.
+                    string? legacyType = await db.PackagingLedger.AsNoTracking()
+                        .Where(l => !l.IsDeleted && l.CustomerId == deliveryOrder.CustomerId && l.PackagingType == type).Select(l => l.PackagingType).FirstOrDefaultAsync();
+                    var (typeCode, typeError) = ReferenceCatalogs.CheckColumn(_referenceLists, "PackagingLedger.PackagingType", type, legacyType);
+                    if (typeError != null)
+                    {
+                        return (typeError, Guid.Empty);
+                    }
+                    type = typeCode;
+                }
                 if (type == null)
                 {
                     var types = await PackagingRules.DeliveredTypesAsync(db, deliveryOrder.CustomerId, number);

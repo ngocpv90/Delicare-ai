@@ -81,7 +81,7 @@ namespace AppDelicare.Tests.Purchasing
                     var menu = await db.ObjectMenu.FirstOrDefaultAsync(m => m.MetaLink == link);
                     if (menu == null)
                     {
-                        menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Duyệt – " + screen, MetaLink = link, IsActive = true, LevelShow = 2 };
+                        menu = new ObjectMenu { Id = Guid.NewGuid(), Name = screen, MetaLink = link, IsActive = true, LevelShow = 2 };
                         db.ObjectMenu.Add(menu);
                         await db.SaveChangesAsync();
                     }

@@ -27,6 +27,18 @@ namespace AppDelicare.Messaging.Conversations
             _pending[K(bot, chat, messageId)] = new PendingReply(flow, key, now.Add(Lifetime), extra);
         }
 
+        /// <summary>BOT-UX-1: hủy mọi câu hỏi đang chờ của chat (Quay lại / Menu / Đóng khi đang nhập dở) → trả mã tin hỏi để xóa.</summary>
+        public List<string> Forget(string bot, string chat)
+        {
+            string prefix = bot + ":" + chat + ":";
+            var keys = _pending.Keys.Where(k => k.StartsWith(prefix, StringComparison.Ordinal)).ToList();
+            foreach (var k in keys)
+            {
+                _pending.TryRemove(k, out _);
+            }
+            return [.. keys.Select(k => k[prefix.Length..])];
+        }
+
         /// <summary>Lấy và xóa (1 câu trả lời / câu hỏi).</summary>
         public PendingReply? Take(string bot, string chat, string? replyToMessageId)
         {

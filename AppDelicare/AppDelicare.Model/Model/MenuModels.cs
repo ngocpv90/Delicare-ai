@@ -67,8 +67,9 @@ namespace AppDelicare.Model.Model
         public Guid MenuId { get; set; }
         public string? MenuCode { get; set; }
         public string? MenuName { get; set; }
-        public Guid MenuAssignmentId { get; set; }
-        /// <summary>LOCATION = gán theo điểm giao; CUSTOMER = gán theo khách.</summary>
+        /// <summary>Phân công đã dùng; null = thực đơn chung (không có phân công).</summary>
+        public Guid? MenuAssignmentId { get; set; }
+        /// <summary>LOCATION = gán theo điểm giao; CUSTOMER = gán theo khách; COMMON = thực đơn chung của tuần (ORD-OPT-1.2, D-74 f).</summary>
         public string? Level { get; set; }
     }
 }

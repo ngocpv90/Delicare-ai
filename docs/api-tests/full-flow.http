@@ -150,7 +150,7 @@ Authorization: Bearer {{token}}
 @dishBeefId = {{dishBeef.response.body.listData[0].id}}
 @dishRiceId = {{dishRice.response.body.listData[0].id}}
 
-### 0.6 Công thức Bò kho: 20 kg bò / 100 suất → gửi duyệt → duyệt (mục "Duyệt – Công thức") → khóa
+### 0.6 Công thức Bò kho: 20 kg bò / 100 suất → gửi duyệt → duyệt (mục "Phê duyệt › Công thức") → khóa
 # @name recipeBeef
 POST {{base}}/api/Recipe/CreateVersion
 Authorization: Bearer {{token}}
@@ -822,7 +822,7 @@ Content-Type: application/json
 { "warehouseId": "{{warehouseId}}", "note": "[DEMO] thử xuất lô hết hạn", "listLine": [ { "ingredientId": "{{beefId}}", "materialLotId": "{{lotHH.response.body.listData[qcStatus=DAT].id}}", "quantity": 5 } ] }
 
 ########## 9. KẾ HOẠCH → DUYỆT → PHÁT HÀNH THEO CA (GIỮ CHỖ NGUYÊN LIỆU FEFO – Catalog 126, 140)
-### 9.1 Duyệt kế hoạch (mục "Duyệt – Kế hoạch sản xuất")
+### 9.1 Duyệt kế hoạch (mục "Phê duyệt › Kế hoạch sản xuất")
 POST {{base}}/api/ProductionPlan/Approve
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
@@ -1022,7 +1022,7 @@ POST {{base}}/api/PackingOrder/RecordResult
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{packing1}}&PackedQuantity=1000&PackagingType=[DEMO] hộp giữ nhiệt
+Id={{packing1}}&PackedQuantity=1000&PackagingType=HOP_GIU_NHIET
 
 ###
 # @expect data.batch.status == Packed
@@ -1222,7 +1222,7 @@ Content-Type: application/x-www-form-urlencoded
 Id={{stopId}}&TemperatureC=58&DeliveredQuantity=1000&AcceptedQuantity=998&ReceiverName=[DEMO] Chị Lan
 
 ### 12.10 Bàn giao 63 °C, giao 1000 / nhận 998 (2 suất từ chối → phản ánh PA- tự động) → đơn Đã giao, chuyến Hoàn thành;
-###       sổ bao bì OUT 998 "[DEMO] hộp giữ nhiệt" (loại của kết quả đóng gói, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi
+###       sổ bao bì OUT 998 "HOP_GIU_NHIET" (Hộp giữ nhiệt) (loại của kết quả đóng gói, 1 hộp / suất nhận) + phiếu thu hồi Chờ thu hồi
 # @expect data.route.status == Completed
 POST {{base}}/api/DeliveryStop/Deliver
 Authorization: Bearer {{token}}

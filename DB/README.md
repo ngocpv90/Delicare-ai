@@ -48,7 +48,7 @@ So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** 
 | 4 | `sp/uspUser_GetAll.sql` (sửa) | T45R.8 | Thêm `@IsActive` |
 | 5 | `seed/00_Admin_seed.sql` (sửa) | T48.0 | Tạo `admin` nếu chưa có – nhận hash **PBKDF2** (biến sqlcmd `AdminUserName`, `AdminPasswordHash` – truyền bằng `:setvar`, không dùng `-v`, T48.3); chỉ chạy qua `Deploy-Database.ps1 -AdminPassword` hoặc `db-init.sh` (`ADMIN_PASSWORD`, khi chưa có admin) |
 | 6 | `seed/OrganizationUnit_seed.sql` (không đổi) | T07 | Cơ cấu tổ chức (chạy trước để các seed sau có công ty) |
-| 7 | `seed/ObjectMenu_seed.sql` (sửa) | T13, T15.1 | + mục "Duyệt – Đơn đặt suất ăn" (`#/wf-inbox?type=crm-order`), "Duyệt – Đơn mua hàng (Giám đốc)" (`#/wf-inbox?type=scm-po-director`) |
+| 7 | `seed/ObjectMenu_seed.sql` (sửa) | T13, T15.1 | + mục "Phê duyệt › Đơn đặt suất ăn" (`#/wf-inbox?type=crm-order`), "Phê duyệt › Đơn mua hàng (Giám đốc)" (`#/wf-inbox?type=scm-po-director`) |
 | 8 | `seed/ObjectMenu_disable_legacy.sql` (mới) | T45R.8 (D-37) | Tắt 26 menu app cũ (không xóa) |
 | 9 | `seed/UserRole_seed.sql` (sửa) | T13, T15.1 | Quyền duyệt 2 mục trên cho nhóm CEO |
 | 10 | `seed/Shift_seed.sql` (không đổi) | T21.1 | 4 ca `SANG_6H` / `TRUA` / `TOI` / `DEM_23H` (Pilot chạy 4 ca – T17.1) |
@@ -57,6 +57,7 @@ So với commit `9d03b40` (trước đợt Pilot). Chạy **đúng thứ tự** 
 | 13 | `seed/FoodSafetyQa_seed.sql` (mới) | BE2.5 | Bộ checklist `QA_FG` (thành phẩm), `PREP`, `PREP_AREA_CLEAN`, `BLAST_CHILL`, `KITCHEN_CLEAN` (5S), `VS-KHAY` (vệ sinh khay 6 bước) – PROPOSED D-54. Chỉ thêm khi chưa có (theo Code / ItemCode), không ghi đè |
 | 14 | `seed/SystemUser_seed.sql` (mới) | T23 | Tài khoản dịch vụ `system` (Id cố định `061877ad-396c-4386-8868-25d4940bf467` = `SystemUsers:JobUserId`) cho job tự động – không đăng nhập được (mật khẩu không phải hash hợp lệ), không cấp nhóm quyền. Chỉ thêm khi chưa có |
 | 15 | `seed/KpiMetricDefinition_seed.sql` (mới) | BE3.4 | 11 chỉ tiêu KPI phiên bản 1 theo spec 11.7 + BUSINESS_RULES §12 (`PROD_ACHIEVEMENT`, `WASTE_RATE`, `QC_REJECT_RATE`, `QC_CORE_TEMP_PASS`, `QC_SAMPLE_RETAINED`, `DEL_ONTIME`, `INV_ACCURACY`, `FIN_COST_MEAL`, `FIN_FOOD_COST`, `PKG_LOSS_RATE`, `CS_COMPLAINT_SLA`); mục tiêu = thẻ `[TARGET >= x]` cuối `FormulaDescription` (GAP-KPI-01). Công thức + mục tiêu PROPOSED – D-57 b, w–ab. Chỉ thêm mã chưa có (mọi phiên bản, kể cả đã xóa mềm), không ghi đè – đổi số qua màn `#/kpi-definition` (tạo phiên bản mới) |
+| 16 | `seed/ObjectMenu_crm_order_week_seed.sql` (mới) | ORD-OPT-1.8 (D-74 g) | Mục menu `#/crm-order-week` "Đăng ký suất tuần" (cạnh `#/crm-order`) + quyền chép nguyên từ `#/crm-order` cho mọi nhóm – chỉ thêm. Cột mới `OrderLine.MenuOptionNo` đi bằng migration `DB/migrations/20261122_01_orderline_menu_option.sql` (không nằm trong scripts.order) |
 
 T11, T12, T13 (ngoài seed menu), T14, T15, T15.1, T17, T17.1, T19, T50R1: **không có SP / seed mới** (đọc / ghi qua EF + SP `usp*_GetAll` sẵn có).
 
@@ -109,4 +110,4 @@ Cả hai chạy lại bao nhiêu lần cũng được: migration đã chạy th�
 | `DocumentStorage:RootPath`, `MaxFileSizeMb`, `AllowedExtensions`, `Categories` | `App_Data/DocumentFiles`, 20, pdf/jpg/jpeg/png/xlsx/docx, signature/photo/evidence/contract/other | BE2.7 | Tệp đính kèm ngoài wwwroot (biến môi trường `DocumentStorage__RootPath` để đổi chỗ) |
 | `Licenses:GemBox` (bí mật – user-secrets / biến môi trường `Licenses__GemBox`) | – | BE2.7 | Mẫu in Word đủ trang (thiếu → bản dùng thử) |
 
-Đã chạy: DB dev `AppDelicare` (2026-11-17, mục 1–4, 6–11 theo thứ tự trên, `-f 65001`) và staging `AppDelicare_Staging` (qua `Deploy-Database.ps1`). Tên tiếng Việt bị lỗi font từ lần chạy seed trước (thiếu `-f 65001`: tên ca, ghi chú đơn vị, tên công ty, mục "Duyệt – Đơn đặt suất ăn") đã sửa bằng `deploy/db/Repair-VietnameseText.ps1` (dev 44 giá trị, staging 9).
+Đã chạy: DB dev `AppDelicare` (2026-11-17, mục 1–4, 6–11 theo thứ tự trên, `-f 65001`) và staging `AppDelicare_Staging` (qua `Deploy-Database.ps1`). Tên tiếng Việt bị lỗi font từ lần chạy seed trước (thiếu `-f 65001`: tên ca, ghi chú đơn vị, tên công ty, mục "Phê duyệt › Đơn đặt suất ăn") đã sửa bằng `deploy/db/Repair-VietnameseText.ps1` (dev 44 giá trị, staging 9).

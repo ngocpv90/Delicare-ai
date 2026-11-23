@@ -14,7 +14,7 @@ import { RecipeLineModalComponent } from './recipe-line-modal/recipe-line-modal.
 import { RecipeModalComponent } from './recipe-modal/recipe-modal.component';
 import { RecipeVersionModalComponent } from './recipe-version-modal/recipe-version-modal.component';
 
-// menu-recipe – Công thức & phiên bản (FE-3). Mỗi phiên bản = 1 Recipe cùng DishId (không có bảng RecipeVersion).
+// menu-recipe – Công thức chế biến (FE-3). Mỗi phiên bản = 1 Recipe cùng DishId (không có bảng RecipeVersion).
 // Danh sách: Recipe/GetAllData + tên món. Ngăn kéo: định lượng (RecipeLine CRUD khi Draft, quyền theo menu #/menu-recipe-line –
 // ScreenMap RecipeLine → menu-recipe-line), giá vốn (Recipe/CalculateCost), các phiên bản của món (Recipe/GetByDishId), thông tin.
 // Luồng: CreateVersion (Draft) → Submit (PendingApproval) → Approve (Approved) / Reject (→ Draft, bắt buộc lý do) → Lock (Locked,

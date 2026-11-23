@@ -22,7 +22,7 @@ namespace AppDelicare.Services.Implement
 {
     public partial class CustomerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IClock clock, IDocumentNumberService documentNumberService, ICurrentActor currentActor
-        , IPackagingLedgerService packagingLedgerService, IOptions<BusinessRulesOptions> rules) : ICustomerService
+        , IPackagingLedgerService packagingLedgerService, IOptions<BusinessRulesOptions> rules, IPermissionService permissionService) : ICustomerService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -34,6 +34,8 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>MA-1.2: mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công (D-63 j).</summary>
         private string? _createdCode;
+        /// <summary>UI-5.8: bản ghi tạo kèm khách mới (liên hệ chính, điểm giao) – nối vào thông báo thành công.</summary>
+        private readonly List<string> _createdExtras = [];
 
         public async Task<IResults<CustomerViewModel>> GetAll(CustomerSearchRequest request)
         {
@@ -135,7 +137,7 @@ namespace AppDelicare.Services.Implement
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
                     ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
-                        : _createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "khách hàng", _createdCode)
+                        : _createdCode != null ? string.Join(" · ", new[] { string.Format(ConstantHelper.Message.SaveSuccessWithCode, "khách hàng", _createdCode) }.Concat(_createdExtras))
                         : ConstantHelper.Message.SaveSuccess,
                     Data = true
                 };
@@ -159,6 +161,16 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
+            // UI-5.8: kiểm điểm giao đầu tiên TRƯỚC khi ghi – lỗi → không tạo khách (cùng transaction của Save).
+            var first = request.FirstLocation is { IsEmpty: false } fl ? fl : null;
+            if (first != null)
+            {
+                invalid = CheckFirstLocation(first);
+                if (!string.IsNullOrEmpty(invalid))
+                {
+                    return invalid;
+                }
+            }
             var insert = _mapper.Map<Customer>(request);
             insert.Code = await _documentNumberService.NextCodeAsync(CodeKind(request.CustomerType));
             insert.CIF = insert.Code;
@@ -166,6 +178,47 @@ namespace AppDelicare.Services.Implement
             _unitOfWork.CustomerRepository.Add(insert);
             await _unitOfWork.CustomerRepository.CommitAsync(typeSave);
             _createdCode = insert.Code;
+
+            // UI-5.8 (D-63 r): khách doanh nghiệp → người liên hệ chính từ Người liên hệ + SĐT + email người liên hệ.
+            if (request.CustomerType == CustomerTypes.Business && request.ContactPersonName != null)
+            {
+                _unitOfWork.CustomerContactRepository.Add(new CustomerContact
+                {
+                    CustomerId = insert.Id, Name = request.ContactPersonName, FullName = request.ContactPersonName,
+                    Phone = request.ContactPersonPhone, Email = request.ContactPersonEmail, IsPrimary = true, Status = "Active",
+                });
+                await _unitOfWork.CustomerContactRepository.CommitAsync(typeSave);
+                _createdExtras.Add(ConstantHelper.Message.CustomerCreatedPrimaryContact);
+            }
+            if (first != null)
+            {
+                var location = new CustomerDeliveryLocation
+                {
+                    CustomerId = insert.Id, Code = await _documentNumberService.NextCodeAsync(DocumentKind.DeliveryLocation),
+                    Name = first.Name!.Trim(), Address = first.Address!.Trim(), DeliveryWindowFrom = first.DeliveryWindowFrom, DeliveryWindowTo = first.DeliveryWindowTo,
+                    ContactName = request.ContactPersonName ?? request.Name, ContactPhone = request.ContactPersonPhone ?? request.PhoneNumber, Status = "Active",
+                };
+                _unitOfWork.CustomerDeliveryLocationRepository.Add(location);
+                await _unitOfWork.CustomerDeliveryLocationRepository.CommitAsync(typeSave);
+                _createdExtras.Add(string.Format(ConstantHelper.Message.CustomerCreatedLocation, location.Code));
+            }
+            return string.Empty;
+        }
+
+        /// <summary>UI-5.8: điểm giao đầu tiên cần tên + địa chỉ; giờ nhận từ &lt; đến khi nhập đủ hai đầu.</summary>
+        private static string CheckFirstLocation(CustomerFirstLocationRequest first)
+        {
+            var missing = new List<string>();
+            if (string.IsNullOrWhiteSpace(first.Name)) missing.Add("tên điểm giao");
+            if (string.IsNullOrWhiteSpace(first.Address)) missing.Add("địa chỉ");
+            if (missing.Count > 0)
+            {
+                return string.Format(ConstantHelper.Message.CustomerFirstLocationRequired, string.Join(", ", missing));
+            }
+            if (first.DeliveryWindowFrom is { } from && first.DeliveryWindowTo is { } to && from >= to)
+            {
+                return ConstantHelper.Message.CustomerFirstLocationWindowInvalid;
+            }
             return string.Empty;
         }
 
@@ -351,7 +404,7 @@ namespace AppDelicare.Services.Implement
             {
                 // Trường của doanh nghiệp → xóa trống.
                 request.LegalName = request.BusinessRegistrationNumber = request.RegistrationPlace = request.LegalRepresentativeName = null;
-                request.ContactPersonName = request.ContactPersonPhone = request.ContactPersonEmail = request.Industry = request.CompanySize = request.Segment = null;
+                request.ContactPersonName = request.ContactPersonPhone = request.ContactPersonEmail = request.Industry = request.CompanySize = null;
                 request.RegistrationDate = null;
                 request.LastName = Clean(request.LastName);
                 request.FirstName = Clean(request.FirstName);
@@ -393,6 +446,24 @@ namespace AppDelicare.Services.Implement
                 }
                 request.Name = request.LastName + " " + request.FirstName;
                 request.DisplayName = request.Name;
+            }
+
+            // UI-5.3 (D-63 r): Ngành / Quy mô / Giới tính / Nguồn chỉ nhận mã trong danh mục (giá trị cũ ngoài danh mục giữ được khi không sửa).
+            string? catalogError;
+            (request.Industry, catalogError) = CustomerCatalogs.Check("Industry", request.Industry, exist?.Industry);
+            if (catalogError != null) return catalogError;
+            (request.CompanySize, catalogError) = CustomerCatalogs.Check("CompanySize", request.CompanySize, exist?.CompanySize);
+            if (catalogError != null) return catalogError;
+            (request.Gender, catalogError) = CustomerCatalogs.Check("Gender", request.Gender, exist?.Gender);
+            if (catalogError != null) return catalogError;
+            (request.Source, catalogError) = CustomerCatalogs.Check("Source", request.Source, exist?.Source);
+            if (catalogError != null) return catalogError;
+
+            // UI-5.1: NV phụ trách = User.Id của tài khoản đang hoạt động (giữ nguyên người cũ nếu không đổi).
+            if (request.UserAssignId is { } assignee && assignee != exist?.UserAssignId
+                && !await _unitOfWork.DbContext.User.AsNoTracking().AnyAsync(x => x.Id == assignee && !x.IsDeleted && x.IsActive))
+            {
+                return ConstantHelper.Message.CustomerAssigneeNotFound;
             }
 
             foreach (var (label, phone) in new[] { ("Điện thoại", request.PhoneNumber), ("SĐT người liên hệ", request.ContactPersonPhone) })
@@ -611,6 +682,77 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-5 (D-63 r): chi nhánh (chỉ loại BRANCH), NV phụ trách (tài khoản đang hoạt động, tên từ Person), danh mục, cờ chi nhánh bắt buộc.</summary>
+        public async Task<IResult<CustomerFormOptionsModel>> GetFormOptions()
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var branches = await db.OrganizationUnit.AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.UnitType == OrganizationUnitService.BranchType)
+                    .OrderBy(x => x.Name).Select(x => new { x.Id, x.Code, x.Name }).ToListAsync();
+                var users = await db.User.AsNoTracking().Where(x => !x.IsDeleted && x.IsActive)
+                    .Select(x => new { x.Id, x.UserName, x.PersonId }).ToListAsync();
+                var personIds = users.Where(x => x.PersonId != null).Select(x => x.PersonId!.Value).Distinct().ToList();
+                var names = await db.Person.AsNoTracking().Where(p => personIds.Contains(p.Id)).Select(p => new { p.Id, p.FullName }).ToDictionaryAsync(p => p.Id, p => p.FullName);
+                static List<CustomerFormOptionItem> Items(IEnumerable<CatalogItem> list) => [.. list.Select(x => new CustomerFormOptionItem { Code = x.Code, Name = x.Name })];
+                var model = new CustomerFormOptionsModel
+                {
+                    BranchRequired = branches.Count > 0,
+                    ListBranch = [.. branches.Select(x => new CustomerFormOptionItem { Code = x.Id.ToString(), Name = x.Name ?? x.Code ?? string.Empty, Hint = x.Code })],
+                    ListAssignee = [.. users
+                        .Select(x => new CustomerFormOptionItem
+                        {
+                            Code = x.Id.ToString(),
+                            Name = x.PersonId is { } pid && names.TryGetValue(pid, out var n) && !string.IsNullOrWhiteSpace(n) ? n! : x.UserName ?? string.Empty,
+                            Hint = x.UserName,
+                        })
+                        .OrderBy(x => x.Name, StringComparer.CurrentCulture)],
+                    Catalogs = new Dictionary<string, List<CustomerFormOptionItem>>
+                    {
+                        ["Industry"] = Items(CustomerCatalogs.Industry),
+                        ["CompanySize"] = Items(CustomerCatalogs.CompanySize),
+                        ["Gender"] = Items(CustomerCatalogs.Gender),
+                        ["Source"] = Items(CustomerCatalogs.Source),
+                        ["Status"] = Items(CustomerCatalogs.Status),
+                    },
+                };
+                return Result<CustomerFormOptionsModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetFormOptions: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// UI-2R (D-69 c–d): quyền xem thông tin cá nhân (ngày sinh, CCCD + ngày / nơi cấp của khách cá nhân – chỉ người có quyền Sửa crm-customer;
+        /// lọc ở máy chủ), tên người tạo / cập nhật, suất / ngày theo điểm giao (30 ngày đã qua).
+        /// </summary>
+        private async Task FillInfoPanelAsync(CustomerOverviewModel model, Customer customer, IQueryable<Order> orders, DateTime today)
+        {
+            var db = _unitOfWork.DbContext;
+            model.CanViewPersonal = _currentActor.Actor is not { } actor
+                || permissionService.IsAllowed(await permissionService.GetAsync(actor.UserId), "crm-customer", PermissionAction.Edit);
+            if (!model.CanViewPersonal)
+            {
+                // Bản sao tách khỏi DbContext – không đụng bản ghi đang theo dõi.
+                db.Entry(customer).State = EntityState.Detached;
+                customer.DateOfBirth = null;
+                customer.IdentityNumber = null;
+                customer.IdentityDate = null;
+                customer.IdentityPlace = null;
+            }
+            var names = await InfoPanelRules.UserNamesAsync(db, [customer.CreatedBy, customer.ModifiedBy]);
+            model.CreatedByName = names.NameOf(customer.CreatedBy);
+            model.ModifiedByName = names.NameOf(customer.ModifiedBy);
+            DateTime since = today.AddDays(-30);
+            var perLocation = await orders.Where(o => o.DeliveryLocationId != null && o.MealDate >= since && o.MealDate < today && CompletedOrderStatuses.Contains(o.Status!))
+                .GroupBy(o => o.DeliveryLocationId!.Value).Select(g => new { g.Key, Total = g.Sum(o => o.TotalQuantity) ?? 0m }).ToListAsync();
+            model.ListLocationStat = [.. perLocation.Select(x => new CustomerLocationStatModel { LocationId = x.Key, AvgMealsPerDay = Math.Round(x.Total / 30m, 0) })];
+        }
+
         /// <summary>Đơn đã giao xong – dùng tính số suất trung bình 7 ngày.</summary>
         private static readonly string[] CompletedOrderStatuses = ["Delivered", "Reconciled"];
 
@@ -641,7 +783,7 @@ namespace AppDelicare.Services.Implement
                     ListContract = contracts.Select(x => new ContractOverviewModel
                     {
                         Id = x.Id, ContractNumber = x.ContractNumber, Name = x.Name, StartDate = x.StartDate, EndDate = x.EndDate, Status = x.Status,
-                        ContractValue = x.ContractValue, ListMeal = meals.Where(m => m.ContractId == x.Id).ToList(),
+                        ContractValue = x.ContractValue, PaymentTerm = x.PaymentTerm, ListMeal = meals.Where(m => m.ContractId == x.Id).ToList(),
                     }).ToList(),
                     ListRecentOrder = await orders.OrderByDescending(o => o.MealDate).Take(15).Select(o => new OrderBriefModel
                     {
@@ -670,6 +812,7 @@ namespace AppDelicare.Services.Implement
                                                     where !r.IsDeleted && !o.IsDeleted && o.CustomerId == id
                                                     select r.OrderId).Distinct().CountAsync();
                 await FillProfileAsync(model, customer, contracts, complaints.Select(c => (c.ComplaintStatus, c.SlaDueAt)).ToList(), today, now);
+                await FillInfoPanelAsync(model, customer, orders, today);
                 return Result<CustomerOverviewModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

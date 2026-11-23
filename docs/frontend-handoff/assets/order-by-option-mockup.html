@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Đăng ký suất theo lựa chọn (đề xuất)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--border:#E8ECE5;--tx:#263238;--tx2:#6b756e;--tx3:#9aa39c;--g-bg:#EFF5E5;--g-tx:#6F9131;--b-bg:#E6F1FB;--b-tx:#185FA5;--o-bg:#FDF0E6;--o-tx:#B85A16;--r-bg:#FCEBEB;--r-tx:#A32D2D;--n-bg:#F1EFE8}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F6F8F4;color:var(--tx);margin:20px auto;max-width:1400px;padding:0 16px}
+button{border:1px solid #cfd6cc;background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+button.p{background:#6F9131;border-color:#6F9131;color:#fff}
+.c{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:18px}
+.l{font-size:12px;color:var(--tx2)}
+.b{font-size:11px;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--border);margin:6px 0 18px;overflow-x:auto}
+.tab{font-size:14px;padding:10px 2px;color:var(--tx2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--tx);font-weight:600;border-color:#6F9131}
+.pane{display:none}.pane.on{display:block}
+h2{font-size:18px;margin:0 0 4px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--tx2)}
+.f select,.f input{font-size:13px;padding:6px 8px;border:1px solid #cfd6cc;border-radius:8px;min-width:170px}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--border);padding:7px 8px;vertical-align:top}
+th{font-size:12px;color:var(--tx2);font-weight:600;text-align:left;background:#FAFBF8;position:sticky;top:0}
+.grid td.cell{min-width:140px}
+.dish{font-size:11px;color:var(--tx2);line-height:1.35;margin-bottom:5px;min-height:30px}
+.qty{width:100%;font-size:15px;font-weight:600;text-align:right;padding:5px 8px;border:1px solid #cfd6cc;border-radius:8px}
+.qty:focus{outline:2px solid #B7D08A;border-color:#6F9131}
+.lock .qty{background:var(--n-bg);color:var(--tx2);border-color:var(--border)}
+.lock{background:#FBFBF9}
+tr.meal td{background:#F3F7EC;font-weight:700}
+tr.sum td{font-weight:600;background:#FAFBF8}
+tr.tot td{font-weight:800;font-size:14px}
+.num{text-align:right;white-space:nowrap}
+.wrap{overflow-x:auto}
+.two{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:1199px){.two{grid-template-columns:1fr}}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.kv b{font-size:15px}
+.note{background:var(--b-bg);color:var(--b-tx);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+.warn{background:var(--o-bg);color:var(--o-tx)}
+.pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;background:var(--g-bg);color:var(--g-tx);margin-left:6px}
+.prop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media(max-width:900px){.prop{grid-template-columns:1fr}}
+.pc{border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:13px}
+.pc h4{margin:0 0 6px;font-size:14px}
+.keep{color:var(--g-tx)}.new{color:var(--o-tx)}
+/* phone */
+.phone{width:360px;border:10px solid #222;border-radius:34px;background:#E9EEF3;padding:14px 10px;margin:auto;min-height:640px}
+.msg{max-width:85%;padding:9px 11px;border-radius:12px;font-size:13px;margin:8px 0;line-height:1.4;background:#fff}
+.me{margin-left:auto;background:#D6EAFF}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.btns span{border:1px solid #9cc3ee;color:#185FA5;border-radius:8px;padding:4px 8px;font-size:12px;background:#fff}
+.mini{background:#fff;border-radius:12px;padding:10px;font-size:12px}
+.mini .r{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #eee}
+.mini input{width:70px;text-align:right;padding:4px;border:1px solid #ccc;border-radius:6px}
+/* phiếu */
+.slip th,.slip td{border:1px solid #cfd6cc}
+.box{display:inline-block;width:70px;height:22px;border:1px dashed #9aa39c;border-radius:4px;vertical-align:middle}
+</style></head><body>
+
+<p class="l">Demo đề xuất – số liệu minh họa lấy từ file New_Menu_Delicare_202611_W3.xlsx. Ô nhập trong tab "Đăng ký suất tuần" sửa được và tự cộng; tab "Kế hoạch đặt hàng" tính lại theo số anh nhập.</p>
+
+<div class="c">
+  <h2>Đề xuất: khách đăng ký số suất theo từng lựa chọn</h2>
+  <div class="l" style="margin-bottom:12px">Giá theo buổi (loại suất) trong hợp đồng – mọi lựa chọn cùng buổi cùng giá. Thực đơn chung mỗi tuần, gán riêng chỉ cho khách ngoại lệ.</div>
+  <div class="prop">
+    <div class="pc"><h4 class="keep"><i class="ti ti-circle-check"></i> Giữ nguyên</h4>Thực đơn tuần (buổi × lựa chọn × món) · công thức, giá vốn, FC · hợp đồng & giá theo loại suất · chốt 20:00 ngày D-1 · duyệt sau giờ chốt.</div>
+    <div class="pc"><h4 class="new"><i class="ti ti-pencil-plus"></i> Thay đổi</h4>Dòng đơn lưu <b>số suất theo lựa chọn</b> (thêm 1 cột – cần anh duyệt DB) · màn nhập suất cả tuần · tính nguyên liệu theo số thật (bỏ chia đều + 15%) · phiếu gửi khách có ô số suất · đối soát thực tế theo lựa chọn.</div>
+    <div class="pc"><h4 class="new"><i class="ti ti-users"></i> Gán thực đơn</h4>Có <b>thực đơn chung</b> của tuần: khách không có phân công riêng tự dùng thực đơn chung. Màn Phân công thực đơn chỉ còn cho khách có thực đơn riêng (trường học, bệnh viện…).</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab on" data-t="p1">1. Thực đơn tuần (bếp)</div>
+  <div class="tab" data-t="p2">2. Phiếu gửi khách</div>
+  <div class="tab" data-t="p3">3. Đăng ký suất tuần (kinh doanh)</div>
+  <div class="tab" data-t="p4">4. Kế hoạch đặt hàng (sau chốt)</div>
+  <div class="tab" data-t="p5">5. Bot Zalo (sau này)</div>
+</div>
+
+<!-- P1 -->
+<div class="pane on" id="p1"><div class="c">
+  <div class="bar"><div><h2>NU-261130-001 · Thực đơn chung tuần 30/11 – 06/12/2026 <span class="b" style="background:var(--g-bg);color:var(--g-tx)">Đã công bố</span></h2>
+  <div class="l">Nhân bản từ tuần trước · áp dụng cho mọi khách chưa có phân công riêng</div></div>
+  <div style="display:flex;gap:8px"><button><i class="ti ti-copy"></i>Nhân bản</button><button><i class="ti ti-printer"></i>In phiếu gửi khách</button></div></div>
+  <div class="wrap"><table id="menuTbl"></table></div>
+</div></div>
+
+<!-- P2 -->
+<div class="pane" id="p2"><div class="c">
+  <div class="note">Phiếu hệ thống in ra cho từng khách (giống sheet 4. Menu_Sent) – <b>thêm ô "Số suất"</b> dưới mỗi lựa chọn. Khách điền rồi gửi lại; kinh doanh tải phiếu lên (tab 3) hoặc nhập tay.</div>
+  <div style="text-align:center;font-weight:700">CÔNG TY CỔ PHẦN THƯƠNG MẠI DỊCH VỤ DELICARE VN</div>
+  <div style="text-align:center;font-size:17px;font-weight:800;margin:6px 0">PHIẾU ĐĂNG KÝ SUẤT ĂN CA CÔNG NHÂN</div>
+  <div style="text-align:center" class="l">Khách: Công ty X · Điểm giao: Nhà máy A · Tuần 30/11 – 06/12/2026 · Hạn gửi: 20:00 Chủ nhật 29/11</div>
+  <div class="wrap" style="margin-top:12px"><table class="slip" id="slipTbl"></table></div>
+</div></div>
+
+<!-- P3 -->
+<div class="pane" id="p3">
+  <div class="bar">
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <label class="f">Khách hàng *<select><option>KHB-00012 · Công ty X</option></select></label>
+      <label class="f">Điểm giao *<select><option>DP-00031 · Nhà máy A</option><option>DP-00032 · Nhà máy B</option></select></label>
+      <label class="f">Tuần *<select><option>30/11 – 06/12/2026</option></select></label>
+      <label class="f">Thực đơn áp dụng<input value="NU-261130-001 (thực đơn chung)" disabled></label>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button><i class="ti ti-history"></i>Chép số tuần trước</button>
+      <button><i class="ti ti-upload"></i>Tải phiếu đăng ký lên</button>
+      <button><i class="ti ti-device-floppy"></i>Lưu nháp</button>
+      <button class="p"><i class="ti ti-check"></i>Xác nhận cả tuần</button>
+    </div>
+  </div>
+  <div class="two">
+    <div class="c" style="padding:10px 12px"><div class="wrap"><table class="grid" id="ordTbl"></table></div>
+      <div class="l" style="margin-top:8px"><i class="ti ti-lock"></i> Ngày đã qua 20:00 hôm trước bị khóa – muốn sửa phải "Yêu cầu thay đổi sau giờ chốt" (cần duyệt). Ô trống / 0 = không đặt.</div></div>
+    <div>
+      <div class="c"><div style="font-weight:600;margin-bottom:6px">Tổng tuần</div>
+        <div class="kv"><span>Tổng suất</span><b id="wSu">0</b></div>
+        <div class="kv"><span>Thành tiền (chưa VAT)</span><b id="wTien">0</b></div>
+        <div class="kv"><span>Giá theo hợp đồng HD-261101-004</span><span>Sáng 20.000 · Trưa 40.000 · Tối 40.000 · Đêm 30.000</span></div>
+      </div>
+      <div class="c"><div style="font-weight:600;margin-bottom:6px">Khi bấm "Xác nhận cả tuần"</div>
+        <div class="l" style="line-height:1.6">• Tạo <b>7 đơn</b> (mỗi ngày 1 đơn cho Nhà máy A), trạng thái Đã xác nhận.<br>• Mỗi đơn có dòng theo <b>buổi × lựa chọn</b>; đơn giá lấy theo buổi.<br>• Sau đó vẫn mở được từng đơn để sửa tới 20:00 ngày hôm trước.<br>• 20:00 D-1 hệ thống chốt → đơn Đã chốt → vào kế hoạch sản xuất.</div></div>
+      <div class="c" style="background:var(--o-bg);border-color:#F5C9A6"><div style="font-weight:600;color:var(--o-tx)"><i class="ti ti-alert-triangle"></i> Cảnh báo mẫu</div>
+        <div class="l" style="color:var(--o-tx);margin-top:4px">Sáng T5 lệch &gt; 10% so với tuần trước (chỉ cảnh báo, vẫn lưu được).</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- P4 -->
+<div class="pane" id="p4"><div class="c">
+  <div class="note">Sau khi chốt, hệ thống cộng <b>số suất từng lựa chọn × món trong set</b> của mọi khách → số phần từng món mỗi ngày (thay sheet 5. Plan_Order). Món mua sẵn (bánh, sữa) ra thẳng số lượng đặt NCC; món nấu (trưa, tối) đi tiếp qua công thức để ra nguyên liệu (kg). <b>Không còn chia đều + 15% dự phòng.</b></div>
+  <div class="wrap"><table id="planTbl"></table></div>
+</div></div>
+
+<!-- P5 -->
+<div class="pane" id="p5"><div class="c">
+  <div class="note">Cùng dữ liệu với tab 3 – chỉ khác người nhập là khách. Cần chốt trước D-06 (nối tài khoản Zalo ↔ người liên hệ của khách).</div>
+  <div class="phone">
+    <div class="msg">📋 <b>Delicare</b> – Thực đơn tuần 30/11 – 06/12 đã có. Hạn đăng ký: 20:00 CN 29/11.<div class="btns"><span>Xem thực đơn</span><span>Đăng ký suất</span></div></div>
+    <div class="msg me">Đăng ký suất</div>
+    <div class="msg">Chọn điểm giao:<div class="btns"><span>Nhà máy A</span><span>Nhà máy B</span></div></div>
+    <div class="msg me">Nhà máy A</div>
+    <div class="msg" style="max-width:100%"><b>Thứ 2 – 30/11</b> (form trong Zalo, vuốt sang ngày khác)
+      <div class="mini" style="margin-top:6px">
+        <div class="r"><span><b>Sáng LC1</b><br><span class="l">Bánh mì HN · Trứng · Sữa Fami</span></span><input value="2000"></div>
+        <div class="r"><span><b>Sáng LC2</b><br><span class="l">Bánh bao · Trứng · Sữa Fami</span></span><input value="1500"></div>
+        <div class="r"><span><b>Sáng LC3</b><br><span class="l">Bánh chưng · Chả mỡ · Sữa Fami</span></span><input value="1000"></div>
+        <div class="r"><span><b>Trưa</b><br><span class="l">Thịt hầm đậu đỏ · Cá chiên vừng…</span></span><input value="4500"></div>
+        <div class="r"><span><b>Tối</b><br><span class="l">Bò kho củ cải · Thịt rang…</span></span><input value="4500"></div>
+        <div class="r" style="border:0"><span><b>Đêm LC1</b><br><span class="l">Bánh mỳ kẹp trứng, chả · Sữa</span></span><input value="1200"></div>
+      </div></div>
+    <div class="msg">✅ Tóm tắt Nhà máy A, tuần 30/11:<br>• 7 ngày · 102.900 suất · 3.402.000.000 đ<br>• T2: Sáng 4.500 (2.000/1.500/1.000) · Trưa 4.500 · Tối 4.500 · Đêm 1.200<div class="btns"><span>Xác nhận</span><span>Sửa</span></div></div>
+    <div class="msg me">Xác nhận</div>
+    <div class="msg">Đã ghi nhận 7 đơn. Anh/chị sửa được tới 20:00 hôm trước mỗi ngày.</div>
+  </div>
+</div></div>
+
+<script>
+const D=['T2','T3','T4','T5','T6','T7','CN'],DATE=['30/11','01/12','02/12','03/12','04/12','05/12','06/12'];
+const PRICE={SANG:20000,TRUA:40000,TOI:40000,DEM:30000};
+const M={
+ SANG:{name:'SÁNG',opts:[
+  [['Bánh mì Hữu Nghị','Trứng luộc','Sữa Fami'],['Bánh mì Hữu Nghị','Trứng luộc','Sữa Ba Vì trái cây'],['Bánh bao thập cẩm','Trứng luộc','Sữa Mori 110ml'],['Bánh tẻ','Trứng luộc','Sữa Ba Vì hương cam'],['Bánh bao thập cẩm','Trứng luộc','Sữa Fami'],['Bánh dầy','Chả mỡ','Sữa Ba Vì trái cây'],['Bánh mì que','Trứng luộc','Sữa Fami socola']],
+  [['Bánh bao thập cẩm','Trứng luộc','Sữa Fami'],['Bánh chưng','Chả mỡ','Sữa Ba Vì trái cây'],['Bánh dầy','Chả mỡ','Sữa Mori 110ml'],['Bánh chưng','Chả mỡ','Sữa Ba Vì hương cam'],['Bánh dầy','Chả mỡ','Sữa Fami'],['Bánh chưng','Chả mỡ','Sữa Ba Vì trái cây'],['Bánh tẻ','Trứng luộc','Sữa Fami socola']],
+  [['Bánh chưng','Chả mỡ','Sữa Fami'],['Xôi khúc','Sữa Ba Vì trái cây'],['Bánh tẻ','Trứng luộc','Sữa Mori 110ml'],['Xôi ruốc','Sữa Ba Vì hương cam'],['Xôi ruốc','Sữa Fami'],['Xôi ruốc','Sữa Ba Vì trái cây'],['Bánh giò','Chả mỡ','Sữa Fami socola']]]},
+ TRUA:{name:'TRƯA',opts:[zip(
+  ['Thịt hầm đậu đỏ','Ba chỉ kho tiêu','Vịt om khoai môn','Cá phi lê chiên mắm tỏi','Thịt kho trứng cút','Sườn sốt chua ngọt','Gà rang lá chanh'],
+  ['Cá chiên vừng','Gà xào sả ớt','Tôm rang hành','Thịt kho dừa','Tôm sốt cay','Thịt rang hành','Thịt xào đỗ đũa'],
+  ['Đậu tẩm hành','Mướp đắng xào trứng','Trứng đảo bông','Cà tím om đậu','Lạc rang muối','Chả rim mắm','Nem rán'],
+  ['Cải thảo xào','Cải mèo luộc','Cải thảo xào','Củ quả luộc tam sắc','Cải mèo xào','Bắp cải luộc','Cải mèo luộc'],
+  ['Canh me chua','Canh rau dền','Canh mồng tơi','Canh me chua','Canh rau dền','Canh cải xanh','Canh bí xanh'],
+  ['Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng'],
+  ['Hồng giòn','Chuối','Thạch rau câu','Quýt','Chuối','Quýt','Thạch rau câu'])]},
+ TOI:{name:'TỐI',opts:[zip(
+  ['Bò kho củ cải','Cá nục kho riềng','Sườn rim mắm','Thịt quay xá xíu','Gà chiên mắm tỏi','Cá ngừ sốt xì dầu','Chân giò hầm khoai cà rốt'],
+  ['Thịt rang cháy cạnh','Thịt xào giả bê','Thịt xào đỗ đũa','Gà rang gừng sả','Thịt rang cháy cạnh','Thịt kho củ cải','Thịt rim tiêu'],
+  ['Trứng đúc hành','Chả rim mắm','Đậu tẩm hành','Nem rán','Mướp đắng xào trứng','Cà tím om thịt','Đậu sốt xì dầu'],
+  ['Bắp cải luộc','Cải ngồng luộc','Cải chíp luộc','Bắp cải luộc','Cải ngồng luộc','Cải chíp luộc','Củ quả luộc tam sắc'],
+  ['Canh bầu','Canh bí xanh thịt băm','Canh cải thảo thịt băm','Canh bầu','Canh me chua','Canh mồng tơi','Canh bí xanh thịt băm'],
+  ['Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng'],
+  ['Củ đậu','Quýt','Ổi','Chuối','Quýt','Ổi','Quýt'])]},
+ DEM:{name:'ĐÊM',opts:[zip(
+  ['Bánh mỳ kẹp trứng, chả','Cháo thịt băm','Xôi thịt kho','Mì xào thập cẩm','Phở xào','Bún chả nướng','Bánh mỳ kẹp trứng, chả'],
+  ['Sữa Ba Vì hương cam','Sữa Ba Vì trái cây','Sữa Ba Vì hương cam','Sữa Ba Vì trái cây','Sữa Ba Vì hương cam','Sữa Ba Vì trái cây','Sữa Ba Vì hương cam'])]}
+};
+function zip(...a){return D.map((_,i)=>a.map(x=>x[i]))}
+const KEYS=['SANG','TRUA','TOI','DEM'];
+const Q={SANG:[[2000,2000,2000,2000,2000,2000,2000],[1500,1500,1500,1500,1500,1500,1500],[1000,1000,1000,1000,1000,1000,1000]],TRUA:[[4500,4500,4500,4500,4500,4500,4500]],TOI:[[4500,4500,4500,4500,4500,4500,4500]],DEM:[[1200,1200,1200,1200,1200,1200,1200]]};
+const LOCK=[0]; // T2 đã chốt (demo: đang là tối 29/11 sau 20:00)
+const fmt=n=>Math.round(n).toLocaleString('vi-VN');
+const optLabel=(k,i)=>M[k].opts.length>1?'Lựa chọn '+(i+1):'Suất '+M[k].name.toLowerCase();
+
+// P1
+(function(){let h='<tr><th style="width:120px">Buổi / lựa chọn</th>'+D.map((d,i)=>`<th>${d} <span class="l">${DATE[i]}</span></th>`).join('')+'</tr>';
+KEYS.forEach(k=>{h+=`<tr class="meal"><td colspan="8">${M[k].name} <span class="pill">Giá bán ${fmt(PRICE[k])} đ/suất</span></td></tr>`;
+ M[k].opts.forEach((o,i)=>{h+=`<tr><td><b>${optLabel(k,i)}</b></td>`+o.map(s=>`<td class="l" style="color:var(--tx)">${s.join('<br>')}</td>`).join('')+'</tr>'});});
+document.getElementById('menuTbl').innerHTML=h;})();
+
+// P2
+(function(){let h='<tr><th>Thứ</th>'+KEYS.map(k=>`<th>${M[k].name}</th>`).join('')+'</tr>';
+D.forEach((d,di)=>{h+=`<tr><td><b>${d}</b><br><span class="l">${DATE[di]}</span></td>`+KEYS.map(k=>'<td>'+M[k].opts.map((o,i)=>`<div style="margin-bottom:8px"><b>${optLabel(k,i)}</b><br><span class="l">${o[di].join(' · ')}</span><br>Số suất: <span class="box"></span></div>`).join('')+'</td>').join('')+'</tr>'});
+document.getElementById('slipTbl').innerHTML=h;})();
+
+// P3
+function buildOrder(){let h='<tr><th style="width:120px">Buổi / lựa chọn</th>'+D.map((d,i)=>`<th class="${LOCK.includes(i)?'lock':''}">${d} ${DATE[i]} ${LOCK.includes(i)?'<span class="b" style="background:var(--n-bg)"><i class="ti ti-lock"></i> Đã chốt</span>':''}</th>`).join('')+'</tr>';
+KEYS.forEach(k=>{h+=`<tr class="meal"><td colspan="8">${M[k].name} · ${fmt(PRICE[k])} đ/suất</td></tr>`;
+ M[k].opts.forEach((o,i)=>{h+=`<tr><td><b>${optLabel(k,i)}</b></td>`+o.map((s,di)=>`<td class="cell ${LOCK.includes(di)?'lock':''}"><div class="dish">${s.join(' · ')}</div><input class="qty" data-k="${k}" data-o="${i}" data-d="${di}" value="${Q[k][i][di]||''}" ${LOCK.includes(di)?'disabled':''} inputmode="numeric"></td>`).join('')+'</tr>'});
+ if(M[k].opts.length>1)h+=`<tr class="sum"><td>Tổng ${M[k].name.toLowerCase()}</td>`+D.map((_,di)=>`<td class="num" id="s_${k}_${di}"></td>`).join('')+'</tr>';});
+h+='<tr class="tot"><td>Tổng suất</td>'+D.map((_,di)=>`<td class="num" id="ts_${di}"></td>`).join('')+'</tr>';
+h+='<tr class="tot"><td>Thành tiền</td>'+D.map((_,di)=>`<td class="num" id="tt_${di}"></td>`).join('')+'</tr>';
+document.getElementById('ordTbl').innerHTML=h;
+document.querySelectorAll('.qty').forEach(e=>e.addEventListener('input',ev=>{const t=ev.target;t.value=t.value.replace(/\D/g,'');Q[t.dataset.k][t.dataset.o][t.dataset.d]=+t.value||0;calc()}));calc();}
+function calc(){let ws=0,wt=0;D.forEach((_,di)=>{let su=0,ti=0;KEYS.forEach(k=>{const s=Q[k].reduce((a,r)=>a+(+r[di]||0),0);su+=s;ti+=s*PRICE[k];const el=document.getElementById(`s_${k}_${di}`);if(el)el.textContent=fmt(s)});
+ document.getElementById('ts_'+di).textContent=fmt(su);document.getElementById('tt_'+di).textContent=fmt(ti);ws+=su;wt+=ti});
+ document.getElementById('wSu').textContent=fmt(ws);document.getElementById('wTien').textContent=fmt(wt)+' đ';plan();}
+// P4
+const PER={'Bánh mì Hữu Nghị':[2,'cái']};
+function plan(){const agg={};KEYS.forEach(k=>M[k].opts.forEach((o,i)=>o.forEach((set,di)=>set.forEach(dish=>{const q=+Q[k][i][di]||0;if(!q)return;const key=dish+'|'+M[k].name;agg[key]=agg[key]||{dish,meal:M[k].name,v:Array(7).fill(0)};agg[key].v[di]+=q*((PER[dish]||[1])[0])}))));
+ let h='<tr><th>Món</th><th>Buổi</th><th>ĐVT</th>'+D.map((d,i)=>`<th class="num">${d}</th>`).join('')+'<th class="num">Cả tuần</th></tr>';
+ Object.values(agg).sort((a,b)=>KEYS.indexOf(a.meal)-KEYS.indexOf(b.meal)||a.dish.localeCompare(b.dish)).forEach(r=>{h+=`<tr><td>${r.dish}</td><td class="l">${r.meal}</td><td class="l">${(PER[r.dish]||[1,'phần'])[1]}</td>`+r.v.map(x=>`<td class="num">${x?fmt(x):'<span class="l">–</span>'}</td>`).join('')+`<td class="num"><b>${fmt(r.v.reduce((a,b)=>a+b,0))}</b></td></tr>`});
+ document.getElementById('planTbl').innerHTML=h;}
+buildOrder();
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab,.pane').forEach(x=>x.classList.remove('on'));t.classList.add('on');document.getElementById(t.dataset.t).classList.add('on')});
+</script>
+</body></html>

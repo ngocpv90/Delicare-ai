@@ -59,7 +59,7 @@ namespace AppDelicare.Tests.Purchasing
             return new Scenario(code, warehouse, kg, meat, veg, fish, rice, a, b, pr);
         }
 
-        /// <summary>User thường; withApprove = có quyền trên mục "Duyệt – Đơn mua hàng" (#/wf-inbox?type=scm-po).</summary>
+        /// <summary>User thường; withApprove = có quyền trên mục "Phê duyệt › Đơn mua hàng" (#/wf-inbox?type=scm-po).</summary>
         private async Task<Guid> UserAsync(bool withApprove)
         {
             Guid userId = Guid.NewGuid(), group = Guid.NewGuid();
@@ -73,7 +73,7 @@ namespace AppDelicare.Tests.Purchasing
                     var menu = await db.ObjectMenu.FirstOrDefaultAsync(m => m.MetaLink == "#/wf-inbox?type=scm-po");
                     if (menu == null)
                     {
-                        menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Duyệt – Đơn mua hàng", MetaLink = "#/wf-inbox?type=scm-po", IsActive = true, LevelShow = 2 };
+                        menu = new ObjectMenu { Id = Guid.NewGuid(), Name = "Đơn mua hàng", MetaLink = "#/wf-inbox?type=scm-po", IsActive = true, LevelShow = 2 };
                         db.ObjectMenu.Add(menu);
                     }
                     db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = group, ObjectMenuId = menu.Id, AllowAccess = true, AllowEdit = true });

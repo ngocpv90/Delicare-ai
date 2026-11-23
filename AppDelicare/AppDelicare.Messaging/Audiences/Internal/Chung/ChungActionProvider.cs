@@ -11,7 +11,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
     {
         public IEnumerable<BotAction> GetActions() =>
         [
-            new BotAction { Code = "my_shift", Module = "CHUNG", Label = KeyboardBuilder.MyShift, Order = 1, Handler = (c, ct) => shiftCards.Value.MyCardAsync(c, ct) }, // BOT-2.1: ⚡ = làm mới Thẻ ca
+            new BotAction { Code = "my_shift", Module = "CHUNG", Label = KeyboardBuilder.MyShift, Command = "ca", CommandDescription = "Ca của tôi", Order = 1, Handler = (c, ct) => shiftCards.Value.MyCardAsync(c, ct) }, // BOT-2.1: ⚡ = làm mới Thẻ ca
             new BotAction { Code = "check_in", Module = "CHUNG", Label = KeyboardBuilder.CheckIn, Command = "chamcong", CommandDescription = "Chấm công vào / ra", Order = 2, Handler = self.PromptLocationAsync },
             new BotAction { Code = "my_schedule", Module = "CHUNG", Label = "📅 Lịch ca", Command = "lichca", CommandDescription = "Lịch ca 7 ngày", Order = 3, Handler = self.MyShiftsAsync },
             new BotAction { Code = "leave", Module = "CHUNG", Label = "🏖 Xin nghỉ", Command = "nghi", CommandDescription = "Xin nghỉ", Order = 4, Handler = leave.StartAsync },
