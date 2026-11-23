@@ -15,7 +15,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 7. ~~MENU-4~~ ✅ dọn menu (xong 2026-11-23; nhóm E chờ anh quyết – PROGRESS).
 7b. ~~BIZ-1~~ ✅ sửa sai nghiệp vụ (xong 2026-11-23; GAP-BIZ-01 kiểu tính tiền theo hợp đồng chờ anh – PROGRESS).
 7c. ~~FC-1~~ ✅ dự báo tự gợi ý (xong 2026-11-23).
-7d. **BIZ-2** bớt bước thừa + tự động hóa (D-77) → 7e. **BIZ-3** hoàn thiện luồng (D-77).
+7d. ~~BIZ-2~~ ✅ bớt bước thừa + tự động hóa (xong 2026-11-23; kế hoạch bổ sung sau phát hành chờ anh – PROGRESS) → 7e. **BIZ-3** hoàn thiện luồng (D-77).
 8. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
 9. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
 10. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
@@ -121,7 +121,7 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 
 **Xong khi:** phiếu trước SX món Thịt hầm đậu đỏ ra 113,4 g / suất; tính nhu cầu 7 ngày trừ tồn lũy kế đúng, hiện ngày phải đặt; đối soát đơn nhận 200 / ăn 180 tính tiền 200; đơn đã chốt không đổi giá khi có chính sách giá mới; yêu cầu quá 48 giờ vẫn duyệt được.
 
-## ★ BIZ-2 – BỚT BƯỚC THỪA + TỰ ĐỘNG HÓA (D-77 – đợt 2, anh chốt 2026-11-23) · `TODO` (sau BIZ-1)
+## ★ BIZ-2 – BỚT BƯỚC THỪA + TỰ ĐỘNG HÓA (D-77 – đợt 2, anh chốt 2026-11-23) · `DONE` 2026-11-23 (2.4 kế hoạch bổ sung sau phát hành + GAP-BIZ-02 – PROGRESS)
 
 > Nguồn: báo cáo mục B, C. Không thêm bảng / cột. Tự động = gọi trong cùng transaction của thao tác gốc hoặc trong job hiện có (chốt đơn 20:00); mọi bước tự động **ghi lịch sử "Hệ thống tự …"** và báo bot người liên quan; lỗi bước tự động không làm hỏng thao tác gốc – ghi cảnh báo để người làm tay.
 

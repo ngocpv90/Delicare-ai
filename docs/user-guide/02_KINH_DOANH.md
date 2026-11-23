@@ -113,7 +113,7 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 - **Dạng Kanban** (mặc định): 8 cột theo trạng thái, mỗi thẻ = số đơn, khách, điểm giao, ngày, số suất. **Dạng bảng**: lọc theo trạng thái.
 
 **Tạo đơn**
-1. **Tạo đơn hàng** → chọn **Khách hàng***, **Ngày ăn*** (mặc định hôm nay + 4).
+1. **Tạo đơn hàng** → chọn **Khách hàng***, **Ngày ăn*** (mặc định **ngày mai** – BIZ-2.1). Cột **Ca** chỉ hiện khi loại suất có nhiều ca (ca tự gán theo loại suất).
 2. Hệ thống tải mẫu: hợp đồng hiệu lực, **hạn chốt đơn**, mỗi **điểm giao** một bảng: Loại suất, Ca, Đơn giá, Dự báo, **Số lượng** (điền sẵn = dự báo).
    - Buổi có **nhiều lựa chọn** (vd Sáng LC1 / LC2 / LC3): mỗi lựa chọn 1 hàng – *Lựa chọn N* + món trong set + ô **Số lượng** riêng (dự báo ghi ở hàng đầu, là của cả buổi). Buổi 1 lựa chọn: 1 ô như cũ, món trong set hiện dưới tên suất.
    - Điểm giao đã có đơn cho ngày này → báo *"Điểm giao này đã có đơn … – mở đơn đó để sửa số lượng"*.
@@ -128,12 +128,11 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 | Nút | Khi nào | Kết quả |
 |---|---|---|
 | **Lưu số lượng** | Nháp / Đã gửi / Đã xác nhận, trước giờ chốt, không có yêu cầu duyệt đang chờ | Cập nhật số suất, tính lại tiền |
-| **Gửi đơn (Submitted)** | Nháp, trước giờ chốt | → Đã gửi (đơn phải có ít nhất 1 dòng có Ca + Loại suất) |
-| **Xác nhận (Confirmed)** | Đã gửi, trước giờ chốt | Hộp xác nhận hiện % lệch so với dự báo → Đã xác nhận |
+| **Xác nhận** | Nháp hoặc Đã gửi, trước giờ chốt | Hộp xác nhận hiện % lệch so với dự báo → **Đã xác nhận** (BIZ-2.1: đơn nhân viên nhập **không còn bước Gửi**; *Đã gửi* chỉ dùng cho đơn khách tự đăng ký) |
 | **Chốt số lượng (Locked)** | Đã xác nhận | → Đã chốt (không cần đợi job 20:00) |
 | **Hủy đơn** | Nháp / Đã gửi (mọi lúc); Đã xác nhận (trước giờ chốt) | Bắt buộc **Lý do hủy** → Hủy |
 
-- **Lệch suất lớn:** sửa số lượng của đơn **Đã xác nhận** mà lệch > 30% → hệ thống **không ghi ngay** mà gửi duyệt *"Số suất lệch …% (> 30%) … đã gửi duyệt …, số mới chỉ ghi khi được duyệt"*.
+- **Lệch suất lớn (BIZ-2.1):** trước giờ chốt sửa số **ghi ngay, không đi duyệt**. Tổng suất lệch > 30% so với **trung bình 4 tuần cùng thứ của điểm giao** → chỉ **cảnh báo** + ghi vào ghi chú đơn `[LECH_TB_4_TUAN]`. Sau giờ chốt vẫn phải gửi *Yêu cầu sửa sau chốt* (người duyệt: Trưởng KD – nhóm SAL-CON – hoặc COO).
 - Tab **Hành trình**: các chặng đơn → kế hoạch → sản xuất → đóng gói → giao → đối soát → phản ánh, kèm chứng từ từng chặng.
 
 - **Chốt đơn theo ngày** (đầu màn `crm-order`, cần quyền Sửa): chọn ngày ăn → **Chốt đơn** → xác nhận → khóa mọi đơn **Đã xác nhận** của ngày (chỉ khi đã tới giờ chốt 20:00 hôm trước; bình thường job 20:00 tự chốt). Màn báo số đơn đã chốt và số đơn còn chưa xác nhận / đang chờ duyệt.
@@ -178,7 +177,7 @@ Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn �
 |---|---|---|
 | Hợp đồng | Nháp → Chờ duyệt → Hiệu lực → Hết hạn (job 00:30 / Quét) / Chấm dứt (Thanh lý) | KD gửi duyệt, Ban điều hành duyệt |
 | Dự báo | Nháp → Đã công bố → Bị thay thế | KD |
-| Đơn hàng | Nháp → Đã gửi → Đã xác nhận → Đã chốt → Đang sản xuất → Đã giao → Đã đối soát; Hủy | KD tới Đã chốt (hoặc job 20:00); Đang sản xuất khi phát hành kế hoạch SX; Đã giao khi bàn giao xong; Đã đối soát khi đối soát |
+| Đơn hàng | Nháp → (Đã gửi – đơn khách tự đăng ký) → Đã xác nhận → Đã chốt → Đang sản xuất → Đã giao → Đã đối soát; Hủy | KD tới Đã chốt (hoặc job 20:00); Đang sản xuất khi phát hành kế hoạch SX; Đã giao khi bàn giao xong; Đã đối soát khi đối soát |
 | Đối soát | Mở → Khớp / Chênh lệch → Đóng | KD / Điểm phát |
 
 ## 6. Lỗi / cảnh báo thường gặp

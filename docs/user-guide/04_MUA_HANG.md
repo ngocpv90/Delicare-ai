@@ -1,6 +1,9 @@
 # 04 – Mua hàng (nhu cầu nguyên liệu, đề nghị mua, đơn mua, nhà cung cấp)
 
 ## 1. Bạn là ai
+> **BIZ-2.2 – PO tự duyệt:** lập PO từ đề nghị mua Đã duyệt → PO **tự Đã duyệt** khi đúng NCC gợi ý, đơn giá = bảng giá, số ≤ đề nghị, tổng < 50 triệu (ghi chú `[TU_DUYET]`). Thiếu đơn giá / ≥ 50 triệu → Nháp, gửi duyệt như cũ. Sửa dòng PO đã tự duyệt (chưa nhập hàng) → về **Nháp**, gửi duyệt lại.
+> **BIZ-2.6 – QC xong tự nhập kho:** kết luận QC **Đạt / Đạt một phần** → hệ thống **tự Ghi sổ** phần đạt (lô, tồn, PO) ngay trong thao tác kết luận. **Không đạt** cả phiếu → không nhập, Ghi sổ tay để tạo sự cố NCC. Nút **Ghi sổ** chỉ còn dùng khi tự ghi sổ lỗi.
+
 
 - Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – dùng chung với thủ kho (`05_KHO.md`). Trưởng bộ phận mua hàng được cấp thêm **"Phê duyệt › Đề nghị mua hàng (cấp 1)"**.
 - Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); trưởng bộ phận được cấp thêm bot **Điều hành**.

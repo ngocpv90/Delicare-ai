@@ -14,7 +14,7 @@
 | `wf-step` | (màn con, ẩn) | Các cấp duyệt của yêu cầu – xem trong tab Tiến trình duyệt |
 | `prod-plan` | Sản xuất › Kế hoạch sản xuất | Nút **Duyệt** kế hoạch (cần quyền Phê duyệt › CEO / COO) |
 | `menu-menu` | Thực đơn › Thực đơn | Nút **Duyệt** thực đơn (CEO / COO) |
-| `menu-recipe` | Thực đơn › Công thức | **Khóa & áp dụng** phiên bản (CEO / COO) |
+| `menu-recipe` | Thực đơn › Công thức | Duyệt cấp cuối = **khóa & áp dụng** luôn (BIZ-2.3); nút **Áp dụng** chỉ cho bản Đã duyệt cũ (CEO / COO) |
 | `qc-inspection` | QC › Phiếu kiểm tra QC | Kết luận QC (QA) |
 
 ## 3. Các loại yêu cầu duyệt

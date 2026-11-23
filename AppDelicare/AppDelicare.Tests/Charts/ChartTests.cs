@@ -17,6 +17,7 @@ namespace AppDelicare.Tests.Charts
         {
             _factory = factory;
             _factory.Clock.FixedNow = new DateTime(2031, 3, 20, 10, 0, 0);
+            _factory.Settings["BusinessRules:ReconciliationAutoCloseHours"] = "0"; // đếm trạng thái mẫu – tắt tự chốt BIZ-2.9 (test riêng ReconciliationAutoTests)
         }
 
         private static string Key() => Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();

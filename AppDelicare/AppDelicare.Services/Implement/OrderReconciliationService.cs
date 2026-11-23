@@ -24,9 +24,10 @@ namespace AppDelicare.Services.Implement
     /// T19 (spec 6.7, BUSINESS_RULES §8b, Pilot P8) – đối soát suất: đơn Đã giao → Reconcile (suất thực tế phục vụ do khách xác nhận; Open → Khớp / Chênh lệch, ghi lại được tới khi đóng)
     /// → Close (→ Đóng, đơn hàng → Đã đối soát). CRUD cũ không ghi (số liệu chỉ tính qua Reconcile).
     /// </summary>
-    public class OrderReconciliationService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IOrderReconciliationService
+    public partial class OrderReconciliationService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+        , IAuditChangeService auditChangeService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, IServiceProvider services) : IOrderReconciliationService
     {
+        private readonly IServiceProvider _services = services;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -303,7 +304,8 @@ namespace AppDelicare.Services.Implement
                 reconciliation.ProofOfDeliveryId = pods[0].Id;
                 reconciliation.ReconciliationDate = _clock.Now;
                 reconciliation.FinalAmount = finalAmount;
-                reconciliation.Remark = DeliveryRules.Clean(request.Remark) ?? reconciliation.Remark;
+                // BIZ-2.9: ghi chú tự sinh khi hệ thống tạo đối soát không tính là ghi chú của người – lần ghi tay thay hẳn.
+                reconciliation.Remark = DeliveryRules.Clean(request.Remark) ?? (IsAutoRemark(reconciliation.Remark) ? null : reconciliation.Remark);
                 reconciliation.Note = JsonSerializer.Serialize(new ReconcileNote
                 {
                     PodAccepted = podAccepted,
@@ -363,7 +365,7 @@ namespace AppDelicare.Services.Implement
                     return Fail(string.Format(ConstantHelper.Message.StatusActionInvalid, "đóng đối soát", "bản đối soát",
                         ReconciliationStatus.Label(ReconciliationStatus.Matched) + " / " + ReconciliationStatus.Label(ReconciliationStatus.Variance), ReconciliationStatus.Label(reconciliation.Status)));
                 }
-                string? remark = DeliveryRules.Clean(request.Remark) ?? DeliveryRules.Clean(reconciliation.Remark);
+                string? remark = DeliveryRules.Clean(request.Remark) ?? (IsAutoRemark(reconciliation.Remark) ? null : DeliveryRules.Clean(reconciliation.Remark));
                 decimal percent = Math.Abs(reconciliation.VariancePercent ?? 0m);
                 if (percent > _rules.ReconciliationVarianceRemarkPct && remark == null)
                 {
@@ -382,7 +384,14 @@ namespace AppDelicare.Services.Implement
                 }
                 await _unitOfWork.OrderReconciliationRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
-                return Result<OrderReconciliationDetailModel>.Success((await DetailAsync(reconciliation.Id))!, ConstantHelper.Message.SaveSuccess);
+                // BIZ-2.9: chốt (tay / tự) → tự tính giá vốn suất.
+                string? costWarning = await AutoMealCostAsync(reconciliation.OrderId);
+                var closedDetail = (await DetailAsync(reconciliation.Id))!;
+                if (costWarning != null)
+                {
+                    closedDetail.ListWarning.Add(costWarning);
+                }
+                return Result<OrderReconciliationDetailModel>.Success(closedDetail, costWarning == null ? ConstantHelper.Message.ReconcileClosedWithCost : $"{ConstantHelper.Message.SaveSuccess} – {costWarning}");
             }
             catch (Exception ex)
             {
@@ -440,6 +449,8 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
+                // BIZ-2.9: mở màn đối soát → chốt các bản Khớp đã quá hạn tự chốt (cùng hàm với job 20:00).
+                await AutoCloseDueAsync();
                 var charts = _rules.Charts;
                 string? error = ChartRules.DayRange(request.From, request.To, _clock.Today, charts.DefaultRangeDays, charts.MaxRangeDays, out DateTime from, out DateTime to);
                 if (error != null)

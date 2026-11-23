@@ -1,6 +1,8 @@
 # 07 – Bếp trung tâm / sản xuất
 
 ## 1. Bạn là ai
+> **BIZ-2.7 / 2.8 – Mẻ tự Đạt, tự lệnh đóng gói:** sau Kết thúc nấu, mẻ đủ điều kiện – lõi gần nhất ≥ 70 °C, **đã ghi sản lượng**, **đã lưu mẫu**, không tiêu chí trọng yếu FAIL đang mở – **tự Đạt QC** (không cần bấm Đạt). Thiếu điều kiện → giữ Chờ QC, màn báo còn thiếu gì. QA vẫn **Tạm giữ** (cả mẻ đã tự Đạt, chưa đóng gói → về Chờ QC) / **Loại** được. Mẻ Đạt (tay / tự) → **tự sinh lệnh đóng gói** theo đơn; đóng gói hoàn tất bằng lệnh đóng gói (Bắt đầu → Ghi kết quả).
+
 
 - Nhóm quyền: **OPS-KIT** (1.3 Bếp trung tâm – bếp trưởng, trưởng ca, tổ trưởng các tổ Sơ chế, Nấu, Cơm / Canh, Chia suất / Đóng gói, Vệ sinh, QA bếp).
 - Bot dùng: **Vận hành** (phân hệ 🍳 Bếp) – kênh chính của công nhân và tổ trưởng; QR dán ở dây chuyền / bàn nấu. Bếp trưởng được cấp thêm bot **Điều hành**.

@@ -58,7 +58,7 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
    - *Định lượng phải lớn hơn 0*, *Hao hụt phải trong khoảng [0, 100)*, *Chưa có quy đổi giữa 2 đơn vị này*.
 3. **Gửi duyệt** → xác nhận → **Chờ duyệt** (không sửa được định lượng tới khi có kết quả). *Công thức phải có ít nhất 1 nguyên liệu*.
 4. Người duyệt duyệt ở **Yêu cầu phê duyệt** → bản thành **Đã duyệt**; từ chối → về **Nháp**.
-5. **Khóa & áp dụng** (bản Đã duyệt, cần quyền duyệt công thức): chọn **Áp dụng từ ngày*** → **Khóa & áp dụng**. Phiên bản đang dùng chuyển **Hết dùng** từ ngày trước đó; giá thành chuẩn của món được tính lại. Sau khi khóa không sửa được.
+5. **Một lần duyệt (BIZ-2.3):** khi **Gửi duyệt** chọn **Áp dụng từ ngày*** (mặc định ngày mai). **Duyệt cấp cuối = khóa & áp dụng ngay** từ ngày đó (ngày đã qua → ngày duyệt): phiên bản đang dùng chuyển **Hết dùng** từ ngày trước đó, giá thành chuẩn của món tính lại; sau khi khóa không sửa được. Bản *Đã duyệt* chưa khóa còn sót từ trước có nút **Áp dụng** (dùng một lần để dọn).
 
 **Tính giá vốn** (mọi phiên bản): nhập **Số suất cần tính** (mặc định 100) → **Tính** → giá vốn NVL / suất, tổng, bảng từng nguyên liệu (định lượng, đơn giá NCC ưu tiên, thành tiền). Cảnh báo *"Có nguyên liệu chưa tính được chi phí – giá vốn đang thấp hơn thực tế"* = thiếu giá NCC hoặc thiếu quy đổi đơn vị.
 

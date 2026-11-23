@@ -14,6 +14,7 @@ using AppDelicare.Model.SearchRequest;
 using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
 using System.Net;
@@ -26,8 +27,9 @@ namespace AppDelicare.Services.Implement
     /// CRUD: chỉ sửa ghi chú / thứ tự / giờ dự kiến khi chuyến + điểm còn Kế hoạch (điểm dừng sinh từ DeliveryRoute/Create).
     /// </summary>
     public class DeliveryStopService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IDeliveryStopService
+        , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications, IServiceProvider services) : IDeliveryStopService
     {
+        private readonly IServiceProvider _services = services;
         private readonly INotificationService _notifications = notifications; // BOT-1.7d
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -181,6 +183,8 @@ namespace AppDelicare.Services.Implement
         private sealed class StopContext
         {
             public List<string> Warnings { get; } = [];
+            /// <summary>BIZ-2.9: đơn hàng vừa chuyển Đã giao – tự tạo đối soát sau khi lưu.</summary>
+            public List<Guid> DeliveredOrders { get; } = [];
             public bool KeepOnError { get; set; }
         }
 
@@ -235,6 +239,13 @@ namespace AppDelicare.Services.Implement
                 }
                 await _unitOfWork.DeliveryStopRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
+                foreach (Guid orderId in ctx.DeliveredOrders)
+                {
+                    if (await _services.GetRequiredService<IOrderReconciliationService>().AutoCreateAsync(orderId) is { } note)
+                    {
+                        ctx.Warnings.Add(note);
+                    }
+                }
                 var detail = await DeliveryRules.RouteDetailAsync(db, route.Id, _rules);
                 detail!.ListWarning.InsertRange(0, ctx.Warnings);
                 return Result<DeliveryRouteDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
@@ -414,6 +425,7 @@ namespace AppDelicare.Services.Implement
                     {
                         order.Status = OrderStatus.Delivered;
                         _unitOfWork.OrderRepository.Update(order);
+                        ctx.DeliveredOrders.Add(order.Id);
                     }
                 }
                 if (rejected > 0 && _rules.DeliveryAutoComplaintOnRejected)

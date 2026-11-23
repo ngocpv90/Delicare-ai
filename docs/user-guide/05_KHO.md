@@ -1,6 +1,8 @@
 # 05 – Kho (nhận hàng, tồn kho, lô, xuất kho, kiểm kê)
 
 ## 1. Bạn là ai
+> **BIZ-2.5 – Phiếu xuất theo ca:** phát hành lệnh SX → hệ thống tạo sẵn **phiếu xuất Nháp** cho mọi lệnh của ca (số = số đã giữ chỗ, lô FEFO phân bổ sẵn), bot kho nhận "Phiếu xuất ca … sẵn sàng". Màn **Xuất kho** có khối **Phiếu xuất theo ca**: kiểm / sửa từng phiếu như phiếu thường rồi bấm **Ghi sổ cả ca** một lần. Kho xuất = kho có nhiều tồn nhất cho nguyên liệu của lệnh.
+
 
 - Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – thủ kho, nhân viên kho. Nhóm **QA** cũng có quyền sửa các màn kho.
 - Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); QR dán ở kệ / vị trí kho.

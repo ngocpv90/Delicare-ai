@@ -83,6 +83,12 @@ namespace AppDelicare.Model.Option
         public bool BatchAutoPass { get; set; } = true;
         /// <summary>BIZ-2.8 (D-77 – C7): mẻ Đạt → tự sinh lệnh đóng gói (PackingOrder/GenerateFromBatch).</summary>
         public bool PackingAutoGenerateOnPass { get; set; } = true;
+        /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
+        public bool ReconciliationAutoCreate { get; set; } = true;
+        /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>
+        public int ReconciliationAutoCloseHours { get; set; } = 24;
+        /// <summary>BIZ-2.9 (C9): chốt đối soát → tự tính giá vốn suất (MealCost/Calculate).</summary>
+        public bool MealCostAutoOnReconcileClose { get; set; } = true;
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
         /// <summary>

@@ -1,6 +1,8 @@
 # 10 – Điểm phát / CSKH (nhận hàng, đối soát suất, phản ánh)
 
 ## 1. Bạn là ai
+> **BIZ-2.9 – Đối soát tự động:** bàn giao xong đơn (Đã giao) → hệ thống **tự tạo đối soát** với suất phục vụ = suất khách nhận (nhân viên điểm sửa nếu khác, ghi suất lỗi Delicare như BIZ-1.4). Đối soát **Khớp**, đơn không còn phản ánh mở, quá **24 giờ** → **tự Chốt** ("Hệ thống tự chốt" – chạy lúc 20:00 và khi mở màn đối soát). Chốt (tay / tự) → **tự tính giá vốn suất**.
+
 
 - Nhóm quyền: **OPS-POS** (1.5 Vận hành điểm phát – quản lý / nhân viên điểm phát tại công trường / nhà máy) và **SAL-CS** (2.3 Chăm sóc khách hàng).
 - Bot dùng: **Vận hành** – phân hệ 🍱 Điểm phát (OPS-POS) và 📣 CSKH (SAL-CS); QR dán tại điểm phát. Trưởng CSKH được cấp thêm bot **Điều hành**.
