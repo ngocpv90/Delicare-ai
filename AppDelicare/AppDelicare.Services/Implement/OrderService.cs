@@ -9,6 +9,7 @@ using AppDelicare.Model.Option;
 using AppDelicare.Model.Request.Custom;
 using AppDelicare.Data.Share;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System.Globalization;
@@ -24,13 +25,14 @@ namespace AppDelicare.Services.Implement
     public partial class OrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock
         , IOptions<BusinessRulesOptions> rules, IDocumentNumberService documentNumberService, IPricePolicyService pricePolicyService
         , IMenuAssignmentService menuAssignmentService, IApprovalRequestService approvalRequestService
-        , IAuditChangeService auditChangeService) : IOrderService
+        , IAuditChangeService auditChangeService, IServiceProvider services) : IOrderService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
         private readonly IClock _clock = clock;
+        private readonly IServiceProvider _services = services;
         private readonly BusinessRulesOptions _rules = rules.Value;
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         private readonly IPricePolicyService _pricePolicyService = pricePolicyService;
@@ -951,6 +953,11 @@ namespace AppDelicare.Services.Implement
                 summary.LockedCount = summary.ListLockedNumber.Count;
                 await _unitOfWork.OrderRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
+                // BIZ-2.4 (D-77 – B5, C3): chốt xong → tự lập + tự phát hành kế hoạch SX (lỗi không làm hỏng việc chốt).
+                if (_rules.ProductionAutoReleaseAfterLock && summary.LockedCount > 0)
+                {
+                    summary.AutoPlan = await _services.GetRequiredService<IProductionPlanService>().AutoPlanAfterLockAsync(day);
+                }
                 return Result<OrderLockSummaryModel>.Success(summary, ConstantHelper.Message.SaveSuccess);
             }
             catch (Exception ex)

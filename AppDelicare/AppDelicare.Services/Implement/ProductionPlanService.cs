@@ -20,10 +20,11 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ProductionPlanService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class ProductionPlanService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
-        , IOptions<BusinessRulesOptions> rules, IUomConversionService uomConversionService) : IProductionPlanService
+        , IOptions<BusinessRulesOptions> rules, IUomConversionService uomConversionService, INotificationService notifications) : IProductionPlanService
     {
+        private readonly INotificationService _notifications = notifications;
         private readonly IUomConversionService _uomConversionService = uomConversionService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;

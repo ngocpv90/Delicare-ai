@@ -398,6 +398,10 @@
             public static readonly string DispatchTimeMissing = "Không xác định được giờ xuất bếp: điểm giao chưa có giờ giao, ca chưa có giờ bắt đầu – nhập giờ xuất bếp (DispatchTime)";
             public static readonly string ReleaseNoRecipe = "Món chưa có công thức đã khóa / đã duyệt – không phát hành được: {0}";
             public static readonly string ReleaseRecipeNotLocked = "Cảnh báo: món {0} dùng công thức Đã duyệt chưa khóa – lệnh SX lưu ảnh chụp định lượng hiện tại";
+            public static readonly string AutoPlanAlreadyApproved = "Kế hoạch {0} đã ở trạng thái {1} – hệ thống không tự lập lại";
+            public static readonly string AutoPlanEditedByHand = "Kế hoạch {0} đã được sửa tay – giữ bản sửa, chờ COO duyệt / phát hành";
+            public static readonly string AutoPlanNoLockedRecipe = "Món chưa có công thức khóa: {0}";
+            public static readonly string AutoPlanError = "Lỗi khi tự lập / phát hành kế hoạch – cần làm tay";
             public static readonly string ReleaseStartInPast = "Cảnh báo: mẻ {0} có giờ bắt đầu kế hoạch {1} đã qua";
             public static readonly string ReleaseLinesWithoutShift = "Cảnh báo: {0} dòng đơn chưa gán ca – tính vào ca mặc định {1}";
             public static readonly string ReleaseShiftAlready = "Ca {0} của kế hoạch đã phát hành";

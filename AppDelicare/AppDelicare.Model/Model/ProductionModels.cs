@@ -5,6 +5,18 @@ namespace AppDelicare.Model.Model
     /// <summary>
     /// T17 (spec 8.1, Pilot P7): chi tiết kế hoạch sản xuất – dòng món × phần, lệnh SX + mẻ (lịch ngược từ giờ xuất bếp), thao tác được phép.
     /// </summary>
+    /// <summary>BIZ-2.4: kết quả tự lập + tự phát hành kế hoạch sau chốt đơn. Status: RELEASED / HELD (Nháp, chờ COO) / SKIPPED (đã duyệt trước) / NONE (không có đơn chốt).</summary>
+    public class ProductionAutoPlanModel
+    {
+        public DateTime ProductionDate { get; set; }
+        public string Status { get; set; } = "NONE";
+        public Guid? PlanId { get; set; }
+        public string? PlanNumber { get; set; }
+        public int ProductionOrderCount { get; set; }
+        public List<string> ListReason { get; set; } = [];
+        public List<string> ListWarning { get; set; } = [];
+    }
+
     public class ProductionPlanDetailModel
     {
         public ProductionPlan ProductionPlan { get; set; } = null!;

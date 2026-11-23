@@ -237,6 +237,8 @@
           const d = res.data || {}, nc = (d.listNotConfirmedNumber || []).length, pa = (d.listPendingApprovalNumber || []).length;
           const extra = [nc ? nc + ' đơn chưa xác nhận' : '', pa ? pa + ' đơn đang chờ duyệt' : ''].filter(Boolean).join(' · ');
           UI.toast('Đã chốt ' + U.num(d.lockedCount || 0) + ' đơn ngày ' + esc(U.date(day)) + (extra ? ' – còn ' + extra : ''), extra ? 'warn' : 'ok'); bust(); APP.refresh();
+          // BIZ-2.4: kế hoạch SX tự lập / phát hành sau chốt.
+          const ap = d.autoPlan; if (ap) { const T = { RELEASED: ['ok', 'Hệ thống đã lập và phát hành kế hoạch ' + (ap.planNumber || '') + ' (' + U.num(ap.productionOrderCount || 0) + ' lệnh SX)'], HELD: ['warn', 'Kế hoạch ' + (ap.planNumber || '') + ' chưa tự phát hành – chờ COO: ' + (ap.listReason || []).join('; ')], SKIPPED: ['info', (ap.listReason || []).join('; ')], NONE: ['info', 'Chưa lập kế hoạch: ' + (ap.listReason || []).join('; ')] }[ap.status]; if (T) setTimeout(() => UI.toast(esc(T[1]), T[0]), 600); }
         }), { danger: true, ok: 'Chốt đơn' });
       } });
   }
