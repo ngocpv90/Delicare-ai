@@ -401,6 +401,7 @@
             public static readonly string AutoPlanAlreadyApproved = "Kế hoạch {0} đã ở trạng thái {1} – hệ thống không tự lập lại";
             public static readonly string AutoPlanEditedByHand = "Kế hoạch {0} đã được sửa tay – giữ bản sửa, chờ COO duyệt / phát hành";
             public static readonly string AutoPlanNoLockedRecipe = "Món chưa có công thức khóa: {0}";
+            public static readonly string ContainerLossPctInvalid = "Ngưỡng thất thoát khay phải từ 0 đến 100 (%)";
             public static readonly string StandardCostAutoRecalculated = "đã tự tính lại giá thành chuẩn {0} món dùng nguyên liệu này";
             public static readonly string FoodCostOverWarning = "thực đơn vượt FC: {0}";
             public static readonly string StandardCostAutoFailed = "chưa tự tính lại được giá thành – bấm Tính lại ở Giá thành chuẩn";

@@ -241,6 +241,10 @@ namespace AppDelicare.Services.Implement
         /// </summary>
         private async Task<string> Update(CustomerRequest request, string typeSave)
         {
+            if (CustomerExternalData.Validate(request.ExternalData) is { } externalError)
+            {
+                return externalError;
+            }
             var exist = request.Id == null ? null : _unitOfWork.CustomerRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (exist == null)
             {
@@ -266,7 +270,10 @@ namespace AppDelicare.Services.Implement
                 cif = code;
                 Log.Information(string.Concat("[", GetType().Name, "]", " Update: ", string.Format(ConstantHelper.Message.CustomerTypeChanged, exist.Code, code)));
             }
+            string? oldExternal = exist.ExternalData;
             var update = _mapper.Map(request, exist);
+            // BIZ-3.6: ExternalData gộp khóa (không ghi đè cả cột): trống = giữ nguyên; khóa = null → bỏ khóa.
+            update.ExternalData = CustomerExternalData.Merge(oldExternal, request.ExternalData);
             update.Code = code;
             update.CIF = cif;
             update.CompanyId = companyId;
