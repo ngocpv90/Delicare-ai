@@ -93,6 +93,8 @@ namespace AppDelicare.Model.Option
         public int MenuReminderWeekday { get; set; } = 3;
         /// <summary>BIZ-3.4: thứ chạy job nhắc khách chưa đăng ký suất tuần sau (5 = thứ Sáu).</summary>
         public int OrderWeekReminderWeekday { get; set; } = 5;
+        /// <summary>BIZ-3.3 (D-77 – C10): lưu bảng giá NCC → tự tính lại giá thành chuẩn món dùng nguyên liệu + cảnh báo FC % thực đơn.</summary>
+        public bool StandardCostAutoOnSupplierPrice { get; set; } = true;
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
         /// <summary>

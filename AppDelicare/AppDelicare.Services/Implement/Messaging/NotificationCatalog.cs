@@ -62,6 +62,8 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string MenuMissing = "MENU_MISSING";
         /// <summary>BIZ-3.4: thứ Sáu khách chưa đăng ký suất tuần sau.</summary>
         public const string OrderWeekMissing = "ORDER_WEEK_MISSING";
+        /// <summary>BIZ-3.3: giá NCC đổi làm thực đơn vượt FC %.</summary>
+        public const string FoodCostOver = "FOOD_COST_OVER";
 
         private const string P = MessagingCode.Scope.Personal, D = MessagingCode.Scope.Department, X = MessagingCode.Scope.CrossDepartment,
             A = MessagingCode.Scope.Approval, C = MessagingCode.Scope.Critical;
@@ -96,6 +98,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(OrdersUnconfirmed, D, Urgent, "19:00 khách chưa chốt – NV KD"),
             new(MenuMissing, X, Urgent, "Thứ Tư 09:00 chưa có thực đơn chung tuần sau – Kế hoạch, COO"),
             new(OrderWeekMissing, D, Normal, "Thứ Sáu 16:00 khách chưa đăng ký suất tuần sau – NV KD"),
+            new(FoodCostOver, X, Urgent, "Giá NCC đổi → thực đơn vượt FC % – Kế hoạch, COO"),
             new(MenuPublished, D, Digest, "Thực đơn công bố – kế hoạch, KD, bếp"),
             new(NotCheckedIn, D, Normal, "Chưa vào ca > 10′ – trưởng ca, nhân sự"),
             new(MorningBrief, X, Digest, "Bản tin 07:00"),
