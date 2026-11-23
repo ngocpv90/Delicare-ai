@@ -72,9 +72,8 @@ namespace AppDelicare.Tests.Menu
                 created.ResponseCode.Should().Be(200, created.ResponseMessage);
                 Guid recipeId = created.Data!.Id;
                 (await lines.Save(new RecipeLineRequest { RecipeId = recipeId, IngredientId = ingredient, Quantity = 10, UnitId = kg }, "Insert")).ResponseCode.Should().Be(200);
-                (await recipes.Submit(recipeId)).ResponseCode.Should().Be(200);
-                (await recipes.Decide(new RecipeDecisionRequest { Id = recipeId }, approve: true)).ResponseCode.Should().Be(200);
-                var locked = await recipes.Lock(new RecipeLockRequest { Id = recipeId, EffectiveFrom = new DateTime(2026, 12, 1) });
+                (await recipes.Submit(recipeId, new DateTime(2026, 12, 1))).ResponseCode.Should().Be(200);
+                var locked = await recipes.Decide(new RecipeDecisionRequest { Id = recipeId }, approve: true); // BIZ-2.3: duyệt = khóa & áp dụng
                 locked.ResponseCode.Should().Be(200, locked.ResponseMessage);
 
                 db.ChangeTracker.Clear();

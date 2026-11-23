@@ -166,9 +166,9 @@ namespace AppDelicare.Tests.Pilot
                 {
                     Guid recipe = Id((await Post("/api/Recipe/CreateVersion", ("DishId", dish))).Ok());
                     (await Post("/api/RecipeLine/Insert", ("RecipeId", recipe), ("IngredientId", ingredient), ("Quantity", qty), ("UnitId", kg), ("SequenceNo", 1))).Ok();
-                    (await Post("/api/Recipe/Submit", ("id", recipe))).Ok();
+                    // BIZ-2.3: chọn ngày áp dụng khi gửi – duyệt = khóa & áp dụng.
+                    (await Post("/api/Recipe/Submit", ("id", recipe), ("effectiveFrom", today))).Ok();
                     (await Post("/api/Recipe/Approve", ("Id", recipe), ("Note", "[DEMO]"))).Ok();
-                    (await Post("/api/Recipe/Lock", ("Id", recipe), ("EffectiveFrom", today))).Ok();
                 }
                 Guid branch = await db.OrganizationUnit.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => x.Id).FirstAsync();
                 Guid customer = await Insert<Model.Entity.Customer>("Customer", q => q.Where(x => x.LegalName == "[DEMO] Khách Pilot " + k).Select(x => x.Id).SingleAsync(),

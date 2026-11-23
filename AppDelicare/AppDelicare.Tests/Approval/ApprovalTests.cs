@@ -104,7 +104,7 @@ namespace AppDelicare.Tests.Approval
 
             (await approver.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", request.Id), ("Approve", true), ("Note", "OK"))).Ok();
 
-            (await _factory.QueryAsync(db => db.Recipe.AsNoTracking().SingleAsync(r => r.Id == recipe))).Status.Should().Be("Approved");
+            (await _factory.QueryAsync(db => db.Recipe.AsNoTracking().SingleAsync(r => r.Id == recipe))).Status.Should().Be("Locked", "BIZ-2.3: duyệt cấp cuối = khóa & áp dụng");
             (await RequestOfAsync(recipe)).RequestStatus.Should().Be("Approved");
             var decision = await _factory.QueryAsync(db => db.ApprovalDecision.AsNoTracking().SingleAsync(d => d.ApprovalRequestId == request.Id));
             decision.DecisionCode.Should().Be("APPROVE");
