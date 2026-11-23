@@ -370,9 +370,16 @@ namespace AppDelicare.Services.Implement
             string code = await CodeOrNewAsync(r["Mã điểm giao"], DocumentKind.DeliveryLocation);
             var e = await FindAsync<CustomerDeliveryLocation>(x => x.CustomerId == customer.Id && x.Code == code && !x.IsDeleted);
             bool isNew = e == null;
+            // LOC-1: người nhận (khách doanh nghiệp) phải có trong danh sách người liên hệ – kiểm TRƯỚC khi thêm bản ghi.
+            var (recipient, recipientPhone, recipientError) = await DeliveryRecipientRules.ResolveAsync(_unitOfWork.DbContext, customer.Id, r["Người nhận"], r["SĐT người nhận"],
+                required: false, e?.ContactName, e?.ContactPhone);
+            if (recipientError != null)
+            {
+                return recipientError;
+            }
             e ??= Add(_unitOfWork.CustomerDeliveryLocationRepository, new CustomerDeliveryLocation { Id = Guid.NewGuid(), CustomerId = customer.Id, Code = code, Status = Active });
-            bool changed = Set(e, x => x.Name, r["Tên điểm giao"]) | Set(e, x => x.Address, r["Địa chỉ"]) | Set(e, x => x.ContactName, r["Người nhận"])
-                | Set(e, x => x.ContactPhone, r["SĐT người nhận"]) | Set(e, x => x.DeliveryWindowFrom, from) | Set(e, x => x.DeliveryWindowTo, to)
+            bool changed = Set(e, x => x.Name, r["Tên điểm giao"]) | Set(e, x => x.Address, r["Địa chỉ"]) | Set(e, x => x.ContactName, recipient)
+                | Set(e, x => x.ContactPhone, recipientPhone) | Set(e, x => x.DeliveryWindowFrom, from) | Set(e, x => x.DeliveryWindowTo, to)
                 | Set(e, x => x.Latitude, lat) | Set(e, x => x.Longitude, lng) | Set(e, x => x.DeliveryInstructions, r["Hướng dẫn giao"]);
             return Finish(e, isNew, changed, ctx);
         }

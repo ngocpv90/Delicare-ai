@@ -144,6 +144,14 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
+            // LOC-1: người nhận (khách doanh nghiệp) phải là người liên hệ của khách – bắt buộc khi tạo mới.
+            var (recipient, recipientPhone, recipientError) = await DeliveryRecipientRules.ResolveAsync(_unitOfWork.DbContext, request.CustomerId, request.ContactName, request.ContactPhone, required: true);
+            if (recipientError != null)
+            {
+                return recipientError;
+            }
+            request.ContactName = recipient;
+            request.ContactPhone = recipientPhone;
             var insert = _mapper.Map<CustomerDeliveryLocation>(request);
             // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
             insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.DeliveryLocation);
@@ -168,6 +176,15 @@ namespace AppDelicare.Services.Implement
             }
             // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
             request.Code = exist.Code;
+            // LOC-1: người nhận phải là người liên hệ của khách (giữ nguyên người nhận cũ thì vẫn lưu được).
+            var (recipient, recipientPhone, recipientError) = await DeliveryRecipientRules.ResolveAsync(_unitOfWork.DbContext, exist.CustomerId, request.ContactName, request.ContactPhone,
+                required: false, exist.ContactName, exist.ContactPhone);
+            if (recipientError != null)
+            {
+                return recipientError;
+            }
+            request.ContactName = recipient;
+            request.ContactPhone = recipientPhone;
             var update = _mapper.Map(request, exist);
             _unitOfWork.CustomerDeliveryLocationRepository.Update(update);
             await _unitOfWork.CustomerDeliveryLocationRepository.CommitAsync(typeSave);

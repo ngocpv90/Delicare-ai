@@ -244,8 +244,22 @@
       if (cats[m.name]) return UI.catalogSelect(id, m.name, cats[m.name], v, isReq(m), '— Chọn ' + labelOf(m).toLowerCase() + ' —');
       return null;
     };
+    // LOC-1 (2026-11-22): điểm giao của khách doanh nghiệp – Người nhận chọn trong danh sách người liên hệ của khách (máy chủ kiểm lại), chọn xong tự điền SĐT.
+    const isLocation = t === 'CustomerDeliveryLocation';
+    const recipientPick = () => {
+      const cus = Store.get('Customer', valueOfRec('CustomerId'));
+      if (!cus || String(cus.CustomerType || '').toUpperCase() !== 'BUSINESS') return null;
+      const cts = Store.by('CustomerContact', 'CustomerId', cus.Id).filter(c => !c.IsDeleted && (!c.Status || c.Status === 'Active'))
+        .sort((a, b) => (b.IsPrimary ? 1 : 0) - (a.IsPrimary ? 1 : 0) || String(a.FullName || a.Name).localeCompare(String(b.FullName || b.Name)));
+      const cur = rec.ContactName || '';
+      const nameOf = c => c.FullName || c.Name || '';
+      const known = cts.some(c => nameOf(c).toLowerCase() === cur.toLowerCase());
+      return `<select class="select" id="f_ContactName" name="ContactName" required data-recipient="1"><option value="">${cts.length ? '— Chọn người liên hệ —' : '— Khách chưa có người liên hệ –  thêm ở mục Người liên hệ —'}</option>${cur && !known ? `<option value="${esc(cur)}" data-phone="${esc(rec.ContactPhone || '')}" selected>${esc(cur)} (giá trị cũ)</option>` : ''}${cts.map(c => `<option value="${esc(nameOf(c))}" data-phone="${esc(c.Phone || '')}" ${nameOf(c).toLowerCase() === cur.toLowerCase() ? 'selected' : ''}>${esc(nameOf(c))}${c.Position ? ' – ' + esc(c.Position) : ''}${c.Phone ? ' · ' + esc(c.Phone) : ''}${c.IsPrimary ? ' (chính)' : ''}</option>`).join('')}</select>`;
+    };
+    function valueOfRec(name) { const el = document.querySelector('.modal #f_' + name); return el && el.value ? el.value : rec[name]; }
     const inputOf = m => {
       const r = ruleOf(m), v = rec[m.name];
+      if (isLocation && m.name === 'ContactName') { const pick = recipientPick(); if (pick) return pick; }
       if (r && r.group === 'G1') return `<input class="input mono" id="f_${m.name}" name="${m.name}" value="${esc(v || '')}" placeholder="(tự sinh khi lưu)" readonly data-g1="1" title="Mã do máy chủ tự sinh${r.prefix ? ' – ' + esc(r.prefix) : ''}">`;
       if (isCustomer && m.name === 'CustomerType') {
         // Loại khách khóa sau khi lưu (D-63 i) – đổi loại chỉ khi chưa có hợp đồng / đơn, máy chủ kiểm và cấp mã mới.
@@ -333,6 +347,15 @@
         };
         if (isCustomer) applyOptions(cusOpt);
         wire();
+        if (isLocation) {
+          // Đổi khách → vẽ lại ô Người nhận; chọn người nhận → điền SĐT theo người liên hệ.
+          const redrawRecipient = () => { const el = m.querySelector('#f_ContactName'), fld = el && el.closest('.field'); if (!fld) return; rec.ContactName = el.value || null; const meta = fields.find(f => f.name === 'ContactName'); if (!meta) return; const tmp = document.createElement('div'); tmp.innerHTML = fieldHtml(meta); fld.replaceWith(tmp.firstElementChild); };
+          m.addEventListener('change', e => {
+            if (e.target.id === 'f_CustomerId') { rec.CustomerId = e.target.value; redrawRecipient(); }
+            if (e.target.id === 'f_ContactName' && e.target.dataset.recipient) { const o = e.target.selectedOptions[0], ph = m.querySelector('#f_ContactPhone'); if (o && ph && o.dataset.phone) ph.value = o.dataset.phone; }
+          });
+          Store.ensure('CustomerContact').then(() => { if (host.isConnected) redrawRecipient(); });
+        }
         // Quy tắc mã / dữ liệu form tải xong sau khi mở form → CHỈ thay các ô phụ thuộc dữ liệu đó (ô mã, ô chọn danh mục / chi nhánh / NV phụ trách).
         // Không vẽ lại cả form: người dùng có thể đang mở hộp chọn ngày / đang gõ – thay ô sẽ làm mất giá trị vừa chọn (lỗi UAT 2026-11-21).
         const OPTION_FIELDS = new Set(['BranchId', 'UserAssignId', 'Industry', 'CompanySize', 'Gender', 'Source']);

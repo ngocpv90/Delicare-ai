@@ -177,7 +177,7 @@ namespace AppDelicare.Tests.Pilot
                     ("ContactPersonName", "[DEMO] Chị Liên Hệ"), ("ContactPersonPhone", "0901234567"), ("Address", "[DEMO] KCN Tân Bình"), ("PhoneNumber", "0281234567"),
                     ("BranchId", branch), ("Industry", "FACTORY"), ("Status", "Active"));
                 Guid location = await Insert<Model.Entity.CustomerDeliveryLocation>("CustomerDeliveryLocation", q => q.Where(x => x.CustomerId == customer).Select(x => x.Id).SingleAsync(),
-                    ("CustomerId", customer), ("Code", code + "CT"), ("Name", "[DEMO] Căng tin " + k), ("Address", "[DEMO] KCN"), ("DeliveryWindowFrom", "11:00"),
+                    ("CustomerId", customer), ("Code", code + "CT"), ("Name", "[DEMO] Căng tin " + k), ("ContactName", "[DEMO] Chị Liên Hệ"), ("Address", "[DEMO] KCN"), ("DeliveryWindowFrom", "11:00"),
                     ("DeliveryWindowTo", "12:00"), ("Status", "Active"));
                 Guid contract = await Insert<Model.Entity.Contract>("Contract", q => q.Where(x => x.CustomerId == customer).Select(x => x.Id).SingleAsync(),
                     ("CustomerId", customer), ("ContractNumber", code + "HD"), ("Name", "[DEMO] HĐ suất ăn " + k), ("EffectiveFrom", today.AddDays(-1)), ("Status", "Active"));
