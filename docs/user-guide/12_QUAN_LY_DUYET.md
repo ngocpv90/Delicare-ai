@@ -22,8 +22,8 @@
 | Loại (Loại nghiệp vụ) | Phát sinh khi | Cấp duyệt (mục "Phê duyệt › …") | Nhóm có quyền theo seed |
 |---|---|---|---|
 | Hợp đồng (CONTRACT) | KD **Gửi duyệt** hợp đồng | `crm-contract` | CEO |
-| Đơn lệch > 30% (ORDER_DEVIATION) | KD chốt / xác nhận đơn lệch dự báo / lịch sử > 30% | `crm-order` | CEO |
-| Đổi đơn sau giờ chốt (ORDER_CHANGE_AFTER_CUTOFF) | Yêu cầu đổi đơn sau 20:00 D-1 (nút **Yêu cầu sửa sau chốt** trong ngăn chi tiết đơn) | `crm-order` | CEO |
+| Đơn lệch > 30% (ORDER_DEVIATION) | **Không còn phát sinh** (BIZ-2.1: trước giờ chốt sửa số không đi duyệt, lệch > 30 % so TB 4 tuần chỉ cảnh báo). Yêu cầu loại này tạo trước đó vẫn duyệt / từ chối được | `crm-order` | SAL-CON / COO |
+| Đổi đơn sau giờ chốt (ORDER_CHANGE_AFTER_CUTOFF) | Yêu cầu đổi đơn sau 20:00 D-1 (nút **Yêu cầu sửa sau chốt** trong ngăn chi tiết đơn) | `crm-order` | **SAL-CON (Trưởng KD) / COO** (BIZ-2.1, bỏ CEO – DB có sẵn chạy `DB/scripts/BIZ2_order_approvers.sql`) |
 | Đề nghị mua (PURCHASE_REQUEST) | Mua hàng **Gửi duyệt** PR | Cấp 1 `scm-pr-l1` → Cấp 2 `scm-pr-l2` | OPS-SCM → COO |
 | Đơn mua (PURCHASE_ORDER) | **Gửi duyệt** PO | `scm-po`; PO ≥ 50.000.000 đ thêm `scm-po-director` | CEO / COO; thêm CEO |
 | Kiểm kê (STOCK_COUNT) | Kiểm kê chênh lệch > 2% | `scm-stockcount` → `scm-stockcount-l2` | CEO / COO → FIN-ACC |

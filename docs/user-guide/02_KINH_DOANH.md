@@ -157,11 +157,10 @@ Dùng khi khách đăng ký **số suất theo từng lựa chọn cho cả tu�
 - **Kho / bếp nhận đúng số**: sau chốt, kế hoạch sản xuất và nhu cầu nguyên liệu tính **số suất lựa chọn × món trong set** (vd 2.000 suất LC1 → 2.000 phần mỗi món của LC1; món 2 cái / suất như bánh mì → 4.000 cái) – không còn chia đều + 15%.
 
 ### 4.6 Thay đổi đơn sau giờ chốt
-- Trên web: sau giờ chốt (20:00 D-1), ngăn chi tiết đơn có nút **Yêu cầu sửa sau chốt** (chỉ hiện khi đã quá giờ chốt): nhập số suất mới từng dòng + **Lý do*** → **Gửi yêu cầu** → yêu cầu duyệt ORDER_CHANGE_AFTER_CUTOFF (số `XN-…`) chờ CEO duyệt; duyệt xong số lượng mới mới được ghi.
-- Cách làm hiện có:
-  - **Thêm đơn mới** sau giờ chốt: dùng **Tạo đơn hàng** + lý do (mục 4.5 bước 4).
-  - **Sửa số suất** đơn đã chốt: báo Ban điều hành / IT (chờ bổ sung nút).
-  - **Đổi món**: bộ phận Kế hoạch tạo **Yêu cầu đổi món** (`03_KE_HOACH.md`).
+- **Sửa số suất** sau giờ chốt (20:00 D-1) – kể cả đơn **Đã chốt**: ngăn chi tiết đơn có nút **Yêu cầu sửa sau chốt** (chỉ hiện khi đã quá giờ chốt): nhập số suất mới từng dòng + **Lý do*** → **Gửi yêu cầu** → yêu cầu duyệt ORDER_CHANGE_AFTER_CUTOFF (số `XN-…`) chờ **Trưởng KD (nhóm SAL-CON) hoặc COO** duyệt (BIZ-2.1); duyệt xong số lượng mới được ghi, đơn → Đã chốt.
+- **Thêm đơn mới** sau giờ chốt: dùng **Tạo đơn hàng** + lý do (mục 4.5 bước 4).
+- **Đổi món**: bộ phận Kế hoạch tạo **Yêu cầu đổi món** (`03_KE_HOACH.md`).
+- Trước giờ chốt không cần duyệt: sửa số trực tiếp (lệch > 30 % so trung bình 4 tuần chỉ cảnh báo – mục 4.5).
 
 ### 4.7 Chính sách giá – `crm-price-policy`
 - Danh sách chính sách giá theo khách / hợp đồng / loại suất / thời gian hiệu lực (thêm / sửa bằng form chung).

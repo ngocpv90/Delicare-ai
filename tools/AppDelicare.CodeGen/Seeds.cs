@@ -447,7 +447,10 @@ public static partial class Seeds
     ];
 
     /// <summary>MENU-2 / D-58: nhóm Database Architecture + 2 màn tra cứu cấu trúc DB; MENU-4: thêm Menu4HiddenLinks → IsActive = 0 (không xóa dòng).</summary>
-    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks];
+    /// <summary>BIZ-3.7 (D-77 – B7): mục "Phê duyệt › Kiểm tra hàng nhập" – không loại duyệt nào dùng (QC đầu vào kết luận trực tiếp, BIZ-2.6 tự ghi sổ) → ẩn.</summary>
+    public static readonly string[] Biz3HiddenLinks = ["#/wf-inbox?type=qc-inspection"];
+
+    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Biz3HiddenLinks];
 
     /// <summary>Tên hiển thị của mục menu theo MENU-2 (không có trong bảng → giữ tên catalog).</summary>
     public static string MenuName(string link, string name) => MenuRenames.FirstOrDefault(r => r.Link == link).New ?? name;
