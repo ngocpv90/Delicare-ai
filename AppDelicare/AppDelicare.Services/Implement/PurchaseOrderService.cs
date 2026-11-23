@@ -311,8 +311,11 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 var po = _unitOfWork.PurchaseOrderRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
                 var inputs = request.ListLine ?? [];
+                // BIZ-2.2: PO hệ thống tự duyệt (chưa gửi NCC / chưa nhập) sửa dòng được – về Nháp, phải gửi duyệt lại.
+                bool autoApproved = po != null && po.Status == PurchaseOrderStatus.Approved && (po.Note ?? string.Empty).Contains("[TU_DUYET]")
+                    && !await db.GoodsReceipt.AsNoTracking().AnyAsync(g => g.PurchaseOrderId == po.Id && !g.IsDeleted);
                 string? error = po == null ? ConstantHelper.Message.RecordNotFoundMessage
-                    : po.Status != PurchaseOrderStatus.Draft ? InvalidStatus(po, "sửa dòng PO", PurchaseOrderStatus.Draft)
+                    : po.Status != PurchaseOrderStatus.Draft && !autoApproved ? InvalidStatus(po, "sửa dòng PO", PurchaseOrderStatus.Draft)
                     : inputs.Count == 0 ? ConstantHelper.Message.PurchaseOrderNeedsLine
                     : inputs.Any(l => l.Quantity <= 0 || l.UnitPrice < 0) ? ConstantHelper.Message.PurchaseOrderLineInvalid
                     : null;
@@ -384,10 +387,15 @@ namespace AppDelicare.Services.Implement
                     po.ExpectedDeliveryDate = po.ExpectedDate = request.ExpectedDeliveryDate;
                 }
                 po.Note = PurchasingRules.AppendNote(po.Note, request.Note);
+                if (autoApproved)
+                {
+                    po.Status = PurchaseOrderStatus.Draft;
+                    po.Note = PurchasingRules.AppendNote(po.Note, ConstantHelper.Message.PurchaseOrderAutoApprovedReverted);
+                }
                 _unitOfWork.PurchaseOrderRepository.Update(po);
                 await _unitOfWork.PurchaseOrderRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
-                return Result<PurchaseOrderDetailModel>.Success(await DetailAsync(po.Id), ConstantHelper.Message.SaveSuccess);
+                return Result<PurchaseOrderDetailModel>.Success(await DetailAsync(po.Id), autoApproved ? ConstantHelper.Message.PurchaseOrderAutoApprovedReverted : ConstantHelper.Message.SaveSuccess);
             }
             catch (Exception ex)
             {

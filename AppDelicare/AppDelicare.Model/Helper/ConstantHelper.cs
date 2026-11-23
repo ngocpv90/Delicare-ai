@@ -356,6 +356,8 @@
             public static readonly string PurchaseOrderHasReceipt = "PO đã có phiếu nhập {0} – không hủy được (đóng PO bằng Close)";
             public static readonly string PurchaseOrderPendingReceipt = "PO còn phiếu nhập chưa ghi sổ: {0}";
             public static readonly string PurchaseOrderNotPending = "PO không có yêu cầu duyệt đang chờ";
+            public static readonly string PurchaseOrderAutoApprovedFromRequest = "[TU_DUYET] Hệ thống tự duyệt: đúng đề nghị mua {0} (NCC gợi ý, đơn giá bảng giá, số lượng ≤ đề nghị, tổng {1} < {2})";
+            public static readonly string PurchaseOrderAutoApprovedReverted = "Sửa dòng PO đã tự duyệt – về Nháp, cần gửi duyệt lại";
             public static readonly string PurchaseOrderAutoApproved = "PO tổng {0} ≤ ngưỡng tự duyệt {1} – đã duyệt tự động";
             public static readonly string PurchaseOrderSubmitted = "Đã gửi duyệt PO (yêu cầu {0})";
             public static readonly string CancelReasonRequired = "Nhập lý do hủy (tối thiểu 3 ký tự)";
@@ -671,6 +673,7 @@
             public static readonly string ForecastSuggestRange = "Khoảng ngày tạo dự báo gợi ý không hợp lệ (từ ≤ đến, tối đa {0} ngày)";
             public static readonly string ForecastSuggestNoContract = "Không có khách hàng nào có hợp đồng hiệu lực trong khoảng ngày đã chọn";
             public static readonly string ForecastSuggestDone = "Đã ghi {0} dòng dự báo gợi ý (bản Nháp) · bỏ qua {1} dòng Nháp người đã sửa · {2} dòng thiếu dữ liệu";
+            public static readonly string OrderHistoryDeviationWarning = "Số suất {0} lệch {1}% so với trung bình 4 tuần cùng thứ của điểm giao ({2} suất) – vượt ngưỡng {3}%, chỉ cảnh báo";
             public static readonly string ForecastVarianceWarning = "Lệch dự báo {0}% (đặt {1} / dự báo {2} suất) vượt ngưỡng {3}% – đã ghi nhận";
             public static readonly string MenuChangeNotFound = "Không tìm thấy yêu cầu đổi món";
             public static readonly string MenuChangeReasonRequired = "Yêu cầu đổi món phải ghi lý do";

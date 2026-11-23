@@ -649,28 +649,17 @@ namespace AppDelicare.Services.Implement
                 {
                     order!.Note = string.IsNullOrWhiteSpace(order.Note) ? request.Note.Trim() : $"{order.Note}\n{request.Note.Trim()}";
                 }
-                if (order!.Status == OrderStatus.Confirmed && maxDeviation > _rules.PortionDeviationPctNeedApproval)
+                // BIZ-2.1 (D-77 – B1): trước giờ chốt sửa số KHÔNG đi duyệt nữa (bỏ ORDER_DEVIATION) – lệch so trung bình 4 tuần cùng thứ của điểm giao > ngưỡng
+                // chỉ cảnh báo + ghi Note. Yêu cầu ORDER_DEVIATION đang chờ (tạo trước BIZ-2) vẫn xử lý như cũ.
+                var projected = current.ToDictionary(kv => kv.Key, kv => kv.Value);
+                foreach (var c in changes)
                 {
-                    if (changes.Count(c => c.Quantity > 0) + current.Keys.Count(k => changes.All(c => c.Id != k)) == 0)
-                    {
-                        _unitOfWork.RollbackTransaction();
-                        return Result<OrderDetailModel>.Fail(ConstantHelper.Message.OrderNeedsLine);
-                    }
-                    var (approval, approvalError) = await _approvalRequestService.CreateAsync(OrderStatus.DeviationBusinessType, order.Id,
-                        JsonConvert.SerializeObject(changes.Select(c => new { c.Id, c.Quantity })));
-                    if (approvalError != null)
-                    {
-                        _unitOfWork.RollbackTransaction();
-                        return Result<OrderDetailModel>.Fail(approvalError);
-                    }
-                    _unitOfWork.OrderRepository.Update(order);
-                    await _unitOfWork.OrderRepository.CommitAsync(ConstantHelper.TypeSave.Update);
-                    _unitOfWork.CommitTransaction();
-                    var pendingDetail = await DetailAsync(order.Id);
-                    pendingDetail!.ApprovalRequested = true;
-                    pendingDetail.MaxDeviationPercent = maxDeviation;
-                    return Result<OrderDetailModel>.Success(pendingDetail,
-                        string.Format(ConstantHelper.Message.OrderDeviationRequested, maxDeviation, _rules.PortionDeviationPctNeedApproval, approval!.RequestNo));
+                    projected[c.Id] = c.Quantity;
+                }
+                string? historyWarning = await HistoryDeviationWarningAsync(order!, projected.Values.Sum());
+                if (historyWarning != null)
+                {
+                    order!.Note = string.IsNullOrWhiteSpace(order.Note) ? "[LECH_TB_4_TUAN] " + historyWarning : $"{order.Note}\n[LECH_TB_4_TUAN] {historyWarning}";
                 }
                 _unitOfWork.OrderRepository.Update(order);
                 error = await ApplyLinesAsync(order.Id, changes);
@@ -682,7 +671,11 @@ namespace AppDelicare.Services.Implement
                 _unitOfWork.CommitTransaction();
                 var detail = await DetailAsync(order.Id);
                 detail!.MaxDeviationPercent = maxDeviation;
-                return Result<OrderDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
+                if (historyWarning != null)
+                {
+                    detail.ListWarning.Add(historyWarning);
+                }
+                return Result<OrderDetailModel>.Success(detail, historyWarning == null ? ConstantHelper.Message.SaveSuccess : $"{ConstantHelper.Message.SaveSuccess} – {historyWarning}");
             }
             catch (Exception ex)
             {
@@ -731,6 +724,36 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// BIZ-2.1 (D-77 – B1): Σ suất mới so trung bình suất thực nhận của <b>cùng điểm giao</b> trong 4 (ForecastLookbackWeeks) ngày cùng thứ trước ngày ăn
+        /// (tuần không có đơn không tính – như dự báo gợi ý FC-1). Lệch &gt; <c>PortionDeviationPctNeedApproval</c> (30%) → câu cảnh báo; không chặn.
+        /// </summary>
+        private async Task<string?> HistoryDeviationWarningAsync(Order order, decimal newTotal)
+        {
+            if (order.DeliveryLocationId is not { } location)
+            {
+                return null;
+            }
+            int weeks = Math.Max(1, _rules.ForecastLookbackWeeks);
+            var dates = Enumerable.Range(1, weeks).Select(i => order.MealDate.Date.AddDays(-7 * i)).ToList();
+            var actual = await ForecastService.ActualAsync(_unitOfWork.DbContext, dates, [order.CustomerId]);
+            var perDay = actual.Where(a => a.Key.LocationId == location).GroupBy(a => a.Key.Date).Select(g => g.Sum(x => x.Value)).ToList();
+            if (perDay.Count == 0)
+            {
+                return null;
+            }
+            decimal avg = perDay.Average();
+            if (avg <= 0)
+            {
+                return null;
+            }
+            decimal pct = Math.Round(Math.Abs(newTotal - avg) / avg * 100m, 1, MidpointRounding.AwayFromZero);
+            return pct > _rules.PortionDeviationPctNeedApproval
+                ? string.Format(ConstantHelper.Message.OrderHistoryDeviationWarning, newTotal.ToString("0.##", CultureInfo.InvariantCulture), pct.ToString("0.#", CultureInfo.InvariantCulture),
+                    Math.Round(avg, 1).ToString("0.#", CultureInfo.InvariantCulture), _rules.PortionDeviationPctNeedApproval.ToString("0.##", CultureInfo.InvariantCulture))
+                : null;
+        }
+
         /// <summary>Spec 6.6 submit: Draft → Submitted, trước giờ chốt; ≥ 1 dòng, mọi dòng có MealType, ShiftId, Quantity &gt; 0.</summary>
         public Task<IResult<OrderDetailModel>> Submit(OrderActionRequest request)
             => ChangeStatus(request.Id, [OrderStatus.Draft], OrderStatus.Submitted, "gửi đơn", true, request.Note, async order =>
@@ -748,11 +771,17 @@ namespace AppDelicare.Services.Implement
         /// </summary>
         public async Task<IResult<OrderDetailModel>> Confirm(OrderActionRequest request)
         {
-            string? warning = null;
+            string? warning = null, extraWarning = null;
             var current = await _unitOfWork.OrderRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(o => o.Id == request.Id && !o.IsDeleted);
-            if (current != null && current.Status == OrderStatus.Submitted)
+            if (current != null && current.Status is OrderStatus.Submitted or OrderStatus.Draft)
             {
                 var lines = await _unitOfWork.OrderLineRepository.GetAll().AsNoTracking().Where(l => l.OrderId == current.Id && !l.IsDeleted).ToListAsync();
+                string? historyWarning = await HistoryDeviationWarningAsync(current, lines.Where(l => l.Quantity > 0).Sum(l => l.Quantity));
+                if (historyWarning != null)
+                {
+                    request.Note = string.IsNullOrWhiteSpace(request.Note) ? "[LECH_TB_4_TUAN] " + historyWarning : $"{request.Note.Trim()}\n[LECH_TB_4_TUAN] {historyWarning}";
+                    extraWarning = historyWarning;
+                }
                 var forecast = await ForecastOfAsync(current, lines);
                 if (forecast.Variance is { } v && Math.Abs(v) > _rules.ForecastVariancePctWarning)
                 {
@@ -762,11 +791,25 @@ namespace AppDelicare.Services.Implement
                 }
             }
             string? note = warning == null ? request.Note : string.IsNullOrWhiteSpace(request.Note) ? "[LECH_DU_BAO] " + warning : $"{request.Note.Trim()}\n[LECH_DU_BAO] {warning}";
-            var result = await ChangeStatus(request.Id, [OrderStatus.Submitted], OrderStatus.Confirmed, "xác nhận đơn", true, note, null);
-            if (warning != null && result.ResponseCode == (int)HttpStatusCode.OK && result.Data != null)
+            // BIZ-2.1 (D-77 – B2): đơn nhân viên nhập Nháp → Xác nhận thẳng (bỏ bước Gửi); Đã gửi chỉ còn cho đơn khách tự đăng ký.
+            var result = await ChangeStatus(request.Id, [OrderStatus.Draft, OrderStatus.Submitted], OrderStatus.Confirmed, "xác nhận đơn", true, note, async order =>
             {
-                result.ResponseMessage = $"{result.ResponseMessage} – {warning}";
-                result.Data.ListWarning.Add(warning);
+                if (order.Status != OrderStatus.Draft)
+                {
+                    return null;
+                }
+                var lines = await _unitOfWork.OrderLineRepository.GetAll().AsNoTracking().Where(l => l.OrderId == order.Id && !l.IsDeleted).ToListAsync();
+                return lines.Count == 0 ? ConstantHelper.Message.OrderNeedsLine
+                    : lines.Any(l => string.IsNullOrEmpty(l.MealType) || l.ShiftId == null || l.Quantity <= 0) ? ConstantHelper.Message.OrderLineIncomplete
+                    : null;
+            });
+            if (result.ResponseCode == (int)HttpStatusCode.OK && result.Data != null)
+            {
+                foreach (var w in new[] { warning, extraWarning }.Where(w => w != null))
+                {
+                    result.ResponseMessage = $"{result.ResponseMessage} – {w}";
+                    result.Data.ListWarning.Add(w!);
+                }
             }
             return result;
         }
@@ -1052,7 +1095,7 @@ namespace AppDelicare.Services.Implement
             switch (order.Status)
             {
                 case OrderStatus.Draft:
-                    if (!afterCutoff) actions.AddRange(["updateLines", "submit"]);
+                    if (!afterCutoff) actions.AddRange(["updateLines", "confirm"]);
                     actions.Add("cancel");
                     break;
                 case OrderStatus.Submitted:

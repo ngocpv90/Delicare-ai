@@ -118,6 +118,12 @@ public static partial class Seeds
     /// <para>BE2.3 (D-46, anh chốt 2026-11-16 – nhóm duyệt từng cấp PROPOSED): đề nghị mua 2 cấp <c>scm-pr-l1</c> (Trưởng bộ phận Mua hàng → seed OPS-SCM) →
     /// <c>scm-pr-l2</c> (Giám đốc vận hành → seed COO); kiểm kê lệch &gt; 2% cấp 2 Kế toán <c>scm-stockcount-l2</c> (spec 2.3 → seed FIN-ACC).</para>
     /// </summary>
+    /// <summary>BIZ-2.1 (D-77 – B6): mục duyệt có nhóm duyệt riêng (không lấy theo ma trận). "Đơn đặt suất" (sửa / thêm đơn sau giờ chốt) = Trưởng KD (SAL-CON) + COO, bỏ CEO.</summary>
+    public static readonly IReadOnlyDictionary<string, string[]> ApproverOverrides = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["crm-order"] = ["SAL-CON", "COO"],
+    };
+
     public static readonly IReadOnlyList<ExtraApproval> ExtraApprovals =
     [
         new("scm-po-director", "Đơn mua hàng (Giám đốc)", "P4", ["CEO"]),
@@ -559,8 +565,9 @@ public static partial class Seeds
             JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
             WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
             """);
-        var approvals = matrix.SelectMany(m => screens.Where(s => s.Approvable && Flags(m.Rights[GroupToMatrix[s.Group]]).Approve)
+        var approvals = matrix.SelectMany(m => screens.Where(s => s.Approvable && !ApproverOverrides.ContainsKey(s.Id) && Flags(m.Rights[GroupToMatrix[s.Group]]).Approve)
             .Select(s => $"({Sql(m.Role)}, {Sql(ApprovalLinkPrefix + s.Id)})")).ToList();
+        approvals.AddRange(ApproverOverrides.SelectMany(kv => kv.Value.Select(r => $"({Sql(r)}, {Sql(ApprovalLinkPrefix + kv.Key)})")));
         approvals.AddRange(ExtraApprovals.SelectMany(x => x.Roles.Select(r => $"({Sql(r)}, {Sql(ApprovalLinkPrefix + x.Id)})")));
         if (approvals.Count > 0)
         {
@@ -583,7 +590,7 @@ public static partial class Seeds
 
     /// <summary>Tóm tắt quyền duyệt seed: mục "Duyệt …" → các nhóm (để in ra console khi chạy CodeGen).</summary>
     public static Dictionary<string, List<string>> Approvers(List<Screen> screens, List<(string Role, string Label, Dictionary<string, string> Rights)> matrix)
-        => screens.Where(s => s.Approvable).ToDictionary(s => s.Id, s => matrix.Where(m => Flags(m.Rights[GroupToMatrix[s.Group]]).Approve).Select(m => m.Role).ToList())
+        => screens.Where(s => s.Approvable).ToDictionary(s => s.Id, s => ApproverOverrides.TryGetValue(s.Id, out var o) ? [.. o] : matrix.Where(m => Flags(m.Rights[GroupToMatrix[s.Group]]).Approve).Select(m => m.Role).ToList())
             .Concat(ExtraApprovals.Select(x => new KeyValuePair<string, List<string>>(x.Id, x.Roles.ToList()))).ToDictionary(kv => kv.Key, kv => kv.Value);
 
     [GeneratedRegex(@"^\|\s*([A-Z0-9-]+)\s*\|\s*([^|]+?)\s*\|\s*(COMPANY|BOARD|DIVISION|DEPARTMENT|TEAM)\s*\|\s*([^|]*?)\s*\|\s*$")]

@@ -291,8 +291,8 @@ namespace AppDelicare.Tests.Pilot
                 var poDkDetail = (await Get($"/api/PurchaseOrder/GetDetail?id={poDk}")).Ok();
                 poDkDetail.GetProperty("purchaseOrder").GetProperty("totalAmount").GetDecimal().Should().Be(1_000_000m);
                 poDkDetail.GetProperty("needsDirectorApproval").GetBoolean().Should().BeFalse();
-                (await Post("/api/PurchaseOrder/Submit", ("Id", poDk), ("Note", "[DEMO]"))).Ok();
-                (await Post("/api/PurchaseOrder/Approve", ("Id", poDk), ("Note", "[DEMO]"))).Ok();
+                // BIZ-2.2: PO đúng đề nghị (NCC gợi ý, giá bảng giá, < 50 triệu) → hệ thống tự duyệt.
+                poDkDetail.GetProperty("purchaseOrder").GetProperty("status").GetString().Should().Be("Approved");
                 (await Post("/api/PurchaseOrder/Send", ("Id", poDk))).Ok();
 
                 // ===== 5. MRP: bò 200 (bị chặn 80, mua 200); gạo 120 − hàng sắp về 50 = mua 70

@@ -19,7 +19,7 @@ namespace AppDelicare.Services.Implement
 {
     public class PurchaseRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IUomConversionService uomConversionService
-        , IClock clock, IApprovalRequestService approvalRequestService) : IPurchaseRequestService
+        , IClock clock, IApprovalRequestService approvalRequestService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IPurchaseRequestService
     {
         private readonly IApprovalRequestService _approvalRequestService = approvalRequestService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -29,6 +29,7 @@ namespace AppDelicare.Services.Implement
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         private readonly IUomConversionService _uomConversionService = uomConversionService;
         private readonly IClock _clock = clock;
+        private readonly AppDelicare.Model.Option.BusinessRulesOptions _rules = rules.Value;
 
         public async Task<IResults<PurchaseRequestViewModel>> GetAll(PurchaseRequestSearchRequest request)
         {
@@ -507,6 +508,8 @@ namespace AppDelicare.Services.Implement
                     };
                     decimal total = 0m;
                     int lineCount = 0;
+                    int warningsBefore = result.ListWarning.Count;
+                    bool priced = true;
                     foreach (Guid ingredientId in bySupplier)
                     {
                         var offer = bestByIngredient[ingredientId].Material;
@@ -541,6 +544,7 @@ namespace AppDelicare.Services.Implement
                         decimal price = offer.UnitPrice ?? 0m;
                         if (offer.UnitPrice == null)
                         {
+                            priced = false;
                             result.ListWarning.Add($"{name}: bảng giá NCC {supplier.Name} chưa có đơn giá – PO ghi 0, sửa bằng PurchaseOrder/UpdateLines");
                         }
                         decimal? moq = offer.MinimumOrderQuantity ?? offer.MinimumOrderQty;
@@ -559,6 +563,15 @@ namespace AppDelicare.Services.Implement
                         lineCount++;
                     }
                     po.TotalAmount = total;
+                    // BIZ-2.2 (D-77 – B3, C2): PO lập đúng đề nghị (NCC gợi ý = NCC ưu tiên / bảng giá hiệu lực, giá bảng giá, số = đề nghị quy đổi, không cảnh báo đơn vị)
+                    // và tổng < ngưỡng Giám đốc → tự Đã duyệt; sai một điều kiện → Nháp, gửi duyệt như cũ. MOQ chỉ cảnh báo (số vẫn ≤ đề nghị).
+                    bool clean = result.ListWarning.Skip(warningsBefore).All(w => w.Contains("dưới MOQ"));
+                    if (_rules.PurchaseOrderAutoApproveFromRequest && priced && clean && total > 0 && total < _rules.PurchaseOrderDirectorApprovalAmount)
+                    {
+                        po.Status = PurchaseOrderStatus.Approved;
+                        po.Note = PurchasingRules.AppendNote(po.Note, string.Format(ConstantHelper.Message.PurchaseOrderAutoApprovedFromRequest, prNumber,
+                            PurchasingRules.Money(total), PurchasingRules.Money(_rules.PurchaseOrderDirectorApprovalAmount)));
+                    }
                     _unitOfWork.PurchaseOrderRepository.Add(po);
                     result.ListPurchaseOrder.Add(new PurchaseOrderBriefModel
                     {

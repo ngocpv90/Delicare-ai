@@ -71,6 +71,8 @@ namespace AppDelicare.Model.Option
         /// <c>#/wf-inbox?type=scm-po-director</c>; dưới ngưỡng duyệt trên <c>#/wf-inbox?type=scm-po</c>. Vẫn duyệt 1 cấp.
         /// </summary>
         public decimal PurchaseOrderDirectorApprovalAmount { get; set; } = 50_000_000m;
+        /// <summary>BIZ-2.2 (D-77 – B3, C2): PO lập từ đề nghị mua Đã duyệt tự Đã duyệt khi đúng NCC gợi ý, đơn giá = bảng giá, số ≤ đề nghị, tổng &lt; ngưỡng Giám đốc.</summary>
+        public bool PurchaseOrderAutoApproveFromRequest { get; set; } = true;
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
         /// <summary>

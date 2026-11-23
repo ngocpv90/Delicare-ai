@@ -67,12 +67,8 @@ namespace AppDelicare.Tests.Purchasing
                 poBrief.PurchaseOrderNumber.Should().MatchRegex(@"^PO-\d{6}-\d{4}$");
                 poBrief.TotalAmount.Should().Be(1_000_000m);
 
-                var submitted = await poService.Submit(new PurchaseActionRequest { Id = poBrief.Id });
-                submitted.ResponseCode.Should().Be(200, submitted.ResponseMessage);
-                submitted.Data!.PurchaseOrder.Status.Should().Be("PendingApproval");
-                submitted.Data.PendingApprovalNo.Should().MatchRegex(@"^XN-\d{6}-\d{3}$");
-                var approved = await poService.Decide(new PurchaseActionRequest { Id = poBrief.Id, Note = "[DEMO] duyệt" }, true);
-                approved.ResponseCode.Should().Be(200, approved.ResponseMessage);
+                // BIZ-2.2: đúng đề nghị, < 50 triệu → tự Đã duyệt.
+                poBrief.Status.Should().Be("Approved");
 
                 var detail = (await poService.GetDetail(poBrief.Id)).Data!;
                 detail.PurchaseOrder.Status.Should().Be("Approved");
@@ -104,9 +100,7 @@ namespace AppDelicare.Tests.Purchasing
                 (await db.InventoryBalance.AsNoTracking().Where(b => b.MaterialLotId == lot.Id).SumAsync(b => b.AvailableQuantity)).Should().Be(8);
                 (await db.TemperatureLog.AsNoTracking().CountAsync(t => t.MaterialLotId == lot.Id && t.MeasurementType == "RECEIVING")).Should().Be(1);
                 (await db.PurchaseOrder.AsNoTracking().SingleAsync(p => p.Id == poBrief.Id)).Status.Should().Be("PartiallyReceived");
-                var approval = await db.ApprovalRequest.AsNoTracking().SingleAsync(a => a.BusinessId == poBrief.Id);
-                approval.RequestStatus.Should().Be("Approved");
-                (await db.ApprovalDecision.AsNoTracking().CountAsync(d => d.ApprovalRequestId == approval.Id && d.DecisionCode == "APPROVE")).Should().Be(1);
+                (await db.ApprovalRequest.AsNoTracking().CountAsync(a => a.BusinessId == poBrief.Id)).Should().Be(0, "BIZ-2.2: PO tự duyệt – không qua yêu cầu duyệt");
                 await tx.RollbackAsync();
             }
 
