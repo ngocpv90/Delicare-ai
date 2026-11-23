@@ -668,6 +668,9 @@
             public static readonly string ForecastInsertViaImport = "Thêm dự báo qua Forecast/Import (đánh phiên bản, thay bản cũ)";
             public static readonly string ForecastEditOnlyDraft = "Chỉ sửa / xóa dự báo Nháp (hiện tại: {0}); trạng thái / phiên bản đổi qua Forecast/Import và Forecast/Publish";
             public static readonly string ForecastNothingToPublish = "Không có dự báo Nháp nào trong khoảng ngày đã chọn";
+            public static readonly string ForecastSuggestRange = "Khoảng ngày tạo dự báo gợi ý không hợp lệ (từ ≤ đến, tối đa {0} ngày)";
+            public static readonly string ForecastSuggestNoContract = "Không có khách hàng nào có hợp đồng hiệu lực trong khoảng ngày đã chọn";
+            public static readonly string ForecastSuggestDone = "Đã ghi {0} dòng dự báo gợi ý (bản Nháp) · bỏ qua {1} dòng Nháp người đã sửa · {2} dòng thiếu dữ liệu";
             public static readonly string ForecastVarianceWarning = "Lệch dự báo {0}% (đặt {1} / dự báo {2} suất) vượt ngưỡng {3}% – đã ghi nhận";
             public static readonly string MenuChangeNotFound = "Không tìm thấy yêu cầu đổi món";
             public static readonly string MenuChangeReasonRequired = "Yêu cầu đổi món phải ghi lý do";

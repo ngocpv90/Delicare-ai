@@ -14,7 +14,7 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 6. ~~ORD-OPT-1~~ ✅ · ~~MENU-2~~ ✅ (xong 2026-11-22 theo PROGRESS).
 7. ~~MENU-4~~ ✅ dọn menu (xong 2026-11-23; nhóm E chờ anh quyết – PROGRESS).
 7b. ~~BIZ-1~~ ✅ sửa sai nghiệp vụ (xong 2026-11-23; GAP-BIZ-01 kiểu tính tiền theo hợp đồng chờ anh – PROGRESS).
-7c. **FC-1** dự báo tự gợi ý (D-76) – sau BIZ-1 (FC-1.4 gộp vào BIZ-1.3).
+7c. ~~FC-1~~ ✅ dự báo tự gợi ý (xong 2026-11-23).
 7d. **BIZ-2** bớt bước thừa + tự động hóa (D-77) → 7e. **BIZ-3** hoàn thiện luồng (D-77).
 8. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
 9. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
@@ -149,7 +149,7 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 
 **Xong khi:** phản ánh thiếu 10 suất → đơn bù giá 0 → nấu ưu tiên → giao → không vào bảng kê; bảng kê tháng 1 khách khớp tổng đối soát đã chốt + VAT + phí khay; đổi giá thịt → giá thành món tự tính lại + cảnh báo FC; thực đơn tự hết hiệu lực; KPI tự có số mỗi sáng.
 
-## ★ FC-1 – DỰ BÁO SUẤT ĂN DO HỆ THỐNG TỰ GỢI Ý (D-76, anh chốt 2026-11-23) · `TODO`
+## ★ FC-1 – DỰ BÁO SUẤT ĂN DO HỆ THỐNG TỰ GỢI Ý (D-76, anh chốt 2026-11-23) · `DONE` 2026-11-23 (GAP-FC-01: nguồn gợi ý lưu trong Note)
 
 > Nguồn: chat tài liệu 2026-11-23. Hiện dự báo **100 % nhập tay** (`crm-forecast`), chỉ dùng làm số gợi ý khi tạo đơn + cảnh báo lệch > 10 %; không dùng cho nguyên liệu. Khách đã đăng ký suất theo tuần (D-74) → nhập tay trùng việc. Chuyển sang: **hệ thống tính → Kinh doanh sửa chỗ cần → Công bố**. Claude Code làm BE + FE (D-65). **Không thêm bảng / cột** (dùng `Forecast` + phiên bản Nháp / Đã công bố như hiện tại – GAP-FC-01); cần thêm thì ghi GAP. Không job tự động (D-45): action bấm tay, Service viết để `AppDelicare.Job` gọi lại được.
 

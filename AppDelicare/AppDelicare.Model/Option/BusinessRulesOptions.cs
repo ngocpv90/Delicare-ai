@@ -121,6 +121,10 @@ namespace AppDelicare.Model.Option
         public decimal ForecastVariancePctWarning { get; set; } = 10.0m;
         /// <summary>BE2.2: số ngày tối đa của ma trận / công bố dự báo trong 1 lần gọi.</summary>
         public int ForecastMaxDays { get; set; } = 62;
+        /// <summary>FC-1.1 (D-76): số tuần nhìn lại khi tính dự báo gợi ý (trung bình suất thực nhận cùng thứ).</summary>
+        public int ForecastLookbackWeeks { get; set; } = 4;
+        /// <summary>FC-1.1: số ngày tối đa của 1 lần tạo dự báo gợi ý.</summary>
+        public int ForecastSuggestMaxDays { get; set; } = 14;
 
         // ------------------------------------------------------------ BE2.3 – duyệt nhiều cấp (PROPOSED – BA/PO CONFIRM, D-52)
         /// <summary>

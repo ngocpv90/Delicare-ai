@@ -92,7 +92,11 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 **Quét hợp đồng hết hạn:** nút đầu trang → hệ thống liệt kê hợp đồng Hiệu lực đã quá ngày hết hiệu lực → **Chuyển sang Hết hạn** (không hoàn tác). Job 00:30 cũng tự làm việc này.
 
 ### 4.4 Dự báo – `crm-forecast`
-**Xem ma trận:** chọn **Từ – đến** (tối đa 62 ngày) → bảng khách × ngày. Số chính = đã công bố; chữ nhỏ "nháp N" = đã nhập chưa công bố.
+**Xem ma trận:** chọn **Từ – đến** (tối đa 62 ngày) → bảng khách × ngày. Số đậm = đã công bố; ô nhập = bản **Nháp** – **sửa trực tiếp** (gõ số rồi Enter / rời ô); ngày có nhiều dòng Nháp (nhiều điểm giao / loại suất) hiện nút "nháp N" → bấm để sửa từng dòng. Khoảng ≤ 31 ngày: chữ nhỏ dưới ô = **TB** (trung bình suất thực nhận cùng thứ 4 tuần gần nhất) + **tuần trước**; rê chuột xem từng tuần; dấu **•** cam = đã sửa khác số gợi ý; ô **xám "Thiếu dữ liệu"** = dưới 2 tuần có đơn → nhập tay.
+
+**Tạo dự báo gợi ý (FC-1, D-76):** **Tạo dự báo gợi ý** → chọn Từ – Đến (tối đa 14 ngày, mặc định thứ Hai tuần sau → Chủ nhật tuần kế tiếp), Khách hàng (trống = mọi khách có hợp đồng hiệu lực) → **Tạo gợi ý**. Hệ thống tính cho từng khách × điểm giao (đang hoạt động) × loại suất trong hợp đồng × ngày: **trung bình suất thực nhận cùng thứ trong 4 tuần gần nhất, làm tròn lên** (thực nhận = suất tính tiền trong đối soát → suất khách nhận khi bàn giao → số đặt đã chốt). Tuần khách nghỉ (không có đơn) không tính. Kết quả ghi thành bản **Nháp**; bản Nháp người đã sửa / nhập tay được giữ – hệ thống hỏi **Ghi đè bản nháp?**. Không đụng bản đã công bố. Kiểm tra, sửa vài ô rồi **Công bố** như cũ.
+
+**Độ chính xác dự báo – 4 tuần qua** (khối dưới ma trận): thẻ **Sai số dự báo** (Σ |dự báo − thực nhận| / Σ thực nhận), **Lệch chung** (dương = dự báo cao), **Khách sai số > 10%**; bảng theo khách (rê chuột xem từng tuần).
 
 **Nhập dự báo**
 1. **Nhập dự báo** (cần quyền Nhập).
