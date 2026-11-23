@@ -412,12 +412,12 @@ namespace AppDelicare.Tests.Pilot
                 (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Fail("70");
                 (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchBeef), ("TemperatureC", 75.5m), ("DeviceCode", "[DEMO]-NK"))).Ok();
                 (await Post("/api/ProductionBatch/RecordSampleRetained", ("Id", batchBeef), ("ActualValue", "[DEMO] tủ mẫu 150 g"))).Ok();
-                (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Fail();
-                (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Ok();
+                // BIZ-2.7: lõi đạt + sản lượng + lưu mẫu → hệ thống tự Đạt (không bấm Đạt QC); BIZ-2.8: tự sinh lệnh đóng gói.
+                (await Get($"/api/ProductionBatch/GetDetail?id={batchBeef}")).Ok().GetProperty("batch").GetProperty("status").GetString().Should().Be("Passed");
                 (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
 
-                // ===== 11. Đóng gói theo lệnh (Bò kho); mẻ Cơm: FEFO 2 lô + checklist lỗi trọng yếu giữ mẻ
-                var packing = (await Post("/api/PackingOrder/GenerateFromBatch", ("ProductionBatchId", batchBeef), ("Note", "[DEMO]"))).Ok();
+                // ===== 11. Đóng gói theo lệnh (Bò kho – lệnh tự sinh khi mẻ Đạt); mẻ Cơm: FEFO 2 lô + checklist lỗi trọng yếu giữ mẻ
+                var packing = (await Get($"/api/PackingOrder/GetByBatch?id={batchBeef}")).Ok();
                 Guid packingId = Id(packing.GetProperty("listPackingOrder")[0].GetProperty("packingOrder"));
                 (await Post("/api/ProductionBatch/Pack", ("Id", batchBeef))).Fail();
                 (await Post("/api/ProductionBatch/FinishStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
@@ -454,7 +454,11 @@ namespace AppDelicare.Tests.Pilot
                     checklistId = fg, productionBatchId = batchRice, checkDate = D(day), listItem = new[] { new { itemCode = "CAM_QUAN", resultCode = "PASS", actualValue = "[DEMO] đạt" } },
                 })).Ok();
                 (await Post("/api/ProductionBatch/Release", ("Id", batchRice))).Ok();
-                (await Post("/api/ProductionBatch/Pack", ("Id", batchRice))).Ok();
+                // BIZ-2.8: lệnh đóng gói tự sinh khi mẻ Đạt → hoàn tất theo lệnh.
+                Guid ricePacking = Id((await Get($"/api/PackingOrder/GetByBatch?id={batchRice}")).Ok().GetProperty("listPackingOrder").EnumerateArray()
+                    .First(p => p.GetProperty("packingOrder").GetProperty("status").GetString() != "Cancelled").GetProperty("packingOrder"));
+                (await Post("/api/PackingOrder/Start", ("Id", ricePacking))).Ok();
+                (await Post("/api/PackingOrder/RecordResult", ("Id", ricePacking), ("PackedQuantity", 1000m), ("PackagingType", "HOP_GIU_NHIET"))).Ok();
                 (await Get($"/api/ProductionPlan/GetDetail?id={planId}")).Ok().GetProperty("productionPlan").GetProperty("status").GetString().Should().Be("Completed");
                 (await Post("/api/MealCost/Calculate", ("OrderId", orderId))).Fail();
 

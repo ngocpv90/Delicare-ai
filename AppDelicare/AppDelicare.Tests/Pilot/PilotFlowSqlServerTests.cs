@@ -133,6 +133,16 @@ namespace AppDelicare.Tests.Pilot
 
             private static Guid Id(JsonElement e) => e.GetProperty("id").GetGuid();
 
+            /// <summary>BIZ-2.8: mẻ Đạt → lệnh đóng gói tự sinh; hoàn tất theo lệnh (Start + RecordResult).</summary>
+            private async Task PackByOrderAsync(Guid batchId, decimal quantity)
+            {
+                var packing = (await Get($"/api/PackingOrder/GetByBatch?id={batchId}")).Ok().GetProperty("listPackingOrder").EnumerateArray()
+                    .First(p => p.GetProperty("packingOrder").GetProperty("status").GetString() != "Cancelled");
+                Guid packingId = Id(packing.GetProperty("packingOrder"));
+                (await Post("/api/PackingOrder/Start", ("Id", packingId))).Ok();
+                (await Post("/api/PackingOrder/RecordResult", ("Id", packingId), ("PackedQuantity", quantity), ("PackagingType", "HOP_GIU_NHIET"))).Ok();
+            }
+
             public async Task RunAsync()
             {
                 string code = "DEMO" + k; // mã ngắn chỉ A–Z 0–9 (dùng trong số lô NL- / số chuyến CX-)
@@ -325,14 +335,14 @@ namespace AppDelicare.Tests.Pilot
                 (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Fail("70");
                 (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchBeef), ("TemperatureC", 75.5m), ("DeviceCode", "[DEMO]-NK"))).Ok();
                 (await Post("/api/ProductionBatch/RecordSampleRetained", ("Id", batchBeef), ("ActualValue", "[DEMO] tủ mẫu 150 g"))).Ok();
-                (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Ok();
-                (await Post("/api/ProductionBatch/Pack", ("Id", batchBeef))).Ok();
+                // BIZ-2.7 / 2.8: đủ điều kiện → tự Đạt + tự sinh lệnh đóng gói → hoàn tất theo lệnh.
+                await PackByOrderAsync(batchBeef, 1000m);
                 // Cơm: 82 °C, đạt + đóng gói nhưng CHƯA lưu mẫu (D-42: chặn ở bước xuất chuyến).
                 (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchRice), ("TemperatureC", 82m), ("DeviceCode", "[DEMO]-NK"))).Ok();
                 (await Post("/api/ProductionBatch/Finish", ("Id", batchRice), ("ActualQuantity", 1000m))).Ok();
                 (await Post("/api/ProductionBatch/RecordOutput", ("Id", batchRice), ("ProducedQuantity", 1000m), ("RejectedQuantity", 0m))).Ok();
-                (await Post("/api/ProductionBatch/Release", ("Id", batchRice))).Ok();
-                (await Post("/api/ProductionBatch/Pack", ("Id", batchRice))).Ok();
+                (await Post("/api/ProductionBatch/Release", ("Id", batchRice))).Ok(); // chưa lưu mẫu → không tự Đạt, QA bấm Đạt
+                await PackByOrderAsync(batchRice, 1000m);
                 (await Get($"/api/ProductionPlan/GetDetail?id={planId}")).Ok().GetProperty("productionPlan").GetProperty("status").GetString().Should().Be("Completed");
 
                 // ===== P8. Chuyến CX- → nhiệt độ xuất phát → xuất phát → bàn giao + POD → đối soát → phản ánh

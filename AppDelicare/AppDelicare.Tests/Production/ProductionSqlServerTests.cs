@@ -102,10 +102,12 @@ namespace AppDelicare.Tests.Production
                 (await batchService.RecordSampleRetained(new ProductionBatchSampleRequest { Id = batchBrief.Id, ActualValue = "[DEMO] mẫu 150 g" })).ResponseCode.Should().Be(200);
                 (await batchService.Finish(new ProductionBatchFinishRequest { Id = batchBrief.Id, ActualQuantity = 50 })).ResponseCode.Should().Be(200);
                 (await batchService.RecordOutput(new ProductionBatchOutputRequest { Id = batchBrief.Id, ProducedQuantity = 50, RejectedQuantity = 1, Note = "[DEMO]" })).ResponseCode.Should().Be(200);
-                var passed = await batchService.Release(new ProductionActionRequest { Id = batchBrief.Id });
-                passed.ResponseCode.Should().Be(200, passed.ResponseMessage);
-                var packed = await batchService.Pack(new ProductionActionRequest { Id = batchBrief.Id });
-                packed.ResponseCode.Should().Be(200, packed.ResponseMessage);
+                // BIZ-2.7 / 2.8: đủ điều kiện → hệ thống tự Đạt + tự sinh lệnh đóng gói → hoàn tất theo lệnh đóng gói.
+                var packingService = scope.ServiceProvider.GetRequiredService<IPackingOrderService>();
+                var packingOrderId = (await packingService.GetByBatch(batchBrief.Id)).Data!.ListPackingOrder.Single().PackingOrder.Id;
+                (await packingService.Start(new PackingOrderActionRequest { Id = packingOrderId })).ResponseCode.Should().Be(200);
+                var packedResult = await packingService.RecordResult(new PackingOrderResultRequest { Id = packingOrderId, PackedQuantity = 49, PackagingType = "HOP_GIU_NHIET" });
+                packedResult.ResponseCode.Should().Be(200, packedResult.ResponseMessage);
 
                 db.ChangeTracker.Clear();
                 var batch = await db.ProductionBatch.AsNoTracking().SingleAsync(b => b.Id == batchBrief.Id);

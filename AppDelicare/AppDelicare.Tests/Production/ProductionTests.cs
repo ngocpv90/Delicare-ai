@@ -29,6 +29,8 @@ namespace AppDelicare.Tests.Production
         {
             _factory = factory;
             _factory.Clock.FixedNow = Today.AddHours(10);
+            _factory.Settings["BusinessRules:BatchAutoPass"] = "false"; // kiểm luồng QC / đóng gói tay (BIZ-2.7 / 2.8 tự Đạt + tự lệnh đóng gói: kiểm ở ProductionSqlServerTests / luồng SQL)
+            _factory.Settings["BusinessRules:PackingAutoGenerateOnPass"] = "false";
         }
 
         private sealed record Scenario(string Shift, Guid ShiftId, Guid Line, Guid Warehouse, Guid Kg, Guid Meat, Guid Veg, Guid DishMeat, Guid DishSoup,

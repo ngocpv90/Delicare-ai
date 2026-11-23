@@ -119,13 +119,17 @@ namespace AppDelicare.Tests.Production
                 (await batchService.RecordSampleRetained(new ProductionBatchSampleRequest { Id = batchBrief.Id, ActualValue = "[DEMO]" })).ResponseCode.Should().Be(200);
                 (await batchService.Finish(new ProductionBatchFinishRequest { Id = batchBrief.Id, ActualQuantity = 50 })).ResponseCode.Should().Be(200);
                 (await batchService.RecordOutput(new ProductionBatchOutputRequest { Id = batchBrief.Id, ProducedQuantity = 50, RejectedQuantity = 0, Note = "[DEMO]" })).ResponseCode.Should().Be(200);
-                (await batchService.Release(new ProductionActionRequest { Id = batchBrief.Id })).ResponseCode.Should().Be(200);
-                (await batchService.Pack(new ProductionActionRequest { Id = batchBrief.Id })).ResponseCode.Should().Be(400, "chưa xong công đoạn Chia suất");
+                // BIZ-2.7: đủ điều kiện → đã tự Đạt khi ghi sản lượng.
+                (await batchService.GetDetail(batchBrief.Id)).Data!.Batch.Status.Should().Be("Passed");
                 (await batchService.StartStage(new ProductionStageRequest { Id = batchBrief.Id, StageCode = "CHIA_SUAT" })).ResponseCode.Should().Be(200);
                 (await batchService.FinishStage(new ProductionStageRequest { Id = batchBrief.Id, StageCode = "CHIA_SUAT" })).ResponseCode.Should().Be(200);
-                var packed = await batchService.Pack(new ProductionActionRequest { Id = batchBrief.Id });
-                packed.ResponseCode.Should().Be(200, packed.ResponseMessage);
-                packed.Data!.ListStage.Should().OnlyContain(s => s.Status == "Done");
+                // BIZ-2.7 / 2.8: đủ điều kiện → hệ thống tự Đạt + tự sinh lệnh đóng gói → hoàn tất theo lệnh đóng gói.
+                var packingService = scope.ServiceProvider.GetRequiredService<IPackingOrderService>();
+                var packingOrderId = (await packingService.GetByBatch(batchBrief.Id)).Data!.ListPackingOrder.Single().PackingOrder.Id;
+                (await packingService.Start(new PackingOrderActionRequest { Id = packingOrderId })).ResponseCode.Should().Be(200);
+                var packedResult = await packingService.RecordResult(new PackingOrderResultRequest { Id = packingOrderId, PackedQuantity = 50, PackagingType = "HOP_GIU_NHIET" });
+                packedResult.ResponseCode.Should().Be(200, packedResult.ResponseMessage);
+                (await batchService.GetDetail(batchBrief.Id)).Data!.ListStage.Should().OnlyContain(s => s.Status == "Done");
 
                 // 5) Đóng lệnh: chênh lệch 0 (xuất đúng định mức), giá thành NVL 5 000.
                 var closed = await orderService.Close(new ProductionActionRequest { Id = productionOrder, Note = "[DEMO]" });
