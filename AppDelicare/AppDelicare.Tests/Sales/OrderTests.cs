@@ -140,6 +140,31 @@ namespace AppDelicare.Tests.Sales
             (await c.PostFormAsync("/api/OrderLine/Insert", ("OrderId", id), ("Quantity", 5m))).Fail("Order/UpdateLines");
         }
 
+        /// <summary>BIZ-1.5 (D-77 e): giá cố định lúc chốt – chính sách giá mới trước giờ chốt vào đơn khi chốt; chính sách duyệt sau khi chốt không đổi đơn.</summary>
+        [Fact]
+        public async Task Lock_fixes_unit_price_from_policy_at_meal_date_and_later_policies_do_not_change_locked_order()
+        {
+            var s = await SeedAsync("ORD-PRC");
+            using var c = _factory.CreateAuthorizedClient();
+            _factory.Clock.FixedNow = BeforeCutoff;
+            Guid id = IdOf((await CreateAsync(c, s, s.LocA, 30)).Ok());
+            (await LinesAsync(id)).Single(l => l.MealType == "TRUA").UnitPrice.Should().Be(40000, "giá hợp đồng lúc tạo");
+            (await Act(c, "Submit", id)).Ok();
+            (await Act(c, "Confirm", id)).Ok();
+            // Chính sách giá mới cho ngày ăn, duyệt trước giờ chốt.
+            await _factory.SeedAsync(db => { db.PricePolicy.Add(new PricePolicy { Id = Guid.NewGuid(), Code = "PP-PRC-1", CustomerId = s.Customer, ContractId = s.Contract, MealType = "TRUA", UnitPrice = 43000, Status = "Active", EffectiveFrom = MealDate, EffectiveTo = MealDate }); return Task.CompletedTask; });
+            _factory.Clock.FixedNow = AtCutoff;
+            (await Act(c, "Lock", id)).Ok();
+            var line = (await LinesAsync(id)).Single(l => l.MealType == "TRUA");
+            (line.UnitPrice, line.LineAmount).Should().Be((43000m, 1_290_000m));
+            (await OrderAsync(id)).TotalAmount.Should().Be(1_290_000m);
+            // Chính sách giá khác duyệt SAU khi chốt → đơn đã chốt giữ giá.
+            await _factory.SeedAsync(db => { db.PricePolicy.Add(new PricePolicy { Id = Guid.NewGuid(), Code = "PP-PRC-2", CustomerId = s.Customer, ContractId = s.Contract, MealType = "TRUA", UnitPrice = 50000, Status = "Active", EffectiveFrom = MealDate, EffectiveTo = MealDate }); return Task.CompletedTask; });
+            (await c.GetResultAsync($"/api/Order/GetDetail?id={id}")).Ok();
+            (await LinesAsync(id)).Single(l => l.MealType == "TRUA").UnitPrice.Should().Be(43000);
+            (await OrderAsync(id)).TotalAmount.Should().Be(1_290_000m);
+        }
+
         [Fact]
         public async Task Cutoff_20h_previous_day_blocks_changes_and_bulk_lock_needs_cutoff()
         {

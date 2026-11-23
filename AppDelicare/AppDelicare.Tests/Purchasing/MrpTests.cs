@@ -20,10 +20,10 @@ namespace AppDelicare.Tests.Purchasing
     /// Thịt kho 150, Rau xào 150, Cơm 300, Món chưa có CT 150.</para>
     /// <list type="bullet">
     /// <item>Thịt kho: CT đã khóa, snapshot 15 000 g thịt / 100 suất, hao hụt 10% (dòng định lượng hiện tại 99 999 g – không được dùng)
-    ///   → 15 kg × 150/100 × 1,1 = <b>24,75 kg</b>. Tồn: lô tốt 10 kg + lô hết hạn trước ngày SX 5 kg (bị chặn). Tồn an toàn (chính sách kho) 2.
-    ///   Thiếu 24,75 + 2 − 10 = 16,75 → MOQ NCC ưu tiên 20 kg → mua <b>20</b> × 100 000 = 2 000 000.</item>
-    /// <item>Rau xào: CT chỉ Đã duyệt (cảnh báo), 10 kg / 100 suất, hao hụt lấy Ingredient.StandardWastePercent 20% → 10 × 1,5 × 1,2 = <b>18 kg</b>.
-    ///   Tồn: lô QC KHONG_DAT 20 kg (bị chặn). Thiếu = mua <b>18</b> × 15 000 = 270 000; NCC giao 3 ngày → cảnh báo.</item>
+    ///   → 15 kg × 150/100 ÷ (1 − 10 %) = <b>25 kg</b> (BIZ-1.1 – công thức chia). Tồn: lô tốt 10 kg + lô hết hạn trước ngày SX 5 kg (bị chặn). Tồn an toàn (chính sách kho) 2.
+    ///   Thiếu 25 + 2 − 10 = 17 → MOQ NCC ưu tiên 20 kg → mua <b>20</b> × 100 000 = 2 000 000.</item>
+    /// <item>Rau xào: CT chỉ Đã duyệt (cảnh báo), 10 kg / 100 suất, hao hụt lấy Ingredient.StandardWastePercent 20% → 10 × 1,5 ÷ 0,8 = <b>18,75 kg</b>.
+    ///   Tồn: lô QC KHONG_DAT 20 kg (bị chặn). Thiếu = mua <b>18,75</b> × 15 000 = 281 250; NCC giao 3 ngày → cảnh báo.</item>
     /// <item>Cơm: CT khóa, 12 kg gạo / 100 suất → 12 × 3 = <b>36 kg</b>. Tồn 50 000 g (quy đổi 50 kg). Tồn an toàn Ingredient.SafetyStock 20.
     ///   Thiếu 36 + 20 − 50 = <b>6</b>, chưa có NCC → mua 6, cảnh báo.</item>
     /// </list>
@@ -176,25 +176,25 @@ namespace AppDelicare.Tests.Purchasing
             dishes["Món chưa có CT MRP1"].GetProperty("recipeId").ValueKind.Should().Be(JsonValueKind.Null);
 
             var meat = Item(result, s.Meat);
-            meat.GetProperty("requiredQuantity").GetDecimal().Should().Be(24.75m);
+            meat.GetProperty("requiredQuantity").GetDecimal().Should().Be(25m);
             meat.GetProperty("availableQuantity").GetDecimal().Should().Be(10);
             meat.GetProperty("blockedQuantity").GetDecimal().Should().Be(5, "lô hết hạn trước ngày sản xuất");
             meat.GetProperty("safetyStock").GetDecimal().Should().Be(2);
-            meat.GetProperty("shortageQuantity").GetDecimal().Should().Be(16.75m);
+            meat.GetProperty("shortageQuantity").GetDecimal().Should().Be(17m);
             meat.GetProperty("purchaseQuantity").GetDecimal().Should().Be(20, "làm tròn lên MOQ 20 kg");
             meat.GetProperty("status").GetString().Should().Be("Requested");
             meat.GetProperty("unitName").GetString().Should().Be("kg");
             var meatSupplier = meat.GetProperty("supplier");
             meatSupplier.GetProperty("supplierName").GetString().Should().Be("NCC thịt ưu tiên", "ưu tiên trước giá rẻ");
             meatSupplier.GetProperty("estimatedAmount").GetDecimal().Should().Be(2_000_000);
-            meat.GetProperty("coveragePercent").GetDecimal().Should().Be(Math.Round(10m / 24.75m * 100m, 2));
+            meat.GetProperty("coveragePercent").GetDecimal().Should().Be(Math.Round(10m / 25m * 100m, 2));
 
             var veg = Item(result, s.Veg);
-            veg.GetProperty("requiredQuantity").GetDecimal().Should().Be(18);
+            veg.GetProperty("requiredQuantity").GetDecimal().Should().Be(18.75m);
             veg.GetProperty("availableQuantity").GetDecimal().Should().Be(0);
             veg.GetProperty("blockedQuantity").GetDecimal().Should().Be(20, "lô KHONG_DAT");
-            veg.GetProperty("purchaseQuantity").GetDecimal().Should().Be(18);
-            veg.GetProperty("supplier").GetProperty("estimatedAmount").GetDecimal().Should().Be(270_000);
+            veg.GetProperty("purchaseQuantity").GetDecimal().Should().Be(18.75m);
+            veg.GetProperty("supplier").GetProperty("estimatedAmount").GetDecimal().Should().Be(281_250);
 
             var rice = Item(result, s.Rice);
             rice.GetProperty("requiredQuantity").GetDecimal().Should().Be(36);
@@ -204,7 +204,7 @@ namespace AppDelicare.Tests.Purchasing
             rice.GetProperty("supplier").ValueKind.Should().Be(JsonValueKind.Null);
             rice.GetProperty("warning").GetString().Should().Contain("Chưa có NCC");
 
-            result.GetProperty("estimatedAmount").GetDecimal().Should().Be(2_270_000);
+            result.GetProperty("estimatedAmount").GetDecimal().Should().Be(2_281_250);
             var warnings = result.GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).ToList();
             warnings.Should().Contain(w => w!.Contains("1 đơn chưa chốt"));
             warnings.Should().Contain(w => w!.Contains("Món chưa có CT MRP1"));

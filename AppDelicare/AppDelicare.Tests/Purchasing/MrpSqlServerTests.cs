@@ -45,7 +45,7 @@ namespace AppDelicare.Tests.Purchasing
                 db.Dish.Add(new Dish { Id = dish, Code = tag, Name = "[DEMO] Thịt kho T14" });
                 db.Recipe.Add(new Recipe { Id = recipe, DishId = dish, VersionNo = 1, Status = "Locked", IsActive = true, StandardOutputQty = 100,
                     EffectiveFrom = clock.Today, LockedAt = clock.Now, LockedBy = admin, Note = "[DEMO]" });
-                db.RecipeLine.Add(new RecipeLine { Id = Guid.NewGuid(), RecipeId = recipe, IngredientId = ingredient, Quantity = 20, UnitId = kg, UomId = kg, WastePercent = 5 });
+                db.RecipeLine.Add(new RecipeLine { Id = Guid.NewGuid(), RecipeId = recipe, IngredientId = ingredient, Quantity = 19.95m, UnitId = kg, UomId = kg, WastePercent = 5 });
                 db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = tag, Name = "[DEMO] Thực đơn T14", VersionNo = 1, Status = "Published", EffectiveFrom = clock.Today });
                 db.MenuLine.Add(new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = dish, MealType = "TRUA", DayOfWeek = day, SequenceNo = 1 });
                 db.Customer.Add(new Customer { Id = customer, Code = tag, Name = "[DEMO] Khách T14", CIF = tag, CustomerType = "FACTORY", DisplayName = "[DEMO] Khách T14", Status = "Active" });
@@ -62,7 +62,7 @@ namespace AppDelicare.Tests.Purchasing
                 var mrp = scope.ServiceProvider.GetRequiredService<IMaterialRequirementService>();
                 var first = await mrp.Calculate(new MaterialRequirementCalculateRequest { ProductionDate = date, WarehouseId = warehouse });
                 first.ResponseCode.Should().Be(200, first.ResponseMessage);
-                // 20 kg × 200/100 × 1,05 = 42; thiếu 42 − 12 = 30.
+                // BIZ-1.1: 19,95 kg × 200/100 ÷ (1 − 5 %) = 42; thiếu 42 − 12 = 30.
                 var item = first.Data!.ListItem.Single();
                 item.RequiredQuantity.Should().Be(42);
                 item.AvailableQuantity.Should().Be(12);

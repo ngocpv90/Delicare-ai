@@ -95,7 +95,7 @@ namespace AppDelicare.Tests.Delivery
                 reconciled.ResponseCode.Should().Be(200, reconciled.ResponseMessage);
                 reconciled.Data!.Reconciliation.VarianceQty.Should().Be(-2);
                 reconciled.Data.Reconciliation.VariancePercent.Should().Be(-4);
-                reconciled.Data.Reconciliation.FinalAmount.Should().Be(1_440_000, "1.500.000 × 48 ÷ 50");
+                reconciled.Data.Reconciliation.FinalAmount.Should().Be(1_500_000, "BIZ-1.4: tính theo 50 suất khách nhận (phục vụ 48 chỉ tham khảo)");
                 (await reconciliations.Close(new ReconciliationCloseRequest { Id = reconciled.Data.Reconciliation.Id })).ResponseCode.Should().Be(200);
 
                 var complaint = await complaints.Create(new ComplaintCreateRequest { CustomerId = customer, DeliveryStopId = stop.Id, Severity = "Medium", Description = "[DEMO] Thiếu canh" });

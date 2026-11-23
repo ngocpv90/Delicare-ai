@@ -259,6 +259,24 @@ namespace AppDelicare.Model.Helper
         public const string BillingDelivered = "DELIVERED";
         public const string BillingAccepted = "ACCEPTED";
         public const string BillingServed = "SERVED";
+        /// <summary>BIZ-1.4 (D-77 d, mặc định): suất khách ký nhận (POD) − suất trả lại / hủy do lỗi Delicare.</summary>
+        public const string BillingReceived = "RECEIVED";
+
+        /// <summary>BIZ-1.4: lý do trả lại / hủy do lỗi Delicare (giảm tiền). Khách không dùng hết KHÔNG thuộc nhóm này (không giảm tiền).</summary>
+        public static readonly IReadOnlyDictionary<string, string> FaultReasons = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["SHORTAGE"] = "Thiếu suất", ["DAMAGED"] = "Hỏng / đổ vỡ", ["TEMPERATURE"] = "Không đạt nhiệt độ", ["WRONG_DISH"] = "Sai món", ["QUALITY"] = "Chất lượng không đạt",
+        };
+
+        public static string BillingLabel(string? basis) => (basis ?? string.Empty).ToUpperInvariant() switch
+        {
+            BillingReceived => "Theo số khách nhận (trừ suất lỗi Delicare)",
+            BillingServed => "Theo suất ăn thực tế",
+            BillingOrdered => "Theo số đặt / chốt",
+            BillingDelivered => "Theo số giao",
+            BillingAccepted => "Theo số khách nhận",
+            _ => basis ?? string.Empty,
+        };
 
         /// <summary>
         /// BE2.1 (GAP-DLV-08): DeliveryOrder không có cột số suất → số suất của đơn giao ghi ở đầu <c>DeliveryOrder.Note</c> dạng <c>[SUAT:60]</c>

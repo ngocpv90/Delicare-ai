@@ -75,6 +75,17 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             return new ApiData(r.Data, r.ListData ?? [], r.TotalRecords);
         }
 
+        /// <summary>GET phụ (thêm thông tin vào tin đang trả lời): lỗi → bỏ qua, không báo.</summary>
+        private async Task<ApiData?> GetQuietAsync(BotActionContext ctx, string path, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token)
+            {
+                return null;
+            }
+            var r = await Web.GetAsUserAsync<JsonElement>(path, token, ct);
+            return r.IsOk ? new ApiData(r.Data, r.ListData ?? [], r.TotalRecords) : null;
+        }
+
         private sealed record ApiData(JsonElement Data, List<JsonElement> ListData, int Total)
         {
             /// <summary>Danh sách: listData (Results) / data là mảng / data.listItem / data.listData.</summary>
@@ -183,7 +194,16 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             var lines = items.Select(i => (Dec(i, "shortageQuantity") > 0 ? "⚠️ " : "• ") + $"{S(i, "ingredientName")}: cần {N(i, "requiredQuantity")} {S(i, "unitName")} · có {N(i, "availableQuantity")}"
                 + (Dec(i, "shortageQuantity") > 0 ? $" · thiếu {N(i, "shortageQuantity")}" : "")).ToList();
             string head = $"Kế hoạch {S(r.Data, "planNumber") ?? "-"} · {N(r.Data, "totalMeals")} suất · thiếu {N(r.Data, "shortageCount")} NL";
-            await ReplyListAsync(ctx, $"{(shortageOnly ? "⚠️ Thiếu hụt" : "🥬 NL")} ngày {day:dd/MM}", [head, .. lines], $"Chưa tính nhu cầu nguyên liệu cho ngày {day:dd/MM}.", ct);
+            // BIZ-1.3 (D-77 c): /nlmai kèm nguyên liệu PHẢI ĐẶT HÔM NAY theo kế hoạch mua 7 ngày (đơn chốt → đăng ký → dự báo, lead time NCC).
+            string? footer = null;
+            if (dayOffset == 1 && !shortageOnly && await GetQuietAsync(ctx, "api/MaterialRequirement/GetHorizon", ct) is { } hz)
+            {
+                var due = hz.Items.Where(i => S(i, "orderStatus") is "TODAY" or "LATE" && Dec(i, "totalShortage") > 0).ToList();
+                footer = due.Count == 0 ? "🛒 Kế hoạch mua 7 ngày: không có nguyên liệu phải đặt hôm nay."
+                    : "🛒 Phải đặt hôm nay: " + string.Join("; ", due.Take(8).Select(i => $"{S(i, "ingredientName")} {N(i, "totalShortage")} {S(i, "unitName")}" + (S(i, "orderStatus") == "LATE" ? " (trễ)" : "")))
+                        + (due.Count > 8 ? $"; … và {due.Count - 8} NL nữa" : string.Empty);
+            }
+            await ReplyListAsync(ctx, $"{(shortageOnly ? "⚠️ Thiếu hụt" : "🥬 NL")} ngày {day:dd/MM}", [head, .. lines], $"Chưa tính nhu cầu nguyên liệu cho ngày {day:dd/MM}.", ct, footer);
         }
 
         private async Task<List<JsonElement>?> PurchaseOrdersAsync(BotActionContext ctx, string[] statuses, CancellationToken ct)

@@ -39,13 +39,53 @@
     return tbl;
   }
 
+  // ---------- BIZ-1.3 (D-77 c): kế hoạch mua theo ngày cần hàng – D+1 → D+7, nguồn đơn chốt → đăng ký → dự báo, trừ tồn lũy kế ----------
+  // MaterialRequirement/GetHorizon chỉ tính khi xem (không lưu); "Lập đề nghị mua cho phần phải đặt" → CreateHorizonPurchaseRequest (dòng theo ngày cần hàng).
+  const hz = { data: null, busy: false };
+  const HZ_TAG = { LATE: 'red', TODAY: 'orange', UPCOMING: 'blue', NONE: 'green' };
+  const HZ_SRC = { LOCKED: 'green', CONFIRMED: 'blue', FORECAST: 'purple', MIXED: 'orange', NONE: '' };
+  function horizonPanel(el) {
+    if (!el) return;
+    hz.host = el;   // màn vẽ lại nhiều lần khi đang tải – luôn vẽ vào khung mới nhất
+    const draw = () => {
+      const host = hz.host;
+      if (!host || !host.isConnected) return;
+      const x = hz.data;
+      if (!x) { host.innerHTML = `<div class="card panel mb"><div class="panel-title">Kế hoạch mua 7 ngày tới</div><div class="muted small mt">Đang tính…</div></div>`; return; }
+      if (!x.ok) { host.innerHTML = `<div class="notice gap">${I('alert')}<div><b>Không tính được kế hoạch mua</b>${esc(x.message || '')}</div></div>`; return; }
+      const d = x.data || {}, days = d.listDay || [], items = d.listItem || [];
+      const due = items.filter(i => ['LATE', 'TODAY'].includes(i.orderStatus) && i.totalShortage > 0);
+      const dd = v => U.date(v).slice(0, 5);
+      host.innerHTML = `<div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Kế hoạch mua theo ngày cần hàng · ${dd(d.fromDate)} – ${dd(d.toDate)}</div>
+          <div class="panel-desc">Mỗi ngày lấy đơn đã chốt; chưa chốt thì đăng ký / đơn đã xác nhận; chưa có thì dự báo đã công bố. Tồn kho, hàng sắp về và đề nghị mua đang mở được trừ dồn qua các ngày. Ngày phải đặt = ngày cần − thời gian giao của NCC − 1 ngày.</div></div>
+          <div class="row-flex">${due.length ? `<button class="btn sm primary" id="hzPr">${I('plus')} Lập đề nghị mua cho phần phải đặt (${due.length})</button>` : ''}<button class="btn sm" id="hzReload">${I('reset')} Tính lại</button></div></div>
+        <div class="kpis">${UI.kpi('Phải đặt hôm nay', U.num(d.dueTodayCount || 0), 'nguyên liệu', 'clipboard', d.dueTodayCount ? 'orange' : 'green')}${UI.kpi('Đã trễ ngày đặt', U.num(d.lateCount || 0), 'nguyên liệu', 'alert', d.lateCount ? 'red' : 'green')}${UI.kpi('Nguyên liệu trong kỳ', U.num(items.length), '', 'layers', 'blue')}</div>
+        ${(d.listWarning || []).map(w => `<div class="notice warn small">${I('alert')}<div>${esc(w)}</div></div>`).join('')}
+        <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Nguyên liệu</th>${days.map(x => `<th class="num" title="${esc((x.listWarning || []).join('\n'))}">${dd(x.date)}<span class="sub"><span class="tag ${HZ_SRC[x.source] || ''}">${esc(x.sourceName || '')}</span></span></th>`).join('')}<th class="num">Phải mua</th><th>ĐVT</th><th>Ngày phải đặt</th><th>NCC gợi ý</th></tr></thead>
+          <tbody>${items.map(i => `<tr><td><b>${esc(i.ingredientName || '')}</b><span class="sub">${esc(i.ingredientCode || '')}${i.safetyStock ? ' · tồn an toàn ' + U.num(i.safetyStock, 2) : ''}</span></td>${days.map(x => { const c = (i.listDay || []).find(y => U.day(y.date) === U.day(x.date)); return `<td class="num">${c ? U.num(c.required, 2) : '<span class="muted">–</span>'}${c && c.shortage > 0 ? `<span class="sub bad">mua ${U.num(c.shortage, 2)}</span>` : ''}</td>`; }).join('')}<td class="num">${i.totalShortage > 0 ? `<b class="bad">${U.num(i.totalShortage, 2)}</b>` : '<span class="up">0</span>'}</td><td>${esc(i.unitName || '')}</td><td><span class="tag ${HZ_TAG[i.orderStatus] || ''}">${esc(i.orderStatusName || '')}</span></td><td>${i.supplierName ? esc(i.supplierName) + (i.leadTimeDays ? `<span class="sub">giao ${i.leadTimeDays} ngày</span>` : '') : '<span class="muted">Chưa có NCC</span>'}</td></tr>`).join('') || `<tr><td colspan="${days.length + 5}" class="empty">Không có nhu cầu nguyên liệu trong kỳ</td></tr>`}</tbody></table></div></div>`;
+      host.querySelector('#hzReload').onclick = () => load(true);
+      const b = host.querySelector('#hzPr');
+      if (b) b.onclick = () => UI.confirm(`Lập đề nghị mua <b>Nháp</b> cho ${due.length} nguyên liệu phải đặt tới hôm nay? Mỗi dòng ghi ngày cần hàng; gửi duyệt ở màn Đề nghị mua.`, () =>
+        Store.act('MaterialRequirement/CreateHorizonPurchaseRequest', { json: { onlyDue: true, organizationUnitId: Store.ctx.branch || null }, tables: PUR_TABLES }).then(r => {
+          if (!r.ok) return; UI.toast(okText(r, 'Đã lập đề nghị mua nháp'), 'ok'); hz.data = { ok: true, data: r.data }; draw();
+        }), { ok: 'Lập đề nghị mua' });
+    };
+    const load = force => {
+      if (hz.busy) return; if (hz.data && !force) return draw();
+      hz.busy = true; if (force) { hz.data = null; draw(); }
+      Store.query('MaterialRequirement/GetHorizon', { organizationUnitId: Store.ctx.branch }).then(x => { hz.busy = false; hz.data = x; draw(); });
+    };
+    draw(); load(false);
+  }
+
   // ---------- Nhu cầu nguyên liệu: kết quả do máy chủ tính theo ngày sản xuất ----------
   const rq = { date: null, data: {}, busy: {} };
   function reqLive(el, f) {
     if (!rq.date) rq.date = U.addDays(Store.ctx.date, 1);
     const date = rq.date;
     el.innerHTML = APP.header(f, `<input type="date" class="input" id="rqDate" value="${date}" style="width:auto"><button class="btn primary" id="rqCalc">${I('calc')} Tính nhu cầu</button><button class="btn" id="rqTop" style="display:none">${I('plus')} Tính bổ sung</button><button class="btn" id="rqPrint" style="display:none">${I('export')} In phiếu trước sản xuất</button>`,
-      { noNote: true, sub: 'Chọn ngày sản xuất rồi bấm Tính nhu cầu. Hệ thống lấy các đơn đã chốt của ngày, tính nguyên liệu theo công thức, so với tồn kho và tự lập đề nghị mua nháp cho phần thiếu.' }) + `<div id="rqBody"><div class="card panel empty">${I('calc')}<h2 class="mt">Đang tải…</h2></div></div>`;
+      { noNote: true, sub: 'Chọn ngày sản xuất rồi bấm Tính nhu cầu. Hệ thống lấy các đơn đã chốt của ngày, tính nguyên liệu theo công thức, so với tồn kho và tự lập đề nghị mua nháp cho phần thiếu.' }) + `<div id="hzBody"></div><div id="rqBody"><div class="card panel empty">${I('calc')}<h2 class="mt">Đang tải…</h2></div></div>`;
+    horizonPanel(el.querySelector('#hzBody'));
     const body = el.querySelector('#rqBody');
     const draw = x => {
       if (!body.isConnected) return;
@@ -60,14 +100,14 @@
       const prRow = p => `<div class="spread" style="padding:6px 0;border-bottom:1px solid #F0F2ED"><span><b>${esc(p.requestNumber || '')}</b> · ${p.lineCount || 0} dòng · ước tính ${U.money(p.estimatedAmount || 0)}</span><span>${UI.badge(p.status, 'PurchaseRequest', 'Status')}</span></div>`;
       const itemRow = r => {
         const p = Math.min(100, r.coveragePercent === null || r.coveragePercent === undefined ? 100 : r.coveragePercent);
-        return `<tr${r.incomplete ? ' style="background:#FFF8E6"' : ''}><td><b>${esc(r.ingredientName || '')}</b><span class="sub">${esc(r.ingredientCode || '')}${r.warning ? ' · ' + esc(r.warning) : ''}</span></td><td class="num">${U.num(r.requiredQuantity, 2)}</td><td class="num">${U.num(r.availableQuantity, 2)}${r.blockedQuantity ? `<span class="sub">bị chặn ${U.num(r.blockedQuantity, 2)}</span>` : ''}</td><td class="num">${U.num(r.expectedIncomingQuantity || 0, 2)}</td><td class="num">${r.purchaseQuantity > 0 ? `<b class="bad">${U.num(r.purchaseQuantity, 2)}</b>` : '<span class="up">0</span>'}</td><td>${esc(r.unitName || '')}</td><td><div class="track" style="width:110px"><div class="fill ${p >= 100 ? '' : p > 50 ? 'orange' : 'red'}" style="width:${p}%"></div></div></td><td>${r.supplier ? esc(r.supplier.supplierName || '') : '<span class="muted">Chưa có NCC</span>'}</td><td><span class="badge ${r.status === 'Sufficient' ? 'green' : r.status === 'Shortage' ? 'red' : 'orange'}">${esc(r.statusName || r.status || '')}</span></td></tr>`;
+        return `<tr${r.incomplete ? ' style="background:#FFF8E6"' : ''}><td><b>${esc(r.ingredientName || '')}</b><span class="sub">${esc(r.ingredientCode || '')}${r.warning ? ' · ' + esc(r.warning) : ''}</span></td><td class="num">${U.num(r.requiredQuantity, 2)}</td><td class="num">${r.safetyStock ? U.num(r.safetyStock, 2) : '<span class="muted">0</span>'}</td><td class="num">${U.num(r.availableQuantity, 2)}${r.blockedQuantity ? `<span class="sub">bị chặn ${U.num(r.blockedQuantity, 2)}</span>` : ''}</td><td class="num">${U.num(r.expectedIncomingQuantity || 0, 2)}</td><td class="num">${r.purchaseQuantity > 0 ? `<b class="bad">${U.num(r.purchaseQuantity, 2)}</b>` : '<span class="up">0</span>'}</td><td>${esc(r.unitName || '')}</td><td><div class="track" style="width:110px"><div class="fill ${p >= 100 ? '' : p > 50 ? 'orange' : 'red'}" style="width:${p}%"></div></div></td><td>${r.supplier ? esc(r.supplier.supplierName || '') : '<span class="muted">Chưa có NCC</span>'}</td><td><span class="badge ${r.status === 'Sufficient' ? 'green' : r.status === 'Shortage' ? 'red' : 'orange'}">${esc(r.statusName || r.status || '')}</span></td></tr>`;
       };
       const dishRow = m => `<tr><td><b>${esc(m.dishName || '')}</b><span class="sub">${esc(m.dishCode || '')}</span></td><td class="num">${U.num(m.portions, 1)}${m.bufferPortions ? `<span class="sub">+${U.num(m.bufferPortions, 1)} dự phòng</span>` : ''}</td><td>${m.recipeVersion ? 'Phiên bản ' + esc(m.recipeVersion) : '<span class="muted">–</span>'}</td><td>${m.warning ? `<span class="warn">${esc(m.warning)}</span>` : ''}</td></tr>`;
       body.innerHTML = `
         <div class="kpis">${UI.kpi('Đơn đã chốt', U.num(d.orderCount || 0), `Kế hoạch ${esc(d.planNumber || '–')} · ${esc(d.planStatusName || '')}`, 'clipboard', 'green')}${UI.kpi('Tổng suất', U.num(d.totalMeals || 0), `${d.dishCount || 0} món`, 'utensils', 'blue')}${UI.kpi('Nguyên liệu cần mua', U.num(d.shortageCount || 0), d.shortageCount ? '<span class="bad">Thiếu hàng</span>' : 'Đủ hàng', 'alert', d.shortageCount ? 'red' : 'green')}${UI.kpi('Giá trị mua ước tính', U.money(d.estimatedAmount || 0), d.calculatedAt ? 'Tính lúc ' + U.dt(String(d.calculatedAt).replace(/\.\d+$/, '')) : '', 'calc', 'orange')}</div>
         ${(d.listWarning || []).length ? `<div class="notice warn">${I('alert')}<div><b>Lưu ý</b>${d.listWarning.map(w => esc(w)).join('<br>')}</div></div>` : ''}
         <div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Đề nghị mua của kế hoạch</div><div class="panel-desc">Đề nghị nháp được lập tự động cho phần thiếu. Gửi duyệt và lập PO ở màn Đề nghị mua.</div></div><div class="row-flex">${d.productionPlanId && !locked && (d.listItem || []).some(r => r.purchaseQuantity > 0) ? `<button class="btn" id="rqPR">${I('plus')} Lập đề nghị mua theo dòng chọn</button>` : ''}<a class="btn" href="#/scm-pr">Mở Đề nghị mua →</a></div></div>${pr ? prRow(pr) : '<div class="muted small">Không thiếu nguyên liệu – không có đề nghị mua.</div>'}${tops.map(prRow).join('')}</div>
-        <div class="card panel mb"><div class="panel-title mb">Nguyên liệu</div><div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Nguyên liệu</th><th class="num">Nhu cầu</th><th class="num">Tồn xuất được</th><th class="num">Hàng sắp về</th><th class="num">Cần mua</th><th>ĐVT</th><th>Độ phủ</th><th>NCC gợi ý</th><th>Trạng thái</th></tr></thead><tbody>${(d.listItem || []).map(itemRow).join('') || '<tr><td colspan="9" class="empty">Không có nguyên liệu</td></tr>'}</tbody></table></div></div>
+        <div class="card panel mb"><div class="panel-title mb">Nguyên liệu</div><div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Nguyên liệu</th><th class="num">Nhu cầu thuần</th><th class="num">Tồn an toàn</th><th class="num">Tồn xuất được</th><th class="num">Hàng sắp về</th><th class="num">Cần mua</th><th>ĐVT</th><th>Độ phủ</th><th>NCC gợi ý</th><th>Trạng thái</th></tr></thead><tbody>${(d.listItem || []).map(itemRow).join('') || '<tr><td colspan="10" class="empty">Không có nguyên liệu</td></tr>'}</tbody></table></div></div>
         <div class="card panel"><div class="panel-title mb">Món và số suất</div><div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Món</th><th class="num">Số suất</th><th>Công thức</th><th>Ghi chú</th></tr></thead><tbody>${(d.listDish || []).map(dishRow).join('') || '<tr><td colspan="4" class="empty">Không có món</td></tr>'}</tbody></table></div></div>`;
       const bq = body.querySelector('#rqPR'); if (bq) bq.onclick = () => prFromShortage(d, () => { delete rq.data[date]; APP.refresh(); });
     };
@@ -441,9 +481,9 @@
     const items = (d.listItem || []).filter(r => r.purchaseQuantity > 0);
     UI.modal({
       title: 'Lập đề nghị mua từ nguyên liệu thiếu', sub: 'Kế hoạch ' + esc(d.planNumber || ''), size: 'lg',
-      body: `<div class="form-grid mb">${fld('Dự phòng thêm (%)', '<input class="input" type="number" min="0" max="100" step="1" id="prBuf" value="5">')}${fld('Ghi chú', '<input class="input" id="prNote">')}</div>
+      body: `<div class="form-grid mb">${fld('Dự phòng thêm (%)', '<input class="input" type="number" min="0" max="100" step="1" id="prBuf" value="0">')}${fld('Ghi chú', '<input class="input" id="prNote">')}</div>
         ${tbl([['<input type="checkbox" id="prAll" checked>'], ['Nguyên liệu'], ['Cần mua', 1], ['ĐVT'], ['NCC gợi ý']], items.map(r => `<tr><td><input type="checkbox" data-rid="${r.id}" checked></td><td><b>${esc(r.ingredientName || '')}</b><span class="sub">${esc(r.ingredientCode || '')}</span></td><td class="num">${U.num(r.purchaseQuantity, 2)}</td><td>${esc(r.unitName || '')}</td><td>${r.supplier ? esc(r.supplier.supplierName || '') : '<span class="muted">Chưa có NCC</span>'}</td></tr>`))}
-        <div class="small muted mt">Số đề nghị = số cần mua × (1 + % dự phòng). Đề nghị mua nháp của kế hoạch được cập nhật lại theo các dòng đã chọn.</div>`,
+        <div class="small muted mt">Số cần mua đã gồm tồn an toàn của nguyên liệu – mặc định không cộng thêm dự phòng (BIZ-1.2). Chỉ nhập % dự phòng khi thật cần; số đề nghị = số cần mua × (1 + % dự phòng). Đề nghị mua nháp của kế hoạch được cập nhật lại theo các dòng đã chọn.</div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="prGo">Lập đề nghị mua</button>',
       onMount: (m, close) => {
         const boxes = () => [...m.querySelectorAll('[data-rid]')];

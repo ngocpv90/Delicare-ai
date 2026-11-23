@@ -289,11 +289,15 @@ namespace AppDelicare.Services.Implement
         /// cấp điểm giao trước, rồi cấp khách (DeliveryLocationId trống). Chỉ thực đơn Approved / Published (PROPOSED – BA/PO CONFIRM).
         /// ORD-OPT-1.2 (D-74 f): không có phân công → <b>thực đơn chung</b> (<c>MenuType = COMMON</c>) Đã công bố, hiệu lực tại ngày ăn, có món cho loại suất (nếu có loại suất).
         /// </summary>
-        public async Task<MenuResolveModel?> ResolveAsync(Guid customerId, Guid? deliveryLocationId, string? mealType, DateTime date)
+        public Task<MenuResolveModel?> ResolveAsync(Guid customerId, Guid? deliveryLocationId, string? mealType, DateTime date)
+            => ResolveAsync(_unitOfWork.DbContext, customerId, deliveryLocationId, mealType, date);
+
+        /// <summary>BIZ-1.3: bản dùng chung (tính nhu cầu nhiều ngày lấy thực đơn cho dự báo) – cùng quy tắc như trên.</summary>
+        public static async Task<MenuResolveModel?> ResolveAsync(DatabaseContext db, Guid customerId, Guid? deliveryLocationId, string? mealType, DateTime date)
         {
             DateTime day = date.Date;
-            var rows = await (from a in _unitOfWork.MenuAssignmentRepository.GetAll().AsNoTracking()
-                              join m in _unitOfWork.MenuRepository.GetAll().AsNoTracking() on a.MenuId equals m.Id
+            var rows = await (from a in db.MenuAssignment.AsNoTracking()
+                              join m in db.Menu.AsNoTracking() on a.MenuId equals m.Id
                               where !a.IsDeleted && !m.IsDeleted && a.CustomerId == customerId
                                   && (a.Status == null || a.Status == ActiveStatus)
                                   && (m.Status == MenuStatus.Approved || m.Status == MenuStatus.Published)
@@ -314,7 +318,7 @@ namespace AppDelicare.Services.Implement
                     Level = best.DeliveryLocationId != null ? "LOCATION" : "CUSTOMER",
                 };
             }
-            var common = await CommonMenuAsync(_unitOfWork.DbContext, mealType, day);
+            var common = await CommonMenuAsync(db, mealType, day);
             return common == null ? null : new MenuResolveModel { MenuId = common.Id, MenuCode = common.Code, MenuName = common.Name, Level = "COMMON" };
         }
 

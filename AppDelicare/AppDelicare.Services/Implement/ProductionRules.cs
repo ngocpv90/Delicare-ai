@@ -24,6 +24,8 @@ namespace AppDelicare.Services.Implement
             public decimal Quantity { get; set; }
             public Guid UnitId { get; set; }
             public decimal? WastePercent { get; set; }
+            /// <summary>BIZ-1.1: % hao hụt chế biến (RecipeLine.ExpectedWasteRate). Ảnh chụp cũ không có → 0.</summary>
+            public decimal? ExpectedWasteRate { get; set; }
             public int? SequenceNo { get; set; }
         }
 
@@ -357,7 +359,7 @@ namespace AppDelicare.Services.Implement
             if (lines.Count == 0)
             {
                 lines = await db.RecipeLine.AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted)
-                    .Select(l => new SnapshotLine { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent, SequenceNo = l.SequenceNo })
+                    .Select(l => new SnapshotLine { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate, SequenceNo = l.SequenceNo })
                     .ToListAsync();
             }
             return (recipe, locked, lines);
@@ -491,7 +493,7 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>
         /// Nguyên liệu của mẻ = định lượng (ảnh chụp trong lệnh SX) × phần kế hoạch của mẻ ÷ suất chuẩn công thức (StandardOutputQty, trống = BusinessRules 100)
-        /// × (1 + hao hụt %, RecipeLine.WastePercent, trống = Ingredient.StandardWastePercent) – cùng công thức MRP (T14). Số đã xuất = phiếu xuất Đã xuất của mẻ.
+        /// → lượng mua theo hao hụt 2 tầng (WasteRules – BIZ-1.1) – cùng công thức MRP. Số đã xuất = phiếu xuất Đã xuất của mẻ.
         /// </summary>
         public static async Task<List<ProductionMaterialModel>> MaterialsAsync(DatabaseContext db, ProductionOrder order, ProductionBatch batch, BusinessRulesOptions rules)
         {
@@ -521,7 +523,7 @@ namespace AppDelicare.Services.Implement
                     RecipeUnitId = group.Key.UnitId,
                     RecipeUnitName = units.GetValueOrDefault(group.Key.UnitId),
                     WastePercent = waste,
-                    RequiredQuantity = Ceil4(group.Sum(l => l.Quantity * portions / servings * (1 + (l.WastePercent ?? ingredient?.StandardWastePercent ?? 0m) / 100m))),
+                    RequiredQuantity = Ceil4(group.Sum(l => WasteRules.Gross(l.Quantity * portions / servings, l.WastePercent ?? ingredient?.StandardWastePercent, l.ExpectedWasteRate))),
                     IssuedQuantity = mineIssued.Sum(l => l.Quantity),
                     IssuedUnitName = mineIssued.Count == 0 ? null : units.GetValueOrDefault(mineIssued[0].UnitId),
                 });

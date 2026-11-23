@@ -243,7 +243,7 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.QuantityMustBePositive;
             }
-            if (request.WastePercent is { } w && (w < 0 || w >= 100))
+            if ((request.WastePercent is { } w && (w < 0 || w >= 100)) || (request.ExpectedWasteRate is { } cw && (cw < 0 || cw >= 100)))
             {
                 return ConstantHelper.Message.WastePercentRange;
             }

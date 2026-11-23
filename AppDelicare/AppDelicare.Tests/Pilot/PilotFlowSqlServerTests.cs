@@ -360,7 +360,7 @@ namespace AppDelicare.Tests.Pilot
                     .Should().Contain(o => o.GetProperty("orderId").GetGuid() == orderId);
                 var rec = (await Post("/api/OrderReconciliation/Reconcile", ("OrderId", orderId), ("ServedQuantity", 990m), ("ReturnedQuantity", 5m), ("WastedQuantity", 3m),
                     ("Remark", "[DEMO] khách xác nhận"))).Ok();
-                rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_650_000m, "35.000.000 × 990 ÷ 1000");
+                rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_930_000m, "BIZ-1.4: 35.000.000 × 998 khách nhận ÷ 1000 (phục vụ 990 chỉ tham khảo)");
                 (await Post("/api/OrderReconciliation/Close", ("Id", Id(rec.GetProperty("reconciliation"))), ("Remark", "[DEMO] chốt"))).Ok();
                 var complaint = (await Post("/api/CustomerComplaint/Create", ("CustomerId", customer), ("DeliveryStopId", stopId), ("Severity", "High"),
                     ("SourceChannel", "ZALO"), ("CategoryCode", "QUALITY"), ("Description", "[DEMO] Cơm hơi khô"))).Ok();

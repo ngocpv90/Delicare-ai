@@ -288,6 +288,8 @@ namespace AppDelicare.Tests.Sales
             var s = await SeedAsync("BE22-MC");
             using var c = _factory.CreateAuthorizedClient();
             Guid order = await ConfirmedOrderAsync(c, s, s.LocA, 100);
+            // BIZ-1.3 / A9: kế hoạch SX chính thức chỉ lấy đơn Đã chốt (như sau chốt 20:00).
+            await _factory.SeedAsync(async db => (await db.Order.SingleAsync(o => o.Id == order)).Status = "Locked");
             (await c.PostFormAsync("/api/ProductionPlan/Generate", ("ProductionDate", MealDate))).Ok();
             async Task<Dictionary<Guid, decimal>> PlanAsync() => (await Q(db => (from p in db.ProductionPlan
                                                                                join l in db.ProductionPlanLine on p.Id equals l.ProductionPlanId

@@ -710,6 +710,10 @@ namespace AppDelicare.Services.Implement
                     return Result<OrderDetailModel>.Fail(error);
                 }
                 order!.Status = to;
+                if (to == OrderStatus.Locked)
+                {
+                    await FixPricesAtLockAsync(order); // BIZ-1.5: chốt tay từng đơn cũng cố định giá
+                }
                 if (!string.IsNullOrWhiteSpace(note))
                 {
                     order.Note = string.IsNullOrWhiteSpace(order.Note) ? note.Trim() : $"{order.Note}\n{note.Trim()}";
@@ -827,6 +831,46 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
+        /// BIZ-1.5 (D-77 e): CỐ ĐỊNH GIÁ lúc chốt – tra chính sách giá tại ngày ăn (PricePolicy/Resolve) cho từng dòng, ghi đơn giá + thành tiền vào dòng đơn,
+        /// tính lại tổng đơn. Sau đó đối soát / giá vốn / bảng kê dùng giá đã ghi (không tra lại) – chính sách giá duyệt sau giờ chốt không đổi đơn đã chốt.
+        /// Dòng không tra được giá (chưa có chính sách) giữ giá đang có. Đơn bù (Note có [DON_BU:) giữ nguyên giá.
+        /// </summary>
+        private async Task FixPricesAtLockAsync(Order order)
+        {
+            if (order.Note?.Contains("[DON_BU:", StringComparison.Ordinal) == true)
+            {
+                return;
+            }
+            DateTime day = order.MealDate.Date;
+            var lines = _unitOfWork.OrderLineRepository.GetAll().Where(l => l.OrderId == order.Id && !l.IsDeleted).ToList();
+            var cache = new Dictionary<string, decimal?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var line in lines)
+            {
+                string key = (line.MealType ?? string.Empty).Trim();
+                if (!cache.TryGetValue(key, out var unitPrice))
+                {
+                    var price = await _pricePolicyService.Resolve(new PriceResolveRequest { CustomerId = order.CustomerId, ContractId = order.ContractId, MealType = line.MealType, Date = day });
+                    unitPrice = price.ResponseCode == (int)HttpStatusCode.OK && price.Data != null ? price.Data.UnitPrice : null;
+                    cache[key] = unitPrice;
+                }
+                if (unitPrice is not { } p)
+                {
+                    continue;
+                }
+                decimal amount = Math.Round(line.Quantity * p, 2);
+                if (line.UnitPrice == p && line.LineAmount == amount)
+                {
+                    continue;
+                }
+                line.UnitPrice = p;
+                line.LineAmount = amount;
+                line.Amount = amount;
+                _unitOfWork.OrderLineRepository.Update(line);
+            }
+            order.TotalAmount = lines.Sum(l => l.LineAmount);
+        }
+
+        /// <summary>
         /// Nút "Chốt đơn" theo ngày ăn (thay job 20:00 trong Pilot): chỉ khi đã tới giờ chốt; mọi đơn Confirmed của ngày → Locked.
         /// Đơn Draft / Submitted không khóa – trả danh sách để điều phối xử lý tay.
         /// </summary>
@@ -857,6 +901,7 @@ namespace AppDelicare.Services.Implement
                         summary.ListPendingApprovalNumber.Add(number);
                     }
                     order.Status = OrderStatus.Locked;
+                    await FixPricesAtLockAsync(order);
                     _unitOfWork.OrderRepository.Update(order);
                     summary.ListLockedNumber.Add(number);
                 }
@@ -1237,6 +1282,7 @@ namespace AppDelicare.Services.Implement
                 return applyError;
             }
             order.Status = OrderStatus.Locked;
+            await FixPricesAtLockAsync(order);
             string text = proposal.Kind == AfterCutoffProposal.Create ? "Duyệt thêm đơn sau giờ chốt" : "Duyệt sửa đơn sau giờ chốt";
             text = $"[SAU_GIO_CHOT] {text}: {proposal.Reason}" + (string.IsNullOrWhiteSpace(note) ? string.Empty : $" – {note.Trim()}");
             DateTime day = order.MealDate.Date, next = day.AddDays(1);

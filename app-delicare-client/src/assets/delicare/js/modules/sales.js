@@ -346,6 +346,8 @@
       })
     });
   }
+  // BIZ-1.4: lý do lỗi Delicare (khớp DeliveryCode.FaultReasons máy chủ).
+  const RC_FAULT = [['SHORTAGE', 'Thiếu suất'], ['DAMAGED', 'Hỏng / đổ vỡ'], ['TEMPERATURE', 'Không đạt nhiệt độ'], ['WRONG_DISH', 'Sai món'], ['QUALITY', 'Chất lượng không đạt']];
   // Form ghi suất thực tế phục vụ: 0 ≤ phục vụ ≤ suất khách nhận; phục vụ + trả về + hủy ≤ suất khách nhận (backend kiểm tra lại).
   function reconcileForm(o) {
     const has = v => v !== null && v !== undefined;
@@ -357,20 +359,26 @@
     UI.modal({
       title: 'Ghi suất thực tế phục vụ', sub: 'Đơn ' + esc(o.label || ''), size: byLine ? 'lg' : undefined,
       body: `<div class="kv mb"><div><label>Suất đặt</label><span>${U.num(o.ordered)}</span></div><div><label>Suất giao</label><span>${U.num(o.delivered)}</span></div>${has(o.pod) ? `<div><label>Khách nhận khi bàn giao</label><span>${U.num(o.pod)}</span></div>` : ''}</div>
-        <div class="form-grid"><div class="field"><label>Suất phục vụ thực tế <span class="req">*</span></label><input type="number" min="0" step="any" class="input" id="rcServed" value="${def}"></div><div class="field"><label>Suất trả về</label><input type="number" min="0" step="any" class="input" id="rcRet"></div><div class="field"><label>Suất hủy</label><input type="number" min="0" step="any" class="input" id="rcWaste"></div><div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="rcNote" maxlength="2000"></textarea></div></div>${lineHtml}
-        <div class="small muted mt">Số suất tính tiền và chênh lệch được tính lại theo số liệu này.${byLine ? ' Suất phục vụ = tổng các lựa chọn; tiền = Σ suất phục vụ × giá buổi.' : ''} Có thể ghi lại cho tới khi chốt đối soát.</div>`,
+        <div class="form-grid"><div class="field"><label>Suất phục vụ thực tế <span class="req">*</span></label><input type="number" min="0" step="any" class="input" id="rcServed" value="${def}"></div><div class="field"><label>Suất trả về</label><input type="number" min="0" step="any" class="input" id="rcRet"></div><div class="field"><label>Suất hủy</label><input type="number" min="0" step="any" class="input" id="rcWaste"></div><div class="field"><label>Suất trả lại / hủy do lỗi Delicare</label><input type="number" min="0" step="any" class="input" id="rcFault"></div><div class="field"><label>Lý do lỗi Delicare</label><select class="select" id="rcFaultReason"><option value="">— Chọn khi có suất lỗi —</option>${RC_FAULT.map(([c, l]) => `<option value="${c}">${l}</option>`).join('')}</select></div><div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="rcNote" maxlength="2000"></textarea></div></div>${lineHtml}
+        <div class="notice info mt small" id="rcBill"></div>
+        <div class="small muted mt">Tính tiền theo <b>số khách ký nhận trừ suất lỗi Delicare</b> (thiếu, hỏng, không đạt nhiệt độ, sai món); khách không dùng hết không giảm tiền. Suất phục vụ thực tế chỉ để tham khảo và làm dự báo.${byLine ? ' Suất phục vụ = tổng các lựa chọn; tiền = Σ suất phục vụ × giá buổi.' : ''} Có thể ghi lại cho tới khi chốt đối soát.</div>`,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="rcSave">${I('ok')} Lưu đối soát</button>`,
       onMount: (m, close) => {
         const lineInputs = [...m.querySelectorAll('[data-rcl]')];
         const sumLines = () => { m.querySelector('#rcServed').value = lineInputs.reduce((a, x) => a + (Number(x.value) || 0), 0); };
         if (lineInputs.length) { m.querySelector('#rcServed').readOnly = true; lineInputs.forEach(x => x.addEventListener('input', sumLines)); sumLines(); }
+        // BIZ-1.4 (D-77 d): hộp tính tiền – nhận · trả lại do lỗi Delicare · tính tiền · phục vụ (tham khảo).
+        const bill = () => { const pod = Number(o.pod) || 0, f = Number(m.querySelector('#rcFault').value) || 0, sv = m.querySelector('#rcServed').value; m.querySelector('#rcBill').innerHTML = `${I('calc')}<div>Khách nhận <b>${U.num(pod)}</b> − lỗi Delicare <b>${U.num(f)}</b> = tính tiền <b>${U.num(Math.max(0, pod - f))}</b> suất · phục vụ (tham khảo) ${sv === '' ? '–' : U.num(Number(sv))}</div>`; };
+        ['#rcFault', '#rcServed'].forEach(s => m.querySelector(s).addEventListener('input', bill)); lineInputs.forEach(x => x.addEventListener('input', bill)); bill();
         m.querySelector('#rcSave').onclick = () => {
         const val = sel => { const v = m.querySelector(sel).value; return v === '' ? null : Number(v); };
-        const served = val('#rcServed'), ret = val('#rcRet'), waste = val('#rcWaste');
+        const served = val('#rcServed'), ret = val('#rcRet'), waste = val('#rcWaste'), fault = val('#rcFault'), faultReason = m.querySelector('#rcFaultReason').value;
+        if (fault !== null && (fault < 0 || (has(o.pod) && fault > Number(o.pod)))) return UI.toast('Suất lỗi Delicare từ 0 đến số suất khách nhận', 'err');
+        if (fault > 0 && !faultReason) return UI.toast('Chọn lý do lỗi Delicare', 'err');
         if (served === null || isNaN(served) || served < 0) return UI.toast('Nhập số suất phục vụ thực tế (≥ 0)', 'err');
         if ((ret !== null && ret < 0) || (waste !== null && waste < 0)) return UI.toast('Suất trả về / hủy không được âm', 'err');
         if (has(o.pod) && served + (ret || 0) + (waste || 0) > Number(o.pod)) return UI.toast('Phục vụ + trả về + hủy không được vượt số suất khách nhận (' + U.num(o.pod) + ')', 'err');
-        const form = { OrderId: o.orderId, ServedQuantity: served, ReturnedQuantity: ret, WastedQuantity: waste, Remark: m.querySelector('#rcNote').value.trim() };
+        const form = { OrderId: o.orderId, ServedQuantity: served, ReturnedQuantity: ret, WastedQuantity: waste, DelicareFaultQuantity: fault, FaultReason: fault > 0 ? faultReason : null, Remark: m.querySelector('#rcNote').value.trim() };
         lineInputs.forEach((x, k) => { form[`ListLine[${k}].OrderLineId`] = x.dataset.rcl; form[`ListLine[${k}].ServedQuantity`] = Math.max(0, Number(x.value) || 0); });
         Store.act('OrderReconciliation/Reconcile', { form, tables: ['OrderReconciliation', 'Order'] })
           .then(r => { if (!r.ok) return; bust(); close(); UI.toast('Đã ghi đối soát đơn ' + esc(o.label || ''), 'ok'); APP.refresh(); });

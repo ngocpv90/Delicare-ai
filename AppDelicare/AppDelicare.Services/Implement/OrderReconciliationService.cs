@@ -41,6 +41,9 @@ namespace AppDelicare.Services.Implement
             public decimal PodAccepted { get; set; }
             public decimal? Returned { get; set; }
             public decimal? Wasted { get; set; }
+            /// <summary>BIZ-1.4: suất trả lại / hủy do lỗi Delicare + mã lý do.</summary>
+            public decimal? Fault { get; set; }
+            public string? FaultReason { get; set; }
             public string? BillingBasis { get; set; }
             public decimal BillingQuantity { get; set; }
             public decimal OrderAmount { get; set; }
@@ -249,20 +252,36 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(string.Format(ConstantHelper.Message.ReconcileQuantityInvalid, DeliveryRules.Num(podAccepted)));
                 }
+                // BIZ-1.4 (D-77 d): suất trả lại / hủy do lỗi Delicare – trừ khỏi số tính tiền; phải có lý do thuộc nhóm lỗi Delicare.
+                decimal fault = request.DelicareFaultQuantity ?? 0m;
+                string? faultReason = DeliveryRules.Clean(request.FaultReason)?.ToUpperInvariant();
+                if (fault < 0 || fault > podAccepted)
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ReconcileFaultInvalid, DeliveryRules.Num(podAccepted)));
+                }
+                if (fault > 0 && (faultReason == null || !DeliveryCode.FaultReasons.ContainsKey(faultReason)))
+                {
+                    return Fail(string.Format(ConstantHelper.Message.ReconcileFaultReasonRequired, string.Join(", ", DeliveryCode.FaultReasons.Values)));
+                }
+                if (fault == 0)
+                {
+                    faultReason = null;
+                }
                 decimal variance = served - ordered;
                 decimal percent = ordered > 0 ? Math.Round(variance / ordered * 100m, 2, MidpointRounding.AwayFromZero) : 0m;
-                string basis = (_rules.ReconciliationBillingBasis ?? DeliveryCode.BillingServed).Trim().ToUpperInvariant();
+                string basis = (_rules.ReconciliationBillingBasis ?? DeliveryCode.BillingReceived).Trim().ToUpperInvariant();
+                if (basis is not (DeliveryCode.BillingOrdered or DeliveryCode.BillingDelivered or DeliveryCode.BillingAccepted or DeliveryCode.BillingServed))
+                {
+                    basis = DeliveryCode.BillingReceived;
+                }
                 decimal billingQuantity = basis switch
                 {
                     DeliveryCode.BillingOrdered => ordered,
                     DeliveryCode.BillingDelivered => delivered,
                     DeliveryCode.BillingAccepted => podAccepted,
-                    _ => served,
+                    DeliveryCode.BillingServed => served,
+                    _ => Math.Max(0m, podAccepted - fault),
                 };
-                if (basis is not (DeliveryCode.BillingOrdered or DeliveryCode.BillingDelivered or DeliveryCode.BillingAccepted))
-                {
-                    basis = DeliveryCode.BillingServed;
-                }
                 decimal finalAmount = ordered > 0 ? Math.Round(amount * billingQuantity / ordered, 0, MidpointRounding.AwayFromZero) : 0m;
                 if (perLine.Count != 0 && basis == DeliveryCode.BillingServed)
                 {
@@ -290,6 +309,8 @@ namespace AppDelicare.Services.Implement
                     PodAccepted = podAccepted,
                     Returned = request.ReturnedQuantity,
                     Wasted = request.WastedQuantity,
+                    Fault = fault > 0 ? fault : null,
+                    FaultReason = faultReason,
                     BillingBasis = basis,
                     BillingQuantity = billingQuantity,
                     OrderAmount = amount,
@@ -605,6 +626,10 @@ namespace AppDelicare.Services.Implement
                 WastedQuantity = note?.Wasted,
                 LeftoverQuantity = (note?.PodAccepted ?? accepted) - served,
                 BillingBasis = note?.BillingBasis,
+                BillingBasisName = note?.BillingBasis == null ? null : DeliveryCode.BillingLabel(note.BillingBasis),
+                DelicareFaultQuantity = note?.Fault,
+                FaultReason = note?.FaultReason,
+                FaultReasonName = note?.FaultReason is { } fr ? DeliveryCode.FaultReasons.GetValueOrDefault(fr, fr) : null,
                 BillingQuantity = note?.BillingQuantity ?? served,
                 ListPod = pods,
                 ListLine = listLine,

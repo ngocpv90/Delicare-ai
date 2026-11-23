@@ -524,7 +524,7 @@ namespace AppDelicare.Tests.Pilot
                     .Should().Contain(o => o.GetProperty("orderId").GetGuid() == orderId);
                 var rec = (await Post("/api/OrderReconciliation/Reconcile", ("OrderId", orderId), ("ServedQuantity", 990m), ("ReturnedQuantity", 5m), ("WastedQuantity", 3m),
                     ("Remark", "[DEMO]"))).Ok();
-                rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_650_000m, "35.000.000 × 990 ÷ 1000");
+                rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_930_000m, "BIZ-1.4: 35.000.000 × 998 khách nhận ÷ 1000 (phục vụ 990 chỉ tham khảo)");
                 // Chuỗi Đặt → SX → Đóng: 2 món × 1000 suất – bò kho đóng theo lệnh đóng gói gắn đơn, cơm đóng thẳng theo mẻ.
                 rec.GetProperty("reconciliation").GetProperty("producedQty").GetDecimal().Should().Be(1000m);
                 rec.GetProperty("reconciliation").GetProperty("packedQty").GetDecimal().Should().Be(1000m);

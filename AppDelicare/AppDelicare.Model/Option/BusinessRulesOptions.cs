@@ -37,6 +37,10 @@ namespace AppDelicare.Model.Option
         };
         public int ExpiringLotDays { get; set; } = 7;
         public int ShortageForecastDays { get; set; } = 3;
+        /// <summary>BIZ-1.3 (D-77 c): số ngày tính nhu cầu nguyên liệu dự kiến (D+1 → D+N) – kế hoạch mua theo ngày cần hàng.</summary>
+        public int PurchaseHorizonDays { get; set; } = 7;
+        /// <summary>BIZ-1.3: ngày phải đặt = ngày cần − lead time NCC ưu tiên − số ngày đệm này.</summary>
+        public int PurchaseOrderLeadBufferDays { get; set; } = 1;
         /// <summary>Spec 5.2 bước 4: chi phí nhân công / suất khi khóa công thức (PROPOSED – BA/PO CONFIRM).</summary>
         public decimal RecipeLaborCostPerServing { get; set; }
         /// <summary>Spec 5.2 bước 4: chi phí chung / suất (PROPOSED – BA/PO CONFIRM).</summary>
@@ -102,7 +106,8 @@ namespace AppDelicare.Model.Option
         /// <summary>T19: chặn xuất chuyến khi có mẻ (đã đóng gói) của ngày / ca chưa lưu mẫu SAMPLE_RETAINED – anh chốt 2026-11-16.</summary>
         public bool DeliveryRequireSampleRetained { get; set; } = true;
         /// <summary>T19: cơ sở tính tiền khi đối soát: ORDERED / DELIVERED / ACCEPTED / SERVED – PROPOSED (spec 6.7: TotalAmount × suất nhận ÷ suất đặt; GAP-DLV-05).</summary>
-        public string ReconciliationBillingBasis { get; set; } = "SERVED";
+        /// <summary>BIZ-1.4 (D-77 d): mặc định RECEIVED = suất khách ký nhận − suất lỗi Delicare. Hợp đồng chưa có cột lưu kiểu riêng (GAP-BIZ-01) → dùng chung giá trị này.</summary>
+        public string ReconciliationBillingBasis { get; set; } = "RECEIVED";
         /// <summary>T19: đóng đối soát có |chênh lệch| % lớn hơn ngưỡng này phải ghi chú (spec 6.7, GAP-F-11 tạm 1%) – PROPOSED.</summary>
         public decimal ReconciliationVarianceRemarkPct { get; set; } = 1.0m;
         /// <summary>T19: bàn giao có suất bị từ chối → tự tạo phản ánh PA- (SourceChannel POD, SHORTAGE) – spec 10.3, PROPOSED.</summary>

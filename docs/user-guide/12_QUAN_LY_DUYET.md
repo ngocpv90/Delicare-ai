@@ -33,7 +33,7 @@
 | Đơn nghỉ (LEAVE_REQUEST) | Nhân viên tạo đơn nghỉ | `hr-leave` | CEO / COO / FIN-HR |
 | Đổi ca (SHIFT_SWAP) | Nhân viên tạo đơn đổi ca | `hr-swap` | CEO / COO / FIN-HR |
 
-- Mỗi cấp có **hạn xử lý 48 giờ**; quá hạn hiện nhãn **Quá hạn** và **không duyệt được nữa** – người gửi phải hủy yêu cầu và gửi duyệt lại. Quá hạn 24 giờ bot báo COO.
+- Mỗi cấp có **hạn xử lý 48 giờ**; quá hạn hiện nhãn **Quá hạn** nhưng **vẫn duyệt / từ chối được** (BIZ-1.6, D-77 f) – không phải hủy gửi lại; người gửi vẫn hủy được nếu muốn. Leo thang qua bot: quá hạn → báo người duyệt của cấp; quá thêm 24 giờ → báo **COO**; quá thêm 24 giờ nữa (48 giờ sau hạn) → báo **CEO**.
 - Một người không duyệt hai cấp của cùng một yêu cầu (cấp sau phải do người khác).
 
 ## 4. Thao tác từng bước – `wf-inbox`
@@ -80,5 +80,5 @@
   - **Rủi ro thấp** (đơn nghỉ, đổi ca, đổi món): duyệt **1 chạm**, có **↩️ Hoàn tác** trong 10 giây; nhiều mục cùng loại có **✅ Duyệt nhanh N mục**.
   - Loại khác: bấm Duyệt → bot hỏi lại xác nhận (2 bước).
   - Từ chối: bot yêu cầu **trả lời tin** với lý do.
-- Bot báo kết quả duyệt cho người gửi (🟡 APPROVAL_RESULT); yêu cầu quá hạn 24 giờ báo COO.
+- Bot báo kết quả duyệt cho người gửi (🟡 APPROVAL_RESULT); yêu cầu quá hạn: 24 giờ báo COO, 48 giờ báo CEO.
 - **Liên kết tài khoản web cho người duyệt:** bot yêu cầu mã lấy ở web *menu tài khoản (góc phải) → Liên kết Telegram* rồi gõ `/start <mã>` (mã 15 phút). Trên web: bấm **Mở bot** ngay trong hộp mã để khỏi gõ lệnh.

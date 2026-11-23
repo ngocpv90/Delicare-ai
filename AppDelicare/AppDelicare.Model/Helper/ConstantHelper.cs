@@ -331,6 +331,14 @@
             public static readonly string MrpDishNoRecipe = "Món chưa có công thức đã khóa / đã duyệt – không tính nguyên liệu";
             public static readonly string MrpRecipeNotLocked = "Công thức chưa khóa (Đã duyệt) – dùng dòng định lượng hiện tại";
             public static readonly string MrpUnitMissing = "Cảnh báo: nguyên liệu {0} thiếu quy đổi đơn vị {1} → {2} – phần này không được tính";
+            public static readonly string ReconcileFaultInvalid = "Suất trả lại / hủy do lỗi Delicare phải từ 0 đến số suất khách nhận ({0})";
+            public static readonly string ReconcileFaultReasonRequired = "Có suất lỗi Delicare thì chọn lý do: {0} (khách không dùng hết không giảm tiền)";
+            public static readonly string MrpHorizonDaysRange = "Số ngày tính nhu cầu phải từ 1 đến 31";
+            public static readonly string MrpHorizonNoDemand = "Từ {0} đến {1} chưa có đơn, đăng ký hay dự báo đã công bố nào";
+            public static readonly string MrpHorizonForecastNoMenu = "Dự báo khách {0} – loại suất {1} ngày {2} chưa có thực đơn (phân công / thực đơn chung) – không tính được nguyên liệu";
+            public static readonly string MrpHorizonNothingDue = "Không có nguyên liệu nào phải đặt tới hôm nay";
+            public static readonly string MrpHorizonNothingToOrder = "Không có nguyên liệu nào cần mua thêm trong kỳ";
+            public static readonly string MrpHorizonPrCreated = "Đã lập đề nghị mua nháp – {0} dòng theo ngày cần hàng. Gửi duyệt ở màn Đề nghị mua.";
             public static readonly string MrpNoSupplier = "Chưa có NCC đang hiệu lực cho nguyên liệu này";
             public static readonly string MrpLeadTimeWarning = "Cảnh báo: NCC {0} cần {1} ngày giao – đặt hôm nay không kịp ngày {2}";
             // T15 – mua hàng, nhận hàng, QC đầu vào (P6)
@@ -500,7 +508,7 @@
             public static readonly string RoutePlanNoVehicle = "Chọn ít nhất 1 xe để lập chuyến";
             public static readonly string RoutePlanNothing = "Không có đơn hàng / đơn giao nào của ngày {0} cần xếp chuyến";
             public static readonly string RoutePlanOverflow = "{0} ({1} suất) không vừa tải còn trống của xe nào – xếp vào xe {2} (vượt tải)";
-            public static readonly string PlanGenerateNoOrders = "Không có đơn Đã xác nhận / Đã chốt nào của ngày {0} có thực đơn cho ngày đó";
+            public static readonly string PlanGenerateNoOrders = "Không có đơn Đã chốt nào của ngày {0} có thực đơn cho ngày đó (kế hoạch chính thức chỉ lấy đơn Đã chốt – số dự kiến xem ở Tính nhu cầu nguyên liệu)";
             public static readonly string PlanGenerateNotDraft = "Kế hoạch {0} đang {1} – không sinh lại được";
             public static readonly string PlanGenerateHasMrp = "Kế hoạch {0} đã tính nhu cầu nguyên liệu – tính lại bằng MaterialRequirement/Calculate";
             public static readonly string MrpPlanNotFound = "Không tìm thấy kế hoạch sản xuất";

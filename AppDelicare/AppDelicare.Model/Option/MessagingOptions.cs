@@ -86,6 +86,10 @@ namespace AppDelicare.Model.Option
         /// <summary>Chưa có dữ liệu "cấp trên trực tiếp" → nhóm quyền theo tên (PROPOSED: COO). Khởi tạo rỗng (binder nối mảng).</summary>
         public List<string> ApprovalOverdueGroups { get; set; } = [];
         public static readonly IReadOnlyList<string> DefaultApprovalOverdueGroups = ["COO"];
+        /// <summary>BIZ-1.6 (D-77 f): bậc 3 – quá thêm ApprovalOverdueEscalateHours nữa (mặc định tổng 48 giờ sau hạn) → nhóm này (mặc định CEO).</summary>
+        public List<string> ApprovalOverdueTopGroups { get; set; } = [];
+        public static readonly IReadOnlyList<string> DefaultApprovalOverdueTopGroups = ["CEO"];
+        public IReadOnlyList<string> EffectiveApprovalOverdueTopGroups => ApprovalOverdueTopGroups.Count > 0 ? ApprovalOverdueTopGroups : DefaultApprovalOverdueTopGroups;
         public IReadOnlyList<string> EffectiveApprovalOverdueGroups => ApprovalOverdueGroups.Count > 0 ? ApprovalOverdueGroups : DefaultApprovalOverdueGroups;
     }
 

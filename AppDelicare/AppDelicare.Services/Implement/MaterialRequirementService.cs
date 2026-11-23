@@ -22,7 +22,7 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class MaterialRequirementService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class MaterialRequirementService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IUomConversionService uomConversionService, IDocumentNumberService documentNumberService
         , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IMaterialRequirementService
     {
@@ -230,6 +230,8 @@ namespace AppDelicare.Services.Implement
             public decimal Quantity { get; set; }
             public Guid UnitId { get; set; }
             public decimal? WastePercent { get; set; }
+            /// <summary>BIZ-1.1: % hao hụt chế biến (RecipeLine.ExpectedWasteRate).</summary>
+            public decimal? ExpectedWasteRate { get; set; }
         }
 
         /// <summary>Kết quả tính của 1 nguyên liệu (trước khi ghi).</summary>
@@ -368,34 +370,48 @@ namespace AppDelicare.Services.Implement
         /// tồn xuất được / bị chặn, tồn an toàn, thiếu, NCC gợi ý + MOQ. <paramref name="extraIngredients"/> (nguyên liệu → đơn vị dự phòng): nguyên liệu
         /// phải có dòng kết quả dù không còn nhu cầu (CalculateTopUp – dòng nhu cầu / đề nghị mua cũ), nhu cầu = 0.
         /// </summary>
+        /// <param name="demand">BIZ-1.3: nguồn nhu cầu do nơi gọi dựng sẵn (dòng đơn chốt / đăng ký / dự báo quy ra dòng – nhãn hiển thị theo OrderId).
+        /// Trống = tính chính thức: chỉ đơn Đã chốt của ngày (A9).</param>
         private async Task<(Computation? Data, string? Error)> ComputeAsync(DateTime date, Guid? unitId, Guid? warehouseId, IReadOnlyDictionary<Guid, Guid>? extraIngredients = null,
-            IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null)
+            IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null, (List<OrderLine> Lines, Dictionary<Guid, string> Labels)? demand = null)
         {
             var db = _unitOfWork.DbContext;
             // 2) Đơn đã chốt × thực đơn → món × suất.
             DateTime next = date.AddDays(1);
-            var orders = await db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.MealDate >= date && o.MealDate < next).ToListAsync();
-            var lockedOrders = orders.Where(o => o.Status == OrderStatus.Locked).ToList();
-            if (lockedOrders.Count == 0)
+            Computation c;
+            List<OrderLine> orderLines;
+            Dictionary<Guid, string> orderNo;
+            if (demand is { } given)
             {
-                return (null, string.Format(ConstantHelper.Message.MrpNoLockedOrder, Day(date)));
+                c = new Computation(new Converter(_uomConversionService, date));
+                orderLines = [.. given.Lines.Where(l => l.Quantity > 0)];
+                orderNo = given.Labels;
             }
-            var c = new Computation(new Converter(_uomConversionService, date)) { LockedOrders = lockedOrders };
+            else
+            {
+                var orders = await db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.MealDate >= date && o.MealDate < next).ToListAsync();
+                var lockedOrders = orders.Where(o => o.Status == OrderStatus.Locked).ToList();
+                if (lockedOrders.Count == 0)
+                {
+                    return (null, string.Format(ConstantHelper.Message.MrpNoLockedOrder, Day(date)));
+                }
+                c = new Computation(new Converter(_uomConversionService, date)) { LockedOrders = lockedOrders };
+                // Anh chốt 2026-11-16: chỉ đơn Locked được tính; đơn Confirmed (và Draft / Submitted) chỉ cảnh báo.
+                int notLocked = orders.Count(o => o.Status is OrderStatus.Draft or OrderStatus.Submitted or OrderStatus.Confirmed);
+                if (notLocked > 0)
+                {
+                    c.Warnings.Add(string.Format(ConstantHelper.Message.MrpOrdersNotLocked, notLocked, Day(date)));
+                }
+                var orderIds = lockedOrders.Select(o => o.Id).ToList();
+                orderLines = await db.OrderLine.AsNoTracking().Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0).ToListAsync();
+                orderNo = lockedOrders.ToDictionary(o => o.Id, o => o.OrderNumber ?? o.OrderNo ?? o.Id.ToString("N")[..8]);
+            }
             var warnings = c.Warnings;
-            // Anh chốt 2026-11-16: chỉ đơn Locked được tính; đơn Confirmed (và Draft / Submitted) chỉ cảnh báo.
-            int notLocked = orders.Count(o => o.Status is OrderStatus.Draft or OrderStatus.Submitted or OrderStatus.Confirmed);
-            if (notLocked > 0)
-            {
-                warnings.Add(string.Format(ConstantHelper.Message.MrpOrdersNotLocked, notLocked, Day(date)));
-            }
-            var orderIds = lockedOrders.Select(o => o.Id).ToList();
-            var orderLines = await db.OrderLine.AsNoTracking().Where(l => orderIds.Contains(l.OrderId) && !l.IsDeleted && l.Quantity > 0).ToListAsync();
             c.OrderLines = orderLines;
             var menuIds = orderLines.Where(l => l.MenuId != null).Select(l => l.MenuId!.Value).Distinct().ToList();
             int dayOfWeek = MenuService.MenuDayOf(date);
             var menuLines = await db.MenuLine.AsNoTracking().Where(m => menuIds.Contains(m.MenuId) && !m.IsDeleted && m.DayOfWeek == dayOfWeek).ToListAsync();
             var menuNames = await db.Menu.AsNoTracking().Where(m => menuIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id, m => m.Code ?? m.Name);
-            var orderNo = lockedOrders.ToDictionary(o => o.Id, o => o.OrderNumber ?? o.OrderNo ?? o.Id.ToString("N")[..8]);
             var portions = c.Portions;
             var bufferPortions = new Dictionary<Guid, decimal>();
             var lineDemands = new List<ProductionRules.DishDemand>();
@@ -492,7 +508,7 @@ namespace AppDelicare.Services.Implement
                 {
                     model.RecipeSource = "Lines";
                     lines = await db.RecipeLine.AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted)
-                        .Select(l => new RecipeLineInput { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent })
+                        .Select(l => new RecipeLineInput { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate })
                         .ToListAsync();
                 }
                 if (!lockedRecipe)
@@ -513,7 +529,7 @@ namespace AppDelicare.Services.Implement
             var items = c.Items;
             Guid BaseUnitOf(Ingredient? ingredient, Guid fallback)
                 => ingredient?.BaseUnitId is { } b && b != Guid.Empty ? b : ingredient?.BaseUomId is { } o && o != Guid.Empty ? o : fallback;
-            // Hao hụt theo BUSINESS_RULES §3 (anh chốt 2026-11-16): nhu cầu = định lượng × suất ÷ suất chuẩn × (1 + hao hụt %).
+            // BIZ-1.1 (D-77 a): nhu cầu = định lượng tinh × suất ÷ suất chuẩn ÷ (1 − % chế biến) ÷ (1 − % sơ chế) – WasteRules (thay "× (1 + hao hụt %)" T14.1).
             foreach (var (dishId, qty, servings, line) in inputs)
             {
                 var ingredient = ingredients.GetValueOrDefault(line.IngredientId);
@@ -522,8 +538,7 @@ namespace AppDelicare.Services.Implement
                     item = new ItemCalc { IngredientId = line.IngredientId, UnitId = BaseUnitOf(ingredient, line.UnitId) };
                     items[line.IngredientId] = item;
                 }
-                decimal waste = line.WastePercent ?? ingredient?.StandardWastePercent ?? 0m;
-                decimal gross = line.Quantity * qty / servings * (1 + waste / 100m);
+                decimal gross = WasteRules.Gross(line.Quantity * qty / servings, line.WastePercent ?? ingredient?.StandardWastePercent, line.ExpectedWasteRate);
                 decimal? converted = await converter.ConvertAsync(gross, line.UnitId, item.UnitId);
                 if (converted == null)
                 {
@@ -791,7 +806,7 @@ namespace AppDelicare.Services.Implement
         /// <item>Đơn <b>Đã chốt</b> (Locked) có ngày ăn = ngày sản xuất × thực đơn của dòng đơn (MenuLine cùng loại suất, thứ của ngày) → món × suất.
         /// Thực đơn có nhiều lựa chọn (SequenceNo) → suất chia đều cho các lựa chọn rồi cộng dự phòng <c>MrpOptionBufferPct</c> mỗi lựa chọn (T14.1, GAP-MRP-03).</item>
         /// <item>Món × công thức: bản đã khóa hiệu lực tại ngày (SnapshotJson; thiếu thì dòng định lượng), không có thì bản Đã duyệt mới nhất (cảnh báo).
-        /// Nhu cầu = định lượng × suất ÷ suất chuẩn (StandardOutputQty, mặc định BusinessRules 100) × (1 + hao hụt %), hao hụt = RecipeLine.WastePercent,
+        /// Nhu cầu = định lượng tinh × suất ÷ suất chuẩn (StandardOutputQty, mặc định BusinessRules 100) ÷ (1 − % chế biến ExpectedWasteRate) ÷ (1 − % sơ chế) (BIZ-1.1), % sơ chế = RecipeLine.WastePercent,
         /// trống thì Ingredient.StandardWastePercent; quy đổi về đơn vị cơ sở của nguyên liệu qua UomConversion.</item>
         /// <item>Khả dụng = Σ AvailableQuantity (đã trừ giữ chỗ) của lô không bị chặn tại ngày sản xuất (InventoryLotRules: hết hạn / QC / tạm giữ), theo kho / chi nhánh.</item>
         /// <item>Thiếu = max(0, nhu cầu + tồn an toàn (D-12, PROPOSED) − khả dụng − hàng sắp về (Pilot = 0)); số mua làm tròn lên MOQ của NCC gợi ý.</item>

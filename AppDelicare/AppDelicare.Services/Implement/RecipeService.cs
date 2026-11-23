@@ -440,7 +440,7 @@ namespace AppDelicare.Services.Implement
                 recipe.LockedAt = _clock.Now;
                 recipe.LockedBy = _currentActor.RequireActor().UserId;
                 var lines = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted).OrderBy(l => l.SortOrder).ToListAsync();
-                recipe.SnapshotJson = JsonConvert.SerializeObject(lines.Select(l => new { l.IngredientId, l.Quantity, l.UnitId, l.WastePercent, l.SequenceNo }));
+                recipe.SnapshotJson = JsonConvert.SerializeObject(lines.Select(l => new { l.IngredientId, l.Quantity, l.UnitId, l.WastePercent, l.ExpectedWasteRate, l.SequenceNo }));
                 _unitOfWork.RecipeRepository.Update(recipe);
                 await _unitOfWork.RecipeRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 await UpsertStandardCostAsync(recipe.DishId, recipe.Id, from);
@@ -527,7 +527,8 @@ namespace AppDelicare.Services.Implement
             var lines = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking().Where(l => l.RecipeId == recipeId && !l.IsDeleted)
                 .OrderBy(l => l.SortOrder).ThenBy(l => l.SequenceNo).ToListAsync();
             var ingredientIds = lines.Select(l => l.IngredientId).Distinct().ToList();
-            var names = await _unitOfWork.IngredientRepository.GetAll().AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => i.Name);
+            var ingredientInfo = await _unitOfWork.IngredientRepository.GetAll().AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).Select(i => new { i.Id, i.Name, i.StandardWastePercent }).ToDictionaryAsync(i => i.Id);
+            var names = ingredientInfo.ToDictionary(i => i.Key, i => i.Value.Name);
             var prices = await _unitOfWork.SupplierMaterialRepository.GetAll().AsNoTracking()
                 .Where(m => !m.IsDeleted && m.IsPreferred && ingredientIds.Contains(m.IngredientId)
                     && (m.EffectiveFrom == null || m.EffectiveFrom <= day) && (m.EffectiveTo == null || m.EffectiveTo >= day))
@@ -535,7 +536,11 @@ namespace AppDelicare.Services.Implement
             var result = new List<RecipeLineCostModel>();
             foreach (var l in lines)
             {
-                var item = new RecipeLineCostModel { LineId = l.Id, IngredientId = l.IngredientId, IngredientName = names.GetValueOrDefault(l.IngredientId), Quantity = l.Quantity, UnitId = l.UnitId };
+                // BIZ-1.1: giá vốn tính trên LƯỢNG MUA (trước sơ chế) – hao hụt 2 tầng như MRP.
+                decimal? prepPct = l.WastePercent ?? ingredientInfo.GetValueOrDefault(l.IngredientId)?.StandardWastePercent;
+                var item = new RecipeLineCostModel { LineId = l.Id, IngredientId = l.IngredientId, IngredientName = names.GetValueOrDefault(l.IngredientId), Quantity = l.Quantity, UnitId = l.UnitId,
+                    PrepWastePercent = prepPct, CookWastePercent = l.ExpectedWasteRate,
+                    QuantityAfterPrep = Math.Round(WasteRules.AfterPrep(l.Quantity, l.ExpectedWasteRate), 4), GrossQuantity = Math.Round(WasteRules.Gross(l.Quantity, prepPct, l.ExpectedWasteRate), 4) };
                 var price = prices.FirstOrDefault(p => p.IngredientId == l.IngredientId);
                 if (price?.UnitPrice is not { } unitPrice)
                 {
@@ -545,7 +550,7 @@ namespace AppDelicare.Services.Implement
                 {
                     item.UnitPrice = unitPrice;
                     item.PriceUnitId = price.PurchaseUomId ?? l.UnitId;
-                    decimal? qty = await _uomConversionService.ConvertAsync(l.Quantity, l.UnitId, item.PriceUnitId.Value, day);
+                    decimal? qty = await _uomConversionService.ConvertAsync(WasteRules.Gross(l.Quantity, prepPct, l.ExpectedWasteRate), l.UnitId, item.PriceUnitId.Value, day);
                     if (qty == null)
                     {
                         item.Warning = "Thiếu quy đổi đơn vị giữa định lượng và đơn vị giá NCC.";

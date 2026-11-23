@@ -52,8 +52,8 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
 1. Chọn món → **Tạo phiên bản mới** → bản **Nháp** mới, chép định lượng của phiên bản mới nhất.
    - *Món đang có bản công thức nháp / chờ duyệt – hoàn tất bản đó trước*.
 2. Trên bản Nháp:
-   - Sửa **Định lượng / 100 suất** trực tiếp trong bảng (lưu ngay).
-   - **Thêm nguyên liệu**: chọn Nguyên liệu, Định lượng, ĐVT, Hao hụt %, Thứ tự, Ghi chú sơ chế → **Tạo mới**.
+   - Sửa **Định lượng tinh / 100 suất** (lượng sau chế biến) trực tiếp trong bảng (lưu ngay). Bảng hiện thêm **Sau sơ chế** = tinh ÷ (1 − hao hụt chế biến %) và **Lượng mua (trước sơ chế)** = sau sơ chế ÷ (1 − hao hụt sơ chế %) – giống file định lượng (vd. 70 g, 35 %, 5 % → 107,7 g → 113,4 g). Nhu cầu nguyên liệu, phiếu xuất và giá vốn đều tính theo lượng mua.
+   - **Thêm nguyên liệu**: chọn Nguyên liệu, Định lượng, ĐVT, **Hao hụt chế biến %**, **Hao hụt sơ chế %** (để trống = hao hụt chuẩn của nguyên liệu), Thứ tự, Ghi chú sơ chế → **Tạo mới**.
    - 🗑 trên dòng để bỏ nguyên liệu.
    - *Định lượng phải lớn hơn 0*, *Hao hụt phải trong khoảng [0, 100)*, *Chưa có quy đổi giữa 2 đơn vị này*.
 3. **Gửi duyệt** → xác nhận → **Chờ duyệt** (không sửa được định lượng tới khi có kết quả). *Công thức phải có ít nhất 1 nguyên liệu*.

@@ -32,6 +32,6 @@ namespace AppDelicare.Services.Interface
         public Task<ApprovalProgressModel?> OpenProgressAsync(string businessType, Guid businessId);
 
         /// <summary>BOT-2.3: duyệt quá hạn (DueAt của cấp đang chờ) → APPROVAL_OVERDUE tới người duyệt của cấp; quá thêm <paramref name="escalateHours"/> giờ → nhóm <paramref name="escalateGroups"/> (bot DH). Trả số tin đã xếp.</summary>
-        public Task<int> NotifyOverdueAsync(int escalateHours, IReadOnlyCollection<string> escalateGroups);
+        public Task<int> NotifyOverdueAsync(int escalateHours, IReadOnlyCollection<string> escalateGroups, IReadOnlyCollection<string>? topGroups = null);
     }
 }
