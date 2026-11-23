@@ -296,7 +296,8 @@ namespace AppDelicare.Tests.Pilot
                         new { goodsReceiptLineId = grRice, result = "DAT", appearance = "Khô", packaging = "Nguyên" },
                     },
                 })).Ok();
-                (await Post("/api/GoodsReceipt/Post", ("Id", grId), ("Note", "[DEMO] ghi sổ"))).Ok();
+                // BIZ-2.6: QC đạt → hệ thống tự ghi sổ.
+                (await Get($"/api/GoodsReceipt/GetDetail?id={grId}")).Ok().GetProperty("goodsReceipt").GetProperty("status").GetString().Should().Be("Posted");
                 var grDetail = (await Get($"/api/GoodsReceipt/GetDetail?id={grId}")).Ok();
                 System.Text.RegularExpressions.Regex.Matches(grDetail.GetRawText(), "LO-\\d{6}-NC\\d{5,6}-\\d{2}").Select(m => m.Value).Distinct()
                     .Should().HaveCount(2, "mỗi dòng phiếu nhập 1 lô LO- riêng, không trùng số (lỗi T50R1)");

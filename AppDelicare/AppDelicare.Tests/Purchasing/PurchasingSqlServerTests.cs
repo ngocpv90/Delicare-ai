@@ -86,8 +86,8 @@ namespace AppDelicare.Tests.Purchasing
                     ListLine = [new QcInspectionLineInput { GoodsReceiptLineId = created.Data.ListLine.Single().Id, Result = "DAT_MOT_PHAN", AcceptedQuantity = 8, Remark = "[DEMO] 2 kg dập" }],
                 });
                 concluded.ResponseCode.Should().Be(200, concluded.ResponseMessage);
-                var posted = await grService.Post(new GoodsReceiptPostRequest { Id = created.Data.GoodsReceipt.Id });
-                posted.ResponseCode.Should().Be(200, posted.ResponseMessage);
+                var posted = concluded; // BIZ-2.6: QC đạt một phần → tự ghi sổ phần đạt
+                posted.Data!.GoodsReceipt.Status.Should().Be("Posted");
                 posted.Data!.SupplierIssueId.Should().NotBeNull();
 
                 db.ChangeTracker.Clear();

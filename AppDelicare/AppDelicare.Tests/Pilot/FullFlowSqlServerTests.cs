@@ -356,7 +356,8 @@ namespace AppDelicare.Tests.Pilot
                         new { goodsReceiptLineId = grRice, result = "DAT", appearance = "Khô", packaging = "Nguyên" },
                     },
                 })).Ok();
-                (await Post("/api/GoodsReceipt/Post", ("Id", grId), ("Note", "[DEMO] ghi sổ"))).Ok();
+                // BIZ-2.6: QC đạt → hệ thống tự ghi sổ.
+                (await Get($"/api/GoodsReceipt/GetDetail?id={grId}")).Ok().GetProperty("goodsReceipt").GetProperty("status").GetString().Should().Be("Posted");
                 poDkDetail = (await Get($"/api/PurchaseOrder/GetDetail?id={poDk}")).Ok();
                 var grDk = (await PostJson("/api/GoodsReceipt/Create", new
                 {
@@ -368,7 +369,7 @@ namespace AppDelicare.Tests.Pilot
                     id = grDk.GetProperty("qcInspectionId").GetGuid(), note = "[DEMO]",
                     listLine = new[] { new { goodsReceiptLineId = Id(grDk.GetProperty("listLine")[0]), result = "DAT", appearance = "Khô", packaging = "Nguyên" } },
                 })).Ok();
-                (await Post("/api/GoodsReceipt/Post", ("Id", Id(grDk.GetProperty("goodsReceipt"))), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/GoodsReceipt/Post", ("Id", Id(grDk.GetProperty("goodsReceipt"))), ("Note", "[DEMO]"))).Fail("Đã ghi sổ"); // BIZ-2.6: đã tự ghi sổ
                 await GetFile($"/api/GoodsReceipt/Print?id={grId}");
                 await GetFile($"/api/GoodsReceipt/Print?id={grId}&format=docx");
                 Encoding.ASCII.GetString((await GetFile($"/api/GoodsReceipt/Print?id={grId}&format=pdf")).Take(5).ToArray())

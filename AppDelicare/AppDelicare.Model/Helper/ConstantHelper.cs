@@ -401,6 +401,8 @@
             public static readonly string AutoPlanAlreadyApproved = "Kế hoạch {0} đã ở trạng thái {1} – hệ thống không tự lập lại";
             public static readonly string AutoPlanEditedByHand = "Kế hoạch {0} đã được sửa tay – giữ bản sửa, chờ COO duyệt / phát hành";
             public static readonly string AutoPlanNoLockedRecipe = "Món chưa có công thức khóa: {0}";
+            public static readonly string QcAutoPosted = "Đã kết luận QC – hệ thống đã tự ghi sổ phần đạt vào kho";
+            public static readonly string QcAutoPostFailed = "Đã kết luận QC nhưng chưa tự ghi sổ được: {0} – bấm Ghi sổ để làm tay";
             public static readonly string ShiftIssueDraftFailed = "Không tạo được phiếu xuất nháp cho lệnh {0}: {1} – kho lập phiếu tay";
             public static readonly string ShiftIssueNothing = "Không có phiếu xuất Nháp nào của ca này";
             public static readonly string ShiftIssuePosted = "Đã ghi sổ {0} phiếu xuất của ca{1}";

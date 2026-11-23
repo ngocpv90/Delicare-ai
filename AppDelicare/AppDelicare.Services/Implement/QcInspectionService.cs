@@ -353,6 +353,19 @@ namespace AppDelicare.Services.Implement
                         $"{NotificationCatalog.QcIncomingFail}:{receipt.Id:N}");
                 }
                 _unitOfWork.CommitTransaction();
+                // BIZ-2.6 (D-77 – C5): QC Đạt / Đạt một phần → tự Ghi sổ phần đạt ngay (lô, tồn, PO); Không đạt cả phiếu → không nhập, giữ luồng sự cố NCC (Ghi sổ tay).
+                // Ghi sổ lỗi → kết luận QC vẫn giữ, báo để kho bấm Ghi sổ tay.
+                if (_rules.GoodsReceiptAutoPostAfterQc && overall != IncomingQcResult.KhongDat)
+                {
+                    var posted = await _goodsReceiptService.Post(new GoodsReceiptPostRequest { Id = receipt.Id, Note = "Hệ thống tự ghi sổ sau kết luận QC" });
+                    if (posted.ResponseCode == 200)
+                    {
+                        return Result<GoodsReceiptDetailModel>.Success(posted.Data!, ConstantHelper.Message.QcAutoPosted);
+                    }
+                    var kept = await _goodsReceiptService.DetailAsync(receipt.Id);
+                    kept!.ListWarning.Add(string.Format(ConstantHelper.Message.QcAutoPostFailed, posted.ResponseMessage));
+                    return Result<GoodsReceiptDetailModel>.Success(kept, string.Format(ConstantHelper.Message.QcAutoPostFailed, posted.ResponseMessage));
+                }
                 return Result<GoodsReceiptDetailModel>.Success(await _goodsReceiptService.DetailAsync(receipt.Id), ConstantHelper.Message.SaveSuccess);
             }
             catch (Exception ex)

@@ -24,6 +24,7 @@ namespace AppDelicare.Tests.Production
         {
             _factory = factory;
             _factory.Clock.FixedNow = Today.AddHours(10);
+            _factory.Settings["BusinessRules:ProductionAutoDraftIssueOnRelease"] = "false"; // test xuất kho tay theo mẻ (BIZ-2.5 test riêng)
         }
 
         private sealed record Scenario(DateTime Day, string Shift, Guid ShiftId, Guid Line, Guid Warehouse, Guid Kg, Guid Meat, Guid Veg, Guid DishMeat, Guid DishSoup,

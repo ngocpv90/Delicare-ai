@@ -25,6 +25,7 @@ namespace AppDelicare.Tests.Purchasing
             _factory.Clock.FixedNow = Today.AddHours(10);
             // Các test ở đây kiểm luồng duyệt PO thủ công – tắt tự duyệt BIZ-2.2 (test riêng: PurchaseOrderAutoApproveTests).
             _factory.Settings["BusinessRules:PurchaseOrderAutoApproveFromRequest"] = "false";
+            _factory.Settings["BusinessRules:GoodsReceiptAutoPostAfterQc"] = "false"; // kiểm Ghi sổ tay (BIZ-2.6 tự ghi sổ: kiểm ở MrpTests / luồng SQL)
         }
 
         private sealed record Scenario(string Code, Guid Warehouse, Guid Kg, Guid Meat, Guid Veg, Guid Fish, Guid Rice, Guid SupplierA, Guid SupplierB, Guid Request);

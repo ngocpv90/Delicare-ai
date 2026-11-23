@@ -532,7 +532,8 @@ namespace AppDelicare.Tests.Purchasing
                 id = receipt.GetProperty("qcInspectionId").GetGuid(),
                 listLine = new[] { new { goodsReceiptLineId = receipt.GetProperty("listLine")[0].GetProperty("id").GetGuid(), result = "DAT" } },
             }))).Ok();
-            (await c.PostFormAsync("/api/GoodsReceipt/Post", ("Id", receiptId))).Ok();
+            // BIZ-2.6: QC đạt → tự ghi sổ.
+            (await c.PostFormAsync("/api/GoodsReceipt/Post", ("Id", receiptId))).Fail("Đã ghi sổ");
 
             // Không đổi suất: phần đã nhận (6) không bị tính 2 lần (tồn + đã đề nghị) → chênh 0, không lập, không cảnh báo thừa.
             var same = await TopUp();

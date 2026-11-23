@@ -113,7 +113,7 @@ namespace AppDelicare.Tests.Production
                 batch.AcceptedQty.Should().Be(49);
                 (await db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == batch.ProductionOrderId)).Status.Should().Be("Completed");
                 (await db.ProductionPlan.AsNoTracking().SingleAsync(p => p.Id == plan)).Status.Should().Be("Completed");
-                (await db.MaterialIssue.AsNoTracking().SingleAsync(i => i.ProductionOrderId == batch.ProductionOrderId)).Status.Should().Be("Issued");
+                (await db.MaterialIssue.AsNoTracking().SingleAsync(i => i.ProductionOrderId == batch.ProductionOrderId && (i.Note == null || !i.Note.StartsWith("[XUAT_CA")))).Status.Should().Be("Issued");
                 (await db.InventoryBalance.AsNoTracking().Where(b => b.MaterialLotId == goodLot).SumAsync(b => b.OnHandQuantity)).Should().Be(3);
                 (await db.InventoryBalance.AsNoTracking().Where(b => b.MaterialLotId == expiredLot).SumAsync(b => b.OnHandQuantity)).Should().Be(30, "lô hết hạn không bị xuất");
                 (await db.TemperatureLog.AsNoTracking().SingleAsync(t => t.ProductionBatchId == batch.Id)).IsWithinRange.Should().BeTrue();
