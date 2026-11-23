@@ -20,7 +20,6 @@ Menu **Quản trị hệ thống** (FIN-IT: xem + sửa + xuất):
 | `adm-employee` | Nhân sự | Nhân viên (danh mục chung với Nhân sự) |
 | `adm-position` | Chức vụ | Chức vụ |
 | `adm-company` | Công ty | Pháp nhân |
-| `adm-person` | Cá nhân (Person) | Thông tin cá nhân |
 | `adm-admin-unit` | Đơn vị hành chính | Vùng / tỉnh / huyện / xã |
 | `adm-document` | Quản lý tài liệu | Tải lên / tải xuống tệp đính kèm |
 | `adm-audit` | Audit log | Nhật ký thay đổi dữ liệu |
@@ -28,7 +27,27 @@ Menu **Quản trị hệ thống** (FIN-IT: xem + sửa + xuất):
 | `adm-merge-conflict` | Xung đột hợp nhất dữ liệu | Đánh dấu đã xử lý xung đột chuẩn hóa dữ liệu |
 | `sys-import` | Nhập dữ liệu gốc (Excel) | Nạp danh mục từ file Excel (khách hàng, điểm giao, NCC, nguyên liệu, kho, nhân viên, xe, món, định mức, bảng giá NCC…) |
 
-Các màn `adm-reference`, `dbx-explorer`, `dbx-gap` **đang ẩn** ở chế độ dữ liệu thật. Nhóm **Tích hợp** (`int-*`) hiện theo ma trận quyền.
+| `adm-reference` | Danh mục dùng chung | **Chỉ xem** các giá trị chọn sẵn (loại suất, loại kho, kênh phản ánh…) và màn / cột đang dùng. Thêm / sửa giá trị = sửa cấu hình máy chủ (liên hệ quản trị hệ thống) |
+
+Các màn `dbx-explorer`, `dbx-gap` **đang ẩn** ở chế độ dữ liệu thật. Nhóm **Tích hợp** (`int-*`) hiện theo ma trận quyền.
+
+**Dọn menu (MENU-4, 2026-11-23):** bảng con không còn mục menu riêng – nhập / xem trong màn chính, quyền theo màn chính (ma trận quyền không còn hiện các mục này):
+
+| Mục đã ẩn | Nhập / xem ở |
+|---|---|
+| Loại suất & đơn giá | Form + tab chi tiết **Hợp đồng** |
+| Chi tiết đơn đặt suất | **Đơn đặt suất** / Đăng ký suất tuần |
+| Chi tiết định lượng · Chi tiết thực đơn | **Công thức chế biến** · **Thực đơn tuần** |
+| Chi tiết đề nghị mua / đơn mua / phiếu nhập / phiếu xuất / kiểm kê | Màn chứng từ tương ứng (danh sách có **Lọc theo nguyên liệu**) |
+| Chi tiết kế hoạch sản xuất · Chi tiết kiểm tra hàng nhập | **Kế hoạch sản xuất** · **Kiểm tra hàng nhập** |
+| Tiêu chí kiểm tra | **Bộ kiểm tra ATTP** → tab **Tiêu chí** |
+| Điểm dừng · Diễn biến giao hàng · Lịch sử xử lý phản ánh | **Chuyến giao hàng** · **Theo dõi chuyến giao** · **Phản ánh khách hàng** |
+| Các bước duyệt · Lịch sử duyệt · Chứng từ trong yêu cầu duyệt | Chi tiết yêu cầu trong **Hộp phê duyệt** |
+| Phiếu chuyển kho · Phiếu điều chỉnh tồn | Nút **Chuyển kho** / **Điều chỉnh tồn** trên màn **Tồn kho** (duyệt điều chỉnh vẫn ở Phê duyệt › Phiếu điều chỉnh tồn) |
+| Thông tin cá nhân | **Tài khoản** / **Nhân viên** |
+| Hộp phê duyệt (nhóm Nhân sự) | **Phê duyệt › Tất cả yêu cầu duyệt** (cùng màn; dòng quyền `#/wf-inbox` giữ nguyên – vẫn cấp ở ma trận quyền) |
+
+Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản lượng** (ghi khi kết thúc mẻ nấu), **Xếp hàng lên xe** và **Xác nhận đã giao** (Theo dõi chuyến / bot), **Liên kết tài khoản chat** (mã liên kết; nút Liên kết / Gỡ liên kết).
 
 ## 3. Việc theo thứ tự
 

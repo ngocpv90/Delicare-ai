@@ -52,6 +52,41 @@ namespace AppDelicare.Tests.MasterData
             (await c.GetResultAsync($"/api/Customer/GetOverview?id={Guid.NewGuid()}")).Fail();
         }
 
+        /// <summary>LOC-1 (anh yêu cầu 2026-11-22): người nhận của điểm giao (khách doanh nghiệp) phải nằm trong danh sách người liên hệ của khách.</summary>
+        [Fact]
+        public async Task Delivery_location_recipient_must_be_a_contact_of_business_customer()
+        {
+            Guid biz = Guid.NewGuid(), person = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                db.Customer.AddRange(
+                    new Customer { Id = biz, Code = "LOC1-B", Name = "Công ty LOC1", CIF = "LOC1-B", DisplayName = "Công ty LOC1", CustomerType = "BUSINESS", Status = "Active" },
+                    new Customer { Id = person, Code = "LOC1-C", Name = "Anh Cá Nhân", CIF = "LOC1-C", DisplayName = "Anh Cá Nhân", CustomerType = "INDIVIDUAL", Status = "Active" });
+                db.CustomerContact.AddRange(
+                    new CustomerContact { Id = Guid.NewGuid(), CustomerId = biz, Name = "Chị Lan", FullName = "Nguyễn Thị Lan", Phone = "0901 111 222", Status = "Active" },
+                    new CustomerContact { Id = Guid.NewGuid(), CustomerId = biz, Name = "Anh Cũ", FullName = "Trần Văn Cũ", Phone = "0903000000", Status = "Inactive" });
+                return Task.CompletedTask;
+            });
+            using var c = _factory.CreateAuthorizedClient();
+
+            (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", biz), ("Name", "Cổng 1"))).Fail("Chọn người nhận");
+            (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", biz), ("Name", "Cổng 1"), ("ContactName", "Bảo vệ"))).Fail("không có trong danh sách người liên hệ");
+            (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", biz), ("Name", "Cổng 1"), ("ContactName", "Trần Văn Cũ"))).Fail("không có trong danh sách"); // người liên hệ ngưng hoạt động không được chọn
+            (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", biz), ("Name", "Cổng 1"), ("ContactName", "nguyễn thị lan"), ("ContactPhone", "0999999999"))).Fail("SĐT người nhận không khớp");
+            (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", biz), ("Name", "Cổng 1"), ("ContactName", "nguyễn thị lan"))).Ok();
+            var loc = await _factory.QueryAsync(db => db.CustomerDeliveryLocation.AsNoTracking().SingleAsync(x => x.CustomerId == biz));
+            loc.ContactName.Should().Be("Nguyễn Thị Lan", "ghi theo người liên hệ");
+            loc.ContactPhone.Should().Be("0901 111 222", "SĐT trống → lấy SĐT người liên hệ");
+
+            // Dữ liệu cũ: người nhận không có trong danh sách nhưng giữ nguyên → vẫn sửa được trường khác; đổi sang người lạ → chặn.
+            await _factory.SeedAsync(async db => { var x = await db.CustomerDeliveryLocation.SingleAsync(l => l.Id == loc.Id); x.ContactName = "Ông Cũ"; x.ContactPhone = "0911"; });
+            (await c.PutFormAsync("/api/CustomerDeliveryLocation/Update", ("Id", loc.Id), ("CustomerId", biz), ("Name", "Cổng 1 (mới)"), ("ContactName", "Ông Cũ"), ("ContactPhone", "0911"))).Ok();
+            (await c.PutFormAsync("/api/CustomerDeliveryLocation/Update", ("Id", loc.Id), ("CustomerId", biz), ("Name", "Cổng 1"), ("ContactName", "Người Lạ"))).Fail("không có trong danh sách");
+
+            // Khách cá nhân: không áp dụng.
+            (await c.PostFormAsync("/api/CustomerDeliveryLocation/Insert", ("CustomerId", person), ("Name", "Nhà riêng"), ("ContactName", "Chị Hàng Xóm"))).Ok();
+        }
+
         [Fact]
         public async Task Delivery_location_window_coordinates_and_inactive_guard()
         {

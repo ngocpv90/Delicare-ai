@@ -224,7 +224,8 @@
       const d = CUSTOMER_FIELDS[cusType];
       return ['Code', 'CustomerType'].concat(d.req, d.opt).map(f => Store.colmeta[t][f]).filter(Boolean);
     };
-    const isReq = m => isCustomer ? CUSTOMER_FIELDS[cusType].req.includes(m.name) || m.name === 'CustomerType' || (m.name === 'BranchId' && !!cusOpt.branchRequired) : (!m.nullable && !m.def);
+    // opt.optional: cột NOT NULL nhưng máy chủ tự điền khi trống (vd. MENU-4.5 mã / thứ tự tiêu chí ATTP).
+    const isReq = m => isCustomer ? CUSTOMER_FIELDS[cusType].req.includes(m.name) || m.name === 'CustomerType' || (m.name === 'BranchId' && !!cusOpt.branchRequired) : (!m.nullable && !m.def && !(opt.optional || []).includes(m.name));
     const labelOf = m => (isCustomer && CUSTOMER_LABEL[m.name]) || U.colLabel(m.name);
     // MA-1 (D-63 k): nhóm mã từ api/Common/GetCodeRules – G1 chỉ đọc "(tự sinh khi lưu)", G2 chữ hoa không dấu.
     const ruleOf = m => Store.codeRule(t, m.name);
@@ -244,14 +245,29 @@
       if (cats[m.name]) return UI.catalogSelect(id, m.name, cats[m.name], v, isReq(m), '— Chọn ' + labelOf(m).toLowerCase() + ' —');
       return null;
     };
+    // LOC-1 (2026-11-22): điểm giao của khách doanh nghiệp – Người nhận chọn trong danh sách người liên hệ của khách (máy chủ kiểm lại), chọn xong tự điền SĐT.
+    const isLocation = t === 'CustomerDeliveryLocation';
+    const recipientPick = () => {
+      const cus = Store.get('Customer', valueOfRec('CustomerId'));
+      if (!cus || String(cus.CustomerType || '').toUpperCase() !== 'BUSINESS') return null;
+      const cts = Store.by('CustomerContact', 'CustomerId', cus.Id).filter(c => !c.IsDeleted && (!c.Status || c.Status === 'Active'))
+        .sort((a, b) => (b.IsPrimary ? 1 : 0) - (a.IsPrimary ? 1 : 0) || String(a.FullName || a.Name).localeCompare(String(b.FullName || b.Name)));
+      const cur = rec.ContactName || '';
+      const nameOf = c => c.FullName || c.Name || '';
+      const known = cts.some(c => nameOf(c).toLowerCase() === cur.toLowerCase());
+      return `<select class="select" id="f_ContactName" name="ContactName" required data-recipient="1"><option value="">${cts.length ? '— Chọn người liên hệ —' : '— Khách chưa có người liên hệ –  thêm ở mục Người liên hệ —'}</option>${cur && !known ? `<option value="${esc(cur)}" data-phone="${esc(rec.ContactPhone || '')}" selected>${esc(cur)} (giá trị cũ)</option>` : ''}${cts.map(c => `<option value="${esc(nameOf(c))}" data-phone="${esc(c.Phone || '')}" ${nameOf(c).toLowerCase() === cur.toLowerCase() ? 'selected' : ''}>${esc(nameOf(c))}${c.Position ? ' – ' + esc(c.Position) : ''}${c.Phone ? ' · ' + esc(c.Phone) : ''}${c.IsPrimary ? ' (chính)' : ''}</option>`).join('')}</select>`;
+    };
+    function valueOfRec(name) { const el = document.querySelector('.modal #f_' + name); return el && el.value ? el.value : rec[name]; }
     const inputOf = m => {
       const r = ruleOf(m), v = rec[m.name];
+      if (isLocation && m.name === 'ContactName') { const pick = recipientPick(); if (pick) return pick; }
       if (r && r.group === 'G1') return `<input class="input mono" id="f_${m.name}" name="${m.name}" value="${esc(v || '')}" placeholder="(tự sinh khi lưu)" readonly data-g1="1" title="Mã do máy chủ tự sinh${r.prefix ? ' – ' + esc(r.prefix) : ''}">`;
       if (isCustomer && m.name === 'CustomerType') {
         // Loại khách khóa sau khi lưu (D-63 i) – đổi loại chỉ khi chưa có hợp đồng / đơn, máy chủ kiểm và cấp mã mới.
         return `<select class="select" id="f_CustomerType" name="CustomerType" required ${editing && !opt.allowTypeChange ? 'data-locked="1"' : ''}>${['BUSINESS', 'INDIVIDUAL'].map(c => `<option value="${c}" ${c === cusType ? 'selected' : ''}>${c === 'BUSINESS' ? 'Doanh nghiệp' : 'Cá nhân'}</option>`).join('')}</select>`;
       }
-      const html = (isCustomer && customerInput(m)) || UI.input(t, m, v);
+      let html = (isCustomer && customerInput(m)) || UI.input(t, m, v);
+      if ((opt.optional || []).includes(m.name)) html = html.replace(' required', '').replace('<input ', `<input placeholder="${m.name === 'SortOrder' ? '(cuối danh sách)' : '(tự sinh khi để trống)'}" `);
       return r && r.group === 'G2' ? html.replace('<input ', '<input data-g2="1" ') : html;
     };
     const fieldHtml = m => {
@@ -333,6 +349,15 @@
         };
         if (isCustomer) applyOptions(cusOpt);
         wire();
+        if (isLocation) {
+          // Đổi khách → vẽ lại ô Người nhận; chọn người nhận → điền SĐT theo người liên hệ.
+          const redrawRecipient = () => { const el = m.querySelector('#f_ContactName'), fld = el && el.closest('.field'); if (!fld) return; rec.ContactName = el.value || null; const meta = fields.find(f => f.name === 'ContactName'); if (!meta) return; const tmp = document.createElement('div'); tmp.innerHTML = fieldHtml(meta); fld.replaceWith(tmp.firstElementChild); };
+          m.addEventListener('change', e => {
+            if (e.target.id === 'f_CustomerId') { rec.CustomerId = e.target.value; redrawRecipient(); }
+            if (e.target.id === 'f_ContactName' && e.target.dataset.recipient) { const o = e.target.selectedOptions[0], ph = m.querySelector('#f_ContactPhone'); if (o && ph && o.dataset.phone) ph.value = o.dataset.phone; }
+          });
+          Store.ensure('CustomerContact').then(() => { if (host.isConnected) redrawRecipient(); });
+        }
         // Quy tắc mã / dữ liệu form tải xong sau khi mở form → CHỈ thay các ô phụ thuộc dữ liệu đó (ô mã, ô chọn danh mục / chi nhánh / NV phụ trách).
         // Không vẽ lại cả form: người dùng có thể đang mở hộp chọn ngày / đang gõ – thay ô sẽ làm mất giá trị vừa chọn (lỗi UAT 2026-11-21).
         const OPTION_FIELDS = new Set(['BranchId', 'UserAssignId', 'Industry', 'CompanySize', 'Gender', 'Source']);
@@ -524,7 +549,11 @@
   UI.APPEND_ONLY = new Set(['InventoryTransaction', 'PackagingLedger', 'TemperatureLog', 'AuditChange', 'IntegrationLog', 'ApprovalDecision', 'AttendanceEvent', 'DeliveryEvent', 'ComplaintHistory',
     // Đối soát: máy chủ chặn thêm / sửa / xóa thẳng – chỉ ghi qua Ghi suất phục vụ / Ghi lại / Chốt (OrderReconciliation/Reconcile / Close).
     'OrderReconciliation']);
-  UI.readOnly = t => Store.isLive && UI.APPEND_ONLY.has(t);
+  // MENU-4 nhóm C (D-75 e): dữ liệu sinh từ thao tác nghiệp vụ – chỉ xem, không Thêm / Sửa tay: Sản lượng (ghi khi kết thúc mẻ nấu),
+  // Xếp hàng lên xe (DeliveryRoute/Load), Xác nhận đã giao (màn Theo dõi chuyến / bot), Liên kết tài khoản chat (mã liên kết D-62 + nút Liên kết / Gỡ ở modules/ghep.js).
+  UI.VIEW_ONLY = new Set(['ProductionOutput', 'DeliveryLoading', 'ProofOfDeliverie', 'UserExternalIdentity']);
+  UI.viewOnly = t => Store.isLive && UI.VIEW_ONLY.has(t);
+  UI.readOnly = t => Store.isLive && (UI.APPEND_ONLY.has(t) || UI.VIEW_ONLY.has(t));
   UI.detail = (t, id, opt = {}) => {
     const row = Store.get(t, id); if (!row) { UI.toast('Không tìm thấy bản ghi', 'err'); return; }
     const sc = Store.statusCol(t);

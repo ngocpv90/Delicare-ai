@@ -97,6 +97,27 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>MENU-4.5: xếp thứ tự tiêu chí trong màn Bộ kiểm tra ATTP – ItemIds = danh sách Id theo thứ tự mới, cách nhau dấu phẩy (quyền Sửa qc-checklist).</summary>
+        [HttpPost("Reorder")]
+        public async Task<IActionResult> Reorder([FromForm] Guid checklistId, [FromForm] string? itemIds)
+        {
+            try
+            {
+                var ids = (itemIds ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(s => Guid.TryParse(s, out var g) ? g : Guid.Empty).ToList();
+                if (ids.Any(g => g == Guid.Empty))
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Reorder(checklistId, ids));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Reorder: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetAllData")]
         public IActionResult GetAllData()
         {

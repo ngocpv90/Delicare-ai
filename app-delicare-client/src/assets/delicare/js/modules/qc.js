@@ -379,4 +379,41 @@
       td.querySelectorAll('[data-to]').forEach(b => b.onclick = () => issueTransit(r, b.dataset.to));
     });
   });
+  // ---------- MENU-4.5 (D-75 f1): Bộ kiểm tra ATTP – tab Tiêu chí (thêm / sửa / xóa / xếp thứ tự; quyền qc-checklist) ----------
+  // Mục menu "Tiêu chí kiểm tra" đã ẩn – tiêu chí chỉ nhập ở đây. Máy chủ chặn sửa nội dung / xóa tiêu chí đã có kết quả kiểm tra (bảng không có cột ngừng dùng).
+  const CK_T = 'FoodSafetyChecklistItem';
+  function checklistItemsPane(ckId, pane) {
+    const perm = Store.perm('qc-checklist'), canEdit = perm.edit !== false;
+    const used = new Set(Store.rows('FoodSafetyChecklistResult').map(r => r.ChecklistItemId));
+    const items = () => Store.by(CK_T, 'ChecklistId', ckId).sort((a, b) => (a.SortOrder || 0) - (b.SortOrder || 0));
+    const save = (row) => UI.form(CK_T, row, { title: row ? 'Sửa tiêu chí' : 'Thêm tiêu chí', defaults: { ChecklistId: ckId }, onSave: () => draw(),
+      fields: ['ItemName', 'ItemCode', 'Description', 'ExpectedValue', 'UnitCode', 'IsCritical', 'IsRequired', 'SortOrder'], optional: ['ItemCode', 'SortOrder'] });
+    const reorder = ids => Store.act(CK_T + '/Reorder', { form: { ChecklistId: ckId, ItemIds: ids.join(',') }, tables: [CK_T] }).then(r => { if (r.ok) { UI.toast('Đã lưu thứ tự tiêu chí', 'ok'); draw(); } });
+    function draw() {
+      if (!pane.isConnected) return;
+      const list = items();
+      pane.innerHTML = `<div class="spread mb"><div class="small muted">${list.length} tiêu chí · tiêu chí đã có kết quả kiểm tra chỉ đổi được thứ tự / mô tả, không xóa được.</div>${canEdit ? `<button class="btn sm primary" data-ck-add>${I('plus')} Thêm tiêu chí</button>` : ''}</div>
+        ${list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th class="num">#</th><th>Mã</th><th>Tiêu chí</th><th>Giá trị chuẩn</th><th>Trọng yếu</th><th>Bắt buộc</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${list.map((x, i) => `<tr data-ck="${x.Id}"><td class="num">${i + 1}</td><td>${esc(x.ItemCode || '')}</td><td><b>${esc(x.ItemName || '')}</b>${x.Description ? `<span class="sub">${esc(x.Description)}</span>` : ''}${used.has(x.Id) ? '<span class="sub muted">Đã có kết quả kiểm tra</span>' : ''}</td><td>${esc(x.ExpectedValue || '')}${x.UnitCode ? ' ' + esc(x.UnitCode) : ''}</td><td>${x.IsCritical ? 'Có' : ''}</td><td>${x.IsRequired === false || x.IsRequired === 0 ? '' : 'Có'}</td>${canEdit ? `<td class="actions" style="white-space:nowrap"><button class="btn xs" data-up ${i === 0 ? 'disabled' : ''} title="Lên">↑</button> <button class="btn xs" data-down ${i === list.length - 1 ? 'disabled' : ''} title="Xuống">↓</button> <button class="btn xs" data-edit>${I('edit')}</button> ${used.has(x.Id) ? '' : `<button class="btn xs danger" data-del>Xóa</button>`}</td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="empty">Bộ kiểm tra chưa có tiêu chí</div>'}`;
+      const add = pane.querySelector('[data-ck-add]'); if (add) add.onclick = () => save(null);
+      pane.querySelectorAll('tr[data-ck]').forEach(tr => {
+        const id = tr.dataset.ck, ids = list.map(x => x.Id), i = ids.indexOf(id);
+        const on = (sel, fn) => { const b = tr.querySelector(sel); if (b) b.onclick = fn; };
+        on('[data-edit]', () => save(Store.get(CK_T, id)));
+        on('[data-up]', () => { ids.splice(i - 1, 0, ids.splice(i, 1)[0]); reorder(ids); });
+        on('[data-down]', () => { ids.splice(i + 1, 0, ids.splice(i, 1)[0]); reorder(ids); });
+        on('[data-del]', () => UI.confirm(`Xóa tiêu chí <b>${esc((Store.get(CK_T, id) || {}).ItemName || '')}</b>?`, () => { Store.remove(CK_T, id); setTimeout(draw, 300); }, { danger: true, ok: 'Xóa' }));
+      });
+    }
+    Store.ensure(CK_T).then(draw);
+    return '<div class="muted small">Đang tải tiêu chí…</div>';
+  }
+  const baseOpenQc = APP.openDetail;
+  APP.openDetail = (t, id, f, opt) => t === 'FoodSafetyChecklist'
+    ? UI.detail(t, id, Object.assign({ screen: 'qc-checklist', onChange: () => APP.refresh(), tabs: [{ label: 'Tiêu chí', html: p => checklistItemsPane(id, p) }] }, opt || {}))
+    : baseOpenQc(t, id, f, opt);
+  APP.register('qc-checklist', (el, f) => {
+    APP.genericList(el, f, { noTransit: true, cols: [{ k: 'Code', label: 'Mã' }, { k: 'Name', label: 'Tên bộ kiểm tra' }, { k: 'AreaCode', label: 'Khu vực' }, { k: 'FrequencyCode', label: 'Tần suất' },
+      { k: 'n', label: 'Số tiêu chí', col: false, num: true, render: r => Store.by(CK_T, 'ChecklistId', r.Id).length, sortv: r => Store.by(CK_T, 'ChecklistId', r.Id).length }, { k: 'Status', label: 'Trạng thái' }],
+      top: Store.isLive ? `<div class="notice info">${I('clipboard')}<div><b>Tiêu chí của từng bộ</b>Mở bộ kiểm tra → tab <b>Tiêu chí</b> để thêm, sửa, xếp thứ tự tiêu chí.</div></div>` : '' });
+  });
 })();

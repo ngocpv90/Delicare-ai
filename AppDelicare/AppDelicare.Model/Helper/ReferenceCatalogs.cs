@@ -35,6 +35,30 @@ namespace AppDelicare.Model.Helper
             ["Menu.MenuType"] = ("MenuType", "Loại thực đơn"),
         };
 
+        /// <summary>MENU-4.6 (D-75 f2): tên tiếng Việt của danh mục – màn chỉ xem "Danh mục dùng chung" (adm-reference). Danh mục mới chưa có tên ở đây → lấy nhãn cột đầu tiên, rồi tới khóa.</summary>
+        public static readonly IReadOnlyDictionary<string, string> ListTitles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["MealType"] = "Loại suất (bữa ăn)",
+            ["LeaveType"] = "Loại nghỉ",
+            ["AttendanceSource"] = "Hình thức chấm công",
+            ["WarehouseType"] = "Loại kho",
+            ["StorageType"] = "Kiểu bảo quản",
+            ["WasteType"] = "Loại hủy suất ăn",
+            ["TemperatureMeasurementType"] = "Loại đo nhiệt độ",
+            ["PackagingType"] = "Loại khay / hộp",
+            ["PackagingTransactionType"] = "Loại phát sinh khay / hộp",
+            ["ReturnInspectionResult"] = "Kết quả kiểm tra khay hộp thu hồi",
+            ["SupplierType"] = "Loại nhà cung cấp",
+            ["ComplaintChannel"] = "Kênh tiếp nhận phản ánh",
+            ["ComplaintCategory"] = "Phân loại phản ánh",
+            ["MenuType"] = "Loại thực đơn",
+            ["ApprovalOverdueGroups"] = "Nhóm nhận cảnh báo duyệt quá hạn",
+        };
+
+        public static string TitleOf(string list)
+            => ListTitles.TryGetValue(list, out var t) ? t
+                : Columns.Where(c => string.Equals(c.Value.List, list, StringComparison.OrdinalIgnoreCase)).Select(c => c.Value.Label).FirstOrDefault() ?? list;
+
         /// <summary>Các cột (Thực thể.Cột) dùng danh mục <paramref name="list"/>.</summary>
         public static List<string> ColumnsOf(string list)
             => [.. Columns.Where(c => string.Equals(c.Value.List, list, StringComparison.OrdinalIgnoreCase)).Select(c => c.Key).OrderBy(k => k)];

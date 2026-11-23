@@ -4,6 +4,8 @@ namespace AppDelicare.Model.SearchRequest
 {
 	public class PurchaseOrderSearchRequest : BaseSearchRequest
 	{
+		/// <summary>MENU-4.7: chỉ chứng từ có dòng chứa nguyên liệu này (kèm số lượng).</summary>
+		public Guid? IngredientId { get; set; }
 		public Guid? SupplierId { get; set; }
 		public Guid? PurchaseRequestId { get; set; }
 		public string? PurchaseOrderNumber { get; set; }

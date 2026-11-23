@@ -707,5 +707,20 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (a) | Quy tắc đặt tên (áp cho mọi màn mới) | Ngắn, từ nghiệp vụ quen thuộc; không tiếng Anh / thuật ngữ kỹ thuật (ledger, bin, MOQ, NCR, POD, KPI, ObjectMenu, 360°…); màn bảng con = "Chi tiết …"; mục Phê duyệt = tên màn gốc; "Khiếu nại" → "Phản ánh" (khớp hướng dẫn sử dụng). |
 | (b) | Tên nhóm | Điều hành · Kinh doanh · Thực đơn & Món ăn · Mua hàng & Kho · Sản xuất & Giá thành · Chất lượng & ATTP · Đóng gói & Giao hàng · Nhân sự · Tích hợp & Chỉ số · Quản trị hệ thống · Phê duyệt. |
 | (c) | Phạm vi đổi | Tên menu + tiêu đề màn hình + tài liệu cùng lúc; yêu cầu duyệt mới mang tên mới, yêu cầu cũ giữ tên cũ. Script không ghi đè tên admin đã tự sửa. |
+| (d) | Bỏ mục "Loại suất & đơn giá" (`#/crm-contract-meal`) – anh chốt 2026-11-23 | Ẩn khỏi menu (`IsActive = 0`, không xóa). Loại suất & đơn giá chỉ nhập trong form hợp đồng và xem ở tab chi tiết hợp đồng; quyền API loại suất theo quyền màn Hợp đồng. ROADMAP **MENU-3** → gộp vào **MENU-4**. |
+| (e) | Dọn menu (anh chốt 2026-11-23) | Ẩn 17 bảng con (nhập / xem ở màn cha), 3 màn chưa làm (Phiếu chuyển kho, Phiếu điều chỉnh tồn, Danh mục dùng chung), mục trùng "Hộp phê duyệt" ở nhóm Nhân sự, "Thông tin cá nhân"; 4 màn sinh từ nghiệp vụ chuyển chỉ xem (Sản lượng, Xếp hàng lên xe, Xác nhận đã giao, Liên kết tài khoản chat); màn kỹ thuật chỉ nhóm Quản trị. **Giữ** nghiệp vụ điều chỉnh tồn: kiểm kê thực tế so với hệ thống (lệch > 2 % duyệt 2 cấp, ghi sổ = bút toán điều chỉnh) + nút Điều chỉnh tồn tay (duyệt 1 cấp) – anh xác nhận cần. Quy tắc cho màn mới: bảng con không lên menu; màn chưa có API không lên menu. ROADMAP **MENU-4**. |
+| (f) | Bổ sung trước khi ẩn (anh chốt 2026-11-23) | (1) Tiêu chí kiểm tra ATTP: thêm / sửa / xếp thứ tự trong màn Bộ kiểm tra ATTP rồi mới ẩn mục riêng. (2) Danh mục dùng chung: **không ẩn**, làm màn **chỉ xem** giá trị thật từ máy chủ; thêm giá trị vẫn qua quản trị hệ thống (người dùng tự sửa = GAP-CFG-01, chờ duyệt). (3) Lọc theo nguyên liệu ở danh sách Đề nghị mua, Đơn mua, Phiếu nhập, Phiếu xuất thay cho tra cứu chéo ở bảng con. ROADMAP MENU-4.5 → 4.7. |
 
 **Đã làm 2026-11-22 (MENU-2 DONE – PROGRESS).** Ghi chú: bảng đổi tên nằm trong bộ sinh seed (`Seeds.MenuRenames`), catalog mockup giữ tên cũ; tên bước duyệt không lưu trong yêu cầu duyệt mà đọc theo tên menu hiện tại – dữ liệu yêu cầu cũ không bị sửa, nhưng màn xem hiện tên mới. Quyền UserRole trước / sau trên DB dev khớp 100% (2.418 dòng).
+
+## D-76 – Dự báo suất ăn: hệ thống tự gợi ý, Kinh doanh sửa rồi công bố (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, chọn phương án b): bỏ nhập tay từ đầu; hệ thống tính dự báo từ dữ liệu thực tế, người sửa chỗ cần rồi công bố. Việc làm: ROADMAP **FC-1**. Không thêm bảng / cột.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Cách tính | Trung bình **suất thực nhận cùng thứ của 4 tuần gần nhất** (`BusinessRules:ForecastLookbackWeeks` = 4), làm tròn lên; nguồn: đối soát → POD → đơn đã chốt; bỏ tuần không có đơn; < 2 tuần dữ liệu → không gợi ý. Theo khách / điểm giao / ngày / ca / loại suất (buổi), không theo lựa chọn. |
+| (b) | Quy trình | Bấm **Tạo dự báo gợi ý** (1–2 tuần tới) → bản **Nháp** → Kinh doanh sửa (nghỉ lễ, tăng ca, khách mới nhập tay) → **Công bố**. Không ghi đè Nháp người đã sửa nếu không xác nhận; không đụng bản đã công bố. |
+| (c) | Dùng vào đâu | Như cũ: số gợi ý khi tạo đơn + cảnh báo lệch > 10 %. **Thêm:** "Nhu cầu nguyên liệu dự kiến N ngày tới" (N = `ShortageForecastDays` = 3) – ngày có đăng ký / đơn xác nhận dùng số đó, chưa có thì dùng dự báo đã công bố → thấy thiếu sớm, tạo đề nghị mua nháp khi bấm. Kế hoạch SX / MRP chính thức vẫn chỉ theo đơn Đã chốt. |
+| (d) | Theo dõi | Chỉ số **sai số dự báo %** (dự báo đã công bố so suất thực nhận) theo khách / tuần. |
+| (e) | Không làm | Mô hình thống kê phức tạp (mùa vụ, hồi quy); job tự chạy (D-45 – bấm tay, Job gọi lại sau); dự báo theo lựa chọn. |

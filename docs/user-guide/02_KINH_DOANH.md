@@ -69,6 +69,8 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 
 ### 4.2 Người liên hệ, điểm giao – `crm-contact`, `crm-location`
 Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa chỉ, **giờ nhận từ – đến**, người nhận + số điện thoại, tọa độ (để chấm "đã đến" trên bot).
+- **Người nhận** (khách doanh nghiệp): **chọn trong danh sách người liên hệ của khách** (người liên hệ đang hoạt động, người liên hệ chính xếp đầu); chọn xong SĐT tự điền theo người liên hệ. Chưa có người cần chọn → thêm ở **Người liên hệ** trước. Điểm giao cũ có người nhận ngoài danh sách hiện "(giá trị cũ)" – vẫn sửa được trường khác; đổi người nhận thì phải chọn trong danh sách. Nhập Excel cũng kiểm như vậy. Khách cá nhân: nhập tự do.
+- *Chọn người nhận trong danh sách người liên hệ của khách*; *Người nhận «…» không có trong danh sách người liên hệ của khách – thêm vào Người liên hệ trước*; *SĐT người nhận không khớp người liên hệ «…»*.
 - *Giờ giao từ phải nhỏ hơn giờ giao đến*; *Vĩ độ phải trong [-90, 90]*; *Kinh độ phải trong [-180, 180]*.
 - *Còn đơn giao chưa hoàn tất tại điểm này – không ngừng hoạt động được*.
 

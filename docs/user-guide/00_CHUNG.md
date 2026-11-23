@@ -62,7 +62,7 @@ Phần lớn màn có dạng danh sách giống nhau:
 | Tab | Nội dung |
 |---|---|
 | Thông tin | Toàn bộ trường của bản ghi (+ khối riêng của từng màn) |
-| (tab riêng) | Tùy màn: Chi tiết dòng, Loại suất & đơn giá, Hành trình (đơn hàng), Sự kiện giao (đơn giao), Nguyên liệu & an toàn (mẻ)… |
+| (tab riêng) | Tùy màn: Chi tiết dòng, Loại suất & đơn giá, Tiêu chí (bộ kiểm tra ATTP), Hành trình (đơn hàng), Sự kiện giao (đơn giao), Nguyên liệu & an toàn (mẻ)… |
 | Liên quan | Bản ghi liên quan theo nhóm (khách hàng, hợp đồng, đơn hàng, NCC, nguyên liệu, PO, lô, món, nhân viên); bấm để mở, "Xem tất cả →" để sang màn danh sách |
 | Lịch sử xử lý | Dòng thời gian: tạo, sửa, gửi duyệt, quyết định duyệt, lịch sử phản ánh, tệp đính kèm |
 

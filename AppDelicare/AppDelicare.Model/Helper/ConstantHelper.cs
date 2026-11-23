@@ -242,6 +242,14 @@
             public static readonly string OrderQuantityNegative = "Số suất không được âm";
             public static readonly string OrderLineLocationMismatch = "Mỗi đơn chỉ cho 1 điểm giao – dòng có điểm giao khác đầu đơn";
             public static readonly string OrderLineDuplicate = "Trùng dòng suất (cùng suất hợp đồng, ca và lựa chọn)";
+            public static readonly string ChecklistItemNoChecklist = "Chọn bộ kiểm tra ATTP cho tiêu chí";
+            public static readonly string ChecklistItemNameRequired = "Nhập tên tiêu chí";
+            public static readonly string ChecklistItemUsedLocked = "Tiêu chí «{0}» đã có kết quả kiểm tra – không sửa nội dung được (chỉ đổi thứ tự / mô tả). Bảng tiêu chí không có trạng thái ngừng dùng: muốn thay tiêu chí, thêm tiêu chí mới";
+            public static readonly string ChecklistItemUsedNoDelete = "Tiêu chí «{0}» đã có kết quả kiểm tra – không xóa được (bảng tiêu chí không có trạng thái ngừng dùng)";
+            public static readonly string ChecklistItemReorderInvalid = "Danh sách thứ tự phải gồm đủ các tiêu chí đang dùng của bộ kiểm tra";
+            public static readonly string LocationRecipientRequired = "Chọn người nhận trong danh sách người liên hệ của khách (thêm người liên hệ trước nếu chưa có)";
+            public static readonly string LocationRecipientNotContact = "Người nhận «{0}» không có trong danh sách người liên hệ của khách – thêm vào Người liên hệ trước (đang có: {1})";
+            public static readonly string LocationRecipientPhoneMismatch = "SĐT người nhận không khớp người liên hệ «{0}» của khách (đang có: {1})";
             public static readonly string OrderWeekDayLockedStatus = "Đơn {0} đang {1} – không sửa ở màn tuần";
             public static readonly string OrderWeekDayLockedCutoff = "Đã qua giờ chốt {0} – muốn sửa dùng «Yêu cầu thay đổi sau giờ chốt» (cần duyệt)";
             public static readonly string OrderWeekCellOutside = "Ô số suất phải thuộc tuần {0} – {1}";

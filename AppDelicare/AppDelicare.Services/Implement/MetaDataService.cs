@@ -54,6 +54,7 @@ namespace AppDelicare.Services.Implement
                     .Select(x => new ReferenceListModel
                     {
                         Name = x.Key,
+                        Title = ReferenceCatalogs.TitleOf(x.Key),
                         ListItem = x.Value.Select(v => new StatusItemModel { Code = v.Code, Label = v.Label }).ToList(),
                         // Lỗi UAT 2026-11-21: cột (Thực thể.Cột) dùng danh mục này – giao diện vẽ ô chọn cho các cột đó.
                         ListColumn = ReferenceCatalogs.ColumnsOf(x.Key),

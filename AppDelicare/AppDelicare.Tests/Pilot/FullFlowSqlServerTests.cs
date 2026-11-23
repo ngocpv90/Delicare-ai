@@ -205,7 +205,7 @@ namespace AppDelicare.Tests.Pilot
                     ("ContactPersonName", "[DEMO] Chị Liên Hệ"), ("ContactPersonPhone", "0901234567"), ("Address", "[DEMO] KCN Tân Bình"), ("PhoneNumber", "0281234567"),
                     ("BranchId", branch), ("Industry", "FACTORY"), ("Status", "Active"));
                 Guid location = await Insert<Model.Entity.CustomerDeliveryLocation>("CustomerDeliveryLocation", q => q.Where(x => x.CustomerId == customer).Select(x => x.Id).SingleAsync(),
-                    ("CustomerId", customer), ("Code", code + "CT"), ("Name", "[DEMO] Căng tin " + k), ("Address", "[DEMO] KCN Tân Bình"), ("DeliveryWindowFrom", "11:00"),
+                    ("CustomerId", customer), ("Code", code + "CT"), ("Name", "[DEMO] Căng tin " + k), ("ContactName", "[DEMO] Chị Liên Hệ"), ("Address", "[DEMO] KCN Tân Bình"), ("DeliveryWindowFrom", "11:00"),
                     ("DeliveryWindowTo", "12:00"), ("Status", "Active"));
                 Guid vehicle = await Insert<Model.Entity.Vehicle>("Vehicle", q => q.Where(x => x.LicensePlate == "[DEMO] 51C-" + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code), ("LicensePlate", "[DEMO] 51C-" + k), ("VehicleType", "TRUCK"), ("Capacity", 1200m), ("Status", "Active"));

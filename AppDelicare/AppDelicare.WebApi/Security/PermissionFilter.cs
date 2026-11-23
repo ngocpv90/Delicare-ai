@@ -67,7 +67,8 @@ namespace AppDelicare.WebApi.Security
             UserPermissions userPermissions = await permissions.GetAsync(actor.UserId, context.HttpContext.RequestAborted);
             bool allowed = required == null
                 ? userPermissions.IsAdmin
-                : permissions.IsAllowed(userPermissions, required.ScreenId, required.Action);
+                : permissions.IsAllowed(userPermissions, required.ScreenId, required.Action)
+                  || required.OrActions.Any(a => permissions.IsAllowed(userPermissions, required.ScreenId, a));
             if (!allowed)
             {
                 Log.Warning("Từ chối quyền {Action} trên {Screen} cho {Actor} ({Path})",
@@ -112,7 +113,10 @@ namespace AppDelicare.WebApi.Security
             {
                 return;
             }
+            // MENU-4.3: bảng con (không còn mục menu riêng) → quyền màn cha.
+            bool hasParent = ScreenMap.ParentByClass.TryGetValue(controller.ControllerName, out var parent);
             string screen = ControllerScreens.TryGetValue(controller.ControllerName, out var s) ? s
+                : hasParent ? parent.Screen
                 : ScreenMap.ByClass.TryGetValue(controller.ControllerName, out var mapped) ? mapped
                 : ScreenMap.FallbackScreen;
 
@@ -124,6 +128,7 @@ namespace AppDelicare.WebApi.Security
                 }
                 object filter = SelfService.Contains(action.ActionName) ? new SkipPermissionAttribute()
                     : AdminActions.Contains(action.ActionName) ? new AdminOnlyAttribute()
+                    : hasParent && parent.WriteAsEdit ? ChildPermission(screen, ActionOf(action))
                     : new PermissionAttribute(screen, ActionOf(action));
                 foreach (var selector in action.Selectors)
                 {
@@ -131,6 +136,14 @@ namespace AppDelicare.WebApi.Security
                 }
             }
         }
+
+        /// <summary>MENU-4.3: ghi dòng con = sửa chứng từ cha (Thêm dòng: Sửa hoặc Thêm; Xóa dòng: Sửa hoặc Xóa).</summary>
+        public static PermissionAttribute ChildPermission(string parentScreen, PermissionAction action) => action switch
+        {
+            PermissionAction.Add => new PermissionAttribute(parentScreen, PermissionAction.Edit) { OrActions = [PermissionAction.Add] },
+            PermissionAction.Delete => new PermissionAttribute(parentScreen, PermissionAction.Edit) { OrActions = [PermissionAction.Delete] },
+            _ => new PermissionAttribute(parentScreen, action),
+        };
 
         public static PermissionAction ActionOf(ActionModel action)
         {
