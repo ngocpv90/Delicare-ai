@@ -12,7 +12,7 @@ namespace AppDelicare.Tests.Production
     /// <summary>
     /// BE2.4 – kho & sản xuất mở rộng: giữ chỗ nguyên liệu khi phát hành / xuất (126), hàng sắp về từ PO cho MRP, hủy / đóng lệnh SX (144, 145),
     /// chênh lệch tiêu hao (135), giá thành thực tế + giá vốn suất (152–154), công đoạn theo tổ, xử lý lô hết hạn. Hôm nay (đồng hồ test) = 20/12/2026 10:00.
-    /// <para>Bộ số tính tay (giống ProductionTests): Thịt 12 kg / 100 suất, hao hụt 10% → lệnh 250 phần cần 33 kg; Rau 5 kg / 100 suất → lệnh Canh 80 phần cần 4 kg.
+    /// <para>Bộ số tính tay (giống ProductionTests): Thịt 11,88 kg tinh / 100 suất, hao hụt sơ chế 10% (÷ 0,9 – BIZ-1.1) → lệnh 250 phần cần 33 kg; Rau 5 kg / 100 suất → lệnh Canh 80 phần cần 4 kg.
     /// Lô thịt L1 HSD ngày SX+1 10 kg, L2 HSD +9 20 kg, L3 HSD +20 20 kg (FEFO L1 → L2 → L3); rau R1 10 kg; đơn giá lô 1 000 đ / kg.</para>
     /// </summary>
     public class InventoryProductionTests : IClassFixture<InMemoryApiFactory>
@@ -24,6 +24,9 @@ namespace AppDelicare.Tests.Production
         {
             _factory = factory;
             _factory.Clock.FixedNow = Today.AddHours(10);
+            _factory.Settings["BusinessRules:BatchAutoPass"] = "false"; // kiểm luồng QC / đóng gói tay (BIZ-2.7 / 2.8 tự Đạt + tự lệnh đóng gói: kiểm ở ProductionSqlServerTests / luồng SQL)
+            _factory.Settings["BusinessRules:PackingAutoGenerateOnPass"] = "false";
+            _factory.Settings["BusinessRules:ProductionAutoDraftIssueOnRelease"] = "false"; // test xuất kho tay theo mẻ (BIZ-2.5 test riêng)
         }
 
         private sealed record Scenario(DateTime Day, string Shift, Guid ShiftId, Guid Line, Guid Warehouse, Guid Kg, Guid Meat, Guid Veg, Guid DishMeat, Guid DishSoup,
@@ -51,7 +54,7 @@ namespace AppDelicare.Tests.Production
                     new Dish { Id = dishSoup, Code = "CA-" + code, Name = "Canh rau " + code, Status = "Active" });
                 db.Recipe.AddRange(
                     new Recipe { Id = Guid.NewGuid(), DishId = dishMeat, VersionNo = 1, VersionCode = "v1", Status = "Locked", LockedAt = Today.AddDays(-5), IsActive = true, StandardOutputQty = 100,
-                        SnapshotJson = $"[{{\"IngredientId\":\"{meat}\",\"Quantity\":12,\"UnitId\":\"{kg}\",\"WastePercent\":10,\"SequenceNo\":1}}]" },
+                        SnapshotJson = $"[{{\"IngredientId\":\"{meat}\",\"Quantity\":11.88,\"UnitId\":\"{kg}\",\"WastePercent\":10,\"SequenceNo\":1}}]" },
                     new Recipe { Id = Guid.NewGuid(), DishId = dishSoup, VersionNo = 1, VersionCode = "v1", Status = "Locked", LockedAt = Today.AddDays(-5), IsActive = true, StandardOutputQty = 100,
                         SnapshotJson = $"[{{\"IngredientId\":\"{veg}\",\"Quantity\":5,\"UnitId\":\"{kg}\",\"WastePercent\":0,\"SequenceNo\":1}}]" });
                 db.ProductionPlan.Add(new ProductionPlan { Id = plan, PlanNumber = "KH-" + code, PlanNo = "KH-" + code, ProductionDate = day, PlanDate = Today, Status = "Draft" });
@@ -142,7 +145,7 @@ namespace AppDelicare.Tests.Production
             var meatOrder = await OrderOfAsync(s, s.DishMeat);
             var soupOrder = await OrderOfAsync(s, s.DishSoup);
 
-            // Giữ chỗ lúc phát hành: Thịt 250 × 12 / 100 × 1,1 = 33 kg (đủ 50), Rau 80 × 5 / 100 = 4 kg.
+            // Giữ chỗ lúc phát hành: Thịt 250 × 11,88 / 100 ÷ 0,9 = 33 kg (đủ 50), Rau 80 × 5 / 100 = 4 kg.
             var reservations = await _factory.QueryAsync(db => db.MaterialReservation.AsNoTracking().Where(r => r.ProductionOrderId == meatOrder || r.ProductionOrderId == soupOrder).ToListAsync());
             reservations.Should().HaveCount(2);
             var meatRes = reservations.Single(r => r.IngredientId == s.Meat);

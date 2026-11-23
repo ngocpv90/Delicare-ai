@@ -19,7 +19,7 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ForecastService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock, IOptions<BusinessRulesOptions> rules
+    public partial class ForecastService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IClock clock, IOptions<BusinessRulesOptions> rules
         , IAuditChangeService auditChangeService) : IForecastService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -265,6 +265,8 @@ namespace AppDelicare.Services.Implement
                     .Select(g => g.OrderByDescending(f => f.VersionNo).First()).ToList();
                 var ids = published.Concat(drafts).Select(f => f.CustomerId).Distinct().ToList();
                 var names = await db.Customer.AsNoTracking().Where(c => ids.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => new { c.Code, Name = c.DisplayName ?? c.Name });
+                var draftLocationIds = drafts.Where(f => f.DeliveryLocationId != null).Select(f => f.DeliveryLocationId!.Value).Distinct().ToList();
+                var locationNames = await db.CustomerDeliveryLocation.AsNoTracking().Where(l => draftLocationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, l => l.Name ?? l.Code);
                 var model = new ForecastMatrixModel();
                 for (DateTime d = from; d <= to; d = d.AddDays(1))
                 {
@@ -282,11 +284,20 @@ namespace AppDelicare.Services.Implement
                     foreach (var g in drafts.Where(f => f.CustomerId == cid2).GroupBy(f => DayKey(f.ForecastDate)))
                     {
                         row.DraftValues[g.Key] = g.Sum(f => f.ForecastQuantity);
+                        row.Drafts[g.Key] = [.. g.Select(f => new ForecastDraftCellModel
+                        {
+                            Id = f.Id, DeliveryLocationId = f.DeliveryLocationId, DeliveryLocationName = f.DeliveryLocationId is { } l ? locationNames.GetValueOrDefault(l) : null,
+                            ShiftId = f.ShiftId, MealType = f.MealType, ForecastQuantity = f.ForecastQuantity, Note = f.Note, Suggested = SuggestedOf(f.Note), Edited = IsEditedDraft(f),
+                        }).OrderBy(x => x.DeliveryLocationName).ThenBy(x => x.MealType)];
                     }
                     row.Total = row.Values.Values.Sum();
                     model.Rows.Add(row);
                 }
                 model.GrandTotal = model.Rows.Sum(r => r.Total);
+                if (request.WithSuggestion && (to - from).TotalDays < 31)
+                {
+                    await AttachSuggestionAsync(model, request, drafts);
+                }
                 return Result<ForecastMatrixModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

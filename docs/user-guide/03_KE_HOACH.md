@@ -52,22 +52,24 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
 1. Chọn món → **Tạo phiên bản mới** → bản **Nháp** mới, chép định lượng của phiên bản mới nhất.
    - *Món đang có bản công thức nháp / chờ duyệt – hoàn tất bản đó trước*.
 2. Trên bản Nháp:
-   - Sửa **Định lượng / 100 suất** trực tiếp trong bảng (lưu ngay).
-   - **Thêm nguyên liệu**: chọn Nguyên liệu, Định lượng, ĐVT, Hao hụt %, Thứ tự, Ghi chú sơ chế → **Tạo mới**.
+   - Sửa **Định lượng tinh / 100 suất** (lượng sau chế biến) trực tiếp trong bảng (lưu ngay). Bảng hiện thêm **Sau sơ chế** = tinh ÷ (1 − hao hụt chế biến %) và **Lượng mua (trước sơ chế)** = sau sơ chế ÷ (1 − hao hụt sơ chế %) – giống file định lượng (vd. 70 g, 35 %, 5 % → 107,7 g → 113,4 g). Nhu cầu nguyên liệu, phiếu xuất và giá vốn đều tính theo lượng mua.
+   - **Thêm nguyên liệu**: chọn Nguyên liệu, Định lượng, ĐVT, **Hao hụt chế biến %**, **Hao hụt sơ chế %** (để trống = hao hụt chuẩn của nguyên liệu), Thứ tự, Ghi chú sơ chế → **Tạo mới**.
    - 🗑 trên dòng để bỏ nguyên liệu.
    - *Định lượng phải lớn hơn 0*, *Hao hụt phải trong khoảng [0, 100)*, *Chưa có quy đổi giữa 2 đơn vị này*.
 3. **Gửi duyệt** → xác nhận → **Chờ duyệt** (không sửa được định lượng tới khi có kết quả). *Công thức phải có ít nhất 1 nguyên liệu*.
 4. Người duyệt duyệt ở **Yêu cầu phê duyệt** → bản thành **Đã duyệt**; từ chối → về **Nháp**.
-5. **Khóa & áp dụng** (bản Đã duyệt, cần quyền duyệt công thức): chọn **Áp dụng từ ngày*** → **Khóa & áp dụng**. Phiên bản đang dùng chuyển **Hết dùng** từ ngày trước đó; giá thành chuẩn của món được tính lại. Sau khi khóa không sửa được.
+5. **Một lần duyệt (BIZ-2.3):** khi **Gửi duyệt** chọn **Áp dụng từ ngày*** (mặc định ngày mai). **Duyệt cấp cuối = khóa & áp dụng ngay** từ ngày đó (ngày đã qua → ngày duyệt): phiên bản đang dùng chuyển **Hết dùng** từ ngày trước đó, giá thành chuẩn của món tính lại; sau khi khóa không sửa được. Bản *Đã duyệt* chưa khóa còn sót từ trước có nút **Áp dụng** (dùng một lần để dọn).
 
 **Tính giá vốn** (mọi phiên bản): nhập **Số suất cần tính** (mặc định 100) → **Tính** → giá vốn NVL / suất, tổng, bảng từng nguyên liệu (định lượng, đơn giá NCC ưu tiên, thành tiền). Cảnh báo *"Có nguyên liệu chưa tính được chi phí – giá vốn đang thấp hơn thực tế"* = thiếu giá NCC hoặc thiếu quy đổi đơn vị.
 
 ### 4.3 Giá thành tiêu chuẩn – `cost-standard`
+**Tự tính lại khi giá NCC đổi (BIZ-3.3):** thêm / sửa / đổi ưu tiên / xóa dòng bảng giá NCC → hệ thống tự tính lại giá thành chuẩn các món có công thức khóa dùng nguyên liệu đó (thông báo khi lưu) và kiểm FC % các thực đơn Đã duyệt / Đã công bố còn hiệu lực có món này (giá bán = đơn giá suất thấp nhất trong hợp đồng hiệu lực). Vượt ngưỡng 55 % → bot 🔴 Kế hoạch + COO kèm thực đơn / lựa chọn / thứ vượt.
 - **Tính lại giá thành** (đầu trang): tính lại mọi món có công thức đang áp dụng theo giá NCC hiện hành → bản đang dùng ngừng hiệu lực, thay bằng bản mới.
 - **Tính lại** trên từng dòng Đang dùng: chỉ món đó.
 - Kết quả: "Đã tính lại giá thành chuẩn cho N món" / "Không có món nào có công thức đang áp dụng để tính lại".
 
 ### 4.4 Thực đơn tuần – `menu-menu`
+**Tự hết hiệu lực + nhắc (BIZ-3.4):** thực đơn Đã công bố qua ngày hiệu lực cuối (trống ngày đến = hiệu lực từ + 6) → tự **Hết hiệu lực** lúc 00:30. **Thứ Tư 09:00** chưa có thực đơn chung Đã công bố cho tuần sau → bot 🔴 Kế hoạch + COO. **Thứ Sáu 16:00** khách chưa gửi đăng ký suất tuần sau → bot nhắc NV kinh doanh phụ trách.
 **Xem:** chip chọn thực đơn (mã + trạng thái); thẻ Thực đơn (hiệu lực, loại), Số dòng món, Khách hàng được gán, Suất đã đặt; chip **Loại suất**; bảng **Nhóm món × T2…CN** – mỗi ô là món + giá vốn / suất; hàng **Giá vốn / suất** từng ngày + % so với giá bán (đỏ nếu vượt mục tiêu). Nhiều lựa chọn cho một loại suất hiện "Lựa chọn 1, 2…".
 
 **Lập thực đơn**

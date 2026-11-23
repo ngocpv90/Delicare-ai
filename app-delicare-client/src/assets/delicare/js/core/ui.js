@@ -282,7 +282,10 @@
       <button type="button" class="btn xs" id="flToggle">${firstLoc.open ? 'Bỏ điểm giao' : I('plus') + ' Thêm điểm giao ngay'}</button></div>
       <div class="form-grid ${firstLoc.open ? '' : 'hide'}" id="flBody">${FIRST_LOC.map(([k, l, type]) => `<div class="field ${k === 'Address' ? 'full' : ''}"><label for="fl_${k}">${l}${k === 'Name' || k === 'Address' ? ' <span class="req">*</span>' : ''}</label><input class="input" type="${type}" id="fl_${k}" value="${esc(firstLoc[k] || '')}"><span class="err hide"></span></div>`).join('')}</div></div>`;
     let fields = fieldsOf();
-    const formHtml = () => (isCustomer && !typeChosen) ? typePickHtml() : `<div id="frmErr" class="notice warn hide"></div><form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}</form>${firstLocHtml()}`;
+    // BIZ-3.6 (D-77 – A10): nhóm Điều khoản – ngưỡng thất thoát khay % lưu Customer.ExternalData.containerLossMaxPct (trống = cấu hình chung).
+    const extOf = () => { try { return JSON.parse((row && row.ExternalData) || '{}') || {}; } catch (e) { return {}; } };
+    const termsHtml = () => !isCustomer ? '' : `<div class="mt"><div class="panel-title mb">Điều khoản</div><div class="form-grid"><div class="field"><label>Ngưỡng thất thoát khay (%)</label><input type="number" class="input" id="f_xLoss" min="0" max="100" step="0.1" value="${esc(extOf().containerLossMaxPct ?? '')}" placeholder="Theo cấu hình chung"><span class="err hide"></span><span class="small muted">Vượt ngưỡng → cảnh báo thất thoát khay của khách. Trống = theo cấu hình chung.</span></div></div></div>`;
+    const formHtml = () => (isCustomer && !typeChosen) ? typePickHtml() : `<div id="frmErr" class="notice warn hide"></div><form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}</form>${termsHtml()}${firstLocHtml()}`;
     // Chế độ thật: không hiện ghi chú kỹ thuật của mockup (tên bảng, cột SQL) – CLAUDE.md 4.4.
     const body = `${Store.isLive ? '' : `<div class="notice info">${I('database')}<div><b>Form sinh từ cấu trúc bảng <code>dbo.${t}</code></b>Trường bắt buộc (<span class="req" style="color:var(--red)">*</span>) = cột NOT NULL không có DEFAULT trong SQL. Tên cột SQL hiển thị cạnh nhãn. Cột deprecated không hiển thị.</div></div>`}<div id="frmBody">${formHtml()}</div>`;
     UI.modal({
@@ -400,6 +403,7 @@
             out[f.name] = v;
           });
           if (isCustomer) out.CustomerType = cusType;
+          if (isCustomer) { const xl = m.querySelector('#f_xLoss'); if (xl) { const n = xl.value === '' ? null : Number(xl.value); if (n !== null && !(n >= 0 && n <= 100)) { ok = false; setErr(xl, 'Từ 0 đến 100'); } else out.ExternalData = JSON.stringify(Object.assign(extOf(), { containerLossMaxPct: n })); } }
           if (isCustomer && !checkFirstLoc(true)) ok = false;
           const v2 = opt.validate && opt.validate(out); if (v2) { ok = false; showErr(v2); }
           if (!ok) { const bad = m.querySelector('.field.invalid'); bad && bad.scrollIntoView({ block: 'nearest' }); return; }

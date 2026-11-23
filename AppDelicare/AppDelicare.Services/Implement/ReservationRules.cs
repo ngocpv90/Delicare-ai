@@ -149,7 +149,7 @@ namespace AppDelicare.Services.Implement
             return unit ?? (ingredient.BaseUnitId is { } b && b != Guid.Empty ? b : ingredient.BaseUomId is { } o && o != Guid.Empty ? o : null);
         }
 
-        /// <summary>Nhu cầu nguyên liệu của cả lệnh SX theo đơn vị công thức: định lượng (ảnh chụp) × phần kế hoạch ÷ suất chuẩn × (1 + hao hụt %) – cùng công thức mẻ / MRP.</summary>
+        /// <summary>Nhu cầu nguyên liệu của cả lệnh SX theo đơn vị công thức: định lượng (ảnh chụp) × phần kế hoạch ÷ suất chuẩn → lượng mua hao hụt 2 tầng (WasteRules – BIZ-1.1) – cùng công thức mẻ / MRP.</summary>
         public static async Task<List<(Guid IngredientId, Guid RecipeUnitId, decimal Quantity)>> OrderNeedsAsync(DatabaseContext db, ProductionOrder order, BusinessRulesOptions rules, decimal? portions = null)
         {
             var lines = ProductionRules.ParseSnapshot(order.RecipeSnapshotJson);
@@ -159,8 +159,8 @@ namespace AppDelicare.Services.Implement
             var ingredientIds = lines.Select(l => l.IngredientId).Distinct().ToList();
             var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
             return [.. lines.Where(l => l.Quantity > 0).GroupBy(l => (l.IngredientId, l.UnitId))
-                .Select(g => (g.Key.IngredientId, g.Key.UnitId, g.Sum(l => l.Quantity * qty / servings
-                    * (1 + (l.WastePercent ?? ingredients.GetValueOrDefault(l.IngredientId)?.StandardWastePercent ?? 0m) / 100m))))];
+                .Select(g => (g.Key.IngredientId, g.Key.UnitId, g.Sum(l => WasteRules.Gross(l.Quantity * qty / servings,
+                    l.WastePercent ?? ingredients.GetValueOrDefault(l.IngredientId)?.StandardWastePercent, l.ExpectedWasteRate))))];
         }
 
         /// <summary>

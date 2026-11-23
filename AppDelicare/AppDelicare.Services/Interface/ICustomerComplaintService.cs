@@ -21,6 +21,8 @@ namespace AppDelicare.Services.Interface
         // T19 (Pilot P8) – phản ánh PA- cơ bản: tạo / giao xử lý / đã xử lý / đóng / từ chối / ghi chú.
         public Task<IResult<CustomerComplaintDetailModel>> Create(ComplaintCreateRequest request);
         public Task<IResult<CustomerComplaintDetailModel>> Assign(ComplaintActionRequest request);
+        /// <summary>BIZ-3.1: tạo đơn bù (Đã chốt, giá 0 khi lỗi Delicare) từ phản ánh thiếu suất / hỏng / không đạt nhiệt độ.</summary>
+        public Task<IResult<AppDelicare.Model.Model.CustomerComplaintDetailModel>> CreateCompensationOrder(AppDelicare.Model.Request.Custom.ComplaintCompensationRequest request);
         public Task<IResult<CustomerComplaintDetailModel>> Resolve(ComplaintActionRequest request);
         public Task<IResult<CustomerComplaintDetailModel>> Close(ComplaintActionRequest request);
         public Task<IResult<CustomerComplaintDetailModel>> Reject(ComplaintActionRequest request);

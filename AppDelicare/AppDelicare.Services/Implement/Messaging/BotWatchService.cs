@@ -47,7 +47,7 @@ namespace AppDelicare.Services.Implement.Messaging
             sent += await SafeAsync("NotCheckedIn", () => NotCheckedInAsync(now, o));
             sent += await SafeAsync("ComplaintSla", () => ComplaintSlaAsync(now, o));
             sent += await SafeAsync("PoLate", () => PoLateAsync(now));
-            sent += await SafeAsync("ApprovalOverdue", () => approvals.NotifyOverdueAsync(o.ApprovalOverdueEscalateHours, o.EffectiveApprovalOverdueGroups));
+            sent += await SafeAsync("ApprovalOverdue", () => approvals.NotifyOverdueAsync(o.ApprovalOverdueEscalateHours, o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));
             return Result<int>.Success(sent, ConstantHelper.Message.GetAllSuccessfully);
         }
 

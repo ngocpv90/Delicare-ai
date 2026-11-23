@@ -30,8 +30,15 @@ namespace AppDelicare.Model.Model
         public Guid LineId { get; set; }
         public Guid IngredientId { get; set; }
         public string? IngredientName { get; set; }
+        /// <summary>Định lượng tinh (sau chế biến).</summary>
         public decimal Quantity { get; set; }
         public Guid UnitId { get; set; }
+        /// <summary>BIZ-1.1: % hao hụt sơ chế (dòng, trống = theo nguyên liệu) / % hao hụt chế biến.</summary>
+        public decimal? PrepWastePercent { get; set; }
+        public decimal? CookWastePercent { get; set; }
+        /// <summary>BIZ-1.1: lượng sau sơ chế = tinh ÷ (1 − % chế biến); lượng mua (trước sơ chế) = sau sơ chế ÷ (1 − % sơ chế) – giá vốn tính trên lượng mua.</summary>
+        public decimal QuantityAfterPrep { get; set; }
+        public decimal GrossQuantity { get; set; }
         public decimal? UnitPrice { get; set; }
         public Guid? PriceUnitId { get; set; }
         public decimal? Amount { get; set; }

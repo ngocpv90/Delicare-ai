@@ -252,6 +252,11 @@ namespace AppDelicare.Model.Model
         /// <summary>Suất nhận nhưng không phục vụ = nhận (POD) − phục vụ.</summary>
         public decimal LeftoverQuantity { get; set; }
         public string? BillingBasis { get; set; }
+        /// <summary>BIZ-1.4: tên kiểu tính tiền; suất trả lại / hủy do lỗi Delicare + lý do.</summary>
+        public string? BillingBasisName { get; set; }
+        public decimal? DelicareFaultQuantity { get; set; }
+        public string? FaultReason { get; set; }
+        public string? FaultReasonName { get; set; }
         public decimal BillingQuantity { get; set; }
         public List<ProofOfDelivery> ListPod { get; set; } = [];
         public List<string> AllowedActions { get; set; } = [];

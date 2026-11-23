@@ -42,6 +42,7 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 ## 4. Thao tác từng bước
 
 ### 4.1 Khách hàng 360° – `crm-customer`
+**Điều khoản (BIZ-3.6):** form khách hàng có ô **Ngưỡng thất thoát khay (%)** – trống = theo cấu hình chung (3 %); vượt ngưỡng → cảnh báo thất thoát khay và tính phí trên bảng kê (nếu có phí / khay). *Cách tính tiền theo từng hợp đồng* chưa có (GAP-BIZ-01 – cần anh duyệt chỗ lưu).
 - **Thêm khách hàng (D-63, UI-5):**
   1. Bấm **Tạo mới** → form mở ra với 2 nút lớn **Doanh nghiệp** / **Cá nhân** (chưa chọn sẵn). Chọn loại → hiện các ô của loại đó. Trước khi lưu vẫn đổi loại được ở ô *Loại khách hàng*, dữ liệu đã nhập được giữ.
   2. Nhập các ô (bảng dưới). *Doanh nghiệp*: gõ **Tên doanh nghiệp** → **Tên giao dịch** tự điền giống vậy khi ô này còn trống (sửa lại được).
@@ -92,7 +93,11 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 **Quét hợp đồng hết hạn:** nút đầu trang → hệ thống liệt kê hợp đồng Hiệu lực đã quá ngày hết hiệu lực → **Chuyển sang Hết hạn** (không hoàn tác). Job 00:30 cũng tự làm việc này.
 
 ### 4.4 Dự báo – `crm-forecast`
-**Xem ma trận:** chọn **Từ – đến** (tối đa 62 ngày) → bảng khách × ngày. Số chính = đã công bố; chữ nhỏ "nháp N" = đã nhập chưa công bố.
+**Xem ma trận:** chọn **Từ – đến** (tối đa 62 ngày) → bảng khách × ngày. Số đậm = đã công bố; ô nhập = bản **Nháp** – **sửa trực tiếp** (gõ số rồi Enter / rời ô); ngày có nhiều dòng Nháp (nhiều điểm giao / loại suất) hiện nút "nháp N" → bấm để sửa từng dòng. Khoảng ≤ 31 ngày: chữ nhỏ dưới ô = **TB** (trung bình suất thực nhận cùng thứ 4 tuần gần nhất) + **tuần trước**; rê chuột xem từng tuần; dấu **•** cam = đã sửa khác số gợi ý; ô **xám "Thiếu dữ liệu"** = dưới 2 tuần có đơn → nhập tay.
+
+**Tạo dự báo gợi ý (FC-1, D-76):** **Tạo dự báo gợi ý** → chọn Từ – Đến (tối đa 14 ngày, mặc định thứ Hai tuần sau → Chủ nhật tuần kế tiếp), Khách hàng (trống = mọi khách có hợp đồng hiệu lực) → **Tạo gợi ý**. Hệ thống tính cho từng khách × điểm giao (đang hoạt động) × loại suất trong hợp đồng × ngày: **trung bình suất thực nhận cùng thứ trong 4 tuần gần nhất, làm tròn lên** (thực nhận = suất tính tiền trong đối soát → suất khách nhận khi bàn giao → số đặt đã chốt). Tuần khách nghỉ (không có đơn) không tính. Kết quả ghi thành bản **Nháp**; bản Nháp người đã sửa / nhập tay được giữ – hệ thống hỏi **Ghi đè bản nháp?**. Không đụng bản đã công bố. Kiểm tra, sửa vài ô rồi **Công bố** như cũ.
+
+**Độ chính xác dự báo – 4 tuần qua** (khối dưới ma trận): thẻ **Sai số dự báo** (Σ |dự báo − thực nhận| / Σ thực nhận), **Lệch chung** (dương = dự báo cao), **Khách sai số > 10%**; bảng theo khách (rê chuột xem từng tuần).
 
 **Nhập dự báo**
 1. **Nhập dự báo** (cần quyền Nhập).
@@ -109,7 +114,7 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 - **Dạng Kanban** (mặc định): 8 cột theo trạng thái, mỗi thẻ = số đơn, khách, điểm giao, ngày, số suất. **Dạng bảng**: lọc theo trạng thái.
 
 **Tạo đơn**
-1. **Tạo đơn hàng** → chọn **Khách hàng***, **Ngày ăn*** (mặc định hôm nay + 4).
+1. **Tạo đơn hàng** → chọn **Khách hàng***, **Ngày ăn*** (mặc định **ngày mai** – BIZ-2.1). Cột **Ca** chỉ hiện khi loại suất có nhiều ca (ca tự gán theo loại suất).
 2. Hệ thống tải mẫu: hợp đồng hiệu lực, **hạn chốt đơn**, mỗi **điểm giao** một bảng: Loại suất, Ca, Đơn giá, Dự báo, **Số lượng** (điền sẵn = dự báo).
    - Buổi có **nhiều lựa chọn** (vd Sáng LC1 / LC2 / LC3): mỗi lựa chọn 1 hàng – *Lựa chọn N* + món trong set + ô **Số lượng** riêng (dự báo ghi ở hàng đầu, là của cả buổi). Buổi 1 lựa chọn: 1 ô như cũ, món trong set hiện dưới tên suất.
    - Điểm giao đã có đơn cho ngày này → báo *"Điểm giao này đã có đơn … – mở đơn đó để sửa số lượng"*.
@@ -124,12 +129,11 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 | Nút | Khi nào | Kết quả |
 |---|---|---|
 | **Lưu số lượng** | Nháp / Đã gửi / Đã xác nhận, trước giờ chốt, không có yêu cầu duyệt đang chờ | Cập nhật số suất, tính lại tiền |
-| **Gửi đơn (Submitted)** | Nháp, trước giờ chốt | → Đã gửi (đơn phải có ít nhất 1 dòng có Ca + Loại suất) |
-| **Xác nhận (Confirmed)** | Đã gửi, trước giờ chốt | Hộp xác nhận hiện % lệch so với dự báo → Đã xác nhận |
+| **Xác nhận** | Nháp hoặc Đã gửi, trước giờ chốt | Hộp xác nhận hiện % lệch so với dự báo → **Đã xác nhận** (BIZ-2.1: đơn nhân viên nhập **không còn bước Gửi**; *Đã gửi* chỉ dùng cho đơn khách tự đăng ký) |
 | **Chốt số lượng (Locked)** | Đã xác nhận | → Đã chốt (không cần đợi job 20:00) |
 | **Hủy đơn** | Nháp / Đã gửi (mọi lúc); Đã xác nhận (trước giờ chốt) | Bắt buộc **Lý do hủy** → Hủy |
 
-- **Lệch suất lớn:** sửa số lượng của đơn **Đã xác nhận** mà lệch > 30% → hệ thống **không ghi ngay** mà gửi duyệt *"Số suất lệch …% (> 30%) … đã gửi duyệt …, số mới chỉ ghi khi được duyệt"*.
+- **Lệch suất lớn (BIZ-2.1):** trước giờ chốt sửa số **ghi ngay, không đi duyệt**. Tổng suất lệch > 30% so với **trung bình 4 tuần cùng thứ của điểm giao** → chỉ **cảnh báo** + ghi vào ghi chú đơn `[LECH_TB_4_TUAN]`. Sau giờ chốt vẫn phải gửi *Yêu cầu sửa sau chốt* (người duyệt: Trưởng KD – nhóm SAL-CON – hoặc COO).
 - Tab **Hành trình**: các chặng đơn → kế hoạch → sản xuất → đóng gói → giao → đối soát → phản ánh, kèm chứng từ từng chặng.
 
 - **Chốt đơn theo ngày** (đầu màn `crm-order`, cần quyền Sửa): chọn ngày ăn → **Chốt đơn** → xác nhận → khóa mọi đơn **Đã xác nhận** của ngày (chỉ khi đã tới giờ chốt 20:00 hôm trước; bình thường job 20:00 tự chốt). Màn báo số đơn đã chốt và số đơn còn chưa xác nhận / đang chờ duyệt.
@@ -154,16 +158,22 @@ Dùng khi khách đăng ký **số suất theo từng lựa chọn cho cả tu�
 - **Kho / bếp nhận đúng số**: sau chốt, kế hoạch sản xuất và nhu cầu nguyên liệu tính **số suất lựa chọn × món trong set** (vd 2.000 suất LC1 → 2.000 phần mỗi món của LC1; món 2 cái / suất như bánh mì → 4.000 cái) – không còn chia đều + 15%.
 
 ### 4.6 Thay đổi đơn sau giờ chốt
-- Trên web: sau giờ chốt (20:00 D-1), ngăn chi tiết đơn có nút **Yêu cầu sửa sau chốt** (chỉ hiện khi đã quá giờ chốt): nhập số suất mới từng dòng + **Lý do*** → **Gửi yêu cầu** → yêu cầu duyệt ORDER_CHANGE_AFTER_CUTOFF (số `XN-…`) chờ CEO duyệt; duyệt xong số lượng mới mới được ghi.
-- Cách làm hiện có:
-  - **Thêm đơn mới** sau giờ chốt: dùng **Tạo đơn hàng** + lý do (mục 4.5 bước 4).
-  - **Sửa số suất** đơn đã chốt: báo Ban điều hành / IT (chờ bổ sung nút).
-  - **Đổi món**: bộ phận Kế hoạch tạo **Yêu cầu đổi món** (`03_KE_HOACH.md`).
+- **Sửa số suất** sau giờ chốt (20:00 D-1) – kể cả đơn **Đã chốt**: ngăn chi tiết đơn có nút **Yêu cầu sửa sau chốt** (chỉ hiện khi đã quá giờ chốt): nhập số suất mới từng dòng + **Lý do*** → **Gửi yêu cầu** → yêu cầu duyệt ORDER_CHANGE_AFTER_CUTOFF (số `XN-…`) chờ **Trưởng KD (nhóm SAL-CON) hoặc COO** duyệt (BIZ-2.1); duyệt xong số lượng mới được ghi, đơn → Đã chốt.
+- **Thêm đơn mới** sau giờ chốt: dùng **Tạo đơn hàng** + lý do (mục 4.5 bước 4).
+- **Đổi món**: bộ phận Kế hoạch tạo **Yêu cầu đổi món** (`03_KE_HOACH.md`).
+- Trước giờ chốt không cần duyệt: sửa số trực tiếp (lệch > 30 % so trung bình 4 tuần chỉ cảnh báo – mục 4.5).
 
 ### 4.7 Chính sách giá – `crm-price-policy`
 - Danh sách chính sách giá theo khách / hợp đồng / loại suất / thời gian hiệu lực (thêm / sửa bằng form chung).
 - **Tra đơn giá áp dụng**: chọn **Khách hàng***, Hợp đồng, Loại suất (trống = mọi loại), Ngày áp dụng → **Tra giá** → đơn giá + nguồn (*Chính sách giá theo hợp đồng* → *theo khách hàng* → *Đơn giá loại suất trong hợp đồng*).
 - Lỗi: *Chồng thời gian hiệu lực với chính sách giá khác…*, *Đơn giá phải lớn hơn 0*, *Không tìm thấy đơn giá áp dụng…*.
+
+### 4.7b Bảng kê thanh toán – `crm-billing` (BIZ-3.2)
+Quyền: Kinh doanh + Kế toán (xem / xuất / in). Chọn **Khách hàng***, Hợp đồng (trống = tất cả), **Từ – Đến** (mặc định tháng trước, tối đa 3 tháng) → **Lập bảng kê**.
+- Chỉ đơn có **đối soát đã chốt**: theo ngày × buổi – **suất tính tiền** (số khách nhận − lỗi Delicare, BIZ-1.4), cột suất lỗi (đã trừ), **đơn giá cố định lúc chốt** (BIZ-1.5), thành tiền.
+- **Phí thất thoát khay**: số khay mất vượt ngưỡng của khách × phí / khay theo loại (cấu hình `ContainerLossFee` – hiện chưa đặt = 0 đ).
+- Cộng chưa VAT → **VAT 8 %** (`SalesVatPct`) → **Tổng thanh toán**. Đơn chưa chốt đối soát liệt kê riêng "Chờ đối soát"; đơn bù do lỗi Delicare (giá 0) không tính.
+- **Xuất Excel** (mẫu biên bản xác nhận khối lượng) / **In PDF** – có ô ký khách hàng, kế toán, đại diện Delicare. Hóa đơn / công nợ làm ở phần mềm kế toán.
 
 ### 4.8 Đối soát suất – `crm-reconciliation`
 Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn đặt **theo lựa chọn**: hộp **Ghi suất phục vụ** có bảng *Suất phục vụ theo lựa chọn* (từng loại suất × lựa chọn); ô *Suất phục vụ thực tế* tự cộng; tiền = Σ suất phục vụ × giá buổi. Phiếu giao hàng in thêm *LC n (món)* ở cột Bữa.
@@ -174,7 +184,7 @@ Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn �
 |---|---|---|
 | Hợp đồng | Nháp → Chờ duyệt → Hiệu lực → Hết hạn (job 00:30 / Quét) / Chấm dứt (Thanh lý) | KD gửi duyệt, Ban điều hành duyệt |
 | Dự báo | Nháp → Đã công bố → Bị thay thế | KD |
-| Đơn hàng | Nháp → Đã gửi → Đã xác nhận → Đã chốt → Đang sản xuất → Đã giao → Đã đối soát; Hủy | KD tới Đã chốt (hoặc job 20:00); Đang sản xuất khi phát hành kế hoạch SX; Đã giao khi bàn giao xong; Đã đối soát khi đối soát |
+| Đơn hàng | Nháp → (Đã gửi – đơn khách tự đăng ký) → Đã xác nhận → Đã chốt → Đang sản xuất → Đã giao → Đã đối soát; Hủy | KD tới Đã chốt (hoặc job 20:00); Đang sản xuất khi phát hành kế hoạch SX; Đã giao khi bàn giao xong; Đã đối soát khi đối soát |
 | Đối soát | Mở → Khớp / Chênh lệch → Đóng | KD / Điểm phát |
 
 ## 6. Lỗi / cảnh báo thường gặp

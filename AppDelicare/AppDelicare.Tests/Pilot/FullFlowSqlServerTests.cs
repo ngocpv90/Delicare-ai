@@ -194,9 +194,9 @@ namespace AppDelicare.Tests.Pilot
                 {
                     Guid recipe = Id((await Post("/api/Recipe/CreateVersion", ("DishId", dish))).Ok());
                     (await Post("/api/RecipeLine/Insert", ("RecipeId", recipe), ("IngredientId", ingredient), ("Quantity", qty), ("UnitId", kg), ("SequenceNo", 1))).Ok();
-                    (await Post("/api/Recipe/Submit", ("id", recipe))).Ok();
+                    // BIZ-2.3: chọn ngày áp dụng khi gửi – duyệt = khóa & áp dụng.
+                    (await Post("/api/Recipe/Submit", ("id", recipe), ("effectiveFrom", today))).Ok();
                     (await Post("/api/Recipe/Approve", ("Id", recipe), ("Note", "[DEMO]"))).Ok();
-                    (await Post("/api/Recipe/Lock", ("Id", recipe), ("EffectiveFrom", today))).Ok();
                 }
                 Guid branch = await db.OrganizationUnit.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => x.Id).FirstAsync();
                 Guid customer = await Insert<Model.Entity.Customer>("Customer", q => q.Where(x => x.LegalName == "[DEMO] Khách toàn luồng " + k).Select(x => x.Id).SingleAsync(),
@@ -291,8 +291,8 @@ namespace AppDelicare.Tests.Pilot
                 var poDkDetail = (await Get($"/api/PurchaseOrder/GetDetail?id={poDk}")).Ok();
                 poDkDetail.GetProperty("purchaseOrder").GetProperty("totalAmount").GetDecimal().Should().Be(1_000_000m);
                 poDkDetail.GetProperty("needsDirectorApproval").GetBoolean().Should().BeFalse();
-                (await Post("/api/PurchaseOrder/Submit", ("Id", poDk), ("Note", "[DEMO]"))).Ok();
-                (await Post("/api/PurchaseOrder/Approve", ("Id", poDk), ("Note", "[DEMO]"))).Ok();
+                // BIZ-2.2: PO đúng đề nghị (NCC gợi ý, giá bảng giá, < 50 triệu) → hệ thống tự duyệt.
+                poDkDetail.GetProperty("purchaseOrder").GetProperty("status").GetString().Should().Be("Approved");
                 (await Post("/api/PurchaseOrder/Send", ("Id", poDk))).Ok();
 
                 // ===== 5. MRP: bò 200 (bị chặn 80, mua 200); gạo 120 − hàng sắp về 50 = mua 70
@@ -356,7 +356,8 @@ namespace AppDelicare.Tests.Pilot
                         new { goodsReceiptLineId = grRice, result = "DAT", appearance = "Khô", packaging = "Nguyên" },
                     },
                 })).Ok();
-                (await Post("/api/GoodsReceipt/Post", ("Id", grId), ("Note", "[DEMO] ghi sổ"))).Ok();
+                // BIZ-2.6: QC đạt → hệ thống tự ghi sổ.
+                (await Get($"/api/GoodsReceipt/GetDetail?id={grId}")).Ok().GetProperty("goodsReceipt").GetProperty("status").GetString().Should().Be("Posted");
                 poDkDetail = (await Get($"/api/PurchaseOrder/GetDetail?id={poDk}")).Ok();
                 var grDk = (await PostJson("/api/GoodsReceipt/Create", new
                 {
@@ -368,7 +369,7 @@ namespace AppDelicare.Tests.Pilot
                     id = grDk.GetProperty("qcInspectionId").GetGuid(), note = "[DEMO]",
                     listLine = new[] { new { goodsReceiptLineId = Id(grDk.GetProperty("listLine")[0]), result = "DAT", appearance = "Khô", packaging = "Nguyên" } },
                 })).Ok();
-                (await Post("/api/GoodsReceipt/Post", ("Id", Id(grDk.GetProperty("goodsReceipt"))), ("Note", "[DEMO]"))).Ok();
+                (await Post("/api/GoodsReceipt/Post", ("Id", Id(grDk.GetProperty("goodsReceipt"))), ("Note", "[DEMO]"))).Fail("Đã ghi sổ"); // BIZ-2.6: đã tự ghi sổ
                 await GetFile($"/api/GoodsReceipt/Print?id={grId}");
                 await GetFile($"/api/GoodsReceipt/Print?id={grId}&format=docx");
                 Encoding.ASCII.GetString((await GetFile($"/api/GoodsReceipt/Print?id={grId}&format=pdf")).Take(5).ToArray())
@@ -411,12 +412,12 @@ namespace AppDelicare.Tests.Pilot
                 (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Fail("70");
                 (await Post("/api/ProductionBatch/RecordCoreTemperature", ("Id", batchBeef), ("TemperatureC", 75.5m), ("DeviceCode", "[DEMO]-NK"))).Ok();
                 (await Post("/api/ProductionBatch/RecordSampleRetained", ("Id", batchBeef), ("ActualValue", "[DEMO] tủ mẫu 150 g"))).Ok();
-                (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Fail();
-                (await Post("/api/ProductionBatch/Release", ("Id", batchBeef))).Ok();
+                // BIZ-2.7: lõi đạt + sản lượng + lưu mẫu → hệ thống tự Đạt (không bấm Đạt QC); BIZ-2.8: tự sinh lệnh đóng gói.
+                (await Get($"/api/ProductionBatch/GetDetail?id={batchBeef}")).Ok().GetProperty("batch").GetProperty("status").GetString().Should().Be("Passed");
                 (await Post("/api/ProductionBatch/StartStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
 
-                // ===== 11. Đóng gói theo lệnh (Bò kho); mẻ Cơm: FEFO 2 lô + checklist lỗi trọng yếu giữ mẻ
-                var packing = (await Post("/api/PackingOrder/GenerateFromBatch", ("ProductionBatchId", batchBeef), ("Note", "[DEMO]"))).Ok();
+                // ===== 11. Đóng gói theo lệnh (Bò kho – lệnh tự sinh khi mẻ Đạt); mẻ Cơm: FEFO 2 lô + checklist lỗi trọng yếu giữ mẻ
+                var packing = (await Get($"/api/PackingOrder/GetByBatch?id={batchBeef}")).Ok();
                 Guid packingId = Id(packing.GetProperty("listPackingOrder")[0].GetProperty("packingOrder"));
                 (await Post("/api/ProductionBatch/Pack", ("Id", batchBeef))).Fail();
                 (await Post("/api/ProductionBatch/FinishStage", ("Id", batchBeef), ("StageCode", "CHIA_SUAT"))).Ok();
@@ -453,7 +454,11 @@ namespace AppDelicare.Tests.Pilot
                     checklistId = fg, productionBatchId = batchRice, checkDate = D(day), listItem = new[] { new { itemCode = "CAM_QUAN", resultCode = "PASS", actualValue = "[DEMO] đạt" } },
                 })).Ok();
                 (await Post("/api/ProductionBatch/Release", ("Id", batchRice))).Ok();
-                (await Post("/api/ProductionBatch/Pack", ("Id", batchRice))).Ok();
+                // BIZ-2.8: lệnh đóng gói tự sinh khi mẻ Đạt → hoàn tất theo lệnh.
+                Guid ricePacking = Id((await Get($"/api/PackingOrder/GetByBatch?id={batchRice}")).Ok().GetProperty("listPackingOrder").EnumerateArray()
+                    .First(p => p.GetProperty("packingOrder").GetProperty("status").GetString() != "Cancelled").GetProperty("packingOrder"));
+                (await Post("/api/PackingOrder/Start", ("Id", ricePacking))).Ok();
+                (await Post("/api/PackingOrder/RecordResult", ("Id", ricePacking), ("PackedQuantity", 1000m), ("PackagingType", "HOP_GIU_NHIET"))).Ok();
                 (await Get($"/api/ProductionPlan/GetDetail?id={planId}")).Ok().GetProperty("productionPlan").GetProperty("status").GetString().Should().Be("Completed");
                 (await Post("/api/MealCost/Calculate", ("OrderId", orderId))).Fail();
 
@@ -524,7 +529,7 @@ namespace AppDelicare.Tests.Pilot
                     .Should().Contain(o => o.GetProperty("orderId").GetGuid() == orderId);
                 var rec = (await Post("/api/OrderReconciliation/Reconcile", ("OrderId", orderId), ("ServedQuantity", 990m), ("ReturnedQuantity", 5m), ("WastedQuantity", 3m),
                     ("Remark", "[DEMO]"))).Ok();
-                rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_650_000m, "35.000.000 × 990 ÷ 1000");
+                rec.GetProperty("reconciliation").GetProperty("finalAmount").GetDecimal().Should().Be(34_930_000m, "BIZ-1.4: 35.000.000 × 998 khách nhận ÷ 1000 (phục vụ 990 chỉ tham khảo)");
                 // Chuỗi Đặt → SX → Đóng: 2 món × 1000 suất – bò kho đóng theo lệnh đóng gói gắn đơn, cơm đóng thẳng theo mẻ.
                 rec.GetProperty("reconciliation").GetProperty("producedQty").GetDecimal().Should().Be(1000m);
                 rec.GetProperty("reconciliation").GetProperty("packedQty").GetDecimal().Should().Be(1000m);

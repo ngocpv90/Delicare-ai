@@ -128,5 +128,7 @@ namespace AppDelicare.Model.Model
         public List<string> ListNotConfirmedNumber { get; set; } = [];
         /// <summary>Đơn Confirmed còn yêu cầu duyệt lệch suất đang chờ – vẫn khóa, yêu cầu sẽ không duyệt được.</summary>
         public List<string> ListPendingApprovalNumber { get; set; } = [];
+        /// <summary>BIZ-2.4: kế hoạch SX tự lập / tự phát hành sau chốt (null = tắt BusinessRules:ProductionAutoReleaseAfterLock / không chốt được đơn nào).</summary>
+        public ProductionAutoPlanModel? AutoPlan { get; set; }
     }
 }

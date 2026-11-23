@@ -20,10 +20,12 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ProductionPlanService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class ProductionPlanService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
-        , IOptions<BusinessRulesOptions> rules, IUomConversionService uomConversionService) : IProductionPlanService
+        , IOptions<BusinessRulesOptions> rules, IUomConversionService uomConversionService, INotificationService notifications, IServiceProvider services) : IProductionPlanService
     {
+        private readonly IServiceProvider _services = services;
+        private readonly INotificationService _notifications = notifications;
         private readonly IUomConversionService _uomConversionService = uomConversionService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -481,6 +483,9 @@ namespace AppDelicare.Services.Implement
                 await _unitOfWork.ProductionPlanRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 await ReservationRules.ReallocateAsync(db, reservedIngredients, _clock.Today);
                 _unitOfWork.CommitTransaction();
+                // BIZ-2.5: phiếu xuất Nháp theo ca (sau khi phát hành đã ghi – lỗi chỉ cảnh báo).
+                var shiftCodes = toRelease.ToDictionary(p => p.Shift.Id, p => p.Shift.Code);
+                warnings.AddRange(await CreateShiftIssueDraftsAsync(planNo, [.. newOrders.Select(o => (o.Id, o.ShiftId ?? Guid.Empty, shiftCodes.GetValueOrDefault(o.ShiftId ?? Guid.Empty), o.ProductionOrderNumber ?? o.ProductionOrderNo))]));
                 var detail = await DetailAsync(plan.Id);
                 detail!.ListWarning.AddRange(warnings);
                 return Result<ProductionPlanDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
@@ -543,7 +548,8 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(string.Format(ConstantHelper.Message.PlanGenerateHasMrp, plan.PlanNumber ?? plan.PlanNo));
                 }
-                var (demands, orders, skipped, _) = await ProductionRules.DishDemandsAsync(db, date, [OrderStatus.Confirmed, OrderStatus.Locked], _rules);
+                // BIZ-1.3 / A9 (D-77 c): kế hoạch SX chính thức chỉ lấy đơn Đã chốt – cùng nguồn với tính nhu cầu chính thức (số dự kiến ở MaterialRequirement/GetHorizon).
+                var (demands, orders, skipped, _) = await ProductionRules.DishDemandsAsync(db, date, [OrderStatus.Locked], _rules);
                 if (demands.Count == 0)
                 {
                     return Fail(string.Format(ConstantHelper.Message.PlanGenerateNoOrders, ProductionRules.Day(date)));
@@ -554,10 +560,10 @@ namespace AppDelicare.Services.Implement
                     warnings.Add($"{skipped.Count} dòng đơn không có thực đơn / thực đơn không có món cho ngày này – không đưa vào kế hoạch");
                 }
                 int pending = await db.Order.AsNoTracking().CountAsync(o => !o.IsDeleted && o.MealDate >= date && o.MealDate < next
-                    && (o.Status == OrderStatus.Draft || o.Status == OrderStatus.Submitted));
+                    && (o.Status == OrderStatus.Draft || o.Status == OrderStatus.Submitted || o.Status == OrderStatus.Confirmed));
                 if (pending > 0)
                 {
-                    warnings.Add($"{pending} đơn Nháp / Đã gửi của ngày chưa được tính (chỉ đơn Đã xác nhận / Đã chốt)");
+                    warnings.Add($"{pending} đơn Nháp / Đã gửi / Đã xác nhận của ngày chưa được tính (chỉ đơn Đã chốt)");
                 }
                 var byDish = demands.GroupBy(d => d.DishId)
                     .Select(g => (DishId: g.Key, Quantity: ProductionRules.Round4(g.Sum(x => x.Quantity)), FirstLine: g.First().OrderLineId, Shifts: g.Select(x => x.ShiftId).Distinct().ToList()))

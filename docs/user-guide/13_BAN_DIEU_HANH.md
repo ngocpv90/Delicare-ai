@@ -52,6 +52,7 @@
 5. Khối **Cảnh báo & công việc** (theo quyền tài khoản): mỗi việc có **Mở** → tới màn xử lý.
 
 ### 4.2 Chỉ số theo ngày / tháng – `kpi-daily`, `kpi-monthly`
+**Tự tính (BIZ-3.5):** KPI ngày tự tính lúc **22:00**; KPI tháng tính lúc **01:00** cho tháng của hôm qua (ngày 1 chốt số tháng trước). Job lỗi → bot báo IT. Nút làm mới tay vẫn dùng được.
 1. Chip nhóm: **Tất cả**, Sản xuất, Chất lượng, Giao hàng, Kho, Tài chính, Bao bì, Khách hàng.
 2. Mỗi chỉ tiêu: nhóm, tên, nhãn **Đạt / Chưa đạt / Thiếu dữ liệu / Không có mục tiêu / Chưa có số**, giá trị gần nhất, mục tiêu (≥ / ≤), ngày / tháng, biểu đồ đường có vạch mục tiêu.
 3. **Làm mới số liệu** – chỉ quản trị hệ thống thấy; tính lại và báo *"Đã làm mới N chỉ tiêu · M chỉ tiêu thiếu dữ liệu"*. Lịch tự tính KPI hằng ngày / tháng hiện **đang tắt** → số liệu chỉ có sau khi quản trị bấm làm mới.

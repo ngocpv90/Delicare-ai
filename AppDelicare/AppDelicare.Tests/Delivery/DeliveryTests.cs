@@ -13,7 +13,7 @@ namespace AppDelicare.Tests.Delivery
     /// <para>Bộ số tính tay: đơn A 60 suất × 30.000 = 1.800.000 (điểm giao 11:30), đơn B 40 suất × 30.000 = 1.200.000 (điểm giao 11:00) → chuyến 2 điểm: #1 = B, #2 = A, tải 100 / xe 120.
     /// Mẻ của ngày / ca: M1 đã đóng gói + lưu mẫu, M2 đã đóng gói CHƯA lưu mẫu → chặn xuất phát (anh chốt 2026-11-16).
     /// Bàn giao A: giao 58, nhận 56 (từ chối 2 → phản ánh PA- tự động), thiếu 2. Đối soát A: phục vụ 50, trả về 4, hủy 2 → chênh 50 − 60 = −10 (−16,67%),
-    /// giá trị = 1.800.000 × 50 ÷ 60 = 1.500.000 (cơ sở SERVED). Đối soát B: phục vụ 40 = đặt → Khớp, 1.200.000.</para>
+    /// tính tiền (BIZ-1.4, cơ sở RECEIVED) = khách nhận 56 − 2 suất lỗi Delicare (không đạt nhiệt độ) = 54 → 1.800.000 × 54 ÷ 60 = 1.620.000; phục vụ 50 chỉ tham khảo. Đối soát B: phục vụ 40 = đặt → Khớp, nhận 40 → 1.200.000.</para>
     /// </summary>
     public class DeliveryTests : IClassFixture<InMemoryApiFactory>
     {
@@ -193,19 +193,26 @@ namespace AppDelicare.Tests.Delivery
             // Đối soát A: kiểm số; phục vụ 50, trả về 4, hủy 2.
             (await c.PostFormAsync("/api/OrderReconciliation/Reconcile", ("OrderId", s.OrderA), ("ServedQuantity", 57m))).Fail("Suất phục vụ từ 0 tới số suất khách nhận khi bàn giao (56)");
             (await c.PostFormAsync("/api/OrderReconciliation/Reconcile", ("OrderId", s.OrderA), ("ServedQuantity", 50m), ("ReturnedQuantity", 4m), ("WastedQuantity", 3m))).Fail("không vượt số nhận");
-            var recA = (await c.PostFormAsync("/api/OrderReconciliation/Reconcile", ("OrderId", s.OrderA), ("ServedQuantity", 50m), ("ReturnedQuantity", 4m), ("WastedQuantity", 2m))).Ok();
+            // BIZ-1.4: suất lỗi Delicare phải có lý do, ≤ suất nhận.
+            (await c.PostFormAsync("/api/OrderReconciliation/Reconcile", ("OrderId", s.OrderA), ("ServedQuantity", 50m), ("DelicareFaultQuantity", 2m))).Fail("chọn lý do");
+            (await c.PostFormAsync("/api/OrderReconciliation/Reconcile", ("OrderId", s.OrderA), ("ServedQuantity", 50m), ("DelicareFaultQuantity", 57m), ("FaultReason", "TEMPERATURE"))).Fail("lỗi Delicare");
+            var recA = (await c.PostFormAsync("/api/OrderReconciliation/Reconcile", ("OrderId", s.OrderA), ("ServedQuantity", 50m), ("ReturnedQuantity", 4m), ("WastedQuantity", 2m),
+                ("DelicareFaultQuantity", 2m), ("FaultReason", "TEMPERATURE"))).Ok();
             var r = recA.GetProperty("reconciliation");
             r.GetProperty("orderedQuantity").GetDecimal().Should().Be(60);
             r.GetProperty("deliveredQuantity").GetDecimal().Should().Be(58);
             r.GetProperty("acceptedQuantity").GetDecimal().Should().Be(50);
             r.GetProperty("varianceQty").GetDecimal().Should().Be(-10);
             r.GetProperty("variancePercent").GetDecimal().Should().Be(-16.67m);
-            r.GetProperty("finalAmount").GetDecimal().Should().Be(1_500_000);
+            r.GetProperty("finalAmount").GetDecimal().Should().Be(1_620_000, "1.800.000 × (56 nhận − 2 lỗi) ÷ 60");
             r.GetProperty("status").GetString().Should().Be("Variance");
             recA.GetProperty("podAcceptedQuantity").GetDecimal().Should().Be(56);
             recA.GetProperty("leftoverQuantity").GetDecimal().Should().Be(6);
             recA.GetProperty("returnedQuantity").GetDecimal().Should().Be(4);
-            recA.GetProperty("billingBasis").GetString().Should().Be("SERVED");
+            recA.GetProperty("billingBasis").GetString().Should().Be("RECEIVED");
+            recA.GetProperty("billingQuantity").GetDecimal().Should().Be(54);
+            recA.GetProperty("delicareFaultQuantity").GetDecimal().Should().Be(2);
+            recA.GetProperty("faultReasonName").GetString().Should().Be("Không đạt nhiệt độ");
             Guid recAId = r.GetProperty("id").GetGuid();
             (await c.PostFormAsync("/api/OrderReconciliation/Close", ("Id", recAId))).Fail("phải ghi chú");
             var closedA = (await c.PostFormAsync("/api/OrderReconciliation/Close", ("Id", recAId), ("Remark", "Khách nghỉ ca 10 người"))).Ok();

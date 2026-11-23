@@ -724,3 +724,23 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | (c) | Dùng vào đâu | Như cũ: số gợi ý khi tạo đơn + cảnh báo lệch > 10 %. **Thêm:** "Nhu cầu nguyên liệu dự kiến N ngày tới" (N = `ShortageForecastDays` = 3) – ngày có đăng ký / đơn xác nhận dùng số đó, chưa có thì dùng dự báo đã công bố → thấy thiếu sớm, tạo đề nghị mua nháp khi bấm. Kế hoạch SX / MRP chính thức vẫn chỉ theo đơn Đã chốt. |
 | (d) | Theo dõi | Chỉ số **sai số dự báo %** (dự báo đã công bố so suất thực nhận) theo khách / tuần. |
 | (e) | Không làm | Mô hình thống kê phức tạp (mùa vụ, hồi quy); job tự chạy (D-45 – bấm tay, Job gọi lại sau); dự báo theo lựa chọn. |
+
+## D-77 – Sửa logic nghiệp vụ toàn hệ thống: 3 đợt BIZ-1 / BIZ-2 / BIZ-3 (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu): duyệt toàn bộ báo cáo `docs/claude/REVIEW_BUSINESS_LOGIC_2026-11-23.md` và 5 câu hỏi theo đề xuất. Việc làm: ROADMAP **BIZ-1** (sửa sai – trước khi chạy thật), **BIZ-2** (bớt bước + tự động), **BIZ-3** (hoàn thiện luồng). Không thêm bảng / cột; cần thêm → GAP chờ duyệt.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Hao hụt | Lượng mua = định lượng tinh ÷ (1 − % chế biến) ÷ (1 − % sơ chế) như file thật (thay chốt T14.1 "× (1 + %)"). |
+| (b) | Dự phòng | Chỉ giữ tồn an toàn theo nguyên liệu; dự phòng đề nghị mua mặc định 0; 15 % lựa chọn chỉ cho dòng đơn cũ. |
+| (c) | Mua hàng | Tính nhu cầu **nhiều ngày** (mặc định 7), nguồn: đơn chốt → đăng ký / đơn xác nhận → dự báo đã công bố; trừ tồn lũy kế; đặt trước theo lead time NCC (**thường 2–3 ngày**); 20:00 chỉ tính bổ sung. Kế hoạch / nhu cầu chính thức chỉ lấy đơn Đã chốt. |
+| (d) | Tính tiền | Mặc định theo **số khách ký nhận (POD) − suất trả lại do lỗi Delicare**; số suất ăn thực tế chỉ để dự báo. Hợp đồng chọn được kiểu khác (nhận / thực tế / số chốt) – lưu ở dữ liệu mở rộng sẵn có của hợp đồng. |
+| (e) | Giá đơn | Cố định đơn giá trên dòng đơn lúc chốt. |
+| (f) | Duyệt quá hạn | Vẫn duyệt được, gắn Quá hạn + leo thang (COO, rồi CEO). |
+| (g) | Đơn hàng | Nhân viên nhập: Nháp → Đã xác nhận → Đã chốt (20:00 tự động); "Đã gửi" chỉ cho khách tự đăng ký. Trước giờ chốt không duyệt lệch (chỉ cảnh báo so TB 4 tuần); sau giờ chốt duyệt bởi Trưởng KD / COO. Ẩn ô Ca. Ngày ăn mặc định = ngày mai. |
+| (h) | PO | Lập từ đề nghị đã duyệt, đúng NCC / giá / số lượng, < 50 triệu → tự duyệt. |
+| (i) | Công thức | Một lần duyệt = khóa & áp dụng từ ngày đã chọn khi gửi. |
+| (j) | Sản xuất | Sau chốt 20:00 tự lập + tự phát hành kế hoạch; COO chỉ duyệt khi sửa tay / thiếu nguyên liệu / vượt năng lực / thiếu công thức. Tự tạo phiếu xuất nháp theo ca. Mẻ đủ điều kiện (lõi ≥ 70 °C, sản lượng, lưu mẫu, không lỗi trọng yếu) **tự Đạt**, QA xử lý ngoại lệ. Mẻ Đạt tự sinh lệnh đóng gói. |
+| (k) | Kho, đối soát | QC kết luận → tự ghi sổ phần đạt. Giao xong → tự tạo đối soát; khớp → tự chốt sau 24 giờ; chốt → tự tính giá vốn. |
+| (l) | Hoàn thiện | Đơn bù từ phản ánh (giá 0 khi lỗi Delicare, ưu tiên nấu / giao); **Bảng kê thanh toán tháng** (chỉ xem + Excel, VAT bán 8 %, phí thất thoát khay cấu hình); giá thành tự tính lại khi giá NCC đổi + cảnh báo FC; thực đơn tự hết hiệu lực, nhắc thứ Tư công bố thực đơn, nhắc thứ Sáu khách chưa đăng ký; bật tự tính KPI; cấu hình khách / hợp đồng lên form. |
+| (m) | Thứ tự | MENU-4 → **BIZ-1** → FC-1 → BIZ-2 → BIZ-3. FC-1.4 gộp vào BIZ-1.3. |

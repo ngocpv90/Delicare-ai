@@ -9,7 +9,7 @@ namespace AppDelicare.Services.Jobs
     // Giờ mặc định ghi ở DefaultAt; đổi giờ / tắt bằng cấu hình Jobs:<Code> (PROPOSED D-59).
 
     /// <summary>20:00 – khóa đơn ngày mai (Confirmed → Locked). Đơn chưa xác nhận / chờ duyệt được liệt kê, không khóa.</summary>
-    public sealed class LockOrdersJob(IOrderService orderService, IUnitOfWork unitOfWork, INotificationService notifications) : IScheduledJob
+    public sealed class LockOrdersJob(IOrderService orderService, IUnitOfWork unitOfWork, INotificationService notifications, IOrderReconciliationService reconciliationService) : IScheduledJob
     {
         public string Code => "LockOrders";
         public string Name => "Khóa đơn ngày mai";
@@ -19,6 +19,8 @@ namespace AppDelicare.Services.Jobs
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
         {
             DateTime mealDate = now.Date.AddDays(1);
+            // BIZ-2.9: tự chốt đối soát Khớp quá hạn (cùng hàm khi mở màn đối soát).
+            await reconciliationService.AutoCloseDueAsync();
             var result = await orderService.LockByMealDate(new OrderLockByMealDateRequest { MealDate = mealDate });
             if (result.ResponseCode == 200 && result.Data is { } locked)
             {

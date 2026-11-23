@@ -21,6 +21,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<ProductionPlanDetailModel>> Release(ProductionPlanReleaseRequest request);
         /// <summary>BE2.1 (spec 8.1 generate): sinh / làm lại kế hoạch Nháp của ngày từ đơn Đã xác nhận / Đã chốt (1 KH- / ngày, số phần theo ca).</summary>
         public Task<IResult<ProductionPlanDetailModel>> Generate(ProductionPlanGenerateRequest request);
+        /// <summary>BIZ-2.4: sau chốt đơn – tự lập, tự duyệt + phát hành (hoặc giữ Nháp + báo COO).</summary>
+        public Task<AppDelicare.Model.Model.ProductionAutoPlanModel> AutoPlanAfterLockAsync(DateTime productionDate);
         public Task<IResult<ProductionPlanDetailModel>> GetDetail(Guid id);
         public Task<IResult<byte[]>> ExportProductionSheet(Guid id);
     }

@@ -169,5 +169,43 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>FC-1.1 / 1.2 (D-76): hệ thống tính dự báo gợi ý (trung bình suất thực nhận cùng thứ 4 tuần) → bản Nháp. Quyền Sửa trên crm-forecast.</summary>
+        [HttpPost("Suggest")]
+        public async Task<IActionResult> Suggest([FromForm] ForecastSuggestRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Suggest(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Suggest: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>FC-1.5: sai số dự báo % theo khách / tuần (dự báo Đã công bố so suất thực nhận). Quyền Xem trên crm-forecast.</summary>
+        [HttpGet("GetAccuracy")]
+        public async Task<IActionResult> GetAccuracy([FromQuery] ForecastAccuracyRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetAccuracy(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetAccuracy: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

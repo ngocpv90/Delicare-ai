@@ -18,5 +18,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.ForecastMatrixModel>> GetMatrix(AppDelicare.Model.Request.Custom.ForecastMatrixRequest request);
         public Task<IResult<AppDelicare.Model.Model.ForecastImportResultModel>> Import(AppDelicare.Model.Request.Custom.ForecastImportRequest request);
         public Task<IResult<AppDelicare.Model.Model.ForecastPublishResultModel>> Publish(AppDelicare.Model.Request.Custom.ForecastPublishRequest request);
+        /// <summary>FC-1.1 / 1.2 (D-76): tạo dự báo gợi ý → bản Nháp.</summary>
+        public Task<IResult<AppDelicare.Model.Model.ForecastSuggestResultModel>> Suggest(AppDelicare.Model.Request.Custom.ForecastSuggestRequest request);
+        /// <summary>FC-1.5: sai số dự báo theo khách / tuần.</summary>
+        public Task<IResult<AppDelicare.Model.Model.ForecastAccuracyModel>> GetAccuracy(AppDelicare.Model.Request.Custom.ForecastAccuracyRequest request);
     }
 }

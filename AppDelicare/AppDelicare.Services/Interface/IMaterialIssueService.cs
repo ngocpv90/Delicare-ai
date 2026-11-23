@@ -12,6 +12,10 @@ namespace AppDelicare.Services.Interface
 {
     public interface IMaterialIssueService
     {
+        /// <summary>BIZ-2.5: nhóm phiếu xuất theo ca (thẻ [XUAT_CA:…]) từ ngày cho trước.</summary>
+        public Task<IResults<AppDelicare.Model.Model.MaterialIssueShiftGroupModel>> GetShiftGroups(DateTime? fromDate);
+        /// <summary>BIZ-2.5: ghi sổ mọi phiếu Nháp của ca.</summary>
+        public Task<IResult<int>> PostShift(AppDelicare.Model.Request.Custom.MaterialIssueShiftRequest request);
         public Task<IResults<MaterialIssueViewModel>> GetAll(MaterialIssueSearchRequest request);
         public Task<IResult<bool>> Save(MaterialIssueRequest request, string typeSave);
         public IResults<MaterialIssue> GetAllData();

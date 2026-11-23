@@ -25,6 +25,7 @@ namespace AppDelicare.Tests.Purchasing
         {
             _factory = factory;
             _factory.Clock.FixedNow = Today.AddHours(10);
+            _factory.Settings["BusinessRules:GoodsReceiptAutoPostAfterQc"] = "false";
         }
 
         private sealed record Item(string Key, string? StorageType, decimal Quantity, decimal UnitPrice, Guid? CategoryId = null);

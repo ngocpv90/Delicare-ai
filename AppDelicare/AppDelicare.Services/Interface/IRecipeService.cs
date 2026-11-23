@@ -19,7 +19,9 @@ namespace AppDelicare.Services.Interface
         // <summary>T45R: phiên bản công thức của món.</summary>
         public Task<IResults<RecipeVersionModel>> GetByDishId(Guid dishId);
         public Task<IResult<Recipe>> CreateVersion(RecipeVersionRequest request);
-        public Task<IResult<bool>> Submit(Guid id);
+        public Task<IResult<bool>> Submit(Guid id, DateTime? effectiveFrom = null);
+        /// <summary>BIZ-2.3: khóa &amp; áp dụng không mở transaction riêng (gọi từ duyệt cấp cuối trong transaction của engine). Trả lỗi hoặc null.</summary>
+        public Task<string?> LockCoreAsync(Guid id, DateTime from, Guid actorUserId);
         public Task<IResult<bool>> Decide(RecipeDecisionRequest request, bool approve);
         public Task<IResult<bool>> Lock(RecipeLockRequest request);
         public Task<StandardCost> UpsertStandardCostAsync(Guid dishId, Guid recipeId, DateTime from);

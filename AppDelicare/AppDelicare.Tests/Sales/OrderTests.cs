@@ -105,7 +105,7 @@ namespace AppDelicare.Tests.Sales
             lines[0].ShiftId.Should().NotBeNull();
             lines[0].LineAmount.Should().Be(4_000_000);
             lines[0].Amount.Should().Be(4_000_000, "ghi song song cột cũ Amount");
-            created.GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().Contain(["submit", "updateLines", "cancel"]);
+            created.GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().Contain(["confirm", "updateLines", "cancel"], "BIZ-2.1: Nháp → Xác nhận thẳng");
 
             (await CreateAsync(c, s, s.LocA, trua: 5)).Fail("Đã có đơn");
 
@@ -126,7 +126,6 @@ namespace AppDelicare.Tests.Sales
             using var c = _factory.CreateAuthorizedClient();
             Guid id = IdOf((await CreateAsync(c, s, s.LocA, 50)).Ok());
 
-            (await Act(c, "Confirm", id)).Fail("Đã gửi");
             (await Act(c, "Lock", id)).Fail("Đã xác nhận");
             (await Act(c, "Cancel", id)).Fail("lý do");
             (await Act(c, "Cancel", id, ("Reason", "Khách đổi lịch"))).Ok();
@@ -138,6 +137,31 @@ namespace AppDelicare.Tests.Sales
             // CRUD cũ không phá máy trạng thái.
             (await c.PostFormAsync("/api/Order/Insert", ("CustomerId", s.Customer), ("OrderDate", MealDate), ("DeliveryDate", MealDate))).Fail("Order/Create");
             (await c.PostFormAsync("/api/OrderLine/Insert", ("OrderId", id), ("Quantity", 5m))).Fail("Order/UpdateLines");
+        }
+
+        /// <summary>BIZ-1.5 (D-77 e): giá cố định lúc chốt – chính sách giá mới trước giờ chốt vào đơn khi chốt; chính sách duyệt sau khi chốt không đổi đơn.</summary>
+        [Fact]
+        public async Task Lock_fixes_unit_price_from_policy_at_meal_date_and_later_policies_do_not_change_locked_order()
+        {
+            var s = await SeedAsync("ORD-PRC");
+            using var c = _factory.CreateAuthorizedClient();
+            _factory.Clock.FixedNow = BeforeCutoff;
+            Guid id = IdOf((await CreateAsync(c, s, s.LocA, 30)).Ok());
+            (await LinesAsync(id)).Single(l => l.MealType == "TRUA").UnitPrice.Should().Be(40000, "giá hợp đồng lúc tạo");
+            (await Act(c, "Submit", id)).Ok();
+            (await Act(c, "Confirm", id)).Ok();
+            // Chính sách giá mới cho ngày ăn, duyệt trước giờ chốt.
+            await _factory.SeedAsync(db => { db.PricePolicy.Add(new PricePolicy { Id = Guid.NewGuid(), Code = "PP-PRC-1", CustomerId = s.Customer, ContractId = s.Contract, MealType = "TRUA", UnitPrice = 43000, Status = "Active", EffectiveFrom = MealDate, EffectiveTo = MealDate }); return Task.CompletedTask; });
+            _factory.Clock.FixedNow = AtCutoff;
+            (await Act(c, "Lock", id)).Ok();
+            var line = (await LinesAsync(id)).Single(l => l.MealType == "TRUA");
+            (line.UnitPrice, line.LineAmount).Should().Be((43000m, 1_290_000m));
+            (await OrderAsync(id)).TotalAmount.Should().Be(1_290_000m);
+            // Chính sách giá khác duyệt SAU khi chốt → đơn đã chốt giữ giá.
+            await _factory.SeedAsync(db => { db.PricePolicy.Add(new PricePolicy { Id = Guid.NewGuid(), Code = "PP-PRC-2", CustomerId = s.Customer, ContractId = s.Contract, MealType = "TRUA", UnitPrice = 50000, Status = "Active", EffectiveFrom = MealDate, EffectiveTo = MealDate }); return Task.CompletedTask; });
+            (await c.GetResultAsync($"/api/Order/GetDetail?id={id}")).Ok();
+            (await LinesAsync(id)).Single(l => l.MealType == "TRUA").UnitPrice.Should().Be(43000);
+            (await OrderAsync(id)).TotalAmount.Should().Be(1_290_000m);
         }
 
         [Fact]
@@ -173,66 +197,44 @@ namespace AppDelicare.Tests.Sales
             (await CreateAsync(c, other, other.LocA, 10)).Fail("quá giờ chốt");
         }
 
+        /// <summary>
+        /// BIZ-2.1 (D-77 – B1): trước giờ chốt sửa số không đi duyệt (bỏ ORDER_DEVIATION); lệch &gt; 30% so trung bình 4 tuần cùng thứ của điểm giao → chỉ cảnh báo + ghi Note.
+        /// Lịch sử điểm A: 2 tuần trước cùng thứ đơn Đã giao 100 suất (tuần nghỉ không tính).
+        /// </summary>
         [Fact]
-        public async Task Deviation_up_to_30_percent_is_applied_above_needs_approval_approve_applies_reject_does_not()
+        public async Task Changes_before_cutoff_apply_without_approval_and_warn_against_four_week_average()
         {
             var s = await SeedAsync("ORD-DEV");
+            await _factory.SeedAsync(db =>
+            {
+                foreach (int w in new[] { 1, 3 })
+                {
+                    Guid past = Guid.NewGuid();
+                    db.Order.Add(new Order { Id = past, OrderNumber = $"DH-DEV-{w}", OrderNo = $"DH-DEV-{w}", CustomerId = s.Customer, DeliveryLocationId = s.LocA, OrderDate = MealDate.AddDays(-7 * w - 1), MealDate = MealDate.AddDays(-7 * w), DeliveryDate = MealDate.AddDays(-7 * w), Status = "Delivered", TotalQuantity = 100 });
+                    db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = past, MealType = "TRUA", Quantity = 100 });
+                }
+                return Task.CompletedTask;
+            });
             using var c = _factory.CreateAuthorizedClient();
             Guid id = IdOf((await CreateAsync(c, s, s.LocA, 100)).Ok());
             Guid lineId = (await LinesAsync(id))[0].Id;
+            var confirmed = (await Act(c, "Confirm", id)).Ok();
+            confirmed.GetProperty("listWarning").EnumerateArray().Should().BeEmpty("100 = trung bình");
 
-            // Nháp: sửa thoải mái (không xét lệch).
-            (await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 300m } } })).Ok();
-            (await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 100m } } })).Ok();
-            (await Act(c, "Submit", id)).Ok();
-            (await Act(c, "Confirm", id)).Ok();
-
-            // Đã xác nhận: +30% đúng ngưỡng → ghi ngay.
+            // +30% đúng ngưỡng → không cảnh báo.
             var applied = (await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 130m } } })).Ok();
             applied.GetProperty("approvalRequested").GetBoolean().Should().BeFalse();
-            (await OrderAsync(id)).TotalAmount.Should().Be(130 * 40000m);
+            applied.GetProperty("listWarning").EnumerateArray().Should().BeEmpty();
 
-            // +53,8% → không ghi, gửi duyệt ORDER_DEVIATION kèm đề xuất.
-            var asked = await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 200m } } });
-            asked.Ok().GetProperty("approvalRequested").GetBoolean().Should().BeTrue();
-            asked.Message.Should().Contain("gửi duyệt XN-");
-            (await LinesAsync(id))[0].Quantity.Should().Be(130);
-            var request = await _factory.QueryAsync(db => db.ApprovalRequest.AsNoTracking().SingleAsync(a => a.BusinessId == id && a.RequestStatus == "Pending"));
-            request.BusinessType.Should().Be("ORDER_DEVIATION");
-            request.PayloadJson.Should().Contain("\"proposal\"").And.Contain("\"state\"");
-            (await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 120m } } })).Fail("đang có yêu cầu duyệt");
-
-            (await c.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", request.Id), ("Approve", true), ("Note", "Khách tăng ca"))).Ok();
+            // +100% → ghi ngay, chỉ cảnh báo + Note.
+            var big = await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 200m } } });
+            big.Ok().GetProperty("approvalRequested").GetBoolean().Should().BeFalse();
+            big.Message.Should().Contain("lệch 100% so với trung bình 4 tuần cùng thứ của điểm giao (100 suất)");
             (await LinesAsync(id))[0].Quantity.Should().Be(200);
             var order = await OrderAsync(id);
-            order.TotalQuantity.Should().Be(200);
-            order.TotalAmount.Should().Be(200 * 40000m);
-            order.Status.Should().Be("Confirmed");
-            (await _factory.QueryAsync(db => db.ApprovalDecision.CountAsync(d => d.ApprovalRequestId == request.Id))).Should().Be(1);
-
-            // Lần 2: −50% → gửi duyệt → từ chối → số không đổi.
-            (await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 100m } } })).Ok().GetProperty("approvalRequested").GetBoolean().Should().BeTrue();
-            var second = await _factory.QueryAsync(db => db.ApprovalRequest.AsNoTracking().SingleAsync(a => a.BusinessId == id && a.RequestStatus == "Pending"));
-            (await c.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", second.Id), ("Approve", false), ("Note", "Không đủ căn cứ"))).Ok();
-            (await LinesAsync(id))[0].Quantity.Should().Be(200);
-            (await OrderAsync(id)).Note.Should().Contain("Từ chối lệch suất");
-        }
-
-        [Fact]
-        public async Task Deviation_request_cannot_be_approved_after_the_order_was_locked()
-        {
-            var s = await SeedAsync("ORD-DEVLOCK");
-            using var c = _factory.CreateAuthorizedClient();
-            Guid id = IdOf((await CreateAsync(c, s, s.LocA, 100)).Ok());
-            Guid lineId = (await LinesAsync(id))[0].Id;
-            (await Act(c, "Submit", id)).Ok();
-            (await Act(c, "Confirm", id)).Ok();
-            (await PutJson(c, "/api/Order/UpdateLines", new { id, listLine = new[] { new { id = lineId, quantity = 10m } } })).Ok();
-            var request = await _factory.QueryAsync(db => db.ApprovalRequest.AsNoTracking().SingleAsync(a => a.BusinessId == id && a.RequestStatus == "Pending"));
-            (await Act(c, "Lock", id)).Ok();
-
-            (await c.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", request.Id), ("Approve", true))).Fail("đã thay đổi");
-            (await LinesAsync(id))[0].Quantity.Should().Be(100);
+            (order.TotalQuantity, order.Status).Should().Be((200m, "Confirmed"));
+            order.Note.Should().Contain("[LECH_TB_4_TUAN]");
+            (await _factory.QueryAsync(db => db.ApprovalRequest.CountAsync(a => a.BusinessId == id))).Should().Be(0);
         }
 
         [Fact]

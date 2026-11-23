@@ -16,7 +16,7 @@ namespace AppDelicare.Tests.Production
     /// <para>Bộ số tính tay: điểm giao nhận lúc 11:30 → giờ xuất bếp 11:30 − 60′ = 10:30 → mẻ cuối xong 10:30 − 30′ (chia suất / đóng gói) = 10:00.
     /// Dây chuyền 100 phần / mẻ, 60 phút / mẻ. Thịt kho 250 phần → 3 mẻ chia đều 84 / 83 / 83 (T17.1, anh chốt 2026-11-16): 07:00–08:00, 08:00–09:00, 09:00–10:00;
     /// Canh 80 phần → 1 mẻ 09:00–10:00. Số mẻ theo giờ bắt đầu rồi tên món: -01 Thịt#1, -02 Thịt#2, -03 Canh, -04 Thịt#3.</para>
-    /// <para>Định lượng: Thịt 12 kg / 100 suất, hao hụt 10% → mẻ 84 phần cần 11,088 kg; mẻ 83 phần 10,956 kg. Rau 5 kg / 100 suất → mẻ 80 phần 4 kg.
+    /// <para>Định lượng: Thịt 11,88 kg tinh / 100 suất, hao hụt sơ chế 10% (÷ 0,9 = 13,2 kg mua – BIZ-1.1) → mẻ 84 phần cần 11,088 kg; mẻ 83 phần 10,956 kg. Rau 5 kg / 100 suất → mẻ 80 phần 4 kg.
     /// Lô thịt: L1 HSD 22/12 10 kg, L2 HSD 30/12 20 kg, LX hết hạn 19/12 50 kg, LK KHONG_DAT 50 kg → mẻ -01 lấy L1 10 + L2 1,088 (FEFO).</para>
     /// </summary>
     public class ProductionTests : IClassFixture<InMemoryApiFactory>
@@ -29,6 +29,8 @@ namespace AppDelicare.Tests.Production
         {
             _factory = factory;
             _factory.Clock.FixedNow = Today.AddHours(10);
+            _factory.Settings["BusinessRules:BatchAutoPass"] = "false"; // kiểm luồng QC / đóng gói tay (BIZ-2.7 / 2.8 tự Đạt + tự lệnh đóng gói: kiểm ở ProductionSqlServerTests / luồng SQL)
+            _factory.Settings["BusinessRules:PackingAutoGenerateOnPass"] = "false";
         }
 
         private sealed record Scenario(string Shift, Guid ShiftId, Guid Line, Guid Warehouse, Guid Kg, Guid Meat, Guid Veg, Guid DishMeat, Guid DishSoup,
@@ -54,7 +56,7 @@ namespace AppDelicare.Tests.Production
                     new Dish { Id = dishSoup, Code = "CA-" + code, Name = "Canh rau " + code, Status = "Active" });
                 db.Recipe.AddRange(
                     new Recipe { Id = Guid.NewGuid(), DishId = dishMeat, VersionNo = 1, VersionCode = "v1", Status = "Locked", LockedAt = Today.AddDays(-5), IsActive = true, StandardOutputQty = 100,
-                        SnapshotJson = $"[{{\"IngredientId\":\"{meat}\",\"Quantity\":12,\"UnitId\":\"{kg}\",\"WastePercent\":10,\"SequenceNo\":1}}]" },
+                        SnapshotJson = $"[{{\"IngredientId\":\"{meat}\",\"Quantity\":11.88,\"UnitId\":\"{kg}\",\"WastePercent\":10,\"SequenceNo\":1}}]" },
                     new Recipe { Id = Guid.NewGuid(), DishId = dishSoup, VersionNo = 1, VersionCode = "v1", Status = "Locked", LockedAt = Today.AddDays(-5), IsActive = true, StandardOutputQty = 100,
                         SnapshotJson = $"[{{\"IngredientId\":\"{veg}\",\"Quantity\":5,\"UnitId\":\"{kg}\",\"WastePercent\":0,\"SequenceNo\":1}}]" });
                 db.ProductionPlan.Add(new ProductionPlan { Id = plan, PlanNumber = "KH-" + code, PlanNo = "KH-" + code, ProductionDate = Day, PlanDate = Today, Status = "Draft" });
@@ -192,7 +194,7 @@ namespace AppDelicare.Tests.Production
             ws.Cell(1, 13).GetValue<decimal>().Should().Be(330, "số suất order = Σ phần kế hoạch của các mẻ");
             ws.Cell(7, 6).GetString().Should().Be("SL cần");
             ws.Cell(8, 3).GetString().Should().Be("Thịt P1");
-            ws.Cell(8, 6).GetValue<decimal>().Should().Be(11.088m, "12 kg / 100 suất × 84 phần × 1,1");
+            ws.Cell(8, 6).GetValue<decimal>().Should().Be(11.088m, "11,88 kg / 100 suất × 84 phần ÷ 0,9");
         }
 
         [Fact]
@@ -205,8 +207,8 @@ namespace AppDelicare.Tests.Production
 
             var detail = (await c.GetResultAsync($"/api/ProductionBatch/GetDetail?id={first}")).Ok();
             var material = detail.GetProperty("listMaterial").EnumerateArray().Single();
-            material.GetProperty("requiredQuantity").GetDecimal().Should().Be(11.088m, "12 kg / 100 suất × 84 phần × 1,1");
-            material.GetProperty("quantityPerServing").GetDecimal().Should().Be(0.12m);
+            material.GetProperty("requiredQuantity").GetDecimal().Should().Be(11.088m, "11,88 kg / 100 suất × 84 phần ÷ 0,9");
+            material.GetProperty("quantityPerServing").GetDecimal().Should().Be(0.1188m);
 
             var issue = (await c.PostFormAsync("/api/ProductionBatch/CreateMaterialIssue", ("Id", first), ("WarehouseId", s.Warehouse), ("Post", true))).Ok();
             issue.GetProperty("materialIssue").GetProperty("status").GetString().Should().Be("Issued");

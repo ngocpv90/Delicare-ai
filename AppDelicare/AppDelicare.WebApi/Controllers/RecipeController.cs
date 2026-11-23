@@ -149,11 +149,11 @@ namespace AppDelicare.WebApi.Controllers
 
         /// <summary>T45R: gửi duyệt (Draft → PendingApproval, cần ≥ 1 dòng định lượng) và tạo ApprovalRequest RECIPE_VERSION.</summary>
         [HttpPost("Submit")]
-        public async Task<IActionResult> Submit([FromForm] Guid id)
+        public async Task<IActionResult> Submit([FromForm] Guid id, [FromForm] DateTime? effectiveFrom)
         {
             try
             {
-                return Ok(await _service.Submit(id));
+                return Ok(await _service.Submit(id, effectiveFrom));
             }
             catch (Exception ex)
             {

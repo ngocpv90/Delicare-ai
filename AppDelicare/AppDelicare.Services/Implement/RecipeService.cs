@@ -344,7 +344,7 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>T45R (spec 5.2): Draft → PendingApproval (≥ 1 dòng định lượng) + ApprovalRequest RECIPE_VERSION.</summary>
-        public async Task<IResult<bool>> Submit(Guid id)
+        public async Task<IResult<bool>> Submit(Guid id, DateTime? effectiveFrom = null)
         {
             using var tran = await _unitOfWork.OpenTransaction();
             try
@@ -360,6 +360,8 @@ namespace AppDelicare.Services.Implement
                     return Result<bool>.Fail(error, false);
                 }
                 recipe!.Status = RecipeStatus.PendingApproval;
+                // BIZ-2.3 (D-77 – B4): chọn "Áp dụng từ ngày" khi gửi duyệt; duyệt cấp cuối = khóa & áp dụng từ ngày này (trống / đã qua → ngày duyệt).
+                recipe.EffectiveFrom = (effectiveFrom ?? _clock.Today).Date;
                 _unitOfWork.RecipeRepository.Update(recipe);
                 // T12: yêu cầu duyệt qua engine chung (mã XN-, bước duyệt, nội dung được duyệt để chống sửa sau khi gửi).
                 var (_, approvalError) = await _approvalRequestService.CreateAsync(RecipeStatus.BusinessType, recipe.Id);
@@ -426,6 +428,35 @@ namespace AppDelicare.Services.Implement
                     return Result<bool>.Fail(error, false);
                 }
                 DateTime from = (request.EffectiveFrom ?? _clock.Today).Date;
+                error = await LockCoreAsync(recipe!.Id, from, _currentActor.RequireActor().UserId) ?? string.Empty;
+                if (!string.IsNullOrEmpty(error))
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<bool>.Fail(error, false);
+                }
+                _unitOfWork.CommitTransaction();
+                return Result<bool>.Success(true, ConstantHelper.Message.SaveSuccess);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Lock: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Phần lõi của Lock (spec 5.2 bước 1–5) – không mở transaction: dùng cho nút Lock (bản Đã duyệt cũ) và duyệt cấp cuối (BIZ-2.3, bản Chờ duyệt → Khóa ngay).
+        /// </summary>
+        public async Task<string?> LockCoreAsync(Guid id, DateTime from, Guid actorUserId)
+        {
+            {
+                var recipe = _unitOfWork.RecipeRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
+                if (recipe == null)
+                {
+                    return ConstantHelper.Message.RecordNotFoundMessage;
+                }
+                from = from.Date;
                 foreach (var old in _unitOfWork.RecipeRepository.GetAll().Where(x => x.DishId == recipe!.DishId && x.Id != recipe.Id && x.IsActive && !x.IsDeleted).ToList())
                 {
                     old.IsActive = false;
@@ -438,20 +469,13 @@ namespace AppDelicare.Services.Implement
                 recipe.EffectiveFrom = from;
                 recipe.EffectiveTo = null;
                 recipe.LockedAt = _clock.Now;
-                recipe.LockedBy = _currentActor.RequireActor().UserId;
+                recipe.LockedBy = actorUserId;
                 var lines = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted).OrderBy(l => l.SortOrder).ToListAsync();
-                recipe.SnapshotJson = JsonConvert.SerializeObject(lines.Select(l => new { l.IngredientId, l.Quantity, l.UnitId, l.WastePercent, l.SequenceNo }));
+                recipe.SnapshotJson = JsonConvert.SerializeObject(lines.Select(l => new { l.IngredientId, l.Quantity, l.UnitId, l.WastePercent, l.ExpectedWasteRate, l.SequenceNo }));
                 _unitOfWork.RecipeRepository.Update(recipe);
                 await _unitOfWork.RecipeRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 await UpsertStandardCostAsync(recipe.DishId, recipe.Id, from);
-                _unitOfWork.CommitTransaction();
-                return Result<bool>.Success(true, ConstantHelper.Message.SaveSuccess);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(string.Concat("[", GetType().Name, "]", " Lock: ", ex.ToString()));
-                _unitOfWork.RollbackTransaction();
-                throw;
+                return null;
             }
         }
 
@@ -527,7 +551,8 @@ namespace AppDelicare.Services.Implement
             var lines = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking().Where(l => l.RecipeId == recipeId && !l.IsDeleted)
                 .OrderBy(l => l.SortOrder).ThenBy(l => l.SequenceNo).ToListAsync();
             var ingredientIds = lines.Select(l => l.IngredientId).Distinct().ToList();
-            var names = await _unitOfWork.IngredientRepository.GetAll().AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => i.Name);
+            var ingredientInfo = await _unitOfWork.IngredientRepository.GetAll().AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).Select(i => new { i.Id, i.Name, i.StandardWastePercent }).ToDictionaryAsync(i => i.Id);
+            var names = ingredientInfo.ToDictionary(i => i.Key, i => i.Value.Name);
             var prices = await _unitOfWork.SupplierMaterialRepository.GetAll().AsNoTracking()
                 .Where(m => !m.IsDeleted && m.IsPreferred && ingredientIds.Contains(m.IngredientId)
                     && (m.EffectiveFrom == null || m.EffectiveFrom <= day) && (m.EffectiveTo == null || m.EffectiveTo >= day))
@@ -535,7 +560,11 @@ namespace AppDelicare.Services.Implement
             var result = new List<RecipeLineCostModel>();
             foreach (var l in lines)
             {
-                var item = new RecipeLineCostModel { LineId = l.Id, IngredientId = l.IngredientId, IngredientName = names.GetValueOrDefault(l.IngredientId), Quantity = l.Quantity, UnitId = l.UnitId };
+                // BIZ-1.1: giá vốn tính trên LƯỢNG MUA (trước sơ chế) – hao hụt 2 tầng như MRP.
+                decimal? prepPct = l.WastePercent ?? ingredientInfo.GetValueOrDefault(l.IngredientId)?.StandardWastePercent;
+                var item = new RecipeLineCostModel { LineId = l.Id, IngredientId = l.IngredientId, IngredientName = names.GetValueOrDefault(l.IngredientId), Quantity = l.Quantity, UnitId = l.UnitId,
+                    PrepWastePercent = prepPct, CookWastePercent = l.ExpectedWasteRate,
+                    QuantityAfterPrep = Math.Round(WasteRules.AfterPrep(l.Quantity, l.ExpectedWasteRate), 4), GrossQuantity = Math.Round(WasteRules.Gross(l.Quantity, prepPct, l.ExpectedWasteRate), 4) };
                 var price = prices.FirstOrDefault(p => p.IngredientId == l.IngredientId);
                 if (price?.UnitPrice is not { } unitPrice)
                 {
@@ -545,7 +574,7 @@ namespace AppDelicare.Services.Implement
                 {
                     item.UnitPrice = unitPrice;
                     item.PriceUnitId = price.PurchaseUomId ?? l.UnitId;
-                    decimal? qty = await _uomConversionService.ConvertAsync(l.Quantity, l.UnitId, item.PriceUnitId.Value, day);
+                    decimal? qty = await _uomConversionService.ConvertAsync(WasteRules.Gross(l.Quantity, prepPct, l.ExpectedWasteRate), l.UnitId, item.PriceUnitId.Value, day);
                     if (qty == null)
                     {
                         item.Warning = "Thiếu quy đổi đơn vị giữa định lượng và đơn vị giá NCC.";

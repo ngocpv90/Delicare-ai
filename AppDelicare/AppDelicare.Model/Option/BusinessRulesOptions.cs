@@ -37,6 +37,10 @@ namespace AppDelicare.Model.Option
         };
         public int ExpiringLotDays { get; set; } = 7;
         public int ShortageForecastDays { get; set; } = 3;
+        /// <summary>BIZ-1.3 (D-77 c): số ngày tính nhu cầu nguyên liệu dự kiến (D+1 → D+N) – kế hoạch mua theo ngày cần hàng.</summary>
+        public int PurchaseHorizonDays { get; set; } = 7;
+        /// <summary>BIZ-1.3: ngày phải đặt = ngày cần − lead time NCC ưu tiên − số ngày đệm này.</summary>
+        public int PurchaseOrderLeadBufferDays { get; set; } = 1;
         /// <summary>Spec 5.2 bước 4: chi phí nhân công / suất khi khóa công thức (PROPOSED – BA/PO CONFIRM).</summary>
         public decimal RecipeLaborCostPerServing { get; set; }
         /// <summary>Spec 5.2 bước 4: chi phí chung / suất (PROPOSED – BA/PO CONFIRM).</summary>
@@ -67,6 +71,34 @@ namespace AppDelicare.Model.Option
         /// <c>#/wf-inbox?type=scm-po-director</c>; dưới ngưỡng duyệt trên <c>#/wf-inbox?type=scm-po</c>. Vẫn duyệt 1 cấp.
         /// </summary>
         public decimal PurchaseOrderDirectorApprovalAmount { get; set; } = 50_000_000m;
+        /// <summary>BIZ-2.2 (D-77 – B3, C2): PO lập từ đề nghị mua Đã duyệt tự Đã duyệt khi đúng NCC gợi ý, đơn giá = bảng giá, số ≤ đề nghị, tổng &lt; ngưỡng Giám đốc.</summary>
+        public bool PurchaseOrderAutoApproveFromRequest { get; set; } = true;
+        /// <summary>BIZ-2.4 (D-77 – B5, C3): sau chốt đơn theo ngày → tự lập kế hoạch SX, tự duyệt + phát hành (trừ trường hợp phải chờ COO).</summary>
+        public bool ProductionAutoReleaseAfterLock { get; set; } = true;
+        /// <summary>BIZ-2.5 (D-77 – C4): phát hành lệnh → tự tạo phiếu xuất Nháp theo ca (số = giữ chỗ, lô FEFO).</summary>
+        public bool ProductionAutoDraftIssueOnRelease { get; set; } = true;
+        /// <summary>BIZ-2.6 (D-77 – C5): QC đầu vào kết luận Đạt / Đạt một phần → tự ghi sổ phiếu nhập (phần đạt).</summary>
+        public bool GoodsReceiptAutoPostAfterQc { get; set; } = true;
+        /// <summary>BIZ-2.7 (D-77 – C6): mẻ đủ điều kiện (lõi, sản lượng, lưu mẫu, không lỗi trọng yếu) tự Đạt QC.</summary>
+        public bool BatchAutoPass { get; set; } = true;
+        /// <summary>BIZ-2.8 (D-77 – C7): mẻ Đạt → tự sinh lệnh đóng gói (PackingOrder/GenerateFromBatch).</summary>
+        public bool PackingAutoGenerateOnPass { get; set; } = true;
+        /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
+        public bool ReconciliationAutoCreate { get; set; } = true;
+        /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>
+        public int ReconciliationAutoCloseHours { get; set; } = 24;
+        /// <summary>BIZ-2.9 (C9): chốt đối soát → tự tính giá vốn suất (MealCost/Calculate).</summary>
+        public bool MealCostAutoOnReconcileClose { get; set; } = true;
+        /// <summary>BIZ-3.4 (D-77 – C12): thứ chạy job nhắc thực đơn chung tuần sau (0 = Chủ nhật … 3 = thứ Tư).</summary>
+        public int MenuReminderWeekday { get; set; } = 3;
+        /// <summary>BIZ-3.4: thứ chạy job nhắc khách chưa đăng ký suất tuần sau (5 = thứ Sáu).</summary>
+        public int OrderWeekReminderWeekday { get; set; } = 5;
+        /// <summary>BIZ-3.3 (D-77 – C10): lưu bảng giá NCC → tự tính lại giá thành chuẩn món dùng nguyên liệu + cảnh báo FC % thực đơn.</summary>
+        public bool StandardCostAutoOnSupplierPrice { get; set; } = true;
+        /// <summary>BIZ-3.2 (D-77 – A7): VAT bán hàng % trên bảng kê thanh toán.</summary>
+        public decimal SalesVatPct { get; set; } = 8m;
+        /// <summary>BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay (PROPOSED – trống = 0, chưa tính).</summary>
+        public Dictionary<string, decimal> ContainerLossFee { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
         /// <summary>
@@ -102,7 +134,8 @@ namespace AppDelicare.Model.Option
         /// <summary>T19: chặn xuất chuyến khi có mẻ (đã đóng gói) của ngày / ca chưa lưu mẫu SAMPLE_RETAINED – anh chốt 2026-11-16.</summary>
         public bool DeliveryRequireSampleRetained { get; set; } = true;
         /// <summary>T19: cơ sở tính tiền khi đối soát: ORDERED / DELIVERED / ACCEPTED / SERVED – PROPOSED (spec 6.7: TotalAmount × suất nhận ÷ suất đặt; GAP-DLV-05).</summary>
-        public string ReconciliationBillingBasis { get; set; } = "SERVED";
+        /// <summary>BIZ-1.4 (D-77 d): mặc định RECEIVED = suất khách ký nhận − suất lỗi Delicare. Hợp đồng chưa có cột lưu kiểu riêng (GAP-BIZ-01) → dùng chung giá trị này.</summary>
+        public string ReconciliationBillingBasis { get; set; } = "RECEIVED";
         /// <summary>T19: đóng đối soát có |chênh lệch| % lớn hơn ngưỡng này phải ghi chú (spec 6.7, GAP-F-11 tạm 1%) – PROPOSED.</summary>
         public decimal ReconciliationVarianceRemarkPct { get; set; } = 1.0m;
         /// <summary>T19: bàn giao có suất bị từ chối → tự tạo phản ánh PA- (SourceChannel POD, SHORTAGE) – spec 10.3, PROPOSED.</summary>
@@ -116,6 +149,10 @@ namespace AppDelicare.Model.Option
         public decimal ForecastVariancePctWarning { get; set; } = 10.0m;
         /// <summary>BE2.2: số ngày tối đa của ma trận / công bố dự báo trong 1 lần gọi.</summary>
         public int ForecastMaxDays { get; set; } = 62;
+        /// <summary>FC-1.1 (D-76): số tuần nhìn lại khi tính dự báo gợi ý (trung bình suất thực nhận cùng thứ).</summary>
+        public int ForecastLookbackWeeks { get; set; } = 4;
+        /// <summary>FC-1.1: số ngày tối đa của 1 lần tạo dự báo gợi ý.</summary>
+        public int ForecastSuggestMaxDays { get; set; } = 14;
 
         // ------------------------------------------------------------ BE2.3 – duyệt nhiều cấp (PROPOSED – BA/PO CONFIRM, D-52)
         /// <summary>

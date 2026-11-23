@@ -75,6 +75,30 @@ namespace AppDelicare.Model.Request.Custom
         public Guid? BranchId { get; set; }
         public Guid? CustomerId { get; set; }
         public string? MealType { get; set; }
+        /// <summary>FC-1.3: kèm số gợi ý / trung bình 4 tuần / tuần trước theo khách × ngày (khoảng ≤ 31 ngày).</summary>
+        public bool WithSuggestion { get; set; }
+    }
+
+    /// <summary>FC-1.1 / 1.2 (D-76): tạo dự báo gợi ý (form). Trống = thứ Hai tuần sau → Chủ nhật tuần kế tiếp; tối đa ForecastSuggestMaxDays (14) ngày.</summary>
+    public class ForecastSuggestRequest
+    {
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+        /// <summary>Trống = mọi khách có hợp đồng hiệu lực.</summary>
+        public Guid? CustomerId { get; set; }
+        /// <summary>true = ghi đè cả bản Nháp người đã sửa / nhập tay (mặc định không).</summary>
+        public bool Overwrite { get; set; }
+        /// <summary>true = chỉ tính, không ghi.</summary>
+        public bool Preview { get; set; }
+    }
+
+    /// <summary>FC-1.5: độ chính xác dự báo (query). Trống = 28 ngày đã qua gần nhất.</summary>
+    public class ForecastAccuracyRequest
+    {
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+        public Guid? BranchId { get; set; }
+        public Guid? CustomerId { get; set; }
     }
 
     /// <summary>

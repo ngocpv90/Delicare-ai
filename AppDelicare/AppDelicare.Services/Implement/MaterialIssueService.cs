@@ -19,7 +19,7 @@ using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
-    public class MaterialIssueService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class MaterialIssueService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IInventoryLedgerService inventoryLedgerService, IDocumentNumberService documentNumberService
         , IClock clock, IOptions<BusinessRulesOptions> rules) : IMaterialIssueService
     {

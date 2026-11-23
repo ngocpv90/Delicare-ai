@@ -14,6 +14,7 @@ using AppDelicare.Model.ViewModels;
 using AppDelicare.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System.Net;
 
@@ -28,8 +29,40 @@ namespace AppDelicare.Services.Implement
     public class ProductionBatchService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IMaterialIssueService materialIssueService, IUomConversionService uomConversionService
         , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications
-        , IDocumentNumberService documentNumberService) : IProductionBatchService
+        , IDocumentNumberService documentNumberService, IServiceProvider services) : IProductionBatchService
     {
+        private readonly IServiceProvider _services = services;
+
+        /// <summary>Thao tác không chạy "tự Đạt" sau đó (QA vừa quyết định tay).</summary>
+        private static readonly HashSet<string> ManualQcActions = ["cho mẻ đạt QC", "tạm giữ mẻ", "loại mẻ"];
+
+        /// <summary>
+        /// BIZ-2.7 (D-77 – C6): mẻ Chờ QC (không bị Tạm giữ) đủ điều kiện → tự Đạt: lõi gần nhất ≥ CoreTempMinC, đã ghi sản lượng, ĐÃ LƯU MẪU, không tiêu chí
+        /// trọng yếu FAIL đang mở (= SafetyBlockersAsync + lưu mẫu bắt buộc). Thiếu → giữ Chờ QC, trả điều kiện còn thiếu (cảnh báo). QA vẫn Tạm giữ / Loại được.
+        /// </summary>
+        private async Task AutoPassAsync(ProductionBatch batch, List<string> warnings)
+        {
+            if (!_rules.BatchAutoPass || batch.Status != ProductionBatchStatus.QcPending || batch.QcStatus == BatchQcStatus.Hold)
+            {
+                return;
+            }
+            var db = _unitOfWork.DbContext;
+            var missing = await ProductionRules.SafetyBlockersAsync(db, batch, _rules, needOutput: true);
+            if ((await ProductionRules.SamplesAsync(db, batch.Id)).Count == 0 && !missing.Contains(ConstantHelper.Message.SampleMissing))
+            {
+                missing.Add(ConstantHelper.Message.SampleMissing);
+            }
+            if (missing.Count != 0)
+            {
+                warnings.Add(string.Format(ConstantHelper.Message.BatchAutoPassWaiting, Number(batch), string.Join("; ", missing)));
+                return;
+            }
+            batch.Status = ProductionBatchStatus.Passed;
+            batch.QcStatus = BatchQcStatus.Pass;
+            batch.QualityStatus = BatchQcStatus.Pass;
+            SetOutputQuality(batch, BatchQcStatus.Pass, "Hệ thống tự Đạt – đủ điều kiện (lõi, sản lượng, lưu mẫu, không lỗi trọng yếu)");
+            warnings.Add(string.Format(ConstantHelper.Message.BatchAutoPassed, Number(batch)));
+        }
         /// <summary>
         /// BOT-3.3 (D-72): nấu thêm – mẻ bổ sung (Kế hoạch) cùng lệnh SX / món / công thức với mẻ gốc; số mẻ cấp mới theo ngày + ca của lệnh (ME-YYMMDD-CA-NN).
         /// Phần kế hoạch của lệnh tăng thêm; nguyên liệu cho mẻ thêm phải lập phiếu xuất (nút Xuất NL của mẻ) – cảnh báo kèm kết quả. Lý do ghi vào ghi chú lệnh.
@@ -324,6 +357,7 @@ namespace AppDelicare.Services.Implement
                     return Fail(ConstantHelper.Message.ProductionOrderNotFound);
                 }
                 var warnings = new List<string>();
+                string? statusBefore = batch.Status;
                 string? error = await body(batch, order, actor, warnings);
                 if (error != null)
                 {
@@ -331,7 +365,36 @@ namespace AppDelicare.Services.Implement
                 }
                 _unitOfWork.ProductionBatchRepository.Update(batch);
                 await _unitOfWork.ProductionBatchRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                // BIZ-2.7: kiểm điều kiện tự Đạt SAU khi lưu (nhiệt độ / lưu mẫu / sản lượng vừa ghi đọc từ CSDL), cùng transaction.
+                if (!ManualQcActions.Contains(action) && batch.Status == ProductionBatchStatus.QcPending)
+                {
+                    await AutoPassAsync(batch, warnings);
+                    if (batch.Status == ProductionBatchStatus.Passed)
+                    {
+                        _unitOfWork.ProductionBatchRepository.Update(batch);
+                        await _unitOfWork.ProductionBatchRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                    }
+                }
                 _unitOfWork.CommitTransaction();
+                // BIZ-2.8 (D-77 – C7): mẻ vừa Đạt (tay hoặc tự) → tự sinh lệnh đóng gói theo đơn (PackingOrder/GenerateFromBatch); lỗi chỉ cảnh báo.
+                if (_rules.PackingAutoGenerateOnPass && statusBefore != ProductionBatchStatus.Passed && batch.Status == ProductionBatchStatus.Passed)
+                {
+                    try
+                    {
+                        var packing = await _services.GetRequiredService<IPackingOrderService>().GenerateFromBatch(new PackingOrderGenerateRequest { ProductionBatchId = batch.Id, Note = "Hệ thống tự sinh khi mẻ Đạt" });
+                        warnings.Add(packing.ResponseCode == 200 ? string.Format(ConstantHelper.Message.PackingAutoGenerated, Number(batch))
+                            : string.Format(ConstantHelper.Message.PackingAutoFailed, Number(batch), packing.ResponseMessage));
+                        if (packing.ResponseCode == 200 && packing.Data?.ListWarning is { Count: > 0 } pw)
+                        {
+                            warnings.AddRange(pw);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "[ProductionBatchService] tự sinh lệnh đóng gói mẻ {Batch}", batch.Id);
+                        warnings.Add(string.Format(ConstantHelper.Message.PackingAutoFailed, Number(batch), ex.Message));
+                    }
+                }
                 var detail = await DetailAsync(batch.Id);
                 detail!.ListWarning.InsertRange(0, warnings);
                 return Result<ProductionBatchDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
@@ -716,12 +779,14 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T17 (spec 8.3 qc HOLD): tạm giữ mẻ chờ QC (vẫn Chờ QC), nhận xét bắt buộc.</summary>
         public Task<IResult<ProductionBatchDetailModel>> Hold(ProductionActionRequest request)
-            => RunAsync(request.Id, "tạm giữ mẻ", [ProductionBatchStatus.QcPending], (batch, order, actor, warnings) =>
+            => RunAsync(request.Id, "tạm giữ mẻ", [ProductionBatchStatus.QcPending, ProductionBatchStatus.Passed], (batch, order, actor, warnings) =>
             {
                 if (string.IsNullOrWhiteSpace(request.Note))
                 {
                     return Task.FromResult<string?>(ConstantHelper.Message.BatchReasonRequired);
                 }
+                // BIZ-2.7: QA tạm giữ được cả mẻ đã (tự) Đạt chưa đóng gói → về Chờ QC.
+                batch.Status = ProductionBatchStatus.QcPending;
                 batch.QcStatus = BatchQcStatus.Hold;
                 batch.QualityStatus = BatchQcStatus.Hold;
                 SetOutputQuality(batch, BatchQcStatus.Hold, request.Note);
@@ -888,7 +953,7 @@ namespace AppDelicare.Services.Implement
                     ProductionBatchStatus.Planned => ["createMaterialIssue", "start", "exportProductionSheet"],
                     ProductionBatchStatus.Cooking => ["createMaterialIssue", "recordCoreTemperature", "recordSampleRetained", "recordWaste", "finish", "exportProductionSheet"],
                     ProductionBatchStatus.QcPending => ["recordCoreTemperature", "recordSampleRetained", "recordOutput", "recordWaste", "release", "hold", "reject", "exportProductionSheet"],
-                    ProductionBatchStatus.Passed => ["recordCoreTemperature", "recordSampleRetained", "recordOutput", "recordWaste", "pack", "reject", "exportProductionSheet"],
+                    ProductionBatchStatus.Passed => ["recordCoreTemperature", "recordSampleRetained", "recordOutput", "recordWaste", "pack", "hold", "reject", "exportProductionSheet"],
                     _ => ["recordWaste", "exportProductionSheet"],
                 },
             };

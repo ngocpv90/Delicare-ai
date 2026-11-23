@@ -724,7 +724,9 @@ namespace AppDelicare.Services.Implement
         /// BOT-2.3 (BOT_TELEGRAM §5.2 "Duyệt quá hạn"): yêu cầu mở có hạn của cấp đang chờ (ApprovalStep.DueAt, không có thì ApprovalRequest.DueAt) đã qua →
         /// APPROVAL_OVERDUE tới người duyệt của cấp (1 lần / cấp); quá thêm N giờ → nhóm quyền cấu hình (chưa có dữ liệu "cấp trên trực tiếp" – PROPOSED COO), bot DH.
         /// </summary>
-        public async Task<int> NotifyOverdueAsync(int escalateHours, IReadOnlyCollection<string> escalateGroups)
+        /// <remarks>BIZ-1.6 (D-77 f): quá hạn VẪN DUYỆT ĐƯỢC (ApprovalBlockOverdueDecision = false), chỉ gắn nhãn Quá hạn + leo thang:
+        /// bậc 1 người duyệt; bậc 2 sau N giờ → <paramref name="escalateGroups"/> (COO); bậc 3 sau 2N giờ → <paramref name="topGroups"/> (CEO).</remarks>
+        public async Task<int> NotifyOverdueAsync(int escalateHours, IReadOnlyCollection<string> escalateGroups, IReadOnlyCollection<string>? topGroups = null)
         {
             DateTime now = _clock.Now;
             var db = _unitOfWork.DbContext;
@@ -745,6 +747,7 @@ namespace AppDelicare.Services.Implement
             }
             var routes = await RoutesAsync(overdue.Select(x => x.Request.Id));
             var groupUsers = await RecipientResolver.UsersInGroupsAsync(db, escalateGroups);
+            var topUsers = topGroups is { Count: > 0 } ? await RecipientResolver.UsersInGroupsAsync(db, topGroups) : [];
             int sent = 0;
             foreach (var (r, step, due) in overdue)
             {
@@ -773,6 +776,15 @@ namespace AppDelicare.Services.Implement
                         Template = NotificationCatalog.ApprovalOverdue, UserIds = groupUsers, BotCode = MessagingCode.BotDieuHanh,
                         Data = new { title, requestNo = r.RequestNo, step = stepName, detail = $"Quá hạn duyệt từ {due:HH:mm dd/MM} – người duyệt chưa xử lý (bậc 2)" },
                         IdempotencyKey = $"{NotificationCatalog.ApprovalOverdue}:{r.Id:N}:{stepNo}:2", CorrelationId = "APR:" + r.Id.ToString("N"),
+                    });
+                }
+                if (now >= due!.Value.AddHours(2 * Math.Max(0, escalateHours)) && topUsers.Count > 0)
+                {
+                    sent += await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                    {
+                        Template = NotificationCatalog.ApprovalOverdue, UserIds = topUsers, BotCode = MessagingCode.BotDieuHanh,
+                        Data = new { title, requestNo = r.RequestNo, step = stepName, detail = $"Quá hạn duyệt từ {due:HH:mm dd/MM} – đã báo COO, vẫn chưa xử lý (bậc 3)" },
+                        IdempotencyKey = $"{NotificationCatalog.ApprovalOverdue}:{r.Id:N}:{stepNo}:3", CorrelationId = "APR:" + r.Id.ToString("N"),
                     });
                 }
             }

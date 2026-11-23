@@ -224,5 +224,38 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+        /// <summary>BIZ-2.5 (D-77 – C4): phiếu xuất Nháp theo ca do hệ thống tạo khi phát hành lệnh.</summary>
+        [HttpGet("GetShiftGroups")]
+        public async Task<IActionResult> GetShiftGroups([FromQuery] DateTime? fromDate)
+        {
+            try
+            {
+                return Ok(await _service.GetShiftGroups(fromDate));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetShiftGroups: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BIZ-2.5: ghi sổ cả ca – mọi phiếu Nháp cùng thẻ ca (mỗi phiếu như MaterialIssue/Post). Quyền Sửa trên scm-issue.</summary>
+        [HttpPost("PostShift")]
+        public async Task<IActionResult> PostShift([FromForm] MaterialIssueShiftRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.PostShift(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " PostShift: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

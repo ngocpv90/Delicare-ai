@@ -1,6 +1,9 @@
 # 04 – Mua hàng (nhu cầu nguyên liệu, đề nghị mua, đơn mua, nhà cung cấp)
 
 ## 1. Bạn là ai
+> **BIZ-2.2 – PO tự duyệt:** lập PO từ đề nghị mua Đã duyệt → PO **tự Đã duyệt** khi đúng NCC gợi ý, đơn giá = bảng giá, số ≤ đề nghị, tổng < 50 triệu (ghi chú `[TU_DUYET]`). Thiếu đơn giá / ≥ 50 triệu → Nháp, gửi duyệt như cũ. Sửa dòng PO đã tự duyệt (chưa nhập hàng) → về **Nháp**, gửi duyệt lại.
+> **BIZ-2.6 – QC xong tự nhập kho:** kết luận QC **Đạt / Đạt một phần** → hệ thống **tự Ghi sổ** phần đạt (lô, tồn, PO) ngay trong thao tác kết luận. **Không đạt** cả phiếu → không nhập, Ghi sổ tay để tạo sự cố NCC. Nút **Ghi sổ** chỉ còn dùng khi tự ghi sổ lỗi.
+
 
 - Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – dùng chung với thủ kho (`05_KHO.md`). Trưởng bộ phận mua hàng được cấp thêm **"Phê duyệt › Đề nghị mua hàng (cấp 1)"**.
 - Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); trưởng bộ phận được cấp thêm bot **Điều hành**.
@@ -36,15 +39,17 @@
 ## 4. Thao tác từng bước
 
 ### 4.1 Nhu cầu nguyên liệu (MRP) – `scm-requirement`
+**Kế hoạch mua theo ngày cần hàng (khối đầu trang – BIZ-1.3, D-77 c):** hệ thống tự tính nhu cầu **7 ngày tới** (ngày mai → +7). Mỗi ngày, mỗi khách / điểm giao / loại suất lấy **đơn đã chốt**; chưa chốt thì lấy **đăng ký / đơn đã xác nhận**; chưa có thì lấy **dự báo đã công bố** (đầu cột ngày ghi nguồn). Tồn kho, hàng PO sắp về và đề nghị mua đang mở được **trừ dồn** qua các ngày (không dùng một tồn cho nhiều ngày). Mỗi nguyên liệu có **Ngày phải đặt** = ngày cần − thời gian giao của NCC ưu tiên − 1 ngày: *Phải đặt hôm nay* / *Đặt trước ngày …* / *Trễ*. Nút **Lập đề nghị mua cho phần phải đặt** → đề nghị mua Nháp, mỗi dòng ghi ngày cần hàng; gửi duyệt như thường. Bot `/nlmai` cũng báo nguyên liệu phải đặt hôm nay. Mốc 20:00 sau chốt đơn chỉ còn **Tính bổ sung**.
+
 1. Chọn **ngày sản xuất** (mặc định ngày mai) ở đầu trang.
 2. **Tính nhu cầu**: hệ thống lấy các đơn **Đã chốt** của ngày, nhân định lượng công thức, so với tồn **xuất được** và **hàng sắp về** (PO đã duyệt có ngày giao ≤ ngày SX), cộng tồn an toàn, rồi tự lập **đề nghị mua Nháp** cho phần thiếu.
 3. Kết quả trên màn:
    - Thẻ: Đơn đã chốt (kế hoạch `KS-…`), Tổng suất / số món, **Nguyên liệu cần mua**, Giá trị mua ước tính (tính lúc …).
    - Khối **Lưu ý**: cảnh báo (đơn chưa chốt, đơn chưa gắn thực đơn, món chưa có công thức khóa, thiếu quy đổi đơn vị, NCC giao không kịp…).
    - Khối **Đề nghị mua của kế hoạch**: số đề nghị, số dòng, giá trị, trạng thái + **Mở Đề nghị mua →**.
-   - Bảng **Nguyên liệu**: Nhu cầu, Tồn xuất được (+ "bị chặn" nếu có lô giữ / hết hạn), Hàng sắp về, **Cần mua**, ĐVT, Độ phủ (thanh màu), NCC gợi ý, Trạng thái (Đủ / Thiếu / Đã đề nghị mua).
+   - Bảng **Nguyên liệu**: Nhu cầu thuần, **Tồn an toàn**, Tồn xuất được (+ "bị chặn" nếu có lô giữ / hết hạn), Hàng sắp về, **Cần mua**, ĐVT, Độ phủ (thanh màu), NCC gợi ý, Trạng thái (Đủ / Thiếu / Đã đề nghị mua).
    - Bảng **Món và số suất**: món, số suất (+ dự phòng khi thực đơn nhiều lựa chọn), phiên bản công thức.
-4. **Lập đề nghị mua theo dòng chọn** (khi đề nghị chưa gửi duyệt): tick các nguyên liệu, nhập **Dự phòng thêm (%)** (0–100, mặc định 5), Ghi chú → **Lập đề nghị mua**. Số đề nghị = cần mua × (1 + % dự phòng); đề nghị Nháp của kế hoạch được cập nhật lại.
+4. **Lập đề nghị mua theo dòng chọn** (khi đề nghị chưa gửi duyệt): tick các nguyên liệu, nhập **Dự phòng thêm (%)** (0–100, **mặc định 0** – BIZ-1.2: số cần mua đã gồm tồn an toàn, chỉ nhập khi thật cần), Ghi chú → **Lập đề nghị mua**. Số đề nghị = cần mua × (1 + % dự phòng); đề nghị Nháp của kế hoạch được cập nhật lại.
 5. **Tính bổ sung** (chỉ hiện khi đề nghị mua của kế hoạch đã gửi duyệt / đã duyệt / đã lập PO): tính lại phần thiếu thêm và lập **đề nghị mua bổ sung**, không đụng đề nghị cũ.
 6. **In phiếu trước sản xuất**: tải phiếu nguyên liệu cần cho ngày.
 

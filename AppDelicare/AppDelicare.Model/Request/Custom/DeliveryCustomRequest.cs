@@ -305,6 +305,10 @@ namespace AppDelicare.Model.Request.Custom
         public decimal ServedQuantity { get; set; }
         public decimal? ReturnedQuantity { get; set; }
         public decimal? WastedQuantity { get; set; }
+        /// <summary>BIZ-1.4: suất khách trả lại / hủy do LỖI DELICARE (thiếu, hỏng, không đạt nhiệt độ, sai món) – trừ khỏi số tính tiền. ≤ suất nhận.</summary>
+        public decimal? DelicareFaultQuantity { get; set; }
+        /// <summary>BIZ-1.4: mã lý do (DeliveryCode.FaultReasons) – bắt buộc khi có suất lỗi.</summary>
+        public string? FaultReason { get; set; }
         [MaxLength(2000)]
         public string? Remark { get; set; }
         /// <summary>
@@ -363,6 +367,18 @@ namespace AppDelicare.Model.Request.Custom
     }
 
     /// <summary>T19: thao tác phản ánh (form): Assign (AssignedTo = User.Id), Resolve (Comment = cách xử lý), Close, Reject, AddComment.</summary>
+    /// <summary>BIZ-3.1 (D-77 – A6): tạo đơn bù từ phản ánh (form). Quantity trống = số khách từ chối ở POD của đơn gốc.</summary>
+    public class ComplaintCompensationRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        public decimal? Quantity { get; set; }
+        /// <summary>true = khách đặt thêm, trả tiền (giá dòng đơn gốc); mặc định lỗi Delicare – giá 0.</summary>
+        public bool ChargeCustomer { get; set; }
+        [MaxLength(500)]
+        public string? Note { get; set; }
+    }
+
     public class ComplaintActionRequest
     {
         [Required]

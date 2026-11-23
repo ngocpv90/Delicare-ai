@@ -25,12 +25,12 @@ namespace AppDelicare.Tests.Production
         private static int MenuDay(DateTime d) => d.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)d.DayOfWeek;
 
         [Fact]
-        public async Task Generate_builds_one_day_plan_from_confirmed_and_locked_orders_split_by_shift_and_refreshes_while_draft()
+        public async Task Generate_builds_one_day_plan_from_locked_orders_only_split_by_shift_and_refreshes_while_draft()
         {
             var day = new DateTime(2026, 11, 30);
             _factory.Clock.FixedNow = day.AddDays(-1).AddHours(21);
             Guid lunch = Guid.NewGuid(), dinner = Guid.NewGuid(), rice = Guid.NewGuid(), chicken = Guid.NewGuid(), fish = Guid.NewGuid(), menu = Guid.NewGuid();
-            Guid customer = Guid.NewGuid(), o1 = Guid.NewGuid(), o2 = Guid.NewGuid(), o3 = Guid.NewGuid();
+            Guid customer = Guid.NewGuid(), o1 = Guid.NewGuid(), o2 = Guid.NewGuid(), o3 = Guid.NewGuid(), o4 = Guid.NewGuid();
             await _factory.SeedAsync(db =>
             {
                 db.Shift.AddRange(new Shift { Id = lunch, Code = "TRUAG1", Name = "Trưa", StartTime = new TimeSpan(10, 30, 0), Status = "Active" },
@@ -46,13 +46,16 @@ namespace AppDelicare.Tests.Production
                     new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = fish, MealType = "TOI", DayOfWeek = MenuDay(day), SequenceNo = 1, SortOrder = 2 });
                 db.Customer.Add(new Customer { Id = customer, Code = "KG1", Name = "[DEMO] Khách G1", DisplayName = "Khách G1", CIF = "KG1", CustomerType = "FACTORY", Status = "Active" });
                 db.Order.AddRange(
-                    new Order { Id = o1, OrderNumber = "PH-G1-1", CustomerId = customer, OrderDate = day.AddDays(-3), MealDate = day, DeliveryDate = day, Status = "Confirmed", TotalQuantity = 100 },
+                    new Order { Id = o1, OrderNumber = "PH-G1-1", CustomerId = customer, OrderDate = day.AddDays(-3), MealDate = day, DeliveryDate = day, Status = "Locked", TotalQuantity = 100 },
                     new Order { Id = o2, OrderNumber = "PH-G1-2", CustomerId = customer, OrderDate = day.AddDays(-3), MealDate = day, DeliveryDate = day, Status = "Locked", TotalQuantity = 50 },
-                    new Order { Id = o3, OrderNumber = "PH-G1-3", CustomerId = customer, OrderDate = day.AddDays(-3), MealDate = day, DeliveryDate = day, Status = "Draft", TotalQuantity = 999 });
+                    new Order { Id = o3, OrderNumber = "PH-G1-3", CustomerId = customer, OrderDate = day.AddDays(-3), MealDate = day, DeliveryDate = day, Status = "Draft", TotalQuantity = 999 },
+                    // BIZ-1.3 / A9: đơn Đã xác nhận (chưa chốt) không vào kế hoạch chính thức.
+                    new Order { Id = o4, OrderNumber = "PH-G1-4", CustomerId = customer, OrderDate = day.AddDays(-3), MealDate = day, DeliveryDate = day, Status = "Confirmed", TotalQuantity = 777 });
                 db.OrderLine.AddRange(
                     new OrderLine { Id = Guid.NewGuid(), OrderId = o1, MenuId = menu, MealType = "TRUA", ShiftId = lunch, Quantity = 100, LineAmount = 0 },
                     new OrderLine { Id = Guid.NewGuid(), OrderId = o2, MenuId = menu, MealType = "TOI", ShiftId = dinner, Quantity = 50, LineAmount = 0 },
-                    new OrderLine { Id = Guid.NewGuid(), OrderId = o3, MenuId = menu, MealType = "TRUA", ShiftId = lunch, Quantity = 999, LineAmount = 0 });
+                    new OrderLine { Id = Guid.NewGuid(), OrderId = o3, MenuId = menu, MealType = "TRUA", ShiftId = lunch, Quantity = 999, LineAmount = 0 },
+                    new OrderLine { Id = Guid.NewGuid(), OrderId = o4, MenuId = menu, MealType = "TRUA", ShiftId = lunch, Quantity = 777, LineAmount = 0 });
                 return Task.CompletedTask;
             });
             using var c = _factory.CreateAuthorizedClient();
@@ -68,7 +71,7 @@ namespace AppDelicare.Tests.Production
             lines["GAG1"].GetProperty("shiftId").GetGuid().Should().Be(lunch);
             lines["CAG1"].GetProperty("plannedQuantity").GetDecimal().Should().Be(50);
             lines["CAG1"].GetProperty("shiftId").GetGuid().Should().Be(dinner);
-            plan.GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("1 đơn Nháp / Đã gửi"));
+            plan.GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("2 đơn Nháp / Đã gửi / Đã xác nhận"));
 
             // Sinh lại khi còn Nháp: đơn 1 đổi 100 → 80 suất → cập nhật tại chỗ (cùng số KH-).
             await _factory.SeedAsync(async db => (await db.OrderLine.SingleAsync(l => l.OrderId == o1)).Quantity = 80);

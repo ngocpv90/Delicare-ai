@@ -1,6 +1,8 @@
 # 10 – Điểm phát / CSKH (nhận hàng, đối soát suất, phản ánh)
 
 ## 1. Bạn là ai
+> **BIZ-2.9 – Đối soát tự động:** bàn giao xong đơn (Đã giao) → hệ thống **tự tạo đối soát** với suất phục vụ = suất khách nhận (nhân viên điểm sửa nếu khác, ghi suất lỗi Delicare như BIZ-1.4). Đối soát **Khớp**, đơn không còn phản ánh mở, quá **24 giờ** → **tự Chốt** ("Hệ thống tự chốt" – chạy lúc 20:00 và khi mở màn đối soát). Chốt (tay / tự) → **tự tính giá vốn suất**.
+
 
 - Nhóm quyền: **OPS-POS** (1.5 Vận hành điểm phát – quản lý / nhân viên điểm phát tại công trường / nhà máy) và **SAL-CS** (2.3 Chăm sóc khách hàng).
 - Bot dùng: **Vận hành** – phân hệ 🍱 Điểm phát (OPS-POS) và 📣 CSKH (SAL-CS); QR dán tại điểm phát. Trưởng CSKH được cấp thêm bot **Điều hành**.
@@ -38,7 +40,8 @@
 1. Đầu màn: biểu đồ **Đặt – Giao – Nhận** theo ngày ăn. Bảng: Đơn hàng, Đặt, Sản xuất, Đóng gói, Giao, Nhận, **Chênh lệch %** (đỏ khi vượt 1%), Trạng thái.
 2. **Ghi suất phục vụ** (đầu trang) → danh sách đơn **Đã giao** chờ đối soát (Số đơn, Ngày ăn, Khách hàng, Đặt, Giao, Khách nhận, Đối soát) → bấm **Ghi suất phục vụ** trên đơn.
 3. Hộp **Ghi suất thực tế phục vụ**: hiển thị Suất đặt / Suất giao / Khách nhận khi bàn giao; nhập **Suất phục vụ thực tế*** (mặc định = số khách nhận), **Suất trả về**, **Suất hủy**, **Ghi chú** → **Lưu đối soát**.
-   - Ràng buộc: phục vụ + trả về + hủy **≤ số suất khách nhận**. Số suất tính tiền và chênh lệch tính lại theo số này.
+   - Ràng buộc: phục vụ + trả về + hủy **≤ số suất khách nhận**.
+   - **Tính tiền (BIZ-1.4, D-77 d):** theo **số khách ký nhận khi bàn giao trừ suất trả lại / hủy do lỗi Delicare**. Nhập ô **Suất trả lại / hủy do lỗi Delicare** + chọn **Lý do** (Thiếu suất, Hỏng / đổ vỡ, Không đạt nhiệt độ, Sai món, Chất lượng không đạt). Khách không dùng hết **không giảm tiền**. Hộp xanh hiện: Khách nhận − lỗi Delicare = tính tiền · phục vụ (tham khảo). Suất phục vụ thực tế chỉ để tham khảo và làm dự báo.
 4. Trên dòng: **Ghi lại** (sửa số khi chưa chốt), **Chốt** (nhập ghi chú; chênh lệch > 1% bắt buộc giải trình) → đơn hàng **Đã đối soát**, không sửa được nữa; **In** (biên bản đối soát PDF – chỉ in được sau khi chốt).
 
 ### 4.3 Phản ánh khách hàng – `log-complaint`

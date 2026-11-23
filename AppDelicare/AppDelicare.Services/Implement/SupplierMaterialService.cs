@@ -14,9 +14,14 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class SupplierMaterialService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : ISupplierMaterialService
+    public partial class SupplierMaterialService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+        , IAuditChangeService auditChangeService, IServiceProvider services, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules
+        , AppDelicare.Data.Share.IClock clock, INotificationService notifications) : ISupplierMaterialService
     {
+        private readonly IServiceProvider _services = services;
+        private readonly AppDelicare.Model.Option.BusinessRulesOptions _rules = rules.Value;
+        private readonly AppDelicare.Data.Share.IClock _clock = clock;
+        private readonly INotificationService _notifications = notifications;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -91,6 +96,10 @@ namespace AppDelicare.Services.Implement
 
         public async Task<IResult<bool>> Save(SupplierMaterialRequest request, string typeSave)
         {
+            // BIZ-3.3: nguyên liệu bị ảnh hưởng (xóa → lấy từ dòng cũ) để tính lại giá thành sau khi lưu.
+            Guid ingredientId = typeSave == ConstantHelper.TypeSave.Delete
+                ? await _unitOfWork.DbContext.SupplierMaterial.AsNoTracking().Where(x => x.Id == request.Id).Select(x => x.IngredientId).FirstOrDefaultAsync()
+                : request.IngredientId;
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
@@ -120,10 +129,11 @@ namespace AppDelicare.Services.Implement
                         Data = false
                     };
                 }
+                string? costNote = await AfterPriceChangeAsync(ingredientId);
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess,
+                    ResponseMessage = (typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess) + (costNote == null ? string.Empty : " – " + costNote),
                     Data = true
                 };
             }

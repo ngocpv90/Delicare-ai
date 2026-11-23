@@ -13,6 +13,10 @@ namespace AppDelicare.Services.Interface
     public interface IOrderReconciliationService
     {
         public Task<IResults<OrderReconciliationViewModel>> GetAll(OrderReconciliationSearchRequest request);
+        /// <summary>BIZ-2.9: đơn vừa Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận). Trả câu thông báo (null = không tạo).</summary>
+        public Task<string?> AutoCreateAsync(Guid orderId);
+        /// <summary>BIZ-2.9: tự chốt đối soát Khớp, không phản ánh mở, quá ReconciliationAutoCloseHours. Trả số bản đã chốt.</summary>
+        public Task<int> AutoCloseDueAsync();
         public Task<IResult<bool>> Save(OrderReconciliationRequest request, string typeSave);
         public Task<IResults<OrderReconciliation>> GetAllData();
         public Task<IResult<OrderReconciliation>> GetById(Guid id);

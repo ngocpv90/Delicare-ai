@@ -26,7 +26,7 @@ namespace AppDelicare.Services.Implement
     /// T19 (spec 10.5, BUSINESS_RULES §9, Pilot P8) – phản ánh khách <c>PA-yyMMdd-NNNN</c>: Create (Mới, hạn SLA theo mức độ) → Assign (Đang xử lý) → Resolve (Đã xử lý)
     /// → Close (Đóng); Reject (Mới / Đang xử lý → Từ chối); AddComment. Mọi bước ghi ComplaintHistory (sổ chỉ ghi thêm). Cảnh báo / leo thang SLA tự động → sau Pilot.
     /// </summary>
-    public class CustomerComplaintService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+    public partial class CustomerComplaintService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
         , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications, IOptions<ReferenceListsOptions> referenceLists) : ICustomerComplaintService
     {
         private readonly ReferenceListsOptions _referenceLists = referenceLists.Value;

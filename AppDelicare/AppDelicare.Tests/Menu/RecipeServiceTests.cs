@@ -65,17 +65,16 @@ namespace AppDelicare.Tests.Menu
             cost.GetProperty("totalMaterialCost").GetDecimal().Should().Be(1_020_000);
             cost.GetProperty("complete").GetBoolean().Should().BeTrue();
 
-            (await c.PostFormAsync("/api/Recipe/Submit", ("id", r1))).Ok();
+            (await c.PostFormAsync("/api/Recipe/Submit", ("id", r1), ("effectiveFrom", new DateTime(2026, 12, 1)))).Ok();
             (await RecipeAsync(r1)).Status.Should().Be("PendingApproval");
             (await c.PutFormAsync("/api/RecipeLine/Update", ("Id", line.Id), ("RecipeId", r1), ("IngredientId", rice), ("Quantity", 1m), ("UnitId", g))).Fail("Draft");
             (await c.DeleteResultAsync($"/api/RecipeLine/Delete?id={line.Id}")).Fail("Draft");
             (await c.PostFormAsync("/api/Recipe/Lock", ("Id", r1), ("EffectiveFrom", new DateTime(2026, 12, 1)))).Fail("Approved");
             (await c.PostFormAsync("/api/Recipe/Reject", ("Id", r1), ("Note", ""))).Fail("lý do");
+            // BIZ-2.3: duyệt cấp cuối = khóa & áp dụng từ ngày chọn khi gửi.
             (await c.PostFormAsync("/api/Recipe/Approve", ("Id", r1))).Ok();
-            (await RecipeAsync(r1)).Status.Should().Be("Approved");
-
-            (await c.PostFormAsync("/api/Recipe/Lock", ("Id", r1), ("EffectiveFrom", new DateTime(2026, 12, 1)))).Ok();
             var locked = await RecipeAsync(r1);
+            (await c.PostFormAsync("/api/Recipe/Lock", ("Id", r1))).Fail("Approved");
             locked.Status.Should().Be("Locked");
             locked.IsActive.Should().BeTrue();
             locked.LockedAt.Should().NotBeNull();
@@ -87,9 +86,8 @@ namespace AppDelicare.Tests.Menu
             // V2 sao chép V1 → khóa → V1 Obsolete, EffectiveTo = ngày trước hiệu lực V2.
             Guid r2 = (await c.PostFormAsync("/api/Recipe/CreateVersion", ("DishId", dish), ("CopyFromRecipeId", r1))).Ok().GetProperty("id").GetGuid();
             (await _factory.QueryAsync(db => db.RecipeLine.CountAsync(l => l.RecipeId == r2 && !l.IsDeleted))).Should().Be(2);
-            (await c.PostFormAsync("/api/Recipe/Submit", ("id", r2))).Ok();
+            (await c.PostFormAsync("/api/Recipe/Submit", ("id", r2), ("effectiveFrom", new DateTime(2027, 1, 1)))).Ok();
             (await c.PostFormAsync("/api/Recipe/Approve", ("Id", r2))).Ok();
-            (await c.PostFormAsync("/api/Recipe/Lock", ("Id", r2), ("EffectiveFrom", new DateTime(2027, 1, 1)))).Ok();
             var old = await RecipeAsync(r1);
             old.Status.Should().Be("Obsolete");
             old.IsActive.Should().BeFalse();
@@ -131,8 +129,7 @@ namespace AppDelicare.Tests.Menu
             await AddLine(c, r, rice, 12000, g, 1);
             await AddLine(c, r, pork, 15, kg, 2);
             await c.PostFormAsync("/api/Recipe/Submit", ("id", r));
-            await c.PostFormAsync("/api/Recipe/Approve", ("Id", r));
-            (await c.PostFormAsync("/api/Recipe/Lock", ("Id", r))).Ok();
+            (await c.PostFormAsync("/api/Recipe/Approve", ("Id", r))).Ok();
 
             await _factory.SeedAsync(async db =>
             {

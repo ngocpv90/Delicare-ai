@@ -508,7 +508,7 @@ namespace AppDelicare.Services.Implement
                 I("Đơn hàng", detail.OrderNumber),
                 I("Ngày ăn", D(detail.MealDate)),
                 I("Trạng thái", detail.StatusName ?? r.Status),
-                I("Cơ sở tính tiền", detail.BillingBasis),
+                I("Cơ sở tính tiền", detail.BillingBasisName ?? detail.BillingBasis),
                 I("Số suất tính tiền", N(detail.BillingQuantity)),
             ]);
             doc.ListHeader.AddRange(["Đặt", "Sản xuất", "Đóng gói", "Giao", "Nhận (POD)", "Chênh lệch", "% chênh lệch", "Giá trị chốt"]);

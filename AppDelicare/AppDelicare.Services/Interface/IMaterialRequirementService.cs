@@ -24,6 +24,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<MaterialRequirementResultModel>> CreatePurchaseRequest(MaterialRequirementPurchaseRequest request);
         /// <summary>T14: kết quả đã lưu theo ngày sản xuất (+ chi nhánh).</summary>
         public Task<IResult<MaterialRequirementResultModel>> GetByDate(MaterialRequirementByDateRequest request);
+        /// <summary>BIZ-1.3: nhu cầu nhiều ngày (đơn chốt → đăng ký → dự báo), trừ tồn lũy kế, ngày phải đặt theo lead time NCC – chỉ tính khi xem.</summary>
+        public Task<IResult<AppDelicare.Model.Model.MaterialHorizonModel>> GetHorizon(MaterialHorizonRequest request);
+        /// <summary>BIZ-1.3: lập đề nghị mua Nháp cho phần phải đặt (dòng theo ngày cần hàng).</summary>
+        public Task<IResult<AppDelicare.Model.Model.MaterialHorizonModel>> CreateHorizonPurchaseRequest(MaterialHorizonPurchaseRequest request);
         /// <summary>T14: kết quả đã lưu theo kế hoạch sản xuất.</summary>
         public Task<IResult<MaterialRequirementResultModel>> GetDetail(Guid productionPlanId);
         /// <summary>T15: in Phiếu trước sản xuất (.xlsx) từ kết quả tính nhu cầu của kế hoạch.</summary>

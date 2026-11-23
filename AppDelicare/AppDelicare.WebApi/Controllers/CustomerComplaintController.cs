@@ -258,5 +258,23 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+        /// <summary>BIZ-3.1 (D-77 – A6): tạo đơn bù từ phản ánh – quyền Sửa trên log-complaint.</summary>
+        [HttpPost("CreateCompensationOrder")]
+        public async Task<IActionResult> CreateCompensationOrder([FromForm] ComplaintCompensationRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CreateCompensationOrder(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateCompensationOrder: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

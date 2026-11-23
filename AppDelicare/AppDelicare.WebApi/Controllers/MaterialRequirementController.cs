@@ -212,6 +212,40 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>BIZ-1.3 (D-77 c): nhu cầu nguyên liệu D+1 → D+N theo ngày cần hàng – nguồn đơn chốt / đăng ký / dự báo, trừ tồn lũy kế, ngày phải đặt.</summary>
+        [HttpGet("GetHorizon")]
+        public async Task<IActionResult> GetHorizon([FromQuery] MaterialHorizonRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetHorizon(request ?? new MaterialHorizonRequest()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetHorizon: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>BIZ-1.3: lập đề nghị mua Nháp cho phần phải đặt (mặc định chỉ phần có ngày phải đặt ≤ hôm nay) – mỗi dòng theo ngày cần hàng.</summary>
+        [HttpPost("CreateHorizonPurchaseRequest")]
+        public async Task<IActionResult> CreateHorizonPurchaseRequest([FromBody] MaterialHorizonPurchaseRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CreateHorizonPurchaseRequest(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateHorizonPurchaseRequest: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>BE2.1 (spec 7.1 create-purchase-request): lập / làm lại đề nghị mua Nháp từ các dòng thiếu được chọn + % dự phòng – JSON vì có danh sách dòng.</summary>
         [HttpPost("CreatePurchaseRequest")]
         public async Task<IActionResult> CreatePurchaseRequest([FromBody] MaterialRequirementPurchaseRequest request)

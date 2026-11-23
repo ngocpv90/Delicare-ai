@@ -175,6 +175,30 @@ namespace AppDelicare.Tests.Notifications
             (await OfAsync(f, NotificationCatalog.TripNotDeparted)).Should().Contain(m => m.PayloadJson!.Contains("CX-23B"), "10:00 – chuyến 09:10 đã trễ quá 10′");
         }
 
+        /// <summary>BIZ-1.6 (D-77 f): duyệt quá hạn không bị khóa, chỉ leo thang – quá hạn → người duyệt; +24 giờ → COO; +48 giờ → CEO (nhóm cấu hình ApprovalOverdueTopGroups).</summary>
+        [Fact]
+        public async Task Overdue_approval_escalates_to_top_group_after_twice_the_escalation_hours()
+        {
+            using var f = NewFactory(quiet: false);
+            f.Settings["Messaging:Watch:ApprovalOverdueGroups:0"] = "NHOM-KHONG-CO";
+            f.Settings["Messaging:Watch:ApprovalOverdueTopGroups:0"] = "G-23";
+            var p = await SeedAsync(f, "#/wf-inbox?type=" + LeaveRequestStatus.ScreenId);
+            Guid leave = Guid.NewGuid();
+            await f.SeedAsync(db =>
+            {
+                db.LeaveRequest.Add(new LeaveRequest { Id = leave, RequestNo = "NP-24", EmployeeId = p.OnDutyEmp, LeaveTypeCode = "ANNUAL", FromDate = Day.AddDays(3), ToDate = Day.AddDays(3), RequestStatus = "Pending", SubmittedAt = Day.AddDays(-4) });
+                db.ApprovalRequest.Add(new ApprovalRequest { Id = Guid.NewGuid(), RequestNo = "YC-24", BusinessType = LeaveRequestStatus.BusinessType, BusinessId = leave, RequestedBy = p.Evening,
+                    RequestedAt = Day.AddDays(-4), RequestStatus = "Pending", CurrentStepNo = 1, DueAt = Day.AddDays(-1).AddHours(8) });
+                return Task.CompletedTask;
+            });
+            f.Clock.FixedNow = Day.AddHours(9);
+            await WatchAsync(f);
+            (await OfAsync(f, NotificationCatalog.ApprovalOverdue)).Should().NotContain(m => m.IdempotencyKey!.Contains(":1:3:"), "mới quá hạn 25 giờ – chưa tới bậc 3 (48 giờ)");
+            f.Clock.FixedNow = Day.AddDays(1).AddHours(9);
+            await WatchAsync(f);
+            (await OfAsync(f, NotificationCatalog.ApprovalOverdue)).Should().Contain(m => m.IdempotencyKey!.Contains(":1:3:"), "quá hạn 49 giờ → báo nhóm bậc 3 (CEO)");
+        }
+
         private static async Task<long> RunJobAsync(InMemoryApiFactory f, string code)
         {
             using var scope = f.Services.CreateScope();

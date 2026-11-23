@@ -166,7 +166,8 @@
     const editable = ['Draft', 'Submitted'].includes(o.Status);
     const dvs = Store.by('DeliveryOrder', 'OrderId', id);
     const rec = Store.one('OrderReconciliation', 'OrderId', id);
-    const actions = { Draft: ['submit', 'Gửi đơn (Submitted)'], Submitted: ['confirm', 'Xác nhận (Confirmed)'], Confirmed: ['lock', 'Chốt số lượng (Locked)'] }[o.Status];
+    // BIZ-2.1: đơn nhân viên nhập Nháp → Xác nhận thẳng (bỏ Gửi); Đã gửi = đơn khách tự đăng ký.
+    const actions = { Draft: ['confirm', 'Xác nhận'], Submitted: ['confirm', 'Xác nhận'], Confirmed: ['lock', 'Chốt số lượng'] }[o.Status];
     UI.detail('Order', id, {
       screen: 'crm-order', noEdit: !editable,
       top: `${UI.stepper(ORDER_FLOW.map(s => UI.statusVi('Order', 'Status', s)), i, o.Status === 'Cancelled')}<div data-odlive></div><div class="small muted mt">Khách hàng: <b>${esc(c.DisplayName || c.Name || '')}</b>${c.CustomerType ? ' · ' + esc(UI.statusVi('Customer', 'CustomerType', c.CustomerType) || '') : ''}</div><div class="kpis mt">${UI.kpi('Số dòng suất', U.num(Store.by('OrderLine', 'OrderId', id).length), '', 'clipboard', 'green')}${UI.kpi('Tổng suất', U.num(o.TotalQuantity), '', 'utensils', 'blue')}${UI.kpi('Thành tiền', U.money(o.TotalAmount), '', 'calc', 'orange')}</div>
@@ -236,6 +237,8 @@
           const d = res.data || {}, nc = (d.listNotConfirmedNumber || []).length, pa = (d.listPendingApprovalNumber || []).length;
           const extra = [nc ? nc + ' đơn chưa xác nhận' : '', pa ? pa + ' đơn đang chờ duyệt' : ''].filter(Boolean).join(' · ');
           UI.toast('Đã chốt ' + U.num(d.lockedCount || 0) + ' đơn ngày ' + esc(U.date(day)) + (extra ? ' – còn ' + extra : ''), extra ? 'warn' : 'ok'); bust(); APP.refresh();
+          // BIZ-2.4: kế hoạch SX tự lập / phát hành sau chốt.
+          const ap = d.autoPlan; if (ap) { const T = { RELEASED: ['ok', 'Hệ thống đã lập và phát hành kế hoạch ' + (ap.planNumber || '') + ' (' + U.num(ap.productionOrderCount || 0) + ' lệnh SX)'], HELD: ['warn', 'Kế hoạch ' + (ap.planNumber || '') + ' chưa tự phát hành – chờ COO: ' + (ap.listReason || []).join('; ')], SKIPPED: ['info', (ap.listReason || []).join('; ')], NONE: ['info', 'Chưa lập kế hoạch: ' + (ap.listReason || []).join('; ')] }[ap.status]; if (T) setTimeout(() => UI.toast(esc(T[1]), T[0]), 600); }
         }), { danger: true, ok: 'Chốt đơn' });
       } });
   }
@@ -243,7 +246,7 @@
     const cus = Store.rows('Customer').filter(c => c.Status === 'Active');
     UI.modal({
       title: 'Tạo đơn đặt suất', sub: Store.isLive ? 'Loại suất theo hợp đồng hiệu lực · mỗi điểm giao một đơn · số lượng gợi ý từ dự báo đã công bố' : 'Order + OrderLine · lấy loại suất từ ContractMeal, điểm giao từ CustomerDeliveryLocation, gợi ý số lượng từ Forecast', size: 'lg',
-      body: `<div class="form-grid"><div class="field"><label>Khách hàng <span class="req">*</span><code>CustomerId</code></label><select class="select" id="nC"><option value="">— Chọn —</option>${cus.map(c => `<option value="${c.Id}">${esc(c.DisplayName)}</option>`).join('')}</select></div><div class="field"><label>Ngày ăn <span class="req">*</span><code>MealDate</code></label><input type="date" class="input" id="nD" value="${U.addDays(Store.ctx.date, 4)}"></div></div><div id="nLines" class="mt"></div>`,
+      body: `<div class="form-grid"><div class="field"><label>Khách hàng <span class="req">*</span><code>CustomerId</code></label><select class="select" id="nC"><option value="">— Chọn —</option>${cus.map(c => `<option value="${c.Id}">${esc(c.DisplayName)}</option>`).join('')}</select></div><div class="field"><label>Ngày ăn <span class="req">*</span><code>MealDate</code></label><input type="date" class="input" id="nD" value="${U.addDays(Store.ctx.date, 1)}"></div></div><div id="nLines" class="mt"></div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="nSave">Tạo đơn (Nháp)</button>',
       onMount: (m, close) => {
         // Chế độ API: Order/GetNewTemplate dựng sẵn dòng theo hợp đồng hiệu lực tại ngày ăn × điểm giao (mỗi điểm giao = 1 đơn),
@@ -261,10 +264,10 @@
             const locs = tpl.listLocation || [];
             box.innerHTML = `<div class="notice ok">${I('ok')}<div>Hợp đồng ${esc(tpl.contractNumber || '')}${tpl.contractName ? ' · ' + esc(tpl.contractName) : ''} · hạn chốt đơn ${esc(U.dt(tpl.cutoffAt))}</div></div>
               ${tpl.isAfterCutoff ? `<div class="notice warn">${I('alert')}<div>Đã quá giờ chốt của ngày ăn này. Đơn tạo mới sẽ ở trạng thái Nháp và được gửi duyệt.</div></div><div class="field"><label>Lý do thêm đơn sau giờ chốt <span class="req">*</span></label><textarea class="input" rows="2" id="nReason"></textarea></div>` : ''}
-              ${locs.map(l => `<h3 class="mt">${esc(l.locationName || l.locationCode || 'Điểm giao')}</h3>${l.existingOrderId ? `<div class="small muted">Điểm giao này đã có đơn <b>${esc(l.existingOrderNumber || '')}</b> cho ngày ăn đã chọn – mở đơn đó để sửa số lượng.</div>` : `<table class="table dc-table dt"><thead><tr><th>Loại suất</th><th>Ca</th><th class="num">Đơn giá</th><th class="num">Dự báo</th><th class="num">Số lượng</th></tr></thead><tbody>${(l.listLine || []).map(ln => { const ops = ln.listOption || []; const inp = (o, v) => `<input type="number" min="0" class="input" style="width:90px;text-align:right" data-m="${esc(ln.contractMealId)}" data-l="${esc(l.deliveryLocationId)}" data-s="${esc(ln.shiftId || '')}" data-o="${o || ''}" value="${v}">`;
+              ${(() => { const sh = {}; locs.forEach(l => (l.listLine || []).forEach(ln => { (sh[ln.mealType] = sh[ln.mealType] || new Set()).add(ln.shiftId || ''); })); window.__ncShowShift = Object.values(sh).some(x => x.size > 1); return ''; })()}${locs.map(l => `<h3 class="mt">${esc(l.locationName || l.locationCode || 'Điểm giao')}</h3>${l.existingOrderId ? `<div class="small muted">Điểm giao này đã có đơn <b>${esc(l.existingOrderNumber || '')}</b> cho ngày ăn đã chọn – mở đơn đó để sửa số lượng.</div>` : `<table class="table dc-table dt"><thead><tr><th>Loại suất</th>${window.__ncShowShift ? '<th>Ca</th>' : ''}<th class="num">Đơn giá</th><th class="num">Dự báo</th><th class="num">Số lượng</th></tr></thead><tbody>${(l.listLine || []).map(ln => { const ops = ln.listOption || []; const inp = (o, v) => `<input type="number" min="0" class="input" style="width:90px;text-align:right" data-m="${esc(ln.contractMealId)}" data-l="${esc(l.deliveryLocationId)}" data-s="${esc(ln.shiftId || '')}" data-o="${o || ''}" value="${v}">`;
                 // ORD-OPT-1.3 / 1.8: buổi nhiều lựa chọn → mỗi lựa chọn 1 ô số suất (món trong set); dự báo là của cả buổi.
-                if (ops.length > 1) return ops.map((op, k) => `<tr><td>${k ? '' : `${UI.tag(ln.mealType || '')} ${esc(ln.mealName || '')}`}<div><b>Lựa chọn ${op.optionNo}</b> <span class="small muted">${esc(op.dishText || '')}</span></div></td><td>${esc(ln.shiftName || ln.shiftCode || '')}</td><td class="num">${U.money(ln.unitPrice)}</td><td class="num muted">${!k && ln.suggestedQuantity ? U.num(ln.suggestedQuantity) + ' (cả buổi)' : ''}</td><td class="num">${inp(op.optionNo, 0)}</td></tr>`).join('');
-                return `<tr><td>${UI.tag(ln.mealType || '')} ${esc(ln.mealName || '')}${ops.length === 1 && ops[0].dishText ? `<div class="small muted">${esc(ops[0].dishText)}</div>` : ''}</td><td>${esc(ln.shiftName || ln.shiftCode || '')}</td><td class="num">${U.money(ln.unitPrice)}</td><td class="num muted">${ln.suggestedQuantity ? U.num(ln.suggestedQuantity) : '–'}</td><td class="num">${inp(ops.length === 1 ? ops[0].optionNo : '', Number(ln.suggestedQuantity) || 0)}</td></tr>`; }).join('')}</tbody></table>`}`).join('') || '<div class="muted small">Khách hàng chưa có điểm giao hàng.</div>'}`;
+                if (ops.length > 1) return ops.map((op, k) => `<tr><td>${k ? '' : `${UI.tag(ln.mealType || '')} ${esc(ln.mealName || '')}`}<div><b>Lựa chọn ${op.optionNo}</b> <span class="small muted">${esc(op.dishText || '')}</span></div></td>${window.__ncShowShift ? `<td>${esc(ln.shiftName || ln.shiftCode || '')}</td>` : ''}<td class="num">${U.money(ln.unitPrice)}</td><td class="num muted">${!k && ln.suggestedQuantity ? U.num(ln.suggestedQuantity) + ' (cả buổi)' : ''}</td><td class="num">${inp(op.optionNo, 0)}</td></tr>`).join('');
+                return `<tr><td>${UI.tag(ln.mealType || '')} ${esc(ln.mealName || '')}${ops.length === 1 && ops[0].dishText ? `<div class="small muted">${esc(ops[0].dishText)}</div>` : ''}</td>${window.__ncShowShift ? `<td>${esc(ln.shiftName || ln.shiftCode || '')}</td>` : ''}<td class="num">${U.money(ln.unitPrice)}</td><td class="num muted">${ln.suggestedQuantity ? U.num(ln.suggestedQuantity) : '–'}</td><td class="num">${inp(ops.length === 1 ? ops[0].optionNo : '', Number(ln.suggestedQuantity) || 0)}</td></tr>`; }).join('')}</tbody></table>`}`).join('') || '<div class="muted small">Khách hàng chưa có điểm giao hàng.</div>'}`;
           });
         };
         const drawDemo = () => {
@@ -346,6 +349,8 @@
       })
     });
   }
+  // BIZ-1.4: lý do lỗi Delicare (khớp DeliveryCode.FaultReasons máy chủ).
+  const RC_FAULT = [['SHORTAGE', 'Thiếu suất'], ['DAMAGED', 'Hỏng / đổ vỡ'], ['TEMPERATURE', 'Không đạt nhiệt độ'], ['WRONG_DISH', 'Sai món'], ['QUALITY', 'Chất lượng không đạt']];
   // Form ghi suất thực tế phục vụ: 0 ≤ phục vụ ≤ suất khách nhận; phục vụ + trả về + hủy ≤ suất khách nhận (backend kiểm tra lại).
   function reconcileForm(o) {
     const has = v => v !== null && v !== undefined;
@@ -357,20 +362,26 @@
     UI.modal({
       title: 'Ghi suất thực tế phục vụ', sub: 'Đơn ' + esc(o.label || ''), size: byLine ? 'lg' : undefined,
       body: `<div class="kv mb"><div><label>Suất đặt</label><span>${U.num(o.ordered)}</span></div><div><label>Suất giao</label><span>${U.num(o.delivered)}</span></div>${has(o.pod) ? `<div><label>Khách nhận khi bàn giao</label><span>${U.num(o.pod)}</span></div>` : ''}</div>
-        <div class="form-grid"><div class="field"><label>Suất phục vụ thực tế <span class="req">*</span></label><input type="number" min="0" step="any" class="input" id="rcServed" value="${def}"></div><div class="field"><label>Suất trả về</label><input type="number" min="0" step="any" class="input" id="rcRet"></div><div class="field"><label>Suất hủy</label><input type="number" min="0" step="any" class="input" id="rcWaste"></div><div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="rcNote" maxlength="2000"></textarea></div></div>${lineHtml}
-        <div class="small muted mt">Số suất tính tiền và chênh lệch được tính lại theo số liệu này.${byLine ? ' Suất phục vụ = tổng các lựa chọn; tiền = Σ suất phục vụ × giá buổi.' : ''} Có thể ghi lại cho tới khi chốt đối soát.</div>`,
+        <div class="form-grid"><div class="field"><label>Suất phục vụ thực tế <span class="req">*</span></label><input type="number" min="0" step="any" class="input" id="rcServed" value="${def}"></div><div class="field"><label>Suất trả về</label><input type="number" min="0" step="any" class="input" id="rcRet"></div><div class="field"><label>Suất hủy</label><input type="number" min="0" step="any" class="input" id="rcWaste"></div><div class="field"><label>Suất trả lại / hủy do lỗi Delicare</label><input type="number" min="0" step="any" class="input" id="rcFault"></div><div class="field"><label>Lý do lỗi Delicare</label><select class="select" id="rcFaultReason"><option value="">— Chọn khi có suất lỗi —</option>${RC_FAULT.map(([c, l]) => `<option value="${c}">${l}</option>`).join('')}</select></div><div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="rcNote" maxlength="2000"></textarea></div></div>${lineHtml}
+        <div class="notice info mt small" id="rcBill"></div>
+        <div class="small muted mt">Tính tiền theo <b>số khách ký nhận trừ suất lỗi Delicare</b> (thiếu, hỏng, không đạt nhiệt độ, sai món); khách không dùng hết không giảm tiền. Suất phục vụ thực tế chỉ để tham khảo và làm dự báo.${byLine ? ' Suất phục vụ = tổng các lựa chọn; tiền = Σ suất phục vụ × giá buổi.' : ''} Có thể ghi lại cho tới khi chốt đối soát.</div>`,
       foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="rcSave">${I('ok')} Lưu đối soát</button>`,
       onMount: (m, close) => {
         const lineInputs = [...m.querySelectorAll('[data-rcl]')];
         const sumLines = () => { m.querySelector('#rcServed').value = lineInputs.reduce((a, x) => a + (Number(x.value) || 0), 0); };
         if (lineInputs.length) { m.querySelector('#rcServed').readOnly = true; lineInputs.forEach(x => x.addEventListener('input', sumLines)); sumLines(); }
+        // BIZ-1.4 (D-77 d): hộp tính tiền – nhận · trả lại do lỗi Delicare · tính tiền · phục vụ (tham khảo).
+        const bill = () => { const pod = Number(o.pod) || 0, f = Number(m.querySelector('#rcFault').value) || 0, sv = m.querySelector('#rcServed').value; m.querySelector('#rcBill').innerHTML = `${I('calc')}<div>Khách nhận <b>${U.num(pod)}</b> − lỗi Delicare <b>${U.num(f)}</b> = tính tiền <b>${U.num(Math.max(0, pod - f))}</b> suất · phục vụ (tham khảo) ${sv === '' ? '–' : U.num(Number(sv))}</div>`; };
+        ['#rcFault', '#rcServed'].forEach(s => m.querySelector(s).addEventListener('input', bill)); lineInputs.forEach(x => x.addEventListener('input', bill)); bill();
         m.querySelector('#rcSave').onclick = () => {
         const val = sel => { const v = m.querySelector(sel).value; return v === '' ? null : Number(v); };
-        const served = val('#rcServed'), ret = val('#rcRet'), waste = val('#rcWaste');
+        const served = val('#rcServed'), ret = val('#rcRet'), waste = val('#rcWaste'), fault = val('#rcFault'), faultReason = m.querySelector('#rcFaultReason').value;
+        if (fault !== null && (fault < 0 || (has(o.pod) && fault > Number(o.pod)))) return UI.toast('Suất lỗi Delicare từ 0 đến số suất khách nhận', 'err');
+        if (fault > 0 && !faultReason) return UI.toast('Chọn lý do lỗi Delicare', 'err');
         if (served === null || isNaN(served) || served < 0) return UI.toast('Nhập số suất phục vụ thực tế (≥ 0)', 'err');
         if ((ret !== null && ret < 0) || (waste !== null && waste < 0)) return UI.toast('Suất trả về / hủy không được âm', 'err');
         if (has(o.pod) && served + (ret || 0) + (waste || 0) > Number(o.pod)) return UI.toast('Phục vụ + trả về + hủy không được vượt số suất khách nhận (' + U.num(o.pod) + ')', 'err');
-        const form = { OrderId: o.orderId, ServedQuantity: served, ReturnedQuantity: ret, WastedQuantity: waste, Remark: m.querySelector('#rcNote').value.trim() };
+        const form = { OrderId: o.orderId, ServedQuantity: served, ReturnedQuantity: ret, WastedQuantity: waste, DelicareFaultQuantity: fault, FaultReason: fault > 0 ? faultReason : null, Remark: m.querySelector('#rcNote').value.trim() };
         lineInputs.forEach((x, k) => { form[`ListLine[${k}].OrderLineId`] = x.dataset.rcl; form[`ListLine[${k}].ServedQuantity`] = Math.max(0, Number(x.value) || 0); });
         Store.act('OrderReconciliation/Reconcile', { form, tables: ['OrderReconciliation', 'Order'] })
           .then(r => { if (!r.ok) return; bust(); close(); UI.toast('Đã ghi đối soát đơn ' + esc(o.label || ''), 'ok'); APP.refresh(); });
@@ -450,19 +461,135 @@
     APP.rowExtra(el, tr => { const r = Store.get('Contract', tr.dataset.row); if (r.Status === 'Draft') { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-sub="${r.Id}">Gửi duyệt</button> `); td.querySelector('[data-sub]').onclick = () => Store.act('Contract/Submit', { form: { Id: r.Id }, tables: ['Contract', 'ApprovalRequest', 'ApprovalStep', 'ApprovalItem'], demo: () => { APP.submitApproval('CONTRACT', 'Contract', r.Id, [['Ban giám đốc']], 'Duyệt hợp đồng ' + r.ContractNumber); Store.update('Contract', r.Id, { Status: 'PendingApproval' }); } }).then(x => { if (!x.ok) return; if (!x.demo) UI.toast('Đã gửi duyệt hợp đồng ' + esc(r.ContractNumber), 'ok'); APP.refresh(); }); }
       if (r.Status === 'Active' && Store.isLive) { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs danger" data-term="${r.Id}">Thanh lý</button> `); td.querySelector('[data-term]').onclick = () => UI.confirm('Thanh lý hợp đồng <b>' + esc(r.ContractNumber) + '</b>?', note => Store.act('Contract/Terminate', { form: { Id: r.Id, Reason: note }, tables: ['Contract'] }).then(x => { if (x.ok) { UI.toast('Đã thanh lý hợp đồng', 'ok'); APP.refresh(); } }), { input: 'Lý do thanh lý', required: true, danger: true, ok: 'Thanh lý' }); } });
   });
+  // ---------- BIZ-3.2 (D-77 – A7): Bảng kê thanh toán tháng ----------
+  const bk = { cus: '', ct: '', from: '', to: '' };
+  APP.register('crm-billing', (el, f) => {
+    const t = Store.ctx.date, first = t.slice(0, 8) + '01';
+    if (!bk.from) { bk.from = U.addDays(first, -1).slice(0, 8) + '01'; bk.to = U.addDays(first, -1); }
+    const cus = Store.rows('Customer').filter(c => c.Status !== 'Inactive' && (!Store.ctx.branch || c.BranchId === Store.ctx.branch));
+    const perm = Store.perm(f.id);
+    el.innerHTML = `<div class="page-head"><div><h1>Bảng kê thanh toán</h1><div class="muted small">Suất tính tiền đã chốt đối soát × đơn giá cố định lúc chốt + phí thất thoát khay + VAT. Hóa đơn / công nợ ở phần mềm kế toán.</div></div>
+      <div class="heading-actions">${perm.exp !== false ? `<button class="btn" id="bkXls">${I('download')} Xuất Excel</button>` : ''}${perm.print !== false ? `<button class="btn" id="bkPdf">${I('print')} In PDF</button>` : ''}</div></div>
+      <div class="card panel mb"><div class="row-flex" style="gap:10px;flex-wrap:wrap">
+        <div class="field" style="min-width:240px"><label>Khách hàng <span class="req">*</span></label><select class="select" id="bkCus">${opts(cus, c => c.DisplayName || c.Code, '— Chọn khách hàng —')}</select></div>
+        <div class="field" style="min-width:200px"><label>Hợp đồng</label><select class="select" id="bkCt"><option value="">Tất cả</option></select></div>
+        <div class="field"><label>Từ ngày</label><input type="date" class="input" id="bkFrom" value="${bk.from}"></div>
+        <div class="field"><label>Đến ngày</label><input type="date" class="input" id="bkTo" value="${bk.to}"></div>
+        <div class="field" style="align-self:flex-end"><button class="btn primary" id="bkGo">${I('calc')} Lập bảng kê</button></div></div></div>
+      <div id="bkOut"><div class="empty">Chọn khách hàng và kỳ để lập bảng kê</div></div>`;
+    const g = s => el.querySelector(s);
+    const fillCt = () => { g('#bkCt').innerHTML = opts(bk.cus ? Store.by('Contract', 'CustomerId', bk.cus) : [], c => (c.ContractNumber || '') + (c.Name ? ' · ' + c.Name : ''), 'Tất cả'); g('#bkCt').value = bk.ct || ''; };
+    g('#bkCus').value = bk.cus; fillCt();
+    g('#bkCus').onchange = () => { bk.cus = g('#bkCus').value; bk.ct = ''; fillCt(); };
+    const params = () => { bk.cus = g('#bkCus').value; bk.ct = g('#bkCt').value; bk.from = g('#bkFrom').value; bk.to = g('#bkTo').value; return { CustomerId: bk.cus, ContractId: bk.ct || null, From: bk.from, To: bk.to }; };
+    const need = () => { if (!g('#bkCus').value) { UI.toast('Chọn khách hàng', 'err'); return false; } return true; };
+    const draw = () => {
+      if (!need()) return; const out = g('#bkOut'); out.innerHTML = '<div class="muted small">Đang lập…</div>';
+      Store.query('BillingStatement/GetStatement', params()).then(x => {
+        if (!out.isConnected) return; if (!x.ok || !x.data) { out.innerHTML = failBox(x.message); return; }
+        const d = x.data, rows = d.listRow || [];
+        out.innerHTML = `<div class="kpis mb">${UI.kpi('Suất tính tiền', U.num(d.totalBilledQuantity), U.num(rows.length) + ' dòng', 'utensils', 'green')}${UI.kpi('Tiền suất ăn', U.money(d.mealAmount), '', 'calc', 'blue')}${UI.kpi('Phí thất thoát khay', U.money(d.containerFeeAmount), '', 'box', d.containerFeeAmount ? 'orange' : 'gray')}${UI.kpi('Tổng thanh toán', U.money(d.grandTotal), 'gồm VAT ' + U.num(d.vatPct) + '%', 'money', 'purple')}</div>
+          <div class="card panel mb"><div class="panel-title mb">${esc(d.customerName || '')}${d.contractNumber ? ' · HĐ ' + esc(d.contractNumber) : ''} · ${U.date(U.day(d.from))} – ${U.date(U.day(d.to))} <span class="small muted">(${esc(d.billingBasisName || '')})</span></div>
+          ${rows.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Ngày</th><th>Buổi</th><th>Đơn</th><th>Điểm giao</th><th class="num">Suất tính tiền</th><th class="num">Suất lỗi (đã trừ)</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead><tbody>${rows.map(r => `<tr><td>${U.date(U.day(r.mealDate))}</td><td>${esc(r.mealName || r.mealType || '')}</td><td>${esc(r.orderNumber || '')}</td><td>${esc(r.locationName || '')}</td><td class="num">${U.num(r.billedQuantity)}</td><td class="num">${r.faultQuantity ? U.num(r.faultQuantity) : '<span class="muted">–</span>'}</td><td class="num">${U.money(r.unitPrice)}</td><td class="num">${U.money(r.amount)}</td></tr>`).join('')}</tbody>
+            <tfoot><tr><td colspan="4"><b>Cộng tiền suất ăn</b></td><td class="num"><b>${U.num(d.totalBilledQuantity)}</b></td><td class="num">${U.num(d.totalFaultQuantity)}</td><td></td><td class="num"><b>${U.money(d.mealAmount)}</b></td></tr>
+            ${(d.listContainerFee || []).map(c => `<tr><td colspan="4">Phí thất thoát khay ${esc(c.packagingType)} (mất ${U.num(c.periodLossQuantity)} / giao ${U.num(c.periodOutQuantity)}, ngưỡng ${U.num(c.thresholdPct)}%)</td><td class="num">${U.num(c.overQuantity)}</td><td></td><td class="num">${U.money(c.feePerUnit)}</td><td class="num">${U.money(c.amount)}</td></tr>`).join('')}
+            <tr><td colspan="7">Cộng chưa VAT</td><td class="num">${U.money(d.subTotal)}</td></tr><tr><td colspan="7">VAT ${U.num(d.vatPct)}%</td><td class="num">${U.money(d.vatAmount)}</td></tr><tr><td colspan="7"><b>TỔNG THANH TOÁN</b></td><td class="num"><b>${U.money(d.grandTotal)}</b></td></tr></tfoot></table></div>` : '<div class="empty">Chưa có đơn nào đã chốt đối soát trong kỳ</div>'}
+          ${d.compensationOrderCount ? `<div class="small muted mt">${d.compensationOrderCount} đơn bù do lỗi Delicare (giá 0) không tính tiền.</div>` : ''}</div>
+          ${(d.listPending || []).length ? `<div class="card panel"><div class="panel-title mb">Chờ đối soát – chưa tính tiền (${d.listPending.length} đơn)</div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Đơn</th><th>Ngày ăn</th><th>Tình trạng</th><th class="num">Suất đặt</th><th class="num">Giá trị đơn</th></tr></thead><tbody>${d.listPending.map(p => `<tr><td>${esc(p.orderNumber || '')}</td><td>${U.date(U.day(p.mealDate))}</td><td>${esc(p.statusName || '')}</td><td class="num">${U.num(p.orderedQuantity)}</td><td class="num">${U.money(p.orderAmount)}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
+      });
+    };
+    g('#bkGo').onclick = draw;
+    const dl = path => { if (need()) Store.download(path, params()); };
+    if (g('#bkXls')) g('#bkXls').onclick = () => dl('BillingStatement/ExportStatement');
+    if (g('#bkPdf')) g('#bkPdf').onclick = () => dl('BillingStatement/PrintStatement');
+    if (bk.cus) draw();
+  });
   // ---------- Dự báo: pivot ----------
   const fcs = { from: null, to: null };   // khoảng ngày của ma trận (chế độ API)
   const dayCount = (a, b) => Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / 86400000) + 1;
   // Chế độ API: ma trận khách × ngày từ Forecast/GetMatrix – số đã công bố, kèm số bản nháp chưa công bố.
+  // FC-1.3 (D-76): ma trận kèm gợi ý của hệ thống (khoảng ≤ 31 ngày) – ô Nháp sửa trực tiếp, chữ nhỏ: TB 4 tuần + cùng thứ tuần trước, rê chuột xem 4 số.
+  const histTip = s => s && s.listHistory && s.listHistory.length ? 'Suất thực nhận cùng thứ: ' + s.listHistory.map(h => U.date(U.day(h.date)).slice(0, 5) + ': ' + (h.actual === null || h.actual === undefined ? '– (không có đơn)' : U.num(h.actual))).join(' · ') : '';
+  function saveDraft(dr, qty) {
+    if (!(qty >= 0)) return UI.toast('Số suất không được âm', 'err');
+    return Store.act('Forecast/Update', { method: 'PUT', form: { Id: dr.id, CustomerId: dr.customerId, ForecastDate: dr.date, DeliveryLocationId: dr.deliveryLocationId || null, ShiftId: dr.shiftId || null, MealType: dr.mealType || null, ForecastQuantity: qty, Note: dr.note || null }, tables: ['Forecast'], quiet: true })
+      .then(r => { if (r.ok) { bust(); UI.toast('Đã lưu ' + U.num(qty) + ' suất (bản Nháp)', 'ok'); } return r; });
+  }
+  function editDrafts(r, k, list) {
+    UI.modal({
+      title: 'Sửa dự báo Nháp – ' + esc(r.customerName || r.customerCode || '') + ' · ' + U.date(k), size: 'md',
+      body: `<table class="table dc-table"><thead><tr><th>Điểm giao</th><th>Loại suất</th><th class="num">Gợi ý</th><th class="num">Số suất</th></tr></thead><tbody>${list.map((d, i) => `<tr><td>${esc(d.deliveryLocationName || 'Chung cho khách')}</td><td>${esc(d.mealType || '')}</td><td class="num">${d.suggested === null || d.suggested === undefined ? '<span class="muted">nhập tay</span>' : U.num(d.suggested)}</td><td class="num"><input type="number" min="0" class="input" style="width:90px;text-align:right" data-i="${i}" value="${d.forecastQuantity}"></td></tr>`).join('')}</tbody></table>`,
+      foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="fdSave">${I('ok')} Lưu</button>`,
+      onMount: (m, close) => m.querySelector('#fdSave').onclick = async () => {
+        for (const inp of m.querySelectorAll('[data-i]')) { const d = list[+inp.dataset.i], v = Number(inp.value); if (inp.value === '' || v === d.forecastQuantity) continue; const x = await saveDraft({ ...d, customerId: r.customerId, date: k }, v); if (!x || !x.ok) return; }
+        close(); loadMatrix();
+      }
+    });
+  }
   function loadMatrix() {
+    const withSug = dayCount(fcs.from, fcs.to) <= 31;
     const key = fcs.key = 'fc|' + fcs.from + '|' + fcs.to + '|' + (Store.ctx.branch || '');
-    cq(key, () => Store.query('Forecast/GetMatrix', { From: fcs.from, To: fcs.to, BranchId: Store.ctx.branch })).then(x => {
+    cq(key, () => Store.query('Forecast/GetMatrix', { From: fcs.from, To: fcs.to, BranchId: Store.ctx.branch, WithSuggestion: withSug })).then(x => {
       const box = document.getElementById('fcMx'); if (!box || fcs.key !== key) return;
       if (!x.ok || !x.data) { box.innerHTML = failBox(x.message); return; }
       const d = x.data, days = (d.dates || []).map(U.day), rows = d.rows || [], tot = d.totals || {};
-      if (!rows.length) { box.innerHTML = '<div class="empty">Chưa có dự báo trong khoảng ngày này</div>'; return; }
-      const cell = (r, k) => { const pv = (r.values || {})[k], dv = (r.draftValues || {})[k]; return `<td class="num">${pv ? U.num(pv) : (dv ? '' : '<span class="muted">–</span>')}${dv ? `<div class="small muted">nháp ${U.num(dv)}</div>` : ''}</td>`; };
-      box.innerHTML = `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Khách hàng</th>${days.map(k => `<th class="num">${U.date(k).slice(0, 5)}</th>`).join('')}<th class="num">Tổng</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.customerName || r.customerCode || '')}</td>${days.map(k => cell(r, k)).join('')}<td class="num"><b>${U.num(r.total)}</b></td></tr>`).join('')}<tr><td><b>Tổng</b></td>${days.map(k => `<td class="num"><b>${U.num(tot[k] || 0)}</b></td>`).join('')}<td class="num"><b>${U.num(d.grandTotal)}</b></td></tr></tbody></table></div><div class="small muted mt">Số chính = dự báo đã công bố · "nháp" = bản đã nhập nhưng chưa công bố.</div>`;
+      if (!rows.length) { box.innerHTML = '<div class="empty">Chưa có dự báo trong khoảng ngày này – bấm <b>Tạo dự báo gợi ý</b> để hệ thống tính từ lịch sử</div>'; return; }
+      const canEdit = Store.perm('crm-forecast').edit !== false;
+      const cell = (r, ri, k) => {
+        const pv = (r.values || {})[k], drafts = (r.drafts || {})[k] || [], s = (r.suggest || {})[k], dv = (r.draftValues || {})[k];
+        const gray = s && s.insufficient && !drafts.length && !pv;
+        const pub = pv ? `<div><b>${U.num(pv)}</b>${drafts.length ? '' : ''}</div>` : '';
+        let draft = '';
+        if (drafts.length === 1 && canEdit) draft = `<div class="row-flex" style="justify-content:flex-end;gap:3px;flex-wrap:nowrap">${drafts[0].edited && drafts[0].suggested !== null && drafts[0].suggested !== undefined ? '<span title="Đã sửa khác số gợi ý" style="color:var(--orange,#E8833A);font-size:18px;line-height:1">•</span>' : ''}<input type="number" min="0" class="input" style="width:72px;text-align:right;padding:2px 6px;height:28px" data-fc="${ri}|${k}" value="${drafts[0].forecastQuantity}" title="Nháp – sửa rồi Enter / rời ô để lưu"></div>`;
+        else if (drafts.length) draft = `<button class="btn xs" data-fcm="${ri}|${k}" title="${drafts.length} dòng Nháp (điểm giao / loại suất) – bấm để sửa">nháp ${U.num(dv)}${drafts.some(z => z.edited) ? ' •' : ''}</button>`;
+        const sub = s ? (s.insufficient ? '<div class="small muted">Thiếu dữ liệu</div>' : `<div class="small muted">TB ${U.num(s.average)}${s.lastWeek !== null && s.lastWeek !== undefined ? ' · tuần trước ' + U.num(s.lastWeek) : ''}${s.partlyInsufficient ? ' · thiếu 1 phần' : ''}</div>`) : '';
+        const empty = !pub && !draft && !sub ? '<span class="muted">–</span>' : '';
+        return `<td class="num" style="${gray ? 'background:var(--bg-soft,#F2F4F1);' : ''}white-space:nowrap" title="${esc(histTip(s))}">${pub}${draft}${sub}${empty}</td>`;
+      };
+      box.innerHTML = `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Khách hàng</th>${days.map(k => `<th class="num">${U.date(k).slice(0, 5)}</th>`).join('')}<th class="num">Tổng</th></tr></thead><tbody>${rows.map((r, ri) => `<tr><td>${esc(r.customerName || r.customerCode || '')}</td>${days.map(k => cell(r, ri, k)).join('')}<td class="num"><b>${U.num(r.total)}</b></td></tr>`).join('')}<tr><td><b>Tổng</b></td>${days.map(k => `<td class="num"><b>${U.num(tot[k] || 0)}</b></td>`).join('')}<td class="num"><b>${U.num(d.grandTotal)}</b></td></tr></tbody></table></div><div class="small muted mt">Số đậm = dự báo đã công bố · ô nhập = bản Nháp (sửa trực tiếp) · <span style="color:var(--orange,#E8833A)">•</span> = đã sửa khác số gợi ý · "TB" = trung bình suất thực nhận cùng thứ 4 tuần gần nhất (rê chuột xem từng tuần) · ô xám = thiếu dữ liệu (< 2 tuần có đơn), nhập tay.</div>`;
+      box.querySelectorAll('[data-fc]').forEach(inp => {
+        const [ri, k] = inp.dataset.fc.split('|'), r = rows[+ri], dr = r.drafts[k][0];
+        const go = () => { const v = Number(inp.value); if (inp.value === '' || v === dr.forecastQuantity) return; saveDraft({ ...dr, customerId: r.customerId, date: k }, v).then(z => { if (z && z.ok) { dr.forecastQuantity = v; loadMatrix(); } }); };
+        inp.onchange = go; inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
+      });
+      box.querySelectorAll('[data-fcm]').forEach(b => { const [ri, k] = b.dataset.fcm.split('|'), r = rows[+ri]; b.onclick = () => editDrafts(r, k, r.drafts[k]); });
+    });
+    loadAccuracy();
+  }
+  // FC-1.5: độ chính xác dự báo – 4 tuần đã qua gần nhất, theo khách (sai số % = Σ|dự báo − thực nhận| / Σ thực nhận).
+  function loadAccuracy() {
+    const box = document.getElementById('fcAcc'); if (!box) return;
+    cq('fcacc|' + (Store.ctx.branch || ''), () => Store.query('Forecast/GetAccuracy', { BranchId: Store.ctx.branch })).then(x => {
+      const el = document.getElementById('fcAcc'); if (!el) return;
+      if (!x.ok || !x.data) { el.innerHTML = failBox(x.message); return; }
+      const a = x.data, rows = a.listCustomer || [], warn = a.warningPct;
+      const pct = v => v === null || v === undefined ? '–' : U.num(v) + '%';
+      el.innerHTML = `<div class="kpis mb">${UI.kpi('Sai số dự báo', pct(a.errorPct), U.date(U.day(a.from)).slice(0, 5) + ' – ' + U.date(U.day(a.to)).slice(0, 5), 'calc', a.errorPct > warn ? 'red' : 'green')}${UI.kpi('Lệch chung', pct(a.biasPct), a.biasPct > 0 ? 'dự báo cao' : a.biasPct < 0 ? 'dự báo thấp' : '', 'chart', 'blue')}${UI.kpi('Khách sai số > ' + U.num(warn) + '%', U.num(a.customerOverWarning || 0), '/ ' + U.num(a.customerCount || 0) + ' khách', 'alert', a.customerOverWarning ? 'orange' : 'green')}</div>`
+        + (rows.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Khách hàng</th><th class="num">Số ngày</th><th class="num">Dự báo</th><th class="num">Thực nhận</th><th class="num">Sai số</th><th class="num">Lệch</th></tr></thead><tbody>${rows.map(r => { const wk = (a.listWeek || []).filter(w => w.customerId === r.customerId); return `<tr title="${esc(wk.map(w => 'Tuần ' + U.date(U.day(w.weekStart)).slice(0, 5) + ': ' + pct(w.errorPct)).join(' · '))}"><td>${esc(r.customerName || r.customerCode || '')}</td><td class="num">${r.days}</td><td class="num">${U.num(r.forecast)}</td><td class="num">${U.num(r.actual)}</td><td class="num">${r.errorPct > warn ? `<b style="color:var(--red,#D64545)">${pct(r.errorPct)}</b>` : pct(r.errorPct)}</td><td class="num">${pct(r.biasPct)}</td></tr>`; }).join('')}</tbody></table></div><div class="small muted mt">So dự báo đã công bố với suất thực nhận (đối soát → POD → số đặt đã chốt). Rê chuột vào dòng để xem từng tuần.</div>` : '<div class="muted small">Chưa có dự báo đã công bố cho các ngày đã qua.</div>');
+    });
+  }
+  // FC-1.1 / 1.2: hệ thống tính dự báo gợi ý → bản Nháp; có Nháp người đã sửa → hỏi ghi đè.
+  function suggestForecast() {
+    const cus = Store.rows('Customer').filter(c => c.Status !== 'Inactive');
+    const t = Store.ctx.date, wd = new Date(t + 'T00:00').getDay(), mon = U.addDays(t, ((8 - wd) % 7) || 7);
+    UI.modal({
+      title: 'Tạo dự báo gợi ý', sub: 'Hệ thống tính trung bình suất thực nhận cùng thứ trong 4 tuần gần nhất → ghi bản Nháp để Kinh doanh sửa rồi Công bố', size: 'sm',
+      body: `<div class="field"><label>Từ ngày <span class="req">*</span></label><input type="date" class="input" id="fsFrom" value="${mon}"></div>
+        <div class="field"><label>Đến ngày <span class="req">*</span></label><input type="date" class="input" id="fsTo" value="${U.addDays(mon, 13)}"></div>
+        <div class="field"><label>Khách hàng</label><select class="select" id="fsCus">${opts(cus, c => c.DisplayName || c.Code, 'Mọi khách có hợp đồng hiệu lực')}</select></div>
+        <div class="small muted">Tối đa 14 ngày. Tuần khách nghỉ không tính vào trung bình; dưới 2 tuần có đơn → "Thiếu dữ liệu" (nhập tay). Bản Nháp người đã sửa được giữ, trừ khi anh / chị chọn ghi đè.</div>`,
+      foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="fsGo">${I('calc')} Tạo gợi ý</button>`,
+      onMount: (m, close) => m.querySelector('#fsGo').onclick = () => {
+        const a = m.querySelector('#fsFrom').value, b = m.querySelector('#fsTo').value, cid = m.querySelector('#fsCus').value || null;
+        if (!a || !b || b < a || dayCount(a, b) > 14) return UI.toast('Chọn khoảng ngày hợp lệ (tối đa 14 ngày)', 'err');
+        const run = over => Store.act('Forecast/Suggest', { form: { From: a, To: b, CustomerId: cid, Overwrite: over }, tables: ['Forecast'] }).then(r => {
+          if (!r.ok) return; bust(); const d = r.data || {};
+          const done = () => { close(); fcs.from = a; fcs.to = b; UI.toast(r.message || 'Đã tạo dự báo gợi ý', 'ok'); APP.refresh(); };
+          done();
+          if (!over && d.skippedEdited) UI.confirm(`Đã ghi <b>${U.num((d.created || 0) + (d.refreshed || 0))}</b> dòng gợi ý. Có <b>${U.num(d.skippedEdited)}</b> dòng Nháp người đã sửa / nhập tay – <b>Ghi đè bản nháp?</b>`, () => run(true), { ok: 'Ghi đè', danger: true, title: 'Ghi đè bản nháp?' });
+        });
+        run(false);
+      }
     });
   }
   // Chế độ API: nhập dự báo theo khách × loại suất × khoảng ngày (Forecast/Import) → bản Nháp phiên bản mới.
@@ -531,10 +658,11 @@
     if (Store.isLive) {
       const perm = Store.perm(f.id);
       if (!fcs.from) { fcs.from = Store.ctx.date; fcs.to = U.addDays(Store.ctx.date, 13); }
-      APP.genericList(el, f, { top: `<div class="card panel mb"><div class="spread mb"><div class="panel-title">Ma trận dự báo suất ăn theo khách hàng × ngày</div><div class="row-flex"><span class="small muted">Từ</span><input type="date" class="input" id="fcFrom" value="${fcs.from}" style="width:150px"><span class="small muted">đến</span><input type="date" class="input" id="fcTo" value="${fcs.to}" style="width:150px"></div></div><div id="fcMx"><div class="muted small">Đang tải…</div></div></div>` });
+      APP.genericList(el, f, { top: `<div class="card panel mb"><div class="spread mb"><div class="panel-title">Ma trận dự báo suất ăn theo khách hàng × ngày</div><div class="row-flex"><span class="small muted">Từ</span><input type="date" class="input" id="fcFrom" value="${fcs.from}" style="width:150px"><span class="small muted">đến</span><input type="date" class="input" id="fcTo" value="${fcs.to}" style="width:150px"></div></div><div id="fcMx"><div class="muted small">Đang tải…</div></div></div><div class="card panel mb"><div class="panel-title mb">Độ chính xác dự báo – 4 tuần qua</div><div id="fcAcc"><div class="muted small">Đang tải…</div></div></div>` });
       const add = el.querySelector('[data-act="add"]'), ha = el.querySelector('.heading-actions');
       // Forecast/Insert bị backend chặn → nút tạo mới chuyển thành nhập hàng loạt (quyền Nhập).
       if (add) { add.innerHTML = `${I('plus')} Nhập dự báo`; add.disabled = perm.imp === false; add.title = perm.imp === false ? 'Tài khoản không có quyền Nhập' : ''; add.onclick = importForecast; }
+      if (ha && perm.edit !== false && !ha.querySelector('#fcSug')) { ha.insertAdjacentHTML('afterbegin', `<button class="btn primary" id="fcSug">${I('calc')} Tạo dự báo gợi ý</button>`); ha.querySelector('#fcSug').onclick = suggestForecast; }
       if (ha && perm.edit !== false && !ha.querySelector('#fcPub')) { ha.insertAdjacentHTML('beforeend', `<button class="btn orange" id="fcPub">${I('approve')} Công bố</button>`); ha.querySelector('#fcPub').onclick = publishForecast; }
       const onRange = () => { const a = el.querySelector('#fcFrom').value, b = el.querySelector('#fcTo').value; if (!a || !b) return; if (b < a || dayCount(a, b) > 62) return UI.toast('Khoảng ngày không hợp lệ (tối đa 62 ngày)', 'err'); fcs.from = a; fcs.to = b; document.getElementById('fcMx').innerHTML = '<div class="muted small">Đang tải…</div>'; loadMatrix(); };
       el.querySelector('#fcFrom').onchange = onRange; el.querySelector('#fcTo').onchange = onRange;
