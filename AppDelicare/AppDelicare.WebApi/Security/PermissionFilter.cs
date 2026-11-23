@@ -68,7 +68,8 @@ namespace AppDelicare.WebApi.Security
             bool allowed = required == null
                 ? userPermissions.IsAdmin
                 : permissions.IsAllowed(userPermissions, required.ScreenId, required.Action)
-                  || required.OrActions.Any(a => permissions.IsAllowed(userPermissions, required.ScreenId, a));
+                  || required.OrActions.Any(a => permissions.IsAllowed(userPermissions, required.ScreenId, a))
+                  || required.OrScreens.Any(s => permissions.IsAllowed(userPermissions, s, required.Action));
             if (!allowed)
             {
                 Log.Warning("Từ chối quyền {Action} trên {Screen} cho {Actor} ({Path})",
@@ -96,6 +97,15 @@ namespace AppDelicare.WebApi.Security
 
         /// <summary>Nguy hiểm / leo thang quyền: chỉ admin (D-26; ResetPassword, GetPreview – spec 3.2 / 3.3: nhóm Quản trị hệ thống).</summary>
         private static readonly HashSet<string> AdminActions = new(StringComparer.OrdinalIgnoreCase) { "DeleteData", "SaveIsAdmin", "ResetPassword", "GetPreview" };
+
+        /// <summary>
+        /// D-78 (6): màn kỹ thuật chỉ admin / FIN-IT nhưng dữ liệu đọc ở màn khác – thao tác XEM được thêm bằng quyền xem các màn này
+        /// (danh mục chỉ số: màn KPI ngày / tháng, bảng điều hành đọc tên + đơn vị chỉ số).
+        /// </summary>
+        private static readonly Dictionary<string, string[]> ReadAlsoScreens = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["KpiMetricDefinition"] = ["kpi-daily", "kpi-monthly", "dash-exec"],
+        };
 
         /// <summary>Controller không trùng tên bảng.</summary>
         private static readonly Dictionary<string, string> ControllerScreens = new(StringComparer.OrdinalIgnoreCase)
@@ -130,7 +140,10 @@ namespace AppDelicare.WebApi.Security
                 object filter = SelfService.Contains(action.ActionName) ? new SkipPermissionAttribute()
                     : AdminActions.Contains(action.ActionName) ? new AdminOnlyAttribute()
                     : hasParent && parent.WriteAsEdit ? ChildPermission(screen, ActionOf(action))
-                    : new PermissionAttribute(screen, ActionOf(action));
+                    : new PermissionAttribute(screen, ActionOf(action))
+                    {
+                        OrScreens = ActionOf(action) == PermissionAction.View && ReadAlsoScreens.TryGetValue(controller.ControllerName, out var also) ? also : [],
+                    };
                 foreach (var selector in action.Selectors)
                 {
                     selector.EndpointMetadata.Add(filter);
