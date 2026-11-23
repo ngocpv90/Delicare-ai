@@ -89,6 +89,10 @@ namespace AppDelicare.Model.Option
         public int ReconciliationAutoCloseHours { get; set; } = 24;
         /// <summary>BIZ-2.9 (C9): chốt đối soát → tự tính giá vốn suất (MealCost/Calculate).</summary>
         public bool MealCostAutoOnReconcileClose { get; set; } = true;
+        /// <summary>BIZ-3.4 (D-77 – C12): thứ chạy job nhắc thực đơn chung tuần sau (0 = Chủ nhật … 3 = thứ Tư).</summary>
+        public int MenuReminderWeekday { get; set; } = 3;
+        /// <summary>BIZ-3.4: thứ chạy job nhắc khách chưa đăng ký suất tuần sau (5 = thứ Sáu).</summary>
+        public int OrderWeekReminderWeekday { get; set; } = 5;
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;
         /// <summary>
