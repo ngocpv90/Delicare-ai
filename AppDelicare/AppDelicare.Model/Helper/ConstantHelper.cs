@@ -401,6 +401,11 @@
             public static readonly string AutoPlanAlreadyApproved = "Kế hoạch {0} đã ở trạng thái {1} – hệ thống không tự lập lại";
             public static readonly string AutoPlanEditedByHand = "Kế hoạch {0} đã được sửa tay – giữ bản sửa, chờ COO duyệt / phát hành";
             public static readonly string AutoPlanNoLockedRecipe = "Món chưa có công thức khóa: {0}";
+            public static readonly string CompensationCategoryInvalid = "Chỉ tạo đơn bù cho phản ánh loại Thiếu suất / Hỏng – đổ vỡ / Không đạt nhiệt độ";
+            public static readonly string CompensationNoSourceOrder = "Phản ánh chưa gắn đơn hàng (hoặc đơn đã hủy) – không tạo được đơn bù";
+            public static readonly string CompensationExists = "Phản ánh này đã có đơn bù {0}";
+            public static readonly string CompensationQuantityRequired = "Nhập số suất bù (POD của đơn gốc không ghi suất bị từ chối)";
+            public static readonly string CompensationCreated = "Đã tạo đơn bù {0} – {1} suất";
             public static readonly string BillingRangeInvalid = "Kỳ bảng kê không hợp lệ (từ ≤ đến, tối đa 3 tháng)";
             public static readonly string ContainerLossPctInvalid = "Ngưỡng thất thoát khay phải từ 0 đến 100 (%)";
             public static readonly string StandardCostAutoRecalculated = "đã tự tính lại giá thành chuẩn {0} món dùng nguyên liệu này";

@@ -42,6 +42,7 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 ## 4. Thao tác từng bước
 
 ### 4.1 Khách hàng 360° – `crm-customer`
+**Điều khoản (BIZ-3.6):** form khách hàng có ô **Ngưỡng thất thoát khay (%)** – trống = theo cấu hình chung (3 %); vượt ngưỡng → cảnh báo thất thoát khay và tính phí trên bảng kê (nếu có phí / khay). *Cách tính tiền theo từng hợp đồng* chưa có (GAP-BIZ-01 – cần anh duyệt chỗ lưu).
 - **Thêm khách hàng (D-63, UI-5):**
   1. Bấm **Tạo mới** → form mở ra với 2 nút lớn **Doanh nghiệp** / **Cá nhân** (chưa chọn sẵn). Chọn loại → hiện các ô của loại đó. Trước khi lưu vẫn đổi loại được ở ô *Loại khách hàng*, dữ liệu đã nhập được giữ.
   2. Nhập các ô (bảng dưới). *Doanh nghiệp*: gõ **Tên doanh nghiệp** → **Tên giao dịch** tự điền giống vậy khi ô này còn trống (sửa lại được).
@@ -166,6 +167,13 @@ Dùng khi khách đăng ký **số suất theo từng lựa chọn cho cả tu�
 - Danh sách chính sách giá theo khách / hợp đồng / loại suất / thời gian hiệu lực (thêm / sửa bằng form chung).
 - **Tra đơn giá áp dụng**: chọn **Khách hàng***, Hợp đồng, Loại suất (trống = mọi loại), Ngày áp dụng → **Tra giá** → đơn giá + nguồn (*Chính sách giá theo hợp đồng* → *theo khách hàng* → *Đơn giá loại suất trong hợp đồng*).
 - Lỗi: *Chồng thời gian hiệu lực với chính sách giá khác…*, *Đơn giá phải lớn hơn 0*, *Không tìm thấy đơn giá áp dụng…*.
+
+### 4.7b Bảng kê thanh toán – `crm-billing` (BIZ-3.2)
+Quyền: Kinh doanh + Kế toán (xem / xuất / in). Chọn **Khách hàng***, Hợp đồng (trống = tất cả), **Từ – Đến** (mặc định tháng trước, tối đa 3 tháng) → **Lập bảng kê**.
+- Chỉ đơn có **đối soát đã chốt**: theo ngày × buổi – **suất tính tiền** (số khách nhận − lỗi Delicare, BIZ-1.4), cột suất lỗi (đã trừ), **đơn giá cố định lúc chốt** (BIZ-1.5), thành tiền.
+- **Phí thất thoát khay**: số khay mất vượt ngưỡng của khách × phí / khay theo loại (cấu hình `ContainerLossFee` – hiện chưa đặt = 0 đ).
+- Cộng chưa VAT → **VAT 8 %** (`SalesVatPct`) → **Tổng thanh toán**. Đơn chưa chốt đối soát liệt kê riêng "Chờ đối soát"; đơn bù do lỗi Delicare (giá 0) không tính.
+- **Xuất Excel** (mẫu biên bản xác nhận khối lượng) / **In PDF** – có ô ký khách hàng, kế toán, đại diện Delicare. Hóa đơn / công nợ làm ở phần mềm kế toán.
 
 ### 4.8 Đối soát suất – `crm-reconciliation`
 Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn đặt **theo lựa chọn**: hộp **Ghi suất phục vụ** có bảng *Suất phục vụ theo lựa chọn* (từng loại suất × lựa chọn); ô *Suất phục vụ thực tế* tự cộng; tiền = Σ suất phục vụ × giá buổi. Phiếu giao hàng in thêm *LC n (món)* ở cột Bữa.

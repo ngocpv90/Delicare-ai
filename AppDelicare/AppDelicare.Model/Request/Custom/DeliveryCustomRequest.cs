@@ -367,6 +367,18 @@ namespace AppDelicare.Model.Request.Custom
     }
 
     /// <summary>T19: thao tác phản ánh (form): Assign (AssignedTo = User.Id), Resolve (Comment = cách xử lý), Close, Reject, AddComment.</summary>
+    /// <summary>BIZ-3.1 (D-77 – A6): tạo đơn bù từ phản ánh (form). Quantity trống = số khách từ chối ở POD của đơn gốc.</summary>
+    public class ComplaintCompensationRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        public decimal? Quantity { get; set; }
+        /// <summary>true = khách đặt thêm, trả tiền (giá dòng đơn gốc); mặc định lỗi Delicare – giá 0.</summary>
+        public bool ChargeCustomer { get; set; }
+        [MaxLength(500)]
+        public string? Note { get; set; }
+    }
+
     public class ComplaintActionRequest
     {
         [Required]

@@ -15,9 +15,9 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 7. ~~MENU-4~~ ✅ dọn menu (xong 2026-11-23; nhóm E chờ anh quyết – PROGRESS).
 7b. ~~BIZ-1~~ ✅ sửa sai nghiệp vụ (xong 2026-11-23; GAP-BIZ-01 kiểu tính tiền theo hợp đồng chờ anh – PROGRESS).
 7c. ~~FC-1~~ ✅ dự báo tự gợi ý (xong 2026-11-23).
-7d. ~~BIZ-2~~ ✅ bớt bước thừa + tự động hóa (xong 2026-11-23; kế hoạch bổ sung sau phát hành chờ anh – PROGRESS) → 7e. **BIZ-3** hoàn thiện luồng (D-77).
-8. **FE-E** việc frontend tồn đọng (FE-E.1 Telegram → FE-E.2 QR → FE-E.3 màn tích hợp).
-9. **UG-1** sửa chênh lệch tài liệu – code (`docs/user-guide/90_CHENH_LECH.md`), kèm phần giao diện (FE-E.4).
+7d. ~~BIZ-2~~ ✅ bớt bước thừa + tự động hóa (xong 2026-11-23; kế hoạch bổ sung sau phát hành chờ anh – PROGRESS) → 7e. ~~BIZ-3~~ ✅ hoàn thiện luồng (xong 2026-11-23; đơn bù chưa tự sinh lệnh bổ sung, GAP-BIZ-01 – PROGRESS).
+8. ~~FE-E~~ ✅ việc frontend tồn đọng (xong 2026-11-19).
+9. ~~UG-1~~ ✅ sửa chênh lệch tài liệu – code (xong 2026-11-19).
 10. ĐỢT BOT còn lại (BOT-2.9 – cần server test / token thật) khi anh sẵn sàng.
 
 Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/user-guide/*` liên quan; xong bước nào báo anh mở thử giao diện bước đó.
@@ -137,7 +137,7 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 
 **Xong khi:** một ngày chạy thử: KD nhập đơn → Xác nhận → 20:00 tự chốt → kế hoạch tự phát hành → phiếu xuất ca chờ kho ghi sổ → mẻ đủ điều kiện tự Đạt → lệnh đóng gói tự sinh → giao xong → đối soát tự tạo, 24 giờ sau tự chốt, giá vốn tự tính; PO đúng đề nghị tự duyệt; QC đạt tự nhập kho.
 
-## ★ BIZ-3 – HOÀN THIỆN LUỒNG (D-77 – đợt 3, anh chốt 2026-11-23) · `TODO` (sau BIZ-2)
+## ★ BIZ-3 – HOÀN THIỆN LUỒNG (D-77 – đợt 3, anh chốt 2026-11-23) · `DONE` 2026-11-23 (3.1 lệnh bổ sung + 3.6 hợp đồng chờ anh – PROGRESS)
 
 - **BIZ-3.1 Đơn bù từ phản ánh thiếu suất (A6, C14):** trên phản ánh phân loại *thiếu suất / hỏng / không đạt nhiệt độ* (kể cả phản ánh tự tạo từ POD) → nút **Tạo đơn bù**: đơn cùng ngày ăn, cùng điểm giao, số suất = số thiếu (sửa được), loại suất / lựa chọn theo đơn gốc, **gắn phản ánh + đơn gốc** (Note tag `[DON_BU:<số đơn gốc>|<số PA>]` nếu không có cột liên kết), **tự duyệt** (lý do = phản ánh), **giá 0** khi lỗi Delicare (chọn "Khách trả tiền" nếu khách đặt thêm). Đơn bù → kế hoạch bổ sung → lệnh / mẻ **ưu tiên** (nhãn 🔴 Đơn bù trên bảng điều độ, bot bếp + điều phối) → đơn giao → POD. Phản ánh tự sang Đang xử lý; giao bù xong gợi ý "Đã xử lý". Đối soát / bảng kê: đơn bù giá 0 không tính tiền; giá vốn tính vào chi phí lỗi.
 - **BIZ-3.2 Bảng kê thanh toán tháng (A7):** màn mới `crm-billing` "Bảng kê thanh toán" (nhóm Kinh doanh, quyền Kinh doanh + Kế toán): chọn kỳ (tháng / từ – đến), khách, hợp đồng → theo ngày × buổi: suất tính tiền (BIZ-1.4), đơn giá đã cố định (BIZ-1.5), thành tiền; giảm trừ suất lỗi; **phí thất thoát khay** vượt ngưỡng (số lượng × `BusinessRules:ContainerLossFee` theo loại khay – PROPOSED, mặc định 0 = chưa tính); tổng chưa VAT, VAT bán hàng `BusinessRules:SalesVatPct` (mặc định 8 %), tổng thanh toán. Chỉ tính đơn đối soát **đã chốt**; đơn chưa chốt liệt kê riêng "chờ đối soát". **Xuất Excel** (mẫu biên bản xác nhận khối lượng) + in PDF. Không lưu dữ liệu mới; hóa đơn / công nợ ở phần mềm kế toán.
