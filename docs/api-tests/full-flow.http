@@ -824,6 +824,16 @@ Content-Type: application/json
 
 { "warehouseId": "{{warehouseId}}", "note": "[DEMO] thử xuất lô hết hạn", "listLine": [ { "ingredientId": "{{beefId}}", "materialLotId": "{{lotHH.response.body.listData[qcStatus=DAT].id}}", "quantity": 5 } ] }
 
+### UI-6.23 (D-104): màn "7 ngày tới" – ngày của luồng có đúng 1 kế hoạch (Nháp), việc gợi ý Tính lại
+# @expect data.listDay[0].planId == {{planId}}
+# @expect data.listDay[0].dayStatus == draft
+GET {{base}}/api/ProductionPlan/GetDays?from={{day}}&to={{day}}
+Authorization: Bearer {{token}}
+
+### UI-6.23: nguyên liệu thiếu nếu ra lệnh lúc này (chỉ đọc – không ghi giữ chỗ)
+GET {{base}}/api/ProductionPlan/GetShortage?id={{planId}}
+Authorization: Bearer {{token}}
+
 ########## 9. KẾ HOẠCH → DUYỆT → PHÁT HÀNH THEO CA (GIỮ CHỖ NGUYÊN LIỆU FEFO – Catalog 126, 140)
 ### 9.1 Duyệt kế hoạch (mục "Phê duyệt › Kế hoạch sản xuất")
 POST {{base}}/api/ProductionPlan/Approve

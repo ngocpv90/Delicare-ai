@@ -176,7 +176,7 @@ namespace AppDelicare.Tests.Production
             var planLine = await _factory.QueryAsync(db => db.ProductionPlanLine.AsNoTracking().FirstAsync(l => l.ProductionPlanId == s.Plan));
             (await c.PutFormAsync("/api/ProductionPlanLine/Update", ("Id", planLine.Id), ("ProductionPlanId", s.Plan), ("DishId", planLine.DishId), ("PlannedQuantity", 999m))).Fail("Nháp");
             (await c.PutFormAsync("/api/ProductionPlan/Update", ("Id", s.Plan), ("ProductionDate", Day), ("PlanDate", Day), ("Status", "Draft"))).Fail("Approve / Release");
-            (await c.PostFormAsync("/api/ProductionPlan/Insert", ("ProductionDate", Day), ("PlanDate", Day))).Fail("MaterialRequirement/Calculate");
+            (await c.PostFormAsync("/api/ProductionPlan/Insert", ("ProductionDate", Day), ("PlanDate", Day))).Fail("một kế hoạch mỗi ngày");
             (await c.PostFormAsync("/api/ProductionBatch/Insert", ("ProductionOrderId", meatOrder.Id), ("StartDate", Day))).Fail("ProductionPlan/Release");
             (await c.PutFormAsync("/api/ProductionBatch/Update", ("Id", batch.Id), ("ProductionOrderId", meatOrder.Id), ("StartDate", Day), ("Status", "Packed"))).Ok();
             (await BatchAsync(batch.Id)).Status.Should().Be("Planned", "CRUD Update không đổi trạng thái mẻ");

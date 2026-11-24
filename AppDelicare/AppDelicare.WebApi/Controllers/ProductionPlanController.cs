@@ -221,5 +221,49 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+        /// <summary>UI-6.23 (D-104): màn "7 ngày tới" – mỗi ngày: suất chốt / chưa chốt, kế hoạch duy nhất của ngày, suất theo ca, việc gợi ý (quyền Xem prod-plan).</summary>
+        [HttpGet("GetDays")]
+        public async Task<IActionResult> GetDays([FromQuery] ProductionPlanDaysRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetDays(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDays: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.23 (D-104): Lập / Tính lại kế hoạch của ngày – đủ đơn chốt → luồng tự động sau chốt (tự duyệt + ra lệnh hoặc giữ lại kèm lý do); còn đơn chưa chốt → Nháp (quyền Sửa prod-plan).</summary>
+        [HttpPost("Recalculate")]
+        public async Task<IActionResult> Recalculate([FromForm] ProductionPlanRecalculateRequest request)
+        {
+            try
+            {
+                return Ok(await _service.Recalculate(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Recalculate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.23 (D-104): nguyên liệu thiếu nếu ra lệnh lúc này (chỉ đọc, không ghi giữ chỗ) + đơn mua đang mở (quyền Xem prod-plan).</summary>
+        [HttpGet("GetShortage")]
+        public async Task<IActionResult> GetShortage(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetShortage(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetShortage: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

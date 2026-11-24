@@ -232,4 +232,18 @@ namespace AppDelicare.Model.Request.Custom
         [MaxLength(1000)]
         public string? Note { get; set; }
     }
+
+    /// <summary>UI-6.23 (D-104): màn "7 ngày tới" – kỳ From..To (tối đa 14 ngày; trống = 7 ngày từ hôm nay).</summary>
+    public class ProductionPlanDaysRequest
+    {
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+    }
+
+    /// <summary>UI-6.23 (D-104): Lập / Tính lại kế hoạch của ngày – máy chủ tự quyết (đủ đơn chốt → luồng tự động sau chốt; còn đơn chưa chốt → chỉ lập Nháp).</summary>
+    public class ProductionPlanRecalculateRequest
+    {
+        [Required]
+        public DateTime ProductionDate { get; set; }
+    }
 }

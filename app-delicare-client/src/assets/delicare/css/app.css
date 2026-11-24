@@ -648,6 +648,18 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 }
 .fw-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.fw-tools .input{max-width:260px}
 .fw-table td.fw-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* UI-6.23 (D-104): Kế hoạch sản xuất – 7 ngày tới (dùng chung khung .fw-* của Dự báo tuần) */
+.fw-step .s4{background:#FDECEA;color:#B42318}
+.btn.danger-o{background:#fff;border-color:#E9A8A1;color:#B42318;font-weight:600}
+.notice.danger{background:#FDECEA;border-color:#E9A8A1;color:#B42318}
+.fw-sw.held{background:#FDECEA;border-color:#E9A8A1}
+.fw-q.pp{display:inline-block;min-width:72px;width:auto;cursor:default}.fw-q.pp[data-day]{cursor:pointer}.fw-q.pp[data-day]:hover{box-shadow:0 0 0 2px #DCE8C6}
+.fw-q.held{border-color:#E9A8A1;background:#FDECEA;color:#B42318}.fw-q.open{border-color:#F2B98A;background:#fff;color:#C2571A}
+.fw-hint.bad{color:#B42318}
+.pp-table th b{display:block;font-size:13px;color:#1E2620}.pp-table th .tag{margin-top:4px}.pp-table th.pp-today{background:#EEF4E3;color:#1E2620}
+.pp-table tr.pp-act td{background:#FCFDFB;padding:8px 6px}.pp-table tr.pp-act .btn{width:100%;justify-content:center}
+.pp-table .l{position:sticky;left:0;z-index:1;background:#fff}.pp-table th.l{background:#FAFBF8}.pp-table tr.fw-cus td.l{background:#F7F9F4}.pp-table tr.pp-act td.l{background:#FCFDFB;font-weight:600}
+@media(max-width:760px){.pp-table col.name{width:150px}.pp-table{min-width:860px}}
 .fw-card-h{cursor:pointer}.fw-card.closed .fw-chev{transform:rotate(-90deg)}
 .fw-table col.tot{width:110px}.fw-table .fw-more{padding:0 6px;min-height:22px;margin-left:4px}
 @media(max-width:760px){

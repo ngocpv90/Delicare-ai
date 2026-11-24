@@ -29,6 +29,7 @@ const SCRIPTS = [
   'modules/supplier-price.js', // UI-6.19 (D-100): form giá NCC + bảng so sánh NCC × nguyên liệu – sau uom.js
   'modules/purchase-flow.js', // UI-6.18 (D-99): form đề nghị mua có dòng + Chọn nhà cung cấp / Chờ gửi NCC – sau scm.js
   'modules/production.js',
+  'modules/plan-days.js', // UI-6.23 (D-104): Kế hoạch sản xuất – 7 ngày tới (sau production.js: dùng APP.prodPlanList)
   'modules/qc.js',
   'modules/supplier360.js',
   'modules/employee360.js',

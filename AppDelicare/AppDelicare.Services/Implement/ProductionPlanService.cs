@@ -142,7 +142,7 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>T17: kế hoạch chỉ sinh từ MaterialRequirement/Calculate (KH- theo ngày, kèm nhu cầu NL) – CRUD Insert không ghi.</summary>
+        /// <summary>T17 / UI-6.23: kế hoạch chỉ sinh qua Generate (hệ thống tự lập sau chốt đơn, nút Lập / Tính lại ở màn 7 ngày tới) – CRUD Insert không ghi.</summary>
         private Task<string> Insert(ProductionPlanRequest request, string typeSave)
             => Task.FromResult(ConstantHelper.Message.PlanInsertBlocked);
 
@@ -530,11 +530,9 @@ namespace AppDelicare.Services.Implement
                 var actor = _currentActor.RequireActor();
                 var db = _unitOfWork.DbContext;
                 DateTime date = request.ProductionDate.Date, next = date.AddDays(1);
-                Guid? unitId = request.OrganizationUnitId is { } ou && ou != Guid.Empty ? ou : null;
-                if (unitId != null && !await db.OrganizationUnit.AsNoTracking().AnyAsync(o => o.Id == unitId && !o.IsDeleted))
-                {
-                    return Fail(ConstantHelper.Message.OrganizationUnitNotFound);
-                }
+                // UI-6.23 (D-104): MỘT kế hoạch / ngày sản xuất (khóa = ngày, OrganizationUnitId để trống) – đơn Đã chốt lấy cả ngày không lọc đơn vị, nên lập theo đơn vị
+                // sinh kế hoạch thứ 2 đủ món → nấu gấp đôi. OrganizationUnitId gửi lên giữ cho tương thích, không dùng.
+                Guid? unitId = null;
                 // Khóa theo ngày (sp_getapplock của mã KH-) như MaterialRequirement/Calculate – 2 lần sinh / tính cùng ngày chạy lần lượt.
                 string planNumber = await _documentNumberService.NextAsync(DocumentKind.ProductionPlan, date);
                 var plan = _unitOfWork.ProductionPlanRepository.GetAll()

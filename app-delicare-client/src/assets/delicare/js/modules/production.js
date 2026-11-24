@@ -198,37 +198,21 @@
       <h3 class="mt">Hao hụt</h3>${mini(['Thời điểm', 'Loại', 'Số suất', 'Kg', 'Lý do'], (d.listWaste || []).map(w => [esc(U.dt(w.occurredAt)), esc(wasteName(w.wasteType)), U.num(w.quantityMeals), U.num(w.quantityKg), esc(w.reason || '')]))}`;
   }
   // ---------- Kế hoạch sản xuất ----------
-  APP.register('prod-plan', (el, f) => {
-    APP.genericList(el, f, { noTransit: true, cols: [{ k: 'PlanNumber', label: 'Số kế hoạch' }, { k: 'ProductionDate', label: 'Ngày SX' }, { k: 'ShiftId', label: 'Ca' }, { k: 'OrganizationUnitId', label: 'Đơn vị' }, { k: 'n', label: 'Số món', col: false, num: true, render: r => Store.by('ProductionPlanLine', 'ProductionPlanId', r.Id).length }, { k: 'q', label: 'Tổng suất', col: false, num: true, render: r => U.num(U.sum(Store.by('ProductionPlanLine', 'ProductionPlanId', r.Id), 'PlannedQuantity')) }, { k: 'o', label: 'Lệnh SX', col: false, num: true, render: r => Store.by('ProductionOrder', 'ProductionPlanId', r.Id).length }, { k: 'Status', label: 'Trạng thái' }],
-      top: `<div class="notice warn">${I('alert')}<div><b>GAP-C-04:</b> BRD lập kế hoạch theo ngày, ca, line, menu – ProductionPlan chưa có ProductionLineId/MenuId ở header. Dây chuyền được gán ở cấp Lệnh sản xuất.</div></div>` });
-    // Chế độ API: ProductionPlan/Generate lập (hoặc tính lại) kế hoạch Nháp của ngày từ đơn Đã xác nhận / Đã chốt.
-    const ha = Store.isLive && el.querySelector('.heading-actions');
-    if (ha) { ha.insertAdjacentHTML('afterbegin', `<button class="btn orange" data-gen>${I('flow')} Lập từ đơn hàng</button>`); ha.querySelector('[data-gen]').onclick = generatePlan; }
+  // UI-6.23 (D-104): tab Danh sách kế hoạch của màn Kế hoạch sản xuất (modules/plan-days.js) – không Tạo mới chung (kế hoạch do hệ thống lập, mỗi ngày một bản),
+  // không hộp Lập từ đơn hàng / ô Đơn vị, không dòng GAP; Ra lệnh SX khi kế hoạch Đã duyệt (còn ca chưa ra lệnh – kế hoạch chuyển Đã phát hành khi đủ ca).
+  APP.prodPlanList = (el, f, top) => {
+    APP.genericList(el, f, { noTransit: true, noAdd: true, top: top || '', cols: [{ k: 'PlanNumber', label: 'Số kế hoạch' }, { k: 'ProductionDate', label: 'Ngày SX' }, { k: 'n', label: 'Số món', col: false, num: true, render: r => Store.by('ProductionPlanLine', 'ProductionPlanId', r.Id).length }, { k: 'q', label: 'Tổng suất', col: false, num: true, render: r => U.num(U.sum(Store.by('ProductionPlanLine', 'ProductionPlanId', r.Id), 'PlannedQuantity')) }, { k: 'o', label: 'Lệnh SX', col: false, num: true, render: r => Store.by('ProductionOrder', 'ProductionPlanId', r.Id).length }, { k: 'Status', label: 'Trạng thái' }] });
     APP.rowExtra(el, tr => { const r = Store.get('ProductionPlan', tr.dataset.row); const td = tr.querySelector('.actions');
       if (r.Status === 'Draft' && Store.canApprove('prod-plan')) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-a>Duyệt</button> `); td.querySelector('[data-a]').onclick = () => approvePlan(r); }
       if (Store.isLive) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs" data-xs title="Xuất phiếu sản xuất">${I('export')}</button> `); td.querySelector('[data-xs]').onclick = () => Store.download('ProductionPlan/ExportProductionSheet', { id: r.Id }); }
-      if (r.Status === 'Approved' && !Store.by('ProductionOrder', 'ProductionPlanId', r.Id).length) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs primary" data-g>Ra lệnh SX</button> `); td.querySelector('[data-g]').onclick = () => release(r); } });
-  });
+      if (r.Status === 'Approved' && Store.perm('prod-plan').edit !== false) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs primary" data-g>Ra lệnh SX</button> `); td.querySelector('[data-g]').onclick = () => release(r); } });
+  };
+  APP.register('prod-plan', (el, f) => APP.prodPlanList(el, f));
   function approvePlan(r) {
     UI.confirm('Duyệt kế hoạch ' + esc(r.PlanNumber) + '?', () => Store.act('ProductionPlan/Approve', { form: { Id: r.Id }, tables: ['ProductionPlan', 'ApprovalRequest'], demo: () => Store.update('ProductionPlan', r.Id, { Status: 'Approved' }) }).then(x => { if (x.ok) { UI.toast('Đã duyệt kế hoạch', 'ok'); APP.refresh(); } }));
   }
   // UI-6 (D-80): trang chi tiết kế hoạch (modules/detail-prod.js) gọi lại đúng các thao tác của danh sách. r / pl = { Id, PlanNumber }.
   APP.prodPlan = { approve: r => approvePlan(r), release: pl => release(pl), exportSheet: id => Store.download('ProductionPlan/ExportProductionSheet', { id }) };
-  function generatePlan() {
-    UI.modal({ title: 'Lập kế hoạch sản xuất từ đơn hàng', size: 'sm',
-      body: `<p style="margin-top:0" class="small muted">Tổng hợp số phần từng món từ các đơn Đã xác nhận / Đã chốt của ngày. Kế hoạch Nháp cùng ngày sẽ được tính lại; kế hoạch đã duyệt thì không thay đổi.</p>
-        <div class="field"><label>Ngày sản xuất <span class="req">*</span></label><input type="date" class="input" id="gD" value="${esc(Store.ctx.date)}"></div>
-        <div class="field mt"><label>Đơn vị</label><select class="select" id="gU"><option value="">— Không chọn —</option>${Store.rows('OrganizationUnit').map(o => `<option value="${esc(o.Id)}" ${o.Id === Store.ctx.branch ? 'selected' : ''}>${esc(Store.label('OrganizationUnit', o))}</option>`).join('')}</select></div>
-        <div class="field mt"><label>Ghi chú</label><textarea class="input" rows="2" id="gN" maxlength="1000"></textarea></div>`,
-      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="gOk">Lập kế hoạch</button>',
-      onMount: (m, c) => m.querySelector('#gOk').onclick = () => {
-        const date = m.querySelector('#gD').value; if (!date) return UI.toast('Chọn ngày sản xuất.', 'err');
-        Store.act('ProductionPlan/Generate', { form: { ProductionDate: date, OrganizationUnitId: m.querySelector('#gU').value, Note: m.querySelector('#gN').value.trim() }, tables: ['ProductionPlan', 'ProductionPlanLine'] }).then(r => {
-          if (!r.ok) return; const d = r.data || {}, p = d.productionPlan || {};
-          c(); UI.toast(`Đã lập kế hoạch ${esc(p.planNumber || '')} · ${(d.listLine || []).length} món · ${U.num(d.totalPortions || 0)} phần`, 'ok'); warnToast(d); APP.refresh();
-        });
-      } });
-  }
   function release(pl) {
     const lines = Store.by('ProductionPlanLine', 'ProductionPlanId', pl.Id);
     const lineFor = d => { const cat = Store.label('DishCategorie', (Store.get('Dishe', d) || {}).DishCategoryId); const L = Store.rows('ProductionLine'); return /mặn/i.test(cat) ? L[0] : /rau|canh/i.test(cat) ? L[1] : /cơm/i.test(cat) ? L[2] : L[3]; };
