@@ -220,6 +220,28 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 
 ---
 
+### 4.5 CHUẨN GIAO DIỆN BẮT BUỘC CHO **MỌI** TÍNH NĂNG (anh chốt 2026-11-23 – áp toàn ứng dụng, cả màn cũ lẫn màn mới)
+> Không chỉ áp cho màn được nêu trong task. **Sửa / làm bất kỳ màn nào cũng phải đưa màn đó về đúng chuẩn này**; màn chưa đúng chuẩn = lỗi. Rà toàn bộ trong ROADMAP UI-6.10.
+1. **Ngôn ngữ (D-88 c):** mọi chữ người dùng thấy – giao diện, chip lọc, ô chọn, tiêu đề cột, form, nút, thông báo / lỗi (kể cả lỗi máy chủ), tooltip, file Excel / CSV / PDF, tên file, tin nhắn bot – **tiếng Việt, một cách gọi duy nhất** theo từ điển trạng thái chung (`UI.STATUS_VI` + phía máy chủ). Active / Inactive = **Đang hoạt động / Ngừng hoạt động**. Không in mã / tên cột kỹ thuật (Status, ForecastQuantity, true / false, null…). Chỉ giữ tiếng Anh cho mã chứng từ, đơn vị chuẩn, tên riêng. Mã trạng thái mới phải thêm vào từ điển trước khi lên giao diện.
+2. **Thẻ chỉ số (D-88 a, b; D-64):** < 2 thẻ → **không hiển thị hàng chỉ số**; 2 → mỗi thẻ 1/2; 3 → 1/3; 4 → 1/4 (tối đa 4 một hàng); ≥ 5 → xuống hàng, thẻ thứ 5 trở đi rộng 1/4. Máy tính bảng / điện thoại 2 cột. Luôn qua hàm chung `UI.kpis`, không tự ghép khung `.kpis`. Trang chi tiết dùng bản gọn `.kpis.compact` (D-80 d).
+3. **Màn bảng nhập số theo ngày / ma trận / kế hoạch (D-84 g):** dòng giải thích mục đích · dải bước đánh số có nút tại bước · chỉ số gọn · kỳ cố định (tuần / tháng) + ◀ ▶ · nhóm dòng mở / gập + dòng tổng · **một số mỗi ô**, màu theo trạng thái + chú thích màu · chi tiết phụ ở chữ nhỏ / rê chuột · sửa trực tiếp trong ô · phần phụ để trong tab. Mô phỏng mẫu: `docs/frontend-handoff/assets/forecast-week-mockup.html`.
+4. **Chi tiết hồ sơ / chứng từ (D-80):** trang toàn màn theo khuôn hồ sơ / chứng từ, không dùng ngăn trượt cho hồ sơ / chứng từ chính; phần đầu gọn một khung bọc tên + chỉ số.
+5. **Biểu đồ (D-86 a):** chỉ **Chart.js** (có sẵn, nạp qua `angular.json`), qua hàm chung `UI.chart`; không vẽ SVG thủ công, không CDN.
+6. **Giảm thao tác:** không bắt người dùng làm từng bản ghi khi có thể làm hàng loạt (xác nhận / xuất / gửi nhiều dòng một lần – D-85, D-86 c, D-87); không có nút phụ thuộc bước trước mà nằm tách khỏi bước đó; mặc định điền sẵn số hợp lý (người dùng chỉ sửa ngoại lệ).
+7. **Tên menu / màn (D-75 a):** ngắn, từ nghiệp vụ quen thuộc, không tiếng Anh / thuật ngữ kỹ thuật; bảng con không lên menu; màn chưa có API không lên menu.
+8. **Tính năng chưa làm xong** mà vẫn để nút trên giao diện: bấm hiện "Tính năng chưa được nâng cấp. Vui lòng liên hệ quản trị viên." (D-87 c) – không để nút báo lỗi kỹ thuật hay màn GAP.
+9. **Kiểm tra trước khi báo xong mọi task FE:** chạy script quét UI-6.10 (từ tiếng Anh / mã trạng thái, số thẻ chỉ số) trên các màn đã sửa – sạch mới báo xong.
+
+### 4.6 DEFINITION OF DONE – chuẩn "Hoàn thành" bắt buộc (D-92 b, anh chốt 2026-11-24)
+Task chỉ được ghi **DONE** trong ROADMAP / PROGRESS khi đủ **cả 7 điểm**; thiếu điểm nào → trạng thái **`PARTIAL`** + ghi rõ trong mục "Chưa làm / còn rủi ro".
+1. **DB dev:** mọi migration / seed / script dữ liệu của task **đã chạy thật** (`DryRun=0`) trên DB dev, chạy lại lần 2 = 0 việc; số liệu ghi PROGRESS. Không ghi "chờ anh backup / chờ anh chạy" cho DB dev (D-92 a – backup chỉ bắt buộc khi có staging / production, anh sẽ báo).
+2. **Giao diện thật:** API + FE chạy trên DB dev, kiểm bằng trình duyệt / Chrome headless, có ảnh (1440 + 390 với màn có giao diện).
+3. **Đối chiếu từng dòng** AC / bảng anh chốt, mỗi dòng có bằng chứng (ảnh, test, truy vấn).
+4. **Nguồn trùng đồng bộ:** seed, script, `catalog.js`, CodeGen, HDSD… cùng cập nhật; nguồn sinh từ CodeGen phải có test so khớp (vd `Tests/Menu/CatalogMenuTests`).
+5. **Không chỉ admin:** kiểm bằng tài khoản **không phải admin** cho các vai trò liên quan (tài khoản thử `uat.<vai trò>` trên DB dev) + trường hợp biên / lỗi / không có quyền.
+6. **Xanh toàn bộ:** `dotnet test`, `full-flow.http` (`tools/seed-demo`), build FE; mở mọi màn liên quan không lỗi JS / 500 / trang trắng.
+7. **PROGRESS trung thực:** có mục **"Chưa làm / còn rủi ro"**; còn mục nào thì không ghi DONE.
+
 ## 5. Tra cứu nhanh
 
 | Cần gì | Xem ở đâu |
@@ -256,11 +278,11 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
    - **Trước mỗi lần gộp `main` (D-61, T48.5):** test `SqlServer2022CompatibilityTests` xanh **và** kiểm trên SQL Server 2022 thật (Docker – `deploy/README.md` mục 11: DB trống → `db-init` 2 lần → `full-flow.http` đạt); ghi kết quả vào PROGRESS. Máy chưa có Docker → ghi rõ "chưa kiểm 2022 thật" khi báo anh.
 7. Tự rà lại theo **tiêu chí nghiệm thu** của task. Đánh dấu từng tiêu chí đạt hay chưa.
 8. Cập nhật:
-   - ROADMAP: đổi trạng thái task (`TODO` → `DONE` / `BLOCKED`).
+   - ROADMAP: đổi trạng thái task (`TODO` → `DONE` / `PARTIAL` / `BLOCKED`) – `DONE` chỉ khi đủ DoD §4.6.
    - PROGRESS: ghi đã làm gì, file chính, cách kiểm tra, việc còn lại.
    - DECISIONS: GAP hoặc câu hỏi mới.
    - **`docs/reference/DELICARE_API_Catalog.xlsx`, sheet `API_Catalog`**: với mỗi dòng spec mà task làm, cập nhật cột **J Trạng thái** (`Đã xong` / `Một phần` / `Đang làm` / `Chưa bắt đầu` / `Không làm`), **L API thực tế (khung cũ)**, **M Task**, ghi chú ở **K** nếu cần. Không sửa cột A–I, không thêm / xóa dòng. Đây là **ngoại lệ duy nhất** của luật "không sửa `docs/reference/*`" (anh yêu cầu 2026-11-16). Dùng openpyxl, giữ định dạng; sheet `Tong_hop` tự tính.
-9. Commit trên nhánh task. Báo anh **ngắn gọn**: xong gì, kiểm tra thế nào, cần anh làm gì (vd. chạy script SQL trên DB dev, nhập secret).
+9. Commit trên nhánh task. Báo anh **ngắn gọn**: xong gì, kiểm tra thế nào (theo DoD §4.6), cần anh làm gì (vd. nhập secret, chạy trên DB không phải dev). Script DB dev em tự chạy thật (D-92 a).
 10. Nếu anh nói "làm tiếp", "tiếp" hoặc `/next` thì quay lại bước 1.
 
 **Khi nào dừng để hỏi anh:**

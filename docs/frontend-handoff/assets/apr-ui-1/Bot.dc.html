@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bot Điều hành – thẻ duyệt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2B6CB0}a:hover{color:#1E4E8C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #DCE6EC; font-family: Inter, system-ui, sans-serif; color: #1F2430; font-size: 14px; display: flex; flex-direction: column">
+<div style="background: #fff; padding: 14px 16px; border-bottom: 1px solid #C9D3D9"><b>Delicare · Điều hành</b><div style="font-size: 12px; color: #5B6270">bot</div></div>
+<div style="flex: 1; padding: 14px 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto">
+
+<div style="background: #fff; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; max-width: 340px">
+<div style="font-size: 12px; color: #B42318; font-weight: 600">🔴 CẦN DUYỆT · QUÁ HẠN 5 GIỜ</div>
+<b>Đơn mua hàng PO-000123</b>
+<div>NCC Rau sạch Đà Lạt · 38.450.000 đ · 12 dòng · giao 25/11</div>
+<div style="color: #5B6270; font-size: 13px">Vì sao cần duyệt: đơn lập tay, không từ đề nghị mua đã duyệt</div>
+<div style="background: #FFFAEB; color: #93370D; border-radius: 8px; padding: 8px 10px; font-size: 13px">⚠ Giá cà chua cao hơn lần mua trước 18 %<br>⚠ Không phải NCC gợi ý cho cải ngọt</div>
+<div style="color: #5B6270; font-size: 12px">Người gửi: Nguyễn Văn An · 08:10</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-width: 340px">
+<button style="height: 44px; border-radius: 10px; border: 0; background: #fff; font-weight: 600; color: #067647">✅ Duyệt</button>
+<button style="height: 44px; border-radius: 10px; border: 0; background: #fff; font-weight: 600; color: #B42318">❌ Từ chối</button>
+<button style="height: 44px; border-radius: 10px; border: 0; background: #fff; font-weight: 600; color: #2B6CB0">Xem chi tiết</button>
+</div>
+
+<div style="background: #fff; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; max-width: 340px">
+<div style="font-size: 12px; color: #067647; font-weight: 600">🟢 BÌNH THƯỜNG · CÒN 40 GIỜ</div>
+<b>Đơn xin nghỉ NP-000210</b>
+<div>Phạm Minh Châu – Tổ Nấu · 26–27/11 · phép năm</div>
+<div style="color: #5B6270; font-size: 13px">Đã có người thay 2 ca sáng · đã nghỉ 5 ngày năm nay</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-width: 340px">
+<button style="height: 44px; border-radius: 10px; border: 0; background: #fff; font-weight: 600; color: #067647">✅ Duyệt</button>
+<button style="height: 44px; border-radius: 10px; border: 0; background: #fff; font-weight: 600; color: #B42318">❌ Từ chối</button>
+</div>
+
+<div style="background: #fff; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; max-width: 340px">
+<div style="font-size: 12px; color: #0F766E; font-weight: 600">📋 TỔNG HỢP CUỐI NGÀY · 23/11</div>
+<div>Còn chờ bạn: <b>7</b> (1 quá hạn, 3 có cảnh báo)</div>
+<div>Hệ thống tự duyệt hôm nay (hậu kiểm): <b>23</b> – 14 đơn nghỉ, 6 đổi ca, 3 điều chỉnh tồn nhỏ</div>
+<div style="color: #5B6270; font-size: 13px">Hoàn tác được trong 24 giờ.</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-width: 340px">
+<button style="height: 44px; border-radius: 10px; border: 0; background: #fff; font-weight: 600; color: #2B6CB0">Mở Phê duyệt</button>
+<button style="height: 44px; border-radius: 10px; border: 0; background: #fff; font-weight: 600; color: #2B6CB0">Xem 23 việc tự duyệt</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

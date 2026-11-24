@@ -48,7 +48,14 @@ Thứ tự ưu tiên cách thao tác (ít công nhất trước): **hệ thống
 | Khu vệ sinh hộp khay (BOT-2.4) | `?start=CLEAN` | Lô vệ sinh của ca |
 - Tham số `start` ≤ 64 ký tự `[A-Za-z0-9_-]`; dùng **mã** (không dùng Guid khi có mã ngắn). Ảnh QR: FE sinh ở màn in hoặc in sẵn từ link – **BE không thêm thư viện vẽ QR** (nếu cần → hỏi gói mới).
 
-### 1.4 Menu + điều hướng – bảng điều khiển duy nhất (BOT-1.4, BOT-UX-1)
+### 1.4 Menu + điều hướng – bảng điều khiển duy nhất (BOT-1.4, BOT-UX-1, BOT-UX-2)
+> **BOT-UX-2 – `TODO` (anh chốt 2026-11-23, sau khi test thật):** mục tiêu việc hằng ngày **≤ 3 chạm, không gõ tay** (tổ trưởng bếp ghi nhiệt độ lõi: ⭐ Mẻ cần làm → ME → 78; tài xế giao đủ 1 điểm: ⭐ Chuyến của tôi → điểm → ✅ Giao đủ N; chấm công: 1 chạm 📍). Khi xong, các điểm dưới thay phần tương ứng bên dưới:
+> - **Một nút Quay lại / màn** (hàng điều hướng), về **đúng màn trước** (thẻ mẻ › nhiệt độ › ◀ = thẻ mẻ); không phát lại thao tác ghi. Đường dẫn đủ cấp (*Menu › Bếp › Mẻ cần làm › ME-0123*).
+> - **3 phím luôn có:** gửi lại khi /menu, /ca, /help và lần đầu sau khi bot khởi động; bỏ bàn phím vị trí dùng 1 lần – phím 📍 đã gửi vị trí.
+> - **Nhập số bằng nút:** giá trị điền sẵn + `−10 −1 +1 +10` + chọn nhanh + [✅ Xác nhận]; lý do / ghi chú = nút lý do hay gặp, [Khác…] mới gõ.
+> - **Phản hồi:** mọi nút có thông báo nổi ngắn; ghi xong → dòng `✅ … · HH:mm` ở đầu thẻ, **thẻ giữ nút bước kế tiếp**; chỉ khi hết bước mới thành phiếu kết quả.
+> - **Danh sách:** 6 mục / trang [◀ Trước] [Sau ▶]; mặc định lọc ca này / tổ tôi / chuyến của tôi, việc gấp lên đầu, [Xem tất cả].
+> - **Menu theo vai trò:** ≤ 6 chức năng → màn đầu phẳng; bỏ ô "·"; mỗi chức năng 1 phân hệ chính; phân hệ của vai trò chính xếp đầu.
 - **Bàn phím dưới cố định 3 phím** (mọi người, `is_persistent`): [⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công] – gửi khi liên kết tài khoản và khi /start.
 - **Chỉ 4 lệnh "/"** cho mọi chat: `/menu` `/ca` `/chamcong` `/help` – lệnh nào cũng mở cùng bảng điều khiển. Lệnh / mã chức năng khác (`/nlca`, `/cho`, `/truyxuatlo`…) và gõ mã chứng từ **vẫn chạy** nhưng không liệt kê.
 - **Bảng điều khiển (panel) – chat riêng:** mỗi chat **tối đa 1 tin có nút của bot**. Mọi điều hướng / chức năng **sửa chính panel** (không gửi tin mới). Dòng đầu là đường dẫn (vd. *Menu › 🍳 Bếp › 🌡 Ghi nhiệt độ lõi*); hàng nút cuối mọi màn: **[◀ Quay lại] [🏠 Menu] [✖ Đóng]** (màn đầu chỉ có ✖ Đóng).

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Phần đầu màn chi tiết: hiện tại vs đề xuất gọn</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g-bg:#EFF5E5;--g-tx:#6F9131;--o-bg:#FDF0E6;--o-tx:#C2571A;--b-bg:#E6F1FB;--b-tx:#2F64A0;--r-bg:#FCEBEB;--r-tx:#A32D2D}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px}
+h2{font-size:15px;margin:26px 0 8px;color:#44504a}.note{font-size:13px;color:var(--muted);margin:0 0 10px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 14px;height:38px;font-size:14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}
+.tag{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+.tabs{display:flex;gap:26px;font-size:14px;color:var(--muted);padding:12px 4px 0;border-bottom:1px solid var(--line);margin-top:14px;overflow-x:auto}
+.tabs span{padding-bottom:10px;white-space:nowrap}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.ruler{position:relative}.ruler::after{content:attr(data-h);position:absolute;right:-6px;top:0;transform:translateX(100%);font-size:11px;color:#b45;writing-mode:vertical-rl}
+
+/* ---------- HIỆN TẠI ---------- */
+.cur .head{padding:24px 28px;margin-bottom:24px}
+.cur .row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.cur .av{width:64px;height:64px;border-radius:16px;background:var(--g-bg);color:var(--g-tx);display:grid;place-items:center;font-weight:800;font-size:22px}
+.cur h1{font-size:22px;margin:0 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cur .meta{font-size:13px;color:var(--muted);margin-top:4px;min-height:16px}
+.cur .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+.cur .kpi{display:flex;gap:20px;align-items:center;padding:24px}
+.cur .ki{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:28px;flex:none}
+.cur .kl{font-size:15px;color:#5F6B66}.cur .kv{font-size:34px;font-weight:800;letter-spacing:-.6px;line-height:1.1;margin-top:4px}.cur .ks{font-size:14px;color:#8A938D;font-weight:400}
+
+/* ---------- ĐỀ XUẤT ---------- */
+.new .wrap{padding:18px 22px}
+.new .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.new .av{width:52px;height:52px;border-radius:14px;background:var(--g-bg);color:var(--g-tx);display:grid;place-items:center;font-weight:800;font-size:19px;flex:none}
+.new .id{flex:1;min-width:240px}
+.new h1{font-size:20px;line-height:1.25;margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.new .meta{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.new .meta i{font-size:14px;vertical-align:-2px}
+.new .acts{display:flex;gap:8px;flex-wrap:wrap}
+.new .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.new .kpi{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px;cursor:pointer;min-width:0}
+.new .kpi:hover{border-color:#B9CB97}
+.new .ki{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;flex:none}
+.new .kb{min-width:0}
+.new .kl{font-size:13px;color:#5F6B66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.new .kv{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15;margin-top:2px;white-space:nowrap}
+.new .ks{font-size:13px;color:#8A938D;font-weight:400;letter-spacing:0}
+@media(max-width:1199px){.new .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cur .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:767px){
+ .new .wrap{padding:14px}
+ .new .row{align-items:flex-start}
+ .new .acts{width:100%}.new .acts button:not(.p):not(.more){display:none}.new .acts .p{flex:1;justify-content:center}
+ .new .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .new .kpi{padding:10px;gap:10px}.new .ki{width:36px;height:36px;font-size:18px;border-radius:10px}.new .kv{font-size:22px}
+ .cur .kpis{grid-template-columns:1fr}
+}
+</style></head><body>
+
+<p class="note">Thu hẹp cửa sổ để xem bản ≥ 1200px / 768–1199px / điện thoại. Số liệu minh họa từ ảnh anh gửi.</p>
+
+<h2>① Hiện tại – 2 khối tách rời, phần đầu cao ≈ 300px</h2>
+<div class="cur">
+ <div class="card head"><div class="row">
+  <div class="av">LS</div>
+  <div style="flex:1;min-width:240px"><h1>[DEMO] Khách toàn luồng ST8WW <span class="tag" style="background:var(--g-bg);color:var(--g-tx)">Doanh nghiệp</span><span class="tag" style="background:var(--g-bg);color:var(--g-tx)">● Đang hoạt động</span></h1>
+   <div class="meta">DEMOST8WW</div><div class="meta"></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button><i class="ti ti-pencil"></i>Sửa</button><button class="p"><i class="ti ti-plus"></i>Tạo đơn</button><button><i class="ti ti-message"></i>Ghi phản ánh</button><button>⋯</button></div>
+ </div></div>
+ <div class="kpis">
+  <div class="card kpi"><div class="ki" style="background:var(--g-bg);color:var(--g-tx)"><i class="ti ti-file-text"></i></div><div><div class="kl">Hợp đồng hiệu lực</div><div class="kv">1</div></div></div>
+  <div class="card kpi"><div class="ki" style="background:var(--o-bg);color:var(--o-tx)"><i class="ti ti-tools-kitchen-2"></i></div><div><div class="kl">Suất TB/ngày (7 ngày)</div><div class="kv">143</div></div></div>
+  <div class="card kpi"><div class="ki" style="background:var(--b-bg);color:var(--b-tx)"><i class="ti ti-file-invoice"></i></div><div><div class="kl">Doanh thu đã đối soát</div><div class="kv">34.650.000 ₫</div><div class="ks">1 đơn</div></div></div>
+  <div class="card kpi"><div class="ki" style="background:var(--r-bg);color:var(--r-tx)"><i class="ti ti-message"></i></div><div><div class="kl">Khiếu nại đang mở</div><div class="kv">1 <span class="ks">/ 2 · 50% đúng hạn</span></div></div></div>
+ </div>
+ <div class="tabs"><span class="on">Tổng quan</span><span>Hợp đồng và giá</span><span>Đơn hàng</span><span>Giao nhận</span><span>Đối soát</span><span>Khay hộp</span><span>Phản ánh</span></div>
+</div>
+
+<h2>② Đề xuất – 1 khung, phần đầu cao ≈ 190px (gọn hơn ~ 110px)</h2>
+<div class="new">
+ <div class="card wrap">
+  <div class="row">
+   <div class="av">LS</div>
+   <div class="id"><h1>[DEMO] Khách toàn luồng ST8WW <span class="tag" style="background:var(--g-bg);color:var(--g-tx)">Doanh nghiệp</span><span class="tag" style="background:var(--g-bg);color:var(--g-tx)">● Đang hoạt động</span></h1>
+    <div class="meta">DEMOST8WW · Bệnh viện · Chi nhánh Hưng Yên · Phụ trách: Lê Thu Hà · <i class="ti ti-phone"></i> 0912 345 678 · MST 0101234567</div></div>
+   <div class="acts"><button><i class="ti ti-pencil"></i>Sửa</button><button class="p"><i class="ti ti-plus"></i>Tạo đơn</button><button><i class="ti ti-message"></i>Ghi phản ánh</button><button class="more">⋯</button></div>
+  </div>
+  <div class="kpis">
+   <div class="kpi"><div class="ki" style="background:var(--g-bg);color:var(--g-tx)"><i class="ti ti-file-text"></i></div><div class="kb"><div class="kl">Hợp đồng hiệu lực</div><div class="kv">1</div></div></div>
+   <div class="kpi"><div class="ki" style="background:var(--o-bg);color:var(--o-tx)"><i class="ti ti-tools-kitchen-2"></i></div><div class="kb"><div class="kl">Suất TB/ngày (7 ngày)</div><div class="kv">143</div></div></div>
+   <div class="kpi"><div class="ki" style="background:var(--b-bg);color:var(--b-tx)"><i class="ti ti-file-invoice"></i></div><div class="kb"><div class="kl">Doanh thu đã đối soát</div><div class="kv">34,65 tr ₫ <span class="ks">· 1 đơn</span></div></div></div>
+   <div class="kpi"><div class="ki" style="background:var(--r-bg);color:var(--r-tx)"><i class="ti ti-message"></i></div><div class="kb"><div class="kl">Phản ánh đang mở</div><div class="kv">1 <span class="ks">/ 2 · 50% đúng hạn</span></div></div></div>
+  </div>
+ </div>
+ <div class="tabs"><span class="on">Tổng quan</span><span>Hợp đồng và giá</span><span>Đơn hàng</span><span>Giao nhận</span><span>Đối soát</span><span>Khay hộp</span><span>Phản ánh</span></div>
+</div>
+</body></html>

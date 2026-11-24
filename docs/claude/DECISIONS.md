@@ -761,3 +761,209 @@ Không có quy tắc PROPOSED mới. Tổng hợp mục còn mở + đề xuất
 | 10 | Mặc định BIZ-2 / BIZ-3 | Giữ nguyên. |
 
 Thứ tự làm: 1 → 3 → 6 → 2.
+
+## D-79 – Phân quyền theo từng màn + sắp lại menu theo vai trò (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, "đồng ý và giao task cho Claude Code"): đồng ý toàn bộ đề xuất rà menu & phân quyền, gồm cả 3 điểm có phương án khác (thêm 3 nhóm quyền mới; CEO bỏ duyệt việc thường ngày; tách menu Mua hàng / Kho / Giá thành). Việc làm: ROADMAP **MENU-5** (Claude Code làm BE + FE – D-65). Không thêm bảng / cột; nhóm quyền, mục menu, quyền là **dữ liệu**.
+
+**Lý do (rà seed 2026-11-23):** `UserRole_seed.sql` cấp quyền **theo cả nhóm màn** (ORG_STRUCTURE §2, GAP-PERM-02: E = Thêm + Sửa + Xóa + Nhập) → ghi chú như "E (đối soát suất)" áp cho cả nhóm. Hậu quả: OPS-POS Thêm / Sửa / Xóa toàn bộ Kinh doanh + Giao hàng; SAL-CS toàn quyền Giao hàng; QA toàn quyền Mua hàng & Kho; OPS-KIT toàn quyền Sản xuất & Giá thành + QC. Thao tác kiểm soát theo quy ước = **Sửa** màn: `ProductionBatch/Release|Hold|Reject` (Sửa Mẻ nấu → bếp tự cho mẻ Đạt), `MaterialLot/Hold|Release` (kho tự thả lô QA giữ), `QcInspection/Conclude`; `CustomerComplaint/CreateCompensationOrder` = Thêm Phản ánh (CSKH tạo đơn giá 0). Engine cho người gửi tự duyệt cấp 1 (D-52 d) + nhóm vừa lập vừa duyệt (OPS-SCM ĐN mua cấp 1, SAL-CON sửa đơn sau chốt, FIN-HR đơn nghỉ). QA thiếu quyền Giữ / Loại mẻ và xử lý phản ánh; FIN-HR thiếu Chức vụ. Giá bán / hợp đồng / giá vốn lộ cho bếp, kho, giao vận, QA, bảo trì. Quyền Xem `#/wf-inbox` (KIT, ACC, PMO, HR) xem được chi tiết mọi yêu cầu duyệt.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Nguyên tắc | (1) Cấp quyền **theo từng màn** (bỏ cấp theo nhóm màn, thay GAP-PERM-02). (2) **Xóa** chỉ nhóm chủ dữ liệu. (3) Thao tác kiểm soát = quyền **Duyệt** (mục Phê duyệt). (4) Giá bán, hợp đồng, giá vốn chỉ KD, KT, Kế hoạch, ban điều hành. (5) **Người gửi không duyệt bất kỳ cấp nào** của yêu cầu mình (admin miễn) – thay D-52 (d) "người gửi vẫn được duyệt cấp 1". (6) CEO chỉ duyệt việc lớn; việc vận hành COO; quá hạn vẫn leo thang lên CEO (BIZ-1.6). |
+| (b) | Nhóm quyền mới (dữ liệu `UserGroup`, Name = mã) | **SAL-HEAD** (Trưởng KD – thay SAL-CON làm người duyệt sửa đơn sau chốt, D-78 (4) giữ COO) · **OPS-SCM-HEAD** (Trưởng mua hàng & kho) · **OPS-WH** (thủ kho – tách khỏi OPS-SCM: người mua không ghi sổ nhập). Admin chuyển người sang nhóm mới trên màn Tài khoản; nhóm cũ giữ nguyên. |
+| (c) | Ma trận sau khi sửa | Bảng "Quyền sau khi sửa" ở ROADMAP MENU-5.1 (Q = Thêm / Sửa / Xóa / Nhập; S = Thêm / Sửa; X = Xem; In / Xuất theo ghi chú). Là nguồn mới thay ORG_STRUCTURE §2. |
+| (d) | Người duyệt | Hợp đồng · Chính sách giá · Đơn mua ≥ 50 tr: **CEO**. Sửa đơn sau chốt: **SAL-HEAD, COO**. Công thức · Thực đơn · Đổi món · Kế hoạch SX · Điều chỉnh tồn · Đơn mua < 50 tr: **COO**. ĐN mua cấp 1 / 2: **OPS-SCM-HEAD / COO**. Kiểm kê cấp 1 / 2: **OPS-SCM-HEAD, COO / FIN-ACC**. Đơn nghỉ · Đổi ca: **FIN-HR, COO**. Kết luận kiểm tra hàng nhập (mở lại mục `#/wf-inbox?type=qc-inspection`) · Đạt / Tạm giữ / Loại mẻ làm tay (mục mới `#/wf-inbox?type=prod-batch`) · Giữ / thả lô (mục mới `#/wf-inbox?type=scm-lot`): **QA**. Tất cả yêu cầu duyệt: CEO, CEO-PMO, COO **chỉ Xem**. Mục cũ "Đề nghị mua hàng" (`scm-pr`, không loại duyệt nào dùng – D-52 a): **ẩn**. Mẻ hệ thống tự Đạt (BIZ-2.7) không đổi. |
+| (e) | Menu | 14 nhóm theo thứ tự: Việc của tôi (mục đầu) · Phê duyệt · Điều hành (+ Chỉ số ngày / tháng) · Kinh doanh (+ Phản ánh khách hàng; ẩn Người liên hệ) · Thực đơn & Món ăn · **Mua hàng** · **Kho** · Sản xuất · **Giá thành** · Chất lượng & ATTP · Đóng gói & Giao hàng · Nhân sự (+ Nhân viên, Chức vụ) · Quản trị hệ thống · **Nhật ký & Tích hợp** (chỉ Quản trị). Trong nhóm: việc hằng ngày trước, danh mục sau. Chi tiết ROADMAP MENU-5.4. Bổ sung D-75 (b) (tên nhóm) và thay "không sắp xếp lại nhóm" của D-75. |
+| (f) | Không làm | Thêm bảng / cột; xóa nhóm quyền cũ; đổi quyền đã chỉnh tay của admin ngoài danh sách trong script (script in rõ trước / sau). |
+
+## D-80 – Trang chi tiết toàn màn thay ngăn trượt + phần đầu gọn (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu): ngăn trượt chi tiết khó nhìn khi thông tin nhiều → hồ sơ / chứng từ chính mở **trang chi tiết toàn màn** theo cách 3 màn 360; làm **một đợt**. Việc làm: ROADMAP **UI-6**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Phạm vi | 14 trang: Đơn đặt suất, Hợp đồng, Món ăn, Nguyên liệu, Mẻ nấu (+ lệnh SX), Đơn mua hàng, Chuyến giao hàng, Phản ánh, Lô nguyên liệu, Kế hoạch SX ngày, Phiếu nhập kho, Đề nghị mua, Phiếu kiểm kê, Điểm giao hàng. Danh mục nhỏ giữ ngăn trượt. |
+| (b) | Hai khuôn | Hồ sơ (như 360: phần đầu, chỉ số, tab, Tổng quan 1/3 – 2/3) và Chứng từ (số, trạng thái, **thanh tiến trình trạng thái**, nút theo trạng thái + quyền; tab Tổng quan · Chi tiết dòng · Chứng từ liên quan · Duyệt · Tài liệu · Lịch sử). |
+| (c) | Điều hướng | Đường dẫn riêng `#/<screen>-detail?id=`; quay lại giữ bộ lọc; Ctrl + bấm mở tab mới; mọi link tới loại này đều mở trang. |
+| (d) | Phần đầu gọn | Một khung bọc tên + chỉ số (sửa lỗi chỉ số nằm ngoài); thông tin phụ 1 dòng; thẻ chỉ số biến thể `.kpis.compact` (biểu tượng 44px, số 26px) – **ngoại lệ của D-64 chỉ cho phần đầu trang chi tiết**, bảng điều hành giữ chuẩn D-64. Mô phỏng `docs/frontend-handoff/assets/detail-head-compact-mockup.html`. |
+| (e) | Dữ liệu | Mỗi trang 1 API `GetOverview` từ dữ liệu có sẵn, quyền theo màn gốc (D-79); không thêm bảng / cột. |
+
+## D-81 – Phê duyệt: một màn tổng thay 20 mục menu + khuôn tóm tắt chung (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, sau khi xem mockup): nhóm Phê duyệt có quá nhiều mục con (mỗi mục chỉ là bộ lọc `?type=` của cùng màn `wf-inbox`), không có màn nhìn bao quát; các màn duyệt giống nhau chỉ khác loại dữ liệu. Việc làm: ROADMAP **APR-UI-1** (Claude Code làm BE + FE – D-65). Mockup: canvas https://claude.ai/artifact/Xm5iKMTRTnwAb5zWwY9Xkt (bản nguồn trong repo: `docs/frontend-handoff/assets/apr-ui-1/`). Không thêm bảng / cột.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Menu | Sidebar chỉ còn **1 mục "Phê duyệt"** (dưới "Việc của tôi") có số "chờ tôi duyệt". Các dòng `#/wf-inbox?type=…` **giữ nguyên trong DB, IsActive = 1** (là quyền duyệt – D-31, quyền chỉ tính trên mục đang bật) – FE không đưa lên sidebar / tìm kiếm. Màn Phân quyền gom chúng vào khối **"Quyền duyệt"** (mỗi loại 1 ô tick Truy cập + Sửa). Thay dòng nhóm "Phê duyệt" của D-79 (e). |
+| (b) | Màn tổng | 4 thẻ: Chờ tôi duyệt · Quá hạn · Hết hạn trong 8 giờ · Tôi gửi đang chờ. Tab: Chờ tôi duyệt · Tôi đã gửi · Tôi đã duyệt · Tất cả (chỉ người có Xem `#/wf-inbox` – CEO / CEO-PMO / COO / FIN-IT). Lọc nhanh theo phân hệ có số, lọc tại chỗ. Sắp mặc định: quá hạn → sắp hết hạn → cũ nhất. Mỗi dòng: loại, số chứng từ, tóm tắt, **"Vì sao cần duyệt"**, nhãn **cảnh báo** hoặc **Bình thường**, người gửi + cấp, hạn. |
+| (c) | Xem nhanh | Bấm dòng → ngăn bên phải (điện thoại: trang toàn màn, nút cố định cuối): lý do, cảnh báo, thông tin chính, dòng chứng từ (ô bất thường tô màu), trước → sau, tiến trình cấp, ý kiến (bắt buộc khi từ chối), **Duyệt & sang việc tiếp**, ‹ Trước / Tiếp theo ›, link chứng từ gốc. |
+| (d) | Duyệt nhiều | Chỉ dòng **Bình thường** thuộc loại rủi ro thấp (đơn nghỉ, đổi ca, đơn mua < ngưỡng tự duyệt khi có) – cấu hình `BusinessRules:ApprovalBulkTypes`. Hợp đồng, chính sách giá, PO ≥ 50 tr, kiểm kê, sửa đơn sau chốt: luôn mở từng yêu cầu. |
+| (e) | Khuôn tóm tắt chung (BE) | `IApprovalHandler.GetSummaryAsync(businessId)` → `{ title, typeName, moduleName, counterparty, mainValue, reason, flags[≤3] {text, severity}, info[] {label, value}, lineHeaders[], lines[] {cells[], highlight}, changes[] {label, before, after}, openLink }`. `GetMyPending` / `GetDetail` trả kèm khuôn này; FE **một bộ vẽ** cho mọi loại; bot dùng cùng khuôn. Loại mới chỉ cần viết `GetSummaryAsync`. Handler chưa viết → khuôn mặc định (tiêu đề + số chứng từ), không lỗi. |
+| (f) | Cảnh báo ban đầu (máy chủ tính, chỉ đọc dữ liệu có sẵn) | PO: giá dòng > lần mua trước cùng NCC ≥ `ApprovalFlagPricePct` (10 %); NCC không phải ưu tiên; lập tay không từ đề nghị mua. ĐN mua: vượt định mức tồn tối đa. Sửa đơn sau chốt: kế hoạch đã phát hành (sẽ sinh mẻ bổ sung); lệch > 30 %. Kiểm kê: dòng lệch > 5 %. Đơn nghỉ: ca chưa có người thay; vượt số ngày phép năm (khi có – GAP-HR-06). Hợp đồng / chính sách giá: giá suất thấp hơn giá vốn chuẩn. Người gửi bị từ chối loại này ≥ 2 lần / 30 ngày. Không có cảnh báo → **Bình thường**. |
+| (g) | Gom việc duyệt ngoài engine | `GetMyPending` gộp **kế hoạch SX giữ Nháp chờ COO** (BIZ-2.4 HELD, duyệt trực tiếp GAP-PRD-06) và thực đơn tuần nếu đang duyệt trực tiếp (Claude Code kiểm); Duyệt gọi đúng action gốc. 3 quyền Duyệt của QA (mẻ, lô, kết luận QC – D-79) là thao tác trên màn QC, **không** vào hộp này (QA thấy qua chuông). |
+| (h) | Người gửi | Tab "Tôi đã gửi": đang chờ ai (tên / nhóm), đã chờ bao lâu, nút **Nhắc qua bot** (mỗi yêu cầu tối đa 1 lần / 4 giờ). |
+| (i) | Người duyệt vắng | Người duyệt của cấp có đơn nghỉ đã duyệt hôm nay → yêu cầu leo thang ngay lên bậc kế (COO / CEO) không chờ 48 giờ. Ủy quyền đích danh = **GAP-APR-04** (cần chỗ lưu – R2). |
+| (j) | Dọn | Bỏ hộp GAP-F-08, chữ "dbo.…", mã `BusinessType` thô trên màn chạy thật → tên tiếng Việt. |
+| (k) | Đo và giai đoạn sau | UAT: COO + trưởng mua hàng dùng 1 ngày; mục tiêu ≤ 2 lần bấm / yêu cầu bình thường, ≤ 30 giây / yêu cầu có cảnh báo. Thống kê tỉ lệ duyệt nguyên trạng theo loại (`ApprovalRequest/GetStats`). **Hậu kiểm** (tự duyệt loại hoàn tác được + tổng hợp cuối ngày + hoàn tác 24 giờ): chỉ bật sau UAT khi anh chốt danh sách loại / ngưỡng – chưa làm. **Trợ lý gợi ý quyết định** (Hermes): R2. |
+
+**GAP-APR-04 (PROPOSED – R2):** ủy quyền duyệt cho người khác khi vắng cần lưu (người ủy quyền, người nhận, loại, từ – đến); không có bảng phù hợp – chờ anh duyệt thiết kế. Tạm: leo thang ngay khi người duyệt nghỉ (D-81 i).
+
+## D-82 – Tài khoản ↔ con người ↔ nhân viên: `Employee.PersonId` + `User.AccountType` + vòng đời tài khoản tự động (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu): **duyệt migration 2 cột** `Employee.PersonId`, `User.AccountType`; đóng **GAP-ADM-03 / GAP-HR-02**; thay cách tra 3 bước của D-55 (b) và ghi chú "chưa có cột" của D-38. Việc làm: ROADMAP **HR-ACC-1** (Claude Code BE + FE – D-65).
+
+**Lý do:** `User.PersonId → Person` có sẵn, `Employee` không có cột nối → hệ thống đoán nhân viên của tài khoản (liên kết bot → tên đăng nhập = mã NV → SĐT); đổi tên đăng nhập / mã / SĐT là mất liên kết; Nhân viên 360 đoán khác `HrRules.ResolveEmployeeAsync`; họ tên / SĐT / ngày sinh trùng ở Person và Employee; **nghỉ việc không khóa tài khoản**; không có chỗ thấy ai chưa có tài khoản / tài khoản mồ côi; D-79 chặn tự duyệt, D-81 (i) người duyệt vắng cần nối chắc. Sau này khách hàng cũng có tài khoản (cổng riêng) → không được coi mọi tài khoản là nhân viên.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Mô hình | **Person = con người** (thông tin cá nhân gốc); các **vai trò** gắn vào Person: `Employee.PersonId` (bây giờ), `CustomerContact.PersonId` (khi mở cổng khách – GAP-PORTAL-01). `User.PersonId` (có sẵn) = tài khoản của người đó. 1 Person ↔ tối đa 1 Employee đang làm, tối đa 1 User mỗi loại tài khoản (D-38). |
+| (b) | Loại tài khoản | `User.AccountType`: `INTERNAL` (mặc định – mọi tài khoản hiện có: nhân viên, admin, hệ thống) · `CUSTOMER` (cổng khách – R2) · (sau `SUPPLIER`). Máy chủ kiểm lúc đăng nhập + claim trong JWT: tài khoản không phải `INTERNAL` **không gọi được API nội bộ** (kể cả khi bị gán nhầm nhóm quyền); tài khoản nội bộ không vào cổng khách. Nhân viên / hệ thống trong `INTERNAL` phân biệt bằng có liên kết Employee hay không (hiển thị, không lưu). |
+| (c) | Migration | `Employee.PersonId uniqueidentifier NULL` + FK `Person(Id)` + chỉ mục duy nhất lọc (`PersonId IS NOT NULL AND IsDeleted = 0` – Claude Code xem có cần điều kiện trạng thái đang làm không, ghi PROGRESS). `User.AccountType nvarchar(20) NOT NULL DEFAULT 'INTERNAL'` + CHECK theo danh sách. File `DB/migrations/2026112x_hr_acc_person_link.sql`, chạy lại được. Bảng hệ thống khác không đổi. |
+| (d) | Gắn dữ liệu cũ | Script DryRun: với mỗi Employee dùng 3 bước cũ (liên kết bot có UserId → `User.PersonId`; tên đăng nhập = mã NV; SĐT khớp đúng 1) → điền `PersonId`; báo cáo **khớp chắc / nhiều ứng viên / không khớp**; chạy lại không đổi gì. NS xử lý tay ở tab Đối chiếu. Employee chưa có Person: chỉ tạo Person khi cấp tài khoản. |
+| (e) | Dữ liệu cá nhân | Person là gốc (họ tên, SĐT, ngày sinh, giới tính, địa chỉ); Employee giữ bản sao **cập nhật cùng transaction** (sửa ở màn nào cũng ghi cả hai) để báo cáo / SP cũ không vỡ. Email giữ ở Employee. Quyền xem thông tin cá nhân giữ D-68 (e). |
+| (f) | Tuyển mới | NS tạo nhân viên, tick **"Cấp tài khoản web"** (hoặc nút trên Nhân viên 360) → **yêu cầu duyệt "Cấp tài khoản"** (`BusinessType = USER_ACCOUNT_CREATE`, nội dung ở `PayloadJson`, người duyệt **FIN-IT**) hiện trong Phê duyệt tổng (D-81) với **nhóm quyền gợi ý theo chức danh** (`BusinessRules:PositionDefaultGroups`, mã chức danh → mã nhóm). IT có thể đổi nhóm rồi Duyệt → tạo Person (nếu chưa) + User (`INTERNAL`, tên đăng nhập = mã NV, mật khẩu tạm, bắt đổi lần đầu) + liên kết; **gửi mật khẩu tạm qua bot** nếu nhân viên đã liên kết, không thì IT xem 1 lần trên màn. Người có Thêm `adm-user` vẫn tạo thẳng được (không qua duyệt). NS không tự cấp quyền. |
+| (g) | Đổi bộ phận / chức danh | Nhóm gợi ý của chức danh mới khác nhóm hiện tại → tự tạo yêu cầu **"Đổi nhóm quyền"** (`USER_ACCOUNT_GROUP`) cho FIN-IT; trong lúc chờ giữ quyền cũ. |
+| (h) | Nghỉ việc / quay lại | `Employee.Status` → Inactive / Resigned: **tự khóa tài khoản** (`User.IsActive = 0`), thu hồi liên kết bot (`IdentityStatus = Revoked`), vô hiệu phiên / token đang có, yêu cầu duyệt người này đang giữ → leo thang bậc kế (D-81 i), yêu cầu người này đã gửi → báo người duyệt; không cần IT xác nhận; ghi AuditChange. Quay lại Đang làm → yêu cầu **"Mở lại tài khoản"** (`USER_ACCOUNT_REOPEN`) cho FIN-IT. |
+| (i) | Tra cứu | Một hàm duy nhất User → Person → Employee thay `HrRules.ResolveEmployeeAsync` và cách đoán của `Employee/GetOverview`; mọi nơi dùng chung (chấm công, đơn nghỉ / đổi ca, Việc của tôi, bot, chặn tự duyệt, người duyệt vắng, chuyến của tôi). Đoán theo SĐT / mã NV giữ **1 bản phát hành** làm dự phòng, mỗi lần dùng ghi nhật ký cảnh báo; sau đó bỏ. |
+| (j) | Màn hình | Nhân viên 360 – khối Tài khoản: Chưa có / Đang chờ IT duyệt / Hoạt động / Đã khóa · tên đăng nhập · nhóm · lần đăng nhập cuối · nút theo quyền ([Đề nghị cấp] NS, [Tạo] / [Khóa] / [Đặt lại mật khẩu] IT). Tài khoản: cột Nhân viên (mã, đơn vị, trạng thái làm việc), nhãn Nhân viên / Hệ thống / Khách hàng, cảnh báo cố định **"Nhân viên đã nghỉ nhưng tài khoản còn mở"** (chỉ tiêu = 0), lọc "Chưa gắn". Nhân viên – tab **Đối chiếu** (NS + IT). Chức vụ: cột nhóm quyền gợi ý (đọc cấu hình). |
+| (k) | Ngoài phạm vi (R2) | **GAP-PORTAL-01**: cổng khách hàng – `CustomerContact.PersonId`, đăng ký bằng email / SĐT → chờ kích hoạt → yêu cầu duyệt "Kích hoạt tài khoản khách hàng" cho KD phụ trách, API `/api/portal/*` riêng lọc theo khách hàng, tự khóa khi khách ngừng / người liên hệ nghỉ, màn riêng. Một người vừa nhân viên vừa người liên hệ khách: 2 tài khoản riêng. Chờ anh duyệt khi làm cổng. |
+
+## D-83 – Chính sách giá → "Phụ lục điều chỉnh giá" trong hợp đồng (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu). Cơ chế đổi giá theo thời gian **giữ** (đổi giá giữa kỳ cần phụ lục hai bên ký, không làm lại hợp đồng), nhưng sửa cách làm. Việc làm: ROADMAP **UI-6.4** (cùng đợt UI-6).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Chỗ làm | Bỏ mục menu "Chính sách giá"; điều chỉnh giá ở tab "Loại suất & đơn giá" của trang chi tiết hợp đồng, nút "+ Điều chỉnh giá". |
+| (b) | Cấp áp dụng | Chỉ theo **hợp đồng**; bỏ cấp theo khách. Thứ tự tra giá: phụ lục giá đang hiệu lực → giá gốc hợp đồng. |
+| (c) | Căn cứ | **Bắt buộc đính kèm phụ lục đã ký** khi gửi duyệt; vẫn duyệt trước khi áp; chặn chồng thời gian; giá đơn cố định lúc chốt (BIZ-1.5). |
+| (d) | Lịch sử | Tab giá hiện giá gốc → các lần điều chỉnh (thời gian, giá, chênh %, người duyệt, file). |
+| (e) | Dữ liệu | Dùng bảng chính sách giá hiện có, `ContractId` bắt buộc – không thêm bảng / cột. Bản cũ theo khách → chuyển sang hợp đồng hiệu lực duy nhất; còn lại liệt kê chờ anh quyết. |
+
+## D-84 – Dự báo suất ăn: màn theo tuần + hệ thống tự tạo, KD xác nhận (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, duyệt mô phỏng `docs/frontend-handoff/assets/forecast-week-mockup.html`). Bổ sung D-76. Việc làm: ROADMAP **UI-6.5**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Lý do | Ma trận cũ khó dùng: 14–62 cột ngày tràn ngang, mỗi ô 3 số không chú thích, gộp hết theo khách, mặc định từ hôm nay nên nhiều ô "Thiếu dữ liệu", danh sách thô dài bên dưới. |
+| (b) | Bố cục | Theo **tuần** (7 cột, mặc định tuần sau, ◀ ▶), dòng khách mở / gập → điểm giao · buổi, **một số mỗi ô** tô theo trạng thái (công bố / Nháp / khách đã đăng ký / thiếu dữ liệu) + chú thích màu, sửa trực tiếp; 3 bước Tạo gợi ý → Sửa → Công bố; tab Dự báo tuần · Độ chính xác · Lịch sử công bố. |
+| (c) | Khách hiện | Tự động mọi khách có hợp đồng hiệu lực trong tuần (điểm giao + loại suất theo hợp đồng); người dùng không chọn khách / ngày. |
+| (d) | Tự động | Thứ Tư 22:00 hệ thống tự tạo gợi ý tuần sau → Thứ Năm bot báo KD → KD sửa, Công bố → Thứ Sáu 12:00 nhắc → **16:00 tự công bố** nếu chưa. |
+| (e) | Đăng ký khách | Ô có đăng ký / đơn đã xác nhận tự chuyển "đã đăng ký" (chỉ đọc); hệ thống dùng số đăng ký. |
+| (f) | Dữ liệu | Không thêm bảng / cột. |
+| (g) | **Mẫu thiết kế chuẩn** | Anh khen mô phỏng này → dùng làm **mẫu chuẩn cho mọi màn ma trận / kế hoạch / nhập số theo ngày** (kế hoạch SX, nhu cầu nguyên liệu, phân ca, đăng ký suất tuần…): (1) dòng giải thích mục đích màn; (2) dải **các bước đánh số** kèm nút hành động ngay tại bước; (3) chỉ số gọn đầu trang; (4) khoảng thời gian cố định dễ đọc (tuần) + ◀ ▶ thay ô chọn từ – đến; (5) nhóm dòng mở / gập + dòng tổng; (6) **một con số mỗi ô**, màu theo trạng thái + **chú thích màu** ngay trên bảng; (7) chi tiết phụ để ở chữ nhỏ / rê chuột; (8) sửa trực tiếp trong ô, không hộp thoại; (9) tab cho phần phụ (độ chính xác, lịch sử) thay vì xếp dọc trang. |
+
+## D-85 – Đăng ký suất tuần theo mẫu chuẩn + xử lý điểm chưa có số lúc chốt (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, duyệt mô phỏng `docs/frontend-handoff/assets/order-week-v2-mockup.html`). Bổ sung D-74. Việc làm: ROADMAP **UI-6.6**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Bố cục | Theo mẫu chuẩn D-84 (g): tuần ◀ ▶, 4 bước (Gửi phiếu → Nhận số → Kiểm tra & xác nhận → Hệ thống tự chốt), 4 chỉ số, tab **Tổng quan tuần** (mọi khách / điểm giao × ngày, màu trạng thái) · **Nhập số theo điểm giao** (buổi → lựa chọn × ngày, món là chữ nhỏ, ⚠ lệch, Điểm trước / sau) · **Lịch sử**. |
+| (b) | Thao tác gộp | Gửi phiếu cho mọi điểm chưa đăng ký; tải nhiều phiếu một lần (tự nhận điểm qua mã ẩn); xác nhận nhiều điểm một lần; lấy số từ dự báo cho ô trống. |
+| (c) | Chưa có số lúc chốt | **Không tự tạo đơn** (tiền tính theo số khách ký nhận – tự đặt thay khách dễ tranh chấp). 18:00 hôm trước nhắc; 20:00 vẫn chưa có → bot đỏ KD + Trưởng KD + COO. (Anh đồng ý theo đề xuất phương án a.) |
+| (d) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-86 – Biểu đồ dùng Chart.js + màn Đối soát xác nhận hàng loạt (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, duyệt mô phỏng `docs/frontend-handoff/assets/reconciliation-mockup.html`). Việc làm: ROADMAP **UI-6.7**, **UI-6.8**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Thư viện biểu đồ | **Chart.js 4.4.4** (có sẵn trong `package.json`, nạp qua `angular.json` scripts) cho **mọi** biểu đồ; bỏ SVG tự vẽ. Không cài thêm gói, không CDN. Hàm chung `UI.chart`, giữ chữ ký `UI.bars / lines / donut`. |
+| (b) | Bố cục Đối soát | Mẫu D-84 (g); hai biểu đồ cạnh nhau: trái Đặt – Giao – Nhận theo ngày ăn (cột + đường), phải chuỗi 5 khâu (thanh ngang + hao hụt giữa khâu); bảng theo tab. |
+| (c) | Giảm thao tác | Bỏ hai hộp thoại; bảng xác nhận ngay trên trang: phục vụ mặc định = khách nhận, **"Xác nhận tất cả dòng khớp"** 1 nút, chỉ sửa dòng có sự cố (Enter xuống dòng, lý do lỗi hiện khi cần); bot điểm phát "Đã phục vụ đủ" 1 chạm; khớp tự chốt 24 giờ. Lý do: tiền tính theo nhận − lỗi Delicare (D-77 d), số phục vụ chỉ để dự báo. |
+| (d) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-87 – Bảng kê thanh toán: mọi khách một bảng, xuất hàng loạt; gửi khách để đợt sau (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, duyệt mô phỏng `docs/frontend-handoff/assets/billing-mockup.html`). Bổ sung BIZ-3.2. Việc làm: ROADMAP **UI-6.9**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Nghiệp vụ | Cuối tháng tổng hợp tiền phải thu từng khách (suất tính tiền đã chốt đối soát × đơn giá cố định lúc chốt + phí thất thoát khay + VAT, trừ suất lỗi Delicare) để gửi khách xác nhận khối lượng → hóa đơn / công nợ ở phần mềm kế toán. |
+| (b) | Thao tác | Bỏ "Lập bảng kê" từng khách; kỳ tháng ◀ ▶; một bảng mọi khách với trạng thái Sẵn sàng / Chờ đối soát / Không phát sinh, ⚠ lệch > 20 % so tháng trước; Excel / PDF trên từng dòng; chọn nhiều → Excel 1 file nhiều sheet, PDF 1 file nén; nút "Xuất tất cả khách sẵn sàng". Bot báo ngày 1 hằng tháng. |
+| (c) | Gửi khách xác nhận | **Chưa làm đợt này.** Nút có trên giao diện, bấm hiện "Tính năng chưa được nâng cấp. Vui lòng liên hệ quản trị viên." Đợt sau chọn kênh: **email** từ hộp thư công ty (đính kèm PDF + Excel, kế toán đánh dấu khách đã xác nhận / phản hồi, lưu bằng tài liệu đính kèm), hoặc **Zalo OA** (khi có bot Zalo khách, D-06), hoặc **cổng khách hàng** (GAP-PORTAL-01, R2). Khi làm cần anh cho biết hộp thư gửi đi (Google Workspace / Microsoft 365 / khác – thông tin đăng nhập IT nhập vào cấu hình máy chủ, không ghi repo) và người nhận (đề xuất: liên hệ có vai trò Kế toán). |
+| (d) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-88 – Hàng chỉ số tự co giãn theo số lượng + giao diện 100 % tiếng Việt (anh chốt 2026-11-23)
+
+✅ **Anh yêu cầu 2026-11-23** (chat tài liệu – màn Nhóm món ăn có 2 thẻ chỉ số chỉ chiếm nửa màn; nhiều chỗ lẫn Active / Inactive và Hoạt động / Không hoạt động). Áp **mọi màn**. Việc làm: ROADMAP **UI-6.10**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Số thẻ chỉ số | **Không màn nào có đúng 1 thẻ** – có 1 thì ẩn cả hàng; tối thiểu 2. |
+| (b) | Co giãn | 2 thẻ → mỗi thẻ 1/2; 3 → 1/3; 4 → 1/4 (tối đa 4 một hàng); ≥ 5 → xuống hàng, thẻ thứ 5 trở đi rộng 1/4. Máy tính bảng 2 cột; điện thoại 2 cột gọn. Bổ sung D-64 và D-80 d. |
+| (c) | Ngôn ngữ | Mọi chữ người dùng thấy (giao diện, file xuất, PDF, thông báo, bot) **tiếng Việt, một cách gọi duy nhất** theo từ điển trạng thái chung; Active / Inactive → **Đang hoạt động / Ngừng hoạt động** (nhãn đã dùng ở UI-5). Chỉ giữ tiếng Anh cho mã chứng từ, đơn vị chuẩn, tên riêng. |
+| (d) | Kiểm soát | Quét tự động mọi màn tìm từ tiếng Anh / mã trạng thái và màn có 1 thẻ chỉ số; mã trạng thái mới phải thêm vào từ điển trước khi lên giao diện. |
+
+## D-89 – Thực đơn tuần: hệ thống tự lập nháp (chu kỳ 4 tuần), bếp chỉ sửa chỗ đánh dấu (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu, theo đề xuất "trải nghiệm tốt nhất"; bố cục mô phỏng `docs/frontend-handoff/assets/menu-week-mockup.html`). Việc làm: ROADMAP **UI-6.11**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Quy trình tuần | Thứ Hai hệ thống tự có Nháp tuần sau → bếp sửa ô đánh dấu → gửi duyệt → COO duyệt → thứ Năm công bố → phiếu đăng ký gửi khách → hết Chủ nhật tự hết hiệu lực; đổi món sau công bố qua Yêu cầu đổi món. |
+| (b) | Tự lập nháp | Nhân bản **tuần cùng vị trí trong chu kỳ 4 tuần** (N − 4, cấu hình `MenuCycleWeeks`); thiếu lịch sử → tuần gần nhất. Cách tay vẫn có: nhân bản tuần chọn / tải Excel theo mẫu sheet "1. Menu" / khung trống mẫu chuẩn. |
+| (c) | Đánh dấu | Ô trống · món chưa có công thức khóa · suất FC% vượt mục tiêu · món chính trùng trong 7 ngày (cảnh báo). Gửi duyệt khóa đến khi hết ô trống / thiếu công thức / FC vượt. |
+| (d) | Sửa món | Bấm ô → 5 gợi ý (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC), hiện FC mới; Enter sang ngày kế; Điền cả hàng; Chép ngày; không hộp thoại. |
+| (e) | Dữ liệu | Không thêm bảng / cột. Mục tiêu: 5–10 phút / tuần. |
+
+## D-90 – Không áp dụng thực đơn riêng cho từng khách (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu): tính năng thực đơn riêng theo khách **không áp dụng**. **Thay D-74 (f)** (phân công riêng cho khách ngoại lệ) và phần "thực đơn riêng" trong D-89. Việc làm: ROADMAP **UI-6.12** (+ sửa UI-6.11).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Quy tắc | Mỗi tuần **một thực đơn chung**; mọi khách dùng thực đơn chung Đã công bố hiệu lực tại ngày ăn. |
+| (b) | Giao diện | Ẩn mục menu "Thực đơn riêng cho khách" (`#/menu-assignment`); bỏ ô chọn / nút tạo thực đơn riêng / tab Khách áp dụng ở màn Thực đơn tuần. |
+| (c) | Dữ liệu | `MenuAssignment` cũ giữ nguyên, không dùng; không thêm / xóa bảng. |
+| (d) | Giữ | Yêu cầu đổi món theo đơn / ngày / ca. |
+
+## D-91 – Đổi món tại chỗ, tự duyệt khi an toàn, bỏ mục menu "Yêu cầu đổi món" (anh chốt 2026-11-23)
+
+✅ **Anh chốt 2026-11-23** (chat tài liệu). Việc làm: ROADMAP **UI-6.13**; phần Zalo ghi ở **T41**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Đổi cho mọi khách | Bấm ô món trên Thực đơn tuần (đã công bố) → chọn món gợi ý → chọn lý do → Gửi; hệ thống tự xác định mọi đơn bị ảnh hưởng (hiện trước số khách / suất). |
+| (b) | Khách xin đổi riêng | Trên trang chi tiết đơn; số suất mặc định cả lựa chọn; tùy chọn áp cho các đơn của khách trong khoảng ngày. |
+| (c) | Duyệt | Tự duyệt khi cùng nhóm món + có công thức khóa + FC không vượt + trước giờ chốt; còn lại COO duyệt. Sau duyệt tự tính lại nhu cầu nếu kế hoạch chưa phát hành, đã phát hành thì báo bếp / kho. |
+| (d) | Menu | Ẩn mục "Yêu cầu đổi món"; theo dõi ở tab "Đổi món" của Thực đơn tuần; duyệt ở Phê duyệt. |
+| (e) | Kênh khách | Hiện tại khách gửi qua email / Zalo cá nhân / điện thoại → **nhân viên nhập** (3 thao tác). **Khách tự đổi qua bot Zalo: để sau, làm cùng bot Zalo khách (T41)**. Email không tự động (đọc sai rủi ro lớn); trợ lý AI soạn nháp từ email để R2. |
+| (f) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-92 – Môi trường dev: chạy script DB ngay, không chờ backup + chuẩn "Hoàn thành" bắt buộc + kiểm điểm (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** (chat tài liệu): ứng dụng **đang phát triển, chưa triển khai thật lần nào** → mọi migration / seed / script dữ liệu **chạy thật (`DryRun=0`) trên DB dev ngay trong task**, **không chờ anh backup**, không ghi "chờ anh chạy DB" cho DB dev nữa. Anh yêu cầu Claude Code **kiểm điểm**: MENU-5 báo DONE nhưng anh mở vẫn thấy Mua hàng và Kho lẫn nhau (script `D79_menu_regroup.sql` chỉ chạy thử; menu dự phòng `catalog.js` vẫn nhóm cũ "Mua hàng & Kho", "Sản xuất & Giá thành", "Tích hợp & Chỉ số") – giao việc không trọn vẹn, không test kỹ các trường hợp, còn lỗi. Việc làm: ROADMAP **FIX-NOW-1** (làm ngay, trước mọi task).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | DB dev | Chạy thật mọi script đang chờ theo đúng thứ tự PROGRESS; chạy lại lần 2 phải = 0 việc; ghi kết quả từng script vào PROGRESS. Backup chỉ bắt buộc khi có môi trường thật (staging / production) – khi đó anh sẽ báo. |
+| (b) | Chuẩn "Hoàn thành" (DoD) – task chỉ được ghi DONE khi đủ cả 7 | (1) script DB đã chạy thật trên DB dev, chạy lại = 0; (2) API + FE chạy trên DB dev, **kiểm bằng giao diện thật** (Chrome headless hoặc trình duyệt), có ảnh; (3) đối chiếu **từng dòng** AC / bảng anh chốt, ghi bằng chứng (ảnh, test, truy vấn); (4) mọi nguồn trùng được cập nhật đồng bộ (seed, script, `catalog.js`, CodeGen, tài liệu HDSD); (5) test bằng **tài khoản không phải admin** cho các vai trò liên quan + trường hợp biên / lỗi / không có quyền; (6) `dotnet test`, `full-flow.http`, build FE xanh, mở mọi màn liên quan không lỗi JS / 500 / trang trắng; (7) PROGRESS có mục **"Chưa làm / còn rủi ro"** ghi trung thực – còn mục nào thì trạng thái là `PARTIAL`, không phải DONE. |
+| (c) | Kiểm điểm | Claude Code viết `docs/claude/RETRO_2026-11-24.md`: việc đã báo DONE mà chưa trọn, nguyên nhân gốc, cách sửa quy trình; rà lại **mọi task báo DONE từ 2026-11-21** theo DoD (b) và sửa hết chỗ thiếu trong FIX-NOW-1. |
+| (d) | Ghi quy tắc | DoD (b) ghi vào `CLAUDE.md` (mục Definition of Done) để áp cho mọi task sau. |
+
+## D-93 – Mục "Phê duyệt" nằm trong nhóm Điều hành, ngay dưới Bảng điều hành (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** (chat tài liệu). Thay vị trí "Phê duyệt ngay dưới Việc của tôi" của D-81 (a) / APR-1.1 và nhóm "Phê duyệt" thứ 2 của D-79 (e). Việc làm: ROADMAP **FIX-NOW-1 → FIX-1.4b** (làm cùng FIX-NOW-1).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Vị trí | Sidebar: **Việc của tôi** → nhóm **Điều hành**: Bảng điều hành · **Phê duyệt** (số "chờ tôi duyệt") · Chỉ số theo ngày · Chỉ số theo tháng → các nhóm còn lại như D-79 (e). Không còn nhóm "Phê duyệt" riêng trên sidebar. |
+| (b) | Người không xem được Bảng điều hành | Người có quyền duyệt / đã gửi yêu cầu nhưng không có quyền Bảng điều hành (vd OPS-SCM-HEAD, FIN-HR, QA) vẫn thấy nhóm **Điều hành** với mục **Phê duyệt** (và chỉ số nếu có quyền) – điều kiện hiện mục giữ như APR-1.1. |
+| (c) | DB / quyền | Nhóm `#/group/approve` và các dòng `#/wf-inbox?type=…` **giữ nguyên** làm quyền duyệt (IsActive = 1, D-81 a), chỉ không lên sidebar; màn Phân quyền vẫn hiện khối "Quyền duyệt". Thứ tự nhóm Phê duyệt (`OrderShow` 20) không còn ý nghĩa hiển thị – Claude Code có thể đặt về cuối cho khỏi nhầm. |
+| (d) | Đồng bộ | Menu dự phòng `catalog.js` (FIX-1.4), `Menu5Groups` / test so khớp, HDSD `00_CHUNG`, `12_QUAN_LY_DUYET`, ROADMAP MENU-5.4 ghi chú theo D-93. |
+
+## D-94 – Biểu đồ: làm lại toàn bộ bằng Chart.js ngay sau FIX-NOW-1 + chuẩn chung (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** (chat tài liệu: "rà soát và sửa lại toàn bộ biểu đồ, chuyển về Chart.js"). Bổ sung D-86 (a): việc **UI-6.7 chưa làm** (`core/ui.js` vẫn vẽ SVG tay: `UI.bars`, `UI.lines`, `UI.donut`) → tách thành task riêng **CHART-1**, làm ngay sau FIX-NOW-1. Chuẩn hiển thị dưới đây áp cho mọi biểu đồ hiện có và về sau.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Phạm vi | Mọi biểu đồ trên các màn Delicare (`assets/delicare/js` – danh sách 21 chỗ gọi ở ROADMAP CHART-1.2). **Không** tính: thanh tiến độ trong bảng / thẻ (tiến độ ca, độ phủ nguyên liệu, mức tồn, tải trọng xe, chỉ số % của 3 màn 360) – giữ thanh HTML; sơ đồ quan hệ bảng (`explorer.js`); biểu tượng SVG. Trang mẫu của theme W3CRM trong `src/app` (ApexCharts) không phải màn Delicare – không vẽ lại; nếu người dùng mở được qua đường dẫn thì gỡ khỏi route. |
+| (b) | Thư viện | Chart.js 4.4.4 có sẵn (`package.json`), nạp `chart.umd.js` qua `angular.json` scripts; không cài thêm gói, không CDN, không ApexCharts cho màn Delicare. |
+| (c) | Chuẩn chung | Một hàm `UI.chart`; giữ chữ ký `UI.bars / UI.lines / UI.donut` (+ thêm loại kết hợp cột + đường, thanh ngang, vùng ngưỡng, đường mục tiêu, kiểu thu nhỏ không trục). Bảng màu cố định theo nghĩa (Đặt / Kế hoạch – xanh nhạt, Giao – xanh dương, Nhận / Thực tế – cam, vượt ngưỡng – đỏ, mục tiêu – nét đứt xám); chú giải chấm tròn góc phải; rê chuột hiện **mọi chuỗi của cùng ngày**; trục số rút gọn **tiếng Việt** ("15 N", "1,2 tr", "3 tỷ" – D-88); số trong chú thích có dấu chấm nghìn; ngày dạng dd/MM; chiều cao cố định theo khung (không nhảy bố cục); co giãn theo bề rộng (390 / 1440); không có dữ liệu → chữ "Chưa có dữ liệu" thay biểu đồ trống; hủy biểu đồ cũ khi vẽ lại / rời màn. |
+| (d) | Dễ đọc / truy cập | Mỗi biểu đồ có tiêu đề + `aria-label`, nút nhỏ **"Xem bảng số"** mở bảng số liệu của biểu đồ (thay cho người không xem được màu); màu phân biệt cả độ sáng, không chỉ sắc độ. |

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Thực đơn tuần theo mẫu chuẩn D-84 (g)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--r:#A32D2D;--r-bg:#FCEBEB;--n-bg:#F2F4F1}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.period{display:flex;align-items:center;gap:8px;font-weight:600}
+select.s{height:36px;border:1px solid #d5dbd2;border-radius:10px;padding:0 8px;font-size:13px}
+.st{font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600;white-space:nowrap}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step.cur{border-color:#B9CB97;background:#FAFCF6}.step.done{opacity:.75}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.step.done .n{background:#7FA43A;color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+@media(max-width:1100px){.steps,.kpis{grid-template-columns:repeat(2,1fr)}}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:0 0 12px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted)}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:5px 6px;vertical-align:middle}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+th.l,td.l{text-align:left}
+tr.meal td{background:#F3F7EC;font-weight:700;cursor:pointer}tr.meal.closed i.chev{transform:rotate(-90deg)}
+tr.opt td{background:#FAFBF8;font-weight:600;font-size:12px}
+tr.cat td.l{padding-left:26px;color:var(--muted);font-size:12px}
+.dish{display:block;width:100%;text-align:left;border:1px solid transparent;border-radius:8px;padding:5px 7px;font-size:12.5px;line-height:1.3;background:transparent;height:auto;min-height:30px;white-space:normal;cursor:pointer}
+.dish:hover{border-color:#B9CB97;background:#FAFCF6}
+.dish.empty{border:1px dashed #b9c0b5;background:var(--n-bg);color:var(--muted)}
+.dish.norecipe{border-color:#F2B98A;background:var(--o-bg)}
+.dish.chg{box-shadow:inset 3px 0 0 #E8833A}
+.fc{font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px;display:inline-block}
+.fc.ok{background:var(--g-bg);color:#3F5A17}.fc.bad{background:var(--r-bg);color:var(--r)}
+select.pick{width:100%;font-size:12.5px;padding:4px;border:1px solid #7FA43A;border-radius:8px}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Thực đơn tuần</h1><div class="small muted">Bếp lập món cho từng ngày × buổi × lựa chọn của tuần; hệ thống tính giá vốn và FC% từng suất. Duyệt xong → công bố → khách nhận phiếu đăng ký suất. Đã công bố thì muốn đổi món dùng "Yêu cầu đổi món".</div></div>
+  <div class="bar" style="gap:8px">
+   <div class="period"><button class="xs"><i class="ti ti-chevron-left"></i></button>Tuần 30/11 – 06/12/2026 <span class="small muted" style="font-weight:400">(tuần sau)</span><button class="xs"><i class="ti ti-chevron-right"></i></button></div>
+   <span class="small muted">NU-261130-001</span>
+   <span class="st" style="background:var(--o-bg);color:var(--o)">Nháp · hạn công bố Thứ Năm 26/11</span>
+  </div>
+ </div>
+ <div class="steps">
+  <div class="step done"><span class="n"><i class="ti ti-check"></i></span><div><b>Lập thực đơn</b><span class="muted">Đã nhân bản từ tuần 23/11</span></div></div>
+  <div class="step cur"><span class="n">2</span><div><b>Hoàn thiện món</b><span class="muted"><span id="sEmpty">3</span> ô trống · <span id="sNoRc">1</span> món thiếu công thức · <span id="sFc">2</span> suất FC vượt</span><div style="margin-top:6px"><button class="xs"><i class="ti ti-arrow-down"></i>Đến ô cần xử lý</button></div></div></div>
+  <div class="step"><span class="n">3</span><div><b>Gửi duyệt</b><span class="muted">COO duyệt trong Phê duyệt</span><div style="margin-top:6px"><button class="xs" id="sendBtn" disabled title="Còn ô trống / món thiếu công thức"><i class="ti ti-send"></i>Gửi duyệt</button></div></div></div>
+  <div class="step"><span class="n">4</span><div><b>Công bố & gửi phiếu</b><span class="muted">Khách nhận phiếu đăng ký suất tuần</span></div></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Ô còn trống</div><div class="v" id="kEmpty">3</div></div>
+  <div class="kpi"><div class="small muted">Món thiếu công thức</div><div class="v" style="color:var(--o)" id="kNoRc">1</div></div>
+  <div class="kpi"><div class="small muted">FC% trung bình tuần (mục tiêu ≤ 55%)</div><div class="v" id="kFc">–</div></div>
+  <div class="kpi"><div class="small muted">Khách áp dụng</div><div class="v">18 <span class="small muted" style="font-weight:400">khách · 31 điểm</span></div></div>
+ </div>
+</div>
+
+<div class="card" style="padding:12px 14px">
+ <div class="tabs"><span class="on">Lịch tuần</span><span>Duyệt &amp; lịch sử</span></div>
+ <div class="bar" style="margin-bottom:8px">
+  <div class="legend" style="margin:0">
+   <span>Bấm ô để chọn / đổi món (gõ tìm)</span>
+   <span><span style="display:inline-block;width:12px;height:12px;border:1px dashed #b9c0b5;background:var(--n-bg);border-radius:3px;vertical-align:-2px"></span> ô trống</span>
+   <span><span style="display:inline-block;width:12px;height:12px;border:1px solid #F2B98A;background:var(--o-bg);border-radius:3px;vertical-align:-2px"></span> món chưa có công thức khóa</span>
+   <span><span class="fc ok">FC 48%</span> đạt · <span class="fc bad">FC 61%</span> vượt mục tiêu</span>
+  </div>
+  <div style="display:flex;gap:8px"><button class="xs"><i class="ti ti-copy"></i>Chép ngày…</button><button class="xs"><i class="ti ti-printer"></i>Xem bản gửi khách</button></div>
+ </div>
+ <div style="overflow-x:auto"><table id="t"></table></div>
+</div>
+
+<script>
+const D=['T2 30/11','T3 01/12','T4 02/12','T5 03/12','T6 04/12','T7 05/12','CN 06/12'];
+const PRICE={SANG:20000,TRUA:40000,TOI:40000,DEM:30000},NAME={SANG:'Sáng',TRUA:'Trưa',TOI:'Tối',DEM:'Đêm'};
+const COST={'Bánh mì Hữu Nghị':7044,'Bánh bao thập cẩm':8333,'Bánh chưng':9000,'Bánh tẻ':7500,'Bánh dầy':6800,'Xôi khúc':9500,'Xôi ruốc':8800,'Bánh giò':8200,'Bánh mì que':6000,'Trứng luộc':2050,'Chả mỡ':3395,'Sữa Fami':3194,'Sữa Ba Vì':3300,'Sữa Mori':3500,
+ 'Thịt hầm đậu đỏ':8900,'Ba chỉ kho tiêu':9400,'Vịt om khoai môn':10200,'Cá phi lê chiên':9800,'Thịt kho trứng cút':8700,'Sườn chua ngọt':11500,'Gà rang lá chanh':9100,'Cá chiên vừng':6200,'Gà xào sả ớt':6900,'Tôm rang hành':8800,'Thịt kho dừa':6300,'Tôm sốt cay':9000,'Thịt rang hành':5600,'Thịt xào đỗ đũa':5200,
+ 'Đậu tẩm hành':1900,'Mướp đắng xào trứng':2100,'Trứng đảo bông':2000,'Cà tím om đậu':1800,'Lạc rang muối':1500,'Chả rim mắm':2600,'Nem rán':3100,'Rau cải xào':1200,'Canh chua':1500,'Cơm trắng':2300,'Hoa quả':1800,
+ 'Bò kho củ cải':12500,'Cá nục kho riềng':7800,'Sườn rim mắm':11000,'Bánh mỳ kẹp trứng, chả':9500,'Cháo thịt băm':7600,'Xôi thịt kho':9800,'Mì xào thập cẩm':10200,'Phở xào':10500,'Bún chả nướng':11800};
+const NORC=new Set(['Sườn chua ngọt']);
+const ALL=Object.keys(COST).sort((a,b)=>a.localeCompare(b,'vi'));
+const W=(...a)=>a;
+const M={
+ SANG:{open:true,opts:[
+  {cats:{'Món chính':W('Bánh mì Hữu Nghị','Bánh mì Hữu Nghị','Bánh bao thập cẩm','Bánh tẻ','Bánh bao thập cẩm','Bánh dầy','Bánh mì que'),'Ăn kèm':W('Trứng luộc','Trứng luộc','Trứng luộc','Trứng luộc','Trứng luộc','Chả mỡ','Trứng luộc'),'Đồ uống':W('Sữa Fami','Sữa Ba Vì','Sữa Mori','Sữa Ba Vì','Sữa Fami','Sữa Ba Vì','Sữa Fami')}},
+  {cats:{'Món chính':W('Bánh bao thập cẩm','Bánh chưng','Bánh dầy','Bánh chưng','Bánh dầy','Bánh chưng','Bánh tẻ'),'Ăn kèm':W('Trứng luộc','Chả mỡ','Chả mỡ','Chả mỡ','Chả mỡ','Chả mỡ','Trứng luộc'),'Đồ uống':W('Sữa Fami','Sữa Ba Vì','Sữa Mori','Sữa Ba Vì','Sữa Fami','Sữa Ba Vì','Sữa Fami')}},
+  {cats:{'Món chính':W('Bánh chưng','Xôi khúc','Bánh tẻ','Xôi ruốc','Xôi ruốc','Xôi ruốc','Bánh giò'),'Ăn kèm':W('Chả mỡ',null,'Trứng luộc',null,null,null,'Chả mỡ'),'Đồ uống':W('Sữa Fami','Sữa Ba Vì','Sữa Mori','Sữa Ba Vì','Sữa Fami','Sữa Ba Vì','Sữa Fami')}}]},
+ TRUA:{open:true,opts:[{cats:{'Món chính 1':W('Thịt hầm đậu đỏ','Ba chỉ kho tiêu','Vịt om khoai môn','Cá phi lê chiên','Thịt kho trứng cút','Sườn chua ngọt','Gà rang lá chanh'),'Món chính 2':W('Cá chiên vừng','Gà xào sả ớt','Tôm rang hành','Thịt kho dừa','Tôm sốt cay','Thịt rang hành','Thịt xào đỗ đũa'),'Món phụ':W('Đậu tẩm hành','Mướp đắng xào trứng','Trứng đảo bông','Cà tím om đậu','Lạc rang muối','Chả rim mắm','Nem rán'),'Rau':W('Rau cải xào','Rau cải xào','Rau cải xào','Rau cải xào','Rau cải xào','Rau cải xào',null),'Canh':W('Canh chua','Canh chua','Canh chua','Canh chua','Canh chua','Canh chua','Canh chua'),'Cơm':W('Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng'),'Tráng miệng':W('Hoa quả','Hoa quả','Hoa quả','Hoa quả','Hoa quả','Hoa quả','Hoa quả')}}]},
+ TOI:{open:false,opts:[{cats:{'Món chính 1':W('Bò kho củ cải','Cá nục kho riềng','Sườn rim mắm','Thịt kho dừa','Gà rang lá chanh','Cá phi lê chiên','Thịt hầm đậu đỏ'),'Món chính 2':W('Thịt rang hành','Thịt xào đỗ đũa','Thịt xào đỗ đũa','Gà xào sả ớt','Thịt rang hành','Thịt kho dừa','Thịt rang hành'),'Món phụ':W('Nem rán','Chả rim mắm','Đậu tẩm hành','Nem rán','Mướp đắng xào trứng','Cà tím om đậu','Đậu tẩm hành'),'Rau':W('Rau cải xào','Rau cải xào','Rau cải xào','Rau cải xào','Rau cải xào','Rau cải xào','Rau cải xào'),'Canh':W('Canh chua','Canh chua','Canh chua','Canh chua','Canh chua','Canh chua','Canh chua'),'Cơm':W('Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng','Cơm trắng'),'Tráng miệng':W('Hoa quả','Hoa quả','Hoa quả','Hoa quả','Hoa quả','Hoa quả','Hoa quả')}}]},
+ DEM:{open:false,opts:[{cats:{'Món chính':W('Bánh mỳ kẹp trứng, chả','Cháo thịt băm','Xôi thịt kho','Mì xào thập cẩm','Phở xào','Bún chả nướng','Bánh mỳ kẹp trứng, chả'),'Đồ uống':W('Sữa Ba Vì','Sữa Ba Vì','Sữa Ba Vì','Sữa Ba Vì','Sữa Ba Vì','Sữa Ba Vì','Sữa Ba Vì')}}]}};
+const chg=new Set();let edit=null;
+const fcOf=(k,o,i)=>{const c=Object.values(M[k].opts[o].cats).reduce((a,arr)=>a+(arr[i]?COST[arr[i]]||0:0),0);return {c,p:c/PRICE[k]*100}};
+function draw(){
+ let h='<colgroup><col style="width:170px">'+D.map(()=>'<col>').join('')+'</colgroup><tr><th class="l">Buổi / lựa chọn / nhóm món</th>'+D.map(d=>`<th>${d}</th>`).join('')+'</tr>';
+ let empty=0,norc=new Set(),bad=0,fcs=[];
+ Object.keys(M).forEach(k=>{const m=M[k];
+  h+=`<tr class="meal ${m.open?'':'closed'}" data-k="${k}"><td class="l" colspan="8"><i class="ti ti-chevron-down chev"></i> ${NAME[k]} <span class="small muted" style="font-weight:400">· giá bán ${PRICE[k].toLocaleString('vi-VN')} đ/suất · ${m.opts.length} lựa chọn</span></td></tr>`;
+  m.opts.forEach((op,oi)=>{
+   const fc=D.map((_,i)=>fcOf(k,oi,i));fc.forEach(x=>{fcs.push(x.p);if(x.p>55)bad++});
+   Object.entries(op.cats).forEach(([cat,arr])=>arr.forEach(x=>{if(!x)empty++;else if(NORC.has(x))norc.add(x)}));
+   if(!m.open)return;
+   h+=`<tr class="opt"><td class="l">${m.opts.length>1?'Lựa chọn '+(oi+1):'Suất '+NAME[k].toLowerCase()} · giá vốn / FC</td>${fc.map(x=>`<td style="text-align:center">${Math.round(x.c).toLocaleString('vi-VN')} đ <span class="fc ${x.p>55?'bad':'ok'}">${Math.round(x.p)}%</span></td>`).join('')}</tr>`;
+   Object.entries(op.cats).forEach(([cat,arr])=>{
+    h+=`<tr class="cat"><td class="l">${cat}</td>${arr.map((x,i)=>{const id=[k,oi,cat,i].join('|');
+     if(edit===id)return `<td><select class="pick" data-id="${id}" size="1"><option value="">— chọn món —</option>${ALL.map(n=>`<option ${n===x?'selected':''}>${n}</option>`).join('')}</select></td>`;
+     return `<td><button class="dish ${!x?'empty':NORC.has(x)?'norecipe':''} ${chg.has(id)?'chg':''}" data-id="${id}" title="${x?(NORC.has(x)?'Chưa có công thức khóa – chưa tính được giá vốn':'Giá vốn '+COST[x].toLocaleString('vi-VN')+' đ'):'Bấm để chọn món'}">${x||'+ chọn món'}</button></td>`}).join('')}</tr>`;
+   });
+  });
+ });
+ t.innerHTML=h;
+ [kEmpty.textContent,sEmpty.textContent]=[empty,empty];[kNoRc.textContent,sNoRc.textContent]=[norc.size,norc.size];sFc.textContent=bad;
+ const avg=fcs.reduce((a,b)=>a+b,0)/fcs.length;kFc.innerHTML=`<span style="color:${avg>55?'var(--r)':'var(--g)'}">${avg.toFixed(1)}%</span>`;
+ sendBtn.disabled=!!(empty||norc.size);
+ t.querySelectorAll('tr.meal').forEach(r=>r.onclick=()=>{M[r.dataset.k].open=!M[r.dataset.k].open;draw()});
+ t.querySelectorAll('.dish').forEach(b=>b.onclick=()=>{edit=b.dataset.id;draw();const s=t.querySelector('select.pick');s.focus()});
+ t.querySelectorAll('select.pick').forEach(s=>{const done=()=>{const [k,oi,cat,i]=s.dataset.id.split('|');const old=M[k].opts[oi].cats[cat][i];M[k].opts[oi].cats[cat][i]=s.value||null;if((s.value||null)!==old)chg.add(s.dataset.id);edit=null;draw()};s.onchange=done;s.onblur=()=>{edit=null;draw()}});
+}
+draw();
+</script>
+</body></html>

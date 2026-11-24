@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Đăng ký suất tuần theo mẫu chuẩn D-84 (g)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#A32D2D;--r-bg:#FCEBEB}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.week{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.step .act{margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.pane{display:none}.pane.on{display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:6px;vertical-align:middle}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+th.l,td.l{text-align:left}
+tr.grp td{background:#F7F9F4;font-weight:700;cursor:pointer}tr.grp.closed td.l i.chev{transform:rotate(-90deg)}
+tr.sub td.l{padding-left:28px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.q{width:76px;text-align:right;font-size:14px;font-weight:600;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.chip{display:inline-block;min-width:64px;text-align:right;font-weight:700;padding:5px 8px;border-radius:8px;border:1px solid var(--line)}
+.s-none{border-style:dashed;background:var(--n-bg);color:var(--muted)}
+.s-draft{border-color:#F2B98A;background:var(--o-bg);color:#8A3B0B}
+.s-bot{border-color:#A9C7EA;background:var(--b-bg);color:#1F4C80}
+.s-ok{border-color:#B9CB97;background:var(--g-bg);color:#3F5A17}
+.s-lock{background:#ECEEEA;color:#6b756e;border-color:#DADFD7}
+.hint{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.warn{color:var(--r);font-size:11px}
+.tot{font-weight:700;text-align:center}
+.foot td{font-weight:800;background:#FAFBF8;text-align:center}
+.pt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.pt .sel{font-weight:700;font-size:15px}
+.status{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+@media(max-width:1100px){.steps,.kpis{grid-template-columns:repeat(2,1fr)}.q{width:60px;font-size:13px}}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Đăng ký suất tuần</h1><div class="small muted">Ghi số suất khách đăng ký cho từng điểm giao, từng buổi / lựa chọn trong tuần. Số đã xác nhận đi thẳng vào đơn hàng, 20:00 hôm trước hệ thống tự chốt từng ngày.</div></div>
+  <div class="week"><button><i class="ti ti-chevron-left"></i></button> Tuần 30/11 – 06/12/2026 <span class="small muted" style="font-weight:400">(tuần sau · thực đơn NU-261130-001 đã công bố)</span> <button><i class="ti ti-chevron-right"></i></button></div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n">1</span><div><b>Gửi phiếu cho khách</b><span class="muted">Phiếu có thực đơn + ô số suất</span><div class="act"><button class="xs"><i class="ti ti-send"></i>Gửi cho 3 điểm chưa đăng ký</button></div></div></div>
+  <div class="step"><span class="n">2</span><div><b>Nhận số</b><span class="muted">Tải phiếu khách gửi lại / nhập tay / khách tự nhập qua bot</span><div class="act"><button class="xs"><i class="ti ti-upload"></i>Tải phiếu lên (nhiều file)</button></div></div></div>
+  <div class="step"><span class="n">3</span><div><b>Kiểm tra &amp; xác nhận</b><span class="muted">Ô ⚠ lệch &gt; 30% so TB 4 tuần</span><div class="act"><button class="xs p"><i class="ti ti-check"></i>Xác nhận 2 điểm đã nhập</button></div></div></div>
+  <div class="step"><span class="n" style="background:var(--n-bg);color:var(--muted)">4</span><div><b>Hệ thống tự chốt</b><span class="muted">20:00 hôm trước, từng ngày. 18:00 nhắc điểm chưa có số.</span></div></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Điểm giao đã đăng ký</div><div class="v">3 / 6</div></div>
+  <div class="kpi"><div class="small muted">Tổng suất tuần (đã có)</div><div class="v" id="kTot">–</div></div>
+  <div class="kpi"><div class="small muted">Thành tiền (chưa VAT)</div><div class="v" id="kMoney">–</div></div>
+  <div class="kpi"><div class="small muted">Lệch so dự báo</div><div class="v" style="color:var(--g)">+2,4%</div></div>
+ </div>
+</div>
+
+<div class="tabs"><span class="on" data-t="p1">Tổng quan tuần</span><span data-t="p2">Nhập số theo điểm giao</span><span data-t="p3">Lịch sử</span></div>
+
+<!-- TAB 1 -->
+<div class="pane on card" id="p1" style="padding:12px 14px">
+ <div class="legend">
+  <span><span class="sw" style="background:var(--n-bg);border:1px dashed #9aa39c"></span>Chưa đăng ký (chữ nhỏ = dự báo)</span>
+  <span><span class="sw" style="background:var(--o-bg);border:1px solid #F2B98A"></span>Nháp – KD đang nhập</span>
+  <span><span class="sw" style="background:var(--b-bg);border:1px solid #A9C7EA"></span>Khách gửi qua bot – chờ KD xác nhận</span>
+  <span><span class="sw" style="background:var(--g-bg);border:1px solid #B9CB97"></span>Đã xác nhận</span>
+  <span><span class="sw" style="background:#ECEEEA;border:1px solid #DADFD7"></span>Đã chốt (khóa)</span>
+ </div>
+ <div style="overflow-x:auto"><table id="t1"></table></div>
+</div>
+
+<!-- TAB 2 -->
+<div class="pane card" id="p2" style="padding:12px 14px">
+ <div class="pt">
+  <button class="xs" id="prevPt"><i class="ti ti-chevron-left"></i>Điểm trước</button>
+  <span class="sel" id="ptName"></span><span class="status" id="ptStatus"></span>
+  <button class="xs" id="nextPt">Điểm sau<i class="ti ti-chevron-right"></i></button>
+  <span style="flex:1"></span>
+  <button class="xs"><i class="ti ti-history"></i>Chép số tuần trước</button>
+  <button class="xs"><i class="ti ti-chart-line"></i>Lấy số dự báo</button>
+  <button class="xs"><i class="ti ti-printer"></i>In phiếu</button>
+  <button class="xs p" id="okPt"><i class="ti ti-check"></i>Xác nhận điểm này</button>
+ </div>
+ <div class="legend">
+  <span>Mỗi ô = số suất của lựa chọn. Chữ nhỏ = món trong set (rê chuột xem đủ).</span>
+  <span><span class="warn">⚠</span> lệch &gt; 30% so TB 4 tuần cùng thứ – chỉ cảnh báo</span>
+  <span><span class="sw" style="background:#ECEEEA;border:1px solid #DADFD7"></span>Ngày đã chốt – sửa qua "Yêu cầu sửa sau chốt"</span>
+ </div>
+ <div style="overflow-x:auto"><table id="t2"></table></div>
+</div>
+
+<div class="pane card" id="p3"><div class="muted">Lịch sử: ai nhập / sửa / xác nhận / tải phiếu / khách gửi qua bot, thời điểm, số trước → sau.</div></div>
+
+<script>
+const D=['T2 30/11','T3 01/12','T4 02/12','T5 03/12','T6 04/12','T7 05/12','CN 06/12'];
+const PRICE={SANG:20000,TRUA:40000,TOI:40000,DEM:30000};
+const fmt=n=>n==null||n===''?'':Math.round(n).toLocaleString('vi-VN');
+// Tổng quan: khách → điểm giao, mỗi ngày: [số, trạng thái, dự báo]
+const OV=[
+ {name:'Công ty X',open:true,pts:[
+  {name:'Nhà máy A',st:['lock','ok','ok','ok','ok','ok','ok'],v:[14700,14700,14600,14700,14700,6900,0],fc:[14650,14700,14600,14700,14650,6950,0]},
+  {name:'Nhà máy B',st:['lock','draft','draft','draft','draft','none','none'],v:[1200,1200,1150,1200,1180,null,null],fc:[1190,1210,1160,1200,1180,0,0]}]},
+ {name:'Bệnh viện An Bình',open:true,pts:[
+  {name:'Khoa nội',st:['lock','bot','bot','bot','bot','bot','bot'],v:[620,620,640,620,620,580,560],fc:[616,623,638,621,620,583,556]},
+  {name:'Khoa ngoại',st:['lock','none','none','none','none','none','none'],v:[410,null,null,null,null,null,null],fc:[410,405,415,410,400,380,370]}]},
+ {name:'Công ty Y (khách mới)',open:true,pts:[
+  {name:'Xưởng 1',st:['none','none','none','none','none','none','none'],v:[null,null,null,null,null,null,null],fc:[null,null,null,null,null,null,null]},
+  {name:'Xưởng 2',st:['ok','ok','ok','ok','ok','ok','ok'],v:[300,300,300,300,300,0,0],fc:[null,null,null,null,null,null,null]}]}];
+const ST={none:'Chưa đăng ký',draft:'Nháp',bot:'Khách gửi – chờ xác nhận',ok:'Đã xác nhận',lock:'Đã chốt'};
+const SC={none:'s-none',draft:'s-draft',bot:'s-bot',ok:'s-ok',lock:'s-lock'};
+function drawOv(){
+ let h='<colgroup><col style="width:250px">'+D.map(()=>'<col>').join('')+'<col style="width:90px"><col style="width:80px"></colgroup>';
+ h+='<tr><th class="l">Khách hàng / điểm giao</th>'+D.map(d=>`<th>${d}</th>`).join('')+'<th>Cả tuần</th><th></th></tr>';
+ const g=Array(7).fill(0);
+ OV.forEach((c,ci)=>{
+  const s=D.map((_,i)=>c.pts.reduce((a,p)=>a+(p.v[i]||0),0));s.forEach((x,i)=>g[i]+=x);
+  h+=`<tr class="grp ${c.open?'':'closed'}" data-c="${ci}"><td class="l"><i class="ti ti-chevron-down chev"></i> ${c.name} <span class="small muted" style="font-weight:400">· ${c.pts.length} điểm</span></td>${s.map(x=>`<td class="tot">${x?fmt(x):'<span class="muted">–</span>'}</td>`).join('')}<td class="tot">${fmt(s.reduce((a,b)=>a+b,0))}</td><td></td></tr>`;
+  if(c.open)c.pts.forEach((p,pi)=>{
+   h+=`<tr class="sub"><td class="l">${p.name}</td>`+D.map((_,i)=>{const st=p.st[i];return `<td title="${ST[st]}"><div class="cell"><span class="chip ${SC[st]}">${p.v[i]==null?'—':fmt(p.v[i])}</span><span class="hint">${st==='none'?(p.fc[i]?'DB '+fmt(p.fc[i]):'chưa có dự báo'):ST[st].toLowerCase()}</span></div></td>`}).join('')+`<td class="tot">${fmt(p.v.reduce((a,b)=>a+(b||0),0))}</td><td><button class="xs" data-go="${ci}|${pi}">Nhập</button></td></tr>`;
+  });
+ });
+ h+='<tr class="foot"><td class="l">Tổng</td>'+g.map(x=>`<td>${fmt(x)}</td>`).join('')+`<td>${fmt(g.reduce((a,b)=>a+b,0))}</td><td></td></tr>`;
+ t1.innerHTML=h;
+ kTot.textContent=fmt(g.reduce((a,b)=>a+b,0));
+ t1.querySelectorAll('tr.grp').forEach(r=>r.onclick=()=>{OV[r.dataset.c].open=!OV[r.dataset.c].open;drawOv()});
+ t1.querySelectorAll('[data-go]').forEach(b=>b.onclick=e=>{e.stopPropagation();cur=b.dataset.go.split('|').map(Number);show('p2');drawPt()});
+}
+// Nhập theo điểm: buổi → lựa chọn × ngày
+const MENU={SANG:[['Bánh mì HN · Trứng · Sữa Fami','Bánh mì HN · Trứng · Sữa BV','Bánh bao · Trứng · Sữa Mori','Bánh tẻ · Trứng · Sữa BV cam','Bánh bao · Trứng · Sữa Fami','Bánh dầy · Chả · Sữa BV','Bánh mì que · Trứng · Fami'],['Bánh bao · Trứng · Sữa Fami','Bánh chưng · Chả · Sữa BV','Bánh dầy · Chả · Sữa Mori','Bánh chưng · Chả · Sữa BV cam','Bánh dầy · Chả · Sữa Fami','Bánh chưng · Chả · Sữa BV','Bánh tẻ · Trứng · Fami'],['Bánh chưng · Chả · Sữa Fami','Xôi khúc · Sữa BV','Bánh tẻ · Trứng · Sữa Mori','Xôi ruốc · Sữa BV cam','Xôi ruốc · Sữa Fami','Xôi ruốc · Sữa BV','Bánh giò · Chả · Fami']],
+ TRUA:[['Thịt hầm đậu đỏ · Cá chiên vừng…','Ba chỉ kho tiêu · Gà xào sả ớt…','Vịt om khoai môn · Tôm rang…','Cá phi lê chiên · Thịt kho dừa…','Thịt kho trứng cút · Tôm sốt…','Sườn chua ngọt · Thịt rang…','Gà rang lá chanh · Thịt xào…']],
+ TOI:[['Bò kho củ cải · Thịt rang…','Cá nục kho riềng · Thịt giả bê…','Sườn rim mắm · Thịt xào đỗ…','Thịt quay xá xíu · Gà rang…','Gà chiên mắm tỏi · Thịt rang…','Cá ngừ xì dầu · Thịt kho…','Chân giò hầm · Thịt rim tiêu…']],
+ DEM:[['Bánh mỳ kẹp trứng, chả · Sữa','Cháo thịt băm · Sữa','Xôi thịt kho · Sữa','Mì xào thập cẩm · Sữa','Phở xào · Sữa','Bún chả nướng · Sữa','Bánh mỳ kẹp · Sữa']]};
+const NAME={SANG:'Sáng',TRUA:'Trưa',TOI:'Tối',DEM:'Đêm'};
+const Q={SANG:[[2000,2000,2000,2000,2000,1000,0],[1500,1500,1500,1500,1500,500,0],[1000,1000,900,1000,1000,400,0]],TRUA:[[4500,4500,4500,4500,4500,2100,0]],TOI:[[4500,4500,4500,4500,4500,2000,0]],DEM:[[1200,1200,1200,1200,1200,900,0]]};
+const AVG={SANG:[[1980,2010,2000,1990,2000,1000,0],[1500,1490,1510,1500,1500,520,0],[1000,1000,1400,1000,1000,400,0]]};
+const open={SANG:true,TRUA:true,TOI:true,DEM:true};
+let cur=[0,0];
+function drawPt(){
+ const c=OV[cur[0]],p=c.pts[cur[1]];ptName.textContent=c.name+' · '+p.name;
+ const st=p.st[1];ptStatus.textContent=ST[st];ptStatus.className='status chip '+SC[st];
+ let h='<colgroup><col style="width:210px">'+D.map(()=>'<col>').join('')+'<col style="width:90px"></colgroup>';
+ h+='<tr><th class="l">Buổi / lựa chọn</th>'+D.map((d,i)=>`<th>${d}${i===0?' <i class="ti ti-lock"></i>':''}</th>`).join('')+'<th>Cả tuần</th></tr>';
+ let day=Array(7).fill(0),money=Array(7).fill(0);
+ Object.keys(Q).forEach(k=>{
+  const s=D.map((_,i)=>Q[k].reduce((a,r)=>a+(+r[i]||0),0));s.forEach((x,i)=>{day[i]+=x;money[i]+=x*PRICE[k]});
+  h+=`<tr class="grp ${open[k]?'':'closed'}" data-k="${k}"><td class="l"><i class="ti ti-chevron-down chev"></i> ${NAME[k]} <span class="small muted" style="font-weight:400">· ${fmt(PRICE[k])} đ/suất · ${Q[k].length} lựa chọn</span></td>${s.map(x=>`<td class="tot">${fmt(x)}</td>`).join('')}<td class="tot">${fmt(s.reduce((a,b)=>a+b,0))}</td></tr>`;
+  if(open[k])Q[k].forEach((r,oi)=>{
+   h+=`<tr class="sub"><td class="l">${Q[k].length>1?'Lựa chọn '+(oi+1):'Suất '+NAME[k].toLowerCase()}</td>`+D.map((_,i)=>{
+    const lock=i===0,av=AVG[k]&&AVG[k][oi]?AVG[k][oi][i]:null,dev=av&&r[i]!=null&&Math.abs(r[i]-av)/av>0.3;
+    return `<td title="${MENU[k][oi][i]}${av?'\nTB 4 tuần: '+fmt(av):''}"><div class="cell"><input class="q ${lock?'s-lock':'s-ok'}" data-k="${k}" data-o="${oi}" data-i="${i}" value="${fmt(r[i])}" ${lock?'readonly':''}><span class="hint">${dev?'<span class="warn">⚠ TB '+fmt(av)+'</span>':MENU[k][oi][i]}</span></div></td>`}).join('')+`<td class="tot">${fmt(r.reduce((a,b)=>a+(+b||0),0))}</td></tr>`;
+  });
+ });
+ h+='<tr class="foot"><td class="l">Tổng suất</td>'+day.map(x=>`<td>${fmt(x)}</td>`).join('')+`<td>${fmt(day.reduce((a,b)=>a+b,0))}</td></tr>`;
+ h+='<tr class="foot"><td class="l">Thành tiền</td>'+money.map(x=>`<td>${(x/1e6).toLocaleString('vi-VN',{maximumFractionDigits:1})} tr</td>`).join('')+`<td>${(money.reduce((a,b)=>a+b,0)/1e6).toLocaleString('vi-VN',{maximumFractionDigits:1})} tr</td></tr>`;
+ t2.innerHTML=h;kMoney.textContent=(money.reduce((a,b)=>a+b,0)/1e9).toLocaleString('vi-VN',{maximumFractionDigits:2})+' tỷ';
+ t2.querySelectorAll('tr.grp').forEach(r=>r.onclick=()=>{open[r.dataset.k]=!open[r.dataset.k];drawPt()});
+ t2.querySelectorAll('input.q:not([readonly])').forEach(e=>e.onchange=()=>{Q[e.dataset.k][e.dataset.o][e.dataset.i]=+e.value.replace(/\D/g,'')||0;drawPt()});
+}
+const flat=()=>OV.flatMap((c,ci)=>c.pts.map((_,pi)=>[ci,pi]));
+prevPt.onclick=()=>{const f=flat(),i=f.findIndex(x=>x[0]==cur[0]&&x[1]==cur[1]);cur=f[(i-1+f.length)%f.length];drawPt()};
+nextPt.onclick=()=>{const f=flat(),i=f.findIndex(x=>x[0]==cur[0]&&x[1]==cur[1]);cur=f[(i+1)%f.length];drawPt()};
+function show(id){document.querySelectorAll('.tabs span,.pane').forEach(x=>x.classList.remove('on'));document.querySelector(`.tabs [data-t="${id}"]`).classList.add('on');document.getElementById(id).classList.add('on')}
+document.querySelectorAll('.tabs span').forEach(t=>t.onclick=()=>{show(t.dataset.t);if(t.dataset.t==='p2')drawPt()});
+drawOv();drawPt();
+</script>
+</body></html>

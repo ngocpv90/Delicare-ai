@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Bảng kê thanh toán tháng (đề xuất)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--r:#A32D2D;--r-bg:#FCEBEB;--n-bg:#F2F4F1}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}button.ic{height:28px;width:30px;padding:0;justify-content:center}
+button:disabled{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.period{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+@media(max-width:1100px){.steps{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+.s-ready{background:var(--g-bg);color:var(--g)}.s-wait{background:var(--o-bg);color:var(--o)}.s-empty{background:var(--n-bg);color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:8px;text-align:right;vertical-align:middle}
+th{background:#FAFBF8;color:var(--muted);font-size:12px}th.l,td.l{text-align:left}
+tr.row{cursor:pointer}tr.row:hover td{background:#FAFBF8}tr.exp td{background:#FBFCF9}
+.warn{color:var(--r);font-size:11px;display:block}
+.detail{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:6px 0 10px;background:#fff}
+.detail table{font-size:12px}.detail .dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.selbar{position:sticky;bottom:12px;background:#1E2620;color:#fff;border-radius:12px;padding:10px 14px;display:none;gap:10px;align-items:center;justify-content:space-between;margin-top:12px}
+.selbar button{background:#2B352E;border-color:#3A463E;color:#fff}.selbar button.p{background:#7FA43A;border-color:#7FA43A}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:0 0 12px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted)}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Bảng kê thanh toán</h1><div class="small muted">Tổng hợp tiền phải thu từng khách trong tháng (suất tính tiền đã chốt đối soát × đơn giá + phí thất thoát khay + VAT) để gửi khách xác nhận, rồi xuất hóa đơn ở phần mềm kế toán. Hệ thống tự lập cho mọi khách – không cần bấm "Lập".</div></div>
+  <div class="period"><button class="xs"><i class="ti ti-chevron-left"></i></button>Tháng 11/2026<button class="xs"><i class="ti ti-chevron-right"></i></button></div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n">1</span><div><b>Chốt hết đối soát của tháng</b><span class="muted">Khách còn đơn chờ đối soát thì chưa sẵn sàng</span><div style="margin-top:6px"><button class="xs"><i class="ti ti-arrow-right"></i>7 đơn chờ đối soát (2 khách)</button></div></div></div>
+  <div class="step"><span class="n">2</span><div><b>Kiểm tra</b><span class="muted">Bấm dòng để xem chi tiết; ⚠ = lệch &gt; 20% so tháng trước</span></div></div>
+  <div class="step"><span class="n">3</span><div><b>Xuất / in hàng loạt</b><span class="muted">Chọn nhiều khách hoặc tất cả khách sẵn sàng</span><div style="margin-top:6px"><button class="xs p" id="allReady"><i class="ti ti-file-zip"></i>Xuất tất cả khách sẵn sàng (<span id="nR">0</span>)</button></div></div></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Tổng phải thu tháng (có VAT)</div><div class="v" id="kTot">–</div></div>
+  <div class="kpi"><div class="small muted">Khách sẵn sàng</div><div class="v" id="kReady">–</div></div>
+  <div class="kpi"><div class="small muted">Đơn chờ đối soát</div><div class="v" style="color:var(--o)">7</div></div>
+  <div class="kpi"><div class="small muted">Phí thất thoát khay</div><div class="v">4,2 tr ₫</div></div>
+ </div>
+</div>
+
+<div class="card">
+ <div class="tabs"><span class="on">Theo khách hàng</span><span>Chờ đối soát (7)</span><span>Lịch sử xuất</span></div>
+ <div class="legend">
+  <span><span class="st s-ready">Sẵn sàng</span> đã chốt hết đối soát trong tháng</span>
+  <span><span class="st s-wait">Chờ đối soát</span> còn đơn chưa chốt – số tiền tạm tính</span>
+  <span><span class="st s-empty">Không phát sinh</span></span>
+  <span>Biểu tượng <i class="ti ti-file-spreadsheet"></i> Excel · <i class="ti ti-printer"></i> PDF trên từng dòng – không cần lập trước</span>
+ </div>
+ <table id="t"></table>
+ <div class="selbar" id="sb"><span id="sbTxt"></span><span style="display:flex;gap:8px"><button id="sbX"><i class="ti ti-file-spreadsheet"></i>Excel (1 file, mỗi khách 1 sheet)</button><button id="sbP"><i class="ti ti-file-zip"></i>PDF (file nén, mỗi khách 1 file)</button><button class="p"><i class="ti ti-send"></i>Gửi khách xác nhận</button></span></div>
+</div>
+
+<script>
+const vi=n=>Math.round(n).toLocaleString('vi-VN'),tr=n=>(n/1e6).toLocaleString('vi-VN',{maximumFractionDigits:1})+' tr';
+const C=[
+ {kh:'Công ty X',hd:'HD-261001-001',su:398400,tien:14182400000,khay:2100000,vat:8,st:'ready',prev:13900000000},
+ {kh:'Bệnh viện An Bình',hd:'HD-261005-003',su:31200,tien:1248000000,khay:0,vat:8,st:'ready',prev:1230000000},
+ {kh:'Công ty Y',hd:'HD-261110-002',su:6300,tien:252000000,khay:0,vat:8,st:'ready',prev:0,newc:true},
+ {kh:'Trường TH Hòa Bình',hd:'HD-260901-004',su:17850,tien:535500000,khay:1200000,vat:8,st:'wait',pend:4,prev:520000000},
+ {kh:'Công ty Z',hd:'HD-260815-006',su:12400,tien:496000000,khay:900000,vat:8,st:'wait',pend:3,prev:380000000},
+ {kh:'Nhà hàng Sen',hd:'HD-260701-009',su:0,tien:0,khay:0,vat:8,st:'empty',prev:0}];
+C.forEach(c=>{c.sel=false;c.open=false});
+const ST={ready:['Sẵn sàng','s-ready'],wait:['Chờ đối soát','s-wait'],empty:['Không phát sinh','s-empty']};
+function tot(c){return (c.tien+c.khay)*(1+c.vat/100)}
+function draw(){
+ let h='<tr><th style="width:30px"><input type="checkbox" id="all"></th><th class="l">Khách hàng / hợp đồng</th><th>Suất tính tiền</th><th>Tiền suất ăn</th><th>Phí khay</th><th>VAT</th><th>Tổng thanh toán</th><th class="l">Trạng thái</th><th style="width:110px"></th></tr>';
+ C.forEach((c,i)=>{
+  const t=tot(c),dev=c.prev&&Math.abs(c.tien-c.prev)/c.prev>0.2;
+  h+=`<tr class="row ${c.open?'exp':''}" data-i="${i}"><td><input type="checkbox" data-s="${i}" ${c.sel?'checked':''} ${c.st==='empty'?'disabled':''}></td>
+  <td class="l"><i class="ti ti-chevron-${c.open?'down':'right'} muted"></i> <b>${c.kh}</b><br><span class="small muted" style="padding-left:18px">${c.hd}${c.newc?' · khách mới':''}</span></td>
+  <td>${vi(c.su)}</td><td>${tr(c.tien)}${dev?'<span class="warn">⚠ '+(c.tien>c.prev?'+':'')+Math.round((c.tien-c.prev)/c.prev*100)+'% so tháng trước</span>':''}</td><td>${c.khay?tr(c.khay):'–'}</td><td>${tr((c.tien+c.khay)*c.vat/100)}</td><td><b>${tr(t)}</b></td>
+  <td class="l"><span class="st ${ST[c.st][1]}">${ST[c.st][0]}${c.pend?' · '+c.pend+' đơn':''}</span></td>
+  <td><button class="ic" title="Xuất Excel" ${c.st==='empty'?'disabled':''}><i class="ti ti-file-spreadsheet"></i></button> <button class="ic" title="In PDF" ${c.st==='empty'?'disabled':''}><i class="ti ti-printer"></i></button> <button class="ic" title="Gửi khách"><i class="ti ti-send"></i></button></td></tr>`;
+  if(c.open)h+=`<tr><td></td><td colspan="8"><div class="detail"><div class="dh"><b>Bảng kê ${c.kh} · tháng 11/2026</b><span class="small muted">Tính tiền theo số khách ký nhận − suất lỗi Delicare</span></div>
+   <table><tr><th class="l">Buổi</th><th>Suất tính tiền</th><th>Suất lỗi (đã trừ)</th><th>Đơn giá</th><th>Thành tiền</th></tr>
+   <tr><td class="l">Sáng</td><td>${vi(c.su*0.3)}</td><td>40</td><td>20.000</td><td>${tr(c.su*0.3*20000)}</td></tr>
+   <tr><td class="l">Trưa</td><td>${vi(c.su*0.3)}</td><td>20</td><td>40.000</td><td>${tr(c.su*0.3*40000)}</td></tr>
+   <tr><td class="l">Tối</td><td>${vi(c.su*0.3)}</td><td>0</td><td>40.000</td><td>${tr(c.su*0.3*40000)}</td></tr>
+   <tr><td class="l">Đêm</td><td>${vi(c.su*0.1)}</td><td>0</td><td>30.000</td><td>${tr(c.su*0.1*30000)}</td></tr></table>
+   <div class="small muted" style="margin-top:6px">Chi tiết theo ngày × buổi × đơn có trong file Excel / PDF. ${c.pend?'<b style="color:var(--o)">'+c.pend+' đơn chờ đối soát – số tạm tính, chưa nên gửi khách.</b>':''}</div></div></td></tr>`;
+ });
+ const r=C.filter(c=>c.st==='ready');
+ h+=`<tr><td></td><td class="l"><b>Tổng</b></td><td><b>${vi(C.reduce((a,c)=>a+c.su,0))}</b></td><td><b>${tr(C.reduce((a,c)=>a+c.tien,0))}</b></td><td><b>${tr(C.reduce((a,c)=>a+c.khay,0))}</b></td><td></td><td><b>${tr(C.reduce((a,c)=>a+tot(c),0))}</b></td><td colspan="2"></td></tr>`;
+ t.innerHTML=h;nR.textContent=r.length;kReady.textContent=r.length+' / '+C.filter(c=>c.st!=='empty').length;kTot.textContent=(C.reduce((a,c)=>a+tot(c),0)/1e9).toLocaleString('vi-VN',{maximumFractionDigits:2})+' tỷ ₫';
+ t.querySelectorAll('tr.row').forEach(row=>row.onclick=e=>{if(e.target.closest('input,button'))return;C[row.dataset.i].open=!C[row.dataset.i].open;draw()});
+ t.querySelectorAll('[data-s]').forEach(x=>x.onchange=()=>{C[x.dataset.s].sel=x.checked;sel()});
+ all.onchange=()=>{C.forEach(c=>{if(c.st!=='empty')c.sel=all.checked});draw();sel()};
+}
+function sel(){const s=C.filter(c=>c.sel);sb.style.display=s.length?'flex':'none';sbTxt.innerHTML=`Đã chọn <b>${s.length}</b> khách · ${tr(s.reduce((a,c)=>a+tot(c),0))}${s.some(c=>c.st==='wait')?' · <span style="color:#F5B17E">có khách chờ đối soát</span>':''}`}
+allReady.onclick=()=>{C.forEach(c=>c.sel=c.st==='ready');draw();sel()};
+draw();
+</script>
+</body></html>

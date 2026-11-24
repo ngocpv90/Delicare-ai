@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Dự báo suất ăn theo tuần (đề xuất)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.week{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:200px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:6px 6px;vertical-align:middle}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+th.l,td.l{text-align:left}
+col.name{width:260px}
+tr.cus td{background:#F7F9F4;font-weight:700;cursor:pointer}
+tr.cus td.l i{transition:.15s}tr.cus.closed td.l i{transform:rotate(-90deg)}
+tr.sub td.l{padding-left:30px;font-weight:400}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.q{width:72px;text-align:right;font-size:14px;font-weight:600;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.q.pub{border-color:#B9CB97;background:var(--g-bg);color:#3F5A17}
+.q.draft{border-color:#F2B98A;background:var(--o-bg);color:#8A3B0B}
+.q.miss{border-style:dashed;background:var(--n-bg);color:var(--muted)}
+.q.reg{border-color:#A9C7EA;background:var(--b-bg);color:#1F4C80}
+.q:focus{outline:2px solid #B7D08A}
+.hint{font-size:11px;color:var(--muted);white-space:nowrap}
+.tot{font-weight:700;text-align:center}
+.foot td{font-weight:800;background:#FAFBF8;text-align:center}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}col.name{width:190px}.q{width:58px;font-size:13px}}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Dự báo suất ăn</h1><div class="small muted">Ước số suất từng khách cho tuần tới khi khách chưa gửi đăng ký – dùng để mua nguyên liệu sớm. Khách gửi đăng ký rồi thì hệ thống dùng số đăng ký.</div></div>
+  <div class="week"><button><i class="ti ti-chevron-left"></i></button> Tuần 30/11 – 06/12/2026 <span class="small muted" style="font-weight:400">(tuần sau)</span> <button><i class="ti ti-chevron-right"></i></button></div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n" style="background:var(--g-bg);color:var(--g)">1</span><div><b>Tạo gợi ý</b><span class="muted">Hệ thống lấy TB 4 tuần cùng thứ</span></div><button class="p" style="margin-left:auto"><i class="ti ti-wand"></i>Tạo gợi ý tuần này</button></div>
+  <div class="step"><span class="n" style="background:var(--o-bg);color:var(--o)">2</span><div><b>Sửa ô cần</b><span class="muted">Nghỉ lễ, tăng ca, khách mới</span></div></div>
+  <div class="step"><span class="n" style="background:var(--g-bg);color:var(--g)">3</span><div><b>Công bố</b><span class="muted" id="draftCnt">18 ô Nháp chờ công bố</span></div><button class="o" style="margin-left:auto"><i class="ti ti-send"></i>Công bố tuần này</button></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Tổng suất dự kiến tuần</div><div class="v" id="kTot">0</div></div>
+  <div class="kpi"><div class="small muted">Ô Nháp chưa công bố</div><div class="v" style="color:var(--o)">18</div></div>
+  <div class="kpi"><div class="small muted">Ô thiếu dữ liệu (nhập tay)</div><div class="v">7</div></div>
+  <div class="kpi"><div class="small muted">Sai số 4 tuần qua</div><div class="v" style="color:var(--g)">6,2%</div></div>
+ </div>
+</div>
+
+<div class="tabs"><span class="on">Dự báo tuần</span><span>Độ chính xác</span><span>Lịch sử công bố</span></div>
+
+<div class="card" style="padding:12px 14px">
+ <div class="legend">
+  <span><span class="sw" style="background:var(--g-bg);border:1px solid #B9CB97"></span>Đã công bố</span>
+  <span><span class="sw" style="background:var(--o-bg);border:1px solid #F2B98A"></span>Nháp (chưa công bố)</span>
+  <span><span class="sw" style="background:var(--b-bg);border:1px solid #A9C7EA"></span>Khách đã đăng ký (dùng số này)</span>
+  <span><span class="sw" style="background:var(--n-bg);border:1px dashed #9aa39c"></span>Thiếu dữ liệu – nhập tay</span>
+  <span>Chữ nhỏ dưới ô: TB 4 tuần · rê chuột xem 4 số</span>
+ </div>
+ <div style="overflow-x:auto"><table id="t"></table></div>
+</div>
+
+<script>
+const D=['T2 30/11','T3 01/12','T4 02/12','T5 03/12','T6 04/12','T7 05/12','CN 06/12'];
+// state: pub|draft|reg|miss
+const data=[
+ {name:'Công ty X',open:true,rows:[
+  {name:'Nhà máy A · Sáng',v:[4500,4500,4400,4500,4500,2000,0],s:['reg','reg','draft','draft','draft','draft','pub'],avg:[4480,4490,4420,4470,4500,2100,0]},
+  {name:'Nhà máy A · Trưa',v:[4500,4500,4500,4500,4500,2100,0],s:['reg','reg','draft','draft','draft','draft','pub'],avg:[4510,4500,4480,4520,4490,2050,0]},
+  {name:'Nhà máy A · Tối',v:[4400,4450,4500,4500,4450,1800,0],s:['reg','reg','pub','pub','pub','pub','pub'],avg:[4390,4440,4500,4510,4460,1850,0]},
+  {name:'Nhà máy B · Trưa',v:[1200,1200,1150,1200,1180,0,0],s:['draft','draft','draft','draft','draft','pub','pub'],avg:[1190,1210,1160,1200,1180,0,0]}]},
+ {name:'Bệnh viện An Bình',open:false,rows:[
+  {name:'Khoa nội · Trưa',v:[320,320,330,320,320,300,290],s:['pub','pub','pub','pub','pub','pub','pub'],avg:[318,322,329,321,318,302,288]},
+  {name:'Khoa nội · Tối',v:[300,300,310,300,300,280,270],s:['pub','pub','pub','pub','pub','pub','pub'],avg:[298,301,309,300,302,281,268]}]},
+ {name:'Khách mới – Công ty Y',open:true,rows:[
+  {name:'Xưởng 1 · Trưa',v:[null,null,null,null,null,null,null],s:['miss','miss','miss','miss','miss','miss','miss'],avg:[]}]}
+];
+const fmt=n=>n==null?'':Math.round(n).toLocaleString('vi-VN');
+function draw(){
+ let h='<colgroup><col class="name">'+D.map(()=>'<col>').join('')+'<col style="width:90px"></colgroup>';
+ h+='<tr><th class="l">Khách hàng / điểm giao · buổi</th>'+D.map(d=>`<th>${d}</th>`).join('')+'<th>Cả tuần</th></tr>';
+ let grand=Array(7).fill(0);
+ data.forEach((c,ci)=>{
+  const sum=D.map((_,i)=>c.rows.reduce((a,r)=>a+(r.v[i]||0),0));sum.forEach((x,i)=>grand[i]+=x);
+  h+=`<tr class="cus ${c.open?'':'closed'}" data-c="${ci}"><td class="l"><i class="ti ti-chevron-down"></i> ${c.name} <span class="small muted" style="font-weight:400">· ${c.rows.length} dòng</span></td>${sum.map(x=>`<td class="tot">${x?fmt(x):'<span class="muted">–</span>'}</td>`).join('')}<td class="tot">${fmt(sum.reduce((a,b)=>a+b,0))}</td></tr>`;
+  if(c.open) c.rows.forEach((r,ri)=>{
+   h+=`<tr class="sub"><td class="l">${r.name}</td>`+D.map((_,i)=>{const st=r.s[i];const tip=st==='miss'?'Chưa đủ 2 tuần lịch sử – nhập tay':`Thực nhận cùng thứ 4 tuần: ${[r.avg[i]-20,r.avg[i]+10,r.avg[i]-5,r.avg[i]+15].map(fmt).join(' · ')}`;
+    return `<td title="${tip}"><div class="cell"><input class="q ${st}" data-c="${ci}" data-r="${ri}" data-i="${i}" value="${fmt(r.v[i])}" placeholder="${st==='miss'?'nhập':''}" ${st==='reg'?'readonly':''}><span class="hint">${st==='reg'?'đã đăng ký':st==='miss'?'thiếu dữ liệu':'TB '+fmt(r.avg[i])}</span></div></td>`}).join('')+`<td class="tot">${fmt(r.v.reduce((a,b)=>a+(b||0),0))}</td></tr>`;
+  });
+ });
+ h+='<tr class="foot"><td class="l">Tổng</td>'+grand.map(x=>`<td>${fmt(x)}</td>`).join('')+`<td>${fmt(grand.reduce((a,b)=>a+b,0))}</td></tr>`;
+ document.getElementById('t').innerHTML=h;
+ document.getElementById('kTot').textContent=fmt(grand.reduce((a,b)=>a+b,0));
+ document.querySelectorAll('tr.cus').forEach(t=>t.onclick=()=>{data[t.dataset.c].open=!data[t.dataset.c].open;draw()});
+ document.querySelectorAll('input.q').forEach(e=>e.onchange=()=>{const r=data[e.dataset.c].rows[e.dataset.r];r.v[e.dataset.i]=+e.value.replace(/\D/g,'')||0;if(r.s[e.dataset.i]!=='reg')r.s[e.dataset.i]='draft';draw()});
+}
+draw();
+</script>
+</body></html>

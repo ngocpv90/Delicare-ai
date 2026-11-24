@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phê duyệt tổng – web</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#0F766E}a:hover{color:#115E59}
+button{font-family:inherit}
+.rowbtn:hover{background:#F8FAFA}
+</style>
+</helmet>
+<div style="font-family: Inter, system-ui, sans-serif; color: #1F2430; display: flex; flex-wrap: wrap; min-height: 1000px; font-size: 14px">
+
+<nav aria-label="Menu chính" style="flex: 1 1 232px; max-width: 260px; background: #13232B; color: #DCE3E6; padding: 20px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="font-weight: 700; font-size: 18px; color: #fff; padding: 4px 12px 18px">Delicare</div>
+<a href="#" style="color: #DCE3E6; text-decoration: none; padding: 10px 12px; border-radius: 8px">Việc của tôi</a>
+<a href="#" aria-current="page" style="color: #fff; text-decoration: none; padding: 10px 12px; border-radius: 8px; background: #0F766E; display: flex; justify-content: space-between; align-items: center; font-weight: 600">Phê duyệt <span style="background: #fff; color: #0F766E; border-radius: 10px; padding: 1px 8px; font-size: 12px">7</span></a>
+<div style="height: 1px; background: #2A3C44; margin: 10px 4px"></div>
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="11"><a href="#" style="color: #B9C5CA; text-decoration: none; padding: 9px 12px; border-radius: 8px">{{m}}</a></sc-for>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; padding: 24px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px">
+<div><h1 style="margin: 0; font-size: 24px">Phê duyệt</h1><div style="color: #5B6270; margin-top: 4px">Lê Văn Long · Giám đốc vận hành (COO) · cập nhật 16:40</div></div>
+<label style="display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #D5D9DE; border-radius: 8px; padding: 0 12px; height: 40px; min-width: 260px"><span style="color: #5B6270">Tìm</span><input placeholder="Số chứng từ, khách, NCC, người gửi" style="border: 0; outline: 0; flex: 1; font: inherit"></label>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+<div style="background: #fff; border-radius: 14px; padding: 16px; border: 1px solid #E4E7EB"><div style="color: #5B6270">Chờ tôi duyệt</div><div style="font-size: 28px; font-weight: 700; margin-top: 4px">7</div><div style="color: #5B6270; font-size: 12px">3 có cảnh báo · 4 bình thường</div></div>
+<div style="background: #FEF3F2; border-radius: 14px; padding: 16px; border: 1px solid #FECDCA"><div style="color: #912018">Quá hạn</div><div style="font-size: 28px; font-weight: 700; margin-top: 4px; color: #B42318">1</div><div style="color: #912018; font-size: 12px">đã báo COO lúc 11:40</div></div>
+<div style="background: #FFFAEB; border-radius: 14px; padding: 16px; border: 1px solid #FEDF89"><div style="color: #93370D">Hết hạn trong 8 giờ</div><div style="font-size: 28px; font-weight: 700; margin-top: 4px; color: #B54708">1</div><div style="color: #93370D; font-size: 12px">Sửa đơn sau chốt</div></div>
+<div style="background: #fff; border-radius: 14px; padding: 16px; border: 1px solid #E4E7EB"><div style="color: #5B6270">Tôi gửi đang chờ</div><div style="font-size: 28px; font-weight: 700; margin-top: 4px">2</div><div style="color: #5B6270; font-size: 12px">lâu nhất 26 giờ</div></div>
+</div>
+
+<div style="background: #fff; border-radius: 14px; border: 1px solid #E4E7EB; display: flex; flex-direction: column">
+<div role="tablist" style="display: flex; gap: 4px; padding: 10px 12px 0; border-bottom: 1px solid #E4E7EB; flex-wrap: wrap">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button></sc-for>
+</div>
+
+<sc-if value="{{isMine}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 8px; padding: 12px 14px; flex-wrap: wrap; align-items: center">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="6"><button onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">{{c.label}} <b>{{c.n}}</b></button></sc-for>
+<span style="flex: 1"></span>
+<span style="color: #5B6270; font-size: 13px">Xếp: quá hạn → sắp hết hạn → cũ nhất</span>
+</div>
+<sc-if value="{{hasPicked}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 0 14px 10px; background: #F0FDF9; border: 1px solid #99F6E0; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<b>Đã chọn {{pickedN}} yêu cầu bình thường</b><span style="color: #5B6270">Chỉ chọn được dòng không có cảnh báo, loại rủi ro thấp</span><span style="flex: 1"></span>
+<button style="height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #0F766E; color: #fff; font-weight: 600">Duyệt các mục đã chọn</button>
+</div>
+</sc-if>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+<div style="{{r.wrap}}">
+<label style="width: 44px; display: flex; justify-content: center; align-items: center"><input type="checkbox" checked="{{r.checked}}" disabled="{{r.noBulk}}" onChange="{{r.toggle}}" aria-label="Chọn {{r.no}} để duyệt nhanh" style="width: 18px; height: 18px"></label>
+<button class="rowbtn" onClick="{{r.open}}" style="flex: 1; min-width: 0; border: 0; background: transparent; text-align: left; padding: 12px 12px 12px 0; display: grid; grid-template-columns: 150px minmax(0, 1fr) 150px 110px; gap: 12px; align-items: center; cursor: pointer; color: inherit; font-size: 14px">
+<span><span style="display: block; font-weight: 600">{{r.type}}</span><span style="color: #5B6270; font-size: 12px">{{r.no}}</span></span>
+<span style="min-width: 0"><span style="display: block; font-weight: 500">{{r.summary}}</span><span style="display: block; color: #5B6270; font-size: 13px; margin-top: 2px">Vì sao cần duyệt: {{r.reason}}</span><span style="{{r.flagStyle}}">{{r.flagText}}</span></span>
+<span style="color: #5B6270; font-size: 13px">{{r.by}}<br>gửi {{r.at}} · cấp {{r.step}}</span>
+<span style="{{r.dueStyle}}">{{r.due}}</span>
+</button>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isSent}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{sent}}" as="s" hint-placeholder-count="2">
+<div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 220px 120px; gap: 12px; align-items: center; padding: 14px; border-bottom: 1px solid #EEF0F2">
+<span><b style="display: block">{{s.type}}</b><span style="color: #5B6270; font-size: 12px">{{s.no}}</span></span>
+<span>{{s.summary}}</span>
+<span style="color: #5B6270; font-size: 13px">Đang chờ: <b style="color: #1F2430">{{s.who}}</b><br>đã chờ {{s.wait}} · cấp {{s.step}}</span>
+<button style="height: 40px; border-radius: 8px; border: 1px solid #0F766E; background: #fff; color: #0F766E; font-weight: 600">Nhắc qua bot</button>
+</div>
+</sc-for>
+<div style="padding: 12px 14px; color: #5B6270; font-size: 13px">Nhắc tối đa 1 lần / 4 giờ cho mỗi yêu cầu. Yêu cầu do bạn gửi không hiện ở "Chờ tôi duyệt" (chặn tự duyệt – D-79).</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #F0FDF9; border: 1px solid #99F6E0; border-radius: 10px; padding: 12px 14px"><b>Hậu kiểm (sau UAT):</b> hôm nay hệ thống tự duyệt 23 việc bình thường (14 đơn nghỉ, 6 đổi ca, 3 điều chỉnh tồn nhỏ). Xem lại và hoàn tác trong 24 giờ nếu thấy sai.</div>
+<sc-for list="{{done}}" as="d" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 160px 110px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #EEF0F2">
+<span><b style="display: block">{{d.type}}</b><span style="color: #5B6270; font-size: 12px">{{d.no}}</span></span><span>{{d.summary}}</span><span style="color: #5B6270; font-size: 13px">{{d.when}}</span><span style="{{d.style}}">{{d.result}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</main>
+
+<aside aria-label="Xem nhanh yêu cầu" style="flex: 1 1 420px; max-width: 460px; background: #fff; border-left: 1px solid #E4E7EB; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="color: #5B6270; font-size: 13px">Xem nhanh · {{posText}}</span><span style="display: flex; gap: 6px"><button onClick="{{prev}}" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5D9DE; background: #fff">‹ Trước</button><button onClick="{{next}}" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5D9DE; background: #fff; font-weight: 600">Tiếp theo ›</button></span></div>
+<div><div style="color: #5B6270; font-size: 13px">{{cur.type}} · <a href="#">{{cur.no}} ↗</a></div><h2 style="margin: 4px 0 0; font-size: 19px">{{cur.summary}}</h2></div>
+<div style="background: #F4F5F7; border-radius: 10px; padding: 12px 14px"><div style="font-size: 12px; color: #5B6270; font-weight: 600">VÌ SAO CẦN DUYỆT</div><div style="margin-top: 4px">{{cur.reason}}</div></div>
+<div style="{{cur.boxStyle}}"><div style="font-size: 12px; font-weight: 600">{{cur.boxTitle}}</div><sc-for list="{{cur.flags}}" as="f" hint-placeholder-count="1"><div style="margin-top: 4px">• {{f}}</div></sc-for></div>
+<div style="display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 12px; font-size: 13px"><sc-for list="{{cur.info}}" as="i" hint-placeholder-count="4"><span style="color: #5B6270">{{i.k}}</span><span>{{i.v}}</span></sc-for></div>
+<div style="border: 1px solid #E4E7EB; border-radius: 10px; overflow-x: auto">
+<div style="display: grid; grid-template-columns: minmax(0, 1.6fr) 1fr 1fr; gap: 8px; padding: 8px 12px; background: #F8F9FA; font-size: 12px; color: #5B6270; font-weight: 600"><span>{{cur.h1}}</span><span>{{cur.h2}}</span><span>{{cur.h3}}</span></div>
+<sc-for list="{{cur.lines}}" as="l" hint-placeholder-count="3"><div style="display: grid; grid-template-columns: minmax(0, 1.6fr) 1fr 1fr; gap: 8px; padding: 8px 12px; border-top: 1px solid #EEF0F2; font-size: 13px"><span>{{l.a}}</span><span>{{l.b}}</span><span style="{{l.cs}}">{{l.c}}</span></div></sc-for>
+</div>
+<div style="font-size: 13px; color: #5B6270">Tiến trình: {{cur.progress}}</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">Ý kiến (bắt buộc khi từ chối)<textarea rows="2" style="font: inherit; border: 1px solid #D5D9DE; border-radius: 8px; padding: 8px"></textarea></label>
+<div style="display: flex; gap: 10px; margin-top: auto"><button style="flex: 1; height: 48px; border-radius: 10px; border: 1px solid #B42318; background: #fff; color: #B42318; font-weight: 600; font-size: 15px">Từ chối</button><button style="flex: 2; height: 48px; border-radius: 10px; border: 0; background: #0F766E; color: #fff; font-weight: 600; font-size: 15px">Duyệt &amp; sang việc tiếp</button></div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+const ITEMS = [
+ { id: 1, g: 'Mua hàng', type: 'Đơn mua hàng', no: 'PO-000123', summary: 'NCC Rau sạch Đà Lạt · 38.450.000 đ · 12 dòng', reason: 'Đơn mua lập tay, không từ đề nghị mua đã duyệt', flags: ['Giá cà chua cao hơn lần mua trước 18 %', 'Không phải NCC gợi ý cho cải ngọt'], by: 'Nguyễn Văn An', at: '23/11 08:10', step: '1/1', due: 'Quá hạn 5 giờ', dk: 'over', bulk: false,
+   info: [{k:'Nhà cung cấp',v:'Rau sạch Đà Lạt (NCC-00012)'},{k:'Ngày giao',v:'25/11, kho lạnh 1'},{k:'Thanh toán',v:'Công nợ 15 ngày'},{k:'Người lập',v:'Nguyễn Văn An – Mua hàng'}],
+   h: ['Nguyên liệu','Số lượng','Đơn giá'], lines: [{a:'Cà chua',b:'420 kg',c:'26.000 (+18 %)',w:1},{a:'Cải ngọt',b:'380 kg',c:'14.500'},{a:'Hành lá',b:'60 kg',c:'32.000'}], progress: 'Cấp 1 (COO) – đang chờ bạn' },
+ { id: 2, g: 'Kinh doanh', type: 'Sửa đơn sau chốt', no: 'DH-000456', summary: 'Cty ABC – Xưởng 2 · Trưa 24/11: 1.200 → 1.350 suất (+12,5 %)', reason: 'Khách đổi số sau giờ chốt 20:00', flags: ['Kế hoạch SX 24/11 đã phát hành – sẽ sinh mẻ bổ sung'], by: 'Trần Thị Bình', at: '23/11 21:05', step: '1/1', due: 'Còn 3 giờ', dk: 'soon', bulk: false,
+   info: [{k:'Khách hàng',v:'Cty ABC (KH-00031)'},{k:'Điểm giao',v:'Xưởng 2 – giờ nhận 10:30'},{k:'Lý do khách',v:'Tăng ca dây chuyền B'},{k:'Thành tiền thêm',v:'+4.050.000 đ'}],
+   h: ['Lựa chọn','Trước','Sau'], lines: [{a:'Trưa – LC1',b:'800',c:'900',w:1},{a:'Trưa – LC2',b:'400',c:'450',w:1}], progress: 'Cấp 1 (Trưởng KD / COO) – đang chờ' },
+ { id: 3, g: 'Sản xuất', type: 'Kế hoạch sản xuất', no: 'KH-241124', summary: 'Ngày 24/11 · 18.640 suất · 42 mẻ', reason: 'Hệ thống giữ Nháp vì thiếu nguyên liệu sau giữ chỗ', flags: ['Thiếu 35 kg ức gà cho ca trưa'], by: 'Hệ thống (sau chốt 20:00)', at: '23/11 20:02', step: '1/1', due: 'Còn 14 giờ', dk: 'ok', bulk: false,
+   info: [{k:'Ngày SX',v:'24/11 – 3 ca'},{k:'Đơn đã chốt',v:'61 đơn'},{k:'Năng lực',v:'86 % dây chuyền'},{k:'Gợi ý',v:'PO bổ sung ức gà đã lập Nháp'}],
+   h: ['Ca','Suất','Mẻ'], lines: [{a:'Sáng',b:'5.120',c:'11'},{a:'Trưa',b:'9.860',c:'22',w:1},{a:'Tối',b:'3.660',c:'9'}], progress: 'Duyệt 1 cấp (COO)' },
+ { id: 4, g: 'Kho', type: 'Kiểm kê – cấp 1', no: 'KK-000031', summary: 'Kho lạnh 1 · lệch 3,1 % giá trị · 6 dòng lệch', reason: 'Có dòng lệch > 2 %', flags: ['Thịt heo nạc lệch −4,2 kg (−5,6 %)'], by: 'Đỗ Thị Hạnh – Thủ kho', at: '23/11 15:20', step: '1/2', due: 'Còn 30 giờ', dk: 'ok', bulk: false,
+   info: [{k:'Kho',v:'Kho lạnh 1'},{k:'Ngày đếm',v:'23/11'},{k:'Giá trị lệch',v:'−1.870.000 đ'},{k:'Cấp sau',v:'Kế toán'}],
+   h: ['Nguyên liệu','Hệ thống → thực','Lệch'], lines: [{a:'Thịt heo nạc',b:'75,0 → 70,8 kg',c:'−5,6 %',w:1},{a:'Đùi gà',b:'120 → 118,5 kg',c:'−1,3 %'},{a:'Cá basa',b:'64 → 63,2 kg',c:'−1,3 %'}], progress: 'Cấp 1 (Trưởng kho / COO) đang chờ → cấp 2 Kế toán' },
+ { id: 5, g: 'Mua hàng', type: 'Đề nghị mua – cấp 2', no: 'DNM-000089', summary: '24 nguyên liệu · 61.200.000 đ · cần hàng 26–27/11', reason: 'Đề nghị mua 2 cấp – cấp 1 đã duyệt (Lê Hùng)', flags: [], by: 'Phạm Quốc Bảo', at: '23/11 10:45', step: '2/2', due: 'Còn 20 giờ', dk: 'ok', bulk: false,
+   info: [{k:'Nguồn',v:'Kế hoạch mua 7 ngày (hệ thống)'},{k:'Ngày cần',v:'26–27/11'},{k:'So định mức',v:'Trong định mức'},{k:'Cấp 1',v:'Lê Hùng duyệt 14:10'}],
+   h: ['Nguyên liệu','Số lượng','Ngày cần'], lines: [{a:'Gạo ST25',b:'1.800 kg',c:'26/11'},{a:'Ức gà',b:'640 kg',c:'26/11'},{a:'Trứng gà',b:'9.000 quả',c:'27/11'}], progress: 'Cấp 1 đã duyệt → cấp 2 (COO) đang chờ' },
+ { id: 6, g: 'Nhân sự', type: 'Đơn xin nghỉ', no: 'NP-000210', summary: 'Phạm Minh Châu – Tổ Nấu · 26–27/11 (2 ngày)', reason: 'Nghỉ phép năm', flags: [], by: 'Phạm Minh Châu', at: '23/11 09:00', step: '1/1', due: 'Còn 40 giờ', dk: 'ok', bulk: true,
+   info: [{k:'Loại nghỉ',v:'Phép năm'},{k:'Đã nghỉ năm nay',v:'5 ngày'},{k:'Ca bị ảnh hưởng',v:'2 ca sáng – đã có người thay'},{k:'Tổ',v:'Tổ Nấu'}],
+   h: ['Ngày','Ca','Người thay'], lines: [{a:'26/11',b:'Sáng',c:'Võ Thu Hà'},{a:'27/11',b:'Sáng',c:'Đỗ Quang'}], progress: 'Duyệt 1 cấp (Nhân sự / COO)' },
+ { id: 7, g: 'Nhân sự', type: 'Đơn đổi ca', no: 'DC-000077', summary: 'Võ Thu Hà ↔ Đỗ Quang · ca sáng 25/11', reason: 'Hoán đổi ca giữa 2 nhân viên cùng tổ', flags: [], by: 'Võ Thu Hà', at: '23/11 13:30', step: '1/1', due: 'Còn 44 giờ', dk: 'ok', bulk: true,
+   info: [{k:'Tổ',v:'Tổ Sơ chế'},{k:'Kiểm tra',v:'Không trùng ca, không trùng ngày nghỉ'},{k:'Đồng ý',v:'Đỗ Quang đã đồng ý'},{k:'Ca',v:'Sáng 05:00–13:00'}],
+   h: ['Nhân viên','Trước','Sau'], lines: [{a:'Võ Thu Hà',b:'Sáng 25/11',c:'Chiều 26/11'},{a:'Đỗ Quang',b:'Chiều 26/11',c:'Sáng 25/11'}], progress: 'Duyệt 1 cấp (Nhân sự / COO)' }
+];
+const GROUPS = ['Tất cả', 'Kinh doanh', 'Mua hàng', 'Kho', 'Sản xuất', 'Nhân sự'];
+const DUE = { over: 'color:#B42318;background:#FEF3F2;border-radius:6px;padding:4px 8px;font-weight:600;font-size:13px;justify-self:start', soon: 'color:#B54708;background:#FFFAEB;border-radius:6px;padding:4px 8px;font-weight:600;font-size:13px;justify-self:start', ok: 'color:#5B6270;font-size:13px' };
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tab: 'mine', g: 'Tất cả', cur: 1, picked: [] }; }
+  renderVals() {
+    const s = this.state;
+    const list = ITEMS.filter(i => s.g === 'Tất cả' || i.g === s.g);
+    const all = ITEMS;
+    const idx = Math.max(0, all.findIndex(i => i.id === s.cur));
+    const c = all[idx];
+    const flagged = c.flags.length > 0;
+    const go = d => this.setState({ cur: all[(idx + d + all.length) % all.length].id });
+    const tabStyle = on => 'height:44px;padding:0 14px;border:0;background:transparent;font-size:14px;cursor:pointer;border-bottom:2px solid ' + (on ? '#0F766E;color:#0F766E;font-weight:600' : 'transparent;color:#5B6270');
+    const TABS = [['mine', 'Chờ tôi duyệt (7)'], ['sent', 'Tôi đã gửi (2)'], ['done', 'Tôi đã duyệt'], ['mine', 'Tất cả (CEO / PMO / COO)']];
+    return {
+      menu: ['Điều hành', 'Kinh doanh', 'Thực đơn & Món ăn', 'Mua hàng', 'Kho', 'Sản xuất', 'Giá thành', 'Chất lượng & ATTP', 'Đóng gói & Giao hàng', 'Nhân sự'],
+      tabs: TABS.map(([k, l], n) => ({ label: l, on: s.tab === k && (n < 3), style: tabStyle(s.tab === k && n < 3), pick: () => this.setState({ tab: k }) })),
+      isMine: s.tab === 'mine', isSent: s.tab === 'sent', isDone: s.tab === 'done',
+      chips: GROUPS.map(g => ({ label: g, n: g === 'Tất cả' ? ITEMS.length : ITEMS.filter(i => i.g === g).length, on: s.g === g, pick: () => this.setState({ g }),
+        style: 'height:36px;padding:0 12px;border-radius:18px;cursor:pointer;font-size:13px;' + (s.g === g ? 'background:#0F766E;color:#fff;border:1px solid #0F766E' : 'background:#fff;color:#1F2430;border:1px solid #D5D9DE') })),
+      hasPicked: s.picked.length > 0, pickedN: s.picked.length,
+      rows: list.map(i => ({ ...i, checked: s.picked.includes(i.id), noBulk: !i.bulk,
+        toggle: () => this.setState({ picked: s.picked.includes(i.id) ? s.picked.filter(x => x !== i.id) : s.picked.concat(i.id) }),
+        open: () => this.setState({ cur: i.id }),
+        flagText: i.flags.length ? '⚠ ' + i.flags.length + ' cảnh báo: ' + i.flags[0] : '✓ Bình thường',
+        flagStyle: 'display:inline-block;margin-top:6px;font-size:12px;font-weight:600;border-radius:6px;padding:3px 8px;' + (i.flags.length ? 'color:#93370D;background:#FFFAEB' : 'color:#067647;background:#ECFDF3'),
+        dueStyle: DUE[i.dk],
+        wrap: 'display:flex;align-items:stretch;border-top:1px solid #EEF0F2;' + (s.cur === i.id ? 'background:#F0FDF9;box-shadow:inset 3px 0 0 #0F766E' : '') })),
+      sent: [{ type: 'Đề nghị mua – cấp 1', no: 'DNM-000092', summary: 'Bổ sung rau tuần 48 · 9.800.000 đ', who: 'Lê Hùng – Trưởng mua hàng', wait: '26 giờ', step: '1/2' },
+             { type: 'Đơn xin nghỉ', no: 'NP-000215', summary: 'Lê Văn Long · nghỉ phép 28/11 (1 ngày)', who: 'Nhân sự (FIN-HR)', wait: '3 giờ', step: '1/1' }],
+      done: [{ type: 'Thực đơn tuần', no: 'TD-2026-W48', summary: 'Thực đơn chung tuần 48', when: '23/11 11:20', result: 'Đã duyệt', style: 'color:#067647;font-weight:600' },
+             { type: 'Đơn mua hàng', no: 'PO-000119', summary: 'Gia vị Hưng Phát · 7.200.000 đ', when: '22/11 17:05', result: 'Từ chối', style: 'color:#B42318;font-weight:600' },
+             { type: 'Đơn xin nghỉ', no: 'NP-000201', summary: 'Ngô Lan – Tổ Cơm / Canh · 1 ngày', when: '22/11 09:12', result: 'Đã duyệt', style: 'color:#067647;font-weight:600' }],
+      cur: { ...c, h1: c.h[0], h2: c.h[1], h3: c.h[2],
+        lines: c.lines.map(l => ({ ...l, cs: l.w ? 'color:#B54708;font-weight:600' : '' })),
+        flags: flagged ? c.flags : ['Không có điểm bất thường so với lịch sử'],
+        boxTitle: flagged ? 'CẢNH BÁO (' + c.flags.length + ')' : 'BÌNH THƯỜNG',
+        boxStyle: 'border-radius:10px;padding:12px 14px;' + (flagged ? 'background:#FFFAEB;color:#93370D;border:1px solid #FEDF89' : 'background:#ECFDF3;color:#067647;border:1px solid #ABEFC6') },
+      posText: (idx + 1) + ' / ' + all.length,
+      prev: () => go(-1), next: () => go(1)
+    };
+  }
+}
+</script>
+</body>
+</html>

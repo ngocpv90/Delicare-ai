@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Đối soát suất ăn v2 (Chart.js + xác nhận hàng loạt)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--r:#A32D2D;--r-bg:#FCEBEB;--n-bg:#F2F4F1}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:10px;overflow:hidden}.seg button{border:0;border-radius:0;height:34px}.seg .on{background:var(--g-bg);color:#3F5A17;font-weight:600}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.period{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+@media(max-width:1199px){.two{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr}}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.cw{position:relative;height:300px}
+.loss{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.loss div{border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:12px;text-align:center}
+.loss b{display:block;font-size:14px}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 12px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted)}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:8px;text-align:right}th{background:#FAFBF8;color:var(--muted);font-size:12px}th.l,td.l{text-align:left}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+.bad{color:var(--r);font-weight:700}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Đối soát suất ăn</h1><div class="small muted">So số suất qua từng khâu Đặt → Sản xuất → Đóng gói → Giao → Khách nhận, chốt số tính tiền cho từng đơn. Đơn giao xong tự có đối soát; khớp số thì tự chốt sau 24 giờ.</div></div>
+  <div class="bar" style="gap:8px">
+   <div class="seg"><button>7 ngày</button><button class="on">30 ngày</button><button>Tháng</button></div>
+   <div class="period"><button class="xs"><i class="ti ti-chevron-left"></i></button>25/10 – 23/11/2026<button class="xs"><i class="ti ti-chevron-right"></i></button></div>
+   <select style="height:36px;border:1px solid #d5dbd2;border-radius:10px;padding:0 8px"><option>Tất cả khách hàng</option><option>Công ty X</option></select>
+  </div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n">1</span><div><b>Xác nhận số</b><span class="muted">Khớp số: 1 nút cho tất cả · lệch: sửa trực tiếp trên dòng</span><div style="margin-top:6px"><button class="xs p"><i class="ti ti-plus"></i>Xác nhận 6 đơn chờ (ngay dưới)</button></div></div></div>
+  <div class="step"><span class="n">2</span><div><b>Xử lý chênh lệch</b><span class="muted">Đơn lệch Nhận ≠ Đặt hoặc còn phản ánh mở</span><div style="margin-top:6px"><button class="xs"><i class="ti ti-alert-triangle"></i>3 đơn có chênh lệch</button></div></div></div>
+  <div class="step"><span class="n">3</span><div><b>Chốt đối soát</b><span class="muted">Khớp số → hệ thống tự chốt sau 24 giờ; còn lại kế toán chốt</span><div style="margin-top:6px"><button class="xs"><i class="ti ti-file-invoice"></i>Bảng kê tháng</button></div></div></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Suất đặt (30 ngày)</div><div class="v">412.380</div></div>
+  <div class="kpi"><div class="small muted">Suất khách nhận</div><div class="v">410.952 <span class="small muted" style="font-weight:400">· 99,65%</span></div></div>
+  <div class="kpi"><div class="small muted">Giá trị đã chốt</div><div class="v">14,38 tỷ ₫</div></div>
+  <div class="kpi"><div class="small muted">Chờ đối soát / có chênh lệch</div><div class="v">4 <span class="small muted" style="font-weight:400">/ 3 đơn</span></div></div>
+ </div>
+</div>
+
+<div class="two">
+ <div class="card">
+  <div class="ph"><div><h3>Đặt – Giao – Nhận theo ngày ăn</h3><div class="small muted">Cột = suất đặt · đường = giao, khách nhận · rê chuột xem từng ngày</div></div></div>
+  <div class="cw"><canvas id="c1"></canvas></div>
+ </div>
+ <div class="card">
+  <div class="ph"><div><h3>Chuỗi đối soát Đặt → Sản xuất → Đóng gói → Giao → Nhận</h3><div class="small muted">Tổng suất cả kỳ qua từng khâu · hao hụt giữa các khâu</div></div></div>
+  <div class="cw" style="height:250px"><canvas id="c2"></canvas></div>
+  <div class="loss" id="loss"></div>
+ </div>
+</div>
+
+<div class="card">
+ <div class="tabs"><span class="on">Chờ đối soát (6)</span><span>Có chênh lệch (2)</span><span>Đã chốt</span><span>Tất cả</span></div>
+ <div class="bar" style="margin-bottom:10px">
+  <div class="small muted">Mặc định <b>Phục vụ = Khách nhận</b>, không cần nhập. Chỉ sửa dòng có trả về / lỗi Delicare / phục vụ khác. Enter = xuống dòng dưới.</div>
+  <div style="display:flex;gap:8px;align-items:center">
+   <select style="height:32px;border:1px solid #d5dbd2;border-radius:8px;padding:0 6px"><option>Ngày ăn 22/11</option></select>
+   <select style="height:32px;border:1px solid #d5dbd2;border-radius:8px;padding:0 6px"><option>Mọi điểm giao</option></select>
+   <button class="xs" id="okSel"><i class="ti ti-check"></i>Xác nhận dòng đã chọn</button>
+   <button class="xs p" id="okAll"><i class="ti ti-checks"></i>Xác nhận tất cả dòng khớp (<span id="nMatch">0</span>)</button>
+  </div>
+ </div>
+ <table id="g"></table>
+ <div class="small muted" style="margin-top:8px"><span class="sw2" style="display:inline-block;width:10px;height:10px;background:var(--o-bg);border:1px solid #F2B98A;border-radius:2px"></span> dòng đã sửa · Tiền = (Khách nhận − Lỗi Delicare) × đơn giá · Phục vụ chỉ để dự báo · Điểm phát có thể bấm "Đã phục vụ đủ" trên bot ngay sau bữa → dòng tự xác nhận</div>
+</div>
+<style>
+#g input{width:74px;text-align:right;padding:4px 6px;border:1px solid var(--line);border-radius:7px;font-size:13px}
+#g input.pre{color:#9aa39c}#g tr.chg td{background:var(--o-bg)}#g tr.ok td{background:var(--g-bg)}
+#g select{height:28px;border:1px solid var(--line);border-radius:7px;font-size:12px}
+#g tr.opt td{background:#FAFBF8;font-size:12px}#g .chev{cursor:pointer;color:var(--muted)}
+</style>
+<script>
+Chart.defaults.font.family='system-ui,Segoe UI,Arial,sans-serif';Chart.defaults.font.size=12;Chart.defaults.color='#6b756e';
+const days=[...Array(30)].map((_,i)=>{const d=new Date(2026,9,25+i);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')});
+const ord=days.map((_,i)=>{const w=new Date(2026,9,25+i).getDay();return w===0?4200:w===6?9800:15100+Math.round(Math.sin(i)*300)});
+const del=ord.map((v,i)=>v-(i%7===3?60:i%5===0?20:0));
+const rec=del.map((v,i)=>v-(i%9===2?40:i%4===0?10:0));
+const vi=n=>n.toLocaleString('vi-VN');
+new Chart(c1,{data:{labels:days,datasets:[
+ {type:'bar',label:'Đặt',data:ord,backgroundColor:'#C9DBA5',borderRadius:4,maxBarThickness:18,order:3},
+ {type:'line',label:'Giao',data:del,borderColor:'#2F64A0',backgroundColor:'#2F64A0',pointRadius:0,pointHoverRadius:4,borderWidth:2,tension:.25,order:2},
+ {type:'line',label:'Khách nhận',data:rec,borderColor:'#E8833A',backgroundColor:'#E8833A',pointRadius:0,pointHoverRadius:4,borderWidth:2,borderDash:[5,4],tension:.25,order:1}]},
+ options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+  plugins:{legend:{position:'top',align:'end',labels:{usePointStyle:true,boxWidth:8}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+vi(c.parsed.y),footer:it=>{const o=it[0].parsed.y,r=it[2]?it[2].parsed.y:o;return 'Chênh lệch nhận − đặt: '+vi(r-o)+' ('+((r-o)/o*100).toFixed(2)+'%)'}}}},
+  scales:{x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:10}},y:{beginAtZero:true,grid:{color:'#EEF1EC'},ticks:{callback:v=>v>=1000?(v/1000)+'k':v}}}}});
+const stages=['Đặt','Sản xuất','Đóng gói','Giao','Khách nhận'],vals=[412380,412310,412010,411620,410952],cols=['#C9DBA5','#91AF42','#B79FD6','#79A8CC','#F5B17E'];
+const valueLabel={id:'vl',afterDatasetsDraw(ch){const {ctx}=ch;ch.getDatasetMeta(0).data.forEach((b,i)=>{ctx.save();ctx.fillStyle='#1E2620';ctx.font='600 12px system-ui';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(vi(vals[i])+(i?'  ('+(vals[i]/vals[0]*100).toFixed(2)+'%)':''),b.x-8,b.y);ctx.restore()})}};
+new Chart(c2,{type:'bar',data:{labels:stages,datasets:[{data:vals,backgroundColor:cols,borderRadius:6,barThickness:26}]},
+ options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+vi(c.parsed.x)+' suất'}}},
+  scales:{x:{min:Math.floor(vals[4]*0.97/1000)*1000,grid:{color:'#EEF1EC'},ticks:{callback:v=>(v/1000)+'k'}},y:{grid:{display:false},ticks:{font:{weight:600}}}}},plugins:[valueLabel]});
+loss.innerHTML=stages.slice(1).map((s,i)=>{const d=vals[i+1]-vals[i];return `<div>${stages[i]} → ${s}<b class="${d<0?'bad':''}">${vi(d)}</b>${(d/vals[i]*100).toFixed(2)}%</div>`}).join('');
+
+const R=[
+ {no:'DH-261122-014',kh:'Công ty X · Nhà máy A',ord:14700,rec:14680,price:35580,src:'Bàn giao',opts:[['Sáng LC1',2000],['Sáng LC2',1500],['Sáng LC3',1000],['Trưa',4500],['Tối',4500],['Đêm',1200]]},
+ {no:'DH-261122-015',kh:'Bệnh viện An Bình · Khoa nội',ord:620,rec:620,price:40000,src:'Bot: đã phục vụ đủ'},
+ {no:'DH-261122-016',kh:'Công ty Y · Xưởng 2',ord:300,rec:300,price:40000,src:'Bàn giao'},
+ {no:'DH-261122-017',kh:'Công ty X · Nhà máy B',ord:1200,rec:1190,price:40000,src:'Bàn giao'},
+ {no:'DH-261122-018',kh:'Bệnh viện An Bình · Khoa ngoại',ord:410,rec:410,price:40000,src:'Bàn giao'},
+ {no:'DH-261122-019',kh:'Trường TH Hòa Bình · Bếp 1',ord:850,rec:850,price:30000,src:'Bàn giao'}];
+R.forEach(r=>{r.sv=null;r.ret=0;r.fault=0;r.reason='';r.sel=false;r.done=false;r.open=false});
+const FR=['','Thiếu suất','Hỏng / đổ vỡ','Không đạt nhiệt độ','Sai món','Chất lượng'];
+function changed(r){return r.sv!==null||r.ret||r.fault}
+function drawG(){
+ let h='<tr><th style="width:30px"><input type="checkbox" id="all" style="width:auto"></th><th class="l">Đơn</th><th class="l">Khách / điểm giao</th><th>Đặt</th><th>Khách nhận</th><th>Phục vụ</th><th>Trả về</th><th>Lỗi Delicare</th><th class="l">Lý do</th><th>Tính tiền</th><th>Thành tiền</th><th class="l">Nguồn số nhận</th></tr>';
+ R.forEach((r,i)=>{ if(r.done)return;
+  const bill=r.rec-r.fault,dev=r.rec!==r.ord;
+  h+=`<tr class="${changed(r)?'chg':''}"><td><input type="checkbox" data-s="${i}" ${r.sel?'checked':''} style="width:auto"></td>
+  <td class="l">${r.opts?`<i class="ti ti-chevron-${r.open?'down':'right'} chev" data-o="${i}"></i> `:''}${r.no}</td><td class="l">${r.kh}</td><td>${vi(r.ord)}</td>
+  <td class="${dev?'bad':''}">${vi(r.rec)}</td>
+  <td><input data-f="sv" data-i="${i}" class="${r.sv===null?'pre':''}" value="${vi(r.sv===null?r.rec:r.sv)}"></td>
+  <td><input data-f="ret" data-i="${i}" value="${r.ret||''}" placeholder="0"></td>
+  <td><input data-f="fault" data-i="${i}" value="${r.fault||''}" placeholder="0"></td>
+  <td class="l">${r.fault?`<select data-r="${i}">${FR.map(x=>`<option ${x===r.reason?'selected':''}>${x||'— chọn —'}</option>`).join('')}</select>`:'<span class="muted">–</span>'}</td>
+  <td><b>${vi(bill)}</b></td><td>${(bill*r.price/1e6).toLocaleString('vi-VN',{maximumFractionDigits:1})} tr</td><td class="l small muted">${r.src}</td></tr>`;
+  if(r.opts&&r.open) r.opts.forEach(o=>h+=`<tr class="opt"><td></td><td class="l" style="padding-left:30px">${o[0]}</td><td></td><td>${vi(o[1])}</td><td></td><td><input value="${vi(o[1])}" class="pre"></td><td colspan="6"></td></tr>`);
+ });
+ g.innerHTML=h;
+ nMatch.textContent=R.filter(r=>!r.done&&r.rec===r.ord&&!changed(r)).length;
+ g.querySelectorAll('input[data-f]').forEach(e=>{e.onchange=()=>{const r=R[e.dataset.i],v=e.value===''?0:+e.value.replace(/\D/g,'');if(e.dataset.f==='sv')r.sv=(v===r.rec?null:v);else r[e.dataset.f]=v;drawG()};
+  e.onkeydown=k=>{if(k.key==='Enter'){k.preventDefault();const all=[...g.querySelectorAll('input[data-f="'+e.dataset.f+'"]')];const n=all[all.indexOf(e)+1];e.blur();setTimeout(()=>{const a=[...g.querySelectorAll('input[data-f="'+e.dataset.f+'"]')];const x=a[all.indexOf(e)+1];if(x)x.focus()},0)}}});
+ g.querySelectorAll('[data-s]').forEach(e=>e.onchange=()=>R[e.dataset.s].sel=e.checked);
+ g.querySelectorAll('[data-r]').forEach(e=>e.onchange=()=>R[e.dataset.r].reason=e.value);
+ g.querySelectorAll('[data-o]').forEach(e=>e.onclick=()=>{R[e.dataset.o].open=!R[e.dataset.o].open;drawG()});
+ all.onchange=()=>{R.forEach(r=>r.sel=all.checked);drawG()};
+}
+okAll.onclick=()=>{R.forEach(r=>{if(r.rec===r.ord&&!changed(r))r.done=true});drawG()};
+okSel.onclick=()=>{const bad=R.find(r=>r.sel&&r.fault&&!r.reason);if(bad){alert('Chọn lý do lỗi Delicare cho '+bad.no);return}R.forEach(r=>{if(r.sel)r.done=true});drawG()};
+drawG();
+</script>
+</body></html>

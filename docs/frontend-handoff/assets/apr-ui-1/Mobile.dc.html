@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phê duyệt – điện thoại</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F766E}a:hover{color:#115E59}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F5F7; font-family: Inter, system-ui, sans-serif; color: #1F2430; font-size: 14px; display: flex; flex-direction: column; overflow: hidden">
+
+<sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+<div style="background: #13232B; color: #fff; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: center"><b style="font-size: 18px">Phê duyệt</b><span style="font-size: 13px; color: #B9C5CA">COO · 16:40</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div style="background: #1E333C; border-radius: 10px; padding: 8px 10px"><div style="font-size: 12px; color: #B9C5CA">Chờ tôi</div><b style="font-size: 20px">7</b></div>
+<div style="background: #4A1D1A; border-radius: 10px; padding: 8px 10px"><div style="font-size: 12px; color: #FECDCA">Quá hạn</div><b style="font-size: 20px">1</b></div>
+<div style="background: #4A3214; border-radius: 10px; padding: 8px 10px"><div style="font-size: 12px; color: #FEDF89">Dưới 8 giờ</div><b style="font-size: 20px">1</b></div>
+</div>
+</div>
+<div style="display: flex; gap: 6px; padding: 10px 12px; overflow-x: auto">
+<span style="flex: none; background: #0F766E; color: #fff; border-radius: 16px; padding: 6px 12px; font-size: 13px">Tất cả 7</span>
+<span style="flex: none; background: #fff; border: 1px solid #D5D9DE; border-radius: 16px; padding: 6px 12px; font-size: 13px">Mua hàng 2</span>
+<span style="flex: none; background: #fff; border: 1px solid #D5D9DE; border-radius: 16px; padding: 6px 12px; font-size: 13px">Nhân sự 2</span>
+<span style="flex: none; background: #fff; border: 1px solid #D5D9DE; border-radius: 16px; padding: 6px 12px; font-size: 13px">Kho 1</span>
+</div>
+<div style="flex: 1; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+<button onClick="{{c.open}}" style="text-align: left; background: #fff; border: 1px solid #E4E7EB; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; color: inherit; font-size: 14px; cursor: pointer">
+<span style="display: flex; justify-content: space-between; gap: 8px"><b>{{c.type}}</b><span style="{{c.dueStyle}}">{{c.due}}</span></span>
+<span>{{c.summary}}</span>
+<span style="color: #5B6270; font-size: 12px">{{c.by}} · {{c.no}}</span>
+<span style="{{c.flagStyle}}">{{c.flag}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isDetail}}" hint-placeholder-val="{{ false }}">
+<div style="background: #fff; padding: 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #E4E7EB">
+<button onClick="{{back}}" aria-label="Quay lại danh sách" style="width: 44px; height: 44px; border: 0; background: #F4F5F7; border-radius: 10px; font-size: 18px">‹</button>
+<div style="flex: 1"><div style="font-size: 12px; color: #5B6270">Đơn mua hàng · 1 / 7</div><b>PO-000123</b></div>
+<span style="color: #B42318; background: #FEF3F2; border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 600">Quá hạn 5 giờ</span>
+</div>
+<div style="flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 18px">NCC Rau sạch Đà Lạt · 38.450.000 đ · 12 dòng</h2>
+<div style="background: #fff; border-radius: 10px; padding: 12px"><div style="font-size: 12px; color: #5B6270; font-weight: 600">VÌ SAO CẦN DUYỆT</div><div style="margin-top: 4px">Đơn mua lập tay, không từ đề nghị mua đã duyệt</div></div>
+<div style="background: #FFFAEB; color: #93370D; border: 1px solid #FEDF89; border-radius: 10px; padding: 12px"><div style="font-size: 12px; font-weight: 600">CẢNH BÁO (2)</div><div style="margin-top: 4px">• Giá cà chua cao hơn lần mua trước 18 %</div><div>• Không phải NCC gợi ý cho cải ngọt</div></div>
+<div style="background: #fff; border-radius: 10px; padding: 4px 12px">
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #EEF0F2"><span>Cà chua · 420 kg</span><b style="color: #B54708">26.000 (+18 %)</b></div>
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #EEF0F2"><span>Cải ngọt · 380 kg</span><span>14.500</span></div>
+<div style="display: flex; justify-content: space-between; padding: 8px 0"><span>Hành lá · 60 kg</span><span>32.000</span></div>
+</div>
+<a href="#" style="font-size: 13px">Xem đủ 12 dòng và chứng từ gốc ↗</a>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">Ý kiến (bắt buộc khi từ chối)<textarea rows="2" style="font: inherit; border: 1px solid #D5D9DE; border-radius: 8px; padding: 8px"></textarea></label>
+</div>
+<div style="background: #fff; border-top: 1px solid #E4E7EB; padding: 12px 16px 20px; display: flex; gap: 10px">
+<button style="flex: 1; height: 52px; border-radius: 12px; border: 1px solid #B42318; background: #fff; color: #B42318; font-weight: 600; font-size: 15px">Từ chối</button>
+<button onClick="{{back}}" style="flex: 2; height: 52px; border-radius: 12px; border: 0; background: #0F766E; color: #fff; font-weight: 600; font-size: 15px">Duyệt · việc tiếp ›</button>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const C = [
+ { type: 'Đơn mua hàng', no: 'PO-000123', summary: 'Rau sạch Đà Lạt · 38,45 tr · 12 dòng', by: 'Nguyễn Văn An', due: 'Quá hạn 5 giờ', dk: 'over', flag: '⚠ 2 cảnh báo · giá cà chua +18 %' },
+ { type: 'Sửa đơn sau chốt', no: 'DH-000456', summary: 'Cty ABC · Trưa 1.200 → 1.350 (+12,5 %)', by: 'Trần Thị Bình', due: 'Còn 3 giờ', dk: 'soon', flag: '⚠ 1 cảnh báo · sẽ sinh mẻ bổ sung' },
+ { type: 'Kế hoạch sản xuất', no: 'KH-241124', summary: '24/11 · 18.640 suất · 42 mẻ', by: 'Hệ thống', due: 'Còn 14 giờ', dk: 'ok', flag: '⚠ 1 cảnh báo · thiếu 35 kg ức gà' },
+ { type: 'Đơn xin nghỉ', no: 'NP-000210', summary: 'Phạm Minh Châu · 26–27/11', by: 'Phạm Minh Châu', due: 'Còn 40 giờ', dk: 'ok', flag: '✓ Bình thường' }
+];
+const DUE = { over: 'color:#B42318;font-weight:600;font-size:12px', soon: 'color:#B54708;font-weight:600;font-size:12px', ok: 'color:#5B6270;font-size:12px' };
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { detail: false }; }
+  renderVals() {
+    return {
+      isList: !this.state.detail, isDetail: this.state.detail,
+      back: () => this.setState({ detail: false }),
+      cards: C.map(c => ({ ...c, dueStyle: DUE[c.dk], open: () => this.setState({ detail: true }),
+        flagStyle: 'align-self:flex-start;margin-top:4px;font-size:12px;font-weight:600;border-radius:6px;padding:3px 8px;' + (c.flag[0] === '✓' ? 'color:#067647;background:#ECFDF3' : 'color:#93370D;background:#FFFAEB') }))
+    };
+  }
+}
+</script>
+</body>
+</html>
