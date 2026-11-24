@@ -46,5 +46,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.OrderWeekModel>> CopyPreviousWeek(AppDelicare.Model.Request.Custom.OrderWeekRequest request);
         public Task<IResult<byte[]>> ExportWeekSlip(AppDelicare.Model.Request.Custom.OrderWeekRequest request);
         public Task<IResult<AppDelicare.Model.Model.OrderWeekSlipModel>> ImportWeekSlip(Guid customerId, Guid locationId, DateTime weekStart, System.IO.Stream file);
+        /// <summary>UI-6.6 (D-85): tổng quan tuần mọi khách / điểm giao, xác nhận nhiều điểm, lấy số dự báo, tải nhiều phiếu.</summary>
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekOverviewModel>> GetWeekOverview(AppDelicare.Model.Model.OrderWeekOverviewRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekConfirmResultModel>> ConfirmWeekPoints(AppDelicare.Model.Model.OrderWeekConfirmRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekModel>> FillWeekFromForecast(AppDelicare.Model.Request.Custom.OrderWeekRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderWeekSlipBatchResultModel>> ImportWeekSlips(DateTime? weekStart, IReadOnlyList<(string Name, System.IO.Stream File)> files);
     }
 }
