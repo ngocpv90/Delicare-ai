@@ -31,5 +31,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResults<AppDelicare.Model.Model.MenuDishSuggestionModel>> SuggestDish(AppDelicare.Model.Model.MenuSuggestRequest request);
         public Task<IResult<AppDelicare.Model.Model.MenuWeekModel>> SubmitWeek(AppDelicare.Model.Request.Custom.MenuActionRequest request);
         public Task<IResult<AppDelicare.Model.Model.MenuAutoDraftResultModel>> AutoDraft(DateTime? weekStart, Guid? sourceId = null, bool blank = false);
+        public Task<IResult<byte[]>> ExportWeekTemplate(AppDelicare.Model.Model.MenuWeekRequest request);
+        public Task<IResult<AppDelicare.Model.Model.MenuImportModel>> ImportWeek(Guid menuId, System.IO.Stream file, bool apply, IReadOnlyDictionary<string, Guid>? picks = null);
     }
 }

@@ -37,7 +37,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X | X | X | X | — | — | — | — | — | X | — | S | Q (IX) | Q (IX) | — | — | — | X | — |
 | Kinh doanh › Đơn đặt suất | `crm-order` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | X | X | X | X | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | — | — | X | — |
-| Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | — | — | — | — | — | — | S | — | X | S | S | X | X (IX) | — | X | — |
+| Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | — | — | — | — | — | — | S | — | X | S | S | X | S (IX) | — | X | — |
 | Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | — | — | — | — | — | — | — | — | X (IX) | X (IX) | X (IX) | — | X (IX) | — | X | — |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | X | — | — | — | — | — | — | S | — | X | X | S | S | — | — | X | S (IX) |
 | Kinh doanh › Điểm giao hàng | `crm-location` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | — | — | X | — |
@@ -144,7 +144,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   SAL-CON       vào  19 mục · ô quyền   67
   SAL-HEAD      vào  25 mục · ô quyền   76
   SAL-CS        vào  11 mục · ô quyền   15
-  FIN-ACC       vào  28 mục · ô quyền   77
+  FIN-ACC       vào  28 mục · ô quyền   79
   FIN-HR        vào  12 mục · ô quyền   42
   FIN-IT        vào 101 mục · ô quyền  214
   QA            vào  29 mục · ô quyền   68

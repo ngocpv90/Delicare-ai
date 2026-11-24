@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Request;
@@ -411,6 +412,53 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " ExportWeekSlip: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>
+        /// UI-6.13 (D-91 b): khách xin đổi món riêng – món của đơn; có OriginalDishId → phạm vi (đơn này + đơn của khách trong khoảng ngày) + 5 gợi ý món thay + tự duyệt từng ô.
+        /// Quyền Xem Đơn đặt suất (KD làm trên trang đơn).
+        /// </summary>
+        [HttpGet("GetDishChange")]
+        public async Task<IActionResult> GetDishChange([FromQuery] AppDelicare.Model.Model.OrderDishChangeRequest request)
+        {
+            try
+            {
+                var svc = HttpContext.RequestServices.GetRequiredService<IMenuChangeRequestService>();
+                var r = await svc.GetOrderDishChange(request ?? new());
+                if (r.ResponseCode == (int)HttpStatusCode.OK && r.Data?.Source is { } src)
+                {
+                    var sug = await HttpContext.RequestServices.GetRequiredService<IMenuService>().SuggestDish(new AppDelicare.Model.Model.MenuSuggestRequest
+                    {
+                        MenuId = src.MenuId, WeekStart = src.MealDate, MealType = src.MealType, OptionNo = src.OptionNo, CategoryId = src.CategoryId, Day = AppDelicare.Services.Implement.MenuService.MenuDayOf(src.MealDate),
+                    });
+                    r.Data.ListSuggestion = (sug.ListData ?? []).Where(x => x.DishId != src.DishId).ToList();
+                }
+                return Ok(r);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDishChange: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.13 (D-91 b): gửi đổi món cho đơn (và các đơn của khách trong khoảng ngày) – JSON; tự duyệt từng ô khi đủ điều kiện. Quyền Sửa Đơn đặt suất.</summary>
+        [HttpPost("RequestDishChange")]
+        public async Task<IActionResult> RequestDishChange([FromBody] AppDelicare.Model.Model.OrderDishChangeRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await HttpContext.RequestServices.GetRequiredService<IMenuChangeRequestService>().CreateForOrder(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RequestDishChange: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

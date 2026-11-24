@@ -233,6 +233,8 @@ public static partial class Seeds
 
         G("FIN-ACC", ix, [.. L("crm-customer crm-contract crm-price-policy crm-order crm-reconciliation crm-billing scm-po scm-gr scm-issue scm-inv-balance scm-inv-txn scm-lot scm-stockcount scm-consumption-var cost-standard cost-actual cost-meal prod-waste log-packaging-ledger log-pod hr-attendance"), .. Kpi]);
         G("FIN-ACC", ViewR, L("scm-supplier scm-supplier-material"));
+        // UI-6.8 (D-86, anh duyệt 2026-11-24): Kế toán chốt đối soát còn lại (dòng khớp tự chốt 24 giờ) → Thêm + Sửa màn Đối soát.
+        G("FIN-ACC", EditR, L("crm-reconciliation"));
 
         G("FIN-HR", OwnR, L("hr-shift adm-position"));
         G("FIN-HR", EditR.Or(ix), L("adm-employee hr-shift-assign hr-attendance hr-leave hr-swap"));

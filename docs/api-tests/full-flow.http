@@ -699,9 +699,9 @@ Content-Type: application/json
 { "purchaseOrderId": "{{poId}}", "warehouseId": "{{warehouseId}}", "note": "[DEMO] nhận hàng",
   "listLine": [
     { "purchaseOrderLineId": "{{po.response.body.data.listLine[0].id}}", "receivedQuantity": {{po.response.body.data.listLine[0].quantity}},
-      "supplierLotNumber": "[DEMO]-LOT-1", "manufactureDate": "{{$datetime "YYYY-MM-DD"}}", "expiryDate": "{{$datetime "YYYY-MM-DD" 30 d}}" },
+      "supplierLotNumber": "[DEMO]-LOT-1", "manufactureDate": "{{$datetime "YYYY-MM-DD"}}", "expiryDate": "{{$dayDatetime "YYYY-MM-DD" 30 d}}" },
     { "purchaseOrderLineId": "{{po.response.body.data.listLine[1].id}}", "receivedQuantity": {{po.response.body.data.listLine[1].quantity}},
-      "supplierLotNumber": "[DEMO]-LOT-2", "manufactureDate": "{{$datetime "YYYY-MM-DD"}}", "expiryDate": "{{$datetime "YYYY-MM-DD" 30 d}}" } ] }
+      "supplierLotNumber": "[DEMO]-LOT-2", "manufactureDate": "{{$datetime "YYYY-MM-DD"}}", "expiryDate": "{{$dayDatetime "YYYY-MM-DD" 30 d}}" } ] }
 
 ###
 @grId = {{gr.response.body.data.goodsReceipt.id}}
@@ -751,7 +751,7 @@ Content-Type: application/json
 
 { "purchaseOrderId": "{{poDkId}}", "warehouseId": "{{warehouseId}}", "note": "[DEMO] nhận gạo định kỳ",
   "listLine": [ { "purchaseOrderLineId": "{{poDk.response.body.data.listLine[0].id}}", "receivedQuantity": 50,
-      "supplierLotNumber": "[DEMO]-LOT-DK", "manufactureDate": "{{$datetime "YYYY-MM-DD"}}", "expiryDate": "{{$datetime "YYYY-MM-DD" 20 d}}" } ] }
+      "supplierLotNumber": "[DEMO]-LOT-DK", "manufactureDate": "{{$datetime "YYYY-MM-DD"}}", "expiryDate": "{{$dayDatetime "YYYY-MM-DD" 20 d}}" } ] }
 
 ###
 POST {{base}}/api/QcInspection/Conclude

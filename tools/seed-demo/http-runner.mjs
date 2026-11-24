@@ -10,7 +10,13 @@ function fmt(d, f, utc) {
   return f.replace('YYYY', g('FullYear')).replace('MM', pad(g('Month') + 1)).replace('DD', pad(g('Date')))
     .replace('HH', pad(g('Hours'))).replace('mm', pad(g('Minutes'))).replace('ss', pad(g('Seconds')));
 }
-function dyn(expr) {
+// {{$dayDatetime "fmt" N d}}: mốc = ngày muộn hơn giữa hôm nay và biến @day – hạn lô theo ngày ăn chạy thử (không hết hạn trước ngày sản xuất).
+function dyn(expr, vars = {}) {
+  const dd = expr.match(/^\$dayDatetime\s+"([^"]+)"(?:\s+(-?\d+)\s+d)?$/);
+  if (dd) {
+    const now = new Date(), base = vars.day ? new Date(vars.day + 'T00:00:00Z') : now, from = base > now ? base : now;
+    return fmt(new Date(from.getTime() + (dd[2] ? Number(dd[2]) * 864e5 : 0)), dd[1], true);
+  }
   const m = expr.match(/^\$(datetime|localDatetime)\s+"([^"]+)"(?:\s+(-?\d+)\s+(d|h|m))?$/);
   if (!m) return null;
   const d = new Date(Date.now() + (m[3] ? Number(m[3]) * { d: 864e5, h: 36e5, m: 6e4 }[m[4]] : 0));
@@ -48,7 +54,7 @@ export async function runHttpFile(file, overrides = {}, log = () => { }) {
     for (let i = 0; i < 5 && /\{\{[^}]+\}\}/.test(s); i++) {
       s = s.replace(/\{\{([^}]+)\}\}/g, (all, e) => {
         e = e.trim();
-        if (e.startsWith('$')) return dyn(e) ?? all;
+        if (e.startsWith('$')) return dyn(e, vars) ?? all;
         const r = e.match(/^([A-Za-z0-9_]+)\.response\.body\.?(.*)$/);
         if (r) { const v = getPath(named[r[1]]?.body, r[2]); return v === undefined || v === null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); }
         return e in vars ? vars[e] : all;

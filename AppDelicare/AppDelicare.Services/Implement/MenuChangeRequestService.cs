@@ -21,7 +21,7 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     public partial class MenuChangeRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IMenuChangeRequestService
+        , IClock clock, ICurrentActor currentActor, IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules, INotificationService notifications) : IMenuChangeRequestService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -455,8 +455,14 @@ namespace AppDelicare.Services.Implement
             DateTime day = r.MealDate.Date, next = day.AddDays(1);
             var plan = _unitOfWork.ProductionPlanRepository.GetAll().Where(p => !p.IsDeleted && p.ProductionDate >= day && p.ProductionDate < next)
                 .OrderBy(p => p.CreatedDate).FirstOrDefault();
-            if (plan == null || plan.Status != ProductionPlanStatus.Draft)
+            if (plan == null)
             {
+                return null;
+            }
+            if (plan.Status != ProductionPlanStatus.Draft)
+            {
+                // UI-6.13 (D-91 c): kế hoạch đã phát hành → không tự sửa; bot 🔴 bếp + kho + kế hoạch kèm món cũ → mới, số suất, ngày (xử lý tay).
+                await AlertReleasedPlanAsync(r, plan);
                 return null;
             }
             var lines = _unitOfWork.ProductionPlanLineRepository.GetAll().Where(l => l.ProductionPlanId == plan.Id && !l.IsDeleted).ToList();

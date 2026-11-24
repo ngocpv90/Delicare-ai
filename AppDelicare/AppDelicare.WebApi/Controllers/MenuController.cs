@@ -343,6 +343,50 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.11: mẫu Excel thực đơn tuần (sheet "1. Menu": Buổi · Lựa chọn · Nhóm món · T2…CN, điền sẵn món) – khung để điền, quyền Xem.</summary>
+        [HttpGet("GetWeekTemplate")]
+        public async Task<IActionResult> GetWeekTemplate([FromQuery] AppDelicare.Model.Model.MenuWeekRequest request)
+        {
+            try
+            {
+                var r = await _service.ExportWeekTemplate(request ?? new());
+                if (r.ResponseCode != 200 || r.Data == null)
+                {
+                    return Ok(r);
+                }
+                return File(r.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"ThucDon_Tuan_{(request?.WeekStart ?? DateTime.Today):yyyyMMdd}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExportWeekTemplate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.11: tải Excel thực đơn tuần – apply=false xem trước khớp món, apply=true ghi (picks = JSON {"hàng|thứ": dishId} chọn tay). Form. Quyền Nhập.</summary>
+        [HttpPost("ImportWeek")]
+        public async Task<IActionResult> ImportWeek([FromForm] Guid menuId, [FromForm] bool apply, [FromForm] string? picks, IFormFile? file)
+        {
+            try
+            {
+                if (file == null || !Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(ConstantHelper.Message.FileCorrectFormat);
+                }
+                var map = string.IsNullOrWhiteSpace(picks) ? null : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, Guid>>(picks);
+                await using var stream = file.OpenReadStream();
+                using var copy = new MemoryStream();
+                await stream.CopyToAsync(copy);
+                copy.Position = 0;
+                return Ok(await _service.ImportWeek(menuId, copy, apply, map));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ImportWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>UI-6.11: tạo thực đơn tuần – nhân bản tuần N − 4 (mặc định) / tuần chọn (SourceId) / khung trống (Blank). Form. Quyền Thêm.</summary>
         [HttpPost("CreateWeek")]
         public async Task<IActionResult> CreateWeek([FromForm] DateTime? weekStart, [FromForm] Guid? sourceId, [FromForm] bool blank)
