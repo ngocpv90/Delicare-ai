@@ -352,10 +352,8 @@ namespace AppDelicare.Services.Implement
                 return [];
             }
             var batchIds = batches.Select(b => b.Id).ToList();
-            var itemIds = await db.FoodSafetyChecklistItem.AsNoTracking().Where(i => i.ItemCode == ProductionCode.SampleRetainedItem).Select(i => i.Id).ToListAsync();
-            var sampled = await db.FoodSafetyChecklistResult.AsNoTracking()
-                .Where(r => !r.IsDeleted && r.ProductionBatchId != null && batchIds.Contains(r.ProductionBatchId.Value) && itemIds.Contains(r.ChecklistItemId))
-                .Select(r => r.ProductionBatchId!.Value).Distinct().ToListAsync();
+            // UI-6.25 (D-106): lưu mẫu theo món × ca – lệnh SX đã có mẫu → mọi mẻ của lệnh đủ điều kiện xuất chuyến.
+            var sampledOrders = await ProductionRules.OrderSamplesAsync(db, [.. batches.Select(b => b.ProductionOrderId).Distinct()]);
             var dishIds = batches.Select(b => b.DishId).Distinct().ToList();
             var dishes = await db.Dish.AsNoTracking().Where(d => dishIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name);
             // BE2.5: tiêu chí ATTP trọng yếu đang KHÔNG ĐẠT của mẻ (chặn xuất chuyến – D-54 d).
@@ -367,7 +365,7 @@ namespace AppDelicare.Services.Implement
                 DishName = dishes.GetValueOrDefault(b.DishId),
                 Status = b.Status,
                 StatusName = ProductionBatchStatus.Label(b.Status),
-                SampleRetained = sampled.Contains(b.Id),
+                SampleRetained = sampledOrders.ContainsKey(b.ProductionOrderId),
                 OpenCriticalFailures = critical.GetValueOrDefault(b.Id) ?? [],
             }).OrderBy(b => b.BatchNumber, StringComparer.Ordinal)];
         }

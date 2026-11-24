@@ -443,3 +443,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Màn Món ăn: cột nhóm hiện dây chuyền của từng nhóm (cam = chưa gán); ⋯ → Gán dây chuyền; đổi tên nhóm không mất dây chuyền.
 - [ ] Ra lệnh kế hoạch có món của 2 nhóm / 2 dây chuyền: mỗi lệnh đúng dây chuyền, số mẻ = suất ÷ công suất (làm tròn lên), giờ mỗi mẻ theo phút / mẻ; món nhóm chưa gán → 1 mẻ + cảnh báo. Bảng mẻ không còn cột "Chưa gán dây chuyền" khi mọi nhóm đã gán.
 - [ ] Tab Bàn nấu: không còn tọa độ / bán kính; In QR bàn nấu vẫn in được.
+
+## UI-6.25 – Mẻ nấu 1 chạm, chế độ Dây chuyền / Bếp trưởng, lưu mẫu theo món × ca (D-106)
+- [ ] Màn Mẻ nấu: một ngày (◀ ▶, chọn ngày), 4 thẻ ca (giờ xuất bếp, x/y mẻ xong, trễ, tiến độ); công tắc Dây chuyền / Bếp trưởng nhớ sau khi tải lại.
+- [ ] Dây chuyền: chọn dây chuyền → Bắt đầu nấu → **Xong mẻ**: nhập lõi bằng bàn phím số (Đạt / Dưới ngưỡng hiện ngay; dưới ngưỡng bắt nhập khắc phục), số suất −/+, tích "Đã lưu mẫu" (không tích sẵn), hao hụt chip → thông báo "tự Đạt QC" hoặc "Chờ QC: …".
+- [ ] Mẻ thứ 2 cùng món trong ca: hộp Xong mẻ hiện "Đã lưu ở mẻ trước" → tự Đạt không cần lưu lại. Món khác chưa lưu → Chờ QC "Chưa lưu mẫu"; bấm **Đã lưu mẫu** ở khối Chờ QC.
+- [ ] **Xong & bắt đầu <món kế tiếp>** chỉ hiện khi có mẻ Chờ nấu cùng dây chuyền; bấm → mẻ kế tiếp Đang nấu.
+- [ ] Bếp trưởng: 4 chỉ số; Cần làm ngay + **Bắt đầu cả n mẻ**; tab Theo giờ (thanh mẻ, viền đỏ trễ, vạch Bây giờ / Hạn xong nấu); tab Sản lượng & hao hụt ca.
+- [ ] Xuất chuyến: mẻ của món × ca đã lưu mẫu (ở mẻ khác) không còn bị chặn "chưa lưu mẫu".
+- [ ] Vai trò: OPS-KIT thao tác được; QA thấy Đạt / Tạm giữ / Loại ở mẻ Chờ QC; COO chỉ xem; Kinh doanh không mở được.

@@ -856,3 +856,31 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .pk-side h3{font-size:14px;margin:0 0 8px}.pk-po{padding:6px 0;border-bottom:1px solid #F0F2ED}
 @media(max-width:1100px){.pk-two{grid-template-columns:1fr}.pk-line{grid-template-columns:1fr}}
 .pr-lines input[type=date]{width:140px}.pr-lines .pr-u{min-width:90px;max-width:140px}.pr-lines td{white-space:nowrap}.pr-lines td.small{white-space:normal;min-width:180px}
+/* UI-6.25 (D-106): Mẻ nấu – thẻ ca, chế độ Dây chuyền / Bếp trưởng, hộp Xong mẻ, Theo giờ */
+.bb-shifts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.bb-shift{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px;cursor:pointer;font:inherit;color:inherit}
+.bb-shift.on{border-color:#7FA43A;box-shadow:0 0 0 2px #DCE8C6}
+.bb-bar{display:block;height:6px;border-radius:4px;background:#EEF1EC;overflow:hidden;margin-top:4px}.bb-bar i{display:block;height:100%;background:#7FA43A}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.seg-b{border:0;background:transparent;padding:8px 16px;font:inherit;font-size:13px;cursor:pointer;color:#6b756e}.seg-b.on{background:#EFF5E5;color:#3F5A17;font-weight:600}
+.bb-now{display:flex;justify-content:space-between;align-items:center;gap:16px;border:2px solid #F2B98A;background:#FFF8F1;border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.bb-now.idle{border-color:#A9C7EA;background:#F4F8FD}.bb-now h3{margin:4px 0;font-size:20px}
+.bb-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.bb-big{height:52px;font-size:16px;padding:0 22px}
+.bb-qc{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}.bb-qc:first-of-type{border-top:0}
+tr.bb-late td{background:#FFF5F4}
+.bb-done{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.bb-temp{display:flex;gap:8px;align-items:center}.bb-temp .input{font-size:22px;height:48px;font-weight:700;max-width:160px}
+.bb-pad{display:grid;grid-template-columns:repeat(3,64px);gap:6px;margin-top:8px}.bb-pad .btn{height:46px;font-size:18px;justify-content:center}
+.bb-qty{display:flex;gap:6px;align-items:center}.bb-qty .input{max-width:110px;text-align:center;font-size:18px}.bb-qty .btn{width:42px;justify-content:center;font-size:18px}
+.bb-tl{position:relative;min-width:860px}
+.bb-tl-row{display:flex;border-bottom:1px solid var(--line)}.bb-tl-name{width:180px;flex:none;padding:8px;font-size:13px;font-weight:600;position:sticky;left:0;background:#fff;z-index:2}
+.bb-tl-track{position:relative;flex:1;min-height:36px}.bb-tl-head .bb-tl-track{height:24px}
+.bb-tl-hour{position:absolute;top:4px;font-size:11px;color:#6b756e;transform:translateX(-50%)}
+.bb-tl-bar{position:absolute;height:26px;border-radius:6px;font-size:11px;line-height:24px;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid transparent;color:#1E2620;text-decoration:none}
+.bb-tl-bar.wait,.bb-sw.wait{background:#E6F1FB;border-color:#A9C7EA}.bb-tl-bar.cook,.bb-sw.cook{background:#FDF0E6;border-color:#F2B98A}.bb-tl-bar.qc,.bb-sw.qc{background:#FFF8DC;border-color:#E9D27A}
+.bb-tl-bar.ok,.bb-sw.ok{background:#EFF5E5;border-color:#B9CB97}.bb-tl-bar.bad,.bb-sw.bad{background:#FDECEA;border-color:#E9A8A1}.bb-tl-bar.late{border:2px solid #B42318}.bb-tl-bar.extra{border-style:dashed}
+.bb-sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid;vertical-align:-2px;margin-right:4px}
+.bb-tl-mark{position:absolute;top:0;bottom:0;width:0;border-left:2px solid #2F64A0;z-index:3;pointer-events:none}.bb-tl-mark.dl{border-left:2px dashed #B42318}
+.bb-tl-mark span{position:absolute;top:-2px;left:4px;font-size:10px;background:#fff;padding:0 3px;white-space:nowrap}
+@media(max-width:1100px){.bb-shifts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.bb-now{flex-direction:column;align-items:stretch}.bb-done{grid-template-columns:1fr}.bb-big{width:100%}}

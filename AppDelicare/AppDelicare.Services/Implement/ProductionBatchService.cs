@@ -48,7 +48,7 @@ namespace AppDelicare.Services.Implement
             }
             var db = _unitOfWork.DbContext;
             var missing = await ProductionRules.SafetyBlockersAsync(db, batch, _rules, needOutput: true);
-            if ((await ProductionRules.SamplesAsync(db, batch.Id)).Count == 0 && !missing.Contains(ConstantHelper.Message.SampleMissing))
+            if (!await ProductionRules.OrderSampledAsync(db, batch.ProductionOrderId) && !missing.Contains(ConstantHelper.Message.SampleMissing))
             {
                 missing.Add(ConstantHelper.Message.SampleMissing);
             }
@@ -579,6 +579,138 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>
+        /// UI-6.25 (D-106): "Xong mẻ" một chạm – MỘT giao dịch: nhiệt độ lõi (bắt buộc; dưới ngưỡng → bắt buộc khắc phục), lưu mẫu (khi người dùng xác nhận và món × ca
+        /// chưa có mẫu), sản lượng (mặc định = kế hoạch mẻ, loại 0), hao hụt trong mẻ (nếu có), kết thúc nấu → Chờ QC → tự Đạt (BIZ-2.7) trong RunAsync.
+        /// <c>StartNextBatchId</c>: cùng giao dịch bắt đầu mẻ Chờ nấu kế tiếp CÙNG dây chuyền. Lỗi bất kỳ → không ghi gì. Action lẻ cũ giữ cho bot / trang mẻ.
+        /// </summary>
+        public Task<IResult<ProductionBatchDetailModel>> Complete(ProductionBatchCompleteRequest request)
+            => RunAsync(request.Id, "xong mẻ", [ProductionBatchStatus.Cooking], async (batch, order, actor, warnings) =>
+            {
+                var db = _unitOfWork.DbContext;
+                if (request.CoreTemperatureC is not { } temp)
+                {
+                    return ConstantHelper.Message.CoreTempMissing;
+                }
+                decimal min = _rules.CoreTempMinC;
+                bool within = temp >= min;
+                string? corrective = string.IsNullOrWhiteSpace(request.CorrectiveAction) ? null : request.CorrectiveAction.Trim();
+                if (!within && corrective == null)
+                {
+                    return string.Format(ConstantHelper.Message.CoreTempCorrectiveRequired, ProductionRules.Num(temp), ProductionRules.Num(min));
+                }
+                if (await StageNotDoneAsync(batch, ProductionCode.StageCook))
+                {
+                    return string.Format(ConstantHelper.Message.StageCookNotDone, Number(batch));
+                }
+                decimal planned = batch.PlannedQuantity ?? batch.PlannedQty ?? 0m;
+                decimal produced = request.ProducedQuantity ?? planned;
+                if (produced <= 0)
+                {
+                    return ConstantHelper.Message.OutputQuantityInvalid;
+                }
+                foreach (var w in request.ListWaste)
+                {
+                    if (w.QuantityMeals is not > 0 && w.QuantityKg is not > 0 || w.QuantityMeals < 0 || w.QuantityKg < 0)
+                    {
+                        return ConstantHelper.Message.WasteQuantityRequired;
+                    }
+                }
+                DateTime now = _clock.Now;
+                _unitOfWork.TemperatureLogRepository.Add(new TemperatureLog
+                {
+                    Id = Guid.NewGuid(), ProductionBatchId = batch.Id, MeasurementType = ProductionCode.CoreMeasurement, TemperatureC = temp, MinAllowedC = min, IsWithinRange = within,
+                    MeasuredAt = now, SourceChannel = "MANUAL", RecordedBy = actor.UserId, CorrectiveAction = corrective,
+                });
+                if (!within)
+                {
+                    warnings.Add(string.Format(ConstantHelper.Message.CoreTempBelowWarning, ProductionRules.Num(temp), ProductionRules.Num(min)));
+                    await BusinessNotifier.ToMenusAsync(_notifications, db, NotificationCatalog.CoreTempLow, ["#/prod-batch", "#/qc-checklist-result"],
+                        new { title = "Mẻ " + (batch.BatchNumber ?? batch.BatchNo), detail = $"Lõi {ProductionRules.Num(temp)} °C < {ProductionRules.Num(min)} °C lúc {now:HH:mm} – khắc phục: {corrective}" },
+                        $"{NotificationCatalog.CoreTempLow}:{batch.Id:N}:{now:yyyyMMddHHmmss}",
+                        buttons: [new NotificationButton("🔍 Xem mẻ", BusinessNotifier.Callback("bat", "view", batch.Id))], except: actor.UserId);
+                }
+                var sampled = await ProductionRules.OrderSamplesAsync(db, [order.Id]);
+                if (request.RetainSample && !sampled.ContainsKey(order.Id))
+                {
+                    var item = await ProductionRules.SampleItemAsync(db);
+                    if (item == null)
+                    {
+                        return ConstantHelper.Message.SampleChecklistMissing;
+                    }
+                    _unitOfWork.FoodSafetyChecklistResultRepository.Add(new FoodSafetyChecklistResult
+                    {
+                        Id = Guid.NewGuid(), ChecklistId = item.ChecklistId, ChecklistItemId = item.Id, CheckDate = now.Date, ShiftId = order.ShiftId, ProductionBatchId = batch.Id,
+                        WorkstationId = batch.KitchenWorkstationId, ResultCode = ProductionCode.ResultPass, CheckedBy = actor.UserId, CheckedAt = now,
+                        ActualValue = string.IsNullOrWhiteSpace(request.SampleNote) ? null : request.SampleNote.Trim(),
+                    });
+                }
+                decimal wasteMeals = 0m;
+                foreach (var w in request.ListWaste)
+                {
+                    string type = string.IsNullOrWhiteSpace(w.WasteType) ? ProductionCode.WasteOverProduction : w.WasteType.Trim().ToUpperInvariant();
+                    AddWaste(batch, order, actor, type, w.QuantityMeals, w.QuantityKg, w.Reason, null);
+                    wasteMeals += w.QuantityMeals ?? 0m;
+                }
+                if (wasteMeals > 0 || request.ListWaste.Count != 0)
+                {
+                    batch.WasteQty = await WasteMealsAsync(batch.Id) + wasteMeals;
+                }
+                batch.Status = ProductionBatchStatus.QcPending;
+                batch.EndTime = now;
+                batch.ActualQty = produced;
+                batch.ActualQuantity = produced;
+                var output = UpsertOutput(batch, produced, 0m, batch.QcStatus, request.Note);
+                batch.AcceptedQty = output.AcceptedQuantity;
+                batch.RejectedQty = output.RejectedQuantity;
+                // Bắt đầu mẻ kế tiếp cùng dây chuyền (cùng giao dịch).
+                if (request.StartNextBatchId is { } nextId && nextId != Guid.Empty)
+                {
+                    var next = _unitOfWork.ProductionBatchRepository.GetSingle(x => x.Id == nextId && !x.IsDeleted);
+                    if (next == null || next.Status != ProductionBatchStatus.Planned)
+                    {
+                        return ConstantHelper.Message.BatchNextNotPlanned;
+                    }
+                    var nextOrder = next.ProductionOrderId == order.Id ? order : _unitOfWork.ProductionOrderRepository.GetSingle(x => x.Id == next.ProductionOrderId && !x.IsDeleted);
+                    if (nextOrder == null || order.ProductionLineId == null || nextOrder.ProductionLineId != order.ProductionLineId)
+                    {
+                        return ConstantHelper.Message.BatchNextOtherLine;
+                    }
+                    next.Status = ProductionBatchStatus.Cooking;
+                    next.StartTime = now;
+                    if (nextOrder.Status == ProductionOrderStatus.Released)
+                    {
+                        nextOrder.Status = ProductionOrderStatus.InProgress;
+                    }
+                    nextOrder.ActualStartDate ??= now;
+                    _unitOfWork.ProductionBatchRepository.Update(next);
+                    _unitOfWork.ProductionOrderRepository.Update(nextOrder);
+                    warnings.Add(string.Format(ConstantHelper.Message.BatchNextStarted, next.BatchNumber ?? next.BatchNo));
+                }
+                _unitOfWork.ProductionOrderRepository.Update(order);
+                return null;
+            });
+
+        /// <summary>UI-6.25 (D-106): bắt đầu nhiều mẻ đến giờ một lần (khối "Cần làm ngay") – từng mẻ kiểm như Start, trả mẻ thành công / lỗi.</summary>
+        public async Task<IResult<ProductionBatchStartManyModel>> StartMany(ProductionBatchStartManyRequest request)
+        {
+            var model = new ProductionBatchStartManyModel();
+            foreach (Guid id in request.ListId.Distinct())
+            {
+                var r = await Start(new ProductionBatchStartRequest { Id = id });
+                if (r.ResponseCode == 200)
+                {
+                    model.ListStarted.Add(id);
+                }
+                else
+                {
+                    model.ListFailed.Add(new ProductionBatchStartFailModel { Id = id, Message = r.ResponseMessage });
+                }
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+            }
+            return Result<ProductionBatchStartManyModel>.Success(model, string.Format(ConstantHelper.Message.BatchStartManyDone, model.ListStarted.Count, model.ListFailed.Count));
+        }
+
+        /// <summary>
         /// T17 (BUSINESS_RULES §6): ghi nhiệt độ lõi – TemperatureLog CORE (sổ chỉ ghi thêm), MinAllowedC = CoreTempMinC (70 °C), IsWithinRange tính ở server.
         /// Dưới ngưỡng → bắt buộc hành động khắc phục, mẻ bị chặn đạt QC / đóng gói tới khi đo lại đạt (lần đo gần nhất quyết định).
         /// </summary>
@@ -641,6 +773,12 @@ namespace AppDelicare.Services.Implement
                 if (existing != null)
                 {
                     return string.Format(ConstantHelper.Message.SampleAlready, ProductionRules.Time(existing.CheckedAt));
+                }
+                // UI-6.25 (D-106): món × ca (lệnh SX) đã lưu mẫu ở mẻ khác → không ghi thêm, báo giờ đã lưu (không lỗi).
+                if ((await ProductionRules.OrderSamplesAsync(db, [order.Id])).TryGetValue(order.Id, out var orderSample))
+                {
+                    warnings.Add(string.Format(ConstantHelper.Message.SampleAlreadyForDishShift, ProductionRules.Time(orderSample.At), orderSample.BatchNumber));
+                    return null;
                 }
                 DateTime at = request.CheckedAt ?? _clock.Now;
                 _unitOfWork.FoodSafetyChecklistResultRepository.Add(new FoodSafetyChecklistResult
@@ -755,7 +893,7 @@ namespace AppDelicare.Services.Implement
                 {
                     return string.Format(ConstantHelper.Message.BatchCannotRelease, Number(batch), string.Join("; ", blockers));
                 }
-                if (!_rules.ProductionRequireSampleBeforeRelease && (await ProductionRules.SamplesAsync(_unitOfWork.DbContext, batch.Id)).Count == 0)
+                if (!_rules.ProductionRequireSampleBeforeRelease && !await ProductionRules.OrderSampledAsync(_unitOfWork.DbContext, batch.ProductionOrderId))
                 {
                     // Anh chốt 2026-11-16: lưu mẫu bắt buộc trước khi giao (chặn ở DeliveryRoute/Dispatch) – đạt QC chỉ cảnh báo.
                     warnings.Add(ConstantHelper.Message.SampleMissing + " – bắt buộc trước khi xuất chuyến giao");
@@ -889,15 +1027,43 @@ namespace AppDelicare.Services.Implement
                     var lineOrders = orders.Where(o => o.ProductionLineId != null && lines.Contains(o.ProductionLineId.Value)).Select(o => o.Id).ToHashSet();
                     batches = [.. batches.Where(b => lineOrders.Contains(b.ProductionOrderId) || (b.KitchenWorkstationId != null && stations.Contains(b.KitchenWorkstationId.Value)))];
                 }
-                var list = await ProductionRules.BatchBriefsAsync(db, batches, _rules);
-                return Result<ProductionBoardModel>.Success(new ProductionBoardModel
+                DateTime now = _clock.Now;
+                var list = await ProductionRules.BatchBriefsAsync(db, batches, _rules, now);
+                // UI-6.25 (D-106): lý do chưa tự Đạt của mẻ Chờ QC (không tạm giữ).
+                foreach (var brief in list.Where(b => b.Status == ProductionBatchStatus.QcPending))
+                {
+                    var src = batches.First(b => b.Id == brief.Id);
+                    brief.ListAutoPassMissing = await ProductionRules.SafetyBlockersAsync(db, src, _rules, needOutput: true);
+                    if (!brief.SampleRetained && !brief.ListAutoPassMissing.Contains(ConstantHelper.Message.SampleMissing))
+                    {
+                        brief.ListAutoPassMissing.Add(ConstantHelper.Message.SampleMissing);
+                    }
+                }
+                var shiftIds = list.Where(b => b.ShiftId != null).Select(b => b.ShiftId!.Value).Distinct().ToList();
+                var shifts = await db.Shift.AsNoTracking().Where(x => shiftIds.Contains(x.Id)).ToListAsync();
+                var model = new ProductionBoardModel
                 {
                     ProductionDate = date,
                     ListBatch = list,
                     StatusCounts = list.GroupBy(b => b.Status ?? string.Empty).ToDictionary(g => g.Key, g => g.Count()),
                     PlannedPortions = list.Sum(b => b.PlannedQuantity),
                     PassedPortions = list.Where(b => b.Status is ProductionBatchStatus.Passed or ProductionBatchStatus.Packed).Sum(b => b.AcceptedQuantity ?? b.ActualQuantity ?? 0m),
-                }, ConstantHelper.Message.GetAllSuccessfully);
+                    Now = now, CoreTempMinC = _rules.CoreTempMinC, BatchLateStartMinutes = _rules.BatchLateStartMinutes, BatchQcWaitWarnMinutes = _rules.BatchQcWaitWarnMinutes,
+                    ListShift = [.. shifts.OrderBy(x => x.StartTime ?? TimeSpan.MaxValue).ThenBy(x => x.Code).Select(x =>
+                    {
+                        var mine = list.Where(b => b.ShiftId == x.Id).ToList();
+                        DateTime? dispatch = mine.Count == 0 ? null : mine.Max(b => b.PlannedEnd ?? b.PlannedStart).AddMinutes(_rules.ProductionPackingMinutes);
+                        return new ProductionBoardShiftModel
+                        {
+                            ShiftId = x.Id, ShiftCode = x.Code, ShiftName = x.Name ?? x.Code, StartTime = x.StartTime, DispatchAt = dispatch, CookDeadline = dispatch?.AddMinutes(-_rules.ProductionPackingMinutes),
+                            BatchTotal = mine.Count, BatchDone = mine.Count(b => b.Status is ProductionBatchStatus.Passed or ProductionBatchStatus.Packed or ProductionBatchStatus.Failed),
+                            LateCount = mine.Count(b => b.LateStart || b.LateFinish || b.QcWaitLong),
+                        };
+                    })],
+                    ListLine = [.. list.GroupBy(b => b.ProductionLineId).Select(g => new ProductionBoardLineModel { Id = g.Key, Name = g.Key == null ? "Chưa gán dây chuyền" : g.First().ProductionLineName })
+                        .OrderBy(l => l.Id == null ? 1 : 0).ThenBy(l => l.Name)],
+                };
+                return Result<ProductionBoardModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)
             {

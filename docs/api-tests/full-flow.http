@@ -1069,14 +1069,15 @@ Content-Type: application/x-www-form-urlencoded
 
 Id={{batch2}}
 
-###
-POST {{base}}/api/ProductionBatch/RecordCoreTemperature
+### UI-6.25 (D-106): XONG MẺ một chạm – lõi 82 °C + 1000 suất + kết thúc nấu trong 1 giao dịch; chưa lưu mẫu (không xác nhận) → Chờ QC kèm lý do
+# @expect data.batch.status == QCPending
+POST {{base}}/api/ProductionBatch/Complete
 Authorization: Bearer {{token}}
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-Id={{batch2}}&TemperatureC=82&DeviceCode=[DEMO]-NK
+{ "id": "{{batch2}}", "coreTemperatureC": 82, "producedQuantity": 1000, "retainSample": false, "note": "[DEMO] Xong mẻ một chạm" }
 
-###
+### CHỐT AN TOÀN → 400: mẻ đã Xong mẻ (Chờ QC) không kết thúc nấu lần nữa
 POST {{base}}/api/ProductionBatch/Finish
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded

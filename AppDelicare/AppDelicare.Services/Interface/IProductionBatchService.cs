@@ -30,6 +30,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<MaterialIssueDetailModel>> CreateMaterialIssue(ProductionBatchIssueRequest request);
         public Task<IResult<ProductionBatchDetailModel>> Start(ProductionBatchStartRequest request);
         public Task<IResult<ProductionBatchDetailModel>> Finish(ProductionBatchFinishRequest request);
+        public Task<IResult<ProductionBatchDetailModel>> Complete(AppDelicare.Model.Model.ProductionBatchCompleteRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ProductionBatchStartManyModel>> StartMany(AppDelicare.Model.Model.ProductionBatchStartManyRequest request);
         public Task<IResult<ProductionBatchDetailModel>> RecordCoreTemperature(ProductionBatchTemperatureRequest request);
         public Task<IResult<ProductionBatchDetailModel>> RecordSampleRetained(ProductionBatchSampleRequest request);
         public Task<IResult<ProductionBatchDetailModel>> RecordOutput(ProductionBatchOutputRequest request);

@@ -55,7 +55,15 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 
 ## 4. Thao tác từng bước
 
-### 4.1 Bảng điều độ mẻ – `prod-batch`
+### 4.0 Mẻ nấu – 1 chạm mỗi mẻ (UI-6.25, D-106)
+Màn **Mẻ nấu** xem **một ngày** (◀ ngày ▶ hoặc chọn ngày) và **một ca** (4 thẻ ca: giờ xuất bếp, x/y mẻ xong, số mẻ trễ, thanh tiến độ – mặc định ca đang chạy). Công tắc **Dây chuyền / Bếp trưởng** (máy nhớ lựa chọn).
+- **Chế độ Dây chuyền** (bếp đứng máy): chọn dây chuyền (máy nhớ) → khối **ĐANG NẤU** (món, suất, giờ, đã lưu mẫu món trong ca chưa) với nút to **Xong mẻ** và **Ghi hao hụt**; chưa có mẻ đang nấu → nút to **Bắt đầu nấu** mẻ kế tiếp. Khối **Mẻ chờ QC – cần bổ sung** (lý do chưa tự Đạt + nút **Đã lưu mẫu**; QA có Đạt / Tạm giữ / Loại). Cột **Tiếp theo** (trễ tô đỏ) và **Đã xong trong ca**.
+- **Hộp Xong mẻ**: Nhiệt độ lõi* (bàn phím số to; báo Đạt / Dưới ngưỡng ngay – dưới ngưỡng phải nhập hành động khắc phục) · Số suất nấu được (mặc định kế hoạch, nút −/+) · **Lưu mẫu món này trong ca** (đã lưu ở mẻ trước → hiện giờ đã lưu; chưa → ô xác nhận **không tích sẵn**) · Hao hụt trong mẻ (Hư hỏng / Hao hụt sơ chế / Hỏng khi đóng gói + số suất). Nút **Xong mẻ** hoặc **Xong & bắt đầu <món kế tiếp> (giờ)** (cùng dây chuyền). Đủ điều kiện → "hệ thống tự Đạt QC"; thiếu → "Chờ QC: <thiếu gì>". Tất cả ghi trong 1 lần – lỗi thì không ghi gì.
+- **Lưu mẫu theo món × ca**: mẻ đầu của món trong ca lưu mẫu, các mẻ sau dùng lại (tự Đạt và xuất chuyến đều tính theo món × ca). Ghi lưu mẫu lần nữa → báo "Món này trong ca đã lưu mẫu lúc …".
+- **Chế độ Bếp trưởng**: 4 chỉ số (Mẻ của ca · Đang nấu · Tự Đạt QC / cần QA xem · Trễ / cần xử lý); khối **Cần làm ngay** (đến giờ chưa bắt đầu – nút Bắt đầu / **Bắt đầu cả n mẻ**; quá giờ xong – Xong mẻ; chờ QC quá 20 phút – mở mẻ); tab **Theo giờ** (mỗi dây chuyền một dòng, mẻ là thanh theo giờ, màu theo trạng thái, viền đỏ = trễ, viền đứt = nấu thêm, vạch Bây giờ và Hạn xong nấu; bấm thanh mở trang mẻ); tab **Sản lượng & hao hụt ca** theo món (mẻ xong, kế hoạch, nấu được, đạt, loại QC, hao hụt khác, %).
+- Ngưỡng trễ trong cấu hình: `BatchLateStartMinutes` (10 phút), `BatchQcWaitWarnMinutes` (20 phút). Nút **Bảng sản xuất ngày** mở trang kế hoạch của ngày.
+
+### 4.1 Bảng điều độ mẻ – `prod-batch` (cách cũ – chế độ DEMO)
 1. Chọn **Ngày sản xuất** (chip 5 ngày gần nhất, hoặc ô chọn ngày).
 2. Dòng trạng thái đếm mẻ: Kế hoạch · Đang nấu · Chờ QC · Đạt · Đã đóng gói · Không đạt.
 3. Thẻ số liệu: Số mẻ (số lệnh), Phần món kế hoạch, Phần món đạt QC, Tạm giữ / Loại.
