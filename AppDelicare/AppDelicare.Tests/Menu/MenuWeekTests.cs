@@ -89,5 +89,47 @@ namespace AppDelicare.Tests.Menu
             (await c.PostFormAsync("/api/Menu/Approve", ("Id", menuId))).Ok();
             (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/Menu/SaveCell", new { menuId, mealType = "TRUA", optionNo = 1, categoryId = cat, day = 3, dishId = dA }))).Fail("không còn ở Nháp");
         }
+
+        [Fact]
+        public async Task Excel_template_round_trip_matches_names_without_accents_suggests_and_writes_picks()
+        {
+            string k = Guid.NewGuid().ToString("N")[..4].ToUpperInvariant();
+            DateTime week = Week.AddDays(21);
+            factory.Clock.FixedNow = week.AddDays(-7);
+            Guid dGa = Guid.NewGuid(), dCa = Guid.NewGuid();
+            await factory.SeedAsync(db =>
+            {
+                db.Dish.Add(new Dish { Id = dGa, Code = "EX1" + k, Name = "Gà kho gừng " + k, Status = "Active" });
+                db.Dish.Add(new Dish { Id = dCa, Code = "EX2" + k, Name = "Cá thu sốt cà " + k, Status = "Active" });
+                return Task.CompletedTask;
+            });
+            using var c = factory.CreateAuthorizedClient();
+            var created = (await c.PostFormAsync("/api/Menu/CreateWeek", ("weekStart", week.ToString("yyyy-MM-dd")), ("blank", true))).Ok();
+            Guid menuId = created.GetProperty("menuId").GetGuid();
+            var bytes = await c.GetByteArrayAsync($"/api/Menu/GetWeekTemplate?WeekStart={week:yyyy-MM-dd}");
+            using var input = new MemoryStream(bytes);
+            using var wb = new ClosedXML.Excel.XLWorkbook(input);
+            var ws = wb.Worksheet("1. Menu");
+            int row = Enumerable.Range(2, ws.LastRowUsed()!.RowNumber()).First(r => ws.Cell(r, 1).GetString() == "TRUA");
+            ws.Cell(row, 4).Value = "ga kho gung " + k.ToLowerInvariant();   // không dấu → vẫn khớp
+            ws.Cell(row, 5).Value = "Cá thu " + k;                          // không khớp → gợi ý
+            using var output = new MemoryStream();
+            wb.SaveAs(output);
+            async Task<LegacyResult> Send(bool apply, string? picks)
+            {
+                using var form = new MultipartFormDataContent { { new StringContent(menuId.ToString()), "menuId" }, { new StringContent(apply ? "true" : "false"), "apply" }, { new ByteArrayContent(output.ToArray()), "file", "menu.xlsx" } };
+                if (picks != null) form.Add(new StringContent(picks), "picks");
+                return await LegacyResult.ReadAsync(await c.PostAsync("/api/Menu/ImportWeek", form));
+            }
+            var pre = (await Send(false, null)).Ok();
+            pre.GetProperty("matched").GetInt32().Should().Be(1);
+            pre.GetProperty("unmatched").GetInt32().Should().Be(1);
+            var miss = pre.GetProperty("listCell").EnumerateArray().Single(x => x.GetProperty("dishId").ValueKind == System.Text.Json.JsonValueKind.Null);
+            miss.GetProperty("listSuggestion").EnumerateArray().Select(x => x.GetProperty("dishId").GetGuid()).Should().Contain(dCa);
+            var done = (await Send(true, $$"""{"{{miss.GetProperty("key").GetString()}}":"{{dCa}}"}""")).Ok();
+            done.GetProperty("written").GetInt32().Should().Be(2);
+            var lines = await factory.QueryAsync(db => db.MenuLine.AsNoTracking().Where(l => l.MenuId == menuId && !l.IsDeleted).ToListAsync());
+            lines.Select(l => (l.DishId, l.DayOfWeek)).Should().BeEquivalentTo(new[] { (dGa, (int?)1), (dCa, (int?)2) });
+        }
     }
 }

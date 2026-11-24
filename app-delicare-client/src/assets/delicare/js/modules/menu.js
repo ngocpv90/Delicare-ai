@@ -225,10 +225,15 @@
         });
       });
     });
-    box.innerHTML = h + '</tbody></table></div><div class="small muted mt">Bấm ô → 5 gợi ý (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC); gõ để tìm món khác; <b>Enter</b> lưu và sang ngày kế; <b>Delete</b> xóa món; <b>Esc</b> đóng. ⧉ ở đầu cột = chép cả ngày.</div>';
+    const xl = edit ? `<div class="row-flex mb"><button class="btn sm" id="mwXlsOut">${I('down')} Tải mẫu Excel</button><button class="btn sm" id="mwXlsIn">${I('file')} Tải Excel lên</button><input type="file" id="mwXlsFile" accept=".xlsx" hidden><span class="small muted">Mẫu sheet "1. Menu": Buổi · Lựa chọn · Nhóm món · T2…CN – ghi tên món, hệ thống tự khớp danh mục</span></div>` : '';
+    box.innerHTML = xl + h + '</tbody></table></div><div class="small muted mt">Bấm ô → 5 gợi ý (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC); gõ để tìm món khác; <b>Enter</b> lưu và sang ngày kế; <b>Delete</b> xóa món; <b>Esc</b> đóng. ⧉ ở đầu cột = chép cả ngày.</div>';
     box.querySelectorAll('[data-mwm]').forEach(tr => tr.onclick = () => { const k = tr.dataset.mwm; mw.closed.has(k) ? mw.closed.delete(k) : mw.closed.add(k); mwGrid(el, f, canEdit); });
     if (changeable) box.querySelectorAll('[data-mwc]:not([disabled])').forEach(btn => btn.onclick = () => mwChange(el, f, btn));
     if (!edit) return;
+    box.querySelector('#mwXlsOut').onclick = () => Store.download('Menu/GetWeekTemplate', { WeekStart: mw.week });
+    const fileIn = box.querySelector('#mwXlsFile');
+    box.querySelector('#mwXlsIn').onclick = () => fileIn.click();
+    fileIn.onchange = () => { const fl = fileIn.files[0]; fileIn.value = ''; if (fl) mwImport(el, f, fl); };
     box.querySelectorAll('[data-mwc]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, false));
     box.querySelectorAll('[data-mwf]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, true));
     box.querySelectorAll('[data-mwcd]').forEach(btn => btn.onclick = () => {
@@ -326,13 +331,28 @@
       box.innerHTML = list.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Số</th><th>Ngày ăn</th><th>Món cũ → món mới</th><th>Phạm vi</th><th class="num">Suất</th><th>Lý do</th><th>Trạng thái</th><th>Người duyệt</th></tr></thead><tbody>${list.map(r => `<tr><td>${esc(r.requestNo || '')}</td><td>${U.date(U.day(r.mealDate))}</td><td>${esc(r.originalDish || '')} → <b>${esc(r.requestedDish || '')}</b></td><td>${esc(r.scope || '')}</td><td class="num">${r.quantity != null ? U.num(r.quantity) : '–'}</td><td class="small">${esc(r.reason || '')}</td><td><span class="badge ${cls[r.status] || 'gray'}">${esc(r.statusName || '')}</span></td><td class="small">${esc(r.approvedBy || '')}${r.approvedAt ? ' · ' + U.dt(r.approvedAt) : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Tuần này chưa có yêu cầu đổi món. Đổi món cho mọi khách: bấm ô món trên Lịch tuần của thực đơn đã công bố.</div>';
     });
   }
+  // UI-6.11: tải Excel – xem trước khớp tên món (xanh = khớp, đỏ = chưa khớp + chọn món gợi ý) → Ghi.
+  function mwImport(el, f, file) {
+    const send = (apply, picks) => { const fd = new FormData(); fd.append('menuId', mw.data.menuId); fd.append('apply', apply ? 'true' : 'false'); if (picks) fd.append('picks', JSON.stringify(picks)); fd.append('file', file); return Store.act('Menu/ImportWeek', { json: fd, tables: ['MenuLine'], quiet: !apply }); };
+    send(false).then(x => {
+      if (!x.ok || !x.data) return UI.toast(esc(x.message || 'Không đọc được tệp'), 'err');
+      const d = x.data, picks = {};
+      UI.modal({ title: 'Tải Excel thực đơn tuần', sub: `Khớp ${d.matched} ô · ${d.unmatched} ô chưa khớp tên món`, size: 'lg',
+        body: `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Buổi · LC</th><th>Thứ</th><th>Trong tệp</th><th>Món trong danh mục</th></tr></thead><tbody>${d.listCell.map(c => `<tr class="${c.dishId ? '' : 'mw-miss'}"><td>${esc(c.mealType)} · ${c.optionNo}</td><td>${MW_DOW[c.day - 1]}</td><td>${esc(c.text)}</td><td>${c.dishId ? '<span class="up">✓ ' + esc(c.dishName) + '</span>' : `<select class="select" data-pk="${esc(c.key)}"><option value="">— Bỏ qua (chưa khớp) —</option>${(c.listSuggestion || []).map(s2 => `<option value="${s2.dishId}">${esc(s2.dishName)}</option>`).join('')}</select>`}</td></tr>`).join('')}</tbody></table></div><div class="small muted mt">Ô chưa khớp: chọn món gần giống hoặc bỏ qua; ô trống trong tệp giữ nguyên món đang có.</div>`,
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="mwXlsOk">Ghi vào thực đơn</button>',
+        onMount: (m, close) => {
+          m.querySelectorAll('[data-pk]').forEach(sel => sel.onchange = () => { if (sel.value) picks[sel.dataset.pk] = sel.value; else delete picks[sel.dataset.pk]; });
+          m.querySelector('#mwXlsOk').onclick = () => send(true, picks).then(y => { if (!y.ok) return; close(); UI.toast(esc((y.res && y.res.responseMessage) || 'Đã ghi'), 'ok'); mwLoad(el, f, true).then(() => mwDraw(el, f)); });
+        } });
+    });
+  }
   function mwCreate(el, f) {
     const menus = Store.rows('Menu').filter(m => m.MenuType === 'COMMON' && m.Status !== 'Draft').sort((a, b) => String(b.EffectiveFrom || '').localeCompare(String(a.EffectiveFrom || ''))).slice(0, 20);
     UI.modal({ title: 'Tạo thực đơn tuần ' + U.date(mw.week).slice(0, 5), size: 'sm',
       body: `<label class="mw-radio"><input type="radio" name="mwm" value="auto" checked> <b>Nhân bản tuần cùng vị trí chu kỳ 4 tuần</b><div class="small muted">Như hệ thống tự lập thứ Hai</div></label>
         <label class="mw-radio"><input type="radio" name="mwm" value="pick"> <b>Nhân bản tuần chọn</b><select class="select mt" id="mwSrc">${menus.map(m => `<option value="${m.Id}">${esc(m.Code || '')} · ${U.date(U.day(m.EffectiveFrom))}</option>`).join('')}</select></label>
         <label class="mw-radio"><input type="radio" name="mwm" value="blank"> <b>Khung trống mẫu chuẩn</b><div class="small muted">Sáng 3 lựa chọn × Món chính – Ăn kèm – Đồ uống; Trưa / Tối 7 nhóm món; Đêm Món chính – Đồ uống</div></label>
-        <label class="mw-radio muted"><input type="radio" disabled> Tải Excel theo mẫu sheet "1. Menu" <span class="small">(chưa nâng cấp)</span></label>`,
+        <div class="small muted">Tải Excel: tạo <b>khung trống</b> (hoặc nhân bản) rồi bấm <b>Tải Excel lên</b> trên Lịch tuần (mẫu sheet "1. Menu").</div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="mwCOk">Tạo</button>',
       onMount: (m, close) => m.querySelector('#mwCOk').onclick = () => {
         const mode = (m.querySelector('[name=mwm]:checked') || {}).value, form = { weekStart: mw.week };

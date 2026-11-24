@@ -719,3 +719,4 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .mw-cell.mw-changed{border-color:#B9CB97;background:#EFF5E5}
 .mw-tag{display:inline-block;margin-left:4px;font-size:10px;font-weight:700;color:#3F5A17;background:#DDEBC6;border-radius:6px;padding:0 5px;vertical-align:1px}
 .mw-tag.pend{color:#8A3B0B;background:#FBE1CC}
+.mw-miss td{background:#FDECEC}

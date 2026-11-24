@@ -256,3 +256,30 @@ namespace AppDelicare.Model.Model
         public List<string> ListError { get; set; } = [];
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.11: tải Excel thực đơn tuần (mẫu sheet "1. Menu") – xem trước khớp món / ghi.</summary>
+    public class MenuImportModel
+    {
+        public Guid MenuId { get; set; }
+        public int Matched { get; set; }
+        public int Unmatched { get; set; }
+        public int Written { get; set; }
+        public List<MenuImportCellModel> ListCell { get; set; } = [];
+    }
+
+    public class MenuImportCellModel
+    {
+        public string Key { get; set; } = string.Empty;
+        public int Row { get; set; }
+        public string? MealType { get; set; }
+        public int OptionNo { get; set; }
+        public int Day { get; set; }
+        public string? Category { get; set; }
+        public string? Text { get; set; }
+        public Guid? DishId { get; set; }
+        public string? DishName { get; set; }
+        public List<MenuDishSuggestionModel> ListSuggestion { get; set; } = [];
+    }
+}

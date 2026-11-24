@@ -114,7 +114,7 @@ Mỗi tuần **một thực đơn chung** cho mọi khách (D-90). **Vòng tuầ
 - **Nhân bản tuần cùng vị trí chu kỳ 4 tuần** (như hệ thống tự làm: tuần N − 4; thiếu thì lấy tuần gần nhất có món).
 - **Nhân bản tuần chọn**.
 - **Khung trống mẫu chuẩn**: Sáng 3 lựa chọn × Món chính – Ăn kèm – Đồ uống; Trưa / Tối Món chính 1 – Món chính 2 – Món phụ – Rau – Canh – Cơm – Tráng miệng; Đêm Món chính – Đồ uống.
-- *Tải Excel theo mẫu sheet "1. Menu"* **chưa nâng cấp**.
+- **Tải Excel** (thực đơn Nháp): trên Lịch tuần bấm **Tải mẫu Excel** (sheet "1. Menu": Buổi · Lựa chọn · Nhóm món · T2…CN, điền sẵn món đang có) → ghi tên món → **Tải Excel lên** → hộp xem trước: ô khớp tên món (không phân biệt dấu / hoa thường) màu xanh, ô chưa khớp màu đỏ kèm 3 món gần giống để chọn hoặc bỏ qua → **Ghi vào thực đơn**. Ô trống trong tệp giữ món đang có. Cần quyền Nhập.
 
 **Tab Lịch tuần** – một màn đủ 4 buổi:
 - **Buổi** (bấm để mở / gập; giá bán bình quân, số lựa chọn) → dòng **lựa chọn** (giá vốn / suất và **FC%** từng ngày: xanh đạt, đỏ vượt) → **nhóm món** × 7 ngày, mỗi ô một món.
