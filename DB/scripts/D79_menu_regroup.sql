@@ -87,7 +87,7 @@ INSERT INTO @P VALUES
     (N'#/scm-ingredient', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 406, N'', N'', NULL),
     (N'#/scm-ingredient-cat', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 407, N'', N'', 0),
     (N'#/scm-uom', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 408, N'', N'', NULL),
-    (N'#/scm-uom-conversion', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 409, N'', N'', NULL),
+    (N'#/scm-uom-conversion', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 409, N'', N'', 0),
     (N'#/group/04b', 1, NULL, -1, -1, N'', NULL, 450, N'Kho', N'wh', NULL),
     (N'#/scm-gr', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 451, N'', N'', NULL),
     (N'#/scm-issue', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 452, N'', N'', NULL),

@@ -32,7 +32,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | — | Q |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | X | Q |
 | Mua hàng › Đơn vị tính | `scm-uom` | — | Q |
-| Mua hàng › Quy đổi đơn vị | `scm-uom-conversion` | — | Q |
 | Kho › Phiếu nhập kho | `scm-gr` | S (IX) | S (IX) |
 | Kho › Phiếu xuất sản xuất | `scm-issue` | S (IX) | S (IX) |
 | Kho › Tồn kho | `scm-inv-balance` | X | X |

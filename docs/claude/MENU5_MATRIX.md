@@ -50,7 +50,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | X | — | X | — |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | X | X | X | S | Q | X | Q | — | — | — | — | — | — | — | — | — | — | X | X |
 | Mua hàng › Đơn vị tính | `scm-uom` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | — | — | X | — |
-| Mua hàng › Quy đổi đơn vị | `scm-uom-conversion` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Kho › Phiếu nhập kho | `scm-gr` | X | X | X | — | X | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | X |
 | Kho › Phiếu xuất sản xuất | `scm-issue` | X | X | X | — | X | S (IX) | S (IX) | X | — | — | — | — | — | — | — | X (IX) | — | X | — |
 | Kho › Tồn kho | `scm-inv-balance` | X | X | X | X | X | X | X | X | — | — | — | — | — | — | — | X (IX) | — | X | X |

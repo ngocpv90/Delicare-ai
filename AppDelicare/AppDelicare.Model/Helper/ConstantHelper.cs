@@ -253,6 +253,13 @@
             public static readonly string IngredientInUseWarning = "Lưu ý: nguyên liệu còn trong {0}";
             public static readonly string GroupNameDuplicate = "Tên nhóm «{0}» đã có – chọn tên khác";
             public static readonly string GroupInUse = "Nhóm còn {0} {1} đang dùng – chuyển {1} sang nhóm khác hoặc ngừng dùng {1} trước";
+            public static readonly string UomPackTypeInvalid = "Chọn loại bao bì: thùng, bao, khay, hộp, chai, can, túi, kiện, bình, lốc";
+            public static readonly string UomPackQuantityInvalid = "Nhập số lượng của 1 đơn vị đóng gói (lớn hơn 0)";
+            public static readonly string UomPackBaseInvalid = "Chọn đơn vị gốc (kg, g, lít, quả…) cho đơn vị đóng gói";
+            public static readonly string UomPackReused = "Đã có đơn vị «{0}» cùng kích cỡ – dùng lại đơn vị này";
+            public static readonly string UomBaseNameRequired = "Nhập tên và mã đơn vị";
+            public static readonly string UomCodeDuplicate = "Mã đơn vị «{0}» đã có";
+            public static readonly string UomFactorInUse = "Đơn vị đã được dùng (nguyên liệu / giá NCC / công thức / chứng từ) – không đổi hệ số; tạo đơn vị đóng gói mới thay vì sửa";
             public static readonly string ShelfLifeRequired = "Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0";
             public static readonly string ConversionFactorPositive = "Hệ số quy đổi phải lớn hơn 0";
             public static readonly string ConversionSameUnit = "Đơn vị nguồn và đích phải khác nhau";

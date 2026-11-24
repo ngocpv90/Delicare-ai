@@ -30,6 +30,51 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.22 (D-103): lưu đơn vị gốc / đóng gói có kích cỡ + quy đổi chung trong 1 giao dịch (trùng kích cỡ → dùng lại). JSON. Quyền Sửa (Thêm qua "Save" = Sửa theo quy ước – cần Sửa / Thêm Đơn vị tính).</summary>
+        [HttpPost("SaveWithConversion")]
+        public async Task<IActionResult> SaveWithConversion([FromBody] AppDelicare.Model.Model.UnitPackRequest request)
+        {
+            try
+            {
+                return null == request ? BadRequest(ConstantHelper.Message.ModelStateMessage) : Ok(await _service.SaveWithConversion(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SaveWithConversion: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.22: đơn vị quy đổi được về đơn vị kho của nguyên liệu (hoặc đơn vị gốc) + hệ số. Quyền Xem.</summary>
+        [HttpGet("GetForIngredient")]
+        public async Task<IActionResult> GetForIngredient(Guid? ingredientId, Guid? baseUnitId)
+        {
+            try
+            {
+                return Ok(await _service.GetForIngredient(ingredientId, baseUnitId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetForIngredient: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.22: đơn vị + loại + "= N đơn vị gốc" + số chỗ đang dùng. Quyền Xem.</summary>
+        [HttpGet("GetUsage")]
+        public async Task<IActionResult> GetUsage()
+        {
+            try
+            {
+                return Ok(await _service.GetUsage());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetUsage: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPost("Insert")]
         public async Task<IActionResult> Insert([FromForm] UnitMeasureRequest request)
         {

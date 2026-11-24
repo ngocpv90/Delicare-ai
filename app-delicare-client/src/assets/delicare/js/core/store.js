@@ -234,7 +234,8 @@
     // UI-6.16 (D-97): mục Điểm giao hàng ẩn – điểm giao thêm / sửa ở trang Khách hàng (khớp máy chủ ScreenMap.ParentByClass).
     'crm-location': 'crm-customer',
     // UI-6.21 (D-102): nhóm nguyên liệu / nhóm món quản lý trong màn Nguyên liệu / Món ăn.
-    'scm-ingredient-cat': 'scm-ingredient', 'menu-dish-cat': 'menu-dish' };
+    'scm-ingredient-cat': 'scm-ingredient', 'menu-dish-cat': 'menu-dish',
+    'scm-uom-conversion': 'scm-uom' }; // UI-6.22 (D-103)
   const NAME_FIELDS = ['DisplayName', 'Name', 'FullName', 'MetricName', 'ChannelName', 'BotName', 'ItemName', 'NameVN', 'MealName', 'FileName', 'UserName'];
   const NO_FIELDS = ['OrderNumber', 'ContractNumber', 'RequestNumber', 'PurchaseOrderNumber', 'ReceiptNumber', 'LotNumber', 'IssueNumber', 'CountNumber', 'PlanNumber', 'ProductionOrderNumber', 'BatchNumber', 'PackingOrderNumber', 'DeliveryNumber', 'RouteNo', 'InspectionNumber', 'CleaningBatchNumber', 'TransactionNumber', 'RequirementNo', 'RequestNo', 'ComplaintNo', 'LicensePlate', 'VersionCode', 'MetricCode', 'BotCode', 'ChannelCode', 'Code', 'ItemCode', 'IdempotencyKey', 'JobCode'];
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };

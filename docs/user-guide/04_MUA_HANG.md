@@ -31,7 +31,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | Q | Q |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | Q | Q |
 | Mua hàng › Đơn vị tính | `scm-uom` | Q | Q |
-| Mua hàng › Quy đổi đơn vị | `scm-uom-conversion` | Q | Q |
 | Kho › Phiếu nhập kho | `scm-gr` | X | S (IX) |
 | Kho › Phiếu xuất sản xuất | `scm-issue` | X | S (IX) |
 | Kho › Tồn kho | `scm-inv-balance` | X | X |
@@ -113,6 +112,8 @@ Sửa dòng PO Nháp: mở PO → **Sửa dòng hàng** (nguyên liệu, số l�
 - Bảng giá NCC (`scm-supplier-material`): mỗi dòng NCC × nguyên liệu × đơn giá × hiệu lực; đánh dấu **Ưu tiên** để MRP / Lập PO chọn NCC này và để tính giá vốn công thức.
 
 ### 4.5 Nguyên liệu, đơn vị – `scm-ingredient`, `scm-uom`, `scm-uom-conversion`
+**Màn Đơn vị tính – gộp quy đổi (UI-6.22, D-103):** mục menu "Quy đổi đơn vị" đã ẩn. Danh sách: Mã · Đơn vị · Loại (**Gốc** / **Đóng gói**) · **= bao nhiêu đơn vị gốc** · **Đang dùng ở** (số nguyên liệu, giá NCC, dòng công thức, dòng chứng từ) · Trạng thái; lọc Tất cả / Gốc / Đóng gói. **+ Đơn vị gốc** (mã, tên, ký hiệu – kg, g, lít, ml là đơn vị chuẩn, khóa sửa). **+ Đơn vị đóng gói**: chọn loại bao bì (thùng / bao / khay / hộp / chai / can / túi / kiện / bình / lốc) + "1 đơn vị = [số] [đơn vị gốc]" → tên tự sinh (vd "thùng 10 kg"); đã có cùng kích cỡ → hệ thống chọn lại đơn vị đó. Đơn vị đã dùng không đổi được kích cỡ (tạo đơn vị mới). Bấm dòng để sửa; đơn vị gốc có link **Quy đổi khác** (giữa 2 đơn vị gốc khác loại – hiếm). Trong form Nguyên liệu, nút **+ Tạo đơn vị đóng gói** tạo ngay tại chỗ.
+
 **Màn Nguyên liệu – nhóm ở cột trái (UI-6.21, D-102):** mục menu "Nhóm nguyên liệu" đã ẩn. Cột trái: **Tất cả nhóm** + từng nhóm (số nguyên liệu đang dùng) + **Chưa phân nhóm**; bấm nhóm = lọc bảng (giữ khi quay lại), tiêu đề bảng ghi "Tên nhóm · N nguyên liệu · thường bảo quản X, đơn vị Y"; nhóm trống có nút **+ Thêm nguyên liệu vào nhóm này**. **+ Thêm nhóm** (gõ tên, Enter lưu); rê chuột nhóm → **⋯ Đổi tên** (Enter lưu, Esc hủy) · **Ngừng dùng** (khóa khi nhóm còn nguyên liệu đang dùng – ghi "còn N nguyên liệu") · **Dùng lại**; nhóm ngừng dùng gạch ngang, xếp cuối, không có trong ô chọn của form. Tên nhóm không trùng (không phân biệt hoa thường); nhóm chỉ 1 cấp. Quyền theo màn Nguyên liệu (Thêm / Sửa). Bảng: Mã · Nguyên liệu · Nhóm · ĐVT kho · Bảo quản (Mát / Đông lạnh / Khô) · Hạn dùng · NCC ưu tiên. 4 thẻ: Nguyên liệu đang dùng · Chưa có giá NCC · Chưa phân nhóm · Số nhóm. Điện thoại: nhóm thành dải chip cuộn ngang. Trong form nguyên liệu, chọn nhóm → **gợi ý loại bảo quản + đơn vị kho** theo đa số nguyên liệu cùng nhóm ("Gợi ý theo N nguyên liệu cùng nhóm …", chỉ điền ô còn trống).
 
 **Form Nguyên liệu (UI-6.20, D-101) – 5 nhóm** (dùng chung cho Thêm / Sửa ở danh sách, nút Sửa trang chi tiết và "+ Tạo nguyên liệu mới" ở tab Công thức):

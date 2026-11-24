@@ -281,3 +281,69 @@ namespace AppDelicare.Model.Model
         public int UnitCount { get; set; }
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.22 (D-103): lưu đơn vị gốc / đóng gói + quy đổi (UnitMeasure/SaveWithConversion).</summary>
+    public class UnitPackRequest
+    {
+        public Guid? Id { get; set; }
+        /// <summary>BASE (đơn vị gốc) · PACK (đơn vị đóng gói có kích cỡ).</summary>
+        public string? Kind { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string? Symbol { get; set; }
+        /// <summary>Loại bao bì (thùng / bao / khay / hộp / chai / can / túi / kiện / bình / lốc).</summary>
+        public string? PackType { get; set; }
+        /// <summary>1 đơn vị đóng gói = Quantity đơn vị gốc.</summary>
+        public decimal? Quantity { get; set; }
+        public Guid? BaseUnitId { get; set; }
+        public string? Status { get; set; }
+        public string? UnitType { get; set; }
+    }
+
+    public class UnitSavedModel
+    {
+        public Guid Id { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        /// <summary>true = đã có đơn vị cùng kích cỡ → trả lại đơn vị đó.</summary>
+        public bool Reused { get; set; }
+    }
+
+    public class UnitChoiceListModel
+    {
+        public Guid? BaseUnitId { get; set; }
+        public List<UnitChoiceModel> ListUnit { get; set; } = [];
+    }
+
+    public class UnitChoiceModel
+    {
+        public Guid Id { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string Kind { get; set; } = "BASE";
+        public decimal Factor { get; set; }
+        public bool IsBase { get; set; }
+    }
+
+    public class UnitUsageModel
+    {
+        public Guid Id { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string? Symbol { get; set; }
+        public string Kind { get; set; } = "BASE";
+        public string? PackType { get; set; }
+        public string Status { get; set; } = "Active";
+        public decimal? Factor { get; set; }
+        public Guid? ToUnitId { get; set; }
+        public string? ToUnitCode { get; set; }
+        public int IngredientCount { get; set; }
+        public int SupplierPriceCount { get; set; }
+        public int RecipeLineCount { get; set; }
+        public int DocumentLineCount { get; set; }
+        /// <summary>Đơn vị chuẩn (kg, g, lít, ml) – khóa sửa.</summary>
+        public bool Locked { get; set; }
+    }
+}
