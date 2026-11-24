@@ -230,7 +230,9 @@
     'crm-contract-meal': 'crm-contract', 'crm-order-line': 'crm-order', 'menu-recipe-line': 'menu-recipe', 'menu-menu-line': 'menu-menu',
     'scm-pr-line': 'scm-pr', 'scm-po-line': 'scm-po', 'scm-gr-line': 'scm-gr', 'scm-issue-line': 'scm-issue', 'scm-stockcount-line': 'scm-stockcount',
     'prod-plan-line': 'prod-plan', 'qc-inspection-line': 'qc-inspection', 'qc-checklist-item': 'qc-checklist', 'log-stop': 'log-route', 'log-event': 'log-execution',
-    'log-complaint-history': 'log-complaint', 'wf-step': 'wf-inbox', 'wf-decision': 'wf-inbox', 'wf-item': 'wf-inbox', 'adm-person': 'adm-user' };
+    'log-complaint-history': 'log-complaint', 'wf-step': 'wf-inbox', 'wf-decision': 'wf-inbox', 'wf-item': 'wf-inbox', 'adm-person': 'adm-user',
+    // UI-6.16 (D-97): mục Điểm giao hàng ẩn – điểm giao thêm / sửa ở trang Khách hàng (khớp máy chủ ScreenMap.ParentByClass).
+    'crm-location': 'crm-customer' };
   const NAME_FIELDS = ['DisplayName', 'Name', 'FullName', 'MetricName', 'ChannelName', 'BotName', 'ItemName', 'NameVN', 'MealName', 'FileName', 'UserName'];
   const NO_FIELDS = ['OrderNumber', 'ContractNumber', 'RequestNumber', 'PurchaseOrderNumber', 'ReceiptNumber', 'LotNumber', 'IssueNumber', 'CountNumber', 'PlanNumber', 'ProductionOrderNumber', 'BatchNumber', 'PackingOrderNumber', 'DeliveryNumber', 'RouteNo', 'InspectionNumber', 'CleaningBatchNumber', 'TransactionNumber', 'RequirementNo', 'RequestNo', 'ComplaintNo', 'LicensePlate', 'VersionCode', 'MetricCode', 'BotCode', 'ChannelCode', 'Code', 'ItemCode', 'IdempotencyKey', 'JobCode'];
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };

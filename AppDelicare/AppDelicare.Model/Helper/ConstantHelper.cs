@@ -241,6 +241,7 @@
             public static readonly string DeliveryWindowInvalid = "Giờ giao từ phải nhỏ hơn giờ giao đến";
             public static readonly string LatitudeInvalid = "Vĩ độ phải trong [-90, 90]";
             public static readonly string LongitudeInvalid = "Kinh độ phải trong [-180, 180]";
+            public static readonly string LocationHasOpenOrders = "Điểm giao còn {0} đơn hàng chưa giao (từ hôm nay: {1}) – không ngừng hoạt động được";
             public static readonly string LocationInUse = "Còn đơn giao chưa hoàn tất tại điểm này – không ngừng hoạt động được";
             public static readonly string YieldPercentRange = "Tỷ lệ thu hồi phải trong (0, 100]";
             public static readonly string StandardWasteRange = "Tỷ lệ hao hụt chuẩn phải trong [0, 100)";

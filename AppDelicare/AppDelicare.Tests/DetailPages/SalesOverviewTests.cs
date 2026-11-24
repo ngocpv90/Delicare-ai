@@ -230,9 +230,9 @@ namespace AppDelicare.Tests.DetailPages
             e.GetProperty("listRecentOrder").GetArrayLength().Should().Be(0);
             (await admin.GetResultAsync($"/api/CustomerDeliveryLocation/GetOverview?id={Guid.NewGuid()}")).Fail("Không tìm thấy");
 
-            using var viewer = factory.CreateAuthorizedClient(await UserAsync("#/crm-location"));
+            using var viewer = factory.CreateAuthorizedClient(await UserAsync("#/crm-customer")); // UI-6.16 (D-97): quyền điểm giao theo màn Khách hàng
             (await viewer.GetAsync($"/api/CustomerDeliveryLocation/GetOverview?id={loc}")).StatusCode.Should().Be(HttpStatusCode.OK);
-            using var other = factory.CreateAuthorizedClient(await UserAsync("#/crm-customer"));
+            using var other = factory.CreateAuthorizedClient(await UserAsync("#/crm-order")); // không có quyền Khách hàng → 403
             Forbidden(await other.GetAsync($"/api/CustomerDeliveryLocation/GetOverview?id={loc}"));
         }
     }

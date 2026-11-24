@@ -32,7 +32,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số theo ngày | `kpi-daily` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
-| Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X | — | — | — | — | — | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
+| Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | — | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | X (IX) | — | X | — |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X | X | X | X | — | — | — | — | — | X | — | S | Q (IX) | Q (IX) | — | — | — | X | — |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
@@ -40,7 +40,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | — | — | — | — | — | — | S | — | X | S | S | X | S (IX) | — | X | — |
 | Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | — | — | — | — | — | — | — | — | X (IX) | X (IX) | X (IX) | — | X (IX) | — | X | — |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | X | — | — | — | — | — | — | S | — | X | X | S | S | — | — | X | S (IX) |
-| Kinh doanh › Điểm giao hàng | `crm-location` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | — | — | X | — |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | Q | X | — | X | X | — | X | — | X | X | X | X | — | — | X | X |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | X | X | Q | X | — | X | X | — | — | — | — | — | — | — | — | — | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | Q | — | — | — | X | — | — | — | X | X | X | X | — | — | X | X |
@@ -137,7 +136,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   OPS-WH        vào  18 mục · ô quyền   58
   OPS-SCM-HEAD  vào  33 mục · ô quyền  111
   OPS-KIT       vào  26 mục · ô quyền   44
-  OPS-LOG       vào  16 mục · ô quyền   32
+  OPS-LOG       vào  17 mục · ô quyền   33
   OPS-POS       vào  12 mục · ô quyền   20
   OPS-MNT       vào   5 mục · ô quyền    9
   SAL-SALES     vào  19 mục · ô quyền   37

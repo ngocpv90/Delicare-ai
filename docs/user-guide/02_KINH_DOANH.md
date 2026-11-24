@@ -26,7 +26,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | S | S | X |
 | Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X (IX) | X (IX) | — |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | S | S |
-| Kinh doanh › Điểm giao hàng | `crm-location` | S | Q (IX) | Q (IX) | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | X |
 | Giá thành › Giá thành chuẩn | `cost-standard` | — | — | X | — |
@@ -83,13 +82,15 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 - Thêm / sửa khách bằng **Tạo mới** / **Sửa**.
 
 ### 4.2 Người liên hệ, điểm giao – `crm-contact`, `crm-location`
-Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa chỉ, **giờ nhận từ – đến**, người nhận + số điện thoại, tọa độ (để chấm "đã đến" trên bot).
+**UI-6.16 (D-97): mục menu "Điểm giao hàng" đã ẩn** – điểm giao thêm / sửa / ngừng hoạt động **chỉ ở trang Khách hàng**, khối **Điểm giao và liên hệ**: nút **+ Điểm giao**, nút ✎ cạnh từng điểm (Sửa, đổi Trạng thái = Ngừng hoạt động); mỗi dòng: tên (bấm → trang chi tiết điểm giao), địa chỉ, khung giờ nhận, người nhận, trạng thái (khi ngừng), suất TB / ngày. Quyền theo màn **Khách hàng** (Xem = xem điểm giao; Sửa / Thêm = thêm / sửa điểm giao). Link cũ `#/crm-location` mở danh sách Khách hàng, `#/crm-location?id=…` mở trang chi tiết điểm giao. Điều phối tìm điểm giao ở màn **Chuyến giao hàng** (ô Tìm điểm giao).
+
+Điểm giao cần: tên, địa chỉ, **giờ nhận từ – đến**, người nhận + số điện thoại, tọa độ (để chấm "đã đến" trên bot).
 - **Người nhận** (khách doanh nghiệp): **chọn trong danh sách người liên hệ của khách** (người liên hệ đang hoạt động, người liên hệ chính xếp đầu); chọn xong SĐT tự điền theo người liên hệ. Chưa có người cần chọn → thêm ở **Người liên hệ** trước. Điểm giao cũ có người nhận ngoài danh sách hiện "(giá trị cũ)" – vẫn sửa được trường khác; đổi người nhận thì phải chọn trong danh sách. Nhập Excel cũng kiểm như vậy. Khách cá nhân: nhập tự do.
 - *Chọn người nhận trong danh sách người liên hệ của khách*; *Người nhận «…» không có trong danh sách người liên hệ của khách – thêm vào Người liên hệ trước*; *SĐT người nhận không khớp người liên hệ «…»*.
 - *Giờ giao từ phải nhỏ hơn giờ giao đến*; *Vĩ độ phải trong [-90, 90]*; *Kinh độ phải trong [-180, 180]*.
-- *Còn đơn giao chưa hoàn tất tại điểm này – không ngừng hoạt động được*.
+- *Còn đơn giao chưa hoàn tất tại điểm này – không ngừng hoạt động được*; *Điểm giao còn N đơn hàng chưa giao (từ hôm nay: DH-…) – không ngừng hoạt động được* (UI-6.16).
 
-**Trang chi tiết điểm giao (UI-6):** bấm 1 dòng ở **Điểm giao hàng** (hoặc tên điểm giao trong trang đơn hàng) → mở **trang riêng** `#/crm-location-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Điểm giao hàng** quay lại đúng bộ lọc, trang, vị trí cuộn). Phần đầu: tên, mã, khách, địa chỉ, giờ nhận, người nhận; nút **Sửa** (cần quyền Sửa), **Bản đồ** (khi có tọa độ), ⋯ **Hồ sơ khách hàng**. 4 thẻ: **Suất TB / ngày** (30 ngày), **Đơn 30 ngày**, **Giao đúng giờ** (% đơn giao Đã giao trước giờ dự kiến + 15 phút / Đã giao + Thất bại, 30 ngày), **Phản ánh đang mở** (của các đơn tại điểm). Tab **Tổng quan** (thông tin điểm giao · đơn và giao hàng gần đây) · **Đơn hàng** · **Giao hàng** · **Phản ánh** (tab chỉ hiện khi có quyền xem màn tương ứng). Điểm giao chưa có tab Lịch sử / Tài liệu.
+**Trang chi tiết điểm giao (UI-6):** bấm tên điểm giao ở trang Khách hàng (hoặc ở trang đơn hàng, ô Tìm điểm giao của Chuyến giao hàng) → mở **trang riêng** `#/crm-location-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Điểm giao hàng** quay lại đúng bộ lọc, trang, vị trí cuộn). Phần đầu: tên, mã, khách, địa chỉ, giờ nhận, người nhận; nút **Sửa** (cần quyền Sửa), **Bản đồ** (khi có tọa độ), ⋯ **Hồ sơ khách hàng**. 4 thẻ: **Suất TB / ngày** (30 ngày), **Đơn 30 ngày**, **Giao đúng giờ** (% đơn giao Đã giao trước giờ dự kiến + 15 phút / Đã giao + Thất bại, 30 ngày), **Phản ánh đang mở** (của các đơn tại điểm). Tab **Tổng quan** (thông tin điểm giao · đơn và giao hàng gần đây) · **Đơn hàng** · **Giao hàng** · **Phản ánh** (tab chỉ hiện khi có quyền xem màn tương ứng). Điểm giao chưa có tab Lịch sử / Tài liệu.
 
 ### 4.3 Hợp đồng – `crm-contract`
 **Tạo hợp đồng**

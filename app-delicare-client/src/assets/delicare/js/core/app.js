@@ -4,7 +4,7 @@
   const FN = {}; CAT.funcs.forEach(f => FN[f.id] = f);
   // Màn hình điều hướng (không phải bảng) – bổ sung vào menu
   FN['flow-e2e'] = { ph: '—', grp: 'Điều hành', fn: 'Luồng nghiệp vụ End-to-End', id: 'flow-e2e', name: 'Luồng nghiệp vụ E2E (9 luồng)', types: ['DB'], table: null, rel: [], st: 'NAV', note: '' };
-  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact']); // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
+  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact', 'crm-location']); // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
@@ -23,6 +23,7 @@
     'wf-step': ['wf-inbox', 'ApprovalStep', 'ApprovalRequestId'], 'wf-decision': ['wf-inbox'], 'wf-item': ['wf-inbox', 'ApprovalItem', 'ApprovalRequestId'],
     'adm-person': ['adm-user'], 'scm-transfer': ['scm-inv-balance'], 'scm-adjustment': ['scm-inv-balance'],
     'crm-contact': ['crm-customer', 'CustomerContact', 'CustomerId'], // MENU-5 (D-79): link cũ → hồ sơ khách hàng
+    'crm-location': ['crm-customer'], // UI-6.16 (D-97): link cũ → danh sách Khách hàng; ?id= → trang chi tiết điểm giao (xử lý trong route)
     'crm-price-policy': ['crm-contract', 'PricePolicie', 'ContractId'], // UI-6.4 (D-83): điều chỉnh giá làm trong hợp đồng (tab Loại suất & đơn giá)
   };
   window.DC_PARENT_OF = PARENT_OF;
@@ -328,6 +329,7 @@
   }
   function renderScreen(id, params) {
     // MENU-4.2: link cũ tới màn đã ẩn (tìm kiếm, thông báo, đánh dấu trang) → màn cha; có ?id= của dòng con thì mở bản ghi cha.
+    if (Store.isLive && id === 'crm-location' && params.id) { location.replace(APP.href('crm-location-detail?id=' + encodeURIComponent(params.id))); return; }
     const up = Store.isLive && PARENT_OF[id];
     if (up) {
       const row = params.id && up[1] && Store.get(up[1], params.id), pid = row ? row[up[2]] : (up[1] ? null : params.id);

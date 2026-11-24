@@ -118,7 +118,9 @@
     const locs = (d.listLocation || []).map(pas), contacts = (d.listContact || []).map(pas);
     const perLoc = {}; (d.listLocationStat || []).forEach(s => { perLoc[String(s.locationId).toLowerCase()] = s.avgMealsPerDay; });
     const join = (...a) => a.filter(Boolean).join(' · ');
-    const locHtml = locs.map(l => `<div class="dc-it"><div class="top"><b>${esc(l.Name || l.Code || '')}</b>${perLoc[String(l.Id).toLowerCase()] ? `<span class="ip-muted">${U.num(perLoc[String(l.Id).toLowerCase()])} suất/ngày</span>` : ''}</div>
+    // UI-6.16 (D-97): khối điểm giao là nơi DUY NHẤT thêm / sửa / ngừng điểm giao (mục menu Điểm giao hàng đã ẩn) – bấm tên mở trang chi tiết điểm giao.
+    const locHref = lid => (APP.detailHref && APP.detailHref('CustomerDeliveryLocation', lid)) || null;
+    const locHtml = locs.map(l => `<div class="dc-it"><div class="top"><b>${locHref(l.Id) ? `<a href="${locHref(l.Id)}">${esc(l.Name || l.Code || '')}</a>` : esc(l.Name || l.Code || '')} ${l.Status && l.Status !== 'Active' ? UI.badge(l.Status, 'CustomerDeliveryLocation', 'Status') : ''}</b><span class="row-flex">${perLoc[String(l.Id).toLowerCase()] ? `<span class="ip-muted">${U.num(perLoc[String(l.Id).toLowerCase()])} suất TB/ngày</span>` : ''}${can('crm-location', 'edit') ? `<button class="btn xs" data-loc-edit="${esc(l.Id)}" title="Sửa / ngừng hoạt động điểm giao">${I('edit')}</button>` : ''}</span></div>
       <div class="sub">${esc(join(l.Address, l.DeliveryWindowFrom && 'nhận ' + U.time(l.DeliveryWindowFrom) + (l.DeliveryWindowTo ? '–' + U.time(l.DeliveryWindowTo) : ''), join(l.ContactName, l.ContactPhone).replace(' · ', ' ')))}</div></div>`).join('');
     const ctHtml = contacts.sort((a, b) => (b.IsPrimary === true) - (a.IsPrimary === true)).map(x => `<div class="dc-it"><div class="top"><b>${esc(x.FullName || x.Name || '')}${x.IsPrimary ? ' ' + UI.tag('Chính', 'green') : ''}</b>${x.Phone ? `<span class="ip-muted">${UI.tel(x.Phone)}</span>` : ''}</div>
       ${x.Position || x.Email ? `<div class="sub">${[esc(x.Position || ''), x.Email ? UI.mail(x.Email) : ''].filter(Boolean).join(' · ')}</div>` : ''}</div>`).join('');
@@ -147,6 +149,7 @@
     UI.wireInfoPanel(box, cfg);
     box.querySelectorAll('[data-go]').forEach(a => a.onclick = () => APP.go(a.dataset.go));
     box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => UI.form(b.dataset.add, null, { title: b.dataset.add === 'CustomerContact' ? 'Người liên hệ' : 'Điểm giao', defaults: { CustomerId: id }, onSave: () => APP.refresh() }));
+    box.querySelectorAll('[data-loc-edit]').forEach(b => b.onclick = () => UI.form('CustomerDeliveryLocation', b.dataset.locEdit, { title: 'Điểm giao', onSave: () => APP.refresh() }));
     box.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => APP.openDetail('Contract', b.dataset.ct, APP.FN['crm-contract']));
     box.querySelectorAll('[data-renew]').forEach(b => b.onclick = () => APP.go('crm-contract?customer=' + encodeURIComponent(id)));
     // Biểu đồ 30 ngày (Customer/GetTrend) + chênh đặt – nhận trung bình.

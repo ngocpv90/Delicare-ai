@@ -1064,7 +1064,7 @@ INSERT INTO @R VALUES
     (N'OPS-LOG', N'#/dash-exec', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/kpi-daily', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/kpi-monthly', 0, 0, 0, 0, 0, 0, 0),
-    (N'OPS-LOG', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-LOG', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-order-week', 0, 0, 0, 0, 0, 0, 0),

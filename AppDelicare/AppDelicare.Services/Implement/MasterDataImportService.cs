@@ -73,7 +73,7 @@ namespace AppDelicare.Services.Implement
                 new("CIF", false, "Bỏ qua – CIF = mã khách hàng (D-63)"), new("Mã số thuế"), new("Điện thoại"), new("Email"), new("Địa chỉ"),
                 new("Trạng thái", false, "Active / Inactive, trống = Active"),
             ]),
-            new("CustomerDeliveryLocation", "Điểm giao hàng", "crm-location",
+            new("CustomerDeliveryLocation", "Điểm giao hàng", "crm-customer" /* UI-6.16: mục Điểm giao ẩn – quyền theo Khách hàng */,
             [
                 new("Mã khách hàng", true, null, "[DEMO]-KH01"), new("Mã điểm giao", false, GeneratedCodeNote, "[DEMO]-DG01"), new("Tên điểm giao", true, null, "[DEMO] Cổng A"),
                 new("Địa chỉ"), new("Người nhận"), new("SĐT người nhận"), new("Giờ nhận từ", false, "HH:mm", "10:30"), new("Giờ nhận đến", false, "HH:mm", "11:15"),
