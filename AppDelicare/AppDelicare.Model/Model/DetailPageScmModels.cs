@@ -347,3 +347,130 @@ namespace AppDelicare.Model.Model
         public bool Locked { get; set; }
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.19 (D-100): bảng giá NCC.</summary>
+    public class SupplierPriceHistoryModel
+    {
+        public Guid Id { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public Guid? UnitId { get; set; }
+        public string? UnitName { get; set; }
+        public decimal? PricePerBase { get; set; }
+        public string? BaseUnitName { get; set; }
+        public DateTime? EffectiveFrom { get; set; }
+        public DateTime? EffectiveTo { get; set; }
+        public decimal? ChangePct { get; set; }
+        public bool IsPreferred { get; set; }
+        public string? Status { get; set; }
+    }
+
+    public class SupplierPriceCompareModel
+    {
+        public Guid SupplierId { get; set; }
+        public string? SupplierName { get; set; }
+        public Guid PriceId { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public string? UnitName { get; set; }
+        public decimal? PricePerBase { get; set; }
+        public bool IsPreferred { get; set; }
+        public bool IsCheapest { get; set; }
+        public int? LeadTimeDays { get; set; }
+        public decimal? OnTimePct { get; set; }
+        public DateTime? EffectiveTo { get; set; }
+    }
+
+    public class SupplierPriceMatrixRequest
+    {
+        public DateTime? Date { get; set; }
+        public Guid? CategoryId { get; set; }
+        /// <summary>NO_PRICE · NO_PREFERRED · EXPIRING · PRICE_UP · PREFERRED_NOT_CHEAPEST · NO_CONVERSION.</summary>
+        public string? Flag { get; set; }
+        public string? Search { get; set; }
+    }
+
+    public class SupplierPriceMatrixModel
+    {
+        public DateTime Date { get; set; }
+        public int IngredientCount { get; set; }
+        public int PricedCount { get; set; }
+        public int NoPreferredCount { get; set; }
+        public int ExpiringCount { get; set; }
+        public int PriceUpCount { get; set; }
+        public Dictionary<string, int> FlagCount { get; set; } = [];
+        public List<SupplierColumnModel> ListSupplier { get; set; } = [];
+        public List<SupplierPriceRowModel> ListRow { get; set; } = [];
+    }
+
+    public class SupplierColumnModel
+    {
+        public Guid SupplierId { get; set; }
+        public string? SupplierName { get; set; }
+        public decimal? OnTimePct { get; set; }
+    }
+
+    public class SupplierPriceRowModel
+    {
+        public Guid IngredientId { get; set; }
+        public string? IngredientCode { get; set; }
+        public string? IngredientName { get; set; }
+        public Guid? CategoryId { get; set; }
+        public string? CategoryName { get; set; }
+        public string? BaseUnitName { get; set; }
+        public List<string> ListFlag { get; set; } = [];
+        public List<SupplierPriceCellModel> ListCell { get; set; } = [];
+    }
+
+    public class SupplierPriceCellModel
+    {
+        public Guid SupplierId { get; set; }
+        public Guid PriceId { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public string? UnitName { get; set; }
+        public decimal? PricePerBase { get; set; }
+        public bool IsPreferred { get; set; }
+        public bool IsCheapest { get; set; }
+        public decimal? MinimumOrderQty { get; set; }
+        public int? LeadTimeDays { get; set; }
+        public string? DeliveryDays { get; set; }
+        public DateTime? EffectiveFrom { get; set; }
+        public DateTime? EffectiveTo { get; set; }
+        public decimal? ChangePct { get; set; }
+        public bool NoConversion { get; set; }
+    }
+
+    public class SupplierPriceExtendRequest
+    {
+        public List<Guid> ListId { get; set; } = [];
+        public DateTime? EffectiveTo { get; set; }
+    }
+
+    public class SupplierQuoteImportModel
+    {
+        public int Up { get; set; }
+        public int Down { get; set; }
+        public int New { get; set; }
+        public int Error { get; set; }
+        public int Applied { get; set; }
+        public List<SupplierQuoteLineModel> ListLine { get; set; } = [];
+    }
+
+    public class SupplierQuoteLineModel
+    {
+        public int Row { get; set; }
+        public string? IngredientCode { get; set; }
+        public Guid? IngredientId { get; set; }
+        public string? IngredientName { get; set; }
+        public string? Text { get; set; }
+        public decimal? CurrentPrice { get; set; }
+        public decimal? NewPrice { get; set; }
+        public Guid? UnitId { get; set; }
+        public string? UnitName { get; set; }
+        public DateTime? EffectiveFrom { get; set; }
+        /// <summary>UP · DOWN · NEW · SAME · ERROR.</summary>
+        public string Status { get; set; } = "NEW";
+        public string? Message { get; set; }
+        public bool Applied { get; set; }
+    }
+}

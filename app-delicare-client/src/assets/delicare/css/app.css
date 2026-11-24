@@ -811,3 +811,17 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .grp-menu button{border:0;background:#fff;text-align:left;padding:8px 12px;cursor:pointer;font-size:13px}.grp-menu button:hover{background:#F4F7EF}.grp-menu button[disabled]{color:#9aa39c;cursor:not-allowed}
 .grp-in{height:30px;width:100%}
 @media(max-width:768px){.grp-layout{grid-template-columns:1fr}.grp-side{position:static}.grp-list{flex-direction:row;overflow-x:auto;gap:6px}.grp-it{border:1px solid var(--line);border-radius:16px;white-space:nowrap;flex:none}.grp-hint{display:none}}
+
+/* UI-6.19 (D-100): form giá NCC + bảng so sánh */
+.sp-two{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px}
+.sp-two h3{font-size:14px;margin:0 0 8px}
+.sp-side{border-left:1px solid var(--line);padding-left:16px}
+.sp-side .table td{font-size:12px}.sp-cur td{background:var(--green-soft)}
+.sp-cmp{padding:6px 0;border-bottom:1px solid #F0F2ED;font-size:13px}
+.sp-days{gap:6px}
+.sp-matrix td.sp-cell{cursor:pointer;position:relative;white-space:nowrap}
+.sp-matrix td.sp-cell.pref{box-shadow:inset 0 0 0 2px var(--green)}
+.sp-matrix td.sp-cell:hover{background:#F7FAF2}
+.sp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle}
+.sp-pref{visibility:hidden}.sp-cell:hover .sp-pref{visibility:visible}
+@media(max-width:1100px){.sp-two{grid-template-columns:1fr}.sp-side{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px}}

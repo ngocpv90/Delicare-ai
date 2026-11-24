@@ -133,7 +133,7 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = (typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess) + (costNote == null ? string.Empty : " – " + costNote),
+                    ResponseMessage = (typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess : ConstantHelper.Message.SaveSuccess) + (_priceNote == null ? string.Empty : " – " + _priceNote) + (costNote == null ? string.Empty : " – " + costNote),
                     Data = true
                 };
             }
@@ -161,17 +161,9 @@ namespace AppDelicare.Services.Implement
             }
             if ((request.UnitPrice ?? 0) < 0 || (request.MinimumOrderQuantity ?? 0) < 0 || (request.LeadTimeDays ?? 0) < 0)
             {
-                return "Đơn giá, MOQ và lead time không được âm.";
+                return "Đơn giá, số lượng đặt tối thiểu và số ngày giao không được âm.";
             }
-            // Cung NCC + nguyen lieu: khong duoc trung khoang thoi gian hieu luc (null = khong gioi han)
-            var overlap = _unitOfWork.SupplierMaterialRepository
-                .FindBy(x => x.SupplierId == request.SupplierId && x.IngredientId == request.IngredientId && x.Id != request.Id && !x.IsDeleted)
-                .Any(x => (!request.EffectiveFrom.HasValue || !x.EffectiveTo.HasValue || request.EffectiveFrom.Value.Date <= x.EffectiveTo.Value.Date)
-                       && (!x.EffectiveFrom.HasValue || !request.EffectiveTo.HasValue || x.EffectiveFrom.Value.Date <= request.EffectiveTo.Value.Date));
-            if (overlap)
-            {
-                return "Nhà cung cấp đã có thông tin cho nguyên liệu này trong khoảng thời gian hiệu lực đã chọn.";
-            }
+            // UI-6.19 (D-100): trùng khoảng hiệu lực kiểm ở PriceRulesAsync (tự kết thúc giá cũ đang mở).
             return string.Empty;
         }
 
@@ -199,8 +191,18 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
+            invalid = await PriceRulesAsync(request, null);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             ClearOtherPreferred(request);
             var insert = _mapper.Map<SupplierMaterial>(request);
+            if (insert.Id == Guid.Empty)
+            {
+                insert.Id = Guid.NewGuid();
+            }
+            insert.MinimumOrderQty = insert.MinimumOrderQuantity;
             _unitOfWork.SupplierMaterialRepository.Add(insert);
             await _unitOfWork.SupplierMaterialRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -219,8 +221,14 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
+            invalid = await PriceRulesAsync(request, exist);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
             ClearOtherPreferred(request);
             var update = _mapper.Map(request, exist);
+            update.MinimumOrderQty = update.MinimumOrderQuantity;
             _unitOfWork.SupplierMaterialRepository.Update(update);
             await _unitOfWork.SupplierMaterialRepository.CommitAsync(typeSave);
             return string.Empty;

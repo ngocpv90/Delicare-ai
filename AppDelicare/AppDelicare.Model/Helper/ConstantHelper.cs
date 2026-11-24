@@ -260,6 +260,16 @@
             public static readonly string UomBaseNameRequired = "Nhập tên và mã đơn vị";
             public static readonly string UomCodeDuplicate = "Mã đơn vị «{0}» đã có";
             public static readonly string UomFactorInUse = "Đơn vị đã được dùng (nguyên liệu / giá NCC / công thức / chứng từ) – không đổi hệ số; tạo đơn vị đóng gói mới thay vì sửa";
+            public static readonly string SupplierPriceRequired = "Nhập đơn giá lớn hơn 0";
+            public static readonly string SupplierPriceUnitNotConvertible = "Đơn vị \"giá tính theo\" chưa quy đổi được về đơn vị kho của nguyên liệu – chọn đơn vị khác hoặc tạo đơn vị đóng gói";
+            public static readonly string SupplierPriceUsed = "Giá áp dụng từ {0} đã được dùng – không sửa đè đơn giá / đơn vị; lưu thành giá mới từ ngày (mặc định hôm nay)";
+            public static readonly string SupplierPriceSameStart = "Đã có giá bắt đầu ngày {0} – sửa giá ngày {0} thay vì thêm";
+            public static readonly string SupplierPriceOverlap = "Trùng khoảng áp dụng với giá {0} – {1} đã có";
+            public static readonly string SupplierPriceAutoEnded = "Hệ thống tự kết thúc giá từ {0} vào ngày {1}";
+            public static readonly string SupplierPreferredMoved = "Bỏ ưu tiên của: {0}";
+            public static readonly string SupplierPriceExtended = "Đã cập nhật ngày kết thúc {0} dòng giá (bỏ qua {1})";
+            public static readonly string SupplierQuoteInvalid = "Không phải mẫu báo giá (tải mẫu ở màn Bảng giá nhà cung cấp, không đổi tiêu đề cột)";
+            public static readonly string SupplierQuoteApplied = "Đã tạo {0} giá mới ({1} dòng lỗi bỏ qua)";
             public static readonly string ShelfLifeRequired = "Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0";
             public static readonly string ConversionFactorPositive = "Hệ số quy đổi phải lớn hơn 0";
             public static readonly string ConversionSameUnit = "Đơn vị nguồn và đích phải khác nhau";
