@@ -1,0 +1,214 @@
+{
+ "roles": {
+  "OPS-SCM": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Thực đơn & Món ăn (2)",
+    "Mua hàng (9)",
+    "Kho (6)",
+    "Sản xuất (1)",
+    "Chất lượng & ATTP (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-WH": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Mua hàng (3)",
+    "Kho (12)",
+    "Sản xuất (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-SCM-HEAD": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Thực đơn & Món ăn (2)",
+    "Mua hàng (9)",
+    "Kho (12)",
+    "Sản xuất (2)",
+    "Chất lượng & ATTP (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-KIT": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Thực đơn & Món ăn (3)",
+    "Kho (2)",
+    "Sản xuất (7)",
+    "Chất lượng & ATTP (5)",
+    "Đóng gói & Giao hàng (3)",
+    "Nhân sự (5)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-PLAN": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (3)",
+    "Kinh doanh (6)",
+    "Thực đơn & Món ăn (6)",
+    "Mua hàng (3)",
+    "Kho (2)",
+    "Sản xuất (7)",
+    "Giá thành (3)",
+    "Chất lượng & ATTP (7)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-LOG": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (2)",
+    "Sản xuất (1)",
+    "Chất lượng & ATTP (1)",
+    "Đóng gói & Giao hàng (11)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-POS": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (6)",
+    "Thực đơn & Món ăn (1)",
+    "Đóng gói & Giao hàng (4)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "QA": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (1)",
+    "Thực đơn & Món ăn (3)",
+    "Mua hàng (2)",
+    "Kho (3)",
+    "Sản xuất (3)",
+    "Chất lượng & ATTP (7)",
+    "Đóng gói & Giao hàng (3)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "SAL-SALES": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (4)",
+    "Đóng gói & Giao hàng (4)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "SAL-HEAD": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (4)",
+    "Giá thành (2)",
+    "Đóng gói & Giao hàng (4)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "SAL-CS": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (5)",
+    "Thực đơn & Món ăn (3)",
+    "Đóng gói & Giao hàng (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "FIN-ACC": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (6)",
+    "Mua hàng (3)",
+    "Kho (7)",
+    "Sản xuất (1)",
+    "Giá thành (3)",
+    "Đóng gói & Giao hàng (2)",
+    "Nhân sự (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "FIN-HR": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (1)",
+    "Nhân sự (7)",
+    "Quản trị hệ thống (1)",
+    "Nhật ký & Tích hợp (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "COO": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (6)",
+    "Mua hàng (9)",
+    "Kho (12)",
+    "Sản xuất (7)",
+    "Giá thành (3)",
+    "Chất lượng & ATTP (7)",
+    "Đóng gói & Giao hàng (12)",
+    "Nhân sự (7)",
+    "Nhật ký & Tích hợp (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "CEO": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (6)",
+    "Mua hàng (9)",
+    "Kho (12)",
+    "Sản xuất (7)",
+    "Giá thành (3)",
+    "Chất lượng & ATTP (7)",
+    "Đóng gói & Giao hàng (12)",
+    "Nhân sự (7)",
+    "Quản trị hệ thống (2)",
+    "Nhật ký & Tích hợp (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  }
+ },
+ "admin": []
+}

@@ -141,6 +141,15 @@
     IdChange: 'Bản ghi', Action: 'Hành động', EntityName: 'Bảng', Changes: 'Nội dung thay đổi', IPv4: 'Địa chỉ IP', PcName: 'Tên máy', FileName: 'Tên tệp', FileType: 'Loại tệp', FileSize: 'Dung lượng',
     TheoreticalQty: 'Lý thuyết', StandardQuantity2: '', VarianceCost: 'Giá trị chênh lệch', NameVN: 'Tên', FullNameVN: 'Tên đầy đủ', AdministrativeProvinceId: 'Tỉnh/TP', AdministrativeDistrictId: 'Quận/Huyện', AdministrativeUnitId: 'Cấp hành chính', AdministrativeRegionId: 'Vùng'
   };
+  // FIX-1.5 (D-88): cột kỹ thuật của màn tích hợp / nhật ký / chỉ số – không hiện tên cột tiếng Anh.
+  Object.entries({
+    IntegrationChannelId: 'Kênh nhắn tin', LinkedAt: 'Liên kết lúc', LastSeenAt: 'Hoạt động gần nhất', IdentityStatus: 'Trạng thái liên kết', RequestAt: 'Gửi lúc', ResponseAt: 'Phản hồi lúc',
+    HttpStatus: 'Mã phản hồi', DirectionCode: 'Chiều', OperationCode: 'Thao tác', ErrorCode: 'Mã lỗi', ErrorMessage: 'Nội dung lỗi', LogStatus: 'Trạng thái', JobCode: 'Job', RunId: 'Lượt chạy',
+    StartedAt: 'Bắt đầu', CompletedAt: 'Kết thúc', RunStatus: 'Trạng thái chạy', RowsProcessed: 'Số dòng xử lý', DurationSeconds: 'Thời gian (giây)', SourceWatermark: 'Mốc dữ liệu',
+    CorrelationId: 'Mã liên kết', IdempotencyKey: 'Khóa chống trùng', MessageType: 'Loại tin', ReceivedAt: 'Nhận lúc', ProcessingStatus: 'Trạng thái xử lý', QueuedAt: 'Vào hàng đợi',
+    SentAt: 'Gửi lúc', MessageStatus: 'Trạng thái gửi', RetryCount: 'Số lần thử lại', LastError: 'Lỗi gần nhất', ExternalUserId: 'Mã người dùng trên kênh', ExternalMessageId: 'Mã tin trên kênh',
+    ExternalConversationId: 'Mã hội thoại', RecipientExternalId: 'Người nhận trên kênh', ProviderMessageId: 'Mã tin của nhà cung cấp', PayloadHash: 'Mã băm nội dung', PayloadJson: 'Nội dung',
+  }).forEach(([k, v]) => { if (!UTIL.LABEL[k]) UTIL.LABEL[k] = v; });
   UTIL.colLabel = c => UTIL.LABEL[c] || c.replace(/([a-z])([A-Z])/g, '$1 $2');
   window.UTIL = UTIL;
 })();

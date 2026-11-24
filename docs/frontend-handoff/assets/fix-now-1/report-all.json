@@ -1,0 +1,1215 @@
+{
+ "roles": {
+  "OPS-SCM": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Thực đơn & Món ăn (2)",
+    "Mua hàng (9)",
+    "Kho (6)",
+    "Sản xuất (1)",
+    "Chất lượng & ATTP (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-WH": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Mua hàng (3)",
+    "Kho (12)",
+    "Sản xuất (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-SCM-HEAD": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Thực đơn & Món ăn (2)",
+    "Mua hàng (9)",
+    "Kho (12)",
+    "Sản xuất (2)",
+    "Chất lượng & ATTP (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-KIT": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Thực đơn & Món ăn (3)",
+    "Kho (2)",
+    "Sản xuất (7)",
+    "Chất lượng & ATTP (5)",
+    "Đóng gói & Giao hàng (3)",
+    "Nhân sự (5)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-PLAN": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (3)",
+    "Kinh doanh (6)",
+    "Thực đơn & Món ăn (6)",
+    "Mua hàng (3)",
+    "Kho (2)",
+    "Sản xuất (7)",
+    "Giá thành (3)",
+    "Chất lượng & ATTP (7)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-LOG": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (2)",
+    "Sản xuất (1)",
+    "Chất lượng & ATTP (1)",
+    "Đóng gói & Giao hàng (11)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "OPS-POS": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (6)",
+    "Thực đơn & Món ăn (1)",
+    "Đóng gói & Giao hàng (4)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "QA": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (1)",
+    "Thực đơn & Món ăn (3)",
+    "Mua hàng (2)",
+    "Kho (3)",
+    "Sản xuất (3)",
+    "Chất lượng & ATTP (7)",
+    "Đóng gói & Giao hàng (3)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "SAL-SALES": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (4)",
+    "Đóng gói & Giao hàng (4)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "SAL-HEAD": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (4)",
+    "Giá thành (2)",
+    "Đóng gói & Giao hàng (4)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "SAL-CS": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Kinh doanh (5)",
+    "Thực đơn & Món ăn (3)",
+    "Đóng gói & Giao hàng (2)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "FIN-ACC": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (6)",
+    "Mua hàng (3)",
+    "Kho (7)",
+    "Sản xuất (1)",
+    "Giá thành (3)",
+    "Đóng gói & Giao hàng (2)",
+    "Nhân sự (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "FIN-HR": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (1)",
+    "Nhân sự (7)",
+    "Quản trị hệ thống (1)",
+    "Nhật ký & Tích hợp (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "COO": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (6)",
+    "Mua hàng (9)",
+    "Kho (12)",
+    "Sản xuất (7)",
+    "Giá thành (3)",
+    "Chất lượng & ATTP (7)",
+    "Đóng gói & Giao hàng (12)",
+    "Nhân sự (7)",
+    "Nhật ký & Tích hợp (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  },
+  "CEO": {
+   "groups": [
+    "Việc của tôi (1)",
+    "Điều hành (4)",
+    "Kinh doanh (10)",
+    "Thực đơn & Món ăn (6)",
+    "Mua hàng (9)",
+    "Kho (12)",
+    "Sản xuất (7)",
+    "Giá thành (3)",
+    "Chất lượng & ATTP (7)",
+    "Đóng gói & Giao hàng (12)",
+    "Nhân sự (7)",
+    "Quản trị hệ thống (2)",
+    "Nhật ký & Tích hợp (1)"
+   ],
+   "diff": [],
+   "exc": [],
+   "http5xx": []
+  }
+ },
+ "admin": [
+  {
+   "g": "Việc của tôi",
+   "link": "hr-my",
+   "len": 6039,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Điều hành",
+   "link": "dash-exec",
+   "len": 1479,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Điều hành",
+   "link": "wf-inbox",
+   "len": 326,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Điều hành",
+   "link": "kpi-daily",
+   "len": 1007,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Điều hành",
+   "link": "kpi-monthly",
+   "len": 987,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-customer",
+   "len": 1333,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-contract",
+   "len": 3451,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-price-policy",
+   "len": 313,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-order-week",
+   "len": 4183,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-order",
+   "len": 764,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-forecast",
+   "len": 24712,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-reconciliation",
+   "len": 1923,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-billing",
+   "len": 2599,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "log-complaint",
+   "len": 2711,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kinh doanh",
+   "link": "crm-location",
+   "len": 3326,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Thực đơn & Món ăn",
+   "link": "menu-menu",
+   "len": 2015,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Thực đơn & Món ăn",
+   "link": "menu-assignment",
+   "len": 3599,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Thực đơn & Món ăn",
+   "link": "menu-change-request",
+   "len": 1630,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Thực đơn & Món ăn",
+   "link": "menu-recipe",
+   "len": 31454,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Thực đơn & Món ăn",
+   "link": "menu-dish",
+   "len": 1280,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Thực đơn & Món ăn",
+   "link": "menu-dish-cat",
+   "len": 571,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-requirement",
+   "len": 2000,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-pr",
+   "len": 3585,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-po",
+   "len": 5338,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-supplier",
+   "len": 951,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-supplier-material",
+   "len": 2580,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-ingredient",
+   "len": 937,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-ingredient-cat",
+   "len": 252,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-uom",
+   "len": 816,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Mua hàng",
+   "link": "scm-uom-conversion",
+   "len": 287,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-gr",
+   "len": 5081,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-issue",
+   "len": 5180,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-inv-balance",
+   "len": 3496,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-lot",
+   "len": 4277,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-inv-txn",
+   "len": 2539,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-reservation",
+   "len": 2358,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-stockcount",
+   "len": 866,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-consumption-var",
+   "len": 2612,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-warehouse",
+   "len": 909,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-zone",
+   "len": 1491,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-location",
+   "len": 255,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Kho",
+   "link": "scm-inv-policy",
+   "len": 311,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Sản xuất",
+   "link": "prod-plan",
+   "len": 921,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Sản xuất",
+   "link": "prod-order",
+   "len": 1942,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Sản xuất",
+   "link": "prod-batch",
+   "len": 3707,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Sản xuất",
+   "link": "prod-output",
+   "len": 2216,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Sản xuất",
+   "link": "prod-waste",
+   "len": 1706,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Sản xuất",
+   "link": "prod-line",
+   "len": 870,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Sản xuất",
+   "link": "prod-workstation",
+   "len": 1115,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Giá thành",
+   "link": "cost-standard",
+   "len": 3733,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Giá thành",
+   "link": "cost-actual",
+   "len": 13375,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Giá thành",
+   "link": "cost-meal",
+   "len": 990,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Chất lượng & ATTP",
+   "link": "qc-inspection",
+   "len": 1985,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Chất lượng & ATTP",
+   "link": "qc-checklist-result",
+   "len": 956,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Chất lượng & ATTP",
+   "link": "qc-temperature",
+   "len": 2159,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Chất lượng & ATTP",
+   "link": "qc-cleaning",
+   "len": 1386,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Chất lượng & ATTP",
+   "link": "qc-cleaning-result",
+   "len": 2132,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Chất lượng & ATTP",
+   "link": "qc-supplier-issue",
+   "len": 672,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Chất lượng & ATTP",
+   "link": "qc-checklist",
+   "len": 935,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-packing-order",
+   "len": 2252,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-packing-result",
+   "len": 1684,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-delivery-order",
+   "len": 2805,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-route",
+   "len": 1030,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-loading",
+   "len": 2708,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-execution",
+   "len": 715,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-gps",
+   "len": 338,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-pod",
+   "len": 1468,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-container-return",
+   "len": 1744,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-return-inspection",
+   "len": 962,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-packaging-ledger",
+   "len": 4242,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Đóng gói & Giao hàng",
+   "link": "log-vehicle",
+   "len": 866,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhân sự",
+   "link": "adm-employee",
+   "len": 992,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhân sự",
+   "link": "hr-shift-assign",
+   "len": 1991,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhân sự",
+   "link": "hr-attendance",
+   "len": 4724,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhân sự",
+   "link": "hr-leave",
+   "len": 2243,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhân sự",
+   "link": "hr-swap",
+   "len": 2389,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhân sự",
+   "link": "hr-shift",
+   "len": 415,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhân sự",
+   "link": "adm-position",
+   "len": 200,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-user",
+   "len": 910,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-usergroup",
+   "len": 468,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-permission",
+   "len": 6714,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-objectmenu",
+   "len": 6954,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-orgunit",
+   "len": 3893,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-company",
+   "len": 280,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "sys-import",
+   "len": 2385,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-reference",
+   "len": 1247,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-admin-unit",
+   "len": 1288,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Quản trị hệ thống",
+   "link": "adm-document",
+   "len": 771,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "adm-job",
+   "len": 3557,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "adm-audit",
+   "len": 802,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "adm-access-log",
+   "len": 464,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "adm-merge-conflict",
+   "len": 302,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "int-channel",
+   "len": 515,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "int-bot",
+   "len": 707,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "int-identity",
+   "len": 1391,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "int-inbound",
+   "len": 1014,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "int-outbound",
+   "len": 1231,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "int-log",
+   "len": 1258,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "kpi-definition",
+   "len": 953,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  },
+  {
+   "g": "Nhật ký & Tích hợp",
+   "link": "kpi-refresh",
+   "len": 3219,
+   "words": [],
+   "exc": [],
+   "http5xx": [],
+   "toast": [],
+   "renderErr": []
+  }
+ ]
+}

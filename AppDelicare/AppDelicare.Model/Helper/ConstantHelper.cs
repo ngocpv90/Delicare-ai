@@ -342,7 +342,7 @@
             public static readonly string MrpTopUpNothingShort = "Không thiếu thêm so với các đề nghị mua đã lập ({0}) – không lập đề nghị mua bổ sung";
             public static readonly string MrpTopUpCreated = "Đã lập đề nghị mua bổ sung {0} ({1} dòng)";
             public static readonly string MrpTopUpOverRequested = "Cảnh báo: {0} đã đề nghị {1} {2}, nhu cầu mới chỉ thiếu {3} {2} (thừa {4}) – không tự sửa đề nghị cũ, kiểm tra lại nếu cần";
-            public static readonly string MrpNoLockedOrder = "Không có đơn Đã chốt cho ngày {0} – chốt đơn (Order/Lock, Order/LockByMealDate) trước khi tính nhu cầu";
+            public static readonly string MrpNoLockedOrder = "Không có đơn Đã chốt cho ngày {0} – chốt đơn của ngày đó (màn Đơn đặt suất › Chốt đơn) trước khi tính nhu cầu";
             public static readonly string MrpNotCalculated = "Chưa tính nhu cầu nguyên liệu cho ngày {0}";
             public static readonly string MrpOrdersNotLocked = "Cảnh báo: còn {0} đơn chưa chốt của ngày {1} (không được tính)";
             public static readonly string MrpOrderLineNoMenu = "Cảnh báo: đơn {0} (loại suất {1}) chưa gắn thực đơn – bỏ qua {2} suất";

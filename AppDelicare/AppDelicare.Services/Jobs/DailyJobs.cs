@@ -13,7 +13,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "LockOrders";
         public string Name => "Khóa đơn ngày mai";
-        public string Description => "Khóa mọi đơn Đã xác nhận của ngày ăn D+1 (= nút Order/LockByMealDate). Đơn chưa xác nhận / chờ duyệt: chỉ liệt kê.";
+        public string Description => "Khóa mọi đơn Đã xác nhận của ngày ăn D+1 (như nút Chốt đơn theo ngày ăn ở màn Đơn đặt suất). Đơn chưa xác nhận / chờ duyệt: chỉ liệt kê.";
         public string DefaultAt => "20:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -52,7 +52,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "Mrp";
         public string Name => "Tính nhu cầu vật tư + đề nghị mua";
-        public string Description => "Tính MRP cho ngày sản xuất D+1 (= nút MaterialRequirement/Calculate, toàn công ty): kế hoạch KH-, thiếu hụt, đề nghị mua Nháp + NCC gợi ý.";
+        public string Description => "Tính MRP cho ngày sản xuất D+1 (như nút Tính nhu cầu nguyên liệu, toàn công ty): kế hoạch KH-, thiếu hụt, đề nghị mua Nháp + NCC gợi ý.";
         public string DefaultAt => "20:30";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -115,7 +115,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "LotExpiry";
         public string Name => "Xử lý lô hết hạn";
-        public string Description => "Lô Khả dụng có hạn < hôm nay → Hết hạn + ghi hao hụt tồn (= nút MaterialLot/ProcessExpired). Lô tạm giữ bỏ qua.";
+        public string Description => "Lô Khả dụng có hạn < hôm nay → Hết hạn + ghi hao hụt tồn (như nút Xử lý lô hết hạn). Lô tạm giữ bỏ qua.";
         public string DefaultAt => "00:15";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -132,7 +132,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "ContractExpiry";
         public string Name => "Hợp đồng hết hạn";
-        public string Description => "Hợp đồng Hiệu lực có ngày hết hiệu lực < hôm nay → Hết hạn (= nút Contract/ExpireOverdue).";
+        public string Description => "Hợp đồng Hiệu lực có ngày hết hiệu lực < hôm nay → Hết hạn (như nút Cập nhật hợp đồng hết hạn).";
         public string DefaultAt => "00:30";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -151,7 +151,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "MarkAbsent";
         public string Name => "Chốt vắng ca hôm qua";
-        public string Description => "Ca Kế hoạch / Xác nhận của hôm qua đã hết giờ mà không vào ca → Vắng (= nút ShiftAssignment/MarkAbsent, toàn công ty).";
+        public string Description => "Ca Kế hoạch / Xác nhận của hôm qua đã hết giờ mà không vào ca → Vắng (như nút Đánh dấu vắng, toàn công ty).";
         public string DefaultAt => "08:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)

@@ -64,7 +64,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "DayCard";
         public string Name => "Thẻ ngày cho quản lý (bot Điều hành)";
-        public string Description => "07:00 – gửi Thẻ ngày (ghim) cho người có mục Dashboard điều hành đã liên kết bot DH: việc chờ tôi duyệt, cảnh báo đang mở, số liệu chính hôm nay.";
+        public string Description => "07:00 – gửi Thẻ ngày (ghim) cho người có mục Bảng điều hành đã liên kết bot DH: việc chờ tôi duyệt, cảnh báo đang mở, số liệu chính hôm nay.";
         public string DefaultAt => "07:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -112,7 +112,7 @@ namespace AppDelicare.Services.Jobs
     }
 
     /// <summary>
-    /// BOT-2.3 (BOT_TELEGRAM §3.3, §5.1 MORNING_BRIEF): 07:00 – bản tin sáng ⚪ cho người có mục Dashboard điều hành (#/dash-exec), bot DH:
+    /// BOT-2.3 (BOT_TELEGRAM §3.3, §5.1 MORNING_BRIEF): 07:00 – bản tin sáng ⚪ cho người có mục Bảng điều hành (#/dash-exec), bot DH:
     /// kết quả hôm qua (giao, sản xuất, QC, phản ánh) + kế hoạch hôm nay (suất, đơn, điểm giao, người có ca). Số liệu = Dashboard/GetExecutive (như web).
     /// Khác Thẻ ngày (ghim, việc của riêng người đó): bản tin là số liệu chung công ty. Chống trùng theo ngày.
     /// </summary>
@@ -120,7 +120,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "MorningBrief";
         public string Name => "Bản tin sáng (bot Điều hành)";
-        public string Description => "07:00 – kết quả hôm qua + kế hoạch hôm nay cho người có mục Dashboard điều hành (bot DH).";
+        public string Description => "07:00 – kết quả hôm qua + kế hoạch hôm nay cho người có mục Bảng điều hành (bot DH).";
         public string DefaultAt => "07:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -152,7 +152,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "DailyReport";
         public string Name => "Báo cáo cuối ngày (bot Điều hành)";
-        public string Description => "17:00 – kết quả hôm nay (giao, sản xuất, QC, nhân sự, phản ánh) + đơn ngày mai cho người có mục Dashboard điều hành (bot DH).";
+        public string Description => "17:00 – kết quả hôm nay (giao, sản xuất, QC, nhân sự, phản ánh) + đơn ngày mai cho người có mục Bảng điều hành (bot DH).";
         public string DefaultAt => "17:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -180,13 +180,13 @@ namespace AppDelicare.Services.Jobs
 
     /// <summary>
     /// BOT-3.3 (D-72, BOT_TELEGRAM §3.3 "báo cáo tuần / tháng"): 07:30 – thứ Hai gửi báo cáo TUẦN trước (KPI trung bình 7 ngày so mục tiêu, KpiSnapshot/GetDaily),
-    /// ngày 1 gửi báo cáo THÁNG trước (KpiSnapshot/GetMonthly) ⚪ cho người có mục Dashboard điều hành, bot DH. Ngày khác: không gửi. Chống trùng theo kỳ.
+    /// ngày 1 gửi báo cáo THÁNG trước (KpiSnapshot/GetMonthly) ⚪ cho người có mục Bảng điều hành, bot DH. Ngày khác: không gửi. Chống trùng theo kỳ.
     /// </summary>
     public sealed class PeriodReportJob(IUnitOfWork unitOfWork, IKpiSnapshotService kpi, INotificationService notifications) : IScheduledJob
     {
         public string Code => "PeriodReport";
         public string Name => "Báo cáo tuần / tháng (bot Điều hành)";
-        public string Description => "07:30 – thứ Hai: KPI tuần trước; ngày 1: KPI tháng trước – cho người có mục Dashboard điều hành (bot DH).";
+        public string Description => "07:30 – thứ Hai: KPI tuần trước; ngày 1: KPI tháng trước – cho người có mục Bảng điều hành (bot DH).";
         public string DefaultAt => "07:30";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -327,7 +327,7 @@ namespace AppDelicare.Services.Jobs
     /// <summary>BOT-2.3: câu chữ dùng chung cho bản tin / báo cáo (số liệu từ Dashboard/GetExecutive).</summary>
     public static class BotReports
     {
-        /// <summary>Người nhận bản tin / báo cáo = người có mục Dashboard điều hành (PROPOSED – CEO / COO / PMO / trưởng phòng theo cấp).</summary>
+        /// <summary>Người nhận bản tin / báo cáo = người có mục Bảng điều hành (PROPOSED – CEO / COO / PMO / trưởng phòng theo cấp).</summary>
         public const string ExecutiveMenu = "#/dash-exec";
 
         public static IEnumerable<string> Result(DashboardKpiModel k)

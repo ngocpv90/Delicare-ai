@@ -10,7 +10,7 @@
 
 ## 2. Màn hình được dùng
 
-**APR-UI-1 (D-81):** sidebar chỉ còn **1 mục "Phê duyệt"** (ngay dưới "Việc của tôi", có số **chờ tôi duyệt**). Mục hiện cho người có ít nhất một quyền duyệt, người có quyền xem hộp chung, hoặc người đang có yêu cầu đã gửi. Các mục cũ "Phê duyệt › <loại>" vẫn giữ trong hệ thống làm **quyền duyệt** (cấp ở màn Phân quyền – khối *Quyền duyệt*, `01_QUAN_TRI.md` §4.5) nhưng không còn trên menu; link cũ `#/wf-inbox?type=…` vẫn mở được (áp làm bộ lọc).
+**APR-UI-1 (D-81):** sidebar chỉ còn **1 mục "Phê duyệt"** nằm trong nhóm **Điều hành**, ngay dưới **Bảng điều hành** (D-93), có số **chờ tôi duyệt**; người không có quyền Bảng điều hành vẫn thấy nhóm Điều hành chứa mục này. Mục hiện cho người có ít nhất một quyền duyệt, người có quyền xem hộp chung, hoặc người đang có yêu cầu đã gửi. Các mục cũ "Phê duyệt › <loại>" vẫn giữ trong hệ thống làm **quyền duyệt** (cấp ở màn Phân quyền – khối *Quyền duyệt*, `01_QUAN_TRI.md` §4.5) nhưng không còn trên menu; link cũ `#/wf-inbox?type=…` vẫn mở được (áp làm bộ lọc).
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|

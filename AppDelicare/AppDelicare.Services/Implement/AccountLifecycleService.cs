@@ -631,7 +631,7 @@ namespace AppDelicare.Services.Implement
             s.Info.Add(new() { Label = "Đơn vị", Value = unit ?? "–" });
             s.Info.Add(new() { Label = "Chức danh", Value = position == null ? "–" : $"{position.Name} ({position.Code})" });
             s.Info.Add(new() { Label = "Trạng thái làm việc", Value = EmployeeStatus.IsWorking(e.Status) ? "Đang làm" : "Đã nghỉ" });
-            s.Info.Add(new() { Label = "Nhóm gợi ý theo chức danh", Value = suggested.Count == 0 ? "Chưa cấu hình (BusinessRules:PositionDefaultGroups)" : string.Join(", ", suggested) });
+            s.Info.Add(new() { Label = "Nhóm gợi ý theo chức danh", Value = suggested.Count == 0 ? "Chưa cấu hình cho chức danh này – IT chọn nhóm bên dưới" : string.Join(", ", suggested) });
             if (businessType == AccountLifecycleCodes.CreateBusinessType)
             {
                 s.Info.Add(new() { Label = "Tên đăng nhập sẽ tạo", Value = login.Length == 0 ? "–" : login });

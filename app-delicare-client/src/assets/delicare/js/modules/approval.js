@@ -9,7 +9,7 @@
   const U = UTIL, I = U.icon, esc = U.esc;
   const legacy = APP.SCREENS['wf-inbox'];
   const LOADING = '<div class="empty">Đang tải…</div>';
-  const MODULES = ['Kinh doanh', 'Thực đơn', 'Mua hàng', 'Kho', 'Sản xuất', 'Nhân sự', 'Khác'];
+  const MODULES = ['Kinh doanh', 'Thực đơn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng', 'Nhân sự', 'Quản trị hệ thống', 'Khác']; /* FIX-1.1: + Quản trị hệ thống (3 loại duyệt tài khoản HR-ACC-1), Chất lượng (QC / mẻ / lô) */
   // Tên loại cho tab Tất cả (máy chủ trả typeName ở các tab khác).
   const TYPE_VI = { PURCHASE_ORDER: 'Đơn mua hàng', PURCHASE_REQUEST: 'Đề nghị mua', ORDER_CHANGE_AFTER_CUTOFF: 'Sửa đơn sau chốt', ORDER_DEVIATION: 'Lệch suất đơn đặt', CONTRACT: 'Hợp đồng',
     RECIPE_VERSION: 'Công thức chế biến', MENU_CHANGE: 'Yêu cầu đổi món', STOCK_COUNT: 'Kiểm kê', STOCK_ADJUSTMENT: 'Điều chỉnh tồn', LEAVE_REQUEST: 'Đơn xin nghỉ', SHIFT_SWAP: 'Đơn đổi ca' };
@@ -66,7 +66,7 @@
   APP.register('wf-inbox', (el, f, p) => {
     if (!live()) return legacy && legacy(el, f, p);
     // D-81 (a): 1 mục "Phê duyệt" (tên menu cũ "Hộp phê duyệt" thuộc nhóm Nhân sự không còn dùng ở giao diện).
-    f.fn = f.name = 'Phê duyệt'; f.grp = 'Phê duyệt'; document.title = 'Phê duyệt | DELI-CARE';
+    f.fn = f.name = 'Phê duyệt'; f.grp = 'Điều hành'; /* D-93: mục Phê duyệt thuộc nhóm Điều hành */ document.title = 'Phê duyệt | DELI-CARE';
     if (p && p.type && p.type !== 'wf-inbox' && H.lastType !== p.type) { H.lastType = p.type; H.tab = 'mine'; H.g = ''; }
     if (H.mine === null) { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel">${LOADING}</div>`; loadMine(true).then(() => APP.current === 'wf-inbox' && APP.refresh()); if (H.sent === null) loadSent(); return; }
     if (H.sent === null) { loadSent().then(() => APP.current === 'wf-inbox' && APP.refresh()); }

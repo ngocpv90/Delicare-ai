@@ -10,8 +10,19 @@
   };
   const CMAP = {}; Object.entries(COLOR).forEach(([c, s]) => s.split(' ').forEach(k => CMAP[k] = c));
   const UI = {};
-  UI.statusVi = (t, col, v) => { const d = Store.statusDef(t, col); if (d) { const i = d.codes.indexOf(v); if (i >= 0 && d.vi[i]) return d.vi[i]; } return v; };
-  UI.badge = (v, t, col) => v === null || v === undefined || v === '' ? '<span class="muted">–</span>' : `<span class="badge ${CMAP[v] || 'gray'}" title="${esc(t && !Store.isLive ? t + '.' + col + ' = ' + v : (t ? UI.statusVi(t, col, v) : v))}">${esc(t ? UI.statusVi(t, col, v) : v)}</span>`;
+  // D-88 (FIX-1.5 – bản đầu, UI-6.10 rà đủ): từ điển trạng thái dùng chung khi bảng / cột chưa có định nghĩa riêng – không in mã tiếng Anh.
+  UI.STATUS_VI = {
+    Active: 'Đang hoạt động', Inactive: 'Ngừng hoạt động', Draft: 'Nháp', Submitted: 'Đã gửi', Pending: 'Chờ xử lý', Approved: 'Đã duyệt', Rejected: 'Từ chối',
+    Cancelled: 'Đã hủy', Canceled: 'Đã hủy', Confirmed: 'Đã xác nhận', Locked: 'Đã chốt', Published: 'Đã công bố', Superseded: 'Bị thay thế', Expired: 'Hết hiệu lực',
+    Open: 'Đang mở', Closed: 'Đã đóng', InProgress: 'Đang thực hiện', Completed: 'Hoàn thành', Delivered: 'Đã giao', Failed: 'Thất bại', OnHold: 'Tạm giữ', Hold: 'Tạm giữ',
+    Passed: 'Đạt', Pass: 'Đạt', Fail: 'Không đạt', Success: 'Thành công', Succeeded: 'Thành công', Running: 'Đang chạy', Started: 'Đang chạy', Queued: 'Chờ gửi', Sent: 'Đã gửi',
+    Received: 'Đã nhận', Processed: 'Đã xử lý', Ignored: 'Bỏ qua', Linked: 'Đã liên kết', Revoked: 'Đã thu hồi', Unlinked: 'Đã gỡ liên kết', Resigned: 'Nghỉ việc', Suspended: 'Tạm ngừng',
+    New: 'Mới', Planned: 'Đã lập', Released: 'Đã phát hành', Available: 'Sẵn sàng', Reserved: 'Đã giữ chỗ', Consumed: 'Đã dùng', Returned: 'Đã trả', Packed: 'Đã đóng gói',
+    Paid: 'Đã thanh toán', Unpaid: 'Chưa thanh toán', Valid: 'Hợp lệ', Invalid: 'Không hợp lệ', Error: 'Lỗi', Warning: 'Cảnh báo', Info: 'Thông tin',
+    Inbound: 'Đến', Outbound: 'Đi', IN: 'Đến', OUT: 'Đi', true: 'Có', false: 'Không',
+  };
+  UI.statusVi = (t, col, v) => { const d = t && Store.statusDef(t, col); if (d) { const i = d.codes.indexOf(v); if (i >= 0 && d.vi[i]) return d.vi[i]; } return v != null && Object.prototype.hasOwnProperty.call(UI.STATUS_VI, v) ? UI.STATUS_VI[v] : v; };
+  UI.badge = (v, t, col) => v === null || v === undefined || v === '' ? '<span class="muted">–</span>' : `<span class="badge ${CMAP[v] || 'gray'}" title="${esc(t && !Store.isLive ? t + '.' + col + ' = ' + v : (t ? UI.statusVi(t, col, v) : v))}">${esc(UI.statusVi(t, col, v))}</span>`;
   UI.tag = (v, c) => `<span class="tag ${c || ''}">${esc(v)}</span>`;
   // ---------- Hiển thị giá trị theo kiểu cột ----------
   UI.val = (t, col, v, row) => {

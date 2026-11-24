@@ -805,6 +805,69 @@ public static partial class Seeds
         return string.Join(nl, lines);
     }
 
+    // ------------------------------------------------------------------ menu dự phòng FE (FIX-1.4 / MENU-5.7, D-92; D-93)
+    /// <summary>
+    /// Nhóm menu sidebar theo đúng thứ tự hiển thị (dùng chung cho menu dự phòng <c>catalog.js</c> và test so khớp):
+    /// bỏ nhóm "Phê duyệt" (D-93 c – chỉ là quyền duyệt), bỏ mục quyền vào bot (D-62) và Hộp phê duyệt cũ khỏi Nhân sự,
+    /// mục <c>wf-inbox</c> "Phê duyệt" (màn tổng D-81) nằm trong Điều hành ngay dưới Bảng điều hành (D-93 a).
+    /// </summary>
+    public static IReadOnlyList<(string Link, string Name, string[] Items)> SidebarGroups() =>
+    [
+        .. Menu5Groups.Where(g => g.Link != ApprovalGroupLink).Select(g =>
+        {
+            var items = g.Items.Where(i => i != "wf-inbox" && !MatrixSkipLinks.Contains("#/" + i) && !Menu5HiddenLinks.Contains("#/" + i)).ToList();
+            if (g.Link == "#/group/01")
+            {
+                items.Insert(items.IndexOf("dash-exec") + 1, "wf-inbox");
+            }
+            return (g.Link, g.Name, items.ToArray());
+        }),
+    ];
+
+    /// <summary>
+    /// Sinh lại dòng dữ liệu <c>window.DC_CATALOG</c> của FE (<c>app-delicare-client/src/assets/delicare/js/data/catalog.js</c>):
+    /// <c>grp</c> + <c>fn</c> (tên mục như seed) của mọi màn có trong <see cref="SidebarGroups"/>, <c>menuOrder</c> = tên nhóm theo thứ tự,
+    /// <c>menuGroups</c> = [{ name, link, items }] (thứ tự mục trong nhóm). Màn không thuộc nhóm nào (vd "Database Architecture") giữ <c>grp</c> cũ
+    /// nhưng không có trong <c>menuOrder</c> → không lên sidebar dự phòng.
+    /// </summary>
+    public static string FrontCatalog(string js, List<Screen> screens)
+    {
+        int nl = js.IndexOf('\n');
+        string head = nl >= 0 ? js[..(nl + 1)] : string.Empty;
+        string body = nl >= 0 ? js[(nl + 1)..] : js;
+        int start = body.IndexOf('{');
+        int end = body.LastIndexOf('}');
+        var root = System.Text.Json.Nodes.JsonNode.Parse(body[start..(end + 1)])!.AsObject();
+        var groups = SidebarGroups();
+        var where = new Dictionary<string, string>();
+        foreach (var g in groups)
+        {
+            foreach (string i in g.Items)
+            {
+                where[i] = g.Name;
+            }
+        }
+        foreach (var f in root["funcs"]!.AsArray())
+        {
+            string id = f!["id"]!.GetValue<string>();
+            if (where.TryGetValue(id, out string? grp))
+            {
+                f["grp"] = grp;
+                f["fn"] = id == "wf-inbox" ? "Phê duyệt" : ItemName(id, screens);
+            }
+        }
+        root["menuOrder"] = new System.Text.Json.Nodes.JsonArray([.. groups.Select(g => (System.Text.Json.Nodes.JsonNode?)g.Name)]);
+        root["menuGroups"] = new System.Text.Json.Nodes.JsonArray([.. groups.Select(g => (System.Text.Json.Nodes.JsonNode?)new System.Text.Json.Nodes.JsonObject
+        {
+            ["name"] = g.Name,
+            ["link"] = g.Link,
+            ["items"] = new System.Text.Json.Nodes.JsonArray([.. g.Items.Select(i => (System.Text.Json.Nodes.JsonNode?)i)]),
+        })]);
+        var opts = new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+        string eol = head.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        return head + "window.DC_CATALOG=" + root.ToJsonString(opts) + ";" + eol;
+    }
+
     /// <summary>Tóm tắt in ra console: số mục được vào / số ô quyền theo nhóm; người duyệt từng mục.</summary>
     public static string Menu5Summary()
     {

@@ -353,7 +353,7 @@
     APP.resources().then(set => (set && set.has(String(res).toLowerCase())) ? Store.query('Common/GetStatusSummary', { Resource: res }) : null).then(x => {
       if (!x || !x.ok || !x.data || APP.current !== scr) return;
       const by = {}; (x.data.listByStatus || []).forEach(s => { by[s.status === null || s.status === undefined ? '' : String(s.status)] = s; });
-      el.querySelectorAll('[data-st]').forEach(c => { if (c.dataset.st === '') { if (x.data.total !== undefined) c.textContent = 'Tất cả · ' + x.data.total; return; } const s = by[c.dataset.st]; if (s) c.textContent = (s.statusName || c.dataset.st) + ' · ' + s.count; });
+      el.querySelectorAll('[data-st]').forEach(c => { if (c.dataset.st === '') { if (x.data.total !== undefined) c.textContent = 'Tất cả · ' + x.data.total; return; } const s = by[c.dataset.st]; if (s) c.textContent = (s.statusName && s.statusName !== c.dataset.st ? s.statusName : UI.statusVi(f.table, Store.statusCol(f.table), c.dataset.st)) + ' · ' + s.count; /* D-88: máy chủ chưa có tên → từ điển chung */ });
     });
   };
 

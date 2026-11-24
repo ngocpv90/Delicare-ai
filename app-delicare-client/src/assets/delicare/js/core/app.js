@@ -38,10 +38,13 @@
   APP.base = () => (window.DC_HOST && window.DC_HOST.hashBase) || '#/';
   APP.href = id => APP.base() + id;
   APP.go = id => { location.hash = APP.href(id); };
+  // FIX-1.5: trang chủ theo quyền – không xem được Bảng điều hành → Việc của tôi.
+  APP.home = () => (Store.perm('dash-exec').access === false ? 'hr-my' : 'dash-exec');
   // ---------- Sidebar ----------
   function buildNav() {
     const nav = document.getElementById('navGroups');
     const db = dbNav(), list = db || catalogNav();
+    navNotice(db);
     // Tìm kiếm chức năng dùng cùng danh sách với sidebar (chế độ menu theo DB).
     APP._navIds = db ? new Set(db.flatMap(g => g.items.map(i => i.f.id))) : null;
     // MENU-5 (D-79): nhóm 1 mục cùng tên ("Việc của tôi") hiện thành 1 dòng bấm thẳng, không mở / đóng.
@@ -51,8 +54,23 @@
     markNav(APP.current);
     updateCounts();
   }
-  // Menu theo danh mục cứng của mockup (chế độ DEMO, hoặc khi máy chủ không trả menu).
+  // FIX-1.4 (D-92): chế độ thật không âm thầm dùng menu cứng – admin thấy thông báo khi máy chủ không trả menu, hoặc DB còn nhóm tên cũ (chưa chạy script MENU-5).
+  const OLD_GROUPS = ['Mua hàng & Kho', 'Sản xuất & Giá thành', 'Tích hợp & Chỉ số', 'Nhân sự & Phê duyệt', 'Tích hợp & KPI'];
+  function navNotice(db) {
+    const old = document.getElementById('navNotice'); if (old) old.remove();
+    if (!Store.isLive || !(window.DC_HOST && DC_HOST.user && DC_HOST.user.isAdmin)) return;
+    const msg = !db ? 'Không tải được menu từ máy chủ – đang hiện menu dự phòng.' : db.some(g => OLD_GROUPS.includes(g.name)) ? 'DB chưa chạy script menu MENU-5 (còn nhóm tên cũ).' : '';
+    if (!msg) return;
+    const nav = document.getElementById('navGroups'); if (!nav) return;
+    nav.insertAdjacentHTML('beforebegin', `<div id="navNotice" class="nav-notice" role="alert" style="margin:8px 12px;padding:8px 10px;border-radius:8px;background:#fff4e5;color:#8a4b00;font-size:12px;line-height:1.4">${esc(msg)}</div>`);
+  }
+  APP._navNotice = navNotice;
+  // Menu dự phòng (chế độ DEMO, hoặc khi máy chủ không trả menu): nhóm + thứ tự sinh từ cùng nguồn Seeds.Menu5Groups (CodeGen → catalog.menuGroups, D-93).
   function catalogNav() {
+    if (CAT.menuGroups) {
+      const ok = id => FN[id] && !CHILD.has(id) && !hiddenNow(id) && Store.perm(id).access !== false;
+      return CAT.menuGroups.map(g => ({ name: g.name, items: g.items.filter(ok).map(id => ({ f: FN[id], label: id === 'hr-my' ? g.name : id === 'wf-inbox' ? 'Phê duyệt' : FN[id].fn, link: id })) })).filter(g => g.items.length);
+    }
     const groups = {};
     Object.values(FN).forEach(f => { if (CHILD.has(f.id) || hiddenNow(f.id) || Store.perm(f.id).access === false) return; (groups[f.grp] = groups[f.grp] || []).push({ f, label: f.fn }); });
     const dash = groups['Điều hành'] || []; dash.sort(a => (a.f.id === 'dash-exec' ? -1 : 1));
@@ -68,7 +86,7 @@
     // MENU-4.2: bỏ bảng con / màn chưa làm / mục trùng kể cả khi DB chưa chạy script MENU4 (máy chủ vẫn trả mục IsActive = 1).
     // MENU-5 (D-79): #/bot-van-hanh, #/bot-dieu-hanh là quyền VÀO BOT (D-62) – không phải màn hình, không lên sidebar.
     // APR-1.1 (D-81 a): mọi mục "Phê duyệt › …" (wf-inbox?type=…) và "Hộp phê duyệt" cũ KHÔNG lên sidebar / tìm kiếm (DB giữ – là quyền duyệt);
-    // thay bằng 1 mục "Phê duyệt" (màn tổng) ngay dưới "Việc của tôi" cho người có quyền duyệt / xem hộp chung / đã gửi yêu cầu.
+    // thay bằng 1 mục "Phê duyệt" (màn tổng) trong nhóm Điều hành dưới Bảng điều hành (D-93) cho người có quyền duyệt / xem hộp chung / đã gửi yêu cầu.
     const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || id === 'wf-inbox' || /^bot-/.test(id); };
     const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !skip(i.link)).filter(i => !used.has(i.link)).map(i => {
       used.add(i.link); const id = i.link.split('?')[0]; used.add(id);
@@ -79,10 +97,18 @@
     // Dự phòng khi DB CHƯA chạy seed / script MENU-5 (chưa có dòng ObjectMenu #/hr-my, #/adm-job, #/sys-import): màn FE đã có (f.extra) tạm thêm vào
     // nhóm của nó khi tài khoản được vào (adm-job: chỉ admin / người có quyền mục – FIN-IT). DB đã có dòng → mục lấy theo DB, không thêm.
     // "Việc của tôi" luôn đầu sidebar (nhóm riêng 1 mục).
-    Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false) return; const grp = f.id === 'hr-my' ? 'Việc của tôi' : f.grp; let g = out.find(x => x.name === grp); if (!g) { g = { name: grp, items: [] }; if (f.id === 'hr-my') out.unshift(g); else out.push(g); } g.items.push({ f, label: f.id === 'hr-my' ? grp : f.fn, link: f.id }); });
+    // FIX-1.5: chỉ hr-my (mọi người) và admin – sys-import nằm trong OPEN_SCREENS của host nên perm() luôn cho vào, không dùng làm điều kiện hiện menu.
+    const isAdm = !!(window.DC_HOST && DC_HOST.user && DC_HOST.user.isAdmin);
+    Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false || (f.id !== 'hr-my' && !isAdm)) return; const grp = f.id === 'hr-my' ? 'Việc của tôi' : f.grp; let g = out.find(x => x.name === grp); if (!g) { g = { name: grp, items: [] }; if (f.id === 'hr-my') out.unshift(g); else out.push(g); } g.items.push({ f, label: f.id === 'hr-my' ? grp : f.fn, link: f.id }); });
     const res = out.filter(g => g.items.length), my = res.findIndex(g => g.items.some(i => i.link === 'hr-my'));
     if (my > 0) res.unshift(res.splice(my, 1)[0]);
-    if (FN['wf-inbox'] && Store.perm('wf-inbox').access !== false) res.splice(res.length && res[0].items.some(i => i.link === 'hr-my') ? 1 : 0, 0, { name: 'Phê duyệt', items: [{ f: FN['wf-inbox'], label: 'Phê duyệt', link: 'wf-inbox' }] });
+    // D-93: mục "Phê duyệt" nằm trong nhóm Điều hành ngay dưới Bảng điều hành; không có quyền Bảng điều hành → nhóm Điều hành vẫn hiện với mục Phê duyệt.
+    if (FN['wf-inbox'] && Store.perm('wf-inbox').access !== false) {
+      const apr = { f: FN['wf-inbox'], label: 'Phê duyệt', link: 'wf-inbox' };
+      const g = res.find(x => x.items.some(i => i.link === 'dash-exec')) || res.find(x => x.name === 'Điều hành');
+      if (g) { const k = g.items.findIndex(i => i.link === 'dash-exec'); g.items.splice(k + 1, 0, apr); }
+      else res.splice(res.length && res[0].items.some(i => i.link === 'hr-my') ? 1 : 0, 0, { name: 'Điều hành', items: [apr] });
+    }
     return res;
   }
   // Mở một nhóm menu (đóng các nhóm khác – kiểu metismenu của theme).
@@ -162,7 +188,7 @@
   // Chế độ dữ liệu thật: bỏ các phần chỉ để trình diễn của mockup (tên bảng / cột, ghi chú GAP, truy vết DB) – CLAUDE.md 4.4.
   const LIVE = () => Store.isLive;
   APP.header = (f, actions, opt = {}) => APP.liveText(APP._header(f, actions, opt));
-  APP._header = (f, actions, opt = {}) => `<div class="breadcrumb"><a href="${APP.href('dash-exec')}">Trang chủ</a><span>›</span><span>${esc(f.grp)}</span><span>›</span><strong>${esc(f.name)}</strong></div>
+  APP._header = (f, actions, opt = {}) => `<div class="breadcrumb"><a href="${APP.href(APP.home())}">Trang chủ</a><span>›</span><span>${esc(f.grp)}</span><span>›</span><strong>${esc(f.name)}</strong></div>
     <div class="page-heading"><div><h1>${esc(opt.title || f.name)}</h1><div class="subtitle">${opt.sub || esc(f.fn) + (!LIVE() && f.rel && f.rel.length ? ' · Liên quan: ' + f.rel.join(', ') : '')}</div></div><div class="heading-actions">${actions || ''}${f.table && !LIVE() ? `<button class="btn" data-trace="${f.table}">${I('database')} Truy vết DB</button>` : ''}</div></div>${opt.noNote || LIVE() ? '' : UI.gapNote(f)}`;
   // ---------- Màn hình chung theo schema (dùng cho chức năng chưa có màn hình chuyên biệt) ----------
   const PREF_NO = ['OrderNumber', 'ContractNumber', 'RequestNumber', 'PurchaseOrderNumber', 'ReceiptNumber', 'LotNumber', 'IssueNumber', 'CountNumber', 'PlanNumber', 'ProductionOrderNumber', 'BatchNumber', 'PackingOrderNumber', 'DeliveryNumber', 'RouteNo', 'InspectionNumber', 'CleaningBatchNumber', 'TransactionNumber', 'RequirementNo', 'RequestNo', 'ComplaintNo', 'Code', 'MetricCode', 'ChannelCode', 'BotCode', 'ItemCode', 'LicensePlate', 'VersionCode', 'UserName'];
@@ -178,7 +204,7 @@
     const s = cand.find(m => m.usage.startsWith('Trạng thái')); if (s) { if (out.length >= max) out.pop(); out.push(s); }
     return out.map(m => ({ k: m.name, label: U.colLabel(m.name), num: /decimal|int/.test(m.type) && !m.name.endsWith('Id') && m.usage !== 'Trạng thái (badge + lọc)' }));
   };
-  APP.nextStatus = (t, col, v) => { const d = Store.statusDef(t, col); if (!d) return null; const flow = d.flow.split(';')[0]; const main = flow.split('→').map(s => s.trim().split('/')[0].trim()); const i = main.indexOf(v); return i >= 0 && i < main.length - 1 ? main[i + 1] : null; };
+  APP.nextStatus = (t, col, v) => { const d = Store.statusDef(t, col); if (!d || !d.flow) return null; /* FIX-1.5: định nghĩa trạng thái từ máy chủ có thể không có flow */ const flow = d.flow.split(';')[0]; const main = flow.split('→').map(s => s.trim().split('/')[0].trim()); const i = main.indexOf(v); return i >= 0 && i < main.length - 1 ? main[i + 1] : null; };
   APP.genericList = (el, f, opt = {}) => {
     const t = f.table, perm = Store.perm(f.id), sc = Store.statusCol(t);
     const rowsFn = opt.rows || (() => Store.rows(t));
@@ -192,7 +218,7 @@
     const ref = {}; APP._lastTbl = ref;
     const tbl = UI.table(el.querySelector('#gt'), {
       table: t, cols, rows: rowsFn, filters: fks, pageSize: 10, onRow: id => (opt.onRow ? opt.onRow(id) : APP.openDetail(t, id, f)),
-      actions: r => { const nx = sc && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button>${UI.readOnly(t) ? '' : ` <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>`}${nx && !opt.noTransit && !LIVE() ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del && !UI.readOnly(t) ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
+      actions: r => { const nx = sc && !LIVE() && APP.nextStatus(t, sc, r[sc]); return `<button class="btn xs" data-view="${r.Id}">${I('eye')}</button>${UI.readOnly(t) ? '' : ` <button class="btn xs" data-edit="${r.Id}" ${perm.edit === false ? 'disabled' : ''}>${I('edit')}</button>`}${nx && !opt.noTransit && !LIVE() ? ` <button class="btn xs" data-next="${r.Id}" data-to="${nx}" ${perm.edit === false ? 'disabled' : ''} title="${sc}: ${r[sc]} → ${nx}">→ ${esc(UI.statusVi(t, sc, nx))}</button>` : ''}${perm.del && !UI.readOnly(t) ? ` <button class="btn xs danger" data-del="${r.Id}">${I('trash')}</button>` : ''}`; },
       after: tb => {
         tb.querySelectorAll('[data-view]').forEach(b => b.onclick = () => APP.openDetail(t, b.dataset.view, f));
         tb.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => UI.form(t, Store.get(t, b.dataset.edit), { title: f.name, onSave: () => APP.refresh() }));
@@ -272,7 +298,7 @@
   function route() {
     const seq = ++routeSeq;
     const base = APP.base(), raw = location.hash;
-    const h = (raw.startsWith(base) ? raw.slice(base.length) : raw.replace(/^#\/?/, '')) || 'dash-exec';
+    const h = (raw.startsWith(base) ? raw.slice(base.length) : raw.replace(/^#\/?/, '')) || APP.home();
     const [id, qs] = h.split('?'); const params = Object.fromEntries(new URLSearchParams(qs || ''));
     renderScreen(id, params);
     settle(seq, 0, id, params);
@@ -295,7 +321,7 @@
       const row = params.id && up[1] && Store.get(up[1], params.id), pid = row ? row[up[2]] : (up[1] ? null : params.id);
       location.replace(APP.href(up[0]) + (pid ? '?id=' + encodeURIComponent(pid) : '')); return;
     }
-    const f = FN[id] || FN['dash-exec'];
+    const f = FN[id] || FN[APP.home()]; /* FIX-1.5: #/quan-tri/trang-chu và mã lạ → trang chủ theo quyền */
     // UI-6: rời danh sách đang chờ khôi phục (quay lại từ trang chi tiết) sang màn khác → thôi khôi phục.
     if (APP._restoreList && APP._restoreList !== f.id) { APP._restoreList = null; APP._restoreScroll = null; }
     APP.current = f.id; APP.params = params;
@@ -528,7 +554,7 @@
     document.getElementById('collapseBtn').onclick = () => { const el = wrapEl(); el.classList.toggle('menu-toggle'); el.querySelector('.hamburger').classList.toggle('is-active', el.classList.contains('menu-toggle')); };
     const side = document.getElementById('sidebar');
     side.onmouseover = () => wrapEl().classList.add('iconhover-toggle'); side.onmouseout = () => wrapEl().classList.remove('iconhover-toggle');
-    document.getElementById('brandLink').onclick = () => APP.go('dash-exec');
+    document.getElementById('brandLink').onclick = () => APP.go(APP.home());
     document.getElementById('branchSelect').onclick = chooseBranch;
     document.getElementById('notificationBtn').onclick = notifications; document.getElementById('helpBtn').onclick = help;
     document.querySelectorAll('[data-role-btn]').forEach(b => b.onclick = roleOrAccount);

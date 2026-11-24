@@ -136,6 +136,87 @@ namespace AppDelicare.WebApi.Security
             ["KpiMetricDefinition"] = ["kpi-daily", "kpi-monthly", "dash-exec"],
         };
 
+        /// <summary>
+        /// FIX-NOW-1 (D-92 b 5 – kiểm bằng vai trò không phải admin): màn của vai trò đọc nhãn từ bảng liên quan qua <c>GetAllData</c>
+        /// (vd Thực đơn tuần đọc tên món / nhóm món, Phiếu xuất SX đọc lệnh SX) – trước đây 403 khi vai trò không có quyền Xem màn gốc của bảng đó.
+        /// Chỉ action <c>GetAllData</c> (danh sách tra cứu, không phải màn danh sách / chi tiết / ghi) được mở thêm cho người Xem được một màn có bảng
+        /// <b>liên quan trực tiếp</b> (quan hệ logic <see cref="AppDelicare.Data.Share.ReferenceMap"/>, 2 chiều; bảng con tính theo màn cha);
+        /// danh mục gốc (<see cref="MasterClasses"/>) thêm 1 bậc (vd Thực đơn → dòng thực đơn → món → nhóm món). Tên người dùng (User) đọc được từ mọi màn
+        /// (cột người tạo / phụ trách). Không đổi ma trận quyền màn hình (D-79).
+        /// </summary>
+        private static readonly HashSet<string> MasterClasses = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Dish", "DishCategory", "Ingredient", "IngredientCategory", "UnitMeasure", "UnitConversion", "Supplier", "Customer", "CustomerDeliveryLocation",
+            "Warehouse", "StorageZone", "StorageLocation", "Shift", "Position", "OrganizationUnit", "Company", "ProductionLine", "KitchenWorkstation", "Vehicle",
+            "Recipe", "Menu", "FoodSafetyChecklist", "ProductionStage", "Employee",
+        };
+
+        private static readonly Lazy<Dictionary<string, string[]>> LookupScreens = new(BuildLookupScreens);
+
+        private static Dictionary<string, string[]> BuildLookupScreens()
+        {
+            var cmp = StringComparer.OrdinalIgnoreCase;
+            var tableOf = AppDelicare.Data.Share.ReferenceMap.TableOfClass;
+            var classOf = tableOf.GroupBy(kv => kv.Value, cmp).ToDictionary(g => g.Key, g => g.First().Key, cmp);
+            var adj = new Dictionary<string, HashSet<string>>(cmp);
+            void Link(string a, string b)
+            {
+                (adj.TryGetValue(a, out var x) ? x : adj[a] = new HashSet<string>(cmp)).Add(b);
+                (adj.TryGetValue(b, out var y) ? y : adj[b] = new HashSet<string>(cmp)).Add(a);
+            }
+            foreach (var (target, sources) in AppDelicare.Data.Share.ReferenceMap.Incoming)
+            {
+                foreach (var (source, _) in sources)
+                {
+                    Link(target, source);
+                }
+            }
+            string? ScreenOfTable(string table)
+            {
+                if (!classOf.TryGetValue(table, out string? cls))
+                {
+                    return null;
+                }
+                if (ScreenMap.ParentByClass.TryGetValue(cls, out var parent))
+                {
+                    return parent.Screen;
+                }
+                return ScreenMap.ByClass.TryGetValue(cls, out string? s) && s != ScreenMap.FallbackScreen && !s.StartsWith("dbx-", StringComparison.Ordinal) ? s : null;
+            }
+            var result = new Dictionary<string, string[]>(cmp);
+            foreach (var (cls, table) in tableOf)
+            {
+                if (!adj.TryGetValue(table, out var hop1))
+                {
+                    continue;
+                }
+                var tables = new HashSet<string>(hop1, cmp);
+                if (MasterClasses.Contains(cls))
+                {
+                    foreach (string t in hop1)
+                    {
+                        // Bảng "trung tâm" (công ty, đơn vị) nối gần như mọi bảng – không đi xuyên qua ở bậc 2.
+                        if (t.Equals("Company", StringComparison.OrdinalIgnoreCase) || t.Equals("OrganizationUnit", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+                        if (adj.TryGetValue(t, out var hop2))
+                        {
+                            tables.UnionWith(hop2);
+                        }
+                    }
+                }
+                string? own = ScreenMap.ByClass.TryGetValue(cls, out string? o) ? o : null;
+                result[cls] = [.. tables.Select(ScreenOfTable).OfType<string>().Where(s => s != own).Distinct().OrderBy(s => s, StringComparer.Ordinal)];
+            }
+            // Tên người dùng (người tạo / phụ trách / người gửi) hiện ở mọi màn.
+            result["User"] = [.. ScreenMap.ByClass.Values.Where(s => s != ScreenMap.FallbackScreen && !s.StartsWith("dbx-", StringComparison.Ordinal) && s != "adm-user").Distinct().OrderBy(s => s, StringComparer.Ordinal)];
+            return result;
+        }
+
+        /// <summary>Màn cho phép đọc <c>GetAllData</c> của bảng ngoài màn gốc (FIX-NOW-1) – dùng cho test.</summary>
+        public static IReadOnlyList<string> LookupScreensOf(string controller) => LookupScreens.Value.TryGetValue(controller, out var s) ? s : [];
+
         /// <summary>Controller không trùng tên bảng.</summary>
         private static readonly Dictionary<string, string> ControllerScreens = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -171,7 +252,9 @@ namespace AppDelicare.WebApi.Security
                     : hasParent && parent.WriteAsEdit ? ChildPermission(screen, ActionOf(action))
                     : new PermissionAttribute(screen, ActionOf(action))
                     {
-                        OrScreens = ActionOf(action) == PermissionAction.View && ReadAlsoScreens.TryGetValue(controller.ControllerName, out var also) ? also : [],
+                        OrScreens = ActionOf(action) != PermissionAction.View ? []
+                            : [.. (ReadAlsoScreens.TryGetValue(controller.ControllerName, out var also) ? also : []),
+                               .. (string.Equals(action.ActionName, "GetAllData", StringComparison.OrdinalIgnoreCase) ? LookupScreensOf(controller.ControllerName) : [])],
                     };
                 foreach (var selector in action.Selectors)
                 {
