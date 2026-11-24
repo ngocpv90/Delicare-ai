@@ -95,7 +95,7 @@ namespace AppDelicare.Services.Implement
                 {
                     entry.RunStatus = JobRunStatus.Locked;
                     entry.CompletedAt = _clock.Now;
-                    entry.Message = string.Format(ConstantHelper.Message.KpiRefreshRunning, jobCode);
+                    entry.Message = string.Format(ConstantHelper.Message.KpiRefreshRunning, KpiCode.JobLabel(jobCode));
                     await gate.InsertLogAsync(entry, actor.UserId);
                     return Result<KpiRefreshResultModel>.Fail(entry.Message);
                 }
@@ -114,12 +114,12 @@ namespace AppDelicare.Services.Implement
                     entry.CompletedAt = _clock.Now;
                     entry.Message = ex.Message;
                     await gate.UpdateLogAsync(entry, actor.UserId);
-                    return Result<KpiRefreshResultModel>.Fail(string.Format(ConstantHelper.Message.KpiRefreshFailed, jobCode, ConstantHelper.Message.InternalServer));
+                    return Result<KpiRefreshResultModel>.Fail(string.Format(ConstantHelper.Message.KpiRefreshFailed, KpiCode.JobLabel(jobCode), ConstantHelper.Message.InternalServer));
                 }
                 entry.RunStatus = JobRunStatus.Succeeded;
                 entry.RowsProcessed = result.RowsProcessed;
                 entry.CompletedAt = _clock.Now;
-                entry.Message = string.Format(ConstantHelper.Message.KpiRefreshDone, jobCode, result.Metrics.Count, result.IncompleteCount);
+                entry.Message = string.Format(ConstantHelper.Message.KpiRefreshDone, KpiCode.JobLabel(jobCode), result.Metrics.Count, result.IncompleteCount);
                 await gate.UpdateLogAsync(entry, actor.UserId);
                 Log.Information("[KPI] {JobCode} xong: {Rows} dòng, {Incomplete} thiếu dữ liệu (RunId {RunId})", jobCode, result.RowsProcessed, result.IncompleteCount, entry.RunId);
                 result.RunId = entry.RunId;

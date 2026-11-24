@@ -19,7 +19,7 @@ namespace AppDelicare.Services.Jobs
         {
             var result = await kpiCalculationService.Calculate(KpiCode.JobDaily, now.Date, null, JobTrigger.Schedule, cancellationToken);
             return new JobOutcome(JobRunStatus.Succeeded, result.RowsProcessed, now.Date,
-                string.Format(ConstantHelper.Message.KpiRefreshDone, KpiCode.JobDaily, result.Metrics.Count, result.IncompleteCount));
+                string.Format(ConstantHelper.Message.KpiRefreshDone, KpiCode.JobLabel(KpiCode.JobDaily), result.Metrics.Count, result.IncompleteCount));
         }
     }
 
@@ -36,7 +36,7 @@ namespace AppDelicare.Services.Jobs
             DateTime day = now.Date.AddDays(-1);
             var result = await kpiCalculationService.Calculate(KpiCode.JobMonthly, day, null, JobTrigger.Schedule, cancellationToken);
             return new JobOutcome(JobRunStatus.Succeeded, result.RowsProcessed, new DateTime(day.Year, day.Month, 1),
-                string.Format(ConstantHelper.Message.KpiRefreshDone, KpiCode.JobMonthly, result.Metrics.Count, result.IncompleteCount));
+                string.Format(ConstantHelper.Message.KpiRefreshDone, KpiCode.JobLabel(KpiCode.JobMonthly), result.Metrics.Count, result.IncompleteCount));
         }
     }
 }

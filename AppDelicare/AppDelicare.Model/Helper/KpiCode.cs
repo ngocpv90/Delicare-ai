@@ -11,6 +11,8 @@ namespace AppDelicare.Model.Helper
         /// <summary>Mã job làm mới = <c>AnalyticsRefreshLog.JobCode</c> = khóa <c>sp_getapplock</c> (DELICARE_JOB_&lt;mã&gt;, dùng chung với AppDelicare.Job).</summary>
         public const string JobDaily = "KPI_DAILY";
         public const string JobMonthly = "KPI_MONTHLY";
+        /// <summary>Hồi quy đợt 2 (D-88): tên tiếng Việt của job cho thông báo – không hiện mã kỹ thuật.</summary>
+        public static string JobLabel(string? jobCode) => jobCode switch { JobDaily => "chỉ số ngày", JobMonthly => "chỉ số tháng", _ => jobCode ?? string.Empty };
         /// <summary>Spec 11.7 có INVENTORY_BALANCE – R1 không làm (tồn tính trực tiếp từ sổ kho) → 400.</summary>
         public const string JobInventoryBalance = "INVENTORY_BALANCE";
 

@@ -318,7 +318,7 @@
     Promise.all([Store.query('AnalyticsRefreshLog/GetList', { Page: 1, PageSize: 20 }), Store.query('Job/GetAll')]).then(([x, jb]) => {
       const jn = {}; ((jb && jb.list) || []).forEach(j => { if (j.jobCode) jn[j.jobCode] = j.jobName || j.jobCode; });
       if (!host.isConnected) return; if (!x.ok) { if (is404(x)) host.remove(); else host.innerHTML = `<div class="panel-title mb">Lần chạy gần đây</div><div class="muted small">${esc(failText(x))}</div>`; return; }
-      const rows = (x.list.length ? x.list : ((x.data && (x.data.items || x.data.listItem)) || [])).map(r => (r.jobCode && jn[r.jobCode] ? Object.assign({}, r, { jobCode: jn[r.jobCode] }) : r));
+      const rows = (x.list.length ? x.list : ((x.data && (x.data.items || x.data.listItem)) || [])).map(r => { const vn = r.jobCode && (jn[r.jobCode] || (UI.JOB_VI && UI.JOB_VI[r.jobCode])); return vn ? Object.assign({}, r, { jobCode: vn }) : r; });
       host.innerHTML = `<div class="panel-title mb">Lần chạy gần đây</div>${rows.length ? listHtml(rows, 8) : '<div class="muted small">Chưa có lần chạy nào trong 30 ngày gần nhất</div>'}`;
     });
   });
