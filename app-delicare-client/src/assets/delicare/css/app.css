@@ -763,3 +763,24 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .k-system{background:#F2F4F1;color:var(--muted)}
 .k-order{background:var(--blue-soft);color:#2F64A0}
 .k-complaint{background:var(--red-soft);color:var(--red)}
+
+/* UI-6.15 (D-96): Đơn hàng theo ngày */
+.od-days{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.od-days .chip.active{background:var(--green-soft);border-color:#B9CB97;color:#3F5A17;font-weight:600}
+.od-bar{flex-wrap:wrap;gap:8px}
+.od-cnt{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#F2F4F1;font-size:11px;text-align:center}
+.od-cnt.warn{background:var(--orange-soft);color:#C2571A;font-weight:700}
+.od-table td,.od-table th{vertical-align:middle}
+.od-grp{background:#FAFBF8;cursor:pointer}
+.od-grp td{border-top:1px solid var(--line)}
+.od-caret{display:inline-block;width:14px;color:var(--muted)}
+.od-row.click{cursor:pointer}.od-row.click:hover{background:#F7FAF2}
+.od-pt{padding-left:30px!important}
+.od-row.od-x td{color:#9aa39c;text-decoration:line-through}
+.od-prog{display:inline-flex;gap:3px;vertical-align:middle}.od-prog i{width:9px;height:9px;border-radius:50%;background:#E3E7E0;display:inline-block}.od-prog i.on{background:var(--green)}
+.od-warn{color:#C2571A;font-weight:600;font-size:12px}
+.od-cancel{color:var(--red);font-size:12px}
+.od-total td{border-top:2px solid var(--line);background:#FAFBF8}
+.od-opt{padding:6px 0;border-bottom:1px solid #F0F2ED;align-items:center}
+.chip-radio{display:inline-flex;align-items:center;gap:4px;border:1px solid #d5dbd2;border-radius:16px;padding:4px 10px;font-size:13px;cursor:pointer}
+#odMoreBox{position:absolute;right:16px;margin-top:40px;z-index:20}

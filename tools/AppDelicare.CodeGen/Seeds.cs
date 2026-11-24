@@ -239,7 +239,7 @@ public static partial class Seeds
         ("#/crm-price-policy", "Chính sách giá theo KH/HĐ", "Chính sách giá"),
         ("#/crm-contract", "Hợp đồng suất ăn", "Hợp đồng"),
         ("#/crm-contract-meal", "Loại suất theo hợp đồng", "Loại suất & đơn giá"),
-        ("#/crm-order", "Đơn đặt suất ăn", "Đơn đặt suất"),
+        ("#/crm-order", "Đơn đặt suất ăn", "Đơn hàng theo ngày"), // UI-6.15 (D-96): đổi tên lần 2 – script DB/scripts/UI615_rename_crm_order.sql
         ("#/crm-order-line", "Số lượng theo ca / loại suất", "Chi tiết đơn đặt suất"),
         ("#/crm-reconciliation", "Đối soát Đặt–SX–Đóng–Giao–Nhận", "Đối soát suất ăn"),
         ("#/menu-dish", "Danh mục món ăn", "Món ăn"),

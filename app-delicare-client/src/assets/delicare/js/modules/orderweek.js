@@ -18,8 +18,11 @@
   const nextMonday = () => U.addDays(mondayOf(Store.ctx.date), 7);
   const points = () => st.ov ? st.ov.listCustomer.flatMap(c => c.listPoint.map(p => Object.assign({ customerId: c.customerId, customerName: c.customerName }, p))) : [];
 
-  APP.register('crm-order-week', (el, f) => {
+  APP.register('crm-order-week', (el, f, params) => {
     const perm = Store.perm(f.id), canEdit = perm.edit !== false;
+    // UI-6.15: mở từ Đơn hàng theo ngày – đúng tuần (?week=) và đúng điểm giao (?loc=), áp 1 lần cho mỗi link.
+    const pk = params && (params.week || params.loc) ? (params.week || '') + '|' + (params.loc || '') : '';
+    if (pk && pk !== st.lastParam) { st.lastParam = pk; if (params.week) { st.week = params.week; st.ov = null; st.data = null; st.dataKey = ''; } if (params.loc) { st.tab = 'pt'; st.wantLoc = params.loc; } }
     if (!st.week) st.week = nextMonday();
     if (!Store.isLive) { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="notice gap">${I('alert')}<div>Màn đăng ký suất tuần dùng dữ liệu API – chuyển sang chế độ API để nhập.</div></div>`; return; }
     el.innerHTML = APP.header(f, '', { noNote: true }) + `
@@ -146,7 +149,7 @@
   }
 
   // ---------- Tab Nhập số theo điểm giao ----------
-  function curPoint() { const fl = points(); if (!fl.length) return null; if (st.cur < 0 || st.cur >= fl.length) st.cur = 0; return fl[st.cur]; }
+  function curPoint() { const fl = points(); if (!fl.length) return null; if (st.wantLoc) { const i = fl.findIndex(x => x.deliveryLocationId === st.wantLoc); if (i >= 0) { st.cur = i; st.wantLoc = ''; st.dataKey = ''; } }if (st.cur < 0 || st.cur >= fl.length) st.cur = 0; return fl[st.cur]; }
   function loadPoint(el, f, p, force) {
     const key = [p.customerId, p.deliveryLocationId, st.week].join('|');
     if (!force && st.dataKey === key) return;

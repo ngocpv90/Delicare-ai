@@ -14,7 +14,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Menu › Mục | screen-id | OPS-LOG |
 |---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X |
-| Kinh doanh › Đơn đặt suất | `crm-order` | X |
+| Kinh doanh › Đơn hàng theo ngày | `crm-order` | X |
 | Kinh doanh › Điểm giao hàng | `crm-location` | X |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |

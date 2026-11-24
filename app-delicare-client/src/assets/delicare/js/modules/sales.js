@@ -124,9 +124,194 @@
     });
     if (ov) ov.then(x => { const k = [...document.querySelectorAll('[data-c360]')].find(n => n.dataset.c360 === String(id)); if (x.ok && x.data && k) k.innerHTML = kpiHtml(x.ok && x.data ? x.data : localKpi()); });
   }
-  // ---------- Đơn hàng ----------
+  // ---------- Đơn hàng theo ngày – UI-6.15 (D-96), mô phỏng docs/frontend-handoff/assets/order-day-mockup.html ----------
+  // Theo dõi 1 ngày ăn + xử lý việc phát sinh (số hằng tuần nhập ở Đăng ký suất tuần). Một bảng: khách → điểm giao (cả điểm chưa có đơn, số dự báo mờ)
+  // → Sáng / Trưa / Tối / Tổng / Tiến độ 5 chấm / Cần chú ý + nút xử lý tại dòng. Bấm dòng → trang chi tiết đơn. API Order/GetDay, Order/CreateExtra.
+  const od = { day: '', tab: 'all', q: '', data: null, key: '', closed: new Set() };
+  const OD_MEAL = { SANG: 'Sáng', TRUA: 'Trưa', TOI: 'Tối', DEM: 'Đêm' };
+  const OD_STEPS = ['Đã xác nhận', 'Đã chốt', 'Đang nấu', 'Đã giao', 'Đã đối soát'];
+  const OD_REASON = [['EVENT', 'Sự kiện / tiệc'], ['ADDON', 'Khách đặt thêm'], ['COMPENSATION', 'Đơn bù do phản ánh'], ['OTHER', 'Khác']];
+  const WDAY = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const odLabel = d => { const x = new Date(d + 'T00:00'); return WDAY[x.getDay()] + ' ' + U.date(d); };
+  function orderDay(el, f, params) {
+    const perm = Store.perm(f.id);
+    if (params && params.date && params.date !== od.lastParam) { od.lastParam = params.date; od.day = params.date; }
+    if (!od.day) od.day = U.addDays(Store.ctx.date, 1);
+    const canLock = perm.edit !== false && Store.canApprove && Store.canApprove('crm-order');
+    el.innerHTML = APP.header(f, `<button class="btn primary" id="odNew" ${perm.add === false ? 'disabled' : ''}>${I('plus')} Thêm đơn phát sinh</button>${canLock ? `<button class="btn more" id="odMore" aria-label="Thêm thao tác">⋯</button><div class="c360-more hide" id="odMoreBox"><button id="odLock">Chốt đơn theo ngày</button></div>` : ''}`, { noNote: true, sub: 'Theo dõi một ngày ăn và xử lý việc phát sinh' }) + `
+      <div class="notice info mb">${I('help')}<div>Mọi đơn của một ngày ăn: số suất từng khách, từng điểm giao, từng buổi và đơn đang ở khâu nào. Đơn tự sinh từ <a href="javascript:void 0" data-go="crm-order-week">Đăng ký suất tuần</a> – màn này chỉ để theo dõi và xử lý việc phát sinh.</div></div>
+      <div class="card panel mb"><div class="fw-week od-days"><button class="chip" data-odq="0">Hôm nay</button><button class="chip" data-odq="1">Ngày mai</button><button class="btn sm" id="odPrev" aria-label="Ngày trước">◀</button><b id="odLbl"></b><button class="btn sm" id="odNext" aria-label="Ngày sau">▶</button><span class="small muted" id="odState"></span></div>
+        <div class="fw-steps ow-steps" id="odSteps"></div><div id="odKpis"></div></div>
+      <div class="card panel"><div class="spread mb od-bar"><div class="tabs" id="odTabs"></div><div class="row-flex"><input class="input" id="odQ" placeholder="Tìm khách / điểm giao / số đơn" value="${esc(od.q)}" style="max-width:260px"><button class="btn" id="odXls">${I('export')} Xuất Excel</button></div></div>
+        <div class="small muted mb">Số suất đã xác nhận (rê chuột xem từng lựa chọn) · chữ mờ <span class="muted">~150</span> là dự báo của điểm chưa có số · Tiến độ: ${OD_STEPS.join(' → ')}</div>
+        <div id="odBody">${'<div class="muted small">Đang tải…</div>'}</div>
+        <div class="small muted mt">Bấm một dòng để mở trang chi tiết đơn (số theo lựa chọn, món, giao hàng, đối soát, lịch sử). Sửa số trước giờ chốt làm ở Đăng ký suất tuần; sau giờ chốt bấm "Sửa sau chốt" trong trang chi tiết – hệ thống gửi duyệt.</div></div>`;
+    const g = s => el.querySelector(s);
+    el.querySelectorAll('[data-go]').forEach(a => a.onclick = () => APP.go(a.dataset.go + '?week=' + mondayOf(od.day)));
+    const go = d => { od.day = d; od.data = null; od.key = ''; orderDay(el, f, null); };
+    g('#odPrev').onclick = () => go(U.addDays(od.day, -1)); g('#odNext').onclick = () => go(U.addDays(od.day, 1));
+    el.querySelectorAll('[data-odq]').forEach(b => { const d = U.addDays(Store.ctx.date, +b.dataset.odq); b.classList.toggle('active', d === od.day); b.onclick = () => go(d); });
+    g('#odLbl').textContent = odLabel(od.day);
+    g('#odNew').onclick = () => odExtra(el, f);
+    const mb = g('#odMore'); if (mb) { const box = g('#odMoreBox'); mb.onclick = e => { e.stopPropagation(); box.classList.toggle('hide'); }; g('#odLock').onclick = () => { box.classList.add('hide'); lockByDay(od.day); }; }
+    let tq; g('#odQ').oninput = e => { clearTimeout(tq); tq = setTimeout(() => { od.q = e.target.value.trim(); odDraw(el, f); }, 200); };
+    g('#odXls').onclick = () => odExport();
+    const key = od.day + '|' + (Store.ctx.branch || '');
+    if (od.data && od.key === key) return odDraw(el, f);
+    Store.query('Order/GetDay', { MealDate: od.day, BranchId: Store.ctx.branch }).then(x => {
+      if (APP.current !== 'crm-order' || !g('#odBody') || !g('#odBody').isConnected) return;
+      if (!x.ok || !x.data) { g('#odBody').innerHTML = failBox(x.message); return; }
+      od.data = x.data; od.key = key; odDraw(el, f);
+    });
+  }
+  const odRows = () => {
+    const d = od.data, q = U.fold ? U.fold(od.q) : od.q.toLowerCase(), fold = s => (U.fold ? U.fold(s || '') : String(s || '').toLowerCase());
+    return (d.listCustomer || []).map(c => ({ c, rows: c.listRow.filter(r => {
+      if (od.tab === 'need' && !r.listAttention.some(a => a.tone === 'warn')) return false;
+      if (od.tab === 'extra' && r.source !== 'EXTRA') return false;
+      if (od.tab === 'cancel' && r.status !== 'Cancelled') return false;
+      if (od.tab !== 'cancel' && r.status === 'Cancelled') return false;
+      return !q || fold(c.customerName).includes(q) || fold(r.locationName).includes(q) || fold(r.orderNumber).includes(q);
+    }) })).filter(x => x.rows.length);
+  };
+  function odDraw(el, f) {
+    const d = od.data, g = s => el.querySelector(s);
+    if (!d) return;
+    const cut = new Date(d.cutoffAt), now = new Date(), left = cut - now;
+    const stTxt = d.dayState === 'DELIVERED' ? 'đã giao xong' : d.dayState === 'LOCKED' ? 'đã chốt' : `chưa chốt · tự chốt lúc ${String(cut.getHours()).padStart(2, '0')}:${String(cut.getMinutes()).padStart(2, '0')} ${U.date(U.day(d.cutoffAt))}`;
+    g('#odState').textContent = '(' + stTxt + ')';
+    const pts = d.pointCount, withNo = d.pointsWithOrder;
+    const hh = Math.max(0, Math.floor(left / 3600e3)), mm = Math.max(0, Math.floor(left % 3600e3 / 60e3));
+    g('#odSteps').innerHTML = `
+      <div class="fw-step"><span class="n s1">1</span><div><b>Nhận số từ đăng ký tuần</b><span class="small muted">${U.num(withNo)} / ${U.num(pts)} điểm giao đã có số</span></div><button class="btn sm" id="odWeek">${I('calendar')} Mở Đăng ký suất tuần</button></div>
+      <div class="fw-step"><span class="n s2">2</span><div><b>Xử lý việc cần chú ý</b><span class="small muted">Chưa có số · chưa xác nhận · lệch dự báo · chờ duyệt</span></div><button class="btn sm ${d.attentionCount ? 'orange' : ''}" id="odNeed">${U.num(d.attentionCount)} việc cần xử lý</button></div>
+      <div class="fw-step"><span class="n s3">3</span><div><b>Hệ thống tự chốt ${String(cut.getHours()).padStart(2, '0')}:${String(cut.getMinutes()).padStart(2, '0')}</b><span class="small muted">${d.dayState === 'OPEN' ? `Còn ${hh} giờ ${mm} phút. Chốt xong tự lập kế hoạch sản xuất.` : 'Đã chốt – kế hoạch sản xuất tự lập sau chốt.'}</span></div></div>
+      <div class="fw-step"><span class="n s4">4</span><div><b>Nấu → giao → đối soát</b><span class="small muted">Hệ thống tự cập nhật theo từng khâu, không cần thao tác</span></div></div>`;
+    g('#odWeek').onclick = () => APP.go('crm-order-week?week=' + mondayOf(od.day));
+    g('#odNeed').onclick = () => { od.tab = 'need'; odDraw(el, f); };
+    const dev = d.forecastDeviationPct;
+    g('#odKpis').innerHTML = UI.kpis([
+      UI.kpi('Tổng suất ngày', U.num(d.totalQuantity), dev === null || dev === undefined ? 'chưa có dự báo' : (dev > 0 ? '+' : '') + U.num(dev, 1) + '% so dự báo', 'utensils', 'green'),
+      UI.kpi('Điểm giao có đơn', U.num(withNo) + ' / ' + U.num(pts), U.num(d.customerCount) + ' khách hàng', 'pin', 'blue'),
+      UI.kpi('Cần xử lý', U.num(d.attentionCount), d.dayState === 'OPEN' ? 'trước giờ chốt' : '', 'alert', d.attentionCount ? 'orange' : 'green'),
+      UI.kpi('Thành tiền dự kiến', U.moneyShort ? U.moneyShort(d.totalAmount) : U.money(d.totalAmount), 'chưa VAT', 'calc', 'purple'),
+    ], 'compact');
+    const all = (d.listCustomer || []).flatMap(c => c.listRow);
+    const cnt = { all: all.filter(r => r.status !== 'Cancelled').length, need: all.filter(r => r.listAttention.some(a => a.tone === 'warn')).length, extra: all.filter(r => r.source === 'EXTRA' && r.status !== 'Cancelled').length, cancel: d.cancelledCount };
+    g('#odTabs').innerHTML = [['all', 'Tất cả'], ['need', 'Cần xử lý'], ['extra', 'Đơn phát sinh'], ['cancel', 'Đã hủy']].map(([k, l]) => `<button class="tab ${od.tab === k ? 'active' : ''}" data-odt="${k}">${l} <span class="${k === 'need' && cnt.need ? 'od-cnt warn' : 'od-cnt'}">${U.num(cnt[k] || 0)}</span></button>`).join('');
+    el.querySelectorAll('[data-odt]').forEach(t => t.onclick = () => { od.tab = t.dataset.odt; odDraw(el, f); });
+    const meals = d.listMealType || [];
+    const qty = (r, m) => { const x = (r.listMeal || []).find(y => y.mealType === m); return x ? x : null; };
+    const cellOf = (r, m) => {
+      const x = qty(r, m);
+      if (!r.orderId) return `<td class="num muted">${r.forecast && m === (meals.includes('TRUA') ? 'TRUA' : meals[0]) ? '~' + U.num(r.forecast) : '–'}</td>`;
+      if (!x) return '<td class="num muted">–</td>';
+      const tip = (x.listOption || []).map(o => 'Lựa chọn ' + o.optionNo + ': ' + U.num(o.quantity)).join(' · ');
+      return `<td class="num" title="${esc(tip)}">${U.num(x.quantity)}</td>`;
+    };
+    const prog = r => {
+      if (r.status === 'Cancelled') return '<span class="od-cancel">Đã hủy</span>';
+      if (!r.orderId) return '<span class="small muted">Chưa có đơn</span>';
+      if (r.progress === 0) return `<span class="od-warn">Chưa xác nhận</span>`;
+      return `<span class="od-prog" title="${esc(OD_STEPS[r.progress - 1] || '')}">${OD_STEPS.map((s, i) => `<i class="${i < r.progress ? 'on' : ''}"></i>`).join('')}</span> <span class="small">${esc(OD_STEPS[r.progress - 1] || '')}</span>`;
+    };
+    const att = r => r.listAttention.map(a => `<span class="tag ${a.tone === 'info' ? 'blue' : 'orange'}">${esc(a.label)}</span>${a.action === 'INPUT' ? ` <button class="btn sm" data-odin="${esc(r.deliveryLocationId)}">Nhập số</button>` : a.action === 'CONFIRM' && Store.perm('crm-order').edit !== false ? ` <button class="btn sm" data-odok="${esc(r.orderId)}">Xác nhận</button>` : a.action === 'APPROVE' && Store.canApprove && Store.canApprove('crm-order') ? ` <button class="btn sm orange" data-odap="${esc(r.orderId)}">Duyệt</button>` : ''}`).join(' ');
+    const list = odRows();
+    const colN = meals.length + 4;
+    let h = `<div class="table-wrap"><table class="table dc-table od-table"><thead><tr><th>Khách hàng / điểm giao</th>${meals.map(m => `<th class="num">${OD_MEAL[m] || m}</th>`).join('')}<th class="num">Tổng</th><th>Tiến độ</th><th>Cần chú ý</th></tr></thead><tbody>`;
+    list.forEach(({ c, rows }) => {
+      const closed = od.closed.has(c.customerId);
+      h += `<tr class="od-grp ${closed ? 'closed' : ''}" data-odg="${esc(c.customerId)}"><td><span class="od-caret">${closed ? '▸' : '▾'}</span> <b>${esc(c.customerName || '')}</b> <span class="small muted">· ${U.num(c.pointCount)} điểm giao</span></td>${meals.map(m => `<td class="num"><b>${c.mealTotal[m] ? U.num(c.mealTotal[m]) : '–'}</b></td>`).join('')}<td class="num"><b>${U.num(c.total)}</b></td><td></td><td>${c.attentionCount ? `<span class="tag orange">${U.num(c.attentionCount)} cần xử lý</span>` : ''}</td></tr>`;
+      if (closed) return;
+      rows.forEach(r => {
+        h += `<tr class="od-row ${r.orderId ? 'click' : ''} ${r.status === 'Cancelled' ? 'od-x' : ''}" ${r.orderId ? `data-odo="${esc(r.orderId)}"` : ''}><td class="od-pt"><div>${esc(r.locationName || r.locationCode || '')}</div><div class="small muted">${r.source === 'EXTRA' ? 'Đơn phát sinh · ' + esc(r.orderNumber || '') + (r.extraReason ? ' · ' + esc(r.extraReason) : '') : r.source === 'WEEK' ? 'Từ đăng ký suất tuần · ' + esc(r.orderNumber || '') : ''}</div></td>${meals.map(m => cellOf(r, m)).join('')}<td class="num">${r.orderId ? `<b>${U.num(r.total)}</b>` : '–'}</td><td>${prog(r)}</td><td>${att(r)}</td></tr>`;
+      });
+    });
+    if (!list.length) h += `<tr><td colspan="${colN}" class="muted">${od.tab === 'all' && !od.q ? 'Không có khách có hợp đồng hiệu lực cho ngày này' : 'Không có dòng phù hợp'}</td></tr>`;
+    else h += `<tr class="od-total"><td><b>Tổng ngày</b></td>${meals.map(m => `<td class="num"><b>${U.num(d.mealTotal[m] || 0)}</b></td>`).join('')}<td class="num"><b>${U.num(d.totalQuantity)}</b></td><td></td><td></td></tr>`;
+    h += '</tbody></table></div>';
+    const body = g('#odBody'); body.innerHTML = h;
+    body.querySelectorAll('[data-odg]').forEach(r => r.onclick = () => { const k = r.dataset.odg; if (od.closed.has(k)) od.closed.delete(k); else od.closed.add(k); odDraw(el, f); });
+    body.querySelectorAll('[data-odo]').forEach(r => r.onclick = e => { if (e.target.closest('button')) return; APP.openDetail('Order', r.dataset.odo, f); });
+    body.querySelectorAll('[data-odin]').forEach(b => b.onclick = e => { e.stopPropagation(); APP.go('crm-order-week?week=' + mondayOf(od.day) + '&loc=' + b.dataset.odin); });
+    body.querySelectorAll('[data-odap]').forEach(b => b.onclick = e => { e.stopPropagation(); APP.openDetail('Order', b.dataset.odap, f); });
+    body.querySelectorAll('[data-odok]').forEach(b => b.onclick = e => {
+      e.stopPropagation();
+      const r = all.find(x => x.orderId === b.dataset.odok);
+      orderStep('confirm', { Id: r.orderId, OrderNumber: r.orderNumber, TotalQuantity: r.total }, r.forecast || 0, m => { UI.toast(m, 'ok'); od.data = null; od.key = ''; orderDay(el, f, null); });
+    });
+  }
+  // Xuất Excel đúng bảng đang xem (lọc + tìm hiện tại).
+  function odExport() {
+    const d = od.data; if (!d) return;
+    const meals = d.listMealType || [], rows = [];
+    odRows().forEach(({ c, rows: rs }) => rs.forEach(r => { const o = { kh: c.customerName, dg: r.locationName, nguon: r.source === 'EXTRA' ? 'Đơn phát sinh' : r.source === 'WEEK' ? 'Đăng ký suất tuần' : 'Chưa có đơn', so: r.orderNumber || '', tt: r.statusName || '', tong: r.orderId ? r.total : '', du: r.forecast || '', cy: r.listAttention.map(a => a.label).join('; ') }; meals.forEach(m => { const x = (r.listMeal || []).find(y => y.mealType === m); o[m] = x ? x.quantity : ''; }); rows.push(o); }));
+    const cols = [{ k: 'kh', label: 'Khách hàng' }, { k: 'dg', label: 'Điểm giao' }, { k: 'nguon', label: 'Nguồn' }, { k: 'so', label: 'Số đơn' }].concat(meals.map(m => ({ k: m, label: OD_MEAL[m] || m }))).concat([{ k: 'tong', label: 'Tổng' }, { k: 'du', label: 'Dự báo' }, { k: 'tt', label: 'Trạng thái' }, { k: 'cy', label: 'Cần chú ý' }]);
+    U.csv(rows, cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => r[c.k] })), 'DonHang_' + od.day.replace(/-/g, '') + '.csv');
+    UI.toast('Đã xuất ' + rows.length + ' dòng', 'ok');
+  }
+  // "Thêm đơn phát sinh": khách → điểm giao → ngày ăn → lý do → số suất theo buổi × lựa chọn (món + đơn giá theo hợp đồng) → "Tạo đơn · N suất · tiền".
+  function odExtra(el, f) {
+    const cus = (od.data ? od.data.listCustomer : []).map(c => ({ id: c.customerId, name: c.customerName }));
+    UI.modal({ title: 'Thêm đơn phát sinh', sub: 'Đơn ngoài đăng ký tuần: sự kiện, khách đặt thêm, đơn bù. Giá lấy theo hợp đồng, món theo thực đơn tuần.', size: 'lg',
+      body: `<div class="form-grid"><div class="field"><label>Khách hàng <span class="req">*</span></label><select class="select" id="exC"><option value="">— Chọn —</option>${cus.map(c => `<option value="${esc(c.id)}">${esc(c.name || '')}</option>`).join('')}</select></div>
+        <div class="field"><label>Ngày ăn <span class="req">*</span></label><input type="date" class="input" id="exD" value="${od.day}"></div>
+        <div class="field"><label>Điểm giao <span class="req">*</span></label><select class="select" id="exL"><option value="">— Chọn khách trước —</option></select></div>
+        <div class="field"><label>Lý do <span class="req">*</span></label><div class="row-flex" id="exR">${OD_REASON.map(([k, l], i) => `<label class="chip-radio"><input type="radio" name="exR" value="${k}" ${i === 0 ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
+        <div class="field" style="grid-column:1/-1"><label>Ghi chú</label><input class="input" id="exN" placeholder="vd. Tiệc kỷ niệm 10 năm"></div></div>
+        <div id="exWarn"></div><div id="exLines" class="mt"><div class="muted small">Chọn khách hàng và ngày ăn để tải loại suất theo hợp đồng.</div></div><div id="exCut" class="small muted mt"></div>`,
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="exOk" disabled>Tạo đơn</button>',
+      onMount: (m, close) => {
+        let tpl = null, seq = 0;
+        const sel = s => m.querySelector(s);
+        const sum = () => {
+          let n = 0, money = 0;
+          m.querySelectorAll('[data-exq]').forEach(i => { const q = Math.max(0, +i.value || 0); n += q; money += q * (+i.dataset.p || 0); });
+          const ok = sel('#exOk'); ok.disabled = !n || !sel('#exL').value; ok.textContent = n ? `Tạo đơn · ${U.num(n)} suất · ${U.money(money)}` : 'Tạo đơn';
+        };
+        const warn = () => {
+          const loc = sel('#exL').value, box = sel('#exWarn'); box.innerHTML = '';
+          const l = tpl && (tpl.listLocation || []).find(x => x.deliveryLocationId === loc);
+          if (l && l.existingOrderId) box.innerHTML = `<div class="notice warn">${I('alert')}<div>Điểm này đã có đơn <b>${esc(l.existingOrderNumber || '')}</b> từ đăng ký tuần – đơn này là đơn thêm.</div></div>`;
+          sum();
+        };
+        const load = () => {
+          const cid = sel('#exC').value, day = sel('#exD').value, box = sel('#exLines');
+          tpl = null; sel('#exL').innerHTML = '<option value="">— Chọn —</option>';
+          if (!cid || !day) { box.innerHTML = '<div class="muted small">Chọn khách hàng và ngày ăn để tải loại suất theo hợp đồng.</div>'; return sum(); }
+          const my = ++seq; box.innerHTML = '<div class="muted small">Đang tải…</div>';
+          Store.query('Order/GetNewTemplate', { customerId: cid, mealDate: day }).then(x => {
+            if (my !== seq || !box.isConnected) return;
+            if (!x.ok || !x.data) { box.innerHTML = failBox(x.message); return; }
+            tpl = x.data;
+            sel('#exL').innerHTML = '<option value="">— Chọn —</option>' + (tpl.listLocation || []).map(l => `<option value="${esc(l.deliveryLocationId)}">${esc(l.locationName || l.locationCode || '')}</option>`).join('');
+            if ((tpl.listLocation || []).length === 1) sel('#exL').value = tpl.listLocation[0].deliveryLocationId;
+            const lines = ((tpl.listLocation || [])[0] || {}).listLine || [];
+            box.innerHTML = lines.map(ln => { const ops = (ln.listOption || []).length ? ln.listOption : [{ optionNo: 1, dishText: '' }];
+              return `<h3 class="mt">${esc(ln.mealName || OD_MEAL[ln.mealType] || ln.mealType || '')} <span class="small muted">(hợp đồng ${esc(tpl.contractNumber || '')} · ${U.money(ln.unitPrice)}/suất)</span></h3>${ops.map(o => `<div class="spread od-opt"><div><b>Lựa chọn ${o.optionNo}</b> <span class="small muted">${esc(o.dishText || '')}</span></div><input type="number" min="0" class="input" style="width:110px;text-align:right" data-exq data-m="${esc(ln.contractMealId)}" data-s="${esc(ln.shiftId || '')}" data-o="${o.optionNo}" data-p="${ln.unitPrice || 0}" value="0"></div>`).join('')}`; }).join('') || '<div class="muted small">Hợp đồng chưa có loại suất.</div>';
+            sel('#exCut').innerHTML = tpl.isAfterCutoff ? `<span class="bad">Đã quá giờ chốt (${esc(U.dt(tpl.cutoffAt))}): hệ thống tự gửi Trưởng KD duyệt và báo bếp.</span>` : `Trước ${esc(U.dt(tpl.cutoffAt))}: đơn vào thẳng kế hoạch, không cần duyệt. Sau giờ chốt: hệ thống tự gửi Trưởng KD duyệt và báo bếp.`;
+            box.querySelectorAll('[data-exq]').forEach(i => i.oninput = sum);
+            warn();
+          });
+        };
+        sel('#exC').onchange = load; sel('#exD').onchange = load; sel('#exL').onchange = warn;
+        sel('#exOk').onclick = () => {
+          const lines = [...m.querySelectorAll('[data-exq]')].filter(i => +i.value > 0).map(i => ({ contractMealId: i.dataset.m, shiftId: i.dataset.s || null, menuOptionNo: +i.dataset.o, quantity: +i.value }));
+          const reason = (m.querySelector('[name=exR]:checked') || {}).value;
+          if (!lines.length || !sel('#exL').value) return UI.toast('Chọn điểm giao và nhập số suất', 'err');
+          Store.act('Order/CreateExtra', { json: { customerId: sel('#exC').value, deliveryLocationId: sel('#exL').value, mealDate: sel('#exD').value, reason, note: sel('#exN').value.trim() || null, listLine: lines }, tables: ORDER_T }).then(r => {
+            if (!r.ok || !r.data || !r.data.order) return;
+            close(); bust();
+            UI.toast('Đã tạo đơn ' + esc(r.data.order.orderNumber || '') + (r.data.approvalRequested ? ' – đã gửi Trưởng KD duyệt' : r.data.order.status === 'Confirmed' ? ' – đã xác nhận' : ''), r.data.approvalRequested ? 'warn' : 'ok');
+            od.day = U.day(r.data.order.mealDate) || od.day; od.data = null; od.key = ''; orderDay(el, f, null);
+          });
+        };
+      } });
+  }
+  // ---------- Đơn hàng (chế độ DEMO – bảng Kanban cũ; chế độ API dùng orderDay ở trên) ----------
   const os = { view: 'board', date: null };   // date: null = chưa chọn, '' = Tất cả
   APP.register('crm-order', (el, f, params) => {
+    if (Store.isLive) { if (params && params.id) setTimeout(() => APP.openDetail('Order', params.id), 50); return orderDay(el, f, params); }
     const perm = Store.perm(f.id);
     const dates = [...new Set(Store.rows('Order').map(o => U.day(o.MealDate)))].sort();
     // Ngày mặc định (chỉ đặt 1 lần, khi đã có dữ liệu): ngày mai nếu có đơn, không thì ngày gần nhất từ hôm nay có đơn, không có thì Tất cả.
@@ -242,8 +427,8 @@
   }
   APP.crmOrder = { act: orderStep, saveLines: saveOrderLines };
   // UG-1 C-05: chốt đơn theo ngày ăn (Order/LockByMealDate – thay job 20:00 khi cần chốt tay): chọn ngày → xác nhận lần 2 → báo số đơn đã chốt / chưa xác nhận / chờ duyệt.
-  function lockByDay() {
-    const def = U.addDays(Store.ctx.date, 1);
+  function lockByDay(day0) {
+    const def = day0 || U.addDays(Store.ctx.date, 1);
     UI.modal({ title: 'Chốt đơn theo ngày ăn', size: 'sm',
       body: `<div class="field"><label>Ngày ăn <span class="req">*</span></label><input type="date" class="input" id="lkDay" value="${def}"></div><div class="small muted mt">Khóa mọi đơn <b>Đã xác nhận</b> của ngày ăn – chỉ làm được khi đã tới giờ chốt (20:00 hôm trước). Đơn đã chốt chỉ sửa được qua Yêu cầu sửa sau chốt.</div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn orange" id="lkOk">Chốt đơn</button>',
