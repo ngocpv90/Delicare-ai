@@ -13,6 +13,11 @@ namespace AppDelicare.WebApi.Controllers
         // ------------------------------------------------------------ HR-ACC-1 (D-82)
 
         /// <summary>HR-ACC-1.8 (D-82 j): màn Tài khoản – cột Nhân viên, nhãn loại (Nhân viên / Hệ thống / Khách hàng), cảnh báo "đã nghỉ nhưng còn mở", lọc "Chưa gắn".</summary>
+        /// <summary>HR-ACC-1.8 (D-82 j): "Việc của tôi" – tài khoản đang đăng nhập đã gắn nhân viên chưa (mọi tài khoản đăng nhập, không cần quyền màn).</summary>
+        [HttpGet("GetMyEmployee")]
+        [Security.SkipPermission]
+        public Task<IActionResult> GetMyEmployee() => RunAccount(nameof(GetMyEmployee), () => accounts.GetMyEmployee());
+
         [HttpGet("GetAccountLinks")]
         public Task<IActionResult> GetAccountLinks() => RunAccount(nameof(GetAccountLinks), () => accounts.GetAccountLinks());
 

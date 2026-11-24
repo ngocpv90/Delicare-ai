@@ -405,19 +405,78 @@
     }
   });
   // adm-employee: nút "Tạo mã liên kết bot" trên dòng – chỉ khi có quyền Sửa màn hồ sơ nhân viên (mã 72 giờ).
-  APP.register('adm-employee', (el, f) => {
-    APP.genericList(el, f, { onRow: id => APP.go('adm-employee-360?id=' + encodeURIComponent(id)) });   // UI-4 (D-68 a): bấm dòng → hồ sơ nhân viên
+  // HR-ACC-1.8 (D-82 d, j): tab "Đối chiếu" – nhân viên chưa gắn con người (Employee.PersonId) + ứng viên theo 3 cách của script D82
+  // (liên kết bot / tên đăng nhập = mã NV / SĐT). Gắn bằng Employee/LinkPerson (quyền Sửa adm-employee + Sửa adm-user).
+  const LINK_GRP = { SURE: ['Khớp chắc', 'green'], MULTI: ['Nhiều ứng viên', 'orange'], NONE: ['Không khớp', 'gray'] };
+  const linkState = { group: '' };
+  function linkReview(pane, f) {
+    const canLink = Store.perm('adm-employee').edit !== false && Store.perm('adm-user').edit !== false;
+    pane.innerHTML = APP.header(f, '', { noNote: true, sub: 'Tài khoản ↔ con người ↔ nhân viên (D-82). Khớp chắc: script D82 tự gắn khi chạy thật; nhiều ứng viên / không khớp: chọn tay ở đây. Nhân viên chưa có tài khoản: mở hồ sơ → Đề nghị cấp tài khoản.' })
+      + `<div class="card panel"><div id="lkBody">${LOADING}</div></div>`;
+    const body = pane.querySelector('#lkBody');
+    const load = () => Store.query('Employee/GetLinkReview', { group: linkState.group }).then(x => {
+      if (!body.isConnected) return;
+      if (!x.ok) { body.innerHTML = `<div class="notice warn">${I('alert')}<div>${esc(x.message || 'Không tải được')}</div></div>`; return; }
+      const d = x.data || {}, rows = d.listRow || [];
+      const chip = (g, label, n) => `<button class="chip ${linkState.group === g ? 'active' : ''}" data-lg="${g}">${label} · ${U.num(n || 0)}</button>`;
+      body.innerHTML = `<div class="row-flex mb">${chip('', 'Tất cả chưa gắn', (d.sureCount || 0) + (d.multiCount || 0) + (d.noneCount || 0))}${chip('SURE', 'Khớp chắc', d.sureCount)}${chip('MULTI', 'Nhiều ứng viên', d.multiCount)}${chip('NONE', 'Không khớp', d.noneCount)}<span class="small muted">Đã gắn: ${U.num(d.linkedCount || 0)}</span></div>`
+        + (rows.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Nhân viên</th><th>Đơn vị</th><th>SĐT</th><th>Nhóm</th><th>Ứng viên (người / tài khoản)</th><th></th></tr></thead><tbody>${rows.map(r => {
+          const g = LINK_GRP[r.group] || [r.groupName, 'gray'];
+          const cands = (r.listCandidate || []).map(c => `<div class="mb">${esc(c.fullName || '(không tên)')}${c.userName ? ` · <b>${esc(c.userName)}</b>` : ''}${c.phoneNumber ? ` · ${esc(c.phoneNumber)}` : ''}<span class="sub">${esc(c.sourceText || '')}${c.linkedEmployee ? ' · đã gắn ' + esc(c.linkedEmployee) : ''}</span>
+            ${canLink && !c.linkedEmployee ? `<button class="btn xs primary" data-lk="${r.employeeId}" data-person="${c.personId}">Gắn</button>` : ''}</div>`).join('');
+          return `<tr><td><b>${esc(r.employeeCode || '')}</b><span class="sub">${esc(r.employeeName || '')}</span></td><td>${esc(r.organizationUnitName || '')}</td><td>${esc(r.phone || '')}</td><td>${UI.tag(g[0], g[1])}</td>
+            <td style="white-space:normal;min-width:260px">${cands || '<span class="muted small">Không có ứng viên</span>'}</td>
+            <td class="actions">${canLink ? `<button class="btn xs" data-lkuser="${r.employeeId}" data-name="${esc((r.employeeCode || '') + ' ' + (r.employeeName || ''))}">Chọn tài khoản…</button> ` : ''}<a class="btn xs" href="#/adm-employee-360?id=${r.employeeId}">Hồ sơ</a></td></tr>`;
+        }).join('')}</tbody></table></div>` : '<div class="muted small">Không có nhân viên nào trong nhóm này.</div>');
+      body.querySelectorAll('[data-lg]').forEach(b => b.onclick = () => { linkState.group = b.dataset.lg; load(); });
+      const link = (payload, after) => Store.act('Employee/LinkPerson', { json: payload }).then(z => { if (z.ok) { UI.toast(esc((z.res && z.res.message) || 'Đã gắn'), 'ok'); after && after(); load(); } });
+      body.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => UI.confirm('Gắn nhân viên này với người đã chọn? Tài khoản của người đó sẽ dùng cho chấm công, bot, duyệt…', () => link({ employeeId: b.dataset.lk, personId: b.dataset.person }), { ok: 'Gắn' }));
+      body.querySelectorAll('[data-lkuser]').forEach(b => b.onclick = () => Store.query('User/GetAccountLinks').then(z => {
+        const free = ((z.data && z.data.listRow) || []).filter(u => !u.employeeId && u.accountType === 'INTERNAL');
+        if (!free.length) return UI.toast('Không còn tài khoản nội bộ nào chưa gắn nhân viên', 'warn');
+        UI.modal({ title: 'Gắn tài khoản cho ' + b.dataset.name, size: 'md',
+          body: `<div class="field"><label for="lkU">Tài khoản (chưa gắn nhân viên)</label><select class="input" id="lkU">${free.map(u => `<option value="${u.userId}">${esc(u.userName || '')}${u.isActive ? '' : ' (đã khóa)'}</option>`).join('')}</select></div><div class="row-flex mt"><button class="btn primary" data-ok>Gắn</button></div>`,
+          onMount: (m, close) => { m.querySelector('[data-ok]').onclick = () => link({ employeeId: b.dataset.lkuser, userId: m.querySelector('#lkU').value }, close); } });
+      }));
+    });
+    load();
+  }
+  APP.register('adm-employee', (el, f, params) => {
+    // HR-ACC-1.8: 2 tab Danh sách / Đối chiếu (chế độ thật).
+    let host = el;
+    if (Store.isLive) {
+      const tab = (params && params.tab) === 'link' ? 'link' : 'list';
+      el.innerHTML = `<div class="tabs c360-tabs mb"><button class="tab ${tab === 'list' ? 'active' : ''}" data-et="list">Danh sách</button><button class="tab ${tab === 'link' ? 'active' : ''}" data-et="link">Đối chiếu tài khoản</button></div><div data-epane></div>`;
+      el.querySelectorAll('[data-et]').forEach(b => b.onclick = () => APP.go(b.dataset.et === 'link' ? 'adm-employee?tab=link' : 'adm-employee'));
+      host = el.querySelector('[data-epane]');
+      if (tab === 'link') return linkReview(host, f);
+    }
+    APP.genericList(host, f, { onRow: id => APP.go('adm-employee-360?id=' + encodeURIComponent(id)) });   // UI-4 (D-68 a): bấm dòng → hồ sơ nhân viên
     if (!Store.isLive || Store.perm('adm-employee').edit === false) return;
-    APP.rowExtra(el, tr => {
+    APP.rowExtra(host, tr => {
       const cell = tr.lastElementChild; if (!cell || cell.querySelector('[data-tgemp]')) return;
       cell.insertAdjacentHTML('beforeend', ` <button class="btn xs" data-tgemp title="Tạo mã liên kết bot (hạn 72 giờ)">${I('msg')}</button>`);
       cell.querySelector('[data-tgemp]').onclick = e => { e.stopPropagation(); Store.act('TelegramLink/CreateCodeForEmployee', { form: { EmployeeId: tr.dataset.row } }).then(r => { if (r.ok && !r.demo) showTelegramCode(r.data); }); };
     });
   });
+  // HR-ACC-1.8 (D-82 j): Chức vụ – nhóm quyền gợi ý theo mã chức danh (đọc cấu hình, IT điền BusinessRules:PositionDefaultGroups).
+  let posGroups = null;
+  APP.register('adm-position', (el, f) => {
+    APP.genericList(el, f);
+    if (!Store.isLive) return;
+    const draw = () => APP.rowExtra(el, tr => {
+      const r = Store.get('Position', tr.dataset.row); if (!r || tr.querySelector('[data-pg]')) return;
+      const g = posGroups && r.Code ? (posGroups[r.Code] || posGroups[String(r.Code).toUpperCase()] || []) : [];
+      const cell = [...tr.children].find(c => c.textContent.trim() === String(r.Code || '').trim()) || tr.children[0];
+      cell.insertAdjacentHTML('beforeend', `<span class="sub" data-pg>Nhóm gợi ý: ${g.length ? esc(g.join(', ')) : '<span class="muted">chưa cấu hình</span>'}</span>`);
+    });
+    if (posGroups) return draw();
+    Store.query('Employee/GetPositionGroups').then(x => { posGroups = (x.ok && x.data) || {}; if (APP.current === 'adm-position') draw(); });
+  });
   APP.register('hr-my', (el, f) => {
     if (!Store.isLive) return onlyLive(el, f);
     el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Ca làm việc, đơn nghỉ, đơn đổi ca, chuyến giao của tài khoản đang đăng nhập và liên kết bot Telegram.' }) +
-      box('myAtt', 'Chấm công hôm nay', 'Vào ca / ra ca bằng vị trí hiện tại của thiết bị') + box('myShift', 'Ca của tôi', '14 ngày tới') + `<div class="grid g2">${box('myLeave', 'Đơn nghỉ của tôi', '', `<button class="btn sm primary" id="myLeaveNew">${I('plus')} Tạo đơn nghỉ</button>`)}${box('mySwap', 'Đơn đổi ca của tôi', '', `<a class="btn sm" href="#/hr-swap">Màn đổi ca →</a>`)}</div>` +
+      '<div data-mylink></div>' + box('myAtt', 'Chấm công hôm nay', 'Vào ca / ra ca bằng vị trí hiện tại của thiết bị') + box('myShift', 'Ca của tôi', '14 ngày tới') + `<div class="grid g2">${box('myLeave', 'Đơn nghỉ của tôi', '', `<button class="btn sm primary" id="myLeaveNew">${I('plus')} Tạo đơn nghỉ</button>`)}${box('mySwap', 'Đơn đổi ca của tôi', '', `<a class="btn sm" href="#/hr-swap">Màn đổi ca →</a>`)}</div>` +
       box('myRoute', 'Chuyến giao của tôi', 'Hôm nay – dành cho tài xế') + box('myTg', 'Liên kết Telegram', 'Nhận thông báo và thao tác qua bot', `<button class="btn sm primary" id="myTgNew">${I('plus')} Tạo mã liên kết</button>`);
     const shifts = () => {
       const o = el.querySelector('#myShift'); let list = [];
@@ -434,6 +493,14 @@
       validate: o => o.FromDate && o.ToDate && o.ToDate < o.FromDate ? 'Đến ngày phải ≥ Từ ngày' : null,
       submit: (o, close) => Store.act('LeaveRequest/Create', { form: o, tables: ['LeaveRequest'] }).then(x => { if (!x.ok) return; close(); UI.toast(okMsg(x, 'Đã gửi đơn nghỉ – chờ duyệt'), 'ok'); leaves(); }) });
     if (APP.myAttendance) APP.myAttendance(el.querySelector('#myAtt'));
+    // HR-ACC-1.8 (D-82 j): tài khoản chưa gắn với nhân viên (Employee.PersonId) → chấm công / đơn / bot dùng tạm cách đoán cũ hoặc không được – báo NS.
+    Store.query('User/GetMyEmployee').then(x => {
+      const o = el.querySelector('[data-mylink]'); if (!o || !x.ok || !x.data || x.data.linked) return;
+      const d = x.data;
+      o.innerHTML = `<div class="notice warn mb">${I('alert')}<div><b>Tài khoản chưa gắn với nhân viên</b> – ${d.guessed
+        ? `hệ thống đang tạm nhận bạn là <b>${esc((d.employeeCode || '') + ' ' + (d.employeeName || ''))}</b> theo mã / SĐT; nhờ phòng Nhân sự gắn chính thức (màn Nhân viên › Đối chiếu tài khoản) để không bị mất khi đổi mã, SĐT hoặc tên đăng nhập.`
+        : 'chưa chấm công, lập đơn nghỉ / đổi ca hay nhận ca qua bot được. Liên hệ phòng Nhân sự để gắn tài khoản với hồ sơ nhân viên (màn Nhân viên › Đối chiếu tài khoản).'}</div></div>`;
+    });
     fill(el, 'myRoute', 'DeliveryRoute/GetMine', null, x => { const lr = (x.data && x.data.listRoute) || []; return lr.length ? lr.map(r => `<div class="mb"><div class="spread"><b>${esc((r.route && (r.route.routeNo || r.route.routeNumber)) || '')} · ${esc(r.licensePlate || '')}</b><span class="badge gray">${esc(r.statusName || '')}</span></div><div class="small muted">${U.num(r.loadMeals || 0)} suất${r.departureTemperatureC !== null && r.departureTemperatureC !== undefined ? ' · xuất phát ' + U.num(r.departureTemperatureC, 1) + ' °C' : ''}</div>${listHtml(r.listStop || [], 6)}</div>`).join('') + `<a class="btn sm" href="#/log-route">Mở màn Tuyến giao hàng →</a>` : ''; }, 'Hôm nay không có chuyến giao nào của bạn');
     const tg = () => UI.telegramBox(el);
     tg();

@@ -20,6 +20,10 @@ namespace AppDelicare.Services.Interface
         Task<IResult<bool>> LinkPerson(EmployeeLinkPersonRequest request);
         /// <summary>Mật khẩu tạm của tài khoản vừa tạo khi không gửi được qua bot – trả 1 lần (IT), sau đó xóa.</summary>
         Task<IResult<AccountCreatedModel>> TakeCreated(Guid employeeId);
+        /// <summary>"Việc của tôi": tài khoản đang đăng nhập đã gắn nhân viên chưa (thông báo trỏ tới NS).</summary>
+        Task<IResult<MyEmployeeLinkModel>> GetMyEmployee();
+        /// <summary>Màn Chức vụ: nhóm quyền gợi ý theo mã chức danh (BusinessRules:PositionDefaultGroups).</summary>
+        IResult<Dictionary<string, List<string>>> GetPositionGroups();
 
         // ---- dùng trong transaction của nghiệp vụ khác (EmployeeService, handler duyệt, job)
         Task<string?> ApplyCreateAsync(Guid employeeId, string? proposalJson, Guid actorUserId);

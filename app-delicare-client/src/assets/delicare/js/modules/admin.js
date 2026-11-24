@@ -205,9 +205,32 @@
       });
     });
   }
+  // HR-ACC-1.8 (D-82 j): User/GetAccountLinks – cột Nhân viên + nhãn loại (Nhân viên / Hệ thống / Khách hàng), cảnh báo cố định
+  // "Nhân viên đã nghỉ nhưng tài khoản còn mở" (chỉ tiêu = 0), lọc "Chưa gắn". Tải 1 lần / lần mở màn, rồi vẽ lại danh sách.
+  const accState = { data: null, loading: false, only: false };
+  const accTop = () => {
+    const d = accState.data; if (!LIVE()) return '';
+    if (!d) return `<div class="small muted mb" data-acctop>Đang tải liên kết tài khoản – nhân viên…</div>`;
+    return `<div data-acctop>${d.resignedButActiveCount ? `<div class="notice warn mb">${I('alert')}<div><b>${U.num(d.resignedButActiveCount)} nhân viên đã nghỉ nhưng tài khoản còn mở</b> – khóa ngay (job hằng ngày cũng tự khóa và báo FIN-IT).</div></div>` : ''}
+      <div class="row-flex mb"><button class="chip ${accState.only ? 'active' : ''}" data-acconly>Chưa gắn nhân viên · ${U.num(d.unlinkedCount || 0)}</button>
+      <span class="small muted">Nhân viên đang làm chưa có tài khoản: ${U.num(d.employeeWithoutAccountCount || 0)}${Store.perm('adm-employee').access !== false ? ' – xem tab <a href="#/adm-employee?tab=link">Đối chiếu</a> ở màn Nhân viên' : ''}</span></div></div>`;
+  };
+  const accRow = id => accState.data && accState.data.by[id];
   APP.register('adm-user', (el, f) => {
     const canEdit = Store.perm(f.id).edit !== false;
-    APP.genericList(el, f, { noAdd: LIVE() });
+    if (LIVE() && !accState.data && !accState.loading) {
+      accState.loading = true;
+      Store.query('User/GetAccountLinks').then(x => {
+        accState.loading = false;
+        if (!x.ok || !x.data) return;
+        const d = x.data; d.by = {}; (d.listRow || []).forEach(r => { d.by[r.userId] = r; });
+        accState.data = d;
+        if (APP.current === 'adm-user') APP.refresh();
+      });
+    }
+    const onlyRows = LIVE() && accState.only && accState.data ? () => Store.rows('User').filter(u => { const a = accRow(u.Id); return !a || (!a.linked && a.accountType === 'INTERNAL'); }) : undefined;
+    APP.genericList(el, f, { noAdd: LIVE(), top: accTop(), rows: onlyRows });
+    const onlyBtn = el.querySelector('[data-acconly]'); if (onlyBtn) onlyBtn.onclick = () => { accState.only = !accState.only; APP.refresh(); };
     // UG-1 C-06: chế độ thật – tạo người dùng qua User/Insert (gán nhóm + mật khẩu tạm), không nhập tay dòng User.
     if (LIVE() && Store.perm(f.id).add !== false) {
       const bar = el.querySelector('.heading-actions');
@@ -216,6 +239,13 @@
     APP.rowExtra(el, tr => {
       const r = Store.get('User', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td) return;
       const name = esc(r.UserName || ''), active = !!r.IsActive;
+      const acc = accRow(r.Id);
+      if (acc && !tr.querySelector('[data-accinfo]')) {
+        const cell = [...tr.children].find(c => c.textContent.trim() === String(r.UserName || '').trim()) || tr.children[0];
+        const kindColor = acc.accountType === 'INTERNAL' ? (acc.employeeId ? 'blue' : 'gray') : 'purple';
+        cell.insertAdjacentHTML('beforeend', ` <span data-accinfo>${UI.tag(acc.kindName || '', kindColor)}${acc.resignedButActive ? ' ' + UI.tag('Đã nghỉ – còn mở', 'red') : ''}${acc.employeeId && !acc.linked ? ' ' + UI.tag('Đoán theo mã', 'orange') : ''}
+          ${acc.employeeId ? `<span class="sub">${esc([acc.employeeCode, acc.employeeName, acc.organizationUnitName, acc.employeeStatusName].filter(Boolean).join(' · '))}</span>` : ''}</span>`);
+      }
       let h = '';
       if (LIVE()) h += `<button class="btn xs" data-eff title="Quyền hiệu lực của tài khoản">${I('shield')}</button> `;
       // Không tự khóa tài khoản đang đăng nhập (backend cũng chặn).

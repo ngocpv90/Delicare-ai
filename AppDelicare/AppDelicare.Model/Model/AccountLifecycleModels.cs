@@ -148,6 +148,17 @@ namespace AppDelicare.Model.Model
         public bool SentByBot { get; set; }
     }
 
+    /// <summary>HR-ACC-1.8 (D-82 j): "Việc của tôi" – tài khoản đang đăng nhập đã gắn nhân viên chưa.</summary>
+    public class MyEmployeeLinkModel
+    {
+        public bool Linked { get; set; }
+        /// <summary>Chưa gắn nhưng đang dùng tạm cách đoán cũ (tên đăng nhập = mã NV / liên kết bot / SĐT) – vẫn chấm công được, NS cần đối chiếu.</summary>
+        public bool Guessed { get; set; }
+        public Guid? EmployeeId { get; set; }
+        public string? EmployeeCode { get; set; }
+        public string? EmployeeName { get; set; }
+    }
+
     /// <summary>Khóa tài khoản theo nghỉ việc (D-82 h) – kết quả cho job / test.</summary>
     public class AccountLockResultModel
     {

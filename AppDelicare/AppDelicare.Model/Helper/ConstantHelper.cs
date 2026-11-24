@@ -100,7 +100,7 @@
             public static readonly string HrConfirmNotified = " – đã gửi thông báo qua bot cho nhân viên đã liên kết";
             public static readonly string HrMarkAbsentDone = "Đã đánh Vắng {0} ca hết giờ mà không vào ca";
             public static readonly string HrUserNoUnit = "Tài khoản chưa gắn với nhân viên có đơn vị / tổ – không lọc được \"tổ tôi\"";
-            public static readonly string HrUserNoEmployee ="Tài khoản chưa gắn với nhân viên (Employee) – nhân sự đặt mã nhân viên = tên đăng nhập hoặc liên kết tài khoản (GAP-HR-02)";
+            public static readonly string HrUserNoEmployee ="Tài khoản chưa gắn với nhân viên – nhờ phòng Nhân sự gắn ở màn Nhân viên › Đối chiếu tài khoản (D-82)";
             public static readonly string HrNoRightOther = "Không có quyền {0} cho nhân viên khác (cần quyền Thêm trên màn \"{1}\")";
             public static readonly string HrSourceInvalid = "Hình thức chấm công không hợp lệ (GPS / QR / MACHINE / PROXY)";
             public static readonly string HrSourceRequiredForOther = "Chấm công cho nhân viên khác phải ghi rõ hình thức (SourceChannel: MACHINE / QR / PROXY / GPS)";

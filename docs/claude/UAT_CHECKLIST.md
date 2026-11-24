@@ -31,6 +31,24 @@ Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) ho�
 - [ ] Điểm giao: bấm dòng ở màn Điểm giao hàng (hoặc tên điểm giao trong trang đơn) → `#/crm-location-detail?id=`; thẻ Suất TB / ngày, Đơn 30 ngày, **Giao đúng giờ** (đơn giao trễ > 15 phút không tính đúng giờ), Phản ánh đang mở; **Bản đồ** mở đúng tọa độ; **Sửa** mở form chung, lưu xong trang cập nhật.
 - [ ] Quyền: tài khoản chỉ có quyền xem `crm-order` mở được trang đơn nhưng không thấy nút thao tác; không có quyền màn gốc → API trả 403 / trang báo không có quyền; tab Giao hàng / Phản ánh ẩn khi không có quyền xem màn tương ứng. Id sai → "Không tìm thấy bản ghi". Chế độ DEMO vẫn mở ngăn trượt.
 
+## TÀI KHOẢN ↔ CON NGƯỜI ↔ NHÂN VIÊN (HR-ACC-1, D-82 – 2026-11-24) · migration `DB/migrations/20261123_02_hr_acc_person_link.sql` · script `DB/scripts/D82_link_employee_person.sql` · test: `HrAccount/HrAccountTests.cs`, `HrAccount/D82LinkScriptSqlTests.cs` · ảnh: `docs/frontend-handoff/assets/hr-acc-1/` · HDSD `01_QUAN_TRI.md` 4.1c–4.2, `11_NHAN_SU.md` 4.0 / 4.0b, `12_QUAN_LY_DUYET.md`
+
+Chạy **sau** khi đã backup → migration → deploy API → script D82 (DryRun rồi chạy thật).
+
+| # | Kịch bản | Thao tác | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Script gắn | `sqlcmd … -v DryRun=1 -i DB/scripts/D82_link_employee_person.sql` rồi `DryRun=0`, chạy lại lần 2 | Báo cáo 3 nhóm Khớp chắc / Nhiều ứng viên / Không khớp + danh sách; lần 2 "Đã gắn 0" | | |
+| 2 | Đối chiếu | NS mở **Nhân viên › Đối chiếu tài khoản**, lọc Nhiều ứng viên → **Gắn** đúng người; thử gắn người đó cho NV thứ 2 | Gắn được; lần 2 báo "Người này đã gắn nhân viên …" | | |
+| 3 | Tuyển mới | NS **Thêm** nhân viên, tích **Cấp tài khoản web** → IT mở **Phê duyệt**, đổi nhóm, **Duyệt** | Tài khoản = mã NV viết thường, đúng nhóm IT chọn; mật khẩu tạm qua bot hoặc hộp 1 lần; đăng nhập phải đổi mật khẩu | | |
+| 4 | Không trùng | NS bấm **Đề nghị cấp tài khoản** lần 2 khi yêu cầu còn mở | "Đã có yêu cầu duyệt đang chờ…" | | |
+| 5 | Đổi tên / mã / SĐT | Đổi tên đăng nhập (màn Tài khoản), đổi SĐT nhân viên → nhân viên chấm công web / bot | Vẫn chấm công đúng người; **Việc của tôi** không báo "chưa gắn" | | |
+| 6 | Nghỉ việc | NS đổi trạng thái *Nghỉ việc* khi người đó đang đăng nhập và đang giữ 1 yêu cầu duyệt | Thao tác kế tiếp: "Tài khoản đã bị khóa"; đăng nhập lại không được; bot ngừng; COO nhận tin "Người duyệt … đã nghỉ việc"; màn Tài khoản: cảnh báo "đã nghỉ còn mở" = 0 | | |
+| 7 | Quay lại | Đổi lại *Đang làm* → IT duyệt **Mở lại tài khoản** | Đăng nhập lại được | | |
+| 8 | Đổi chức danh | (Sau khi IT điền `BusinessRules:PositionDefaultGroups`) đổi chức danh sang chức danh có nhóm gợi ý khác | Có yêu cầu **Đổi nhóm quyền**; trong lúc chờ giữ quyền cũ; duyệt → nhóm mới | | |
+| 9 | Tự duyệt | Người duyệt đơn nghỉ là chính nhân viên được NS lập đơn hộ | "Không duyệt yêu cầu về chính mình" | | |
+| 10 | Đồng bộ | Sửa SĐT ở hồ sơ nhân viên; sửa họ tên ở hồ sơ cá nhân (menu tài khoản) | Hai nơi cùng đổi | | |
+| 11 | Tài khoản khách | (Test tự động) tài khoản CUSTOMER kể cả IsAdmin | Đăng nhập bị từ chối; API nội bộ 403 | | |
+
 ## PHÊ DUYỆT TỔNG (APR-UI-1, D-81 – 2026-11-23) · test: `Approval/ApprovalHubTests.cs` · ảnh: `docs/frontend-handoff/assets/apr-ui-1/screens/` · HDSD `12_QUAN_LY_DUYET.md`
 
 **Đo (D-81 k):** COO + trưởng mua hàng dùng màn Phê duyệt 1 ngày; ghi số lần bấm / yêu cầu bình thường (mục tiêu **≤ 2**) và thời gian / yêu cầu có cảnh báo (mục tiêu **≤ 30 giây**). Cuối ngày gọi `GET api/ApprovalRequest/GetStats` (admin / người xem hộp chung) – số yêu cầu, % duyệt nguyên trạng, thời gian chờ TB theo loại – dán vào cột Ghi chú.

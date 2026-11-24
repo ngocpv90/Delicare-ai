@@ -223,6 +223,28 @@ namespace AppDelicare.Tests.HrAccount
         }
 
         [Fact]
+        public async Task It_creates_account_directly_and_account_screen_and_my_work_show_the_link()
+        {
+            await GroupsAsync("HA7-KIT");
+            Guid emp = await EmployeeAsync("HA7-001", "0907777001");
+            using var it = _factory.CreateAuthorizedClient(await UserAsync("ha7.it", ["#/adm-user", "#/adm-employee"]));
+            var created = (await LegacyResult.ReadAsync(await it.PostAsync("/api/User/CreateForEmployee", JsonContent.Create(new { employeeId = emp, groups = "HA7-KIT" })))).Ok();
+            created.GetProperty("userName").GetString().Should().Be("ha7-001");
+            created.GetProperty("temporaryPassword").GetString().Should().NotBeNullOrEmpty();
+            Guid user = created.GetProperty("userId").GetGuid();
+
+            var links = (await it.GetResultAsync("/api/User/GetAccountLinks")).Ok();
+            var row = links.GetProperty("listRow").EnumerateArray().Single(r => r.GetProperty("userId").GetGuid() == user);
+            (row.GetProperty("kindName").GetString(), row.GetProperty("employeeCode").GetString(), row.GetProperty("linked").GetBoolean()).Should().Be(("Nhân viên", "HA7-001", true));
+            links.GetProperty("listRow").EnumerateArray().Single(r => r.GetProperty("userName").GetString() == "ha7.it").GetProperty("kindName").GetString().Should().Be("Hệ thống");
+
+            using var me = _factory.CreateAuthorizedClient(user);
+            (await me.GetResultAsync("/api/User/GetMyEmployee")).Ok().GetProperty("linked").GetBoolean().Should().BeTrue();
+            (await it.GetResultAsync("/api/User/GetMyEmployee")).Ok().GetProperty("linked").GetBoolean().Should().BeFalse("tài khoản IT chưa gắn nhân viên");
+            (await it.GetResultAsync("/api/Employee/GetPositionGroups")).Ok().ValueKind.Should().Be(JsonValueKind.Object);
+        }
+
+        [Fact]
         public async Task Customer_account_is_blocked_from_internal_login_and_api_even_as_admin()
         {
             Guid customer = await UserAsync("ha5.customer", password: "Mat-khau-HA5", accountType: PersonLink.Customer, isAdmin: true);

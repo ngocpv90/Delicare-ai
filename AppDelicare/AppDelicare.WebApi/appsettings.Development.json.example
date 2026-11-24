@@ -18,5 +18,15 @@
   },
   "ApplicationInsights": {
     "QuickPulseApiKey": "<OPTIONAL>"
+  },
+  // HR-ACC-1.6 (D-82 f): VÍ DỤ nhóm quyền gợi ý theo chức danh – đổi theo mã chức danh / tên nhóm thật của DB (không phải giá trị chốt).
+  "BusinessRules": {
+    "PositionDefaultGroups": {
+      "BEP-TRUONG": "OPS-KIT",
+      "TAI-XE": "OPS-LOG",
+      "KE-TOAN": "FIN-ACC",
+      "NHAN-SU": "FIN-HR"
+    },
+    "Hr": { "LegacyEmployeeMatch": true }
   }
 }

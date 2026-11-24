@@ -32,6 +32,11 @@ namespace AppDelicare.WebApi.Controllers
         [HttpGet("GetLinkReview")]
         public Task<IActionResult> GetLinkReview(string? group) => Run(nameof(GetLinkReview), () => accounts.GetLinkReview(group));
 
+        /// <summary>HR-ACC-1.8 (D-82 j): màn Chức vụ – nhóm quyền gợi ý theo mã chức danh (đọc cấu hình BusinessRules:PositionDefaultGroups).</summary>
+        [HttpGet("GetPositionGroups")]
+        [Security.Permission("adm-employee", PermissionAction.View, OrScreens = ["adm-position", "adm-user"])]
+        public Task<IActionResult> GetPositionGroups() => Run(nameof(GetPositionGroups), () => Task.FromResult(accounts.GetPositionGroups()));
+
         /// <summary>HR-ACC-1.8: gắn nhân viên với 1 người (PersonId) hoặc với người của 1 tài khoản (UserId); Unlink = gỡ. Quyền Sửa adm-employee + Sửa adm-user.</summary>
         [HttpPost("LinkPerson")]
         [Security.Permission("adm-employee", PermissionAction.Edit, AndScreens = ["adm-user"])]

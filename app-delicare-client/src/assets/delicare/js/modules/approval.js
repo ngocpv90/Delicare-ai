@@ -128,11 +128,38 @@
       ${lines.length ? `<div class="apr-lines"><table><thead><tr>${heads.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${lines.map(l => `<tr class="${l.highlight ? 'hl' : ''}">${(l.cells || []).map(c => `<td>${esc(c == null ? '–' : c)}</td>`).join('')}</tr>`).join('')}</tbody></table>${s.lineCount > lines.length ? `<div class="small muted apr-more">${s.openLink ? `<a href="${APP.href(s.openLink)}">Xem đủ ${s.lineCount} dòng và chứng từ gốc ↗</a>` : `Còn ${s.lineCount - lines.length} dòng`}</div>` : ''}</div>` : ''}
       ${(s.changes || []).length && !lines.length ? `<div class="apr-info">${s.changes.map(c => `<span class="muted">${esc(c.label)}</span><span>${esc(c.before || '–')} → <b>${esc(c.after || '–')}</b></span>`).join('')}</div>` : ''}
       <div class="small muted" data-progress>Tiến trình: ${esc(i.stepName || '')} – cấp ${i.stepNo}/${i.stepCount}, đang chờ bạn${i.requestedByName ? ' · người gửi ' + esc(i.requestedByName) : ''}</div>
+      ${editHtml(i, s)}
       <label class="apr-note">Ý kiến ${plan ? '' : '(bắt buộc khi từ chối)'}<textarea rows="2" id="aprNote" maxlength="1000">${esc(H.note)}</textarea></label>
       <div class="apr-acts">${plan ? `<a class="btn" href="${APP.href(s.openLink || 'prod-plan')}">Sửa kế hoạch</a>` : `<button class="btn danger" data-act="no">Từ chối</button>`}<button class="btn primary" data-act="ok">${I('approve')} ${mobile ? 'Duyệt · việc tiếp ›' : 'Duyệt &amp; sang việc tiếp'}</button></div>`;
   }
+  // HR-ACC-1.8 (D-82 f): người duyệt sửa đề xuất trước khi Duyệt – hiện tại: nhóm quyền của tài khoản (summary.edit.kind = groups).
+  H.edit = H.edit || {};
+  function editHtml(i, s) {
+    const e = s.edit; if (!e || e.kind !== 'groups') return '';
+    const sel = H.edit[i.id] || (e.selected || []);
+    return `<div class="apr-box"><div class="apr-cap">${esc(e.label || 'Sửa trước khi duyệt')}</div><div class="row-flex" style="flex-wrap:wrap;gap:6px 14px">${(e.options || []).map(o =>
+      `<label class="small" style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" data-eg="${esc(o)}" ${sel.includes(o) ? 'checked' : ''}> ${esc(o)}</label>`).join('')}</div></div>`;
+  }
+  const editedProposal = i => {
+    const e = sum(i).edit; if (!e || e.kind !== 'groups' || !H.edit[i.id]) return null;
+    let p = {}; try { p = JSON.parse(e.proposalJson || '{}'); } catch (_) { p = {}; }
+    p.groups = H.edit[i.id];
+    return JSON.stringify(p);
+  };
+  // Sau khi duyệt cấp tài khoản: mật khẩu tạm hiện 1 lần cho IT khi nhân viên chưa liên kết bot (User/TakeCreatedAccount).
+  const afterAccount = i => {
+    if (i.businessType !== 'USER_ACCOUNT_CREATE' || !i.businessId) return;
+    Store.query('User/TakeCreatedAccount', { employeeId: i.businessId }).then(x => {
+      if (!x.ok || !x.data) return;
+      const a = x.data;
+      UI.modal({ title: 'Đã cấp tài khoản ' + (a.userName || ''), size: 'md', body: `<div class="apr-info"><span class="muted">Tên đăng nhập</span><span><b>${esc(a.userName || '')}</b></span>
+        <span class="muted">Nhóm quyền</span><span>${esc((a.groups || []).join(', '))}</span>${a.temporaryPassword ? `<span class="muted">Mật khẩu tạm</span><span><b class="mono">${esc(a.temporaryPassword)}</b></span>` : ''}</div>
+        <div class="small muted mt">${a.temporaryPassword ? 'Nhân viên chưa liên kết bot – báo trực tiếp mật khẩu tạm (chỉ hiện 1 lần, hạn 24 giờ, bắt đổi khi đăng nhập lần đầu).' : 'Đã gửi mật khẩu tạm cho nhân viên qua bot Telegram.'}</div>` });
+    });
+  };
   function bindDetail(box, i, list, close) {
     const note = box.querySelector('#aprNote'); if (note) note.oninput = () => { H.note = note.value; };
+    box.querySelectorAll('[data-eg]').forEach(c => c.onchange = () => { H.edit[i.id] = [...box.querySelectorAll('[data-eg]:checked')].map(x => x.dataset.eg); });
     box.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { const idx = list.findIndex(x => x.id === i.id), n = list[(idx + +b.dataset.nav + list.length) % list.length]; H.cur = n.id; H.note = ''; APP.refresh(); });
     box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => decide(i, b.dataset.act === 'ok', list, close));
     // Tiến trình các cấp + người quyết định (GetDetail) – nạp sau, không chặn duyệt.
@@ -170,8 +197,12 @@
   function decide(i, ok, list, close) {
     const note = (H.note || '').trim();
     if (!ok && !note) { UI.toast('Nhập lý do từ chối', 'err'); const n = document.getElementById('aprNote'); if (n) n.focus(); return; }
-    Store.act('ApprovalRequest/Decide', { form: { Id: i.id, Approve: ok, Note: note || null }, tables: [] }).then(x => {
+    const proposal = ok ? editedProposal(i) : null;
+    if (ok && proposal && !(H.edit[i.id] || []).length) { UI.toast('Chọn ít nhất 1 nhóm quyền', 'err'); return; }
+    Store.act('ApprovalRequest/Decide', { form: Object.assign({ Id: i.id, Approve: ok, Note: note || null }, proposal ? { Proposal: proposal } : {}), tables: [] }).then(x => {
       if (!x.ok) return;
+      delete H.edit[i.id];
+      if (ok) afterAccount(i);
       UI.toast(ok ? `Đã duyệt ${esc(sum(i).documentNo || i.requestNo || '')}` : 'Đã từ chối', ok ? 'ok' : 'warn');
       const idx = list.findIndex(y => y.id === i.id);
       H.mine = (H.mine || []).filter(y => y.id !== i.id); H.picked.delete(i.id); H.note = '';

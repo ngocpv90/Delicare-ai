@@ -42,12 +42,17 @@
 | Kết luận kiểm tra hàng nhập | Nút **Kết luận** trên phiếu QC đầu vào (không qua hộp duyệt) | `qc-inspection` | QA |
 | Đạt / Tạm giữ / Loại mẻ làm tay | Nút QC trên mẻ (không qua hộp duyệt) | `prod-batch` (Phê duyệt › Mẻ nấu) | QA |
 | Giữ / thả lô | Nút **Tạm giữ / Mở giữ** trên lô (không qua hộp duyệt) | `scm-lot` (Phê duyệt › Giữ / thả lô) | QA |
+| Cấp tài khoản (USER_ACCOUNT_CREATE) | NS tích **Cấp tài khoản web** khi tạo nhân viên / **Đề nghị cấp tài khoản** ở hồ sơ | `adm-user` (Phê duyệt › Tài khoản) | FIN-IT |
+| Đổi nhóm quyền (USER_ACCOUNT_GROUP) | Đổi chức danh mà nhóm gợi ý mới khác nhóm hiện tại | `adm-user` | FIN-IT |
+| Mở lại tài khoản (USER_ACCOUNT_REOPEN) | Nhân viên nghỉ việc quay lại làm (trạng thái *Đang làm*) | `adm-user` | FIN-IT |
 
 - Hợp đồng · Chính sách giá · Đơn mua ≥ 50 triệu: CEO (D-79 a6 – CEO chỉ duyệt việc lớn; quá hạn vẫn leo thang lên CEO). Mục *Phê duyệt › Chính sách giá* đang **ẩn** vì chưa có loại duyệt nào dùng (chính sách giá có hiệu lực ngay khi lưu) – em ghi GAP-PERM-03; mục cũ *Đề nghị mua hàng* (`scm-pr`) ẩn (D-52 a).
 - DB đang chạy: quyền duyệt đặt bằng `DB/scripts/D79_permission_matrix.sql` (thay `BIZ2_order_approvers.sql`).
 
 - Mỗi cấp có **hạn xử lý 48 giờ**; quá hạn hiện nhãn **Quá hạn** nhưng **vẫn duyệt / từ chối được** (BIZ-1.6, D-77 f) – không phải hủy gửi lại; người gửi vẫn hủy được nếu muốn. Leo thang qua bot: quá hạn → báo người duyệt của cấp; quá thêm 24 giờ → báo **COO**; quá thêm 24 giờ nữa (48 giờ sau hạn) → báo **CEO**.
 - Một người không duyệt hai cấp của cùng một yêu cầu (cấp sau phải do người khác).
+- **Không duyệt yêu cầu về chính mình** (D-82 i): đơn nghỉ / đổi ca / tài khoản của chính nhân viên gắn với tài khoản người duyệt bị chặn – *Không duyệt yêu cầu về chính mình* – kể cả khi người khác lập hộ.
+- **3 loại duyệt tài khoản (HR-ACC-1, D-82):** thẻ duyệt ghi nhân viên, đơn vị, chức danh, trạng thái làm việc, nhóm gợi ý theo chức danh, tên đăng nhập sẽ tạo (cảnh báo nếu trùng). Với **Cấp tài khoản** / **Đổi nhóm quyền**, IT **tích / bỏ nhóm quyền** ngay trên thẻ (ô *Nhóm quyền sẽ cấp*) rồi **Duyệt** – nhóm đã chọn được lưu vào yêu cầu. Duyệt **Cấp tài khoản** xong hiện hộp **Đã cấp tài khoản** (mật khẩu tạm 1 lần nếu nhân viên chưa liên kết bot). Từ chối: không tạo / giữ nguyên. Người duyệt nghỉ việc: yêu cầu đang giữ chuyển bậc kế ngay khi tài khoản bị khóa.
 
 ## 4. Thao tác từng bước – màn Phê duyệt (`wf-inbox`)
 

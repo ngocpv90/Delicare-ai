@@ -43,6 +43,10 @@ namespace AppDelicare.Services.Implement.Approval
                 LeaveRequestStatus.BusinessType => ("Đơn xin nghỉ", "Nhân sự", "hr-leave"),
                 ShiftSwapStatus.BusinessType => ("Đơn đổi ca", "Nhân sự", "hr-swap"),
                 PlanBusinessType => ("Kế hoạch sản xuất", "Sản xuất", "prod-plan"),
+                // HR-ACC-1.6 (D-82 f–h): vòng đời tài khoản – người duyệt FIN-IT.
+                AccountLifecycleCodes.CreateBusinessType => ("Cấp tài khoản", "Quản trị hệ thống", "adm-user"),
+                AccountLifecycleCodes.GroupBusinessType => ("Đổi nhóm quyền", "Quản trị hệ thống", "adm-user"),
+                AccountLifecycleCodes.ReopenBusinessType => ("Mở lại tài khoản", "Quản trị hệ thống", "adm-user"),
                 _ => (businessType ?? "Yêu cầu duyệt", "Khác", "wf-inbox"),
             };
         }

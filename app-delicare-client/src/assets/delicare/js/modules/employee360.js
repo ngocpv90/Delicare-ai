@@ -233,15 +233,54 @@
       bindGo(box);
     });
   }
+  // HR-ACC-1.8 (D-82 j): khối Tài khoản – Employee/GetAccount (liên kết thật User.PersonId ↔ Employee.PersonId); nút theo quyền:
+  // NS [Đề nghị cấp] / [Đề nghị mở lại], IT [Tạo ngay] / [Khóa] / [Đặt lại mật khẩu], người duyệt [Mở yêu cầu].
+  const ACC_ST = { None: ['Chưa có tài khoản', 'gray'], Pending: ['Đang chờ IT duyệt', 'orange'], Active: ['Hoạt động', 'green'], Locked: ['Đã khóa', 'gray'] };
+  const tempModal = (title, a) => UI.modal({ title, size: 'md', body: `<div class="c360-rows"><div class="r"><label>Tên đăng nhập</label><span><b>${esc(a.userName || '')}</b></span></div>
+      ${a.temporaryPassword ? `<div class="r"><label>Mật khẩu tạm</label><span><b class="mono">${esc(a.temporaryPassword)}</b></span></div>` : ''}</div>
+      <div class="small muted mt">${a.temporaryPassword ? 'Chỉ hiện 1 lần – báo trực tiếp cho nhân viên. Hạn 24 giờ, nhân viên phải đổi mật khẩu khi đăng nhập lần đầu.' : 'Mật khẩu tạm đã gửi cho nhân viên qua bot Telegram.'}</div>` });
+  const groupsModal = (title, okLabel, groups, send) => UI.modal({
+    title, size: 'md',
+    body: `<div class="field"><label for="accGroups">Nhóm quyền đề xuất (tên nhóm, cách nhau dấu phẩy)</label><input class="input" id="accGroups" value="${esc(groups.join(', '))}" placeholder="vd. OPS-KIT"></div>
+      <div class="field mt"><label for="accReason">Lý do (tùy chọn)</label><input class="input" id="accReason" maxlength="500"></div>
+      <div class="small muted mt">Trống = nhóm gợi ý theo chức danh. IT đổi được nhóm trước khi duyệt.</div>
+      <div class="row-flex mt"><button class="btn primary" data-ok>${okLabel}</button></div>`,
+    onMount: (m, close) => { m.querySelector('[data-ok]').onclick = () => send(m.querySelector('#accGroups').value.trim(), m.querySelector('#accReason').value.trim(), close); },
+  });
   function accountTab(box, d, id) {
     if (!live()) { box.innerHTML = demoNote; return; }
     const r = list => `<div class="c360-rows">${list.map(([l, v]) => `<div class="r"><label>${esc(l)}</label><span>${v || '<span class="muted">–</span>'}</span></div>`).join('')}</div>`;
-    box.innerHTML = `<div class="c360-grid two"><div class="card panel"><h3>Tài khoản web</h3>${r([['Tên đăng nhập', esc(d.userName)], ['Trạng thái', d.userName ? (d.userIsActive === false ? UI.tag('Đã khóa', 'gray') : UI.tag('Đang hoạt động', 'green')) : ''],
-        ['Nhóm quyền', esc((d.listUserGroupName || []).join(', '))]])}${!d.userName ? '<div class="small muted mt">Tài khoản web gắn theo quy tắc tên đăng nhập = mã nhân viên, hoặc qua liên kết bot.</div>' : ''}${can('adm-user') ? `<div class="row-flex mt"><a href="javascript:void 0" data-go="adm-user" class="small">Mở màn người dùng</a></div>` : ''}</div>
-      <div class="card panel"><h3>Bot Telegram</h3>${r([['Liên kết', d.botLinked ? UI.tag('Đã liên kết', 'green') : UI.tag('Chưa liên kết', 'orange')], ['Tài khoản Telegram', esc(d.botUsername)], ['Liên kết lúc', d.botLinkedAt ? esc(U.dt(d.botLinkedAt)) : ''], ['Trạng thái', esc(d.botStatus)]])}
-        ${Store.perm('adm-employee').edit !== false ? `<div class="row-flex mt"><button class="btn primary" data-tg>${I('msg')} Tạo mã liên kết bot</button><span class="small muted">Mã hạn 72 giờ – nhân viên gửi mã cho bot để liên kết.</span></div>` : ''}</div></div>`;
-    bindGo(box);
-    const tg = box.querySelector('[data-tg]'); if (tg) tg.onclick = () => tgCode(id);
+    box.innerHTML = loading;
+    const reload = () => accountTab(box, d, id);
+    Store.query('Employee/GetAccount', { id }).then(x => {
+      if (!box.isConnected) return;
+      if (!x.ok) { box.innerHTML = failBox(x.message); return; }
+      const a = x.data || {}, st = ACC_ST[a.status] || [a.statusName || a.status, 'gray'], acts = a.actions || [];
+      const btn = (k, label, cls = '') => acts.includes(k) ? `<button class="btn ${cls}" data-acc="${k}">${label}</button>` : '';
+      box.innerHTML = `<div class="c360-grid two"><div class="card panel"><h3>Tài khoản web</h3>${r([
+          ['Trạng thái', UI.tag(st[0], st[1])],
+          ['Tên đăng nhập', esc(a.userName)],
+          ['Nhóm quyền', esc((a.groups || []).join(', '))],
+          ['Nhóm gợi ý theo chức danh', esc((a.suggestedGroups || []).join(', ')) || '<span class="muted">Chưa cấu hình</span>'],
+          ['Lần đăng nhập cuối', a.lastLoginAt ? esc(U.dt(a.lastLoginAt)) : '<span class="muted">Chưa ghi nhận (GAP-ACC-01)</span>'],
+          ['Gắn với nhân viên', a.userId ? (a.linked ? UI.tag('Đã gắn', 'green') : UI.tag('Đoán theo mã / bot – cần đối chiếu', 'orange')) : ''],
+          ['Yêu cầu đang chờ', a.pendingRequestId ? `${esc(a.pendingTypeName || '')} · ${esc(a.pendingRequestNo || '')}` : ''],
+        ])}<div class="row-flex mt">${btn('request', I('plus') + ' Đề nghị cấp tài khoản', 'primary')}${btn('create', I('plus') + ' Tạo ngay (IT)')}${btn('reopen', 'Đề nghị mở lại')}${btn('approve', 'Mở yêu cầu duyệt')}${btn('reset', 'Đặt lại mật khẩu')}${btn('lock', 'Khóa tài khoản')}
+          ${can('adm-user') ? '<a href="javascript:void 0" data-go="adm-user" class="small">Mở màn Tài khoản</a>' : ''}</div></div>
+        <div class="card panel"><h3>Bot Telegram</h3>${r([['Liên kết', d.botLinked ? UI.tag('Đã liên kết', 'green') : UI.tag('Chưa liên kết', 'orange')], ['Tài khoản Telegram', esc(d.botUsername)], ['Liên kết lúc', d.botLinkedAt ? esc(U.dt(d.botLinkedAt)) : ''], ['Trạng thái', esc(d.botStatus)]])}
+          ${Store.perm('adm-employee').edit !== false ? `<div class="row-flex mt"><button class="btn primary" data-tg>${I('msg')} Tạo mã liên kết bot</button><span class="small muted">Mã hạn 72 giờ – nhân viên gửi mã cho bot để liên kết.</span></div>` : ''}</div></div>`;
+      bindGo(box);
+      const tg = box.querySelector('[data-tg]'); if (tg) tg.onclick = () => tgCode(id);
+      const on = (k, fn) => { const el = box.querySelector(`[data-acc="${k}"]`); if (el) el.onclick = fn; };
+      on('request', () => groupsModal('Đề nghị cấp tài khoản web', 'Gửi IT duyệt', a.suggestedGroups || [], (groups, reason, close) =>
+        Store.act('Employee/RequestAccount', { json: { employeeId: id, groups, reason } }).then(z => { if (!z.ok) return; close(); UI.toast(esc((z.res && z.res.message) || 'Đã gửi yêu cầu cho IT duyệt'), 'ok'); reload(); })));
+      on('create', () => groupsModal('Tạo tài khoản ngay (không qua duyệt)', 'Tạo tài khoản', a.suggestedGroups || [], (groups, _r, close) =>
+        Store.act('User/CreateForEmployee', { json: { employeeId: id, groups } }).then(z => { if (!z.ok) return; close(); tempModal('Đã tạo tài khoản', z.data || {}); reload(); })));
+      on('reopen', () => UI.confirm('Gửi IT yêu cầu mở lại tài khoản của nhân viên này?', () => Store.act('Employee/RequestReopen', { json: { employeeId: id } }).then(z => { if (z.ok) { UI.toast('Đã gửi yêu cầu mở lại tài khoản', 'ok'); reload(); } }), { ok: 'Gửi yêu cầu' }));
+      on('approve', () => APP.go('wf-inbox'));
+      on('reset', () => UI.confirm(`Đặt lại mật khẩu tạm cho <b>${esc(a.userName)}</b>?`, () => Store.query('User/ResetPassword', { id: a.userId }).then(z => { if (z.ok) tempModal('Mật khẩu tạm mới', { userName: a.userName, temporaryPassword: z.data }); else UI.toast(esc(z.message || 'Không đặt lại được'), 'err'); }), { ok: 'Đặt lại' }));
+      on('lock', () => UI.confirm(`Khóa tài khoản <b>${esc(a.userName)}</b>? Phiên đang đăng nhập bị chặn ngay.`, () => Store.query('User/SaveIsActive', { id: a.userId }).then(z => { if (z.ok) { UI.toast('Đã khóa tài khoản', 'ok'); reload(); } else UI.toast(esc(z.message || 'Không khóa được'), 'err'); }), { ok: 'Khóa' }));
+    });
   }
 
   const TABS = [

@@ -290,7 +290,9 @@
     // BIZ-3.6 (D-77 – A10): nhóm Điều khoản – ngưỡng thất thoát khay % lưu Customer.ExternalData.containerLossMaxPct (trống = cấu hình chung).
     const extOf = () => { try { return JSON.parse((row && row.ExternalData) || '{}') || {}; } catch (e) { return {}; } };
     const termsHtml = () => !isCustomer ? '' : `<div class="mt"><div class="panel-title mb">Điều khoản</div><div class="form-grid"><div class="field"><label>Ngưỡng thất thoát khay (%)</label><input type="number" class="input" id="f_xLoss" min="0" max="100" step="0.1" value="${esc(extOf().containerLossMaxPct ?? '')}" placeholder="Theo cấu hình chung"><span class="err hide"></span><span class="small muted">Vượt ngưỡng → cảnh báo thất thoát khay của khách. Trống = theo cấu hình chung.</span></div></div></div>`;
-    const formHtml = () => (isCustomer && !typeChosen) ? typePickHtml() : `<div id="frmErr" class="notice warn hide"></div><form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}</form>${termsHtml()}${firstLocHtml()}`;
+    // HR-ACC-1.8 (D-82 f): tạo nhân viên → ô "Cấp tài khoản web" (lưu xong máy chủ tạo yêu cầu duyệt "Cấp tài khoản" cho IT; nhóm gợi ý theo chức danh).
+    const accountHtml = () => (t !== 'Employee' || editing || !Store.isLive) ? '' : `<label class="check mt" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="f_xWebAccount"><span><b>Cấp tài khoản web</b><span class="small muted" style="display:block">Lưu xong gửi yêu cầu "Cấp tài khoản" cho IT duyệt – tên đăng nhập = mã nhân viên, nhóm quyền gợi ý theo chức danh, mật khẩu tạm gửi qua bot (nếu đã liên kết).</span></span></label>`;
+    const formHtml = () => (isCustomer && !typeChosen) ? typePickHtml() : `<div id="frmErr" class="notice warn hide"></div><form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}</form>${termsHtml()}${firstLocHtml()}${accountHtml()}`;
     // Chế độ thật: không hiện ghi chú kỹ thuật của mockup (tên bảng, cột SQL) – CLAUDE.md 4.4.
     const body = `${Store.isLive ? '' : `<div class="notice info">${I('database')}<div><b>Form sinh từ cấu trúc bảng <code>dbo.${t}</code></b>Trường bắt buộc (<span class="req" style="color:var(--red)">*</span>) = cột NOT NULL không có DEFAULT trong SQL. Tên cột SQL hiển thị cạnh nhãn. Cột deprecated không hiển thị.</div></div>`}<div id="frmBody">${formHtml()}</div>`;
     UI.modal({
@@ -416,6 +418,7 @@
           if (opt.submit) return opt.submit(out, close);
           // MA-1.8: ghi CHỜ API – đóng form + báo thành công chỉ khi máy chủ xác nhận; lỗi → giữ form, hiện lỗi tại chỗ.
           const payload = editing ? Object.assign({}, row, out) : Object.assign({}, opt.defaults || {}, out);
+          { const wa = m.querySelector('#f_xWebAccount'); if (wa && wa.checked) payload.RequestWebAccount = true; }
           if (isCustomer && !editing && firstLoc.open) FIRST_LOC.forEach(([k]) => { const el = m.querySelector('#fl_' + k); if (el && el.value.trim()) payload['FirstLocation.' + k] = el.value.trim(); });
           btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = 'Đang lưu…';
           Store.save(t, editing ? 'Update' : 'Insert', payload).then(r => {

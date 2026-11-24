@@ -109,6 +109,21 @@ namespace AppDelicare.Services.Implement
                 : Result<AccountCreatedModel>.Success(created, ConstantHelper.Message.GetAllSuccessfully));
         }
 
+        public async Task<IResult<MyEmployeeLinkModel>> GetMyEmployee()
+        {
+            var actor = currentActor.RequireActor();
+            var linked = await PersonLink.EmployeeOfUserAsync(Db, actor.UserId, legacy: false);
+            var e = linked ?? await PersonLink.EmployeeOfUserAsync(Db, actor.UserId);
+            return Result<MyEmployeeLinkModel>.Success(new MyEmployeeLinkModel
+            {
+                Linked = linked != null, Guessed = linked == null && e != null, EmployeeId = e?.Id, EmployeeCode = e?.Code ?? e?.EmployeeCode, EmployeeName = e?.FullName,
+            }, ConstantHelper.Message.GetAllSuccessfully);
+        }
+
+        public IResult<Dictionary<string, List<string>>> GetPositionGroups()
+            => Result<Dictionary<string, List<string>>>.Success(_rules.PositionDefaultGroups.ToDictionary(k => k.Key, k => ParseGroups(k.Value), StringComparer.OrdinalIgnoreCase),
+                ConstantHelper.Message.GetAllSuccessfully);
+
         public async Task<IResult<EmployeeAccountModel>> GetEmployeeAccount(Guid employeeId)
         {
             try

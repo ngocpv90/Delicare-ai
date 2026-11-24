@@ -87,10 +87,23 @@ Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản
 1. Trên dòng tài khoản bấm nút hình chìa khóa (**Đặt lại mật khẩu**) → xác nhận *"Đặt lại mật khẩu của tài khoản …? Mật khẩu hiện tại sẽ không dùng được nữa."*
 2. Hộp **Mật khẩu tạm** hiện mật khẩu – bấm **Sao chép**. Mật khẩu chỉ hiện **một lần**, hết hạn sau **24 giờ**, người dùng phải đổi khi đăng nhập.
 
+**4.1c Tài khoản của nhân viên – cấp qua duyệt (HR-ACC-1, D-82):**
+- Tài khoản ↔ **con người** ↔ **nhân viên** nối thật: tài khoản trỏ tới hồ sơ người (Person), nhân viên cũng trỏ tới đúng người đó. Đổi tên đăng nhập, mã nhân viên hay số điện thoại **không** làm mất liên kết (chấm công, bot, đơn nghỉ, chặn tự duyệt vẫn đúng người).
+- **Tuyển mới:** NS tạo nhân viên và tích **Cấp tài khoản web** (hoặc bấm **Đề nghị cấp tài khoản** ở hồ sơ nhân viên › tab **Tài khoản và bot**) → yêu cầu **Cấp tài khoản** đến IT ở màn **Phê duyệt** (mục quyền *Phê duyệt › Tài khoản*, nhóm FIN-IT). IT xem nhân viên, đơn vị, chức danh, **nhóm quyền gợi ý theo chức danh**; **tích / bỏ nhóm** ngay trên thẻ duyệt rồi **Duyệt** → hệ thống tạo hồ sơ người (nếu chưa có) + tài khoản (tên đăng nhập = **mã nhân viên viết thường**, vd. `nv-00045`, mật khẩu tạm 24 giờ, bắt đổi lần đầu) + nhóm quyền + liên kết. Nhân viên đã liên kết bot: mật khẩu tạm gửi qua bot; chưa liên kết: hộp **Đã cấp tài khoản** hiện mật khẩu tạm **1 lần** cho IT.
+- Người có quyền **Thêm** ở màn Tài khoản vẫn tạo thẳng được: hồ sơ nhân viên › **Tạo ngay (IT)** (không qua duyệt).
+- Nhóm gợi ý theo chức danh: cấu hình `BusinessRules:PositionDefaultGroups` (mã chức danh → tên nhóm) – IT điền; màn **Chức vụ** hiện cột *Nhóm gợi ý*. Đổi chức danh mà nhóm gợi ý mới khác nhóm hiện tại → tự có yêu cầu **Đổi nhóm quyền** (trong lúc chờ giữ quyền cũ).
+- Một nhân viên chỉ có 1 yêu cầu tài khoản đang mở; NS không tự cấp quyền.
+
+**4.1d Loại tài khoản (D-82 b):** mọi tài khoản hiện có là **Nội bộ** (INTERNAL). Màn **Tài khoản** ghi nhãn **Nhân viên** (đã gắn nhân viên) / **Hệ thống** (không gắn – admin, system) / **Khách hàng**. Tài khoản không phải nội bộ (khách hàng / NCC – cổng riêng sau này, GAP-PORTAL-01) **không đăng nhập** được màn nội bộ và **không gọi được API nội bộ**, kể cả khi bị gán nhầm nhóm quản trị.
+
+**4.1e Màn Tài khoản – liên kết nhân viên:** dưới tên đăng nhập có nhãn loại + mã / tên / đơn vị / trạng thái làm việc của nhân viên; **Đoán theo mã** = chưa gắn chính thức (đang dùng tạm cách đoán cũ – nhờ NS đối chiếu). Cảnh báo cố định **"N nhân viên đã nghỉ nhưng tài khoản còn mở"** (chỉ tiêu = 0); chip **Chưa gắn nhân viên** lọc tài khoản nội bộ chưa gắn.
+
 ### 4.2 Khóa / mở khóa tài khoản – `adm-user`
 1. Trên dòng tài khoản bấm **Khóa** (hoặc **Mở khóa**) → xác nhận.
 2. Người bị khóa không đăng nhập được; bot Telegram cũng ngừng phục vụ người đó.
 3. Không tự khóa được tài khoản đang đăng nhập: *Không thể tự khóa tài khoản của chính mình*.
+4. **Khóa có hiệu lực ngay** (D-82 h): người đang đăng nhập bị chặn ở thao tác kế tiếp – *Tài khoản đã bị khóa – liên hệ IT* – và về màn đăng nhập.
+5. **Nhân viên nghỉ việc** (NS đổi trạng thái *Nghỉ việc* / *Ngừng*): tài khoản **tự khóa**, liên kết bot bị thu hồi, yêu cầu duyệt người đó đang giữ được **chuyển bậc kế** (COO → CEO), yêu cầu người đó đã gửi thì người duyệt nhận tin báo. Không cần IT xác nhận. Job **Khóa tài khoản nhân viên đã nghỉ** (00:30 hằng ngày) khóa nốt trường hợp đổi trạng thái ngoài màn (nhập Excel…) và báo FIN-IT. Nhân viên **quay lại làm** → yêu cầu **Mở lại tài khoản** cho IT duyệt.
 
 ### 4.3 Xem quyền hiệu lực của một tài khoản – `adm-user`
 Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòng → bảng cây menu × 7 quyền (Truy cập, Thêm, Sửa, Xóa, In, Xuất, Nhập), cộng dồn mọi nhóm của tài khoản. Tài khoản quản trị: "có mọi quyền".
