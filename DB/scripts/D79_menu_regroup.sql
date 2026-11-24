@@ -74,7 +74,7 @@ INSERT INTO @P VALUES
     (N'#/group/03', 1, NULL, 300, 300, N'', NULL, 300, N'Thực đơn & Món ăn', N'menu', NULL),
     (N'#/menu-menu', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 301, N'', N'', NULL),
     (N'#/menu-assignment', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 302, N'', N'', 0),
-    (N'#/menu-change-request', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 303, N'', N'', NULL),
+    (N'#/menu-change-request', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 303, N'', N'', 0),
     (N'#/menu-recipe', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 304, N'', N'', NULL),
     (N'#/menu-dish', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 305, N'', N'', NULL),
     (N'#/menu-dish-cat', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 306, N'', N'', NULL),

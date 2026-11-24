@@ -193,6 +193,32 @@ namespace AppDelicare.Services.Implement
                 }
                 model.ListMeal.Add(meal);
             }
+            if (menu != null)
+            {
+                // UI-6.13 (D-91): đổi món cho mọi khách (yêu cầu không gắn đơn) – ô hiện món mới + dấu "đã đổi"; chờ duyệt → dấu chờ.
+                var changes = await db.MenuChangeRequest.AsNoTracking().Where(r => !r.IsDeleted && r.MenuId == menu.Id && r.OrderId == null && r.MealDate >= monday && r.MealDate < end
+                    && (r.RequestStatus == MenuChangeStatus.Approved || r.RequestStatus == MenuChangeStatus.Pending)).ToListAsync();
+                var newIds = changes.Where(c => c.RequestedDishId != null).Select(c => c.RequestedDishId!.Value).Distinct().ToList();
+                var newNames = await db.Dish.AsNoTracking().Where(d => newIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name);
+                foreach (var meal in model.ListMeal)
+                {
+                    foreach (var cell in meal.ListOption.SelectMany(o => o.ListRow).SelectMany(r => r.ListCell).Where(c => c.DishId != null))
+                    {
+                        var ch = changes.Where(c => c.OriginalDishId == cell.DishId && MenuDayOf(c.MealDate) == cell.Day).OrderByDescending(c => c.CreatedDate).FirstOrDefault();
+                        if (ch == null)
+                        {
+                            continue;
+                        }
+                        if (ch.RequestStatus == MenuChangeStatus.Pending)
+                        {
+                            cell.ChangePending = true;
+                            continue;
+                        }
+                        cell.ChangedDishName = ch.RequestedDishId is { } n ? newNames.GetValueOrDefault(n) : null;
+                        cell.ChangeNote = $"Đã đổi từ {cell.DishName} ({ch.RequestNo}) – {ch.Reason}";
+                    }
+                }
+            }
             var cells = model.ListMeal.SelectMany(m => m.ListOption).SelectMany(o => o.ListRow).SelectMany(r => r.ListCell).ToList();
             model.EmptyCells = cells.Count(c => c.Flag == FlagEmpty);
             model.MissingRecipe = cells.Count(c => c.Flag == FlagNoRecipe);

@@ -22,5 +22,9 @@ namespace AppDelicare.Services.Interface
         public Task<string?> DescribeAsync(Guid id);
         public Task<string?> ApproveFromEngineAsync(Guid id, Guid actorUserId);
         public Task<string?> CloseFromEngineAsync(Guid id, bool cancelled);
+        /// <summary>UI-6.13 (D-91): đổi món cho mọi khách trên ô Thực đơn tuần – xem trước ảnh hưởng, gửi (tự duyệt khi đủ điều kiện), danh sách đổi món của tuần.</summary>
+        public Task<IResult<AppDelicare.Model.Model.MenuChangeCellPreviewModel>> PreviewCell(AppDelicare.Model.Model.MenuChangeCellRequest request);
+        public Task<IResult<AppDelicare.Model.Model.MenuChangeDetailModel>> CreateForCell(AppDelicare.Model.Model.MenuChangeCellRequest request);
+        public Task<IResults<AppDelicare.Model.Model.MenuChangeWeekItemModel>> GetWeekChanges(AppDelicare.Model.Model.MenuWeekRequest request);
     }
 }
