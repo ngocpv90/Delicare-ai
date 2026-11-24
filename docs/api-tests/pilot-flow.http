@@ -126,19 +126,34 @@ Content-Type: application/x-www-form-urlencoded
 
 SupplierId={{supplierId}}&IngredientId={{riceId}}&UnitPrice=20000&MinimumOrderQuantity=0&LeadTimeDays=1&EffectiveFrom={{$datetime "YYYY-MM-DD" -1 d}}&IsPreferred=true&Status=Active
 
+### Nhóm món (UI-6.17 D-98: món bắt buộc chọn nhóm món trong danh mục)
+POST {{base}}/api/DishCategory/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}NM&Name=[DEMO] Nhóm món {{code}}&Status=Active
+
+###
+# @name dishCat
+GET {{base}}/api/DishCategory/GetAll?SearchText={{code}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@dishCatId = {{dishCat.response.body.listData[0].id}}
+
 ### 0.5 Món: Bò kho, Cơm trắng
 POST {{base}}/api/Dish/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}BOKHO&Name=[DEMO] Bò kho {{code}}BOKHO&StandardServingSize=150&Status=Active
+Code={{code}}BOKHO&Name=[DEMO] Bò kho {{code}}BOKHO&StandardServingSize=150&DishCategoryId={{dishCatId}}&Status=Active
 
 ###
 POST {{base}}/api/Dish/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}COM&Name=[DEMO] Cơm trắng {{code}}COM&StandardServingSize=200&Status=Active
+Code={{code}}COM&Name=[DEMO] Cơm trắng {{code}}COM&StandardServingSize=200&DishCategoryId={{dishCatId}}&Status=Active
 
 ###
 # @name dishBeef

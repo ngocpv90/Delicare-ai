@@ -167,10 +167,13 @@ namespace AppDelicare.Tests.Pilot
                     (await Post("/api/SupplierMaterial/Insert", ("SupplierId", supplier), ("IngredientId", ingredient), ("UnitPrice", price), ("MinimumOrderQuantity", 0m),
                         ("LeadTimeDays", 1), ("EffectiveFrom", today.AddDays(-1)), ("IsPreferred", true), ("Status", "Active"))).Ok();
                 }
+                // UI-6.17 (D-98): món bắt buộc chọn nhóm món trong danh mục.
+                Guid dishCat = await Insert<Model.Entity.DishCategory>("DishCategory", q => q.Where(x => x.Name == "[DEMO] Nhóm món " + k).Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "NM"), ("Name", "[DEMO] Nhóm món " + k), ("Status", "Active"));
                 Guid dishBeef = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Name == "[DEMO] Bò kho " + k).Select(x => x.Id).SingleAsync(),
-                    ("Code", code + "BOKHO"), ("Name", "[DEMO] Bò kho " + k), ("StandardServingSize", 150m), ("Status", "Active"));
+                    ("Code", code + "BOKHO"), ("Name", "[DEMO] Bò kho " + k), ("StandardServingSize", 150m), ("DishCategoryId", dishCat), ("Status", "Active"));
                 Guid dishRice = await Insert<Model.Entity.Dish>("Dish", q => q.Where(x => x.Name == "[DEMO] Cơm trắng " + k).Select(x => x.Id).SingleAsync(),
-                    ("Code", code + "COM"), ("Name", "[DEMO] Cơm trắng " + k), ("StandardServingSize", 200m), ("Status", "Active"));
+                    ("Code", code + "COM"), ("Name", "[DEMO] Cơm trắng " + k), ("StandardServingSize", 200m), ("DishCategoryId", dishCat), ("Status", "Active"));
                 // Công thức: định lượng cho 100 suất – bò 20 kg, gạo 12 kg → gửi duyệt → duyệt → khóa.
                 foreach (var (dish, ingredient, qty) in new[] { (dishBeef, beef, 20m), (dishRice, rice, 12m) })
                 {

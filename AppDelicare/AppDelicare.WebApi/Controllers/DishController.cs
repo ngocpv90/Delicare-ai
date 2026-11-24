@@ -48,6 +48,25 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.17 (D-98): thêm món từ form gọn (5 ô) – trả { id, code } để tạo tiếp công thức. Form. Quyền Thêm.</summary>
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromForm] DishRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Create(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Create: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPut("Update")]
         public async Task<IActionResult> Update([FromForm] DishRequest request)
         {

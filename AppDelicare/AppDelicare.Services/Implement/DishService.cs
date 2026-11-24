@@ -23,6 +23,18 @@ namespace AppDelicare.Services.Implement
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
         private string? _createdCode;
+        private Guid? _createdId;
+
+        /// <summary>UI-6.17 B: thêm món (form gọn) – trả id + mã để FE tạo tiếp công thức V1 (chép từ món khác / nhập mới) rồi mở trang món.</summary>
+        public async Task<IResult<DishCreatedModel>> Create(DishRequest request)
+        {
+            var saved = await Save(request, ConstantHelper.TypeSave.Insert);
+            if (saved.ResponseCode != (int)HttpStatusCode.OK || _createdId == null)
+            {
+                return Result<DishCreatedModel>.Fail(saved.ResponseMessage);
+            }
+            return Result<DishCreatedModel>.Success(new DishCreatedModel { Id = _createdId.Value, Code = _createdCode }, saved.ResponseMessage);
+        }
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IRecipeService _recipeService = recipeService;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -140,9 +152,60 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// UI-6.17 A (D-98): form món còn 5 ô (Tên*, Nhóm món*, Định lượng 1 suất + đơn vị, Mô tả, Trạng thái). Máy chủ tự ghi cột ẩn:
+        /// MealCategory = mã nhóm món; StandardPortion = StandardServingSize; Ghi chú gộp vào Mô tả khi Mô tả trống. Giá thành chuẩn chỉ đọc
+        /// (StandardCost/Recalculate tính từ công thức) – bỏ qua giá trị gửi lên (thêm mới = trống, sửa = giữ giá đang có).
+        /// </summary>
+        private async Task<string> NormalizeAsync(DishRequest request, Dish? exist)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return string.Format(ConstantHelper.Message.NotExist, "Tên món").Trim();
+            }
+            request.Name = request.Name.Trim();
+            request.DishCategoryId ??= exist?.DishCategoryId ?? exist?.CategoryId;
+            if (request.DishCategoryId == null)
+            {
+                return ConstantHelper.Message.DishCategoryRequired;
+            }
+            var category = await _unitOfWork.DbContext.DishCategory.AsNoTracking().FirstOrDefaultAsync(c => c.Id == request.DishCategoryId && !c.IsDeleted);
+            if (category == null)
+            {
+                return ConstantHelper.Message.DishCategoryRequired;
+            }
+            request.MealCategory = category.Code;
+            if (request.StandardServingSize is { } size)
+            {
+                if (size <= 0)
+                {
+                    return ConstantHelper.Message.DishServingSizeInvalid;
+                }
+                request.StandardPortion = size;
+            }
+            else
+            {
+                request.StandardPortion = exist?.StandardPortion;
+            }
+            if (string.IsNullOrWhiteSpace(request.Description) && !string.IsNullOrWhiteSpace(request.Note))
+            {
+                request.Description = request.Note.Trim();
+            }
+            request.StandardCost = exist?.StandardCost;
+            return string.Empty;
+        }
+
         private async Task<string> Insert(DishRequest request, string typeSave)
         {
+            string invalid = await NormalizeAsync(request, null);
+            if (invalid.Length > 0)
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<Dish>(request);
+            insert.CategoryId ??= insert.DishCategoryId;
+            insert.Status ??= "Active";
+            _createdId = insert.Id == Guid.Empty ? (insert.Id = Guid.NewGuid()) : insert.Id;
             // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
             insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.Dish);
             _createdCode = insert.Code;
@@ -160,7 +223,13 @@ namespace AppDelicare.Services.Implement
             }
             // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
             request.Code = exist.Code;
+            string invalid = await NormalizeAsync(request, exist);
+            if (invalid.Length > 0)
+            {
+                return invalid;
+            }
             var update = _mapper.Map(request, exist);
+            update.CategoryId = update.DishCategoryId ?? update.CategoryId;
             _unitOfWork.DishRepository.Update(update);
             await _unitOfWork.DishRepository.CommitAsync(typeSave);
             return string.Empty;

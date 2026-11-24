@@ -294,11 +294,12 @@ namespace AppDelicare.Services.Implement
                 Recipe? source = null;
                 if (request.CopyFromRecipeId is { } srcId)
                 {
-                    source = await _unitOfWork.RecipeRepository.GetSingleAsync(x => x.Id == srcId && x.DishId == request.DishId && !x.IsDeleted);
-                    if (source == null)
+                    source = await _unitOfWork.RecipeRepository.GetSingleAsync(x => x.Id == srcId && !x.IsDeleted);
+                    // UI-6.17 B (D-98): chép từ món khác chỉ nhận công thức đã duyệt / đang dùng (không chép bản nháp của người khác).
+                    if (source == null || (source.DishId != request.DishId && source.Status is RecipeStatus.Draft or RecipeStatus.PendingApproval))
                     {
                         _unitOfWork.RollbackTransaction();
-                        return Result<Recipe>.Fail(ConstantHelper.Message.SourceRecipeNotInDish);
+                        return Result<Recipe>.Fail(source == null ? ConstantHelper.Message.SourceRecipeNotInDish : ConstantHelper.Message.RecipeSourceNotEffective);
                     }
                 }
                 var recipeRequest = new RecipeRequest

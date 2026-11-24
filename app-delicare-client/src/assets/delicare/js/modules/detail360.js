@@ -49,8 +49,10 @@
       }
       panes[i].classList.remove('hide');
     };
-    bar.onclick = e => { const b = e.target.closest('[data-t]'); if (b) show(+b.dataset.t); };
-    show(0);
+    bar.onclick = e => { const b = e.target.closest('[data-t]'); if (b) { APP._wantTab = null; show(+b.dataset.t); } };
+    // Mở thẳng một tab (vd. "Lưu và mở công thức" – UI-6.17): APP._wantTab = nhãn tab, dùng 1 lần.
+    const want = APP._wantTab && Date.now() - (APP._wantTabAt || 0) < 15000 ? APP._wantTab : null, wi = want ? list.findIndex(t => t.label === want) : -1;
+    show(wi >= 0 ? wi : 0);
   };
   // Menu ⋯ của phần đầu: đóng khi bấm ra ngoài.
   /* UI-2R fix (D-80 d – mô phỏng detail-head-compact-mockup.html bản ②): dòng tên của phần đầu 3 màn 360 (không tự bọc .card – màn bọc chung với hàng chỉ số).
