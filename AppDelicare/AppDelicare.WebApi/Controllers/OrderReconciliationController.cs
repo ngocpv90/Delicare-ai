@@ -221,6 +221,74 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.8 (D-86 b): bảng đối soát theo kỳ / khách – dòng (đặt, giao, nhận, phục vụ, lỗi, tính tiền, nguồn), 4 chỉ số, 2 biểu đồ.</summary>
+        [HttpGet("GetBoard")]
+        public async Task<IActionResult> GetBoard([FromQuery] AppDelicare.Model.Model.ReconBoardRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetBoard(request ?? new()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.8 (D-86 c): xác nhận nhiều dòng (JSON) – mỗi dòng như Reconcile; phục vụ trống = khách nhận. Quyền Sửa.</summary>
+        [HttpPost("ReconcileMany")]
+        public async Task<IActionResult> ReconcileMany([FromBody] AppDelicare.Model.Model.ReconcileManyRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.ReconcileMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ReconcileMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.8: chốt nhiều đối soát (JSON) – mỗi bản như Close. Quyền Sửa.</summary>
+        [HttpPost("CloseMany")]
+        public async Task<IActionResult> CloseMany([FromBody] AppDelicare.Model.Model.ReconCloseManyRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CloseMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CloseMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.8 (D-86 c): bot điểm phát "Đã phục vụ đủ" – phục vụ = số khách nhận, nguồn bot. Form: orderId. Quyền Sửa.</summary>
+        [HttpPost("ConfirmServedFull")]
+        public async Task<IActionResult> ConfirmServedFull([FromForm] Guid orderId)
+        {
+            try
+            {
+                return Ok(await _service.ConfirmServedFull(orderId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ConfirmServedFull: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>BE3.1 (Catalog 100): danh sách đối soát theo ngày ăn (from / to – mặc định 30 ngày, status, customerId, searchText, page) + <c>chart</c> Đặt – Giao – Nhận theo ngày + <c>statusCounts</c>.</summary>
         [HttpGet("GetList")]
         public async Task<IActionResult> GetList([FromQuery] ReconciliationListRequest request)

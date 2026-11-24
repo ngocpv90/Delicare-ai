@@ -192,6 +192,44 @@ namespace AppDelicare.Services.Implement
         /// Khung chung thao tác điểm dừng (1 transaction): nạp điểm + chuyến (phải Đang giao) + đơn giao, kiểm trạng thái điểm, chạy thân, lưu, commit, trả chi tiết chuyến.
         /// Thân báo lỗi mà <c>KeepOnError</c> (đã ghi lần đo nhiệt độ dưới ngưỡng kèm khắc phục) → vẫn commit lần đo, trả lỗi nghiệp vụ kèm chi tiết.
         /// </summary>
+        /// <summary>
+        /// UI-6.8 (D-86 c): sau giờ giao của ca (<c>BusinessRules:ReconcilePromptMinutes</c> sau bàn giao, 0 = tắt), bot Vận hành gửi người ghi nhận bàn giao ở điểm phát
+        /// nút "✅ Đã phục vụ đủ" (1 chạm → phục vụ = khách nhận, xác nhận dòng) hoặc "✏️ Nhập số khác". Lỗi gửi không ảnh hưởng bàn giao.
+        /// </summary>
+        private async Task PromptServedAsync(Guid orderId, ActorInfo actor)
+        {
+            if (_rules.ReconcilePromptMinutes <= 0 || actor.Type != ActorType.User)
+            {
+                return;
+            }
+            try
+            {
+                var o = await _unitOfWork.DbContext.Order.AsNoTracking().Where(x => x.Id == orderId)
+                    .Select(x => new { No = x.OrderNumber ?? x.OrderNo, x.MealDate, Customer = _unitOfWork.DbContext.Customer.Where(c => c.Id == x.CustomerId).Select(c => c.DisplayName ?? c.Name).FirstOrDefault() })
+                    .FirstOrDefaultAsync();
+                if (o == null)
+                {
+                    return;
+                }
+                string text = $"🧮 Đối soát {o.No} – {o.Customer} ({o.MealDate:dd/MM}): đã phục vụ đủ số suất khách nhận chưa?";
+                await AppDelicare.Services.Implement.Messaging.BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                {
+                    Template = AppDelicare.Services.Implement.Messaging.NotificationCatalog.ManualText, UserIds = [actor.UserId], BotCode = MessagingCode.BotVanHanh,
+                    Data = new { text },
+                    Buttons = new[]
+                    {
+                        new AppDelicare.Services.Implement.Messaging.NotificationButton("✅ Đã phục vụ đủ", AppDelicare.Services.Implement.Messaging.BusinessNotifier.Callback("rcn", "ok", orderId)),
+                        new AppDelicare.Services.Implement.Messaging.NotificationButton("✏️ Nhập số khác", AppDelicare.Services.Implement.Messaging.BusinessNotifier.Callback("rcn", "o", orderId)),
+                    },
+                    NotBefore = _clock.Now.AddMinutes(_rules.ReconcilePromptMinutes), IdempotencyKey = $"RECON_PROMPT:{orderId:N}",
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[DeliveryStopService] nhắc đối soát đơn {Order}", orderId);
+            }
+        }
+
         private async Task<IResult<DeliveryRouteDetailModel>> RunAsync(Guid stopId, string action, string[] allowed,
             Func<DeliveryStop, DeliveryRoute, DeliveryOrder?, ActorInfo, StopContext, Task<string?>> body)
         {
@@ -245,6 +283,7 @@ namespace AppDelicare.Services.Implement
                     {
                         ctx.Warnings.Add(note);
                     }
+                    await PromptServedAsync(orderId, actor);
                 }
                 var detail = await DeliveryRules.RouteDetailAsync(db, route.Id, _rules);
                 detail!.ListWarning.InsertRange(0, ctx.Warnings);

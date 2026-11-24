@@ -27,6 +27,11 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<OrderReconciliationDetailModel>> GetDetail(Guid id);
         public Task<IResult<OrderReconciliationDetailModel>> GetByOrder(Guid orderId);
         public Task<IResults<ReconciliationPendingModel>> GetPendingOrders(ReconciliationPendingRequest request);
+        /// <summary>UI-6.8 (D-86 b, c): bảng xác nhận ngay trên trang + xác nhận / chốt theo lô + bot "Đã phục vụ đủ".</summary>
+        public Task<IResult<AppDelicare.Model.Model.ReconBoardModel>> GetBoard(AppDelicare.Model.Model.ReconBoardRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ReconBatchResultModel>> ReconcileMany(AppDelicare.Model.Model.ReconcileManyRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ReconBatchResultModel>> CloseMany(AppDelicare.Model.Model.ReconCloseManyRequest request);
+        public Task<IResult<OrderReconciliationDetailModel>> ConfirmServedFull(Guid orderId);
         /// <summary>BE3.1 (Catalog 100): danh sách đối soát + biểu đồ Đặt – Giao – Nhận theo ngày ăn.</summary>
         public Task<IResult<ReconciliationListModel>> GetList(ReconciliationListRequest request);
     }
