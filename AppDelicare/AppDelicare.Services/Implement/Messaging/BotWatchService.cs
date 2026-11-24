@@ -24,10 +24,11 @@ namespace AppDelicare.Services.Implement.Messaging
     /// <item>COMPLAINT_SLA: phản ánh chưa xong còn ≤ N′ tới hạn SLA (lần 2 khi đã quá hạn) → CSKH.</item>
     /// <item>PO_LATE: PO đã duyệt / đã gửi / nhận một phần quá ngày hẹn giao → mua hàng, thủ kho (1 lần / PO).</item>
     /// <item>APPROVAL_OVERDUE: <see cref="IApprovalRequestService.NotifyOverdueAsync"/>.</item>
+    /// <item>CHECKLIST_DUE (UI-6.30): lượt kiểm tra ATTP theo ca quá hạn → 1 tin gộp / ca (trưởng ca + QA).</item>
     /// </list>
     /// </summary>
     public class BotWatchService(IUnitOfWork unitOfWork, IClock clock, IConfiguration configuration, ICurrentActor currentActor,
-        IOptionsMonitor<MessagingOptions> options, INotificationService notifications, IApprovalRequestService approvals) : IBotWatchService
+        IOptionsMonitor<MessagingOptions> options, INotificationService notifications, IApprovalRequestService approvals, IFoodSafetyChecklistResultService checklists) : IBotWatchService
     {
         private static readonly string[] PoOpen = [PurchaseOrderStatus.Approved, PurchaseOrderStatus.Sent, PurchaseOrderStatus.PartiallyReceived];
 
@@ -47,6 +48,7 @@ namespace AppDelicare.Services.Implement.Messaging
             sent += await SafeAsync("NotCheckedIn", () => NotCheckedInAsync(now, o));
             sent += await SafeAsync("ComplaintSla", () => ComplaintSlaAsync(now, o));
             sent += await SafeAsync("PoLate", () => PoLateAsync(now));
+            sent += await SafeAsync("ChecklistOverdue", () => checklists.RemindOverdueAsync(now));
             sent += await SafeAsync("ApprovalOverdue", () => approvals.NotifyOverdueAsync(o.ApprovalOverdueEscalateHours, o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));
             // APR-1.4 (D-81 i): người duyệt của cấp đều nghỉ hôm nay → báo ngay bậc leo thang (1 lần / yêu cầu / cấp / ngày).
             sent += await SafeAsync("ApprovalAbsent", () => approvals.EscalateAbsentAsync(o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));

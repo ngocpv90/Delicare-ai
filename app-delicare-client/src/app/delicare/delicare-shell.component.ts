@@ -33,6 +33,7 @@ const SCRIPTS = [
   'modules/cost-margin.js', // UI-6.27 (D-108): Giá vốn & lãi gộp – sau production.js
   'modules/batch-board.js', // UI-6.25 (D-106): Mẻ nấu 1 chạm – sau production.js, trước prod-menu.js
   'modules/qc.js',
+  'modules/qc-shift.js', // UI-6.30 (D-111): Kiểm tra theo ca / mẻ – sau qc.js
   'modules/supplier360.js',
   'modules/employee360.js',
   'modules/logistics.js',

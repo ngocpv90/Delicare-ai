@@ -87,14 +87,22 @@ Ngưỡng nhiệt độ nhận hàng:
 | Đang xử lý | **Đã xử lý** | Bắt buộc **Cách xử lý** |
 | Đã xử lý | **Đóng** / **Mở lại** | Đóng rồi không sửa, không mở lại |
 
-### 4.3 Checklist ATTP – `qc-checklist-result`
-1. Chọn bộ checklist (chip mã) và **ca** (chip mã ca). Ngày = ngày làm việc hiện tại.
-2. Dòng trạng thái: *Đã ghi x/y tiêu chí cho ca này · Hạn làm: … · Quá hạn*.
-3. Bảng tiêu chí: Tiêu chí (+ nhãn **Trọng yếu**), Chuẩn, **Giá trị đo**, **Kết quả** (PASS / FAIL), **Khắc phục** (bắt buộc nếu FAIL).
-4. **Ghi kết quả checklist** → ghi cả lượt một lần.
-   - Có tiêu chí **trọng yếu** FAIL → *"Có N tiêu chí TRỌNG YẾU không đạt – mẻ liên quan chuyển chờ QC"*: mẻ bị giữ, **chặn đạt QC / đóng gói / xuất chuyến** tới khi kiểm lại ĐẠT; bot gửi 🔴 tới QA, trưởng ca, bếp trưởng, COO.
-5. Khối **Tiêu chí trọng yếu đang không đạt** + biểu đồ **Tỷ lệ đạt 7 ngày**.
-- Lỗi: *Chọn kết quả cho tất cả tiêu chí*, *Tiêu chí FAIL bắt buộc nhập hành động khắc phục*, *Bộ checklist … không áp dụng ngày …*.
+### 4.3 Kiểm tra theo ca / mẻ – `qc-checklist-result` (UI-6.30 – kiểm thực bước 2)
+Màn có 3 tab: **Hôm nay** · **Sổ kiểm tra** · **Tỷ lệ đạt**.
+
+**Hôm nay (chỗ làm việc):**
+1. Chọn ngày bằng ◀ ▶ (mặc định hôm nay). 4 thẻ: Lượt đến hạn · Đã làm · **Quá hạn** · **Lỗi trọng yếu đang mở**.
+2. **Ma trận Bộ kiểm tra × Ca**: mỗi ô "đã ghi / số tiêu chí" + giờ hạn; màu: Chưa đến hạn · Đến hạn (xanh dương) · **Quá hạn (đỏ)** · Đạt hết (xanh lá) · Có lỗi (cam) · **Có lỗi trọng yếu (đỏ)** + "Giữ mẻ: …". Cột ca đang chạy tô nổi. Hạn = giờ xuất bếp của ca + độ lệch của bộ (Sơ chế −150′, Vệ sinh khu sơ chế −90′, Làm lạnh nhanh −20′, Vệ sinh bếp +90′).
+3. Chỉ hiện bộ ghi ở màn này; bộ **công đoạn / lưu mẫu** ghi ở **Mẻ nấu**, **vệ sinh khay** ở **Vệ sinh khay hộp**.
+4. Bấm ô → **form kiểm tra**: tiêu chí theo thứ tự, kết quả **mặc định Đạt**, nút **Đạt tất cả**; ô **Giá trị đo** chỉ ở tiêu chí có chuẩn đo; **Không đạt** → bắt buộc **hành động khắc phục**.
+5. Tiêu chí **trọng yếu** Không đạt → khối **Mẻ bị ảnh hưởng**: tick mẻ của ca (mẻ Đang nấu / Chờ QC được tick sẵn) **hoặc** tick **Không ảnh hưởng mẻ nào** + lý do (bắt buộc). **Ghi kết quả** → mẻ được chọn **bị giữ** (Đạt → Chờ QC + tạm giữ; Đã đóng gói → chặn xuất chuyến) – thông báo ghi rõ "Mẻ bị giữ: …"; bot gửi 🔴 tới QA, trưởng ca, bếp trưởng, COO.
+6. Kiểm lại sau khắc phục: mở lại ô, đổi tiêu chí sang **Đạt** → các mẻ đang bị giữ vì tiêu chí đó được mở chặn. Chỉ ghi tiêu chí thay đổi (kiểm lại = ghi lần mới, không sửa lần cũ).
+- Lượt quá hạn: bot gửi **1 tin gộp theo ca** "⏰ Kiểm tra ATTP quá hạn" cho trưởng ca + QA.
+- Lỗi: *Có tiêu chí trọng yếu Không đạt – chọn mẻ bị ảnh hưởng (mẻ sẽ bị giữ) hoặc ghi lý do không ảnh hưởng mẻ nào*, *Tiêu chí … KHÔNG ĐẠT – bắt buộc ghi hành động khắc phục*, *Bộ kiểm tra … ghi ở màn Mẻ nấu …*.
+
+**Sổ kiểm tra (chỉ xem – hồ sơ kiểm thực bước 2):** mỗi dòng = một tiêu chí đã ghi, **gom theo ngày** (mở / gập, "N lượt · M tiêu chí · K không đạt", nút **In ngày**). Cột Giờ ghi · Ca · Bộ kiểm tra · Tiêu chí (nhãn **Trọng yếu**, **Kiểm lại**) · Giá trị đo (+ chuẩn) · Kết quả · Khắc phục · Mẻ bị giữ · Người kiểm. Ô tìm + kỳ **Hôm nay · 7 ngày · Tháng này · Chọn khoảng** + lọc Bộ · Ca · Kết quả · **Chỉ lỗi trọng yếu**. Đầu màn **In sổ kiểm thực bước 2** + **Xuất Excel**. Không có Sửa / Xóa. Điện thoại: thẻ gọn.
+
+**Tỷ lệ đạt:** biểu đồ tỷ lệ đạt 30 ngày theo bộ (kết quả mới nhất mỗi tiêu chí trong ngày / ca) + bảng **tiêu chí hay Không đạt nhất** (số lần, lần gần nhất).
 
 ### 4.4 Nhật ký nhiệt độ – `qc-temperature`
 1. Chip **Khu vực bảo quản** → biểu đồ 48 giờ (dải ngưỡng tối thiểu – tối đa, điểm đỏ = ngoài ngưỡng) + số lần vượt.

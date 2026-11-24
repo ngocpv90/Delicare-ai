@@ -54,6 +54,8 @@ namespace AppDelicare.Model.Model
     /// <summary>BE2.5 (spec 9.2 results): kết quả ghi checklist – số dòng ghi, lỗi trọng yếu, lần chạy sau khi ghi.</summary>
     public class ChecklistRecordModel
     {
+        /// <summary>UI-6.30: mẻ đã bị giữ do lỗi trọng yếu ("số mẻ – tác động").</summary>
+        public List<string> ListHeldBatch { get; set; } = [];
         public int Saved { get; set; }
         public List<ChecklistCriticalFailureModel> ListCriticalFailure { get; set; } = [];
         public ChecklistRunModel Run { get; set; } = null!;
