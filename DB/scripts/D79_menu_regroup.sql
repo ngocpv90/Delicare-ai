@@ -58,7 +58,7 @@ INSERT INTO @P VALUES
     (N'#/group/01', 1, NULL, 100, 100, N'Tổng quan điều hành', NULL, 100, N'Điều hành', N'kpi', NULL),
     (N'#/dash-exec', 2, N'#/group/01', 101, 199, N'', N'#/group/01', 101, N'', N'', NULL),
     (N'#/kpi-daily', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 102, N'', N'', NULL),
-    (N'#/kpi-monthly', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 103, N'', N'', NULL),
+    (N'#/kpi-monthly', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 103, N'', N'', 0),
     (N'#/cost-meal', 2, N'#/group/05', 501, 599, N'', N'#/group/01', 104, N'', N'', NULL),
     (N'#/group/02', 1, NULL, 200, 200, N'Kinh doanh & Đơn hàng', NULL, 200, N'Kinh doanh', N'sales', NULL),
     (N'#/crm-customer', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 201, N'', N'', NULL),

@@ -461,3 +461,8 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Thêm / sửa giá thành chuẩn bằng API → báo "do hệ thống tự tính…".
 - [ ] Thực đơn tuần: ngày có món thiếu giá chuẩn hiện "thiếu giá N món"; ngày đỏ bấm → gợi ý món rẻ hơn cùng nhóm trước.
 - [ ] Quyền: CEO, COO, SAL-HEAD, FIN-ACC xem; OPS-KIT không thấy mục.
+
+## UI-6.28 – Chỉ số kinh doanh, thứ tự nhóm Điều hành (D-109)
+- [ ] Sidebar Điều hành: Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt (admin, CEO, COO, SAL-HEAD, FIN-ACC); vai trò chỉ có quyền duyệt (vd OPS-WH) thấy đúng 1 mục Phê duyệt.
+- [ ] Chỉ số kinh doanh: công tắc Theo ngày | Theo tháng đổi đúng dữ liệu, tải lại trang vẫn nhớ; Làm mới số liệu (admin) chạy job ngày / tháng theo chế độ.
+- [ ] Link cũ `#/kpi-monthly` mở Chỉ số kinh doanh chế độ tháng.

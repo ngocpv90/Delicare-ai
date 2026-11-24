@@ -24,7 +24,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.DieuHanh
             A("dh_overview", "📊 Tổng quan hôm nay", "tongquan", "Tổng quan vận hành hôm nay", "#/dash-exec", 1, OverviewAsync),
             A("dh_open", "🚨 Việc đang mở", "viecmo", "Cảnh báo / việc đang mở", null, 2, (c, ct) => xem.AlertsAsync(c, "🚨 Việc đang mở", null, ct)),
             A("dh_kpi", "🎯 KPI 7 ngày", "kpi", "Chỉ tiêu KPI 7 ngày", "#/kpi-daily", 3, KpiDailyAsync),
-            A("dh_kpi_month", "📅 Chỉ số tháng", "kpithang", "Chỉ số tháng này", "#/kpi-monthly", 4, KpiMonthlyAsync),
+            A("dh_kpi_month", "📅 Chỉ số tháng", "kpithang", "Chỉ số tháng này", "#/kpi-daily", 4, KpiMonthlyAsync),
             A("dh_kitchen", "📈 Tiến độ bếp", "tiendobep", "Tiến độ sản xuất hôm nay", BepActions.Menu, 5, bep.ProgressAsync),
             A("dh_delivery", "🗺 Giao vận trực tiếp", "giaovantt", "Chuyến giao hôm nay", "#/log-route", 6, giaoVan.BoardAsync),
             A("dh_stock", "📦 Tồn & thiếu hụt", "tonthieu", "Tồn dưới mức + thiếu hụt ngày mai", "#/scm-inv-balance", 7, StockAsync),

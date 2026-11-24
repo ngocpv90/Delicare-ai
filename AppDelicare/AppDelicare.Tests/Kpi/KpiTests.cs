@@ -348,7 +348,12 @@ namespace AppDelicare.Tests.Kpi
             using var user = _factory.CreateAuthorizedClient(viewer);
             (await user.PostAsync("/api/KpiSnapshot/Refresh", LegacyHttp.Form(("JobCode", "KPI_DAILY")))).StatusCode.Should().Be(HttpStatusCode.Forbidden, "chỉ admin bấm làm mới");
             (await user.GetAsync("/api/KpiSnapshot/GetDaily")).StatusCode.Should().Be(HttpStatusCode.OK);
-            (await user.GetAsync("/api/KpiSnapshot/GetMonthly")).StatusCode.Should().Be(HttpStatusCode.Forbidden, "không có quyền Xem #/kpi-monthly");
+            (await user.GetAsync("/api/KpiSnapshot/GetMonthly")).StatusCode.Should().Be(HttpStatusCode.OK, "UI-6.28 (D-109): chỉ số tháng trong màn Chỉ số kinh doanh (#/kpi-daily)");
+            Guid outsider = await CommonTestUsers.UserAsync(_factory, ("kpi-refresh", "V"));
+            using (var other = _factory.CreateAuthorizedClient(outsider))
+            {
+                (await other.GetAsync("/api/KpiSnapshot/GetMonthly")).StatusCode.Should().Be(HttpStatusCode.Forbidden, "không có quyền Xem Chỉ số kinh doanh");
+            }
             (await user.GetAsync("/api/AnalyticsRefreshLog/GetList")).StatusCode.Should().Be(HttpStatusCode.OK, "Xem #/kpi-refresh");
             (await user.PostAsync("/api/KpiMetricDefinition/Insert", LegacyHttp.Form(("MetricCode", "X")))).StatusCode.Should().Be(HttpStatusCode.Forbidden, "không có quyền Thêm #/kpi-definition");
         }

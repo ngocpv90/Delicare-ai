@@ -174,6 +174,8 @@
         const ms = (x.data && x.data.metrics) || [];
         body.innerHTML = ms.length ? `<div class="grid g3 mb">${ms.map(m => {
           const df = m.definition || {}, la = m.latest, unit = df.unitCode;
+          const NL = { FIN_FOOD_COST: 'Tỷ lệ nguyên liệu / doanh thu', FIN_COST_MEAL: 'Giá vốn nguyên liệu / suất' };
+          if (NL[m.metricCode || df.metricCode]) { m.metricName = NL[m.metricCode || df.metricCode]; df.metricName = m.metricName; }
           const ser = (m.series || []).filter(s => s.value !== null && s.value !== undefined);
           const met = la ? la.met : null, tg = la && la.target !== null && la.target !== undefined ? la.target : df.targetValue;
           const badge = !la ? '<span class="badge gray">Chưa có số</span>' : la.value === null || la.value === undefined ? '<span class="badge orange">Thiếu dữ liệu</span>' : met === true ? '<span class="badge green">Đạt</span>' : met === false ? '<span class="badge red">Chưa đạt</span>' : '<span class="badge gray">Không có mục tiêu</span>';
@@ -186,7 +188,23 @@
       });
     };
   }
-  ['kpi-daily', 'kpi-monthly'].forEach((id, i) => { const base = APP.SCREENS[id]; if (base) APP.register(id, kpiLive(i === 1, base)); });
+  // UI-6.28 (D-109): "Chỉ số theo ngày" + "Chỉ số theo tháng" gộp thành "Chỉ số kinh doanh" (#/kpi-daily) – công tắc Theo ngày | Theo tháng (nhớ theo máy);
+  // #/kpi-daily?view=month (link cũ #/kpi-monthly) mở chế độ tháng. Chế độ DEMO giữ 2 màn cũ.
+  const KV = { get: () => { try { return localStorage.getItem('dc.kpiView') === 'month' ? 'month' : 'day'; } catch (e) { return 'day'; } }, set: v => { try { localStorage.setItem('dc.kpiView', v); } catch (e) { /* máy chặn lưu */ } } };
+  const baseDay = APP.SCREENS['kpi-daily'], baseMonth = APP.SCREENS['kpi-monthly'];
+  if (baseMonth) APP.register('kpi-monthly', kpiLive(true, baseMonth));
+  if (baseDay) APP.register('kpi-daily', (el, f, p) => {
+    if (!Store.isLive) return kpiLive(false, baseDay)(el, f, p);
+    if (p && (p.view === 'month' || p.view === 'day')) KV.set(p.view);
+    const month = KV.get() === 'month';
+    kpiLive(month, month && baseMonth ? baseMonth : baseDay)(el, f, p);
+    const h = el.querySelector('.page-heading');
+    if (h && !el.querySelector('[data-kv]')) {
+      h.insertAdjacentHTML('afterend', `<div class="mb"><div class="seg"><button class="seg-b ${month ? '' : 'on'}" data-kv="day">Theo ngày</button><button class="seg-b ${month ? 'on' : ''}" data-kv="month">Theo tháng</button></div>
+        <span class="small muted" style="margin-left:8px">${month ? '12 tháng gần nhất – tháng đang chạy tính đến hôm nay' : '30 ngày gần nhất'}</span></div>`);
+      el.querySelectorAll('[data-kv]').forEach(b => b.onclick = () => { KV.set(b.dataset.kv); APP.SCREENS['kpi-daily'](el, f, {}); });
+    }
+  });
 
   // ---------- Kho tài liệu (#/adm-document): tải lên / tải xuống tệp đính kèm – docs/frontend-handoff/BE2.7.md ----------
   // Backend: tối đa 20 MB; chỉ nhận pdf, jpg, png, xlsx, docx. Tệp gửi multipart nên FormData đi thẳng qua Store.act (không qua objForm).

@@ -237,6 +237,8 @@
     'prod-order': 'prod-plan', 'prod-output': 'prod-batch', 'prod-workstation': 'prod-line',
     // UI-6.27 (D-108): Giá thành chuẩn / thực tế gộp vào Giá vốn & lãi gộp (cost-meal).
     'cost-standard': 'cost-meal', 'cost-actual': 'cost-meal',
+    // UI-6.28 (D-109): Chỉ số theo tháng gộp vào Chỉ số kinh doanh.
+    'kpi-monthly': 'kpi-daily',
     // UI-6.21 (D-102): nhóm nguyên liệu / nhóm món quản lý trong màn Nguyên liệu / Món ăn.
     'scm-ingredient-cat': 'scm-ingredient', 'menu-dish-cat': 'menu-dish',
     'scm-uom-conversion': 'scm-uom' }; // UI-6.22 (D-103)

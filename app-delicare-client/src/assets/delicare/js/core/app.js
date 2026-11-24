@@ -105,11 +105,12 @@
     Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false || (f.id !== 'hr-my' && !isAdm)) return; const grp = f.id === 'hr-my' ? 'Việc của tôi' : f.grp; let g = out.find(x => x.name === grp); if (!g) { g = { name: grp, items: [] }; if (f.id === 'hr-my') out.unshift(g); else out.push(g); } g.items.push({ f, label: f.id === 'hr-my' ? grp : f.fn, link: f.id }); });
     const res = out.filter(g => g.items.length), my = res.findIndex(g => g.items.some(i => i.link === 'hr-my'));
     if (my > 0) res.unshift(res.splice(my, 1)[0]);
-    // D-93: mục "Phê duyệt" nằm trong nhóm Điều hành ngay dưới Bảng điều hành; không có quyền Bảng điều hành → nhóm Điều hành vẫn hiện với mục Phê duyệt.
+    // D-93 → D-109: mục "Phê duyệt" nằm cuối nhóm Điều hành; không có quyền Bảng điều hành → nhóm Điều hành vẫn hiện với mục Phê duyệt.
     if (FN['wf-inbox'] && Store.perm('wf-inbox').access !== false) {
       const apr = { f: FN['wf-inbox'], label: 'Phê duyệt', link: 'wf-inbox' };
       const g = res.find(x => x.items.some(i => i.link === 'dash-exec')) || res.find(x => x.name === 'Điều hành');
-      if (g) { const k = g.items.findIndex(i => i.link === 'dash-exec'); g.items.splice(k + 1, 0, apr); }
+      // UI-6.28 (D-109): Phê duyệt xuống CUỐI nhóm Điều hành (Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt).
+      if (g) g.items.push(apr);
       else res.splice(res.length && res[0].items.some(i => i.link === 'hr-my') ? 1 : 0, 0, { name: 'Điều hành', items: [apr] });
     }
     return res;
@@ -337,6 +338,8 @@
     if (Store.isLive && id === 'prod-output') { location.replace(APP.href('prod-batch?tab=output')); return; }
     // UI-6.27 (D-108): Giá thành chuẩn / thực tế → Giá vốn & lãi gộp tab Theo món.
     if (Store.isLive && (id === 'cost-standard' || id === 'cost-actual')) { location.replace(APP.href('cost-meal?tab=dish')); return; }
+    // UI-6.28 (D-109): Chỉ số theo tháng → Chỉ số kinh doanh chế độ tháng.
+    if (Store.isLive && id === 'kpi-monthly') { location.replace(APP.href('kpi-daily?view=month')); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];
     if (up) {

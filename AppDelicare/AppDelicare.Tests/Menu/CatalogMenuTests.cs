@@ -38,7 +38,7 @@ namespace AppDelicare.Tests.Menu
                     .Select(r => r.Link[2..]).Where(i => i != "wf-inbox" && !i.StartsWith("bot-", StringComparison.Ordinal)).ToList();
                 if (g.Link == "#/group/01")
                 {
-                    items.Insert(items.IndexOf("dash-exec") + 1, "wf-inbox");
+                    items.Add("wf-inbox"); // UI-6.28 (D-109): Phê duyệt cuối nhóm Điều hành
                 }
                 result.Add((g.Name, items));
             }
@@ -79,7 +79,7 @@ namespace AppDelicare.Tests.Menu
             order.Should().ContainInOrder("Mua hàng", "Kho");
             var exec = cat.GetProperty("menuGroups").EnumerateArray().Single(g => g.GetProperty("name").GetString() == "Điều hành")
                 .GetProperty("items").EnumerateArray().Select(i => i.GetString()).ToList();
-            exec.Take(2).Should().Equal(["dash-exec", "wf-inbox"], "D-93 a: Phê duyệt ngay dưới Bảng điều hành");
+            exec.Should().Equal(["dash-exec", "kpi-daily", "cost-meal", "wf-inbox"], "D-109 (UI-6.28): Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt");
 
             // grp của từng màn trong catalog.funcs đúng nhóm mới (breadcrumb / tìm kiếm chức năng dùng grp).
             var groupOf = cat.GetProperty("menuGroups").EnumerateArray()

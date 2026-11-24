@@ -63,7 +63,7 @@ public static partial class Seeds
             "wf-inbox?type=prod-plan", "wf-inbox?type=qc-inspection", "wf-inbox?type=prod-batch", "wf-inbox?type=scm-lot", "wf-inbox?type=hr-leave",
             "wf-inbox?type=hr-swap", "wf-inbox?type=scm-pr", "wf-inbox?type=adm-user",
         ]),
-        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal"]), // UI-6.27 (D-108): Giá vốn & lãi gộp vào Điều hành
+        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal"]), // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
             ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "crm-billing", "log-complaint", "crm-location", "crm-contact"]),
         new("#/group/03", "Thực đơn & Món ăn", [], 300, "menu", ["menu-menu", "menu-assignment", "menu-change-request", "menu-recipe", "menu-dish", "menu-dish-cat"]),
@@ -825,7 +825,7 @@ public static partial class Seeds
             var items = g.Items.Where(i => i != "wf-inbox" && !MatrixSkipLinks.Contains("#/" + i) && !HiddenNow.Contains("#/" + i)).ToList();
             if (g.Link == "#/group/01")
             {
-                items.Insert(items.IndexOf("dash-exec") + 1, "wf-inbox");
+                items.Add("wf-inbox"); // UI-6.28 (D-109): Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt
             }
             return (g.Link, g.Name, items.ToArray());
         }),

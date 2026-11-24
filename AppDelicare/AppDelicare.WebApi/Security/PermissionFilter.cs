@@ -133,7 +133,7 @@ namespace AppDelicare.WebApi.Security
         /// </summary>
         private static readonly Dictionary<string, string[]> ReadAlsoScreens = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["KpiMetricDefinition"] = ["kpi-daily", "kpi-monthly", "dash-exec"],
+            ["KpiMetricDefinition"] = ["kpi-daily", "dash-exec"], // UI-6.28: kpi-monthly gộp vào kpi-daily
         };
 
         /// <summary>

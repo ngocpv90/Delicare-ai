@@ -18,8 +18,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Phê duyệt › Mẻ nấu | `wf-inbox?type=prod-batch` | Duyệt |
 | Phê duyệt › Giữ / thả lô | `wf-inbox?type=scm-lot` | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | X |
-| Điều hành › Chỉ số theo ngày | `kpi-daily` | X |
-| Điều hành › Chỉ số theo tháng | `kpi-monthly` | X |
+| Điều hành › Chỉ số kinh doanh | `kpi-daily` | X |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | S (IX) |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X |
