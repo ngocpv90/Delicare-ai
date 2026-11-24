@@ -267,8 +267,23 @@ public static partial class Seeds
         {
             G(role, ViewR, ["wf-inbox?type=wf-inbox"]);
         }
+        // UI-6.29 (D-110): Kho 12 → 5 mục – màn cha nhận hợp quyền các mục gộp (vd OPS-WH Tồn kho = Định mức Q + Sổ kho / Lô S(IX)); mục ẩn giữ dòng quyền.
+        foreach (var (child, parent) in KhoMerged)
+        {
+            foreach (var role in m.Values.Where(r => r.ContainsKey(child)).ToList())
+            {
+                role[parent] = role.TryGetValue(parent, out var cur) ? cur.Or(role[child]) : role[child];
+            }
+        }
         return m.ToDictionary(kv => kv.Key, kv => (IReadOnlyDictionary<string, Right>)kv.Value);
     }
+
+    /// <summary>UI-6.29 (D-110): mục Kho ẩn → màn cha (khớp ScreenMap.HiddenScreenParent, DB/scripts/UI629_kho_menu.sql).</summary>
+    public static readonly (string Child, string Parent)[] KhoMerged =
+    [
+        ("scm-zone", "scm-warehouse"), ("scm-location", "scm-warehouse"), ("scm-lot", "scm-inv-balance"), ("scm-inv-txn", "scm-inv-balance"),
+        ("scm-inv-policy", "scm-inv-balance"), ("scm-consumption-var", "scm-inv-balance"), ("scm-reservation", "scm-issue"),
+    ];
 
     /// <summary>D-79 (d): mục duyệt → nhóm duyệt (AllowAccess + AllowEdit). <c>crm-price-policy</c> giữ CEO cho khi có loại duyệt (mục đang ẩn).</summary>
     public static readonly (string Screen, string[] Roles)[] Approvers5 =

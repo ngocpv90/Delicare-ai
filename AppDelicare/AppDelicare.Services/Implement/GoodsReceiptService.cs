@@ -343,6 +343,18 @@ namespace AppDelicare.Services.Implement
                 }
                 await _unitOfWork.GoodsReceiptRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
                 _unitOfWork.CommitTransaction();
+                // UI-6.29 (D-110): mọi dòng tự đạt (không yêu cầu QC + nhiệt độ đạt) → tự ghi sổ ngay như sau kết luận QC (GoodsReceiptAutoPostAfterQc);
+                // ghi sổ lỗi → giữ phiếu Đạt + cảnh báo, kho bấm Ghi sổ tay.
+                if (allAuto && _rules.GoodsReceiptAutoPostAfterQc)
+                {
+                    var posted = await Post(new GoodsReceiptPostRequest { Id = receipt.Id, Note = "Hệ thống tự ghi sổ – mọi dòng tự đạt" });
+                    if (posted.ResponseCode == 200 && posted.Data != null)
+                    {
+                        posted.Data.ListWarning.InsertRange(0, warnings);
+                        return Result<GoodsReceiptDetailModel>.Success(posted.Data, ConstantHelper.Message.GoodsReceiptAutoPosted);
+                    }
+                    warnings.Add(string.Format(ConstantHelper.Message.QcAutoPostFailed, posted.ResponseMessage));
+                }
                 var detail = await DetailAsync(receipt.Id);
                 detail!.ListWarning.AddRange(warnings);
                 return Result<GoodsReceiptDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);

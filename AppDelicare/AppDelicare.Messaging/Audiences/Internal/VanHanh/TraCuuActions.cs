@@ -28,7 +28,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         private BotAction T(string code, string module, int order, string? command) => new()
         {
             Code = code, Module = module, Label = "🔍 Truy xuất", Command = command, CommandDescription = command == null ? null : "Truy xuất lô / mẻ", Bots = ["VH"], Order = order,
-            Visible = i => i.IsAdmin || i.Menus.Any(m => string.Equals(m, "#/scm-lot", StringComparison.OrdinalIgnoreCase) || string.Equals(m, "#/prod-batch", StringComparison.OrdinalIgnoreCase)),
+            Visible = i => i.IsAdmin || i.Menus.Any(m => string.Equals(m, "#/scm-lot", StringComparison.OrdinalIgnoreCase) || string.Equals(m, "#/scm-inv-balance", StringComparison.OrdinalIgnoreCase) || string.Equals(m, "#/prod-batch", StringComparison.OrdinalIgnoreCase)),
             Handler = (ctx, ct) => AskAsync(ctx, "🔍 Gõ số lô (vd. LO-…, NL-…) hoặc số mẻ (ME-…):", ReplyTrace, "x", ct),
         };
 

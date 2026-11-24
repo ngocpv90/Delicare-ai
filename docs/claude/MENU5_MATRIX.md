@@ -50,23 +50,16 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | X | — | X | — |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | X | X | X | S | Q | X | Q | — | — | — | — | — | — | — | — | — | — | X | X |
 | Mua hàng › Đơn vị tính | `scm-uom` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | — | — | X | — |
-| Kho › Phiếu nhập kho | `scm-gr` | X | X | X | — | X | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | X |
-| Kho › Phiếu xuất sản xuất | `scm-issue` | X | X | X | — | X | S (IX) | S (IX) | X | — | — | — | — | — | — | — | X (IX) | — | X | — |
-| Kho › Tồn kho | `scm-inv-balance` | X | X | X | X | X | X | X | X | — | — | — | — | — | — | — | X (IX) | — | X | X |
-| Kho › Lô hàng & hạn dùng | `scm-lot` | X | X | X | X | X | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | X |
-| Kho › Sổ kho | `scm-inv-txn` | X | X | X | — | X | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | — |
-| Kho › Giữ chỗ nguyên liệu | `scm-reservation` | X | X | X | — | — | S (IX) | S (IX) | — | — | — | — | — | — | — | — | — | — | X | — |
-| Kho › Phiếu kiểm kê | `scm-stockcount` | X | X | X | — | — | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | — |
-| Kho › Chênh lệch tiêu hao | `scm-consumption-var` | X | X | X | — | — | X | X | — | — | — | — | — | — | — | — | X (IX) | — | X | — |
-| Kho › Kho | `scm-warehouse` | X | X | X | — | X | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
-| Kho › Khu bảo quản | `scm-zone` | X | X | X | — | — | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
-| Kho › Vị trí kệ | `scm-location` | X | X | X | — | — | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
-| Kho › Định mức tồn kho | `scm-inv-policy` | X | X | X | — | — | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
+| Kho › Nhận hàng | `scm-gr` | X | X | X | — | X | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | X |
+| Kho › Xuất kho sản xuất | `scm-issue` | X | X | X | — | X | S (IX) | S (IX) | X | — | — | — | — | — | — | — | X (IX) | — | X | — |
+| Kho › Tồn kho | `scm-inv-balance` | X | X | X | X | X | Q (IX) | Q (IX) | X | — | — | — | — | — | — | — | X (IX) | — | X | X |
+| Kho › Kiểm kê | `scm-stockcount` | X | X | X | — | — | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | — |
+| Kho › Kho & vị trí | `scm-warehouse` | X | X | X | — | X | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X | X | S | X | X | X | X | X | — | — | — | — | — | — | — | — | X | X |
 | Sản xuất › Mẻ nấu | `prod-batch` | X | X | X | X | — | — | — | S | — | — | X | — | — | — | — | — | — | X | X |
 | Sản xuất › Hao hụt | `prod-waste` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | X (IX) | — | X | — |
 | Sản xuất › Dây chuyền & trạm bếp | `prod-line` | X | X | X | Q | — | — | — | X | — | — | S | — | — | — | — | — | — | X | — |
-| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | X | X | X | X | X | — | X | — | — | — | — | — | — | — | — | — | — | X | S (IX) |
+| Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | X | X | X | X | X | — | X | — | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X | X | X | X | — | — | — | S | X | — | X | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
@@ -124,8 +117,8 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   COO           vào  91 mục · ô quyền  108
   OPS-PLAN      vào  38 mục · ô quyền   82
   OPS-SCM       vào  21 mục · ô quyền   57
-  OPS-WH        vào  18 mục · ô quyền   58
-  OPS-SCM-HEAD  vào  33 mục · ô quyền  111
+  OPS-WH        vào  18 mục · ô quyền   64
+  OPS-SCM-HEAD  vào  33 mục · ô quyền  117
   OPS-KIT       vào  26 mục · ô quyền   44
   OPS-LOG       vào  17 mục · ô quyền   33
   OPS-POS       vào  12 mục · ô quyền   20

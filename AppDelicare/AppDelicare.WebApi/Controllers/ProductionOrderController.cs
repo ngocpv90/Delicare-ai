@@ -144,6 +144,8 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>BE2.4 (Catalog 126): giữ chỗ (bổ sung) nguyên liệu cho lệnh Phát hành / Đang SX – quyền Sửa prod-order.</summary>
+        /// UI-6.29 (D-110): thủ kho giữ chỗ bổ sung tại "Xuất kho sản xuất" (quyền Sửa scm-issue) – giữ quyền Sửa kế hoạch SX.
+        [Security.Permission("prod-plan", PermissionAction.Edit, OrScreens = ["scm-issue"])]
         [HttpPost("Reserve")]
         public async Task<IActionResult> Reserve([FromForm] ProductionActionRequest request)
         {

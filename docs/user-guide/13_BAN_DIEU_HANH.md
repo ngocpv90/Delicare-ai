@@ -37,13 +37,10 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | S (IX) |
 | Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | X (IX) |
 | Mua hàng › Đơn mua hàng | `scm-po` | X | X | X | X (IX) |
-| Kho › Phiếu nhập kho | `scm-gr` | X | X | X | X (IX) |
-| Kho › Phiếu xuất sản xuất | `scm-issue` | X | X | X | X (IX) |
+| Kho › Nhận hàng | `scm-gr` | X | X | X | X (IX) |
+| Kho › Xuất kho sản xuất | `scm-issue` | X | X | X | X (IX) |
 | Kho › Tồn kho | `scm-inv-balance` | X | X | X | X (IX) |
-| Kho › Lô hàng & hạn dùng | `scm-lot` | X | X | X | X (IX) |
-| Kho › Sổ kho | `scm-inv-txn` | X | X | X | X (IX) |
-| Kho › Phiếu kiểm kê | `scm-stockcount` | X | X | X | X (IX) |
-| Kho › Chênh lệch tiêu hao | `scm-consumption-var` | X | X | X | X (IX) |
+| Kho › Kiểm kê | `scm-stockcount` | X | X | X | X (IX) |
 | Sản xuất › Hao hụt | `prod-waste` | X | X | X | X (IX) |
 | Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | X (IX) |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | X (IX) |

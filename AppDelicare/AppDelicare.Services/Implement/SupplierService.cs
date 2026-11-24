@@ -346,9 +346,9 @@ namespace AppDelicare.Services.Implement
             Add(m.OverduePoCount, "PO_OVERDUE", "HIGH", string.Format(ConstantHelper.Message.SupplierAlertPoOverdue, m.OverduePoCount,
                 string.Join(", ", overdue.Take(3).Select(p => p.PurchaseOrderNumber ?? p.PONo)) + (overdue.Count > 3 ? "…" : "")), "scm-po");
             Add(m.OverdueIssueCount, "ISSUE_OVERDUE", "HIGH", string.Format(ConstantHelper.Message.SupplierAlertIssueOverdue, m.OverdueIssueCount), "qc-supplier-issue");
-            Add(m.LotOnHoldCount, "LOT_ON_HOLD", "MEDIUM", string.Format(ConstantHelper.Message.SupplierAlertLotOnHold, m.LotOnHoldCount), "scm-lot");
+            Add(m.LotOnHoldCount, "LOT_ON_HOLD", "MEDIUM", string.Format(ConstantHelper.Message.SupplierAlertLotOnHold, m.LotOnHoldCount), "scm-inv-balance?tab=lot");
             Add(m.PriceExpiringCount, "PRICE_EXPIRING", "MEDIUM", string.Format(ConstantHelper.Message.SupplierAlertPriceExpiring, m.PriceExpiringCount, PriceExpiryDays), "scm-supplier-material");
-            Add(m.LotNearExpiryCount, "LOT_EXPIRING", "LOW", string.Format(ConstantHelper.Message.SupplierAlertLotExpiring, m.LotNearExpiryCount, m.LotExpiryDays), "scm-lot");
+            Add(m.LotNearExpiryCount, "LOT_EXPIRING", "LOW", string.Format(ConstantHelper.Message.SupplierAlertLotExpiring, m.LotNearExpiryCount, m.LotExpiryDays), "scm-inv-balance?tab=lot");
         }
 
         /// <summary>UI-3 (D-67 f2): theo tháng – giá trị PO đặt, giá trị đã nhận (phiếu Đã ghi sổ: SL đạt × đơn giá), % đúng hạn, % bị loại.</summary>

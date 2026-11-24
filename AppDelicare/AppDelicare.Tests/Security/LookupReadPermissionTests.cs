@@ -21,7 +21,7 @@ namespace AppDelicare.Tests.Security
         [InlineData("ProductionOrder", "scm-issue")]
         [InlineData("PurchaseRequest", "scm-po")]
         [InlineData("QcInspection", "scm-gr")]
-        [InlineData("UnitMeasure", "scm-reservation")]
+        [InlineData("UnitMeasure", "scm-issue")] // UI-6.29 (D-110): Giữ chỗ gộp vào Xuất kho sản xuất
         [InlineData("User", "qc-supplier-issue")]
         [InlineData("Person", "int-identity")]
         [InlineData("DeliveryOrder", "log-return-inspection")]

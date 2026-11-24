@@ -321,7 +321,7 @@ namespace AppDelicare.Tests.Approval
                 db.Ingredient.Add(new Ingredient { Id = ingredient, Code = "GAO-ML7", Name = "Gạo ML7", BaseUnitId = kg });
                 return Task.CompletedTask;
             });
-            using var keeper = _factory.CreateAuthorizedClient(await UserAsync(_factory, [], ["scm-inv-txn"]));
+            using var keeper = _factory.CreateAuthorizedClient(await UserAsync(_factory, [], ["scm-inv-balance"]) /* UI-6.29: Sổ kho gộp vào Tồn kho */);
             using var manager = _factory.CreateAuthorizedClient(await UserAsync(_factory, ["scm-adjustment"]));
 
             (await keeper.PostFormAsync("/api/InventoryTransaction/Adjust", ("WarehouseId", warehouse), ("IngredientId", ingredient), ("Quantity", -1m), ("Reason", "Hỏng"))).Fail("Không đủ tồn");

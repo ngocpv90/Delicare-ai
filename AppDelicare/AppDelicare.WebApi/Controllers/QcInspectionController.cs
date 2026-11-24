@@ -9,9 +9,10 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class QcInspectionController(IQcInspectionService service) : BaseController
+    public class QcInspectionController(IQcInspectionService service, IQcBookService book) : BaseController
     {
         private readonly IQcInspectionService _service = service;
+        private readonly IQcBookService _book = book;
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] QcInspectionSearchRequest request)
@@ -145,6 +146,36 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " Conclude: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.29 (D-110): Sổ kiểm tra hàng nhập – chỉ đọc, nhóm theo ngày (quyền Xem qc-inspection).</summary>
+        [HttpGet("GetBook")]
+        public async Task<IActionResult> GetBook([FromQuery] AppDelicare.Model.Model.QcBookRequest request)
+        {
+            try
+            {
+                return Ok(await _book.GetBook(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBook: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.29 (D-110): tỷ lệ đạt / không đạt / nhiệt độ ngoài vùng theo nhà cung cấp (mặc định 30 ngày).</summary>
+        [HttpGet("GetSupplierSummary")]
+        public async Task<IActionResult> GetSupplierSummary([FromQuery] AppDelicare.Model.Model.QcBookRequest request)
+        {
+            try
+            {
+                return Ok(await _book.GetSupplierSummary(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSupplierSummary: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

@@ -28,12 +28,11 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Đề nghị mua hàng | `scm-pr` | X |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | S |
 | Kho › Tồn kho | `scm-inv-balance` | X |
-| Kho › Lô hàng & hạn dùng | `scm-lot` | X |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | S |
 | Sản xuất › Mẻ nấu | `prod-batch` | X |
 | Sản xuất › Hao hụt | `prod-waste` | X |
 | Sản xuất › Dây chuyền & trạm bếp | `prod-line` | Q |
-| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | X |
+| Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | X |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | X |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | X |

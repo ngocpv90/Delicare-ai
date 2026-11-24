@@ -54,6 +54,15 @@ namespace AppDelicare.WebApi.Security
             // Giá thành chuẩn chỉ tự tính (Insert / Update chặn); StandardCost/Recalculate theo quyền Sửa Công thức (attribute ở controller).
             ["StandardCost"] = ("cost-meal", false),
             ["ActualCost"] = ("cost-meal", false),
+            // UI-6.29 (D-110): Kho 12 → 5 mục – Khu / Vị trí trong "Kho & vị trí"; Lô, Sổ kho, Định mức tồn, Chênh lệch tiêu hao trong "Tồn kho"; Giữ chỗ trong "Xuất kho sản xuất".
+            // Tồn kho nhận hợp quyền các mục gộp (CodeGen Seeds.Menu5 – OPS-WH / OPS-SCM-HEAD); Tạm giữ / Mở giữ lô vẫn theo quyền Duyệt "Phê duyệt › Giữ / thả lô".
+            ["StorageZone"] = ("scm-warehouse", false),
+            ["StorageLocation"] = ("scm-warehouse", false),
+            ["MaterialLot"] = ("scm-inv-balance", false),
+            ["InventoryTransaction"] = ("scm-inv-balance", false),
+            ["InventoryPolicy"] = ("scm-inv-balance", false),
+            ["MaterialConsumptionVariance"] = ("scm-inv-balance", false),
+            ["MaterialReservation"] = ("scm-issue", false),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -67,6 +76,8 @@ namespace AppDelicare.WebApi.Security
             ["scm-transfer"] = "scm-inv-balance", ["scm-adjustment"] = "scm-inv-balance", ["crm-contact"] = "crm-customer", ["crm-location"] = "crm-customer", ["scm-ingredient-cat"] = "scm-ingredient", ["menu-dish-cat"] = "menu-dish", ["scm-uom-conversion"] = "scm-uom",
             ["prod-order"] = "prod-plan", ["prod-output"] = "prod-batch", ["prod-workstation"] = "prod-line",
             ["cost-standard"] = "cost-meal", ["cost-actual"] = "cost-meal",
+            ["scm-zone"] = "scm-warehouse", ["scm-location"] = "scm-warehouse", ["scm-lot"] = "scm-inv-balance", ["scm-inv-txn"] = "scm-inv-balance", ["scm-inv-policy"] = "scm-inv-balance",
+            ["scm-consumption-var"] = "scm-inv-balance", ["scm-reservation"] = "scm-issue",
         };
     }
 }

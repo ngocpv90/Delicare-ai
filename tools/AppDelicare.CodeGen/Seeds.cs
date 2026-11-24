@@ -282,6 +282,12 @@ public static partial class Seeds
         ("#/qc-checklist", "Bộ checklist ATTP", "Bộ kiểm tra ATTP"),
         ("#/qc-checklist-item", "Tiêu chí checklist", "Tiêu chí kiểm tra"),
         ("#/qc-inspection", "Phiếu QC đầu vào", "Kiểm tra hàng nhập"),
+        // UI-6.29 (D-110): chạy sau các dòng đổi tên cũ của cùng mục.
+        ("#/scm-gr", "Phiếu nhập kho", "Nhận hàng"),
+        ("#/scm-issue", "Phiếu xuất sản xuất", "Xuất kho sản xuất"),
+        ("#/scm-warehouse", "Kho", "Kho & vị trí"),
+        ("#/qc-inspection", "Kiểm tra hàng nhập", "Sổ kiểm tra hàng nhập"),
+        ("#/scm-stockcount", "Phiếu kiểm kê", "Kiểm kê"),
         ("#/qc-inspection-line", "Tiêu chí QC theo dòng nhập", "Chi tiết kiểm tra hàng nhập"),
         ("#/qc-checklist-result", "Thực hiện checklist theo ca/mẻ", "Kiểm tra theo ca / mẻ"),
         ("#/qc-temperature", "Nhật ký nhiệt độ kho/mẻ", "Nhật ký nhiệt độ"),
@@ -367,7 +373,8 @@ public static partial class Seeds
     public static readonly string[] Ui6HiddenLinks = ["#/menu-assignment", "#/crm-price-policy", "#/menu-change-request", "#/crm-location", "#/scm-ingredient-cat", "#/menu-dish-cat", "#/scm-uom-conversion",
         "#/prod-order", "#/prod-output", "#/prod-workstation",
         "#/cost-standard", "#/cost-actual", "#/group/05b",
-        "#/kpi-monthly"]; // UI-6.28 (D-109): gộp vào Chỉ số kinh doanh // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
+        "#/kpi-monthly", // UI-6.28 (D-109): gộp vào Chỉ số kinh doanh
+        "#/scm-zone", "#/scm-location", "#/scm-lot", "#/scm-inv-txn", "#/scm-inv-policy", "#/scm-reservation", "#/scm-consumption-var"]; // UI-6.29 (D-110): Kho 12 → 5 mục // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
 
     public static string[] HiddenMenuLinks => ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Ui6HiddenLinks];
 

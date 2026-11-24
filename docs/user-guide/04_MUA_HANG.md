@@ -30,20 +30,13 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | Q | Q |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | Q | Q |
 | Mua hàng › Đơn vị tính | `scm-uom` | Q | Q |
-| Kho › Phiếu nhập kho | `scm-gr` | X | S (IX) |
-| Kho › Phiếu xuất sản xuất | `scm-issue` | X | S (IX) |
-| Kho › Tồn kho | `scm-inv-balance` | X | X |
-| Kho › Lô hàng & hạn dùng | `scm-lot` | X | S (IX) |
-| Kho › Sổ kho | `scm-inv-txn` | X | S (IX) |
-| Kho › Giữ chỗ nguyên liệu | `scm-reservation` | — | S (IX) |
-| Kho › Phiếu kiểm kê | `scm-stockcount` | — | S (IX) |
-| Kho › Chênh lệch tiêu hao | `scm-consumption-var` | — | X |
-| Kho › Kho | `scm-warehouse` | X | Q |
-| Kho › Khu bảo quản | `scm-zone` | — | Q |
-| Kho › Vị trí kệ | `scm-location` | — | Q |
-| Kho › Định mức tồn kho | `scm-inv-policy` | — | Q |
+| Kho › Nhận hàng | `scm-gr` | X | S (IX) |
+| Kho › Xuất kho sản xuất | `scm-issue` | X | S (IX) |
+| Kho › Tồn kho | `scm-inv-balance` | X | Q (IX) |
+| Kho › Kiểm kê | `scm-stockcount` | — | S (IX) |
+| Kho › Kho & vị trí | `scm-warehouse` | X | Q |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
-| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | X | X |
+| Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | X | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X | X |
 <!-- MENU5:END -->
 
