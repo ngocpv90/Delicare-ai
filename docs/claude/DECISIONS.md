@@ -224,7 +224,7 @@ Ngoài ra còn GAP-F / C / Q / RD trong `docs/reference/GAP_REGISTER.md` (từ g
 | GAP-HR-01 | `Shift.Status` chưa có danh mục; `Shift` có giờ bắt đầu = giờ kết thúc. | Status: `Active` / `Inactive` (mặc định Active); bắt đầu = kết thúc → 422 BUSINESS_RULE. | PROPOSED – BA/PO CONFIRM | T03, T21.1 |
 | GAP-PERM-01 | `UserRole` không có cột quyền **duyệt** (cột "A" của ma trận ORG_STRUCTURE). | `[Permission(screen, Approve)]` kiểm tra nhóm của user ∈ `appsettings Permissions:ApproverGroups` theo cột ma trận (CodeGen in ra danh sách từ ORG_STRUCTURE). | PROPOSED – BA/PO CONFIRM | T07 |
 | GAP-PERM-02 | Ma trận quyền chỉ có V / E / A / X. | Quy đổi: V → AllowAccess; **E → Add + Edit + Delete + Import**; X → Print + Export. Ghi chú trong ô (vd. "V (đề nghị xuất)") áp cho cả nhóm màn hình – tinh chỉnh từng màn khi UAT-1. | PROPOSED – BA/PO CONFIRM | T07 |
-| GAP-PERM-03 | `UserGroup` không có cột Code. | `UserGroup.Name` = mã vai trò (CEO, OPS-SCM…, ORG_STRUCTURE mục 2). 20 nhóm cũ trong DB dev ("1"…"17", "123", "Administrator") **không xóa** – anh dọn khi UAT. | PROPOSED | T07 |
+| GAP-PERM-03 | `UserGroup` không có cột Code. | `UserGroup.Name` = mã vai trò (CEO, OPS-SCM…, ORG_STRUCTURE mục 2). 20 nhóm cũ trong DB dev ("1"…"17", "123", "Administrator") **không xóa** – anh dọn khi UAT. → **APPROVED 2026-11-24 (D-124, UI-6.43):** thêm `UserGroup.Code` / `Description` / `GroupBlock`; mã chuyển sang Code, Name thành tên tiếng Việt. | APPROVED | T07, UI-6.43 |
 | GAP-PERM-04 | Bảng không có màn hình riêng trong mockup (Patient, Person, DocumentFile, bảng hệ thống…). | Quyền theo màn `dbx-explorer` (Database Explorer). | PROPOSED – BA/PO CONFIRM | T07 |
 | GAP-INV-01 | Bút toán đảo: loại giao dịch và số chứng từ. | `TransactionType = ADJUSTMENT`, `ReferenceType = REVERSAL`, `ReferenceId` = dòng gốc, `Reason` bắt buộc; số = số gốc + "-R" (mã chuẩn ở T11). Không đảo 2 lần, không đảo bút toán đảo; đảo phiếu nhập đã xuất bớt → 422 INSUFFICIENT_STOCK. Quyền: `Edit` trên `#/scm-inv-txn`. | PROPOSED – BA/PO CONFIRM | T08 |
 | GAP-DEP-01 | DB staging mới cần schema + tài khoản admin ban đầu. | `Deploy-Database.ps1 -CreateSchemaIfEmpty` chạy **DDL chuẩn của PO** chỉ khi DB **rỗng** (không bao giờ sửa bảng có sẵn); admin tạo bằng `DB/seed/00_Admin_seed.sql`, mật khẩu truyền lúc chạy. Trên máy anh đã tạo `AppDelicare_Staging` (LocalDB) theo cách này. | PROPOSED – anh xác nhận cách dựng DB staging / UAT | T48.1 |
@@ -967,3 +967,431 @@ Thứ tự làm: 1 → 3 → 6 → 2.
 | (b) | Thư viện | Chart.js 4.4.4 có sẵn (`package.json`), nạp `chart.umd.js` qua `angular.json` scripts; không cài thêm gói, không CDN, không ApexCharts cho màn Delicare. |
 | (c) | Chuẩn chung | Một hàm `UI.chart`; giữ chữ ký `UI.bars / UI.lines / UI.donut` (+ thêm loại kết hợp cột + đường, thanh ngang, vùng ngưỡng, đường mục tiêu, kiểu thu nhỏ không trục). Bảng màu cố định theo nghĩa (Đặt / Kế hoạch – xanh nhạt, Giao – xanh dương, Nhận / Thực tế – cam, vượt ngưỡng – đỏ, mục tiêu – nét đứt xám); chú giải chấm tròn góc phải; rê chuột hiện **mọi chuỗi của cùng ngày**; trục số rút gọn **tiếng Việt** ("15 N", "1,2 tr", "3 tỷ" – D-88); số trong chú thích có dấu chấm nghìn; ngày dạng dd/MM; chiều cao cố định theo khung (không nhảy bố cục); co giãn theo bề rộng (390 / 1440); không có dữ liệu → chữ "Chưa có dữ liệu" thay biểu đồ trống; hủy biểu đồ cũ khi vẽ lại / rời màn. |
 | (d) | Dễ đọc / truy cập | Mỗi biểu đồ có tiêu đề + `aria-label`, nút nhỏ **"Xem bảng số"** mở bảng số liệu của biểu đồ (thay cho người không xem được màu); màu phân biệt cả độ sáng, không chỉ sắc độ. |
+
+## D-95 – Tab "Lịch sử" mọi trang chi tiết hiển thị dạng dòng thời gian (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý đưa vào task cho claude code thực hiện. áp dụng cho toàn bộ tab lịch sử trong màn hình chi tiết"). Mô phỏng `docs/frontend-handoff/assets/history-timeline-mockup.html`. Task ROADMAP **UI-6.14**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Phạm vi | Mọi tab Lịch sử trong trang chi tiết (3 màn 360, 14 trang UI-6, trang làm sau) – một hàm chung, không làm riêng từng màn. |
+| (b) | Hiển thị | Dòng thời gian dọc, chấm màu theo loại hoạt động, nhóm theo ngày, mỗi hoạt động là một câu tiếng Việt có mã chứng từ bấm được; thay đổi dạng thẻ "cũ (gạch) → mới", quá 3 thì gọn; ý kiến duyệt dạng trích dẫn; tải 20 / lần. |
+| (c) | Tên trường | Luôn tiếng Việt, giá trị mã đổi ra chữ, bỏ trường kỹ thuật – không bao giờ hiện tên cột DB (D-88). |
+| (d) | Lọc | Chip theo loại (Thông tin · Trạng thái & duyệt · Hợp đồng, đơn, phản ánh · Tài liệu) + người thực hiện (có "Hệ thống"). |
+| (e) | Gộp | Hoạt động của chứng từ liên quan nằm chung dòng thời gian; "Liên quan" chuyển sang cột phải 1/3 có nút Mở. |
+| (f) | Dữ liệu | API gộp `Common/GetTimeline` đọc nhật ký thay đổi + lịch sử duyệt sẵn có, kiểm quyền từng chứng từ; không thêm bảng / cột. |
+
+## D-96 – Màn "Đơn đặt suất" đổi thành "Đơn hàng theo ngày": theo dõi 1 ngày + xử lý phát sinh (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("Đồng ý đưa vào task cho claude code thực hiện"). Mô phỏng `docs/frontend-handoff/assets/order-day-mockup.html`. Task ROADMAP **UI-6.15**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Dữ liệu | Đơn đặt suất (Order / OrderLine) **bắt buộc giữ** – là gốc của kế hoạch SX, nhu cầu NL, đóng gói, giao, đối soát, bảng kê. Luồng trạng thái BIZ-2.1 không đổi. Không thêm bảng / cột. |
+| (b) | Vai trò màn | Nhập số hằng tuần ở **Đăng ký suất tuần**; màn `crm-order` đổi tên **"Đơn hàng theo ngày"** chỉ để theo dõi 1 ngày ăn và xử lý việc phát sinh. |
+| (c) | Bố cục | Mẫu D-84 (g): ngày ◀ ▶ + Hôm nay / Ngày mai, 4 bước, 4 chỉ số, một bảng khách → điểm giao × Sáng / Trưa / Tối + tiến độ 5 chấm + cột "Cần chú ý" có nút xử lý tại dòng. **Bỏ bảng thẻ Kanban**. |
+| (d) | Tạo đơn | Chỉ còn **"Thêm đơn phát sinh"** (sự kiện, đặt thêm, đơn bù) có lý do; giá và món tự lấy; sau giờ chốt tự gửi duyệt. |
+| (e) | Chốt tay | "Chốt đơn theo ngày" chuyển vào nút phụ cho người có quyền; job 20:00 là chính. |
+
+## D-97 – Ẩn mục menu "Điểm giao hàng", điểm giao quản lý trong trang Khách hàng (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý đưa vào task cho claude code thực hiện"). Task ROADMAP **UI-6.16**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Lý do | Thêm / sửa điểm giao đang làm được ở 2 nơi (danh sách Điểm giao hàng + trang Khách hàng) – cùng bảng dữ liệu, thừa lối vào. Điểm giao luôn thuộc 1 khách → nhập trong trang khách. |
+| (b) | Menu | `#/crm-location` ẩn (IsActive = 0, giữ dòng làm quyền), như Người liên hệ (MENU-5). Link cũ chuyển hướng. |
+| (c) | Giữ lại | Trang chi tiết điểm giao (UI-6 #14) mở từ khách, đơn, chuyến giao, đối soát, phản ánh. Điều phối tra điểm giao bằng ô tìm trong Chuyến giao hàng. |
+| (d) | Không trùng | Điểm dừng (lượt ghé trong chuyến – đã ẩn), Đơn giao hàng, Khay hộp theo khách là chứng từ, chỉ tham chiếu điểm giao – không đổi. |
+| (e) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-98 – Form Món ăn gọn, tạo món kèm công thức, nhập công thức trong trang chi tiết món; giữ màn Công thức chế biến (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("Đồng ý đề xuất cho màn món ăn, giữ nguyên màn công thức chế biến"). Mô phỏng `docs/frontend-handoff/assets/dish-recipe-mockup.html`. Task ROADMAP **UI-6.17**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Form Món ăn | 5 ô: Tên món · Nhóm món (chọn danh mục) · Định lượng 1 suất + ĐVT · Mô tả · Trạng thái; mã tự sinh. Ẩn "Phân loại" (gõ tự do, trùng Nhóm món) và "Khẩu phần chuẩn" (trùng Định lượng) – không xóa cột, máy chủ tự ghi. Giá thành chuẩn chỉ đọc (tự tính từ công thức). |
+| (b) | Tạo món | Hộp thoại có mục Công thức: Chép từ món có sẵn (mặc định) / Nhập mới / Để sau; nút "Lưu và mở công thức" tạo V1 Nháp và mở tab Công thức. |
+| (c) | Trang chi tiết món | Tab Công thức nhập / sửa / gửi duyệt / duyệt / tạo phiên bản mới ngay trên bảng, tự tính giá vốn; cùng API với màn Công thức chế biến. |
+| (d) | Màn Công thức chế biến | **Giữ nguyên** (anh chốt) – không đổi thành danh sách nhắc việc. |
+| (e) | Luật chung | Trường đã có danh mục / bộ giá trị → bắt buộc chọn, không gõ tự do; rà mọi form; danh mục mới chưa có bảng → GAP chờ anh duyệt. Ghi `CLAUDE.md` §4.5 điểm 10. |
+| (f) | Dữ liệu | Không thêm bảng / cột; script dọn dữ liệu cũ idempotent. |
+
+## D-99 – Mua hàng liền mạch: đề nghị duyệt xong tự lập + tự duyệt đơn mua, hệ thống gợi ý nhà cung cấp, form chứng từ đúng chuẩn (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task cho claude code thực hiện"). Mô phỏng `docs/frontend-handoff/assets/supplier-pick-mockup.html`. Task ROADMAP **UI-6.18**. **Thay một phần quy tắc T15 "mọi PO phải duyệt"** (BUSINESS_RULES §4).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Hai chứng từ | Giữ riêng Đề nghị mua (nhu cầu nội bộ, duyệt 2 cấp D-46) và Đơn mua (cam kết với 1 NCC, căn cứ nhận hàng / công nợ); nối bằng link, không chuyển tay. |
+| (b) | Tự lập PO | Duyệt cấp cuối đề nghị → hệ thống tự lập đơn mua theo NCC gợi ý (mỗi NCC 1 PO); dòng không có NCC đủ điều kiện → tab "Chọn nhà cung cấp". |
+| (c) | Tự duyệt PO | PO tự lập từ đề nghị đã duyệt được tự duyệt khi đủ cả 3: NCC ưu tiên · giá không cao hơn lúc duyệt đề nghị · tổng < 50 triệu. Thiếu → duyệt như hiện có (≥ 50 tr Giám đốc). PO lập tay / sửa sau khi lập vẫn phải duyệt. |
+| (d) | Gợi ý NCC | Lọc đủ điều kiện (hoạt động, giá hiệu lực, giao kịp, không sự cố mở) → NCC ưu tiên, trừ khi tăng giá ≥ 10 % và có NCC rẻ hơn đạt chuẩn → không thì giá thấp nhất trong NCC đúng hẹn ≥ 90 % → hòa thì giao nhanh hơn; dưới mức tối thiểu thì làm tròn lên. |
+| (e) | Chọn tay | Màn "Chọn nhà cung cấp": tối đa 3 thẻ / dòng, bấm thẻ để chọn, "Theo gợi ý cho tất cả", "Áp cho cả nhóm", sửa giá trên thẻ; tự gom theo NCC và báo trước đơn nào tự duyệt / phải duyệt. Gửi NCC hàng loạt. |
+| (f) | Form chứng từ | Trạng thái không bao giờ là ô nhập; số / người lập / ngày lập tự sinh, chỉ đọc; form tạo mới chứng từ có dòng phải nhập được dòng – áp mọi chứng từ (`CLAUDE.md` §4.5 điểm 11). |
+| (g) | Dữ liệu | Không thêm bảng / cột. Gom nhiều đề nghị vào 1 PO → GAP-PUR-11 chờ duyệt. |
+
+## D-100 – Bảng giá nhà cung cấp: form đúng đơn vị, giữ lịch sử giá, màn so sánh NCC × nguyên liệu; ô ngày hiệu lực chỉ chọn ngày (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("thời gian hiệu lực chỉ cần chọn đến ngày không cần giờ phút giây" → duyệt mô phỏng `docs/frontend-handoff/assets/price-form-mockup.html` → "đồng ý đưa vào task cho claude code thực hiện"). Task ROADMAP **UI-6.19**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Đơn vị giá | "Giá tính theo" là ô chọn đơn vị bắt buộc (ghi `PurchaseUomId`); hiện giá quy về ĐVT kho; đơn vị chưa quy đổi → chặn lưu. |
+| (b) | Lịch sử giá | Đổi giá = giá mới có ngày áp dụng; giá cũ tự kết thúc ngày hôm trước (không báo trùng); giá đã dùng không ghi đè. Lịch sử giá là căn cứ "tăng giá so lần trước". |
+| (c) | Form | Đơn giá bắt buộc > 0; nhãn tiếng Việt (Đặt tối thiểu, Số ngày giao); ngày giao trong tuần chọn bằng nút; công tắc ưu tiên báo NCC bị thay; không có ô trạng thái (tự theo ngày); cột phải lịch sử giá + so với NCC khác. |
+| (d) | Màn Bảng giá | Giữ mục menu riêng, đổi thành bảng so sánh nguyên liệu × NCC, chip lọc việc cần làm, đặt ưu tiên / gia hạn hàng loạt, nhập báo giá Excel theo NCC. |
+| (e) | Ngày | Mọi ô hiệu lực / ngày áp dụng / ngày cần hàng trong toàn ứng dụng chỉ chọn ngày (dd/MM/yyyy, không giờ phút); chỉ trường là thời điểm thật (giờ chốt, giờ giao / nhận, giờ đo nhiệt độ, chấm công…) mới có giờ. Ghi `CLAUDE.md` §4.5 điểm 12. |
+| (f) | Dữ liệu | Không thêm bảng / cột; script dọn dữ liệu cũ (đơn vị trống, giá chồng khoảng). |
+
+## D-101 – Form Nguyên liệu đúng logic: đơn vị chọn + quy đổi tại chỗ, loại bảo quản 3 mã, bỏ ô trùng (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.20**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Đơn vị | ĐVT kho / mua / xuất đều chọn từ danh mục; khác ĐVT kho → ~~nhập quy đổi ngay trong form~~ **(sửa theo D-103)** chỉ chọn đơn vị quy đổi được về ĐVT kho, thiếu thì "+ Tạo đơn vị đóng gói" (vd "thùng 10 kg"). |
+| (b) | Bảo quản | Loại bảo quản chọn 1 trong 3 (Khô / thường · Mát 0–5 °C · Đông lạnh ≤ −18 °C) – khớp kiểm nhiệt độ nhận hàng; hạn dùng 1 công tắc + số ngày bắt buộc; quản lý lô tự bật khi có hạn dùng; kiểm tra khi nhận tự bật với hàng mát / đông lạnh. |
+| (c) | Bỏ trùng | Một cờ hạn dùng; chỉ dùng "hao hụt sơ chế %" (ẩn tỷ lệ thu hồi); ẩn ô Công ty – máy chủ tự ghi. |
+| (d) | Tồn | Tồn tối thiểu / an toàn ở nguyên liệu là mức chung; kho có định mức riêng thì dùng định mức kho – form ghi rõ và liệt kê kho có định mức riêng. |
+| (e) | Dữ liệu | Không thêm bảng / cột; script chuẩn hóa loại bảo quản, cờ hạn dùng, đơn vị trống; phần không nhận diện được chờ anh / QA xác nhận. |
+
+## D-102 – Nhóm nguyên liệu / nhóm món ăn quản lý ngay trong màn Nguyên liệu / Món ăn, ẩn mục menu riêng (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý, tạo task cho claude code thực hiện"). Mô phỏng `docs/frontend-handoff/assets/ingredient-group-mockup.html`. Task ROADMAP **UI-6.21**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Có cần nhóm | Có – dùng để gom / lọc ở chọn NCC, bảng giá, VAT theo nhóm, tồn kho, báo cáo; nhóm món cho thực đơn / gợi ý món. |
+| (b) | Menu | Ẩn `#/scm-ingredient-cat`, `#/menu-dish-cat` (IsActive = 0, giữ làm quyền), như Người liên hệ / Điểm giao. |
+| (c) | Quản lý | Cột trái trong màn Nguyên liệu / Món ăn: đếm, lọc, sắp thứ tự, đổi tên tại chỗ, ngừng dùng (khóa khi còn bản ghi đang dùng), thêm nhóm; form có "+ Thêm nhóm". |
+| (d) | Gợi ý | Chọn nhóm nguyên liệu → gợi ý loại bảo quản + đơn vị kho theo đa số nguyên liệu cùng nhóm (tính khi mở form, không lưu). |
+| (e) | Cấp nhóm | Chỉ 1 cấp, ẩn nhóm cha. Không thêm bảng / cột. |
+
+## D-103 – Quy đổi đơn vị: giữ, gộp vào màn Đơn vị tính; đơn vị đóng gói ghi rõ kích cỡ (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.22**; sửa câu tương ứng ở UI-6.19, UI-6.20, D-101 (a).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Có cần | Bắt buộc giữ – mọi tính toán nhu cầu / mua / nhận / giá vốn quy về một đơn vị. |
+| (b) | Giới hạn | Bảng quy đổi không gắn nguyên liệu → quy đổi chung cho mọi nguyên liệu; không có "quy đổi riêng của nguyên liệu". |
+| (c) | Cách làm | Đơn vị đóng gói ghi rõ kích cỡ ("thùng 10 kg", "bao 25 kg", "khay 30 quả") – mỗi đơn vị một quy đổi đúng cho mọi nguyên liệu; ô chọn đơn vị chỉ hiện đơn vị quy đổi được về đơn vị kho, có "+ Tạo đơn vị đóng gói" tại chỗ. |
+| (d) | Menu | Ẩn "Quy đổi đơn vị", quy đổi khai trong form Đơn vị tính; bỏ ô hiệu lực của quy đổi trên giao diện; chặn sửa hệ số đơn vị đã dùng. |
+| (e) | Dữ liệu cũ | Liệt kê đơn vị đóng gói chưa ghi kích cỡ kèm nơi đang dùng (`UOM_REVIEW.md`) để anh / Mua hàng xác nhận rồi mới tách. |
+| (f) | Chờ duyệt | Quy đổi theo từng nguyên liệu (quả trứng ≈ 60 g) cần thêm cột → GAP-UOM-01 PROPOSED. |
+
+## D-104 – Kế hoạch sản xuất: màn "7 ngày tới", một kế hoạch / ngày, bỏ nút Tạo mới chung và ô Đơn vị (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.23**; mô phỏng `docs/frontend-handoff/assets/production-plan-days-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Một kế hoạch / ngày | Khóa kế hoạch = ngày sản xuất, đơn vị để trống – đúng như luồng tự lập sau chốt. `Generate` bỏ qua đơn vị gửi lên (chọn đơn vị từng sinh kế hoạch thứ 2 đủ món cả ngày → lệnh SX + giữ chỗ gấp đôi). |
+| (b) | Bỏ cách tạo sai | Bỏ nút "Tạo mới" chung (máy chủ luôn chặn), bỏ hộp "Lập từ đơn hàng" + ô Đơn vị, bỏ dòng GAP-C-04 trên giao diện. |
+| (c) | Màn chính | Tab "7 ngày tới" theo mẫu D-84 g: dải 4 bước có nút tại bước, 4 thẻ chỉ số, bảng ngày × (Đơn hàng · Kế hoạch theo ca · Món / lệnh), mỗi ngày đúng 1 nút việc cần làm; ô không sửa trực tiếp (sửa tay làm hệ thống không tự ra lệnh). |
+| (d) | Lập / Tính lại | Máy chủ tự quyết: ngày đã chốt đủ → chạy luồng tự động (tự duyệt + ra lệnh khi đủ điều kiện, không thì giữ Nháp + lý do); ngày còn đơn chưa chốt → chỉ lập Nháp. |
+| (e) | Ngày bị giữ | Hiện lý do + nguyên liệu thiếu + đơn mua đang về; người có quyền Duyệt được "Vẫn duyệt" (phần thiếu giữ chỗ bổ sung khi hàng về). |
+| (f) | Dữ liệu cũ | Script idempotent xóa mềm kế hoạch trùng ở Nháp chưa có lệnh; bản đã có lệnh chỉ liệt kê để anh quyết. |
+| (g) | Dữ liệu | Không thêm bảng / cột – API mới chỉ đọc / tổng hợp (`GetDays`, `GetShortage`) + `Recalculate` dùng lại `Generate` / `AutoPlanAfterLockAsync`. |
+
+## D-105 – Sản xuất một mạch: lệnh chỉ sinh từ kế hoạch, "Bảng sản xuất ngày" Món × Ca, tự đóng lệnh, menu Sản xuất còn 4 mục (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý và tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.24** (làm sau UI-6.23 / D-104).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Tạo lệnh tay | **Không cho.** Lệnh SX + mẻ chỉ sinh khi ra lệnh kế hoạch (giữ chỗ nguyên liệu, công thức khóa, truy xuất đơn → mẻ). Ngoại lệ đã có: đơn chốt muộn → hệ thống tự bổ sung; nấu thêm → mẻ bổ sung trong lệnh có sẵn (bắt buộc lý do). |
+| (b) | Giao diện lệnh | Bỏ nút "Tạo mới" và form "Sửa" chung của lệnh; trong trang lệnh chỉ sửa tại chỗ Người phụ trách + Ghi chú. |
+| (c) | Màn làm việc | Trang chi tiết kế hoạch thành "Bảng sản xuất ngày": ma trận Món × Ca, mỗi ô một số + tiến độ mẻ, màu theo trạng thái; bấm ô mở chi tiết lệnh (mẻ, giữ chỗ, phiếu xuất, chênh lệch). Bếp vẫn dùng bảng Mẻ nấu ca × dây chuyền. |
+| (d) | Đóng lệnh | Hệ thống **tự đóng** ngay khi lệnh Hoàn thành + job cuối ngày quét lệnh sót (cờ bật / tắt, giờ cấu hình); chênh lệch vượt ngưỡng báo bot gộp theo ngày. Nút đóng tay giữ khi tắt tự động. |
+| (e) | Menu | Sản xuất còn 4 mục: Kế hoạch sản xuất · Mẻ nấu · Hao hụt · Dây chuyền & trạm bếp. Ẩn Lệnh sản xuất, Sản lượng (giữ quyền + link cũ); gộp Dây chuyền + Trạm bếp một màn 2 tab. |
+| (f) | Thông báo | Thông báo chặn đổi sang tiếng Việt nghiệp vụ, chỉ đường bấm ("Vào Kế hoạch sản xuất → chọn ngày → Ra lệnh"); sửa câu sai "tạo bằng MaterialRequirement/Calculate". |
+| (g) | Dữ liệu | Không thêm bảng / cột; cờ / giờ tự đóng nằm trong cấu hình ứng dụng. |
+
+## D-106 – Mẻ nấu: 1 chạm mỗi mẻ, chế độ Dây chuyền / Bếp trưởng, lưu mẫu theo món × ca, sản lượng & hao hụt nhập tại mẻ (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý theo đề xuất, tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.25** (làm sau UI-6.24); mô phỏng `docs/frontend-handoff/assets/production-batch-v2-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Thao tác | Hộp **"Xong mẻ"** gộp nhiệt độ lõi + lưu mẫu + sản lượng (mặc định = kế hoạch) + hao hụt + kết thúc trong một giao dịch → tự Đạt (BIZ-2.7); nút "Xong & bắt đầu mẻ tiếp" cùng dây chuyền. 6 thao tác → 1 chạm + gõ nhiệt độ. |
+| (b) | Màn | Một ngày + thẻ ca; 2 chế độ nhớ theo máy: **Dây chuyền** (đang nấu / tiếp theo / đã xong, nút to) và **Bếp trưởng** (cần làm ngay, theo giờ, sản lượng & hao hụt ca). Bỏ lưới mọi ca × dây chuyền và hàng nút ngày. |
+| (c) | Lưu mẫu | **Theo món × ca** (lệnh SX) thay vì từng mẻ – áp cho tự Đạt và chặn xuất bến; không tích sẵn (hồ sơ ATTP). |
+| (d) | QC | QA chỉ xử lý mẻ không tự Đạt, kèm lý do máy chủ trả; nút bổ sung tại chỗ. |
+| (e) | Sản lượng | Không có màn riêng – nhập trong "Xong mẻ", xem ở tab Sản lượng & hao hụt ca. |
+| (f) | Hao hụt | Nhập tại mẻ; màn Hao hụt giữ làm báo cáo nhiều ngày + nhập hao hụt không gắn mẻ (Khách trả lại). Tự ghi "Nấu dư" khi lệnh tự đóng nếu số đóng gói tin cậy (kiểm trước). |
+| (g) | Dữ liệu | Không thêm bảng / cột; ngưỡng trễ trong cấu hình ứng dụng. |
+
+## D-107 – Dây chuyền bếp gắn theo nhóm món (thêm cột `DishCategorie.ProductionLineId`); ra lệnh chia mẻ đúng dây chuyền; Trạm bếp thành "Bàn nấu" phụ (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý theo phương án bạn đề xuất"). Task ROADMAP **UI-6.26** (làm trước UI-6.25). **GAP-PRD-10 APPROVED:** thêm 1 cột `DishCategorie.ProductionLineId` (không FK vật lý).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Lỗi gốc | Ra lệnh chỉ nhận 1 dây chuyền tùy chọn cho cả lần ra lệnh, giao diện / luồng tự động không gửi → mọi món 1 mẻ, thời lượng mặc định, bảng mẻ "Chưa gán dây chuyền". |
+| (b) | Dây chuyền | **Cần** – cơ sở chia mẻ theo công suất + xếp lịch + điều độ bếp + QR bot. Gắn theo **nhóm món** (món theo nhóm, nhóm con kế thừa nhóm cha); ra lệnh chọn dây chuyền theo từng món. |
+| (c) | Phương án dữ liệu | Thêm cột ở nhóm món (có màn sửa, người dùng tự gán) – không dùng ánh xạ trong cấu hình ứng dụng. |
+| (d) | Món chưa gán | Giữ cách cũ (1 mẻ) + cảnh báo; màn dây chuyền nhắc + "Gán nhanh" hàng loạt. |
+| (e) | Lịch giữa các món | Giữ luật song song GAP-PRD-07; không đổi đợt này. |
+| (f) | Trạm bếp | Không là danh mục quản lý riêng: tab "Bàn nấu" trong màn Dây chuyền (in QR, ghi kèm checklist); không hỏi trạm khi bắt đầu / xong mẻ; bỏ tọa độ / bán kính (không dùng). |
+
+## D-108 – "Giá vốn & lãi gộp": gộp 3 màn Giá thành thành 1 báo cáo trong nhóm Điều hành; chi phí nguyên liệu hiện ngay trong Thực đơn tuần (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý theo đề xuất thiết kế và menu Giá vốn & lãi gộp này sẽ nằm trong điều hành"). Task ROADMAP **UI-6.27** (làm sau UI-6.24); mô phỏng `docs/frontend-handoff/assets/cost-margin-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Có cần | Số liệu giá thành **cần** (giá bán cố định theo hợp đồng → lãi lỗ nằm ở giá vốn); **3 màn riêng không cần**. |
+| (b) | Menu | Bỏ nhóm "Giá thành"; **"Giá vốn & lãi gộp" trong nhóm Điều hành** (thứ tự theo D-109: sau Chỉ số kinh doanh, trước Phê duyệt) (dùng lại mã `cost-meal`); ẩn Giá thành chuẩn, Giá thành thực tế (giữ quyền + link cũ). |
+| (c) | Màn | Kỳ tháng; 4 chỉ số (NL / suất, tỷ lệ NL / doanh thu ngưỡng 55 %, lãi sau NL, chi phí lỗi); tab Theo khách hàng / hợp đồng (đi xuống ngày → đơn, gợi ý phụ lục giá D-83) · Theo món (chuẩn vs thực tế, nguyên nhân) · Xu hướng (Chart.js). |
+| (d) | Giá thành chuẩn | Chỉ tự tính (khóa công thức, đổi giá NCC); chặn thêm / sửa tay; mỗi món 1 bản đang hiệu lực. Xem ở Món ăn và **dòng "Chi phí NL / suất" trong Thực đơn tuần** (màu theo ngưỡng, bấm ngày đỏ → gợi ý món rẻ hơn cùng nhóm). |
+| (e) | Giá thành thực tế | Xem trong Bảng sản xuất ngày (UI-6.24) và tab Theo món; giá vốn suất tự tính lại khi lệnh tự đóng. |
+| (f) | Nhân công / chi phí chung | Đang = 0 → gọi đúng tên **"Lãi sau nguyên liệu"** cho đến khi có định mức; nhập định mức theo tháng trên giao diện = GAP-COST-01 PROPOSED. |
+| (g) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-109 – "Chỉ số kinh doanh" (gộp chỉ số ngày + tháng, công tắc Theo ngày | Theo tháng); nhóm Điều hành sắp lại, Phê duyệt xuống cuối (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("gộp 2 màn hình chỉ số theo ngày và chỉ số theo tháng thành 1 màn hình là chỉ số kinh doanh…", "cho phê duyệt xuống cuối cùng sau giá vốn và lãi gộp", "tạo task"). Task ROADMAP **UI-6.28**. **Thay thứ tự của D-93** (Phê duyệt không còn ngay dưới Bảng điều hành).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Gộp màn | "Chỉ số theo ngày" + "Chỉ số theo tháng" → **"Chỉ số kinh doanh"** (mã `kpi-daily`), công tắc Theo ngày (30 ngày) / Theo tháng (12 tháng), nhớ theo máy; giữ chip mảng, thẻ chỉ tiêu, biểu đồ, nút làm mới (đúng job theo chế độ). |
+| (b) | Menu Điều hành | **Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt**. |
+| (c) | Quyền / link cũ | Ẩn `kpi-monthly` (giữ quyền); nhóm có quyền tháng được cấp quyền mục gộp; `#/kpi-monthly` mở chế độ tháng. |
+| (d) | Dữ liệu | Không sửa máy chủ, không thêm bảng / cột. |
+
+## D-110 – Kho gọn 5 mục; "Nhận hàng & kiểm tra" một form tại cửa kho; "Sổ kiểm tra hàng nhập" chỉ xem (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task cho claude code thực hiện các nội dung đã thống nhất"). Task ROADMAP **UI-6.29**; mô phỏng `docs/frontend-handoff/assets/qc-incoming-book-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Menu Kho | 12 → 5 mục: **Nhận hàng · Xuất kho sản xuất · Tồn kho · Kiểm kê · Kho & vị trí**. Khu bảo quản / Vị trí kệ → tab trong Kho & vị trí; Lô & hạn dùng / Sổ kho / Định mức tồn kho → tab / ô trong Tồn kho; Giữ chỗ → Xuất kho sản xuất; Chênh lệch tiêu hao → Bảng sản xuất ngày + Giá vốn & lãi gộp (không lên menu). Giữ quyền + link cũ. |
+| (b) | Nhận hàng | Bắt đầu từ màn Kho ("Đơn mua hẹn giao hôm nay"); bỏ "Tạo mới" chung; bỏ tự chuyển sang màn QA. |
+| (c) | Kiểm tra hàng nhập | **Một form "Nhận hàng & kiểm tra"** tại cửa kho: cảm quan / bao bì mặc định Đạt, kết quả gợi ý tự điền; QA "Kết luận & nhập kho" một lần; không có QA → "Gửi QA" vào Phê duyệt, QA chỉ xác nhận / sửa dòng có vấn đề, không nhập lại. |
+| (d) | Lỗi | Mọi dòng tự đạt → **tự ghi sổ ngay** (trước đây chỉ Đạt, không vào tồn). |
+| (e) | Sổ | Mục Chất lượng đổi thành **"Sổ kiểm tra hàng nhập"**: chỉ xem, mỗi dòng một nguyên liệu, gom theo ngày, tìm / lọc, chi tiết + lô đã đi đâu, tab Theo nhà cung cấp, in sổ kiểm thực bước 1. **Không sửa / xóa** (máy chủ chặn cả sửa ghi chú); sai sau nhập kho → tạm giữ lô / sự cố NCC / điều chỉnh tồn. |
+| (f) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-111 – Kiểm tra ATTP theo ca / mẻ: ma trận "Hôm nay", "Đạt tất cả", lỗi trọng yếu phải chọn mẻ để giữ; Sổ kiểm thực bước 2 chỉ xem (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.30**; không có mô phỏng riêng (theo mẫu D-84 g + bố cục Sổ kiểm tra hàng nhập D-110).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Ý nghĩa | Kiểm thực bước 2 – hồ sơ ATTP bắt buộc; giữ nguyên luật máy chủ (ghi thêm, không sửa / xóa, hạn theo giờ xuất bếp, trọng yếu giữ mẻ). |
+| (b) | Lỗi | Giao diện không gửi mẻ → trọng yếu Không đạt không giữ mẻ nào (báo sai); trạm bếp gán cứng; hiện cả bộ công đoạn / lưu mẫu không ghi được. Sửa hết. |
+| (c) | Hôm nay | Ngày ◀ ▶; **ma trận Bộ kiểm tra × Ca** (x/y, giờ hạn, màu: chưa đến hạn / đến hạn / quá hạn / đạt hết / lỗi trọng yếu); form mặc định Đạt + **"Đạt tất cả"**, chỉ sửa ngoại lệ. |
+| (d) | Trọng yếu | Không đạt → **bắt buộc chọn mẻ bị ảnh hưởng** (gợi ý mẻ đang nấu / chờ QC của ca) hoặc ghi lý do "không ảnh hưởng mẻ nào"; máy chủ giữ đúng các mẻ đã chọn. |
+| (e) | Sổ | Tab **Sổ kiểm tra** chỉ xem: tra cứu theo ngày / bộ / ca / kết quả, in sổ kiểm thực bước 2; tab **Tỷ lệ đạt** (Chart.js + tiêu chí lỗi nhiều nhất). |
+| (f) | Nhắc việc | Lượt quá hạn → tin bot gộp theo ca cho tổ trưởng + QA (nếu chưa có). |
+| (g) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-112 – Nhật ký nhiệt độ: bảng "Hôm nay" theo khu, "Ghi một lượt", đo tay mỗi ca, báo cảm biến mất tín hiệu, Sổ nhiệt độ chỉ xem, một biểu đồ (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.31**; mô phỏng `docs/frontend-handoff/assets/temperature-log-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Ý nghĩa | Sổ nhiệt độ bảo quản – hồ sơ ATTP; giữ luật máy chủ (ngưỡng theo khu, chỉ ghi thêm, lõi / giao / nhận ghi ở nghiệp vụ riêng). |
+| (b) | Hôm nay | Mỗi khu một thẻ (nhiệt độ mới nhất, ngưỡng, nguồn, đường 24 giờ, trạng thái); khối "Cần xử lý ngay"; 4 chỉ số. |
+| (c) | Ghi tay | **"Ghi một lượt"**: mọi khu ghi tay trong một bảng, lưu một lần; ngoài ngưỡng bắt buộc khắc phục; khắc phục = ghi lần đo mới. |
+| (d) | Lịch đo | Khu không có cảm biến **đo ít nhất 1 lần mỗi ca**, hạn 60′ đầu ca (cấu hình); cảm biến im quá 30′ (cấu hình) → "mất tín hiệu", chuyển đo tay; cả hai có tin bot. |
+| (e) | Cảnh báo | Ghi tay ngoài ngưỡng cũng gửi tin bot như cảm biến. |
+| (f) | Sổ / biểu đồ | Tab **Sổ nhiệt độ** chỉ xem (lọc, mặc định ẩn lõi / giao / nhận, in sổ); tab **Biểu đồ** chỉ một biểu đồ Chart.js (bỏ biểu đồ trùng). |
+| (g) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-113 – Vệ sinh khay hộp: bảng 3 cột, "Đạt tất cả & kết luận", khay sạch cho ngày mai, Sổ vệ sinh chỉ xem; ẩn "Kiểm tra vệ sinh" và "Kiểm tra khay hộp thu hồi" (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý, tạo task cho claude code thực hiện"). Task ROADMAP **UI-6.32**; mô phỏng `docs/frontend-handoff/assets/cleaning-board-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Nghiệp vụ | Cần (khay quay vòng + ATTP); giữ luật máy chủ: kiểm tra tự lập mẻ, 6 bước lần lượt, khử khuẩn phải ghi hóa chất, chỉ ghi thêm. |
+| (b) | Màn | Một màn "Vệ sinh khay hộp": thanh **khay sạch cho ngày mai** (sẵn sàng / cần / thiếu), 4 chỉ số, bảng 3 cột **Chờ kiểm tra → Đang vệ sinh → Hoàn tất hôm nay**. |
+| (c) | Thao tác | Kiểm tra một form (kết quả một chạm, người kiểm = người đăng nhập, lập mẻ tự động); ghi bước mặc định Đạt, hóa chất điền sẵn, **"Đạt tất cả & kết luận"** một chạm (máy chủ một giao dịch); Không đạt → "Vệ sinh lại". |
+| (d) | Sổ | Tab **Sổ vệ sinh** chỉ xem, in sổ – thay mục "Kiểm tra vệ sinh". |
+| (e) | Menu | Ẩn "Kiểm tra vệ sinh" và "Kiểm tra khay hộp thu hồi" (giữ quyền + link cũ). Thu hồi khay hộp / Khay hộp theo khách rà ở nhóm Đóng gói & Giao hàng. |
+| (f) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-114 – Sự cố nhà cung cấp: form gọn, hướng xử lý chuẩn, không xóa; Bộ kiểm tra ATTP thành tab cấu hình, bảo vệ bộ hệ thống, tạo phiên bản mới (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("tạo task"). Task ROADMAP **UI-6.33**; không có mô phỏng riêng.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Sự cố NCC – ý nghĩa | Cần: theo dõi lỗi NCC tới đóng, tự sinh khi nhập hàng không đạt, lập tay cho lỗi khác; dùng đánh giá / chọn NCC. |
+| (b) | Sự cố NCC – màn | Chip trạng thái có số đếm, quá hạn lên đầu, mô tả ngắn trên dòng, nút bước tiếp trên dòng, lọc NCC / loại / mức độ. |
+| (c) | Sự cố NCC – form | Thay form chung: NCC, Loại (danh mục), Mức độ (3 nút), Mô tả, chứng từ lọc theo NCC; không ô trạng thái / cách xử lý / ngày đóng / hạn (máy chủ tự điền). |
+| (d) | Sự cố NCC – xử lý | "Đã xử lý" bắt buộc chọn **Hướng xử lý** (Đổi hàng · Trả hàng · Trừ tiền thanh toán · Cảnh cáo NCC · Khác) + ghi chú, lưu dạng chuẩn trong cách xử lý để thống kê. **Không xóa**; không sửa khi đã xử lý. |
+| (e) | Bộ kiểm tra – vị trí | Ẩn mục menu; thành **tab "Bộ kiểm tra"** trong màn Kiểm tra theo ca / mẻ (quyền như cũ). |
+| (f) | Bộ kiểm tra – luật | **Bộ hệ thống** (mã gắn cấu hình) không đổi mã / xóa / ngừng; khu vực, tần suất chọn từ danh mục; mã, phiên bản tự sinh; **"Tạo phiên bản mới"** chép tiêu chí, đặt ngày áp dụng; bộ tự tạo hạn = hết ca. |
+| (g) | Dữ liệu | Không thêm bảng / cột; danh mục mới đặt trong cấu hình ứng dụng. |
+
+## D-115 – Chia suất & đóng gói + Điều phối giao hàng một mạch: chỉ giao khi đủ toàn bộ thực đơn (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task"). Task ROADMAP **UI-6.34**; mô phỏng `docs/frontend-handoff/assets/packing-dispatch-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Luật gốc | Thực đơn nhiều món, món nhiều mẻ; **chỉ giao khi điểm giao đủ toàn bộ thực đơn**, không giao theo món hay theo mẻ xong trước. |
+| (b) | Món mở chia | Chỉ khi **mọi mẻ của món trong ca đã Đạt**; bỏ "chia một phần"; mẻ nấu thêm → món quay lại chờ đủ mẻ. |
+| (c) | Màn Chia suất & đóng gói | Ma trận điểm giao (nhóm theo chuyến) × món; "Xong món này", "Xong điểm giao"; chỉ gõ khi hỏng / thiếu; món ngoài lựa chọn = "không áp dụng". Lệnh đóng gói vẫn tự sinh theo mẻ làm dữ liệu nền; không tạo tay. |
+| (d) | Màn Điều phối giao hàng | Cột chuyến + "Chưa gán chuyến"; chuyển xe bằng ô chọn; "Xếp lên xe" chỉ khi mọi điểm đủ thực đơn, rồi "Xuất bến". Chuyến tự lập sau chốt đơn 20:00 (cờ cấu hình). |
+| (e) | Luật máy chủ | `Load` chặn khi thiếu (đóng GAP-C-03); xếp có điều kiện chỉ người có quyền + lý do; bot "Chuyến đủ hàng" + cảnh báo sát giờ xuất bến. |
+| (f) | Menu | 5 → 2 mục thao tác: Chia suất & đóng gói · Điều phối giao hàng; ẩn Kết quả đóng gói, Đơn giao hàng, Xếp hàng lên xe (giữ quyền, link cũ chuyển đúng màn). |
+| (g) | Dữ liệu | Không thêm bảng / cột; liên kết lệnh đóng gói ↔ đơn giao qua OrderId. |
+
+## D-116 – Theo dõi giao hàng một màn (điều phối theo chuyến + chế độ tài xế) và Khay hộp theo khách gộp thu hồi; menu 6 → 2 (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý"). Task ROADMAP **UI-6.35**; không có mô phỏng riêng.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Hành trình | Xuất bến → đến điểm → bàn giao **và thu khay kỳ trước tại cùng điểm** → điểm kế → chuyến tự hoàn tất → khay vào "Chờ kiểm tra" của Vệ sinh khay hộp. |
+| (b) | Theo dõi giao hàng – điều phối | Mỗi dòng một chuyến, dải điểm giao có trạng thái + trễ khung giờ; chi tiết chuyến toàn màn; tab Sổ giao nhận (thay Xác nhận đã giao) và khung Bản đồ (thay Vị trí xe). |
+| (c) | Chế độ tài xế | Điện thoại, chỉ chuyến của mình; "Đã đến" gửi vị trí thật điện thoại; "Bàn giao" một form gồm số nhận, người nhận, nhiệt độ, ảnh / chữ ký và **thu khay** (điền sẵn số còn ở điểm). |
+| (d) | Khay hộp theo khách | Số dư + quá hạn thu; tab Phiếu thu hồi (thay Thu hồi khay hộp, bỏ nút Kiểm tra) + tab Sổ; ghi tay chỉ Thất thoát / Điều chỉnh có lý do. |
+| (e) | Luật máy chủ | Bàn giao + thu khay một giao dịch; giao thất bại → "Cần giao lại" ở Điều phối + bot; chặn ghi tay khay giao / thu; bot sắp trễ / trễ và khay quá hạn thu. |
+| (f) | Menu | Còn Theo dõi giao hàng · Khay hộp theo khách; ẩn Vị trí xe, Xác nhận đã giao, Thu hồi khay hộp (Kiểm tra khay hộp thu hồi đã ẩn theo D-113). |
+| (g) | Dữ liệu | Không thêm bảng / cột; cấu hình mới trong appsettings. |
+
+## D-117 – Nhân viên: danh sách theo nghiệp vụ nhân sự, form "Thêm nhân viên" riêng, việc cần làm cho người mới, cho nghỉ việc đúng quy trình (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("tạo task"). Task ROADMAP **UI-6.36**; mô phỏng `docs/frontend-handoff/assets/employee-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Danh sách | 4 chỉ số bấm để lọc (Đang làm việc · Vào làm tháng này · Chưa có tài khoản · Chưa liên kết bot); lọc trạng thái (mặc định Đang làm việc), đơn vị dạng cây, chức vụ, tìm; cột có Ngày vào làm, Tài khoản, Bot; bỏ Công ty, Ngày sinh. |
+| (b) | Thao tác | Chọn nhiều → Đề nghị cấp tài khoản / Tạo mã liên kết bot / Xuất Excel; nút Nhập từ Excel trên màn; tab Đối chiếu tài khoản chỉ hiện khi còn người chưa gắn. |
+| (c) | Form Thêm nhân viên | 3 nhóm: Thông tin cá nhân (SĐT báo trùng ngay, giới tính ô chọn) · Công việc (đơn vị cây có tìm, chức vụ, ngày vào làm mặc định hôm nay) · Tài khoản & bot (hiện nhóm quyền gợi ý, tạo mã bot). Bỏ ô Mã, Trạng thái, Công ty. Lưu xong mở hồ sơ. |
+| (d) | Người mới | Hồ sơ có dải "Việc cần làm cho người mới": tài khoản, bot, phân ca, giấy khám sức khỏe – tự tích khi xong. |
+| (e) | Nghỉ việc | Hộp ngày nghỉ + lý do, báo trước hệ quả; máy chủ khóa tài khoản (đúng ngày nghỉ), hủy ca sau ngày nghỉ, chuyển yêu cầu duyệt; đổi trạng thái chỉ qua nút Cho nghỉ việc / Tạm nghỉ / Quay lại làm, không qua form Sửa. |
+| (f) | Luật máy chủ | Bắt buộc họ tên; SĐT không trùng giữa người đang làm; công ty lấy theo đơn vị; trạng thái khi tạo luôn Đang làm việc. |
+| (g) | Dữ liệu | Không thêm bảng / cột; ngày + lý do nghỉ ghi lịch sử thay đổi (cần cột riêng → GAP chờ anh duyệt). |
+
+## D-118 – Phân ca: tuần Thứ 2 – CN, tô ca một chạm, sao chép tuần trước, thiếu người theo tổ × ca, trạng thái tuần và gửi thay đổi sau khi chốt (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task"). Task ROADMAP **UI-6.37**; không có mô phỏng riêng.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Tuần | Lưới theo tuần Thứ 2 – CN, mặc định tuần hiện tại; ngày đã qua khóa. |
+| (b) | Thao tác | "Tô ca": chọn ca rồi bấm / kéo qua ô (1 chạm / ô, lưu theo lô); "Sao chép tuần trước" chỉ vào ô trống; phân hàng loạt chọn người theo tổ / chức vụ một chạm. |
+| (c) | Thiếu người | Dòng tổng mỗi tổ theo ngày × ca "đã phân / cần", thiếu tô đỏ; mức cần đặt trong cấu hình theo tổ × ca (không thêm cột). |
+| (d) | Theo người | Cột số ca / giờ công tuần, cảnh báo làm quá nhiều hoặc không có ngày nghỉ. |
+| (e) | Trạng thái | Ô phân biệt nháp / đã chốt / đã vào ca / vắng / phép / đổi ca / đổi sau chốt; nhãn trạng thái tuần; "Chốt & gửi lịch", sau chốt sửa thì "Gửi N thay đổi" – bot báo đổi / hủy ca cho từng người. |
+| (f) | Tự động | Thứ 6 15:00 nhắc trưởng đơn vị + nhân sự nếu tuần sau còn ca nháp / thiếu người. |
+| (g) | Dữ liệu | Không thêm bảng / cột; giữ nguyên các luật chặn hiện có. |
+
+## D-119 – Chấm công: tab Hôm nay, Bảng công tháng dạng ma trận + xuất Excel, Bổ sung giờ thực tế, xác nhận ngoài bán kính, tự chuyển Vắng (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý. tạo task"). Task ROADMAP **UI-6.38**; mô phỏng `docs/frontend-handoff/assets/attendance-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Bố cục | 3 tab: Hôm nay (mặc định) · Bảng công · Sổ chấm công (chỉ xem); bỏ khối "Ca hôm nay của tôi" (đã có ở Việc của tôi). |
+| (b) | Hôm nay | Theo ca: Chưa vào ca (quá giờ) · Đã vào ca · Nghỉ phép · Cần xử lý; chấm hộ có giờ thực tế, báo vắng; bot báo trưởng đơn vị khi quá 15 phút còn người chưa vào ca. |
+| (c) | Bảng công | Theo tháng, người × ngày nhóm theo tổ, ký hiệu ✓ M V P T !, cột tổng công / giờ / muộn / vắng / phép; dải "Cần xử lý trước khi xuất lương"; xuất Excel. |
+| (d) | Bổ sung giờ | Quên ra / vào ca: nhập giờ thực tế + lý do, trong khung ca và ≤ 3 ngày; ghi thêm vào sổ, tính lại giờ công. |
+| (e) | Ngoài bán kính | Có nút "Xác nhận hợp lệ" kèm lý do. |
+| (f) | Vắng | Tự chuyển Vắng 23:30 hằng ngày, bỏ nút "Chốt vắng". |
+| (g) | Dữ liệu | Không thêm bảng / cột; giữ nguyên luật chấm công hiện có. |
+
+## D-120 – "Nghỉ & đổi ca": gộp Đơn xin nghỉ + Đơn đổi ca thành một mục, duyệt kèm ảnh hưởng, lịch nghỉ, tạo đơn 3 loại, người nhận đồng ý qua bot (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý. tạo task"). Task ROADMAP **UI-6.39**; mô phỏng `docs/frontend-handoff/assets/leave-swap-mockup.html`. **Thay D-55 (i)** (người nhận đồng ý ngoài hệ thống).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Menu | Nhân sự: một mục "Nghỉ & đổi ca" (ẩn Đơn đổi ca); Phê duyệt: một mục "Nghỉ & đổi ca" (quyền duyệt từng loại giữ nguyên); Chấm công và Phân ca vẫn là mục riêng. Nhân sự còn: Nhân viên · Phân ca · Chấm công · Nghỉ & đổi ca · Ca làm việc · Chức vụ. |
+| (b) | Danh sách | Đơn nghỉ + đổi ca + nhường ca chung một danh sách, cột Ảnh hưởng, duyệt / hủy ngay trên dòng; 4 chỉ số gồm "Ca trống do nghỉ". |
+| (c) | Duyệt | Hộp duyệt hiện phép năm còn lại, người cùng tổ nghỉ trùng, ca sẽ bỏ + tổ còn bao nhiêu người, người có thể thay; duyệt xong mở Phân ca. |
+| (d) | Lịch nghỉ | Lịch 2 tuần ai nghỉ / đổi ca ngày nào; ngày tổ sẽ thiếu người tô đỏ. |
+| (e) | Tạo đơn | Một nút, 3 loại: Xin nghỉ (hiện ảnh hưởng ngay) · Đổi ca (chọn thẻ ca mình → thẻ ca đồng nghiệp đã lọc) · Nhường ca. |
+| (f) | Đồng ý | Đổi / nhường ca: người nhận đồng ý qua bot (hoặc web) trước, rồi mới tới người duyệt; quá 24 giờ tự hủy. |
+| (g) | Dữ liệu | Không thêm bảng / cột; phép năm còn lại tính từ cấu hình 12 ngày / năm (phép riêng theo người → GAP chờ anh duyệt). |
+
+## D-121 – Nhóm menu "Danh mục hệ thống": gom 11 danh mục + trang tổng có cảnh báo thiếu dữ liệu (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý"). Task ROADMAP **UI-6.40**.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Nhóm mới | "Danh mục hệ thống", đặt ngay trên "Quản trị hệ thống". |
+| (b) | 10 mục (sửa theo D-122) | Công ty & đơn vị (gộp Công ty + Sơ đồ tổ chức) · Chức vụ · Ca làm việc · Đơn vị tính · Kho & vị trí · Dây chuyền & bàn nấu · Xe giao hàng · Danh mục dùng chung · Địa giới hành chính · Danh mục chỉ số. |
+| (c) | Không chuyển | Nguyên liệu, Món ăn, Khách hàng, Nhà cung cấp ở lại nhóm nghiệp vụ; các danh mục đã ẩn trong màn cha giữ nguyên; cấu hình kỹ thuật / bảo mật ở Quản trị. |
+| (d) | Quyền | Chỉ đổi nhóm menu; giữ mã màn, link cũ và quyền từng mục như hiện tại. |
+| (e) | Trang tổng | Mỗi danh mục một thẻ: số bản ghi, sửa gần nhất, cảnh báo thiếu dữ liệu bấm mở đúng màn. |
+| (f) | Về sau | Danh mục mới / chuyển chỗ trong các task sau đặt vào nhóm này. |
+| (g) | Dữ liệu | Không thêm bảng / cột. |
+
+## D-122 – "Công ty & đơn vị": gộp Công ty + Sơ đồ tổ chức thành một màn cây / chi tiết (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý tạo task"). Task ROADMAP **UI-6.41**; mô phỏng `docs/frontend-handoff/assets/org-mockup.html`. **Sửa D-121 (b):** nhóm "Danh mục hệ thống" còn 10 mục – "Công ty" và "Đơn vị" thành một mục "Công ty & đơn vị".
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Gộp | Một mục "Công ty & đơn vị" (ẩn mục Công ty, link cũ mở đúng); quyền sửa công ty giữ theo quyền mục Công ty. |
+| (b) | Bố cục | Cây bên trái (công ty → chi nhánh / bếp / phòng → tổ, nhãn "chưa có trưởng", số nhân viên); chi tiết bên phải theo nút chọn; bỏ bảng liệt kê trùng. |
+| (c) | Công ty | Xem / sửa tên, mã số thuế, địa chỉ, SĐT, email – in ở đầu mọi phiếu in; không xóa. |
+| (d) | Đơn vị | Thêm đơn vị con, sửa, chuyển sang đơn vị khác, đặt trưởng tại chỗ, ngừng hoạt động (chặn khi còn người / đơn vị con); tab Nhân viên · Đơn vị con · Kho · Lịch sử. |
+| (e) | Form | Loại đơn vị là ô chọn tiếng Việt; trưởng đơn vị ô chọn có tìm; bỏ ô Công ty (lấy theo đơn vị cha). |
+| (f) | Chỉ số | Đơn vị đang hoạt động · Nhân viên · Chưa có trưởng đơn vị · Nhân viên chưa gắn đơn vị. |
+| (g) | Dữ liệu | Không thêm bảng / cột; giữ chống vòng lặp, khóa mã, chặn xóa khi đang dùng. |
+
+## D-123 – Tài khoản: một đường cấp tài khoản cho nhân viên, tab "Chờ IT xử lý", danh sách có nhóm quyền / truy cập gần nhất, thao tác hàng loạt, không xóa (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("tạo task"). Task ROADMAP **UI-6.42**; mô phỏng `docs/frontend-handoff/assets/account-mockup.html`.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Cấp tài khoản | Tài khoản cho nhân viên chỉ một đường theo D-82 (tên = mã NV, tự gắn hồ sơ nhân viên); bỏ hộp "Tạo người dùng" cũ (tên tự do, chọn hồ sơ người). Tài khoản hệ thống (máy chấm công, tích hợp) chỉ quản trị tạo. Khách hàng để giai đoạn sau. |
+| (b) | Chờ IT xử lý | Tab trên màn Tài khoản hiện yêu cầu cấp / đổi nhóm / mở lại của Nhân sự; IT duyệt & tạo tại chỗ (cùng luồng phê duyệt). |
+| (c) | Danh sách | Cột người dùng (mã NV, chức vụ, đơn vị), nhóm quyền, truy cập gần nhất, bot, trạng thái; lọc loại / trạng thái / nhóm / đơn vị; nút "Thao tác" có chữ. |
+| (d) | Hàng loạt | Chọn nhiều để thêm / bỏ nhóm quyền, khóa. |
+| (e) | Chỉ số | Đang hoạt động · Chờ IT xử lý · Nghỉ việc nhưng còn mở (khóa ngay) · Không đăng nhập 60 ngày. |
+| (f) | Không xóa | Tài khoản không xóa được, không dùng nữa thì khóa. |
+| (g) | Dữ liệu | Không thêm bảng / cột; truy cập gần nhất lấy từ nhật ký truy cập. |
+
+## D-124 – Nhóm quyền: gộp Nhóm quyền + Phân quyền thành danh sách → trang chi tiết; phân quyền 4 mức + Tùy chỉnh, lưu theo lô; thêm UserGroup.Code / Description / GroupBlock (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý" – duyệt cách A). Task ROADMAP **UI-6.43**; mô phỏng `docs/frontend-handoff/assets/group-mockup.html`. **GAP-PERM-03 APPROVED:** thêm 3 cột `UserGroup.Code`, `Description`, `GroupBlock` (không bảng mới, không FK); mã chuyển sang Code, tên đổi sang tiếng Việt.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Menu | Một mục "Nhóm quyền"; mục "Phân quyền" ẩn (giữ làm quyền, link cũ mở trang chi tiết nhóm). |
+| (b) | Danh sách | Nhóm theo khối; tên tiếng Việt + mã nhỏ, mô tả công việc, số tài khoản, số màn, số loại duyệt, sửa gần nhất; chỉ số "Nhóm không có ai". |
+| (c) | Chi tiết | Trang toàn màn: Phân quyền · Tài khoản · Xem trước menu · So sánh nhóm · Lịch sử; sửa tên / mô tả, sao chép quyền, tạo nhóm từ nhóm này, ngừng dùng (chặn khi còn người / đang là người duyệt). |
+| (d) | Phân quyền | Mỗi màn 1 nút 4 mức (Không · Xem · Xem & sửa · Toàn quyền) + In / Xuất + Tùy chỉnh 7 ô; đặt cả nhóm menu một chạm; lưu theo lô có xem lại, không lưu từng ô. |
+| (e) | Cấu trúc quyền | Giữ nguyên 7 quyền Truy cập · Thêm · Sửa · Xóa · In · Xuất · Nhập; 4 mức chỉ là phím tắt theo ký hiệu D-79 (X, S, Q, IX). Quyền duyệt giữ nguyên. |
+| (f) | Mã nhóm | Máy chủ tìm nhóm theo Code (luồng duyệt, FIN-IT, nhóm gợi ý theo chức vụ); Code khóa khi đã dùng. |
+| (g) | Dữ liệu | 3 cột mới trên UserGroup (GAP-PERM-03 APPROVED); UserRole, UserClaim, ApprovalStep không đổi. |
+
+## D-125 – Tác động chéo của đợt UI-6 còn lại: giữ quyền khi gộp màn, đồng bộ bot, liên kết & số liệu chéo, chuỗi job + cấu hình, hồi quy sau mỗi đợt; thứ tự 7 đợt (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("nếu có thì thêm task vào để claude code thực hiện"). Task ROADMAP **UI-6.44 → UI-6.48** + mục **7j** trong "THỨ TỰ LÀM TIẾP".
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Quyền khi gộp / ẩn màn | Nhóm có quyền Xem ở mục bị ẩn được cấp Xem ở màn cha mới (không chép quyền thêm / sửa / xóa); kiểm tổng 19 vai trò trước / sau đợt – không ai mất lối vào. |
+| (b) | Bot Telegram | Bot dùng đúng API / luật mới (Xong mẻ, chia suất, chỉ giao khi đủ thực đơn, bàn giao kèm thu khay, vị trí thật, lỗi trọng yếu chọn mẻ, Đạt tất cả, đổi ca chờ người nhận đồng ý); link mở web đổi sang màn mới. Sửa trong từng task, kiểm tổng cuối. |
+| (c) | Liên kết & số liệu chéo | Cảnh báo, tìm kiếm, bảng điều hành, chỉ số, khuôn tóm tắt duyệt, đối soát / bảng kê / truy xuất, phiếu in, Việc của tôi theo màn và luật mới. |
+| (d) | Job + cấu hình | Rà chuỗi job tối (20:00 → 22:00 → 23:30), chống chạy trùng, màn Job tự động đủ job mới; gom khóa cấu hình mới vào appsettings + bản production, có tài liệu khóa cấu hình. |
+| (e) | Hồi quy | Sau mỗi đợt: cập nhật full-flow theo luật mới (không xóa bước để cho xanh), test + build xanh, chạy luồng đầu – cuối trên DB dev; dữ liệu mẫu / UAT cập nhật. |
+| (f) | Thứ tự | 7 đợt: (1) Lịch sử, đơn hàng, điểm giao, món · (2) nguyên liệu, đơn vị, bảng giá, mua hàng · (3) sản xuất, giá vốn · (4) điều hành, kho, ATTP · (5) đóng gói & giao · (6) nhân sự · (7) quản trị & danh mục; rồi kiểm tổng và UI-6.3. |
+
+## D-126 – Chế độ tự chạy cho Claude Code: làm hết 7 đợt UI-6 + phần chốt, tự chọn phương án tốt nhất, test – merge main – push sau mỗi task (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("thực hiện toàn bộ các task trong cả 7 đợt… tự đưa ra 3 đề xuất và luôn chọn đề xuất tốt nhất… không cần chờ xác nhận… test lại toàn bộ và merge code vào main, commit lên git"). Ghi ở ROADMAP mục 7j.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Phạm vi | Toàn bộ 7 đợt (UI-6.14 → UI-6.43) + phần chốt (UI-6.45 → 6.46 → 6.47 → 6.44 → 6.48 → UI-6.3), làm liên tục. |
+| (b) | Khi có vấn đề | Tự nêu 3 phương án, chọn phương án tốt nhất, làm luôn; ghi PROGRESS "Quyết định tự chọn" để anh xem lại. Không dừng chờ anh. |
+| (c) | Luật cứng vẫn giữ | Không commit bí mật; không thêm bảng / cột ngoài D-107, D-124 (cần thì chọn phương án không đổi cấu trúc + GAP PROPOSED); không xóa dữ liệu thật; DB dev chạy thật (D-92). |
+| (d) | Mỗi task | Nhánh riêng → build + test + full-flow + build FE xanh → merge `main` → commit + push git. Hết mỗi đợt chạy hồi quy UI-6.48 trên `main`. |
+| (e) | Không sửa được | Sau 3 cách thử: giữ chức năng cũ, để phần mới sau cờ cấu hình, ghi rủi ro, làm tiếp task sau – không dừng cả đợt. |
+| (f) | Báo cáo | Chỉ báo anh khi xong toàn bộ: bảng tổng đầu PROGRESS (task · kết quả · commit · ảnh · quyết định tự chọn · rủi ro còn lại). |

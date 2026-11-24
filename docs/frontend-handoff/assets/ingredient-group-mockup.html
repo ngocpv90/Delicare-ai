@@ -1,0 +1,137 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Nguyên liệu: quản lý nhóm ngay trong màn</title>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#A32D2D;--r-bg:#FCEBEB}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.week{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.step .act{margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.pane{display:none}.pane.on{display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:6px;vertical-align:middle}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+th.l,td.l{text-align:left}
+tr.grp td{background:#F7F9F4;font-weight:700;cursor:pointer}tr.grp.closed td.l i.chev{transform:rotate(-90deg)}
+tr.sub td.l{padding-left:28px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.q{width:76px;text-align:right;font-size:14px;font-weight:600;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.chip{display:inline-block;min-width:64px;text-align:right;font-weight:700;padding:5px 8px;border-radius:8px;border:1px solid var(--line)}
+.s-none{border-style:dashed;background:var(--n-bg);color:var(--muted)}
+.s-draft{border-color:#F2B98A;background:var(--o-bg);color:#8A3B0B}
+.s-bot{border-color:#A9C7EA;background:var(--b-bg);color:#1F4C80}
+.s-ok{border-color:#B9CB97;background:var(--g-bg);color:#3F5A17}
+.s-lock{background:#ECEEEA;color:#6b756e;border-color:#DADFD7}
+.hint{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.warn{color:var(--r);font-size:11px}
+.tot{font-weight:700;text-align:center}
+.foot td{font-weight:800;background:#FAFBF8;text-align:center}
+.pt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.pt .sel{font-weight:700;font-size:15px}
+.status{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+@media(max-width:1100px){.steps,.kpis{grid-template-columns:repeat(2,1fr)}.q{width:60px;font-size:13px}}
+
+.lay{display:grid;grid-template-columns:270px minmax(0,1fr);gap:16px;align-items:start}
+.gp{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px}
+.gp h3{margin:2px 4px 8px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.gi{display:flex;align-items:center;gap:8px;padding:8px 8px;border-radius:10px;cursor:pointer;font-size:14px}
+.gi:hover{background:#F7F9F4}.gi.on{background:var(--g-bg);font-weight:600;color:#3F5A17}
+.gi .h{color:#c2c8bf;cursor:grab;font-size:12px}
+.gi .c{margin-left:auto;font-size:12px;color:var(--muted);background:var(--n-bg);border-radius:10px;padding:1px 8px}
+.gi .m{visibility:hidden;color:var(--muted);font-size:13px;padding:0 2px}.gi:hover .m{visibility:visible}
+.gi.off{color:var(--muted);text-decoration:line-through}
+.gi input{flex:1;height:28px;border:1px solid #7FA43A;border-radius:6px;padding:0 6px;font-size:13px}
+.addg{width:100%;justify-content:center;margin-top:6px;border-style:dashed;color:var(--b)}
+.menu{position:absolute;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;z-index:5;font-size:13px;min-width:170px}
+.menu div{padding:7px 10px;border-radius:6px;cursor:pointer}.menu div:hover{background:#F7F9F4}.menu .dis{color:#b9bfb6;cursor:not-allowed}
+.tb td,.tb th{padding:8px 8px}.tb td{font-size:13px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+.t-c{background:var(--b-bg);color:#1F4C80}.t-f{background:#E8E6F6;color:#3C3489}.t-d{background:var(--n-bg);color:var(--muted)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1E2620;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;display:none}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:16px;width:min(560px,94vw);padding:20px 22px}
+.dlg h2{margin:0 0 2px;font-size:17px}.f{margin-top:12px}.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.inp{width:100%;height:36px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:13px;background:#fff}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sug{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:8px 12px;font-size:12px;margin-top:10px}
+.seg{display:flex;gap:6px}.seg span{flex:1;text-align:center;border:1px solid #d5dbd2;border-radius:9px;padding:7px 4px;font-size:12px;cursor:pointer}.seg .on{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}
+</style></head><body>
+<div class="card">
+ <div class="bar"><div><h1>Nguyên liệu</h1><div class="small muted">Danh mục nguyên liệu theo nhóm. Nhóm quản lý ngay ở cột trái – không còn mục menu "Nhóm nguyên liệu" riêng.</div></div>
+ <div style="display:flex;gap:8px"><button>Nhập Excel</button><button>Xuất Excel</button><button class="p" onclick="openF()">+ Thêm nguyên liệu</button></div></div>
+ <div class="kpis"><div class="kpi"><div class="small muted">Nguyên liệu đang dùng</div><div class="v">232</div></div><div class="kpi"><div class="small muted">Chưa có giá NCC</div><div class="v" style="color:var(--o)">7</div></div><div class="kpi"><div class="small muted">Dưới tồn tối thiểu</div><div class="v" style="color:var(--r)">4</div></div><div class="kpi"><div class="small muted">Chưa phân nhóm</div><div class="v">0</div></div></div>
+</div>
+<div class="lay">
+ <div class="gp" style="position:relative">
+  <h3><span>Nhóm nguyên liệu</span></h3>
+  <div id="glist"></div>
+  <button class="addg" onclick="addG()">+ Thêm nhóm</button>
+  <div class="small muted" style="margin:10px 4px 2px">Kéo ⋮⋮ để sắp xếp. Rê chuột vào nhóm → ⋯ để đổi tên / ngừng dùng. Nhóm còn nguyên liệu đang dùng thì không ngừng được.</div>
+ </div>
+ <div class="card" style="padding:12px 14px;margin:0">
+  <div class="bar" style="margin-bottom:8px"><div><b id="gtitle">Tất cả nhóm</b> <span class="small muted" id="gsub"></span></div><input class="inp" style="width:260px" placeholder="Tìm tên, mã nguyên liệu…"></div>
+  <table class="tb"><colgroup><col style="width:10%"><col style="width:26%"><col style="width:18%"><col style="width:9%"><col style="width:15%"><col style="width:10%"><col style="width:12%"></colgroup>
+  <thead><tr><th class="l">Mã</th><th class="l">Nguyên liệu</th><th class="l">Nhóm</th><th>ĐVT kho</th><th class="l">Bảo quản</th><th>Hạn dùng</th><th class="l">NCC ưu tiên</th></tr></thead><tbody id="rows"></tbody></table>
+ </div>
+</div>
+
+<div class="ov" id="ov"><div class="dlg">
+ <h2>Thêm nguyên liệu</h2><div class="small muted">Trích phần "Thông tin chung" và "Bảo quản" của form mới (UI-6.20)</div>
+ <div class="g2"><div class="f"><label>Tên nguyên liệu *</label><input class="inp" value="Thịt bò thăn"></div>
+ <div class="f"><label>Nhóm nguyên liệu * <a href="#" onclick="event.preventDefault();quick()" style="float:right;font-size:12px">+ Thêm nhóm</a></label><select class="inp" id="fg" onchange="sug()"></select></div></div>
+ <div class="sug" id="sugbox"></div>
+ <div class="g2"><div class="f"><label>Đơn vị kho *</label><select class="inp" id="fu"><option>kg</option><option>g</option><option>lít</option><option>quả</option><option>cái</option></select></div>
+ <div class="f"><label>Loại bảo quản *</label><div class="seg" id="fs"><span>Khô / thường</span><span>Mát 0–5 °C</span><span>Đông lạnh ≤ −18 °C</span></div></div></div>
+ <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button onclick="document.getElementById('ov').classList.remove('on')">Đóng</button><button class="p">Lưu</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+let G=[{"name": "Thịt tươi", "n": 38, "st": "Mát", "u": "kg"}, {"name": "Hải sản", "n": 21, "st": "Đông lạnh", "u": "kg"}, {"name": "Rau củ", "n": 64, "st": "Mát", "u": "kg"}, {"name": "Gạo & ngũ cốc", "n": 9, "st": "Khô / thường", "u": "kg"}, {"name": "Gia vị", "n": 47, "st": "Khô / thường", "u": "g"}, {"name": "Dầu & nước chấm", "n": 15, "st": "Khô / thường", "u": "lít"}, {"name": "Trứng & sữa", "n": 12, "st": "Mát", "u": "quả"}, {"name": "Đồ khô", "n": 26, "st": "Khô / thường", "u": "kg"}, {"name": "Bao bì", "n": 0, "st": "Khô / thường", "u": "cái"}], I=[["NL0012", "Thịt ba chỉ", "Thịt tươi", "kg", "Mát", 3, "Hà Nam"], ["NL0013", "Thịt nạc vai", "Thịt tươi", "kg", "Mát", 3, "Hà Nam"], ["NL0021", "Ức gà", "Thịt tươi", "kg", "Mát", 2, "Hà Nam"], ["NL0102", "Cá basa phi lê", "Hải sản", "kg", "Đông lạnh", 90, "Quảng Ninh"], ["NL0110", "Tôm thẻ", "Hải sản", "kg", "Đông lạnh", 60, "Quảng Ninh"], ["NL0201", "Cải ngọt", "Rau củ", "kg", "Mát", 2, "Đông Anh"], ["NL0202", "Bí đỏ", "Rau củ", "kg", "Khô / thường", 30, "Long Biên"], ["NL0301", "Gạo tám thơm", "Gạo & ngũ cốc", "kg", "Khô / thường", 180, "Thái Bình"], ["NL0401", "Hạt nêm", "Gia vị", "g", "Khô / thường", 365, "—"], ["NL0501", "Nước mắm", "Dầu & nước chấm", "lít", "Khô / thường", 365, "—"], ["NL0601", "Trứng vịt", "Trứng & sữa", "quả", "Mát", 14, "—"]], cur='', drag=null;
+const $=id=>document.getElementById(id);
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2600)}
+function drawG(){
+ const tot=G.filter(g=>!g.off).reduce((a,g)=>a+g.n,0);
+ $('glist').innerHTML=`<div class="gi ${cur===''?'on':''}" onclick="sel('')"><span class="h" style="visibility:hidden">⋮⋮</span>Tất cả<span class="c">${tot}</span></div>`+
+ G.map((g,i)=>`<div class="gi ${cur===g.name?'on':''} ${g.off?'off':''}" draggable="true" data-i="${i}" onclick="sel('${g.name}')">
+  <span class="h">⋮⋮</span>${g.edit?`<input value="${g.name}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')ren(${i},this.value);if(event.key==='Escape'){G[${i}].edit=0;drawG()}" onblur="ren(${i},this.value)">`:`<span>${g.name}</span>`}
+  <span class="c">${g.n}</span><span class="m" onclick="event.stopPropagation();menu(event,${i})">⋯</span></div>`).join('');
+ $('glist').querySelectorAll('[draggable]').forEach(el=>{
+  el.ondragstart=()=>drag=+el.dataset.i; el.ondragover=e=>e.preventDefault();
+  el.ondrop=()=>{const to=+el.dataset.i;if(drag===null||drag===to)return;const [m]=G.splice(drag,1);G.splice(to,0,m);drag=null;drawG();toast('Đã lưu thứ tự nhóm')}});
+ const inp=$('glist').querySelector('input');if(inp){inp.focus();inp.select()}
+}
+function drawI(){
+ const rows=I.filter(r=>!cur||r[2]===cur);
+ $('gtitle').textContent=cur||'Tất cả nhóm';const g=G.find(x=>x.name===cur);
+ $('gsub').textContent=cur?`· ${g?g.n:0} nguyên liệu · thường ${g?g.st:''}, đơn vị ${g?g.u:''}`:'· 232 nguyên liệu';
+ const cls={'Mát':'t-c','Đông lạnh':'t-f'};
+ $('rows').innerHTML=rows.length?rows.map(r=>`<tr><td class="l small muted">${r[0]}</td><td class="l"><b>${r[1]}</b></td><td class="l">${r[2]}</td><td style="text-align:center">${r[3]}</td><td class="l"><span class="tag ${cls[r[4]]||'t-d'}">${r[4]}</span></td><td style="text-align:center">${r[5]} ngày</td><td class="l">${r[6]}</td></tr>`).join(''):`<tr><td colspan="7" class="l muted" style="padding:20px">Nhóm chưa có nguyên liệu. <a href="#" onclick="event.preventDefault();openF()">+ Thêm nguyên liệu vào nhóm này</a></td></tr>`;
+}
+function sel(n){cur=n;drawG();drawI()}
+function menu(e,i){document.querySelectorAll('.menu').forEach(m=>m.remove());const g=G[i];const m=document.createElement('div');m.className='menu';
+ const r=e.target.closest('.gi').getBoundingClientRect(),p=$('glist').parentElement.getBoundingClientRect();m.style.left=(r.right-p.left-160)+'px';m.style.top=(r.bottom-p.top)+'px';
+ m.innerHTML=`<div onclick="G[${i}].edit=1;drawG()">Đổi tên</div>`+(g.off?`<div onclick="G[${i}].off=0;drawG();toast('Đã dùng lại nhóm ${g.name}')">Dùng lại</div>`:(g.n?`<div class="dis" title="Còn nguyên liệu">Ngừng dùng (còn ${g.n} nguyên liệu)</div>`:`<div onclick="G[${i}].off=1;drawG();toast('Đã ngừng dùng nhóm ${g.name}')">Ngừng dùng</div>`));
+ $('glist').parentElement.appendChild(m);setTimeout(()=>document.addEventListener('click',()=>m.remove(),{once:true}),0)}
+function ren(i,v){v=v.trim();const old=G[i].name;G[i].edit=0;if(v&&v!==old){if(G.some(g=>g.name.toLowerCase()===v.toLowerCase()))return toast('Tên nhóm đã có'),drawG();G[i].name=v;I.forEach(r=>{if(r[2]===old)r[2]=v});if(cur===old)cur=v;toast('Đã đổi tên nhóm')}drawG();drawI()}
+function addG(){G.push({name:'Nhóm mới',n:0,st:'Khô / thường',u:'kg',edit:1});drawG()}
+function fillSel(v){$('fg').innerHTML=G.filter(g=>!g.off).map(g=>`<option ${g.name===v?'selected':''}>${g.name}</option>`).join('')}
+function sug(){const g=G.find(x=>x.name===$('fg').value);if(!g)return;
+ $('sugbox').innerHTML=g.n?`Gợi ý theo ${g.n} nguyên liệu cùng nhóm "<b>${g.name}</b>": bảo quản <b>${g.st}</b>, đơn vị kho <b>${g.u}</b> – đã điền sẵn, sửa được.`:`Nhóm "${g.name}" chưa có nguyên liệu – chưa có gợi ý.`;
+ $('fu').value=g.u;[...$('fs').children].forEach(s=>s.classList.toggle('on',s.textContent.startsWith(g.st.split(' ')[0])))}
+function openF(){fillSel(cur||'Thịt tươi');sug();$('ov').classList.add('on')}
+function quick(){const n=prompt('Tên nhóm mới');if(!n)return;G.push({name:n,n:0,st:'Khô / thường',u:'kg'});fillSel(n);sug();drawG();toast('Đã thêm nhóm "'+n+'" và chọn cho nguyên liệu này')}
+document.querySelectorAll('#fs span').forEach(s=>s.onclick=()=>{[...s.parentElement.children].forEach(x=>x.classList.remove('on'));s.classList.add('on')});
+drawG();drawI();
+</script></body></html>

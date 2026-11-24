@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Chia suất & đóng gói · Điều phối giao hàng (đề xuất)</title>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1 id="ttl">Chia suất & đóng gói</h1><div class="small muted" id="sub"></div></div>
+  <div class="bar" style="gap:10px"><div class="seg" id="scr"><span data-s="pack" class="on">Chia suất & đóng gói</span><span data-s="disp">Điều phối giao hàng</span></div>
+  <div class="day"><button>◀</button>T3 24/11/2026 · <span class="chip c-due">Ca 2 · Trưa · xuất bến từ 10:00</span><button>▶</button></div></div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n" style="background:var(--g-bg);color:var(--g)">1</span>Chốt đơn → kế hoạch → mẻ (tự động)</div>
+  <div class="step"><span class="n" style="background:var(--g-bg);color:var(--g)">2</span>Món đủ mẻ → mở chia</div>
+  <div class="step" id="st3"><span class="n" style="background:var(--o-bg);color:var(--o)">3</span>Điểm giao đủ thực đơn → sẵn sàng</div>
+  <div class="step" id="st4"><span class="n" style="background:var(--b-bg);color:var(--b)">4</span>Chuyến đủ mọi điểm → Xếp xe → Xuất bến</div>
+ </div>
+ <div class="kpis" id="kpis"></div>
+</div>
+<div id="view"></div>
+
+<div class="ov" id="ov"><div class="dlg" id="dlg"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DISH=[{n:'Thịt kho trứng',b:'3/3 mẻ đạt',st:'ok'},{n:'Cá basa sốt cà',b:'2/3 mẻ đạt – chờ đủ mẻ',st:'wait'},{n:'Canh chua',b:'1/2 mẻ đạt – chờ đủ mẻ',st:'wait'},{n:'Rau muống xào',b:'2/2 mẻ đạt',st:'ok'},{n:'Cơm trắng',b:'3/3 mẻ đạt',st:'ok'},{n:'Chè / Trái cây (lựa chọn)',b:'đủ mẻ',st:'ok'}];
+const RT=[{id:'r1',no:'CX-261124-29C1-01',car:'29C-123.45',drv:'Trần Văn Hùng',area:'Khu A – KCN Bắc Thăng Long',cap:1600,dep:'10:00'},{id:'r2',no:'CX-261124-29C2-01',car:'29C-678.90',drv:'Lê Minh Đức',area:'Khu B – Đông Anh',cap:1400,dep:'10:10'},{id:'r3',no:'CX-261124-29C3-01',car:'29C-246.80',drv:'Phạm Quốc Bảo',area:'Khu C – Long Biên',cap:1200,dep:'10:20'}];
+// pt: điểm giao; c: trạng thái theo món (done / ready / wait / part / short)
+const PT=[
+ {id:'p1',r:'r1',n:'Công ty X – Nhà máy A · Cổng 2',q:620,t:'11:15',c:['done','wait','wait','done','done','done']},
+ {id:'p2',r:'r1',n:'Công ty X – Nhà máy A · Nhà ăn 3',q:480,t:'11:20',c:['done','wait','wait','done','done','na']},
+ {id:'p3',r:'r1',n:'Công ty X – Nhà máy B',q:310,t:'11:30',c:['done','done','done','done','done','done']},
+ {id:'p4',r:'r2',n:'Công ty Y – Xưởng 1',q:300,t:'11:00',c:['done','done','done','done','done','done']},
+ {id:'p5',r:'r2',n:'Công ty Y – Xưởng 2',q:280,t:'11:10',c:['done','done','done','done','done','done']},
+ {id:'p6',r:'r2',n:'Trường Z – Cơ sở 1',q:620,t:'10:55',c:['done','done','done','done','done','done']},
+ {id:'p7',r:'r3',n:'Bệnh viện An Bình – Khoa nội',q:210,t:'11:00',c:['done','wait','wait','done','done','done']},
+ {id:'p8',r:'r3',n:'Bệnh viện An Bình – Khoa ngoại',q:160,t:'11:05',c:['done','wait','wait','done','done','short']},
+ {id:'p9',r:'r3',n:'Công ty W – Văn phòng',q:95,t:'11:30',c:['ready','wait','wait','ready','ready','na']},
+ {id:'p10',r:null,n:'Công ty Y – Xưởng 3 (đơn chốt muộn 21:40)',q:60,t:'11:15',c:['ready','wait','wait','ready','ready','ready']},
+];
+let RS={r1:'plan',r2:'plan',r3:'plan'},scr='pack';
+const f=n=>n.toLocaleString('vi-VN'),qty=(p,i)=>Math.round(p.q*(i===4?1:i===5?1:i===2?1:1));
+const need=p=>p.c.filter(x=>x!=='na').length,done=p=>p.c.filter(x=>x==='done').length,ready=p=>p.c.every(x=>x==='done'||x==='na');
+function kpis(){const all=PT.length,rd=PT.filter(ready).length,tot=PT.reduce((a,p)=>a+p.q*need(p),0),dn=PT.reduce((a,p)=>a+p.q*done(p),0);
+ document.getElementById('kpis').innerHTML=scr==='pack'?`<div class="kpi"><div class="s">Món sẵn sàng chia</div><div class="v" style="color:var(--g)">${DISH.filter((d,i)=>PT.some(p=>p.c[i]==='ready'||p.c[i]==='part')).length}</div><div class="s">${DISH.filter(d=>d.st==='wait').length} món chờ đủ mẻ</div></div>
+ <div class="kpi"><div class="s">Điểm giao đủ thực đơn</div><div class="v">${rd} / ${all}</div><div class="s">mọi món của thực đơn đã chia</div></div>
+ <div class="kpi"><div class="s">Phần đã chia</div><div class="v">${Math.round(dn/tot*100)}%</div><div class="s">${f(dn)} / ${f(tot)} phần</div></div>
+ <div class="kpi"><div class="s">Hỏng / thiếu khi chia</div><div class="v" style="color:var(--r)">1</div><div class="s">Chè đậu xanh – BV Khoa ngoại thiếu 12</div></div>`
+ :`<div class="kpi"><div class="s">Chuyến hôm nay (ca 2)</div><div class="v">${RT.length}</div><div class="s">tự lập 20:31 hôm qua</div></div>
+ <div class="kpi"><div class="s">Điểm giao chưa gán chuyến</div><div class="v" style="color:var(--o)">${PT.filter(p=>!p.r).length}</div><div class="s">đơn chốt muộn</div></div>
+ <div class="kpi"><div class="s">Chuyến đủ hàng, sẵn sàng xếp</div><div class="v" style="color:var(--g)">${RT.filter(r=>PT.filter(p=>p.r===r.id).every(ready)&&RS[r.id]==='plan').length}</div><div class="s">trên ${RT.length} chuyến</div></div>
+ <div class="kpi"><div class="s">Đã xuất bến</div><div class="v">${RT.filter(r=>RS[r.id]==='go').length}</div><div class="s">${RT.filter(r=>RS[r.id]==='loaded').length} đang xếp</div></div>`}
+function pack(){
+ let h=`<div class="card" style="padding:12px 14px"><div class="legend"><span><span class="sw" style="background:var(--g-bg);border:1px solid #B9CB97"></span>Đã chia</span><span><span class="sw" style="background:#fff;border:1px solid #7FA43A"></span>Sẵn sàng chia (mẻ đạt)</span><span><span class="sw" style="background:var(--n-bg);border:1px dashed #9aa39c"></span>Chờ đủ mẻ (món chỉ mở chia khi mọi mẻ của món đạt)</span><span>Không áp dụng = món không thuộc lựa chọn của điểm giao</span><span><span class="sw" style="background:var(--r-bg);border:1px solid #E9A8A1"></span>Hỏng / thiếu</span><span>Số trong ô = phần cần chia · bấm ô để ghi hỏng / thiếu</span></div>
+ <div class="scroll"><table class="m"><tr><th class="l" style="min-width:250px">Chuyến · điểm giao</th>${DISH.map((d,i)=>`<th><b>${d.n}</b>${d.b}<div style="margin-top:6px">${PT.some(p=>p.c[i]==='ready')?`<button class="sm p" onclick="doneDish(${i})">Xong món này</button>`:d.st==='wait'?'<span class="chip c-n">Chờ đủ mẻ</span>':PT.every(p=>p.c[i]!=='ready')?'<span class="chip c-ok">Xong</span>':'<span class="chip c-ok">Xong</span>'}</div></th>`).join('')}<th>Điểm giao</th></tr>`;
+ [...RT,{id:null,no:'Chưa gán chuyến',car:'',area:'đơn chốt muộn – điều phối gán xe'}].forEach(r=>{const ps=PT.filter(p=>p.r===r.id);if(!ps.length)return;
+  h+=`<tr class="rt"><td class="l">${r.no} <span class="small muted" style="font-weight:400">· ${r.car?r.car+' · ':''}${r.area}</span></td><td colspan="${DISH.length+1}" class="small" style="text-align:left;font-weight:400">${ps.filter(ready).length}/${ps.length} điểm giao đủ thực đơn</td></tr>`;
+  ps.forEach(p=>{h+=`<tr><td class="l"><b>${p.n}</b><div class="small muted">${f(p.q)} suất · giao ${p.t}</div></td>${p.c.map((c,i)=>`<td><span class="q ${c}" onclick="cell('${p.id}',${i})">${c==='wait'?'chờ':c==='na'?'không áp dụng':f(p.q)}</span>${c==='short'?'<span class="hint" style="color:var(--r)">thiếu 12</span>':''}</td>`).join('')}
+  <td>${ready(p)?'<span class="chip c-ok">Đủ thực đơn</span>':`<div class="small">${done(p)}/${need(p)} món</div><div class="pg" style="margin:4px auto"><i style="width:${done(p)/need(p)*100}%"></i></div>${p.c.includes('ready')?`<button class="sm" onclick="donePt('${p.id}')">Xong điểm giao</button>`:''}`}</td></tr>`})});
+ return h+'</table></div><div class="small muted" style="margin-top:8px">Lệnh đóng gói vẫn tự sinh theo mẻ (dữ liệu nền, người làm không thao tác theo mẻ) – màn này chỉ mở chia khi món đủ mẻ, ghi kết quả hàng loạt theo món × điểm giao, mặc định đủ số, hỏng = 0.</div></div>'}
+function disp(){
+ let h=`<div class="note">Hệ thống đã <b>tự lập 3 chuyến theo khu vực</b> lúc 20:31 ngày 23/11 sau khi chốt đơn. Điều phối chỉ xử lý ngoại lệ: chuyển điểm giao sang xe khác, tách đơn khi quá tải, gán đơn chốt muộn. Chỉ giao khi <b>đủ toàn bộ thực đơn</b>: "Xếp lên xe" chỉ mở khi mọi điểm giao của chuyến đủ thực đơn (máy chủ cũng chặn).</div><div class="board">`;
+ const un=PT.filter(p=>!p.r);
+ if(un.length)h+=`<div class="col un"><div class="ch"><b>Chưa gán chuyến</b><div class="small muted">${un.length} điểm giao · gợi ý: ${RT[1].no} (cùng khu, còn trống)</div></div>${un.map(p=>card(p,true)).join('')}</div>`;
+ RT.forEach(r=>{const ps=PT.filter(p=>p.r===r.id),load=ps.reduce((a,p)=>a+p.q,0),pct=Math.round(load/r.cap*100),allR=ps.every(ready),st=RS[r.id];
+  h+=`<div class="col"><div class="ch"><div class="bar"><b>${r.car}</b><span class="chip ${st==='go'?'c-b':st==='loaded'?'c-due':allR?'c-ok':'c-n'}">${st==='go'?'Đã xuất bến':st==='loaded'?'Đã xếp xe':allR?'Đủ hàng':'Đang chuẩn bị'}</span></div><div class="small muted">${r.no} · ${r.drv}</div><div class="small">${r.area} · xuất bến ${r.dep}</div>
+  <div class="load"><i style="width:${Math.min(100,pct)}%;background:${pct>100?'var(--r)':'#7FA43A'}"></i></div><div class="small muted">Tải ${f(load)} / ${f(r.cap)} suất (${pct}%)</div></div>
+  ${ps.map(p=>card(p,false)).join('')}
+  <div style="margin-top:8px;display:flex;gap:6px">${st==='plan'?`<button class="p" style="flex:1" ${allR?'':'disabled title="Còn điểm giao chưa chia xong"'} onclick="loadR('${r.id}')">Xếp lên xe</button>`:st==='loaded'?`<button class="o" style="flex:1" onclick="goR('${r.id}')">Xuất bến</button>`:'<span class="small muted">Theo dõi ở màn Theo dõi chuyến giao</span>'}</div>
+  ${st==='plan'&&!allR?`<div class="small" style="color:var(--o);margin-top:6px">Còn ${ps.filter(p=>!ready(p)).length} điểm chưa chia xong: ${[...new Set(ps.flatMap(p=>p.c.map((c,i)=>c!=='done'?DISH[i].n:null)).filter(Boolean))].join(', ')}</div>`:''}</div>`});
+ return h+'</div>'}
+function card(p,un){return `<div class="st ${ready(p)?'ok':'wip'}"><div class="bar"><b>${p.n}</b></div><div class="muted">${f(p.q)} suất · giao ${p.t}</div><div class="bar" style="margin-top:4px"><span>${ready(p)?'<span class="chip c-ok">Đủ thực đơn</span>':`Đã chia ${done(p)}/${need(p)} món`}</span>${un?`<button class="sm p" onclick="assign('${p.id}')">Gán vào ${RT[1].car}</button>`:`<select class="sm" style="height:26px;border-radius:8px;border:1px solid #d5dbd2;font-size:12px" onchange="move('${p.id}',this.value)"><option>Chuyển xe…</option>${RT.filter(r=>r.id!==p.r).map(r=>`<option value="${r.id}">${r.car}</option>`).join('')}</select>`}</div></div>`}
+function doneDish(i){let n=0;PT.forEach(p=>{if(p.c[i]==='ready'){p.c[i]='done';n++}});toast(`Đã ghi chia xong "${DISH[i].n}" cho ${n} điểm giao (mặc định đủ số, hỏng 0)`);draw()}
+function donePt(id){const p=PT.find(x=>x.id===id);let n=0;p.c=p.c.map(c=>c==='ready'?(n++,'done'):c);toast(`Đã ghi xong ${n} món cho ${p.n}`+(p.c.includes('wait')?' – còn món chờ mẻ':''));draw()}
+function cell(id,i){const p=PT.find(x=>x.id===id);if(p.c[i]==='wait')return;
+ document.getElementById('dlg').innerHTML=`<h3 style="font-size:17px">${DISH[i].n} · ${p.n}</h3><div class="small muted">Cần chia ${f(p.q)} phần</div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><div><div class="small muted">Đã chia (đạt)</div><input class="in" value="${f(p.q-(p.c[i]==='short'?12:0))}"></div><div><div class="small muted">Hỏng / đổ</div><input class="in" value="${p.c[i]==='short'?12:0}"></div></div>
+ <div class="small muted" style="margin-top:8px">Hỏng &gt; 0 → tự ghi hao hụt "Hỏng khi đóng gói"; thiếu so với cần → báo bếp nấu thêm.</div>
+ <div class="bar" style="margin-top:14px;justify-content:flex-end"><button onclick="closeD()">Đóng</button><button class="p" onclick="p0('${id}',${i})">Lưu</button></div>`;
+ document.getElementById('ov').classList.add('on')}
+function p0(id,i){PT.find(x=>x.id===id).c[i]='done';closeD();toast('Đã ghi kết quả chia');draw()}
+function loadR(id){RS[id]='loaded';toast('Đã xếp lên xe '+RT.find(r=>r.id===id).car+' – tài xế nhận tin bot');draw()}
+function goR(id){const r=RT.find(x=>x.id===id);document.getElementById('dlg').innerHTML=`<h3 style="font-size:17px">Xuất bến ${r.car}</h3><div class="small muted">Nhiệt độ thùng giữ nhiệt lúc xuất bến (≥ 63 °C)</div><input class="in" style="margin-top:10px;font-size:20px;font-weight:700" value="68"><div class="bar" style="margin-top:14px;justify-content:flex-end"><button onclick="closeD()">Hủy</button><button class="o" onclick="RS['${id}']='go';closeD();toast('Đã xuất bến – chuyển sang Theo dõi chuyến giao');draw()">Xuất bến</button></div>`;document.getElementById('ov').classList.add('on')}
+function move(id,r){if(!r||r.length>3)return;PT.find(x=>x.id===id).r=r;toast('Đã chuyển điểm giao sang '+RT.find(x=>x.id===r).car);draw()}
+function assign(id){PT.find(x=>x.id===id).r='r2';toast('Đã gán vào '+RT[1].car);draw()}
+function closeD(){document.getElementById('ov').classList.remove('on')}
+function toast(s){const e=document.getElementById('toast');e.textContent=s;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3500)}
+function draw(){document.getElementById('ttl').textContent=scr==='pack'?'Chia suất & đóng gói':'Điều phối giao hàng';
+ document.getElementById('sub').textContent=scr==='pack'?'Món chỉ mở chia khi đủ mọi mẻ của món. Điểm giao "Đủ thực đơn" khi mọi món đã chia; chỉ khi đó mới được lên xe. Bấm "Xong món này" / "Xong điểm giao"; chỉ ghi số khi hỏng / thiếu.':'Chuyến tự lập sau chốt đơn. Điều phối chỉ xử lý ngoại lệ; xếp lên xe một chạm khi chuyến đủ hàng, xuất bến kèm nhiệt độ.';
+ document.querySelectorAll('#scr span').forEach(s=>{s.classList.toggle('on',s.dataset.s===scr);s.onclick=()=>{scr=s.dataset.s;draw()}});
+ kpis();document.getElementById('view').innerHTML=scr==='pack'?pack():disp()}
+draw();
+if(location.hash==='#dp'){scr='disp';draw()}
+if(location.hash==='#dp2'){scr='disp';PT.filter(p=>p.r==='r2').forEach(p=>p.c=p.c.map(c=>c==='wait'?'wait':'done'));PT.filter(p=>p.r==='r2').forEach(p=>p.c=p.c.map(()=> 'done'));draw()}
+</script>
+</body></html>

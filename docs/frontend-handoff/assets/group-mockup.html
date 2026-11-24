@@ -1,0 +1,125 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nhóm quyền – mô phỏng</title><style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0}.tabs span{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}.tabs span.on{border-color:#7FA43A;color:var(--ink);font-weight:600}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cl{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px}.cl.red{background:#FFF9F8;border-color:#F2C6BF}
+.cl h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between}
+.pc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pc b{font-size:13px}.pc .sub{display:block;color:var(--muted)}
+.shiftbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sh{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;cursor:pointer;background:#fff}.sh.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}.sh b{font-size:13px}
+table.g{border-collapse:separate;border-spacing:0;font-size:12px;width:100%}
+table.g th,table.g td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:center}
+table.g th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:11px}
+table.g td.l,table.g th.l{text-align:left;position:sticky;left:0;background:#fff;min-width:170px;z-index:1}table.g th.l{background:#FAFBF8}
+table.g tr.grp td{background:#F7F9F4;font-weight:700;text-align:left}
+.k{display:inline-block;min-width:22px;padding:2px 3px;border-radius:6px;font-weight:700;cursor:pointer}
+.k.ok{color:#3F5A17}.k.M{background:var(--o-bg);color:#8A3B0B}.k.V{background:var(--r-bg);color:var(--r)}.k.P{background:var(--b-bg);color:#1F4C80}.k.T{background:#FFF3CD;color:#7A5B00;outline:1px dashed #D9B44A}.k.R{background:#FDECEA;color:var(--r);outline:1px dashed #E9A8A1}.k.o{color:#c5cbc3;font-weight:400}
+td.we{background:#FBFBF9}
+.tot{font-weight:700}
+.fix{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fx{border:1px solid #F2C6BF;background:#FFF9F8;border-radius:10px;padding:6px 10px;font-size:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.f.full{grid-column:1/-1}
+@media(max-width:700px){.cols{grid-template-columns:1fr}.fg{grid-template-columns:1fr}}
+
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;background:#FAFBF8;padding:8px;border-bottom:1px solid var(--line)}table.t td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t tr.row:hover td{background:#FAFCF7;cursor:pointer}table.t tr.blk td{background:#F3F6EF;font-weight:700;font-size:12px;color:#4b5a4f;text-transform:uppercase}
+.code{font-size:11px;color:var(--muted);font-family:ui-monospace,monospace;margin-left:6px}.sub{display:block;font-size:12px;color:var(--muted)}
+.lay{display:grid;grid-template-columns:230px 1fr;gap:16px}
+.nav{position:sticky;top:10px;align-self:start}.nav div{padding:7px 10px;border-radius:8px;font-size:13px;cursor:pointer;display:flex;justify-content:space-between}.nav div:hover{background:#F4F8EE}.nav div.on{background:#EFF5E5;font-weight:600}.nav small{color:var(--muted)}
+table.mx{width:100%;border-collapse:collapse;font-size:13px}table.mx td{padding:7px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.mx tr.gh td{background:#F3F6EF;font-weight:700;padding:9px 7px}
+.lv{display:inline-flex;border:1px solid #d5dbd2;border-radius:8px;overflow:hidden;background:#fff}.lv span{padding:4px 10px;font-size:12px;cursor:pointer;border-right:1px solid #d5dbd2;white-space:nowrap}.lv span:last-child{border-right:0}.lv span.on{background:#7FA43A;color:#fff;font-weight:600}.lv span.cu{background:#FDF0E6;color:#8A3B0B;font-weight:600}
+tr.chg td{background:#FFFBEA}tr.chg td:first-child{box-shadow:inset 3px 0 0 #E8A33A}
+.was{font-size:11px;color:#8A6A00;margin-left:6px}
+.fl{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;padding:6px 0 2px}.fl label{display:flex;gap:4px;align-items:center}
+.save{position:sticky;bottom:0;background:#1E2620;color:#fff;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-top:14px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.save button{height:32px}.save .grow{flex:1}
+.hint2{font-size:12px;color:var(--muted)}
+.pv{display:grid;grid-template-columns:220px 1fr;gap:14px}.side{background:#24301F;color:#E6EDE1;border-radius:12px;padding:10px;font-size:13px}.side div{padding:5px 8px}.side .h{font-size:11px;color:#9FB38F;text-transform:uppercase;margin-top:8px}
+</style></head><body>
+<div id="pg"></div><div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);function toast(m){const t=$('toast');t.innerHTML=m;t.style.display='block';setTimeout(()=>t.style.display='none',3500)}
+const G=[['Ban điều hành',[['CEO','Tổng giám đốc','Xem toàn bộ; duyệt hợp đồng, chính sách giá, đơn mua ≥ 50 triệu',2,85,3,'20/11'],['COO','Giám đốc vận hành','Xem vận hành; duyệt kế hoạch, công thức, sửa đơn sau chốt',1,82,6,'18/11']]],
+['Vận hành',[['OPS-PLAN','Kế hoạch vận hành','Thực đơn, công thức, kế hoạch / lệnh sản xuất',2,38,0,'12/11'],['OPS-KIT','Bếp','Mẻ nấu, hao hụt, đóng gói, kiểm tra theo ca',14,24,0,'24/11'],['OPS-WH','Thủ kho','Nhận hàng, xuất kho, kiểm kê, danh mục kho',2,19,0,'10/11'],['OPS-LOG','Điều phối giao hàng','Chia suất, chuyến, theo dõi giao, khay hộp',9,16,0,'22/11'],['OPS-MNT','Bảo trì','Thiết bị, dây chuyền',0,6,0,'01/11']]],
+['Tài chính – Hỗ trợ',[['FIN-HR','Nhân sự','Nhân viên, phân ca, chấm công, nghỉ & đổi ca',2,14,1,'23/11'],['FIN-IT','Quản trị hệ thống','Tài khoản, nhóm quyền, cấu hình; nhận yêu cầu cấp tài khoản',1,30,1,'24/11']]]];
+function list(){return `<div class="card"><div class="bar"><div><h1>Nhóm quyền</h1><div class="small muted">Mỗi nhóm là một vai trò công việc. Bấm nhóm để phân quyền, xem ai trong nhóm.</div></div><div class="bar" style="gap:8px"><input class="in" placeholder="Tìm nhóm, mã…" style="width:220px;height:34px;font-size:13px"><button class="p">＋ Thêm nhóm</button></div></div>
+<div class="kpis"><div class="kpi"><div class="small muted">Nhóm đang dùng</div><div class="v">19</div><div class="s">5 khối</div></div><div class="kpi"><div class="small muted">Tài khoản đã gán nhóm</div><div class="v">47</div><div class="s">1 tài khoản chưa có nhóm</div></div><div class="kpi"><div class="small muted">Nhóm không có ai</div><div class="v" style="color:#C2571A">2</div><div class="s">bấm để lọc</div></div><div class="kpi"><div class="small muted">Sửa quyền 7 ngày qua</div><div class="v">6</div><div class="s">lần</div></div></div></div>
+<div class="card"><table class="t"><thead><tr><th>Nhóm quyền</th><th>Mô tả công việc</th><th>Tài khoản</th><th>Số màn được vào</th><th>Quyền duyệt</th><th>Sửa gần nhất</th></tr></thead><tbody>${G.map(([b,gs])=>`<tr class="blk"><td colspan="6">${b}</td></tr>`+gs.map(g=>`<tr class="row" onclick="go('det')"><td><b>${g[1]}</b><span class="code">${g[0]}</span></td><td class="small">${g[2]}</td><td>${g[3]?g[3]:'<span style="color:#C2571A">chưa có ai</span>'}</td><td>${g[4]}</td><td>${g[5]?g[5]+' loại':'–'}</td><td class="small muted">${g[6]}</td></tr>`).join('')).join('')}</tbody></table><div class="small muted" style="margin-top:8px">… 10 nhóm khác · bấm dòng mở trang chi tiết nhóm</div></div>`}
+const P=[['Sản xuất',[['Kế hoạch sản xuất','view'],['Bảng sản xuất ngày','edit'],['Mẻ nấu','edit','chg','Xem'],['Dây chuyền & bàn nấu','view']]],
+['Chất lượng & ATTP',[['Kiểm tra theo ca / mẻ','edit'],['Nhật ký nhiệt độ','edit'],['Vệ sinh khay hộp','custom']]],
+['Đóng gói & giao hàng',[['Chia suất & đóng gói','edit'],['Điều phối giao hàng','none'],['Theo dõi giao hàng','none'],['Khay hộp theo khách','none']]],
+['Kho',[['Nhận hàng','none'],['Xuất kho sản xuất','view','chg','Không'],['Tồn kho','view'],['Kiểm kê','none']]]];
+const LV=[['none','Không'],['view','Xem'],['edit','Xem & sửa'],['full','Toàn quyền']];
+let tab=location.hash==='#prev'?'prev':location.hash==='#users'?'users':'perm';
+function row(m){const cu=m[1]==='custom';return `<tr class="${m[2]==='chg'?'chg':''}"><td style="width:38%">${m[0]}${m[2]==='chg'?`<span class="was">trước: ${m[3]}</span>`:''}${cu?'<div class="fl"><label><input type="checkbox" checked>Xem</label><label><input type="checkbox" checked>Thêm</label><label><input type="checkbox" checked>Sửa</label><label><input type="checkbox">Xóa</label><label><input type="checkbox" checked>In</label><label><input type="checkbox">Xuất</label><label><input type="checkbox">Nhập</label></div>':''}</td>
+<td><div class="lv">${LV.map(l=>`<span class="${l[0]===m[1]?'on':''}">${l[1]}</span>`).join('')}<span class="${cu?'cu':''}">Tùy chỉnh</span></div></td><td style="text-align:center;width:90px">${m[1]==='none'?'–':`<input type="checkbox" ${m[0]==='Mẻ nấu'||cu?'checked':''}>`}</td></tr>`}
+function perm(){return `<div class="lay"><div class="card nav" style="padding:10px">${P.map((g,i)=>`<div class="${i==0?'on':''}">${g[0]}<small>${g[1].filter(m=>m[1]!=='none').length}/${g[1].length}</small></div>`).join('')}<div>Kinh doanh<small>0/8</small></div><div>Nhân sự<small>1/4</small></div><div>Quyền duyệt<small>0/2</small></div></div>
+<div><div class="bar" style="margin-bottom:10px"><input class="in" placeholder="Tìm màn…" style="width:220px;height:34px;font-size:13px"><div class="bar" style="gap:12px"><label class="small"><input type="checkbox"> Chỉ màn có quyền</label><label class="small"><input type="checkbox"> Chỉ thay đổi chưa lưu</label></div></div>
+<div class="hint2" style="margin-bottom:8px"><b>Xem</b> = chỉ xem · <b>Xem & sửa</b> = xem, thêm, sửa · <b>Toàn quyền</b> = thêm xóa, nhập Excel · <b>Tùy chỉnh</b> = mở 7 ô chi tiết. Cột cuối: In / Xuất.</div>
+<table class="mx"><tbody>${P.map(([g,ms])=>`<tr class="gh"><td>${g} <span class="small muted" style="font-weight:400">· ${ms.filter(m=>m[1]!=='none').length}/${ms.length} màn</span></td><td colspan="2"><span class="small muted" style="font-weight:400">Đặt cả nhóm:</span> <div class="lv">${LV.map(l=>`<span>${l[1]}</span>`).join('')}</div></td></tr>`+ms.map(row).join('')).join('')}
+<tr class="gh"><td>Quyền duyệt</td><td colspan="2"></td></tr><tr><td>Mẻ nấu – Đạt / Giữ / Loại làm tay</td><td><label class="small"><input type="checkbox"> Được duyệt</label></td><td></td></tr><tr><td>Nghỉ & đổi ca</td><td><label class="small"><input type="checkbox"> Được duyệt</label></td><td></td></tr></tbody></table>
+<div class="save"><b>2 thay đổi chưa lưu</b><span style="opacity:.8">· áp dụng cho 14 tài khoản của nhóm Bếp</span><span class="grow"></span><button onclick="toast('Đã bỏ 2 thay đổi')">Bỏ thay đổi</button><button class="p" onclick="toast('Đã lưu 2 thay đổi quyền nhóm Bếp · có hiệu lực ngay · ghi lịch sử')">Xem lại & lưu</button></div></div></div>`}
+function users(){return `<div class="bar" style="margin-bottom:10px"><span class="small muted">14 tài khoản</span><button class="sm p">＋ Thêm tài khoản vào nhóm</button></div><table class="t"><thead><tr><th>Tài khoản</th><th>Nhân viên</th><th>Nhóm khác</th><th></th></tr></thead><tbody>${[['nv0187','Hoàng Văn Nam · Bếp trưởng · Tổ nấu','Bếp – điều hành'],['nv0201','Trần Minh Đức · Đầu bếp · Tổ nấu','—'],['nv0150','Bùi Thị Mai · Phụ bếp · Tổ sơ chế','—']].map(u=>`<tr><td><b>${u[0]}</b></td><td>${u[1]}</td><td>${u[2]}</td><td><button class="sm">Bỏ khỏi nhóm</button></td></tr>`).join('')}</tbody></table>`}
+function prev(){return `<div class="small muted" style="margin-bottom:10px">Người thuộc <b>chỉ</b> nhóm Bếp sẽ thấy menu và nút như sau (gồm cả thay đổi chưa lưu):</div><div class="pv"><div class="side"><div class="h">Việc của tôi</div><div>Việc của tôi</div><div class="h">Sản xuất</div><div>Kế hoạch sản xuất 👁</div><div>Bảng sản xuất ngày ✎</div><div>Mẻ nấu ✎</div><div>Dây chuyền & bàn nấu 👁</div><div class="h">Chất lượng & ATTP</div><div>Kiểm tra theo ca / mẻ ✎</div><div>Nhật ký nhiệt độ ✎</div><div>Vệ sinh khay hộp ✎</div><div class="h">Đóng gói & giao hàng</div><div>Chia suất & đóng gói ✎</div><div class="h">Kho</div><div>Xuất kho sản xuất 👁</div><div>Tồn kho 👁</div></div>
+<div class="note">👁 = chỉ xem · ✎ = được thêm / sửa. Không thấy: Kinh doanh, Mua hàng, Nhân sự, Quản trị. Không duyệt được loại nào.</div></div>`}
+function det(){return `<div class="card"><div class="small muted"><a href="javascript:go('list')">Nhóm quyền</a> › Bếp</div><div class="bar"><div><h1>Bếp <span class="code" style="font-size:13px">OPS-KIT</span> <span class="chip c-n">Vận hành</span></h1><div class="small muted">Mẻ nấu, hao hụt, đóng gói, kiểm tra theo ca · 14 tài khoản · 24 màn · sửa gần nhất 24/11 bởi admin</div></div><div class="bar" style="gap:8px"><button>Sửa tên / mô tả</button><button>Sao chép quyền từ nhóm…</button><button>Tạo nhóm từ nhóm này</button><button>Ngừng dùng</button></div></div>
+<div class="tabs">${[['perm','Phân quyền'],['users','Tài khoản (14)'],['prev','Xem trước menu'],['cmp','So sánh nhóm'],['his','Lịch sử']].map(t=>`<span class="${t[0]===tab?'on':''}" onclick="tab='${t[0]}';draw()">${t[1]}</span>`).join('')}</div>
+${tab==='users'?users():tab==='prev'?prev():tab==='perm'?perm():'<div class="small muted">Như mockup trước.</div>'}</div>`}
+let page=location.hash&&location.hash!=='#list'?'det':'list';function go(p){page=p;draw();scrollTo(0,0)}
+function draw(){$('pg').innerHTML=page==='list'?list():det()}draw();
+</script></body></html>

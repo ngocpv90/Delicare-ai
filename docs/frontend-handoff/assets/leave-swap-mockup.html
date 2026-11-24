@@ -1,0 +1,158 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nghỉ & đổi ca – mô phỏng</title><style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0}.tabs span{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}.tabs span.on{border-color:#7FA43A;color:var(--ink);font-weight:600}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cl{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px}.cl.red{background:#FFF9F8;border-color:#F2C6BF}
+.cl h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between}
+.pc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pc b{font-size:13px}.pc .sub{display:block;color:var(--muted)}
+.shiftbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sh{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;cursor:pointer;background:#fff}.sh.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}.sh b{font-size:13px}
+table.g{border-collapse:separate;border-spacing:0;font-size:12px;width:100%}
+table.g th,table.g td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:center}
+table.g th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:11px}
+table.g td.l,table.g th.l{text-align:left;position:sticky;left:0;background:#fff;min-width:170px;z-index:1}table.g th.l{background:#FAFBF8}
+table.g tr.grp td{background:#F7F9F4;font-weight:700;text-align:left}
+.k{display:inline-block;min-width:22px;padding:2px 3px;border-radius:6px;font-weight:700;cursor:pointer}
+.k.ok{color:#3F5A17}.k.M{background:var(--o-bg);color:#8A3B0B}.k.V{background:var(--r-bg);color:var(--r)}.k.P{background:var(--b-bg);color:#1F4C80}.k.T{background:#FFF3CD;color:#7A5B00;outline:1px dashed #D9B44A}.k.R{background:#FDECEA;color:var(--r);outline:1px dashed #E9A8A1}.k.o{color:#c5cbc3;font-weight:400}
+td.we{background:#FBFBF9}
+.tot{font-weight:700}
+.fix{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fx{border:1px solid #F2C6BF;background:#FFF9F8;border-radius:10px;padding:6px 10px;font-size:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.f.full{grid-column:1/-1}
+@media(max-width:700px){.cols{grid-template-columns:1fr}.fg{grid-template-columns:1fr}}
+
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;background:#FAFBF8;padding:8px;border-bottom:1px solid var(--line)}table.t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.sub{display:block;font-size:12px;color:var(--muted)}
+.pill{border:1px solid #d5dbd2;border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;background:#fff}.pill.on{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}
+.flt{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.dlg.lg{max-width:780px}
+.opt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.oc{border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:12px;cursor:pointer}.oc.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2;background:#F7FBF0}.oc b{font-size:13px;display:block}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cd{border:1px solid var(--line);border-radius:10px;padding:6px;min-height:84px;font-size:11px}.cd .n{font-weight:700;font-size:12px;margin-bottom:4px;display:flex;justify-content:space-between}
+.cd .e{border-radius:6px;padding:2px 5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e.ok{background:var(--b-bg);color:#1F4C80}.e.pd{background:#fff;border:1px dashed #9DB8DA;color:#1F4C80}.e.xw{background:#F1ECFA;color:#5B3E96}
+.cd.warn{border-color:#F2C6BF;background:#FFF9F8}.cd.off{background:#FAFBF8;color:#b5bcb6}
+.imp{border:1px solid #F2C6BF;background:#FFF9F8;border-radius:12px;padding:10px 12px;font-size:13px;margin-top:10px}
+</style></head><body>
+<div class="card">
+ <div class="bar"><div><h1>Nghỉ & đổi ca</h1><div class="small muted">Một nơi cho đơn xin nghỉ, đổi ca, nhường ca – tạo, duyệt và xem ai vắng ngày nào.</div></div>
+ <button class="p" onclick="openNew('leave')">＋ Tạo đơn</button></div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Chờ duyệt</div><div class="v" style="color:#C2571A">4</div><div class="s">1 quá hạn · 3 nghỉ · 1 đổi ca</div></div>
+  <div class="kpi"><div class="small muted">Nghỉ hôm nay</div><div class="v">2</div><div class="s">Đỗ Thu Trang, Đặng Thị Hoa</div></div>
+  <div class="kpi"><div class="small muted">Nghỉ 7 ngày tới</div><div class="v">5</div><div class="s">người · 9 ngày công</div></div>
+  <div class="kpi"><div class="small muted">Ca trống do nghỉ</div><div class="v" style="color:#B42318">3</div><div class="s">chưa có người thay – bấm để phân</div></div>
+ </div>
+ <div class="tabs"><span data-t="list" class="on">Đơn</span><span data-t="cal">Lịch nghỉ</span></div>
+ <div id="body"></div>
+</div>
+
+<div class="ov" id="ovNew"><div class="dlg lg">
+ <div class="bar"><h3>Tạo đơn</h3><button class="sm" onclick="cl('ovNew')">✕</button></div>
+ <div class="seg" style="margin:12px 0" id="kind"><span data-k="leave" class="on">Xin nghỉ</span><span data-k="swap">Đổi ca</span><span data-k="give">Nhường ca</span></div>
+ <div id="frm"></div>
+ <div class="bar" style="justify-content:flex-end;gap:8px;margin-top:12px"><button onclick="cl('ovNew')">Hủy</button><button class="p" onclick="cl('ovNew');toast('Đã gửi đơn – người duyệt nhận tin qua bot')">Gửi duyệt</button></div>
+</div></div>
+
+<div class="ov" id="ovAp"><div class="dlg lg">
+ <div class="bar"><h3>Duyệt đơn DN-261124-0031 · Bùi Thị Mai</h3><button class="sm" onclick="cl('ovAp')">✕</button></div>
+ <div class="small muted" style="margin:6px 0 10px">Phép năm · 26/11 → 28/11/2026 (3 ngày) · Lý do: về quê có việc gia đình · gửi 24/11 07:40</div>
+ <div class="fg"><div class="f"><label>Phép năm còn lại</label><b>8 / 12 ngày</b> → sau đơn này còn <b>5</b></div><div class="f"><label>Cùng tổ sơ chế nghỉ trùng ngày</label><b>Lý Thu Hà</b> (27/11 – đơn chờ duyệt)</div></div>
+ <div class="imp"><b>Duyệt đơn sẽ bỏ 3 ca của chị Mai:</b> S 26/11 · S 27/11 · S 28/11.<br>Tổ sơ chế ca S ngày 27/11 còn <b style="color:#B42318">7/9 người</b> (thiếu 2 nếu duyệt cả đơn của Lý Thu Hà).
+  <div style="margin-top:8px" class="small"><b>Người có thể thay</b> (cùng tổ, ngày đó chưa có ca): Phan Văn Bình · Lê Thị Hạnh</div></div>
+ <div class="f full" style="margin-top:10px"><label>Ý kiến (bắt buộc khi từ chối)</label><input class="in" placeholder="không bắt buộc khi duyệt"></div>
+ <label class="small" style="display:flex;gap:8px;margin-top:10px"><input type="checkbox" checked> Duyệt xong mở Phân ca ngày 26–28/11 để xếp người thay</label>
+ <div class="bar" style="justify-content:flex-end;gap:8px;margin-top:12px"><button onclick="cl('ovAp')">Đóng</button><button style="color:#B42318" onclick="cl('ovAp');toast('Đã từ chối đơn')">Từ chối</button><button class="p" onclick="cl('ovAp');toast('Đã duyệt · đã bỏ 3 ca · mở Phân ca 26–28/11 để xếp người thay')">Duyệt</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);let tab=location.hash.includes('cal')?'cal':'list',ty='',st='Pending';
+function toast(m){const t=$('toast');t.innerHTML=m;t.style.display='block';setTimeout(()=>t.style.display='none',3500)}function cl(i){$(i).classList.remove('on')}
+const R=[['DN-261124-0031','leave','Bùi Thị Mai','Tổ sơ chế','Phép năm · 26/11 → 28/11 (3 ngày)','3 ca bị bỏ · tổ thiếu 2 người 27/11','24/11 07:40','Pending',''],
+['DC-261124-0007','swap','Trần Minh Đức ⇄ Hoàng Văn Nam','Tổ nấu','Đức: C 25/11 ⇄ Nam: S 26/11','Nam đã đồng ý qua bot','24/11 06:10','Pending',''],
+['DN-261123-0029','leave','Lý Thu Hà','Tổ sơ chế','Phép năm · 27/11 (1 ngày)','1 ca bị bỏ','23/11 16:20','Pending','over'],
+['DN-261123-0028','leave','Phạm Văn Tú','Giao hàng','Nghỉ ốm · 24/11 (1 ngày) · lập lùi','1 ca bị bỏ','24/11 08:50','Pending',''],
+['DC-261122-0006','give','Ngô Quang Huy → Phạm Văn Tú','Giao hàng','Nhường ca S 23/11','','22/11 10:05','Approved',''],
+['DN-261120-0025','leave','Đỗ Thu Trang','Văn phòng','Phép năm · 24/11 → 25/11','','20/11 09:00','Approved',''],
+['DN-261118-0022','leave','Bùi Thị Mai','Tổ sơ chế','Việc riêng · 19/11','Ca đã chấm công – không duyệt được','18/11 13:00','Rejected','']];
+const TY={leave:['Xin nghỉ','c-b'],swap:['Đổi ca','c-ok'],give:['Nhường ca','c-due']};const ST={Pending:['Chờ duyệt','c-due'],Approved:['Đã duyệt','c-ok'],Rejected:['Từ chối','c-bad']};
+function list(){const r=R.filter(x=>(!ty||x[1]===ty)&&(!st||x[7]===st));
+ $('body').innerHTML=`<div class="flt">${[['Pending','Chờ duyệt · 4'],['Approved','Đã duyệt'],['Rejected','Từ chối / hủy'],['','Tất cả']].map(([k,l])=>`<span class="pill ${st===k?'on':''}" onclick="st='${k}';draw()">${l}</span>`).join('')}<span style="width:16px"></span>${[['','Mọi loại'],['leave','Xin nghỉ'],['swap','Đổi ca'],['give','Nhường ca']].map(([k,l])=>`<span class="pill ${ty===k?'on':''}" onclick="ty='${k}';draw()">${l}</span>`).join('')}<span style="flex:1"></span><input class="in" placeholder="Tìm người, số đơn…" style="width:200px;height:34px;font-size:13px"></div>
+ <table class="t"><thead><tr><th>Đơn</th><th>Loại</th><th>Người</th><th>Nội dung</th><th>Ảnh hưởng</th><th>Gửi lúc</th><th>Trạng thái</th><th></th></tr></thead><tbody>${r.map(x=>`<tr><td><b>${x[0]}</b></td><td><span class="chip ${TY[x[1]][1]}">${TY[x[1]][0]}</span></td><td><b>${x[2]}</b><span class="sub">${x[3]}</span></td><td>${x[4]}</td><td class="small" style="color:${/thiếu|không duyệt/.test(x[5])?'#B42318':'#6b756e'}">${x[5]}</td><td>${x[6]}${x[8]?'<span class="sub" style="color:#B42318">quá hạn duyệt</span>':''}</td><td><span class="chip ${ST[x[7]][1]}">${ST[x[7]][0]}</span></td><td style="white-space:nowrap">${x[7]==='Pending'?`<button class="sm p" onclick="${x[0]==='DN-261124-0031'?"$('ovAp').classList.add('on')":"toast('Đã duyệt đơn "+x[0]+"')"}">Duyệt</button> <button class="sm" onclick="$('ovAp').classList.add('on')">Xem</button>`:''}</td></tr>`).join('')}</tbody></table>
+ <div class="small muted" style="margin-top:8px">Nút Duyệt chỉ hiện với người duyệt của đơn; người gửi thấy nút Hủy đơn. Duyệt từ Hộp phê duyệt hoặc bot vẫn dùng chung.</div>`;}
+function cal(){const days=Array.from({length:14},(_,i)=>23+i);const lab=d=>d>30?d-30+'/12':d+'/11';const dw=['T2','T3','T4','T5','T6','T7','CN'];
+ const ev={24:[['ok','Đỗ Thu Trang · phép'],['ok','Đặng Thị Hoa · ốm'],['pd','Phạm Văn Tú · ốm (chờ)']],25:[['ok','Đỗ Thu Trang · phép'],['xw','Đức ⇄ Nam (chờ)']],26:[['pd','Bùi Thị Mai · phép (chờ)']],27:[['pd','Bùi Thị Mai · phép (chờ)'],['pd','Lý Thu Hà · phép (chờ)']],28:[['pd','Bùi Thị Mai · phép (chờ)']],2:[['ok','Vũ Đức Anh · phép']],3:[['ok','Vũ Đức Anh · phép']]};
+ $('body').innerHTML=`<div class="bar" style="margin-bottom:10px"><div class="day"><button>◀</button>23/11 – 06/12/2026<button>▶</button></div><div class="legend" style="margin:0"><span><span class="sw" style="background:var(--b-bg)"></span>Nghỉ đã duyệt</span><span><span class="sw" style="border:1px dashed #9DB8DA"></span>Nghỉ chờ duyệt</span><span><span class="sw" style="background:#F1ECFA"></span>Đổi / nhường ca</span><span><span class="sw" style="background:#FFF9F8;border:1px solid #F2C6BF"></span>Tổ thiếu người nếu duyệt</span></div></div>
+ <div class="cal">${dw.map(d=>`<div class="small muted" style="text-align:center;font-weight:600">${d}</div>`).join('')}${days.map((d,i)=>{const k=d>30?d-30:d;const e=ev[k]||[];return `<div class="cd ${k===27?'warn':''} ${i%7===6?'off':''}"><div class="n">${lab(d)}${k===27?'<span class="chip c-bad">thiếu 2</span>':''}</div>${e.map(x=>`<div class="e ${x[0]}">${x[1]}</div>`).join('')}</div>`}).join('')}</div>`;}
+const FRM={leave:`<div class="fg"><div class="f"><label>Nhân viên *</label><input class="in" value="Bùi Thị Mai · NV0150 (tôi)"></div><div class="f"><label>Loại nghỉ *</label><select class="in"><option>Phép năm</option><option>Nghỉ ốm</option><option>Việc riêng có lương</option><option>Không lương</option></select></div>
+ <div class="f"><label>Từ ngày *</label><input type="date" class="in" value="2026-11-26"></div><div class="f"><label>Đến ngày *</label><input type="date" class="in" value="2026-11-28"></div>
+ <div class="f full"><label>Lý do *</label><input class="in" value="Về quê có việc gia đình"></div></div>
+ <div class="note" style="margin-top:10px">Phép năm còn <b>8/12 ngày</b> → sau đơn còn <b>5</b>. Đơn này bỏ <b>3 ca</b>: S 26/11 · S 27/11 · S 28/11. <span style="color:#B42318">Ngày 27/11 tổ sơ chế đã có 1 người xin nghỉ.</span></div>`,
+swap:`<div class="f"><label>Ca của tôi muốn đổi *</label><div class="opt"><div class="oc on"><b>C · T4 25/11</b>14:00–22:00</div><div class="oc"><b>S · T5 26/11</b>06:00–14:00</div><div class="oc"><b>S · T6 27/11</b>06:00–14:00</div></div></div>
+ <div class="f" style="margin-top:12px"><label>Đổi lấy ca của đồng nghiệp * <span class="muted">(cùng tổ, ±7 ngày, ca còn mở – hệ thống đã lọc không trùng giờ / nghỉ phép)</span></label><div class="opt"><div class="oc on"><b>Hoàng Văn Nam</b>S · T5 26/11 · 06:00–14:00</div><div class="oc"><b>Phan Văn Bình</b>S · T4 25/11 · 06:00–14:00</div><div class="oc"><b>Phan Văn Bình</b>C · T7 28/11 · 14:00–22:00</div></div></div>
+ <div class="f full" style="margin-top:12px"><label>Lý do *</label><input class="in" value="Chiều 25/11 đưa con đi khám"></div>
+ <div class="note" style="margin-top:10px">Gửi xong, <b>Hoàng Văn Nam nhận tin bot để đồng ý</b>; Nam đồng ý thì đơn mới tới người duyệt.</div>`,
+give:`<div class="f"><label>Ca của tôi muốn nhường *</label><div class="opt"><div class="oc on"><b>C · T4 25/11</b>14:00–22:00</div><div class="oc"><b>S · T5 26/11</b>06:00–14:00</div><div class="oc"><b>S · T6 27/11</b>06:00–14:00</div></div></div>
+ <div class="f" style="margin-top:12px"><label>Nhường cho * <span class="muted">(cùng tổ, ngày đó chưa có ca)</span></label><div class="opt"><div class="oc on"><b>Phan Văn Bình</b>trống ngày 25/11</div><div class="oc"><b>Lê Thị Hạnh</b>trống ngày 25/11</div></div></div>
+ <div class="f full" style="margin-top:12px"><label>Lý do *</label><input class="in"></div>`};
+function openNew(k){$('ovNew').classList.add('on');setK(k)}function setK(k){document.querySelectorAll('#kind span').forEach(s=>s.classList.toggle('on',s.dataset.k===k));$('frm').innerHTML=FRM[k]}
+document.querySelectorAll('#kind span').forEach(s=>s.onclick=()=>setK(s.dataset.k));
+function draw(){document.querySelectorAll('[data-t]').forEach(s=>s.classList.toggle('on',s.dataset.t===tab));({list,cal})[tab]()}
+document.querySelectorAll('[data-t]').forEach(s=>s.onclick=()=>{tab=s.dataset.t;draw()});draw();
+const h=location.hash;if(h==='#new')openNew('leave');if(h==='#swap')openNew('swap');if(h==='#ap')$('ovAp').classList.add('on');
+</script></body></html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Sổ kiểm tra hàng nhập (đề xuất)</title>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.sm{height:28px;font-size:12px;padding:0 9px}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips span{border:1px solid #d5dbd2;border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;background:#fff}.chips span.on{background:#F2F7EA;border-color:#7FA43A;font-weight:600}
+.search{flex:1;min-width:260px;height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 12px;font-size:14px}
+select{height:34px;border:1px solid #d5dbd2;border-radius:10px;padding:0 8px;font-size:13px;background:#fff}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:12px;padding:8px;text-align:left;white-space:nowrap}
+td{border-top:1px solid var(--line);padding:8px;vertical-align:middle}
+td.n,th.n{text-align:right}
+tr.day td{background:#F7F9F4;font-weight:700;cursor:pointer}
+tr.ln{cursor:pointer}tr.ln:hover td{background:#FAFCF6}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-part{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+.t{font-weight:700;border-radius:6px;padding:2px 6px}.t-ok{color:#3F5A17}.t-warn{background:var(--o-bg);color:#8A3B0B}.t-bad{background:var(--r-bg);color:var(--r)}
+.sub{display:block;font-size:11px;color:var(--muted)}
+.scroll{overflow-x:auto}
+/* ngăn chi tiết */
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.3);display:none;z-index:9}.ov.on{display:block}
+.pane{position:absolute;right:0;top:0;bottom:0;width:460px;max-width:100%;background:#fff;padding:18px 20px;overflow:auto;box-shadow:-10px 0 30px rgba(0,0,0,.15)}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:7px 10px;font-size:13px;margin:12px 0}.kv label{color:var(--muted)}
+.box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13px}
+.tl{border-left:2px solid #DCE9C6;margin-left:6px;padding-left:12px}.tl div{margin:6px 0;position:relative}.tl div:before{content:'';position:absolute;left:-18px;top:5px;width:10px;height:10px;border-radius:50%;background:#7FA43A}
+/* thẻ điện thoại */
+.cards{display:none}
+.cd{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){body{padding:10px}.card{padding:14px}.desk{display:none}.cards{display:block}}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Sổ kiểm tra hàng nhập</h1><div class="small muted">Hồ sơ kiểm thực bước 1 (ATTP) – tra cứu theo ngày, nguyên liệu, nhà cung cấp, lô. Chỉ xem: kết luận làm ở Nhận hàng / Phê duyệt, không sửa, không xóa.</div></div>
+  <div class="bar" style="gap:8px"><button>Xuất Excel</button><button class="p" onclick="toast()">In sổ kiểm thực bước 1</button></div>
+ </div>
+ <div class="filters">
+  <input class="search" id="q" placeholder="Tìm nguyên liệu, nhà cung cấp, số lô, số phiếu nhập…">
+  <div class="chips" id="per"><span data-p="1">Hôm nay</span><span data-p="7" class="on">7 ngày</span><span data-p="30">Tháng này</span><span data-p="c">Chọn khoảng…</span></div>
+ </div>
+ <div class="filters">
+  <span class="small muted">Kết quả:</span><div class="chips" id="res"><span data-r="" class="on">Tất cả</span><span data-r="ok">Đạt</span><span data-r="part">Đạt một phần</span><span data-r="bad">Không đạt</span></div>
+  <span class="small muted" style="margin-left:8px">Bảo quản:</span><div class="chips" id="sto"><span data-s="" class="on">Tất cả</span><span data-s="Thường">Thường</span><span data-s="Mát">Mát</span><span data-s="Đông lạnh">Đông lạnh</span></div>
+  <select id="sup"><option value="">Mọi nhà cung cấp</option></select>
+  <label class="small"><input type="checkbox" id="onlyTemp"> Chỉ nhiệt độ ngoài ngưỡng</label>
+ </div>
+ <div class="kpis" id="kpis"></div>
+</div>
+
+<div class="tabs" id="tabs"><span data-t="book" class="on">Sổ chi tiết</span><span data-t="sup">Theo nhà cung cấp</span></div>
+<div class="card" style="padding:12px 14px" id="view"></div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)this.classList.remove('on')"><div class="pane" id="pane"></div></div>
+
+<script>
+const R={ok:['c-ok','Đạt'],part:['c-part','Đạt một phần'],bad:['c-bad','Không đạt']};
+const LIM={'Thường':null,'Mát':[5,8],'Đông lạnh':[-18,-12]};
+const tz=(s,t)=>{if(t==null)return s==='Thường'?'na':'miss';const l=LIM[s];if(!l)return'ok';if(s==='Đông lạnh')return t<=l[0]?'ok':t<=l[1]?'warn':'bad';return t<=l[0]?'ok':t<=l[1]?'warn':'bad'};
+const D=[
+ ['24/11','06:12','PN-261124-01','Thịt ba chỉ','Mát','CT Thực phẩm An Phát','AP2411-07','NL-261124-AP-01','27/11/2026',120,120,'kg',3.8,'Đạt','Đạt','ok','Trần Thị Hoa',0,''],
+ ['24/11','06:12','PN-261124-01','Thịt nạc vai','Mát','CT Thực phẩm An Phát','AP2411-08','NL-261124-AP-02','27/11/2026',80,62,'kg',6.9,'Đạt','Rách 1 thùng','part','Trần Thị Hoa',0,'1 thùng bao bì rách, loại 18 kg – ưu tiên dùng trước'],
+ ['24/11','06:40','PN-261124-02','Rau muống','Thường','HTX Rau sạch Đông Anh','—','NL-261124-DA-01','25/11/2026',300,300,'kg',null,'Đạt','Đạt','ok','Hệ thống',1,'Không yêu cầu kiểm tra – tự đạt'],
+ ['24/11','06:40','PN-261124-02','Cải ngọt','Thường','HTX Rau sạch Đông Anh','—','NL-261124-DA-02','25/11/2026',150,150,'kg',null,'Đạt','Đạt','ok','Hệ thống',1,'Không yêu cầu kiểm tra – tự đạt'],
+ ['24/11','07:05','PN-261124-03','Cá basa phi lê','Đông lạnh','CT Thủy sản Miền Tây','MT-5521','NL-261124-MT-01','10/02/2027',400,0,'kg',-9,'Đá tan, mềm','Đạt','bad','Trần Thị Hoa',0,'Lõi −9°C (> −12°C) – trả hàng, đã lập sự cố NCC SC-2611-004'],
+ ['23/11','06:20','PN-261123-01','Thịt gà ta','Mát','CT Thực phẩm An Phát','AP2311-02','NL-261123-AP-01','26/11/2026',200,200,'kg',4.1,'Đạt','Đạt','ok','Nguyễn Văn Bình',0,''],
+ ['23/11','06:55','PN-261123-02','Trứng gà','Thường','Trang trại Ba Huân','BH-1123','NL-261123-BH-01','06/12/2026',3000,2940,'quả',null,'Vỡ 60 quả','Đạt','part','Nguyễn Văn Bình',0,'Vỡ 60 quả – trừ khi thanh toán'],
+ ['23/11','07:10','PN-261123-03','Đậu hũ','Mát','CS Đậu hũ Minh Châu','—','NL-261123-MC-01','24/11/2026',500,500,'miếng',5.6,'Đạt','Đạt','ok','Nguyễn Văn Bình',0,'Nhiệt độ có điều kiện – ưu tiên dùng trước'],
+ ['22/11','06:15','PN-261122-01','Thịt bò thăn','Mát','CT Thực phẩm An Phát','AP2211-05','NL-261122-AP-01','25/11/2026',90,90,'kg',2.9,'Đạt','Đạt','ok','Trần Thị Hoa',0,''],
+ ['22/11','06:50','PN-261122-02','Gạo tẻ','Thường','CT Lương thực Hà Nam','HN-2211','NL-261122-HN-01','22/05/2027',2000,2000,'kg',null,'Đạt','Đạt','ok','Hệ thống',1,'Không yêu cầu kiểm tra – tự đạt'],
+ ['21/11','06:30','PN-261121-01','Tôm thẻ','Đông lạnh','CT Thủy sản Miền Tây','MT-5490','NL-261121-MT-01','01/02/2027',60,60,'kg',-19.5,'Đạt','Đạt','ok','Trần Thị Hoa',0,''],
+].map(a=>({day:a[0],time:a[1],gr:a[2],ing:a[3],st:a[4],sup:a[5],slot:a[6],lot:a[7],exp:a[8],rec:a[9],acc:a[10],u:a[11],temp:a[12],sense:a[13],pack:a[14],res:a[15],by:a[16],auto:a[17],note:a[18]}));
+let F={q:'',p:'7',r:'',s:'',sup:'',temp:false},tab='book',open={};
+const f=n=>n.toLocaleString('vi-VN');
+const tcell=d=>{const z=tz(d.st,d.temp);if(z==='na')return'<span class="muted">–</span>';if(z==='miss')return'<span class="t t-bad">Chưa đo</span>';const lim=LIM[d.st];return `<span class="t t-${z}">${d.temp.toLocaleString('vi-VN')}°C</span><span class="sub">${d.st==='Mát'?'đạt ≤ 5°C':'đạt ≤ −18°C'}</span>`};
+function rows(){const q=F.q.toLowerCase();return D.filter(d=>(!q||[d.ing,d.sup,d.slot,d.lot,d.gr].join(' ').toLowerCase().includes(q))&&(!F.r||d.res===F.r)&&(!F.s||d.st===F.s)&&(!F.sup||d.sup===F.sup)&&(!F.temp||['warn','bad'].includes(tz(d.st,d.temp))))}
+function kpis(rs){const n=rs.length,ok=rs.filter(d=>d.res==='ok').length,pb=rs.filter(d=>d.res!=='ok').length,tb=rs.filter(d=>['warn','bad'].includes(tz(d.st,d.temp))).length;
+ document.getElementById('kpis').innerHTML=`<div class="kpi"><div class="s">Lượt kiểm (dòng hàng)</div><div class="v">${n}</div><div class="s">${new Set(rs.map(d=>d.gr)).size} phiếu nhập · ${rs.filter(d=>d.auto).length} tự đạt</div></div>
+ <div class="kpi"><div class="s">Tỷ lệ đạt</div><div class="v" style="color:var(--g)">${n?Math.round(ok/n*100):0}%</div><div class="s">theo dòng hàng</div></div>
+ <div class="kpi"><div class="s">Đạt một phần / Không đạt</div><div class="v" style="color:var(--r)">${pb}</div><div class="s">${rs.filter(d=>d.res==='bad').length} trả hàng · có sự cố NCC</div></div>
+ <div class="kpi"><div class="s">Nhiệt độ ngoài ngưỡng</div><div class="v" style="color:var(--o)">${tb}</div><div class="s">hàng mát / đông lạnh</div></div>`}
+function book(rs){const days=[...new Set(rs.map(d=>d.day))];
+ let h=`<div class="legend"><span>Mỗi dòng = một nguyên liệu trong phiếu nhập · gom theo ngày (bấm để mở / gập) · bấm dòng xem đầy đủ + truy xuất lô</span></div><div class="scroll desk"><table><tr><th>Giờ</th><th>Nguyên liệu</th><th>Nhà cung cấp</th><th>Lô NCC / lô kho</th><th>Hạn dùng</th><th class="n">Nhận / đạt</th><th>Nhiệt độ</th><th>Cảm quan</th><th>Bao bì</th><th>Kết quả</th><th>Người kiểm</th><th></th></tr>`;
+ days.forEach(dy=>{const g=rs.filter(d=>d.day===dy),bad=g.filter(d=>d.res!=='ok').length,isOpen=open[dy]!==false;
+  h+=`<tr class="day" onclick="open['${dy}']=${!isOpen};draw()"><td colspan="12">${isOpen?'▾':'▸'} Ngày ${dy}/2026 · ${new Set(g.map(d=>d.gr)).size} phiếu · ${g.length} dòng · ${bad?`<span style="color:var(--r)">${bad} không đạt / đạt một phần</span>`:'<span style="color:var(--g)">đạt hết</span>'} <span style="float:right;font-weight:400"><button class="sm" onclick="event.stopPropagation();toast()">In ngày ${dy}</button></span></td></tr>`;
+  if(isOpen)g.forEach(d=>{const i=D.indexOf(d);h+=`<tr class="ln" onclick="det(${i})"><td>${d.time}</td><td><b>${d.ing}</b><span class="sub">${d.st}</span></td><td>${d.sup}<span class="sub">${d.gr}</span></td><td>${d.slot}<span class="sub">${d.lot}</span></td><td>${d.exp}</td><td class="n">${f(d.rec)} / <b>${f(d.acc)}</b> ${d.u}</td><td>${tcell(d)}</td><td>${d.sense==='Đạt'?'Đạt':`<span style="color:var(--r)">${d.sense}</span>`}</td><td>${d.pack==='Đạt'?'Đạt':`<span style="color:var(--r)">${d.pack}</span>`}</td><td><span class="chip ${R[d.res][0]}">${R[d.res][1]}</span></td><td>${d.auto?'<span class="chip c-n">Tự đạt</span>':d.by}</td><td><button class="sm" onclick="event.stopPropagation();toast()">In</button></td></tr>`});
+ });
+ h+='</table></div><div class="cards">'+rs.map(d=>`<div class="cd" onclick="det(${D.indexOf(d)})"><div class="bar"><b>${d.ing}</b><span class="chip ${R[d.res][0]}">${R[d.res][1]}</span></div><div class="small muted">${d.day} ${d.time} · ${d.sup}</div><div class="small" style="margin-top:4px">${f(d.rec)} / <b>${f(d.acc)}</b> ${d.u} · ${tcell(d).replace(/<span class="sub">.*?<\/span>/,'')} · lô ${d.lot}</div></div>`).join('')+'</div>';
+ return h}
+function bySup(rs){const g={};rs.forEach(d=>{const s=g[d.sup]=g[d.sup]||{n:0,ok:0,part:0,bad:0,temp:0,last:''};s.n++;s[d.res]++;if(['warn','bad'].includes(tz(d.st,d.temp)))s.temp++;if(d.res!=='ok'&&!s.last)s.last=d.ing+' ('+d.day+')'});
+ return `<div class="legend"><span>Dùng khi đánh giá / chọn nhà cung cấp – bấm dòng để lọc sổ theo nhà cung cấp</span></div><div class="scroll"><table><tr><th>Nhà cung cấp</th><th class="n">Dòng kiểm</th><th class="n">Đạt</th><th class="n">Đạt một phần</th><th class="n">Không đạt</th><th class="n">Nhiệt độ ngoài ngưỡng</th><th>Tỷ lệ đạt</th><th>Lần lỗi gần nhất</th></tr>${Object.entries(g).sort((a,b)=>(a[1].ok/a[1].n)-(b[1].ok/b[1].n)).map(([k,s])=>{const r=Math.round(s.ok/s.n*100);return `<tr class="ln" onclick="F.sup='${k}';document.getElementById('sup').value='${k}';tab='book';draw()"><td><b>${k}</b></td><td class="n">${s.n}</td><td class="n">${s.ok}</td><td class="n">${s.part||'–'}</td><td class="n" style="color:${s.bad?'var(--r)':''}">${s.bad||'–'}</td><td class="n">${s.temp||'–'}</td><td><span class="chip ${r<80?'c-bad':r<95?'c-part':'c-ok'}">${r}%</span></td><td class="small">${s.last||'<span class="muted">–</span>'}</td></tr>`}).join('')}</table></div>`}
+function det(i){const d=D[i];
+ document.getElementById('pane').innerHTML=`<div class="bar"><div><h1 style="font-size:18px">${d.ing}</h1><div class="small muted">${d.gr} · ${d.day}/2026 ${d.time} · ${d.sup}</div></div><button class="sm" onclick="document.getElementById('ov').classList.remove('on')">Đóng</button></div>
+ <div style="margin-top:8px"><span class="chip ${R[d.res][0]}">${R[d.res][1]}</span> ${d.auto?'<span class="chip c-n">Tự đạt – không yêu cầu kiểm tra</span>':''}</div>
+ <div class="kv"><label>Bảo quản</label><span>${d.st}</span><label>Số nhận / đạt</label><span>${f(d.rec)} / <b>${f(d.acc)}</b> ${d.u}</span><label>Nhiệt độ</label><span>${tcell(d)}</span><label>Cảm quan</label><span>${d.sense}</span><label>Bao bì</label><span>${d.pack}</span><label>Hạn dùng</label><span>${d.exp}</span><label>Lô NCC</label><span>${d.slot}</span><label>Lô trong kho</label><span><a href="#">${d.lot}</a> · ${d.res==='bad'?'<span style="color:var(--r)">Tạm giữ – không xuất</span>':'Đang dùng'}</span><label>Người kiểm</label><span>${d.auto?'Hệ thống':d.by} · ${d.day} ${d.time}</span></div>
+ ${d.note?`<div class="box"><b>Nhận xét:</b> ${d.note}</div>`:''}
+ <div class="box"><b>Lô này đã đi đâu</b><div class="tl small">${d.res==='bad'?'<div>Không nhập kho – trả nhà cung cấp, sự cố SC-2611-004</div>':`<div>Nhập kho ${d.day} ${d.time} – ${f(d.acc)} ${d.u}</div><div>Xuất sản xuất ca 2 – ${f(Math.round(d.acc*0.6))} ${d.u} (PX-2611-118)</div><div>Mẻ ME-${d.day.replace('/','')}-C2-03, -04 → 4 khách hàng</div>`}</div></div>
+ <div class="bar" style="margin-top:14px;justify-content:flex-start"><button>Mở phiếu nhập</button><button>Truy xuất lô đầy đủ</button><button class="p" onclick="toast()">In phiếu kiểm tra</button></div>
+ <div class="small muted" style="margin-top:12px">Phát hiện sai sau khi nhập kho: Tạm giữ lô / lập sự cố NCC ở trang lô – không sửa hồ sơ kiểm tra.</div>`;
+ document.getElementById('ov').classList.add('on')}
+function toast(){alert('Demo: tải PDF biểu mẫu kiểm thực bước 1')}
+function draw(){const rs=rows();kpis(rs);document.getElementById('view').innerHTML=tab==='book'?book(rs):bySup(rs);document.querySelectorAll('#tabs span').forEach(s=>s.classList.toggle('on',s.dataset.t===tab))}
+document.getElementById('sup').innerHTML+= [...new Set(D.map(d=>d.sup))].map(s=>`<option>${s}</option>`).join('');
+document.getElementById('q').oninput=e=>{F.q=e.target.value;draw()};
+[['res','r'],['sto','s'],['per','p']].forEach(([id,k])=>document.querySelectorAll('#'+id+' span').forEach(s=>s.onclick=()=>{document.querySelectorAll('#'+id+' span').forEach(x=>x.classList.remove('on'));s.classList.add('on');F[k]=s.dataset[k];draw()}));
+document.getElementById('sup').onchange=e=>{F.sup=e.target.value;draw()};
+document.getElementById('onlyTemp').onchange=e=>{F.temp=e.target.checked;draw()};
+document.querySelectorAll('#tabs span').forEach(s=>s.onclick=()=>{tab=s.dataset.t;draw()});
+draw();
+if(location.hash==='#ct')det(4);if(location.hash==='#ncc'){tab='sup';draw()}
+</script>
+</body></html>

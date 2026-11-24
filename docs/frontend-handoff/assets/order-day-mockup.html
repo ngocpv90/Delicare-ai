@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Đơn hàng theo ngày (thay màn Đơn đặt suất)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#A32D2D;--r-bg:#FCEBEB}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.week{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.step .act{margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.pane{display:none}.pane.on{display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:6px;vertical-align:middle}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+th.l,td.l{text-align:left}
+tr.grp td{background:#F7F9F4;font-weight:700;cursor:pointer}tr.grp.closed td.l i.chev{transform:rotate(-90deg)}
+tr.sub td.l{padding-left:28px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.q{width:76px;text-align:right;font-size:14px;font-weight:600;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.chip{display:inline-block;min-width:64px;text-align:right;font-weight:700;padding:5px 8px;border-radius:8px;border:1px solid var(--line)}
+.s-none{border-style:dashed;background:var(--n-bg);color:var(--muted)}
+.s-draft{border-color:#F2B98A;background:var(--o-bg);color:#8A3B0B}
+.s-bot{border-color:#A9C7EA;background:var(--b-bg);color:#1F4C80}
+.s-ok{border-color:#B9CB97;background:var(--g-bg);color:#3F5A17}
+.s-lock{background:#ECEEEA;color:#6b756e;border-color:#DADFD7}
+.hint{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.warn{color:var(--r);font-size:11px}
+.tot{font-weight:700;text-align:center}
+.foot td{font-weight:800;background:#FAFBF8;text-align:center}
+.pt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.pt .sel{font-weight:700;font-size:15px}
+.status{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+@media(max-width:1100px){.steps,.kpis{grid-template-columns:repeat(2,1fr)}.q{width:60px;font-size:13px}}
+
+.pipe{display:flex;align-items:center;gap:0;justify-content:center}
+.pipe i.d{width:10px;height:10px;border-radius:50%;background:#DADFD7;display:inline-block}
+.pipe i.d.on{background:#7FA43A}.pipe i.d.cur{background:#fff;border:2px solid #7FA43A}
+.pipe i.ln{width:14px;height:2px;background:#DADFD7;display:inline-block}.pipe i.ln.on{background:#7FA43A}
+.pl{font-size:11px;color:var(--muted);text-align:center;margin-top:2px}
+.flag{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+.f-o{background:var(--o-bg);color:#8A3B0B}.f-r{background:var(--r-bg);color:var(--r)}.f-b{background:var(--b-bg);color:#1F4C80}.f-g{background:var(--g-bg);color:#3F5A17}
+td.go{text-align:center;color:var(--muted)}tr.row:hover td{background:#FBFCF9;cursor:pointer}
+.chips{display:flex;gap:6px}.chips span{border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;background:#fff}.chips .on{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17;font-weight:600}
+.tabs .cnt,.cnt{padding:0 6px;display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--o);color:#fff;font-size:11px;text-align:center;margin-left:4px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:16px;width:min(620px,94vw);padding:20px 22px;max-height:90vh;overflow:auto}
+.dlg h2{font-size:17px;margin:0 0 4px}.fld{margin-top:12px}.fld label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.fld select,.fld input{width:100%;height:36px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.optrow{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;font-size:13px}
+.note{border-radius:10px;padding:8px 12px;font-size:12px;margin-top:12px}.note.w{background:var(--o-bg);color:#8A3B0B}.note.i{background:var(--b-bg);color:#1F4C80}
+.dfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+</style></head><body>
+<div class="card">
+ <div class="bar">
+  <div><h1>Đơn hàng theo ngày</h1><div class="small muted">Mọi đơn của một ngày ăn: số suất từng khách, từng điểm giao, từng buổi và đơn đang ở khâu nào. Đơn tự sinh từ <a href="#">Đăng ký suất tuần</a> – màn này chỉ để theo dõi và xử lý việc phát sinh.</div></div>
+  <div class="week"><div class="chips"><span>Hôm nay</span><span class="on">Ngày mai</span></div><button><i class="ti ti-chevron-left"></i></button> Thứ Năm 26/11/2026 <span class="small muted" style="font-weight:400">(chưa chốt · tự chốt lúc 20:00 hôm nay)</span> <button><i class="ti ti-chevron-right"></i></button></div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n">1</span><div><b>Nhận số từ đăng ký tuần</b><span class="muted">7 / 8 điểm giao đã có số</span><div class="act"><button class="xs"><i class="ti ti-calendar-week"></i>Mở Đăng ký suất tuần</button></div></div></div>
+  <div class="step"><span class="n" style="background:var(--o-bg);color:var(--o)">2</span><div><b>Xử lý việc cần chú ý</b><span class="muted">Chưa có số · lệch dự báo · sửa sau chốt</span><div class="act"><button class="xs o" data-tab="need"><i class="ti ti-alert-triangle"></i>3 việc cần xử lý</button></div></div></div>
+  <div class="step"><span class="n">3</span><div><b>Hệ thống tự chốt 20:00</b><span class="muted">Còn 6 giờ 15 phút. Chốt xong tự lập kế hoạch sản xuất.</span></div></div>
+  <div class="step"><span class="n" style="background:var(--n-bg);color:var(--muted)">4</span><div><b>Nấu → giao → đối soát</b><span class="muted">Hệ thống tự cập nhật theo từng khâu, không cần thao tác</span></div></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Tổng suất ngày</div><div class="v">3.790</div><div class="small" style="color:var(--g)">+3,1% so dự báo</div></div>
+  <div class="kpi"><div class="small muted">Điểm giao có đơn</div><div class="v">7 / 8</div><div class="small muted">4 khách hàng</div></div>
+  <div class="kpi"><div class="small muted">Cần xử lý</div><div class="v" style="color:var(--o)">3</div><div class="small muted">trước 20:00</div></div>
+  <div class="kpi"><div class="small muted">Thành tiền dự kiến</div><div class="v">142,6 tr</div><div class="small muted">chưa VAT</div></div>
+ </div>
+</div>
+
+<div class="card" style="padding:12px 14px">
+ <div class="bar" style="margin-bottom:8px">
+  <div class="tabs" style="margin:0;border:0"><span class="on" data-f="">Tất cả <span class="small muted">8</span></span><span data-f="need">Cần xử lý<span class="cnt">3</span></span><span data-f="extra">Đơn phát sinh <span class="small muted">1</span></span><span data-f="cancel">Đã hủy <span class="small muted">0</span></span></div>
+  <div style="display:flex;gap:8px"><input placeholder="Tìm khách, điểm giao, số đơn…" style="height:36px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;width:240px"><button id="btnNew" class="p"><i class="ti ti-plus"></i>Thêm đơn phát sinh</button><button><i class="ti ti-file-export"></i>Xuất Excel</button></div>
+ </div>
+ <div class="legend"><span><span class="sw" style="background:var(--g-bg);border:1px solid #B9CB97"></span>Số suất đã xác nhận (rê chuột xem từng lựa chọn)</span><span><span class="sw" style="background:var(--n-bg);border:1px dashed #9aa39c"></span>Chưa có số – chữ nhỏ là dự báo</span><span>Tiến độ: Đã xác nhận → Đã chốt → Đang nấu → Đã giao → Đã đối soát</span></div>
+ <table>
+  <colgroup><col style="width:27%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:17%"><col style="width:18%"><col style="width:6%"></colgroup>
+  <thead><tr><th class="l">Khách hàng / điểm giao</th><th>Sáng</th><th>Trưa</th><th>Tối</th><th>Tổng</th><th>Tiến độ</th><th class="l">Cần chú ý</th><th></th></tr></thead>
+  <tbody><tr class="grp" data-g="0"><td class="l"><i class="ti ti-chevron-down chev"></i> Công ty May Hồng Phát <span class="small muted" style="font-weight:400">· 2 điểm giao</span></td><td class="tot">200</td><td class="tot">770</td><td class="tot">180</td><td class="tot">1.150</td><td></td><td class="l"><span class='flag f-o'>1 cần xử lý</span></td><td></td></tr><tr class="row sub" data-p="0" data-k=""><td class="l">Xưởng 1 – Khu A<div class='hint'>Từ đăng ký suất tuần</div></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 72 · Lựa chọn 2: 48">120</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 270 · Lựa chọn 2: 180">450</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 108 · Lựa chọn 2: 72">180</span></td><td class="tot">750</td><td><div class="pipe"><i class="d cur" title="Đã xác nhận"></i><i class="ln "></i><i class="d " title="Đã chốt"></i><i class="ln "></i><i class="d " title="Đang nấu"></i><i class="ln "></i><i class="d " title="Đã giao"></i><i class="ln "></i><i class="d " title="Đã đối soát"></i></div><div class="pl">Đã xác nhận</div></td><td class="l"></td><td class="go"><i class="ti ti-chevron-right"></i></td></tr><tr class="row sub" data-p="0" data-k="need"><td class="l">Xưởng 2 – Khu B<div class='hint'>Từ đăng ký suất tuần</div></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 48 · Lựa chọn 2: 32">80</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 192 · Lựa chọn 2: 128">320</span></td><td style="text-align:center"><span class="muted">–</span></td><td class="tot">400</td><td><div class="pipe"><i class="d cur" title="Đã xác nhận"></i><i class="ln "></i><i class="d " title="Đã chốt"></i><i class="ln "></i><i class="d " title="Đang nấu"></i><i class="ln "></i><i class="d " title="Đã giao"></i><i class="ln "></i><i class="d " title="Đã đối soát"></i></div><div class="pl">Đã xác nhận</div></td><td class="l"><span class="flag f-o"><i class="ti ti-alert-triangle"></i>Lệch +34% dự báo</span></td><td class="go"><i class="ti ti-chevron-right"></i></td></tr><tr class="grp" data-g="1"><td class="l"><i class="ti ti-chevron-down chev"></i> Trường Tiểu học Đông Hà <span class="small muted" style="font-weight:400">· 2 điểm giao</span></td><td class="tot">–</td><td class="tot">620</td><td class="tot">–</td><td class="tot">620</td><td></td><td class="l"><span class='flag f-o'>1 cần xử lý</span></td><td></td></tr><tr class="row sub" data-p="1" data-k=""><td class="l">Cơ sở chính<div class='hint'>Từ đăng ký suất tuần</div></td><td style="text-align:center"><span class="muted">–</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 372 · Lựa chọn 2: 248">620</span></td><td style="text-align:center"><span class="muted">–</span></td><td class="tot">620</td><td><div class="pipe"><i class="d cur" title="Đã xác nhận"></i><i class="ln "></i><i class="d " title="Đã chốt"></i><i class="ln "></i><i class="d " title="Đang nấu"></i><i class="ln "></i><i class="d " title="Đã giao"></i><i class="ln "></i><i class="d " title="Đã đối soát"></i></div><div class="pl">Đã xác nhận</div></td><td class="l"></td><td class="go"><i class="ti ti-chevron-right"></i></td></tr><tr class="row sub" data-p="1" data-k="need"><td class="l">Cơ sở 2</td><td style="text-align:center"><span class="muted">–</span></td><td style="text-align:center"><span class="chip s-none" title="Dự báo">~150</span></td><td style="text-align:center"><span class="muted">–</span></td><td class="tot muted">–</td><td><div class="pl">Chưa có đơn</div></td><td class="l"><span class="flag f-r"><i class="ti ti-clock"></i>Chưa có số – 18:00 đã nhắc</span></td><td class="go"><button class="xs" onclick="event.stopPropagation()"><i class="ti ti-pencil"></i>Nhập số</button></td></tr><tr class="grp" data-g="2"><td class="l"><i class="ti ti-chevron-down chev"></i> Bệnh viện Đa khoa An Bình <span class="small muted" style="font-weight:400">· 2 điểm giao</span></td><td class="tot">90</td><td class="tot">350</td><td class="tot">190</td><td class="tot">630</td><td></td><td class="l"><span class='flag f-o'>1 cần xử lý</span></td><td></td></tr><tr class="row sub" data-p="2" data-k="need"><td class="l">Khoa Nội trú<div class='hint'>Từ đăng ký suất tuần</div></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 54 · Lựa chọn 2: 36">90</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 84 · Lựa chọn 2: 56">140</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 78 · Lựa chọn 2: 52">130</span></td><td class="tot">360</td><td><div class="pipe"><i class="d cur" title="Đã xác nhận"></i><i class="ln "></i><i class="d " title="Đã chốt"></i><i class="ln "></i><i class="d " title="Đang nấu"></i><i class="ln "></i><i class="d " title="Đã giao"></i><i class="ln "></i><i class="d " title="Đã đối soát"></i></div><div class="pl">Đã xác nhận</div></td><td class="l"><span class="flag f-b"><i class="ti ti-hourglass"></i>Lệch −28% dự báo – chờ Trưởng KD duyệt</span></td><td class="go"><button class="xs" onclick="event.stopPropagation()">Duyệt</button></td></tr><tr class="row sub" data-p="2" data-k=""><td class="l">Căng tin nhân viên<div class='hint'>Từ đăng ký suất tuần</div></td><td style="text-align:center"><span class="muted">–</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 126 · Lựa chọn 2: 84">210</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 36 · Lựa chọn 2: 24">60</span></td><td class="tot">270</td><td><div class="pipe"><i class="d cur" title="Đã xác nhận"></i><i class="ln "></i><i class="d " title="Đã chốt"></i><i class="ln "></i><i class="d " title="Đang nấu"></i><i class="ln "></i><i class="d " title="Đã giao"></i><i class="ln "></i><i class="d " title="Đã đối soát"></i></div><div class="pl">Đã xác nhận</div></td><td class="l"></td><td class="go"><i class="ti ti-chevron-right"></i></td></tr><tr class="grp" data-g="3"><td class="l"><i class="ti ti-chevron-down chev"></i> Công ty Điện tử Quang Minh <span class="small muted" style="font-weight:400">· 2 điểm giao</span></td><td class="tot">200</td><td class="tot">930</td><td class="tot">260</td><td class="tot">1.390</td><td></td><td class="l"></td><td></td></tr><tr class="row sub" data-p="3" data-k=""><td class="l">Nhà máy 1<div class='hint'>Từ đăng ký suất tuần</div></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 120 · Lựa chọn 2: 80">200</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 468 · Lựa chọn 2: 312">780</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 156 · Lựa chọn 2: 104">260</span></td><td class="tot">1.240</td><td><div class="pipe"><i class="d cur" title="Đã xác nhận"></i><i class="ln "></i><i class="d " title="Đã chốt"></i><i class="ln "></i><i class="d " title="Đang nấu"></i><i class="ln "></i><i class="d " title="Đã giao"></i><i class="ln "></i><i class="d " title="Đã đối soát"></i></div><div class="pl">Đã xác nhận</div></td><td class="l"></td><td class="go"><i class="ti ti-chevron-right"></i></td></tr><tr class="row sub" data-p="3" data-k=" extra"><td class="l">Sự kiện kỷ niệm 10 năm<div class='hint'>Đơn phát sinh · DH-261126-019</div></td><td style="text-align:center"><span class="muted">–</span></td><td style="text-align:center"><span class="chip s-ok" title="Lựa chọn 1: 90 · Lựa chọn 2: 60">150</span></td><td style="text-align:center"><span class="muted">–</span></td><td class="tot">150</td><td><div class="pipe"><i class="d cur" title="Đã xác nhận"></i><i class="ln "></i><i class="d " title="Đã chốt"></i><i class="ln "></i><i class="d " title="Đang nấu"></i><i class="ln "></i><i class="d " title="Đã giao"></i><i class="ln "></i><i class="d " title="Đã đối soát"></i></div><div class="pl">Đã xác nhận</div></td><td class="l"><span class="flag f-g"><i class="ti ti-sparkles"></i>Đơn phát sinh</span></td><td class="go"><i class="ti ti-chevron-right"></i></td></tr></tbody><tfoot><tr class="foot"><td class="l">Tổng ngày</td><td>490</td><td>2.670</td><td>630</td><td>3.790</td><td></td><td></td><td></td></tr></tfoot>
+ </table>
+ <div class="small muted" style="margin-top:8px"><i class="ti ti-info-circle"></i> Bấm một dòng để mở trang chi tiết đơn (số theo lựa chọn, món, giao hàng, đối soát, lịch sử). Sửa số trước 20:00 làm ở Đăng ký suất tuần; sau 20:00 bấm “Sửa sau chốt” trong trang chi tiết – hệ thống gửi duyệt.</div>
+</div>
+
+<div class="ov" id="ov"><div class="dlg">
+ <h2>Thêm đơn phát sinh</h2><div class="small muted">Đơn ngoài đăng ký tuần: sự kiện, khách đặt thêm, đơn bù. Giá lấy theo hợp đồng, món theo thực đơn tuần.</div>
+ <div class="grid2"><div class="fld"><label>Khách hàng</label><select><option>Công ty Điện tử Quang Minh</option></select></div><div class="fld"><label>Điểm giao</label><select><option>Nhà máy 1</option><option>+ Điểm giao tạm (ghi địa chỉ)</option></select></div></div>
+ <div class="grid2"><div class="fld"><label>Ngày ăn</label><input value="26/11/2026"></div><div class="fld"><label>Lý do</label><select><option>Sự kiện / tiệc</option><option>Khách đặt thêm</option><option>Đơn bù do phản ánh</option><option>Khác</option></select></div></div>
+ <div class="fld"><label>Số suất – Bữa trưa (hợp đồng HD-QM-2026 · 35.000 đ/suất)</label>
+  <div class="optrow"><div><b>Lựa chọn 1</b> <span class="small muted">Gà kho gừng · Canh bí · Rau muống xào</span></div><input style="width:90px;text-align:right" value="100"></div>
+  <div class="optrow"><div><b>Lựa chọn 2</b> <span class="small muted">Cá basa sốt cà · Canh chua · Đậu que xào</span></div><input style="width:90px;text-align:right" value="50"></div>
+ </div>
+ <div class="note i"><i class="ti ti-info-circle"></i> Trước 20:00: đơn vào thẳng kế hoạch, không cần duyệt. Sau giờ chốt: hệ thống tự gửi Trưởng KD duyệt và báo bếp.</div>
+ <div class="dfoot"><button id="cls">Hủy</button><button class="p">Tạo đơn · 150 suất · 5.250.000 đ</button></div>
+</div></div>
+<script>
+document.querySelectorAll('tr.grp').forEach(g=>g.onclick=()=>{g.classList.toggle('closed');document.querySelectorAll('tr[data-p="'+g.dataset.g+'"]').forEach(r=>r.style.display=g.classList.contains('closed')?'none':'')});
+const flt=k=>{document.querySelectorAll('.tabs [data-f]').forEach(t=>t.classList.toggle('on',t.dataset.f===k));document.querySelectorAll('tr.row').forEach(r=>r.style.display=!k||r.dataset.k.includes(k)?'':'none')};
+document.querySelectorAll('.tabs [data-f]').forEach(t=>t.onclick=()=>flt(t.dataset.f));
+document.querySelector('[data-tab]').onclick=()=>flt('need');
+document.getElementById('btnNew').onclick=()=>document.getElementById('ov').classList.add('on');
+document.getElementById('cls').onclick=()=>document.getElementById('ov').classList.remove('on');
+</script>
+</body></html>

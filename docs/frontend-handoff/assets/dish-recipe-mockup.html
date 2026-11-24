@@ -1,0 +1,100 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Tạo món ăn + nhập công thức trong trang chi tiết món</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#A32D2D;--r-bg:#FCEBEB}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.week{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.step .act{margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.pane{display:none}.pane.on{display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:6px;vertical-align:middle}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+th.l,td.l{text-align:left}
+tr.grp td{background:#F7F9F4;font-weight:700;cursor:pointer}tr.grp.closed td.l i.chev{transform:rotate(-90deg)}
+tr.sub td.l{padding-left:28px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.q{width:76px;text-align:right;font-size:14px;font-weight:600;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.chip{display:inline-block;min-width:64px;text-align:right;font-weight:700;padding:5px 8px;border-radius:8px;border:1px solid var(--line)}
+.s-none{border-style:dashed;background:var(--n-bg);color:var(--muted)}
+.s-draft{border-color:#F2B98A;background:var(--o-bg);color:#8A3B0B}
+.s-bot{border-color:#A9C7EA;background:var(--b-bg);color:#1F4C80}
+.s-ok{border-color:#B9CB97;background:var(--g-bg);color:#3F5A17}
+.s-lock{background:#ECEEEA;color:#6b756e;border-color:#DADFD7}
+.hint{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.warn{color:var(--r);font-size:11px}
+.tot{font-weight:700;text-align:center}
+.foot td{font-weight:800;background:#FAFBF8;text-align:center}
+.pt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.pt .sel{font-weight:700;font-size:15px}
+.status{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+@media(max-width:1100px){.steps,.kpis{grid-template-columns:repeat(2,1fr)}.q{width:60px;font-size:13px}}
+
+.two{display:grid;grid-template-columns:420px minmax(0,1fr);gap:16px;align-items:start}
+.lbl{font-size:12px;color:var(--muted);margin:12px 0 4px;display:block}.req{color:var(--r)}
+.inp,select.inp{width:100%;height:36px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:13px;background:#fff}
+.row2{display:grid;grid-template-columns:1fr 110px;gap:8px}
+.ro{background:#F7F9F4;border:1px dashed #d5dbd2;border-radius:10px;padding:8px 10px;font-size:13px;color:var(--muted)}
+.opt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:13px;display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.opt.on{border-color:#B9CB97;background:var(--g-bg)}.opt input{margin-top:3px}
+.dfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.cap{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:6px}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+.t-o{background:var(--o-bg);color:#8A3B0B}.t-g{background:var(--g-bg);color:#3F5A17}.t-n{background:var(--n-bg);color:var(--muted)}
+.vers{display:flex;gap:6px;margin:10px 0}.vers span{border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:12px}.vers .on{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B;font-weight:600}
+td input{width:80px;text-align:right;height:30px;border:1px solid var(--line);border-radius:8px;padding:0 6px}
+td.r,th.r{text-align:right}
+.addrow td{background:#FBFCF9}
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.sum div{border:1px solid var(--line);border-radius:12px;padding:8px 12px}.sum b{display:block;font-size:18px}
+.check{font-size:12px;margin-top:10px;display:flex;flex-direction:column;gap:4px}
+.ok{color:var(--g)}.bad{color:var(--r)}
+</style></head><body>
+<div class="two">
+<div class="card">
+ <div class="cap">Bước 1 · Hộp thoại "Thêm món ăn"</div>
+ <h1 style="font-size:17px">Thêm món ăn</h1><div class="small muted">Mã món tự sinh khi lưu.</div>
+ <label class="lbl">Tên món <span class="req">*</span></label><input class="inp" value="Thịt kho trứng vịt">
+ <label class="lbl">Nhóm món <span class="req">*</span></label><select class="inp"><option>Món mặn</option><option>Món rau</option><option>Canh</option><option>Cơm &amp; tinh bột</option><option>Tráng miệng</option><option>Món bệnh lý</option></select>
+ <div class="small" style="margin-top:4px"><a href="#">+ Thêm nhóm món</a></div>
+ <label class="lbl">Định lượng 1 suất</label><div class="row2"><input class="inp" value="150"><select class="inp"><option>g</option><option>ml</option><option>cái</option></select></div>
+ <label class="lbl">Mô tả</label><input class="inp" placeholder="VD: kho nước dừa, trứng vịt luộc bóc vỏ">
+ <label class="lbl">Giá thành chuẩn</label><div class="ro">Hệ thống tự tính khi công thức được duyệt</div>
+ <label class="lbl">Công thức chế biến</label>
+ <label class="opt on"><input type="radio" name="r" checked><div><b>Chép từ món có sẵn</b> <span class="small muted">rồi sửa lại</span><select class="inp" style="margin-top:6px"><option>Thịt kho trứng (M001) · V3 đang dùng · 6 nguyên liệu</option></select></div></label>
+ <label class="opt"><input type="radio" name="r"><div><b>Nhập mới</b><div class="small muted">Bảng nguyên liệu trống</div></div></label>
+ <label class="opt"><input type="radio" name="r"><div><b>Để sau</b><div class="small muted">Món sẽ gắn nhãn "Chưa có công thức" – chưa đưa vào thực đơn được</div></div></label>
+ <div class="dfoot"><button>Hủy</button><button class="p"><i class="ti ti-arrow-right"></i>Lưu và mở công thức</button></div>
+</div>
+
+<div class="card">
+ <div class="cap">Bước 2 · Trang chi tiết món – tab "Công thức"</div>
+ <div class="head"><div><h1>Thịt kho trứng vịt <span class="small muted" style="font-weight:400">M087</span></h1><div style="margin-top:6px"><span class="tag t-n">Món mặn</span> <span class="tag t-o">Chưa có công thức hiệu lực</span></div></div>
+ <div style="display:flex;gap:8px"><button><i class="ti ti-pencil"></i>Sửa thông tin</button></div></div>
+ <div class="tabs" style="margin-top:12px"><span>Tổng quan</span><span class="on">Công thức</span><span>Thực đơn</span><span>Lịch sử nấu</span><span>Lịch sử</span></div>
+ <div class="vers"><span class="on">V1 · Nháp (chép từ M001 · V3)</span></div>
+ <div class="small muted" style="margin-bottom:8px">Định lượng tính cho <b>100 suất</b>. Gõ tên nguyên liệu ở dòng cuối để thêm; Enter xuống dòng. Hệ thống tự tính lượng cần mua và giá vốn.</div>
+ <table><colgroup><col style="width:4%"><col style="width:24%"><col style="width:12%"><col style="width:7%"><col style="width:11%"><col style="width:12%"><col style="width:11%"><col style="width:13%"><col style="width:6%"></colgroup>
+ <thead><tr><th>#</th><th class="l">Nguyên liệu</th><th class="r">Định lượng tinh</th><th>ĐVT</th><th class="r">Hao hụt sơ chế %</th><th class="r">Lượng cần mua</th><th class="r">Giá NCC</th><th class="r">Thành tiền (100 suất)</th><th></th></tr></thead>
+ <tbody><tr><td>1</td><td class="l"><b>Thịt ba chỉ</b></td><td class="r"><input value="8"></td><td>kg</td><td class="r"><input value="10" style="width:56px"></td><td class="r">8,89</td><td class="r">185.000</td><td class="r"><b>1.644.444</b></td><td>✕</td></tr><tr><td>2</td><td class="l"><b>Trứng vịt</b></td><td class="r"><input value="100"></td><td>quả</td><td class="r"><input value="0" style="width:56px"></td><td class="r">100</td><td class="r">3.500</td><td class="r"><b>350.000</b></td><td>✕</td></tr><tr><td>3</td><td class="l"><b>Nước dừa</b></td><td class="r"><input value="3"></td><td>lít</td><td class="r"><input value="0" style="width:56px"></td><td class="r">3</td><td class="r">25.000</td><td class="r"><b>75.000</b></td><td>✕</td></tr><tr><td>4</td><td class="l"><b>Nước mắm</b></td><td class="r"><input value="0,4"></td><td>lít</td><td class="r"><input value="0" style="width:56px"></td><td class="r">0,4</td><td class="r">60.000</td><td class="r"><b>24.000</b></td><td>✕</td></tr><tr><td>5</td><td class="l"><b>Đường</b></td><td class="r"><input value="0,3"></td><td>kg</td><td class="r"><input value="0" style="width:56px"></td><td class="r">0,3</td><td class="r">22.000</td><td class="r"><b>6.600</b></td><td>✕</td></tr><tr><td>6</td><td class="l"><b>Hành tím</b></td><td class="r"><input value="0,5"></td><td>kg</td><td class="r"><input value="15" style="width:56px"></td><td class="r">0,59</td><td class="r">45.000</td><td class="r"><b>26.471</b></td><td>✕</td></tr><tr class="addrow"><td></td><td colspan="8" class="l"><input style="width:100%;text-align:left" placeholder="+ Gõ tên nguyên liệu để thêm (VD: tiêu, hạt nêm…)"></td></tr></tbody></table>
+ <div class="sum"><div><span class="small muted">Giá vốn NL / suất</span><b>21.265 đ</b></div><div><span class="small muted">Số nguyên liệu</span><b>6</b></div><div><span class="small muted">Thành phẩm / suất</span><b>150 g</b></div><div><span class="small muted">So với V3 món gốc</span><b>+4,2%</b></div></div>
+ <div class="check"><span class="ok">✓ Mọi nguyên liệu đã có giá nhà cung cấp</span><span class="ok">✓ Đơn vị tính quy đổi được</span><span class="muted">○ Chưa có hướng dẫn chế biến (không bắt buộc)</span></div>
+ <div class="dfoot"><button><i class="ti ti-device-floppy"></i>Lưu nháp</button><button class="o"><i class="ti ti-send"></i>Gửi duyệt</button></div>
+ <div class="small muted">Sau khi duyệt: công thức có hiệu lực, giá thành chuẩn tự tính, món dùng được trong Thực đơn tuần. Sửa công thức đang dùng = bấm “Tạo phiên bản mới” (chép bản hiện tại → nháp → duyệt).</div>
+</div>
+</div></body></html>

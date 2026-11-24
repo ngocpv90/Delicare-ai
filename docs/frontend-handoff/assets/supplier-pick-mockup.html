@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Đơn mua: chọn nhà cung cấp</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#A32D2D;--r-bg:#FCEBEB}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.xs{height:28px;padding:0 9px;font-size:12px}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.week{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.step{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--g-bg);color:var(--g)}
+.step .act{margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.pane{display:none}.pane.on{display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:6px;vertical-align:middle}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+th.l,td.l{text-align:left}
+tr.grp td{background:#F7F9F4;font-weight:700;cursor:pointer}tr.grp.closed td.l i.chev{transform:rotate(-90deg)}
+tr.sub td.l{padding-left:28px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.q{width:76px;text-align:right;font-size:14px;font-weight:600;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.chip{display:inline-block;min-width:64px;text-align:right;font-weight:700;padding:5px 8px;border-radius:8px;border:1px solid var(--line)}
+.s-none{border-style:dashed;background:var(--n-bg);color:var(--muted)}
+.s-draft{border-color:#F2B98A;background:var(--o-bg);color:#8A3B0B}
+.s-bot{border-color:#A9C7EA;background:var(--b-bg);color:#1F4C80}
+.s-ok{border-color:#B9CB97;background:var(--g-bg);color:#3F5A17}
+.s-lock{background:#ECEEEA;color:#6b756e;border-color:#DADFD7}
+.hint{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.warn{color:var(--r);font-size:11px}
+.tot{font-weight:700;text-align:center}
+.foot td{font-weight:800;background:#FAFBF8;text-align:center}
+.pt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.pt .sel{font-weight:700;font-size:15px}
+.status{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600}
+@media(max-width:1100px){.steps,.kpis{grid-template-columns:repeat(2,1fr)}.q{width:60px;font-size:13px}}
+
+.lay{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.ln{border-bottom:1px solid var(--line);padding:12px 4px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:14px;align-items:start}
+.ln:last-child{border-bottom:0}
+.ing b{font-size:14px}.ing .small{display:block;margin-top:2px}
+.why{display:inline-block;margin-top:6px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+.w-o{background:var(--o-bg);color:#8A3B0B}.w-r{background:var(--r-bg);color:var(--r)}.w-b{background:var(--b-bg);color:#1F4C80}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sc{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;position:relative;background:#fff;font-size:12px;transition:.12s}
+.sc:hover{border-color:#B9CB97}
+.sc.sel{border-color:#7FA43A;background:var(--g-bg);box-shadow:0 0 0 2px #E2EDCF}
+.sc.dis{opacity:.55;cursor:not-allowed;background:#FAFAF8}
+.sc .nm{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:52px}
+.sc .pr{font-size:16px;font-weight:800;margin:4px 0 2px}
+.sc .pr input{width:90px;font-size:14px;font-weight:700;border:1px solid #d5dbd2;border-radius:6px;padding:2px 4px}
+.sc .meta{color:var(--muted);line-height:1.5}
+.sc .badge{position:absolute;top:7px;right:8px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.b-g{background:#7FA43A;color:#fff}.b-n{background:var(--n-bg);color:var(--muted)}
+.bad{color:var(--r)}.good{color:var(--g)}
+.edit{font-size:11px;color:var(--b);cursor:pointer;margin-left:4px}
+.grpbar{display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.side h3{margin:0 0 8px;font-size:15px}
+.po{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.po .top{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+.st{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;margin-top:6px}
+.s-g{background:var(--g-bg);color:#3F5A17}.s-o{background:var(--o-bg);color:#8A3B0B}.s-r{background:var(--r-bg);color:var(--r)}
+.empty{color:var(--muted);font-size:13px;padding:6px 0}
+.tot{display:flex;justify-content:space-between;font-weight:800;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+.srcline{font-size:12px;color:var(--muted);margin-top:2px}
+@media(max-width:1100px){.lay{grid-template-columns:1fr}.ln{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<div class="card">
+ <div class="bar">
+  <div><h1>Đơn mua hàng</h1><div class="small muted">Đề nghị mua được duyệt → hệ thống tự lập đơn mua theo nhà cung cấp gợi ý. Bộ phận Mua chỉ chọn nhà cung cấp cho dòng ngoại lệ rồi gửi đơn.</div></div>
+  <div class="week"><button>◀</button> Ngày cần hàng: 25/11 – 27/11/2026 <button>▶</button></div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n">1</span><div><b>Đề nghị mua đã duyệt</b><span class="muted">MH-261124-0003 · duyệt 2 cấp lúc 09:12</span></div></div>
+  <div class="step"><span class="n" style="background:var(--o-bg);color:var(--o)">2</span><div><b>Chọn nhà cung cấp</b><span class="muted">Chỉ dòng ngoại lệ</span><div class="act"><button class="xs o" onclick="tab('t1')">4 dòng cần chọn</button></div></div></div>
+  <div class="step"><span class="n">3</span><div><b>Duyệt đơn mua</b><span class="muted">Tự duyệt nếu NCC ưu tiên, giá không tăng, &lt; 50 tr</span></div></div>
+  <div class="step"><span class="n">4</span><div><b>Gửi nhà cung cấp</b><span class="muted">Xuất phiếu đặt hàng, đánh dấu đã gửi</span><div class="act"><button class="xs p" onclick="tab('t2')">3 đơn chờ gửi</button></div></div></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Dòng cần chọn NCC</div><div class="v" style="color:var(--o)" id="kNeed">4</div></div>
+  <div class="kpi"><div class="small muted">Đơn chờ gửi NCC</div><div class="v">3</div></div>
+  <div class="kpi"><div class="small muted">Đơn chờ duyệt</div><div class="v">1</div></div>
+  <div class="kpi"><div class="small muted">Giá trị đang chọn</div><div class="v" id="kVal">–</div></div>
+ </div>
+</div>
+
+<div class="tabs"><span class="on" data-t="t1" onclick="tab('t1')">Chọn nhà cung cấp <b style="color:var(--o)">4</b></span><span data-t="t2" onclick="tab('t2')">Chờ gửi NCC <b>3</b></span><span>Chờ duyệt <b>1</b></span><span>Đã gửi · chờ giao</span><span>Đã nhận / đóng</span><span>Tất cả</span></div>
+
+<div class="pane on" id="t1"><div class="lay">
+ <div class="card" style="padding:14px 16px">
+  <div class="bar" style="margin-bottom:4px">
+   <div class="small muted">Bấm vào thẻ nhà cung cấp để chọn. Viền xanh = hệ thống gợi ý (giao kịp · giá tốt · đúng hẹn ≥ 90%). Sửa giá ngay trên thẻ nếu NCC báo giá khác.</div>
+   <button class="p" onclick="pickAll()">✓ Theo gợi ý cho tất cả</button>
+  </div>
+  <div id="lines"></div>
+ </div>
+ <div class="card side">
+  <h3>Đơn mua sẽ lập</h3><div class="small muted" style="margin-bottom:10px">Tự gom theo nhà cung cấp, cập nhật ngay khi anh chọn.</div>
+  <div id="pos"></div>
+  <div class="tot"><span>Tổng</span><span id="tot">–</span></div>
+  <button class="p" style="width:100%;justify-content:center;margin-top:12px;height:40px" id="mk">Lập đơn mua</button>
+  <div class="small muted" style="margin-top:8px">Đơn đủ điều kiện → <b>Đã duyệt, chờ gửi</b>. Còn lại → tự gửi duyệt (≥ 50 tr: Giám đốc).</div>
+ </div>
+</div></div>
+
+<div class="pane" id="t2"><div class="card">
+ <div class="bar" style="margin-bottom:10px"><div class="small muted">Đơn đã duyệt, chưa gửi nhà cung cấp. Gửi một lần cho tất cả: hệ thống xuất phiếu đặt hàng từng NCC và đánh dấu đã gửi.</div><button class="p">Gửi tất cả (3 đơn)</button></div>
+ <table><thead><tr><th class="l">Số đơn</th><th class="l">Nhà cung cấp</th><th>Số dòng</th><th>Giá trị</th><th>Ngày giao</th><th class="l">Nguồn</th><th class="l">Duyệt</th><th></th></tr></thead><tbody>
+ <tr><td class="l"><b>PO-261124-0011</b></td><td class="l">HTX Rau sạch Đông Anh</td><td style="text-align:center">7</td><td style="text-align:center">8.240.000</td><td style="text-align:center">25/11</td><td class="l small">Tự lập từ MH-261124-0003</td><td class="l"><span class="st s-g">Hệ thống tự duyệt</span></td><td><button class="xs">Gửi</button></td></tr>
+ <tr><td class="l"><b>PO-261124-0012</b></td><td class="l">Công ty Thực phẩm Hà Nam</td><td style="text-align:center">4</td><td style="text-align:center">21.500.000</td><td style="text-align:center">25/11</td><td class="l small">Tự lập từ MH-261124-0003</td><td class="l"><span class="st s-g">Hệ thống tự duyệt</span></td><td><button class="xs">Gửi</button></td></tr>
+ <tr><td class="l"><b>PO-261124-0009</b></td><td class="l">Đại lý Gạo Thái Bình</td><td style="text-align:center">2</td><td style="text-align:center">12.800.000</td><td style="text-align:center">26/11</td><td class="l small">Lập tay (mua gấp)</td><td class="l"><span class="st s-o">Trưởng Mua đã duyệt</span></td><td><button class="xs">Gửi</button></td></tr>
+ </tbody></table>
+</div></div>
+
+<script>
+const S={
+ rau:{n:'HTX Rau sạch Đông Anh',ot:96,iss:0},
+ rau2:{n:'Rau Đà Lạt Xanh',ot:88,iss:1},
+ rau3:{n:'Chợ đầu mối Long Biên',ot:92,iss:0},
+ thit:{n:'Công ty Thực phẩm Hà Nam',ot:94,iss:0},
+ thit2:{n:'Lò mổ Phú Xuyên',ot:91,iss:0},
+ hs:{n:'Hải sản Quảng Ninh',ot:93,iss:0},
+ hs2:{n:'Thủy sản Hồng Hà',ot:85,iss:2},
+ kho:{n:'Đại lý Gạo Thái Bình',ot:97,iss:0},
+};
+const L=[
+ {g:'Rau củ',ing:'Cải ngọt',q:60,u:'kg',need:'25/11',why:['w-o','NCC ưu tiên hết hàng tuần này'],c:[['rau',0,0,'Hết hàng đến 28/11',true],['rau3',17500,1,'',false],['rau2',16000,2,'',false]],rec:'rau3'},
+ {g:'Rau củ',ing:'Bí đỏ',q:45,u:'kg',need:'25/11',why:['w-b','Chưa có NCC ưu tiên'],c:[['rau3',14000,1,'',false],['rau2',12500,2,'',false],['rau',15000,1,'Giá cao nhất',false]],rec:'rau3'},
+ {g:'Thịt, hải sản',ing:'Cá basa phi lê',q:38,u:'kg',need:'26/11',why:['w-r','Giá NCC ưu tiên tăng 14% so lần trước'],c:[['hs',78000,1,'Ưu tiên · +14%',false],['hs2',69000,1,'2 sự cố / 90 ngày',false],['thit',72000,2,'',false]],rec:'thit',pref:'hs'},
+ {g:'Thịt, hải sản',ing:'Thịt nạc vai',q:25,u:'kg',need:'25/11',why:['w-o','Cần 25 kg – dưới mức tối thiểu NCC ưu tiên (30 kg)'],c:[['thit',118000,1,'Tối thiểu 30 kg → mua 30 kg',false,30],['thit2',121000,1,'',false],['hs',0,0,'Không bán',true]],rec:'thit',pref:'thit'},
+];
+const pick={};
+const money=v=>Math.round(v).toLocaleString('vi-VN');
+function draw(){
+ let h='',g='';
+ L.forEach((l,i)=>{
+  if(l.g!==g){g=l.g;h+=`<div class="grpbar"><span>${g}</span><span class="edit" onclick="grp('${g}',${i})">Áp NCC đang chọn cho cả nhóm</span></div>`}
+  h+=`<div class="ln"><div class="ing"><b>${l.ing}</b><span class="small muted">${l.q} ${l.u} · cần ${l.need}</span><span class="why ${l.why[0]}">${l.why[1]}</span></div><div class="cards">`+
+  l.c.map(([k,p,ld,note,dis,moq])=>{const qq=Math.max(l.q,moq||0);const s=S[k],sel=pick[i]===k,rec=l.rec===k;
+   return `<div class="sc ${sel?'sel':''} ${dis?'dis':''}" ${dis?'':`onclick="pk(${i},'${k}')"`} style="${rec&&!sel?'border-color:#B9CB97':''}">
+   ${rec?'<span class="badge b-g">Gợi ý</span>':(l.pref===k?'<span class="badge b-n">Ưu tiên</span>':'')}
+   <div class="nm">${s.n}</div>
+   <div class="pr">${dis?'<span class="muted" style="font-size:13px">—</span>':money(p)+' đ<span class="small muted" style="font-weight:400">/'+l.u+'</span>'}${!dis?`<span class="edit" onclick="event.stopPropagation();ed(${i},'${k}')">sửa giá</span>`:''}</div>
+   <div class="meta">${dis?'':`Giao ${ld} ngày · `}<span class="${s.ot>=90?'good':'bad'}">đúng hẹn ${s.ot}%</span>${s.iss?` · <span class="bad">${s.iss} sự cố</span>`:''}${note?`<br><span class="${/sự cố|\+|cao|Hết|Không/.test(note)?'bad':''}">${note}</span>`:''}${!dis?`<br>= <b>${money(p*qq)} đ</b>`:''}</div></div>`}).join('')+`</div></div>`;
+ });
+ document.getElementById('lines').innerHTML=h;
+ const base={rau:[7,8240000,true],thit:[3,17800000,true]};
+ const add={};
+ L.forEach((l,i)=>{const k=pick[i];if(!k)return;const c=l.c.find(x=>x[0]===k);(add[k]=add[k]||{n:0,v:0,pref:true});add[k].n++;add[k].v+=c[1]*Math.max(l.q,c[5]||0);if(l.pref!==k||(k!=='thit'&&k!=='rau'))add[k].pref=false});
+ const keys=[...new Set(Object.keys(base).concat(Object.keys(add)))];
+ let tot=0,ph='';
+ keys.forEach(k=>{const b=base[k]||[0,0,true],a=add[k]||{n:0,v:0,pref:true};const v=b[1]+a.v,n=b[0]+a.n;tot+=v;
+  const auto=b[2]&&a.pref&&v<50e6;
+  ph+=`<div class="po"><div class="top"><span>${S[k].n}</span><span>${money(v)}</span></div><div class="srcline">${n} dòng${b[0]?` · ${b[0]} dòng hệ thống đã lập`:''}${a.n?` · <b>+${a.n} dòng vừa chọn</b>`:''}</div><span class="st ${v>=50e6?'s-r':auto?'s-g':'s-o'}">${v>=50e6?'Chờ Giám đốc duyệt':auto?'Tự duyệt → chờ gửi':'Gửi Trưởng Mua duyệt (có dòng NCC không ưu tiên)'}</span></div>`});
+ const need=L.length-Object.keys(pick).length;
+ document.getElementById('pos').innerHTML=ph+(need?`<div class="empty">Còn ${need} dòng chưa chọn nhà cung cấp.</div>`:'');
+ document.getElementById('tot').textContent=money(tot)+' đ';
+ document.getElementById('kNeed').textContent=need;document.getElementById('kVal').textContent=(tot/1e6).toFixed(1).replace('.',',')+' tr';
+ const mk=document.getElementById('mk');mk.disabled=!!need;mk.style.opacity=need?.5:1;mk.textContent=need?`Lập đơn mua (còn ${need} dòng chưa chọn)`:'Lập đơn mua';
+}
+function pk(i,k){pick[i]=k;draw()}
+function pickAll(){L.forEach((l,i)=>pick[i]=l.rec);draw()}
+function grp(g,i){const k=pick[i];if(!k)return alert('Chọn nhà cung cấp cho dòng đầu nhóm trước');L.forEach((l,j)=>{if(l.g===g&&l.c.some(c=>c[0]===k&&!c[4]))pick[j]=k});draw()}
+function ed(i,k){const c=L[i].c.find(x=>x[0]===k);const v=prompt('Giá mới NCC báo (đ/'+L[i].u+'). Người có quyền: ghi vào bảng giá từ hôm nay.',c[1]);if(v&&+v>0){c[1]=+v;pick[i]=k;draw()}}
+function tab(t){document.querySelectorAll('.tabs [data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id===t))}
+draw();
+</script></body></html>

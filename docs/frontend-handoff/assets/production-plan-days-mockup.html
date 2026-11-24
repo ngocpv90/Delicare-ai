@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Kế hoạch sản xuất 7 ngày tới (đề xuất UI-6.23)</title>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}
+button.r{background:#fff;border-color:#E9A8A1;color:var(--r);font-weight:600}button.sm{height:28px;font-size:12px;padding:0 8px;width:100%}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.week{display:flex;align-items:center;gap:8px;font-weight:600}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:220px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center}
+.step b{display:block}.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed;min-width:980px}
+th,td{border-bottom:1px solid var(--line);padding:6px 6px;vertical-align:middle;text-align:center}
+th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+th.today{background:#EEF4E3;color:var(--ink)}
+th b{display:block;font-size:13px;color:var(--ink)}
+th.l,td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}
+th.l{background:#FAFBF8}
+col.name{width:220px}
+tr.grp td{background:#F7F9F4;font-weight:700;cursor:pointer}tr.grp td.l{background:#F7F9F4}
+tr.grp td.l .chev{display:inline-block;transition:.15s}tr.grp.closed td.l .chev{transform:rotate(-90deg)}
+tr.sub td.l{padding-left:28px;font-weight:400}
+tr.act td{background:#FCFDFB;padding:8px 6px}tr.act td.l{background:#FCFDFB;font-weight:600}
+.q{display:inline-block;min-width:76px;text-align:right;font-size:14px;font-weight:600;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+.q.rel{border-color:#B9CB97;background:var(--g-bg);color:#3F5A17}
+.q.apr{border-color:#A9C7EA;background:var(--b-bg);color:#1F4C80}
+.q.draft{border-color:#F2B98A;background:var(--o-bg);color:#8A3B0B}
+.q.held{border-color:#E9A8A1;background:var(--r-bg);color:var(--r)}
+.q.none{border-style:dashed;background:var(--n-bg);color:var(--muted)}
+.q.open{border-color:#F2B98A;background:#fff;color:var(--o)}
+.q.zero{border-color:transparent;background:transparent;color:#b5bcb6;cursor:default}
+.hint{display:block;font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint.bad{color:var(--r)}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;margin-top:4px}
+.c-rel{background:var(--g-bg);color:#3F5A17}.c-apr{background:var(--b-bg);color:#1F4C80}.c-draft{background:var(--o-bg);color:#8A3B0B}.c-held{background:var(--r-bg);color:var(--r)}.c-none{background:var(--n-bg);color:var(--muted)}
+.tot{font-weight:700}
+.foot td{font-weight:800;background:#FAFBF8}.foot td.l{background:#FAFBF8}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.scroll{overflow-x:auto}
+/* hộp chi tiết ngày */
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:16px}
+.ov.on{display:flex}
+.dlg{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+.dlg h2{font-size:17px;margin:0 0 4px}
+.dlg .rs{background:var(--r-bg);color:var(--r);border-radius:10px;padding:10px 12px;font-size:13px;margin:12px 0}
+.dlg .ok{background:var(--g-bg);color:#3F5A17;border-radius:10px;padding:10px 12px;font-size:13px;margin:12px 0}
+.dlg table{min-width:0}.dlg td,.dlg th{text-align:left}
+.dlg .ft{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.toast{position:fixed;right:20px;bottom:20px;background:#1E2620;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;display:none;z-index:10;max-width:420px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}col.name{width:170px}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}.step{min-width:100%}h1{font-size:18px}}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Kế hoạch sản xuất</h1><div class="small muted">Hệ thống tự lập, tự duyệt và ra lệnh sản xuất sau khi chốt đơn (20:00 hôm trước). Màn này cho thấy 7 ngày tới – anh chỉ cần xử lý những ngày có nút.</div></div>
+  <div class="week"><button title="7 ngày trước">◀</button> 24/11 – 30/11/2026 <span class="small muted" style="font-weight:400">(7 ngày tới)</span> <button title="7 ngày sau">▶</button></div>
+ </div>
+ <div class="steps">
+  <div class="step"><span class="n" style="background:var(--g-bg);color:var(--g)">1</span><div><b>Chốt đơn</b><span class="muted">Tự động 20:00 hôm trước</span></div></div>
+  <div class="step"><span class="n" style="background:var(--g-bg);color:var(--g)">2</span><div><b>Lập kế hoạch</b><span class="muted">Tự động · <span id="s2">1 ngày cần tính lại</span></span></div><button class="o" style="margin-left:auto" onclick="act('27')">Tính lại 27/11</button></div>
+  <div class="step"><span class="n" style="background:var(--r-bg);color:var(--r)">3</span><div><b>Duyệt</b><span class="muted" id="s3">1 ngày bị giữ – thiếu nguyên liệu</span></div><button class="r" style="margin-left:auto" onclick="openDay('25')">Xem lý do</button></div>
+  <div class="step"><span class="n" style="background:var(--b-bg);color:var(--b)">4</span><div><b>Ra lệnh SX theo ca</b><span class="muted" id="s4">2 ca chờ ra lệnh</span></div><button class="p" style="margin-left:auto" onclick="act('26')">Ra lệnh 2 ca</button></div>
+ </div>
+ <div class="kpis">
+  <div class="kpi"><div class="small muted">Suất đã chốt (7 ngày)</div><div class="v" id="kLock">0</div></div>
+  <div class="kpi"><div class="small muted">Suất chưa chốt</div><div class="v" style="color:var(--o)" id="kOpen">0</div></div>
+  <div class="kpi"><div class="small muted">Ngày cần xử lý</div><div class="v" style="color:var(--r)" id="kTodo">0</div></div>
+  <div class="kpi"><div class="small muted">Ca đã ra lệnh SX</div><div class="v" style="color:var(--g)" id="kRel">0</div></div>
+ </div>
+</div>
+
+<div class="tabs"><span class="on">7 ngày tới</span><span>Danh sách kế hoạch</span><span>Nhật ký tự động</span></div>
+
+<div class="card" style="padding:12px 14px">
+ <div class="legend">
+  <span><span class="sw" style="background:var(--g-bg);border:1px solid #B9CB97"></span>Đã ra lệnh SX</span>
+  <span><span class="sw" style="background:var(--b-bg);border:1px solid #A9C7EA"></span>Đã duyệt – chờ ra lệnh</span>
+  <span><span class="sw" style="background:var(--o-bg);border:1px solid #F2B98A"></span>Nháp / cần tính lại</span>
+  <span><span class="sw" style="background:var(--r-bg);border:1px solid #E9A8A1"></span>Hệ thống giữ lại (có lý do)</span>
+  <span><span class="sw" style="background:var(--n-bg);border:1px dashed #9aa39c"></span>Chưa có kế hoạch</span>
+  <span>Bấm ô để xem chi tiết ngày / ca</span>
+ </div>
+ <div class="scroll"><table id="t"></table></div>
+</div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)closeDlg()"><div class="dlg" id="dlg"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SHIFTS=['Ca 1 · Sáng','Ca 2 · Trưa','Ca 3 · Chiều','Ca 4 · Tối'];
+// st: rel | apr | draft | held | none (chưa có KH) | open (đơn chưa chốt)
+const days=[
+ {k:'24',d:'T3 24/11',today:true,no:'KH-261124-01',st:'rel',lock:20150,open:0,dish:14,ord:56,
+  sh:[[5200,'rel'],[6100,'rel'],[3800,'rel'],[5050,'rel']]},
+ {k:'25',d:'T4 25/11',no:'KH-261125-01',st:'held',lock:19800,open:0,dish:13,ord:0,
+  reason:'Thiếu nguyên liệu sau giữ chỗ: Thịt ba chỉ thiếu 42 kg, Cá basa phi lê thiếu 18 kg. Hệ thống không tự duyệt – báo Kế hoạch + COO lúc 20:05.',
+  sh:[[5100,'held'],[6000,'held'],[3700,'held'],[5000,'held']]},
+ {k:'26',d:'T5 26/11',no:'KH-261126-01',st:'apr',lock:20020,open:0,dish:14,ord:28,
+  sh:[[5150,'rel'],[6050,'rel'],[3780,'apr'],[5040,'apr']]},
+ {k:'27',d:'T6 27/11',no:'KH-261127-01',st:'draft',lock:19950,open:0,dish:14,ord:0,re:380,
+  sh:[[5005,'draft'],[5925,'draft'],[3705,'draft'],[4935,'draft']]},
+ {k:'28',d:'T7 28/11',st:'none',lock:9800,open:4100,dish:0,ord:0,
+  sh:[[2400,'none'],[3100,'none'],[1900,'none'],[2400,'none']]},
+ {k:'29',d:'CN 29/11',st:'open',lock:0,open:6200,dish:0,ord:0,sh:[[0,'zero'],[0,'zero'],[0,'zero'],[0,'zero']]},
+ {k:'30',d:'T2 30/11',st:'open',lock:0,open:20300,dish:0,ord:0,sh:[[0,'zero'],[0,'zero'],[0,'zero'],[0,'zero']]},
+];
+const grp={order:true,plan:true,prod:false};
+const fmt=n=>n==null?'':Math.round(n).toLocaleString('vi-VN');
+const CHIP={rel:['c-rel','Đã ra lệnh'],apr:['c-apr','Đã duyệt'],draft:['c-draft','Nháp'],held:['c-held','Bị giữ lại'],none:['c-none','Chưa có KH'],open:['c-none','Chưa chốt đơn']};
+function action(x){
+ if(x.st==='held')return `<button class="sm r" onclick="openDay('${x.k}')">Xem lý do</button>`;
+ if(x.st==='draft')return `<button class="sm o" onclick="act('${x.k}')">Tính lại</button>`;
+ if(x.st==='apr'){const n=x.sh.filter(s=>s[1]==='apr').length;return `<button class="sm p" onclick="act('${x.k}')">Ra lệnh ${n} ca</button>`;}
+ if(x.st==='none'&&x.lock>0)return `<button class="sm o" onclick="act('${x.k}')">Lập trước</button>`;
+ if(x.st==='rel')return `<button class="sm" onclick="openDay('${x.k}')">Xem</button>`;
+ return `<span class="small muted">Tự lập sau chốt 20:00</span>`;
+}
+function hintOf(x){
+ if(x.st==='held')return '<span class="hint bad">Thiếu 2 nguyên liệu</span>';
+ if(x.st==='draft')return `<span class="hint">+${fmt(x.re)} suất chốt sau lần lập</span>`;
+ if(x.st==='none'&&x.open)return `<span class="hint">Còn ${fmt(x.open)} suất chưa chốt</span>`;
+ if(x.st==='apr')return '<span class="hint">2/4 ca đã ra lệnh</span>';
+ return '<span class="hint">&nbsp;</span>';
+}
+function cell(v,st,x,label){
+ if(st==='zero')return `<span class="q zero">–</span>`;
+ const tip=label+' · '+x.d+': '+fmt(v)+' suất';
+ return `<span class="q ${st}" title="${tip}" onclick="openDay('${x.k}')">${fmt(v)}</span>`;
+}
+function draw(){
+ let h='<colgroup><col class="name">'+days.map(()=>'<col>').join('')+'<col style="width:96px"></colgroup>';
+ h+='<tr><th class="l">Ngày sản xuất</th>'+days.map(x=>`<th class="${x.today?'today':''}"><b>${x.d}</b>${x.today?'hôm nay':''}<br><span class="chip ${CHIP[x.st][0]}">${CHIP[x.st][1]}</span></th>`).join('')+'<th>Cả 7 ngày</th></tr>';
+ h+='<tr class="act"><td class="l">Việc cần làm</td>'+days.map(x=>`<td>${action(x)}${hintOf(x)}</td>`).join('')+'<td></td></tr>';
+ // Nhóm Đơn hàng
+ const L=days.map(x=>x.lock),O=days.map(x=>x.open);
+ h+=row('order','Đơn hàng (suất)',days.map((x,i)=>L[i]+O[i]));
+ if(grp.order){
+  h+=`<tr class="sub"><td class="l">Đã chốt</td>${days.map(x=>`<td>${x.lock?`<span class="q rel" style="cursor:default">${fmt(x.lock)}</span>`:'<span class="q zero">–</span>'}</td>`).join('')}<td class="tot">${fmt(sum(L))}</td></tr>`;
+  h+=`<tr class="sub"><td class="l">Chưa chốt</td>${days.map(x=>`<td>${x.open?`<span class="q open" style="cursor:default">${fmt(x.open)}</span>`:'<span class="q zero">–</span>'}</td>`).join('')}<td class="tot" style="color:var(--o)">${fmt(sum(O))}</td></tr>`;
+ }
+ // Nhóm Kế hoạch theo ca
+ const P=days.map(x=>x.st==='open'?0:x.sh.reduce((a,s)=>a+s[0],0));
+ h+=row('plan','Kế hoạch theo ca (suất)',P);
+ if(grp.plan) SHIFTS.forEach((s,si)=>{
+  const tot=days.reduce((a,x)=>a+(x.sh[si][1]==='zero'?0:x.sh[si][0]),0);
+  h+=`<tr class="sub"><td class="l">${s}</td>${days.map(x=>`<td>${cell(x.sh[si][0],x.sh[si][1],x,s)}</td>`).join('')}<td class="tot">${fmt(tot)}</td></tr>`;
+ });
+ // Nhóm Sản xuất
+ h+=row('prod','Món · lệnh sản xuất',days.map(x=>x.ord),true);
+ if(grp.prod){
+  h+=`<tr class="sub"><td class="l">Số món</td>${days.map(x=>`<td>${x.dish||'<span class="muted">–</span>'}</td>`).join('')}<td></td></tr>`;
+  h+=`<tr class="sub"><td class="l">Lệnh SX đã ra</td>${days.map(x=>`<td>${x.ord||'<span class="muted">–</span>'}</td>`).join('')}<td class="tot">${sum(days.map(x=>x.ord))}</td></tr>`;
+ }
+ document.getElementById('t').innerHTML=h;
+ document.querySelectorAll('tr.grp').forEach(t=>t.onclick=()=>{grp[t.dataset.g]=!grp[t.dataset.g];draw()});
+ document.getElementById('kLock').textContent=fmt(sum(L));
+ document.getElementById('kOpen').textContent=fmt(sum(O));
+ document.getElementById('kTodo').textContent=days.filter(x=>['held','draft','apr'].includes(x.st)||(x.st==='none'&&x.lock)).length;
+ document.getElementById('kRel').textContent=days.reduce((a,x)=>a+x.sh.filter(s=>s[1]==='rel').length,0)+' / '+days.filter(x=>x.st!=='open').length*4;
+}
+function row(g,name,vals,plain){
+ return `<tr class="grp ${grp[g]?'':'closed'}" data-g="${g}"><td class="l"><span class="chev">▾</span> ${name}</td>${vals.map(v=>`<td>${v?fmt(v):'<span class="muted">–</span>'}</td>`).join('')}<td>${plain?'':fmt(sum(vals))}</td></tr>`;
+}
+const sum=a=>a.reduce((x,y)=>x+(y||0),0);
+function toast(t){const e=document.getElementById('toast');e.innerHTML=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3500)}
+function act(k){
+ const x=days.find(d=>d.k===k);
+ if(x.st==='draft'){x.lock+=0;x.sh=x.sh.map(s=>[s[0]+95,'draft']);x.re=0;x.st='rel';x.sh=x.sh.map(s=>[s[0],'rel']);x.ord=56;
+  toast(`Đã tính lại ${x.no} (+380 suất) · đủ công thức và nguyên liệu → hệ thống tự duyệt và ra lệnh 4 ca, 56 lệnh SX.`);}
+ else if(x.st==='apr'){x.sh=x.sh.map(s=>[s[0],'rel']);x.st='rel';x.ord=56;toast(`Đã ra lệnh 2 ca còn lại của ${x.no} · tổng 56 lệnh SX, giữ chỗ nguyên liệu xong.`);}
+ else if(x.st==='none'){x.no='KH-261128-01';x.st='draft';x.dish=12;x.sh=x.sh.map(s=>[s[0],'draft']);toast(`Đã lập ${x.no} từ 9.800 suất đã chốt (Nháp). 4.100 suất chưa chốt sẽ được cộng vào khi chốt 20:00 – kế hoạch tự tính lại.`);}
+ else if(x.st==='held'){x.st='apr';x.sh=x.sh.map(s=>[s[0],'apr']);toast(`Đã duyệt ${x.no}. Bấm "Ra lệnh 4 ca" khi hàng về.`);closeDlg();}
+ updSteps();draw();
+}
+function updSteps(){
+ const dr=days.filter(x=>x.st==='draft').length,he=days.filter(x=>x.st==='held').length,ca=days.reduce((a,x)=>a+x.sh.filter(s=>s[1]==='apr').length,0);
+ document.getElementById('s2').textContent=dr?dr+' ngày cần tính lại':'Không có ngày cần xử lý';
+ document.getElementById('s3').textContent=he?he+' ngày bị giữ – thiếu nguyên liệu':'Không có ngày bị giữ';
+ document.getElementById('s4').textContent=ca?ca+' ca chờ ra lệnh':'Mọi ca đã ra lệnh';
+}
+function openDay(k){
+ const x=days.find(d=>d.k===k);
+ let b=`<h2>${x.no||'Chưa có kế hoạch'} · ${x.d}</h2><div class="small muted">${fmt(x.lock)} suất đã chốt · ${x.dish} món · <span class="chip ${CHIP[x.st][0]}">${CHIP[x.st][1]}</span></div>`;
+ if(x.st==='held')b+=`<div class="rs"><b>Hệ thống giữ lại, chưa tự duyệt:</b><br>${x.reason}</div>
+  <table><tr><th>Nguyên liệu</th><th>Cần</th><th>Giữ được</th><th>Thiếu</th><th>Đang về</th></tr>
+  <tr><td>Thịt ba chỉ</td><td>620 kg</td><td>578 kg</td><td style="color:var(--r);font-weight:700">42 kg</td><td>Đơn mua DM-2611-018 · 24/11 15:00</td></tr>
+  <tr><td>Cá basa phi lê</td><td>410 kg</td><td>392 kg</td><td style="color:var(--r);font-weight:700">18 kg</td><td class="muted">Chưa có đơn mua</td></tr></table>
+  <div class="small muted" style="margin-top:8px">Duyệt khi chấp nhận thiếu: lệnh SX vẫn ra, phần thiếu kho giữ chỗ bổ sung khi hàng về (nút "Giữ chỗ bổ sung" ở Phiếu xuất sản xuất).</div>
+  <div class="ft"><button onclick="closeDlg()">Đóng</button><button>Mở tính nhu cầu nguyên liệu</button><button>Mở kế hoạch</button><button class="p" onclick="act('25')">Vẫn duyệt</button></div>`;
+ else b+=`<div class="ok">${x.st==='rel'?'Đã ra lệnh sản xuất đủ 4 ca.':'Bấm ô ca để mở trang chi tiết kế hoạch tại ca đó.'}</div>
+  <table><tr><th>Ca</th><th>Suất</th><th>Trạng thái</th></tr>${x.sh.map((s,i)=>`<tr><td>${SHIFTS[i]}</td><td>${fmt(s[0])}</td><td><span class="chip ${(CHIP[s[1]]||CHIP.none)[0]}">${(CHIP[s[1]]||['','–'])[1]}</span></td></tr>`).join('')}</table>
+  <div class="ft"><button onclick="closeDlg()">Đóng</button><button class="p">Mở trang chi tiết kế hoạch</button></div>`;
+ document.getElementById('dlg').innerHTML=b;document.getElementById('ov').classList.add('on');
+}
+function closeDlg(){document.getElementById('ov').classList.remove('on')}
+draw();
+if(location.hash==='#ly-do')openDay('25');
+</script>
+</body></html>

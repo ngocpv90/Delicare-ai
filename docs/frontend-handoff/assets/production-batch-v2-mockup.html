@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Mẻ nấu v2: 1 chạm mỗi mẻ (đề xuất)</title>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA;--dk:#4E6B22}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}
+button.r{border-color:#E9A8A1;color:var(--r);font-weight:600}button.sm{height:28px;font-size:12px;padding:0 10px}
+button.xl{height:64px;font-size:20px;border-radius:14px;padding:0 22px;font-weight:700}
+button.lg{height:48px;font-size:16px;border-radius:12px;padding:0 16px;font-weight:600}
+h1{font-size:20px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}
+.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.tag{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px}
+.t-run{background:var(--o-bg);color:#8A3B0B}.t-done{background:var(--g-bg);color:#3F5A17}.t-wait{background:var(--n-bg);color:var(--muted)}.t-qc{background:var(--b-bg);color:#1F4C80}.t-bad{background:var(--r-bg);color:var(--r)}
+.shifts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+.sh{border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;background:#fff}
+.sh.on{border-color:#7FA43A;box-shadow:0 0 0 2px #DCE9C6 inset;background:#FAFCF6}
+.sh .row{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.prog{height:6px;border-radius:4px;background:var(--n-bg);margin-top:8px;overflow:hidden;display:flex}.prog i{display:block;height:100%}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px;align-items:center}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.todo{border:1px solid #F2C6BF;background:#FFF8F6;border-radius:14px;padding:10px 14px;margin-bottom:16px}
+.todo h3{margin:0 0 6px;font-size:14px;color:var(--r)}
+.todo .it{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px dashed #F2D3CD;font-size:13px}.todo .it:first-of-type{border-top:0}.todo .it span{flex:1}
+/* chế độ dây chuyền */
+.lhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.lsel{display:flex;gap:8px;flex-wrap:wrap}.lsel span{border:1px solid #d5dbd2;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;background:#fff}.lsel span.on{border-color:#7FA43A;background:#F2F7EA;font-weight:700}
+.lgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+.now{border:2px solid #F2B98A;background:#FFFAF5;border-radius:18px;padding:18px 20px;margin-bottom:14px}
+.now h2{font-size:26px;margin:6px 0 2px}.now .meta{font-size:15px;color:var(--muted)}
+.timer{font-size:15px;margin:12px 0;display:flex;gap:16px;flex-wrap:wrap}.timer b{font-size:22px}
+.bigbar{height:10px;border-radius:6px;background:#F3E3D5;overflow:hidden;margin:6px 0 14px}.bigbar i{display:block;height:100%;background:#E8833A}
+.next{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;background:#fff}
+.next .tm{font-size:18px;font-weight:700;width:62px}.next .nm{flex:1}.next .nm b{font-size:16px}
+.next.late{border-color:#E9A8A1;background:#FFF8F6}
+.done{font-size:13px;border-top:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;gap:8px}
+.sect{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:4px 0 10px}
+/* dòng thời gian */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.gantt{position:relative;min-width:900px}
+.ghead,.grow{display:grid;grid-template-columns:180px 1fr}
+.ghead .ticks{position:relative;height:26px;border-bottom:1px solid var(--line)}
+.ghead .ticks span{position:absolute;top:4px;font-size:11px;color:var(--muted);transform:translateX(-50%)}
+.grow{border-bottom:1px solid var(--line);min-height:62px}.grow .ln{padding:8px 8px 8px 0;font-size:13px}.grow .ln b{display:block}
+.track{position:relative}
+.bt{position:absolute;top:9px;height:44px;border-radius:8px;padding:4px 7px;font-size:11px;line-height:1.25;overflow:hidden;cursor:pointer;border:1px solid;white-space:nowrap}
+.bt b{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis}
+.Planned{background:#fff;border-color:#C9CFC6}.Cooking{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}.QCPending{background:var(--b-bg);border-color:#A9C7EA;color:#1F4C80}
+.Passed{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}.Packed{background:#DCE7C9;border-color:#B9CB97;color:var(--dk);opacity:.75}.Failed{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.bt.late{box-shadow:0 0 0 2px var(--r)}
+.nowl{position:absolute;top:0;bottom:0;width:2px;background:var(--r);z-index:2;pointer-events:none}.nowl span{position:absolute;top:-2px;left:4px;font-size:11px;color:#fff;background:var(--r);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.cut{position:absolute;top:0;bottom:0;border-left:2px dashed #7FA43A;z-index:1;pointer-events:none}.cut span{position:absolute;bottom:2px;left:4px;font-size:11px;color:var(--dk);background:#fff;padding:0 4px;white-space:nowrap}
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:12px;text-align:right;padding:8px}table.t th.l,table.t td.l{text-align:left}
+table.t td{border-top:1px solid var(--line);padding:8px;text-align:right}table.t tr.sum td{font-weight:800;background:#FAFBF8}
+/* hộp Xong mẻ */
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:760px;width:100%;padding:18px 20px;max-height:96vh;overflow:auto}
+.dlg h2{margin:0;font-size:20px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.fld{border:1px solid var(--line);border-radius:14px;padding:12px}.fld label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+.fld.act{border-color:#7FA43A;box-shadow:0 0 0 2px #DCE9C6}
+.num{font-size:30px;font-weight:800;display:flex;align-items:center;gap:8px}.num small{font-size:15px;color:var(--muted);font-weight:500}
+.num .stp{width:44px;height:44px;font-size:22px;border-radius:12px}
+.ok{color:var(--g);font-size:13px;font-weight:600}.bad{color:var(--r);font-size:13px;font-weight:600}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.pad button{height:52px;font-size:22px;border-radius:12px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chips span{border:1px solid #d5dbd2;border-radius:20px;padding:8px 12px;font-size:13px;cursor:pointer}.chips span.on{background:var(--o-bg);border-color:#F2B98A;font-weight:600}
+.ft{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.scroll{overflow-x:auto}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.lgrid{grid-template-columns:1fr}}
+@media(max-width:700px){body{padding:10px}.card{padding:14px}.shifts{grid-template-columns:repeat(2,1fr)}.fgrid{grid-template-columns:1fr}.now h2{font-size:22px}button.xl{height:58px;font-size:18px;width:100%}}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Mẻ nấu</h1><div class="small muted">Mỗi mẻ chỉ 1 chạm: <b>Xong mẻ</b> (nhập nhiệt độ lõi) → hệ thống ghi sản lượng, lưu mẫu, tự Đạt QC và bắt đầu mẻ tiếp theo.</div></div>
+  <div class="bar" style="gap:10px"><div class="seg" id="mode"><span data-m="line">Dây chuyền</span><span data-m="chef">Bếp trưởng</span></div>
+  <div class="day"><button>◀</button>T3 24/11/2026 <span class="tag t-run">Hôm nay</span><button>▶</button></div></div>
+ </div>
+ <div id="top"></div>
+</div>
+<div id="main"></div>
+
+<div class="ov" id="ov"><div class="dlg" id="dlg"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+let NOW=9*60+10;
+const ST={Planned:'Chờ nấu',Cooking:'Đang nấu',QCPending:'Chờ QC',Passed:'Đạt',Packed:'Đã đóng gói',Failed:'Không đạt'};
+const FLOW=['Planned','Cooking','QCPending','Passed','Packed'];
+const LINES=[{id:'L1',n:'Món mặn',c:'300 suất/mẻ · 40\''},{id:'L2',n:'Rau & canh',c:'400 suất/mẻ · 30\''},{id:'L3',n:'Cơm',c:'1.200 suất/mẻ · 60\''},{id:'L4',n:'Món phụ & tráng miệng',c:'600 suất/mẻ · 30\''}];
+const t=s=>{const[a,b]=s.split(':');return +a*60+ +b}, hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(Math.round(m%60)).padStart(2,'0'), f=n=>Math.round(n).toLocaleString('vi-VN');
+let n=0;const B=(l,dish,q,s,e,st,x={})=>Object.assign({id:'b'+(++n),no:'ME-261124-C2-'+String(n).padStart(2,'0'),l,dish,q,s:t(s),e:t(e),st,out:['Passed','Packed'].includes(st)?q-4:null,waste:0,sample:['Passed','Packed','QCPending'].includes(st)},x);
+const SH={
+ C1:{n:'Ca 1 · Sáng',out:'05:30',from:2,to:6,b:[]},
+ C2:{n:'Ca 2 · Trưa',out:'10:30',from:6,to:10.5,b:[
+  B('L1','Thịt kho trứng',300,'06:00','06:40','Packed',{temp:82}),B('L1','Thịt kho trứng',300,'06:40','07:20','Packed',{temp:84}),B('L1','Thịt kho trứng',300,'07:20','08:00','Passed',{temp:83}),
+  B('L1','Cá basa sốt cà',300,'08:00','08:40','QCPending',{temp:78,sample:false,out:296,why:'Chưa lưu mẫu món Cá basa sốt cà – ca 2',qcSince:t('08:42')}),B('L1','Cá basa sốt cà',300,'08:40','09:20','Cooking',{startAt:t('08:44')}),B('L1','Cá basa sốt cà',300,'09:20','10:00','Planned'),
+  B('L2','Canh bí đỏ',400,'07:00','07:30','Packed',{temp:90}),B('L2','Canh bí đỏ',400,'07:30','08:00','Passed',{temp:91}),B('L2','Rau muống xào tỏi',400,'08:00','08:30','Passed',{temp:80}),
+  B('L2','Rau muống xào tỏi',400,'08:30','09:00','Planned'),B('L2','Canh chua',400,'09:00','09:30','Planned'),B('L2','Canh chua',400,'09:30','10:00','Planned'),
+  B('L3','Cơm trắng',1200,'07:00','08:00','Passed',{temp:95}),B('L3','Cơm trắng',1200,'08:00','09:00','Passed',{temp:94}),B('L3','Cơm trắng',1200,'09:00','10:00','Cooking',{startAt:t('09:01')}),
+  B('L4','Đậu hũ sốt cà',600,'06:30','07:00','Packed',{temp:80}),B('L4','Chè đậu xanh',600,'07:00','07:30','Failed',{temp:68,out:0,why:'Lõi 68°C < 70°C – loại, tự ghi hao hụt "QC loại" 600 suất'}),B('L4','Chè đậu xanh',600,'07:30','08:00','Packed',{temp:79}),
+  B('L4','Chè đậu xanh',600,'08:45','09:15','Cooking',{extra:1,startAt:t('08:46')}),B('L4','Trái cây cắt',600,'09:15','09:45','Planned')]},
+ C3:{n:'Ca 3 · Chiều',out:'15:30',from:11,to:15.5,b:[]},C4:{n:'Ca 4 · Tối',out:'18:30',from:14,to:18.5,b:[]},
+};
+(function(){const mk=(k,st,base)=>{const S=SH[k];LINES.forEach((L,li)=>{for(let i=0;i<(li===2?2:4);i++){const d=li===2?60:li===0?40:30,s=base*60+li*15+i*d;S.b.push({id:'b'+(++n),no:'ME-'+k+'-'+(S.b.length+1),l:L.id,dish:['Gà kho gừng','Canh rau ngót','Cơm trắng','Bánh flan'][li],q:[300,400,1200,600][li],s,e:s+d,st,out:st==='Packed'?[300,400,1200,600][li]-3:null,waste:0,sample:st==='Packed',temp:st==='Packed'?80:null})}})};mk('C1','Packed',2);mk('C3','Planned',11);mk('C4','Planned',14)})();
+let mode=window.innerWidth<1100?'line':'line',cur='C2',line='L1',tab='time';
+const isLate=b=>(b.st==='Planned'&&b.s+10<=NOW)||(b.st==='QCPending'&&b.qcSince&&NOW-b.qcSince>=20)||(b.st==='Cooking'&&b.e<NOW);
+const lateWhy=b=>b.st==='Planned'?`Đến giờ ${hm(b.s)} chưa bắt đầu`:b.st==='QCPending'?`Chờ QC ${NOW-b.qcSince}' – ${b.why||''}`:b.st==='Cooking'?`Quá giờ xong ${hm(b.e)}`:'';
+const pc=v=>v.toLocaleString('vi-VN',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+const LN=id=>LINES.find(l=>l.id===id);
+const bs=()=>SH[cur].b;
+/* ---------- đầu màn ---------- */
+function drawTop(){
+ let h=`<div class="shifts">${Object.entries(SH).map(([k,S])=>{const b=S.b,done=b.filter(x=>['Packed','Passed','Failed'].includes(x.st)).length,run=b.filter(x=>['Cooking','QCPending'].includes(x.st)).length,late=b.filter(isLate).length;
+  const tg=done===b.length?'<span class="tag t-done">Xong</span>':(run||done)?'<span class="tag t-run">Đang chạy</span>':'<span class="tag t-wait">Chưa bắt đầu</span>';
+  return `<div class="sh ${k===cur?'on':''}" data-s="${k}"><div class="row"><b>${S.n}</b>${tg}</div><div class="small muted" style="margin-top:4px">Xuất bếp ${S.out} · ${done}/${b.length} mẻ${late?` · <b style="color:var(--r)">${late} trễ</b>`:''}</div><div class="prog"><i style="width:${done/b.length*100}%;background:#7FA43A"></i><i style="width:${run/b.length*100}%;background:#E8833A"></i></div></div>`}).join('')}</div>`;
+ if(mode==='chef'){const b=bs();h+=`<div class="kpis"><div class="kpi"><div class="small muted">Mẻ của ca</div><div class="v">${b.length}</div></div><div class="kpi"><div class="small muted">Đang nấu</div><div class="v" style="color:var(--o)">${b.filter(x=>x.st==='Cooking').length}</div></div><div class="kpi"><div class="small muted">Tự Đạt QC / cần QA xem</div><div class="v"><span style="color:var(--g)">${b.filter(x=>['Passed','Packed'].includes(x.st)).length}</span> / <span style="color:var(--b)">${b.filter(x=>x.st==='QCPending').length}</span></div></div><div class="kpi"><div class="small muted">Trễ / cần xử lý</div><div class="v" style="color:var(--r)">${b.filter(isLate).length}</div></div></div>`;}
+ document.getElementById('top').innerHTML=h;
+ document.querySelectorAll('.sh').forEach(e=>e.onclick=()=>{cur=e.dataset.s;draw()});
+ document.querySelectorAll('#mode span').forEach(e=>{e.classList.toggle('on',e.dataset.m===mode);e.onclick=()=>{mode=e.dataset.m;draw()}});
+}
+/* ---------- chế độ dây chuyền ---------- */
+function drawLine(){
+ const L=LN(line),b=bs().filter(x=>x.l===line).sort((a,c)=>a.s-c.s);
+ const cook=b.filter(x=>x.st==='Cooking'),next=b.filter(x=>x.st==='Planned'),fin=b.filter(x=>!['Cooking','Planned'].includes(x.st)).reverse(),qc=b.filter(x=>x.st==='QCPending');
+ let h=`<div class="card"><div class="lhead"><div class="lsel">${LINES.map(l=>`<span class="${l.id===line?'on':''}" data-l="${l.id}">${l.n}</span>`).join('')}</div><div class="small muted">Máy này nhớ dây chuyền đã chọn · Bây giờ <b style="color:var(--ink)">${hm(NOW)}</b></div></div></div>`;
+ h+=`<div class="lgrid"><div>`;
+ if(cook.length)cook.forEach(x=>{const el=NOW-(x.startAt||x.s),dur=x.e-x.s,pct=Math.min(100,el/dur*100);
+  h+=`<div class="now"><span class="tag t-run">ĐANG NẤU</span> <span class="small muted">${x.no}${x.extra?' · nấu thêm':''}</span><h2>${x.dish}</h2><div class="meta">${f(x.q)} suất · ${hm(x.s)}–${hm(x.e)}</div>
+   <div class="timer"><span>Đã nấu <b>${el}'</b></span><span>Còn <b style="color:${dur-el<0?'var(--r)':'inherit'}">${dur-el}'</b></span><span>Lưu mẫu món: <b style="font-size:15px">${sampleDone(x)?'<span class="ok">đã lưu</span>':'<span class="bad">chưa lưu</span>'}</b></span></div>
+   <div class="bigbar"><i style="width:${pct}%"></i></div><button class="xl p" onclick="finish('${x.id}')">Xong mẻ</button> <button class="lg" onclick="openWaste('${x.id}')">Ghi hao hụt</button></div>`});
+ else h+=`<div class="now" style="border-color:var(--line);background:#fff"><span class="tag t-wait">CHƯA NẤU MẺ NÀO</span><h2>${next[0]?next[0].dish:'Hết mẻ của ca'}</h2>${next[0]?`<div class="meta">${f(next[0].q)} suất · ${hm(next[0].s)}</div><div style="margin-top:14px"><button class="xl o" onclick="start('${next[0].id}')">Bắt đầu nấu</button></div>`:''}</div>`;
+ if(qc.length)h+=`<div class="todo"><h3>Mẻ chờ QC – cần bổ sung</h3>${qc.map(x=>`<div class="it"><span><b>${x.dish}</b> · ${x.no} — <span style="color:var(--r)">${x.why}</span></span>${!x.sample?`<button class="sm p" onclick="doSample('${x.id}')">Đã lưu mẫu</button>`:''}</div>`).join('')}</div>`;
+ h+=`</div><div><div class="card"><div class="sect">Tiếp theo</div>${next.map((x,i)=>`<div class="next ${isLate(x)?'late':''}"><div class="tm">${hm(x.s)}</div><div class="nm"><b>${x.dish}</b><div class="small muted">${f(x.q)} suất · ${x.no}${isLate(x)?` · <span style="color:var(--r)">${lateWhy(x)}</span>`:''}</div></div>${i===0?`<button class="lg ${cook.length?'':'o'}" onclick="start('${x.id}')">Bắt đầu</button>`:''}</div>`).join('')||'<div class="muted small">Hết mẻ chờ nấu</div>'}
+  <div class="sect" style="margin-top:16px">Đã xong trong ca (${fin.length})</div>${fin.map(x=>`<div class="done"><span>${hm(x.s)} · <b>${x.dish}</b> · ${x.out!=null?f(x.out):'–'} suất</span><span class="tag ${x.st==='Failed'?'t-bad':x.st==='QCPending'?'t-qc':'t-done'}">${ST[x.st]}${x.temp?' · '+x.temp+'°C':''}</span></div>`).join('')}</div></div></div>`;
+ return h;
+}
+function sampleDone(x){return bs().some(y=>y.dish===x.dish&&y.sample)}
+/* ---------- chế độ bếp trưởng ---------- */
+function drawChef(){
+ const late=bs().filter(isLate);
+ let h=late.length?`<div class="todo"><h3>Cần làm ngay (${late.length})</h3>${late.map(b=>`<div class="it"><span><b>${b.dish}</b> · ${b.no} · ${LN(b.l).n} — <span style="color:var(--r)">${lateWhy(b)}</span></span>${b.st==='Planned'?`<button class="sm o" onclick="start('${b.id}')">Bắt đầu nấu</button>`:b.st==='QCPending'&&!b.sample?`<button class="sm p" onclick="doSample('${b.id}')">Đã lưu mẫu</button>`:''}</div>`).join('')}</div>`:'';
+ h+=`<div class="tabs">${[['time','Theo giờ'],['out','Sản lượng & hao hụt ca']].map(([k,l])=>`<span class="${tab===k?'on':''}" data-t="${k}">${l}</span>`).join('')}</div><div class="card" style="padding:12px 14px">${tab==='time'?gantt():outTbl()}</div>`;
+ return h;
+}
+function gantt(){
+ const S=SH[cur],a=S.from*60,z=S.to*60,W=z-a,p=m=>((m-a)/W*100);let ticks='';for(let m=Math.ceil(a/30)*30;m<z;m+=30)ticks+=`<span style="left:${p(m)}%">${hm(m)}</span>`;
+ let h=`<div class="legend">${FLOW.concat('Failed').map(s=>`<span><span class="sw ${s}" style="border:1px solid"></span>${ST[s]}</span>`).join('')}<span><span class="sw" style="border:2px solid var(--r)"></span>Trễ</span><span>Bấm mẻ để xử lý · vạch xanh: hạn xong nấu</span></div><div class="scroll"><div class="gantt"><div class="ghead"><div class="small muted" style="padding-top:6px">Dây chuyền</div><div class="ticks">${ticks}</div></div>`;
+ LINES.forEach(L=>{const b=S.b.filter(x=>x.l===L.id);h+=`<div class="grow"><div class="ln"><b>${L.n}</b><span class="small muted">${L.c}</span></div><div class="track">${b.map(x=>`<div class="bt ${x.st} ${isLate(x)?'late':''}" style="left:${p(x.s)}%;width:calc(${p(x.e)-p(x.s)}% - 3px)" title="${x.no} · ${ST[x.st]}${isLate(x)?' · '+lateWhy(x):''}" onclick="chefClick('${x.id}')"><b>${x.dish}</b>${f(x.q)} suất · ${hm(x.s)}</div>`).join('')}</div></div>`});
+ if(cur==='C2')h+=`<div class="nowl" style="left:calc(180px + (100% - 180px) * ${p(NOW)/100})"><span>Bây giờ ${hm(NOW)}</span></div>`;
+ h+=`<div class="cut" style="left:calc(180px + (100% - 180px) * ${p(t(S.out)-30)/100})"><span>Hạn xong nấu ${hm(t(S.out)-30)}</span></div></div></div>`;return h;
+}
+function outTbl(){
+ const g={};bs().forEach(x=>{const k=x.dish;g[k]=g[k]||{dish:k,plan:0,out:0,ok:0,bad:0,waste:0,n:0,d:0};const r=g[k];r.plan+=x.q;r.n++;if(x.out!=null){r.out+=x.st==='Failed'?x.q:x.out;r.d++;}if(['Passed','Packed'].includes(x.st))r.ok+=x.out;if(x.st==='Failed')r.bad+=x.q;r.waste+=x.waste});
+ const rows=Object.values(g);const S=k=>rows.reduce((a,r)=>a+r[k],0);
+ return `<table class="t"><tr><th class="l">Món</th><th>Mẻ xong</th><th>Kế hoạch</th><th>Nấu được</th><th>Đạt</th><th>Loại QC</th><th>Hao hụt khác</th><th>% hao hụt</th></tr>${rows.map(r=>`<tr><td class="l"><b>${r.dish}</b></td><td>${r.d}/${r.n}</td><td>${f(r.plan)}</td><td>${r.d?f(r.out):'–'}</td><td>${r.ok?f(r.ok):'–'}</td><td style="color:${r.bad?'var(--r)':''}">${r.bad?f(r.bad):'–'}</td><td>${r.waste?f(r.waste):'–'}</td><td>${r.out?pc((r.bad+r.waste)/r.out*100):'–'}</td></tr>`).join('')}<tr class="sum"><td class="l">Cả ca</td><td>${S('d')}/${S('n')}</td><td>${f(S('plan'))}</td><td>${f(S('out'))}</td><td>${f(S('ok'))}</td><td>${f(S('bad'))}</td><td>${f(S('waste'))}</td><td>${S('out')?pc((S('bad')+S('waste'))/S('out')*100):''}</td></tr></table>
+ <div class="small muted" style="margin-top:8px">Số tự gom từ "Xong mẻ" và "Ghi hao hụt" – không nhập ở đây. Phân tích nhiều ngày (theo món, loại, chi phí) xem ở màn <b>Hao hụt</b>.</div>`;
+}
+function chefClick(id){const b=find(id);if(b.st==='Cooking')finish(id);else if(b.st==='Planned')start(id);else toast(`${b.dish} · ${b.no} · ${ST[b.st]}${b.temp?' · lõi '+b.temp+'°C':''}${b.why?' · '+b.why:''}`)}
+/* ---------- thao tác ---------- */
+function find(id){for(const S of Object.values(SH)){const b=S.b.find(x=>x.id===id);if(b)return b}}
+function start(id){const b=find(id);b.st='Cooking';b.startAt=NOW;toast(`Đã bắt đầu nấu ${b.dish} (${b.no})`);draw()}
+let F=null;
+function finish(id){
+ const b=find(id),nx=bs().filter(x=>x.l===b.l&&x.st==='Planned').sort((a,c)=>a.s-c.s)[0];
+ F={id,temp:'',out:b.q,sample:sampleDone(b),field:'temp',waste:null,wq:0,nx:nx&&nx.id};renderF();document.getElementById('ov').classList.add('on');
+}
+function renderF(){
+ const b=find(F.id),nx=F.nx&&find(F.nx),tv=parseFloat(String(F.temp).replace(',','.')),okT=!isNaN(tv)&&tv>=70,badT=!isNaN(tv)&&tv<70;
+ document.getElementById('dlg').innerHTML=`<div class="bar"><div><h2>Xong mẻ · ${b.dish}</h2><div class="small muted">${b.no} · ${LN(b.l).n} · kế hoạch ${f(b.q)} suất</div></div><button class="sm" onclick="closeF()">Đóng</button></div>
+ <div class="fgrid">
+  <div class="fld ${F.field==='temp'?'act':''}" onclick="F.field='temp';renderF()"><label>Nhiệt độ lõi * (tối thiểu 70°C)</label><div class="num">${F.temp||'<span class="muted">__</span>'} <small>°C</small></div>${okT?'<div class="ok">Đạt ✓</div>':badT?'<div class="bad">Dưới 70°C – nấu tiếp rồi đo lại, hoặc ghi hành động khắc phục</div>':'<div class="small muted">Có đầu dò IoT → tự điền số đo mới nhất</div>'}</div>
+  <div class="fld ${F.field==='out'?'act':''}" onclick="F.field='out';renderF()"><label>Số suất nấu được (mặc định = kế hoạch)</label><div class="num"><button class="stp" onclick="event.stopPropagation();F.out=Math.max(0,F.out-10);renderF()">−</button>${f(F.out)} <small>suất</small><button class="stp" onclick="event.stopPropagation();F.out+=10;renderF()">+</button></div>${F.out!==b.q?`<div class="small" style="color:var(--o)">${F.out<b.q?'Thiếu '+f(b.q-F.out)+' suất so với kế hoạch':'Dư '+f(F.out-b.q)+' suất'}</div>`:'<div class="small muted">Chỉ sửa khi khác kế hoạch</div>'}</div>
+  <div class="fld"><label>Lưu mẫu món này trong ca</label>${F.sample&&sampleDone(b)?'<div class="ok" style="font-size:15px">✓ Đã lưu ở mẻ trước của món – không cần lưu lại</div>':`<button class="lg ${F.sample?'p':''}" onclick="F.sample=!F.sample;renderF()">${F.sample?'✓ Đã lưu mẫu':'Bấm khi đã lưu mẫu'}</button><div class="small muted" style="margin-top:6px">Bắt buộc 1 lần cho mỗi món mỗi ca (hồ sơ ATTP – không tích sẵn)</div>`}</div>
+  <div class="fld"><label>Hao hụt trong mẻ (nếu có)</label><div class="chips">${[['SPOILAGE','Hư hỏng'],['PREP_LOSS','Hao hụt sơ chế'],['PACKING_DAMAGE','Hỏng khi đóng gói']].map(([c,l])=>`<span class="${F.waste===c?'on':''}" onclick="F.waste=F.waste==='${c}'?null:'${c}';F.field=F.waste?'wq':'temp';renderF()">${l}</span>`).join('')}</div>${F.waste?`<div class="num" style="font-size:22px;margin-top:8px;cursor:pointer" onclick="F.field='wq';renderF()">${F.wq||'<span class="muted">__</span>'} <small>suất</small></div>`:'<div class="small muted" style="margin-top:6px">Không có thì bỏ qua</div>'}</div>
+ </div>
+ <div class="pad">${['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(k=>`<button onclick="key('${k}')">${k}</button>`).join('')}</div>
+ <div class="ft"><button class="lg" onclick="save(false)">Xong mẻ</button>${nx?`<button class="lg p" onclick="save(true)">Xong & bắt đầu ${nx.dish} (${hm(nx.s)})</button>`:''}</div>`;
+}
+function key(k){const fld=F.field;let v=String(F[fld]===0&&fld!=='temp'?'':F[fld]);if(k==='⌫')v=v.slice(0,-1);else v+=k;if(fld==='temp')F.temp=v.slice(0,5);else F[fld]=+v.replace(',','.')||0;renderF()}
+function save(goNext){
+ const b=find(F.id),tv=parseFloat(String(F.temp).replace(',','.'));
+ if(isNaN(tv))return toast('Nhập nhiệt độ lõi');
+ b.temp=tv;b.out=F.out;if(F.sample)b.sample=true;if(F.waste&&F.wq)b.waste+=F.wq;b.qcSince=NOW;
+ const miss=[];if(tv<70)miss.push('lõi '+tv+'°C < 70°C');if(!sampleDone(b))miss.push('chưa lưu mẫu món');
+ if(miss.length){b.st='QCPending';b.why=miss.join(', ');}else b.st='Passed';
+ let msg=b.st==='Passed'?`✓ ${b.dish}: đã ghi lõi ${tv}°C, ${f(b.out)} suất${F.waste&&F.wq?', hao hụt '+F.wq+' suất':''} → <b>tự Đạt QC</b>, sẵn sàng đóng gói`:`${b.dish} chờ QC: ${b.why}`;
+ if(goNext&&F.nx){const x=find(F.nx);x.st='Cooking';x.startAt=NOW;msg+=` · đã bắt đầu ${x.dish}`;}
+ closeF();toast(msg);draw();
+}
+function closeF(){document.getElementById('ov').classList.remove('on')}
+function doSample(id){const b=find(id);b.sample=true;if(b.st==='QCPending'&&b.temp>=70){b.st='Passed';b.why=null;toast(`Đã ghi lưu mẫu → ${b.dish} tự Đạt QC`)}draw()}
+function openWaste(id){const b=find(id);F={id,temp:'',out:b.q,sample:sampleDone(b),field:'wq',waste:'SPOILAGE',wq:0,nx:null};renderF();document.getElementById('ov').classList.add('on')}
+function toast(s){const e=document.getElementById('toast');e.innerHTML=s;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',4000)}
+function draw(){drawTop();document.getElementById('main').innerHTML=mode==='line'?drawLine():drawChef();
+ document.querySelectorAll('[data-l]').forEach(e=>e.onclick=()=>{line=e.dataset.l;draw()});
+ document.querySelectorAll('[data-t]').forEach(e=>e.onclick=()=>{tab=e.dataset.t;draw()});}
+const H=location.hash;if(H==='#chef')mode='chef';if(H==='#out'){mode='chef';tab='out'}
+draw();if(H==='#xong'){finish('b5');F.temp='86';renderF()}
+</script>
+</body></html>

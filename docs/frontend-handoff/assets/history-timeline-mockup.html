@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Tab Lịch sử dạng timeline (dùng chung mọi trang chi tiết)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--r:#A32D2D;--r-bg:#FCEBEB;--p:#6B4FA0;--p-bg:#F0EBF8;--n-bg:#F2F4F1}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0 auto;padding:20px;max-width:1440px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1100px){.two{grid-template-columns:1fr}}
+h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.chip{border:1px solid #d5dbd2;background:#fff;border-radius:20px;padding:5px 12px;font-size:13px;cursor:pointer}
+.chip.on{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17;font-weight:600}
+select{height:32px;border:1px solid #d5dbd2;border-radius:8px;padding:0 8px;font-size:13px}
+.day{font-size:12px;font-weight:700;color:var(--muted);text-transform:none;margin:18px 0 8px 46px}
+.day:first-child{margin-top:0}
+.tl{position:relative}
+.ev{position:relative;display:flex;gap:14px;padding:0 0 16px}
+.ev::before{content:"";position:absolute;left:17px;top:36px;bottom:0;width:2px;background:var(--line)}
+.ev.last::before{display:none}
+.dot{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;flex:none;z-index:1;border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.body{flex:1;min-width:0;padding-top:6px}
+.head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.title{font-size:14px}.title b{font-weight:600}
+.time{font-size:12px;color:var(--muted);white-space:nowrap}
+.ref{font-size:12px;color:var(--b);text-decoration:none;font-weight:600}
+.changes{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ch{font-size:12px;background:#FAFBF8;border:1px solid var(--line);border-radius:8px;padding:3px 8px}
+.ch s{color:#9aa39c}.ch b{font-weight:600}
+.more{font-size:12px;color:var(--b);cursor:pointer;margin-top:4px;display:inline-block}
+.quote{margin-top:6px;font-size:13px;background:var(--n-bg);border-left:3px solid #B9CB97;border-radius:0 8px 8px 0;padding:6px 10px}
+.st{font-size:11px;padding:1px 8px;border-radius:20px;font-weight:600}
+.load{text-align:center;margin-top:6px}.load button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;height:34px;padding:0 14px;cursor:pointer}
+.rel .g{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.rel .g:last-child{border-bottom:0}.rel .g i{font-size:18px;margin-right:8px;vertical-align:-3px}
+.rel a{font-size:12px;color:var(--b);text-decoration:none}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend span i{font-size:14px;vertical-align:-2px}
+</style></head><body>
+
+<div class="two">
+ <div class="card">
+  <div class="bar">
+   <div style="display:flex;gap:6px;flex-wrap:wrap" id="filters">
+    <span class="chip on" data-f="all">Tất cả</span><span class="chip" data-f="info">Thông tin</span><span class="chip" data-f="flow">Trạng thái &amp; duyệt</span><span class="chip" data-f="doc">Hợp đồng, đơn, phản ánh</span><span class="chip" data-f="file">Tài liệu</span>
+   </div>
+   <select><option>Mọi người thực hiện</option><option>Lê Thu Hà</option><option>Hệ thống</option></select>
+  </div>
+  <div class="tl" id="tl"></div>
+  <div class="load"><button>Xem thêm 20 hoạt động cũ hơn</button></div>
+ </div>
+ <div class="card rel">
+  <h3 style="margin-bottom:6px">Liên quan</h3>
+  <div class="g"><span><i class="ti ti-file-text" style="color:var(--g)"></i>Hợp đồng · 2</span><a href="#">Mở</a></div>
+  <div class="g"><span><i class="ti ti-shopping-cart" style="color:var(--b)"></i>Đơn đặt suất · 184</span><a href="#">Mở</a></div>
+  <div class="g"><span><i class="ti ti-map-pin" style="color:var(--o)"></i>Điểm giao · 3</span><a href="#">Mở</a></div>
+  <div class="g"><span><i class="ti ti-message" style="color:var(--r)"></i>Phản ánh · 2 (1 đang mở)</span><a href="#">Mở</a></div>
+  <div class="g"><span><i class="ti ti-receipt" style="color:var(--p)"></i>Đối soát · 176</span><a href="#">Mở</a></div>
+  <div class="legend">
+   <span><i class="ti ti-circle-plus" style="color:var(--g)"></i> tạo</span><span><i class="ti ti-pencil" style="color:var(--b)"></i> sửa</span><span><i class="ti ti-circle-check" style="color:var(--g)"></i> duyệt</span><span><i class="ti ti-circle-x" style="color:var(--r)"></i> từ chối / hủy</span><span><i class="ti ti-paperclip" style="color:var(--p)"></i> tài liệu</span><span><i class="ti ti-robot" style="color:var(--muted)"></i> hệ thống</span>
+  </div>
+ </div>
+</div>
+
+<script>
+const T={create:['ti-circle-plus','var(--g-bg)','var(--g)'],edit:['ti-pencil','var(--b-bg)','var(--b)'],approve:['ti-circle-check','var(--g-bg)','var(--g)'],submit:['ti-send','var(--o-bg)','var(--o)'],reject:['ti-circle-x','var(--r-bg)','var(--r)'],file:['ti-paperclip','var(--p-bg)','var(--p)'],sys:['ti-robot','var(--n-bg)','var(--muted)'],order:['ti-shopping-cart','var(--b-bg)','var(--b)'],complaint:['ti-message','var(--r-bg)','var(--r)']};
+const E=[
+ {day:'Hôm nay · 24/11',t:'09:42',k:'sys',f:'doc',who:'Hệ thống',txt:'tự chốt đối soát đơn',ref:'DH-261122-015',ch:[['Tính tiền','620 suất · 24,8 tr ₫']]},
+ {day:'Hôm nay · 24/11',t:'08:15',k:'edit',f:'info',who:'Lê Thu Hà',txt:'sửa thông tin liên hệ',ch:[['Điện thoại','0912 345 678','0912 888 999'],['Email kế toán','—','ketoan@congtyx.vn'],['Người liên hệ chính','Trần Minh','Nguyễn Lan'],['Địa chỉ xuất hóa đơn','Số 12 KCN A','Số 15 KCN A'],['Ngành','Sản xuất','Sản xuất điện tử']]},
+ {day:'Hôm qua · 23/11',t:'16:30',k:'complaint',f:'doc',who:'Điểm phát Nhà máy A',txt:'ghi phản ánh',ref:'PA-261123-002',note:'Thiếu 20 suất trưa, khách báo lúc 11:40.',st:['Đang xử lý','var(--o-bg)','var(--o)']},
+ {day:'Hôm qua · 23/11',t:'10:05',k:'approve',f:'flow',who:'Phạm Quốc Bảo (COO)',txt:'duyệt phụ lục điều chỉnh giá',ref:'HD-261001-001',ch:[['Trưa','38.000','40.000 ₫'],['Áp dụng từ','','01/12/2026']],note:'Đồng ý theo biên bản trượt giá tháng 11.'},
+ {day:'Hôm qua · 23/11',t:'09:20',k:'file',f:'file',who:'Lê Thu Hà',txt:'đính kèm tài liệu',ref:'Phụ lục 02 – điều chỉnh giá.pdf'},
+ {day:'Hôm qua · 23/11',t:'09:18',k:'submit',f:'flow',who:'Lê Thu Hà',txt:'gửi duyệt phụ lục điều chỉnh giá',ref:'HD-261001-001'},
+ {day:'20/11/2026',t:'14:02',k:'order',f:'doc',who:'Lê Thu Hà',txt:'xác nhận đăng ký suất tuần 23/11 – 29/11',ref:'7 đơn · 102.900 suất'},
+ {day:'02/10/2026',t:'11:00',k:'approve',f:'flow',who:'Đỗ Hải (CEO)',txt:'duyệt hợp đồng',ref:'HD-261001-001',st:['Hiệu lực','var(--g-bg)','var(--g)']},
+ {day:'01/10/2026',t:'08:30',k:'create',f:'info',who:'Lê Thu Hà',txt:'tạo hồ sơ khách hàng',ref:'KHB-00012'}];
+let F='all';const open=new Set();
+function draw(){
+ const L=E.filter(e=>F==='all'||e.f===F);let h='',d='';
+ L.forEach((e,i)=>{ if(e.day!==d){d=e.day;h+=`<div class="day">${d}</div>`}
+  const [ic,bg,fg]=T[e.k],nx=L[i+1],last=!nx||nx.day!==e.day;
+  const ch=e.ch||[],show=open.has(i)?ch:ch.slice(0,3);
+  h+=`<div class="ev ${last?'last':''}"><div class="dot" style="background:${bg};color:${fg}"><i class="ti ${ic}"></i></div><div class="body">
+   <div class="head"><div class="title"><b>${e.who}</b> ${e.txt}${e.ref?` · <a class="ref" href="#">${e.ref}</a>`:''} ${e.st?`<span class="st" style="background:${e.st[1]};color:${e.st[2]}">${e.st[0]}</span>`:''}</div><span class="time">${e.t}</span></div>
+   ${show.length?`<div class="changes">${show.map(c=>c.length===2?`<span class="ch">${c[0]}: <b>${c[1]}</b></span>`:`<span class="ch">${c[0]}: ${c[1]?`<s>${c[1]}</s> → `:''}<b>${c[2]}</b></span>`).join('')}</div>`:''}
+   ${ch.length>3?`<span class="more" data-i="${i}">${open.has(i)?'Thu gọn':'+ '+(ch.length-3)+' thay đổi khác'}</span>`:''}
+   ${e.note?`<div class="quote">${e.note}</div>`:''}
+  </div></div>`});
+ tl.innerHTML=h||'<div class="muted">Không có hoạt động.</div>';
+ tl.querySelectorAll('.more').forEach(m=>m.onclick=()=>{const i=+m.dataset.i;open.has(i)?open.delete(i):open.add(i);draw()});
+}
+filters.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{filters.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');F=c.dataset.f;draw()});
+draw();
+</script>
+</body></html>

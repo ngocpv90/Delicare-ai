@@ -1,0 +1,133 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Công ty & đơn vị – mô phỏng</title><style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0}.tabs span{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}.tabs span.on{border-color:#7FA43A;color:var(--ink);font-weight:600}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cl{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px}.cl.red{background:#FFF9F8;border-color:#F2C6BF}
+.cl h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between}
+.pc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pc b{font-size:13px}.pc .sub{display:block;color:var(--muted)}
+.shiftbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sh{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;cursor:pointer;background:#fff}.sh.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}.sh b{font-size:13px}
+table.g{border-collapse:separate;border-spacing:0;font-size:12px;width:100%}
+table.g th,table.g td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:center}
+table.g th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:11px}
+table.g td.l,table.g th.l{text-align:left;position:sticky;left:0;background:#fff;min-width:170px;z-index:1}table.g th.l{background:#FAFBF8}
+table.g tr.grp td{background:#F7F9F4;font-weight:700;text-align:left}
+.k{display:inline-block;min-width:22px;padding:2px 3px;border-radius:6px;font-weight:700;cursor:pointer}
+.k.ok{color:#3F5A17}.k.M{background:var(--o-bg);color:#8A3B0B}.k.V{background:var(--r-bg);color:var(--r)}.k.P{background:var(--b-bg);color:#1F4C80}.k.T{background:#FFF3CD;color:#7A5B00;outline:1px dashed #D9B44A}.k.R{background:#FDECEA;color:var(--r);outline:1px dashed #E9A8A1}.k.o{color:#c5cbc3;font-weight:400}
+td.we{background:#FBFBF9}
+.tot{font-weight:700}
+.fix{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fx{border:1px solid #F2C6BF;background:#FFF9F8;border-radius:10px;padding:6px 10px;font-size:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.f.full{grid-column:1/-1}
+@media(max-width:700px){.cols{grid-template-columns:1fr}.fg{grid-template-columns:1fr}}
+
+.wrap{display:grid;grid-template-columns:380px 1fr;gap:16px}
+.tree{font-size:13px}
+.nd{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:10px;cursor:pointer}.nd:hover{background:#F4F8EE}.nd.on{background:#EFF5E5;box-shadow:inset 0 0 0 1px #B9CB97}
+.nd .cnt{margin-left:auto;font-size:11px;color:var(--muted)}
+.ch{margin-left:18px;border-left:1px dashed #D5DBD2;padding-left:6px}
+.ic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+.i-co{background:#2F64A0;color:#fff}.i-br{background:var(--b-bg);color:#1F4C80}.i-ki{background:var(--g-bg);color:#3F5A17}.i-te{background:var(--n-bg);color:var(--muted)}.i-wh{background:var(--o-bg);color:#8A3B0B}
+.warn{color:#B42318;font-size:11px}
+.kv2{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 18px;font-size:13px}.kv2 label{display:block;font-size:12px;color:var(--muted)}
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;background:#FAFBF8;padding:7px;border-bottom:1px solid var(--line)}table.t td{padding:7px;border-bottom:1px solid var(--line)}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.f.full{grid-column:1/-1}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.kv2{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<div class="card"><div class="bar"><div><h1>Công ty & đơn vị</h1><div class="small muted">Cây tổ chức: công ty → chi nhánh / bếp → tổ. Chọn một nút để xem và sửa ngay bên phải.</div></div>
+<div class="bar" style="gap:8px"><input class="in" placeholder="Tìm đơn vị…" style="width:220px;height:34px;font-size:13px"><button onclick="openAdd()">＋ Thêm đơn vị</button></div></div>
+<div class="kpis"><div class="kpi"><div class="small muted">Đơn vị đang hoạt động</div><div class="v">9</div><div class="s">1 công ty · 2 bếp · 6 tổ / phòng</div></div><div class="kpi"><div class="small muted">Nhân viên</div><div class="v">52</div><div class="s">đã gắn đơn vị</div></div><div class="kpi"><div class="small muted">Chưa có trưởng đơn vị</div><div class="v" style="color:#B42318">2</div><div class="s">bot nhắc lịch / chưa vào ca không có người nhận</div></div><div class="kpi"><div class="small muted">Nhân viên chưa gắn đơn vị</div><div class="v" style="color:#C2571A">3</div><div class="s">bấm để gắn</div></div></div></div>
+<div class="wrap">
+ <div class="card tree" id="tree"></div>
+ <div class="card" id="panel"></div>
+</div>
+<div class="ov" id="ovAdd"><div class="dlg">
+ <div class="bar"><h3>Thêm đơn vị</h3><button class="sm" onclick="cl('ovAdd')">✕</button></div>
+ <div class="fg" style="margin-top:12px">
+  <div class="f full"><label>Thuộc *</label><select class="in"><option>Bếp trung tâm Long Biên</option><option>Công ty CP Suất ăn Delicare</option><option>Bếp vệ tinh Bắc Thăng Long</option><option>Văn phòng</option></select></div>
+  <div class="f"><label>Tên đơn vị *</label><input class="in" value="Tổ rửa – vệ sinh"></div>
+  <div class="f"><label>Mã *</label><input class="in" value="BLB-RUA"><span class="small muted">Chữ hoa không dấu – khóa khi đã dùng</span></div>
+  <div class="f"><label>Loại *</label><select class="in"><option>Tổ</option><option>Bếp</option><option>Chi nhánh</option><option>Phòng ban</option><option>Kho</option></select></div>
+  <div class="f"><label>Trưởng đơn vị</label><input class="in" placeholder="Tìm nhân viên…"></div>
+ </div>
+ <div class="bar" style="justify-content:flex-end;gap:8px;margin-top:14px"><button onclick="cl('ovAdd')">Hủy</button><button class="p" onclick="cl('ovAdd');toast('Đã thêm Tổ rửa – vệ sinh vào Bếp trung tâm Long Biên')">Thêm</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);function toast(m){const t=$('toast');t.innerHTML=m;t.style.display='block';setTimeout(()=>t.style.display='none',3500)}function cl(i){$(i).classList.remove('on')}function openAdd(){$('ovAdd').classList.add('on')}
+const T={id:'co',t:'co',n:'Công ty CP Suất ăn Delicare',c:'DELICARE',e:52,ch:[
+ {id:'b1',t:'ki',n:'Bếp trung tâm Long Biên',c:'BLB',m:'Hoàng Văn Nam',e:38,w:2,ch:[{id:'t1',t:'te',n:'Tổ sơ chế',c:'BLB-SC',m:'Bùi Thị Mai',e:9},{id:'t2',t:'te',n:'Tổ nấu',c:'BLB-NAU',m:'Trần Minh Đức',e:11},{id:'t3',t:'te',n:'Tổ chia suất & đóng gói',c:'BLB-DG',m:'',e:10},{id:'t4',t:'te',n:'Đội giao hàng',c:'BLB-GH',m:'Ngô Quang Huy',e:8}]},
+ {id:'b2',t:'ki',n:'Bếp vệ tinh Bắc Thăng Long',c:'BTL',m:'',e:6,w:1,ch:[]},
+ {id:'v',t:'br',n:'Văn phòng',c:'VP',m:'Đặng Thị Hoa',e:8,ch:[]}]};
+const L={co:['C','i-co','Công ty'],br:['P','i-br','Phòng ban'],ki:['B','i-ki','Bếp'],te:['T','i-te','Tổ']};
+let sel=location.hash==='#co'?'co':'b1';
+const all=[];(function w(n,p){n.p=p;all.push(n);(n.ch||[]).forEach(c=>w(c,n))})(T,null);
+function tree(n){return `<div class="nd ${n.id===sel?'on':''}" onclick="sel='${n.id}';draw()"><span class="ic ${L[n.t][1]}">${L[n.t][0]}</span><b>${n.n}</b>${n.t!=='co'&&!n.m?'<span class="warn">· chưa có trưởng</span>':''}<span class="cnt">${n.e} NV</span></div>${n.ch&&n.ch.length?`<div class="ch">${n.ch.map(tree).join('')}</div>`:''}`}
+function panel(){const n=all.find(x=>x.id===sel);
+ if(n.t==='co') return `<div class="bar"><div><div class="small muted">Công ty</div><h1>${n.n}</h1></div><button>Sửa</button></div>
+ <div class="kv2" style="margin-top:14px"><div><label>Mã</label>DELICARE</div><div><label>Mã số thuế</label>0109 876 543</div><div><label>Điện thoại</label>024 3999 8888</div><div class="f full" style="grid-column:1/3"><label>Địa chỉ</label>Số 8 Ngọc Lâm, Long Biên, Hà Nội</div><div><label>Email</label>lienhe@delicare.vn</div></div>
+ <div class="note" style="margin-top:14px">Tên, địa chỉ, điện thoại, mã số thuế của công ty in ở đầu mọi phiếu in và file Excel in ra. Mỗi đơn vị bên trái thuộc công ty này.</div>
+ <h3 style="margin-top:10px">Đơn vị trực thuộc</h3><table class="t" style="margin-top:6px"><thead><tr><th>Đơn vị</th><th>Loại</th><th>Trưởng đơn vị</th><th>Nhân viên</th></tr></thead><tbody>${n.ch.map(c=>`<tr><td><b>${c.n}</b></td><td>${L[c.t][2]}</td><td>${c.m||'<span class="warn">chưa có</span>'}</td><td>${c.e}</td></tr>`).join('')}</tbody></table>`;
+ const path=[];let p=n.p;while(p){path.unshift(p.n);p=p.p}
+ return `<div class="bar"><div><div class="small muted">${path.join(' › ')}</div><h1>${n.n} <span class="chip c-n">${L[n.t][2]}</span> <span class="chip c-ok">Đang hoạt động</span></h1></div><div class="bar" style="gap:8px"><button onclick="openAdd()">＋ Đơn vị con</button><button>Sửa</button><button>Chuyển sang đơn vị khác</button><button>Ngừng hoạt động</button></div></div>
+ <div class="kv2" style="margin-top:14px"><div><label>Mã</label>${n.c}</div><div><label>Trưởng đơn vị</label>${n.m||'<span class="warn">Chưa có – </span><a href="#">chọn ngay</a>'}</div><div><label>Nhân viên</label>${n.e} người</div>${n.w?`<div><label>Kho</label>${n.w} kho</div>`:''}<div><label>Điện thoại</label>024 3888 1234</div><div><label>Địa chỉ</label>Số 8 Ngọc Lâm, Long Biên</div></div>
+ <div class="tabs"><span class="on">Nhân viên</span><span>Đơn vị con</span><span>Kho</span><span>Lịch sử</span></div>
+ <table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th>Chức vụ</th><th>Đơn vị</th></tr></thead><tbody>
+ ${[['NV0187','Hoàng Văn Nam','Bếp trưởng','Tổ nấu'],['NV0201','Trần Minh Đức','Đầu bếp','Tổ nấu'],['NV0150','Bùi Thị Mai','Phụ bếp','Tổ sơ chế'],['NV0208','Nguyễn Thị Lan','Nhân viên đóng gói','Tổ chia suất & đóng gói'],['NV0142','Ngô Quang Huy','Tài xế','Đội giao hàng']].map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</tbody></table>
+ <div class="small muted" style="margin-top:8px">Hiện cả nhân viên của các tổ con · bấm tên mở hồ sơ.</div>`}
+function draw(){$('tree').innerHTML=tree(T);$('panel').innerHTML=panel()}draw();if(location.hash==='#add')openAdd();
+</script></body></html>

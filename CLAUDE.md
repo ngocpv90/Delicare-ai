@@ -231,6 +231,9 @@ Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Mode
 7. **Tên menu / màn (D-75 a):** ngắn, từ nghiệp vụ quen thuộc, không tiếng Anh / thuật ngữ kỹ thuật; bảng con không lên menu; màn chưa có API không lên menu.
 8. **Tính năng chưa làm xong** mà vẫn để nút trên giao diện: bấm hiện "Tính năng chưa được nâng cấp. Vui lòng liên hệ quản trị viên." (D-87 c) – không để nút báo lỗi kỹ thuật hay màn GAP.
 9. **Kiểm tra trước khi báo xong mọi task FE:** chạy script quét UI-6.10 (từ tiếng Anh / mã trạng thái, số thẻ chỉ số) trên các màn đã sửa – sạch mới báo xong.
+10. **Ô nhập trong form (D-98 e):** trường đã có danh mục / bảng tham chiếu / bộ giá trị cố định thì **bắt buộc chọn** (ô chọn có tìm), không cho gõ chữ tự do; cột chữ tự do trùng nghĩa với trường chọn → ẩn khỏi giao diện, máy chủ tự ghi; giá trị do hệ thống tính (giá thành, tổng, tồn…) → chỉ đọc. Cần danh mục mới chưa có bảng → ghi GAP chờ anh duyệt, không tự tạo bảng.
+11. **Form chứng từ (D-99 f):** chứng từ có luồng trạng thái **không có ô chọn trạng thái** (chỉ nhãn; đổi bằng nút nghiệp vụ); số chứng từ, người lập, ngày lập do máy chủ tự sinh, chỉ đọc; chứng từ có dòng thì form tạo mới phải nhập được dòng. Ô "Đang hoạt động / Ngừng hoạt động" chỉ dùng cho danh mục.
+12. **Ô ngày (D-100 e):** hiệu lực, ngày áp dụng, ngày cần hàng, ngày ăn, ngày chứng từ… **chỉ chọn ngày** (hiển thị / nhập dd/MM/yyyy, không giờ phút giây; gửi máy chủ dạng ngày). Chỉ trường là **thời điểm thật** (giờ chốt, giờ giao / nhận hàng, giờ đo nhiệt độ, chấm công, thời điểm duyệt) mới có giờ (HH:mm). Rà `UI.isDateOnly` / mọi form khi sửa màn.
 
 ### 4.6 DEFINITION OF DONE – chuẩn "Hoàn thành" bắt buộc (D-92 b, anh chốt 2026-11-24)
 Task chỉ được ghi **DONE** trong ROADMAP / PROGRESS khi đủ **cả 7 điểm**; thiếu điểm nào → trạng thái **`PARTIAL`** + ghi rõ trong mục "Chưa làm / còn rủi ro".

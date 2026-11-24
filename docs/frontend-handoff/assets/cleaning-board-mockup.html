@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Vệ sinh khay hộp (đề xuất)</title>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.r{border-color:#E9A8A1;color:var(--r);font-weight:600}
+button.sm{height:28px;font-size:12px;padding:0 9px}button.lg{height:46px;font-size:15px;border-radius:12px;padding:0 18px;font-weight:600}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.need{border:1px solid #F2C6BF;background:#FFF8F6;border-radius:12px;padding:10px 14px;margin-top:12px;font-size:13px;display:flex;gap:12px;align-items:center}
+.meter{flex:1;height:12px;border-radius:6px;background:var(--n-bg);position:relative;overflow:hidden;min-width:160px}.meter i{position:absolute;top:0;bottom:0;left:0}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-height:200px}
+.col h3{display:flex;justify-content:space-between;align-items:center;margin:2px 4px 10px}
+.tk{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.tk.ins{border-left-color:#5A8CC8}.tk.run{border-left-color:#E8833A}.tk.ok{border-left-color:#7FA43A}.tk.bad{border-left-color:var(--r)}
+.tk b{font-size:14px}.tk .row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:8px}
+.steps{display:flex;gap:3px;margin-top:8px}.steps i{flex:1;height:6px;border-radius:3px;background:var(--n-bg)}.steps i.on{background:#7FA43A}.steps i.f{background:var(--r)}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+table{width:100%;border-collapse:collapse;font-size:13px}th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:12px;padding:8px;text-align:left}td{border-top:1px solid var(--line);padding:8px}
+td.n,th.n{text-align:right}tr.dayr td{background:#F7F9F4;font-weight:700}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.search,select{height:34px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:13px;background:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips span{border:1px solid #d5dbd2;border-radius:20px;padding:5px 11px;font-size:13px;cursor:pointer;background:#fff}.chips span.on{background:#F2F7EA;border-color:#7FA43A;font-weight:600}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:760px;width:100%;padding:18px 20px;max-height:94vh;overflow:auto}
+.stp{display:grid;grid-template-columns:28px 1fr 190px;gap:10px;align-items:center;border-top:1px solid var(--line);padding:10px 0}
+.stp .n{width:26px;height:26px;border-radius:50%;background:var(--g-bg);color:var(--g);display:grid;place-items:center;font-weight:700;font-size:12px}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:10px;overflow:hidden}.seg span{padding:7px 12px;font-size:13px;cursor:pointer}.seg span.ok{background:#7FA43A;color:#fff;font-weight:600}.seg span.bad{background:var(--r);color:#fff;font-weight:600}
+.in{height:34px;border:1px solid #d5dbd2;border-radius:8px;padding:0 8px;font-size:13px;width:100%}.in.req{border-color:#E9A8A1}
+.res{display:flex;gap:8px;flex-wrap:wrap}.res span{border:1px solid #d5dbd2;border-radius:10px;padding:9px 14px;font-size:14px;cursor:pointer}.res span.on{background:#F2F7EA;border-color:#7FA43A;font-weight:700}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.fg label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.board{grid-template-columns:1fr}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}.stp{grid-template-columns:28px 1fr}.stp>div:last-child{grid-column:2}.fg{grid-template-columns:1fr}}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Vệ sinh khay hộp</h1><div class="small muted">Khay / hộp thu hồi → kiểm tra → vệ sinh 6 bước → sẵn sàng dùng lại. Mẻ vệ sinh tự lập khi kiểm tra xong; mỗi lần ghi là một dòng mới (hồ sơ ATTP).</div></div>
+  <div class="day"><button>◀</button>T3 24/11/2026 <span class="chip c-due">Hôm nay</span><button>▶</button></div>
+ </div>
+ <div class="need"><b style="white-space:nowrap">Khay sạch cho ngày mai</b><div class="meter"><i style="width:88%;background:#E8833A"></i></div><span style="white-space:nowrap"><b>12.150</b> sẵn sàng / cần <b>13.800</b> (19.800 suất × 0,7 khay) – <b style="color:var(--r)">thiếu 1.650</b> · đang vệ sinh 1.200 · chờ kiểm tra 900</span></div>
+ <div class="kpis" id="kpis"></div>
+</div>
+
+<div class="tabs" id="tabs"><span data-t="board" class="on">Hôm nay</span><span data-t="book">Sổ vệ sinh</span></div>
+<div id="view"></div>
+
+<div class="ov" id="ov"><div class="dlg" id="dlg"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STEPS=['Loại bỏ thức ăn thừa','Rửa sơ bằng nước','Rửa với chất tẩy rửa','Tráng sạch','Khử khuẩn (ngâm hóa chất)','Làm khô, kiểm tra cảm quan'];
+const CHEM=4;
+let RET=[
+ {id:'r1',cus:'Công ty X – Nhà máy A',dv:'GH-261124-012',type:'Khay inox',due:620,got:612,dmg:3,at:'08:10'},
+ {id:'r2',cus:'Công ty Y – Xưởng 1',dv:'GH-261124-020',type:'Khay inox',due:300,got:288,dmg:0,at:'08:35'},
+];
+let BAT=[
+ {id:'b1',no:'VS-261124-C2-01',cus:'Công ty X – Nhà máy B',type:'Khay inox',q:540,done:4,fail:-1,by:'Đỗ Thị Lan',st:'run',at:'07:40'},
+ {id:'b2',no:'VS-261124-C2-02',cus:'Bệnh viện An Bình',type:'Hộp giữ nhiệt',q:660,done:1,fail:-1,by:'Đỗ Thị Lan',st:'run',at:'08:20'},
+ {id:'b3',no:'VS-261124-C1-01',cus:'Công ty X – Nhà máy A',type:'Khay inox',q:1180,done:6,fail:-1,by:'Ngô Văn Hải',st:'ok',at:'06:55'},
+ {id:'b4',no:'VS-261124-C1-02',cus:'Công ty W',type:'Hộp giữ nhiệt',q:120,done:5,fail:5,by:'Ngô Văn Hải',st:'bad',at:'07:10',why:'Còn vết dầu sau khử khuẩn – vệ sinh lại'},
+];
+const lastChem='Cloramin B 0,5 % – 10 phút';
+let tab='board';
+const f=n=>n.toLocaleString('vi-VN');
+function kpis(){document.getElementById('kpis').innerHTML=`<div class="kpi"><div class="s">Chờ kiểm tra</div><div class="v" style="color:var(--b)">${RET.length}</div><div class="s">${f(RET.reduce((a,r)=>a+r.got,0))} khay / hộp đã thu</div></div>
+ <div class="kpi"><div class="s">Đang vệ sinh</div><div class="v" style="color:var(--o)">${BAT.filter(b=>b.st==='run').length}</div><div class="s">${f(BAT.filter(b=>b.st==='run').reduce((a,b)=>a+b.q,0))} khay / hộp</div></div>
+ <div class="kpi"><div class="s">Hoàn tất hôm nay</div><div class="v" style="color:var(--g)">${BAT.filter(b=>b.st==='ok').length} / ${BAT.filter(b=>b.st!=='run').length}</div><div class="s">${BAT.filter(b=>b.st==='bad').length} mẻ không đạt</div></div>
+ <div class="kpi"><div class="s">Tỷ lệ đạt 7 ngày</div><div class="v">96%</div><div class="s">3 mẻ vệ sinh lại</div></div>`}
+function board(){
+ const steps=b=>`<div class="steps">${STEPS.map((s,i)=>`<i class="${b.fail===i?'f':i<b.done?'on':''}"></i>`).join('')}</div>`;
+ return `<div class="board">
+ <div class="col"><h3>Chờ kiểm tra <span class="chip c-b">${RET.length}</span></h3>${RET.map(r=>`<div class="tk ins"><b>${r.cus}</b><div class="small muted">${r.type} · ${r.dv} · thu lúc ${r.at}</div><div class="small" style="margin-top:4px">Phải thu ${f(r.due)} · thu về <b>${f(r.got)}</b>${r.dmg?` · hỏng ${r.dmg}`:''}${r.due>r.got?` · <span style="color:var(--r)">thiếu ${r.due-r.got}</span>`:''}</div><div class="row"><span></span><button class="sm p" onclick="inspect('${r.id}')">Kiểm tra</button></div></div>`).join('')||'<div class="small muted" style="padding:6px">Không có phiếu chờ kiểm tra</div>'}</div>
+ <div class="col"><h3>Đang vệ sinh <span class="chip c-due">${BAT.filter(b=>b.st==='run').length}</span></h3>${BAT.filter(b=>b.st==='run').map(b=>`<div class="tk run"><b>${b.no}</b><div class="small muted">${b.cus} · ${b.type} · ${f(b.q)} cái</div>${steps(b)}<div class="row"><span class="small">Bước ${b.done}/6 · ${b.by}</span><button class="sm o" onclick="openB('${b.id}')">Ghi bước</button></div></div>`).join('')}</div>
+ <div class="col"><h3>Hoàn tất hôm nay <span class="chip c-ok">${BAT.filter(b=>b.st!=='run').length}</span></h3>${BAT.filter(b=>b.st!=='run').map(b=>`<div class="tk ${b.st}"><div class="bar"><b>${b.no}</b><span class="chip ${b.st==='ok'?'c-ok':'c-bad'}">${b.st==='ok'?'Đạt – sẵn sàng':'Không đạt'}</span></div><div class="small muted">${b.cus} · ${b.type} · ${f(b.q)} cái · ${b.by}</div>${steps(b)}${b.why?`<div class="small" style="color:var(--r);margin-top:6px">${b.why}</div><div class="row"><span></span><button class="sm r" onclick="redo('${b.id}')">Vệ sinh lại</button></div>`:''}</div>`).join('')}</div></div>`}
+function book(){const rows=[['24/11','06:55','VS-261124-C1-01','Công ty X – Nhà máy A','Khay inox',1180,'Đạt','Ngô Văn Hải',lastChem,''],['24/11','07:10','VS-261124-C1-02','Công ty W','Hộp giữ nhiệt',120,'Không đạt','Ngô Văn Hải',lastChem,'Còn vết dầu sau khử khuẩn – vệ sinh lại'],['23/11','21:40','VS-261123-C4-01','Công ty Y – Xưởng 2','Khay inox',640,'Đạt','Trần Văn Phú',lastChem,''],['23/11','15:20','VS-261123-C3-01','Trường Z','Khay inox',820,'Đạt','Đỗ Thị Lan',lastChem,'']];
+ return `<div class="card" style="padding:12px 14px"><div class="filters"><input class="search" placeholder="Tìm số mẻ, khách hàng, người làm…"><div class="chips"><span>Hôm nay</span><span class="on">7 ngày</span><span>Tháng này</span><span>Chọn khoảng…</span></div><select><option>Mọi khách hàng</option></select><select><option>Mọi kết quả</option><option>Đạt</option><option>Không đạt</option></select><span style="flex:1"></span><button>Xuất Excel</button><button class="p">In sổ vệ sinh</button></div>
+ <table><tr><th>Giờ kết luận</th><th>Mẻ</th><th>Khách hàng</th><th>Loại</th><th class="n">Số lượng</th><th>Kết quả</th><th>Hóa chất khử khuẩn</th><th>Người làm</th><th>Khắc phục</th></tr>
+ ${['24/11','23/11'].map(d=>`<tr class="dayr"><td colspan="9">▾ Ngày ${d}/2026</td></tr>`+rows.filter(r=>r[0]===d).map(r=>`<tr><td>${r[1]}</td><td><b>${r[2]}</b></td><td>${r[3]}</td><td>${r[4]}</td><td class="n">${f(r[5])}</td><td><span class="chip ${r[6]==='Đạt'?'c-ok':'c-bad'}">${r[6]}</span></td><td class="small">${r[8]}</td><td>${r[7]}</td><td class="small" style="color:var(--r)">${r[9]||'<span class="muted">–</span>'}</td></tr>`).join('')).join('')}</table>
+ <div class="small muted" style="margin-top:8px">Chỉ xem – bấm mẻ xem đủ 6 bước (người, giờ, hóa chất từng bước). Thay cho mục "Kiểm tra vệ sinh".</div></div>`}
+function inspect(id){const r=RET.find(x=>x.id===id);
+ document.getElementById('dlg').innerHTML=`<div class="bar"><div><h3 style="font-size:18px">Kiểm tra khay / hộp thu hồi</h3><div class="small muted">${r.cus} · ${r.type} · ${r.dv}</div></div><button class="sm" onclick="closeD()">Đóng</button></div>
+ <div style="margin-top:12px"><div class="small muted" style="margin-bottom:6px">Kết quả</div><div class="res" id="rs">${['Đủ','Thiếu','Hỏng','Bẩn','Không đạt'].map((x,i)=>`<span class="${i===(r.due>r.got?1:0)?'on':''}" onclick="document.querySelectorAll('#rs span').forEach(s=>s.classList.remove('on'));this.classList.add('on')">${x}</span>`).join('')}</div></div>
+ <div class="fg"><div><label>Số hỏng</label><input class="in" value="${r.dmg}"></div><div><label>Số thiếu (phải thu − thu về)</label><input class="in" value="${r.due-r.got}"></div>
+ <div><label>Người kiểm</label><input class="in" value="Nguyễn Thị Mai (bạn)" readonly></div><div><label>Phụ trách vệ sinh</label><input class="in" value="Đỗ Thị Lan (tổ vệ sinh ca 2)"></div>
+ <div style="grid-column:1/-1"><label>Ghi chú ${r.due>r.got?'(bắt buộc khi khác "Đủ")':''}</label><input class="in ${r.due>r.got?'req':''}" placeholder="vd: khách giữ lại 8 khay, hẹn trả mai"></div></div>
+ <div class="bar" style="margin-top:16px"><span class="small muted">Lưu xong: ${f(r.got-r.dmg)} khay dùng được tự vào mẻ vệ sinh mới.</span><button class="p lg" onclick="doIns('${id}')">Ghi kiểm tra & lập mẻ</button></div>`;
+ document.getElementById('ov').classList.add('on')}
+function doIns(id){const r=RET.find(x=>x.id===id);RET=RET.filter(x=>x.id!==id);const no='VS-261124-C2-0'+(BAT.length+1);BAT.unshift({id:'b'+Date.now(),no,cus:r.cus,type:r.type,q:r.got-r.dmg,done:0,fail:-1,by:'Đỗ Thị Lan',st:'run',at:'09:10'});closeD();toast(`Đã kiểm tra – lập mẻ ${no} (${f(r.got-r.dmg)} cái)`);draw()}
+let S=[];
+function openB(id){const b=BAT.find(x=>x.id===id);S=STEPS.map((s,i)=>({ok:true,chem:i===CHEM?lastChem:'',fix:'',done:i<b.done}));
+ const rend=()=>{document.getElementById('dlg').innerHTML=`<div class="bar"><div><h3 style="font-size:18px">${b.no} · ${b.type} · ${f(b.q)} cái</h3><div class="small muted">${b.cus} · phụ trách ${b.by} · đã làm ${b.done}/6 bước</div></div><button class="sm" onclick="closeD()">Đóng</button></div>
+ ${STEPS.map((s,i)=>`<div class="stp"><span class="n">${i+1}</span><div><b>${s}</b>${S[i].done?'<div class="small muted">Đã ghi lúc trước · Đạt</div>':''}${i===CHEM?`<input class="in" style="margin-top:6px" value="${S[i].chem}" placeholder="Hóa chất + nồng độ + thời gian (bắt buộc)" oninput="S[${i}].chem=this.value"><div class="small muted">Điền sẵn theo lần trước</div>`:''}${!S[i].ok?`<input class="in req" style="margin-top:6px" placeholder="Hành động khắc phục (bắt buộc)" oninput="S[${i}].fix=this.value">`:''}</div>
+ <div>${S[i].done?'<span class="chip c-ok">Đạt</span>':`<div class="seg"><span class="${S[i].ok?'ok':''}" onclick="S[${i}].ok=true;rendB()">Đạt</span><span class="${S[i].ok?'':'bad'}" onclick="S[${i}].ok=false;rendB()">Không đạt</span></div>`}</div></div>`).join('')}
+ <div class="bar" style="margin-top:14px"><span class="small muted">Các bước làm lần lượt · bước Không đạt thì không kết luận được, sửa rồi ghi lại.</span><div class="bar" style="gap:8px"><button class="lg" onclick="saveB('${id}',false)">Lưu bước đã làm</button><button class="p lg" ${S.some(x=>!x.ok)?'disabled style="opacity:.5"':''} onclick="saveB('${id}',true)">Đạt tất cả & kết luận</button></div></div>`};
+ window.rendB=rend;rend();document.getElementById('ov').classList.add('on')}
+function saveB(id,all){const b=BAT.find(x=>x.id===id);if(!S[CHEM].chem.trim())return toast('Bước khử khuẩn: nhập hóa chất');
+ if(all){b.done=6;b.st='ok';closeD();toast(`${b.no} đạt – ${f(b.q)} cái vào kho khay sạch, sẵn sàng dùng lại`)}else{const fi=S.findIndex(x=>!x.ok);if(fi>=0&&!S[fi].fix.trim())return toast('Bước Không đạt: nhập hành động khắc phục');b.done=fi>=0?fi:Math.min(6,b.done+2);closeD();toast('Đã ghi các bước')}draw()}
+function redo(id){const b=BAT.find(x=>x.id===id);const no=b.no+'-L2';BAT.unshift({id:'b'+Date.now(),no,cus:b.cus,type:b.type,q:b.q,done:0,fail:-1,by:b.by,st:'run'});toast('Đã lập mẻ vệ sinh lại '+no);draw()}
+function closeD(){document.getElementById('ov').classList.remove('on')}
+function toast(s){const e=document.getElementById('toast');e.textContent=s;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3500)}
+function draw(){kpis();document.getElementById('view').innerHTML=tab==='board'?board():book();document.querySelectorAll('#tabs span').forEach(s=>{s.classList.toggle('on',s.dataset.t===tab);s.onclick=()=>{tab=s.dataset.t;draw()}})}
+draw();
+const H=location.hash;if(H==='#me')openB('b1');if(H==='#kt')inspect('r1');if(H==='#so'){tab='book';draw()}
+</script>
+</body></html>

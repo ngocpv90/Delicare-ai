@@ -1,0 +1,200 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nhân viên – mô phỏng</title><style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}.tabs span{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}.tabs span.on{border-color:#7FA43A;color:var(--ink);font-weight:600}
+.kpi{cursor:pointer}.kpi.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}
+.flt{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 10px}
+.flt .in{width:auto;height:34px;font-size:13px}
+.pill{border:1px solid #d5dbd2;border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;background:#fff}.pill.on{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;background:#FAFBF8;padding:8px;border-bottom:1px solid var(--line)}
+table.t td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t tr:hover td{background:#FAFCF7;cursor:pointer}
+.sub{display:block;font-size:12px;color:var(--muted)}
+.bulk{display:none;background:#F3F8EA;border:1px solid #CFE0B0;border-radius:12px;padding:8px 12px;margin-bottom:10px;align-items:center;gap:10px;font-size:13px}.bulk.on{display:flex}
+.dlg.lg{max-width:760px}
+.grp{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.grp h4{margin:0 0 10px;font-size:13px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.f label .rq{color:var(--r)}
+.f.full{grid-column:1/-1}
+.err{font-size:12px;color:var(--r);margin-top:4px}
+.f .in.bad{border-color:#E9A8A1;background:#FFF8F7}
+.tree{border:1px solid #d5dbd2;border-radius:10px;max-height:170px;overflow:auto;font-size:13px;margin-top:4px}
+.tree div{padding:6px 10px;cursor:pointer}.tree div:hover{background:#F4F8EE}.tree div.on{background:#EFF5E5;font-weight:600}
+.ck{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:8px}.ck input{margin-top:3px}
+.grps{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0 24px}
+.todo{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.td{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center}
+.td .c{width:22px;height:22px;border-radius:50%;border:2px solid #C9CFC6;flex:none;display:grid;place-items:center;font-size:12px}
+.td.ok .c{background:#7FA43A;border-color:#7FA43A;color:#fff}
+.av{width:56px;height:56px;border-radius:50%;background:#E3EDD2;display:grid;place-items:center;font-weight:800;color:#3F5A17;font-size:20px}
+table.t .show-m{display:none}.tabs span .chip{padding:2px 8px;border:0}#sv{min-width:150px}
+@media(max-width:700px){table.t .hide-m2{display:none}table.t .show-m{display:block}table.t{min-width:0}.fg{grid-template-columns:1fr}.todo{grid-template-columns:1fr 1fr}.hide-m{display:none}.dlg.lg{max-height:92vh;overflow:auto}}
+</style></head><body>
+<div id="pList">
+<div class="card">
+ <div class="bar"><div><h1>Nhân viên</h1><div class="small muted">Hồ sơ người làm việc, đơn vị, chức vụ, tài khoản và liên kết bot. Bấm dòng để mở hồ sơ.</div></div>
+ <div class="bar" style="gap:8px"><button>⬆ Nhập từ Excel</button><button class="p" onclick="openNew()">＋ Thêm nhân viên</button></div></div>
+ <div class="kpis" id="kpis"></div>
+</div>
+<div class="card">
+ <div class="tabs"><span class="on">Danh sách</span><span>Đối chiếu tài khoản <span class="chip c-due">3</span></span></div>
+ <div class="flt">
+  <span class="pill on" data-st="Active">Đang làm việc · <b id="nA"></b></span><span class="pill" data-st="Inactive">Tạm nghỉ · <b id="nI"></b></span><span class="pill" data-st="Resigned">Đã nghỉ việc · <b id="nR"></b></span><span class="pill" data-st="">Tất cả</span>
+  <span style="flex:1"></span>
+  <select class="in" id="fU"><option value="">Mọi đơn vị</option><option>Bếp trung tâm</option><option>— Tổ sơ chế</option><option>— Tổ nấu</option><option>— Tổ chia suất & đóng gói</option><option>Kho</option><option>Giao hàng</option><option>Văn phòng</option></select>
+  <select class="in" id="fP"><option value="">Mọi chức vụ</option><option>Bếp trưởng</option><option>Đầu bếp</option><option>Phụ bếp</option><option>Nhân viên đóng gói</option><option>Thủ kho</option><option>Tài xế</option><option>Nhân viên QA</option><option>Kế toán</option></select>
+  <input class="in" id="fQ" placeholder="Tìm tên, mã, số điện thoại…" style="width:240px">
+ </div>
+ <div class="bulk" id="bulk"><b id="bN">0</b> người đã chọn<button class="sm p">Đề nghị cấp tài khoản</button><button class="sm">Tạo mã liên kết bot</button><button class="sm">Xuất Excel</button><span style="flex:1"></span><a class="small muted" href="javascript:sel.clear();draw()">Bỏ chọn</a></div>
+ <div class="scroll"><table class="t"><thead><tr><th style="width:30px"><input type="checkbox" id="all"></th><th class="hide-m2">Mã</th><th>Họ tên</th><th class="hide-m2">Đơn vị</th><th class="hide-m2">Chức vụ</th><th class="hide-m">Ngày vào làm</th><th>Tài khoản</th><th class="hide-m2">Bot</th><th class="hide-m2">Trạng thái</th></tr></thead><tbody id="rows"></tbody></table></div>
+ <div class="small muted" style="margin-top:8px" id="foot"></div>
+</div>
+</div>
+
+<div id="pProfile" style="display:none">
+<div class="card">
+ <div class="bar"><div class="bar" style="gap:14px;justify-content:flex-start"><div class="av">LH</div><div><div class="small muted"><a href="javascript:show('list')">Nhân viên</a> › NV0213</div><h1>Lê Thị Hạnh <span class="chip c-ok">Đang làm việc</span></h1><div class="small muted">Phụ bếp · Tổ sơ chế – Bếp trung tâm · vào làm 24/11/2026 · 0912 345 678</div></div></div>
+ <div class="bar" style="gap:8px"><button>Sửa</button><button>In hồ sơ</button><button onclick="openResign()">Cho nghỉ việc</button></div></div>
+ <div class="note" style="margin-top:14px;margin-bottom:0"><b>Việc cần làm cho người mới</b> – 1/4 xong. Mỗi việc tự đánh dấu khi xong.
+  <div class="todo">
+   <div class="td ok"><span class="c">✓</span><div><b>Đề nghị cấp tài khoản</b><span class="sub">Đã gửi IT · chờ duyệt</span></div></div>
+   <div class="td"><span class="c"></span><div><b>Liên kết bot</b><span class="sub">Mã 48213 · hạn 72 giờ</span></div><button class="sm" style="margin-left:auto">Xem QR</button></div>
+   <div class="td"><span class="c"></span><div><b>Phân ca tuần này</b><span class="sub">Chưa có ca nào</span></div><button class="sm" style="margin-left:auto">Phân ca</button></div>
+   <div class="td"><span class="c"></span><div><b>Giấy khám sức khỏe</b><span class="sub">Bắt buộc với bộ phận bếp</span></div><button class="sm" style="margin-left:auto">Tải lên</button></div>
+  </div></div>
+</div>
+<div class="card"><div class="tabs"><span class="on">Tổng quan</span><span>Ca làm việc</span><span>Chấm công</span><span>Nghỉ phép & đơn từ</span><span>Tài khoản & bot</span><span>Tài liệu</span><span>Lịch sử</span></div><div class="muted small">Các tab hồ sơ giữ nguyên như hiện tại (D-68).</div></div>
+</div>
+
+<div class="ov" id="ovNew"><div class="dlg lg">
+ <div class="bar"><h3>Thêm nhân viên</h3><button class="sm" onclick="close_('ovNew')">✕</button></div>
+ <div class="small muted" style="margin:4px 0 12px">Mã nhân viên do hệ thống tự cấp khi lưu. Trạng thái mặc định: Đang làm việc.</div>
+ <div class="grp"><h4>Thông tin cá nhân</h4><div class="fg">
+  <div class="f full"><label>Họ tên <span class="rq">*</span></label><input class="in" value="Lê Thị Hạnh"></div>
+  <div class="f"><label>Điện thoại <span class="rq">*</span></label><input class="in" id="ph" value="0903 111 222" oninput="chkPh()"><div class="err" id="phE"></div></div>
+  <div class="f"><label>Giới tính</label><select class="in"><option>— Chọn —</option><option selected>Nữ</option><option>Nam</option><option>Khác</option></select></div>
+  <div class="f"><label>Ngày sinh</label><input type="date" class="in" value="1996-05-12"></div>
+  <div class="f"><label>Email</label><input class="in" placeholder="không bắt buộc"></div>
+  <div class="f full"><label>Địa chỉ</label><input class="in" value="12 Ngõ 34 Phố Hoàng Mai, Hà Nội"></div>
+ </div></div>
+ <div class="grp"><h4>Công việc</h4><div class="fg">
+  <div class="f"><label>Đơn vị <span class="rq">*</span></label><input class="in" placeholder="Tìm đơn vị…" value="Tổ sơ chế"><div class="tree"><div>Bếp trung tâm</div><div class="on">&nbsp;&nbsp;└ Tổ sơ chế</div><div>&nbsp;&nbsp;└ Tổ nấu</div><div>&nbsp;&nbsp;└ Tổ chia suất & đóng gói</div><div>Kho</div><div>Giao hàng</div><div>Văn phòng</div></div></div>
+  <div class="f"><label>Chức vụ <span class="rq">*</span></label><select class="in" id="pos" onchange="grp()"><option>Phụ bếp</option><option>Đầu bếp</option><option>Nhân viên đóng gói</option><option>Thủ kho</option><option>Tài xế</option><option>Nhân viên QA</option></select>
+   <label style="margin-top:10px">Ngày vào làm <span class="rq">*</span></label><input type="date" class="in" value="2026-11-24"></div>
+ </div></div>
+ <div class="grp"><h4>Tài khoản & bot</h4>
+  <label class="ck"><input type="checkbox" checked onchange="document.getElementById('gp').style.display=this.checked?'flex':'none'"><span><b>Cấp tài khoản web</b><span class="sub">Gửi IT duyệt · tên đăng nhập = mã nhân viên · mật khẩu tạm gửi qua bot</span></span></label>
+  <div class="grps" id="gp"></div>
+  <label class="ck"><input type="checkbox" checked><span><b>Tạo mã liên kết bot</b><span class="sub">Lưu xong hiện mã / QR để nhân viên quét ngay (hạn 72 giờ)</span></span></label>
+ </div>
+ <div class="bar"><span class="small muted">Lưu xong mở hồ sơ để làm tiếp việc cho người mới.</span><div class="bar" style="gap:8px"><button onclick="close_('ovNew')">Hủy</button><button class="p" id="sv" onclick="save()">Lưu & mở hồ sơ</button></div></div>
+</div></div>
+
+<div class="ov" id="ovRes"><div class="dlg">
+ <div class="bar"><h3>Cho nghỉ việc – Lê Thị Hạnh</h3><button class="sm" onclick="close_('ovRes')">✕</button></div>
+ <div class="fg" style="margin-top:12px">
+  <div class="f"><label>Ngày nghỉ việc <span class="rq">*</span></label><input type="date" class="in" value="2026-11-30"></div>
+  <div class="f"><label>Lý do <span class="rq">*</span></label><select class="in"><option>Xin nghỉ</option><option>Hết hợp đồng</option><option>Kỷ luật</option><option>Khác</option></select></div>
+  <div class="f full"><label>Ghi chú</label><input class="in" placeholder="không bắt buộc"></div>
+ </div>
+ <div class="note" style="margin-top:12px"><b>Khi xác nhận, hệ thống sẽ:</b><br>• Khóa tài khoản web và gỡ liên kết bot từ ngày nghỉ việc.<br>• Hủy <b>3 ca</b> đã phân sau 30/11 (01/12, 02/12, 04/12) và báo người phân ca.<br>• Chuyển <b>1 yêu cầu duyệt</b> người này đang giữ sang người duyệt thay.</div>
+ <div class="bar" style="justify-content:flex-end;gap:8px"><button onclick="close_('ovRes')">Hủy</button><button class="o" onclick="close_('ovRes');toast('Đã ghi nghỉ việc từ 30/11/2026 · tài khoản sẽ khóa ngày 30/11 · đã hủy 3 ca')">Xác nhận nghỉ việc</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+const E=[
+['NV0213','Lê Thị Hạnh','0912 345 678','Tổ sơ chế','Phụ bếp','24/11/2026','wait','no','Active'],
+['NV0212','Phạm Văn Tú','0987 222 101','Giao hàng','Tài xế','18/11/2026','no','no','Active'],
+['NV0208','Nguyễn Thị Lan','0903 111 222','Tổ chia suất & đóng gói','Nhân viên đóng gói','03/11/2026','yes','yes','Active'],
+['NV0201','Trần Minh Đức','0915 888 120','Tổ nấu','Đầu bếp','12/10/2026','yes','yes','Active'],
+['NV0187','Hoàng Văn Nam','0934 567 890','Tổ nấu','Bếp trưởng','02/05/2025','yes','yes','Active'],
+['NV0176','Đỗ Thu Trang','0976 445 332','Văn phòng','Nhân viên QA','15/03/2025','yes','no','Active'],
+['NV0165','Vũ Đức Anh','0968 123 456','Kho','Thủ kho','09/01/2025','yes','yes','Active'],
+['NV0150','Bùi Thị Mai','0945 678 901','Tổ sơ chế','Phụ bếp','20/08/2024','no','yes','Active'],
+['NV0142','Ngô Quang Huy','0988 765 432','Giao hàng','Tài xế','11/06/2024','yes','yes','Active'],
+['NV0131','Đặng Thị Hoa','0917 321 654','Văn phòng','Kế toán','04/03/2024','yes','yes','Active'],
+['NV0120','Lý Văn Long','0909 876 543','Tổ chia suất & đóng gói','Nhân viên đóng gói','22/11/2023','yes','no','Inactive'],
+['NV0098','Phan Thị Thu','0936 234 567','Tổ nấu','Phụ bếp','05/05/2023','no','no','Resigned'],
+];
+const ST={Active:['Đang làm việc','c-ok'],Inactive:['Tạm nghỉ','c-due'],Resigned:['Đã nghỉ việc','c-n']};
+const ACC={yes:['Có','c-ok'],wait:['Chờ IT duyệt','c-b'],no:['Chưa có','c-due']};
+let fs='Active',fk='',sel=new Set();
+const $=id=>document.getElementById(id);
+function kp(){const a=E.filter(e=>e[8]==='Active');const K=[['','Đang làm việc',a.length,'trên '+E.length+' hồ sơ'],['new','Vào làm tháng này',a.filter(e=>e[5].endsWith('11/2026')).length,'tháng 11/2026'],['acc','Chưa có tài khoản',a.filter(e=>e[6]!=='yes').length,a.filter(e=>e[6]==='wait').length+' đang chờ IT duyệt'],['bot','Chưa liên kết bot',a.filter(e=>e[7]!=='yes').length,'không nhận ca / tin qua bot được']];
+$('kpis').innerHTML=K.map(k=>`<div class="kpi ${fk===k[0]&&k[0]?'on':''}" onclick="fk=fk==='${k[0]}'?'':'${k[0]}';fs='Active';draw()"><div class="small muted">${k[1]}</div><div class="v" style="${k[0]&&k[2]?'color:#C2571A':''}">${k[2]}</div><div class="s">${k[3]}</div></div>`).join('');
+['A','I','R'].forEach((c,i)=>$('n'+c).textContent=E.filter(e=>e[8]===['Active','Inactive','Resigned'][i]).length);}
+function draw(){kp();document.querySelectorAll('[data-st]').forEach(p=>p.classList.toggle('on',p.dataset.st===fs));
+const q=$('fQ').value.toLowerCase(),u=$('fU').value.replace('— ',''),p=$('fP').value;
+let r=E.filter(e=>(!fs||e[8]===fs)&&(!u||e[3]===u)&&(!p||e[4]===p)&&(!q||(e[0]+e[1]+e[2]).toLowerCase().includes(q)));
+if(fk==='new')r=r.filter(e=>e[5].endsWith('11/2026'));if(fk==='acc')r=r.filter(e=>e[6]!=='yes');if(fk==='bot')r=r.filter(e=>e[7]!=='yes');
+$('rows').innerHTML=r.map(e=>`<tr onclick="if(event.target.type!=='checkbox')show('profile')"><td><input type="checkbox" ${sel.has(e[0])?'checked':''} onchange="this.checked?sel.add('${e[0]}'):sel.delete('${e[0]}');bk()"></td><td class="hide-m2"><b>${e[0]}</b></td><td><b>${e[1]}</b><span class="sub">${e[2]}</span><span class="sub show-m">${e[0]} · ${e[4]} · ${e[3]}</span></td><td class="hide-m2">${e[3]}</td><td class="hide-m2">${e[4]}</td><td class="hide-m">${e[5]}</td><td><span class="chip ${ACC[e[6]][1]}">${ACC[e[6]][0]}</span></td><td class="hide-m2">${e[7]==='yes'?'<span class="chip c-ok">Đã liên kết</span>':'<span class="chip c-n">Chưa</span>'}</td><td class="hide-m2"><span class="chip ${ST[e[8]][1]}">${ST[e[8]][0]}</span></td></tr>`).join('')||'<tr><td colspan="9" class="muted" style="text-align:center;padding:20px">Không có nhân viên phù hợp</td></tr>';
+$('foot').textContent=r.length+' nhân viên'+(fk?' · đang lọc theo chỉ số – bấm lại thẻ để bỏ lọc':'');bk();}
+function bk(){$('bN').textContent=sel.size;$('bulk').classList.toggle('on',sel.size>0);}
+document.querySelectorAll('[data-st]').forEach(p=>p.onclick=()=>{fs=p.dataset.st;fk='';draw()});
+['fU','fP'].forEach(i=>$(i).onchange=draw);$('fQ').oninput=draw;
+$('all').onchange=e=>{document.querySelectorAll('#rows input').forEach(c=>{c.checked=e.target.checked;c.onchange()});};
+const G={'Phụ bếp':['Bếp – thao tác'],'Đầu bếp':['Bếp – thao tác','Mẻ nấu'],'Nhân viên đóng gói':['Đóng gói'],'Thủ kho':['Kho'],'Tài xế':['Giao hàng – tài xế'],'Nhân viên QA':['Chất lượng & ATTP']};
+function grp(){$('gp').innerHTML='<span class="small muted">Nhóm quyền gợi ý theo chức vụ:</span>'+G[$('pos').value].map(g=>`<span class="chip c-ok">${g}</span>`).join('')+'<span class="small muted">(IT đổi được khi duyệt)</span>';}
+function chkPh(){const v=$('ph').value.replace(/\s/g,'');const d=E.find(e=>e[2].replace(/\s/g,'')===v&&e[8]!=='Resigned');$('phE').innerHTML=d?`Số này đang dùng cho <b>${d[1]} (${d[0]})</b> – mỗi nhân viên đang làm một số riêng.`:'';$('ph').classList.toggle('bad',!!d);$('sv').disabled=!!d;}
+function openNew(){$('ovNew').classList.add('on');grp();chkPh();}
+function openResign(){$('ovRes').classList.add('on');}
+function close_(i){$(i).classList.remove('on');}
+function save(){close_('ovNew');show('profile');toast('Đã thêm nhân viên NV0213 · đã gửi IT đề nghị cấp tài khoản');}
+function show(p){$('pList').style.display=p==='list'?'':'none';$('pProfile').style.display=p==='profile'?'':'none';scrollTo(0,0);}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
+draw();
+const h=location.hash;if(h==='#new')openNew();if(h==='#new-ok'){openNew();$('ph').value='0977 555 000';chkPh();}if(h==='#profile')show('profile');if(h==='#resign'){show('profile');openResign();}
+</script></body></html>

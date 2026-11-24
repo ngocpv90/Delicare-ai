@@ -1,0 +1,136 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chấm công – mô phỏng</title><style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0}.tabs span{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}.tabs span.on{border-color:#7FA43A;color:var(--ink);font-weight:600}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cl{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px}.cl.red{background:#FFF9F8;border-color:#F2C6BF}
+.cl h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between}
+.pc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pc b{font-size:13px}.pc .sub{display:block;color:var(--muted)}
+.shiftbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sh{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;cursor:pointer;background:#fff}.sh.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}.sh b{font-size:13px}
+table.g{border-collapse:separate;border-spacing:0;font-size:12px;width:100%}
+table.g th,table.g td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:center}
+table.g th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:11px}
+table.g td.l,table.g th.l{text-align:left;position:sticky;left:0;background:#fff;min-width:170px;z-index:1}table.g th.l{background:#FAFBF8}
+table.g tr.grp td{background:#F7F9F4;font-weight:700;text-align:left}
+.k{display:inline-block;min-width:22px;padding:2px 3px;border-radius:6px;font-weight:700;cursor:pointer}
+.k.ok{color:#3F5A17}.k.M{background:var(--o-bg);color:#8A3B0B}.k.V{background:var(--r-bg);color:var(--r)}.k.P{background:var(--b-bg);color:#1F4C80}.k.T{background:#FFF3CD;color:#7A5B00;outline:1px dashed #D9B44A}.k.R{background:#FDECEA;color:var(--r);outline:1px dashed #E9A8A1}.k.o{color:#c5cbc3;font-weight:400}
+td.we{background:#FBFBF9}
+.tot{font-weight:700}
+.fix{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fx{border:1px solid #F2C6BF;background:#FFF9F8;border-radius:10px;padding:6px 10px;font-size:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.f.full{grid-column:1/-1}
+@media(max-width:700px){.cols{grid-template-columns:1fr}.fg{grid-template-columns:1fr}}
+</style></head><body>
+<div class="card">
+ <div class="bar"><div><h1>Chấm công</h1><div class="small muted" id="sub"></div></div>
+ <div class="bar" style="gap:8px"><select class="in" style="width:auto;height:34px;font-size:13px"><option>Tất cả đơn vị</option><option>Bếp trung tâm</option><option>— Tổ sơ chế</option><option>— Tổ nấu</option><option>Giao hàng</option></select><button id="btnX">⬇ Xuất bảng công</button></div></div>
+ <div class="tabs"><span data-t="day" class="on">Hôm nay</span><span data-t="grid">Bảng công</span><span data-t="log">Sổ chấm công</span></div>
+ <div id="body"></div>
+</div>
+<div class="ov" id="ovS"><div class="dlg">
+ <div class="bar"><h3>Bổ sung giờ ra ca – Bùi Thị Mai</h3><button class="sm" onclick="cl('ovS')">✕</button></div>
+ <div class="small muted" style="margin:4px 0 12px">Ca C (14:00–22:00) ngày 23/11/2026 · đã vào ca 13:56 · <b style="color:#B42318">chưa ra ca</b></div>
+ <div class="fg">
+  <div class="f"><label>Loại</label><select class="in"><option>Ra ca</option><option>Vào ca</option></select></div>
+  <div class="f"><label>Giờ thực tế <span style="color:#B42318">*</span></label><input class="in" type="time" value="22:05"></div>
+  <div class="f full"><label>Lý do <span style="color:#B42318">*</span></label><select class="in"><option>Quên chấm công</option><option>Điện thoại hết pin / mất mạng</option><option>Máy chấm công lỗi</option><option>Khác</option></select></div>
+  <div class="f full"><label>Ghi chú</label><input class="in" value="Tổ trưởng xác nhận chị Mai ở lại dọn bếp tới 22:05"></div>
+ </div>
+ <div class="note" style="margin-top:12px">Giờ bổ sung phải nằm trong khung ca (±3 giờ) và trong 3 ngày gần nhất. Ghi vào sổ với hình thức <b>Bổ sung</b>, người ghi = bạn – không sửa, không xóa được. Giờ công tự tính lại.</div>
+ <div class="bar" style="justify-content:flex-end;gap:8px"><button onclick="cl('ovS')">Hủy</button><button class="p" onclick="cl('ovS');toast('Đã bổ sung ra ca 22:05 cho Bùi Thị Mai · giờ công ca C ngày 23/11: 8,1 giờ')">Ghi bổ sung</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);let tab=location.hash.replace('#','')||'day',shf='S';
+function toast(m){const t=$('toast');t.innerHTML=m;t.style.display='block';setTimeout(()=>t.style.display='none',3500)}
+function cl(i){$(i).classList.remove('on')}function sup(){$('ovS').classList.add('on')}
+const SH={S:['Ca S','06:00–14:00','đang diễn ra'],C:['Ca C','14:00–22:00','bắt đầu sau 5 giờ'],D:['Ca Đ','22:00–06:00','đêm qua – đã xong']};
+function day(){
+ $('sub').textContent='Ai đang có mặt, ai chưa vào ca – xử lý ngay trong ngày. Thứ Ba 24/11/2026 · 08:55';
+ const late=[['Phạm Văn Tú','Tài xế · Giao hàng','quá giờ 2 giờ 55′','0987 222 101'],['Lý Văn Long','Đóng gói','quá giờ 2 giờ 55′','0909 876 543']];
+ const inn=[['Hoàng Văn Nam','Bếp trưởng','05:52'],['Trần Minh Đức','Đầu bếp','05:58'],['Lê Thị Hạnh','Phụ bếp','06:12','M'],['Nguyễn Thị Lan','Đóng gói','05:49'],['Vũ Đức Anh','Thủ kho','06:01'],['Bùi Thị Mai','Phụ bếp','06:20','M'],['Ngô Quang Huy','Tài xế','05:40','R']];
+ const lv=[['Đỗ Thu Trang','QA · Phép năm','NP-2611-014'],['Đặng Thị Hoa','Kế toán · Nghỉ ốm','NP-2611-016']];
+ $('body').innerHTML=`<div class="kpis"><div class="kpi"><div class="small muted">Có mặt / được phân</div><div class="v">7 / 9</div><div class="s">ca S hôm nay</div></div><div class="kpi"><div class="small muted">Chưa vào ca (quá giờ)</div><div class="v" style="color:#B42318">2</div><div class="s">đã báo tổ trưởng qua bot lúc 06:15</div></div><div class="kpi"><div class="small muted">Đi muộn</div><div class="v" style="color:#C2571A">2</div><div class="s">tổng 32 phút</div></div><div class="kpi"><div class="small muted">Cần xử lý</div><div class="v" style="color:#C2571A">3</div><div class="s">1 ngoài bán kính · 2 thiếu ra ca hôm qua</div></div></div>
+ <div class="shiftbar">${Object.entries(SH).map(([k,v])=>`<div class="sh ${k===shf?'on':''}" onclick="shf='${k}';draw()"><b>${v[0]}</b> ${v[1]}<div class="muted">${v[2]}</div></div>`).join('')}</div>
+ <div class="cols">
+  <div class="cl red"><h4>Chưa vào ca <span class="chip c-bad">${late.length}</span></h4>${late.map(p=>`<div class="pc"><div><b>${p[0]}</b><span class="sub">${p[1]} · <span style="color:#B42318">${p[2]}</span></span><span class="sub">${p[3]}</span></div><div style="display:grid;gap:4px"><button class="sm" onclick="toast('Chấm hộ: nhập giờ thực tế + lý do')">Chấm hộ</button><button class="sm" onclick="toast('Đã ghi vắng ca S – ${p[0]}')">Báo vắng</button></div></div>`).join('')}</div>
+  <div class="cl"><h4>Đã vào ca <span class="chip c-ok">${inn.length}</span></h4>${inn.map(p=>`<div class="pc"><div><b>${p[0]}</b><span class="sub">${p[1]}</span></div><div style="text-align:right">${p[2]}${p[3]==='M'?'<span class="sub" style="color:#C2571A">muộn '+(p[2]==='06:12'?'12':'20')+'′</span>':''}${p[3]==='R'?'<span class="sub" style="color:#B42318">ngoài bán kính 850 m</span>':''}</div></div>`).join('')}</div>
+  <div class="cl"><h4>Nghỉ phép <span class="chip c-b">${lv.length}</span></h4>${lv.map(p=>`<div class="pc"><div><b>${p[0]}</b><span class="sub">${p[1]}</span></div><span class="small muted">${p[2]}</span></div>`).join('')}</div>
+  <div class="cl"><h4>Cần xử lý <span class="chip c-due">3</span></h4>
+   <div class="pc"><div><b>Bùi Thị Mai</b><span class="sub">Ca C 23/11 · <span style="color:#B42318">chưa ra ca</span></span></div><button class="sm p" onclick="sup()">Bổ sung giờ</button></div>
+   <div class="pc"><div><b>Trần Minh Đức</b><span class="sub">Ca C 23/11 · <span style="color:#B42318">chưa ra ca</span></span></div><button class="sm p" onclick="sup()">Bổ sung giờ</button></div>
+   <div class="pc"><div><b>Ngô Quang Huy</b><span class="sub">Vào ca 05:40 · cách bếp 850 m</span></div><button class="sm" onclick="toast('Đã xác nhận hợp lệ: tài xế nhận xe ở bãi – ghi lý do vào sổ')">Xác nhận hợp lệ</button></div>
+  </div>
+ </div>
+ <div class="small muted" style="margin-top:10px">Ca hết giờ mà chưa vào ca tự chuyển <b>Vắng</b> lúc 23:30 (không cần bấm "Chốt vắng"). Nhân viên tự chấm ở mục <b>Việc của tôi</b> hoặc bot.</div>`;}
+function grid(){
+ $('sub').textContent='Bảng công theo tháng – mỗi ô một ngày, bấm ô xem ca và bổ sung giờ. Tổng cuối dòng dùng tính lương.';
+ const days=Array.from({length:24},(_,i)=>i+1);const dow=d=>['CN','T2','T3','T4','T5','T6','T7'][new Date(2026,10,d).getDay()];
+ const P=[['Tổ nấu',[['Hoàng Văn Nam','NV0187','','',''],['Trần Minh Đức','NV0201','M9','T23',''],['Phan Văn Bình','NV0193','V12','P17,P18','']]],['Tổ sơ chế',[['Lê Thị Hạnh','NV0213','start24','M24',''],['Bùi Thị Mai','NV0150','M3,M10,M24','T23',''],['Lý Thu Hà','NV0190','','P5,P6,P7','']]],['Giao hàng',[['Ngô Quang Huy','NV0142','R24','',''],['Phạm Văn Tú','NV0212','start18','W24','']]]];
+ const cell=(spec,d)=>{const s=spec.join(',');const st=(s.match(/start(\d+)/)||[])[1];if(st&&d<+st)return '<span class="k o">·</span>';if(dow(d)==='CN')return '<span class="k o">–</span>';if(/W24/.test(s)&&d===24)return '<span class="k o" title="Ca đang diễn ra – chưa vào ca">…</span>';for(const k of ['V','P','T','R','M']){if(new RegExp(k+d+'(,|$)').test(s))return `<span class="k ${k}">${k==='M'?'M':k==='T'?'T':k==='R'?'!':k}</span>`}return '<span class="k ok">✓</span>'};
+ let rows='';P.forEach(([g,ps])=>{rows+=`<tr class="grp"><td class="l" colspan="${days.length+6}">${g}</td></tr>`;ps.forEach(p=>{const sp=[p[2],p[3]];let w=0,m=0,v=0,pp=0;days.forEach(d=>{const c=cell(sp,d);if(c.includes('k ok')||c.includes('k M')||c.includes('k T')||c.includes('k R'))w++;if(c.includes('k M'))m++;if(c.includes('k V'))v++;if(c.includes('k P'))pp++});rows+=`<tr><td class="l"><b>${p[0]}</b> <span class="muted">${p[1]}</span></td>${days.map(d=>`<td class="${dow(d)==='CN'?'we':''}" onclick="${cell(sp,d).includes('k T')?'sup()':''}">${cell(sp,d)}</td>`).join('')}<td class="tot">${w}</td><td class="tot">${(w*8).toLocaleString('vi-VN')}</td><td class="tot" style="color:${m?'#C2571A':''}">${m}</td><td class="tot" style="color:${v?'#B42318':''}">${v}</td><td class="tot">${pp}</td></tr>`})});
+ $('body').innerHTML=`<div class="bar"><div class="day"><button>◀</button>Tháng 11/2026 · 01/11 – 24/11<button>▶</button></div><div class="legend" style="margin:0"><span><span class="k ok">✓</span> đủ công</span><span><span class="k M">M</span> đi muộn / về sớm</span><span><span class="k V">V</span> vắng</span><span><span class="k P">P</span> nghỉ phép</span><span><span class="k T">T</span> thiếu ra / vào ca</span><span><span class="k R">!</span> ngoài bán kính</span><span>– không có ca</span><span>… ca hôm nay chưa vào</span></div></div>
+ <div class="fix" style="margin-top:10px"><span class="small muted" style="align-self:center">Cần xử lý trước khi xuất lương:</span><span class="fx">2 ca thiếu ra ca</span><span class="fx">1 lần ngoài bán kính chưa xác nhận</span><span class="fx">1 ca vắng không có đơn nghỉ</span></div>
+ <div class="scroll"><table class="g"><thead><tr><th class="l">Nhân viên</th>${days.map(d=>`<th class="${dow(d)==='CN'?'we':''}">${dow(d)}<br>${d}</th>`).join('')}<th>Công</th><th>Giờ</th><th>Muộn</th><th>Vắng</th><th>Phép</th></tr></thead><tbody>${rows}</tbody></table></div>`;}
+function log(){ $('sub').textContent='Sổ ghi từng lần chấm – chỉ xem, không sửa / xóa. Dùng để tra cứu khi có khiếu nại.';
+ const L=[['24/11 06:20','Bùi Thị Mai','Vào ca','GPS','Hợp lệ · 35 m',''],['24/11 06:12','Lê Thị Hạnh','Vào ca','Bot Telegram','Hợp lệ · 20 m',''],['24/11 05:40','Ngô Quang Huy','Vào ca','GPS','Ngoài bán kính · 850 m',''],['23/11 22:07','Hoàng Văn Nam','Ra ca','Máy chấm công','Hợp lệ',''],['23/11 14:10','Phan Văn Bình','Vào ca','Chấm hộ','Hợp lệ','Ghi bởi Nguyễn Thị Lan – điện thoại hỏng']];
+ $('body').innerHTML=`<div class="bar" style="margin-bottom:10px"><input class="in" placeholder="Tìm nhân viên…" style="width:240px;height:34px;font-size:13px"><span class="small muted">Lọc: hình thức · hợp lệ · khoảng ngày</span></div><table class="g"><thead><tr><th class="l">Thời điểm</th><th>Nhân viên</th><th>Loại</th><th>Hình thức</th><th>Vị trí</th><th>Ghi chú</th></tr></thead><tbody>${L.map(r=>`<tr><td class="l">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4].startsWith('Ngoài')?'<span class="chip c-bad">'+r[4]+'</span>':r[4]}</td><td class="small muted">${r[5]}</td></tr>`).join('')}</tbody></table>`;}
+function draw(){document.querySelectorAll('[data-t]').forEach(s=>s.classList.toggle('on',s.dataset.t===tab));({day,grid,log})[tab]();}
+document.querySelectorAll('[data-t]').forEach(s=>s.onclick=()=>{tab=s.dataset.t;draw()});
+$('btnX').onclick=()=>toast('Xuất Excel bảng công tháng 11/2026 – theo mẫu lương (công, giờ, muộn, vắng, phép)');
+draw();if(location.hash==='#sup')sup();
+</script></body></html>

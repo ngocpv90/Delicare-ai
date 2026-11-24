@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo – Nhật ký nhiệt độ (đề xuất)</title>
+<style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:28px;font-size:12px;padding:0 9px}
+button.lg{height:46px;font-size:15px;border-radius:12px;padding:0 18px;font-weight:600}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 14px;font-size:14px}
+.tabs span{padding:10px 0;color:var(--muted);cursor:pointer}.tabs .on{color:var(--ink);font-weight:600;border-bottom:2px solid #7FA43A}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.zc{border:1px solid var(--line);border-left:5px solid #B9CB97;border-radius:14px;padding:12px 14px;background:#fff;cursor:pointer}
+.zc.bad{border-left-color:var(--r);background:#FFF9F8}.zc.due{border-left-color:#E8833A;background:#FFFCF8}.zc.off{border-left-color:#9aa39c;background:#FAFBF9}
+.zc .t{font-size:30px;font-weight:800;margin:6px 0 2px}.zc .t small{font-size:14px;color:var(--muted);font-weight:500}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+svg.sp{width:100%;height:38px;display:block;margin-top:6px}
+.todo{border:1px solid #F2C6BF;background:#FFF8F6;border-radius:14px;padding:10px 14px;margin-bottom:16px}
+.todo h3{color:var(--r);margin-bottom:6px}
+.todo .it{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px dashed #F2D3CD;font-size:13px}.todo .it:first-of-type{border-top:0}.todo .it span{flex:1}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:12px;padding:8px;text-align:left;white-space:nowrap}td{border-top:1px solid var(--line);padding:8px;vertical-align:middle}
+td.n,th.n{text-align:right}tr.dayr td{background:#F7F9F4;font-weight:700}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips span{border:1px solid #d5dbd2;border-radius:20px;padding:5px 11px;font-size:13px;cursor:pointer;background:#fff}.chips span.on{background:#F2F7EA;border-color:#7FA43A;font-weight:600}
+select,.search{height:34px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:13px;background:#fff}.search{min-width:240px}
+/* biểu đồ minh họa (thật: Chart.js) */
+.chart{position:relative;height:220px;border-bottom:1px solid var(--line);margin:8px 0 26px 36px}
+.chart .band{position:absolute;left:0;right:0;background:rgba(127,164,58,.12);border-top:1px dashed #7FA43A;border-bottom:1px dashed #7FA43A}
+.chart svg{position:absolute;inset:0;width:100%;height:100%}
+.chart .ax{position:absolute;left:-34px;font-size:10px;color:var(--muted);transform:translateY(50%)}
+.chart .xl{position:absolute;bottom:-18px;font-size:10px;color:var(--muted);transform:translateX(-50%)}
+/* lượt đo */
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:820px;width:100%;padding:18px 20px;max-height:94vh;overflow:auto}
+.round td{padding:10px 8px}
+.inp{width:96px;height:44px;font-size:20px;font-weight:700;text-align:right;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px}
+.inp.bad{border-color:var(--r);background:var(--r-bg);color:var(--r)}.inp.ok{border-color:#B9CB97;background:var(--g-bg)}
+.fix{width:100%;height:38px;border:1px solid #E9A8A1;border-radius:10px;padding:0 10px;font-size:13px;margin-top:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.scroll{overflow-x:auto}
+@media(max-width:1100px){.kpis,.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}.grid{grid-template-columns:1fr}}
+</style></head><body>
+
+<div class="card">
+ <div class="bar">
+  <div><h1>Nhật ký nhiệt độ</h1><div class="small muted">Nhiệt độ kho, tủ, khu chia suất – cảm biến ghi tự động, khu ghi tay đo mỗi ca. Sổ chỉ ghi thêm, không sửa / xóa. Nhiệt độ lõi mẻ, giao hàng, nhận hàng ghi ở mẻ / chuyến / nhận hàng.</div></div>
+  <div class="bar" style="gap:8px"><div class="day"><button>◀</button>T3 24/11/2026 · <span class="chip c-due">Ca 2 · Trưa</span><button>▶</button></div><button class="p lg" onclick="openRound()">Ghi một lượt</button></div>
+ </div>
+ <div class="kpis" id="kpis"></div>
+</div>
+
+<div class="tabs" id="tabs"><span data-t="today" class="on">Hôm nay</span><span data-t="book">Sổ nhiệt độ</span><span data-t="chart">Biểu đồ</span></div>
+<div id="view"></div>
+
+<div class="ov" id="ov"><div class="dlg" id="dlg"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const NOW='09:10';
+const Z=[
+ {id:'z1',n:'Kho mát 1',area:'Kho nguyên liệu',min:0,max:5,src:'iot',dev:'CB-KM1',last:3.4,at:'09:05',st:'ok',s:[3.1,3.3,3.6,3.2,3.4,3.8,3.5,3.3,3.4,3.2,3.6,3.4]},
+ {id:'z2',n:'Kho mát 2',area:'Kho nguyên liệu',min:0,max:5,src:'manual',last:7.2,at:'08:40',st:'bad',fix:null,s:[3.8,4.1,4.4,4.0,4.6,5.2,6.1,6.8,7.2]},
+ {id:'z3',n:'Kho đông',area:'Kho nguyên liệu',min:-25,max:-18,src:'iot',dev:'CB-KD1',last:-19.6,at:'07:12',st:'off',s:[-20.1,-19.8,-20.3,-19.9,-19.6]},
+ {id:'z4',n:'Tủ mát sơ chế',area:'Khu sơ chế',min:0,max:5,src:'manual',last:4.1,at:'06:05',st:'due',s:[3.9,4.3,4.1]},
+ {id:'z5',n:'Tủ giữ nóng chia suất',area:'Khu chia suất',min:63,max:null,src:'manual',last:68,at:'08:55',st:'ok',s:[66,67,69,68]},
+ {id:'z6',n:'Khu chia suất',area:'Khu chia suất',min:null,max:25,src:'manual',last:23.5,at:'08:55',st:'ok',s:[22.8,23.1,24.0,23.5]},
+ {id:'z7',n:'Kho khô',area:'Kho nguyên liệu',min:null,max:30,src:'manual',last:27.8,at:'06:10',st:'due',s:[26.9,27.2,27.8]},
+ {id:'z8',n:'Tủ mát thành phẩm',area:'Khu đóng gói',min:0,max:5,src:'iot',dev:'CB-TP1',last:2.8,at:'09:08',st:'ok',s:[2.5,2.9,3.1,2.7,2.8,2.6,3.0,2.8]},
+];
+const LOG=[
+ ['24/11','09:05','Kho mát 1','Kho / tủ bảo quản',3.4,'ok','Cảm biến CB-KM1','',''],
+ ['24/11','08:55','Tủ giữ nóng chia suất','Giữ nóng thành phẩm',68,'ok','Lê Văn Tâm','',''],
+ ['24/11','08:55','Khu chia suất','Khu chia suất / đóng gói',23.5,'ok','Lê Văn Tâm','',''],
+ ['24/11','08:40','Kho mát 2','Kho / tủ bảo quản',7.2,'bad','Phạm Thu Hà','Chưa khắc phục',''],
+ ['24/11','08:31','Mẻ ME-261124-C2-04 (Cá basa sốt cà)','Lõi mẻ',78,'ok','Nguyễn Văn Nam','','mẻ'],
+ ['24/11','07:12','Kho đông','Kho / tủ bảo quản',-19.6,'ok','Cảm biến CB-KD1','',''],
+ ['24/11','06:10','Kho khô','Kho / tủ bảo quản',27.8,'ok','Phạm Thu Hà','',''],
+ ['24/11','06:05','Tủ mát sơ chế','Kho / tủ bảo quản',4.1,'ok','Phạm Thu Hà','',''],
+ ['24/11','06:05','Kho mát 2','Kho / tủ bảo quản',4.6,'ok','Phạm Thu Hà','',''],
+ ['23/11','22:40','Kho mát 2','Kho / tủ bảo quản',4.2,'ok','Trần Minh','Đo lại sau khắc phục',''],
+ ['23/11','22:10','Kho mát 2','Kho / tủ bảo quản',5.8,'bad','Trần Minh','Chỉnh lại nhiệt độ máy, đo lại 22:40 = 4,2 °C – đạt',''],
+ ['23/11','14:05','Tủ giữ nóng chia suất','Giữ nóng thành phẩm',61,'bad','Lê Văn Tâm','Bật lại tủ, chuyển suất sang tủ 2 – đo lại 14:20 = 66 °C',''],
+];
+let tab='today',onlyBad=false,showProc=false;
+const rng=z=>z.min!=null&&z.max!=null?`${z.min} – ${z.max} °C`:z.min!=null?`≥ ${z.min} °C`:`≤ ${z.max} °C`;
+const inR=(z,v)=>(z.min==null||v>=z.min)&&(z.max==null||v<=z.max);
+const f1=v=>v.toLocaleString('vi-VN',{maximumFractionDigits:1});
+const ST={ok:['c-ok','Đạt'],bad:['c-bad','Ngoài ngưỡng – chưa khắc phục'],due:['c-due','Đến giờ chưa đo (ca 2)'],off:['c-n','Cảm biến mất tín hiệu 118′']};
+function spark(z){const v=z.s,lo=Math.min(...v,z.min??Infinity,z.max??Infinity)-1,hi=Math.max(...v,z.max??-Infinity,z.min??-Infinity)+1,y=x=>38-(x-lo)/(hi-lo)*36,w=100/(v.length-1);
+ const band=z.min!=null&&z.max!=null?`<rect x="0" y="${y(z.max)}" width="100" height="${y(z.min)-y(z.max)}" fill="rgba(127,164,58,.12)"/>`:z.max!=null?`<line x1="0" x2="100" y1="${y(z.max)}" y2="${y(z.max)}" stroke="#B42318" stroke-dasharray="2"/>`:`<line x1="0" x2="100" y1="${y(z.min)}" y2="${y(z.min)}" stroke="#B42318" stroke-dasharray="2"/>`;
+ return `<svg class="sp" viewBox="0 0 100 40" preserveAspectRatio="none">${band}<polyline fill="none" stroke="${z.st==='bad'?'#B42318':'#6F9131'}" stroke-width="1.6" points="${v.map((x,i)=>`${i*w},${y(x)}`).join(' ')}"/></svg>`}
+function kpis(){document.getElementById('kpis').innerHTML=`<div class="kpi"><div class="s">Khu đang ngoài ngưỡng</div><div class="v" style="color:var(--r)">${Z.filter(z=>z.st==='bad').length}</div><div class="s">trên ${Z.length} khu theo dõi</div></div>
+ <div class="kpi"><div class="s">Đến giờ chưa đo (ca này)</div><div class="v" style="color:var(--o)">${Z.filter(z=>z.st==='due').length}</div><div class="s">khu ghi tay · hạn 60′ đầu ca</div></div>
+ <div class="kpi"><div class="s">Cảm biến mất tín hiệu</div><div class="v">${Z.filter(z=>z.st==='off').length}</div><div class="s">${Z.filter(z=>z.src==='iot').length} cảm biến đang khai</div></div>
+ <div class="kpi"><div class="s">Lần ngoài ngưỡng 7 ngày</div><div class="v">6</div><div class="s">5 đã khắc phục · 1 còn mở</div></div>`}
+function vToday(){const bad=Z.filter(z=>z.st!=='ok');
+ let h=bad.length?`<div class="todo"><h3>Cần xử lý ngay (${bad.length})</h3>${bad.map(z=>`<div class="it"><span><b>${z.n}</b> — ${z.st==='bad'?`<span style="color:var(--r)">${f1(z.last)} °C lúc ${z.at} (ngưỡng ${rng(z)}) – chưa ghi khắc phục</span>`:z.st==='due'?`<span style="color:var(--o)">lần đo gần nhất ${z.at} (ca 1) – ca 2 chưa đo</span>`:`<span>cảm biến ${z.dev} không gửi số từ ${z.at} – kiểm tra cảm biến, đo tay tạm thời</span>`}</span>${z.st==='bad'?`<button class="sm o" onclick="openFix('${z.id}')">Đo lại & ghi khắc phục</button>`:`<button class="sm" onclick="openRound('${z.id}')">Đo tay ngay</button>`}</div>`).join('')}</div>`:'';
+ const areas=[...new Set(Z.map(z=>z.area))];
+ h+=`<div class="legend"><span><span class="sw" style="background:#B9CB97"></span>Đạt</span><span><span class="sw" style="background:var(--r)"></span>Ngoài ngưỡng chưa khắc phục</span><span><span class="sw" style="background:#E8833A"></span>Đến giờ chưa đo</span><span><span class="sw" style="background:#9aa39c"></span>Cảm biến mất tín hiệu</span><span>Bấm thẻ xem biểu đồ của khu · dải xanh = ngưỡng</span></div>`;
+ areas.forEach(a=>{h+=`<div class="small muted" style="margin:6px 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">${a}</div><div class="grid" style="margin-bottom:14px">${Z.filter(z=>z.area===a).map(z=>`<div class="zc ${z.st}" onclick="tab='chart';cz='${z.id}';draw()"><div class="bar"><b>${z.n}</b><span class="chip ${z.src==='iot'?'c-b':'c-n'}">${z.src==='iot'?'Cảm biến':'Ghi tay'}</span></div>
+  <div class="t" style="color:${z.st==='bad'?'var(--r)':z.st==='off'?'var(--muted)':'inherit'}">${f1(z.last)} <small>°C</small></div>
+  <div class="small muted">Ngưỡng ${rng(z)} · đo lúc ${z.at}</div>${spark(z)}<div style="margin-top:6px"><span class="chip ${ST[z.st][0]}">${ST[z.st][1]}</span></div></div>`).join('')}</div>`});
+ return h}
+function vBook(){const rows=LOG.filter(r=>(!onlyBad||r[5]==='bad')&&(showProc||!r[8]));const days=[...new Set(rows.map(r=>r[0]))];
+ return `<div class="card" style="padding:12px 14px"><div class="filters"><input class="search" placeholder="Tìm khu vực, mẻ, người đo…"><div class="chips"><span>Hôm nay</span><span class="on">7 ngày</span><span>Tháng này</span><span>Chọn khoảng…</span></div><select><option>Mọi khu vực</option>${Z.map(z=>`<option>${z.n}</option>`).join('')}</select><select><option>Mọi nguồn</option><option>Cảm biến</option><option>Ghi tay</option></select>
+ <label class="small"><input type="checkbox" ${onlyBad?'checked':''} onchange="onlyBad=this.checked;draw()"> Chỉ ngoài ngưỡng</label><label class="small"><input type="checkbox" ${showProc?'checked':''} onchange="showProc=this.checked;draw()"> Gồm lõi mẻ / giao hàng / nhận hàng</label><span style="flex:1"></span><button>Xuất Excel</button><button class="p">In sổ nhiệt độ</button></div>
+ <div class="scroll"><table><tr><th>Giờ</th><th>Khu vực / đối tượng</th><th>Loại đo</th><th class="n">Nhiệt độ</th><th>Kết quả</th><th>Người đo / nguồn</th><th>Khắc phục</th></tr>
+ ${days.map(d=>{const g=rows.filter(r=>r[0]===d);return `<tr class="dayr"><td colspan="7">▾ Ngày ${d}/2026 · ${g.length} lần đo · ${g.filter(r=>r[5]==='bad').length?`<span style="color:var(--r)">${g.filter(r=>r[5]==='bad').length} ngoài ngưỡng</span>`:'<span style="color:var(--g)">đạt hết</span>'}</td></tr>`+g.map(r=>`<tr><td>${r[1]}</td><td><b>${r[2]}</b>${r[8]?' <a href="#" class="small">mở mẻ</a>':''}</td><td class="small">${r[3]}</td><td class="n"><b style="color:${r[5]==='bad'?'var(--r)':''}">${f1(r[4])} °C</b></td><td><span class="chip ${r[5]==='bad'?'c-bad':'c-ok'}">${r[5]==='bad'?'Ngoài ngưỡng':'Đạt'}</span></td><td class="small">${r[6]}</td><td class="small" style="color:${r[7]==='Chưa khắc phục'?'var(--r)':''}">${r[7]||'<span class="muted">–</span>'}</td></tr>`).join('')}).join('')}</table></div>
+ <div class="small muted" style="margin-top:8px">Chỉ xem – không sửa / xóa. Khắc phục = ghi lần đo mới kèm hành động.</div></div>`}
+let cz='z2';
+function vChart(){const z=Z.find(x=>x.id===cz);const v=[3.6,3.9,4.2,3.8,4.0,4.4,4.1,3.7,3.9,4.3,4.6,4.0,3.8,4.1,4.5,5.8,4.2,3.9,4.0,4.4,4.6,5.2,6.1,6.8,7.2];
+ const lo=-1,hi=9,y=x=>(x-lo)/(hi-lo)*100;
+ return `<div class="card" style="padding:12px 14px"><div class="filters"><select onchange="cz=this.value;draw()">${Z.map(x=>`<option value="${x.id}" ${x.id===cz?'selected':''}>${x.n}</option>`).join('')}</select><div class="chips"><span class="on">48 giờ</span><span>7 ngày</span><span>30 ngày</span></div><span class="small muted">Bản thật: một biểu đồ Chart.js duy nhất – rê chuột xem giờ, người đo, khắc phục</span></div>
+ <h3>${z.n} · ngưỡng ${rng(z)}</h3><div class="chart"><div class="band" style="bottom:${y(0)}%;height:${y(5)-y(0)}%"></div>${[0,2,4,6,8].map(t=>`<span class="ax" style="bottom:${y(t)}%">${t}°</span>`).join('')}
+ <svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline fill="none" stroke="#6F9131" stroke-width=".6" points="${v.map((x,i)=>`${i/(v.length-1)*100},${100-y(x)}`).join(' ')}"/></svg>${v.map((x,i)=>x>5?`<span style="position:absolute;width:9px;height:9px;border-radius:50%;background:#B42318;left:calc(${i/(v.length-1)*100}% - 4px);bottom:calc(${y(x)}% - 4px)"></span>`:'').join('')}
+ ${['23/11 10h','23/11 18h','24/11 02h','24/11 09h'].map((l,i)=>`<span class="xl" style="left:${[8,38,70,98][i]}%">${l}</span>`).join('')}</div>
+ <div class="small muted">Chấm đỏ = lần đo ngoài ngưỡng (23/11 22:10 đã khắc phục; 24/11 06:40 → 08:40 tăng dần, chưa khắc phục).</div></div>`}
+function draw(){kpis();document.getElementById('view').innerHTML=tab==='today'?vToday():tab==='book'?vBook():vChart();document.querySelectorAll('#tabs span').forEach(s=>{s.classList.toggle('on',s.dataset.t===tab);s.onclick=()=>{tab=s.dataset.t;draw()}})}
+function openRound(only){const zs=Z.filter(z=>z.src==='manual'||z.st==='off').filter(z=>!only||z.id===only||true);
+ document.getElementById('dlg').innerHTML=`<div class="bar"><div><h3 style="font-size:18px">Ghi một lượt – Ca 2 · Trưa</h3><div class="small muted">Các khu ghi tay + khu cảm biến đang mất tín hiệu · ngoài ngưỡng bắt buộc ghi khắc phục · lưu cả lượt một lần</div></div><button class="sm" onclick="closeD()">Đóng</button></div>
+ <table class="round" style="margin-top:10px"><tr><th>Khu vực</th><th>Ngưỡng</th><th>Lần trước</th><th class="n">Nhiệt độ đo (°C)</th></tr>${zs.map(z=>`<tr><td><b>${z.n}</b><div class="small muted">${z.area}${z.st==='off'?' · cảm biến mất tín hiệu':''}</div></td><td class="small">${rng(z)}</td><td class="small">${f1(z.last)} °C · ${z.at}</td><td class="n"><input class="inp" data-z="${z.id}" inputmode="decimal" placeholder="__" ${only===z.id?'autofocus':''}><div data-fx="${z.id}"></div></td></tr>`).join('')}</table>
+ <div class="bar" style="margin-top:14px"><span class="small muted">Để trống = chưa đo khu đó (vẫn hiện "đến giờ chưa đo").</span><button class="p lg" onclick="saveRound()">Lưu lượt đo</button></div>`;
+ document.getElementById('ov').classList.add('on');
+ document.querySelectorAll('.inp').forEach(i=>i.oninput=()=>{const z=Z.find(x=>x.id===i.dataset.z),v=parseFloat(i.value.replace(',','.'));const fx=document.querySelector(`[data-fx="${z.id}"]`);
+  if(isNaN(v)){i.className='inp';fx.innerHTML='';return}const ok=inR(z,v);i.className='inp '+(ok?'ok':'bad');fx.innerHTML=ok?'':`<input class="fix" placeholder="Ngoài ngưỡng – hành động khắc phục (bắt buộc)">`})}
+function openFix(id){openRound(id)}
+function saveRound(){let n=0,miss=0;document.querySelectorAll('.inp').forEach(i=>{const v=parseFloat(i.value.replace(',','.'));if(isNaN(v))return;const z=Z.find(x=>x.id===i.dataset.z);const fx=document.querySelector(`[data-fx="${z.id}"] input`);if(fx&&!fx.value.trim()){miss++;return}n++;z.last=v;z.at=NOW;z.s.push(v);z.st=inR(z,v)?'ok':(fx?'ok':'bad')});
+ if(miss)return toast('Còn '+miss+' khu ngoài ngưỡng chưa ghi hành động khắc phục');closeD();toast('Đã ghi '+n+' lần đo'+(n?' – lần ngoài ngưỡng đã gửi tin bot cho trưởng ca + QA':''));draw()}
+function closeD(){document.getElementById('ov').classList.remove('on')}
+function toast(s){const e=document.getElementById('toast');e.textContent=s;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3500)}
+draw();
+const H=location.hash;if(H==='#so'){tab='book';draw()}if(H==='#bd'){tab='chart';draw()}if(H==='#luot'){openRound();const i=document.querySelector('[data-z="z2"]');i.value='7,5';i.oninput();const j=document.querySelector('[data-z="z4"]');j.value='3,9';j.oninput()}
+</script>
+</body></html>
