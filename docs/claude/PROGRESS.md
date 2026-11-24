@@ -1,6 +1,38 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.10 (D-88; luật CLAUDE.md §4.5 mục 1–2) DONE – hàng chỉ số co giãn theo số thẻ + giao diện tiếng Việt toàn ứng dụng** (nhánh `feat/UI-6.10-vi-kpi` từ CHART-1). **UI-6.0** (phần đầu gọn) đã xong từ UI-2R fix 2026-11-23 → mục 7g0 đủ.
+  - **Hàng chỉ số (D-88 a, b):** mọi khung `.kpis` (cả `.kpis.compact`) tự mang `data-n` = số thẻ (quan sát DOM ở `core/ui.js` – không phải sửa từng chỗ ghép chuỗi). CSS:
+    - < 2 thẻ → **ẩn hàng**; 2 → 1/2; 3 → 1/3; 4 → 1/4; ≥ 5 → 4 cột, thẻ thứ 5 xuống hàng rộng 1/4;
+    - 768–1199px: 2 cột; < 768px: 2 cột gọn (biểu tượng 36px, số 22px); ngăn trượt / hộp thoại 2 cột.
+    - Hàm chung `UI.kpis(cards, cls)` cho code mới.
+    - Màn danh sách chung `APP.defaultKpis`: Tổng bản ghi · 2 trạng thái nhiều nhất · Thêm mới 30 ngày · Sửa gần nhất (tối đa 4).
+    - Ảnh `docs/frontend-handoff/assets/ui-6/kpi/` (7 màn × 1440 / 390).
+  - **Tiếng Việt (D-88 c):**
+    - Từ điển trạng thái chung **máy chủ** `Model/Helper/StatusLabels.cs` ↔ **giao diện** `UI.STATUS_VI`, có test so khớp `Common/StatusLabelsTests`. Gồm mã trạng thái, mã QC (Đạt / Không đạt / Tạm giữ / Loại / Bẩn / Hỏng…), mã buổi (Sáng / Trưa / Tối / Đêm), hành động nhật ký (Thêm / Sửa / Xóa / Tải xuống).
+    - **Active / Inactive = Đang hoạt động / Ngừng hoạt động ở mọi bảng** (`StatusCatalogEffective` thống nhất biến thể "Hoạt động / Đang áp dụng / Ngừng"; trạng thái chứng từ giữ nhãn riêng – hợp đồng *Hiệu lực*…).
+    - Thống kê trạng thái / tab Liên quan dùng từ điển thay mã.
+    - Máy dev: mã chưa dịch hiện "(chưa dịch: X)" để quét bắt.
+    - Bảng đầy đủ: `BUSINESS_RULES.md` §13 Nhãn hiển thị.
+  - **Đã sửa:**
+    - ~40 tiêu đề cột kỹ thuật (Employee Code, Shift Assignment Id, Short Name, Icon…);
+    - mô tả màn Phân quyền / QC còn tên bảng (UserRole, ObjectMenu, QCInspectionLine…);
+    - Nhật ký thay đổi: tên bảng → tên màn, hành động tiếng Việt;
+    - "Khiếu nại" → "Phản ánh" mọi chỗ hiển thị;
+    - CSV: tiêu đề chỉ tiếng Việt (bỏ "(Tên cột)"), tên file theo màn không dấu + ngày;
+    - thông báo máy chủ "Successfully / Internal Server Error / Model State Invalid" → tiếng Việt;
+    - bot: trạng thái job tiếng Việt;
+    - mô tả job hết tên API.
+  - **Kiểm tra (D-88 d):** script quét Chrome headless mở **100 mục menu** (admin, DB dev). Từ cấm gồm mã trạng thái, tên cột / bảng, true / false / null / undefined / NaN; kèm từ ghép kiểu CamelCase và số thẻ chỉ số mỗi hàng. Báo cáo `docs/frontend-handoff/assets/ui-6/i18n-kpi-report.md` (1440) + `-390.md`.
+    - Lượt 1: 27 / 100 màn có vấn đề → lượt 3: **0 màn có thẻ chỉ số đơn lẻ**, còn 3 ngoại lệ được phép (xem dưới).
+    - `dotnet test` **635 / 635**; build FE đạt.
+  - **Chưa làm / còn rủi ro:**
+    - Còn 3 ngoại lệ chữ tiếng Anh, giữ có chủ đích:
+      - tên file mẫu "Menu.xlsx" ở Nhập dữ liệu gốc (tên file máy chủ);
+      - câu lỗi nguyên văn của Telegram ở Tin nhắn đi ("Bad Request: chat not found");
+      - mã job (ContractExpiry…) ở Nhật ký tính chỉ số – mã định danh.
+    - File Excel / PDF phía máy chủ và tin bot chỉ rà theo mã trạng thái (dùng chung từ điển) – chưa có máy quét nội dung file xuất.
+    - Hộp thoại / form chỉ quét gián tiếp (nhãn cột chung `UTIL.LABEL`), chưa mở từng hộp thoại.
 - **2026-11-24: CHART-1 (D-94, D-86 a) DONE – toàn bộ biểu đồ vẽ bằng Chart.js** (nhánh `feat/CHART-1-chartjs` từ `main` sau FIX-NOW-1).
   - **1.1 Nền:**
     - `node_modules/chart.js/dist/chart.umd.js` (4.4.4 có sẵn) vào `scripts` của build + test trong `angular.json` (không CDN, không gói mới).

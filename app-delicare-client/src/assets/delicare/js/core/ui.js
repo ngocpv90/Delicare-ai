@@ -19,7 +19,9 @@
     Received: 'Đã nhận', Processed: 'Đã xử lý', Ignored: 'Bỏ qua', Linked: 'Đã liên kết', Revoked: 'Đã thu hồi', Unlinked: 'Đã gỡ liên kết', Resigned: 'Nghỉ việc', Suspended: 'Tạm ngừng',
     New: 'Mới', Planned: 'Kế hoạch', Released: 'Đã phát hành', Available: 'Khả dụng', Reserved: 'Đã giữ chỗ', Consumed: 'Đã dùng hết', Returned: 'Đã trả', Packed: 'Đã đóng gói',
     Paid: 'Đã thanh toán', Unpaid: 'Chưa thanh toán', Valid: 'Hợp lệ', Invalid: 'Không hợp lệ', Error: 'Lỗi', Warning: 'Cảnh báo', Info: 'Thông tin',
+    DAT: 'Đạt', KHONG_DAT: 'Không đạt', TAM_GIU: 'Tạm giữ', PASS: 'Đạt', FAIL: 'Không đạt', HOLD: 'Tạm giữ', REJECT: 'Loại', DIRTY: 'Bẩn', DAMAGED: 'Hỏng', CLEAN: 'Sạch', GOOD: 'Tốt', DELIVERY: 'Giao hàng', CORE: 'Lõi', RECEIVING: 'Nhận hàng', STORAGE: 'Bảo quản', Duplicate: 'Trùng lặp', SANG: 'Sáng', TRUA: 'Trưa', TOI: 'Tối', DEM: 'Đêm',
     PendingApproval: 'Chờ duyệt', Terminated: 'Chấm dứt', Obsolete: 'Hết dùng', Posted: 'Đã ghi sổ', Issued: 'Đã xuất', Matched: 'Khớp', Variance: 'Chênh lệch',
+    Added: 'Thêm', Modified: 'Sửa', Deleted: 'Xóa', Download: 'Tải xuống', Login: 'Đăng nhập', Logout: 'Đăng xuất',
     Inbound: 'Đến', Outbound: 'Đi', IN: 'Đến', OUT: 'Đi', true: 'Có', false: 'Không',
   };
   // UI-6.10 (D-88): Active / Inactive một cách gọi duy nhất – bỏ biến thể cũ của danh mục (Hoạt động, Đang áp dụng, Ngừng, Không hoạt động).
@@ -32,6 +34,9 @@
     const m = Store.colmeta[t] && Store.colmeta[t][col];
     if (v === null || v === undefined || v === '') return '<span class="muted">–</span>';
     if (!m) return esc(v);
+    // UI-6.10 (D-88): nhật ký – tên bảng / hành động tiếng Việt.
+    if (col === 'EntityName') return esc(UI.tableVi(v));
+    if (t === 'AuditChange' && col === 'Action') return esc(UI.STATUS_VI[v] || v);
     // Lỗi UAT 2026-11-21: cột mã danh mục tham chiếu (ReferenceLists) hiện nhãn tiếng Việt.
     if (Store.isRefCol(t, col)) return UI.tag(UI.statusVi(t, col, v));
     if (m.usage.startsWith('Trạng thái') || ['MealType', 'TransactionType', 'CountType', 'WasteType', 'Severity', 'EventType', 'CustomerType', 'SupplierType', 'WarehouseType', 'StorageType', 'UnitType', 'BusinessType', 'DomainCode', 'LeaveTypeCode', 'DirectionCode', 'MeasurementType', 'PriorityCode', 'CategoryCode', 'IssueType', 'DataQualityStatus'].includes(col)) return m.usage.startsWith('Trạng thái') ? UI.badge(v, t, col) : UI.tag(v);
@@ -50,7 +55,9 @@
     if (/Url$/.test(col)) return `<span class="mono">${esc(v)}</span>`;
     return esc(v);
   };
-  UI.text = (t, col, v) => { if (v === null || v === undefined) return ''; if (col.endsWith('Id') && Store.target(t, col)) return Store.label(Store.target(t, col), v); const m = Store.colmeta[t][col]; if (m && m.usage.startsWith('Trạng thái')) return UI.statusVi(t, col, v); return v; };
+  // UI-6.10 (D-88): tên bảng kỹ thuật (EntityName của nhật ký / xung đột) → tên màn tiếng Việt.
+  UI.tableVi = name => { const f = name && Object.values((window.APP && APP.FN) || {}).find(x => x.table === name && !String(x.id).includes('-detail')); return f ? f.name : name; };
+  UI.text = (t, col, v) => { if (v === null || v === undefined) return ''; if (col === 'EntityName') return UI.tableVi(v); if (t === 'AuditChange' && col === 'Action') return UI.STATUS_VI[v] || v; if (col.endsWith('Id') && Store.target(t, col)) return Store.label(Store.target(t, col), v); const m = Store.colmeta[t][col]; if (m && m.usage.startsWith('Trạng thái')) return UI.statusVi(t, col, v); return v; };
   // ---------- Toast ----------
   // Màn hình chuyên biệt cần dữ liệu nền (nhóm, ca, kho…) mà database chưa có.
   UI.emptyData = (tables, msg) => `<div class="card panel empty">${I('database')}<h2 class="mt">Chưa có dữ liệu để hiển thị màn hình này</h2><p class="muted">${msg ? esc(msg) + '<br>' : ''}Bảng chưa có dữ liệu: ${tables.map(t => '<code>dbo.' + esc(t) + '</code>' + (Store.srcOf(t) === 'api' ? ' (API ' + esc(Store.controllerOf(t)) + ')' : '')).join(', ')}. Nhập dữ liệu danh mục liên quan rồi mở lại.</p></div>`;
