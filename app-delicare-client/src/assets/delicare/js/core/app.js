@@ -4,7 +4,7 @@
   const FN = {}; CAT.funcs.forEach(f => FN[f.id] = f);
   // Màn hình điều hướng (không phải bảng) – bổ sung vào menu
   FN['flow-e2e'] = { ph: '—', grp: 'Điều hành', fn: 'Luồng nghiệp vụ End-to-End', id: 'flow-e2e', name: 'Luồng nghiệp vụ E2E (9 luồng)', types: ['DB'], table: null, rel: [], st: 'NAV', note: '' };
-  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact', 'crm-location', 'scm-ingredient-cat', 'menu-dish-cat']); // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
+  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact', 'crm-location', 'scm-ingredient-cat', 'menu-dish-cat', 'scm-uom-conversion']); // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
@@ -24,7 +24,7 @@
     'adm-person': ['adm-user'], 'scm-transfer': ['scm-inv-balance'], 'scm-adjustment': ['scm-inv-balance'],
     'crm-contact': ['crm-customer', 'CustomerContact', 'CustomerId'], // MENU-5 (D-79): link cũ → hồ sơ khách hàng
     'crm-location': ['crm-customer'],
-    'scm-ingredient-cat': ['scm-ingredient', 'IngredientCategorie', '_'], 'menu-dish-cat': ['menu-dish', 'DishCategorie', '_'], // UI-6.21 (D-102): nhóm quản lý ở cột trái màn cha // UI-6.16 (D-97): link cũ → danh sách Khách hàng; ?id= → trang chi tiết điểm giao (xử lý trong route)
+    'scm-ingredient-cat': ['scm-ingredient', 'IngredientCategorie', '_'], 'menu-dish-cat': ['menu-dish', 'DishCategorie', '_'], 'scm-uom-conversion': ['scm-uom', 'UomConversion', '_'], // UI-6.21 (D-102): nhóm quản lý ở cột trái màn cha // UI-6.16 (D-97): link cũ → danh sách Khách hàng; ?id= → trang chi tiết điểm giao (xử lý trong route)
     'crm-price-policy': ['crm-contract', 'PricePolicie', 'ContractId'], // UI-6.4 (D-83): điều chỉnh giá làm trong hợp đồng (tab Loại suất & đơn giá)
   };
   window.DC_PARENT_OF = PARENT_OF;

@@ -13,9 +13,10 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class UnitMeasureService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IUnitMeasureService
+    public partial class UnitMeasureService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+        , IAuditChangeService auditChangeService, IUomConversionService uomConversion) : IUnitMeasureService
     {
+        private readonly IUomConversionService _uom = uomConversion;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;

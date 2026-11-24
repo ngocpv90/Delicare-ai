@@ -25,6 +25,7 @@ const SCRIPTS = [
   'modules/menu.js',
   'modules/scm.js',
   'modules/ingredient-form.js', // UI-6.20 (D-101): form Nguyên liệu – sau scm.js
+  'modules/uom.js', // UI-6.22 (D-103): Đơn vị tính gộp quy đổi + đơn vị đóng gói
   'modules/production.js',
   'modules/qc.js',
   'modules/supplier360.js',
