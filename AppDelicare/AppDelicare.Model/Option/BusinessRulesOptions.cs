@@ -99,6 +99,10 @@ namespace AppDelicare.Model.Option
         public bool StandardCostAutoOnSupplierPrice { get; set; } = true;
         /// <summary>BIZ-3.2 (D-77 – A7): VAT bán hàng % trên bảng kê thanh toán.</summary>
         public decimal SalesVatPct { get; set; } = 8m;
+        /// <summary>UI-6.9 (D-87): ⚠ khi tiền suất ăn tháng này lệch quá % này so tháng trước.</summary>
+        public decimal BillingMonthDeviationPct { get; set; } = 20m;
+        /// <summary>UI-6.9: ngày trong tháng bot báo bảng kê tháng trước (1 = ngày 1).</summary>
+        public int BillingMonthNoticeDay { get; set; } = 1;
         /// <summary>BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay (PROPOSED – trống = 0, chưa tính).</summary>
         public Dictionary<string, decimal> ContainerLossFee { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>

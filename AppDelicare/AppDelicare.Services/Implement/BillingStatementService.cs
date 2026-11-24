@@ -20,6 +20,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<BillingStatementModel>> GetStatement(BillingStatementRequest request);
         /// <summary>Xuất Excel (format xlsx – mặc định) / in PDF (format pdf) – dựng bằng PrintRenderer như phiếu in.</summary>
         public Task<IResult<FileContentModel>> Export(BillingStatementRequest request);
+        /// <summary>UI-6.9 (D-87): bảng kê tháng mọi khách, xuất lô, lịch sử xuất.</summary>
+        public Task<IResult<BillingMonthModel>> GetMonthOverview(BillingMonthRequest request);
+        public Task<IResult<FileContentModel>> ExportBatch(BillingBatchRequest request);
+        public Task<IResults<BillingExportLogModel>> GetExportHistory(BillingMonthRequest request);
     }
 }
 
@@ -32,7 +36,7 @@ namespace AppDelicare.Services.Implement
     /// Phí thất thoát khay = (khay mất trong kỳ − số giao × ngưỡng %) × <c>ContainerLossFee</c>[loại] (mặc định 0 = chưa tính – PROPOSED).
     /// VAT bán hàng <c>SalesVatPct</c> (8 %). Đơn chưa chốt đối soát liệt kê riêng "chờ đối soát". Không lưu dữ liệu mới.
     /// </summary>
-    public class BillingStatementService(IUnitOfWork unitOfWork, IClock clock, IOptions<BusinessRulesOptions> rules) : IBillingStatementService
+    public partial class BillingStatementService(IUnitOfWork unitOfWork, IClock clock, IOptions<BusinessRulesOptions> rules, ICurrentActor currentActor) : IBillingStatementService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IClock _clock = clock;
@@ -195,44 +199,9 @@ namespace AppDelicare.Services.Implement
                     return Result<FileContentModel>.Fail(error);
                 }
                 string format = string.Equals(request.Format, PrintRenderer.Pdf, StringComparison.OrdinalIgnoreCase) ? PrintRenderer.Pdf : PrintRenderer.Xlsx;
-                var company = await _unitOfWork.DbContext.Company.AsNoTracking().Where(c => !c.IsDeleted).OrderBy(c => c.CreatedDate).FirstOrDefaultAsync();
-                var doc = new PrintDocumentModel
-                {
-                    Type = "BILLING_STATEMENT", Id = m!.CustomerId, Title = "BẢNG KÊ XÁC NHẬN KHỐI LƯỢNG SUẤT ĂN", FormCode = "BK-TT",
-                    DocumentNo = $"BK-{m.CustomerCode}-{m.From:yyMM}", DocumentDate = _clock.Today,
-                    CompanyName = company?.Name ?? "DELICARE", CompanyAddress = company?.Address, CompanyPhone = company?.Phone, CompanyTaxCode = company?.TaxCode,
-                };
-                doc.ListInfo.AddRange([
-                    new PrintInfoRowModel { Label = "Khách hàng", Value = m.CustomerName },
-                    new PrintInfoRowModel { Label = "Mã số thuế", Value = m.TaxCode },
-                    new PrintInfoRowModel { Label = "Địa chỉ", Value = m.Address },
-                    new PrintInfoRowModel { Label = "Hợp đồng", Value = m.ContractNumber ?? "Tất cả" },
-                    new PrintInfoRowModel { Label = "Kỳ", Value = $"{D(m.From)} – {D(m.To)}" },
-                    new PrintInfoRowModel { Label = "Cách tính", Value = m.BillingBasisName },
-                ]);
-                doc.ListHeader.AddRange(["Ngày", "Buổi", "Đơn", "Điểm giao", "Suất tính tiền", "Suất lỗi (đã trừ)", "Đơn giá", "Thành tiền"]);
-                foreach (var r in m.ListRow)
-                {
-                    doc.ListRow.Add([D(r.MealDate), r.MealName ?? r.MealType ?? string.Empty, r.OrderNumber ?? string.Empty, r.LocationName ?? string.Empty, N(r.BilledQuantity), N(r.FaultQuantity), N(r.UnitPrice), N(r.Amount)]);
-                }
-                doc.ListFooter.Add(["", "", "", "Cộng tiền suất ăn", N(m.TotalBilledQuantity), N(m.TotalFaultQuantity), "", N(m.MealAmount)]);
-                foreach (var f in m.ListContainerFee)
-                {
-                    doc.ListFooter.Add(["", "", "", $"Phí thất thoát khay {f.PackagingType}", N(f.OverQuantity), "", N(f.FeePerUnit), N(f.Amount)]);
-                }
-                doc.ListFooter.Add(["", "", "", "Cộng chưa VAT", "", "", "", N(m.SubTotal)]);
-                doc.ListFooter.Add(["", "", "", $"VAT {N(m.VatPct)}%", "", "", "", N(m.VatAmount)]);
-                doc.ListFooter.Add(["", "", "", "TỔNG THANH TOÁN", "", "", "", N(m.GrandTotal)]);
-                if (m.ListPending.Count != 0)
-                {
-                    doc.ListNote.Add($"Chưa tính: {m.ListPending.Count} đơn chờ đối soát ({string.Join(", ", m.ListPending.Take(15).Select(p => p.OrderNumber))}).");
-                }
-                if (m.CompensationOrderCount != 0)
-                {
-                    doc.ListNote.Add($"{m.CompensationOrderCount} đơn bù do lỗi Delicare (giá 0) không tính tiền.");
-                }
-                doc.ListSignature.AddRange(["Đại diện khách hàng", "Kế toán Delicare", "Đại diện Delicare"]);
+                var doc = await DocAsync(m!);
                 byte[] content = PrintRenderer.Render([doc], format);
+                await LogExportAsync([m!.CustomerId], format, m.From, m.To);
                 return Result<FileContentModel>.Success(new FileContentModel
                 {
                     Content = content, ContentType = PrintRenderer.ContentTypeOf(format), FileName = $"BangKe_{m.CustomerCode}_{m.From:yyyyMMdd}_{m.To:yyyyMMdd}.{format}",
@@ -243,6 +212,49 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " Export: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>UI-6.9: tài liệu in / xuất của 1 bảng kê (dùng cho xuất từng khách và xuất lô).</summary>
+        private async Task<PrintDocumentModel> DocAsync(BillingStatementModel m)
+        {
+            var company = await _unitOfWork.DbContext.Company.AsNoTracking().Where(c => !c.IsDeleted).OrderBy(c => c.CreatedDate).FirstOrDefaultAsync();
+            var doc = new PrintDocumentModel
+            {
+                Type = "BILLING_STATEMENT", Id = m!.CustomerId, Title = "BẢNG KÊ XÁC NHẬN KHỐI LƯỢNG SUẤT ĂN", FormCode = "BK-TT",
+                DocumentNo = $"BK-{m.CustomerCode}-{m.From:yyMM}", DocumentDate = _clock.Today,
+                CompanyName = company?.Name ?? "DELICARE", CompanyAddress = company?.Address, CompanyPhone = company?.Phone, CompanyTaxCode = company?.TaxCode,
+            };
+            doc.ListInfo.AddRange([
+                new PrintInfoRowModel { Label = "Khách hàng", Value = m.CustomerName },
+                new PrintInfoRowModel { Label = "Mã số thuế", Value = m.TaxCode },
+                new PrintInfoRowModel { Label = "Địa chỉ", Value = m.Address },
+                new PrintInfoRowModel { Label = "Hợp đồng", Value = m.ContractNumber ?? "Tất cả" },
+                new PrintInfoRowModel { Label = "Kỳ", Value = $"{D(m.From)} – {D(m.To)}" },
+                new PrintInfoRowModel { Label = "Cách tính", Value = m.BillingBasisName },
+            ]);
+            doc.ListHeader.AddRange(["Ngày", "Buổi", "Đơn", "Điểm giao", "Suất tính tiền", "Suất lỗi (đã trừ)", "Đơn giá", "Thành tiền"]);
+            foreach (var r in m.ListRow)
+            {
+                doc.ListRow.Add([D(r.MealDate), r.MealName ?? r.MealType ?? string.Empty, r.OrderNumber ?? string.Empty, r.LocationName ?? string.Empty, N(r.BilledQuantity), N(r.FaultQuantity), N(r.UnitPrice), N(r.Amount)]);
+            }
+            doc.ListFooter.Add(["", "", "", "Cộng tiền suất ăn", N(m.TotalBilledQuantity), N(m.TotalFaultQuantity), "", N(m.MealAmount)]);
+            foreach (var f in m.ListContainerFee)
+            {
+                doc.ListFooter.Add(["", "", "", $"Phí thất thoát khay {f.PackagingType}", N(f.OverQuantity), "", N(f.FeePerUnit), N(f.Amount)]);
+            }
+            doc.ListFooter.Add(["", "", "", "Cộng chưa VAT", "", "", "", N(m.SubTotal)]);
+            doc.ListFooter.Add(["", "", "", $"VAT {N(m.VatPct)}%", "", "", "", N(m.VatAmount)]);
+            doc.ListFooter.Add(["", "", "", "TỔNG THANH TOÁN", "", "", "", N(m.GrandTotal)]);
+            if (m.ListPending.Count != 0)
+            {
+                doc.ListNote.Add($"Chưa tính: {m.ListPending.Count} đơn chờ đối soát ({string.Join(", ", m.ListPending.Take(15).Select(p => p.OrderNumber))}).");
+            }
+            if (m.CompensationOrderCount != 0)
+            {
+                doc.ListNote.Add($"{m.CompensationOrderCount} đơn bù do lỗi Delicare (giá 0) không tính tiền.");
+            }
+            doc.ListSignature.AddRange(["Đại diện khách hàng", "Kế toán Delicare", "Đại diện Delicare"]);
+            return doc;
         }
     }
 }
