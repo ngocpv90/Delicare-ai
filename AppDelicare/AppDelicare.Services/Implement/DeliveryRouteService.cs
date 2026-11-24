@@ -1233,6 +1233,49 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn chuyến giao – dùng lại RouteDetailAsync (GetDetail) + đếm điểm giao xong / thất bại, suất giao, POD, phản ánh của chuyến.</summary>
+        public async Task<IResult<DeliveryRouteOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var detail = await DeliveryRules.RouteDetailAsync(db, id, _rules);
+                if (detail == null)
+                {
+                    return Result<DeliveryRouteOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var complaints = await (from c in db.CustomerComplaint.AsNoTracking()
+                                        where !c.IsDeleted && c.DeliveryRouteId == id
+                                        join cu in db.Customer.AsNoTracking() on c.CustomerId equals cu.Id into cj
+                                        from cu in cj.DefaultIfEmpty()
+                                        orderby c.ReceivedAt descending
+                                        select new DeliveryRouteComplaintModel
+                                        {
+                                            Id = c.Id, ComplaintNo = c.ComplaintNo, CustomerName = cu != null ? cu.Name : null, CategoryCode = c.CategoryCode, Severity = c.Severity,
+                                            ComplaintStatus = c.ComplaintStatus, ReceivedAt = c.ReceivedAt, Description = c.Description,
+                                        }).ToListAsync();
+                var stops = detail.ListStop;
+                return Result<DeliveryRouteOverviewModel>.Success(new DeliveryRouteOverviewModel
+                {
+                    Detail = detail,
+                    StopCount = stops.Count,
+                    DeliveredStopCount = stops.Count(s => s.StopStatus == DeliveryStopStatus.Delivered),
+                    FailedStopCount = stops.Count(s => s.StopStatus == DeliveryStopStatus.Failed),
+                    PlannedMeals = stops.Sum(s => s.PlannedMealQty ?? 0m),
+                    DeliveredMeals = stops.Sum(s => s.DeliveredMealQty ?? 0m),
+                    PodCount = stops.Count(s => s.Pod != null),
+                    ComplaintCount = complaints.Count,
+                    OpenComplaintCount = complaints.Count(c => !ComplaintStatus.Done.Contains(c.ComplaintStatus)),
+                    ListComplaint = complaints,
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         /// <summary>T19: in Biên bản giao hàng / phiếu chuyến (.xlsx).</summary>
         public async Task<IResult<byte[]>> ExportDeliveryNote(Guid id)
         {

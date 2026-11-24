@@ -26,6 +26,8 @@ namespace AppDelicare.Services.Interface
         /// <summary>D-78 (1): đơn chốt sau khi kế hoạch ngày đã duyệt / phát hành → lệnh + mẻ bổ sung ưu tiên.</summary>
         public Task<AppDelicare.Model.Model.ProductionAutoPlanModel> SupplementForOrderAsync(Guid orderId, string? reason);
         public Task<IResult<ProductionPlanDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn (…/GetOverview).</summary>
+        public Task<IResult<ProductionPlanOverviewModel>> GetOverview(Guid id);
         public Task<IResult<byte[]>> ExportProductionSheet(Guid id);
     }
 }

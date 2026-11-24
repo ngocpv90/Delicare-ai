@@ -209,6 +209,44 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn lệnh SX – dùng lại DetailAsync (GetDetail) + kế hoạch / ca / dây chuyền / người phụ trách + đếm mẻ, giữ chỗ thiếu, chênh lệch vượt ngưỡng.</summary>
+        public async Task<IResult<ProductionOrderOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var detail = await DetailAsync(id);
+                if (detail == null)
+                {
+                    return Result<ProductionOrderOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var db = _unitOfWork.DbContext;
+                var o = detail.ProductionOrder;
+                var plan = await db.ProductionPlan.AsNoTracking().Where(p => p.Id == o.ProductionPlanId)
+                    .Select(p => new { No = p.PlanNumber ?? p.PlanNo, p.ProductionDate }).FirstOrDefaultAsync();
+                var batches = detail.ListBatch;
+                return Result<ProductionOrderOverviewModel>.Success(new ProductionOrderOverviewModel
+                {
+                    Detail = detail,
+                    PlanNumber = plan?.No,
+                    ProductionDate = plan?.ProductionDate,
+                    ShiftName = o.ShiftId is { } sid ? await db.Shift.AsNoTracking().Where(s => s.Id == sid).Select(s => s.Name ?? s.Code).FirstOrDefaultAsync() : null,
+                    ProductionLineName = o.ProductionLineId is { } lid ? await db.ProductionLine.AsNoTracking().Where(l => l.Id == lid).Select(l => l.Name).FirstOrDefaultAsync() : null,
+                    ResponsibleName = o.ResponsibleEmployeeId is { } eid ? await db.Employee.AsNoTracking().Where(e => e.Id == eid).Select(e => e.FullName).FirstOrDefaultAsync() : null,
+                    BatchCount = batches.Count(b => b.Status != ProductionBatchStatus.Cancelled),
+                    BatchDoneCount = batches.Count(b => b.Status is ProductionBatchStatus.Passed or ProductionBatchStatus.Packed),
+                    BatchFailedCount = batches.Count(b => b.Status == ProductionBatchStatus.Failed),
+                    AcceptedPortions = batches.Sum(b => b.AcceptedQuantity ?? 0m),
+                    ShortReservationCount = detail.ListReservation.Count(r => r.ShortQuantity > 0),
+                    VarianceOverCount = detail.ListVariance.Count(v => v.IsOverThreshold),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         private async Task<ProductionOrderDetailModel?> DetailAsync(Guid id)
         {
             var db = _unitOfWork.DbContext;

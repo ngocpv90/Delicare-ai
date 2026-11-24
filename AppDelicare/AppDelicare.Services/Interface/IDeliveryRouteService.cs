@@ -23,6 +23,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<DeliveryBoardModel>> GetMine(DateTime? deliveryDate);
         public Task<IResults<DeliveryReadyOrderModel>> GetReadyOrders(DeliveryDateRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn (…/GetOverview).</summary>
+        public Task<IResult<DeliveryRouteOverviewModel>> GetOverview(Guid id);
         public Task<IResult<DeliveryRouteDetailModel>> Create(DeliveryRouteCreateRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> RecordTemperature(DeliveryTemperatureRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> Dispatch(DeliveryRouteDispatchRequest request);

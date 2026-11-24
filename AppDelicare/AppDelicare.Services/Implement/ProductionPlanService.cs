@@ -663,6 +663,54 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// UI-6 (D-80): trang chi tiết toàn màn kế hoạch SX – dùng lại DetailAsync (GetDetail) + đơn vị / ca + đếm món, lệnh, mẻ, giữ chỗ thiếu.
+        /// Tab Duyệt: kế hoạch Nháp giữ chờ COO (D-81 g – Note JSON AutoRun "… chờ COO duyệt") → ApprovalRequestId = Id kế hoạch (ApprovalRequest/GetDetail nhận Id này).
+        /// </summary>
+        public async Task<IResult<ProductionPlanOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var detail = await DetailAsync(id);
+                if (detail == null)
+                {
+                    return Result<ProductionPlanOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var db = _unitOfWork.DbContext;
+                var plan = detail.ProductionPlan;
+                string? held = null;
+                if (plan.Status == ProductionPlanStatus.Draft && plan.Note != null && plan.Note.Contains("chờ COO duyệt", StringComparison.Ordinal))
+                {
+                    try
+                    {
+                        string? auto = (string?)Newtonsoft.Json.Linq.JObject.Parse(plan.Note)["AutoRun"];
+                        held = auto != null && auto.Contains("chờ COO duyệt", StringComparison.Ordinal) ? auto : null;
+                    }
+                    catch (Newtonsoft.Json.JsonException)
+                    {
+                    }
+                }
+                return Result<ProductionPlanOverviewModel>.Success(new ProductionPlanOverviewModel
+                {
+                    Detail = detail,
+                    ApprovalRequestId = held != null ? plan.Id : null,
+                    HeldReason = held,
+                    OrganizationUnitName = plan.OrganizationUnitId is { } ou ? await db.OrganizationUnit.AsNoTracking().Where(u => u.Id == ou).Select(u => u.Name).FirstOrDefaultAsync() : null,
+                    ShiftName = plan.ShiftId is { } sid ? await db.Shift.AsNoTracking().Where(s => s.Id == sid).Select(s => s.Name ?? s.Code).FirstOrDefaultAsync() : null,
+                    DishCount = detail.ListLine.Select(l => l.DishId).Distinct().Count(),
+                    OrderCount = detail.ListOrder.Count(o => o.Status != ProductionOrderStatus.Cancelled),
+                    BatchCount = detail.ListBatch.Count(b => b.Status != ProductionBatchStatus.Cancelled),
+                    BatchDoneCount = detail.ListBatch.Count(b => b.Status is ProductionBatchStatus.Passed or ProductionBatchStatus.Packed),
+                    ShortReservationCount = detail.ListReservation.Count(r => r.ShortQuantity > 0),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         private async Task<ProductionPlanDetailModel?> DetailAsync(Guid id)
         {
             var db = _unitOfWork.DbContext;

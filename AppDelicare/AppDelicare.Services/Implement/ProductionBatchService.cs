@@ -917,6 +917,46 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn mẻ nấu – dùng lại DetailAsync (GetDetail) + kế hoạch / ngày SX / ca / người phụ trách lệnh + số đo nhiệt, công đoạn, hao hụt.</summary>
+        public async Task<IResult<ProductionBatchOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var detail = await DetailAsync(id);
+                if (detail == null)
+                {
+                    return Result<ProductionBatchOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var db = _unitOfWork.DbContext;
+                var order = await db.ProductionOrder.AsNoTracking().Where(o => o.Id == detail.Order.Id)
+                    .Select(o => new { o.ProductionPlanId, o.ShiftId, o.ResponsibleEmployeeId }).FirstAsync();
+                var plan = await db.ProductionPlan.AsNoTracking().Where(p => p.Id == order.ProductionPlanId)
+                    .Select(p => new { p.Id, No = p.PlanNumber ?? p.PlanNo, p.ProductionDate }).FirstOrDefaultAsync();
+                Guid? shiftId = detail.Batch.ShiftId ?? order.ShiftId;
+                return Result<ProductionBatchOverviewModel>.Success(new ProductionBatchOverviewModel
+                {
+                    Detail = detail,
+                    ProductionPlanId = plan?.Id,
+                    PlanNumber = plan?.No,
+                    ProductionDate = plan?.ProductionDate,
+                    ShiftName = shiftId is { } sid ? await db.Shift.AsNoTracking().Where(s => s.Id == sid).Select(s => s.Name ?? s.Code).FirstOrDefaultAsync() : null,
+                    RecipeVersion = detail.Order.RecipeVersion,
+                    ResponsibleName = order.ResponsibleEmployeeId is { } eid ? await db.Employee.AsNoTracking().Where(e => e.Id == eid).Select(e => e.FullName).FirstOrDefaultAsync() : null,
+                    TemperatureCount = detail.ListTemperature.Count,
+                    TemperatureFailCount = detail.ListTemperature.Count(t => t.IsWithinRange == false),
+                    IssueCount = detail.ListIssue.Count,
+                    StageCount = detail.ListStage.Count,
+                    StageDoneCount = detail.ListStage.Count(s => s.Status == ProductionStageStatus.Done),
+                    WasteMeals = detail.ListWaste.Sum(w => w.QuantityMeals ?? 0m),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         private async Task<ProductionBatchDetailModel?> DetailAsync(Guid id)
         {
             var db = _unitOfWork.DbContext;

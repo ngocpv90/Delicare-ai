@@ -82,6 +82,8 @@ Chọn **Ngày giao** (chip hoặc ô ngày).
 - **Xuất bến**: nhập **Nhiệt độ thùng giữ nhiệt °C** và **Hành động khắc phục** (bắt buộc nếu dưới 60 °C) → **Xác nhận** → chuyến **Đang giao**.
 - **In phiếu giao (PDF)**: một tệp gồm mọi phiếu giao của chuyến (mỗi phiếu một trang, có QR). **Biên bản giao hàng (Excel)**: biên bản cả chuyến.
 
+**Trang chi tiết chuyến (UI-6):** nút **Chi tiết** trên thẻ chuyến → trang `#/log-route-detail?id=…`: thanh bước Kế hoạch → Đang xếp → Đang giao → Hoàn thành; cùng các nút của thẻ chuyến (Xếp hàng lên xe, Xuất bến, Sắp điểm dừng, Ghi vị trí hiện tại, In phiếu giao, Biên bản giao hàng); 4 chỉ số Điểm đã giao, Suất đã giao, Tải xe %, Phản ánh (đang mở). Tổng quan: xe, tài xế, giờ, nhiệt độ xuất bến so ngưỡng, điều kiện xuất bến còn thiếu, dòng thời gian điểm giao. Tab **Điểm giao & POD**, **Sự kiện & nhiệt độ**, **Mẻ phục vụ** (bấm → trang mẻ), **Phản ánh**. "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
+
 ### 4.3 Thực hiện giao – `log-execution`
 1. Chọn ngày. Thẻ đếm: Chờ xếp hàng / Đã xếp / Đã xuất phát / Đã đến / Đã giao / Thất bại.
 2. Mỗi đơn giao: số phiếu · điểm giao, khung giờ nhận, chuyến, khách · số suất · xe · tài xế; thanh tiến trình.

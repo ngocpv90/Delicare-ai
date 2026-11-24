@@ -35,6 +35,7 @@ const SCRIPTS = [
   'modules/detail-stockcount.js',
   'modules/detail-scm.js', // UI-6B
   'modules/detail-sales.js', // UI-6A: đơn đặt suất, hợp đồng, phản ánh, điểm giao
+  'modules/detail-prod.js', // UI-6C
   'modules/admin.js',
   'modules/integration.js',
   'modules/explorer.js',

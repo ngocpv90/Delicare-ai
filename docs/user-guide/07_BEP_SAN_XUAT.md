@@ -65,6 +65,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 4. Lưới **Ca × Dây chuyền** (mỗi dây chuyền ghi suất / mẻ, phút / mẻ; cột "Chưa gán dây chuyền" nếu có). Mỗi thẻ mẻ: món, số mẻ `ME-…`, số suất, **Lõi …°C ✓/✗** hoặc "Chưa đo nhiệt độ lõi", "đã / chưa lưu mẫu", trạng thái, QC.
 5. Bấm thẻ mẻ → ngăn chi tiết (thanh tiến trình, lệnh SX + ca, công thức phiên bản khóa, nhiệt độ lõi, checklist theo mẻ; tab **Nguyên liệu & an toàn**).
 
+**Trang chi tiết mẻ (UI-6):** chế độ dữ liệu thật, bấm thẻ mẻ → trang `#/prod-batch-detail?id=…` thay ngăn chi tiết: thanh bước Kế hoạch → Đang nấu → Chờ QC → Đạt → Đã đóng gói (Không đạt: đỏ); nút theo trạng thái như bảng 4.2 (**Bắt đầu nấu**, **Kết thúc nấu → Chờ QC**, **Ghi sản lượng**, **Ghi lưu mẫu**, **QC: Đạt / Tạm giữ / Loại mẻ**, **Tạo lệnh đóng gói**; ⋯ → Ghi hao hụt, In phiếu sản xuất, Mở lệnh sản xuất); 4 chỉ số Sản lượng, Nhiệt độ lõi (so ngưỡng), Công đoạn (xong / tổng), Hao hụt. Tổng quan: thông tin mẻ (lệnh, kế hoạch, ngày, ca, dây chuyền, công thức khóa, giờ), điều kiện còn thiếu, an toàn thực phẩm, nguyên liệu theo định lượng. Tab **QC & an toàn** (nhiệt độ lõi từng lần đo + khắc phục, lưu mẫu), **Công đoạn** (Bắt đầu / Xong), **Nguyên liệu & xuất kho**. "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
+
 ### 4.2 Chạy một mẻ
 | Trạng thái mẻ | Nút | Thao tác |
 |---|---|---|

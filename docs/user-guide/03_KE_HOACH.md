@@ -72,6 +72,8 @@ Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & á
 ### 4.1 Món ăn – `menu-dish`
 Danh sách: Mã, Món ăn, Nhóm món, Giá thành chuẩn, **Công thức đang dùng** (phiên bản + trạng thái, hoặc "Chưa có công thức hiệu lực"), CP NVL ước tính, Trạng thái. Thêm / sửa món bằng form chung.
 
+**Trang chi tiết (UI-6):** bấm 1 món → trang `#/menu-dish-detail?id=…`: phần đầu (tên, nhóm, trạng thái, công thức đang dùng; nút **Sửa**, **Công thức**), 4 chỉ số – **Giá vốn NVL / suất** (cam khi thiếu giá NCC, đỏ khi cao hơn giá thành chuẩn), **Định mức** (số nguyên liệu), **Menu dùng món**, **Mẻ đạt QC** (%). Tab **Tổng quan** (thông tin món + bảng định mức có đơn giá, thành tiền), **Định mức** (các phiên bản công thức), **Menu** (thực đơn có món, bữa, số lần), **Lịch sử nấu** (50 mẻ gần nhất – bấm mẻ → trang mẻ). "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
+
 ### 4.2 Công thức chế biến – `menu-recipe`
 Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản, nhãn "chờ" nếu có bản Nháp / Chờ duyệt); phải là các phiên bản của món đang chọn.
 
@@ -140,6 +142,8 @@ Lỗi: *Đã có thực đơn chung … Đã công bố chồng thời gian hi�
 
 Danh sách: Số kế hoạch, Ngày SX, Ca, Đơn vị, Số món, Tổng suất, Số lệnh SX, Trạng thái.
 
+**Trang chi tiết (UI-6):** bấm 1 kế hoạch → trang `#/prod-plan-detail?id=…`: thanh bước Nháp → Đã duyệt → Đã phát hành → Hoàn thành; nút **Duyệt kế hoạch** (Nháp, người có quyền Duyệt), **Ra lệnh SX** (Đã duyệt), **Phiếu sản xuất**; 4 chỉ số Tổng suất, Ca đã phát hành, Lệnh SX (mẻ đạt), Giữ chỗ thiếu. Tổng quan có khối **Theo ca** và **Món & suất**; tab **Lệnh sản xuất**, **Mẻ** (bấm dòng → trang lệnh / mẻ), **Giữ chỗ nguyên liệu**. Kế hoạch hệ thống giữ Nháp *chờ COO duyệt* có tag **Chờ COO duyệt**, lý do, và tab **Duyệt**. "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
+
 ### 4.8 Lệnh sản xuất – `prod-order`
 Bấm một lệnh → ngăn chi tiết:
 - Tab **Mẻ & nguyên liệu**: mẻ (số, kế hoạch, thực tế, bắt đầu, trạng thái, QC), định lượng lúc phát hành, giữ chỗ nguyên liệu (cần / đã giữ / thiếu), phiếu xuất.
@@ -149,6 +153,8 @@ Bấm một lệnh → ngăn chi tiết:
   - **Đóng lệnh** (lệnh Hoàn thành) – tính chênh lệch tiêu hao, giá thành, giải phóng giữ chỗ dư; không mở lại được.
   - **Hủy lệnh** (Kế hoạch / Phát hành, chưa mẻ nào bắt đầu) – bắt buộc lý do ≥ 3 ký tự; mẻ + phiếu xuất nháp bị hủy, giữ chỗ được giải phóng.
 - Lỗi: *Lệnh … đã có mẻ bắt đầu nấu – không hủy được (mẻ không đạt thì dùng Loại mẻ)*, *Lệnh … đã xuất kho – hủy phiếu xuất trước khi hủy lệnh*.
+
+**Trang chi tiết (UI-6):** chế độ dữ liệu thật, bấm 1 lệnh → trang `#/prod-order-detail?id=…` thay ngăn chi tiết: thanh bước Kế hoạch → Phát hành → Đang SX → Hoàn thành → Đóng; cùng 3 nút trên; 4 chỉ số Mẻ đạt, Suất đạt, Giữ chỗ thiếu, Giá thành / phần (đỏ khi cao hơn chuẩn); Tổng quan có bảng mẻ (bấm → trang mẻ); 2 tab như trên. "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
 
 ### 4.9 Hao hụt – `prod-waste`
 - Lọc **Kỳ** từ – đến (mặc định 30 ngày), **Loại hao hụt**; tổng suất / kg + top loại.

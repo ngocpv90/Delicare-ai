@@ -238,5 +238,75 @@ namespace AppDelicare.Services.Implement
                 throw;
             }
         }
+
+        /// <summary>
+        /// UI-6 (D-80): hồ sơ món ăn toàn màn – công thức hiệu lực + giá vốn NVL / suất (như GetActiveRecipe), các phiên bản công thức, menu đang dùng món,
+        /// lịch sử nấu (mẻ) + tỷ lệ mẻ đạt QC. Đánh giá món của khách: chưa có dữ liệu (không bảng nào gắn món – GAP).
+        /// </summary>
+        public async Task<IResult<DishOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var dish = await db.Dish.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
+                if (dish == null)
+                {
+                    return Result<DishOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                Guid? catId = dish.DishCategoryId ?? dish.CategoryId;
+                var recipes = await db.Recipe.AsNoTracking().Where(r => r.DishId == id && !r.IsDeleted).OrderByDescending(r => r.VersionNo).ToListAsync();
+                var recipeIds = recipes.Select(r => r.Id).ToList();
+                var lineCounts = await db.RecipeLine.AsNoTracking().Where(l => recipeIds.Contains(l.RecipeId) && !l.IsDeleted)
+                    .GroupBy(l => l.RecipeId).Select(g => new { g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.N);
+                var active = recipes.FirstOrDefault(r => r.IsActive);
+                var menuLines = await (from l in db.MenuLine.AsNoTracking()
+                                       where !l.IsDeleted && l.DishId == id
+                                       join m in db.Menu.AsNoTracking() on l.MenuId equals m.Id
+                                       where !m.IsDeleted
+                                       select new { m.Id, m.Code, m.Name, m.Status, m.EffectiveFrom, m.EffectiveTo, l.MealType }).ToListAsync();
+                var batches = await (from b in db.ProductionBatch.AsNoTracking()
+                                     where !b.IsDeleted && b.DishId == id && b.Status != ProductionBatchStatus.Cancelled
+                                     join o in db.ProductionOrder.AsNoTracking() on b.ProductionOrderId equals o.Id into oj
+                                     from o in oj.DefaultIfEmpty()
+                                     orderby b.StartDate descending
+                                     select new DishBatchBriefModel
+                                     {
+                                         Id = b.Id, BatchNumber = b.BatchNumber ?? b.BatchNo, ProductionOrderNumber = o != null ? (o.ProductionOrderNumber ?? o.ProductionOrderNo) : null,
+                                         StartDate = b.StartDate, PlannedQuantity = b.PlannedQuantity ?? b.PlannedQty, ActualQuantity = b.ActualQuantity ?? b.ActualQty,
+                                         AcceptedQuantity = b.AcceptedQty, Status = b.Status, QcStatus = b.QcStatus,
+                                     }).ToListAsync();
+                int passed = batches.Count(b => b.Status is ProductionBatchStatus.Passed or ProductionBatchStatus.Packed);
+                int concluded = passed + batches.Count(b => b.Status == ProductionBatchStatus.Failed);
+                return Result<DishOverviewModel>.Success(new DishOverviewModel
+                {
+                    Dish = dish,
+                    CategoryName = catId is { } c ? await db.DishCategory.AsNoTracking().Where(x => x.Id == c).Select(x => x.Name).FirstOrDefaultAsync() : null,
+                    UnitName = dish.DefaultUnitId is { } u ? await db.UnitMeasure.AsNoTracking().Where(x => x.Id == u).Select(x => x.Name ?? x.Code).FirstOrDefaultAsync() : null,
+                    ActiveRecipe = active,
+                    Cost = active == null ? null : await _recipeService.CalculateCostAsync(active.Id, 1, null),
+                    IngredientCount = active == null ? 0 : lineCounts.GetValueOrDefault(active.Id),
+                    ListRecipe = [.. recipes.Select(r => new DishRecipeBriefModel
+                    {
+                        Id = r.Id, VersionCode = r.VersionCode, VersionNo = r.VersionNo, Status = r.Status, IsActive = r.IsActive,
+                        EffectiveFrom = r.EffectiveFrom, EffectiveTo = r.EffectiveTo, LineCount = lineCounts.GetValueOrDefault(r.Id),
+                    })],
+                    MenuCount = menuLines.Select(m => m.Id).Distinct().Count(),
+                    ListMenu = [.. menuLines.GroupBy(m => m.Id).Select(g => new DishMenuBriefModel
+                    {
+                        Id = g.Key, Code = g.First().Code, Name = g.First().Name, Status = g.First().Status, EffectiveFrom = g.First().EffectiveFrom, EffectiveTo = g.First().EffectiveTo,
+                        LineCount = g.Count(), ListMealType = [.. g.Select(x => x.MealType).Where(x => !string.IsNullOrEmpty(x)).Select(x => x!).Distinct().Order()],
+                    }).OrderByDescending(m => m.EffectiveFrom)],
+                    BatchCount = batches.Count,
+                    PortionsAccepted = batches.Sum(b => b.AcceptedQuantity ?? 0m),
+                    QcPassPercent = concluded == 0 ? null : Math.Round(100m * passed / concluded, 1),
+                    ListBatch = [.. batches.Take(50)],
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
     }
 }
