@@ -22,5 +22,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.ForecastSuggestResultModel>> Suggest(AppDelicare.Model.Request.Custom.ForecastSuggestRequest request);
         /// <summary>FC-1.5: sai số dự báo theo khách / tuần.</summary>
         public Task<IResult<AppDelicare.Model.Model.ForecastAccuracyModel>> GetAccuracy(AppDelicare.Model.Request.Custom.ForecastAccuracyRequest request);
+        // UI-6.5 (D-84): dự báo theo tuần
+        public Task<IResult<AppDelicare.Model.Model.ForecastWeekModel>> GetWeek(AppDelicare.Model.Model.ForecastWeekRequest request);
+        public Task<IResult<bool>> SaveCell(AppDelicare.Model.Model.ForecastCellRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ForecastSuggestResultModel>> SuggestWeek(AppDelicare.Model.Model.ForecastWeekActionRequest request);
+        public Task<IResult<AppDelicare.Model.Model.ForecastWeekPublishResultModel>> PublishWeek(AppDelicare.Model.Model.ForecastWeekActionRequest request, bool auto = false);
     }
 }

@@ -207,5 +207,38 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        private async Task<IActionResult> RunWeek<T>(string name, Func<Task<T>> body)
+        {
+            try
+            {
+                return Ok(await body());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ", name, ": ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.5 (D-84): dự báo theo tuần (mặc định tuần sau) – khách → điểm giao × buổi × 7 ngày.</summary>
+        [HttpGet("GetWeek")]
+        [Security.Permission("crm-forecast", PermissionAction.View)]
+        public Task<IActionResult> GetWeek([FromQuery] AppDelicare.Model.Model.ForecastWeekRequest request) => RunWeek(nameof(GetWeek), () => _service.GetWeek(request));
+
+        /// <summary>UI-6.5: lưu Nháp một ô (sửa trực tiếp trong bảng); số trống = xóa Nháp của ô.</summary>
+        [HttpPost("SaveCell")]
+        [Security.Permission("crm-forecast", PermissionAction.Edit, OrActions = [PermissionAction.Add])]
+        public Task<IActionResult> SaveCell([FromBody] AppDelicare.Model.Model.ForecastCellRequest request) => RunWeek(nameof(SaveCell), () => _service.SaveCell(request));
+
+        /// <summary>UI-6.5: tạo gợi ý cho tuần đang xem (tùy chọn 1 khách) – giữ ô người đã sửa.</summary>
+        [HttpPost("SuggestWeek")]
+        [Security.Permission("crm-forecast", PermissionAction.Edit, OrActions = [PermissionAction.Add])]
+        public Task<IActionResult> SuggestWeek([FromForm] AppDelicare.Model.Model.ForecastWeekActionRequest request) => RunWeek(nameof(SuggestWeek), () => _service.SuggestWeek(request));
+
+        /// <summary>UI-6.5: công bố tuần – mọi ô Nháp (bỏ qua ô khách đã đăng ký).</summary>
+        [HttpPost("PublishWeek")]
+        [Security.Permission("crm-forecast", PermissionAction.Edit)]
+        public Task<IActionResult> PublishWeek([FromForm] AppDelicare.Model.Model.ForecastWeekActionRequest request) => RunWeek(nameof(PublishWeek), () => _service.PublishWeek(request));
     }
 }

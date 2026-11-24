@@ -151,6 +151,14 @@ namespace AppDelicare.Model.Option
         public int ForecastMaxDays { get; set; } = 62;
         /// <summary>FC-1.1 (D-76): số tuần nhìn lại khi tính dự báo gợi ý (trung bình suất thực nhận cùng thứ).</summary>
         public int ForecastLookbackWeeks { get; set; } = 4;
+        /// <summary>UI-6.5 (D-84 d): thứ Tư 22:00 tự tạo gợi ý tuần sau + thứ Năm 08:00 báo KD (tắt → chỉ bấm tay).</summary>
+        public bool ForecastAutoSuggest { get; set; } = true;
+        /// <summary>UI-6.5 (D-84 d): thứ Sáu 12:00 nhắc + 16:00 tự công bố bản Nháp tuần sau.</summary>
+        public bool ForecastAutoPublish { get; set; } = true;
+        /// <summary>Thứ tạo gợi ý (3 = thứ Tư), thứ báo KD (4 = thứ Năm), thứ nhắc / tự công bố (5 = thứ Sáu) – giờ ở Jobs:&lt;Code&gt;.</summary>
+        public int ForecastSuggestWeekday { get; set; } = 3;
+        public int ForecastNoticeWeekday { get; set; } = 4;
+        public int ForecastPublishWeekday { get; set; } = 5;
         /// <summary>FC-1.1: số ngày tối đa của 1 lần tạo dự báo gợi ý.</summary>
         public int ForecastSuggestMaxDays { get; set; } = 14;
 

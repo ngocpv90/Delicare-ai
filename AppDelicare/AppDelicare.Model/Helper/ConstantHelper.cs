@@ -229,6 +229,11 @@
             public static readonly string PriceAdjustNeedsFile = "Chưa đính kèm phụ lục đã ký – tải file lên trước khi gửi duyệt";
             public static readonly string PriceAdjustSubmitted = "Đã gửi duyệt phụ lục điều chỉnh giá (yêu cầu {0})";
             public static readonly string PriceAdjustNotPending = "Phụ lục đang ở trạng thái {0} – không phải Chờ duyệt";
+            // UI-6.5 (D-84): dự báo theo tuần
+            public static readonly string ForecastCellInvalid = "Thiếu khách hàng hoặc loại suất của ô dự báo";
+            public static readonly string ForecastCellPast = "Không sửa dự báo của ngày đã qua";
+            public static readonly string ForecastCellRegistered = "Khách đã đăng ký số suất ngày này – dùng số đăng ký, không sửa dự báo";
+            public static readonly string ForecastWeekPublished = "Đã công bố {0} ô dự báo tuần {1}";
             public static readonly string PriceNotFound = "Không tìm thấy đơn giá áp dụng cho khách / hợp đồng / loại suất này";
             public static readonly string PriceOverlap = "Chồng thời gian hiệu lực với chính sách giá khác cùng khách / hợp đồng / loại suất";
             public static readonly string PriceMustBePositive = "Đơn giá phải lớn hơn 0";
