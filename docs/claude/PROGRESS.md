@@ -1,6 +1,45 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.8 (D-86 b, c) DONE – Đối soát: bố cục mới + xác nhận hàng loạt + bot "Đã phục vụ đủ"** (nhánh `feat/UI-6.8-reconciliation`). Không thêm bảng / cột; không có script DB.
+  - **BE:**
+    - `OrderReconciliation/GetBoard` đọc theo lô (đơn, dòng, đơn giao, POD, đối soát; không gọi từng đơn) và trả:
+      - dòng (đặt, giao, nhận, phục vụ, trả về, lỗi + lý do, tính tiền, thành tiền, nguồn POD / BOT / WEB / AUTO, tab, các lựa chọn);
+      - 4 chỉ số;
+      - Đặt – Giao – Nhận theo ngày;
+      - chuỗi 5 khâu (SX / đóng gói: lấy giá trị đã lưu, thiếu thì tính, tối đa 400 đơn).
+    - `ReconcileMany` / `CloseMany` (JSON): dùng lại `Reconcile` / `Close`; dòng lỗi báo riêng.
+    - `ConfirmServedFull`: phục vụ = khách nhận, nguồn bot.
+    - Sau ký nhận bàn giao, `DeliveryStopService` hẹn tin bot Vận hành cho người ký nhận (`ReconcilePromptMinutes` 120) với nút "✅ Đã phục vụ đủ" (`rcn:ok`) / "✏️ Nhập số khác" (`rcn:o`). Messaging `DiemPhatActions` xử lý thêm `ok`.
+  - **FE (`sales.js` `crm-reconciliation`, theo `reconciliation-mockup.html`; chế độ DEMO giữ bố cục cũ):**
+    - Kỳ 7 ngày / 30 ngày / Tháng + ◀ ▶ + lọc khách.
+    - 3 bước có nút: xác nhận N đơn khớp / N đơn chênh lệch / chốt N đơn + Bảng kê tháng. 4 KPI gọn.
+    - Hai biểu đồ Chart.js cạnh nhau + 4 ô hao hụt giữa khâu.
+    - Bảng xác nhận trên trang:
+      - tab Chờ / Có chênh lệch / Đã chốt / Tất cả; lọc ngày ăn, điểm giao;
+      - phục vụ mặc định = khách nhận (chữ mờ); lý do hiện khi lỗi > 0; sửa → dòng cam + tự chọn + tiền tự tính; Enter xuống dòng cùng cột;
+      - ▸ mở lựa chọn;
+      - nút "Xác nhận tất cả dòng khớp (N)" / "Xác nhận dòng đã chọn" (chặn lỗi thiếu lý do); hộp kết quả liệt kê dòng lỗi.
+    - Hai hộp thoại cũ (`pendingReconcile` → `reconcileForm`) không còn trong luồng chính.
+  - **Kiểm trên DB dev thật** (uat.sal-head, kỳ 18–24/11; ảnh `docs/frontend-handoff/assets/ui-6.8/`):
+    - 7 đơn, 5.350 đặt / 5.340 nhận (99,8 %).
+    - "Xác nhận tất cả dòng khớp (2)" → PH-261117-0307 / 0308 Đã xác nhận (nguồn Web).
+    - Sửa 0308: lỗi Delicare 1, "Hỏng / đổ vỡ" → tính tiền 149 = 5.215.000 → Xác nhận dòng đã chọn.
+    - "Chốt 2 đơn đã xác nhận" → Đã chốt.
+    - Không có lỗi JS.
+  - **Vai trò (gọi API thật):**
+    - SAL-HEAD, OPS-POS: xem / xác nhận / bot = 200.
+    - FIN-ACC, SAL-SALES, SAL-CS: chỉ xem (xác nhận 403; giao diện khóa nút, không có ô nhập).
+    - OPS-LOG, OPS-WH: 403.
+  - **Test:** `ReconBoardTests` (tab / nguồn / tiền, xác nhận lô có dòng lỗi riêng, lỗi + lý do → tính tiền 94, bot → nguồn BOT, chốt lô → đơn Đã đối soát); toàn bộ **646/646**; FE build xanh; `full-flow.http` ngày 27/12 **226/227** (lỗi 9.3 do hạn lô như cũ).
+  - **Tài liệu:** HDSD 10 §4.2 viết lại; HDSD 02 §4.8 + lịch việc; HDSD 20 (nút bot); BUSINESS_RULES thêm mục UI-6.8.
+  - **Chưa làm / còn rủi ro:**
+    - **Kế toán (FIN-ACC) chỉ có quyền Xem** đối soát theo ma trận hiện có, trong khi bản mô phỏng ghi "còn lại kế toán chốt". **Cần anh quyết** có cấp quyền Sửa `crm-reconciliation` cho FIN-ACC không. Em chưa đổi ma trận quyền.
+    - Tin bot "Đã phục vụ đủ" gửi **người ký nhận bàn giao** (thường là nhân viên điểm qua bot "Xe đến"). Nếu tài xế ký thay thì tin đến tài xế. Chưa có liên kết điểm giao → nhân viên điểm (không thêm cột).
+    - Chưa có test riêng cho nút bot `rcn:ok` ở project Messaging. Đã có test API `ConfirmServedFull`.
+    - Chưa gửi thử tin bot thật trên DB dev (tránh nhắn người thật).
+    - Dữ liệu thử trên DB dev: PH-261117-0307 / 0308 đã chốt (0308 có lỗi Delicare 1 suất "Hỏng / đổ vỡ").
+    - Mục ROADMAP UI-6.8 → DONE: anh tự cập nhật.
 - **2026-11-24: UI-6.6 (D-85) DONE – Đăng ký suất tuần theo mẫu chuẩn** (nhánh `feat/UI-6.6-order-week`). Không thêm bảng / cột; không có script DB (không đổi menu / quyền).
   - **BE:**
     - `Order/GetWeekOverview`: khách có hợp đồng hiệu lực × điểm giao đang hoạt động × 7 ngày. Mỗi ô có tổng suất, trạng thái (Chưa đăng ký / Nháp / Khách gửi / Đã xác nhận / Đã chốt / Ngoài hợp đồng) và dự báo Đã công bố. Kèm 4 chỉ số, thực đơn chung áp dụng và lần chốt tới.

@@ -50,7 +50,7 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 | 19:00 | Bot nhắc "⏰ khách chưa chốt" – xử lý nốt | bot |
 | **20:00** | Hệ thống tự **chốt** mọi đơn Đã xác nhận của ngày mai | tự động |
 | Sau 20:00 | Thay đổi đơn ngày mai → xin duyệt (mục 4.6) | `crm-order` |
-| Sau giao hàng | Ghi suất thực tế phục vụ, chốt đối soát | `crm-reconciliation` |
+| Sau giao hàng | Xác nhận dòng khớp (1 nút), xử lý dòng chênh lệch, chốt đối soát | `crm-reconciliation` |
 
 **Giờ chốt:** đơn cho ngày ăn D phải xong trước **20:00 ngày D-1**.
 
@@ -254,7 +254,7 @@ Quyền: Kinh doanh + Kế toán (xem / xuất / in). Chọn **Khách hàng***, 
 - **Xuất Excel** (mẫu biên bản xác nhận khối lượng) / **In PDF** – có ô ký khách hàng, kế toán, đại diện Delicare. Hóa đơn / công nợ làm ở phần mềm kế toán.
 
 ### 4.8 Đối soát suất – `crm-reconciliation`
-Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn đặt **theo lựa chọn**: hộp **Ghi suất phục vụ** có bảng *Suất phục vụ theo lựa chọn* (từng loại suất × lựa chọn); ô *Suất phục vụ thực tế* tự cộng; tiền = Σ suất phục vụ × giá buổi. Phiếu giao hàng in thêm *LC n (món)* ở cột Bữa.
+Màn mới (UI-6.8, D-86): kỳ 7 ngày / 30 ngày / Tháng, 3 bước (Xác nhận số → Xử lý chênh lệch → Chốt đối soát + Bảng kê tháng), 2 biểu đồ cạnh nhau, **bảng xác nhận ngay trên trang** (phục vụ mặc định = khách nhận; **Xác nhận tất cả dòng khớp** 1 nút; chỉ sửa dòng có sự cố). Thao tác chi tiết: `10_DIEM_PHAT.md` mục 4.2. Đơn đặt **theo lựa chọn**: bấm ▸ trên dòng để ghi phục vụ từng lựa chọn; tiền = Σ suất × giá buổi.
 
 ## 5. Trạng thái chứng từ
 

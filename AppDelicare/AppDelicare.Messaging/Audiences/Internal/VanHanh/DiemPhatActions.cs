@@ -135,6 +135,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "q" when value != null:
                     await ReconcileAsync(ctx, orderId, token, value, ct);
                     break;
+                case "ok":
+                    // UI-6.8 (D-86 c): tin nhắc sau giờ giao – 1 chạm "Đã phục vụ đủ" (phục vụ = khách nhận).
+                    await ServedFullAsync(ctx, orderId, token, ct);
+                    break;
                 case "qx":
                     await AskAsync(ctx, "Nhập số suất thực tế đã phục vụ:", ReplyServed, orderId.ToString("N"), ct);
                     break;
@@ -184,6 +188,21 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             InputWidgets.Number(m, Kind, "on", "q", orderId.ToString("N"), InputWidgets.Value(value) ?? known, "suất",
                 [known, Math.Floor(known * 0.98m), Math.Floor(known * 0.95m)], 0, 99999, "✅ Đối soát");
             await ShowAsync(ctx, m, ct);
+        }
+
+        private async Task ServedFullAsync(BotActionContext ctx, Guid orderId, string token, CancellationToken ct)
+        {
+            var r = await Web.PostFormAsUserAsync<JsonElement>("api/OrderReconciliation/ConfirmServedFull", [new("orderId", orderId.ToString())], token, ct);
+            if (!r.IsOk)
+            {
+                await SayAsync(ctx, "⚠️ " + Problem(r), ct);
+                return;
+            }
+            await SendAsync(ctx, new NeutralMessage
+            {
+                Title = "✅ Đã ghi phục vụ đủ",
+                Lines = [$"{S(r.Data, "orderNumber")} – {S(r.Data, "customerName")}: phục vụ {N(r.Data, "servedQuantity")} suất · tính tiền {N(r.Data, "billingQuantity")} suất"],
+            }, ct);
         }
 
         private async Task ReconcileAsync(BotActionContext ctx, Guid orderId, string token, string served, CancellationToken ct)

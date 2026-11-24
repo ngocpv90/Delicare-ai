@@ -460,6 +460,10 @@
             public static readonly string StandardCostAutoRecalculated = "đã tự tính lại giá thành chuẩn {0} món dùng nguyên liệu này";
             public static readonly string FoodCostOverWarning = "thực đơn vượt FC: {0}";
             public static readonly string StandardCostAutoFailed = "chưa tự tính lại được giá thành – bấm Tính lại ở Giá thành chuẩn";
+            public static readonly string ReconNothingSelected = "Chưa chọn dòng nào";
+            public static readonly string ReconWebRemark = "Xác nhận trên màn Đối soát";
+            public static readonly string ReconManyDone = "Đã xác nhận {0} dòng (lỗi {1})";
+            public static readonly string ReconCloseManyDone = "Đã chốt {0} đối soát (lỗi {1})";
             public static readonly string ReconcileAutoCreatedRemark = "Hệ thống tự tạo khi giao xong – suất phục vụ = suất khách nhận; nhân viên điểm sửa nếu khác";
             public static readonly string ReconcileAutoCreated = "Đã tự tạo đối soát cho đơn {0}";
             public static readonly string ReconcileAutoCreateFailed = "Chưa tự tạo được đối soát đơn {0}: {1} – nhân viên điểm ghi tay";

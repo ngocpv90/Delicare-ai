@@ -87,6 +87,8 @@ namespace AppDelicare.Model.Option
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>
         public int ReconciliationAutoCloseHours { get; set; } = 24;
+        /// <summary>UI-6.8 (D-86 c): số phút sau bàn giao bot hỏi người nhận ở điểm phát "Đã phục vụ đủ" (0 = tắt).</summary>
+        public int ReconcilePromptMinutes { get; set; } = 120;
         /// <summary>BIZ-2.9 (C9): chốt đối soát → tự tính giá vốn suất (MealCost/Calculate).</summary>
         public bool MealCostAutoOnReconcileClose { get; set; } = true;
         /// <summary>BIZ-3.4 (D-77 – C12): thứ chạy job nhắc thực đơn chung tuần sau (0 = Chủ nhật … 3 = thứ Tư).</summary>
