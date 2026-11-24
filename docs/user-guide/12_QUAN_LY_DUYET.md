@@ -92,7 +92,7 @@
 - **⏳ Chờ tôi duyệt** (`/cho`) – cùng danh sách với web: mỗi dòng 🔴 quá hạn / ⚠️ có cảnh báo / 🟢 bình thường + loại + số chứng từ + tóm tắt.
 - **Thẻ duyệt** (cùng khuôn tóm tắt với web – APR-1.7): nhãn **🔴 CẦN DUYỆT · QUÁ HẠN** / **⚠️ CẦN DUYỆT · N CẢNH BÁO** / **🟢 BÌNH THƯỜNG** + hạn, loại + số chứng từ, tóm tắt, *Vì sao cần duyệt*, tối đa 3 cảnh báo, người gửi + cấp → **✅ Duyệt** / **❌ Từ chối** / **📄 Xem chi tiết** (thông tin chính + 8 dòng đầu chứng từ).
   - **Rủi ro thấp** (đơn nghỉ, đổi ca, đổi món) và **không có cảnh báo**: duyệt **1 chạm**, có **↩️ Hoàn tác** trong 10 giây; **✅ Duyệt nhanh N mục** chỉ gồm mục không cảnh báo.
-  - Loại khác: bấm Duyệt → bot hỏi lại xác nhận (2 bước). Từ chối: **trả lời tin** với lý do.
+  - Loại khác: bấm Duyệt → bot hỏi lại xác nhận (2 bước). Từ chối: chọn **nút lý do hay gặp** (bấm = từ chối); chỉ khi bấm **✏️ Khác…** mới trả lời tin bằng lý do.
 - Tin "Chờ bạn duyệt" khi có yêu cầu mới cũng theo khuôn này. Người gửi bấm **Nhắc qua bot** trên web → người duyệt nhận tin "🔔 Người gửi nhắc …".
 - **Tổng hợp cuối ngày** (bot Điều hành, từ `Messaging:ApprovalDigestHour` = 18 giờ, 1 lần / ngày): còn chờ bạn N (quá hạn, có cảnh báo) + nút **⏳ Mở Phê duyệt**. Phần "hệ thống tự duyệt hôm nay" chỉ có khi bật hậu kiểm (chưa bật – D-81 k).
 - Bot báo kết quả duyệt cho người gửi (🟡 APPROVAL_RESULT); quá hạn: 24 giờ báo COO, 48 giờ báo CEO; người duyệt nghỉ → báo ngay bậc kế.

@@ -78,7 +78,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đạt | **Tạo lệnh đóng gói** | Sinh lệnh đóng gói từ mẻ (chia số phần đạt cho các đơn Đã chốt / Đang SX của ngày) |
 | Đạt | **Loại mẻ** | Ghi chú bắt buộc |
 
-**Nhiệt độ lõi:** ngưỡng đạt hiện trên hộp nhập (cấu hình, mặc định **≥ 70 °C**); ô nhiệt độ để trống, nhập số đo thật. Đo dưới ngưỡng: hiện ô **Hành động khắc phục** (bắt buộc, vd. *gia nhiệt lại 10 phút*) – trên bot, bot tự hỏi hành động khắc phục sau khi gõ nhiệt độ. Mẻ chưa cho Đạt QC được tới khi đo lại đạt.
+**Nhiệt độ lõi:** ngưỡng đạt hiện trên hộp nhập (cấu hình, mặc định **≥ 70 °C**); ô nhiệt độ để trống, nhập số đo thật. Đo dưới ngưỡng: hiện ô **Hành động khắc phục** (bắt buộc, vd. *gia nhiệt lại 10 phút*) – trên bot, đo dưới ngưỡng thì bot hiện nút **hành động khắc phục** hay gặp (✏️ Khác… mới phải gõ). Mẻ chưa cho Đạt QC được tới khi đo lại đạt.
 
 ### 4.3 Lệnh sản xuất – `prod-order`
 Xem `03_KE_HOACH.md` mục 4.8 (tab Mẻ & nguyên liệu, Giá thành & chênh lệch; **Đóng lệnh** khi Hoàn thành; **Hủy lệnh** khi chưa mẻ nào bắt đầu).
@@ -119,8 +119,8 @@ Xem `06_QC_ATTP.md` mục 4.3, 4.4, 4.6.
 ## 7. Trên bot Telegram
 
 Phân hệ **🍳 Bếp** (bot Vận hành):
-- 🍳 **Mẻ cần làm** (`/me`) – mẻ hôm nay (của tổ tôi). Mỗi mẻ: **▶️ Bắt đầu**, **🌡 Nhiệt độ lõi** (nút đặt sẵn 70 / 72 / 75 / 78 / 80 / 85 °C hoặc **Khác…** để gõ), **✅ Xong mẻ** (số suất thực tế: **✅ Đúng N** hoặc **Khác…**), **🧪 Lưu mẫu**, **🔄 Làm mới**. Mẻ đang nấu có theo dõi công đoạn: thẻ hiện dòng **Công đoạn: Sơ chế ✅ → Nấu ⏳ → Chia suất** và một nút cho công đoạn hiện tại – **▶️ Bắt đầu <công đoạn>** hoặc **⏹ Xong <công đoạn>** (làm lần lượt theo thứ tự).
+- 🍳 **Mẻ cần làm** (`/me`) – mặc định mẻ **ca hiện tại** của tổ tôi (mẻ trễ / nhiệt độ chưa đạt lên đầu), 6 mẻ / trang, **📋 Xem tất cả** để xem cả ngày. Mỗi mẻ: **▶️ Bắt đầu**; mẻ Đang nấu có **hàng nhiệt độ lõi 70° 72° 75° 78° 80° bấm 1 chạm** hoặc **🌡 Nhiệt độ khác** (màn số: −10 / −1 / +1 / +10 rồi ✅ Xác nhận); **✅ Xong mẻ** (số suất điền sẵn theo kế hoạch, chỉnh trên màn số); **♻️ Ghi thừa**, **➕ Nấu thêm** (màn số + nút lý do); **🧪 Lưu mẫu**, **🔄 Làm mới**. Ghi nhanh nhiệt độ: **⭐ Mẻ cần làm → ME-… → 78°** (3 chạm). Sau mỗi thao tác, đầu thẻ hiện dòng **✅ … · HH:mm** và thẻ giữ nút bước kế tiếp; **◀ Quay lại** về đúng màn trước, không lặp lại thao tác ghi. Mẻ đang nấu có theo dõi công đoạn: thẻ hiện dòng **Công đoạn: Sơ chế ✅ → Nấu ⏳ → Chia suất** và một nút cho công đoạn hiện tại – **▶️ Bắt đầu <công đoạn>** hoặc **⏹ Xong <công đoạn>** (làm lần lượt theo thứ tự).
 - 📈 **Tiến độ ca** (`/tiendo`) – suất đạt / kế hoạch hôm nay.
 - **QR dây chuyền / bàn nấu** (`?start=LINE_<mã>`): mở mẻ đang nấu / chờ nấu tại đó.
-- **✅ Xong mẻ** trên bot ghi luôn **sản lượng** (số suất vừa chọn / gõ) → mẻ sang Chờ QC, QA cho Đạt được ngay. Mẻ Chờ QC chưa có sản lượng (kết thúc từ bản cũ): ngăn chi tiết mẻ trên web có nút **Ghi sản lượng**.
+- **✅ Xong mẻ** trên bot ghi luôn **sản lượng** (số suất trên màn số) → mẻ sang Chờ QC, QA cho Đạt được ngay. Mẻ Chờ QC chưa có sản lượng (kết thúc từ bản cũ): ngăn chi tiết mẻ trên web có nút **Ghi sản lượng**.
 - Thông báo: 🔴 mẻ trễ > 15′, 🔴 nhiệt độ lõi < 70 °C, 🔴 lỗi trọng yếu checklist, 🟡 checklist sắp hạn, 🟡 người tổ chưa vào ca, 🟡 kế hoạch đã duyệt.

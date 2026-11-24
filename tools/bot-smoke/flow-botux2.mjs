@@ -43,8 +43,9 @@ ok(!buttons(p).some(b => b.text === '·'), 'màn đầu không còn ô "·"');
 ok(backs(p) === 0, 'màn đầu không có nút Quay lại', backs(p) + ' nút');
 await push(msg({ text: '/menu' }).update);
 p = await settle(x => x && x.message_id !== p.message_id, '/menu lần 2');
-const kbs = (await alive()).filter(m => m.reply_markup?.keyboard);
-ok(kbs.length === 1, '/menu gửi lại 3 phím – chỉ còn 1 tin bàn phím', kbs.length + ' tin');
+// Tin chào khi liên kết (/start) cũng mang bàn phím nhưng là lời chào – giữ lại; chỉ tin "⌨️ Phím dưới" không được chồng (tin cũ bị xóa).
+const kbs = (await alive()).filter(m => m.reply_markup?.keyboard && (m.text || '').startsWith('⌨️ Phím dưới'));
+ok(kbs.length === 1, '/menu gửi lại 3 phím – chỉ còn 1 tin "Phím dưới"', kbs.length + ' tin');
 ok(JSON.stringify(kbs[0]?.reply_markup?.keyboard?.flat().map(b => b.text)) === JSON.stringify(['⚡ Ca của tôi', '📂 Chức năng', '📍 Chấm công']), 'bàn phím dưới đúng 3 phím');
 
 // 2. Bếp → Mẻ cần làm → (thẻ mẻ đầu tiên nếu có) → ◀ ◀ ◀: mỗi màn đúng 1 nút Quay lại, mỗi lần bấm có chữ trả lời.

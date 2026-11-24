@@ -151,12 +151,12 @@ Xem `10_DIEM_PHAT.md` mục 4.3 (cùng màn).
 ## 7. Trên bot Telegram
 
 Phân hệ **🚚 Giao vận** (bot Vận hành):
-- 🚚 **Chuyến của tôi** (`/chuyen`) – tài xế: chuyến hôm nay. Trong chuyến:
-  - **🚀 Xuất phát** – chọn nhiệt độ thức ăn (nút 60 / 62 / 65 / 68 / 70 / 75 °C hoặc **Khác…**); dưới ngưỡng phải xử lý trên web.
-  - Mỗi điểm **📍 #n**: **📍 Đã đến**, **✅ Giao** (số suất: **✅ Đúng N** / **Khác…** → nhiệt độ bàn giao hoặc **Không đo** → tên người nhận), **❌ Không giao được** (chọn lý do: Khách không nhận hàng / Không liên lạc được người nhận / Sai – không tìm thấy địa chỉ / Xe hỏng – trễ quá giờ), **⬅️ Chuyến**, **🔄 Làm mới**.
+- 🚚 **Chuyến của tôi** (`/chuyen`) – tài xế: chuyến hôm nay (chỉ 1 chuyến thì mở thẳng thẻ chuyến; chuyến trễ lên đầu). Trong chuyến:
+  - **🚀 Xuất phát** – chọn nhiệt độ thức ăn (nút 60 / 62 / 65 / 68 / 70 / 75 °C bấm 1 chạm; **Khác…** = màn số); dưới ngưỡng phải xử lý trên web.
+  - Mỗi điểm **📍 #n**: **📍 Đã đến**, **✅ Giao đủ N · t°** – **1 chạm** (số suất đã xếp, nhiệt độ bàn giao = lần đo tại điểm, chưa đo thì lấy lần đo lúc xuất phát; người nhận điền sẵn người nhận gần nhất tại điểm hoặc "Đại diện <khách>" – **👤 Người nhận khác…** để gõ tên); **✏️ Giao số khác** (thiếu / thừa – màn số); **❌ Không giao được** (chọn lý do hay gặp, ✏️ Khác… mới gõ); **🔄 Làm mới**. Quay lại thẻ chuyến bằng **◀ Quay lại** (không còn nút ⬅️ Chuyến riêng). Giao đủ nhanh: **⭐ Chuyến của tôi → điểm → ✅ Giao đủ N** (3 chạm).
   - **Vị trí trực tiếp** (chia sẻ Live Location trong Telegram): bot tự ghi **xuất phát** khi xe rời bếp và **đã đến** khi vào bán kính 150 m của điểm giao.
 - 🗺 **Giao vận hôm nay** (`/giaovan`) – điều phối: mọi chuyến hôm nay.
-- 📥 **Nhận hộp về** (`/hop`) – chọn điểm đã giao → gõ số hộp / khay nhận về.
+- 📥 **Nhận hộp về** (`/hop`) – chọn điểm đã giao → số hộp / khay nhận về trên **màn số** (điền sẵn số phải thu, −10 / −1 / +1 / +10, ✅ Xác nhận).
 - **QR trên xe** (`?start=VEH_<mã xe>`): chuyến hôm nay của xe + **🚀 Xuất phát**.
 - **QR trên phiếu giao / POD**: mở đúng phiếu.
 - Thông báo: 🔴 xe chưa rời bếp quá giờ, 🔴 điểm trễ, 🔴 nhiệt độ giao < 60 °C, 🔴 báo thiếu suất; tài xế 🟡 được phân / đổi chuyến.

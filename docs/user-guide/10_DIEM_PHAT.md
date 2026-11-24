@@ -101,8 +101,8 @@ Ghi số khay / hộp khách trả và xem số còn ở khách: `09_GIAO_VAN.md
 
 **🍱 Điểm phát** (OPS-POS):
 - 🚚 **Xe đến hôm nay** (`/xeden`) – chuyến tới điểm mình: giờ dự kiến, số suất, trạng thái.
-- 🧮 **Đối soát suất** (`/doisoat`) – chọn đơn đã giao → gõ số suất phục vụ thực tế.
-- 📣 **Phản ánh tại điểm** – chọn khách → mức độ (🔴 / 🟡 / ⚪) → gõ nội dung.
+- 🧮 **Đối soát suất** (`/doisoat`) – chọn đơn đã giao → số suất phục vụ thực tế trên **màn số** (điền sẵn số khách đã nhận – chưa có thì số đã giao, −10 / −1 / +1 / +10, ✅ Xác nhận).
+- 📣 **Phản ánh tại điểm** – chọn khách → mức độ (🔴 / 🟡 / ⚪) → gõ nội dung (chữ tự do – vẫn gõ tay).
 - **QR tại điểm phát** (`?start=LOC_<mã>`): mở thông tin điểm phát.
 
 **📣 CSKH** (SAL-CS):
