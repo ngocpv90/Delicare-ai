@@ -129,6 +129,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – quyền Xem scm-stockcount (PermissionConvention: Get* = Xem).</summary>
+        [HttpGet("GetOverview")]
+        public async Task<IActionResult> GetOverview(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetOverview(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T16: tạo phiếu kiểm kê Nháp, dòng lấy từ tồn hệ thống.</summary>
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromForm] StockCountCreateRequest request)

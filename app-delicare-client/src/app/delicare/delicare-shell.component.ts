@@ -20,6 +20,7 @@ const SCRIPTS = [
   'modules/sales.js',
   'modules/orderweek.js',
   'modules/detail360.js',
+  'modules/detail-page.js', // UI-6 (D-80): khung trang chi tiết toàn màn – trước các module đăng ký trang
   'modules/customer360.js',
   'modules/menu.js',
   'modules/scm.js',
@@ -30,6 +31,8 @@ const SCRIPTS = [
   'modules/logistics.js',
   'modules/hr.js',
   'modules/approval.js', // APR-UI-1 (D-81): màn Phê duyệt tổng – sau hr.js (giữ màn cũ cho chế độ DEMO)
+  // UI-6 (D-80): trang chi tiết toàn màn – mỗi nhóm 1 tệp (khung: modules/detail-page.js).
+  'modules/detail-stockcount.js',
   'modules/admin.js',
   'modules/integration.js',
   'modules/explorer.js',

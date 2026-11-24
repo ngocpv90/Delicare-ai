@@ -796,6 +796,8 @@
       }
     }));
   }
+  // UI-6 (D-80): trang chi tiết phiếu kiểm kê (modules/detail-stockcount.js) gọi lại đúng các thao tác này.
+  APP.scmStockCount = { countModal: id => countModal(id), postCountAsk: (r, after) => postCountAsk(r, after) };
   function countModal(id) {
     Store.query('StockCount/GetDetail', { id }).then(x => {
       if (!x.ok || !x.data) return UI.toast(esc(x.message || 'Không tải được phiếu kiểm kê'), 'err');

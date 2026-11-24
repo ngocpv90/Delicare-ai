@@ -83,7 +83,12 @@
   // ---------- Bảng dữ liệu: tìm kiếm, sắp xếp, phân trang, lọc ----------
   UI.table = (el, cfg) => {
     const st = { q: '', sort: cfg.sort || null, dir: cfg.dir || 1, page: 1, size: cfg.pageSize || 10, f: {} };
+    // UI-6 (D-80): nhớ tìm / lọc / sắp xếp / trang theo màn + bảng; quay lại từ trang chi tiết (APP._restoreList = màn) → khôi phục.
+    const tkey = window.APP ? APP.current + '|' + (el.id || '') + '|' + (cfg.table || '') : null;
+    UI._tbl = UI._tbl || {};
+    if (tkey && window.APP && APP._restoreList === APP.current && UI._tbl[tkey]) Object.assign(st, UI._tbl[tkey], { f: Object.assign({}, UI._tbl[tkey].f) });
     const render = () => {
+      if (tkey) UI._tbl[tkey] = { q: st.q, sort: st.sort, dir: st.dir, page: st.page, size: st.size, f: Object.assign({}, st.f) };
       let rows = typeof cfg.rows === 'function' ? cfg.rows() : cfg.rows;
       if (st.q) { const q = st.q.toLowerCase(); rows = rows.filter(r => cfg.cols.some(c => String(c.text ? c.text(r) : (cfg.table ? UI.text(cfg.table, c.k, r[c.k]) : r[c.k]) ?? '').toLowerCase().includes(q))); }
       Object.entries(st.f).forEach(([k, v]) => { if (v) rows = rows.filter(r => String(r[k]) === v); });

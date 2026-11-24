@@ -564,6 +564,12 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        // ------------------------------------------------------------ UI-6 (D-80): tab Duyệt của trang chi tiết
+
+        public Task<Guid?> LatestRequestIdAsync(string businessType, Guid businessId)
+            => _unitOfWork.DbContext.ApprovalRequest.AsNoTracking().Where(a => !a.IsDeleted && a.BusinessType == businessType && a.BusinessId == businessId)
+                .OrderByDescending(a => a.RequestedAt).Select(a => (Guid?)a.Id).FirstOrDefaultAsync();
+
         // ------------------------------------------------------------ 1.7 tổng hợp cuối ngày
 
         public async Task<int> SendDigestAsync()

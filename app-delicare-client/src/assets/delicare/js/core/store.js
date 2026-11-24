@@ -224,6 +224,7 @@
   // G2: chữ hoa không dấu, chỉ A–Z 0–9 - _ (giống CodeRules.NormalizeUserCode ở máy chủ).
   const userCode = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
+  // UI-6: trang chi tiết <screen>-detail dùng quyền màn gốc – thêm qua Store.permAlias (modules/detail-page.js).
   const PERM_ALIAS = { 'crm-customer-360': 'crm-customer', 'scm-supplier-360': 'scm-supplier', 'adm-employee-360': 'adm-employee',
     // MENU-4.3 (D-75 e): bảng con không còn mục menu → quyền của màn cha (khớp máy chủ ScreenMap.ParentByClass).
     'crm-contract-meal': 'crm-contract', 'crm-order-line': 'crm-order', 'menu-recipe-line': 'menu-recipe', 'menu-menu-line': 'menu-menu',
@@ -411,6 +412,7 @@
     },
     reset() { load(); Store.audit('System', 'reset', 'RESET', mode === 'api' ? 'Tải lại dữ liệu từ API' : 'Khôi phục dữ liệu demo'); notify(null); },
     // Phân quyền theo UserRole × ObjectMenu (MetaLink = '#/screen-id')
+    permAlias(alias, screen) { PERM_ALIAS[alias] = screen; },
     perm(screen) {
       // Màn con không có mục menu riêng → dùng quyền của màn cha (UI-2: crm-customer-360 = quyền crm-customer).
       screen = PERM_ALIAS[screen] || screen;

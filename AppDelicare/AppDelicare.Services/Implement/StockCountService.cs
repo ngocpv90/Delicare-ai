@@ -695,6 +695,32 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn phiếu kiểm kê – dùng lại DetailAsync (GetDetail) + yêu cầu duyệt mới nhất + người phụ trách + số dòng lệch.</summary>
+        public async Task<IResult<StockCountOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var detail = await DetailAsync(id);
+                if (detail?.StockCount is not { } sc)
+                {
+                    return Result<StockCountOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                string? responsible = sc.ResponsibleEmployeeId is { } eid
+                    ? await _unitOfWork.DbContext.Employee.AsNoTracking().Where(e => e.Id == eid).Select(e => e.FullName).FirstOrDefaultAsync() : null;
+                return Result<StockCountOverviewModel>.Success(new StockCountOverviewModel
+                {
+                    Detail = detail, ApprovalRequestId = await _approvalRequestService.LatestRequestIdAsync(StockCountStatus.BusinessType, id), ResponsibleName = responsible,
+                    LineCount = detail.ListLine.Count, VarianceLineCount = detail.ListLine.Count(l => l.VarianceQuantity != 0),
+                    OverThresholdCount = detail.ListLine.Count(l => l.OverThreshold),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         private async Task<StockCountDetailModel?> DetailAsync(Guid id)
         {
             var db = _unitOfWork.DbContext;

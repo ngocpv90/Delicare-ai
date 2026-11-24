@@ -30,5 +30,7 @@ namespace AppDelicare.Services.Interface
         public Task<string?> ApplyDecisionAsync(Guid id, bool approved, Guid actorUserId, string? note);
         /// <summary>T16: chi tiết phiếu kiểm kê.</summary>
         public Task<IResult<StockCountDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – chi tiết + yêu cầu duyệt mới nhất + số dòng lệch.</summary>
+        public Task<IResult<AppDelicare.Model.Model.StockCountOverviewModel>> GetOverview(Guid id);
     }
 }

@@ -49,5 +49,7 @@ namespace AppDelicare.Services.Interface
         public Task<int> EscalateAbsentAsync(IReadOnlyCollection<string> escalateGroups, IReadOnlyCollection<string> topGroups);
         /// <summary>APR-1.7: tin tổng hợp cuối ngày cho từng người duyệt (còn chờ, quá hạn, có cảnh báo) – 1 lần / người / ngày.</summary>
         public Task<int> SendDigestAsync();
+        /// <summary>UI-6 (D-80): Id yêu cầu duyệt mới nhất của 1 chứng từ (mọi trạng thái) – tab Duyệt của trang chi tiết; không có → null.</summary>
+        public Task<Guid?> LatestRequestIdAsync(string businessType, Guid businessId);
     }
 }
