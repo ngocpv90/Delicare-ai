@@ -341,8 +341,9 @@
         ]));
       } },
     ],
-    onAct: (act, o, id) => {
-      if (act === 'edit') APP.openDetail('Ingredient', id, APP.FN['scm-ingredient'], { drawer: true });
+    onAct: (act, o, id, reload) => {
+      // UI-6.20 (D-101): Sửa = form Nguyên liệu mới (đọc bản ghi đầy đủ qua Ingredient/GetById).
+      if (act === 'edit') return Store.query('Ingredient/GetById', { id }).then(x => { if (!x.ok || !x.data) return UI.toast(esc(x.message || 'Không tải được nguyên liệu'), 'err'); const row = {}; Object.keys(x.data).forEach(k => { row[k.charAt(0).toUpperCase() + k.slice(1)] = x.data[k]; }); APP.ingredientForm(row, { onSave: reload }); });
       else if (act === 'lots') APP.go('scm-lot');
     },
   });

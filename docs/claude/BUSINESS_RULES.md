@@ -78,6 +78,7 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 - **Bản Pilot đã cài (T15 + T15.1 – anh chốt 2026-11-16, DECISIONS mục "Anh chốt 2026-11-16 (T15 mua hàng → T15.1)", GAP-PUR-01…10, D-11):**
   - **Duyệt PO bắt buộc**, 1 cấp: `BusinessRules:PurchaseOrderAutoApproveMaxAmount` = 0 (mọi PO phải duyệt). PO **≥ `PurchaseOrderDirectorApprovalAmount` = 50 000 000** đ chỉ **Giám đốc** duyệt (mục quyền `#/wf-inbox?type=scm-po-director`, seed nhóm CEO); dưới ngưỡng duyệt trên `#/wf-inbox?type=scm-po`. PO lớn không tự duyệt.
   - Nhận hàng khi PO **Đã duyệt** / Đã gửi NCC / Nhận một phần; nhận vượt tối đa `GoodsReceiptOverReceivePct` = **10%** mỗi dòng.
+  - **Loại bảo quản nguyên liệu (UI-6.20, D-101):** đúng 3 mã **DRY** (Khô / thường – không kiểm nhiệt độ), **CHILLED** (Mát 0–5 °C), **FROZEN** (Đông lạnh ≤ −18 °C); AMBIENT cũ = DRY. Máy chủ từ chối mã khác. Có hạn dùng → quản lý lô mặc định bật; CHILLED / FROZEN → kiểm tra khi nhận mặc định bật. Đơn vị mua / xuất ≠ đơn vị kho phải quy đổi được (bảng quy đổi chung). YieldPercent = 100 − StandardWastePercent. **Tồn tối thiểu / an toàn:** định mức của kho (Định mức tồn kho) dùng trước, không có mới dùng số trên nguyên liệu (D-12).
   - **Nhiệt độ nhận 3 vùng** (`BusinessRules:ReceivingTemp` theo `Ingredient.StorageType`):
 
     | Kiểu | Nhận | Nhận có điều kiện | Loại |

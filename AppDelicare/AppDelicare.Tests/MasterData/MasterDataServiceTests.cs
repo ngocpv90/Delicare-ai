@@ -114,10 +114,14 @@ namespace AppDelicare.Tests.MasterData
         public async Task Ingredient_rules_and_stock()
         {
             using var c = _factory.CreateAuthorizedClient();
-            (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-Y"), ("Name", "Sai thu hồi"), ("YieldPercent", 0m))).Fail("thu hồi");
-            (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-W"), ("Name", "Sai hao hụt"), ("StandardWastePercent", 100m))).Fail("hao hụt");
-            (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-H"), ("Name", "Thiếu hạn"), ("IsExpiryManaged", true))).Fail("hạn dùng");
-            (await c.PostFormAsync("/api/Ingredient/Insert", ("Code", "NL-OK"), ("Name", "Thịt NL-OK"), ("IsExpiryManaged", true), ("ShelfLifeDays", 3), ("MinimumStock", 50m))).Ok();
+            // UI-6.20 (D-101): nhóm nguyên liệu, đơn vị kho, loại bảo quản là bắt buộc.
+            Guid ncat = Guid.NewGuid(), nunit = Guid.NewGuid();
+            await _factory.SeedAsync(db => { db.IngredientCategory.Add(new IngredientCategory { Id = ncat, Code = "NC-" + ncat.ToString("N")[..5], Name = "Nhóm thử", Status = "Active" }); db.UnitMeasure.Add(new UnitMeasure { Id = nunit, Code = "kg" + nunit.ToString("N")[..4], Name = "Kilogam", Status = "Active" }); return Task.CompletedTask; });
+            (string, object)[] must = [("IngredientCategoryId", ncat), ("BaseUnitId", nunit), ("StorageType", "DRY")];
+            (await c.PostFormAsync("/api/Ingredient/Insert", [("Code", "NL-Y"), ("Name", "Sai thu hồi"), ("YieldPercent", 0m), .. must])).Fail("thu hồi");
+            (await c.PostFormAsync("/api/Ingredient/Insert", [("Code", "NL-W"), ("Name", "Sai hao hụt"), ("StandardWastePercent", 100m), .. must])).Fail("hao hụt");
+            (await c.PostFormAsync("/api/Ingredient/Insert", [("Code", "NL-H"), ("Name", "Thiếu hạn"), ("IsExpiryManaged", true), .. must])).Fail("hạn dùng");
+            (await c.PostFormAsync("/api/Ingredient/Insert", [("Code", "NL-OK"), ("Name", "Thịt NL-OK"), ("IsExpiryManaged", true), ("ShelfLifeDays", 3), ("MinimumStock", 50m), .. must])).Ok();
             var id = await _factory.QueryAsync(db => db.Ingredient.Where(x => x.Name == "Thịt NL-OK").Select(x => x.Id).SingleAsync());
             await _factory.SeedAsync(db =>
             {

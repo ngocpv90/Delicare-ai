@@ -42,8 +42,8 @@ Tổng: **59** ô. Cột "Đã sửa / cần duyệt" cập nhật theo từng t
 | 32 | Loại suất & đơn giá | `ContractMeal.MealType` | Bộ giá trị Buổi (SANG / TRUA / TOI / DEM) | Cần anh duyệt / task sau |
 | 33 | Loại suất & đơn giá | `ContractMeal.ServiceType` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | Cần anh duyệt / task sau |
 | 34 | Món ăn | `Dishe.MealCategory` | Danh mục nhóm tương ứng (nếu có bảng) | Ẩn khỏi form, máy chủ tự ghi = mã nhóm món (UI-6.17) |
-| 35 | Nguyên liệu | `Ingredient.StorageCondition` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | Làm ở UI-6.20 (form Nguyên liệu đúng logic) |
-| 36 | Nguyên liệu | `Ingredient.StorageType` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | Làm ở UI-6.20 (form Nguyên liệu đúng logic) |
+| 35 | Nguyên liệu | `Ingredient.StorageCondition` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | **Giữ gõ tự do (UI-6.20):** chỉ là mô tả thêm, loại bảo quản đã là ô chọn |
+| 36 | Nguyên liệu | `Ingredient.StorageType` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | **Đã sửa UI-6.20:** chọn 1 trong 3 (DRY / CHILLED / FROZEN), máy chủ chặn mã khác |
 | 37 | Nhà cung cấp | `Supplier.SupplierType` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | Cần anh duyệt / task sau |
 | 38 | Nhân viên | `Employee.Gender` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | Làm ở UI-6.36 |
 | 39 | Nhật ký nhiệt độ | `TemperatureLog.MeasurementType` | Bộ giá trị cố định trong BUSINESS_RULES (nếu có) – chưa có thì GAP | Cần anh duyệt / task sau |

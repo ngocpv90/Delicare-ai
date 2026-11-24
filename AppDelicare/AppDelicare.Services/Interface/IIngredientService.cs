@@ -20,5 +20,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<IngredientStockModel>> GetStock(Guid id);
         /// <summary>UI-6 (D-80): trang chi tiết toàn màn – tồn theo kho, lô, giá mua gần nhất, bảng giá NCC, lịch sử giá, giao dịch kho.</summary>
         public Task<IResult<IngredientOverviewModel>> GetOverview(Guid id);
+        /// <summary>UI-6.20 (D-101): loại bảo quản + ngưỡng nhận hàng, quy đổi đơn vị, định mức theo kho.</summary>
+        public Task<IResult<AppDelicare.Model.Model.IngredientFormOptionsModel>> GetFormOptions(Guid? id);
     }
 }

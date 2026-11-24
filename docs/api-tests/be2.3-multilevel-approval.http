@@ -59,12 +59,27 @@ Authorization: Bearer {{token}}
 ###
 @warehouseId = {{wh.response.body.listData[0].id}}
 
+### Nhóm nguyên liệu (UI-6.20 D-101: nguyên liệu bắt buộc chọn nhóm)
+POST {{base}}/api/IngredientCategory/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}NNL&Name=[DEMO] Nhóm NL {{code}}&Status=Active
+
+###
+# @name ingCat
+GET {{base}}/api/IngredientCategory/GetAll?SearchText={{code}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@ingCatId = {{ingCat.response.body.listData[0].id}}
+
 ### 0.2 Nguyên liệu gạo + NCC + bảng giá 15.000 đ/kg
 POST {{base}}/api/Ingredient/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}GAO&Name=[DEMO] Gạo {{key}}&BaseUnitId={{kgId}}&StorageType=DRY&QcRequired=false&Status=Active
+Code={{code}}GAO&Name=[DEMO] Gạo {{key}}&BaseUnitId={{kgId}}&StorageType=DRY&QcRequired=false&IngredientCategoryId={{ingCatId}}&Status=Active
 
 ###
 # @name rice

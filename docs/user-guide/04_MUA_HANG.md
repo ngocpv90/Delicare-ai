@@ -114,6 +114,15 @@ Sửa dòng PO Nháp: mở PO → **Sửa dòng hàng** (nguyên liệu, số l�
 - Bảng giá NCC (`scm-supplier-material`): mỗi dòng NCC × nguyên liệu × đơn giá × hiệu lực; đánh dấu **Ưu tiên** để MRP / Lập PO chọn NCC này và để tính giá vốn công thức.
 
 ### 4.5 Nguyên liệu, đơn vị – `scm-ingredient`, `scm-uom`, `scm-uom-conversion`
+**Form Nguyên liệu (UI-6.20, D-101) – 5 nhóm** (dùng chung cho Thêm / Sửa ở danh sách, nút Sửa trang chi tiết và "+ Tạo nguyên liệu mới" ở tab Công thức):
+1. **Thông tin chung:** Tên* · **Nhóm nguyên liệu*** (chọn danh mục, + Thêm nhóm theo quyền) · Quy cách · Mã (tự sinh, chỉ đọc).
+2. **Đơn vị:** **Đơn vị kho*** · Đơn vị mua · Đơn vị xuất – 2 ô sau **chỉ liệt kê đơn vị quy đổi được về đơn vị kho** (ghi "= N kg"), để trống = đơn vị kho.
+3. **Bảo quản & ATTP:** **Loại bảo quản*** chọn 1 trong 3 – **Khô / thường**, **Mát 0–5 °C**, **Đông lạnh ≤ −18 °C** (mỗi loại ghi ngưỡng nhận hàng); **Quản lý hạn dùng** (1 công tắc) → **Hạn dùng (ngày)***; **Quản lý theo lô** tự bật khi có hạn dùng (tắt thì báo "xuất theo hạn dùng cần quản lý lô"); **Kiểm tra khi nhận** tự bật với Mát / Đông lạnh (chỉ QA tắt được, có cảnh báo ATTP); Điều kiện bảo quản (mô tả).
+4. **Định mức:** **Hao hụt sơ chế %** (dùng khi công thức không ghi hao hụt riêng) · **Tồn tối thiểu**, **Tồn an toàn** (theo đơn vị kho) – kho có định mức riêng (màn Định mức tồn kho) thì dùng định mức kho; form liệt kê các kho đang có định mức riêng.
+5. **Ghi chú · Trạng thái** (Đang dùng / Ngừng dùng). Ngừng dùng nguyên liệu còn trong công thức / đề nghị / đơn mua chưa xong → vẫn lưu, báo *"Lưu ý: nguyên liệu còn trong …"* kèm số chứng từ.
+
+Lỗi thường gặp: *Chọn nhóm nguyên liệu trong danh mục*; *Chọn đơn vị kho của nguyên liệu*; *Loại bảo quản phải là Khô / thường, Mát 0–5 °C hoặc Đông lạnh ≤ −18 °C*; *Đơn vị mua / xuất chưa quy đổi được về đơn vị kho*.
+
 Danh mục chung. Lưu ý khi nhập nguyên liệu: kiểu bảo quản (Mát / Đông lạnh / thường – dùng để kiểm nhiệt độ nhận hàng), số ngày hạn dùng, tỷ lệ thu hồi, tồn an toàn. Quy đổi đơn vị phải có cho mọi cặp đơn vị công thức ↔ đơn vị tồn kho, thiếu thì MRP bỏ qua phần đó.
 - *Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0*, *Tỷ lệ thu hồi phải trong (0, 100]*, *Hệ số quy đổi phải lớn hơn 0*, *Cặp quy đổi đơn vị này đã tồn tại*.
 

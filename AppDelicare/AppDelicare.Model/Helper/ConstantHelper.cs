@@ -245,6 +245,12 @@
             public static readonly string LocationInUse = "Còn đơn giao chưa hoàn tất tại điểm này – không ngừng hoạt động được";
             public static readonly string YieldPercentRange = "Tỷ lệ thu hồi phải trong (0, 100]";
             public static readonly string StandardWasteRange = "Tỷ lệ hao hụt chuẩn phải trong [0, 100)";
+            public static readonly string IngredientCategoryRequired = "Chọn nhóm nguyên liệu trong danh mục";
+            public static readonly string IngredientBaseUnitRequired = "Chọn đơn vị kho của nguyên liệu";
+            public static readonly string IngredientStorageTypeInvalid = "Loại bảo quản phải là Khô / thường, Mát 0–5 °C hoặc Đông lạnh ≤ −18 °C";
+            public static readonly string IngredientUnitNotConvertible = "Đơn vị {0} chưa quy đổi được về đơn vị kho – chọn đơn vị khác hoặc tạo đơn vị đóng gói";
+            public static readonly string IngredientStockNegative = "Tồn tối thiểu / tồn an toàn không được âm";
+            public static readonly string IngredientInUseWarning = "Lưu ý: nguyên liệu còn trong {0}";
             public static readonly string ShelfLifeRequired = "Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0";
             public static readonly string ConversionFactorPositive = "Hệ số quy đổi phải lớn hơn 0";
             public static readonly string ConversionSameUnit = "Đơn vị nguồn và đích phải khác nhau";

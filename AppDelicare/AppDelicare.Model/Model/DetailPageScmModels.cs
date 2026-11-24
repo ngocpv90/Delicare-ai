@@ -214,3 +214,37 @@ namespace AppDelicare.Model.Model
         public string? StatusName { get; set; }
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.20: Ingredient/GetFormOptions.</summary>
+    public class IngredientFormOptionsModel
+    {
+        public List<IngredientStorageOptionModel> ListStorageType { get; set; } = [];
+        public List<UomEdgeModel> ListConversion { get; set; } = [];
+        public List<IngredientWarehousePolicyModel> ListWarehousePolicy { get; set; } = [];
+    }
+
+    public class IngredientStorageOptionModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public decimal? AcceptMax { get; set; }
+        public decimal? ConditionalMax { get; set; }
+        public string? Note { get; set; }
+    }
+
+    public class UomEdgeModel
+    {
+        public Guid FromUnitId { get; set; }
+        public Guid ToUnitId { get; set; }
+        public decimal Factor { get; set; }
+    }
+
+    public class IngredientWarehousePolicyModel
+    {
+        public string? WarehouseName { get; set; }
+        public decimal? MinStock { get; set; }
+        public decimal? SafetyStock { get; set; }
+    }
+}
