@@ -426,6 +426,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-KIT', N'#/hr-swap', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/hr-shift', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-LOG', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-order', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-location', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/prod-plan', 1, 0, 0, 0, 0, 0, 0),
@@ -531,9 +532,9 @@ INSERT INTO @Allow VALUES
     (N'SAL-CS', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/log-execution', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-CS', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-ACC', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0);
+    (N'SAL-CS', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0);
 INSERT INTO @Allow VALUES
+    (N'FIN-ACC', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/wf-inbox?type=scm-stockcount-l2', 1, 0, 1, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/dash-exec', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/kpi-daily', 1, 0, 0, 0, 1, 1, 0),

@@ -69,7 +69,7 @@ INSERT INTO @P VALUES
     (N'#/crm-reconciliation', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 207, N'', N'', NULL),
     (N'#/crm-billing', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 208, N'', N'', NULL),
     (N'#/log-complaint', 2, N'#/group/07', 701, 799, N'', N'#/group/02', 209, N'', N'', NULL),
-    (N'#/crm-location', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 210, N'', N'', NULL),
+    (N'#/crm-location', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 210, N'', N'', 0),
     (N'#/crm-contact', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 211, N'', N'', 0),
     (N'#/group/03', 1, NULL, 300, 300, N'', NULL, 300, N'Thực đơn & Món ăn', N'menu', NULL),
     (N'#/menu-menu', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 301, N'', N'', NULL),

@@ -112,7 +112,7 @@ namespace AppDelicare.Services.Implement
             R<ShiftSwapRequest>("Đơn đổi ca", "hr-swap", "RequestStatus", "SubmittedAt", "RequestNo,Reason",
                 "RequestNo:Số đơn,RequesterEmployeeId:Người đổi,TargetEmployeeId:Người nhận ca,Reason,RequestStatus,SubmittedAt:Ngày lập"),
             // UI-6 (D-80): trang chi tiết Điểm giao – có Lịch sử / Tài liệu / xuất Excel như các danh sách khác.
-            R<CustomerDeliveryLocation>("Điểm giao", "crm-location", "Status", null, "Code,Name,Address,ContactName,ContactPhone",
+            R<CustomerDeliveryLocation>("Điểm giao", "crm-customer" /* UI-6.16: màn cha */, "Status", null, "Code,Name,Address,ContactName,ContactPhone",
                 "Code:Mã điểm giao,Name:Tên điểm giao,CustomerId,Address:Địa chỉ,ContactName:Người liên hệ,ContactPhone:Điện thoại,DeliveryWindowFrom:Giao từ,DeliveryWindowTo:Giao đến,Status,DeliveryInstructions:Hướng dẫn giao", attachable: true),
             R<Employee>("Nhân viên", "adm-employee", "Status", null, "Code,FullName,Phone",
                 "Code:Mã nhân viên,FullName:Họ tên,OrganizationUnitId:Đơn vị,Phone,Email,HireDate:Ngày vào làm,Status", attachable: true),

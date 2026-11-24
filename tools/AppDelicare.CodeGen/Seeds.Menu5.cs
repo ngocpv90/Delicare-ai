@@ -204,7 +204,8 @@ public static partial class Seeds
 
         G("OPS-LOG", OwnR, ["log-vehicle"]);
         G("OPS-LOG", EditR, L("log-delivery-order log-route log-loading log-execution log-pod log-container-return"));
-        G("OPS-LOG", ViewR, L("log-packing-order log-packing-result log-gps log-packaging-ledger crm-location crm-order prod-plan qc-temperature"));
+        // UI-6.16 / UI-6.44 (D-125 a): mục Điểm giao ẩn → OPS-LOG được Xem ở màn cha Khách hàng (không mất lối vào điểm giao).
+        G("OPS-LOG", ViewR, L("log-packing-order log-packing-result log-gps log-packaging-ledger crm-customer crm-location crm-order prod-plan qc-temperature"));
 
         G("OPS-POS", EditR, L("crm-reconciliation log-pod log-container-return log-complaint"));
         G("OPS-POS", ViewR, L("crm-customer crm-location crm-order crm-order-week menu-menu log-execution log-packaging-ledger"));

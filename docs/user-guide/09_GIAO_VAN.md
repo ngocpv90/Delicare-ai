@@ -14,8 +14,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Menu › Mục | screen-id | OPS-LOG |
 |---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X |
+| Kinh doanh › Khách hàng | `crm-customer` | X |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X |
-| Kinh doanh › Điểm giao hàng | `crm-location` | X |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
 | Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | X |
@@ -58,6 +58,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | **Hủy** | Bắt buộc lý do; gỡ khỏi chuyến, số suất trả lại đơn hàng |
 
 ### 4.2 Lập chuyến – `log-route`
+**Tìm điểm giao (UI-6.16):** ô **Tìm điểm giao** dưới chọn ngày – gõ ≥ 2 ký tự tên điểm / địa chỉ / tên khách → bảng tối đa 8 điểm: khách, địa chỉ, khung giờ nhận, người nhận, tọa độ; bấm tên mở trang chi tiết điểm giao (cần quyền Xem Khách hàng – mục menu Điểm giao hàng đã ẩn).
+
 Chọn **Ngày giao** (chip hoặc ô ngày).
 
 **Lập chuyến theo khu vực** (cách nhanh):

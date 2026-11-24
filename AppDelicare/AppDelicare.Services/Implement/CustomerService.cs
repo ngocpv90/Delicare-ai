@@ -580,7 +580,7 @@ namespace AppDelicare.Services.Implement
             }
             if (model.ListLocation.Count == 0)
             {
-                alerts.Add(new CustomerAlertModel { Code = "NO_DELIVERY_LOCATION", Severity = "MEDIUM", Screen = "crm-location", Message = ConstantHelper.Message.CustomerAlertNoLocation });
+                alerts.Add(new CustomerAlertModel { Code = "NO_DELIVERY_LOCATION", Severity = "MEDIUM", Screen = "crm-customer", Message = ConstantHelper.Message.CustomerAlertNoLocation });
             }
             if (!model.ListContact.Any(x => x.IsPrimary == true))
             {

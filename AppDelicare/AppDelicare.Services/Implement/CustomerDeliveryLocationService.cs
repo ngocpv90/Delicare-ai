@@ -268,6 +268,19 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.LocationInUse;
             }
+            // UI-6.16 (D-97): còn đơn hàng chưa giao (từ hôm nay) → chặn, báo số đơn.
+            if (request.Id is { } lid && request.Status == "Inactive")
+            {
+                DateTime today = _clock.Today;
+                var open = await _unitOfWork.OrderRepository.GetAll().AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.DeliveryLocationId == lid && o.MealDate >= today
+                        && o.Status != OrderStatus.Delivered && o.Status != OrderStatus.Reconciled && o.Status != OrderStatus.Cancelled)
+                    .OrderBy(o => o.MealDate).Select(o => o.OrderNumber ?? o.OrderNo).ToListAsync();
+                if (open.Count > 0)
+                {
+                    return string.Format(ConstantHelper.Message.LocationHasOpenOrders, open.Count, string.Join(", ", open.Take(5)) + (open.Count > 5 ? "…" : string.Empty));
+                }
+            }
             return string.Empty;
         }
     }
