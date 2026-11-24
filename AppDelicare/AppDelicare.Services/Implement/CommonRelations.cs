@@ -107,6 +107,19 @@ namespace AppDelicare.Services.Implement
                 Name = db.Dish.Where(d => d.Id == x.DishId).Select(d => d.Name).FirstOrDefault(),
             }));
 
+        private static CommonRelatedGroup ProductionOrders(Func<DatabaseContext, Guid, IQueryable<ProductionOrder>> where) => G<ProductionOrder>("ProductionOrder", "Status",
+            (db, id) => where(db, id).Where(x => !x.IsDeleted).Select(x => new CommonRow { Id = x.Id, Code = x.ProductionOrderNumber ?? x.ProductionOrderNo, Status = x.Status, At = x.PlannedStartDate }), withDate: true);
+
+        private static CommonRelatedGroup ProductionBatches(Func<DatabaseContext, Guid, IQueryable<ProductionBatch>> where) => G<ProductionBatch>("ProductionBatch", "Status",
+            (db, id) => where(db, id).Where(x => !x.IsDeleted).Select(x => new CommonRow
+            {
+                Id = x.Id, Code = x.BatchNumber ?? x.BatchNo, Status = x.Status, At = x.StartDate,
+                Name = db.Dish.Where(d => d.Id == x.DishId).Select(d => d.Name).FirstOrDefault(),
+            }));
+
+        private static CommonRelatedGroup MaterialIssues(Func<DatabaseContext, Guid, IQueryable<MaterialIssue>> where) => G<MaterialIssue>("MaterialIssue", "Status",
+            (db, id) => where(db, id).Where(x => !x.IsDeleted).Select(x => new CommonRow { Id = x.Id, Code = x.IssueNumber ?? x.IssueNo, Status = x.Status, At = x.IssueDate }), withDate: true);
+
         /// <summary>Quan hệ theo danh sách nguồn (khóa = tên danh sách của <see cref="CommonRegistry"/>). Thứ tự nhóm = thứ tự hiển thị tab.</summary>
         public static readonly IReadOnlyDictionary<string, IReadOnlyList<CommonRelatedGroup>> Related = new Dictionary<string, IReadOnlyList<CommonRelatedGroup>>(StringComparer.OrdinalIgnoreCase)
         {
@@ -166,6 +179,46 @@ namespace AppDelicare.Services.Implement
                         Id = x.Id, Code = x.BatchNumber ?? x.BatchNo, Status = x.Status, At = x.StartDate,
                         Name = db.Dish.Where(d => d.Id == x.DishId).Select(d => d.Name).FirstOrDefault(),
                     })),
+            ],
+            // UI-6 (D-80): tab "Chứng từ liên quan" của các trang chi tiết toàn màn – chỉ khóa ngoại có sẵn (không thêm cột).
+            ["GoodsReceipt"] =
+            [
+                PurchaseOrders((db, id) => db.PurchaseOrder.Where(p => db.GoodsReceipt.Any(g => g.Id == id && g.PurchaseOrderId == p.Id))),
+                MaterialLots((db, id) => db.MaterialLot.Where(m => db.GoodsReceiptLine.Any(l => l.Id == m.GoodsReceiptLineId && l.GoodsReceiptId == id && !l.IsDeleted))),
+                SupplierIssues((db, id) => db.SupplierIssue.Where(x => x.GoodsReceiptId == id)),
+            ],
+            ["PurchaseRequest"] =
+            [
+                PurchaseOrders((db, id) => db.PurchaseOrder.Where(x => x.PurchaseRequestId == id)),
+            ],
+            ["CustomerComplaint"] =
+            [
+                Orders((db, id) => db.Order.Where(o => db.CustomerComplaint.Any(c => c.Id == id && c.OrderId == o.Id))),
+                DeliveryOrders((db, id) => db.DeliveryOrder.Where(d => db.CustomerComplaint.Any(c => c.Id == id && c.DeliveryOrderId == d.Id))),
+            ],
+            ["ProductionPlan"] =
+            [
+                ProductionOrders((db, id) => db.ProductionOrder.Where(x => x.ProductionPlanId == id)),
+                ProductionBatches((db, id) => db.ProductionBatch.Where(b => db.ProductionOrder.Any(o => o.Id == b.ProductionOrderId && o.ProductionPlanId == id && !o.IsDeleted))),
+            ],
+            ["ProductionOrder"] =
+            [
+                ProductionBatches((db, id) => db.ProductionBatch.Where(x => x.ProductionOrderId == id)),
+                MaterialIssues((db, id) => db.MaterialIssue.Where(x => x.ProductionOrderId == id)),
+            ],
+            ["ProductionBatch"] =
+            [
+                ProductionOrders((db, id) => db.ProductionOrder.Where(o => db.ProductionBatch.Any(b => b.Id == id && b.ProductionOrderId == o.Id))),
+                MaterialIssues((db, id) => db.MaterialIssue.Where(i => db.ProductionBatch.Any(b => b.Id == id && b.ProductionOrderId == i.ProductionOrderId))),
+            ],
+            ["CustomerDeliveryLocation"] =
+            [
+                DeliveryOrders((db, id) => db.DeliveryOrder.Where(x => x.CustomerDeliveryLocationId == id)),
+            ],
+            ["DeliveryRoute"] =
+            [
+                DeliveryOrders((db, id) => db.DeliveryOrder.Where(x => x.DeliveryRouteId == id)),
+                Complaints((db, id) => db.CustomerComplaint.Where(x => x.DeliveryRouteId == id)),
             ],
             ["Dish"] =
             [

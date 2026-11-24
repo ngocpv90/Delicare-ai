@@ -133,7 +133,7 @@
     { label: 'Lô nội bộ', html: l => (l.materialLotId ? link('MaterialLot', l.materialLotId, l.lotNumber) : '–') },
   ]);
   D.page({
-    id: 'scm-gr-detail', screen: 'scm-gr', table: 'GoodsReceipt', kind: 'doc', api: 'GoodsReceipt/GetOverview', resource: 'GoodsReceipt', related: false,
+    id: 'scm-gr-detail', screen: 'scm-gr', table: 'GoodsReceipt', kind: 'doc', api: 'GoodsReceipt/GetOverview', resource: 'GoodsReceipt',
     head: o => {
       const d = o.detail || {}, gr = d.goodsReceipt || {}, acts = d.allowedActions || [], edit = D.can('scm-gr', 'edit');
       return {
@@ -201,7 +201,7 @@
     { label: 'Trạng thái', html: p => badge('PurchaseOrder', p.status) },
   ]);
   D.page({
-    id: 'scm-pr-detail', screen: 'scm-pr', table: 'PurchaseRequest', kind: 'doc', api: 'PurchaseRequest/GetOverview', resource: 'PurchaseRequest', related: false,
+    id: 'scm-pr-detail', screen: 'scm-pr', table: 'PurchaseRequest', kind: 'doc', api: 'PurchaseRequest/GetOverview', resource: 'PurchaseRequest',
     head: o => {
       const d = o.detail || {}, pr = d.purchaseRequest || {}, acts = d.allowedActions || [], edit = D.can('scm-pr', 'edit');
       return {
@@ -246,7 +246,7 @@
   const TRACE = [['listSupplier', 'Nhà cung cấp'], ['listPurchaseOrder', 'Đơn mua'], ['listGoodsReceipt', 'Phiếu nhập'], ['listLot', 'Lô nguyên liệu'], ['listIssue', 'Phiếu xuất kho'], ['listProductionOrder', 'Lệnh sản xuất'], ['listBatch', 'Mẻ sản xuất'], ['listTemperature', 'Nhiệt độ đã đo'], ['listPackingOrder', 'Lệnh đóng gói'], ['listOrder', 'Đơn hàng'], ['listDeliveryOrder', 'Đơn giao hàng'], ['listCustomer', 'Khách hàng nhận suất ăn']];
   const expiryTag = (days, expired) => (expired ? UI.tag('Đã hết hạn', 'red') : has(days) && days <= 3 ? UI.tag(`Còn ${days} ngày`, 'orange') : '');
   D.page({
-    id: 'scm-lot-detail', screen: 'scm-lot', table: 'MaterialLot', kind: 'profile', api: 'MaterialLot/GetOverview', resource: 'MaterialLot', docs: false,
+    id: 'scm-lot-detail', screen: 'scm-lot', table: 'MaterialLot', kind: 'profile', api: 'MaterialLot/GetOverview', resource: 'MaterialLot',
     head: o => {
       const l = o.lot || {}, canQa = Store.canApprove('scm-lot');
       return {
@@ -292,7 +292,7 @@
 
   // ================= Nguyên liệu (khuôn hồ sơ) =================
   D.page({
-    id: 'scm-ingredient-detail', screen: 'scm-ingredient', table: 'Ingredient', kind: 'profile', api: 'Ingredient/GetOverview', resource: 'Ingredient', docs: false,
+    id: 'scm-ingredient-detail', screen: 'scm-ingredient', table: 'Ingredient', kind: 'profile', api: 'Ingredient/GetOverview', resource: 'Ingredient',
     head: o => {
       const g = o.ingredient || {};
       return {

@@ -26,7 +26,7 @@
     { label: 'Khắc phục', html: t => esc(t.correctiveAction || '') },
   ]);
   D.page({
-    id: 'prod-batch-detail', screen: 'prod-batch', table: 'ProductionBatche', kind: 'doc', api: 'ProductionBatch/GetOverview', resource: 'ProductionBatch', related: false,
+    id: 'prod-batch-detail', screen: 'prod-batch', table: 'ProductionBatche', kind: 'doc', api: 'ProductionBatch/GetOverview', resource: 'ProductionBatch',
     head: o => {
       const d = o.detail || {}, b = d.batch || {}, s = b.status, edit = D.can('prod-batch', 'edit'), qc = Store.canApprove('prod-batch');
       return {
@@ -102,7 +102,7 @@
     { label: 'Trạng thái', html: b => UI.badge(b.status, 'ProductionBatche', 'Status') + (b.qcStatus ? ' ' + UI.badge(b.qcStatus, 'ProductionBatche', 'QcStatus') : '') },
   ];
   D.page({
-    id: 'prod-order-detail', screen: 'prod-order', table: 'ProductionOrder', kind: 'doc', api: 'ProductionOrder/GetOverview', resource: 'ProductionOrder', related: false, docs: false,
+    id: 'prod-order-detail', screen: 'prod-order', table: 'ProductionOrder', kind: 'doc', api: 'ProductionOrder/GetOverview', resource: 'ProductionOrder',
     head: o => {
       const d = o.detail || {}, po = d.productionOrder || {}, br = d.order || {}, edit = D.can('prod-order', 'edit');
       return {
@@ -151,7 +151,7 @@
   // ================= KẾ HOẠCH SẢN XUẤT =================
   const PFLOW = ['Draft', 'Approved', 'Released', 'Completed'];
   D.page({
-    id: 'prod-plan-detail', screen: 'prod-plan', table: 'ProductionPlan', kind: 'doc', api: 'ProductionPlan/GetOverview', resource: 'ProductionPlan', related: false, docs: false,
+    id: 'prod-plan-detail', screen: 'prod-plan', table: 'ProductionPlan', kind: 'doc', api: 'ProductionPlan/GetOverview', resource: 'ProductionPlan',
     head: o => {
       const d = o.detail || {}, p = d.productionPlan || {}, no = p.planNumber || p.planNo || '';
       return {
@@ -220,7 +220,7 @@
     { label: 'Thành tiền', num: true, html: l => (nil(l.amount) ? '–' : U.money(l.amount)) },
   ];
   D.page({
-    id: 'menu-dish-detail', screen: 'menu-dish', table: 'Dishe', kind: 'profile', api: 'Dish/GetOverview', resource: 'Dish', docs: false,
+    id: 'menu-dish-detail', screen: 'menu-dish', table: 'Dishe', kind: 'profile', api: 'Dish/GetOverview', resource: 'Dish',
     head: o => {
       const m = o.dish || {}, r = o.activeRecipe;
       return {
@@ -279,7 +279,7 @@
   // ================= CHUYẾN GIAO =================
   const RFLOW = ['Planned', 'Loading', 'InTransit', 'Completed'];
   D.page({
-    id: 'log-route-detail', screen: 'log-route', table: 'DeliveryRoute', kind: 'doc', api: 'DeliveryRoute/GetOverview', resource: 'DeliveryRoute', related: false,
+    id: 'log-route-detail', screen: 'log-route', table: 'DeliveryRoute', kind: 'doc', api: 'DeliveryRoute/GetOverview', resource: 'DeliveryRoute',
     head: o => {
       const d = o.detail || {}, r = d.route || {}, s = r.status, edit = D.can('log-route', 'edit');
       return {

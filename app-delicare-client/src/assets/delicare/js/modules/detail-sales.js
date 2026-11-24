@@ -189,7 +189,7 @@
   const hoursText = h => { const a = Math.abs(Number(h) || 0); return a >= 48 ? U.num(a / 24, 1) + ' ngày' : U.num(a, 1) + ' giờ'; };
   const historyHtml = list => (list.length ? `<div class="timeline">${list.map(h => `<div class="tl ${h.newStatusName === 'Từ chối' ? 'red' : h.newStatusName && h.newStatusName !== h.oldStatusName ? '' : 'orange'}"><b>${esc(U.dt(h.eventAt))} · ${esc(h.newStatusName && h.newStatusName !== h.oldStatusName ? (h.oldStatusName ? h.oldStatusName + ' → ' : '') + h.newStatusName : 'Ghi chú')}</b><small>${[h.actorName && esc(h.actorName), h.comment && esc(h.comment)].filter(Boolean).join(' · ')}</small></div>`).join('')}</div>` : D.none);
   D.page({
-    id: 'log-complaint-detail', screen: 'log-complaint', table: 'CustomerComplaint', kind: 'doc', api: 'CustomerComplaint/GetOverview', resource: 'CustomerComplaint', related: false,
+    id: 'log-complaint-detail', screen: 'log-complaint', table: 'CustomerComplaint', kind: 'doc', api: 'CustomerComplaint/GetOverview', resource: 'CustomerComplaint',
     head: x => {
       const d = x.detail || {}, c = d.complaint || {}, acts = d.allowedActions || [], ed = D.can('log-complaint', 'edit');
       const nx = APP.nextStatus('CustomerComplaint', 'ComplaintStatus', c.complaintStatus);
@@ -250,9 +250,8 @@
   // ================================================================ ĐIỂM GIAO HÀNG (hồ sơ – không có thanh trạng thái)
   const mapUrl = l => (l.latitude !== null && l.latitude !== undefined && l.longitude !== null && l.longitude !== undefined ? `https://www.google.com/maps?q=${encodeURIComponent(l.latitude + ',' + l.longitude)}` : null);
   const windowText = l => (l.deliveryWindowFrom || l.deliveryWindowTo ? `${U.time(l.deliveryWindowFrom) || '…'}–${U.time(l.deliveryWindowTo) || '…'}` : '');
-  // GAP: CustomerDeliveryLocation chưa có trong CommonRegistry (máy chủ) → chưa có tab Lịch sử / Tài liệu / Liên quan chuẩn.
   D.page({
-    id: 'crm-location-detail', screen: 'crm-location', table: 'CustomerDeliveryLocation', kind: 'profile', api: 'CustomerDeliveryLocation/GetOverview',
+    id: 'crm-location-detail', screen: 'crm-location', table: 'CustomerDeliveryLocation', kind: 'profile', api: 'CustomerDeliveryLocation/GetOverview', resource: 'CustomerDeliveryLocation',
     head: x => {
       const l = x.location || {};
       return {
