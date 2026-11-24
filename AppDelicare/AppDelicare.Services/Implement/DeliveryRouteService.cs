@@ -1255,9 +1255,17 @@ namespace AppDelicare.Services.Implement
                                             ComplaintStatus = c.ComplaintStatus, ReceivedAt = c.ReceivedAt, Description = c.Description,
                                         }).ToListAsync();
                 var stops = detail.ListStop;
+                // Chuyến không có cột ca → suy từ ca của các dòng đơn trên các phiếu giao của chuyến (OrderLine.ShiftId).
+                var shiftNames = await (from d in db.DeliveryOrder.AsNoTracking()
+                                        where !d.IsDeleted && d.DeliveryRouteId == id
+                                        join l in db.OrderLine.AsNoTracking() on d.OrderId equals l.OrderId
+                                        where !l.IsDeleted && l.ShiftId != null
+                                        join sh in db.Shift.AsNoTracking() on l.ShiftId equals sh.Id
+                                        select sh.Name ?? sh.Code).Distinct().ToListAsync();
                 return Result<DeliveryRouteOverviewModel>.Success(new DeliveryRouteOverviewModel
                 {
                     Detail = detail,
+                    ShiftNames = shiftNames.Where(n => !string.IsNullOrWhiteSpace(n)).OrderBy(n => n).ToList()!,
                     StopCount = stops.Count,
                     DeliveredStopCount = stops.Count(s => s.StopStatus == DeliveryStopStatus.Delivered),
                     FailedStopCount = stops.Count(s => s.StopStatus == DeliveryStopStatus.Failed),

@@ -120,6 +120,8 @@ namespace AppDelicare.Model.Model
     public class DeliveryRouteOverviewModel
     {
         public DeliveryRouteDetailModel Detail { get; set; } = new();
+        /// <summary>Ca suy từ các đơn trên chuyến (DeliveryRoute không có ShiftId).</summary>
+        public List<string> ShiftNames { get; set; } = [];
         public int StopCount { get; set; }
         public int DeliveredStopCount { get; set; }
         public int FailedStopCount { get; set; }

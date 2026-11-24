@@ -285,7 +285,7 @@
       return {
         title: 'Chuyến ' + (r.routeNo || ''), no: r.routeNo, avatar: 'CX', avatarCls: 'biz',
         tags: [s ? UI.badge(s, 'DeliveryRoute', 'Status') : '', (d.listBlocker || []).length && ['Planned', 'Loading'].includes(s) ? UI.tag('Chưa đủ điều kiện xuất bến', 'orange') : ''],
-        meta: [r.name && esc(r.name), 'Ngày giao ' + D.dmy(r.deliveryDate), esc([d.licensePlate || d.vehicleCode, d.driverName && 'Tài xế ' + d.driverName].filter(Boolean).join(' · '))],
+        meta: [r.name && esc(r.name), 'Ngày giao ' + D.dmy(r.deliveryDate), (o.shiftNames || []).length && esc('Ca ' + o.shiftNames.join(', ')), esc([d.licensePlate || d.vehicleCode, d.driverName && 'Tài xế ' + d.driverName].filter(Boolean).join(' · '))],
         steps: D.stepsOf(RFLOW, s, [], st('DeliveryRoute', 'Status')),
         buttons: [
           { act: 'load', icon: 'package', label: 'Xếp hàng lên xe', ok: edit && s === 'Planned', primary: true },
@@ -309,7 +309,7 @@
       const d = o.detail || {}, r = d.route || {}, stops = d.listStop || [];
       const tempOk = !nil(d.departureTemperatureC) && d.departureTemperatureC >= (d.deliveryTempMinC || 0);
       box.innerHTML = D.split(
-        D.block('Thông tin chuyến', D.kv([['Số chuyến', esc(r.routeNo || '')], ['Tên chuyến', esc(r.name || '')], ['Ngày giao', D.dmy(r.deliveryDate)],
+        D.block('Thông tin chuyến', D.kv([['Số chuyến', esc(r.routeNo || '')], ['Tên chuyến', esc(r.name || '')], ['Ngày giao', D.dmy(r.deliveryDate)], ['Ca', esc((o.shiftNames || []).join(', ') || '–')],
           ['Xe', esc([d.licensePlate, d.vehicleCode].filter(Boolean).join(' · '))], ['Tài xế', esc(d.driverName || '')],
           ['Giờ kế hoạch', esc([U.time(r.plannedStart), r.plannedEnd && U.time(r.plannedEnd)].filter(Boolean).join(' – '))],
           ['Giờ thực tế', esc([r.actualStart && U.dt(r.actualStart), r.actualEnd && U.time(r.actualEnd)].filter(Boolean).join(' – '))],

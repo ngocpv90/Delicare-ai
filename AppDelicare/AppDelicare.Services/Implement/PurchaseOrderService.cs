@@ -702,11 +702,18 @@ namespace AppDelicare.Services.Implement
                     };
                 }).ToList();
                 decimal ordered = detail.ListLine.Sum(l => l.Quantity), received = detail.ListLine.Sum(l => l.ReceivedQuantity);
+                // % đã nhận: mỗi dòng tự đúng đơn vị của nó → gộp theo GIÁ TRỊ (Σ min(nhận, đặt) × giá / Σ đặt × giá) chứ không cộng số lượng khác đơn vị (GAP-PUR-01);
+                // PO chưa có giá → trung bình % từng dòng. Nhận vượt không làm % > 100.
+                var priced = detail.ListLine.Where(l => l.Quantity > 0 && l.UnitPrice > 0).ToList();
+                decimal pctBase = priced.Sum(l => l.Quantity * l.UnitPrice);
+                decimal receivedPercent = pctBase > 0
+                    ? priced.Sum(l => Math.Min(l.ReceivedQuantity, l.Quantity) * l.UnitPrice) / pctBase * 100m
+                    : detail.ListLine.Where(l => l.Quantity > 0).Select(l => Math.Min(l.ReceivedQuantity / l.Quantity, 1m) * 100m).DefaultIfEmpty(0m).Average();
                 return Result<PurchaseOrderOverviewModel>.Success(new PurchaseOrderOverviewModel
                 {
                     Detail = detail, ApprovalRequestId = await _approvalRequestService.LatestRequestIdAsync(PurchaseOrderStatus.BusinessType, id),
                     LineCount = detail.ListLine.Count, ReceiptCount = receipts.Count(r => r.Status != GoodsReceiptStatus.Cancelled),
-                    OrderedQuantity = ordered, ReceivedQuantity = received, ReceivedPercent = ordered > 0 ? Math.Round(received / ordered * 100m, 1) : 0m,
+                    OrderedQuantity = ordered, ReceivedQuantity = received, ReceivedPercent = Math.Round(receivedPercent, 1),
                     RemainingLineCount = detail.ListLine.Count(l => l.RemainingQuantity > 0),
                     RejectedQuantity = qc.Where(r => r.Status != GoodsReceiptStatus.Cancelled).Sum(r => r.RejectedQuantity),
                     ListReceiptQc = qc,

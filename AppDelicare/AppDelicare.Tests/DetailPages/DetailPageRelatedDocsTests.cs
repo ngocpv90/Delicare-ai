@@ -60,6 +60,51 @@ namespace AppDelicare.Tests.DetailPages
             (await Rel("GoodsReceipt", gr)).Should().Equal(("PurchaseOrder", 1), ("MaterialLot", 1), ("SupplierIssue", 0));
         }
 
+        [Fact]
+        public async Task PurchaseOrder_received_percent_is_value_weighted_across_units()
+        {
+            // 10 kg thịt × 100.000 đã nhận đủ; 1.000 g gia vị × 1.000 chưa nhận → theo giá trị 50 % (cộng số lượng khác đơn vị sẽ ra ~1 %).
+            string k = Guid.NewGuid().ToString("N")[..6];
+            Guid wh = Guid.NewGuid(), kg = Guid.NewGuid(), g = Guid.NewGuid(), meat = Guid.NewGuid(), spice = Guid.NewGuid(), sup = Guid.NewGuid(), po = Guid.NewGuid(), gr = Guid.NewGuid();
+            await factory.SeedAsync(db =>
+            {
+                db.Warehouse.Add(new Warehouse { Id = wh, Code = "KHO-P" + k, Name = "Kho " + k });
+                db.UnitMeasure.AddRange(new UnitMeasure { Id = kg, Code = "KG-P" + k, Name = "kg" }, new UnitMeasure { Id = g, Code = "G-P" + k, Name = "g" });
+                db.Ingredient.AddRange(new Ingredient { Id = meat, Code = "NL-P1" + k, Name = "Thịt " + k, BaseUnitId = kg }, new Ingredient { Id = spice, Code = "NL-P2" + k, Name = "Tiêu " + k, BaseUnitId = g });
+                db.Supplier.Add(new Supplier { Id = sup, Code = "NCC-P" + k, Name = "NCC " + k, Status = "Active" });
+                db.PurchaseOrder.Add(new PurchaseOrder { Id = po, PurchaseOrderNumber = "PO-P" + k, SupplierId = sup, OrderDate = Day, Status = "PartiallyReceived", TotalAmount = 2_000_000 });
+                db.PurchaseOrderLine.AddRange(
+                    new PurchaseOrderLine { Id = Guid.NewGuid(), PurchaseOrderId = po, IngredientId = meat, Quantity = 10, UnitId = kg, UomId = kg, UnitPrice = 100_000, LineAmount = 1_000_000 },
+                    new PurchaseOrderLine { Id = Guid.NewGuid(), PurchaseOrderId = po, IngredientId = spice, Quantity = 1000, UnitId = g, UomId = g, UnitPrice = 1_000, LineAmount = 1_000_000 });
+                db.GoodsReceipt.Add(new GoodsReceipt { Id = gr, ReceiptNumber = "PN-P" + k, PurchaseOrderId = po, SupplierId = sup, WarehouseId = wh, ReceiptDate = Day, Status = "Posted" });
+                db.GoodsReceiptLine.Add(new GoodsReceiptLine { Id = Guid.NewGuid(), GoodsReceiptId = gr, IngredientId = meat, UnitId = kg, UomId = kg, Quantity = 10, ReceivedQuantity = 10, AcceptedQuantity = 10, UnitCost = 100_000 });
+                return Task.CompletedTask;
+            });
+            using var admin = factory.CreateAuthorizedClient();
+            var o = (await admin.GetResultAsync($"/api/PurchaseOrder/GetOverview?id={po}")).Ok();
+            o.GetProperty("receivedPercent").GetDecimal().Should().Be(50);
+        }
+
+        [Fact]
+        public async Task Route_overview_shows_shift_derived_from_its_orders()
+        {
+            string k = Guid.NewGuid().ToString("N")[..6];
+            Guid shift = Guid.NewGuid(), cust = Guid.NewGuid(), order = Guid.NewGuid(), route = Guid.NewGuid();
+            await factory.SeedAsync(db =>
+            {
+                db.Shift.Add(new Shift { Id = shift, Code = "CA-S" + k, Name = "Ca trưa " + k, StartTime = new TimeSpan(10, 30, 0), EndTime = new TimeSpan(13, 30, 0), Status = "Active" });
+                db.Customer.Add(new Customer { Id = cust, CIF = Guid.NewGuid().ToString("N")[..10], CustomerType = "FACTORY", DisplayName = "KH", Code = "KH-S" + k, Name = "Khách " + k, BranchId = Guid.NewGuid(), Status = "Active" });
+                db.Order.Add(new Order { Id = order, OrderNumber = "DH-S" + k, OrderNo = "DH-S" + k, CustomerId = cust, OrderDate = Day, MealDate = Day, DeliveryDate = Day, Status = "Confirmed" });
+                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = order, ShiftId = shift, MealType = "LUNCH", Quantity = 100 });
+                db.DeliveryRoute.Add(new DeliveryRoute { Id = route, RouteNo = "CX-S" + k, Code = "CX-S" + k, DeliveryDate = Day, Status = "Planned" });
+                db.DeliveryOrder.Add(new DeliveryOrder { Id = Guid.NewGuid(), DeliveryNumber = "PG-S" + k, DeliveryNo = "PG-S" + k, OrderId = order, CustomerId = cust, DeliveryDate = Day, DeliveryRouteId = route, Status = "Planned" });
+                return Task.CompletedTask;
+            });
+            using var admin = factory.CreateAuthorizedClient();
+            var o = (await admin.GetResultAsync($"/api/DeliveryRoute/GetOverview?id={route}")).Ok();
+            o.GetProperty("shiftNames").EnumerateArray().Select(x => x.GetString()).Should().Equal("Ca trưa " + k);
+        }
+
         [Theory]
         [InlineData("Employee")]
         [InlineData("Ingredient")]
