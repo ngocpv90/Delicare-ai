@@ -338,7 +338,7 @@ namespace AppDelicare.Services.Implement
             var menus = await db.Menu.AsNoTracking()
                 .Where(m => !m.IsDeleted && m.MenuType == MenuScope.Common && m.Status == MenuStatus.Published
                     && (m.EffectiveFrom == null || m.EffectiveFrom <= day) && (m.EffectiveTo == null || m.EffectiveTo >= day))
-                .OrderByDescending(m => m.EffectiveFrom).ToListAsync();
+                .OrderByDescending(m => m.EffectiveFrom).ThenByDescending(m => m.CreatedDate).ToListAsync(); // UI-6.12: cùng ngày hiệu lực → thực đơn tạo sau
             if (string.IsNullOrWhiteSpace(mealType) || menus.Count == 0)
             {
                 return menus.FirstOrDefault();

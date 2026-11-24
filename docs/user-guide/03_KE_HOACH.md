@@ -4,7 +4,7 @@
 
 - Nhóm quyền: **OPS-PLAN** (1.1 Kế hoạch vận hành và Cost).
 - Bot dùng: **Vận hành** (phân hệ 📋 Kế hoạch).
-- Việc chính: món + công thức có phiên bản, giá thành chuẩn, thực đơn tuần, phân công thực đơn cho khách, đổi món, **lập kế hoạch sản xuất ngày mai**, theo dõi hao hụt và giá thành.
+- Việc chính: món + công thức có phiên bản, giá thành chuẩn, thực đơn tuần (một thực đơn chung cho mọi khách – D-90), đổi món, **lập kế hoạch sản xuất ngày mai**, theo dõi hao hụt và giá thành.
 
 ## 2. Màn hình được dùng
 
@@ -61,7 +61,6 @@ Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & á
 | Khi có món mới / đổi định lượng | Tạo phiên bản công thức → gửi duyệt → (COO) khóa & áp dụng | `menu-recipe` |
 | Khi giá NCC đổi | Tính lại giá thành chuẩn | `cost-standard` |
 | Hằng tuần | Lập / nhân bản thực đơn tuần → duyệt → công bố → xuất gửi khách | `menu-menu` |
-| Đầu hợp đồng | Gán thực đơn cho khách / điểm giao / loại suất | `menu-assignment` |
 | Khi khách xin đổi | Tạo yêu cầu đổi món | `menu-change-request` |
 | Sau 20:00 (đơn đã chốt) | Lập kế hoạch sản xuất ngày mai từ đơn → COO duyệt → **Ra lệnh SX** | `prod-plan` |
 | Sau sản xuất | Theo dõi hao hụt, giá thành lệnh, giá vốn suất | `prod-waste`, `cost-actual`, `cost-meal` |
@@ -113,10 +112,9 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
 
 Lỗi: *Đã có thực đơn chung … Đã công bố chồng thời gian hiệu lực…* (cho thực đơn chung cũ hết hiệu lực hoặc đổi ngày), *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để công bố – thiếu: …*, *Cảnh báo: món … chưa có công thức đang khóa – chưa tính được giá vốn*, *Thứ phải trong khoảng 1 (Thứ 2) – 7 (Chủ nhật)*, *Lựa chọn (SequenceNo) phải trong khoảng 1 – 9*, *Dòng thực đơn phải có loại suất*.
 
-### 4.5 Phân công thực đơn – `menu-assignment`
-- Danh sách phân công (khách / điểm giao / loại suất / thực đơn / hiệu lực) – thêm / sửa bằng form chung. **Chỉ cần cho khách ngoại lệ** (trường học, bệnh viện… có thực đơn riêng); khách khác dùng **thực đơn chung** của tuần.
-- **Tra thực đơn áp dụng**: chọn **Khách hàng***, Điểm giao, **Loại suất***, **Ngày ăn*** → **Tra cứu** → thực đơn + cấp phân công (*Gán theo điểm giao* / *Gán theo khách hàng* / *Thực đơn chung* khi khách không có phân công); bấm mã thực đơn để mở lịch.
-- Lỗi: *Chồng thời gian hiệu lực với phân công thực đơn khác…*, *Loại suất … không có trong suất của hợp đồng*, *Điểm giao không thuộc khách hàng này*, *Không có thực đơn được gán…*.
+### 4.5 Thực đơn riêng cho khách – đã bỏ (UI-6.12, D-90)
+- **Không còn thực đơn riêng theo khách**: mọi khách dùng **thực đơn chung Đã công bố** của tuần. Mục menu "Thực đơn riêng cho khách" đã ẩn; dữ liệu phân công cũ giữ lại nhưng không dùng.
+- Khách cần đổi món cho một đơn / ngày / ca: dùng **Yêu cầu đổi món** (4.6).
 
 ### 4.6 Yêu cầu đổi món – `menu-change-request`
 1. **Tạo yêu cầu đổi món** → hộp nhập:

@@ -1,6 +1,26 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.12 (D-90) DONE – bỏ thực đơn riêng theo khách, mọi khách dùng thực đơn chung** (nhánh `feat/UI-6.12-common-menu-only` từ UI-6.10).
+  - **Tra thực đơn:** `MenuAssignmentService.ResolveAsync` (mẫu tạo đơn, đăng ký suất tuần, phiếu đăng ký, tính nhu cầu, kế hoạch SX, bot `/thucdon`) **chỉ lấy thực đơn chung Đã công bố hiệu lực tại ngày ăn** (có món cho loại suất; cùng ngày hiệu lực → bản tạo sau). Bản tra cũ giữ tên `ResolveWithAssignmentAsync` (không dùng).
+  - **Menu:**
+    - `#/menu-assignment` ẩn: `IsActive = 0`, **giữ dòng + quyền**. CodeGen tách `HiddenNow` (menu) khỏi `Menu5HiddenLinks` (ma trận quyền) nên ẩn UI-6 không thu quyền.
+    - Sinh lại `ObjectMenu_seed.sql`, `D79_menu_regroup.sql`, `catalog.js`, `MENU5_MATRIX.md`, bảng HDSD 02 / 03.
+    - Script `DB/scripts/UI612_hide_menu_assignment.sql`. **Chạy thật DB dev:** ẩn 1 mục, UserRole 3.258 → 3.258, chạy lại = 0; `D79_menu_regroup.sql` chạy thử sau đó = 0 việc.
+  - **Giao diện:**
+    - Khách hàng 360 bỏ khối "Thực đơn được gán"; tab đổi tên "Dự báo".
+    - Thực đơn tuần bỏ thẻ "Khách hàng được gán" (trỏ màn đã ẩn).
+    - Form thực đơn ẩn trường loại thực đơn.
+    - Giữ Yêu cầu đổi món.
+  - **Phân công đang hiệu lực trên DB dev (để anh biết trước khi bỏ – D-90 c):** 85 dòng, **toàn bộ là dữ liệu [DEMO] của các lượt full-flow** (vd KHB-00002 … KHB-00008 "[DEMO] Khách toàn luồng …", thực đơn NU-2612xx-001, 1 ngày mỗi dòng); **0 khách thật**. Danh sách in trong lượt chạy script.
+  - **Kiểm tra:**
+    - Test: tra thực đơn bỏ qua phân công, trả thực đơn chung (`MenuCalendarTests`). Kịch bản đơn / dự báo / tính nhu cầu / luồng SQL toàn trình chuyển sang thực đơn chung (Duyệt → Công bố).
+    - `full-flow.http` §3 theo D-90.
+    - `dotnet test` **635 / 635**.
+    - Giao diện DB dev: sidebar 15 vai trò khớp ma trận (OPS-SCM thêm mục Phê duyệt vì đã gửi yêu cầu – đúng D-93 b); mẫu tạo đơn lấy `[DEMO]-NU-CHUNG`.
+  - **Chưa làm / còn rủi ro:**
+    - `tools/seed-demo` cần ngày trống trong hạn lô; DB dev đã kín tới 24/12 nên chưa chạy lại `full-flow.http` trên DB dev sau D-90. Luồng đã kiểm bằng test SQL `FullFlowSqlServerTests` (cùng bước, ngày 2099).
+    - Tab "Khách áp dụng" ở màn Thực đơn tuần mới (UI-6.11) sẽ không làm theo D-90.
 - **2026-11-24: UI-6.10 (D-88; luật CLAUDE.md §4.5 mục 1–2) DONE – hàng chỉ số co giãn theo số thẻ + giao diện tiếng Việt toàn ứng dụng** (nhánh `feat/UI-6.10-vi-kpi` từ CHART-1). **UI-6.0** (phần đầu gọn) đã xong từ UI-2R fix 2026-11-23 → mục 7g0 đủ.
   - **Hàng chỉ số (D-88 a, b):** mọi khung `.kpis` (cả `.kpis.compact`) tự mang `data-n` = số thẻ (quan sát DOM ở `core/ui.js` – không phải sửa từng chỗ ghép chuỗi). CSS:
     - < 2 thẻ → **ẩn hàng**; 2 → 1/2; 3 → 1/3; 4 → 1/4; ≥ 5 → 4 cột, thẻ thứ 5 xuống hàng rộng 1/4;

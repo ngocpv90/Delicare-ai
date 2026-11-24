@@ -315,7 +315,7 @@
     { label: 'Đối soát', screen: 'crm-reconciliation', render: reconTab },
     { label: 'Khay hộp', screen: 'log-container-return', render: packagingTab },
     { label: 'Phản ánh', screen: 'log-complaint', render: complaintTab },
-    { label: 'Dự báo và thực đơn', screen: 'crm-forecast', render: forecastTab },
+    { label: 'Dự báo', screen: 'crm-forecast', render: forecastTab }, // UI-6.12 (D-90): bỏ khối thực đơn riêng
     { label: 'Tài liệu', render: documentsTab },
     { label: 'Lịch sử', render: historyTab },
   ];

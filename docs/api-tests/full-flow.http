@@ -406,13 +406,13 @@ From={{day}}&To={{day}}&ListCustomerId={{customerId}}
 GET {{base}}/api/Forecast/GetMatrix?From={{day}}&To={{day}}&CustomerId={{customerId}}
 Authorization: Bearer {{token}}
 
-########## 3. THỰC ĐƠN TUẦN → PHÂN CÔNG → ĐƠN (mẫu có gợi ý → tạo → gửi → xác nhận → chốt)
-### 3.1 Thực đơn (luôn Nháp) – hiệu lực ngày @day
+########## 3. THỰC ĐƠN CHUNG → ĐƠN (mẫu có gợi ý → tạo → gửi → xác nhận → chốt) – UI-6.12 (D-90): mọi khách dùng thực đơn chung, không phân công riêng
+### 3.1 Thực đơn chung (luôn Nháp) – hiệu lực ngày @day
 POST {{base}}/api/Menu/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}TD&Name=[DEMO] Thực đơn tuần {{code}}TD&EffectiveFrom={{day}}&EffectiveTo={{day}}
+Code={{code}}TD&Name=[DEMO] Thực đơn tuần {{code}}TD&MenuType=COMMON&EffectiveFrom={{day}}&EffectiveTo={{day}}
 
 ###
 # @name menu
@@ -436,7 +436,7 @@ Content-Type: application/x-www-form-urlencoded
 
 MenuId={{menuId}}&DishId={{dishRiceId}}&MealType=TRUA&DayOfWeek={{dow}}&SequenceNo=1&SortOrder=2
 
-### 3.3 Lịch tuần + giá vốn + FC% (giá bán 35.000) → duyệt thực đơn → phân công cho khách / hợp đồng
+### 3.3 Lịch tuần + giá vốn + FC% (giá bán 35.000) → duyệt → công bố thực đơn chung
 GET {{base}}/api/Menu/GetCalendar?id={{menuId}}&mealType=TRUA&sellingPrice=35000
 Authorization: Bearer {{token}}
 
@@ -448,11 +448,11 @@ Content-Type: application/x-www-form-urlencoded
 Id={{menuId}}
 
 ###
-POST {{base}}/api/MenuAssignment/Insert
+POST {{base}}/api/Menu/Publish
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-CustomerId={{customerId}}&ContractId={{contractId}}&MenuId={{menuId}}&MealType=TRUA&EffectiveFrom={{day}}&EffectiveTo={{day}}
+Id={{menuId}}
 
 ### 3.4 Mẫu tạo đơn: hợp đồng, suất, đơn giá, thực đơn, giờ chốt 20:00 ngày trước, gợi ý = dự báo đã công bố (1000)
 # @expect data.contractId == {{contractId}}

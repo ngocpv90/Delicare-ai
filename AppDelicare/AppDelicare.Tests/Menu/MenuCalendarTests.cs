@@ -139,10 +139,11 @@ namespace AppDelicare.Tests.Menu
         }
 
         [Fact]
-        public async Task Assignment_resolve_prefers_location_level_and_rejects_overlap()
+        /// <summary>UI-6.12 (D-90): phân công thực đơn riêng vẫn kiểm hợp lệ khi ghi (dữ liệu cũ) nhưng KHÔNG được dùng khi tra – mọi khách nhận thực đơn chung Đã công bố.</summary>
+        public async Task Assignment_is_ignored_and_resolve_returns_common_menu()
         {
             Guid customer = Guid.NewGuid(), locA = Guid.NewGuid(), locB = Guid.NewGuid(), contract = Guid.NewGuid(), otherCustomer = Guid.NewGuid();
-            Guid menuCustomer = Guid.NewGuid(), menuLocation = Guid.NewGuid(), menuDraft = Guid.NewGuid();
+            Guid menuCustomer = Guid.NewGuid(), menuLocation = Guid.NewGuid(), menuDraft = Guid.NewGuid(), menuCommon = Guid.NewGuid(), dish = Guid.NewGuid();
             await _factory.SeedAsync(db =>
             {
                 db.Customer.AddRange(new Customer { Id = customer, Code = "ASG", Name = "Khách ASG", CIF = "ASG", CustomerType = "FACTORY", DisplayName = "ASG", Status = "Active" }, new Customer { Id = otherCustomer, Code = "ASG-2", Name = "Khách khác", CIF = "ASG-2", CustomerType = "FACTORY", DisplayName = "ASG-2", Status = "Active" });
@@ -154,7 +155,13 @@ namespace AppDelicare.Tests.Menu
                 db.Menu.AddRange(
                     new Model.Entity.Menu { Id = menuCustomer, Code = "ASG-KH", VersionNo = 1, Status = "Published" },
                     new Model.Entity.Menu { Id = menuLocation, Code = "ASG-DG", VersionNo = 1, Status = "Approved" },
-                    new Model.Entity.Menu { Id = menuDraft, Code = "ASG-NHAP", VersionNo = 1, Status = "Draft" });
+                    new Model.Entity.Menu { Id = menuDraft, Code = "ASG-NHAP", VersionNo = 1, Status = "Draft" },
+                    new Model.Entity.Menu { Id = menuCommon, Code = "ASG-CHUNG", VersionNo = 1, Status = "Published", MenuType = "COMMON", CreatedDate = DateTime.Now, EffectiveFrom = new DateTime(2026, 12, 7), EffectiveTo = new DateTime(2026, 12, 13) });
+                db.Dish.Add(new Dish { Id = dish, Code = "ASG-M", Name = "Món ASG" });
+                for (int dow = 1; dow <= 7; dow++)
+                {
+                    db.MenuLine.Add(new MenuLine { Id = Guid.NewGuid(), MenuId = menuCommon, DishId = dish, MealType = "TRUA", DayOfWeek = dow, SequenceNo = 1 });
+                }
                 return Task.CompletedTask;
             });
             using var c = _factory.CreateAuthorizedClient();
@@ -170,14 +177,12 @@ namespace AppDelicare.Tests.Menu
             (await Assign(menuDraft, null, new DateTime(2026, 12, 1), contractId: contract, cust: otherCustomer)).Fail("Hợp đồng không thuộc");
             (await Assign(menuDraft, locB, new DateTime(2026, 12, 20), new DateTime(2026, 12, 10))).Fail("hiệu lực từ");
 
-            var atA = (await c.GetResultAsync($"/api/MenuAssignment/Resolve?customerId={customer}&deliveryLocationId={locA}&mealType=TRUA&date=2026-12-10")).Ok();
-            atA.GetProperty("menuId").GetGuid().Should().Be(menuLocation);
-            atA.GetProperty("level").GetString().Should().Be("LOCATION");
-            var atB = (await c.GetResultAsync($"/api/MenuAssignment/Resolve?customerId={customer}&deliveryLocationId={locB}&mealType=TRUA&date=2026-12-10")).Ok();
-            atB.GetProperty("menuId").GetGuid().Should().Be(menuCustomer);
-            atB.GetProperty("level").GetString().Should().Be("CUSTOMER");
-            var afterLocation = (await c.GetResultAsync($"/api/MenuAssignment/Resolve?customerId={customer}&deliveryLocationId={locA}&mealType=TRUA&date=2027-01-05")).Ok();
-            afterLocation.GetProperty("menuId").GetGuid().Should().Be(menuCustomer, "phân công điểm giao hết hiệu lực → về cấp khách");
+            foreach (Guid? loc in new Guid?[] { locA, locB, null })
+            {
+                var r = (await c.GetResultAsync($"/api/MenuAssignment/Resolve?customerId={customer}&deliveryLocationId={loc}&mealType=TRUA&date=2026-12-10")).Ok();
+                r.GetProperty("menuId").GetGuid().Should().Be(menuCommon, "D-90: bỏ qua phân công điểm giao / khách – dùng thực đơn chung");
+                r.GetProperty("level").GetString().Should().Be("COMMON");
+            }
             (await c.GetResultAsync($"/api/MenuAssignment/Resolve?customerId={customer}&deliveryLocationId={locA}&mealType=SANG&date=2026-12-10")).Fail("Không có thực đơn");
         }
 
