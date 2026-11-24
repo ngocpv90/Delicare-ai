@@ -102,6 +102,7 @@ Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) 
 
 ### 4.6 Lô nguyên liệu – `scm-lot`
 - Chip lọc: **Tất cả / Còn tồn / Hết hạn trong 3 ngày / Trong 7 ngày / Trong 30 ngày**.
+- Bấm một dòng → **trang chi tiết lô** (mục 4.12).
 - Cột: Số lô, Nguyên liệu, NCC, Ngày nhận, HSD (đỏ nếu sắp hết), Tồn, Khả dụng, QC, Trạng thái.
 - Nút trên dòng:
   - **Truy xuất** → chuỗi *Nhà cung cấp → Đơn mua → Phiếu nhập → Lô → Phiếu xuất → Lệnh SX → Mẻ (+ "truy ngược mẻ") → Nhiệt độ → Lệnh đóng gói → Đơn hàng → Đơn giao → Khách hàng*.
@@ -142,6 +143,11 @@ Chọn khoảng ngày, tick **Chỉ dòng vượt ngưỡng cảnh báo** (> 5%)
 
 ### 4.11 Kho, khu, vị trí – `scm-warehouse`, `scm-zone`, `scm-location`
 Nút **Sơ đồ** trên dòng kho → các khu bảo quản (ngưỡng nhiệt độ) và vị trí trong khu.
+
+### 4.12 Trang chi tiết – phiếu nhập, lô (UI-6)
+Bấm một dòng ở **Phiếu nhập kho** hoặc **Lô nguyên liệu** → **trang chi tiết toàn màn** (đường dẫn riêng; Ctrl + bấm / chuột giữa → tab mới; **← Danh sách** giữ bộ lọc, trang, vị trí cuộn). Quyền xem = quyền xem màn danh sách; nút phần đầu là đúng các nút trên dòng, hiện theo trạng thái / quyền.
+- **Phiếu nhập:** phần đầu số phiếu + trạng thái + nhãn kết luận QC, NCC, kho, ngày nhận, PO (bấm mở trang đơn mua); tiến trình **Chờ QC → QC kết luận (Đạt / Đạt một phần / Từ chối) → Đã ghi sổ** (Hủy = đỏ). Nút **Ghi sổ nhập kho**, **Mở phiếu QC** (khi Chờ QC), **In phiếu**; ⋯ **Hủy phiếu nhập**. 4 thẻ: Số dòng (số lô đã tạo) · Dòng bị loại · **Lệch nhiệt độ** (vùng có điều kiện / loại / thiếu số đo) · Giá trị đạt (giá trị nhận). Tab: Tổng quan (thông tin + dòng + **lô đã tạo** – bấm số lô mở trang lô) · Dòng & QC (nhiệt độ, lô NCC, HSD, kết quả, "Dùng trước") · Kiểm tra cảm quan · Tài liệu · Lịch sử.
+- **Lô:** phần đầu số lô + trạng thái + QC + nhãn hạn (Đã hết hạn / Còn N ngày), nguyên liệu (bấm mở hồ sơ nguyên liệu), NCC, ngày nhận, HSD; khung vàng **Không xuất được** + lý do khi lô bị chặn. Nút **Truy xuất** (hộp truy xuất như ở danh sách), **Tạm giữ** / **Mở tạm giữ** (chỉ người có quyền Duyệt "Giữ / thả lô"). 4 thẻ: Tồn thực · Khả dụng (đã giữ) · Đã xuất (số nhập) · Hạn dùng còn bao nhiêu ngày. Tab: Tổng quan (nguồn: phiếu nhập, đơn mua, NSX, đơn giá nhập, số nhận / đạt; tồn theo kho; giao dịch gần nhất) · Giao dịch kho · **Truy xuất** (chuỗi NCC → … → khách hàng ngay trên trang) · Chứng từ liên quan · Lịch sử.
 
 ## 5. Trạng thái
 

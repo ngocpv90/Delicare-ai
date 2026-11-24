@@ -33,6 +33,7 @@ const SCRIPTS = [
   'modules/approval.js', // APR-UI-1 (D-81): màn Phê duyệt tổng – sau hr.js (giữ màn cũ cho chế độ DEMO)
   // UI-6 (D-80): trang chi tiết toàn màn – mỗi nhóm 1 tệp (khung: modules/detail-page.js).
   'modules/detail-stockcount.js',
+  'modules/detail-scm.js', // UI-6B
   'modules/admin.js',
   'modules/integration.js',
   'modules/explorer.js',

@@ -125,29 +125,45 @@
   function prLive(el) {
     APP.rowExtra(el, tr => {
       const r = Store.get('PurchaseRequest', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td || td.dataset.live) return; td.dataset.live = '1';
-      const no = esc(r.RequestNumber || '');
-      if (['Draft', 'Approved'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => askReason(`Hủy đề nghị mua <b>${no}</b>?`, note => run('PurchaseRequest/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy đề nghị mua')));
-      if (r.Status === 'Approved') rowBtn(td, 'primary', 'Lập PO', () => UI.confirm(`Lập đơn mua (PO) từ đề nghị <b>${no}</b>? Mỗi nhà cung cấp gợi ý sẽ có một PO nháp.`, () => Store.act('PurchaseRequest/ConvertToPurchaseOrder', { form: { Id: r.Id }, tables: PUR_TABLES }).then(x => {
-        if (!x.ok) return; const d = x.data || {}, pos = d.listPurchaseOrder || [], w = d.listWarning || [];
-        UI.toast('Đã lập ' + pos.length + ' PO: ' + pos.map(p => esc(p.purchaseOrderNumber)).join(', ') + (w.length ? '<br><span class="small">' + w.map(s => esc(s)).join('<br>') + '</span>' : ''), w.length ? 'warn' : 'ok'); APP.go('scm-po');
-      }), { ok: 'Lập PO' }));
-      if (r.Status === 'Draft') rowBtn(td, 'orange', 'Gửi duyệt', () => UI.confirm(`Gửi duyệt đề nghị mua <b>${no}</b>?`, () => run('PurchaseRequest/Submit', { Id: r.Id }, 'Đã gửi duyệt đề nghị mua'), { ok: 'Gửi duyệt' }));
+      if (['Draft', 'Approved'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => prAct.cancel(r));
+      if (r.Status === 'Approved') rowBtn(td, 'primary', 'Lập PO', () => prAct.convert(r));
+      if (r.Status === 'Draft') rowBtn(td, 'orange', 'Gửi duyệt', () => prAct.submit(r));
     });
   }
+  // UI-6 (D-80) nhóm B: thao tác dùng chung danh sách + trang chi tiết (modules/detail-scm.js) – r = { Id, RequestNumber }.
+  const prAct = {
+    cancel: r => askReason(`Hủy đề nghị mua <b>${esc(r.RequestNumber || '')}</b>?`, note => run('PurchaseRequest/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy đề nghị mua')),
+    convert: r => UI.confirm(`Lập đơn mua (PO) từ đề nghị <b>${esc(r.RequestNumber || '')}</b>? Mỗi nhà cung cấp gợi ý sẽ có một PO nháp.`, () => Store.act('PurchaseRequest/ConvertToPurchaseOrder', { form: { Id: r.Id }, tables: PUR_TABLES }).then(x => {
+      if (!x.ok) return; const d = x.data || {}, pos = d.listPurchaseOrder || [], w = d.listWarning || [];
+      UI.toast('Đã lập ' + pos.length + ' PO: ' + pos.map(p => esc(p.purchaseOrderNumber)).join(', ') + (w.length ? '<br><span class="small">' + w.map(s => esc(s)).join('<br>') + '</span>' : ''), w.length ? 'warn' : 'ok'); APP.go('scm-po');
+    }), { ok: 'Lập PO' }),
+    submit: r => UI.confirm(`Gửi duyệt đề nghị mua <b>${esc(r.RequestNumber || '')}</b>?`, () => run('PurchaseRequest/Submit', { Id: r.Id }, 'Đã gửi duyệt đề nghị mua'), { ok: 'Gửi duyệt' }),
+  };
+  APP.scmPr = prAct;
 
   // ---------- Đơn mua (PO) ----------
   function poLive(el) {
     APP.rowExtra(el, tr => {
       const r = Store.get('PurchaseOrder', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td || td.dataset.live) return; td.dataset.live = '1';
-      const no = esc(r.PurchaseOrderNumber || '');
-      rowBtn(td, '', 'In', () => Store.download('PurchaseOrder/ExportOrder', { id: r.Id }).then(x => { if (x.ok) UI.toast('Đã tải ' + esc(x.fileName || 'đơn đặt hàng'), 'ok'); }));
-      if (['Draft', 'Approved', 'Sent'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => askReason(`Hủy đơn mua <b>${no}</b>?`, note => run('PurchaseOrder/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy đơn mua')));
-      if (['PartiallyReceived', 'Received'].includes(r.Status)) rowBtn(td, '', 'Đóng', () => UI.confirm(`Đóng đơn mua <b>${no}</b>?`, () => run('PurchaseOrder/Close', { Id: r.Id }, 'Đã đóng đơn mua'), { ok: 'Đóng PO' }));
-      if (['Approved', 'Sent', 'PartiallyReceived'].includes(r.Status)) rowBtn(td, 'primary', 'Nhận hàng', () => receiveLive(r));
-      if (r.Status === 'Approved') rowBtn(td, 'orange', 'Gửi NCC', () => UI.confirm(`Đánh dấu đã gửi đơn <b>${no}</b> cho nhà cung cấp?`, () => run('PurchaseOrder/Send', { Id: r.Id }, 'Đã gửi nhà cung cấp'), { ok: 'Gửi NCC' }));
-      if (r.Status === 'Draft') rowBtn(td, 'orange', 'Gửi duyệt', () => UI.confirm(`Gửi duyệt đơn mua <b>${no}</b>?`, () => run('PurchaseOrder/Submit', { Id: r.Id }, 'Đã gửi duyệt đơn mua'), { ok: 'Gửi duyệt' }));
+      rowBtn(td, '', 'In', () => poAct.print(r));
+      if (['Draft', 'Approved', 'Sent'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => poAct.cancel(r));
+      if (['PartiallyReceived', 'Received'].includes(r.Status)) rowBtn(td, '', 'Đóng', () => poAct.close(r));
+      if (['Approved', 'Sent', 'PartiallyReceived'].includes(r.Status)) rowBtn(td, 'primary', 'Nhận hàng', () => poAct.receive(r));
+      if (r.Status === 'Approved') rowBtn(td, 'orange', 'Gửi NCC', () => poAct.send(r));
+      if (r.Status === 'Draft') rowBtn(td, 'orange', 'Gửi duyệt', () => poAct.submit(r));
     });
   }
+  // UI-6 (D-80) nhóm B: thao tác dùng chung danh sách + trang chi tiết – r = { Id, PurchaseOrderNumber }.
+  const poNo = r => esc(r.PurchaseOrderNumber || '');
+  const poAct = {
+    print: r => Store.download('PurchaseOrder/ExportOrder', { id: r.Id }).then(x => { if (x.ok) UI.toast('Đã tải ' + esc(x.fileName || 'đơn đặt hàng'), 'ok'); }),
+    cancel: r => askReason(`Hủy đơn mua <b>${poNo(r)}</b>?`, note => run('PurchaseOrder/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy đơn mua')),
+    close: r => UI.confirm(`Đóng đơn mua <b>${poNo(r)}</b>?`, () => run('PurchaseOrder/Close', { Id: r.Id }, 'Đã đóng đơn mua'), { ok: 'Đóng PO' }),
+    receive: r => receiveLive(r),
+    send: r => UI.confirm(`Đánh dấu đã gửi đơn <b>${poNo(r)}</b> cho nhà cung cấp?`, () => run('PurchaseOrder/Send', { Id: r.Id }, 'Đã gửi nhà cung cấp'), { ok: 'Gửi NCC' }),
+    submit: r => UI.confirm(`Gửi duyệt đơn mua <b>${poNo(r)}</b>?`, () => run('PurchaseOrder/Submit', { Id: r.Id }, 'Đã gửi duyệt đơn mua'), { ok: 'Gửi duyệt' }),
+  };
+  APP.scmPo = poAct;
   // Nhận hàng theo PO: số nhận, số lô NCC, hạn dùng, nhiệt độ từng dòng → GoodsReceipt/Create (JSON) → sinh phiếu QC.
   function receiveLive(po) {
     Promise.all([Store.query('PurchaseOrder/GetDetail', { id: po.Id }), Store.ensure('Warehouse')]).then(([x]) => {
@@ -182,13 +198,20 @@
   function grLive(el) {
     APP.rowExtra(el, tr => {
       const r = Store.get('GoodsReceipt', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td || td.dataset.live) return; td.dataset.live = '1';
-      const no = esc(r.ReceiptNumber || '');
-      if (!['Posted', 'Cancelled'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => askReason(`Hủy phiếu nhập <b>${no}</b>?`, note => run('GoodsReceipt/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy phiếu nhập')));
-      if (['Accepted', 'PartiallyAccepted', 'Rejected'].includes(r.Status)) rowBtn(td, 'primary', 'Ghi sổ', () => UI.confirm(`Ghi sổ phiếu nhập <b>${no}</b>? Hệ thống tạo lô, nhập kho phần đạt QC và cập nhật đơn mua.`, () => run('GoodsReceipt/Post', { Id: r.Id }, 'Đã ghi sổ nhập kho'), { ok: 'Ghi sổ nhập kho' }));
-      if (r.Status === 'QCPending') rowBtn(td, 'orange', 'Mở QC', () => APP.go('qc-inspection'));
-      if (['Accepted', 'PartiallyAccepted', 'Rejected', 'Posted'].includes(r.Status)) rowBtn(td, '', 'In', () => printDoc('GoodsReceipt/Print', r.Id, 'phiếu nhập kho'));
+      if (!['Posted', 'Cancelled'].includes(r.Status)) rowBtn(td, 'danger', 'Hủy', () => grAct.cancel(r));
+      if (['Accepted', 'PartiallyAccepted', 'Rejected'].includes(r.Status)) rowBtn(td, 'primary', 'Ghi sổ', () => grAct.post(r));
+      if (r.Status === 'QCPending') rowBtn(td, 'orange', 'Mở QC', () => grAct.qc(r));
+      if (['Accepted', 'PartiallyAccepted', 'Rejected', 'Posted'].includes(r.Status)) rowBtn(td, '', 'In', () => grAct.print(r));
     });
   }
+  // UI-6 (D-80) nhóm B: thao tác dùng chung danh sách + trang chi tiết – r = { Id, ReceiptNumber }.
+  const grAct = {
+    cancel: r => askReason(`Hủy phiếu nhập <b>${esc(r.ReceiptNumber || '')}</b>?`, note => run('GoodsReceipt/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy phiếu nhập')),
+    post: r => UI.confirm(`Ghi sổ phiếu nhập <b>${esc(r.ReceiptNumber || '')}</b>? Hệ thống tạo lô, nhập kho phần đạt QC và cập nhật đơn mua.`, () => run('GoodsReceipt/Post', { Id: r.Id }, 'Đã ghi sổ nhập kho'), { ok: 'Ghi sổ nhập kho' }),
+    qc: () => APP.go('qc-inspection'),
+    print: r => printDoc('GoodsReceipt/Print', r.Id, 'phiếu nhập kho'),
+  };
+  APP.scmGr = grAct;
 
   // ---------- Nhu cầu vật tư (MRP) ----------
   const ms = { plan: null };
@@ -238,6 +261,7 @@
   });
   const baseOpen = APP.openDetail;
   APP.openDetail = (t, id, f, opt) => {
+    if ((!opt || !opt.drawer) && APP.detailPageOf && APP.detailPageOf(t)) return baseOpen(t, id, f, opt); // UI-6 (D-80): bảng có trang chi tiết → mở trang
     if (t === 'PurchaseRequest' || t === 'PurchaseOrder' || t === 'GoodsReceipt' || t === 'StockCount' || t === 'MaterialIssue') {
       const lt = { PurchaseRequest: ['PurchaseRequestLine', 'PurchaseRequestId'], PurchaseOrder: ['PurchaseOrderLine', 'PurchaseOrderId'], GoodsReceipt: ['GoodsReceiptLine', 'GoodsReceiptId'], StockCount: ['StockCountLine', 'StockCountId'], MaterialIssue: ['MaterialIssueLine', 'MaterialIssueId'] }[t];
       const lines = Store.by(lt[0], lt[1], id); const cols = APP.pickCols(lt[0], 9).filter(c => c.k !== lt[1]);
@@ -334,8 +358,8 @@
       const no = esc(r.LotNumber || '');
       // MENU-5.2 (D-79): Giữ / thả lô = quyền Duyệt "Phê duyệt › Giữ / thả lô" (#/wf-inbox?type=scm-lot – QA); kho chỉ xem.
       if (!Store.canApprove('scm-lot')) return;
-      if (r.Status === 'Available') rowBtn(td, 'orange', 'Tạm giữ', () => askReason(`Tạm giữ lô <b>${no}</b>? Lô tạm giữ không được gợi ý và không xuất kho được.`, note => actInv('MaterialLot/Hold', { form: { Id: r.Id, Reason: note } }, 'Đã tạm giữ lô')));
-      if (r.Status === 'OnHold') rowBtn(td, '', 'Mở giữ', () => UI.confirm(`Mở tạm giữ lô <b>${no}</b>? Lô trở lại khả dụng và được xuất kho.`, () => actInv('MaterialLot/Release', { form: { Id: r.Id } }, 'Đã mở tạm giữ lô'), { ok: 'Mở tạm giữ' }));
+      if (r.Status === 'Available') rowBtn(td, 'orange', 'Tạm giữ', () => lotAct.hold(r));
+      if (r.Status === 'OnHold') rowBtn(td, '', 'Mở giữ', () => lotAct.release(r));
     });
     if (live) {
       el.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => { lotS.f = b.dataset.lf; APP.refresh(); });
@@ -343,6 +367,14 @@
     }
     if (params.id && !(lotS.traced === params.id && Date.now() - lotS.tracedAt < 3000)) { lotS.traced = params.id; lotS.tracedAt = Date.now(); setTimeout(() => trace(params.id), 50); }
   });
+  // UI-6 (D-80) nhóm B: thao tác lô dùng chung danh sách + trang chi tiết – r = { Id, LotNumber }.
+  const lotAct = {
+    hold: r => askReason(`Tạm giữ lô <b>${esc(r.LotNumber || '')}</b>? Lô tạm giữ không được gợi ý và không xuất kho được.`, note => actInv('MaterialLot/Hold', { form: { Id: r.Id, Reason: note } }, 'Đã tạm giữ lô')),
+    release: r => UI.confirm(`Mở tạm giữ lô <b>${esc(r.LotNumber || '')}</b>? Lô trở lại khả dụng và được xuất kho.`, () => actInv('MaterialLot/Release', { form: { Id: r.Id } }, 'Đã mở tạm giữ lô'), { ok: 'Mở tạm giữ' }),
+    trace: id => trace(id),
+    batchTrace: id => batchTrace(id),
+  };
+  APP.scmLot = lotAct;
   function trace(lid) {
     if (Store.isLive) return traceLive(lid);
     const l = Store.get('MaterialLot', lid); if (!l) return;

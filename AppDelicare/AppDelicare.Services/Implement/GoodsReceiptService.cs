@@ -570,6 +570,34 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn phiếu nhập – dùng lại DetailAsync (GetDetail) + số dòng loại / lệch nhiệt độ + số lô + giá trị nhận / đạt.</summary>
+        public async Task<IResult<GoodsReceiptOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var detail = await DetailAsync(id);
+                if (detail == null)
+                {
+                    return Result<GoodsReceiptOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var lines = detail.ListLine;
+                return Result<GoodsReceiptOverviewModel>.Success(new GoodsReceiptOverviewModel
+                {
+                    Detail = detail, LineCount = lines.Count,
+                    RejectedLineCount = lines.Count(l => l.RejectedQuantity > 0 || string.Equals(l.QualityStatus, IncomingQcResult.KhongDat, StringComparison.OrdinalIgnoreCase)),
+                    TemperatureIssueCount = lines.Count(l => l.TemperatureZone is ReceivingTempZone.Conditional or ReceivingTempZone.Reject or ReceivingTempZone.Missing),
+                    LotCount = lines.Count(l => l.MaterialLotId != null),
+                    ReceivedValue = lines.Sum(l => l.ReceivedQuantity * (l.UnitCost ?? 0m)),
+                    AcceptedValue = lines.Sum(l => l.AcceptedQuantity * (l.UnitCost ?? 0m)),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<GoodsReceiptDetailModel?> DetailAsync(Guid id)
         {
             var db = _unitOfWork.DbContext;

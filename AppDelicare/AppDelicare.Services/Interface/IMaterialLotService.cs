@@ -19,6 +19,8 @@ namespace AppDelicare.Services.Interface
         // BE2.1 (spec 7.5) – danh sách lô + truy xuất xuôi.
         public Task<IResults<AppDelicare.Model.Model.MaterialLotListItemModel>> GetList(AppDelicare.Model.Request.Custom.MaterialLotListRequest request);
         public Task<IResult<AppDelicare.Model.Model.TraceModel>> Trace(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn lô – nguồn, tồn theo kho, hạn dùng / chặn xuất, giao dịch kho.</summary>
+        public Task<IResult<AppDelicare.Model.Model.MaterialLotOverviewModel>> GetOverview(Guid id);
         /// <summary>T16: tạm giữ lô (Available → OnHold), lý do bắt buộc.</summary>
         public Task<IResult<MaterialLot>> Hold(MaterialLotHoldRequest request);
         /// <summary>T16: mở lô tạm giữ (OnHold → Available).</summary>

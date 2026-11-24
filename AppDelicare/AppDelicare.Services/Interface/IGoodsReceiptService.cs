@@ -23,6 +23,8 @@ namespace AppDelicare.Services.Interface
         /// <summary>T15: hủy phiếu chưa ghi sổ (lý do bắt buộc).</summary>
         public Task<IResult<GoodsReceiptDetailModel>> Cancel(PurchaseCancelRequest request);
         public Task<IResult<GoodsReceiptDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – chi tiết + số dòng loại / lệch nhiệt độ + số lô + giá trị.</summary>
+        public Task<IResult<GoodsReceiptOverviewModel>> GetOverview(Guid id);
         /// <summary>T15: chi tiết dùng chung cho QcInspection/GetDetail.</summary>
         public Task<GoodsReceiptDetailModel?> DetailAsync(Guid id);
     }

@@ -18,6 +18,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<PurchaseOrder>> GetById(Guid id);
         /// <summary>T15: chi tiết PO (dòng + đã nhận / đang chờ / còn lại, phiếu nhập, yêu cầu duyệt, thao tác được phép).</summary>
         public Task<IResult<PurchaseOrderDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – chi tiết + yêu cầu duyệt mới nhất + tiến độ nhận + phiếu nhập kèm QC.</summary>
+        public Task<IResult<PurchaseOrderOverviewModel>> GetOverview(Guid id);
         /// <summary>T15: sửa toàn bộ dòng PO Nháp, tính lại tổng tiền.</summary>
         public Task<IResult<PurchaseOrderDetailModel>> UpdateLines(PurchaseOrderUpdateLinesRequest request);
         /// <summary>T15: Nháp → Chờ duyệt (ApprovalRequest PURCHASE_ORDER) hoặc tự duyệt dưới ngưỡng cấu hình.</summary>

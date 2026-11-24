@@ -271,6 +271,33 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn đề nghị mua – dùng lại DetailAsync (GetDetail) + yêu cầu duyệt mới nhất + người đề nghị + độ phủ NCC.</summary>
+        public async Task<IResult<PurchaseRequestOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var detail = await DetailAsync(id);
+                if (detail == null)
+                {
+                    return Result<PurchaseRequestOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var pr = detail.PurchaseRequest;
+                string? requester = pr.RequestedByEmployeeId is { } eid
+                    ? await _unitOfWork.DbContext.Employee.AsNoTracking().Where(e => e.Id == eid).Select(e => e.FullName).FirstOrDefaultAsync() : null;
+                return Result<PurchaseRequestOverviewModel>.Success(new PurchaseRequestOverviewModel
+                {
+                    Detail = detail, ApprovalRequestId = await _approvalRequestService.LatestRequestIdAsync(PurchaseRequestStatus.BusinessType, id), RequesterName = requester,
+                    LineCount = detail.ListLine.Count, SupplierCount = detail.ListLine.Where(l => l.SupplierId != null).Select(l => l.SupplierId).Distinct().Count(),
+                    NoSupplierLineCount = detail.ListLine.Count(l => l.SupplierId == null || l.UnitPrice == null), PurchaseOrderCount = detail.ListPurchaseOrder.Count,
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         private async Task<PurchaseRequestDetailModel?> DetailAsync(Guid id)
         {
             var db = _unitOfWork.DbContext;

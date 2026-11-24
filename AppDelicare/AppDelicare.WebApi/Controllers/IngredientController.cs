@@ -112,6 +112,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – quyền Xem scm-ingredient (PermissionConvention: Get* = Xem).</summary>
+        [HttpGet("GetOverview")]
+        public async Task<IActionResult> GetOverview(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetOverview(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T45R: tồn khả dụng theo kho và cờ dưới mức tối thiểu.</summary>
         [HttpGet("GetStock")]
         public async Task<IActionResult> GetStock(Guid id)

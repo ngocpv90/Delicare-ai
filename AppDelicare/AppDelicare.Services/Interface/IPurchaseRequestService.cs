@@ -18,6 +18,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<PurchaseRequest>> GetById(Guid id);
         /// <summary>T15: chi tiết đề nghị mua (dòng + NCC gợi ý + tiền ước tính + PO đã lập).</summary>
         public Task<IResult<PurchaseRequestDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – chi tiết + yêu cầu duyệt mới nhất + người đề nghị + độ phủ NCC.</summary>
+        public Task<IResult<PurchaseRequestOverviewModel>> GetOverview(Guid id);
         /// <summary>T15 (spec 7.2 convert-to-po): lập PO Nháp theo NCC gợi ý, đề nghị → Converted.</summary>
         public Task<IResult<PurchaseRequestConvertResultModel>> ConvertToPurchaseOrder(PurchaseRequestConvertRequest request);
         /// <summary>T15: hủy đề nghị Nháp / Đã duyệt (lý do bắt buộc).</summary>

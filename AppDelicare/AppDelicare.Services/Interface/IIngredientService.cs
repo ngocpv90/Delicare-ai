@@ -18,5 +18,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<Ingredient>> GetById(Guid id);
         // <summary>T45R: tồn khả dụng + dưới mức tối thiểu.</summary>
         public Task<IResult<IngredientStockModel>> GetStock(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – tồn theo kho, lô, giá mua gần nhất, bảng giá NCC, lịch sử giá, giao dịch kho.</summary>
+        public Task<IResult<IngredientOverviewModel>> GetOverview(Guid id);
     }
 }

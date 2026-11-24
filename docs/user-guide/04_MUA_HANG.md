@@ -80,7 +80,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 6. **In phiếu trước sản xuất**: tải phiếu nguyên liệu cần cho ngày.
 
 ### 4.2 Đề nghị mua – `scm-pr`
-Danh sách: Số đề nghị, Ngày, Ngày cần, Người đề nghị, Số dòng, Giá trị ước tính, Trạng thái. Bấm dòng → tab **Chi tiết dòng** (nguyên liệu, số lượng, ĐVT, ngày cần).
+Danh sách: Số đề nghị, Ngày, Ngày cần, Người đề nghị, Số dòng, Giá trị ước tính, Trạng thái. Bấm dòng → **trang chi tiết đề nghị mua** (mục 4.6).
 
 | Nút trên dòng | Khi nào | Kết quả |
 |---|---|---|
@@ -91,7 +91,7 @@ Danh sách: Số đề nghị, Ngày, Ngày cần, Người đề nghị, Số d
 Đề nghị mua thường được **sinh từ MRP**. Tạo tay bằng **Tạo mới** tạo phần đầu phiếu, rồi mở phiếu (Nháp) → **Sửa dòng nguyên liệu**: thêm / sửa / xóa dòng (nguyên liệu, số lượng, đơn vị, ngày cần, ghi chú; mỗi nguyên liệu một dòng).
 
 ### 4.3 Đơn mua (PO) – `scm-po`
-Danh sách: Số PO, NCC, Đề nghị mua, Ngày đặt, Giao dự kiến, Giá trị, Trạng thái. Bấm dòng → tab **Chi tiết dòng**.
+Danh sách: Số PO, NCC, Đề nghị mua, Ngày đặt, Giao dự kiến, Giá trị, Trạng thái. Bấm dòng → **trang chi tiết đơn mua** (mục 4.6).
 
 | Nút trên dòng | Khi nào | Kết quả |
 |---|---|---|
@@ -116,6 +116,12 @@ Sửa dòng PO Nháp: mở PO → **Sửa dòng hàng** (nguyên liệu, số l�
 ### 4.5 Nguyên liệu, đơn vị – `scm-ingredient`, `scm-uom`, `scm-uom-conversion`
 Danh mục chung. Lưu ý khi nhập nguyên liệu: kiểu bảo quản (Mát / Đông lạnh / thường – dùng để kiểm nhiệt độ nhận hàng), số ngày hạn dùng, tỷ lệ thu hồi, tồn an toàn. Quy đổi đơn vị phải có cho mọi cặp đơn vị công thức ↔ đơn vị tồn kho, thiếu thì MRP bỏ qua phần đó.
 - *Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0*, *Tỷ lệ thu hồi phải trong (0, 100]*, *Hệ số quy đổi phải lớn hơn 0*, *Cặp quy đổi đơn vị này đã tồn tại*.
+
+### 4.6 Trang chi tiết – đề nghị mua, đơn mua, nguyên liệu (UI-6)
+Bấm một dòng ở **Đề nghị mua**, **Đơn mua** hoặc **Nguyên liệu** → mở **trang chi tiết toàn màn** (đường dẫn riêng, gửi được cho người khác; Ctrl + bấm hoặc bấm chuột giữa → mở tab mới). **← Danh sách** quay lại đúng bộ lọc, trang và vị trí cuộn đang xem. Quyền xem trang = quyền xem màn danh sách. Nút trên phần đầu là **đúng các nút trên dòng** của danh sách và chỉ hiện khi trạng thái / quyền cho phép (nút phụ nằm trong ⋯).
+- **Đơn mua:** phần đầu số PO + trạng thái + nhãn "Giám đốc duyệt" (PO vượt ngưỡng), NCC, ngày đặt / giao dự kiến, đề nghị mua gốc (bấm để mở); **thanh tiến trình** Nháp → Chờ duyệt → Đã duyệt → Đã gửi NCC → Nhận một phần → Đã nhận đủ → Đóng (Hủy = đỏ). Nút **Nhận hàng**, **Gửi duyệt**, **Gửi NCC**, **Đóng PO**, **In đơn**; ⋯ **Hủy đơn mua**, **Mở màn Phê duyệt**. 4 thẻ: Giá trị gồm VAT (chưa VAT) · Đã nhận % (số dòng còn chờ) · Phiếu nhập · Bị loại QC. Tab: Tổng quan · Dòng hàng (đặt / đơn giá / VAT / đã nhận / chờ QC / còn lại) · **Phiếu nhập & QC** (mỗi phiếu: kho, phiếu QC, kết quả, nhận / đạt / loại – bấm số phiếu mở trang phiếu nhập) · Duyệt (khi đã gửi duyệt) · Chứng từ liên quan · Tài liệu · Lịch sử.
+- **Đề nghị mua:** tiến trình Nháp → Chờ duyệt → Đã duyệt → Đã lập PO (Từ chối / Hủy = đỏ); nút **Lập PO**, **Gửi duyệt**; ⋯ **Hủy**, **Mở màn Phê duyệt**. 4 thẻ: Số dòng · Giá trị ước tính · NCC gợi ý (số dòng chưa có giá) · PO đã lập. Tab: Tổng quan · Dòng đề nghị (NCC gợi ý, đơn giá, ước tính) · Đơn mua đã lập · Duyệt · Tài liệu · Lịch sử.
+- **Nguyên liệu (hồ sơ):** phần đầu tên, mã, nhóm, ĐVT, kiểu bảo quản, NCC ưu tiên; nhãn **Dưới tồn tối thiểu** / **N lô sắp hết hạn**. Nút **Sửa** (mở hộp sửa như cũ), **Danh sách lô**. 4 thẻ: Tồn khả dụng (tối thiểu) · Lô còn tồn (số lô hết hạn trong số ngày cảnh báo của chính sách tồn, mặc định 3) · **Giá mua gần nhất** (= đơn giá dòng PO đã duyệt mới nhất, không tính PO Nháp / Hủy) · Nhà cung cấp có bảng giá đang hiệu lực. Tab: Tổng quan (thông tin + tồn theo kho + lô còn tồn theo thứ tự nên xuất trước) · Lô · Giao dịch kho (100 dòng mới nhất) · **Giá & nhà cung cấp** (bảng giá NCC + lịch sử giá 30 dòng PO gần nhất) · Chứng từ liên quan · Lịch sử.
 
 ## 5. Trạng thái
 

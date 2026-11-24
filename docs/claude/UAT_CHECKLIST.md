@@ -3,6 +3,23 @@
 Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) hoặc VS Code REST Client (`docs/api-tests/*.http`).
 Đánh dấu [x] khi đạt; ghi lỗi / góp ý vào cột "Ghi chú" hoặc báo Claude Code.
 
+## TRANG CHI TIẾT TOÀN MÀN – MUA HÀNG / KHO (UI-6.2 nhóm B, D-80 – 2026-11-23) · test: `DetailPages/ScmOverviewTests.cs` · HDSD `04_MUA_HANG.md` mục 4.6, `05_KHO.md` mục 4.12
+
+| # | Kịch bản | Thao tác | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Mở trang | Ở Đơn mua / Phiếu nhập / Đề nghị mua / Lô / Nguyên liệu bấm 1 dòng | Mở trang toàn màn `#/scm-…-detail?id=…` (không còn ngăn trượt); F5 vẫn đúng bản ghi; dán đường dẫn sang trình duyệt khác (cùng quyền) mở được | [ ] | |
+| 2 | Quay lại | Lọc + sang trang 2 + cuộn xuống → mở 1 dòng → **← Danh sách** | Về đúng bộ lọc, trang, vị trí cuộn | [ ] | |
+| 3 | Tab mới | Ctrl + bấm (hoặc chuột giữa) 1 dòng PO | Trang chi tiết mở ở tab mới, danh sách giữ nguyên | [ ] | |
+| 4 | PO đang nhận | Mở PO Nhận một phần | Tiến trình tô tới "Nhận một phần"; thẻ Đã nhận % khớp tab Dòng hàng; tab Phiếu nhập & QC có phiếu + kết quả QC; bấm số phiếu → trang phiếu nhập; nút **Nhận hàng** mở đúng hộp nhận hàng của danh sách | [ ] | |
+| 5 | PO Nháp → duyệt | PO Nháp → **Gửi duyệt** trên trang | Trang tải lại: trạng thái Chờ duyệt, có tab **Duyệt** (các cấp, hạn), ⋯ Mở màn Phê duyệt | [ ] | |
+| 6 | Phiếu nhập | Mở phiếu Đạt một phần → **Ghi sổ nhập kho** | Ghi sổ xong trang hiện Đã ghi sổ, khối **Lô đã tạo** có số lô (bấm → trang lô); thẻ Lệch nhiệt độ đếm đúng dòng vùng có điều kiện / loại | [ ] | |
+| 7 | Đề nghị mua | Đề nghị Đã duyệt → **Lập PO** | Báo danh sách PO; đề nghị → Đã lập PO; tab Đơn mua đã lập có PO mới | [ ] | |
+| 8 | Lô | Mở lô từ trang phiếu nhập → tab **Truy xuất** | Chuỗi NCC → đơn mua → phiếu nhập → lô → phiếu xuất → … hiện ngay trên trang; QA có quyền thấy **Tạm giữ** → giữ lô → trạng thái Tạm giữ + khung "Không xuất được" | [ ] | kho không thấy nút Tạm giữ |
+| 9 | Nguyên liệu | Mở 1 nguyên liệu có tồn | 4 thẻ: tồn khả dụng (đỏ nếu dưới tối thiểu), lô còn tồn / sắp hết hạn, **giá mua gần nhất** = PO đã duyệt mới nhất (không lấy PO Nháp), số NCC; tab Giá & nhà cung cấp có bảng giá + lịch sử giá; **Sửa** mở hộp sửa cũ | [ ] | |
+| 10 | Quyền | Tài khoản chỉ xem Đơn mua mở trang Lô (dán đường dẫn) | Báo không có quyền (API 403); tài khoản xem Lô mở được | [ ] | |
+| 11 | Id sai / rỗng | Sửa id trên đường dẫn thành id không có; mở PO / phiếu nhập chưa có dòng | Id sai: "Không tìm thấy bản ghi" (không trắng trang); chứng từ rỗng: trang mở, bảng "Chưa có dữ liệu" | [ ] | |
+| 12 | Điện thoại | Mở trang PO trên điện thoại | Chỉ nút chính + ⋯; thẻ chỉ số 2 cột; bảng cuộn ngang trong khung | [ ] | |
+
 ## PHÊ DUYỆT TỔNG (APR-UI-1, D-81 – 2026-11-23) · test: `Approval/ApprovalHubTests.cs` · ảnh: `docs/frontend-handoff/assets/apr-ui-1/screens/` · HDSD `12_QUAN_LY_DUYET.md`
 
 **Đo (D-81 k):** COO + trưởng mua hàng dùng màn Phê duyệt 1 ngày; ghi số lần bấm / yêu cầu bình thường (mục tiêu **≤ 2**) và thời gian / yêu cầu có cảnh báo (mục tiêu **≤ 30 giây**). Cuối ngày gọi `GET api/ApprovalRequest/GetStats` (admin / người xem hộp chung) – số yêu cầu, % duyệt nguyên trạng, thời gian chờ TB theo loại – dán vào cột Ghi chú.

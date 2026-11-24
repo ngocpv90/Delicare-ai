@@ -314,6 +314,54 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>
+        /// UI-6 (D-80): trang chi tiết toàn màn lô – nguồn (NCC, dòng phiếu nhập → phiếu nhập → PO), tồn theo kho, hạn dùng / lý do chặn xuất (InventoryLotRules),
+        /// giao dịch kho của lô (mới nhất trước, tối đa 100). Truy xuất xuôi vẫn ở MaterialLot/Trace.
+        /// </summary>
+        public async Task<IResult<MaterialLotOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var db = _unitOfWork.DbContext;
+                var lot = await db.MaterialLot.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id && !l.IsDeleted);
+                if (lot == null)
+                {
+                    return Result<MaterialLotOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                DateTime today = _clock.Today;
+                var ingredient = await db.Ingredient.AsNoTracking().FirstOrDefaultAsync(i => i.Id == lot.IngredientId);
+                Guid? unitId = ingredient?.BaseUnitId ?? ingredient?.BaseUomId;
+                var grLine = lot.GoodsReceiptLineId is { } glId ? await db.GoodsReceiptLine.AsNoTracking().FirstOrDefaultAsync(l => l.Id == glId) : null;
+                var receipt = grLine == null ? null : await db.GoodsReceipt.AsNoTracking().FirstOrDefaultAsync(r => r.Id == grLine.GoodsReceiptId);
+                var po = receipt?.PurchaseOrderId is { } poId ? await db.PurchaseOrder.AsNoTracking().FirstOrDefaultAsync(p => p.Id == poId) : null;
+                Guid? supplierId = lot.SupplierId ?? receipt?.SupplierId;
+                var balances = await ScmOverviewRules.BalancesAsync(db, db.InventoryBalance.AsNoTracking().Where(b => b.MaterialLotId == id || (b.MaterialLotId == null && b.LotId == id)));
+                var txQuery = db.InventoryTransaction.AsNoTracking().Where(t => t.MaterialLotId == id || (t.MaterialLotId == null && t.LotId == id));
+                return Result<MaterialLotOverviewModel>.Success(new MaterialLotOverviewModel
+                {
+                    Lot = lot, StatusName = MaterialLotStatus.Label(lot.Status), IngredientCode = ingredient?.Code, IngredientName = ingredient?.Name,
+                    UnitName = unitId is { } u ? await db.UnitMeasure.AsNoTracking().Where(x => x.Id == u).Select(x => x.Name).FirstOrDefaultAsync() : null,
+                    SupplierId = supplierId,
+                    SupplierName = supplierId is { } s ? await db.Supplier.AsNoTracking().Where(x => x.Id == s).Select(x => x.Name).FirstOrDefaultAsync() : null,
+                    GoodsReceiptId = receipt?.Id, GoodsReceiptNumber = receipt?.ReceiptNumber ?? receipt?.ReceiptNo,
+                    PurchaseOrderId = po?.Id, PurchaseOrderNumber = po?.PurchaseOrderNumber ?? po?.PONo,
+                    ReceivedQuantity = grLine?.ReceivedQuantity, AcceptedQuantity = grLine?.AcceptedQuantity,
+                    OnHandQuantity = balances.Sum(b => b.OnHandQuantity), ReservedQuantity = balances.Sum(b => b.ReservedQuantity), AvailableQuantity = balances.Sum(b => b.AvailableQuantity),
+                    IssuedQuantity = await txQuery.Where(t => !t.IsDeleted).SumAsync(t => t.QuantityOut),
+                    DaysToExpiry = lot.ExpiryDate is { } e ? (int)(e.Date - today).TotalDays : null,
+                    IsExpired = lot.ExpiryDate is { } x2 && x2.Date < today,
+                    BlockReason = InventoryLotRules.BlockReason(lot, today),
+                    ListBalance = balances,
+                    ListTransaction = await ScmOverviewRules.TransactionsAsync(db, txQuery, 100),
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResult<MaterialLot>> GetById(Guid id)
         {
             try

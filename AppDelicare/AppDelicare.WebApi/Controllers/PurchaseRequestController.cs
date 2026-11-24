@@ -113,6 +113,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – quyền Xem scm-pr (PermissionConvention: Get* = Xem).</summary>
+        [HttpGet("GetOverview")]
+        public async Task<IActionResult> GetOverview(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetOverview(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T15: chi tiết đề nghị mua – dòng + NCC gợi ý + tiền ước tính + PO đã lập.</summary>
         [HttpGet("GetDetail")]
         public async Task<IActionResult> GetDetail(Guid id)

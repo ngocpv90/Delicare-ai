@@ -671,6 +671,54 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn PO – dùng lại DetailAsync (GetDetail) + yêu cầu duyệt mới nhất + tiến độ nhận + phiếu nhập kèm QC.</summary>
+        public async Task<IResult<PurchaseOrderOverviewModel>> GetOverview(Guid id)
+        {
+            try
+            {
+                var detail = await DetailAsync(id);
+                if (detail == null)
+                {
+                    return Result<PurchaseOrderOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                }
+                var db = _unitOfWork.DbContext;
+                var receiptIds = detail.ListGoodsReceipt.Select(r => r.Id).ToList();
+                var receipts = await db.GoodsReceipt.AsNoTracking().Where(r => receiptIds.Contains(r.Id)).ToListAsync();
+                var whIds = receipts.Select(r => r.WarehouseId).Distinct().ToList();
+                var warehouses = await db.Warehouse.AsNoTracking().Where(w => whIds.Contains(w.Id)).ToDictionaryAsync(w => w.Id, w => w.Name);
+                var grLines = await db.GoodsReceiptLine.AsNoTracking().Where(l => receiptIds.Contains(l.GoodsReceiptId) && !l.IsDeleted).ToListAsync();
+                var inspections = (await db.QcInspection.AsNoTracking().Where(q => receiptIds.Contains(q.GoodsReceiptId) && !q.IsDeleted).ToListAsync())
+                    .GroupBy(q => q.GoodsReceiptId).ToDictionary(g => g.Key, g => g.OrderByDescending(q => q.CreatedDate).First());
+                var qc = receipts.OrderBy(r => r.ReceiptDate).Select(r =>
+                {
+                    inspections.TryGetValue(r.Id, out var ins);
+                    var ls = grLines.Where(l => l.GoodsReceiptId == r.Id).ToList();
+                    return new ScmReceiptQcModel
+                    {
+                        Id = r.Id, ReceiptNumber = r.ReceiptNumber ?? r.ReceiptNo, ReceiptDate = r.ReceiptDate, Status = r.Status, StatusName = GoodsReceiptStatus.Label(r.Status),
+                        WarehouseName = warehouses.GetValueOrDefault(r.WarehouseId), QcInspectionId = ins?.Id, InspectionNumber = ins?.InspectionNumber,
+                        QcResult = ins?.Result, QcResultName = ins?.Result == null ? null : IncomingQcResult.Label(ins.Result),
+                        ReceivedQuantity = ls.Sum(l => l.ReceivedQuantity), AcceptedQuantity = ls.Sum(l => l.AcceptedQuantity), RejectedQuantity = ls.Sum(l => l.RejectedQuantity),
+                    };
+                }).ToList();
+                decimal ordered = detail.ListLine.Sum(l => l.Quantity), received = detail.ListLine.Sum(l => l.ReceivedQuantity);
+                return Result<PurchaseOrderOverviewModel>.Success(new PurchaseOrderOverviewModel
+                {
+                    Detail = detail, ApprovalRequestId = await _approvalRequestService.LatestRequestIdAsync(PurchaseOrderStatus.BusinessType, id),
+                    LineCount = detail.ListLine.Count, ReceiptCount = receipts.Count(r => r.Status != GoodsReceiptStatus.Cancelled),
+                    OrderedQuantity = ordered, ReceivedQuantity = received, ReceivedPercent = ordered > 0 ? Math.Round(received / ordered * 100m, 1) : 0m,
+                    RemainingLineCount = detail.ListLine.Count(l => l.RemainingQuantity > 0),
+                    RejectedQuantity = qc.Where(r => r.Status != GoodsReceiptStatus.Cancelled).Sum(r => r.RejectedQuantity),
+                    ListReceiptQc = qc,
+                }, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                throw;
+            }
+        }
+
         private async Task<PurchaseOrderDetailModel?> DetailAsync(Guid id)
         {
             var db = _unitOfWork.DbContext;
