@@ -16,9 +16,15 @@ using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
-    public class IngredientService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, AppDelicare.Data.Share.IClock clock) : IIngredientService
+    public partial class IngredientService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, AppDelicare.Data.Share.IClock clock, IUomConversionService uomConversion, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IIngredientService
     {
+        private readonly IUomConversionService _uom = uomConversion;
+        private readonly AppDelicare.Model.Option.BusinessRulesOptions _rules = rules.Value;
+        /// <summary>UI-6.20: cảnh báo kèm thông báo lưu (ngừng dùng nguyên liệu còn trong công thức / chứng từ chưa xong).</summary>
+        private string? _warning;
+        /// <summary>UI-6.20 (D-101): 3 loại bảo quản chuẩn – AMBIENT cũ = DRY.</summary>
+        public static readonly string[] StorageTypes = ["DRY", "CHILLED", "FROZEN"];
         private readonly AppDelicare.Data.Share.IClock _clock = clock;
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
@@ -117,7 +123,8 @@ namespace AppDelicare.Services.Implement
                 return new Result<bool>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
-                    ResponseMessage = typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
+                    ResponseMessage = _warning != null ? (_createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "nguyên liệu", _createdCode) : ConstantHelper.Message.SaveSuccess) + " – " + _warning
+                        : typeSave == ConstantHelper.TypeSave.Delete ? ConstantHelper.Message.DeleteSuccess
                         : _createdCode != null ? string.Format(ConstantHelper.Message.SaveSuccessWithCode, "nguyên liệu", _createdCode)
                         : ConstantHelper.Message.SaveSuccess,
                     Data = true
@@ -134,12 +141,15 @@ namespace AppDelicare.Services.Implement
         private async Task<string> Insert(IngredientRequest request, string typeSave)
         {
             // T45R: luật nghiệp vụ (spec) – trước khi ghi.
-            var invalid = await CheckRules(request);
+            var invalid = await CheckRules(request, null);
             if (!string.IsNullOrEmpty(invalid))
             {
                 return invalid;
             }
             var insert = _mapper.Map<Ingredient>(request);
+            // UI-6.20: cột cũ (deprecated) ghi song song.
+            insert.CategoryId = insert.IngredientCategoryId;
+            insert.BaseUomId = insert.BaseUnitId;
             // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
             insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.Ingredient);
             _createdCode = insert.Code;
@@ -150,20 +160,26 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(IngredientRequest request, string typeSave)
         {
-            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
-            var invalid = await CheckRules(request);
-            if (!string.IsNullOrEmpty(invalid))
-            {
-                return invalid;
-            }
             var exist = _unitOfWork.IngredientRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            // T45R: luật nghiệp vụ (spec) – trước khi ghi.
+            var invalid = await CheckRules(request, exist);
+            if (!string.IsNullOrEmpty(invalid))
+            {
+                return invalid;
+            }
+            if (request.Status == "Inactive" && exist.Status != "Inactive")
+            {
+                _warning = await InUseWarningAsync(exist.Id);
+            }
             // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
             request.Code = exist.Code;
             var update = _mapper.Map(request, exist);
+            update.CategoryId = update.IngredientCategoryId;
+            update.BaseUomId = update.BaseUnitId;
             _unitOfWork.IngredientRepository.Update(update);
             await _unitOfWork.IngredientRepository.CommitAsync(typeSave);
             return string.Empty;
@@ -218,22 +234,99 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>T45R (spec 4.4): YieldPercent ∈ (0, 100]; StandardWastePercent ∈ [0, 100); ShelfLifeDays &gt; 0 khi quản lý hạn.</summary>
-        private Task<string> CheckRules(IngredientRequest request)
+        /// <summary>
+        /// T45R (spec 4.4) + UI-6.20 (D-101): Tên*, Nhóm nguyên liệu*, Đơn vị kho*; Loại bảo quản* ∈ {DRY, CHILLED, FROZEN} (AMBIENT cũ = DRY);
+        /// 1 công tắc hạn dùng (ghi cả ExpiryControl + IsExpiryManaged) → ShelfLifeDays &gt; 0; LotControl mặc định = có hạn dùng; QcRequired mặc định
+        /// = Mát / Đông lạnh; ĐVT mua / xuất mặc định = đơn vị kho, khác thì phải quy đổi được về đơn vị kho; YieldPercent = 100 − hao hụt chuẩn;
+        /// CompanyId / cột cũ (CategoryId, BaseUomId) máy chủ tự ghi.
+        /// </summary>
+        private async Task<string> CheckRules(IngredientRequest request, Ingredient? exist)
         {
-            if (request.YieldPercent is { } y && (y <= 0 || y > 100))
+            if (string.IsNullOrWhiteSpace(request.Name))
             {
-                return Task.FromResult(ConstantHelper.Message.YieldPercentRange);
+                return string.Format(ConstantHelper.Message.NotExist, "Tên nguyên liệu").Trim();
             }
+            request.Name = request.Name.Trim();
+            request.IngredientCategoryId ??= exist?.IngredientCategoryId ?? exist?.CategoryId;
+            if (request.IngredientCategoryId == null)
+            {
+                return ConstantHelper.Message.IngredientCategoryRequired;
+            }
+            request.BaseUnitId ??= exist?.BaseUnitId ?? exist?.BaseUomId;
+            if (request.BaseUnitId == null)
+            {
+                return ConstantHelper.Message.IngredientBaseUnitRequired;
+            }
+            string storage = (request.StorageType ?? exist?.StorageType ?? string.Empty).Trim().ToUpperInvariant();
+            if (storage == "AMBIENT")
+            {
+                storage = "DRY";
+            }
+            if (!StorageTypes.Contains(storage))
+            {
+                return ConstantHelper.Message.IngredientStorageTypeInvalid;
+            }
+            request.StorageType = storage;
             if (request.StandardWastePercent is { } w && (w < 0 || w >= 100))
             {
-                return Task.FromResult(ConstantHelper.Message.StandardWasteRange);
+                return ConstantHelper.Message.StandardWasteRange;
             }
-            if (request.IsExpiryManaged && !(request.ShelfLifeDays > 0))
+            if (request.StandardWastePercent is { } waste)
             {
-                return Task.FromResult(ConstantHelper.Message.ShelfLifeRequired);
+                request.YieldPercent = 100m - waste;
             }
-            return Task.FromResult(string.Empty);
+            else if (request.YieldPercent is { } y && (y <= 0 || y > 100))
+            {
+                return ConstantHelper.Message.YieldPercentRange;
+            }
+            bool expiry = request.IsExpiryManaged || request.ExpiryControl == true;
+            if (expiry && !(request.ShelfLifeDays > 0))
+            {
+                return ConstantHelper.Message.ShelfLifeRequired;
+            }
+            request.IsExpiryManaged = expiry;
+            request.ExpiryControl = expiry;
+            request.LotControl ??= expiry;
+            request.QcRequired ??= storage is "CHILLED" or "FROZEN";
+            request.PurchaseUomId ??= request.BaseUnitId;
+            request.IssueUomId ??= request.BaseUnitId;
+            foreach (var (unit, label) in new[] { (request.PurchaseUomId.Value, "mua"), (request.IssueUomId.Value, "xuất") })
+            {
+                if (unit != request.BaseUnitId && await _uom.ConvertAsync(1m, unit, request.BaseUnitId.Value) == null)
+                {
+                    return string.Format(ConstantHelper.Message.IngredientUnitNotConvertible, label);
+                }
+            }
+            request.CompanyId ??= exist?.CompanyId ?? await _unitOfWork.DbContext.Company.AsNoTracking().Where(c => !c.IsDeleted).OrderBy(c => c.CreatedDate).Select(c => (Guid?)c.Id).FirstOrDefaultAsync();
+            if (request.MinimumStock is < 0 || request.SafetyStock is < 0)
+            {
+                return ConstantHelper.Message.IngredientStockNegative;
+            }
+            return string.Empty;
+        }
+
+        /// <summary>UI-6.20: nguyên liệu còn trong công thức đang dùng / nháp, đề nghị mua hoặc đơn mua chưa xong → câu cảnh báo kèm số chứng từ (không chặn).</summary>
+        private async Task<string?> InUseWarningAsync(Guid id)
+        {
+            var db = _unitOfWork.DbContext;
+            var recipes = await (from l in db.RecipeLine.AsNoTracking()
+                                 join r in db.Recipe.AsNoTracking() on l.RecipeId equals r.Id
+                                 join d in db.Dish.AsNoTracking() on r.DishId equals d.Id
+                                 where l.IngredientId == id && !l.IsDeleted && !r.IsDeleted && (r.IsActive || r.Status == RecipeStatus.Draft || r.Status == RecipeStatus.PendingApproval)
+                                 select d.Name + " " + (r.VersionCode ?? "V" + r.VersionNo)).Distinct().Take(5).ToListAsync();
+            var prs = await (from l in db.PurchaseRequestLine.AsNoTracking()
+                             join p in db.PurchaseRequest.AsNoTracking() on l.PurchaseRequestId equals p.Id
+                             where l.IngredientId == id && !l.IsDeleted && !p.IsDeleted && p.Status != "Cancelled" && p.Status != "Rejected" && p.Status != "Converted" && p.Status != "Closed"
+                             select p.RequestNumber ?? p.RequestNo).Distinct().Take(5).ToListAsync();
+            var pos = await (from l in db.PurchaseOrderLine.AsNoTracking()
+                             join p in db.PurchaseOrder.AsNoTracking() on l.PurchaseOrderId equals p.Id
+                             where l.IngredientId == id && !l.IsDeleted && !p.IsDeleted && p.Status != "Cancelled" && p.Status != "Closed" && p.Status != "Received" && p.Status != "Completed"
+                             select p.PurchaseOrderNumber ?? p.PONo).Distinct().Take(5).ToListAsync();
+            var parts = new List<string>();
+            if (recipes.Count > 0) parts.Add("công thức: " + string.Join(", ", recipes));
+            if (prs.Count > 0) parts.Add("đề nghị mua: " + string.Join(", ", prs));
+            if (pos.Count > 0) parts.Add("đơn mua: " + string.Join(", ", pos));
+            return parts.Count == 0 ? null : string.Format(ConstantHelper.Message.IngredientInUseWarning, string.Join("; ", parts));
         }
 
         /// <summary>T45R (spec 4.4): tồn khả dụng của nguyên liệu (tổng các kho) và cờ dưới mức tối thiểu.</summary>

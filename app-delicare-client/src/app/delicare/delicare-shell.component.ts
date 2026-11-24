@@ -24,6 +24,7 @@ const SCRIPTS = [
   'modules/customer360.js',
   'modules/menu.js',
   'modules/scm.js',
+  'modules/ingredient-form.js', // UI-6.20 (D-101): form Nguyên liệu – sau scm.js
   'modules/production.js',
   'modules/qc.js',
   'modules/supplier360.js',

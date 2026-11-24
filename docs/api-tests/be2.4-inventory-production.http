@@ -75,19 +75,34 @@ Authorization: Bearer {{token}}
 ###
 @zoneId = {{zone.response.body.listData[0].id}}
 
+### Nhóm nguyên liệu (UI-6.20 D-101: nguyên liệu bắt buộc chọn nhóm)
+POST {{base}}/api/IngredientCategory/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}NNL&Name=[DEMO] Nhóm NL {{code}}&Status=Active
+
+###
+# @name ingCat
+GET {{base}}/api/IngredientCategory/GetAll?SearchText={{code}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@ingCatId = {{ingCat.response.body.listData[0].id}}
+
 ### 0.2 Nguyên liệu: gà (đủ tồn), rau (tồn an toàn 100 kg → MRP thiếu)
 POST {{base}}/api/Ingredient/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}GA&Name=[DEMO] Thịt gà {{key}}&BaseUnitId={{kgId}}&StorageType=CHILLED&QcRequired=true&Status=Active
+Code={{code}}GA&Name=[DEMO] Thịt gà {{key}}&BaseUnitId={{kgId}}&StorageType=CHILLED&QcRequired=true&IngredientCategoryId={{ingCatId}}&Status=Active
 
 ###
 POST {{base}}/api/Ingredient/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}RAU&Name=[DEMO] Rau cải {{key}}&BaseUnitId={{kgId}}&StorageType=DRY&QcRequired=false&SafetyStock=100&Status=Active
+Code={{code}}RAU&Name=[DEMO] Rau cải {{key}}&BaseUnitId={{kgId}}&StorageType=DRY&QcRequired=false&SafetyStock=100&IngredientCategoryId={{ingCatId}}&Status=Active
 
 ###
 # @name ga

@@ -173,12 +173,15 @@ namespace AppDelicare.Tests.Pilot
                     ("Code", code + "KG"), ("Name", "[DEMO] kg " + k), ("Symbol", "kg"), ("Status", "Active"));
                 Guid warehouse = await Insert<Model.Entity.Warehouse>("Warehouse", q => q.Where(x => x.Name == "[DEMO] Kho bếp " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "K"), ("Name", "[DEMO] Kho bếp " + k), ("WarehouseType", "KITCHEN"), ("Status", "Active"));
+                // UI-6.20 (D-101): nguyên liệu bắt buộc chọn nhóm nguyên liệu.
+                Guid ingCat = await Insert<Model.Entity.IngredientCategory>("IngredientCategory", q => q.Where(x => x.Name == "[DEMO] Nhóm NL " + k).Select(x => x.Id).SingleAsync(),
+                    ("Code", code + "NNL"), ("Name", "[DEMO] Nhóm NL " + k), ("Status", "Active"));
                 Guid beef = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Name == "[DEMO] Thịt bò " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "BO"), ("Name", "[DEMO] Thịt bò " + k), ("BaseUnitId", kg), ("StorageType", "CHILLED"), ("ShelfLifeDays", 5),
-                    ("IsExpiryManaged", true), ("QcRequired", true), ("Status", "Active"));
+                    ("IsExpiryManaged", true), ("QcRequired", true), ("IngredientCategoryId", ingCat), ("Status", "Active"));
                 Guid rice = await Insert<Model.Entity.Ingredient>("Ingredient", q => q.Where(x => x.Name == "[DEMO] Gạo " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code + "GAO"), ("Name", "[DEMO] Gạo " + k), ("BaseUnitId", kg), ("StorageType", "DRY"), ("ShelfLifeDays", 180),
-                    ("IsExpiryManaged", true), ("QcRequired", true), ("Status", "Active"));
+                    ("IsExpiryManaged", true), ("QcRequired", true), ("IngredientCategoryId", ingCat), ("Status", "Active"));
                 Guid supplier = await Insert<Model.Entity.Supplier>("Supplier", q => q.Where(x => x.Name == "[DEMO] NCC toàn luồng " + k).Select(x => x.Id).SingleAsync(),
                     ("Code", code), ("Name", "[DEMO] NCC toàn luồng " + k), ("Status", "Active"));
                 foreach (var (ingredient, price) in new[] { (beef, 300_000m), (rice, 20_000m) })
