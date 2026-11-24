@@ -32,5 +32,8 @@ namespace AppDelicare.Services.Implement.Approval
         public Task<string?> ApproveAsync(Guid businessId, Guid actorUserId, string? note) => _purchaseOrderService.ApplyDecisionAsync(businessId, true, note);
 
         public Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note) => _purchaseOrderService.ApplyDecisionAsync(businessId, false, note);
+
+        /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung – ApprovalSummaries.</summary>
+        public Task<AppDelicare.Model.Model.ApprovalSummaryModel?> GetSummaryAsync(Guid businessId, ApprovalSummaryContext ctx) => ApprovalSummaries.PurchaseOrderAsync(businessId, ctx);
     }
 }

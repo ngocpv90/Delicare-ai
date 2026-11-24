@@ -24,7 +24,7 @@ using AppDelicare.Services.Implement.Messaging;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ApprovalRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+    public partial class ApprovalRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
         , IServiceProvider serviceProvider, IPermissionService permissionService, ICurrentActor currentActor, IClock clock
         , IDocumentNumberService documentNumberService, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IApprovalRequestService
     {
@@ -427,6 +427,8 @@ namespace AppDelicare.Services.Implement
             await _unitOfWork.ApprovalRequestRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
             // BOT-1.7: báo người duyệt cấp 1 (APPROVAL_PENDING) – cùng transaction, lỗi không làm hỏng việc gửi duyệt.
             await NotifyPendingAsync(request, handler, 1, steps, []);
+            // APR-1.4 (D-81 i): người duyệt cấp 1 đều nghỉ hôm nay → báo ngay bậc leo thang.
+            await SafeEscalateIfAbsentAsync(request);
             return (request, null);
         }
 
@@ -506,8 +508,12 @@ namespace AppDelicare.Services.Implement
                         continue;
                     }
                     DateTime? due = step?.DueAt ?? r.DueAt;
+                    int stepCount = Math.Max(route?.Count ?? 0, Math.Max(steps.Count, 1));
+                    // APR-1.2 / 1.3 (D-81): khuôn tóm tắt chung + sắp hết hạn + duyệt nhiều được không.
+                    var summary = await BuildSummaryAsync(h, r, stepNo, stepCount, screen);
                     list.Add(new ApprovalPendingModel
                     {
+                        Summary = summary, DueSoon = DueSoon(due), CanBulk = await CanBulkAsync(r.BusinessType, r.BusinessId, summary),
                         Id = r.Id, RequestNo = r.RequestNo, BusinessType = r.BusinessType, BusinessId = r.BusinessId, ScreenId = screen,
                         Title = r.BusinessId is { } bid ? await h.DescribeAsync(bid) : null,
                         RequestedAt = r.RequestedAt, RequestedBy = r.RequestedBy,
@@ -518,6 +524,9 @@ namespace AppDelicare.Services.Implement
                 }
                 var stepNames = await StepNamesAsync(list.Select(x => x.ScreenId!));
                 list.ForEach(x => x.StepName = stepNames.GetValueOrDefault(x.ScreenId!, x.ScreenId!));
+                // APR-1.3 (D-81 g): kế hoạch SX giữ Nháp chờ COO – cùng hộp (Decide nhận Id kế hoạch).
+                await AppendHeldPlansAsync(list, perms, type);
+                list = SortPending(list);
                 return new Results<ApprovalPendingModel>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),
@@ -541,6 +550,11 @@ namespace AppDelicare.Services.Implement
         /// </summary>
         public async Task<IResult<bool>> Decide(ApprovalDecideRequest request)
         {
+            // APR-1.3 (D-81 g): Id là kế hoạch SX giữ Nháp chờ COO → duyệt = ProductionPlan/Approve (không qua engine).
+            if (!await _unitOfWork.ApprovalRequestRepository.GetAll().AnyAsync(a => a.Id == request.Id) && await DecidePlanAsync(request) is { } planResult)
+            {
+                return planResult;
+            }
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
@@ -709,6 +723,7 @@ namespace AppDelicare.Services.Implement
             if (pending is { } p)
             {
                 await NotifyPendingAsync(approval, handler, p.StepNo, route, _rules.ApprovalRequireDistinctApprovers ? p.Exclude : []);
+                await SafeEscalateIfAbsentAsync(approval);
             }
             if (decided)
             {
@@ -732,14 +747,18 @@ namespace AppDelicare.Services.Implement
                 var approvers = (await RecipientResolver.UsersWithApproveAsync(_unitOfWork.DbContext, screen))
                     .Where(u => u != r.RequestedBy && !exclude.Contains(u)).ToList();
                 var requester = r.RequestedBy is { } uid ? (await UserNamesAsync([uid])).GetValueOrDefault(uid) : null;
+                // APR-1.7 (D-81 e): tin bot dùng cùng khuôn tóm tắt với web (loại, tóm tắt, giá trị chính, vì sao, ≤ 3 cảnh báo).
+                var summary = await BuildSummaryAsync(handler, r, stepNo, Math.Max(route?.Count ?? 1, stepNo), screen);
                 await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
                 {
                     Template = NotificationCatalog.ApprovalPending,
                     UserIds = approvers,
                     Data = new
                     {
-                        title = await handler.DescribeAsync(bid), requestNo = r.RequestNo, requester,
+                        title = summary.Title ?? await handler.DescribeAsync(bid), requestNo = r.RequestNo, requester,
                         step = (await StepNamesAsync([screen])).GetValueOrDefault(screen, screen), dueAt = r.DueAt,
+                        typeName = summary.TypeName, documentNo = summary.DocumentNo, mainValue = summary.MainValue, reason = summary.Reason,
+                        flags = summary.Flags.Select(f => f.Text).ToList(),
                     },
                     Buttons = new[] { new NotificationButton("📄 Xem & duyệt", BusinessNotifier.Callback("apv", "view", r.Id)) },
                     IdempotencyKey = $"{NotificationCatalog.ApprovalPending}:{r.Id:N}:{stepNo}",
@@ -982,7 +1001,9 @@ namespace AppDelicare.Services.Implement
                 var approval = await db.ApprovalRequest.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
                 if (approval == null)
                 {
-                    return Result<ApprovalDetailModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+                    // APR-1.3 (D-81 g): kế hoạch SX giữ Nháp chờ COO.
+                    return await PlanDetailAsync(id) is { } plan ? Result<ApprovalDetailModel>.Success(plan, ConstantHelper.Message.GetAllSuccessfully)
+                        : Result<ApprovalDetailModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
                 }
                 Guid actor = _currentActor.RequireActor().UserId;
                 var perms = await _permissionService.GetAsync(actor);
@@ -1039,6 +1060,7 @@ namespace AppDelicare.Services.Implement
                     ListDecision = [.. decisions.Select(d => new ApprovalDecisionItemModel { Decision = d, DecidedByName = names.GetValueOrDefault(d.DecidedBy) })],
                     ListItem = await db.ApprovalItem.AsNoTracking().Where(i => i.ApprovalRequestId == id && !i.IsDeleted).ToListAsync(),
                     Business = await BusinessAsync(approval.BusinessType, approval.BusinessId),
+                    Summary = await BuildSummaryAsync(handler, approval, open ? currentNo : stepCount, stepCount, screen),
                     ProposalJson = UnwrapPayload(approval.PayloadJson).Proposal,
                     CanDecide = canApproveCurrent,
                     CanCancel = open && (approval.RequestedBy == actor || perms.IsAdmin),

@@ -72,5 +72,8 @@ namespace AppDelicare.Services.Implement.Approval
             _unitOfWork.RecipeRepository.Update(recipe);
             return Task.FromResult<string?>(null);
         }
+
+        /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung – ApprovalSummaries.</summary>
+        public Task<AppDelicare.Model.Model.ApprovalSummaryModel?> GetSummaryAsync(Guid businessId, ApprovalSummaryContext ctx) => ApprovalSummaries.RecipeAsync(businessId, ctx);
     }
 }

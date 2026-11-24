@@ -731,6 +731,14 @@
             public static readonly string ApprovalAlreadyDecidedStep = "Bạn đã quyết định cấp {0} của yêu cầu này – cấp sau phải do người khác duyệt";
             /// <summary>MENU-5.3 (D-79 a5): người gửi không tự duyệt yêu cầu của mình (mọi cấp).</summary>
             public static readonly string ApprovalSelfBlocked = "Bạn là người gửi yêu cầu này – cần người khác duyệt";
+            /// <summary>APR-UI-1 (D-81).</summary>
+            public static readonly string ApprovalBulkNotAllowed = "Không duyệt nhiều được: yêu cầu có cảnh báo hoặc thuộc loại phải mở từng yêu cầu";
+            public static readonly string ApprovalBulkNotPending = "Không còn chờ bạn duyệt (đã xử lý hoặc không có quyền cấp này)";
+            public static readonly string ApprovalRemindOnlyRequester = "Chỉ người gửi được nhắc người duyệt";
+            public static readonly string ApprovalRemindTooSoon = "Đã nhắc lúc {0:HH:mm dd/MM} – nhắc lại được sau {1:HH:mm dd/MM}";
+            public static readonly string ApprovalRemindNoApprover = "Cấp đang chờ chưa có người được phân quyền duyệt – báo quản trị cấp quyền";
+            public static readonly string ApprovalReminded = "Đã nhắc {0} người duyệt qua bot";
+            public static readonly string ApprovalPlanNoReject = "Kế hoạch sản xuất giữ Nháp không có thao tác từ chối – sửa kế hoạch trên màn Kế hoạch sản xuất rồi duyệt";
             public static readonly string ApprovalStepOverdue = "Bước duyệt cấp {0} đã quá hạn ({1:dd/MM/yyyy HH:mm}) – người gửi hủy yêu cầu và gửi duyệt lại";
             public static readonly string ApprovalNoSteps = "Chưa cấu hình bước duyệt cho loại {0}";
             public static readonly string PurchaseRequestSubmitted = "Đã gửi duyệt đề nghị mua (yêu cầu {0}, {1} cấp)";

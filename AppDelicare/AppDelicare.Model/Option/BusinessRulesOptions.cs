@@ -174,6 +174,19 @@ namespace AppDelicare.Model.Option
         /// (hộp duyệt, Decide, bot); quản trị viên được miễn. Hủy yêu cầu của mình vẫn được.
         /// </summary>
         public bool ApprovalBlockSelfApproval { get; set; } = true;
+        /// <summary>APR-1.2 (D-81 f): cảnh báo PO khi giá dòng cao hơn lần mua trước cùng NCC ≥ N %.</summary>
+        public decimal ApprovalFlagPricePct { get; set; } = 10m;
+        /// <summary>APR-1.2 (D-81 f): cảnh báo kiểm kê khi dòng lệch &gt; N %.</summary>
+        public decimal ApprovalFlagStockCountLinePct { get; set; } = 5m;
+        /// <summary>APR-1.2 (D-81 f): cảnh báo khi người gửi bị từ chối loại này ≥ N lần trong <see cref="ApprovalFlagRejectDays"/> ngày.</summary>
+        public int ApprovalFlagRejectCount { get; set; } = 2;
+        public int ApprovalFlagRejectDays { get; set; } = 30;
+        /// <summary>APR-1.3 (D-81 d): loại được duyệt nhiều khi Bình thường (PO chỉ khi &lt; PurchaseOrderAutoApproveMaxAmount &gt; 0).</summary>
+        public string[] ApprovalBulkTypes { get; set; } = ["LEAVE_REQUEST", "SHIFT_SWAP"];
+        /// <summary>APR-1.3: "Hết hạn trong N giờ" (thẻ chỉ số, nhãn sắp hết hạn).</summary>
+        public int ApprovalDueSoonHours { get; set; } = 8;
+        /// <summary>APR-1.3 (D-81 h): mỗi yêu cầu nhắc qua bot tối đa 1 lần / N giờ.</summary>
+        public int ApprovalRemindHours { get; set; } = 4;
         /// <summary>
         /// BE2.3 (PO nhiều cấp theo ngưỡng): true = PO ≥ <see cref="PurchaseOrderDirectorApprovalAmount"/> duyệt 2 cấp (<c>scm-po</c> → <c>scm-po-director</c>).
         /// Mặc định false = 1 cấp Giám đốc như D-11 (anh chốt 2026-11-16).

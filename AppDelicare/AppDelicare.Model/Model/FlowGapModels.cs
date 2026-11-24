@@ -103,6 +103,8 @@ namespace AppDelicare.Model.Model
     /// <summary>BE2.1 (spec 11.5 GET approvals/{id}): yêu cầu duyệt + bước + quyết định + mục + bản ghi nghiệp vụ.</summary>
     public class ApprovalDetailModel
     {
+        /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung (cùng bộ vẽ với danh sách / bot).</summary>
+        public ApprovalSummaryModel? Summary { get; set; }
         public ApprovalRequest Request { get; set; } = null!;
         public string? StatusName { get; set; }
         public string? RequestedByName { get; set; }

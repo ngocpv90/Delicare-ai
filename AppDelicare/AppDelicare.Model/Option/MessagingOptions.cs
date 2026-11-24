@@ -50,6 +50,8 @@ namespace AppDelicare.Model.Option
 
         /// <summary>BOT-2.3: ngưỡng các việc kiểm tra định kỳ (BotChannel/RunWatch).</summary>
         public WatchOptions Watch { get; set; } = new();
+        /// <summary>APR-1.7 (D-81): giờ gửi tin tổng hợp duyệt cuối ngày (giờ VN, 0–23; &lt; 0 = tắt). Gửi ở lần RunWatch đầu tiên từ giờ này, 1 lần / người / ngày.</summary>
+        public int ApprovalDigestHour { get; set; } = 18;
     }
 
     /// <summary>

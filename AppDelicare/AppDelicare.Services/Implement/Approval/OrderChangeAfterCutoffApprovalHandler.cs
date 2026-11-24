@@ -37,5 +37,8 @@ namespace AppDelicare.Services.Implement.Approval
             => _orderService.ApplyChangeAfterCutoffAsync(businessId, proposalJson, note);
 
         public Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note) => _orderService.RejectChangeAfterCutoffAsync(businessId, note);
+
+        /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung – ApprovalSummaries.</summary>
+        public Task<AppDelicare.Model.Model.ApprovalSummaryModel?> GetSummaryAsync(Guid businessId, ApprovalSummaryContext ctx) => ApprovalSummaries.OrderChangeAsync(businessId, ctx, true);
     }
 }

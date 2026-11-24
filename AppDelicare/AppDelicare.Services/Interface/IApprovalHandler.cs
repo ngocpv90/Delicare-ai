@@ -1,6 +1,22 @@
 namespace AppDelicare.Services.Interface
 {
     /// <summary>
+    /// APR-1.2 (D-81 e): dữ liệu engine truyền cho <see cref="IApprovalHandler.GetSummaryAsync"/> – DbContext (chỉ đọc), ngưỡng BusinessRules, đồng hồ,
+    /// người gửi + nội dung đề xuất lưu lúc gửi (sửa đơn sau chốt, lệch đơn, điều chỉnh tồn), cấp đang chờ.
+    /// </summary>
+    public sealed class ApprovalSummaryContext
+    {
+        public required AppDelicare.Data.Connection.DatabaseContext Db { get; init; }
+        public required AppDelicare.Model.Option.BusinessRulesOptions Rules { get; init; }
+        public required DateTime Now { get; init; }
+        public Guid? RequestedBy { get; init; }
+        public string? ProposalJson { get; init; }
+        public int StepNo { get; init; } = 1;
+        public int StepCount { get; init; } = 1;
+        public string? StepScreenId { get; init; }
+    }
+
+    /// <summary>
     /// T12 – bộ xử lý nghiệp vụ được duyệt theo <c>ApprovalRequest.BusinessType</c> (registry). Mỗi nghiệp vụ cần duyệt (công thức, PO,
     /// đơn lệch suất…) có 1 lớp cài đặt; <c>ApprovalRequestService</c> gọi khi tạo / duyệt / từ chối. Đăng ký trong <c>Ioc/ComponentRegistrar</c>.
     /// Các method chạy TRONG transaction của ApprovalRequestService; trả thông báo lỗi (tiếng Việt) hoặc null nếu thành công.
@@ -36,6 +52,13 @@ namespace AppDelicare.Services.Interface
 
         /// <summary>Tiêu đề hiển thị trong hộp duyệt.</summary>
         Task<string?> DescribeAsync(Guid businessId);
+
+        /// <summary>
+        /// APR-1.2 (D-81 e): khuôn tóm tắt chung (tiêu đề, giá trị chính, vì sao, cảnh báo ≤ 3, thông tin, dòng, trước → sau, link). Chỉ ĐỌC dữ liệu có sẵn.
+        /// Mặc định null → engine dựng khuôn mặc định từ <see cref="DescribeAsync"/> (loại mới chỉ cần viết method này).
+        /// </summary>
+        Task<AppDelicare.Model.Model.ApprovalSummaryModel?> GetSummaryAsync(Guid businessId, ApprovalSummaryContext ctx)
+            => Task.FromResult<AppDelicare.Model.Model.ApprovalSummaryModel?>(null);
 
         /// <summary>Thực thi khi được duyệt.</summary>
         Task<string?> ApproveAsync(Guid businessId, Guid actorUserId, string? note);

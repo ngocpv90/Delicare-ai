@@ -60,10 +60,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             var message = new NeutralMessage
             {
                 Title = $"⏳ Chờ tôi duyệt ({items.Count})",
-                Lines = [.. items.Take(10).Select(i => $"• {i.RequestNo} – {i.Title ?? i.StepName}{(i.RequestedByName != null ? " · " + i.RequestedByName : "")}{(i.IsOverdue ? " ⚠️ quá hạn" : "")}")],
-                Buttons = [.. items.Take(8).Select(i => new NeutralButton("📄 " + (i.RequestNo ?? "Xem"), CallbackData.Build(CallbackData.Kinds.Approval, "view", i.Id)))],
+                // APR-1.7 (D-81 e): cùng khuôn tóm tắt với web – loại · tóm tắt · 🔴 quá hạn / ⚠ cảnh báo / 🟢 bình thường.
+                Lines = [.. items.Take(10).Select(i => $"{Mark(i)} {i.Summary?.TypeName ?? i.StepName} {i.Summary?.DocumentNo ?? i.RequestNo} – {i.Summary?.Title ?? i.Title}{(i.RequestedByName != null ? " · " + i.RequestedByName : "")}")],
+                Buttons = [.. items.Take(8).Select(i => new NeutralButton("📄 " + (i.Summary?.DocumentNo ?? i.RequestNo ?? "Xem"), CallbackData.Build(CallbackData.Kinds.Approval, "view", i.Id)))],
             };
-            int low = items.Count(i => IsLowRisk(i.BusinessType));
+            int low = items.Count(i => IsLowRisk(i.BusinessType) && (i.Summary == null || i.Summary.Flags.Count == 0));
             if (low >= 2)
             {
                 message.Buttons.Add(new NeutralButton($"✅ Duyệt nhanh {low} mục rủi ro thấp", CallbackData.Build(CallbackData.Kinds.Approval, "bulk")));
@@ -80,6 +81,9 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             {
                 case "view" when id != null:
                     await ViewAsync(ctx, id.Value, edit: true, ct);
+                    break;
+                case "more" when id != null:
+                    await ViewAsync(ctx, id.Value, edit: true, ct, more: true);
                     break;
                 case "ok" when id != null:
                     await ApproveTapAsync(ctx, id.Value, ct);
@@ -137,7 +141,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
 
         // ------------------------------------------------------------ nội bộ
 
-        private async Task ViewAsync(BotActionContext ctx, Guid id, bool edit, CancellationToken ct)
+        private async Task ViewAsync(BotActionContext ctx, Guid id, bool edit, CancellationToken ct, bool more = false)
         {
             var token = await TokenAsync(ctx, ct);
             if (token == null)
@@ -150,7 +154,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 await SayAsync(ctx, "Không xem được yêu cầu (đã xử lý hoặc không có quyền).", ct);
                 return;
             }
-            var m = Card(d.Value, id);
+            var m = Card(d.Value, id, more);
             if (edit && ctx.Event.MessageId != null)
             {
                 await EditAsync(ctx, m, ct);
@@ -161,18 +165,54 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             }
         }
 
-        private NeutralMessage Card(JsonElement d, Guid id)
+        /// <summary>🔴 quá hạn · ⚠ có cảnh báo · 🟢 bình thường.</summary>
+        private static string Mark(ApprovalPendingModel i) => i.IsOverdue ? "🔴" : i.Summary is { Flags.Count: > 0 } ? "⚠️" : "🟢";
+
+        /// <summary>
+        /// APR-1.7 (D-81 e): thẻ duyệt theo khuôn tóm tắt chung (GetDetail.summary) – nhãn 🔴 QUÁ HẠN / ⚠ CÓ CẢNH BÁO / 🟢 BÌNH THƯỜNG + hạn, loại + số chứng từ,
+        /// tóm tắt, giá trị chính, vì sao cần duyệt, tối đa 3 cảnh báo, người gửi, cấp; nút Duyệt / Từ chối / Xem chi tiết (thông tin + dòng chứng từ).
+        /// </summary>
+        private NeutralMessage Card(JsonElement d, Guid id, bool more = false)
         {
             var req = d.TryGetProperty("request", out var r) ? r : default;
+            var sum = d.TryGetProperty("summary", out var sm) && sm.ValueKind == JsonValueKind.Object ? sm : default;
             string? type = Str(req, "businessType");
             bool canDecide = d.TryGetProperty("canDecide", out var c) && c.ValueKind == JsonValueKind.True;
-            var lines = new List<string>
+            bool overdue = d.TryGetProperty("isOverdue", out var o) && o.ValueKind == JsonValueKind.True;
+            var flags = sum.ValueKind == JsonValueKind.Object && sum.TryGetProperty("flags", out var fl) && fl.ValueKind == JsonValueKind.Array
+                ? fl.EnumerateArray().Select(x => Str(x, "text")).Where(x => !string.IsNullOrWhiteSpace(x)).Take(3).ToList() : [];
+            string? due = Str(d, "dueAt") is { } du && DateTime.TryParse(du, out var dt) ? dt.ToString("HH:mm dd/MM") : null;
+            string state = overdue ? "🔴 CẦN DUYỆT · QUÁ HẠN" : flags.Count > 0 ? $"⚠️ CẦN DUYỆT · {flags.Count} CẢNH BÁO" : "🟢 BÌNH THƯỜNG";
+            var lines = new List<string> { state + (due != null ? " · hạn " + due : string.Empty) };
+            if (Str(sum, "title") is { } st)
             {
-                $"{Str(req, "requestNo")} · {Str(d, "statusName")}",
-                $"Người gửi: {Str(d, "requestedByName") ?? "-"}",
-                $"Cấp {Num(d, "currentStepNo")}/{Num(d, "stepCount")}{(d.TryGetProperty("isOverdue", out var o) && o.ValueKind == JsonValueKind.True ? " ⚠️ quá hạn" : "")}",
-            };
-            var m = new NeutralMessage { Title = Str(d, "title") ?? "Yêu cầu duyệt", Lines = lines };
+                lines.Add(st);
+            }
+            if (Str(sum, "reason") is { } why)
+            {
+                lines.Add("Vì sao cần duyệt: " + why);
+            }
+            lines.AddRange(flags.Select(x => "⚠ " + x));
+            lines.Add($"Người gửi: {Str(d, "requestedByName") ?? "-"} · cấp {Num(d, "currentStepNo")}/{Num(d, "stepCount")} · {Str(d, "statusName")}");
+            if (more && sum.ValueKind == JsonValueKind.Object)
+            {
+                if (sum.TryGetProperty("info", out var info) && info.ValueKind == JsonValueKind.Array)
+                {
+                    lines.AddRange(info.EnumerateArray().Take(6).Select(x => $"{Str(x, "label")}: {Str(x, "value") ?? "–"}"));
+                }
+                if (sum.TryGetProperty("lines", out var ls) && ls.ValueKind == JsonValueKind.Array)
+                {
+                    lines.AddRange(ls.EnumerateArray().Take(8).Select(x => (x.TryGetProperty("highlight", out var h) && h.ValueKind == JsonValueKind.True ? "• ❗ " : "• ")
+                        + string.Join(" · ", x.TryGetProperty("cells", out var cells) ? cells.EnumerateArray().Select(v => v.ValueKind == JsonValueKind.String ? v.GetString() : "–") : [])));
+                    int total = sum.TryGetProperty("lineCount", out var lc) && lc.TryGetInt32(out int n) ? n : 0;
+                    if (total > 8)
+                    {
+                        lines.Add($"… {total - 8} dòng nữa – xem đủ trên web (Phê duyệt).");
+                    }
+                }
+            }
+            string head = $"{Str(sum, "typeName") ?? "Yêu cầu duyệt"} {Str(sum, "documentNo") ?? Str(req, "requestNo")}".Trim();
+            var m = new NeutralMessage { Title = head, Lines = lines };
             if (!canDecide)
             {
                 lines.Add("Bạn không duyệt được ở cấp này.");
@@ -181,6 +221,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             lines.Add(IsLowRisk(type) ? "Mức rủi ro: thấp (duyệt 1 chạm, hoàn tác trong " + undo.Delay.TotalSeconds + "″)" : "Mức rủi ro: cao (xác nhận 2 bước)");
             m.Buttons.Add(new NeutralButton("✅ Duyệt", CallbackData.Build(CallbackData.Kinds.Approval, "ok", id)));
             m.Buttons.Add(new NeutralButton("❌ Từ chối", CallbackData.Build(CallbackData.Kinds.Approval, "no", id)));
+            if (!more)
+            {
+                m.Buttons.Add(new NeutralButton("📄 Xem chi tiết", CallbackData.Build(CallbackData.Kinds.Approval, "more", id)));
+            }
             return m;
         }
 
@@ -349,7 +393,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 await SayAsync(ctx, ForbiddenText(r), ct);
                 return null;
             }
-            return [.. (r.ListData ?? []).Where(i => IsLowRisk(i.BusinessType))];
+            return [.. (r.ListData ?? []).Where(i => IsLowRisk(i.BusinessType) && (i.Summary == null || i.Summary.Flags.Count == 0))];
         }
 
         private async Task<JsonElement?> DetailAsync(Guid id, string token, CancellationToken ct)

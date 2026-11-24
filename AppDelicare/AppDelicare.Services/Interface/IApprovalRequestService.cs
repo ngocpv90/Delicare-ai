@@ -33,5 +33,21 @@ namespace AppDelicare.Services.Interface
 
         /// <summary>BOT-2.3: duyệt quá hạn (DueAt của cấp đang chờ) → APPROVAL_OVERDUE tới người duyệt của cấp; quá thêm <paramref name="escalateHours"/> giờ → nhóm <paramref name="escalateGroups"/> (bot DH). Trả số tin đã xếp.</summary>
         public Task<int> NotifyOverdueAsync(int escalateHours, IReadOnlyCollection<string> escalateGroups, IReadOnlyCollection<string>? topGroups = null);
+
+        // APR-UI-1 (D-81) – màn Phê duyệt tổng.
+        /// <summary>APR-1.3: yêu cầu tôi gửi còn mở – cấp, người / nhóm đang giữ, đã chờ, nhắc được không.</summary>
+        public Task<IResults<ApprovalSentModel>> GetMySent();
+        /// <summary>APR-1.3: yêu cầu tôi đã duyệt / từ chối (mới nhất trước, phân trang).</summary>
+        public Task<IResults<ApprovalDecidedModel>> GetMyDecided(int page, int pageSize);
+        /// <summary>APR-1.3 (D-81 d): duyệt nhiều – mỗi id kiểm lại canBulk + quyền ở máy chủ; trả kết quả từng id. Không từ chối hàng loạt.</summary>
+        public Task<IResults<ApprovalBulkResultModel>> DecideBulk(ApprovalBulkRequest request);
+        /// <summary>APR-1.3 (D-81 h): người gửi nhắc người duyệt cấp hiện tại qua bot – tối đa 1 lần / BusinessRules:ApprovalRemindHours.</summary>
+        public Task<IResult<bool>> Remind(ApprovalRemindRequest request);
+        /// <summary>APR-1.3 (D-81 k): thống kê theo loại trong khoảng ngày gửi (mặc định 30 ngày).</summary>
+        public Task<IResults<ApprovalStatsModel>> GetStats(DateTime? fromDate, DateTime? toDate);
+        /// <summary>APR-1.4 (D-81 i): người duyệt của cấp đang chờ đều có đơn nghỉ Đã duyệt hôm nay → báo ngay bậc leo thang kế (COO, rồi CEO), ghi dấu. Trả số tin.</summary>
+        public Task<int> EscalateAbsentAsync(IReadOnlyCollection<string> escalateGroups, IReadOnlyCollection<string> topGroups);
+        /// <summary>APR-1.7: tin tổng hợp cuối ngày cho từng người duyệt (còn chờ, quá hạn, có cảnh báo) – 1 lần / người / ngày.</summary>
+        public Task<int> SendDigestAsync();
     }
 }

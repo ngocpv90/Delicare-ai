@@ -48,6 +48,14 @@ namespace AppDelicare.Services.Implement.Messaging
             sent += await SafeAsync("ComplaintSla", () => ComplaintSlaAsync(now, o));
             sent += await SafeAsync("PoLate", () => PoLateAsync(now));
             sent += await SafeAsync("ApprovalOverdue", () => approvals.NotifyOverdueAsync(o.ApprovalOverdueEscalateHours, o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));
+            // APR-1.4 (D-81 i): người duyệt của cấp đều nghỉ hôm nay → báo ngay bậc leo thang (1 lần / yêu cầu / cấp / ngày).
+            sent += await SafeAsync("ApprovalAbsent", () => approvals.EscalateAbsentAsync(o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));
+            // APR-1.7: tổng hợp duyệt cuối ngày từ Messaging:ApprovalDigestHour (IdempotencyKey theo người + ngày → 1 lần / ngày).
+            int digestHour = options.CurrentValue.ApprovalDigestHour;
+            if (digestHour >= 0 && now.Hour >= digestHour)
+            {
+                sent += await SafeAsync("ApprovalDigest", approvals.SendDigestAsync);
+            }
             return Result<int>.Success(sent, ConstantHelper.Message.GetAllSuccessfully);
         }
 

@@ -197,6 +197,28 @@ namespace AppDelicare.Messaging.Core.Contracts
         public int StepCount { get; set; }
         public DateTime? DueAt { get; set; }
         public bool IsOverdue { get; set; }
+        /// <summary>APR-1.7 (D-81 e): khuôn tóm tắt chung – cùng nội dung với web.</summary>
+        public ApprovalSummaryDto? Summary { get; set; }
+        public bool DueSoon { get; set; }
+        public bool CanBulk { get; set; }
+        public string? Source { get; set; }
+    }
+
+    /// <summary>APR-1.7: bản đọc của ApprovalSummaryModel (máy chủ) – bot chỉ dùng phần cần cho thẻ.</summary>
+    public sealed class ApprovalSummaryDto
+    {
+        public string? Title { get; set; }
+        public string? TypeName { get; set; }
+        public string? DocumentNo { get; set; }
+        public string? MainValue { get; set; }
+        public string? Reason { get; set; }
+        public List<ApprovalFlagDto> Flags { get; set; } = [];
+    }
+
+    public sealed class ApprovalFlagDto
+    {
+        public string? Text { get; set; }
+        public string? Severity { get; set; }
     }
 
     public sealed class UserTokenModel

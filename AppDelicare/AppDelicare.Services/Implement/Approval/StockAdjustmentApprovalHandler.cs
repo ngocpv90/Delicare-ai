@@ -27,5 +27,9 @@ namespace AppDelicare.Services.Implement.Approval
             => _inventoryTransactionService.ApplyApprovedAdjustmentAsync(businessId, proposalJson, note);
 
         public Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note) => Task.FromResult<string?>(null);
+
+        /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung – đề xuất điều chỉnh lưu lúc gửi (chưa có bản ghi tới khi duyệt).</summary>
+        public async Task<AppDelicare.Model.Model.ApprovalSummaryModel?> GetSummaryAsync(Guid businessId, ApprovalSummaryContext ctx)
+            => await ApprovalSummaries.StockAdjustmentAsync(businessId, ctx, await DescribeAsync(businessId));
     }
 }

@@ -57,6 +57,8 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string LeaveHandover = "LEAVE_HANDOVER";
         // BOT-2.3: tin theo lịch.
         public const string ApprovalOverdue = "APPROVAL_OVERDUE";
+        /// <summary>APR-1.7 (D-81): tổng hợp duyệt cuối ngày – người duyệt (còn chờ, quá hạn, có cảnh báo).</summary>
+        public const string ApprovalDigest = "APPROVAL_DIGEST";
         public const string IngredientsTonight = "INGREDIENTS_TONIGHT";
         /// <summary>BIZ-3.4: thứ Tư chưa có thực đơn chung tuần sau.</summary>
         public const string MenuMissing = "MENU_MISSING";
@@ -111,6 +113,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(DayCard, X, Digest, "Thẻ ngày 07:00 cho quản lý (bot DH, ghim) – BOT-2.1"),
             new(LeaveHandover, P, Normal, "Người duyệt sắp nghỉ: còn việc chờ duyệt – BOT-2.2"),
             new(ApprovalOverdue, A, Normal, "Duyệt quá hạn – người duyệt của cấp; quá thêm 1 ngày → COO (bot DH) – BOT-2.3"),
+            new(ApprovalDigest, A, Digest, "Tổng hợp duyệt cuối ngày (Messaging:ApprovalDigestHour) – người duyệt còn việc chờ – APR-1.7"),
             new(IngredientsTonight, D, Normal, "21:00 nguyên liệu cho sản xuất ngày mai – thủ kho – BOT-2.3"),
         }.ToDictionary(t => t.Code, StringComparer.OrdinalIgnoreCase);
 

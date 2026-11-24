@@ -110,8 +110,9 @@ namespace AppDelicare.Tests.Notifications
             pending[0].IntegrationChannelId.Should().Be(Vh);
             pending[0].MessageStatus.Should().Be("Queued");
             var card = MessageTemplates.Render(pending[0].PayloadJson);
-            card.Title.Should().StartWith("⏳ Chờ bạn duyệt: XN-");
-            card.Lines.Should().Contain(l => l.Contains("PH-NT1")).And.Contain(l => l.StartsWith("Cấp: "));
+            // APR-1.7 (D-81 e): khuôn tóm tắt chung – nhãn bình thường / cảnh báo + loại + số chứng từ; vì sao cần duyệt; cấp.
+            card.Title.Should().Be("🟢 Chờ bạn duyệt · bình thường: Đề nghị mua – cấp 1 PH-NT1");
+            card.Lines.Should().Contain(l => l.StartsWith("Vì sao cần duyệt: ")).And.Contain(l => l.StartsWith("Cấp: "));
             var request = await f.QueryAsync(db => db.ApprovalRequest.AsNoTracking().SingleAsync(a => a.BusinessId == pr));
             card.Buttons.Should().ContainSingle().Which.Callback.Should().Be("apv:view:" + request.Id.ToString("N"));
 

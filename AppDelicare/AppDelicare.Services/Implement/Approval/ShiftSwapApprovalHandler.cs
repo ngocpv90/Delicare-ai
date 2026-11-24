@@ -25,5 +25,8 @@ namespace AppDelicare.Services.Implement.Approval
         public Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note) => _service.ApplyDecisionAsync(businessId, ShiftSwapStatus.Rejected);
 
         public Task<string?> CancelAsync(Guid businessId, Guid actorUserId, string reason) => _service.ApplyDecisionAsync(businessId, ShiftSwapStatus.Cancelled);
+
+        /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung – ApprovalSummaries.</summary>
+        public Task<AppDelicare.Model.Model.ApprovalSummaryModel?> GetSummaryAsync(Guid businessId, ApprovalSummaryContext ctx) => ApprovalSummaries.ShiftSwapAsync(businessId, ctx);
     }
 }

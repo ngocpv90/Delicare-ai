@@ -23,6 +23,14 @@ namespace AppDelicare.Model.Model
         /// <summary>BE2.3: hạn của bước đang chờ; quá hạn → <see cref="IsOverdue"/> (cờ, không job – D-45).</summary>
         public DateTime? DueAt { get; set; }
         public bool IsOverdue { get; set; }
+        /// <summary>APR-1.3: còn &lt; 8 giờ tới hạn (chưa quá hạn).</summary>
+        public bool DueSoon { get; set; }
+        /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung.</summary>
+        public ApprovalSummaryModel? Summary { get; set; }
+        /// <summary>APR-1.3 (D-81 d): duyệt nhiều được (Bình thường + loại trong BusinessRules:ApprovalBulkTypes).</summary>
+        public bool CanBulk { get; set; }
+        /// <summary>APR-1.3 (D-81 g): ENGINE = yêu cầu duyệt; PLAN = kế hoạch SX giữ Nháp chờ COO (duyệt bằng ProductionPlan/Approve, Id = Id kế hoạch).</summary>
+        public string Source { get; set; } = "ENGINE";
     }
 
     /// <summary>BE2.3: 1 bước của quy trình duyệt (ApprovalStep + mục quyền + tên người quyết định).</summary>

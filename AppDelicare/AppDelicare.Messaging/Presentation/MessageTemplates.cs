@@ -100,11 +100,15 @@ namespace AppDelicare.Messaging.Presentation
             {
                 "MANUAL_TEXT" => NeutralMessage.Text(Str(data, "text") ?? string.Empty),
                 "SYSTEM_TEST" => new NeutralMessage { Title = "Kiểm tra kết nối", Lines = ["Bot Delicare đã kết nối thành công."] },
+                // APR-1.7 (D-81 e): khuôn tóm tắt chung – nhãn ⚠ / 🟢, loại + số chứng từ, tóm tắt, vì sao, ≤ 3 cảnh báo, người gửi, cấp, hạn.
                 "APPROVAL_PENDING" => new NeutralMessage
                 {
-                    Title = "⏳ Chờ bạn duyệt" + (Str(data, "requestNo") is { } no ? ": " + no : string.Empty),
-                    Lines = [.. Present(Str(data, "title"), Prefixed("Người gửi: ", Str(data, "requester")), Prefixed("Cấp: ", Str(data, "step")), Prefixed("Hạn: ", When(Str(data, "dueAt"))))],
+                    Title = (Array(data, "flags").Count > 0 ? $"⚠️ Chờ bạn duyệt · {Array(data, "flags").Count} cảnh báo" : Str(data, "typeName") != null ? "🟢 Chờ bạn duyệt · bình thường" : "⏳ Chờ bạn duyệt")
+                        + (Str(data, "typeName") is { } tn ? ": " + tn + (Str(data, "documentNo") is { } dn ? " " + dn : string.Empty) : Str(data, "requestNo") is { } no ? ": " + no : string.Empty),
+                    Lines = [.. Present(Str(data, "title"), Prefixed("Vì sao cần duyệt: ", Str(data, "reason"))), .. Array(data, "flags").Take(3).Select(f => "⚠ " + f),
+                        .. Present(Prefixed("Người gửi: ", Str(data, "requester")), Prefixed("Cấp: ", Str(data, "step")), Prefixed("Hạn: ", When(Str(data, "dueAt"))))],
                 },
+                "APPROVAL_DIGEST" => new NeutralMessage { Title = Str(data, "title") ?? "📋 Tổng hợp duyệt cuối ngày", Lines = Array(data, "lines") },
                 "APPROVAL_RESULT" => new NeutralMessage
                 {
                     Title = (Flag(data, "approved") ? "✅ Đã duyệt" : "❌ Bị từ chối") + (Str(data, "requestNo") is { } no2 ? ": " + no2 : string.Empty),

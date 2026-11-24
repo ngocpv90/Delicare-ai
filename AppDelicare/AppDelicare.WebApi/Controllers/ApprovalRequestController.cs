@@ -184,5 +184,93 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>APR-1.3 (D-81 h): yêu cầu tôi gửi còn đang mở – cấp, người đang giữ, đã chờ, nhắc được không.</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetMySent")]
+        public async Task<IActionResult> GetMySent()
+        {
+            try
+            {
+                return Ok(await _service.GetMySent());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetMySent: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>APR-1.3: yêu cầu tôi đã duyệt / từ chối (mới nhất trước).</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetMyDecided")]
+        public async Task<IActionResult> GetMyDecided(int page = 1, int pageSize = 20)
+        {
+            try
+            {
+                return Ok(await _service.GetMyDecided(page, pageSize));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetMyDecided: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>APR-1.3 (D-81 d): duyệt nhiều yêu cầu Bình thường – JSON body (danh sách id); máy chủ kiểm lại canBulk + quyền từng id, trả kết quả từng id. Không từ chối hàng loạt.</summary>
+        [Security.SkipPermission]
+        [HttpPost("DecideBulk")]
+        public async Task<IActionResult> DecideBulk([FromBody] ApprovalBulkRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.DecideBulk(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " DecideBulk: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>APR-1.3 (D-81 h): người gửi nhắc người duyệt cấp hiện tại qua bot – tối đa 1 lần / BusinessRules:ApprovalRemindHours giờ / yêu cầu.</summary>
+        [Security.SkipPermission]
+        [HttpPost("Remind")]
+        public async Task<IActionResult> Remind([FromForm] ApprovalRemindRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Remind(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Remind: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>APR-1.3 (D-81 k): thống kê theo loại (số yêu cầu, % duyệt nguyên trạng, thời gian chờ TB) – admin / người có quyền Xem #/wf-inbox.</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetStats")]
+        public async Task<IActionResult> GetStats(DateTime? fromDate, DateTime? toDate)
+        {
+            try
+            {
+                return Ok(await _service.GetStats(fromDate, toDate));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetStats: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }
