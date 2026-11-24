@@ -91,7 +91,7 @@ Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở
 - **Lịch tin định kỳ:** 07:00 thẻ ngày / bản tin sáng · 16:00 nhắc bàn giao người nghỉ ngày mai · 17:00 báo cáo cuối ngày · 19:00 khách chưa chốt đơn · 21:00 nguyên liệu cho tối nay / mai.
 
 ## 8. Duyệt trên bot
-`12_QUAN_LY_DUYET.md` §7: rủi ro thấp (nghỉ, đổi ca, đổi món) duyệt 1 chạm + **↩️ Hoàn tác** 10 giây, **✅ Duyệt nhanh N mục**; loại khác xác nhận 2 bước; từ chối phải trả lời tin với lý do.
+`12_QUAN_LY_DUYET.md` §7 (APR-UI-1): thẻ duyệt cùng khuôn tóm tắt với web – 🔴 quá hạn / ⚠️ cảnh báo / 🟢 bình thường, vì sao cần duyệt, ≤ 3 cảnh báo, người gửi, hạn; **✅ Duyệt / ❌ Từ chối / 📄 Xem chi tiết**. Rủi ro thấp + không cảnh báo duyệt 1 chạm + **↩️ Hoàn tác** 10 giây, **✅ Duyệt nhanh N mục**; loại khác xác nhận 2 bước; từ chối phải trả lời tin với lý do. **📋 Tổng hợp cuối ngày** lúc 18 giờ (`Messaging:ApprovalDigestHour`). Tin **🔔 Người gửi nhắc** khi người gửi bấm Nhắc trên web.
 
 ## 9. Lỗi thường gặp
 

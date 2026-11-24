@@ -57,7 +57,7 @@ Các màn `dbx-explorer`, `dbx-gap` **đang ẩn** ở chế độ dữ liệu t
 | Các bước duyệt · Lịch sử duyệt · Chứng từ trong yêu cầu duyệt | Chi tiết yêu cầu trong **Hộp phê duyệt** |
 | Phiếu chuyển kho · Phiếu điều chỉnh tồn | Nút **Chuyển kho** / **Điều chỉnh tồn** trên màn **Tồn kho** (duyệt điều chỉnh vẫn ở Phê duyệt › Phiếu điều chỉnh tồn) |
 | Thông tin cá nhân | **Tài khoản** / **Nhân viên** |
-| Hộp phê duyệt (nhóm Nhân sự) | **Phê duyệt › Tất cả yêu cầu duyệt** (cùng màn; dòng quyền `#/wf-inbox` giữ nguyên – vẫn cấp ở ma trận quyền) |
+| Hộp phê duyệt (nhóm Nhân sự) và 20 mục "Phê duyệt › …" | 1 mục **Phê duyệt** (màn tổng – D-81); các dòng quyền giữ nguyên, cấp ở khối **Quyền duyệt** của màn Phân quyền (§4.5) |
 
 Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản lượng** (ghi khi kết thúc mẻ nấu), **Xếp hàng lên xe** và **Xác nhận đã giao** (Theo dõi chuyến / bot), **Liên kết tài khoản chat** (mã liên kết; nút Liên kết / Gỡ liên kết).
 
@@ -101,6 +101,7 @@ Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòn
 - Nút hình khiên **Xem trước quyền của nhóm** (quản trị) → danh sách màn được truy cập + các tài khoản thuộc nhóm.
 
 ### 4.5 Phân quyền – `adm-permission`
+**APR-UI-1 (D-81 a):** các mục "Phê duyệt › …" không nằm trong cây menu nữa mà gom ở khối **Quyền duyệt** cuối bảng: mỗi loại (kèm cấp: 1 cấp / Cấp 1 / Cấp 2) **1 ô "Được duyệt"** – tick = Truy cập + Sửa trên mục quyền duyệt (D-31), bỏ tick = thu cả hai. "Tất cả yêu cầu duyệt" = **chỉ xem** mọi yêu cầu (không duyệt được). Các dòng này giữ trong DB (IsActive = 1) – đừng tắt ở màn Cấu hình menu, tắt là mất quyền duyệt.
 1. Cột trái: chọn nhóm (hiện số chức năng được truy cập, số tài khoản).
 2. Bảng phải: mỗi mục menu cấp 2 × 7 ô quyền. Tick / bỏ tick → lưu ngay ("Cấp … / Thu hồi …").
    - Tick bất kỳ quyền nào khác → tự bật **Truy cập**.

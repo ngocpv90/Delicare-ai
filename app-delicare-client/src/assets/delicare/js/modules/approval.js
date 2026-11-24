@@ -65,6 +65,8 @@
   // ---------- vẽ ----------
   APP.register('wf-inbox', (el, f, p) => {
     if (!live()) return legacy && legacy(el, f, p);
+    // D-81 (a): 1 mục "Phê duyệt" (tên menu cũ "Hộp phê duyệt" thuộc nhóm Nhân sự không còn dùng ở giao diện).
+    f.fn = f.name = 'Phê duyệt'; f.grp = 'Phê duyệt'; document.title = 'Phê duyệt | DELI-CARE';
     if (p && p.type && p.type !== 'wf-inbox' && H.lastType !== p.type) { H.lastType = p.type; H.tab = 'mine'; H.g = ''; }
     if (H.mine === null) { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel">${LOADING}</div>`; loadMine(true).then(() => APP.current === 'wf-inbox' && APP.refresh()); if (H.sent === null) loadSent(); return; }
     if (H.sent === null) { loadSent().then(() => APP.current === 'wf-inbox' && APP.refresh()); }
@@ -79,7 +81,7 @@
     const counts = {}; mine.forEach(i => { const m = sum(i).moduleName || 'Khác'; counts[m] = (counts[m] || 0) + 1; });
     el.innerHTML = APP.header(f, `<label class="apr-search">${I('search')}<input type="search" id="aprQ" placeholder="Số chứng từ, khách, NCC, người gửi" value="${esc(H.q)}" aria-label="Tìm yêu cầu duyệt"></label>`,
       { noNote: true, sub: `${esc(user.fullName || user.userName || '')}${user.fullName || user.userName ? ' · ' : ''}cập nhật ${new Date(H.mineAt || Date.now()).toTimeString().slice(0, 5)} · tự làm mới 30 giây` })
-      + `<div class="kpis">${UI.kpi('Chờ tôi duyệt', U.num(mine.length), `${flagged} cảnh báo · ${mine.length - flagged} bình thường`, 'approve', 'orange')}${UI.kpi('Quá hạn', U.num(over), over ? 'đã leo thang theo hạn' : '', 'alert', over ? 'red' : 'green')}${UI.kpi('Hết hạn trong 8 giờ', U.num(soon.length), soon[0] ? typeOf(soon[0]) : '', 'clock', soon.length ? 'orange' : 'green')}${UI.kpi('Tôi gửi đang chờ', U.num(sent.length), sent.length ? 'lâu nhất ' + hrs(maxWait) : '', 'export', 'blue')}</div>`
+      + `<div class="kpis apr-kpis">${UI.kpi('Chờ tôi duyệt', U.num(mine.length), `${flagged} cảnh báo · ${mine.length - flagged} bình thường`, 'approve', 'orange')}${UI.kpi('Quá hạn', U.num(over), over ? 'đã leo thang theo hạn' : '', 'alert', over ? 'red' : 'green')}${UI.kpi('Hết hạn trong 8 giờ', U.num(soon.length), soon[0] ? typeOf(soon[0]) : '', 'clock', soon.length ? 'orange' : 'green')}${UI.kpi('Tôi gửi đang chờ', U.num(sent.length), sent.length ? 'lâu nhất ' + hrs(maxWait) : '', 'export', 'blue')}</div>`
       + `<div class="apr-layout"><section class="card apr-main"><div class="apr-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${H.tab === k}" class="${H.tab === k ? 'on' : ''}" data-tab="${k}">${esc(l)}</button>`).join('')}</div><div id="aprBody"></div></section>`
       + `<aside class="card apr-side" id="aprSide" aria-label="Xem nhanh yêu cầu"></aside></div>`;
     const body = el.querySelector('#aprBody');
@@ -90,7 +92,7 @@
         ${H.picked.size ? `<div class="apr-bulk"><b>Đã chọn ${H.picked.size} yêu cầu bình thường</b><span class="small muted">Chỉ chọn được dòng không có cảnh báo, loại rủi ro thấp</span><span class="grow"></span><button class="btn primary" id="aprBulk">${I('approve')} Duyệt các mục đã chọn</button></div>` : ''}
         <div class="apr-rows">${list.length ? list.map(rowHtml).join('') : `<div class="empty">${I('ok')}<div class="mt">${mine.length ? 'Không có yêu cầu khớp bộ lọc' : 'Không có yêu cầu nào chờ bạn duyệt'}</div></div>`}</div>`;
       body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { H.g = b.dataset.g; APP.refresh(); });
-      body.querySelectorAll('[data-open]').forEach(b => b.onclick = () => open(b.dataset.open, list));
+      body.querySelectorAll('[data-apr-open]').forEach(b => b.onclick = () => open(b.dataset.aprOpen, list));
       body.querySelectorAll('input[data-pick]').forEach(c => c.onchange = () => { if (c.checked) H.picked.add(c.dataset.pick); else H.picked.delete(c.dataset.pick); APP.refresh(); });
       const bulk = body.querySelector('#aprBulk'); if (bulk) bulk.onclick = bulkApprove;
       side(el.querySelector('#aprSide'), list);
@@ -105,9 +107,8 @@
     const fl = flags(i), d = dueLabel(i), s = sum(i);
     return `<div class="apr-row ${H.cur === i.id ? 'cur' : ''}">
       <label class="apr-pick">${i.canBulk ? `<input type="checkbox" data-pick="${i.id}" ${H.picked.has(i.id) ? 'checked' : ''} aria-label="Chọn ${esc(s.documentNo || i.requestNo)} để duyệt nhanh">` : `<input type="checkbox" disabled aria-label="Không duyệt nhanh được – mở từng yêu cầu" title="Có cảnh báo hoặc loại phải mở từng yêu cầu">`}</label>
-      <button type="button" class="apr-open" data-open="${i.id}">
-        <span class="apr-type"><b>${esc(typeOf(i))}</b><span class="small muted">${esc(s.documentNo || i.requestNo || '')}</span></span>
-        <span class="apr-what"><span class="apr-title">${esc(s.title || i.title || '')}</span><span class="small muted">Vì sao cần duyệt: ${esc(s.reason || '')}</span>
+      <button type="button" class="apr-open" data-apr-open="${i.id}">
+        <span class="apr-what"><span class="apr-type"><b>${esc(typeOf(i))}</b> <span class="small muted">${esc(s.documentNo || i.requestNo || '')}</span></span><span class="apr-title">${esc(s.title || i.title || '')}</span><span class="small muted">Vì sao cần duyệt: ${esc(s.reason || '')}</span>
           ${fl.length ? `<span class="apr-flag warn">⚠ ${fl.length} cảnh báo: ${esc(fl[0].text)}</span>` : '<span class="apr-flag okf">✓ Bình thường</span>'}</span>
         <span class="apr-by small muted">${esc(i.requestedByName || '–')}<br>gửi ${esc(U.dt(i.requestedAt))} · cấp ${i.stepNo}/${i.stepCount}</span>
         <span class="apr-due ${d.c}">${d.t}</span>

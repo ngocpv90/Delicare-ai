@@ -1,26 +1,26 @@
-# 12 – Quản lý duyệt (Hộp phê duyệt)
+# 12 – Quản lý duyệt (màn Phê duyệt tổng – D-81)
 
 ## 1. Bạn là ai
 
 - Người duyệt theo ma trận D-79 (MENU-5): **CEO** (việc lớn: hợp đồng, đơn mua ≥ 50 triệu), **COO** (việc vận hành), **SAL-HEAD** (sửa đơn sau chốt), **OPS-SCM-HEAD** (đề nghị mua cấp 1, kiểm kê cấp 1), **FIN-ACC** (kiểm kê cấp 2), **FIN-HR** (đơn nghỉ / đổi ca), **QA** (kết luận kiểm tra hàng nhập, Đạt / Tạm giữ / Loại mẻ làm tay, Giữ / thả lô). Bảng đủ ở mục 3.
 - **Người gửi không duyệt bất kỳ cấp nào của yêu cầu mình** (D-79 a5 – thay D-52 d; cấu hình `BusinessRules:ApprovalBlockSelfApproval`, mặc định bật; tài khoản quản trị được miễn). Yêu cầu do bạn gửi không hiện trong *Chờ tôi duyệt*; hộp duyệt hiện nhãn **Bạn gửi – chờ người khác duyệt**; bấm Duyệt báo *Bạn là người gửi yêu cầu này – cần người khác duyệt*. Bạn vẫn **hủy** được yêu cầu của mình.
-- **Hộp phê duyệt chung** (xem mọi yêu cầu, tab Đang chờ / Tất cả): chỉ CEO, CEO-PMO, COO (mục *Phê duyệt › Tất cả yêu cầu duyệt* – chỉ xem, **không** làm người có nó duyệt được mọi loại) và FIN-IT. Người duyệt khác bấm mục *Phê duyệt › <loại>* của mình → chỉ thấy danh sách **Chờ tôi duyệt**.
+- **Tab Tất cả** của màn Phê duyệt (xem mọi yêu cầu): chỉ CEO, CEO-PMO, COO (quyền *Tất cả yêu cầu duyệt* – chỉ xem, **không** làm người có nó duyệt được mọi loại) và FIN-IT. Người duyệt khác thấy Chờ tôi duyệt / Tôi đã gửi / Tôi đã duyệt.
 - Quyền duyệt = quyền **Truy cập + Sửa** trên mục menu **"Phê duyệt › …"** (`#/wf-inbox?type=<màn>`) do quản trị cấp (`01_QUAN_TRI.md`).
 - Bot: duyệt trên bot **Điều hành** / **Vận hành** (⏳ Chờ tôi duyệt) – chỉ khi tài khoản Telegram đã **liên kết tài khoản web** (xem 7 và `90_CHENH_LECH.md` C-02).
 
 ## 2. Màn hình được dùng
 
+**APR-UI-1 (D-81):** sidebar chỉ còn **1 mục "Phê duyệt"** (ngay dưới "Việc của tôi", có số **chờ tôi duyệt**). Mục hiện cho người có ít nhất một quyền duyệt, người có quyền xem hộp chung, hoặc người đang có yêu cầu đã gửi. Các mục cũ "Phê duyệt › <loại>" vẫn giữ trong hệ thống làm **quyền duyệt** (cấp ở màn Phân quyền – khối *Quyền duyệt*, `01_QUAN_TRI.md` §4.5) nhưng không còn trên menu; link cũ `#/wf-inbox?type=…` vẫn mở được (áp làm bộ lọc).
+
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `wf-inbox?type=…` | Phê duyệt › <loại> | Duyệt / từ chối yêu cầu chờ mình ở cấp hiện tại (mỗi loại 1 mục, xem mục 3) |
-| `wf-inbox?type=wf-inbox` | Phê duyệt › Tất cả yêu cầu duyệt | Xem mọi yêu cầu (CEO / CEO-PMO / COO – chỉ xem) |
-| `wf-step` | (màn con, ẩn) | Các cấp duyệt của yêu cầu – xem trong tab Tiến trình duyệt |
-| `prod-plan` | Sản xuất › Kế hoạch sản xuất | Nút **Duyệt** kế hoạch (quyền Phê duyệt › Kế hoạch sản xuất – COO) |
-| `menu-menu` | Thực đơn & Món ăn › Thực đơn tuần | Nút **Duyệt** thực đơn (COO) |
-| `menu-recipe` | Thực đơn & Món ăn › Công thức chế biến | Duyệt cấp cuối = **khóa & áp dụng** luôn (BIZ-2.3); nút **Áp dụng** chỉ cho bản Đã duyệt cũ (COO) |
-| `qc-inspection` | Chất lượng & ATTP › Kiểm tra hàng nhập | Nút **Kết luận** (quyền Phê duyệt › Kiểm tra hàng nhập – QA) |
-| `prod-batch` | Sản xuất › Mẻ nấu | Nút **QC: PASS / HOLD / REJECT**, **Loại mẻ** (quyền Phê duyệt › Mẻ nấu – QA); bếp thấy *Chờ QA kết luận*. Mẻ hệ thống tự Đạt (BIZ-2.7) không đổi |
-| `scm-lot` | Kho › Lô hàng & hạn dùng | Nút **Tạm giữ / Mở giữ** lô (quyền Phê duyệt › Giữ / thả lô – QA) |
+| `wf-inbox` | Phê duyệt | Màn tổng: mọi việc chờ bạn duyệt, việc bạn đã gửi, việc bạn đã duyệt; tab Tất cả (CEO / CEO-PMO / COO / FIN-IT – chỉ xem) |
+| `prod-plan` | Sản xuất › Kế hoạch sản xuất | Kế hoạch hệ thống giữ Nháp chờ COO cũng hiện trong màn Phê duyệt; nút **Sửa kế hoạch** mở màn này |
+| `menu-menu` | Thực đơn & Món ăn › Thực đơn tuần | Nút **Duyệt** thực đơn (COO) – thực đơn không có bước "gửi duyệt" nên không vào màn Phê duyệt |
+| `menu-recipe` | Thực đơn & Món ăn › Công thức chế biến | Duyệt cấp cuối = **khóa & áp dụng** luôn (BIZ-2.3) |
+| `qc-inspection` | Chất lượng & ATTP › Kiểm tra hàng nhập | Nút **Kết luận** (quyền duyệt "Kiểm tra hàng nhập" – QA) – không vào màn Phê duyệt (D-81 g) |
+| `prod-batch` | Sản xuất › Mẻ nấu | Nút **QC: PASS / HOLD / REJECT**, **Loại mẻ** (quyền duyệt "Mẻ nấu" – QA) |
+| `scm-lot` | Kho › Lô hàng & hạn dùng | Nút **Tạm giữ / Mở giữ** lô (quyền duyệt "Giữ / thả lô" – QA) |
 
 ## 3. Các loại yêu cầu duyệt
 
@@ -49,21 +49,22 @@
 - Mỗi cấp có **hạn xử lý 48 giờ**; quá hạn hiện nhãn **Quá hạn** nhưng **vẫn duyệt / từ chối được** (BIZ-1.6, D-77 f) – không phải hủy gửi lại; người gửi vẫn hủy được nếu muốn. Leo thang qua bot: quá hạn → báo người duyệt của cấp; quá thêm 24 giờ → báo **COO**; quá thêm 24 giờ nữa (48 giờ sau hạn) → báo **CEO**.
 - Một người không duyệt hai cấp của cùng một yêu cầu (cấp sau phải do người khác).
 
-## 4. Thao tác từng bước – `wf-inbox`
+## 4. Thao tác từng bước – màn Phê duyệt (`wf-inbox`)
 
-1. Đầu màn: thẻ **Chờ tôi duyệt** (đúng người duyệt của bước hiện tại, tự làm mới 30 giây), **Đang chờ (tất cả)**, **Đã duyệt**, **Từ chối**.
-2. Chip: **Chờ tôi duyệt** / **Đang chờ** / **Tất cả**.
-3. Bảng: Số yêu cầu `XN-…`, Loại nghiệp vụ, Bản ghi nghiệp vụ, Người yêu cầu, Gửi lúc, Bước / Vai trò duyệt, Trạng thái; nút trên dòng **Duyệt**, **Từ chối**, **Hủy yêu cầu** (chỉ người gửi).
-4. Bấm dòng → ngăn chi tiết:
-   - Thanh các cấp (đã duyệt / đang chờ / từ chối), khối **Bản ghi nghiệp vụ** (thông tin chứng từ; với PR có danh sách dòng).
-   - Tab **Tiến trình duyệt**: Người gửi, Trạng thái, Cấp duyệt (n / tổng), Hạn xử lý, Chứng từ; **Các cấp duyệt** (tên bước = tên mục "Phê duyệt › …", người quyết định, lúc, ý kiến); nút **Duyệt / Từ chối / Hủy yêu cầu** theo quyền của bạn.
-   - Tab **Quyết định**: lịch sử quyết định.
-   - Chân ngăn: **Từ chối**, **Duyệt bước hiện tại**.
-5. **Duyệt** → nhập **Ý kiến phê duyệt** (không bắt buộc) → **Duyệt**. Cấp cuối duyệt → chứng từ chuyển trạng thái (vd PR **Đã duyệt**, hợp đồng **Hiệu lực**, đơn nghỉ **Đã duyệt** + bỏ ca).
-6. **Từ chối** → **Ý kiến phê duyệt** bắt buộc → chứng từ về trạng thái từ chối / nháp.
-7. **Hủy yêu cầu** (người gửi) → **Lý do hủy*** → chứng từ không còn chờ duyệt (không hoàn tác).
+1. Bấm **Phê duyệt** trên sidebar. Đầu màn: 4 thẻ **Chờ tôi duyệt** (số có cảnh báo / bình thường) · **Quá hạn** · **Hết hạn trong 8 giờ** · **Tôi gửi đang chờ** (lâu nhất bao lâu). Ô **Tìm** (số chứng từ, khách, NCC, người gửi) lọc ngay tại chỗ. Danh sách tự làm mới 30 giây.
+2. Tab **Chờ tôi duyệt**: lọc nhanh theo phân hệ (Kinh doanh · Thực đơn · Mua hàng · Kho · Sản xuất · Nhân sự – có số). Xếp sẵn: **quá hạn → sắp hết hạn → cũ nhất**. Mỗi dòng: loại + số chứng từ, tóm tắt (vd. "NCC Rau sạch · 38.450.000 đ · 12 dòng"), **Vì sao cần duyệt**, nhãn **⚠ N cảnh báo: …** hoặc **✓ Bình thường**, người gửi + cấp, hạn (đỏ = quá hạn, cam = còn dưới 8 giờ).
+3. Bấm dòng → **Xem nhanh** (màn rộng: ngăn bên phải; máy tính bảng: lớp phủ; điện thoại: toàn màn, nút cố định cuối): vì sao cần duyệt, cảnh báo, thông tin chính, các dòng chứng từ (ô bất thường tô màu), tiến trình các cấp, link **chứng từ gốc ↗**, **‹ Trước / Tiếp theo ›**.
+4. **Duyệt & sang việc tiếp**: ý kiến không bắt buộc; duyệt xong tự mở việc kế tiếp. Yêu cầu bình thường = **≤ 2 lần bấm** (bấm dòng → Duyệt).
+5. **Từ chối**: ô **Ý kiến** bắt buộc (bỏ trống → báo "Nhập lý do từ chối"). Kế hoạch sản xuất giữ Nháp không có Từ chối – bấm **Sửa kế hoạch**.
+6. **Duyệt nhiều**: chỉ tick được dòng **Bình thường** thuộc loại rủi ro thấp (`BusinessRules:ApprovalBulkTypes` – mặc định đơn nghỉ, đổi ca) → **Duyệt các mục đã chọn**. Máy chủ kiểm lại từng yêu cầu: có cảnh báo / không còn chờ bạn → bỏ qua và báo lý do. **Không từ chối hàng loạt.** Hợp đồng, chính sách giá, PO ≥ 50 triệu, kiểm kê, sửa đơn sau chốt luôn mở từng yêu cầu.
+7. Tab **Tôi đã gửi**: yêu cầu của bạn còn mở – đang chờ ai (tên người có quyền duyệt cấp đó), đã chờ bao lâu, cấp; nút **Nhắc qua bot** (mỗi yêu cầu tối đa **1 lần / 4 giờ** – `ApprovalRemindHours`; bấm sớm hơn báo "Đã nhắc lúc … – nhắc lại được sau …") và **Hủy** (lý do bắt buộc).
+8. Tab **Tôi đã duyệt**: 50 quyết định gần nhất (đã duyệt / từ chối, ý kiến). Tab **Tất cả** (CEO / CEO-PMO / COO / FIN-IT): mọi yêu cầu – chỉ xem.
 
-Đơn nghỉ / đổi ca cũng duyệt được ngay trên `hr-leave` / `hr-swap` (tab **Xử lý đơn**).
+**Cảnh báo máy chủ tính (D-81 f – chỉ đọc dữ liệu có sẵn; ngưỡng trong `BusinessRules`):** PO – giá dòng cao hơn lần mua trước cùng NCC ≥ 10 %, NCC không phải ưu tiên cho nguyên liệu, PO lập tay không từ đề nghị mua; ĐN mua – tồn + đề nghị vượt định mức tối đa; sửa đơn sau chốt – kế hoạch ngày ăn đã duyệt / phát hành (sẽ sinh mẻ bổ sung), lệch > 30 %; kiểm kê – dòng lệch > 5 %; đơn nghỉ – ca đã phân trong ngày nghỉ chưa có người thay; hợp đồng – giá suất thấp hơn giá vốn chuẩn bình quân; mọi loại – người gửi bị từ chối loại này ≥ 2 lần / 30 ngày; người duyệt cấp này đang nghỉ (đã báo bậc leo thang).
+
+**Người duyệt nghỉ (D-81 i):** mọi người có quyền duyệt cấp đang chờ đều có đơn nghỉ **Đã duyệt** hôm nay → hệ thống báo ngay **COO** (COO cũng nghỉ → **CEO**) qua bot Điều hành, không chờ 48 giờ; yêu cầu hiện cảnh báo "Người duyệt cấp này đang nghỉ". Ủy quyền đích danh: GAP-APR-04 (chưa làm).
+
+Đơn nghỉ / đổi ca vẫn duyệt được ngay trên `hr-leave` / `hr-swap` (tab **Xử lý đơn**).
 
 ## 5. Trạng thái yêu cầu duyệt
 
@@ -88,10 +89,11 @@
 
 ## 7. Duyệt trên bot
 
-- **⏳ Chờ tôi duyệt** (`/cho`) – danh sách yêu cầu đến lượt bạn (cần đã liên kết tài khoản web).
-- Thẻ duyệt: tiêu đề, người gửi, nội dung tóm tắt, hạn → **✅ Duyệt** / **❌ Từ chối**.
-  - **Rủi ro thấp** (đơn nghỉ, đổi ca, đổi món): duyệt **1 chạm**, có **↩️ Hoàn tác** trong 10 giây; nhiều mục cùng loại có **✅ Duyệt nhanh N mục**.
-  - Loại khác: bấm Duyệt → bot hỏi lại xác nhận (2 bước).
-  - Từ chối: bot yêu cầu **trả lời tin** với lý do.
-- Bot báo kết quả duyệt cho người gửi (🟡 APPROVAL_RESULT); yêu cầu quá hạn: 24 giờ báo COO, 48 giờ báo CEO.
+- **⏳ Chờ tôi duyệt** (`/cho`) – cùng danh sách với web: mỗi dòng 🔴 quá hạn / ⚠️ có cảnh báo / 🟢 bình thường + loại + số chứng từ + tóm tắt.
+- **Thẻ duyệt** (cùng khuôn tóm tắt với web – APR-1.7): nhãn **🔴 CẦN DUYỆT · QUÁ HẠN** / **⚠️ CẦN DUYỆT · N CẢNH BÁO** / **🟢 BÌNH THƯỜNG** + hạn, loại + số chứng từ, tóm tắt, *Vì sao cần duyệt*, tối đa 3 cảnh báo, người gửi + cấp → **✅ Duyệt** / **❌ Từ chối** / **📄 Xem chi tiết** (thông tin chính + 8 dòng đầu chứng từ).
+  - **Rủi ro thấp** (đơn nghỉ, đổi ca, đổi món) và **không có cảnh báo**: duyệt **1 chạm**, có **↩️ Hoàn tác** trong 10 giây; **✅ Duyệt nhanh N mục** chỉ gồm mục không cảnh báo.
+  - Loại khác: bấm Duyệt → bot hỏi lại xác nhận (2 bước). Từ chối: **trả lời tin** với lý do.
+- Tin "Chờ bạn duyệt" khi có yêu cầu mới cũng theo khuôn này. Người gửi bấm **Nhắc qua bot** trên web → người duyệt nhận tin "🔔 Người gửi nhắc …".
+- **Tổng hợp cuối ngày** (bot Điều hành, từ `Messaging:ApprovalDigestHour` = 18 giờ, 1 lần / ngày): còn chờ bạn N (quá hạn, có cảnh báo) + nút **⏳ Mở Phê duyệt**. Phần "hệ thống tự duyệt hôm nay" chỉ có khi bật hậu kiểm (chưa bật – D-81 k).
+- Bot báo kết quả duyệt cho người gửi (🟡 APPROVAL_RESULT); quá hạn: 24 giờ báo COO, 48 giờ báo CEO; người duyệt nghỉ → báo ngay bậc kế.
 - **Liên kết tài khoản web cho người duyệt:** bot yêu cầu mã lấy ở web *menu tài khoản (góc phải) → Liên kết Telegram* rồi gõ `/start <mã>` (mã 15 phút). Trên web: bấm **Mở bot** ngay trong hộp mã để khỏi gõ lệnh.

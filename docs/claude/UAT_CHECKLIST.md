@@ -3,6 +3,25 @@
 Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) hoặc VS Code REST Client (`docs/api-tests/*.http`).
 Đánh dấu [x] khi đạt; ghi lỗi / góp ý vào cột "Ghi chú" hoặc báo Claude Code.
 
+## PHÊ DUYỆT TỔNG (APR-UI-1, D-81 – 2026-11-23) · test: `Approval/ApprovalHubTests.cs` · ảnh: `docs/frontend-handoff/assets/apr-ui-1/screens/` · HDSD `12_QUAN_LY_DUYET.md`
+
+**Đo (D-81 k):** COO + trưởng mua hàng dùng màn Phê duyệt 1 ngày; ghi số lần bấm / yêu cầu bình thường (mục tiêu **≤ 2**) và thời gian / yêu cầu có cảnh báo (mục tiêu **≤ 30 giây**). Cuối ngày gọi `GET api/ApprovalRequest/GetStats` (admin / người xem hộp chung) – số yêu cầu, % duyệt nguyên trạng, thời gian chờ TB theo loại – dán vào cột Ghi chú.
+
+| # | Kịch bản | Thao tác | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Sidebar | Đăng nhập COO / OPS-SCM-HEAD / FIN-HR / nhân viên vừa gửi đơn nghỉ | 1 mục **Phê duyệt** dưới "Việc của tôi", số = chờ tôi duyệt; không còn mục "Phê duyệt › …"; người không có quyền duyệt và chưa gửi gì không thấy mục | [ ] | |
+| 2 | Màn tổng | Mở Phê duyệt | 4 thẻ (Chờ tôi duyệt · Quá hạn · Hết hạn trong 8 giờ · Tôi gửi đang chờ); lọc phân hệ có số; xếp quá hạn → sắp hết hạn → cũ nhất; mỗi dòng có Vì sao cần duyệt + cảnh báo / Bình thường; không có "dbo.", mã loại thô, hộp GAP | [ ] | |
+| 3 | Duyệt ≤ 2 bấm | Bấm 1 đơn nghỉ bình thường → **Duyệt & sang việc tiếp** | Duyệt xong, tự sang việc kế; số trên sidebar giảm | [ ] | đếm số bấm |
+| 4 | Cảnh báo PO | Lập PO tay giá cao hơn lần trước ≥ 10 % → gửi duyệt | Dòng PO có "⚠ … cảnh báo: Giá … cao hơn lần mua trước …", ô giá tô màu ở xem nhanh; không tick được để duyệt nhiều | [ ] | đo thời gian |
+| 5 | Từ chối | Bấm Từ chối không nhập ý kiến | Báo "Nhập lý do từ chối"; nhập lý do → từ chối được | [ ] | |
+| 6 | Duyệt nhiều | Tick 2 đơn nghỉ / đổi ca bình thường → Duyệt các mục đã chọn | "Đã duyệt 2/2"; dòng có cảnh báo không tick được | [ ] | |
+| 7 | Kế hoạch giữ Nháp | Sau chốt đơn hệ thống giữ Nháp kế hoạch (thiếu NL) → COO mở Phê duyệt | Kế hoạch hiện trong Chờ tôi duyệt (phân hệ Sản xuất) với lý do giữ; Duyệt → kế hoạch Đã duyệt; không có nút Từ chối (có Sửa kế hoạch) | [ ] | |
+| 8 | Tôi đã gửi + Nhắc | Người gửi mở tab Tôi đã gửi → **Nhắc qua bot**, bấm lại ngay | Lần 1: người duyệt nhận tin "🔔 Người gửi nhắc"; lần 2: "Đã nhắc lúc … – nhắc lại được sau …" | [ ] | |
+| 9 | Người duyệt nghỉ | FIN-HR (người duyệt duy nhất đơn nghỉ) có đơn nghỉ Đã duyệt hôm nay; nhân viên gửi đơn nghỉ | COO nhận ngay tin bot "Người duyệt cấp này đang nghỉ hôm nay – chuyển bạn xử lý (bậc 2)"; yêu cầu có cảnh báo "Người duyệt cấp này đang nghỉ" | [ ] | |
+| 10 | Bot | Bot Điều hành → ⏳ Chờ tôi duyệt → mở 1 thẻ | Thẻ: 🔴/⚠️/🟢 + hạn, loại + số, tóm tắt, vì sao, ≤ 3 cảnh báo, người gửi; nút Duyệt / Từ chối / 📄 Xem chi tiết; sau 18 giờ nhận 📋 Tổng hợp cuối ngày | [ ] | |
+| 11 | Điện thoại | Mở Phê duyệt trên điện thoại | Thẻ thay bảng, lọc cuộn ngang, bấm thẻ → toàn màn, nút Từ chối / Duyệt · việc tiếp cố định cuối (cao ≥ 44px) | [ ] | |
+| 12 | Phân quyền | Admin mở Phân quyền 1 nhóm | Khối **Quyền duyệt** riêng (tên loại + cấp, 1 ô / loại); tick → nhóm duyệt được loại đó | [ ] | |
+
 ## PHÂN QUYỀN THEO TỪNG MÀN + MENU THEO VAI TRÒ (MENU-5, D-79 – 2026-11-23) · script: `DB/scripts/D79_menu_regroup.sql`, `DB/scripts/D79_permission_matrix.sql` · test: `Security/Menu5PermissionTests.cs`, `Security/D79MatrixSqlTests.cs` · ma trận: `docs/claude/MENU5_MATRIX.md`
 
 Trước khi thử: deploy API → seed → `D79_menu_regroup.sql` → `D79_permission_matrix.sql` (DryRun trước, sau backup); tạo 1 tài khoản thử cho mỗi nhóm (hoặc chuyển người sang SAL-HEAD / OPS-SCM-HEAD / OPS-WH), đăng nhập lại.
