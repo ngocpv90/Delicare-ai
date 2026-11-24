@@ -17,7 +17,7 @@
   ]);
 
   D.page({
-    id: 'scm-stockcount-detail', screen: 'scm-stockcount', table: 'StockCount', kind: 'doc', api: 'StockCount/GetOverview', resource: 'StockCount',
+    id: 'scm-stockcount-detail', screen: 'scm-stockcount', table: 'StockCount', kind: 'doc', api: 'StockCount/GetOverview', resource: 'StockCount', related: false,
     head: o => {
       const d = o.detail || {}, sc = d.stockCount || {}, acts = d.allowedActions || [];
       return {
