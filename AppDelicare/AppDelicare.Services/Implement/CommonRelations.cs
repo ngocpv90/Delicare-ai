@@ -255,7 +255,7 @@ namespace AppDelicare.Services.Implement
             string table = entityType.GetCustomAttribute<TableAttribute>()?.Name ?? entityType.Name;
             var set = StatusCatalogEffective.All.FirstOrDefault(s => s.Table.Equals(table, StringComparison.OrdinalIgnoreCase) && s.Column.Equals(column, StringComparison.OrdinalIgnoreCase));
             int i = set == null ? -1 : Array.FindIndex(set.Codes, c => c.Equals(code, StringComparison.OrdinalIgnoreCase));
-            return i >= 0 && i < set!.Labels.Length ? set.Labels[i] : code;
+            return i >= 0 && i < set!.Labels.Length ? set.Labels[i] : StatusLabels.Vi(code); // UI-6.10: từ điển chung thay vì mã tiếng Anh
         }
 
         /// <summary>Nhãn mặc định: mã – tên (– ngày) – rút gọn 120 ký tự.</summary>

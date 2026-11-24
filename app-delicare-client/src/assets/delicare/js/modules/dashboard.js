@@ -46,7 +46,7 @@
       ${UI.kpi('Cảnh báo tồn kho', pad2(k.stockAlerts), k.stockAlerts ? '<span class="warn">Cần xử lý</span>' : '', 'alert', 'red', 'scm-inv-balance')}
       ${UI.kpi('QC tạm giữ / loại', pad2(k.qcHoldReject), `${qd.batchHold || 0} mẻ giữ · ${qd.batchReject || 0} mẻ loại · ${qd.lotOnHold || 0} lô tạm giữ`, 'shield', 'red', 'prod-batch')}
       ${UI.kpi('Nhân sự theo ca', `${sf.checkedIn || 0}/${sf.assigned || 0}`, 'đã vào ca', 'users', 'green', 'hr-shift-assign')}
-      ${UI.kpi('Khiếu nại đang mở', pad2(k.openComplaints), '', 'msg', 'orange', 'log-complaint')}
+      ${UI.kpi('Phản ánh đang mở', pad2(k.openComplaints), '', 'msg', 'orange', 'log-complaint')}
     </div>
     <div class="grid g-main mb">
       <article class="card panel"><div class="panel-head"><div><div class="panel-title">Sản lượng suất ăn 7 ngày</div><div class="panel-desc">Suất kế hoạch theo ngày ăn so với suất khách đã nhận</div></div></div>
@@ -103,7 +103,7 @@
       ${UI.kpi('Cảnh báo tồn kho', String(under).padStart(2, '0'), '<span class="warn">Cần xử lý</span>', 'alert', 'red', 'scm-inv-balance')}
       ${UI.kpi('QC tạm giữ / loại', String(qcHold).padStart(2, '0'), '', 'shield', 'red', 'qc-inspection')}
       ${UI.kpi('Nhân sự theo ca', `${sa.filter(a => ['CheckedIn', 'Completed'].includes(a.AssignmentStatus)).length}/${sa.length}`, 'đã chấm công', 'users', 'green', 'hr-shift-assign')}
-      ${UI.kpi('Khiếu nại đang mở', String(cmp.length).padStart(2, '0'), '', 'msg', 'orange', 'log-complaint')}
+      ${UI.kpi('Phản ánh đang mở', String(cmp.length).padStart(2, '0'), '', 'msg', 'orange', 'log-complaint')}
     </div>
     <div class="grid g-main mb">
       <article class="card panel"><div class="panel-head"><div><div class="panel-title">Sản lượng suất ăn 7 ngày</div><div class="panel-desc">Suất kế hoạch theo ngày ăn so với suất khách đã nhận</div></div></div>

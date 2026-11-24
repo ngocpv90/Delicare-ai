@@ -24,8 +24,10 @@
       const n = Number(v); return isNaN(n) ? null : n;
     },
     initials(s) { return (s || '?').split(/\s+/).slice(-2).map(x => x[0]).join('').toUpperCase(); },
+    /** UI-6.10: tên file không dấu từ tên màn (vd "Diem-giao-hang"). */
+    fileName(s) { return String(s || 'DELICARE').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, ''); },
     csv(rows, cols, filename) {
-      const lines = [cols.map(c => '"' + c.label + ' (' + (c.col || c.k) + ')"').join(',')];
+      const lines = [cols.map(c => '"' + String(c.label).replace(/<[^>]*>/g, '').replace(/"/g, '""') + '"').join(',')]; // UI-6.10 (D-88): tiêu đề cột chỉ tiếng Việt, bỏ tên cột kỹ thuật
       rows.forEach(r => lines.push(cols.map(c => '"' + String(c.text ? c.text(r) : (r[c.k] ?? '')).replace(/"/g, '""') + '"').join(',')));
       const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
@@ -122,7 +124,7 @@
     DeliveryRouteId: 'Tuyến', DeliveryOrderId: 'Đơn giao', DeliveryNumber: 'Số đơn giao', PlannedDeliveryTime: 'Giờ giao KH', ActualDeliveryTime: 'Giờ giao TT', SequenceNo: 'Thứ tự', PlannedArrival: 'Đến KH', ActualArrival: 'Đến TT', PlannedMealQty: 'Suất KH', DeliveredMealQty: 'Suất giao', ShortageQty: 'Thiếu', StopStatus: 'Trạng thái điểm',
     DeliveredQuantity: 'SL giao', ReceiverName: 'Người nhận', ReceiverPhone: 'SĐT nhận', ReceivedAt: 'Nhận lúc', SignatureUrl: 'Chữ ký', PhotoUrl: 'Ảnh', ConfirmedAt: 'Xác nhận lúc', EventType: 'Sự kiện', EventAt: 'Thời điểm', TemperatureC: 'Nhiệt độ °C',
     ReturnDate: 'Ngày thu hồi', ExpectedQuantity: 'SL phải thu', ReturnedQuantity: 'SL thu được', DamagedQuantity: 'SL hỏng', InspectionResult: 'Kết quả kiểm', DamagedQty: 'Hỏng', MissingQty: 'Thiếu', ContainerReturnId: 'Phiếu thu hồi', ReturnInspectionId: 'Phiếu kiểm',
-    ComplaintNo: 'Số khiếu nại', SourceChannel: 'Kênh', CategoryCode: 'Phân loại', Severity: 'Mức độ', SlaDueAt: 'Hạn SLA', ComplaintStatus: 'Trạng thái', AssignedTo: 'Phụ trách', ResolvedAt: 'Xử lý xong', Resolution: 'Kết quả xử lý',
+    ComplaintNo: 'Số phản ánh', SourceChannel: 'Kênh', CategoryCode: 'Phân loại', Severity: 'Mức độ', SlaDueAt: 'Hạn SLA', ComplaintStatus: 'Trạng thái', AssignedTo: 'Phụ trách', ResolvedAt: 'Xử lý xong', Resolution: 'Kết quả xử lý',
     EmployeeId: 'Nhân viên', WorkDate: 'Ngày làm', AssignmentStatus: 'Trạng thái ca', AssignedBy: 'Người phân', StartTime: 'Giờ bắt đầu', EndTime: 'Giờ kết thúc', FromDate: 'Từ ngày', ToDate: 'Đến ngày', LeaveTypeCode: 'Loại nghỉ', RequestStatus: 'Trạng thái', SubmittedAt: 'Gửi lúc', RequestNo: 'Số yêu cầu',
     BusinessType: 'Loại nghiệp vụ', BusinessId: 'Bản ghi nghiệp vụ', RequestedBy: 'Người yêu cầu', RequestedAt: 'Yêu cầu lúc', CurrentStepNo: 'Bước hiện tại', PriorityCode: 'Ưu tiên', DueAt: 'Hạn', StepNo: 'Bước', ApproverUserId: 'Người duyệt', ApproverRoleCode: 'Vai trò duyệt', DecisionStatus: 'Quyết định', DecidedAt: 'Quyết định lúc', DecisionNote: 'Ý kiến',
     ChannelCode: 'Mã kênh', ChannelName: 'Tên kênh', ProviderCode: 'Nhà cung cấp', ChannelStatus: 'Trạng thái', BotCode: 'Mã bot', BotName: 'Tên bot', BotStatus: 'Trạng thái', MessageType: 'Loại tin', ProcessingStatus: 'Xử lý', MessageStatus: 'Trạng thái gửi',

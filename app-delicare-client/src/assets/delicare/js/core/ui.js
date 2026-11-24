@@ -17,11 +17,14 @@
     Open: 'Đang mở', Closed: 'Đã đóng', InProgress: 'Đang thực hiện', Completed: 'Hoàn thành', Delivered: 'Đã giao', Failed: 'Thất bại', OnHold: 'Tạm giữ', Hold: 'Tạm giữ',
     Passed: 'Đạt', Pass: 'Đạt', Fail: 'Không đạt', Success: 'Thành công', Succeeded: 'Thành công', Running: 'Đang chạy', Started: 'Đang chạy', Queued: 'Chờ gửi', Sent: 'Đã gửi',
     Received: 'Đã nhận', Processed: 'Đã xử lý', Ignored: 'Bỏ qua', Linked: 'Đã liên kết', Revoked: 'Đã thu hồi', Unlinked: 'Đã gỡ liên kết', Resigned: 'Nghỉ việc', Suspended: 'Tạm ngừng',
-    New: 'Mới', Planned: 'Đã lập', Released: 'Đã phát hành', Available: 'Sẵn sàng', Reserved: 'Đã giữ chỗ', Consumed: 'Đã dùng', Returned: 'Đã trả', Packed: 'Đã đóng gói',
+    New: 'Mới', Planned: 'Kế hoạch', Released: 'Đã phát hành', Available: 'Khả dụng', Reserved: 'Đã giữ chỗ', Consumed: 'Đã dùng hết', Returned: 'Đã trả', Packed: 'Đã đóng gói',
     Paid: 'Đã thanh toán', Unpaid: 'Chưa thanh toán', Valid: 'Hợp lệ', Invalid: 'Không hợp lệ', Error: 'Lỗi', Warning: 'Cảnh báo', Info: 'Thông tin',
+    PendingApproval: 'Chờ duyệt', Terminated: 'Chấm dứt', Obsolete: 'Hết dùng', Posted: 'Đã ghi sổ', Issued: 'Đã xuất', Matched: 'Khớp', Variance: 'Chênh lệch',
     Inbound: 'Đến', Outbound: 'Đi', IN: 'Đến', OUT: 'Đi', true: 'Có', false: 'Không',
   };
-  UI.statusVi = (t, col, v) => { const d = t && Store.statusDef(t, col); if (d) { const i = d.codes.indexOf(v); if (i >= 0 && d.vi[i]) return d.vi[i]; } return v != null && Object.prototype.hasOwnProperty.call(UI.STATUS_VI, v) ? UI.STATUS_VI[v] : v; };
+  // UI-6.10 (D-88): Active / Inactive một cách gọi duy nhất – bỏ biến thể cũ của danh mục (Hoạt động, Đang áp dụng, Ngừng, Không hoạt động).
+  const UNIFY = { Active: ['Hoạt động', 'Đang áp dụng', 'Active'], Inactive: ['Ngừng', 'Không hoạt động', 'Ngừng áp dụng', 'Inactive'] };
+  UI.statusVi = (t, col, v) => { const d = t && Store.statusDef(t, col); if (d) { const i = d.codes.indexOf(v); if (i >= 0 && d.vi[i]) return UNIFY[v] && UNIFY[v].includes(d.vi[i]) ? UI.STATUS_VI[v] : d.vi[i]; } return v != null && Object.prototype.hasOwnProperty.call(UI.STATUS_VI, v) ? UI.STATUS_VI[v] : (t && v != null && /^[A-Z][a-zA-Z]+$/.test(String(v)) && window.DC_HOST && /localhost|127.0.0.1/.test(location.host) ? '(chưa dịch: ' + v + ')' : v); };
   UI.badge = (v, t, col) => v === null || v === undefined || v === '' ? '<span class="muted">–</span>' : `<span class="badge ${CMAP[v] || 'gray'}" title="${esc(t && !Store.isLive ? t + '.' + col + ' = ' + v : (t ? UI.statusVi(t, col, v) : v))}">${esc(UI.statusVi(t, col, v))}</span>`;
   UI.tag = (v, c) => `<span class="tag ${c || ''}">${esc(v)}</span>`;
   // ---------- Hiển thị giá trị theo kiểu cột ----------
@@ -681,6 +684,13 @@
   const chartQueue = () => { if (chartTick) return; chartTick = requestAnimationFrame(() => { chartTick = 0; chartScan(); }); };
   new MutationObserver(chartQueue).observe(document.documentElement, { childList: true, subtree: true });
   UI.chartScan = chartScan;
+  // UI-6.10 (D-88 a, b): mọi khung .kpis tự mang data-n = số thẻ chỉ số → CSS co giãn / ẩn hàng 1 thẻ (không phải sửa từng chỗ ghép chuỗi .kpis).
+  function kpiScan() { document.querySelectorAll('.kpis').forEach(k => { const n = String(k.querySelectorAll(':scope > .card.kpi, :scope > .kpi').length); if (k.dataset.n !== n) k.dataset.n = n; }); }
+  let kpiTick = 0;
+  new MutationObserver(() => { if (kpiTick) return; kpiTick = requestAnimationFrame(() => { kpiTick = 0; kpiScan(); }); }).observe(document.documentElement, { childList: true, subtree: true });
+  UI.kpiScan = kpiScan;
+  /** Hàm chung cho hàng chỉ số (luật §4.5 mục 2): cards = mảng chuỗi UI.kpi(...); cls = '' | 'compact'. < 2 thẻ → không vẽ gì. */
+  UI.kpis = (cards, cls = '') => { const list = (cards || []).filter(Boolean); return list.length < 2 ? '' : `<div class="kpis ${cls}" data-n="${list.length}">${list.join('')}</div>`; };
   UI.chartCount = () => CH.live.size;
   // Chữ ký cũ (mọi chỗ gọi cũ tự đổi sang Chart.js): series [{ name, color, values }] / parts [{ l, v, c }].
   UI.bars = (labels, series, opt = {}) => UI.chart(Object.assign({ type: 'bar', labels, series }, opt));

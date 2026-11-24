@@ -208,3 +208,34 @@ Cách cài: `IDocumentNumberService.Next(kind, date, suffix)`. Dùng `sp_getappl
 | SAMPLE_RETAINED_PCT | Mẻ đã lưu mẫu | PROPOSED 100% |
 
 Ảnh chụp KPI theo ngày ghi vào `KpiDailySnapshot` (job 22:00), theo tháng ghi vào `KpiMonthlySnapshot`.
+
+## 13. Nhãn hiển thị – tiếng Việt một cách gọi duy nhất (D-88 c, UI-6.10)
+
+Mọi chữ người dùng thấy (giao diện, chip lọc, thẻ chỉ số, file CSV / Excel / PDF, thông báo, bot) dùng **nhãn tiếng Việt** dưới đây khi bảng / cột chưa có nhãn riêng trong danh mục trạng thái (`StatusCatalogEffective` – lớp `*Status.cs` hoặc `STATUS_CATALOG.md`). Nguồn code: máy chủ `AppDelicare.Model/Helper/StatusLabels.cs`, giao diện `UI.STATUS_VI` (`core/ui.js`) – hai bảng phải giống nhau. Mã trạng thái mới: **thêm vào cả hai trước khi lên giao diện**; ở máy dev, mã chưa dịch hiện "(chưa dịch: X)" để quét tự động bắt được.
+
+**Active / Inactive = Đang hoạt động / Ngừng hoạt động ở mọi bảng** (bỏ biến thể "Hoạt động", "Đang áp dụng", "Ngừng", "Không hoạt động"). Trạng thái chứng từ có nhãn nghiệp vụ riêng giữ nhãn riêng (vd hợp đồng *Hiệu lực*, đơn *Đã chốt*, lô *Khả dụng*).
+
+| Mã | Nhãn | Mã | Nhãn | Mã | Nhãn |
+|---|---|---|---|---|---|
+| Active | Đang hoạt động | Inactive | Ngừng hoạt động | Draft | Nháp |
+| Submitted | Đã gửi | Pending | Chờ xử lý | PendingApproval | Chờ duyệt |
+| Approved | Đã duyệt | Rejected | Từ chối | Cancelled / Canceled | Đã hủy |
+| Confirmed | Đã xác nhận | Locked | Đã chốt | Published | Đã công bố |
+| Superseded | Bị thay thế | Expired | Hết hiệu lực | Open | Đang mở |
+| Closed | Đã đóng | InProgress | Đang thực hiện | Completed | Hoàn thành |
+| Delivered | Đã giao | Failed | Thất bại | OnHold / Hold | Tạm giữ |
+| Passed / Pass | Đạt | Fail | Không đạt | Success / Succeeded | Thành công |
+| Running / Started | Đang chạy | Queued | Chờ gửi | Sent | Đã gửi |
+| Received | Đã nhận | Processed | Đã xử lý | Ignored | Bỏ qua |
+| Linked | Đã liên kết | Revoked | Đã thu hồi | Unlinked | Đã gỡ liên kết |
+| Resigned | Nghỉ việc | Suspended | Tạm ngừng | New | Mới |
+| Planned | Kế hoạch | Released | Đã phát hành | Available | Khả dụng |
+| Reserved | Đã giữ chỗ | Consumed | Đã dùng hết | Returned | Đã trả |
+| Packed | Đã đóng gói | Paid | Đã thanh toán | Unpaid | Chưa thanh toán |
+| Valid | Hợp lệ | Invalid | Không hợp lệ | Error | Lỗi |
+| Warning | Cảnh báo | Info | Thông tin | Terminated | Chấm dứt |
+| Obsolete | Hết dùng | Posted | Đã ghi sổ | Issued | Đã xuất |
+| Matched | Khớp | Variance | Chênh lệch | Inbound / Outbound | Đến / Đi |
+| true / false | Có / Không | | | | |
+
+Giữ tiếng Anh chỉ cho: mã chứng từ / mã định danh (DH-…, KHB-…), đơn vị chuẩn (kg, °C), tên riêng (Zalo, Telegram, Excel, PDF). Tiêu đề cột CSV chỉ có nhãn tiếng Việt (không kèm tên cột kỹ thuật); tên file xuất = tên màn không dấu + ngày (vd `Diem-giao-hang_2026-11-24.csv`).

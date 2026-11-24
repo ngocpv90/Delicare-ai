@@ -80,7 +80,9 @@ namespace AppDelicare.Model.Helper
                 }
             }
             var list = StatusCatalog.All.Select(x => fromCode.Remove(x.Key, out var code) ? code : x).ToList();
-            list.AddRange(fromCode.Values);   // cột có lớp trạng thái nhưng STATUS_CATALOG.md chưa có (vd. DeliveryOrder, CleaningBatche)
+            list.AddRange(fromCode.Values);
+            // UI-6.10 (D-88): Active / Inactive = Đang hoạt động / Ngừng hoạt động mọi bảng (bỏ biến thể Hoạt động / Đang áp dụng / Ngừng).
+            list = [.. list.Select(x => x with { Labels = [.. x.Codes.Select((c, i) => StatusLabels.Unify(c, i < x.Labels.Length ? x.Labels[i] : c))] })];   // cột có lớp trạng thái nhưng STATUS_CATALOG.md chưa có (vd. DeliveryOrder, CleaningBatche)
             return list;
         }
 

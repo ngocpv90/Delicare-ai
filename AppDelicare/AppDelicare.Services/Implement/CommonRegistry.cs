@@ -207,7 +207,7 @@ namespace AppDelicare.Services.Implement
             }
             var set = StatusCatalogEffective.All.FirstOrDefault(s => s.Table.Equals(TableName, StringComparison.OrdinalIgnoreCase) && s.Column.Equals(StatusColumn, StringComparison.OrdinalIgnoreCase));
             int i = set == null ? -1 : Array.FindIndex(set.Codes, c => c.Equals(code, StringComparison.OrdinalIgnoreCase));
-            return i >= 0 && i < set!.Labels.Length ? set.Labels[i] : code;
+            return i >= 0 && i < set!.Labels.Length ? set.Labels[i] : StatusLabels.Vi(code); // UI-6.10: từ điển chung thay vì mã tiếng Anh
         }
 
         public IReadOnlyList<string> CatalogStatuses()

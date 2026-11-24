@@ -370,7 +370,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 var last = Obj(j, "lastRun");
                 string status = S(last, "runStatus") ?? "chưa chạy";
                 string icon = status == "Failed" ? "🔴" : status == "Succeeded" || status == "Success" ? "✅" : "•";
-                return $"{icon} {S(j, "jobName") ?? S(j, "jobCode")} · {status}{(S(last, "startedAt") is { } at ? " " + Time(at) : "")}{(Flag(j, "enabled") ? "" : " · tắt")}";
+                string statusVi = status switch { "Succeeded" or "Success" => "thành công", "Failed" => "lỗi", "Running" or "Started" => "đang chạy", "Skipped" => "bỏ qua", _ => status }; // UI-6.10 (D-88): bot không in mã tiếng Anh
+                return $"{icon} {S(j, "jobName") ?? S(j, "jobCode")} · {statusVi}{(S(last, "startedAt") is { } at ? " " + Time(at) : "")}{(Flag(j, "enabled") ? "" : " · tắt")}";
             }).ToList();
             await ReplyListAsync(ctx, "🖥 Job tự động", lines, "Chưa có job nào.", ct, $"Tin gửi lỗi (Failed): {failed.Total}");
         }

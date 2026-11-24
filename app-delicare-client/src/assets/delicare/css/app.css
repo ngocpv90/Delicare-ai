@@ -585,3 +585,21 @@ figure.dc-chart.empty{display:flex;align-items:center;justify-content:center;bor
 figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .dc-chart-pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media (max-width:1199px){.dc-chart-pair{grid-template-columns:1fr}}
+/* UI-6.10 (D-88 a, b – luật CLAUDE.md §4.5 mục 2): hàng chỉ số co giãn theo SỐ THẺ (data-n do core/ui.js đặt cho mọi khung .kpis).
+   < 2 thẻ → ẩn hàng · 2 → 1/2 · 3 → 1/3 · 4 → 1/4 · ≥ 5 → 4 cột, thẻ thứ 5 trở đi xuống hàng vẫn rộng 1/4.
+   768–1199px: 2 cột (thẻ lẻ cuối rộng 1/2); < 768px: 2 cột gọn (biểu tượng 36px, số 22px). Ngăn trượt / hộp thoại: 2 cột. */
+.kpis[data-n="0"],.kpis[data-n="1"]{display:none!important}
+.kpis[data-n="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpis[data-n="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpis[data-n]:not([data-n="0"]):not([data-n="1"]):not([data-n="2"]):not([data-n="3"]){grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1199.98px){.kpis[data-n]:not([data-n="0"]):not([data-n="1"]){grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:767.98px){
+  .kpis[data-n]:not([data-n="0"]):not([data-n="1"]){grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+  .kpis[data-n] .card.kpi{padding:12px;gap:10px;min-width:0}
+  .kpis[data-n] .kpi-icon{width:36px;height:36px;border-radius:10px}
+  .kpis[data-n] .kpi-icon svg.i{width:18px;height:18px}
+  .kpis[data-n] .kpi .kpi-value{font-size:22px;letter-spacing:-.3px}
+  .kpis[data-n] .kpi-label{font-size:12px}
+  .kpis[data-n] .kpi-sub{font-size:12px}
+}
+.drawer .kpis[data-n]:not([data-n="0"]):not([data-n="1"]),.modal-dialog .kpis[data-n]:not([data-n="0"]):not([data-n="1"]){grid-template-columns:repeat(2,minmax(0,1fr))!important}

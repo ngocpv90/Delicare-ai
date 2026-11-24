@@ -146,9 +146,9 @@
             public static readonly string HrSwapWillFail = "Duyệt sẽ không thực hiện được: {0}";
             // ---------------------------------------------------------------- hết BE2.6
             public static readonly string GetAllSuccessfully = "Lấy thông tin dữ liệu thành công";
-            public static readonly string Successfully = "Successfully";
-            public static readonly string InternalServer = "Internal Server Error";
-            public static readonly string ModelStateMessage = "Model State Invalid";
+            public static readonly string Successfully = "Thành công"; // UI-6.10 (D-88): thông báo máy chủ tiếng Việt
+            public static readonly string InternalServer = "Lỗi máy chủ – vui lòng thử lại hoặc báo quản trị";
+            public static readonly string ModelStateMessage = "Dữ liệu gửi lên không hợp lệ";
             public static readonly string ImportSuccess = "Import dữ liệu thành công";
             public static readonly string SaveSuccess = "Lưu thông tin thành công";
             public static readonly string CannotImport = "Không thể tải dữ liệu lên, vui lòng liên hệ với quản trị viên";

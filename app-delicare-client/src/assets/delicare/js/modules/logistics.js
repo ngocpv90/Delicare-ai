@@ -337,7 +337,7 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
         Store.add('DeliveryEvent', { DeliveryRouteId: x.DeliveryRouteId, DeliveryOrderId: d.Id, EventType: 'DELIVERED', EventAt: now, Latitude: loc.Latitude, Longitude: loc.Longitude, Description: 'Bàn giao xong – ' + rn, SourceChannel: 'MOBILE' });
         const ord = Store.get('Order', d.OrderId); if (ord && Store.by('DeliveryOrder', 'OrderId', ord.Id).every(z => z.Status === 'DELIVERED')) Store.update('Order', ord.Id, { Status: 'Delivered' });
         if (dq - aq > 0) Store.add('CustomerComplaint', { ComplaintNo: 'KN-2611-' + String(Store.rows('CustomerComplaint').length + 1).padStart(3, '0'), CustomerId: d.CustomerId, OrderId: d.OrderId, DeliveryOrderId: d.Id, DeliveryRouteId: d.DeliveryRouteId, SourceChannel: 'POD', CategoryCode: 'SHORTAGE', Severity: 'Medium', Description: `Khách từ chối ${dq - aq} suất khi nhận`, ReceivedAt: now, ComplaintStatus: 'Open' });
-        close(); UI.toast('Đã ghi POD – DELIVERED' + (dq - aq ? ' · tự lập khiếu nại do khách từ chối suất' : ''), 'ok'); APP.refresh();
+        close(); UI.toast('Đã ghi POD – DELIVERED' + (dq - aq ? ' · tự lập phản ánh do khách từ chối suất' : ''), 'ok'); APP.refresh();
       } });
   }
   // ---------- Khiếu nại ----------
@@ -386,11 +386,11 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
           .then(x => { if (!x.ok) return; close(); bust(); UI.toast(esc(x.message || 'Đã tạo đơn bù'), 'ok'); APP.refresh(); }); } });
   }
   function complaintNext(r, nx) {
-    UI.confirm(`Chuyển khiếu nại ${esc(r.ComplaintNo)} sang ${UI.badge(nx, 'CustomerComplaint', 'ComplaintStatus')}? Ghi lịch sử vào ComplaintHistory.`, note => { const old = r.ComplaintStatus;
+    UI.confirm(`Chuyển phản ánh ${esc(r.ComplaintNo)} sang ${UI.badge(nx, 'CustomerComplaint', 'ComplaintStatus')}? Ghi lịch sử vào ComplaintHistory.`, note => { const old = r.ComplaintStatus;
       // Chế độ API: CustomerComplaint/Assign · Resolve · Close · Reject (backend ghi ComplaintHistory, tính SLA).
       const act = { InProgress: 'Assign', Resolved: 'Resolve', Closed: 'Close', Rejected: 'Reject' }[nx];
       if (Store.isLive && act) return Store.act('CustomerComplaint/' + act, { form: { Id: r.Id, Comment: note }, tables: ['CustomerComplaint', 'ComplaintHistory'] }).then(x => { if (x.ok) { bust(); UI.toast('Đã cập nhật khiếu nại', 'ok'); APP.refresh(); } });
-      Store.update('CustomerComplaint', r.Id, Object.assign({ ComplaintStatus: nx }, nx === 'Resolved' ? { ResolvedAt: U.iso(new Date()), Resolution: note } : {})); Store.add('ComplaintHistory', { ComplaintId: r.Id, EventType: 'STATUS_CHANGED', OldStatus: old, NewStatus: nx, Comment: note, EventAt: U.iso(new Date()), ActorId: Store.user.id }); UI.toast('Đã cập nhật khiếu nại + ComplaintHistory', 'ok'); APP.refresh(); }, { input: 'Nội dung xử lý', required: true });
+      Store.update('CustomerComplaint', r.Id, Object.assign({ ComplaintStatus: nx }, nx === 'Resolved' ? { ResolvedAt: U.iso(new Date()), Resolution: note } : {})); Store.add('ComplaintHistory', { ComplaintId: r.Id, EventType: 'STATUS_CHANGED', OldStatus: old, NewStatus: nx, Comment: note, EventAt: U.iso(new Date()), ActorId: Store.user.id }); UI.toast('Đã cập nhật phản ánh và lịch sử xử lý', 'ok'); APP.refresh(); }, { input: 'Nội dung xử lý', required: true });
   }
   APP.logComplaint = { compensate: complaintCompensate, next: complaintNext };
 

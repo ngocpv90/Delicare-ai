@@ -177,7 +177,7 @@
     const pend = Store.rows('ApprovalRequest').filter(r => ['Pending', 'InProgress'].includes(r.RequestStatus)); if (pend.length) a.push({ c: 'orange', i: 'approve', t: pend.length + ' yêu cầu chờ phê duyệt', s: 'ApprovalRequest.RequestStatus = Pending/InProgress', go: 'wf-inbox' });
     Store.rows('QCInspectionLine').filter(l => l.Result === 'HOLD').forEach(l => a.push({ c: 'red', i: 'shield', t: 'QC tạm giữ: ' + Store.label('Ingredient', l.IngredientId), s: (l.Remark || '') + ' · QCInspectionLine.Result = HOLD', go: 'qc-inspection' }));
     const tl = Store.rows('TemperatureLog').filter(x => x.IsWithinRange === 0); if (tl.length) a.push({ c: 'orange', i: 'thermo', t: tl.length + ' lần đo nhiệt độ ngoài ngưỡng (48h)', s: 'TemperatureLog.IsWithinRange = 0', go: 'qc-temperature' });
-    const cp = Store.rows('CustomerComplaint').filter(x => ['Open', 'InProgress'].includes(x.ComplaintStatus)); if (cp.length) a.push({ c: 'orange', i: 'msg', t: cp.length + ' khiếu nại đang mở', s: 'CustomerComplaint.ComplaintStatus', go: 'log-complaint' });
+    const cp = Store.rows('CustomerComplaint').filter(x => ['Open', 'InProgress'].includes(x.ComplaintStatus)); if (cp.length) a.push({ c: 'orange', i: 'msg', t: cp.length + ' phản ánh đang mở', s: 'CustomerComplaint.ComplaintStatus', go: 'log-complaint' });
     const om = Store.rows('OutboundMessage').filter(x => x.MessageStatus === 'Failed'); if (om.length) a.push({ c: 'red', i: 'bot', t: om.length + ' tin nhắn Bot gửi lỗi', s: 'OutboundMessage.MessageStatus = Failed', go: 'int-outbound' });
     const exp = Store.rows('MaterialLot').filter(l => l.Status === 'Available' && l.ExpiryDate && l.ExpiryDate.slice(0, 10) <= U.addDays(Store.ctx.date, 2)); if (exp.length) a.push({ c: 'orange', i: 'lot', t: exp.length + ' lô sắp hết hạn trong 2 ngày', s: 'MaterialLot.ExpiryDate (FEFO)', go: 'scm-lot' });
     return a;
@@ -205,6 +205,17 @@
     return out.map(m => ({ k: m.name, label: U.colLabel(m.name), num: /decimal|int/.test(m.type) && !m.name.endsWith('Id') && m.usage !== 'Trạng thái (badge + lọc)' }));
   };
   APP.nextStatus = (t, col, v) => { const d = Store.statusDef(t, col); if (!d || !d.flow) return null; /* FIX-1.5: định nghĩa trạng thái từ máy chủ có thể không có flow */ const flow = d.flow.split(';')[0]; const main = flow.split('→').map(s => s.trim().split('/')[0].trim()); const i = main.indexOf(v); return i >= 0 && i < main.length - 1 ? main[i + 1] : null; };
+  // UI-6.10 (D-88 b): chỉ số mặc định của màn danh sách chung – Tổng bản ghi, trạng thái (tối đa 2 nhóm nhiều nhất), Thêm mới 30 ngày (CreatedDate),
+  // Sửa gần nhất (ModifiedDate); tối đa 4 thẻ; bảng chỉ ra < 2 chỉ số thì hàng chỉ số tự ẩn (CSS data-n).
+  APP.defaultKpis = (t, rows, sc, statusChips) => {
+    const cards = [UI.kpi('Tổng bản ghi', U.num(rows.length), '', 'clipboard', 'green')];
+    (statusChips || []).slice(0, 2).forEach(([k, v], i) => cards.push(UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), '', 'layers', ['blue', 'orange'][i])));
+    const since = U.addDays(Store.ctx.date, -30);
+    if (rows.some(r => r.CreatedDate)) cards.push(UI.kpi('Thêm mới 30 ngày', U.num(rows.filter(r => r.CreatedDate && U.day(r.CreatedDate) >= since).length), '', 'plus', 'purple'));
+    const mod = rows.map(r => r.ModifiedDate).filter(Boolean).sort().pop();
+    if (mod && cards.length < 4) cards.push(UI.kpi('Sửa gần nhất', U.date(mod), '', 'edit', 'gray'));
+    return cards.slice(0, 4).join('');
+  };
   APP.genericList = (el, f, opt = {}) => {
     const t = f.table, perm = Store.perm(f.id), sc = Store.statusCol(t);
     const rowsFn = opt.rows || (() => Store.rows(t));
@@ -212,7 +223,7 @@
     const stat = sc ? U.group(rowsFn(), sc) : {};
     const statusChips = sc ? Object.entries(stat).sort((a, b) => b[1].length - a[1].length) : [];
     el.innerHTML = APP.header(f, `${perm.exp !== false ? `<button class="btn" data-act="export">${I('export')} Xuất CSV</button>` : ''}${opt.noAdd || UI.viewOnly(t) ? '' : `<button class="btn primary" data-act="add" ${perm.add === false ? 'disabled title="Tài khoản không có quyền Thêm"' : ''}>${I('plus')} Tạo mới</button>`}`) + (opt.top || '') +
-      `<div class="kpis" data-kpis>${opt.kpis !== undefined ? opt.kpis : `${UI.kpi('Tổng bản ghi', U.num(rowsFn().length), '', 'clipboard', 'green')}${statusChips.slice(0, 3).map(([k, v], i) => UI.kpi(UI.statusVi(t, sc, k) || '(trống)', U.num(v.length), '', 'layers', ['blue', 'orange', 'purple'][i])).join('')}`}</div>
+      `<div class="kpis" data-kpis>${opt.kpis !== undefined ? opt.kpis : APP.defaultKpis(t, rowsFn(), sc, statusChips)}</div>
       <div class="card panel">${sc ? `<div class="row-flex mb"><span class="small muted">${LIVE() ? 'Lọc nhanh:' : 'Lọc nhanh ' + sc + ':'}</span><button class="chip active" data-st="">Tất cả</button>${statusChips.map(([k, v]) => `<button class="chip" data-st="${esc(k)}">${esc(UI.statusVi(t, sc, k) || '(trống)')} · ${v.length}</button>`).join('')}</div>` : ''}<div id="gt"></div></div>`;
     const fks = cols.filter(c => Store.target(t, c.k)).slice(0, 1).map(c => { const vals = [...new Set(rowsFn().map(r => r[c.k]).filter(Boolean))]; return { k: c.k, label: c.label, options: vals.map(v => ({ v, l: Store.label(Store.target(t, c.k), v) })).sort((a, b) => a.l.localeCompare(b.l)) }; });
     const ref = {}; APP._lastTbl = ref;
@@ -231,7 +242,7 @@
     if (opt.afterKpis) opt.afterKpis(el.querySelector('[data-kpis]'));
     el.querySelectorAll('[data-st]').forEach(c => c.onclick = () => { el.querySelectorAll('[data-st]').forEach(x => x.classList.toggle('active', x === c)); tbl.setFilter(sc, c.dataset.st); });
     el.querySelector('[data-act="add"]') && (el.querySelector('[data-act="add"]').onclick = () => UI.form(t, null, { title: f.name, defaults: opt.defaults, onSave: () => APP.refresh() }));
-    el.querySelector('[data-act="export"]') && (el.querySelector('[data-act="export"]').onclick = () => { U.csv(rowsFn(), cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => UI.text(t, c.k, r[c.k]) })), `DELICARE_${LIVE() ? '' : 'DEMO_'}${t}.csv`); UI.toast('Đã xuất CSV ' + rowsFn().length + ' dòng' + (LIVE() ? '' : ' (DỮ LIỆU DEMO)'), 'ok'); });
+    el.querySelector('[data-act="export"]') && (el.querySelector('[data-act="export"]').onclick = () => { U.csv(rowsFn(), cols.map(c => ({ k: c.k, label: c.label, col: c.k, text: r => UI.text(t, c.k, r[c.k]) })), `${U.fileName(f.name)}_${LIVE() ? '' : 'DEMO_'}${Store.ctx.date}.csv`); UI.toast('Đã xuất CSV ' + rowsFn().length + ' dòng' + (LIVE() ? '' : ' (DỮ LIỆU DEMO)'), 'ok'); });
     // Chế độ API: Common/ExportList xuất Excel từ server (đủ dòng, đúng quyền Xuất) cho các bảng backend có đăng ký.
     if (Store.isLive && perm.exp !== false) APP.resources().then(set => {
       const b = el.querySelector('[data-act="export"]'), key = Store.controllerOf(t);
