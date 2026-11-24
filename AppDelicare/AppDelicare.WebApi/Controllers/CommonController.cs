@@ -205,6 +205,23 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.14 (D-95): tab Lịch sử dạng dòng thời gian – nhật ký bản ghi + chứng từ liên quan (chỉ nhóm có quyền Xem), lọc group = all / info / status / docs / file, by / bySystem, tải dần page / pageSize (20).</summary>
+        [Security.SkipPermission] // service kiểm quyền Xem trên màn của resource và của từng nhóm liên quan
+        [HttpGet("GetTimeline")]
+        public async Task<IActionResult> GetTimeline([FromQuery] AppDelicare.Model.Model.TimelineRequest request)
+        {
+            try
+            {
+                var result = await _service.GetTimeline(request ?? new());
+                return result.ResponseCode == Forbidden ? StatusCode(Forbidden, result) : Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTimeline: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>BOT-1.7d: nội dung 1 phiếu dạng dữ liệu (bot mở phiếu khi quét QR DOC_ trên phiếu in). type = GOODS_RECEIPT / MATERIAL_ISSUE / STOCK_COUNT / DELIVERY_ORDER / POD / RECONCILIATION (hoặc mã ngắn GR / MI / SC / DO / POD / RC); quyền Xem màn của loại phiếu (service kiểm).</summary>
         [Security.SkipPermission] // service kiểm quyền Xem trên màn của loại phiếu
         [HttpGet("GetPrintDocument")]

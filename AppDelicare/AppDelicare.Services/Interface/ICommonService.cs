@@ -33,6 +33,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<GlobalSearchModel>> GlobalSearch(string? q);
         /// <summary>BE3.3 – Catalog 16: tab Liên quan – nhóm chứng từ theo quan hệ viết cứng, mỗi nhóm ≤ 8 dòng + tổng; bỏ nhóm không được Xem.</summary>
         public Task<IResults<RelatedGroupModel>> GetRelated(string? resource, Guid id);
+        /// <summary>UI-6.14 (D-95): dòng thời gian của bản ghi + chứng từ liên quan (lọc nhóm / người, tải dần).</summary>
+        public Task<IResult<TimelineModel>> GetTimeline(TimelineRequest request);
         /// <summary>BE3.5 – Catalog 231: số NL dưới tồn tối thiểu / lô tạm giữ / phản ánh đang mở – cùng quy tắc chuông, không lọc quyền, không cache. Chi nhánh không có → null.</summary>
         public Task<SharedAlertCountsModel?> GetSharedCounts(Guid? branchId);
         /// <summary>BE3.5: đơn vị + mọi đơn vị con (theo ParentId). Không có → null.</summary>
