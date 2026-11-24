@@ -32,6 +32,8 @@ namespace AppDelicare.WebApi.Security
             ["ApprovalItem"] = ("wf-inbox", true),
             // "Thông tin cá nhân" ẩn (trùng Tài khoản / Nhân viên): hồ sơ người dùng tạo / sửa ở màn Tài khoản (admin.js – Person/Insert khi tạo người dùng).
             ["Person"] = ("adm-user", false),
+            // MENU-5.4 (D-79): "Người liên hệ" ẩn – nhập / sửa ở Khách hàng 360 (ghi liên hệ = Sửa khách hàng).
+            ["CustomerContact"] = ("crm-customer", true),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -42,7 +44,7 @@ namespace AppDelicare.WebApi.Security
             ["scm-stockcount-line"] = "scm-stockcount", ["prod-plan-line"] = "prod-plan", ["qc-inspection-line"] = "qc-inspection", ["qc-checklist-item"] = "qc-checklist",
             ["log-stop"] = "log-route", ["log-event"] = "log-execution", ["log-complaint-history"] = "log-complaint",
             ["wf-step"] = "wf-inbox", ["wf-decision"] = "wf-inbox", ["wf-item"] = "wf-inbox", ["adm-person"] = "adm-user",
-            ["scm-transfer"] = "scm-inv-balance", ["scm-adjustment"] = "scm-inv-balance",
+            ["scm-transfer"] = "scm-inv-balance", ["scm-adjustment"] = "scm-inv-balance", ["crm-contact"] = "crm-customer",
         };
     }
 }

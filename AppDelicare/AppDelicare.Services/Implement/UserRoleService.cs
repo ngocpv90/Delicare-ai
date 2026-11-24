@@ -447,6 +447,14 @@ namespace AppDelicare.Services.Implement
                             flat.Add(ToViewModel(m, merged));
                         }
                     }
+                    // MENU-5.5 (D-79): nhóm menu cấp 1 (#/group/…) thường KHÔNG có dòng UserRole (seed chỉ cấp quyền màn) → mục con bị rơi thành gốc
+                    // và giao diện không dựng được nhóm. Nhóm cha của mục được xem luôn đi kèm (chỉ để hiển thị – quyền vẫn tính trên mục con).
+                    var shown = flat.Select(x => x.ObjectMenuId).ToHashSet();
+                    foreach (var parent in menus.Where(m => !shown.Contains(m.Id) && flat.Any(x => x.ParentId == m.Id)).ToList())
+                    {
+                        flat.Add(ToViewModel(parent, new UserRole { AllowAccess = true }));
+                    }
+                    flat = [.. flat.OrderBy(x => x.LevelShow).ThenBy(x => x.OrderShow).ThenBy(x => x.ObjectMenuName)];
                 }
                 return Result<UserRoleModel>.Success(new UserRoleModel { ListMenu = BuildTree(flat) }, ConstantHelper.Message.GetAllSuccessfully);
             }

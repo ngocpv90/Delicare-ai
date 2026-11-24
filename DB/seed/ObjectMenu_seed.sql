@@ -432,5 +432,184 @@ UPDATE [dbo].[ObjectMenu] SET Name = N'Kế hoạch sản xuất', ModifiedDate 
 UPDATE [dbo].[ObjectMenu] SET Name = N'Kiểm tra hàng nhập', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=qc-inspection' AND IsDeleted = 0 AND Name IN (N'Phiếu QC đầu vào', N'Duyệt – Phiếu QC đầu vào');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Tất cả yêu cầu duyệt', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=wf-inbox' AND IsDeleted = 0 AND Name IN (N'Hộp phê duyệt tập trung', N'Duyệt – Hộp phê duyệt tập trung');
 -- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB; MENU-4 (D-75 e): ẩn bảng con, màn chưa làm, mục trùng (IsActive = 0, không xóa).
-UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/wf-inbox?type=qc-inspection') AND IsDeleted = 0 AND IsActive = 1;
+UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person') AND IsDeleted = 0 AND IsActive = 1;
+-- MENU-5 (D-79): 14 nhóm theo vai trò. Seed CHỈ THÊM nhóm / mục mới (đặt thẳng vào chỗ mới); chuyển nhóm / thứ tự / đổi tên / ẩn – mở CHỈ áp cho dòng do chính lần chạy
+-- này tạo (DB mới). DB đang chạy: sắp lại bằng DB/scripts/D79_menu_regroup.sql (DryRun, AuditChange). Nguồn: tools/AppDelicare.CodeGen/Seeds.Menu5.cs.
+DECLARE @By UNIQUEIDENTIFIER = @SeedBy;
+DECLARE @P TABLE (Link NVARCHAR(400) PRIMARY KEY, Lvl INT, OldParent NVARCHAR(400) NULL, OldMin INT, OldMax INT, OldNames NVARCHAR(1000),
+                  NewParent NVARCHAR(400) NULL, NewOrder INT, NewName NVARCHAR(500), ShortName NVARCHAR(100), SetActive INT NULL);
+INSERT INTO @P VALUES
+    (N'#/group/00', 1, NULL, -1, -1, N'', NULL, 10, N'Việc của tôi', N'my', NULL),
+    (N'#/hr-my', 2, NULL, 0, -1, N'', N'#/group/00', 11, N'Việc của tôi', N'P8', NULL),
+    (N'#/group/approve', 1, NULL, 9900, 9900, N'', NULL, 20, N'Phê duyệt', N'approve', NULL),
+    (N'#/wf-inbox?type=wf-inbox', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9901, N'', N'', NULL),
+    (N'#/wf-inbox?type=crm-contract', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9902, N'', N'', NULL),
+    (N'#/wf-inbox?type=crm-price-policy', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9903, N'', N'', 0),
+    (N'#/wf-inbox?type=crm-order', 2, N'#/group/approve', 9901, 9999, N'Đơn đặt suất|Đơn đặt suất ăn', N'#/group/approve', 9904, N'Đơn đặt suất (sửa sau chốt)', N'', NULL),
+    (N'#/wf-inbox?type=menu-recipe', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9905, N'', N'', NULL),
+    (N'#/wf-inbox?type=menu-menu', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9906, N'', N'', NULL),
+    (N'#/wf-inbox?type=menu-change-request', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9907, N'', N'', NULL),
+    (N'#/wf-inbox?type=scm-pr-l1', 2, N'#/group/approve', 9901, 9999, N'Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng)|Đề nghị mua hàng (cấp 1 - Trưởng bộ phận Mua hàng)', N'#/group/approve', 9908, N'Đề nghị mua – cấp 1', N'', NULL),
+    (N'#/wf-inbox?type=scm-pr-l2', 2, N'#/group/approve', 9901, 9999, N'Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)|Đề nghị mua hàng (cấp 2 - Giám đốc vận hành)', N'#/group/approve', 9909, N'Đề nghị mua – cấp 2', N'', NULL),
+    (N'#/wf-inbox?type=scm-po', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9910, N'', N'', NULL),
+    (N'#/wf-inbox?type=scm-po-director', 2, N'#/group/approve', 9901, 9999, N'Đơn mua hàng (Giám đốc)', N'#/group/approve', 9911, N'Đơn mua hàng ≥ 50 triệu', N'', NULL),
+    (N'#/wf-inbox?type=scm-stockcount', 2, N'#/group/approve', 9901, 9999, N'Phiếu kiểm kê', N'#/group/approve', 9912, N'Phiếu kiểm kê – cấp 1', N'', NULL),
+    (N'#/wf-inbox?type=scm-stockcount-l2', 2, N'#/group/approve', 9901, 9999, N'Phiếu kiểm kê (cấp 2 – Kế toán)|Phiếu kiểm kê (cấp 2 - Kế toán)', N'#/group/approve', 9913, N'Phiếu kiểm kê – cấp 2', N'', NULL),
+    (N'#/wf-inbox?type=scm-adjustment', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9914, N'', N'', NULL),
+    (N'#/wf-inbox?type=prod-plan', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9915, N'', N'', NULL),
+    (N'#/wf-inbox?type=qc-inspection', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9916, N'', N'', 1),
+    (N'#/wf-inbox?type=prod-batch', 2, NULL, 0, -1, N'', N'#/group/approve', 9917, N'Mẻ nấu', N'P5', NULL),
+    (N'#/wf-inbox?type=scm-lot', 2, NULL, 0, -1, N'', N'#/group/approve', 9918, N'Giữ / thả lô', N'P4', NULL),
+    (N'#/wf-inbox?type=hr-leave', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9919, N'', N'', NULL),
+    (N'#/wf-inbox?type=hr-swap', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9920, N'', N'', NULL),
+    (N'#/wf-inbox?type=scm-pr', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9921, N'', N'', 0),
+    (N'#/group/01', 1, NULL, 100, 100, N'Tổng quan điều hành', NULL, 100, N'Điều hành', N'kpi', NULL),
+    (N'#/dash-exec', 2, N'#/group/01', 101, 199, N'', N'#/group/01', 101, N'', N'', NULL),
+    (N'#/kpi-daily', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 102, N'', N'', NULL),
+    (N'#/kpi-monthly', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 103, N'', N'', NULL),
+    (N'#/group/02', 1, NULL, 200, 200, N'Kinh doanh & Đơn hàng', NULL, 200, N'Kinh doanh', N'sales', NULL),
+    (N'#/crm-customer', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 201, N'', N'', NULL),
+    (N'#/crm-contract', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 202, N'', N'', NULL),
+    (N'#/crm-price-policy', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 203, N'', N'', NULL),
+    (N'#/crm-order-week', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 204, N'', N'', NULL),
+    (N'#/crm-order', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 205, N'', N'', NULL),
+    (N'#/crm-forecast', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 206, N'', N'', NULL),
+    (N'#/crm-reconciliation', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 207, N'', N'', NULL),
+    (N'#/crm-billing', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 208, N'', N'', NULL),
+    (N'#/log-complaint', 2, N'#/group/07', 701, 799, N'', N'#/group/02', 209, N'', N'', NULL),
+    (N'#/crm-location', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 210, N'', N'', NULL),
+    (N'#/crm-contact', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 211, N'', N'', 0),
+    (N'#/group/03', 1, NULL, 300, 300, N'', NULL, 300, N'Thực đơn & Món ăn', N'menu', NULL),
+    (N'#/menu-menu', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 301, N'', N'', NULL),
+    (N'#/menu-assignment', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 302, N'', N'', NULL),
+    (N'#/menu-change-request', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 303, N'', N'', NULL),
+    (N'#/menu-recipe', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 304, N'', N'', NULL),
+    (N'#/menu-dish', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 305, N'', N'', NULL),
+    (N'#/menu-dish-cat', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 306, N'', N'', NULL),
+    (N'#/group/04', 1, NULL, 400, 400, N'Mua hàng & Kho', NULL, 400, N'Mua hàng', N'scm', NULL),
+    (N'#/scm-requirement', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 401, N'', N'', NULL),
+    (N'#/scm-pr', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 402, N'', N'', NULL),
+    (N'#/scm-po', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 403, N'', N'', NULL),
+    (N'#/scm-supplier', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 404, N'', N'', NULL),
+    (N'#/scm-supplier-material', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 405, N'', N'', NULL),
+    (N'#/scm-ingredient', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 406, N'', N'', NULL),
+    (N'#/scm-ingredient-cat', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 407, N'', N'', NULL),
+    (N'#/scm-uom', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 408, N'', N'', NULL),
+    (N'#/scm-uom-conversion', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 409, N'', N'', NULL),
+    (N'#/group/04b', 1, NULL, -1, -1, N'', NULL, 450, N'Kho', N'wh', NULL),
+    (N'#/scm-gr', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 451, N'', N'', NULL),
+    (N'#/scm-issue', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 452, N'', N'', NULL),
+    (N'#/scm-inv-balance', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 453, N'', N'', NULL),
+    (N'#/scm-lot', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 454, N'', N'', NULL),
+    (N'#/scm-inv-txn', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 455, N'', N'', NULL),
+    (N'#/scm-reservation', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 456, N'', N'', NULL),
+    (N'#/scm-stockcount', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 457, N'', N'', NULL),
+    (N'#/scm-consumption-var', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 458, N'', N'', NULL),
+    (N'#/scm-warehouse', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 459, N'', N'', NULL),
+    (N'#/scm-zone', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 460, N'', N'', NULL),
+    (N'#/scm-location', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 461, N'', N'', NULL),
+    (N'#/scm-inv-policy', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 462, N'', N'', NULL),
+    (N'#/group/05', 1, NULL, 500, 500, N'Sản xuất & Giá thành', NULL, 500, N'Sản xuất', N'production', NULL),
+    (N'#/prod-plan', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 501, N'', N'', NULL),
+    (N'#/prod-order', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 502, N'', N'', NULL),
+    (N'#/prod-batch', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 503, N'', N'', NULL),
+    (N'#/prod-output', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 504, N'', N'', NULL),
+    (N'#/prod-waste', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 505, N'', N'', NULL),
+    (N'#/prod-line', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 506, N'', N'', NULL),
+    (N'#/prod-workstation', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 507, N'', N'', NULL),
+    (N'#/group/05b', 1, NULL, -1, -1, N'', NULL, 550, N'Giá thành', N'cost', NULL),
+    (N'#/cost-standard', 2, N'#/group/05', 501, 599, N'', N'#/group/05b', 551, N'', N'', NULL),
+    (N'#/cost-actual', 2, N'#/group/05', 501, 599, N'', N'#/group/05b', 552, N'', N'', NULL),
+    (N'#/cost-meal', 2, N'#/group/05', 501, 599, N'', N'#/group/05b', 553, N'', N'', NULL),
+    (N'#/group/06', 1, NULL, 600, 600, N'QC & An toàn thực phẩm', NULL, 600, N'Chất lượng & ATTP', N'qc', NULL),
+    (N'#/qc-inspection', 2, N'#/group/06', 601, 699, N'', N'#/group/06', 601, N'', N'', NULL),
+    (N'#/qc-checklist-result', 2, N'#/group/06', 601, 699, N'', N'#/group/06', 602, N'', N'', NULL),
+    (N'#/qc-temperature', 2, N'#/group/06', 601, 699, N'', N'#/group/06', 603, N'', N'', NULL),
+    (N'#/qc-cleaning', 2, N'#/group/06', 601, 699, N'', N'#/group/06', 604, N'', N'', NULL),
+    (N'#/qc-cleaning-result', 2, N'#/group/06', 601, 699, N'', N'#/group/06', 605, N'', N'', NULL),
+    (N'#/qc-supplier-issue', 2, N'#/group/06', 601, 699, N'', N'#/group/06', 606, N'', N'', NULL),
+    (N'#/qc-checklist', 2, N'#/group/06', 601, 699, N'', N'#/group/06', 607, N'', N'', NULL),
+    (N'#/group/07', 1, NULL, 700, 700, N'Đóng gói & Giao nhận', NULL, 700, N'Đóng gói & Giao hàng', N'logistics', NULL),
+    (N'#/log-packing-order', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 701, N'', N'', NULL),
+    (N'#/log-packing-result', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 702, N'', N'', NULL),
+    (N'#/log-delivery-order', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 703, N'', N'', NULL),
+    (N'#/log-route', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 704, N'', N'', NULL),
+    (N'#/log-loading', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 705, N'', N'', NULL),
+    (N'#/log-execution', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 706, N'', N'', NULL),
+    (N'#/log-gps', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 707, N'', N'', NULL),
+    (N'#/log-pod', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 708, N'', N'', NULL),
+    (N'#/log-container-return', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 709, N'', N'', NULL),
+    (N'#/log-return-inspection', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 710, N'', N'', NULL),
+    (N'#/log-packaging-ledger', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 711, N'', N'', NULL),
+    (N'#/log-vehicle', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 712, N'', N'', NULL),
+    (N'#/group/08', 1, NULL, 800, 800, N'Nhân sự & Phê duyệt', NULL, 800, N'Nhân sự', N'hr', NULL),
+    (N'#/adm-employee', 2, N'#/group/10', 1001, 1099, N'', N'#/group/08', 801, N'', N'', NULL),
+    (N'#/hr-shift-assign', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 802, N'', N'', NULL),
+    (N'#/hr-attendance', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 803, N'', N'', NULL),
+    (N'#/hr-leave', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 804, N'', N'', NULL),
+    (N'#/hr-swap', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 805, N'', N'', NULL),
+    (N'#/hr-shift', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 806, N'', N'', NULL),
+    (N'#/adm-position', 2, N'#/group/10', 1001, 1099, N'', N'#/group/08', 807, N'', N'', NULL),
+    (N'#/wf-inbox', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 808, N'', N'', NULL),
+    (N'#/group/10', 1, NULL, 1000, 1000, N'', NULL, 1000, N'Quản trị hệ thống', N'admin', NULL),
+    (N'#/adm-user', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1001, N'', N'', NULL),
+    (N'#/adm-usergroup', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1002, N'', N'', NULL),
+    (N'#/adm-permission', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1003, N'', N'', NULL),
+    (N'#/adm-objectmenu', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1004, N'', N'', NULL),
+    (N'#/adm-orgunit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1005, N'', N'', NULL),
+    (N'#/adm-company', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1006, N'', N'', NULL),
+    (N'#/sys-import', 2, NULL, 0, -1, N'', N'#/group/10', 1007, N'Nhập dữ liệu gốc (Excel)', N'P0', NULL),
+    (N'#/adm-reference', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1008, N'', N'', NULL),
+    (N'#/adm-admin-unit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1009, N'', N'', NULL),
+    (N'#/adm-document', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1010, N'', N'', NULL),
+    (N'#/group/09', 1, NULL, 900, 900, N'Tích hợp & Chỉ số|Tích hợp & KPI', NULL, 1050, N'Nhật ký & Tích hợp', N'kpi', NULL),
+    (N'#/adm-job', 2, NULL, 0, -1, N'', N'#/group/09', 1051, N'Job tự động', N'P0', NULL),
+    (N'#/adm-audit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/09', 1052, N'', N'', NULL),
+    (N'#/adm-access-log', 2, N'#/group/10', 1001, 1099, N'', N'#/group/09', 1053, N'', N'', NULL),
+    (N'#/adm-merge-conflict', 2, N'#/group/10', 1001, 1099, N'', N'#/group/09', 1054, N'', N'', NULL),
+    (N'#/int-channel', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1055, N'', N'', NULL),
+    (N'#/int-bot', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1056, N'', N'', NULL),
+    (N'#/int-identity', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1057, N'', N'', NULL),
+    (N'#/int-inbound', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1058, N'', N'', NULL),
+    (N'#/int-outbound', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1059, N'', N'', NULL),
+    (N'#/int-log', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1060, N'', N'', NULL),
+    (N'#/kpi-definition', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1061, N'', N'', NULL),
+    (N'#/kpi-refresh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1062, N'', N'', NULL),
+    (N'#/bot-van-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1063, N'', N'', NULL),
+    (N'#/bot-dieu-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1064, N'', N'', NULL);
+INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
+SELECT NEWID(), p.NewName, p.ShortName, p.Link, NULL, 1, p.NewOrder, 1, 0, @Now, @By, 0
+FROM @P p WHERE p.Lvl = 1 AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);
+INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
+SELECT NEWID(), p.NewName, p.ShortName, p.Link, np.Id, 2, p.NewOrder, 1, 0, @Now, @By, 0
+FROM @P p JOIN [dbo].[ObjectMenu] np ON np.MetaLink = p.NewParent AND np.IsDeleted = 0
+WHERE p.Lvl = 2 AND p.OldParent IS NULL AND p.NewName <> N'' AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);
+DECLARE @C TABLE (Id UNIQUEIDENTIFIER PRIMARY KEY, Link NVARCHAR(400), OldParentId UNIQUEIDENTIFIER NULL, NewParentId UNIQUEIDENTIFIER NULL, OldOrder INT NULL, NewOrder INT NULL,
+                  OldName NVARCHAR(500), NewName NVARCHAR(500), OldActive BIT, NewActive BIT, Moved BIT, Kept BIT);
+INSERT INTO @C
+SELECT m.Id, p.Link, m.ParentId,
+       CASE WHEN mv.Ok = 1 THEN np.Id ELSE m.ParentId END,
+       m.OrderShow,
+       CASE WHEN mv.Ok = 1 THEN p.NewOrder ELSE m.OrderShow END,
+       m.Name,
+       CASE WHEN p.OldNames <> N'' AND CHARINDEX(N'|' + ISNULL(m.Name, N'') + N'|', N'|' + p.OldNames + N'|') > 0 THEN p.NewName ELSE m.Name END,
+       m.IsActive,
+       CASE WHEN p.SetActive IS NULL THEN m.IsActive ELSE CAST(p.SetActive AS BIT) END,
+       mv.Ok,
+       CASE WHEN mv.Ok = 0 AND mv.Target = 0 THEN 1 ELSE 0 END
+FROM @P p
+JOIN [dbo].[ObjectMenu] m ON m.MetaLink = p.Link AND m.IsDeleted = 0 AND m.CreatedDate = @Now AND m.CreatedBy = @SeedBy
+LEFT JOIN [dbo].[ObjectMenu] np ON np.MetaLink = p.NewParent AND np.IsDeleted = 0
+LEFT JOIN [dbo].[ObjectMenu] op ON op.MetaLink = p.OldParent AND op.IsDeleted = 0
+CROSS APPLY (SELECT
+    -- đã đúng vị trí mới
+    CASE WHEN ISNULL(m.OrderShow, -1) = p.NewOrder AND (p.Lvl = 1 OR m.ParentId = np.Id) THEN 1 ELSE 0 END AS Target,
+    -- được chuyển: nhóm cấp 1 còn thứ tự seed cũ; mục cấp 2 còn ở nhóm cha cũ (hoặc đã ở nhóm mới) với thứ tự trong dải seed cũ
+    CASE WHEN ISNULL(m.OrderShow, -1) = p.NewOrder AND (p.Lvl = 1 OR m.ParentId = np.Id) THEN 0
+         WHEN p.Lvl = 1 AND m.OrderShow BETWEEN p.OldMin AND p.OldMax THEN 1
+         WHEN p.Lvl = 2 AND np.Id IS NOT NULL AND (m.ParentId = op.Id OR m.ParentId = np.Id) AND m.OrderShow BETWEEN p.OldMin AND p.OldMax THEN 1
+         ELSE 0 END AS Ok) mv;
+UPDATE m SET m.ParentId = c.NewParentId, m.OrderShow = c.NewOrder, m.Name = c.NewName, m.IsActive = c.NewActive, m.ModifiedDate = @Now, m.ModifiedBy = @By
+FROM [dbo].[ObjectMenu] m JOIN @C c ON c.Id = m.Id
+WHERE c.Moved = 1 OR ISNULL(c.OldName, N'') <> ISNULL(c.NewName, N'') OR c.OldActive <> c.NewActive;
 COMMIT;

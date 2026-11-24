@@ -137,15 +137,18 @@ if (Layer("status"))
 if (Layer("security"))
 {
     var screens = Seeds.LoadScreens(root, out var menuOrder);
-    var matrix = Seeds.LoadMatrix(root);
     var units = Seeds.LoadOrgUnits(root);
     Write(P("AppDelicare.WebApi", "Security", "ScreenMap.Generated.cs"), Seeds.ScreenMapCode(tables, screens), true);
     Write(P("AppDelicare.Data", "Share", "ReferenceMap.Generated.cs"), Seeds.ReferenceMapCode(tables, meta), true);
     Write(Path.Combine(root, "DB", "seed", "OrganizationUnit_seed.sql"), Seeds.OrganizationSeed(units), true);
     Write(Path.Combine(root, "DB", "seed", "ObjectMenu_seed.sql"), Seeds.ObjectMenuSeed(screens, menuOrder), true);
-    Write(Path.Combine(root, "DB", "seed", "UserRole_seed.sql"), Seeds.UserRoleSeed(screens, matrix), true);
-    Console.WriteLine($"Màn hình: {screens.Count}. Đơn vị: {units.Count}. Vai trò: {matrix.Count} ({string.Join(", ", matrix.Select(m => m.Role))}).");
-    Console.WriteLine("Quyền duyệt (D-31, mục \"Duyệt …\") = " + System.Text.Json.JsonSerializer.Serialize(Seeds.Approvers(screens, matrix)));
+    // MENU-5 (D-79): ma trận theo từng màn + bố cục menu theo vai trò (Seeds.Menu5.cs) → seed + 2 script DB đang chạy (DryRun bắt buộc).
+    Write(Path.Combine(root, "DB", "seed", "UserRole_seed.sql"), Seeds.UserRoleSeed5(), true);
+    Write(Path.Combine(root, "DB", "scripts", "D79_menu_regroup.sql"), Seeds.Menu5RegroupScript(screens, menuOrder), true);
+    Write(Path.Combine(root, "DB", "scripts", "D79_permission_matrix.sql"), Seeds.PermissionMatrixScript(), true);
+    Console.WriteLine($"Màn hình: {screens.Count}. Đơn vị: {units.Count}. Vai trò: {Seeds.StandardRoles.Length} ({string.Join(", ", Seeds.StandardRoles)}).");
+    Console.WriteLine("Ma trận MENU-5 (D-79):");
+    Console.WriteLine(Seeds.Menu5Summary());
 }
 
 Console.WriteLine($"DDL: {tables.Count} bảng. Chọn: {selected.Count}. {(options.DryRun ? "[DRY-RUN] " : string.Empty)}Ghi: {written.Count}. Bỏ qua (đã có, không --force): {skipped.Count}.");

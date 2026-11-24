@@ -69,76 +69,19 @@ public static partial class Seeds
     /// </summary>
     private static readonly HashSet<string> ExtraApprovable = new(StringComparer.OrdinalIgnoreCase) { "crm-order" };
 
-    /// <summary>Mục "Duyệt …" không gắn 1 màn hình catalog.js (chỉ là mục quyền duyệt) + nhóm được seed quyền duyệt (AllowAccess + AllowEdit).</summary>
-    public sealed record ExtraApproval(string Id, string Name, string Phase, string[] Roles);
+    /// <summary>Mục "Duyệt …" không gắn 1 màn hình catalog.js (chỉ là mục quyền duyệt). Nhóm duyệt: Seeds.Menu5.cs (Approvers5 – D-79 d).</summary>
+    public sealed record ExtraApproval(string Id, string Name, string Phase);
 
-    /// <summary>
-    /// D-69 (UG-1 C-17, C-23 – anh chốt 2026-11-19): quyền theo TỪNG MÀN bổ sung cho ma trận theo nhóm màn (ORG_STRUCTURE §2 chỉ chia theo nhóm).
-    /// Chỉ NÂNG quyền (OR với ma trận), không hạ. Roles = ["*"] → mọi nhóm. DB đang chạy: DB/scripts/UG1_D69_permissions.sql.
-    /// </summary>
-    public sealed record RightOverride(string Screen, string[] Roles, bool Add, bool Edit);
+    // MENU-5 (D-79): RightOverrides (D-69), RestrictedScreens (D-71), TechScreens (D-78 (6)), ApproverOverrides (BIZ-2.1) và nhóm duyệt của ExtraApprovals
+    // đã gộp vào ma trận theo từng màn Seeds.Menu5.cs (ScreenMatrix + Approvers5) – một nguồn duy nhất.
 
-    public static readonly IReadOnlyList<RightOverride> RightOverrides =
-    [
-        new("log-packing-order", ["OPS-KIT"], Add: true, Edit: true),    // C-17: tổ Chia suất / Đóng gói thuộc Bếp
-        new("log-packing-result", ["OPS-KIT"], Add: true, Edit: true),
-        // C-18 (tự chấm công / lập đơn nghỉ – đổi ca của mình): KHÔNG cấp quyền màn hr-* – quyền Thêm = lập hộ người khác, Truy cập = xem của mọi người.
-        // Tự phục vụ đi qua API SkipPermission (CheckIn / CheckOut / LeaveRequest.Create / ShiftSwapRequest.Create) trên màn hr-my (mở cho mọi người).
-        new("adm-employee", ["FIN-HR"], Add: true, Edit: true),          // C-23: Nhân sự sửa hồ sơ (SĐT = khóa liên kết bot), tạo mã liên kết Telegram
-    ];
-
-    /// <summary>
-    /// D-71 (PROPOSED, làm theo quy tắc ROADMAP – mục PROPOSED chưa chốt thì làm theo đề xuất): màn GIỚI HẠN – chỉ nhóm liệt kê có quyền, nhóm khác = 0
-    /// (khác RightOverrides chỉ nâng). Màn tích hợp bot (cấu hình kênh / bot, định danh, nhật ký tin) chỉ quản trị FIN-IT; CEO / COO xem tin gửi đi để thấy tin lỗi.
-    /// DB đang chạy: DB/scripts/D71_revoke_int_screens.sql.
-    /// </summary>
-    public sealed record ScreenRight(bool Add, bool Edit, bool Delete, bool Export);
-
-    /// <summary>D-78 (6): màn kỹ thuật (MENU-4 nhóm E) ngoài các màn tích hợp D-71.</summary>
-    public static readonly string[] TechScreens = ["adm-audit", "adm-merge-conflict", "kpi-definition", "kpi-refresh"];
-
-    public static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ScreenRight>> RestrictedScreens = BuildRestricted();
-
-    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, ScreenRight>> BuildRestricted()
-    {
-        var admin = new ScreenRight(Add: true, Edit: true, Delete: false, Export: true);
-        var view = new ScreenRight(false, false, false, false);
-        var map = new Dictionary<string, IReadOnlyDictionary<string, ScreenRight>>();
-        foreach (string s in new[] { "int-channel", "int-bot", "int-identity", "int-inbound", "int-log" })
-        {
-            map[s] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin };
-        }
-        map["int-outbound"] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin, ["CEO"] = view, ["COO"] = view };
-        // D-78 (6) – MENU-4 nhóm E: màn kỹ thuật chỉ admin / FIN-IT. Danh mục chỉ số vẫn ĐỌC được qua quyền xem KPI / bảng điều hành (PermissionConvention.ReadAlsoScreens).
-        // DB đang chạy: DB/scripts/D78_restrict_tech_screens.sql.
-        foreach (string s in TechScreens)
-        {
-            map[s] = new Dictionary<string, ScreenRight> { ["FIN-IT"] = admin };
-        }
-        return map;
-    }
-
-    private static RightOverride? OverrideOf(string screen, string role)
-        => RightOverrides.FirstOrDefault(o => o.Screen == screen && (o.Roles.Contains("*") || o.Roles.Contains(role)));
-
-    /// <summary>
-    /// T15.1 (D-11, anh chốt 2026-11-16): PO tổng ≥ <c>BusinessRules:PurchaseOrderDirectorApprovalAmount</c> do Giám đốc duyệt → mục
-    /// <c>#/wf-inbox?type=scm-po-director</c>, chỉ seed quyền cho nhóm CEO (admin đổi trên ma trận quyền).
-    /// <para>BE2.3 (D-46, anh chốt 2026-11-16 – nhóm duyệt từng cấp PROPOSED): đề nghị mua 2 cấp <c>scm-pr-l1</c> (Trưởng bộ phận Mua hàng → seed OPS-SCM) →
-    /// <c>scm-pr-l2</c> (Giám đốc vận hành → seed COO); kiểm kê lệch &gt; 2% cấp 2 Kế toán <c>scm-stockcount-l2</c> (spec 2.3 → seed FIN-ACC).</para>
-    /// </summary>
-    /// <summary>BIZ-2.1 (D-77 – B6): mục duyệt có nhóm duyệt riêng (không lấy theo ma trận). "Đơn đặt suất" (sửa / thêm đơn sau giờ chốt) = Trưởng KD (SAL-CON) + COO, bỏ CEO.</summary>
-    public static readonly IReadOnlyDictionary<string, string[]> ApproverOverrides = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["crm-order"] = ["SAL-CON", "COO"],
-    };
-
+    /// <summary>T15.1 (D-11) PO ≥ ngưỡng Giám đốc; BE2.3 (D-46) đề nghị mua 2 cấp; kiểm kê cấp 2 Kế toán (spec 2.3).</summary>
     public static readonly IReadOnlyList<ExtraApproval> ExtraApprovals =
     [
-        new("scm-po-director", "Đơn mua hàng (Giám đốc)", "P4", ["CEO"]),
-        new("scm-pr-l1", "Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng)", "P4", ["OPS-SCM"]),
-        new("scm-pr-l2", "Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)", "P4", ["COO"]),
-        new("scm-stockcount-l2", "Phiếu kiểm kê (cấp 2 – Kế toán)", "P4", ["FIN-ACC"]),
+        new("scm-po-director", "Đơn mua hàng (Giám đốc)", "P4"),
+        new("scm-pr-l1", "Đề nghị mua hàng (cấp 1 – Trưởng bộ phận Mua hàng)", "P4"),
+        new("scm-pr-l2", "Đề nghị mua hàng (cấp 2 – Giám đốc vận hành)", "P4"),
+        new("scm-stockcount-l2", "Phiếu kiểm kê (cấp 2 – Kế toán)", "P4"),
     ];
 
     public static List<OrgUnit> LoadOrgUnits(string root)
@@ -156,41 +99,6 @@ public static partial class Seeds
         return result;
     }
 
-    /// <summary>Vai trò → (cột ma trận → chuỗi quyền gốc, vd. "V E X").</summary>
-    public static List<(string Role, string Label, Dictionary<string, string> Rights)> LoadMatrix(string root)
-    {
-        var result = new List<(string, string, Dictionary<string, string>)>();
-        foreach (string line in OrgSection(root, "## 2."))
-        {
-            if (!line.StartsWith("| ", StringComparison.Ordinal) || line.StartsWith("| Nhóm màn hình", StringComparison.Ordinal) || line.StartsWith("|---", StringComparison.Ordinal))
-            {
-                continue;
-            }
-            string[] cells = line.Trim().Trim('|').Split('|').Select(c => c.Trim()).ToArray();
-            if (cells.Length != 1 + MatrixColumns.Length)
-            {
-                continue;
-            }
-            var rights = new Dictionary<string, string>();
-            for (int i = 0; i < MatrixColumns.Length; i++)
-            {
-                rights[MatrixColumns[i]] = cells[i + 1];
-            }
-            foreach (string role in RoleCodes(cells[0]))
-            {
-                result.Add((role, cells[0], rights));
-            }
-        }
-        return result;
-    }
-
-    /// <summary>"SAL-SALES / SAL-CON" → 2 nhóm; "COO (trưởng OPS)" → COO; "QA (4.1–4.5)" → QA; "FIN-IT (admin)" → FIN-IT.</summary>
-    private static IEnumerable<string> RoleCodes(string label)
-    {
-        string noParen = Regex.Replace(label, @"\(.*?\)", string.Empty);
-        return noParen.Split('/').Select(s => s.Trim()).Where(s => s.Length > 0);
-    }
-
     private static IEnumerable<string> OrgSection(string root, string heading)
     {
         bool inside = false;
@@ -206,15 +114,6 @@ public static partial class Seeds
                 yield return line;
             }
         }
-    }
-
-    /// <summary>Chuỗi quyền gốc → cờ UserRole. V = xem; E = thêm/sửa (+ xóa, nhập – PROPOSED); X = in/xuất. A (duyệt) cấu hình riêng.</summary>
-    public static (bool Access, bool Add, bool Edit, bool Delete, bool Print, bool Export, bool Import, bool Approve) Flags(string raw)
-    {
-        string letters = Regex.Replace(raw, @"\(.*?\)", " ");
-        var tokens = letters.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
-        bool v = tokens.Contains("V"), e = tokens.Contains("E"), x = tokens.Contains("X"), a = tokens.Contains("A");
-        return (v || e || x || a, e, e, e, x, x, e, a);
     }
 
     private static string Sql(string s) => "N'" + s.Replace("'", "''") + "'";
@@ -459,7 +358,8 @@ public static partial class Seeds
     /// <summary>BIZ-3.7 (D-77 – B7): mục "Phê duyệt › Kiểm tra hàng nhập" – không loại duyệt nào dùng (QC đầu vào kết luận trực tiếp, BIZ-2.6 tự ghi sổ) → ẩn.</summary>
     public static readonly string[] Biz3HiddenLinks = ["#/wf-inbox?type=qc-inspection"];
 
-    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Biz3HiddenLinks];
+    /// <remarks>MENU-5.2 (D-79): mục duyệt "Kiểm tra hàng nhập" mở lại (quyền Kết luận QC) – bỏ Biz3HiddenLinks khỏi danh sách ẩn.</remarks>
+    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks];
 
     /// <summary>Tên hiển thị của mục menu theo MENU-2 (không có trong bảng → giữ tên catalog).</summary>
     public static string MenuName(string link, string name) => MenuRenames.FirstOrDefault(r => r.Link == link).New ?? name;
@@ -525,85 +425,10 @@ public static partial class Seeds
         }
         sb.AppendLine("-- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB; MENU-4 (D-75 e): ẩn bảng con, màn chưa làm, mục trùng (IsActive = 0, không xóa).");
         sb.AppendLine($"UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN ({string.Join(", ", HiddenMenuLinks.Select(Sql))}) AND IsDeleted = 0 AND IsActive = 1;");
+        sb.Append(Menu5SeedBlock(screens, menuOrder));
         sb.AppendLine("COMMIT;");
         return sb.ToString();
     }
-
-    public static string UserRoleSeed(List<Screen> screens, List<(string Role, string Label, Dictionary<string, string> Rights)> matrix)
-    {
-        var sb = new StringBuilder(SeedHeader);
-        sb.AppendLine("BEGIN TRAN;");
-        sb.AppendLine("-- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). Ma trận quyền: PROPOSED (D-25), anh duyệt khi UAT-1.");
-        sb.AppendLine("-- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh trên ma trận.");
-        sb.AppendLine("-- Quy đổi: V → AllowAccess; E → Add + Edit + Delete + Import (PROPOSED); X → Print + Export. A (duyệt) → AllowAccess + AllowEdit trên mục \"Duyệt …\" (D-31), chỉ thêm khi chưa có – không ghi đè chỉnh sửa của admin.");
-        sb.AppendLine("-- D-69: ngoại lệ theo từng màn (Seeds.RightOverrides – đóng gói cho OPS-KIT, FIN-HR sửa hồ sơ nhân viên). D-71: màn tích hợp int-* chỉ FIN-IT (CEO / COO xem int-outbound) – Seeds.RestrictedScreens.");
-        foreach (var (role, _, _) in matrix)
-        {
-            sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = {Sql(role)} AND IsDeleted = 0)");
-            sb.AppendLine($"    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(role)}, 0, @Now, @SeedBy, 0);");
-        }
-        sb.AppendLine();
-        sb.AppendLine("DECLARE @R TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(200), A BIT, Ad BIT, E BIT, D BIT, P BIT, X BIT, I BIT);");
-        var rows = new List<string>();
-        foreach (var (role, _, rights) in matrix)
-        {
-            foreach (var s in screens)
-            {
-                var f = Flags(rights[GroupToMatrix[s.Group]]);
-                if (OverrideOf(s.Id, role) is { } o)
-                {
-                    f = (true, f.Add || o.Add, f.Edit || o.Edit, f.Delete, f.Print, f.Export, f.Import, f.Approve);   // D-69: chỉ nâng
-                }
-                if (RestrictedScreens.TryGetValue(s.Id, out var allowed))   // D-71: màn giới hạn – đặt đúng quyền, nhóm khác = 0
-                {
-                    f = allowed.TryGetValue(role, out var r) ? (true, r.Add, r.Edit, r.Delete, r.Export, r.Export, false, false) : (false, false, false, false, false, false, false, false);
-                }
-                string b(bool v) => v ? "1" : "0";
-                rows.Add($"({Sql(role)}, {Sql("#/" + s.Id)}, {b(f.Access)}, {b(f.Add)}, {b(f.Edit)}, {b(f.Delete)}, {b(f.Print)}, {b(f.Export)}, {b(f.Import)})");
-            }
-        }
-        foreach (var chunk in rows.Chunk(500))
-        {
-            sb.AppendLine("INSERT INTO @R VALUES");
-            sb.AppendLine("    " + string.Join(",\n    ", chunk) + ";");
-        }
-        sb.AppendLine("""
-
-
-            INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
-            SELECT NEWID(), g.Id, m.Id, r.A, r.Ad, r.E, r.D, r.P, r.X, r.I, @Now, @SeedBy, 0
-            FROM @R r
-            JOIN [dbo].[UserGroup] g ON g.Name = r.GroupName AND g.IsDeleted = 0
-            JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
-            WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
-            """);
-        var approvals = matrix.SelectMany(m => screens.Where(s => s.Approvable && !ApproverOverrides.ContainsKey(s.Id) && Flags(m.Rights[GroupToMatrix[s.Group]]).Approve)
-            .Select(s => $"({Sql(m.Role)}, {Sql(ApprovalLinkPrefix + s.Id)})")).ToList();
-        approvals.AddRange(ApproverOverrides.SelectMany(kv => kv.Value.Select(r => $"({Sql(r)}, {Sql(ApprovalLinkPrefix + kv.Key)})")));
-        approvals.AddRange(ExtraApprovals.SelectMany(x => x.Roles.Select(r => $"({Sql(r)}, {Sql(ApprovalLinkPrefix + x.Id)})")));
-        if (approvals.Count > 0)
-        {
-            sb.AppendLine("-- D-31: quyền duyệt (cột A) – chỉ thêm khi chưa có dòng.");
-            sb.AppendLine("DECLARE @A TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(200));");
-            sb.AppendLine("INSERT INTO @A VALUES");
-            sb.AppendLine("    " + string.Join(",\n    ", approvals) + ";");
-            sb.AppendLine("""
-                INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
-                SELECT NEWID(), g.Id, m.Id, 1, 0, 1, 0, 0, 0, 0, @Now, @SeedBy, 0
-                FROM @A a
-                JOIN [dbo].[UserGroup] g ON g.Name = a.GroupName AND g.IsDeleted = 0
-                JOIN [dbo].[ObjectMenu] m ON m.MetaLink = a.MetaLink AND m.IsDeleted = 0
-                WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
-                """);
-        }
-        sb.AppendLine("COMMIT;");
-        return sb.ToString();
-    }
-
-    /// <summary>Tóm tắt quyền duyệt seed: mục "Duyệt …" → các nhóm (để in ra console khi chạy CodeGen).</summary>
-    public static Dictionary<string, List<string>> Approvers(List<Screen> screens, List<(string Role, string Label, Dictionary<string, string> Rights)> matrix)
-        => screens.Where(s => s.Approvable).ToDictionary(s => s.Id, s => ApproverOverrides.TryGetValue(s.Id, out var o) ? [.. o] : matrix.Where(m => Flags(m.Rights[GroupToMatrix[s.Group]]).Approve).Select(m => m.Role).ToList())
-            .Concat(ExtraApprovals.Select(x => new KeyValuePair<string, List<string>>(x.Id, x.Roles.ToList()))).ToDictionary(kv => kv.Key, kv => kv.Value);
 
     [GeneratedRegex(@"^\|\s*([A-Z0-9-]+)\s*\|\s*([^|]+?)\s*\|\s*(COMPANY|BOARD|DIVISION|DEPARTMENT|TEAM)\s*\|\s*([^|]*?)\s*\|\s*$")]
     private static partial Regex OrgRow();
