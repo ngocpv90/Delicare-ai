@@ -36,6 +36,8 @@
     if (!m) return esc(v);
     // UI-6.10 (D-88): nhật ký – tên bảng / hành động tiếng Việt.
     if (col === 'EntityName') return esc(UI.tableVi(v));
+    if (col === 'JobCode' && UI.JOB_VI && UI.JOB_VI[v]) return esc(UI.JOB_VI[v]);
+    if (/Message$/.test(col) && typeof v === 'string' && /KPI_(DAILY|MONTHLY)/.test(v)) v = v.replace(/KPI_DAILY/g, 'chỉ số ngày').replace(/KPI_MONTHLY/g, 'chỉ số tháng');
     if (t === 'AuditChange' && col === 'Action') return esc(UI.STATUS_VI[v] || v);
     // Lỗi UAT 2026-11-21: cột mã danh mục tham chiếu (ReferenceLists) hiện nhãn tiếng Việt.
     if (Store.isRefCol(t, col)) return UI.tag(UI.statusVi(t, col, v));
@@ -57,7 +59,9 @@
   };
   // UI-6.10 (D-88): tên bảng kỹ thuật (EntityName của nhật ký / xung đột) → tên màn tiếng Việt.
   UI.tableVi = name => { const f = name && Object.values((window.APP && APP.FN) || {}).find(x => x.table === name && !String(x.id).includes('-detail')); return f ? f.name : name; };
-  UI.text = (t, col, v) => { if (v === null || v === undefined) return ''; if (col === 'EntityName') return UI.tableVi(v); if (t === 'AuditChange' && col === 'Action') return UI.STATUS_VI[v] || v; if (col.endsWith('Id') && Store.target(t, col)) return Store.label(Store.target(t, col), v); const m = Store.colmeta[t][col]; if (m && m.usage.startsWith('Trạng thái')) return UI.statusVi(t, col, v); return v; };
+  // Hồi quy đợt 2 (D-88): mã job (AnalyticsRefreshLog.JobCode, Job tự động) → tên tiếng Việt – khớp IScheduledJob.Name ở AppDelicare.Services/Jobs.
+  UI.JOB_VI = { "BillingMonthReady": "Báo bảng kê tháng trước", "LeaveHandover": "Nhắc người duyệt trước ngày nghỉ", "DayCard": "Thẻ ngày cho quản lý (bot Điều hành)", "MorningBrief": "Bản tin sáng (bot Điều hành)", "DailyReport": "Báo cáo cuối ngày (bot Điều hành)", "PeriodReport": "Báo cáo tuần / tháng (bot Điều hành)", "RemindUnconfirmedOrders": "Nhắc khách chưa chốt đơn", "IngredientsTonight": "Nguyên liệu cho ngày mai (thủ kho)", "LockOrders": "Khóa đơn ngày mai", "Mrp": "Tính nhu cầu vật tư + đề nghị mua", "AccountLockResigned": "Khóa tài khoản nhân viên đã nghỉ", "LotExpiry": "Xử lý lô hết hạn", "ContractExpiry": "Hợp đồng hết hạn", "MarkAbsent": "Chốt vắng ca hôm qua", "ForecastAutoSuggest": "Tự tạo gợi ý dự báo tuần sau", "ForecastReadyNotice": "Báo dự báo tuần sau đã sẵn", "ForecastPublishReminder": "Nhắc công bố dự báo tuần sau", "ForecastAutoPublish": "Tự công bố dự báo tuần sau", "MenuAutoDraft": "Tự lập nháp thực đơn tuần sau", "MenuDraftNotice": "Báo bếp thực đơn tuần sau đã có nháp", "OrderMissingReminder": "Nhắc điểm giao chưa có số ngày mai", "OrderMissingAtCutoff": "Báo đỏ điểm giao chưa có số lúc chốt", "MenuExpiry": "Thực đơn hết hiệu lực", "MenuWeekReminder": "Nhắc thực đơn chung tuần sau", "OrderWeekReminder": "Nhắc khách chưa đăng ký suất tuần sau", KPI_DAILY: "Chỉ số ngày", KPI_MONTHLY: "Chỉ số tháng" };
+  UI.text = (t, col, v) => { if (v === null || v === undefined) return ''; if (col === 'JobCode' && UI.JOB_VI[v]) return UI.JOB_VI[v]; if (col === 'EntityName') return UI.tableVi(v); if (t === 'AuditChange' && col === 'Action') return UI.STATUS_VI[v] || v; if (col.endsWith('Id') && Store.target(t, col)) return Store.label(Store.target(t, col), v); const m = Store.colmeta[t][col]; if (m && m.usage.startsWith('Trạng thái')) return UI.statusVi(t, col, v); return v; };
   // ---------- Toast ----------
   // Màn hình chuyên biệt cần dữ liệu nền (nhóm, ca, kho…) mà database chưa có.
   UI.emptyData = (tables, msg) => `<div class="card panel empty">${I('database')}<h2 class="mt">Chưa có dữ liệu để hiển thị màn hình này</h2><p class="muted">${msg ? esc(msg) + '<br>' : ''}Bảng chưa có dữ liệu: ${tables.map(t => '<code>dbo.' + esc(t) + '</code>' + (Store.srcOf(t) === 'api' ? ' (API ' + esc(Store.controllerOf(t)) + ')' : '')).join(', ')}. Nhập dữ liệu danh mục liên quan rồi mở lại.</p></div>`;
