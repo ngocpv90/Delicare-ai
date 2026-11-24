@@ -134,7 +134,12 @@
   };
   // ---------- Form sinh từ schema ----------
   const SKIP = new Set(['Id', 'CreatedDate', 'CreatedBy', 'ModifiedDate', 'ModifiedBy', 'DeletedDate', 'DeletedBy', 'DeleteddBy', 'IsDeleted']);
-  UI.formFields = t => Object.values(Store.colmeta[t]).filter(m => !SKIP.has(m.name) && !Store.isDeprecated(t, m.name) && !UI.hidden(t, m.name) && m.usage !== 'Kỹ thuật' && m.usage !== 'Ẩn (bảo mật)' && m.usage !== 'Hệ thống (PK)');
+  // UI-6.18 E (D-99 f, CLAUDE.md §4.5 điểm 11): chứng từ có luồng trạng thái – form tự sinh KHÔNG hiện ô trạng thái (đổi bằng nút nghiệp vụ), số chứng từ,
+  // người lập / người đề nghị, ngày lập (máy chủ tự sinh, chỉ đọc). Ô chọn Đang hoạt động / Ngừng hoạt động chỉ dùng cho danh mục.
+  const DOC_TABLES = new Set(['Order', 'Contract', 'PurchaseRequest', 'PurchaseOrder', 'GoodsReceipt', 'MaterialIssue', 'StockCount', 'ProductionPlan', 'ProductionOrder', 'ProductionBatche', 'PackingOrder', 'DeliveryOrder', 'DeliveryRoute', 'LeaveRequest', 'ShiftSwapRequest', 'CustomerComplaint', 'SupplierIssue', 'CleaningBatch', 'OrderReconciliation', 'MenuChangeRequest']);
+  const DOC_AUTO = /^(Status|RequestStatus|ComplaintStatus|IssueStatus|[A-Za-z]*Number|[A-Za-z]*No|PONo|RequestDate|OrderDate|RequesterId|RequestedBy|RequestedByEmployeeId|CreatedBy|ApprovedBy|ApprovedAt|SubmittedAt)$/;
+  UI.isDocTable = t => DOC_TABLES.has(t);
+  UI.formFields = t => Object.values(Store.colmeta[t]).filter(m => !SKIP.has(m.name) && !Store.isDeprecated(t, m.name) && !UI.hidden(t, m.name) && m.usage !== 'Kỹ thuật' && m.usage !== 'Ẩn (bảo mật)' && m.usage !== 'Hệ thống (PK)' && !(DOC_TABLES.has(t) && DOC_AUTO.test(m.name)));
   // UI-5.4: nhãn tiếng Việt của bảng cho chữ "— Chọn … —" của ô chọn tham chiếu (không hiện tên bảng tiếng Anh).
   const TABLE_VI = {
     OrganizationUnit: 'đơn vị', User: 'người dùng', Employee: 'nhân viên', Person: 'hồ sơ', Company: 'công ty', Customer: 'khách hàng', Supplier: 'nhà cung cấp',

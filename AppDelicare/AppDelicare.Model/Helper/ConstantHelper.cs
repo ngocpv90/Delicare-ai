@@ -270,6 +270,15 @@
             public static readonly string SupplierPriceExtended = "Đã cập nhật ngày kết thúc {0} dòng giá (bỏ qua {1})";
             public static readonly string SupplierQuoteInvalid = "Không phải mẫu báo giá (tải mẫu ở màn Bảng giá nhà cung cấp, không đổi tiêu đề cột)";
             public static readonly string SupplierQuoteApplied = "Đã tạo {0} giá mới ({1} dòng lỗi bỏ qua)";
+            public static readonly string PurchaseRequestAlreadyConverted = "Đề nghị đã có đơn mua: {0} (hệ thống tự lập khi duyệt)";
+            public static readonly string PurchaseRequestQuantityInvalid = "Số lượng mỗi dòng phải lớn hơn 0";
+            public static readonly string PurchaseRequestLineUnitMissing = "Nguyên liệu «{0}» chưa có đơn vị kho – chọn đơn vị cho dòng";
+            public static readonly string PurchaseRequestDatePast = "Ngày cần hàng không được trước hôm nay";
+            public static readonly string PurchaseAutoPoCreated = "{0} đã duyệt → hệ thống lập {1}";
+            public static readonly string PurchaseAutoPoNeedPick = "; {0} dòng cần chọn nhà cung cấp";
+            public static readonly string PurchaseAutoPoFailed = "Đề nghị đã duyệt nhưng chưa tự lập được đơn mua ({0}) – vào Đơn mua hàng › Chọn nhà cung cấp hoặc bấm Lập PO";
+            public static readonly string PurchasePickCreated = "Đã lập {0} đơn mua: {1}";
+            public static readonly string PurchaseSendDone = "Đã gửi {0} / {1} đơn mua cho nhà cung cấp";
             public static readonly string ShelfLifeRequired = "Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0";
             public static readonly string ConversionFactorPositive = "Hệ số quy đổi phải lớn hơn 0";
             public static readonly string ConversionSameUnit = "Đơn vị nguồn và đích phải khác nhau";

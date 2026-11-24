@@ -135,7 +135,7 @@ namespace AppDelicare.Tests.Approval
             detail.GetProperty("business").GetProperty("table").GetString().Should().Be("PurchaseRequest");
 
             (await coo.PostFormAsync("/api/PurchaseRequest/Approve", ("Id", pr), ("Note", "Đồng ý"))).Ok();
-            (await PrAsync(_factory, pr)).Status.Should().Be("Approved");
+            (await PrAsync(_factory, pr)).Status.Should().BeOneOf(["Approved", "Converted"], "UI-6.18 B: duyệt cấp cuối → hệ thống tự lập PO khi có NCC đủ điều kiện");
             request = await RequestOfAsync(_factory, pr);
             request.RequestStatus.Should().Be("Approved");
             request.CompletedAt.Should().Be(Now);
@@ -368,7 +368,7 @@ namespace AppDelicare.Tests.Approval
             using var head = _factory.CreateAuthorizedClient(await UserAsync(_factory, ["scm-pr-l1"]));
             (await head.GetResultAsync("/api/ApprovalRequest/GetMyPending?type=scm-pr-l1")).ListData.EnumerateArray().Should().Contain(x => x.GetProperty("id").GetGuid() == request.Id);
             (await head.PostFormAsync("/api/PurchaseRequest/Approve", ("Id", pr))).Ok();
-            (await PrAsync(_factory, pr)).Status.Should().Be("Approved", "1 bước → bước cuối");
+            (await PrAsync(_factory, pr)).Status.Should().BeOneOf(["Approved", "Converted"], "1 bước → bước cuối (UI-6.18: có NCC → tự lập PO)");
         }
     }
 }

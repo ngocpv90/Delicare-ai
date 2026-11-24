@@ -31,6 +31,51 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.18 D (D-99): dòng đề nghị đã duyệt cần chọn NCC (≤ 3 thẻ NCC) + PO chưa gửi + 4 chỉ số. Quyền Xem.</summary>
+        [HttpGet("GetSupplierPickBoard")]
+        public async Task<IActionResult> GetSupplierPickBoard([FromQuery] AppDelicare.Model.Model.SupplierPickBoardRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetSupplierPickBoard(request ?? new()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSupplierPickBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.18 D: lập PO từ các dòng đã chọn NCC (mỗi NCC 1 PO; đủ 3 điều kiện tự duyệt, không thì gửi duyệt). JSON. Quyền Thêm.</summary>
+        [HttpPost("CreateFromPick")]
+        public async Task<IActionResult> CreateFromPick([FromBody] AppDelicare.Model.Request.Custom.PurchasePickCreateRequest request)
+        {
+            try
+            {
+                return null == request ? BadRequest(ConstantHelper.Message.ModelStateMessage) : Ok(await _service.CreateFromPick(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateFromPick: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.18 D: gửi nhiều PO Đã duyệt cho NCC một lần. JSON. Quyền Sửa.</summary>
+        [HttpPost("SendMany")]
+        public async Task<IActionResult> SendMany([FromBody] AppDelicare.Model.Request.Custom.PurchaseOrderSendManyRequest request)
+        {
+            try
+            {
+                return null == request ? BadRequest(ConstantHelper.Message.ModelStateMessage) : Ok(await _service.SendMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SendMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPost("Insert")]
         public async Task<IActionResult> Insert([FromForm] PurchaseOrderRequest request)
         {

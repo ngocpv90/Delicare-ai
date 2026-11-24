@@ -23,10 +23,11 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class PurchaseOrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class PurchaseOrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService
-        , IClock clock, IOptions<BusinessRulesOptions> rules) : IPurchaseOrderService
+        , IClock clock, IOptions<BusinessRulesOptions> rules, IServiceProvider serviceProvider) : IPurchaseOrderService
     {
+        private readonly IServiceProvider _serviceProvider = serviceProvider;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;

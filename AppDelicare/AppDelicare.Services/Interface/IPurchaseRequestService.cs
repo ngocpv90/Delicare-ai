@@ -31,5 +31,10 @@ namespace AppDelicare.Services.Interface
         public Task<string?> BuildApprovalStateAsync(Guid id);
         public Task<string?> DescribeAsync(Guid id);
         public Task<string?> ApplyDecisionAsync(Guid id, bool approved, string? note);
+        /// <summary>UI-6.18 (D-99): tạo kèm dòng, sửa dòng (Nháp), gợi ý NCC từng dòng, tự lập đơn mua sau khi duyệt cấp cuối.</summary>
+        public Task<IResult<AppDelicare.Model.Model.PurchaseRequestDetailModel>> CreateWithLines(AppDelicare.Model.Request.Custom.PurchaseRequestCreateRequest request);
+        public Task<IResult<AppDelicare.Model.Model.PurchaseRequestDetailModel>> UpdateLines(AppDelicare.Model.Request.Custom.PurchaseRequestUpdateLinesRequest request);
+        public Task<IResults<AppDelicare.Model.Model.SupplierPickLineModel>> GetSupplierSuggestion(AppDelicare.Model.Request.Custom.SupplierSuggestRequest request);
+        public Task<string?> AutoCreatePoAsync(Guid purchaseRequestId);
     }
 }

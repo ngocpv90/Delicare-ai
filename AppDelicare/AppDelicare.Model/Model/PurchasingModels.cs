@@ -36,6 +36,9 @@ namespace AppDelicare.Model.Model
 
     public class PurchaseOrderBriefModel
     {
+        /// <summary>UI-6.18: nguồn ("Tự lập / từ đề nghị" / "Lập tay") + đã tự duyệt.</summary>
+        public string? Source { get; set; }
+        public bool AutoApproved { get; set; }
         public Guid Id { get; set; }
         public string? PurchaseOrderNumber { get; set; }
         public Guid SupplierId { get; set; }
@@ -54,6 +57,8 @@ namespace AppDelicare.Model.Model
         public List<PurchaseOrderBriefModel> ListPurchaseOrder { get; set; } = [];
         /// <summary>Cảnh báo không chặn: dưới MOQ, chưa có giá, thiếu quy đổi đơn vị mua.</summary>
         public List<string> ListWarning { get; set; } = [];
+        /// <summary>UI-6.18 (D-99): dòng chưa có NCC đủ điều kiện – chưa lập PO, chờ chọn ở màn Chọn nhà cung cấp.</summary>
+        public List<SupplierPickLineModel> ListNeedPick { get; set; } = [];
     }
 
     /// <summary>T15 (spec 7.3): chi tiết PO – dòng kèm số đã nhận (phiếu đã ghi sổ: số đạt) / đang chờ QC / còn lại, thao tác được phép, yêu cầu duyệt đang chờ.</summary>
@@ -185,5 +190,129 @@ namespace AppDelicare.Model.Model
         public Guid? MaterialLotId { get; set; }
         public string? LotNumber { get; set; }
         public string? LotStatus { get; set; }
+    }
+}
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.18 (D-99): gợi ý NCC theo dòng (SupplierPick) – dùng cho form đề nghị, tự lập PO, màn Chọn nhà cung cấp.</summary>
+    public class SupplierPickLineModel
+    {
+        public Guid Key { get; set; }
+        public Guid IngredientId { get; set; }
+        public string? IngredientName { get; set; }
+        public string? CategoryName { get; set; }
+        public decimal Quantity { get; set; }
+        public Guid UnitId { get; set; }
+        public string? UnitName { get; set; }
+        public DateTime NeedDate { get; set; }
+        public Guid? SupplierId { get; set; }
+        public string? SupplierName { get; set; }
+        public Guid? PriceId { get; set; }
+        /// <summary>Đơn giá quy về đơn vị của dòng.</summary>
+        public decimal? UnitPrice { get; set; }
+        public decimal? OrderQuantity { get; set; }
+        /// <summary>Lý do "Cần chọn NCC" (hoặc lý do đổi NCC ưu tiên).</summary>
+        public string? Reason { get; set; }
+        public decimal StockQuantity { get; set; }
+        public bool BelowMinimum { get; set; }
+        public Guid? PurchaseRequestId { get; set; }
+        public string? PurchaseRequestNumber { get; set; }
+        public Guid? PurchaseRequestLineId { get; set; }
+        public List<SupplierPickCardModel> ListCard { get; set; } = [];
+    }
+
+    public class SupplierPickCardModel
+    {
+        public Guid SupplierId { get; set; }
+        public string? SupplierName { get; set; }
+        public Guid? PriceId { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public string? PriceUnitName { get; set; }
+        public decimal? PricePerLineUnit { get; set; }
+        public decimal OrderQuantity { get; set; }
+        public decimal? Amount { get; set; }
+        public int? LeadTimeDays { get; set; }
+        public decimal? OnTimePct { get; set; }
+        public int IssueCount90 { get; set; }
+        public decimal? ChangePct { get; set; }
+        public bool IsPreferred { get; set; }
+        public bool Eligible { get; set; }
+        public bool Suggested { get; set; }
+        public string? Reason { get; set; }
+        public string? Note { get; set; }
+    }
+}
+
+namespace AppDelicare.Model.Request.Custom
+{
+    /// <summary>UI-6.18 A (D-99): tạo đề nghị mua kèm dòng.</summary>
+    public class PurchaseRequestCreateRequest
+    {
+        public DateTime? RequiredDate { get; set; }
+        public string? Note { get; set; }
+        public bool Submit { get; set; }
+        public List<PurchaseRequestLineInput> ListLine { get; set; } = [];
+    }
+
+    public class PurchaseRequestUpdateLinesRequest
+    {
+        public Guid Id { get; set; }
+        public DateTime? RequiredDate { get; set; }
+        public string? Note { get; set; }
+        public List<PurchaseRequestLineInput> ListLine { get; set; } = [];
+    }
+
+    public class PurchaseRequestLineInput
+    {
+        public Guid? Key { get; set; }
+        public Guid IngredientId { get; set; }
+        public decimal Quantity { get; set; }
+        public Guid? UnitId { get; set; }
+        public DateTime? RequiredDate { get; set; }
+        public string? Note { get; set; }
+    }
+
+    public class SupplierSuggestRequest
+    {
+        public DateTime? RequiredDate { get; set; }
+        public List<PurchaseRequestLineInput> ListLine { get; set; } = [];
+    }
+
+    /// <summary>UI-6.18 D: màn Chọn nhà cung cấp – lập đơn mua từ các dòng đã chọn NCC.</summary>
+    public class PurchasePickCreateRequest
+    {
+        public List<PurchasePickLineInput> ListLine { get; set; } = [];
+    }
+
+    public class PurchasePickLineInput
+    {
+        public Guid PurchaseRequestLineId { get; set; }
+        public Guid SupplierId { get; set; }
+    }
+
+    public class PurchaseOrderSendManyRequest
+    {
+        public List<Guid> ListId { get; set; } = [];
+    }
+}
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.18 D (D-99): màn Đơn mua hàng – Chọn nhà cung cấp + Chờ gửi.</summary>
+    public class SupplierPickBoardRequest
+    {
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+    }
+
+    public class SupplierPickBoardModel
+    {
+        public int NeedPickCount { get; set; }
+        public int ToSendCount { get; set; }
+        public int PendingApprovalCount { get; set; }
+        public decimal PickedAmount { get; set; }
+        public List<SupplierPickLineModel> ListLine { get; set; } = [];
+        public List<PurchaseOrderBriefModel> ListUnsent { get; set; } = [];
     }
 }

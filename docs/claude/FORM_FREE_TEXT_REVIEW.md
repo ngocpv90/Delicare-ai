@@ -70,4 +70,11 @@ Tổng: **59** ô. Cột "Đã sửa / cần duyệt" cập nhật theo từng t
 
 ## Luật chứng từ (UI-6.18 E – CLAUDE.md §4.5 điểm 11)
 
-Kết quả rà chứng từ có luồng trạng thái (không ô chọn trạng thái, số / người lập / ngày lập máy chủ tự sinh, form tạo mới nhập được dòng) ghi tiếp ở mục này khi làm UI-6.18.
+Đã áp (UI-6.18 E, 2026-11-24): form tự sinh `UI.form` gặp bảng chứng từ (Order, Contract, PurchaseRequest, PurchaseOrder, GoodsReceipt, MaterialIssue, StockCount, ProductionPlan, ProductionOrder, ProductionBatche, PackingOrder, DeliveryOrder, DeliveryRoute, LeaveRequest, ShiftSwapRequest, CustomerComplaint, SupplierIssue, CleaningBatch, OrderReconciliation, MenuChangeRequest) **không render** ô trạng thái, số chứng từ, người lập / người đề nghị, ngày lập (`core/ui.js` DOC_TABLES / DOC_AUTO).
+
+| Chứng từ | Form tạo mới | Nhập được dòng | Ghi chú |
+|---|---|---|---|
+| Đề nghị mua | Form riêng UI-6.18 | Có | Số / người / ngày máy chủ tự sinh |
+| Đơn mua | Màn Chọn NCC / lập từ đề nghị; "Thêm đơn mua" lập tay còn dùng form cũ + UpdateLines | Qua UpdateLines | Form lập tay mua gấp chọn NCC → dòng: **chưa làm** (rủi ro PROGRESS UI-6.18) |
+| Đơn đặt suất | Đăng ký suất tuần / Thêm đơn phát sinh (UI-6.15) | Có | |
+| Phiếu nhập, xuất, kiểm kê, lệnh SX, mẻ, đơn nghỉ / đổi ca, phản ánh | Form riêng / tự sinh từ chứng từ gốc | Theo màn | Rà lại khi làm UI-6.29 … 6.39 |

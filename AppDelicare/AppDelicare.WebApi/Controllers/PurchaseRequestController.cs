@@ -31,6 +31,51 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.18 A (D-99): tạo đề nghị mua kèm dòng (số / ngày lập / người đề nghị máy chủ điền, Nháp; Submit = gửi duyệt luôn). JSON. Quyền Thêm.</summary>
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromBody] AppDelicare.Model.Request.Custom.PurchaseRequestCreateRequest request)
+        {
+            try
+            {
+                return null == request ? BadRequest(ConstantHelper.Message.ModelStateMessage) : Ok(await _service.CreateWithLines(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Create: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.18 A: sửa dòng đề nghị Nháp (thay toàn bộ dòng). JSON. Quyền Sửa.</summary>
+        [HttpPost("UpdateLines")]
+        public async Task<IActionResult> UpdateLines([FromBody] AppDelicare.Model.Request.Custom.PurchaseRequestUpdateLinesRequest request)
+        {
+            try
+            {
+                return null == request ? BadRequest(ConstantHelper.Message.ModelStateMessage) : Ok(await _service.UpdateLines(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " UpdateLines: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.18 C: gợi ý NCC (≤ 3 thẻ, NCC gợi ý, lý do) + tồn hiện tại cho các dòng đang nhập. JSON (POST đọc). Quyền Xem.</summary>
+        [HttpPost("GetSupplierSuggestion")]
+        public async Task<IActionResult> GetSupplierSuggestion([FromBody] AppDelicare.Model.Request.Custom.SupplierSuggestRequest request)
+        {
+            try
+            {
+                return null == request ? BadRequest(ConstantHelper.Message.ModelStateMessage) : Ok(await _service.GetSupplierSuggestion(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSupplierSuggestion: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPost("Insert")]
         public async Task<IActionResult> Insert([FromForm] PurchaseRequestRequest request)
         {

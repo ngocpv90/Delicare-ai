@@ -78,6 +78,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 6. **In phiếu trước sản xuất**: tải phiếu nguyên liệu cần cho ngày.
 
 ### 4.2 Đề nghị mua – `scm-pr`
+**Form đề nghị mua (UI-6.18, D-99):** số `MH-YYMMDD-NNNN`, ngày lập, người đề nghị **hệ thống tự điền** (chỉ đọc), luôn tạo **Nháp**, không có ô trạng thái. Nhập **Ngày cần hàng***, Ghi chú / lý do, **bảng nguyên liệu** (gõ tên để thêm dòng; số lượng; ĐVT – chỉ đơn vị quy đổi được; ngày cần từng dòng – trống = ngày cần chung). Mỗi dòng hiện **tồn hiện tại**, **NCC gợi ý · giá** (theo quy tắc gợi ý NCC), cảnh báo dưới tồn tối thiểu / "Cần chọn NCC: lý do"; cuối bảng **Tổng giá trị ước tính**. Nút **Lưu nháp** / **Gửi duyệt luôn**; chặn 0 dòng, số ≤ 0; nguyên liệu trùng tự gộp. Trang chi tiết đề nghị Nháp có nút **Sửa dòng**. **Duyệt cấp cuối → hệ thống tự lập đơn mua** (thông báo "MH-… đã duyệt → hệ thống lập PO-… (NCC, tiền, tự duyệt)"; dòng không có NCC đủ điều kiện chờ ở Đơn mua hàng › Chọn nhà cung cấp).
+
 Danh sách: Số đề nghị, Ngày, Ngày cần, Người đề nghị, Số dòng, Giá trị ước tính, Trạng thái. Bấm dòng → **trang chi tiết đề nghị mua** (mục 4.6).
 
 | Nút trên dòng | Khi nào | Kết quả |
@@ -89,6 +91,8 @@ Danh sách: Số đề nghị, Ngày, Ngày cần, Người đề nghị, Số d
 Đề nghị mua thường được **sinh từ MRP**. Tạo tay bằng **Tạo mới** tạo phần đầu phiếu, rồi mở phiếu (Nháp) → **Sửa dòng nguyên liệu**: thêm / sửa / xóa dòng (nguyên liệu, số lượng, đơn vị, ngày cần, ghi chú; mỗi nguyên liệu một dòng).
 
 ### 4.3 Đơn mua (PO) – `scm-po`
+**Khối việc mua hàng trên đầu màn (UI-6.18):** 4 thẻ (Dòng cần chọn NCC · Đơn chờ gửi · Đơn chờ duyệt · Giá trị đang chọn) + 2 tab: **Chọn nhà cung cấp** – dòng đề nghị đã duyệt chưa có đơn mua (nhóm theo nhóm nguyên liệu, nhãn lý do), mỗi dòng ≤ 3 thẻ NCC (giá / đơn vị, số ngày giao, % đúng hẹn, số sự cố 90 ngày, ghi chú tối thiểu / tăng giá, thành tiền; nhãn Gợi ý / Ưu tiên; NCC không đủ điều kiện mờ kèm lý do) – **bấm thẻ = chọn**, **Theo gợi ý cho tất cả**; cột phải **Đơn mua sẽ lập** gom theo NCC và báo trước kết quả (Tự duyệt → chờ gửi / Gửi Trưởng Mua duyệt / Chờ Giám đốc duyệt ≥ 50 tr) → **Lập đơn mua**. **Chờ gửi NCC** – đơn Đã duyệt chưa gửi (nguồn, "Hệ thống tự duyệt"), nút **Gửi** từng đơn / **Gửi tất cả**, **Phiếu đặt hàng** (Excel). Danh sách đơn mua như cũ ở dưới.
+
 Danh sách: Số PO, NCC, Đề nghị mua, Ngày đặt, Giao dự kiến, Giá trị, Trạng thái. Bấm dòng → **trang chi tiết đơn mua** (mục 4.6).
 
 | Nút trên dòng | Khi nào | Kết quả |

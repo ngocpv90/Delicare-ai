@@ -41,5 +41,9 @@ namespace AppDelicare.Services.Interface
         public Task<string?> ApplyDecisionAsync(Guid id, bool approved, string? note);
         /// <summary>T15: cập nhật trạng thái nhận hàng sau khi ghi sổ phiếu nhập (trong transaction của GoodsReceipt/Post).</summary>
         public Task RefreshReceiptStatusAsync(Guid id);
+        /// <summary>UI-6.18 D (D-99): Chọn nhà cung cấp, lập PO từ lựa chọn, gửi nhiều PO.</summary>
+        public Task<IResult<AppDelicare.Model.Model.SupplierPickBoardModel>> GetSupplierPickBoard(AppDelicare.Model.Model.SupplierPickBoardRequest request);
+        public Task<IResult<AppDelicare.Model.Model.PurchaseRequestConvertResultModel>> CreateFromPick(AppDelicare.Model.Request.Custom.PurchasePickCreateRequest request);
+        public Task<IResult<int>> SendMany(AppDelicare.Model.Request.Custom.PurchaseOrderSendManyRequest request);
     }
 }

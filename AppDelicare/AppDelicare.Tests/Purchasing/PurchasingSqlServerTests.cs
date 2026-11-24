@@ -60,7 +60,7 @@ namespace AppDelicare.Tests.Purchasing
                 (await prService.Decide(new PurchaseActionRequest { Id = pr, Note = "[DEMO] cấp 1" }, true)).ResponseCode.Should().Be(200);
                 (await prService.GetDetail(pr)).Data!.PendingApproval!.ScreenId.Should().Be("scm-pr-l2");
                 (await prService.Decide(new PurchaseActionRequest { Id = pr, Note = "[DEMO] cấp 2" }, true)).ResponseCode.Should().Be(200);
-                (await prService.GetDetail(pr)).Data!.PurchaseRequest.Status.Should().Be("Approved");
+                (await prService.GetDetail(pr)).Data!.PurchaseRequest.Status.Should().Be("Converted", "UI-6.18 B: duyệt cấp cuối → hệ thống tự lập PO; Lập PO tay trả PO đã có");
                 var converted = await prService.ConvertToPurchaseOrder(new PurchaseRequestConvertRequest { Id = pr, Note = "[DEMO]" });
                 converted.ResponseCode.Should().Be(200, converted.ResponseMessage);
                 var poBrief = converted.Data!.ListPurchaseOrder.Single();

@@ -569,6 +569,15 @@ namespace AppDelicare.Services.Implement
                 if (request.Approve)
                 {
                     var done = await _unitOfWork.ApprovalRequestRepository.GetAll().AsNoTracking().FirstOrDefaultAsync(a => a.Id == request.Id);
+                    // UI-6.18 B (D-99): đề nghị mua duyệt cấp cuối → hệ thống tự lập đơn mua (lỗi chỉ báo, không hỏng việc duyệt).
+                    if (done is { RequestStatus: Approved, BusinessType: PurchaseRequestStatus.BusinessType } && done.BusinessId is { } prId)
+                    {
+                        string? auto = await _serviceProvider.GetRequiredService<IPurchaseRequestService>().AutoCreatePoAsync(prId);
+                        if (!string.IsNullOrEmpty(auto))
+                        {
+                            message = (message ?? ConstantHelper.Message.SaveSuccess) + " – " + auto;
+                        }
+                    }
                     if (done is { RequestStatus: Approved, BusinessType: OrderStatus.ChangeAfterCutoffBusinessType })
                     {
                         var sup = await _serviceProvider.GetRequiredService<IProductionPlanService>().SupplementForOrderAsync(done.BusinessId ?? Guid.Empty, "duyệt sau giờ chốt " + done.RequestNo);

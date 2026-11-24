@@ -212,6 +212,7 @@
         buttons: [
           { act: 'convert', icon: 'plus', label: 'Lập PO', ok: edit && acts.includes('convertToPurchaseOrder'), primary: true },
           { act: 'submit', icon: 'approve', label: 'Gửi duyệt', ok: edit && acts.includes('submit'), primary: true },
+          { act: 'editLines', icon: 'edit', label: 'Sửa dòng', ok: edit && pr.status === 'Draft' },
         ],
         more: [inbox(d), edit && acts.includes('cancel') ? `<button data-h="cancel">Hủy đề nghị mua</button>` : ''],
       };
@@ -236,7 +237,8 @@
       { label: 'Dòng đề nghị', render: (box, o) => { box.innerHTML = prLines((o.detail || {}).listLine || []); } },
       { label: 'Đơn mua đã lập', render: (box, o) => { const r = (o.detail || {}).listPurchaseOrder || []; box.innerHTML = r.length ? poBrief(r) : '<div class="muted small">Chưa lập đơn mua.</div>'; } },
     ],
-    onAct: (act, o) => {
+    onAct: (act, o, id, reload) => {
+      if (act === 'editLines' && APP.prForm) return APP.prForm({ Id: (o.detail || {}).purchaseRequest.id }, { onSave: () => reload && reload() }); // UI-6.18 A: sửa dòng đề nghị Nháp
       if (act === 'inbox') return APP.go('wf-inbox');
       const A = APP.scmPr; if (A && A[act]) A[act](prRef(o.detail || {}));
     },
