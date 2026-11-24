@@ -147,6 +147,19 @@ if (Layer("security"))
     Write(Path.Combine(root, "DB", "scripts", "D79_menu_regroup.sql"), Seeds.Menu5RegroupScript(screens, menuOrder), true);
     Write(Path.Combine(root, "DB", "scripts", "D79_permission_matrix.sql"), Seeds.PermissionMatrixScript(), true);
     Console.WriteLine($"Màn hình: {screens.Count}. Đơn vị: {units.Count}. Vai trò: {Seeds.StandardRoles.Length} ({string.Join(", ", Seeds.StandardRoles)}).");
+    Write(Path.Combine(root, "docs", "claude", "MENU5_MATRIX.md"), Seeds.MatrixDoc(screens), true);
+    foreach (var (file, roles, compact) in Seeds.GuideRoles)
+    {
+        string guide = Path.Combine(root, "docs", "user-guide", file);
+        if (File.Exists(guide) && Seeds.PatchGuide(File.ReadAllText(guide), roles, compact, screens) is { } patched)
+        {
+            Write(guide, patched, true);
+        }
+        else
+        {
+            Console.WriteLine($"  ! Không thấy mục \"## 2.\" có bảng trong {file} – bỏ qua.");
+        }
+    }
     Console.WriteLine("Ma trận MENU-5 (D-79):");
     Console.WriteLine(Seeds.Menu5Summary());
 }

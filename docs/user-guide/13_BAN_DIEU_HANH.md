@@ -8,16 +8,50 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Dùng để |
-|---|---|---|
-| `dash-exec` | Bảng điều hành › Dashboard điều hành (trang chủ) | Số liệu ngày / ca, cảnh báo |
-| `kpi-daily` | … › Chỉ số theo ngày | Chỉ tiêu 30 ngày gần nhất theo nhóm |
-| `kpi-monthly` | … › Chỉ số theo tháng | Chỉ tiêu 12 tháng |
-| `flow-e2e` | … › 9 luồng nghiệp vụ | Sơ đồ luồng, mở nhanh màn từng bước |
-| `wf-inbox` | Nhân sự › Hộp phê duyệt | Duyệt |
-| `cost-meal`, `cost-actual` | Sản xuất & Giá thành | Giá thành suất, giá thành thực tế |
-| `crm-reconciliation` | Kinh doanh › Đối soát đơn hàng | Kế toán xem / chốt đối soát (`10_DIEM_PHAT.md`) |
-| Mọi màn khác | | Xem (không sửa) |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền hơn **Xem** (đủ ma trận: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | CEO | CEO-PMO | COO | FIN-ACC |
+|---|---|---|---|---|---|
+| Phê duyệt › Hợp đồng | `wf-inbox?type=crm-contract` | Duyệt | — | — | — |
+| Phê duyệt › Đơn đặt suất (sửa sau chốt) | `wf-inbox?type=crm-order` | — | — | Duyệt | — |
+| Phê duyệt › Công thức chế biến | `wf-inbox?type=menu-recipe` | — | — | Duyệt | — |
+| Phê duyệt › Thực đơn tuần | `wf-inbox?type=menu-menu` | — | — | Duyệt | — |
+| Phê duyệt › Yêu cầu đổi món | `wf-inbox?type=menu-change-request` | — | — | Duyệt | — |
+| Phê duyệt › Đề nghị mua – cấp 2 | `wf-inbox?type=scm-pr-l2` | — | — | Duyệt | — |
+| Phê duyệt › Đơn mua hàng | `wf-inbox?type=scm-po` | — | — | Duyệt | — |
+| Phê duyệt › Đơn mua hàng ≥ 50 triệu | `wf-inbox?type=scm-po-director` | Duyệt | — | — | — |
+| Phê duyệt › Phiếu kiểm kê – cấp 1 | `wf-inbox?type=scm-stockcount` | — | — | Duyệt | — |
+| Phê duyệt › Phiếu kiểm kê – cấp 2 | `wf-inbox?type=scm-stockcount-l2` | — | — | — | Duyệt |
+| Phê duyệt › Phiếu điều chỉnh tồn | `wf-inbox?type=scm-adjustment` | — | — | Duyệt | — |
+| Phê duyệt › Kế hoạch sản xuất | `wf-inbox?type=prod-plan` | — | — | Duyệt | — |
+| Phê duyệt › Đơn xin nghỉ | `wf-inbox?type=hr-leave` | — | — | Duyệt | — |
+| Phê duyệt › Đơn đổi ca | `wf-inbox?type=hr-swap` | — | — | Duyệt | — |
+| Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
+| Điều hành › Chỉ số theo ngày | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
+| Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X (IX) |
+| Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X (IX) |
+| Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | X (IX) |
+| Kinh doanh › Chính sách giá | `crm-price-policy` | X | X | X | X (IX) |
+| Kinh doanh › Đơn đặt suất | `crm-order` | X | X | X | X (IX) |
+| Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | X (IX) |
+| Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | X (IX) |
+| Mua hàng › Đơn mua hàng | `scm-po` | X | X | X | X (IX) |
+| Kho › Phiếu nhập kho | `scm-gr` | X | X | X | X (IX) |
+| Kho › Phiếu xuất sản xuất | `scm-issue` | X | X | X | X (IX) |
+| Kho › Tồn kho | `scm-inv-balance` | X | X | X | X (IX) |
+| Kho › Lô hàng & hạn dùng | `scm-lot` | X | X | X | X (IX) |
+| Kho › Sổ kho | `scm-inv-txn` | X | X | X | X (IX) |
+| Kho › Phiếu kiểm kê | `scm-stockcount` | X | X | X | X (IX) |
+| Kho › Chênh lệch tiêu hao | `scm-consumption-var` | X | X | X | X (IX) |
+| Sản xuất › Hao hụt | `prod-waste` | X | X | X | X (IX) |
+| Giá thành › Giá thành chuẩn | `cost-standard` | X | X | X | X (IX) |
+| Giá thành › Giá thành thực tế | `cost-actual` | X | X | X | X (IX) |
+| Giá thành › Giá vốn suất ăn | `cost-meal` | X (IX) | X | X | X (IX) |
+| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | X (IX) |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | X (IX) |
+| Nhân sự › Chấm công | `hr-attendance` | X | X | X | X (IX) |
+<!-- MENU5:END -->
 
 ## 3. Việc trong ngày
 

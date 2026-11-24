@@ -10,17 +10,38 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Quyền |
-|---|---|---|
-| `prod-batch` | Sản xuất & Giá thành › Mẻ sản xuất | Xem, sửa |
-| `prod-order` | … › Lệnh sản xuất | Xem, sửa |
-| `prod-plan` | … › Kế hoạch sản xuất | Xem, sửa (duyệt: COO) |
-| `prod-waste` | … › Hao hụt thực phẩm | Xem, sửa |
-| `prod-line`, `prod-workstation` | … › Dây chuyền, Khu vực & trạm làm việc | Xem, sửa |
-| `cost-actual`, `cost-meal`, `cost-standard` | … giá thành | Xem, sửa |
-| `qc-checklist-result`, `qc-temperature`, `qc-cleaning`, `qc-cleaning-result` | QC & ATTP | Xem, sửa (xem `06_QC_ATTP.md`) |
-| `scm-issue`, `scm-reservation`, `scm-inv-balance` | Mua hàng & Kho | Xem |
-| `hr-shift-assign`, `hr-attendance` | Nhân sự › Phân ca, Chấm công | Xem |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | OPS-KIT | OPS-MNT |
+|---|---|---|---|
+| Việc của tôi › Việc của tôi | `hr-my` | X | X |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | — |
+| Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | — |
+| Thực đơn & Món ăn › Món ăn | `menu-dish` | X | — |
+| Kho › Phiếu xuất sản xuất | `scm-issue` | X | — |
+| Kho › Tồn kho | `scm-inv-balance` | X | — |
+| Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | — |
+| Sản xuất › Lệnh sản xuất | `prod-order` | X | — |
+| Sản xuất › Mẻ nấu | `prod-batch` | S | X |
+| Sản xuất › Sản lượng | `prod-output` | X | — |
+| Sản xuất › Hao hụt | `prod-waste` | S | — |
+| Sản xuất › Dây chuyền bếp | `prod-line` | X | S |
+| Sản xuất › Trạm bếp | `prod-workstation` | X | S |
+| Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S | — |
+| Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S | X |
+| Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S | — |
+| Chất lượng & ATTP › Kiểm tra vệ sinh | `qc-cleaning-result` | S | — |
+| Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | — |
+| Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | S | — |
+| Đóng gói & Giao hàng › Kết quả đóng gói | `log-packing-result` | S | — |
+| Đóng gói & Giao hàng › Kiểm tra khay hộp thu hồi | `log-return-inspection` | S | — |
+| Nhân sự › Phân ca | `hr-shift-assign` | X | — |
+| Nhân sự › Chấm công | `hr-attendance` | X | — |
+| Nhân sự › Đơn xin nghỉ | `hr-leave` | X | — |
+| Nhân sự › Đơn đổi ca | `hr-swap` | X | — |
+| Nhân sự › Ca làm việc | `hr-shift` | X | — |
+<!-- MENU5:END -->
 
 ## 3. Việc trong ca
 

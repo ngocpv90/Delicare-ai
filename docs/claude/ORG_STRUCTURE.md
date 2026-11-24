@@ -49,38 +49,33 @@ Seed bằng `DB/seed/OrganizationUnit_seed.sql`, idempotent theo `Code`. `UnitTy
 
 Các tổ trong bếp **đồng thời** là `KitchenWorkstation` (Code trùng với mã tổ, `OrganizationUnitId` trỏ về tổ) để ghi nhận công đoạn sản xuất (T17).
 
-## 2. Nhóm quyền `UserGroup` và ma trận quyền (PROPOSED – anh duyệt khi UAT)
+## 2. Nhóm quyền `UserGroup` và ma trận quyền – THEO TỪNG MÀN (D-79, anh chốt 2026-11-23)
 
-Một `UserGroup` cho mỗi vai trò, đặt tên theo mã. Quyền theo nhóm màn hình của mockup (`catalog.js`, cột group). Ký hiệu:
-- **V** = xem
-- **E** = thêm / sửa
-- **A** = duyệt
-- **X** = xuất / in
-- **—** = không có quyền
+**MENU-5 (D-79) thay bảng theo nhóm màn cũ** (GAP-PERM-02: E = Thêm + Sửa + Xóa + Nhập áp cho cả nhóm màn → điểm phát / CSKH / QA / bếp có quyền ghi quá rộng). Nay cấp quyền **theo từng màn**:
+- **Nguồn duy nhất:** `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + Approvers5) – bảng do người đọc: ROADMAP **MENU-5.1** (bản chốt) và `docs/claude/MENU5_MATRIX.md` (bản sinh, 19 nhóm × mọi mục menu). Sinh `DB/seed/UserRole_seed.sql` (chỉ thêm dòng thiếu) và `DB/scripts/D79_permission_matrix.sql` (đặt lại cho DB đang chạy, DryRun bắt buộc).
+- **Ký hiệu:** Q = Xem + Thêm + Sửa + Xóa + Nhập (chỉ nhóm chủ dữ liệu) · S = Xem + Thêm + Sửa · X = Xem · (IX) = In + Xuất · Duyệt = Xem + Sửa trên mục "Phê duyệt › …".
+- **Thao tác kiểm soát = quyền Duyệt** (D-79 a3): Đạt / Tạm giữ / Loại mẻ làm tay (`#/wf-inbox?type=prod-batch`), Giữ / thả lô (`#/wf-inbox?type=scm-lot`), Kết luận kiểm tra hàng nhập (`#/wf-inbox?type=qc-inspection`) – QA. Tạo đơn bù cần Thêm Phản ánh **và** Thêm Đơn đặt suất.
+- **Người gửi không duyệt bất kỳ cấp nào** của yêu cầu mình (D-79 a5, `BusinessRules:ApprovalBlockSelfApproval`; admin miễn).
+- **Người duyệt** (D-79 d): Hợp đồng · Chính sách giá · Đơn mua ≥ 50 tr: CEO · Sửa đơn sau chốt: SAL-HEAD, COO · Công thức · Thực đơn · Đổi món · Kế hoạch SX · Điều chỉnh tồn · Đơn mua < 50 tr: COO · ĐN mua cấp 1 / 2: OPS-SCM-HEAD / COO · Kiểm kê cấp 1 / 2: OPS-SCM-HEAD, COO / FIN-ACC · Đơn nghỉ · Đổi ca: FIN-HR, COO · Kiểm tra hàng nhập · Mẻ nấu · Giữ / thả lô: QA · Tất cả yêu cầu duyệt: CEO, CEO-PMO, COO chỉ Xem. Hộp phê duyệt chung (`#/wf-inbox`, xem chi tiết mọi yêu cầu): CEO, CEO-PMO, COO, FIN-IT.
 
-Ghi vào `UserRole` (AllowAccess / Add / Edit / Delete / Print / Export / Import) qua `DB/seed/UserRole_seed.sql`.
+**19 nhóm chuẩn** (UserGroup.Name = mã; đổi tên nhóm trên màn quản trị không làm hỏng quyền – quyền nằm ở UserRole):
 
-**MENU-4 (D-75 e, 2026-11-23):** 21 mục bảng con / màn chưa làm / trùng đã ẩn (`ObjectMenu.IsActive = 0`, giữ dòng UserRole). API của bảng con kiểm quyền theo **màn cha** (`ScreenMap.ParentByClass`: ghi dòng = Sửa màn cha) – cấp quyền ở màn cha (Hợp đồng, Đơn đặt suất, Đơn mua…). Mục `#/wf-inbox` giữ ở DB (quyền của API duyệt), giao diện chỉ bỏ khỏi sidebar.
+| Nhóm | Vai trò |
+|---|---|
+| CEO · CEO-PMO · COO | Ban điều hành – chỉ xem (CEO duyệt việc lớn, COO duyệt việc vận hành) |
+| OPS-PLAN | Kế hoạch – thực đơn, công thức, kế hoạch / lệnh SX |
+| OPS-SCM | Mua hàng – NCC, nguyên liệu, đề nghị mua, đơn mua (không ghi sổ nhập) |
+| **OPS-WH** (mới) | Thủ kho – phiếu nhập / xuất, giữ chỗ, sổ kho, kiểm kê, danh mục kho |
+| **OPS-SCM-HEAD** (mới) | Trưởng mua hàng & kho = OPS-SCM ∪ OPS-WH + chỉ số; duyệt ĐN mua cấp 1, kiểm kê cấp 1 |
+| OPS-KIT | Bếp – mẻ nấu (không Đạt / Giữ / Loại tay), hao hụt, đóng gói, kiểm tra theo ca |
+| OPS-LOG · OPS-POS · OPS-MNT | Giao vận · Điểm phát suất · Bảo trì |
+| SAL-SALES · SAL-CON · SAL-CS | Kinh doanh · Hợp đồng (chủ dữ liệu khách hàng / hợp đồng / đơn) · CSKH (phản ánh, không tạo đơn bù) |
+| **SAL-HEAD** (mới) | Trưởng kinh doanh = SAL-CON + tạo đơn bù + xem giá vốn / giá thành chuẩn / chỉ số; duyệt sửa đơn sau chốt |
+| FIN-ACC · FIN-HR · FIN-IT · QA | Kế toán (xem + in / xuất) · Nhân sự (+ Chức vụ) · Quản trị hệ thống · QA / ATTP |
 
-**Cột A (duyệt) – D-31:** không cấu hình trong appsettings. Mỗi loại duyệt là một mục `ObjectMenu` cấp 2 dưới nhóm "Phê duyệt" (MetaLink `#/wf-inbox?type=<screen-id>`, 14 màn có loại AP trong catalog.js); vai trò có **A** được seed `UserRole.AllowAccess + AllowEdit` trên mục đó. Seed chỉ thêm phần thiếu, không ghi đè chỉnh sửa của admin. Sau go-live, admin đổi quyền trên màn hình ma trận quyền cũ (`UserRole/GetByUserGroupId`, `UserRole/Update`).
+Ghi vào `UserRole` (AllowAccess / Add / Edit / Delete / Print / Export / Import). Seed chỉ thêm phần thiếu, không ghi đè chỉnh sửa của admin; sau go-live admin đổi quyền trên màn ma trận quyền cũ (`UserRole/GetByUserGroupId`, `UserRole/Update`). Nhóm cũ không xóa; admin chuyển người sang 3 nhóm mới trên màn Tài khoản.
 
-| Nhóm màn hình → / Vai trò ↓ | Quản trị (P0) | KD & Đơn hàng | Thực đơn & Món | Mua hàng & Kho | Sản xuất & Giá thành | QC & ATTP | Đóng gói & Giao hàng | Nhân sự & Duyệt | KPI / Dashboard |
-|---|---|---|---|---|---|---|---|---|---|
-| CEO | V | V A | V A | V A | V A | V | V | V A | V X |
-| CEO-PMO | V | V | V | V | V | V | V | V | V X |
-| COO (trưởng OPS) | — | V | V A | V A | V A | V | V A | V A | V X |
-| OPS-PLAN | — | V | V E | V | V E X | V | V | — | V |
-| OPS-SCM (mua hàng, thủ kho) | — | V | V | V E X | V | V | — | — | V |
-| OPS-KIT (bếp trưởng, trưởng ca, tổ trưởng) | — | V | V | V (đề nghị xuất) | V E | V E | V | V (ca) | V |
-| OPS-LOG (điều phối, tài xế) | — | V | — | — | V | V (nhiệt độ giao) | V E X | — | V |
-| OPS-POS (điểm phát suất) | — | V E (đối soát suất) | V | — | — | V | V E (nhận hàng, POD) | — | V |
-| OPS-MNT | — | — | — | — | V | V | — | — | — |
-| SAL-SALES / SAL-CON | — | V E X | V | — | V | — | V | — | V |
-| SAL-CS | — | V | V | — | — | V | V E (phản ánh) | — | V |
-| FIN-ACC | — | V X | V | V X | V X (giá thành) | — | V X (hộp / khay) | V X (chấm công) | V X |
-| FIN-HR | V (nhân sự) | — | — | — | — | — | — | V E A X | V |
-| FIN-IT (admin) | V E X | V | V | V | V | V | V | V | V |
-| QA (4.1–4.5) | — | V | V | V E (QC đầu vào) | V | V E A X | V | — | V |
+**MENU-4 (D-75 e):** mục bảng con / màn chưa làm / trùng ẩn (`ObjectMenu.IsActive = 0`, giữ dòng UserRole); API bảng con kiểm quyền theo **màn cha** (`ScreenMap.ParentByClass`; MENU-5 thêm Người liên hệ → Khách hàng). Mục `#/wf-inbox` giữ ở DB (quyền của API duyệt), giao diện bỏ khỏi sidebar.
 
 Ngưỡng duyệt cụ thể (cutoff 20h, lệch > 2%, > 30%, giá trị PO…) theo BUSINESS_RULES.md và DECISIONS.md. `ApprovalStep.ApproverRoleCode` dùng **mã UserGroup** ở trên.
 

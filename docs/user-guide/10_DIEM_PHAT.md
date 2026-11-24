@@ -10,13 +10,24 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | OPS-POS | SAL-CS |
-|---|---|---|---|
-| `crm-reconciliation` | Kinh doanh › Đối soát đơn hàng | Sửa | Xem |
-| `log-complaint` | Đóng gói & Giao hàng › Phản ánh khách hàng | Sửa | Sửa |
-| `log-execution` | … › Thực hiện giao hàng | Sửa | Sửa |
-| `log-container-return`, `log-packaging-ledger` | … › Thu hồi khay hộp, Sổ bao bì | Sửa | Sửa |
-| `crm-customer`, `crm-order` | Kinh doanh | Sửa | Xem |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | OPS-POS |
+|---|---|---|
+| Việc của tôi › Việc của tôi | `hr-my` | X |
+| Kinh doanh › Khách hàng | `crm-customer` | X |
+| Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X |
+| Kinh doanh › Đơn đặt suất | `crm-order` | X |
+| Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | S |
+| Kinh doanh › Phản ánh khách hàng | `log-complaint` | S |
+| Kinh doanh › Điểm giao hàng | `crm-location` | X |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X |
+| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X |
+| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | S |
+| Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | S |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X |
+<!-- MENU5:END -->
 
 ## 3. Việc trong ngày
 

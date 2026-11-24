@@ -8,17 +8,41 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Dùng để |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | QA |
 |---|---|---|
-| `qc-inspection` | Chất lượng & ATTP › Phiếu kiểm tra QC | Kết luận QC đầu vào từng dòng |
-| `qc-supplier-issue` | … › Sự cố nhà cung cấp | Nhận xử lý → Đã xử lý → Đóng |
-| `qc-checklist-result` | … › Kết quả checklist ATTP | Ghi checklist theo ngày / ca |
-| `qc-temperature` | … › Nhật ký nhiệt độ | Ghi nhiệt độ, xem biểu đồ 48 giờ |
-| `qc-cleaning` | … › Mẻ vệ sinh | Kiểm tra khay thu hồi, lập mẻ, ghi 6 bước, kết luận |
-| `qc-cleaning-result` | … › Kết quả checklist vệ sinh | Ghi bước vệ sinh |
-| `qc-checklist` | … › Bộ kiểm tra ATTP | Danh mục bộ checklist (mã, phiên bản, tần suất); mở bộ → tab **Tiêu chí**: thêm, sửa, xóa, xếp thứ tự (↑ ↓) tiêu chí. Mã tiêu chí để trống → tự cấp TC-nn. Tiêu chí đã có kết quả kiểm tra chỉ đổi thứ tự / mô tả, không sửa nội dung / xóa (muốn thay → thêm tiêu chí mới). Mục riêng "Tiêu chí kiểm tra" đã bỏ khỏi menu (MENU-4) |
-| `prod-batch` | Sản xuất & Giá thành › Mẻ sản xuất | QC thành phẩm: Đạt / Tạm giữ / Loại, lưu mẫu |
-| `scm-lot` | Mua hàng & Kho › Lô nguyên liệu | Tạm giữ / mở giữ lô, truy xuất |
+| Việc của tôi › Việc của tôi | `hr-my` | X |
+| Phê duyệt › Kiểm tra hàng nhập | `wf-inbox?type=qc-inspection` | Duyệt |
+| Phê duyệt › Mẻ nấu | `wf-inbox?type=prod-batch` | Duyệt |
+| Phê duyệt › Giữ / thả lô | `wf-inbox?type=scm-lot` | Duyệt |
+| Điều hành › Bảng điều hành | `dash-exec` | X |
+| Điều hành › Chỉ số theo ngày | `kpi-daily` | X |
+| Điều hành › Chỉ số theo tháng | `kpi-monthly` | X |
+| Kinh doanh › Phản ánh khách hàng | `log-complaint` | S (IX) |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X |
+| Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X |
+| Thực đơn & Món ăn › Món ăn | `menu-dish` | X |
+| Mua hàng › Nhà cung cấp | `scm-supplier` | X |
+| Mua hàng › Nguyên liệu | `scm-ingredient` | X |
+| Kho › Phiếu nhập kho | `scm-gr` | X |
+| Kho › Tồn kho | `scm-inv-balance` | X |
+| Kho › Lô hàng & hạn dùng | `scm-lot` | X |
+| Sản xuất › Kế hoạch sản xuất | `prod-plan` | X |
+| Sản xuất › Mẻ nấu | `prod-batch` | X |
+| Sản xuất › Sản lượng | `prod-output` | X |
+| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | S (IX) |
+| Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S (IX) |
+| Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S (IX) |
+| Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S (IX) |
+| Chất lượng & ATTP › Kiểm tra vệ sinh | `qc-cleaning-result` | S (IX) |
+| Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | Q |
+| Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | Q |
+| Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | X |
+| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X |
+| Đóng gói & Giao hàng › Kiểm tra khay hộp thu hồi | `log-return-inspection` | S (IX) |
+<!-- MENU5:END -->
 
 ## 3. Việc trong ngày
 

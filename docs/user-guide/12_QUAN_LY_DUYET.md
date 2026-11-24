@@ -2,7 +2,9 @@
 
 ## 1. Bạn là ai
 
-- Người duyệt theo seed quyền hiện tại: **CEO**, **COO**, **FIN-HR** (đơn nghỉ / đổi ca), **OPS-SCM** (đề nghị mua cấp 1), **FIN-ACC** (kiểm kê cấp 2), **QA** (phiếu QC đầu vào – duyệt trực tiếp trên màn QC).
+- Người duyệt theo ma trận D-79 (MENU-5): **CEO** (việc lớn: hợp đồng, đơn mua ≥ 50 triệu), **COO** (việc vận hành), **SAL-HEAD** (sửa đơn sau chốt), **OPS-SCM-HEAD** (đề nghị mua cấp 1, kiểm kê cấp 1), **FIN-ACC** (kiểm kê cấp 2), **FIN-HR** (đơn nghỉ / đổi ca), **QA** (kết luận kiểm tra hàng nhập, Đạt / Tạm giữ / Loại mẻ làm tay, Giữ / thả lô). Bảng đủ ở mục 3.
+- **Người gửi không duyệt bất kỳ cấp nào của yêu cầu mình** (D-79 a5 – thay D-52 d; cấu hình `BusinessRules:ApprovalBlockSelfApproval`, mặc định bật; tài khoản quản trị được miễn). Yêu cầu do bạn gửi không hiện trong *Chờ tôi duyệt*; hộp duyệt hiện nhãn **Bạn gửi – chờ người khác duyệt**; bấm Duyệt báo *Bạn là người gửi yêu cầu này – cần người khác duyệt*. Bạn vẫn **hủy** được yêu cầu của mình.
+- **Hộp phê duyệt chung** (xem mọi yêu cầu, tab Đang chờ / Tất cả): chỉ CEO, CEO-PMO, COO (mục *Phê duyệt › Tất cả yêu cầu duyệt* – chỉ xem, **không** làm người có nó duyệt được mọi loại) và FIN-IT. Người duyệt khác bấm mục *Phê duyệt › <loại>* của mình → chỉ thấy danh sách **Chờ tôi duyệt**.
 - Quyền duyệt = quyền **Truy cập + Sửa** trên mục menu **"Phê duyệt › …"** (`#/wf-inbox?type=<màn>`) do quản trị cấp (`01_QUAN_TRI.md`).
 - Bot: duyệt trên bot **Điều hành** / **Vận hành** (⏳ Chờ tôi duyệt) – chỉ khi tài khoản Telegram đã **liên kết tài khoản web** (xem 7 và `90_CHENH_LECH.md` C-02).
 
@@ -10,28 +12,39 @@
 
 | screen-id | Menu › Mục | Dùng để |
 |---|---|---|
-| `wf-inbox` | Nhân sự › Hộp phê duyệt | Duyệt / từ chối / hủy mọi loại yêu cầu |
+| `wf-inbox?type=…` | Phê duyệt › <loại> | Duyệt / từ chối yêu cầu chờ mình ở cấp hiện tại (mỗi loại 1 mục, xem mục 3) |
+| `wf-inbox?type=wf-inbox` | Phê duyệt › Tất cả yêu cầu duyệt | Xem mọi yêu cầu (CEO / CEO-PMO / COO – chỉ xem) |
 | `wf-step` | (màn con, ẩn) | Các cấp duyệt của yêu cầu – xem trong tab Tiến trình duyệt |
-| `prod-plan` | Sản xuất › Kế hoạch sản xuất | Nút **Duyệt** kế hoạch (cần quyền Phê duyệt › CEO / COO) |
-| `menu-menu` | Thực đơn › Thực đơn | Nút **Duyệt** thực đơn (CEO / COO) |
-| `menu-recipe` | Thực đơn › Công thức | Duyệt cấp cuối = **khóa & áp dụng** luôn (BIZ-2.3); nút **Áp dụng** chỉ cho bản Đã duyệt cũ (CEO / COO) |
-| `qc-inspection` | QC › Phiếu kiểm tra QC | Kết luận QC (QA) |
+| `prod-plan` | Sản xuất › Kế hoạch sản xuất | Nút **Duyệt** kế hoạch (quyền Phê duyệt › Kế hoạch sản xuất – COO) |
+| `menu-menu` | Thực đơn & Món ăn › Thực đơn tuần | Nút **Duyệt** thực đơn (COO) |
+| `menu-recipe` | Thực đơn & Món ăn › Công thức chế biến | Duyệt cấp cuối = **khóa & áp dụng** luôn (BIZ-2.3); nút **Áp dụng** chỉ cho bản Đã duyệt cũ (COO) |
+| `qc-inspection` | Chất lượng & ATTP › Kiểm tra hàng nhập | Nút **Kết luận** (quyền Phê duyệt › Kiểm tra hàng nhập – QA) |
+| `prod-batch` | Sản xuất › Mẻ nấu | Nút **QC: PASS / HOLD / REJECT**, **Loại mẻ** (quyền Phê duyệt › Mẻ nấu – QA); bếp thấy *Chờ QA kết luận*. Mẻ hệ thống tự Đạt (BIZ-2.7) không đổi |
+| `scm-lot` | Kho › Lô hàng & hạn dùng | Nút **Tạm giữ / Mở giữ** lô (quyền Phê duyệt › Giữ / thả lô – QA) |
 
 ## 3. Các loại yêu cầu duyệt
 
 | Loại (Loại nghiệp vụ) | Phát sinh khi | Cấp duyệt (mục "Phê duyệt › …") | Nhóm có quyền theo seed |
 |---|---|---|---|
 | Hợp đồng (CONTRACT) | KD **Gửi duyệt** hợp đồng | `crm-contract` | CEO |
-| Đơn lệch > 30% (ORDER_DEVIATION) | **Không còn phát sinh** (BIZ-2.1: trước giờ chốt sửa số không đi duyệt, lệch > 30 % so TB 4 tuần chỉ cảnh báo). Yêu cầu loại này tạo trước đó vẫn duyệt / từ chối được | `crm-order` | SAL-CON / COO |
-| Đổi đơn sau giờ chốt (ORDER_CHANGE_AFTER_CUTOFF) | Yêu cầu đổi đơn sau 20:00 D-1 (nút **Yêu cầu sửa sau chốt** trong ngăn chi tiết đơn) | `crm-order` | **SAL-CON (Trưởng KD) / COO** (BIZ-2.1, bỏ CEO – DB có sẵn chạy `DB/scripts/BIZ2_order_approvers.sql`) |
-| Đề nghị mua (PURCHASE_REQUEST) | Mua hàng **Gửi duyệt** PR | Cấp 1 `scm-pr-l1` → Cấp 2 `scm-pr-l2` | OPS-SCM → COO |
-| Đơn mua (PURCHASE_ORDER) | **Gửi duyệt** PO | `scm-po`; PO ≥ 50.000.000 đ thêm `scm-po-director` | CEO / COO; thêm CEO |
-| Kiểm kê (STOCK_COUNT) | Kiểm kê chênh lệch > 2% | `scm-stockcount` → `scm-stockcount-l2` | CEO / COO → FIN-ACC |
-| Điều chỉnh tồn (STOCK_ADJUSTMENT) | Kho lập điều chỉnh tồn | `scm-adjustment` | CEO / COO |
-| Công thức (RECIPE_VERSION) | Kế hoạch **Gửi duyệt** phiên bản công thức | `menu-recipe` | CEO / COO |
-| Đề xuất đổi món (MENU_CHANGE) | Lập đề xuất đổi món | `menu-change-request` | CEO / COO |
-| Đơn nghỉ (LEAVE_REQUEST) | Nhân viên tạo đơn nghỉ | `hr-leave` | CEO / COO / FIN-HR |
-| Đổi ca (SHIFT_SWAP) | Nhân viên tạo đơn đổi ca | `hr-swap` | CEO / COO / FIN-HR |
+| Đơn lệch > 30% (ORDER_DEVIATION) | **Không còn phát sinh** (BIZ-2.1: trước giờ chốt sửa số không đi duyệt, lệch > 30 % so TB 4 tuần chỉ cảnh báo). Yêu cầu loại này tạo trước đó vẫn duyệt / từ chối được | `crm-order` (Phê duyệt › Đơn đặt suất (sửa sau chốt)) | SAL-HEAD / COO |
+| Đổi đơn sau giờ chốt (ORDER_CHANGE_AFTER_CUTOFF) | Yêu cầu đổi đơn sau 20:00 D-1 (nút **Yêu cầu sửa sau chốt** trong ngăn chi tiết đơn) | `crm-order` (Phê duyệt › Đơn đặt suất (sửa sau chốt)) | **SAL-HEAD (Trưởng KD) / COO** (D-79 d – thay SAL-CON) |
+| Đề nghị mua (PURCHASE_REQUEST) | Mua hàng **Gửi duyệt** PR | Cấp 1 `scm-pr-l1` (Đề nghị mua – cấp 1) → Cấp 2 `scm-pr-l2` (Đề nghị mua – cấp 2) | OPS-SCM-HEAD → COO |
+| Đơn mua (PURCHASE_ORDER) | **Gửi duyệt** PO | `scm-po` (Đơn mua hàng); PO ≥ 50.000.000 đ: `scm-po-director` (Đơn mua hàng ≥ 50 triệu) | COO; ≥ 50 triệu: CEO |
+| Kiểm kê (STOCK_COUNT) | Kiểm kê chênh lệch > 2% | `scm-stockcount` (Phiếu kiểm kê – cấp 1) → `scm-stockcount-l2` (Phiếu kiểm kê – cấp 2) | OPS-SCM-HEAD / COO → FIN-ACC |
+| Điều chỉnh tồn (STOCK_ADJUSTMENT) | Kho lập điều chỉnh tồn | `scm-adjustment` | COO |
+| Công thức (RECIPE_VERSION) | Kế hoạch **Gửi duyệt** phiên bản công thức | `menu-recipe` | COO |
+| Đề xuất đổi món (MENU_CHANGE) | Lập đề xuất đổi món | `menu-change-request` | COO |
+| Kế hoạch sản xuất | Nút **Duyệt** trên kế hoạch | `prod-plan` | COO |
+| Thực đơn tuần | Nút **Duyệt** trên thực đơn | `menu-menu` | COO |
+| Đơn nghỉ (LEAVE_REQUEST) | Nhân viên tạo đơn nghỉ | `hr-leave` | FIN-HR / COO |
+| Đổi ca (SHIFT_SWAP) | Nhân viên tạo đơn đổi ca | `hr-swap` | FIN-HR / COO |
+| Kết luận kiểm tra hàng nhập | Nút **Kết luận** trên phiếu QC đầu vào (không qua hộp duyệt) | `qc-inspection` | QA |
+| Đạt / Tạm giữ / Loại mẻ làm tay | Nút QC trên mẻ (không qua hộp duyệt) | `prod-batch` (Phê duyệt › Mẻ nấu) | QA |
+| Giữ / thả lô | Nút **Tạm giữ / Mở giữ** trên lô (không qua hộp duyệt) | `scm-lot` (Phê duyệt › Giữ / thả lô) | QA |
+
+- Hợp đồng · Chính sách giá · Đơn mua ≥ 50 triệu: CEO (D-79 a6 – CEO chỉ duyệt việc lớn; quá hạn vẫn leo thang lên CEO). Mục *Phê duyệt › Chính sách giá* đang **ẩn** vì chưa có loại duyệt nào dùng (chính sách giá có hiệu lực ngay khi lưu) – em ghi GAP-PERM-03; mục cũ *Đề nghị mua hàng* (`scm-pr`) ẩn (D-52 a).
+- DB đang chạy: quyền duyệt đặt bằng `DB/scripts/D79_permission_matrix.sql` (thay `BIZ2_order_approvers.sql`).
 
 - Mỗi cấp có **hạn xử lý 48 giờ**; quá hạn hiện nhãn **Quá hạn** nhưng **vẫn duyệt / từ chối được** (BIZ-1.6, D-77 f) – không phải hủy gửi lại; người gửi vẫn hủy được nếu muốn. Leo thang qua bot: quá hạn → báo người duyệt của cấp; quá thêm 24 giờ → báo **COO**; quá thêm 24 giờ nữa (48 giờ sau hạn) → báo **CEO**.
 - Một người không duyệt hai cấp của cùng một yêu cầu (cấp sau phải do người khác).

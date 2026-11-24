@@ -11,19 +11,45 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Quyền |
-|---|---|---|
-| `scm-requirement` | Mua hàng & Kho › Nhu cầu vật tư | Xem, sửa, xuất |
-| `scm-pr` | … › Yêu cầu mua hàng | Xem, sửa, xuất |
-| `scm-po` | … › Đơn mua hàng | Xem, sửa, xuất |
-| (bộ lọc) | Đề nghị mua, Đơn mua, Phiếu nhập, Phiếu xuất: **Lọc theo nguyên liệu** | Chỉ hiện chứng từ có nguyên liệu đó + cột **SL nguyên liệu** (thay mục "Chi tiết …" đã bỏ khỏi menu) |
-| `scm-supplier` | … › Nhà cung cấp | Xem, sửa, xuất |
-| `scm-supplier-material` | … › Nhà cung cấp nguyên liệu (bảng giá) | Xem, sửa, xuất |
-| `scm-ingredient`, `scm-ingredient-cat` | … › Nguyên liệu, Nhóm nguyên liệu | Xem, sửa, xuất |
-| `scm-uom`, `scm-uom-conversion` | … › Đơn vị tính, Quy đổi đơn vị | Xem, sửa, xuất |
-| `scm-gr` | … › Nhập kho | Xem, sửa, xuất (xem `05_KHO.md`) |
-| `qc-supplier-issue` | QC & ATTP › Sự cố nhà cung cấp | Xem |
-| `wf-inbox` | Nhân sự › Yêu cầu phê duyệt | Theo mục Duyệt được cấp |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | OPS-SCM | OPS-SCM-HEAD |
+|---|---|---|---|
+| Việc của tôi › Việc của tôi | `hr-my` | X | X |
+| Phê duyệt › Đề nghị mua – cấp 1 | `wf-inbox?type=scm-pr-l1` | — | Duyệt |
+| Phê duyệt › Phiếu kiểm kê – cấp 1 | `wf-inbox?type=scm-stockcount` | — | Duyệt |
+| Điều hành › Bảng điều hành | `dash-exec` | — | X |
+| Điều hành › Chỉ số theo ngày | `kpi-daily` | — | X |
+| Điều hành › Chỉ số theo tháng | `kpi-monthly` | — | X |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X |
+| Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | X |
+| Mua hàng › Tính nhu cầu nguyên liệu | `scm-requirement` | S (IX) | S (IX) |
+| Mua hàng › Đề nghị mua hàng | `scm-pr` | S (IX) | S (IX) |
+| Mua hàng › Đơn mua hàng | `scm-po` | S (IX) | S (IX) |
+| Mua hàng › Nhà cung cấp | `scm-supplier` | Q | Q |
+| Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | Q | Q |
+| Mua hàng › Nguyên liệu | `scm-ingredient` | Q | Q |
+| Mua hàng › Nhóm nguyên liệu | `scm-ingredient-cat` | Q | Q |
+| Mua hàng › Đơn vị tính | `scm-uom` | Q | Q |
+| Mua hàng › Quy đổi đơn vị | `scm-uom-conversion` | Q | Q |
+| Kho › Phiếu nhập kho | `scm-gr` | X | S (IX) |
+| Kho › Phiếu xuất sản xuất | `scm-issue` | X | S (IX) |
+| Kho › Tồn kho | `scm-inv-balance` | X | X |
+| Kho › Lô hàng & hạn dùng | `scm-lot` | X | S (IX) |
+| Kho › Sổ kho | `scm-inv-txn` | X | S (IX) |
+| Kho › Giữ chỗ nguyên liệu | `scm-reservation` | — | S (IX) |
+| Kho › Phiếu kiểm kê | `scm-stockcount` | — | S (IX) |
+| Kho › Chênh lệch tiêu hao | `scm-consumption-var` | — | X |
+| Kho › Kho | `scm-warehouse` | X | Q |
+| Kho › Khu bảo quản | `scm-zone` | — | Q |
+| Kho › Vị trí kệ | `scm-location` | — | Q |
+| Kho › Định mức tồn kho | `scm-inv-policy` | — | Q |
+| Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
+| Sản xuất › Lệnh sản xuất | `prod-order` | — | X |
+| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | X | X |
+| Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X | X |
+<!-- MENU5:END -->
 
 ## 3. Việc trong ngày
 

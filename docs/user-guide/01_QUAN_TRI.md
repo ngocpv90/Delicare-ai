@@ -10,22 +10,34 @@
 
 Menu **Quản trị hệ thống** (FIN-IT: xem + sửa + xuất):
 
-| screen-id | Mục menu | Dùng để |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền hơn **Xem** (đủ ma trận: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | FIN-IT |
 |---|---|---|
-| `adm-user` | Người dùng | Tài khoản: tạo, khóa / mở, đặt lại mật khẩu, xem quyền hiệu lực |
-| `adm-usergroup` | Nhóm người dùng | Nhóm quyền (vai trò) |
-| `adm-permission` | Vai trò & phân quyền | Phân quyền |
-| `adm-objectmenu` | Menu chức năng hệ thống | Thứ tự, nhóm của mục menu |
-| `adm-orgunit` | Chi nhánh, đơn vị tổ chức | Cây đơn vị |
-| `adm-employee` | Nhân sự | Nhân viên (danh mục chung với Nhân sự) |
-| `adm-position` | Chức vụ | Chức vụ |
-| `adm-company` | Công ty | Pháp nhân |
-| `adm-admin-unit` | Đơn vị hành chính | Vùng / tỉnh / huyện / xã |
-| `adm-document` | Quản lý tài liệu | Tải lên / tải xuống tệp đính kèm |
-| `adm-audit` | Audit log | Nhật ký thay đổi dữ liệu |
-| `adm-access-log` | Nhật ký truy cập | Nhật ký máy truy cập (IP / tên máy) |
-| `adm-merge-conflict` | Xung đột hợp nhất dữ liệu | Đánh dấu đã xử lý xung đột chuẩn hóa dữ liệu |
-| `sys-import` | Nhập dữ liệu gốc (Excel) | Nạp danh mục từ file Excel (khách hàng, điểm giao, NCC, nguyên liệu, kho, nhân viên, xe, món, định mức, bảng giá NCC…) |
+| Quản trị hệ thống › Tài khoản | `adm-user` | Q (IX) |
+| Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | Q (IX) |
+| Quản trị hệ thống › Phân quyền | `adm-permission` | Q (IX) |
+| Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | Q (IX) |
+| Quản trị hệ thống › Sơ đồ tổ chức | `adm-orgunit` | Q (IX) |
+| Quản trị hệ thống › Công ty | `adm-company` | Q (IX) |
+| Quản trị hệ thống › Nhập dữ liệu gốc (Excel) | `sys-import` | Q (IX) |
+| Quản trị hệ thống › Danh mục dùng chung | `adm-reference` | Q (IX) |
+| Quản trị hệ thống › Địa giới hành chính | `adm-admin-unit` | Q (IX) |
+| Quản trị hệ thống › Tài liệu đính kèm | `adm-document` | Q (IX) |
+| Nhật ký & Tích hợp › Job tự động | `adm-job` | Q (IX) |
+| Nhật ký & Tích hợp › Nhật ký thay đổi dữ liệu | `adm-audit` | S (IX) |
+| Nhật ký & Tích hợp › Nhật ký truy cập | `adm-access-log` | Q (IX) |
+| Nhật ký & Tích hợp › Dữ liệu trùng cần gộp | `adm-merge-conflict` | S (IX) |
+| Nhật ký & Tích hợp › Kênh nhắn tin | `int-channel` | S (IX) |
+| Nhật ký & Tích hợp › Bot | `int-bot` | S (IX) |
+| Nhật ký & Tích hợp › Liên kết tài khoản chat | `int-identity` | S (IX) |
+| Nhật ký & Tích hợp › Tin nhắn đến | `int-inbound` | S (IX) |
+| Nhật ký & Tích hợp › Tin nhắn đi | `int-outbound` | S (IX) |
+| Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | S (IX) |
+| Nhật ký & Tích hợp › Danh mục chỉ số | `kpi-definition` | S (IX) |
+| Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | S (IX) |
+<!-- MENU5:END -->
 
 | `adm-reference` | Danh mục dùng chung | **Chỉ xem** các giá trị chọn sẵn (loại suất, loại kho, kênh phản ánh…) và màn / cột đang dùng. Thêm / sửa giá trị = sửa cấu hình máy chủ (liên hệ quản trị hệ thống) |
 
@@ -83,7 +95,8 @@ Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản
 Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòng → bảng cây menu × 7 quyền (Truy cập, Thêm, Sửa, Xóa, In, Xuất, Nhập), cộng dồn mọi nhóm của tài khoản. Tài khoản quản trị: "có mọi quyền".
 
 ### 4.4 Nhóm quyền – `adm-usergroup`
-- **Tạo mới** nhóm: tên nhóm = mã vai trò (CEO, COO, OPS-PLAN, OPS-SCM, OPS-KIT, OPS-LOG, OPS-POS, OPS-MNT, SAL-SALES, SAL-CON, SAL-CS, FIN-ACC, FIN-HR, FIN-IT, QA, CEO-PMO).
+- **Tạo mới** nhóm: tên nhóm = mã vai trò. 19 nhóm chuẩn (D-79): CEO, CEO-PMO, COO, OPS-PLAN, OPS-SCM (mua hàng), **OPS-WH** (thủ kho – mới), **OPS-SCM-HEAD** (Trưởng mua hàng & kho – mới), OPS-KIT, OPS-LOG, OPS-POS, OPS-MNT, SAL-SALES, SAL-CON, **SAL-HEAD** (Trưởng kinh doanh – mới), SAL-CS, FIN-ACC, FIN-HR, FIN-IT, QA. Quyền từng nhóm theo từng màn: `docs/claude/MENU5_MATRIX.md`.
+- **Việc cần làm sau khi chạy MENU-5 (D-79):** trên màn **Tài khoản** bấm **Gán nhóm** để chuyển người: Trưởng kinh doanh → **SAL-HEAD** (người duyệt sửa đơn sau chốt, tạo đơn bù); Trưởng mua hàng & kho → **OPS-SCM-HEAD** (duyệt đề nghị mua cấp 1, kiểm kê cấp 1); thủ kho → **OPS-WH** (ghi sổ nhập / xuất, kiểm kê). Nhóm cũ giữ nguyên (người mua hàng vẫn ở OPS-SCM nhưng không còn ghi sổ nhập, không tự duyệt cấp 1).
 - Nút **Phân quyền** trên dòng → sang ma trận quyền của nhóm.
 - Nút hình khiên **Xem trước quyền của nhóm** (quản trị) → danh sách màn được truy cập + các tài khoản thuộc nhóm.
 

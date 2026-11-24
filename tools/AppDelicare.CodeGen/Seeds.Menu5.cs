@@ -666,6 +666,142 @@ public static partial class Seeds
         return sb.ToString();
     }
 
+    // ------------------------------------------------------------------ tài liệu sinh (MENU-5.6)
+    /// <summary>Tên hiển thị của mục menu (giống seed: tên MENU-2 / MENU-5, mục mới, mục duyệt).</summary>
+    private static string ItemName(string item, List<Screen> screens)
+    {
+        if (Menu5NewItems.TryGetValue(item, out var nw))
+        {
+            return nw.Name;
+        }
+        if (Menu5Renames.TryGetValue(item, out var rn))
+        {
+            return rn.New;
+        }
+        if (item is "bot-van-hanh" or "bot-dieu-hanh")
+        {
+            return item == "bot-van-hanh" ? "Bot Telegram – Vận hành" : "Bot Telegram – Điều hành";
+        }
+        string id = item.StartsWith("wf-inbox?type=", StringComparison.Ordinal) ? item["wf-inbox?type=".Length..] : item;
+        string baseName = screens.FirstOrDefault(s => s.Id == id)?.Name ?? ExtraApprovals.FirstOrDefault(x => x.Id == id)?.Name ?? id;
+        return MenuName("#/" + item, baseName);
+    }
+
+    /// <summary>Ký hiệu quyền như ROADMAP MENU-5.1: Q / S / X, (IX), Duyệt; "—" = không có.</summary>
+    private static string RightLabel(string item, Right r)
+    {
+        if (!r.A)
+        {
+            return "—";
+        }
+        if (item.StartsWith("wf-inbox?type=", StringComparison.Ordinal) && item != "wf-inbox?type=wf-inbox")
+        {
+            return r.E ? "Duyệt" : "X";
+        }
+        string b = r.D && r.I ? "Q" : r.Ad && r.E ? "S" : r.E ? "Sửa" : "X";
+        return r.P || r.X ? b + " (IX)" : b;
+    }
+
+    /// <summary>Bảng markdown: Menu › Mục | screen-id | quyền từng vai trò. <paramref name="hideViewOnly"/> = bỏ dòng mọi vai trò chỉ Xem.</summary>
+    public static string RoleTableMd(string[] roles, List<Screen> screens, bool hideViewOnly = false)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("| Menu › Mục | screen-id | " + string.Join(" | ", roles) + " |");
+        sb.AppendLine("|---|---|" + string.Concat(roles.Select(_ => "---|")));
+        foreach (var g in Menu5Groups)
+        {
+            foreach (string item in g.Items.Where(i => !Menu5HiddenLinks.Contains("#/" + i) && !MatrixSkipLinks.Contains("#/" + i)))
+            {
+                var rights = roles.Select(r => RightOf(r, item)).ToList();
+                if (!rights.Any(r => r.A) || (hideViewOnly && rights.All(r => RightLabel(item, r) is "X" or "—")))
+                {
+                    continue;
+                }
+                sb.AppendLine($"| {g.Name} › {ItemName(item, screens)} | `{item}` | " + string.Join(" | ", roles.Select((r, i) => RightLabel(item, rights[i]))) + " |");
+            }
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>docs/claude/MENU5_MATRIX.md – toàn bộ ma trận 19 nhóm (bản đọc của Seeds.Menu5.cs, thay bảng theo nhóm màn của ORG_STRUCTURE §2).</summary>
+    public static string MatrixDoc(List<Screen> screens)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("<!-- auto-generated: tools/AppDelicare.CodeGen (--layers security) từ Seeds.Menu5.cs – không sửa tay. -->");
+        sb.AppendLine("# MENU-5 – Ma trận quyền theo từng màn (D-79)");
+        sb.AppendLine();
+        sb.AppendLine("Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + Approvers5) → `DB/seed/UserRole_seed.sql` (chỉ thêm dòng thiếu) và `DB/scripts/D79_permission_matrix.sql` (DB đang chạy). Thay bảng theo nhóm màn của ORG_STRUCTURE §2 (GAP-PERM-02).");
+        sb.AppendLine();
+        sb.AppendLine("**Ký hiệu:** Q = Xem + Thêm + Sửa + Xóa + Nhập · S = Xem + Thêm + Sửa · X = Xem · (IX) = có In + Xuất · Duyệt = Xem + Sửa trên mục \"Phê duyệt › …\" · — = không có. Mục \"Việc của tôi\" mọi nhóm Xem. Mục quyền vào bot (`#/bot-van-hanh`, `#/bot-dieu-hanh` – D-62) không thuộc ma trận này.");
+        sb.AppendLine();
+        sb.Append(RoleTableMd(StandardRoles, screens));
+        sb.AppendLine();
+        sb.AppendLine("## Số mục được vào / số ô quyền");
+        sb.AppendLine();
+        sb.AppendLine("```");
+        sb.AppendLine(Menu5Summary());
+        sb.AppendLine("```");
+        return sb.ToString();
+    }
+
+    /// <summary>HDSD → vai trò của bảng "Màn hình được dùng" (mục 2). <c>true</c> = chỉ dòng có quyền hơn Xem (vai trò xem mọi màn nghiệp vụ).</summary>
+    public static readonly (string File, string[] Roles, bool Compact)[] GuideRoles =
+    [
+        ("01_QUAN_TRI.md", ["FIN-IT"], true),
+        ("02_KINH_DOANH.md", ["SAL-SALES", "SAL-CON", "SAL-HEAD", "SAL-CS"], false),
+        ("03_KE_HOACH.md", ["OPS-PLAN"], false),
+        ("04_MUA_HANG.md", ["OPS-SCM", "OPS-SCM-HEAD"], false),
+        ("05_KHO.md", ["OPS-WH", "OPS-SCM-HEAD"], false),
+        ("06_QC_ATTP.md", ["QA"], false),
+        ("07_BEP_SAN_XUAT.md", ["OPS-KIT", "OPS-MNT"], false),
+        ("08_DONG_GOI.md", ["OPS-KIT", "OPS-LOG"], false),
+        ("09_GIAO_VAN.md", ["OPS-LOG"], false),
+        ("10_DIEM_PHAT.md", ["OPS-POS"], false),
+        ("11_NHAN_SU.md", ["FIN-HR"], false),
+        ("13_BAN_DIEU_HANH.md", ["CEO", "CEO-PMO", "COO", "FIN-ACC"], true),
+    ];
+
+    public const string GuideBegin = "<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->";
+    public const string GuideEnd = "<!-- MENU5:END -->";
+
+    /// <summary>
+    /// Thay bảng của mục "## 2. Màn hình được dùng" bằng khối sinh (giữa 2 dấu mốc). Lần đầu: bảng markdown đầu tiên của mục 2 được thay bằng khối.
+    /// Trả null nếu không tìm thấy mục 2.
+    /// </summary>
+    public static string? PatchGuide(string text, string[] roles, bool compact, List<Screen> screens)
+    {
+        string nl = text.Contains("\r\n") ? "\r\n" : "\n";
+        string block = GuideBegin + "\n"
+            + (compact ? $"Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền hơn **Xem** (đủ ma trận: `docs/claude/MENU5_MATRIX.md`).\n\n" : "Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).\n\n")
+            + RoleTableMd(roles, screens, compact) + GuideEnd;
+        block = block.Replace("\r\n", "\n").Replace("\n", nl);
+        int b = text.IndexOf(GuideBegin, StringComparison.Ordinal);
+        if (b >= 0)
+        {
+            int e = text.IndexOf(GuideEnd, b, StringComparison.Ordinal);
+            return e < 0 ? null : text[..b] + block + text[(e + GuideEnd.Length)..];
+        }
+        var lines = text.Split(nl).ToList();
+        int h = lines.FindIndex(l => l.StartsWith("## 2.", StringComparison.Ordinal));
+        if (h < 0)
+        {
+            return null;
+        }
+        int start = lines.FindIndex(h + 1, l => l.StartsWith('|') || l.StartsWith("## ", StringComparison.Ordinal));
+        if (start < 0 || !lines[start].StartsWith('|'))
+        {
+            return null;
+        }
+        int end = start;
+        while (end < lines.Count && lines[end].StartsWith('|'))
+        {
+            end++;
+        }
+        lines.RemoveRange(start, end - start);
+        lines.Insert(start, block);
+        return string.Join(nl, lines);
+    }
+
     /// <summary>Tóm tắt in ra console: số mục được vào / số ô quyền theo nhóm; người duyệt từng mục.</summary>
     public static string Menu5Summary()
     {

@@ -8,15 +8,24 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Dùng để |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | FIN-HR |
 |---|---|---|
-| `hr-shift-assign` | Nhân sự › Phân ca | Lưới phân ca tuần, phân hàng loạt, xác nhận lịch |
-| `hr-attendance` | … › Chấm công | Ca hôm nay của tôi (vào / ra ca), chấm hộ, bảng công, chốt vắng |
-| `hr-leave` | … › Đơn nghỉ phép | Tạo, hủy, xem / duyệt đơn |
-| `hr-swap` | … › Đơn đổi ca | Tạo, hủy, xem / duyệt đơn |
-| `hr-shift` | … › Ca làm việc | Danh mục ca (mã, giờ bắt đầu / kết thúc) |
-| `adm-employee` | Quản trị hệ thống › Nhân viên | Nhân viên (mã, họ tên, đơn vị, chức danh, SĐT – SĐT dùng để liên kết bot): FIN-HR **thêm / sửa** được (D-69), tạo mã liên kết Telegram cho nhân viên |
-| `wf-inbox` | … › Hộp phê duyệt | Duyệt đơn (xem `12_QUAN_LY_DUYET.md`) |
+| Việc của tôi › Việc của tôi | `hr-my` | X |
+| Phê duyệt › Đơn xin nghỉ | `wf-inbox?type=hr-leave` | Duyệt |
+| Phê duyệt › Đơn đổi ca | `wf-inbox?type=hr-swap` | Duyệt |
+| Nhân sự › Nhân viên | `adm-employee` | S (IX) |
+| Nhân sự › Phân ca | `hr-shift-assign` | S (IX) |
+| Nhân sự › Chấm công | `hr-attendance` | S (IX) |
+| Nhân sự › Đơn xin nghỉ | `hr-leave` | S (IX) |
+| Nhân sự › Đơn đổi ca | `hr-swap` | S (IX) |
+| Nhân sự › Ca làm việc | `hr-shift` | Q |
+| Nhân sự › Chức vụ | `adm-position` | Q |
+| Quản trị hệ thống › Sơ đồ tổ chức | `adm-orgunit` | X |
+| Nhật ký & Tích hợp › Liên kết tài khoản chat | `int-identity` | X |
+<!-- MENU5:END -->
 
 ## 3. Việc trong tuần / ngày
 

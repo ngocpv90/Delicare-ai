@@ -8,23 +8,50 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Quyền |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | OPS-PLAN |
 |---|---|---|
-| `menu-dish-cat` | Thực đơn & Món ăn › Món ăn | Xem, sửa |
-| `menu-dish` | … › Món ăn | Xem, sửa |
-| `menu-recipe` | … › Công thức chế biến (version) | Xem, sửa |
-| `menu-menu` | … › Thực đơn | Xem, sửa |
-| `menu-assignment` | … › Phân công thực đơn | Xem, sửa |
-| `menu-change-request` | … › Yêu cầu đổi món | Xem, sửa |
-| `cost-standard` | Sản xuất & Giá thành › Giá thành tiêu chuẩn | Xem, sửa, xuất |
-| `prod-line`, `prod-workstation` | … › Dây chuyền, Khu vực & trạm làm việc | Xem, sửa, xuất |
-| `prod-plan` | … › Kế hoạch sản xuất | Xem, sửa, xuất |
-| `prod-order` | … › Lệnh sản xuất | Xem, sửa, xuất |
-| `prod-batch` | … › Mẻ sản xuất | Xem, sửa, xuất |
-| `prod-waste` | … › Hao hụt thực phẩm | Xem, sửa, xuất |
-| `cost-actual` | … › Giá thành thực tế | Xem, sửa, xuất |
-| `cost-meal` | … › Giá thành / suất & biên lợi nhuận | Xem, sửa, xuất |
-| `scm-requirement`, `scm-inv-balance`, `crm-order`… | Mua hàng & Kho, Kinh doanh | Chỉ xem |
+| Việc của tôi › Việc của tôi | `hr-my` | X |
+| Điều hành › Bảng điều hành | `dash-exec` | X |
+| Điều hành › Chỉ số theo ngày | `kpi-daily` | X |
+| Điều hành › Chỉ số theo tháng | `kpi-monthly` | X |
+| Kinh doanh › Khách hàng | `crm-customer` | X |
+| Kinh doanh › Chính sách giá | `crm-price-policy` | X |
+| Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X |
+| Kinh doanh › Đơn đặt suất | `crm-order` | X |
+| Kinh doanh › Dự báo suất ăn | `crm-forecast` | X |
+| Kinh doanh › Điểm giao hàng | `crm-location` | X |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | Q |
+| Thực đơn & Món ăn › Thực đơn riêng cho khách | `menu-assignment` | Q |
+| Thực đơn & Món ăn › Yêu cầu đổi món | `menu-change-request` | Q |
+| Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | Q |
+| Thực đơn & Món ăn › Món ăn | `menu-dish` | Q |
+| Thực đơn & Món ăn › Nhóm món ăn | `menu-dish-cat` | Q |
+| Mua hàng › Tính nhu cầu nguyên liệu | `scm-requirement` | X |
+| Mua hàng › Đề nghị mua hàng | `scm-pr` | X |
+| Mua hàng › Nguyên liệu | `scm-ingredient` | S |
+| Kho › Tồn kho | `scm-inv-balance` | X |
+| Kho › Lô hàng & hạn dùng | `scm-lot` | X |
+| Sản xuất › Kế hoạch sản xuất | `prod-plan` | S |
+| Sản xuất › Lệnh sản xuất | `prod-order` | S |
+| Sản xuất › Mẻ nấu | `prod-batch` | X |
+| Sản xuất › Sản lượng | `prod-output` | X |
+| Sản xuất › Hao hụt | `prod-waste` | X |
+| Sản xuất › Dây chuyền bếp | `prod-line` | Q |
+| Sản xuất › Trạm bếp | `prod-workstation` | Q |
+| Giá thành › Giá thành chuẩn | `cost-standard` | S |
+| Giá thành › Giá thành thực tế | `cost-actual` | X (IX) |
+| Giá thành › Giá vốn suất ăn | `cost-meal` | X (IX) |
+| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | X |
+| Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | X |
+| Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
+| Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | X |
+| Chất lượng & ATTP › Kiểm tra vệ sinh | `qc-cleaning-result` | X |
+| Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X |
+| Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X |
+<!-- MENU5:END -->
 
 Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & áp dụng** công thức, **duyệt thực đơn**, **duyệt kế hoạch sản xuất** do COO / CEO (mục "Phê duyệt › …"). Bấm các nút này khi chưa được cấp → *"Bạn không có quyền …"*.
 

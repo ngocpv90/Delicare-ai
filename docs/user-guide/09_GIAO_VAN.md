@@ -8,18 +8,28 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Dùng để |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | OPS-LOG |
 |---|---|---|
-| `log-route` | Đóng gói & Giao hàng › Tuyến giao hàng | Lập chuyến, sắp điểm dừng, xếp xe, xuất bến, in phiếu, đơn giao trong ngày |
-| `log-delivery-order` | … › Đơn giao hàng | Lập, gán / chuyển chuyến, tách, hủy đơn giao |
-| `log-execution` | … › Thực hiện giao hàng | Đã đến, bàn giao + POD, giao thất bại, ghi vị trí, in |
-| `log-gps` | … › Theo dõi vị trí xe (GPS) | Vị trí xe hôm nay theo sự kiện |
-| `log-container-return` | … › Thu hồi khay hộp | Ghi thu hồi, kiểm tra |
-| `log-return-inspection` | … › Kiểm tra hàng trả về | Kiểm tra phiếu thu hồi |
-| `log-packaging-ledger` | … › Sổ theo dõi bao bì | Khay hộp còn ở khách, ghi sổ tay |
-| `log-complaint` | … › Phản ánh khách hàng | Tạo / xử lý phản ánh |
-| `log-packing-order`, `log-packing-result` | … › Đơn / Kết quả đóng gói | Xem `08_DONG_GOI.md` |
-| `log-vehicle` | … › Phương tiện | Danh mục xe (biển số, loại, sức chở, trạng thái) |
+| Việc của tôi › Việc của tôi | `hr-my` | X |
+| Kinh doanh › Đơn đặt suất | `crm-order` | X |
+| Kinh doanh › Điểm giao hàng | `crm-location` | X |
+| Sản xuất › Kế hoạch sản xuất | `prod-plan` | X |
+| Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
+| Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | X |
+| Đóng gói & Giao hàng › Kết quả đóng gói | `log-packing-result` | X |
+| Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | S |
+| Đóng gói & Giao hàng › Chuyến giao hàng | `log-route` | S |
+| Đóng gói & Giao hàng › Xếp hàng lên xe | `log-loading` | S |
+| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | S |
+| Đóng gói & Giao hàng › Vị trí xe | `log-gps` | X |
+| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | S |
+| Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | S |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X |
+| Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | Q |
+<!-- MENU5:END -->
 
 ## 3. Việc trong ngày
 

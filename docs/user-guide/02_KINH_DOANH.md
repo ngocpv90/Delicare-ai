@@ -8,20 +8,37 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Quyền |
-|---|---|---|
-| `crm-customer` | Kinh doanh › Khách hàng | Xem, sửa, xuất |
-| `crm-contact` | … › Người liên hệ | Xem, sửa, xuất |
-| `crm-location` | … › Điểm giao hàng | Xem, sửa, xuất |
-| `crm-contract` | … › Hợp đồng | Xem, sửa, xuất |
-| `crm-price-policy` | … › Chính sách giá | Xem, sửa, xuất |
-| `crm-forecast` | … › Dự báo | Xem, sửa, xuất |
-| `crm-order` | … › Đơn hàng | Xem, sửa, xuất |
-| `crm-order-week` | … › Đăng ký suất tuần | Như `crm-order` (xem, sửa, xuất phiếu, tải phiếu lên) |
-| `crm-reconciliation` | … › Đối soát đơn hàng | Xem, sửa, xuất |
-| `menu-menu`, `menu-assignment`, `menu-dish`, `menu-change-request` | Thực đơn & Món ăn | Chỉ xem |
-| `log-*`, `prod-*`, `cost-*` | Đóng gói & Giao hàng, Sản xuất & Giá thành | Chỉ xem |
-| `dash-exec`, `kpi-daily`, `kpi-monthly` | Tổng quan / KPI | Xem |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | SAL-SALES | SAL-CON | SAL-HEAD | SAL-CS |
+|---|---|---|---|---|---|
+| Việc của tôi › Việc của tôi | `hr-my` | X | X | X | X |
+| Phê duyệt › Đơn đặt suất (sửa sau chốt) | `wf-inbox?type=crm-order` | — | — | Duyệt | — |
+| Điều hành › Bảng điều hành | `dash-exec` | — | — | X | — |
+| Điều hành › Chỉ số theo ngày | `kpi-daily` | — | — | X | — |
+| Điều hành › Chỉ số theo tháng | `kpi-monthly` | — | — | X | — |
+| Kinh doanh › Khách hàng | `crm-customer` | S | Q (IX) | Q (IX) | X |
+| Kinh doanh › Hợp đồng | `crm-contract` | S | Q (IX) | Q (IX) | — |
+| Kinh doanh › Chính sách giá | `crm-price-policy` | S | Q (IX) | Q (IX) | — |
+| Kinh doanh › Đăng ký suất tuần | `crm-order-week` | S | Q (IX) | Q (IX) | — |
+| Kinh doanh › Đơn đặt suất | `crm-order` | S | Q (IX) | Q (IX) | X |
+| Kinh doanh › Dự báo suất ăn | `crm-forecast` | S | Q (IX) | Q (IX) | — |
+| Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | S | S | X |
+| Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X (IX) | X (IX) | — |
+| Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | S | S |
+| Kinh doanh › Điểm giao hàng | `crm-location` | S | Q (IX) | Q (IX) | X |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | X |
+| Thực đơn & Món ăn › Thực đơn riêng cho khách | `menu-assignment` | X | X | X | — |
+| Thực đơn & Món ăn › Yêu cầu đổi món | `menu-change-request` | S | S | S | S |
+| Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | X |
+| Giá thành › Giá thành chuẩn | `cost-standard` | — | — | X | — |
+| Giá thành › Giá vốn suất ăn | `cost-meal` | — | — | X | — |
+| Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | X | X | X | — |
+| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X | X | X | X |
+| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | X |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | — |
+<!-- MENU5:END -->
 
 Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơn sau giờ chốt, hợp đồng do Ban điều hành duyệt – xem `12_QUAN_LY_DUYET.md`).
 

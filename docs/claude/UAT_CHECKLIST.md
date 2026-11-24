@@ -3,6 +3,33 @@
 Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) hoặc VS Code REST Client (`docs/api-tests/*.http`).
 Đánh dấu [x] khi đạt; ghi lỗi / góp ý vào cột "Ghi chú" hoặc báo Claude Code.
 
+## PHÂN QUYỀN THEO TỪNG MÀN + MENU THEO VAI TRÒ (MENU-5, D-79 – 2026-11-23) · script: `DB/scripts/D79_menu_regroup.sql`, `DB/scripts/D79_permission_matrix.sql` · test: `Security/Menu5PermissionTests.cs`, `Security/D79MatrixSqlTests.cs` · ma trận: `docs/claude/MENU5_MATRIX.md`
+
+Trước khi thử: deploy API → seed → `D79_menu_regroup.sql` → `D79_permission_matrix.sql` (DryRun trước, sau backup); tạo 1 tài khoản thử cho mỗi nhóm (hoặc chuyển người sang SAL-HEAD / OPS-SCM-HEAD / OPS-WH), đăng nhập lại.
+
+| # | Vai trò | Menu thấy gì | 1 thao tác được | 1 thao tác bị chặn | Đạt | Ghi chú |
+|---|---|---|---|---|---|---|
+| 1 | CEO | Việc của tôi, Phê duyệt (Hợp đồng, Đơn mua ≥ 50 triệu, Tất cả yêu cầu duyệt), mọi nhóm nghiệp vụ chỉ xem; không có Quản trị, Nhật ký & Tích hợp (trừ Tin nhắn đi) | Duyệt hợp đồng trong Phê duyệt › Hợp đồng | Mở Thực đơn tuần → không có nút sửa; không thấy mục duyệt Công thức | [ ] | |
+| 2 | COO | Như CEO + Phê duyệt việc vận hành (công thức, thực đơn, đổi món, kế hoạch SX, điều chỉnh tồn, đơn mua, ĐN mua cấp 2, kiểm kê, đơn nghỉ / đổi ca, sửa đơn sau chốt) | Duyệt kế hoạch sản xuất | Sửa đơn đặt suất → không có nút Sửa (chỉ xem) | [ ] | |
+| 3 | OPS-PLAN | Thực đơn & Món ăn, Sản xuất (kế hoạch / lệnh), Giá thành (chuẩn S, thực tế / giá vốn xem + in), Chất lượng (xem), Kho (tồn / lô xem) | Tạo công thức, gửi duyệt | Không tự duyệt công thức của mình; không vào Hợp đồng | [ ] | |
+| 4 | OPS-SCM | Mua hàng (NCC, nguyên liệu Q; tính nhu cầu, ĐN mua, đơn mua S); Kho chỉ xem | Lập đề nghị mua, gửi duyệt | Phiếu nhập kho chỉ xem (không ghi sổ nhập); không thấy Phê duyệt › ĐN mua – cấp 1 | [ ] | |
+| 5 | OPS-WH | Kho (phiếu nhập / xuất, giữ chỗ, sổ kho, kiểm kê, lô S; danh mục kho Q); Mua hàng xem đơn mua / NCC / nguyên liệu | Ghi phiếu nhập kho | Lô hàng: không có nút Tạm giữ / Mở giữ; API MaterialLot/Release → 403 | [ ] | |
+| 6 | OPS-SCM-HEAD | Mua hàng + Kho (như OPS-SCM ∪ OPS-WH) + Điều hành; Phê duyệt › ĐN mua – cấp 1, Phiếu kiểm kê – cấp 1 | Duyệt ĐN mua cấp 1 của người khác | ĐN mua do chính mình gửi: nhãn "Bạn gửi – chờ người khác duyệt", không có nút Duyệt | [ ] | |
+| 7 | OPS-KIT | Sản xuất (mẻ nấu, hao hụt S; kế hoạch / lệnh xem), Đóng gói (lệnh / kết quả S), Chất lượng (kiểm tra theo ca, nhiệt độ, vệ sinh S), Nhân sự xem ca / chấm công | Bắt đầu / kết thúc mẻ, ghi nhiệt độ lõi | Mẻ Chờ QC: không có nút QC PASS / HOLD / REJECT ("Chờ QA kết luận"); không thấy Giá thành | [ ] | |
+| 8 | OPS-LOG | Đóng gói & Giao hàng (đơn giao, chuyến, xếp xe, theo dõi, xác nhận, thu hồi S; xe Q) | Tạo chuyến giao | Không thấy Chính sách giá / Hợp đồng | [ ] | |
+| 9 | OPS-POS | Kinh doanh (đối soát S; khách / đơn xem), Phản ánh S, Giao hàng (xác nhận đã giao, thu hồi S) | Ghi đối soát suất ăn | Hợp đồng: không thấy; PUT Contract/Update → 403 | [ ] | |
+| 10 | OPS-MNT | Sản xuất › Dây chuyền bếp, Trạm bếp (S), Mẻ nấu xem, Nhật ký nhiệt độ xem | Sửa trạm bếp | Không vào kế hoạch sản xuất | [ ] | |
+| 11 | SAL-SALES | Kinh doanh (khách, điểm giao, giá, hợp đồng, dự báo, đơn, đăng ký tuần S; bảng kê xem + in), Thực đơn xem, Giao hàng xem | Tạo đơn đặt suất | Không xóa khách hàng; không duyệt sửa đơn sau chốt | [ ] | |
+| 12 | SAL-CON | Như SAL-SALES nhưng Q + in / xuất trên dữ liệu khách hàng / hợp đồng / đơn | Xóa đơn nháp | Không còn mục Phê duyệt › Đơn đặt suất (sửa sau chốt) | [ ] | |
+| 13 | SAL-HEAD | Như SAL-CON + Phản ánh S + Giá vốn / Giá thành chuẩn / Điều hành xem; Phê duyệt › Đơn đặt suất (sửa sau chốt) | Tạo đơn bù từ phản ánh thiếu suất; duyệt sửa đơn sau chốt của người khác | Không tự duyệt yêu cầu sửa đơn do mình gửi | [ ] | |
+| 14 | SAL-CS | Phản ánh khách hàng, Yêu cầu đổi món (S); khách / đơn / theo dõi chuyến xem | Ghi phản ánh | Phản ánh thiếu suất: không có nút Tạo đơn bù; API CreateCompensationOrder → 403; không sửa chuyến | [ ] | |
+| 15 | FIN-ACC | Xem + in / xuất: khách, hợp đồng, giá, đơn, đối soát, bảng kê, mua hàng, kho, giá thành, hao hụt, khay hộp, chấm công, chỉ số; Phê duyệt › Phiếu kiểm kê – cấp 2 | Duyệt kiểm kê cấp 2 | Không có nút Thêm / Sửa ở mọi màn; không mở được Hộp phê duyệt chung | [ ] | |
+| 16 | FIN-HR | Nhân sự (nhân viên, phân ca, chấm công, đơn nghỉ / đổi ca S; ca làm việc, chức vụ Q); Phê duyệt › Đơn xin nghỉ, Đơn đổi ca | Thêm chức vụ; duyệt đơn nghỉ của người khác | Đơn nghỉ do chính mình tạo: không có nút Duyệt | [ ] | |
+| 17 | FIN-IT | Quản trị hệ thống + Nhật ký & Tích hợp (Job tự động, nhật ký, bot…) + xem mọi màn nghiệp vụ + Hộp phê duyệt chung | Chạy tay 1 job ở Job tự động | Không có mục Phê duyệt › …; không sửa đơn đặt suất | [ ] | |
+| 18 | QA | Chất lượng & ATTP (Q / S), Phản ánh S, kiểm tra khay hộp thu hồi S; NCC / nguyên liệu / phiếu nhập / lô / mẻ xem; Phê duyệt › Kiểm tra hàng nhập, Mẻ nấu, Giữ / thả lô | Kết luận phiếu QC đầu vào; Tạm giữ lô; Loại mẻ | Không lập đơn mua (POST PurchaseOrder/Insert → 403); không thấy Hợp đồng / Chính sách giá | [ ] | |
+| 19 | Chung | Sidebar mọi vai trò: **Việc của tôi** dòng đầu (bấm thẳng), **Phê duyệt** ngay sau; không còn nhóm chỉ có 1 mục lạc chỗ; không thấy "Bot Telegram – …" | Mở Người liên hệ cũ (`#/crm-contact`) → về Khách hàng | Người gửi bấm Duyệt yêu cầu của mình (bot / API) → "Bạn là người gửi yêu cầu này – cần người khác duyệt" | [ ] | |
+| 20 | ĐN mua 2 cấp | Tài khoản OPS-SCM gửi ĐN mua → OPS-SCM-HEAD duyệt cấp 1 → COO duyệt cấp 2 | Đề nghị chuyển Đã duyệt | Một người không duyệt được cả 2 cấp | [ ] | |
+
 ## DỌN MENU (MENU-4, D-75 d, e, f – 2026-11-23) · script: `DB/scripts/MENU4_cleanup_menu.sql` · test: `AppDelicare.Tests/Admin/Menu4Tests.cs`, `Menu4SqlServerTests.cs` · ảnh: `docs/frontend-handoff/assets/menu-4/`
 
 | # | Kịch bản | Thao tác | Kỳ vọng | Đạt | Ghi chú |

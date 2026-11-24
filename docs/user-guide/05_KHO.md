@@ -12,20 +12,45 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Dùng để |
-|---|---|---|
-| `scm-po` | Mua hàng & Kho › Đơn mua hàng | Nút **Nhận hàng** |
-| `scm-gr` | … › Nhập kho | Phiếu nhập: Mở QC, Ghi sổ, Hủy, In |
-| `scm-inv-balance` | … › Số dư tồn kho | Tồn theo kho × nguyên liệu, theo lô; Chuyển kho; Điều chỉnh tồn |
-| `scm-lot` | … › Lô nguyên liệu | Lọc hạn dùng, Tạm giữ / Mở giữ, Xử lý lô hết hạn, Truy xuất |
-| `scm-inv-txn` | … › Giao dịch tồn kho | Sổ cái; Chuyển kho; Điều chỉnh tồn |
-| `scm-reservation` | … › Đặt trước vật tư | Giữ chỗ nguyên liệu theo kế hoạch / lệnh SX |
-| `scm-issue` | … › Xuất vật tư | Phiếu xuất sản xuất: gợi ý lô, tạo, ghi sổ, hủy, in |
-| `scm-stockcount` | … › Kiểm kê | Tạo phiếu, kiểm đếm, gửi duyệt, ghi sổ, in |
-| `scm-consumption-var` | … › Chênh lệch tiêu hao | So định mức với thực xuất (xem) |
-| `scm-warehouse` | … › Kho | Kho + **Sơ đồ** |
-| `scm-zone`, `scm-location` | … › Khu vực / Vị trí lưu trữ | Danh mục (khu có ngưỡng nhiệt độ) |
-| `scm-inv-policy` | … › Chính sách tồn kho | Tối thiểu ≤ an toàn ≤ điểm đặt hàng ≤ tối đa, FEFO / FIFO |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | OPS-WH | OPS-SCM-HEAD |
+|---|---|---|---|
+| Việc của tôi › Việc của tôi | `hr-my` | X | X |
+| Phê duyệt › Đề nghị mua – cấp 1 | `wf-inbox?type=scm-pr-l1` | — | Duyệt |
+| Phê duyệt › Phiếu kiểm kê – cấp 1 | `wf-inbox?type=scm-stockcount` | — | Duyệt |
+| Điều hành › Bảng điều hành | `dash-exec` | — | X |
+| Điều hành › Chỉ số theo ngày | `kpi-daily` | — | X |
+| Điều hành › Chỉ số theo tháng | `kpi-monthly` | — | X |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | — | X |
+| Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | — | X |
+| Mua hàng › Tính nhu cầu nguyên liệu | `scm-requirement` | — | S (IX) |
+| Mua hàng › Đề nghị mua hàng | `scm-pr` | — | S (IX) |
+| Mua hàng › Đơn mua hàng | `scm-po` | X | S (IX) |
+| Mua hàng › Nhà cung cấp | `scm-supplier` | X | Q |
+| Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | — | Q |
+| Mua hàng › Nguyên liệu | `scm-ingredient` | X | Q |
+| Mua hàng › Nhóm nguyên liệu | `scm-ingredient-cat` | — | Q |
+| Mua hàng › Đơn vị tính | `scm-uom` | — | Q |
+| Mua hàng › Quy đổi đơn vị | `scm-uom-conversion` | — | Q |
+| Kho › Phiếu nhập kho | `scm-gr` | S (IX) | S (IX) |
+| Kho › Phiếu xuất sản xuất | `scm-issue` | S (IX) | S (IX) |
+| Kho › Tồn kho | `scm-inv-balance` | X | X |
+| Kho › Lô hàng & hạn dùng | `scm-lot` | S (IX) | S (IX) |
+| Kho › Sổ kho | `scm-inv-txn` | S (IX) | S (IX) |
+| Kho › Giữ chỗ nguyên liệu | `scm-reservation` | S (IX) | S (IX) |
+| Kho › Phiếu kiểm kê | `scm-stockcount` | S (IX) | S (IX) |
+| Kho › Chênh lệch tiêu hao | `scm-consumption-var` | X | X |
+| Kho › Kho | `scm-warehouse` | Q | Q |
+| Kho › Khu bảo quản | `scm-zone` | Q | Q |
+| Kho › Vị trí kệ | `scm-location` | Q | Q |
+| Kho › Định mức tồn kho | `scm-inv-policy` | Q | Q |
+| Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
+| Sản xuất › Lệnh sản xuất | `prod-order` | X | X |
+| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | — | X |
+| Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | — | X |
+<!-- MENU5:END -->
 
 Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) **ẩn trên menu** (MENU-4) – hai việc này làm bằng nút trên `scm-inv-balance` / `scm-inv-txn`; link cũ tới hai màn này tự mở màn Tồn kho. Các mục "Chi tiết phiếu nhập / phiếu xuất / kiểm kê" cũng đã bỏ: xem dòng trong chi tiết phiếu, hoặc **Lọc theo nguyên liệu** trên danh sách Phiếu nhập / Phiếu xuất.
 

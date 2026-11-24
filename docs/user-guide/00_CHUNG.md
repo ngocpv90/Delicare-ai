@@ -32,7 +32,7 @@
 
 | Vùng | Nội dung |
 |---|---|
-| Thanh menu trái | Nhóm chức năng (Bảng điều hành, Kinh doanh, Thực đơn & Món ăn, Mua hàng & Kho, Sản xuất & Giá thành, Chất lượng & ATTP, Đóng gói & Giao hàng, Nhân sự, Tích hợp & Chỉ số, Quản trị hệ thống). **Chỉ hiện mục bạn có quyền Truy cập.** Nút thu gọn menu ở đầu thanh; trên điện thoại bấm ☰. |
+| Thanh menu trái | 14 nhóm theo vai trò (MENU-5, D-79): **Việc của tôi** (luôn đầu – chấm công, đơn nghỉ / đổi ca của mình) · **Phê duyệt** · Điều hành (bảng điều hành, chỉ số ngày / tháng) · Kinh doanh · Thực đơn & Món ăn · **Mua hàng** · **Kho** · Sản xuất · **Giá thành** · Chất lượng & ATTP · Đóng gói & Giao hàng · Nhân sự · Quản trị hệ thống · **Nhật ký & Tích hợp** (chỉ quản trị). Trong nhóm: việc hằng ngày trước, danh mục sau. **Chỉ hiện mục bạn có quyền Truy cập** – quyền theo từng màn (`docs/claude/MENU5_MATRIX.md`). Nút thu gọn menu ở đầu thanh; trên điện thoại bấm ☰. |
 | Ô tìm kiếm trên cùng | Tìm chức năng + chứng từ (xem mục 4) |
 | **Đơn vị làm việc** (góc trên) | Chọn chi nhánh / đơn vị → các màn lọc số liệu theo đơn vị đó. "Tất cả đơn vị" = không lọc |
 | Chuông 🔔 | Cảnh báo & công việc (mục 5) |
@@ -98,6 +98,7 @@ Bấm 🔔 → ngăn **Cảnh báo & công việc**, cập nhật mỗi 60 giây
 Mọi chứng từ cần duyệt đều đi qua **Yêu cầu phê duyệt** (`wf-inbox`) – xem `12_QUAN_LY_DUYET.md`. Người gửi:
 - Theo dõi ở tab **Lịch sử xử lý** của chứng từ hoặc tab **Tất cả** của hộp duyệt.
 - **Hủy yêu cầu**: chỉ người gửi, khi còn chờ duyệt, bắt buộc ghi lý do.
+- **Người gửi không tự duyệt** (D-79): yêu cầu do bạn gửi không hiện trong *Chờ tôi duyệt*, hộp duyệt hiện nhãn **Bạn gửi – chờ người khác duyệt**; bấm Duyệt (vd. từ bot) báo *Bạn là người gửi yêu cầu này – cần người khác duyệt*. Áp cho **mọi cấp**, kể cả khi bạn có quyền duyệt loại đó (tài khoản quản trị được miễn).
 - Sửa chứng từ sau khi đã gửi duyệt → *Nội dung chứng từ đã thay đổi sau khi gửi duyệt – gửi duyệt lại*.
 
 ## 7. In phiếu, tải tệp

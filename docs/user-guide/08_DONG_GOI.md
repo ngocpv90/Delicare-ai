@@ -9,11 +9,49 @@
 
 ## 2. Màn hình được dùng
 
-| screen-id | Menu › Mục | Dùng để |
-|---|---|---|
-| `log-packing-order` | Đóng gói & Giao hàng › Đơn đóng gói | Lập lệnh, Bắt đầu, Ghi kết quả, Hủy |
-| `log-packing-result` | … › Kết quả đóng gói | Danh sách kết quả; **Ghi kết quả đóng gói** |
-| `prod-batch` | Sản xuất & Giá thành › Mẻ sản xuất | Nút **Tạo lệnh đóng gói** trên mẻ Đạt |
+<!-- MENU5:BEGIN – bảng sinh từ ma trận D-79 (tools/AppDelicare.CodeGen --layers security), không sửa tay -->
+Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
+
+| Menu › Mục | screen-id | OPS-KIT | OPS-LOG |
+|---|---|---|---|
+| Việc của tôi › Việc của tôi | `hr-my` | X | X |
+| Kinh doanh › Đơn đặt suất | `crm-order` | — | X |
+| Kinh doanh › Điểm giao hàng | `crm-location` | — | X |
+| Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | — |
+| Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | — |
+| Thực đơn & Món ăn › Món ăn | `menu-dish` | X | — |
+| Kho › Phiếu xuất sản xuất | `scm-issue` | X | — |
+| Kho › Tồn kho | `scm-inv-balance` | X | — |
+| Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
+| Sản xuất › Lệnh sản xuất | `prod-order` | X | — |
+| Sản xuất › Mẻ nấu | `prod-batch` | S | — |
+| Sản xuất › Sản lượng | `prod-output` | X | — |
+| Sản xuất › Hao hụt | `prod-waste` | S | — |
+| Sản xuất › Dây chuyền bếp | `prod-line` | X | — |
+| Sản xuất › Trạm bếp | `prod-workstation` | X | — |
+| Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S | — |
+| Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S | X |
+| Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S | — |
+| Chất lượng & ATTP › Kiểm tra vệ sinh | `qc-cleaning-result` | S | — |
+| Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | — |
+| Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | S | X |
+| Đóng gói & Giao hàng › Kết quả đóng gói | `log-packing-result` | S | X |
+| Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | — | S |
+| Đóng gói & Giao hàng › Chuyến giao hàng | `log-route` | — | S |
+| Đóng gói & Giao hàng › Xếp hàng lên xe | `log-loading` | — | S |
+| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | — | S |
+| Đóng gói & Giao hàng › Vị trí xe | `log-gps` | — | X |
+| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | — | S |
+| Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | — | S |
+| Đóng gói & Giao hàng › Kiểm tra khay hộp thu hồi | `log-return-inspection` | S | — |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | — | X |
+| Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | — | Q |
+| Nhân sự › Phân ca | `hr-shift-assign` | X | — |
+| Nhân sự › Chấm công | `hr-attendance` | X | — |
+| Nhân sự › Đơn xin nghỉ | `hr-leave` | X | — |
+| Nhân sự › Đơn đổi ca | `hr-swap` | X | — |
+| Nhân sự › Ca làm việc | `hr-shift` | X | — |
+<!-- MENU5:END -->
 
 ## 3. Việc trong ca
 
