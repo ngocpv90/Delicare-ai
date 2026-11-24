@@ -53,6 +53,20 @@
     show(0);
   };
   // Menu ⋯ của phần đầu: đóng khi bấm ra ngoài.
+  /* UI-2R fix (D-80 d – mô phỏng detail-head-compact-mockup.html bản ②): dòng tên của phần đầu 3 màn 360 (không tự bọc .card – màn bọc chung với hàng chỉ số).
+   * meta = các phần thông tin phụ (HTML đã escape) → gộp 1 dòng " · ", bỏ phần trống, quá dài "…" (title hiện đủ).
+   * buttons = [{ act, icon, label, ok, primary }] theo thứ tự hiện; < 768px chỉ còn nút chính + ⋯ (nút khác có bản sao trong menu ⋯ – class mob-only).
+   * more = các nút HTML của menu ⋯. actions = false → không vẽ nút (bản nháp trước khi có dữ liệu). */
+  D.headRow = ({ avatar, avatarCls, title, meta, buttons, more, actions }) => {
+    const parts = (meta || []).filter(x => x !== null && x !== undefined && String(x).trim() !== '');
+    const plain = parts.map(x => String(x).replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim()).join(' · ');
+    const btns = (buttons || []).filter(b => b.ok);
+    const acts = actions === false ? '' : `<div class="c360-actions">${btns.map(b => `<button class="btn ${b.primary ? 'primary' : 'sec'}" data-h="${b.act}">${I(b.icon)} ${b.label}</button>`).join('')}
+      <button class="btn more" data-h="more" aria-label="Thêm thao tác">⋯</button>
+      <div class="c360-more hide" data-hmore>${btns.filter(b => !b.primary).map(b => `<button class="mob-only" data-h="${b.act}">${b.label}</button>`).join('')}${(more || []).filter(Boolean).join('')}</div></div>`;
+    return `<div class="c360-head"><div class="c360-avatar ${avatarCls || 'biz'}">${esc(avatar || '')}</div>
+      <div class="c360-id"><h1>${title}</h1>${parts.length ? `<div class="c360-meta one" title="${esc(plain)}">${parts.join(' · ')}</div>` : ''}</div>${acts}</div>`;
+  };
   D.bindMore = (box, onAct) => {
     const more = box.querySelector('[data-hmore]');
     box.querySelectorAll('[data-h]').forEach(b => b.onclick = e => {

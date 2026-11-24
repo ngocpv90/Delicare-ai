@@ -18,8 +18,8 @@
     if (!id) { el.innerHTML = APP.header(f, '', { noNote: true }) + failBox('Chưa chọn khách hàng – mở từ danh sách khách hàng.'); return; }
     // Vẽ khung ngay, dữ liệu máy chủ điền sau (GetOverview 1 lần cho phần đầu + thẻ + tab Tổng quan).
     el.innerHTML = `<div class="page-head"><div><div class="breadcrumb small"><a href="javascript:void 0" data-back>${I('down')} Danh sách khách hàng</a> / <span data-c360code>${esc(local ? local.Code || '' : '')}</span></div></div></div>
-      <div data-c360head>${local ? headHtml({ customer: pas(local) }, true) : loading}</div>
-      <div class="kpis" data-c360kpi>${APP.customerKpis(null)}</div>
+      <!-- UI-2R fix (D-80 d): 1 khung bọc dòng tên + hàng chỉ số gọn (.kpis.compact) --><div class="card d360-top"><div data-c360head>${local ? headHtml({ customer: pas(local) }, true) : loading}</div>
+      <div class="kpis compact" data-c360kpi>${APP.customerKpis(null, true)}</div></div>
       <div class="tabs c360-tabs" data-c360tabs></div><div data-c360pane></div>`;
     el.querySelector('[data-back]').onclick = () => APP.go('crm-customer');
     const ov = Store.isLive ? Store.query('Customer/GetOverview', { id }) : Promise.resolve({ ok: true, data: demoOverview(id) });
@@ -31,7 +31,7 @@
       const d = x.data;
       el.querySelector('[data-c360head]').innerHTML = headHtml(d, false);
       el.querySelector('[data-c360code]').textContent = (d.customer && d.customer.code) || '';
-      el.querySelector('[data-c360kpi]').innerHTML = APP.customerKpis(d);
+      el.querySelector('[data-c360kpi]').innerHTML = APP.customerKpis(d, true);
       el.querySelectorAll('[data-c360kpi] [data-go]').forEach(b => b.onclick = () => APP.go(b.dataset.go));
       bindHead(el, d, id);
       buildTabs(el, d, id);
@@ -43,19 +43,15 @@
     const c = d.customer ? (d.customer.Code !== undefined ? d.customer : pas(d.customer)) : {};
     const ind = String(c.CustomerType || '').toUpperCase() === 'INDIVIDUAL';
     const name = c.DisplayName || c.Name || '';
-    const meta = [c.Code, vi('Industry', c.Industry), d.branchName && 'Chi nhánh ' + d.branchName, d.userAssignName && 'Phụ trách: ' + d.userAssignName].filter(Boolean).map(esc).join(' · ');
-    const contact = [c.Address && `<span>${I('pin')}${esc(c.Address)}</span>`, c.PhoneNumber && `<span>${I('msg')}${esc(c.PhoneNumber)}</span>`,
-      ind ? c.IdentityNumber && `<span>CCCD ${esc(c.IdentityNumber)}</span>` : c.TaxCode && `<span>MST ${esc(c.TaxCode)}</span>`].filter(Boolean).join('');
     const p = Store.perm('crm-customer');
-    const btn = (act, icon, label, ok) => ok ? `<button class="btn ${act === 'order' ? 'primary' : ''}" data-h="${act}">${I(icon)} ${label}</button>` : '';
-    return `<div class="card panel"><div class="c360-head">
-      <div class="c360-avatar ${ind ? 'ind' : 'biz'}">${esc(initials(name))}</div>
-      <div class="c360-id"><h1>${esc(name)} ${UI.tag(ind ? 'Cá nhân' : 'Doanh nghiệp', ind ? 'blue' : 'green')} ${c.Status ? UI.badge(c.Status, 'Customer', 'Status') : ''}</h1>
-        <div class="c360-meta">${meta}</div><div class="c360-meta">${contact}</div></div>
-      ${partial ? '' : `<div class="c360-actions">${btn('edit', 'edit', 'Sửa', p.edit !== false)}${btn('order', 'plus', 'Tạo đơn', can('crm-order', 'add'))}${btn('complaint', 'msg', 'Ghi phản ánh', can('log-complaint', 'add'))}
-        <button class="btn" data-h="more" aria-label="Thêm thao tác">⋯</button>
-        <div class="c360-more hide" data-hmore>${can('crm-contract', 'add') ? '<button data-h="contract">Tạo hợp đồng</button>' : ''}<button data-h="print">In hồ sơ</button>${p.edit !== false && c.Status !== 'Inactive' ? '<button data-h="inactive">Ngừng hoạt động</button>' : ''}</div></div>`}
-    </div></div>`;
+    // Thông tin phụ 1 dòng: mã · ngành · chi nhánh · phụ trách · SĐT · MST / CCCD (bỏ ô trống; địa chỉ xem ở tab Tổng quan).
+    return APP.D360.headRow({ avatar: initials(name), avatarCls: ind ? 'ind' : 'biz', actions: !partial,
+      title: `${esc(name)} ${UI.tag(ind ? 'Cá nhân' : 'Doanh nghiệp', ind ? 'blue' : 'green')} ${c.Status ? UI.badge(c.Status, 'Customer', 'Status') : ''}`,
+      meta: [esc(c.Code || ''), esc(vi('Industry', c.Industry) || ''), d.branchName && esc('Chi nhánh ' + d.branchName), d.userAssignName && esc('Phụ trách: ' + d.userAssignName),
+        c.PhoneNumber && `${I('phone')} ${esc(c.PhoneNumber)}`, ind ? c.IdentityNumber && esc('CCCD ' + c.IdentityNumber) : c.TaxCode && esc('MST ' + c.TaxCode)],
+      buttons: [{ act: 'edit', icon: 'edit', label: 'Sửa', ok: p.edit !== false }, { act: 'order', icon: 'plus', label: 'Tạo đơn', ok: can('crm-order', 'add'), primary: true },
+        { act: 'complaint', icon: 'msg', label: 'Ghi phản ánh', ok: can('log-complaint', 'add') }],
+      more: [can('crm-contract', 'add') && '<button data-h="contract">Tạo hợp đồng</button>', '<button data-h="print">In hồ sơ</button>', p.edit !== false && c.Status !== 'Inactive' && '<button data-h="inactive">Ngừng hoạt động</button>'] });
   }
   function bindHead(el, d, id) {
     const box = el.querySelector('[data-c360head]');

@@ -15,7 +15,7 @@
   const daysLate = v => { if (!v) return 0; const n = Math.round((new Date(today()) - new Date(U.day(v))) / 86400000); return n > 0 ? n : 0; };
 
   // 4 thẻ chỉ số (D-67 b, chuẩn thẻ D-64 c).
-  APP.supplierKpis = d => UI.kpi('PO đang mở', d ? U.num(d.openPoCount || 0) : '–', d ? U.money(d.openPoAmount || 0) : '', 'clipboard', 'blue', can('scm-po') ? 'scm-po' : '')
+  APP.supplierKpis = d => UI.kpi('PO đang mở', d ? U.num(d.openPoCount || 0) : '–', d ? '· ' + U.moneyShort(d.openPoAmount || 0) : '', 'clipboard', 'blue', can('scm-po') ? 'scm-po' : '')
     + UI.kpi('Giao đúng hạn 90 ngày', d ? pct(d.onTimeRate) : '–', d ? `${U.num(d.receiptCount90d || 0)} lần nhận` : '', 'truck', 'green')
     + UI.kpi('Hàng bị loại 90 ngày', d ? pct(d.rejectRate) : '–', d && d.lastReceiptDate ? 'gần nhất ' + dmy(d.lastReceiptDate) : '', 'alert', d && d.rejectRate > 0 ? 'red' : 'green')
     + UI.kpi('Sự cố đang mở', d ? U.num(d.openIssueCount || 0) : '–', d ? `/ ${U.num(d.issueCount || 0)}${d.overdueIssueCount ? ' · ' + U.num(d.overdueIssueCount) + ' quá hạn' : ''}` : '', 'shield', d && d.overdueIssueCount ? 'red' : 'orange', can('qc-supplier-issue') ? 'qc-supplier-issue' : '');
@@ -25,8 +25,8 @@
     if (!id) { el.innerHTML = APP.header(f, '', { noNote: true }) + failBox('Chưa chọn nhà cung cấp – mở từ danh sách nhà cung cấp.'); return; }
     const local = Store.get('Supplier', id);
     el.innerHTML = `<div class="page-head"><div><div class="breadcrumb small"><a href="javascript:void 0" data-back>${I('down')} Danh sách nhà cung cấp</a> / <span data-s360code>${esc(local ? local.Code || '' : '')}</span></div></div></div>
-      <div data-s360head>${local ? headHtml({ supplier: local }, true) : loading}</div>
-      <div class="kpis" data-s360kpi>${APP.supplierKpis(null)}</div>
+      <!-- UI-2R fix (D-80 d): 1 khung bọc dòng tên + hàng chỉ số gọn (.kpis.compact) --><div class="card d360-top"><div data-s360head>${local ? headHtml({ supplier: local }, true) : loading}</div>
+      <div class="kpis compact" data-s360kpi>${APP.supplierKpis(null)}</div></div>
       <div class="tabs c360-tabs" data-s360tabs></div><div data-s360pane></div>`;
     el.querySelector('[data-back]').onclick = () => APP.go('scm-supplier');
     const ov = live() ? Store.query('Supplier/GetOverview', { id }) : Promise.resolve({ ok: true, data: demoOverview(id) });
@@ -49,18 +49,14 @@
   const sup = d => (d.supplier ? (d.supplier.Code !== undefined || d.supplier.Name !== undefined ? d.supplier : pas(d.supplier)) : {});
   function headHtml(d, partial) {
     const s = sup(d), p = Store.perm('scm-supplier');
-    const meta = [s.Code, s.TaxCode && 'MST ' + s.TaxCode].filter(Boolean).map(esc).join(' · ');
-    const contact = [s.ContactName && `<span>${I('users')}${esc([s.ContactName, s.ContactPhone].filter(Boolean).join(' · '))}</span>`, s.Phone && `<span>${I('msg')}${esc(s.Phone)}</span>`,
-      s.Address && `<span>${I('pin')}${esc(s.Address)}</span>`, s.Email && `<span>${esc(s.Email)}</span>`].filter(Boolean).join('');
-    const btn = (act, icon, label, ok, primary) => ok ? `<button class="btn ${primary ? 'primary' : ''}" data-h="${act}">${I(icon)} ${label}</button>` : '';
-    return `<div class="card panel"><div class="c360-head">
-      <div class="c360-avatar biz">${esc(initials(s.Name))}</div>
-      <div class="c360-id"><h1>${esc(s.Name || '')} ${s.SupplierType ? UI.tag(s.SupplierType, 'blue') : ''} ${s.Status ? UI.tag(s.Status === 'Inactive' ? 'Ngừng giao dịch' : s.Status === 'Active' ? 'Đang giao dịch' : s.Status, s.Status === 'Inactive' ? 'gray' : 'green') : ''}</h1>
-        <div class="c360-meta">${meta}</div><div class="c360-meta">${contact}</div></div>
-      ${partial ? '' : `<div class="c360-actions">${btn('edit', 'settings', 'Sửa', p.edit !== false)}${btn('price', 'plus', 'Thêm giá NL', can('scm-supplier-material', 'add'), true)}${btn('issue', 'alert', 'Ghi sự cố', can('qc-supplier-issue', 'add'))}
-        <button class="btn" data-h="more" aria-label="Thêm thao tác">⋯</button>
-        <div class="c360-more hide" data-hmore><button data-h="print">In hồ sơ</button>${p.edit !== false && s.Status !== 'Inactive' ? '<button data-h="inactive">Ngừng giao dịch</button>' : ''}</div></div>`}
-    </div></div>`;
+    // Thông tin phụ 1 dòng: mã · MST · người liên hệ · SĐT · email (bỏ ô trống; địa chỉ xem ở tab Tổng quan).
+    return APP.D360.headRow({ avatar: initials(s.Name), avatarCls: 'biz', actions: !partial,
+      title: `${esc(s.Name || '')} ${s.SupplierType ? UI.tag(s.SupplierType, 'blue') : ''} ${s.Status ? UI.tag(s.Status === 'Inactive' ? 'Ngừng giao dịch' : s.Status === 'Active' ? 'Đang giao dịch' : s.Status, s.Status === 'Inactive' ? 'gray' : 'green') : ''}`,
+      meta: [esc(s.Code || ''), s.TaxCode && esc('MST ' + s.TaxCode), s.ContactName && esc('Liên hệ: ' + [s.ContactName, s.ContactPhone].filter(Boolean).join(' – ')),
+        s.Phone && `${I('phone')} ${esc(s.Phone)}`, s.Email && esc(s.Email)],
+      buttons: [{ act: 'edit', icon: 'settings', label: 'Sửa', ok: p.edit !== false }, { act: 'price', icon: 'plus', label: 'Thêm giá NL', ok: can('scm-supplier-material', 'add'), primary: true },
+        { act: 'issue', icon: 'alert', label: 'Ghi sự cố', ok: can('qc-supplier-issue', 'add') }],
+      more: ['<button data-h="print">In hồ sơ</button>', p.edit !== false && s.Status !== 'Inactive' && '<button data-h="inactive">Ngừng giao dịch</button>'] });
   }
   const priceForm = (id, row) => UI.form('SupplierMaterial', row || null, { title: 'Giá nguyên liệu của NCC', defaults: row ? undefined : { SupplierId: id, IsPreferred: false, Status: 'Active', EffectiveFrom: today() }, onSave: () => APP.refresh() });
   function bindHead(el, d, id) {

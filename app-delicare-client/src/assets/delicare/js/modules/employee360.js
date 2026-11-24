@@ -26,8 +26,8 @@
     if (!id) { el.innerHTML = APP.header(f, '', { noNote: true }) + failBox('Chưa chọn nhân viên – mở từ danh sách nhân viên.'); return; }
     const local = Store.get('Employee', id);
     el.innerHTML = `<div class="page-head"><div><div class="breadcrumb small"><a href="javascript:void 0" data-back>${I('down')} Danh sách nhân viên</a> / <span data-e360code>${esc(local ? local.Code || '' : '')}</span></div></div></div>
-      <div data-e360head>${local ? headHtml({ employee: local }, true) : loading}</div>
-      <div class="kpis" data-e360kpi>${APP.employeeKpis(null)}</div>
+      <!-- UI-2R fix (D-80 d): 1 khung bọc dòng tên + hàng chỉ số gọn (.kpis.compact) --><div class="card d360-top"><div data-e360head>${local ? headHtml({ employee: local }, true) : loading}</div>
+      <div class="kpis compact" data-e360kpi>${APP.employeeKpis(null)}</div></div>
       <div class="tabs c360-tabs" data-e360tabs></div><div data-e360pane></div>`;
     el.querySelector('[data-back]').onclick = () => APP.go('adm-employee');
     const ov = live() ? Store.query('Employee/GetOverview', { id }) : Promise.resolve({ ok: true, data: { employee: local || {}, listAlert: [] } });
@@ -49,19 +49,17 @@
   // ---------- Phần đầu (D-68 b) ----------
   function headHtml(d, partial) {
     const e = emp(d), p = Store.perm('adm-employee'), st = EMP_ST[e.Status] || [e.Status, 'gray'];
-    const meta = [e.Code, d.positionName, d.organizationUnitName, e.HireDate && `Vào làm ${dmy(e.HireDate)}${d.tenureMonths !== undefined && d.tenureMonths !== null ? ' · ' + tenure(d.tenureMonths) : ''}`].filter(Boolean).map(esc).join(' · ');
-    const contact = [e.Phone && `<span>${I('msg')}${esc(e.Phone)}</span>`, e.Email && `<span>${esc(e.Email)}</span>`].filter(Boolean).join('');
+    // Thông tin phụ 1 dòng: mã · chức vụ · đơn vị · vào làm (thâm niên) · SĐT · email (bỏ ô trống).
+    const meta = [esc(e.Code || ''), d.positionName && esc(d.positionName), d.organizationUnitName && esc(d.organizationUnitName),
+      e.HireDate && esc(`Vào làm ${dmy(e.HireDate)}${d.tenureMonths !== undefined && d.tenureMonths !== null ? ' (' + tenure(d.tenureMonths) + ')' : ''}`),
+      e.Phone && `${I('phone')} ${esc(e.Phone)}`, e.Email && esc(e.Email)];
     const bot = partial || !live() ? '' : d.botLinked ? UI.tag('Đã liên kết bot', 'green') : UI.tag('Chưa liên kết bot', 'orange');
-    const btn = (act, icon, label, ok, primary) => ok ? `<button class="btn ${primary ? 'primary' : ''}" data-h="${act}">${I(icon)} ${label}</button>` : '';
     const more = [p.edit !== false && live() && '<button data-h="tg">Tạo mã liên kết bot</button>', can('hr-leave', 'add') && live() && '<button data-h="leave">Tạo đơn nghỉ thay</button>',
-      '<button data-h="print">In hồ sơ</button>', p.edit !== false && e.Status !== 'Resigned' && '<button data-h="resign">Cho nghỉ việc</button>'].filter(Boolean).join('');
-    return `<div class="card panel"><div class="c360-head">
-      <div class="c360-avatar ind">${esc(initials(e.FullName))}</div>
-      <div class="c360-id"><h1>${esc(e.FullName || '')} ${e.Status ? UI.tag(st[0], st[1]) : ''} ${bot}</h1>
-        <div class="c360-meta">${meta}</div><div class="c360-meta">${contact}</div></div>
-      ${partial ? '' : `<div class="c360-actions">${btn('edit', 'settings', 'Sửa', p.edit !== false)}${btn('assign', 'calendar', 'Phân ca', can('hr-shift-assign', 'add'), true)}${btn('proxy', 'check', 'Chấm công hộ', can('hr-attendance', 'add') && live())}
-        <button class="btn" data-h="more" aria-label="Thêm thao tác">⋯</button><div class="c360-more hide" data-hmore>${more}</div></div>`}
-    </div></div>`;
+      '<button data-h="print">In hồ sơ</button>', p.edit !== false && e.Status !== 'Resigned' && '<button data-h="resign">Cho nghỉ việc</button>'];
+    return APP.D360.headRow({ avatar: initials(e.FullName), avatarCls: 'ind', actions: !partial, meta, more,
+      title: `${esc(e.FullName || '')} ${e.Status ? UI.tag(st[0], st[1]) : ''} ${bot}`,
+      buttons: [{ act: 'edit', icon: 'settings', label: 'Sửa', ok: p.edit !== false }, { act: 'assign', icon: 'calendar', label: 'Phân ca', ok: can('hr-shift-assign', 'add'), primary: true },
+        { act: 'proxy', icon: 'check', label: 'Chấm công hộ', ok: can('hr-attendance', 'add') && live() }] });
   }
   const tgCode = id => Store.act('TelegramLink/CreateCodeForEmployee', { form: { EmployeeId: id } }).then(r => { if (r.ok && !r.demo && APP.showTelegramCode) APP.showTelegramCode(r.data); });
   const leaveFor = id => UI.form('LeaveRequest', null, { title: 'Tạo đơn nghỉ thay nhân viên', fields: ['EmployeeId', 'FromDate', 'ToDate', 'LeaveTypeCode', 'Reason'], defaults: { EmployeeId: id },

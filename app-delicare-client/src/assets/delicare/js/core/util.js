@@ -7,6 +7,8 @@
     esc(s) { return s === null || s === undefined ? '' : String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); },
     num(v, dg) { if (v === null || v === undefined || v === '') return ''; const n = Number(v); if (isNaN(n)) return UTIL.esc(v); return n.toLocaleString('vi-VN', { maximumFractionDigits: dg === undefined ? 2 : dg }); },
     money(v) { if (v === null || v === undefined || v === '') return ''; return Number(v).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + ' ₫'; },
+    // UI-2R fix (D-80 d): thẻ chỉ số gọn – tiền ≥ 10 triệu rút gọn "34,65 tr ₫" (≥ 1 tỷ: "1,25 tỷ ₫"), title hiện số đầy đủ. Trả HTML.
+    moneyShort(v) { if (v === null || v === undefined || v === '') return ''; const n = Number(v), a = Math.abs(n), full = UTIL.money(n); if (a < 1e7) return full; const num = (n / (a >= 1e9 ? 1e9 : 1e6)).toLocaleString('vi-VN', { maximumFractionDigits: 2 }), unit = a >= 1e9 ? 'tỷ ₫' : 'tr ₫'; return `<span title="${full}">${num}<span class="u"> ${unit}</span></span>`; },
     pct(v, dg = 1) { if (v === null || v === undefined || isNaN(v)) return '–'; return Number(v).toLocaleString('vi-VN', { maximumFractionDigits: dg }) + '%'; },
     date(v) { if (!v) return ''; const s = String(v); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : s; },
     dt(v) { if (!v) return ''; const s = String(v); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/); return m ? m[3] + '/' + m[2] + ' ' + m[4] + ':' + m[5] : UTIL.date(s); },

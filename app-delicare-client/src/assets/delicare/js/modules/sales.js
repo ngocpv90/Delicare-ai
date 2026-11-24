@@ -32,10 +32,11 @@
     return U.sum(ords, 'TotalQuantity') / 7;
   };
   // UI-1.3 (D-64): Hợp đồng hiệu lực (còn N ngày) · Suất TB/ngày (7 ngày) · Doanh thu đã đối soát (N đơn) · Khiếu nại đang mở (/ tổng · % đúng hạn).
-  APP.customerKpis = d => UI.kpi('Hợp đồng hiệu lực', d ? U.num(d.activeContractCount || 0) : '–', d && d.daysToContractEnd !== null && d.daysToContractEnd !== undefined ? `còn ${d.daysToContractEnd} ngày` : '', 'file', 'green', 'crm-contract')
+  // compact = hàng chỉ số gọn ở phần đầu màn 360 (UI-2R fix – D-80 d): tiền ≥ 10 triệu rút gọn, số phụ cùng dòng.
+  APP.customerKpis = (d, compact) => UI.kpi('Hợp đồng hiệu lực', d ? U.num(d.activeContractCount || 0) : '–', d && d.daysToContractEnd !== null && d.daysToContractEnd !== undefined ? `còn ${d.daysToContractEnd} ngày` : '', 'file', 'green', 'crm-contract')
     + UI.kpi('Suất TB/ngày (7 ngày)', d ? U.num(d.avgMealsPerDay7d || 0, 0) : '–', '', 'utensils', 'orange')
-    + UI.kpi('Doanh thu đã đối soát', d ? U.money(d.reconciledRevenue || 0) : '–', d ? `${U.num(d.reconciledOrderCount || 0)} đơn` : '', 'calc', 'blue', 'crm-reconciliation')
-    + UI.kpi('Khiếu nại đang mở', d ? U.num(d.openComplaintCount || 0) : '–', d ? `/ ${U.num(d.complaintCount || 0)}${d.complaintOnTimePct === null || d.complaintOnTimePct === undefined ? '' : ' · ' + U.num(d.complaintOnTimePct, 0) + '% đúng hạn'}` : '', 'msg', 'red', 'log-complaint');
+    + UI.kpi('Doanh thu đã đối soát', d ? (compact ? U.moneyShort : U.money)(d.reconciledRevenue || 0) : '–', d ? `${compact ? '· ' : ''}${U.num(d.reconciledOrderCount || 0)} đơn` : '', 'calc', 'blue', 'crm-reconciliation')
+    + UI.kpi('Phản ánh đang mở', d ? U.num(d.openComplaintCount || 0) : '–', d ? `/ ${U.num(d.complaintCount || 0)}${d.complaintOnTimePct === null || d.complaintOnTimePct === undefined ? '' : ' · ' + U.num(d.complaintOnTimePct, 0) + '% đúng hạn'}` : '', 'msg', 'red', 'log-complaint');
   APP.customerAvgMeals7d = ids => avgMeals7d(ids);
   APP.register('crm-customer', (el, f) => {
     const listRows = () => Store.rows('Customer').filter(c => !Store.ctx.branch || c.BranchId === Store.ctx.branch);

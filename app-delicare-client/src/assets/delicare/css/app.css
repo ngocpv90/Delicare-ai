@@ -448,3 +448,47 @@ body.dc-live #helpBtn{display:none !important}
 .ow-kv{grid-template-columns:1fr 1fr}
 @media (max-width:1200px){.ow-two{grid-template-columns:1fr}}
 @media (max-width:700px){.ow-filter{grid-template-columns:1fr}.ow-grid{min-width:960px}}
+
+/* ---------- UI-2R fix (D-80 d – ngoại lệ D-64 CHỈ cho phần đầu 3 màn 360; bảng điều hành giữ .card.kpi chuẩn) ----------
+   Mô phỏng docs/frontend-handoff/assets/detail-head-compact-mockup.html bản ②: 1 khung bọc dòng tên + hàng chỉ số. */
+.card.d360-top{padding:18px 22px;margin-bottom:20px;border-radius:16px}
+.d360-top .c360-head{align-items:center;gap:14px;margin-bottom:0}
+.d360-top .c360-avatar{width:52px;height:52px;border-radius:14px;font-size:19px}
+.d360-top .c360-id h1{font-size:20px;line-height:1.25;margin:0}
+.c360-meta.one{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;max-width:100%}
+.c360-meta.one svg.i{width:14px;height:14px;vertical-align:-2px}
+.d360-top .c360-actions{align-items:center}
+.d360-top .c360-actions>.btn{height:38px;min-height:38px;display:inline-flex;align-items:center;gap:6px}
+.c360-more .mob-only{display:none}
+.kpis.compact{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0 0;padding-top:16px;border-top:1px solid var(--line,#E6E9E4)}
+.kpis.compact .card.kpi{padding:12px 14px;gap:12px;border-radius:12px;border-color:var(--kpi-line,#E6E9E4);min-width:0}
+.kpis.compact .card.kpi:focus{outline:none}
+.kpis.compact .card.kpi,.kpis.compact .kpi-body{min-width:0;overflow:hidden}
+.kpis.compact .kpi-line{max-width:100%}
+.kpis.compact .kpi-body{align-items:stretch}
+.kpis.compact .kpi .kpi-value{overflow:hidden;text-overflow:ellipsis}
+.kpis.compact .card.kpi.link:hover,.kpis.compact .card.kpi.link:focus-visible{border-color:var(--kpi-line-hover,#B9CB97)}
+.kpis.compact .kpi-icon{width:44px;height:44px;border-radius:12px}
+.kpis.compact .kpi-icon svg.i{width:22px;height:22px}
+.kpis.compact .kpi-label{font-size:13px}
+.kpis.compact .kpi-line{flex-wrap:nowrap;margin-top:2px;gap:6px;white-space:nowrap;min-width:0}
+.kpis.compact .kpi .kpi-value{font-size:26px;letter-spacing:-.5px;line-height:1.15;overflow-wrap:normal;white-space:nowrap}
+.kpis.compact .kpi-sub{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media(max-width:1199.98px){.kpis.compact{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:767.98px){
+  .card.d360-top{padding:14px}
+  .d360-top .c360-head{align-items:flex-start}
+  .d360-top .c360-actions{width:100%}
+  .d360-top .c360-actions>.btn.sec{display:none}
+  .d360-top .c360-actions>.btn.primary{flex:1;justify-content:center}
+  .c360-more .mob-only{display:block}
+  .kpis.compact{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .kpis.compact .card.kpi{padding:10px;gap:10px}
+  .kpis.compact .kpi-icon{width:36px;height:36px;border-radius:10px}
+  .kpis.compact .kpi-icon svg.i{width:18px;height:18px}
+  .kpis.compact .kpi .kpi-value{font-size:22px}
+  .kpis.compact .kpi .kpi-value{white-space:normal;overflow:visible}
+  .kpis.compact .kpi-value .u{font-size:.68em;font-weight:700;display:inline-block;margin-left:3px}
+  .kpis.compact .kpi-line{flex-wrap:wrap;row-gap:0}
+}
+@media(max-width:420px){.kpis.compact .card.kpi{padding:10px;gap:10px}.kpis.compact .kpi-icon{width:36px;height:36px}.kpis.compact .kpi .kpi-value{font-size:22px}}
