@@ -23,6 +23,11 @@ namespace AppDelicare.Tests.Security
         [InlineData("QcInspection", "scm-gr")]
         [InlineData("UnitMeasure", "scm-reservation")]
         [InlineData("User", "qc-supplier-issue")]
+        [InlineData("Person", "int-identity")]
+        [InlineData("DeliveryOrder", "log-return-inspection")]
+        [InlineData("DeliveryStop", "log-delivery-order")]
+        [InlineData("MaterialReservation", "scm-issue")]
+        [InlineData("Person", "qc-supplier-issue")]
         public void Lookup_screens_follow_logical_relations(string controller, string screen)
             => PermissionConvention.LookupScreensOf(controller).Should().Contain(screen);
 
