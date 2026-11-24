@@ -1,6 +1,56 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: CHART-1 (D-94, D-86 a) DONE – toàn bộ biểu đồ vẽ bằng Chart.js** (nhánh `feat/CHART-1-chartjs` từ `main` sau FIX-NOW-1).
+  - **1.1 Nền:**
+    - `node_modules/chart.js/dist/chart.umd.js` (4.4.4 có sẵn) vào `scripts` của build + test trong `angular.json` (không CDN, không gói mới).
+    - Hàm chung `UI.chart(spec)` trong `core/ui.js` + giữ chữ ký `UI.bars / UI.lines / UI.donut`; thêm `UI.combo` (cột + đường), `UI.hbars` (thanh ngang), `UI.spark` (thu nhỏ không trục), vùng ngưỡng (`band`), đường mục tiêu nét đứt (`target`).
+    - Chuẩn D-94 (c):
+      - màu theo nghĩa `UI.CHART_COLORS`: Đặt / Kế hoạch xanh nhạt · Giao xanh dương · Nhận / Thực tế cam · vượt ngưỡng đỏ · mục tiêu xám nét đứt;
+      - chú giải chấm tròn góc phải, đúng thứ tự chuỗi;
+      - rê chuột hiện mọi chuỗi của cùng ngày (`mode: index`);
+      - trục số rút gọn tiếng Việt ("10 N", "1,2 tr", "3 tỷ"), số trong chú thích có dấu chấm nghìn;
+      - chiều cao cố định theo khung, co giãn theo bề rộng;
+      - không dữ liệu → "Chưa có dữ liệu";
+      - khung tự gắn / tự hủy biểu đồ qua MutationObserver (không rò).
+    - D-94 (d): `aria-label` = tiêu đề; nút **"Xem bảng số"** mở bảng số liệu.
+  - **1.2 Áp cho từng chỗ:** 17 chỗ gọi theo bảng CHART-1.2.
+    - **#1–2 Bảng điều hành:** cột Kế hoạch + đường Thực nhận; bỏ chú giải tay và mô tả còn tên bảng / cột kỹ thuật.
+    - **#3 / #10 Đối soát:** khung 2 biểu đồ cạnh nhau (≥ 1200px, nhỏ hơn xếp dọc).
+      - Trái: cột Đặt + đường Giao + đường nét đứt Nhận; chú thích có chênh Nhận − Đặt (số, %).
+      - Phải: thanh ngang 5 khâu cả kỳ; chú thích có hao hụt so với khâu trước.
+      - Bỏ khung BE3.1 trùng.
+    - **#4 Hao hụt:** theo ngày = cột dọc; theo nhóm / món / khách = thanh ngang giảm dần, nhãn đủ trong chú thích.
+    - **#5 / #7 Nhiệt độ:** đường + vùng ngưỡng min – max, điểm vượt màu đỏ.
+    - **#6 KPI:** đường + mục tiêu nét đứt; điểm không đạt (theo chiều mục tiêu) màu cam.
+    - **#8 QC:** % trục 0–100 + mục tiêu 100 %. **PROPOSED:** không có số mục tiêu tỷ lệ đạt checklist trong dữ liệu – em đặt 100 % (checklist ATTP kỳ vọng đạt hết).
+    - **#11 / #12 Khách hàng 360:**
+      - Xu hướng: đường Đặt / Giao / Nhận + vùng chênh Đặt – Nhận.
+      - Dự báo: cột.
+    - **#13 NCC 360:** cột giá trị mua theo đơn vị ₫.
+    - **#14 Nhân viên 360:** cột giờ công + đường **giờ chuẩn ca**. API `Employee/GetOverview` thêm `listDayHours[].plannedHours` = giờ ca theo phân ca của ngày; số liệu có sẵn, không thêm cột, có test.
+    - **#15 Tích hợp:** đường thu nhỏ – chỉ ở chế độ DEMO; chế độ thật màn KPI dùng #6.
+    - **#16–17 Giá thành thực tế:** vành khuyên, chú giải có %, tâm = tổng chi phí (tiền thật, không còn đơn vị "nghìn / triệu đồng" tự chia).
+    - **#18–21:** chưa có biểu đồ trong trang chi tiết UI-6 / dự báo tuần / bảng kê – các màn đó (UI-6.5 / 6.8 / 6.9) sẽ dùng `UI.chart` khi làm.
+  - **1.3 Rà sót:**
+    - `grep` `modules/*.js` không còn `<svg class="chart">` / `<polyline>` vẽ biểu đồ; còn lại chỉ biểu tượng, sơ đồ quan hệ bảng `explorer.js` (D-94 a) và chú giải sơ đồ của nó.
+    - Trang mẫu ApexCharts của theme (`src/app/plugins/**`, `elements/**`) **không có route** từ FE-0 (`app.routes.ts` chỉ còn đăng nhập + shell) – không mở được bằng đường dẫn, không cần gỡ thêm.
+  - **1.4 Kiểm tra (DB dev):**
+    - Chrome headless 1440 + 390 chụp **từng biểu đồ** của 11 màn → `docs/frontend-handoff/assets/chart-1/` (45 ảnh, tên `<màn>-<thứ tự>-<khổ>.png`).
+    - Rê chuột 4 loại:
+      - kết hợp "22/11 · Kế hoạch 1.000 suất · Thực nhận 998 suất";
+      - vùng ngưỡng "08:10 · 2,9 °C";
+      - thanh ngang "Sản xuất · 10.000 suất";
+      - vành khuyên "Nguyên vật liệu 321.100.000 ₫ (100%)".
+    - "Xem bảng số" mở 7 dòng.
+    - **Chuyển màn 20 lần:** canvas 1 → 1, biểu đồ đang sống 1 → 1, heap 26 → 24 MB (không rò).
+    - `dotnet test` **633 / 633**; build FE đạt; admin mở **100 / 100** mục menu: 0 lỗi JS / 5xx / trang trắng / chữ cấm.
+    - **Dữ liệu mẫu đã tạo (ghi rõ):**
+      - KPI ngày tính lại 17 → 23/11 + KPI tháng 10 bằng nút Tính lại chỉ số (số thật từ dữ liệu dev);
+      - 6 ngày phân ca + vào / ra ca **[DEMO]** cho 1 nhân viên lượt full-flow DEMOSTEF4 (biểu đồ giờ công).
+  - **Chưa làm / còn rủi ro:**
+    - KPI tháng chỉ có số của 1 tháng có dữ liệu → biểu đồ xu hướng tháng chưa hiện (cần ≥ 2 điểm) – đúng điều kiện cũ, sẽ tự hiện khi có tháng sau.
+    - Màn Đối soát vẫn dùng bố cục cũ (bảng danh sách) – bố cục mới + xác nhận hàng loạt là UI-6.8.
 - **2026-11-24: FIX-NOW-1 (D-92, D-93) DONE – chạy thật DB dev + sửa menu Mua hàng / Kho + kiểm điểm + rà lại task đã báo DONE** (nhánh `fix/FIX-NOW-1` từ `main`).
   - **1.1 Kiểm điểm:** `docs/claude/RETRO_2026-11-24.md`, gồm:
     - vì sao MENU-5 báo DONE mà anh vẫn thấy menu cũ: script chỉ DryRun, `catalog.js` không sửa, chỉ kiểm bằng admin;
