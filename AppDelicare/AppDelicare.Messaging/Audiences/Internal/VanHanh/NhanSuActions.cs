@@ -4,6 +4,7 @@ using AppDelicare.Messaging.Callback;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Conversations;
 using AppDelicare.Messaging.Core;
+using AppDelicare.Messaging.Experience;
 using AppDelicare.Messaging.Presentation;
 
 namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
@@ -13,7 +14,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     /// ca còn mở, giờ bắt đầu đã qua ≥ 10′, chưa chấm, không nghỉ phép) → [✍️ Chấm hộ] (chỉ khi có mục <c>#/hr-attendance</c>; lý do gõ tay bắt buộc –
     /// <c>AttendanceEvent/CheckIn</c> EmployeeId + SourceChannel PROXY, api kiểm quyền Thêm). Callback <c>hr:px:&lt;EmployeeId N&gt;</c>.
     /// </summary>
-    public sealed class NhanSuActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time)
+    public sealed class NhanSuActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, ReasonCatalog reasons)
         : WebActions(web, tokens, sender, replies), IBotActionProvider
     {
         public const string Kind = CallbackData.Kinds.Hr;
@@ -44,7 +45,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await SayAsync(ctx, Problem(r), ct);
                 return;
             }
-            var absent = new List<(Guid Id, string Name, string Line)>();
+            var absent = new List<(Guid Id, string Name, string Line, DateTime Start)>();
             foreach (var e in GiaoVanActions.Arr(r.Data, "employees"))
             {
                 if (!e.TryGetProperty("cells", out var cells) || cells.ValueKind != JsonValueKind.Object || !cells.TryGetProperty(key, out var c) || c.ValueKind != JsonValueKind.Object)
@@ -56,24 +57,41 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 if (open && started && !Flag(c, "hasAttendance") && !Flag(c, "onLeave") && Guid.TryParse(S(e, "id"), out var id))
                 {
                     string name = S(e, "fullName") ?? S(e, "code") ?? "Nhân viên";
-                    absent.Add((id, name, $"• {name} · {S(c, "shiftName")} {start:HH:mm} · trễ {(int)(now - start).TotalMinutes}′{(S(e, "organizationUnitName") is { } u ? " · " + u : "")}"));
+                    absent.Add((id, name, $"• {name} · {S(c, "shiftName")} {start:HH:mm} · trễ {(int)(now - start).TotalMinutes}′{(S(e, "organizationUnitName") is { } u ? " · " + u : "")}", start));
                 }
             }
             bool canProxy = ctx.Identity.IsAdmin || ctx.Identity.Menus.Contains(AttendanceMenu, StringComparer.OrdinalIgnoreCase);
-            await SendAsync(ctx, new NeutralMessage
-            {
-                Title = $"👥 Chưa vào ca{(myUnit ? " – tổ tôi" : "")} {now:HH:mm} ({absent.Count})",
-                Lines = absent.Count == 0 ? ["Mọi người có ca đã vào ca đủ."] : [.. absent.Take(25).Select(a => a.Line)],
-                Buttons = canProxy ? [.. absent.Take(10).Select(a => new NeutralButton("✍️ " + a.Name, CallbackData.Build(Kind, "px", a.Id)))] : [],
-            }, ct);
+            // BOT-UX-2 (mục 10, 11): trễ lâu nhất lên đầu, 6 người / trang (dòng + nút cùng trang).
+            var m = new NeutralMessage { Title = $"👥 Chưa vào ca{(myUnit ? " – tổ tôi" : "")} {now:HH:mm} ({absent.Count})", Lines = absent.Count == 0 ? ["Mọi người có ca đã vào ca đủ."] : [] };
+            ListPager.Fill(m, ctx, myUnit ? "bep_absent" : "hr_absent", [.. absent.OrderBy(a => a.Start)], a => a.Line, a => canProxy ? new NeutralButton("✍️ " + a.Name, CallbackData.Build(Kind, "px", a.Id)) : null);
+            await ShowAsync(ctx, m, ct);
         }
 
         public async Task HandleAsync(BotActionContext ctx, CallbackData data, CancellationToken ct)
         {
-            if (data.Action == "px" && Guid.TryParseExact(data.Id ?? string.Empty, "N", out Guid id))
+            string[] parts = (data.Id ?? string.Empty).Split('.', 2);
+            if (!Guid.TryParseExact(parts[0], "N", out Guid id))
             {
-                await AskAsync(ctx, "✍️ Chấm hộ vào ca – lý do (bắt buộc, vd. quên điện thoại):", ReplyProxy, id.ToString("N"), ct);
+                await SayAsync(ctx, "Nút đã hết hạn.", ct);
                 return;
+            }
+            switch (data.Action)
+            {
+                case "px":
+                    // BOT-UX-2 (mục 7): lý do chấm hộ = nút lý do hay gặp (Messaging:Reasons:hr-proxy) + [✏️ Khác…].
+                    await ShowAsync(ctx, new NeutralMessage
+                    {
+                        Title = "✍️ Chấm hộ vào ca – lý do",
+                        Lines = ["Chọn lý do (bắt buộc):"],
+                        Buttons = reasons.Buttons(ReasonCatalog.ProxyCheckIn, Kind, "pr", "pxx", id.ToString("N")),
+                    }, ct);
+                    return;
+                case "pr" when reasons.At(ReasonCatalog.ProxyCheckIn, parts.Length > 1 ? parts[1] : null) is { } reason && await TokenAsync(ctx, ct) is { } token:
+                    await ProxyAsync(ctx, id, token, reason, ct);
+                    return;
+                case "pxx":
+                    await AskAsync(ctx, "✍️ Chấm hộ vào ca – lý do (bắt buộc, vd. quên điện thoại):", ReplyProxy, id.ToString("N"), ct);
+                    return;
             }
             await SayAsync(ctx, "Nút đã hết hạn.", ct);
         }
@@ -90,6 +108,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await AskAsync(ctx, "Lý do quá ngắn – gõ lại:", ReplyProxy, pending.Key, ct);
                 return;
             }
+            await ProxyAsync(ctx, id, token, reason, ct);
+        }
+
+        private async Task ProxyAsync(BotActionContext ctx, Guid id, string token, string reason, CancellationToken ct)
+        {
             var r = await Web.PostFormAsUserAsync<JsonElement>("api/AttendanceEvent/CheckIn",
                 [new("EmployeeId", id.ToString()), new("SourceChannel", "PROXY"), new("Note", "Chấm hộ qua Telegram: " + reason)], token, ct);
             if (!r.IsOk)

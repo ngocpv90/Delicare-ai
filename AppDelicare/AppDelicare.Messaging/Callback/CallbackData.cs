@@ -33,6 +33,8 @@ namespace AppDelicare.Messaging.Callback
             public const string Op = "op";
             /// <summary>BOT-UX-1: điều hướng bảng điều khiển – Quay lại / Menu / Đóng / Tiếp tục.</summary>
             public const string Nav = "nav";
+            /// <summary>BOT-UX-2: trang / bộ lọc danh sách (<c>pg:&lt;mã chức năng&gt;:&lt;trang&gt;[.&lt;lọc&gt;]</c>) – chạy lại chức năng chỉ đọc.</summary>
+            public const string Page = "pg";
         }
 
         public static string Build(string kind, string action, string? id = null)

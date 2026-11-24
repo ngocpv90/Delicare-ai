@@ -128,7 +128,9 @@ namespace AppDelicare.Tests.Messaging
             string id = Late.ToString("N");
             Buttons(list.ReplyMarkup).Should().Equal("hr:px:" + id);
             await h.SendAsync(Tap("hr:px:" + id));
-            await h.SendAsync(Text("Quên điện thoại", replyTo: LastSentId(h)));
+            // BOT-UX-2 (mục 7): lý do chấm hộ = nút lý do hay gặp – bấm "Quên điện thoại" (không gõ).
+            Buttons(h.Sender.Edits.Last().Markup).Should().Contain(["hr:pr:" + id + ".0", "hr:pxx:" + id]);
+            await h.SendAsync(Tap("hr:pr:" + id + ".0"));
             var call = h.Web.Calls.Last(x => x.Path == "api/AttendanceEvent/CheckIn");
             call.Form["EmployeeId"].Should().Be(Late.ToString());
             call.Form["SourceChannel"].Should().Be("PROXY");

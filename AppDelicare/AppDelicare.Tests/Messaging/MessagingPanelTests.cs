@@ -121,8 +121,9 @@ namespace AppDelicare.Tests.Messaging
             await using var h = Host();
             await h.SendAsync(Text("/cho").Json);
             await h.SendAsync(Tap("apv:no:" + L1.ToString("N"), Panel(h)));
+            await h.SendAsync(Tap("apv:nx:" + L1.ToString("N"), Panel(h)));
             var ask = h.Sender.Log.Last();
-            ask.Message.ReplyMarkup.Should().BeOfType<TgForceReply>("lý do từ chối – bắt buộc gõ → ForceReply");
+            ask.Message.ReplyMarkup.Should().BeOfType<TgForceReply>("lý do khác – gõ tay → ForceReply");
 
             await h.SendAsync(Tap("nav:back", Panel(h)));
             h.Sender.Deleted.Select(d => d.MessageId).Should().Contain(ask.Id, "hủy nháp → xóa câu hỏi");
@@ -138,6 +139,7 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Text("/cho").Json);
             string panel = Panel(h);
             await h.SendAsync(Tap("apv:no:" + L1.ToString("N"), panel));
+            await h.SendAsync(Tap("apv:nx:" + L1.ToString("N"), panel));
             var ask = h.Sender.Log.Last();
             var answer = Text("Trùng lịch kiểm kê", replyTo: long.Parse(ask.Id));
             await h.SendAsync(answer.Json);

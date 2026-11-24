@@ -62,6 +62,42 @@ namespace AppDelicare.Messaging.Experience
             return message;
         }
 
+        /// <summary>Nhóm hàng của màn số (<see cref="NeutralButton.Row"/>).</summary>
+        public const string StepRow = "num-step";
+        public const string QuickRow = "num-quick";
+
+        /// <summary>
+        /// BOT-UX-2 (mục 6): màn nhập số không gõ tay – giá trị điền sẵn (kế hoạch / lần trước) hiện trên panel "👉 78 °C", hàng [−10] [−1] [+1] [+10], hàng chọn nhanh,
+        /// [✅ Xác nhận 78 °C]. Giá trị nằm trong callback (số nguyên): đổi giá trị = <c>&lt;loại&gt;:&lt;màn&gt;:&lt;khóa&gt;.&lt;giá trị&gt;</c> (vẽ lại cùng màn, KHÔNG gọi api ghi),
+        /// xác nhận = <c>&lt;loại&gt;:&lt;xác nhận&gt;:&lt;khóa&gt;.&lt;giá trị&gt;</c> (chức năng ghi). Nháp chỉ nằm trên panel – ◀ Quay lại mở lại màn trước = hủy nháp.
+        /// </summary>
+        public static void Number(NeutralMessage m, string kind, string screenAction, string confirmAction, string key, decimal value, string unit,
+            IEnumerable<decimal>? quick = null, decimal min = 0, decimal max = 99999, string confirmLabel = "✅ Xác nhận")
+        {
+            int lo = (int)Math.Ceiling(min), hi = (int)Math.Floor(max);
+            int v = Math.Clamp((int)Math.Round(value, MidpointRounding.AwayFromZero), lo, hi);
+            string Id(int x) => (string.IsNullOrEmpty(key) ? string.Empty : key + ".") + x.ToString(CultureInfo.InvariantCulture);
+            string u = string.IsNullOrEmpty(unit) ? string.Empty : " " + unit;
+            m.Lines.Add($"👉 {v}{u}");
+            foreach (int s in new[] { -10, -1, 1, 10 })
+            {
+                int nv = Math.Clamp(v + s, lo, hi);
+                m.Buttons.Add(new NeutralButton((s > 0 ? "+" : "−") + Math.Abs(s), CallbackData.Build(kind, screenAction, Id(nv)), Row: StepRow));
+            }
+            foreach (int q in (quick ?? []).Select(x => (int)Math.Round(x, MidpointRounding.AwayFromZero)).Where(x => x >= lo && x <= hi && x != v).Distinct().Take(NeutralMessage.MaxRowWidth))
+            {
+                m.Buttons.Add(new NeutralButton(q.ToString(CultureInfo.InvariantCulture), CallbackData.Build(kind, screenAction, Id(q)), Row: QuickRow));
+            }
+            m.Buttons.Add(new NeutralButton($"{confirmLabel} {v}{u}", CallbackData.Build(kind, confirmAction, Id(v))));
+        }
+
+        /// <summary>Giá trị số cuối của khóa callback "&lt;id&gt;.&lt;…&gt;.&lt;giá trị&gt;" (null = không có / không đọc được).</summary>
+        public static decimal? Value(string? raw)
+            => decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) ? v : null;
+
+        /// <summary>BOT-UX-2 (mục 9): dòng kết quả đầu thẻ sau thao tác ghi: "✅ … · HH:mm" (giờ Việt Nam).</summary>
+        public static string Done(string text, TimeProvider time) => "✅ " + text + " · " + Core.VnTime.Now(time).ToString("HH:mm", CultureInfo.InvariantCulture);
+
         private static string Fmt(decimal v) => v.ToString("0.##", CultureInfo.InvariantCulture);
     }
 }

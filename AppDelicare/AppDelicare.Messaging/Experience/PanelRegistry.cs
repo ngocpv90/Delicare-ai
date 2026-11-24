@@ -13,10 +13,15 @@ namespace AppDelicare.Messaging.Experience
         public int RecentCount { get; set; } = 4;
     }
 
-    /// <summary>1 bước trong ngăn xếp điều hướng (breadcrumb): Root (màn chọn phân hệ) → Module → Action.</summary>
-    public sealed record PanelEntry(PanelLevel Level, string? Id, string Label);
+    /// <summary>
+    /// 1 bước trong ngăn xếp điều hướng (breadcrumb): Root (màn chọn phân hệ) → Module → Action → Screen (BOT-UX-2: mỗi màn xem bên trong chức năng – thẻ, chọn giá trị).
+    /// <paramref name="Replay"/> = callback CHỈ XEM để mở lại màn (Screen; Action khi đang ở trang / bộ lọc khác của danh sách – <c>pg:*</c>);
+    /// <paramref name="Key"/> = định danh màn (callback bỏ phần giá trị – bấm −1 / +1 trên cùng màn không đẩy thêm); <paramref name="Detail"/> = thẻ chức năng tự mở
+    /// (vd. chỉ có 1 chuyến → mở thẳng thẻ chuyến) – hiện trên đường dẫn, Quay lại bỏ qua.
+    /// </summary>
+    public sealed record PanelEntry(PanelLevel Level, string? Id, string Label, string? Replay = null, string? Key = null, string? Detail = null);
 
-    public enum PanelLevel { Root, Module, Action }
+    public enum PanelLevel { Root, Module, Action, Screen }
 
     /// <summary>Trạng thái panel của 1 chat (khóa bot + chat). Chỉ ở bộ nhớ – khởi động lại thì panel cũ coi như tin thường.</summary>
     public sealed class PanelState
@@ -25,8 +30,14 @@ namespace AppDelicare.Messaging.Experience
         public string? MessageId { get; set; }
         public DateTime CreatedUtc { get; set; }
         public List<PanelEntry> Stack { get; } = [];
-        /// <summary>Số màn con đã đi bên trong chức năng (nút trong chức năng) – Quay lại từ màn con → về màn đầu của chức năng.</summary>
-        public int Depth { get; set; }
+        /// <summary>
+        /// BOT-UX-2: panel đang hiện ĐÚNG màn đầu ngăn xếp. false = đang hiện màn tạm (câu hỏi gõ tay, báo lỗi, phiếu kết quả) → Quay lại mở lại màn đầu ngăn xếp
+        /// (không bỏ màn nào).
+        /// </summary>
+        public bool TopShown { get; set; } = true;
+        /// <summary>BOT-UX-2 (mục 4): tin mang bàn phím dưới 3 phím đã gửi trong lần chạy này của container (gửi lại thì xóa tin cũ).</summary>
+        public string? KeyboardMessageId { get; set; }
+        public bool KeyboardShown { get; set; }
         /// <summary>Tin hỏi ForceReply đang chờ trả lời (nháp đang nhập) – Quay lại / Menu / Đóng thì xóa và hủy nháp.</summary>
         public List<string> DraftQuestions { get; } = [];
         /// <summary>Các panel cũ (đã thay) – bấm nút trên đó → "Menu này đã cũ".</summary>
@@ -97,6 +108,12 @@ namespace AppDelicare.Messaging.Experience
         public bool Rendered { get; set; }
         /// <summary>Nội dung chức năng gửi trong phiên (nhiều tin → ghép).</summary>
         public List<(string Html, List<List<TgInlineButton>> Rows)> Parts { get; } = [];
+        /// <summary>BOT-UX-2: màn chức năng tự khai báo vừa vẽ (thẻ mẻ / chuyến / điểm…) – callback xem để mở lại + khóa màn. Xem <see cref="Screens.Show"/>.</summary>
+        public (string Replay, string Key)? Screen { get; set; }
+        /// <summary>BOT-UX-2: callback đang xử lý (nút vừa bấm, hoặc callback xem đang được phát lại khi ◀ Quay lại) – null = lệnh / chữ / chạy lại chức năng.</summary>
+        public string? Callback { get; set; }
+        /// <summary>BOT-UX-2: lần xử lý này mở chức năng (menu, ⭐, lệnh, Tiếp tục) – thẻ chức năng tự mở thì gộp vào bước chức năng.</summary>
+        public bool EnteredAction { get; set; }
 
         public static PanelSession Begin(string bot, string chatId, PanelState state, PanelMode mode)
         {

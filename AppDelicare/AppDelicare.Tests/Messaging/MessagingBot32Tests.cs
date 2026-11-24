@@ -80,7 +80,9 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Text("/xeden"));
             Buttons(h.Sender.Sent.Last().Message.ReplyMarkup).Should().Contain(b => b.CallbackData == "rcn:rv:" + Stop.ToString("N"));
             await h.SendAsync(Tap("rcn:rv:" + Stop.ToString("N")));
-            Buttons(h.Sender.Edits.Last().Markup).First().Text.Should().Be("✅ Đủ 100");
+            // BOT-UX-2 (mục 6): màn số điền sẵn số kế hoạch – [✅ Ký nhận 100 suất] 1 chạm, chỉnh bằng −10 −1 +1 +10 / hàng chọn nhanh.
+            Buttons(h.Sender.Edits.Last().Markup).Should().Contain(b => b.Text == "✅ Ký nhận 100 suất" && b.CallbackData == "rcn:rq:" + Stop.ToString("N") + ".100")
+                .And.Contain(b => b.CallbackData == "rcn:rvn:" + Stop.ToString("N") + ".98");
             await h.SendAsync(Tap("rcn:rq:" + Stop.ToString("N") + ".98"));
             var form = Last(h, "api/DeliveryStop/Deliver").Form;
             form["Id"].Should().Be(Stop.ToString());
@@ -135,11 +137,16 @@ namespace AppDelicare.Tests.Messaging
             Buttons(h.Sender.Edits.Last().Markup).Select(b => b.CallbackData).Should().Contain(["bat:pk:" + n, "bat:wx:" + n, "bat:ex:" + n]);
             await h.SendAsync(Tap("bat:pk:" + n));
             Last(h, "api/ProductionBatch/Pack").Form["Id"].Should().Be(Batch.ToString());
+            // BOT-UX-2 (mục 6, 7): số suất = màn số (−10 −1 +1 +10, ✅ Xác nhận), lý do = nút + [✏️ Khác…] – không gõ số.
             await h.SendAsync(Tap("bat:wx:" + n));
-            await h.SendAsync(Text("5", replyTo: LastSentId(h)));
+            Buttons(h.Sender.Edits.Last().Markup).Select(b => b.CallbackData).Should().Contain(["bat:wxn:" + n + ".11", "bat:wxn:" + n + ".5", "bat:wq:" + n + ".1"]);
+            await h.SendAsync(Tap("bat:wxn:" + n + ".5"));
+            await h.SendAsync(Tap("bat:wq:" + n + ".5"));
             Last(h, "api/ProductionBatch/RecordWaste").Form["QuantityMeals"].Should().Be("5");
             await h.SendAsync(Tap("bat:ex:" + n));
-            await h.SendAsync(Text("20", replyTo: LastSentId(h)));
+            await h.SendAsync(Tap("bat:exq:" + n + ".20"));
+            h.Web.Calls.Should().NotContain(c => c.Path == "api/ProductionBatch/CreateExtra", "mới chọn số – chưa có lý do");
+            await h.SendAsync(Tap("bat:exx:" + n + ".20"));
             await h.SendAsync(Text("Thiếu 20 suất khách A", replyTo: LastSentId(h)));
             var extra = Last(h, "api/ProductionBatch/CreateExtra").Form;
             extra["Quantity"].Should().Be("20");
@@ -174,7 +181,8 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("op:dt:0"));
             string meal = Today.AddDays(2).ToString("yyyyMMdd");
             await h.SendAsync(Tap("op:cd:" + meal));
-            await h.SendAsync(Text("Khách đề nghị", replyTo: LastSentId(h)));
+            // BOT-UX-2 (mục 7): lý do đổi món = nút lý do hay gặp (bấm, không gõ).
+            await h.SendAsync(Tap("op:chr:k.0"));
             var change = Last(h, "api/MenuChangeRequest/Create").Form;
             change["OriginalDishId"].Should().Be(Dish1.ToString());
             change["RequestedDishId"].Should().Be(Dish2.ToString());
@@ -188,6 +196,7 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("op:cp:0"));
             h.Sender.Sent.Last().Message.Text.Should().Contain("còn bước chưa đạt: Sấy", "máy chủ chặn Đạt khi chưa ghi đủ bước – bot báo rõ");
             await h.SendAsync(Tap("op:cr:0"));
+            await h.SendAsync(Tap("op:crx:0"));
             await h.SendAsync(Text("Khay còn bẩn", replyTo: LastSentId(h)));
             var reject = Last(h, "api/CleaningBatch/Complete").Form;
             reject["QcResult"].Should().Be("REJECT");

@@ -4,6 +4,7 @@ using AppDelicare.Messaging.Callback;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Conversations;
 using AppDelicare.Messaging.Core;
+using AppDelicare.Messaging.Experience;
 using AppDelicare.Messaging.Presentation;
 
 namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
@@ -43,19 +44,22 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             var stops = GiaoVanActions.Arr(r.Data, "listRoute")
                 .SelectMany(route => GiaoVanActions.Arr(route, "listStop").Select(s => (Route: route, Stop: s)))
-                .OrderBy(x => S(x.Stop, "plannedArrival")).ToList();
+                .OrderBy(x => S(x.Stop, "stopStatus") is "Delivered" or "Failed" ? 1 : 0).ThenBy(x => S(x.Stop, "plannedArrival")).ToList();
             // BOT-3.2 (D-72): ✅ Nhận hàng / ký nhận tại điểm – điểm chưa giao xong có nút (quyền ghi kiểm ở api DeliveryStop/Deliver).
-            var open = stops.Where(x => S(x.Stop, "stopStatus") is not ("Delivered" or "Failed") && Guid.TryParse(S(x.Stop, "id"), out _)).Take(10).ToList();
-            await SendAsync(ctx, new NeutralMessage
+            // BOT-UX-2 (mục 10, 11): điểm chưa nhận lên đầu, 6 điểm / trang.
+            var m = new NeutralMessage
             {
                 Title = $"🚚 Xe đến hôm nay {VnTime.Today(time):dd/MM} ({stops.Count} điểm)",
-                Lines = stops.Count == 0 ? ["Chưa có chuyến giao nào hôm nay."] : [.. stops.Take(20).Select(x => Line(x.Route, x.Stop))],
-                Buttons = [.. open.Select(x => new NeutralButton($"✅ Nhận {S(x.Stop, "customerName") ?? S(x.Stop, "locationName")}", CallbackData.Build(Kind, "rv", Guid.Parse(S(x.Stop, "id")!))))],
-            }, ct);
+                Lines = stops.Count == 0 ? ["Chưa có chuyến giao nào hôm nay."] : [],
+            };
+            ListPager.Fill(m, ctx, "dp_arrivals", stops, x => Line(x.Route, x.Stop),
+                x => S(x.Stop, "stopStatus") is not ("Delivered" or "Failed") && Guid.TryParse(S(x.Stop, "id"), out var sid)
+                    ? new NeutralButton($"✅ Nhận {S(x.Stop, "customerName") ?? S(x.Stop, "locationName")}", CallbackData.Build(Kind, "rv", sid)) : null);
+            await ShowAsync(ctx, m, ct);
         }
 
-        /// <summary>BOT-3.2: chọn số suất nhận (điền sẵn số kế hoạch của điểm) → DeliveryStop/Deliver, người nhận = người dùng bot.</summary>
-        private async Task AskReceiveAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
+        /// <summary>BOT-3.2 / BOT-UX-2: số suất nhận – màn số điền sẵn số kế hoạch của điểm → DeliveryStop/Deliver, người nhận = người dùng bot.</summary>
+        private async Task AskReceiveAsync(BotActionContext ctx, Guid stopId, string token, string? value, CancellationToken ct)
         {
             var r = await Web.GetAsUserAsync<JsonElement>("api/DeliveryRoute/GetBoard?DeliveryDate=" + Today, token, ct);
             var stop = GiaoVanActions.Arr(r.Data, "listRoute").SelectMany(route => GiaoVanActions.Arr(route, "listStop"))
@@ -66,14 +70,14 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 return;
             }
             decimal planned = Dec(stop, "plannedMealQty");
-            var presets = new[] { planned, Math.Floor(planned * 0.98m), Math.Floor(planned * 0.95m) }.Where(q => q > 0).Distinct().ToList();
-            await ShowAsync(ctx, new NeutralMessage
+            var m = new NeutralMessage
             {
                 Title = $"✅ Nhận hàng – {S(stop, "customerName") ?? S(stop, "locationName")}",
                 Lines = [$"Kế hoạch {planned:0.##} suất · {S(stop, "statusName")}", "Số suất điểm đã nhận:"],
-                Buttons = [.. presets.Select(q => new NeutralButton((q == planned ? "✅ Đủ " : "") + q.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "rq", $"{stopId:N}.{q.ToString("0.##", CultureInfo.InvariantCulture)}"))),
-                    new NeutralButton("Khác…", CallbackData.Build(Kind, "rx", stopId))],
-            }, ct);
+            };
+            InputWidgets.Number(m, Kind, "rvn", "rq", stopId.ToString("N"), InputWidgets.Value(value) ?? planned, "suất",
+                [planned, Math.Floor(planned * 0.98m), Math.Floor(planned * 0.95m)], 0, 99999, "✅ Ký nhận");
+            await ShowAsync(ctx, m, ct);
         }
 
         private async Task ReceiveAsync(BotActionContext ctx, Guid stopId, string token, string quantity, CancellationToken ct)
@@ -81,6 +85,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             string receiver = string.IsNullOrWhiteSpace(ctx.Identity.FullName) ? "Điểm phát" : ctx.Identity.FullName!;
             var r = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryStop/Deliver",
                 [new("Id", stopId.ToString()), new("DeliveredQuantity", quantity), new("AcceptedQuantity", quantity), new("ReceiverName", receiver[..Math.Min(receiver.Length, 100)]), new("Remark", "Ký nhận tại điểm (Telegram)")], token, ct);
+            CallbackAnswer.Set(r.IsOk ? $"✅ Đã ký nhận {quantity} suất" : "⚠️ " + Problem(r));
             await SayAsync(ctx, r.IsOk ? $"✅ {r.ResponseMessage ?? "Đã ký nhận"} – {quantity} suất, người nhận {receiver}." : "⚠️ " + Problem(r), ct);
         }
 
@@ -97,13 +102,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 return;
             }
             var orders = (r.ListData ?? []).Where(o => Guid.TryParse(S(o, "orderId"), out _)).ToList();
-            await ShowAsync(ctx, new NeutralMessage
-            {
-                Title = $"🧮 Chờ đối soát hôm nay ({orders.Count})",
-                Lines = orders.Count == 0 ? ["Không có đơn nào chờ đối soát."]
-                    : [.. orders.Take(12).Select(o => $"• {S(o, "orderNumber")} {S(o, "customerName")} · giao {N(o, "deliveredQuantity")} · nhận {N(o, "podAcceptedQuantity")}{(S(o, "reconciliationStatus") is { } st ? " · " + st : "")}")],
-                Buttons = [.. orders.Take(12).Select(o => new NeutralButton($"🧮 {S(o, "orderNumber")}", CallbackData.Build(Kind, "o", Guid.Parse(S(o, "orderId")!))))],
-            }, ct);
+            var m = new NeutralMessage { Title = $"🧮 Chờ đối soát hôm nay ({orders.Count})", Lines = orders.Count == 0 ? ["Không có đơn nào chờ đối soát."] : [] };
+            ListPager.Fill(m, ctx, "dp_reconcile", orders,
+                o => $"• {S(o, "orderNumber")} {S(o, "customerName")} · giao {N(o, "deliveredQuantity")} · nhận {N(o, "podAcceptedQuantity")}{(S(o, "reconciliationStatus") is { } st ? " · " + st : "")}",
+                o => new NeutralButton($"🧮 {S(o, "orderNumber")}", CallbackData.Build(Kind, "o", Guid.Parse(S(o, "orderId")!))));
+            await ShowAsync(ctx, m, ct);
         }
 
         public async Task HandleAsync(BotActionContext ctx, CallbackData data, CancellationToken ct)
@@ -113,22 +116,24 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 return;
             }
+            string? value = parts.Length > 1 ? parts[1] : null;
             switch (data.Action)
             {
-                case "rv":
-                    await AskReceiveAsync(ctx, orderId, token, ct);   // id ở đây là DeliveryStop
+                case "rv" or "rvn":
+                    await AskReceiveAsync(ctx, orderId, token, value, ct);   // id ở đây là DeliveryStop
                     break;
-                case "rq" when parts.Length > 1:
-                    await ReceiveAsync(ctx, orderId, token, parts[1], ct);
+                case "rq" when value != null:
+                    await ReceiveAsync(ctx, orderId, token, value, ct);
                     break;
                 case "rx":
+                    // Nút cũ (trước BOT-UX-2) – vẫn nhận gõ tay.
                     await AskAsync(ctx, "Nhập số suất điểm đã nhận:", ReplyReceive, orderId.ToString("N"), ct);
                     break;
-                case "o":
-                    await AskServedAsync(ctx, orderId, token, ct);
+                case "o" or "on":
+                    await AskServedAsync(ctx, orderId, token, value, ct);
                     break;
-                case "q" when parts.Length > 1:
-                    await ReconcileAsync(ctx, orderId, token, parts[1], ct);
+                case "q" when value != null:
+                    await ReconcileAsync(ctx, orderId, token, value, ct);
                     break;
                 case "qx":
                     await AskAsync(ctx, "Nhập số suất thực tế đã phục vụ:", ReplyServed, orderId.ToString("N"), ct);
@@ -159,7 +164,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             await ReconcileAsync(ctx, orderId, token, v.ToString("0.##", CultureInfo.InvariantCulture), ct);
         }
 
-        private async Task AskServedAsync(BotActionContext ctx, Guid orderId, string token, CancellationToken ct)
+        /// <summary>BOT-UX-2 (mục 6): số suất thực tế đã phục vụ – màn số điền sẵn số khách nhận khi bàn giao (POD), không có thì số đã giao.</summary>
+        private async Task AskServedAsync(BotActionContext ctx, Guid orderId, string token, string? value, CancellationToken ct)
         {
             var r = await Web.GetAsUserAsync<JsonElement>("api/OrderReconciliation/GetPendingOrders?MealDate=" + Today, token, ct);
             var o = (r.ListData ?? []).FirstOrDefault(x => Guid.TryParse(S(x, "orderId"), out var g) && g == orderId);
@@ -168,17 +174,16 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await SayAsync(ctx, r.IsOk ? "Đơn không còn chờ đối soát." : Problem(r), ct);
                 return;
             }
-            // Điền sẵn: số khách nhận khi bàn giao (POD), không có thì số đã giao.
             decimal accepted = Dec(o, "podAcceptedQuantity"), delivered = Dec(o, "deliveredQuantity");
             decimal known = accepted > 0 ? accepted : delivered;
-            var presets = new[] { known, Math.Floor(known * 0.98m), Math.Floor(known * 0.95m) }.Where(q => q > 0).Distinct().ToList();
-            await ShowAsync(ctx, new NeutralMessage
+            var m = new NeutralMessage
             {
                 Title = $"🧮 {S(o, "orderNumber")} – {S(o, "customerName")}",
                 Lines = [$"Đặt {N(o, "orderedQuantity")} · giao {delivered:0.##} · khách nhận {accepted:0.##}", "Số suất thực tế đã phục vụ:"],
-                Buttons = [.. presets.Select(q => new NeutralButton((q == known ? "✅ Đúng " : "") + q.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "q", $"{orderId:N}.{q.ToString("0.##", CultureInfo.InvariantCulture)}"))),
-                    new NeutralButton("Khác…", CallbackData.Build(Kind, "qx", orderId))],
-            }, ct);
+            };
+            InputWidgets.Number(m, Kind, "on", "q", orderId.ToString("N"), InputWidgets.Value(value) ?? known, "suất",
+                [known, Math.Floor(known * 0.98m), Math.Floor(known * 0.95m)], 0, 99999, "✅ Đối soát");
+            await ShowAsync(ctx, m, ct);
         }
 
         private async Task ReconcileAsync(BotActionContext ctx, Guid orderId, string token, string served, CancellationToken ct)

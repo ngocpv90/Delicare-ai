@@ -49,6 +49,29 @@ namespace AppDelicare.Messaging.Audiences.Internal
 
         public List<BotAction> Available(string bot, BotIdentityModel identity) => [.. _actions.Where(a => a.IsAllowed(bot, identity))];
 
+        /// <summary>BOT-UX-2: chức năng đã nằm sẵn trên bàn phím dưới (⚡ Ca của tôi, 📍 Chấm công) – không lặp lại trong 📂 menu.</summary>
+        public static readonly IReadOnlySet<string> KeyboardCodes = new HashSet<string>(StringComparer.Ordinal) { "my_shift", "check_in" };
+
+        /// <summary>BOT-UX-2: chức năng hiện trong 📂 menu (bỏ chức năng của bàn phím dưới) – đếm để quyết định màn đầu phẳng (≤ 6).</summary>
+        public List<BotAction> MenuAvailable(string bot, BotIdentityModel identity) => [.. Available(bot, identity).Where(a => !KeyboardCodes.Contains(a.Code))];
+
+        /// <summary>
+        /// BOT-UX-2 (mục 14): phân hệ của người dùng theo thứ tự hiển thị – phân hệ của vai trò chính (nhiều chức năng cần mục quyền <c>identity.Menus</c> nhất) xếp đầu,
+        /// còn lại theo thứ tự chuẩn. Admin toàn quyền giữ thứ tự chuẩn.
+        /// </summary>
+        public List<string> ModulesFor(string bot, BotIdentityModel identity)
+        {
+            var menu = MenuAvailable(bot, identity);
+            var modules = menu.Select(a => a.Module).Distinct().ToList();
+            if (identity.IsAdmin)
+            {
+                return modules;
+            }
+            int Weight(string m) => menu.Count(a => a.Module == m && a.MenuMetaLink != null && identity.Menus.Contains(a.MenuMetaLink, StringComparer.OrdinalIgnoreCase));
+            string? main = modules.Select((m, i) => (m, i, w: Weight(m))).Where(x => x.w > 0).OrderByDescending(x => x.w).ThenBy(x => x.i).Select(x => x.m).FirstOrDefault();
+            return main == null ? modules : [main, .. modules.Where(m => m != main)];
+        }
+
         public BotAction? ByCode(string? code) => _actions.FirstOrDefault(a => a.Code == code);
 
         public BotAction? ByLabel(string bot, BotIdentityModel identity, string? text)

@@ -2,6 +2,7 @@ using System.Text.Json;
 using AppDelicare.Messaging.Channels.Telegram.Models;
 using AppDelicare.Messaging.Core;
 using AppDelicare.Messaging.Core.Contracts;
+using AppDelicare.Messaging.Experience;
 using FluentAssertions;
 
 namespace AppDelicare.Tests.Messaging
@@ -54,7 +55,10 @@ namespace AppDelicare.Tests.Messaging
         {
             await using var h = WebUserHost();
             await h.SendAsync(Text("/start CHAMCONG"));
-            h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Which.Keyboard[0][0].RequestLocation.Should().BeTrue();
+            // BOT-UX-2 (mục 5): vẫn đúng 3 phím, phím 📍 Chấm công xin vị trí (không đổi thành bàn phím 1 nút).
+            var kb = h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgReplyKeyboard>().Subject;
+            kb.Keyboard.SelectMany(r => r).Select(b => b.Text).Should().Equal(KeyboardBuilder.MyShift, KeyboardBuilder.Functions, KeyboardBuilder.CheckIn);
+            kb.Keyboard[0][2].RequestLocation.Should().BeTrue();
             h.Web.Routes["api/ShiftAssignment/GetMine"] = (_, _) => (200, null, null, "[{\"workDate\":\"2031-06-03T00:00:00\",\"shiftName\":\"Ca sáng\",\"plannedStart\":\"2031-06-03T06:00:00\",\"plannedEnd\":\"2031-06-03T14:00:00\"}]");
             await h.SendAsync(Text("/lichca"));
             Last(h, "api/ShiftAssignment/GetMine").Token.Should().Be("jwt-user");
@@ -72,9 +76,15 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("lv:t:ANNUAL"));
             h.Sender.Edits.Last().Text.Should().Contain("Nghỉ từ ngày nào");
             await h.SendAsync(Tap("lv:d:1"));
+            // BOT-UX-2 (mục 6): "Khác…" số ngày = màn số (không gõ); chọn 2 ngày.
+            await h.SendAsync(Tap("lv:nn:5"));
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["lv:nn:4", "lv:nn:6", "lv:n:5"]);
             await h.SendAsync(Tap("lv:n:2"));
-            h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgForceReply>();
+            // BOT-UX-2 (mục 7): lý do = nút lý do hay gặp + [✏️ Khác…].
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["lv:r:k.1", "lv:rx:k"]);
             h.Web.Calls.Should().NotContain(c => c.Path == "api/LeaveRequest/Create", "chưa có lý do");
+            await h.SendAsync(Tap("lv:rx:k"));
+            h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgForceReply>();
             await h.SendAsync(Text("Đi khám bệnh", replyTo: LastSentId(h)));
             var call = Last(h, "api/LeaveRequest/Create");
             DateTime tomorrow = VnTime.Today(TimeProvider.System).AddDays(1);
@@ -97,12 +107,12 @@ namespace AppDelicare.Tests.Messaging
             h.Sender.Sent.Last().Message.Text.Should().Contain("Ngày chưa đúng");
             await h.SendAsync(Text("25/12", replyTo: LastSentId(h)));
             await h.SendAsync(Tap("lv:n:1"));
-            await h.SendAsync(Text("Sốt", replyTo: LastSentId(h)));
+            await h.SendAsync(Tap("lv:r:k.1"));
             var call = h.Api.EmployeeCalls.Should().ContainSingle(c => c.Action == "EmployeeCreateLeave").Subject;
             using var doc = JsonDocument.Parse(call.Json);
             doc.RootElement.GetProperty("fromDate").GetString().Should().EndWith("-12-25");
             doc.RootElement.GetProperty("leaveTypeCode").GetString().Should().Be("SICK");
-            doc.RootElement.GetProperty("reason").GetString().Should().Be("Sốt");
+            doc.RootElement.GetProperty("reason").GetString().Should().Be("Ốm / khám bệnh", "bấm lý do có sẵn");
         }
 
         private static MessagingTestHost KitchenHost(int writeCode = 200)
@@ -131,32 +141,50 @@ namespace AppDelicare.Tests.Messaging
             await using var h = KitchenHost();
             await h.SendAsync(Text("🍳 Mẻ cần làm"));
             var list = h.Sender.Sent.Last().Message;
-            list.Text.Should().Contain("Mẻ cần làm hôm nay (2)");
+            // BOT-UX-2 (mục 11): mặc định ca hiện tại (mẻ đang nấu), [📋 Xem tất cả (2)] mở cả mẻ kế hoạch ngày khác giờ.
+            list.Text.Should().Contain("Mẻ cần làm hôm nay (1 · ca hiện tại)");
             string cook = Cooking.ToString("N"), plan = Planned.ToString("N");
+            ((TgInlineKeyboard)list.ReplyMarkup!).InlineKeyboard.SelectMany(r => r).Should().Contain(b => b.Text == "📋 Xem tất cả (2)" && b.CallbackData == "pg:bep_batches:0.all");
+            await h.SendAsync(Tap("pg:bep_batches:0.all"));
+            h.Sender.Edits.Last().Text.Should().Contain("Mẻ cần làm hôm nay (2)");
             await h.SendAsync(Tap("bat:view:" + cook));
             var card = h.Sender.Edits.Last();
-            ((TgInlineKeyboard)card.Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["bat:t:" + cook, "bat:fin:" + cook, "bat:smp:" + cook]);
-            await h.SendAsync(Tap("bat:t:" + cook));
-            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain("bat:tv:" + cook + ".72");
+            // BOT-UX-2: nhiệt độ lõi bấm 1 chạm ngay trên thẻ mẻ + "🌡 Nhiệt độ khác" (màn số).
+            ((TgInlineKeyboard)card.Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["bat:tv:" + cook + ".72", "bat:tn:" + cook, "bat:fin:" + cook, "bat:smp:" + cook]);
             await h.SendAsync(Tap("bat:tv:" + cook + ".72"));
             Last(h, "api/ProductionBatch/RecordCoreTemperature").Form.Should().Contain(new KeyValuePair<string, string>("TemperatureC", "72")).And.Contain(new KeyValuePair<string, string>("Id", Cooking.ToString()));
-            h.Sender.Edits.Last().Text.Should().Contain("Đã ghi RecordCoreTemperature");
+            h.Sender.Edits.Last().Text.Should().StartWith("✅ Đã ghi nhiệt độ lõi 72 °C ·", "dòng kết quả ở đầu thẻ");
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain("bat:fin:" + cook, "ghi xong vẫn giữ nút bước kế tiếp");
+            // Màn số: điền sẵn 75 (chưa đo), −1 → 74, ✅ Ghi 74 °C.
+            await h.SendAsync(Tap("bat:tn:" + cook));
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["bat:tn:" + cook + ".74", "bat:tv:" + cook + ".75"]);
+            int writes = h.Web.Calls.Count(c => c.Method == "POST");
+            await h.SendAsync(Tap("bat:tn:" + cook + ".74"));
+            h.Web.Calls.Count(c => c.Method == "POST").Should().Be(writes, "chỉnh số trên màn số không ghi gì");
+            await h.SendAsync(Tap("bat:tv:" + cook + ".74"));
+            Last(h, "api/ProductionBatch/RecordCoreTemperature").Form["TemperatureC"].Should().Be("74");
+            // Nút cũ (gõ tay) vẫn nhận.
             await h.SendAsync(Tap("bat:tx:" + cook));
             await h.SendAsync(Text("73,5", replyTo: LastSentId(h)));
             Last(h, "api/ProductionBatch/RecordCoreTemperature").Form["TemperatureC"].Should().Be("73.5");
 
-            // UG-1 C-09: dưới ngưỡng → máy chủ đòi hành động khắc phục → bot hỏi, người dùng gõ → ghi lại kèm CorrectiveAction.
+            // UG-1 C-09 / BOT-UX-2 (mục 7): dưới ngưỡng → máy chủ đòi hành động khắc phục → bấm hành động hay gặp (không gõ) → ghi lại kèm CorrectiveAction.
             h.Web.Routes["api/ProductionBatch/RecordCoreTemperature"] = (_, form) => form.ContainsKey("CorrectiveAction")
                 ? (200, "Đã ghi nhiệt độ (dưới ngưỡng)", "{}", null)
                 : (400, "Nhiệt độ lõi 65 °C dưới ngưỡng 70 °C – phải ghi hành động khắc phục", null, null);
-            await h.SendAsync(Tap("bat:tx:" + cook));
-            await h.SendAsync(Text("65", replyTo: LastSentId(h)));
-            h.Sender.Sent.Last().Message.Text.Should().Contain("Nhập hành động khắc phục");
-            await h.SendAsync(Text("Gia nhiệt lại 10 phút", replyTo: LastSentId(h)));
-            Last(h, "api/ProductionBatch/RecordCoreTemperature").Form.Should().Contain(new KeyValuePair<string, string>("CorrectiveAction", "Gia nhiệt lại 10 phút"))
+            await h.SendAsync(Tap("bat:tv:" + cook + ".65"));
+            h.Sender.Edits.Last().Text.Should().Contain("hành động khắc phục");
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["bat:fixr:" + cook + ".65.0", "bat:fixx:" + cook + ".65"]);
+            await h.SendAsync(Tap("bat:fixr:" + cook + ".65.0"));
+            Last(h, "api/ProductionBatch/RecordCoreTemperature").Form.Should().Contain(new KeyValuePair<string, string>("CorrectiveAction", "Gia nhiệt lại 10 phút, đo lại"))
                 .And.Contain(new KeyValuePair<string, string>("TemperatureC", "65"));
+            // [✏️ Khác…] → gõ tay.
+            await h.SendAsync(Tap("bat:fixx:" + cook + ".65"));
+            await h.SendAsync(Text("Gia nhiệt lại 15 phút", replyTo: LastSentId(h)));
+            Last(h, "api/ProductionBatch/RecordCoreTemperature").Form["CorrectiveAction"].Should().Be("Gia nhiệt lại 15 phút");
+
             await h.SendAsync(Tap("bat:fin:" + cook));
-            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).First().Text.Should().Be("✅ Đúng 100", "điền sẵn số kế hoạch");
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Should().Contain(b => b.Text == "✅ Xác nhận 100 suất" && b.CallbackData == "bat:fq:" + cook + ".100", "điền sẵn số kế hoạch");
             await h.SendAsync(Tap("bat:fq:" + cook + ".100"));
             Last(h, "api/ProductionBatch/Finish").Form["ActualQuantity"].Should().Be("100");
             // UG-1 C-07: xong mẻ trên bot ghi luôn sản lượng (ProductionOutput) – không còn kẹt "Chưa ghi sản lượng mẻ" khi cho Đạt.

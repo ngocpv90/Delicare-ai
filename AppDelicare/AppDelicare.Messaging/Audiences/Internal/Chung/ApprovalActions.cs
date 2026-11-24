@@ -27,7 +27,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
     /// Thiếu quyền / token hạn chế (PendingCode) → api 403 → bot báo rõ.
     /// </summary>
     public sealed class ApprovalActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, UndoWindow undo, ReplyContextStore replies,
-        TaskCard cards, IOptionsMonitor<MessagingHostOptions> options, TimeProvider time)
+        TaskCard cards, IOptionsMonitor<MessagingHostOptions> options, TimeProvider time, ReasonCatalog reasons)
     {
         public const string RejectFlow = "apv-reject";
         private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -57,19 +57,26 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 await SayAsync(ctx, "Không có yêu cầu nào chờ bạn duyệt.", ct);
                 return;
             }
-            var message = new NeutralMessage
-            {
-                Title = $"⏳ Chờ tôi duyệt ({items.Count})",
-                // APR-1.7 (D-81 e): cùng khuôn tóm tắt với web – loại · tóm tắt · 🔴 quá hạn / ⚠ cảnh báo / 🟢 bình thường.
-                Lines = [.. items.Take(10).Select(i => $"{Mark(i)} {i.Summary?.TypeName ?? i.StepName} {i.Summary?.DocumentNo ?? i.RequestNo} – {i.Summary?.Title ?? i.Title}{(i.RequestedByName != null ? " · " + i.RequestedByName : "")}")],
-                Buttons = [.. items.Take(8).Select(i => new NeutralButton("📄 " + (i.Summary?.DocumentNo ?? i.RequestNo ?? "Xem"), CallbackData.Build(CallbackData.Kinds.Approval, "view", i.Id)))],
-            };
+            var message = new NeutralMessage { Title = $"⏳ Chờ tôi duyệt ({items.Count})" };
+            // APR-1.7 (D-81 e): cùng khuôn tóm tắt với web – loại · tóm tắt · 🔴 quá hạn / ⚠ cảnh báo / 🟢 bình thường.
+            // BOT-UX-2 (mục 10, 11): quá hạn → có cảnh báo → bình thường; 6 mục / trang.
+            var sorted = items.OrderBy(i => i.IsOverdue ? 0 : i.Summary is { Flags.Count: > 0 } ? 1 : 2).ToList();
+            ListPager.Fill(message, ctx, "approvals", sorted,
+                i => $"{Mark(i)} {i.Summary?.TypeName ?? i.StepName} {i.Summary?.DocumentNo ?? i.RequestNo} – {i.Summary?.Title ?? i.Title}{(i.RequestedByName != null ? " · " + i.RequestedByName : "")}",
+                i => new NeutralButton("📄 " + (i.Summary?.DocumentNo ?? i.RequestNo ?? "Xem"), CallbackData.Build(CallbackData.Kinds.Approval, "view", i.Id)));
             int low = items.Count(i => IsLowRisk(i.BusinessType) && (i.Summary == null || i.Summary.Flags.Count == 0));
             if (low >= 2)
             {
                 message.Buttons.Add(new NeutralButton($"✅ Duyệt nhanh {low} mục rủi ro thấp", CallbackData.Build(CallbackData.Kinds.Approval, "bulk")));
             }
-            await BotReply.SendAsync(sender, ctx.Bot, ctx.Event.ChatId, message, ct: ct);
+            if (ctx.Event.Kind == IncomingKind.Callback)
+            {
+                await EditAsync(ctx, message, ct);
+            }
+            else
+            {
+                await BotReply.SendAsync(sender, ctx.Bot, ctx.Event.ChatId, message, ct: ct);
+            }
         }
 
         // ------------------------------------------------------------ nút apv:* / undo:apv:*
@@ -92,7 +99,14 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                     await DecideAsync(ctx, id.Value, true, null, ctx.Event.MessageId?.ToString(), ct);
                     break;
                 case "no" when id != null:
+                    await RejectReasonsAsync(ctx, id.Value, ct);
+                    break;
+                case "nx" when id != null:
                     await AskReasonAsync(ctx, id.Value, ct);
+                    break;
+                case "nr" when (data.Id ?? string.Empty).Split('.') is [var rid, var ri] && Guid.TryParseExact(rid, "N", out var rejectId)
+                    && reasons.At(ReasonCatalog.ApprovalReject, ri) is { } reason:
+                    await DecideAsync(ctx, rejectId, false, reason, ctx.Event.MessageId?.ToString(), ct);
                     break;
                 case "bulk":
                     await BulkPreviewAsync(ctx, ct);
@@ -247,7 +261,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                     Buttons =
                     [
                         new NeutralButton("✅ Xác nhận duyệt", CallbackData.Build(CallbackData.Kinds.Approval, "cf", id)),
-                        new NeutralButton("⬅️ Quay lại", CallbackData.Build(CallbackData.Kinds.Approval, "view", id)),
+                        .. Screens.Back("⬅️ Quay lại", CallbackData.Build(CallbackData.Kinds.Approval, "view", id)),
                     ],
                 }, ct);
                 return;
@@ -264,6 +278,19 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 Buttons = [new NeutralButton("↩️ Hoàn tác", CallbackData.Build(CallbackData.Kinds.Undo, "apv", id))],
             }, ct);
         }
+
+        /// <summary>
+        /// BOT-UX-2 (mục 7): ❌ Từ chối → chọn lý do hay gặp (<c>Messaging:Reasons:apv-reject</c>) – bấm lý do = từ chối (bước 2); [✏️ Khác…] mới hỏi gõ tay.
+        /// Sửa ngay trên thẻ duyệt (thẻ việc hoặc panel), kết quả thay thẻ như cũ.
+        /// </summary>
+        private Task RejectReasonsAsync(BotActionContext ctx, Guid id, CancellationToken ct)
+            => EditAsync(ctx, new NeutralMessage
+            {
+                Title = "❌ Từ chối – chọn lý do",
+                Lines = ["Bấm lý do để từ chối (người gửi sẽ thấy lý do):"],
+                Buttons = [.. reasons.Buttons(ReasonCatalog.ApprovalReject, CallbackData.Kinds.Approval, "nr", "nx", id.ToString("N")),
+                    .. Screens.Back("⬅️ Quay lại", CallbackData.Build(CallbackData.Kinds.Approval, "view", id))],
+            }, ct);
 
         private async Task AskReasonAsync(BotActionContext ctx, Guid id, CancellationToken ct)
         {
@@ -339,7 +366,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
                 Buttons =
                 [
                     new NeutralButton($"✅ Xác nhận duyệt {low.Count}", CallbackData.Build(CallbackData.Kinds.Approval, "bulkok")),
-                    new NeutralButton("⬅️ Hủy", CallbackData.Build(CallbackData.Kinds.Menu, "act", "approvals")),
+                    .. Screens.Back("⬅️ Hủy", CallbackData.Build(CallbackData.Kinds.Menu, "act", "approvals")),
                 ],
             }, ct);
         }

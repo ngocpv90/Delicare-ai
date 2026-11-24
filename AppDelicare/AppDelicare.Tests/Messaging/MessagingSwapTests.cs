@@ -73,6 +73,9 @@ namespace AppDelicare.Tests.Messaging
             ((TgInlineKeyboard)cands.Markup!).InlineKeyboard.SelectMany(r => r).First().Text.Should().Contain("Lan").And.Contain("Ca chiều 14:00");
             Buttons(cands.Markup).Should().Equal("swp:x:0", "swp:g");
             await h.SendAsync(Tap("swp:x:0"));
+            // BOT-UX-2 (mục 7): lý do = nút lý do hay gặp + [✏️ Khác…] (gõ tay).
+            Buttons(h.Sender.Edits.Last().Markup).Should().Contain(["swp:r:k.0", "swp:rx:k"]);
+            await h.SendAsync(Tap("swp:rx:k"));
             h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgForceReply>();
             await h.SendAsync(Text("ok", replyTo: LastSentId(h)));
             h.Sender.Sent.Last().Message.Text.Should().Contain("Lý do quá ngắn");
@@ -95,7 +98,8 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("swp:g"));
             Buttons(h.Sender.Edits.Last().Markup).Should().Equal("swp:p:0", "swp:p:1");
             await h.SendAsync(Tap("swp:p:1"));
-            await h.SendAsync(Text("Nhường cho Mai", replyTo: LastSentId(h)));
+            await h.SendAsync(Tap("swp:r:k.1"));
+            h.Web.Calls.Last(c => c.Path == "api/ShiftSwapRequest/Create").Form["Reason"].Should().Be("[Telegram] Ốm / khám bệnh", "bấm lý do có sẵn – không gõ tay");
             var call = h.Web.Calls.Last(c => c.Path == "api/ShiftSwapRequest/Create");
             call.Form["TargetEmployeeId"].Should().Be(Colleague2.ToString());
             call.Form.Should().NotContainKey("ProposedShiftAssignmentId");
