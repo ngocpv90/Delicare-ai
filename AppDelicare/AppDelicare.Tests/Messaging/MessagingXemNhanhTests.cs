@@ -93,7 +93,7 @@ namespace AppDelicare.Tests.Messaging
             h.Web.Routes["api/Job/GetAll"] = (_, _) => (200, null, null, JsonSerializer.Serialize(new[] { new { jobCode = "MRP", jobName = "Tính MRP", enabled = true, lastRun = new { runStatus = "Failed", startedAt = "2031-06-02T20:30:00" } } }));
             h.Web.Routes["api/OutboundMessage/GetAll"] = (_, _) => (200, null, null, "[]");
             await h.SendAsync(Text("/hethong"));
-            h.Sender.Sent.Last().Message.Text.Should().Contain("🔴 Tính MRP · Failed");
+            h.Sender.Sent.Last().Message.Text.Should().Contain("🔴 Tính MRP · lỗi", "UI-6.10 (D-88): bot không in mã trạng thái tiếng Anh");
 
             await using var plain = Host(false);
             await plain.SendAsync(Text("/hethong"));
