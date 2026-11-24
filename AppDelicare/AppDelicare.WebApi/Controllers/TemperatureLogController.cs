@@ -117,5 +117,51 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.31 (D-112): bảng "Hôm nay" theo khu bảo quản (quyền Xem qc-temperature).</summary>
+        [HttpGet("GetDayBoard")]
+        public async Task<IActionResult> GetDayBoard(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _service.GetDayBoard(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDayBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.31: ghi một lượt nhiều khu (quyền Thêm như Record).</summary>
+        [Security.Permission("qc-temperature", PermissionAction.Add)]
+        [HttpPost("RecordRound")]
+        public async Task<IActionResult> RecordRound([FromBody] AppDelicare.Model.Model.TemperatureRoundRequest request)
+        {
+            try
+            {
+                return Ok(await _service.RecordRound(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RecordRound: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.31: Sổ nhiệt độ – chỉ xem.</summary>
+        [HttpGet("GetBook")]
+        public async Task<IActionResult> GetBook([FromQuery] AppDelicare.Model.Model.TemperatureBookRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetBook(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBook: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

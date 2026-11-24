@@ -104,11 +104,21 @@ Màn có 3 tab: **Hôm nay** · **Sổ kiểm tra** · **Tỷ lệ đạt**.
 
 **Tỷ lệ đạt:** biểu đồ tỷ lệ đạt 30 ngày theo bộ (kết quả mới nhất mỗi tiêu chí trong ngày / ca) + bảng **tiêu chí hay Không đạt nhất** (số lần, lần gần nhất).
 
-### 4.4 Nhật ký nhiệt độ – `qc-temperature`
-1. Chip **Khu vực bảo quản** → biểu đồ 48 giờ (dải ngưỡng tối thiểu – tối đa, điểm đỏ = ngoài ngưỡng) + số lần vượt.
-2. Khối **Chuỗi nhiệt độ khu vực kho** (chọn khu ở ô chọn) – gồm cả số đo cảm biến IoT.
-3. **Ghi nhiệt độ** → chọn Khu vực bảo quản **hoặc** Mẻ sản xuất, **Loại đo*** (Kho / tủ bảo quản, Giữ nóng thành phẩm, Làm lạnh nhanh, Khu chia suất / đóng gói, Nhiệt độ phòng), **Nhiệt độ °C***, Đo lúc, Thiết bị đo, **Hành động khắc phục** (bắt buộc khi ngoài ngưỡng) → **Ghi nhiệt độ**.
-4. Sổ chỉ ghi thêm – không sửa / xóa. Nhiệt độ lõi mẻ và nhiệt độ giao ghi ở màn mẻ / giao hàng (*Nhiệt độ … ghi qua …*).
+### 4.4 Nhật ký nhiệt độ – `qc-temperature` (UI-6.31)
+3 tab: **Hôm nay** · **Sổ nhiệt độ** · **Biểu đồ**.
+
+**Hôm nay:** ngày ◀ ▶ + nhãn **ca đang chạy** + nút to **Ghi một lượt**. 4 thẻ: Khu đang ngoài ngưỡng · **Đến giờ chưa đo (ca này)** · **Cảm biến mất tín hiệu** · Lần ngoài ngưỡng 7 ngày (đã khắc phục / còn mở).
+- Khối **Cần xử lý ngay**: khu ngoài ngưỡng chưa khắc phục → **Đo lại & ghi khắc phục**; khu đến giờ chưa đo / cảm biến mất tín hiệu → **Đo tay ngay**.
+- Mỗi khu một thẻ: nhiệt độ mới nhất, ngưỡng, giờ đo, nhãn **Cảm biến** / **Ghi tay**, đường 24 giờ (dải xanh = ngưỡng), trạng thái (Đạt · Ngoài ngưỡng chưa khắc phục · Đến giờ chưa đo · Cảm biến mất tín hiệu). Bấm thẻ → tab Biểu đồ của khu.
+- **Lịch đo:** khu không có cảm biến (hoặc cảm biến mất tín hiệu) phải đo **ít nhất 1 lần mỗi ca**; quá **60 phút đầu ca** chưa đo → "Đến giờ chưa đo" + bot báo trưởng ca, QA (1 tin / ca). Cảm biến quá **30 phút** không gửi số → "Cảm biến mất tín hiệu" + bot báo (1 lần / khoảng mất) – đo tay khu đó tới khi có lại.
+
+**Ghi một lượt:** mỗi khu ghi tay (và khu cảm biến đang mất tín hiệu) một dòng – ngưỡng, lần trước, ô nhiệt độ to; nhập là tô xanh / đỏ ngay; ngoài ngưỡng → **hành động khắc phục bắt buộc**; để trống = chưa đo khu đó; **Lưu cả lượt** (một lần). Loại đo tự theo loại khu, giờ đo = lúc lưu. Ngoài ngưỡng → bot báo trưởng ca + QA.
+- **Đo lại & ghi khắc phục:** ghi **lần đo mới** kèm khắc phục (không sửa lần cũ). Lần ngoài ngưỡng được coi **đã khắc phục** khi có khắc phục hoặc có lần đo sau trong ngưỡng của cùng khu.
+
+**Sổ nhiệt độ (chỉ xem):** gom theo ngày (số lần đo / ngoài ngưỡng, nút **In ngày**); cột Giờ · Khu vực / đối tượng · Loại đo · Nhiệt độ · Ngưỡng · Kết quả · Người đo / nguồn ("Cảm biến <mã>") · Khắc phục. Ô tìm + kỳ (Hôm nay · 7 ngày · Tháng này · Chọn khoảng) + lọc khu, nguồn, **Chỉ ngoài ngưỡng**, **Gồm lõi mẻ / giao hàng / nhận hàng** (mặc định tắt; bật thì có link mở mẻ / lô). **In sổ nhiệt độ** + **Xuất Excel**. Không Sửa / Xóa.
+
+**Biểu đồ:** một biểu đồ cho khu đã chọn – **48 giờ / 7 ngày / 30 ngày**, dải ngưỡng, điểm ngoài ngưỡng tô đỏ.
+- Nhiệt độ lõi mẻ, giao hàng, nhận hàng ghi ở màn Mẻ nấu / Chuyến giao hàng / Nhận hàng (*Nhiệt độ «…» ghi ở màn …*).
 
 ### 4.5 QC thành phẩm (mẻ) – `prod-batch`
 Bấm thẻ mẻ trên **bảng điều độ** (ngày × ca × dây chuyền) → ngăn chi tiết:

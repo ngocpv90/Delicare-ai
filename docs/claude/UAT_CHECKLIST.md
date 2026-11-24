@@ -485,3 +485,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bản ghi mới không gắn trạm bếp cố định (trạm theo mẻ hoặc trống).
 - [ ] Sổ kiểm tra: gom theo ngày, lọc kỳ / bộ / ca / kết quả / chỉ lỗi trọng yếu, nhãn "Kiểm lại", In sổ kiểm thực bước 2, Xuất Excel; không Sửa / Xóa. Tỷ lệ đạt: biểu đồ 30 ngày + tiêu chí hay Không đạt.
 - [ ] Quyền: uat.qa, uat.ops-kit ghi được; uat.coo chỉ xem (ô không bấm được); uat.ops-wh / uat.sal-sales không vào được. Bot gửi "⏰ Kiểm tra ATTP quá hạn" 1 tin / ca.
+
+## UI-6.31 – Nhật ký nhiệt độ (D-112)
+- [ ] Hôm nay: ◀ ▶, nhãn ca đang chạy, 4 thẻ, khối "Cần xử lý ngay", thẻ mỗi khu (Cảm biến / Ghi tay, đường 24 giờ, màu trạng thái); bấm thẻ → Biểu đồ của khu.
+- [ ] Ghi một lượt: nhập là tô xanh / đỏ; ngoài ngưỡng bắt buộc khắc phục; lưu một lần; ngoài ngưỡng → bot báo trưởng ca + QA.
+- [ ] Đo lại & ghi khắc phục ghi lần đo mới; lần ngoài ngưỡng cũ chuyển "đã khắc phục".
+- [ ] Khu ghi tay quá 60′ đầu ca chưa đo → "Đến giờ chưa đo" + 1 tin bot / ca; cảm biến im quá 30′ → "Cảm biến mất tín hiệu", có số đo lại → hết.
+- [ ] Sổ nhiệt độ: gom theo ngày, lọc khu / nguồn / chỉ ngoài ngưỡng / gồm lõi – giao – nhận, In sổ, Xuất Excel, không Sửa / Xóa. Biểu đồ: chỉ một biểu đồ, 48 giờ / 7 / 30 ngày.
+- [ ] Quyền: uat.qa, uat.ops-kit, uat.coo vào được; uat.ops-wh, uat.sal-sales không (theo ma trận).

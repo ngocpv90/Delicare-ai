@@ -21,9 +21,12 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     /// <summary>TemperatureLog – sổ chỉ ghi thêm (T08). BE2.1: ghi nhiệt độ tự do (Record), CRUD Insert tính ngưỡng ở server; CORE / DELIVERY / RECEIVING qua nghiệp vụ.</summary>
-    public class TemperatureLogService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, IOptions<ReferenceListsOptions> referenceLists) : ITemperatureLogService
+    public partial class TemperatureLogService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, IOptions<ReferenceListsOptions> referenceLists
+        , IOptionsMonitor<IotOptions> iot, INotificationService notifications) : ITemperatureLogService
     {
+        private readonly IOptionsMonitor<IotOptions> _iot = iot; // UI-6.31: thiết bị cảm biến theo khu
+        private readonly INotificationService _notifications = notifications; // UI-6.31: ghi tay ngoài ngưỡng → bot
         private readonly IClock _clock = clock;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly BusinessRulesOptions _rules = rules.Value;
@@ -156,10 +159,10 @@ namespace AppDelicare.Services.Implement
         /// <summary>Loại đo phải ghi qua nghiệp vụ riêng (gắn kiểm soát ATTP chặn đạt QC / xuất phát / nhận hàng).</summary>
         private static readonly Dictionary<string, string> ViaAction = new(StringComparer.OrdinalIgnoreCase)
         {
-            [ProductionCode.CoreMeasurement] = "ProductionBatch/RecordCoreTemperature",
-            ["CORE_TEMP"] = "ProductionBatch/RecordCoreTemperature",
-            [DeliveryCode.DeliveryMeasurement] = "DeliveryRoute/RecordTemperature (xuất phát / bàn giao)",
-            ["RECEIVING"] = "QcInspection (nhận hàng – GoodsReceipt)",
+            [ProductionCode.CoreMeasurement] = "màn Mẻ nấu (nhiệt độ lõi)",
+            ["CORE_TEMP"] = "màn Mẻ nấu (nhiệt độ lõi)",
+            [DeliveryCode.DeliveryMeasurement] = "màn Chuyến giao hàng (xuất phát / bàn giao)",
+            ["RECEIVING"] = "màn Nhận hàng (nhiệt độ nhận)",
         };
 
         private const string HotHolding = "HOT_HOLDING";
@@ -182,12 +185,12 @@ namespace AppDelicare.Services.Implement
             string type = (request.MeasurementType ?? string.Empty).Trim().ToUpperInvariant();
             if (ViaAction.TryGetValue(type, out string? via))
             {
-                return (null, string.Format(ConstantHelper.Message.TempTypeViaAction, type, via));
+                return (null, string.Format(ConstantHelper.Message.TempTypeViaAction, MeasurementName(type), via));
             }
             if (_referenceLists.Lists.TryGetValue("TemperatureMeasurementType", out var allowed) && allowed.Count != 0
                 && !allowed.Any(a => string.Equals(a.Code, type, StringComparison.OrdinalIgnoreCase)))
             {
-                return (null, $"Loại đo {type} không có trong danh mục TemperatureMeasurementType ({string.Join(", ", allowed.Select(a => a.Code))})");
+                return (null, $"Loại đo «{type}» không có trong danh mục loại đo nhiệt độ ({string.Join(", ", allowed.Select(a => a.Label))})");
             }
             if (request.TemperatureC is not { } temperature)
             {
@@ -292,6 +295,10 @@ namespace AppDelicare.Services.Implement
                     return Result<TemperatureLogRecordModel>.Fail(error!);
                 }
                 _unitOfWork.CommitTransaction();
+                if (!string.Equals(log.SourceChannel, IotTemperatureService.SourceIot, StringComparison.OrdinalIgnoreCase))
+                {
+                    await NotifyManualOutAsync([log]); // UI-6.31 (D-112): ghi tay ngoài ngưỡng → tin bot như IoT.
+                }
                 return Result<TemperatureLogRecordModel>.Success(new TemperatureLogRecordModel { Log = log, ListWarning = warnings }, ConstantHelper.Message.SaveSuccess);
             }
             catch (Exception ex)

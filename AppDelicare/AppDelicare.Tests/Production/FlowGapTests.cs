@@ -141,9 +141,9 @@ namespace AppDelicare.Tests.Production
             using var c = _factory.CreateAuthorizedClient();
 
             (await c.PostFormAsync("/api/TemperatureLog/Record", ("MeasurementType", "STORAGE"), ("TemperatureC", 3m))).Fail("ít nhất 1 đối tượng đo");
-            (await c.PostFormAsync("/api/TemperatureLog/Record", ("StorageZoneId", zone), ("MeasurementType", "CORE"), ("TemperatureC", 80m))).Fail("ProductionBatch/RecordCoreTemperature");
-            (await c.PostFormAsync("/api/TemperatureLog/Record", ("StorageZoneId", zone), ("MeasurementType", "DELIVERY"), ("TemperatureC", 80m))).Fail("DeliveryRoute/RecordTemperature");
-            (await c.PostFormAsync("/api/TemperatureLog/Record", ("StorageZoneId", zone), ("MeasurementType", "XYZ"), ("TemperatureC", 3m))).Fail("TemperatureMeasurementType");
+            (await c.PostFormAsync("/api/TemperatureLog/Record", ("StorageZoneId", zone), ("MeasurementType", "CORE"), ("TemperatureC", 80m))).Fail("màn Mẻ nấu");
+            (await c.PostFormAsync("/api/TemperatureLog/Record", ("StorageZoneId", zone), ("MeasurementType", "DELIVERY"), ("TemperatureC", 80m))).Fail("màn Chuyến giao hàng");
+            (await c.PostFormAsync("/api/TemperatureLog/Record", ("StorageZoneId", zone), ("MeasurementType", "XYZ"), ("TemperatureC", 3m))).Fail("danh mục loại đo nhiệt độ");
 
             // Vị trí → ngưỡng của khu (0…5 °C): 3 °C đạt; 7 °C không đạt, thiếu khắc phục → vẫn lưu + cảnh báo.
             var ok = (await c.PostFormAsync("/api/TemperatureLog/Record", ("StorageLocationId", location), ("MeasurementType", "storage"), ("TemperatureC", 3m), ("DeviceCode", "NK-1"))).Ok();
