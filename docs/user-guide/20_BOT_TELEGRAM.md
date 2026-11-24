@@ -25,11 +25,15 @@ Quyền bấm nút = quyền vào màn tương ứng trên web: nút chỉ hiệ
 
 Bàn phím dưới cố định (mọi người): **[⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công]**. Danh sách lệnh `/` chỉ có 4 lệnh: `/menu`, `/ca`, `/chamcong`, `/help` – các lệnh khác trong bảng dưới gõ vẫn chạy.
 
-**Bảng điều khiển (chat riêng):** bot chỉ giữ **1 tin có nút** – mọi màn mở ra đều hiện trong chính tin đó, dòng đầu là đường dẫn (vd. *Menu › 👤 Cá nhân › 📅 Lịch ca*), hàng cuối **[◀ Quay lại] [🏠 Menu] [✖ Đóng]**.
-- **Quay lại** lùi 1 bước; đang gõ dở (vd. lý do từ chối) mà bấm Quay lại → bỏ, không lưu gì.
-- Xong việc → bảng hiện **✅ kết quả + giờ** và nút **[▶ Tiếp tục]** (làm tiếp cùng chức năng) / **[🏠 Menu]**.
+**Bảng điều khiển (chat riêng):** bot chỉ giữ **1 tin có nút** – mọi màn mở ra đều hiện trong chính tin đó, dòng đầu là đường dẫn đủ cấp (vd. *Menu › 🍳 Bếp › 🍳 Mẻ cần làm › 🔥 ME-0123*; dài quá thì rút gọn giữa bằng "…"), hàng cuối **[◀ Quay lại] [🏠 Menu] [✖ Đóng]** – mỗi màn chỉ có **1 nút Quay lại** (ở hàng cuối).
+- **Quay lại** mở lại **đúng màn trước** (thẻ mẻ › nhiệt độ › ◀ → về thẻ mẻ, không về danh sách). Quay lại **không bao giờ lặp lại thao tác ghi**; đang chọn số / gõ dở (vd. lý do khác) mà bấm Quay lại → bỏ, không lưu gì.
+- Bấm nút nào bot cũng báo 1 dòng nhỏ trên màn hình (*"Đã ghi 78 °C"*, *"Đã mở: ME-0123"*, lỗi → câu lỗi của máy chủ).
+- Ghi xong 1 bước: đầu thẻ hiện **✅ kết quả · giờ** và thẻ **giữ nút bước kế tiếp** (vd. ghi nhiệt độ xong vẫn còn 🧪 Lưu mẫu / ✅ Xong mẻ). Chỉ khi chức năng không còn bước nào, bảng mới thành **phiếu kết quả** với **[▶ Tiếp tục]** / **[🏠 Menu]**.
 - Gõ `/menu` hoặc bấm phím dưới → bot xóa tin lệnh của bạn và bảng cũ, mở bảng mới ở cuối chat. Bấm nút trên bảng cũ → báo *"Menu này đã cũ"* và mở bảng mới.
-- Màn đầu có hàng **⭐ Hay dùng** (4 chức năng bạn dùng gần nhất).
+- **Màn đầu:** người có ≤ 6 chức năng thấy thẳng các chức năng (không qua phân hệ); người nhiều chức năng thấy phân hệ – phân hệ của công việc chính của bạn đứng đầu – và **1 hàng ⭐ Hay dùng** (chức năng dùng gần nhất) trên cùng. ⚡ Ca của tôi / 📍 Chấm công không lặp lại trong menu (đã có ở phím dưới). Mỗi chức năng chỉ nằm ở 1 phân hệ.
+- **Danh sách** tối đa 6 mục / trang, **[◀ Trước] [Sau ▶]**; việc gấp (trễ giờ, cảnh báo, quá hạn) lên đầu. *Mẻ cần làm* mặc định chỉ hiện **ca hiện tại** (đang nấu / chờ QC, mẻ trễ, mẻ bắt đầu trong 2 giờ trước – 4 giờ tới) → **[📋 Xem tất cả]** để xem cả ngày.
+- **Không phải gõ:** số (nhiệt độ, số suất, số hộp, số ngày nghỉ) chọn trên **màn số** – giá trị điền sẵn (kế hoạch / lần đo trước) hiện trên bảng, chỉnh bằng **[−10] [−1] [+1] [+10]** hoặc hàng chọn nhanh, rồi **[✅ Xác nhận]**. Lý do / ghi chú (từ chối duyệt, khắc phục nhiệt độ, nấu thêm, không giao được, chấm hộ, xin nghỉ, đổi ca, đổi món, vệ sinh không đạt) chọn **nút lý do hay gặp**; chỉ khi bấm **[✏️ Khác…]** mới phải gõ. Chỉ còn gõ tay cho chữ tự do thật sự: ghi chú phản ánh / sự việc, tên khách / món / tài xế để tìm, tên người nhận khác, số lô để truy xuất.
+- Phím dưới **3 phím luôn còn**: bot gửi lại khi gõ `/menu`, `/ca`, `/help` và ở lần bạn nhắn đầu tiên sau khi hệ thống khởi động lại (tin phím cũ được xóa). `/chamcong` chỉ nhắc bấm 📍 – không đổi bàn phím.
 - Thẻ việc, Thẻ ca ghim, bản tin… **không bị bảng điều khiển xóa / sửa**. Nhóm chat không có bảng điều khiển.
 
 | Nút | Lệnh | Làm gì |
@@ -38,7 +42,7 @@ Bàn phím dưới cố định (mọi người): **[⚡ Ca của tôi] [📂 Ch
 | 📂 Chức năng | `/menu` | Danh sách phân hệ được phép |
 | 📍 Chấm công | `/chamcong` | Bấm phím 📍 ở bàn phím dưới để gửi vị trí vào / ra ca (không chuyển tiếp vị trí; vị trí quá 120 giây bị từ chối; bán kính 150 m) |
 | 📅 Lịch ca | `/lichca` | Lịch ca 7 ngày |
-| 🏖 Xin nghỉ | `/nghi` | Loại nghỉ → ngày bắt đầu (Hôm nay / Ngày mai / Ngày kia / Ngày khác…) → số ngày → lý do |
+| 🏖 Xin nghỉ | `/nghi` | Loại nghỉ → ngày bắt đầu (10 ngày tới bấm 1 chạm; Ngày khác… mới gõ) → số ngày (1 / 2 / 3, Khác… = màn số) → lý do (nút lý do, Khác… mới gõ) |
 | 🔁 Đổi ca | `/doica` | Chỉ người có tài khoản web |
 | 📝 Đơn của tôi | `/donct` | Đơn nghỉ / đổi ca và trạng thái |
 | ⏳ Chờ tôi duyệt | `/cho` | Yêu cầu đến lượt bạn duyệt (cần tài khoản web + quyền duyệt) |
@@ -53,18 +57,20 @@ Bàn phím dưới cố định (mọi người): **[⚡ Ca của tôi] [📂 Ch
 
 | Phân hệ | Nút (lệnh) | Ai dùng | Chi tiết |
 |---|---|---|---|
-| 🍳 Bếp | 🍳 Mẻ cần làm (`/me`), 📈 Tiến độ ca (`/tiendo`), 🥬 NL của ca (`/nlca`), 🔍 Truy xuất (nút), 👥 Ai chưa vào (tổ) + ✍️ Chấm hộ, 🧼 Lô vệ sinh hộp khay (`/vesinh` – ✅ Đạt / ❌ Không đạt); thẻ mẻ: 🍱 Chia suất xong, ♻️ Ghi thừa, ➕ Nấu thêm (số suất + lý do) | OPS-KIT | `07_BEP_SAN_XUAT.md` §7 |
-| 🧽 ATTP / QC | 🧽 Checklist ATTP (`/checklist`), ⛔ Mẻ đang giữ (`/giu`), 🧪 Lô chờ QC đầu vào (`/chokiem`), 🌡 Cảnh báo ATTP (`/canhbao`), 🔍 Truy xuất (nút), 🧼 Lô vệ sinh hộp khay (nút) | QA, OPS-KIT | `06_QC_ATTP.md` §7 |
-| 🚚 Giao vận | 🚚 Chuyến của tôi (`/chuyen`), 🗺 Giao vận hôm nay (`/giaovan`), 📥 Nhận hộp về (`/hop`), 🧭 Lịch xe ngày mai (`/lichxe`), 📦 Hộp khay hôm nay (`/hopkhay`); thẻ chuyến chưa xuất phát: 🔁 Đổi xe (chọn xe) / 👤 Đổi tài xế (gõ tên để tìm) | OPS-LOG | `09_GIAO_VAN.md` §7 |
-| 🍱 Điểm phát | 🚚 Xe đến hôm nay (`/xeden`) + ✅ Nhận <khách> (chọn số suất – người nhận là bạn), 🧮 Đối soát suất (`/doisoat`), 📣 Phản ánh tại điểm | OPS-POS | `10_DIEM_PHAT.md` §7 |
+| 🍳 Bếp | 🍳 Mẻ cần làm (`/me` – mặc định ca hiện tại, 📋 Xem tất cả), 📈 Tiến độ ca (`/tiendo`), 🥬 NL của ca (`/nlca`), 👥 Ai chưa vào (tổ) + ✍️ Chấm hộ (chọn lý do); thẻ mẻ Đang nấu: **hàng nhiệt độ lõi 70° 72° 75° 78° 80° bấm 1 chạm**, 🌡 Nhiệt độ khác (màn số), dưới ngưỡng → chọn hành động khắc phục; ✅ Xong mẻ (số suất điền sẵn kế hoạch), 🍱 Chia suất xong, ♻️ Ghi thừa, ➕ Nấu thêm (màn số + nút lý do) | OPS-KIT | `07_BEP_SAN_XUAT.md` §7 |
+| 🧽 ATTP / QC | 🧽 Checklist ATTP (`/checklist`), ⛔ Mẻ đang giữ (`/giu`), 🧪 Lô chờ QC đầu vào (`/chokiem`), 🌡 Cảnh báo ATTP (`/canhbao`), 🔍 Truy xuất lô / mẻ (`/truyxuatlo` – gõ số lô LO-… / số mẻ ME-…; ai có quyền xem lô hoặc mẻ đều thấy), 🧼 Lô vệ sinh hộp khay (`/vesinh` – ✅ Đạt / ❌ Không đạt chọn lý do) | QA, OPS-KIT | `06_QC_ATTP.md` §7 |
+| 🚚 Giao vận | 🚚 Chuyến của tôi (`/chuyen` – 1 chuyến thì mở thẳng thẻ chuyến), 🗺 Giao vận hôm nay (`/giaovan`), 📥 Nhận hộp về (`/hop` – số hộp trên màn số, điền sẵn số phải thu), 🧭 Lịch xe ngày mai (`/lichxe`), 📦 Hộp khay hôm nay (`/hopkhay`); 🚀 Xuất phát: nhiệt độ bấm 1 chạm; thẻ điểm: **✅ Giao đủ N · t° 1 chạm** (số đã xếp / kế hoạch, nhiệt độ đo tại điểm hoặc lúc xuất phát, người nhận điền sẵn – 👤 Người nhận khác… để gõ tên), ✏️ Giao số khác (thiếu / thừa), ❌ Không giao được (chọn lý do); thẻ chuyến chưa xuất phát: 🔁 Đổi xe (chọn xe) / 👤 Đổi tài xế (gõ tên để tìm) | OPS-LOG | `09_GIAO_VAN.md` §7 |
+| 🍱 Điểm phát | 🚚 Xe đến hôm nay (`/xeden`) + ✅ Nhận <khách> (màn số điền sẵn kế hoạch → ✅ Ký nhận – người nhận là bạn), 🧮 Đối soát suất (`/doisoat` – điền sẵn số khách nhận); ghi phản ánh tại điểm: 📣 Ghi phản ánh ở phân hệ CSKH (hoặc ⭐ / `/ghiphananh`) | OPS-POS | `10_DIEM_PHAT.md` §7 |
 | 📣 CSKH | 📋 Phản ánh đang mở (`/phananh`), ⏱ Sắp quá hạn (`/saphan`), 📣 Ghi phản ánh (`/ghiphananh`) | SAL-CS | `10_DIEM_PHAT.md` §7 |
-| 📦 Kho & mua hàng | 📦 Tồn dưới mức (`/ton`), ⌛ Cận date (`/candate`), 🥬 NL ngày mai (`/nlmai`), 🧾 PO sắp về / trễ (`/po`), 🚛 Hàng về hôm nay (`/hangve`), ⚠️ Thiếu hụt (`/thieuhut`), 🔍 Truy xuất lô / mẻ (`/truyxuatlo` – gõ số lô LO-… / số mẻ ME-…) | OPS-SCM | `04_MUA_HANG.md`, `05_KHO.md` §7 |
+| 📦 Kho & mua hàng | 📦 Tồn dưới mức (`/ton`), ⌛ Cận date (`/candate`), 🥬 NL ngày mai (`/nlmai`), 🧾 PO sắp về / trễ (`/po`), 🚛 Hàng về hôm nay (`/hangve`), ⚠️ Thiếu hụt (`/thieuhut`); truy xuất lô / mẻ: 🔍 Truy xuất ở ATTP / QC (`/truyxuatlo`) | OPS-SCM | `04_MUA_HANG.md`, `05_KHO.md` §7 |
 | 📋 Kế hoạch | 📋 Kế hoạch ngày mai (`/kehoach`), 📅 Thực đơn đang áp dụng (`/thucdon`), ♻️ Hao hụt 7 ngày (`/haohut`), 💰 Giá thành suất (`/giathanh`), 🔄 Lập lại kế hoạch ngày mai (`/laplai`, xác nhận trước), ✏️ Đề xuất đổi món (`/doimon` – món cũ → món mới → ngày ăn → lý do) | OPS-PLAN | `03_KE_HOACH.md` §7 |
-| 💼 Kinh doanh | 📦 Đơn ngày mai (`/donmai`), ⏰ Khách chưa chốt (`/chuachot`), 📅 Thực đơn tuần (`/thucdontuan`), 📋 Việc tôi đã báo (`/viecdabao`), 📣 Báo thiếu suất / phản ánh (nút), 🔄 Đổi món – ý kiến khách (nút) | SAL-SALES, SAL-CON | `02_KINH_DOANH.md` §7 |
-| 🧾 Kế toán | 📦 Hộp khay thất thoát (`/thatthoat`), 🧾 PO đã nhận (`/podanhan`), 🧾 Công tháng (`/congthang`, cần quyền xem bảng công) | FIN-ACC | |
-| 👥 Nhân sự | 👥 Ai chưa vào ca (`/chuavao`) + ✍️ Chấm hộ, 🧾 Công tháng (nút), ⏳ Đơn đang chờ (`/donchoduyet`), 📥 Nhập file máy chấm công (`/nhapmcc` – trả lời tin bot bằng file Excel .xlsx) | FIN-HR | `11_NHAN_SU.md` §7 |
+| 💼 Kinh doanh | 📦 Đơn ngày mai (`/donmai`), ⏰ Khách chưa chốt (`/chuachot`), 📋 Việc tôi đã báo (`/viecdabao`); báo thiếu suất / phản ánh = 📣 Ghi phản ánh (CSKH, `/ghiphananh`), đổi món theo ý khách = ✏️ Đề xuất đổi món (Kế hoạch, `/doimon`), thực đơn = 📅 Thực đơn đang áp dụng (Kế hoạch, `/thucdon`) | SAL-SALES, SAL-CON | `02_KINH_DOANH.md` §7 |
+| 🧾 Kế toán | 📦 Hộp khay thất thoát (`/thatthoat`), 🧾 PO đã nhận (`/podanhan`); 🧾 Công tháng ở phân hệ Nhân sự (`/congthang`) | FIN-ACC | |
+| 👥 Nhân sự | 👥 Ai chưa vào ca (`/chuavao` – trễ lâu nhất lên đầu) + ✍️ Chấm hộ (chọn lý do), 🧾 Công tháng (`/congthang`, cần quyền xem bảng công), ⏳ Đơn đang chờ (`/donchoduyet`), 📥 Nhập file máy chấm công (`/nhapmcc` – trả lời tin bot bằng file Excel .xlsx) | FIN-HR | `11_NHAN_SU.md` §7 |
 | 🖥 Quản trị | 🖥 Tình trạng hệ thống (`/hethong`), 🆔 Mã chat (`/chatid` – trong nhóm: thêm bot vào nhóm rồi gõ `/chatid`, chỉ quản trị được trả lời) | FIN-IT (admin) | `01_QUAN_TRI.md` |
 | ⏳ Phê duyệt | ⏳ Chờ tôi duyệt (`/cho`) | Người duyệt | `12_QUAN_LY_DUYET.md` §7 |
+
+**Thao tác nhanh (≤ 3 chạm, không gõ – BOT-UX-2):** ghi nhiệt độ lõi: **⭐ Mẻ cần làm → ME-… → 78°**; giao đủ 1 điểm: **⭐ Chuyến của tôi → điểm → ✅ Giao đủ N**; chấm công: **1 chạm phím 📍** (3 phím dưới vẫn giữ nguyên). Lý do hay gặp chỉnh trong cấu hình `Messaging:Reasons:<luồng>` của container messaging (IT).
 
 ## 5. Bot Điều hành
 Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở, 🎯 KPI 7 ngày, 📅 Chỉ số theo tháng, 📈 Tiến độ bếp, 🗺 Giao vận trực tiếp, 📦 Tồn & thiếu hụt, 🔍 Truy xuất.
@@ -91,7 +97,7 @@ Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở
 - **Lịch tin định kỳ:** 07:00 thẻ ngày / bản tin sáng · 16:00 nhắc bàn giao người nghỉ ngày mai · 17:00 báo cáo cuối ngày · 19:00 khách chưa chốt đơn · 21:00 nguyên liệu cho tối nay / mai.
 
 ## 8. Duyệt trên bot
-`12_QUAN_LY_DUYET.md` §7 (APR-UI-1): thẻ duyệt cùng khuôn tóm tắt với web – 🔴 quá hạn / ⚠️ cảnh báo / 🟢 bình thường, vì sao cần duyệt, ≤ 3 cảnh báo, người gửi, hạn; **✅ Duyệt / ❌ Từ chối / 📄 Xem chi tiết**. Rủi ro thấp + không cảnh báo duyệt 1 chạm + **↩️ Hoàn tác** 10 giây, **✅ Duyệt nhanh N mục**; loại khác xác nhận 2 bước; từ chối phải trả lời tin với lý do. **📋 Tổng hợp cuối ngày** lúc 18 giờ (`Messaging:ApprovalDigestHour`). Tin **🔔 Người gửi nhắc** khi người gửi bấm Nhắc trên web.
+`12_QUAN_LY_DUYET.md` §7 (APR-UI-1): thẻ duyệt cùng khuôn tóm tắt với web – 🔴 quá hạn / ⚠️ cảnh báo / 🟢 bình thường, vì sao cần duyệt, ≤ 3 cảnh báo, người gửi, hạn; **✅ Duyệt / ❌ Từ chối / 📄 Xem chi tiết**. Rủi ro thấp + không cảnh báo duyệt 1 chạm + **↩️ Hoàn tác** 10 giây, **✅ Duyệt nhanh N mục**; loại khác xác nhận 2 bước; **❌ Từ chối** → chọn lý do hay gặp (bấm = từ chối), **✏️ Khác…** mới phải trả lời tin bằng lý do. **📋 Tổng hợp cuối ngày** lúc 18 giờ (`Messaging:ApprovalDigestHour`). Tin **🔔 Người gửi nhắc** khi người gửi bấm Nhắc trên web.
 
 ## 9. Lỗi thường gặp
 
