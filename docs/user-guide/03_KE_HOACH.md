@@ -94,22 +94,45 @@ Màn 2 cột: trái là danh sách món (ô **Tìm món…**, số phiên bản,
 - **Tính lại** trên từng dòng Đang dùng: chỉ món đó.
 - Kết quả: "Đã tính lại giá thành chuẩn cho N món" / "Không có món nào có công thức đang áp dụng để tính lại".
 
-### 4.4 Thực đơn tuần – `menu-menu`
-**Tự hết hiệu lực + nhắc (BIZ-3.4):** thực đơn Đã công bố qua ngày hiệu lực cuối (trống ngày đến = hiệu lực từ + 6) → tự **Hết hiệu lực** lúc 00:30. **Thứ Tư 09:00** chưa có thực đơn chung Đã công bố cho tuần sau → bot 🔴 Kế hoạch + COO. **Thứ Sáu 16:00** khách chưa gửi đăng ký suất tuần sau → bot nhắc NV kinh doanh phụ trách.
-**Xem:** chip chọn thực đơn (mã + trạng thái); thẻ Thực đơn (hiệu lực, loại), Số dòng món, Khách hàng được gán, Suất đã đặt; chip **Loại suất**; bảng **Nhóm món × T2…CN** – mỗi ô là món + giá vốn / suất; hàng **Giá vốn / suất** từng ngày + % so với giá bán (đỏ nếu vượt mục tiêu). Nhiều lựa chọn cho một loại suất hiện "Lựa chọn 1, 2…".
+### 4.4 Thực đơn tuần – `menu-menu` (UI-6.11, D-89)
+Mỗi tuần **một thực đơn chung** cho mọi khách (D-90). **Vòng tuần:**
+1. Thứ Hai 06:00 hệ thống tự lập bản **Nháp** tuần sau.
+2. 08:00 bot báo bếp / kế hoạch số ô cần xem.
+3. Bếp sửa các ô được đánh dấu → **Gửi duyệt** → COO **Duyệt** → **Công bố** trước thứ Năm.
+4. Gửi phiếu đăng ký cho khách (màn Đăng ký suất tuần).
+5. Hết Chủ nhật thực đơn tự hết hiệu lực. Đổi món sau công bố: **Yêu cầu đổi món** (mục 4.6).
 
-**Lập thực đơn**
-1. **Tạo mới** (bảng chung) hoặc **Nhân bản** thực đơn đang xem: nhập Mã, Tên, **Hiệu lực từ*** → **Nhân bản** → thực đơn Nháp mới, chép toàn bộ món.
-2. **Thêm món**: chọn Món, Loại suất, **Thứ** (1 = T2 … 7 = CN), Lựa chọn (1–9), Số phần, Bắt buộc, Ghi chú → **Tạo mới**. Bấm vào món trong lịch để xem / sửa / xóa dòng.
-3. Nút **Chuyển sang …** theo trạng thái:
-   - Nháp → **Đã duyệt** (cần quyền "Phê duyệt › Thực đơn"),
-   - Đã duyệt → **Đã công bố** (kiểm đủ món mọi ngày, công thức hiệu lực),
-   - Đã công bố → **Hết hiệu lực**.
-4. **Xuất gửi khách**: tải tệp thực đơn gửi khách. **In phiếu đăng ký**: chọn khách + điểm giao → tải *Phiếu đăng ký suất* (Excel, ô Số suất dưới mỗi lựa chọn, tuần bắt đầu hiệu lực của thực đơn) – khách điền rồi gửi lại cho Kinh doanh tải lên (`02_KINH_DOANH.md` mục 4.5b).
-5. **Thực đơn chung** (ORD-OPT-1, D-74 f): ô **Loại thực đơn** = *Thực đơn chung* → mọi khách **không có phân công riêng** tự dùng thực đơn này khi đã **Đã công bố** và hiệu lực tại ngày ăn (nhãn cam *Thực đơn chung* ở đầu lịch). Mỗi tuần một thực đơn chung (thường **Nhân bản** từ tuần trước). Không công bố được 2 thực đơn chung chồng ngày hiệu lực.
-6. **Lựa chọn** (1–9) = set món: Sáng LC1 = bánh mì + trứng + sữa… Khách đặt số suất theo từng lựa chọn; **Số phần** = số phần của món trong 1 suất (vd bánh mì 2 cái / suất; trống = 1) – dùng để tính số phần nấu / mua.
+**Đầu trang:**
+- Tuần ◀ ▶ (mặc định tuần sau); trạng thái + mã thực đơn + **hạn công bố (thứ Năm)**. Không có ô chọn thực đơn.
+- **4 bước**, bước xong có ✓:
+  - ① **Lập thực đơn** – nút *Tạo thực đơn tuần* khi tuần chưa có.
+  - ② **Hoàn thiện món** – số ô trống / thiếu công thức / suất FC vượt / trùng món + nút **Đến ô cần xử lý** (nhảy lần lượt).
+  - ③ **Gửi duyệt** – khóa khi còn ô trống / món thiếu công thức / FC vượt; trùng món chỉ cảnh báo. Người có quyền duyệt thấy nút **Duyệt**.
+  - ④ **Công bố & gửi phiếu** – nút **Công bố** (người duyệt) / **Gửi phiếu đăng ký** (mở màn Đăng ký suất tuần).
+- **4 thẻ:** Ô còn trống · Món thiếu công thức · FC% TB tuần (mục tiêu ≤ `KpiIngredientToRevenueMaxPct` 55 %) · Khách áp dụng (khách có hợp đồng hiệu lực trong tuần).
 
-Lỗi: *Đã có thực đơn chung … Đã công bố chồng thời gian hiệu lực…* (cho thực đơn chung cũ hết hiệu lực hoặc đổi ngày), *Thực đơn phải có ít nhất 1 món*, *Chưa đủ món để công bố – thiếu: …*, *Cảnh báo: món … chưa có công thức đang khóa – chưa tính được giá vốn*, *Thứ phải trong khoảng 1 (Thứ 2) – 7 (Chủ nhật)*, *Lựa chọn (SequenceNo) phải trong khoảng 1 – 9*, *Dòng thực đơn phải có loại suất*.
+**Tạo thực đơn tuần** (nút bước ①):
+- **Nhân bản tuần cùng vị trí chu kỳ 4 tuần** (như hệ thống tự làm: tuần N − 4; thiếu thì lấy tuần gần nhất có món).
+- **Nhân bản tuần chọn**.
+- **Khung trống mẫu chuẩn**: Sáng 3 lựa chọn × Món chính – Ăn kèm – Đồ uống; Trưa / Tối Món chính 1 – Món chính 2 – Món phụ – Rau – Canh – Cơm – Tráng miệng; Đêm Món chính – Đồ uống.
+- *Tải Excel theo mẫu sheet "1. Menu"* **chưa nâng cấp**.
+
+**Tab Lịch tuần** – một màn đủ 4 buổi:
+- **Buổi** (bấm để mở / gập; giá bán bình quân, số lựa chọn) → dòng **lựa chọn** (giá vốn / suất và **FC%** từng ngày: xanh đạt, đỏ vượt) → **nhóm món** × 7 ngày, mỗi ô một món.
+- **Màu ô:** nét đứt = ô trống · cam = món chưa có công thức khóa · đỏ (dòng FC) = suất FC vượt · xanh dương = món chính trùng trong 7 ngày (gồm cuối tuần trước) · vạch cam = ô vừa sửa.
+- **Sửa ô tại chỗ (không hộp thoại):**
+  - bấm ô → hộp chọn có **5 món gợi ý**, xếp theo: cùng nhóm món → có công thức khóa → chưa dùng trong 14 ngày (`MenuNoRepeatDays`) → giữ FC% trong mục tiêu;
+  - mỗi gợi ý hiện giá vốn + **FC% mới nếu chọn**;
+  - gõ để tìm món khác; ↑ ↓ chọn; **Enter** lưu và sang ô ngày kế tiếp; **Delete** (ô tìm trống) xóa món; **Esc** đóng.
+- **⋯** cuối hàng = **Điền cả hàng** (7 ngày cùng món); **⧉** ở đầu cột ngày = **Chép ngày** (mọi buổi sang ngày khác, ngày đích bị thay).
+- Mỗi ô lưu ngay (Nháp), FC% tính lại tức thì.
+- Đã duyệt / công bố → chỉ đọc.
+
+**Tab Duyệt & lịch sử:** ai tạo / sửa / duyệt / công bố, lúc nào.
+
+**Giá vốn món** = giá vốn chuẩn của món (`Dish.StandardCost`) × số phần; món chưa có giá vốn chuẩn không tính FC. **Giá bán** = đơn giá loại suất bình quân các hợp đồng hiệu lực trong tuần.
+
+**Quyền:** Kế hoạch (OPS-PLAN) lập / sửa; bếp, KD xem; COO duyệt / công bố.
 
 ### 4.5 Thực đơn riêng cho khách – đã bỏ (UI-6.12, D-90)
 - **Không còn thực đơn riêng theo khách**: mọi khách dùng **thực đơn chung Đã công bố** của tuần. Mục menu "Thực đơn riêng cho khách" đã ẩn; dữ liệu phân công cũ giữ lại nhưng không dùng.

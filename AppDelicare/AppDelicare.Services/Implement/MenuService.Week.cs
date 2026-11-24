@@ -36,7 +36,8 @@ namespace AppDelicare.Services.Implement
             => await _unitOfWork.DbContext.Menu.AsNoTracking()
                 .Where(m => !m.IsDeleted && m.MenuType == MenuScope.Common && m.Status != MenuStatus.Expired
                     && (m.EffectiveFrom == null || m.EffectiveFrom <= monday.AddDays(6)) && (m.EffectiveTo == null || m.EffectiveTo >= monday))
-                .OrderByDescending(m => m.EffectiveFrom == monday).ThenByDescending(m => m.EffectiveFrom).ThenByDescending(m => m.CreatedDate).FirstOrDefaultAsync();
+                .OrderByDescending(m => m.EffectiveFrom == monday).ThenByDescending(m => m.EffectiveFrom == null || m.EffectiveFrom <= monday)
+                .ThenByDescending(m => m.Status == MenuStatus.Published).ThenByDescending(m => m.EffectiveFrom).ThenByDescending(m => m.CreatedDate).FirstOrDefaultAsync();
 
         private async Task<Dictionary<string, decimal>> MealPricesAsync(DateTime monday)
         {
@@ -176,7 +177,7 @@ namespace AppDelicare.Services.Implement
                     {
                         decimal cost = ol.Where(l => l.DayOfWeek == day).Sum(l => (dishes.GetValueOrDefault(l.DishId)?.Cost ?? 0m) * (l.PortionQty ?? 1m));
                         option.ListCost.Add(Math.Round(cost, 0));
-                        decimal? fc = meal.Price is > 0 && ol.Any(l => l.DayOfWeek == day) ? Math.Round(cost / meal.Price.Value * 100m, 1) : null;
+                        decimal? fc = meal.Price is > 0 && cost > 0 ? Math.Round(cost / meal.Price.Value * 100m, 1) : null; // món chưa có giá vốn chuẩn → không tính FC
                         option.ListFcPct.Add(fc);
                         if (fc is { } f)
                         {
