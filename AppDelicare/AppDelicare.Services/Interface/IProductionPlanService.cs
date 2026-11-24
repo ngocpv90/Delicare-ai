@@ -29,6 +29,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.ProductionPlanDaysModel>> GetDays(ProductionPlanDaysRequest request);
         public Task<IResult<AppDelicare.Model.Model.ProductionPlanRecalculateModel>> Recalculate(ProductionPlanRecalculateRequest request);
         public Task<IResult<AppDelicare.Model.Model.ProductionPlanShortageModel>> GetShortage(Guid id);
+        public Task<IResult<AppDelicare.Model.Model.ProductionDayBoardModel>> GetDayBoard(Guid id);
         /// <summary>UI-6 (D-80): trang chi tiết toàn màn (…/GetOverview).</summary>
         public Task<IResult<ProductionPlanOverviewModel>> GetOverview(Guid id);
         public Task<IResult<byte[]>> ExportProductionSheet(Guid id);

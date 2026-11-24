@@ -19,6 +19,7 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string ApprovalResult = "APPROVAL_RESULT";
         // Bếp / ATTP
         public const string BatchLate = "BATCH_LATE";
+        public const string ProductionVariance = "PRODUCTION_VARIANCE";
         public const string CoreTempLow = "CORE_TEMP_LOW";
         public const string FoodSafetyCritical = "FOODSAFETY_CRITICAL";
         public const string IotOutOfRange = "IOT_OUT_OF_RANGE";
@@ -79,6 +80,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(ApprovalPending, A, Normal, "Cấp duyệt mới (gửi duyệt / chuyển cấp) – người duyệt của cấp"),
             new(ApprovalResult, P, Normal, "Kết quả duyệt (đơn nghỉ / đổi ca / chứng từ) – người gửi"),
             new(BatchLate, D, Urgent, "Mẻ trễ > 15′ – trưởng ca"),
+            new(ProductionVariance, D, Normal, "Chênh lệch tiêu hao vượt ngưỡng của ngày (1 tin gộp lúc đóng lệnh cuối ngày) – Bếp trưởng + COO"),
             new(CoreTempLow, X, Urgent, "Nhiệt độ lõi < 70 °C – trưởng ca, QA, bếp trưởng"),
             new(FoodSafetyCritical, C, Urgent, "Lỗi trọng yếu checklist ATTP – QA, trưởng ca, bếp trưởng, COO"),
             new(IotOutOfRange, D, Urgent, "Nhiệt độ kho / khu ngoài ngưỡng (IoT) – QA, thủ kho"),

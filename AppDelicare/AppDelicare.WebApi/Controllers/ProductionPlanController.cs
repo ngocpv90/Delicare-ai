@@ -265,5 +265,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.24 (D-105): Bảng sản xuất ngày – ma trận Món × Ca của kế hoạch (suất, lệnh, mẻ xong / tổng, trạng thái ô), nguyên liệu & giữ chỗ, chênh lệch, giá thành (quyền Xem prod-plan).</summary>
+        [HttpGet("GetDayBoard")]
+        public async Task<IActionResult> GetDayBoard(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetDayBoard(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDayBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

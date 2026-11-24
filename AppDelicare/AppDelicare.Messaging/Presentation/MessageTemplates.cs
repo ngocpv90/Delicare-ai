@@ -38,6 +38,7 @@ namespace AppDelicare.Messaging.Presentation
         private static readonly Dictionary<string, string> Titles = new(StringComparer.OrdinalIgnoreCase)
         {
             ["BATCH_LATE"] = "⏰ Mẻ trễ giờ",
+            ["PRODUCTION_VARIANCE"] = "⚠️ Chênh lệch tiêu hao vượt ngưỡng",
             ["CORE_TEMP_LOW"] = "🌡 Nhiệt độ lõi chưa đạt",
             ["FOODSAFETY_CRITICAL"] = "🚨 Lỗi an toàn thực phẩm trọng yếu",
             ["FOOD_SAFETY_CRITICAL"] = "🚨 Lỗi an toàn thực phẩm trọng yếu",

@@ -175,14 +175,14 @@ namespace AppDelicare.Tests.Production
             (await c.PostFormAsync("/api/ProductionPlan/Release", ("Id", s.Plan))).Fail("Đã duyệt");
             var planLine = await _factory.QueryAsync(db => db.ProductionPlanLine.AsNoTracking().FirstAsync(l => l.ProductionPlanId == s.Plan));
             (await c.PutFormAsync("/api/ProductionPlanLine/Update", ("Id", planLine.Id), ("ProductionPlanId", s.Plan), ("DishId", planLine.DishId), ("PlannedQuantity", 999m))).Fail("Nháp");
-            (await c.PutFormAsync("/api/ProductionPlan/Update", ("Id", s.Plan), ("ProductionDate", Day), ("PlanDate", Day), ("Status", "Draft"))).Fail("Approve / Release");
-            (await c.PostFormAsync("/api/ProductionPlan/Insert", ("ProductionDate", Day), ("PlanDate", Day))).Fail("một kế hoạch mỗi ngày");
-            (await c.PostFormAsync("/api/ProductionBatch/Insert", ("ProductionOrderId", meatOrder.Id), ("StartDate", Day))).Fail("ProductionPlan/Release");
+            (await c.PutFormAsync("/api/ProductionPlan/Update", ("Id", s.Plan), ("ProductionDate", Day), ("PlanDate", Day), ("Status", "Draft"))).Fail("Duyệt / Ra lệnh");
+            (await c.PostFormAsync("/api/ProductionPlan/Insert", ("ProductionDate", Day), ("PlanDate", Day))).Fail("được hệ thống lập từ các đơn đã chốt");
+            (await c.PostFormAsync("/api/ProductionBatch/Insert", ("ProductionOrderId", meatOrder.Id), ("StartDate", Day))).Fail("Vào Kế hoạch sản xuất → chọn ngày → Ra lệnh");
             (await c.PutFormAsync("/api/ProductionBatch/Update", ("Id", batch.Id), ("ProductionOrderId", meatOrder.Id), ("StartDate", Day), ("Status", "Packed"))).Ok();
             (await BatchAsync(batch.Id)).Status.Should().Be("Planned", "CRUD Update không đổi trạng thái mẻ");
             (await c.DeleteResultAsync($"/api/ProductionBatch/Delete?id={batch.Id}")).Fail();
-            (await c.PostFormAsync("/api/ProductionOrder/Insert", ("ProductionPlanId", s.Plan), ("PlannedStartDate", Day))).Fail("ProductionPlan/Release");
-            (await c.PostFormAsync("/api/ProductionOutput/Insert", ("ProductionBatchId", batch.Id), ("ProducedQuantity", 1m))).Fail("RecordOutput");
+            (await c.PostFormAsync("/api/ProductionOrder/Insert", ("ProductionPlanId", s.Plan), ("PlannedStartDate", Day))).Fail("Lệnh sản xuất được hệ thống tạo khi ra lệnh kế hoạch sản xuất. Vào Kế hoạch sản xuất → chọn ngày → Ra lệnh.");
+            (await c.PostFormAsync("/api/ProductionOutput/Insert", ("ProductionBatchId", batch.Id), ("ProducedQuantity", 1m))).Fail("Ghi sản lượng");
             (await c.PostFormAsync("/api/MealWasteRecord/Insert", ("ProductionBatchId", batch.Id), ("WasteType", "SPOILAGE"), ("QuantityMeals", 1m))).Fail("RecordWaste");
 
             // In Phiếu sản xuất (kế hoạch) mở được, đúng tiêu đề.
@@ -301,9 +301,9 @@ namespace AppDelicare.Tests.Production
             (output.ProducedQuantity, output.AcceptedQuantity, output.RejectedQuantity, output.QualityStatus, output.OutputQty).Should().Be((80m, 78m, 2m, "PASS", 80m));
             (await _factory.QueryAsync(db => db.MealWasteRecord.AsNoTracking().SingleAsync(w => w.ProductionBatchId == soup))).WasteType.Should().Be("OVERPRODUCTION");
 
-            // Lệnh Canh (1 mẻ) hoàn thành; kế hoạch chưa (còn mẻ Thịt).
+            // Lệnh Canh (1 mẻ) hoàn thành → UI-6.24 (D-105) tự Đóng; kế hoạch chưa (còn mẻ Thịt).
             var soupOrder = await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == batch.ProductionOrderId));
-            soupOrder.Status.Should().Be("Completed");
+            soupOrder.Status.Should().Be("Closed");
             soupOrder.ActualQty.Should().Be(78);
             (await _factory.QueryAsync(db => db.ProductionPlan.AsNoTracking().SingleAsync(p => p.Id == s.Plan))).Status.Should().Be("Released");
 

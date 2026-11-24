@@ -87,6 +87,10 @@ namespace AppDelicare.Model.Option
         public bool BatchAutoPass { get; set; } = true;
         /// <summary>BIZ-2.8 (D-77 – C7): mẻ Đạt → tự sinh lệnh đóng gói (PackingOrder/GenerateFromBatch).</summary>
         public bool PackingAutoGenerateOnPass { get; set; } = true;
+        /// <summary>UI-6.24 (D-105): lệnh SX chuyển Hoàn thành (mẻ cuối đóng gói / loại) → hệ thống tự Đóng (chênh lệch tiêu hao, giá thành thực tế, giải phóng giữ chỗ dư). Tắt → đóng tay.</summary>
+        public bool ProductionAutoCloseOrder { get; set; } = true;
+        /// <summary>UI-6.24 (D-105): giờ job cuối ngày đóng lệnh Hoàn thành còn sót + gửi 1 tin chênh lệch tiêu hao vượt ngưỡng của ngày (HH:mm, giờ VN).</summary>
+        public string ProductionAutoCloseTime { get; set; } = "22:00";
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>

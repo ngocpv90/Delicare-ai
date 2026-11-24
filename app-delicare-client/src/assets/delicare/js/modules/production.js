@@ -218,7 +218,7 @@
     const lineFor = d => { const cat = Store.label('DishCategorie', (Store.get('Dishe', d) || {}).DishCategoryId); const L = Store.rows('ProductionLine'); return /mặn/i.test(cat) ? L[0] : /rau|canh/i.test(cat) ? L[1] : /cơm/i.test(cat) ? L[2] : L[3]; };
     UI.confirm(`Phát hành ${lines.length} lệnh sản xuất từ kế hoạch ${esc(pl.PlanNumber)}? Hệ thống chụp công thức đang hiệu lực (RecipeSnapshotJson) và giữ chỗ nguyên liệu (MaterialReservation).`, () => {
       // Chế độ API: ProductionPlan/Release sinh lệnh SX + mẻ theo quy tắc backend (lịch ngược từ giờ xuất bếp).
-      if (Store.isLive) return Store.act('ProductionPlan/Release', { form: { Id: pl.Id }, tables: ['ProductionPlan', 'ProductionOrder', 'ProductionBatche', 'MaterialReservation'] }).then(x => { if (x.ok) { UI.toast('Đã phát hành lệnh sản xuất và mẻ', 'ok'); APP.go('prod-order'); } });
+      if (Store.isLive) return Store.act('ProductionPlan/Release', { form: { Id: pl.Id }, tables: ['ProductionPlan', 'ProductionOrder', 'ProductionBatche', 'MaterialReservation'] }).then(x => { if (x.ok) { const w = (x.data && x.data.listWarning) || []; UI.toast('Đã ra lệnh sản xuất' + (w.length ? ' · ' + w.length + ' cảnh báo (xem trang kế hoạch)' : ''), w.length ? 'warn' : 'ok'); if (APP.prodBoard) APP.prodBoard.reload(pl.Id); APP.refresh(); } });
       let n = Store.rows('ProductionOrder').length;
       lines.forEach(pll => {
         const rc = Store.by('Recipe', 'DishId', pll.DishId).find(r => r.IsActive); if (!rc) return;

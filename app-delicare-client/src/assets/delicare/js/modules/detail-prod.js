@@ -101,6 +101,23 @@
     { label: 'Bắt đầu', html: b => esc(U.dt(b.actualStart || b.plannedStart)) },
     { label: 'Trạng thái', html: b => UI.badge(b.status, 'ProductionBatche', 'Status') + (b.qcStatus ? ' ' + UI.badge(b.qcStatus, 'ProductionBatche', 'QcStatus') : '') },
   ];
+  // UI-6.24 (D-105): lệnh SX do hệ thống tạo – chỉ Người phụ trách + Ghi chú sửa được (ô chọn nhân viên có tìm – CLAUDE.md §4.5 luật 10).
+  function orderInline(po, o) {
+    Store.ensure('Employee').then(() => {
+      const emps = Store.rows('Employee').filter(e => !e.IsDeleted && (!e.Status || e.Status === 'Active') || e.Id === po.responsibleEmployeeId)
+        .map(e => ({ id: e.Id, name: Store.label('Employee', e) })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+      UI.modal({ title: 'Sửa lệnh ' + esc(po.productionOrderNumber || ''), size: 'sm',
+        body: `<div class="field"><label>Người phụ trách</label><input type="search" class="input mb" id="oiQ" placeholder="Tìm theo tên…" autocomplete="off"><select class="select" id="oiE"><option value="">— Chưa giao —</option>${emps.map(e => `<option value="${esc(e.id)}" ${e.id === po.responsibleEmployeeId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select></div>
+          <div class="field mt"><label>Ghi chú</label><textarea class="input" rows="3" id="oiN" maxlength="1000">${esc(po.note || '')}</textarea></div>`,
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="oiOk">Lưu</button>',
+        onMount: (m, close) => {
+          const fold = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
+          m.querySelector('#oiQ').oninput = e => { const q = fold(e.target.value.trim()), sel = m.querySelector('#oiE'); [...sel.options].forEach((op, i) => { op.hidden = i > 0 && !!q && !fold(op.textContent).includes(q) && !op.selected; }); const hits = [...sel.options].filter((op, i) => i > 0 && !op.hidden); if (q && hits.length === 1) sel.value = hits[0].value; };
+          m.querySelector('#oiOk').onclick = () => Store.act('ProductionOrder/Update', { method: 'PUT', form: { Id: po.id, Note: m.querySelector('#oiN').value.trim(), ResponsibleEmployeeId: m.querySelector('#oiE').value }, tables: ['ProductionOrder'] })
+            .then(r => { if (!r.ok) return; UI.toast('Đã lưu lệnh ' + esc(po.productionOrderNumber || ''), 'ok'); close(); APP.refresh(); });
+        } });
+    });
+  }
   D.page({
     id: 'prod-order-detail', screen: 'prod-order', table: 'ProductionOrder', kind: 'doc', api: 'ProductionOrder/GetOverview', resource: 'ProductionOrder',
     head: o => {
@@ -130,12 +147,13 @@
       box.innerHTML = D.split(
         D.block('Thông tin lệnh', D.kv([['Số lệnh', esc(po.productionOrderNumber || '')], ['Món', esc(br.dishName || '')], ['Công thức (khóa lúc phát hành)', esc(br.recipeVersion || '')],
           ['Kế hoạch', lnk('ProductionPlan', po.productionPlanId, o.planNumber)], ['Ngày sản xuất', D.dmy(o.productionDate)], ['Ca', esc(o.shiftName || br.shiftCode || '')],
-          ['Dây chuyền', esc(o.productionLineName || '')], ['Phụ trách', esc(o.responsibleName || '')], ['Số suất kế hoạch', U.num(po.plannedQty || 0)],
+          ['Dây chuyền', esc(o.productionLineName || '')], ['Phụ trách', esc(o.responsibleName || '') + (D.can('prod-order', 'edit') ? ' <a href="javascript:void 0" class="small" data-inline="owner">Sửa</a>' : '')], ['Số suất kế hoạch', U.num(po.plannedQty || 0)],
           ['Bắt đầu kế hoạch', esc(U.dt(po.plannedStartDate))], ['Thực tế', esc([U.dt(po.actualStartDate), po.actualEndDate && U.dt(po.actualEndDate)].filter(Boolean).join(' – '))],
-          ['Trạng thái', esc(br.statusName || st('ProductionOrder', 'Status')(po.status))], ['Ghi chú', esc(po.note || '')]])),
+          ['Trạng thái', esc(br.statusName || st('ProductionOrder', 'Status')(po.status))], ['Ghi chú', `<span style="white-space:pre-wrap">${esc(po.note || '')}</span>` + (D.can('prod-order', 'edit') ? ' <a href="javascript:void 0" class="small" data-inline="note">Sửa</a>' : '')]])),
         notes(d.listWarning) + D.block('Mẻ sản xuất', D.table(rows, batchCols, true))
         + (o.varianceOverCount ? D.block('Chênh lệch tiêu hao vượt ngưỡng', `<div class="small bad">${U.num(o.varianceOverCount)} nguyên liệu vượt ngưỡng – xem tab Giá thành & chênh lệch.</div>`) : ''));
       rowsTo(box, rows, 'ProductionBatche');
+      box.querySelectorAll('[data-inline]').forEach(a => a.onclick = () => orderInline(po, o));
     },
     tabs: [
       { label: 'Mẻ & nguyên liệu', render: (box, o) => { box.innerHTML = APP.prodOrder ? APP.prodOrder.workHtml(o.detail || {}) : D.none; } },
@@ -157,49 +175,33 @@
       return {
         title: 'Kế hoạch ' + no, no, avatar: 'KH', avatarCls: 'biz',
         tags: [p.status ? UI.badge(p.status, 'ProductionPlan', 'Status') : '', o.heldReason ? UI.tag('Chờ COO duyệt', 'orange') : ''],
-        meta: ['Ngày SX ' + D.dmy(p.productionDate), o.organizationUnitName && esc(o.organizationUnitName), o.shiftName && esc(o.shiftName), U.num(d.totalPortions || 0) + ' suất · ' + U.num(o.dishCount || 0) + ' món'],
+        meta: ['Bảng sản xuất ngày ' + D.dmy(p.productionDate), U.num(d.totalPortions || 0) + ' suất · ' + U.num(o.dishCount || 0) + ' món'],
         steps: D.stepsOf(PFLOW, p.status, ['Cancelled'], st('ProductionPlan', 'Status')),
         buttons: [
           { act: 'approve', icon: 'approve', label: 'Duyệt kế hoạch', ok: has(d, 'approve') && Store.canApprove('prod-plan'), primary: true },
-          { act: 'release', icon: 'flow', label: 'Ra lệnh SX', ok: has(d, 'release') && D.can('prod-plan', 'edit'), primary: true },
+          { act: 'release', icon: 'flow', label: 'Ra lệnh ' + (((d.listShift || []).filter(s => !s.released).length) || '') + ' ca', ok: has(d, 'release') && D.can('prod-plan', 'edit'), primary: true },
           { act: 'sheet', icon: 'export', label: 'Phiếu sản xuất', ok: has(d, 'exportProductionSheet') },
         ],
         more: [o.approvalRequestId ? `<button data-h="inbox">Mở màn Phê duyệt</button>` : ''],
       };
     },
+    // UI-6.24 (D-105): trang kế hoạch = "Bảng sản xuất ngày" (modules/prod-board.js) – 4 chỉ số gọn, ma trận Món × Ca, tab Nguyên liệu & giữ chỗ / Chênh lệch & giá thành.
     kpis: o => {
-      const d = o.detail || {}, sh = d.listShift || [], rel = sh.filter(s => s.released).length;
-      return UI.kpi('Tổng suất', U.num(d.totalPortions || 0), U.num(o.dishCount || 0) + ' món', 'utensils', 'blue')
-        + UI.kpi('Ca đã phát hành', `${U.num(rel)} / ${U.num(sh.length)}`, '', 'calendar', sh.length && rel === sh.length ? 'green' : 'orange')
-        + UI.kpi('Lệnh SX', U.num(o.orderCount || 0), `${U.num(o.batchDoneCount || 0)}/${U.num(o.batchCount || 0)} mẻ đạt`, 'clipboard', 'blue')
-        + UI.kpi('Giữ chỗ thiếu', U.num(o.shortReservationCount || 0), 'dòng nguyên liệu', 'alert', o.shortReservationCount ? 'red' : 'green');
+      const d = o.detail || {};
+      return UI.kpi('Suất kế hoạch', U.num(d.totalPortions || 0), U.num(o.dishCount || 0) + ' món', 'utensils', 'blue')
+        + UI.kpi('Mẻ xong', `${U.num(o.batchDoneCount || 0)} / ${U.num(o.batchCount || 0)}`, '', 'chef', o.batchCount && o.batchDoneCount === o.batchCount ? 'green' : 'blue')
+        + UI.kpi('Mẻ chờ QC / bị loại', U.num(o.batchQcOrProblemCount || 0), o.shortReservationCount ? U.num(o.shortReservationCount) + ' dòng thiếu nguyên liệu' : '', 'alert', o.batchQcOrProblemCount ? 'orange' : 'green')
+        + UI.kpi('Lệnh đã đóng', `${U.num(o.orderClosedCount || 0)} / ${U.num(o.orderCount || 0)}`, '', 'clipboard', o.orderCount && o.orderClosedCount === o.orderCount ? 'green' : 'blue');
     },
-    overview: (box, o) => {
+    overview: (box, o, id) => {
       const d = o.detail || {}, p = d.productionPlan || {};
-      box.innerHTML = D.split(
-        D.block('Thông tin kế hoạch', D.kv([['Số kế hoạch', esc(p.planNumber || p.planNo || '')], ['Ngày sản xuất', D.dmy(p.productionDate)], ['Ngày lập', D.dmy(p.planDate)],
-          ['Đơn vị', esc(o.organizationUnitName || '')], ['Ca', esc(o.shiftName || '')], ['Trạng thái', esc(d.statusName || st('ProductionPlan', 'Status')(p.status))],
-          ['Giờ xuất bếp muộn nhất', d.dispatchAt ? esc(U.dt(d.dispatchAt)) : ''], ['Chờ duyệt', o.heldReason ? `<span class="bad">${esc(o.heldReason)}</span>` : '']])),
-        notes(d.listWarning)
-        + D.block('Theo ca', D.table(d.listShift || [], [{ label: 'Ca', html: s => `<b>${esc(s.shiftName || s.shiftCode || '')}</b>` }, { label: 'Suất', num: true, html: s => U.num(s.portions) },
-          { label: 'Phát hành', html: s => (s.released ? UI.tag('Đã phát hành', 'green') : UI.tag('Chưa', 'gray')) }, { label: 'Lệnh / mẻ', num: true, html: s => `${U.num(s.orderCount)} / ${U.num(s.batchCount)}` },
-          { label: 'Xuất bếp', html: s => esc(U.dt(s.dispatchAt)) }]))
-        + D.block('Món & suất', D.table(d.listLine || [], [{ label: 'Món', html: l => `<b>${esc(l.dishName || '')}</b><span class="sub">${esc(l.dishCode || '')}</span>` },
-          { label: 'Suất', num: true, html: l => U.num(l.plannedQuantity) }, { label: 'Theo ca', html: l => esc((l.listShift || []).map(x => `${x.shiftCode}: ${U.num(x.quantity)}`).join(' · ')) }])));
+      const held = o.heldReason ? `<div class="notice warn mb">${I('alert')}<div><b>Hệ thống giữ lại, chờ COO duyệt:</b> ${esc(o.heldReason)}</div></div>` : '';
+      box.innerHTML = held + notes(d.listWarning) + '<div id="pbBoard"></div>';
+      if (APP.prodBoard) APP.prodBoard.render(box.querySelector('#pbBoard'), p.id || id);
     },
     tabs: [
-      { label: 'Lệnh sản xuất', render: (box, o) => {
-        const rows = (o.detail || {}).listOrder || [];
-        box.innerHTML = D.table(rows, [{ label: 'Số lệnh', html: r => `<b>${esc(r.productionOrderNumber || '')}</b>` }, { label: 'Món', html: r => esc(r.dishName || '') }, { label: 'Ca', html: r => esc(r.shiftCode || '') },
-          { label: 'Suất', num: true, html: r => U.num(r.plannedQuantity) }, { label: 'Mẻ', num: true, html: r => U.num(r.batchCount) }, { label: 'Trạng thái', html: r => UI.badge(r.status, 'ProductionOrder', 'Status') }], true);
-        rowsTo(box, rows, 'ProductionOrder');
-      } },
-      { label: 'Mẻ', render: (box, o) => { const rows = (o.detail || {}).listBatch || []; box.innerHTML = D.table(rows, batchCols, true); rowsTo(box, rows, 'ProductionBatche'); } },
-      { label: 'Giữ chỗ nguyên liệu', render: (box, o) => {
-        box.innerHTML = D.table((o.detail || {}).listReservation || [], [{ label: 'Lệnh', html: x => esc(x.productionOrderNumber || '') }, { label: 'Nguyên liệu', html: x => esc(x.ingredientName || x.ingredientCode || '') },
-          { label: 'Cần', num: true, html: x => U.num(x.requiredQuantity, 3) + ' ' + esc(x.unitName || '') }, { label: 'Đã giữ', num: true, html: x => U.num(x.reservedQuantity, 3) },
-          { label: 'Thiếu', num: true, html: x => (x.shortQuantity > 0 ? `<b class="bad">${U.num(x.shortQuantity, 3)}</b>` : '0') }, { label: 'Trạng thái', html: x => esc(x.statusName || x.status || '') }]);
-      } },
+      { label: 'Nguyên liệu & giữ chỗ', render: (box, o, id) => { if (APP.prodBoard) APP.prodBoard.materials(box, ((o.detail || {}).productionPlan || {}).id || id); } },
+      { label: 'Chênh lệch & giá thành', render: (box, o, id) => { if (APP.prodBoard) APP.prodBoard.variance(box, ((o.detail || {}).productionPlan || {}).id || id); } },
     ],
     onAct: (act, o, id) => {
       const p = (o.detail || {}).productionPlan || {}, r = { Id: id, PlanNumber: p.planNumber || p.planNo };

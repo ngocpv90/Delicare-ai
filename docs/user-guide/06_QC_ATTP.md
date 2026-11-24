@@ -31,7 +31,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kho › Lô hàng & hạn dùng | `scm-lot` | X |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X |
 | Sản xuất › Mẻ nấu | `prod-batch` | X |
-| Sản xuất › Sản lượng | `prod-output` | X |
 | Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | S (IX) |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S (IX) |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S (IX) |

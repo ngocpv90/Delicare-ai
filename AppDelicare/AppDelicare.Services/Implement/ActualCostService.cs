@@ -138,11 +138,11 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>BE2.4: Giá thành thực tế chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/CalculateCost, Close) – CRUD Insert không ghi.</summary>
         private Task<string> Insert(ActualCostRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá thành thực tế", "ProductionOrder/CalculateCost, Close"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá thành thực tế", "được hệ thống tính khi đóng lệnh sản xuất hoặc bấm Tính giá thành ở trang lệnh."));
 
         /// <summary>BE2.4: Giá thành thực tế chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/CalculateCost, Close) – CRUD Update không ghi.</summary>
         private Task<string> Update(ActualCostRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá thành thực tế", "ProductionOrder/CalculateCost, Close"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá thành thực tế", "được hệ thống tính khi đóng lệnh sản xuất hoặc bấm Tính giá thành ở trang lệnh."));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {

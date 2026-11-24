@@ -144,7 +144,7 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T17: lệnh SX chỉ sinh khi phát hành kế hoạch (ProductionPlan/Release – số PH-, công thức + ảnh chụp định lượng) – CRUD Insert không ghi.</summary>
         private Task<string> Insert(ProductionOrderRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Lệnh sản xuất", "ProductionPlan/Release"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Lệnh sản xuất", "được hệ thống tạo khi ra lệnh kế hoạch sản xuất. Vào Kế hoạch sản xuất → chọn ngày → Ra lệnh."));
 
         /// <summary>T17: CRUD Update chỉ sửa ghi chú / người phụ trách; trạng thái, món, công thức, số lượng, lịch chỉ đổi qua phát hành kế hoạch và thao tác mẻ.</summary>
         private async Task<string> Update(ProductionOrderRequest request, string typeSave)
@@ -163,7 +163,7 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T17: lệnh SX không xóa (đã có mẻ / phiếu xuất) – hủy lệnh để sau Pilot.</summary>
         private Task<string> Delete(Guid? id, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Lệnh sản xuất", "không xóa"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Lệnh sản xuất", "không xóa được – bấm Hủy lệnh (kèm lý do) ở trang lệnh."));
 
         public async Task<IResult<ProductionOrder>> GetById(Guid id)
         {

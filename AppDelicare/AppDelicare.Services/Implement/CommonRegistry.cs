@@ -79,7 +79,7 @@ namespace AppDelicare.Services.Implement
                 attachable: true, children: [C<StockCountLine>("StockCountId")]),
             R<ProductionPlan>("Kế hoạch sản xuất", "prod-plan", "Status", "ProductionDate", "PlanNumber",
                 "PlanNumber:Số kế hoạch,ProductionDate:Ngày sản xuất,ShiftId,OrganizationUnitId:Bếp,Status", attachable: true, children: [C<ProductionPlanLine>("ProductionPlanId")]),
-            R<ProductionOrder>("Lệnh sản xuất", "prod-order", "Status", "PlannedStartDate", "ProductionOrderNumber,Note",
+            R<ProductionOrder>("Lệnh sản xuất", "prod-plan", "Status", "PlannedStartDate", "ProductionOrderNumber,Note",
                 "ProductionOrderNumber:Số lệnh,PlannedStartDate:Bắt đầu kế hoạch,DishId,ShiftId,PlannedQty,ActualQty:Số suất thực tế,Status,Note", attachable: true),
             R<ProductionBatch>("Mẻ sản xuất", "prod-batch", "Status", "StartDate", "BatchNumber",
                 "BatchNumber:Số mẻ,StartDate,EndDate,DishId,PlannedQuantity:Phần kế hoạch,ActualQuantity:Phần thực tế,AcceptedQty:Phần đạt,RejectedQty:Phần loại,QualityStatus:Kết quả QC,Status",

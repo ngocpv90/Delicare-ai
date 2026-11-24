@@ -160,7 +160,7 @@ namespace AppDelicare.Tests.Production
             orderDetail.GetProperty("listReservation")[0].GetProperty("statusName").GetString().Should().Be("Đã giữ");
             orderDetail.GetProperty("allowedActions").EnumerateArray().Select(a => a.GetString()).Should().Contain(["reserve", "cancel"]);
             (await c.GetResultAsync($"/api/MaterialReservation/GetAll?ProductionOrderId={meatOrder}&Page=1&PageSize=10")).Code.Should().Be(200);
-            (await c.PostFormAsync("/api/MaterialReservation/Insert", ("ProductionOrderId", meatOrder), ("IngredientId", s.Meat), ("UnitId", s.Kg))).Fail("ProductionPlan/Release");
+            (await c.PostFormAsync("/api/MaterialReservation/Insert", ("ProductionOrderId", meatOrder), ("IngredientId", s.Meat), ("UnitId", s.Kg))).Fail("Giữ chỗ bổ sung");
 
             // Xuất tay không gắn lệnh: chỉ còn 50 − 33 = 17 kg khả dụng.
             (await PostJson(c, "/api/MaterialIssue/Create", new { warehouseId = s.Warehouse, listLine = new[] { new { ingredientId = s.Meat, quantity = 18m } } }))
@@ -320,8 +320,9 @@ namespace AppDelicare.Tests.Production
                 .GetProperty("currentStageCode").GetString().Should().Be("CHIA_SUAT");
 
             (await c.PostFormAsync("/api/ProductionBatch/FinishStage", ("Id", batch), ("StageCode", "CHIA_SUAT"))).Ok();
-            (await c.PostFormAsync("/api/ProductionBatch/Pack", ("Id", batch))).Ok();
-            (await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == soupOrder))).Status.Should().Be("Completed");
+            // UI-6.24 (D-105): mẻ cuối đóng gói → lệnh Hoàn thành → hệ thống tự Đóng (chênh lệch, giá thành, giải phóng giữ chỗ dư).
+            (await c.PostFormAsync("/api/ProductionBatch/Pack", ("Id", batch))).Ok().GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("tự đóng"));
+            (await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == soupOrder))).Status.Should().Be("Closed");
 
             // Giá thành: NVL = 4 kg (mẻ) + 0,5 kg (lệnh, chia cho mẻ duy nhất) × 1 000 = 4 500; hao hụt 2 suất × (4 500 / 80) = 112,5 (chỉ phân tích).
             var cost = (await c.PostFormAsync("/api/ProductionOrder/CalculateCost", ("Id", soupOrder))).Ok();
@@ -333,16 +334,15 @@ namespace AppDelicare.Tests.Production
             breakdown.GetProperty("costPerPortion").GetDecimal().Should().Be(Math.Round(4500m / 78m, 4));
             breakdown.GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("không gắn mẻ"));
 
-            // Đóng lệnh: chênh lệch Rau = 4,5 − 5 / 100 × 80 = +0,5 kg (12,5%, vượt 5%), giải phóng giữ chỗ dư.
+            // Đã tự đóng: chênh lệch Rau = 4,5 − 5 / 100 × 80 = +0,5 kg (12,5%, vượt 5%), giải phóng giữ chỗ dư. Lệnh chưa xong vẫn không đóng tay được.
             (await c.PostFormAsync("/api/ProductionOrder/Close", ("Id", await OrderOfAsync(s, s.DishMeat)))).Fail("Hoàn thành");
-            var closed = (await c.PostFormAsync("/api/ProductionOrder/Close", ("Id", soupOrder))).Ok();
-            closed.GetProperty("detail").GetProperty("productionOrder").GetProperty("status").GetString().Should().Be("Closed");
-            var variance = closed.GetProperty("listVariance").EnumerateArray().Single();
+            var closedDetail = (await c.GetResultAsync($"/api/ProductionOrder/GetDetail?id={soupOrder}")).Ok();
+            closedDetail.GetProperty("productionOrder").GetProperty("status").GetString().Should().Be("Closed");
+            var variance = closedDetail.GetProperty("listVariance").EnumerateArray().Single();
             (variance.GetProperty("standardQuantity").GetDecimal(), variance.GetProperty("actualQuantity").GetDecimal(), variance.GetProperty("varianceQuantity").GetDecimal(),
                 variance.GetProperty("variancePercent").GetDecimal(), variance.GetProperty("varianceCost").GetDecimal(), variance.GetProperty("isOverThreshold").GetBoolean())
                 .Should().Be((4m, 4.5m, 0.5m, 12.5m, 500m, true));
-            closed.GetProperty("detail").GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("vượt 5%"));
-            closed.GetProperty("actualCost").GetProperty("totalCost").GetDecimal().Should().Be(4500m);
+            closedDetail.GetProperty("actualCost").GetProperty("totalCost").GetDecimal().Should().Be(4500m);
             (await _factory.QueryAsync(db => db.MaterialReservation.AsNoTracking().SingleAsync(r => r.ProductionOrderId == soupOrder))).Status.Should().Be("Issued");
             (await c.PostFormAsync("/api/ProductionOrder/Close", ("Id", soupOrder))).Fail();
             var list = await c.GetResultAsync($"/api/MaterialConsumptionVariance/GetList?ProductionOrderId={soupOrder}&OverThresholdOnly=true");
@@ -350,7 +350,7 @@ namespace AppDelicare.Tests.Production
             list.ListData.GetArrayLength().Should().Be(1);
             var actual = (await c.GetResultAsync($"/api/ActualCost/GetList?From={s.Day:yyyy-MM-dd}&To={s.Day:yyyy-MM-dd}")).Ok();
             actual.GetProperty("listData").EnumerateArray().Should().ContainSingle(x => x.GetProperty("productionOrderId").GetGuid() == soupOrder);
-            (await c.PostFormAsync("/api/ActualCost/Insert", ("ProductionBatchId", batch))).Fail("CalculateCost");
+            (await c.PostFormAsync("/api/ActualCost/Insert", ("ProductionBatchId", batch))).Fail("Tính giá thành");
 
             // Giá vốn suất: đơn phải Đã giao / Đã đối soát; đối soát nhận 300 / 330 suất.
             (await c.PostFormAsync("/api/MealCost/Calculate", ("OrderId", s.Order))).Fail("Đã giao");

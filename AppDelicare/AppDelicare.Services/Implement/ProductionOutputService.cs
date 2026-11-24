@@ -132,13 +132,13 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T17: sản lượng mẻ chỉ ghi qua ProductionBatch/RecordOutput (1 dòng / mẻ, cập nhật số đạt / loại của mẻ) – CRUD không ghi.</summary>
         private Task<string> Insert(ProductionOutputRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ProductionBatch/RecordOutput, Reject"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ghi ở mẻ nấu (Ghi sản lượng / Loại mẻ)."));
 
         private Task<string> Update(ProductionOutputRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ProductionBatch/RecordOutput, Reject"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ghi ở mẻ nấu (Ghi sản lượng / Loại mẻ)."));
 
         private Task<string> Delete(Guid? id, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ProductionBatch/RecordOutput, Reject"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Sản lượng mẻ", "ghi ở mẻ nấu (Ghi sản lượng / Loại mẻ)."));
 
         public async Task<IResult<ProductionOutput>> GetById(Guid id)
         {

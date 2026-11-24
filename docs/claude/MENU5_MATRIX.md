@@ -63,12 +63,9 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Kho › Vị trí kệ | `scm-location` | X | X | X | — | — | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Kho › Định mức tồn kho | `scm-inv-policy` | X | X | X | — | — | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X | X | S | X | X | X | X | X | — | — | — | — | — | — | — | — | X | X |
-| Sản xuất › Lệnh sản xuất | `prod-order` | X | X | X | S | — | X | X | X | — | — | — | — | — | — | — | — | — | X | — |
 | Sản xuất › Mẻ nấu | `prod-batch` | X | X | X | X | — | — | — | S | — | — | X | — | — | — | — | — | — | X | X |
-| Sản xuất › Sản lượng | `prod-output` | X | X | X | X | — | — | — | X | — | — | — | — | — | — | — | — | — | X | X |
 | Sản xuất › Hao hụt | `prod-waste` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | X (IX) | — | X | — |
-| Sản xuất › Dây chuyền bếp | `prod-line` | X | X | X | Q | — | — | — | X | — | — | S | — | — | — | — | — | — | X | — |
-| Sản xuất › Trạm bếp | `prod-workstation` | X | X | X | Q | — | — | — | X | — | — | S | — | — | — | — | — | — | X | — |
+| Sản xuất › Dây chuyền & trạm bếp | `prod-line` | X | X | X | Q | — | — | — | X | — | — | S | — | — | — | — | — | — | X | — |
 | Giá thành › Giá thành chuẩn | `cost-standard` | X | X | X | S | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |
 | Giá thành › Giá thành thực tế | `cost-actual` | X | X | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | X (IX) | — | X | — |
 | Giá thành › Giá vốn suất ăn | `cost-meal` | X (IX) | X | X | X (IX) | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |

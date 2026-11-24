@@ -113,7 +113,7 @@ namespace AppDelicare.Tests.Production
                 var batch = await db.ProductionBatch.AsNoTracking().SingleAsync(b => b.Id == batchBrief.Id);
                 batch.Status.Should().Be("Packed");
                 batch.AcceptedQty.Should().Be(49);
-                (await db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == batch.ProductionOrderId)).Status.Should().Be("Completed");
+                (await db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == batch.ProductionOrderId)).Status.Should().Be("Closed", "UI-6.24: lệnh Hoàn thành tự Đóng");
                 (await db.ProductionPlan.AsNoTracking().SingleAsync(p => p.Id == plan)).Status.Should().Be("Completed");
                 (await db.MaterialIssue.AsNoTracking().SingleAsync(i => i.ProductionOrderId == batch.ProductionOrderId && (i.Note == null || !i.Note.StartsWith("[XUAT_CA")))).Status.Should().Be("Issued");
                 (await db.InventoryBalance.AsNoTracking().Where(b => b.MaterialLotId == goodLot).SumAsync(b => b.OnHandQuantity)).Should().Be(3);

@@ -131,12 +131,14 @@ namespace AppDelicare.Tests.Production
                 packedResult.ResponseCode.Should().Be(200, packedResult.ResponseMessage);
                 (await batchService.GetDetail(batchBrief.Id)).Data!.ListStage.Should().OnlyContain(s => s.Status == "Done");
 
-                // 5) Đóng lệnh: chênh lệch 0 (xuất đúng định mức), giá thành NVL 5 000.
-                var closed = await orderService.Close(new ProductionActionRequest { Id = productionOrder, Note = "[DEMO]" });
-                closed.ResponseCode.Should().Be(200, closed.ResponseMessage);
-                closed.Data!.ListVariance.Should().ContainSingle().Which.VarianceQuantity.Should().Be(0);
-                closed.Data.ActualCost.MaterialCost.Should().Be(5000);
-                closed.Data.ActualCost.CostPerPortion.Should().Be(100);
+                // 5) UI-6.24 (D-105): mẻ cuối đóng gói → lệnh Hoàn thành → hệ thống TỰ ĐÓNG (cùng logic Close): chênh lệch 0 (xuất đúng định mức), giá thành NVL 5 000.
+                packedResult.Data!.ListWarning.Should().Contain(w => w.Contains("tự đóng"));
+                var closed = (await orderService.GetDetail(productionOrder)).Data!;
+                closed.ProductionOrder.Status.Should().Be("Closed");
+                closed.ListVariance.Should().ContainSingle().Which.VarianceQuantity.Should().Be(0);
+                closed.ActualCost!.MaterialCost.Should().Be(5000);
+                closed.ActualCost.CostPerPortion.Should().Be(100);
+                (await orderService.Close(new ProductionActionRequest { Id = productionOrder, Note = "[DEMO]" })).ResponseCode.Should().Be(400, "đã tự đóng");
 
                 // 6) Giá vốn suất sau đối soát.
                 db.ChangeTracker.Clear();

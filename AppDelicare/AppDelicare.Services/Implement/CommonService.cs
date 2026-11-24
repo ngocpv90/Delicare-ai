@@ -127,7 +127,7 @@ namespace AppDelicare.Services.Implement
                 void Add(string grp, string grpName, string? code, string label, string payload)
                     => list.Add(new FieldQrModel { Group = grp, GroupName = grpName, Code = code, Label = label, Payload = payload, Link = QrCodeRenderer.StartLink(bot, payload) });
 
-                if (Want("CHAMCONG", "prod-workstation"))
+                if (Want("CHAMCONG", "prod-line"))
                 {
                     Add("CHAMCONG", "Cổng chấm công", null, "Chấm công vào / ra ca", "CHAMCONG");
                 }
@@ -138,7 +138,7 @@ namespace AppDelicare.Services.Implement
                         if (SafeCode(x.Code)) Add("LINE", "Dây chuyền / bàn nấu", x.Code, x.Name ?? x.Code!, "LINE_" + x.Code);
                     }
                 }
-                if (Want("LINE", "prod-workstation"))
+                if (Want("LINE", "prod-line"))
                 {
                     foreach (var x in await db.KitchenWorkstation.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => new { x.Code, x.Name }).ToListAsync())
                     {

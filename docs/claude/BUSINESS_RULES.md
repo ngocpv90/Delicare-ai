@@ -104,6 +104,12 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 
 ## 6. Sản xuất
 
+### UI-6.24 (D-105) – Lệnh sản xuất chỉ sinh từ kế hoạch, tự đóng
+- Lệnh SX + mẻ chỉ sinh khi Ra lệnh kế hoạch (`ProductionPlan/Release`); thêm mới lệnh / mẻ / sản lượng / giữ chỗ / giá thành / chênh lệch bằng CRUD bị chặn với câu tiếng Việt chỉ đường làm. Ngoại lệ giữ nguyên: đơn chốt muộn (`SupplementForOrderAsync`), Nấu thêm (`ProductionBatch/CreateExtra`).
+- Lệnh chuyển Hoàn thành (mẻ cuối Đã đóng gói / Không đạt – `CompleteOrderIfDoneAsync`) → **tự Đóng** ngay sau khi thao tác mẻ / đóng gói đã lưu, bằng đúng `ProductionOrder/Close` (chênh lệch tiêu hao, giá thành thực tế, giải phóng + phân bổ lại giữ chỗ dư). Lỗi khi tự đóng chỉ trả cảnh báo, lệnh giữ Hoàn thành.
+- Job `ProductionAutoClose` (giờ `BusinessRules:ProductionAutoCloseTime`, mặc định 22:00): đóng mọi lệnh Hoàn thành còn sót; gửi 1 tin `PRODUCTION_VARIANCE` (khóa theo ngày) liệt kê chênh lệch vượt `ConsumptionVariancePctWarning` của các lệnh thuộc kế hoạch hôm nay cho OPS-KIT + COO. Cờ `ProductionAutoCloseOrder` (mặc định bật) tắt → không tự đóng, không gửi; nút Đóng lệnh tay vẫn dùng được.
+- Quyền: mục Lệnh sản xuất / Sản lượng / Trạm bếp ẩn → quyền API theo màn cha (ProductionOrder → prod-plan, ProductionOutput → prod-batch, KitchenWorkstation → prod-line – `ScreenMap.ParentByClass`). Không vai trò nào mất quyền xem; quyền Sửa không đổi (OPS-PLAN).
+
 ### UI-6.23 (D-104) – Một kế hoạch sản xuất / ngày
 - Khóa kế hoạch = **ngày sản xuất** (`OrganizationUnitId` để trống, không ca). `ProductionPlan/Generate` và `MaterialRequirement/Calculate` bỏ qua đơn vị gửi lên khi tìm / tạo kế hoạch (đơn vị chỉ giới hạn kho khi tính tồn) – đơn Đã chốt lấy cả ngày không lọc đơn vị nên kế hoạch theo đơn vị = nấu gấp đôi.
 - Giữ nguyên: chỉ đơn Đã chốt; kế hoạch Nháp được tính lại, đã duyệt không đổi; tự lập + tự duyệt + tự ra lệnh sau chốt và các lý do giữ lại (BIZ-2.4); bổ sung đơn chốt muộn (D-78).

@@ -427,3 +427,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Gọi Generate 2 lần cho cùng ngày (kể cả gửi Đơn vị) → vẫn 1 kế hoạch.
 - [ ] Vai trò: OPS-PLAN thấy Lập / Tính lại / Ra lệnh, không có Vẫn duyệt; COO có Vẫn duyệt; OPS-KIT chỉ xem; Kinh doanh / Kế toán không mở được (403).
 - [ ] Điện thoại 390: bảng cuộn ngang, cột tên dòng đứng yên.
+
+## UI-6.24 – Sản xuất liền mạch: Bảng sản xuất ngày, lệnh tự đóng, menu Sản xuất 4 mục (D-105)
+- [ ] Menu Sản xuất chỉ còn: Kế hoạch sản xuất · Mẻ nấu · Hao hụt · Dây chuyền & trạm bếp. Link cũ `#/prod-order?id=` → trang lệnh; `#/prod-order` → Kế hoạch; `#/prod-output` → Mẻ nấu tab Sản lượng; `#/prod-workstation` → Dây chuyền tab Trạm bếp.
+- [ ] Trang kế hoạch = Bảng sản xuất ngày: 4 chỉ số đúng; ma trận Món × Ca (nhóm món gập được, dòng tổng, Cả ngày); màu ô theo trạng thái mẻ; bấm ô → hộp lệnh (mẻ, giữ chỗ, phiếu xuất; nút Giữ chỗ bổ sung / Tính giá thành / Hủy lệnh / Mở trang lệnh theo trạng thái).
+- [ ] Mẻ cuối của lệnh Đóng gói (hoặc Loại) → thông báo "hệ thống tự đóng"; lệnh = Đóng, có chênh lệch + giá thành, giữ chỗ dư = Đã giải phóng.
+- [ ] Màn Job tự động: "Đóng lệnh sản xuất đã xong" 22:00; Chạy ngay → đóng lệnh còn sót, chạy lại = 0. Có chênh lệch vượt ngưỡng → 1 tin cho Bếp trưởng + COO.
+- [ ] Trang lệnh: không có Tạo mới / Sửa chung; **Sửa** cạnh Phụ trách / Ghi chú lưu được (ô chọn nhân viên có tìm).
+- [ ] Thêm mới lệnh / mẻ bằng API → câu tiếng Việt "…Vào Kế hoạch sản xuất → chọn ngày → Ra lệnh."
+- [ ] Vai trò: OPS-PLAN thao tác lệnh được; OPS-KIT / COO / QA chỉ xem bảng & lệnh; Kinh doanh không mở được.

@@ -56,6 +56,9 @@ namespace AppDelicare.Model.Model
         public int BatchCount { get; set; }
         public int BatchDoneCount { get; set; }
         public int ShortReservationCount { get; set; }
+        /// <summary>UI-6.24 (D-105): thẻ chỉ số Bảng sản xuất ngày – mẻ chờ QC / bị loại / tạm giữ; lệnh đã đóng.</summary>
+        public int BatchQcOrProblemCount { get; set; }
+        public int OrderClosedCount { get; set; }
     }
 
     /// <summary>Hồ sơ món ăn: công thức hiệu lực + giá vốn NVL / suất, các phiên bản, menu đang dùng, lịch sử nấu (mẻ).</summary>

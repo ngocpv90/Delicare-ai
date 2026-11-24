@@ -154,7 +154,7 @@ namespace AppDelicare.Tests.DetailPages
             e.GetProperty("productionLineName").ValueKind.Should().Be(JsonValueKind.Null, "lệnh chưa gán dây chuyền vẫn mở được trang");
             (await admin.GetResultAsync($"/api/ProductionOrder/GetOverview?id={Guid.NewGuid()}")).Fail("Không tìm thấy");
 
-            await PermissionAsync($"/api/ProductionOrder/GetOverview?id={s.Order}", "prod-order", "prod-batch");
+            await PermissionAsync($"/api/ProductionOrder/GetOverview?id={s.Order}", "prod-plan", "prod-batch"); // UI-6.24 (D-105): lệnh SX theo quyền Kế hoạch sản xuất
         }
 
         [Fact]
@@ -180,7 +180,7 @@ namespace AppDelicare.Tests.DetailPages
             apr.GetProperty("screenId").GetString().Should().Be("prod-plan");
             (await admin.GetResultAsync($"/api/ProductionPlan/GetOverview?id={Guid.NewGuid()}")).Fail("Không tìm thấy");
 
-            await PermissionAsync($"/api/ProductionPlan/GetOverview?id={s.Plan}", "prod-plan", "prod-order");
+            await PermissionAsync($"/api/ProductionPlan/GetOverview?id={s.Plan}", "prod-plan", "prod-batch");
         }
 
         [Fact]

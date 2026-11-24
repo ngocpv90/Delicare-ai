@@ -23,12 +23,9 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kho › Phiếu xuất sản xuất | `scm-issue` | X | — |
 | Kho › Tồn kho | `scm-inv-balance` | X | — |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
-| Sản xuất › Lệnh sản xuất | `prod-order` | X | — |
 | Sản xuất › Mẻ nấu | `prod-batch` | S | — |
-| Sản xuất › Sản lượng | `prod-output` | X | — |
 | Sản xuất › Hao hụt | `prod-waste` | S | — |
-| Sản xuất › Dây chuyền bếp | `prod-line` | X | — |
-| Sản xuất › Trạm bếp | `prod-workstation` | X | — |
+| Sản xuất › Dây chuyền & trạm bếp | `prod-line` | X | — |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S | — |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S | X |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S | — |

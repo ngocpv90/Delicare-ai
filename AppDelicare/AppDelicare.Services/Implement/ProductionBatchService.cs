@@ -253,7 +253,7 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T17: mẻ chỉ sinh khi phát hành kế hoạch (ProductionPlan/Release – số ME-, lịch ngược) – CRUD Insert không ghi.</summary>
         private Task<string> Insert(ProductionBatchRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Mẻ nấu", "ProductionPlan/Release, ProductionBatch/Start / Finish / Release / Pack"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Mẻ nấu", "được hệ thống tạo khi ra lệnh kế hoạch sản xuất. Vào Kế hoạch sản xuất → chọn ngày → Ra lệnh; nấu thêm bằng nút Nấu thêm ở mẻ."));
 
         /// <summary>T17: CRUD Update chỉ đổi trạm bếp của mẻ Kế hoạch / Đang nấu; trạng thái, số, số lượng, giờ chỉ đổi qua action nghiệp vụ.</summary>
         private async Task<string> Update(ProductionBatchRequest request, string typeSave)
@@ -280,7 +280,7 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T17: mẻ không xóa (đã có số ME-, lịch, có thể đã xuất NL / đo nhiệt độ) – hủy mẻ để sau Pilot.</summary>
         private Task<string> Delete(Guid? id, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Mẻ nấu", "không xóa – Reject nếu không đạt"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Mẻ nấu", "không xóa được – mẻ không đạt thì bấm Loại mẻ."));
 
         /// <summary>BE2.1 (spec 7.5 trace, Catalog 118 / 119 – chiều ngược): mẻ → phiếu xuất → lô NL → phiếu nhập → PO → NCC (+ nhiệt độ), kèm xuôi mẻ → đóng gói → đơn → đơn giao → khách.</summary>
         public async Task<IResult<TraceModel>> Trace(Guid id)
@@ -394,6 +394,11 @@ namespace AppDelicare.Services.Implement
                         Log.Warning(ex, "[ProductionBatchService] tự sinh lệnh đóng gói mẻ {Batch}", batch.Id);
                         warnings.Add(string.Format(ConstantHelper.Message.PackingAutoFailed, Number(batch), ex.Message));
                     }
+                }
+                // UI-6.24 (D-105): mẻ cuối xong → lệnh Hoàn thành → tự Đóng (sau commit; lỗi chỉ cảnh báo, job cuối ngày đóng lại).
+                if (order.Status == ProductionOrderStatus.Completed && await ProductionAutoClose.AfterBatchAsync(_services, _rules, _unitOfWork.DbContext, batch.Id) is { } closeNote)
+                {
+                    warnings.Add(closeNote);
                 }
                 var detail = await DetailAsync(batch.Id);
                 detail!.ListWarning.InsertRange(0, warnings);
