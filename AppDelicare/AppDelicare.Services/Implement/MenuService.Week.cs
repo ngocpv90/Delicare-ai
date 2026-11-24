@@ -176,8 +176,11 @@ namespace AppDelicare.Services.Implement
                     for (int day = 1; day <= 7; day++)
                     {
                         decimal cost = ol.Where(l => l.DayOfWeek == day).Sum(l => (dishes.GetValueOrDefault(l.DishId)?.Cost ?? 0m) * (l.PortionQty ?? 1m));
+                        // UI-6.27 (D-108): món chưa có giá thành chuẩn → ngày "thiếu giá", không tính FC (không tính sai bằng cách coi giá 0).
+                        int missing = ol.Count(l => l.DayOfWeek == day && dishes.GetValueOrDefault(l.DishId)?.Cost == null);
+                        option.ListMissingCost.Add(missing);
                         option.ListCost.Add(Math.Round(cost, 0));
-                        decimal? fc = meal.Price is > 0 && cost > 0 ? Math.Round(cost / meal.Price.Value * 100m, 1) : null; // món chưa có giá vốn chuẩn → không tính FC
+                        decimal? fc = missing == 0 && meal.Price is > 0 && cost > 0 ? Math.Round(cost / meal.Price.Value * 100m, 1) : null; // món chưa có giá vốn chuẩn → không tính FC
                         option.ListFcPct.Add(fc);
                         if (fc is { } f)
                         {
@@ -429,7 +432,10 @@ namespace AppDelicare.Services.Implement
                         FcOk = fc == null || fc <= _rules.KpiIngredientToRevenueMaxPct,
                     };
                 })
-                .OrderByDescending(x => x.Same).ThenByDescending(x => x.Model.HasRecipe).ThenByDescending(x => x.Model.DaysSinceUsed == null).ThenByDescending(x => x.FcOk).ThenBy(x => x.Model.DishName)
+                .OrderByDescending(x => x.Same).ThenByDescending(x => x.Model.HasRecipe)
+                // UI-6.27 (D-108): mở từ ngày vượt ngưỡng FC → món rẻ hơn (cùng nhóm) lên trước.
+                .ThenBy(x => request.CheaperFirst ? x.Model.Cost ?? decimal.MaxValue : 0m)
+                .ThenByDescending(x => x.Model.DaysSinceUsed == null).ThenByDescending(x => x.FcOk).ThenBy(x => x.Model.DishName)
                 .Select(x => x.Model).Take(q == null ? 5 : 10).ToList();
                 return new Results<MenuDishSuggestionModel> { ResponseCode = 200, ResponseMessage = ConstantHelper.Message.GetAllSuccessfully, ListData = list, TotalRecords = list.Count };
             }

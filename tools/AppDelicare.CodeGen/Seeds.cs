@@ -276,6 +276,7 @@ public static partial class Seeds
         ("#/prod-output", "Ghi nhận sản lượng", "Sản lượng"),
         ("#/cost-actual", "Giá thành thực tế theo mẻ/lệnh", "Giá thành thực tế"),
         ("#/cost-meal", "Giá thành mỗi suất & Margin", "Giá vốn suất ăn"),
+        ("#/cost-meal", "Giá vốn suất ăn", "Giá vốn & lãi gộp"), // UI-6.27 (D-108): chạy sau dòng trên
         ("#/prod-waste", "Ghi nhận hao hụt", "Hao hụt"),
         ("#/group/06", "QC & An toàn thực phẩm", "Chất lượng & ATTP"),
         ("#/qc-checklist", "Bộ checklist ATTP", "Bộ kiểm tra ATTP"),
@@ -363,7 +364,8 @@ public static partial class Seeds
     /// <summary>UI-6.12 (D-90): bỏ thực đơn riêng theo khách – mục #/menu-assignment ẩn (IsActive = 0), giữ dòng + quyền; script DB/scripts/UI612_hide_menu_assignment.sql.</summary>
     /// <remarks>UI-6.4 (D-83): + "#/crm-price-policy" – điều chỉnh giá làm trong tab giá của hợp đồng (phụ lục), script DB/scripts/UI64_hide_price_policy_menu.sql.</remarks>
     public static readonly string[] Ui6HiddenLinks = ["#/menu-assignment", "#/crm-price-policy", "#/menu-change-request", "#/crm-location", "#/scm-ingredient-cat", "#/menu-dish-cat", "#/scm-uom-conversion",
-        "#/prod-order", "#/prod-output", "#/prod-workstation"]; // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
+        "#/prod-order", "#/prod-output", "#/prod-workstation",
+        "#/cost-standard", "#/cost-actual", "#/group/05b"]; // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
 
     public static string[] HiddenMenuLinks => ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Ui6HiddenLinks];
 

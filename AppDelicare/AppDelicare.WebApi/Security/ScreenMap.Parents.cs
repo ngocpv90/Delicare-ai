@@ -50,6 +50,10 @@ namespace AppDelicare.WebApi.Security
             ["ProductionOrder"] = ("prod-plan", false),
             ["ProductionOutput"] = ("prod-batch", false),
             ["KitchenWorkstation"] = ("prod-line", false),
+            // UI-6.27 (D-108): 3 màn Giá thành gộp thành "Giá vốn & lãi gộp" (cost-meal, nhóm Điều hành) – mọi vai trò xem Giá thành chuẩn / thực tế đều xem cost-meal (UI-6.44).
+            // Giá thành chuẩn chỉ tự tính (Insert / Update chặn); StandardCost/Recalculate theo quyền Sửa Công thức (attribute ở controller).
+            ["StandardCost"] = ("cost-meal", false),
+            ["ActualCost"] = ("cost-meal", false),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -62,6 +66,7 @@ namespace AppDelicare.WebApi.Security
             ["wf-step"] = "wf-inbox", ["wf-decision"] = "wf-inbox", ["wf-item"] = "wf-inbox", ["adm-person"] = "adm-user",
             ["scm-transfer"] = "scm-inv-balance", ["scm-adjustment"] = "scm-inv-balance", ["crm-contact"] = "crm-customer", ["crm-location"] = "crm-customer", ["scm-ingredient-cat"] = "scm-ingredient", ["menu-dish-cat"] = "menu-dish", ["scm-uom-conversion"] = "scm-uom",
             ["prod-order"] = "prod-plan", ["prod-output"] = "prod-batch", ["prod-workstation"] = "prod-line",
+            ["cost-standard"] = "cost-meal", ["cost-actual"] = "cost-meal",
         };
     }
 }

@@ -182,6 +182,8 @@ namespace AppDelicare.Model.Model
     {
         public Guid OrderId { get; set; }
         public string? OrderNumber { get; set; }
+        /// <summary>UI-6.27 (D-108): lọc đơn theo khách ở hộp chi tiết Giá vốn & lãi gộp.</summary>
+        public Guid CustomerId { get; set; }
         public DateTime MealDate { get; set; }
         public string? OrderStatus { get; set; }
         /// <summary>D-78 (3): đơn bù do lỗi Delicare (giá 0, ghi chú [DON_BU:]) – giá vốn là <b>Chi phí lỗi</b>, báo cáo tách riêng, không tính vào giá vốn / lãi gộp suất bán.</summary>

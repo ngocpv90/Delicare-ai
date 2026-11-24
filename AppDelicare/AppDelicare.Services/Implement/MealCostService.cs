@@ -372,6 +372,7 @@ namespace AppDelicare.Services.Implement
             {
                 OrderId = order.Id,
                 OrderNumber = order.OrderNumber ?? order.OrderNo,
+                CustomerId = order.CustomerId,
                 MealDate = order.MealDate,
                 OrderStatus = order.Status,
                 IsFaultCost = order.Note?.Contains("[DON_BU:", StringComparison.Ordinal) == true && (order.TotalAmount ?? 0m) == 0m,

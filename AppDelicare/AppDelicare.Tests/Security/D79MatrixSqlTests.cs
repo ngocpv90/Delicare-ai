@@ -92,7 +92,7 @@ namespace AppDelicare.Tests.Security
                 var wrong = actual.Where(kv => kv.Value != expected.GetValueOrDefault(kv.Key, "0000000")).Select(kv => $"{kv.Key.Item1} × {kv.Key.Item2}: {kv.Value} (đích {expected.GetValueOrDefault(kv.Key, "0000000")})").ToList();
                 wrong.Should().BeEmpty("quyền 19 nhóm sau khi chạy script phải khớp ma trận MENU-5.1");
                 expected.Where(kv => kv.Value[0] == '1').Select(kv => kv.Key).Where(k => !actual.ContainsKey(k))
-                    .Where(k => k.Item2 is not ("#/crm-price-policy" or "#/menu-assignment" or "#/menu-change-request" or "#/crm-location" or "#/scm-ingredient-cat" or "#/menu-dish-cat" or "#/prod-order" or "#/prod-output" or "#/prod-workstation" or "#/scm-uom-conversion")).Should().BeEmpty("mọi mục được cấp trong ma trận (đang bật) đều có dòng quyền – #/menu-assignment (UI-6.12, D-90), #/crm-price-policy (UI-6.4, D-83), #/menu-change-request (UI-6.13, D-91), #/crm-location (UI-6.16, D-97) ẩn nhưng giữ quyền");
+                    .Where(k => k.Item2 is not ("#/crm-price-policy" or "#/menu-assignment" or "#/menu-change-request" or "#/crm-location" or "#/scm-ingredient-cat" or "#/menu-dish-cat" or "#/prod-order" or "#/prod-output" or "#/prod-workstation" or "#/scm-uom-conversion" or "#/cost-standard" or "#/cost-actual")).Should().BeEmpty("mọi mục được cấp trong ma trận (đang bật) đều có dòng quyền – #/menu-assignment (UI-6.12, D-90), #/crm-price-policy (UI-6.4, D-83), #/menu-change-request (UI-6.13, D-91), #/crm-location (UI-6.16, D-97) ẩn nhưng giữ quyền");
 
                 // Kiểm tay các ô đại diện của bảng ROADMAP MENU-5.1 (độc lập với bộ sinh). Cờ: Xem Thêm Sửa Xóa In Xuất Nhập.
                 string F(string role, string link) => actual.GetValueOrDefault((role, link), "0000000");
@@ -143,7 +143,7 @@ namespace AppDelicare.Tests.Security
                     SELECT STRING_AGG(MetaLink, ',') WITHIN GROUP (ORDER BY OrderShow) FROM ObjectMenu
                     WHERE IsDeleted = 0 AND IsActive = 1 AND LevelShow = 1 AND (MetaLink LIKE '#/group/%')
                     """, cn, tx);
-                (await order.ExecuteScalarAsync() as string).Should().Be("#/group/00,#/group/approve,#/group/01,#/group/02,#/group/03,#/group/04,#/group/04b,#/group/05,#/group/05b,#/group/06,#/group/07,#/group/08,#/group/10,#/group/09");
+                (await order.ExecuteScalarAsync() as string).Should().Be("#/group/00,#/group/approve,#/group/01,#/group/02,#/group/03,#/group/04,#/group/04b,#/group/05,#/group/06,#/group/07,#/group/08,#/group/10,#/group/09"); // UI-6.27 (D-108): nhóm Giá thành (#/group/05b) ẩn
                 (await CountAsync("SELECT COUNT(*) FROM ObjectMenu c JOIN ObjectMenu p ON p.Id = c.ParentId WHERE p.MetaLink = '#/group/04b' AND c.IsActive = 1 AND c.IsDeleted = 0")).Should().Be(12);
                 (await CountAsync("SELECT COUNT(*) FROM ObjectMenu WHERE MetaLink IN ('#/crm-contact', '#/wf-inbox?type=scm-pr', '#/crm-price-policy', '#/menu-assignment') AND IsActive = 1 AND IsDeleted = 0")).Should().Be(0);
                 (await CountAsync("SELECT COUNT(*) FROM ObjectMenu WHERE MetaLink = '#/wf-inbox?type=crm-price-policy' AND IsActive = 1 AND IsDeleted = 0")).Should().Be(1, "UI-6.4: quyền duyệt phụ lục điều chỉnh giá");

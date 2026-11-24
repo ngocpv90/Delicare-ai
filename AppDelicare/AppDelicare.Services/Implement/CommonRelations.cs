@@ -225,7 +225,7 @@ namespace AppDelicare.Services.Implement
                 Recipes((db, id) => db.Recipe.Where(x => x.DishId == id)),
                 G<StandardCost>("StandardCost", "Status", (db, id) => db.StandardCost.Where(x => !x.IsDeleted && x.DishId == id)
                     .Select(x => new CommonRow { Id = x.Id, Status = x.Status, At = x.EffectiveFrom, Amount = x.CostPerServing }),
-                    title: "Giá thành chuẩn", screen: "cost-standard",
+                    title: "Giá thành chuẩn", screen: "cost-meal",
                     label: r => string.Join(" – ", new[] { r.At?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture), r.Amount?.ToString("#,0", CultureInfo.InvariantCulture) + " đ/suất" }.Where(s => !string.IsNullOrEmpty(s)))),
             ],
             ["Employee"] =

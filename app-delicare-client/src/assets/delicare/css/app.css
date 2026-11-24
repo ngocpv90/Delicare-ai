@@ -884,3 +884,7 @@ tr.bb-late td{background:#FFF5F4}
 .bb-tl-mark span{position:absolute;top:-2px;left:4px;font-size:10px;background:#fff;padding:0 3px;white-space:nowrap}
 @media(max-width:1100px){.bb-shifts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.bb-now{flex-direction:column;align-items:stretch}.bb-done{grid-template-columns:1fr}.bb-big{width:100%}}
+
+/* UI-6.27 (D-108): Giá vốn & lãi gộp – thanh tỷ lệ NL / DT so vạch ngưỡng */
+.cm-bar{position:relative;display:inline-block;width:90px;height:8px;border-radius:4px;background:#EEF1EC;vertical-align:middle;margin-left:6px}.cm-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#7FA43A}.cm-bar i.orange{background:#E8833A}.cm-bar i.red{background:#B42318}.cm-bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1E2620}
+.cm-table .l{position:sticky;left:0;background:#fff;z-index:1}

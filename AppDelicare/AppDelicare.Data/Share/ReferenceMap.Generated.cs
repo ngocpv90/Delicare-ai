@@ -47,7 +47,7 @@ namespace AppDelicare.Data.Share
             ["Person"] = [("PatientDetail", "PersonId"), ("User", "PersonId")],
             ["Position"] = [("Employee", "PositionId")],
             ["ProductionBatche"] = [("ActualCost", "ProductionBatchId"), ("FoodSafetyChecklistResult", "ProductionBatchId"), ("MealWasteRecord", "ProductionBatchId"), ("PackingOrder", "ProductionBatchId"), ("ProductionOutput", "ProductionBatchId"), ("TemperatureLog", "ProductionBatchId")],
-            ["ProductionLine"] = [("DishCategorie", "ProductionLineId"), ("ProductionOrder", "ProductionLineId")],
+            ["ProductionLine"] = [("ProductionOrder", "ProductionLineId")],
             ["ProductionOrder"] = [("ActualCost", "ProductionOrderId"), ("MaterialConsumptionVariance", "ProductionOrderId"), ("MaterialIssue", "ProductionOrderId"), ("MaterialReservation", "ProductionOrderId"), ("MealWasteRecord", "ProductionOrderId"), ("ProductionBatche", "ProductionOrderId")],
             ["ProductionOutput"] = [("PackingResult", "ProductionOutputId")],
             ["ProductionPlan"] = [("MaterialRequirement", "ProductionPlanId"), ("ProductionOrder", "ProductionPlanId"), ("ProductionPlanLine", "ProductionPlanId")],

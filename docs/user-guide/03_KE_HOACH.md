@@ -17,6 +17,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Điều hành › Bảng điều hành | `dash-exec` | X |
 | Điều hành › Chỉ số theo ngày | `kpi-daily` | X |
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X |
+| Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) |
 | Kinh doanh › Khách hàng | `crm-customer` | X |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X |
@@ -33,9 +34,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Sản xuất › Mẻ nấu | `prod-batch` | X |
 | Sản xuất › Hao hụt | `prod-waste` | X |
 | Sản xuất › Dây chuyền & trạm bếp | `prod-line` | Q |
-| Giá thành › Giá thành chuẩn | `cost-standard` | S |
-| Giá thành › Giá thành thực tế | `cost-actual` | X (IX) |
-| Giá thành › Giá vốn suất ăn | `cost-meal` | X (IX) |
 | Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | X |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | X |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
@@ -135,6 +133,8 @@ Mỗi tuần **một thực đơn chung** cho mọi khách (D-90). **Vòng tuầ
 **Giá vốn món** = giá vốn chuẩn của món (`Dish.StandardCost`) × số phần; món chưa có giá vốn chuẩn không tính FC. **Giá bán** = đơn giá loại suất bình quân các hợp đồng hiệu lực trong tuần.
 
 **Quyền:** Kế hoạch (OPS-PLAN) lập / sửa; bếp, KD xem; COO duyệt / công bố.
+
+**Chi phí nguyên liệu trong Thực đơn tuần (UI-6.27, D-108):** dòng **Giá vốn / FC%** mỗi ngày = Σ giá thành chuẩn / phần các món của lựa chọn ÷ giá bán bình quân (hợp đồng hiệu lực). Ngày có món **chưa có giá thành chuẩn** → ô "–" + chữ "thiếu giá N món" (không tính FC% – tránh tính sai). Ngày **vượt ngưỡng** (đỏ) bấm được → mở chọn món cho món đắt nhất của ngày, gợi ý **món rẻ hơn cùng nhóm** lên trước.
 
 ### 4.5 Thực đơn riêng cho khách – đã bỏ (UI-6.12, D-90)
 - **Không còn thực đơn riêng theo khách**: mọi khách dùng **thực đơn chung Đã công bố** của tuần. Mục menu "Thực đơn riêng cho khách" đã ẩn; dữ liệu phân công cũ giữ lại nhưng không dùng.

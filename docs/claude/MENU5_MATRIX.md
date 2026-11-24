@@ -32,6 +32,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số theo ngày | `kpi-daily` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
+| Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | — | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | X (IX) | — | X | — |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X | X | X | X | — | — | — | — | — | X | — | S | Q (IX) | Q (IX) | — | — | — | X | — |
@@ -66,9 +67,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Sản xuất › Mẻ nấu | `prod-batch` | X | X | X | X | — | — | — | S | — | — | X | — | — | — | — | — | — | X | X |
 | Sản xuất › Hao hụt | `prod-waste` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | X (IX) | — | X | — |
 | Sản xuất › Dây chuyền & trạm bếp | `prod-line` | X | X | X | Q | — | — | — | X | — | — | S | — | — | — | — | — | — | X | — |
-| Giá thành › Giá thành chuẩn | `cost-standard` | X | X | X | S | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |
-| Giá thành › Giá thành thực tế | `cost-actual` | X | X | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | X (IX) | — | X | — |
-| Giá thành › Giá vốn suất ăn | `cost-meal` | X (IX) | X | X | X (IX) | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |
 | Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | X | X | X | X | X | — | X | — | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X | X | X | X | — | — | — | S | X | — | X | — | — | — | — | — | — | X | S (IX) |

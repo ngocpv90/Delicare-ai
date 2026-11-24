@@ -452,3 +452,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Bếp trưởng: 4 chỉ số; Cần làm ngay + **Bắt đầu cả n mẻ**; tab Theo giờ (thanh mẻ, viền đỏ trễ, vạch Bây giờ / Hạn xong nấu); tab Sản lượng & hao hụt ca.
 - [ ] Xuất chuyến: mẻ của món × ca đã lưu mẫu (ở mẻ khác) không còn bị chặn "chưa lưu mẫu".
 - [ ] Vai trò: OPS-KIT thao tác được; QA thấy Đạt / Tạm giữ / Loại ở mẻ Chờ QC; COO chỉ xem; Kinh doanh không mở được.
+
+## UI-6.27 – Giá vốn & lãi gộp (D-108)
+- [ ] Menu Điều hành có "Giá vốn & lãi gộp"; không còn nhóm Giá thành. Link cũ `#/cost-standard`, `#/cost-actual` mở màn mới tab Theo món.
+- [ ] Tháng ◀ ▶; 4 chỉ số (NL / suất so tháng trước, tỷ lệ NL / DT có màu theo ngưỡng, Lãi sau nguyên liệu, Chi phí lỗi); dòng "chỉ gồm nguyên liệu"; dòng "N đơn tạm tính" khi lệnh SX chưa đóng.
+- [ ] Tab Theo khách hàng: tỷ lệ cao nhất trên đầu, dòng Cả tháng = tổng; bấm dòng → theo ngày → đơn; vượt ngưỡng có nút Lập phụ lục điều chỉnh giá.
+- [ ] Tab Theo món: chuẩn vs thực tế, chênh lệch màu, nguyên nhân; bấm món mở Bảng sản xuất ngày. Tab Xu hướng: biểu đồ + đường ngưỡng + Xem bảng số.
+- [ ] Thêm / sửa giá thành chuẩn bằng API → báo "do hệ thống tự tính…".
+- [ ] Thực đơn tuần: ngày có món thiếu giá chuẩn hiện "thiếu giá N món"; ngày đỏ bấm → gợi ý món rẻ hơn cùng nhóm trước.
+- [ ] Quyền: CEO, COO, SAL-HEAD, FIN-ACC xem; OPS-KIT không thấy mục.
