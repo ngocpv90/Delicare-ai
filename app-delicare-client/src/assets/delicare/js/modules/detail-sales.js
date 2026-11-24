@@ -43,6 +43,64 @@
   const openOrder = o => APP.openDetail('Order', o.id, APP.FN['crm-order']);
   const openComplaint = c => APP.openDetail('CustomerComplaint', c.id, APP.FN['log-complaint']);
   const openDelivery = d => APP.openDetail('DeliveryOrder', d.id, APP.FN['log-delivery-order']);
+
+  // UI-6.4 (D-83): tab "Loại suất & đơn giá" – giá gốc → phụ lục điều chỉnh giá (thay mục menu Chính sách giá).
+  const PRICE_ST = { Draft: 'gray', PendingApproval: 'orange', Active: 'green', Rejected: 'red', Expired: 'gray' };
+  const priceTab = (box, x, id) => {
+    box.innerHTML = '<div data-pr>' + D.loading + '</div>';
+    Store.query('Contract/GetPrices', { id }).then(r => {
+      const host = box.querySelector('[data-pr]'); if (!host || !host.isConnected) return;
+      if (!r.ok) { host.innerHTML = '<div class="notice gap">' + I('alert') + '<div>' + esc(r.message || 'Không tải được bảng giá') + '</div></div>'; return; }
+      const d = r.data || {}, ed = D.can('crm-contract', 'edit'), can = ed && d.canAdjust;
+      const meals = (d.listMeal || []).map(m => `<tr><td>${UI.tag(m.mealType || '')} ${esc(m.mealName || '')}</td><td class="num">${U.money(m.basePrice || 0)}</td><td class="num"><b>${U.money(m.todayPrice || 0)}</b></td><td>${esc(m.todaySource || '')}</td></tr>`).join('');
+      const pct = v => v === null || v === undefined ? '–' : `<span class="${v > 0 ? 'warn' : ''}">${v > 0 ? '+' : ''}${U.num(v, 1)}%</span>`;
+      const adj = (d.listAdjustment || []).map(a => `<tr class="${a.appliesToday ? 'hl' : ''}"><td><b>${esc(a.code || '')}</b><span class="sub">${esc(a.reason || '')}</span></td><td>${UI.tag(a.mealType || '')}</td>
+        <td>${D.dmy(a.effectiveFrom)} – ${a.effectiveTo ? D.dmy(a.effectiveTo) : 'hết hợp đồng'}</td><td class="num">${U.money(a.oldPrice || 0)} → <b>${U.money(a.newPrice || 0)}</b></td><td class="num">${pct(a.changePct)}</td>
+        <td><span class="badge ${PRICE_ST[a.status] || 'gray'}">${esc(a.statusName || '')}</span>${a.appliesToday ? ' <span class="badge green">Đang áp hôm nay</span>' : ''}</td>
+        <td>${a.approvedBy ? esc(a.approvedBy) + '<span class="sub">' + esc(U.dt(a.approvedAt)) + '</span>' : '–'}</td>
+        <td>${a.fileCount ? a.fileCount + ' tệp' : '<span class="bad">Chưa có</span>'}</td>
+        <td class="row-flex">${ed && a.status === 'Draft' ? `<button class="btn xs" data-pa-file="${a.id}">${I('file')} Đính kèm phụ lục</button><button class="btn xs primary" data-pa-submit="${a.id}" ${a.fileCount ? '' : 'disabled title="Đính kèm phụ lục đã ký trước khi gửi duyệt"'}>Gửi duyệt</button>` : ''}${ed && (a.status === 'Draft' || a.status === 'Rejected') ? `<button class="btn xs danger" data-pa-del="${a.id}">${I('trash')}</button>` : ''}${a.approvalRequestId && a.status === 'PendingApproval' ? `<button class="btn xs" data-pa-inbox="${a.approvalRequestId}">Xem duyệt</button>` : ''}</td></tr>`).join('');
+      host.innerHTML = (d.listWarning || []).map(w => '<div class="notice warn mb">' + I('alert') + '<div>' + esc(w) + '</div></div>').join('')
+        + `<div class="spread mb"><div class="panel-title">Giá gốc và giá đang áp hôm nay</div>${can ? `<button class="btn primary" data-pa-new>${I('plus')} Điều chỉnh giá</button>` : ''}</div>
+        <div class="table-wrap mb"><table class="table dc-table dt"><thead><tr><th>Loại suất</th><th class="num">Giá gốc (hợp đồng)</th><th class="num">Đang áp hôm nay</th><th>Theo</th></tr></thead><tbody>${meals || '<tr><td colspan="4" class="muted">Hợp đồng chưa có loại suất</td></tr>'}</tbody></table></div>
+        <div class="panel-title mb">Lịch sử điều chỉnh giá (phụ lục)</div>
+        <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Phụ lục</th><th>Loại suất</th><th>Áp dụng</th><th class="num">Giá cũ → mới</th><th class="num">Chênh</th><th>Trạng thái</th><th>Người duyệt</th><th>Phụ lục đã ký</th><th></th></tr></thead><tbody>${adj || '<tr><td colspan="9" class="muted">Chưa có điều chỉnh giá – giá áp theo giá gốc trong hợp đồng</td></tr>'}</tbody></table></div>
+        <div class="small muted mt">Giá trên đơn cố định lúc chốt: phụ lục duyệt sau giờ chốt không đổi đơn đã chốt. Gửi duyệt cần đính kèm phụ lục đã ký (PDF / ảnh).</div>`;
+      const reload = () => priceTab(box, x, id);
+      const nb = host.querySelector('[data-pa-new]'); if (nb) nb.onclick = () => priceForm(d, id, reload);
+      host.querySelectorAll('[data-pa-file]').forEach(b => b.onclick = () => {
+        const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,.png,.jpg,.jpeg';
+        inp.onchange = () => { const f = inp.files && inp.files[0]; if (!f) return; const fd = new FormData(); fd.append('File', f); fd.append('Category', 'other'); fd.append('Resource', 'PricePolicy'); fd.append('RecordId', b.dataset.paFile);
+          Store.act('DocumentFile/Upload', { json: fd }).then(rr => { if (rr.ok) { UI.toast('Đã đính kèm ' + esc(f.name), 'ok'); reload(); } }); };
+        inp.click();
+      });
+      host.querySelectorAll('[data-pa-submit]').forEach(b => b.onclick = () => Store.act('Contract/SubmitPriceAdjustment', { form: { Id: b.dataset.paSubmit } }).then(rr => { if (rr.ok) { UI.toast(rr.message || 'Đã gửi duyệt', 'ok'); reload(); } }));
+      host.querySelectorAll('[data-pa-del]').forEach(b => b.onclick = () => UI.confirm('Xóa phụ lục điều chỉnh giá này?', () => Store.act('Contract/DeletePriceAdjustment', { form: { Id: b.dataset.paDel } }).then(rr => { if (rr.ok) reload(); }), { danger: true, ok: 'Xóa' }));
+      host.querySelectorAll('[data-pa-inbox]').forEach(b => b.onclick = () => APP.go('wf-inbox?id=' + b.dataset.paInbox));
+    });
+  };
+  // Form "+ Điều chỉnh giá": hợp đồng chọn sẵn, nhiều loại suất, giá mới > 0, áp dụng từ ≥ ngày mai (trong hiệu lực), đến ngày trống = hết hợp đồng, lý do.
+  const priceForm = (d, id, done) => {
+    const iso = v => (v ? String(v).slice(0, 10) : '');
+    const rows = (d.listMeal || []).map(m => `<tr><td><label class="row-flex"><input type="checkbox" data-pm="${esc(m.mealType)}"> ${UI.tag(m.mealType || '')} ${esc(m.mealName || '')}</label></td><td class="num">${U.money(m.todayPrice || 0)}</td><td><input class="input" type="number" min="1" step="500" data-pp="${esc(m.mealType)}" placeholder="Giá mới" style="width:140px"></td></tr>`).join('');
+    UI.modal({
+      title: 'Điều chỉnh giá (phụ lục hợp đồng)', sub: 'Lập phụ lục Nháp → đính kèm phụ lục đã ký → gửi duyệt',
+      body: `<div class="table-wrap mb"><table class="table dc-table"><thead><tr><th>Loại suất</th><th class="num">Đang áp</th><th>Giá mới (₫)</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <div class="grid g2"><div><label class="form-label">Áp dụng từ ngày *</label><input class="input" type="date" id="paFrom" min="${iso(d.minEffectiveFrom)}" value="${iso(d.minEffectiveFrom)}" ${d.contractEffectiveTo ? 'max="' + iso(d.contractEffectiveTo) + '"' : ''}></div>
+        <div><label class="form-label">Đến ngày (trống = hết hợp đồng)</label><input class="input" type="date" id="paTo" min="${iso(d.minEffectiveFrom)}" ${d.contractEffectiveTo ? 'max="' + iso(d.contractEffectiveTo) + '"' : ''}></div></div>
+        <div class="mt"><label class="form-label">Lý do</label><input class="input" id="paReason" maxlength="500" placeholder="vd. Giá nguyên liệu tăng – phụ lục số 01"></div>`,
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="paSave">Lập phụ lục</button>',
+      onMount: (m, close) => {
+        m.querySelectorAll('[data-pp]').forEach(i => i.oninput = () => { const c = m.querySelector(`[data-pm="${i.dataset.pp}"]`); if (c) c.checked = !!i.value; });
+        m.querySelector('#paSave').onclick = () => {
+          const lines = [...m.querySelectorAll('[data-pm]')].filter(c => c.checked).map(c => ({ mealType: c.dataset.pm, unitPrice: Number((m.querySelector(`[data-pp="${c.dataset.pm}"]`) || {}).value || 0) }));
+          if (!lines.length) return UI.toast('Chọn ít nhất 1 loại suất và nhập giá mới', 'err');
+          const body = { contractId: id, listLine: lines, effectiveFrom: m.querySelector('#paFrom').value, effectiveTo: m.querySelector('#paTo').value || null, reason: m.querySelector('#paReason').value };
+          Store.act('Contract/CreatePriceAdjustment', { json: body }).then(r => { if (r.ok) { UI.toast(r.message || 'Đã lập phụ lục', 'ok'); close(); done(); } });
+        };
+      },
+    });
+  };
   const notices = list => list.filter(Boolean).map(([cls, html]) => `<div class="notice ${cls} mb">${I('alert')}<div>${html}</div></div>`).join('');
 
   // ================================================================ ĐƠN ĐẶT SUẤT
@@ -171,6 +229,7 @@
       bindLinks(box);
     },
     tabs: [
+      { label: 'Loại suất & đơn giá', screen: 'crm-contract', render: (box, x, id) => priceTab(box, x, id) },
       { label: 'Đơn hàng', screen: 'crm-order', render: (box, x) => { box.innerHTML = '<div class="small muted mb">20 đơn gần nhất theo ngày ăn.</div><div data-t></div>'; fill(box, '[data-t]', x.listRecentOrder || [], orderCols, openOrder); } },
     ],
     onAct: (act, x, id, reload) => {

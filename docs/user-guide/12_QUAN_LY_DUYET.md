@@ -46,7 +46,7 @@
 | Đổi nhóm quyền (USER_ACCOUNT_GROUP) | Đổi chức danh mà nhóm gợi ý mới khác nhóm hiện tại | `adm-user` | FIN-IT |
 | Mở lại tài khoản (USER_ACCOUNT_REOPEN) | Nhân viên nghỉ việc quay lại làm (trạng thái *Đang làm*) | `adm-user` | FIN-IT |
 
-- Hợp đồng · Chính sách giá · Đơn mua ≥ 50 triệu: CEO (D-79 a6 – CEO chỉ duyệt việc lớn; quá hạn vẫn leo thang lên CEO). Mục *Phê duyệt › Chính sách giá* đang **ẩn** vì chưa có loại duyệt nào dùng (chính sách giá có hiệu lực ngay khi lưu) – em ghi GAP-PERM-03; mục cũ *Đề nghị mua hàng* (`scm-pr`) ẩn (D-52 a).
+- Hợp đồng · Chính sách giá · Đơn mua ≥ 50 triệu: CEO (D-79 a6 – CEO chỉ duyệt việc lớn; quá hạn vẫn leo thang lên CEO). Mục *Phê duyệt › Chính sách giá* là quyền duyệt **Phụ lục điều chỉnh giá** của hợp đồng (UI-6.4, D-83 – đóng GAP-PERM-03): tóm tắt giá cũ → giá mới, chênh %, ngày áp dụng, có file phụ lục đã ký chưa; mục cũ *Đề nghị mua hàng* (`scm-pr`) ẩn (D-52 a).
 - DB đang chạy: quyền duyệt đặt bằng `DB/scripts/D79_permission_matrix.sql` (thay `BIZ2_order_approvers.sql`).
 
 - Mỗi cấp có **hạn xử lý 48 giờ**; quá hạn hiện nhãn **Quá hạn** nhưng **vẫn duyệt / từ chối được** (BIZ-1.6, D-77 f) – không phải hủy gửi lại; người gửi vẫn hủy được nếu muốn. Leo thang qua bot: quá hạn → báo người duyệt của cấp; quá thêm 24 giờ → báo **COO**; quá thêm 24 giờ nữa (48 giờ sau hạn) → báo **CEO**.

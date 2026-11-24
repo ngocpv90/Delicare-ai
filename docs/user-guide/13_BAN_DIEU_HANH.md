@@ -14,6 +14,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Menu › Mục | screen-id | CEO | CEO-PMO | COO | FIN-ACC |
 |---|---|---|---|---|---|
 | Phê duyệt › Hợp đồng | `wf-inbox?type=crm-contract` | Duyệt | — | — | — |
+| Phê duyệt › Chính sách giá | `wf-inbox?type=crm-price-policy` | Duyệt | — | — | — |
 | Phê duyệt › Đơn đặt suất (sửa sau chốt) | `wf-inbox?type=crm-order` | — | — | Duyệt | — |
 | Phê duyệt › Công thức chế biến | `wf-inbox?type=menu-recipe` | — | — | Duyệt | — |
 | Phê duyệt › Thực đơn tuần | `wf-inbox?type=menu-menu` | — | — | Duyệt | — |
@@ -32,7 +33,6 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X (IX) |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | X (IX) |
-| Kinh doanh › Chính sách giá | `crm-price-policy` | X | X | X | X (IX) |
 | Kinh doanh › Đơn đặt suất | `crm-order` | X | X | X | X (IX) |
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | X (IX) |
 | Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | X (IX) |

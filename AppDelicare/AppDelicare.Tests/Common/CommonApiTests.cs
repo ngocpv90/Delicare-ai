@@ -31,7 +31,8 @@ namespace AppDelicare.Tests.Common
             foreach (var r in CommonRegistry.All)
             {
                 ScreenMap.ByClass.Should().ContainKey(r.Key);
-                ScreenMap.ByClass[r.Key].Should().Be(r.ScreenId, $"màn của {r.Key} phải khớp ScreenMap");
+                string expectedScreen = ScreenMap.ParentByClass.TryGetValue(r.Key, out var parent) ? parent.Screen : ScreenMap.ByClass[r.Key];
+                expectedScreen.Should().Be(r.ScreenId, $"màn của {r.Key} phải khớp ScreenMap (bảng con / màn ẩn → màn cha)");
                 var props = r.EntityType.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToDictionary(p => p.Name);
                 foreach (var c in r.SearchColumns)
                 {

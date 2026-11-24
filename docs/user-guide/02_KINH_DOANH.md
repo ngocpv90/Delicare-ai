@@ -4,7 +4,7 @@
 
 - Nhóm quyền: **SAL-SALES** (2.2 Bán hàng) và **SAL-CON** (2.3 Quản lý hợp đồng / đơn hàng). Cùng một bộ quyền.
 - Bot dùng: **Vận hành** (phân hệ 💼 Kinh doanh). Trưởng phòng được cấp thêm bot **Điều hành**.
-- Việc chính: hồ sơ khách hàng, hợp đồng + loại suất, dự báo, chính sách giá, **đơn hàng hằng ngày (chốt trước 20:00)**, đối soát suất.
+- Việc chính: hồ sơ khách hàng, hợp đồng + loại suất (điều chỉnh giá bằng phụ lục trong hợp đồng), dự báo, **đơn hàng hằng ngày (chốt trước 20:00)**, đối soát suất.
 
 ## 2. Màn hình được dùng
 
@@ -20,7 +20,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | — | — | X | — |
 | Kinh doanh › Khách hàng | `crm-customer` | S | Q (IX) | Q (IX) | X |
 | Kinh doanh › Hợp đồng | `crm-contract` | S | Q (IX) | Q (IX) | — |
-| Kinh doanh › Chính sách giá | `crm-price-policy` | S | Q (IX) | Q (IX) | — |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | S | Q (IX) | Q (IX) | — |
 | Kinh doanh › Đơn đặt suất | `crm-order` | S | Q (IX) | Q (IX) | X |
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | S | Q (IX) | Q (IX) | — |
@@ -185,10 +184,15 @@ Dùng khi khách đăng ký **số suất theo từng lựa chọn cho cả tu�
 - **Đổi món**: bộ phận Kế hoạch tạo **Yêu cầu đổi món** (`03_KE_HOACH.md`).
 - Trước giờ chốt không cần duyệt: sửa số trực tiếp (lệch > 30 % so trung bình 4 tuần chỉ cảnh báo – mục 4.5).
 
-### 4.7 Chính sách giá – `crm-price-policy`
-- Danh sách chính sách giá theo khách / hợp đồng / loại suất / thời gian hiệu lực (thêm / sửa bằng form chung).
-- **Tra đơn giá áp dụng**: chọn **Khách hàng***, Hợp đồng, Loại suất (trống = mọi loại), Ngày áp dụng → **Tra giá** → đơn giá + nguồn (*Chính sách giá theo hợp đồng* → *theo khách hàng* → *Đơn giá loại suất trong hợp đồng*).
-- Lỗi: *Chồng thời gian hiệu lực với chính sách giá khác…*, *Đơn giá phải lớn hơn 0*, *Không tìm thấy đơn giá áp dụng…*.
+### 4.7 Điều chỉnh giá – phụ lục trong hợp đồng (UI-6.4, D-83)
+Mục menu "Chính sách giá" **đã bỏ**: đổi giá giữa kỳ làm bằng **phụ lục điều chỉnh giá** ngay trong hợp đồng (link cũ tới Chính sách giá tự mở hợp đồng).
+1. Mở hợp đồng **đang Hiệu lực** → tab **Loại suất & đơn giá**: bảng giá gốc theo loại suất + giá **đang áp hôm nay** (theo giá gốc hay theo phụ lục nào).
+2. Bấm **+ Điều chỉnh giá** (quyền Sửa hợp đồng): tích loại suất + nhập **giá mới** (> 0, nhiều loại suất một lần được), **Áp dụng từ ngày** (từ ngày mai, trong hiệu lực hợp đồng), **Đến ngày** (trống = hết hợp đồng), **Lý do** → **Lập phụ lục** (Nháp).
+3. Trên dòng phụ lục: **Đính kèm phụ lục** (bản đã ký hai bên – PDF / ảnh) → **Gửi duyệt**. Chưa đính kèm thì không gửi duyệt được.
+4. Người duyệt (CEO) duyệt ở màn **Phê duyệt** (loại *Phụ lục điều chỉnh giá* – thấy giá cũ → giá mới, chênh %, ngày áp dụng, có phụ lục chưa). Duyệt → **Hiệu lực**; từ chối → *Từ chối* kèm lý do (xóa được bản Nháp / Từ chối).
+- **Lịch sử điều chỉnh giá** trong tab: từng phụ lục (từ – đến ngày, giá cũ → mới, chênh %, trạng thái, người duyệt, số tệp phụ lục); phụ lục **đang áp hôm nay** được tô đậm.
+- **Tra giá khi chốt đơn:** phụ lục đang hiệu lực của hợp đồng → giá gốc trong hợp đồng. Giá trên đơn **cố định lúc chốt** – phụ lục duyệt sau giờ chốt không đổi đơn đã chốt.
+- Lỗi: *Chỉ điều chỉnh giá khi hợp đồng đang Hiệu lực*, *Áp dụng từ ngày phải từ ngày mai…*, *Thời gian áp dụng phải nằm trong hiệu lực hợp đồng…*, *Loại suất … đã có phụ lục … chồng thời gian áp dụng*, *Chưa đính kèm phụ lục đã ký…*.
 
 ### 4.7b Bảng kê thanh toán – `crm-billing` (BIZ-3.2)
 Quyền: Kinh doanh + Kế toán (xem / xuất / in). Chọn **Khách hàng***, Hợp đồng (trống = tất cả), **Từ – Đến** (mặc định tháng trước, tối đa 3 tháng) → **Lập bảng kê**.
@@ -226,7 +230,7 @@ Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn �
 | Chưa có thực đơn áp dụng cho … ngày … – không chọn được lựa chọn | Gán thực đơn cho khách hoặc nhờ Kế hoạch công bố thực đơn chung |
 | Trùng dòng suất (cùng suất hợp đồng, ca và lựa chọn) | Mỗi lựa chọn chỉ 1 dòng |
 | Không phải phiếu đăng ký suất của hệ thống / Phiếu không đúng khách / điểm giao / tuần | Tải lại phiếu từ màn Đăng ký suất tuần đúng khách, điểm giao, tuần; không sửa hàng / cột ẩn |
-| Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp | Hợp đồng đã duyệt chỉ Thanh lý; muốn đổi giá → chính sách giá hoặc hợp đồng mới |
+| Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp | Hợp đồng đã duyệt chỉ Thanh lý; muốn đổi giá → **phụ lục điều chỉnh giá** trong hợp đồng (4.7) hoặc hợp đồng mới |
 | Số hợp đồng … đã tồn tại | Để trống ô số để tự sinh |
 | Hợp đồng đã hết hạn (…) – không duyệt được | Sửa ngày hiệu lực rồi gửi lại |
 | Khoảng ngày không hợp lệ (tối đa 62 ngày) | Thu hẹp khoảng ngày dự báo |

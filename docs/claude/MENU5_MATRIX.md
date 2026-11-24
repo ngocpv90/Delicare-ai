@@ -10,6 +10,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Việc của tôi › Việc của tôi | `hr-my` | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X |
 | Phê duyệt › Tất cả yêu cầu duyệt | `wf-inbox?type=wf-inbox` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Phê duyệt › Hợp đồng | `wf-inbox?type=crm-contract` | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Phê duyệt › Chính sách giá | `wf-inbox?type=crm-price-policy` | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Phê duyệt › Đơn đặt suất (sửa sau chốt) | `wf-inbox?type=crm-order` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | Duyệt | — | — | — | — | — |
 | Phê duyệt › Công thức chế biến | `wf-inbox?type=menu-recipe` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Phê duyệt › Thực đơn tuần | `wf-inbox?type=menu-menu` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
@@ -33,7 +34,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X | — | — | — | — | — | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | — | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | X (IX) | — | X | — |
-| Kinh doanh › Chính sách giá | `crm-price-policy` | X | X | X | X | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | X (IX) | — | X | — |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X | X | X | X | — | — | — | — | — | X | — | S | Q (IX) | Q (IX) | — | — | — | X | — |
 | Kinh doanh › Đơn đặt suất | `crm-order` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | X | X | X | X | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | — | — | X | — |

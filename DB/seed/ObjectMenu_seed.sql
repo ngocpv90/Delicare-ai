@@ -22,7 +22,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/crm-contact
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/crm-location' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Điểm giao hàng', N'P1', N'#/crm-location', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/02' AND IsDeleted = 0), 2, 203, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/crm-price-policy' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Chính sách giá', N'P2', N'#/crm-price-policy', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/02' AND IsDeleted = 0), 2, 204, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Chính sách giá', N'P2', N'#/crm-price-policy', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/02' AND IsDeleted = 0), 2, 204, 0, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/crm-contract' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Hợp đồng', N'P3', N'#/crm-contract', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/02' AND IsDeleted = 0), 2, 205, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/crm-contract-meal' AND IsDeleted = 0)
@@ -432,7 +432,7 @@ UPDATE [dbo].[ObjectMenu] SET Name = N'Kế hoạch sản xuất', ModifiedDate 
 UPDATE [dbo].[ObjectMenu] SET Name = N'Kiểm tra hàng nhập', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=qc-inspection' AND IsDeleted = 0 AND Name IN (N'Phiếu QC đầu vào', N'Duyệt – Phiếu QC đầu vào');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Tất cả yêu cầu duyệt', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=wf-inbox' AND IsDeleted = 0 AND Name IN (N'Hộp phê duyệt tập trung', N'Duyệt – Hộp phê duyệt tập trung');
 -- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB; MENU-4 (D-75 e): ẩn bảng con, màn chưa làm, mục trùng (IsActive = 0, không xóa).
-UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment') AND IsDeleted = 0 AND IsActive = 1;
+UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment', N'#/crm-price-policy') AND IsDeleted = 0 AND IsActive = 1;
 -- MENU-5 (D-79): 14 nhóm theo vai trò. Seed CHỈ THÊM nhóm / mục mới (đặt thẳng vào chỗ mới); chuyển nhóm / thứ tự / đổi tên / ẩn – mở CHỈ áp cho dòng do chính lần chạy
 -- này tạo (DB mới). DB đang chạy: sắp lại bằng DB/scripts/D79_menu_regroup.sql (DryRun, AuditChange). Nguồn: tools/AppDelicare.CodeGen/Seeds.Menu5.cs.
 DECLARE @By UNIQUEIDENTIFIER = @SeedBy;
@@ -444,7 +444,7 @@ INSERT INTO @P VALUES
     (N'#/group/approve', 1, NULL, 9900, 9900, N'', NULL, 20, N'Phê duyệt', N'approve', NULL),
     (N'#/wf-inbox?type=wf-inbox', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9901, N'', N'', NULL),
     (N'#/wf-inbox?type=crm-contract', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9902, N'', N'', NULL),
-    (N'#/wf-inbox?type=crm-price-policy', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9903, N'', N'', 0),
+    (N'#/wf-inbox?type=crm-price-policy', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9903, N'', N'', 1),
     (N'#/wf-inbox?type=crm-order', 2, N'#/group/approve', 9901, 9999, N'Đơn đặt suất|Đơn đặt suất ăn', N'#/group/approve', 9904, N'Đơn đặt suất (sửa sau chốt)', N'', NULL),
     (N'#/wf-inbox?type=menu-recipe', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9905, N'', N'', NULL),
     (N'#/wf-inbox?type=menu-menu', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9906, N'', N'', NULL),
@@ -471,7 +471,7 @@ INSERT INTO @P VALUES
     (N'#/group/02', 1, NULL, 200, 200, N'Kinh doanh & Đơn hàng', NULL, 200, N'Kinh doanh', N'sales', NULL),
     (N'#/crm-customer', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 201, N'', N'', NULL),
     (N'#/crm-contract', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 202, N'', N'', NULL),
-    (N'#/crm-price-policy', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 203, N'', N'', NULL),
+    (N'#/crm-price-policy', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 203, N'', N'', 0),
     (N'#/crm-order-week', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 204, N'', N'', NULL),
     (N'#/crm-order', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 205, N'', N'', NULL),
     (N'#/crm-forecast', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 206, N'', N'', NULL),

@@ -37,6 +37,9 @@ namespace AppDelicare.Services.Implement
                 "Code:Mã KH,Name:Tên khách hàng,CustomerType:Loại khách,PhoneNumber:Điện thoại,Email,Address,TaxCode:Mã số thuế,Status,Note", attachable: true),
             R<Contract>("Hợp đồng", "crm-contract", "Status", "EffectiveFrom", "ContractNumber,Name",
                 "ContractNumber:Số hợp đồng,Name:Tên hợp đồng,CustomerId,SignedDate:Ngày ký,EffectiveFrom,EffectiveTo,ContractValue:Giá trị hợp đồng,Status,Note", attachable: true),
+            // UI-6.4 (D-83): file phụ lục đã ký gắn theo dòng điều chỉnh giá – quyền theo màn Hợp đồng.
+            R<PricePolicy>("Phụ lục điều chỉnh giá", "crm-contract", "Status", "EffectiveFrom", "Code,Name,MealType",
+                "Code:Số phụ lục,MealType:Loại suất,UnitPrice:Đơn giá mới,EffectiveFrom:Áp dụng từ,EffectiveTo:Đến ngày,Status,Name:Lý do", attachable: true),
             R<Forecast>("Dự báo suất ăn", "crm-forecast", "Status", "ForecastDate", "MealType,Note",
                 "ForecastDate:Ngày,CustomerId,ShiftId,MealType:Bữa,ForecastQuantity:Số suất dự báo,VersionNo,Status,Note"),
             R<Order>("Đơn đặt suất", "crm-order", "Status", "MealDate", "OrderNumber,Note",

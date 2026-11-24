@@ -1,6 +1,34 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.4 (D-83) DONE – Chính sách giá → "Phụ lục điều chỉnh giá" trong hợp đồng** (nhánh `feat/UI-6.4-price-appendix`). Không thêm bảng / cột: phụ lục = dòng `PricePolicy` có `ContractId` (Nháp → Chờ duyệt → Hiệu lực / Từ chối; "Hết hiệu lực" suy ra).
+  - **BE:**
+    - `PriceAdjustmentService` + API `Contract/GetPrices`, `CreatePriceAdjustment` (nhiều loại suất), `SubmitPriceAdjustment`, `DeletePriceAdjustment` – quyền theo Hợp đồng.
+    - Luật lập phụ lục:
+      - hợp đồng Hiệu lực;
+      - giá > 0;
+      - từ ≥ ngày mai và trong hiệu lực hợp đồng;
+      - đến trống = hết hợp đồng;
+      - không chồng thời gian cùng loại suất;
+      - **gửi duyệt bắt buộc có file phụ lục đã ký** (Tài liệu đính kèm, tài nguyên `PricePolicy` mới trong `CommonRegistry`).
+    - Duyệt qua engine: handler mới `PRICE_ADJUSTMENT` (mục quyền `#/wf-inbox?type=crm-price-policy` mở lại – CEO; **đóng GAP-PERM-03**). Tóm tắt: giá cũ → mới, chênh %, ngày áp, file; cờ khi đổi ≥ 10 % / chưa có file. Người gửi không tự duyệt.
+    - Tra giá `PricePolicy/Resolve`: phụ lục Hiệu lực của hợp đồng → giá gốc `ContractMeal`. Bản cũ theo khách chỉ còn đọc cho khách chưa chuyển được, có log cảnh báo. Giá đơn cố định lúc chốt (BIZ-1.5) giữ nguyên.
+    - Quyền API `PricePolicy` theo màn cha Hợp đồng (`ScreenMap.ParentByClass`), vì mục menu ẩn thì quyền màn đó không còn tính.
+  - **Menu + DB:**
+    - `#/crm-price-policy` ẩn (giữ dòng + quyền, CodeGen `Ui6HiddenLinks`); mục duyệt mở lại (`Menu5ShownLinks`).
+    - Sinh lại seed / `D79_menu_regroup.sql` / `catalog.js` / `MENU5_MATRIX.md` / bảng HDSD.
+    - Script `DB/scripts/UI64_hide_price_policy_menu.sql` (ẩn / mở menu + chuyển chính sách theo khách sang hợp đồng hiệu lực duy nhất, liệt kê phần chờ anh). **Chạy thật DB dev:** 2 mục menu đổi; **0 chính sách theo khách cũ** (DB dev không có) → không có mục chờ anh quyết; chạy lại = 0; UserRole 3.258 → 3.258. 2 script D79 chạy thử sau đó = 0 việc.
+  - **FE:**
+    - Trang Hợp đồng thêm tab **"Loại suất & đơn giá"**: giá gốc + giá đang áp hôm nay; lịch sử phụ lục (từ – đến, giá cũ → mới, chênh %, trạng thái, người duyệt, số tệp; đang áp hôm nay tô đậm).
+    - Form **+ Điều chỉnh giá**: nhiều loại suất, ngày giới hạn theo hợp đồng, lý do.
+    - Nút Đính kèm phụ lục / Gửi duyệt (khóa khi chưa có file) / Xóa / Xem duyệt.
+    - Link cũ `#/crm-price-policy` → hợp đồng.
+  - **Kiểm tra:**
+    - `Sales/PriceAdjustmentTests` 3 test: luật lập; bắt buộc file; duyệt qua engine → Hiệu lực; tra giá 2 cấp theo ngày; nhiều loại suất; xóa nháp; khách cũ.
+    - `dotnet test` **638 / 638**.
+    - **Vai trò trên DB dev:** uat.sal-head lập phụ lục BG-00001 cho HĐ HD-261124-004 (TRUA 35.000 → 38.000) → gửi khi chưa có file bị chặn đúng thông báo → đính kèm PDF → gửi duyệt. uat.ceo thấy trong Phê duyệt "35.000 ₫ → 38.000 ₫ (+8,6%)"; người gửi không có nút duyệt.
+    - Ảnh `docs/frontend-handoff/assets/ui-6/ui64/` (1440 / 390). **Phụ lục BG-00001 còn chờ CEO duyệt – anh mở thử bằng CEO.**
+  - **Chưa làm / còn rủi ro:** màn danh sách "Chính sách giá" cũ (`sales.js`) vẫn còn trong code nhưng không lên menu, link tự chuyển sang hợp đồng.
 - **2026-11-24: UI-6.12 (D-90) DONE – bỏ thực đơn riêng theo khách, mọi khách dùng thực đơn chung** (nhánh `feat/UI-6.12-common-menu-only` từ UI-6.10).
   - **Tra thực đơn:** `MenuAssignmentService.ResolveAsync` (mẫu tạo đơn, đăng ký suất tuần, phiếu đăng ký, tính nhu cầu, kế hoạch SX, bot `/thucdon`) **chỉ lấy thực đơn chung Đã công bố hiệu lực tại ngày ăn** (có món cho loại suất; cùng ngày hiệu lực → bản tạo sau). Bản tra cũ giữ tên `ResolveWithAssignmentAsync` (không dùng).
   - **Menu:**

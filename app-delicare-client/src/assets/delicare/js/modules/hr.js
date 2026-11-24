@@ -279,7 +279,7 @@
   const isOpen = r => ['Pending', 'InProgress'].includes(r.RequestStatus);
   const approvalTables = r => ['ApprovalRequest', 'ApprovalStep', 'ApprovalDecision', 'ApprovalItem'].concat(BT[r.BusinessType] ? [BT[r.BusinessType][0]] : []);
   // Mục menu duyệt theo loại (ObjectMenu '#/wf-inbox?type=<screen-id>[-l1|-l2|-director]'): lọc hộp duyệt theo màn hình của nghiệp vụ.
-  const TYPE_SCREEN = { PURCHASE_ORDER: 'scm-po', ORDER: 'crm-order', ORDER_QUANTITY_CHANGE: 'crm-order', ORDER_CHANGE_AFTER_CUTOFF: 'crm-order', PRODUCTION_PLAN: 'prod-plan', INVENTORY_ADJUSTMENT: 'scm-adjustment', PRICE_POLICY: 'crm-price-policy', MENU: 'menu-menu', MENU_VERSION: 'menu-menu', QC_INSPECTION: 'qc-inspection' };
+  const TYPE_SCREEN = { PURCHASE_ORDER: 'scm-po', ORDER: 'crm-order', ORDER_QUANTITY_CHANGE: 'crm-order', ORDER_CHANGE_AFTER_CUTOFF: 'crm-order', PRODUCTION_PLAN: 'prod-plan', INVENTORY_ADJUSTMENT: 'scm-adjustment', PRICE_POLICY: 'crm-contract', PRICE_ADJUSTMENT: 'crm-contract', MENU: 'menu-menu', MENU_VERSION: 'menu-menu', QC_INSPECTION: 'qc-inspection' };
   const screenOf = a => (BT[a.BusinessType] && BT[a.BusinessType][4]) || TYPE_SCREEN[a.BusinessType] || '';
   // MENU-5 (D-79): yêu cầu do chính mình gửi – máy chủ không cho tự duyệt (BusinessRules:ApprovalBlockSelfApproval, admin miễn).
   const SELF_TAG = '<span class="tag blue">Bạn gửi – chờ người khác duyệt</span>';

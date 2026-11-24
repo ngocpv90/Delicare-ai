@@ -23,6 +23,7 @@
     'wf-step': ['wf-inbox', 'ApprovalStep', 'ApprovalRequestId'], 'wf-decision': ['wf-inbox'], 'wf-item': ['wf-inbox', 'ApprovalItem', 'ApprovalRequestId'],
     'adm-person': ['adm-user'], 'scm-transfer': ['scm-inv-balance'], 'scm-adjustment': ['scm-inv-balance'],
     'crm-contact': ['crm-customer', 'CustomerContact', 'CustomerId'], // MENU-5 (D-79): link cũ → hồ sơ khách hàng
+    'crm-price-policy': ['crm-contract', 'PricePolicie', 'ContractId'], // UI-6.4 (D-83): điều chỉnh giá làm trong hợp đồng (tab Loại suất & đơn giá)
   };
   window.DC_PARENT_OF = PARENT_OF;
   // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).

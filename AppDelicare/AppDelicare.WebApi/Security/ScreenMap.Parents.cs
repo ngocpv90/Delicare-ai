@@ -34,6 +34,8 @@ namespace AppDelicare.WebApi.Security
             ["Person"] = ("adm-user", false),
             // MENU-5.4 (D-79): "Người liên hệ" ẩn – nhập / sửa ở Khách hàng 360 (ghi liên hệ = Sửa khách hàng).
             ["CustomerContact"] = ("crm-customer", true),
+            // UI-6.4 (D-83): mục menu Chính sách giá ẩn – phụ lục điều chỉnh giá làm trong hợp đồng → quyền API PricePolicy (tra giá, đính kèm) theo màn Hợp đồng.
+            ["PricePolicy"] = ("crm-contract", true),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>

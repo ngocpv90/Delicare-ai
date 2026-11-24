@@ -271,10 +271,12 @@ namespace AppDelicare.Services.Implement
                         return Result<PriceResolveModel>.Success(new PriceResolveModel { UnitPrice = byContract.UnitPrice, Source = "PricePolicy:Contract", SourceId = byContract.Id }, ConstantHelper.Message.GetAllSuccessfully);
                     }
                 }
+                // UI-6.4 (D-83): bỏ cấp theo khách – chỉ còn đọc bản cũ chưa chuyển sang hợp đồng (khách 0 / > 1 hợp đồng hiệu lực – chờ anh quyết), có cảnh báo.
                 var byCustomer = await Effective().Where(p => p.CustomerId == request.CustomerId && p.ContractId == null)
                     .OrderByDescending(p => p.MealType != null).ThenByDescending(p => p.EffectiveFrom).FirstOrDefaultAsync();
                 if (byCustomer != null)
                 {
+                    Log.Warning("[PricePolicy] Tra giá theo khách cũ (chưa chuyển sang phụ lục hợp đồng – D-83): khách {CustomerId}, chính sách {Code}", request.CustomerId, byCustomer.Code);
                     return Result<PriceResolveModel>.Success(new PriceResolveModel { UnitPrice = byCustomer.UnitPrice, Source = "PricePolicy:Customer", SourceId = byCustomer.Id }, ConstantHelper.Message.GetAllSuccessfully);
                 }
                 if (request.ContractId is { } cid)

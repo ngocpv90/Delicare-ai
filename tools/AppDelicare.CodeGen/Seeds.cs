@@ -360,7 +360,8 @@ public static partial class Seeds
 
     /// <remarks>MENU-5.2 (D-79): mục duyệt "Kiểm tra hàng nhập" mở lại (quyền Kết luận QC) – bỏ Biz3HiddenLinks khỏi danh sách ẩn.</remarks>
     /// <summary>UI-6.12 (D-90): bỏ thực đơn riêng theo khách – mục #/menu-assignment ẩn (IsActive = 0), giữ dòng + quyền; script DB/scripts/UI612_hide_menu_assignment.sql.</summary>
-    public static readonly string[] Ui6HiddenLinks = ["#/menu-assignment"];
+    /// <remarks>UI-6.4 (D-83): + "#/crm-price-policy" – điều chỉnh giá làm trong tab giá của hợp đồng (phụ lục), script DB/scripts/UI64_hide_price_policy_menu.sql.</remarks>
+    public static readonly string[] Ui6HiddenLinks = ["#/menu-assignment", "#/crm-price-policy"];
 
     public static string[] HiddenMenuLinks => ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Ui6HiddenLinks];
 

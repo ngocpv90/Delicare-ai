@@ -122,13 +122,14 @@ public static partial class Seeds
     /// MENU-5: ẩn (IsActive = 0) – <c>crm-contact</c> (bảng con, nhập ở Khách hàng 360 – quyền API theo màn cha), mục duyệt không loại duyệt nào dùng:
     /// <c>scm-pr</c> cũ (D-52 a) và <c>crm-price-policy</c> (MENU-5.3: không có IApprovalHandler / action Duyệt nào dùng – ghi PROGRESS).
     /// </summary>
-    public static readonly string[] Menu5HiddenLinks = ["#/crm-contact", "#/wf-inbox?type=scm-pr", "#/wf-inbox?type=crm-price-policy"];
+    /// <remarks>UI-6.4 (D-83): "#/wf-inbox?type=crm-price-policy" mở lại – nay là quyền duyệt Phụ lục điều chỉnh giá (PriceAdjustmentApprovalHandler).</remarks>
+    public static readonly string[] Menu5HiddenLinks = ["#/crm-contact", "#/wf-inbox?type=scm-pr"];
 
     /// <summary>Mục đang ẩn trên menu = MENU-5 + UI-6.x (<see cref="Ui6HiddenLinks"/> – D-90 / D-83 / D-91). Ma trận quyền vẫn dùng <see cref="Menu5HiddenLinks"/>: ẩn UI-6 KHÔNG thu quyền (giữ dòng + quyền, chỉ IsActive = 0).</summary>
     public static string[] HiddenNow => [.. Menu5HiddenLinks, .. Ui6HiddenLinks];
 
     /// <summary>MENU-5.2: mở lại mục duyệt "Kiểm tra hàng nhập" (BIZ-3.7 đã ẩn) – nay là quyền Kết luận QC đầu vào.</summary>
-    public static readonly string[] Menu5ShownLinks = ["#/wf-inbox?type=qc-inspection"];
+    public static readonly string[] Menu5ShownLinks = ["#/wf-inbox?type=qc-inspection", "#/wf-inbox?type=crm-price-policy"];
 
     // ------------------------------------------------------------------ tập màn
     private static readonly string[] Kpi = ["dash-exec", "kpi-daily", "kpi-monthly"];

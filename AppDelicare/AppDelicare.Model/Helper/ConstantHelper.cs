@@ -214,6 +214,21 @@
             public static readonly string QuantityMustBePositive = "Định lượng phải lớn hơn 0";
             public static readonly string WastePercentRange = "Hao hụt phải trong khoảng [0, 100)";
             public static readonly string UomConversionMissing = "Chưa có quy đổi giữa 2 đơn vị này";
+            // UI-6.4 (D-83): phụ lục điều chỉnh giá trong hợp đồng
+            public static readonly string PriceAdjustContractNotActive = "Chỉ điều chỉnh giá khi hợp đồng đang Hiệu lực";
+            public static readonly string PriceAdjustNoLine = "Chọn ít nhất 1 loại suất và nhập giá mới";
+            public static readonly string PriceAdjustPricePositive = "Giá mới phải lớn hơn 0";
+            public static readonly string PriceAdjustDuplicateMeal = "Mỗi loại suất chỉ nhập 1 giá mới";
+            public static readonly string PriceAdjustFromTomorrow = "Áp dụng từ ngày phải từ ngày mai ({0}) trở đi";
+            public static readonly string PriceAdjustOutsideContract = "Thời gian áp dụng phải nằm trong hiệu lực hợp đồng ({0} – {1})";
+            public static readonly string PriceAdjustToBeforeFrom = "Đến ngày phải sau hoặc bằng từ ngày";
+            public static readonly string PriceAdjustMealNotInContract = "Loại suất {0} không có trong hợp đồng";
+            public static readonly string PriceAdjustOverlap = "Loại suất {0} đã có phụ lục {1} chồng thời gian áp dụng";
+            public static readonly string PriceAdjustCreated = "Đã lập phụ lục điều chỉnh giá (Nháp) – đính kèm phụ lục đã ký rồi gửi duyệt";
+            public static readonly string PriceAdjustNotDraft = "Phụ lục đang ở trạng thái {0} – chỉ thao tác được bản Nháp";
+            public static readonly string PriceAdjustNeedsFile = "Chưa đính kèm phụ lục đã ký – tải file lên trước khi gửi duyệt";
+            public static readonly string PriceAdjustSubmitted = "Đã gửi duyệt phụ lục điều chỉnh giá (yêu cầu {0})";
+            public static readonly string PriceAdjustNotPending = "Phụ lục đang ở trạng thái {0} – không phải Chờ duyệt";
             public static readonly string PriceNotFound = "Không tìm thấy đơn giá áp dụng cho khách / hợp đồng / loại suất này";
             public static readonly string PriceOverlap = "Chồng thời gian hiệu lực với chính sách giá khác cùng khách / hợp đồng / loại suất";
             public static readonly string PriceMustBePositive = "Đơn giá phải lớn hơn 0";

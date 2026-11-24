@@ -9,9 +9,42 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class ContractController(IContractService service) : BaseController
+    public class ContractController(IContractService service, IPriceAdjustmentService priceAdjustments) : BaseController
     {
         private readonly IContractService _service = service;
+
+        private async Task<IActionResult> RunPrice<T>(string name, Func<Task<T>> body)
+        {
+            try
+            {
+                return Ok(await body());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ", name, ": ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.4 (D-83): tab "Loại suất &amp; đơn giá" – giá gốc, giá đang áp hôm nay, lịch sử phụ lục điều chỉnh giá.</summary>
+        [HttpGet("GetPrices")]
+        [Security.Permission("crm-contract", PermissionAction.View)]
+        public Task<IActionResult> GetPrices(Guid id) => RunPrice(nameof(GetPrices), () => priceAdjustments.GetContractPrices(id));
+
+        /// <summary>UI-6.4: lập phụ lục điều chỉnh giá (Nháp) – một / nhiều loại suất, cùng thời gian + lý do.</summary>
+        [HttpPost("CreatePriceAdjustment")]
+        [Security.Permission("crm-contract", PermissionAction.Edit)]
+        public Task<IActionResult> CreatePriceAdjustment([FromBody] AppDelicare.Model.Model.PriceAdjustmentCreateRequest request) => RunPrice(nameof(CreatePriceAdjustment), () => priceAdjustments.Create(request));
+
+        /// <summary>UI-6.4: gửi duyệt phụ lục – bắt buộc đã đính kèm phụ lục đã ký.</summary>
+        [HttpPost("SubmitPriceAdjustment")]
+        [Security.Permission("crm-contract", PermissionAction.Edit)]
+        public Task<IActionResult> SubmitPriceAdjustment([FromForm] Guid id) => RunPrice(nameof(SubmitPriceAdjustment), () => priceAdjustments.Submit(id));
+
+        /// <summary>UI-6.4: xóa phụ lục Nháp / Từ chối.</summary>
+        [HttpPost("DeletePriceAdjustment")]
+        [Security.Permission("crm-contract", PermissionAction.Edit)]
+        public Task<IActionResult> DeletePriceAdjustment([FromForm] Guid id) => RunPrice(nameof(DeletePriceAdjustment), () => priceAdjustments.DeleteDraft(id));
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] ContractSearchRequest request)

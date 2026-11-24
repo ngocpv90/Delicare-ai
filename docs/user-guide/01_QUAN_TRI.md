@@ -130,7 +130,7 @@ Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòn
 |---|---|
 | Phê duyệt › Hợp đồng (`crm-contract`) | Hợp đồng |
 | Phê duyệt › Đơn đặt suất (`crm-order`) | Lệch suất > 30% và sửa / thêm đơn sau giờ chốt |
-| Phê duyệt › Chính sách giá (`crm-price-policy`) | (có mục quyền) |
+| Phê duyệt › Chính sách giá (`crm-price-policy`) | Duyệt phụ lục điều chỉnh giá trong hợp đồng (UI-6.4, D-83) |
 | Phê duyệt › Công thức chế biến (`menu-recipe`) | Phiên bản công thức |
 | Phê duyệt › Thực đơn tuần (`menu-menu`) | (có mục quyền) |
 | Phê duyệt › Yêu cầu đổi món (`menu-change-request`) | Đổi món |
