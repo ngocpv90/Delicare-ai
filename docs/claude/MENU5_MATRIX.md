@@ -43,14 +43,12 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | Q | X | — | X | X | — | X | — | X | X | X | X | — | — | X | X |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | X | X | Q | X | — | X | X | — | — | — | — | — | — | — | — | — | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | Q | — | — | — | X | — | — | — | X | X | X | X | — | — | X | X |
-| Thực đơn & Món ăn › Nhóm món ăn | `menu-dish-cat` | X | X | X | Q | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 | Mua hàng › Tính nhu cầu nguyên liệu | `scm-requirement` | X | X | X | X | S (IX) | — | S (IX) | — | — | — | — | — | — | — | — | — | — | X | — |
 | Mua hàng › Đề nghị mua hàng | `scm-pr` | X | X | X | X | S (IX) | — | S (IX) | — | — | — | — | — | — | — | — | — | — | X | — |
 | Mua hàng › Đơn mua hàng | `scm-po` | X | X | X | — | S (IX) | X | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | — |
 | Mua hàng › Nhà cung cấp | `scm-supplier` | X | X | X | — | Q | X | Q | — | — | — | — | — | — | — | — | X | — | X | X |
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | X | — | X | — |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | X | X | X | S | Q | X | Q | — | — | — | — | — | — | — | — | — | — | X | X |
-| Mua hàng › Nhóm nguyên liệu | `scm-ingredient-cat` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Mua hàng › Đơn vị tính | `scm-uom` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Mua hàng › Quy đổi đơn vị | `scm-uom-conversion` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Kho › Phiếu nhập kho | `scm-gr` | X | X | X | — | X | S (IX) | S (IX) | — | — | — | — | — | — | — | — | X (IX) | — | X | X |

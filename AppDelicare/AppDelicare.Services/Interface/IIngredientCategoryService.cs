@@ -14,5 +14,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(IngredientCategoryRequest request, string typeSave);
         public IResults<IngredientCategory> GetAllData();
         public Task<IResult<IngredientCategory>> GetById(Guid id);
+        /// <summary>UI-6.21 (D-102): nhóm + số bản ghi đang dùng (cột nhóm bên trái).</summary>
+        public Task<IResult<AppDelicare.Model.Model.CategoryCountListModel>> GetWithCount();
     }
 }

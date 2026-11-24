@@ -40,6 +40,9 @@ namespace AppDelicare.WebApi.Security
             ["MenuChangeRequest"] = ("menu-menu", true),
             // UI-6.16 (D-97): mục menu Điểm giao hàng ẩn – điểm giao thêm / sửa / ngừng ở trang Khách hàng → quyền API theo màn Khách hàng (như Người liên hệ).
             ["CustomerDeliveryLocation"] = ("crm-customer", true),
+            // UI-6.21 (D-102): mục menu Nhóm nguyên liệu / Nhóm món ẩn – nhóm quản lý ở cột trái màn Nguyên liệu / Món ăn → quyền theo màn cha (ghi nhóm = Sửa màn cha).
+            ["IngredientCategory"] = ("scm-ingredient", true),
+            ["DishCategory"] = ("menu-dish", true),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -50,7 +53,7 @@ namespace AppDelicare.WebApi.Security
             ["scm-stockcount-line"] = "scm-stockcount", ["prod-plan-line"] = "prod-plan", ["qc-inspection-line"] = "qc-inspection", ["qc-checklist-item"] = "qc-checklist",
             ["log-stop"] = "log-route", ["log-event"] = "log-execution", ["log-complaint-history"] = "log-complaint",
             ["wf-step"] = "wf-inbox", ["wf-decision"] = "wf-inbox", ["wf-item"] = "wf-inbox", ["adm-person"] = "adm-user",
-            ["scm-transfer"] = "scm-inv-balance", ["scm-adjustment"] = "scm-inv-balance", ["crm-contact"] = "crm-customer", ["crm-location"] = "crm-customer",
+            ["scm-transfer"] = "scm-inv-balance", ["scm-adjustment"] = "scm-inv-balance", ["crm-contact"] = "crm-customer", ["crm-location"] = "crm-customer", ["scm-ingredient-cat"] = "scm-ingredient", ["menu-dish-cat"] = "menu-dish",
         };
     }
 }

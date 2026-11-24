@@ -248,3 +248,36 @@ namespace AppDelicare.Model.Model
         public decimal? SafetyStock { get; set; }
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.21: nhóm (nguyên liệu / món) + số bản ghi.</summary>
+    public class CategoryCountListModel
+    {
+        public List<CategoryCountModel> ListGroup { get; set; } = [];
+        public int Ungrouped { get; set; }
+        public int TotalActive { get; set; }
+        /// <summary>Số nhóm còn nhóm cha cũ (1 cấp từ UI-6.21 – hiện phẳng).</summary>
+        public int HadParent { get; set; }
+    }
+
+    public class CategoryCountModel
+    {
+        public Guid Id { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string Status { get; set; } = "Active";
+        public int ActiveCount { get; set; }
+        public int TotalCount { get; set; }
+    }
+
+    /// <summary>UI-6.21: gợi ý loại bảo quản + đơn vị kho theo đa số nguyên liệu đang dùng cùng nhóm.</summary>
+    public class IngredientCategoryDefaultsModel
+    {
+        public int SampleCount { get; set; }
+        public string? StorageType { get; set; }
+        public int StorageCount { get; set; }
+        public Guid? BaseUnitId { get; set; }
+        public int UnitCount { get; set; }
+    }
+}

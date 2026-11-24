@@ -42,6 +42,7 @@ const SCRIPTS = [
   'modules/explorer.js',
   'modules/be3.js',
   'modules/ghep.js',
+  'modules/group-panel.js', // UI-6.21 (D-102): cột nhóm màn Nguyên liệu / Món ăn – sau menu.js, scm.js, ghep.js
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';
 const SCRIPT_ATTR = 'data-delicare';

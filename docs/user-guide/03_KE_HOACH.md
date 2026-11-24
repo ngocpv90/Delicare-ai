@@ -24,7 +24,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | Q |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | Q |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | Q |
-| Thực đơn & Món ăn › Nhóm món ăn | `menu-dish-cat` | Q |
 | Mua hàng › Tính nhu cầu nguyên liệu | `scm-requirement` | X |
 | Mua hàng › Đề nghị mua hàng | `scm-pr` | X |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | S |
@@ -66,6 +65,8 @@ Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & á
 
 ### 4.1 Món ăn – `menu-dish`
 Danh sách: Mã, Món ăn, Nhóm món, Giá thành chuẩn, **Công thức đang dùng** (phiên bản + trạng thái, hoặc "Chưa có công thức hiệu lực"), CP NVL ước tính, Trạng thái.
+
+**Màn Món ăn – nhóm món ở cột trái (UI-6.21, D-102):** mục menu "Nhóm món ăn" đã ẩn; cột trái nhóm món + số món, bấm để lọc, + Thêm nhóm, ⋯ Đổi tên / Ngừng dùng (khóa khi còn món đang dùng) / Dùng lại – như màn Nguyên liệu (xem 04_MUA_HANG.md 4.5). 4 thẻ: Món đang dùng · Chưa có công thức hiệu lực · Chưa phân nhóm · Số nhóm món.
 
 **Form Món ăn (UI-6.17, D-98) – 5 ô:** **Tên món*** · **Nhóm món*** (chọn trong danh mục; link **+ Thêm nhóm món** cho người có quyền Thêm Nhóm món ăn – thêm xong tự chọn) · **Định lượng 1 suất** (số + đơn vị g / ml / cái…) · **Mô tả** · **Trạng thái** (Đang dùng / Ngừng dùng). Mã món hệ thống tự sinh (chỉ đọc). **Giá thành chuẩn chỉ đọc** – hệ thống tự tính khi công thức được duyệt. Phân loại và khẩu phần cũ không còn trên form (máy chủ tự ghi theo nhóm món / định lượng).
 

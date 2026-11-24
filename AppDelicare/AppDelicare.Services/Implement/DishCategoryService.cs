@@ -13,7 +13,7 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class DishCategoryService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class DishCategoryService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService) : IDishCategoryService
     {
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
@@ -133,6 +133,11 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(DishCategoryRequest request, string typeSave)
         {
+            string invalid = await CheckGroupAsync(request, null);
+            if (invalid.Length > 0)
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<DishCategory>(request);
             // Anh chốt 2026-11-22: mã nhóm món máy chủ tự sinh (DocumentKind.DishCategory), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
             insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.DishCategory);
@@ -151,6 +156,11 @@ namespace AppDelicare.Services.Implement
             }
             // Mã do máy chủ cấp – giữ nguyên mã đang có (kể cả mã cũ người dùng đặt trước 2026-11-22).
             request.Code = exist.Code;
+            string invalid = await CheckGroupAsync(request, exist);
+            if (invalid.Length > 0)
+            {
+                return invalid;
+            }
             var update = _mapper.Map(request, exist);
             _unitOfWork.DishCategoryRepository.Update(update);
             await _unitOfWork.DishCategoryRepository.CommitAsync(typeSave);

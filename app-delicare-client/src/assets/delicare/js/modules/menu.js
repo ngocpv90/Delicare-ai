@@ -434,17 +434,21 @@
     }
   });
   // ---------- Món ăn: thêm cột giá thành ----------
-  APP.register('menu-dish', (el, f) => APP.genericList(el, f, {
+  // UI-6.21: tùy chọn danh sách món dùng chung (group-panel.js thêm cột nhóm bên trái ở chế độ API).
+  const dishListOpt = {
     cols: [{ k: 'Code', label: 'Mã' }, { k: 'Name', label: 'Món ăn' }, { k: 'DishCategoryId', label: 'Nhóm món' }, { k: 'StandardCost', label: 'Giá thành chuẩn', num: true },
       { k: 'x', label: 'Công thức đang dùng', col: false, nosort: true, render: r => { const rc = Store.by('Recipe', 'DishId', r.Id).find(x => x.IsActive); return rc ? `${esc(rc.VersionCode)} ${UI.badge(rc.Status, 'Recipe', 'Status')}` : '<span class="bad small">Chưa có công thức hiệu lực</span>'; } },
       { k: 'y', label: 'CP NVL ước tính', col: false, num: true, nosort: true, render: r => { const rc = Store.by('Recipe', 'DishId', r.Id).find(x => x.IsActive) || Store.by('Recipe', 'DishId', r.Id)[0]; return rc ? U.money(recipeCost(rc.Id)) : '–'; } }, { k: 'Status', label: 'Trạng thái' }]
-  }));
+  };
+  APP.dishListOpt = dishListOpt;
+  APP.register('menu-dish', (el, f) => APP.genericList(el, f, dishListOpt));
   // ---------- UI-6.17 (D-98): form Món ăn gọn (5 ô) + "Thêm món ăn" kèm công thức + tab Công thức sửa được trong trang chi tiết món ----------
   // Form dùng cho mọi chỗ gọi UI.form('Dishe') ở chế độ API (danh sách Món ăn, nút Sửa trang chi tiết). Mã tự sinh (MA-1), giá thành chuẩn chỉ đọc.
   // Công thức: cùng API màn "Công thức chế biến" (Recipe/CreateVersion, RecipeLine Insert / Update / Delete, Recipe/Submit / Approve / Reject / Lock, Recipe/CalculateCost).
   const dsh = { mode: 'copy' };
   const nilv = v => v === null || v === undefined || v === '';
   function dishForm(row, opt) {
+    if (!row && opt && opt.defaults) row = Object.assign({}, opt.defaults);
     const isNew = !row || !row.Id, cats = () => Store.rows('DishCategorie').filter(c => c.Status !== 'Inactive' || (row && c.Id === row.DishCategoryId));
     const units = Store.rows('UnitMeasure').filter(u => u.Status !== 'Inactive');
     const canCat = Store.perm('menu-dish-cat').add !== false && Store.perm('menu-dish-cat').access !== false;
