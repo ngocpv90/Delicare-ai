@@ -22,6 +22,23 @@ Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) ho�
 | 11 | Điện thoại | Mở Phê duyệt trên điện thoại | Thẻ thay bảng, lọc cuộn ngang, bấm thẻ → toàn màn, nút Từ chối / Duyệt · việc tiếp cố định cuối (cao ≥ 44px) | [ ] | |
 | 12 | Phân quyền | Admin mở Phân quyền 1 nhóm | Khối **Quyền duyệt** riêng (tên loại + cấp, 1 ô / loại); tick → nhóm duyệt được loại đó | [ ] | |
 
+## TRANG CHI TIẾT – SẢN XUẤT / THỰC ĐƠN / GIAO HÀNG (UI-6.2 nhóm C, D-80 – 2026-11-23) · test: `DetailPages/ProdOverviewTests.cs` · HDSD `03_KE_HOACH.md` (món ăn, kế hoạch, lệnh SX), `07_BEP_SAN_XUAT.md` (mẻ), `09_GIAO_VAN.md` (chuyến)
+
+Chế độ dữ liệu thật (API). Chế độ DEMO giữ ngăn trượt như cũ.
+
+| # | Kịch bản | Thao tác | Kỳ vọng | Đạt | Ghi chú |
+|---|---|---|---|---|---|
+| 1 | Mẻ nấu – mở trang | Bảng điều độ mẻ → bấm 1 thẻ mẻ (Ctrl + bấm → tab mới) | Mở `#/prod-batch-detail?id=…`: tên "Mẻ ME-…", thanh bước Kế hoạch → Đang nấu → Chờ QC → Đạt → Đã đóng gói, 4 chỉ số (sản lượng, nhiệt độ lõi, công đoạn, hao hụt); "← Danh sách" về đúng ngày đang xem | [ ] | |
+| 2 | Mẻ nấu – thao tác | Mẻ Kế hoạch → Bắt đầu nấu; Đang nấu → Kết thúc nấu (nhập sản lượng + nhiệt độ lõi); Chờ QC → QC: Đạt / Tạm giữ / Loại mẻ (QA); ⋯ → Ghi hao hụt / In phiếu sản xuất | Hộp nhập giống ngăn chi tiết cũ; xong trang tự tải lại, bước + chỉ số đổi; người không có quyền Duyệt "Mẻ nấu" không thấy nút QC | [ ] | |
+| 3 | Mẻ nấu – tab | Tab QC & an toàn / Công đoạn / Nguyên liệu & xuất kho / Chứng từ liên quan / Tài liệu / Lịch sử | Bảng nhiệt độ lõi (đạt / không đạt + khắc phục), lưu mẫu; công đoạn có nút Bắt đầu / Xong; nguyên liệu theo định lượng + phiếu xuất | [ ] | |
+| 4 | Lệnh SX | Màn Lệnh sản xuất → bấm 1 dòng | Trang `#/prod-order-detail`: chỉ số mẻ đạt, suất đạt, giữ chỗ thiếu, giá thành / phần (đỏ khi > chuẩn); bảng mẻ bấm được → trang mẻ; nút Đóng lệnh / Tính giá thành / Hủy lệnh theo trạng thái (gọi đúng hộp xác nhận cũ) | [ ] | |
+| 5 | Kế hoạch SX | Màn Kế hoạch sản xuất → bấm 1 dòng | Trang `#/prod-plan-detail`: tổng suất, ca đã phát hành, lệnh SX, giữ chỗ thiếu; khối Theo ca + Món & suất; tab Lệnh sản xuất / Mẻ / Giữ chỗ nguyên liệu; Nháp → Duyệt kế hoạch (người có quyền Duyệt), Đã duyệt → Ra lệnh SX | [ ] | |
+| 6 | Kế hoạch giữ chờ COO | Kế hoạch Nháp do hệ thống giữ sau chốt đơn ("chờ COO duyệt") | Tag "Chờ COO duyệt", dòng lý do ở Thông tin kế hoạch, tab **Duyệt** hiện cấp "Kế hoạch sản xuất (COO)"; ⋯ → Mở màn Phê duyệt | [ ] | |
+| 7 | Món ăn | Màn Món ăn → bấm 1 dòng | Trang `#/menu-dish-detail`: giá vốn NVL / suất (cam khi thiếu giá, đỏ khi > giá thành chuẩn), số nguyên liệu định mức, số menu dùng món, % mẻ đạt QC; tab Định mức (các phiên bản công thức) / Menu / Lịch sử nấu (bấm mẻ → trang mẻ); Sửa mở đúng biểu mẫu món | [ ] | |
+| 8 | Chuyến giao | Màn Tuyến giao → Chi tiết 1 chuyến | Trang `#/log-route-detail`: điểm đã giao / tổng, suất đã giao, tải xe %, phản ánh; dòng thời gian điểm giao; tab Điểm giao & POD / Sự kiện & nhiệt độ / Mẻ phục vụ / Phản ánh; nút Xếp hàng lên xe (Kế hoạch) / Xuất bến (Đang xếp – hỏi nhiệt độ) / Sắp điểm dừng / In phiếu giao / Biên bản giao hàng | [ ] | |
+| 9 | Quyền | Tài khoản chỉ xem Mẻ nấu mở link trang lệnh SX / chuyến giao | Không mở được (403 / "không có quyền"); tài khoản có quyền xem màn gốc mở được | [ ] | |
+| 10 | Id sai / rỗng | Sửa `?id=` thành mã khác | "Không tìm thấy bản ghi"; bản ghi chưa có dữ liệu con (mẻ chưa đo, món chưa công thức, chuyến chưa điểm giao) vẫn mở được | [ ] | |
+
 ## PHÂN QUYỀN THEO TỪNG MÀN + MENU THEO VAI TRÒ (MENU-5, D-79 – 2026-11-23) · script: `DB/scripts/D79_menu_regroup.sql`, `DB/scripts/D79_permission_matrix.sql` · test: `Security/Menu5PermissionTests.cs`, `Security/D79MatrixSqlTests.cs` · ma trận: `docs/claude/MENU5_MATRIX.md`
 
 Trước khi thử: deploy API → seed → `D79_menu_regroup.sql` → `D79_permission_matrix.sql` (DryRun trước, sau backup); tạo 1 tài khoản thử cho mỗi nhóm (hoặc chuyển người sang SAL-HEAD / OPS-SCM-HEAD / OPS-WH), đăng nhập lại.

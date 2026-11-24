@@ -18,5 +18,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<Dish>> GetById(Guid id);
         // <summary>T45R: công thức hiệu lực + giá vốn / suất.</summary>
         public Task<IResult<RecipeVersionModel>> GetActiveRecipe(Guid id);
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn (…/GetOverview).</summary>
+        public Task<IResult<DishOverviewModel>> GetOverview(Guid id);
     }
 }

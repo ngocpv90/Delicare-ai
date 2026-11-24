@@ -85,7 +85,8 @@
       ${shifts.map(s => `<div class="bh" style="display:flex;flex-direction:column;justify-content:center">${esc(s.Name)}<span style="font-weight:500">${U.time(s.StartTime)}–${U.time(s.EndTime)}</span></div>${cols.map(l => `<div class="cell">${batches.filter(b => inCell(b, s, l)).sort((x, y) => (y.Priority ? 1 : 0) - (x.Priority ? 1 : 0)).map(b => `<div class="batch ${b.Status}" data-b="${b.Id}"${b.Priority ? ' style="border-left:4px solid var(--red,#D64545)"' : ''}>${b.Priority ? `<div class="small" style="color:var(--red,#D64545);font-weight:700">${esc(b.Priority)} – ưu tiên</div>` : ''}<b>${esc(b.DishName || Store.label('Dishe', b.DishId))}</b><small>${esc(b.BatchNumber)} · ${U.num(b.ActualQuantity || b.PlannedQuantity)} suất</small>${b.live ? `<small>${nil(b.Temp) ? 'Chưa đo nhiệt độ lõi' : 'Lõi ' + U.num(b.Temp, 1) + '°C ' + (b.TempOk ? '✓' : '✗')} · ${b.Sample ? 'đã lưu mẫu' : 'chưa lưu mẫu'}</small>` : ''}<div class="row-flex" style="margin-top:4px">${UI.badge(b.Status, 'ProductionBatche', 'Status')}${b.QcStatus ? UI.badge(b.QcStatus, 'ProductionBatche', 'QcStatus') : ''}</div></div>`).join('') || '<span class="muted small" style="margin:auto">—</span>'}</div>`).join('')}`).join('')}</div></div>`;
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { bs.date = b.dataset.d; APP.refresh(); });
     const dp = el.querySelector('[data-dp]'); if (dp) dp.onchange = () => { if (dp.value) { bs.date = dp.value; APP.refresh(); } };
-    el.querySelectorAll('[data-b]').forEach(c => c.onclick = () => batchAct(c.dataset.b));
+    // UI-6 (D-80): chế độ API có trang chi tiết → mở trang (Ctrl / chuột giữa: tab mới); DEMO giữ ngăn chi tiết.
+    el.querySelectorAll('[data-b]').forEach(c => c.onclick = () => (APP.detailPageOf && APP.detailPageOf('ProductionBatche') ? APP.openDetail('ProductionBatche', c.dataset.b) : batchAct(c.dataset.b)));
   });
   // UG-1 C-15: công đoạn của mẻ (Sơ chế → Nấu → Chia suất…) – ProductionBatch/GetDetail.listStage; nút Bắt đầu / Xong gọi StartStage / FinishStage.
   // Máy chủ chặn bắt đầu khi công đoạn trước chưa xong và chặn kết thúc nấu khi công đoạn bắt buộc chưa xong.
@@ -120,7 +121,12 @@
       top: `${UI.stepper(BFLOW.map(s => UI.statusVi('ProductionBatche', 'Status', s)), b.Status === 'Failed' ? 3 : i, b.Status === 'Failed')}
         <div class="kv mt mb"><div><label>Lệnh sản xuất</label><span>${esc(po.ProductionOrderNumber)} · ${esc(Store.label('Shift', po.ShiftId))}</span></div><div><label>Công thức (phiên bản khóa)</label><span>${esc(Store.label('Recipe', b.RecipeId))}</span></div><div><label>Nhiệt độ lõi (TemperatureLog)</label><span>${temps.map(t => `${U.num(t.TemperatureC)}°C ${t.IsWithinRange ? '✓' : '✗'}`).join(', ') || '<span class="muted">Chưa đo</span>'}</span></div><div><label>Checklist ATTP theo mẻ</label><span>${fsr.length ? fsr.filter(x => x.ResultCode === 'PASS').length + '/' + fsr.length + ' đạt' : '<span class="muted">–</span>'}</span></div></div>`,
       foot: () => ({ Planned: `<button class="btn orange" data-act="cook">${I('play')} Bắt đầu nấu</button>`, Cooking: `<button class="btn orange" data-act="finish">Kết thúc nấu → Chờ QC</button>`, QCPending: `${Store.isLive && !Store.by('ProductionOutput', 'ProductionBatchId', id).length ? `<button class="btn orange" data-act="output">Ghi sản lượng</button>` : ''}${Store.isLive ? `<button class="btn" data-act="sample">Ghi lưu mẫu</button>` : ''}${qcOk ? `<button class="btn primary" data-act="pass">QC: PASS</button><button class="btn" data-act="hold">HOLD</button><button class="btn danger" data-act="reject">REJECT</button>` : '<span class="small muted">Chờ QA kết luận (Đạt / Tạm giữ / Loại)</span>'}`, Passed: `<button class="btn primary" data-act="pack">Tạo lệnh đóng gói</button>${Store.isLive && qcOk ? `<button class="btn danger" data-act="reject">Loại mẻ</button>` : ''}` }[b.Status] || '') + (Store.isLive && ['Cooking', 'QCPending', 'Passed', 'Packed', 'Failed'].includes(b.Status) ? `<button class="btn" data-act="waste">Ghi hao hụt</button>` : ''),
-      onAct: (a, row, close) => {
+      onAct: (a, row, close) => batchDo(a, id, close, () => batchAct(id)) });
+  }
+  // UI-6 (D-80): thao tác của mẻ dùng chung cho ngăn chi tiết (DEMO) và trang chi tiết toàn màn (modules/detail-prod.js – APP.prodBatch).
+  // close = đóng ngăn (trang: không làm gì), again = mở lại ngăn sau khi ghi sản lượng / lưu mẫu (trang: APP.refresh đã vẽ lại).
+  function batchDo(a, id, close, again, row) {
+    const b = Store.get('ProductionBatche', id) || row || { Id: id }, po = poOf(b);
         const fin = m => { close(); UI.toast(m, 'ok'); APP.refresh(); };
         // Chế độ API: action nghiệp vụ ProductionBatch/* (backend kiểm tra nhiệt độ lõi, lưu mẫu, sản lượng và tự ghi các bảng liên quan).
         const PT = ['ProductionBatche', 'ProductionOrder', 'ProductionPlan', 'TemperatureLog', 'ProductionOutput', 'MealWasteRecord', 'PackingOrder', 'FoodSafetyChecklistResult'];
@@ -129,8 +135,8 @@
         if (a === 'waste') wasteModal({ batchId: id }, () => { close(); APP.refresh(); });
         // UG-1 C-07: mẻ Chờ QC chưa có sản lượng (vd. kết thúc từ bot bản cũ) → ghi sản lượng để cho Đạt / đóng gói được.
         if (a === 'output') UI.modal({ title: 'Ghi sản lượng mẻ', size: 'sm', body: `<div class="field"><label>Số suất thực tế <span class="req">*</span></label><input type="number" min="0" class="input" id="oq" value="${b.ActualQuantity || b.PlannedQuantity || ''}"></div><div class="field mt"><label>Số suất hỏng / loại</label><input type="number" min="0" class="input" id="orj" value="0"></div>`, foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="oOk">Ghi sản lượng</button>',
-          onMount: (m, cl) => m.querySelector('#oOk').onclick = () => { const q = m.querySelector('#oq').value; if (q === '' || Number(q) <= 0) return UI.toast('Nhập số suất thực tế', 'err'); call('RecordOutput', { ProducedQuantity: q, RejectedQuantity: m.querySelector('#orj').value || 0 }).then(r => { if (r.ok) { cl(); close(); UI.toast('Đã ghi sản lượng mẻ', 'ok'); APP.refresh(); batchAct(id); } }); } });
-        if (a === 'sample') call('RecordSampleRetained', { ActualValue: 'Đã lưu mẫu' }).then(r => { if (r.ok) { close(); UI.toast('Đã ghi lưu mẫu thức ăn', 'ok'); APP.refresh(); batchAct(id); } });
+          onMount: (m, cl) => m.querySelector('#oOk').onclick = () => { const q = m.querySelector('#oq').value; if (q === '' || Number(q) <= 0) return UI.toast('Nhập số suất thực tế', 'err'); call('RecordOutput', { ProducedQuantity: q, RejectedQuantity: m.querySelector('#orj').value || 0 }).then(r => { if (r.ok) { cl(); close(); UI.toast('Đã ghi sản lượng mẻ', 'ok'); APP.refresh(); again(); } }); } });
+        if (a === 'sample') call('RecordSampleRetained', { ActualValue: 'Đã lưu mẫu' }).then(r => { if (r.ok) { close(); UI.toast('Đã ghi lưu mẫu thức ăn', 'ok'); APP.refresh(); again(); } });
         // UG-1 C-09: ngưỡng nhiệt độ lõi lấy từ máy chủ (BusinessRules:CoreTempMinC – mặc định 70 °C), không điền sẵn nhiệt độ;
         // dưới ngưỡng bắt buộc nhập Hành động khắc phục (máy chủ cũng chặn – CoreTempCorrectiveRequired).
         if (a === 'finish') {
@@ -178,8 +184,8 @@
         }
         if (a === 'pack' && Store.isLive) return Store.act('PackingOrder/GenerateFromBatch', { form: { ProductionBatchId: id }, tables: PT }).then(r => { if (r.ok) fin('Đã sinh lệnh đóng gói (PackingOrder) từ mẻ'); });
         if (a === 'pack') { const o = Store.rows('Order').find(x => U.day(x.MealDate) === U.day(planOf(po).ProductionDate) && x.Status !== 'Cancelled'); const n = Store.rows('PackingOrder').length + 1; Store.add('PackingOrder', { PackingOrderNumber: 'DG-' + String(n).padStart(4, '0'), ProductionBatchId: id, OrderId: o && o.Id, PlannedQty: b.AcceptedQty || b.ActualQuantity, PackingDate: U.iso(new Date()), Status: 'Packing' }); Store.update('ProductionBatche', id, { Status: 'Packed' }); fin('Đã tạo lệnh đóng gói (PackingOrder) từ mẻ – BRD'); }
-      } });
   }
+  APP.prodBatch = { act: (a, id, row) => batchDo(a, id, () => {}, () => {}, row), stagePane: (p, id) => stagePane(p, id), detailHtml: d => batchDetailHtml(d) };
   function batchDetailHtml(d) {
     const bt = d.batch || {}, out = d.output;
     return `${notes(d.listBlocker, 'gap')}${notes(d.listWarning)}
@@ -199,10 +205,15 @@
     const ha = Store.isLive && el.querySelector('.heading-actions');
     if (ha) { ha.insertAdjacentHTML('afterbegin', `<button class="btn orange" data-gen>${I('flow')} Lập từ đơn hàng</button>`); ha.querySelector('[data-gen]').onclick = generatePlan; }
     APP.rowExtra(el, tr => { const r = Store.get('ProductionPlan', tr.dataset.row); const td = tr.querySelector('.actions');
-      if (r.Status === 'Draft' && Store.canApprove('prod-plan')) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-a>Duyệt</button> `); td.querySelector('[data-a]').onclick = () => UI.confirm('Duyệt kế hoạch ' + esc(r.PlanNumber) + '?', () => Store.act('ProductionPlan/Approve', { form: { Id: r.Id }, tables: ['ProductionPlan', 'ApprovalRequest'], demo: () => Store.update('ProductionPlan', r.Id, { Status: 'Approved' }) }).then(x => { if (x.ok) { UI.toast('Đã duyệt kế hoạch', 'ok'); APP.refresh(); } })); }
+      if (r.Status === 'Draft' && Store.canApprove('prod-plan')) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-a>Duyệt</button> `); td.querySelector('[data-a]').onclick = () => approvePlan(r); }
       if (Store.isLive) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs" data-xs title="Xuất phiếu sản xuất">${I('export')}</button> `); td.querySelector('[data-xs]').onclick = () => Store.download('ProductionPlan/ExportProductionSheet', { id: r.Id }); }
       if (r.Status === 'Approved' && !Store.by('ProductionOrder', 'ProductionPlanId', r.Id).length) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs primary" data-g>Ra lệnh SX</button> `); td.querySelector('[data-g]').onclick = () => release(r); } });
   });
+  function approvePlan(r) {
+    UI.confirm('Duyệt kế hoạch ' + esc(r.PlanNumber) + '?', () => Store.act('ProductionPlan/Approve', { form: { Id: r.Id }, tables: ['ProductionPlan', 'ApprovalRequest'], demo: () => Store.update('ProductionPlan', r.Id, { Status: 'Approved' }) }).then(x => { if (x.ok) { UI.toast('Đã duyệt kế hoạch', 'ok'); APP.refresh(); } }));
+  }
+  // UI-6 (D-80): trang chi tiết kế hoạch (modules/detail-prod.js) gọi lại đúng các thao tác của danh sách. r / pl = { Id, PlanNumber }.
+  APP.prodPlan = { approve: r => approvePlan(r), release: pl => release(pl), exportSheet: id => Store.download('ProductionPlan/ExportProductionSheet', { id }) };
   function generatePlan() {
     UI.modal({ title: 'Lập kế hoạch sản xuất từ đơn hàng', size: 'sm',
       body: `<p style="margin-top:0" class="small muted">Tổng hợp số phần từng món từ các đơn Đã xác nhận / Đã chốt của ngày. Kế hoạch Nháp cùng ngày sẽ được tính lại; kế hoạch đã duyệt thì không thay đổi.</p>
@@ -265,6 +276,8 @@
     <h3 class="mt">Phiếu xuất nguyên liệu</h3>${mini(['Số phiếu', 'Ngày', 'Kho', 'Trạng thái'], (d.listIssue || []).map(i => [esc(i.issueNumber || ''), esc(U.date(i.issueDate)), esc(Store.label('Warehouse', i.warehouseId)), esc(i.statusName || i.status || '')]))}`;
   const orderCostHtml = d => `<h3>Giá thành thực tế</h3>${d.actualCost ? notes(d.actualCost.listWarning) + costKv(d.actualCost) : '<div class="muted small mb">Chưa tính giá thành. Bấm “Tính giá thành” hoặc đóng lệnh để tính.</div>'}
     <h3 class="mt">Chênh lệch tiêu hao nguyên liệu</h3>${mini(['Nguyên liệu', 'Định mức', 'Thực tế', 'Chênh lệch', '%', 'Giá trị'], (d.listVariance || []).map(v => [esc(v.ingredientName || v.ingredientCode || ''), U.num(v.standardQuantity, 3) + ' ' + esc(v.unitName || ''), U.num(v.actualQuantity, 3), v.isOverThreshold ? `<b style="color:var(--red)">${U.num(v.varianceQuantity, 3)}</b>` : U.num(v.varianceQuantity, 3), nil(v.variancePercent) ? '' : U.pct(v.variancePercent), nil(v.varianceCost) ? '' : U.money(v.varianceCost)]))}`;
+  // UI-6 (D-80): trang chi tiết lệnh SX (modules/detail-prod.js) gọi lại đúng các thao tác này. o = { Id, ProductionOrderNumber }; a = close / cancel / cost.
+  APP.prodOrder = { act: (a, o, done) => orderAct(a, o, done || (() => APP.refresh())), workHtml: d => orderWorkHtml(d), costHtml: d => orderCostHtml(d) };
   function orderDetail(id) {
     const o = Store.get('ProductionOrder', id); if (!o) return UI.toast('Không tìm thấy lệnh sản xuất', 'err');
     let dq = null; const detail = () => dq || (dq = Store.query('ProductionOrder/GetDetail', { id }));
@@ -282,8 +295,10 @@
     APP.rowExtra(el, tr => {
       const r = Store.get('ProductionOrder', tr.dataset.row); if (!r) return; const td = tr.querySelector('.actions');
       // Mở ngăn chi tiết theo ProductionOrder/GetDetail (mẻ, giữ chỗ, chênh lệch, giá thành) thay cho ngăn chi tiết chung.
-      tr.onclick = e => { if (e.target.closest('button,a,input,select')) return; orderDetail(r.Id); };
-      const vw = td && td.querySelector('[data-view]'); if (vw) vw.onclick = () => orderDetail(r.Id);
+      // UI-6 (D-80): có trang chi tiết → mở trang (Ctrl / chuột giữa: tab mới).
+      const open = () => (APP.detailPageOf && APP.detailPageOf('ProductionOrder') ? APP.openDetail('ProductionOrder', r.Id) : orderDetail(r.Id));
+      tr.onclick = e => { if (e.target.closest('button,a,input,select')) return; open(); };
+      const vw = td && td.querySelector('[data-view]'); if (vw) vw.onclick = open;
       if (!td) return;
       if (r.Status === 'Completed') { td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-oc ${dis}>Đóng lệnh</button> `); td.querySelector('[data-oc]').onclick = () => orderAct('close', r, () => APP.refresh()); }
       if (canCancel(r)) { td.insertAdjacentHTML('afterbegin', `<button class="btn xs danger" data-ox ${dis}>Hủy lệnh</button> `); td.querySelector('[data-ox]').onclick = () => orderAct('cancel', r, () => APP.refresh()); }

@@ -182,6 +182,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – quyền Xem log-route (PermissionConvention: Get* = Xem).</summary>
+        [HttpGet("GetOverview")]
+        public async Task<IActionResult> GetOverview(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetOverview(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T19: lập chuyến CX- (đơn giao PH- + điểm dừng) – JSON vì có danh sách đơn hàng lồng nhau (như AuthenticationController.Login). Quyền Thêm log-route.</summary>
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] DeliveryRouteCreateRequest request)

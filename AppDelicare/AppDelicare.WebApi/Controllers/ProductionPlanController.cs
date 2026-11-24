@@ -128,6 +128,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6 (D-80): trang chi tiết toàn màn – quyền Xem prod-plan (PermissionConvention: Get* = Xem).</summary>
+        [HttpGet("GetOverview")]
+        public async Task<IActionResult> GetOverview(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetOverview(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T17: xác nhận kế hoạch KH- (Nháp → Đã duyệt). Quyền duyệt = mục "Phê duyệt › Kế hoạch sản xuất" (#/wf-inbox?type=prod-plan, D-31).</summary>
         [Security.Permission("prod-plan", PermissionAction.Approve)]
         [HttpPost("Approve")]

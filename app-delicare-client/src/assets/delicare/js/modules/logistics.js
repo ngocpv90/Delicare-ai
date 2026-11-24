@@ -257,16 +257,31 @@
     }
     // Common/PrintBatch: một tệp PDF gồm mọi phiếu giao của tuyến (mỗi phiếu một trang).
     el.querySelectorAll('[data-prt]').forEach(b => b.onclick = () => Store.download('Common/PrintBatch', null, { deliveryRouteId: b.dataset.prt }));
-    el.querySelectorAll('[data-load]').forEach(b => b.onclick = () => { const r = Store.get('DeliveryRoute', b.dataset.load); const v = Store.get('Vehicle', r.VehicleId);
+    el.querySelectorAll('[data-load]').forEach(b => b.onclick = () => routeLoad(b.dataset.load));
+    // (data-dep: core gắn sẵn [data-go] cho điều hướng nên không dùng tên đó cho nút Xuất bến.)
+    el.querySelectorAll('[data-dep]').forEach(b => b.onclick = () => routeDispatch(b.dataset.dep));
+  });
+  // UI-6 (D-80): trang chi tiết chuyến (modules/detail-prod.js – APP.logRoute) gọi lại đúng các thao tác của màn Tuyến giao.
+  APP.logRoute = {
+    load: id => Promise.all(['DeliveryRoute', 'DeliveryOrder', 'DeliveryStop', 'Vehicle'].map(t => Store.ensure(t))).then(() => routeLoad(id)),
+    dispatch: id => Store.ensure('DeliveryRoute').then(() => routeDispatch(id)),
+    stops: id => Promise.all(['DeliveryRoute', 'DeliveryStop', 'CustomerDeliveryLocation'].map(t => Store.ensure(t))).then(() => routeStops(Store.get('DeliveryRoute', id))),
+    position: id => recordPosition(id),
+    print: id => Store.download('Common/PrintBatch', null, { deliveryRouteId: id }),
+    note: id => Store.download('DeliveryRoute/ExportDeliveryNote', { id }).then(x => { if (x.ok) UI.toast('Đã xuất ' + esc(x.fileName || 'biên bản giao hàng'), 'ok'); }),
+  };
+  function routeLoad(id) {
+    const r = Store.get('DeliveryRoute', id); if (!r) return UI.toast('Đang tải dữ liệu chuyến – thử lại sau giây lát.', 'warn'); const v = Store.get('Vehicle', r.VehicleId);
       // Chế độ API: DeliveryRoute/Load – backend ghi DeliveryLoading + DeliveryExecution và kiểm tra lệnh đóng gói.
       if (Store.isLive) return Store.act('DeliveryRoute/Load', { json: { id: r.Id, listItem: Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).map(d => ({ deliveryOrderId: d.Id, loadedQty: U.sum(Store.by('DeliveryStop', 'DeliveryOrderId', d.Id), 'PlannedMealQty') || null })) }, tables: LT }).then(x => { if (x.ok) { bust(); UI.toast('Đã xếp hàng lên xe', 'ok'); APP.refresh(); } });
-Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one('DeliveryLoading', 'DeliveryOrderId', d.Id)) Store.add('DeliveryLoading', { DeliveryRouteId: r.Id, DeliveryOrderId: d.Id, LoadedQty: U.sum(Store.by('DeliveryStop', 'DeliveryOrderId', d.Id), 'PlannedMealQty'), LoadingTime: U.iso(new Date()), LoadingDate: U.iso(new Date()), VehicleCode: v && v.Code, Status: 'Loaded' }); if (!Store.one('DeliveryExecution', 'DeliveryOrderId', d.Id)) Store.add('DeliveryExecution', { DeliveryOrderId: d.Id, DeliveryRouteId: r.Id, Status: 'LOADED', VehicleCode: v && v.Code, DriverName: Store.label('Employee', r.DriverId) }); }); Store.update('DeliveryRoute', r.Id, { Status: 'Loading' }); UI.toast('Đã xếp hàng – DeliveryLoading + DeliveryExecution (LOADED). GAP-C-03: chưa liên kết PackingOrder.', 'ok'); APP.refresh(); });
-    // (data-dep: core gắn sẵn [data-go] cho điều hướng nên không dùng tên đó cho nút Xuất bến.)
-    el.querySelectorAll('[data-dep]').forEach(b => b.onclick = () => { const r = Store.get('DeliveryRoute', b.dataset.dep);
+Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one('DeliveryLoading', 'DeliveryOrderId', d.Id)) Store.add('DeliveryLoading', { DeliveryRouteId: r.Id, DeliveryOrderId: d.Id, LoadedQty: U.sum(Store.by('DeliveryStop', 'DeliveryOrderId', d.Id), 'PlannedMealQty'), LoadingTime: U.iso(new Date()), LoadingDate: U.iso(new Date()), VehicleCode: v && v.Code, Status: 'Loaded' }); if (!Store.one('DeliveryExecution', 'DeliveryOrderId', d.Id)) Store.add('DeliveryExecution', { DeliveryOrderId: d.Id, DeliveryRouteId: r.Id, Status: 'LOADED', VehicleCode: v && v.Code, DriverName: Store.label('Employee', r.DriverId) }); }); Store.update('DeliveryRoute', r.Id, { Status: 'Loading' }); UI.toast('Đã xếp hàng – DeliveryLoading + DeliveryExecution (LOADED). GAP-C-03: chưa liên kết PackingOrder.', 'ok'); APP.refresh();
+  }
+  function routeDispatch(id) {
+    const r = Store.get('DeliveryRoute', id); if (!r) return UI.toast('Đang tải dữ liệu chuyến – thử lại sau giây lát.', 'warn');
       // Chế độ API: DeliveryRoute/Dispatch – ghi nhiệt độ lúc xuất bến (backend chặn khi dưới ngưỡng mà không có hành động khắc phục).
       if (Store.isLive) return tempPrompt('Xuất bến tuyến ' + esc(r.RouteNo), (tc, ca) => Store.act('DeliveryRoute/Dispatch', { form: { Id: r.Id, TemperatureC: tc, CorrectiveAction: ca }, tables: LT }).then(x => { if (x.ok) { bust(); UI.toast('Tuyến đã xuất bến', 'ok'); APP.refresh(); } return x; }));
-      Store.update('DeliveryRoute', r.Id, { Status: 'InTransit', ActualStart: U.iso(new Date()) }); Store.by('DeliveryExecution', 'DeliveryRouteId', r.Id).forEach(x => { if (['READY', 'LOADED'].includes(x.Status)) { Store.update('DeliveryExecution', x.Id, { Status: 'DISPATCHED', DispatchedAt: U.iso(new Date()), DepartedAt: U.iso(new Date()) }); Store.add('DeliveryEvent', { DeliveryRouteId: r.Id, DeliveryOrderId: x.DeliveryOrderId, EventType: 'DISPATCHED', EventAt: U.iso(new Date()), Latitude: 21.1388, Longitude: 105.8464, Description: 'Xe xuất bến', SourceChannel: 'WEB' }); } }); UI.toast('Tuyến đã xuất bến – DeliveryEvent DISPATCHED', 'ok'); APP.refresh(); });
-  });
+      Store.update('DeliveryRoute', r.Id, { Status: 'InTransit', ActualStart: U.iso(new Date()) }); Store.by('DeliveryExecution', 'DeliveryRouteId', r.Id).forEach(x => { if (['READY', 'LOADED'].includes(x.Status)) { Store.update('DeliveryExecution', x.Id, { Status: 'DISPATCHED', DispatchedAt: U.iso(new Date()), DepartedAt: U.iso(new Date()) }); Store.add('DeliveryEvent', { DeliveryRouteId: r.Id, DeliveryOrderId: x.DeliveryOrderId, EventType: 'DISPATCHED', EventAt: U.iso(new Date()), Latitude: 21.1388, Longitude: 105.8464, Description: 'Xe xuất bến', SourceChannel: 'WEB' }); } }); UI.toast('Tuyến đã xuất bến – DeliveryEvent DISPATCHED', 'ok'); APP.refresh();
+  }
   // ---------- Thực hiện giao hàng ----------
   APP.register('log-execution', (el, f) => {
     const date = ls.date || Store.ctx.date;
