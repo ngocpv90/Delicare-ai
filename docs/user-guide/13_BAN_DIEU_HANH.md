@@ -33,7 +33,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X (IX) |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | X (IX) |
-| Kinh doanh › Đơn đặt suất | `crm-order` | X | X | X | X (IX) |
+| Kinh doanh › Đơn hàng theo ngày | `crm-order` | X | X | X | X (IX) |
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | S (IX) |
 | Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | X (IX) |
 | Mua hàng › Đơn mua hàng | `scm-po` | X | X | X | X (IX) |

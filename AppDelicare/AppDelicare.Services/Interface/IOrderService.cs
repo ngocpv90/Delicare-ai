@@ -51,5 +51,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.OrderWeekConfirmResultModel>> ConfirmWeekPoints(AppDelicare.Model.Model.OrderWeekConfirmRequest request);
         public Task<IResult<AppDelicare.Model.Model.OrderWeekModel>> FillWeekFromForecast(AppDelicare.Model.Request.Custom.OrderWeekRequest request);
         public Task<IResult<AppDelicare.Model.Model.OrderWeekSlipBatchResultModel>> ImportWeekSlips(DateTime? weekStart, IReadOnlyList<(string Name, System.IO.Stream File)> files);
+        /// <summary>UI-6.15 (D-96): đơn hàng theo ngày + thêm đơn phát sinh.</summary>
+        public Task<IResult<AppDelicare.Model.Model.OrderDayModel>> GetDay(AppDelicare.Model.Model.OrderDayRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderDetailModel>> CreateExtra(AppDelicare.Model.Model.OrderExtraRequest request);
     }
 }

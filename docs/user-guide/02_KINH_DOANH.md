@@ -21,7 +21,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Khách hàng | `crm-customer` | S | Q (IX) | Q (IX) | X |
 | Kinh doanh › Hợp đồng | `crm-contract` | S | Q (IX) | Q (IX) | — |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | S | Q (IX) | Q (IX) | — |
-| Kinh doanh › Đơn đặt suất | `crm-order` | S | Q (IX) | Q (IX) | X |
+| Kinh doanh › Đơn hàng theo ngày | `crm-order` | S | Q (IX) | Q (IX) | X |
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | S | Q (IX) | Q (IX) | — |
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | S | S | X |
 | Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X (IX) | X (IX) | — |
@@ -155,22 +155,28 @@ Chữ nhỏ dưới ô: **TB** 4 tuần (· "đã sửa" nếu Nháp khác số 
 
 - Dự báo đã công bố được dùng làm **số gợi ý** khi tạo đơn và để cảnh báo lệch khi xác nhận đơn (> 10%).
 
-### 4.5 Đơn hàng – `crm-order`
-**Xem đơn**
-- Chip **Ngày ăn** (mặc định ngày mai), **Tất cả** để xem mọi ngày; thanh trạng thái đếm số đơn mỗi bước.
-- **Dạng Kanban** (mặc định): 8 cột theo trạng thái, mỗi thẻ = số đơn, khách, điểm giao, ngày, số suất. **Dạng bảng**: lọc theo trạng thái.
+### 4.5 Đơn hàng theo ngày – `crm-order` (UI-6.15, D-96)
+Số suất hằng tuần nhập ở **Đăng ký suất tuần** (4.5b). Màn này để **theo dõi một ngày ăn và xử lý việc phát sinh** (Kinh doanh, bếp, điều phối, kế toán). Tên cũ "Đơn đặt suất" – link cũ vẫn mở đúng màn; chứng từ vẫn gọi là *đơn đặt suất*.
 
-**Tạo đơn**
-1. **Tạo đơn hàng** → chọn **Khách hàng***, **Ngày ăn*** (mặc định **ngày mai** – BIZ-2.1). Cột **Ca** chỉ hiện khi loại suất có nhiều ca (ca tự gán theo loại suất).
-2. Hệ thống tải mẫu: hợp đồng hiệu lực, **hạn chốt đơn**, mỗi **điểm giao** một bảng: Loại suất, Ca, Đơn giá, Dự báo, **Số lượng** (điền sẵn = dự báo).
-   - Buổi có **nhiều lựa chọn** (vd Sáng LC1 / LC2 / LC3): mỗi lựa chọn 1 hàng – *Lựa chọn N* + món trong set + ô **Số lượng** riêng (dự báo ghi ở hàng đầu, là của cả buổi). Buổi 1 lựa chọn: 1 ô như cũ, món trong set hiện dưới tên suất.
-   - Điểm giao đã có đơn cho ngày này → báo *"Điểm giao này đã có đơn … – mở đơn đó để sửa số lượng"*.
-3. Sửa số lượng → **Tạo đơn (Nháp)**. Mỗi điểm giao có số > 0 thành **1 đơn** riêng (số `DH-…`).
-4. Nếu **đã quá giờ chốt**: hộp báo vàng + ô **Lý do thêm đơn sau giờ chốt*** → đơn tạo ở Nháp và **tự gửi duyệt**; duyệt xong đơn chuyển **Đã chốt**.
+**Đầu màn**
+- Chọn ngày: **Hôm nay** / **Ngày mai** (mặc định) hoặc **◀ ▶**; bên cạnh ghi trạng thái ngày: *chưa chốt · tự chốt lúc 20:00 …* / *đã chốt* / *đã giao xong*.
+- **4 bước:** (1) Nhận số từ đăng ký tuần – "x / y điểm giao đã có số" + nút **Mở Đăng ký suất tuần** (đúng tuần của ngày); (2) Xử lý việc cần chú ý – nút cam **N việc cần xử lý** bật tab Cần xử lý; (3) Hệ thống tự chốt 20:00 – đếm ngược, chốt xong tự lập kế hoạch sản xuất; (4) Nấu → giao → đối soát – hệ thống tự cập nhật.
+- **4 thẻ:** Tổng suất ngày (± % so dự báo) · Điểm giao có đơn (x / y, số khách) · Cần xử lý · Thành tiền dự kiến (chưa VAT).
 
-**Đổi món theo yêu cầu khách (UI-6.13, D-91 b):** trên trang chi tiết đơn bấm **Đổi món** – xem `03_KE_HOACH.md` mục 4.6 (chọn món, món thay gợi ý, số suất, nguồn, áp cho các đơn của khách theo khoảng ngày; tự duyệt khi an toàn).
+**Bảng một ngày**
+- Nhóm theo **khách** (bấm dòng khách để gập / mở; dòng khách có tổng từng buổi + "N cần xử lý"); dòng con là **điểm giao**, gồm cả điểm **chưa có đơn** (số dự báo hiện mờ "~150").
+- Cột **Sáng · Trưa · Tối · Đêm** (chỉ buổi có trong hợp đồng) – rê chuột lên ô để xem chia theo lựa chọn; **Tổng**; **Tiến độ** 5 chấm Đã xác nhận → Đã chốt → Đang nấu → Đã giao → Đã đối soát (Nháp / khách gửi hiện chữ cam *Chưa xác nhận*; đơn hủy gạch ngang); **Cần chú ý**.
+- Dưới tên điểm ghi nguồn: *Từ đăng ký suất tuần · DH-…* hoặc *Đơn phát sinh · DH-… · lý do*. Một điểm có đơn tuần + đơn phát sinh → mỗi đơn một dòng. Cuối bảng: **Tổng ngày**.
+- **Cần chú ý** (hệ thống tự tính): *Chưa có số* (sau 18:00 thêm "đã nhắc") → nút **Nhập số** mở Đăng ký suất tuần đúng điểm / tuần; *Chưa xác nhận* → nút **Xác nhận**; *Lệch số / Sửa sau chốt – chờ duyệt* → nút **Duyệt** (người có quyền duyệt KD; mở trang đơn, tab Duyệt); *Lệch ±N% dự báo*; *Đơn phát sinh* (nhãn xanh, không tính vào cần xử lý). Sau giờ chốt điểm chưa có số ghi *Không có đơn (đã chốt)*.
+- Tab **Tất cả · Cần xử lý · Đơn phát sinh · Đã hủy**; ô tìm khách / điểm giao / số đơn; **Xuất Excel** (tệp CSV đúng bảng đang xem).
+- **Bấm một dòng có đơn** → trang chi tiết đơn (dưới). Sửa số trước giờ chốt làm ở Đăng ký suất tuần; sau giờ chốt dùng "Yêu cầu sửa sau chốt" trong trang chi tiết.
+- **⋯ › Chốt đơn theo ngày** (chỉ người có quyền Sửa + quyền duyệt KD): chốt tay khi cần – job 20:00 vẫn là chính.
 
-**Trang chi tiết đơn (UI-6):** bấm thẻ Kanban / dòng bảng (hoặc số đơn ở màn khác) → **trang riêng** `#/crm-order-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Đơn đặt suất** quay lại đúng ngày ăn / bộ lọc / vị trí cuộn). Phần đầu: số đơn, trạng thái, "Chờ duyệt …", "Đã quá giờ chốt"; khách · điểm giao · ngày ăn · hợp đồng · NV phụ trách; thanh bước 7 trạng thái (Hủy tô đỏ). Nút (chỉ nút máy chủ cho phép, cần quyền Sửa): **Xác nhận**, **Chốt số lượng**, **Sửa số suất** (hộp sửa số từng dòng → *Lưu số lượng*), **Yêu cầu sửa sau chốt**, ⋯ **Hủy đơn**, **Mở màn Phê duyệt**, **Hồ sơ khách hàng**. 4 thẻ: **Tổng suất** (dự báo, % lệch), **Thành tiền**, **Giao hàng** (số phiếu giao, khách nhận), **Phản ánh đang mở**. Tab **Tổng quan** (thông tin đơn – bấm khách / điểm giao / hợp đồng để mở; cảnh báo; suất theo ca / loại suất; đối soát) · **Chi tiết dòng** · **Giao hàng** · **Phản ánh** · **Duyệt** (khi có yêu cầu lệch suất / sửa sau chốt) · **Chứng từ liên quan** · **Tài liệu** · **Lịch sử**. Chế độ DEMO vẫn mở ngăn chi tiết như dưới.
+**Thêm đơn phát sinh** (quyền Thêm): chọn **Khách hàng*** → **Ngày ăn*** → **Điểm giao*** → **Lý do*** (Sự kiện / tiệc · Khách đặt thêm · Đơn bù do phản ánh · Khác) + ghi chú → nhập số suất theo **buổi × lựa chọn** (món trong set, đơn giá theo hợp đồng) → nút **Tạo đơn · N suất · tiền**.
+- Điểm đã có đơn tuần cùng ngày → báo *"Điểm này đã có đơn … từ đăng ký tuần – đơn này là đơn thêm"* (không chặn).
+- Trước giờ chốt: đơn **Đã xác nhận** luôn (vào kế hoạch). Sau giờ chốt: đơn Nháp + **tự gửi Trưởng KD duyệt** (lý do = lý do phát sinh).
+
+**Trang chi tiết đơn (UI-6):** bấm dòng ở Đơn hàng theo ngày (hoặc số đơn ở màn khác) → **trang riêng** `#/crm-order-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Đơn hàng theo ngày** quay lại đúng ngày ăn / bộ lọc / vị trí cuộn). Phần đầu: số đơn, trạng thái, "Chờ duyệt …", "Đã quá giờ chốt"; khách · điểm giao · ngày ăn · hợp đồng · NV phụ trách; thanh bước 7 trạng thái (Hủy tô đỏ). Nút (chỉ nút máy chủ cho phép, cần quyền Sửa): **Xác nhận**, **Chốt số lượng**, **Sửa số suất** (hộp sửa số từng dòng → *Lưu số lượng*), **Yêu cầu sửa sau chốt**, ⋯ **Hủy đơn**, **Mở màn Phê duyệt**, **Hồ sơ khách hàng**. 4 thẻ: **Tổng suất** (dự báo, % lệch), **Thành tiền**, **Giao hàng** (số phiếu giao, khách nhận), **Phản ánh đang mở**. Tab **Tổng quan** (thông tin đơn – bấm khách / điểm giao / hợp đồng để mở; cảnh báo; suất theo ca / loại suất; đối soát) · **Chi tiết dòng** · **Giao hàng** · **Phản ánh** · **Duyệt** (khi có yêu cầu lệch suất / sửa sau chốt) · **Chứng từ liên quan** · **Tài liệu** · **Lịch sử**. Chế độ DEMO vẫn mở ngăn chi tiết như dưới.
 
 **Xử lý đơn (bấm vào thẻ / dòng)** – ngăn chi tiết (chế độ DEMO):
 - Đầu ngăn: thanh tiến trình trạng thái; hộp thông tin: **Hạn chốt đơn**, "đã quá giờ chốt", **Đang chờ duyệt** (lệch suất / thay đổi sau giờ chốt), dự báo + % lệch.

@@ -360,13 +360,16 @@ namespace AppDelicare.Services.Implement
         /// mỗi dòng: MealType theo ContractMeal, ca mặc định, MenuId theo phân công, UnitPrice theo tra giá, LineAmount (+ Amount cũ);
         /// bỏ dòng số lượng 0; tổng TotalQuantity / TotalAmount.
         /// </summary>
-        public async Task<IResult<OrderDetailModel>> Create(OrderCreateRequest request)
+        public Task<IResult<OrderDetailModel>> Create(OrderCreateRequest request) => CreateCoreAsync(request, false);
+
+        /// <summary>extra = đơn phát sinh (UI-6.15): cho phép thêm đơn vào điểm giao đã có đơn cùng ngày.</summary>
+        private async Task<IResult<OrderDetailModel>> CreateCoreAsync(OrderCreateRequest request, bool extra)
         {
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
                 var warnings = new List<string>();
-                var (order, lines, error) = await BuildOrderAsync(request, warnings);
+                var (order, lines, error) = await BuildOrderAsync(request, warnings, extra);
                 if (error != null)
                 {
                     _unitOfWork.RollbackTransaction();
@@ -409,7 +412,7 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<(Order? Order, List<OrderLine>? Lines, string? Error)> BuildOrderAsync(OrderCreateRequest request, List<string> warnings)
+        private async Task<(Order? Order, List<OrderLine>? Lines, string? Error)> BuildOrderAsync(OrderCreateRequest request, List<string> warnings, bool extra = false)
         {
             DateTime day = request.MealDate.Date;
             if (IsAfterCutoff(day) && string.IsNullOrWhiteSpace(request.AfterCutoffReason))
@@ -438,7 +441,11 @@ namespace AppDelicare.Services.Implement
             var duplicate = await _unitOfWork.OrderRepository.GetAll().AsNoTracking()
                 .FirstOrDefaultAsync(o => !o.IsDeleted && o.CustomerId == request.CustomerId && o.DeliveryLocationId == request.DeliveryLocationId
                     && o.MealDate == day && o.Status != OrderStatus.Cancelled);
-            if (duplicate != null)
+            if (duplicate != null && extra)
+            {
+                warnings.Add(string.Format(ConstantHelper.Message.OrderExtraSamePoint, duplicate.OrderNumber ?? duplicate.OrderNo, (duplicate.TotalQuantity ?? 0m).ToString("#,0", CultureInfo.InvariantCulture).Replace(",", ".")));
+            }
+            else if (duplicate != null)
             {
                 return (null, null, string.Format(ConstantHelper.Message.OrderDuplicate, duplicate.OrderNumber ?? duplicate.OrderNo));
             }

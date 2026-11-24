@@ -286,7 +286,8 @@
   const canEdit = id => Store.perm(id).edit !== false;
 
   // Đơn hàng: chốt đơn theo ngày ăn (nút "Chốt đơn 20h").
-  extend('crm-order', el => { if (!canEdit('crm-order')) return; headBtn(el, `<button class="btn">${I('key')} Chốt đơn theo ngày</button>`, () => dialog('Chốt đơn theo ngày ăn', `<div class="small muted mb">Khóa mọi đơn Đã xác nhận của ngày ăn đã chọn. Chỉ chạy được khi đã tới giờ chốt của ngày đó.</div>${fld('Ngày ăn *', `<input type="date" class="input" id="gxD" value="${addDays(1)}">`)}`, 'Chốt đơn', (m, close) => {
+  // UI-6.15: chế độ API – nút chốt nằm trong "⋯" của màn Đơn hàng theo ngày (chỉ người có quyền Sửa + duyệt KD).
+  extend('crm-order', el => { if (Store.isLive || !canEdit('crm-order')) return; headBtn(el, `<button class="btn">${I('key')} Chốt đơn theo ngày</button>`, () => dialog('Chốt đơn theo ngày ăn', `<div class="small muted mb">Khóa mọi đơn Đã xác nhận của ngày ăn đã chọn. Chỉ chạy được khi đã tới giờ chốt của ngày đó.</div>${fld('Ngày ăn *', `<input type="date" class="input" id="gxD" value="${addDays(1)}">`)}`, 'Chốt đơn', (m, close) => {
     const d = val(m, 'gxD'); if (!d) return UI.toast('Chọn ngày ăn', 'err');
     Store.act('Order/LockByMealDate', { form: { MealDate: d }, tables: ['Order', 'OrderLine'] }).then(r => { if (!r.ok || r.demo) return; close(); const x = r.data || {}, li = (t, a) => (a && a.length ? `<h3 class="mt">${t} <span class="muted small">${a.length} đơn</span></h3><div class="row-flex">${a.map(n => `<span class="tag">${esc(n)}</span>`).join('')}</div>` : ''); UI.modal({ title: 'Kết quả chốt đơn ngày ' + U.date(d), body: `<div class="notice ok">${I('ok')}<div><b>Đã chốt ${U.num(x.lockedCount || 0)} đơn</b>${esc((r.res && r.res.responseMessage) || '')}</div></div>${li('Đơn đã chốt', x.listLockedNumber)}${li('Đơn chưa xác nhận – cần xử lý tay', x.listNotConfirmedNumber)}${li('Đơn đang chờ duyệt', x.listPendingApprovalNumber)}` }); APP.refresh(); });
   })); });

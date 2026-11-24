@@ -15,7 +15,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Menu › Mục | screen-id | OPS-KIT | OPS-LOG |
 |---|---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X | X |
-| Kinh doanh › Đơn đặt suất | `crm-order` | — | X |
+| Kinh doanh › Đơn hàng theo ngày | `crm-order` | — | X |
 | Kinh doanh › Điểm giao hàng | `crm-location` | — | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | — |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | — |

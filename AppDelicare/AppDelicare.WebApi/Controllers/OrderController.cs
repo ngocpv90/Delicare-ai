@@ -463,6 +463,40 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.15 (D-96): đơn hàng theo ngày – nhóm khách → điểm giao (cả điểm chưa có đơn + dự báo) → đơn: số theo buổi / lựa chọn, tiến độ, cần chú ý; 4 chỉ số, giờ chốt. Quyền Xem.</summary>
+        [HttpGet("GetDay")]
+        public async Task<IActionResult> GetDay([FromQuery] AppDelicare.Model.Model.OrderDayRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetDay(request ?? new()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDay: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.15: thêm đơn phát sinh (lý do EVENT / ADDON / COMPENSATION / OTHER; điểm đã có đơn tuần chỉ cảnh báo; trước giờ chốt tự xác nhận, sau giờ chốt gửi duyệt). JSON. Quyền Thêm.</summary>
+        [HttpPost("CreateExtra")]
+        public async Task<IActionResult> CreateExtra([FromBody] AppDelicare.Model.Model.OrderExtraRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CreateExtra(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateExtra: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>UI-6.6 (D-85): tổng quan tuần – mọi khách có hợp đồng hiệu lực × điểm giao đang hoạt động × 7 ngày (tổng suất, trạng thái, dự báo đã công bố) + 4 chỉ số.</summary>
         [HttpGet("GetWeekOverview")]
         public async Task<IActionResult> GetWeekOverview([FromQuery] AppDelicare.Model.Model.OrderWeekOverviewRequest request)

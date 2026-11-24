@@ -19,7 +19,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X |
 | Kinh doanh › Khách hàng | `crm-customer` | X |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X |
-| Kinh doanh › Đơn đặt suất | `crm-order` | X |
+| Kinh doanh › Đơn hàng theo ngày | `crm-order` | X |
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | X |
 | Kinh doanh › Điểm giao hàng | `crm-location` | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | Q |
