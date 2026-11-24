@@ -104,24 +104,124 @@
     }
     load();
   };
-  // Tab Lịch sử + Liên quan (Common/GetHistory · Common/GetRelated).
-  D.historyTab = (resource, noRelated) => (box, d, id) => {
-    if (!Store.isLive) { box.innerHTML = UI.history ? '' : D.demoNote; if (UI.history) UI.history(resource, id, box); return; }
-    box.innerHTML = `<h3>Lịch sử</h3><div data-his>${D.loading}</div>${noRelated ? '' : `<h3 class="mt">Liên quan</h3><div data-rel>${D.loading}</div>`}`;
-    const his = box.querySelector('[data-his]'), rel = box.querySelector('[data-rel]');
-    D.run(his, Store.query('Common/GetHistory', { resource, id }), x => {
-      const rows = x.list || [];
-      his.innerHTML = rows.length ? rows.map(h => `<div class="c360-rows"><div class="r"><label>${esc(U.dt ? U.dt(h.at) : D.dmy(h.at))} · ${esc(h.byName || h.by || '')}</label><span><b>${esc(h.actionName || h.action || '')}</b>${h.referenceNo ? ' · ' + esc(h.referenceNo) : ''}</span></div>
-        ${(h.listChange || []).map(c => `<div class="small muted" style="padding-left:12px">${esc(c.field)}: ${esc(c.masked ? '***' : c.from ?? '∅')} → ${esc(c.masked ? '***' : c.to ?? '∅')}</div>`).join('')}${h.comment ? `<div class="small" style="padding-left:12px">${esc(h.comment)}</div>` : ''}</div>`).join('') : D.none;
-    });
-    if (noRelated) return;
-    D.run(rel, Store.query('Common/GetRelated', { resource, id }), x => {
-      const groups = (x.list || []).filter(g => g.count);
-      rel.innerHTML = groups.length ? groups.map(g => `<div class="mb"><div class="spread"><b>${esc(g.title)} · ${U.num(g.count)}</b>${g.route && D.can(g.route) ? `<a href="javascript:void 0" data-go="${esc(g.route)}" class="small">Mở màn</a>` : ''}</div>
-        <div class="small">${(g.items || []).slice(0, 8).map(i => `${esc(i.label || '')}${i.statusName ? ' (' + esc(i.statusName) + ')' : ''}`).join(' · ')}</div></div>`).join('') : D.none;
-      D.bindGo(rel);
-    });
+  // UI-6.14 (D-95): tab Lịch sử dạng dòng thời gian – MỘT hàm chung cho mọi trang chi tiết / màn 360 (Common/GetTimeline).
+  // Trái 2/3: dòng thời gian nhóm theo ngày, chấm màu theo loại, câu "Người + động từ + chứng từ", thẻ thay đổi ngang (≤ 3 + "N thay đổi khác"),
+  // ý kiến duyệt dạng trích dẫn, lọc nhóm + người ở máy chủ, tải dần 20. Phải 1/3: "Liên quan" + chú thích màu. Điện thoại: một cột, Liên quan lên trên.
+  const TL_KIND = { create: ['plus', 'Tạo'], update: ['edit', 'Sửa'], submit: ['up', 'Gửi duyệt'], approve: ['approve', 'Duyệt'], reject: ['x', 'Từ chối / hủy'],
+    file: ['file', 'Tài liệu'], system: ['bot', 'Hệ thống tự làm'], order: ['clipboard', 'Đơn hàng'], complaint: ['msg', 'Phản ánh'] };
+  const TL_GROUPS = [['all', 'Tất cả'], ['info', 'Thông tin'], ['status', 'Trạng thái & duyệt'], ['docs', 'Hợp đồng, đơn, phản ánh'], ['file', 'Tài liệu']];
+  // Trường kỹ thuật không bao giờ hiện.
+  const TL_TECH = /^(Id|RowVersion|ConcurrencyStamp|SecurityStamp|CreatedDate|CreatedBy|ModifiedDate|ModifiedBy|UpdatedAt|UpdatedBy|DeletedDate|DeletedBy|DeleteddBy|IsDeleted|TenantId|SyncedAt|Hash|FileNameHas|NormalizedUserName|NormalizedEmail|XemThemSuaXoaInXuatNhap|ExternalEventId|RecipeSnapshotJson|SnapshotJson|ActorId|ComplaintId|ApprovalStepId|QCInspectionId)$/;
+  // Bảng máy chủ → bảng FE (tên lớp FE theo schema.js).
+  const TL_FE = { Dish: 'Dishe', ProductionBatch: 'ProductionBatche', DishCategory: 'DishCategorie' };
+  const feTable = t => (t && TL_FE[t]) || t;
+  const TL_EXTRA = { AssignedAt: 'Giao lúc', ActionCode: 'Thao tác', ItemStatus: 'Trạng thái', ItemType: 'Loại', Denominator: 'Mẫu số', Numerator: 'Tử số', CalculationVersion: 'Phiên bản tính', MetricVersion: 'Phiên bản chỉ số', LotId: 'Lô', TransactionNo: 'Số giao dịch', UomId: 'Đơn vị tính', AvailableQty: 'Tồn khả dụng', OnHandQty: 'Tồn thực tế', NewStatus: 'Trạng thái mới', OldStatus: 'Trạng thái cũ', Comment: 'Ý kiến', MealQty: 'Số suất', ChemicalUsed: 'Hóa chất dùng', CleaningNo: 'Số phiếu vệ sinh', DeliveredQty: 'Số suất đã giao', OrderedQty: 'Số suất đặt', DeliveryStopId: 'Điểm dừng', DeliveryNo: 'Số đơn giao', PackingNo: 'Số phiếu đóng gói', OutputQty: 'Sản lượng', ReservedQty: 'Đã giữ chỗ', IssueNo: 'Số phiếu xuất', ProductionOrderNo: 'Số lệnh sản xuất', BatchNo: 'Số mẻ', LotNo: 'Số lô', ReceiptNo: 'Số phiếu nhập', DecidedBy: 'Người quyết định', DecisionCode: 'Quyết định', ExpectedDate: 'Ngày giao dự kiến', PONo: 'Số đơn mua', PlanNo: 'Số kế hoạch', ExpectedIncomingQty: 'Sắp về', PurchaseQty: 'Cần mua', MenuOptionNo: 'Lựa chọn thực đơn', IsPrimary: 'Liên hệ chính', Position: 'Chức vụ', BusinessRegistrationNumber: 'Số đăng ký kinh doanh', LegalRepresentativeName: 'Người đại diện pháp luật', IsExpiryManaged: 'Quản lý hạn dùng', AccountType: 'Loại tài khoản', CategoryId: 'Nhóm', CompanySize: 'Quy mô', ContactPersonEmail: 'Email người liên hệ', RegistrationDate: 'Ngày đăng ký', RegistrationPlace: 'Nơi đăng ký', FirstName: 'Tên', LastName: 'Họ', IdentityDate: 'Ngày cấp giấy tờ', IdentityNumber: 'Số giấy tờ', UserAssignId: 'Người phụ trách', FormulaDescription: 'Mô tả công thức', PhysicalQty: 'Số đếm thực tế', CountNo: 'Số phiếu kiểm kê', SystemQty: 'Tồn hệ thống', AllowAccess: 'Xem', AllowAdd: 'Thêm', AllowEdit: 'Sửa', AllowDelete: 'Xóa', AllowExport: 'Xuất', AllowImport: 'Nhập', AllowPrint: 'In', TotalQuantity: 'Tổng suất', Quantity: 'Số lượng', MealType: 'Buổi', MealDate: 'Ngày ăn', DeliveryDate: 'Ngày giao', OrderDate: 'Ngày đặt', OrderNumber: 'Số đơn', OrderNo: 'Số đơn',
+    ContractNo: 'Số hợp đồng', StartDate: 'Ngày bắt đầu', EndDate: 'Ngày kết thúc', UnitPrice: 'Đơn giá', Amount: 'Thành tiền', TotalAmount: 'Tổng tiền', OptionNo: 'Lựa chọn', ShiftId: 'Ca',
+    RequestStatus: 'Trạng thái', ComplaintStatus: 'Trạng thái', IssueStatus: 'Trạng thái', PassWord: 'Mật khẩu', Latitude: 'Vĩ độ', Longitude: 'Kinh độ', Name: 'Tên', Phone: 'Điện thoại' };
+  D.fieldLabel = (table, f) => {
+    if (!f || TL_TECH.test(f)) return null;
+    const L = U.LABEL || {};
+    const m = Store.colmeta && Store.colmeta[feTable(table)] && Store.colmeta[feTable(table)][f];
+    return L[f] || TL_EXTRA[f] || (m && m.label) || (/Id$/.test(f) && (L[f.replace(/Id$/, '')] || L[f.replace(/Id$/, 'Name')])) || null;
   };
+  const TL_ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/;
+  // Nhật ký ghi ngày theo InvariantCulture: M/d/yyyy H:mm:ss.
+  const TL_VN = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: (\d{1,2}):(\d{2}))?/;
+  const p2 = n => String(n).padStart(2, '0');
+  D.tlValue = v => {
+    if (v === null || v === undefined || v === '') return '—';
+    const t = String(v).trim();
+    if (/^true$/i.test(t)) return 'Có';
+    if (/^false$/i.test(t)) return 'Không';
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(t)) return '(đã đổi)';
+    if (/^-?\d+(\.\d+)?$/.test(t)) return U.num(+t, t.includes('.') ? 2 : 0);
+    let m = t.match(TL_ISO);
+    if (m) return m[3] + '/' + m[2] + '/' + m[1] + (m[4] && (m[4] !== '00' || m[5] !== '00') ? ' ' + m[4] + ':' + m[5] : '');
+    m = t.match(TL_VN);
+    if (m) return p2(m[2]) + '/' + p2(m[1]) + '/' + m[3] + (m[4] && (+m[4] !== 0 || +m[5] !== 0) ? ' ' + p2(m[4]) + ':' + m[5] : '');
+    return UI.STATUS_VI && Object.prototype.hasOwnProperty.call(UI.STATUS_VI, t) ? UI.STATUS_VI[t] : t;
+  };
+  const WD = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+  D.tlDay = at => {
+    const d = new Date(at), t = new Date(), y = new Date(); y.setDate(t.getDate() - 1);
+    const same = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const dm = p2(d.getDate()) + '/' + p2(d.getMonth() + 1);
+    if (same(d, t)) return 'Hôm nay · ' + dm;
+    if (same(d, y)) return 'Hôm qua · ' + dm;
+    return WD[d.getDay()] + ' · ' + dm + '/' + d.getFullYear();
+  };
+  const tlChanges = (e, open) => {
+    const list = (e.listChange || []).map(c => ({ c, label: D.fieldLabel(e.entityName || e.docKey, c.field) })).filter(x => x.label);
+    if (!list.length) return '';
+    const show = open ? list : list.slice(0, 3);
+    return `<div class="tl-changes">${show.map(({ c, label }) => c.masked ? `<span class="tl-ch">${esc(label)}: <b>(đã ẩn)</b></span>`
+      : c.from === null || c.from === undefined ? `<span class="tl-ch">${esc(label)}: <b>${esc(D.tlValue(c.to))}</b></span>`
+      : `<span class="tl-ch">${esc(label)}: <s>${esc(D.tlValue(c.from))}</s> → <b>${esc(D.tlValue(c.to))}</b></span>`).join('')}</div>${list.length > 3 ? `<span class="tl-more" data-more>${open ? 'Thu gọn' : '+ ' + (list.length - 3) + ' thay đổi khác'}</span>` : ''}`;
+  };
+  const tlDoc = e => {
+    if (e.isSelf || !e.docId) return '';
+    const href = APP.detailHref && APP.detailHref(feTable(e.docKey), e.docId);
+    const lbl = esc(e.docLabel || '');
+    return ` ${esc((e.docTitle || '').toLowerCase())} ${href ? `<a class="tl-ref" href="${href}">${lbl}</a>` : `<b class="tl-ref">${lbl}</b>`}`;
+  };
+  D.timeline = opts => (box, d, id) => {
+    const resource = opts.resource;
+    if (!Store.isLive) { box.innerHTML = UI.history ? '' : D.demoNote; if (UI.history) UI.history(resource, id, box); return; }
+    const st = { group: 'all', by: '', page: 1, items: [], open: new Set() };
+    box.innerHTML = `<div class="tl-wrap"><div class="tl-main"><div class="tl-bar"><div class="tl-chips" data-chips></div><select class="select tl-by" data-by aria-label="Người thực hiện"><option value="">Mọi người thực hiện</option></select></div>
+      <div class="tl-list" data-tl>${D.loading}</div><div class="tl-load hide" data-load><button class="btn sec">Xem thêm 20 hoạt động cũ hơn</button></div></div>
+      <div class="tl-side" data-side><h3>Liên quan</h3><div data-rel>${D.loading}</div>
+      <div class="tl-legend">${Object.entries(TL_KIND).map(([k, v]) => `<span><i class="tl-mini k-${k}">${I(v[0])}</i> ${esc(v[1])}</span>`).join('')}</div></div></div>`;
+    const tl = box.querySelector('[data-tl]'), chips = box.querySelector('[data-chips]'), sel = box.querySelector('[data-by]'), more = box.querySelector('[data-load]'), rel = box.querySelector('[data-rel]');
+    let first = true;
+    const draw = () => {
+      let h = '', day = '';
+      st.items.forEach((e, i) => {
+        const dd = D.tlDay(e.at);
+        if (dd !== day) { day = dd; h += `<div class="tl-day">${esc(dd)}</div>`; }
+        const nx = st.items[i + 1], last = !nx || D.tlDay(nx.at) !== dd, k = TL_KIND[e.kind] ? e.kind : 'update';
+        const at = new Date(e.at);
+        const verb = esc(e.verb || '');
+        h += `<div class="tl-ev ${last ? 'last' : ''}" data-i="${i}"><div class="tl-dot k-${k}" title="${esc(TL_KIND[k][1])}">${I(TL_KIND[k][0])}</div><div class="tl-body">
+          <div class="tl-head"><div class="tl-title"><b>${esc(e.byName || '')}</b> ${verb}${tlDoc(e)}</div><span class="tl-time">${p2(at.getHours())}:${p2(at.getMinutes())}</span></div>
+          ${tlChanges(e, st.open.has(i))}${e.comment ? `<div class="tl-quote">${esc(e.comment)}</div>` : ''}</div></div>`;
+      });
+      tl.innerHTML = h || '<div class="muted small">Chưa có hoạt động</div>';
+      tl.querySelectorAll('[data-more]').forEach(m => m.onclick = () => { const i = +m.closest('[data-i]').dataset.i; if (st.open.has(i)) st.open.delete(i); else st.open.add(i); draw(); });
+    };
+    const load = reset => {
+      if (reset) { st.page = 1; st.items = []; st.open.clear(); tl.innerHTML = D.loading; }
+      const q = { resource, id, group: st.group, page: st.page, pageSize: 20 };
+      if (st.by === 'system') q.bySystem = true; else if (st.by) q.by = st.by;
+      Store.query('Common/GetTimeline', q).then(x => {
+        if (!tl.isConnected) return;
+        if (!x.ok) { tl.innerHTML = D.failBox(x.message); return; }
+        const data = x.data || {};
+        st.items = st.items.concat(data.listItem || []);
+        const cnt = data.groupCount || {};
+        chips.innerHTML = TL_GROUPS.map(([g, l]) => `<button class="chip ${st.group === g ? 'on' : ''}" data-g="${g}">${esc(l)}${cnt[g] !== undefined ? ' · ' + U.num(cnt[g]) : ''}</button>`).join('');
+        chips.querySelectorAll('[data-g]').forEach(c => c.onclick = () => { st.group = c.dataset.g; load(true); });
+        if (first) {
+          first = false;
+          sel.innerHTML = '<option value="">Mọi người thực hiện</option>' + (data.listActor || []).map(a => `<option value="${a.isSystem ? 'system' : esc(a.id)}">${esc(a.name)}</option>`).join('');
+          sel.onchange = () => { st.by = sel.value; load(true); };
+          const groups = data.listRelated || [];
+          rel.innerHTML = groups.length ? groups.map(g => {
+            const scr = (g.route || '').replace('#/', '');
+            return `<div class="tl-rg"><div class="spread"><b>${esc(g.title)} · ${U.num(g.count)}</b>${scr && D.can(scr) ? `<a href="javascript:void 0" data-go="${esc(scr)}" class="small">Mở màn</a>` : ''}</div>
+            ${(g.items || []).slice(0, 3).map(it => { const href = APP.detailHref && APP.detailHref(feTable(g.key), it.id); return `<div class="tl-ri small"><span>${esc(it.label || '')}${it.statusName ? ' · <span class="muted">' + esc(it.statusName) + '</span>' : ''}</span>${href ? `<a href="${href}">Mở</a>` : ''}</div>`; }).join('')}</div>`;
+          }).join('') : '<div class="muted small">Không có chứng từ liên quan</div>';
+          D.bindGo(rel);
+        }
+        more.classList.toggle('hide', !data.hasMore);
+        draw();
+      });
+    };
+    more.querySelector('button').onclick = () => { st.page++; load(false); };
+    load(true);
+  };
+  // Tên cũ (mọi trang đang gọi) → dòng thời gian chung.
+  D.historyTab = (resource, noRelated, title) => D.timeline({ resource, noRelated, title });
   // Thanh tỷ lệ (Đánh giá NCC…): value 0–100, good = ngưỡng tốt.
   D.meter = (label, value, sub, good) => {
     const v = value === null || value === undefined ? null : Math.max(0, Math.min(100, +value));

@@ -66,6 +66,15 @@ Phần lớn màn có dạng danh sách giống nhau:
 | Liên quan | Bản ghi liên quan theo nhóm (khách hàng, hợp đồng, đơn hàng, NCC, nguyên liệu, PO, lô, món, nhân viên); bấm để mở, "Xem tất cả →" để sang màn danh sách |
 | Lịch sử xử lý | Dòng thời gian: tạo, sửa, gửi duyệt, quyết định duyệt, lịch sử phản ánh, tệp đính kèm |
 
+**Tab Lịch sử (dòng thời gian – UI-6.14, áp cho mọi trang chi tiết và hồ sơ khách hàng / nhà cung cấp / nhân viên):**
+
+- Bên trái là **dòng thời gian** nhóm theo ngày ("Hôm nay", "Hôm qua", "Thứ … dd/MM/yyyy"), mới nhất ở trên, giờ ở bên phải. Mỗi hoạt động là một câu: **người thực hiện** + việc đã làm + chứng từ (bấm số chứng từ để mở trang chi tiết). Việc do hệ thống / job tự làm ghi người là **Hệ thống**.
+- **Màu chấm:** xanh lá = tạo · xanh dương = sửa · cam = gửi duyệt · xanh lá đậm = duyệt / chuyển trạng thái tiến lên · đỏ = từ chối, hủy, xóa · tím = tài liệu · xám = hệ thống tự làm · biểu tượng đơn hàng / phản ánh cho hoạt động của đơn, phản ánh liên quan. Chú thích màu ở khối bên phải.
+- **Thay đổi** hiện thành thẻ nhỏ "Tên trường: ~~giá trị cũ~~ → **giá trị mới**" (tên trường tiếng Việt, mã đổi ra tên, Có / Không, số có dấu chấm nghìn, ngày dd/MM/yyyy). Quá 3 thay đổi → bấm "+ N thay đổi khác". Ý kiến duyệt hiện trong khung trích dẫn.
+- Hoạt động của **chứng từ liên quan** (vd. với khách hàng: hợp đồng, đơn đặt suất, đơn giao, phản ánh) được gộp vào cùng dòng thời gian – chỉ những loại chứng từ bạn có quyền xem.
+- **Lọc nhanh:** Tất cả · Thông tin · Trạng thái & duyệt · Hợp đồng, đơn, phản ánh · Tài liệu (số trong nút = số hoạt động); ô **Mọi người thực hiện** chọn một người hoặc "Hệ thống". Mỗi lần tải 20 hoạt động, bấm **Xem thêm 20 hoạt động cũ hơn** để xem tiếp.
+- Bên phải là khối **Liên quan** (số chứng từ theo loại, 3 chứng từ mới nhất có nút **Mở**, "Mở màn" sang danh sách). Trên điện thoại khối này nằm trên dòng thời gian.
+
 Chân ngăn: nút nghiệp vụ của màn + **Chỉnh sửa** (nếu được sửa) + **Đóng**. Phím `Esc` đóng hộp / ngăn đang mở.
 
 **Sổ chỉ ghi thêm:** sổ kho, nhật ký nhiệt độ, chấm công, sổ bao bì, kết quả vệ sinh – **không có Sửa / Xóa**. Ghi sai thì ghi bút toán / dòng ngược lại hoặc hủy chứng từ gốc.

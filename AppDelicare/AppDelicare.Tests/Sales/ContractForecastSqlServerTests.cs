@@ -35,6 +35,8 @@ namespace AppDelicare.Tests.Sales
             using (actor.BeginScope(ActorInfo.ForUser(admin)))
             await using (var tx = await db.Database.BeginTransactionAsync())
             {
+                // DB dev có thể có thực đơn chung đã công bố khác phủ cùng ngày (dữ liệu full-flow / UAT) → tạm ẩn trong giao dịch (rollback cuối test) để đơn dùng đúng thực đơn của test.
+                await db.Menu.Where(m => m.MenuType == "COMMON" && m.Status == "Published" && !m.IsDeleted).ExecuteUpdateAsync(u => u.SetProperty(m => m.Status, "Draft"));
                 Guid customer = Guid.NewGuid(), location = Guid.NewGuid(), shift = Guid.NewGuid(), chicken = Guid.NewGuid(), fish = Guid.NewGuid(), menu = Guid.NewGuid();
                 db.Customer.Add(new Customer { Id = customer, Code = tag, Name = "[DEMO] Khách BE2.2", CIF = tag, CustomerType = "FACTORY", DisplayName = "[DEMO] Khách BE2.2", Status = "Active" });
                 db.CustomerDeliveryLocation.Add(new CustomerDeliveryLocation { Id = location, CustomerId = customer, Code = tag, Name = "[DEMO] Điểm giao" });

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using AppDelicare.Data.Connection;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Data.Share;
@@ -411,12 +412,34 @@ namespace AppDelicare.Services.Implement
                     return new Results<RecordHistoryItemModel>([], 0) { ResponseCode = CommonAccess.Forbidden, ResponseMessage = deny };
                 }
                 var db = _unitOfWork.DbContext;
-                // Bản ghi đã xóa mềm vẫn xem được lịch sử (để biết ai xóa) – chỉ cần đã từng tồn tại.
-                bool known = await resource.ExistsAsync(db, id) || await db.AuditChange.AsNoTracking().AnyAsync(a => a.IdChange == id && a.EntityName == resource.EntityType.Name);
-                if (!known)
+                if (!await KnownAsync(db, resource, id))
                 {
                     return Results<RecordHistoryItemModel>.Fail(string.Format(ConstantHelper.Message.CommonRecordNotFound, resource.Title));
                 }
+                var items = await CollectHistoryAsync(db, resource, id);
+                var ordered = items.OrderByDescending(i => i.At).ThenBy(i => i.Source).Take(Math.Max(1, _rules.HistoryMaxItems)).ToList();
+                var names = await CommonAccess.UserNamesAsync(db, ordered.Select(i => i.By));
+                foreach (var i in ordered)
+                {
+                    i.ByName = i.By is { } b ? names.GetValueOrDefault(b) : null;
+                }
+                return new Results<RecordHistoryItemModel>(ordered, items.Count) { ResponseCode = 200, ResponseMessage = ConstantHelper.Message.GetAllSuccessfully };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetHistory: ", ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>Bản ghi đã xóa mềm vẫn xem được lịch sử (để biết ai xóa) – chỉ cần đã từng tồn tại.</summary>
+        private static async Task<bool> KnownAsync(DatabaseContext db, CommonResource resource, Guid id)
+            => await resource.ExistsAsync(db, id) || await db.AuditChange.AsNoTracking().AnyAsync(a => a.IdChange == id && a.EntityName == resource.EntityType.Name);
+
+        /// <summary>Gom nhật ký của 1 bản ghi (chưa sắp, chưa gắn tên người): AuditChange bản ghi + dòng con, yêu cầu duyệt + quyết định, lịch sử phản ánh, tệp đính kèm.
+        /// Dùng chung cho <c>Common/GetHistory</c> và <c>Common/GetTimeline</c> (UI-6.14).</summary>
+        private static async Task<List<RecordHistoryItemModel>> CollectHistoryAsync(DatabaseContext db, CommonResource resource, Guid id)
+        {
                 var items = new List<RecordHistoryItemModel>();
 
                 // 1. AuditChange của bản ghi + dòng con (dòng đơn, dòng phiếu…).
@@ -494,20 +517,7 @@ namespace AppDelicare.Services.Implement
                     ActionName = f.IsDeleted ? "Đính kèm tệp (đã xóa)" : "Đính kèm tệp", EntityName = nameof(DocumentFile), EntityId = f.Id,
                     Comment = (f.FileName ?? string.Empty) + (f.FileType ?? string.Empty),
                 }));
-
-                var ordered = items.OrderByDescending(i => i.At).ThenBy(i => i.Source).Take(Math.Max(1, _rules.HistoryMaxItems)).ToList();
-                var names = await CommonAccess.UserNamesAsync(db, ordered.Select(i => i.By));
-                foreach (var i in ordered)
-                {
-                    i.ByName = i.By is { } b ? names.GetValueOrDefault(b) : null;
-                }
-                return new Results<RecordHistoryItemModel>(ordered, items.Count) { ResponseCode = 200, ResponseMessage = ConstantHelper.Message.GetAllSuccessfully };
-            }
-            catch (Exception ex)
-            {
-                Log.Error(string.Concat("[", GetType().Name, "]", " GetHistory: ", ex.ToString()));
-                throw;
-            }
+                return items;
         }
 
         private static string DecisionLabel(string? code) => code?.ToUpperInvariant() switch
@@ -530,6 +540,19 @@ namespace AppDelicare.Services.Implement
                 ActionName = action switch { "Added" => "Tạo mới", "Modified" => "Cập nhật", "Deleted" => "Xóa", "Download" => "Tải tệp", _ => action },
                 EntityName = entity, EntityId = a.IdChange, ListChange = changes,
             };
+        }
+
+        /// <summary>Dòng do script dữ liệu ghi dạng "'cũ' → 'mới'" (vd. MA-1 đổi mã) → tách cũ / mới như dòng From … to ….</summary>
+        private static RecordChangeModel ArrowChange(string field, string value)
+        {
+            int k = value.IndexOf("' → '", StringComparison.Ordinal);
+            if (k > 0)
+            {
+                string to = value[(k + 5)..];
+                int end = to.IndexOf('\'');
+                return new RecordChangeModel { Field = field, From = value[..k].TrimStart('\''), To = end >= 0 ? to[..end] : to };
+            }
+            return new RecordChangeModel { Field = field, To = value };
         }
 
         public static List<RecordChangeModel> ParseChanges(string? changes)
@@ -558,7 +581,7 @@ namespace AppDelicare.Services.Implement
                 }
                 list.Add(m.Groups["from"].Success && m.Groups["to"].Success
                     ? new RecordChangeModel { Field = field, From = m.Groups["from"].Value, To = m.Groups["to"].Value }
-                    : new RecordChangeModel { Field = field, To = m.Groups["val"].Success ? m.Groups["val"].Value : m.Groups["raw"].Value.Trim() });
+                    : ArrowChange(field, m.Groups["val"].Success ? m.Groups["val"].Value : m.Groups["raw"].Value.Trim()));
             }
             return list;
         }

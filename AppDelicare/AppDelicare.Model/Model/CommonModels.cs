@@ -127,3 +127,67 @@ namespace AppDelicare.Model.Model
         public string? Value { get; set; }
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.14 (D-95): tab Lịch sử dạng dòng thời gian – <c>Common/GetTimeline</c>.</summary>
+    public class TimelineRequest
+    {
+        public string? Resource { get; set; }
+        public Guid Id { get; set; }
+        /// <summary>Lọc nhóm: all · info (thông tin) · status (trạng thái &amp; duyệt) · docs (chứng từ liên quan) · file (tài liệu).</summary>
+        public string? Group { get; set; }
+        /// <summary>Lọc người thực hiện (User.Id); <see cref="BySystem"/> = true → chỉ việc hệ thống tự làm.</summary>
+        public Guid? By { get; set; }
+        public bool? BySystem { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+    }
+
+    public class TimelineModel
+    {
+        public int Total { get; set; }
+        public bool HasMore { get; set; }
+        public List<TimelineItemModel> ListItem { get; set; } = [];
+        /// <summary>Người thực hiện có trong toàn bộ dòng thời gian (cho ô chọn), kèm "Hệ thống".</summary>
+        public List<TimelineActorModel> ListActor { get; set; } = [];
+        /// <summary>Khối "Liên quan" (như <c>Common/GetRelated</c>, chỉ nhóm có quyền Xem).</summary>
+        public List<RelatedGroupModel> ListRelated { get; set; } = [];
+        /// <summary>Số hoạt động theo nhóm lọc (all / info / status / docs / file).</summary>
+        public Dictionary<string, int> GroupCount { get; set; } = [];
+    }
+
+    public class TimelineActorModel
+    {
+        public Guid? Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public bool IsSystem { get; set; }
+    }
+
+    public class TimelineItemModel
+    {
+        public DateTime At { get; set; }
+        public Guid? By { get; set; }
+        public string? ByName { get; set; }
+        public bool IsSystem { get; set; }
+        /// <summary>Loại chấm: create · update · submit · approve · reject · file · system · order · complaint.</summary>
+        public string Kind { get; set; } = "update";
+        /// <summary>Nhóm lọc: info · status · docs · file.</summary>
+        public string Group { get; set; } = "info";
+        /// <summary>Động từ tiếng Việt ("tạo", "sửa", "gửi duyệt", "duyệt (cấp 1)"…).</summary>
+        public string Verb { get; set; } = string.Empty;
+        public string? Source { get; set; }
+        public string? Action { get; set; }
+        public string? Comment { get; set; }
+        public string? ReferenceNo { get; set; }
+        /// <summary>Chứng từ của hoạt động: khóa loại (Customer, Contract, Order…), id, tên loại, số / mã – null DocId = chính bản ghi đang xem.</summary>
+        public string? DocKey { get; set; }
+        public Guid? DocId { get; set; }
+        public string? DocTitle { get; set; }
+        public string? DocLabel { get; set; }
+        public bool IsSelf { get; set; }
+        /// <summary>Bảng của dòng thay đổi (bản ghi chính hoặc dòng con) – FE đổi tên trường theo bảng này.</summary>
+        public string? EntityName { get; set; }
+        public List<RecordChangeModel> ListChange { get; set; } = [];
+    }
+}
