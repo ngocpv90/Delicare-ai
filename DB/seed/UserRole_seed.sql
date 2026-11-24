@@ -1932,7 +1932,7 @@ INSERT INTO @R VALUES
     (N'FIN-ACC', N'#/crm-order-week', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/crm-order', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-forecast', 0, 0, 0, 0, 0, 0, 0),
-    (N'FIN-ACC', N'#/crm-reconciliation', 1, 0, 0, 0, 1, 1, 0),
+    (N'FIN-ACC', N'#/crm-reconciliation', 1, 1, 1, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-billing', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/log-complaint', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/crm-location', 0, 0, 0, 0, 0, 0, 0),

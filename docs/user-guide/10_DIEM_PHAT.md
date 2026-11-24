@@ -67,7 +67,7 @@ So số suất qua từng khâu Đặt → Sản xuất → Đóng gói → Giao
 6. Dòng **Đã chốt**: chỉ xem, nút **In** biên bản đối soát (PDF). Tính tiền (BIZ-1.4, D-77 d): theo số khách ký nhận trừ suất lỗi Delicare; khách không dùng hết không giảm tiền; phục vụ chỉ để dự báo.
 7. **Bot điểm phát (D-86 c):** 2 giờ sau khi bạn ký nhận bàn giao (cấu hình `BusinessRules:ReconcilePromptMinutes`), bot Vận hành hỏi "đã phục vụ đủ chưa?" với 2 nút: **✅ Đã phục vụ đủ** (1 chạm → phục vụ = khách nhận, dòng tự xác nhận, nguồn *Bot*) hoặc **✏️ Nhập số khác** (màn số điền sẵn số khách nhận).
 
-**Quyền:** Điểm phát (OPS-POS), Trưởng KD sửa / xác nhận / chốt; Kế toán, NV KD, CSKH chỉ xem.
+**Quyền:** Điểm phát (OPS-POS), Trưởng KD, **Kế toán** (FIN-ACC – chốt phần còn lại) sửa / xác nhận / chốt; NV KD, CSKH chỉ xem.
 
 ### 4.3 Phản ánh khách hàng – `log-complaint`
 **Tạo phản ánh** (đầu trang):

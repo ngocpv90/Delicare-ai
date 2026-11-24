@@ -542,7 +542,7 @@ INSERT INTO @Allow VALUES
     (N'FIN-ACC', N'#/crm-contract', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-price-policy', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-order', 1, 0, 0, 0, 1, 1, 0),
-    (N'FIN-ACC', N'#/crm-reconciliation', 1, 0, 0, 0, 1, 1, 0),
+    (N'FIN-ACC', N'#/crm-reconciliation', 1, 1, 1, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-billing', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/scm-po', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/scm-supplier', 1, 0, 0, 0, 0, 0, 0),
