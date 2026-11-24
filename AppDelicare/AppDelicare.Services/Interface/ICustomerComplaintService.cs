@@ -28,5 +28,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<CustomerComplaintDetailModel>> Reject(ComplaintActionRequest request);
         public Task<IResult<CustomerComplaintDetailModel>> AddComment(ComplaintActionRequest request);
         public Task<IResult<CustomerComplaintDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (6.2 nhóm A): trang chi tiết toàn màn – chi tiết + hạn SLA còn lại + diễn biến kèm tên người xử lý + đơn bù.</summary>
+        public Task<IResult<AppDelicare.Model.Model.ComplaintPageModel>> GetOverview(Guid id);
     }
 }

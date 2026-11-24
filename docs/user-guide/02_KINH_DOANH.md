@@ -92,6 +92,8 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 - *Giờ giao từ phải nhỏ hơn giờ giao đến*; *Vĩ độ phải trong [-90, 90]*; *Kinh độ phải trong [-180, 180]*.
 - *Còn đơn giao chưa hoàn tất tại điểm này – không ngừng hoạt động được*.
 
+**Trang chi tiết điểm giao (UI-6):** bấm 1 dòng ở **Điểm giao hàng** (hoặc tên điểm giao trong trang đơn hàng) → mở **trang riêng** `#/crm-location-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Điểm giao hàng** quay lại đúng bộ lọc, trang, vị trí cuộn). Phần đầu: tên, mã, khách, địa chỉ, giờ nhận, người nhận; nút **Sửa** (cần quyền Sửa), **Bản đồ** (khi có tọa độ), ⋯ **Hồ sơ khách hàng**. 4 thẻ: **Suất TB / ngày** (30 ngày), **Đơn 30 ngày**, **Giao đúng giờ** (% đơn giao Đã giao trước giờ dự kiến + 15 phút / Đã giao + Thất bại, 30 ngày), **Phản ánh đang mở** (của các đơn tại điểm). Tab **Tổng quan** (thông tin điểm giao · đơn và giao hàng gần đây) · **Đơn hàng** · **Giao hàng** · **Phản ánh** (tab chỉ hiện khi có quyền xem màn tương ứng). Điểm giao chưa có tab Lịch sử / Tài liệu.
+
 ### 4.3 Hợp đồng – `crm-contract`
 **Tạo hợp đồng**
 1. **Tạo mới** → hộp **Tạo hợp đồng**.
@@ -103,6 +105,8 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 **Gửi duyệt:** dòng Nháp có nút **Gửi duyệt** → "Đã gửi duyệt hợp đồng …" → trạng thái **Chờ duyệt**. Duyệt xong → **Hiệu lực**. Bị từ chối → về **Nháp**, sửa rồi gửi lại.
 
 **Xem chi tiết:** tab **Loại suất & đơn giá** (khách, trạng thái, yêu cầu duyệt đang chờ, số đơn đang mở, cảnh báo). Chỉ **Chỉnh sửa** được khi Nháp.
+
+**Trang chi tiết hợp đồng (UI-6):** bấm 1 dòng hợp đồng (ở danh sách hoặc hồ sơ khách 360) → **trang riêng** `#/crm-contract-detail?id=…` thay ngăn trượt (chế độ DEMO vẫn ngăn trượt). Phần đầu: số hợp đồng + trạng thái + "Chờ duyệt …" / "Còn N ngày"; thanh bước **Nháp → Chờ duyệt → Hiệu lực → Hết hạn** (Chấm dứt tô đỏ); nút theo trạng thái – **Gửi duyệt**, **Sửa** (Nháp), **Duyệt / Từ chối** (Chờ duyệt), ⋯ **Thanh lý hợp đồng** (Hiệu lực), **Mở màn Phê duyệt**, **Hồ sơ khách hàng** – đúng các thao tác như ở danh sách. 4 thẻ: **Giá trị hợp đồng**, **Còn hiệu lực** (ngày), **Đơn hàng** (chưa giao · suất 30 ngày), **Đã đối soát** (Σ tiền chốt). Tab **Tổng quan** (thông tin · loại suất & đơn giá · cách tính tiền đối soát – đổi được khi có quyền Sửa) · **Đơn hàng** (20 đơn gần nhất) · **Duyệt** (khi đã gửi duyệt: các cấp, cảnh báo) · **Chứng từ liên quan** · **Tài liệu** · **Lịch sử**.
 
 **Thanh lý:** dòng Hiệu lực có **Thanh lý** → nhập **Lý do thanh lý*** → **Thanh lý** → **Chấm dứt**.
 - *Còn … đơn hàng chưa giao có ngày ăn sau …: … – hủy / giao xong trước khi chấm dứt*.
@@ -138,7 +142,9 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 3. Sửa số lượng → **Tạo đơn (Nháp)**. Mỗi điểm giao có số > 0 thành **1 đơn** riêng (số `DH-…`).
 4. Nếu **đã quá giờ chốt**: hộp báo vàng + ô **Lý do thêm đơn sau giờ chốt*** → đơn tạo ở Nháp và **tự gửi duyệt**; duyệt xong đơn chuyển **Đã chốt**.
 
-**Xử lý đơn (bấm vào thẻ / dòng)** – ngăn chi tiết:
+**Trang chi tiết đơn (UI-6):** bấm thẻ Kanban / dòng bảng (hoặc số đơn ở màn khác) → **trang riêng** `#/crm-order-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Đơn đặt suất** quay lại đúng ngày ăn / bộ lọc / vị trí cuộn). Phần đầu: số đơn, trạng thái, "Chờ duyệt …", "Đã quá giờ chốt"; khách · điểm giao · ngày ăn · hợp đồng · NV phụ trách; thanh bước 7 trạng thái (Hủy tô đỏ). Nút (chỉ nút máy chủ cho phép, cần quyền Sửa): **Xác nhận**, **Chốt số lượng**, **Sửa số suất** (hộp sửa số từng dòng → *Lưu số lượng*), **Yêu cầu sửa sau chốt**, ⋯ **Hủy đơn**, **Mở màn Phê duyệt**, **Hồ sơ khách hàng**. 4 thẻ: **Tổng suất** (dự báo, % lệch), **Thành tiền**, **Giao hàng** (số phiếu giao, khách nhận), **Phản ánh đang mở**. Tab **Tổng quan** (thông tin đơn – bấm khách / điểm giao / hợp đồng để mở; cảnh báo; suất theo ca / loại suất; đối soát) · **Chi tiết dòng** · **Giao hàng** · **Phản ánh** · **Duyệt** (khi có yêu cầu lệch suất / sửa sau chốt) · **Chứng từ liên quan** · **Tài liệu** · **Lịch sử**. Chế độ DEMO vẫn mở ngăn chi tiết như dưới.
+
+**Xử lý đơn (bấm vào thẻ / dòng)** – ngăn chi tiết (chế độ DEMO):
 - Đầu ngăn: thanh tiến trình trạng thái; hộp thông tin: **Hạn chốt đơn**, "đã quá giờ chốt", **Đang chờ duyệt** (lệch suất / thay đổi sau giờ chốt), dự báo + % lệch.
 - Bảng dòng: Ca, Loại suất, **Lựa chọn** (*Lựa chọn N* + món trong set; "–" = đơn cũ không theo lựa chọn), Điểm giao, **Số lượng** (ô sửa được khi cho phép), Dự báo, Đơn giá, Thành tiền. Mọi lựa chọn cùng buổi cùng đơn giá.
 - Nút (chỉ hiện nút máy chủ cho phép):
