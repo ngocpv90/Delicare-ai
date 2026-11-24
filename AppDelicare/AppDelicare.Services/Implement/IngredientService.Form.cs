@@ -11,6 +11,31 @@ namespace AppDelicare.Services.Implement
     /// (để chỉ cho chọn đơn vị mua / xuất quy đổi được về đơn vị kho), định mức tồn riêng theo kho của nguyên liệu (chỉ xem).</summary>
     public partial class IngredientService
     {
+        /// <summary>UI-6.21 (D-102): chọn nhóm → gợi ý loại bảo quản + đơn vị kho theo đa số nguyên liệu đang dùng cùng nhóm (tính khi gọi, không lưu).</summary>
+        public async Task<IResult<IngredientCategoryDefaultsModel>> GetCategoryDefaults(Guid categoryId)
+        {
+            try
+            {
+                var rows = await _unitOfWork.DbContext.Ingredient.AsNoTracking()
+                    .Where(x => !x.IsDeleted && (x.Status == null || x.Status == "Active") && (x.IngredientCategoryId == categoryId || (x.IngredientCategoryId == null && x.CategoryId == categoryId)))
+                    .Select(x => new { x.StorageType, Unit = x.BaseUnitId ?? x.BaseUomId }).ToListAsync();
+                var model = new IngredientCategoryDefaultsModel { SampleCount = rows.Count };
+                var st = rows.Where(r => !string.IsNullOrEmpty(r.StorageType)).GroupBy(r => r.StorageType!.ToUpperInvariant() == "AMBIENT" ? "DRY" : r.StorageType!.ToUpperInvariant())
+                    .OrderByDescending(g => g.Count()).FirstOrDefault();
+                var un = rows.Where(r => r.Unit != null).GroupBy(r => r.Unit).OrderByDescending(g => g.Count()).FirstOrDefault();
+                model.StorageType = st?.Key;
+                model.StorageCount = st?.Count() ?? 0;
+                model.BaseUnitId = un?.Key;
+                model.UnitCount = un?.Count() ?? 0;
+                return Result<IngredientCategoryDefaultsModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCategoryDefaults: ", ex.ToString()));
+                throw;
+            }
+        }
+
         public async Task<IResult<IngredientFormOptionsModel>> GetFormOptions(Guid? id)
         {
             try

@@ -30,6 +30,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.21 (D-102): nhóm nguyên liệu + số nguyên liệu đang dùng / tổng, số nguyên liệu chưa phân nhóm (cột nhóm bên trái màn Nguyên liệu). Quyền Xem.</summary>
+        [HttpGet("GetWithCount")]
+        public async Task<IActionResult> GetWithCount()
+        {
+            try
+            {
+                return Ok(await _service.GetWithCount());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetWithCount: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPost("Insert")]
         public async Task<IActionResult> Insert([FromForm] IngredientCategoryRequest request)
         {

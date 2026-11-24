@@ -113,6 +113,21 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>UI-6.20 (D-101): dữ liệu form Nguyên liệu (loại bảo quản + ngưỡng nhận hàng, quy đổi đơn vị chung, định mức tồn riêng theo kho). Quyền Xem.</summary>
+        [HttpGet("GetCategoryDefaults")]
+        public async Task<IActionResult> GetCategoryDefaults(Guid categoryId)
+        {
+            try
+            {
+                return Ok(await _service.GetCategoryDefaults(categoryId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCategoryDefaults: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.20: dữ liệu form (xem trên).</summary>
         [HttpGet("GetFormOptions")]
         public async Task<IActionResult> GetFormOptions(Guid? id)
         {

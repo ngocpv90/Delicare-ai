@@ -14,7 +14,7 @@
     return null;
   };
   function ingredientForm(row, opt) {
-    const r = row || {}, isNew = !r.Id;
+    const r = row || Object.assign({}, (opt && opt.defaults) || {}), isNew = !r.Id;
     const perm = s => Store.perm(s), can = (s, a) => perm(s).access !== false && perm(s)[a] !== false;
     const qa = can('qc-inspection', 'edit');
     return Promise.all([Store.ensure('IngredientCategorie'), Store.ensure('UnitMeasure'), Store.query('Ingredient/GetFormOptions', isNew ? {} : { id: r.Id })]).then(([, , fo]) => {
@@ -29,6 +29,7 @@
         body: `<div class="if-sec"><h3>1. Thông tin chung</h3><div class="form-grid">
             <div class="field"><label>Tên nguyên liệu <span class="req">*</span></label><input class="input" id="ifName" value="${esc(r.Name || '')}"></div>
             <div class="field"><label>Nhóm nguyên liệu <span class="req">*</span>${can('scm-ingredient-cat', 'add') ? ' <a href="javascript:void 0" class="small" id="ifCatNew">+ Thêm nhóm</a>' : ''}</label><select class="select" id="ifCat"></select></div>
+            <div class="small muted" id="ifHint" style="grid-column:1/-1"></div>
             <div class="field"><label>Quy cách</label><input class="input" id="ifSpec" value="${esc(r.Specification || '')}" placeholder="vd. thăn bò, không xương"></div>
             <div class="field"><label>Mã nguyên liệu</label><input class="input" value="${esc(r.Code || 'Tự sinh khi lưu')}" disabled></div></div></div>
           <div class="if-sec"><h3>2. Đơn vị</h3><div class="form-grid">
@@ -56,6 +57,20 @@
           const g = s => m.querySelector(s);
           const drawCats = sel => { g('#ifCat').innerHTML = '<option value="">— Chọn nhóm —</option>' + cats().map(c => `<option value="${esc(c.Id)}" ${c.Id === sel ? 'selected' : ''}>${esc(c.Name || c.Code || '')}</option>`).join(''); };
           drawCats(r.IngredientCategoryId || r.CategoryId);
+          // UI-6.21: chọn nhóm → gợi ý loại bảo quản + đơn vị kho theo đa số nguyên liệu cùng nhóm (chỉ điền khi chưa chọn).
+          const suggest = () => {
+            const id = g('#ifCat').value; g('#ifHint').textContent = ''; if (!id) return;
+            Store.query('Ingredient/GetCategoryDefaults', { categoryId: id }).then(x => {
+              const d = x.ok && x.data; if (!d || !d.sampleCount || !m.isConnected) return;
+              const parts = [];
+              if (d.storageType && !m.querySelector('[name=ifSt]:checked')) { const rb = m.querySelector('[name=ifSt][value=' + d.storageType + ']'); if (rb) { rb.checked = true; rb.dispatchEvent(new Event('change')); } }
+              if (d.storageType) { const o2 = (o.listStorageType || []).find(z => z.code === d.storageType); parts.push('bảo quản ' + (o2 ? o2.label : d.storageType)); }
+              if (d.baseUnitId && !g('#ifBase').value) { g('#ifBase').value = d.baseUnitId; drawUnits(); }
+              if (d.baseUnitId) parts.push('đơn vị kho ' + uname(d.baseUnitId));
+              g('#ifHint').textContent = 'Gợi ý theo ' + d.sampleCount + ' nguyên liệu cùng nhóm: ' + parts.join(', ') + '.';
+            });
+          };
+          g('#ifCat').onchange = suggest;
           const drawUnits = () => {
             const base = g('#ifBase').value;
             m.querySelectorAll('[data-bu]').forEach(x => { x.textContent = base ? '(' + uname(base) + ')' : ''; });
@@ -65,7 +80,7 @@
               el.innerHTML = `<option value="">= đơn vị kho</option>${ok.filter(u => u.Id !== base).map(u => `<option value="${esc(u.Id)}" ${u.Id === keep ? 'selected' : ''}>${esc(u.Code || u.Name || '')} = ${U.num(factorTo(o.listConversion || [], u.Id, base), 4)} ${esc(uname(base))}</option>`).join('')}`;
             });
           };
-          g('#ifBase').onchange = drawUnits; drawUnits();
+          g('#ifBase').onchange = drawUnits; drawUnits(); if (isNew && g('#ifCat').value) suggest();
           const pk = g('#ifPack'); if (pk) pk.onclick = () => APP.packUnitForm({ baseUnitId: g('#ifBase').value, onSave: u => Store.query('Ingredient/GetFormOptions', {}).then(x => { if (x.ok) o.listConversion = x.data.listConversion || []; return Store.reload(['UnitMeasure']); }).then(() => { units.splice(0, units.length, ...Store.rows('UnitMeasure').filter(z => z.Status !== 'Inactive')); drawUnits(); if (u && u.id) { g('#ifPur').value = u.id; } }) });
           const cn = g('#ifCatNew'); if (cn) cn.onclick = () => UI.form('IngredientCategorie', null, { title: 'Nhóm nguyên liệu', onSave: () => Store.reload(['IngredientCategorie']).then(() => drawCats((Store.rows('IngredientCategorie')[0] || {}).Id)) });
           const stOf = () => (m.querySelector('[name=ifSt]:checked') || {}).value || '';

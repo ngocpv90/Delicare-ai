@@ -42,7 +42,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/crm-billing
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/03' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Thực đơn & Món ăn', N'menu', N'#/group/03', NULL, 1, 300, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/menu-dish-cat' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nhóm món ăn', N'P2', N'#/menu-dish-cat', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/03' AND IsDeleted = 0), 2, 301, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nhóm món ăn', N'P2', N'#/menu-dish-cat', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/03' AND IsDeleted = 0), 2, 301, 0, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/menu-dish' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Món ăn', N'P2', N'#/menu-dish', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/03' AND IsDeleted = 0), 2, 302, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/menu-recipe' AND IsDeleted = 0)
@@ -64,7 +64,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/scm-supplie
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/scm-ingredient' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nguyên liệu', N'P1', N'#/scm-ingredient', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/04' AND IsDeleted = 0), 2, 402, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/scm-ingredient-cat' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nhóm nguyên liệu', N'P1', N'#/scm-ingredient-cat', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/04' AND IsDeleted = 0), 2, 403, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nhóm nguyên liệu', N'P1', N'#/scm-ingredient-cat', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/04' AND IsDeleted = 0), 2, 403, 0, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/scm-supplier-material' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Bảng giá nhà cung cấp', N'P1', N'#/scm-supplier-material', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/04' AND IsDeleted = 0), 2, 404, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/scm-uom' AND IsDeleted = 0)
@@ -432,7 +432,7 @@ UPDATE [dbo].[ObjectMenu] SET Name = N'Kế hoạch sản xuất', ModifiedDate 
 UPDATE [dbo].[ObjectMenu] SET Name = N'Kiểm tra hàng nhập', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=qc-inspection' AND IsDeleted = 0 AND Name IN (N'Phiếu QC đầu vào', N'Duyệt – Phiếu QC đầu vào');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Tất cả yêu cầu duyệt', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=wf-inbox' AND IsDeleted = 0 AND Name IN (N'Hộp phê duyệt tập trung', N'Duyệt – Hộp phê duyệt tập trung');
 -- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB; MENU-4 (D-75 e): ẩn bảng con, màn chưa làm, mục trùng (IsActive = 0, không xóa).
-UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment', N'#/crm-price-policy', N'#/menu-change-request', N'#/crm-location') AND IsDeleted = 0 AND IsActive = 1;
+UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment', N'#/crm-price-policy', N'#/menu-change-request', N'#/crm-location', N'#/scm-ingredient-cat', N'#/menu-dish-cat') AND IsDeleted = 0 AND IsActive = 1;
 -- MENU-5 (D-79): 14 nhóm theo vai trò. Seed CHỈ THÊM nhóm / mục mới (đặt thẳng vào chỗ mới); chuyển nhóm / thứ tự / đổi tên / ẩn – mở CHỈ áp cho dòng do chính lần chạy
 -- này tạo (DB mới). DB đang chạy: sắp lại bằng DB/scripts/D79_menu_regroup.sql (DryRun, AuditChange). Nguồn: tools/AppDelicare.CodeGen/Seeds.Menu5.cs.
 DECLARE @By UNIQUEIDENTIFIER = @SeedBy;
@@ -486,7 +486,7 @@ INSERT INTO @P VALUES
     (N'#/menu-change-request', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 303, N'', N'', 0),
     (N'#/menu-recipe', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 304, N'', N'', NULL),
     (N'#/menu-dish', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 305, N'', N'', NULL),
-    (N'#/menu-dish-cat', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 306, N'', N'', NULL),
+    (N'#/menu-dish-cat', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 306, N'', N'', 0),
     (N'#/group/04', 1, NULL, 400, 400, N'Mua hàng & Kho', NULL, 400, N'Mua hàng', N'scm', NULL),
     (N'#/scm-requirement', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 401, N'', N'', NULL),
     (N'#/scm-pr', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 402, N'', N'', NULL),
@@ -494,7 +494,7 @@ INSERT INTO @P VALUES
     (N'#/scm-supplier', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 404, N'', N'', NULL),
     (N'#/scm-supplier-material', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 405, N'', N'', NULL),
     (N'#/scm-ingredient', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 406, N'', N'', NULL),
-    (N'#/scm-ingredient-cat', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 407, N'', N'', NULL),
+    (N'#/scm-ingredient-cat', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 407, N'', N'', 0),
     (N'#/scm-uom', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 408, N'', N'', NULL),
     (N'#/scm-uom-conversion', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 409, N'', N'', NULL),
     (N'#/group/04b', 1, NULL, -1, -1, N'', NULL, 450, N'Kho', N'wh', NULL),

@@ -30,6 +30,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.21 (D-102): nhóm món + số món đang dùng / tổng, số món chưa phân nhóm (cột nhóm bên trái màn Món ăn). Quyền Xem.</summary>
+        [HttpGet("GetWithCount")]
+        public async Task<IActionResult> GetWithCount()
+        {
+            try
+            {
+                return Ok(await _service.GetWithCount());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetWithCount: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpPost("Insert")]
         public async Task<IActionResult> Insert([FromForm] DishCategoryRequest request)
         {

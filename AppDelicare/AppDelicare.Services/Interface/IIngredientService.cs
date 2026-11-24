@@ -22,5 +22,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<IngredientOverviewModel>> GetOverview(Guid id);
         /// <summary>UI-6.20 (D-101): loại bảo quản + ngưỡng nhận hàng, quy đổi đơn vị, định mức theo kho.</summary>
         public Task<IResult<AppDelicare.Model.Model.IngredientFormOptionsModel>> GetFormOptions(Guid? id);
+        /// <summary>UI-6.21 (D-102): gợi ý loại bảo quản + đơn vị kho theo nhóm.</summary>
+        public Task<IResult<AppDelicare.Model.Model.IngredientCategoryDefaultsModel>> GetCategoryDefaults(Guid categoryId);
     }
 }

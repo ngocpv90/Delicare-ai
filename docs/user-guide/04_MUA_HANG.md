@@ -30,7 +30,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Nhà cung cấp | `scm-supplier` | Q | Q |
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | Q | Q |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | Q | Q |
-| Mua hàng › Nhóm nguyên liệu | `scm-ingredient-cat` | Q | Q |
 | Mua hàng › Đơn vị tính | `scm-uom` | Q | Q |
 | Mua hàng › Quy đổi đơn vị | `scm-uom-conversion` | Q | Q |
 | Kho › Phiếu nhập kho | `scm-gr` | X | S (IX) |
@@ -114,6 +113,8 @@ Sửa dòng PO Nháp: mở PO → **Sửa dòng hàng** (nguyên liệu, số l�
 - Bảng giá NCC (`scm-supplier-material`): mỗi dòng NCC × nguyên liệu × đơn giá × hiệu lực; đánh dấu **Ưu tiên** để MRP / Lập PO chọn NCC này và để tính giá vốn công thức.
 
 ### 4.5 Nguyên liệu, đơn vị – `scm-ingredient`, `scm-uom`, `scm-uom-conversion`
+**Màn Nguyên liệu – nhóm ở cột trái (UI-6.21, D-102):** mục menu "Nhóm nguyên liệu" đã ẩn. Cột trái: **Tất cả nhóm** + từng nhóm (số nguyên liệu đang dùng) + **Chưa phân nhóm**; bấm nhóm = lọc bảng (giữ khi quay lại), tiêu đề bảng ghi "Tên nhóm · N nguyên liệu · thường bảo quản X, đơn vị Y"; nhóm trống có nút **+ Thêm nguyên liệu vào nhóm này**. **+ Thêm nhóm** (gõ tên, Enter lưu); rê chuột nhóm → **⋯ Đổi tên** (Enter lưu, Esc hủy) · **Ngừng dùng** (khóa khi nhóm còn nguyên liệu đang dùng – ghi "còn N nguyên liệu") · **Dùng lại**; nhóm ngừng dùng gạch ngang, xếp cuối, không có trong ô chọn của form. Tên nhóm không trùng (không phân biệt hoa thường); nhóm chỉ 1 cấp. Quyền theo màn Nguyên liệu (Thêm / Sửa). Bảng: Mã · Nguyên liệu · Nhóm · ĐVT kho · Bảo quản (Mát / Đông lạnh / Khô) · Hạn dùng · NCC ưu tiên. 4 thẻ: Nguyên liệu đang dùng · Chưa có giá NCC · Chưa phân nhóm · Số nhóm. Điện thoại: nhóm thành dải chip cuộn ngang. Trong form nguyên liệu, chọn nhóm → **gợi ý loại bảo quản + đơn vị kho** theo đa số nguyên liệu cùng nhóm ("Gợi ý theo N nguyên liệu cùng nhóm …", chỉ điền ô còn trống).
+
 **Form Nguyên liệu (UI-6.20, D-101) – 5 nhóm** (dùng chung cho Thêm / Sửa ở danh sách, nút Sửa trang chi tiết và "+ Tạo nguyên liệu mới" ở tab Công thức):
 1. **Thông tin chung:** Tên* · **Nhóm nguyên liệu*** (chọn danh mục, + Thêm nhóm theo quyền) · Quy cách · Mã (tự sinh, chỉ đọc).
 2. **Đơn vị:** **Đơn vị kho*** · Đơn vị mua · Đơn vị xuất – 2 ô sau **chỉ liệt kê đơn vị quy đổi được về đơn vị kho** (ghi "= N kg"), để trống = đơn vị kho.

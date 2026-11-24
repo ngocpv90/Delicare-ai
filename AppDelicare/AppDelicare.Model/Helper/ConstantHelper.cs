@@ -251,6 +251,8 @@
             public static readonly string IngredientUnitNotConvertible = "Đơn vị {0} chưa quy đổi được về đơn vị kho – chọn đơn vị khác hoặc tạo đơn vị đóng gói";
             public static readonly string IngredientStockNegative = "Tồn tối thiểu / tồn an toàn không được âm";
             public static readonly string IngredientInUseWarning = "Lưu ý: nguyên liệu còn trong {0}";
+            public static readonly string GroupNameDuplicate = "Tên nhóm «{0}» đã có – chọn tên khác";
+            public static readonly string GroupInUse = "Nhóm còn {0} {1} đang dùng – chuyển {1} sang nhóm khác hoặc ngừng dùng {1} trước";
             public static readonly string ShelfLifeRequired = "Nguyên liệu quản lý hạn dùng phải có số ngày hạn dùng lớn hơn 0";
             public static readonly string ConversionFactorPositive = "Hệ số quy đổi phải lớn hơn 0";
             public static readonly string ConversionSameUnit = "Đơn vị nguồn và đích phải khác nhau";
