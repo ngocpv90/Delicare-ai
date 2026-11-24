@@ -226,7 +226,7 @@
       });
     });
     const xl = edit ? `<div class="row-flex mb"><button class="btn sm" id="mwXlsOut">${I('down')} Tải mẫu Excel</button><button class="btn sm" id="mwXlsIn">${I('file')} Tải Excel lên</button><input type="file" id="mwXlsFile" accept=".xlsx" hidden><span class="small muted">Mẫu sheet "1. Menu": Buổi · Lựa chọn · Nhóm món · T2…CN – ghi tên món, hệ thống tự khớp danh mục</span></div>` : '';
-    box.innerHTML = xl + h + '</tbody></table></div><div class="small muted mt">Bấm ô → 5 gợi ý (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC); gõ để tìm món khác; <b>Enter</b> lưu và sang ngày kế; <b>Delete</b> xóa món; <b>Esc</b> đóng. ⧉ ở đầu cột = chép cả ngày.</div>';
+    box.innerHTML = xl + h + '</tbody></table></div><div class="small muted mt">Bấm ô → 5 gợi ý (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC); gõ để tìm món khác; <b>Enter</b> lưu và sang ngày kế; phím <b>xóa</b> để bỏ món; <b>Esc</b> đóng. ⧉ ở đầu cột = chép cả ngày.</div>';
     box.querySelectorAll('[data-mwm]').forEach(tr => tr.onclick = () => { const k = tr.dataset.mwm; mw.closed.has(k) ? mw.closed.delete(k) : mw.closed.add(k); mwGrid(el, f, canEdit); });
     if (changeable) box.querySelectorAll('[data-mwc]:not([disabled])').forEach(btn => btn.onclick = () => mwChange(el, f, btn));
     if (!edit) return;
