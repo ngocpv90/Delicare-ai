@@ -19,15 +19,16 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
 
         public IEnumerable<BotAction> GetActions() =>
         [
-            // Lệnh gõ phải duy nhất toàn bot (/truyxuat là của bot DH) → 1 chức năng giữ /truyxuatlo, 2 chức năng còn lại chỉ có nút trong phân hệ.
-            T("kho_trace", "KHO", "#/scm-lot", 7, "truyxuatlo"),
-            T("qa_trace", "ATTP", "#/scm-lot", 5, null),
-            T("bep_trace", "BEP", "#/prod-batch", 21, null),
+            // Lệnh gõ phải duy nhất toàn bot (/truyxuat là của bot DH) → /truyxuatlo.
+            // BOT-UX-2 (mục 14): mỗi chức năng 1 phân hệ chính – 🔍 Truy xuất chỉ ở ATTP / QC (trước có thêm bản ở Kho và Bếp); ai có quyền xem lô (#/scm-lot)
+            // hoặc mẻ (#/prod-batch) đều thấy, mở nhanh qua ⭐ Hay dùng hoặc /truyxuatlo.
+            T("qa_trace", "ATTP", 5, "truyxuatlo"),
         ];
 
-        private BotAction T(string code, string module, string menu, int order, string? command) => new()
+        private BotAction T(string code, string module, int order, string? command) => new()
         {
-            Code = code, Module = module, Label = "🔍 Truy xuất", Command = command, CommandDescription = command == null ? null : "Truy xuất lô / mẻ", Bots = ["VH"], MenuMetaLink = menu, Order = order,
+            Code = code, Module = module, Label = "🔍 Truy xuất", Command = command, CommandDescription = command == null ? null : "Truy xuất lô / mẻ", Bots = ["VH"], Order = order,
+            Visible = i => i.IsAdmin || i.Menus.Any(m => string.Equals(m, "#/scm-lot", StringComparison.OrdinalIgnoreCase) || string.Equals(m, "#/prod-batch", StringComparison.OrdinalIgnoreCase)),
             Handler = (ctx, ct) => AskAsync(ctx, "🔍 Gõ số lô (vd. LO-…, NL-…) hoặc số mẻ (ME-…):", ReplyTrace, "x", ct),
         };
 
