@@ -199,6 +199,9 @@ namespace AppDelicare.Model.Option
         public Dictionary<string, string> PositionDefaultGroups { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         /// <summary>APR-1.2 (D-81 f): cảnh báo PO khi giá dòng cao hơn lần mua trước cùng NCC ≥ N %.</summary>
         public decimal ApprovalFlagPricePct { get; set; } = 10m;
+        /// <summary>UI-6.18 C / UI-6.19 (D-99, D-100): NCC "đúng hẹn" khi tỉ lệ phiếu nhập không trễ ngày giao dự kiến của PO ≥ ngưỡng này (90 ngày gần nhất).</summary>
+        public decimal SupplierOnTimeMinPct { get; set; } = 90m;
+        public int SupplierOnTimeLookbackDays { get; set; } = 90;
         /// <summary>APR-1.2 (D-81 f): cảnh báo kiểm kê khi dòng lệch &gt; N %.</summary>
         public decimal ApprovalFlagStockCountLinePct { get; set; } = 5m;
         /// <summary>APR-1.2 (D-81 f): cảnh báo khi người gửi bị từ chối loại này ≥ N lần trong <see cref="ApprovalFlagRejectDays"/> ngày.</summary>

@@ -34,9 +34,12 @@ namespace AppDelicare.Tests.Menu
                 return Task.CompletedTask;
             });
             using var c = factory.CreateAuthorizedClient();
-            var saved = await c.PutFormAsync("/api/SupplierMaterial/Update", ("Id", sm), ("SupplierId", supplier), ("IngredientId", meat), ("UnitPrice", 300000m),
-                ("PurchaseUomId", kg), ("IsPreferred", true), ("EffectiveFrom", new DateTime(2032, 1, 1)), ("Status", "Active"));
+            // UI-6.19 (D-100): giá đã áp dụng không sửa đè – sửa thẳng bị chặn, lưu thành giá mới từ hôm nay (giá cũ tự kết thúc hôm trước).
+            (await c.PutFormAsync("/api/SupplierMaterial/Update", ("Id", sm), ("SupplierId", supplier), ("IngredientId", meat), ("UnitPrice", 300000m), ("PurchaseUomId", kg), ("IsPreferred", true), ("EffectiveFrom", new DateTime(2032, 1, 1)), ("Status", "Active"))).Fail("lưu thành giá mới");
+            var saved = await c.PostFormAsync("/api/SupplierMaterial/SaveNewPrice", ("SupplierId", supplier), ("IngredientId", meat), ("UnitPrice", 300000m),
+                ("PurchaseUomId", kg), ("IsPreferred", true), ("EffectiveFrom", new DateTime(2032, 3, 2)), ("Status", "Active"));
             saved.Ok();
+            (await factory.QueryAsync(db => db.SupplierMaterial.AsNoTracking().SingleAsync(x => x.Id == sm))).EffectiveTo.Should().Be(new DateTime(2032, 3, 1), "giá cũ tự kết thúc hôm trước");
             saved.Message.Should().Contain("đã tự tính lại giá thành chuẩn 1 món").And.Contain("TD" + k).And.Contain("FC 75%");
             (await factory.QueryAsync(db => db.Dish.AsNoTracking().SingleAsync(d => d.Id == dish))).StandardCost.Should().Be(30000);
         }
