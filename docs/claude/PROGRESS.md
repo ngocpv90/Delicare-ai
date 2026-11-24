@@ -1,6 +1,45 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.9 (D-87) DONE – Bảng kê thanh toán: mọi khách một bảng + xuất hàng loạt** (nhánh `feat/UI-6.9-billing`). Không thêm bảng / cột; không có script DB.
+  - **BE:**
+    - `BillingStatement/GetMonthOverview`:
+      - khách = có đơn trong tháng ∪ hợp đồng hiệu lực; mỗi khách tính như BIZ-3.2;
+      - trạng thái Sẵn sàng / Chờ đối soát / Không phát sinh; ⚠ lệch > 20 % so tháng trước;
+      - đơn chờ đối soát nhóm theo khách; tổng.
+    - `ExportStatementBatch`: Excel 1 tệp, sheet Tổng hợp + mỗi khách 1 sheet.
+    - `PrintStatementBatch`: zip, mỗi khách 1 PDF `BangKe_<MaKH>_<YYYYMM>`.
+    - `GetExportHistory`: nhật ký xuất / in trong `AuditChange`; xuất từng khách cũng được ghi.
+    - Tách phần dựng tài liệu bảng kê ra `DocAsync` dùng chung.
+    - Job `BillingMonthReady` 08:00 ngày 1 → FIN-ACC + SAL-HEAD.
+  - **FE (`sales.js` `crm-billing`, theo `billing-mockup.html`):**
+    - Tháng ◀ ▶; bỏ "Lập bảng kê" (mở là tính).
+    - 3 bước (đơn chờ đối soát → tab; kiểm tra; Xuất tất cả khách sẵn sàng); 4 KPI.
+    - Tab **Theo khách hàng**: chọn, XLS / PDF / ✉ trên dòng; bấm dòng mở chi tiết theo buổi ngay dưới; ⚠; dòng Tổng.
+    - Thanh chọn dưới đáy: Excel nhiều sheet / PDF nén / Gửi khách xác nhận / Bỏ chọn; cảnh báo khách chờ đối soát.
+    - "Gửi khách xác nhận" chỉ hiện "Tính năng chưa được nâng cấp…" (D-87 c).
+    - Tab **Chờ đối soát** (nhóm theo khách + nút mở màn Đối soát), tab **Lịch sử xuất**.
+  - **Kiểm trên DB dev thật** (uat.fin-acc, tháng 11/2026; ảnh `docs/frontend-handoff/assets/ui-6.9/`):
+    - 97 khách, 22 có phát sinh, 9 sẵn sàng, 16 đơn chờ (13 khách), tổng 312.568.200; tính trong khoảng 0,7 giây.
+    - Xuất lô 9 khách sẵn sàng: Excel `BangKe_202611_9KH.xlsx` (19,7 KB), zip 9 PDF (519 KB).
+    - Lịch sử xuất ghi 18 dòng (9 Excel + 9 PDF).
+    - Không có lỗi JS.
+    - Tháng 10 không có khách: DB dev chưa có hợp đồng / đơn trước tháng 11.
+  - **Vai trò (gọi API thật):**
+    - FIN-ACC, SAL-HEAD, SAL-SALES: xem / xuất / in 200.
+    - SAL-CS, OPS-POS, OPS-WH: 403.
+  - **Test:**
+    - `BillingMonthTests`: Sẵn sàng / Chờ / Không phát sinh xếp cuối, ⚠ +100 %, xuất lô Excel 3 sheet, zip 2 PDF đúng tên, lô rỗng bị chặn, lịch sử 2 lần.
+    - `JobTests` thêm `BillingMonthReady`.
+    - Toàn bộ **647/647**; FE build xanh.
+    - `full-flow.http` ngày 09/01/2027 **226/227** (lỗi 9.3 do hạn lô như cũ).
+  - **Tài liệu:** HDSD 02 §4.7b viết lại; BUSINESS_RULES thêm mục UI-6.9.
+  - **Chưa làm / còn rủi ro:**
+    - "Gửi khách xác nhận" chưa làm theo D-87 c. Cần anh chọn kênh (email / Zalo OA / cổng khách) và cung cấp hộp thư gửi.
+    - Cờ ⚠ so với **Σ giá trị đối soát tháng trước** (gồm cả đối soát chưa chốt), không dựng lại bảng kê tháng trước. Đây là xấp xỉ để màn chạy nhanh.
+    - Mỗi khách tính riêng (`BuildAsync`); khoảng 100 khách mất dưới 1 giây trên DB dev. Nhiều khách hơn có thể chậm, chưa đo.
+    - Chưa chạy thật job ngày 1 (tránh nhắn người thật).
+    - Mục ROADMAP UI-6.9 → DONE: anh tự cập nhật.
 - **2026-11-24: UI-6.8 (D-86 b, c) DONE – Đối soát: bố cục mới + xác nhận hàng loạt + bot "Đã phục vụ đủ"** (nhánh `feat/UI-6.8-reconciliation`). Không thêm bảng / cột; không có script DB.
   - **BE:**
     - `OrderReconciliation/GetBoard` đọc theo lô (đơn, dòng, đơn giao, POD, đối soát; không gọi từng đơn) và trả:

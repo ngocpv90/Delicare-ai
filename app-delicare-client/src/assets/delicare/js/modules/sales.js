@@ -687,48 +687,122 @@
     return Store.act('Contract/UpdateBillingBasis', { method: 'PUT', form: { Id: id, BillingBasis: basis || null }, tables: ['Contract'] }).then(r => { if (r.ok) UI.toast('Đã đổi cách tính tiền: ' + esc((r.data || {}).billingBasisName || ''), 'ok'); return r; });
   }
   APP.crmContract = { submit: contractSubmit, terminate: contractTerminate, setBilling: contractBilling, billingSelect };
-  // ---------- BIZ-3.2 (D-77 – A7): Bảng kê thanh toán tháng ----------
-  const bk = { cus: '', ct: '', from: '', to: '' };
-  APP.register('crm-billing', (el, f) => {
-    const t = Store.ctx.date, first = t.slice(0, 8) + '01';
-    if (!bk.from) { bk.from = U.addDays(first, -1).slice(0, 8) + '01'; bk.to = U.addDays(first, -1); }
-    const cus = Store.rows('Customer').filter(c => c.Status !== 'Inactive' && (!Store.ctx.branch || c.BranchId === Store.ctx.branch));
-    const perm = Store.perm(f.id);
-    el.innerHTML = `<div class="page-head"><div><h1>Bảng kê thanh toán</h1><div class="muted small">Suất tính tiền đã chốt đối soát × đơn giá cố định lúc chốt + phí thất thoát khay + VAT. Hóa đơn / công nợ ở phần mềm kế toán.</div></div>
-      <div class="heading-actions">${perm.exp !== false ? `<button class="btn" id="bkXls">${I('download')} Xuất Excel</button>` : ''}${perm.print !== false ? `<button class="btn" id="bkPdf">${I('print')} In PDF</button>` : ''}</div></div>
-      <div class="card panel mb"><div class="row-flex" style="gap:10px;flex-wrap:wrap">
-        <div class="field" style="min-width:240px"><label>Khách hàng <span class="req">*</span></label><select class="select" id="bkCus">${opts(cus, c => c.DisplayName || c.Code, '— Chọn khách hàng —')}</select></div>
-        <div class="field" style="min-width:200px"><label>Hợp đồng</label><select class="select" id="bkCt"><option value="">Tất cả</option></select></div>
-        <div class="field"><label>Từ ngày</label><input type="date" class="input" id="bkFrom" value="${bk.from}"></div>
-        <div class="field"><label>Đến ngày</label><input type="date" class="input" id="bkTo" value="${bk.to}"></div>
-        <div class="field" style="align-self:flex-end"><button class="btn primary" id="bkGo">${I('calc')} Lập bảng kê</button></div></div></div>
-      <div id="bkOut"><div class="empty">Chọn khách hàng và kỳ để lập bảng kê</div></div>`;
-    const g = s => el.querySelector(s);
-    const fillCt = () => { g('#bkCt').innerHTML = opts(bk.cus ? Store.by('Contract', 'CustomerId', bk.cus) : [], c => (c.ContractNumber || '') + (c.Name ? ' · ' + c.Name : ''), 'Tất cả'); g('#bkCt').value = bk.ct || ''; };
-    g('#bkCus').value = bk.cus; fillCt();
-    g('#bkCus').onchange = () => { bk.cus = g('#bkCus').value; bk.ct = ''; fillCt(); };
-    const params = () => { bk.cus = g('#bkCus').value; bk.ct = g('#bkCt').value; bk.from = g('#bkFrom').value; bk.to = g('#bkTo').value; return { CustomerId: bk.cus, ContractId: bk.ct || null, From: bk.from, To: bk.to }; };
-    const need = () => { if (!g('#bkCus').value) { UI.toast('Chọn khách hàng', 'err'); return false; } return true; };
-    const draw = () => {
-      if (!need()) return; const out = g('#bkOut'); out.innerHTML = '<div class="muted small">Đang lập…</div>';
-      Store.query('BillingStatement/GetStatement', params()).then(x => {
-        if (!out.isConnected) return; if (!x.ok || !x.data) { out.innerHTML = failBox(x.message); return; }
-        const d = x.data, rows = d.listRow || [];
-        out.innerHTML = `<div class="kpis mb">${UI.kpi('Suất tính tiền', U.num(d.totalBilledQuantity), U.num(rows.length) + ' dòng', 'utensils', 'green')}${UI.kpi('Tiền suất ăn', U.money(d.mealAmount), '', 'calc', 'blue')}${UI.kpi('Phí thất thoát khay', U.money(d.containerFeeAmount), '', 'box', d.containerFeeAmount ? 'orange' : 'gray')}${UI.kpi('Tổng thanh toán', U.money(d.grandTotal), 'gồm VAT ' + U.num(d.vatPct) + '%', 'money', 'purple')}</div>
-          <div class="card panel mb"><div class="panel-title mb">${esc(d.customerName || '')}${d.contractNumber ? ' · HĐ ' + esc(d.contractNumber) : ''} · ${U.date(U.day(d.from))} – ${U.date(U.day(d.to))} <span class="small muted">(${esc(d.billingBasisName || '')})</span></div>
-          ${rows.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Ngày</th><th>Buổi</th><th>Đơn</th><th>Điểm giao</th><th class="num">Suất tính tiền</th><th class="num">Suất lỗi (đã trừ)</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead><tbody>${rows.map(r => `<tr><td>${U.date(U.day(r.mealDate))}</td><td>${esc(r.mealName || r.mealType || '')}</td><td>${esc(r.orderNumber || '')}</td><td>${esc(r.locationName || '')}</td><td class="num">${U.num(r.billedQuantity)}</td><td class="num">${r.faultQuantity ? U.num(r.faultQuantity) : '<span class="muted">–</span>'}</td><td class="num">${U.money(r.unitPrice)}</td><td class="num">${U.money(r.amount)}</td></tr>`).join('')}</tbody>
-            <tfoot><tr><td colspan="4"><b>Cộng tiền suất ăn</b></td><td class="num"><b>${U.num(d.totalBilledQuantity)}</b></td><td class="num">${U.num(d.totalFaultQuantity)}</td><td></td><td class="num"><b>${U.money(d.mealAmount)}</b></td></tr>
-            ${(d.listContainerFee || []).map(c => `<tr><td colspan="4">Phí thất thoát khay ${esc(c.packagingType)} (mất ${U.num(c.periodLossQuantity)} / giao ${U.num(c.periodOutQuantity)}, ngưỡng ${U.num(c.thresholdPct)}%)</td><td class="num">${U.num(c.overQuantity)}</td><td></td><td class="num">${U.money(c.feePerUnit)}</td><td class="num">${U.money(c.amount)}</td></tr>`).join('')}
-            <tr><td colspan="7">Cộng chưa VAT</td><td class="num">${U.money(d.subTotal)}</td></tr><tr><td colspan="7">VAT ${U.num(d.vatPct)}%</td><td class="num">${U.money(d.vatAmount)}</td></tr><tr><td colspan="7"><b>TỔNG THANH TOÁN</b></td><td class="num"><b>${U.money(d.grandTotal)}</b></td></tr></tfoot></table></div>` : '<div class="empty">Chưa có đơn nào đã chốt đối soát trong kỳ</div>'}
-          ${d.compensationOrderCount ? `<div class="small muted mt">${d.compensationOrderCount} đơn bù do lỗi Delicare (giá 0) không tính tiền.</div>` : ''}</div>
-          ${(d.listPending || []).length ? `<div class="card panel"><div class="panel-title mb">Chờ đối soát – chưa tính tiền (${d.listPending.length} đơn)</div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Đơn</th><th>Ngày ăn</th><th>Tình trạng</th><th class="num">Suất đặt</th><th class="num">Giá trị đơn</th></tr></thead><tbody>${d.listPending.map(p => `<tr><td>${esc(p.orderNumber || '')}</td><td>${U.date(U.day(p.mealDate))}</td><td>${esc(p.statusName || '')}</td><td class="num">${U.num(p.orderedQuantity)}</td><td class="num">${U.money(p.orderAmount)}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
-      });
+  // ---------- Bảng kê thanh toán – UI-6.9 (D-87), mô phỏng docs/frontend-handoff/assets/billing-mockup.html ----------
+  // Tháng ◀ ▶ (mặc định tháng trước) · tự tính mọi khách khi mở (bỏ "Lập bảng kê") · 3 bước · 4 chỉ số · tab Theo khách hàng / Chờ đối soát / Lịch sử xuất ·
+  // Excel / PDF trên từng dòng · chọn nhiều → Excel 1 tệp nhiều sheet / PDF tệp nén · "Gửi khách xác nhận" chưa nâng cấp (D-87 c).
+  const bkm = { month: '', tab: 'cus', data: null, key: '', sel: new Set(), open: new Set(), detail: {}, hist: null };
+  const BK_ST = { READY: ['green', 'Sẵn sàng'], PENDING: ['orange', 'Chờ đối soát'], NONE: ['gray', 'Không phát sinh'] };
+  const bkMonth = () => { if (!bkm.month) { const d = new Date(Store.ctx.date + 'T00:00'); d.setDate(1); d.setMonth(d.getMonth() - 1); bkm.month = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; } return bkm.month; };
+  const bkShift = n => { const d = new Date(bkMonth() + 'T00:00'); d.setMonth(d.getMonth() + n); bkm.month = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; };
+  const bkShort = v => { v = Number(v) || 0; return v >= 1e9 ? U.num(Math.round(v / 1e7) / 100) + ' tỷ' : v >= 1e6 ? U.num(Math.round(v / 1e5) / 10) + ' tr' : U.num(v); };
+  const bkNotYet = () => UI.toast('Tính năng chưa được nâng cấp. Vui lòng liên hệ quản trị viên.', 'warn');
+  function bkExport(ids, fmt) {
+    if (!ids.length) return UI.toast('Chưa chọn khách hàng nào', 'err');
+    const one = ids.length === 1, m = bkMonth(), to = U.addDays(U.addDays(m, 32).slice(0, 8) + '01', -1);
+    const p = one ? Store.download(fmt === 'pdf' ? 'BillingStatement/PrintStatement' : 'BillingStatement/ExportStatement', { CustomerId: ids[0], From: m, To: to })
+      : Store.download(fmt === 'pdf' ? 'BillingStatement/PrintStatementBatch' : 'BillingStatement/ExportStatementBatch', null, { month: m, listCustomerId: ids });
+    return p.then(r => { if (r && r.ok) { UI.toast('Đã tải ' + esc(r.fileName || ''), 'ok'); bkm.hist = null; } });
+  }
+  function bkBilling(el, f) {
+    const perm = Store.perm(f.id), m = bkMonth(), d0 = new Date(m + 'T00:00');
+    el.innerHTML = APP.header(f, '', { noNote: true }) + `
+      <div class="notice info mb">${I('help')}<div>Tổng hợp tiền phải thu từng khách trong tháng (suất tính tiền đã chốt đối soát × đơn giá + phí thất thoát khay + VAT) để gửi khách xác nhận, rồi xuất hóa đơn ở phần mềm kế toán. Hệ thống tự lập cho mọi khách – không cần bấm "Lập".</div></div>
+      <div class="card panel mb"><div class="fw-week"><button class="btn sm" id="bkPrev" aria-label="Tháng trước">◀</button><span>Tháng ${String(d0.getMonth() + 1).padStart(2, '0')}/${d0.getFullYear()}</span><button class="btn sm" id="bkNext" aria-label="Tháng sau">▶</button></div>
+        <div class="fw-steps ow-steps" id="bkSteps"></div><div id="bkKpis"></div></div>
+      <div class="card panel"><div class="tabs" id="bkTabs"></div><div id="bkBody"><div class="muted small">Đang tính bảng kê mọi khách…</div></div></div>
+      <div class="bk-bar" id="bkBar" hidden></div>`;
+    el.querySelector('#bkPrev').onclick = () => { bkShift(-1); bkm.sel = new Set(); bkBilling(el, f); };
+    el.querySelector('#bkNext').onclick = () => { bkShift(1); bkm.sel = new Set(); bkBilling(el, f); };
+    const key = m + '|' + (Store.ctx.branch || '');
+    if (bkm.key === key && bkm.data) return bkDraw(el, f, perm);
+    bkm.key = key; bkm.data = null; bkm.detail = {};
+    Store.query('BillingStatement/GetMonthOverview', { Month: m, BranchId: Store.ctx.branch }).then(x => {
+      if (bkm.key !== key || !el.isConnected) return;
+      if (!x.ok || !x.data) { el.querySelector('#bkBody').innerHTML = failBox(x.message); return; }
+      bkm.data = x.data; bkDraw(el, f, perm);
+    });
+  }
+  function bkDraw(el, f, perm) {
+    const d = bkm.data, ready = d.listCustomer.filter(c => c.status === 'READY');
+    el.querySelector('#bkSteps').innerHTML = `
+      <div class="fw-step"><span class="n s1">1</span><div><b>Chốt hết đối soát của tháng</b><span class="small muted">Khách còn đơn chờ đối soát thì chưa sẵn sàng</span></div><button class="btn sm" id="bkS1" ${d.pendingOrders ? '' : 'disabled'}>${U.num(d.pendingOrders)} đơn chờ đối soát (${U.num(d.pendingCustomers)} khách)</button></div>
+      <div class="fw-step"><span class="n s2">2</span><div><b>Kiểm tra</b><span class="small muted">Bấm dòng để xem chi tiết; ⚠ = lệch &gt; ${U.num(d.deviationPct)}% so tháng trước</span></div></div>
+      <div class="fw-step"><span class="n s3">3</span><div><b>Xuất / in hàng loạt</b><span class="small muted">Chọn nhiều khách hoặc tất cả khách sẵn sàng</span></div><button class="btn sm primary" id="bkS3" ${ready.length && perm.exp !== false ? '' : 'disabled'}>${I('export')} Xuất tất cả khách sẵn sàng (${ready.length})</button></div>`;
+    el.querySelector('#bkKpis').innerHTML = UI.kpis([
+      UI.kpi('Tổng phải thu (có VAT)', bkShort(d.grandTotal), '', 'calc', 'green'),
+      UI.kpi('Khách sẵn sàng', U.num(d.readyCount), '/ ' + U.num(d.activeCount) + ' khách', 'check', d.readyCount === d.activeCount ? 'green' : 'orange'),
+      UI.kpi('Đơn chờ đối soát', U.num(d.pendingOrders), U.num(d.pendingCustomers) + ' khách', 'alert', d.pendingOrders ? 'orange' : 'green'),
+      UI.kpi('Phí thất thoát khay', bkShort(d.containerFee), 'đã gồm trong tổng', 'package', 'blue')], 'compact');
+    el.querySelector('#bkS1').onclick = () => { bkm.tab = 'pend'; bkTab(el, f, perm); };
+    el.querySelector('#bkS3').onclick = () => bkExport(ready.map(c => c.customerId), 'xlsx');
+    bkTab(el, f, perm);
+  }
+  function bkTab(el, f, perm) {
+    const d = bkm.data;
+    el.querySelector('#bkTabs').innerHTML = [['cus', 'Theo khách hàng'], ['pend', `Chờ đối soát (${U.num(d.pendingOrders)})`], ['hist', 'Lịch sử xuất']].map(([k, l]) => `<button class="tab ${bkm.tab === k ? 'active' : ''}" data-bkt="${k}">${l}</button>`).join('');
+    el.querySelectorAll('[data-bkt]').forEach(t => t.onclick = () => { bkm.tab = t.dataset.bkt; bkTab(el, f, perm); });
+    const box = el.querySelector('#bkBody');
+    el.querySelector('#bkBar').hidden = bkm.tab !== 'cus' || !bkm.sel.size;
+    if (bkm.tab === 'pend') {
+      box.innerHTML = d.listPendingGroup.length ? d.listPendingGroup.map(g => `<div class="mb"><div class="spread"><b>${esc(g.customerName || '')}</b><span class="small muted">${g.listOrder.length} đơn</span></div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Đơn</th><th>Ngày ăn</th><th>Trạng thái</th><th class="num">Suất đặt</th></tr></thead><tbody>${g.listOrder.map(o => `<tr><td><a href="javascript:void 0" data-bko="${o.orderId}">${esc(o.orderNumber || '')}</a></td><td>${U.date(U.day(o.mealDate))}</td><td>${esc(o.statusName || '')}</td><td class="num">${U.num(o.orderedQuantity)}</td></tr>`).join('')}</tbody></table></div></div>`).join('') + `<button class="btn primary" id="bkGoRc">${I('check')} Mở màn Đối soát để xác nhận / chốt</button>` : '<div class="empty">Tháng này không còn đơn chờ đối soát.</div>';
+      box.querySelectorAll('[data-bko]').forEach(a => a.onclick = () => APP.openDetail('Order', a.dataset.bko));
+      const g = box.querySelector('#bkGoRc'); if (g) g.onclick = () => APP.go('crm-reconciliation');
+      return;
+    }
+    if (bkm.tab === 'hist') {
+      box.innerHTML = '<div class="muted small">Đang tải…</div>';
+      const load = bkm.hist ? Promise.resolve(bkm.hist) : Store.query('BillingStatement/GetExportHistory', { Month: bkMonth() }).then(x => (bkm.hist = x.ok ? x.list || [] : []));
+      load.then(list => { if (!box.isConnected || bkm.tab !== 'hist') return; box.innerHTML = list.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Lúc</th><th>Người</th><th>Khách hàng</th><th>Thao tác</th><th>Chi tiết</th></tr></thead><tbody>${list.map(h => `<tr><td>${U.dt(h.at)}</td><td>${esc(h.byName || '')}</td><td>${esc(h.customerName || '')}</td><td>${esc(h.action || '')}</td><td class="small muted">${esc(h.detail || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Chưa có lần xuất / in nào trong tháng.</div>'; });
+      return;
+    }
+    const rows = d.listCustomer, sum = k => rows.reduce((s, r) => s + (Number(r[k]) || 0), 0);
+    const can = { exp: perm.exp !== false, prt: perm.print !== false };
+    box.innerHTML = `<div class="fw-legend">${Object.entries(BK_ST).map(([k, [c, l]]) => `<span><span class="badge ${c}">${l}</span> ${k === 'READY' ? 'đã chốt hết đối soát trong tháng' : k === 'PENDING' ? 'còn đơn chưa chốt – số tiền tạm tính' : ''}</span>`).join('')}<span>Biểu tượng Excel · PDF trên từng dòng – không cần lập trước</span></div>
+      <div class="table-wrap"><table class="table dc-table bk-grid"><thead><tr><th style="width:28px"><input type="checkbox" id="bkAll" aria-label="Chọn tất cả"></th><th>Khách hàng</th><th class="num">Suất tính tiền</th><th class="num">Tiền suất ăn</th><th class="num">Phí khay</th><th class="num">VAT</th><th class="num">Tổng thanh toán</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+      ${rows.map(r => { const [c, l] = BK_ST[r.status] || ['gray', r.status], open = bkm.open.has(r.customerId);
+        return `<tr class="bk-row ${open ? 'open' : ''}" data-bkr="${r.customerId}"><td><input type="checkbox" data-bks="${r.customerId}" ${bkm.sel.has(r.customerId) ? 'checked' : ''} ${r.status === 'NONE' ? 'disabled' : ''} aria-label="Chọn khách"></td>
+          <td><b>${esc(r.customerName || '')}</b><div class="small muted">${esc(r.customerCode || '')}${r.contractNumber ? ' · ' + esc(r.contractNumber) : ''}</div></td>
+          <td class="num">${U.num(r.billedQuantity)}</td><td class="num">${U.num(r.mealAmount, 0)}${r.warn ? ` <span class="ow-warn" title="Lệch ${U.num(r.changePct)}% so tháng trước (${U.num(r.previousMealAmount, 0)})">⚠</span>` : ''}</td>
+          <td class="num">${r.containerFee ? U.num(r.containerFee, 0) : '–'}</td><td class="num">${U.num(r.vatAmount, 0)}</td><td class="num"><b>${U.num(r.grandTotal, 0)}</b></td>
+          <td><span class="badge ${c}">${l}${r.status === 'PENDING' ? ' · ' + r.pendingOrders + ' đơn' : ''}</span></td>
+          <td class="actions">${r.status !== 'NONE' ? `${can.exp ? `<button class="btn xs" data-bkx="${r.customerId}" title="Xuất Excel" aria-label="Xuất Excel">XLS</button>` : ''} ${can.prt ? `<button class="btn xs" data-bkp="${r.customerId}" title="In PDF" aria-label="In PDF">PDF</button>` : ''} <button class="btn xs" data-bkg title="Gửi khách xác nhận" aria-label="Gửi khách xác nhận">${I('mail')}</button>` : ''}</td></tr>`
+          + (open ? `<tr class="bk-det"><td></td><td colspan="8" data-bkdet="${r.customerId}"><div class="muted small">Đang tải chi tiết…</div></td></tr>` : ''); }).join('')}
+      </tbody><tfoot><tr class="fw-foot"><td></td><td><b>Tổng</b></td><td class="num">${U.num(sum('billedQuantity'))}</td><td class="num">${U.num(sum('mealAmount'), 0)}</td><td class="num">${U.num(sum('containerFee'), 0)}</td><td class="num">${U.num(sum('vatAmount'), 0)}</td><td class="num"><b>${U.num(sum('grandTotal'), 0)}</b></td><td colspan="2"></td></tr></tfoot></table></div>`;
+    const bar = el.querySelector('#bkBar');
+    const drawBar = () => {
+      const sel = rows.filter(r => bkm.sel.has(r.customerId)), pend = sel.filter(r => r.status === 'PENDING').length;
+      bar.hidden = !sel.length;
+      bar.innerHTML = `<span>Đã chọn <b>${sel.length}</b> khách · <b>${U.money(sel.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0))}</b>${pend ? ` <span class="bad small">· ${pend} khách còn chờ đối soát (số tạm tính)</span>` : ''}</span><span class="row-flex">${can.exp ? `<button class="btn sm" id="bkBx">${I('export')} Excel (1 tệp, mỗi khách 1 sheet)</button>` : ''}${can.prt ? `<button class="btn sm" id="bkBp">${I('print')} PDF (tệp nén, mỗi khách 1 tệp)</button>` : ''}<button class="btn sm" id="bkBg">${I('mail')} Gửi khách xác nhận</button><button class="btn sm" id="bkBc">Bỏ chọn</button></span>`;
+      const ids = sel.map(r => r.customerId);
+      if (bar.querySelector('#bkBx')) bar.querySelector('#bkBx').onclick = () => bkExport(ids, 'xlsx');
+      if (bar.querySelector('#bkBp')) bar.querySelector('#bkBp').onclick = () => bkExport(ids, 'pdf');
+      bar.querySelector('#bkBg').onclick = bkNotYet;
+      bar.querySelector('#bkBc').onclick = () => { bkm.sel = new Set(); bkTab(el, f, perm); };
     };
-    g('#bkGo').onclick = draw;
-    const dl = path => { if (need()) Store.download(path, params()); };
-    if (g('#bkXls')) g('#bkXls').onclick = () => dl('BillingStatement/ExportStatement');
-    if (g('#bkPdf')) g('#bkPdf').onclick = () => dl('BillingStatement/PrintStatement');
-    if (bk.cus) draw();
+    drawBar();
+    box.querySelector('#bkAll').onchange = e => { rows.filter(r => r.status !== 'NONE').forEach(r => e.target.checked ? bkm.sel.add(r.customerId) : bkm.sel.delete(r.customerId)); bkTab(el, f, perm); };
+    box.querySelectorAll('[data-bks]').forEach(c => { c.onclick = e => e.stopPropagation(); c.onchange = () => { c.checked ? bkm.sel.add(c.dataset.bks) : bkm.sel.delete(c.dataset.bks); drawBar(); }; });
+    box.querySelectorAll('[data-bkx]').forEach(b => b.onclick = e => { e.stopPropagation(); bkExport([b.dataset.bkx], 'xlsx'); });
+    box.querySelectorAll('[data-bkp]').forEach(b => b.onclick = e => { e.stopPropagation(); bkExport([b.dataset.bkp], 'pdf'); });
+    box.querySelectorAll('[data-bkg]').forEach(b => b.onclick = e => { e.stopPropagation(); bkNotYet(); });
+    box.querySelectorAll('tr.bk-row').forEach(tr => tr.onclick = () => { const id = tr.dataset.bkr; bkm.open.has(id) ? bkm.open.delete(id) : bkm.open.add(id); bkTab(el, f, perm); });
+    // Chi tiết ngay dưới dòng: theo buổi (suất tính tiền, lỗi đã trừ, đơn giá, thành tiền) + ghi chú đơn bù / số tạm tính.
+    box.querySelectorAll('[data-bkdet]').forEach(cell => {
+      const id = cell.dataset.bkdet, m = bkMonth(), to = U.addDays(U.addDays(m, 32).slice(0, 8) + '01', -1);
+      const p = bkm.detail[id] || (bkm.detail[id] = Store.query('BillingStatement/GetStatement', { CustomerId: id, From: m, To: to }));
+      p.then(x => {
+        if (!cell.isConnected) return;
+        if (!x.ok || !x.data) { cell.innerHTML = failBox(x.message); return; }
+        const s = x.data, by = {};
+        (s.listRow || []).forEach(r => { const k = (r.mealName || r.mealType || '') + '|' + r.unitPrice; const g = by[k] || (by[k] = { meal: r.mealName || r.mealType || '', price: r.unitPrice, billed: 0, fault: 0, amount: 0 }); g.billed += r.billedQuantity; g.fault += r.faultQuantity; g.amount += r.amount; });
+        cell.innerHTML = `<table class="table dc-table"><thead><tr><th>Buổi</th><th class="num">Suất tính tiền</th><th class="num">Suất lỗi (đã trừ)</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead><tbody>${Object.values(by).map(g => `<tr><td>${esc(g.meal)}</td><td class="num">${U.num(g.billed)}</td><td class="num">${g.fault ? U.num(g.fault) : '–'}</td><td class="num">${U.money(g.price)}</td><td class="num">${U.num(g.amount, 0)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Chưa có suất tính tiền</td></tr>'}${(s.listContainerFee || []).map(c => `<tr><td>Phí thất thoát khay ${esc(c.packagingType)}</td><td class="num">${U.num(c.overQuantity)}</td><td></td><td class="num">${U.money(c.feePerUnit)}</td><td class="num">${U.num(c.amount, 0)}</td></tr>`).join('')}</tbody></table>`
+          + `${s.compensationOrderCount ? `<div class="small muted">${s.compensationOrderCount} đơn bù do lỗi Delicare (giá 0) không tính tiền.</div>` : ''}${(s.listPending || []).length ? `<div class="notice warn small mt">${I('alert')}<div>Số tạm tính – còn ${s.listPending.length} đơn chờ đối soát: ${s.listPending.slice(0, 10).map(o => esc(o.orderNumber)).join(', ')}</div></div>` : ''}`;
+      });
+    });
+  }
+  APP.register('crm-billing', (el, f) => {
+    if (!Store.isLive) { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="notice gap">${I('alert')}<div>Bảng kê thanh toán dùng dữ liệu API – chuyển sang chế độ API.</div></div>`; return; }
+    bkBilling(el, f);
   });
   // ---------- Dự báo suất ăn theo tuần (UI-6.5, D-84) ----------
   // Khách có hợp đồng hiệu lực tự hiện; khách → điểm giao · buổi × 7 ngày, một số mỗi ô. Sửa ô = lưu Nháp (Forecast/SaveCell, Enter / rời ô);

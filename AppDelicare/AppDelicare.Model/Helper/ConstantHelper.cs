@@ -455,6 +455,7 @@
             public static readonly string CompensationExists = "Phản ánh này đã có đơn bù {0}";
             public static readonly string CompensationQuantityRequired = "Nhập số suất bù (POD của đơn gốc không ghi suất bị từ chối)";
             public static readonly string CompensationCreated = "Đã tạo đơn bù {0} – {1} suất";
+            public static readonly string BillingBatchEmpty = "Chưa chọn khách hàng nào có bảng kê trong kỳ";
             public static readonly string BillingRangeInvalid = "Kỳ bảng kê không hợp lệ (từ ≤ đến, tối đa 3 tháng)";
             public static readonly string ContainerLossPctInvalid = "Ngưỡng thất thoát khay phải từ 0 đến 100 (%)";
             public static readonly string StandardCostAutoRecalculated = "đã tự tính lại giá thành chuẩn {0} món dùng nguyên liệu này";

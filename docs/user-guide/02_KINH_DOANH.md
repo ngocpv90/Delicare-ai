@@ -246,12 +246,36 @@ Mục menu "Chính sách giá" **đã bỏ**: đổi giá giữa kỳ làm bằn
 - **Tra giá khi chốt đơn:** phụ lục đang hiệu lực của hợp đồng → giá gốc trong hợp đồng. Giá trên đơn **cố định lúc chốt** – phụ lục duyệt sau giờ chốt không đổi đơn đã chốt.
 - Lỗi: *Chỉ điều chỉnh giá khi hợp đồng đang Hiệu lực*, *Áp dụng từ ngày phải từ ngày mai…*, *Thời gian áp dụng phải nằm trong hiệu lực hợp đồng…*, *Loại suất … đã có phụ lục … chồng thời gian áp dụng*, *Chưa đính kèm phụ lục đã ký…*.
 
-### 4.7b Bảng kê thanh toán – `crm-billing` (BIZ-3.2)
-Quyền: Kinh doanh + Kế toán (xem / xuất / in). Chọn **Khách hàng***, Hợp đồng (trống = tất cả), **Từ – Đến** (mặc định tháng trước, tối đa 3 tháng) → **Lập bảng kê**.
-- Chỉ đơn có **đối soát đã chốt**: theo ngày × buổi – **suất tính tiền** (số khách nhận − lỗi Delicare, BIZ-1.4), cột suất lỗi (đã trừ), **đơn giá cố định lúc chốt** (BIZ-1.5), thành tiền.
-- **Phí thất thoát khay**: số khay mất vượt ngưỡng của khách × phí / khay theo loại (cấu hình `ContainerLossFee` – hiện chưa đặt = 0 đ).
-- Cộng chưa VAT → **VAT 8 %** (`SalesVatPct`) → **Tổng thanh toán**. Đơn chưa chốt đối soát liệt kê riêng "Chờ đối soát"; đơn bù do lỗi Delicare (giá 0) không tính.
-- **Xuất Excel** (mẫu biên bản xác nhận khối lượng) / **In PDF** – có ô ký khách hàng, kế toán, đại diện Delicare. Hóa đơn / công nợ làm ở phần mềm kế toán.
+### 4.7b Bảng kê thanh toán – `crm-billing` (UI-6.9, D-87)
+Tổng hợp tiền phải thu từng khách trong tháng (suất tính tiền đã chốt đối soát × đơn giá cố định lúc chốt + phí thất thoát khay + VAT, trừ suất lỗi Delicare) để gửi khách xác nhận khối lượng → hóa đơn / công nợ ở phần mềm kế toán. **Mở màn là hệ thống tự tính cho mọi khách – không còn nút "Lập bảng kê".**
+
+- **Tháng** ◀ ▶ (mặc định tháng trước).
+- **3 bước:**
+  - ① *Chốt hết đối soát của tháng* – nút *N đơn chờ đối soát (M khách)* mở tab Chờ đối soát.
+  - ② *Kiểm tra* – bấm dòng xem chi tiết; ⚠ = tiền suất lệch > 20 % so tháng trước (`BillingMonthDeviationPct`).
+  - ③ *Xuất / in hàng loạt* – nút **Xuất tất cả khách sẵn sàng (N)**.
+- **4 thẻ:** Tổng phải thu (có VAT) · Khách sẵn sàng / khách có phát sinh · Đơn chờ đối soát · Phí thất thoát khay.
+- **Tab Theo khách hàng:** mọi khách có phát sinh (khách hợp đồng hiệu lực không phát sinh xếp cuối).
+  - Cột: suất tính tiền, tiền suất ăn (⚠ khi lệch), phí khay, VAT, tổng thanh toán.
+  - **Trạng thái:** **Sẵn sàng** (đã chốt hết đối soát) · **Chờ đối soát · N đơn** (số tạm tính) · **Không phát sinh**.
+  - Nút **XLS / PDF** trên từng dòng (xuất ngay); dòng **Tổng**.
+  - Bấm dòng → **chi tiết ngay dưới**: theo buổi – suất tính tiền, suất lỗi đã trừ, đơn giá, thành tiền; phí khay; ghi chú đơn bù giá 0; cảnh báo "số tạm tính" khi còn đơn chờ.
+- **Chọn nhiều** (ô chọn đầu dòng / chọn tất cả) → **thanh dưới đáy**: "Đã chọn N khách · tổng tiền" (cảnh báo nếu có khách chờ đối soát).
+  - **Excel** = 1 tệp, sheet *Tổng hợp* + mỗi khách 1 sheet.
+  - **PDF** = 1 tệp nén, mỗi khách 1 tệp `BangKe_<MaKH>_<YYYYMM>.pdf`.
+- **Gửi khách xác nhận** (trên dòng và thanh chọn): **chưa nâng cấp** – bấm hiện "Tính năng chưa được nâng cấp. Vui lòng liên hệ quản trị viên." (D-87 c – đợt sau: email / Zalo OA / cổng khách).
+- **Tab Chờ đối soát:** đơn chưa chốt đối soát của tháng, nhóm theo khách; nút mở màn **Đối soát suất ăn**.
+- **Tab Lịch sử xuất:** ai xuất / in, lúc nào, khách nào, kỳ nào (gồm cả xuất lô).
+- **Tự động:** 08:00 **ngày 1** hằng tháng bot Điều hành báo Kế toán + Trưởng KD: "Bảng kê tháng MM/YYYY: X/Y khách sẵn sàng, Z khách còn N đơn chờ đối soát".
+- Cách tính giữ nguyên BIZ-3.2:
+  - chỉ đơn có **đối soát đã chốt**;
+  - **suất tính tiền** = khách nhận − lỗi Delicare;
+  - **đơn giá cố định lúc chốt**;
+  - **phí thất thoát khay** = khay mất vượt ngưỡng × phí / khay (`ContainerLossFee`);
+  - **VAT 8 %** (`SalesVatPct`);
+  - đơn bù do lỗi Delicare (giá 0) không tính.
+- Mẫu Excel / PDF có ô ký: khách hàng, kế toán, đại diện Delicare.
+- **Quyền:** Kinh doanh + Kế toán xem / xuất / in.
 
 ### 4.8 Đối soát suất – `crm-reconciliation`
 Màn mới (UI-6.8, D-86): kỳ 7 ngày / 30 ngày / Tháng, 3 bước (Xác nhận số → Xử lý chênh lệch → Chốt đối soát + Bảng kê tháng), 2 biểu đồ cạnh nhau, **bảng xác nhận ngay trên trang** (phục vụ mặc định = khách nhận; **Xác nhận tất cả dòng khớp** 1 nút; chỉ sửa dòng có sự cố). Thao tác chi tiết: `10_DIEM_PHAT.md` mục 4.2. Đơn đặt **theo lựa chọn**: bấm ▸ trên dòng để ghi phục vụ từng lựa chọn; tiền = Σ suất × giá buổi.
