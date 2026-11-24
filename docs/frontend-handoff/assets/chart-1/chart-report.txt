@@ -1,0 +1,29 @@
+Chart.js: function 4.4.4
+1440 dash-exec: 1 biểu đồ (0 chưa có dữ liệu) Sản lượng suất ăn 7 ngày
+1440 crm-reconciliation: 2 biểu đồ (0 chưa có dữ liệu) Đặt – Giao – Nhận theo ngày ăn | Chuỗi Đặt → Sản xuất → Đóng gói → Giao → Nhận
+1440 prod-waste: 1 biểu đồ (0 chưa có dữ liệu) Hao hụt theo nhóm
+1440 qc-temperature: 1 biểu đồ (0 chưa có dữ liệu) Nhiệt độ [DEMO] Kho lạnh B21H
+1440 qc-checklist-result: 1 biểu đồ (0 chưa có dữ liệu) Tỷ lệ đạt 7 ngày
+1440 kpi-daily: 10 biểu đồ (0 chưa có dữ liệu) Phản ánh xử lý đúng hạn | Giao đúng giờ | Giá vốn bình quân / suất | Giá vốn / doanh thu (food cost) | Thất thoát hộp / khay | Hoàn thành kế hoạch sản xuất | Tỷ lệ hao hụt suất ăn | Mẻ đạt nhiệt độ lõi | Tỷ lệ mẻ bị QC từ chối | Mẻ đã lưu mẫu
+1440 kpi-monthly: 0 biểu đồ (0 chưa có dữ liệu) 
+1440 cost-actual: 1 biểu đồ (0 chưa có dữ liệu) Cơ cấu giá thành thực tế
+1440 crm-customer-360: 1 biểu đồ (0 chưa có dữ liệu) Xu hướng suất 30 ngày
+1440 scm-supplier-360: 1 biểu đồ (0 chưa có dữ liệu) Giá trị mua 6 tháng
+1440 adm-employee-360: 1 biểu đồ (0 chưa có dữ liệu) Giờ công 30 ngày
+390 dash-exec: 1 biểu đồ (0 chưa có dữ liệu) Sản lượng suất ăn 7 ngày
+390 crm-reconciliation: 2 biểu đồ (0 chưa có dữ liệu) Đặt – Giao – Nhận theo ngày ăn | Chuỗi Đặt → Sản xuất → Đóng gói → Giao → Nhận
+390 prod-waste: 1 biểu đồ (0 chưa có dữ liệu) Hao hụt theo nhóm
+390 qc-temperature: 1 biểu đồ (0 chưa có dữ liệu) Nhiệt độ [DEMO] Kho lạnh B21H
+390 qc-checklist-result: 1 biểu đồ (0 chưa có dữ liệu) Tỷ lệ đạt 7 ngày
+390 kpi-daily: 10 biểu đồ (0 chưa có dữ liệu) Phản ánh xử lý đúng hạn | Giao đúng giờ | Giá vốn bình quân / suất | Giá vốn / doanh thu (food cost) | Thất thoát hộp / khay | Hoàn thành kế hoạch sản xuất | Tỷ lệ hao hụt suất ăn | Mẻ đạt nhiệt độ lõi | Tỷ lệ mẻ bị QC từ chối | Mẻ đã lưu mẫu
+390 kpi-monthly: 0 biểu đồ (0 chưa có dữ liệu) 
+390 cost-actual: 1 biểu đồ (0 chưa có dữ liệu) Cơ cấu giá thành thực tế
+390 crm-customer-360: 1 biểu đồ (0 chưa có dữ liệu) Xu hướng suất 30 ngày
+390 scm-supplier-360: 1 biểu đồ (0 chưa có dữ liệu) Giá trị mua 6 tháng
+390 adm-employee-360: 1 biểu đồ (0 chưa có dữ liệu) Giờ công 30 ngày
+hover combo: {"title":["22/11"],"body":[" Kế hoạch: 1.000 suất"," Thực nhận: 998 suất"]}
+hover donut: {"title":["Nguyên vật liệu"],"body":[" Nguyên vật liệu: 321.100.000 ₫ (100%)"]}
+hover band: {"title":["08:10"],"body":[" [DEMO] Kho lạnh B21H: 2,9 °C"]}
+hover hbar: {"title":["Sản xuất"],"body":[" Suất cả kỳ: 10.000 suất"]}
+Xem bảng số: 7 dòng
+20 lần chuyển màn – trước {"canvas":1,"charts":1,"live":1,"heap":26} · sau {"canvas":1,"charts":1,"live":1,"heap":24}
