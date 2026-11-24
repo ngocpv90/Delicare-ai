@@ -318,6 +318,7 @@ public static partial class Seeds
         ("#/int-outbound", "Tin nhắn ra", "Tin nhắn đi"),
         ("#/kpi-definition", "Định nghĩa KPI", "Danh mục chỉ số"),
         ("#/kpi-daily", "KPI ngày", "Chỉ số theo ngày"),
+        ("#/kpi-daily", "Chỉ số theo ngày", "Chỉ số kinh doanh"), // UI-6.28 (D-109): chạy sau dòng trên
         ("#/kpi-monthly", "KPI tháng", "Chỉ số theo tháng"),
         ("#/kpi-refresh", "Nhật ký làm mới KPI", "Nhật ký tính chỉ số"),
         ("#/adm-company", "Công ty / Pháp nhân", "Công ty"),
@@ -365,7 +366,8 @@ public static partial class Seeds
     /// <remarks>UI-6.4 (D-83): + "#/crm-price-policy" – điều chỉnh giá làm trong tab giá của hợp đồng (phụ lục), script DB/scripts/UI64_hide_price_policy_menu.sql.</remarks>
     public static readonly string[] Ui6HiddenLinks = ["#/menu-assignment", "#/crm-price-policy", "#/menu-change-request", "#/crm-location", "#/scm-ingredient-cat", "#/menu-dish-cat", "#/scm-uom-conversion",
         "#/prod-order", "#/prod-output", "#/prod-workstation",
-        "#/cost-standard", "#/cost-actual", "#/group/05b"]; // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
+        "#/cost-standard", "#/cost-actual", "#/group/05b",
+        "#/kpi-monthly"]; // UI-6.28 (D-109): gộp vào Chỉ số kinh doanh // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
 
     public static string[] HiddenMenuLinks => ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Ui6HiddenLinks];
 

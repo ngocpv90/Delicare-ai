@@ -29,8 +29,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Phê duyệt › Đơn xin nghỉ | `wf-inbox?type=hr-leave` | — | — | Duyệt | — |
 | Phê duyệt › Đơn đổi ca | `wf-inbox?type=hr-swap` | — | — | Duyệt | — |
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
-| Điều hành › Chỉ số theo ngày | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
-| Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X (IX) |
+| Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X (IX) |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | X (IX) |
@@ -134,3 +133,7 @@ Mục **Điều hành › Giá vốn & lãi gộp** thay 3 màn cũ (Giá thành
 - Tab **Theo món**: giá chuẩn / phần, thực tế / phần, chênh lệch % (> 5 % đỏ, > 2 % cam), tiền chênh, nguyên nhân chính (nguyên liệu vượt định mức, mẻ QC loại); bấm món → Bảng sản xuất ngày gần nhất.
 - Tab **Xu hướng theo ngày**: biểu đồ tỷ lệ NL / DT theo ngày + đường ngưỡng (Xem bảng số dưới biểu đồ).
 - Giá thành chuẩn **chỉ do hệ thống tự tính** (khóa công thức, đổi giá NCC, Tính lại) – không thêm / sửa tay.
+
+
+## Chỉ số kinh doanh (UI-6.28, D-109) – `kpi-daily`
+Nhóm **Điều hành** nay gồm: **Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt** (Phê duyệt cuối nhóm, vẫn hiện số việc chờ duyệt). "Chỉ số theo ngày" và "Chỉ số theo tháng" gộp thành **Chỉ số kinh doanh** với công tắc **Theo ngày | Theo tháng** ở đầu màn (máy nhớ lựa chọn): Theo ngày = 30 ngày gần nhất, Theo tháng = 12 tháng (tháng đang chạy tính đến hôm nay). Chip lọc mảng, thẻ từng chỉ tiêu (số mới nhất, Đạt / Chưa đạt / Thiếu dữ liệu, biểu đồ nhỏ có vạch mục tiêu) giữ nguyên; nút **Làm mới số liệu** (admin) chạy đúng job theo chế độ đang xem. Chỉ tiêu tài chính hiện "Tỷ lệ nguyên liệu / doanh thu", "Giá vốn nguyên liệu / suất" (chưa có định mức nhân công / chung). Link cũ `#/kpi-monthly` mở chế độ tháng.

@@ -39,7 +39,8 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>Catalog 223: KPI tháng – fromMonth / toMonth "yyyy-MM" (trống = 12 tháng gần nhất, tối đa 36), branchId, domainCode.</summary>
-        [Permission("kpi-monthly", Services.Interface.PermissionAction.View)]
+        // UI-6.28 (D-109): "Chỉ số theo ngày" + "Chỉ số theo tháng" gộp thành "Chỉ số kinh doanh" (kpi-daily) – mục kpi-monthly ẩn.
+        [Permission("kpi-daily", Services.Interface.PermissionAction.View)]
         [HttpGet("GetMonthly")]
         public async Task<IActionResult> GetMonthly([FromQuery] KpiMonthlyRequest request)
         {
