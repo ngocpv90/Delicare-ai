@@ -603,3 +603,54 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
   .kpis[data-n] .kpi-sub{font-size:12px}
 }
 .drawer .kpis[data-n]:not([data-n="0"]):not([data-n="1"]),.modal-dialog .kpis[data-n]:not([data-n="0"]):not([data-n="1"]){grid-template-columns:repeat(2,minmax(0,1fr))!important}
+/* UI-6.5 (D-84): Dự báo suất ăn theo tuần – lưới khách → điểm giao · buổi × 7 ngày */
+.fw-week{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;flex-wrap:wrap}
+.fw-steps{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.fw-step{flex:1;min-width:220px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center}
+.fw-step>div{flex:1}.fw-step b,.fw-step .small{display:block}
+.fw-step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none}
+.fw-step .s1{background:#EFF5E5;color:#3F5A17}.fw-step .s2{background:#FDF0E6;color:#8A3B0B}.fw-step .s3{background:#E6F1FB;color:#1F4C80}
+.fw-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#6b756e;margin-bottom:10px}
+.fw-sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line);background:#fff}
+.fw-sw.pub{background:#EFF5E5;border-color:#B9CB97}.fw-sw.draft{background:#FDF0E6;border-color:#F2B98A}.fw-sw.reg{background:#E6F1FB;border-color:#A9C7EA}.fw-sw.miss{background:#F2F4F1;border-style:dashed}.fw-sw.lock{background:repeating-linear-gradient(45deg,#F2F4F1,#F2F4F1 3px,#fff 3px,#fff 6px)}
+.fw-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;table-layout:fixed;min-width:920px}
+.fw-table col.name{width:260px}.fw-table col.tot{width:84px}
+.fw-table th,.fw-table td{border-bottom:1px solid var(--line);padding:6px;vertical-align:middle;text-align:center}
+.fw-table th{background:#FAFBF8;font-size:12px;color:#6b756e;font-weight:600}
+.fw-table .l{text-align:left}
+.fw-table tr.fw-cus td{background:#F7F9F4;font-weight:700;cursor:pointer}
+.fw-chev{display:inline-block;transition:.15s;color:#6b756e}.fw-cus.closed .fw-chev{transform:rotate(-90deg)}
+.fw-more{margin-left:6px;font-weight:400}
+.fw-table tr.fw-sub td.l{padding-left:30px;font-weight:400}
+.fw-table .tot{font-weight:700}
+.fw-table tfoot td{font-weight:800;background:#FAFBF8}
+.fw-cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fw-q{width:72px;text-align:right;font-size:14px;font-weight:600;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#fff;color:inherit;-moz-appearance:textfield}
+.fw-q::-webkit-outer-spin-button,.fw-q::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.fw-q.pub{border-color:#B9CB97;background:#EFF5E5;color:#3F5A17}
+.fw-q.draft{border-color:#F2B98A;background:#FDF0E6;color:#8A3B0B}
+.fw-q.miss{border-style:dashed;background:#F2F4F1;color:#6b756e}
+.fw-q.reg{border-color:#A9C7EA;background:#E6F1FB;color:#1F4C80;cursor:default}
+.fw-q.lock{display:inline-block;border:0;background:transparent;color:#a3aca5;text-align:center}
+.fw-q:focus{outline:2px solid #B7D08A}
+.fw-hint{font-size:11px;color:#6b756e;white-space:nowrap}
+.fw-mob{display:none}
+@media(max-width:1100px){.fw-table col.name{width:190px}.fw-q{width:58px;font-size:13px}}
+@media(max-width:760px){
+  .fw-desk{display:none}.fw-mob{display:block}
+  .fw-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .fw-card-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .fw-card-r{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+  .fw-days{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px}
+  .fw-days label{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .fw-days .fw-q{width:100%;font-size:15px;height:40px}
+  .fw-step{min-width:100%}
+}
+.fw-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.fw-tools .input{max-width:260px}
+.fw-table td.fw-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fw-card-h{cursor:pointer}.fw-card.closed .fw-chev{transform:rotate(-90deg)}
+.fw-table col.tot{width:110px}.fw-table .fw-more{padding:0 6px;min-height:22px;margin-left:4px}
+@media(max-width:760px){
+  .fw-week{display:grid;grid-template-columns:auto 1fr auto;gap:6px;width:100%}.fw-week #fwLbl{text-align:center;font-size:14px}.fw-week #fwNow{grid-column:1/-1;justify-self:start}
+  .fw-step{flex-wrap:wrap}.fw-step .btn{width:100%;justify-content:center}
+}

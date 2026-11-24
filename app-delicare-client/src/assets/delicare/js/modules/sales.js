@@ -549,57 +549,132 @@
     if (g('#bkPdf')) g('#bkPdf').onclick = () => dl('BillingStatement/PrintStatement');
     if (bk.cus) draw();
   });
-  // ---------- Dự báo: pivot ----------
-  const fcs = { from: null, to: null };   // khoảng ngày của ma trận (chế độ API)
+  // ---------- Dự báo suất ăn theo tuần (UI-6.5, D-84) ----------
+  // Khách có hợp đồng hiệu lực tự hiện; khách → điểm giao · buổi × 7 ngày, một số mỗi ô. Sửa ô = lưu Nháp (Forecast/SaveCell, Enter / rời ô);
+  // ô khách đã đăng ký chỉ đọc (dùng số đăng ký); ngày ngoài hiệu lực hợp đồng khóa. Vòng tự động: T4 22:00 gợi ý → T5 08:00 báo → T6 12:00 nhắc → T6 16:00 tự công bố.
   const dayCount = (a, b) => Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / 86400000) + 1;
-  // Chế độ API: ma trận khách × ngày từ Forecast/GetMatrix – số đã công bố, kèm số bản nháp chưa công bố.
-  // FC-1.3 (D-76): ma trận kèm gợi ý của hệ thống (khoảng ≤ 31 ngày) – ô Nháp sửa trực tiếp, chữ nhỏ: TB 4 tuần + cùng thứ tuần trước, rê chuột xem 4 số.
-  const histTip = s => s && s.listHistory && s.listHistory.length ? 'Suất thực nhận cùng thứ: ' + s.listHistory.map(h => U.date(U.day(h.date)).slice(0, 5) + ': ' + (h.actual === null || h.actual === undefined ? '– (không có đơn)' : U.num(h.actual))).join(' · ') : '';
-  function saveDraft(dr, qty) {
-    if (!(qty >= 0)) return UI.toast('Số suất không được âm', 'err');
-    return Store.act('Forecast/Update', { method: 'PUT', form: { Id: dr.id, CustomerId: dr.customerId, ForecastDate: dr.date, DeliveryLocationId: dr.deliveryLocationId || null, ShiftId: dr.shiftId || null, MealType: dr.mealType || null, ForecastQuantity: qty, Note: dr.note || null }, tables: ['Forecast'], quiet: true })
-      .then(r => { if (r.ok) { bust(); UI.toast('Đã lưu ' + U.num(qty) + ' suất (bản Nháp)', 'ok'); } return r; });
+  const MEAL_VI = { SANG: 'Sáng', TRUA: 'Trưa', TOI: 'Tối', DEM: 'Đêm', CHIEU: 'Chiều', PHU: 'Phụ' };
+  const mealVi = t => MEAL_VI[String(t || '').toUpperCase()] || t || 'Chung';
+  const DOW = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const mondayOf = iso => { const d = new Date(iso + 'T00:00'), wd = d.getDay(); return U.addDays(iso, wd === 0 ? -6 : 1 - wd); };
+  const fw = { week: null, tab: 'week', closed: new Set(), data: null, key: null, q: '', init: null };
+  const nextMonday = () => U.addDays(mondayOf(Store.ctx.date), 7);
+  const FW_CLS = { PUBLISHED: 'pub', DRAFT: 'draft', REGISTERED: 'reg', MISSING: 'miss', LOCKED: 'lock', EMPTY: '' };
+  const has = v => v !== null && v !== undefined;
+  function fwTip(c) {
+    const h = (c.listHistory || []).map((v, i) => (c.listHistoryDate && c.listHistoryDate[i] ? U.date(U.day(c.listHistoryDate[i])).slice(0, 5) : 'tuần -' + (i + 1)) + ': ' + (has(v) ? U.num(v) : '– (không có đơn)'));
+    const st = { PUBLISHED: 'Đã công bố', DRAFT: 'Nháp – chưa công bố', REGISTERED: 'Khách đã đăng ký – dùng số này', MISSING: 'Thiếu dữ liệu – nhập tay', LOCKED: 'Ngoài hiệu lực hợp đồng', EMPTY: 'Chưa có số' }[c.status] || '';
+    return st + (has(c.published) && c.status === 'DRAFT' ? ' · đang công bố ' + U.num(c.published) : '') + (has(c.suggested) ? ' · gợi ý ' + U.num(c.suggested) : '') + (h.length ? '\nSuất thực nhận cùng thứ: ' + h.join(' · ') : '');
   }
-  function editDrafts(r, k, list) {
-    UI.modal({
-      title: 'Sửa dự báo Nháp – ' + esc(r.customerName || r.customerCode || '') + ' · ' + U.date(k), size: 'md',
-      body: `<table class="table dc-table"><thead><tr><th>Điểm giao</th><th>Loại suất</th><th class="num">Gợi ý</th><th class="num">Số suất</th></tr></thead><tbody>${list.map((d, i) => `<tr><td>${esc(d.deliveryLocationName || 'Chung cho khách')}</td><td>${esc(d.mealType || '')}</td><td class="num">${d.suggested === null || d.suggested === undefined ? '<span class="muted">nhập tay</span>' : U.num(d.suggested)}</td><td class="num"><input type="number" min="0" class="input" style="width:90px;text-align:right" data-i="${i}" value="${d.forecastQuantity}"></td></tr>`).join('')}</tbody></table>`,
-      foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="fdSave">${I('ok')} Lưu</button>`,
-      onMount: (m, close) => m.querySelector('#fdSave').onclick = async () => {
-        for (const inp of m.querySelectorAll('[data-i]')) { const d = list[+inp.dataset.i], v = Number(inp.value); if (inp.value === '' || v === d.forecastQuantity) continue; const x = await saveDraft({ ...d, customerId: r.customerId, date: k }, v); if (!x || !x.ok) return; }
-        close(); loadMatrix();
-      }
-    });
+  function fwHint(c) {
+    if (c.status === 'LOCKED') return 'ngoài hợp đồng';
+    if (c.status === 'REGISTERED') return 'đã đăng ký';
+    if (c.status === 'MISSING') return 'thiếu dữ liệu';
+    return has(c.average) ? 'TB ' + U.num(c.average) + (c.draftEdited ? ' · đã sửa' : '') : (c.draftEdited ? 'đã sửa' : '&nbsp;');
   }
-  function loadMatrix() {
-    const withSug = dayCount(fcs.from, fcs.to) <= 31;
-    const key = fcs.key = 'fc|' + fcs.from + '|' + fcs.to + '|' + (Store.ctx.branch || '');
-    cq(key, () => Store.query('Forecast/GetMatrix', { From: fcs.from, To: fcs.to, BranchId: Store.ctx.branch, WithSuggestion: withSug })).then(x => {
-      const box = document.getElementById('fcMx'); if (!box || fcs.key !== key) return;
-      if (!x.ok || !x.data) { box.innerHTML = failBox(x.message); return; }
-      const d = x.data, days = (d.dates || []).map(U.day), rows = d.rows || [], tot = d.totals || {};
-      if (!rows.length) { box.innerHTML = '<div class="empty">Chưa có dự báo trong khoảng ngày này – bấm <b>Tạo dự báo gợi ý</b> để hệ thống tính từ lịch sử</div>'; return; }
-      const canEdit = Store.perm('crm-forecast').edit !== false;
-      const cell = (r, ri, k) => {
-        const pv = (r.values || {})[k], drafts = (r.drafts || {})[k] || [], s = (r.suggest || {})[k], dv = (r.draftValues || {})[k];
-        const gray = s && s.insufficient && !drafts.length && !pv;
-        const pub = pv ? `<div><b>${U.num(pv)}</b>${drafts.length ? '' : ''}</div>` : '';
-        let draft = '';
-        if (drafts.length === 1 && canEdit) draft = `<div class="row-flex" style="justify-content:flex-end;gap:3px;flex-wrap:nowrap">${drafts[0].edited && drafts[0].suggested !== null && drafts[0].suggested !== undefined ? '<span title="Đã sửa khác số gợi ý" style="color:var(--orange,#E8833A);font-size:18px;line-height:1">•</span>' : ''}<input type="number" min="0" class="input" style="width:72px;text-align:right;padding:2px 6px;height:28px" data-fc="${ri}|${k}" value="${drafts[0].forecastQuantity}" title="Nháp – sửa rồi Enter / rời ô để lưu"></div>`;
-        else if (drafts.length) draft = `<button class="btn xs" data-fcm="${ri}|${k}" title="${drafts.length} dòng Nháp (điểm giao / loại suất) – bấm để sửa">nháp ${U.num(dv)}${drafts.some(z => z.edited) ? ' •' : ''}</button>`;
-        const sub = s ? (s.insufficient ? '<div class="small muted">Thiếu dữ liệu</div>' : `<div class="small muted">TB ${U.num(s.average)}${s.lastWeek !== null && s.lastWeek !== undefined ? ' · tuần trước ' + U.num(s.lastWeek) : ''}${s.partlyInsufficient ? ' · thiếu 1 phần' : ''}</div>`) : '';
-        const empty = !pub && !draft && !sub ? '<span class="muted">–</span>' : '';
-        return `<td class="num" style="${gray ? 'background:var(--bg-soft,#F2F4F1);' : ''}white-space:nowrap" title="${esc(histTip(s))}">${pub}${draft}${sub}${empty}</td>`;
+  function fwInput(c, key, canEdit) {
+    if (c.status === 'LOCKED') return '<span class="fw-q lock">–</span>';
+    const ro = c.status === 'REGISTERED' || !canEdit;
+    return `<input class="fw-q ${FW_CLS[c.status] || ''}" type="number" min="0" inputmode="numeric" data-fw="${key}" value="${has(c.value) ? c.value : ''}" ${c.status === 'MISSING' ? 'placeholder="nhập"' : ''} ${ro ? 'readonly' : ''} aria-label="${esc(fwTip(c).split('\n')[0])}">`;
+  }
+  function fwDraw(el, f) {
+    const box = el.querySelector('#fwBody'), d = fw.data; if (!box || !d) return;
+    const canEdit = Store.perm(f.id).edit !== false, days = (d.listDate || []).map(U.day);
+    const head = days.map(k => `<th>${DOW[new Date(k + 'T00:00').getDay()]} ${U.date(k).slice(0, 5)}</th>`).join('');
+    const all = d.listCustomer || [], qq = U.norm ? U.norm(fw.q) : fw.q.toLowerCase(), nm = c => (c.customerName || '') + ' ' + (c.customerCode || '');
+    const cus = qq ? all.filter(c => (U.norm ? U.norm(nm(c)) : nm(c).toLowerCase()).includes(qq)) : all;
+    if (fw.init !== fw.week) { fw.init = fw.week; fw.closed = new Set(all.length > 10 ? all.map(c => c.customerId) : []); }
+    const tools = `<div class="fw-tools"><input class="input" id="fwQ" placeholder="Lọc khách hàng…" value="${esc(fw.q)}"><button class="btn sm" id="fwOpenAll">Mở tất cả</button><button class="btn sm" id="fwCloseAll">Thu gọn tất cả</button><span class="small muted">${U.num(cus.length)} / ${U.num(all.length)} khách · bấm dòng khách để mở / thu gọn</span></div>`;
+    if (!all.length) { box.innerHTML = '<div class="empty">Tuần này không có khách nào có hợp đồng hiệu lực.</div>'; return; }
+    const sum = a => (a || []).reduce((s, v) => s + (Number(v) || 0), 0);
+    const desk = `<div class="table-wrap"><table class="fw-table"><colgroup><col class="name">${days.map(() => '<col>').join('')}<col class="tot"></colgroup><thead><tr><th class="l">Khách hàng · điểm giao · buổi</th>${head}<th>Tổng</th></tr></thead><tbody>${cus.map((c, ci) => {
+      const closed = fw.closed.has(c.customerId);
+      return `<tr class="fw-cus${closed ? ' closed' : ''}" data-fwc="${ci}"><td class="l fw-name"><span class="fw-chev">▾</span> ${esc(c.customerName || c.customerCode || '')} <span class="small muted">(${c.listRow.length})</span></td>${(c.listTotal || []).map(v => `<td class="tot">${U.num(v)}</td>`).join('')}<td class="tot">${U.num(sum(c.listTotal))}${canEdit ? ` <button class="btn xs fw-more" data-fws="${ci}" title="Tạo lại gợi ý cho riêng khách này" aria-label="Tạo lại gợi ý cho riêng khách này">⋯</button>` : ''}</td></tr>`
+        + (closed ? '' : c.listRow.map((r, ri) => `<tr class="fw-sub"><td class="l">${esc(r.deliveryLocationName || 'Chung cho khách')} · ${esc(mealVi(r.mealType))}</td>${r.listCell.map((x, di) => `<td title="${esc(fwTip(x))}"><div class="fw-cell">${fwInput(x, ci + '|' + ri + '|' + di, canEdit)}<span class="fw-hint">${fwHint(x)}</span></div></td>`).join('')}<td class="tot">${U.num(sum(r.listCell.map(x => x.value)))}</td></tr>`).join(''));
+    }).join('')}</tbody><tfoot><tr class="fw-foot"><td class="l">Tổng cộng</td>${(d.listTotal || []).map(v => `<td>${U.num(v)}</td>`).join('')}<td>${U.num(d.totalWeek)}</td></tr></tfoot></table></div>`;
+    const mob = `<div class="fw-mob">${cus.map((c, ci) => `<div class="fw-card${fw.closed.has(c.customerId) ? ' closed' : ''}"><div class="fw-card-h" data-fwm="${ci}"><b><span class="fw-chev">▾</span> ${esc(c.customerName || c.customerCode || '')}</b><span class="small muted">${U.num(sum(c.listTotal))} suất${canEdit ? ` <button class="btn xs fw-more" data-fws="${ci}" title="Tạo lại gợi ý cho riêng khách này">⋯ Gợi ý</button>` : ''}</span></div>${fw.closed.has(c.customerId) ? '' : c.listRow.map((r, ri) => `<div class="fw-card-r"><div class="small"><b>${esc(r.deliveryLocationName || 'Chung cho khách')} · ${esc(mealVi(r.mealType))}</b></div><div class="fw-days">${r.listCell.map((x, di) => `<label title="${esc(fwTip(x))}"><span class="small muted">${DOW[new Date(days[di] + 'T00:00').getDay()]} ${U.date(days[di]).slice(0, 5)}</span>${fwInput(x, ci + '|' + ri + '|' + di, canEdit)}<span class="fw-hint">${fwHint(x)}</span></label>`).join('')}</div></div>`).join('')}</div>`).join('')}</div>`;
+    box.innerHTML = tools + `<div class="fw-legend"><span><i class="fw-sw pub"></i>Đã công bố</span><span><i class="fw-sw draft"></i>Nháp (chưa công bố)</span><span><i class="fw-sw reg"></i>Khách đã đăng ký (dùng số này)</span><span><i class="fw-sw miss"></i>Thiếu dữ liệu – nhập tay</span><span><i class="fw-sw lock"></i>Ngoài hiệu lực hợp đồng</span><span>Chữ nhỏ dưới ô: TB 4 tuần · rê chuột xem 4 số</span></div><div class="fw-desk">${desk}</div>${mob}`;
+    const q = box.querySelector('#fwQ'); q.oninput = () => { fw.q = q.value; clearTimeout(fw.t); fw.t = setTimeout(() => { fwDraw(el, f); const n = el.querySelector('#fwQ'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 250); };
+    box.querySelector('#fwOpenAll').onclick = () => { cus.forEach(c => fw.closed.delete(c.customerId)); fwDraw(el, f); };
+    box.querySelector('#fwCloseAll').onclick = () => { cus.forEach(c => fw.closed.add(c.customerId)); fwDraw(el, f); };
+    box.querySelectorAll('tr.fw-cus').forEach(tr => tr.onclick = e => { if (e.target.closest('button')) return; const id = cus[+tr.dataset.fwc].customerId; fw.closed.has(id) ? fw.closed.delete(id) : fw.closed.add(id); fwDraw(el, f); });
+    box.querySelectorAll('[data-fwm]').forEach(h => h.onclick = e => { if (e.target.closest('button')) return; const id = cus[+h.dataset.fwm].customerId; fw.closed.has(id) ? fw.closed.delete(id) : fw.closed.add(id); fwDraw(el, f); });
+    box.querySelectorAll('[data-fws]').forEach(b => b.onclick = () => fwSuggest(el, f, cus[+b.dataset.fws]));
+    box.querySelectorAll('input[data-fw]:not([readonly])').forEach(inp => {
+      const [ci, ri, di] = inp.dataset.fw.split('|').map(Number), c = cus[ci], r = c.listRow[ri], x = r.listCell[di];
+      const save = () => {
+        const raw = inp.value.trim(), q = raw === '' ? null : Number(raw);
+        if (q === (has(x.value) ? Number(x.value) : null)) return;
+        if (q !== null && !(q >= 0)) { UI.toast('Số suất không được âm', 'err'); inp.value = has(x.value) ? x.value : ''; return; }
+        inp.disabled = true;
+        Store.act('Forecast/SaveCell', { json: { customerId: c.customerId, deliveryLocationId: r.deliveryLocationId || null, mealType: r.mealType || null, date: U.day(x.date), quantity: q }, quiet: false }).then(z => {
+          inp.disabled = false; if (!z.ok) { inp.value = has(x.value) ? x.value : ''; return; }
+          bust(); UI.toast(q === null ? 'Đã xóa bản Nháp của ô' : 'Đã lưu ' + U.num(q) + ' suất (bản Nháp)', 'ok'); fwLoad(el, f, true);
+        });
       };
-      box.innerHTML = `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Khách hàng</th>${days.map(k => `<th class="num">${U.date(k).slice(0, 5)}</th>`).join('')}<th class="num">Tổng</th></tr></thead><tbody>${rows.map((r, ri) => `<tr><td>${esc(r.customerName || r.customerCode || '')}</td>${days.map(k => cell(r, ri, k)).join('')}<td class="num"><b>${U.num(r.total)}</b></td></tr>`).join('')}<tr><td><b>Tổng</b></td>${days.map(k => `<td class="num"><b>${U.num(tot[k] || 0)}</b></td>`).join('')}<td class="num"><b>${U.num(d.grandTotal)}</b></td></tr></tbody></table></div><div class="small muted mt">Số đậm = dự báo đã công bố · ô nhập = bản Nháp (sửa trực tiếp) · <span style="color:var(--orange,#E8833A)">•</span> = đã sửa khác số gợi ý · "TB" = trung bình suất thực nhận cùng thứ 4 tuần gần nhất (rê chuột xem từng tuần) · ô xám = thiếu dữ liệu (< 2 tuần có đơn), nhập tay.</div>`;
-      box.querySelectorAll('[data-fc]').forEach(inp => {
-        const [ri, k] = inp.dataset.fc.split('|'), r = rows[+ri], dr = r.drafts[k][0];
-        const go = () => { const v = Number(inp.value); if (inp.value === '' || v === dr.forecastQuantity) return; saveDraft({ ...dr, customerId: r.customerId, date: k }, v).then(z => { if (z && z.ok) { dr.forecastQuantity = v; loadMatrix(); } }); };
-        inp.onchange = go; inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
-      });
-      box.querySelectorAll('[data-fcm]').forEach(b => { const [ri, k] = b.dataset.fcm.split('|'), r = rows[+ri]; b.onclick = () => editDrafts(r, k, r.drafts[k]); });
+      inp.onchange = save; inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } };
     });
-    loadAccuracy();
+  }
+  function fwHead(el, f) {
+    const d = fw.data, h = el.querySelector('#fwHead'); if (!h) return;
+    const nm = nextMonday(), rel = fw.week === nm ? ' (tuần sau)' : fw.week === U.addDays(nm, -7) ? ' (tuần này)' : '';
+    h.querySelector('#fwLbl').textContent = 'Tuần ' + U.date(fw.week).slice(0, 5) + ' – ' + U.date(U.addDays(fw.week, 6)) + rel;
+    const draft = d ? d.draftCells : 0, canEdit = Store.perm(f.id).edit !== false;
+    h.querySelector('#fwDraftN').textContent = U.num(draft) + ' ô Nháp chờ công bố';
+    const pb = h.querySelector('#fwPub'); pb.disabled = !canEdit || !draft; pb.title = !canEdit ? 'Tài khoản không có quyền Sửa' : !draft ? 'Không còn ô Nháp' : '';
+    h.querySelector('#fwSug').disabled = !canEdit;
+    const k = el.querySelector('#fwKpis'); if (!k) return;
+    const pct = v => has(v) ? U.num(v) + '%' : '–';
+    k.innerHTML = d ? UI.kpis([
+      UI.kpi('Tổng suất tuần', U.num(d.totalWeek), U.num((d.listCustomer || []).length) + ' khách', 'calc', 'green'),
+      UI.kpi('Ô Nháp', U.num(d.draftCells), 'chưa công bố · đã công bố ' + U.num(d.publishedCells) + ' · đã đăng ký ' + U.num(d.registeredCells), 'edit', d.draftCells ? 'orange' : 'green'),
+      UI.kpi('Ô thiếu dữ liệu', U.num(d.missingCells), 'nhập tay – dưới 2 tuần có đơn', 'alert', d.missingCells ? 'red' : 'green'),
+      UI.kpi('Sai số 4 tuần', pct(d.mape4Weeks), 'dự báo so với thực nhận', 'chart', 'blue')], 'compact') : '';
+  }
+  function fwLoad(el, f, force) {
+    const key = fw.key = 'fw|' + fw.week + '|' + (Store.ctx.branch || '');
+    if (force) bust();
+    const body = el.querySelector('#fwBody'); if (body && !fw.data) body.innerHTML = '<div class="muted small">Đang tải…</div>';
+    cq(key, () => Store.query('Forecast/GetWeek', { WeekStart: fw.week, BranchId: Store.ctx.branch })).then(x => {
+      if (fw.key !== key || !el.isConnected) return;
+      if (!x.ok || !x.data) { fw.data = null; fwHead(el, f); const b = el.querySelector('#fwBody'); if (b) b.innerHTML = failBox(x.message); return; }
+      fw.data = x.data; fwHead(el, f); if (fw.tab === 'week') fwDraw(el, f);
+    });
+  }
+  function fwSuggest(el, f, cus) {
+    const who = cus ? '<b>' + esc(cus.customerName || cus.customerCode || '') + '</b>' : 'mọi khách có hợp đồng hiệu lực';
+    UI.confirm(`Tạo gợi ý tuần ${U.date(fw.week).slice(0, 5)} – ${U.date(U.addDays(fw.week, 6)).slice(0, 5)} cho ${who}?<div class="small muted mt">Hệ thống lấy trung bình suất thực nhận cùng thứ 4 tuần gần nhất, ghi vào ô Nháp. Ô người đã sửa và ô khách đã đăng ký được giữ nguyên.</div>`, () =>
+      Store.act('Forecast/SuggestWeek', { form: { WeekStart: fw.week, CustomerId: cus ? cus.customerId : null } }).then(r => {
+        if (!r.ok) return; const d = r.data || {};
+        UI.toast('Đã tạo ' + U.num((d.created || 0) + (d.refreshed || 0)) + ' ô gợi ý' + (d.skippedEdited ? ' · giữ ' + U.num(d.skippedEdited) + ' ô đã sửa' : '') + (d.insufficientData ? ' · ' + U.num(d.insufficientData) + ' ô thiếu dữ liệu' : ''), 'ok');
+        fwLoad(el, f, true);
+      }), { ok: 'Tạo gợi ý', title: 'Tạo gợi ý dự báo' });
+  }
+  function fwPublish(el, f) {
+    const d = fw.data || {};
+    UI.confirm(`Công bố <b>${U.num(d.draftCells || 0)}</b> ô Nháp tuần ${U.date(fw.week).slice(0, 5)} – ${U.date(U.addDays(fw.week, 6)).slice(0, 5)}?<div class="small muted mt">Số đã công bố cũ cùng ô được thay thế. Ô khách đã đăng ký giữ số đăng ký, không công bố. Ô thiếu dữ liệu để trống.</div>`, () =>
+      Store.act('Forecast/PublishWeek', { form: { WeekStart: fw.week } }).then(r => {
+        if (!r.ok) return; const x = r.data || {};
+        UI.toast('Đã công bố ' + U.num(x.published || 0) + ' ô' + (x.skippedRegistered ? ' · bỏ qua ' + U.num(x.skippedRegistered) + ' ô đã đăng ký' : '') + (x.missing ? ' · ' + U.num(x.missing) + ' ô còn trống' : ''), 'ok');
+        fwLoad(el, f, true);
+      }), { ok: 'Công bố', title: 'Công bố dự báo tuần' });
+  }
+  function fwHistory(el, f) {
+    const p = el.querySelector('#fwBody'); if (!p) return;
+    p.innerHTML = '<div class="small muted mb">Các dòng dự báo đã công bố (mới nhất trước). Dòng ghi "Hệ thống tự công bố" do hệ thống công bố lúc 16:00 thứ Sáu.</div><div id="fwHist"></div>';
+    const cusName = id => { const c = Store.get('Customer', id); return c ? (c.DisplayName || c.Name || c.Code) : ''; };
+    const locName = id => { const l = id && Store.get('CustomerDeliveryLocation', id); return l ? l.Name : 'Chung cho khách'; };
+    UI.table(p.querySelector('#fwHist'), {
+      cols: [{ k: 'ForecastDate', label: 'Ngày', render: r => U.date(U.day(r.ForecastDate)) }, { k: 'CustomerId', label: 'Khách hàng', render: r => esc(cusName(r.CustomerId)) }, { k: 'DeliveryLocationId', label: 'Điểm giao', render: r => esc(locName(r.DeliveryLocationId)) }, { k: 'MealType', label: 'Buổi', render: r => esc(mealVi(r.MealType)) }, { k: 'ForecastQuantity', label: 'Số suất', num: true, render: r => U.num(r.ForecastQuantity) }, { k: 'VersionNo', label: 'Phiên bản', num: true }, { k: 'Note', label: 'Ghi chú', render: r => esc(r.Note || '') }],
+      rows: () => Store.rows('Forecast').filter(r => r.Status === 'Published').sort((a, b) => String(b.ModifiedDate || b.CreatedDate || '').localeCompare(String(a.ModifiedDate || a.CreatedDate || ''))), pageSize: 15
+    });
+  }
+  function fwTab(el, f) {
+    el.querySelectorAll('[data-fwtab]').forEach(t => t.classList.toggle('active', t.dataset.fwtab === fw.tab));
+    const p = el.querySelector('#fwBody'); if (!p) return;
+    if (fw.tab === 'week') { if (fw.data) fwDraw(el, f); else fwLoad(el, f); }
+    else if (fw.tab === 'acc') { p.innerHTML = '<div id="fcAcc"><div class="muted small">Đang tải…</div></div>'; loadAccuracy(); }
+    else fwHistory(el, f);
   }
   // FC-1.5: độ chính xác dự báo – 4 tuần đã qua gần nhất, theo khách (sai số % = Σ|dự báo − thực nhận| / Σ thực nhận).
   function loadAccuracy() {
@@ -611,30 +686,6 @@
       const pct = v => v === null || v === undefined ? '–' : U.num(v) + '%';
       el.innerHTML = `<div class="kpis mb">${UI.kpi('Sai số dự báo', pct(a.errorPct), U.date(U.day(a.from)).slice(0, 5) + ' – ' + U.date(U.day(a.to)).slice(0, 5), 'calc', a.errorPct > warn ? 'red' : 'green')}${UI.kpi('Lệch chung', pct(a.biasPct), a.biasPct > 0 ? 'dự báo cao' : a.biasPct < 0 ? 'dự báo thấp' : '', 'chart', 'blue')}${UI.kpi('Khách sai số > ' + U.num(warn) + '%', U.num(a.customerOverWarning || 0), '/ ' + U.num(a.customerCount || 0) + ' khách', 'alert', a.customerOverWarning ? 'orange' : 'green')}</div>`
         + (rows.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Khách hàng</th><th class="num">Số ngày</th><th class="num">Dự báo</th><th class="num">Thực nhận</th><th class="num">Sai số</th><th class="num">Lệch</th></tr></thead><tbody>${rows.map(r => { const wk = (a.listWeek || []).filter(w => w.customerId === r.customerId); return `<tr title="${esc(wk.map(w => 'Tuần ' + U.date(U.day(w.weekStart)).slice(0, 5) + ': ' + pct(w.errorPct)).join(' · '))}"><td>${esc(r.customerName || r.customerCode || '')}</td><td class="num">${r.days}</td><td class="num">${U.num(r.forecast)}</td><td class="num">${U.num(r.actual)}</td><td class="num">${r.errorPct > warn ? `<b style="color:var(--red,#D64545)">${pct(r.errorPct)}</b>` : pct(r.errorPct)}</td><td class="num">${pct(r.biasPct)}</td></tr>`; }).join('')}</tbody></table></div><div class="small muted mt">So dự báo đã công bố với suất thực nhận (đối soát → POD → số đặt đã chốt). Rê chuột vào dòng để xem từng tuần.</div>` : '<div class="muted small">Chưa có dự báo đã công bố cho các ngày đã qua.</div>');
-    });
-  }
-  // FC-1.1 / 1.2: hệ thống tính dự báo gợi ý → bản Nháp; có Nháp người đã sửa → hỏi ghi đè.
-  function suggestForecast() {
-    const cus = Store.rows('Customer').filter(c => c.Status !== 'Inactive');
-    const t = Store.ctx.date, wd = new Date(t + 'T00:00').getDay(), mon = U.addDays(t, ((8 - wd) % 7) || 7);
-    UI.modal({
-      title: 'Tạo dự báo gợi ý', sub: 'Hệ thống tính trung bình suất thực nhận cùng thứ trong 4 tuần gần nhất → ghi bản Nháp để Kinh doanh sửa rồi Công bố', size: 'sm',
-      body: `<div class="field"><label>Từ ngày <span class="req">*</span></label><input type="date" class="input" id="fsFrom" value="${mon}"></div>
-        <div class="field"><label>Đến ngày <span class="req">*</span></label><input type="date" class="input" id="fsTo" value="${U.addDays(mon, 13)}"></div>
-        <div class="field"><label>Khách hàng</label><select class="select" id="fsCus">${opts(cus, c => c.DisplayName || c.Code, 'Mọi khách có hợp đồng hiệu lực')}</select></div>
-        <div class="small muted">Tối đa 14 ngày. Tuần khách nghỉ không tính vào trung bình; dưới 2 tuần có đơn → "Thiếu dữ liệu" (nhập tay). Bản Nháp người đã sửa được giữ, trừ khi anh / chị chọn ghi đè.</div>`,
-      foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="fsGo">${I('calc')} Tạo gợi ý</button>`,
-      onMount: (m, close) => m.querySelector('#fsGo').onclick = () => {
-        const a = m.querySelector('#fsFrom').value, b = m.querySelector('#fsTo').value, cid = m.querySelector('#fsCus').value || null;
-        if (!a || !b || b < a || dayCount(a, b) > 14) return UI.toast('Chọn khoảng ngày hợp lệ (tối đa 14 ngày)', 'err');
-        const run = over => Store.act('Forecast/Suggest', { form: { From: a, To: b, CustomerId: cid, Overwrite: over }, tables: ['Forecast'] }).then(r => {
-          if (!r.ok) return; bust(); const d = r.data || {};
-          const done = () => { close(); fcs.from = a; fcs.to = b; UI.toast(r.message || 'Đã tạo dự báo gợi ý', 'ok'); APP.refresh(); };
-          done();
-          if (!over && d.skippedEdited) UI.confirm(`Đã ghi <b>${U.num((d.created || 0) + (d.refreshed || 0))}</b> dòng gợi ý. Có <b>${U.num(d.skippedEdited)}</b> dòng Nháp người đã sửa / nhập tay – <b>Ghi đè bản nháp?</b>`, () => run(true), { ok: 'Ghi đè', danger: true, title: 'Ghi đè bản nháp?' });
-        });
-        run(false);
-      }
     });
   }
   // Chế độ API: nhập dự báo theo khách × loại suất × khoảng ngày (Forecast/Import) → bản Nháp phiên bản mới.
@@ -681,37 +732,26 @@
       }
     });
   }
-  // Chế độ API: công bố các bản dự báo Nháp trong khoảng ngày (Forecast/Publish) – bản đã công bố cũ cùng khóa bị thay thế.
-  function publishForecast() {
-    const cus = Store.rows('Customer');
-    UI.modal({
-      title: 'Công bố dự báo', size: 'sm',
-      body: `<p style="margin-top:0">Các bản dự báo <b>Nháp</b> trong khoảng ngày sẽ chuyển sang <b>Đã công bố</b>; bản đã công bố cũ cùng khách / điểm giao / ngày / ca / loại suất sẽ bị thay thế. Thao tác không hoàn tác được.</p>
-        <div class="field"><label>Từ ngày <span class="req">*</span></label><input type="date" class="input" id="fpFrom" value="${fcs.from || Store.ctx.date}"></div>
-        <div class="field"><label>Đến ngày <span class="req">*</span></label><input type="date" class="input" id="fpTo" value="${fcs.to || U.addDays(Store.ctx.date, 13)}"></div>
-        <div class="field"><label>Khách hàng</label><select class="select" id="fpCus">${opts(cus, c => c.DisplayName || c.Code, 'Tất cả khách hàng')}</select></div>`,
-      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="fpOk">Công bố</button>',
-      onMount: (m, close) => m.querySelector('#fpOk').onclick = () => {
-        const a = m.querySelector('#fpFrom').value, b = m.querySelector('#fpTo').value;
-        if (!a || !b || b < a) return UI.toast('Chọn khoảng ngày hợp lệ', 'err');
-        Store.act('Forecast/Publish', { form: { From: a, To: b, ListCustomerId: m.querySelector('#fpCus').value || null }, tables: ['Forecast'] })
-          .then(r => { if (!r.ok) return; bust(); close(); const d = r.data || {}; UI.toast('Đã công bố ' + U.num(d.published || 0) + ' dòng dự báo' + (d.superseded ? ' · thay thế ' + U.num(d.superseded) + ' dòng cũ' : ''), 'ok'); APP.refresh(); });
-      }
-    });
-  }
   APP.register('crm-forecast', (el, f) => {
     if (Store.isLive) {
       const perm = Store.perm(f.id);
-      if (!fcs.from) { fcs.from = Store.ctx.date; fcs.to = U.addDays(Store.ctx.date, 13); }
-      APP.genericList(el, f, { top: `<div class="card panel mb"><div class="spread mb"><div class="panel-title">Ma trận dự báo suất ăn theo khách hàng × ngày</div><div class="row-flex"><span class="small muted">Từ</span><input type="date" class="input" id="fcFrom" value="${fcs.from}" style="width:150px"><span class="small muted">đến</span><input type="date" class="input" id="fcTo" value="${fcs.to}" style="width:150px"></div></div><div id="fcMx"><div class="muted small">Đang tải…</div></div></div><div class="card panel mb"><div class="panel-title mb">Độ chính xác dự báo – 4 tuần qua</div><div id="fcAcc"><div class="muted small">Đang tải…</div></div></div>` });
-      const add = el.querySelector('[data-act="add"]'), ha = el.querySelector('.heading-actions');
-      // Forecast/Insert bị backend chặn → nút tạo mới chuyển thành nhập hàng loạt (quyền Nhập).
-      if (add) { add.innerHTML = `${I('plus')} Nhập dự báo`; add.disabled = perm.imp === false; add.title = perm.imp === false ? 'Tài khoản không có quyền Nhập' : ''; add.onclick = importForecast; }
-      if (ha && perm.edit !== false && !ha.querySelector('#fcSug')) { ha.insertAdjacentHTML('afterbegin', `<button class="btn primary" id="fcSug">${I('calc')} Tạo dự báo gợi ý</button>`); ha.querySelector('#fcSug').onclick = suggestForecast; }
-      if (ha && perm.edit !== false && !ha.querySelector('#fcPub')) { ha.insertAdjacentHTML('beforeend', `<button class="btn orange" id="fcPub">${I('approve')} Công bố</button>`); ha.querySelector('#fcPub').onclick = publishForecast; }
-      const onRange = () => { const a = el.querySelector('#fcFrom').value, b = el.querySelector('#fcTo').value; if (!a || !b) return; if (b < a || dayCount(a, b) > 62) return UI.toast('Khoảng ngày không hợp lệ (tối đa 62 ngày)', 'err'); fcs.from = a; fcs.to = b; document.getElementById('fcMx').innerHTML = '<div class="muted small">Đang tải…</div>'; loadMatrix(); };
-      el.querySelector('#fcFrom').onchange = onRange; el.querySelector('#fcTo').onchange = onRange;
-      return loadMatrix();
+      if (!fw.week) fw.week = nextMonday();
+      el.innerHTML = APP.header(f, perm.imp === false ? '' : `<button class="btn" id="fwImp">${I('plus')} Nhập dự báo nhiều ngày</button>`, { noNote: true })
+        + `<div class="notice info mb">${I('help')}<div>Ước số suất từng khách cho tuần tới khi khách chưa gửi đăng ký – dùng để mua nguyên liệu sớm. Khách gửi đăng ký rồi thì hệ thống dùng số đăng ký. Hệ thống tự tạo gợi ý 22:00 thứ Tư, nhắc 12:00 thứ Sáu và tự công bố bản Nháp lúc 16:00 thứ Sáu.</div></div>
+        <div class="card panel mb" id="fwHead"><div class="spread"><div class="fw-week"><button class="btn sm" id="fwPrev" title="Tuần trước" aria-label="Tuần trước">◀</button><span id="fwLbl"></span><button class="btn sm" id="fwNext" title="Tuần kế tiếp" aria-label="Tuần kế tiếp">▶</button><button class="btn sm" id="fwNow">Tuần sau</button></div></div>
+          <div class="fw-steps"><div class="fw-step"><span class="n s1">1</span><div><b>Tạo gợi ý</b><span class="small muted">Hệ thống lấy TB 4 tuần cùng thứ</span></div><button class="btn sm" id="fwSug">${I('calc')} Tạo gợi ý tuần này</button></div>
+          <div class="fw-step"><span class="n s2">2</span><div><b>Sửa ô cần</b><span class="small muted">Nghỉ lễ, tăng ca, khách mới – Enter / rời ô để lưu</span></div></div>
+          <div class="fw-step"><span class="n s3">3</span><div><b>Công bố</b><span class="small muted" id="fwDraftN"></span></div><button class="btn orange sm" id="fwPub">${I('approve')} Công bố tuần này</button></div></div>
+          <div id="fwKpis"></div></div>
+        <div class="card panel"><div class="tabs"><button class="tab" data-fwtab="week">Dự báo tuần</button><button class="tab" data-fwtab="acc">Độ chính xác</button><button class="tab" data-fwtab="hist">Lịch sử công bố</button></div><div id="fwBody"></div></div>`;
+      const g = s => el.querySelector(s);
+      const go = wk => { fw.week = wk; fw.data = null; fwHead(el, f); fw.tab = 'week'; fwTab(el, f); };
+      g('#fwPrev').onclick = () => go(U.addDays(fw.week, -7)); g('#fwNext').onclick = () => go(U.addDays(fw.week, 7)); g('#fwNow').onclick = () => go(nextMonday());
+      g('#fwSug').onclick = () => fwSuggest(el, f, null); g('#fwPub').onclick = () => fwPublish(el, f);
+      if (g('#fwImp')) g('#fwImp').onclick = importForecast;
+      el.querySelectorAll('[data-fwtab]').forEach(t => t.onclick = () => { fw.tab = t.dataset.fwtab; fwTab(el, f); });
+      fwHead(el, f); fwTab(el, f); fwLoad(el, f);
+      return;
     }
     const rows = Store.rows('Forecast'); const days = [...new Set(rows.map(r => U.day(r.ForecastDate)))].sort();
     const cus = Store.rows('Customer');

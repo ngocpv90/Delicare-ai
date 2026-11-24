@@ -1,6 +1,48 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.5 (D-84) DONE – Dự báo suất ăn theo tuần + vòng tự động** (nhánh `feat/UI-6.5-forecast-week`). Không thêm bảng / cột; không có script DB (không đổi menu / quyền).
+  - **BE:**
+    - API `Forecast/GetWeek` (quyền Xem `crm-forecast`), `SaveCell` (JSON), `SuggestWeek`, `PublishWeek` (form).
+    - Khách có hợp đồng hiệu lực tự hiện, kể cả khi chưa có dự báo. Dòng = điểm giao × loại suất.
+    - Trạng thái ô: Đã công bố / Nháp / Đã đăng ký (đơn Đã xác nhận trở lên; chỉ đọc, dùng số đăng ký) / Thiếu dữ liệu / Ngoài hợp đồng (khóa) / Trống.
+    - Sửa ô = lưu Nháp; để trống = xóa Nháp; chặn ngày đã qua và ô đã đăng ký.
+    - Công bố tuần bỏ qua ô đã đăng ký. Sai số 4 tuần lấy từ `GetAccuracy`.
+    - 4 job:
+      - `ForecastAutoSuggest` T4 22:00;
+      - `ForecastReadyNotice` T5 08:00;
+      - `ForecastPublishReminder` T6 12:00;
+      - `ForecastAutoPublish` T6 16:00 (ghi chú "Hệ thống tự công bố", báo danh sách ô trống).
+    - Bot Điều hành gửi tin cho NV KD phụ trách khách + SAL-HEAD. Bật / tắt và chọn thứ chạy bằng `BusinessRules:Forecast*`.
+  - **FE (`sales.js` `crm-forecast`, theo `forecast-week-mockup.html`):**
+    - Chọn tuần ◀ ▶ (mặc định tuần sau), dòng giải thích, 3 bước (Tạo gợi ý / Sửa ô cần / Công bố + số ô Nháp), 4 KPI gọn.
+    - 3 tab: Dự báo tuần / Độ chính xác / Lịch sử công bố.
+    - Nhóm khách mở / thu gọn; có Mở tất cả / Thu gọn tất cả và ô Lọc khách. Trên 10 khách thì mặc định thu gọn.
+    - Ô sửa trực tiếp (Enter / rời ô), chú thích 5 màu, chữ nhỏ dưới ô (TB 4 tuần / đã đăng ký / thiếu dữ liệu), rê chuột xem 4 số lịch sử, dòng Tổng cộng.
+    - Nút ⋯ ở mỗi khách để tạo lại gợi ý riêng cho khách đó.
+    - Điện thoại: mỗi khách một thẻ, mỗi điểm giao · buổi một lưới 7 ô.
+    - Bỏ ma trận khoảng ngày cũ cùng các hộp Tạo gợi ý / Công bố theo khoảng ngày. Giữ "Nhập dự báo nhiều ngày" (quyền Nhập).
+  - **Kiểm trên DB dev thật** (ảnh `docs/frontend-handoff/assets/ui-6.5/`, chạy bằng tài khoản uat.sal-head):
+    - Tuần 30/11–06/12: 90 khách, 1.008 ô (44 đã đăng ký, 963 thiếu dữ liệu).
+    - Tạo gợi ý → `insufficientData` 1.008, 0 ô gợi ý. Lý do: DB dev chưa có khách nào đủ 2 tuần đơn cùng thứ; đúng luật.
+    - Nhập tay 1 ô ([DEMO] Khách A B21H · Căng tin A1 · Trưa, 30/11 = 107) → Nháp 1 → Công bố → Nháp 0, Lịch sử công bố hiện dòng 107.
+    - Không có lỗi JS.
+  - **Vai trò (gọi API thật):**
+    - SAL-HEAD, SAL-SALES: xem 200, công bố 200.
+    - OPS-PLAN: xem 200, công bố 403. Giao diện chỉ đọc: nút khóa, không có ⋯ / Nhập (ảnh `forecast-week-opsplan-*`).
+    - SAL-CS, OPS-WH, OPS-KIT, FIN-ACC: 403 / 403.
+  - **Test:**
+    - `ForecastWeekTests` 2/2: khách hợp đồng tự hiện, ô đã đăng ký chỉ đọc, ô ngoài hợp đồng khóa, Nháp cập nhật / xóa, công bố bỏ qua ô đã đăng ký, tự công bố có ghi chú.
+    - `JobTests` có 4 mã job mới.
+    - Toàn bộ `dotnet test` **640/640**; FE `ng build` xanh.
+    - `full-flow.http` trên DB dev: **226/227** (ngày 28/12). Lỗi duy nhất là bước 9.3 (giữ chỗ 0 kg): lô trong luồng có hạn dùng hôm nay + 20 ngày (14/12), sớm hơn ngày ăn, nên đây là giới hạn dữ liệu chứ không phải lỗi code. Ngày trong hạn lô (02–24/12) đều đã có kế hoạch SX từ các lần chạy trước. Các lần thử 21/12, 25/12, 29/12, 02/12 hỏng dây chuyền vì kế hoạch ngày đó đã Phát hành / Hoàn thành; dữ liệu dở dang của các lần này còn trên DB dev (mã DEMOSTEJS / DEMOSTEJT / DEMOSTEJU).
+  - **Tài liệu:** HDSD 02 §4.4 viết lại (3 bước, màu ô, 3 tab, vòng tự động, quyền, thông báo lỗi mới); BUSINESS_RULES thêm mục UI-6.5.
+  - **Chưa làm / còn rủi ro:**
+    - DB dev không có dữ liệu lịch sử đủ để thấy ô gợi ý (cam) thật. Luồng gợi ý mới chứng minh bằng test InMemory và qua `insufficientData`.
+    - Ô đã công bố 107 suất cho khách DEMO B21H, tuần 30/11, vẫn còn trên DB dev (dữ liệu thử).
+    - Job chưa chạy thật đúng giờ trên DB dev (chưa tới T4 / T5 / T6). Đã có test đơn vị, chưa thấy tin bot thật.
+    - Muốn full-flow xanh 227/227 lại cần một ngày trống trong hạn lô: dọn kế hoạch DEMO cũ, hoặc sửa full-flow cho hạn lô tính theo `{{day}}`. Chưa làm.
+    - Mục ROADMAP UI-6.5 → DONE: anh tự cập nhật (file ROADMAP của anh, em không sửa).
 - **2026-11-24: UI-6.4 (D-83) DONE – Chính sách giá → "Phụ lục điều chỉnh giá" trong hợp đồng** (nhánh `feat/UI-6.4-price-appendix`). Không thêm bảng / cột: phụ lục = dòng `PricePolicy` có `ContractId` (Nháp → Chờ duyệt → Hiệu lực / Từ chối; "Hết hiệu lực" suy ra).
   - **BE:**
     - `PriceAdjustmentService` + API `Contract/GetPrices`, `CreatePriceAdjustment` (nhiều loại suất), `SubmitPriceAdjustment`, `DeletePriceAdjustment` – quyền theo Hợp đồng.

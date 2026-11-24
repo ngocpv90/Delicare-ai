@@ -45,7 +45,7 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 | Giờ | Việc | Màn |
 |---|---|---|
 | Đầu kỳ | Tạo / gia hạn hợp đồng, gửi duyệt | `crm-contract` |
-| Hằng tuần | Nhập + công bố dự báo 1–2 tuần tới | `crm-forecast` |
+| Thứ Năm – trước 16:00 thứ Sáu | Xem gợi ý dự báo tuần sau, sửa ô cần, Công bố (quá 16:00 thứ Sáu hệ thống tự công bố) | `crm-forecast` |
 | Hằng ngày, trước 19:00 | Tạo đơn ngày mai → Gửi → Xác nhận | `crm-order` |
 | 19:00 | Bot nhắc "⏰ khách chưa chốt" – xử lý nốt | bot |
 | **20:00** | Hệ thống tự **chốt** mọi đơn Đã xác nhận của ngày mai | tự động |
@@ -111,20 +111,49 @@ Danh sách chung (xem `00_CHUNG.md` mục 3). Điểm giao cần: tên, địa c
 
 **Quét hợp đồng hết hạn:** nút đầu trang → hệ thống liệt kê hợp đồng Hiệu lực đã quá ngày hết hiệu lực → **Chuyển sang Hết hạn** (không hoàn tác). Job 00:30 cũng tự làm việc này.
 
-### 4.4 Dự báo – `crm-forecast`
-**Xem ma trận:** chọn **Từ – đến** (tối đa 62 ngày) → bảng khách × ngày. Số đậm = đã công bố; ô nhập = bản **Nháp** – **sửa trực tiếp** (gõ số rồi Enter / rời ô); ngày có nhiều dòng Nháp (nhiều điểm giao / loại suất) hiện nút "nháp N" → bấm để sửa từng dòng. Khoảng ≤ 31 ngày: chữ nhỏ dưới ô = **TB** (trung bình suất thực nhận cùng thứ 4 tuần gần nhất) + **tuần trước**; rê chuột xem từng tuần; dấu **•** cam = đã sửa khác số gợi ý; ô **xám "Thiếu dữ liệu"** = dưới 2 tuần có đơn → nhập tay.
+### 4.4 Dự báo suất ăn – `crm-forecast` (theo tuần – UI-6.5, D-84)
+Ước số suất từng khách cho tuần tới khi khách chưa gửi đăng ký – dùng để mua nguyên liệu sớm. Khách gửi đăng ký rồi thì hệ thống dùng số đăng ký.
 
-**Tạo dự báo gợi ý (FC-1, D-76):** **Tạo dự báo gợi ý** → chọn Từ – Đến (tối đa 14 ngày, mặc định thứ Hai tuần sau → Chủ nhật tuần kế tiếp), Khách hàng (trống = mọi khách có hợp đồng hiệu lực) → **Tạo gợi ý**. Hệ thống tính cho từng khách × điểm giao (đang hoạt động) × loại suất trong hợp đồng × ngày: **trung bình suất thực nhận cùng thứ trong 4 tuần gần nhất, làm tròn lên** (thực nhận = suất tính tiền trong đối soát → suất khách nhận khi bàn giao → số đặt đã chốt). Tuần khách nghỉ (không có đơn) không tính. Kết quả ghi thành bản **Nháp**; bản Nháp người đã sửa / nhập tay được giữ – hệ thống hỏi **Ghi đè bản nháp?**. Không đụng bản đã công bố. Kiểm tra, sửa vài ô rồi **Công bố** như cũ.
+**Chọn tuần:** ◀ ▶ đổi tuần, **Tuần sau** về tuần mặc định (thứ Hai tuần sau → Chủ nhật).
 
-**Độ chính xác dự báo – 4 tuần qua** (khối dưới ma trận): thẻ **Sai số dự báo** (Σ |dự báo − thực nhận| / Σ thực nhận), **Lệch chung** (dương = dự báo cao), **Khách sai số > 10%**; bảng theo khách (rê chuột xem từng tuần).
+**3 bước:**
+1. **Tạo gợi ý tuần này** – hệ thống lấy **trung bình suất thực nhận cùng thứ 4 tuần gần nhất** (làm tròn lên; thực nhận = suất tính tiền trong đối soát → suất khách nhận khi bàn giao → số đặt đã chốt; tuần khách nghỉ không tính) ghi vào ô **Nháp**. Ô người đã sửa và ô khách đã đăng ký giữ nguyên. Muốn tạo lại cho riêng một khách: nút **⋯** ở cột Tổng của dòng khách.
+2. **Sửa ô cần** (nghỉ lễ, tăng ca, khách mới): gõ số → **Enter** hoặc rời ô = lưu bản Nháp. Xóa trống ô = bỏ bản Nháp của ô.
+3. **Công bố tuần này** – mọi ô Nháp của tuần → **Đã công bố** (số cũ cùng ô bị thay thế). Ô khách đã đăng ký không công bố; ô thiếu dữ liệu để trống.
 
-**Nhập dự báo**
-1. **Nhập dự báo** (cần quyền Nhập).
-2. Chọn **Khách hàng***, Điểm giao (trống = chung cho khách), **Loại suất***, Ca (trống = mọi ca), **Từ ngày* – Đến ngày*** (≤ 62 ngày).
-3. Nhập số suất từng ngày, hoặc gõ vào **Điền nhanh số suất mỗi ngày** để áp cho mọi ngày. Ngày để trống không được nhập.
-4. **Nhập dự báo** → tạo phiên bản mới ở **Nháp**.
+**4 thẻ:** Tổng suất tuần (số khách) · Ô Nháp (chưa công bố / đã công bố / đã đăng ký) · Ô thiếu dữ liệu (nhập tay) · Sai số 4 tuần (dự báo so với thực nhận).
 
-**Công bố:** **Công bố** → chọn Từ – Đến, Khách hàng (trống = tất cả) → **Công bố**. Bản Nháp → **Đã công bố**; bản cũ cùng khách / điểm giao / ngày / ca / loại suất → **Bị thay thế**. Không hoàn tác.
+**Tab Dự báo tuần:** mỗi khách có **hợp đồng hiệu lực** tự hiện một nhóm (kể cả khách chưa có dự báo) → dòng **điểm giao · buổi** × 7 ngày + cột Tổng, dòng **Tổng cộng** cuối bảng. Bấm dòng khách để mở / thu gọn; **Mở tất cả / Thu gọn tất cả**; ô **Lọc khách hàng** (trên 10 khách thì mặc định thu gọn). Màu ô:
+
+| Màu | Ý nghĩa | Sửa được |
+|---|---|---|
+| Xanh lá | Đã công bố | Có – sửa tạo bản Nháp mới |
+| Cam | Nháp (chưa công bố) | Có |
+| Xanh dương | Khách đã đăng ký (đơn Đã xác nhận trở lên) – dùng số đăng ký | Không |
+| Xám, viền đứt, chữ "nhập" | Thiếu dữ liệu (dưới 2 tuần có đơn) – nhập tay | Có |
+| Gạch chéo "–" | Ngày ngoài hiệu lực hợp đồng | Không |
+
+Chữ nhỏ dưới ô: **TB** 4 tuần (· "đã sửa" nếu Nháp khác số gợi ý); rê chuột vào ô xem 4 số thực nhận cùng thứ. Trên điện thoại mỗi khách là một thẻ, mỗi điểm giao · buổi một lưới 7 ô.
+
+**Tab Độ chính xác:** thẻ **Sai số dự báo** (Σ |dự báo − thực nhận| / Σ thực nhận), **Lệch chung** (dương = dự báo cao), **Khách sai số > 10%**; bảng theo khách (rê chuột xem từng tuần).
+
+**Tab Lịch sử công bố:** các dòng dự báo đã công bố, mới nhất trước; ghi chú "Hệ thống tự công bố" = do hệ thống công bố lúc 16:00 thứ Sáu.
+
+**Vòng tự động hằng tuần** (bot Điều hành gửi NV KD phụ trách khách + Trưởng KD):
+| Lúc | Hệ thống làm |
+|---|---|
+| Thứ Tư 22:00 | Tự tạo gợi ý tuần sau cho mọi khách có hợp đồng hiệu lực |
+| Thứ Năm 08:00 | Báo: dự báo tuần sau đã sẵn – N ô Nháp cần xem, M ô thiếu dữ liệu |
+| Thứ Sáu 12:00 | Còn ô Nháp chưa công bố → nhắc kèm danh sách khách |
+| Thứ Sáu 16:00 | Tự công bố mọi ô Nháp ("Hệ thống tự công bố"); báo danh sách ô thiếu dữ liệu còn trống |
+
+**Quyền:** Kinh doanh (Trưởng KD, NV KD) xem + sửa + công bố; Kế hoạch SX chỉ xem (nút bị khóa, ô chỉ đọc).
+
+**Nhập dự báo nhiều ngày** (nút đầu trang, cần quyền Nhập – dùng khi nhập một lúc nhiều ngày cho một khách)
+1. Chọn **Khách hàng***, Điểm giao (trống = chung cho khách), **Loại suất***, Ca (trống = mọi ca), **Từ ngày* – Đến ngày*** (≤ 62 ngày).
+2. Nhập số suất từng ngày, hoặc gõ vào **Điền nhanh số suất mỗi ngày** để áp cho mọi ngày. Ngày để trống không được nhập.
+3. **Nhập dự báo** → tạo phiên bản mới ở **Nháp** → về lưới tuần bấm **Công bố tuần này**.
+
 - Dự báo đã công bố được dùng làm **số gợi ý** khi tạo đơn và để cảnh báo lệch khi xác nhận đơn (> 10%).
 
 ### 4.5 Đơn hàng – `crm-order`
@@ -233,7 +262,9 @@ Cùng thao tác với Điểm phát – xem `10_DIEM_PHAT.md` mục 4.2. Đơn �
 | Chỉ sửa hợp đồng / loại suất khi hợp đồng ở trạng thái Nháp | Hợp đồng đã duyệt chỉ Thanh lý; muốn đổi giá → **phụ lục điều chỉnh giá** trong hợp đồng (4.7) hoặc hợp đồng mới |
 | Số hợp đồng … đã tồn tại | Để trống ô số để tự sinh |
 | Hợp đồng đã hết hạn (…) – không duyệt được | Sửa ngày hiệu lực rồi gửi lại |
-| Khoảng ngày không hợp lệ (tối đa 62 ngày) | Thu hẹp khoảng ngày dự báo |
+| Khoảng ngày không hợp lệ (tối đa 62 ngày) | Thu hẹp khoảng ngày (Nhập dự báo nhiều ngày) |
+| Khách đã đăng ký số suất ngày này – dùng số đăng ký, không sửa dự báo | Ô xanh dương chỉ đọc; muốn đổi số → sửa đơn / đăng ký suất tuần |
+| Không sửa dự báo của ngày đã qua | Chỉ sửa từ hôm nay trở đi |
 | Ngành "…" không có trong danh mục – chọn một trong: … (tương tự Quy mô / Giới tính / Nguồn) | Chọn giá trị trong ô chọn |
 | Không tìm thấy nhân viên phụ trách (tài khoản người dùng đang hoạt động) | Tài khoản đã khóa / xóa → chọn người khác |
 | Điểm giao đầu tiên: thiếu tên điểm giao / địa chỉ · giờ nhận từ phải nhỏ hơn giờ nhận đến | Sửa khối Điểm giao đầu tiên hoặc bấm **Bỏ điểm giao** |
