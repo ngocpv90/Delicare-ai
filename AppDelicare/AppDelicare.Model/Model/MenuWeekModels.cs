@@ -44,6 +44,8 @@ namespace AppDelicare.Model.Model
         public int OptionNo { get; set; }
         public List<decimal> ListCost { get; set; } = [];
         public List<decimal?> ListFcPct { get; set; } = [];
+        /// <summary>UI-6.27 (D-108): số món của ngày chưa có giá thành chuẩn – > 0 thì chi phí ngày chưa đủ, không tính FC% (hiện "thiếu giá").</summary>
+        public List<int> ListMissingCost { get; set; } = [];
         public List<MenuWeekRowModel> ListRow { get; set; } = [];
     }
 
@@ -160,6 +162,8 @@ namespace AppDelicare.Model.Model
         public Guid? CategoryId { get; set; }
         public int Day { get; set; }
         public string? Search { get; set; }
+        /// <summary>UI-6.27 (D-108): mở từ ngày vượt ngưỡng FC → món rẻ hơn cùng nhóm lên trước.</summary>
+        public bool CheaperFirst { get; set; }
     }
 
     public class MenuDishSuggestionModel

@@ -9,8 +9,9 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class MealCostController(IMealCostService service) : BaseController
+    public class MealCostController(IMealCostService service, IMealMarginService margin) : BaseController
     {
+        private readonly IMealMarginService _margin = margin;
         private readonly IMealCostService _service = service;
 
         [HttpGet("GetAll")]
@@ -147,6 +148,21 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.27 (D-108): Giá vốn & lãi gộp theo tháng – GroupBy customer | dish | day (quyền Xem cost-meal).</summary>
+        [HttpGet("GetMargin")]
+        public async Task<IActionResult> GetMargin([FromQuery] AppDelicare.Model.Model.MealMarginRequest request)
+        {
+            try
+            {
+                return Ok(await _margin.GetMargin(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetMargin: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

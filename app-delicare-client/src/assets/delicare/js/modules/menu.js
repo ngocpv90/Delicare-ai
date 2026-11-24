@@ -218,7 +218,7 @@
       h += `<tr class="mw-meal ${closed ? 'closed' : ''}" data-mwm="${esc(m.mealType)}"><td class="l" colspan="9"><span class="fw-chev">▾</span> <b>${esc(m.mealName || m.mealType)}</b> <span class="small muted">· ${m.price != null ? 'giá bán ' + U.money(m.price) : 'chưa có giá bán'} · ${m.listOption.length} lựa chọn</span></td></tr>`;
       if (closed) return;
       m.listOption.forEach((o, oi) => {
-        h += `<tr class="mw-opt"><td class="l">${m.listOption.length > 1 ? 'Lựa chọn ' + o.optionNo : 'Giá vốn / FC%'}</td>${o.listCost.map((c, i) => { const fc = o.listFcPct[i], bad = fc != null && fc > d.fcTargetPct; return `<td class="mw-fc ${bad ? 'bad' : fc != null ? 'good' : ''}">${c ? U.num(c) : '–'}<div class="small">${fc != null ? U.num(fc) + '%' : ''}</div></td>`; }).join('')}<td></td></tr>`;
+        h += `<tr class="mw-opt"><td class="l">${m.listOption.length > 1 ? 'Lựa chọn ' + o.optionNo : 'Giá vốn / FC%'}</td>${o.listCost.map((c, i) => { const fc = o.listFcPct[i], bad = fc != null && fc > d.fcTargetPct, miss = (o.listMissingCost || [])[i] || 0; return `<td class="mw-fc ${bad ? 'bad' : fc != null ? 'good' : ''}" ${bad && edit ? `data-mwfc="${mi}|${oi}|${i}" title="Vượt ngưỡng – bấm để đổi món đắt nhất của ngày (gợi ý món rẻ hơn cùng nhóm trước)" style="cursor:pointer"` : ''}>${miss ? '–' : c ? U.num(c) : '–'}<div class="small">${miss ? `<span class="muted">thiếu giá ${miss} món</span>` : fc != null ? U.num(fc) + '%' : ''}</div></td>`; }).join('')}<td></td></tr>`;
         o.listRow.forEach((r, ri) => {
           h += `<tr><td class="l mw-cat">${esc(r.categoryName || 'Món')}</td>${r.listCell.map((c, di) => { const fl = MW_FLAG[c.flag]; const canChg = changeable && c.dishId && !c.changePending; const tip = c.changedDishName ? c.changeNote || '' : (c.dishName || '') + (c.cost != null ? ' · giá vốn ' + U.num(c.cost) : '') + (fl ? ' · ' + fl[1] : '') + (canChg ? ' · bấm để đổi món ngày này' : '');
             return `<td><button class="mw-cell ${fl && !c.changedDishName ? fl[0] : ''} ${c.changedDishName ? 'mw-changed' : ''}" data-mwc="${mi}|${oi}|${ri}|${di}" title="${esc(tip)}" ${edit || canChg ? '' : 'disabled'}>${c.changedDishName ? `${esc(c.changedDishName)}<span class="mw-tag">đã đổi</span>` : c.dishName ? esc(c.dishName) : '<span class="muted">+ chọn món</span>'}${c.changePending ? '<span class="mw-tag pend">chờ duyệt đổi</span>' : ''}</button></td>`; }).join('')}<td>${edit ? `<button class="btn xs" data-mwf="${mi}|${oi}|${ri}" title="Điền cả hàng (7 ngày cùng món)" aria-label="Điền cả hàng">⋯</button>` : ''}</td></tr>`;
@@ -235,6 +235,13 @@
     box.querySelector('#mwXlsIn').onclick = () => fileIn.click();
     fileIn.onchange = () => { const fl = fileIn.files[0]; fileIn.value = ''; if (fl) mwImport(el, f, fl); };
     box.querySelectorAll('[data-mwc]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, false));
+    // UI-6.27 (D-108): ngày vượt ngưỡng FC → mở chọn món cho món đắt nhất của ngày, gợi ý món rẻ hơn cùng nhóm trước.
+    box.querySelectorAll('[data-mwfc]').forEach(td => td.onclick = () => {
+      const [mi, oi, di] = td.dataset.mwfc.split('|').map(Number), o = mw.data.listMeal[mi].listOption[oi];
+      let best = -1, cost = -1; o.listRow.forEach((r, ri) => { const c = r.listCell[di]; if (c && c.dishId && (c.cost || 0) > cost) { cost = c.cost || 0; best = ri; } });
+      const btn = best >= 0 && box.querySelector(`[data-mwc="${mi}|${oi}|${best}|${di}"]`);
+      if (btn) { mw.cheaper = true; btn.click(); }
+    });
     box.querySelectorAll('[data-mwf]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, true));
     box.querySelectorAll('[data-mwcd]').forEach(btn => btn.onclick = () => {
       const from = +btn.dataset.mwcd;
@@ -246,6 +253,7 @@
   // Hộp chọn món ngay dưới ô (không hộp thoại): 5 gợi ý + tìm; Enter lưu + sang ngày kế; Delete xóa.
   function mwPick(el, f, canEdit, anchor, fillRow) {
     document.querySelectorAll('.mw-pop').forEach(p => p.remove());
+    const cheaper = !!mw.cheaper; mw.cheaper = false;
     const [mi, oi, ri, di0] = (anchor.dataset.mwc || anchor.dataset.mwf + '|0').split('|').map(Number);
     const d = mw.data, meal = d.listMeal[mi], opt = meal.listOption[oi], row = opt.listRow[ri];
     let di = di0;
@@ -260,7 +268,7 @@
     const outside = e => { if (!pop.contains(e.target) && e.target !== anchor) close(); };
     document.addEventListener('mousedown', outside, true);
     const paint = () => { pop.querySelector('#mwList').innerHTML = items.length ? items.map((s, i) => `<button class="mw-opt-btn ${i === sel ? 'on' : ''}" data-i="${i}"><b>${esc(s.dishName)}</b><span class="small muted">${s.hasRecipe ? '' : '⚠ chưa có công thức · '}giá vốn ${mwNum(s.cost)}${s.newFcPct != null ? ` · FC <span class="${s.newFcPct > d.fcTargetPct ? 'bad' : 'up'}">${U.num(s.newFcPct)}%</span>` : ''}${s.daysSinceUsed != null ? ' · dùng ' + s.daysSinceUsed + ' ngày trước' : ''}</span></button>`).join('') : '<div class="muted small">Không có món phù hợp</div>'; pop.querySelectorAll('[data-i]').forEach(b => b.onmousedown = e => { e.preventDefault(); sel = +b.dataset.i; choose(); }); };
-    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: q.value.trim() || null }).then(x => { items = x.ok ? x.list || [] : []; sel = 0; paint(); });
+    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: q.value.trim() || null, CheaperFirst: cheaper || null }).then(x => { items = x.ok ? x.list || [] : []; sel = 0; paint(); });
     const after = x => { if (!x.ok) return; mw.data = x.data; mwGrid(el, f, canEdit); el.querySelector('#mwKpis') && mwDraw(el, f); };
     const save = dishId => Store.act('Menu/SaveCell', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, day: di + 1, dishId }, tables: ['MenuLine'] });
     function choose() {
@@ -281,6 +289,7 @@
   const MW_REASON = [['SHORTAGE', 'Thiếu nguyên liệu'], ['PRICE', 'Giá tăng'], ['SUPPLIER', 'NCC giao lỗi'], ['QUALITY', 'Chất lượng nguyên liệu'], ['OTHER', 'Khác']];
   // Hộp "Đổi món ngày này" ngay dưới ô: 5 gợi ý (như lập thực đơn) + lý do + ảnh hưởng (N khách · M suất) + tự duyệt hay cần COO → Gửi.
   function mwChange(el, f, anchor) {
+    const cheaper = !!mw.cheaper; mw.cheaper = false;
     document.querySelectorAll('.mw-pop').forEach(p => p.remove());
     const [mi, oi, ri, di] = anchor.dataset.mwc.split('|').map(Number), d = mw.data, meal = d.listMeal[mi], opt = meal.listOption[oi], row = opt.listRow[ri], cell = row.listCell[di];
     const pop = document.createElement('div'); pop.className = 'mw-pop';
@@ -309,7 +318,7 @@
     };
     const paint = () => { g('#mcList').innerHTML = items.length ? items.map((s2, i) => `<button class="mw-opt-btn ${i === sel ? 'on' : ''}" data-i="${i}"><b>${esc(s2.dishName)}</b><span class="small muted">${s2.hasRecipe ? '' : '⚠ chưa có công thức · '}giá vốn ${mwNum(s2.cost)}${s2.newFcPct != null ? ' · FC ' + U.num(s2.newFcPct) + '%' : ''}</span></button>`).join('') : '<div class="muted small">Không có món phù hợp</div>';
       pop.querySelectorAll('[data-i]').forEach(b => b.onmousedown = e => { e.preventDefault(); sel = +b.dataset.i; paint(); impact(); ready(); }); };
-    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: g('#mcQ').value.trim() || null })
+    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: g('#mcQ').value.trim() || null, CheaperFirst: cheaper || null })
       .then(x => { items = (x.ok ? x.list || [] : []).filter(s2 => s2.dishId !== cell.dishId); sel = -1; paint(); ready(); });
     g('#mcQ').oninput = () => { clearTimeout(t); t = setTimeout(load, 250); };
     g('#mcR').onchange = ready; g('#mcX').onclick = close;

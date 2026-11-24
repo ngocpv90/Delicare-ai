@@ -31,6 +31,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Chỉ số theo ngày | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | X (IX) | X (IX) | X (IX) | X (IX) |
+| Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X (IX) |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | X (IX) |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X | X | X | X (IX) |
@@ -45,9 +46,6 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Kho › Phiếu kiểm kê | `scm-stockcount` | X | X | X | X (IX) |
 | Kho › Chênh lệch tiêu hao | `scm-consumption-var` | X | X | X | X (IX) |
 | Sản xuất › Hao hụt | `prod-waste` | X | X | X | X (IX) |
-| Giá thành › Giá thành chuẩn | `cost-standard` | X | X | X | X (IX) |
-| Giá thành › Giá thành thực tế | `cost-actual` | X | X | X | X (IX) |
-| Giá thành › Giá vốn suất ăn | `cost-meal` | X (IX) | X | X | X (IX) |
 | Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | X (IX) |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | X (IX) |
 | Nhân sự › Chấm công | `hr-attendance` | X | X | X | X (IX) |
@@ -126,3 +124,13 @@ Không có chứng từ riêng; xem trạng thái chứng từ ở `91_PHU_LUC.m
 - **Thẻ sự cố:** **🛠 Nhận xử lý**, **✅ Đã xử lý**, trả lời tin để ghi chú. Chưa ai nhận → leo thang theo bậc (vd ATTP trọng yếu 10′ → COO, 30′ → CEO-PMO; thiếu suất 15′ → COO, 45′ → CEO).
 - **Giờ yên lặng:** người không có phân ca (văn phòng, quản lý) nhận tin 🟡 / ⚪ trong 07:00–21:00, ngoài khung thì hẹn tới 07:00 hôm sau; tin 🔴 và tin leo thang gửi ngay.
 - Duyệt trên bot: `12_QUAN_LY_DUYET.md` mục 7.
+
+
+## Giá vốn & lãi gộp (UI-6.27, D-108) – `cost-meal`
+Mục **Điều hành › Giá vốn & lãi gộp** thay 3 màn cũ (Giá thành chuẩn · Giá thành thực tế · Giá vốn suất ăn – link cũ mở màn này tab Theo món). Đọc theo **tháng** (◀ ▶; tháng hiện tại tính tới hôm nay), **Xuất Excel**.
+- 4 chỉ số: **Giá vốn nguyên liệu / suất** (so tháng trước) · **Tỷ lệ nguyên liệu / doanh thu** (xanh ≤ ngưỡng − 5 %, cam sát ngưỡng, đỏ vượt ngưỡng `KpiIngredientToRevenueMaxPct` – mặc định 55 %) · **Lãi sau nguyên liệu** · **Chi phí lỗi** (đơn bù / loại – tách khỏi suất bán).
+- Dòng báo: "Giá vốn hiện chỉ gồm nguyên liệu" (chưa có định mức nhân công / chi phí chung – khi Kế toán khai, nhãn đổi thành "Lãi gộp"); "N đơn (x % suất) đang tạm tính theo giá thành chuẩn" – lệnh sản xuất của món chưa đóng, hệ thống tự tính lại khi lệnh đóng (job 22:00 và ngày 1 hằng tháng).
+- Tab **Theo khách hàng / hợp đồng** (mặc định, tỷ lệ cao nhất lên đầu, có dòng Cả tháng): bấm dòng → theo **ngày ăn** (suất, NL / suất, tỷ lệ, nguồn giá Thực tế / Tạm tính) → bấm ngày → đơn và giá vốn từng món. Vượt ngưỡng → nút **Lập phụ lục điều chỉnh giá** (mở hợp đồng).
+- Tab **Theo món**: giá chuẩn / phần, thực tế / phần, chênh lệch % (> 5 % đỏ, > 2 % cam), tiền chênh, nguyên nhân chính (nguyên liệu vượt định mức, mẻ QC loại); bấm món → Bảng sản xuất ngày gần nhất.
+- Tab **Xu hướng theo ngày**: biểu đồ tỷ lệ NL / DT theo ngày + đường ngưỡng (Xem bảng số dưới biểu đồ).
+- Giá thành chuẩn **chỉ do hệ thống tự tính** (khóa công thức, đổi giá NCC, Tính lại) – không thêm / sửa tay.

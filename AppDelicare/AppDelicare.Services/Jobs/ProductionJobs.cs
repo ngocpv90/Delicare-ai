@@ -15,7 +15,7 @@ namespace AppDelicare.Services.Jobs
     /// bằng đúng <c>ProductionOrder/Close</c>; rồi gửi 1 tin gộp chênh lệch tiêu hao vượt <c>ConsumptionVariancePctWarning</c> của các lệnh thuộc kế hoạch hôm nay
     /// cho Bếp trưởng (OPS-KIT) + COO (khóa idempotent theo ngày). Cờ <c>ProductionAutoCloseOrder</c> tắt → không đóng, không gửi. Chạy lại = 0 lệnh.
     /// </summary>
-    public sealed class ProductionAutoCloseJob(IUnitOfWork unitOfWork, IServiceProvider services, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IScheduledJob
+    public sealed class ProductionAutoCloseJob(IUnitOfWork unitOfWork, IServiceProvider services, IOptions<BusinessRulesOptions> rules, INotificationService notifications, IMealMarginService margin) : IScheduledJob
     {
         public const string JobCode = "ProductionAutoClose";
         public string Code => JobCode;
@@ -77,10 +77,35 @@ namespace AppDelicare.Services.Jobs
                     IdempotencyKey = $"{NotificationCatalog.ProductionVariance}:{day:yyyyMMdd}",
                 });
             }
-            string message = $"Đã đóng {closed} lệnh sản xuất"
+            // UI-6.27 (D-108): lệnh vừa đóng có giá thành thực tế → tính lại giá vốn suất các đơn đã đối soát 7 ngày gần nhất còn tạm tính theo giá chuẩn.
+            int recalculated = await margin.RecalcProvisionalAsync(day.AddDays(-7), day, cancellationToken);
+            string message = $"Đã đóng {closed} lệnh sản xuất" + (recalculated != 0 ? $"; tính lại giá vốn {recalculated} đơn đã đối soát" : string.Empty)
                 + (failed.Count != 0 ? $"; {failed.Count} lệnh chưa đóng được: {string.Join(", ", failed.Take(10))}" : string.Empty)
                 + (over.Count != 0 ? $"; {over.Count} dòng chênh lệch vượt ngưỡng (đã báo Bếp trưởng + COO)" : string.Empty);
             return new JobOutcome(failed.Count == 0 ? JobRunStatus.Succeeded : JobRunStatus.Failed, closed, day, message);
+        }
+    }
+
+    /// <summary>
+    /// UI-6.27 (D-108): 01:00 (cùng giờ chỉ số tháng) – ngày 1 quét lại các đơn đã đối soát của THÁNG TRƯỚC còn tạm tính theo giá chuẩn → tính lại giá vốn suất
+    /// theo giá thành thực tế (MealCost/Calculate, cập nhật tại chỗ – chạy lại không nhân đôi). Ngày khác không làm gì.
+    /// </summary>
+    public sealed class MealCostRecalcJob(IMealMarginService margin) : IScheduledJob
+    {
+        public string Code => "MealCostRecalc";
+        public string Name => "Tính lại giá vốn suất tạm tính";
+        public string Description => "Ngày 1 hằng tháng: tính lại giá vốn suất các đơn đã đối soát của tháng trước còn tạm tính theo giá thành chuẩn (lệnh sản xuất đóng muộn).";
+        public string DefaultAt => "01:00";
+
+        public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
+        {
+            if (now.Day != 1)
+            {
+                return new JobOutcome(JobRunStatus.Succeeded, 0, now.Date, "Chỉ chạy ngày 1 hằng tháng");
+            }
+            DateTime first = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
+            int n = await margin.RecalcProvisionalAsync(first, first.AddMonths(1).AddDays(-1), cancellationToken);
+            return new JobOutcome(JobRunStatus.Succeeded, n, first, $"Tính lại giá vốn {n} đơn tháng {first:MM/yyyy}");
         }
     }
 }

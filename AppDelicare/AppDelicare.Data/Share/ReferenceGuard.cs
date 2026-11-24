@@ -30,7 +30,8 @@ namespace AppDelicare.Data.Share
         public async Task<IReadOnlyList<ReferenceUsage>> FindUsagesAsync(string tableOrClass, Guid id, CancellationToken cancellationToken = default)
         {
             string table = ReferenceMap.TableOfClass.TryGetValue(tableOrClass, out var t) ? t : tableOrClass;
-            if (!ReferenceMap.Incoming.TryGetValue(table, out var sources))
+            var sources = ReferenceMap.SourcesOf(table);
+            if (sources.Length == 0)
             {
                 return [];
             }

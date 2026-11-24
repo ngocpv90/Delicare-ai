@@ -135,26 +135,13 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<string> Insert(StandardCostRequest request, string typeSave)
-        {
-            var insert = _mapper.Map<StandardCost>(request);
-            _unitOfWork.StandardCostRepository.Add(insert);
-            await _unitOfWork.StandardCostRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>UI-6.27 (D-108): giá thành chuẩn CHỈ tự tính (khóa công thức – RecipeService.UpsertStandardCostAsync, đổi giá NCC, StandardCost/Recalculate) – không thêm tay.</summary>
+        private Task<string> Insert(StandardCostRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.StandardCostManualBlocked);
 
-        private async Task<string> Update(StandardCostRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.StandardCostRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            var update = _mapper.Map(request, exist);
-            _unitOfWork.StandardCostRepository.Update(update);
-            await _unitOfWork.StandardCostRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>UI-6.27 (D-108): không sửa tay giá thành chuẩn.</summary>
+        private Task<string> Update(StandardCostRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.StandardCostManualBlocked);
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {

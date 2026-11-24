@@ -63,7 +63,7 @@ public static partial class Seeds
             "wf-inbox?type=prod-plan", "wf-inbox?type=qc-inspection", "wf-inbox?type=prod-batch", "wf-inbox?type=scm-lot", "wf-inbox?type=hr-leave",
             "wf-inbox?type=hr-swap", "wf-inbox?type=scm-pr", "wf-inbox?type=adm-user",
         ]),
-        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly"]),
+        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal"]), // UI-6.27 (D-108): Giá vốn & lãi gộp vào Điều hành
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
             ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "crm-billing", "log-complaint", "crm-location", "crm-contact"]),
         new("#/group/03", "Thực đơn & Món ăn", [], 300, "menu", ["menu-menu", "menu-assignment", "menu-change-request", "menu-recipe", "menu-dish", "menu-dish-cat"]),
@@ -72,7 +72,7 @@ public static partial class Seeds
         new("#/group/04b", "Kho", [], 450, "wh",
             ["scm-gr", "scm-issue", "scm-inv-balance", "scm-lot", "scm-inv-txn", "scm-reservation", "scm-stockcount", "scm-consumption-var", "scm-warehouse", "scm-zone", "scm-location", "scm-inv-policy"]),
         new("#/group/05", "Sản xuất", ["Sản xuất & Giá thành"], 500, "production", ["prod-plan", "prod-order", "prod-batch", "prod-output", "prod-waste", "prod-line", "prod-workstation"]),
-        new("#/group/05b", "Giá thành", [], 550, "cost", ["cost-standard", "cost-actual", "cost-meal"]),
+        new("#/group/05b", "Giá thành", [], 550, "cost", ["cost-standard", "cost-actual"]), // UI-6.27 (D-108): nhóm ẩn – 2 mục ẩn, quyền theo cost-meal
         new("#/group/06", "Chất lượng & ATTP", ["QC & An toàn thực phẩm"], 600, "qc",
             ["qc-inspection", "qc-checklist-result", "qc-temperature", "qc-cleaning", "qc-cleaning-result", "qc-supplier-issue", "qc-checklist"]),
         new("#/group/07", "Đóng gói & Giao hàng", ["Đóng gói & Giao nhận"], 700, "logistics",

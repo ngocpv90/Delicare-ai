@@ -335,6 +335,8 @@
     // UI-6.24 (D-105): menu Sản xuất 7 → 4 – link cũ Lệnh sản xuất (?id= → trang chi tiết lệnh, không id → Kế hoạch sản xuất), Sản lượng → Mẻ nấu tab Sản lượng, Trạm bếp → Dây chuyền tab Trạm bếp.
     if (Store.isLive && id === 'prod-order') { location.replace(APP.href(params.id ? 'prod-order-detail?id=' + encodeURIComponent(params.id) : 'prod-plan')); return; }
     if (Store.isLive && id === 'prod-output') { location.replace(APP.href('prod-batch?tab=output')); return; }
+    // UI-6.27 (D-108): Giá thành chuẩn / thực tế → Giá vốn & lãi gộp tab Theo món.
+    if (Store.isLive && (id === 'cost-standard' || id === 'cost-actual')) { location.replace(APP.href('cost-meal?tab=dish')); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];
     if (up) {

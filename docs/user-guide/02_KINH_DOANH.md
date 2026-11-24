@@ -18,6 +18,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Điều hành › Bảng điều hành | `dash-exec` | — | — | X | — |
 | Điều hành › Chỉ số theo ngày | `kpi-daily` | — | — | X | — |
 | Điều hành › Chỉ số theo tháng | `kpi-monthly` | — | — | X | — |
+| Điều hành › Giá vốn & lãi gộp | `cost-meal` | — | — | X | — |
 | Kinh doanh › Khách hàng | `crm-customer` | S | Q (IX) | Q (IX) | X |
 | Kinh doanh › Hợp đồng | `crm-contract` | S | Q (IX) | Q (IX) | — |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | S | Q (IX) | Q (IX) | — |
@@ -28,8 +29,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | S | S |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | X |
-| Giá thành › Giá thành chuẩn | `cost-standard` | — | — | X | — |
-| Giá thành › Giá vốn suất ăn | `cost-meal` | — | — | X | — |
 | Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | X | X | X | — |
 | Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X | X | X | X |
 | Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | X |

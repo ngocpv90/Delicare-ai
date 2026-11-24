@@ -104,6 +104,14 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 
 ## 6. Sản xuất
 
+### UI-6.27 (D-108) – Giá vốn & lãi gộp, giá thành chuẩn chỉ tự tính
+- `StandardCost/Insert`, `Update` chặn ("Giá thành chuẩn do hệ thống tự tính từ công thức và giá nhà cung cấp…"); giữ `StandardCost/Recalculate` (quyền Sửa Công thức). Mỗi món 1 bản Đang hiệu lực (script `UI627_standardcost_cleanup.sql`).
+- `MealCost/GetMargin` (Month, GroupBy customer | dish | day, CustomerId, ContractId): tổng hợp MealCost (doanh thu, giá vốn, suất nhận theo dòng đơn), ActualCost (thực tế / phần theo món), StandardCost, MaterialConsumptionVariance; đơn bù (`[DON_BU:]`, giá 0) = **chi phí lỗi**, không tính vào suất bán; đơn **tạm tính** = có món mà lệnh SX của ngày ăn chưa có ActualCost.
+- Tính lại giá vốn suất đơn đã đối soát còn tạm tính: job `ProductionAutoClose` (22:00, 7 ngày gần nhất) + job `MealCostRecalc` (01:00 ngày 1 – tháng trước); `MealCost/Calculate` cập nhật tại chỗ (chạy lại không nhân đôi).
+- Nhân công / chi phí chung = 0 (chưa có định mức) → nhãn **"Lãi sau nguyên liệu"**, **"Giá vốn nguyên liệu"**; có định mức (cấu hình `RecipeLaborCostPerServing` / `RecipeOverheadCostPerServing` / `ProductionLaborCostPerHour`) → "Lãi gộp". Kế toán tự nhập định mức theo tháng trên giao diện = GAP-COST-01 PROPOSED (bảng mới, chờ duyệt).
+- Thực đơn tuần: ngày có món chưa có giá chuẩn → không tính FC% ("thiếu giá"); `Menu/SuggestDish` `CheaperFirst` – món rẻ hơn cùng nhóm lên trước (mở từ ngày vượt ngưỡng).
+- Menu: `cost-meal` → nhóm Điều hành, tên "Giá vốn & lãi gộp"; ẩn `cost-standard`, `cost-actual`, nhóm `#/group/05b` (quyền API StandardCost / ActualCost theo cost-meal – ScreenMap.ParentByClass).
+
 ### UI-6.25 (D-106) – §6 Xong mẻ một chạm, lưu mẫu theo món × ca
 - `ProductionBatch/Complete` (mẻ Đang nấu) – MỘT giao dịch: nhiệt độ lõi (bắt buộc; < `CoreTempMinC` → bắt buộc hành động khắc phục, báo bot như RecordCoreTemperature), lưu mẫu (khi người dùng xác nhận và món × ca chưa có), sản lượng (mặc định = kế hoạch mẻ, loại 0), hao hụt trong mẻ (`MealWasteRecord`), kết thúc nấu → Chờ QC → tự Đạt (BIZ-2.7) → nếu mẻ cuối: lệnh Hoàn thành → tự Đóng (UI-6.24). `StartNextBatchId`: bắt đầu mẻ Chờ nấu kế tiếp CÙNG dây chuyền trong cùng giao dịch (khác dây chuyền / không còn Chờ nấu → lỗi, không ghi gì). Action lẻ cũ (Start, RecordCoreTemperature, Finish, RecordOutput, RecordSampleRetained…) giữ cho bot / trang mẻ.
 - **Lưu mẫu theo món × ca = theo lệnh SX**: điều kiện tự Đạt, cho Đạt tay (khi bật `ProductionRequireSampleBeforeRelease`), cảnh báo / chặn xuất chuyến (`DeliveryRoute/Dispatch`) đều xét "lệnh SX của mẻ đã có mẫu"; `RecordSampleRetained` khi lệnh đã có mẫu ở mẻ khác → báo giờ đã lưu, không ghi thêm, không lỗi. Không thêm bảng / cột (`FoodSafetyChecklistResult` vẫn gắn mẻ đã lưu).

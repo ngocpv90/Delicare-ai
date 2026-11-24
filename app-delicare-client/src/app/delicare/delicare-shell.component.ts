@@ -30,6 +30,7 @@ const SCRIPTS = [
   'modules/purchase-flow.js', // UI-6.18 (D-99): form đề nghị mua có dòng + Chọn nhà cung cấp / Chờ gửi NCC – sau scm.js
   'modules/production.js',
   'modules/plan-days.js', // UI-6.23 (D-104): Kế hoạch sản xuất – 7 ngày tới (sau production.js: dùng APP.prodPlanList)
+  'modules/cost-margin.js', // UI-6.27 (D-108): Giá vốn & lãi gộp – sau production.js
   'modules/batch-board.js', // UI-6.25 (D-106): Mẻ nấu 1 chạm – sau production.js, trước prod-menu.js
   'modules/qc.js',
   'modules/supplier360.js',

@@ -114,6 +114,7 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>T45R: tính lại giá thành chuẩn theo giá NCC hiện hành (listDishId trống = mọi món có công thức đang khóa).</summary>
+        [Security.Permission("menu-recipe", PermissionAction.Edit)] // UI-6.27 (D-108): mục Giá thành chuẩn ẩn – tính lại theo quyền Sửa Công thức
         [HttpPost("Recalculate")]
         public async Task<IActionResult> Recalculate([FromForm] StandardCostRecalculateRequest request)
         {
