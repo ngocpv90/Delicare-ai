@@ -47,7 +47,7 @@ namespace AppDelicare.Tests.Common
                 foreach (var g in groups)
                 {
                     ScreenMap.ByClass.Should().ContainKey(g.Key);
-                    ScreenMap.ByClass[g.Key].Should().Be(g.ScreenId, $"màn của nhóm {g.Key} phải khớp ScreenMap");
+                    (ScreenMap.ParentByClass.TryGetValue(g.Key, out var parent) ? parent.Screen : ScreenMap.ByClass[g.Key]).Should().Be(g.ScreenId, $"màn của nhóm {g.Key} phải khớp ScreenMap (màn ẩn → màn cha)");
                     g.Title.Should().NotBeNullOrWhiteSpace();
                 }
             }

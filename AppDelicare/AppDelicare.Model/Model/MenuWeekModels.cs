@@ -75,6 +75,8 @@ namespace AppDelicare.Model.Model
     public class MenuChangeCellRequest
     {
         public Guid MenuId { get; set; }
+        /// <summary>Tuần đang xem (thực đơn có thể hiệu lực nhiều tuần) – ngày ăn = thứ Hai tuần + Day − 1.</summary>
+        public DateTime? WeekStart { get; set; }
         public string? MealType { get; set; }
         public int OptionNo { get; set; } = 1;
         public int Day { get; set; }
@@ -152,6 +154,7 @@ namespace AppDelicare.Model.Model
     public class MenuSuggestRequest
     {
         public Guid MenuId { get; set; }
+        public DateTime? WeekStart { get; set; }
         public string? MealType { get; set; }
         public int OptionNo { get; set; } = 1;
         public Guid? CategoryId { get; set; }

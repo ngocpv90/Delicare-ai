@@ -23,7 +23,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | X |
 | Kinh doanh › Điểm giao hàng | `crm-location` | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | Q |
-| Thực đơn & Món ăn › Yêu cầu đổi món | `menu-change-request` | Q |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | Q |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | Q |
 | Thực đơn & Món ăn › Nhóm món ăn | `menu-dish-cat` | Q |
@@ -138,11 +137,32 @@ Mỗi tuần **một thực đơn chung** cho mọi khách (D-90). **Vòng tuầ
 - **Không còn thực đơn riêng theo khách**: mọi khách dùng **thực đơn chung Đã công bố** của tuần. Mục menu "Thực đơn riêng cho khách" đã ẩn; dữ liệu phân công cũ giữ lại nhưng không dùng.
 - Khách cần đổi món cho một đơn / ngày / ca: dùng **Yêu cầu đổi món** (4.6).
 
-### 4.6 Yêu cầu đổi món – `menu-change-request`
-1. **Tạo yêu cầu đổi món** → hộp nhập:
-   - **Đơn hàng** (trống = áp dụng cho mọi đơn của ngày / ca), **Món hiện tại***, **Món thay thế***, **Ngày ăn*** (tự lấy theo đơn nếu chọn đơn), Ca, **Số suất đổi*** (trống = toàn bộ suất của đơn khi có chọn đơn), Thực đơn, **Lý do*** (≥ 3 ký tự).
-2. **Tạo & gửi duyệt** → yêu cầu **Chờ duyệt**; kết quả: Đã duyệt / Từ chối / Đã hủy.
-- Lỗi: *Món thay thế phải khác món hiện tại*, *Yêu cầu không theo đơn cần có ngày ăn và số suất đổi*, *Đơn … đang … – chỉ đổi món cho đơn chưa giao / chưa hủy*, *Món cũ không có trong thực đơn của đơn…*.
+### 4.6 Đổi món – trên màn Thực đơn tuần (UI-6.13, D-91)
+Mục menu "Yêu cầu đổi món" **đã ẩn**; link cũ mở màn **Thực đơn tuần**, tab **Đổi món**.
+
+**Đổi cho mọi khách (3 thao tác):** thực đơn **Đã công bố / Đã duyệt** → bấm ô món → hộp **Đổi món ngày này** ngay dưới ô:
+1. **Chọn món thay:** 5 gợi ý (cùng nhóm → có công thức khóa → chưa dùng 14 ngày → giữ FC; hiện giá vốn + FC% mới), gõ để tìm món khác.
+2. **Lý do*:** Thiếu nguyên liệu / Giá tăng / NCC giao lỗi / Chất lượng nguyên liệu / Khác + ghi chú.
+3. **Gửi.**
+
+Hệ thống tự xác định ngày, buổi, lựa chọn và **mọi đơn của mọi khách** dùng thực đơn đó. Trước khi gửi hiện **"Ảnh hưởng N khách · M suất"**; không chọn đơn, không nhập số suất.
+
+**Tự duyệt** khi đủ cả 4 điều kiện:
+- món thay **cùng nhóm món**;
+- **có công thức khóa**;
+- **FC% suất không vượt mục tiêu**;
+- **trước giờ chốt** (20:00 hôm trước).
+
+Đủ điều kiện → ghi "Hệ thống tự duyệt", áp ngay. Thiếu điều kiện → hộp ghi rõ lý do, yêu cầu **Chờ duyệt** ở **Phê duyệt › Yêu cầu đổi món** (COO).
+
+**Sau khi duyệt:**
+- ô thực đơn hiện **món mới + nhãn "đã đổi"** (rê chuột: món cũ, số yêu cầu, lý do); ô đang chờ có nhãn "chờ duyệt đổi";
+- kế hoạch sản xuất ngày đó còn Nháp → tự chuyển món trong kế hoạch, mọi lần tính lại nhu cầu dùng món mới;
+- kế hoạch đã phát hành → bếp xử lý tay theo chi tiết yêu cầu.
+
+**Tab Đổi món:** mọi yêu cầu có ngày ăn trong tuần (kể cả yêu cầu cũ theo đơn): số, ngày ăn, món cũ → món mới, phạm vi (Mọi khách / Khách X), số suất, lý do, trạng thái, người duyệt ("Hệ thống tự duyệt").
+
+**Quyền:** người có quyền Thêm ở màn Thực đơn tuần (Kế hoạch – OPS-PLAN); duyệt: COO.
 
 ### 4.7 Kế hoạch sản xuất – `prod-plan`
 **Tự lập, tự phát hành (BIZ-2.4):** chốt đơn (job 20:00 hoặc nút **Chốt đơn theo ngày**) → hệ thống tự **lập kế hoạch → duyệt → phát hành** mọi ca có nhu cầu (lịch ngược, mẻ, giữ chỗ như phát hành tay) và tạo **phiếu xuất Nháp theo ca** cho kho (BIZ-2.5). **Không tự phát hành** (kế hoạch giữ Nháp, bot 🔴 báo Kế hoạch + COO kèm lý do) khi: kế hoạch đã **sửa tay**, món **chưa có công thức khóa**, **thiếu nguyên liệu** sau giữ chỗ, mẻ **không kịp giờ xuất bếp**. Kế hoạch đã duyệt / phát hành tay trước đó → hệ thống không lập lại. Ghi chú kế hoạch có dòng "Hệ thống tự …".

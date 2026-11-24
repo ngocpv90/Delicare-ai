@@ -377,7 +377,7 @@ namespace AppDelicare.Services.Implement
                     return new Results<MenuDishSuggestionModel> { ResponseCode = 400, ResponseMessage = ConstantHelper.Message.RecordNotFoundMessage };
                 }
                 string mealType = (request.MealType ?? string.Empty).ToUpperInvariant();
-                DateTime monday = OrderService.MondayOf(menu.EffectiveFrom ?? _clock.Today), date = monday.AddDays(Math.Clamp(request.Day, 1, 7) - 1);
+                DateTime monday = OrderService.MondayOf(request.WeekStart ?? menu.EffectiveFrom ?? _clock.Today), date = monday.AddDays(Math.Clamp(request.Day, 1, 7) - 1);
                 string? q = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
                 var candidates = await db.Dish.AsNoTracking()
                     .Where(d => !d.IsDeleted && (d.Status == null || d.Status == "Active") && (q == null ? (request.CategoryId == null || (d.DishCategoryId ?? d.CategoryId) == request.CategoryId) : d.Name!.Contains(q)))
@@ -417,7 +417,7 @@ namespace AppDelicare.Services.Implement
                 var catNames = await db.DishCategory.AsNoTracking().Select(c => new { c.Id, c.Name }).ToDictionaryAsync(c => c.Id, c => c.Name);
                 var list = info.Values.Select(d =>
                 {
-                    decimal? fc = price is > 0 ? Math.Round((others + (d.Cost ?? 0m)) / price.Value * 100m, 1) : null;
+                    decimal? fc = price is > 0 && others + (d.Cost ?? 0m) > 0 ? Math.Round((others + (d.Cost ?? 0m)) / price.Value * 100m, 1) : null; // chưa có giá vốn → không tính FC
                     return new
                     {
                         Model = new MenuDishSuggestionModel

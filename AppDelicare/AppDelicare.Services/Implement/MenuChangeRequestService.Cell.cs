@@ -60,7 +60,7 @@ namespace AppDelicare.Services.Implement
                 return (null, ConstantHelper.Message.MenuCellInvalid);
             }
             string mealType = request.MealType.Trim().ToUpperInvariant();
-            DateTime monday = OrderService.MondayOf(menu.EffectiveFrom ?? _clock.Today), mealDate = monday.AddDays(request.Day - 1);
+            DateTime monday = OrderService.MondayOf(request.WeekStart ?? menu.EffectiveFrom ?? _clock.Today), mealDate = monday.AddDays(request.Day - 1);
             var scope = await ScopeAsync(menu.Id, mealType, request.OptionNo, mealDate);
             var model = new MenuChangeCellPreviewModel
             {
@@ -121,12 +121,13 @@ namespace AppDelicare.Services.Implement
                 string reason = $"{reasonName}{(string.IsNullOrWhiteSpace(request.Note) ? string.Empty : " – " + request.Note.Trim())} · Mọi khách ({p!.Customers} khách · {p.Quantity:0.##} suất)";
                 var entity = new MenuChangeRequest
                 {
-                    Id = Guid.NewGuid(), RequestNo = await _documentNumberService.NextAsync(DocumentKind.MenuChange, _clock.Today), MenuId = request.MenuId,
+                    Id = Guid.NewGuid(), MenuId = request.MenuId,
                     OriginalDishId = request.OriginalDishId, RequestedDishId = request.RequestedDishId, MealDate = p.MealDate, Quantity = p.Quantity > 0 ? p.Quantity : null,
                     Reason = reason, RequestedBy = actor.UserId, RequestStatus = MenuChangeStatus.Pending,
                 };
                 using (var tran = await _unitOfWork.OpenTransaction())
                 {
+                    entity.RequestNo = await _documentNumberService.NextAsync(DocumentKind.MenuChange, _clock.Today); // sinh mã trong transaction (khóa số)
                     _unitOfWork.MenuChangeRequestRepository.Add(entity);
                     await _unitOfWork.MenuChangeRequestRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
                     if (p.AutoApprove)

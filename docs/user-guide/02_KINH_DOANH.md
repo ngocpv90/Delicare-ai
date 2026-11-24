@@ -28,7 +28,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | S | S |
 | Kinh doanh › Điểm giao hàng | `crm-location` | S | Q (IX) | Q (IX) | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | X |
-| Thực đơn & Món ăn › Yêu cầu đổi món | `menu-change-request` | S | S | S | S |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | X |
 | Giá thành › Giá thành chuẩn | `cost-standard` | — | — | X | — |
 | Giá thành › Giá vốn suất ăn | `cost-meal` | — | — | X | — |
