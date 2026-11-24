@@ -145,9 +145,156 @@
       } }).then(x => { if (!x.ok) return; if (!x.demo) UI.toast('Đã tạo phiên bản nháp ' + esc((x.data && x.data.versionCode) || '') + (last ? ' (sao chép định lượng)' : ''), 'ok'); APP.refresh(); });
     };
   });
+  // ---------- UI-6.11 (D-89): Thực đơn tuần – hệ thống tự lập nháp, bếp chỉ sửa chỗ được đánh dấu (mô phỏng menu-week-mockup.html) ----------
+  // Tuần ◀ ▶ (mặc định tuần sau) · 1 thực đơn chung / tuần (D-90) · 4 bước · 4 chỉ số · lưới buổi → lựa chọn (giá vốn + FC%) → nhóm món × 7 ngày ·
+  // bấm ô → 5 gợi ý (Enter lưu + sang ngày kế, Delete xóa, gõ để tìm) · ⋯ Điền cả hàng · Chép ngày · Gửi duyệt khóa khi còn đánh dấu.
+  const mw = { week: '', data: null, key: '', tab: 'cal', closed: new Set(), focus: -1, hist: null };
+  const MW_DOW = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  const MW_FLAG = { EMPTY: ['mw-empty', 'Ô trống'], NO_RECIPE: ['mw-norec', 'Món chưa có công thức khóa'], DUPLICATE: ['mw-dup', 'Món chính trùng trong 7 ngày'] };
+  const mwMonday = d => { const x = new Date(d + 'T00:00'); return U.addDays(d, -((x.getDay() + 6) % 7)); };
+  const mwNum = v => v === null || v === undefined ? '–' : U.num(v);
+  function mwLoad(el, f, force) {
+    const key = mw.week;
+    if (!force && mw.key === key && mw.data) return Promise.resolve(mw.data);
+    mw.key = key;
+    return Store.query('Menu/GetWeek', { WeekStart: mw.week }).then(x => { if (mw.key !== key) return null; mw.data = x.ok ? x.data : null; if (!x.ok) UI.toast(esc(x.message || 'Không tải được thực đơn tuần'), 'err'); return mw.data; });
+  }
+  function menuWeek(el, f) {
+    if (!mw.week) mw.week = U.addDays(mwMonday(Store.ctx.date), 7);
+    el.innerHTML = APP.header(f, '', { noNote: true }) + `
+      <div class="notice info mb">${I('help')}<div>Mỗi tuần một thực đơn chung cho mọi khách. Thứ Hai 06:00 hệ thống tự lập bản nháp tuần sau (nhân bản tuần cùng vị trí trong chu kỳ 4 tuần) – bếp chỉ sửa các ô được đánh dấu, gửi duyệt, công bố trước thứ Năm.</div></div>
+      <div class="card panel mb"><div class="spread" style="flex-wrap:wrap;gap:8px"><div class="fw-week"><button class="btn sm" id="mwPrev" aria-label="Tuần trước">◀</button><span id="mwLbl"></span><button class="btn sm" id="mwNext" aria-label="Tuần sau">▶</button><button class="btn sm" id="mwNow">Tuần sau</button></div><div id="mwStatus"></div></div>
+        <div class="fw-steps ow-steps" id="mwSteps"></div><div id="mwKpis"></div></div>
+      <div class="card panel"><div class="tabs"><button class="tab" data-mwt="cal">Lịch tuần</button><button class="tab" data-mwt="hist">Duyệt &amp; lịch sử</button></div><div id="mwBody"><div class="muted small">Đang tải…</div></div></div>`;
+    const go = w => { mw.week = w; mw.data = null; mw.focus = -1; mw.hist = null; menuWeek(el, f); };
+    el.querySelector('#mwPrev').onclick = () => go(U.addDays(mw.week, -7));
+    el.querySelector('#mwNext').onclick = () => go(U.addDays(mw.week, 7));
+    el.querySelector('#mwNow').onclick = () => go(U.addDays(mwMonday(Store.ctx.date), 7));
+    el.querySelectorAll('[data-mwt]').forEach(t => t.onclick = () => { mw.tab = t.dataset.mwt; mwDraw(el, f); });
+    mwLoad(el, f).then(() => el.isConnected && mwDraw(el, f));
+  }
+  function mwDraw(el, f) {
+    const d = mw.data, perm = Store.perm(f.id), canEdit = perm.edit !== false, canApprove = Store.canApprove(f.id);
+    el.querySelectorAll('[data-mwt]').forEach(t => t.classList.toggle('active', t.dataset.mwt === mw.tab));
+    const nm = U.addDays(mwMonday(Store.ctx.date), 7);
+    el.querySelector('#mwLbl').innerHTML = `Tuần ${U.date(mw.week).slice(0, 5)} – ${U.date(U.addDays(mw.week, 6))} <span class="small muted" style="font-weight:400">${mw.week === nm ? 'tuần sau' : ''}</span>`;
+    if (!d) { el.querySelector('#mwBody').innerHTML = '<div class="empty">Không tải được thực đơn tuần.</div>'; return; }
+    const st = { Draft: 'orange', Approved: 'blue', Published: 'green', Expired: 'gray' }[d.status] || 'gray';
+    el.querySelector('#mwStatus').innerHTML = d.menuId ? `<span class="badge ${st}">${esc(d.statusName || '')}</span> <b>${esc(d.menuCode || '')}</b> <span class="small muted">· hạn công bố thứ Năm ${U.date(U.day(d.publishDeadline)).slice(0, 5)}</span>` : `<span class="small muted">Chưa có thực đơn · hạn công bố thứ Năm ${U.date(U.day(d.publishDeadline)).slice(0, 5)}</span>`;
+    const need = d.emptyCells + d.missingRecipe + d.fcOver;
+    const s1 = !!d.menuId, s2 = s1 && need === 0, s3 = d.status === 'Approved' || d.status === 'Published', s4 = d.status === 'Published';
+    const dot = ok => ok ? '<span class="mw-ok">✓</span>' : '';
+    el.querySelector('#mwSteps').innerHTML = `
+      <div class="fw-step"><span class="n s1">1</span><div><b>Lập thực đơn ${dot(s1)}</b><span class="small muted">${s1 ? esc(d.sourceNote || 'Đã có thực đơn tuần') : 'Tự lập 06:00 thứ Hai – hoặc tạo tay'}</span></div>${!s1 && perm.add !== false ? `<button class="btn sm primary" id="mwCreate">${I('plus')} Tạo thực đơn tuần</button>` : ''}</div>
+      <div class="fw-step"><span class="n s2">2</span><div><b>Hoàn thiện món ${dot(s2)}</b><span class="small muted">${d.emptyCells} ô trống · ${d.missingRecipe} thiếu công thức · ${d.fcOver} suất FC vượt · ${d.duplicateMain} trùng món</span></div>${s1 && (need + d.duplicateMain) > 0 ? `<button class="btn sm" id="mwNextFlag">${I('search')} Đến ô cần xử lý</button>` : ''}</div>
+      <div class="fw-step"><span class="n s3">3</span><div><b>Gửi duyệt ${dot(s3)}</b><span class="small muted">${d.status === 'Draft' ? (d.canSubmit ? 'Đủ điều kiện – COO duyệt' : 'Khóa tới khi hết ô trống / thiếu công thức / FC vượt') : esc(d.statusName || '')}</span></div>${d.status === 'Draft' && canEdit ? `<button class="btn sm primary" id="mwSubmit" ${d.canSubmit ? '' : 'disabled'}>${I('approve')} Gửi duyệt</button>` : ''}${d.status === 'Draft' && canApprove && d.canSubmit ? `<button class="btn sm orange" id="mwApprove">${I('check')} Duyệt</button>` : ''}</div>
+      <div class="fw-step"><span class="n s4">4</span><div><b>Công bố &amp; gửi phiếu ${dot(s4)}</b><span class="small muted">Công bố trước thứ Năm → gửi phiếu đăng ký cho khách</span></div>${d.status === 'Approved' && canApprove ? `<button class="btn sm orange" id="mwPublish">${I('approve')} Công bố</button>` : ''}${s4 ? `<button class="btn sm" id="mwSlip">${I('down')} Gửi phiếu đăng ký</button>` : ''}</div>`;
+    el.querySelector('#mwKpis').innerHTML = UI.kpis([
+      UI.kpi('Ô còn trống', U.num(d.emptyCells), 'cần chọn món', 'alert', d.emptyCells ? 'orange' : 'green'),
+      UI.kpi('Món thiếu công thức', U.num(d.missingRecipe), 'chưa khóa công thức', 'utensils', d.missingRecipe ? 'red' : 'green'),
+      UI.kpi('FC% TB tuần', d.avgFcPct != null ? U.num(d.avgFcPct) + '%' : '–', 'mục tiêu ≤ ' + U.num(d.fcTargetPct) + '%', 'chart', d.avgFcPct != null && d.avgFcPct > d.fcTargetPct ? 'red' : 'green'),
+      UI.kpi('Khách áp dụng', U.num(d.customerCount), 'hợp đồng hiệu lực', 'users', 'blue')], 'compact');
+    const b = id => el.querySelector(id);
+    if (b('#mwCreate')) b('#mwCreate').onclick = () => mwCreate(el, f);
+    if (b('#mwSubmit')) b('#mwSubmit').onclick = () => Store.act('Menu/SubmitWeek', { form: { Id: d.menuId } }).then(x => { if (x.ok) { UI.toast(esc(x.res.responseMessage || 'Đã gửi duyệt'), 'ok'); } });
+    if (b('#mwApprove')) b('#mwApprove').onclick = () => UI.confirm(`Duyệt thực đơn <b>${esc(d.menuCode)}</b>?`, () => Store.act('Menu/Approve', { form: { Id: d.menuId }, tables: ['Menu'] }).then(x => { if (x.ok) { UI.toast('Đã duyệt', 'ok'); mwLoad(el, f, true).then(() => mwDraw(el, f)); } }), { ok: 'Duyệt' });
+    if (b('#mwPublish')) b('#mwPublish').onclick = () => UI.confirm(`Công bố thực đơn <b>${esc(d.menuCode)}</b>? Khách đăng ký suất theo thực đơn này.`, () => Store.act('Menu/Publish', { form: { Id: d.menuId }, tables: ['Menu'] }).then(x => { if (x.ok) { UI.toast('Đã công bố', 'ok'); mwLoad(el, f, true).then(() => mwDraw(el, f)); } }), { ok: 'Công bố' });
+    if (b('#mwSlip')) b('#mwSlip').onclick = () => APP.go('crm-order-week');
+    if (b('#mwNextFlag')) b('#mwNextFlag').onclick = () => { if (mw.tab !== 'cal') { mw.tab = 'cal'; mwDraw(el, f); } const cs = [...el.querySelectorAll('.mw-cell.mw-empty, .mw-cell.mw-norec, .mw-cell.mw-dup, .mw-fc.bad')]; if (!cs.length) return; mw.focus = (mw.focus + 1) % cs.length; const c = cs[mw.focus]; c.scrollIntoView({ behavior: 'smooth', block: 'center' }); c.classList.add('mw-pulse'); setTimeout(() => c.classList.remove('mw-pulse'), 1200); };
+    if (mw.tab === 'hist') return mwHist(el, f);
+    mwGrid(el, f, canEdit);
+  }
+  function mwGrid(el, f, canEdit) {
+    const d = mw.data, box = el.querySelector('#mwBody'), edit = canEdit && d.editable;
+    if (!d.menuId) { box.innerHTML = `<div class="empty">Tuần này chưa có thực đơn chung. ${Store.perm(f.id).add !== false ? 'Bấm <b>Tạo thực đơn tuần</b> ở bước 1.' : ''}</div>`; return; }
+    const days = d.listDate.map(U.day);
+    let h = `<div class="fw-legend"><span><i class="mw-sw mw-empty"></i>Ô trống</span><span><i class="mw-sw mw-norec"></i>Món chưa có công thức khóa</span><span><i class="mw-sw mw-fcbad"></i>Suất FC vượt mục tiêu</span><span><i class="mw-sw mw-dup"></i>Món chính trùng trong 7 ngày</span><span><i class="mw-sw mw-chg"></i>Ô vừa sửa</span>${d.editable ? '' : '<span><b>Chỉ đọc</b> – đã duyệt / công bố: đổi món qua Yêu cầu đổi món</span>'}</div>
+      <div class="table-wrap"><table class="mw-table"><colgroup><col class="name">${days.map(() => '<col>').join('')}<col style="width:40px"></colgroup><thead><tr><th class="l">Buổi · lựa chọn · nhóm món</th>${days.map((k, i) => `<th>${MW_DOW[i]} ${U.date(k).slice(0, 5)}${edit ? ` <button class="btn xs mw-copy" data-mwcd="${i + 1}" title="Chép cả ngày này sang ngày khác" aria-label="Chép ngày">⧉</button>` : ''}</th>`).join('')}<th></th></tr></thead><tbody>`;
+    d.listMeal.forEach((m, mi) => {
+      const closed = mw.closed.has(m.mealType);
+      h += `<tr class="mw-meal ${closed ? 'closed' : ''}" data-mwm="${esc(m.mealType)}"><td class="l" colspan="9"><span class="fw-chev">▾</span> <b>${esc(m.mealName || m.mealType)}</b> <span class="small muted">· ${m.price != null ? 'giá bán ' + U.money(m.price) : 'chưa có giá bán'} · ${m.listOption.length} lựa chọn</span></td></tr>`;
+      if (closed) return;
+      m.listOption.forEach((o, oi) => {
+        h += `<tr class="mw-opt"><td class="l">${m.listOption.length > 1 ? 'Lựa chọn ' + o.optionNo : 'Giá vốn / FC%'}</td>${o.listCost.map((c, i) => { const fc = o.listFcPct[i], bad = fc != null && fc > d.fcTargetPct; return `<td class="mw-fc ${bad ? 'bad' : fc != null ? 'good' : ''}">${c ? U.num(c) : '–'}<div class="small">${fc != null ? U.num(fc) + '%' : ''}</div></td>`; }).join('')}<td></td></tr>`;
+        o.listRow.forEach((r, ri) => {
+          h += `<tr><td class="l mw-cat">${esc(r.categoryName || 'Món')}</td>${r.listCell.map((c, di) => { const fl = MW_FLAG[c.flag]; return `<td><button class="mw-cell ${fl ? fl[0] : ''}" data-mwc="${mi}|${oi}|${ri}|${di}" title="${esc((c.dishName || '') + (c.cost != null ? ' · giá vốn ' + U.num(c.cost) : '') + (fl ? ' · ' + fl[1] : ''))}" ${edit ? '' : 'disabled'}>${c.dishName ? esc(c.dishName) : '<span class="muted">+ chọn món</span>'}</button></td>`; }).join('')}<td>${edit ? `<button class="btn xs" data-mwf="${mi}|${oi}|${ri}" title="Điền cả hàng (7 ngày cùng món)" aria-label="Điền cả hàng">⋯</button>` : ''}</td></tr>`;
+        });
+      });
+    });
+    box.innerHTML = h + '</tbody></table></div><div class="small muted mt">Bấm ô → 5 gợi ý (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC); gõ để tìm món khác; <b>Enter</b> lưu và sang ngày kế; <b>Delete</b> xóa món; <b>Esc</b> đóng. ⧉ ở đầu cột = chép cả ngày.</div>';
+    box.querySelectorAll('[data-mwm]').forEach(tr => tr.onclick = () => { const k = tr.dataset.mwm; mw.closed.has(k) ? mw.closed.delete(k) : mw.closed.add(k); mwGrid(el, f, canEdit); });
+    if (!edit) return;
+    box.querySelectorAll('[data-mwc]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, false));
+    box.querySelectorAll('[data-mwf]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, true));
+    box.querySelectorAll('[data-mwcd]').forEach(btn => btn.onclick = () => {
+      const from = +btn.dataset.mwcd;
+      UI.modal({ title: 'Chép ngày ' + MW_DOW[from - 1], size: 'sm', body: `<div class="field"><label>Chép mọi buổi của ${MW_DOW[from - 1]} sang</label><select class="select" id="mwTo">${MW_DOW.map((x, i) => i + 1 === from ? '' : `<option value="${i + 1}">${x} ${U.date(days[i]).slice(0, 5)}</option>`).join('')}</select></div><div class="small muted">Món của ngày đích bị thay toàn bộ.</div>`,
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="mwCdOk">Chép</button>',
+        onMount: (mm, close) => mm.querySelector('#mwCdOk').onclick = () => Store.act('Menu/CopyDay', { json: { menuId: mw.data.menuId, fromDay: from, toDay: +mm.querySelector('#mwTo').value }, tables: ['MenuLine'] }).then(x => { if (!x.ok) return; close(); mw.data = x.data; UI.toast('Đã chép ngày', 'ok'); mwDraw(el, f); }) });
+    });
+  }
+  // Hộp chọn món ngay dưới ô (không hộp thoại): 5 gợi ý + tìm; Enter lưu + sang ngày kế; Delete xóa.
+  function mwPick(el, f, canEdit, anchor, fillRow) {
+    document.querySelectorAll('.mw-pop').forEach(p => p.remove());
+    const [mi, oi, ri, di0] = (anchor.dataset.mwc || anchor.dataset.mwf + '|0').split('|').map(Number);
+    const d = mw.data, meal = d.listMeal[mi], opt = meal.listOption[oi], row = opt.listRow[ri];
+    let di = di0;
+    const pop = document.createElement('div'); pop.className = 'mw-pop';
+    const r = anchor.getBoundingClientRect();
+    pop.style.top = (r.bottom + window.scrollY + 4) + 'px'; pop.style.left = Math.min(r.left + window.scrollX, window.innerWidth - 340) + 'px';
+    pop.innerHTML = `<div class="small muted mb">${fillRow ? 'Điền cả hàng – ' : ''}${esc(meal.mealName)} · ${opt.optionNo > 1 || meal.listOption.length > 1 ? 'LC ' + opt.optionNo + ' · ' : ''}${esc(row.categoryName || '')}${fillRow ? '' : ' · ' + MW_DOW[di]}</div><input class="input" id="mwQ" placeholder="Gõ để tìm món khác…" autocomplete="off"><div id="mwList" class="mw-list"><div class="muted small">Đang gợi ý…</div></div>`;
+    document.body.appendChild(pop);
+    const q = pop.querySelector('#mwQ'); q.focus();
+    let items = [], sel = 0, t = null;
+    const close = () => { pop.remove(); document.removeEventListener('mousedown', outside, true); };
+    const outside = e => { if (!pop.contains(e.target) && e.target !== anchor) close(); };
+    document.addEventListener('mousedown', outside, true);
+    const paint = () => { pop.querySelector('#mwList').innerHTML = items.length ? items.map((s, i) => `<button class="mw-opt-btn ${i === sel ? 'on' : ''}" data-i="${i}"><b>${esc(s.dishName)}</b><span class="small muted">${s.hasRecipe ? '' : '⚠ chưa có công thức · '}giá vốn ${mwNum(s.cost)}${s.newFcPct != null ? ` · FC <span class="${s.newFcPct > d.fcTargetPct ? 'bad' : 'up'}">${U.num(s.newFcPct)}%</span>` : ''}${s.daysSinceUsed != null ? ' · dùng ' + s.daysSinceUsed + ' ngày trước' : ''}</span></button>`).join('') : '<div class="muted small">Không có món phù hợp</div>'; pop.querySelectorAll('[data-i]').forEach(b => b.onmousedown = e => { e.preventDefault(); sel = +b.dataset.i; choose(); }); };
+    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: q.value.trim() || null }).then(x => { items = x.ok ? x.list || [] : []; sel = 0; paint(); });
+    const after = x => { if (!x.ok) return; mw.data = x.data; mwGrid(el, f, canEdit); el.querySelector('#mwKpis') && mwDraw(el, f); };
+    const save = dishId => Store.act('Menu/SaveCell', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, day: di + 1, dishId }, tables: ['MenuLine'] });
+    function choose() {
+      const s = items[sel]; if (!s) return;
+      if (fillRow) return Store.act('Menu/FillRow', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, dishId: s.dishId }, tables: ['MenuLine'] }).then(x => { close(); after(x); });
+      save(s.dishId).then(x => { close(); after(x); if (x.ok && di < 6) { const next = el.querySelector(`[data-mwc="${mi}|${oi}|${ri}|${di + 1}"]`); if (next) { next.classList.add('mw-chgd'); mwPick(el, f, canEdit, next, false); } } });
+    }
+    q.oninput = () => { clearTimeout(t); t = setTimeout(load, 250); };
+    q.onkeydown = e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(items.length - 1, sel + 1); paint(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); paint(); }
+      else if (e.key === 'Enter') { e.preventDefault(); choose(); }
+      else if (e.key === 'Escape') close();
+      else if ((e.key === 'Delete' || e.key === 'Backspace') && !q.value && !fillRow) { e.preventDefault(); save(null).then(x => { close(); after(x); }); }
+    };
+    load();
+  }
+  function mwCreate(el, f) {
+    const menus = Store.rows('Menu').filter(m => m.MenuType === 'COMMON' && m.Status !== 'Draft').sort((a, b) => String(b.EffectiveFrom || '').localeCompare(String(a.EffectiveFrom || ''))).slice(0, 20);
+    UI.modal({ title: 'Tạo thực đơn tuần ' + U.date(mw.week).slice(0, 5), size: 'sm',
+      body: `<label class="mw-radio"><input type="radio" name="mwm" value="auto" checked> <b>Nhân bản tuần cùng vị trí chu kỳ 4 tuần</b><div class="small muted">Như hệ thống tự lập thứ Hai</div></label>
+        <label class="mw-radio"><input type="radio" name="mwm" value="pick"> <b>Nhân bản tuần chọn</b><select class="select mt" id="mwSrc">${menus.map(m => `<option value="${m.Id}">${esc(m.Code || '')} · ${U.date(U.day(m.EffectiveFrom))}</option>`).join('')}</select></label>
+        <label class="mw-radio"><input type="radio" name="mwm" value="blank"> <b>Khung trống mẫu chuẩn</b><div class="small muted">Sáng 3 lựa chọn × Món chính – Ăn kèm – Đồ uống; Trưa / Tối 7 nhóm món; Đêm Món chính – Đồ uống</div></label>
+        <label class="mw-radio muted"><input type="radio" disabled> Tải Excel theo mẫu sheet "1. Menu" <span class="small">(chưa nâng cấp)</span></label>`,
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="mwCOk">Tạo</button>',
+      onMount: (m, close) => m.querySelector('#mwCOk').onclick = () => {
+        const mode = (m.querySelector('[name=mwm]:checked') || {}).value, form = { weekStart: mw.week };
+        if (mode === 'pick') form.sourceId = m.querySelector('#mwSrc').value; if (mode === 'blank') form.blank = true;
+        Store.act('Menu/CreateWeek', { form, tables: ['Menu', 'MenuLine'] }).then(x => { if (!x.ok) return; close(); UI.toast(esc((x.data && x.data.message) || 'Đã tạo'), 'ok'); mwLoad(el, f, true).then(() => mwDraw(el, f)); });
+      } });
+  }
+  function mwHist(el, f) {
+    const box = el.querySelector('#mwBody'), d = mw.data;
+    if (!d.menuId) { box.innerHTML = '<div class="empty">Chưa có thực đơn.</div>'; return; }
+    box.innerHTML = '<div class="muted small">Đang tải…</div>';
+    (mw.hist ? Promise.resolve(mw.hist) : Store.query('Common/GetHistory', { resource: 'Menu', id: d.menuId }).then(x => (mw.hist = x.ok ? x.list : []))).then(list => {
+      if (!box.isConnected) return;
+      box.innerHTML = list.length ? `<div class="timeline">${list.slice(0, 80).map(h => `<div class="tl ${/REJECT|DELETE/i.test(h.action || '') ? 'red' : 'orange'}"><b>${esc(h.actionName || h.action || '')}${h.entityName === 'MenuLine' ? ' · món' : ''}</b><small>${esc(U.dt(String(h.at || '').replace(/\.\d+$/, '')))} · ${esc(h.byName || '')}${(h.listChange || []).filter(c => c.field === 'Status').map(c => ' · ' + esc((c.from || '') + ' → ' + c.to)).join('')}</small></div>`).join('')}</div>` : '<div class="empty">Chưa có lịch sử.</div>';
+    });
+  }
   // ---------- Thực đơn dạng lịch tuần ----------
   const ms = { menu: null, mt: 'LUNCH' };
   APP.register('menu-menu', (el, f) => {
+    if (Store.isLive) return menuWeek(el, f);
     const menus = Store.rows('Menu'); if (!ms.menu || !Store.get('Menu', ms.menu)) ms.menu = (menus[0] || {}).Id;
     if (!ms.menu) return APP.genericList(el, f);
     const mn = Store.get('Menu', ms.menu);

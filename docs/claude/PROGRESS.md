@@ -1,6 +1,43 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.11 (D-89) DONE (phần chính) – Thực đơn tuần: hệ thống tự lập nháp, bếp chỉ sửa chỗ đánh dấu** (nhánh `feat/UI-6.11-menu-week`). Không thêm bảng / cột; không có script DB.
+  - **BE:**
+    - `Menu/GetWeek`:
+      - lưới buổi → lựa chọn → nhóm món × 7 ngày; thực đơn chưa có món → khung mẫu chuẩn;
+      - đánh dấu ô trống / thiếu công thức khóa / món chính trùng (gồm cuối tuần trước);
+      - giá vốn + FC% từng lựa chọn × ngày; 4 chỉ số; hạn công bố thứ Năm.
+    - `SaveCell` / `FillRow` / `CopyDay`: chỉ thực đơn Nháp.
+    - `SuggestDish`: 5 gợi ý theo cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC, kèm FC mới; có ô tìm.
+    - `SubmitWeek`: khóa khi còn ô trống / thiếu công thức / FC vượt; hợp lệ → bot COO.
+    - `CreateWeek` / `AutoDraft`: nhân bản tuần N − 4 / tuần chọn / khung trống.
+    - Job `MenuAutoDraft` thứ Hai 06:00 + `MenuDraftNotice` 08:00.
+    - Tùy chọn `MenuCycleWeeks` (4), `MenuNoRepeatDays` (14).
+  - **FE (`menu.js` `menu-menu`, chế độ API; DEMO giữ màn cũ):**
+    - Tuần ◀ ▶, không còn ô chọn thực đơn; nhãn trạng thái + hạn công bố.
+    - 4 bước có ✓: Tạo thực đơn tuần / Đến ô cần xử lý / Gửi duyệt (khóa) + Duyệt / Công bố + Gửi phiếu đăng ký. 4 KPI.
+    - Lưới một màn 4 buổi (mở / gập), dòng FC% xanh / đỏ, ô màu theo đánh dấu.
+    - Bấm ô → hộp gợi ý ngay dưới ô (5 món + FC mới, tìm, ↑ ↓, Enter lưu + sang ngày kế, Delete xóa, Esc).
+    - ⋯ Điền cả hàng; ⧉ Chép ngày; tab Duyệt & lịch sử.
+    - Bỏ dãy nút mọi thực đơn, hộp thoại 7 ô kỹ thuật và nút "Chuyển sang …" trong chế độ API.
+  - **Kiểm trên DB dev thật** (uat.ops-plan; ảnh `docs/frontend-handoff/assets/ui-6.11/`):
+    - Tuần 30/11 hiện [DEMO]-NU-CHUNG Đã công bố, chỉ đọc; 84 ô "thiếu công thức khóa"; khách áp dụng 98.
+    - Tuần 29/03/2027: Tạo thực đơn tuần → NU-270329-001 Nháp (nhân bản NU-270109-001 vì tuần N − 4 không có).
+    - Bấm ô → 5 gợi ý → Enter lưu và tự mở ô ngày kế tiếp.
+    - Không có lỗi JS.
+  - **Vai trò (gọi API thật):**
+    - OPS-PLAN: xem / sửa / tạo 200.
+    - OPS-KIT, SAL-HEAD: xem 200, sửa / tạo 403.
+    - OPS-WH, FIN-ACC: 403.
+  - **Test:** `MenuWeekTests` (nhân bản N − 4, tạo lại bỏ qua, đánh dấu NO_RECIPE / EMPTY, FC 37,5 %, gửi duyệt bị khóa → hết đánh dấu thì gửi được, gợi ý có công thức trước, sửa ô / điền hàng / chép ngày, đã duyệt thì chỉ đọc); `JobTests` thêm 2 mã; toàn bộ **648/648**; FE build xanh; `full-flow.http` ngày 11/01/2027 **226/227** (lỗi 9.3 do hạn lô như cũ).
+  - **Tài liệu:** HDSD 03 §4.4 viết lại (vòng tuần, 4 bước, tạo thực đơn, sửa ô, màu, quyền); BUSINESS_RULES thêm mục UI-6.11.
+  - **Chưa làm / còn rủi ro:**
+    - **Tải Excel theo mẫu sheet "1. Menu"** (`Menu/ImportExcel`: khớp tên món, gợi ý món gần giống) **chưa làm**; trên giao diện hiện "chưa nâng cấp".
+    - "+ Thêm lựa chọn / + Thêm nhóm món" chưa có nút riêng. Hiện chỉ thêm được qua khung mẫu chuẩn / nhân bản.
+    - Giá vốn món lấy `Dish.StandardCost` (giá vốn chuẩn), chưa tính lại theo công thức × giá nguyên liệu. Trên DB dev phần lớn món chưa có giá vốn chuẩn / công thức khóa nên FC hiện "–" và gợi ý báo "chưa có công thức".
+    - "Gửi duyệt" không đổi trạng thái (thực đơn không có trạng thái Chờ duyệt): chỉ kiểm khóa và báo COO; COO duyệt bằng nút Duyệt.
+    - Dữ liệu thử trên DB dev: NU-270329-001 (tuần 29/03/2027, Nháp, đã sửa 1 ô); thực đơn tuần 06/01/2031 do lần dò quyền tạo.
+    - Mục ROADMAP UI-6.11 → DONE / PARTIAL (thiếu Excel): anh tự cập nhật.
 - **2026-11-24: UI-6.9 (D-87) DONE – Bảng kê thanh toán: mọi khách một bảng + xuất hàng loạt** (nhánh `feat/UI-6.9-billing`). Không thêm bảng / cột; không có script DB.
   - **BE:**
     - `BillingStatement/GetMonthOverview`:
