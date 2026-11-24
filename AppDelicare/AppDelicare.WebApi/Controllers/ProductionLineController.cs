@@ -10,8 +10,9 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class ProductionLineController(IProductionLineService service) : BaseController
+    public class ProductionLineController(IProductionLineService service, IProductionLineSetupService setup) : BaseController
     {
+        private readonly IProductionLineSetupService _setup = setup;
         private readonly IProductionLineService _service = service;
 
         [HttpGet("GetAll")]
@@ -107,6 +108,35 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+        /// <summary>UI-6.26 (D-107): dây chuyền + nhóm món đang gán + số món + nhóm chưa gán (quyền Xem prod-line).</summary>
+        [HttpGet("GetOverview")]
+        public async Task<IActionResult> GetOverview()
+        {
+            try
+            {
+                return Ok(await _setup.GetOverview());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetOverview: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.26 (D-107): lưu dây chuyền kèm danh sách nhóm món (một giao dịch; mã trống → tự sinh). Quyền Sửa prod-line.</summary>
+        [HttpPost("SaveWithCategories")]
+        public async Task<IActionResult> SaveWithCategories([FromBody] AppDelicare.Model.Model.ProductionLineSaveRequest request)
+        {
+            try
+            {
+                return Ok(await _setup.SaveWithCategories(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SaveWithCategories: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

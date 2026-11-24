@@ -194,6 +194,7 @@ Dùng cho: kiểm tra tồn tại khi ghi, `ReferenceGuard` khi xóa mềm (T07)
 | CleaningChecklistResult | CleaningBatchId | CleaningBatche | Id | Khớp tên sau khi xét tên bảng legacy số nhiều | ĐỀ XUẤT – chờ BA xác nhận |
 | ContractMeal | UnitId | UnitMeasure | Id | PO xác nhận 14/11/2026: UnitId → UnitMeasure | PO XÁC NHẬN |
 | Dishe | DefaultUnitId | UnitMeasure | Id | PO xác nhận 14/11/2026: UnitId → UnitMeasure | PO XÁC NHẬN |
+| DishCategorie | ProductionLineId | ProductionLine | Id | UI-6.26 (D-107) – cột mới anh duyệt 2026-11-24 (GAP-PRD-10) | ĐÃ DUYỆT |
 | Dishe | DishCategoryId | DishCategorie | Id | Khớp tên sau khi xét tên bảng legacy số nhiều | ĐỀ XUẤT – chờ BA xác nhận |
 | FoodSafetyChecklistResult | ProductionBatchId | ProductionBatche | Id | Khớp tên sau khi xét tên bảng legacy số nhiều | ĐỀ XUẤT – chờ BA xác nhận |
 | GoodsReceiptLine | UnitId | UnitMeasure | Id | PO xác nhận 14/11/2026: UnitId → UnitMeasure | PO XÁC NHẬN |

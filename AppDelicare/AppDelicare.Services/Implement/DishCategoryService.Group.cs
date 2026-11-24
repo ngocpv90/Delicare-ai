@@ -31,6 +31,30 @@ namespace AppDelicare.Services.Implement
                 return string.Format(ConstantHelper.Message.GroupNameDuplicate, request.Name);
             }
             request.ParentId = null;
+            // UI-6.26 (D-107): dây chuyền của nhóm – không gửi = giữ nguyên (đổi tên / ngừng ở cột nhóm không làm mất), Guid rỗng = bỏ gán; gán mới phải là dây chuyền đang hoạt động.
+            if (request.ProductionLineId is { } lineId)
+            {
+                if (lineId == Guid.Empty)
+                {
+                    request.ProductionLineId = null;
+                }
+                else if (lineId != exist?.ProductionLineId)
+                {
+                    var line = await db.ProductionLine.AsNoTracking().FirstOrDefaultAsync(l => l.Id == lineId && !l.IsDeleted);
+                    if (line == null)
+                    {
+                        return ConstantHelper.Message.ProductionLineNotFound;
+                    }
+                    if (!ProductionLineRules.IsActive(line))
+                    {
+                        return string.Format(ConstantHelper.Message.ProductionLineInactiveAssign, line.Name ?? line.Code);
+                    }
+                }
+            }
+            else if (exist != null)
+            {
+                request.ProductionLineId = exist.ProductionLineId;
+            }
             if (exist != null && request.Status == "Inactive" && exist.Status != "Inactive")
             {
                 Guid id = exist.Id;
@@ -49,7 +73,9 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var db = _unitOfWork.DbContext;
-                var groups = await db.DishCategory.AsNoTracking().Where(x => !x.IsDeleted).Select(x => new { x.Id, x.Code, x.Name, x.Status, x.ParentId }).ToListAsync();
+                var groups = await db.DishCategory.AsNoTracking().Where(x => !x.IsDeleted).Select(x => new { x.Id, x.Code, x.Name, x.Status, x.ParentId, x.ProductionLineId }).ToListAsync();
+                var lineIds = groups.Where(g => g.ProductionLineId != null).Select(g => g.ProductionLineId!.Value).Distinct().ToList();
+                var lines = await db.ProductionLine.AsNoTracking().Where(l => lineIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id);
                 var items = await db.Dish.AsNoTracking().Where(x => !x.IsDeleted)
                     .Select(x => new { Group = x.DishCategoryId ?? x.CategoryId, Active = x.Status == null || x.Status == "Active" }).ToListAsync();
                 var model = new CategoryCountListModel
@@ -62,6 +88,8 @@ namespace AppDelicare.Services.Implement
                     {
                         Id = g.Id, Code = g.Code, Name = g.Name, Status = g.Status ?? "Active",
                         ActiveCount = items.Count(i => i.Group == g.Id && i.Active), TotalCount = items.Count(i => i.Group == g.Id),
+                        ProductionLineId = g.ProductionLineId, ProductionLineName = g.ProductionLineId is { } l && lines.TryGetValue(l, out var pl) ? pl.Name ?? pl.Code : null,
+                        ProductionLineInactive = g.ProductionLineId is { } l2 && !ProductionLineRules.IsActive(lines.GetValueOrDefault(l2)),
                     })
                     .OrderBy(g => g.Status == "Inactive" ? 1 : 0).ThenBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase)];
                 return Result<CategoryCountListModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);

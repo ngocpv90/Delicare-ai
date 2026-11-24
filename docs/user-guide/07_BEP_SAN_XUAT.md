@@ -80,7 +80,11 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 ### 4.3 Bảng sản xuất ngày & lệnh sản xuất (UI-6.24 – menu Sản xuất còn 4 mục: Kế hoạch sản xuất · Mẻ nấu · Hao hụt · Dây chuyền & trạm bếp)
 - Màn **Mẻ nấu** giữ bảng điều độ ca × dây chuyền; nút **Bảng sản xuất ngày** mở trang kế hoạch của ngày đang xem (ma trận món × ca, tiến độ mẻ) – xem `03_KE_HOACH.md` mục 4.7.
 - Tab **Sản lượng** trong Mẻ nấu: danh sách chỉ xem (sản lượng ghi ở mẻ – Kết thúc nấu / Loại mẻ). Link cũ `#/prod-output` mở tab này.
-- **Dây chuyền & trạm bếp**: 2 tab Dây chuyền · Trạm bếp (In QR giữ nguyên). Link cũ `#/prod-workstation` mở tab Trạm bếp.
+- **Dây chuyền & trạm bếp** (UI-6.26, D-107) – 2 tab:
+  - **Dây chuyền**: mỗi dây chuyền có Tên, **Công suất (suất / mẻ)**, **Thời gian 1 mẻ (phút)**, **Nhóm món đang gán**, Trạng thái. Khi ra lệnh sản xuất, mỗi món nấu ở **dây chuyền của nhóm món** (nhóm con trống → nhóm cha): số mẻ = suất ÷ công suất (làm tròn lên), mỗi mẻ đúng số phút của dây chuyền. Nhóm chưa gán (hoặc dây chuyền đã ngừng) → món nấu **1 mẻ** + cảnh báo "Món X (nhóm Y) chưa gán dây chuyền – nấu 1 mẻ".
+  - Đầu màn cảnh báo "N nhóm món chưa gán dây chuyền" + nút **Gán nhanh** (bảng nhóm món × ô chọn dây chuyền, lưu một lần). **Thêm dây chuyền / Sửa**: Tên*, Công suất*, Thời gian 1 mẻ*, Trạng thái, **Nhóm món** (tick nhiều – tick nhóm đang ở dây chuyền khác = chuyển sang), Ghi chú; mã tự sinh DC-NNN. Dây chuyền Ngừng hoạt động không gán được cho nhóm.
+  - **Bàn nấu** (trước là Trạm bếp): Mã, Tên bàn nấu, Khu vực, Ghi chú, Trạng thái + **In QR** – không còn tọa độ / bán kính. Bắt đầu mẻ không hỏi bàn nấu (bot / QR vẫn ghi kèm). Link cũ `#/prod-workstation` mở tab này.
+  - Ở màn **Món ăn**, cột nhóm bên trái hiện dây chuyền của từng nhóm (cam = chưa gán); ⋯ → **Gán dây chuyền**.
 - Lệnh sản xuất không tạo tay; **lệnh tự đóng** khi mẻ cuối đóng gói / loại (chênh lệch, giá thành, trả nguyên liệu giữ chỗ dư). Chi tiết trang lệnh: `03_KE_HOACH.md` mục 4.8.
 
 ### 4.4 Kế hoạch sản xuất – `prod-plan`

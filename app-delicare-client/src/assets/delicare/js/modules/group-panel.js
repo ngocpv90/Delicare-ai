@@ -15,9 +15,10 @@
       const d = x.data, groups = d.listGroup || [];
       o.onData && o.onData(d);
       const cur = o.selected();
-      const item = (id, name, n, extra, off) => `<div class="grp-it ${cur === id ? 'on' : ''} ${off ? 'off' : ''}" data-g="${esc(id)}"><span class="nm" title="${esc(name)}">${esc(name)}</span><span class="n">${U.num(n)}</span>${extra || ''}</div>`;
+      const lineOf = g => !o.lineAssign || !g ? '' : `<span class="grp-line ${!g.productionLineId || g.productionLineInactive ? 'warn' : ''}" title="Dây chuyền nấu các món của nhóm (UI-6.26)">${g.productionLineId ? esc(g.productionLineName || '') + (g.productionLineInactive ? ' (đã ngừng)' : '') : 'Chưa gán dây chuyền'}</span>`;
+      const item = (id, name, n, extra, off, g) => `<div class="grp-it ${cur === id ? 'on' : ''} ${off ? 'off' : ''}" data-g="${esc(id)}"><span class="nm" title="${esc(name)}">${esc(name)}${lineOf(g)}</span><span class="n">${U.num(n)}</span>${extra || ''}</div>`;
       box.innerHTML = `<div class="spread grp-head"><b>${esc(o.label)}</b>${can('add') ? `<button class="btn xs" data-gadd>${I('plus')} Thêm nhóm</button>` : ''}</div>
-        <div class="grp-list">${item('', 'Tất cả nhóm', d.totalActive)}${groups.map(g => item(g.id, g.name || g.code || '', g.activeCount, can('edit') ? `<button class="grp-more" data-gm="${esc(g.id)}" aria-label="Thao tác nhóm">⋯</button>` : '', g.status === 'Inactive')).join('')}${d.ungrouped ? item('__none', 'Chưa phân nhóm', d.ungrouped) : ''}</div>
+        <div class="grp-list">${item('', 'Tất cả nhóm', d.totalActive)}${groups.map(g => item(g.id, g.name || g.code || '', g.activeCount, can('edit') ? `<button class="grp-more" data-gm="${esc(g.id)}" aria-label="Thao tác nhóm">⋯</button>` : '', g.status === 'Inactive', g)).join('')}${d.ungrouped ? item('__none', 'Chưa phân nhóm', d.ungrouped) : ''}</div>
         <div class="small muted mt grp-hint">Bấm nhóm để lọc. ${can('edit') ? '⋯ để đổi tên / ngừng dùng – nhóm còn ' + esc(o.itemLabel) + ' đang dùng thì không ngừng được.' : ''}</div>`;
       box.querySelectorAll('[data-g]').forEach(r => r.onclick = e => { if (e.target.closest('button,input')) return; o.onSelect(r.dataset.g); });
       const save = (g, patch) => Store.act(o.ctl + '/Update', { method: 'PUT', form: Object.assign({ Id: g.id, Code: g.code, Name: g.name, Status: g.status }, patch), tables: [o.table] }).then(r => { if (r.ok) { UI.toast('Đã lưu nhóm', 'ok'); draw(); o.onChanged && o.onChanged(); } });
@@ -25,11 +26,19 @@
         e.stopPropagation();
         const g = groups.find(x => x.id === b.dataset.gm), row = b.closest('[data-g]');
         box.querySelectorAll('.grp-menu').forEach(m => m.remove());
-        row.insertAdjacentHTML('beforeend', `<div class="grp-menu"><button data-ga="rename">Đổi tên</button>${g.status === 'Inactive' ? '<button data-ga="on">Dùng lại</button>' : g.activeCount ? `<button disabled title="Chuyển ${esc(o.itemLabel)} sang nhóm khác trước">Ngừng dùng (còn ${U.num(g.activeCount)} ${esc(o.itemLabel)})</button>` : '<button data-ga="off">Ngừng dùng</button>'}</div>`);
+        row.insertAdjacentHTML('beforeend', `<div class="grp-menu"><button data-ga="rename">Đổi tên</button>${o.lineAssign && g.status !== 'Inactive' ? '<button data-ga="line">Gán dây chuyền</button>' : ''}${g.status === 'Inactive' ? '<button data-ga="on">Dùng lại</button>' : g.activeCount ? `<button disabled title="Chuyển ${esc(o.itemLabel)} sang nhóm khác trước">Ngừng dùng (còn ${U.num(g.activeCount)} ${esc(o.itemLabel)})</button>` : '<button data-ga="off">Ngừng dùng</button>'}</div>`);
         row.querySelectorAll('[data-ga]').forEach(a => a.onclick = ev => {
           ev.stopPropagation(); const act = a.dataset.ga; row.querySelector('.grp-menu').remove();
           if (act === 'off') return save(g, { Status: 'Inactive' });
           if (act === 'on') return save(g, { Status: 'Active' });
+          if (act === 'line') return Store.query('ProductionLine/GetOverview').then(x => {
+            const lines = ((x.ok && x.data && x.data.listLine) || []).filter(l => l.status !== 'Inactive');
+            UI.modal({ title: 'Gán dây chuyền cho nhóm ' + esc(g.name || ''), size: 'sm',
+              body: `<p class="small muted" style="margin-top:0">Món của nhóm sẽ được chia mẻ theo công suất và thời gian mỗi mẻ của dây chuyền khi ra lệnh sản xuất. Chưa gán → nấu 1 mẻ.</p>
+                <div class="field"><label>Dây chuyền</label><select class="select" id="gpLine"><option value="00000000-0000-0000-0000-000000000000">— Chưa gán —</option>${lines.map(l => `<option value="${esc(l.id)}" ${l.id === g.productionLineId ? 'selected' : ''}>${esc(l.name || l.code)} · ${U.num(l.capacityMealPerBatch)} suất / mẻ · ${U.num(l.minutesPerBatch)} phút</option>`).join('')}</select></div>`,
+              foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="gpOk">Lưu</button>',
+              onMount: (m, close) => { m.querySelector('#gpOk').onclick = () => { close(); save(g, { ProductionLineId: m.querySelector('#gpLine').value }); }; } });
+          });
           const nm = row.querySelector('.nm'); nm.innerHTML = `<input class="input grp-in" value="${esc(g.name || '')}">`;
           const inp = nm.querySelector('input'); inp.focus(); inp.select();
           inp.onkeydown = k => { if (k.key === 'Escape') draw(); if (k.key === 'Enter') { const v = inp.value.trim(); if (!v) return UI.toast('Nhập tên nhóm', 'err'); if (v === g.name) return draw(); save(g, { Name: v }); } };
@@ -126,6 +135,6 @@
       UI.kpi('Nhóm món', U.num(Store.rows('DishCategorie').filter(c => c.Status !== 'Inactive').length), 'đang dùng', 'clipboard', 'blue'),
     ]);
     APP.groupList(el, f, Object.assign({ kpis: '', top: '<div class="notice info mb">' + I('help') + '<div>Danh mục món ăn theo nhóm. Nhóm món quản lý ngay ở cột trái – không còn mục menu "Nhóm món ăn" riêng.</div></div>' + kpis }, APP.dishListOpt),
-      { fields: ['DishCategoryId', 'CategoryId'], api: 'DishCategory/GetWithCount', ctl: 'DishCategory', table: 'DishCategorie', screen: 'menu-dish', label: 'Nhóm món', itemLabel: 'món' });
+      { fields: ['DishCategoryId', 'CategoryId'], api: 'DishCategory/GetWithCount', ctl: 'DishCategory', table: 'DishCategorie', screen: 'menu-dish', label: 'Nhóm món', itemLabel: 'món', lineAssign: true });
   });
 })();

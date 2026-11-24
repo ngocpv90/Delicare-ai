@@ -13,5 +13,7 @@ namespace AppDelicare.Model.ViewModels
 		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
 		public string? Note { get; set; }
 		public DateTime? CreatedDate { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public Guid? ProductionLineId { get; set; }
 	}
 }

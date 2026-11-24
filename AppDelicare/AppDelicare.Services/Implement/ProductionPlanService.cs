@@ -339,7 +339,6 @@ namespace AppDelicare.Services.Implement
                         return Fail(ConstantHelper.Message.ProductionLineNotFound);
                     }
                 }
-                int minutes = line?.MinutesPerBatch is > 0 ? (int)Math.Ceiling(line.MinutesPerBatch.Value) : _rules.ProductionDefaultMinutesPerBatch;
 
                 // 1) Công thức theo món (các món của ca sẽ phát hành).
                 var dishIds = toRelease.SelectMany(p => p.Lines).Select(l => l.Line.DishId).Distinct().ToList();
@@ -366,6 +365,13 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(string.Format(ConstantHelper.Message.ReleaseNoRecipe, string.Join(", ", missing)));
                 }
+                // UI-6.26 (D-107): dây chuyền theo từng món = dây chuyền của nhóm món (nhóm cha khi trống); ProductionLineId gửi lên chỉ cho món chưa có;
+                // không có → 1 mẻ, thời lượng mặc định + cảnh báo.
+                var dishLines = await ProductionLineRules.ForDishesAsync(db, dishIds);
+                foreach (var w in dishIds.Select(d => dishLines.GetValueOrDefault(d)).Where(x => x?.Line == null && line == null && x?.Warning != null).Select(x => x!.Warning!).Distinct())
+                {
+                    warnings.Add(w);
+                }
 
                 // 2) Mỗi ca: giờ xuất bếp riêng → lệnh SX (PH-) theo món + mẻ (ME-yyMMdd-<CA>-NN) lịch ngược riêng.
                 // Sinh mã đầu rồi cộng dần (sp_getapplock giữ tới khi commit); PH- cộng dần qua mọi ca, ME- theo từng ca.
@@ -389,7 +395,8 @@ namespace AppDelicare.Services.Implement
                     foreach (var (planLine, quantity) in part.Lines.OrderBy(l => dishNames.GetValueOrDefault(l.Line.DishId)))
                     {
                         var (recipe, snapshot) = recipes[planLine.DishId];
-                        var batches = ProductionRules.Schedule(quantity, line?.CapacityMealPerBatch, minutes, cookEnd);
+                        var useLine = dishLines.GetValueOrDefault(planLine.DishId)?.Line ?? line;
+                        var batches = ProductionRules.Schedule(quantity, useLine?.CapacityMealPerBatch, ProductionLineRules.Minutes(useLine, _rules.ProductionDefaultMinutesPerBatch), cookEnd);
                         string number = ProductionRules.Increment(firstOrderNo, orderIndex++);
                         var order = new ProductionOrder
                         {
@@ -400,7 +407,7 @@ namespace AppDelicare.Services.Implement
                             DishId = planLine.DishId,
                             RecipeId = recipe.Id,
                             ShiftId = shift.Id,
-                            ProductionLineId = line?.Id,
+                            ProductionLineId = useLine?.Id,
                             PlannedQty = quantity,
                             Status = ProductionOrderStatus.Released,
                             PlannedStartDate = batches.Min(b => b.Start),

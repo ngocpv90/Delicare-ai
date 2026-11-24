@@ -612,6 +612,7 @@ Ghi chú: Dữ liệu nền; ưu tiên làm CRUD, import, trạng thái, phân q
 | Note | nvarchar(max) | Y |  |  | Ghi chú. |
 | ParentId | uniqueidentifier | Y |  |  | Định danh tham chiếu logic; bảng đích cần đối chiếu tại sheet 04_Quan_he. |
 | Description | nvarchar(max) | Y |  |  | Thông tin mô tả. |
+| ProductionLineId | uniqueidentifier | Y |  | ProductionLine | **UI-6.26 (D-107, GAP-PRD-10 anh duyệt 2026-11-24)** – dây chuyền nấu các món của nhóm; ra lệnh chia mẻ theo công suất / phút mỗi mẻ của dây chuyền. Không FK vật lý. |
 
 ## Dishe
 _Món ăn & công thức · DANH MỤC (Master Data)_ – Món ăn

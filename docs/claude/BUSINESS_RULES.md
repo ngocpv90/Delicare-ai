@@ -104,6 +104,12 @@ Mọi giá trị số đặt trong `appsettings.json` → section `BusinessRules
 
 ## 6. Sản xuất
 
+### UI-6.26 (D-107) – §6 chia mẻ theo dây chuyền của nhóm món
+- Cột mới `DishCategorie.ProductionLineId` (GAP-PRD-10 anh duyệt – migration `DB/migrations/20261124_01_dishcategory_productionline.sql`, không FK). Dây chuyền của món = dây chuyền của nhóm món; nhóm trống → nhóm cha (`ParentId`, tối đa 5 cấp); dây chuyền đã xóa / Ngừng hoạt động → coi như chưa gán + cảnh báo.
+- Ra lệnh (`Release`, tự lập sau chốt qua Release, `SupplementForOrderAsync`): mỗi lệnh ghi `ProductionLineId` của món; mẻ chia theo `CapacityMealPerBatch` (N = ceil(suất ÷ công suất)), lịch ngược theo `MinutesPerBatch` của dây chuyền đó. `ProductionLineId` gửi lên chỉ dùng cho món chưa có dây chuyền; vẫn không có → 1 mẻ, `ProductionDefaultMinutesPerBatch` + cảnh báo "Món X (nhóm Y) chưa gán dây chuyền – nấu 1 mẻ". Lịch giữa các món trên cùng dây chuyền: giữ song song (GAP-PRD-07).
+- Gán: `DishCategory/AssignProductionLine` (nhiều nhóm, một giao dịch, quyền Sửa `prod-line`), `ProductionLine/SaveWithCategories` (form dây chuyền kèm nhóm, mã trống → DC-NNN), `DishCategory/Update` (không gửi `ProductionLineId` = giữ nguyên; Guid rỗng = bỏ gán). Dây chuyền Ngừng hoạt động không gán mới được.
+- Bàn nấu (`KitchenWorkstation`): không bắt buộc khi Start / Complete mẻ; giữ cho QR bàn nấu + ghi kèm checklist; tọa độ / bán kính không hiển thị (không dùng).
+
 ### UI-6.24 (D-105) – Lệnh sản xuất chỉ sinh từ kế hoạch, tự đóng
 - Lệnh SX + mẻ chỉ sinh khi Ra lệnh kế hoạch (`ProductionPlan/Release`); thêm mới lệnh / mẻ / sản lượng / giữ chỗ / giá thành / chênh lệch bằng CRUD bị chặn với câu tiếng Việt chỉ đường làm. Ngoại lệ giữ nguyên: đơn chốt muộn (`SupplementForOrderAsync`), Nấu thêm (`ProductionBatch/CreateExtra`).
 - Lệnh chuyển Hoàn thành (mẻ cuối Đã đóng gói / Không đạt – `CompleteOrderIfDoneAsync`) → **tự Đóng** ngay sau khi thao tác mẻ / đóng gói đã lưu, bằng đúng `ProductionOrder/Close` (chênh lệch tiêu hao, giá thành thực tế, giải phóng + phân bổ lại giữ chỗ dư). Lỗi khi tự đóng chỉ trả cảnh báo, lệnh giữ Hoàn thành.
