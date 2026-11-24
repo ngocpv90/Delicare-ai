@@ -22,7 +22,7 @@ using AppDelicare.Services.Implement.Messaging;
 
 namespace AppDelicare.Services.Implement
 {
-    public class MenuService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IRecipeService recipeService
+    public partial class MenuService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IRecipeService recipeService
         , IPricePolicyService pricePolicyService, IClock clock, IOptions<BusinessRulesOptions> rules
         , IAuditChangeService auditChangeService, INotificationService notifications, IDocumentNumberService documentNumberService) : IMenuService
     {

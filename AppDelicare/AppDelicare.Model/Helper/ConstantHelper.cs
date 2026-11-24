@@ -455,6 +455,13 @@
             public static readonly string CompensationExists = "Phản ánh này đã có đơn bù {0}";
             public static readonly string CompensationQuantityRequired = "Nhập số suất bù (POD của đơn gốc không ghi suất bị từ chối)";
             public static readonly string CompensationCreated = "Đã tạo đơn bù {0} – {1} suất";
+            public static readonly string MenuWeekNotDraft = "Thực đơn không còn ở Nháp – chỉ đọc; đổi món sau công bố qua Yêu cầu đổi món";
+            public static readonly string MenuCellInvalid = "Ô thực đơn không hợp lệ (buổi / ngày)";
+            public static readonly string MenuWeekBlocked = "Chưa gửi duyệt được: còn {0} ô trống, {1} món chưa có công thức khóa, {2} suất FC% vượt mục tiêu";
+            public static readonly string MenuWeekSubmitted = "Đã gửi duyệt thực đơn {0} – đã báo người duyệt";
+            public static readonly string MenuWeekExists = "Tuần này đã có thực đơn chung {0}";
+            public static readonly string MenuWeekDrafted = "Đã tạo nháp {0} (nhân bản {1})";
+            public static readonly string MenuWeekBlankCreated = "Đã tạo khung trống {0} theo mẫu chuẩn";
             public static readonly string BillingBatchEmpty = "Chưa chọn khách hàng nào có bảng kê trong kỳ";
             public static readonly string BillingRangeInvalid = "Kỳ bảng kê không hợp lệ (từ ≤ đến, tối đa 3 tháng)";
             public static readonly string ContainerLossPctInvalid = "Ngưỡng thất thoát khay phải từ 0 đến 100 (%)";

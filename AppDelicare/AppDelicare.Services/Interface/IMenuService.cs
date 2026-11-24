@@ -23,5 +23,13 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Expire(AppDelicare.Model.Request.Custom.MenuActionRequest request);
         public Task<IResult<Menu>> Clone(AppDelicare.Model.Request.Custom.MenuCloneRequest request);
         public Task<IResult<byte[]>> ExportForCustomer(Guid id, string? project);
+        /// <summary>UI-6.11 (D-89): thực đơn tuần – lưới, sửa ô, gợi ý món, điền hàng, chép ngày, gửi duyệt, tự lập nháp.</summary>
+        public Task<IResult<AppDelicare.Model.Model.MenuWeekModel>> GetWeek(AppDelicare.Model.Model.MenuWeekRequest request);
+        public Task<IResult<AppDelicare.Model.Model.MenuWeekModel>> SaveCell(AppDelicare.Model.Model.MenuCellRequest request);
+        public Task<IResult<AppDelicare.Model.Model.MenuWeekModel>> FillRow(AppDelicare.Model.Model.MenuFillRowRequest request);
+        public Task<IResult<AppDelicare.Model.Model.MenuWeekModel>> CopyDay(AppDelicare.Model.Model.MenuCopyDayRequest request);
+        public Task<IResults<AppDelicare.Model.Model.MenuDishSuggestionModel>> SuggestDish(AppDelicare.Model.Model.MenuSuggestRequest request);
+        public Task<IResult<AppDelicare.Model.Model.MenuWeekModel>> SubmitWeek(AppDelicare.Model.Request.Custom.MenuActionRequest request);
+        public Task<IResult<AppDelicare.Model.Model.MenuAutoDraftResultModel>> AutoDraft(DateTime? weekStart, Guid? sourceId = null, bool blank = false);
     }
 }

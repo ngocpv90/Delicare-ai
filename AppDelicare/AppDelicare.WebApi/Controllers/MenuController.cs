@@ -229,6 +229,135 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.11 (D-89): lưới thực đơn tuần (buổi → lựa chọn → nhóm món × 7 ngày) + đánh dấu + giá vốn / FC% + 4 chỉ số. Quyền Xem.</summary>
+        [HttpGet("GetWeek")]
+        public async Task<IActionResult> GetWeek([FromQuery] AppDelicare.Model.Model.MenuWeekRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.GetWeek(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.11: lưu 1 ô (JSON) – tạo / đổi / xóa món; chỉ Nháp. Quyền Sửa.</summary>
+        [HttpPost("SaveCell")]
+        public async Task<IActionResult> SaveCell([FromBody] AppDelicare.Model.Model.MenuCellRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.SaveCell(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SaveCell: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.11: điền cả hàng 7 ngày cùng món (JSON). Quyền Sửa.</summary>
+        [HttpPost("FillRow")]
+        public async Task<IActionResult> FillRow([FromBody] AppDelicare.Model.Model.MenuFillRowRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.FillRow(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " FillRow: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.11: chép cả cột ngày sang ngày khác (JSON). Quyền Sửa.</summary>
+        [HttpPost("CopyDay")]
+        public async Task<IActionResult> CopyDay([FromBody] AppDelicare.Model.Model.MenuCopyDayRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CopyDay(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CopyDay: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.11: 5 gợi ý món cho ô (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC) + FC% mới. Quyền Xem.</summary>
+        [HttpGet("SuggestDish")]
+        public async Task<IActionResult> SuggestDish([FromQuery] AppDelicare.Model.Model.MenuSuggestRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.SuggestDish(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SuggestDish: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.11: gửi duyệt – khóa khi còn ô trống / món thiếu công thức / FC vượt; hợp lệ → báo COO. Quyền Sửa.</summary>
+        [HttpPost("SubmitWeek")]
+        public async Task<IActionResult> SubmitWeek([FromForm] MenuActionRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.SubmitWeek(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SubmitWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.11: tạo thực đơn tuần – nhân bản tuần N − 4 (mặc định) / tuần chọn (SourceId) / khung trống (Blank). Form. Quyền Thêm.</summary>
+        [HttpPost("CreateWeek")]
+        public async Task<IActionResult> CreateWeek([FromForm] DateTime? weekStart, [FromForm] Guid? sourceId, [FromForm] bool blank)
+        {
+            try
+            {
+                return Ok(await _service.AutoDraft(weekStart, sourceId, blank));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>BE2.1 (spec 6.2 GET menus): thực đơn + số dòng / món, số khách được phân công, suất đã đặt.</summary>
         [HttpGet("GetList")]
         public async Task<IActionResult> GetList([FromQuery] MenuListRequest request)

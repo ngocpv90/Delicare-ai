@@ -101,6 +101,10 @@ namespace AppDelicare.Model.Option
         public decimal SalesVatPct { get; set; } = 8m;
         /// <summary>UI-6.9 (D-87): ⚠ khi tiền suất ăn tháng này lệch quá % này so tháng trước.</summary>
         public decimal BillingMonthDeviationPct { get; set; } = 20m;
+        /// <summary>UI-6.11 (D-89 b): chu kỳ thực đơn (tuần) – tự lập nháp tuần N = nhân bản tuần N − chu kỳ.</summary>
+        public int MenuCycleWeeks { get; set; } = 4;
+        /// <summary>UI-6.11 (D-89 d): gợi ý món ưu tiên món chưa dùng trong số ngày này.</summary>
+        public int MenuNoRepeatDays { get; set; } = 14;
         /// <summary>UI-6.9: ngày trong tháng bot báo bảng kê tháng trước (1 = ngày 1).</summary>
         public int BillingMonthNoticeDay { get; set; } = 1;
         /// <summary>BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay (PROPOSED – trống = 0, chưa tính).</summary>
