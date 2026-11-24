@@ -78,5 +78,51 @@ namespace AppDelicare.Tests.Menu
             items.Should().HaveCount(2);
             items.Should().Contain(x => x.GetProperty("autoApproved").GetBoolean() && x.GetProperty("scope").GetString() == "Mọi khách");
         }
+
+        [Fact]
+        public async Task Order_dish_change_lists_dishes_applies_to_customer_range_and_auto_approves_each_cell()
+        {
+            string k = Guid.NewGuid().ToString("N")[..4].ToUpperInvariant();
+            DateTime week = Week.AddDays(14);
+            factory.Clock.FixedNow = week.AddDays(-3).AddHours(9);
+            Guid cat = Guid.NewGuid(), dOld = Guid.NewGuid(), dNew = Guid.NewGuid(), menu = Guid.NewGuid(), cus = Guid.NewGuid(), o1 = Guid.NewGuid(), o2 = Guid.NewGuid();
+            await factory.SeedAsync(db =>
+            {
+                db.DishCategory.Add(new DishCategory { Id = cat, Code = "OB" + k, Name = "Món chính OB" + k });
+                foreach (var (id, name) in new[] { (dOld, "Gà rang " + k), (dNew, "Cá rán " + k) })
+                {
+                    db.Dish.Add(new Dish { Id = id, Code = "D" + id.ToString("N")[..6], Name = name, DishCategoryId = cat, StandardCost = 10000, Status = "Active" });
+                    db.Recipe.Add(new Recipe { Id = Guid.NewGuid(), DishId = id, VersionNo = 1, Status = "Locked", IsActive = true, YieldQuantity = 1 });
+                }
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "NU-OB-" + k, Name = "Chung", VersionNo = 1, Status = "Published", MenuType = "COMMON", EffectiveFrom = week, EffectiveTo = week.AddDays(6) });
+                foreach (int day in new[] { 3, 4 })
+                {
+                    db.MenuLine.Add(new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = dOld, MealType = "TRUA", SequenceNo = 1, DayOfWeek = day, SortOrder = 0, PortionQty = 1 });
+                }
+                db.Customer.Add(new Customer { Id = cus, Code = "OB" + k, Name = "Khách", DisplayName = "Khách OB" + k, CIF = "OB" + k, CustomerType = "BUSINESS", Status = "Active" });
+                var ct = new Contract { Id = Guid.NewGuid(), CustomerId = cus, ContractNumber = "HD-OB" + k, Status = "Active", EffectiveFrom = new DateTime(2034, 1, 1) };
+                db.Contract.Add(ct);
+                db.ContractMeal.Add(new ContractMeal { Id = Guid.NewGuid(), ContractId = ct.Id, MealType = "TRUA", MealName = "Trưa", UnitPrice = 40000 });
+                foreach (var (oid, day, qty) in new[] { (o1, 2, 80m), (o2, 3, 60m) })
+                {
+                    db.Order.Add(new Order { Id = oid, CustomerId = cus, OrderNumber = "DH-OB-" + k + day, MealDate = week.AddDays(day), Status = "Confirmed", TotalQuantity = qty });
+                    db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = oid, MenuId = menu, MealType = "TRUA", MenuOptionNo = 1, Quantity = qty });
+                }
+                return Task.CompletedTask;
+            });
+            using var c = factory.CreateAuthorizedClient();
+            var dishes = (await c.GetResultAsync($"/api/Order/GetDishChange?OrderId={o1}")).Ok();
+            dishes.GetProperty("listDish").EnumerateArray().Single().GetProperty("dishName").GetString().Should().Be("Gà rang " + k);
+            var pre = (await c.GetResultAsync($"/api/Order/GetDishChange?OrderId={o1}&OriginalDishId={dOld}&RequestedDishId={dNew}&ApplyFrom={week.AddDays(2):yyyy-MM-dd}&ApplyTo={week.AddDays(3):yyyy-MM-dd}")).Ok();
+            pre.GetProperty("listItem").GetArrayLength().Should().Be(2, "đơn này + đơn hôm sau của khách có cùng món");
+            pre.GetProperty("listSuggestion").EnumerateArray().Should().Contain(x => x.GetProperty("dishId").GetGuid() == dNew);
+            (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/Order/RequestDishChange", new { orderId = o1, originalDishId = dOld, requestedDishId = dNew }))).Fail("nguồn");
+            var r = (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/Order/RequestDishChange", new { orderId = o1, originalDishId = dOld, requestedDishId = dNew, quantity = 30, source = "PHONE", note = "Khách dị ứng gà", applyFrom = week.AddDays(2), applyTo = week.AddDays(3) }))).Ok();
+            r.GetProperty("autoApproved").GetInt32().Should().Be(2);
+            var reqs = await factory.QueryAsync(db => db.MenuChangeRequest.AsNoTracking().Where(x => x.MenuId == menu).ToListAsync());
+            reqs.Should().HaveCount(2).And.OnlyContain(x => x.RequestStatus == "Approved" && x.Reason!.Contains("Điện thoại"));
+            reqs.Single(x => x.OrderId == o1).Quantity.Should().Be(30, "đổi một phần đơn này");
+            reqs.Single(x => x.OrderId == o2).Quantity.Should().Be(60);
+        }
     }
 }

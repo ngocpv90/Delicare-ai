@@ -26,5 +26,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.MenuChangeCellPreviewModel>> PreviewCell(AppDelicare.Model.Model.MenuChangeCellRequest request);
         public Task<IResult<AppDelicare.Model.Model.MenuChangeDetailModel>> CreateForCell(AppDelicare.Model.Model.MenuChangeCellRequest request);
         public Task<IResults<AppDelicare.Model.Model.MenuChangeWeekItemModel>> GetWeekChanges(AppDelicare.Model.Model.MenuWeekRequest request);
+        /// <summary>UI-6.13 (D-91 b): khách xin đổi món riêng trên trang đơn – món của đơn, xem trước phạm vi (khoảng ngày), gửi.</summary>
+        public Task<IResult<AppDelicare.Model.Model.OrderDishChangeModel>> GetOrderDishChange(AppDelicare.Model.Model.OrderDishChangeRequest request);
+        public Task<IResult<AppDelicare.Model.Model.OrderDishChangeResultModel>> CreateForOrder(AppDelicare.Model.Model.OrderDishChangeRequest request);
     }
 }

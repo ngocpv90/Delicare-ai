@@ -183,3 +183,76 @@ namespace AppDelicare.Model.Model
         public string? Message { get; set; }
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.13 (D-91 b): khách xin đổi món riêng trên trang đơn.</summary>
+    public class OrderDishChangeRequest
+    {
+        public Guid OrderId { get; set; }
+        public Guid? OriginalDishId { get; set; }
+        public string? MealType { get; set; }
+        public Guid? RequestedDishId { get; set; }
+        /// <summary>Số suất của đơn này (trống = cả lựa chọn).</summary>
+        public decimal? Quantity { get; set; }
+        /// <summary>EMAIL / PHONE / ZALO / DIRECT.</summary>
+        public string? Source { get; set; }
+        public string? Note { get; set; }
+        public DateTime? ApplyFrom { get; set; }
+        public DateTime? ApplyTo { get; set; }
+        /// <summary>Món thay riêng cho từng đơn trong khoảng ngày (sửa gợi ý).</summary>
+        public List<OrderDishOverride> ListOverride { get; set; } = [];
+    }
+
+    public class OrderDishOverride
+    {
+        public Guid OrderId { get; set; }
+        public Guid? RequestedDishId { get; set; }
+    }
+
+    public class OrderDishModel
+    {
+        public Guid OrderId { get; set; }
+        public string? OrderNumber { get; set; }
+        public DateTime MealDate { get; set; }
+        public Guid MenuId { get; set; }
+        public string? MealType { get; set; }
+        public string? MealName { get; set; }
+        public int OptionNo { get; set; }
+        public Guid DishId { get; set; }
+        public string? DishName { get; set; }
+        public Guid? CategoryId { get; set; }
+        public decimal Quantity { get; set; }
+    }
+
+    public class OrderDishChangeModel
+    {
+        public Guid OrderId { get; set; }
+        public List<OrderDishModel> ListDish { get; set; } = [];
+        public OrderDishModel? Source { get; set; }
+        public List<MenuDishSuggestionModel> ListSuggestion { get; set; } = [];
+        public List<OrderDishChangeItemModel> ListItem { get; set; } = [];
+    }
+
+    public class OrderDishChangeItemModel
+    {
+        public Guid OrderId { get; set; }
+        public string? OrderNumber { get; set; }
+        public DateTime MealDate { get; set; }
+        public string? MealName { get; set; }
+        public int OptionNo { get; set; }
+        public Guid MenuId { get; set; }
+        public decimal Quantity { get; set; }
+        public Guid? RequestedDishId { get; set; }
+        public bool AutoApprove { get; set; }
+        public List<string> ListBlock { get; set; } = [];
+    }
+
+    public class OrderDishChangeResultModel
+    {
+        public int AutoApproved { get; set; }
+        public int SentToApprove { get; set; }
+        public List<string> ListRequestNo { get; set; } = [];
+        public List<string> ListError { get; set; } = [];
+    }
+}

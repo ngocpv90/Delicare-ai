@@ -455,6 +455,9 @@
             public static readonly string CompensationExists = "Phản ánh này đã có đơn bù {0}";
             public static readonly string CompensationQuantityRequired = "Nhập số suất bù (POD của đơn gốc không ghi suất bị từ chối)";
             public static readonly string CompensationCreated = "Đã tạo đơn bù {0} – {1} suất";
+            public static readonly string MenuChangeSourceRequired = "Chọn nguồn yêu cầu của khách (Email / Điện thoại / Zalo / Trực tiếp)";
+            public static readonly string MenuChangeNothingInRange = "Không có ô nào có món này trong phạm vi đã chọn";
+            public static readonly string MenuChangeOrderDone = "Đã gửi {0} yêu cầu đổi món: {1} tự duyệt, {2} chờ COO duyệt, lỗi {3}";
             public static readonly string MenuChangeAutoApproved = "Đã đổi món {0} – Hệ thống tự duyệt (cùng nhóm, có công thức, FC đạt, trước giờ chốt)";
             public static readonly string MenuChangeSentToApprove = "Đã gửi yêu cầu đổi món {0} chờ COO duyệt ({1})";
             public static readonly string MenuWeekNotDraft = "Thực đơn không còn ở Nháp – chỉ đọc; đổi món sau công bố qua Yêu cầu đổi món";

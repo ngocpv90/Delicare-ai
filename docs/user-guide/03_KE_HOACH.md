@@ -160,6 +160,8 @@ Hệ thống tự xác định ngày, buổi, lựa chọn và **mọi đơn c�
 - kế hoạch sản xuất ngày đó còn Nháp → tự chuyển món trong kế hoạch, mọi lần tính lại nhu cầu dùng món mới;
 - kế hoạch đã phát hành → bếp xử lý tay theo chi tiết yêu cầu.
 
+**Khách xin đổi riêng (KD, trên trang chi tiết đơn):** nút **Đổi món** → chọn **món cần đổi** (món của đơn theo buổi / lựa chọn) → chọn **món thay** (5 gợi ý) → **số suất** (mặc định cả lựa chọn; sửa nếu đổi một phần) → **nguồn** (Điện thoại / Email / Zalo / Trực tiếp) + ghi chú → tùy chọn **Áp cho các đơn của khách từ … đến …** (hệ thống tìm mọi đơn còn mở của khách có món đó, mỗi đơn sửa được món thay) → **Gửi**. Mỗi đơn một yêu cầu; tự duyệt từng ô theo 4 điều kiện trên, còn lại COO duyệt. Quyền: Sửa màn Đơn đặt suất.
+
 **Tab Đổi món:** mọi yêu cầu có ngày ăn trong tuần (kể cả yêu cầu cũ theo đơn): số, ngày ăn, món cũ → món mới, phạm vi (Mọi khách / Khách X), số suất, lý do, trạng thái, người duyệt ("Hệ thống tự duyệt").
 
 **Quyền:** người có quyền Thêm ở màn Thực đơn tuần (Kế hoạch – OPS-PLAN); duyệt: COO.

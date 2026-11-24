@@ -139,6 +139,7 @@
           { act: 'lock', icon: 'key', label: 'Chốt số lượng', ok: ed && acts.includes('lock'), primary: !acts.includes('confirm') },
           { act: 'lines', icon: 'edit', label: 'Sửa số suất', ok: ed && acts.includes('updateLines') },
           { act: 'change', icon: 'edit', label: 'Yêu cầu sửa sau chốt', ok: ed && acts.includes('requestChange') },
+          { act: 'dish', icon: 'utensils', label: 'Đổi món', ok: ed && !['Cancelled', 'Delivered', 'Reconciled'].includes(o.status) },
         ],
         more: [ed && acts.includes('cancel') ? '<button data-h="cancel">Hủy đơn</button>' : '', d.pendingApprovalId ? '<button data-h="inbox">Mở màn Phê duyệt</button>' : '',
           D.can('crm-customer') ? '<button data-h="customer">Hồ sơ khách hàng</button>' : ''],
@@ -178,10 +179,66 @@
       if (['confirm', 'lock', 'cancel'].includes(act) && APP.crmOrder) APP.crmOrder.act(act, { Id: id, OrderNumber: o.orderNumber || o.orderNo, TotalQuantity: o.totalQuantity || 0 }, d.forecastQuantity || 0, after);
       else if (act === 'lines' && APP.crmOrder) editLines(d, id);
       else if (act === 'change' && UI.liveAct) UI.liveAct('gx-order-change', row, noop, 'Order');
+      else if (act === 'dish') orderDishChange(id, reload);
       else if (act === 'inbox') APP.go('wf-inbox');
       else if (act === 'customer') APP.go('crm-customer-360?id=' + encodeURIComponent(o.customerId));
     },
   });
+
+  // UI-6.13 (D-91 b): khách xin đổi món riêng – chọn món của đơn → món thay (5 gợi ý) → số suất (mặc định cả lựa chọn) → nguồn + ghi chú →
+  // tùy chọn áp cho các đơn của khách từ … đến … (mỗi ô sửa được món thay) → Gửi; tự duyệt từng ô khi cùng nhóm + có công thức + FC đạt + trước giờ chốt.
+  function orderDishChange(orderId, reload) {
+    const SRC = [['PHONE', 'Điện thoại'], ['EMAIL', 'Email'], ['ZALO', 'Zalo'], ['DIRECT', 'Trực tiếp']];
+    UI.modal({ title: 'Đổi món cho đơn này', sub: 'Khách xin đổi riêng – không ảnh hưởng khách khác', size: 'lg',
+      body: '<div id="odBody" class="muted small">Đang tải món của đơn…</div>',
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="odGo" disabled>Gửi</button>',
+      onMount: (m, close) => {
+        const g = q => m.querySelector(q);
+        const st = { dish: null, newDish: null, items: [], over: {} };
+        Store.query('Order/GetDishChange', { OrderId: orderId }).then(x => {
+          if (!x.ok || !x.data) { g('#odBody').innerHTML = '<div class="notice warn">' + I('alert') + '<div>' + esc(x.message || 'Không tải được món của đơn') + '</div></div>'; return; }
+          const dishes = x.data.listDish || [];
+          if (!dishes.length) { g('#odBody').innerHTML = '<div class="empty">Đơn chưa gắn thực đơn – không có món để đổi.</div>'; return; }
+          g('#odBody').className = '';
+          g('#odBody').innerHTML = `<div class="form-grid">
+              <div class="field"><label>Món cần đổi <span class="req">*</span></label><select class="select" id="odDish"><option value="">— Chọn —</option>${dishes.map((d, i) => `<option value="${i}">${esc(d.mealName)}${d.optionNo > 1 ? ' · LC ' + d.optionNo : ''} – ${esc(d.dishName)} (${U.num(d.quantity)} suất)</option>`).join('')}</select></div>
+              <div class="field"><label>Số suất đổi</label><input class="input" id="odQty" type="number" min="1" placeholder="Cả lựa chọn"></div>
+              <div class="field"><label>Nguồn yêu cầu <span class="req">*</span></label><select class="select" id="odSrc"><option value="">— Chọn —</option>${SRC.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
+              <div class="field"><label>Ghi chú</label><input class="input" id="odNote" maxlength="300" placeholder="vd khách dị ứng gà"></div>
+              <div class="field"><label>Áp cho các đơn của khách từ</label><input class="input" type="date" id="odFrom"></div>
+              <div class="field"><label>đến</label><input class="input" type="date" id="odTo"></div></div>
+            <div class="mt"><b>Món thay</b> <span class="small muted">(5 gợi ý: cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC)</span><div id="odSug" class="mw-list" style="max-height:none"><div class="muted small">Chọn món cần đổi</div></div></div>
+            <div id="odItems" class="mt"></div>`;
+          const ready = () => { g('#odGo').disabled = !(st.dish && st.newDish && g('#odSrc').value && st.items.length); };
+          const preview = () => {
+            if (!st.dish) return;
+            const q = { OrderId: orderId, OriginalDishId: st.dish.dishId, MealType: st.dish.mealType, RequestedDishId: st.newDish, Quantity: g('#odQty').value || null, ApplyFrom: g('#odFrom').value || null, ApplyTo: g('#odTo').value || null };
+            Store.query('Order/GetDishChange', q).then(r => {
+              if (!m.isConnected) return; if (!r.ok || !r.data) { g('#odItems').innerHTML = '<div class="bad small">' + esc(r.message || '') + '</div>'; return; }
+              const sug = r.data.listSuggestion || [];
+              if (!st.sugDone) { st.sugDone = true; st.sug = sug;
+                g('#odSug').innerHTML = sug.length ? sug.map((s2, i) => `<button class="mw-opt-btn" data-s="${i}"><b>${esc(s2.dishName)}</b><span class="small muted">${s2.hasRecipe ? '' : '⚠ chưa có công thức · '}giá vốn ${s2.cost != null ? U.num(s2.cost) : '–'}${s2.newFcPct != null ? ' · FC ' + U.num(s2.newFcPct) + '%' : ''}</span></button>`).join('') : '<div class="muted small">Không có gợi ý</div>';
+                m.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { m.querySelectorAll('[data-s]').forEach(z => z.classList.toggle('on', z === b)); st.newDish = st.sug[+b.dataset.s].dishId; preview(); }); }
+              st.items = r.data.listItem || [];
+              const opts = (sel) => (st.sug || []).map(s2 => `<option value="${s2.dishId}" ${s2.dishId === sel ? 'selected' : ''}>${esc(s2.dishName)}</option>`).join('');
+              g('#odItems').innerHTML = st.newDish ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Đơn</th><th>Ngày ăn</th><th class="num">Suất</th><th>Món thay</th><th>Duyệt</th></tr></thead><tbody>${st.items.map(it => `<tr><td>${esc(it.orderNumber || '')}</td><td>${U.date(U.day(it.mealDate))}</td><td class="num">${U.num(it.quantity)}</td><td><select class="select" data-ov="${it.orderId}" style="min-width:180px">${opts(it.requestedDishId)}</select></td><td>${it.autoApprove ? '<span class="badge green">Hệ thống tự duyệt</span>' : '<span class="badge orange">COO duyệt</span> <span class="small muted">' + esc((it.listBlock || []).join('; ')) + '</span>'}</td></tr>`).join('')}</tbody></table></div>` : '';
+              m.querySelectorAll('[data-ov]').forEach(sel => sel.onchange = () => { st.over[sel.dataset.ov] = sel.value; });
+              ready();
+            });
+          };
+          g('#odDish').onchange = () => { st.dish = dishes[+g('#odDish').value] || null; st.newDish = null; st.sugDone = false; st.over = {}; g('#odQty').placeholder = st.dish ? 'Cả lựa chọn: ' + U.num(st.dish.quantity) : 'Cả lựa chọn'; preview(); };
+          ['#odQty', '#odFrom', '#odTo'].forEach(q => g(q).onchange = preview);
+          g('#odSrc').onchange = ready;
+          g('#odGo').onclick = () => {
+            g('#odGo').disabled = true;
+            Store.act('Order/RequestDishChange', { json: { orderId, originalDishId: st.dish.dishId, mealType: st.dish.mealType, requestedDishId: st.newDish, quantity: g('#odQty').value ? Number(g('#odQty').value) : null,
+              source: g('#odSrc').value, note: g('#odNote').value.trim() || null, applyFrom: g('#odFrom').value || null, applyTo: g('#odTo').value || null,
+              listOverride: Object.entries(st.over).map(([k, v]) => ({ orderId: k, requestedDishId: v })) }, tables: ['MenuChangeRequest'] })
+              .then(r => { if (!r.ok) { ready(); return; } close(); UI.toast(esc((r.res && r.res.responseMessage) || 'Đã gửi'), (r.data && r.data.listError && r.data.listError.length) ? 'warn' : 'ok'); reload(); });
+          };
+        });
+      } });
+  }
 
   // ================================================================ HỢP ĐỒNG
   const CONTRACT_FLOW = ['Draft', 'PendingApproval', 'Active', 'Expired'];

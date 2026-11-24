@@ -1,6 +1,13 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24 (tiếp, anh duyệt): UI-6.13 phần B + báo kế hoạch đã phát hành; FIN-ACC chốt đối soát; full-flow 227/227.**
+  - **UI-6.13 B (D-91 b):** API `Order/GetDishChange` (món của đơn; có món cũ → phạm vi đơn này + đơn còn mở của khách trong khoảng ngày + 5 gợi ý + tự duyệt từng ô) và `Order/RequestDishChange` (nguồn Điện thoại / Email / Zalo / Trực tiếp, số suất mặc định cả lựa chọn, món thay sửa từng đơn) – quyền màn Đơn đặt suất → **NV KD tạo lại được yêu cầu đổi món** (không cần quyền Thực đơn tuần). Trang chi tiết đơn có nút **Đổi món** (hộp chọn món → gợi ý → bảng phạm vi Tự duyệt / COO duyệt). Kiểm DB dev bằng uat.sal-sales: DH-261122-0001 (Công ty UI5 A, 30/11) đổi "Canh bắp cải" → "Canh bắp cải cà chua" 4.500 suất → gửi 200, Chờ COO (món thay chưa có công thức khóa). Test thêm 1 (khoảng ngày 2 đơn, đổi một phần 30 suất, tự duyệt 2).
+  - **Kế hoạch đã phát hành (D-91 c):** đổi món đã duyệt mà kế hoạch SX ngày đó không còn Nháp → bot Vận hành 🔴 OPS-KIT + OPS-WH + OPS-PLAN (món cũ → mới, suất, số kế hoạch), không tự sửa kế hoạch. Chưa gửi thử tin thật.
+  - **FIN-ACC Thêm + Sửa Đối soát:** CodeGen + `D79_permission_matrix.sql` chạy thật DB dev (1 dòng 1000110 → 1110110, chạy lại 0); API FIN-ACC ReconcileMany 200.
+  - **full-flow:** hạn lô nhập theo ngày chạy (`$dayDatetime` trong http-runner) → **227/227** trên DB dev (09/02/2027).
+  - `dotnet test` **650/650**; FE build xanh.
+  - **Chưa làm / rủi ro:** phần B gửi nhiều đơn = nhiều yêu cầu (mỗi đơn một lần duyệt nếu cần), chưa gộp một lần duyệt; dữ liệu thử: yêu cầu đổi món của DH-261122-0001 chờ COO.
 - **2026-11-24: UI-6.13 (D-91) PARTIAL – Đổi món tại chỗ (A: mọi khách) + bỏ mục menu "Yêu cầu đổi món"** (nhánh `feat/UI-6.13-menu-change`). Không thêm bảng / cột.
   - **BE:**
     - `MenuChangeRequest/GetCellPreview`: ô → ngày ăn theo tuần đang xem; số khách / đơn / suất ảnh hưởng (mọi dòng đơn dùng thực đơn, cùng buổi, lựa chọn); 4 điều kiện tự duyệt.

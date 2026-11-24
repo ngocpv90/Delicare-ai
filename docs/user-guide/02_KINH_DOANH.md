@@ -168,6 +168,8 @@ Chữ nhỏ dưới ô: **TB** 4 tuần (· "đã sửa" nếu Nháp khác số 
 3. Sửa số lượng → **Tạo đơn (Nháp)**. Mỗi điểm giao có số > 0 thành **1 đơn** riêng (số `DH-…`).
 4. Nếu **đã quá giờ chốt**: hộp báo vàng + ô **Lý do thêm đơn sau giờ chốt*** → đơn tạo ở Nháp và **tự gửi duyệt**; duyệt xong đơn chuyển **Đã chốt**.
 
+**Đổi món theo yêu cầu khách (UI-6.13, D-91 b):** trên trang chi tiết đơn bấm **Đổi món** – xem `03_KE_HOACH.md` mục 4.6 (chọn món, món thay gợi ý, số suất, nguồn, áp cho các đơn của khách theo khoảng ngày; tự duyệt khi an toàn).
+
 **Trang chi tiết đơn (UI-6):** bấm thẻ Kanban / dòng bảng (hoặc số đơn ở màn khác) → **trang riêng** `#/crm-order-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Đơn đặt suất** quay lại đúng ngày ăn / bộ lọc / vị trí cuộn). Phần đầu: số đơn, trạng thái, "Chờ duyệt …", "Đã quá giờ chốt"; khách · điểm giao · ngày ăn · hợp đồng · NV phụ trách; thanh bước 7 trạng thái (Hủy tô đỏ). Nút (chỉ nút máy chủ cho phép, cần quyền Sửa): **Xác nhận**, **Chốt số lượng**, **Sửa số suất** (hộp sửa số từng dòng → *Lưu số lượng*), **Yêu cầu sửa sau chốt**, ⋯ **Hủy đơn**, **Mở màn Phê duyệt**, **Hồ sơ khách hàng**. 4 thẻ: **Tổng suất** (dự báo, % lệch), **Thành tiền**, **Giao hàng** (số phiếu giao, khách nhận), **Phản ánh đang mở**. Tab **Tổng quan** (thông tin đơn – bấm khách / điểm giao / hợp đồng để mở; cảnh báo; suất theo ca / loại suất; đối soát) · **Chi tiết dòng** · **Giao hàng** · **Phản ánh** · **Duyệt** (khi có yêu cầu lệch suất / sửa sau chốt) · **Chứng từ liên quan** · **Tài liệu** · **Lịch sử**. Chế độ DEMO vẫn mở ngăn chi tiết như dưới.
 
 **Xử lý đơn (bấm vào thẻ / dòng)** – ngăn chi tiết (chế độ DEMO):
