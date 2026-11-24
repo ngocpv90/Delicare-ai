@@ -419,6 +419,8 @@
         // MENU-5 (D-79): Hộp phê duyệt chung (#/wf-inbox) chỉ CEO / CEO-PMO / COO / FIN-IT được Xem; người có quyền Duyệt một mục "Phê duyệt › …"
         // vẫn vào màn (chỉ thấy yêu cầu chờ mình duyệt – modules/hr.js approverInbox).
         if (screen === 'wf-inbox' && !hp.access && (HOST.menu || []).some(g => g.items.some(i => /^wf-inbox\?type=/.test(i.link) && i.link !== 'wf-inbox?type=wf-inbox' && HOST.perm(i.link).edit === true))) return { access: true, approverOnly: true };
+        // APR-1.1: người đã gửi yêu cầu (không có quyền duyệt) vẫn vào màn Phê duyệt – tab "Tôi đã gửi" (modules/hr.js đặt DC_APR_SENT sau GetMySent).
+        if (screen === 'wf-inbox' && !hp.access && window.DC_APR_SENT) return { access: true, approverOnly: true };
         return hp;
       }
       const g = Store.one('UserGroup', 'Name', Store.user.group);

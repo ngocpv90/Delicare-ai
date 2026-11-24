@@ -44,7 +44,7 @@
     APP._navIds = db ? new Set(db.flatMap(g => g.items.map(i => i.f.id))) : null;
     // MENU-5 (D-79): nhóm 1 mục cùng tên ("Việc của tôi") hiện thành 1 dòng bấm thẳng, không mở / đóng.
     const single = (g, items) => items.length === 1 && items[0].label === g;
-    nav.innerHTML = list.map(({ name: g, items }) => single(g, items) ? `<li class="dc-group dc-single" data-g="${esc(g)}"><a class="ai-icon" href="${APP.href(items[0].link || items[0].f.id)}" data-nav="${esc(items[0].link || items[0].f.id)}" title="${esc(g)}"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a></li>` : `<li class="dc-group" data-g="${esc(g)}"><a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a><ul class="mm-collapse" aria-expanded="false">${items.map(({ f, label, link }) => `<li><a href="${APP.href(link || f.id)}" data-nav="${esc(link || f.id)}" title="${esc(label)}">${esc(label)}${f.st === 'GAP' && !Store.isLive ? '<i class="gap-dot">GAP</i>' : ''}${(link || f.id) === 'wf-inbox' ? `<span class="badge badge-sm badge-secondary ms-2" id="inboxCount"></span>` : ''}</a></li>`).join('')}</ul></li>`).join('');
+    nav.innerHTML = list.map(({ name: g, items }) => single(g, items) ? `<li class="dc-group dc-single" data-g="${esc(g)}"><a class="ai-icon" href="${APP.href(items[0].link || items[0].f.id)}" data-nav="${esc(items[0].link || items[0].f.id)}" title="${esc(g)}"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span>${(items[0].link || items[0].f.id) === 'wf-inbox' ? '<span class="badge badge-sm badge-secondary ms-auto" id="inboxCount"></span>' : ''}</a></li>` : `<li class="dc-group" data-g="${esc(g)}"><a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a><ul class="mm-collapse" aria-expanded="false">${items.map(({ f, label, link }) => `<li><a href="${APP.href(link || f.id)}" data-nav="${esc(link || f.id)}" title="${esc(label)}">${esc(label)}${f.st === 'GAP' && !Store.isLive ? '<i class="gap-dot">GAP</i>' : ''}${(link || f.id) === 'wf-inbox' ? `<span class="badge badge-sm badge-secondary ms-2" id="inboxCount"></span>` : ''}</a></li>`).join('')}</ul></li>`).join('');
     nav.querySelectorAll('li.dc-group:not(.dc-single) > a').forEach(a => a.onclick = () => openGroup(a.parentElement, !a.nextElementSibling.classList.contains('mm-show')));
     markNav(APP.current);
     updateCounts();
@@ -64,10 +64,10 @@
     if (!menu || !menu.length) return null;
     const used = new Set();
     // MENU-4.2: bỏ bảng con / màn chưa làm / mục trùng kể cả khi DB chưa chạy script MENU4 (máy chủ vẫn trả mục IsActive = 1).
-    // "Hộp phê duyệt" (#/wf-inbox, nhóm Nhân sự) trùng "Tất cả yêu cầu duyệt" (#/wf-inbox?type=wf-inbox) – giữ dòng ở DB vì là quyền của API duyệt, chỉ bỏ khỏi sidebar.
-    const hasAllInbox = menu.some(g => g.items.some(i => i.link === 'wf-inbox?type=wf-inbox'));
     // MENU-5 (D-79): #/bot-van-hanh, #/bot-dieu-hanh là quyền VÀO BOT (D-62) – không phải màn hình, không lên sidebar.
-    const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || (link === 'wf-inbox' && hasAllInbox) || /^bot-/.test(id); };
+    // APR-1.1 (D-81 a): mọi mục "Phê duyệt › …" (wf-inbox?type=…) và "Hộp phê duyệt" cũ KHÔNG lên sidebar / tìm kiếm (DB giữ – là quyền duyệt);
+    // thay bằng 1 mục "Phê duyệt" (màn tổng) ngay dưới "Việc của tôi" cho người có quyền duyệt / xem hộp chung / đã gửi yêu cầu.
+    const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || id === 'wf-inbox' || /^bot-/.test(id); };
     const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !skip(i.link)).filter(i => !used.has(i.link)).map(i => {
       used.add(i.link); const id = i.link.split('?')[0]; used.add(id);
       // Mục DB có mà FE chưa có màn: đăng ký màn giữ chỗ để bấm vào không rơi về trang tổng quan.
@@ -80,6 +80,7 @@
     Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false) return; const grp = f.id === 'hr-my' ? 'Việc của tôi' : f.grp; let g = out.find(x => x.name === grp); if (!g) { g = { name: grp, items: [] }; if (f.id === 'hr-my') out.unshift(g); else out.push(g); } g.items.push({ f, label: f.id === 'hr-my' ? grp : f.fn, link: f.id }); });
     const res = out.filter(g => g.items.length), my = res.findIndex(g => g.items.some(i => i.link === 'hr-my'));
     if (my > 0) res.unshift(res.splice(my, 1)[0]);
+    if (FN['wf-inbox'] && Store.perm('wf-inbox').access !== false) res.splice(res.length && res[0].items.some(i => i.link === 'hr-my') ? 1 : 0, 0, { name: 'Phê duyệt', items: [{ f: FN['wf-inbox'], label: 'Phê duyệt', link: 'wf-inbox' }] });
     return res;
   }
   // Mở một nhóm menu (đóng các nhóm khác – kiểu metismenu của theme).
@@ -110,7 +111,8 @@
     const list = APP.alerts();
     // Chế độ API có kết quả chuông: số chờ duyệt = cảnh báo APPROVAL_PENDING (đúng hộp duyệt của người đăng nhập), không cần tải bảng ApprovalRequest.
     const pendAlert = live.alerts && list.find(a => a.code === 'APPROVAL_PENDING');
-    const n = live.alerts ? (pendAlert ? pendAlert.n : 0) : Store.rows('ApprovalRequest').filter(a => ['Pending', 'InProgress'].includes(a.RequestStatus)).length;
+    // APR-1.1: số trên mục "Phê duyệt" = số Chờ tôi duyệt (ApprovalRequest/GetMyPending – modules/hr.js, làm mới 30 giây) khi đã có.
+    const n = APP.aprCount != null ? APP.aprCount : live.alerts ? (pendAlert ? pendAlert.n : 0) : Store.rows('ApprovalRequest').filter(a => ['Pending', 'InProgress'].includes(a.RequestStatus)).length;
     const c = document.getElementById('inboxCount'); if (c) { c.textContent = n; c.style.display = n ? '' : 'none'; }
     const nc = document.getElementById('notifyCount'); if (nc) nc.textContent = live.alerts ? list.reduce((s, a) => s + (a.n || 0), 0) : list.length;
   }

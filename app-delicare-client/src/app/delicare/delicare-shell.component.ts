@@ -29,6 +29,7 @@ const SCRIPTS = [
   'modules/employee360.js',
   'modules/logistics.js',
   'modules/hr.js',
+  'modules/approval.js', // APR-UI-1 (D-81): màn Phê duyệt tổng – sau hr.js (giữ màn cũ cho chế độ DEMO)
   'modules/admin.js',
   'modules/integration.js',
   'modules/explorer.js',
