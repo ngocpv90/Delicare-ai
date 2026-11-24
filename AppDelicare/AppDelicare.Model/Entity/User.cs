@@ -15,5 +15,8 @@ namespace AppDelicare.Model.Entity
         public bool IsActive { get; set; }
         public bool IsAdmin { get; set; }
         public bool IsDefault { get; set; }
+        /// <summary>D-82 (b) – HR-ACC-1.1: INTERNAL (nhân viên / admin / hệ thống) · CUSTOMER (cổng khách – R2) · SUPPLIER. Chỉ INTERNAL gọi được API nội bộ. Migration 20261123_02.</summary>
+        [MaxLength(20)]
+        public string AccountType { get; set; } = "INTERNAL";
     }
 }

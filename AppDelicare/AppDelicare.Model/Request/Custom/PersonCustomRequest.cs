@@ -13,5 +13,7 @@ namespace AppDelicare.Model.Request.Custom
         public string? ListUserGroupId { get; set; }
         /// <summary>Tài khoản đang dùng. Không gửi → false (giữ hành vi cũ: tài khoản tạo kèm hồ sơ chưa kích hoạt).</summary>
         public bool? IsActive { get; set; }
+        /// <summary>HR-ACC-1.5 (D-82 e): tạo tài khoản từ màn Tài khoản cho 1 nhân viên → gắn Employee.PersonId = Person vừa tạo (nhân viên chưa gắn người khác).</summary>
+        public Guid? EmployeeId { get; set; }
     }
 }

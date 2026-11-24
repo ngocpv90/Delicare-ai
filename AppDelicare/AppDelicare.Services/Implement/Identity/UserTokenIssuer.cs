@@ -44,7 +44,7 @@ namespace AppDelicare.Services.Implement.Identity
             else
             {
                 user = await db.User.AsNoTracking().FirstOrDefaultAsync(u => u.Id == identity.UserId && !u.IsDeleted);
-                if (user == null || !user.IsActive)
+                if (user == null || !user.IsActive || !PersonLink.IsInternal(user.AccountType)) // HR-ACC-1.4 (D-82 b): bot chỉ nhận tài khoản nội bộ
                 {
                     reason = ConstantHelper.Message.BotUserInactive;
                 }

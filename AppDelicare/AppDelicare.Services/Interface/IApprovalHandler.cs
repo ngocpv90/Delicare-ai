@@ -79,5 +79,20 @@ namespace AppDelicare.Services.Interface
         /// </summary>
         Task<string?> CancelAsync(Guid businessId, Guid actorUserId, string reason)
             => RejectAsync(businessId, actorUserId, "Người gửi hủy: " + reason);
+
+        /// <summary>
+        /// HR-ACC-1.3 (D-82 i, D-79 a5): nhân viên mà yêu cầu nói tới (đơn nghỉ / đổi ca / tài khoản của ai). Người duyệt là CHÍNH nhân viên đó
+        /// (PersonLink) thì không được duyệt, kể cả khi người khác gửi hộ. Mặc định null = không kiểm.
+        /// </summary>
+        Task<Guid?> SubjectEmployeeIdAsync(Guid businessId) => Task.FromResult<Guid?>(null);
+    }
+
+    /// <summary>
+    /// HR-ACC-1.6 (D-82 f): loại duyệt cho người duyệt sửa đề xuất trước khi Duyệt (ApprovalDecideRequest.Proposal). Trả đề xuất đã chuẩn hóa
+    /// hoặc thông báo lỗi; engine ghi lại vào PayloadJson.proposal rồi gọi ApproveAsync với đề xuất mới.
+    /// </summary>
+    public interface IApprovalProposalEditor
+    {
+        Task<(string? Proposal, string? Error)> ReviseProposalAsync(Guid businessId, string? submitted, string revised);
     }
 }

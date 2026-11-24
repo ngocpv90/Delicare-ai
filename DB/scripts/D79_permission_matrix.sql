@@ -574,6 +574,7 @@ INSERT INTO @Allow VALUES
     (N'FIN-HR', N'#/adm-orgunit', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/int-identity', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/wf-inbox?type=adm-user', 1, 0, 1, 0, 0, 0, 0),
     (N'FIN-IT', N'#/dash-exec', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/kpi-monthly', 1, 0, 0, 0, 0, 0, 0),

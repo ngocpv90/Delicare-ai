@@ -17,7 +17,7 @@ namespace AppDelicare.Services.Implement
     public class EmployeeService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService
         , AppDelicare.Data.Share.IClock clock, AppDelicare.Data.Share.ICurrentActor currentActor, IPermissionService permissionService
-        , IAttendanceEventService attendanceEventService) : IEmployeeService
+        , IAttendanceEventService attendanceEventService, IAccountLifecycleService accountLifecycle) : IEmployeeService
     {
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
@@ -179,7 +179,8 @@ namespace AppDelicare.Services.Implement
             _createdCode = insert.Code;
             _unitOfWork.EmployeeRepository.Add(insert);
             await _unitOfWork.EmployeeRepository.CommitAsync(typeSave);
-            return string.Empty;
+            // HR-ACC-1.6 (D-82 f): ô "Cấp tài khoản web" → yêu cầu duyệt "Cấp tài khoản" cho FIN-IT (cùng transaction).
+            return await accountLifecycle.AfterEmployeeSavedAsync(null, null, insert, request.RequestWebAccount, request.AccountGroups) ?? string.Empty;
         }
 
         private async Task<string> Update(EmployeeRequest request, string typeSave)
@@ -191,10 +192,13 @@ namespace AppDelicare.Services.Implement
             }
             // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
             request.Code = exist.Code;
+            string? oldStatus = exist.Status;
+            Guid? oldPosition = exist.PositionId;
             var update = _mapper.Map(request, exist);
             _unitOfWork.EmployeeRepository.Update(update);
             await _unitOfWork.EmployeeRepository.CommitAsync(typeSave);
-            return string.Empty;
+            // HR-ACC-1.5 / 1.6 / 1.7 (D-82 e–h): đồng bộ Person, nghỉ việc → khóa tài khoản ngay, quay lại → yêu cầu mở lại, đổi chức danh → yêu cầu đổi nhóm.
+            return await accountLifecycle.AfterEmployeeSavedAsync(oldStatus ?? EmployeeStatus.Active, oldPosition, update, request.RequestWebAccount, request.AccountGroups) ?? string.Empty;
         }
 
         private async Task<string> Delete(Guid? id, string typeSave)
@@ -251,7 +255,7 @@ namespace AppDelicare.Services.Implement
             }
         }
         /// <summary>
-        /// UI-4 (D-68 g1): hồ sơ nhân viên. Tài khoản web: liên kết bot có UserId, không có thì tên đăng nhập = mã NV (giống HrRules.ResolveEmployeeAsync).
+        /// UI-4 (D-68 g1): hồ sơ nhân viên. Tài khoản web: PersonLink.UserOfEmployeeAsync (HR-ACC-1.3, D-82 i).
         /// Chỉ số / ca / giờ công lấy từ bảng công (AttendanceEventService.GetTimesheetDetail – cùng quy tắc muộn / vắng). D-68 e: ngày sinh, giới tính, địa chỉ
         /// chỉ trả về khi người xem có quyền Sửa adm-employee.
         /// </summary>
@@ -283,10 +287,8 @@ namespace AppDelicare.Services.Implement
                 // Tài khoản web + bot.
                 var identities = db.UserExternalIdentity.Where(x => !x.IsDeleted && x.EmployeeId == id).OrderByDescending(x => x.LinkedAt).ToList();
                 var usable = identities.FirstOrDefault(x => x.IdentityStatus == null || x.IdentityStatus == "Active" || x.IdentityStatus == "PendingCode");
-                Guid? userId = identities.Select(x => x.UserId).FirstOrDefault(u => u != null);
-                string? code = e.Code ?? e.EmployeeCode;
-                var user = userId is { } uid ? db.User.FirstOrDefault(u => u.Id == uid && !u.IsDeleted)
-                    : !string.IsNullOrWhiteSpace(code) ? db.User.FirstOrDefault(u => !u.IsDeleted && u.UserName == code) : null;
+                // HR-ACC-1.3 (D-82 i): tài khoản = PersonLink (Employee.PersonId → User.PersonId; dự phòng đoán cũ có cảnh báo) – cùng cách với chấm công / bot.
+                var user = await AppDelicare.Services.Implement.Identity.PersonLink.UserOfEmployeeAsync(db, e);
                 if (user != null)
                 {
                     m.UserId = user.Id;

@@ -25,6 +25,8 @@ namespace AppDelicare.Services.Ioc
             services.AddMemoryCache();
             // T45R: IClock, BusinessRules, quyền ở tầng cũ.
             services.Configure<BusinessRulesOptions>(configuration.GetSection(BusinessRulesOptions.Section));
+            // HR-ACC-1.3 (D-82 i): dự phòng đoán nhân viên cũ 1 bản phát hành – tắt bằng BusinessRules:Hr:LegacyEmployeeMatch = false.
+            AppDelicare.Services.Implement.Identity.PersonLink.LegacyMatch = configuration.GetValue(BusinessRulesOptions.Section + ":Hr:LegacyEmployeeMatch", true);
             services.AddSingleton<IClock, SystemClock>();
             services.Configure<PermissionOptions>(configuration.GetSection(PermissionOptions.Section));
             services.Configure<ReferenceListsOptions>(configuration.GetSection(ReferenceListsOptions.Section)); // T45B.5

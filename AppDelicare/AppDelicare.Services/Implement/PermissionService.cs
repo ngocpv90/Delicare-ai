@@ -41,12 +41,17 @@ namespace AppDelicare.Services.Implement
             var db = _unitOfWork.DbContext;
             var user = await db.User.AsNoTracking()
                 .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
-                .Select(u => new { u.IsAdmin })
+                .Select(u => new { u.IsAdmin, u.AccountType })
                 .FirstOrDefaultAsync(cancellationToken);
             UserPermissions result;
             if (user == null)
             {
-                result = UserPermissions.None;
+                result = UserPermissions.Blocked;
+            }
+            else if (!AppDelicare.Services.Implement.Identity.PersonLink.IsInternal(user.AccountType))
+            {
+                // HR-ACC-1.4 (D-82 b): tài khoản khách hàng / NCC – không có quyền nội bộ nào, kể cả khi bị gán nhầm nhóm / IsAdmin.
+                result = UserPermissions.None with { AccountType = user.AccountType.Trim().ToUpperInvariant() };
             }
             else
             {
@@ -86,7 +91,7 @@ namespace AppDelicare.Services.Implement
             }
             var menus = full.Menus.Where(m => !m.Key.StartsWith(IPermissionService.ApproveMenuPrefix, StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(m => m.Key, m => m.Value, StringComparer.OrdinalIgnoreCase);
-            return new UserPermissions(false, full.Groups, menus);
+            return full with { IsAdmin = false, Menus = menus };
         }
 
         public bool IsAllowed(UserPermissions permissions, string screenId, PermissionAction action)

@@ -15,6 +15,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 
 | Menu › Mục | screen-id | FIN-IT |
 |---|---|---|
+| Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | Duyệt |
 | Quản trị hệ thống › Tài khoản | `adm-user` | Q (IX) |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | Q (IX) |
 | Quản trị hệ thống › Phân quyền | `adm-permission` | Q (IX) |

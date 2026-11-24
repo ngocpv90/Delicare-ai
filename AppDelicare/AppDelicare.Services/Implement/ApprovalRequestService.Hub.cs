@@ -491,7 +491,8 @@ namespace AppDelicare.Services.Implement
         /// D-81 (i): mọi người có quyền duyệt cấp đang chờ (trừ người gửi) đều nghỉ hôm nay → báo bậc kế (COO); COO cũng nghỉ hết → CEO. 1 lần / yêu cầu / cấp / ngày
         /// (ApprovalItem ABSENT + IdempotencyKey). Ủy quyền đích danh = GAP-APR-04 (R2).
         /// </summary>
-        private async Task<int> EscalateIfAbsentAsync(ApprovalRequest r, IReadOnlyCollection<string> escalateGroups, IReadOnlyCollection<string> topGroups)
+        private async Task<int> EscalateIfAbsentAsync(ApprovalRequest r, IReadOnlyCollection<string> escalateGroups, IReadOnlyCollection<string> topGroups,
+            IReadOnlyCollection<Guid>? lockedApprovers = null)
         {
             var handler = HandlerOf(r.BusinessType);
             if (handler == null || r.BusinessId is not { } bid)
@@ -510,7 +511,8 @@ namespace AppDelicare.Services.Implement
             int stepNo = CurrentStep(steps)?.StepNo ?? r.CurrentStepNo ?? 1;
             string screen = await StepScreenAsync(handler, bid, stepNo, route);
             var approvers = (await RecipientResolver.UsersWithApproveAsync(db, screen)).Where(u => u != r.RequestedBy).ToList();
-            if (approvers.Count == 0)
+            // HR-ACC-1.7 (D-82 h): người duyệt vừa bị khóa (nghỉ việc) không còn trong danh sách → hết người duyệt cũng là "vắng".
+            if (approvers.Count == 0 && lockedApprovers is not { Count: > 0 })
             {
                 return 0;
             }
@@ -518,6 +520,11 @@ namespace AppDelicare.Services.Implement
             if (absent.Count < approvers.Count)
             {
                 return 0;
+            }
+            if (lockedApprovers is { Count: > 0 })
+            {
+                approvers = [.. approvers.Concat(lockedApprovers).Distinct()];
+                absent.UnionWith(lockedApprovers);
             }
             var next = (await RecipientResolver.UsersInGroupsAsync(db, escalateGroups)).Where(u => u != r.RequestedBy).ToList();
             var nextAbsent = await OnLeaveTodayAsync(next);
@@ -543,10 +550,99 @@ namespace AppDelicare.Services.Implement
             return await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
             {
                 Template = NotificationCatalog.ApprovalOverdue, UserIds = next, BotCode = MessagingCode.BotDieuHanh,
-                Data = new { title = await handler.DescribeAsync(bid), requestNo = r.RequestNo, step = stepName, detail = $"Người duyệt cấp này đang nghỉ hôm nay ({string.Join(", ", names)}) – chuyển bạn xử lý (bậc {level})" },
+                Data = new { title = await handler.DescribeAsync(bid), requestNo = r.RequestNo, step = stepName, detail = lockedApprovers is { Count: > 0 }
+                    ? $"Người duyệt cấp này đã nghỉ việc – tài khoản đã khóa ({string.Join(", ", names)}) – chuyển bạn xử lý (bậc {level})"
+                    : $"Người duyệt cấp này đang nghỉ hôm nay ({string.Join(", ", names)}) – chuyển bạn xử lý (bậc {level})" },
                 Buttons = new[] { new NotificationButton("📄 Xem & duyệt", BusinessNotifier.Callback("apv", "view", r.Id)) },
                 IdempotencyKey = $"{NotificationCatalog.ApprovalOverdue}:{r.Id:N}:{stepNo}:absent:{today}", CorrelationId = "APR:" + r.Id.ToString("N"),
             });
+        }
+
+        // ------------------------------------------------------------ HR-ACC-1.7 (D-82 h) nghỉ việc → yêu cầu đang giữ / đã gửi
+
+        public async Task<List<Guid>> OpenRequestsHeldByAsync(Guid userId)
+        {
+            var db = _unitOfWork.DbContext;
+            var open = await db.ApprovalRequest.AsNoTracking().Where(a => !a.IsDeleted && OpenStatuses.Contains(a.RequestStatus) && a.BusinessId != null && a.RequestedBy != userId).ToListAsync();
+            var held = new List<Guid>();
+            foreach (var r in open)
+            {
+                var handler = HandlerOf(r.BusinessType);
+                if (handler == null)
+                {
+                    continue;
+                }
+                var steps = await db.ApprovalStep.AsNoTracking().Where(s => s.ApprovalRequestId == r.Id && !s.IsDeleted).ToListAsync();
+                var route = (await RoutesAsync([r.Id]))[r.Id];
+                string screen = await StepScreenAsync(handler, r.BusinessId!.Value, CurrentStep(steps)?.StepNo ?? r.CurrentStepNo ?? 1, route);
+                if ((await RecipientResolver.UsersWithApproveAsync(db, screen)).Contains(userId))
+                {
+                    held.Add(r.Id);
+                }
+            }
+            return held;
+        }
+
+        public async Task<int> EscalateAfterLockAsync(IReadOnlyCollection<Guid> requestIds, Guid lockedUserId)
+        {
+            var o = _serviceProvider.GetService<Microsoft.Extensions.Options.IOptionsMonitor<Model.Option.MessagingOptions>>()?.CurrentValue.Watch;
+            var escalate = o?.EffectiveApprovalOverdueGroups ?? Model.Option.WatchOptions.DefaultApprovalOverdueGroups;
+            var top = o?.EffectiveApprovalOverdueTopGroups ?? Model.Option.WatchOptions.DefaultApprovalOverdueTopGroups;
+            int sent = 0;
+            foreach (Guid id in requestIds.Distinct())
+            {
+                var r = await _unitOfWork.DbContext.ApprovalRequest.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted && OpenStatuses.Contains(a.RequestStatus));
+                if (r == null)
+                {
+                    continue;
+                }
+                try
+                {
+                    sent += await EscalateIfAbsentAsync(r, escalate, top, [lockedUserId]);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "[ApprovalRequestService] EscalateAfterLock {Id}: lỗi – bỏ qua", id);
+                }
+            }
+            return sent;
+        }
+
+        public async Task<int> NotifyRequesterLeftAsync(Guid userId, string? personName)
+        {
+            var db = _unitOfWork.DbContext;
+            var open = await db.ApprovalRequest.AsNoTracking().Where(a => !a.IsDeleted && OpenStatuses.Contains(a.RequestStatus) && a.BusinessId != null && a.RequestedBy == userId).ToListAsync();
+            int sent = 0;
+            foreach (var r in open)
+            {
+                var handler = HandlerOf(r.BusinessType);
+                if (handler == null)
+                {
+                    continue;
+                }
+                var steps = await db.ApprovalStep.AsNoTracking().Where(s => s.ApprovalRequestId == r.Id && !s.IsDeleted).ToListAsync();
+                var route = (await RoutesAsync([r.Id]))[r.Id];
+                int stepNo = CurrentStep(steps)?.StepNo ?? r.CurrentStepNo ?? 1;
+                string screen = await StepScreenAsync(handler, r.BusinessId!.Value, stepNo, route);
+                var approvers = (await RecipientResolver.UsersWithApproveAsync(db, screen)).Where(u => u != userId).ToList();
+                if (approvers.Count == 0)
+                {
+                    continue;
+                }
+                string stepName = (await StepNamesAsync([screen])).GetValueOrDefault(screen, screen);
+                sent += await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
+                {
+                    Template = NotificationCatalog.ApprovalOverdue, UserIds = approvers, BotCode = MessagingCode.BotDieuHanh,
+                    Data = new
+                    {
+                        title = await handler.DescribeAsync(r.BusinessId!.Value), requestNo = r.RequestNo, step = stepName,
+                        detail = $"Người gửi {personName} đã nghỉ việc – tài khoản đã khóa; xem xét duyệt / từ chối",
+                    },
+                    Buttons = new[] { new NotificationButton("📄 Xem & duyệt", BusinessNotifier.Callback("apv", "view", r.Id)) },
+                    IdempotencyKey = $"{NotificationCatalog.ApprovalOverdue}:{r.Id:N}:requester-left", CorrelationId = "APR:" + r.Id.ToString("N"),
+                });
+            }
+            return sent;
         }
 
         /// <summary>Gọi sau khi giao cấp (gửi duyệt / chuyển cấp) – lỗi không làm hỏng việc gửi duyệt.</summary>

@@ -8,8 +8,41 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class UserController(IUserService service) : BaseController
+    public class UserController(IUserService service, IAccountLifecycleService accounts) : BaseController
     {
+        // ------------------------------------------------------------ HR-ACC-1 (D-82)
+
+        /// <summary>HR-ACC-1.8 (D-82 j): màn Tài khoản – cột Nhân viên, nhãn loại (Nhân viên / Hệ thống / Khách hàng), cảnh báo "đã nghỉ nhưng còn mở", lọc "Chưa gắn".</summary>
+        [HttpGet("GetAccountLinks")]
+        public Task<IActionResult> GetAccountLinks() => RunAccount(nameof(GetAccountLinks), () => accounts.GetAccountLinks());
+
+        /// <summary>HR-ACC-1.6 (D-82 f): IT (Thêm adm-user) tạo thẳng tài khoản cho nhân viên – không qua duyệt; nhóm trống = gợi ý theo chức danh.</summary>
+        [HttpPost("CreateForEmployee")]
+        [Security.Permission("adm-user", PermissionAction.Add)]
+        public Task<IActionResult> CreateForEmployee([FromBody] AppDelicare.Model.Model.UserCreateForEmployeeRequest request) => RunAccount(nameof(CreateForEmployee), () => accounts.CreateForEmployee(request));
+
+        /// <summary>HR-ACC-1.6: mật khẩu tạm của tài khoản vừa duyệt cấp khi nhân viên chưa liên kết bot – xem 1 lần (30′). Người duyệt tài khoản hoặc Sửa adm-user.</summary>
+        [HttpGet("TakeCreatedAccount")]
+        [Security.Permission("adm-user", PermissionAction.Approve, OrActions = [PermissionAction.Edit])]
+        public Task<IActionResult> TakeCreatedAccount(Guid employeeId) => RunAccount(nameof(TakeCreatedAccount), () => accounts.TakeCreated(employeeId));
+
+        private async Task<IActionResult> RunAccount<T>(string action, Func<Task<T>> run)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await run());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "] ", action, ": ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         private readonly IUserService _service = service;
 
         [HttpGet("GetAll")]

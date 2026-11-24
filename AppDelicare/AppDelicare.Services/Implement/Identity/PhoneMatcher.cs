@@ -60,7 +60,7 @@ namespace AppDelicare.Services.Implement.Identity
                 .Where(p => Normalize(p.PhoneNumber) == wanted).ToList();
             var personIds = persons.Select(p => p.Id).ToList();
             List<Guid> users = personIds.Count == 0 ? [] : await db.User.AsNoTracking()
-                .Where(u => !u.IsDeleted && u.IsActive && u.PersonId != null && personIds.Contains(u.PersonId.Value)).Select(u => u.Id).ToListAsync(ct);
+                .Where(u => !u.IsDeleted && u.IsActive && (u.AccountType == null || u.AccountType == PersonLink.Internal) && u.PersonId != null && personIds.Contains(u.PersonId.Value)).Select(u => u.Id).ToListAsync(ct);
             string? name = employees.FirstOrDefault()?.FullName ?? persons.FirstOrDefault()?.FullName;
             return new PhoneMatch(employees.Select(e => e.Id).ToList(), users, name);
         }

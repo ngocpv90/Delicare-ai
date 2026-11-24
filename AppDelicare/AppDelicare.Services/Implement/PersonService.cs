@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -169,9 +170,36 @@ namespace AppDelicare.Services.Implement
             {
                 return (error, null);
             }
+            // HR-ACC-1.5 (D-82 e): chọn nhân viên → nhân viên phải chưa gắn người; ô trống của hồ sơ lấy từ nhân viên.
+            Employee? employee = null;
+            if (request.EmployeeId is { } employeeId)
+            {
+                employee = await _unitOfWork.DbContext.Employee.FirstOrDefaultAsync(e => e.Id == employeeId && !e.IsDeleted);
+                if (employee == null)
+                {
+                    return (ConstantHelper.Message.RecordNotFoundMessage, null);
+                }
+                if (employee.PersonId != null)
+                {
+                    return (string.Format(ConstantHelper.Message.PersonLinkTaken, (employee.Code ?? employee.EmployeeCode) + " – " + employee.FullName), null);
+                }
+            }
             var insert = _mapper.Map<Person>(request);
+            if (employee != null)
+            {
+                insert.FullName = string.IsNullOrWhiteSpace(insert.FullName) ? employee.FullName : insert.FullName;
+                insert.PhoneNumber = string.IsNullOrWhiteSpace(insert.PhoneNumber) ? employee.Phone : insert.PhoneNumber;
+                insert.DateOfBirth ??= employee.DateOfBirth;
+                insert.Sex = string.IsNullOrWhiteSpace(insert.Sex) ? employee.Gender : insert.Sex;
+                insert.Address = string.IsNullOrWhiteSpace(insert.Address) ? employee.Address : insert.Address;
+            }
             _unitOfWork.PersonRepository.Add(insert);
             await _unitOfWork.PersonRepository.CommitAsync(typeSave);
+            if (employee != null)
+            {
+                employee.PersonId = insert.Id;
+                await _unitOfWork.DbContext.SaveChangesAsync(ConstantHelper.TypeSave.Update);
+            }
             var account = await _userService.InsertUserAfter(insert.Id, insert.FullName, typeSave, userName, request.ListUserGroupId, request.IsActive ?? false);
             if (account.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || account.Data == null)
             {
@@ -191,7 +219,30 @@ namespace AppDelicare.Services.Implement
             var update = _mapper.Map(request, exist);
             _unitOfWork.PersonRepository.Update(update);
             await _unitOfWork.PersonRepository.CommitAsync(typeSave);
+            await SyncEmployeeAsync(update);
             return string.Empty;
+        }
+
+        /// <summary>
+        /// HR-ACC-1.5 (D-82 e): Person là gốc; nhân viên gắn với người này giữ bản sao (họ tên, SĐT, ngày sinh, giới tính, địa chỉ) – ghi cùng transaction
+        /// để báo cáo / SP cũ đọc Employee không lệch. Email giữ ở Employee.
+        /// </summary>
+        private async Task SyncEmployeeAsync(Person person)
+        {
+            var employees = await _unitOfWork.DbContext.Employee.Where(e => e.PersonId == person.Id && !e.IsDeleted).ToListAsync();
+            if (employees.Count == 0)
+            {
+                return;
+            }
+            foreach (var e in employees)
+            {
+                e.FullName = person.FullName;
+                e.Phone = person.PhoneNumber;
+                e.DateOfBirth = person.DateOfBirth;
+                e.Gender = person.Sex;
+                e.Address = person.Address;
+            }
+            await _unitOfWork.DbContext.SaveChangesAsync(ConstantHelper.TypeSave.Update);
         }
 
         private async Task<string> Delete(Guid? id, string typeSave)
@@ -360,6 +411,7 @@ namespace AppDelicare.Services.Implement
                 update.Address = request.Address;
                 _unitOfWork.PersonRepository.Update(update);
                 await _unitOfWork.PersonRepository.CommitAsync(ConstantHelper.TypeSave.UpdateProfile);
+                await SyncEmployeeAsync(update);
                 _unitOfWork.CommitTransaction(); // Rà soát BE: trước đây thiếu commit → thay đổi hồ sơ bị rollback.
                 return new Result<bool>
                 {

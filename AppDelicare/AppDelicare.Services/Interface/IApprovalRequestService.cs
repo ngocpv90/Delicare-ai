@@ -19,6 +19,15 @@ namespace AppDelicare.Services.Interface
         /// <summary>T12: tạo yêu cầu duyệt (gọi trong transaction của nghiệp vụ gửi duyệt).</summary>
         /// <param name="proposalJson">T13 (tùy chọn): thay đổi đề xuất, thực thi khi được duyệt. Có giá trị → PayloadJson = {"state": "&lt;nội dung&gt;", "proposal": "&lt;đề xuất&gt;"}; null → giữ định dạng cũ.</param>
         public Task<(ApprovalRequest? Request, string? Error)> CreateAsync(string businessType, Guid businessId, string? proposalJson = null);
+
+        /// <summary>HR-ACC-1.7 (D-82 h): yêu cầu đang mở mà người này có quyền duyệt cấp đang chờ (gọi TRƯỚC khi khóa tài khoản).</summary>
+        public Task<List<Guid>> OpenRequestsHeldByAsync(Guid userId);
+
+        /// <summary>HR-ACC-1.7: sau khi khóa – yêu cầu không còn ai duyệt được (hoặc người còn lại đều nghỉ) → báo bậc leo thang (D-81 i). Trả số tin đã xếp.</summary>
+        public Task<int> EscalateAfterLockAsync(IReadOnlyCollection<Guid> requestIds, Guid lockedUserId);
+
+        /// <summary>HR-ACC-1.7: yêu cầu người nghỉ việc đã gửi còn mở → báo người duyệt cấp đang chờ. Trả số tin đã xếp.</summary>
+        public Task<int> NotifyRequesterLeftAsync(Guid userId, string? personName);
         /// <summary>T12: yêu cầu chờ người đang đăng nhập duyệt; type = screen-id.</summary>
         public Task<IResults<ApprovalPendingModel>> GetMyPending(string? type, bool explicitOnly = false);
         /// <summary>T12: duyệt / từ chối 1 cấp và thực thi nghiệp vụ.</summary>

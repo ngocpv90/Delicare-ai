@@ -90,7 +90,7 @@ namespace AppDelicare.Services.Implement.Identity
             Guid? userId = null, employeeId = null;
             if (kind == MessagingCode.LinkKind.User)
             {
-                if (!await Db.User.AsNoTracking().AnyAsync(u => u.Id == id && !u.IsDeleted && u.IsActive))
+                if (!await Db.User.AsNoTracking().AnyAsync(u => u.Id == id && !u.IsDeleted && u.IsActive && (u.AccountType == null || u.AccountType == PersonLink.Internal))) // HR-ACC-1.4: bot chỉ nhận tài khoản nội bộ
                 {
                     return Result<BotIdentityModel>.Fail(ConstantHelper.Message.BotUserInactive);
                 }
@@ -170,7 +170,7 @@ namespace AppDelicare.Services.Implement.Identity
         public async Task<IResult<LinkCodeModel>> CreateCode()
         {
             Guid userId = currentActor.RequireActor().UserId;
-            if (!await Db.User.AsNoTracking().AnyAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive))
+            if (!await Db.User.AsNoTracking().AnyAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive && (u.AccountType == null || u.AccountType == PersonLink.Internal))) // HR-ACC-1.4
             {
                 return Result<LinkCodeModel>.Fail(ConstantHelper.Message.BotUserInactive);
             }

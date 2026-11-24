@@ -61,7 +61,7 @@ public static partial class Seeds
             "wf-inbox?type=menu-menu", "wf-inbox?type=menu-change-request", "wf-inbox?type=scm-pr-l1", "wf-inbox?type=scm-pr-l2", "wf-inbox?type=scm-po",
             "wf-inbox?type=scm-po-director", "wf-inbox?type=scm-stockcount", "wf-inbox?type=scm-stockcount-l2", "wf-inbox?type=scm-adjustment",
             "wf-inbox?type=prod-plan", "wf-inbox?type=qc-inspection", "wf-inbox?type=prod-batch", "wf-inbox?type=scm-lot", "wf-inbox?type=hr-leave",
-            "wf-inbox?type=hr-swap", "wf-inbox?type=scm-pr",
+            "wf-inbox?type=hr-swap", "wf-inbox?type=scm-pr", "wf-inbox?type=adm-user",
         ]),
         new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly"]),
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
@@ -103,6 +103,8 @@ public static partial class Seeds
         ["sys-import"] = ("Nhập dữ liệu gốc (Excel)", "P0"),
         ["wf-inbox?type=prod-batch"] = ("Mẻ nấu", "P5"),
         ["wf-inbox?type=scm-lot"] = ("Giữ / thả lô", "P4"),
+        // HR-ACC-1.6 (D-82 f–h): cấp / đổi nhóm / mở lại tài khoản – người duyệt FIN-IT.
+        ["wf-inbox?type=adm-user"] = ("Tài khoản", "P0"),
     };
 
     /// <summary>Đổi tên MENU-5 (mục duyệt rõ cấp): link → (tên seed cũ – có thể nhiều biến thể, tên mới). Chỉ đổi khi DB đang mang tên cũ.</summary>
@@ -271,6 +273,7 @@ public static partial class Seeds
         ("scm-stockcount", ["OPS-SCM-HEAD", "COO"]), ("scm-stockcount-l2", ["FIN-ACC"]),
         ("hr-leave", ["FIN-HR", "COO"]), ("hr-swap", ["FIN-HR", "COO"]),
         ("qc-inspection", ["QA"]), ("prod-batch", ["QA"]), ("scm-lot", ["QA"]),
+        ("adm-user", ["FIN-IT"]), // HR-ACC-1.6 (D-82 f)
     ];
 
     /// <summary>Mọi mục cấp 2 mà ma trận quản (link '#/…'), theo thứ tự menu – trừ mục quyền vào bot.</summary>

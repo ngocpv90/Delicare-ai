@@ -82,6 +82,35 @@ namespace AppDelicare.Services.Jobs
     }
 
     /// <summary>00:15 – lô quá hạn → Hết hạn + ghi hao hụt toàn bộ tồn (spec 7.5 LotExpiryJob).</summary>
+    /// <summary>
+    /// HR-ACC-1.7 (D-82 h): lưới an toàn hằng ngày – nhân viên Nghỉ việc / Ngừng mà tài khoản web còn mở hoặc liên kết bot chưa thu hồi
+    /// (đổi trạng thái ngoài màn Nhân viên: nhập Excel, SQL) → khóa + thu hồi + leo thang yêu cầu đang giữ, báo FIN-IT. Đổi trạng thái qua API đã khóa ngay.
+    /// </summary>
+    public sealed class AccountLockResignedJob(IAccountLifecycleService accounts, IUnitOfWork unitOfWork) : IScheduledJob
+    {
+        public string Code => "AccountLockResigned";
+        public string Name => "Khóa tài khoản nhân viên đã nghỉ";
+        public string Description => "Nhân viên Nghỉ việc / Ngừng còn tài khoản mở hoặc liên kết bot → khóa, thu hồi, leo thang yêu cầu đang giữ, báo FIN-IT (chỉ tiêu “đã nghỉ còn mở” = 0).";
+        public string DefaultAt => "00:30";
+
+        public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
+        {
+            using var tran = await unitOfWork.OpenTransaction();
+            try
+            {
+                var r = await accounts.LockAllResignedAsync();
+                unitOfWork.CommitTransaction();
+                return new JobOutcome(JobRunStatus.Succeeded, r.LockedUsers + r.RevokedIdentities, now.Date,
+                    $"Khóa {r.LockedUsers} tài khoản, thu hồi {r.RevokedIdentities} liên kết bot, leo thang {r.EscalatedRequests}, báo {r.NotifiedRequests}");
+            }
+            catch
+            {
+                unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+    }
+
     public sealed class LotExpiryJob(IMaterialLotService materialLotService) : IScheduledJob
     {
         public string Code => "LotExpiry";

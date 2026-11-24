@@ -27,5 +27,10 @@ namespace AppDelicare.Model.Option
         public int LeaveMaxDays { get; set; } = 30;
         /// <summary>Lưới ca: số ngày mặc định (spec: 7).</summary>
         public int GridDays { get; set; } = 7;
+        /// <summary>
+        /// HR-ACC-1.3 (D-82 i): true = khi tài khoản chưa gắn nhân viên qua Person (Employee.PersonId), dùng tạm cách đoán cũ (liên kết bot → tên đăng nhập = mã NV → SĐT)
+        /// và ghi nhật ký cảnh báo mỗi lần. Giữ 1 bản phát hành rồi đặt false (NS gắn hết ở tab Đối chiếu).
+        /// </summary>
+        public bool LegacyEmployeeMatch { get; set; } = true;
     }
 }

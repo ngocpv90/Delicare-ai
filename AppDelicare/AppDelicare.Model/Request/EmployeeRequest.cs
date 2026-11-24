@@ -16,5 +16,9 @@ namespace AppDelicare.Model.Request
 		public string? Address { get; set; }
 		public DateTime? HireDate { get; set; }
 		public string? Status { get; set; }
+		/// <summary>HR-ACC-1.6 (D-82 f): ô "Cấp tài khoản web" trên form nhân viên – lưu xong tạo yêu cầu duyệt "Cấp tài khoản" cho FIN-IT.</summary>
+		public bool RequestWebAccount { get; set; }
+		/// <summary>HR-ACC-1.6: nhóm quyền đề xuất (tên nhóm, cách nhau bằng dấu phẩy) – trống = nhóm gợi ý theo chức danh (BusinessRules:PositionDefaultGroups).</summary>
+		public string? AccountGroups { get; set; }
 	}
 }

@@ -41,6 +41,8 @@
             public const string Rol = "rol", Id = "id";
             /// <summary>T45R.8 (D-39): token đăng nhập bằng mật khẩu tạm – chỉ được gọi User/ChangePassword, User/GetCurrent, Authentication/*.</summary>
             public const string PwdTemp = "pwd_temp";
+            /// <summary>HR-ACC-1.4 (D-82 b): loại tài khoản (INTERNAL / CUSTOMER / SUPPLIER). Máy chủ vẫn kiểm lại theo DB ở mỗi request (PermissionFilter).</summary>
+            public const string AccountType = "acct";
         }
 
         public static class JwtClaims
@@ -176,6 +178,24 @@
             // T45R.8 (D-37..D-39) – quản trị người dùng, mật khẩu tạm, menu 2 cấp.
             public static readonly string TempPasswordExpired = "Mật khẩu tạm đã hết hạn, liên hệ quản trị";
             public static readonly string MustChangePassword = "Cần đổi mật khẩu";
+            // HR-ACC-1 (D-82): tài khoản ↔ con người ↔ nhân viên, vòng đời tài khoản.
+            public static readonly string AccountLocked = "Tài khoản đã bị khóa – liên hệ IT";
+            public static readonly string AccountNotInternal = "Tài khoản này không dùng được hệ thống nội bộ (chỉ tài khoản nội bộ)";
+            public static readonly string AccountTypeInvalid = "Loại tài khoản không hợp lệ (INTERNAL / CUSTOMER / SUPPLIER)";
+            public static readonly string AccountAlreadyExists = "Nhân viên đã có tài khoản {0}";
+            public static readonly string AccountUserNameTaken = "Tên đăng nhập {0} đã có người dùng – đổi mã nhân viên hoặc tạo tay ở màn Tài khoản";
+            public static readonly string AccountEmployeeNoCode = "Nhân viên chưa có mã – không đặt được tên đăng nhập";
+            public static readonly string AccountEmployeeNotWorking = "Nhân viên không còn làm việc – không cấp / mở lại tài khoản";
+            public static readonly string AccountNoGroup = "Chưa chọn nhóm quyền cho tài khoản";
+            public static readonly string AccountGroupUnknown = "Không có nhóm quyền: {0}";
+            public static readonly string AccountNoUser = "Nhân viên chưa có tài khoản";
+            public static readonly string AccountNotLocked = "Tài khoản đang mở – không cần mở lại";
+            public static readonly string PersonLinkTaken = "Người này đã gắn nhân viên {0}";
+            public static readonly string PersonLinkUserTaken = "Tài khoản {0} đã thuộc người khác";
+            public static readonly string PersonLinkNeedOne = "Chọn đúng 1: người (Person) hoặc tài khoản";
+            public static readonly string PersonLinkAccountNotInternal = "Chỉ gắn nhân viên với tài khoản nội bộ";
+            public static readonly string ApprovalProposalNotEditable = "Loại duyệt này không cho sửa nội dung trước khi duyệt";
+            public static readonly string ApprovalSubjectSelf = "Không duyệt yêu cầu về chính mình";
             public static readonly string PersonHasUser = "Hồ sơ này đã có tài khoản đăng nhập ({0}) – mỗi hồ sơ chỉ có tối đa 1 tài khoản";
             public static readonly string PersonNotFound = "Không tìm thấy hồ sơ cá nhân";
             public static readonly string UserNameInvalid = "Tên đăng nhập chỉ gồm chữ thường không dấu, số và các ký tự . _ - (3–50 ký tự, không khoảng trắng)";

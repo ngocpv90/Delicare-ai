@@ -62,6 +62,15 @@ namespace AppDelicare.Services.Implement
                     Message = ConstantHelper.Message.AccountInActive
                 };
             }
+            // HR-ACC-1.4 (D-82 b): màn đăng nhập nội bộ chỉ nhận tài khoản INTERNAL (khách hàng / NCC dùng cổng riêng – GAP-PORTAL-01).
+            if (!AppDelicare.Services.Implement.Identity.PersonLink.IsInternal(user.AccountType))
+            {
+                return new Response<AuthenticateResponse>
+                {
+                    Code = Convert.ToInt32(HttpStatusCode.Forbidden),
+                    Message = ConstantHelper.Message.AccountNotInternal
+                };
+            }
             // T45R.8 (D-39): mật khẩu tạm – quá hạn 24 giờ thì từ chối; còn hạn thì đăng nhập được nhưng bắt buộc đổi mật khẩu.
             bool mustChangePassword = EncriptFunctionsHelper.IsTemporary(user.PassWord);
             if (mustChangePassword && EncriptFunctionsHelper.IsTemporaryExpired(user.PassWord, _clock.UtcNow))
@@ -110,6 +119,7 @@ namespace AppDelicare.Services.Implement
             claims.Add(new Claim(ClaimTypes.Role, iPv4 ?? ConstantHelper.NotFound));
             claims.Add(new Claim(ClaimTypes.Role, isAdmin.ToString()));
             claims.Add(new Claim(ClaimTypes.Role, string.Join(ConstantHelper.Comma, listMenu?.Select(x => x.ObjectMenuName).ToList() ?? [])));
+            claims.Add(new Claim(ConstantHelper.JwtClaimIdentifiers.AccountType, PersonLinkAccountType(user.AccountType)));
             if (mustChangePassword)
             {
                 // T45R.8: PermissionFilter chỉ cho gọi User/ChangePassword, User/GetCurrent, Authentication/* (403 "Cần đổi mật khẩu").
@@ -185,5 +195,6 @@ namespace AppDelicare.Services.Implement
             return await Task.FromResult<ClaimsIdentity>(null);
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
         }
+        private static string PersonLinkAccountType(string? t) => string.IsNullOrWhiteSpace(t) ? AppDelicare.Services.Implement.Identity.PersonLink.Internal : t.Trim().ToUpperInvariant();
     }
 }

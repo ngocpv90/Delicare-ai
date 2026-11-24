@@ -30,6 +30,19 @@ namespace AppDelicare.Model.Model
         public List<ApprovalChangeModel> Changes { get; set; } = [];
         /// <summary>Đường dẫn màn chứng từ gốc (screen-id[?id=…]).</summary>
         public string? OpenLink { get; set; }
+        /// <summary>HR-ACC-1.6 (D-82 f): người duyệt sửa được trước khi Duyệt (vd. nhóm quyền của tài khoản) – FE gửi lại qua ApprovalDecideRequest.Proposal.</summary>
+        public ApprovalEditModel? Edit { get; set; }
+    }
+
+    /// <summary>HR-ACC-1.6: ô sửa trên thẻ duyệt. Kind = "groups" (chọn nhiều nhóm quyền).</summary>
+    public class ApprovalEditModel
+    {
+        public string Kind { get; set; } = "groups";
+        public string? Label { get; set; }
+        public List<string> Selected { get; set; } = [];
+        public List<string> Options { get; set; } = [];
+        /// <summary>Đề xuất hiện tại (JSON) – FE sửa trường groups rồi gửi lại.</summary>
+        public string? ProposalJson { get; set; }
     }
 
     public class ApprovalFlagModel

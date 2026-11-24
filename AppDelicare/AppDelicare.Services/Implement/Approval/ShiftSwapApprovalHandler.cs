@@ -8,7 +8,7 @@ namespace AppDelicare.Services.Implement.Approval
     /// CEO / COO / FIN-HR). Mặc định 1 cấp (đổi bằng <c>BusinessRules:ApprovalSteps:SHIFT_SWAP</c>). Duyệt → hoán đổi / chuyển ca trong transaction của engine (kiểm lại
     /// chưa chấm công, không trùng ca, không nghỉ phép); từ chối → Từ chối; người gửi hủy → Đã hủy.
     /// </summary>
-    public class ShiftSwapApprovalHandler(IShiftSwapRequestService shiftSwapRequestService) : IApprovalHandler
+    public class ShiftSwapApprovalHandler(IShiftSwapRequestService shiftSwapRequestService, AppDelicare.Data.Interface.IUnitOfWork unitOfWork) : IApprovalHandler
     {
         private readonly IShiftSwapRequestService _service = shiftSwapRequestService;
 
@@ -28,5 +28,10 @@ namespace AppDelicare.Services.Implement.Approval
 
         /// <summary>APR-1.2 (D-81 e): khuôn tóm tắt chung – ApprovalSummaries.</summary>
         public Task<AppDelicare.Model.Model.ApprovalSummaryModel?> GetSummaryAsync(Guid businessId, ApprovalSummaryContext ctx) => ApprovalSummaries.ShiftSwapAsync(businessId, ctx);
+
+        /// <summary>HR-ACC-1.3 (D-82 i): người xin đổi ca – người duyệt là chính người đó thì bị chặn.</summary>
+        public async Task<Guid?> SubjectEmployeeIdAsync(Guid businessId)
+            => await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+                unitOfWork.DbContext.ShiftSwapRequest.Where(l => l.Id == businessId).Select(l => (Guid?)l.RequesterEmployeeId));
     }
 }

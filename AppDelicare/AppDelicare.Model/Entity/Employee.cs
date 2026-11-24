@@ -28,5 +28,7 @@ namespace AppDelicare.Model.Entity
         public string? Gender { get; set; }
         public string? Address { get; set; }
         public DateTime? HireDate { get; set; }
+        /// <summary>D-82 (a, c) – HR-ACC-1.1: con người của nhân viên (Person = gốc thông tin cá nhân; User.PersonId = tài khoản). Migration 20261123_02.</summary>
+        public Guid? PersonId { get; set; }
     }
 }

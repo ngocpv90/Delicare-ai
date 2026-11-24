@@ -106,12 +106,14 @@ namespace AppDelicare.Tests.Security
         }
 
         [Fact]
-        public async Task Inactive_user_gets_403()
+        public async Task Inactive_user_gets_401_account_locked()
         {
             var (userId, _, _) = await CreateUserAsync(access: true, add: true, active: false);
             using var client = _factory.CreateAuthorizedClient(userId);
 
-            (await client.GetAsync("/api/Shift/GetAllData")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            // HR-ACC-1.7 (D-82 h): tài khoản khóa → 401 "Tài khoản đã bị khóa" ở MỌI API đã đăng nhập (trước: 403 chỉ ở API có quyền).
+            (await client.GetAsync("/api/Shift/GetAllData")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            (await client.GetAsync("/api/User/GetCurrent")).StatusCode.Should().Be(HttpStatusCode.Unauthorized, "kể cả API tự phục vụ");
         }
 
         [Fact]
@@ -151,7 +153,7 @@ namespace AppDelicare.Tests.Security
 
             (await ResponseCodeAsync(await admin.GetAsync($"/api/User/SaveIsActive?id={userId}"))).Should().Be(200);
 
-            (await user.GetAsync("/api/Shift/GetAllData")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            (await user.GetAsync("/api/Shift/GetAllData")).StatusCode.Should().Be(HttpStatusCode.Unauthorized, "HR-ACC-1.7: token đang có bị chặn ngay (401)");
         }
 
         [Fact]

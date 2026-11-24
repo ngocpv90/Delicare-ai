@@ -41,52 +41,10 @@ namespace AppDelicare.Services.Implement
         private static string Digits(string? phone) => new((phone ?? string.Empty).Where(char.IsDigit).ToArray());
 
         /// <summary>
-        /// GAP-HR-02 (D-55 b): không có cột liên kết Employee ↔ User (GAP-ADM-03). Nhân viên của tài khoản = theo thứ tự:
-        /// (1) <c>UserExternalIdentity</c> Active có UserId + EmployeeId; (2) <c>Employee.Code</c> (hoặc EmployeeCode cũ) = tên đăng nhập;
-        /// (3) số điện thoại hồ sơ (<c>Person.PhoneNumber</c>) = <c>Employee.Phone</c> và chỉ khớp đúng 1 nhân viên.
+        /// HR-ACC-1.3 (D-82 i – thay D-55 b / GAP-HR-02): nhân viên của tài khoản = <see cref="Identity.PersonLink.EmployeeOfUserAsync"/>
+        /// (User.PersonId → Employee.PersonId; dự phòng đoán cũ theo cờ BusinessRules:Hr:LegacyEmployeeMatch, có ghi cảnh báo). Giữ tên cũ để mọi nơi gọi dùng chung.
         /// </summary>
-        public static async Task<Employee?> ResolveEmployeeAsync(DatabaseContext db, Guid userId)
-        {
-            var linked = await db.UserExternalIdentity.AsNoTracking()
-                .Where(x => !x.IsDeleted && x.UserId == userId && x.EmployeeId != null && (x.IdentityStatus == null || x.IdentityStatus == "Active" || x.IdentityStatus == "PendingCode"))
-                .Select(x => x.EmployeeId).FirstOrDefaultAsync();
-            if (linked is { } eid)
-            {
-                var byLink = await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == eid && !e.IsDeleted);
-                if (byLink != null)
-                {
-                    return byLink;
-                }
-            }
-            var user = await db.User.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
-            if (user == null)
-            {
-                return null;
-            }
-            if (!string.IsNullOrWhiteSpace(user.UserName))
-            {
-                string name = user.UserName.Trim();
-                var byCode = await db.Employee.AsNoTracking().Where(e => !e.IsDeleted && (e.Code == name || e.EmployeeCode == name)).Take(2).ToListAsync();
-                if (byCode.Count == 1)
-                {
-                    return byCode[0];
-                }
-            }
-            if (user.PersonId is { } pid)
-            {
-                string phone = Digits(await db.Person.AsNoTracking().Where(p => p.Id == pid).Select(p => p.PhoneNumber).FirstOrDefaultAsync());
-                if (phone.Length >= 9)
-                {
-                    var candidates = (await db.Employee.AsNoTracking().Where(e => !e.IsDeleted && e.Phone != null).ToListAsync())
-                        .Where(e => Digits(e.Phone) == phone).Take(2).ToList();
-                    if (candidates.Count == 1)
-                    {
-                        return candidates[0];
-                    }
-                }
-            }
-            return null;
-        }
+        public static Task<Employee?> ResolveEmployeeAsync(DatabaseContext db, Guid userId) => Identity.PersonLink.EmployeeOfUserAsync(db, userId);
 
         /// <summary>Đơn vị và mọi đơn vị con (theo ParentId); null = không lọc.</summary>
         public static async Task<HashSet<Guid>?> OrganizationScopeAsync(DatabaseContext db, Guid? organizationUnitId)

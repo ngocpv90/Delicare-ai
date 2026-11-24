@@ -628,6 +628,12 @@ namespace AppDelicare.Services.Implement
             {
                 return (ConstantHelper.Message.ApprovalSelfBlocked, null);
             }
+            // HR-ACC-1.3 (D-82 i): yêu cầu nói về chính nhân viên của người duyệt (đơn nghỉ / đổi ca / tài khoản của mình) – chặn như tự duyệt.
+            if (_rules.ApprovalBlockSelfApproval && !perms.IsAdmin && await handler.SubjectEmployeeIdAsync(businessId) is { } subject
+                && (await HrRules.ResolveEmployeeAsync(_unitOfWork.DbContext, actor))?.Id == subject)
+            {
+                return (ConstantHelper.Message.ApprovalSubjectSelf, null);
+            }
             if (_rules.ApprovalRequireDistinctApprovers && !perms.IsAdmin && steps.FirstOrDefault(s => s.StepNo != stepNo && s.ApproverUserId == actor) is { } mine)
             {
                 return (string.Format(ConstantHelper.Message.ApprovalAlreadyDecidedStep, mine.StepNo), null);
@@ -650,6 +656,22 @@ namespace AppDelicare.Services.Implement
             if (request.Approve && Hash(current) != submittedHash)
             {
                 return (ConstantHelper.Message.ApprovalPayloadChanged, null);
+            }
+            // HR-ACC-1.6 (D-82 f): người duyệt sửa đề xuất trước khi Duyệt (vd. đổi nhóm quyền của tài khoản) – lưu lại vào PayloadJson.proposal.
+            if (request.Approve && !string.IsNullOrWhiteSpace(request.Proposal))
+            {
+                if (handler is not IApprovalProposalEditor editor)
+                {
+                    return (ConstantHelper.Message.ApprovalProposalNotEditable, null);
+                }
+                var (revised, reviseError) = await editor.ReviseProposalAsync(businessId, proposal, request.Proposal);
+                if (reviseError != null)
+                {
+                    return (reviseError, null);
+                }
+                proposal = revised;
+                approval.PayloadJson = WrapPayload(submittedState, proposal);
+                _unitOfWork.ApprovalRequestRepository.Update(approval);
             }
             if (step == null)
             {

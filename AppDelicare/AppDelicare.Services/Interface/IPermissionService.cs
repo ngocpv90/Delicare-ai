@@ -23,6 +23,14 @@ namespace AppDelicare.Services.Interface
     public sealed record UserPermissions(bool IsAdmin, IReadOnlySet<string> Groups, IReadOnlyDictionary<string, MenuRights> Menus)
     {
         public static readonly UserPermissions None = new(false, new HashSet<string>(), new Dictionary<string, MenuRights>());
+
+        /// <summary>HR-ACC-1.4 / 1.7 (D-82 b, h): false = tài khoản không tồn tại / đã khóa / đã xóa → mọi API đăng nhập bị chặn ngay (PermissionFilter, 401).</summary>
+        public bool Active { get; init; } = true;
+
+        /// <summary>HR-ACC-1.4 (D-82 b): loại tài khoản (User.AccountType). Khác INTERNAL → không gọi được API nội bộ (PermissionFilter, 403), kể cả khi gán nhóm admin.</summary>
+        public string AccountType { get; init; } = "INTERNAL";
+
+        public static readonly UserPermissions Blocked = None with { Active = false };
     }
 
     /// <summary>

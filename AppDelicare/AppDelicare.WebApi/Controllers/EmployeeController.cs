@@ -8,9 +8,51 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class EmployeeController(IEmployeeService service) : BaseController
+    public class EmployeeController(IEmployeeService service, IAccountLifecycleService accounts) : BaseController
     {
         private readonly IEmployeeService _service = service;
+
+        // ------------------------------------------------------------ HR-ACC-1 (D-82): tài khoản ↔ con người ↔ nhân viên
+
+        /// <summary>HR-ACC-1.6 (D-82 f): NS đề nghị cấp tài khoản web → yêu cầu duyệt "Cấp tài khoản" cho FIN-IT (nhóm gợi ý theo chức danh, đổi được khi duyệt).</summary>
+        [HttpPost("RequestAccount")]
+        [Security.Permission("adm-employee", PermissionAction.Edit)]
+        public Task<IActionResult> RequestAccount([FromBody] AppDelicare.Model.Model.EmployeeAccountRequest request) => Run(nameof(RequestAccount), () => accounts.RequestCreate(request));
+
+        /// <summary>HR-ACC-1.6 (D-82 h): nhân viên quay lại làm việc mà tài khoản đang khóa → yêu cầu "Mở lại tài khoản" (tự tạo khi đổi trạng thái; nút trên Nhân viên 360).</summary>
+        [HttpPost("RequestReopen")]
+        [Security.Permission("adm-employee", PermissionAction.Edit)]
+        public Task<IActionResult> RequestReopen([FromBody] AppDelicare.Model.Model.EmployeeAccountRequest request) => Run(nameof(RequestReopen), () => accounts.RequestReopen(request));
+
+        /// <summary>HR-ACC-1.8 (D-82 j): khối Tài khoản trên Nhân viên 360 (trạng thái, nhóm, yêu cầu đang chờ, nút theo quyền).</summary>
+        [HttpGet("GetAccount")]
+        public Task<IActionResult> GetAccount(Guid id) => Run(nameof(GetAccount), () => accounts.GetEmployeeAccount(id));
+
+        /// <summary>HR-ACC-1.8 (D-82 d, j): tab Đối chiếu – nhân viên chưa gắn con người + ứng viên. group = SURE / MULTI / NONE (trống = tất cả).</summary>
+        [HttpGet("GetLinkReview")]
+        public Task<IActionResult> GetLinkReview(string? group) => Run(nameof(GetLinkReview), () => accounts.GetLinkReview(group));
+
+        /// <summary>HR-ACC-1.8: gắn nhân viên với 1 người (PersonId) hoặc với người của 1 tài khoản (UserId); Unlink = gỡ. Quyền Sửa adm-employee + Sửa adm-user.</summary>
+        [HttpPost("LinkPerson")]
+        [Security.Permission("adm-employee", PermissionAction.Edit, AndScreens = ["adm-user"])]
+        public Task<IActionResult> LinkPerson([FromBody] AppDelicare.Model.Model.EmployeeLinkPersonRequest request) => Run(nameof(LinkPerson), () => accounts.LinkPerson(request));
+
+        private async Task<IActionResult> Run<T>(string action, Func<Task<T>> run)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await run());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "] ", action, ": ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] EmployeeSearchRequest request)

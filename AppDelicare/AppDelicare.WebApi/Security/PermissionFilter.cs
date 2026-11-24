@@ -45,6 +45,24 @@ namespace AppDelicare.WebApi.Security
             }
 
             var metadata = context.ActionDescriptor.EndpointMetadata;
+            // HR-ACC-1.4 / 1.7 (D-82 b, h): MỌI API đã đăng nhập (kể cả tự phục vụ – SkipPermission) kiểm tài khoản còn mở + loại INTERNAL ở mỗi request
+            // (quyền cache theo user, xóa cache ngay khi khóa → token đang có vô hiệu ngay, không cần danh sách thu hồi token).
+            if (principal.Identity?.IsAuthenticated == true && !metadata.OfType<IAllowAnonymous>().Any() && currentActor.Actor is { } who)
+            {
+                UserPermissions state = await permissions.GetAsync(who.UserId, context.HttpContext.RequestAborted);
+                if (!state.Active)
+                {
+                    Log.Warning("Chặn {Path}: tài khoản {Actor} đã khóa / không còn", context.HttpContext.Request.Path.Value, who);
+                    context.Result = Deny(StatusCodes.Status401Unauthorized, AppDelicare.Model.Helper.ConstantHelper.Message.AccountLocked);
+                    return;
+                }
+                if (!AppDelicare.Services.Implement.Identity.PersonLink.IsInternal(state.AccountType))
+                {
+                    Log.Warning("Chặn {Path}: tài khoản {Actor} loại {Type} không dùng API nội bộ", context.HttpContext.Request.Path.Value, who, state.AccountType);
+                    context.Result = Deny(StatusCodes.Status403Forbidden, AppDelicare.Model.Helper.ConstantHelper.Message.AccountNotInternal);
+                    return;
+                }
+            }
             if (metadata.OfType<IAllowAnonymous>().Any() || metadata.OfType<SkipPermissionAttribute>().Any()
                 || !metadata.OfType<IAuthorizeData>().Any())
             {
@@ -81,6 +99,13 @@ namespace AppDelicare.WebApi.Security
                 context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
             }
         }
+
+        private static ObjectResult Deny(int status, string message) => new(new AppDelicare.Data.Repositories.Result<bool>
+        {
+            ResponseCode = status,
+            ResponseMessage = message,
+            Data = false,
+        }) { StatusCode = status };
 
         private static bool AllowedWithTempPassword(Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor descriptor)
             => descriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor action

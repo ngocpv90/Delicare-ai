@@ -174,6 +174,11 @@ namespace AppDelicare.Model.Option
         /// (hộp duyệt, Decide, bot); quản trị viên được miễn. Hủy yêu cầu của mình vẫn được.
         /// </summary>
         public bool ApprovalBlockSelfApproval { get; set; } = true;
+        /// <summary>
+        /// HR-ACC-1.6 (D-82 f, g): nhóm quyền gợi ý theo chức danh – mã chức danh (Position.Code) → tên nhóm quyền (UserGroup.Name, vd. "OPS-KIT"; nhiều nhóm cách nhau bằng dấu phẩy).
+        /// Mặc định rỗng – IT điền (ví dụ ở appsettings.Development.json.example). Dùng cho yêu cầu "Cấp tài khoản" / "Đổi nhóm quyền"; IT vẫn đổi được trước khi duyệt.
+        /// </summary>
+        public Dictionary<string, string> PositionDefaultGroups { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         /// <summary>APR-1.2 (D-81 f): cảnh báo PO khi giá dòng cao hơn lần mua trước cùng NCC ≥ N %.</summary>
         public decimal ApprovalFlagPricePct { get; set; } = 10m;
         /// <summary>APR-1.2 (D-81 f): cảnh báo kiểm kê khi dòng lệch &gt; N %.</summary>
