@@ -654,3 +654,21 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
   .fw-week{display:grid;grid-template-columns:auto 1fr auto;gap:6px;width:100%}.fw-week #fwLbl{text-align:center;font-size:14px}.fw-week #fwNow{grid-column:1/-1;justify-self:start}
   .fw-step{flex-wrap:wrap}.fw-step .btn{width:100%;justify-content:center}
 }
+/* UI-6.6 (D-85): Đăng ký suất tuần – chip trạng thái ô tổng quan */
+.fw-step .s4{background:#F2F4F1;color:#4E5C51}
+.ow-chip{display:inline-block;min-width:64px;text-align:right;font-weight:600;font-size:13px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.ow-chip.none{border-style:dashed;background:#F2F4F1;color:#6b756e}
+.ow-chip.draft{border-color:#F2B98A;background:#FDF0E6;color:#8A3B0B}
+.ow-chip.bot{border-color:#C9B5E8;background:#F3EEFB;color:#55308F}
+.ow-chip.ok{border-color:#B9CB97;background:#EFF5E5;color:#3F5A17}
+.ow-chip.lock{border-color:#C9CFC6;background:#E9ECE7;color:#4E5C51}
+.ow-chip.nc{border:0;background:repeating-linear-gradient(45deg,#F2F4F1,#F2F4F1 3px,#fff 3px,#fff 6px);color:#a3aca5}
+.ow-chip.sw{min-width:0;width:12px;height:12px;padding:0;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.ow-warn{color:#C2571A;font-weight:700}
+.ow-meal-h{cursor:pointer}.ow-meal-h.closed .fw-chev{transform:rotate(-90deg)}
+.ow-pt-head .select{min-width:260px}
+@media(max-width:760px){.ow-chip{min-width:0;width:100%}.ow-pt-head .select{min-width:0;width:100%}}
+.ow-steps .fw-step{display:grid;grid-template-columns:26px 1fr;column-gap:10px;row-gap:8px;align-items:start}
+.ow-steps .fw-step .btn{grid-column:1/-1;width:100%;justify-content:center;white-space:normal}
+#owBody .ow-grid col.ow-c0{width:190px}
+@media(max-width:760px){.ow-pt-head .ow-chip{width:auto}}

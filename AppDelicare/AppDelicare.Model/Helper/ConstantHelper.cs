@@ -296,6 +296,14 @@
             public static readonly string OrderWeekSaved = "Đã lưu tuần: tạo {0} đơn, sửa {1} đơn, xác nhận {2} đơn, bỏ qua {3} ngày";
             public static readonly string OrderWeekCopied = "Đã chép số tuần trước vào {0} ô (chưa lưu – bấm Lưu nháp / Xác nhận cả tuần)";
             public static readonly string OrderWeekNothingToCopy = "Tuần trước không có số suất để chép";
+            public static readonly string OrderWeekNothingToConfirm = "Không có điểm giao nào có đơn Nháp / khách gửi chờ xác nhận (còn trước giờ chốt) trong tuần";
+            public static readonly string OrderWeekPointsConfirmed = "Đã xác nhận {0} đơn của {1} điểm giao (lỗi {2})";
+            public static readonly string OrderWeekNoForecast = "Không có dự báo đã công bố cho buổi còn trống trong tuần (mở màn Dự báo suất ăn để công bố)";
+            public static readonly string OrderWeekForecastFilled = "Đã điền số dự báo vào {0} buổi còn trống (chưa lưu – rời ô hoặc bấm Lưu nháp)";
+            public static readonly string OrderSlipWrongWeek = "Phiếu của tuần {0}, không phải tuần đang mở ({1})";
+            public static readonly string OrderSlipBatchRead = "Đã lưu Nháp {0} / {1} phiếu (lỗi {2})";
+            public static readonly string OrderSlipNote = "Nhập từ phiếu đăng ký khách gửi lại";
+            public static readonly string OrderSlipEmpty = "Phiếu chưa điền số suất – không có gì để lưu";
             public static readonly string OrderSlipInvalid = "Không phải phiếu đăng ký suất của hệ thống (tải phiếu từ màn Đăng ký suất tuần / Thực đơn, không sửa hàng / cột ẩn)";
             public static readonly string OrderSlipOtherWeek = "Phiếu không đúng khách / điểm giao / tuần đang mở ({0} · {1} · tuần từ {2})";
             public static readonly string OrderSlipRowInvalid = "Hàng {0}: mã ẩn của phiếu bị sửa – bỏ qua";

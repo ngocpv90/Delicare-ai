@@ -40,12 +40,37 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var (model, error) = await BuildWeekAsync(request.CustomerId, request.DeliveryLocationId, request.WeekStart);
+                if (model != null)
+                {
+                    await FillAveragesAsync(model);
+                }
                 return error != null ? Result<OrderWeekModel>.Fail(error) : Result<OrderWeekModel>.Success(model!, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetWeek: ", ex.ToString()));
                 throw;
+            }
+        }
+
+        /// <summary>UI-6.6: TB 4 tuần cùng thứ (chỉ tuần có đơn) theo (buổi, lựa chọn) của điểm giao – cảnh báo lệch, không chặn.</summary>
+        private async Task FillAveragesAsync(OrderWeekModel model)
+        {
+            DateTime since = model.WeekStart.AddDays(-28);
+            var lines = await (from o in _unitOfWork.DbContext.Order.AsNoTracking()
+                               join l in _unitOfWork.DbContext.OrderLine.AsNoTracking() on o.Id equals l.OrderId
+                               where !o.IsDeleted && !l.IsDeleted && o.DeliveryLocationId == model.DeliveryLocationId && o.Status != OrderStatus.Cancelled
+                                     && o.MealDate >= since && o.MealDate < model.WeekStart
+                               select new { o.MealDate, l.MealType, l.MenuOptionNo, l.Quantity }).ToListAsync();
+            foreach (var row in model.ListRow)
+            {
+                foreach (var cell in row.ListCell)
+                {
+                    var perWeek = lines.Where(x => x.MealDate.DayOfWeek == cell.MealDate.DayOfWeek && x.MenuOptionNo == row.MenuOptionNo
+                            && string.Equals(x.MealType, row.MealType, StringComparison.OrdinalIgnoreCase))
+                        .GroupBy(x => x.MealDate.Date).Select(g => g.Sum(x => x.Quantity)).ToList();
+                    cell.Average4Weeks = perWeek.Count == 0 ? null : Math.Round(perWeek.Average(), 0);
+                }
             }
         }
 

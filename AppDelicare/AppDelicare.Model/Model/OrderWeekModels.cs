@@ -67,6 +67,8 @@ namespace AppDelicare.Model.Model
         public decimal Quantity { get; set; }
         public decimal? UnitPrice { get; set; }
         public Guid? OrderLineId { get; set; }
+        /// <summary>UI-6.6: trung bình suất đặt cùng thứ 4 tuần gần nhất (tuần có đơn) cho cùng buổi + lựa chọn – để cảnh báo ⚠ lệch &gt; 30 %; null = chưa có lịch sử.</summary>
+        public decimal? Average4Weeks { get; set; }
     }
 
     public class OrderWeekPriceModel
