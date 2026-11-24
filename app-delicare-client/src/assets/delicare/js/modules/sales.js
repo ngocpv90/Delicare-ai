@@ -325,7 +325,188 @@
     });
   }
   // ---------- Đối soát ----------
+  // ---------- Đối soát suất ăn – UI-6.8 (D-86 b, c), mô phỏng docs/frontend-handoff/assets/reconciliation-mockup.html ----------
+  // Kỳ 7 ngày / 30 ngày / Tháng + lọc khách · 3 bước · 4 chỉ số · 2 biểu đồ cạnh nhau · bảng xác nhận ngay trên trang (phục vụ mặc định = khách nhận,
+  // chỉ sửa dòng có sự cố, Enter xuống dòng cùng cột, lý do lỗi hiện khi > 0) · Xác nhận tất cả dòng khớp / dòng đã chọn · Chốt theo lô.
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const rcb = { mode: '7', end: null, cus: '', tab: 'open', day: '', loc: '', data: null, key: '', edits: {}, sel: new Set(), open: new Set() };
+  const RC_TAB = [['open', 'Chờ đối soát'], ['VARIANCE', 'Có chênh lệch'], ['CLOSED', 'Đã chốt'], ['all', 'Tất cả']];
+  const RC_SRC = { POD: 'Bàn giao', BOT: 'Bot', WEB: 'Web', AUTO: 'Tự động' };
+  function rcRange() {
+    const end = rcb.end || Store.ctx.date;
+    if (rcb.mode === 'M') { const d = new Date(end + 'T00:00'), a = ymd(new Date(d.getFullYear(), d.getMonth(), 1)), b = ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0)); return [a, b]; }
+    const n = rcb.mode === '30' ? 30 : 7; return [U.addDays(end, -(n - 1)), end];
+  }
+  function rcShift(dir) {
+    const end = rcb.end || Store.ctx.date;
+    if (rcb.mode === 'M') { const d = new Date(end + 'T00:00'); rcb.end = ymd(new Date(d.getFullYear(), d.getMonth() + dir + 1, 0)); }
+    else rcb.end = U.addDays(end, dir * (rcb.mode === '30' ? 30 : 7));
+  }
+  const rcVal = (r, k) => { const e = rcb.edits[r.orderId]; return e && e[k] !== undefined ? e[k] : r[k]; };
+  const rcEdited = r => !!rcb.edits[r.orderId] && Object.keys(rcb.edits[r.orderId]).length > 0;
+  const rcBilled = r => Math.max(0, (Number(r.accepted) || 0) - (Number(rcVal(r, 'fault')) || 0));
+  const rcAmount = r => rcEdited(r) ? Math.round(rcBilled(r) * (Number(r.unitAmount) || 0)) : (Number(r.amount) || 0);
+  const rcMoney = v => { v = Number(v) || 0; return v >= 1e9 ? U.num(Math.round(v / 1e7) / 100) + ' tỷ' : v >= 1e6 ? U.num(Math.round(v / 1e5) / 10) + ' tr' : U.num(v); };
+  function reconBoard(el, f) {
+    const canEdit = Store.perm(f.id).edit !== false;
+    const [a, b] = rcRange();
+    const cus = Store.rows('Customer').filter(c => c.Status !== 'Inactive').sort((x, y) => String(x.DisplayName || x.Name || '').localeCompare(String(y.DisplayName || y.Name || '')));
+    el.innerHTML = APP.header(f, '', { noNote: true }) + `
+      <div class="notice info mb">${I('help')}<div>So số suất qua từng khâu Đặt → Sản xuất → Đóng gói → Giao → Khách nhận, chốt số tính tiền cho từng đơn. Đơn giao xong tự có đối soát; khớp số thì tự chốt sau 24 giờ.</div></div>
+      <div class="card panel mb"><div class="spread" style="flex-wrap:wrap;gap:10px"><div class="row-flex">${[['7', '7 ngày'], ['30', '30 ngày'], ['M', 'Tháng']].map(([k, l]) => `<button class="chip ${rcb.mode === k ? 'active' : ''}" data-rcm="${k}">${l}</button>`).join('')}<button class="btn sm" id="rcPrev" aria-label="Kỳ trước">◀</button><b>${U.date(a).slice(0, 5)} – ${U.date(b)}</b><button class="btn sm" id="rcNext" aria-label="Kỳ sau">▶</button></div>
+        <select class="select" id="rcCus" style="max-width:300px"><option value="">Tất cả khách hàng</option>${cus.map(c => `<option value="${c.Id}" ${c.Id === rcb.cus ? 'selected' : ''}>${esc(c.DisplayName || c.Name || c.Code)}</option>`).join('')}</select></div>
+        <div class="fw-steps ow-steps" id="rcSteps"></div><div id="rcKpis"></div></div>
+      <div class="card panel mb" id="rcCharts"><div class="muted small">Đang tải…</div></div>
+      <div class="card panel"><div class="tabs" id="rcTabs"></div><div id="rcBody"><div class="muted small">Đang tải…</div></div></div>`;
+    el.querySelectorAll('[data-rcm]').forEach(c => c.onclick = () => { rcb.mode = c.dataset.rcm; rcb.end = null; rcb.day = ''; reconBoard(el, f); });
+    el.querySelector('#rcPrev').onclick = () => { rcShift(-1); rcb.day = ''; reconBoard(el, f); };
+    el.querySelector('#rcNext').onclick = () => { rcShift(1); rcb.day = ''; reconBoard(el, f); };
+    el.querySelector('#rcCus').onchange = e => { rcb.cus = e.target.value; reconBoard(el, f); };
+    const key = [a, b, rcb.cus, Store.ctx.branch || ''].join('|');
+    if (rcb.key === key && rcb.data) return rcDraw(el, f, canEdit);
+    rcb.key = key; rcb.data = null;
+    Store.query('OrderReconciliation/GetBoard', { From: a, To: b, CustomerId: rcb.cus || null, BranchId: Store.ctx.branch }).then(x => {
+      if (rcb.key !== key || !el.isConnected) return;
+      if (!x.ok || !x.data) { el.querySelector('#rcBody').innerHTML = failBox(x.message); return; }
+      rcb.data = x.data; rcb.edits = {}; rcb.sel = new Set(); rcDraw(el, f, canEdit);
+    });
+  }
+  function rcReload(el, f) { rcb.key = ''; bust(); reconBoard(el, f); }
+  function rcDraw(el, f, canEdit) {
+    const d = rcb.data, rows = d.listRow || [];
+    const pend = rows.filter(r => r.tab === 'PENDING' && r.hasPod && r.orderStatus === 'Delivered'), conf = rows.filter(r => r.tab !== 'CLOSED' && r.confirmed && r.reconciliationId);
+    el.querySelector('#rcSteps').innerHTML = `
+      <div class="fw-step"><span class="n s1">1</span><div><b>Xác nhận số</b><span class="small muted">Khớp số: 1 nút cho tất cả · lệch: sửa trực tiếp trên dòng</span></div><button class="btn sm primary" id="rcStep1" ${!canEdit || !pend.length ? 'disabled' : ''}>${I('check')} Xác nhận ${pend.length} đơn khớp</button></div>
+      <div class="fw-step"><span class="n s2">2</span><div><b>Xử lý chênh lệch</b><span class="small muted">Đơn Nhận ≠ Đặt hoặc có lỗi Delicare</span></div><button class="btn sm" id="rcStep2">${U.num(d.varianceCount)} đơn có chênh lệch</button></div>
+      <div class="fw-step"><span class="n s3">3</span><div><b>Chốt đối soát</b><span class="small muted">Khớp số → hệ thống tự chốt sau 24 giờ; còn lại kế toán chốt</span></div><div class="row-flex" style="grid-column:1/-1"><button class="btn sm orange" id="rcStep3" ${!canEdit || !conf.length ? 'disabled' : ''}>${I('approve')} Chốt ${conf.length} đơn đã xác nhận</button><button class="btn sm" id="rcBill">${I('file')} Bảng kê tháng</button></div></div>`;
+    el.querySelector('#rcKpis').innerHTML = UI.kpis([
+      UI.kpi('Suất đặt', U.num(d.ordered), U.num((d.listRow || []).length) + ' đơn', 'utensils', 'green'),
+      UI.kpi('Suất khách nhận', U.num(d.accepted), d.acceptedPct != null ? U.num(d.acceptedPct) + '% so đặt' : '', 'check', 'blue'),
+      UI.kpi('Giá trị đã chốt', rcMoney(d.closedAmount), U.num(d.closedCount) + ' đơn', 'calc', 'green'),
+      UI.kpi('Chờ / chênh lệch', U.num(d.pendingCount) + ' / ' + U.num(d.varianceCount), 'đơn', 'alert', d.varianceCount ? 'orange' : 'green')], 'compact');
+    el.querySelector('#rcStep1').onclick = () => rcConfirm(el, f, pend.map(r => ({ orderId: r.orderId })), `Xác nhận <b>${pend.length}</b> đơn khớp số (nhận = đặt)? Phục vụ ghi bằng số khách nhận.`);
+    el.querySelector('#rcStep2').onclick = () => { rcb.tab = 'VARIANCE'; rcTable(el, f, canEdit); el.querySelector('#rcBody').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    el.querySelector('#rcStep3').onclick = () => UI.confirm(`Chốt <b>${conf.length}</b> đối soát đã xác nhận? Sau khi chốt không sửa được số liệu; đơn → Đã đối soát.`, note => Store.act('OrderReconciliation/CloseMany', { json: { listReconciliationId: conf.map(r => r.reconciliationId), remark: note || null }, tables: ['OrderReconciliation', 'Order'] }).then(x => { if (!x.ok) return; rcResult(x); rcReload(el, f); }), { input: 'Ghi chú (bắt buộc khi chênh lệch vượt ngưỡng)', ok: 'Chốt đối soát', title: 'Chốt đối soát' });
+    el.querySelector('#rcBill').onclick = () => APP.go('crm-billing');
+    // Biểu đồ: trái Đặt – Giao – Nhận theo ngày; phải chuỗi 5 khâu + 4 ô hao hụt giữa khâu.
+    const days = (d.listDay || []), lbl = days.map(x => U.date(U.day(x.date)).slice(0, 5)), ord = days.map(x => x.ordered), acc = days.map(x => x.accepted);
+    const CH = ['Đặt', 'Sản xuất', 'Đóng gói', 'Giao', 'Nhận'], tot = d.listChain || [0, 0, 0, 0, 0];
+    const left = UI.combo(lbl, [{ name: 'Đặt', type: 'bar', role: 'order', values: ord }, { name: 'Giao', type: 'line', role: 'deliver', values: days.map(x => x.delivered) }, { name: 'Nhận', type: 'line', role: 'receive', dashed: true, values: acc }],
+      { title: 'Đặt – Giao – Nhận theo ngày ăn', unit: 'suất', h: 240, tipExtra: i => { const g = acc[i] - ord[i]; return 'Chênh Nhận − Đặt: ' + (g > 0 ? '+' : '') + U.num(g) + (ord[i] ? ' (' + U.num(g / ord[i] * 100, 1) + '%)' : ''); } });
+    const right = UI.hbars(CH, [{ name: 'Suất cả kỳ', values: tot, color: UI.CHART_COLORS.deliver }], { title: 'Chuỗi Đặt → Sản xuất → Đóng gói → Giao → Nhận', unit: 'suất', h: 200, labelHead: 'Khâu', tipExtra: i => i > 0 && tot[i - 1] ? 'So với ' + CH[i - 1] + ': ' + U.num(tot[i] / tot[i - 1] * 100, 1) + '%' : '' });
+    const loss = [1, 2, 3, 4].map(i => { const v = tot[i] - tot[i - 1]; return `<div class="rc-loss"><span class="small muted">${CH[i - 1]} → ${CH[i]}</span><b class="${v < 0 ? 'bad' : ''}">${v > 0 ? '+' : ''}${U.num(v)}</b><span class="small muted">${tot[i - 1] ? U.num(v / tot[i - 1] * 100, 1) + '%' : '–'}</span></div>`; }).join('');
+    el.querySelector('#rcCharts').innerHTML = rows.length ? `<div class="dc-chart-pair"><div>${left}</div><div>${right}<div class="rc-losses">${loss}</div></div></div>` : '<div class="empty">Chưa có đơn đã giao trong kỳ.</div>';
+    rcTable(el, f, canEdit);
+  }
+  function rcRows() {
+    const rows = (rcb.data.listRow || []).filter(r => rcb.tab === 'all' ? true : rcb.tab === 'open' ? r.tab !== 'CLOSED' : r.tab === rcb.tab);
+    return rows.filter(r => (!rcb.day || U.day(r.mealDate) === rcb.day) && (!rcb.loc || r.locationName === rcb.loc));
+  }
+  function rcTable(el, f, canEdit) {
+    const all = rcb.data.listRow || [], cnt = k => all.filter(r => k === 'all' ? true : k === 'open' ? r.tab !== 'CLOSED' : r.tab === k).length;
+    el.querySelector('#rcTabs').innerHTML = RC_TAB.map(([k, l]) => `<button class="tab ${rcb.tab === k ? 'active' : ''}" data-rct="${k}">${l} (${cnt(k)})</button>`).join('');
+    el.querySelectorAll('[data-rct]').forEach(t => t.onclick = () => { rcb.tab = t.dataset.rct; rcTable(el, f, canEdit); });
+    const rows = rcRows(), days = [...new Set(all.map(r => U.day(r.mealDate)))].sort(), locs = [...new Set(all.map(r => r.locationName).filter(Boolean))].sort();
+    const matched = rows.filter(r => r.tab === 'PENDING' && r.hasPod && r.orderStatus === 'Delivered' && !rcEdited(r));
+    const reasons = rcb.data.listFaultReason || [];
+    const edit = r => canEdit && r.tab !== 'CLOSED' && r.orderStatus === 'Delivered';
+    const inp = (r, k, extra) => edit(r) ? `<input class="rc-in ${rcVal(r, k) == null || (k === 'served' && !rcEdited(r) && r.served == null) ? 'pre' : ''}" data-rcin="${r.orderId}|${k}" inputmode="decimal" value="${rcVal(r, k) != null ? rcVal(r, k) : k === 'served' ? r.accepted : ''}" ${extra || ''}>` : `<span>${rcVal(r, k) != null ? U.num(rcVal(r, k)) : '–'}</span>`;
+    const body = rows.map(r => {
+      const fault = Number(rcVal(r, 'fault')) || 0, lines = r.listLine || [], opened = rcb.open.has(r.orderId);
+      const tr = `<tr class="${rcEdited(r) ? 'chg' : r.tab === 'CONFIRMED' ? 'ok' : ''}" data-rcr="${r.orderId}">
+        <td>${edit(r) ? `<input type="checkbox" data-rcs="${r.orderId}" ${rcb.sel.has(r.orderId) ? 'checked' : ''} aria-label="Chọn dòng">` : ''}</td>
+        <td>${lines.length ? `<span class="rc-chev" data-rco="${r.orderId}">${opened ? '▾' : '▸'}</span> ` : ''}<a href="javascript:void 0" data-rcd="${r.orderId}">${esc(r.orderNumber || '')}</a><div class="small muted">${U.date(U.day(r.mealDate)).slice(0, 5)}</div></td>
+        <td>${esc(r.customerName || '')}<div class="small muted">${esc(r.locationName || '')}</div></td>
+        <td class="num">${U.num(r.ordered)}</td>
+        <td class="num ${Number(r.accepted) !== Number(r.ordered) ? 'bad' : ''}"><b>${U.num(r.accepted)}</b></td>
+        <td class="num">${lines.length ? `<span>${U.num(rcVal(r, 'served') != null ? rcVal(r, 'served') : r.accepted)}</span>` : inp(r, 'served')}</td>
+        <td class="num">${inp(r, 'returned')}</td>
+        <td class="num">${inp(r, 'fault')}</td>
+        <td>${fault > 0 ? (edit(r) ? `<select class="rc-sel" data-rcin="${r.orderId}|faultReason"><option value="">— Lý do —</option>${reasons.map(x => `<option value="${x.code}" ${rcVal(r, 'faultReason') === x.code ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : esc((reasons.find(x => x.code === r.faultReason) || {}).name || r.faultReason || '')) : '<span class="muted">–</span>'}</td>
+        <td class="num"><b>${U.num(rcBilled(r))}</b></td>
+        <td class="num">${U.num(rcAmount(r), 0)}</td>
+        <td><span class="small">${esc(RC_SRC[r.source] || r.source)}</span>${r.tab === 'CLOSED' ? ' <span class="badge gray">Đã chốt</span>' : r.tab === 'CONFIRMED' ? ' <span class="badge green">Đã xác nhận</span>' : ''}</td>
+        <td class="actions">${r.reconciliationId && r.tab === 'CLOSED' ? `<button class="btn xs" data-rcp="${r.reconciliationId}" title="In biên bản đối soát">${I('print')}</button>` : ''}</td></tr>`;
+      const sub = lines.length && opened ? lines.map(l => `<tr class="opt"><td></td><td colspan="2">${esc(MEAL_VI2(l.mealType))}${l.menuOptionNo ? ' · Lựa chọn ' + l.menuOptionNo : ''}</td><td class="num">${U.num(l.quantity)}</td><td></td><td class="num">${edit(r) ? `<input class="rc-in" data-rcl="${r.orderId}|${l.orderLineId}" inputmode="decimal" value="${rcLine(r, l)}">` : U.num(rcLine(r, l))}</td><td colspan="7" class="small muted">${U.money(l.unitPrice)}/suất</td></tr>`).join('') : '';
+      return tr + sub;
+    }).join('');
+    el.querySelector('#rcBody').innerHTML = `<div class="notice info small mb">${I('help')}<div>Mặc định <b style="display:inline">Phục vụ = Khách nhận</b>, không cần nhập. Chỉ sửa dòng có trả về / lỗi Delicare / phục vụ khác. Enter = xuống dòng dưới cùng cột.</div></div>
+      <div class="row-flex mb" style="flex-wrap:wrap"><select class="select" id="rcDay" style="max-width:170px"><option value="">Mọi ngày ăn</option>${days.map(x => `<option value="${x}" ${x === rcb.day ? 'selected' : ''}>Ngày ăn ${U.date(x).slice(0, 5)}</option>`).join('')}</select><select class="select" id="rcLoc" style="max-width:240px"><option value="">Mọi điểm giao</option>${locs.map(x => `<option ${x === rcb.loc ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>
+        ${canEdit ? `<button class="btn sm" id="rcSel">${I('check')} Xác nhận dòng đã chọn (<span id="rcSelN">${rcb.sel.size}</span>)</button><button class="btn sm primary" id="rcAll" ${matched.length ? '' : 'disabled'}>${I('check')} Xác nhận tất cả dòng khớp (${matched.length})</button>` : ''}</div>
+      ${rows.length ? `<div class="table-wrap"><table class="table dc-table rc-grid"><thead><tr><th style="width:28px">${canEdit ? '<input type="checkbox" id="rcSelAll" aria-label="Chọn tất cả">' : ''}</th><th>Đơn</th><th>Khách / điểm giao</th><th class="num">Đặt</th><th class="num">Khách nhận</th><th class="num">Phục vụ</th><th class="num">Trả về</th><th class="num">Lỗi Delicare</th><th>Lý do</th><th class="num">Tính tiền</th><th class="num">Thành tiền</th><th>Nguồn</th><th></th></tr></thead><tbody>${body}</tbody></table></div>` : '<div class="empty">Không có đơn trong nhóm này.</div>'}
+      <div class="small muted mt"><span class="rc-sw"></span> dòng đã sửa · Tiền = (Khách nhận − Lỗi Delicare) × đơn giá cố định lúc chốt đơn · Phục vụ chỉ để dự báo · Điểm phát bấm "Đã phục vụ đủ" trên bot sau bữa → dòng tự xác nhận (nguồn Bot).</div>`;
+    const box = el.querySelector('#rcBody');
+    box.querySelector('#rcDay').onchange = e => { rcb.day = e.target.value; rcTable(el, f, canEdit); };
+    box.querySelector('#rcLoc').onchange = e => { rcb.loc = e.target.value; rcTable(el, f, canEdit); };
+    box.querySelectorAll('[data-rcd]').forEach(a => a.onclick = () => APP.openDetail('Order', a.dataset.rcd));
+    box.querySelectorAll('[data-rcp]').forEach(b => b.onclick = () => Store.download('OrderReconciliation/Print', { id: b.dataset.rcp }));
+    box.querySelectorAll('[data-rco]').forEach(s => s.onclick = () => { const id = s.dataset.rco; rcb.open.has(id) ? rcb.open.delete(id) : rcb.open.add(id); rcTable(el, f, canEdit); });
+    if (!canEdit) return;
+    const byId = id => all.find(r => r.orderId === id);
+    const mark = id => { rcb.sel.add(id); };
+    box.querySelectorAll('[data-rcs]').forEach(c => c.onchange = () => { c.checked ? rcb.sel.add(c.dataset.rcs) : rcb.sel.delete(c.dataset.rcs); box.querySelector('#rcSelN').textContent = rcb.sel.size; });
+    const sa = box.querySelector('#rcSelAll'); if (sa) sa.onchange = () => { box.querySelectorAll('[data-rcs]').forEach(c => { c.checked = sa.checked; sa.checked ? rcb.sel.add(c.dataset.rcs) : rcb.sel.delete(c.dataset.rcs); }); box.querySelector('#rcSelN').textContent = rcb.sel.size; };
+    box.querySelectorAll('[data-rcin]').forEach(x => {
+      const [id, k] = x.dataset.rcin.split('|');
+      const apply = () => {
+        const r = byId(id); if (!r) return;
+        const v = k === 'faultReason' ? x.value : (x.value.trim() === '' ? null : Number(x.value.replace(',', '.')));
+        const base = k === 'served' ? (r.served != null ? r.served : r.accepted) : r[k];
+        const e = rcb.edits[id] || (rcb.edits[id] = {});
+        if ((v ?? null) === (base ?? null)) delete e[k]; else e[k] = v;
+        if (!Object.keys(e).length) delete rcb.edits[id];
+        if (rcEdited(r)) mark(id);
+      };
+      x.onchange = () => { apply(); rcTable(el, f, canEdit); };
+      x.onkeydown = ev => {
+        if (ev.key !== 'Enter') return; ev.preventDefault(); apply();
+        const list = [...box.querySelectorAll(`[data-rcin$="|${k}"]`)], i = list.indexOf(x), next = list[i + 1];
+        const nid = next && next.dataset.rcin; rcTable(el, f, canEdit);
+        if (nid) { const n = el.querySelector(`[data-rcin="${nid}"]`); if (n) { n.focus(); n.select && n.select(); } }
+      };
+    });
+    box.querySelectorAll('[data-rcl]').forEach(x => x.onchange = () => {
+      const [id, lid] = x.dataset.rcl.split('|'), r = byId(id), e = rcb.edits[id] || (rcb.edits[id] = {});
+      e.lines = Object.assign({}, e.lines, { [lid]: Number(x.value) || 0 });
+      e.served = (r.listLine || []).reduce((s, l) => s + rcLine(r, l), 0); mark(id); rcTable(el, f, canEdit);
+    });
+    const item = r => {
+      const e = rcb.edits[r.orderId] || {}, o = { orderId: r.orderId };
+      if (e.served !== undefined) o.servedQuantity = e.served;
+      const ret = rcVal(r, 'returned'), fault = rcVal(r, 'fault');
+      if (ret != null) o.returnedQuantity = ret;
+      if (fault != null) { o.delicareFaultQuantity = fault; o.faultReason = rcVal(r, 'faultReason') || null; }
+      if (r.listLine && r.listLine.length && (e.lines || r.listLine.some(l => l.served != null))) o.listLine = r.listLine.map(l => ({ orderLineId: l.orderLineId, servedQuantity: rcLine(r, l) }));
+      return o;
+    };
+    box.querySelector('#rcSel').onclick = () => {
+      const list = [...rcb.sel].map(byId).filter(r => r && edit(r));
+      if (!list.length) return UI.toast('Chưa chọn dòng nào', 'err');
+      const bad = list.find(r => (Number(rcVal(r, 'fault')) || 0) > 0 && !rcVal(r, 'faultReason'));
+      if (bad) return UI.toast('Đơn ' + esc(bad.orderNumber) + ': chọn lý do lỗi Delicare', 'err');
+      rcConfirm(el, f, list.map(item), `Xác nhận <b>${list.length}</b> dòng đã chọn?`);
+    };
+    box.querySelector('#rcAll').onclick = () => rcConfirm(el, f, matched.map(r => ({ orderId: r.orderId })), `Xác nhận <b>${matched.length}</b> dòng khớp (nhận = đặt, không sửa)? Phục vụ ghi bằng số khách nhận.`);
+  }
+  const MEAL_VI2 = t => ({ SANG: 'Sáng', TRUA: 'Trưa', TOI: 'Tối', DEM: 'Đêm' })[String(t || '').toUpperCase()] || t || '';
+  function rcLine(r, l) { const e = rcb.edits[r.orderId]; return e && e.lines && e.lines[l.orderLineId] !== undefined ? e.lines[l.orderLineId] : l.served != null ? Number(l.served) : Number(l.quantity); }
+  function rcResult(x) {
+    const d = x.data || {};
+    UI.toast(esc((x.res && x.res.responseMessage) || 'Đã lưu'), d.failed ? 'warn' : 'ok');
+    if ((d.listError || []).length) {
+      const no = id => ((rcb.data.listRow || []).find(r => r.orderId === id || r.reconciliationId === id) || {}).orderNumber || id;
+      UI.modal({ title: 'Dòng chưa lưu được', body: `<div class="small">${d.listError.map(e => `<div class="mb"><b>${esc(no(e.id))}</b>: ${esc(e.message || '')}</div>`).join('')}</div>`, foot: '<button class="btn primary" data-close>Đóng</button>' });
+    }
+  }
+  function rcConfirm(el, f, items, msg) {
+    if (!items.length) return UI.toast('Chưa chọn dòng nào', 'err');
+    UI.confirm(msg, () => Store.act('OrderReconciliation/ReconcileMany', { json: { listItem: items }, tables: ['OrderReconciliation', 'Order'] }).then(x => {
+      if (!x.ok) return; rcResult(x); rcb.sel = new Set(); rcReload(el, f);
+    }), { ok: 'Xác nhận', title: 'Xác nhận đối soát' });
+  }
   APP.register('crm-reconciliation', (el, f) => {
+    if (Store.isLive) return reconBoard(el, f);
+
     const rows = Store.rows('OrderReconciliation');
     // Chuỗi Đặt → SX → Đóng → Giao → Nhận theo ngày ăn – 10 ngày ăn gần nhất có đối soát (SX / đóng gói: máy chủ tính từ kế hoạch, mẻ, lệnh đóng gói của đơn).
     const byDay = U.group(rows.filter(r => (Store.get('Order', r.OrderId) || {}).MealDate), r => U.day(Store.get('Order', r.OrderId).MealDate));

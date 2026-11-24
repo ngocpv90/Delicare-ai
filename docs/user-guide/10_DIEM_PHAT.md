@@ -47,13 +47,27 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 - Từ chối bớt suất (SL nhận < SL giao) → hệ thống **tự lập phản ánh thiếu suất** `PA-…`.
 - Xem / in: **Sự kiện**, **In phiếu**, **In POD**. Chi tiết nút xem `09_GIAO_VAN.md` mục 4.3.
 
-### 4.2 Đối soát suất – `crm-reconciliation`
-1. Đầu màn: biểu đồ **Đặt – Giao – Nhận** theo ngày ăn. Bảng: Đơn hàng, Đặt, Sản xuất, Đóng gói, Giao, Nhận, **Chênh lệch %** (đỏ khi vượt 1%), Trạng thái.
-2. **Ghi suất phục vụ** (đầu trang) → danh sách đơn **Đã giao** chờ đối soát (Số đơn, Ngày ăn, Khách hàng, Đặt, Giao, Khách nhận, Đối soát) → bấm **Ghi suất phục vụ** trên đơn.
-3. Hộp **Ghi suất thực tế phục vụ**: hiển thị Suất đặt / Suất giao / Khách nhận khi bàn giao; nhập **Suất phục vụ thực tế*** (mặc định = số khách nhận), **Suất trả về**, **Suất hủy**, **Ghi chú** → **Lưu đối soát**.
-   - Ràng buộc: phục vụ + trả về + hủy **≤ số suất khách nhận**.
-   - **Tính tiền (BIZ-1.4, D-77 d):** theo **số khách ký nhận khi bàn giao trừ suất trả lại / hủy do lỗi Delicare**. Nhập ô **Suất trả lại / hủy do lỗi Delicare** + chọn **Lý do** (Thiếu suất, Hỏng / đổ vỡ, Không đạt nhiệt độ, Sai món, Chất lượng không đạt). Khách không dùng hết **không giảm tiền**. Hộp xanh hiện: Khách nhận − lỗi Delicare = tính tiền · phục vụ (tham khảo). Suất phục vụ thực tế chỉ để tham khảo và làm dự báo.
-4. Trên dòng: **Ghi lại** (sửa số khi chưa chốt), **Chốt** (nhập ghi chú; chênh lệch > 1% bắt buộc giải trình) → đơn hàng **Đã đối soát**, không sửa được nữa; **In** (biên bản đối soát PDF – chỉ in được sau khi chốt).
+### 4.2 Đối soát suất – `crm-reconciliation` (UI-6.8, D-86)
+So số suất qua từng khâu Đặt → Sản xuất → Đóng gói → Giao → Khách nhận, chốt số tính tiền cho từng đơn. Đơn giao xong tự có đối soát (phục vụ = khách nhận); khớp số thì tự chốt sau 24 giờ. **Không còn hộp thoại** – xác nhận ngay trên bảng.
+
+1. **Kỳ:** **7 ngày / 30 ngày / Tháng** + ◀ ▶; lọc **khách hàng**.
+2. **3 bước:**
+   - **① Xác nhận số** – nút *Xác nhận N đơn khớp* (nhận = đặt).
+   - **② Xử lý chênh lệch** – nút *N đơn có chênh lệch* mở tab tương ứng.
+   - **③ Chốt đối soát** – nút *Chốt N đơn đã xác nhận* (ghi chú bắt buộc khi chênh lệch vượt ngưỡng) + **Bảng kê tháng** (mở màn Bảng kê thanh toán).
+3. **4 thẻ:** Suất đặt · Suất khách nhận (% so đặt) · Giá trị đã chốt · Chờ / chênh lệch.
+4. **Hai biểu đồ cạnh nhau** (màn hẹp xếp dọc):
+   - trái **Đặt – Giao – Nhận theo ngày ăn** (cột = đặt, đường = giao, nét đứt = khách nhận; rê chuột xem chênh Nhận − Đặt);
+   - phải **chuỗi 5 khâu** cả kỳ + 4 ô **hao hụt giữa từng khâu** (âm tô đỏ).
+5. **Bảng xác nhận** – tab **Chờ đối soát · Có chênh lệch · Đã chốt · Tất cả**; lọc ngày ăn, điểm giao.
+   - Cột: chọn · Đơn (ngày ăn) · Khách / điểm giao · Đặt · **Khách nhận** (đỏ nếu khác đặt) · **Phục vụ** (mặc định = khách nhận, chữ mờ, không cần nhập) · Trả về · **Lỗi Delicare** (> 0 mới hiện ô **Lý do**: Thiếu suất, Hỏng / đổ vỡ, Không đạt nhiệt độ, Sai món, Chất lượng không đạt) · **Tính tiền** = nhận − lỗi · Thành tiền (giá cố định lúc chốt đơn) · **Nguồn** (Bàn giao / Bot / Web / Tự động).
+   - Sửa ô → dòng tô cam, tự được chọn, tiền tự tính; **Enter xuống dòng dưới cùng cột**. Đơn theo lựa chọn: bấm **▸** mở các lựa chọn để ghi phục vụ từng lựa chọn (tổng tự cộng).
+   - Nút **Xác nhận tất cả dòng khớp (N)** (nhận = đặt, không sửa) và **Xác nhận dòng đã chọn** (chặn dòng có lỗi chưa chọn lý do). Dòng không lưu được hiện riêng trong hộp kết quả, các dòng khác vẫn lưu.
+   - Ràng buộc như cũ: phục vụ + trả về + hủy ≤ số khách nhận; lỗi ≤ số khách nhận.
+6. Dòng **Đã chốt**: chỉ xem, nút **In** biên bản đối soát (PDF). Tính tiền (BIZ-1.4, D-77 d): theo số khách ký nhận trừ suất lỗi Delicare; khách không dùng hết không giảm tiền; phục vụ chỉ để dự báo.
+7. **Bot điểm phát (D-86 c):** 2 giờ sau khi bạn ký nhận bàn giao (cấu hình `BusinessRules:ReconcilePromptMinutes`), bot Vận hành hỏi "đã phục vụ đủ chưa?" với 2 nút: **✅ Đã phục vụ đủ** (1 chạm → phục vụ = khách nhận, dòng tự xác nhận, nguồn *Bot*) hoặc **✏️ Nhập số khác** (màn số điền sẵn số khách nhận).
+
+**Quyền:** Điểm phát (OPS-POS), Trưởng KD sửa / xác nhận / chốt; Kế toán, NV KD, CSKH chỉ xem.
 
 ### 4.3 Phản ánh khách hàng – `log-complaint`
 **Tạo phản ánh** (đầu trang):
