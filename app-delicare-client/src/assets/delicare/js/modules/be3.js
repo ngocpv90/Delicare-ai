@@ -107,8 +107,8 @@
   extend('crm-reconciliation', el => panel(el, 'Đặt – Giao – Nhận theo ngày ăn', 'OrderReconciliation/GetList', { PageSize: 1 }, x => {
     const d = x.data || {}, ch = d.chart || [];
     const sc = d.statusCounts || {};
-    return `<div class="panel-head"><div><div class="panel-title">Đặt – Giao – Nhận theo ngày ăn</div><div class="panel-desc">${U.date(d.from)} → ${U.date(d.to)} · ${d.totalRecords || 0} bản đối soát${Object.keys(sc).length ? ' · ' + Object.entries(sc).map(([k, v]) => v + ' ' + esc(UI.statusVi('OrderReconciliation', 'Status', k) || k).toLowerCase()).join(' · ') : ''}</div></div>${legend([['#B9CE8B', 'Đặt'], ['#8FB8DE', 'Giao'], ['#F5B17E', 'Khách nhận']])}</div>
-      ${ch.length ? UI.lines(ch.map(p => U.date(p.date).slice(0, 5)), [{ name: 'Đặt', values: ch.map(p => p.ordered || 0), color: '#B9CE8B' }, { name: 'Giao', values: ch.map(p => p.delivered || 0), color: '#8FB8DE' }, { name: 'Khách nhận', values: ch.map(p => p.accepted || 0), color: '#F5B17E' }], { min: 0 }) : '<div class="empty">Chưa có dữ liệu đối soát trong khoảng này</div>'}`;
+    return `<div class="panel-head"><div><div class="panel-title">Đặt – Giao – Nhận theo ngày ăn</div><div class="panel-desc">${U.date(d.from)} → ${U.date(d.to)} · ${d.totalRecords || 0} bản đối soát${Object.keys(sc).length ? ' · ' + Object.entries(sc).map(([k, v]) => v + ' ' + esc(UI.statusVi('OrderReconciliation', 'Status', k) || k).toLowerCase()).join(' · ') : ''}</div></div></div>
+      ${ch.length ? UI.lines(ch.map(p => U.date(p.date).slice(0, 5)), [{ name: 'Đặt', role: 'order', values: ch.map(p => p.ordered || 0) }, { name: 'Giao', role: 'deliver', values: ch.map(p => p.delivered || 0) }, { name: 'Khách nhận', role: 'receive', values: ch.map(p => p.accepted || 0) }], { title: 'Đặt – Giao – Nhận theo ngày ăn', unit: 'suất' }) : '<div class="empty">Chưa có dữ liệu đối soát trong khoảng này</div>'}`;
   }));
 
   // Hao hụt suất ăn: tổng hợp 30 ngày theo loại / món / ca / ngày (BE3.1 mục 2)
@@ -118,7 +118,7 @@
     const host = panel(el, 'Tổng hợp hao hụt 30 ngày', 'MealWasteRecord/GetSummary', { GroupBy: ws.by }, x => {
       const d = x.data || {}, li = d.listItem || [];
       return `<div class="panel-head"><div><div class="panel-title">Tổng hợp hao hụt</div><div class="panel-desc">${U.date(d.from)} → ${U.date(d.to)} · ${U.num(d.totalMeals || 0)} suất · ${U.num(d.totalKg || 0, 1)} kg · ước tính ${U.money(d.totalCost || 0)}${d.recordsWithoutCost ? ` · ${d.recordsWithoutCost} dòng chưa tính được giá` : ''}</div></div><div class="row-flex">${WASTE_BY.map(([k, l]) => `<button class="chip ${k === ws.by ? 'active' : ''}" data-wby="${k}">${l}</button>`).join('')}</div></div>
-        ${li.length ? UI.bars(li.slice(0, 14).map(r => { const l = ws.by === 'date' ? U.date(r.key || r.label).slice(0, 5) : String(r.label || r.key || ''); return l.length > 14 ? l.slice(0, 13) + '…' : l; }), [{ name: 'Suất hao hụt', values: li.slice(0, 14).map(r => r.quantityMeals || 0), color: '#F5B17E' }]) : '<div class="empty">Không có hao hụt trong khoảng này</div>'}`;
+        ${li.length ? (ws.by === 'date' ? UI.bars(li.slice(0, 31).map(r => U.date(r.key || r.label).slice(0, 5)), [{ name: 'Suất hao hụt', role: 'over', values: li.slice(0, 31).map(r => r.quantityMeals || 0) }], { title: 'Hao hụt theo ngày', unit: 'suất' }) : (top => UI.hbars(top.map(r => String(r.label || r.key || '–')), [{ name: 'Suất hao hụt', role: 'over', values: top.map(r => r.quantityMeals || 0) }], { title: 'Hao hụt theo nhóm', unit: 'suất', h: Math.max(180, top.length * 28 + 40) }))(li.slice().sort((a, b) => (b.quantityMeals || 0) - (a.quantityMeals || 0)).slice(0, 14))) : '<div class="empty">Không có hao hụt trong khoảng này</div>'}`;
     });
     if (host) host._bind = () => host.querySelectorAll('[data-wby]').forEach(b => b.onclick = () => { ws.by = b.dataset.wby; APP.refresh(); });
   });
@@ -135,7 +135,7 @@
       if (d.temperatureMax !== null && d.temperatureMax !== undefined) refs.push({ v: d.temperatureMax, color: '#D95C4F', label: 'Tối đa ' + U.num(d.temperatureMax, 1) + '°C' });
       const bad = new Set(pts.filter(p => p.isWithinRange === false).map(p => p.temperatureC));
       return `<div class="panel-head"><div><div class="panel-title">Chuỗi nhiệt độ khu vực kho</div><div class="panel-desc">${esc(dtx(d.from))} → ${esc(dtx(d.to))} · ${d.measurementCount || 0} lần đo · <span class="${d.outOfRangeCount ? 'warn' : ''}">${d.outOfRangeCount || 0} lần ngoài ngưỡng</span>${d.bucketMinutes ? ' · gộp ' + d.bucketMinutes + ' phút / điểm' : ''}</div></div><select class="select" data-zone>${zones.map(z => `<option value="${z.Id}" ${z.Id === ts.zone ? 'selected' : ''}>${esc(Store.label('StorageZone', z))}</option>`).join('')}</select></div>
-        ${pts.length ? UI.lines(pts.map(p => dtx(p.measuredAt).slice(0, 11)), [{ name: 'Nhiệt độ', values: pts.map(p => p.temperatureC), color: '#91AF42' }], { refs, bands: refs.length === 2 ? [[d.temperatureMin, d.temperatureMax]] : [], badFn: v => bad.has(v) }) : '<div class="empty">Khu vực này chưa có lần đo trong 48 giờ qua</div>'}`;
+        ${pts.length ? UI.lines(pts.map(p => dtx(p.measuredAt).slice(0, 11)), [{ name: 'Nhiệt độ', role: 'deliver', values: pts.map(p => p.temperatureC) }], { title: 'Nhiệt độ khu vực kho', unit: '°C', band: refs.length === 2 ? { min: d.temperatureMin, max: d.temperatureMax, label: 'Ngưỡng ' + U.num(d.temperatureMin, 1) + ' – ' + U.num(d.temperatureMax, 1) + ' °C' } : undefined, target: refs.length === 1 ? refs.map(r => ({ v: r.v, label: r.label })) : undefined, badFn: v => bad.has(v) }) : '<div class="empty">Khu vực này chưa có lần đo trong 48 giờ qua</div>'}`;
     });
     if (host) host._bind = () => { const s = host.querySelector('[data-zone]'); if (s) s.onchange = e => { ts.zone = e.target.value; APP.refresh(); }; };
   });
@@ -186,7 +186,7 @@
             <div class="kpi-mini-value">${la ? fmt(la.value, unit) : '–'}</div>
             <div class="kpi-foot">${tg !== null && tg !== undefined ? 'Mục tiêu ' + (df.targetDirection === 'LOWER' ? '≤ ' : '≥ ') + fmt(tg, unit) + ' · ' : ''}${la ? (monthly ? 'tháng ' + U.date(la.date).slice(3) : 'ngày ' + U.date(la.date)) : 'chưa làm mới'}${la && la.dataQualityStatus === 'INCOMPLETE' && la.value !== null && la.value !== undefined ? ' · <span class="warn">chưa đủ dữ liệu</span>' : ''}${df.hasCalculator === false ? ' · <span class="warn">chưa có công thức tính</span>' : ''}</div>
             
-            ${ser.length > 1 ? UI.lines(ser.map(s => monthly ? U.date(s.date).slice(3, 8) : U.date(s.date).slice(0, 5)), [{ name: df.metricName, values: ser.map(s => s.value), color: met === false ? '#F07825' : '#91AF42' }], { h: 110, refs: tg !== null && tg !== undefined ? [{ v: tg, color: '#D95C4F', label: 'Mục tiêu' }] : [] }) : ''}</div>`;
+            ${ser.length > 1 ? UI.lines(ser.map(s => monthly ? U.date(s.date).slice(3, 8) : U.date(s.date).slice(0, 5)), [{ name: df.metricName, role: 'deliver', values: ser.map(s => s.value) }], { h: 130, title: df.metricName, legend: false, noTable: false, target: tg !== null && tg !== undefined ? { v: tg, label: 'Mục tiêu' } : undefined, badFn: tg !== null && tg !== undefined ? (v => (df.targetDirection === 'LOWER' ? v > tg : v < tg)) : undefined, badColor: UI.CHART_COLORS.warn }) : ''}</div>`;
         }).join('')}</div>` : '<div class="card panel empty">Chưa có chỉ tiêu nào đang dùng trong nhóm này</div>';
       });
     };

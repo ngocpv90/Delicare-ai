@@ -330,10 +330,23 @@
     // Chuỗi Đặt → SX → Đóng → Giao → Nhận theo ngày ăn – 10 ngày ăn gần nhất có đối soát (SX / đóng gói: máy chủ tính từ kế hoạch, mẻ, lệnh đóng gói của đơn).
     const byDay = U.group(rows.filter(r => (Store.get('Order', r.OrderId) || {}).MealDate), r => U.day(Store.get('Order', r.OrderId).MealDate));
     const days = Object.keys(byDay).sort().slice(-10);
-    const CHAIN = [['Đặt', 'OrderedQuantity', '#B9CE8B'], ['Sản xuất', 'ProducedQty', '#91AF42'], ['Đóng gói', 'PackedQty', '#B79FD6'], ['Giao', 'DeliveredQuantity', '#79A8CC'], ['Nhận', 'AcceptedQuantity', '#F5B17E']];
+    const CHAIN = [['Đặt', 'OrderedQuantity', UI.CHART_COLORS.order], ['Sản xuất', 'ProducedQty', UI.CHART_SEQ[2]], ['Đóng gói', 'PackedQty', UI.CHART_SEQ[3]], ['Giao', 'DeliveredQuantity', UI.CHART_COLORS.deliver], ['Nhận', 'AcceptedQuantity', UI.CHART_COLORS.receive]];
+    // CHART-1 (D-94, D-86 b): 2 biểu đồ cạnh nhau (≥ 1200px; nhỏ hơn xếp dọc).
+    function reconCharts(days, byDay, CHAIN) {
+      const val = (d, k) => U.sum(byDay[d], k), ord = days.map(d => val(d, 'OrderedQuantity')), acc = days.map(d => val(d, 'AcceptedQuantity'));
+      const left = UI.combo(days.map(d => U.date(d).slice(0, 5)), [
+        { name: 'Đặt', type: 'bar', role: 'order', values: ord },
+        { name: 'Giao', type: 'line', role: 'deliver', values: days.map(d => val(d, 'DeliveredQuantity')) },
+        { name: 'Nhận', type: 'line', role: 'receive', dashed: true, values: acc }],
+        { title: 'Đặt – Giao – Nhận theo ngày ăn', unit: 'suất', h: 240, tipExtra: i => { const g = acc[i] - ord[i]; return 'Chênh Nhận − Đặt: ' + (g > 0 ? '+' : '') + U.num(g) + (ord[i] ? ' (' + U.num(g / ord[i] * 100, 1) + '%)' : ''); } });
+      const tot = CHAIN.map(([, k]) => days.reduce((a, d) => a + val(d, k), 0));
+      const right = UI.hbars(CHAIN.map(([n]) => n), [{ name: 'Suất cả kỳ', values: tot, color: UI.CHART_COLORS.deliver }],
+        { title: 'Chuỗi Đặt → Sản xuất → Đóng gói → Giao → Nhận', unit: 'suất', h: 240, labelHead: 'Khâu', tipExtra: i => i > 0 ? 'Hao hụt so với ' + CHAIN[i - 1][0] + ': ' + U.num(tot[i] - tot[i - 1]) + (tot[i - 1] ? ' (' + U.num((tot[i] - tot[i - 1]) / tot[i - 1] * 100, 1) + '%)' : '') : '' });
+      return `<div class="dc-chart-pair"><div>${left}</div><div>${right}</div></div>`;
+    }
     APP.genericList(el, f, {
       noAdd: true,
-      top: `<div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Chuỗi đối soát Đặt → Sản xuất → Đóng gói → Giao → Nhận</div><div class="panel-desc">Σ suất theo ngày ăn · ${days.length ? days.length + ' ngày ăn gần nhất có đối soát (' + U.date(days[0]) + ' – ' + U.date(days[days.length - 1]) + ')' : 'chưa có đối soát'} · chênh lệch = Nhận − Đặt</div></div><div class="chart-legend">${CHAIN.map(([n, , c]) => `<span><i class="legend-dot" style="background:${c}"></i>${n}</span>`).join('')}</div></div>${days.length ? UI.bars(days.map(d => U.date(d).slice(0, 5)), CHAIN.map(([name, k, color]) => ({ name, color, values: days.map(d => U.sum(byDay[d], k)) })), { h: 180 }) : '<div class="empty">Chưa có bản đối soát</div>'}</div>`,
+      top: `<div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Chuỗi đối soát Đặt → Sản xuất → Đóng gói → Giao → Nhận</div><div class="panel-desc">Σ suất theo ngày ăn · ${days.length ? days.length + ' ngày ăn gần nhất có đối soát (' + U.date(days[0]) + ' – ' + U.date(days[days.length - 1]) + ')' : 'chưa có đối soát'} · chênh lệch = Nhận − Đặt</div></div></div>${days.length ? reconCharts(days, byDay, CHAIN) : '<div class="empty">Chưa có bản đối soát</div>'}</div>`,
       cols: [{ k: 'OrderId', label: 'Đơn hàng' }, { k: 'OrderedQuantity', label: 'Đặt', num: true }, { k: 'ProducedQty', label: 'Sản xuất', num: true }, { k: 'PackedQty', label: 'Đóng gói', num: true }, { k: 'DeliveredQuantity', label: 'Giao', num: true }, { k: 'AcceptedQuantity', label: 'Nhận', num: true }, { k: 'VariancePercent', label: 'Chênh lệch %', num: true, render: r => `<span class="${Math.abs(r.VariancePercent) > 1 ? 'bad' : 'up'}">${U.pct(r.VariancePercent, 2)}</span>` }, { k: 'FinalAmount', label: 'Giá trị chốt', num: true }, { k: 'Status', label: 'Trạng thái' }]
     });
     // Chế độ API: in biên bản đối soát (PDF) và chốt đối soát qua action nghiệp vụ.

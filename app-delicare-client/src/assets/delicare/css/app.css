@@ -204,9 +204,6 @@ button.chip:hover{border-color:#cfe0b4}
 .track{grid-column:1/-1;height:7px;background:#F0F2ED;border-radius:20px;overflow:hidden}
 .fill{height:100%;border-radius:20px;background:var(--green);transition:width .4s}.fill.orange{background:var(--orange)}.fill.blue{background:#79A8CC}.fill.red{background:var(--red)}
 .chart-legend{display:flex;gap:14px;font-size:10.5px;color:#7F8980;flex-wrap:wrap}.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
-svg.chart{width:100%;height:auto;display:block}
-svg.chart text{font-size:10px;fill:#9AA39B;font-family:inherit}
-svg.chart .grid-line{stroke:#EEF1EB;stroke-dasharray:3 3}
 /* ---------- Modal & drawer ---------- */
 .drawer-wrap.show{display:block}
 .drawer{position:absolute;top:0;right:0;bottom:0;width:min(720px,100%);background:#fff;box-shadow:-20px 0 40px #0002;display:flex;flex-direction:column;animation:slidein .2s ease}
@@ -571,3 +568,20 @@ body.dc-live #helpBtn{display:none !important}
 .d360-steps li.cur{color:var(--ink,#263238);font-weight:600}.d360-steps li.cur .n{background:var(--green,#91AF42);border-color:var(--green,#91AF42);color:#fff}
 .d360-steps li.bad{color:#B42318;font-weight:600}.d360-steps li.bad .n{background:#FEF3F2;border-color:#F04438;color:#B42318}
 @media(max-width:767.98px){.d360-steps li{min-width:76px}}
+/* CHART-1 (D-94): khung biểu đồ Chart.js – chiều cao cố định theo khung, co giãn theo bề rộng, "Xem bảng số", "Chưa có dữ liệu". */
+figure.dc-chart{margin:0;position:relative;min-width:0}
+figure.dc-chart .dc-chart-box{position:relative;width:100%}
+figure.dc-chart canvas{display:block;max-width:100%}
+figure.dc-chart.empty{display:flex;align-items:center;justify-content:center;border:1px dashed #DDE3D8;border-radius:12px;background:#FAFBF8}
+.dc-chart-empty{color:#98A198;font-size:13px;display:flex;align-items:center;justify-content:center;height:100%;min-height:60px}
+.dc-chart-foot{display:flex;justify-content:flex-end;margin-top:4px}
+.dc-chart-tbl{background:none;border:0;padding:2px 4px;color:#5E7F2E;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.dc-chart-tbl:focus-visible{outline:2px solid #91AF42;outline-offset:2px;border-radius:4px}
+.dc-chart-tablewrap{margin-top:6px;max-height:260px;overflow:auto;border:1px solid #EEF1EB;border-radius:10px}
+.dc-chart-table{width:100%;font-size:12px;border-collapse:collapse}
+.dc-chart-table th,.dc-chart-table td{padding:6px 10px;border-bottom:1px solid #F0F2EC;text-align:left;white-space:nowrap}
+.dc-chart-table th{position:sticky;top:0;background:#F7F9F4;font-weight:600;color:#4A554C}
+.dc-chart-table .num{text-align:right;font-variant-numeric:tabular-nums}
+figure.dc-chart.spark .dc-chart-box{margin-top:4px}
+.dc-chart-pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:1199px){.dc-chart-pair{grid-template-columns:1fr}}

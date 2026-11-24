@@ -151,7 +151,7 @@
       const labels = ms.map(m => { const v = U.day(m.month); return 'T' + (+v.slice(5, 7)); });
       const cur = ms[ms.length - 1];
       legend.innerHTML = S.map(v => `<span><i style="background:${v.color}"></i>${v.name}</span>`).join('');
-      trendBox.innerHTML = `${UI.bars(labels, S, { h: 200, title: 'Giá trị mua 6 tháng' })}<div class="ip-muted">${esc(labels[0] + ' → ' + labels[labels.length - 1])} · theo phiếu nhập đã ghi sổ · tháng này <b>${U.money(cur ? cur.receivedAmount || 0 : 0)}</b></div>`;
+      trendBox.innerHTML = `${UI.bars(labels, S, { h: 220, title: 'Giá trị mua 6 tháng', unit: '₫', labelHead: 'Tháng' })}<div class="ip-muted">${esc(labels[0] + ' → ' + labels[labels.length - 1])} · theo phiếu nhập đã ghi sổ · tháng này <b>${U.money(cur ? cur.receivedAmount || 0 : 0)}</b></div>`;
     });
   }
 

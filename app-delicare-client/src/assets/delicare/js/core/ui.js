@@ -594,35 +594,101 @@
   };
   // mở chi tiết khi click link tham chiếu
   document.addEventListener('click', e => { const a = e.target.closest('[data-open]'); if (a) { e.preventDefault(); if (window.APP && APP.openDetail) APP.openDetail(a.dataset.open, a.dataset.id, APP.FN[APP.current]); else UI.detail(a.dataset.open, a.dataset.id); } });
-  // ---------- Biểu đồ SVG (không cần CDN) ----------
-  UI.bars = (labels, series, opt = {}) => {
-    const W = 640, H = opt.h || 210, pl = 42, pb = 26, pt = 10, n = labels.length, max = Math.max(1, ...series.flatMap(s => s.values)) * 1.1;
-    const gw = (W - pl - 10) / n, bw = Math.min(18, gw / (series.length + 1.2));
-    let g = ''; for (let i = 0; i <= 4; i++) { const y = pt + (H - pt - pb) * i / 4; g += `<line class="grid-line" x1="${pl}" x2="${W - 5}" y1="${y}" y2="${y}"/><text x="${pl - 6}" y="${y + 3}" text-anchor="end">${U.num(max * (1 - i / 4), 0)}</text>`; }
-    labels.forEach((l, i) => {
-      const x0 = pl + gw * i + (gw - bw * series.length - 2 * (series.length - 1)) / 2;
-      series.forEach((s, j) => { const v = s.values[i] || 0, h = (H - pt - pb) * v / max; g += `<rect x="${x0 + j * (bw + 2)}" y="${H - pb - h}" width="${bw}" height="${Math.max(h, 1)}" rx="3" fill="${s.color}"><title>${esc(l)} · ${esc(s.name)}: ${U.num(v)}</title></rect>`; });
-      g += `<text x="${pl + gw * i + gw / 2}" y="${H - 8}" text-anchor="middle">${esc(l)}</text>`;
+  // ---------- Biểu đồ – Chart.js (CHART-1, D-94; D-86 a) ----------
+  // Một hàm chung UI.chart(spec) trả khung HTML (figure + canvas); Chart.js vẽ khi khung đã gắn vào trang (MutationObserver),
+  // hủy biểu đồ khi khung rời trang / vẽ lại (không rò bộ nhớ). Giữ chữ ký cũ UI.bars / UI.lines / UI.donut (+ UI.combo, UI.hbars, UI.spark).
+  // spec: { type: 'bar' | 'line' | 'combo' | 'hbar' | 'donut' | 'spark', labels, series: [{ name, values, role?, color?, type?, dashed?, fill? }],
+  //         h, title, unit, min, max, pct, band: { min, max, label }, target: { v, label } | [..], badFn, total, totalLabel, dates }
+  // role (màu theo nghĩa – D-94 c): plan / order (xanh nhạt) · deliver (xanh dương) · actual / receive (cam) · over (đỏ) · target (xám nét đứt) · ok (xanh lá).
+  UI.CHART_COLORS = { plan: '#8DBBE8', order: '#8DBBE8', deliver: '#2F6FC4', actual: '#E8892B', receive: '#E8892B', served: '#5E9B3A', ok: '#5E9B3A', over: '#D64545', warn: '#E8892B', target: '#7D8590', neutral: '#9AA39B' };
+  UI.CHART_SEQ = ['#2F6FC4', '#E8892B', '#5E9B3A', '#8E5CC4', '#C9A227', '#2BA3A3', '#C4577A', '#7D8590', '#8DBBE8', '#B5651D'];
+  const CH = { seq: 0, cfg: new Map(), live: new Map() };
+  const NF = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });
+  const NF1 = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 });
+  UI.chartNum = v => (v === null || v === undefined || isNaN(v) ? '–' : NF.format(v));
+  // Trục số rút gọn tiếng Việt (D-88): 15 N · 1,2 tr · 3 tỷ.
+  UI.chartShort = v => { const a = Math.abs(v); return a >= 1e9 ? NF1.format(v / 1e9) + ' tỷ' : a >= 1e6 ? NF1.format(v / 1e6) + ' tr' : a >= 1e4 ? NF1.format(v / 1e3) + ' N' : NF1.format(v); };
+  const colorOf = (s, i) => s.color || (s.role && UI.CHART_COLORS[s.role]) || UI.CHART_SEQ[i % UI.CHART_SEQ.length];
+  const hasValues = sp => sp.type === 'donut' ? (sp.series || []).some(p => +p.v > 0) : (sp.labels || []).length > 0 && (sp.series || []).some(s => (s.values || []).some(v => v !== null && v !== undefined && !isNaN(v)));
+  UI.chart = sp => {
+    const id = 'dcc' + (++CH.seq), h = sp.h || (sp.type === 'spark' ? 46 : sp.type === 'donut' ? 200 : 240);
+    CH.cfg.set(id, sp); if (CH.cfg.size > 400) CH.cfg.delete(CH.cfg.keys().next().value);
+    const title = sp.title || 'Biểu đồ';
+    if (!hasValues(sp)) return `<figure class="dc-chart empty" style="height:${h}px" aria-label="${esc(title)}"><div class="dc-chart-empty">Chưa có dữ liệu</div></figure>`;
+    const tbl = sp.type === 'spark' || sp.noTable ? '' : `<figcaption class="dc-chart-foot"><button type="button" class="dc-chart-tbl" data-dcc-tbl="${id}" aria-expanded="false">Xem bảng số</button></figcaption>`;
+    return `<figure class="dc-chart ${sp.type === 'spark' ? 'spark' : ''}" data-dcc="${id}"><div class="dc-chart-box" style="height:${h}px"><canvas role="img" aria-label="${esc(title)}"></canvas></div>${tbl}</figure>`;
+  };
+  // Bảng số liệu của biểu đồ (thay cho người không xem được màu – D-94 d).
+  const dataTable = sp => {
+    if (sp.type === 'donut') { const tot = sp.series.reduce((a, p) => a + (+p.v || 0), 0) || 1; return `<table class="table dc-chart-table"><thead><tr><th>Thành phần</th><th class="num">Giá trị</th><th class="num">%</th></tr></thead><tbody>${sp.series.map(p => `<tr><td>${esc(p.l)}</td><td class="num">${UI.chartNum(p.v)}</td><td class="num">${NF1.format(100 * (+p.v || 0) / tot)}%</td></tr>`).join('')}</tbody></table>`; }
+    const ser = sp.series.filter(s => !s.noTable);
+    return `<table class="table dc-chart-table"><thead><tr><th>${esc(sp.labelHead || (sp.type === 'hbar' ? 'Tên' : 'Ngày'))}</th>${ser.map(s => `<th class="num">${esc(s.name)}</th>`).join('')}</tr></thead><tbody>${sp.labels.map((l, i) => `<tr><td>${esc(sp.fullLabels ? sp.fullLabels[i] : l)}</td>${ser.map(s => `<td class="num">${UI.chartNum(s.values[i])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  };
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-dcc-tbl]'); if (!b) return;
+    const fig = b.closest('figure.dc-chart'), sp = CH.cfg.get(b.dataset.dccTbl); if (!fig || !sp) return;
+    const open = fig.querySelector('.dc-chart-tablewrap');
+    if (open) { open.remove(); b.textContent = 'Xem bảng số'; b.setAttribute('aria-expanded', 'false'); return; }
+    fig.insertAdjacentHTML('beforeend', `<div class="dc-chart-tablewrap">${dataTable(sp)}</div>`); b.textContent = 'Ẩn bảng số'; b.setAttribute('aria-expanded', 'true');
+  });
+  // Vùng ngưỡng min – max (nhiệt độ) + nhãn.
+  const bandPlugin = { id: 'dcBand', beforeDatasetsDraw(c, a, o) { const b = o && o.band; if (!b) return; const y = c.scales.y, x = c.chartArea; if (!y) return; const t = y.getPixelForValue(b.max), bt = y.getPixelForValue(b.min); c.ctx.save(); c.ctx.fillStyle = 'rgba(94,155,58,.10)'; c.ctx.fillRect(x.left, Math.min(t, bt), x.right - x.left, Math.abs(bt - t)); c.ctx.strokeStyle = 'rgba(94,155,58,.45)'; c.ctx.setLineDash([4, 4]); [t, bt].forEach(p => { c.ctx.beginPath(); c.ctx.moveTo(x.left, p); c.ctx.lineTo(x.right, p); c.ctx.stroke(); }); if (b.label) { c.ctx.setLineDash([]); c.ctx.fillStyle = 'rgba(70,110,45,.9)'; c.ctx.font = '11px ' + (c.options.font && c.options.font.family || 'sans-serif'); c.ctx.fillText(b.label, x.left + 6, Math.min(t, bt) + 13); } c.ctx.restore(); } };
+  // Tổng ở tâm vành khuyên.
+  const centerPlugin = { id: 'dcCenter', afterDraw(c, a, o) { if (!o || o.text === undefined) return; const m = c.getDatasetMeta(0); if (!m || !m.data[0]) return; const { x, y } = m.data[0]; c.ctx.save(); c.ctx.textAlign = 'center'; c.ctx.fillStyle = o.color || '#29352D'; c.ctx.font = '700 18px ' + (o.family || 'sans-serif'); c.ctx.fillText(o.text, x, y + 2); if (o.sub) { c.ctx.font = '11px ' + (o.family || 'sans-serif'); c.ctx.fillStyle = '#7D8590'; c.ctx.fillText(o.sub, x, y + 18); } c.ctx.restore(); } };
+  function buildConfig(sp, fig) {
+    const cs = getComputedStyle(fig), family = cs.fontFamily || 'sans-serif', ink = cs.color || '#29352D';
+    const muted = 'rgba(125,133,144,.9)', grid = 'rgba(125,133,144,.15)';
+    const unit = sp.unit ? ' ' + sp.unit : '';
+    const tip = { mode: sp.type === 'donut' ? 'nearest' : 'index', intersect: false, callbacks: { label: c => { const v = sp.type === 'donut' ? c.parsed : (sp.type === 'hbar' ? c.parsed.x : c.parsed.y); if (sp.type === 'donut') { const tot = c.dataset.data.reduce((a, b) => a + (+b || 0), 0) || 1; return ` ${c.label}: ${UI.chartNum(v)}${unit} (${NF1.format(100 * v / tot)}%)`; } return ` ${c.dataset.label}: ${UI.chartNum(v)}${sp.pct ? ' %' : unit}`; }, title: items => items.length ? (sp.fullLabels ? sp.fullLabels[items[0].dataIndex] : items[0].label) : '' } };
+    if (sp.tipExtra) tip.callbacks.afterBody = items => items.length ? sp.tipExtra(items[0].dataIndex) || '' : '';
+    const legend = { display: sp.type !== 'spark' && (sp.legend !== false) && (sp.type === 'donut' || (sp.series || []).length > 1 || !!sp.target), position: sp.type === 'donut' ? 'right' : 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, color: ink, font: { family, size: 12 } } };
+    if (sp.type === 'donut') {
+      const tot = sp.series.reduce((a, p) => a + (+p.v || 0), 0) || 1;
+      legend.labels.generateLabels = c => sp.series.map((p, i) => ({ text: `${p.l} · ${NF1.format(100 * (+p.v || 0) / tot)}%`, fillStyle: p.c || UI.CHART_SEQ[i % UI.CHART_SEQ.length], strokeStyle: 'transparent', pointStyle: 'circle', hidden: !c.getDataVisibility(i), index: i, fontColor: ink }));
+      return { type: 'doughnut', data: { labels: sp.series.map(p => p.l), datasets: [{ data: sp.series.map(p => +p.v || 0), backgroundColor: sp.series.map((p, i) => p.c || UI.CHART_SEQ[i % UI.CHART_SEQ.length]), borderWidth: 2, borderColor: '#fff' }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '64%', animation: { duration: 300 }, font: { family }, plugins: { legend, tooltip: tip, dcCenter: { text: sp.total !== undefined ? sp.total : UI.chartShort(tot), sub: sp.totalLabel || 'tổng', family, color: ink } } }, plugins: [centerPlugin] };
+    }
+    const horiz = sp.type === 'hbar', spark = sp.type === 'spark';
+    const base = sp.type === 'combo' ? null : (sp.type === 'bar' || horiz ? 'bar' : 'line');
+    const n = sp.labels.length;
+    const datasets = sp.series.map((s, i) => {
+      const t = s.type || base || 'line', c = colorOf(s, i), bad = sp.badFn || (sp.band ? v => v < sp.band.min || v > sp.band.max : null);
+      const d = { type: t, label: s.name, data: s.values.map(v => (v === undefined ? null : v)), backgroundColor: t === 'bar' ? c : (s.fill || s.fillTo !== undefined ? c + '2E' : c), borderColor: c, order: t === 'line' ? 1 : 2 };
+      if (t === 'bar') Object.assign(d, { borderRadius: 4, maxBarThickness: horiz ? 18 : 26, categoryPercentage: .7, barPercentage: .9 });
+      else Object.assign(d, { borderWidth: spark ? 1.6 : 2, tension: .3, spanGaps: true, fill: s.fillTo !== undefined ? s.fillTo : (s.fill ? 'origin' : false), borderDash: s.dashed ? [6, 4] : undefined,
+        pointRadius: spark ? 0 : (ctx => { const v = ctx.raw; return bad && v !== null && bad(v) ? 4 : (n <= 31 ? 2.5 : 0); }), pointHoverRadius: 4,
+        pointBackgroundColor: ctx => { const v = ctx.raw; return bad && v !== null && bad(v) ? (sp.badColor || UI.CHART_COLORS.over) : c; }, pointBorderColor: ctx => { const v = ctx.raw; return bad && v !== null && bad(v) ? (sp.badColor || UI.CHART_COLORS.over) : c; } });
+      return d;
     });
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.title || 'Biểu đồ')}">${g}</svg>`;
-  };
-  UI.lines = (labels, series, opt = {}) => {
-    const W = 640, H = opt.h || 210, pl = 42, pb = 26, pt = 10, n = labels.length;
-    const all = series.flatMap(s => s.values).concat(opt.bands ? opt.bands.flat() : []);
-    const mn = opt.min !== undefined ? opt.min : Math.min(...all), mx = opt.max !== undefined ? opt.max : Math.max(...all), span = (mx - mn) || 1;
-    const X = i => pl + (W - pl - 10) * i / Math.max(1, n - 1), Y = v => pt + (H - pt - pb) * (1 - (v - mn) / span);
-    let g = ''; for (let i = 0; i <= 4; i++) { const v = mx - span * i / 4, y = Y(v); g += `<line class="grid-line" x1="${pl}" x2="${W - 5}" y1="${y}" y2="${y}"/><text x="${pl - 6}" y="${y + 3}" text-anchor="end">${U.num(v, 1)}</text>`; }
-    (opt.bands || []).forEach(([a, b]) => g += `<rect x="${pl}" width="${W - pl - 10}" y="${Y(b)}" height="${Math.abs(Y(a) - Y(b))}" fill="#91AF42" opacity=".08"/>`);
-    (opt.refs || []).forEach(r => g += `<line x1="${pl}" x2="${W - 5}" y1="${Y(r.v)}" y2="${Y(r.v)}" stroke="${r.color}" stroke-dasharray="5 4"/><text x="${W - 8}" y="${Y(r.v) - 4}" text-anchor="end" style="fill:${r.color}">${esc(r.label)}</text>`);
-    series.forEach(s => { g += `<polyline fill="none" stroke="${s.color}" stroke-width="2" points="${s.values.map((v, i) => X(i) + ',' + Y(v)).join(' ')}"/>`; s.values.forEach((v, i) => { const bad = opt.badFn && opt.badFn(v); if (bad || n < 32) g += `<circle cx="${X(i)}" cy="${Y(v)}" r="${bad ? 4 : 2.2}" fill="${bad ? '#D95C4F' : s.color}"><title>${esc(labels[i])}: ${U.num(v, 2)}</title></circle>`; }); });
-    const step = Math.ceil(n / 12); labels.forEach((l, i) => { if (i % step === 0) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle">${esc(l)}</text>`; });
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
-  };
-  UI.donut = (parts, opt = {}) => {
-    const tot = parts.reduce((a, p) => a + p.v, 0) || 1; let a0 = -Math.PI / 2, g = '';
-    parts.forEach(p => { const a1 = a0 + 2 * Math.PI * p.v / tot, large = a1 - a0 > Math.PI ? 1 : 0, r = 54, R = 70, c = 80; const P = (a, rr) => (c + rr * Math.cos(a)) + ',' + (c + rr * Math.sin(a)); if (p.v > 0) g += `<path d="M${P(a0, R)} A${R},${R} 0 ${large} 1 ${P(a1, R)} L${P(a1, r)} A${r},${r} 0 ${large} 0 ${P(a0, r)}Z" fill="${p.c}"><title>${esc(p.l)}: ${p.v}</title></path>`; a0 = a1; });
-    return `<div class="row-flex" style="gap:16px"><svg viewBox="0 0 160 160" width="${opt.size || 130}" height="${opt.size || 130}">${g}<text x="80" y="78" text-anchor="middle" style="font-size:20px;font-weight:800;fill:#29352D">${U.num(tot)}</text><text x="80" y="96" text-anchor="middle" style="font-size:9px;fill:#98A198">${esc(opt.label || 'tổng')}</text></svg><div>${parts.map(p => `<div class="small" style="margin:4px 0"><i class="legend-dot" style="background:${p.c}"></i>${esc(p.l)} <b>${U.num(p.v)}</b></div>`).join('')}</div></div>`;
-  };
+    (Array.isArray(sp.target) ? sp.target : sp.target ? [sp.target] : []).forEach(tg => datasets.push({ type: 'line', label: tg.label || 'Mục tiêu', data: sp.labels.map(() => tg.v), borderColor: tg.color || UI.CHART_COLORS.target, backgroundColor: tg.color || UI.CHART_COLORS.target, borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0, order: 0 }));
+    const valAxis = { beginAtZero: sp.min === undefined && !sp.band, min: sp.min, max: sp.max, grid: { color: grid, drawTicks: false }, border: { display: false }, ticks: { color: muted, font: { family, size: 11 }, padding: 6, maxTicksLimit: 6, callback: v => sp.pct ? NF1.format(v) + '%' : UI.chartShort(v) } };
+    const catAxis = { grid: { display: false }, border: { display: false }, ticks: { color: muted, font: { family, size: 11 }, autoSkip: true, maxRotation: 0, autoSkipPadding: 8, callback: function (v) { const l = this.getLabelForValue(v); return horiz && String(l).length > 22 ? String(l).slice(0, 21) + '…' : l; } } };
+    if (sp.band) { const all = sp.series.flatMap(s => s.values).filter(v => v !== null && v !== undefined).concat([sp.band.min, sp.band.max]); valAxis.min = sp.min !== undefined ? sp.min : Math.floor(Math.min(...all) - 2); valAxis.max = sp.max !== undefined ? sp.max : Math.ceil(Math.max(...all) + 2); }
+    const scales = spark ? { x: { display: false }, y: { display: false, beginAtZero: false } } : horiz ? { x: valAxis, y: catAxis } : { x: catAxis, y: valAxis };
+    return { type: base || 'bar', data: { labels: sp.labels, datasets }, options: { responsive: true, maintainAspectRatio: false, indexAxis: horiz ? 'y' : 'x', animation: { duration: 300 }, font: { family }, interaction: { mode: 'index', intersect: false, axis: horiz ? 'y' : 'x' }, layout: { padding: spark ? 2 : { top: 4, right: 8 } }, scales, plugins: { legend, tooltip: spark ? Object.assign(tip, { displayColors: false }) : tip, dcBand: { band: sp.band } } }, plugins: [bandPlugin] };
+  }
+  // Gắn / hủy: quét khung biểu đồ mới gắn vào trang và biểu đồ đã rời trang.
+  function chartScan() {
+    CH.live.forEach((ch, id) => { if (!ch.canvas || !ch.canvas.isConnected) { ch.destroy(); CH.live.delete(id); CH.cfg.delete(id); } });
+    if (!window.Chart) return;
+    document.querySelectorAll('figure.dc-chart[data-dcc]:not([data-on])').forEach(fig => {
+      const id = fig.dataset.dcc, sp = CH.cfg.get(id), cv = fig.querySelector('canvas'); fig.setAttribute('data-on', '1');
+      if (!sp || !cv) return;
+      try { CH.live.set(id, new window.Chart(cv, buildConfig(sp, fig))); } catch (err) { console.error('[UI.chart]', err); fig.querySelector('.dc-chart-box').innerHTML = '<div class="dc-chart-empty">Không vẽ được biểu đồ</div>'; }
+    });
+  }
+  let chartTick = 0;
+  const chartQueue = () => { if (chartTick) return; chartTick = requestAnimationFrame(() => { chartTick = 0; chartScan(); }); };
+  new MutationObserver(chartQueue).observe(document.documentElement, { childList: true, subtree: true });
+  UI.chartScan = chartScan;
+  UI.chartCount = () => CH.live.size;
+  // Chữ ký cũ (mọi chỗ gọi cũ tự đổi sang Chart.js): series [{ name, color, values }] / parts [{ l, v, c }].
+  UI.bars = (labels, series, opt = {}) => UI.chart(Object.assign({ type: 'bar', labels, series }, opt));
+  UI.lines = (labels, series, opt = {}) => UI.chart(Object.assign({ type: 'line', labels, series, band: opt.bands && opt.bands[0] ? { min: Math.min(...opt.bands[0]), max: Math.max(...opt.bands[0]), label: opt.bandLabel } : opt.band, target: opt.refs ? opt.refs.map(r => ({ v: r.v, label: r.label, color: r.color })) : opt.target }, opt, { bands: undefined, refs: undefined }));
+  UI.donut = (parts, opt = {}) => UI.chart(Object.assign({ type: 'donut', series: parts, totalLabel: opt.label, h: opt.size ? Math.max(opt.size + 40, 170) : undefined }, opt));
+  UI.combo = (labels, series, opt = {}) => UI.chart(Object.assign({ type: 'combo', labels, series }, opt));
+  UI.hbars = (labels, series, opt = {}) => UI.chart(Object.assign({ type: 'hbar', labels, series, labelHead: 'Tên' }, opt));
+  UI.spark = (labels, series, opt = {}) => UI.chart(Object.assign({ type: 'spark', labels, series, legend: false }, opt));
   // UI-1 (D-64 c): thẻ chỉ số – ô biểu tượng bên trái; nhãn, số chính + số phụ bên phải; không còn dòng chú thích chân.
   // Giữ chữ ký cũ: tham số thứ 3 (trước là chú thích chân) nay là SỐ PHỤ ngắn hiện cùng dòng sau số chính (vd "/ 2 · 100%").
   // value rỗng / null / undefined → "–" (đang tải). color: green | lime | blue | orange | red | purple | gray.

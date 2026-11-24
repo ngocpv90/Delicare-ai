@@ -289,6 +289,8 @@ namespace AppDelicare.Model.Model
     {
         public DateTime Date { get; set; }
         public decimal Hours { get; set; }
+        /// <summary>CHART-1 (D-94): giờ ca theo phân ca của ngày (PlannedEnd − PlannedStart) – đường "giờ chuẩn ca" trên biểu đồ giờ công.</summary>
+        public decimal PlannedHours { get; set; }
     }
 
     /// <summary>UI-3 (D-67 f2): xu hướng mua của 1 NCC theo tháng.</summary>

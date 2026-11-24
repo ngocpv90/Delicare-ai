@@ -49,6 +49,7 @@ namespace AppDelicare.Tests.Hr
             o.GetProperty("pendingRequestCount").GetInt32().Should().Be(1);
             o.GetProperty("listDayHours").GetArrayLength().Should().Be(30);
             o.GetProperty("listDayHours")[29].GetProperty("hours").GetDecimal().Should().Be(0.4m, "21 phút");
+            o.GetProperty("listDayHours")[29].GetProperty("plannedHours").GetDecimal().Should().Be(24.0m, "CHART-1: giờ ca theo phân ca hôm nay = 1 phút + 23 giờ 59 phút");
             o.GetProperty("listRecentAttendance").GetArrayLength().Should().Be(1);
             o.GetProperty("listAlert").EnumerateArray().Select(a => a.GetProperty("code").GetString())
                 .Should().Equal("NOT_CHECKED_IN", "OUT_OF_RADIUS", "PENDING_REQUEST", "NO_BOT_LINK", "NO_PHONE");

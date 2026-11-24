@@ -320,7 +320,7 @@ namespace AppDelicare.Services.Implement
                 m.ListRecentAttendance = [.. details.Where(d => d.CheckInAt != null || d.CheckOutAt != null).OrderByDescending(d => d.WorkDate).ThenByDescending(d => d.PlannedStart).Take(10)];
                 for (DateTime d = from30; d <= today; d = d.AddDays(1))
                 {
-                    m.ListDayHours.Add(new AppDelicare.Model.Model.EmployeeDayHoursModel { Date = d, Hours = Math.Round(details.Where(x => x.WorkDate.Date == d).Sum(x => x.WorkedMinutes) / 60m, 1) });
+                    m.ListDayHours.Add(new AppDelicare.Model.Model.EmployeeDayHoursModel { Date = d, Hours = Math.Round(details.Where(x => x.WorkDate.Date == d).Sum(x => x.WorkedMinutes) / 60m, 1), PlannedHours = Math.Round((decimal)details.Where(x => x.WorkDate.Date == d && x.PlannedStart != null && x.PlannedEnd != null && x.PlannedEnd > x.PlannedStart).Sum(x => (x.PlannedEnd!.Value - x.PlannedStart!.Value).TotalHours), 1) });
                 }
 
                 // Nghỉ phép năm nay (Đã duyệt) theo loại + ngày nghỉ 7 ngày tới; đơn chờ duyệt.

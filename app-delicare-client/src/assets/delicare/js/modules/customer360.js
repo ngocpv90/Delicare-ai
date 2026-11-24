@@ -161,8 +161,8 @@
       const gap = ord > 0 && acc > 0 ? U.num((ord - acc) / ord * 100, 1) + '%' : null;
       const mix = (x.data.listMealType || []).map(m => `${esc(m.mealType)} ${U.num(m.quantity)}`).join(' · ');
       if (!days.some(r => r.ordered || r.delivered || r.accepted)) { trendBox.innerHTML = none; return; }
-      legend.innerHTML = S.map(s => `<span><i style="background:${s.color}"></i>${s.name}</span>`).join('');
-      trendBox.innerHTML = `${UI.lines(labels, S, { min: 0, h: 200 })}<div class="ip-muted">${esc(join(labels.length ? labels[0] + ' → ' + labels[labels.length - 1] : '', gap && 'chênh đặt – nhận trung bình ' + gap))}${mix ? ' · cơ cấu: ' + mix : ''}</div>`;
+      if (legend) legend.innerHTML = ''; // CHART-1: chú giải do Chart.js vẽ
+      trendBox.innerHTML = `${UI.lines(labels, S.map((s, i) => Object.assign({}, s, { color: undefined, role: i === 0 ? 'order' : i === S.length - 1 ? 'receive' : 'deliver', fillTo: i === S.length - 1 && S.length > 1 ? 0 : undefined })), { h: 220, title: 'Xu hướng suất 30 ngày', unit: 'suất' })}<div class="ip-muted">${esc(join(labels.length ? labels[0] + ' → ' + labels[labels.length - 1] : '', gap && 'chênh đặt – nhận trung bình ' + gap))}${mix ? ' · cơ cấu: ' + mix : ''}</div>`;
     });
     // Đơn hàng gần đây – lọc trạng thái (Order/GetAll theo khách).
     const ordBox = box.querySelector('[data-orders]'), sel = box.querySelector('[data-ost]');
@@ -298,7 +298,7 @@
       const m = x.data || {}, dates = m.dates || [], row = (m.rows || [])[0];
       if (!row || !dates.length) { fc.innerHTML = none; return; }
       const v = dt => { const k = Object.keys(row.values || {}).find(k => iso(k) === iso(dt)); return k ? row.values[k] : null; };
-      fc.innerHTML = UI.bars(dates.map(dt => U.date(dt).slice(0, 5)), [{ name: 'Dự báo', values: dates.map(dt => v(dt) || 0), color: '#91AF42' }], { h: 180 })
+      fc.innerHTML = UI.bars(dates.map(dt => U.date(dt).slice(0, 5)), [{ name: 'Dự báo', role: 'plan', values: dates.map(dt => v(dt) || 0) }], { h: 200, title: 'Dự báo suất', unit: 'suất' })
         + `<div class="small muted">Tổng ${U.num(row.total || 0)} suất</div>`;
     });
     run(ma, Store.query('MenuAssignment/GetAll', { CustomerId: id, Page: 1, PageSize: 100 }), x => {
