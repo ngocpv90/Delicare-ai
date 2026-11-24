@@ -356,19 +356,28 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
       const r = Store.get('CustomerComplaint', tr.dataset.row); if (!r || !r.OrderId || !['SHORTAGE', 'DAMAGED', 'TEMPERATURE'].includes(String(r.CategoryCode || '').toUpperCase()) || !['Open', 'InProgress'].includes(r.ComplaintStatus)) return;
       const td = tr.querySelector('.actions'); if (!td || td.querySelector('[data-bu]')) return;
       td.insertAdjacentHTML('afterbegin', '<button class="btn xs danger" data-bu>Tạo đơn bù</button> ');
-      td.querySelector('[data-bu]').onclick = e => { e.stopPropagation(); UI.modal({ title: 'Tạo đơn bù – ' + esc(r.ComplaintNo || ''), size: 'sm',
-        body: '<p style="margin-top:0">Đơn bù cùng ngày ăn, cùng điểm giao, loại suất / lựa chọn theo đơn gốc; <b>đã chốt ngay</b>, bếp được báo nấu ưu tiên.</p><div class="field"><label>Số suất bù</label><input type="number" min="1" class="input" id="buQ" placeholder="Trống = số khách từ chối khi bàn giao"></div><label class="row-flex small"><input type="checkbox" id="buC"> Khách đặt thêm – tính tiền (mặc định lỗi Delicare, giá 0)</label><div class="field mt"><label>Ghi chú</label><input class="input" id="buN" maxlength="500"></div>',
-        foot: '<button class="btn" data-close>Hủy</button><button class="btn danger" id="buOk">Tạo đơn bù</button>',
-        onMount: (m, close) => m.querySelector('#buOk').onclick = () => { const q = m.querySelector('#buQ').value; if (q !== '' && !(Number(q) > 0)) return UI.toast('Số suất phải lớn hơn 0', 'err');
-          Store.act('CustomerComplaint/CreateCompensationOrder', { form: { Id: r.Id, Quantity: q === '' ? null : Number(q), ChargeCustomer: m.querySelector('#buC').checked, Note: m.querySelector('#buN').value.trim() || null }, tables: ['CustomerComplaint', 'ComplaintHistory', 'Order', 'OrderLine'] })
-            .then(x => { if (!x.ok) return; close(); bust(); UI.toast(esc(x.message || 'Đã tạo đơn bù'), 'ok'); APP.refresh(); }); } }); };
+      td.querySelector('[data-bu]').onclick = e => { e.stopPropagation(); complaintCompensate(r); };
     });
-    APP.rowExtra(el, tr => { const r = Store.get('CustomerComplaint', tr.dataset.row); const nx = APP.nextStatus('CustomerComplaint', 'ComplaintStatus', r.ComplaintStatus); if (!nx) return; const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-nx>→ ${esc(UI.statusVi('CustomerComplaint', 'ComplaintStatus', nx))}</button> `); td.querySelector('[data-nx]').onclick = () => UI.confirm(`Chuyển khiếu nại ${esc(r.ComplaintNo)} sang ${UI.badge(nx, 'CustomerComplaint', 'ComplaintStatus')}? Ghi lịch sử vào ComplaintHistory.`, note => { const old = r.ComplaintStatus;
+    APP.rowExtra(el, tr => { const r = Store.get('CustomerComplaint', tr.dataset.row); const nx = APP.nextStatus('CustomerComplaint', 'ComplaintStatus', r.ComplaintStatus); if (!nx) return; const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-nx>→ ${esc(UI.statusVi('CustomerComplaint', 'ComplaintStatus', nx))}</button> `); td.querySelector('[data-nx]').onclick = () => complaintNext(r, nx); });
+  });
+  // Tạo đơn bù / chuyển bước xử lý – dùng chung cho danh sách và trang chi tiết (UI-6, modules/detail-sales.js gọi qua APP.logComplaint).
+  // r = dòng PascalCase { Id, ComplaintNo, ComplaintStatus }; nx = trạng thái tiếp theo.
+  function complaintCompensate(r) {
+    UI.modal({ title: 'Tạo đơn bù – ' + esc(r.ComplaintNo || ''), size: 'sm',
+      body: '<p style="margin-top:0">Đơn bù cùng ngày ăn, cùng điểm giao, loại suất / lựa chọn theo đơn gốc; <b>đã chốt ngay</b>, bếp được báo nấu ưu tiên.</p><div class="field"><label>Số suất bù</label><input type="number" min="1" class="input" id="buQ" placeholder="Trống = số khách từ chối khi bàn giao"></div><label class="row-flex small"><input type="checkbox" id="buC"> Khách đặt thêm – tính tiền (mặc định lỗi Delicare, giá 0)</label><div class="field mt"><label>Ghi chú</label><input class="input" id="buN" maxlength="500"></div>',
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn danger" id="buOk">Tạo đơn bù</button>',
+      onMount: (m, close) => m.querySelector('#buOk').onclick = () => { const q = m.querySelector('#buQ').value; if (q !== '' && !(Number(q) > 0)) return UI.toast('Số suất phải lớn hơn 0', 'err');
+        Store.act('CustomerComplaint/CreateCompensationOrder', { form: { Id: r.Id, Quantity: q === '' ? null : Number(q), ChargeCustomer: m.querySelector('#buC').checked, Note: m.querySelector('#buN').value.trim() || null }, tables: ['CustomerComplaint', 'ComplaintHistory', 'Order', 'OrderLine'] })
+          .then(x => { if (!x.ok) return; close(); bust(); UI.toast(esc(x.message || 'Đã tạo đơn bù'), 'ok'); APP.refresh(); }); } });
+  }
+  function complaintNext(r, nx) {
+    UI.confirm(`Chuyển khiếu nại ${esc(r.ComplaintNo)} sang ${UI.badge(nx, 'CustomerComplaint', 'ComplaintStatus')}? Ghi lịch sử vào ComplaintHistory.`, note => { const old = r.ComplaintStatus;
       // Chế độ API: CustomerComplaint/Assign · Resolve · Close · Reject (backend ghi ComplaintHistory, tính SLA).
       const act = { InProgress: 'Assign', Resolved: 'Resolve', Closed: 'Close', Rejected: 'Reject' }[nx];
       if (Store.isLive && act) return Store.act('CustomerComplaint/' + act, { form: { Id: r.Id, Comment: note }, tables: ['CustomerComplaint', 'ComplaintHistory'] }).then(x => { if (x.ok) { bust(); UI.toast('Đã cập nhật khiếu nại', 'ok'); APP.refresh(); } });
-      Store.update('CustomerComplaint', r.Id, Object.assign({ ComplaintStatus: nx }, nx === 'Resolved' ? { ResolvedAt: U.iso(new Date()), Resolution: note } : {})); Store.add('ComplaintHistory', { ComplaintId: r.Id, EventType: 'STATUS_CHANGED', OldStatus: old, NewStatus: nx, Comment: note, EventAt: U.iso(new Date()), ActorId: Store.user.id }); UI.toast('Đã cập nhật khiếu nại + ComplaintHistory', 'ok'); APP.refresh(); }, { input: 'Nội dung xử lý', required: true }); });
-  });
+      Store.update('CustomerComplaint', r.Id, Object.assign({ ComplaintStatus: nx }, nx === 'Resolved' ? { ResolvedAt: U.iso(new Date()), Resolution: note } : {})); Store.add('ComplaintHistory', { ComplaintId: r.Id, EventType: 'STATUS_CHANGED', OldStatus: old, NewStatus: nx, Comment: note, EventAt: U.iso(new Date()), ActorId: Store.user.id }); UI.toast('Đã cập nhật khiếu nại + ComplaintHistory', 'ok'); APP.refresh(); }, { input: 'Nội dung xử lý', required: true });
+  }
+  APP.logComplaint = { compensate: complaintCompensate, next: complaintNext };
 
   // ---------- Thu hồi khay hộp: ContainerReturn/GetList · Record · Inspect ----------
   // Ghi thu hồi → máy chủ ghi sổ bao bì (nhập lại phần tốt / phần hỏng). Sổ chỉ ghi thêm nên hỏi lại trước khi ghi.

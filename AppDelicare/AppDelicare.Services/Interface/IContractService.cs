@@ -20,6 +20,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Decide(AppDelicare.Model.Request.Custom.ContractActionRequest request, bool approve);
         public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> Terminate(AppDelicare.Model.Request.Custom.ContractTerminateRequest request);
         public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (6.2 nhóm A): trang chi tiết toàn màn – chi tiết + yêu cầu duyệt mới nhất + đơn gần đây + suất 30 ngày + tiền đã đối soát.</summary>
+        public Task<IResult<AppDelicare.Model.Model.ContractPageModel>> GetOverview(Guid id);
         /// <summary>D-78 (2): đổi cách tính tiền đối soát của hợp đồng.</summary>
         public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> UpdateBillingBasis(AppDelicare.Model.Request.Custom.ContractBillingBasisRequest request);
         /// <summary>T23: hợp đồng Hiệu lực quá ngày hết hiệu lực → Hết hạn (job ContractExpiry 00:30 và nút bấm tay).</summary>

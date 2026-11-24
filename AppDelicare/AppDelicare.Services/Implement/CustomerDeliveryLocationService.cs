@@ -14,10 +14,14 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class CustomerDeliveryLocationService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService) : ICustomerDeliveryLocationService
+    public partial class CustomerDeliveryLocationService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+        , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService
+        , AppDelicare.Data.Share.IClock clock, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : ICustomerDeliveryLocationService
     {
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
+        // UI-6 (6.2 nhóm A): trang chi tiết điểm giao (CustomerDeliveryLocationService.Overview.cs) – 30 ngày gần nhất, giao đúng giờ theo BusinessRules:Kpi.
+        private readonly AppDelicare.Data.Share.IClock _clock = clock;
+        private readonly AppDelicare.Model.Option.BusinessRulesOptions _rules = rules.Value;
         /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
         private string? _createdCode;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;

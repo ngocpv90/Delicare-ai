@@ -17,6 +17,8 @@ namespace AppDelicare.Services.Interface
         // <summary>T13 (spec 6.6): khung tạo đơn, tạo, sửa số suất, máy trạng thái, giờ chốt 20h D-1, lệch suất > 30%.</summary>
         public Task<IResult<AppDelicare.Model.Model.OrderTemplateModel>> GetNewTemplate(Guid customerId, DateTime mealDate);
         public Task<IResult<AppDelicare.Model.Model.OrderDetailModel>> GetDetail(Guid id);
+        /// <summary>UI-6 (6.2 nhóm A): trang chi tiết toàn màn – chi tiết + yêu cầu duyệt mới nhất + giao hàng / đối soát / phản ánh.</summary>
+        public Task<IResult<AppDelicare.Model.Model.OrderPageModel>> GetOverview(Guid id);
         /// <summary>BE2.1 (spec 6.6 view=board): bảng đơn 8 trạng thái + statusCounts.</summary>
         public Task<IResult<AppDelicare.Model.Model.OrderBoardModel>> GetBoard(AppDelicare.Model.Request.Custom.OrderBoardRequest request);
         public Task<IResult<AppDelicare.Model.Model.OrderDetailModel>> Create(AppDelicare.Model.Request.Custom.OrderCreateRequest request);

@@ -34,6 +34,7 @@ const SCRIPTS = [
   // UI-6 (D-80): trang chi tiết toàn màn – mỗi nhóm 1 tệp (khung: modules/detail-page.js).
   'modules/detail-stockcount.js',
   'modules/detail-scm.js', // UI-6B
+  'modules/detail-sales.js', // UI-6A: đơn đặt suất, hợp đồng, phản ánh, điểm giao
   'modules/admin.js',
   'modules/integration.js',
   'modules/explorer.js',

@@ -147,6 +147,6 @@
       groups().forEach(g => { if (g.rows.length < 2) return; for (let di = 0; di < 7; di++) { const c = el.querySelector(`[data-ows="${g.k}|${di}"]`); if (c) c.textContent = U.num(g.rows.reduce((a, x) => a + (Number(st.qty[cellKey(x.ri, di)]) || 0), 0)); } });
       const s = el.querySelector('[data-ow-sum]'); if (s) s.innerHTML = `<b>${U.num(t.qty)}</b>`; const m = el.querySelector('[data-ow-amount]'); if (m) m.innerHTML = `<b>${U.money(t.amount)}</b>`;
     }));
-    el.querySelectorAll('[data-ow-order]').forEach(a => a.onclick = () => { if (APP.orderDetail) APP.orderDetail(a.dataset.owOrder); });
+    el.querySelectorAll('[data-ow-order]').forEach(a => a.onclick = () => APP.openDetail('Order', a.dataset.owOrder));   // UI-6: trang chi tiết đơn (DEMO: ngăn trượt)
   }
 })();

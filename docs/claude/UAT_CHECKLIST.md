@@ -19,6 +19,17 @@ Thử trên **staging** (deploy/README.md). Công cụ: Swagger (`/swagger`) ho�
 | 10 | Quyền | Tài khoản chỉ xem Đơn mua mở trang Lô (dán đường dẫn) | Báo không có quyền (API 403); tài khoản xem Lô mở được | [ ] | |
 | 11 | Id sai / rỗng | Sửa id trên đường dẫn thành id không có; mở PO / phiếu nhập chưa có dòng | Id sai: "Không tìm thấy bản ghi" (không trắng trang); chứng từ rỗng: trang mở, bảng "Chưa có dữ liệu" | [ ] | |
 | 12 | Điện thoại | Mở trang PO trên điện thoại | Chỉ nút chính + ⋯; thẻ chỉ số 2 cột; bảng cuộn ngang trong khung | [ ] | |
+## TRANG CHI TIẾT – NHÓM KINH DOANH (UI-6 6.2 nhóm A, D-80 – 2026-11-23) · API: `GET api/Order|Contract|CustomerComplaint|CustomerDeliveryLocation/GetOverview?id=` · test: `DetailPages/SalesOverviewTests.cs` · HDSD `02_KINH_DOANH.md` 4.2 / 4.3 / 4.5, `09_GIAO_VAN.md` 4.7
+- [ ] Đơn đặt suất: bấm thẻ Kanban / dòng bảng → mở `#/crm-order-detail?id=` (không còn ngăn trượt); **← Đơn đặt suất** về đúng ngày ăn / dạng xem / bộ lọc / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → tab mới; F5 trên trang vẫn mở đúng đơn.
+- [ ] Đơn Nháp trước giờ chốt: nút **Xác nhận** (hộp hiện % lệch dự báo) → trạng thái + thanh bước đổi ngay; **Sửa số suất** → lưu → số / tiền / thẻ Tổng suất cập nhật; đơn Đã xác nhận: **Chốt số lượng**; ⋯ **Hủy đơn** bắt nhập lý do.
+- [ ] Đơn sau giờ chốt: chỉ còn **Yêu cầu sửa sau chốt** → gửi → tab **Duyệt** hiện yêu cầu + các cấp; đơn có lệch suất chờ duyệt có tag "Chờ duyệt PD-…".
+- [ ] Đơn đã giao: thẻ **Giao hàng** = số phiếu giao, khách nhận khớp biên bản giao (POD); khối **Đối soát** khớp màn Đối soát; tab **Phản ánh** liệt kê phản ánh của đơn, bấm mở trang phản ánh.
+- [ ] Hợp đồng: bấm dòng (danh sách / hồ sơ khách 360) → `#/crm-contract-detail?id=`; Nháp: **Gửi duyệt** / **Sửa**; Chờ duyệt: **Duyệt** / **Từ chối** + tab Duyệt; Hiệu lực: ⋯ **Thanh lý hợp đồng** (bắt lý do); **Đổi** cách tính tiền đối soát → trang tải lại đúng giá trị mới.
+- [ ] Hợp đồng: thẻ **Đơn hàng** / **Đã đối soát** khớp tổng ở màn Đơn đặt suất / Đối soát (lọc theo hợp đồng); "Còn N ngày" đúng ngày hiệu lực đến; hợp đồng không thời hạn hiện "Không thời hạn".
+- [ ] Phản ánh: bấm dòng → `#/log-complaint-detail?id=`; nút **→ bước tiếp theo** chuyển Mới → Đang xử lý → Đã xử lý → Đóng (bắt nhập nội dung), ⋯ **Từ chối phản ánh**; thẻ hạn xử lý: còn / quá hạn (đỏ) / đã xử lý trong … giờ.
+- [ ] Phản ánh Thiếu suất / Hỏng / Nhiệt độ có đơn gốc, đang mở, chưa có đơn bù: nút **Tạo đơn bù** (chỉ người có Thêm phản ánh + Thêm đơn đặt suất) → tạo xong nút ẩn, khối **Đơn bù** có đơn mới; **Thêm ghi chú** → tab **Diễn biến xử lý** có dòng mới kèm tên người ghi.
+- [ ] Điểm giao: bấm dòng ở màn Điểm giao hàng (hoặc tên điểm giao trong trang đơn) → `#/crm-location-detail?id=`; thẻ Suất TB / ngày, Đơn 30 ngày, **Giao đúng giờ** (đơn giao trễ > 15 phút không tính đúng giờ), Phản ánh đang mở; **Bản đồ** mở đúng tọa độ; **Sửa** mở form chung, lưu xong trang cập nhật.
+- [ ] Quyền: tài khoản chỉ có quyền xem `crm-order` mở được trang đơn nhưng không thấy nút thao tác; không có quyền màn gốc → API trả 403 / trang báo không có quyền; tab Giao hàng / Phản ánh ẩn khi không có quyền xem màn tương ứng. Id sai → "Không tìm thấy bản ghi". Chế độ DEMO vẫn mở ngăn trượt.
 
 ## PHÊ DUYỆT TỔNG (APR-UI-1, D-81 – 2026-11-23) · test: `Approval/ApprovalHubTests.cs` · ảnh: `docs/frontend-handoff/assets/apr-ui-1/screens/` · HDSD `12_QUAN_LY_DUYET.md`
 
