@@ -332,6 +332,8 @@
       td.insertAdjacentHTML('afterbegin', `<button class="btn xs primary" data-tr="${tr.dataset.row}">Truy xuất</button> `); td.querySelector('[data-tr]').onclick = () => trace(tr.dataset.row);
       const r = live && Store.get('MaterialLot', tr.dataset.row); if (!r) return;
       const no = esc(r.LotNumber || '');
+      // MENU-5.2 (D-79): Giữ / thả lô = quyền Duyệt "Phê duyệt › Giữ / thả lô" (#/wf-inbox?type=scm-lot – QA); kho chỉ xem.
+      if (!Store.canApprove('scm-lot')) return;
       if (r.Status === 'Available') rowBtn(td, 'orange', 'Tạm giữ', () => askReason(`Tạm giữ lô <b>${no}</b>? Lô tạm giữ không được gợi ý và không xuất kho được.`, note => actInv('MaterialLot/Hold', { form: { Id: r.Id, Reason: note } }, 'Đã tạm giữ lô')));
       if (r.Status === 'OnHold') rowBtn(td, '', 'Mở giữ', () => UI.confirm(`Mở tạm giữ lô <b>${no}</b>? Lô trở lại khả dụng và được xuất kho.`, () => actInv('MaterialLot/Release', { form: { Id: r.Id } }, 'Đã mở tạm giữ lô'), { ok: 'Mở tạm giữ' }));
     });

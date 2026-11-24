@@ -351,7 +351,8 @@ Store.by('DeliveryOrder', 'DeliveryRouteId', r.Id).forEach(d => { if (!Store.one
       top: Store.isLive ? (cd && cd.overdueCount ? `<div class="notice warn">${I('alert')}<div><b>${U.num(cd.overdueCount)} phản ánh đã quá hạn xử lý</b>Ưu tiên xử lý các dòng có hạn tô đỏ.</div></div>` : '') : `<div class="notice warn">${I('alert')}<div><b>GAP-F-02 (SLA):</b> chỉ có cột CustomerComplaint.SlaDueAt – chưa có đặc tả SLA theo hợp đồng.</div></div>` });
     if (Store.isLive && Store.perm(f.id).add !== false) { headBtn(el, `<button class="btn primary" id="ccNew">${I('plus')} Tạo phản ánh</button>`); el.querySelector('#ccNew').onclick = complaintCreate; }
     // BIZ-3.1 (D-77 – A6): phản ánh Thiếu suất / Hỏng / Không đạt nhiệt độ có đơn gốc → nút Tạo đơn bù (đơn Đã chốt, giá 0 khi lỗi Delicare).
-    if (Store.isLive && Store.perm(f.id).edit !== false) APP.rowExtra(el, tr => {
+    // MENU-5.2 (D-79): cần Thêm Phản ánh VÀ Thêm Đơn đặt suất (CSKH ghi phản ánh nhưng không tạo đơn bù – Trưởng KD / SAL-CON / quản trị tạo).
+    if (Store.isLive && Store.perm(f.id).add === true && Store.perm('crm-order').add === true) APP.rowExtra(el, tr => {
       const r = Store.get('CustomerComplaint', tr.dataset.row); if (!r || !r.OrderId || !['SHORTAGE', 'DAMAGED', 'TEMPERATURE'].includes(String(r.CategoryCode || '').toUpperCase()) || !['Open', 'InProgress'].includes(r.ComplaintStatus)) return;
       const td = tr.querySelector('.actions'); if (!td || td.querySelector('[data-bu]')) return;
       td.insertAdjacentHTML('afterbegin', '<button class="btn xs danger" data-bu>Tạo đơn bù</button> ');

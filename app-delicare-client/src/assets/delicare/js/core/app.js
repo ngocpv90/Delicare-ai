@@ -4,7 +4,7 @@
   const FN = {}; CAT.funcs.forEach(f => FN[f.id] = f);
   // Màn hình điều hướng (không phải bảng) – bổ sung vào menu
   FN['flow-e2e'] = { ph: '—', grp: 'Điều hành', fn: 'Luồng nghiệp vụ End-to-End', id: 'flow-e2e', name: 'Luồng nghiệp vụ E2E (9 luồng)', types: ['DB'], table: null, rel: [], st: 'NAV', note: '' };
-  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal']);
+  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact']); // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
@@ -22,6 +22,7 @@
     'log-stop': ['log-route', 'DeliveryStop', 'DeliveryRouteId'], 'log-event': ['log-execution'], 'log-complaint-history': ['log-complaint', 'ComplaintHistory', 'ComplaintId'],
     'wf-step': ['wf-inbox', 'ApprovalStep', 'ApprovalRequestId'], 'wf-decision': ['wf-inbox'], 'wf-item': ['wf-inbox', 'ApprovalItem', 'ApprovalRequestId'],
     'adm-person': ['adm-user'], 'scm-transfer': ['scm-inv-balance'], 'scm-adjustment': ['scm-inv-balance'],
+    'crm-contact': ['crm-customer', 'CustomerContact', 'CustomerId'], // MENU-5 (D-79): link cũ → hồ sơ khách hàng
   };
   window.DC_PARENT_OF = PARENT_OF;
   // Ngoài danh sách trên: màn có bảng chính mà backend đang nối chưa có API (404) hoặc API đang lỗi → cũng ẩn (Store.probe dò lúc mở app).
@@ -41,8 +42,10 @@
     const db = dbNav(), list = db || catalogNav();
     // Tìm kiếm chức năng dùng cùng danh sách với sidebar (chế độ menu theo DB).
     APP._navIds = db ? new Set(db.flatMap(g => g.items.map(i => i.f.id))) : null;
-    nav.innerHTML = list.map(({ name: g, items }) => `<li class="dc-group" data-g="${esc(g)}"><a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a><ul class="mm-collapse" aria-expanded="false">${items.map(({ f, label, link }) => `<li><a href="${APP.href(link || f.id)}" data-nav="${esc(link || f.id)}" title="${esc(label)}">${esc(label)}${f.st === 'GAP' && !Store.isLive ? '<i class="gap-dot">GAP</i>' : ''}${(link || f.id) === 'wf-inbox' ? `<span class="badge badge-sm badge-secondary ms-2" id="inboxCount"></span>` : ''}</a></li>`).join('')}</ul></li>`).join('');
-    nav.querySelectorAll('li.dc-group > a').forEach(a => a.onclick = () => openGroup(a.parentElement, !a.nextElementSibling.classList.contains('mm-show')));
+    // MENU-5 (D-79): nhóm 1 mục cùng tên ("Việc của tôi") hiện thành 1 dòng bấm thẳng, không mở / đóng.
+    const single = (g, items) => items.length === 1 && items[0].label === g;
+    nav.innerHTML = list.map(({ name: g, items }) => single(g, items) ? `<li class="dc-group dc-single" data-g="${esc(g)}"><a class="ai-icon" href="${APP.href(items[0].link || items[0].f.id)}" data-nav="${esc(items[0].link || items[0].f.id)}" title="${esc(g)}"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a></li>` : `<li class="dc-group" data-g="${esc(g)}"><a class="has-arrow ai-icon" href="javascript:void(0)" aria-expanded="false"><div class="menu-icon">${I(U.GROUP_ICON[g] || 'clipboard')}</div><span class="nav-text ms-2 me-1">${esc(g)}</span></a><ul class="mm-collapse" aria-expanded="false">${items.map(({ f, label, link }) => `<li><a href="${APP.href(link || f.id)}" data-nav="${esc(link || f.id)}" title="${esc(label)}">${esc(label)}${f.st === 'GAP' && !Store.isLive ? '<i class="gap-dot">GAP</i>' : ''}${(link || f.id) === 'wf-inbox' ? `<span class="badge badge-sm badge-secondary ms-2" id="inboxCount"></span>` : ''}</a></li>`).join('')}</ul></li>`).join('');
+    nav.querySelectorAll('li.dc-group:not(.dc-single) > a').forEach(a => a.onclick = () => openGroup(a.parentElement, !a.nextElementSibling.classList.contains('mm-show')));
     markNav(APP.current);
     updateCounts();
   }
@@ -63,21 +66,25 @@
     // MENU-4.2: bỏ bảng con / màn chưa làm / mục trùng kể cả khi DB chưa chạy script MENU4 (máy chủ vẫn trả mục IsActive = 1).
     // "Hộp phê duyệt" (#/wf-inbox, nhóm Nhân sự) trùng "Tất cả yêu cầu duyệt" (#/wf-inbox?type=wf-inbox) – giữ dòng ở DB vì là quyền của API duyệt, chỉ bỏ khỏi sidebar.
     const hasAllInbox = menu.some(g => g.items.some(i => i.link === 'wf-inbox?type=wf-inbox'));
-    const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || (link === 'wf-inbox' && hasAllInbox); };
+    // MENU-5 (D-79): #/bot-van-hanh, #/bot-dieu-hanh là quyền VÀO BOT (D-62) – không phải màn hình, không lên sidebar.
+    const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || (link === 'wf-inbox' && hasAllInbox) || /^bot-/.test(id); };
     const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !skip(i.link)).filter(i => !used.has(i.link)).map(i => {
       used.add(i.link); const id = i.link.split('?')[0]; used.add(id);
       // Mục DB có mà FE chưa có màn: đăng ký màn giữ chỗ để bấm vào không rơi về trang tổng quan.
       if (!FN[id]) { FN[id] = { id, fn: i.name, name: i.name, grp: g.name, ph: '', types: [], table: null, rel: [], st: 'MAPPED', note: '' }; SCREENS[id] = (el, f) => { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel empty">${I('clipboard')}<h2 class="mt">Mục này chưa có màn hình trên giao diện</h2><p class="muted">Mục menu được cấu hình trong hệ thống nhưng giao diện chưa có màn hình tương ứng.</p></div>`; }; }
       return { f: FN[id], label: i.name || FN[id].fn, link: i.link };
     }) }));
-    // Màn FE đã có mà DB chưa có mục menu (f.extra – "Việc của tôi", "Job tự động"): tạm thêm vào nhóm của nó khi tài khoản được vào,
-    // cho tới khi backend bổ sung dòng ObjectMenu (khi đó mục lấy theo DB như mọi mục khác).
-    Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false) return; let g = out.find(x => x.name === f.grp); if (!g) out.push(g = { name: f.grp, items: [] }); g.items.push({ f, label: f.fn, link: f.id }); });
-    return out.filter(g => g.items.length);
+    // Dự phòng khi DB CHƯA chạy seed / script MENU-5 (chưa có dòng ObjectMenu #/hr-my, #/adm-job, #/sys-import): màn FE đã có (f.extra) tạm thêm vào
+    // nhóm của nó khi tài khoản được vào (adm-job: chỉ admin / người có quyền mục – FIN-IT). DB đã có dòng → mục lấy theo DB, không thêm.
+    // "Việc của tôi" luôn đầu sidebar (nhóm riêng 1 mục).
+    Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false) return; const grp = f.id === 'hr-my' ? 'Việc của tôi' : f.grp; let g = out.find(x => x.name === grp); if (!g) { g = { name: grp, items: [] }; if (f.id === 'hr-my') out.unshift(g); else out.push(g); } g.items.push({ f, label: f.id === 'hr-my' ? grp : f.fn, link: f.id }); });
+    const res = out.filter(g => g.items.length), my = res.findIndex(g => g.items.some(i => i.link === 'hr-my'));
+    if (my > 0) res.unshift(res.splice(my, 1)[0]);
+    return res;
   }
   // Mở một nhóm menu (đóng các nhóm khác – kiểu metismenu của theme).
   function openGroup(li, on) {
-    document.querySelectorAll('#navGroups > li.dc-group').forEach(x => { const o = x === li && on; x.querySelector('ul').classList.toggle('mm-show', o); x.firstElementChild.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+    document.querySelectorAll('#navGroups > li.dc-group:not(.dc-single)').forEach(x => { const o = x === li && on; x.querySelector('ul').classList.toggle('mm-show', o); x.firstElementChild.setAttribute('aria-expanded', o ? 'true' : 'false'); });
   }
   // Tô mục đang mở + mở nhóm chứa nó.
   function markNav(id) {

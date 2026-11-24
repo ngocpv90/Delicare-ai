@@ -414,7 +414,13 @@
     perm(screen) {
       // Màn con không có mục menu riêng → dùng quyền của màn cha (UI-2: crm-customer-360 = quyền crm-customer).
       screen = PERM_ALIAS[screen] || screen;
-      if (HOST && mode === 'api') return HOST.perm(screen);
+      if (HOST && mode === 'api') {
+        const hp = HOST.perm(screen);
+        // MENU-5 (D-79): Hộp phê duyệt chung (#/wf-inbox) chỉ CEO / CEO-PMO / COO / FIN-IT được Xem; người có quyền Duyệt một mục "Phê duyệt › …"
+        // vẫn vào màn (chỉ thấy yêu cầu chờ mình duyệt – modules/hr.js approverInbox).
+        if (screen === 'wf-inbox' && !hp.access && (HOST.menu || []).some(g => g.items.some(i => /^wf-inbox\?type=/.test(i.link) && i.link !== 'wf-inbox?type=wf-inbox' && HOST.perm(i.link).edit === true))) return { access: true, approverOnly: true };
+        return hp;
+      }
       const g = Store.one('UserGroup', 'Name', Store.user.group);
       const om = Store.rows('ObjectMenu').find(o => o.MetaLink === '#/' + screen);
       if (!g) return { access: true, add: true, edit: true, del: true, exp: true };

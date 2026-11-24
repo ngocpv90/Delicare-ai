@@ -6,7 +6,9 @@
     APP.genericList(el, f, { noTransit: true, noAdd: true,
       top: `<div class="notice info">${I('shield')}<div><b>Kết quả theo BRD: PASS / HOLD / REJECT.</b> Mở phiếu để kết luận từng dòng (QCInspectionLine). REJECT → tự lập Sự cố NCC (SupplierIssue). Chỉ dòng PASS được ghi sổ nhập kho.</div></div>`,
       cols: [{ k: 'InspectionNumber', label: 'Số phiếu' }, { k: 'GoodsReceiptId', label: 'Phiếu nhập' }, { k: 'InspectionDate', label: 'Ngày kiểm' }, { k: 'InspectorEmployeeId', label: 'Người kiểm', render: r => esc(Store.label('Employee', r.InspectorEmployeeId)) }, { k: 'n', label: 'Dòng PASS/HOLD/REJECT', col: false, nosort: true, render: r => { const g = U.group(Store.by('QCInspectionLine', 'QCInspectionId', r.Id), 'Result'); return ['PASS', 'HOLD', 'REJECT'].map(k => `${UI.badge(k)} ${(g[k] || []).length}`).join(' ') + (g.undefined ? ` <span class="muted small">${g.undefined.length} chưa kiểm</span>` : ''); } }, { k: 'Result', label: 'Kết luận' }] });
-    APP.rowExtra(el, tr => { const r = Store.get('QCInspection', tr.dataset.row); if (!r.Result) { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-k>Kết luận</button> `); td.querySelector('[data-k]').onclick = () => inspect(r.Id); } });
+    // MENU-5.2 (D-79): Kết luận kiểm tra hàng nhập = quyền Duyệt "Phê duyệt › Kiểm tra hàng nhập" (#/wf-inbox?type=qc-inspection – QA).
+    const canConclude = Store.canApprove('qc-inspection');
+    APP.rowExtra(el, tr => { const r = Store.get('QCInspection', tr.dataset.row); if (!r.Result && canConclude) { const td = tr.querySelector('.actions'); td.insertAdjacentHTML('afterbegin', `<button class="btn xs orange" data-k>Kết luận</button> `); td.querySelector('[data-k]').onclick = () => inspect(r.Id); } });
     if (params.id && Store.get('QCInspection', params.id)) setTimeout(() => inspect(params.id), 50);
   });
   function inspect(id) {

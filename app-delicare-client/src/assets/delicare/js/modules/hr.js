@@ -281,16 +281,46 @@
   // Mục menu duyệt theo loại (ObjectMenu '#/wf-inbox?type=<screen-id>[-l1|-l2|-director]'): lọc hộp duyệt theo màn hình của nghiệp vụ.
   const TYPE_SCREEN = { PURCHASE_ORDER: 'scm-po', ORDER: 'crm-order', ORDER_QUANTITY_CHANGE: 'crm-order', ORDER_CHANGE_AFTER_CUTOFF: 'crm-order', PRODUCTION_PLAN: 'prod-plan', INVENTORY_ADJUSTMENT: 'scm-adjustment', PRICE_POLICY: 'crm-price-policy', MENU: 'menu-menu', MENU_VERSION: 'menu-menu', QC_INSPECTION: 'qc-inspection' };
   const screenOf = a => (BT[a.BusinessType] && BT[a.BusinessType][4]) || TYPE_SCREEN[a.BusinessType] || '';
+  // MENU-5 (D-79): yêu cầu do chính mình gửi – máy chủ không cho tự duyệt (BusinessRules:ApprovalBlockSelfApproval, admin miễn).
+  const SELF_TAG = '<span class="tag blue">Bạn gửi – chờ người khác duyệt</span>';
+  const isSelf = r => Store.isLive && !!Store.user.id && r.RequestedBy === Store.user.id;
+  // Danh sách "Chờ tôi duyệt" (ApprovalRequest/GetMyPending) – làm mới sau 30 giây, vẽ lại màn khi số yêu cầu đổi.
+  function loadMine() {
+    if (!Store.isLive || ws.mineBusy || (ws.mineIds && Date.now() - ws.mineAt <= 30000)) return;
+    ws.mineBusy = true;
+    Store.query('ApprovalRequest/GetMyPending').then(x => { ws.mineBusy = false; ws.mineAt = Date.now(); const had = ws.mineIds; ws.mineList = x.ok ? x.list : []; ws.mineIds = new Set(ws.mineList.map(i => i.id)); if (!had || had.size !== ws.mineIds.size) { if (APP.current === 'wf-inbox') APP.refresh(); } });
+  }
+  const mineInfo = id => { const i = (ws.mineList || []).find(x => x.id === id); return i && { Id: i.id, RequestNo: i.requestNo, BusinessType: i.businessType }; };
+  // MENU-5 (D-79): quyền Xem "Hộp phê duyệt" chung (#/wf-inbox – xem mọi yêu cầu) chỉ CEO / CEO-PMO / COO / FIN-IT. Người duyệt khác vào qua mục
+  // "Phê duyệt › …" của mình: chỉ thấy yêu cầu chờ mình duyệt (GetMyPending) – không tải danh sách mọi yêu cầu (máy chủ trả 403).
+  function approverInbox(el, f, p) {
+    const typ = p && p.type && p.type !== 'wf-inbox' ? String(p.type) : '';
+    loadMine();
+    if (!ws.mineList) { el.innerHTML = APP.header(f, '', { noNote: true }) + `<div class="card panel">${LOADING}</div>`; return; }
+    const rows = ws.mineList.filter(i => !typ || i.screenId === typ).map(i => ({ Id: i.id, RequestNo: i.requestNo, Title: i.title, StepName: i.stepName, StepNo: i.stepNo, StepCount: i.stepCount, RequestedByName: i.requestedByName, RequestedAt: i.requestedAt, DueAt: i.dueAt, IsOverdue: i.isOverdue }));
+    const nav = typ && document.querySelector(`#navGroups [data-nav="wf-inbox?type=${typ}"]`);
+    el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Yêu cầu đang chờ bạn duyệt ở cấp hiện tại. Yêu cầu do chính bạn gửi không hiện ở đây – cần người khác duyệt.' })
+      + `<div class="kpis">${UI.kpi('Chờ tôi duyệt', rows.length, '', 'approve', 'orange')}${UI.kpi('Quá hạn', rows.filter(r => r.IsOverdue).length, '', 'alert', 'red')}</div>`
+      + `<div class="card panel">${typ ? `<div class="row-flex mb"><span class="tag orange">Đang lọc: ${esc(nav ? nav.title : typ)}</span></div>` : ''}<div id="wT"></div></div>`;
+    UI.table(el.querySelector('#wT'), { rows, pageSize: 20, onRow: id => openMine(id),
+      cols: [{ k: 'RequestNo', label: 'Số yêu cầu' }, { k: 'Title', label: 'Nội dung' }, { k: 'StepName', label: 'Cấp duyệt', render: r => `${esc(r.StepName || '')}${r.StepCount > 1 ? ` <span class="muted small">(${r.StepNo}/${r.StepCount})</span>` : ''}` },
+        { k: 'RequestedByName', label: 'Người gửi' }, { k: 'RequestedAt', label: 'Gửi lúc', render: r => esc(U.dt(r.RequestedAt)) }, { k: 'DueAt', label: 'Hạn xử lý', render: r => r.DueAt ? esc(U.dt(r.DueAt)) + (r.IsOverdue ? ' <span class="tag red">Quá hạn</span>' : '') : '' }],
+      actions: r => `<button class="btn xs primary" data-ap="${r.Id}">Duyệt</button> <button class="btn xs danger" data-rj="${r.Id}">Từ chối</button>`,
+      after: t => { t.querySelectorAll('[data-ap]').forEach(b => b.onclick = e => { e.stopPropagation(); decide(b.dataset.ap, true); }); t.querySelectorAll('[data-rj]').forEach(b => b.onclick = e => { e.stopPropagation(); decide(b.dataset.rj, false); }); } });
+  }
+  function openMine(id) {
+    const i = mineInfo(id) || {};
+    UI.modal({ title: 'Yêu cầu duyệt ' + esc(i.RequestNo || ''), size: 'lg', body: `<div id="wD">${LOADING}</div>`, foot: '<button class="btn" data-close>Đóng</button>',
+      onMount: (m, close) => loadApproval(id, m.querySelector('#wD'), close) });
+  }
   APP.register('wf-inbox', (el, f, p) => {
+    if (Store.isLive && Store.perm('wf-inbox').approverOnly) return approverInbox(el, f, p);
     const typ = p && p.type && p.type !== 'wf-inbox' ? String(p.type).replace(/-(l\d+|director)$/, '') : '';
     const all = Store.rows('ApprovalRequest').filter(a => !typ || screenOf(a) === typ).sort((a, b) => (b.RequestedAt || '').localeCompare(a.RequestedAt || ''));
     const pend = all.filter(isOpen);
     const cur = a => Store.by('ApprovalStep', 'ApprovalRequestId', a.Id).find(s => s.DecisionStatus === 'Waiting');
-    // Chế độ API: "Chờ tôi duyệt" lấy từ ApprovalRequest/GetMyPending (đúng người duyệt của bước hiện tại), làm mới sau 30 giây.
-    if (Store.isLive && (!ws.mineIds || Date.now() - ws.mineAt > 30000) && !ws.mineBusy) {
-      ws.mineBusy = true;
-      Store.query('ApprovalRequest/GetMyPending').then(x => { ws.mineBusy = false; ws.mineAt = Date.now(); const had = ws.mineIds; ws.mineIds = new Set(x.ok ? x.list.map(p => p.id) : []); if (!had || had.size !== ws.mineIds.size) { if (APP.current === 'wf-inbox') APP.refresh(); } });
-    }
+    // Chế độ API: "Chờ tôi duyệt" lấy từ ApprovalRequest/GetMyPending (đúng người duyệt của bước hiện tại, không gồm yêu cầu mình gửi), làm mới sau 30 giây.
+    loadMine();
     const mine = Store.isLive ? pend.filter(a => ws.mineIds && ws.mineIds.has(a.Id)) : pend.filter(a => { const s = cur(a); return s && (Store.user.group === 'Quản trị hệ thống' || Store.user.group === s.ApproverRoleCode); });
     // Chế độ API: người gửi được hủy yêu cầu còn chờ duyệt (ApprovalRequest/Cancel) – backend kiểm tra lại.
     const canCancel = r => Store.isLive && isOpen(r) && !!Store.user.id && r.RequestedBy === Store.user.id;
@@ -303,7 +333,7 @@
     el.querySelectorAll('[data-tab2]').forEach(b => b.onclick = () => { ws.tab = b.dataset.tab2; APP.refresh(); });
     UI.table(el.querySelector('#wT'), { table: 'ApprovalRequest', rows: rowsOf, onRow: id => openReq(id),
       cols: [{ k: 'RequestNo', label: 'Số yêu cầu' }, { k: 'BusinessType', label: 'Loại nghiệp vụ' }, { k: 'BusinessId', label: 'Bản ghi nghiệp vụ', render: r => { const m = BT[r.BusinessType]; const row = m && Store.get(m[0], r.BusinessId); return row ? `<a href="javascript:void 0" data-open="${m[0]}" data-id="${row.Id}">${esc(Store.label(m[0], row))}</a><span class="sub">dbo.${m[0]}</span>` : '<span class="muted">–</span>'; } }, { k: 'RequestedBy', label: 'Người yêu cầu', render: r => esc(Store.label('User', r.RequestedBy)) }, { k: 'RequestedAt', label: 'Gửi lúc' }, { k: 'step', label: 'Bước / Vai trò duyệt', col: false, nosort: true, render: r => { const st = Store.by('ApprovalStep', 'ApprovalRequestId', r.Id).sort((a, b) => a.StepNo - b.StepNo); return st.map(s => `<span class="tag ${s.DecisionStatus === 'Approved' ? 'green' : s.DecisionStatus === 'Rejected' ? 'red' : 'orange'}">${s.StepNo}. ${esc(s.ApproverRoleCode)}</span>`).join(' '); } }, { k: 'RequestStatus', label: 'Trạng thái' }],
-      actions: r => (mine.includes(r) ? `<button class="btn xs primary" data-ap="${r.Id}">Duyệt</button> <button class="btn xs danger" data-rj="${r.Id}">Từ chối</button>` : '') + (canCancel(r) ? ` <button class="btn xs" data-cc="${r.Id}">Hủy yêu cầu</button>` : ''),
+      actions: r => (mine.includes(r) ? `<button class="btn xs primary" data-ap="${r.Id}">Duyệt</button> <button class="btn xs danger" data-rj="${r.Id}">Từ chối</button>` : isOpen(r) && isSelf(r) ? SELF_TAG : '') + (canCancel(r) ? ` <button class="btn xs" data-cc="${r.Id}">Hủy yêu cầu</button>` : ''),
       after: t => { t.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => decide(b.dataset.ap, true)); t.querySelectorAll('[data-rj]').forEach(b => b.onclick = () => decide(b.dataset.rj, false)); t.querySelectorAll('[data-cc]').forEach(b => b.onclick = () => cancelReq(b.dataset.cc)); } });
   });
   function openReq(id, loaded) {
@@ -316,24 +346,25 @@
       top: proposalHtml(r) + `${UI.stepper(steps.map(s => ({ l: s.ApproverRoleCode, s: s.DecisionStatus })), steps.findIndex(s => s.DecisionStatus === 'Waiting') < 0 ? steps.length : steps.findIndex(s => s.DecisionStatus === 'Waiting'), steps.some(s => s.DecisionStatus === 'Rejected'))}${biz ? `<div class="card panel mt mb"><h3>${esc(Store.label(m[0], biz))}</h3>${UI.kvHtml(m[0], biz, Object.keys(biz).filter(k => !Store.AUDIT.has(k) && k !== 'Id' && !k.endsWith('Json')).slice(0, 10))}${m[0] === 'PurchaseRequest' ? `<table class="table dc-table dt mt"><thead><tr><th>Nguyên liệu</th><th class="num">SL</th></tr></thead><tbody>${Store.by('PurchaseRequestLine', 'PurchaseRequestId', biz.Id).map(l => `<tr><td>${esc(Store.label('Ingredient', l.IngredientId))}</td><td class="num">${U.num(l.Quantity)}</td></tr>`).join('')}</tbody></table>` : ''}<a class="btn sm mt" href="#/${m[4]}">Mở màn hình ${esc(APP.FN[m[4]].name)} →</a></div>` : ''}`,
       // Chế độ API: tab "Tiến trình duyệt" đọc ApprovalRequest/GetDetail (các cấp, người quyết định, hạn xử lý, quyền duyệt / hủy của tôi).
       tabs: (Store.isLive ? [{ label: 'Tiến trình duyệt', html: p => { loadApproval(id, p); return LOADING; } }] : []).concat([{ label: 'Quyết định', html: `<div class="timeline">${Store.by('ApprovalDecision', 'ApprovalRequestId', id).map(dc => `<div class="tl ${dc.DecisionCode === 'REJECT' ? 'red' : ''}"><b>${esc(dc.DecisionCode)} · ${esc(Store.label('User', dc.DecidedBy))}</b><small>${U.dt(dc.DecidedAt)} · ${esc(dc.Comment || '')}</small></div>`).join('') || '<div class="empty">Chưa có quyết định</div>'}</div>` }]),
-      foot: () => isOpen(r) ? `${Store.isLive && !!Store.user.id && r.RequestedBy === Store.user.id ? '<button class="btn" data-act="cx">Hủy yêu cầu</button>' : ''}<button class="btn danger" data-act="rj">Từ chối</button><button class="btn primary" data-act="ap">${I('approve')} Duyệt bước hiện tại</button>` : '',
+      // MENU-5 (D-79): chế độ API chỉ hiện Duyệt / Từ chối khi yêu cầu nằm trong "Chờ tôi duyệt" (người gửi không tự duyệt – máy chủ kiểm lại).
+      foot: () => isOpen(r) ? `${isSelf(r) ? '<button class="btn" data-act="cx">Hủy yêu cầu</button>' : ''}${!Store.isLive || (ws.mineIds && ws.mineIds.has(id)) ? `<button class="btn danger" data-act="rj">Từ chối</button><button class="btn primary" data-act="ap">${I('approve')} Duyệt bước hiện tại</button>` : isSelf(r) ? SELF_TAG : ''}` : '',
       onAct: (a, row, close) => { close(); if (a === 'cx') cancelReq(id); else decide(id, a === 'ap'); } });
   }
   const DECISION_VI = { APPROVE: 'Duyệt', REJECT: 'Từ chối', CANCEL: 'Hủy' };
-  function loadApproval(id, p) {
+  function loadApproval(id, p, closeBox) {
     Store.query('ApprovalRequest/GetDetail', { id }).then(x => {
       if (!p.isConnected) return;
       if (!x.ok || !x.data) { p.innerHTML = `<div class="empty">${esc(x.message || 'Không tải được chi tiết yêu cầu duyệt')}</div>`; return; }
       const d = x.data, steps = list(d.listStepInfo), decs = list(d.listDecision), b = d.business || {};
       p.innerHTML = (d.title ? `<h3 style="margin-top:0">${esc(d.title)}</h3>` : '') + kv([
-        ['Người gửi', esc(d.requestedByName || '')], ['Trạng thái', esc(d.statusName || '')],
+        ['Người gửi', esc(d.requestedByName || '') + (d.currentStepNo && !d.canDecide && Store.user.id && (d.request || {}).requestedBy === Store.user.id ? ' ' + SELF_TAG : '')], ['Trạng thái', esc(d.statusName || '')],
         ['Cấp duyệt', d.currentStepNo ? `${d.currentStepNo}/${d.stepCount || 1}` : `${d.stepCount || 1} cấp – đã kết thúc`],
         ['Hạn xử lý', d.dueAt ? esc(U.dt(d.dueAt)) + (d.isOverdue ? ' <span class="tag red">Quá hạn</span>' : '') : ''],
         b.label && ['Chứng từ', esc(b.label)]])
         + `<h3 class="mt">Các cấp duyệt</h3><div class="timeline">${steps.map(s => `<div class="tl ${['Rejected', 'Cancelled'].includes(s.decisionStatus) ? 'red' : s.decisionStatus === 'Approved' ? '' : 'orange'}"><b>${s.stepNo}. ${esc(s.stepName || '')} – ${esc(s.decisionStatusName || s.decisionStatus || '')}${s.isCurrent ? ' (đang chờ)' : ''}</b><small>${[s.approverName && esc(s.approverName), s.decidedAt && esc(U.dt(s.decidedAt)), !s.decidedAt && s.dueAt && 'hạn ' + esc(U.dt(s.dueAt)) + (s.isOverdue ? ' – quá hạn' : ''), s.decisionNote && esc(s.decisionNote)].filter(Boolean).join(' · ')}</small></div>`).join('') || '<div class="empty">Chưa có cấp duyệt</div>'}</div>`
         + `<h3 class="mt">Quyết định</h3><div class="timeline">${decs.map(it => { const dc = it.decision || {}; return `<div class="tl ${dc.decisionCode === 'REJECT' ? 'red' : ''}"><b>${esc(DECISION_VI[dc.decisionCode] || dc.decisionCode || '')} · ${esc(it.decidedByName || '')}</b><small>${esc(U.dt(dc.decidedAt))}${dc.comment ? ' · ' + esc(dc.comment) : ''}</small></div>`; }).join('') || '<div class="empty">Chưa có quyết định</div>'}</div>`
         + (d.canDecide || d.canCancel ? `<div class="row-flex mt">${d.canCancel ? '<button class="btn" data-x="cx">Hủy yêu cầu</button>' : ''}<span class="grow"></span>${d.canDecide ? `<button class="btn danger" data-x="rj">Từ chối</button><button class="btn primary" data-x="ap">${I('approve')} Duyệt</button>` : ''}</div>` : '');
-      p.querySelectorAll('[data-x]').forEach(bt => bt.onclick = () => { const a = bt.dataset.x; closeDrawerOf(p); if (a === 'cx') cancelReq(id); else decide(id, a === 'ap'); });
+      p.querySelectorAll('[data-x]').forEach(bt => bt.onclick = () => { const a = bt.dataset.x; closeDrawerOf(p); if (closeBox) closeBox(); if (a === 'cx') cancelReq(id); else decide(id, a === 'ap'); });
     });
   }
   function cancelReq(id) {
@@ -343,13 +374,16 @@
       { input: 'Lý do hủy', required: true, danger: true, ok: 'Hủy yêu cầu' });
   }
   function decide(id, ok) {
-    const r = Store.get('ApprovalRequest', id); const steps = Store.by('ApprovalStep', 'ApprovalRequestId', id).sort((a, b) => a.StepNo - b.StepNo);
+    // MENU-5 (D-79): người duyệt không có quyền Xem hộp chung chỉ có dữ liệu GetMyPending (mineInfo) – không tải lại bảng ApprovalRequest (403).
+    const only = Store.isLive && Store.perm('wf-inbox').approverOnly;
+    const r = (!only && Store.get('ApprovalRequest', id)) || mineInfo(id); if (!r) return;
     if (Store.isLive) {
       // ApprovalRequest/Decide: backend kiểm tra người duyệt của bước hiện tại, ghi quyết định và áp kết quả vào bản ghi nghiệp vụ.
       const biz = BT[r.BusinessType];
-      return UI.confirm(`${ok ? 'Duyệt' : 'Từ chối'} <b>${esc(r.RequestNo)}</b>`, note => Store.act('ApprovalRequest/Decide', { form: { Id: id, Approve: ok, Note: note }, tables: ['ApprovalRequest', 'ApprovalStep', 'ApprovalDecision', 'ApprovalItem'].concat(biz ? [biz[0]] : []) })
+      return UI.confirm(`${ok ? 'Duyệt' : 'Từ chối'} <b>${esc(r.RequestNo)}</b>`, note => Store.act('ApprovalRequest/Decide', { form: { Id: id, Approve: ok, Note: note }, tables: (only ? [] : ['ApprovalRequest', 'ApprovalStep', 'ApprovalDecision', 'ApprovalItem']).concat(biz ? [biz[0]] : []) })
         .then(x => { if (!x.ok) return; ws.mineIds = null; UI.toast(ok ? 'Đã duyệt' : 'Đã từ chối', ok ? 'ok' : 'warn'); APP.refresh(); }), { input: 'Ý kiến phê duyệt', required: !ok, ok: ok ? 'Duyệt' : 'Từ chối', danger: !ok });
     }
+    const steps = Store.by('ApprovalStep', 'ApprovalRequestId', id).sort((a, b) => a.StepNo - b.StepNo);
     const s = steps.find(x => x.DecisionStatus === 'Waiting'); if (!s) return;
     if (Store.user.group !== 'Quản trị hệ thống' && Store.user.group !== s.ApproverRoleCode) return UI.toast(`Bước ${s.StepNo} cần vai trò "${esc(s.ApproverRoleCode)}" – đổi vai trò bằng avatar góc phải`, 'err');
     UI.confirm(`${ok ? 'Duyệt' : 'Từ chối'} <b>${esc(r.RequestNo)}</b> – bước ${s.StepNo}/${steps.length} (${esc(s.ApproverRoleCode)})`, note => {

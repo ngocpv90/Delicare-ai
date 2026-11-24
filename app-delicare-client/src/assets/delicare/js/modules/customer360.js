@@ -140,7 +140,7 @@
     const cfg = infoCfg(d, id);
     box.innerHTML = `<div class="dc-two">${UI.infoPanel(cfg)}<div class="dc-col">${APP.D360.alertBox(d.listAlert)}
       <div class="dc-pair">
-        <div class="card panel"><div class="spread"><h3>Điểm giao và liên hệ</h3><div class="row-flex">${can('crm-location', 'add') ? `<button class="btn xs" data-add="CustomerDeliveryLocation">${I('plus')} Điểm giao</button>` : ''}${can('crm-contact', 'add') ? `<button class="btn xs" data-add="CustomerContact">${I('plus')} Liên hệ</button>` : ''}</div></div>
+        <div class="card panel"><div class="spread"><h3>Điểm giao và liên hệ</h3><div class="row-flex">${can('crm-location', 'add') ? `<button class="btn xs" data-add="CustomerDeliveryLocation">${I('plus')} Điểm giao</button>` : ''}${can('crm-customer', 'edit') || can('crm-contact', 'add') ? `<button class="btn xs" data-add="CustomerContact">${I('plus')} Liên hệ</button>` : ''}</div></div>
           <div class="dc-sub">Điểm giao (${locs.length})</div>${locHtml || '<div class="muted small">Chưa có điểm giao</div>'}
           <div class="dc-sub">Người liên hệ (${contacts.length})</div>${ctHtml || '<div class="muted small">Chưa có người liên hệ</div>'}</div>
         <div class="card panel">${contractHtml}</div>
