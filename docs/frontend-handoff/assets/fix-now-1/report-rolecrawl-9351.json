@@ -1,0 +1,22 @@
+{
+ "roles": {},
+ "admin": [],
+ "crawl": {
+  "OPS-KIT": {
+   "opened": 26,
+   "issues": [
+    "log-return-inspection → 403 DeliveryOrder/GetAllData"
+   ]
+  },
+  "OPS-PLAN": {
+   "opened": 38,
+   "issues": [
+    "qc-supplier-issue → 403 Person/GetAllData"
+   ]
+  },
+  "OPS-LOG": {
+   "opened": 16,
+   "issues": []
+  }
+ }
+}

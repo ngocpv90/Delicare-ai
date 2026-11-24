@@ -103,13 +103,8 @@
   }
   const legend = items => `<div class="chart-legend">${items.map(([c, l]) => `<span><i class="legend-dot" style="background:${c}"></i>${esc(l)}</span>`).join('')}</div>`;
 
-  // Đối soát: biểu đồ Đặt – Giao – Nhận 30 ngày gần nhất (BE3.1 mục 1)
-  extend('crm-reconciliation', el => panel(el, 'Đặt – Giao – Nhận theo ngày ăn', 'OrderReconciliation/GetList', { PageSize: 1 }, x => {
-    const d = x.data || {}, ch = d.chart || [];
-    const sc = d.statusCounts || {};
-    return `<div class="panel-head"><div><div class="panel-title">Đặt – Giao – Nhận theo ngày ăn</div><div class="panel-desc">${U.date(d.from)} → ${U.date(d.to)} · ${d.totalRecords || 0} bản đối soát${Object.keys(sc).length ? ' · ' + Object.entries(sc).map(([k, v]) => v + ' ' + esc(UI.statusVi('OrderReconciliation', 'Status', k) || k).toLowerCase()).join(' · ') : ''}</div></div></div>
-      ${ch.length ? UI.lines(ch.map(p => U.date(p.date).slice(0, 5)), [{ name: 'Đặt', role: 'order', values: ch.map(p => p.ordered || 0) }, { name: 'Giao', role: 'deliver', values: ch.map(p => p.delivered || 0) }, { name: 'Khách nhận', role: 'receive', values: ch.map(p => p.accepted || 0) }], { title: 'Đặt – Giao – Nhận theo ngày ăn', unit: 'suất' }) : '<div class="empty">Chưa có dữ liệu đối soát trong khoảng này</div>'}`;
-  }));
+  // CHART-1 (D-94): biểu đồ Đặt – Giao – Nhận của màn Đối soát nay vẽ trong khung 2 biểu đồ (modules/sales.js reconCharts) – bỏ khung trùng BE3.1.
+
 
   // Hao hụt suất ăn: tổng hợp 30 ngày theo loại / món / ca / ngày (BE3.1 mục 2)
   const ws = { by: 'wasteType' };

@@ -148,7 +148,7 @@ namespace AppDelicare.WebApi.Security
         {
             "Dish", "DishCategory", "Ingredient", "IngredientCategory", "UnitMeasure", "UnitConversion", "Supplier", "Customer", "CustomerDeliveryLocation",
             "Warehouse", "StorageZone", "StorageLocation", "Shift", "Position", "OrganizationUnit", "Company", "ProductionLine", "KitchenWorkstation", "Vehicle",
-            "Recipe", "Menu", "FoodSafetyChecklist", "ProductionStage", "Employee",
+            "Recipe", "Menu", "FoodSafetyChecklist", "ProductionStage", "Employee", "Person",
         };
 
         private static readonly Lazy<Dictionary<string, string[]>> LookupScreens = new(BuildLookupScreens);
@@ -209,8 +209,13 @@ namespace AppDelicare.WebApi.Security
                 string? own = ScreenMap.ByClass.TryGetValue(cls, out string? o) ? o : null;
                 result[cls] = [.. tables.Select(ScreenOfTable).OfType<string>().Where(s => s != own).Distinct().OrderBy(s => s, StringComparer.Ordinal)];
             }
-            // Tên người dùng (người tạo / phụ trách / người gửi) hiện ở mọi màn.
-            result["User"] = [.. ScreenMap.ByClass.Values.Where(s => s != ScreenMap.FallbackScreen && !s.StartsWith("dbx-", StringComparison.Ordinal) && s != "adm-user").Distinct().OrderBy(s => s, StringComparer.Ordinal)];
+            // Quan hệ 2 bậc qua chứng từ trung gian (quét theo vai trò trên DB dev): Kiểm tra khay hộp thu hồi → phiếu thu hồi → phiếu giao.
+            foreach (var (cls, extra) in new (string, string[])[] { ("DeliveryOrder", ["log-return-inspection"]), ("MaterialReservation", ["scm-issue"]) })
+            {
+                result[cls] = [.. (result.TryGetValue(cls, out var cur) ? cur : []).Concat(extra).Distinct().OrderBy(s => s, StringComparer.Ordinal)];
+            }
+            // Tên người dùng (người tạo / phụ trách / người gửi) hiện ở mọi màn – tên lấy từ Person nên Person cũng vậy.
+            result["User"] = result["Person"] = [.. ScreenMap.ByClass.Values.Where(s => s != ScreenMap.FallbackScreen && !s.StartsWith("dbx-", StringComparison.Ordinal) && s != "adm-user").Distinct().OrderBy(s => s, StringComparer.Ordinal)];
             return result;
         }
 
@@ -247,20 +252,28 @@ namespace AppDelicare.WebApi.Security
                 {
                     continue;
                 }
+                bool lookup = string.Equals(action.ActionName, "GetAllData", StringComparison.OrdinalIgnoreCase);
+                string[] lookupScreens = lookup ? [.. LookupScreensOf(controller.ControllerName)] : [];
                 object filter = SelfService.Contains(action.ActionName) ? new SkipPermissionAttribute()
                     : AdminActions.Contains(action.ActionName) ? new AdminOnlyAttribute()
-                    : hasParent && parent.WriteAsEdit ? ChildPermission(screen, ActionOf(action))
+                    // FIX-NOW-1: bảng con cũng mở GetAllData cho màn có bảng liên quan (vd Đơn giao hàng đọc điểm dừng của chuyến).
+                    : hasParent && parent.WriteAsEdit ? WithLookup(ChildPermission(screen, ActionOf(action)), lookupScreens)
                     : new PermissionAttribute(screen, ActionOf(action))
                     {
                         OrScreens = ActionOf(action) != PermissionAction.View ? []
-                            : [.. (ReadAlsoScreens.TryGetValue(controller.ControllerName, out var also) ? also : []),
-                               .. (string.Equals(action.ActionName, "GetAllData", StringComparison.OrdinalIgnoreCase) ? LookupScreensOf(controller.ControllerName) : [])],
+                            : [.. (ReadAlsoScreens.TryGetValue(controller.ControllerName, out var also) ? also : []), .. lookupScreens],
                     };
                 foreach (var selector in action.Selectors)
                 {
                     selector.EndpointMetadata.Add(filter);
                 }
             }
+        }
+
+        private static PermissionAttribute WithLookup(PermissionAttribute p, string[] screens)
+        {
+            return screens.Length == 0 || p.Action != PermissionAction.View ? p
+                : new PermissionAttribute(p.ScreenId, p.Action) { OrActions = p.OrActions, OrScreens = [.. p.OrScreens, .. screens], AndScreens = p.AndScreens };
         }
 
         /// <summary>MENU-4.3: ghi dòng con = sửa chứng từ cha (Thêm dòng: Sửa hoặc Thêm; Xóa dòng: Sửa hoặc Xóa).</summary>
