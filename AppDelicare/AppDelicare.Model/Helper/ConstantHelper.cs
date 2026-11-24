@@ -475,7 +475,7 @@
             public static readonly string ReceivingTempMissingWarning = "Cảnh báo: {0} ({1}) chưa có nhiệt độ nhận – bắt buộc đo trước khi kết luận QC";
             public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Phê duyệt › Đơn mua hàng (Giám đốc)\")";
             // T17 – sản xuất theo mẻ (P7)
-            public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất được tạo bằng MaterialRequirement/Calculate (KH- theo ngày sản xuất)";
+            public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất do hệ thống tự lập sau chốt đơn – dùng nút Lập / Tính lại ở màn 7 ngày tới (một kế hoạch mỗi ngày)";
             public static readonly string PlanUpdateBlocked = "Trạng thái / số / ngày kế hoạch chỉ đổi qua thao tác nghiệp vụ (Approve / Release) – dòng món sửa qua ProductionPlanLine khi kế hoạch còn Nháp";
             public static readonly string PlanNeedsLine = "Kế hoạch chưa có dòng món có số phần lớn hơn 0";
             public static readonly string PlanLineDraftOnly = "Chỉ sửa dòng kế hoạch khi kế hoạch ở trạng thái Nháp";
@@ -652,6 +652,12 @@
             public static readonly string RoutePlanNoVehicle = "Chọn ít nhất 1 xe để lập chuyến";
             public static readonly string RoutePlanNothing = "Không có đơn hàng / đơn giao nào của ngày {0} cần xếp chuyến";
             public static readonly string RoutePlanOverflow = "{0} ({1} suất) không vừa tải còn trống của xe nào – xếp vào xe {2} (vượt tải)";
+            public static readonly string PlanDaysRangeInvalid = "Đến ngày phải sau hoặc bằng Từ ngày";
+            public static readonly string PlanDaysRangeTooLong = "Chỉ xem tối đa 14 ngày một lần";
+            public static readonly string PlanRecalcReleased = "Đã lập {0}: đủ công thức và nguyên liệu → hệ thống tự duyệt và ra {1} lệnh sản xuất";
+            public static readonly string PlanRecalcHeld = "Đã lập {0} (Nháp) – hệ thống giữ lại, chưa tự duyệt: {1}";
+            public static readonly string PlanRecalcDraftOpen = "Đã lập {0} (Nháp) từ các đơn đã chốt. Còn {1} suất chưa chốt – kế hoạch tự tính lại khi chốt đơn {2}";
+            public static readonly string PlanRecalcDraft = "Đã lập {0} (Nháp) – mở kế hoạch để duyệt";
             public static readonly string PlanGenerateNoOrders = "Không có đơn Đã chốt nào của ngày {0} có thực đơn cho ngày đó (kế hoạch chính thức chỉ lấy đơn Đã chốt – số dự kiến xem ở Tính nhu cầu nguyên liệu)";
             public static readonly string PlanGenerateNotDraft = "Kế hoạch {0} đang {1} – không sinh lại được";
             public static readonly string PlanGenerateHasMrp = "Kế hoạch {0} đã tính nhu cầu nguyên liệu – tính lại bằng MaterialRequirement/Calculate";

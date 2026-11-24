@@ -337,8 +337,10 @@ namespace AppDelicare.Services.Implement
         private IQueryable<ProductionPlan> PlansOf(DateTime date, Guid? organizationUnitId)
         {
             DateTime next = date.AddDays(1);
+            // UI-6.23 (D-104): một kế hoạch / ngày – chi nhánh chỉ giới hạn kho khi tính tồn, không tách kế hoạch (tham số giữ cho tương thích).
+            _ = organizationUnitId;
             return _unitOfWork.ProductionPlanRepository.GetAll()
-                .Where(p => !p.IsDeleted && p.ProductionDate >= date && p.ProductionDate < next && p.OrganizationUnitId == organizationUnitId && p.ShiftId == null)
+                .Where(p => !p.IsDeleted && p.ProductionDate >= date && p.ProductionDate < next && p.OrganizationUnitId == null && p.ShiftId == null)
                 .OrderBy(p => p.CreatedDate);
         }
 
@@ -905,7 +907,7 @@ namespace AppDelicare.Services.Implement
                         PlanNo = planNumber,
                         ProductionDate = date,
                         PlanDate = now,
-                        OrganizationUnitId = unitId,
+                        OrganizationUnitId = null, // UI-6.23: một kế hoạch / ngày
                         Status = ProductionPlanStatus.Draft,
                     };
                     _unitOfWork.ProductionPlanRepository.Add(plan);

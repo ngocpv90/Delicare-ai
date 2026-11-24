@@ -417,3 +417,13 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Tổ trưởng bếp: 🍳 Mẻ cần làm → Bắt đầu → Nhiệt độ lõi (nút / gõ; < 70 °C bị báo) → Lưu mẫu → Xong mẻ (số suất điền sẵn) → trên web mẻ đổi trạng thái đúng.
 - [ ] QA: 🧽 Checklist trong 1 tin → Hoàn tất → web màn kết quả checklist có đủ dòng; lỗi trọng yếu → mẻ bị giữ / cảnh báo như web.
 - [ ] Người không có quyền màn Bếp / ATTP không thấy các chức năng này trên bot.
+
+## UI-6.23 – Kế hoạch sản xuất: 7 ngày tới, một kế hoạch / ngày (D-104)
+- [ ] Mở Sản xuất › Kế hoạch sản xuất → mặc định tab **7 ngày tới**, kỳ từ hôm nay; ◀ ▶ đổi 7 ngày; dải 4 bước + 4 chỉ số đúng số.
+- [ ] Không còn nút **Tạo mới**, hộp **Lập từ đơn hàng**, ô **Đơn vị**, dòng "GAP-C-04" (cả tab Danh sách kế hoạch).
+- [ ] Ngày chưa có kế hoạch nhưng có đơn chốt → **Lập trước**: còn đơn chưa chốt → kế hoạch Nháp (thông báo "Còn N suất chưa chốt…"), mở trang chi tiết kế hoạch.
+- [ ] Ngày mọi đơn đã chốt → **Tính lại**: đủ công thức + nguyên liệu → tự duyệt + ra lệnh (thông báo số lệnh); thiếu → Bị giữ lại kèm lý do.
+- [ ] Ngày **Bị giữ lại** → **Xem lý do**: bảng nguyên liệu Cần / Giữ được / Thiếu / Đang về; **Vẫn duyệt** (COO) → Đã duyệt → **Ra lệnh n ca**.
+- [ ] Gọi Generate 2 lần cho cùng ngày (kể cả gửi Đơn vị) → vẫn 1 kế hoạch.
+- [ ] Vai trò: OPS-PLAN thấy Lập / Tính lại / Ra lệnh, không có Vẫn duyệt; COO có Vẫn duyệt; OPS-KIT chỉ xem; Kinh doanh / Kế toán không mở được (403).
+- [ ] Điện thoại 390: bảng cuộn ngang, cột tên dòng đứng yên.

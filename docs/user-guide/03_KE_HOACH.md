@@ -176,18 +176,30 @@ Hệ thống tự xác định ngày, buổi, lựa chọn và **mọi đơn c�
 **Tự lập, tự phát hành (BIZ-2.4):** chốt đơn (job 20:00 hoặc nút **Chốt đơn theo ngày**) → hệ thống tự **lập kế hoạch → duyệt → phát hành** mọi ca có nhu cầu (lịch ngược, mẻ, giữ chỗ như phát hành tay) và tạo **phiếu xuất Nháp theo ca** cho kho (BIZ-2.5). **Không tự phát hành** (kế hoạch giữ Nháp, bot 🔴 báo Kế hoạch + COO kèm lý do) khi: kế hoạch đã **sửa tay**, món **chưa có công thức khóa**, **thiếu nguyên liệu** sau giữ chỗ, mẻ **không kịp giờ xuất bếp**. Kế hoạch đã duyệt / phát hành tay trước đó → hệ thống không lập lại. Ghi chú kế hoạch có dòng "Hệ thống tự …".
 **Đơn chốt muộn (D-78):** đơn được duyệt sửa / thêm sau giờ chốt hoặc đơn bù khi kế hoạch đã phát hành → hệ thống tự sinh **lệnh + mẻ bổ sung** gắn kế hoạch đó (nhãn 🔴 *Bổ sung sau chốt* / *Đơn bù*, xếp đầu ô trên bảng điều độ, không kịp lịch → bắt đầu ngay), giữ chỗ nguyên liệu và tạo phiếu xuất Nháp; bot báo Kế hoạch, bếp, điều phối.
 
-**Lập kế hoạch**
-1. **Lập từ đơn hàng** → chọn **Ngày sản xuất***, Đơn vị, Ghi chú → **Lập kế hoạch**.
-2. Hệ thống tổng hợp số phần từng món từ đơn **Đã xác nhận / Đã chốt** của ngày → kế hoạch **Nháp** `KS-…` (1 kế hoạch / ngày). Bấm lại sẽ tính lại kế hoạch Nháp; kế hoạch đã duyệt không đổi.
-   - Kế hoạch cũng được tạo khi bộ phận mua hàng / job 20:30 **Tính nhu cầu** (MRP).
+**Màn "7 ngày tới" (UI-6.23, D-104) – mở mặc định.** **Một kế hoạch mỗi ngày sản xuất** (không tách theo đơn vị – trước đây chọn Đơn vị sinh kế hoạch thứ 2 → nấu gấp đôi). Hệ thống tự lập, tự duyệt và ra lệnh sau chốt đơn; màn này chỉ cho thấy **ngày nào cần người bấm**.
+- Đầu màn: kỳ 7 ngày từ hôm nay, ◀ ▶ đổi 7 ngày, nút **7 ngày tới** quay về. Dải 4 bước **Chốt đơn → Lập kế hoạch → Duyệt → Ra lệnh SX theo ca**, mỗi bước ghi số việc và có nút cho ngày sớm nhất cần xử lý. 4 chỉ số: Suất đã chốt (7 ngày) · Suất chưa chốt · Ngày cần xử lý · Ca đã ra lệnh SX (x / y).
+- Bảng **ngày × dòng**: tiêu đề cột = ngày + nhãn (Đã ra lệnh · Đã duyệt · Nháp · Bị giữ lại · Chưa có kế hoạch · Chưa chốt đơn). Dòng **Việc cần làm** – mỗi ngày đúng 1 việc:
 
-**Duyệt:** dòng Nháp có **Duyệt** → xác nhận. Cần quyền "Phê duyệt › Kế hoạch sản xuất" (mặc định COO / CEO).
+  | Ngày đang… | Nút | Khi nào phải bấm |
+  |---|---|---|
+  | Bị giữ lại (hệ thống không tự duyệt) | **Xem lý do** | Luôn – xem nguyên liệu thiếu / món thiếu công thức khóa, rồi xử lý hoặc **Vẫn duyệt** |
+  | Nháp | **Tính lại** (chữ nhỏ "+N suất chốt sau lần lập") | Khi có đơn chốt thêm sau lần lập, hoặc kế hoạch lập trước giờ chốt |
+  | Đã duyệt, còn ca chưa ra lệnh | **Ra lệnh n ca** | Khi sẵn sàng nấu (thường sau khi hàng về) |
+  | Chưa có kế hoạch nhưng đã có đơn chốt | **Lập trước** (chữ nhỏ "Còn N suất chưa chốt") | Chỉ khi cần mua / chuẩn bị sớm hơn giờ chốt |
+  | Đã ra lệnh đủ ca | **Xem** | Không cần làm gì |
+  | Chưa có đơn chốt | chữ "Tự lập sau chốt 20:00" | Không cần làm gì |
 
-**Ra lệnh sản xuất:** dòng **Đã duyệt** chưa có lệnh → **Ra lệnh SX** → xác nhận → hệ thống sinh **lệnh sản xuất** + **mẻ nấu** theo ca và dây chuyền (lịch ngược từ giờ xuất bếp), chụp định lượng công thức và **giữ chỗ nguyên liệu** → chuyển sang màn Lệnh sản xuất. Đơn hàng của ngày → **Đang sản xuất**.
+  Nhóm dòng mở / gập: **Đơn hàng (suất)** – Đã chốt / Chưa chốt; **Kế hoạch theo ca (suất)** – mỗi ca một dòng, màu theo trạng thái ca (chú thích màu trên bảng); **Món · lệnh sản xuất** – số món, số lệnh SX. Cột cuối **Cả 7 ngày**. **Ô không sửa trực tiếp** (sửa tay làm hệ thống không tự ra lệnh – sửa ở trang chi tiết kế hoạch); bấm ô → **hộp chi tiết ngày** (số kế hoạch, suất, món, bảng ca; ngày bị giữ lại có lý do + bảng nguyên liệu thiếu: Cần · Giữ được · Thiếu · **Đang về** (đơn mua đang mở, ngày giao dự kiến) và nút **Mở tính nhu cầu nguyên liệu** · **Mở kế hoạch** · **Vẫn duyệt**).
+- **Lập / Tính lại:** máy chủ tự quyết – mọi đơn của ngày đã chốt → chạy đúng luồng tự động sau chốt (đủ công thức và nguyên liệu thì tự duyệt + ra lệnh; không đủ thì giữ Nháp kèm lý do); ngày còn đơn chưa chốt → chỉ lập **Nháp** (kế hoạch tự tính lại khi chốt 20:00). Còn Nháp → mở trang chi tiết kế hoạch.
+- **Vẫn duyệt** (quyền Duyệt "Phê duyệt › Kế hoạch sản xuất", mặc định COO / CEO): duyệt khi thiếu nguyên liệu – lệnh SX vẫn ra, phần thiếu kho giữ chỗ bổ sung khi hàng về.
+- Quyền: Xem màn = xem 7 ngày tới + hộp chi tiết; **Lập / Tính lại**, **Ra lệnh** cần quyền Sửa `prod-plan` (OPS-PLAN); **Vẫn duyệt** cần quyền Duyệt (COO). Bếp (OPS-KIT) chỉ xem.
+- Điện thoại: bảng cuộn ngang, cột tên dòng đứng yên.
+
+**Tab Danh sách kế hoạch:** Số kế hoạch, Ngày SX, Số món, Tổng suất, Số lệnh SX, Trạng thái. **Không có nút Tạo mới / Lập từ đơn hàng** (kế hoạch do hệ thống lập, mỗi ngày một bản – lập sớm bằng **Lập trước** ở 7 ngày tới). Dòng Nháp có **Duyệt** (người có quyền Duyệt); dòng **Đã duyệt** (còn ca chưa ra lệnh) có **Ra lệnh SX** → hệ thống sinh **lệnh sản xuất** + **mẻ nấu** theo ca và dây chuyền (lịch ngược từ giờ xuất bếp), chụp định lượng công thức và **giữ chỗ nguyên liệu**. Đơn hàng của ngày → **Đang sản xuất**.
+
+**Tab Nhật ký tự động:** các lần hệ thống tự lập / tự duyệt / ra lệnh / giữ lại trong 14 ngày (7 ngày trước + kỳ đang xem) – ngày, kế hoạch, trạng thái, việc hệ thống đã làm.
 
 **Xuất phiếu sản xuất:** nút xuất trên mỗi dòng → tải phiếu sản xuất.
-
-Danh sách: Số kế hoạch, Ngày SX, Ca, Đơn vị, Số món, Tổng suất, Số lệnh SX, Trạng thái.
 
 **Trang chi tiết (UI-6):** bấm 1 kế hoạch → trang `#/prod-plan-detail?id=…`: thanh bước Nháp → Đã duyệt → Đã phát hành → Hoàn thành; nút **Duyệt kế hoạch** (Nháp, người có quyền Duyệt), **Ra lệnh SX** (Đã duyệt), **Phiếu sản xuất**; 4 chỉ số Tổng suất, Ca đã phát hành, Lệnh SX (mẻ đạt), Giữ chỗ thiếu. Tổng quan có khối **Theo ca** và **Món & suất**; tab **Lệnh sản xuất**, **Mẻ** (bấm dòng → trang lệnh / mẻ), **Giữ chỗ nguyên liệu**. Kế hoạch hệ thống giữ Nháp *chờ COO duyệt* có tag **Chờ COO duyệt**, lý do, và tab **Duyệt**. "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
 
