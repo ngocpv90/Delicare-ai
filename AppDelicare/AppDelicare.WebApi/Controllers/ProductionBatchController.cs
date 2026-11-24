@@ -487,5 +487,42 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+        /// <summary>UI-6.25 (D-106): Xong mẻ một chạm (lõi + lưu mẫu + sản lượng + hao hụt + kết thúc + tự Đạt, tùy chọn bắt đầu mẻ kế tiếp cùng dây chuyền) – quyền Sửa prod-batch.</summary>
+        [HttpPost("Complete")]
+        public async Task<IActionResult> Complete([FromBody] AppDelicare.Model.Model.ProductionBatchCompleteRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.Complete(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Complete: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.25 (D-106): bắt đầu nhiều mẻ đến giờ (Cần làm ngay) – quyền Sửa prod-batch.</summary>
+        [HttpPost("StartMany")]
+        public async Task<IActionResult> StartMany([FromBody] AppDelicare.Model.Model.ProductionBatchStartManyRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.StartMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " StartMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

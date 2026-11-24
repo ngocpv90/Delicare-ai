@@ -144,6 +144,16 @@ namespace AppDelicare.Model.Model
         public bool SampleRetained { get; set; }
         /// <summary>Đã có phiếu xuất NL ghi sổ cho mẻ.</summary>
         public bool MaterialIssued { get; set; }
+        /// <summary>UI-6.25 (D-106): giờ lưu mẫu của món × ca (lệnh SX) – mẻ đầu lưu, các mẻ sau dùng lại.</summary>
+        public DateTime? SampleRetainedAt { get; set; }
+        public bool IsExtra { get; set; }
+        /// <summary>Trễ: quá giờ bắt đầu chưa nấu / quá giờ xong còn nấu / chờ QC quá ngưỡng (BusinessRules BatchLateStartMinutes, BatchQcWaitWarnMinutes).</summary>
+        public bool LateStart { get; set; }
+        public bool LateFinish { get; set; }
+        public bool QcWaitLong { get; set; }
+        public decimal? WasteMeals { get; set; }
+        /// <summary>Điều kiện còn thiếu để tự Đạt (chỉ mẻ Chờ QC).</summary>
+        public List<string> ListAutoPassMissing { get; set; } = [];
     }
 
     /// <summary>T17 (spec 8.3): bảng mẻ theo ngày + đếm theo trạng thái.</summary>
@@ -154,6 +164,33 @@ namespace AppDelicare.Model.Model
         public Dictionary<string, int> StatusCounts { get; set; } = [];
         public decimal PlannedPortions { get; set; }
         public decimal PassedPortions { get; set; }
+        /// <summary>UI-6.25 (D-106): giờ máy chủ (vạch "Bây giờ"), ngưỡng, ca của ngày (giờ xuất bếp, hạn xong nấu, tiến độ), dây chuyền có mẻ.</summary>
+        public DateTime Now { get; set; }
+        public decimal CoreTempMinC { get; set; }
+        public int BatchLateStartMinutes { get; set; }
+        public int BatchQcWaitWarnMinutes { get; set; }
+        public List<ProductionBoardShiftModel> ListShift { get; set; } = [];
+        public List<ProductionBoardLineModel> ListLine { get; set; } = [];
+    }
+
+    public class ProductionBoardShiftModel
+    {
+        public Guid ShiftId { get; set; }
+        public string? ShiftCode { get; set; }
+        public string? ShiftName { get; set; }
+        public TimeSpan? StartTime { get; set; }
+        public DateTime? DispatchAt { get; set; }
+        /// <summary>Hạn xong nấu = giờ xuất bếp − ProductionPackingMinutes.</summary>
+        public DateTime? CookDeadline { get; set; }
+        public int BatchTotal { get; set; }
+        public int BatchDone { get; set; }
+        public int LateCount { get; set; }
+    }
+
+    public class ProductionBoardLineModel
+    {
+        public Guid? Id { get; set; }
+        public string? Name { get; set; }
     }
 
     /// <summary>T17 (spec 8.3 batches/{id}): chi tiết mẻ – lệnh SX, nguyên liệu cần theo định lượng, phiếu xuất, nhiệt độ lõi, lưu mẫu, sản lượng, hao hụt.</summary>

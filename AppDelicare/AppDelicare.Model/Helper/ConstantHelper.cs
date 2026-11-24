@@ -547,6 +547,11 @@
             public static readonly string ReleaseNothingPending = "Mọi ca có nhu cầu của kế hoạch đã phát hành";
             public static readonly string ReleaseDispatchNeedsShift = "Giờ xuất bếp nhập tay chỉ dùng khi phát hành 1 ca – chọn ca (ShiftId); còn {0} ca chưa phát hành: {1}";
             public static readonly string ProductionCrudBlocked = "{0} {1}";
+            public static readonly string SampleAlreadyForDishShift = "Món này trong ca đã lưu mẫu lúc {0} (mẻ {1}) – không cần lưu lại";
+            public static readonly string BatchNextNotPlanned = "Mẻ kế tiếp không còn ở trạng thái Chờ nấu";
+            public static readonly string BatchNextOtherLine = "Mẻ kế tiếp phải cùng dây chuyền với mẻ vừa xong";
+            public static readonly string BatchNextStarted = "Đã bắt đầu mẻ {0}";
+            public static readonly string BatchStartManyDone = "Đã bắt đầu {0} mẻ, {1} mẻ không bắt đầu được";
             public static readonly string DishNoLineOneBatch = "Món {0} (nhóm {1}) chưa gán dây chuyền – nấu 1 mẻ";
             public static readonly string DishNoCategoryOneBatch = "Món {0} chưa có nhóm món nên chưa có dây chuyền – nấu 1 mẻ";
             public static readonly string DishLineInactive = "Dây chuyền {2} của nhóm {1} đã ngừng hoạt động – món {0} nấu 1 mẻ";

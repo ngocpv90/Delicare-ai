@@ -54,10 +54,15 @@ namespace AppDelicare.Tests.Delivery
                     new OrderLine { Id = Guid.NewGuid(), OrderId = orderB, MealType = "TRUA", ShiftId = shift, Quantity = 40, UnitPrice = 30_000, LineAmount = 1_200_000 });
                 db.Dish.Add(new Dish { Id = dish, Code = "MON" + code, Name = "Cơm gà " + code, Status = "Active" });
                 db.ProductionPlan.Add(new ProductionPlan { Id = plan, PlanNumber = "KH-" + code, PlanNo = "KH-" + code, ProductionDate = Day, PlanDate = Day.AddDays(-1), Status = "Released" });
+                // UI-6.25 (D-106): lưu mẫu theo món × ca (lệnh SX) – mẻ "chưa lưu mẫu" thuộc MÓN khác (lệnh khác) của cùng ca; mẻ thứ 3 cùng món với mẻ 1 dùng lại mẫu.
+                Guid dish2 = Guid.NewGuid(), productionOrder2 = Guid.NewGuid();
+                db.Dish.Add(new Dish { Id = dish2, Code = "MON2" + code, Name = "Canh " + code, Status = "Active" });
                 db.ProductionOrder.Add(new ProductionOrder { Id = productionOrder, ProductionPlanId = plan, DishId = dish, RecipeId = Guid.NewGuid(), ShiftId = shift, PlannedQty = 100, Status = "InProgress", ProductionOrderNumber = "PH-SX" + code, PlannedStartDate = Day.AddHours(7) });
+                db.ProductionOrder.Add(new ProductionOrder { Id = productionOrder2, ProductionPlanId = plan, DishId = dish2, RecipeId = Guid.NewGuid(), ShiftId = shift, PlannedQty = 50, Status = "InProgress", ProductionOrderNumber = "PH-SX2" + code, PlannedStartDate = Day.AddHours(8) });
                 db.ProductionBatch.AddRange(
                     new ProductionBatch { Id = b1, ProductionOrderId = productionOrder, DishId = dish, BatchNumber = $"ME-261221-{code}-01", BatchNo = $"ME-261221-{code}-01", StartDate = Day.AddHours(7), PlannedQuantity = 50, Status = "Packed", QcStatus = "PASS" },
-                    new ProductionBatch { Id = b2, ProductionOrderId = productionOrder, DishId = dish, BatchNumber = b2Number, BatchNo = b2Number, StartDate = Day.AddHours(8), PlannedQuantity = 50, Status = secondBatchStatus, QcStatus = "PASS" });
+                    new ProductionBatch { Id = Guid.NewGuid(), ProductionOrderId = productionOrder, DishId = dish, BatchNumber = $"ME-261221-{code}-03", BatchNo = $"ME-261221-{code}-03", StartDate = Day.AddHours(9), PlannedQuantity = 50, Status = "Packed", QcStatus = "PASS" },
+                    new ProductionBatch { Id = b2, ProductionOrderId = productionOrder2, DishId = dish2, BatchNumber = b2Number, BatchNo = b2Number, StartDate = Day.AddHours(8), PlannedQuantity = 50, Status = secondBatchStatus, QcStatus = "PASS" });
                 Guid item;
                 var existing = await db.FoodSafetyChecklistItem.FirstOrDefaultAsync(i => i.ItemCode == "SAMPLE_RETAINED");
                 if (existing == null)
@@ -111,6 +116,7 @@ namespace AppDelicare.Tests.Delivery
             do1.Should().MatchRegex(@"^GH-261221-\d{4}$");
             int.Parse(do2[^4..]).Should().Be(int.Parse(do1[^4..]) + 1);
             Warnings(route).Should().Contain(w => w!.Contains("chưa lưu mẫu") && w.Contains(s.BatchNoSampleNumber));
+            Warnings(route).Should().NotContain(w => w!.Contains($"ME-261221-{s.Code}-03"), "mẻ 3 cùng món × ca với mẻ đã lưu mẫu");
             // Đơn đã có chuyến không xếp lại được.
             (await CreateRoute(c, s, s.OrderA)).Fail("đã có chuyến");
 

@@ -450,6 +450,27 @@ namespace AppDelicare.Services.Implement
                 .FirstOrDefault();
         }
 
+        /// <summary>
+        /// UI-6.25 (D-106): lưu mẫu theo MÓN × CA = theo lệnh SX – lệnh đã có mẫu (mẻ bất kỳ của lệnh, kết quả PASS) → mọi mẻ của lệnh coi như đã lưu.
+        /// Trả lệnh → (giờ lưu sớm nhất, số mẻ đã lưu).
+        /// </summary>
+        public static async Task<Dictionary<Guid, (DateTime At, string? BatchNumber)>> OrderSamplesAsync(DatabaseContext db, IReadOnlyCollection<Guid> orderIds)
+        {
+            if (orderIds.Count == 0)
+            {
+                return [];
+            }
+            var ids = orderIds.Distinct().ToList();
+            var itemIds = await db.FoodSafetyChecklistItem.AsNoTracking().Where(i => i.ItemCode == ProductionCode.SampleRetainedItem).Select(i => i.Id).ToListAsync();
+            var rows = await (from r in db.FoodSafetyChecklistResult.AsNoTracking()
+                              join b in db.ProductionBatch.AsNoTracking() on r.ProductionBatchId equals b.Id
+                              where !r.IsDeleted && itemIds.Contains(r.ChecklistItemId) && r.ResultCode == ProductionCode.ResultPass && ids.Contains(b.ProductionOrderId)
+                              select new { b.ProductionOrderId, r.CheckedAt, Number = b.BatchNumber ?? b.BatchNo }).ToListAsync();
+            return rows.GroupBy(r => r.ProductionOrderId).ToDictionary(g => g.Key, g => { var f = g.OrderBy(x => x.CheckedAt).First(); return (f.CheckedAt, f.Number); });
+        }
+
+        public static async Task<bool> OrderSampledAsync(DatabaseContext db, Guid productionOrderId) => (await OrderSamplesAsync(db, [productionOrderId])).Count != 0;
+
         public static async Task<List<FoodSafetyChecklistResult>> SamplesAsync(DatabaseContext db, Guid batchId)
         {
             var itemIds = await db.FoodSafetyChecklistItem.AsNoTracking().Where(i => i.ItemCode == ProductionCode.SampleRetainedItem).Select(i => i.Id).ToListAsync();
@@ -474,7 +495,7 @@ namespace AppDelicare.Services.Implement
             {
                 blockers.Add(string.Format(ConstantHelper.Message.CoreTempBelow, Num(core.TemperatureC), Num(rules.CoreTempMinC)));
             }
-            if (rules.ProductionRequireSampleBeforeRelease && (await SamplesAsync(db, batch.Id)).Count == 0)
+            if (rules.ProductionRequireSampleBeforeRelease && !await OrderSampledAsync(db, batch.ProductionOrderId))
             {
                 blockers.Add(ConstantHelper.Message.SampleMissing);
             }
@@ -564,7 +585,7 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>Thông tin tóm tắt mẻ cho bảng điều độ: giờ kế hoạch / thực tế, nhiệt độ lõi gần nhất, lưu mẫu, đã xuất NL.</summary>
-        public static async Task<List<ProductionBatchBriefModel>> BatchBriefsAsync(DatabaseContext db, List<ProductionBatch> batches, BusinessRulesOptions rules)
+        public static async Task<List<ProductionBatchBriefModel>> BatchBriefsAsync(DatabaseContext db, List<ProductionBatch> batches, BusinessRulesOptions rules, DateTime? now = null)
         {
             var ids = batches.Select(b => b.Id).ToList();
             var orderIds = batches.Select(b => b.ProductionOrderId).Distinct().ToList();
@@ -578,10 +599,8 @@ namespace AppDelicare.Services.Implement
                     .ToListAsync())
                 .GroupBy(t => t.ProductionBatchId!.Value)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.MeasuredAt).ThenByDescending(t => t.CreatedDate).First());
-            var sampleItemIds = await db.FoodSafetyChecklistItem.AsNoTracking().Where(i => i.ItemCode == ProductionCode.SampleRetainedItem).Select(i => i.Id).ToListAsync();
-            var sampled = (await db.FoodSafetyChecklistResult.AsNoTracking()
-                    .Where(r => !r.IsDeleted && r.ProductionBatchId != null && ids.Contains(r.ProductionBatchId.Value) && sampleItemIds.Contains(r.ChecklistItemId) && r.ResultCode == ProductionCode.ResultPass)
-                    .Select(r => r.ProductionBatchId!.Value).ToListAsync()).ToHashSet();
+            // UI-6.25 (D-106): lưu mẫu theo món × ca (lệnh SX).
+            var sampled = await OrderSamplesAsync(db, orderIds);
             var issues = await db.MaterialIssue.AsNoTracking()
                 .Where(i => !i.IsDeleted && orderIds.Contains(i.ProductionOrderId) && i.Status == MaterialIssueStatus.Issued && i.Note != null)
                 .Select(i => new { i.ProductionOrderId, i.Note }).ToListAsync();
@@ -616,8 +635,14 @@ namespace AppDelicare.Services.Implement
                     QcStatus = b.QcStatus ?? b.QualityStatus,
                     LastCoreTemperatureC = core?.TemperatureC,
                     CoreTemperatureOk = core == null ? null : core.TemperatureC >= rules.CoreTempMinC,
-                    SampleRetained = sampled.Contains(b.Id),
+                    SampleRetained = sampled.ContainsKey(b.ProductionOrderId),
+                    SampleRetainedAt = sampled.TryGetValue(b.ProductionOrderId, out var smp) ? smp.At : null,
                     MaterialIssued = issues.Any(i => i.ProductionOrderId == b.ProductionOrderId && i.Note!.Contains(number)),
+                    IsExtra = order?.Note?.Contains("Nấu thêm " + number, StringComparison.Ordinal) == true,
+                    WasteMeals = b.WasteQty,
+                    LateStart = now is { } n1 && b.Status == ProductionBatchStatus.Planned && n1 > b.StartDate.AddMinutes(rules.BatchLateStartMinutes),
+                    LateFinish = now is { } n2 && b.Status == ProductionBatchStatus.Cooking && b.EndDate is { } pe && n2 > pe.AddMinutes(rules.BatchLateStartMinutes),
+                    QcWaitLong = now is { } n3 && b.Status == ProductionBatchStatus.QcPending && b.EndTime is { } et && n3 > et.AddMinutes(rules.BatchQcWaitWarnMinutes),
                 };
             }).OrderBy(b => b.PlannedStart).ThenBy(b => b.BatchNumber)];
         }
