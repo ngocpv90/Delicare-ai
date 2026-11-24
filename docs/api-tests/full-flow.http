@@ -321,6 +321,18 @@ Authorization: Bearer {{token}}
 ###
 @lineId = {{pl.response.body.listData[0].id}}
 
+### UI-6.26 (D-107): gán dây chuyền cho nhóm món của luồng – ra lệnh chia mẻ theo dây chuyền của nhóm món (không gửi ProductionLineId)
+# @expect data == 1
+POST {{base}}/api/DishCategory/AssignProductionLine
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "listItem": [ { "dishCategoryId": "{{dishCatId}}", "productionLineId": "{{lineId}}" } ] }
+
+### UI-6.26: màn Dây chuyền – dây chuyền + nhóm món đang gán
+GET {{base}}/api/ProductionLine/GetOverview
+Authorization: Bearer {{token}}
+
 ### 0.10 CHỐT AN TOÀN – lô bị chặn có sẵn: bò HẾT HẠN hôm qua 50 kg + bò QC KHONG_DAT 30 kg (MRP không tính, xuất kho bỏ qua)
 POST {{base}}/api/MaterialLot/Insert
 Authorization: Bearer {{token}}
@@ -847,11 +859,13 @@ Id={{planId}}&Note=[DEMO]
 # @expect data.listBatch length == 2
 # @expect data.listBatch[0].dishId == {{dishBeefId}}
 # @expect data.listBatch[0].batchNumber ~ ^ME-\d{6}-[A-Z0-9]+-\d{2}$
+# @expect data.listBatch[0].productionLineId == {{lineId}}
+# @expect data.listBatch[1].productionLineId == {{lineId}}
 POST {{base}}/api/ProductionPlan/Release
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Id={{planId}}&ProductionLineId={{lineId}}&Note=[DEMO]
+Id={{planId}}&Note=[DEMO] dây chuyền theo nhóm món (UI-6.26)
 
 ###
 @batch1 = {{rel.response.body.data.listBatch[0].id}}

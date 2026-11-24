@@ -17,5 +17,10 @@ namespace AppDelicare.Model.Entity
         public string? Note { get; set; }
         public Guid? ParentId { get; set; }
         public string? Description { get; set; }
+        /// <summary>
+        /// UI-6.26 (D-107, GAP-PRD-10 anh duyệt 2026-11-24) – cột thêm bằng migration <c>DB/migrations/20261124_01_dishcategory_productionline.sql</c> (không có trong DDL chuẩn docs/reference):
+        /// dây chuyền nấu các món của nhóm (tham chiếu logic → ProductionLine, không FK). Chạy lại CodeGen từ DDL chuẩn phải giữ thuộc tính này.
+        /// </summary>
+        public Guid? ProductionLineId { get; set; }
     }
 }

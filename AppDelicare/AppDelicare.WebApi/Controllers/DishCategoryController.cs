@@ -8,8 +8,9 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class DishCategoryController(IDishCategoryService service) : BaseController
+    public class DishCategoryController(IDishCategoryService service, IProductionLineSetupService setup) : BaseController
     {
+        private readonly IProductionLineSetupService _setup = setup;
         private readonly IDishCategoryService _service = service;
 
         [HttpGet("GetAll")]
@@ -123,6 +124,21 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAllData: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+        /// <summary>UI-6.26 (D-107): Gán nhanh dây chuyền cho nhiều nhóm món (một giao dịch). Quyền Sửa mục Dây chuyền & trạm bếp (prod-line).</summary>
+        [Security.Permission("prod-line", PermissionAction.Edit)]
+        [HttpPost("AssignProductionLine")]
+        public async Task<IActionResult> AssignProductionLine([FromBody] AppDelicare.Model.Model.DishCategoryAssignLineRequest request)
+        {
+            try
+            {
+                return Ok(await _setup.AssignProductionLine(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " AssignProductionLine: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

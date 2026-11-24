@@ -99,6 +99,9 @@ namespace AppDelicare.Services.Implement
                         string firstOrderNo = await _documentNumberService.NextAsync(DocumentKind.ProductionOrder, _clock.Today);
                         int orderIndex = 0;
                         int minutes = _rules.ProductionDefaultMinutesPerBatch;
+                        // UI-6.26 (D-107): cùng cách chọn dây chuyền theo nhóm món như Ra lệnh kế hoạch.
+                        var dishLines = await ProductionLineRules.ForDishesAsync(db, [.. mine.Select(m => m.DishId).Distinct()]);
+                        warnings.AddRange(mine.Select(m => dishLines.GetValueOrDefault(m.DishId)).Where(x => x?.Line == null && x?.Warning != null).Select(x => x!.Warning!).Distinct());
                         var planLines = _unitOfWork.ProductionPlanLineRepository.GetAll().Where(l => l.ProductionPlanId == plan.Id && !l.IsDeleted).ToList();
                         foreach (var byShift in mine.GroupBy(m => m.ShiftId))
                         {
@@ -115,17 +118,19 @@ namespace AppDelicare.Services.Implement
                             foreach (var item in byShift.OrderBy(m => dishNames.GetValueOrDefault(m.DishId)))
                             {
                                 var (recipe, snapshot) = recipes[item.DishId];
-                                var batches = ProductionRules.Schedule(item.Quantity, null, minutes, cookEnd);
+                                var itemLine = dishLines.GetValueOrDefault(item.DishId)?.Line;
+                                int itemMinutes = ProductionLineRules.Minutes(itemLine, minutes);
+                                var batches = ProductionRules.Schedule(item.Quantity, itemLine?.CapacityMealPerBatch, itemMinutes, cookEnd);
                                 if (batches.Min(b => b.Start) < now)
                                 {
                                     // Không kịp lịch ngược → ưu tiên bắt đầu ngay.
-                                    batches = ProductionRules.Schedule(item.Quantity, null, minutes, now.AddMinutes(minutes * batches.Count));
+                                    batches = ProductionRules.Schedule(item.Quantity, itemLine?.CapacityMealPerBatch, itemMinutes, now.AddMinutes(itemMinutes * batches.Count));
                                 }
                                 string number = ProductionRules.Increment(firstOrderNo, orderIndex++);
                                 var po = new ProductionOrder
                                 {
                                     Id = Guid.NewGuid(), ProductionOrderNumber = number, ProductionOrderNo = number, ProductionPlanId = plan.Id, DishId = item.DishId, RecipeId = recipe.Id,
-                                    ShiftId = shift.Id, PlannedQty = item.Quantity, Status = ProductionOrderStatus.Released,
+                                    ShiftId = shift.Id, ProductionLineId = itemLine?.Id, PlannedQty = item.Quantity, Status = ProductionOrderStatus.Released,
                                     PlannedStartDate = batches.Min(b => b.Start), StartTime = batches.Min(b => b.Start), EndTime = batches.Max(b => b.End), RecipeSnapshotJson = snapshot,
                                     Note = $"{tag} {label} – đơn {orderNo} – ca {shift.Code} – kế hoạch {result.PlanNumber}" + (string.IsNullOrWhiteSpace(reason) ? string.Empty : " – " + reason.Trim()),
                                 };

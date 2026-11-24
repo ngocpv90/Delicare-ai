@@ -269,6 +269,10 @@ namespace AppDelicare.Model.Model
         public string Status { get; set; } = "Active";
         public int ActiveCount { get; set; }
         public int TotalCount { get; set; }
+        /// <summary>UI-6.26 (D-107): dây chuyền nấu của nhóm món (chỉ nhóm món).</summary>
+        public Guid? ProductionLineId { get; set; }
+        public string? ProductionLineName { get; set; }
+        public bool ProductionLineInactive { get; set; }
     }
 
     /// <summary>UI-6.21: gợi ý loại bảo quản + đơn vị kho theo đa số nguyên liệu đang dùng cùng nhóm.</summary>

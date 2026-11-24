@@ -11,5 +11,7 @@ namespace AppDelicare.Model.Request
 		public string? Status { get; set; }
 		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
 		public string? Note { get; set; }
+		// T45R: cột bổ sung theo DDL 124 bảng (tools/AppDelicare.CodeGen --merge).
+		public Guid? ProductionLineId { get; set; }
 	}
 }

@@ -7,6 +7,7 @@ CREATE OR ALTER PROCEDURE [dbo].[uspDishCategory_GetAll] (
 	@SearchText NVARCHAR(MAX) = NULL
 	, @Status NVARCHAR(MAX) = NULL
 	, @ParentId UNIQUEIDENTIFIER = NULL
+	, @ProductionLineId UNIQUEIDENTIFIER = NULL
 	, @Code NVARCHAR(MAX) = NULL
 	, @Name NVARCHAR(MAX) = NULL
 	, @Description NVARCHAR(MAX) = NULL
@@ -31,12 +32,14 @@ BEGIN
 			, t.[Note]
 			, t.[ParentId]
 			, t.[Description]
+			, t.[ProductionLineId]
 			, t.[CreatedDate]
 		FROM [dbo].[DishCategorie] AS t
 		
 		WHERE (ISNULL(@SearchText, '') = '' OR t.[Code] LIKE CONCAT('%', @SearchText, '%') OR t.[Name] LIKE CONCAT('%', @SearchText, '%'))
 			AND (ISNULL(@Status, '') = '' OR t.[Status] = @Status)
 			AND (@ParentId IS NULL OR t.[ParentId] = @ParentId)
+			AND (@ProductionLineId IS NULL OR t.[ProductionLineId] = @ProductionLineId)
 			AND (ISNULL(@Code, '') = '' OR t.[Code] LIKE CONCAT('%', @Code, '%'))
 			AND (ISNULL(@Name, '') = '' OR t.[Name] LIKE CONCAT('%', @Name, '%'))
 			AND (ISNULL(@Description, '') = '' OR t.[Description] LIKE CONCAT('%', @Description, '%'))
@@ -58,6 +61,8 @@ BEGIN
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'parentId' THEN r.[ParentId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'description' THEN r.[Description] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'description' THEN r.[Description] END DESC,
+		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'productionLineId' THEN r.[ProductionLineId] END ASC,
+		CASE WHEN @SortOrder = 'descend' AND @SortField = 'productionLineId' THEN r.[ProductionLineId] END DESC,
 		CASE WHEN @SortOrder = 'ascend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END ASC,
 		CASE WHEN @SortOrder = 'descend' AND @SortField = 'createdDate' THEN r.[CreatedDate] END DESC,
 		r.[CreatedDate] DESC

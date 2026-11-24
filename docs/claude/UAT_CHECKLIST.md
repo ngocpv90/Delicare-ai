@@ -436,3 +436,10 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Trang lệnh: không có Tạo mới / Sửa chung; **Sửa** cạnh Phụ trách / Ghi chú lưu được (ô chọn nhân viên có tìm).
 - [ ] Thêm mới lệnh / mẻ bằng API → câu tiếng Việt "…Vào Kế hoạch sản xuất → chọn ngày → Ra lệnh."
 - [ ] Vai trò: OPS-PLAN thao tác lệnh được; OPS-KIT / COO / QA chỉ xem bảng & lệnh; Kinh doanh không mở được.
+
+## UI-6.26 – Dây chuyền bếp gắn theo nhóm món (D-107)
+- [ ] Màn Dây chuyền & trạm bếp → tab Dây chuyền: cột Công suất, Phút / mẻ, Nhóm món đang gán, Số món, Trạng thái; còn nhóm chưa gán → cảnh báo + **Gán nhanh** lưu được nhiều nhóm một lần.
+- [ ] Thêm dây chuyền (Tên, Công suất, Thời gian 1 mẻ, tick nhóm món) → mã DC-NNN tự sinh, nhóm được gán; bỏ tick → nhóm về "chưa gán". Dây chuyền Ngừng hoạt động không gán được.
+- [ ] Màn Món ăn: cột nhóm hiện dây chuyền của từng nhóm (cam = chưa gán); ⋯ → Gán dây chuyền; đổi tên nhóm không mất dây chuyền.
+- [ ] Ra lệnh kế hoạch có món của 2 nhóm / 2 dây chuyền: mỗi lệnh đúng dây chuyền, số mẻ = suất ÷ công suất (làm tròn lên), giờ mỗi mẻ theo phút / mẻ; món nhóm chưa gán → 1 mẻ + cảnh báo. Bảng mẻ không còn cột "Chưa gán dây chuyền" khi mọi nhóm đã gán.
+- [ ] Tab Bàn nấu: không còn tọa độ / bán kính; In QR bàn nấu vẫn in được.

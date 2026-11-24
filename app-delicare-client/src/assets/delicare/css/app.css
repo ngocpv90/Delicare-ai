@@ -818,6 +818,9 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .grp-it{position:relative;display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px}
 .grp-it:hover{background:#F4F7EF}.grp-it.on{background:var(--green-soft);font-weight:600;color:#3F5A17}
 .grp-it .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* UI-6.26 (D-107): dây chuyền của nhóm món + form dây chuyền */
+.grp-line{display:block;font-size:11px;font-weight:400;color:#6b756e;overflow:hidden;text-overflow:ellipsis}.grp-line.warn{color:#C2571A}
+.pl-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px}.pl-cat{display:flex;gap:6px;align-items:flex-start;font-size:13px;cursor:pointer}
 .grp-it .n{font-size:12px;color:var(--muted)}
 .grp-it.off .nm{text-decoration:line-through;color:#9aa39c}
 .grp-more{border:0;background:transparent;cursor:pointer;color:var(--muted);padding:0 4px;visibility:hidden}.grp-it:hover .grp-more{visibility:visible}

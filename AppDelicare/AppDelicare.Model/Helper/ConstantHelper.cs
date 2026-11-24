@@ -547,6 +547,14 @@
             public static readonly string ReleaseNothingPending = "Mọi ca có nhu cầu của kế hoạch đã phát hành";
             public static readonly string ReleaseDispatchNeedsShift = "Giờ xuất bếp nhập tay chỉ dùng khi phát hành 1 ca – chọn ca (ShiftId); còn {0} ca chưa phát hành: {1}";
             public static readonly string ProductionCrudBlocked = "{0} {1}";
+            public static readonly string DishNoLineOneBatch = "Món {0} (nhóm {1}) chưa gán dây chuyền – nấu 1 mẻ";
+            public static readonly string DishNoCategoryOneBatch = "Món {0} chưa có nhóm món nên chưa có dây chuyền – nấu 1 mẻ";
+            public static readonly string DishLineInactive = "Dây chuyền {2} của nhóm {1} đã ngừng hoạt động – món {0} nấu 1 mẻ";
+            public static readonly string ProductionLineInactiveAssign = "Dây chuyền {0} đã ngừng hoạt động – không gán cho nhóm món được";
+            public static readonly string ProductionLineNameRequired = "Nhập tên dây chuyền";
+            public static readonly string ProductionLineCapacityInvalid = "Công suất (suất / mẻ) và phút / mẻ phải lớn hơn 0";
+            public static readonly string DishCategoryNotFoundIds = "Không tìm thấy {0} nhóm món (đã xóa hoặc không tồn tại)";
+            public static readonly string DishCategoryLineAssigned = "Đã gán dây chuyền cho {0} nhóm món";
             public static readonly string ProductionOrderAutoClosed = "Lệnh {0} đã xong mọi mẻ – hệ thống tự đóng (tính chênh lệch tiêu hao, giá thành, trả nguyên liệu giữ chỗ dư)";
             public static readonly string ProductionOrderAutoCloseFailed = "Lệnh {0} đã xong mọi mẻ nhưng chưa tự đóng được: {1} – hệ thống thử lại cuối ngày";
             public static readonly string BatchNotFound = "Không tìm thấy mẻ nấu";
