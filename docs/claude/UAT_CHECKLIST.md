@@ -477,3 +477,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Kho & vị trí 3 tab; tab Vị trí kệ có "In QR vị trí kho". Xuất kho sản xuất tab Giữ chỗ nguyên liệu – thủ kho bấm được Giữ chỗ bổ sung.
 - [ ] Link cũ #/scm-lot, #/scm-inv-txn, #/scm-inv-policy, #/scm-zone, #/scm-location, #/scm-reservation, #/scm-consumption-var mở đúng màn / tab.
 - [ ] Sổ kiểm tra hàng nhập: gom theo ngày, lọc kỳ / kết quả / bảo quản / NCC / chỉ nhiệt độ ngoài ngưỡng, 4 chỉ số, ngăn chi tiết + "Lô này đã đi đâu", tab Theo nhà cung cấp, In sổ kiểm thực bước 1, Xuất Excel; không có nút Sửa / Xóa / Kết luận. Điện thoại: thẻ gọn.
+
+## UI-6.30 – Kiểm tra theo ca / mẻ (D-111)
+- [ ] Hôm nay: ◀ ▶ đổi ngày; 4 thẻ; ma trận Bộ × Ca đúng màu (quá hạn đỏ theo giờ xuất bếp), cột ca đang chạy tô nổi; không có bộ công đoạn / lưu mẫu / vệ sinh khay.
+- [ ] Bấm ô → form: mặc định Đạt, "Đạt tất cả" ghi một lượt; Không đạt bắt buộc khắc phục; ô giá trị đo chỉ ở tiêu chí có chuẩn.
+- [ ] Tiêu chí trọng yếu Không đạt: không chọn mẻ / không lý do → báo lỗi; chọn 2 mẻ → thông báo "Mẻ bị giữ"; mẻ Đạt chuyển Chờ QC; mẻ Đã đóng gói không xuất chuyến được; kiểm lại Đạt → mở chặn.
+- [ ] Bản ghi mới không gắn trạm bếp cố định (trạm theo mẻ hoặc trống).
+- [ ] Sổ kiểm tra: gom theo ngày, lọc kỳ / bộ / ca / kết quả / chỉ lỗi trọng yếu, nhãn "Kiểm lại", In sổ kiểm thực bước 2, Xuất Excel; không Sửa / Xóa. Tỷ lệ đạt: biểu đồ 30 ngày + tiêu chí hay Không đạt.
+- [ ] Quyền: uat.qa, uat.ops-kit ghi được; uat.coo chỉ xem (ô không bấm được); uat.ops-wh / uat.sal-sales không vào được. Bot gửi "⏰ Kiểm tra ATTP quá hạn" 1 tin / ca.

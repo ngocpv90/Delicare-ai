@@ -153,5 +153,50 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.30 (D-111): ma trận "Hôm nay" Bộ kiểm tra × Ca (quyền Xem qc-checklist-result).</summary>
+        [HttpGet("GetDayBoard")]
+        public async Task<IActionResult> GetDayBoard(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _service.GetDayBoard(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDayBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.30: Sổ kiểm tra – kiểm thực bước 2, chỉ xem.</summary>
+        [HttpGet("GetBook")]
+        public async Task<IActionResult> GetBook([FromQuery] AppDelicare.Model.Model.ChecklistBookRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetBook(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBook: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.30: tỷ lệ đạt theo bộ + tiêu chí hay Không đạt nhất.</summary>
+        [HttpGet("GetPassRate")]
+        public async Task<IActionResult> GetPassRate(DateTime? from, DateTime? to)
+        {
+            try
+            {
+                return Ok(await _service.GetPassRate(from, to));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetPassRate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

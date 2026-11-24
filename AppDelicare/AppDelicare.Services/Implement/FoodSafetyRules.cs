@@ -17,15 +17,15 @@ namespace AppDelicare.Services.Implement
         {
             if (string.Equals(code, ProductionCode.StageChecklist, StringComparison.OrdinalIgnoreCase))
             {
-                return "ProductionBatch/StartStage – FinishStage";
+                return "màn Mẻ nấu (bắt đầu / xong công đoạn)";
             }
             if (string.Equals(code, ProductionCode.BatchChecklist, StringComparison.OrdinalIgnoreCase))
             {
-                return "ProductionBatch/RecordSampleRetained (lưu mẫu), ProductionBatch/RecordCoreTemperature (nhiệt độ lõi)";
+                return "màn Mẻ nấu (lưu mẫu, nhiệt độ lõi)";
             }
             if (string.Equals(code, rules.CleaningChecklistCode, StringComparison.OrdinalIgnoreCase))
             {
-                return "CleaningBatch/RecordResults";
+                return "màn Vệ sinh khay hộp";
             }
             return null;
         }

@@ -43,7 +43,7 @@ namespace AppDelicare.Messaging.Presentation
             ["FOODSAFETY_CRITICAL"] = "🚨 Lỗi an toàn thực phẩm trọng yếu",
             ["FOOD_SAFETY_CRITICAL"] = "🚨 Lỗi an toàn thực phẩm trọng yếu",
             ["IOT_OUT_OF_RANGE"] = "🌡 Nhiệt độ ngoài ngưỡng",
-            ["CHECKLIST_DUE"] = "🧽 Checklist sắp đến hạn",
+            ["CHECKLIST_DUE"] = "⏰ Kiểm tra ATTP quá hạn",
             ["PLAN_READY"] = "📋 Kế hoạch đã lập – chờ duyệt",
             ["SHORTAGE_MRP"] = "⚠️ Thiếu nguyên liệu sau MRP",
             ["STOCK_LOW"] = "📦 Dưới tồn tối thiểu",

@@ -29,6 +29,11 @@ namespace AppDelicare.Model.Request.Custom
         /// <summary>Trạm bếp (KitchenWorkstation) nơi kiểm.</summary>
         public Guid? WorkstationId { get; set; }
         public List<ChecklistRecordItemRequest> ListItem { get; set; } = [];
+        /// <summary>UI-6.30 (D-111): mẻ bị ảnh hưởng khi có tiêu chí trọng yếu Không đạt ở lượt chung – mỗi mẻ bị giữ.</summary>
+        public List<Guid>? ListProductionBatchId { get; set; }
+        /// <summary>UI-6.30: lý do "không ảnh hưởng mẻ nào" (bắt buộc khi trọng yếu Không đạt mà không chọn mẻ).</summary>
+        [MaxLength(1000)]
+        public string? NoBatchReason { get; set; }
     }
 
     public class ChecklistRecordItemRequest

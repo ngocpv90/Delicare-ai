@@ -23,7 +23,7 @@ using AppDelicare.Services.Implement.Messaging;
 
 namespace AppDelicare.Services.Implement
 {
-    public class FoodSafetyChecklistResultService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+    public partial class FoodSafetyChecklistResultService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
         , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IFoodSafetyChecklistResultService
     {
         private readonly INotificationService _notifications = notifications; // BOT-1.7
@@ -147,8 +147,8 @@ namespace AppDelicare.Services.Implement
 
         private static Task<string> Delete(Guid? id, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private static string CrudBlocked => string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Kết quả checklist ATTP",
-            "FoodSafetyChecklistResult/Record (kiểm lại = ghi lần mới) hoặc thao tác của mẻ (lưu mẫu, công đoạn)");
+        private static string CrudBlocked => string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Kết quả kiểm tra ATTP",
+            "màn Kiểm tra theo ca / mẻ (kiểm lại = ghi lần mới) hoặc màn Mẻ nấu (lưu mẫu, công đoạn)");
 
         public async Task<IResult<FoodSafetyChecklistResult>> GetById(Guid id)
         {
@@ -387,8 +387,68 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(string.Format(ConstantHelper.Message.ChecklistRequiredMissing, string.Join(", ", missing)));
                 }
+                // UI-6.30 (D-111): tiêu chí trọng yếu Không đạt ở lượt chung (không gắn mẻ) → bắt buộc chọn mẻ bị ảnh hưởng, hoặc lý do "không ảnh hưởng mẻ nào".
+                var criticalRows = rows.Where(r => r.Item.IsCritical && r.Code == FoodSafetyCode.ResultFail).ToList();
+                var affectedIds = (request.ListProductionBatchId ?? []).Where(x => x != Guid.Empty && x != batchInfo?.Id).Distinct().ToList();
+                string? noBatchReason = FoodSafetyRules.Clean(request.NoBatchReason);
+                var affected = new List<ProductionBatch>();
+                if (criticalRows.Count != 0 && _rules.FoodSafetyCriticalFailHoldsBatch)
+                {
+                    if (batchInfo == null && affectedIds.Count == 0 && noBatchReason == null)
+                    {
+                        return Fail(ConstantHelper.Message.CriticalFailChooseBatch);
+                    }
+                    foreach (Guid id in affectedIds)
+                    {
+                        var b = _unitOfWork.ProductionBatchRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
+                        if (b == null)
+                        {
+                            return Fail(ConstantHelper.Message.BatchNotFound);
+                        }
+                        if (b.Status == ProductionBatchStatus.Cancelled)
+                        {
+                            return Fail(string.Format(ConstantHelper.Message.ChecklistBatchClosed, b.BatchNumber ?? b.BatchNo));
+                        }
+                        affected.Add(b);
+                    }
+                }
                 foreach (var (item, code, input) in rows)
                 {
+                    string? corrective = FoodSafetyRules.Clean(input.CorrectiveAction);
+                    if (code == FoodSafetyCode.ResultFail && item.IsCritical && batchInfo == null && affected.Count == 0 && noBatchReason != null)
+                    {
+                        corrective = PurchasingRules.AppendNote(corrective, "Không ảnh hưởng mẻ nào: " + noBatchReason);
+                    }
+                    DateTime checkedAt = FoodSafetyRules.NextCheckedAt(now, existing.GetValueOrDefault(item.Id)?.CheckedAt);
+                    // Mẻ bị ảnh hưởng: mỗi mẻ một dòng Không đạt gắn mẻ (chặn đạt QC / đóng gói / xuất chuyến – OpenCriticalFailuresAsync); không thêm cột.
+                    if (code == FoodSafetyCode.ResultFail && item.IsCritical)
+                    {
+                        foreach (var b in affected)
+                        {
+                            _unitOfWork.FoodSafetyChecklistResultRepository.Add(new FoodSafetyChecklistResult
+                            {
+                                Id = Guid.NewGuid(), ChecklistId = checklist.Id, ChecklistItemId = item.Id, CheckDate = date, ShiftId = shiftId, ProductionBatchId = b.Id,
+                                WorkstationId = b.KitchenWorkstationId, ResultCode = code, ActualValue = FoodSafetyRules.Clean(input.ActualValue), CheckedBy = actor.UserId,
+                                CheckedAt = checkedAt, CorrectiveAction = corrective, EvidenceUrl = FoodSafetyRules.Clean(input.EvidenceUrl),
+                            });
+                        }
+                    }
+                    // Kiểm lại Đạt ở lượt chung → mẻ đang bị giữ vì tiêu chí này (cùng bộ, ngày, ca) cũng được ghi Đạt (mở chặn).
+                    if (code == FoodSafetyCode.ResultPass && item.IsCritical && batchInfo == null)
+                    {
+                        var heldRows = await db.FoodSafetyChecklistResult.AsNoTracking()
+                            .Where(r => !r.IsDeleted && r.ChecklistId == checklist.Id && r.ChecklistItemId == item.Id && r.CheckDate == date && r.ShiftId == shiftId && r.ProductionBatchId != null)
+                            .OrderBy(r => r.CheckedAt).ThenBy(r => r.CreatedDate).Select(r => new { r.ProductionBatchId, r.ResultCode, r.WorkstationId }).ToListAsync();
+                        foreach (var h in heldRows.GroupBy(r => r.ProductionBatchId).Select(g => g.Last()).Where(r => r.ResultCode == FoodSafetyCode.ResultFail))
+                        {
+                            _unitOfWork.FoodSafetyChecklistResultRepository.Add(new FoodSafetyChecklistResult
+                            {
+                                Id = Guid.NewGuid(), ChecklistId = checklist.Id, ChecklistItemId = item.Id, CheckDate = date, ShiftId = shiftId, ProductionBatchId = h.ProductionBatchId,
+                                WorkstationId = h.WorkstationId, ResultCode = code, ActualValue = FoodSafetyRules.Clean(input.ActualValue), CheckedBy = actor.UserId,
+                                CheckedAt = checkedAt, CorrectiveAction = corrective, EvidenceUrl = FoodSafetyRules.Clean(input.EvidenceUrl),
+                            });
+                        }
+                    }
                     _unitOfWork.FoodSafetyChecklistResultRepository.Add(new FoodSafetyChecklistResult
                     {
                         Id = Guid.NewGuid(),
@@ -401,8 +461,8 @@ namespace AppDelicare.Services.Implement
                         ResultCode = code,
                         ActualValue = FoodSafetyRules.Clean(input.ActualValue),
                         CheckedBy = actor.UserId,
-                        CheckedAt = FoodSafetyRules.NextCheckedAt(now, existing.GetValueOrDefault(item.Id)?.CheckedAt),
-                        CorrectiveAction = FoodSafetyRules.Clean(input.CorrectiveAction),
+                        CheckedAt = checkedAt,
+                        CorrectiveAction = corrective,
                         EvidenceUrl = FoodSafetyRules.Clean(input.EvidenceUrl),
                     });
                 }
@@ -420,9 +480,20 @@ namespace AppDelicare.Services.Implement
                         batchAction = HoldBatch(batch);
                         model.ListWarning.Add(string.Format(ConstantHelper.Message.CriticalFailHoldBatch, batchNumber, names, batchAction));
                     }
-                    else
+                    else if (affected.Count == 0)
                     {
                         model.ListWarning.Add(string.Format(ConstantHelper.Message.CriticalFailNoBatch, names) + (batchNumber == null ? string.Empty : " (mẻ " + batchNumber + ")"));
+                    }
+                    foreach (var b in affected)
+                    {
+                        string act = HoldBatch(b);
+                        string no = b.BatchNumber ?? b.BatchNo ?? string.Empty;
+                        model.ListWarning.Add(string.Format(ConstantHelper.Message.CriticalFailHoldBatch, no, names, act));
+                        model.ListHeldBatch.Add(no + " – " + act);
+                    }
+                    if (batchInfo != null && batchAction != null)
+                    {
+                        model.ListHeldBatch.Insert(0, batchNumber + " – " + batchAction);
                     }
                     model.ListWarning.Add(ConstantHelper.Message.CriticalFailAlertLater);
                 }
@@ -446,7 +517,7 @@ namespace AppDelicare.Services.Implement
                         new
                         {
                             title = checklist.Name ?? checklist.Code,
-                            detail = batchNumber == null ? null : $"Mẻ {batchNumber}" + (string.IsNullOrEmpty(batchAction) ? string.Empty : ": " + batchAction),
+                            detail = model.ListHeldBatch.Count != 0 ? "Mẻ bị giữ: " + string.Join("; ", model.ListHeldBatch) : batchNumber == null ? null : $"Mẻ {batchNumber}" + (string.IsNullOrEmpty(batchAction) ? string.Empty : ": " + batchAction),
                             lines = critical.Select(r => "❗ " + (r.Item.ItemName ?? r.Item.ItemCode) + (FoodSafetyRules.Clean(r.Input.ActualValue) is { } v ? ": " + v : string.Empty)).ToList(),
                         },
                         $"{NotificationCatalog.FoodSafetyCritical}:{checklist.Id:N}:{batchInfo?.Id:N}:{string.Join(".", critical.Select(r => r.Item.Id.ToString("N")[..6]))}:{_clock.Now:yyyyMMddHHmm}",

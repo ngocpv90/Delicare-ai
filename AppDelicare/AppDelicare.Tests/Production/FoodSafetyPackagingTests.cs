@@ -94,14 +94,14 @@ namespace AppDelicare.Tests.Production
                 new { itemCode = "CAM_QUAN", resultCode = "FAIL" }, new { itemCode = "TRONG_LUONG_SUAT", resultCode = "PASS" }, new { itemCode = "LUU_MAU_KY", resultCode = "PASS" } } }))
                 .Fail("bắt buộc ghi hành động khắc phục");
             (await PostJson(c, "/api/FoodSafetyChecklistResult/Record", new { checklistId = s.Checklist, listItem = new[] { new { itemCode = "CAM_QUAN", resultCode = "MAYBE" } } }))
-                .Fail("phải là PASS hoặc FAIL");
+                .Fail("phải là Đạt hoặc Không đạt");
             Guid stage = await _factory.QueryAsync(db => db.FoodSafetyChecklist.Where(x => x.Code == "PRD_STAGE").Select(x => x.Id).FirstOrDefaultAsync());
             if (stage == Guid.Empty)
             {
                 await _factory.SeedAsync(db => { stage = AddChecklist(db, "PRD_STAGE", ("SO_CHE", "Sơ chế", false, true)); return Task.CompletedTask; });
             }
             (await PostJson(c, "/api/FoodSafetyChecklistResult/Record", new { checklistId = stage, productionBatchId = s.Batch,
-                listItem = new[] { new { itemCode = "SO_CHE", resultCode = "PASS" } } })).Fail("ProductionBatch/StartStage");
+                listItem = new[] { new { itemCode = "SO_CHE", resultCode = "PASS" } } })).Fail("màn Mẻ nấu");
 
             // Cảm quan KHÔNG ĐẠT (trọng yếu) → mẻ Đạt → Chờ QC, tạm giữ; trả criticalFailures; cảnh báo Telegram để R2.
             var recorded = (await PostJson(c, "/api/FoodSafetyChecklistResult/Record", new { checklistId = s.Checklist, productionBatchId = s.Batch, listItem = new object[] {
@@ -140,7 +140,7 @@ namespace AppDelicare.Tests.Production
 
             // CRUD kết quả checklist bị chặn (bằng chứng ATTP).
             (await c.PostFormAsync("/api/FoodSafetyChecklistResult/Insert", ("ChecklistId", s.Checklist), ("ChecklistItemId", Guid.NewGuid()), ("CheckDate", Day), ("ResultCode", "PASS")))
-                .Fail("FoodSafetyChecklistResult/Record");
+                .Fail("màn Kiểm tra theo ca / mẻ");
         }
 
         [Fact]
@@ -160,8 +160,10 @@ namespace AppDelicare.Tests.Production
             run.GetProperty("dueAt").GetDateTime().Should().Be(Day.AddHours(7));
             run.GetProperty("isOverdue").GetBoolean().Should().BeTrue();
             run.GetProperty("requiredCount").GetInt32().Should().Be(1);
-            // Tiêu chí không bắt buộc không cần ghi; FAIL trọng yếu không gắn mẻ → chỉ cảnh báo QA.
-            var noBatch = (await PostJson(c, "/api/FoodSafetyChecklistResult/Record", new { checklistId = prep, shiftId = s.Shift,
+            // Tiêu chí không bắt buộc không cần ghi; FAIL trọng yếu không gắn mẻ → UI-6.30 (D-111): bắt buộc chọn mẻ hoặc lý do "không ảnh hưởng mẻ nào".
+            (await PostJson(c, "/api/FoodSafetyChecklistResult/Record", new { checklistId = prep, shiftId = s.Shift,
+                listItem = new[] { new { itemCode = "NGUYEN_LIEU_DUNG_LO", resultCode = "FAIL", correctiveAction = "Đổi lô gà còn hạn" } } })).Fail("chọn mẻ bị ảnh hưởng");
+            var noBatch = (await PostJson(c, "/api/FoodSafetyChecklistResult/Record", new { checklistId = prep, shiftId = s.Shift, noBatchReason = "Lô gà chưa đưa vào nấu",
                 listItem = new[] { new { itemCode = "NGUYEN_LIEU_DUNG_LO", resultCode = "FAIL", correctiveAction = "Đổi lô gà còn hạn" } } })).Ok();
             Warnings(noBatch).Should().Contain(w => w!.StartsWith("Tiêu chí trọng yếu KHÔNG ĐẠT: Nguyên liệu đúng lô"));
             noBatch.GetProperty("run").GetProperty("isOverdue").GetBoolean().Should().BeFalse("đã đủ tiêu chí bắt buộc");

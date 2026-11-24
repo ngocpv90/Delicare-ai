@@ -20,5 +20,13 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<ChecklistRunModel>> GetRun(ChecklistRunRequest request);
         /// <summary>BE2.5 (Catalog 162): ghi kết quả checklist + lỗi trọng yếu.</summary>
         public Task<IResult<ChecklistRecordModel>> Record(ChecklistRecordRequest request);
+        /// <summary>UI-6.30 (D-111): ma trận Bộ kiểm tra × Ca của ngày.</summary>
+        public Task<IResult<ChecklistDayBoardModel>> GetDayBoard(DateTime? date);
+        /// <summary>UI-6.30: Sổ kiểm tra (kiểm thực bước 2) – chỉ xem.</summary>
+        public Task<IResult<ChecklistBookModel>> GetBook(ChecklistBookRequest request);
+        /// <summary>UI-6.30: tỷ lệ đạt theo bộ × ngày + tiêu chí hay Không đạt nhất.</summary>
+        public Task<IResult<ChecklistPassRateReportModel>> GetPassRate(DateTime? from, DateTime? to);
+        /// <summary>UI-6.30: tin bot gộp theo ca cho lượt kiểm tra quá hạn (BotWatch) – trả số tin đã xếp.</summary>
+        public Task<int> RemindOverdueAsync(DateTime now);
     }
 }

@@ -925,10 +925,11 @@
             // BE2.5 – ATTP, vệ sinh, hộp / khay
             public static readonly string ChecklistNotFound = "Không tìm thấy bộ checklist";
             public static readonly string ChecklistInactive = "Bộ checklist {0} không áp dụng ngày {1} (Ngừng hoặc ngoài thời gian hiệu lực)";
-            public static readonly string ChecklistViaAction = "Bộ checklist {0} ghi qua thao tác riêng: {1}";
+            public static readonly string ChecklistViaAction = "Bộ kiểm tra {0} ghi ở {1}";
+            public static readonly string CriticalFailChooseBatch = "Có tiêu chí trọng yếu Không đạt – chọn mẻ bị ảnh hưởng (mẻ sẽ bị giữ) hoặc ghi lý do không ảnh hưởng mẻ nào";
             public static readonly string ChecklistItemNotInChecklist = "Tiêu chí {0} không thuộc bộ checklist {1}";
             public static readonly string ChecklistItemDuplicate = "Tiêu chí {0} có 2 kết quả trong cùng lần ghi";
-            public static readonly string ChecklistResultInvalid = "Kết quả tiêu chí {0} phải là PASS hoặc FAIL";
+            public static readonly string ChecklistResultInvalid = "Kết quả tiêu chí {0} phải là Đạt hoặc Không đạt";
             public static readonly string ChecklistFailNeedsCorrective = "Tiêu chí {0} KHÔNG ĐẠT – bắt buộc ghi hành động khắc phục";
             public static readonly string ChecklistRequiredMissing = "Tiêu chí bắt buộc chưa có kết quả: {0}";
             public static readonly string ChecklistNoItems = "Chưa có kết quả tiêu chí nào để ghi";

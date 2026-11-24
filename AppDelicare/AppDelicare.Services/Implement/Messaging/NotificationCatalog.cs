@@ -84,7 +84,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(CoreTempLow, X, Urgent, "Nhiệt độ lõi < 70 °C – trưởng ca, QA, bếp trưởng"),
             new(FoodSafetyCritical, C, Urgent, "Lỗi trọng yếu checklist ATTP – QA, trưởng ca, bếp trưởng, COO"),
             new(IotOutOfRange, D, Urgent, "Nhiệt độ kho / khu ngoài ngưỡng (IoT) – QA, thủ kho"),
-            new(ChecklistDue, D, Normal, "Checklist sắp đến hạn – trưởng ca"),
+            new(ChecklistDue, D, Normal, "Kiểm tra ATTP theo ca quá hạn – trưởng ca, QA"),
             new(PlanReady, X, Normal, "Khóa đơn → kế hoạch / lịch xe chờ duyệt"),
             new(ShortageMrp, X, Normal, "Thiếu nguyên liệu sau MRP – mua hàng, thủ kho"),
             new(StockLow, D, Normal, "Dưới tồn tối thiểu – thủ kho"),
