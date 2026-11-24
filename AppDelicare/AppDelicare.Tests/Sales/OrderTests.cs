@@ -49,7 +49,7 @@ namespace AppDelicare.Tests.Sales
                 db.ContractMeal.AddRange(
                     new ContractMeal { Id = trua, ContractId = contract, MealType = "TRUA", MealName = "Suất trưa", UnitPrice = 40000 },
                     new ContractMeal { Id = sang, ContractId = contract, MealType = "SANG", MealName = "Suất sáng", UnitPrice = 20000 });
-                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-" + code, Name = "Thực đơn " + code, VersionNo = 1, Status = "Published", EffectiveFrom = new DateTime(2026, 12, 1) });
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-" + code, Name = "Thực đơn " + code, VersionNo = 1, Status = "Published", MenuType = "COMMON" /* UI-6.12 (D-90): mọi khách dùng thực đơn chung */, EffectiveFrom = new DateTime(2026, 12, 1) });
                 db.MenuAssignment.Add(new MenuAssignment { Id = Guid.NewGuid(), CustomerId = customer, MenuId = menu, MealType = "TRUA", Status = "Active", EffectiveFrom = new DateTime(2026, 12, 1) });
             });
             return new Scenario(customer, locA, locB, contract, trua, sang, menu);

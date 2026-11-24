@@ -293,7 +293,17 @@ namespace AppDelicare.Services.Implement
             => ResolveAsync(_unitOfWork.DbContext, customerId, deliveryLocationId, mealType, date);
 
         /// <summary>BIZ-1.3: bản dùng chung (tính nhu cầu nhiều ngày lấy thực đơn cho dự báo) – cùng quy tắc như trên.</summary>
+        /// <remarks>UI-6.12 (D-90, anh chốt 2026-11-23): KHÔNG áp dụng thực đơn riêng cho từng khách – mọi khách dùng thực đơn chung Đã công bố hiệu lực tại ngày ăn.
+        /// Dữ liệu MenuAssignment cũ giữ nguyên, không đọc nữa (cờ <paramref name="customerId"/> / <paramref name="deliveryLocationId"/> giữ chữ ký cho nơi gọi).</remarks>
         public static async Task<MenuResolveModel?> ResolveAsync(DatabaseContext db, Guid customerId, Guid? deliveryLocationId, string? mealType, DateTime date)
+        {
+            DateTime day = date.Date;
+            var only = await CommonMenuAsync(db, mealType, day);
+            return only == null ? null : new MenuResolveModel { MenuId = only.Id, MenuCode = only.Code, MenuName = only.Name, Level = "COMMON" };
+        }
+
+        /// <summary>Bản cũ (ORD-OPT-1.2 – phân công theo điểm giao / khách trước thực đơn chung) – không còn dùng từ UI-6.12 (D-90), giữ để tra lịch sử.</summary>
+        public static async Task<MenuResolveModel?> ResolveWithAssignmentAsync(DatabaseContext db, Guid customerId, Guid? deliveryLocationId, string? mealType, DateTime date)
         {
             DateTime day = date.Date;
             var rows = await (from a in db.MenuAssignment.AsNoTracking()

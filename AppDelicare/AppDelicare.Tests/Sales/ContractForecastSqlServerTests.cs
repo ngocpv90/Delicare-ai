@@ -40,7 +40,7 @@ namespace AppDelicare.Tests.Sales
                 db.CustomerDeliveryLocation.Add(new CustomerDeliveryLocation { Id = location, CustomerId = customer, Code = tag, Name = "[DEMO] Điểm giao" });
                 db.Shift.Add(new Shift { Id = shift, Code = tag, Name = "[DEMO] Ca trưa" });
                 db.Dish.AddRange(new Dish { Id = chicken, Code = tag + "GA", Name = "[DEMO] Gà" }, new Dish { Id = fish, Code = tag + "CA", Name = "[DEMO] Cá" });
-                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = tag, Name = "[DEMO] Thực đơn", VersionNo = 1, Status = "Published", EffectiveFrom = today.AddDays(-1) });
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = tag, Name = "[DEMO] Thực đơn", VersionNo = 1, Status = "Published", MenuType = "COMMON" /* UI-6.12 (D-90): mọi khách dùng thực đơn chung */, EffectiveFrom = today.AddDays(-1) });
                 foreach (var d in new[] { future, today })
                 {
                     db.MenuLine.Add(new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = chicken, MealType = "TRUA", DayOfWeek = d.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)d.DayOfWeek, SequenceNo = 1 });

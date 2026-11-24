@@ -54,7 +54,7 @@ namespace AppDelicare.Tests.Sales
                     new Dish { Id = chicken, Code = code + "-GA", Name = "Gà kho " + code },
                     new Dish { Id = fish, Code = code + "-CA", Name = "Cá kho " + code },
                     new Dish { Id = rice, Code = code + "-COM", Name = "Cơm " + code });
-                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-" + code, Name = "Thực đơn " + code, VersionNo = 1, Status = "Published", EffectiveFrom = new DateTime(2026, 12, 1) });
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-" + code, Name = "Thực đơn " + code, VersionNo = 1, Status = "Published", MenuType = "COMMON" /* UI-6.12 (D-90): mọi khách dùng thực đơn chung */, EffectiveFrom = new DateTime(2026, 12, 1) });
                 db.MenuLine.AddRange(
                     new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = chicken, MealType = "TRUA", DayOfWeek = 4, SequenceNo = 1 },
                     new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = rice, MealType = "TRUA", DayOfWeek = 4, SequenceNo = 1 });

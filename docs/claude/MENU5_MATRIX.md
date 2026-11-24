@@ -42,7 +42,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | X | — | — | — | — | — | — | S | — | X | X | S | S | — | — | X | S (IX) |
 | Kinh doanh › Điểm giao hàng | `crm-location` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | — | — | X | — |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | Q | X | — | X | X | — | X | — | X | X | X | X | — | — | X | X |
-| Thực đơn & Món ăn › Thực đơn riêng cho khách | `menu-assignment` | X | X | X | Q | — | — | — | — | — | — | — | X | X | X | — | — | — | X | — |
 | Thực đơn & Món ăn › Yêu cầu đổi món | `menu-change-request` | X | X | X | Q | — | — | — | — | — | — | — | S | S | S | S | — | — | X | — |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | X | X | Q | X | — | X | X | — | — | — | — | — | — | — | — | — | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | Q | — | — | — | X | — | — | — | X | X | X | X | — | — | X | X |

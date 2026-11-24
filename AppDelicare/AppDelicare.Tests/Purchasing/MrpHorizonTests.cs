@@ -46,7 +46,7 @@ namespace AppDelicare.Tests.Purchasing
                 db.Dish.Add(new Dish { Id = dish, Code = "M-" + code, Name = "Món " + code });
                 db.Recipe.Add(new Recipe { Id = recipe, DishId = dish, VersionNo = 1, Status = "Locked", IsActive = true, StandardOutputQty = 100, EffectiveFrom = new DateTime(2027, 1, 1),
                     LockedAt = new DateTime(2027, 1, 1), SnapshotJson = JsonSerializer.Serialize(new[] { new { IngredientId = ing, Quantity = 10m, UnitId = kg, SequenceNo = 1 } }) });
-                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-" + code, Name = "Thực đơn " + code, VersionNo = 1, Status = "Published", EffectiveFrom = new DateTime(2027, 1, 1) });
+                db.Menu.Add(new Model.Entity.Menu { Id = menu, Code = "TD-" + code, Name = "Thực đơn " + code, VersionNo = 1, Status = "Published", MenuType = "COMMON" /* UI-6.12 (D-90): mọi khách dùng thực đơn chung */, EffectiveFrom = new DateTime(2027, 1, 1) });
                 foreach (var d in new[] { d1, d2, d3 })
                 {
                     db.MenuLine.Add(new MenuLine { Id = Guid.NewGuid(), MenuId = menu, DishId = dish, MealType = "TRUA", DayOfWeek = DayOf(d), SequenceNo = 1 });

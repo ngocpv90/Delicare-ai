@@ -175,7 +175,8 @@
   // ---------- MA-1 (D-63): cột ẩn + form khách hàng theo loại ----------
   // CIF = Code (máy chủ gán) – chỉ dùng cho môi trường ngân hàng, KHÔNG hiển thị ở form / danh sách / hồ sơ (D-63 h, j).
   // Segment (Phân khúc) – anh bỏ khỏi hệ thống 2026-11-22 (GAP-REF-05); cột DB giữ nguyên, không dùng.
-  const HIDDEN = { Customer: new Set(['CIF', 'Segment']) };
+  // UI-6.12 (D-90): mọi thực đơn là thực đơn chung – ẩn trường loại thực đơn trên form.
+  const HIDDEN = { Customer: new Set(['CIF', 'Segment']), Menu: new Set(['MenuType']) };
   UI.hidden = (t, col) => !!(HIDDEN[t] && HIDDEN[t].has(col));
   // D-63 g: trường theo loại khách hàng. req = bắt buộc trên giao diện (máy chủ kiểm lại; Chi nhánh chỉ bắt buộc khi đã có chi nhánh).
   const CUSTOMER_FIELDS = {

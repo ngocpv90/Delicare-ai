@@ -252,15 +252,15 @@ namespace AppDelicare.Tests.Pilot
 
                 // ===== 3. Thực đơn → phân công → đơn (mẫu có gợi ý) → gửi → xác nhận → chốt
                 Guid menu = await Insert<Model.Entity.Menu>("Menu", q => q.Where(x => x.Name == "[DEMO] Thực đơn tuần " + k).Select(x => x.Id).SingleAsync(),
-                    ("Code", code + "TD"), ("Name", "[DEMO] Thực đơn tuần " + k), ("EffectiveFrom", day), ("EffectiveTo", day));
+                    ("Code", code + "TD"), ("Name", "[DEMO] Thực đơn tuần " + k), ("MenuType", "COMMON"), ("EffectiveFrom", day), ("EffectiveTo", day));
                 foreach (var (dish, sort) in new[] { (dishBeef, 1), (dishRice, 2) })
                 {
                     (await Post("/api/MenuLine/Insert", ("MenuId", menu), ("DishId", dish), ("MealType", "TRUA"), ("DayOfWeek", dow), ("SequenceNo", 1), ("SortOrder", sort))).Ok();
                 }
                 (await Get($"/api/Menu/GetCalendar?id={menu}&mealType=TRUA&sellingPrice=35000")).Ok();
                 (await Post("/api/Menu/Approve", ("Id", menu))).Ok();
-                (await Post("/api/MenuAssignment/Insert", ("CustomerId", customer), ("ContractId", contract), ("MenuId", menu), ("MealType", "TRUA"),
-                    ("EffectiveFrom", day), ("EffectiveTo", day))).Ok();
+                // UI-6.12 (D-90): không còn phân công thực đơn riêng – công bố thực đơn chung tuần (khách dùng thực đơn chung).
+                (await Post("/api/Menu/Publish", ("Id", menu))).Ok();
                 var template = (await Get($"/api/Order/GetNewTemplate?customerId={customer}&mealDate={D(day)}")).Ok();
                 template.GetProperty("contractId").GetGuid().Should().Be(contract);
                 template.GetProperty("listLocation")[0].GetProperty("listLine")[0].GetProperty("suggestedQuantity").GetDecimal().Should().Be(1000m, "gợi ý = dự báo đã công bố");

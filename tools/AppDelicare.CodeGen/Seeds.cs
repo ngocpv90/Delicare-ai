@@ -359,7 +359,10 @@ public static partial class Seeds
     public static readonly string[] Biz3HiddenLinks = ["#/wf-inbox?type=qc-inspection"];
 
     /// <remarks>MENU-5.2 (D-79): mục duyệt "Kiểm tra hàng nhập" mở lại (quyền Kết luận QC) – bỏ Biz3HiddenLinks khỏi danh sách ẩn.</remarks>
-    public static readonly string[] HiddenMenuLinks = ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks];
+    /// <summary>UI-6.12 (D-90): bỏ thực đơn riêng theo khách – mục #/menu-assignment ẩn (IsActive = 0), giữ dòng + quyền; script DB/scripts/UI612_hide_menu_assignment.sql.</summary>
+    public static readonly string[] Ui6HiddenLinks = ["#/menu-assignment"];
+
+    public static string[] HiddenMenuLinks => ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Ui6HiddenLinks];
 
     /// <summary>Tên hiển thị của mục menu theo MENU-2 (không có trong bảng → giữ tên catalog).</summary>
     public static string MenuName(string link, string name) => MenuRenames.FirstOrDefault(r => r.Link == link).New ?? name;

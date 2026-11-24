@@ -124,6 +124,9 @@ public static partial class Seeds
     /// </summary>
     public static readonly string[] Menu5HiddenLinks = ["#/crm-contact", "#/wf-inbox?type=scm-pr", "#/wf-inbox?type=crm-price-policy"];
 
+    /// <summary>Mục đang ẩn trên menu = MENU-5 + UI-6.x (<see cref="Ui6HiddenLinks"/> – D-90 / D-83 / D-91). Ma trận quyền vẫn dùng <see cref="Menu5HiddenLinks"/>: ẩn UI-6 KHÔNG thu quyền (giữ dòng + quyền, chỉ IsActive = 0).</summary>
+    public static string[] HiddenNow => [.. Menu5HiddenLinks, .. Ui6HiddenLinks];
+
     /// <summary>MENU-5.2: mở lại mục duyệt "Kiểm tra hàng nhập" (BIZ-3.7 đã ẩn) – nay là quyền Kết luận QC đầu vào.</summary>
     public static readonly string[] Menu5ShownLinks = ["#/wf-inbox?type=qc-inspection"];
 
@@ -354,7 +357,7 @@ public static partial class Seeds
         sb.AppendLine("                  NewParent NVARCHAR(400) NULL, NewOrder INT, NewName NVARCHAR(500), ShortName NVARCHAR(100), SetActive INT NULL);");
         var rows = new List<string>();
         string Null(string? v) => v == null ? "NULL" : Sql(v);
-        string Active(string link) => Menu5HiddenLinks.Contains(link) ? "0" : Menu5ShownLinks.Contains(link) ? "1" : "NULL";
+        string Active(string link) => HiddenNow.Contains(link) ? "0" : Menu5ShownLinks.Contains(link) ? "1" : "NULL";
         foreach (var g in Menu5Groups)
         {
             int old = OldGroupOrder(g.Link);
@@ -713,7 +716,7 @@ public static partial class Seeds
         sb.AppendLine("|---|---|" + string.Concat(roles.Select(_ => "---|")));
         foreach (var g in Menu5Groups)
         {
-            foreach (string item in g.Items.Where(i => !Menu5HiddenLinks.Contains("#/" + i) && !MatrixSkipLinks.Contains("#/" + i)))
+            foreach (string item in g.Items.Where(i => !HiddenNow.Contains("#/" + i) && !MatrixSkipLinks.Contains("#/" + i)))
             {
                 var rights = roles.Select(r => RightOf(r, item)).ToList();
                 if (!rights.Any(r => r.A) || (hideViewOnly && rights.All(r => RightLabel(item, r) is "X" or "—")))
@@ -815,7 +818,7 @@ public static partial class Seeds
     [
         .. Menu5Groups.Where(g => g.Link != ApprovalGroupLink).Select(g =>
         {
-            var items = g.Items.Where(i => i != "wf-inbox" && !MatrixSkipLinks.Contains("#/" + i) && !Menu5HiddenLinks.Contains("#/" + i)).ToList();
+            var items = g.Items.Where(i => i != "wf-inbox" && !MatrixSkipLinks.Contains("#/" + i) && !HiddenNow.Contains("#/" + i)).ToList();
             if (g.Link == "#/group/01")
             {
                 items.Insert(items.IndexOf("dash-exec") + 1, "wf-inbox");

@@ -292,8 +292,8 @@
   function forecastTab(box, d, id) {
     if (!live()) { box.innerHTML = demoNote; return; }
     const today = Store.ctx.date, to = addD(today, 13);
-    box.innerHTML = `<h3>Dự báo suất 14 ngày tới</h3><div data-fc>${loading}</div><h3 class="mt">Thực đơn được gán</h3><div data-ma>${loading}</div>`;
-    const fc = box.querySelector('[data-fc]'), ma = box.querySelector('[data-ma]');
+    box.innerHTML = `<h3>Dự báo suất 14 ngày tới</h3><div data-fc>${loading}</div>`;
+    const fc = box.querySelector('[data-fc]');
     run(fc, Store.query('Forecast/GetMatrix', { from: today, to, customerId: id }), x => {
       const m = x.data || {}, dates = m.dates || [], row = (m.rows || [])[0];
       if (!row || !dates.length) { fc.innerHTML = none; return; }
@@ -301,11 +301,8 @@
       fc.innerHTML = UI.bars(dates.map(dt => U.date(dt).slice(0, 5)), [{ name: 'Dự báo', role: 'plan', values: dates.map(dt => v(dt) || 0) }], { h: 200, title: 'Dự báo suất', unit: 'suất' })
         + `<div class="small muted">Tổng ${U.num(row.total || 0)} suất</div>`;
     });
-    run(ma, Store.query('MenuAssignment/GetAll', { CustomerId: id, Page: 1, PageSize: 100 }), x => {
-      const rows = x.list || [];
-      ma.innerHTML = table(rows, [{ label: 'Thực đơn', html: r => `<b>${esc(r.menuName || '')}</b>` }, { label: 'Loại suất', html: r => esc(r.mealType || '') }, { label: 'Điểm giao', html: r => esc(r.deliveryLocationName || 'Mọi điểm') },
-        { label: 'Hiệu lực', html: r => `${dmy(r.effectiveFrom)} – ${r.effectiveTo ? dmy(r.effectiveTo) : 'không hạn'}` }, { label: 'Trạng thái', html: r => UI.tag(r.status || '', 'green') }]);
-    });
+    // UI-6.12 (D-90): không còn thực đơn riêng theo khách – bỏ khối "Thực đơn được gán".
+
   }
   const documentsTab = (box, d, id) => APP.D360.documentsTab('Customer', Store.perm('crm-customer').edit !== false)(box, d, id);
   const historyTab = APP.D360.historyTab('Customer');

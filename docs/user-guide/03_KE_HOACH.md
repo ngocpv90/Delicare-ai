@@ -24,7 +24,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | X |
 | Kinh doanh › Điểm giao hàng | `crm-location` | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | Q |
-| Thực đơn & Món ăn › Thực đơn riêng cho khách | `menu-assignment` | Q |
 | Thực đơn & Món ăn › Yêu cầu đổi món | `menu-change-request` | Q |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | Q |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | Q |
