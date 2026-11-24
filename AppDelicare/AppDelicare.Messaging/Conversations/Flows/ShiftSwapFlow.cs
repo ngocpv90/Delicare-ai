@@ -15,7 +15,7 @@ namespace AppDelicare.Messaging.Conversations.Flows
     /// (lý do "[Telegram] …"; đơn vào duyệt như web). Tài khoản web (JWT của chính mình); người chỉ có EmployeeId: làm trên web / nhờ quản lý (PROPOSED).
     /// Lựa chọn lưu ở ConversationStore (30′) – callback chỉ mang số thứ tự: <c>swp:m|x|g|p:&lt;số&gt;</c>.
     /// </summary>
-    public sealed class ShiftSwapFlow(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, ConversationStore store, TimeProvider time)
+    public sealed class ShiftSwapFlow(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, ConversationStore store, TimeProvider time, Experience.ReasonCatalog reasons)
         : WebActions(web, tokens, sender, replies)
     {
         public const string Kind = "swp";
@@ -92,6 +92,12 @@ namespace AppDelicare.Messaging.Conversations.Flows
                 case "p" when i >= 0 && i < s.Colleagues.Count:
                     await AskReasonAsync(ctx, s, s.Colleagues[i], $"nhường ca cho {s.Colleagues[i].Label}", ct);
                     break;
+                case "r" when reasons.At(Experience.ReasonCatalog.Swap, data.Id?.Split('.').Last()) is { } reason:
+                    await SubmitAsync(ctx, s, reason, ct);
+                    break;
+                case "rx":
+                    await AskAsync(ctx, "Lý do (gõ ngắn gọn):", ReplyReason, "swap", ct);
+                    break;
                 default:
                     await SayAsync(ctx, "Nút đã hết hạn – gõ /doica để làm lại.", ct);
                     break;
@@ -110,6 +116,16 @@ namespace AppDelicare.Messaging.Conversations.Flows
             if (reason.Length < 3)
             {
                 await AskAsync(ctx, "Lý do quá ngắn (ít nhất 3 ký tự) – gõ lại:", ReplyReason, pending.Key, ct);
+                return;
+            }
+            await SubmitAsync(ctx, s, reason, ct);
+        }
+
+        private async Task SubmitAsync(BotActionContext ctx, State s, string reason, CancellationToken ct)
+        {
+            if (s.Current?.AssignmentId is not { } current || s.Chosen is not { } chosen)
+            {
+                await SayAsync(ctx, "Phiên đổi ca đã hết hạn – gõ /doica để làm lại.", ct);
                 return;
             }
             if (await TokenAsync(ctx, ct) is not { } token)
@@ -166,7 +182,8 @@ namespace AppDelicare.Messaging.Conversations.Flows
         {
             s.Chosen = chosen;
             store.Set(ctx.Bot, ctx.Event.FromId, Flow, s);
-            await AskAsync(ctx, $"Lý do {what}:", ReplyReason, "swap", ct);
+            // BOT-UX-2 (mục 7): lý do = nút lý do hay gặp (Messaging:Reasons:swap-reason) + [✏️ Khác…] (gõ tay).
+            await ShowAsync(ctx, new NeutralMessage { Title = $"Lý do {what}", Buttons = reasons.Buttons(Experience.ReasonCatalog.Swap, Kind, "r", "rx", "k") }, ct);
         }
 
         private static string ShiftLabel(JsonElement a, string? who)

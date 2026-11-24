@@ -145,7 +145,8 @@ namespace AppDelicare.Tests.Messaging
             await using var h = ApprovalHost();
             await h.SendAsync(Text("/menu"));
             var root = h.Sender.Sent.Last().Message.ReplyMarkup.Should().BeOfType<TgInlineKeyboard>().Subject;
-            root.InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["menu:mod:CHUNG", "menu:mod:DUYET"]);
+            // BOT-UX-2 (mục 12): 6 chức năng (không tính ⚡ / 📍 của bàn phím dưới) → màn đầu phẳng; phân hệ vẫn mở được bằng nút cũ menu:mod.
+            root.InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).Should().Contain(["menu:act:help", "menu:act:approvals"]).And.NotContain(c => c!.StartsWith("menu:mod:"));
             await h.SendAsync(Tap("menu:mod:CHUNG", messageId: 77));
             var edit = h.Sender.Edits.Last();
             edit.MessageId.Should().Be("77");
@@ -198,7 +199,12 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("apv:cf:" + H1.ToString("N"), messageId: 70));
             Decisions(h).Should().ContainSingle().Which["Approve"].Should().Be("true");
 
+            // BOT-UX-2 (mục 7): ❌ Từ chối → nút lý do hay gặp (chưa ghi gì); [✏️ Khác…] mới hỏi gõ tay.
             await h.SendAsync(Tap("apv:no:" + L1.ToString("N"), messageId: 71));
+            var reasons = ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Select(b => b.CallbackData).ToList();
+            reasons.Should().Contain(["apv:nr:" + L1.ToString("N") + ".0", "apv:nx:" + L1.ToString("N")]);
+            Decisions(h).Should().HaveCount(1, "mới mở màn lý do");
+            await h.SendAsync(Tap("apv:nx:" + L1.ToString("N"), messageId: 71));
             var ask = h.Sender.Sent.Last();
             ask.Message.ReplyMarkup.Should().BeOfType<TgForceReply>();
             Decisions(h).Should().HaveCount(1, "chưa có lý do → chưa từ chối");
@@ -207,6 +213,10 @@ namespace AppDelicare.Tests.Messaging
             var reject = Decisions(h).Last();
             reject["Approve"].Should().Be("false");
             reject["Note"].Should().Be("Trùng lịch kiểm kê");
+
+            // Bấm 1 lý do có sẵn = từ chối với lý do đó (không gõ tay).
+            await h.SendAsync(Tap("apv:nr:" + H1.ToString("N") + ".0", messageId: 72));
+            Decisions(h).Last()["Note"].Should().Be("Thiếu thông tin / chứng từ");
         }
 
         [Fact]

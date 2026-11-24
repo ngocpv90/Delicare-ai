@@ -156,13 +156,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             var list = r.Data.TryGetProperty("listBatch", out var lb) && lb.ValueKind == JsonValueKind.Array ? lb.EnumerateArray().ToList() : [];
             var held = list.Where(b => BepActions.S(b, "qcStatus")?.ToUpperInvariant() is "HOLD" or "REJECT" || BepActions.S(b, "status") == "Failed").ToList();
-            await SendAsync(ctx, new NeutralMessage
-            {
-                Title = $"⛔ Mẻ đang giữ / không đạt ({held.Count})",
-                Lines = held.Count == 0 ? ["Không có mẻ nào đang giữ hôm nay."]
-                    : [.. held.Select(b => $"• {BepActions.S(b, "batchNumber")} {BepActions.S(b, "dishName")} · QC {BepActions.S(b, "qcStatus") ?? "-"} · {BepActions.S(b, "statusName")}")],
-                Buttons = [.. held.Take(8).Where(b => Guid.TryParse(BepActions.S(b, "id"), out _)).Select(b => new NeutralButton("🔍 " + BepActions.S(b, "batchNumber"), CallbackData.Build(BepActions.Kind, "view", Guid.Parse(BepActions.S(b, "id")!))))],
-            }, ct);
+            // BOT-UX-2 (mục 10): 6 mẻ / trang.
+            var m = new NeutralMessage { Title = $"⛔ Mẻ đang giữ / không đạt ({held.Count})", Lines = held.Count == 0 ? ["Không có mẻ nào đang giữ hôm nay."] : [] };
+            ListPager.Fill(m, ctx, "attp_hold", held, b => $"• {BepActions.S(b, "batchNumber")} {BepActions.S(b, "dishName")} · QC {BepActions.S(b, "qcStatus") ?? "-"} · {BepActions.S(b, "statusName")}",
+                b => Guid.TryParse(BepActions.S(b, "id"), out var bid) ? new NeutralButton("🔍 " + BepActions.S(b, "batchNumber"), CallbackData.Build(BepActions.Kind, "view", bid)) : null);
+            await ShowAsync(ctx, m, ct);
         }
     }
 }

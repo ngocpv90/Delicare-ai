@@ -4,6 +4,7 @@ using AppDelicare.Messaging.Callback;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Conversations;
 using AppDelicare.Messaging.Core;
+using AppDelicare.Messaging.Experience;
 using AppDelicare.Messaging.Presentation;
 
 namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
@@ -40,9 +41,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             new BotAction { Code = "cs_open", Module = "CSKH", Label = "📋 Phản ánh đang mở", Command = "phananh", CommandDescription = "Phản ánh đang mở", Bots = ["VH"], MenuMetaLink = Menu, Order = 1, Handler = (c, ct) => ListAsync(c, false, ct) },
             new BotAction { Code = "cs_due", Module = "CSKH", Label = "⏱ Sắp quá hạn", Command = "saphan", CommandDescription = "Phản ánh sắp / đã quá hạn", Bots = ["VH"], MenuMetaLink = Menu, Order = 2, Handler = (c, ct) => ListAsync(c, true, ct) },
             new BotAction { Code = "cs_new", Module = "CSKH", Label = "📣 Ghi phản ánh", Command = "ghiphananh", CommandDescription = "Ghi phản ánh của khách", Bots = ["VH"], MenuMetaLink = Menu, Order = 3, Handler = NewAsync },
-            new BotAction { Code = "dp_complaint", Module = "DIEMPHAT", Label = "📣 Phản ánh tại điểm", Bots = ["VH"], MenuMetaLink = Menu, Order = 3, Handler = NewAsync },
-            // BOT-3.2 (D-72): Kinh doanh báo thiếu suất / phản ánh thay khách – cùng luồng ghi phản ánh (chọn khách, loại, mô tả); xem lại ở 📋 Việc tôi đã báo.
-            new BotAction { Code = "kd_complaint", Module = "KINHDOANH", Label = "📣 Báo thiếu suất / phản ánh", Bots = ["VH"], MenuMetaLink = Menu, Order = 5, Handler = NewAsync },
+            // BOT-UX-2 (mục 14): mỗi chức năng 1 phân hệ chính – 📣 Ghi phản ánh chỉ ở CSKH (cùng quyền phản ánh); điểm phát / kinh doanh mở qua ⭐ Hay dùng hoặc /ghiphananh.
         ];
 
         public async Task ListAsync(BotActionContext ctx, bool dueOnly, CancellationToken ct)
@@ -66,12 +65,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     && !items.Any(x => S(C(x), "id") == S(C(i), "id")))];
             }
             items = [.. items.OrderBy(i => Dec(i, "hoursToDue") ?? decimal.MaxValue)];
-            await SendAsync(ctx, new NeutralMessage
-            {
-                Title = (dueOnly ? "⏱ Phản ánh sắp / đã quá hạn" : "📋 Phản ánh đang mở") + $" ({items.Count})",
-                Lines = items.Count == 0 ? ["Không có phản ánh nào."] : [.. items.Take(12).Select(Line)],
-                Buttons = [.. items.Take(10).Where(i => Guid.TryParse(S(C(i), "id"), out _)).Select(i => new NeutralButton($"{Icon(i)} {S(C(i), "complaintNo")}", CallbackData.Build(Kind, "v", Guid.Parse(S(C(i), "id")!))))],
-            }, ct);
+            // BOT-UX-2 (mục 10, 11): sắp / đã quá hạn lên đầu (đã xếp theo giờ còn lại), 6 phản ánh / trang.
+            var m = new NeutralMessage { Title = (dueOnly ? "⏱ Phản ánh sắp / đã quá hạn" : "📋 Phản ánh đang mở") + $" ({items.Count})", Lines = items.Count == 0 ? ["Không có phản ánh nào."] : [] };
+            ListPager.Fill(m, ctx, dueOnly ? "cs_due" : "cs_open", items, Line,
+                i => Guid.TryParse(S(C(i), "id"), out var cid) ? new NeutralButton($"{Icon(i)} {S(C(i), "complaintNo")}", CallbackData.Build(Kind, "v", cid)) : null);
+            await ShowAsync(ctx, m, ct);
         }
 
         public async Task NewAsync(BotActionContext ctx, CancellationToken ct)

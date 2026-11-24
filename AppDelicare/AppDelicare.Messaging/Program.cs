@@ -58,6 +58,8 @@ namespace AppDelicare.Messaging
             builder.Services.AddSingleton<HelpActions>();
             // BOT-1.4: khung trải nghiệm + duyệt.
             builder.Services.AddSingleton<ReplyContextStore>();
+            // BOT-UX-2: lý do hay gặp theo luồng (Messaging:Reasons:<luồng>) – nút thay gõ tay.
+            builder.Services.AddSingleton<ReasonCatalog>();
             builder.Services.AddSingleton<UndoWindow>();
             builder.Services.AddSingleton<TaskCard>();
             builder.Services.AddSingleton<SelfServiceActions>();

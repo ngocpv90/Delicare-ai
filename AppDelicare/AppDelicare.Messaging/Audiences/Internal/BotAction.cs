@@ -3,8 +3,15 @@ using AppDelicare.Messaging.Core.Contracts;
 
 namespace AppDelicare.Messaging.Audiences.Internal
 {
-    /// <summary>Ngữ cảnh khi chạy 1 chức năng: bot, sự kiện (người, chat), định danh.</summary>
-    public sealed record BotActionContext(string Bot, IncomingEvent Event, BotIdentityModel Identity);
+    /// <summary>
+    /// Ngữ cảnh khi chạy 1 chức năng: bot, sự kiện (người, chat), định danh. BOT-UX-2: <see cref="Page"/> / <see cref="Filter"/> = trang và bộ lọc danh sách
+    /// (nút <c>pg:*</c> – Experience/ListPager).
+    /// </summary>
+    public sealed record BotActionContext(string Bot, IncomingEvent Event, BotIdentityModel Identity)
+    {
+        public int Page { get; init; }
+        public string? Filter { get; init; }
+    }
 
     /// <summary>
     /// BOT-1.4 (D-62 §5.1): 1 chức năng của bot – bot dùng (VH / DH / cả 2), phân hệ, nhãn nút, lệnh "/", mục ObjectMenu cần quyền vào (null = ai liên kết cũng dùng),

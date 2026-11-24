@@ -5,6 +5,7 @@ using AppDelicare.Messaging.Callback;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Conversations;
 using AppDelicare.Messaging.Core;
+using AppDelicare.Messaging.Experience;
 using AppDelicare.Messaging.Presentation;
 using Microsoft.Extensions.Configuration;
 
@@ -18,10 +19,23 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     /// 🗺 Giao vận hôm nay (điều phối – <c>GetBoard</c>). Nút hiện theo <c>AllowedActions</c> của api; api kiểm quyền khi ghi.
     /// Callback <c>dlv:&lt;hành động&gt;:&lt;Id N&gt;[.giá trị…]</c> (≤ 64 byte). Ảnh ký nhận / đổi xe / vị trí trực tiếp: BOT-1.5c / BOT-2.4.
     /// </summary>
-    public sealed class GiaoVanActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, IConfiguration configuration)
+    /// <remarks>
+    /// BOT-UX-2: tài xế giao đủ 1 điểm = 3 chạm (⭐ Chuyến của tôi → điểm → [✅ Giao đủ N · t °C]): số suất điền sẵn = đã xếp / kế hoạch, nhiệt độ bàn giao điền sẵn
+    /// = lần đo tại điểm, không có thì lần đo lúc xuất phát (hiện rõ trên nút), người nhận điền sẵn = người nhận gần nhất tại điểm đó (bộ nhớ) hoặc "Đại diện &lt;khách&gt;"
+    /// ([👤 Người nhận khác…] mới gõ tay). Chưa có lần đo nào → chọn nhiệt độ (1 chạm). Số khác / số hộp nhận về / nhiệt độ khác = màn số; lý do không giao được = nút
+    /// (<c>Messaging:Reasons:dlv-fail</c>) + [✏️ Khác…]. Danh sách 6 mục / trang, chuyến trễ lên đầu.
+    /// </remarks>
+    public sealed class GiaoVanActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, IConfiguration configuration,
+        ReasonCatalog reasons)
         : WebActions(web, tokens, sender, replies), IBotActionProvider
     {
         public const string Kind = CallbackData.Kinds.Delivery;
+        /// <summary>BOT-UX-2: gõ tên người nhận khác (khóa = Id điểm N) – nhớ cho điểm đó rồi mở lại thẻ điểm.</summary>
+        public const string ReplyReceiverName = "dlv-rname";
+        /// <summary>BOT-UX-2: lý do không giao được gõ tay ([✏️ Khác…], khóa = Id điểm N).</summary>
+        public const string ReplyFail = "dlv-fail";
+        /// <summary>Người nhận gần nhất theo (bot, điểm giao / điểm dừng) – bộ nhớ, khởi động lại thì về "Đại diện &lt;khách&gt;".</summary>
+        private readonly ConcurrentDictionary<string, string> _receivers = new();
         public const string ReplyDispatchTemp = "dlv-dtemp";
         public const string ReplyQty = "dlv-qty";
         public const string ReplyReceiver = "dlv-recv";
@@ -45,7 +59,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 Title = "🔁 Chọn xe mới",
                 Lines = list.Count == 0 ? ["Không có xe đang hoạt động."] : ["Chọn xe thay cho chuyến:"],
-                Buttons = [.. list.Select((v, i) => new NeutralButton("🚚 " + v.Label, CallbackData.Build(Kind, "pv", $"{routeId:N}.{i}"))), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId))],
+                Buttons = [.. list.Select((v, i) => new NeutralButton("🚚 " + v.Label, CallbackData.Build(Kind, "pv", $"{routeId:N}.{i}"))), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId))],
             }, ct);
         }
 
@@ -68,7 +82,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             await SendAsync(ctx, new NeutralMessage
             {
                 Title = "👤 Chọn tài xế mới",
-                Buttons = [.. list.Select((v, i) => new NeutralButton("👤 " + v.Label, CallbackData.Build(Kind, "pd", $"{routeId:N}.{i}"))), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId))],
+                Buttons = [.. list.Select((v, i) => new NeutralButton("👤 " + v.Label, CallbackData.Build(Kind, "pd", $"{routeId:N}.{i}"))), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId))],
             }, ct);
         }
 
@@ -80,13 +94,12 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 return;
             }
             var r = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryRoute/Reassign", [new("Id", routeId.ToString()), new(field, list[index].Id.ToString()), new("Note", "Đổi qua Telegram")], token, ct);
-            string note = r.IsOk ? "✅ " + (r.ResponseMessage ?? "Đã đổi") + string.Concat(Arr(r.Data, "listWarning").Select(w => "\n⚠️ " + (w.ValueKind == JsonValueKind.String ? w.GetString() : w.ToString())))
+            string note = r.IsOk ? InputWidgets.Done(r.ResponseMessage ?? "Đã đổi", time) + string.Concat(Arr(r.Data, "listWarning").Select(w => "\n⚠️ " + (w.ValueKind == JsonValueKind.String ? w.GetString() : w.ToString())))
                 : "⚠️ " + Problem(r);
             await RouteCardAsync(ctx, routeId, token, note, ct);
         }
         public const string ReplyBoxes = "dlv-box";
         public static readonly decimal[] Temps = [60m, 62m, 65m, 68m, 70m, 75m];
-        public static readonly string[] FailReasons = ["Khách không nhận hàng", "Không liên lạc được người nhận", "Sai / không tìm thấy địa chỉ", "Xe hỏng / trễ quá giờ"];
 
         public IEnumerable<BotAction> GetActions() =>
         [
@@ -108,13 +121,12 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 return;
             }
-            await ShowAsync(ctx, new NeutralMessage
-            {
-                Title = $"🧭 Lịch xe {day:dd/MM} ({routes.Count} chuyến)",
-                Lines = routes.Count == 0 ? ["Chưa lập chuyến nào cho ngày mai."]
-                    : [.. routes.Take(15).Select(r => $"{RouteLine(r)} · {S(r, "licensePlate") ?? S(r, "vehicleCode") ?? "chưa có xe"} · {S(r, "driverName") ?? "chưa có tài xế"}")],
-                Buttons = [.. routes.Take(12).Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
-            }, ct);
+            var m = new NeutralMessage { Title = $"🧭 Lịch xe {day:dd/MM} ({routes.Count} chuyến)", Lines = routes.Count == 0 ? ["Chưa lập chuyến nào cho ngày mai."] : [] };
+            // BOT-UX-2 (mục 10, 11): chuyến chưa có xe / tài xế lên đầu, 6 chuyến / trang.
+            var sorted = routes.OrderBy(r => S(r, "driverName") == null || (S(r, "licensePlate") ?? S(r, "vehicleCode")) == null ? 0 : 1).ToList();
+            ListPager.Fill(m, ctx, "gv_schedule", sorted, r => $"{RouteLine(r)} · {S(r, "licensePlate") ?? S(r, "vehicleCode") ?? "chưa có xe"} · {S(r, "driverName") ?? "chưa có tài xế"}",
+                r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))));
+            await ShowAsync(ctx, m, ct);
         }
 
         /// <summary>BOT-3.1: 📦 Hộp khay hôm nay – phải thu / đã thu / hỏng theo đơn giao (ContainerReturn/GetList hôm nay).</summary>
@@ -160,12 +172,18 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await RouteCardAsync(ctx, RouteId(routes[0]), token, null, ct);
                 return;
             }
-            await ShowAsync(ctx, new NeutralMessage
-            {
-                Title = $"🚚 Chuyến của tôi hôm nay ({routes.Count})",
-                Lines = routes.Count == 0 ? ["Hôm nay bạn chưa được phân chuyến nào."] : [.. routes.Select(RouteLine)],
-                Buttons = [.. routes.Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
-            }, ct);
+            var m = new NeutralMessage { Title = $"🚚 Chuyến của tôi hôm nay ({routes.Count})", Lines = routes.Count == 0 ? ["Hôm nay bạn chưa được phân chuyến nào."] : [] };
+            // BOT-UX-2 (mục 10, 11): chuyến đang chạy / chưa xuất phát trước, chuyến xong cuối; 6 chuyến / trang.
+            ListPager.Fill(m, ctx, "gv_mine", [.. routes.OrderBy(RouteOrder)], RouteLine, r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))));
+            await ShowAsync(ctx, m, ct);
+        }
+
+        /// <summary>Thứ tự việc gấp: đang chạy → trễ giờ xuất phát → chưa xuất phát → xong.</summary>
+        private int RouteOrder(JsonElement r)
+        {
+            string? status = S(Route(r), "status");
+            bool late = status is "Planned" or "Loading" && DateTime.TryParse(S(Route(r), "plannedStart"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) && start < VnTime.Now(time);
+            return late ? 0 : status switch { "InTransit" => 1, "Planned" or "Loading" => 2, _ => 3 };
         }
 
         public async Task BoardAsync(BotActionContext ctx, CancellationToken ct)
@@ -174,12 +192,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 return;
             }
-            await ShowAsync(ctx, new NeutralMessage
-            {
-                Title = $"🗺 Giao vận {VnTime.Today(time):dd/MM} ({routes.Count} chuyến)",
-                Lines = routes.Count == 0 ? ["Chưa có chuyến nào hôm nay."] : [.. routes.Take(15).Select(r => RouteLine(r) + (S(r, "driverName") is { } d ? " · " + d : ""))],
-                Buttons = [.. routes.Take(12).Select(r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))))],
-            }, ct);
+            var m = new NeutralMessage { Title = $"🗺 Giao vận {VnTime.Today(time):dd/MM} ({routes.Count} chuyến)", Lines = routes.Count == 0 ? ["Chưa có chuyến nào hôm nay."] : [] };
+            ListPager.Fill(m, ctx, "gv_board", [.. routes.OrderBy(RouteOrder)], r => RouteLine(r) + (S(r, "driverName") is { } d ? " · " + d : ""),
+                r => new NeutralButton($"{RouteIcon(r)} {RouteNo(r)}", CallbackData.Build(Kind, "r", RouteId(r))));
+            await ShowAsync(ctx, m, ct);
         }
 
         public async Task BoxesAsync(BotActionContext ctx, CancellationToken ct)
@@ -189,12 +205,13 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 return;
             }
             var stops = routes.SelectMany(r => Arr(r, "listStop")).Where(s => S(s, "stopStatus") == "Delivered" && Guid.TryParse(S(s, "deliveryOrderId"), out _)).ToList();
-            await ShowAsync(ctx, new NeutralMessage
+            var m = new NeutralMessage
             {
                 Title = "📥 Nhận hộp khay về",
                 Lines = stops.Count == 0 ? ["Chưa có điểm nào đã giao hôm nay trên chuyến của bạn."] : ["Chọn điểm đã giao để ghi số hộp nhận về:"],
-                Buttons = [.. stops.Take(12).Select(s => new NeutralButton($"📦 {S(s, "customerName") ?? S(s, "deliveryNumber")}", CallbackData.Build(Kind, "bx", Guid.Parse(S(s, "deliveryOrderId")!))))],
-            }, ct);
+            };
+            ListPager.Fill(m, ctx, "gv_box", stops, null, s => new NeutralButton($"📦 {S(s, "customerName") ?? S(s, "deliveryNumber")}", CallbackData.Build(Kind, "bx", Guid.Parse(S(s, "deliveryOrderId")!))));
+            await ShowAsync(ctx, m, ct);
         }
 
         /// <summary>BOT-2.4 (QR <c>start=VEH_&lt;mã&gt;</c> dán trên xe): chuyến hôm nay của xe – chuyến của tôi trước, không có thì bảng giao vận (nếu có quyền) → thẻ chuyến [🚀 Xuất phát].</summary>
@@ -399,20 +416,27 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "dsp":
                     await DispatchAskAsync(ctx, id, token, ct);
                     break;
+                case "dtn":
+                    await DispatchNumberAsync(ctx, id, token, v1, ct);
+                    break;
                 case "dt" when v1 != null:
                     await DispatchAsync(ctx, id, token, v1 == "-" ? null : v1, ct);
                     break;
                 case "dtx":
+                    // Nút cũ (trước BOT-UX-2) – vẫn nhận gõ tay.
                     await AskAsync(ctx, "Nhập nhiệt độ thức ăn lúc xuất phát (°C), vd. 66.5:", ReplyDispatchTemp, id.ToString("N"), ct);
                     break;
                 case "s":
                     await StopCardAsync(ctx, id, token, null, ct);
                     break;
                 case "arr":
-                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Arrive", [new("Id", id.ToString())], ct);
+                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Arrive", [new("Id", id.ToString())], "Đã ghi đến điểm", ct);
                     break;
-                case "dl":
-                    await DeliverQtyAsync(ctx, id, token, ct);
+                case "full":
+                    await DeliverFullAsync(ctx, id, token, ct);
+                    break;
+                case "dl" or "dqn":
+                    await DeliverQtyAsync(ctx, id, token, v1, ct);
                     break;
                 case "dq" when v1 != null:
                     await DeliverTempAsync(ctx, id, v1, ct);
@@ -421,20 +445,30 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     await AskAsync(ctx, "Nhập số suất giao thực tế:", ReplyQty, id.ToString("N"), ct);
                     break;
                 case "dv" when v1 != null && v2 != null:
-                    await AskAsync(ctx, "Tên người nhận hàng (gõ tên):", ReplyReceiver, $"{id:N}.{v1}.{v2}", ct);
+                    // BOT-UX-2: người nhận điền sẵn (đổi bằng 👤 Người nhận khác… trên thẻ điểm) – không hỏi gõ tên mỗi lần giao.
+                    await DeliverAsync(ctx, id, token, v1, v2 == "-" ? null : v2, ct);
+                    break;
+                case "rcv":
+                    await AskAsync(ctx, "👤 Tên người nhận hàng tại điểm này (gõ tên):", ReplyReceiverName, id.ToString("N"), ct);
                     break;
                 case "fl":
                     await ShowAsync(ctx, new NeutralMessage
                     {
                         Title = "❌ Không giao được – lý do",
-                        Buttons = [.. FailReasons.Select((r, i) => new NeutralButton(r, CallbackData.Build(Kind, "fr", $"{id:N}.{i}"))), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "s", id))],
+                        Buttons = [.. reasons.Buttons(ReasonCatalog.DeliveryFail, Kind, "fr", "flx", id.ToString("N")), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "s", id))],
                     }, ct);
                     break;
-                case "fr" when int.TryParse(v1, out int reason) && reason >= 0 && reason < FailReasons.Length:
-                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Fail", [new("Id", id.ToString()), new("Reason", FailReasons[reason] + " (Telegram)")], ct);
+                case "fr" when reasons.At(ReasonCatalog.DeliveryFail, v1) is { } reason:
+                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Fail", [new("Id", id.ToString()), new("Reason", reason + " (Telegram)")], "Đã ghi không giao được", ct);
                     break;
-                case "bx":
-                    await AskAsync(ctx, "Số hộp / khay nhận về (gõ số):", ReplyBoxes, id.ToString("N"), ct);
+                case "flx":
+                    await AskAsync(ctx, "❌ Lý do không giao được (gõ ngắn gọn):", ReplyFail, id.ToString("N"), ct);
+                    break;
+                case "bx" or "bxn":
+                    await BoxesNumberAsync(ctx, id, token, v1, ct);
+                    break;
+                case "bxq" when InputWidgets.Value(v1) is { } boxes:
+                    await RecordBoxesAsync(ctx, id, token, boxes, ct);
                     break;
                 default:
                     await SayAsync(ctx, "Nút đã hết hạn.", ct);
@@ -442,7 +476,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
         }
 
-        /// <summary>Trả lời gõ tay: nhiệt độ xuất phát / số suất giao / tên người nhận / số hộp nhận về.</summary>
+        /// <summary>Trả lời gõ tay: nhiệt độ xuất phát / số suất giao / tên người nhận / số hộp nhận về / lý do không giao được (nút cũ hoặc [✏️ Khác…]).</summary>
         public async Task ReplyAsync(BotActionContext ctx, PendingReply pending, CancellationToken ct)
         {
             string[] parts = pending.Key.Split('.');
@@ -461,6 +495,23 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await PickDriverAsync(ctx, id, token, text, ct);
                 return;
             }
+            if (pending.Flow is ReplyReceiverName or ReplyFail)
+            {
+                if (text.Length < 2)
+                {
+                    await AskAsync(ctx, "Quá ngắn – gõ lại:", pending.Flow, pending.Key, ct);
+                    return;
+                }
+                string clean = text[..Math.Min(text.Length, 100)];
+                if (pending.Flow == ReplyFail)
+                {
+                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Fail", [new("Id", id.ToString()), new("Reason", clean + " (Telegram)")], "Đã ghi không giao được", ct);
+                    return;
+                }
+                _receivers[ReceiverKey(ctx, id)] = clean;
+                await StopCardAsync(ctx, id, token, "👤 Người nhận: " + clean, ct);
+                return;
+            }
             if (pending.Flow == ReplyReceiver)
             {
                 if (text.Length < 2 || parts.Length < 3)
@@ -468,12 +519,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     await AskAsync(ctx, "Tên người nhận quá ngắn – gõ lại:", pending.Flow, pending.Key, ct);
                     return;
                 }
-                var form = new List<KeyValuePair<string, string>> { new("Id", id.ToString()), new("DeliveredQuantity", parts[1]), new("ReceiverName", text[..Math.Min(text.Length, 100)]), new("Remark", "Telegram") };
-                if (parts[2] != "-")
-                {
-                    form.Add(new("TemperatureC", parts[2]));
-                }
-                await StopPostAsync(ctx, id, token, "api/DeliveryStop/Deliver", form, ct);
+                _receivers[ReceiverKey(ctx, id)] = text[..Math.Min(text.Length, 100)];
+                await DeliverAsync(ctx, id, token, parts[1], parts[2] == "-" ? null : parts[2], ct);
                 return;
             }
             if (!decimal.TryParse(text.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out var v) || v < 0)
@@ -492,11 +539,37 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     await DeliverTempAsync(ctx, id, ((int)Math.Round(v)).ToString(CultureInfo.InvariantCulture), ct);
                     break;
                 case ReplyBoxes:
-                    var r = await Web.PostFormAsUserAsync<JsonElement>("api/ContainerReturn/Record",
-                        [new("DeliveryOrderId", id.ToString()), new("ReturnedQuantity", ((int)Math.Round(v)).ToString(CultureInfo.InvariantCulture)), new("Note", "Telegram")], token, ct);
-                    await SayAsync(ctx, r.IsOk ? $"✅ Đã ghi nhận {(int)Math.Round(v)} hộp / khay về." : "⚠️ " + Problem(r), ct);
+                    await RecordBoxesAsync(ctx, id, token, Math.Round(v), ct);
                     break;
             }
+        }
+
+        private static string ReceiverKey(BotActionContext ctx, Guid stopId) => ctx.Bot + ":" + stopId.ToString("N");
+
+        /// <summary>BOT-UX-2 (mục 6): số hộp / khay nhận về – màn số, điền sẵn số phải thu của đơn giao (ContainerReturn/GetList hôm nay), không có thì 0.</summary>
+        private async Task BoxesNumberAsync(BotActionContext ctx, Guid deliveryOrderId, string token, string? value, CancellationToken ct)
+        {
+            decimal expected = 0;
+            string? who = null;
+            var r = await Web.GetAsUserAsync<JsonElement>($"api/ContainerReturn/GetList?from={Today}&to={Today}&page=1&pageSize=100", token, ct);
+            var item = Arr(r.Data, "listItem").FirstOrDefault(x => x.TryGetProperty("return", out var rt) && Guid.TryParse(S(rt, "deliveryOrderId"), out var g) && g == deliveryOrderId);
+            if (item.ValueKind == JsonValueKind.Object)
+            {
+                expected = Dec(item.GetProperty("return"), "expectedQuantity");
+                who = S(item, "customerName");
+            }
+            var m = new NeutralMessage { Title = "📥 Số hộp / khay nhận về" + (who != null ? " – " + who : string.Empty), Lines = expected > 0 ? [$"Phải thu {expected:0.##}"] : [] };
+            InputWidgets.Number(m, Kind, "bxn", "bxq", deliveryOrderId.ToString("N"), InputWidgets.Value(value) ?? expected, "hộp", expected > 0 ? [expected] : [10m, 20m, 50m], 0, 9999, "✅ Ghi");
+            await ShowAsync(ctx, m, ct);
+        }
+
+        private async Task RecordBoxesAsync(BotActionContext ctx, Guid deliveryOrderId, string token, decimal boxes, CancellationToken ct)
+        {
+            int n = (int)Math.Round(boxes);
+            var r = await Web.PostFormAsUserAsync<JsonElement>("api/ContainerReturn/Record",
+                [new("DeliveryOrderId", deliveryOrderId.ToString()), new("ReturnedQuantity", n.ToString(CultureInfo.InvariantCulture)), new("Note", "Telegram")], token, ct);
+            CallbackAnswer.Set(r.IsOk ? $"✅ Đã ghi {n} hộp / khay về" : "⚠️ " + Problem(r));
+            await SayAsync(ctx, r.IsOk ? $"✅ Đã ghi nhận {n} hộp / khay về." : "⚠️ " + Problem(r), ct);
         }
 
         // ---------- Chuyến ----------
@@ -521,8 +594,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             var route = d.TryGetProperty("route", out var rt) ? rt : default;
             var stops = Arr(d, "listStop");
             var allowed = Strings(d, "allowedActions");
+            // BOT-UX-2 (mục 2, 9): thẻ chuyến là 1 màn; dòng kết quả đầu thẻ.
+            Screens.Show(CallbackData.Build(Kind, "r", routeId));
             var m = new NeutralMessage
             {
+                Banner = note,
                 Title = $"{RouteIcon(d)} {RouteNo(d)} – {S(d, "statusName") ?? S(route, "status")}",
                 Lines =
                 [
@@ -535,10 +611,6 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 m.Lines.Add("⛔ " + b);
             }
-            if (note != null)
-            {
-                m.Lines.Insert(0, note);
-            }
             if (allowed.Contains("dispatch"))
             {
                 m.Buttons.Add(new NeutralButton("🚀 Xuất phát", CallbackData.Build(Kind, "dsp", routeId)));
@@ -549,6 +621,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 m.Buttons.Add(new NeutralButton("🔁 Đổi xe", CallbackData.Build(Kind, "rv", routeId)));
                 m.Buttons.Add(new NeutralButton("👤 Đổi tài xế", CallbackData.Build(Kind, "rd", routeId)));
             }
+            // Điểm còn việc (theo thứ tự chạy) – điểm kế tiếp đứng đầu.
             foreach (var s in stops.Where(s => Strings(s, "allowedActions").Count > 0).Take(8))
             {
                 m.Buttons.Add(new NeutralButton($"📍 #{S(s, "sequenceNo")} {S(s, "customerName") ?? S(s, "locationName")}", CallbackData.Build(Kind, "s", Guid.Parse(S(s, "id")!))));
@@ -563,16 +636,31 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 return;
             }
-            decimal min = decimal.TryParse(S(d, "deliveryTempMinC"), NumberStyles.Number, CultureInfo.InvariantCulture, out var mn) ? mn : 60m;
-            var m = new NeutralMessage { Title = "🚀 Xuất phát – nhiệt độ thức ăn (°C)", Lines = [$"Tối thiểu {min:0.##} °C. Thấp hơn → xử lý trên web (cần ghi hành động khắc phục)."] };
+            decimal min = MinTemp(d);
+            var m = new NeutralMessage { Title = $"🚀 {RouteNo(d)} – nhiệt độ thức ăn lúc xuất phát", Lines = [$"Tối thiểu {min:0.##} °C. Bấm nhiệt độ vừa đo để ghi và xuất phát."] };
             // Đã đo đạt ngưỡng → cho xuất phát 1 chạm (không đo lại).
             if (decimal.TryParse(S(d, "departureTemperatureC"), NumberStyles.Number, CultureInfo.InvariantCulture, out var last) && last >= min)
             {
                 m.Buttons.Add(new NeutralButton($"✅ Xuất phát (đã đo {last:0.##} °C)", CallbackData.Build(Kind, "dt", $"{routeId:N}.-")));
             }
-            m.Buttons.AddRange(Temps.Where(t => t >= min).Select(t => new NeutralButton(t.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "dt", $"{routeId:N}.{t.ToString("0.##", CultureInfo.InvariantCulture)}"))));
-            m.Buttons.Add(new NeutralButton("Khác…", CallbackData.Build(Kind, "dtx", routeId)));
-            m.Buttons.Add(new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId)));
+            m.Buttons.AddRange(Temps.Where(t => t >= min).Select(t => new NeutralButton(t.ToString("0", CultureInfo.InvariantCulture) + "°",
+                CallbackData.Build(Kind, "dt", $"{routeId:N}.{t.ToString("0", CultureInfo.InvariantCulture)}"), Row: "dlv-temp")));
+            m.Buttons.Add(new NeutralButton("🌡 Nhiệt độ khác", CallbackData.Build(Kind, "dtn", routeId)));
+            m.Buttons.AddRange(Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "r", routeId)));
+            await ShowAsync(ctx, m, ct);
+        }
+
+        /// <summary>BOT-UX-2 (mục 6): nhiệt độ xuất phát khác – màn số (điền sẵn lần đo trước, không có thì ngưỡng tối thiểu).</summary>
+        private async Task DispatchNumberAsync(BotActionContext ctx, Guid routeId, string token, string? value, CancellationToken ct)
+        {
+            if (await DetailAsync(ctx, routeId, token, ct) is not { } d)
+            {
+                return;
+            }
+            decimal min = MinTemp(d);
+            var m = new NeutralMessage { Title = $"🚀 {RouteNo(d)} – nhiệt độ xuất phát", Lines = [$"Tối thiểu {min:0.##} °C."] };
+            InputWidgets.Number(m, Kind, "dtn", "dt", routeId.ToString("N"), InputWidgets.Value(value) ?? (Dec(d, "departureTemperatureC") is > 0m and var last ? last : min), "°C",
+                Temps, 0, 150, "✅ Ghi & xuất phát");
             await ShowAsync(ctx, m, ct);
         }
 
@@ -584,12 +672,13 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 form.Add(new("TemperatureC", temperature));
             }
             var r = await Web.PostFormAsUserAsync<JsonElement>("api/DeliveryRoute/Dispatch", form, token, ct);
-            await RouteCardAsync(ctx, routeId, token, r.IsOk ? "✅ " + (r.ResponseMessage ?? "Đã xuất phát") : "⚠️ " + Problem(r), ct);
+            CallbackAnswer.Set(r.IsOk ? "✅ Đã xuất phát" + (temperature != null ? $" · {temperature} °C" : "") : "⚠️ " + Problem(r));
+            await RouteCardAsync(ctx, routeId, token, r.IsOk ? InputWidgets.Done(r.ResponseMessage ?? "Đã xuất phát", time) : "⚠️ " + Problem(r), ct);
         }
 
         // ---------- Điểm dừng ----------
 
-        private async Task<(Guid RouteId, JsonElement Stop)?> StopAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
+        private async Task<(Guid RouteId, JsonElement Stop, JsonElement Route)?> StopAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
         {
             var s = await Web.GetAsUserAsync<JsonElement>("api/DeliveryStop/GetById?id=" + stopId, token, ct);
             if (!s.IsOk || !Guid.TryParse(S(s.Data, "deliveryRouteId"), out Guid routeId))
@@ -607,7 +696,37 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 await SayAsync(ctx, "Không tìm thấy điểm dừng.", ct);
                 return null;
             }
-            return (routeId, stop);
+            return (routeId, stop, d);
+        }
+
+        /// <summary>Số suất điền sẵn: đã xếp lên xe (nếu có), không thì kế hoạch.</summary>
+        private static decimal KnownQty(JsonElement stop) => Dec(stop, "loadedQty") is > 0m and var loaded ? loaded : Dec(stop, "plannedMealQty");
+
+        /// <summary>
+        /// Nhiệt độ bàn giao điền sẵn: đã đo tại điểm (api tự dùng – không gửi lại), không có thì lần đo lúc xuất phát của chuyến (gửi kèm, hiện rõ trên nút).
+        /// null = chưa có lần đo nào đạt ngưỡng → phải chọn nhiệt độ.
+        /// </summary>
+        private static (decimal Value, bool AtStop)? KnownTemp(JsonElement stop, JsonElement route)
+        {
+            decimal min = MinTemp(route);
+            if (Dec(stop, "handoverTemperatureC") is > 0m and var atStop && atStop >= min)
+            {
+                return (atStop, true);
+            }
+            return Dec(route, "departureTemperatureC") is > 0m and var dep && dep >= min ? (Math.Round(dep, MidpointRounding.AwayFromZero), false) : null;
+        }
+
+        private static decimal MinTemp(JsonElement route) => Dec(route, "deliveryTempMinC") is > 0m and var m ? m : 60m;
+
+        /// <summary>Người nhận điền sẵn: người nhận gần nhất tại điểm (bộ nhớ) hoặc "Đại diện &lt;khách&gt;".</summary>
+        private string Receiver(BotActionContext ctx, Guid stopId, JsonElement stop)
+        {
+            if (_receivers.TryGetValue(ReceiverKey(ctx, stopId), out var name))
+            {
+                return name;
+            }
+            string who = "Đại diện " + (S(stop, "customerName") ?? S(stop, "locationName") ?? "khách");
+            return who[..Math.Min(who.Length, 100)];
         }
 
         private async Task StopCardAsync(BotActionContext ctx, Guid stopId, string token, string? note, CancellationToken ct)
@@ -622,8 +741,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             var s = x.Stop;
             var allowed = Strings(s, "allowedActions");
+            Screens.Show(CallbackData.Build(Kind, "s", stopId));
             var m = new NeutralMessage
             {
+                Banner = note,
                 Title = $"{StopIcon(s)} #{S(s, "sequenceNo")} {S(s, "customerName")} – {S(s, "statusName")}",
                 Lines =
                 [
@@ -636,59 +757,106 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 m.Lines.Add($"Nhiệt độ bàn giao: {Num(ht)} °C");
             }
-            if (note != null)
-            {
-                m.Lines.Insert(0, note);
-            }
             string n = stopId.ToString("N");
+            if (allowed.Contains("deliver"))
+            {
+                // BOT-UX-2: ✅ Giao đủ N 1 chạm – số suất, nhiệt độ, người nhận điền sẵn và hiện rõ trước khi bấm.
+                decimal qty = KnownQty(s);
+                var temp = KnownTemp(s, x.Route);
+                string receiver = Receiver(ctx, stopId, s);
+                m.Lines.Add($"Bàn giao điền sẵn: {qty:0.##} suất · {(temp is { } t ? $"{t.Value:0.##} °C ({(t.AtStop ? "đo tại điểm" : "lần đo lúc xuất phát")})" : "chưa đo nhiệt độ")} · người nhận: {receiver}");
+                if (qty > 0)
+                {
+                    m.Buttons.Add(new NeutralButton($"✅ Giao đủ {qty:0.##}" + (temp is { } tt ? $" · {tt.Value:0.##}°" : string.Empty), CallbackData.Build(Kind, "full", n)));
+                }
+                m.Buttons.Add(new NeutralButton("✏️ Giao số khác", CallbackData.Build(Kind, "dl", n)));
+            }
             if (allowed.Contains("arrive"))
             {
                 m.Buttons.Add(new NeutralButton("📍 Đã đến", CallbackData.Build(Kind, "arr", n)));
-            }
-            if (allowed.Contains("deliver"))
-            {
-                m.Buttons.Add(new NeutralButton("✅ Giao", CallbackData.Build(Kind, "dl", n)));
             }
             if (allowed.Contains("fail"))
             {
                 m.Buttons.Add(new NeutralButton("❌ Không giao được", CallbackData.Build(Kind, "fl", n)));
             }
-            m.Buttons.Add(new NeutralButton("⬅️ Chuyến", CallbackData.Build(Kind, "r", x.RouteId)));
+            if (allowed.Contains("deliver"))
+            {
+                m.Buttons.Add(new NeutralButton("👤 Người nhận khác…", CallbackData.Build(Kind, "rcv", n)));
+            }
+            m.Buttons.AddRange(Screens.Back("⬅️ Chuyến", CallbackData.Build(Kind, "r", x.RouteId)));
             await ShowAsync(ctx, m, ct);
         }
 
-        private async Task StopPostAsync(BotActionContext ctx, Guid stopId, string token, string path, List<KeyValuePair<string, string>> form, CancellationToken ct)
+        private async Task StopPostAsync(BotActionContext ctx, Guid stopId, string token, string path, List<KeyValuePair<string, string>> form, string done, CancellationToken ct)
         {
             var r = await Web.PostFormAsUserAsync<JsonElement>(path, form, token, ct);
-            await StopCardAsync(ctx, stopId, token, r.IsOk ? "✅ " + (r.ResponseMessage ?? "Đã ghi") : "⚠️ " + Problem(r), ct);
+            CallbackAnswer.Set(r.IsOk ? "✅ " + done : "⚠️ " + Problem(r));
+            await StopCardAsync(ctx, stopId, token, r.IsOk ? InputWidgets.Done(r.ResponseMessage ?? done, time) : "⚠️ " + Problem(r), ct);
         }
 
-        private async Task DeliverQtyAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
+        /// <summary>BOT-UX-2: [✅ Giao đủ N] – giao đúng số điền sẵn; chưa có lần đo nhiệt độ nào đạt ngưỡng → chọn nhiệt độ bàn giao (1 chạm nữa).</summary>
+        private async Task DeliverFullAsync(BotActionContext ctx, Guid stopId, string token, CancellationToken ct)
         {
             if (await StopAsync(ctx, stopId, token, ct) is not { } x)
             {
                 return;
             }
-            // Điền sẵn số đã biết: đã xếp lên xe (nếu có) rồi kế hoạch – bấm 1 chạm nếu đúng.
-            decimal planned = Dec(x.Stop, "plannedMealQty"), loaded = Dec(x.Stop, "loadedQty");
-            decimal known = loaded > 0 ? loaded : planned;
-            var presets = new[] { known, planned, Math.Floor(known * 0.98m), Math.Floor(known * 0.95m) }.Where(q => q > 0).Distinct().ToList();
-            await ShowAsync(ctx, new NeutralMessage
+            string qty = KnownQty(x.Stop).ToString("0", CultureInfo.InvariantCulture);
+            if (KnownTemp(x.Stop, x.Route) is not { } temp)
             {
-                Title = "✅ Giao – số suất thực tế",
-                Lines = [$"Kế hoạch {planned:0.##}{(loaded > 0 ? $" · đã xếp {loaded:0.##}" : "")} suất"],
-                Buttons = [.. presets.Select(q => new NeutralButton((q == known ? "✅ Đúng " : "") + q.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "dq", $"{stopId:N}.{q.ToString("0.##", CultureInfo.InvariantCulture)}"))),
-                    new NeutralButton("Khác…", CallbackData.Build(Kind, "dqx", stopId)), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "s", stopId))],
-            }, ct);
+                await DeliverTempAsync(ctx, stopId, qty, ct);
+                return;
+            }
+            await DeliverAsync(ctx, stopId, token, qty, temp.AtStop ? null : temp.Value.ToString("0.##", CultureInfo.InvariantCulture), ct, x.Stop);
+        }
+
+        /// <summary>Ghi bàn giao (DeliveryStop/Deliver): số suất, nhiệt độ (null = dùng lần đo tại điểm), người nhận điền sẵn.</summary>
+        private async Task DeliverAsync(BotActionContext ctx, Guid stopId, string token, string qty, string? temperature, CancellationToken ct, JsonElement? stop = null)
+        {
+            if (stop == null)
+            {
+                if (await StopAsync(ctx, stopId, token, ct) is not { } x)
+                {
+                    return;
+                }
+                stop = x.Stop;
+            }
+            string receiver = Receiver(ctx, stopId, stop.Value);
+            var form = new List<KeyValuePair<string, string>> { new("Id", stopId.ToString()), new("DeliveredQuantity", qty), new("ReceiverName", receiver), new("Remark", "Telegram") };
+            if (temperature != null)
+            {
+                form.Add(new("TemperatureC", temperature));
+            }
+            await StopPostAsync(ctx, stopId, token, "api/DeliveryStop/Deliver", form, $"Đã giao {qty} suất – {receiver}", ct);
+        }
+
+        /// <summary>BOT-UX-2 (mục 6): giao số khác (thiếu / thừa) – màn số điền sẵn số đã xếp / kế hoạch → [✅ Xác nhận] → chọn nhiệt độ bàn giao.</summary>
+        private async Task DeliverQtyAsync(BotActionContext ctx, Guid stopId, string token, string? value, CancellationToken ct)
+        {
+            if (await StopAsync(ctx, stopId, token, ct) is not { } x)
+            {
+                return;
+            }
+            decimal planned = Dec(x.Stop, "plannedMealQty"), loaded = Dec(x.Stop, "loadedQty");
+            decimal known = KnownQty(x.Stop);
+            var m = new NeutralMessage
+            {
+                Title = $"✅ Giao – #{S(x.Stop, "sequenceNo")} {S(x.Stop, "customerName")}",
+                Lines = [$"Số suất giao thực tế (kế hoạch {planned:0.##}{(loaded > 0 ? $" · đã xếp {loaded:0.##}" : "")}):"],
+            };
+            InputWidgets.Number(m, Kind, "dqn", "dq", stopId.ToString("N"), InputWidgets.Value(value) ?? known, "suất",
+                [known, planned, Math.Floor(known * 0.98m), Math.Floor(known * 0.95m)], 1);
+            m.Buttons.AddRange(Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "s", stopId)));
+            await ShowAsync(ctx, m, ct);
         }
 
         private Task DeliverTempAsync(BotActionContext ctx, Guid stopId, string qty, CancellationToken ct)
             => ShowAsync(ctx, new NeutralMessage
             {
-                Title = $"🌡 Nhiệt độ bàn giao (°C) – {qty} suất",
-                Lines = ["Chọn nhiệt độ đo lúc bàn giao (thấp hơn ngưỡng → ghi trên web kèm hành động khắc phục)."],
-                Buttons = [.. Temps.Select(t => new NeutralButton(t.ToString("0.##", CultureInfo.InvariantCulture), CallbackData.Build(Kind, "dv", $"{stopId:N}.{qty}.{t.ToString("0.##", CultureInfo.InvariantCulture)}"))),
-                    new NeutralButton("Không đo", CallbackData.Build(Kind, "dv", $"{stopId:N}.{qty}.-")), new NeutralButton("⬅️ Quay lại", CallbackData.Build(Kind, "s", stopId))],
+                Title = $"🌡 Nhiệt độ bàn giao – {qty} suất",
+                Lines = ["Bấm nhiệt độ đo lúc bàn giao để ghi (thấp hơn ngưỡng → ghi trên web kèm hành động khắc phục)."],
+                Buttons = [.. Temps.Select(t => new NeutralButton(t.ToString("0", CultureInfo.InvariantCulture) + "°", CallbackData.Build(Kind, "dv", $"{stopId:N}.{qty}.{t.ToString("0", CultureInfo.InvariantCulture)}"), Row: "dlv-temp")),
+                    new NeutralButton("Không đo", CallbackData.Build(Kind, "dv", $"{stopId:N}.{qty}.-")), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "s", stopId))],
             }, ct);
 
         // ---------- Hiển thị ----------

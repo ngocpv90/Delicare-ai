@@ -6,7 +6,7 @@ namespace AppDelicare.Messaging.Experience
     /// <summary>
     /// BOT-1.4 (BOT_TELEGRAM §1.4): bàn phím dưới. Người có > 6 chức năng (kể cả admin toàn quyền) → <b>3 nút cố định</b> [⚡ Ca của tôi] [📂 Chức năng] [📍 Chấm công]
     /// – tới mọi chức năng ≤ 2 lần bấm qua 📂 (phân hệ → chức năng). Người ≤ 6 chức năng → hiện thẳng các chức năng (không tầng).
-    /// Nút 📍 Chấm công xin vị trí (request_location) – chỉ bàn phím dưới mới gửi được vị trí.
+    /// Nút 📍 Chấm công xin vị trí (request_location) – chỉ bàn phím dưới mới gửi được vị trí. BOT-UX-2 (mục 5): bỏ bàn phím 1 nút vị trí (đè mất 3 phím) – /chamcong chỉ nhắc bấm 📍.
     /// </summary>
     public static class KeyboardBuilder
     {
@@ -45,13 +45,6 @@ namespace AppDelicare.Messaging.Experience
         public static TgReplyKeyboard Phone() => new()
         {
             Keyboard = [[new() { Text = SharePhone, RequestContact = true }]],
-            OneTimeKeyboard = true,
-        };
-
-        /// <summary>Chỉ 1 nút gửi vị trí (khi gõ /chamcong).</summary>
-        public static TgReplyKeyboard Location() => new()
-        {
-            Keyboard = [[new() { Text = CheckIn, RequestLocation = true }]],
             OneTimeKeyboard = true,
         };
 

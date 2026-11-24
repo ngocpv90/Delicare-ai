@@ -21,6 +21,8 @@ namespace AppDelicare.Messaging.Experience
 
         public async Task<ChannelSendResult> SendAsync(string botCode, OutgoingMessage message, CancellationToken ct = default)
         {
+            // BOT-UX-2 (mục 8): nội dung vừa gửi → chữ trả lời nút bấm (dòng ✅ / ⚠️ hoặc tiêu đề màn).
+            CallbackAnswer.Offer(message.Text);
             var s = Session(botCode, message.ChatId);
             if (s == null)
             {
@@ -55,6 +57,7 @@ namespace AppDelicare.Messaging.Experience
 
         public async Task<ChannelSendResult> EditAsync(string botCode, string chatId, string providerMessageId, string text, object? replyMarkup, CancellationToken ct = default)
         {
+            CallbackAnswer.Offer(text);
             var s = Session(botCode, chatId);
             if (s == null || providerMessageId != s.State.MessageId || replyMarkup is not (null or TgInlineKeyboard))
             {
@@ -145,9 +148,10 @@ namespace AppDelicare.Messaging.Experience
 
         private (string Html, TgInlineKeyboard Keyboard) Compose(PanelSession s)
         {
-            var state = s.State;
+            // BOT-UX-2: đường dẫn + hàng điều hướng theo ngăn xếp SAU lần xử lý này (màn vừa mở đã có trên đường dẫn).
+            var stack = PanelController.Plan(s).Stack;
             var sb = new StringBuilder();
-            sb.Append("<i>").Append(AppDelicare.Messaging.Channels.Telegram.TelegramFormatter.Escape(Breadcrumb(state))).Append("</i>");
+            sb.Append("<i>").Append(AppDelicare.Messaging.Channels.Telegram.TelegramFormatter.Escape(Breadcrumb(stack))).Append("</i>");
             string body = string.Join("\n\n", s.Parts.Select(p => p.Html).Where(h => !string.IsNullOrWhiteSpace(h)));
             if (body.Length > 0)
             {
@@ -165,17 +169,41 @@ namespace AppDelicare.Messaging.Experience
                 html = html[..(cut > MaxHtml / 2 ? cut : MaxHtml - 1)] + "\n… (còn nữa – xem đủ trên web)";
             }
             var rows = s.Parts.SelectMany(p => p.Rows).Where(r => r.Count > 0).Take(90).ToList();
-            rows.Add(result ? ResultRow() : NavRow(state));
+            rows.Add(result ? ResultRow() : NavRow(stack));
             return (html, new TgInlineKeyboard { InlineKeyboard = rows });
         }
 
-        public static string Breadcrumb(PanelState state)
-            => state.Stack.Count == 0 ? "Menu" : string.Join(Separator, state.Stack.Select(e => e.Level == PanelLevel.Root ? "Menu" : e.Label));
+        /// <summary>BOT-UX-2: đường dẫn dài hơn số ký tự này (và &gt; 4 bước) → rút gọn giữa: "Menu › … › 2 bước cuối".</summary>
+        public const int CrumbMax = 56;
 
-        public static List<TgInlineButton> NavRow(PanelState state)
+        public static string Breadcrumb(PanelState state) => Breadcrumb(state.Stack);
+
+        /// <summary>BOT-UX-2 (mục 3): đường dẫn đủ cấp (vd. Menu › 🍳 Bếp › 🍳 Mẻ cần làm › 🔥 ME-0123), dài thì rút gọn giữa bằng "…".</summary>
+        public static string Breadcrumb(IReadOnlyList<PanelEntry> stack)
+        {
+            if (stack.Count == 0)
+            {
+                return "Menu";
+            }
+            var parts = new List<string>();
+            foreach (var e in stack)
+            {
+                parts.Add(e.Level == PanelLevel.Root ? "Menu" : e.Label);
+                if (e.Detail != null)
+                {
+                    parts.Add(e.Detail);
+                }
+            }
+            string full = string.Join(Separator, parts);
+            return full.Length <= CrumbMax || parts.Count <= 4 ? full : string.Join(Separator, [parts[0], "…", parts[^2], parts[^1]]);
+        }
+
+        public static List<TgInlineButton> NavRow(PanelState state) => NavRow(state.Stack);
+
+        public static List<TgInlineButton> NavRow(IReadOnlyList<PanelEntry> stack)
         {
             var row = new List<TgInlineButton>();
-            if (state.Top is { Level: not PanelLevel.Root } || state.Depth > 0)
+            if (stack.Count > 0 && stack[^1].Level != PanelLevel.Root)
             {
                 row.Add(Btn("◀ Quay lại", PanelNav.Back));
                 row.Add(Btn("🏠 Menu", PanelNav.Home));

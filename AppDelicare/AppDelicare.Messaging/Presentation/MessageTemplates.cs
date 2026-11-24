@@ -4,12 +4,20 @@ using System.Text.Json;
 
 namespace AppDelicare.Messaging.Presentation
 {
-    /// <summary>Nút trung tính: callback (≤ 64 byte, BOT-1.4 Callback/CallbackData) hoặc link.</summary>
-    public sealed record NeutralButton(string Text, string? Callback = null, string? Url = null);
+    /// <summary>
+    /// Nút trung tính: callback (≤ 64 byte, BOT-1.4 Callback/CallbackData) hoặc link. BOT-UX-2: <paramref name="Row"/> = nhóm hàng – các nút liền nhau cùng nhóm
+    /// nằm chung 1 hàng (tối đa <see cref="NeutralMessage.MaxRowWidth"/>: hàng số nhiệt độ, hàng −10 −1 +1 +10, hàng ⭐ Hay dùng, hàng ◀ Trước / Sau ▶);
+    /// không nhóm → 2 nút / hàng như cũ.
+    /// </summary>
+    public sealed record NeutralButton(string Text, string? Callback = null, string? Url = null, string? Row = null);
 
     /// <summary>Nội dung trung tính (không phụ thuộc kênh) – formatter của từng kênh dựng ra HTML Telegram / Zalo…</summary>
     public sealed class NeutralMessage
     {
+        /// <summary>BOT-UX-2: tối đa số nút trên 1 hàng nhóm (<see cref="NeutralButton.Row"/>).</summary>
+        public const int MaxRowWidth = 5;
+        /// <summary>BOT-UX-2 (mục 9): dòng kết quả ở ĐẦU thẻ, trên tiêu đề (vd. "✅ Đã ghi 78 °C · 10:15").</summary>
+        public string? Banner { get; set; }
         public string? Title { get; set; }
         public List<string> Lines { get; set; } = [];
         public List<NeutralButton> Buttons { get; set; } = [];

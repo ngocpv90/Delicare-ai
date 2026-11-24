@@ -5,6 +5,7 @@ using AppDelicare.Messaging.Callback;
 using AppDelicare.Messaging.Channels;
 using AppDelicare.Messaging.Conversations;
 using AppDelicare.Messaging.Core;
+using AppDelicare.Messaging.Experience;
 using AppDelicare.Messaging.Presentation;
 
 namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
@@ -19,7 +20,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     /// </list>
     /// Callback <c>op:&lt;hành động&gt;:&lt;id&gt;</c>; lựa chọn trong danh sách mang số thứ tự (danh sách giữ theo chat) để callback ≤ 64 byte.
     /// </summary>
-    public sealed class ThaoTacActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time)
+    public sealed class ThaoTacActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, ReasonCatalog reasons)
         : WebActions(web, tokens, sender, replies), IBotActionProvider
     {
         public const string Kind = CallbackData.Kinds.Op;
@@ -47,9 +48,9 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         [
             new BotAction { Code = "kh_regen", Module = "KEHOACH", Label = "🔄 Lập lại kế hoạch", Command = "laplai", CommandDescription = "Lập lại kế hoạch sản xuất ngày mai", Bots = ["VH"], MenuMetaLink = "#/prod-plan", Order = 5, Handler = RegenerateAskAsync },
             new BotAction { Code = "kh_change", Module = "KEHOACH", Label = "✏️ Đề xuất đổi món", Command = "doimon", CommandDescription = "Đề xuất đổi món trong thực đơn", Bots = ["VH"], MenuMetaLink = "#/menu-change-request", Order = 6, Handler = ChangeStartAsync },
-            new BotAction { Code = "kd_change", Module = "KINHDOANH", Label = "🔄 Đổi món – ý kiến khách", Bots = ["VH"], MenuMetaLink = "#/menu-change-request", Order = 6, Handler = ChangeStartAsync },
-            new BotAction { Code = "bep_cleaning", Module = "BEP", Label = "🧼 Lô vệ sinh hộp khay", Command = "vesinh", CommandDescription = "Lô vệ sinh hộp khay đang làm", Bots = ["VH"], MenuMetaLink = "#/qc-cleaning", Order = 23, Handler = CleaningAsync },
-            new BotAction { Code = "qa_cleaning", Module = "ATTP", Label = "🧼 Lô vệ sinh hộp khay", Bots = ["VH"], MenuMetaLink = "#/qc-cleaning", Order = 6, Handler = CleaningAsync },
+            // BOT-UX-2 (mục 14): mỗi chức năng 1 phân hệ chính – bỏ bản trùng "🔄 Đổi món – ý kiến khách" (Kinh doanh, cùng luồng + cùng quyền với ✏️ Đề xuất đổi món)
+            // và "🧼 Lô vệ sinh hộp khay" ở Bếp (giữ ở ATTP / QC, lệnh /vesinh chuyển theo).
+            new BotAction { Code = "qa_cleaning", Module = "ATTP", Label = "🧼 Lô vệ sinh hộp khay", Command = "vesinh", CommandDescription = "Lô vệ sinh hộp khay đang làm", Bots = ["VH"], MenuMetaLink = "#/qc-cleaning", Order = 6, Handler = CleaningAsync },
             new BotAction { Code = "ns_import", Module = "NHANSU", Label = "📥 Nhập file máy chấm công", Command = "nhapmcc", CommandDescription = "Gửi file Excel dữ liệu máy chấm công", Bots = ["VH"], MenuMetaLink = "#/hr-attendance", Order = 5, Handler = AttendanceAskAsync },
         ];
 
@@ -281,7 +282,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     if (_drafts.TryGetValue(ctx.Event.ChatId, out var draft))
                     {
                         draft.MealDate = day;
-                        await AskAsync(ctx, "Lý do đổi món (vd. khách đề nghị, thiếu nguyên liệu):", ReplyChangeReason, "x", ct);
+                        // BOT-UX-2 (mục 7): lý do = nút lý do hay gặp (Messaging:Reasons:op-change-reason) + [✏️ Khác…].
+                        await ShowAsync(ctx, new NeutralMessage { Title = "Lý do đổi món", Buttons = reasons.Buttons(ReasonCatalog.DishChange, CallbackData.Kinds.Op, "chr", "chx", "k") }, ct);
                     }
                     else
                     {
@@ -292,7 +294,23 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     await CleaningCompleteAsync(ctx, index, true, "Kết luận qua Telegram", ct);
                     break;
                 case "cr":
+                    await ShowAsync(ctx, new NeutralMessage
+                    {
+                        Title = "❌ Lô vệ sinh không đạt – lý do",
+                        Buttons = reasons.Buttons(ReasonCatalog.CleaningReject, CallbackData.Kinds.Op, "crr", "crx", index.ToString(CultureInfo.InvariantCulture)),
+                    }, ct);
+                    break;
+                case "crr" when id.Split('.') is [var ci, var ri] && int.TryParse(ci, out int cleanIndex) && reasons.At(ReasonCatalog.CleaningReject, ri) is { } cleanReason:
+                    await CleaningCompleteAsync(ctx, cleanIndex, false, cleanReason, ct);
+                    break;
+                case "crx":
                     await AskAsync(ctx, "❌ Lý do không đạt (bắt buộc):", ReplyCleanReject, index.ToString(CultureInfo.InvariantCulture), ct);
+                    break;
+                case "chr" when reasons.At(ReasonCatalog.DishChange, id.Split('.').Last()) is { } changeReason:
+                    await ChangeCreateAsync(ctx, changeReason, ct);
+                    break;
+                case "chx":
+                    await AskAsync(ctx, "Lý do đổi món (vd. khách đề nghị, thiếu nguyên liệu):", ReplyChangeReason, "x", ct);
                     break;
                 default:
                     await SayAsync(ctx, "Nút đã hết hạn.", ct);

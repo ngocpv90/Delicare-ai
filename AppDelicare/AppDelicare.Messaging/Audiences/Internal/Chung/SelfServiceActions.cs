@@ -22,7 +22,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             => AppDelicare.Messaging.Experience.PanelSession.Current != null
                 // BOT-UX-1: có bảng điều khiển → hướng dẫn trên panel; phím 📍 Chấm công (xin vị trí) luôn có ở bàn phím dưới cố định.
                 ? BotReply.TextAsync(sender, ctx.Bot, ctx.Event.ChatId, "📍 Bấm phím \"" + KeyboardBuilder.CheckIn + "\" ở bàn phím dưới để gửi vị trí hiện tại (vào / ra ca).", ct: ct)
-                : BotReply.TextAsync(sender, ctx.Bot, ctx.Event.ChatId, "Bấm nút \"" + KeyboardBuilder.CheckIn + "\" để gửi vị trí hiện tại.", KeyboardBuilder.Location(), ct);
+                // BOT-UX-2 (mục 5): không đổi bàn phím thành 1 nút vị trí (mất 3 phím) – gửi lại đúng 3 phím, phím 📍 đã xin vị trí.
+                : BotReply.TextAsync(sender, ctx.Bot, ctx.Event.ChatId, "Bấm nút \"" + KeyboardBuilder.CheckIn + "\" để gửi vị trí hiện tại.", KeyboardBuilder.MainMenu(), ct);
 
         public async Task LocationAsync(BotActionContext ctx, CancellationToken ct)
         {

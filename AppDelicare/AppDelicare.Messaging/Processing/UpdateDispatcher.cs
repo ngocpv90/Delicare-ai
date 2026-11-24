@@ -86,18 +86,42 @@ namespace AppDelicare.Messaging.Processing
             // BOT-UX-1: chỉ chat riêng có bảng điều khiển; nhóm chat (và nút bấm từ nhóm) giữ hành vi cũ.
             bool panelChat = panels.Enabled && !fromGroup;
             bool stale = false;
-            if (e.Kind == IncomingKind.Callback && e.CallbackId != null)
+            if (e.Kind == IncomingKind.Callback && e.CallbackId != null && panelChat && panels.IsStale(bot, e))
             {
-                if (panelChat && panels.IsStale(bot, e))
+                stale = true;
+                await panels.RetireStaleAsync(bot, e, ct);
+            }
+            // BOT-UX-2 (mục 8): mọi nút bấm đều được trả lời bằng chữ ngắn (answerCallbackQuery) SAU khi xử lý – "Đã ghi 78 °C", "Đã mở: ME-0123", lỗi → câu lỗi api.
+            var answer = e.Kind == IncomingKind.Callback && e.CallbackId != null && !stale ? CallbackAnswer.Begin() : null;
+            bool failed = false;
+            try
+            {
+                return await ProcessAsync(bot, e, panelChat, stale, ct);
+            }
+            catch (Exception)
+            {
+                failed = true;
+                throw;
+            }
+            finally
+            {
+                if (answer != null)
                 {
-                    stale = true;
-                    await panels.RetireStaleAsync(bot, e, ct);
-                }
-                else
-                {
-                    await sender.AnswerCallbackAsync(bot, e.CallbackId, null, ct);
+                    string text = failed ? "⚠️ Có lỗi – vui lòng thử lại." : answer.Resolve();
+                    try
+                    {
+                        await sender.AnswerCallbackAsync(bot, e.CallbackId!, text, ct);
+                    }
+                    catch (Exception) when (failed)
+                    {
+                        // giữ lỗi gốc
+                    }
                 }
             }
+        }
+
+        private async Task<DispatchResult> ProcessAsync(string bot, IncomingEvent e, bool panelChat, bool stale, CancellationToken ct)
+        {
             switch (e.Kind)
             {
                 case IncomingKind.Contact:
@@ -105,6 +129,10 @@ namespace AppDelicare.Messaging.Processing
                     return DispatchResult.Processed;
                 case IncomingKind.Command when e.Command == "start":
                     await onboarding.StartAsync(bot, e, ct);
+                    if (panelChat)
+                    {
+                        panels.KeyboardSent(bot, e.ChatId); // lời chào đã mang bàn phím dưới 3 phím
+                    }
                     return DispatchResult.Processed;
                 case IncomingKind.Command when e.Command == "huylienket":
                     await onboarding.UnlinkAsync(bot, e, ct);
@@ -117,6 +145,7 @@ namespace AppDelicare.Messaging.Processing
             if (!identity.Linked)
             {
                 await onboarding.AskPhoneAsync(bot, e, ct);
+                CallbackAnswer.Set("Bạn chưa liên kết bot");
                 return DispatchResult.Processed;
             }
             if (!identity.CanUseBot)
@@ -136,6 +165,8 @@ namespace AppDelicare.Messaging.Processing
             await panels.RunAsync(bot, e.ChatId, mode.Value, async session =>
             {
                 await commands.SyncAsync(bot, e.ChatId, identity, ct);
+                // BOT-UX-2 (mục 4): bàn phím dưới 3 phím – gửi lại khi /menu, /ca, /help và lần tương tác đầu của chat sau khi container khởi động.
+                await panels.EnsureKeyboardAsync(bot, e.ChatId, e.Kind == IncomingKind.Command && e.Command is "menu" or "ca" or "help", ct);
                 if (pending != null)
                 {
                     // Mục 6: nhận trả lời xong → xóa câu hỏi + câu trả lời, chức năng cập nhật panel.
@@ -152,18 +183,18 @@ namespace AppDelicare.Messaging.Processing
                     await menu.OpenAsync(ctx, ct);
                     return;
                 }
-                if (e.Kind == IncomingKind.Callback && CallbackData.Parse(e.CallbackData) is { } cb)
+                var cb = e.Kind == IncomingKind.Callback ? CallbackData.Parse(e.CallbackData) : null;
+                session.Callback = cb == null ? null : e.CallbackData;
+                if (cb?.Kind == ShiftCards.Kind && registry.ByCode(cb.Id) is { } run && run.IsAllowed(bot, identity))
                 {
-                    if (session.Mode == PanelMode.EditCurrent && cb.Kind is not (CallbackData.Kinds.Menu or CallbackData.Kinds.Nav))
-                    {
-                        session.State.Depth++;
-                    }
-                    else if (cb.Kind == ShiftCards.Kind && registry.ByCode(cb.Id) is { } run && run.IsAllowed(bot, identity))
-                    {
-                        panels.EnterAction(session.State, ctx, run);
-                    }
+                    panels.EnterAction(session.State, ctx, run);
                 }
                 result = await RouteAsync(ctx, pending, ct);
+                if (cb?.Kind != CallbackData.Kinds.Nav)
+                {
+                    // BOT-UX-2 (mục 2): ghi màn vừa mở vào ngăn xếp (◀ Quay lại mở lại đúng màn trước). Nút điều hướng tự ghi khi phát lại màn.
+                    PanelController.Commit(session);
+                }
             }, ct);
             return result;
         }
@@ -223,7 +254,8 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDispatchTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyQty
                         or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyReceiver or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyBoxes
-                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDriver:
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDriver or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyReceiverName
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyFail:
                         await giaoVan.ReplyAsync(ctx, pending, ct);
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions.ReplyServed or AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions.ReplyReceive:
@@ -256,7 +288,10 @@ namespace AppDelicare.Messaging.Processing
                         await menu.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Nav:
-                        await panels.NavAsync(ctx, data, menu, ct);
+                        await panels.NavAsync(ctx, data, menu, async (c, t) => await RouteAsync(c, null, t), ct);
+                        break;
+                    case CallbackData.Kinds.Page:
+                        await panels.PageAsync(ctx, data, ct);
                         break;
                     case ShiftCards.Kind:
                         await shiftCards.HandleAsync(ctx, data, ct);

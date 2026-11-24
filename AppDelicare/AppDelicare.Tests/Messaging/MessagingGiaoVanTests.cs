@@ -86,7 +86,7 @@ namespace AppDelicare.Tests.Messaging
             Buttons(card.ReplyMarkup).Should().Contain("dlv:dsp:" + r);
             await h.SendAsync(Tap("dlv:dsp:" + r));
             var temps = Buttons(h.Sender.Edits.Last().Markup);
-            temps.Should().Contain(["dlv:dt:" + r + ".60", "dlv:dt:" + r + ".65", "dlv:dtx:" + r]);
+            temps.Should().Contain(["dlv:dt:" + r + ".60", "dlv:dt:" + r + ".65", "dlv:dtn:" + r], "nhiệt độ 1 chạm + màn số cho nhiệt độ khác (không gõ tay)");
             temps.Should().NotContain(b => b.EndsWith(".-"), "chưa đo thì không có xuất phát 1 chạm");
             await h.SendAsync(Tap("dlv:dt:" + r + ".65"));
             var call = Last(h, "api/DeliveryRoute/Dispatch");
@@ -119,14 +119,19 @@ namespace AppDelicare.Tests.Messaging
             var card = h.Sender.Edits.Last();
             card.Text.Should().Contain("Trường A").And.Contain("đã xếp 98");
             Buttons(card.Markup).Should().Contain(["dlv:dl:" + s, "dlv:fl:" + s, "dlv:r:" + Route.ToString("N")]).And.NotContain("dlv:arr:" + s);
+            // BOT-UX-2: [✅ Giao đủ 98] có sẵn trên thẻ (số đã xếp); người nhận điền sẵn, đổi bằng 👤 Người nhận khác… (chữ tự do – gõ tay).
+            Buttons(card.Markup).Should().Contain(["dlv:full:" + s, "dlv:rcv:" + s]);
+            card.Text.Should().Contain("người nhận: Đại diện Trường A");
+            await h.SendAsync(Tap("dlv:rcv:" + s));
+            await h.SendAsync(Text("Cô Lan", replyTo: LastSentId(h)));
+            h.Sender.Sent.Last().Message.Text.Should().Contain("người nhận: Cô Lan");
+            h.Web.Calls.Should().NotContain(c => c.Path == "api/DeliveryStop/Deliver", "đổi người nhận chưa ghi gì");
             await h.SendAsync(Tap("dlv:dl:" + s));
             var qty = h.Sender.Edits.Last();
-            ((TgInlineKeyboard)qty.Markup!).InlineKeyboard.SelectMany(x => x).Should().Contain(b => b.Text == "✅ Đúng 98" && b.CallbackData == "dlv:dq:" + s + ".98");
+            ((TgInlineKeyboard)qty.Markup!).InlineKeyboard.SelectMany(x => x).Should().Contain(b => b.Text == "✅ Xác nhận 98 suất" && b.CallbackData == "dlv:dq:" + s + ".98");
             await h.SendAsync(Tap("dlv:dq:" + s + ".98"));
             Buttons(h.Sender.Edits.Last().Markup).Should().Contain(["dlv:dv:" + s + ".98.65", "dlv:dv:" + s + ".98.-"]);
             await h.SendAsync(Tap("dlv:dv:" + s + ".98.65"));
-            h.Web.Calls.Should().NotContain(c => c.Path == "api/DeliveryStop/Deliver", "chưa có tên người nhận");
-            await h.SendAsync(Text("Cô Lan", replyTo: LastSentId(h)));
             var call = Last(h, "api/DeliveryStop/Deliver");
             call.Form["Id"].Should().Be(Stop1.ToString());
             call.Form["DeliveredQuantity"].Should().Be("98");
@@ -151,10 +156,15 @@ namespace AppDelicare.Tests.Messaging
             await h2.SendAsync(Text("📥 Nhận hộp về"));
             string d = DeliveryOrder1.ToString("N");
             Buttons(h2.Sender.Sent.Last().Message.ReplyMarkup).Should().ContainSingle().Which.Should().Be("dlv:bx:" + d);
+            // BOT-UX-2 (mục 6): số hộp = màn số (+10, +1, +1 → ✅ Ghi 12) – không gõ.
             await h2.SendAsync(Tap("dlv:bx:" + d));
-            await h2.SendAsync(Text("abc", replyTo: LastSentId(h2)));
-            h2.Sender.Sent.Last().Message.Text.Should().Contain("Chưa đúng số");
-            await h2.SendAsync(Text("12", replyTo: LastSentId(h2)));
+            Buttons(h2.Sender.Edits.Last().Markup).Should().Contain(["dlv:bxn:" + d + ".10", "dlv:bxq:" + d + ".0"]);
+            await h2.SendAsync(Tap("dlv:bxn:" + d + ".10"));
+            await h2.SendAsync(Tap("dlv:bxn:" + d + ".11"));
+            Buttons(h2.Sender.Edits.Last().Markup).Should().Contain(["dlv:bxn:" + d + ".12", "dlv:bxq:" + d + ".11"]);
+            await h2.SendAsync(Tap("dlv:bxn:" + d + ".12"));
+            h2.Web.Calls.Should().NotContain(c => c.Path == "api/ContainerReturn/Record", "đổi số trên màn số không ghi gì");
+            await h2.SendAsync(Tap("dlv:bxq:" + d + ".12"));
             var call = Last(h2, "api/ContainerReturn/Record");
             call.Form["DeliveryOrderId"].Should().Be(DeliveryOrder1.ToString());
             call.Form["ReturnedQuantity"].Should().Be("12");
@@ -188,7 +198,7 @@ namespace AppDelicare.Tests.Messaging
             string o = Order.ToString("N");
             Buttons(h.Sender.Sent.Last().Message.ReplyMarkup).Should().Contain("rcn:o:" + o);
             await h.SendAsync(Tap("rcn:o:" + o));
-            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(x => x).Should().Contain(b => b.Text == "✅ Đúng 96" && b.CallbackData == "rcn:q:" + o + ".96");
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(x => x).Should().Contain(b => b.Text == "✅ Đối soát 96 suất" && b.CallbackData == "rcn:q:" + o + ".96");
             await h.SendAsync(Tap("rcn:q:" + o + ".96"));
             var call = Last(h, "api/OrderReconciliation/Reconcile");
             call.Form["OrderId"].Should().Be(Order.ToString());

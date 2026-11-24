@@ -8,6 +8,7 @@ using AppDelicare.Messaging.Channels.Telegram;
 using AppDelicare.Messaging.Channels.Telegram.Models;
 using AppDelicare.Messaging.Core;
 using AppDelicare.Messaging.Core.Contracts;
+using AppDelicare.Messaging.Experience;
 using AppDelicare.Messaging.Presentation;
 
 namespace AppDelicare.Messaging.Conversations.Flows
@@ -19,7 +20,7 @@ namespace AppDelicare.Messaging.Conversations.Flows
     /// Callback <c>lv:t:&lt;mã&gt;</c>, <c>lv:d:&lt;0|1|2|x&gt;</c>, <c>lv:n:&lt;1|2|3|x&gt;</c>.
     /// </summary>
     public sealed class LeaveRequestFlow(IBotChannelApi api, IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ConversationStore store,
-        ReplyContextStore replies, TimeProvider time)
+        ReplyContextStore replies, TimeProvider time, ReasonCatalog reasons)
     {
         public const string Kind = "lv";
         public const string Flow = "leave";
@@ -63,11 +64,12 @@ namespace AppDelicare.Messaging.Conversations.Flows
                     await EditAsync(ctx, new NeutralMessage
                     {
                         Title = "Nghỉ từ ngày nào? (" + s.TypeLabel + ")",
+                        // BOT-UX-2 (mục 6): 10 ngày tới bấm 1 chạm (hàng ngày dd/MM), "Ngày khác…" chỉ cho ngày xa hơn.
                         Buttons =
                         [
                             new("Hôm nay " + today.ToString("dd/MM"), CallbackData.Build(Kind, "d", "0")),
                             new("Ngày mai " + today.AddDays(1).ToString("dd/MM"), CallbackData.Build(Kind, "d", "1")),
-                            new("Ngày kia " + today.AddDays(2).ToString("dd/MM"), CallbackData.Build(Kind, "d", "2")),
+                            .. Enumerable.Range(2, 8).Select(p => new NeutralButton(today.AddDays(p).ToString("dd/MM"), CallbackData.Build(Kind, "d", p.ToString(CultureInfo.InvariantCulture)), Row: "lv-day")),
                             new("Ngày khác…", CallbackData.Build(Kind, "d", "x")),
                         ],
                     }, ct);
@@ -82,9 +84,18 @@ namespace AppDelicare.Messaging.Conversations.Flows
                 case "n" when data.Id == "x":
                     await AskAsync(ctx, "Nghỉ bao nhiêu ngày? (gõ số)", ReplyDays, ct);
                     break;
-                case "n" when int.TryParse(data.Id, out int days):
+                case "nn":
+                    await AskDaysAsync(ctx, s, ct, InputWidgets.Value(data.Id));
+                    break;
+                case "n" when int.TryParse(data.Id, out int days) && days is >= 1 and <= 60:
                     s.Days = days;
-                    await AskAsync(ctx, $"Lý do nghỉ ({s.TypeLabel}, {s.From:dd/MM}, {days} ngày):", ReplyReason, ct);
+                    await ReasonsAsync(ctx, s, ct);
+                    break;
+                case "r" when reasons.At(ReasonCatalog.Leave, data.Id?.Split('.').Last()) is { } reason:
+                    await CreateAsync(ctx, s, reason, ct);
+                    break;
+                case "rx":
+                    await AskAsync(ctx, $"Lý do nghỉ ({s.TypeLabel}, {s.From:dd/MM}, {s.Days} ngày):", ReplyReason, ct);
                     break;
             }
         }
@@ -126,7 +137,7 @@ namespace AppDelicare.Messaging.Conversations.Flows
                         return;
                     }
                     s.Days = days;
-                    await AskAsync(ctx, $"Lý do nghỉ ({s.TypeLabel}, {s.From:dd/MM}, {days} ngày):", ReplyReason, ct);
+                    await ReasonsAsync(ctx, s, ct);
                     break;
                 case ReplyReason:
                     await CreateAsync(ctx, s, text, ct);
@@ -176,11 +187,31 @@ namespace AppDelicare.Messaging.Conversations.Flows
             }, ct: ct);
         }
 
-        private Task AskDaysAsync(BotActionContext ctx, State s, CancellationToken ct)
+        /// <summary>
+        /// Số ngày nghỉ: [1 ngày] [2 ngày] [3 ngày] bấm 1 chạm; BOT-UX-2 (mục 6): "Khác…" = màn số (−10 −1 +1 +10, 1–60 ngày, giá trị nằm trên panel) thay cho gõ tay.
+        /// <paramref name="value"/> = đang chỉnh trên màn số (null = màn chọn nhanh).
+        /// </summary>
+        private Task AskDaysAsync(BotActionContext ctx, State s, CancellationToken ct, decimal? value = null)
+        {
+            var m = new NeutralMessage { Title = $"Nghỉ bao nhiêu ngày? (từ {s.From:dd/MM})" };
+            if (value == null)
+            {
+                m.Buttons = [new("1 ngày", CallbackData.Build(Kind, "n", "1")), new("2 ngày", CallbackData.Build(Kind, "n", "2")), new("3 ngày", CallbackData.Build(Kind, "n", "3")),
+                    new("Khác…", CallbackData.Build(Kind, "nn", "5"))];
+            }
+            else
+            {
+                InputWidgets.Number(m, Kind, "nn", "n", string.Empty, value.Value, "ngày", [4m, 5m, 7m, 10m, 14m], 1, 60);
+            }
+            return EditOrSendAsync(ctx, m, ct);
+        }
+
+        /// <summary>BOT-UX-2 (mục 7): lý do nghỉ = nút lý do hay gặp (<c>Messaging:Reasons:leave-reason</c>) + [✏️ Khác…] (gõ tay).</summary>
+        private Task ReasonsAsync(BotActionContext ctx, State s, CancellationToken ct)
             => EditOrSendAsync(ctx, new NeutralMessage
             {
-                Title = $"Nghỉ bao nhiêu ngày? (từ {s.From:dd/MM})",
-                Buttons = [new("1 ngày", CallbackData.Build(Kind, "n", "1")), new("2 ngày", CallbackData.Build(Kind, "n", "2")), new("3 ngày", CallbackData.Build(Kind, "n", "3")), new("Khác…", CallbackData.Build(Kind, "n", "x"))],
+                Title = $"Lý do nghỉ ({s.TypeLabel}, {s.From:dd/MM}, {s.Days} ngày)",
+                Buttons = reasons.Buttons(ReasonCatalog.Leave, Kind, "r", "rx", "k"),
             }, ct);
 
         private async Task AskAsync(BotActionContext ctx, string question, string flow, CancellationToken ct)

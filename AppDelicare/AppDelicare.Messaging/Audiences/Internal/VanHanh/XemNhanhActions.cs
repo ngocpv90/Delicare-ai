@@ -46,10 +46,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             // BOT-3.1 (UG-1 C-22, anh chọn 2026-11-19): chức năng chỉ xem dùng API có sẵn.
             A("bep_mat", "BEP", "🥬 NL của ca", "nlca", "Nguyên liệu cần cho sản xuất hôm nay", "#/scm-requirement", 20, (c, ct) => RequirementAsync(c, 0, false, ct)),
             A("kho_short", "KHO", "⚠️ Thiếu hụt", "thieuhut", "Nguyên liệu thiếu cho ngày mai", "#/scm-requirement", 6, (c, ct) => RequirementAsync(c, 1, true, ct)),
-            A("kd_menu", "KINHDOANH", "📅 Thực đơn tuần", "thucdontuan", "Thực đơn đang áp dụng", "#/menu-menu", 3, MenusAsync),
+            // BOT-UX-2 (mục 14): "📅 Thực đơn tuần" (Kinh doanh) trùng "📅 Thực đơn đang áp dụng" (Kế hoạch, cùng quyền #/menu-menu) – bỏ bản trùng.
             A("kd_mine", "KINHDOANH", "📋 Việc tôi đã báo", "viecdabao", "Phản ánh / báo thiếu suất do tôi ghi", "#/log-complaint", 4, MyComplaintsAsync),
-            A("kt_timesheet", "KETOAN", "🧾 Công tháng", "congthang", "Bảng công tháng này (chỉ xem)", "#/hr-attendance", 3, TimesheetAsync),
-            new BotAction { Code = "ns_timesheet", Module = "NHANSU", Label = "🧾 Công tháng", Bots = ["VH"], MenuMetaLink = "#/hr-attendance", Order = 3, Handler = TimesheetAsync },   // /congthang thuộc kt_timesheet (lệnh không trùng)
+            // BOT-UX-2 (mục 14): mỗi chức năng 1 phân hệ chính – 🧾 Công tháng thuộc Nhân sự (trước có thêm bản ở Kế toán); /congthang giữ nguyên.
+            A("ns_timesheet", "NHANSU", "🧾 Công tháng", "congthang", "Bảng công tháng này (chỉ xem)", "#/hr-attendance", 3, TimesheetAsync),
             A("ns_pending", "NHANSU", "⏳ Đơn đang chờ", "donchoduyet", "Đơn nghỉ / đổi ca đang chờ duyệt", "#/hr-leave", 4, PendingRequestsAsync),
             // Quản trị
             new BotAction { Code = "it_chatid", Module = "QUANTRI", Label = "🆔 Mã chat (chatid)", Command = "chatid", CommandDescription = "Mã chat để cấu hình nhóm nhận thông báo", Bots = ["VH", "DH"], Order = 2, Visible = i => i.IsAdmin, Handler = ChatIdAsync },
