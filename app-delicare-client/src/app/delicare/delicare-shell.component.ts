@@ -52,6 +52,7 @@ const SCRIPTS = [
   'modules/ghep.js',
   'modules/group-panel.js', // UI-6.21 (D-102): cột nhóm màn Nguyên liệu / Món ăn – sau menu.js, scm.js, ghep.js
   'modules/prod-menu.js', // UI-6.24 (D-105): Mẻ nấu + tab Sản lượng, Dây chuyền + tab Trạm bếp – sau ghep.js
+  'modules/qc-temp.js', // UI-6.31 (D-112): Nhật ký nhiệt độ 3 tab – sau be3.js (thay biểu đồ trùng)
   'modules/kho.js', // UI-6.29 (D-110): Kho 12 → 5 mục, Nhận hàng & kiểm tra, Sổ kiểm tra hàng nhập – sau scm.js, qc.js, approval.js, ghep.js
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';

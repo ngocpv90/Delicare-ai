@@ -95,6 +95,10 @@ namespace AppDelicare.Model.Option
         public int BatchQcWaitWarnMinutes { get; set; } = 20;
         /// <summary>UI-6.24 (D-105): giờ job cuối ngày đóng lệnh Hoàn thành còn sót + gửi 1 tin chênh lệch tiêu hao vượt ngưỡng của ngày (HH:mm, giờ VN).</summary>
         public string ProductionAutoCloseTime { get; set; } = "22:00";
+        /// <summary>UI-6.31 (D-112): khu đo tay phải có ≥ 1 lần đo mỗi ca – quá N phút đầu ca chưa đo → "đến giờ chưa đo" + tin bot.</summary>
+        public int TemperatureManualDueMinutes { get; set; } = 60;
+        /// <summary>UI-6.31: cảm biến (Iot:Devices) quá N phút không gửi số đo → "mất tín hiệu" (khu cần đo tay) + tin bot.</summary>
+        public int IotSilenceMinutes { get; set; } = 30;
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>

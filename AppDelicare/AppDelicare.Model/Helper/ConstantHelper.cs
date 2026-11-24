@@ -685,7 +685,11 @@
             public static readonly string MrpRequirementNotInPlan = "Dòng nhu cầu không thuộc kế hoạch hoặc đã bị xóa";
             public static readonly string TempTargetRequired = "Chọn ít nhất 1 đối tượng đo: khu kho, vị trí kho, lô nguyên liệu hoặc mẻ nấu";
             public static readonly string TempTargetNotFound = "{0} không tồn tại";
-            public static readonly string TempTypeViaAction = "Nhiệt độ {0} ghi qua {1} (gắn kiểm soát ATTP của nghiệp vụ)";
+            public static readonly string TempTypeViaAction = "Nhiệt độ «{0}» ghi ở {1} (gắn kiểm soát ATTP của nghiệp vụ)";
+            public static readonly string TempRoundEmpty = "Chưa nhập nhiệt độ khu nào";
+            public static readonly string TempRoundDuplicate = "Mỗi khu chỉ ghi một nhiệt độ trong một lượt";
+            public static readonly string TempRoundNeedCorrective = "{0}: {1} °C ngoài ngưỡng – bắt buộc ghi hành động khắc phục";
+            public static readonly string TempRoundSaved = "Đã ghi nhiệt độ {0} khu";
             public static readonly string TempOutOfRangeWarning = "Nhiệt độ {0} °C ngoài ngưỡng {1} – cần ghi hành động khắc phục";
             public static readonly string WasteRecordNotFound = "Không tìm thấy bản ghi hao hụt";
             public static readonly string WasteTargetRequired = "Chọn mẻ nấu, lệnh sản xuất hoặc món";
