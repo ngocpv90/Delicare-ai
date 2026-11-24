@@ -17,6 +17,8 @@ namespace AppDelicare.WebApi.Security
         public PermissionAction[] OrActions { get; init; } = [];
         /// <summary>D-78 (6): màn thay thế – có cùng quyền trên MỘT trong các màn này cũng được (vd. đọc danh mục chỉ số bằng quyền xem KPI / bảng điều hành).</summary>
         public string[] OrScreens { get; init; } = [];
+        /// <summary>MENU-5.2 (D-79): CẦN THÊM cùng thao tác trên mọi màn này (vd. tạo đơn bù = Thêm Phản ánh và Thêm Đơn đặt suất).</summary>
+        public string[] AndScreens { get; init; } = [];
     }
 
     /// <summary>Chỉ admin (vd. xóa vật lý dữ liệu, cấp quyền admin).</summary>

@@ -70,6 +70,10 @@ namespace AppDelicare.WebApi.Security
                 : permissions.IsAllowed(userPermissions, required.ScreenId, required.Action)
                   || required.OrActions.Any(a => permissions.IsAllowed(userPermissions, required.ScreenId, a))
                   || required.OrScreens.Any(s => permissions.IsAllowed(userPermissions, s, required.Action));
+            if (allowed && required != null && required.AndScreens.Length != 0)
+            {
+                allowed = required.AndScreens.All(s => permissions.IsAllowed(userPermissions, s, required.Action));
+            }
             if (!allowed)
             {
                 Log.Warning("Từ chối quyền {Action} trên {Screen} cho {Actor} ({Path})",

@@ -258,7 +258,8 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
-        /// <summary>BIZ-3.1 (D-77 – A6): tạo đơn bù từ phản ánh – quyền Sửa trên log-complaint.</summary>
+        /// <summary>BIZ-3.1 (D-77 – A6): tạo đơn bù từ phản ánh. MENU-5.2 (D-79): cần Thêm log-complaint VÀ Thêm crm-order (CSKH không tạo đơn bù); bot dùng cùng API.</summary>
+        [Security.Permission("log-complaint", PermissionAction.Add, AndScreens = ["crm-order"])]
         [HttpPost("CreateCompensationOrder")]
         public async Task<IActionResult> CreateCompensationOrder([FromForm] ComplaintCompensationRequest request)
         {

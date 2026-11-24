@@ -113,7 +113,8 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T16: tạm giữ lô (Available → OnHold), lý do bắt buộc – lô tạm giữ bị chặn xuất.</summary>
+        /// <summary>T16: tạm giữ lô (Available → OnHold), lý do bắt buộc – lô tạm giữ bị chặn xuất. MENU-5.2 (D-79): quyền Duyệt "Phê duyệt › Giữ / thả lô" (QA).</summary>
+        [Security.Permission("scm-lot", PermissionAction.Approve)]
         [HttpPost("Hold")]
         public async Task<IActionResult> Hold([FromForm] MaterialLotHoldRequest request)
         {
@@ -132,7 +133,8 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T16: mở lô tạm giữ (OnHold → Available).</summary>
+        /// <summary>T16: mở lô tạm giữ (OnHold → Available). MENU-5.2 (D-79): quyền Duyệt scm-lot – kho không tự thả lô QA giữ.</summary>
+        [Security.Permission("scm-lot", PermissionAction.Approve)]
         [HttpPost("Release")]
         public async Task<IActionResult> Release([FromForm] MaterialLotHoldRequest request)
         {

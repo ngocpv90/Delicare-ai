@@ -365,6 +365,13 @@ namespace AppDelicare.Services.Implement
             _ => status ?? string.Empty,
         };
 
+        /// <summary>
+        /// MENU-5.3 (D-79 a5, thay D-52 d): người gửi không duyệt bất kỳ cấp nào của yêu cầu mình khi bật <c>BusinessRules:ApprovalBlockSelfApproval</c>
+        /// (mặc định true); quản trị viên được miễn.
+        /// </summary>
+        private bool IsSelfBlocked(ApprovalRequest r, Guid actor, UserPermissions perms)
+            => _rules.ApprovalBlockSelfApproval && !perms.IsAdmin && r.RequestedBy == actor;
+
         /// <summary>Bước đang chờ = bước Waiting có StepNo nhỏ nhất (spec 11.5 decide bước 1).</summary>
         private static ApprovalStep? CurrentStep(IEnumerable<ApprovalStep> steps)
             => steps.Where(s => !s.IsDeleted && s.DecisionStatus == StepWaiting).OrderBy(s => s.StepNo).FirstOrDefault();
@@ -443,8 +450,10 @@ namespace AppDelicare.Services.Implement
             int stepNo = step?.StepNo ?? r.CurrentStepNo ?? 1;
             string screen = await StepScreenAsync(handler, r.BusinessId, stepNo, route);
             DateTime? due = step?.DueAt ?? r.DueAt;
+            bool selfBlocked = _currentActor.Actor is { } me && IsSelfBlocked(r, me.UserId, await _permissionService.GetAsync(me.UserId));
             return new ApprovalProgressModel
             {
+                SelfBlocked = selfBlocked,
                 Id = r.Id, RequestNo = r.RequestNo, RequestStatus = r.RequestStatus, StepNo = stepNo, StepCount = Math.Max(route?.Count ?? 0, Math.Max(steps.Count, 1)),
                 ScreenId = screen, StepName = (await StepNamesAsync([screen])).GetValueOrDefault(screen, screen), DueAt = due, IsOverdue = due != null && due < _clock.Now,
             };
@@ -491,6 +500,7 @@ namespace AppDelicare.Services.Implement
                     string screen = await StepScreenAsync(h, r.BusinessId, stepNo, route);
                     if ((!string.IsNullOrEmpty(type) && !screen.Equals(type, StringComparison.OrdinalIgnoreCase))
                         || !_permissionService.IsAllowed(perms, screen, PermissionAction.Approve)
+                        || IsSelfBlocked(r, me, perms)
                         || (_rules.ApprovalRequireDistinctApprovers && !perms.IsAdmin && steps.Any(s => s.StepNo != stepNo && s.ApproverUserId == me)))
                     {
                         continue;
@@ -599,6 +609,10 @@ namespace AppDelicare.Services.Implement
             if (!_permissionService.IsAllowed(perms, screen, PermissionAction.Approve))
             {
                 return (ConstantHelper.Message.ApprovalNoRight, null);
+            }
+            if (IsSelfBlocked(approval, actor, perms))
+            {
+                return (ConstantHelper.Message.ApprovalSelfBlocked, null);
             }
             if (_rules.ApprovalRequireDistinctApprovers && !perms.IsAdmin && steps.FirstOrDefault(s => s.StepNo != stepNo && s.ApproverUserId == actor) is { } mine)
             {
@@ -989,9 +1003,11 @@ namespace AppDelicare.Services.Implement
                 }
                 string? screen = handler == null ? null : screens.GetValueOrDefault(open ? currentNo : stepCount);
                 bool canApproveCurrent = open && screen != null && _permissionService.IsAllowed(perms, screen, PermissionAction.Approve)
+                    && !IsSelfBlocked(approval, actor, perms)
                     && !(_rules.ApprovalRequireDistinctApprovers && !perms.IsAdmin && steps.Any(s => s.StepNo != currentNo && s.ApproverUserId == actor));
                 bool canApproveAny = screens.Values.Any(s => _permissionService.IsAllowed(perms, s, PermissionAction.Approve));
-                // Xem được: người gửi, người có quyền Duyệt một cấp của yêu cầu, admin, hoặc người có quyền Xem hộp duyệt chung #/wf-inbox.
+                // Xem được: người gửi, người có quyền Duyệt một cấp của yêu cầu, admin, hoặc người có quyền Xem hộp duyệt chung #/wf-inbox
+                // (MENU-5.1 / D-79: quyền Xem #/wf-inbox nay chỉ CEO / CEO-PMO / COO / FIN-IT – dữ liệu UserRole, không gán theo tên nhóm trong code).
                 if (approval.RequestedBy != actor && !perms.IsAdmin && !canApproveAny && !_permissionService.IsAllowed(perms, "wf-inbox", PermissionAction.View))
                 {
                     return Result<ApprovalDetailModel>.Fail(ConstantHelper.Message.ApprovalNoRight);

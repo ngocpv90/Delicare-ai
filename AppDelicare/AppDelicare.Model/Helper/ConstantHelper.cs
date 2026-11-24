@@ -729,6 +729,8 @@
             // BE2.3 – duyệt nhiều cấp, đề nghị mua 2 cấp, kiểm kê / điều chỉnh tồn qua duyệt.
             public static readonly string ApprovalStepApproved = "Đã duyệt cấp {0}/{1} – chuyển cấp {2} ({3})";
             public static readonly string ApprovalAlreadyDecidedStep = "Bạn đã quyết định cấp {0} của yêu cầu này – cấp sau phải do người khác duyệt";
+            /// <summary>MENU-5.3 (D-79 a5): người gửi không tự duyệt yêu cầu của mình (mọi cấp).</summary>
+            public static readonly string ApprovalSelfBlocked = "Bạn là người gửi yêu cầu này – cần người khác duyệt";
             public static readonly string ApprovalStepOverdue = "Bước duyệt cấp {0} đã quá hạn ({1:dd/MM/yyyy HH:mm}) – người gửi hủy yêu cầu và gửi duyệt lại";
             public static readonly string ApprovalNoSteps = "Chưa cấu hình bước duyệt cho loại {0}";
             public static readonly string PurchaseRequestSubmitted = "Đã gửi duyệt đề nghị mua (yêu cầu {0}, {1} cấp)";

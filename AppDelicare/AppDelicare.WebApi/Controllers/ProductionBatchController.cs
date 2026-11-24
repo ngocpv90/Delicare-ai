@@ -299,7 +299,11 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T17: Chờ QC → Đạt – chặn khi nhiệt độ lõi &lt; 70 °C, chưa lưu mẫu, chưa ghi sản lượng (quyền Sửa prod-batch, PROPOSED).</summary>
+        /// <summary>
+        /// T17: Chờ QC → Đạt – chặn khi nhiệt độ lõi &lt; 70 °C, chưa lưu mẫu, chưa ghi sản lượng.
+        /// MENU-5.2 (D-79 a3): làm tay = quyền Duyệt "Phê duyệt › Mẻ nấu" (#/wf-inbox?type=prod-batch – QA). Đường tự Đạt của hệ thống (BIZ-2.7) gọi service, không qua quyền này.
+        /// </summary>
+        [Security.Permission("prod-batch", PermissionAction.Approve)]
         [HttpPost("Release")]
         public async Task<IActionResult> Release([FromForm] ProductionActionRequest request)
         {
@@ -318,7 +322,8 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T17: tạm giữ mẻ chờ QC (nhận xét bắt buộc).</summary>
+        /// <summary>T17: tạm giữ mẻ chờ QC (nhận xét bắt buộc). MENU-5.2 (D-79): quyền Duyệt prod-batch.</summary>
+        [Security.Permission("prod-batch", PermissionAction.Approve)]
         [HttpPost("Hold")]
         public async Task<IActionResult> Hold([FromForm] ProductionActionRequest request)
         {
@@ -337,7 +342,8 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
-        /// <summary>T17: loại mẻ → Không đạt (lý do bắt buộc, hao hụt QC_REJECT).</summary>
+        /// <summary>T17: loại mẻ → Không đạt (lý do bắt buộc, hao hụt QC_REJECT). MENU-5.2 (D-79): quyền Duyệt prod-batch.</summary>
+        [Security.Permission("prod-batch", PermissionAction.Approve)]
         [HttpPost("Reject")]
         public async Task<IActionResult> Reject([FromForm] ProductionActionRequest request)
         {

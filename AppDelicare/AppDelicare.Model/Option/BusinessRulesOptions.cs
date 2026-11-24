@@ -170,6 +170,11 @@ namespace AppDelicare.Model.Option
         /// <summary>BE2.3: duyệt nhiều cấp – một người không quyết định 2 bước của cùng yêu cầu (quản trị viên được miễn).</summary>
         public bool ApprovalRequireDistinctApprovers { get; set; } = true;
         /// <summary>
+        /// MENU-5.3 (D-79 a5, thay D-52 d): true = người gửi (<c>ApprovalRequest.RequestedBy</c>) không thấy / không duyệt được BẤT KỲ cấp nào của yêu cầu mình
+        /// (hộp duyệt, Decide, bot); quản trị viên được miễn. Hủy yêu cầu của mình vẫn được.
+        /// </summary>
+        public bool ApprovalBlockSelfApproval { get; set; } = true;
+        /// <summary>
         /// BE2.3 (PO nhiều cấp theo ngưỡng): true = PO ≥ <see cref="PurchaseOrderDirectorApprovalAmount"/> duyệt 2 cấp (<c>scm-po</c> → <c>scm-po-director</c>).
         /// Mặc định false = 1 cấp Giám đốc như D-11 (anh chốt 2026-11-16).
         /// </summary>

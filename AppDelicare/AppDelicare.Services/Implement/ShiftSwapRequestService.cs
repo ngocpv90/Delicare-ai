@@ -519,7 +519,7 @@ namespace AppDelicare.Services.Implement
                     detail.AllowedActions.Add("cancel");
                 }
                 var perms = await _permissionService.GetAsync(actor);
-                if (detail.PendingApproval?.ScreenId is { } screen && _permissionService.IsAllowed(perms, screen, PermissionAction.Approve))
+                if (detail.PendingApproval is { ScreenId: { } screen, SelfBlocked: false } && _permissionService.IsAllowed(perms, screen, PermissionAction.Approve))
                 {
                     detail.AllowedActions.Add("approve");
                     detail.AllowedActions.Add("reject");

@@ -176,16 +176,22 @@ namespace AppDelicare.Tests.Menu
             (await user.PostFormAsync("/api/Recipe/Submit", ("id", r))).Ok(); // sửa được (AllowEdit)
             (await user.PostAsync("/api/Recipe/Approve", LegacyHttp.Form(("Id", r)))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
+            Guid otherId = Guid.NewGuid();
             await _factory.SeedAsync(db =>
             {
                 var approve = new ObjectMenu { Id = Guid.NewGuid(), Name = "Công thức", MetaLink = "#/wf-inbox?type=menu-recipe", IsActive = true, LevelShow = 2 };
                 db.ObjectMenu.Add(approve);
                 db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = groupId, ObjectMenuId = approve.Id, AllowAccess = true, AllowEdit = true });
+                db.User.Add(new User { Id = otherId, UserName = "ops-plan-ap2", IsActive = true });
+                db.UserClaim.Add(new UserClaim { Id = Guid.NewGuid(), UserId = otherId, UserGroupId = groupId });
                 return Task.CompletedTask;
             });
             // Cache quyền 5′ – admin đổi qua màn hình ma trận sẽ xóa cache; ở đây seed trực tiếp nên dùng client mới sau khi xóa cache bằng UserRole/Update rỗng.
             await admin.PutFormAsync("/api/UserRole/Update", ("ListPermission", "[]"));
-            (await user.PostFormAsync("/api/Recipe/Approve", ("Id", r))).Ok();
+            // MENU-5.3 (D-79 a5): có quyền duyệt nhưng là người gửi → không tự duyệt được; người khác cùng nhóm duyệt được.
+            (await user.PostFormAsync("/api/Recipe/Approve", ("Id", r))).Fail("người gửi");
+            using var other = _factory.CreateAuthorizedClient(otherId);
+            (await other.PostFormAsync("/api/Recipe/Approve", ("Id", r))).Ok();
         }
 
         [Fact]

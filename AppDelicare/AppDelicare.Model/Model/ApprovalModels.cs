@@ -59,5 +59,7 @@ namespace AppDelicare.Model.Model
         public string? StepName { get; set; }
         public DateTime? DueAt { get; set; }
         public bool IsOverdue { get; set; }
+        /// <summary>MENU-5.3 (D-79 a5): người đang đăng nhập là người gửi yêu cầu (không phải admin) → không được duyệt cấp nào.</summary>
+        public bool SelfBlocked { get; set; }
     }
 }

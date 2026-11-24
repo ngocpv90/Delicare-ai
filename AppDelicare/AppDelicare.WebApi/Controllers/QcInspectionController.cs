@@ -129,6 +129,8 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>T15 (spec 9.1 conclude): kết luận QC từng dòng DAT / DAT_MOT_PHAN / KHONG_DAT. JSON body vì có danh sách dòng lồng nhau.</summary>
+        /// MENU-5.2 (D-79): quyền Duyệt "Phê duyệt › Kiểm tra hàng nhập" (#/wf-inbox?type=qc-inspection – QA). Tự ghi sổ nhập sau kết luận (BIZ-2.6) giữ nguyên.
+        [Security.Permission("qc-inspection", PermissionAction.Approve)]
         [HttpPost("Conclude")]
         public async Task<IActionResult> Conclude([FromBody] QcInspectionConcludeRequest request)
         {
