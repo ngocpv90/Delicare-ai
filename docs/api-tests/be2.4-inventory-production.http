@@ -182,12 +182,27 @@ Content-Type: application/x-www-form-urlencoded
 
 Id={{adjRau.response.body.data.approvalRequestId}}&Approve=true&Note=[DEMO] duyệt tồn đầu kỳ
 
+### Nhóm món (UI-6.17 D-98: món bắt buộc chọn nhóm món trong danh mục)
+POST {{base}}/api/DishCategory/Insert
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+Code={{code}}NM&Name=[DEMO] Nhóm món {{code}}&Status=Active
+
+###
+# @name dishCat
+GET {{base}}/api/DishCategory/GetAll?SearchText={{code}}&Page=1&PageSize=5
+Authorization: Bearer {{token}}
+
+###
+@dishCatId = {{dishCat.response.body.listData[0].id}}
+
 ### 0.5 Món Cơm gà + công thức khóa (gà 15 kg, rau 10 kg / 100 suất)
 POST {{base}}/api/Dish/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}COMGA&Name=[DEMO] Cơm gà {{key}}&StandardServingSize=350&Status=Active
+Code={{code}}COMGA&Name=[DEMO] Cơm gà {{key}}&StandardServingSize=350&DishCategoryId={{dishCatId}}&Status=Active
 
 ###
 # @name dish

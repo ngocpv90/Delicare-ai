@@ -226,7 +226,7 @@
       return {
         title: m.name || '', no: m.code, avatarCls: 'biz',
         tags: [m.status ? UI.badge(m.status, 'Dishe', 'Status') : '', o.categoryName ? UI.tag(o.categoryName) : '', r ? '' : UI.tag('Chưa có công thức hiệu lực', 'orange')],
-        meta: [esc(m.code || ''), o.unitName && esc(o.unitName), r && esc('Công thức ' + (r.versionCode || 'V' + r.versionNo)), m.mealCategory && esc(m.mealCategory)],
+        meta: [esc(m.code || ''), o.unitName && esc(o.unitName), r && esc('Công thức ' + (r.versionCode || 'V' + r.versionNo))],
         buttons: [
           { act: 'edit', icon: 'edit', label: 'Sửa', ok: D.can('menu-dish', 'edit'), primary: true },
           { act: 'recipe', icon: 'clipboard', label: 'Công thức', ok: D.can('menu-recipe') },
@@ -244,13 +244,14 @@
       const m = o.dish || {}, c = o.cost, r = o.activeRecipe;
       box.innerHTML = D.split(
         D.block('Thông tin món', D.kv([['Mã', esc(m.code || '')], ['Tên món', esc(m.name || '')], ['Nhóm món', esc(o.categoryName || '')], ['Đơn vị', esc(o.unitName || '')],
-          ['Định lượng chuẩn', nil(m.standardPortion) ? '' : U.num(m.standardPortion, 3)], ['Giá thành chuẩn', nil(m.standardCost) ? '' : U.money(m.standardCost)],
+          ['Định lượng 1 suất', nil(m.standardServingSize) ? '' : U.num(m.standardServingSize, 3) + ' ' + esc(o.unitName || '')], ['Giá thành chuẩn', nil(m.standardCost) ? '<span class="muted">Hệ thống tự tính khi công thức được duyệt</span>' : U.money(m.standardCost)],
           ['Công thức hiệu lực', r ? `${esc(r.versionCode || 'V' + r.versionNo)} ${UI.badge(r.status, 'Recipe', 'Status')}` : '<span class="muted">Chưa có</span>'],
-          ['Hiệu lực từ', r ? D.dmy(r.effectiveFrom) : ''], ['Mô tả', esc(m.description || '')], ['Ghi chú', esc(m.note || '')]])),
+          ['Hiệu lực từ', r ? D.dmy(r.effectiveFrom) : ''], ['Mô tả', esc(m.description || m.note || '')]])),
         D.block('Định mức nguyên liệu / suất', c ? `${c.complete ? '' : '<div class="notice warn mb">' + I('alert') + '<div>Có dòng thiếu giá nhà cung cấp / thiếu quy đổi đơn vị – giá vốn chưa đủ.</div></div>'}${D.table(c.listLine || [], costCols)}
           <div class="spread mt"><span class="muted small">Tính cho 1 suất (định lượng chuẩn ${U.num(c.standardServings || 0)} suất)</span><b>${U.money(c.costPerMeal || 0)} / suất</b></div>` : '<div class="muted small">Món chưa có công thức hiệu lực.</div>'));
     },
     tabs: [
+      { label: 'Công thức', render: (box, o, id) => APP.dishRecipeTab ? APP.dishRecipeTab(box, o, id) : (box.innerHTML = D.none) },
       { label: 'Định mức', render: (box, o) => {
         box.innerHTML = `<h3>Các phiên bản công thức</h3>${D.table(o.listRecipe || [], [{ label: 'Phiên bản', html: r => `<b>${esc(r.versionCode || 'V' + r.versionNo)}</b>${r.isActive ? ' ' + UI.tag('Đang dùng', 'green') : ''}` },
           { label: 'Trạng thái', html: r => UI.badge(r.status, 'Recipe', 'Status') }, { label: 'Hiệu lực', html: r => esc([D.dmy(r.effectiveFrom), r.effectiveTo && D.dmy(r.effectiveTo)].filter(Boolean).join(' – ')) },
@@ -271,7 +272,8 @@
       } },
     ],
     onAct: (act, o, id, reload) => {
-      if (act === 'recipe') return APP.go('menu-recipe');
+      // UI-6.17 (D-98): nút Công thức → tab Công thức của trang (nhập / sửa tại chỗ).
+      if (act === 'recipe') { const t = [...document.querySelectorAll('#content [data-dptabs] .tab')].find(b => b.textContent.trim() === 'Công thức'); if (t) t.click(); return; }
       if (act === 'edit') Store.ensure('Dishe').then(() => { const r = Store.get('Dishe', id); if (!r) return UI.toast('Không tải được món ăn', 'err'); UI.form('Dishe', r, { title: 'Món ăn', onSave: reload }); });
     },
   });

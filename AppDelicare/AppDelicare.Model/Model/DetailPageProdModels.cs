@@ -145,3 +145,13 @@ namespace AppDelicare.Model.Model
         public string? Description { get; set; }
     }
 }
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.17: kết quả Dish/Create.</summary>
+    public class DishCreatedModel
+    {
+        public Guid Id { get; set; }
+        public string? Code { get; set; }
+    }
+}

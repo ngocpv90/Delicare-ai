@@ -93,7 +93,7 @@
     <div class="grid" style="grid-template-columns:300px minmax(0,1fr)">
       <div class="card panel"><input class="input" style="width:100%" placeholder="Tìm món…" id="rQ"><div class="tlist mt" id="rList">${dishes.map(x => { const n = Store.by('Recipe', 'DishId', x.Id); const pend = n.some(r => ['Draft', 'PendingApproval'].includes(r.Status)); return `<div class="titem ${x.Id === rs.dish ? 'active' : ''}" data-dish="${x.Id}" data-s="${esc(x.Name.toLowerCase())}"><div><b style="font-family:inherit">${esc(x.Name)}</b><small>${esc(x.Code)} · ${n.length} phiên bản</small></div>${pend ? '<span class="n tag orange">chờ</span>' : ''}</div>`; }).join('')}</div></div>
       <div>
-        <div class="card panel mb"><div class="spread"><div><h2>${esc(d.Name)}</h2><div class="small muted">${esc(d.Description || '')}</div></div><div class="row-flex">${UI.tag(Store.label('DishCategorie', d.DishCategoryId))} ${UI.badge(d.Status, 'Dishe', 'Status')}</div></div>
+        <div class="card panel mb"><div class="spread"><div><h2>${esc(d.Name)}${Store.isLive && APP.detailHref ? ` <a class="small" href="${APP.detailHref('Dishe', d.Id)}">Mở trang món</a>` : ''}</h2><div class="small muted">${esc(d.Description || '')}</div></div><div class="row-flex">${UI.tag(Store.label('DishCategorie', d.DishCategoryId))} ${UI.badge(d.Status, 'Dishe', 'Status')}</div></div>
           ${Store.isLive ? '' : `<div class="notice info mt small">${I('database')}<div><b>Không tạo bảng RecipeVersion.</b> Mỗi phiên bản là một dòng <code>Recipe</code> cùng <code>DishId</code>, phân biệt bằng <code>VersionNo</code>/<code>VersionCode</code>; hiệu lực <code>EffectiveFrom/To</code>; duyệt <code>ApprovedBy/At</code>; khóa <code>LockedAt/By</code> + <code>SnapshotJson</code>.</div></div>`}</div>
         ${recs.map(r => { const lines = Store.by('RecipeLine', 'RecipeId', r.Id); const cost = recipeCost(r.Id); return `<div class="card panel mb"><div class="spread"><div><b>${esc(r.VersionCode || 'V' + r.VersionNo)}</b> · VersionNo ${r.VersionNo} ${UI.badge(r.Status, 'Recipe', 'Status')} ${r.IsActive ? '<span class="tag green">IsActive</span>' : ''}<div class="small muted">Hiệu lực ${U.date(r.EffectiveFrom) || '–'} → ${U.date(r.EffectiveTo) || 'nay'} · Yield ${U.num(r.YieldPercent)}% · ${r.ApprovedAt ? 'Duyệt ' + U.dt(r.ApprovedAt) : 'Chưa duyệt'}${r.LockedAt ? ' · Khóa ' + U.dt(r.LockedAt) : ''}</div></div>
           <div class="row-flex">${r.Status === 'Draft' ? `<button class="btn sm orange" data-sub="${r.Id}">Gửi duyệt</button><button class="btn sm" data-addl="${r.Id}">${I('plus')} Thêm nguyên liệu</button>` : ''}${r.Status === 'Approved' && Store.canApprove('menu-recipe') ? `<button class="btn sm primary" data-lock="${r.Id}">${I('key')} Áp dụng</button>` : ''}${r.Status === 'PendingApproval' ? `<a class="btn sm" href="${APP.href('wf-inbox')}">Xem hộp phê duyệt →</a>` : ''}${Store.isLive ? `<button class="btn sm" data-cost="${r.Id}">${I('calc')} Tính giá vốn</button>` : ''}<button class="btn sm" data-open="Recipe" data-id="${r.Id}">${I('eye')}</button></div></div>
@@ -439,6 +439,173 @@
       { k: 'x', label: 'Công thức đang dùng', col: false, nosort: true, render: r => { const rc = Store.by('Recipe', 'DishId', r.Id).find(x => x.IsActive); return rc ? `${esc(rc.VersionCode)} ${UI.badge(rc.Status, 'Recipe', 'Status')}` : '<span class="bad small">Chưa có công thức hiệu lực</span>'; } },
       { k: 'y', label: 'CP NVL ước tính', col: false, num: true, nosort: true, render: r => { const rc = Store.by('Recipe', 'DishId', r.Id).find(x => x.IsActive) || Store.by('Recipe', 'DishId', r.Id)[0]; return rc ? U.money(recipeCost(rc.Id)) : '–'; } }, { k: 'Status', label: 'Trạng thái' }]
   }));
+  // ---------- UI-6.17 (D-98): form Món ăn gọn (5 ô) + "Thêm món ăn" kèm công thức + tab Công thức sửa được trong trang chi tiết món ----------
+  // Form dùng cho mọi chỗ gọi UI.form('Dishe') ở chế độ API (danh sách Món ăn, nút Sửa trang chi tiết). Mã tự sinh (MA-1), giá thành chuẩn chỉ đọc.
+  // Công thức: cùng API màn "Công thức chế biến" (Recipe/CreateVersion, RecipeLine Insert / Update / Delete, Recipe/Submit / Approve / Reject / Lock, Recipe/CalculateCost).
+  const dsh = { mode: 'copy' };
+  const nilv = v => v === null || v === undefined || v === '';
+  function dishForm(row, opt) {
+    const isNew = !row || !row.Id, cats = () => Store.rows('DishCategorie').filter(c => c.Status !== 'Inactive' || (row && c.Id === row.DishCategoryId));
+    const units = Store.rows('UnitMeasure').filter(u => u.Status !== 'Inactive');
+    const canCat = Store.perm('menu-dish-cat').add !== false && Store.perm('menu-dish-cat').access !== false;
+    const r = row || {};
+    const catOpts = sel => `<option value="">— Chọn nhóm món —</option>${cats().map(c => `<option value="${esc(c.Id)}" ${c.Id === sel ? 'selected' : ''}>${esc(c.Name || c.Code || '')}</option>`).join('')}`;
+    const srcDishes = () => {
+      const cat = document.getElementById('dfCat') ? document.getElementById('dfCat').value : '';
+      return Store.rows('Dishe').filter(x => x.Id !== r.Id && Store.by('Recipe', 'DishId', x.Id).some(rc => rc.IsActive || ['Approved', 'Locked'].includes(rc.Status)))
+        .sort((a, b) => (b.DishCategoryId === cat) - (a.DishCategoryId === cat) || String(a.Name || '').localeCompare(String(b.Name || '')));
+    };
+    const srcLabel = x => { const rc = Store.by('Recipe', 'DishId', x.Id).find(y => y.IsActive) || Store.by('Recipe', 'DishId', x.Id).find(y => ['Approved', 'Locked'].includes(y.Status)); const n = rc ? Store.by('RecipeLine', 'RecipeId', rc.Id).length : 0; return `${x.Name || ''} · ${x.Code || ''}${rc ? ' · ' + (rc.VersionCode || 'V' + rc.VersionNo) + ' đang dùng · ' + n + ' nguyên liệu' : ''}`; };
+    UI.modal({ title: isNew ? 'Thêm món ăn' : 'Sửa món ăn', sub: isNew ? 'Mã món hệ thống tự sinh khi lưu' : esc(r.Code || ''), size: isNew ? 'lg' : 'md',
+      body: `<div class="form-grid">
+        <div class="field"><label>Tên món <span class="req">*</span></label><input class="input" id="dfName" value="${esc(r.Name || '')}"></div>
+        <div class="field"><label>Nhóm món <span class="req">*</span>${canCat ? ' <a href="javascript:void 0" id="dfCatNew" class="small">+ Thêm nhóm món</a>' : ''}</label><select class="select" id="dfCat">${catOpts(r.DishCategoryId || r.CategoryId)}</select></div>
+        <div class="field"><label>Định lượng 1 suất</label><div class="row-flex"><input type="number" min="0" step="any" class="input" id="dfSize" style="max-width:140px" value="${nilv(r.StandardServingSize) ? '' : r.StandardServingSize}"><select class="select" id="dfUnit" style="max-width:140px"><option value="">— Đơn vị —</option>${units.map(u => `<option value="${esc(u.Id)}" ${u.Id === r.DefaultUnitId ? 'selected' : ''}>${esc(u.Code || u.Name || '')}</option>`).join('')}</select></div></div>
+        <div class="field"><label>Trạng thái</label><select class="select" id="dfSt"><option value="Active" ${r.Status !== 'Inactive' ? 'selected' : ''}>Đang dùng</option><option value="Inactive" ${r.Status === 'Inactive' ? 'selected' : ''}>Ngừng dùng</option></select></div>
+        <div class="field" style="grid-column:1/-1"><label>Mô tả</label><textarea class="input" rows="2" id="dfDesc">${esc(r.Description || r.Note || '')}</textarea></div>
+        <div class="field"><label>Mã món</label><input class="input" value="${esc(r.Code || 'Tự sinh khi lưu')}" disabled></div>
+        <div class="field"><label>Giá thành chuẩn</label><div class="small muted" style="padding-top:8px">${nilv(r.StandardCost) ? 'Hệ thống tự tính khi công thức được duyệt' : '<b>' + U.money(r.StandardCost) + '</b> · tính từ công thức đang dùng'}</div></div></div>
+        ${isNew ? `<h3 class="mt">Công thức chế biến</h3><div class="df-modes">
+          <label class="chip-radio"><input type="radio" name="dfM" value="copy" ${dsh.mode === 'copy' ? 'checked' : ''}> Chép từ món có sẵn</label>
+          <label class="chip-radio"><input type="radio" name="dfM" value="new" ${dsh.mode === 'new' ? 'checked' : ''}> Nhập mới</label>
+          <label class="chip-radio"><input type="radio" name="dfM" value="later" ${dsh.mode === 'later' ? 'checked' : ''}> Để sau</label></div>
+          <div class="field mt" id="dfSrcBox"><label>Món nguồn (ưu tiên cùng nhóm)</label><input class="input" id="dfSrcQ" placeholder="Tìm theo tên / mã món"><select class="select mt" id="dfSrc" size="6"></select></div>
+          <div class="small muted mt" id="dfHint"></div>` : ''}`,
+      foot: `<button class="btn" data-close>Hủy</button><button class="btn primary" id="dfOk">${isNew ? 'Lưu và mở công thức' : 'Lưu'}</button>`,
+      onMount: (m, close) => {
+        const g = s => m.querySelector(s);
+        const drawSrc = () => {
+          if (!isNew) return;
+          const q = (g('#dfSrcQ').value || '').toLowerCase(), cur = g('#dfSrc').value;
+          g('#dfSrc').innerHTML = srcDishes().filter(x => !q || String(x.Name || '').toLowerCase().includes(q) || String(x.Code || '').toLowerCase().includes(q)).slice(0, 80).map(x => `<option value="${esc(x.Id)}" ${x.Id === cur ? 'selected' : ''}>${esc(srcLabel(x))}</option>`).join('');
+        };
+        const mode = () => (m.querySelector('[name=dfM]:checked') || {}).value || 'later';
+        const sync = () => {
+          if (!isNew) return;
+          dsh.mode = mode(); g('#dfSrcBox').classList.toggle('hide', dsh.mode !== 'copy');
+          g('#dfOk').textContent = dsh.mode === 'later' ? 'Lưu' : 'Lưu và mở công thức';
+          g('#dfHint').textContent = dsh.mode === 'copy' ? 'Tạo món → tạo phiên bản V1 Nháp chép định lượng từ công thức đang dùng của món nguồn → mở tab Công thức để chỉnh.' : dsh.mode === 'new' ? 'Tạo món → tạo phiên bản V1 Nháp trống → mở tab Công thức để nhập nguyên liệu.' : 'Món gắn nhãn "Chưa có công thức" – Thực đơn tuần chưa chọn được món này cho tới khi có công thức hiệu lực.';
+        };
+        if (isNew) { m.querySelectorAll('[name=dfM]').forEach(x => x.onchange = sync); g('#dfSrcQ').oninput = drawSrc; g('#dfCat').addEventListener('change', drawSrc); Store.ensure('Recipe').then(() => Store.ensure('RecipeLine')).then(drawSrc); sync(); }
+        const cn = g('#dfCatNew');
+        if (cn) cn.onclick = () => UI.form('DishCategorie', null, { title: 'Nhóm món', onSave: () => Store.reload(['DishCategorie']).then(() => { const list = Store.rows('DishCategorie'); const last = list[0]; g('#dfCat').innerHTML = catOpts(last && last.Id); }) });
+        g('#dfOk').onclick = () => {
+          const name = g('#dfName').value.trim(), cat = g('#dfCat').value;
+          if (!name) return UI.toast('Nhập tên món', 'err');
+          if (!cat) return UI.toast('Chọn nhóm món', 'err');
+          const size = g('#dfSize').value;
+          if (size !== '' && !(+size > 0)) return UI.toast('Định lượng 1 suất phải lớn hơn 0', 'err');
+          const form = { Name: name, DishCategoryId: cat, StandardServingSize: size === '' ? null : +size, DefaultUnitId: g('#dfUnit').value || null, Description: g('#dfDesc').value.trim() || null, Status: g('#dfSt').value };
+          if (!isNew) {
+            return Store.act('Dish/Update', { method: 'PUT', form: Object.assign({ Id: r.Id, Code: r.Code }, form), tables: ['Dishe'] }).then(x => { if (!x.ok) return; close(); UI.toast('Đã lưu món ăn', 'ok'); if (opt && opt.onSave) opt.onSave(); });
+          }
+          const md = mode(), src = md === 'copy' ? g('#dfSrc').value : '';
+          if (md === 'copy' && !src) return UI.toast('Chọn món nguồn để chép công thức (hoặc chọn Nhập mới / Để sau)', 'err');
+          const btn = g('#dfOk'); btn.disabled = true;
+          Store.act('Dish/Create', { form, tables: ['Dishe'] }).then(x => {
+            if (!x.ok || !x.data) { btn.disabled = false; return; }
+            const id = x.data.id;
+            const next = md === 'later' ? Promise.resolve(null) : (md === 'copy' ? Store.query('Dish/GetActiveRecipe', { id: src }).then(y => (y.ok && y.data && y.data.recipe ? y.data.recipe.id : null)) : Promise.resolve(null))
+              .then(rid => Store.act('Recipe/CreateVersion', { form: { DishId: id, CopyFromRecipeId: rid || null }, tables: ['Recipe', 'RecipeLine'] }));
+            next.then(v => {
+              close(); UI.toast('Đã tạo món ' + esc(x.data.code || name) + (v && v.ok ? ' + công thức V1 Nháp' : ''), 'ok');
+              if (md === 'later') { if (opt && opt.onSave) opt.onSave(); return; }
+              APP._wantTab = 'Công thức'; APP._wantTabAt = Date.now(); location.hash = APP.href('menu-dish-detail?id=' + encodeURIComponent(id));
+            });
+          });
+        };
+      } });
+  }
+  APP.dishForm = dishForm;
+  const baseForm = UI.form;
+  UI.form = (t, row, opt) => (t === 'Dishe' && Store.isLive ? Promise.all(['DishCategorie', 'UnitMeasure', 'Dishe'].map(x => Store.ensure(x))).then(() => dishForm(row, opt || {})) : baseForm(t, row, opt));
+
+  // Tab "Công thức" của trang chi tiết món: chọn phiên bản; bản Nháp sửa ngay trên bảng (định lượng tinh / 100 suất, hao hụt sơ chế %), thêm nguyên liệu bằng ô gõ tên.
+  APP.dishRecipeTab = (box, o, dishId, reload) => {
+    const st = { ver: null };
+    const canAdd = Store.perm('menu-recipe').add !== false && Store.perm('menu-recipe').access !== false;
+    const canEdit = Store.perm('menu-recipe').edit !== false && Store.perm('menu-recipe').access !== false;
+    const canApr = Store.canApprove && Store.canApprove('menu-recipe');
+    // Đọc thẳng Recipe/GetByDishId (bảng Recipe trên máy khách có thể chỉ nạp một phần) → đổi về tên cột PascalCase để dùng chung với màn Công thức.
+    const P = o => { const x = {}; Object.keys(o || {}).forEach(k => { x[k.charAt(0).toUpperCase() + k.slice(1)] = o[k]; }); return x; };
+    const lineOf = {};
+    const draw = () => Promise.all([Store.query('Recipe/GetByDishId', { dishId }), Store.ensure('UnitMeasure'), Store.ensure('Ingredient')]).then(([q]) => {
+      const list = q && q.ok ? (q.list || []) : [];
+      const recs = list.map(v => { const r = P(v.recipe); lineOf[r.Id] = (v.listLine || []).map(P); return r; }).sort((a, b) => b.VersionNo - a.VersionNo);
+      if (!recs.length) {
+        box.innerHTML = `<div class="notice warn">${I('alert')}<div>Món chưa có công thức. ${canAdd ? '<button class="btn sm primary" data-rnew>Tạo phiên bản V1 (Nháp)</button>' : ''}</div></div>`;
+        const b = box.querySelector('[data-rnew]'); if (b) b.onclick = () => Store.act('Recipe/CreateVersion', { form: { DishId: dishId }, tables: ['Recipe', 'RecipeLine'] }).then(x => { if (x.ok) draw(); });
+        return;
+      }
+      const active = recs.find(x => x.IsActive);
+      const cur = recs.find(x => x.Id === st.ver) || recs.find(x => x.Status === 'Draft') || active || recs[0]; st.ver = cur.Id;
+      const draft = cur.Status === 'Draft' && canEdit;
+      const lines = (lineOf[cur.Id] || []).slice().sort((a, b) => (a.SequenceNo || 0) - (b.SequenceNo || 0));
+      const lineById = {}; lines.forEach(l => { lineById[l.Id] = l; });
+      const vname = x => (x.VersionCode || 'V' + x.VersionNo) + ' · ' + UI.statusVi('Recipe', 'Status', x.Status) + (x.IsActive ? ' (đang dùng)' : '');
+      box.innerHTML = `<div class="spread mb"><div class="row-flex"><select class="select" id="rvSel" style="max-width:280px">${recs.map(x => `<option value="${esc(x.Id)}" ${x.Id === cur.Id ? 'selected' : ''}>${esc(vname(x))}</option>`).join('')}</select>${UI.badge(cur.Status, 'Recipe', 'Status')}</div>
+        <div class="row-flex">${draft ? `<button class="btn sm" id="rvSave">${I('ok')} Lưu nháp</button><button class="btn sm orange" id="rvSub">Gửi duyệt</button>` : ''}${cur.Status === 'PendingApproval' && canApr && cur.CreatedBy !== Store.user.id ? `<button class="btn sm primary" id="rvApr">${I('approve')} Duyệt</button><button class="btn sm danger" id="rvRej">Từ chối</button>` : ''}${cur.Status === 'Approved' && canApr ? `<button class="btn sm primary" id="rvLock">${I('key')} Khóa</button>` : ''}${['Locked', 'Approved', 'Obsolete'].includes(cur.Status) && canAdd && !recs.some(x => ['Draft', 'PendingApproval'].includes(x.Status)) ? `<button class="btn sm" id="rvNew">${I('plus')} Tạo phiên bản mới</button>` : ''}${Store.perm('menu-recipe').access !== false ? '<a href="javascript:void 0" class="small" data-go="menu-recipe">Màn Công thức chế biến</a>' : ''}</div></div>
+        <div class="table-wrap"><table class="table dc-table rv-table"><thead><tr><th>Nguyên liệu</th><th class="num">Định lượng tinh / 100 suất</th><th>ĐVT</th><th class="num">Hao hụt sơ chế %</th><th class="num">Lượng cần mua</th><th class="num">Giá NCC ưu tiên</th><th class="num">Thành tiền / 100 suất</th>${draft ? '<th></th>' : ''}</tr></thead>
+        <tbody>${lines.map(l => { const w = +(l.ExpectedWasteRate ?? l.WastePercent ?? 0) || 0, gross = w < 100 ? (+l.Quantity || 0) * 100 / (100 - w) : 0; return `<tr data-rl="${esc(l.Id)}"><td><b>${esc(Store.label('Ingredient', l.IngredientId))}</b></td>
+          <td class="num">${draft ? `<input type="number" min="0" step="any" class="input rv-q" data-q value="${l.Quantity ?? ''}">` : U.num(l.Quantity, 3)}</td><td>${esc(Store.label('UnitMeasure', l.UnitId || l.UomId) || '')}</td>
+          <td class="num">${draft ? `<input type="number" min="0" max="99" step="any" class="input rv-q" data-w value="${w}">` : U.num(w, 1)}</td><td class="num" data-gross>${U.num(gross, 3)}</td><td class="num" data-price>…</td><td class="num" data-amt>…</td>${draft ? `<td><button class="btn xs danger" data-del title="Xóa dòng">✕</button></td>` : ''}</tr>`; }).join('')}
+        ${draft ? `<tr><td colspan="8"><input class="input" id="rvAdd" list="rvIngList" placeholder="+ Gõ tên nguyên liệu để thêm" style="max-width:360px"><datalist id="rvIngList">${Store.rows('Ingredient').filter(i => i.Status !== 'Inactive').slice(0, 1500).map(i => `<option value="${esc((i.Name || '') + ' · ' + (i.Code || ''))}">`).join('')}</datalist>${Store.perm('scm-ingredient').add !== false && Store.perm('scm-ingredient').access !== false ? ' <a href="javascript:void 0" class="small" id="rvIngNew">+ Tạo nguyên liệu mới</a>' : ''}</td></tr>` : ''}</tbody></table></div>
+        <div class="kpis compact mt" id="rvKpi"></div><div class="small mt" id="rvCheck"></div>`;
+      box.querySelector('#rvSel').onchange = e => { st.ver = e.target.value; draw(); };
+      box.querySelectorAll('[data-go]').forEach(a => a.onclick = () => APP.go(a.dataset.go));
+      // Giá vốn theo phiên bản (Recipe/CalculateCost, 100 suất) + so với bản đang dùng.
+      const calc = id => Store.query('Recipe/CalculateCost', { id, mealCount: 100 });
+      Promise.all([calc(cur.Id), active && active.Id !== cur.Id ? calc(active.Id) : Promise.resolve(null)]).then(([x, y]) => {
+        if (!box.isConnected) return;
+        const d = x && x.ok ? x.data : null, a = y && y.ok ? y.data : null;
+        (d ? d.listLine || [] : []).forEach(l => { const tr = [...box.querySelectorAll('[data-rl]')].find(t => { const rl = lineById[t.dataset.rl]; return rl && rl.IngredientId === l.ingredientId; }); if (!tr) return; if (l.ingredientName) tr.querySelector('b').textContent = l.ingredientName; tr.querySelector('[data-price]').innerHTML = nilv(l.unitPrice) ? '<span class="bad small">thiếu giá</span>' : U.money(l.unitPrice); tr.querySelector('[data-amt]').innerHTML = nilv(l.amount) ? '–' : U.money(l.amount); });
+        box.querySelectorAll('[data-price]').forEach(td => { if (td.textContent === '…') td.textContent = '–'; });
+        box.querySelectorAll('[data-amt]').forEach(td => { if (td.textContent === '…') td.textContent = '–'; });
+        const diff = d && a && a.costPerMeal ? (d.costPerMeal - a.costPerMeal) / a.costPerMeal * 100 : null;
+        box.querySelector('#rvKpi').outerHTML = UI.kpis([
+          UI.kpi('Giá vốn NL / suất', d ? U.money(d.costPerMeal || 0) : '–', d && d.complete === false ? 'còn dòng thiếu giá' : '', 'calc', d && d.complete === false ? 'orange' : 'green'),
+          UI.kpi('Số nguyên liệu', U.num(lines.length), '', 'clipboard', 'blue'),
+          UI.kpi('Thành phẩm / suất', nilv((o.dish || {}).standardServingSize) ? '–' : U.num(o.dish.standardServingSize) + ' ' + esc(o.unitName || ''), '', 'utensils', 'blue'),
+          UI.kpi('So với bản đang dùng', diff === null ? '–' : (diff > 0 ? '+' : '') + U.num(diff, 1) + '%', !active ? 'chưa có bản đang dùng' : active.Id !== cur.Id ? esc(active.VersionCode || 'V' + active.VersionNo) : 'đây là bản đang dùng', 'chart', diff > 0 ? 'orange' : 'green'),
+        ], 'compact') || '<div id="rvKpi"></div>';
+        const chk = [];
+        chk.push(d && d.complete !== false ? '✓ Đủ giá nhà cung cấp' : '⚠ Có nguyên liệu thiếu giá nhà cung cấp');
+        chk.push(lines.every(l => l.UnitId || l.UomId) ? '✓ Đơn vị đủ' : '⚠ Có dòng thiếu đơn vị');
+        chk.push(cur.Instructions ? '✓ Có hướng dẫn chế biến' : '· Chưa có hướng dẫn chế biến (không bắt buộc)');
+        box.querySelector('#rvCheck').textContent = chk.join('   ');
+      });
+      if (draft) {
+        // Enter xuống dòng cùng cột.
+        box.querySelectorAll('.rv-q').forEach(inp => inp.onkeydown = e => { if (e.key !== 'Enter') return; e.preventDefault(); const col = inp.hasAttribute('data-q') ? '[data-q]' : '[data-w]'; const all = [...box.querySelectorAll(col)]; const nx = all[all.indexOf(inp) + 1]; if (nx) nx.focus(); else box.querySelector('#rvAdd').focus(); });
+        const save = () => {
+          const ops = [...box.querySelectorAll('[data-rl]')].map(tr => { const l = lineById[tr.dataset.rl], q = +tr.querySelector('[data-q]').value, w = +tr.querySelector('[data-w]').value; if (!l || (q === +l.Quantity && w === +(l.ExpectedWasteRate ?? l.WastePercent ?? 0))) return null; return () => Store.act('RecipeLine/Update', { method: 'PUT', form: Object.assign({}, l, { Quantity: q, ExpectedWasteRate: w, WastePercent: w }), quiet: false }); }).filter(Boolean);
+          return ops.reduce((p, f) => p.then(f), Promise.resolve());
+        };
+        box.querySelector('#rvSave').onclick = () => save().then(() => { UI.toast('Đã lưu nháp công thức', 'ok'); draw(); });
+        box.querySelector('#rvSub').onclick = () => save().then(() => {
+          if (!lines.length) return UI.toast('Công thức phải có ít nhất 1 nguyên liệu', 'err');
+          UI.confirm('Gửi duyệt phiên bản ' + esc(cur.VersionCode || 'V' + cur.VersionNo) + '? Sau khi gửi không sửa được định lượng; duyệt cấp cuối là khóa và áp dụng.', () => Store.act('Recipe/Submit', { form: { id: cur.Id, effectiveFrom: U.addDays(Store.ctx.date, 1) }, tables: ['Recipe', 'ApprovalRequest'] }).then(x => { if (x.ok) { UI.toast('Đã gửi duyệt', 'ok'); draw(); } }), { ok: 'Gửi duyệt' });
+        });
+        box.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const id = b.closest('[data-rl]').dataset.rl; UI.confirm('Xóa nguyên liệu này khỏi công thức?', () => Store.act('RecipeLine/Delete?id=' + encodeURIComponent(id), { method: 'DELETE', tables: ['RecipeLine'] }).then(x => { if (x.ok) draw(); }), { danger: true, ok: 'Xóa' }); });
+        const add = box.querySelector('#rvAdd');
+        add.onchange = () => {
+          const v = add.value.trim(), code = v.split(' · ').pop();
+          const ing = Store.rows('Ingredient').find(i => i.Code === code) || Store.rows('Ingredient').find(i => (i.Name || '').toLowerCase() === v.toLowerCase());
+          if (!ing) return UI.toast('Không có nguyên liệu này trong danh mục' + (Store.perm('scm-ingredient').add !== false ? ' – bấm "+ Tạo nguyên liệu mới"' : ''), 'warn');
+          if (lines.some(l => l.IngredientId === ing.Id)) return UI.toast('Nguyên liệu đã có trong công thức', 'warn');
+          Store.act('RecipeLine/Insert', { form: { RecipeId: cur.Id, IngredientId: ing.Id, Quantity: 0, UnitId: ing.BaseUnitId || ing.UnitId || null, UomId: ing.BaseUnitId || ing.UnitId || null, ExpectedWasteRate: 0, WastePercent: 0, SequenceNo: lines.length + 1, SortOrder: lines.length + 1 }, tables: ['RecipeLine'] })
+            .then(x => { if (!x.ok) return; draw().then(() => { const q = [...box.querySelectorAll('[data-q]')].pop(); if (q) q.focus(); }); });
+        };
+        const ni = box.querySelector('#rvIngNew'); if (ni) ni.onclick = () => UI.form('Ingredient', null, { title: 'Nguyên liệu', onSave: () => Store.reload(['Ingredient']).then(draw) });
+      }
+      const act = (sel, path, msg, extra) => { const b = box.querySelector(sel); if (b) b.onclick = () => extra ? extra() : Store.act(path, { form: { Id: cur.Id }, tables: ['Recipe', 'ApprovalRequest'] }).then(x => { if (x.ok) { UI.toast(msg, 'ok'); draw(); if (reload) reload(); } }); };
+      act('#rvApr', 'Recipe/Approve', 'Đã duyệt phiên bản');
+      act('#rvRej', null, null, () => UI.confirm('Từ chối phiên bản này?', reason => Store.act('Recipe/Reject', { form: { Id: cur.Id, Note: reason }, tables: ['Recipe', 'ApprovalRequest'] }).then(x => { if (x.ok) { UI.toast('Đã từ chối', 'ok'); draw(); } }), { input: 'Lý do từ chối', required: true, danger: true, ok: 'Từ chối' }));
+      act('#rvLock', null, null, () => UI.confirm('Khóa & áp dụng phiên bản này từ ngày mai? Bản đang dùng ngừng áp dụng, giá thành chuẩn tính lại.', () => Store.act('Recipe/Lock', { form: { Id: cur.Id, EffectiveFrom: U.addDays(Store.ctx.date, 1) }, tables: ['Recipe', 'StandardCost', 'Dishe'] }).then(x => { if (x.ok) { UI.toast('Đã khóa & áp dụng', 'ok'); draw(); if (reload) reload(); } }), { ok: 'Khóa' }));
+      act('#rvNew', null, null, () => Store.act('Recipe/CreateVersion', { form: { DishId: dishId, CopyFromRecipeId: cur.Id }, tables: ['Recipe', 'RecipeLine'] }).then(x => { if (x.ok) { st.ver = null; UI.toast('Đã tạo phiên bản mới (Nháp) – chép từ ' + esc(cur.VersionCode || ''), 'ok'); draw(); } }));
+    });
+    return draw();
+  };
   // ---------- Dùng chung cho các hộp thoại chế độ API ----------
   const opts = (rows, label, sel) => rows.map(r => `<option value="${esc(r.Id)}" ${r.Id === sel ? 'selected' : ''}>${esc(label(r))}</option>`).join('');
   const hasTable = t => !!Store.schema.tables[t];

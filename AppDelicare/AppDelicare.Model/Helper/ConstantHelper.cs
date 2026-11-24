@@ -319,6 +319,9 @@
             public static readonly string OrderLineIncomplete = "Mọi dòng phải có loại suất, ca và số suất lớn hơn 0";
             public static readonly string OrderExtraSamePoint = "Điểm này đã có đơn {0} ({1} suất) từ đăng ký tuần – đơn này là đơn thêm";
             public static readonly string OrderExtraReasonInvalid = "Lý do đơn phát sinh không hợp lệ (Sự kiện / tiệc · Khách đặt thêm · Đơn bù do phản ánh · Khác)";
+            public static readonly string DishCategoryRequired = "Chọn nhóm món trong danh mục (thêm nhóm món mới nếu chưa có)";
+            public static readonly string DishServingSizeInvalid = "Định lượng 1 suất phải lớn hơn 0";
+            public static readonly string RecipeSourceNotEffective = "Món nguồn chưa có công thức để chép";
             public static readonly string OrderDuplicate = "Đã có đơn {0} cho khách / điểm giao / ngày ăn này – sửa đơn đó thay vì tạo mới";
             public static readonly string OrderShiftNotFound = "Không xác định được ca giao cho loại suất {0} – chọn ca";
             public static readonly string OrderCancelReasonRequired = "Hủy đơn phải ghi lý do";

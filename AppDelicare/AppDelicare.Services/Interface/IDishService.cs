@@ -14,6 +14,8 @@ namespace AppDelicare.Services.Interface
     {
         public Task<IResults<DishViewModel>> GetAll(DishSearchRequest request);
         public Task<IResult<bool>> Save(DishRequest request, string typeSave);
+        /// <summary>UI-6.17 (D-98): thêm món – trả id + mã.</summary>
+        public Task<IResult<DishCreatedModel>> Create(DishRequest request);
         public IResults<Dish> GetAllData();
         public Task<IResult<Dish>> GetById(Guid id);
         // <summary>T45R: công thức hiệu lực + giá vốn / suất.</summary>

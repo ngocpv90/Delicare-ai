@@ -784,3 +784,7 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .od-opt{padding:6px 0;border-bottom:1px solid #F0F2ED;align-items:center}
 .chip-radio{display:inline-flex;align-items:center;gap:4px;border:1px solid #d5dbd2;border-radius:16px;padding:4px 10px;font-size:13px;cursor:pointer}
 #odMoreBox{position:absolute;right:16px;margin-top:40px;z-index:20}
+
+/* UI-6.17 (D-98): form món + tab Công thức */
+.df-modes{display:flex;gap:8px;flex-wrap:wrap}
+.rv-table .rv-q{width:110px;text-align:right}
