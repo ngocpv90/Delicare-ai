@@ -69,7 +69,7 @@ namespace AppDelicare.Services.Implement
             R<GoodsReceipt>("Phiếu nhập kho", "scm-gr", "Status", "ReceiptDate", "ReceiptNumber,Note",
                 "ReceiptNumber:Số phiếu nhập,ReceiptDate:Ngày nhập,SupplierId,PurchaseOrderId:Đơn mua,WarehouseId,Status,Note",
                 attachable: true, children: [C<GoodsReceiptLine>("GoodsReceiptId")]),
-            R<MaterialLot>("Lô nguyên liệu", "scm-lot", "Status", "ReceivedDate", "LotNumber,Note",
+            R<MaterialLot>("Lô nguyên liệu", "scm-inv-balance", "Status", "ReceivedDate", "LotNumber,Note",
                 "LotNumber:Số lô,IngredientId,SupplierId,ManufactureDate:NSX,ExpiryDate:HSD,ReceivedDate:Ngày nhận,QualityStatus:Chất lượng,Status,Note", attachable: true),
             R<MaterialIssue>("Phiếu xuất kho", "scm-issue", "Status", "IssueDate", "IssueNumber,Note",
                 "IssueNumber:Số phiếu xuất,IssueDate:Ngày xuất,ProductionOrderId:Lệnh sản xuất,WarehouseId,Status,Note",

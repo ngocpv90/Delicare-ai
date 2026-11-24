@@ -31,56 +31,50 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | — | Q |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | X | Q |
 | Mua hàng › Đơn vị tính | `scm-uom` | — | Q |
-| Kho › Phiếu nhập kho | `scm-gr` | S (IX) | S (IX) |
-| Kho › Phiếu xuất sản xuất | `scm-issue` | S (IX) | S (IX) |
-| Kho › Tồn kho | `scm-inv-balance` | X | X |
-| Kho › Lô hàng & hạn dùng | `scm-lot` | S (IX) | S (IX) |
-| Kho › Sổ kho | `scm-inv-txn` | S (IX) | S (IX) |
-| Kho › Giữ chỗ nguyên liệu | `scm-reservation` | S (IX) | S (IX) |
-| Kho › Phiếu kiểm kê | `scm-stockcount` | S (IX) | S (IX) |
-| Kho › Chênh lệch tiêu hao | `scm-consumption-var` | X | X |
-| Kho › Kho | `scm-warehouse` | Q | Q |
-| Kho › Khu bảo quản | `scm-zone` | Q | Q |
-| Kho › Vị trí kệ | `scm-location` | Q | Q |
-| Kho › Định mức tồn kho | `scm-inv-policy` | Q | Q |
+| Kho › Nhận hàng | `scm-gr` | S (IX) | S (IX) |
+| Kho › Xuất kho sản xuất | `scm-issue` | S (IX) | S (IX) |
+| Kho › Tồn kho | `scm-inv-balance` | Q (IX) | Q (IX) |
+| Kho › Kiểm kê | `scm-stockcount` | S (IX) | S (IX) |
+| Kho › Kho & vị trí | `scm-warehouse` | Q | Q |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
-| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | — | X |
+| Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | — | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | — | X |
 <!-- MENU5:END -->
 
-Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) **ẩn trên menu** (MENU-4) – hai việc này làm bằng nút trên `scm-inv-balance` / `scm-inv-txn`; link cũ tới hai màn này tự mở màn Tồn kho. Các mục "Chi tiết phiếu nhập / phiếu xuất / kiểm kê" cũng đã bỏ: xem dòng trong chi tiết phiếu, hoặc **Lọc theo nguyên liệu** trên danh sách Phiếu nhập / Phiếu xuất.
+**UI-6.29 (D-110): menu Kho còn 5 mục** – Nhận hàng · Xuất kho sản xuất · Tồn kho · Kiểm kê · Kho & vị trí. Các mục cũ đã ẩn và mở đúng chỗ: Lô hàng & hạn dùng (`scm-lot`) → Tồn kho tab **Theo lô & hạn dùng**; Sổ kho (`scm-inv-txn`) → Tồn kho tab **Sổ kho**; Định mức tồn kho (`scm-inv-policy`) → Tồn kho tab **Định mức theo kho**; Khu bảo quản / Vị trí kệ → Kho & vị trí tab tương ứng; Giữ chỗ nguyên liệu → Xuất kho sản xuất tab **Giữ chỗ nguyên liệu**; Chênh lệch tiêu hao → Giá vốn & lãi gộp tab Theo món / Bảng sản xuất ngày. Quyền ở mục cũ được gộp vào mục cha (không ai mất quyền xem). Chuyển kho / Điều chỉnh tồn chỉ còn ở Tồn kho tab đầu (`scm-transfer`, `scm-adjustment` ẩn từ MENU-4). Các mục "Chi tiết phiếu nhập / phiếu xuất / kiểm kê" cũng đã bỏ: xem dòng trong chi tiết phiếu, hoặc **Lọc theo nguyên liệu** trên danh sách Phiếu nhập / Phiếu xuất.
 
 ## 3. Việc trong ngày
 
 | Giờ | Việc | Màn |
 |---|---|---|
 | 00:15 | Hệ thống tự chuyển lô quá hạn → **Hết hạn** + ghi hủy tồn | tự động |
-| Sáng | Xem cận date / dưới tồn tối thiểu (chuông, bot) | `scm-lot`, `scm-inv-balance` |
-| Khi hàng về | **Nhận hàng** theo PO → QC kết luận → **Ghi sổ** | `scm-po` → `qc-inspection` → `scm-gr` |
+| Sáng | Xem cận date / dưới tồn tối thiểu (chuông, bot) | Tồn kho (tab Theo nguyên liệu / Theo lô) |
+| Khi hàng về | **Nhận hàng & kiểm tra** trên một form (tự đạt → nhập kho ngay; cần QA → Gửi QA) | `scm-gr` |
 | Trước giờ nấu | **Xuất kho** phần nguyên liệu đã giữ chỗ cho lệnh SX | `scm-issue` |
-| Khi hàng về sau | **Giữ chỗ bổ sung** cho lệnh còn thiếu | `scm-reservation` |
+| Khi hàng về sau | **Giữ chỗ bổ sung** cho lệnh còn thiếu | Xuất kho sản xuất › tab Giữ chỗ nguyên liệu |
 | Định kỳ | **Kiểm kê** | `scm-stockcount` |
 | 21:00 | Bot gửi nguyên liệu cần cho ngày mai | bot |
 
 ## 4. Thao tác từng bước
 
-### 4.1 Nhận hàng theo PO – `scm-po` → **Nhận hàng**
-1. Trên dòng PO (Đã duyệt / Đã gửi NCC / Nhận một phần) bấm **Nhận hàng**.
-2. Hộp **Nhận hàng – PO…**: chọn **Kho nhận**; mỗi dòng còn chờ nhận nhập **Số nhận** (mặc định = còn lại; 0 = không nhận lần này), **Số lô NCC**, **Hạn dùng** (trống = ngày nhận + hạn bảo quản của nguyên liệu), **Nhiệt độ °C** (bắt buộc với hàng Mát / Đông lạnh).
-3. **Tạo phiếu nhập** → phiếu `PN-…` ở **Chờ QC**, kèm phiếu QC; màn chuyển sang **Phiếu kiểm tra QC** để QA kết luận.
-- Nhận vượt tối đa 10% số đặt mỗi dòng: *… nhận … vượt số còn được nhận …*.
-- Cảnh báo nhiệt độ ngay khi tạo: *nhiệt độ nhận … vượt ngưỡng … – vùng loại, chỉ kết luận KHONG_DAT* / *nhận có điều kiện – cần lý do…* / *chưa có nhiệt độ nhận*.
+### 4.1 Nhận hàng & kiểm tra – `scm-gr` (UI-6.29)
+1. Đầu màn **Nhận hàng**: khối **Đơn mua hẹn giao hôm nay + quá hẹn chưa nhận đủ** (◀ ▶ hoặc chọn ngày; nhãn đỏ **Quá hẹn**). Đơn khác: gõ số đơn mua ở ô **Đơn mua khác** → **Nhận hàng**. Nút **Nhận hàng** ở màn Đơn mua mở **cùng form**. Màn không còn nút "Tạo mới" chung.
+2. Form **Nhận hàng & kiểm tra – PO…**: chọn **Kho nhận**; mỗi dòng còn chờ nhận: **Số nhận** (mặc định = còn lại; 0 = không nhận lần này), **Lô NCC**, **Hạn dùng** (trống = ngày nhận + hạn bảo quản), **Nhiệt độ °C** (bắt buộc với hàng Mát / Đông lạnh – dưới ô hiện vùng *Đạt nhiệt độ / Nhận có điều kiện / Vượt ngưỡng – loại* và ngưỡng), **Cảm quan**, **Bao bì** (mặc định Đạt – chỉ đổi khi có vấn đề), **Kết quả** (tự điền theo gợi ý: vùng loại / quá hạn dùng / cảm quan, bao bì không đạt → Không đạt), **Số đạt** (khi Đạt một phần), **Nhận xét** (bắt buộc khi không Đạt). Hàng đông lạnh nhận có điều kiện → tick **Không có dấu hiệu rã đông**.
+3. Nút cuối form:
+   - Người có quyền Duyệt "Kiểm tra hàng nhập" (QA): **Kết luận & nhập kho** – tạo phiếu, kết luận và tự ghi sổ (lập lô, nhập phần đạt, cập nhật đơn mua) một lần.
+   - Thủ kho: **Gửi QA** – phiếu ở **Chờ QC**, vào **Phê duyệt › Kiểm tra hàng nhập** để QA xác nhận (QA mở cùng form đã điền sẵn, không nhập lại).
+   - **Mọi dòng tự đạt** (nguyên liệu không yêu cầu kiểm tra + nhiệt độ đạt / không kiểm): hệ thống **nhập kho ngay** – *Mọi dòng tự đạt – hệ thống đã nhập kho*.
+- Nhận vượt tối đa 10% số đặt mỗi dòng: *… nhận … vượt số còn được nhận …*. Dòng không đạt → hệ thống tự lập **Sự cố nhà cung cấp**.
 
-### 4.2 Ghi sổ phiếu nhập – `scm-gr`
+### 4.2 Danh sách phiếu nhận – `scm-gr`
 | Nút | Khi nào | Kết quả |
 |---|---|---|
-| **Mở QC** | Chờ QC | Sang màn Phiếu kiểm tra QC |
-| **Ghi sổ** | Đạt / Đạt một phần / Từ chối (QC đã kết luận) | Tạo **lô** `LO-…`, nhập kho **phần đạt**, cập nhật PO (Nhận một phần / Đã nhận đủ) |
+| **Kiểm tra & kết luận** | Chờ QC – chỉ QA | Mở form nhận hàng đã điền sẵn để kết luận |
+| **Ghi sổ** | Đạt / Đạt một phần / Từ chối (tự ghi sổ lỗi) | Ghi sổ tay – tạo **lô** `LO-…`, nhập kho **phần đạt**, cập nhật PO |
 | **In** | Đạt / Đạt một phần / Từ chối / Đã ghi sổ | Phiếu nhập kho PDF |
 | **Hủy** | Chưa ghi sổ, chưa hủy | Bắt buộc lý do |
-- *Phiếu nhập chưa kết luận QC – chưa ghi sổ được* → nhờ QA kết luận.
 
-### 4.3 Tồn kho – `scm-inv-balance`
+### 4.3 Tồn kho – `scm-inv-balance` (4 tab: Theo nguyên liệu · Theo lô & hạn dùng · Sổ kho · Định mức theo kho)
 1. Lọc **Kho** (Tất cả kho) và tick **Chỉ nguyên liệu dưới mức tồn**.
 2. Thẻ: Nguyên liệu có tồn, **Dưới tồn tối thiểu**, **Dưới điểm đặt hàng**, **Lô sắp hết hạn** (+ số lô đã hết hạn).
 3. Bảng: Mã, Nguyên liệu, Kho, Tồn thực, Đã giữ, **Xuất được** (+ "bị chặn"), ĐVT, Tối thiểu / an toàn / đặt hàng, **Mức tồn** (Dưới tối thiểu / Cần đặt hàng / Đủ hàng), Số lô, Sắp hết hạn (+ ngày hết hạn gần nhất).
@@ -88,7 +82,7 @@ Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) 
 5. **Tính lại tồn** (chỉ quản trị): tính lại số tồn từ sổ cái, ghi đè số hiện tại.
 
 ### 4.4 Chuyển kho / vị trí – nút **Chuyển kho**
-1. **Chuyển kho** (ở `scm-inv-balance` hoặc `scm-inv-txn`, hoặc trên một lô).
+1. **Chuyển kho** (Tồn kho tab Theo nguyên liệu, hoặc trên một lô trong hộp Tồn theo lô).
 2. Chọn **Nguyên liệu***, Lô, **Từ kho*** + vị trí, **Đến kho*** + vị trí, **Số lượng chuyển***, **Lý do*** (≥ 3 ký tự) → **Chuyển kho** → xác nhận.
 - *Nơi chuyển đến phải khác nơi chuyển đi*, *Không đủ tồn khả dụng của …: còn …, cần …*.
 
@@ -96,7 +90,7 @@ Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) 
 1. Chọn Nguyên liệu*, Lô, Kho*, Vị trí, **Số lượng điều chỉnh** (+ tăng / − giảm, khác 0), Đơn giá (khi nhập thêm), **Lý do***, Ghi chú → **Ghi điều chỉnh** → xác nhận.
 2. Mặc định điều chỉnh tay **phải được duyệt** ("Phê duyệt › Phiếu điều chỉnh tồn") trước khi ghi sổ: *Đã gửi duyệt điều chỉnh tồn (yêu cầu …) – chỉ ghi sổ khi được duyệt*.
 
-### 4.6 Lô nguyên liệu – `scm-lot`
+### 4.6 Lô nguyên liệu – Tồn kho › tab **Theo lô & hạn dùng** (link cũ `#/scm-lot` mở tab này)
 - Chip lọc: **Tất cả / Còn tồn / Hết hạn trong 3 ngày / Trong 7 ngày / Trong 30 ngày**.
 - Bấm một dòng → **trang chi tiết lô** (mục 4.12).
 - Cột: Số lô, Nguyên liệu, NCC, Ngày nhận, HSD (đỏ nếu sắp hết), Tồn, Khả dụng, QC, Trạng thái.
@@ -106,7 +100,7 @@ Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) 
   - **Mở giữ** (lô Tạm giữ): lô trở lại khả dụng.
 - **Xử lý lô hết hạn** (đầu trang): xem trước danh sách lô quá hạn (+ lô sắp hết hạn), giá trị hủy ước tính → **Chuyển hết hạn và hủy tồn N lô** → ghi chú → xác nhận. Lô đang tạm giữ được bỏ qua (xử lý riêng).
 
-### 4.7 Giữ chỗ nguyên liệu – `scm-reservation`
+### 4.7 Giữ chỗ nguyên liệu – Xuất kho sản xuất › tab **Giữ chỗ nguyên liệu** (thủ kho bấm được **Giữ chỗ bổ sung**)
 1. Khối **Giữ chỗ theo kế hoạch sản xuất**: bấm nút kế hoạch (`KS-…` · ngày) → bảng giữ chỗ mọi lệnh (Cần, Đang giữ, **Chưa giữ được**, trạng thái); bấm số lệnh để mở lệnh.
 2. Nút **Lệnh SX** trên dòng → hộp giữ chỗ của lệnh:
    - **Giữ chỗ bổ sung** (khi còn thiếu và hàng đã về) → giữ thêm từ tồn khả dụng.
@@ -134,14 +128,14 @@ Màn `scm-transfer` (Chuyển kho) và `scm-adjustment` (Điều chỉnh tồn) 
 6. **In** biên bản kiểm kê bất kỳ lúc nào.
 - Trên danh sách: **Kiểm đếm** (Nháp / Đang kiểm), **Ghi sổ** (đã duyệt), "Chờ duyệt →" (đang chờ), **In**.
 
-### 4.10 Chênh lệch tiêu hao – `scm-consumption-var`
-Chọn khoảng ngày, tick **Chỉ dòng vượt ngưỡng cảnh báo** (> 5%) → **Tải lại**. Số liệu sinh khi **đóng lệnh sản xuất**.
+### 4.10 Chênh lệch tiêu hao (mục menu đã ẩn – xem ở Giá vốn & lãi gộp tab Theo món, Bảng sản xuất ngày)
+Màn cũ (link `#/scm-consumption-var` mở Giá vốn & lãi gộp): chọn khoảng ngày, tick **Chỉ dòng vượt ngưỡng cảnh báo** (> 5%) → **Tải lại**. Số liệu sinh khi **đóng lệnh sản xuất**.
 
-### 4.11 Kho, khu, vị trí – `scm-warehouse`, `scm-zone`, `scm-location`
-Nút **Sơ đồ** trên dòng kho → các khu bảo quản (ngưỡng nhiệt độ) và vị trí trong khu.
+### 4.11 Kho & vị trí – `scm-warehouse` (3 tab: Kho · Khu bảo quản · Vị trí kệ)
+Tab **Kho**: nút **Sơ đồ** trên dòng kho → các khu bảo quản (ngưỡng nhiệt độ) và vị trí trong khu. Tab **Khu bảo quản** (nhiệt độ tối thiểu / tối đa), tab **Vị trí kệ** (thêm / sửa, nút **In QR vị trí kho**).
 
 ### 4.12 Trang chi tiết – phiếu nhập, lô (UI-6)
-Bấm một dòng ở **Phiếu nhập kho** hoặc **Lô nguyên liệu** → **trang chi tiết toàn màn** (đường dẫn riêng; Ctrl + bấm / chuột giữa → tab mới; **← Danh sách** giữ bộ lọc, trang, vị trí cuộn). Quyền xem = quyền xem màn danh sách; nút phần đầu là đúng các nút trên dòng, hiện theo trạng thái / quyền.
+Bấm một dòng ở **Nhận hàng** hoặc tab **Theo lô & hạn dùng** → **trang chi tiết toàn màn** (đường dẫn riêng; Ctrl + bấm / chuột giữa → tab mới; **← Danh sách** giữ bộ lọc, trang, vị trí cuộn). Quyền xem = quyền xem màn danh sách; nút phần đầu là đúng các nút trên dòng, hiện theo trạng thái / quyền.
 - **Phiếu nhập:** phần đầu số phiếu + trạng thái + nhãn kết luận QC, NCC, kho, ngày nhận, PO (bấm mở trang đơn mua); tiến trình **Chờ QC → QC kết luận (Đạt / Đạt một phần / Từ chối) → Đã ghi sổ** (Hủy = đỏ). Nút **Ghi sổ nhập kho**, **Mở phiếu QC** (khi Chờ QC), **In phiếu**; ⋯ **Hủy phiếu nhập**. 4 thẻ: Số dòng (số lô đã tạo) · Dòng bị loại · **Lệch nhiệt độ** (vùng có điều kiện / loại / thiếu số đo) · Giá trị đạt (giá trị nhận). Tab: Tổng quan (thông tin + dòng + **lô đã tạo** – bấm số lô mở trang lô) · Dòng & QC (nhiệt độ, lô NCC, HSD, kết quả, "Dùng trước") · Kiểm tra cảm quan · Tài liệu · Lịch sử.
 - **Lô:** phần đầu số lô + trạng thái + QC + nhãn hạn (Đã hết hạn / Còn N ngày), nguyên liệu (bấm mở hồ sơ nguyên liệu), NCC, ngày nhận, HSD; khung vàng **Không xuất được** + lý do khi lô bị chặn. Nút **Truy xuất** (hộp truy xuất như ở danh sách), **Tạm giữ** / **Mở tạm giữ** (chỉ người có quyền Duyệt "Giữ / thả lô"). 4 thẻ: Tồn thực · Khả dụng (đã giữ) · Đã xuất (số nhập) · Hạn dùng còn bao nhiêu ngày. Tab: Tổng quan (nguồn: phiếu nhập, đơn mua, NSX, đơn giá nhập, số nhận / đạt; tồn theo kho; giao dịch gần nhất) · Giao dịch kho · **Truy xuất** (chuỗi NCC → … → khách hàng ngay trên trang) · Chứng từ liên quan · Lịch sử.
 

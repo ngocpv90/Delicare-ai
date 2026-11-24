@@ -466,3 +466,14 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Sidebar Điều hành: Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt (admin, CEO, COO, SAL-HEAD, FIN-ACC); vai trò chỉ có quyền duyệt (vd OPS-WH) thấy đúng 1 mục Phê duyệt.
 - [ ] Chỉ số kinh doanh: công tắc Theo ngày | Theo tháng đổi đúng dữ liệu, tải lại trang vẫn nhớ; Làm mới số liệu (admin) chạy job ngày / tháng theo chế độ.
 - [ ] Link cũ `#/kpi-monthly` mở Chỉ số kinh doanh chế độ tháng.
+
+## UI-6.29 – Kho 5 mục, Nhận hàng & kiểm tra, Sổ kiểm tra hàng nhập (D-110)
+- [ ] Sidebar Kho (uat.ops-wh): Nhận hàng · Xuất kho sản xuất · Tồn kho · Kiểm kê · Kho & vị trí; Chất lượng: "Sổ kiểm tra hàng nhập".
+- [ ] Nhận hàng: khối đơn mua hẹn giao hôm nay + quá hẹn (◀ ▶ đổi ngày), không có nút "Tạo mới"; ô "Đơn mua khác" mở form.
+- [ ] Thủ kho nhận đơn chỉ có nguyên liệu khô không yêu cầu kiểm tra → báo "đã nhập kho", phiếu Đã ghi sổ, có lô, đơn mua cập nhật.
+- [ ] Thủ kho nhận hàng cần kiểm tra → "Gửi QA" → phiếu Chờ QC; uat.qa mở Phê duyệt › Kiểm tra hàng nhập → form điền sẵn → "Kết luận & nhập kho" → Đã ghi sổ.
+- [ ] Nhập nhiệt độ hàng mát 7 °C → vùng "Nhận có điều kiện"; 9 °C → gợi ý Không đạt; Không đạt bắt buộc nhận xét; đông lạnh có điều kiện bắt buộc tick không rã đông.
+- [ ] Tồn kho 4 tab (Theo nguyên liệu / Theo lô & hạn dùng / Sổ kho / Định mức theo kho); Chuyển kho / Điều chỉnh tồn chỉ ở tab đầu.
+- [ ] Kho & vị trí 3 tab; tab Vị trí kệ có "In QR vị trí kho". Xuất kho sản xuất tab Giữ chỗ nguyên liệu – thủ kho bấm được Giữ chỗ bổ sung.
+- [ ] Link cũ #/scm-lot, #/scm-inv-txn, #/scm-inv-policy, #/scm-zone, #/scm-location, #/scm-reservation, #/scm-consumption-var mở đúng màn / tab.
+- [ ] Sổ kiểm tra hàng nhập: gom theo ngày, lọc kỳ / kết quả / bảo quản / NCC / chỉ nhiệt độ ngoài ngưỡng, 4 chỉ số, ngăn chi tiết + "Lô này đã đi đâu", tab Theo nhà cung cấp, In sổ kiểm thực bước 1, Xuất Excel; không có nút Sửa / Xóa / Kết luận. Điện thoại: thẻ gọn.

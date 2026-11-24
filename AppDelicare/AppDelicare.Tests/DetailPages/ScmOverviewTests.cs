@@ -209,7 +209,7 @@ namespace AppDelicare.Tests.DetailPages
             e.GetProperty("onHandQuantity").GetDecimal().Should().Be(0);
             (await admin.GetResultAsync($"/api/MaterialLot/GetOverview?id={Guid.NewGuid()}")).Fail("Không tìm thấy");
 
-            await PermissionAsync($"/api/MaterialLot/GetOverview?id={lot}", "scm-lot", "scm-po");
+            await PermissionAsync($"/api/MaterialLot/GetOverview?id={lot}", "scm-inv-balance", "scm-po"); // UI-6.29 (D-110): Lô gộp vào Tồn kho
         }
 
         [Fact]

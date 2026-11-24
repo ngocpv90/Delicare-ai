@@ -547,6 +547,8 @@
             public static readonly string ReleaseNothingPending = "Mọi ca có nhu cầu của kế hoạch đã phát hành";
             public static readonly string ReleaseDispatchNeedsShift = "Giờ xuất bếp nhập tay chỉ dùng khi phát hành 1 ca – chọn ca (ShiftId); còn {0} ca chưa phát hành: {1}";
             public static readonly string ProductionCrudBlocked = "{0} {1}";
+            public static readonly string QcInspectionUpdateBlocked = "Hồ sơ kiểm tra hàng nhập không sửa được sau khi kết luận – ghi bổ sung ở lô hoặc sự cố nhà cung cấp.";
+            public static readonly string GoodsReceiptAutoPosted = "Mọi dòng tự đạt – hệ thống đã nhập kho (ghi sổ, lập lô, cập nhật đơn mua)";
             public static readonly string StandardCostManualBlocked = "Giá thành chuẩn do hệ thống tự tính từ công thức và giá nhà cung cấp – sửa công thức hoặc bảng giá NCC.";
             public static readonly string SampleAlreadyForDishShift = "Món này trong ca đã lưu mẫu lúc {0} (mẻ {1}) – không cần lưu lại";
             public static readonly string BatchNextNotPlanned = "Mẻ kế tiếp không còn ở trạng thái Chờ nấu";

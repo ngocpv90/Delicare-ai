@@ -19,7 +19,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | — |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | — |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | — |
-| Kho › Phiếu xuất sản xuất | `scm-issue` | X | — |
+| Kho › Xuất kho sản xuất | `scm-issue` | X | — |
 | Kho › Tồn kho | `scm-inv-balance` | X | — |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | — |
 | Sản xuất › Mẻ nấu | `prod-batch` | S | X |

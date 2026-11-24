@@ -42,12 +42,12 @@ namespace AppDelicare.Services.Implement
             [AlertCode.StockBelowMin] = "scm-inv-balance",
             [AlertCode.ApprovalPending] = "wf-inbox",
             [AlertCode.QcIncomingPending] = "qc-inspection",
-            [AlertCode.LotOnHold] = "scm-lot",
+            [AlertCode.LotOnHold] = "scm-inv-balance", // UI-6.29: tab Theo lô
             [AlertCode.TemperatureOutOfRange] = "qc-temperature",
             [AlertCode.ComplaintOverdue] = "log-complaint",
             [AlertCode.ComplaintOpen] = "log-complaint",
             [AlertCode.OutboundFailed] = "int-outbound",
-            [AlertCode.LotExpiring] = "scm-lot",
+            [AlertCode.LotExpiring] = "scm-inv-balance", // UI-6.29: tab Theo lô
         };
 
         private const string OutboundFailedStatus = "Failed";

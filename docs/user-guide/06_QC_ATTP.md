@@ -25,12 +25,11 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X |
 | Mua hàng › Nhà cung cấp | `scm-supplier` | X |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | X |
-| Kho › Phiếu nhập kho | `scm-gr` | X |
+| Kho › Nhận hàng | `scm-gr` | X |
 | Kho › Tồn kho | `scm-inv-balance` | X |
-| Kho › Lô hàng & hạn dùng | `scm-lot` | X |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X |
 | Sản xuất › Mẻ nấu | `prod-batch` | X |
-| Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | S (IX) |
+| Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | S (IX) |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S (IX) |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S (IX) |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S (IX) |
@@ -55,11 +54,19 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 
 ## 4. Thao tác từng bước
 
-### 4.1 QC đầu vào – `qc-inspection`
-1. Dòng chưa kết luận có nút **Kết luận** (hoặc mở thẳng từ màn nhận hàng).
-2. Hộp **Kiểm tra chất lượng đầu vào – …**: mỗi dòng nguyên liệu có Bảo quản, **Nhiệt độ °C** (dưới ô hiện *Tối đa …°C · vùng nhiệt · Gợi ý: Đạt / Tạm giữ / Không đạt*), KL, **Cảm quan**, **Bao bì**, HSD, **Kết quả** (PASS / HOLD / REJECT – điền sẵn theo gợi ý).
-3. Nhập **Ghi chú / lý do** (bắt buộc khi có dòng HOLD / REJECT) → **Lưu kết luận**.
-4. Kết quả: phiếu nhập → **Đạt / Đạt một phần / Từ chối**; lô được gắn kết quả QC; có dòng không đạt → tự lập **Sự cố NCC**. Kho bấm **Ghi sổ** để nhập phần đạt.
+### 4.1 Kiểm tra hàng nhập – hàng chờ ở **Phê duyệt › Kiểm tra hàng nhập** + **Sổ kiểm tra hàng nhập** (`qc-inspection`, UI-6.29)
+**Kết luận (QA):**
+1. Mở **Phê duyệt › Kiểm tra hàng nhập** (`#/wf-inbox?type=qc-inspection`; sổ hiện khung vàng *N phiếu nhận hàng chờ kết luận → Mở hàng chờ*). Mỗi phiếu: số phiếu nhập, NCC, giờ nhận, nguyên liệu + vùng nhiệt độ.
+2. **Kiểm tra & kết luận** → **cùng form Nhận hàng** đã điền sẵn số nhận, lô, hạn dùng, nhiệt độ do kho nhập. Chỉ sửa dòng có vấn đề: Nhiệt độ, Cảm quan, Bao bì, **Kết quả** (Đạt / Đạt một phần / Không đạt – điền sẵn theo gợi ý), Số đạt, Nhận xét (bắt buộc khi không Đạt).
+3. **Kết luận & nhập kho** → hệ thống ghi sổ phần đạt, lập lô; dòng không đạt → tự lập **Sự cố NCC**.
+- QA đứng ở cửa kho: mở **Nhận hàng** → form có nút **Kết luận & nhập kho** (tạo phiếu + kết luận một lần).
+
+**Sổ kiểm tra hàng nhập (chỉ xem):** mỗi dòng = một nguyên liệu trong phiếu nhận, **gom theo ngày** (mở / gập; "N phiếu · M dòng · K không đạt"; nút **In ngày**). Cột Giờ · Nguyên liệu (bảo quản) · NCC (+ số phiếu) · Lô kho · Hạn dùng · Nhận / đạt · Nhiệt độ (màu theo vùng + ngưỡng) · Cảm quan / bao bì · Kết quả · Người kiểm (hoặc **Tự đạt**) · In.
+- Lọc: ô tìm (nguyên liệu, NCC, số lô, số phiếu); kỳ **Hôm nay · 7 ngày · Tháng này · Chọn khoảng**; Kết quả (gồm *Nhận có điều kiện*, *Chờ kết luận*); Bảo quản; NCC; **Chỉ nhiệt độ ngoài ngưỡng**. 4 thẻ: Lượt kiểm · Tỷ lệ đạt · Có điều kiện / Không đạt · Nhiệt độ ngoài ngưỡng.
+- Bấm dòng → ngăn chi tiết (đủ tiêu chí, nhận xét, lô kho) + tab **Lô này đã đi đâu**; nút **Mở phiếu nhập**, **Truy xuất lô**, **In phiếu kiểm tra**.
+- Tab **Theo nhà cung cấp**: phiếu, dòng kiểm, đạt, có điều kiện, không đạt, nhiệt độ ngoài ngưỡng, **tỷ lệ đạt** (thấp lên đầu), lần kiểm gần nhất; bấm NCC → lọc sổ.
+- Đầu màn: **In sổ kiểm thực bước 1** (theo khoảng ngày đang xem) + **Xuất Excel**.
+- **Không có nút Sửa / Xóa / Kết luận trên sổ.** Hồ sơ kiểm tra không sửa được (*Hồ sơ kiểm tra hàng nhập không sửa được sau khi kết luận – ghi bổ sung ở lô hoặc sự cố nhà cung cấp.*). Sai sau khi nhập kho → Tạm giữ lô, sự cố NCC hoặc Điều chỉnh tồn (có lý do).
 
 Ngưỡng nhiệt độ nhận hàng:
 
@@ -68,7 +75,7 @@ Ngưỡng nhiệt độ nhận hàng:
 | Mát (CHILLED) | ≤ 5 °C | 5 – 8 °C | > 8 °C |
 | Đông lạnh (FROZEN) | ≤ −18 °C | −18 – −15 °C (+ xác nhận "không rã đông") | > −15 °C |
 
-**HOLD (nhận một phần):** chọn HOLD → hiện ô **Số lượng đạt** (> 0 và nhỏ hơn số nhận) – chỉ phần đạt được nhập kho. **Hàng đông lạnh** (FROZEN) có ô tick **Xác nhận không rã đông** – bắt buộc khi nhiệt độ nhận nằm trong vùng nhận có điều kiện (−18 … −15 °C).
+**Đạt một phần:** chọn Đạt một phần → hiện ô **Số đạt** (> 0 và nhỏ hơn số nhận) – chỉ phần đạt được nhập kho. **Hàng đông lạnh** nhận có điều kiện (−18 … −15 °C) → tick **Không có dấu hiệu rã đông** (bắt buộc).
 
 ### 4.2 Sự cố nhà cung cấp – `qc-supplier-issue`
 - Danh sách: NCC, Phiếu nhập, Loại, Mức độ, Ghi nhận, **Hạn xử lý** (+ "Quá hạn"), Phụ trách, Trạng thái. Sự cố quá hạn xếp lên đầu.
@@ -119,7 +126,7 @@ Bấm thẻ mẻ trên **bảng điều độ** (ngày × ca × dây chuyền) �
 
 | Chứng từ | Luồng |
 |---|---|
-| QC đầu vào (dòng) | PASS (Đạt) / HOLD (Đạt một phần) / REJECT (Không đạt) |
+| Kiểm tra hàng nhập (dòng) | Đạt / Đạt một phần / Không đạt / Chờ kết luận (+ nhãn "Có điều kiện") |
 | Sự cố NCC | Mới → Đang xử lý → Đã xử lý → Đóng (Đã xử lý ↔ Mở lại) |
 | Checklist (tiêu chí) | PASS / FAIL |
 | Mẻ | Kế hoạch → Đang nấu → Chờ QC → Đạt / Không đạt → Đã đóng gói; QC: Đạt / Tạm giữ / Từ chối |

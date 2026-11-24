@@ -145,20 +145,9 @@ namespace AppDelicare.Services.Implement
         private Task<string> Insert(QcInspectionRequest request, string typeSave)
             => Task.FromResult(ConstantHelper.Message.QcInspectionCrudBlocked);
 
-        /// <summary>T15: CRUD Update chỉ sửa ghi chú / nhận xét chung; kết quả, số, phiếu nhập chỉ đổi qua <c>QcInspection/Conclude</c>.</summary>
-        private async Task<string> Update(QcInspectionRequest request, string typeSave)
-        {
-            var exist = _unitOfWork.QcInspectionRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
-            if (request.Id == null || exist == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            exist.Note = request.Note;
-            exist.Remark = request.Remark;
-            _unitOfWork.QcInspectionRepository.Update(exist);
-            await _unitOfWork.QcInspectionRepository.CommitAsync(typeSave);
-            return string.Empty;
-        }
+        /// <summary>UI-6.29 (D-110): hồ sơ kiểm tra hàng nhập không sửa ghi đè (ATTP) – kết luận chỉ qua Conclude khi phiếu chưa ghi sổ.</summary>
+        private Task<string> Update(QcInspectionRequest request, string typeSave)
+            => Task.FromResult(ConstantHelper.Message.QcInspectionUpdateBlocked);
 
         /// <summary>T15: không xóa phiếu QC (hồ sơ ATTP / truy xuất).</summary>
         private Task<string> Delete(Guid? id, string typeSave)

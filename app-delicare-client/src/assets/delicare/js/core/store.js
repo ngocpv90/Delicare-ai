@@ -239,6 +239,9 @@
     'cost-standard': 'cost-meal', 'cost-actual': 'cost-meal',
     // UI-6.28 (D-109): Chỉ số theo tháng gộp vào Chỉ số kinh doanh.
     'kpi-monthly': 'kpi-daily',
+    // UI-6.29 (D-110): Kho 12 → 5 mục – Khu / Vị trí trong Kho & vị trí; Lô, Sổ kho, Định mức tồn, Chênh lệch tiêu hao trong Tồn kho; Giữ chỗ trong Xuất kho sản xuất.
+    'scm-zone': 'scm-warehouse', 'scm-location': 'scm-warehouse', 'scm-lot': 'scm-inv-balance', 'scm-inv-txn': 'scm-inv-balance', 'scm-inv-policy': 'scm-inv-balance',
+    'scm-consumption-var': 'scm-inv-balance', 'scm-reservation': 'scm-issue',
     // UI-6.21 (D-102): nhóm nguyên liệu / nhóm món quản lý trong màn Nguyên liệu / Món ăn.
     'scm-ingredient-cat': 'scm-ingredient', 'menu-dish-cat': 'menu-dish',
     'scm-uom-conversion': 'scm-uom' }; // UI-6.22 (D-103)

@@ -152,7 +152,7 @@ namespace AppDelicare.Services.Implement
                         if (SafeCode(x.Code)) Add("VEH", "Xe", x.Code, string.IsNullOrWhiteSpace(x.LicensePlate) ? x.Code! : x.LicensePlate!, "VEH_" + x.Code);
                     }
                 }
-                if (Want("LOC", "scm-location"))
+                if (Want("LOC", "scm-warehouse"))
                 {
                     foreach (var x in await db.StorageLocation.AsNoTracking().Where(x => !x.IsDeleted).OrderBy(x => x.Code).Select(x => new { x.Code, x.Name }).ToListAsync())
                     {

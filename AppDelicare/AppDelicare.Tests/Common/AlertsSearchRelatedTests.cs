@@ -183,10 +183,10 @@ namespace AppDelicare.Tests.Common
             CountOf(ByCode(await admin.GetResultAsync($"/api/Common/GetAlerts?branchId={branch}")), "OUTBOUND_FAILED").Should().Be(1, "trong 60 giây trả kết quả đã cache");
             CountOf(ByCode(await admin.GetResultAsync($"/api/Common/GetAlerts?branchId={kitchen}")), "OUTBOUND_FAILED").Should().Be(2);
 
-            // Quyền: chỉ Xem "Lô nguyên liệu" → chỉ cảnh báo lô; không có màn nào → rỗng.
-            using var lotKeeper = _factory.CreateAuthorizedClient(await CommonTestUsers.UserAsync(_factory, ("scm-lot", "V")));
-            ByCode(await lotKeeper.GetResultAsync($"/api/Common/GetAlerts?branchId={branch}")).Keys.Should().BeEquivalentTo("LOT_ON_HOLD", "LOT_EXPIRING");
-            using var nobody = _factory.CreateAuthorizedClient(await CommonTestUsers.UserAsync(_factory, ("scm-lot", "")));
+            // Quyền: chỉ Xem "Tồn kho" (gồm Lô) → cảnh báo lô + tồn tối thiểu; không có màn nào → rỗng.
+            using var lotKeeper = _factory.CreateAuthorizedClient(await CommonTestUsers.UserAsync(_factory, ("scm-inv-balance", "V") /* UI-6.29: tab Theo lô */));
+            ByCode(await lotKeeper.GetResultAsync($"/api/Common/GetAlerts?branchId={branch}")).Keys.Should().BeEquivalentTo(["LOT_ON_HOLD", "LOT_EXPIRING", "STOCK_BELOW_MIN"], "UI-6.29: Tồn kho gồm tab Theo lô – thấy cảnh báo lô + dưới tồn tối thiểu");
+            using var nobody = _factory.CreateAuthorizedClient(await CommonTestUsers.UserAsync(_factory, ("scm-inv-balance", "")));
             ByCode(await nobody.GetResultAsync($"/api/Common/GetAlerts?branchId={branch}")).Should().BeEmpty("có dòng quyền nhưng không có Xem");
         }
 

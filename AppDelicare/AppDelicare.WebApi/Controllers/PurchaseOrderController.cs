@@ -9,8 +9,9 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class PurchaseOrderController(IPurchaseOrderService service) : BaseController
+    public class PurchaseOrderController(IPurchaseOrderService service, IQcBookService book) : BaseController
     {
+        private readonly IQcBookService _book = book;
         private readonly IPurchaseOrderService _service = service;
 
         [HttpGet("GetAll")]
@@ -342,6 +343,22 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " ExportOrder: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.29 (D-110): đơn mua đến hạn nhận cho màn "Nhận hàng" – quyền Xem scm-gr (kho không cần quyền Đơn mua).</summary>
+        [Security.Permission("scm-gr", PermissionAction.View)]
+        [HttpGet("GetDueForReceiving")]
+        public async Task<IActionResult> GetDueForReceiving(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _book.GetDueForReceiving(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDueForReceiving: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
