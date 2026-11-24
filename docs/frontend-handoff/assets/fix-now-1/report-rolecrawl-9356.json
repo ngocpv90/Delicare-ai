@@ -1,0 +1,14 @@
+{
+ "roles": {},
+ "admin": [],
+ "crawl": {
+  "QA": {
+   "opened": 27,
+   "issues": []
+  },
+  "SAL-SALES": {
+   "opened": 19,
+   "issues": []
+  }
+ }
+}

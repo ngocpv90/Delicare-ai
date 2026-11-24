@@ -1,0 +1,18 @@
+{
+ "roles": {},
+ "admin": [],
+ "crawl": {
+  "SAL-HEAD": {
+   "opened": 25,
+   "issues": []
+  },
+  "FIN-ACC": {
+   "opened": 28,
+   "issues": []
+  },
+  "FIN-HR": {
+   "opened": 11,
+   "issues": []
+  }
+ }
+}
