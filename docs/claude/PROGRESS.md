@@ -1,6 +1,49 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.6 (D-85) DONE – Đăng ký suất tuần theo mẫu chuẩn** (nhánh `feat/UI-6.6-order-week`). Không thêm bảng / cột; không có script DB (không đổi menu / quyền).
+  - **BE:**
+    - `Order/GetWeekOverview`: khách có hợp đồng hiệu lực × điểm giao đang hoạt động × 7 ngày. Mỗi ô có tổng suất, trạng thái (Chưa đăng ký / Nháp / Khách gửi / Đã xác nhận / Đã chốt / Ngoài hợp đồng) và dự báo Đã công bố. Kèm 4 chỉ số, thực đơn chung áp dụng và lần chốt tới.
+    - `ConfirmWeekPoints` (JSON): xác nhận nhiều điểm; đơn lỗi được báo riêng.
+    - `FillWeekFromForecast`: lấy số dự báo cho buổi còn trống, chia lựa chọn theo tỉ lệ 4 tuần; chỉ trả về, không lưu.
+    - `ImportWeekSlips` (nhiều `files`): tự nhận điểm qua mã ẩn, lưu Nháp. Phiếu sai mẫu / sai tuần / trống báo riêng.
+    - Ô của `Order/GetWeek` thêm `Average4Weeks` (dùng cho cảnh báo ⚠ > 30 %).
+    - Job `OrderMissingReminder` 18:00 và `OrderMissingAtCutoff` 20:05 (D-85 c): không tự tạo đơn; báo đỏ KD phụ trách + SAL-HEAD + COO.
+  - **FE (`orderweek.js` viết lại theo `order-week-v2-mockup.html`):**
+    - Tuần ◀ ▶ (mặc định tuần sau, kèm thực đơn đã công bố).
+    - 4 bước có nút: tải phiếu cho N điểm chưa đăng ký / tải nhiều phiếu lên / xác nhận N điểm / tự chốt (giờ chốt tới). 4 KPI gọn.
+    - Tab **Tổng quan tuần**: khách mở / gập, chip 6 màu, "DB …" là dự báo, cột Cả tuần, nút Nhập, dòng Tổng, lọc khách. Trên 10 khách thì mặc định thu gọn. Điện thoại hiện dạng thẻ.
+    - Tab **Nhập số theo điểm giao**:
+      - chọn điểm, Điểm trước / sau;
+      - buổi mở / gập kèm tổng, giá, số lựa chọn; lựa chọn × ngày, món là chữ nhỏ dưới ô, ⚠ lệch > 30 %;
+      - rời ô thì lưu Nháp;
+      - nút Chép tuần trước / Lấy số dự báo (sau đó bấm "Lưu nháp các ô đã điền") / In phiếu / Xác nhận điểm này.
+    - Tab **Lịch sử**: từng đơn của điểm trong tuần – tạo, thêm / sửa dòng (số trước → sau), gửi, xác nhận, chốt; ai, lúc nào.
+    - Bỏ bố cục cũ (chọn khách / điểm / tuần bằng ô thả xuống).
+  - **Kiểm trên DB dev thật** (tài khoản uat.sal-head; ảnh ở `docs/frontend-handoff/assets/ui-6.6/`):
+    - Tuần 30/11: 94 khách, 121 điểm, 18 → 19 điểm đã đăng ký, lệch dự báo +0,3 %.
+    - [DEMO] Khách A B21H · Căng tin A1, Trưa 30/11: nhập 120 → rời ô → **Nháp** (DH-261124-0009) → Xác nhận điểm này → **Đã xác nhận** (cảnh báo lệch dự báo +12,15 % so 107).
+    - Tab Lịch sử hiện đủ 4 bước. Màn Dự báo: ô đó chuyển **REGISTERED 120** (liên kết UI-6.5 đúng).
+    - Tải 2 phiếu thật + 1 tệp rác: tự nhận đúng 2 điểm (phiếu trống); tệp rác báo "Không phải phiếu…".
+    - Không có lỗi JS.
+  - **Vai trò (gọi API thật):**
+    - SAL-HEAD: xem / xác nhận / nhập phiếu đều 200.
+    - SAL-SALES: xem / xác nhận 200, nhập phiếu 403. Giao diện khóa nút "Tải phiếu lên" khi không có quyền Nhập.
+    - SAL-CS, OPS-PLAN, FIN-ACC: xem 200, xác nhận / nhập phiếu 403. Giao diện chỉ đọc (ảnh `pt-opsplan-*`).
+    - OPS-WH: 403.
+  - **Test:**
+    - `OrderWeekOverviewTests` 4 test: tổng quan / trạng thái / dự báo / lệch + xác nhận nhiều điểm; lấy số dự báo chia 2 : 1 + phần lẻ; tải 4 phiếu (2 lưu, 1 sai tuần, 1 rác); điểm chưa có đơn.
+    - `WeeklyJobsTests` thêm job 18:00 / 20:05 (có danh sách, không tạo đơn). `JobTests` thêm 2 mã job.
+    - Toàn bộ `dotnet test` **645/645**; FE build xanh.
+    - `full-flow.http` trên DB dev ngày 26/12: **226/227**. Lỗi duy nhất là 9.3, do hạn lô trong luồng là hôm nay + 20 ngày (đã ghi ở UI-6.5).
+  - **Tài liệu:** HDSD 02 §4.5b viết lại (4 bước, màu ô, 3 tab, nút, job 18:00 / 20:05, thông báo lỗi mới); BUSINESS_RULES thêm mục UI-6.6.
+  - **Chưa làm / còn rủi ro:**
+    - "Gửi phiếu cho khách" hiện **tải các tệp Excel** để KD tự gửi; chưa gửi qua bot cho khách vì chưa có kênh khách (BOT-2.9 hoãn).
+    - Tải N phiếu là N lần tải liên tiếp; trình duyệt có thể hỏi cho phép tải nhiều tệp.
+    - Chưa chạy thật 2 job trên DB dev vì sẽ gửi tin bot thật. Đã có test InMemory.
+    - Dữ liệu thử còn trên DB dev: đơn DH-261124-0009 (120 suất, Đã xác nhận, B21H 30/11).
+    - Giờ trong tab Lịch sử lấy từ `Common/GetHistory` có sẵn. Mốc "04:09" lệch so với giờ tạo đơn trên phiếu (19:09) – cần kiểm múi giờ của AuditChange; chưa sửa vì ngoài phạm vi.
+    - Mục ROADMAP UI-6.6 → DONE: anh tự cập nhật.
 - **2026-11-24: UI-6.5 (D-84) DONE – Dự báo suất ăn theo tuần + vòng tự động** (nhánh `feat/UI-6.5-forecast-week`). Không thêm bảng / cột; không có script DB (không đổi menu / quyền).
   - **BE:**
     - API `Forecast/GetWeek` (quyền Xem `crm-forecast`), `SaveCell` (JSON), `SuggestWeek`, `PublishWeek` (form).

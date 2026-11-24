@@ -337,7 +337,7 @@ namespace AppDelicare.Services.Implement
                     item.Cells = read.Data.ListCell.Count;
                     if (item.Cells == 0)
                     {
-                        item.Message = read.ResponseMessage;
+                        item.Message = read.Data.ListError.Count == 0 ? ConstantHelper.Message.OrderSlipEmpty : read.ResponseMessage;
                         item.Ok = read.Data.ListError.Count == 0;
                         if (!item.Ok)
                         {

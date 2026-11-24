@@ -303,6 +303,7 @@
             public static readonly string OrderSlipWrongWeek = "Phiếu của tuần {0}, không phải tuần đang mở ({1})";
             public static readonly string OrderSlipBatchRead = "Đã lưu Nháp {0} / {1} phiếu (lỗi {2})";
             public static readonly string OrderSlipNote = "Nhập từ phiếu đăng ký khách gửi lại";
+            public static readonly string OrderSlipEmpty = "Phiếu chưa điền số suất – không có gì để lưu";
             public static readonly string OrderSlipInvalid = "Không phải phiếu đăng ký suất của hệ thống (tải phiếu từ màn Đăng ký suất tuần / Thực đơn, không sửa hàng / cột ẩn)";
             public static readonly string OrderSlipOtherWeek = "Phiếu không đúng khách / điểm giao / tuần đang mở ({0} · {1} · tuần từ {2})";
             public static readonly string OrderSlipRowInvalid = "Hàng {0}: mã ẩn của phiếu bị sửa – bỏ qua";
