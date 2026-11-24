@@ -111,6 +111,55 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.13 (D-91): xem trước đổi món ô thực đơn – số khách / đơn / suất ảnh hưởng + 4 điều kiện tự duyệt. Quyền Xem.</summary>
+        [HttpGet("GetCellPreview")]
+        public async Task<IActionResult> GetCellPreview([FromQuery] AppDelicare.Model.Model.MenuChangeCellRequest request)
+        {
+            try
+            {
+                return Ok(await _service.PreviewCell(request ?? new()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCellPreview: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.13: gửi đổi món cho mọi khách của ô (JSON) – tự duyệt khi cùng nhóm + có công thức khóa + FC đạt + trước giờ chốt, còn lại COO duyệt. Quyền Thêm.</summary>
+        [HttpPost("CreateForCell")]
+        public async Task<IActionResult> CreateForCell([FromBody] AppDelicare.Model.Model.MenuChangeCellRequest request)
+        {
+            try
+            {
+                if (null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.CreateForCell(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateForCell: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.13: tab "Đổi món" của Thực đơn tuần – mọi yêu cầu đổi món có ngày ăn trong tuần. Quyền Xem.</summary>
+        [HttpGet("GetWeekChanges")]
+        public async Task<IActionResult> GetWeekChanges([FromQuery] AppDelicare.Model.Model.MenuWeekRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetWeekChanges(request ?? new()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetWeekChanges: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>BE2.2: chi tiết yêu cầu đổi món – tên món, đơn, yêu cầu duyệt, kế hoạch sản xuất của ngày (cần xử lý tay hay không).</summary>
         [HttpGet("GetDetail")]
         public async Task<IActionResult> GetDetail(Guid id)

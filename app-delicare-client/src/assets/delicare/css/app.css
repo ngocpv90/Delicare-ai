@@ -715,3 +715,7 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .mw-opt-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px 8px;cursor:pointer}
 .mw-opt-btn.on{border-color:#7FA43A;background:#EFF5E5}
 .mw-radio{display:block;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+/* UI-6.13 (D-91): đổi món tại chỗ */
+.mw-cell.mw-changed{border-color:#B9CB97;background:#EFF5E5}
+.mw-tag{display:inline-block;margin-left:4px;font-size:10px;font-weight:700;color:#3F5A17;background:#DDEBC6;border-radius:6px;padding:0 5px;vertical-align:1px}
+.mw-tag.pend{color:#8A3B0B;background:#FBE1CC}

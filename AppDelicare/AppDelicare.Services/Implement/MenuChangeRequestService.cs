@@ -20,8 +20,8 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class MenuChangeRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService) : IMenuChangeRequestService
+    public partial class MenuChangeRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IDocumentNumberService documentNumberService, IApprovalRequestService approvalRequestService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IMenuChangeRequestService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;

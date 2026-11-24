@@ -64,6 +64,64 @@ namespace AppDelicare.Model.Model
         public decimal? Cost { get; set; }
         /// <summary>EMPTY / NO_RECIPE / DUPLICATE (món chính trùng trong 7 ngày gồm cuối tuần trước) – null = ổn.</summary>
         public string? Flag { get; set; }
+        /// <summary>UI-6.13: món đã đổi cho mọi khách (yêu cầu đổi món đã duyệt) – hiện món mới + dấu "đã đổi".</summary>
+        public string? ChangedDishName { get; set; }
+        public string? ChangeNote { get; set; }
+        /// <summary>UI-6.13: có yêu cầu đổi món chờ duyệt cho ô.</summary>
+        public bool ChangePending { get; set; }
+    }
+
+    /// <summary>UI-6.13 (D-91): đổi món cho mọi khách trên ô thực đơn tuần.</summary>
+    public class MenuChangeCellRequest
+    {
+        public Guid MenuId { get; set; }
+        /// <summary>Tuần đang xem (thực đơn có thể hiệu lực nhiều tuần) – ngày ăn = thứ Hai tuần + Day − 1.</summary>
+        public DateTime? WeekStart { get; set; }
+        public string? MealType { get; set; }
+        public int OptionNo { get; set; } = 1;
+        public int Day { get; set; }
+        public Guid OriginalDishId { get; set; }
+        public Guid? RequestedDishId { get; set; }
+        /// <summary>SHORTAGE / PRICE / SUPPLIER / QUALITY / OTHER.</summary>
+        public string? ReasonCode { get; set; }
+        public string? Note { get; set; }
+    }
+
+    public class MenuChangeCellPreviewModel
+    {
+        public DateTime MealDate { get; set; }
+        public int Customers { get; set; }
+        public int Orders { get; set; }
+        public decimal Quantity { get; set; }
+        public DateTime CutoffAt { get; set; }
+        public bool BeforeCutoff { get; set; }
+        public bool SameCategory { get; set; }
+        public bool HasRecipe { get; set; }
+        public decimal? FcPct { get; set; }
+        public bool FcOk { get; set; }
+        public bool AutoApprove { get; set; }
+        public List<string> ListBlock { get; set; } = [];
+    }
+
+    public class MenuChangeWeekItemModel
+    {
+        public Guid Id { get; set; }
+        public string? RequestNo { get; set; }
+        public DateTime MealDate { get; set; }
+        public string? OriginalDish { get; set; }
+        public string? RequestedDish { get; set; }
+        public string? Scope { get; set; }
+        public decimal? Quantity { get; set; }
+        public string? Reason { get; set; }
+        public string? Status { get; set; }
+        public string? StatusName { get; set; }
+        public string? RequestedBy { get; set; }
+        public string? ApprovedBy { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public bool AutoApproved { get; set; }
+        public Guid? MenuId { get; set; }
+        public Guid? OriginalDishId { get; set; }
+        public Guid? RequestedDishId { get; set; }
     }
 
     public class MenuCellRequest
@@ -96,6 +154,7 @@ namespace AppDelicare.Model.Model
     public class MenuSuggestRequest
     {
         public Guid MenuId { get; set; }
+        public DateTime? WeekStart { get; set; }
         public string? MealType { get; set; }
         public int OptionNo { get; set; } = 1;
         public Guid? CategoryId { get; set; }

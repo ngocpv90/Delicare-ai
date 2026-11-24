@@ -36,6 +36,8 @@ namespace AppDelicare.WebApi.Security
             ["CustomerContact"] = ("crm-customer", true),
             // UI-6.4 (D-83): mục menu Chính sách giá ẩn – phụ lục điều chỉnh giá làm trong hợp đồng → quyền API PricePolicy (tra giá, đính kèm) theo màn Hợp đồng.
             ["PricePolicy"] = ("crm-contract", true),
+            // UI-6.13 (D-91): mục menu Yêu cầu đổi món ẩn – đổi món làm trên ô Thực đơn tuần → quyền API MenuChangeRequest theo màn Thực đơn tuần.
+            ["MenuChangeRequest"] = ("menu-menu", true),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>

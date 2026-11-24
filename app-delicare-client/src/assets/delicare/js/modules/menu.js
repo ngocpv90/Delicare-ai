@@ -165,7 +165,7 @@
       <div class="notice info mb">${I('help')}<div>Mỗi tuần một thực đơn chung cho mọi khách. Thứ Hai 06:00 hệ thống tự lập bản nháp tuần sau (nhân bản tuần cùng vị trí trong chu kỳ 4 tuần) – bếp chỉ sửa các ô được đánh dấu, gửi duyệt, công bố trước thứ Năm.</div></div>
       <div class="card panel mb"><div class="spread" style="flex-wrap:wrap;gap:8px"><div class="fw-week"><button class="btn sm" id="mwPrev" aria-label="Tuần trước">◀</button><span id="mwLbl"></span><button class="btn sm" id="mwNext" aria-label="Tuần sau">▶</button><button class="btn sm" id="mwNow">Tuần sau</button></div><div id="mwStatus"></div></div>
         <div class="fw-steps ow-steps" id="mwSteps"></div><div id="mwKpis"></div></div>
-      <div class="card panel"><div class="tabs"><button class="tab" data-mwt="cal">Lịch tuần</button><button class="tab" data-mwt="hist">Duyệt &amp; lịch sử</button></div><div id="mwBody"><div class="muted small">Đang tải…</div></div></div>`;
+      <div class="card panel"><div class="tabs"><button class="tab" data-mwt="cal">Lịch tuần</button><button class="tab" data-mwt="chg">Đổi món</button><button class="tab" data-mwt="hist">Duyệt &amp; lịch sử</button></div><div id="mwBody"><div class="muted small">Đang tải…</div></div></div>`;
     const go = w => { mw.week = w; mw.data = null; mw.focus = -1; mw.hist = null; menuWeek(el, f); };
     el.querySelector('#mwPrev').onclick = () => go(U.addDays(mw.week, -7));
     el.querySelector('#mwNext').onclick = () => go(U.addDays(mw.week, 7));
@@ -202,13 +202,16 @@
     if (b('#mwSlip')) b('#mwSlip').onclick = () => APP.go('crm-order-week');
     if (b('#mwNextFlag')) b('#mwNextFlag').onclick = () => { if (mw.tab !== 'cal') { mw.tab = 'cal'; mwDraw(el, f); } const cs = [...el.querySelectorAll('.mw-cell.mw-empty, .mw-cell.mw-norec, .mw-cell.mw-dup, .mw-fc.bad')]; if (!cs.length) return; mw.focus = (mw.focus + 1) % cs.length; const c = cs[mw.focus]; c.scrollIntoView({ behavior: 'smooth', block: 'center' }); c.classList.add('mw-pulse'); setTimeout(() => c.classList.remove('mw-pulse'), 1200); };
     if (mw.tab === 'hist') return mwHist(el, f);
+    if (mw.tab === 'chg') return mwChanges(el, f);
     mwGrid(el, f, canEdit);
   }
   function mwGrid(el, f, canEdit) {
     const d = mw.data, box = el.querySelector('#mwBody'), edit = canEdit && d.editable;
+    // UI-6.13 (D-91): thực đơn đã công bố / đã duyệt → bấm ô món để "Đổi món ngày này" (quyền Thêm của màn Thực đơn tuần).
+    const changeable = !d.editable && (d.status === 'Published' || d.status === 'Approved') && Store.perm(f.id).add !== false;
     if (!d.menuId) { box.innerHTML = `<div class="empty">Tuần này chưa có thực đơn chung. ${Store.perm(f.id).add !== false ? 'Bấm <b>Tạo thực đơn tuần</b> ở bước 1.' : ''}</div>`; return; }
     const days = d.listDate.map(U.day);
-    let h = `<div class="fw-legend"><span><i class="mw-sw mw-empty"></i>Ô trống</span><span><i class="mw-sw mw-norec"></i>Món chưa có công thức khóa</span><span><i class="mw-sw mw-fcbad"></i>Suất FC vượt mục tiêu</span><span><i class="mw-sw mw-dup"></i>Món chính trùng trong 7 ngày</span><span><i class="mw-sw mw-chg"></i>Ô vừa sửa</span>${d.editable ? '' : '<span><b>Chỉ đọc</b> – đã duyệt / công bố: đổi món qua Yêu cầu đổi món</span>'}</div>
+    let h = `<div class="fw-legend"><span><i class="mw-sw mw-empty"></i>Ô trống</span><span><i class="mw-sw mw-norec"></i>Món chưa có công thức khóa</span><span><i class="mw-sw mw-fcbad"></i>Suất FC vượt mục tiêu</span><span><i class="mw-sw mw-dup"></i>Món chính trùng trong 7 ngày</span><span><i class="mw-sw mw-chg"></i>Ô vừa sửa</span>${d.editable ? '' : '<span><b>Đã duyệt / công bố</b> – bấm ô món để <b>đổi món ngày này</b> (mọi khách)</span><span><span class="mw-tag">đã đổi</span> món đã đổi</span>'}</div>
       <div class="table-wrap"><table class="mw-table"><colgroup><col class="name">${days.map(() => '<col>').join('')}<col style="width:40px"></colgroup><thead><tr><th class="l">Buổi · lựa chọn · nhóm món</th>${days.map((k, i) => `<th>${MW_DOW[i]} ${U.date(k).slice(0, 5)}${edit ? ` <button class="btn xs mw-copy" data-mwcd="${i + 1}" title="Chép cả ngày này sang ngày khác" aria-label="Chép ngày">⧉</button>` : ''}</th>`).join('')}<th></th></tr></thead><tbody>`;
     d.listMeal.forEach((m, mi) => {
       const closed = mw.closed.has(m.mealType);
@@ -217,12 +220,14 @@
       m.listOption.forEach((o, oi) => {
         h += `<tr class="mw-opt"><td class="l">${m.listOption.length > 1 ? 'Lựa chọn ' + o.optionNo : 'Giá vốn / FC%'}</td>${o.listCost.map((c, i) => { const fc = o.listFcPct[i], bad = fc != null && fc > d.fcTargetPct; return `<td class="mw-fc ${bad ? 'bad' : fc != null ? 'good' : ''}">${c ? U.num(c) : '–'}<div class="small">${fc != null ? U.num(fc) + '%' : ''}</div></td>`; }).join('')}<td></td></tr>`;
         o.listRow.forEach((r, ri) => {
-          h += `<tr><td class="l mw-cat">${esc(r.categoryName || 'Món')}</td>${r.listCell.map((c, di) => { const fl = MW_FLAG[c.flag]; return `<td><button class="mw-cell ${fl ? fl[0] : ''}" data-mwc="${mi}|${oi}|${ri}|${di}" title="${esc((c.dishName || '') + (c.cost != null ? ' · giá vốn ' + U.num(c.cost) : '') + (fl ? ' · ' + fl[1] : ''))}" ${edit ? '' : 'disabled'}>${c.dishName ? esc(c.dishName) : '<span class="muted">+ chọn món</span>'}</button></td>`; }).join('')}<td>${edit ? `<button class="btn xs" data-mwf="${mi}|${oi}|${ri}" title="Điền cả hàng (7 ngày cùng món)" aria-label="Điền cả hàng">⋯</button>` : ''}</td></tr>`;
+          h += `<tr><td class="l mw-cat">${esc(r.categoryName || 'Món')}</td>${r.listCell.map((c, di) => { const fl = MW_FLAG[c.flag]; const canChg = changeable && c.dishId && !c.changePending; const tip = c.changedDishName ? c.changeNote || '' : (c.dishName || '') + (c.cost != null ? ' · giá vốn ' + U.num(c.cost) : '') + (fl ? ' · ' + fl[1] : '') + (canChg ? ' · bấm để đổi món ngày này' : '');
+            return `<td><button class="mw-cell ${fl && !c.changedDishName ? fl[0] : ''} ${c.changedDishName ? 'mw-changed' : ''}" data-mwc="${mi}|${oi}|${ri}|${di}" title="${esc(tip)}" ${edit || canChg ? '' : 'disabled'}>${c.changedDishName ? `${esc(c.changedDishName)}<span class="mw-tag">đã đổi</span>` : c.dishName ? esc(c.dishName) : '<span class="muted">+ chọn món</span>'}${c.changePending ? '<span class="mw-tag pend">chờ duyệt đổi</span>' : ''}</button></td>`; }).join('')}<td>${edit ? `<button class="btn xs" data-mwf="${mi}|${oi}|${ri}" title="Điền cả hàng (7 ngày cùng món)" aria-label="Điền cả hàng">⋯</button>` : ''}</td></tr>`;
         });
       });
     });
     box.innerHTML = h + '</tbody></table></div><div class="small muted mt">Bấm ô → 5 gợi ý (cùng nhóm → có công thức → chưa dùng 14 ngày → giữ FC); gõ để tìm món khác; <b>Enter</b> lưu và sang ngày kế; <b>Delete</b> xóa món; <b>Esc</b> đóng. ⧉ ở đầu cột = chép cả ngày.</div>';
     box.querySelectorAll('[data-mwm]').forEach(tr => tr.onclick = () => { const k = tr.dataset.mwm; mw.closed.has(k) ? mw.closed.delete(k) : mw.closed.add(k); mwGrid(el, f, canEdit); });
+    if (changeable) box.querySelectorAll('[data-mwc]:not([disabled])').forEach(btn => btn.onclick = () => mwChange(el, f, btn));
     if (!edit) return;
     box.querySelectorAll('[data-mwc]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, false));
     box.querySelectorAll('[data-mwf]').forEach(btn => btn.onclick = () => mwPick(el, f, canEdit, btn, true));
@@ -250,7 +255,7 @@
     const outside = e => { if (!pop.contains(e.target) && e.target !== anchor) close(); };
     document.addEventListener('mousedown', outside, true);
     const paint = () => { pop.querySelector('#mwList').innerHTML = items.length ? items.map((s, i) => `<button class="mw-opt-btn ${i === sel ? 'on' : ''}" data-i="${i}"><b>${esc(s.dishName)}</b><span class="small muted">${s.hasRecipe ? '' : '⚠ chưa có công thức · '}giá vốn ${mwNum(s.cost)}${s.newFcPct != null ? ` · FC <span class="${s.newFcPct > d.fcTargetPct ? 'bad' : 'up'}">${U.num(s.newFcPct)}%</span>` : ''}${s.daysSinceUsed != null ? ' · dùng ' + s.daysSinceUsed + ' ngày trước' : ''}</span></button>`).join('') : '<div class="muted small">Không có món phù hợp</div>'; pop.querySelectorAll('[data-i]').forEach(b => b.onmousedown = e => { e.preventDefault(); sel = +b.dataset.i; choose(); }); };
-    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: q.value.trim() || null }).then(x => { items = x.ok ? x.list || [] : []; sel = 0; paint(); });
+    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: q.value.trim() || null }).then(x => { items = x.ok ? x.list || [] : []; sel = 0; paint(); });
     const after = x => { if (!x.ok) return; mw.data = x.data; mwGrid(el, f, canEdit); el.querySelector('#mwKpis') && mwDraw(el, f); };
     const save = dishId => Store.act('Menu/SaveCell', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, day: di + 1, dishId }, tables: ['MenuLine'] });
     function choose() {
@@ -267,6 +272,59 @@
       else if ((e.key === 'Delete' || e.key === 'Backspace') && !q.value && !fillRow) { e.preventDefault(); save(null).then(x => { close(); after(x); }); }
     };
     load();
+  }
+  const MW_REASON = [['SHORTAGE', 'Thiếu nguyên liệu'], ['PRICE', 'Giá tăng'], ['SUPPLIER', 'NCC giao lỗi'], ['QUALITY', 'Chất lượng nguyên liệu'], ['OTHER', 'Khác']];
+  // Hộp "Đổi món ngày này" ngay dưới ô: 5 gợi ý (như lập thực đơn) + lý do + ảnh hưởng (N khách · M suất) + tự duyệt hay cần COO → Gửi.
+  function mwChange(el, f, anchor) {
+    document.querySelectorAll('.mw-pop').forEach(p => p.remove());
+    const [mi, oi, ri, di] = anchor.dataset.mwc.split('|').map(Number), d = mw.data, meal = d.listMeal[mi], opt = meal.listOption[oi], row = opt.listRow[ri], cell = row.listCell[di];
+    const pop = document.createElement('div'); pop.className = 'mw-pop';
+    const r = anchor.getBoundingClientRect();
+    pop.style.top = (r.bottom + window.scrollY + 4) + 'px'; pop.style.left = Math.min(r.left + window.scrollX, window.innerWidth - 360) + 'px';
+    pop.innerHTML = `<div class="mb"><b>Đổi món ngày này</b><div class="small muted">${esc(meal.mealName)} · ${MW_DOW[di]} ${U.date(U.day(d.listDate[di])).slice(0, 5)} · đang là <b>${esc(cell.dishName || '')}</b> · áp cho mọi khách</div></div>
+      <input class="input" id="mcQ" placeholder="Gõ để tìm món khác…" autocomplete="off"><div id="mcList" class="mw-list"><div class="muted small">Đang gợi ý…</div></div>
+      <div class="field mt"><label>Lý do <span class="req">*</span></label><select class="select" id="mcR"><option value="">— Chọn —</option>${MW_REASON.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
+      <input class="input mt" id="mcN" placeholder="Ghi chú (tùy chọn)" maxlength="300"><div id="mcImpact" class="small mt muted">Chọn món thay để xem ảnh hưởng</div>
+      <div class="row-flex mt" style="justify-content:flex-end"><button class="btn sm" id="mcX">Hủy</button><button class="btn sm primary" id="mcGo" disabled>Gửi</button></div>`;
+    document.body.appendChild(pop);
+    let items = [], sel = -1, t = null;
+    const close = () => { pop.remove(); document.removeEventListener('mousedown', outside, true); };
+    const outside = e => { if (!pop.contains(e.target) && e.target !== anchor) close(); };
+    document.addEventListener('mousedown', outside, true);
+    const g = q => pop.querySelector(q);
+    const ready = () => { g('#mcGo').disabled = !(sel >= 0 && g('#mcR').value); };
+    const impact = () => {
+      const s2 = items[sel]; if (!s2) return;
+      g('#mcImpact').innerHTML = 'Đang tính ảnh hưởng…';
+      Store.query('MenuChangeRequest/GetCellPreview', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, Day: di + 1, OriginalDishId: cell.dishId, RequestedDishId: s2.dishId }).then(x => {
+        if (!pop.isConnected) return; if (!x.ok || !x.data) { g('#mcImpact').innerHTML = '<span class="bad">' + esc(x.message || 'Không tính được ảnh hưởng') + '</span>'; return; }
+        const p2 = x.data;
+        g('#mcImpact').innerHTML = `Ảnh hưởng <b>${U.num(p2.customers)} khách · ${U.num(p2.quantity)} suất</b> (${U.num(p2.orders)} đơn)${p2.fcPct != null ? ' · FC suất ' + U.num(p2.fcPct) + '%' : ''}<br>${p2.autoApprove ? '<span class="up"><b>✓ Hệ thống tự duyệt</b> (cùng nhóm, có công thức, FC đạt, trước giờ chốt)</span>' : '<span class="bad">Cần COO duyệt: ' + esc(p2.listBlock.join('; ')) + '</span>'}`;
+      });
+    };
+    const paint = () => { g('#mcList').innerHTML = items.length ? items.map((s2, i) => `<button class="mw-opt-btn ${i === sel ? 'on' : ''}" data-i="${i}"><b>${esc(s2.dishName)}</b><span class="small muted">${s2.hasRecipe ? '' : '⚠ chưa có công thức · '}giá vốn ${mwNum(s2.cost)}${s2.newFcPct != null ? ' · FC ' + U.num(s2.newFcPct) + '%' : ''}</span></button>`).join('') : '<div class="muted small">Không có món phù hợp</div>';
+      pop.querySelectorAll('[data-i]').forEach(b => b.onmousedown = e => { e.preventDefault(); sel = +b.dataset.i; paint(); impact(); ready(); }); };
+    const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: g('#mcQ').value.trim() || null })
+      .then(x => { items = (x.ok ? x.list || [] : []).filter(s2 => s2.dishId !== cell.dishId); sel = -1; paint(); ready(); });
+    g('#mcQ').oninput = () => { clearTimeout(t); t = setTimeout(load, 250); };
+    g('#mcR').onchange = ready; g('#mcX').onclick = close;
+    g('#mcGo').onclick = () => {
+      const s2 = items[sel]; if (!s2) return;
+      g('#mcGo').disabled = true;
+      Store.act('MenuChangeRequest/CreateForCell', { json: { menuId: d.menuId, weekStart: mw.week, mealType: meal.mealType, optionNo: opt.optionNo, day: di + 1, originalDishId: cell.dishId, requestedDishId: s2.dishId, reasonCode: g('#mcR').value, note: g('#mcN').value.trim() || null }, tables: ['MenuChangeRequest'] })
+        .then(x => { if (!x.ok) { g('#mcGo').disabled = false; return; } close(); UI.toast(esc((x.res && x.res.responseMessage) || 'Đã gửi'), 'ok'); mwLoad(el, f, true).then(() => mwDraw(el, f)); });
+    };
+    load();
+  }
+  function mwChanges(el, f) {
+    const box = el.querySelector('#mwBody');
+    box.innerHTML = '<div class="muted small">Đang tải…</div>';
+    Store.query('MenuChangeRequest/GetWeekChanges', { WeekStart: mw.week }).then(x => {
+      if (!box.isConnected || mw.tab !== 'chg') return;
+      const list = x.ok ? x.list || [] : [];
+      const cls = { Approved: 'green', Pending: 'orange', Rejected: 'red', Cancelled: 'gray' };
+      box.innerHTML = list.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Số</th><th>Ngày ăn</th><th>Món cũ → món mới</th><th>Phạm vi</th><th class="num">Suất</th><th>Lý do</th><th>Trạng thái</th><th>Người duyệt</th></tr></thead><tbody>${list.map(r => `<tr><td>${esc(r.requestNo || '')}</td><td>${U.date(U.day(r.mealDate))}</td><td>${esc(r.originalDish || '')} → <b>${esc(r.requestedDish || '')}</b></td><td>${esc(r.scope || '')}</td><td class="num">${r.quantity != null ? U.num(r.quantity) : '–'}</td><td class="small">${esc(r.reason || '')}</td><td><span class="badge ${cls[r.status] || 'gray'}">${esc(r.statusName || '')}</span></td><td class="small">${esc(r.approvedBy || '')}${r.approvedAt ? ' · ' + U.dt(r.approvedAt) : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Tuần này chưa có yêu cầu đổi món. Đổi món cho mọi khách: bấm ô món trên Lịch tuần của thực đơn đã công bố.</div>';
+    });
   }
   function mwCreate(el, f) {
     const menus = Store.rows('Menu').filter(m => m.MenuType === 'COMMON' && m.Status !== 'Draft').sort((a, b) => String(b.EffectiveFrom || '').localeCompare(String(a.EffectiveFrom || ''))).slice(0, 20);
@@ -421,6 +479,8 @@
   });
   // ---------- Yêu cầu đổi món: tạo + gửi duyệt (MenuChangeRequest/Create) ----------
   APP.register('menu-change-request', (el, f) => {
+    // UI-6.13 (D-91): mục menu đã ẩn – link cũ / thông báo mở màn Thực đơn tuần, tab Đổi món.
+    if (Store.isLive) { mw.tab = 'chg'; return APP.go('menu-menu'); }
     if (!Store.isLive) return APP.genericList(el, f);
     const perm = Store.perm(f.id);
     APP.genericList(el, f, { noAdd: true });

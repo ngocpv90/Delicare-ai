@@ -50,7 +50,7 @@ namespace AppDelicare.Services.Implement
                 attachable: true),
             R<Menu>("Thực đơn", "menu-menu", "Status", "EffectiveFrom", "Code,Name",
                 "Code,Name:Tên thực đơn,MenuType:Loại thực đơn,VersionNo,EffectiveFrom,EffectiveTo,Status,Note", children: [C<MenuLine>("MenuId")]),
-            R<MenuChangeRequest>("Yêu cầu đổi món", "menu-change-request", "RequestStatus", "MealDate", "RequestNo,Reason",
+            R<MenuChangeRequest>("Yêu cầu đổi món", "menu-menu", "RequestStatus", "MealDate", "RequestNo,Reason",
                 "RequestNo:Số phiếu,MealDate,OrderId,ShiftId,OriginalDishId:Món cũ,RequestedDishId:Món mới,Quantity:Số suất,Reason,RequestStatus"),
             R<Recipe>("Công thức", "menu-recipe", "Status", "EffectiveFrom", "VersionCode,Note",
                 "DishId,VersionCode:Mã phiên bản,VersionNo,YieldQuantity:Sản lượng chuẩn,EffectiveFrom,EffectiveTo,Status,Note", children: [C<RecipeLine>("RecipeId")]),

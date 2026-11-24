@@ -193,6 +193,32 @@ namespace AppDelicare.Services.Implement
                 }
                 model.ListMeal.Add(meal);
             }
+            if (menu != null)
+            {
+                // UI-6.13 (D-91): đổi món cho mọi khách (yêu cầu không gắn đơn) – ô hiện món mới + dấu "đã đổi"; chờ duyệt → dấu chờ.
+                var changes = await db.MenuChangeRequest.AsNoTracking().Where(r => !r.IsDeleted && r.MenuId == menu.Id && r.OrderId == null && r.MealDate >= monday && r.MealDate < end
+                    && (r.RequestStatus == MenuChangeStatus.Approved || r.RequestStatus == MenuChangeStatus.Pending)).ToListAsync();
+                var newIds = changes.Where(c => c.RequestedDishId != null).Select(c => c.RequestedDishId!.Value).Distinct().ToList();
+                var newNames = await db.Dish.AsNoTracking().Where(d => newIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.Name);
+                foreach (var meal in model.ListMeal)
+                {
+                    foreach (var cell in meal.ListOption.SelectMany(o => o.ListRow).SelectMany(r => r.ListCell).Where(c => c.DishId != null))
+                    {
+                        var ch = changes.Where(c => c.OriginalDishId == cell.DishId && MenuDayOf(c.MealDate) == cell.Day).OrderByDescending(c => c.CreatedDate).FirstOrDefault();
+                        if (ch == null)
+                        {
+                            continue;
+                        }
+                        if (ch.RequestStatus == MenuChangeStatus.Pending)
+                        {
+                            cell.ChangePending = true;
+                            continue;
+                        }
+                        cell.ChangedDishName = ch.RequestedDishId is { } n ? newNames.GetValueOrDefault(n) : null;
+                        cell.ChangeNote = $"Đã đổi từ {cell.DishName} ({ch.RequestNo}) – {ch.Reason}";
+                    }
+                }
+            }
             var cells = model.ListMeal.SelectMany(m => m.ListOption).SelectMany(o => o.ListRow).SelectMany(r => r.ListCell).ToList();
             model.EmptyCells = cells.Count(c => c.Flag == FlagEmpty);
             model.MissingRecipe = cells.Count(c => c.Flag == FlagNoRecipe);
@@ -351,7 +377,7 @@ namespace AppDelicare.Services.Implement
                     return new Results<MenuDishSuggestionModel> { ResponseCode = 400, ResponseMessage = ConstantHelper.Message.RecordNotFoundMessage };
                 }
                 string mealType = (request.MealType ?? string.Empty).ToUpperInvariant();
-                DateTime monday = OrderService.MondayOf(menu.EffectiveFrom ?? _clock.Today), date = monday.AddDays(Math.Clamp(request.Day, 1, 7) - 1);
+                DateTime monday = OrderService.MondayOf(request.WeekStart ?? menu.EffectiveFrom ?? _clock.Today), date = monday.AddDays(Math.Clamp(request.Day, 1, 7) - 1);
                 string? q = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
                 var candidates = await db.Dish.AsNoTracking()
                     .Where(d => !d.IsDeleted && (d.Status == null || d.Status == "Active") && (q == null ? (request.CategoryId == null || (d.DishCategoryId ?? d.CategoryId) == request.CategoryId) : d.Name!.Contains(q)))
@@ -391,7 +417,7 @@ namespace AppDelicare.Services.Implement
                 var catNames = await db.DishCategory.AsNoTracking().Select(c => new { c.Id, c.Name }).ToDictionaryAsync(c => c.Id, c => c.Name);
                 var list = info.Values.Select(d =>
                 {
-                    decimal? fc = price is > 0 ? Math.Round((others + (d.Cost ?? 0m)) / price.Value * 100m, 1) : null;
+                    decimal? fc = price is > 0 && others + (d.Cost ?? 0m) > 0 ? Math.Round((others + (d.Cost ?? 0m)) / price.Value * 100m, 1) : null; // chưa có giá vốn → không tính FC
                     return new
                     {
                         Model = new MenuDishSuggestionModel

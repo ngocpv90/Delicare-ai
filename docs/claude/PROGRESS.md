@@ -1,6 +1,51 @@
 # PROGRESS – Nhật ký tiến độ (Claude Code cập nhật sau mỗi task)
 
 ## Trạng thái hiện tại
+- **2026-11-24: UI-6.13 (D-91) PARTIAL – Đổi món tại chỗ (A: mọi khách) + bỏ mục menu "Yêu cầu đổi món"** (nhánh `feat/UI-6.13-menu-change`). Không thêm bảng / cột.
+  - **BE:**
+    - `MenuChangeRequest/GetCellPreview`: ô → ngày ăn theo tuần đang xem; số khách / đơn / suất ảnh hưởng (mọi dòng đơn dùng thực đơn, cùng buổi, lựa chọn); 4 điều kiện tự duyệt.
+    - `CreateForCell`:
+      - lý do theo danh mục (Thiếu nguyên liệu / Giá tăng / NCC giao lỗi / Chất lượng / Khác) + ghi chú;
+      - đủ 4 điều kiện → áp ngay như duyệt engine, ghi "Hệ thống tự duyệt";
+      - còn lại → ApprovalRequest MENU_CHANGE (COO).
+    - `GetWeekChanges` cho tab Đổi món.
+    - `Menu/GetWeek` hiện món mới "đã đổi" / "chờ duyệt đổi".
+    - `SuggestDish` nhận tuần đang xem (thực đơn hiệu lực nhiều tuần); chỉ tính FC khi có giá vốn.
+  - **Menu + DB:**
+    - Ẩn `#/menu-change-request` (CodeGen `Ui6HiddenLinks`; sinh lại seed / D79 / catalog.js / MENU5_MATRIX / bảng HDSD).
+    - Quyền API `MenuChangeRequest` theo màn cha `menu-menu` (`ScreenMap.Parents`, `CommonRegistry`).
+    - Script `DB/scripts/UI613_hide_menu_change_request.sql`. **Chạy thật DB dev:** 1 mục ẩn; chạy lại 0; UserRole 3.258 → 3.258.
+    - Link cũ mở màn Thực đơn tuần, tab Đổi món.
+  - **FE (`menu.js`):**
+    - Thực đơn Đã công bố / Đã duyệt: bấm ô món → hộp **Đổi món ngày này** ngay dưới ô:
+      - 5 gợi ý + tìm; lý do; ghi chú;
+      - "Ảnh hưởng N khách · M suất", "✓ Hệ thống tự duyệt" hoặc "Cần COO duyệt: …";
+      - nút Gửi.
+    - Ô hiện nhãn "đã đổi" / "chờ duyệt đổi".
+    - Tab **Đổi món** (số, ngày, món cũ → mới, phạm vi, suất, lý do, trạng thái, người duyệt).
+  - **Kiểm trên DB dev thật** (uat.ops-plan; ảnh `docs/frontend-handoff/assets/ui-6.13/`):
+    - Ô Trưa thứ Tư 02/12 "Bò hầm cà rốt khoai tây" → ảnh hưởng **2 khách · 5.500 suất (2 đơn)**.
+    - Món thay chưa có công thức khóa → "Cần COO duyệt".
+    - Gửi → **DM-261124-0001** Chờ duyệt, phạm vi Mọi khách 5.500 suất; hiện ở tab Đổi món.
+    - Không có lỗi JS.
+    - Lỗi tìm ra khi chạy thật và đã sửa:
+      - thực đơn hiệu lực nhiều tuần làm sai ngày ăn → nay gửi kèm tuần;
+      - mã chứng từ phải sinh trong transaction (InMemory không bắt được).
+  - **Vai trò:**
+    - OPS-PLAN: tạo 200.
+    - SAL-SALES, SAL-HEAD, OPS-KIT: xem 200, tạo 403.
+    - OPS-WH: 403.
+  - **Test:**
+    - `MenuChangeCellTests` (phạm vi 2 khách / 150 suất, tự duyệt khi đủ điều kiện, khác nhóm → Chờ duyệt + ApprovalRequest, thiếu lý do bị chặn, lưới hiện món đã đổi, tab Đổi món).
+    - Cập nhật `CommonApiTests` / `AlertsSearchRelatedTests` / `D79MatrixSqlTests` theo quy tắc "màn ẩn → màn cha".
+    - Toàn bộ **649/649**; FE build xanh; `full-flow.http` ngày 14/01/2027 **226/227** (lỗi 9.3 do hạn lô như cũ).
+  - **Tài liệu:** HDSD 03 §4.6 viết lại; BUSINESS_RULES thêm mục UI-6.13.
+  - **Chưa làm / còn rủi ro:**
+    - **Phần B (khách xin đổi riêng trên trang chi tiết đơn, áp cho các đơn của khách theo khoảng ngày, `CreateForCustomerRange`) chưa làm.** API `MenuChangeRequest/Create` theo từng đơn vẫn còn.
+    - **NV KD (SAL-SALES) trước tạo được yêu cầu đổi món, nay mất quyền tạo**, vì quyền theo màn Thực đơn tuần mà KD chỉ có quyền xem. **Cần anh quyết:** cấp quyền Thêm `menu-menu` cho KD, hay chờ làm phần B rồi cấp quyền riêng.
+    - Kế hoạch SX đã phát hành: chưa có bot cảnh báo 🔴 bếp / kho kèm chênh lệch nguyên liệu như ROADMAP. Hiện bếp xử lý tay như trước.
+    - Dữ liệu thử trên DB dev: DM-261124-0001 Chờ duyệt (đổi Bò hầm → Cá bạc má kho tiêu, 02/12, mọi khách). Anh / COO có thể từ chối để dọn.
+    - Mục ROADMAP UI-6.13 → PARTIAL: anh tự cập nhật.
 - **2026-11-24: UI-6.11 (D-89) DONE (phần chính) – Thực đơn tuần: hệ thống tự lập nháp, bếp chỉ sửa chỗ đánh dấu** (nhánh `feat/UI-6.11-menu-week`). Không thêm bảng / cột; không có script DB.
   - **BE:**
     - `Menu/GetWeek`:
