@@ -1,0 +1,22 @@
+{
+ "roles": {},
+ "admin": [],
+ "crawl": {
+  "SAL-HEAD": {
+   "opened": 25,
+   "issues": [
+    "log-delivery-order → 403 DeliveryStop/GetAllData"
+   ]
+  },
+  "SAL-CS": {
+   "opened": 11,
+   "issues": []
+  },
+  "FIN-ACC": {
+   "opened": 28,
+   "issues": [
+    "scm-issue → 403 MaterialReservation/GetAllData"
+   ]
+  }
+ }
+}

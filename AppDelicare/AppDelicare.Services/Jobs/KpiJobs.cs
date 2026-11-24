@@ -28,7 +28,7 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => KpiCode.JobMonthly;
         public string Name => "KPI tháng";
-        public string Description => "01:00 – tính KPI tháng của hôm qua (ngày 1 = chốt tháng trước; toàn công ty) rồi lưu chỉ số tháng – chạy lại không nhân đôi (= nút KpiSnapshot/Refresh KPI_MONTHLY).";
+        public string Description => "01:00 – tính KPI tháng của hôm qua (ngày 1 = chốt tháng trước; toàn công ty) rồi lưu chỉ số tháng – chạy lại không nhân đôi (như nút Tính lại chỉ số tháng).";
         public string DefaultAt => "01:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)

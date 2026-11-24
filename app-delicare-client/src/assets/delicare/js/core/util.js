@@ -151,7 +151,10 @@
     CorrelationId: 'Mã liên kết', IdempotencyKey: 'Khóa chống trùng', MessageType: 'Loại tin', ReceivedAt: 'Nhận lúc', ProcessingStatus: 'Trạng thái xử lý', QueuedAt: 'Vào hàng đợi',
     SentAt: 'Gửi lúc', MessageStatus: 'Trạng thái gửi', RetryCount: 'Số lần thử lại', LastError: 'Lỗi gần nhất', ExternalUserId: 'Mã người dùng trên kênh', ExternalMessageId: 'Mã tin trên kênh',
     ExternalConversationId: 'Mã hội thoại', RecipientExternalId: 'Người nhận trên kênh', ProviderMessageId: 'Mã tin của nhà cung cấp', PayloadHash: 'Mã băm nội dung', PayloadJson: 'Nội dung',
+    // UI-6.10 (D-88): cột còn lộ tên kỹ thuật khi quét mọi màn (i18n-kpi-report.md)
+    AggregationCode: 'Cách tổng hợp', ApprovalRequestId: 'Yêu cầu duyệt', ApprovalRequestNo: 'Số yêu cầu duyệt', BotUsername: 'Tên bot', CanonicalValue: 'Giá trị chuẩn', CleaningBatchId: 'Mẻ vệ sinh', CurrentShiftAssignmentId: 'Ca hiện tại', DataTarget: 'Đích dữ liệu', Days: 'Số ngày', DetectedAt: 'Phát hiện lúc', DistanceMeters: 'Khoảng cách (m)', EmployeeCode: 'Mã nhân viên', EnvironmentCode: 'Môi trường', FieldName: 'Trường dữ liệu', FullNameEN: 'Tên đầy đủ (tiếng Anh)', NameEN: 'Tên tiếng Anh', Icon: 'Biểu tượng', IsDefault: 'Mặc định', IsValid: 'Hợp lệ', LastTokenRotatedAt: 'Đổi khóa gần nhất', LeaveTypeName: 'Loại nghỉ', LegacyValue: 'Giá trị cũ', MaxStock: 'Tồn tối đa', MinStock: 'Tồn tối thiểu', MigrationCode: 'Đợt chuyển dữ liệu', OwnerUserId: 'Người phụ trách', ProposedAssignment: 'Ca đề nghị', ProposedShiftAssignmentId: 'Ca đề nghị', RecordId: 'Bản ghi', RequesterEmployeeId: 'Người xin đổi', RequesterName: 'Người xin đổi', ShiftAssignmentId: 'Phân ca', ShortName: 'Tên ngắn', SwapType: 'Kiểu đổi ca', TargetAudience: 'Đối tượng nhận', TargetEmployeeId: 'Người nhận đổi', TargetName: 'Người nhận đổi', UserId: 'Tài khoản', WebhookPath: 'Đường dẫn webhook', MetaLink: 'Đường dẫn', CodeName: 'Mã – tên', TestDemoId: 'Bản ghi thử',
   }).forEach(([k, v]) => { if (!UTIL.LABEL[k]) UTIL.LABEL[k] = v; });
+  UTIL.LABEL.Icon = 'Biểu tượng'; // UI-6.10: ghi đè nhãn cũ "Icon"
   UTIL.colLabel = c => UTIL.LABEL[c] || c.replace(/([a-z])([A-Z])/g, '$1 $2');
   window.UTIL = UTIL;
 })();

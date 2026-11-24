@@ -1,0 +1,22 @@
+{
+ "roles": {},
+ "admin": [],
+ "crawl": {
+  "OPS-POS": {
+   "opened": 12,
+   "issues": []
+  },
+  "QA": {
+   "opened": 27,
+   "issues": [
+    "log-delivery-order → 403 DeliveryStop/GetAllData"
+   ]
+  },
+  "SAL-SALES": {
+   "opened": 19,
+   "issues": [
+    "log-delivery-order → 403 DeliveryStop/GetAllData"
+   ]
+  }
+ }
+}

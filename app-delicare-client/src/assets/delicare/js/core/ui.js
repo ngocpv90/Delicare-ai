@@ -19,7 +19,9 @@
     Received: 'Đã nhận', Processed: 'Đã xử lý', Ignored: 'Bỏ qua', Linked: 'Đã liên kết', Revoked: 'Đã thu hồi', Unlinked: 'Đã gỡ liên kết', Resigned: 'Nghỉ việc', Suspended: 'Tạm ngừng',
     New: 'Mới', Planned: 'Kế hoạch', Released: 'Đã phát hành', Available: 'Khả dụng', Reserved: 'Đã giữ chỗ', Consumed: 'Đã dùng hết', Returned: 'Đã trả', Packed: 'Đã đóng gói',
     Paid: 'Đã thanh toán', Unpaid: 'Chưa thanh toán', Valid: 'Hợp lệ', Invalid: 'Không hợp lệ', Error: 'Lỗi', Warning: 'Cảnh báo', Info: 'Thông tin',
+    DAT: 'Đạt', KHONG_DAT: 'Không đạt', TAM_GIU: 'Tạm giữ', PASS: 'Đạt', FAIL: 'Không đạt', HOLD: 'Tạm giữ', REJECT: 'Loại', DIRTY: 'Bẩn', DAMAGED: 'Hỏng', CLEAN: 'Sạch', GOOD: 'Tốt', DELIVERY: 'Giao hàng', CORE: 'Lõi', RECEIVING: 'Nhận hàng', STORAGE: 'Bảo quản', Duplicate: 'Trùng lặp', SANG: 'Sáng', TRUA: 'Trưa', TOI: 'Tối', DEM: 'Đêm',
     PendingApproval: 'Chờ duyệt', Terminated: 'Chấm dứt', Obsolete: 'Hết dùng', Posted: 'Đã ghi sổ', Issued: 'Đã xuất', Matched: 'Khớp', Variance: 'Chênh lệch',
+    Added: 'Thêm', Modified: 'Sửa', Deleted: 'Xóa', Download: 'Tải xuống', Login: 'Đăng nhập', Logout: 'Đăng xuất',
     Inbound: 'Đến', Outbound: 'Đi', IN: 'Đến', OUT: 'Đi', true: 'Có', false: 'Không',
   };
   // UI-6.10 (D-88): Active / Inactive một cách gọi duy nhất – bỏ biến thể cũ của danh mục (Hoạt động, Đang áp dụng, Ngừng, Không hoạt động).
@@ -32,6 +34,9 @@
     const m = Store.colmeta[t] && Store.colmeta[t][col];
     if (v === null || v === undefined || v === '') return '<span class="muted">–</span>';
     if (!m) return esc(v);
+    // UI-6.10 (D-88): nhật ký – tên bảng / hành động tiếng Việt.
+    if (col === 'EntityName') return esc(UI.tableVi(v));
+    if (t === 'AuditChange' && col === 'Action') return esc(UI.STATUS_VI[v] || v);
     // Lỗi UAT 2026-11-21: cột mã danh mục tham chiếu (ReferenceLists) hiện nhãn tiếng Việt.
     if (Store.isRefCol(t, col)) return UI.tag(UI.statusVi(t, col, v));
     if (m.usage.startsWith('Trạng thái') || ['MealType', 'TransactionType', 'CountType', 'WasteType', 'Severity', 'EventType', 'CustomerType', 'SupplierType', 'WarehouseType', 'StorageType', 'UnitType', 'BusinessType', 'DomainCode', 'LeaveTypeCode', 'DirectionCode', 'MeasurementType', 'PriorityCode', 'CategoryCode', 'IssueType', 'DataQualityStatus'].includes(col)) return m.usage.startsWith('Trạng thái') ? UI.badge(v, t, col) : UI.tag(v);
@@ -50,7 +55,9 @@
     if (/Url$/.test(col)) return `<span class="mono">${esc(v)}</span>`;
     return esc(v);
   };
-  UI.text = (t, col, v) => { if (v === null || v === undefined) return ''; if (col.endsWith('Id') && Store.target(t, col)) return Store.label(Store.target(t, col), v); const m = Store.colmeta[t][col]; if (m && m.usage.startsWith('Trạng thái')) return UI.statusVi(t, col, v); return v; };
+  // UI-6.10 (D-88): tên bảng kỹ thuật (EntityName của nhật ký / xung đột) → tên màn tiếng Việt.
+  UI.tableVi = name => { const f = name && Object.values((window.APP && APP.FN) || {}).find(x => x.table === name && !String(x.id).includes('-detail')); return f ? f.name : name; };
+  UI.text = (t, col, v) => { if (v === null || v === undefined) return ''; if (col === 'EntityName') return UI.tableVi(v); if (t === 'AuditChange' && col === 'Action') return UI.STATUS_VI[v] || v; if (col.endsWith('Id') && Store.target(t, col)) return Store.label(Store.target(t, col), v); const m = Store.colmeta[t][col]; if (m && m.usage.startsWith('Trạng thái')) return UI.statusVi(t, col, v); return v; };
   // ---------- Toast ----------
   // Màn hình chuyên biệt cần dữ liệu nền (nhóm, ca, kho…) mà database chưa có.
   UI.emptyData = (tables, msg) => `<div class="card panel empty">${I('database')}<h2 class="mt">Chưa có dữ liệu để hiển thị màn hình này</h2><p class="muted">${msg ? esc(msg) + '<br>' : ''}Bảng chưa có dữ liệu: ${tables.map(t => '<code>dbo.' + esc(t) + '</code>' + (Store.srcOf(t) === 'api' ? ' (API ' + esc(Store.controllerOf(t)) + ')' : '')).join(', ')}. Nhập dữ liệu danh mục liên quan rồi mở lại.</p></div>`;
@@ -643,9 +650,9 @@
     const cs = getComputedStyle(fig), family = cs.fontFamily || 'sans-serif', ink = cs.color || '#29352D';
     const muted = 'rgba(125,133,144,.9)', grid = 'rgba(125,133,144,.15)';
     const unit = sp.unit ? ' ' + sp.unit : '';
-    const tip = { mode: sp.type === 'donut' ? 'nearest' : 'index', intersect: false, callbacks: { label: c => { const v = sp.type === 'donut' ? c.parsed : (sp.type === 'hbar' ? c.parsed.x : c.parsed.y); if (sp.type === 'donut') { const tot = c.dataset.data.reduce((a, b) => a + (+b || 0), 0) || 1; return ` ${c.label}: ${UI.chartNum(v)}${unit} (${NF1.format(100 * v / tot)}%)`; } return ` ${c.dataset.label}: ${UI.chartNum(v)}${sp.pct ? ' %' : unit}`; }, title: items => items.length ? (sp.fullLabels ? sp.fullLabels[items[0].dataIndex] : items[0].label) : '' } };
+    const tip = { mode: sp.type === 'donut' ? 'point' : 'index', intersect: sp.type === 'donut', itemSort: (x, y) => x.datasetIndex - y.datasetIndex, callbacks: { label: c => { const v = sp.type === 'donut' ? c.parsed : (sp.type === 'hbar' ? c.parsed.x : c.parsed.y); if (sp.type === 'donut') { const tot = c.dataset.data.reduce((a, b) => a + (+b || 0), 0) || 1; return ` ${c.label}: ${UI.chartNum(v)}${unit} (${NF1.format(100 * v / tot)}%)`; } return ` ${c.dataset.label}: ${UI.chartNum(v)}${sp.pct ? ' %' : unit}`; }, title: items => items.length ? (sp.fullLabels ? sp.fullLabels[items[0].dataIndex] : items[0].label) : '' } };
     if (sp.tipExtra) tip.callbacks.afterBody = items => items.length ? sp.tipExtra(items[0].dataIndex) || '' : '';
-    const legend = { display: sp.type !== 'spark' && (sp.legend !== false) && (sp.type === 'donut' || (sp.series || []).length > 1 || !!sp.target), position: sp.type === 'donut' ? 'right' : 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, color: ink, font: { family, size: 12 } } };
+    const legend = { display: sp.type !== 'spark' && (sp.legend !== false) && (sp.type === 'donut' || (sp.series || []).length > 1 || !!sp.target), position: sp.type === 'donut' ? 'right' : 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, color: ink, font: { family, size: 12 }, sort: (a, b) => a.datasetIndex - b.datasetIndex } };
     if (sp.type === 'donut') {
       const tot = sp.series.reduce((a, p) => a + (+p.v || 0), 0) || 1;
       legend.labels.generateLabels = c => sp.series.map((p, i) => ({ text: `${p.l} · ${NF1.format(100 * (+p.v || 0) / tot)}%`, fillStyle: p.c || UI.CHART_SEQ[i % UI.CHART_SEQ.length], strokeStyle: 'transparent', pointStyle: 'circle', hidden: !c.getDataVisibility(i), index: i, fontColor: ink }));
@@ -667,7 +674,7 @@
     (Array.isArray(sp.target) ? sp.target : sp.target ? [sp.target] : []).forEach(tg => datasets.push({ type: 'line', label: tg.label || 'Mục tiêu', data: sp.labels.map(() => tg.v), borderColor: tg.color || UI.CHART_COLORS.target, backgroundColor: tg.color || UI.CHART_COLORS.target, borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0, order: 0 }));
     const valAxis = { beginAtZero: sp.min === undefined && !sp.band, min: sp.min, max: sp.max, grid: { color: grid, drawTicks: false }, border: { display: false }, ticks: { color: muted, font: { family, size: 11 }, padding: 6, maxTicksLimit: 6, callback: v => sp.pct ? NF1.format(v) + '%' : UI.chartShort(v) } };
     const catAxis = { grid: { display: false }, border: { display: false }, ticks: { color: muted, font: { family, size: 11 }, autoSkip: true, maxRotation: 0, autoSkipPadding: 8, callback: function (v) { const l = this.getLabelForValue(v); return horiz && String(l).length > 22 ? String(l).slice(0, 21) + '…' : l; } } };
-    if (sp.band) { const all = sp.series.flatMap(s => s.values).filter(v => v !== null && v !== undefined).concat([sp.band.min, sp.band.max]); valAxis.min = sp.min !== undefined ? sp.min : Math.floor(Math.min(...all) - 2); valAxis.max = sp.max !== undefined ? sp.max : Math.ceil(Math.max(...all) + 2); }
+    if (sp.band) { const all = sp.series.flatMap(s => s.values).filter(v => v !== null && v !== undefined).concat([sp.band.min, sp.band.max]); delete valAxis.min; delete valAxis.max; valAxis.suggestedMin = sp.min !== undefined ? sp.min : Math.floor(Math.min(...all)); valAxis.suggestedMax = sp.max !== undefined ? sp.max : Math.ceil(Math.max(...all)); valAxis.grace = '8%'; valAxis.beginAtZero = false; }
     const scales = spark ? { x: { display: false }, y: { display: false, beginAtZero: false } } : horiz ? { x: valAxis, y: catAxis } : { x: catAxis, y: valAxis };
     return { type: base || 'bar', data: { labels: sp.labels, datasets }, options: { responsive: true, maintainAspectRatio: false, indexAxis: horiz ? 'y' : 'x', animation: { duration: 300 }, font: { family }, interaction: { mode: 'index', intersect: false, axis: horiz ? 'y' : 'x' }, layout: { padding: spark ? 2 : { top: 4, right: 8 } }, scales, plugins: { legend, tooltip: spark ? Object.assign(tip, { displayColors: false }) : tip, dcBand: { band: sp.band } } }, plugins: [bandPlugin] };
   }
