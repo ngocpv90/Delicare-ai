@@ -17,7 +17,7 @@ namespace AppDelicare.Tests.Security
         [Theory]
         [InlineData("DishCategory", "menu-menu")]
         [InlineData("Dish", "menu-recipe")]
-        [InlineData("Dish", "prod-order")]
+        [InlineData("Dish", "prod-plan")] // UI-6.24 (D-105): Lệnh sản xuất ẩn – quyền theo Kế hoạch sản xuất
         [InlineData("ProductionOrder", "scm-issue")]
         [InlineData("PurchaseRequest", "scm-po")]
         [InlineData("QcInspection", "scm-gr")]

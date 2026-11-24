@@ -129,11 +129,11 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>BE2.4: Giữ chỗ nguyên liệu chỉ sinh / cập nhật qua nghiệp vụ (ProductionPlan/Release, ProductionOrder/Reserve) – CRUD Insert không ghi.</summary>
         private Task<string> Insert(MaterialReservationRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giữ chỗ nguyên liệu", "ProductionPlan/Release, ProductionOrder/Reserve"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giữ chỗ nguyên liệu", "được hệ thống tạo khi ra lệnh kế hoạch sản xuất; giữ thêm bằng nút Giữ chỗ bổ sung ở trang lệnh."));
 
         /// <summary>BE2.4: Giữ chỗ nguyên liệu chỉ sinh / cập nhật qua nghiệp vụ (ProductionPlan/Release, ProductionOrder/Reserve) – CRUD Update không ghi.</summary>
         private Task<string> Update(MaterialReservationRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giữ chỗ nguyên liệu", "ProductionPlan/Release, ProductionOrder/Reserve"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giữ chỗ nguyên liệu", "được hệ thống tạo khi ra lệnh kế hoạch sản xuất; giữ thêm bằng nút Giữ chỗ bổ sung ở trang lệnh."));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {

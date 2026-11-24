@@ -143,11 +143,11 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>BE2.4: Giá vốn suất chỉ sinh / cập nhật qua nghiệp vụ (MealCost/Calculate) – CRUD Insert không ghi.</summary>
         private Task<string> Insert(MealCostRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá vốn suất", "MealCost/Calculate"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá vốn suất", "được hệ thống tính bằng nút Tính giá vốn ở màn Giá vốn suất."));
 
         /// <summary>BE2.4: Giá vốn suất chỉ sinh / cập nhật qua nghiệp vụ (MealCost/Calculate) – CRUD Update không ghi.</summary>
         private Task<string> Update(MealCostRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá vốn suất", "MealCost/Calculate"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Giá vốn suất", "được hệ thống tính bằng nút Tính giá vốn ở màn Giá vốn suất."));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {

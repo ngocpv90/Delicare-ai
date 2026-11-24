@@ -45,6 +45,11 @@ namespace AppDelicare.WebApi.Security
             ["DishCategory"] = ("menu-dish", true),
             // UI-6.22 (D-103): mục menu Quy đổi đơn vị ẩn – quy đổi lưu cùng đơn vị ở màn Đơn vị tính → quyền theo màn Đơn vị tính.
             ["UomConversion"] = ("scm-uom", true),
+            // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục – Lệnh sản xuất xem / thao tác trong Bảng sản xuất ngày (trang kế hoạch), Sản lượng trong Mẻ nấu,
+            // Trạm bếp là tab của Dây chuyền → quyền theo màn cha (mọi vai trò có quyền mục cũ đều có quyền màn cha – UI-6.44; quyền Sửa không đổi).
+            ["ProductionOrder"] = ("prod-plan", false),
+            ["ProductionOutput"] = ("prod-batch", false),
+            ["KitchenWorkstation"] = ("prod-line", false),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -56,6 +61,7 @@ namespace AppDelicare.WebApi.Security
             ["log-stop"] = "log-route", ["log-event"] = "log-execution", ["log-complaint-history"] = "log-complaint",
             ["wf-step"] = "wf-inbox", ["wf-decision"] = "wf-inbox", ["wf-item"] = "wf-inbox", ["adm-person"] = "adm-user",
             ["scm-transfer"] = "scm-inv-balance", ["scm-adjustment"] = "scm-inv-balance", ["crm-contact"] = "crm-customer", ["crm-location"] = "crm-customer", ["scm-ingredient-cat"] = "scm-ingredient", ["menu-dish-cat"] = "menu-dish", ["scm-uom-conversion"] = "scm-uom",
+            ["prod-order"] = "prod-plan", ["prod-output"] = "prod-batch", ["prod-workstation"] = "prod-line",
         };
     }
 }

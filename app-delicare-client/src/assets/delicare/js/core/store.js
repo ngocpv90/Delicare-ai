@@ -233,6 +233,8 @@
     'log-complaint-history': 'log-complaint', 'wf-step': 'wf-inbox', 'wf-decision': 'wf-inbox', 'wf-item': 'wf-inbox', 'adm-person': 'adm-user',
     // UI-6.16 (D-97): mục Điểm giao hàng ẩn – điểm giao thêm / sửa ở trang Khách hàng (khớp máy chủ ScreenMap.ParentByClass).
     'crm-location': 'crm-customer',
+    // UI-6.24 (D-105): Lệnh sản xuất xem trong Bảng sản xuất ngày (trang kế hoạch), Sản lượng trong Mẻ nấu, Trạm bếp là tab của Dây chuyền (khớp ScreenMap.ParentByClass).
+    'prod-order': 'prod-plan', 'prod-output': 'prod-batch', 'prod-workstation': 'prod-line',
     // UI-6.21 (D-102): nhóm nguyên liệu / nhóm món quản lý trong màn Nguyên liệu / Món ăn.
     'scm-ingredient-cat': 'scm-ingredient', 'menu-dish-cat': 'menu-dish',
     'scm-uom-conversion': 'scm-uom' }; // UI-6.22 (D-103)

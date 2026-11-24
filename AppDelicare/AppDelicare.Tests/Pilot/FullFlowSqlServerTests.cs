@@ -557,10 +557,8 @@ namespace AppDelicare.Tests.Pilot
                 db.ChangeTracker.Clear();
                 var productionOrders = await db.ProductionOrder.AsNoTracking().Where(o => o.ProductionPlanId == planId && !o.IsDeleted).Select(o => o.Id).ToListAsync();
                 productionOrders.Should().HaveCount(2);
-                foreach (Guid productionOrder in productionOrders)
-                {
-                    (await Post("/api/ProductionOrder/Close", ("Id", productionOrder), ("Note", "[DEMO]"))).Ok();
-                }
+                // UI-6.24 (D-105): lệnh Hoàn thành đã TỰ ĐÓNG khi mẻ cuối đóng gói (cùng logic Close) – đóng tay lại → 400.
+                (await db.ProductionOrder.AsNoTracking().Where(o => productionOrders.Contains(o.Id)).Select(o => o.Status).ToListAsync()).Should().OnlyContain(st => st == "Closed");
                 (await Post("/api/ProductionOrder/Close", ("Id", productionOrders[0]))).Fail();
                 var cost = (await Get($"/api/ActualCost/GetList?From={D(day)}&To={D(day)}")).Ok();
                 cost.GetProperty("breakdown").GetProperty("materialCost").GetDecimal().Should().Be(62_400_000m, "bò 200 × 300.000 + gạo (50 + 70) × 20.000");

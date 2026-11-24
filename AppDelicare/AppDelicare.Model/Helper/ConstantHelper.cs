@@ -475,8 +475,8 @@
             public static readonly string ReceivingTempMissingWarning = "Cảnh báo: {0} ({1}) chưa có nhiệt độ nhận – bắt buộc đo trước khi kết luận QC";
             public static readonly string PurchaseOrderDirectorRequired = "PO tổng {0} đ ≥ {1} đ – cần Giám đốc duyệt (mục \"Phê duyệt › Đơn mua hàng (Giám đốc)\")";
             // T17 – sản xuất theo mẻ (P7)
-            public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất do hệ thống tự lập sau chốt đơn – dùng nút Lập / Tính lại ở màn 7 ngày tới (một kế hoạch mỗi ngày)";
-            public static readonly string PlanUpdateBlocked = "Trạng thái / số / ngày kế hoạch chỉ đổi qua thao tác nghiệp vụ (Approve / Release) – dòng món sửa qua ProductionPlanLine khi kế hoạch còn Nháp";
+            public static readonly string PlanInsertBlocked = "Kế hoạch sản xuất được hệ thống lập từ các đơn đã chốt. Vào Kế hoạch sản xuất → chọn ngày → Lập / Tính lại.";
+            public static readonly string PlanUpdateBlocked = "Kế hoạch chỉ đổi trạng thái bằng nút Duyệt / Ra lệnh; số suất từng món sửa trong trang kế hoạch khi còn Nháp.";
             public static readonly string PlanNeedsLine = "Kế hoạch chưa có dòng món có số phần lớn hơn 0";
             public static readonly string PlanLineDraftOnly = "Chỉ sửa dòng kế hoạch khi kế hoạch ở trạng thái Nháp";
             public static readonly string PlanLineDuplicateDish = "Món này đã có dòng trong kế hoạch";
@@ -546,7 +546,9 @@
             public static readonly string ReleaseShiftNoDemand = "Ca {0} không có suất nào trong kế hoạch ngày này";
             public static readonly string ReleaseNothingPending = "Mọi ca có nhu cầu của kế hoạch đã phát hành";
             public static readonly string ReleaseDispatchNeedsShift = "Giờ xuất bếp nhập tay chỉ dùng khi phát hành 1 ca – chọn ca (ShiftId); còn {0} ca chưa phát hành: {1}";
-            public static readonly string ProductionCrudBlocked = "{0} chỉ tạo / đổi trạng thái qua thao tác nghiệp vụ ({1})";
+            public static readonly string ProductionCrudBlocked = "{0} {1}";
+            public static readonly string ProductionOrderAutoClosed = "Lệnh {0} đã xong mọi mẻ – hệ thống tự đóng (tính chênh lệch tiêu hao, giá thành, trả nguyên liệu giữ chỗ dư)";
+            public static readonly string ProductionOrderAutoCloseFailed = "Lệnh {0} đã xong mọi mẻ nhưng chưa tự đóng được: {1} – hệ thống thử lại cuối ngày";
             public static readonly string BatchNotFound = "Không tìm thấy mẻ nấu";
             public static readonly string BatchExtraOrderClosed = "Lệnh sản xuất đã đóng / hủy – không nấu thêm được";
             public static readonly string BatchExtraInvalid = "Số suất nấu thêm phải > 0 và phải có lý do";

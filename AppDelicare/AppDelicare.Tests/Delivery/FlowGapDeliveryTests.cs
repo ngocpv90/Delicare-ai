@@ -121,7 +121,8 @@ namespace AppDelicare.Tests.Delivery
             // B: kết quả đủ 40 → mẻ chia hết + mọi lệnh đã đóng gói → mẻ Đã đóng gói, lệnh SX hoàn thành.
             var resultB = (await c.PostFormAsync("/api/PackingOrder/RecordResult", ("Id", poB2), ("PackedQuantity", 40m))).Ok();
             resultB.GetProperty("batchStatus").GetString().Should().Be("Packed");
-            (await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == db.ProductionBatch.Single(b => b.Id == k.Batch).ProductionOrderId))).Status.Should().Be("Completed");
+            (await _factory.QueryAsync(db => db.ProductionOrder.AsNoTracking().SingleAsync(o => o.Id == db.ProductionBatch.Single(b => b.Id == k.Batch).ProductionOrderId))).Status.Should().Be("Closed", "UI-6.24: lệnh Hoàn thành tự Đóng");
+            resultB.GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("tự đóng"));
             (await c.PostFormAsync("/api/PackingOrder/RecordResult", ("Id", poB2), ("PackedQuantity", 40m))).Fail("Đã đóng gói");
 
             // Danh sách theo ngày đóng gói / đơn; CRUD cũ không ghi được.

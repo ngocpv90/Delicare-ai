@@ -45,7 +45,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kho › Vị trí kệ | `scm-location` | Q | Q |
 | Kho › Định mức tồn kho | `scm-inv-policy` | Q | Q |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
-| Sản xuất › Lệnh sản xuất | `prod-order` | X | X |
 | Chất lượng & ATTP › Kiểm tra hàng nhập | `qc-inspection` | — | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | — | X |
 <!-- MENU5:END -->

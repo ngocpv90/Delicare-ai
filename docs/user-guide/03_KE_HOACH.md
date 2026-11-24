@@ -30,12 +30,9 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kho › Tồn kho | `scm-inv-balance` | X |
 | Kho › Lô hàng & hạn dùng | `scm-lot` | X |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | S |
-| Sản xuất › Lệnh sản xuất | `prod-order` | S |
 | Sản xuất › Mẻ nấu | `prod-batch` | X |
-| Sản xuất › Sản lượng | `prod-output` | X |
 | Sản xuất › Hao hụt | `prod-waste` | X |
-| Sản xuất › Dây chuyền bếp | `prod-line` | Q |
-| Sản xuất › Trạm bếp | `prod-workstation` | Q |
+| Sản xuất › Dây chuyền & trạm bếp | `prod-line` | Q |
 | Giá thành › Giá thành chuẩn | `cost-standard` | S |
 | Giá thành › Giá thành thực tế | `cost-actual` | X (IX) |
 | Giá thành › Giá vốn suất ăn | `cost-meal` | X (IX) |
@@ -201,15 +198,23 @@ Hệ thống tự xác định ngày, buổi, lựa chọn và **mọi đơn c�
 
 **Xuất phiếu sản xuất:** nút xuất trên mỗi dòng → tải phiếu sản xuất.
 
+**Bảng sản xuất ngày (UI-6.24, D-105)** – trang chi tiết kế hoạch (mở từ màn 7 ngày tới / danh sách kế hoạch / nút **Bảng sản xuất ngày** ở Mẻ nấu): theo dõi một mạch **Kế hoạch → lệnh → mẻ** của cả ngày.
+- Đầu trang: số kế hoạch, ngày, nhãn trạng thái; nút theo việc được phép: **Duyệt kế hoạch** · **Ra lệnh n ca** · **Phiếu sản xuất**. 4 chỉ số: Suất kế hoạch · Mẻ xong / tổng · Mẻ chờ QC / bị loại · Lệnh đã đóng / tổng.
+- **Ma trận Món × Ca** (nhóm theo nhóm món, mở / gập, có dòng tổng; cột cuối Cả ngày): mỗi ô = số suất của món trong ca, chữ nhỏ "x/y mẻ xong"; màu: xám gạch = kế hoạch chưa ra lệnh · xanh dương = chờ nấu · cam = đang nấu · vàng = chờ QC · xanh lá = đạt / đã đóng gói · đỏ = có mẻ loại hoặc tạm giữ. Rê chuột: số lệnh, dây chuyền, giờ bắt đầu – xong dự kiến. **Ô không sửa trực tiếp.**
+- Bấm ô → **hộp chi tiết lệnh** (món × ca): bảng mẻ (bấm số mẻ mở trang mẻ), giữ chỗ nguyên liệu (cần · đã giữ · thiếu), phiếu xuất, chênh lệch tiêu hao + giá thành khi lệnh đã đóng; nút **Giữ chỗ bổ sung** · **Tính giá thành** · **Hủy lệnh** (lý do) · **Mở trang lệnh**.
+- Tab **Nguyên liệu & giữ chỗ** (gộp theo nguyên liệu cả ngày) · **Chênh lệch & giá thành** (theo lệnh) · Chứng từ liên quan · Tài liệu · Lịch sử.
+- **Không tạo lệnh sản xuất tay:** lệnh + mẻ chỉ sinh khi **Ra lệnh** kế hoạch (mỗi món × ca = 1 lệnh); ngoại lệ có sẵn: đơn chốt muộn → lệnh bổ sung, **Nấu thêm** ở mẻ.
+- **Lệnh tự đóng:** mẻ cuối của lệnh đóng gói / loại → lệnh Hoàn thành → hệ thống **tự Đóng** (chênh lệch tiêu hao, giá thành thực tế, trả nguyên liệu giữ chỗ dư). Lỗi khi tự đóng không làm hỏng thao tác mẻ – job **"Đóng lệnh sản xuất đã xong"** 22:00 đóng lại các lệnh còn sót và gửi **1 tin** chênh lệch vượt ngưỡng của ngày cho Bếp trưởng + COO. Tắt tự động (cấu hình `ProductionAutoCloseOrder`) thì dùng nút **Đóng lệnh** ở trang lệnh.
+
 **Trang chi tiết (UI-6):** bấm 1 kế hoạch → trang `#/prod-plan-detail?id=…`: thanh bước Nháp → Đã duyệt → Đã phát hành → Hoàn thành; nút **Duyệt kế hoạch** (Nháp, người có quyền Duyệt), **Ra lệnh SX** (Đã duyệt), **Phiếu sản xuất**; 4 chỉ số Tổng suất, Ca đã phát hành, Lệnh SX (mẻ đạt), Giữ chỗ thiếu. Tổng quan có khối **Theo ca** và **Món & suất**; tab **Lệnh sản xuất**, **Mẻ** (bấm dòng → trang lệnh / mẻ), **Giữ chỗ nguyên liệu**. Kế hoạch hệ thống giữ Nháp *chờ COO duyệt* có tag **Chờ COO duyệt**, lý do, và tab **Duyệt**. "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
 
-### 4.8 Lệnh sản xuất – `prod-order`
-Bấm một lệnh → ngăn chi tiết:
+### 4.8 Lệnh sản xuất – trang lệnh (mục menu đã ẩn – UI-6.24)
+Không còn mục menu riêng: mở lệnh từ **Bảng sản xuất ngày** (bấm ô → Mở trang lệnh), từ mẻ hoặc tìm kiếm; link cũ `#/prod-order?id=` mở trang lệnh, `#/prod-order` mở Kế hoạch sản xuất. Không có nút Tạo mới / Sửa chung – chỉ **Người phụ trách** và **Ghi chú** sửa tại chỗ (link **Sửa** cạnh 2 ô này, ô chọn nhân viên có tìm). Trang lệnh:
 - Tab **Mẻ & nguyên liệu**: mẻ (số, kế hoạch, thực tế, bắt đầu, trạng thái, QC), định lượng lúc phát hành, giữ chỗ nguyên liệu (cần / đã giữ / thiếu), phiếu xuất.
 - Tab **Giá thành & chênh lệch**: NVL, nhân công, chi phí chung, hao hụt, khác, tổng, giá thành / phần so với chuẩn; chênh lệch tiêu hao từng nguyên liệu.
 - Nút:
   - **Tính giá thành** (lệnh Đang SX / Hoàn thành / Đóng) – ghi đè lần tính trước.
-  - **Đóng lệnh** (lệnh Hoàn thành) – tính chênh lệch tiêu hao, giá thành, giải phóng giữ chỗ dư; không mở lại được.
+  - **Đóng lệnh** (lệnh Hoàn thành – chỉ khi tắt tự đóng hoặc tự đóng lỗi) – tính chênh lệch tiêu hao, giá thành, giải phóng giữ chỗ dư; không mở lại được. Bình thường hệ thống **tự đóng** khi mẻ cuối xong.
   - **Hủy lệnh** (Kế hoạch / Phát hành, chưa mẻ nào bắt đầu) – bắt buộc lý do ≥ 3 ký tự; mẻ + phiếu xuất nháp bị hủy, giữ chỗ được giải phóng.
 - Lỗi: *Lệnh … đã có mẻ bắt đầu nấu – không hủy được (mẻ không đạt thì dùng Loại mẻ)*, *Lệnh … đã xuất kho – hủy phiếu xuất trước khi hủy lệnh*.
 

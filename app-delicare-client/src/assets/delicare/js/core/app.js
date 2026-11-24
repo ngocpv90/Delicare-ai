@@ -332,6 +332,10 @@
     // MENU-4.2: link cũ tới màn đã ẩn (tìm kiếm, thông báo, đánh dấu trang) → màn cha; có ?id= của dòng con thì mở bản ghi cha.
     if (Store.isLive && (id === 'scm-ingredient-cat' || id === 'menu-dish-cat') && params.id && APP.setGroup) APP.setGroup(PARENT_OF[id][0], params.id);
     if (Store.isLive && id === 'crm-location' && params.id) { location.replace(APP.href('crm-location-detail?id=' + encodeURIComponent(params.id))); return; }
+    // UI-6.24 (D-105): menu Sản xuất 7 → 4 – link cũ Lệnh sản xuất (?id= → trang chi tiết lệnh, không id → Kế hoạch sản xuất), Sản lượng → Mẻ nấu tab Sản lượng, Trạm bếp → Dây chuyền tab Trạm bếp.
+    if (Store.isLive && id === 'prod-order') { location.replace(APP.href(params.id ? 'prod-order-detail?id=' + encodeURIComponent(params.id) : 'prod-plan')); return; }
+    if (Store.isLive && id === 'prod-output') { location.replace(APP.href('prod-batch?tab=output')); return; }
+    if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];
     if (up) {
       const row = params.id && up[1] && Store.get(up[1], params.id), pid = row ? row[up[2]] : (up[1] ? null : params.id);

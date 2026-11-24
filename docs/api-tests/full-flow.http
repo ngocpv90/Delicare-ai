@@ -1446,25 +1446,21 @@ GET {{base}}/api/Order/GetDetail?id={{orderId}}
 Authorization: Bearer {{token}}
 
 ########## 14. ĐÓNG LỆNH SX → GIÁ THÀNH THỰC TẾ → CHÊNH LỆCH TIÊU HAO → GIÁ VỐN SUẤT (Catalog 135, 144, 152–154)
-###
+### UI-6.24 (D-105): mẻ cuối đóng gói → lệnh Hoàn thành → hệ thống TỰ ĐÓNG (không còn lệnh Hoàn thành chờ đóng tay)
 # @name poDone
 # @expect listData length == 2
-GET {{base}}/api/ProductionOrder/GetAll?ProductionPlanId={{planId}}&Status=Completed&Page=1&PageSize=5
+GET {{base}}/api/ProductionOrder/GetAll?ProductionPlanId={{planId}}&Status=Closed&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
-### 14.1 Đóng 2 lệnh (Hoàn thành → Đóng): chênh lệch tiêu hao (xuất đúng định mức → 0), giá thành thực tế, giải phóng giữ chỗ dư
-POST {{base}}/api/ProductionOrder/Close
+### 14.1 Hai lệnh đã tự Đóng (UI-6.24): chênh lệch tiêu hao (xuất đúng định mức → 0), giá thành thực tế, giữ chỗ dư đã giải phóng
+# @expect data.productionOrder.status == Closed
+GET {{base}}/api/ProductionOrder/GetDetail?id={{poDone.response.body.listData[0].id}}
 Authorization: Bearer {{token}}
-Content-Type: application/x-www-form-urlencoded
-
-Id={{poDone.response.body.listData[0].id}}&Note=[DEMO]
 
 ###
-POST {{base}}/api/ProductionOrder/Close
+# @expect data.productionOrder.status == Closed
+GET {{base}}/api/ProductionOrder/GetDetail?id={{poDone.response.body.listData[1].id}}
 Authorization: Bearer {{token}}
-Content-Type: application/x-www-form-urlencoded
-
-Id={{poDone.response.body.listData[1].id}}&Note=[DEMO]
 
 ### CHỐT AN TOÀN → 400: lệnh đã Đóng không đóng lại
 POST {{base}}/api/ProductionOrder/Close

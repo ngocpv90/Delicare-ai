@@ -22,8 +22,9 @@ namespace AppDelicare.Services.Implement
     /// <summary>BE2.1 (spec 10.1): lệnh đóng gói PH- sinh từ mẻ Đạt QC / lập tay, bắt đầu, ghi kết quả (PackingResult), hủy; mẻ chia hết + đóng gói xong → mẻ Đã đóng gói.</summary>
     public class PackingOrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
-        , IOptions<BusinessRulesOptions> rules, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists) : IPackingOrderService
+        , IOptions<BusinessRulesOptions> rules, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists, IServiceProvider services) : IPackingOrderService
     {
+        private readonly IServiceProvider _services = services;
         private readonly AppDelicare.Model.Option.ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -518,6 +519,11 @@ namespace AppDelicare.Services.Implement
                 _unitOfWork.PackingOrderRepository.Update(packing);
                 await _unitOfWork.PackingOrderRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
+                // UI-6.24 (D-105): đóng gói xong mẻ cuối → lệnh Hoàn thành → tự Đóng (sau commit; lỗi chỉ cảnh báo).
+                if (await ProductionAutoClose.AfterBatchAsync(_services, _rules, _unitOfWork.DbContext, packing.ProductionBatchId) is { } closeNote)
+                {
+                    warnings.Add(closeNote);
+                }
                 return Result<PackingBatchModel>.Success(await BatchModelAsync(packing.ProductionBatchId, warnings), ConstantHelper.Message.SaveSuccess);
             }
             catch (Exception ex)

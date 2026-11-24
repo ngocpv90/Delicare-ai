@@ -700,6 +700,8 @@ namespace AppDelicare.Services.Implement
                     BatchCount = detail.ListBatch.Count(b => b.Status != ProductionBatchStatus.Cancelled),
                     BatchDoneCount = detail.ListBatch.Count(b => b.Status is ProductionBatchStatus.Passed or ProductionBatchStatus.Packed),
                     ShortReservationCount = detail.ListReservation.Count(r => r.ShortQuantity > 0),
+                    BatchQcOrProblemCount = detail.ListBatch.Count(b => b.Status is ProductionBatchStatus.QcPending or ProductionBatchStatus.Failed || b.QcStatus == BatchQcStatus.Hold),
+                    OrderClosedCount = detail.ListOrder.Count(o => o.Status == ProductionOrderStatus.Closed),
                 }, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

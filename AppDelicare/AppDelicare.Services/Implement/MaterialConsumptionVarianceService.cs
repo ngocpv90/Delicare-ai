@@ -137,11 +137,11 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>BE2.4: Chênh lệch tiêu hao chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/Close) – CRUD Insert không ghi.</summary>
         private Task<string> Insert(MaterialConsumptionVarianceRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Chênh lệch tiêu hao", "ProductionOrder/Close"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Chênh lệch tiêu hao", "được hệ thống tính khi đóng lệnh sản xuất."));
 
         /// <summary>BE2.4: Chênh lệch tiêu hao chỉ sinh / cập nhật qua nghiệp vụ (ProductionOrder/Close) – CRUD Update không ghi.</summary>
         private Task<string> Update(MaterialConsumptionVarianceRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Chênh lệch tiêu hao", "ProductionOrder/Close"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.ProductionCrudBlocked, "Chênh lệch tiêu hao", "được hệ thống tính khi đóng lệnh sản xuất."));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {

@@ -22,12 +22,9 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kho › Phiếu xuất sản xuất | `scm-issue` | X | — |
 | Kho › Tồn kho | `scm-inv-balance` | X | — |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | — |
-| Sản xuất › Lệnh sản xuất | `prod-order` | X | — |
 | Sản xuất › Mẻ nấu | `prod-batch` | S | X |
-| Sản xuất › Sản lượng | `prod-output` | X | — |
 | Sản xuất › Hao hụt | `prod-waste` | S | — |
-| Sản xuất › Dây chuyền bếp | `prod-line` | X | S |
-| Sản xuất › Trạm bếp | `prod-workstation` | X | S |
+| Sản xuất › Dây chuyền & trạm bếp | `prod-line` | X | S |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S | — |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S | X |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S | — |
@@ -80,8 +77,11 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 
 **Nhiệt độ lõi:** ngưỡng đạt hiện trên hộp nhập (cấu hình, mặc định **≥ 70 °C**); ô nhiệt độ để trống, nhập số đo thật. Đo dưới ngưỡng: hiện ô **Hành động khắc phục** (bắt buộc, vd. *gia nhiệt lại 10 phút*) – trên bot, đo dưới ngưỡng thì bot hiện nút **hành động khắc phục** hay gặp (✏️ Khác… mới phải gõ). Mẻ chưa cho Đạt QC được tới khi đo lại đạt.
 
-### 4.3 Lệnh sản xuất – `prod-order`
-Xem `03_KE_HOACH.md` mục 4.8 (tab Mẻ & nguyên liệu, Giá thành & chênh lệch; **Đóng lệnh** khi Hoàn thành; **Hủy lệnh** khi chưa mẻ nào bắt đầu).
+### 4.3 Bảng sản xuất ngày & lệnh sản xuất (UI-6.24 – menu Sản xuất còn 4 mục: Kế hoạch sản xuất · Mẻ nấu · Hao hụt · Dây chuyền & trạm bếp)
+- Màn **Mẻ nấu** giữ bảng điều độ ca × dây chuyền; nút **Bảng sản xuất ngày** mở trang kế hoạch của ngày đang xem (ma trận món × ca, tiến độ mẻ) – xem `03_KE_HOACH.md` mục 4.7.
+- Tab **Sản lượng** trong Mẻ nấu: danh sách chỉ xem (sản lượng ghi ở mẻ – Kết thúc nấu / Loại mẻ). Link cũ `#/prod-output` mở tab này.
+- **Dây chuyền & trạm bếp**: 2 tab Dây chuyền · Trạm bếp (In QR giữ nguyên). Link cũ `#/prod-workstation` mở tab Trạm bếp.
+- Lệnh sản xuất không tạo tay; **lệnh tự đóng** khi mẻ cuối đóng gói / loại (chênh lệch, giá thành, trả nguyên liệu giữ chỗ dư). Chi tiết trang lệnh: `03_KE_HOACH.md` mục 4.8.
 
 ### 4.4 Kế hoạch sản xuất – `prod-plan`
 Bếp xem kế hoạch ngày, **Xuất phiếu sản xuất** (nút xuất trên dòng). Lập / ra lệnh xem `03_KE_HOACH.md` mục 4.7.

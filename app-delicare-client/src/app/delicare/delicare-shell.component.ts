@@ -41,12 +41,14 @@ const SCRIPTS = [
   'modules/detail-scm.js', // UI-6B
   'modules/detail-sales.js', // UI-6A: đơn đặt suất, hợp đồng, phản ánh, điểm giao
   'modules/detail-prod.js', // UI-6C
+  'modules/prod-board.js', // UI-6.24 (D-105): Bảng sản xuất ngày trên trang kế hoạch (APP.prodBoard)
   'modules/admin.js',
   'modules/integration.js',
   'modules/explorer.js',
   'modules/be3.js',
   'modules/ghep.js',
   'modules/group-panel.js', // UI-6.21 (D-102): cột nhóm màn Nguyên liệu / Món ăn – sau menu.js, scm.js, ghep.js
+  'modules/prod-menu.js', // UI-6.24 (D-105): Mẻ nấu + tab Sản lượng, Dây chuyền + tab Trạm bếp – sau ghep.js
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';
 const SCRIPT_ATTR = 'data-delicare';
