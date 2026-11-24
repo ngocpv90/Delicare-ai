@@ -73,6 +73,10 @@ namespace AppDelicare.Model.Option
         public decimal PurchaseOrderDirectorApprovalAmount { get; set; } = 50_000_000m;
         /// <summary>BIZ-2.2 (D-77 – B3, C2): PO lập từ đề nghị mua Đã duyệt tự Đã duyệt khi đúng NCC gợi ý, đơn giá = bảng giá, số ≤ đề nghị, tổng &lt; ngưỡng Giám đốc.</summary>
         public bool PurchaseOrderAutoApproveFromRequest { get; set; } = true;
+        /// <summary>UI-6.18 B (D-99): duyệt cấp cuối đề nghị mua → hệ thống tự lập đơn mua (NCC theo quy tắc gợi ý chung).</summary>
+        public bool PurchaseAutoCreatePoOnApprove { get; set; } = true;
+        /// <summary>UI-6.18 B (D-99): đơn mua tự lập từ đề nghị đã duyệt được tự duyệt khi mọi dòng NCC ưu tiên + giá không cao hơn ước tính + tổng &lt; ngưỡng Giám đốc.</summary>
+        public bool PurchaseOrderAutoApproveFromApprovedRequest { get; set; } = true;
         /// <summary>BIZ-2.4 (D-77 – B5, C3): sau chốt đơn theo ngày → tự lập kế hoạch SX, tự duyệt + phát hành (trừ trường hợp phải chờ COO).</summary>
         public bool ProductionAutoReleaseAfterLock { get; set; } = true;
         /// <summary>BIZ-2.5 (D-77 – C4): phát hành lệnh → tự tạo phiếu xuất Nháp theo ca (số = giữ chỗ, lô FEFO).</summary>

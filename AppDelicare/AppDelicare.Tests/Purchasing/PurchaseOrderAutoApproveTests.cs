@@ -54,11 +54,14 @@ namespace AppDelicare.Tests.Purchasing
             using var c = _factory.CreateAuthorizedClient();
             var s = await SeedAsync("AUTO1", 20m, null);
             await c.ApprovePurchaseRequestAsync(s.Request);
-            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Ok();
+            // UI-6.18 B, C (D-99): duyệt cấp cuối → tự lập PO cho dòng có NCC đủ điều kiện; rau – bảng giá chưa có đơn giá → không lập PO, chờ "Chọn nhà cung cấp".
+            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Fail("Chưa có đơn giá");
             var poA = await PoAsync(s.SupplierA, s.Request);
             (poA.Status, poA.TotalAmount).Should().Be(("Approved", 2_000_000m));
             poA.Note.Should().Contain("[TU_DUYET]").And.Contain("PH-AUTO1");
-            (await PoAsync(s.SupplierB, s.Request)).Status.Should().Be("Draft", "bảng giá NCC chưa có đơn giá → gửi duyệt như cũ");
+            (await _factory.QueryAsync(db => db.PurchaseOrder.AsNoTracking().CountAsync(p => p.SupplierId == s.SupplierB && p.PurchaseRequestId == s.Request))).Should().Be(0);
+            var board = (await c.GetResultAsync("/api/PurchaseOrder/GetSupplierPickBoard")).Ok().GetProperty("listLine").EnumerateArray().ToList();
+            board.Should().Contain(l => l.GetProperty("purchaseRequestId").GetGuid() == s.Request && l.GetProperty("reason").GetString()!.Contains("đơn giá"));
 
             // Sửa dòng PO đã tự duyệt → về Nháp, phải gửi duyệt lại.
             var edited = await LegacyResult.ReadAsync(await c.PutAsJsonAsync("/api/PurchaseOrder/UpdateLines", new { id = poA.Id, listLine = new[] { new { ingredientId = s.Meat, quantity = 25m } } }));

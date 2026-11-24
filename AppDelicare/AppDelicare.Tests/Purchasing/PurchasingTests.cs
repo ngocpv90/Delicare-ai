@@ -121,11 +121,12 @@ namespace AppDelicare.Tests.Purchasing
             (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Fail("Đã duyệt");
             await c.ApprovePurchaseRequestAsync(s.Request);
             (await c.GetResultAsync($"/api/PurchaseRequest/GetDetail?id={s.Request}")).Ok()
-                .GetProperty("allowedActions").EnumerateArray().Select(x => x.GetString()).Should().Contain("convertToPurchaseOrder");
+                .GetProperty("purchaseRequest").GetProperty("status").GetString().Should().Be("Converted", "UI-6.18 B: duyệt cấp cuối → hệ thống tự lập PO");
 
             var result = await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request), ("Note", "[DEMO] lập PO"));
             var data = result.Ok();
-            data.GetProperty("listWarning").EnumerateArray().Select(x => x.GetString()).Should().Contain(w => w!.Contains("MOQ"));
+            // UI-6.18: "Lập PO" sau khi hệ thống đã tự lập → trả PO đã có (cảnh báo MOQ nằm ở lần tự lập).
+            data.GetProperty("listPurchaseOrder").GetArrayLength().Should().Be(2);
             var poA = await PoOfAsync(s.SupplierA, s.Request);
             var poB = await PoOfAsync(s.SupplierB, s.Request);
             poA.PurchaseOrderNumber.Should().MatchRegex(@"^PO-261220-\d{4}$").And.Be(poA.PONo);
@@ -141,7 +142,7 @@ namespace AppDelicare.Tests.Purchasing
             (await _factory.QueryAsync(db => db.PurchaseRequest.AsNoTracking().SingleAsync(p => p.Id == s.Request))).Status.Should().Be("Converted");
 
             // Đã lập PO → không lập lại, không sửa dòng đề nghị.
-            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Fail("Đã duyệt");
+            (await c.PostFormAsync("/api/PurchaseRequest/ConvertToPurchaseOrder", ("Id", s.Request))).Ok().GetProperty("listPurchaseOrder").GetArrayLength().Should().Be(2, "UI-6.18: lập lại → trả PO đã có, không lập trùng");
             (await c.PostFormAsync("/api/PurchaseRequestLine/Insert", ("PurchaseRequestId", s.Request), ("IngredientId", s.Meat), ("Quantity", 1m), ("UnitId", s.Kg))).Fail("Nháp");
 
             // PO lập từ đề nghị: không xóa (Cancel), sửa dòng → tổng tính lại.
