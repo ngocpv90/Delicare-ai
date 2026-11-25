@@ -71,28 +71,12 @@ Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản
 
 ## 4. Thao tác từng bước
 
-### 4.1 Tạo tài khoản – `adm-user`
-1. Mở **Quản trị hệ thống › Người dùng** → **Tạo người dùng**.
-2. Nhập **Tên đăng nhập**, chọn **Hồ sơ người** có sẵn – hoặc bấm **Lấy từ nhân viên** (gõ mã / tên để tìm): hệ thống tạo hồ sơ mới theo họ tên, SĐT, ngày sinh, giới tính, địa chỉ của nhân viên và gợi ý tên đăng nhập (vd. *an.nguyen*) → **Tạo người dùng**.
-   - Tên đăng nhập chỉ gồm chữ thường không dấu, số, `.` `_` `-`, 3–50 ký tự.
-   - Mỗi hồ sơ cá nhân chỉ có 1 tài khoản.
-3. Tạo xong hiện **mật khẩu tạm** một lần (bấm **Sao chép**). Người dùng đăng nhập bằng mật khẩu tạm sẽ gặp ngay hộp **Đổi mật khẩu** bắt buộc – chưa đổi thì không dùng được màn nào (chỉ có nút Đăng xuất).
-4. Gán nhóm quyền: màn **Người dùng** (`adm-user`) → **Tạo người dùng** có ô **Nhóm quyền** (chọn nhiều); tạo xong hiện **mật khẩu tạm** một lần (nút **Sao chép**, hết hạn 24 giờ, người dùng phải đổi khi đăng nhập). Tài khoản đã có: nút **Gán nhóm** trên dòng (chọn lại danh sách nhóm). Sửa tài khoản bằng nút Sửa thông thường không làm mất nhóm.
-
-**4.1b Đặt lại mật khẩu (chỉ tài khoản quản trị):**
-1. Trên dòng tài khoản bấm nút hình chìa khóa (**Đặt lại mật khẩu**) → xác nhận *"Đặt lại mật khẩu của tài khoản …? Mật khẩu hiện tại sẽ không dùng được nữa."*
-2. Hộp **Mật khẩu tạm** hiện mật khẩu – bấm **Sao chép**. Mật khẩu chỉ hiện **một lần**, hết hạn sau **24 giờ**, người dùng phải đổi khi đăng nhập.
-
-**4.1c Tài khoản của nhân viên – cấp qua duyệt (HR-ACC-1, D-82):**
-- Tài khoản ↔ **con người** ↔ **nhân viên** nối thật: tài khoản trỏ tới hồ sơ người (Person), nhân viên cũng trỏ tới đúng người đó. Đổi tên đăng nhập, mã nhân viên hay số điện thoại **không** làm mất liên kết (chấm công, bot, đơn nghỉ, chặn tự duyệt vẫn đúng người).
-- **Tuyển mới:** NS tạo nhân viên và tích **Cấp tài khoản web** (hoặc bấm **Đề nghị cấp tài khoản** ở hồ sơ nhân viên › tab **Tài khoản và bot**) → yêu cầu **Cấp tài khoản** đến IT ở màn **Phê duyệt** (mục quyền *Phê duyệt › Tài khoản*, nhóm FIN-IT). IT xem nhân viên, đơn vị, chức danh, **nhóm quyền gợi ý theo chức danh**; **tích / bỏ nhóm** ngay trên thẻ duyệt rồi **Duyệt** → hệ thống tạo hồ sơ người (nếu chưa có) + tài khoản (tên đăng nhập = **mã nhân viên viết thường**, vd. `nv-00045`, mật khẩu tạm 24 giờ, bắt đổi lần đầu) + nhóm quyền + liên kết. Nhân viên đã liên kết bot: mật khẩu tạm gửi qua bot; chưa liên kết: hộp **Đã cấp tài khoản** hiện mật khẩu tạm **1 lần** cho IT.
-- Người có quyền **Thêm** ở màn Tài khoản vẫn tạo thẳng được: hồ sơ nhân viên › **Tạo ngay (IT)** (không qua duyệt).
-- Nhóm gợi ý theo chức danh: cấu hình `BusinessRules:PositionDefaultGroups` (mã chức danh → tên nhóm) – IT điền; màn **Chức vụ** hiện cột *Nhóm gợi ý*. Đổi chức danh mà nhóm gợi ý mới khác nhóm hiện tại → tự có yêu cầu **Đổi nhóm quyền** (trong lúc chờ giữ quyền cũ).
-- Một nhân viên chỉ có 1 yêu cầu tài khoản đang mở; NS không tự cấp quyền.
-
-**4.1d Loại tài khoản (D-82 b):** mọi tài khoản hiện có là **Nội bộ** (INTERNAL). Màn **Tài khoản** ghi nhãn **Nhân viên** (đã gắn nhân viên) / **Hệ thống** (không gắn – admin, system) / **Khách hàng**. Tài khoản không phải nội bộ (khách hàng / NCC – cổng riêng sau này, GAP-PORTAL-01) **không đăng nhập** được màn nội bộ và **không gọi được API nội bộ**, kể cả khi bị gán nhầm nhóm quản trị.
-
-**4.1e Màn Tài khoản – liên kết nhân viên:** dưới tên đăng nhập có nhãn loại + mã / tên / đơn vị / trạng thái làm việc của nhân viên; **Đoán theo mã** = chưa gắn chính thức (đang dùng tạm cách đoán cũ – nhờ NS đối chiếu). Cảnh báo cố định **"N nhân viên đã nghỉ nhưng tài khoản còn mở"** (chỉ tiêu = 0); chip **Chưa gắn nhân viên** lọc tài khoản nội bộ chưa gắn.
+### 4.1 Tài khoản – `adm-user` (UI-6.42)
+- **4 thẻ:** Đang hoạt động (nhân viên · hệ thống) · **Chờ IT xử lý** (bấm mở tab) · **Nghỉ việc nhưng còn mở** (bấm → **Khóa ngay** tất cả) · **Không đăng nhập 60 ngày** (bấm lọc).
+- **Tab Tài khoản:** chip Tất cả · Nhân viên · Hệ thống; lọc trạng thái, nhóm quyền, đơn vị; tìm tên đăng nhập / họ tên / mã NV. Cột: Tên đăng nhập · **Người dùng** (họ tên, mã · chức vụ · đơn vị; "đã nghỉ việc" đỏ / "tạm nghỉ" cam; tài khoản hệ thống ghi rõ, kèm "quản trị") · **Nhóm quyền** · **Truy cập gần nhất** (+ số ngày khi lâu không đăng nhập) · Bot · **Trạng thái** (Hoạt động · Phải đổi mật khẩu · Đã khóa · Nghỉ việc – còn mở) · **Thao tác ▾**: Xem quyền hiệu lực · Đổi nhóm quyền · Đặt lại mật khẩu (quản trị) · Lịch sử truy cập · Khóa / Mở khóa. **Không còn Sửa / Xóa** – tài khoản là dấu vết người thao tác, không dùng nữa thì **Khóa**. Chọn nhiều → **Thêm nhóm quyền · Bỏ nhóm quyền · Khóa** (tài khoản sẽ hết nhóm thì giữ nguyên và báo; không khóa chính mình / quản trị cuối cùng). Bấm dòng → chi tiết (thông tin, nhóm & quyền, lịch sử).
+- **Tab Chờ IT xử lý:** thẻ yêu cầu từ Nhân sự – **Tuyển mới** (cấp tài khoản) · **Đổi chức vụ** (nhóm mới / cũ) · **Quay lại làm** (mở lại); nhân viên, chức vụ, đơn vị, người gửi, ngày, nhóm gợi ý; chưa liên kết bot thì IT xem mật khẩu tạm 1 lần. Nút **Đổi nhóm & duyệt · Từ chối · Duyệt & tạo / Duyệt** – cùng quy trình với Phê duyệt › Tài khoản (người không có quyền duyệt chỉ xem).
+- **Tạo tài khoản:** **Cho nhân viên** – chọn nhân viên đang làm chưa có tài khoản (gõ để lọc); tên đăng nhập = mã NV; nhóm quyền gợi ý theo chức vụ (chọn lại được) → **Tạo & gửi mật khẩu** (gửi bot nếu đã liên kết, không thì hiện mật khẩu tạm một lần – hết hạn 24 giờ, phải đổi khi đăng nhập). **Tài khoản hệ thống** – chỉ quản trị: tên đăng nhập, mục đích, nhóm quyền. **Khách hàng** – giai đoạn sau.
+- Tài khoản cho nhân viên chỉ đi qua đường này hoặc Nhân viên › Đề nghị cấp tài khoản (IT duyệt) – không còn hộp tạo người dùng tự gõ tên / lấy từ nhân viên.
 
 ### 4.2 Khóa / mở khóa tài khoản – `adm-user`
 1. Trên dòng tài khoản bấm **Khóa** (hoặc **Mở khóa**) → xác nhận.

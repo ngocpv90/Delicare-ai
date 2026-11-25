@@ -68,6 +68,28 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        // ------------------------------------------------------------ UI-6.42 (D-123): Tài khoản
+
+        /// <summary>Danh sách tài khoản: người dùng, nhân viên, nhóm, truy cập gần nhất, bot, trạng thái + 4 chỉ số.</summary>
+        [HttpGet("GetList")]
+        [Security.Permission("adm-user", PermissionAction.View)]
+        public Task<IActionResult> GetList([FromQuery] AppDelicare.Model.Model.AccountListRequest request) => RunAccount(nameof(GetList), () => _service.GetList(request));
+
+        /// <summary>Chọn nhiều → thêm / bỏ nhóm quyền (không để tài khoản hết nhóm).</summary>
+        [HttpPost("SetGroupsMany")]
+        [Security.Permission("adm-user", PermissionAction.Edit)]
+        public Task<IActionResult> SetGroupsMany([FromBody] AppDelicare.Model.Model.AccountIdsRequest request) => RunAccount(nameof(SetGroupsMany), () => _service.SetGroupsMany(request));
+
+        /// <summary>Chọn nhiều → khóa (bỏ qua chính mình / quản trị cuối cùng).</summary>
+        [HttpPost("LockMany")]
+        [Security.Permission("adm-user", PermissionAction.Edit)]
+        public Task<IActionResult> LockMany([FromBody] AppDelicare.Model.Model.AccountIdsRequest request) => RunAccount(nameof(LockMany), () => _service.LockMany(request));
+
+        /// <summary>Tab "Chờ IT xử lý": yêu cầu tài khoản (D-82) đang chờ.</summary>
+        [HttpGet("GetPendingRequests")]
+        [Security.Permission("adm-user", PermissionAction.View)]
+        public Task<IActionResult> GetPendingRequests() => RunAccount(nameof(GetPendingRequests), () => _service.GetPendingRequests());
+
         [HttpPost("Insert")]
         public async Task<IActionResult> Insert([FromForm] UserRequest request)
         {

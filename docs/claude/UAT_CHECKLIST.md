@@ -571,3 +571,10 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Sidebar: nhóm "Danh mục hệ thống" ngay trên Quản trị hệ thống – Tổng quan danh mục + 10 mục đúng thứ tự; các nhóm cũ không còn các mục này.
 - [ ] Quyền mỗi vai trò không đổi (tài khoản chỉ có quyền Xe giao hàng thấy nhóm với Tổng quan + Xe giao hàng).
 - [ ] Tổng quan danh mục: số bản ghi khớp màn danh sách; cảnh báo đỏ bấm mở đúng màn; link cũ (kể cả #/adm-company) mở đúng.
+
+## UI-6.42 – Tài khoản (D-123)
+- [ ] Danh sách: cột Người dùng / Nhóm quyền / Truy cập gần nhất / Trạng thái; không còn nút biểu tượng không chữ, Sửa, Xóa; "Thao tác ▾" đủ mục theo quyền.
+- [ ] Chọn nhiều: thêm / bỏ nhóm (tài khoản hết nhóm bị bỏ qua có báo), khóa (không khóa chính mình).
+- [ ] Thẻ Nghỉ việc còn mở → Khóa ngay; thẻ 60 ngày lọc đúng.
+- [ ] Tab Chờ IT xử lý: Duyệt & tạo (mật khẩu tạm hiện 1 lần nếu chưa liên kết bot), Đổi nhóm & duyệt, Từ chối – kết quả như Phê duyệt › Tài khoản.
+- [ ] Tạo tài khoản cho nhân viên: tên = mã NV, nhóm gợi ý theo chức vụ; tài khoản hệ thống chỉ quản trị; người không phải quản trị tạo trực tiếp bị chặn.

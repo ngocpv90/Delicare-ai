@@ -116,6 +116,9 @@ namespace AppDelicare.Model.Option
 
         /// <summary>UI-6.36 (D-117 e): true = cho đổi Trạng thái nhân viên qua Employee/Update như cũ (mặc định false – chỉ qua Resign / SetStatus).</summary>
         public bool EmployeeStatusViaUpdate { get; set; }
+
+        /// <summary>UI-6.42 (D-123): tài khoản không đăng nhập ≥ N ngày → cảnh báo "lâu không đăng nhập" (Account:InactiveWarnDays).</summary>
+        public int AccountInactiveWarnDays { get; set; } = 60;
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>
