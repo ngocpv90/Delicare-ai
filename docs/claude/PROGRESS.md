@@ -59,6 +59,7 @@ Cập nhật sau mỗi task. Mỗi task: nhánh riêng → build + `dotnet test`
 | UI-6.49 (7) | XANH – bấm dòng ở Tài khoản mở trang chi tiết toàn màn (#/adm-user-detail?id=): Tổng quan · Nhóm & quyền hiệu lực · Truy cập · Bot · Lịch sử; nút Đổi nhóm, Khóa / Mở khóa, Đặt lại mật khẩu; API mới User/GetOverview (quyền adm-user) | (UI-6.49-7) | ui-6/ui649-tai-khoan-1440 / -390 | Dùng khung trang chi tiết D-80 (APP.D360.page) – không thêm màn / quyền mới (quyền xem màn Tài khoản) | – |
 | UI-6.49 (8) | XANH – PERM_ORPHANS.md: 70 dòng quyền lẻ trên mục ẩn không có màn cha, tất cả "không còn màn nào dùng" → để nguyên (không cấp, không xóa). **Sửa 3 lỗi thật:** API ghi kết quả vệ sinh, nhận hộp khay về (bot 📥), kiểm tra khay thu hồi vẫn kiểm quyền theo mục đã ẩn → chỉ quản trị dùng được; nay theo màn cha đã nhận hợp quyền | (UI-6.49-8) | – | Không dòng nào cần cấp theo luật UI-6.44 (API bảng con kiểm theo màn cha) | Test thời gian MessagingExperienceTests.Low_risk_one_tap… lỗi 1 lần, chạy lại xanh (rủi ro cũ từ đợt 6) |
 | UI-6.49 (9) | XANH – nút "Xuất danh sách cần bổ sung" trên trang Danh mục hệ thống → Excel: sheet Tổng hợp (loại · số dòng · người bổ sung · màn) + 8 sheet (đơn vị chưa có trưởng, NV chưa gắn đơn vị, SĐT trùng, tổ chưa có định biên ca, nhóm quyền ngoài chuẩn, nhóm món chưa gán dây chuyền, món / nguyên liệu chưa phân nhóm) theo quyền xem; không sửa hộ dữ liệu; HDSD "Chuẩn bị dữ liệu trước khi chạy thật" | (UI-6.49-9) | – | 1 tệp nhiều sheet (thay vì nhiều nút xuất) – sheet theo quyền xem từng màn | – |
+| UI-6.49 (10) | XANH (phương án tạm) – tự lập chuyến sau chốt đơn gán tài xế = người lái chuyến gần nhất của xe (bỏ tài xế đã nghỉ); không có → để trống + bot nhắc điều phối. GAP-LOG-DRV (cột Vehicle.DefaultDriverEmployeeId) PROPOSED – chờ anh duyệt, không làm | (UI-6.49-10) | – | Theo D-127 g – không thêm cột | Xe đổi tài xế cố định thì chuyến đầu sau đổi vẫn gán người cũ tới khi điều phối sửa (hết khi duyệt GAP-LOG-DRV) |
 
 ### Quyết định tự chọn (D-126 b)
 
@@ -141,7 +142,11 @@ Cập nhật sau mỗi task. Mỗi task: nhánh riêng → build + `dotnet test`
 | QĐ-75 | UI-6.49 (5) | Màn Job tự động cần "lần chạy gần nhất" của nhắc việc chạy trong vòng kiểm bot – không có bảng lưu | (1) Thêm bảng / cột lưu lần chạy (trái luật cứng D-126 c); (2) Giữ trong bộ nhớ tiến trình API (vòng kiểm bot gọi API) + danh mục tên tiếng Việt; (3) Suy từ tin bot gửi gần nhất theo mẫu (không thấy lần chạy không gửi tin) | (2) | Không đổi cấu trúc DB, đúng thời gian thực; mất khi khởi động lại chỉ ~1 phút | BotWatchService.cs, JobRunService.cs, JobModels.cs, ghep.js |
 <!-- D126-END -->
 
-## Trạng thái hiện tại- <!-- d126:UI-6.49 (9) --> **UI-6.49 (9) – Công cụ bổ sung dữ liệu thật (D-127 g) – XANH.**
+## Trạng thái hiện tại- <!-- d126:UI-6.49 (10) --> **UI-6.49 (10) – Xe chưa có tài xế mặc định (D-127 g) – phương án tạm – XANH.**
+- `DeliveryRouteService.AutoPlanAfterLockAsync`: truyền `DriverId` cho từng xe = tài xế chuyến gần nhất TRƯỚC ngày giao (`LastDriversAsync` – nhân viên còn làm; tài xế đã nghỉ bị bỏ qua, lấy chuyến trước đó). Xe chưa có chuyến → để trống; sau khi lập, chuyến Kế hoạch / Đang xếp chưa có tài xế → 1 tin bot cho điều phối (`#/log-route`, khóa idempotent theo ngày).
+- **GAP-LOG-DRV PROPOSED:** thêm `Vehicle.DefaultDriverEmployeeId` – chờ anh duyệt (D-126 c: không thêm cột).
+- **Kiểm:** test mới `AutoPlanDriverUi649Tests` (chuyến gần nhất, bỏ tài xế đã nghỉ, xe chưa có chuyến để trống). `dotnet test` **742/742**; full-flow **235/235**; build FE xanh.
+- <!-- d126:UI-6.49 (9) --> **UI-6.49 (9) – Công cụ bổ sung dữ liệu thật (D-127 g) – XANH.**
 - **Máy chủ:** `Common/ExportDataGaps` (`CatalogSummaryService.Gaps.cs`): Excel sheet Tổng hợp + mỗi loại thiếu 1 sheet, chỉ loại thuộc màn người dùng được Xem (adm-orgunit, adm-employee, hr-shift / hr-shift-assign, adm-usergroup, prod-line / menu-dish, scm-ingredient); nhóm chuẩn = 19 mã ORG_STRUCTURE §2. Chỉ đọc – không sửa dữ liệu.
 - **Giao diện:** nút Xuất danh sách cần bổ sung ở trang Danh mục hệ thống (catalog-home.js).
 - **Tài liệu:** HDSD 01 §4.6c "Chuẩn bị dữ liệu trước khi chạy thật" (sheet · người bổ sung · làm ở đâu).

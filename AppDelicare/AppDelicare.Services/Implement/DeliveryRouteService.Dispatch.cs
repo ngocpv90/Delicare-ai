@@ -115,7 +115,22 @@ namespace AppDelicare.Services.Implement
                         $"{NotificationCatalog.RouteReady}:NOVEH:{date:yyyyMMdd}");
                     return "Chưa có xe sẵn sàng – chưa tự lập chuyến";
                 }
-                var r = await Plan(new DeliveryRoutePlanRequest { DeliveryDate = date.Date, ListVehicle = [.. vehicles.Select(v => new DeliveryPlanVehicleRequest { VehicleId = v.Id })] });
+                // UI-6.49 (10) (D-127 g – tạm, GAP-LOG-DRV PROPOSED: chưa có Vehicle.DefaultDriverEmployeeId): tài xế = người lái chuyến gần nhất của xe (nhân viên còn làm);
+                // xe chưa có chuyến nào / tài xế đã nghỉ → để trống + 1 tin nhắc điều phối gán tài xế.
+                var drivers = await LastDriversAsync(db, [.. vehicles.Select(v => v.Id)], date.Date);
+                var r = await Plan(new DeliveryRoutePlanRequest
+                {
+                    DeliveryDate = date.Date,
+                    ListVehicle = [.. vehicles.Select(v => new DeliveryPlanVehicleRequest { VehicleId = v.Id, DriverId = drivers.GetValueOrDefault(v.Id) })],
+                });
+                var noDriver = await db.DeliveryRoute.AsNoTracking().Where(x => !x.IsDeleted && x.DeliveryDate == date.Date && x.DriverId == null
+                    && (x.Status == DeliveryRouteStatus.Planned || x.Status == DeliveryRouteStatus.Loading)).Select(x => x.RouteNo ?? x.Id.ToString()).ToListAsync();
+                if (noDriver.Count != 0)
+                {
+                    await BusinessNotifier.ToMenusAsync(_notifications, db, NotificationCatalog.RouteReady, ["#/log-route"],
+                        new { title = $"{noDriver.Count} chuyến ngày {date:dd/MM} chưa có tài xế", detail = "Xe chưa có chuyến trước / tài xế cũ đã nghỉ – gán tài xế ở Điều phối giao hàng", lines = noDriver.Take(10).ToList() },
+                        $"{NotificationCatalog.RouteReady}:NODRV:{date:yyyyMMdd}");
+                }
                 return r.ResponseMessage;
             }
             catch (Exception ex)
@@ -123,6 +138,19 @@ namespace AppDelicare.Services.Implement
                 Log.Error(ex, "[DeliveryRouteService] AutoPlanAfterLockAsync {Date}", date);
                 return null;
             }
+        }
+
+        /// <summary>UI-6.49 (10): xe → tài xế của chuyến gần nhất TRƯỚC ngày giao (nhân viên chưa nghỉ việc).</summary>
+        public static async Task<Dictionary<Guid, Guid>> LastDriversAsync(AppDelicare.Data.Connection.DatabaseContext db, List<Guid> vehicleIds, DateTime before)
+        {
+            var rows = await db.DeliveryRoute.AsNoTracking().Where(x => !x.IsDeleted && x.DriverId != null && x.VehicleId != null && vehicleIds.Contains(x.VehicleId.Value) && x.DeliveryDate < before)
+                .Select(x => new { VehicleId = x.VehicleId!.Value, DriverId = x.DriverId!.Value, x.DeliveryDate, x.CreatedDate }).ToListAsync();
+            var ids = rows.Select(x => x.DriverId).Distinct().ToList();
+            var working = (await db.Employee.AsNoTracking().Where(e => ids.Contains(e.Id) && !e.IsDeleted).Select(e => new { e.Id, e.Status }).ToListAsync())
+                .Where(e => EmployeeStatus.IsWorking(e.Status)).Select(e => e.Id).ToHashSet();
+            return rows.GroupBy(x => x.VehicleId)
+                .Select(g => g.OrderByDescending(x => x.DeliveryDate).ThenByDescending(x => x.CreatedDate).FirstOrDefault(x => working.Contains(x.DriverId)))
+                .Where(x => x != null).ToDictionary(x => x!.VehicleId, x => x!.DriverId);
         }
 
         /// <summary>BotWatch: chuyến hôm nay vừa đủ thực đơn mọi điểm → 1 tin / chuyến; còn ≤ DispatchShortWarnMinutes tới giờ xuất bến mà chưa đủ → 1 tin cảnh báo / chuyến.</summary>
