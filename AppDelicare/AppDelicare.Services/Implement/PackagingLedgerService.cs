@@ -21,9 +21,10 @@ using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
-    public class PackagingLedgerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists) : IPackagingLedgerService
+    public partial class PackagingLedgerService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists, INotificationService notifications) : IPackagingLedgerService
     {
+        private readonly INotificationService _notifications = notifications; // UI-6.35: khay quá hạn thu
         private readonly AppDelicare.Model.Option.ReferenceListsOptions _referenceLists = referenceLists.Value;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -183,6 +184,15 @@ namespace AppDelicare.Services.Implement
                 {
                     list = [.. list.Where(x => x.IsOverThreshold)];
                 }
+                // UI-6.35 (D-116): quá hạn thu = phiếu Chờ thu hồi quá ContainerReturnDueDays ngày.
+                DateTime due = _clock.Today.AddDays(-_rules.ContainerReturnDueDays);
+                var overdue = (await _unitOfWork.DbContext.ContainerReturn.AsNoTracking().Where(c => !c.IsDeleted && c.Status == ContainerReturnStatus.Expected && c.ReturnDate < due)
+                    .Select(c => new { c.CustomerId, c.Note, c.ExpectedQuantity }).ToListAsync())
+                    .GroupBy(c => (c.CustomerId, PackagingRules.TypeOf(c.Note) ?? _rules.PackagingDefaultType)).ToDictionary(g => g.Key, g => (decimal)g.Sum(c => c.ExpectedQuantity));
+                foreach (var x in list)
+                {
+                    x.OverdueQuantity = overdue.GetValueOrDefault((x.CustomerId, x.PackagingType));
+                }
                 return Result<PackagingBalanceModel>.Success(new PackagingBalanceModel
                 {
                     From = request.From?.Date,
@@ -190,6 +200,7 @@ namespace AppDelicare.Services.Implement
                     ListItem = list,
                     TotalOutstanding = list.Sum(x => x.Outstanding),
                     OverThresholdCount = list.Count(x => x.IsOverThreshold),
+                    OverdueTotal = list.Sum(x => x.OverdueQuantity),
                 }, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)
@@ -212,6 +223,11 @@ namespace AppDelicare.Services.Implement
                 var actor = _currentActor.RequireActor();
                 var db = _unitOfWork.DbContext;
                 string type = (request.TransactionType ?? string.Empty).Trim().ToUpperInvariant();
+                // UI-6.35 (D-116): Giao cho khách / Khách trả tự ghi khi bàn giao, thu hồi – ghi tay chỉ Thất thoát (trừ khi bật PackagingManualOutIn).
+                if (!_rules.PackagingManualOutIn && type is PackagingTransactionType.Out or PackagingTransactionType.In)
+                {
+                    return Fail(ConstantHelper.Message.PackagingManualOnlyLoss);
+                }
                 if (!PackagingTransactionType.Manual.Contains(type))
                 {
                     return Fail(string.Format(ConstantHelper.Message.PackagingManualTypeInvalid, string.Join(", ", PackagingTransactionType.Manual)));

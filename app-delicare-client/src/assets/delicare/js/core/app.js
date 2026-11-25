@@ -345,7 +345,8 @@
     const KHO_OLD = { 'scm-zone': 'scm-warehouse?tab=zone', 'scm-location': 'scm-warehouse?tab=location', 'scm-lot': 'scm-inv-balance?tab=lot', 'scm-inv-txn': 'scm-inv-balance?tab=txn', 'scm-inv-policy': 'scm-inv-balance?tab=policy', 'scm-reservation': 'scm-issue?tab=res', 'scm-consumption-var': 'cost-meal?tab=dish',
       'qc-cleaning-result': 'qc-cleaning?tab=book', 'log-return-inspection': 'qc-cleaning', // UI-6.32 (D-113)
       'qc-checklist': 'qc-checklist-result?tab=sets', // UI-6.33 (D-114)
-      'log-packing-result': 'log-packing-order', 'log-delivery-order': 'log-route', 'log-loading': 'log-route' }; // UI-6.34 (D-115)
+      'log-packing-result': 'log-packing-order', 'log-delivery-order': 'log-route', 'log-loading': 'log-route', // UI-6.34 (D-115)
+      'log-gps': 'log-execution?tab=map', 'log-pod': 'log-execution?tab=pod', 'log-container-return': 'log-packaging-ledger?tab=returns' }; // UI-6.35 (D-116)
     if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];

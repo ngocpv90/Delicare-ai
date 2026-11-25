@@ -24,6 +24,7 @@ namespace AppDelicare.Tests.Production
         {
             _factory = factory;
             _factory.Clock.FixedNow = Day.AddHours(10);
+            _factory.Settings["BusinessRules:PackagingManualOutIn"] = "true"; // UI-6.35: thử ghi tay tồn đầu kỳ OUT (mặc định tắt)
         }
 
         private static async Task<LegacyResult> PostJson(HttpClient c, string url, object body) => await LegacyResult.ReadAsync(await c.PostAsJsonAsync(url, body));
@@ -181,6 +182,36 @@ namespace AppDelicare.Tests.Production
                 listItem = new[] { new { itemCode = "TRONG_LUONG_SUAT", resultCode = "PASS", actualValue = "350 g" } } })).Ok();
             blockers = await _factory.QueryAsync(async db => DeliveryRules.ProductionBlockers(await DeliveryRules.BatchesAsync(db, Day, [s.Shift]), rules));
             blockers.Should().NotContain(b => b.Contains("trọng yếu"));
+        }
+
+        /// <summary>UI-6.35 (D-116): bàn giao kèm thu khay kỳ trước – trừ phiếu Chờ thu hồi cũ nhất, sổ IN tốt / hỏng; thu quá số còn ở khách → không ghi gì.</summary>
+        [Fact]
+        public async Task Deliver_with_tray_returns_consumes_oldest_pending_returns_in_one_transaction()
+        {
+            var s = await SeedDeliveryAsync("R35A");
+            Guid old1 = Guid.NewGuid(), old2 = Guid.NewGuid(), cr1 = Guid.NewGuid(), cr2 = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                foreach (var (id, n, d) in new[] { (old1, "GH-OLD-1", Day.AddDays(-3)), (old2, "GH-OLD-2", Day.AddDays(-2)) })
+                {
+                    db.DeliveryOrder.Add(new DeliveryOrder { Id = id, OrderId = Guid.NewGuid(), CustomerId = s.Customer, DeliveryNumber = n, DeliveryNo = n, DeliveryDate = d, Status = "Delivered" });
+                    db.PackagingLedger.Add(new PackagingLedger { Id = Guid.NewGuid(), CustomerId = s.Customer, TransactionType = "OUT", PackagingType = s.Type, Quantity = id == old1 ? 10 : 8, TransactionAt = d, ReferenceNo = n });
+                }
+                db.ContainerReturn.AddRange(
+                    new ContainerReturn { Id = cr1, DeliveryOrderId = old1, CustomerId = s.Customer, ReturnDate = Day.AddDays(-3), ExpectedQuantity = 10, Status = "Expected", Note = AppDelicare.Services.Implement.PackagingRules.WithType(null, s.Type) },
+                    new ContainerReturn { Id = cr2, DeliveryOrderId = old2, CustomerId = s.Customer, ReturnDate = Day.AddDays(-2), ExpectedQuantity = 8, Status = "Expected", Note = AppDelicare.Services.Implement.PackagingRules.WithType(null, s.Type) });
+                return Task.CompletedTask;
+            });
+            using var c = _factory.CreateAuthorizedClient();
+            (string, object?)[] Body(int returned, int damaged) => [("Id", s.Stop), ("TemperatureC", 65m), ("DeliveredQuantity", 60m), ("ReceiverName", "Chị Lan"),
+                ("ListReturn[0].PackagingType", s.Type), ("ListReturn[0].ReturnedQty", returned), ("ListReturn[0].DamagedQty", damaged)];
+            (await c.PostFormAsync("/api/DeliveryStop/Deliver", Body(100, 0))).Fail("Khách");
+            (await _factory.QueryAsync(db => db.ProofOfDelivery.CountAsync(p => p.DeliveryOrderId == s.DeliveryOrder))).Should().Be(0, "thu quá số còn ở khách → không ghi bàn giao");
+            (await c.PostFormAsync("/api/DeliveryStop/Deliver", Body(15, 2))).Ok();
+            var crs = await _factory.QueryAsync(db => db.ContainerReturn.AsNoTracking().Where(r => r.Id == cr1 || r.Id == cr2).ToDictionaryAsync(r => r.Id));
+            (crs[cr1].Status, crs[cr1].ReturnedQuantity, crs[cr2].Status, crs[cr2].ReturnedQuantity).Should().Be(("Returned", 10, "Returned", 5), "cũ nhất trước");
+            var ins = await _factory.QueryAsync(db => db.PackagingLedger.AsNoTracking().Where(l => l.CustomerId == s.Customer && l.TransactionType == "IN").ToListAsync());
+            (ins.Where(l => l.ConditionCode == "GOOD").Sum(l => l.Quantity), ins.Where(l => l.ConditionCode == "DAMAGED").Sum(l => l.Quantity)).Should().Be((13m, 2m));
         }
 
         private sealed record DeliveryScenario(Guid Customer, Guid Order, Guid DeliveryOrder, Guid Stop, string DeliveryNumber, string Type, Guid Employee);

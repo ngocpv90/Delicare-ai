@@ -152,6 +152,8 @@ namespace AppDelicare.Model.Model
     /// <summary>BE2.5 (spec 10.4 balance, Catalog 196): số khay / hộp còn ở khách theo (khách, loại) + tỷ lệ thất thoát so với ngưỡng.</summary>
     public class PackagingBalanceItemModel
     {
+        /// <summary>UI-6.35 (D-116): khay của phiếu Chờ thu hồi quá ContainerReturnDueDays ngày.</summary>
+        public decimal OverdueQuantity { get; set; }
         public Guid CustomerId { get; set; }
         public string? CustomerCode { get; set; }
         public string? CustomerName { get; set; }
@@ -181,6 +183,8 @@ namespace AppDelicare.Model.Model
         public List<PackagingBalanceItemModel> ListItem { get; set; } = [];
         public decimal TotalOutstanding { get; set; }
         public int OverThresholdCount { get; set; }
+        /// <summary>UI-6.35: tổng khay quá hạn thu.</summary>
+        public decimal OverdueTotal { get; set; }
     }
 
     /// <summary>BE2.5: dòng sổ bao bì ghi tay + số dư sau khi ghi.</summary>

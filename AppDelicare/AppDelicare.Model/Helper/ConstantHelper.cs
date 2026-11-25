@@ -928,6 +928,8 @@
 
             // BE2.5 – ATTP, vệ sinh, hộp / khay
             public static readonly string ChecklistNotFound = "Không tìm thấy bộ checklist";
+            public static readonly string HandoverTraysReturned = "Đã thu {0} {1} (hỏng {2})";
+            public static readonly string PackagingManualOnlyLoss = "Khay giao / thu đã tự ghi khi bàn giao và thu hồi – ghi tay chỉ cho Thất thoát.";
             public static readonly string PackingManyEmpty = "Chưa chọn ô nào để ghi";
             public static readonly string PackingDishNotReady = "Món {0} chưa đủ mẻ đạt – chưa chia được";
             public static readonly string PackingManySaved = "Đã ghi chia {0} ô";

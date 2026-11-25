@@ -381,5 +381,53 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.35 (D-116): Theo dõi giao hàng – chuyến + dải điểm (quyền Xem log-execution).</summary>
+        [Security.Permission("log-execution", PermissionAction.View, OrScreens = ["log-route"])]
+        [HttpGet("GetTrackBoard")]
+        public async Task<IActionResult> GetTrackBoard(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _service.GetTrackBoard(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetTrackBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.35: chế độ tài xế – chỉ chuyến của tài xế (như GetMine).</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetMyTrack")]
+        public async Task<IActionResult> GetMyTrack(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _service.GetMyTrack(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetMyTrack: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.35: Sổ giao nhận – chỉ xem.</summary>
+        [Security.Permission("log-execution", PermissionAction.View, OrScreens = ["log-pod"])]
+        [HttpGet("GetPodBook")]
+        public async Task<IActionResult> GetPodBook([FromQuery] AppDelicare.Model.Model.PodBookRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetPodBook(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetPodBook: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

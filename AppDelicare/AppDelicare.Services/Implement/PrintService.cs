@@ -34,7 +34,7 @@ namespace AppDelicare.Services.Implement
         private static readonly Dictionary<string, string> Screens = new(StringComparer.OrdinalIgnoreCase)
         {
             [GoodsReceipt] = "scm-gr", [MaterialIssue] = "scm-issue", [StockCount] = "scm-stockcount",
-            [DeliveryOrder] = "log-route" /* UI-6.34 */, [Pod] = "log-pod", [Reconciliation] = "crm-reconciliation",
+            [DeliveryOrder] = "log-route" /* UI-6.34 */, [Pod] = "log-execution" /* UI-6.35 */, [Reconciliation] = "crm-reconciliation",
         };
 
         /// <summary>BOT-1.7d: mã loại ngắn trong QR <c>start=DOC_&lt;mã&gt;_&lt;Id N&gt;</c> (tham số start ≤ 64 ký tự).</summary>

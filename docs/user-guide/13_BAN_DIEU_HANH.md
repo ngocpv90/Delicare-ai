@@ -42,7 +42,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Kho › Tồn kho | `scm-inv-balance` | X | X | X | X (IX) |
 | Kho › Kiểm kê | `scm-stockcount` | X | X | X | X (IX) |
 | Sản xuất › Hao hụt | `prod-waste` | X | X | X | X (IX) |
-| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | X (IX) |
+| Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | X | X | X | X (IX) |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | X (IX) |
 | Nhân sự › Chấm công | `hr-attendance` | X | X | X | X (IX) |
 <!-- MENU5:END -->

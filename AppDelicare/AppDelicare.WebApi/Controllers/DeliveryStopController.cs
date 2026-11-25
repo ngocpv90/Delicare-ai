@@ -167,5 +167,21 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.35 (D-116): form bàn giao của tài xế.</summary>
+        [Security.Permission("log-execution", PermissionAction.View, OrScreens = ["log-route"])]
+        [HttpGet("GetHandover")]
+        public async Task<IActionResult> GetHandover(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetHandover(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetHandover: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

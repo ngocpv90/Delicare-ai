@@ -21,5 +21,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<PackagingBalanceModel>> GetBalance(PackagingBalanceRequest request);
         /// <summary>BE2.5: ghi tay 1 dòng sổ bao bì (OUT / IN / LOSS) có lý do.</summary>
         public Task<IResult<PackagingRecordModel>> Record(PackagingRecordRequest request);
+        /// <summary>UI-6.35 (D-116): khay quá hạn thu – 1 tin gộp / ngày.</summary>
+        public Task<int> RemindOverdueReturnsAsync(DateTime now);
     }
 }

@@ -246,6 +246,8 @@
     'qc-cleaning-result': 'qc-cleaning', 'log-return-inspection': 'qc-cleaning',
     // UI-6.34 (D-115): Kết quả đóng gói → Chia suất & đóng gói; Đơn giao hàng, Xếp hàng lên xe → Điều phối giao hàng.
     'log-packing-result': 'log-packing-order', 'log-delivery-order': 'log-route', 'log-loading': 'log-route',
+    // UI-6.35 (D-116)
+    'log-gps': 'log-execution', 'log-pod': 'log-execution', 'log-container-return': 'log-packaging-ledger',
     // UI-6.21 (D-102): nhóm nguyên liệu / nhóm món quản lý trong màn Nguyên liệu / Món ăn.
     'scm-ingredient-cat': 'scm-ingredient', 'menu-dish-cat': 'menu-dish',
     'scm-uom-conversion': 'scm-uom' }; // UI-6.22 (D-103)

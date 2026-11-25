@@ -249,7 +249,7 @@ namespace AppDelicare.Tests.Delivery
             // CRUD cũ không phá máy trạng thái.
             (await c.PostFormAsync("/api/DeliveryRoute/Insert", ("Code", "X"), ("DeliveryDate", Day))).Fail("DeliveryRoute/Create");
             (await c.PostFormAsync("/api/DeliveryEvent/Insert", ("DeliveryRouteId", routeId), ("EventType", "TEMP_CHECK"), ("TemperatureC", 80m))).Fail("Sự kiện giao hàng");
-            (await c.PostFormAsync("/api/ProofOfDelivery/Insert", ("DeliveryOrderId", Guid.NewGuid()))).Fail("DeliveryStop/Deliver");
+            (await c.PostFormAsync("/api/ProofOfDelivery/Insert", ("DeliveryOrderId", Guid.NewGuid()))).Fail("nút Bàn giao");
             (await c.PostFormAsync("/api/OrderReconciliation/Insert", ("OrderId", s.OrderA))).Fail("OrderReconciliation/Reconcile");
             (await c.PostFormAsync("/api/CustomerComplaint/Insert", ("CustomerId", s.CustomerA), ("ComplaintNo", "PA-X"), ("Description", "x"))).Fail("CustomerComplaint/Create");
             (await c.PostFormAsync("/api/ComplaintHistory/Insert", ("ComplaintId", Guid.NewGuid()), ("EventType", "X"))).Fail("Lịch sử phản ánh");

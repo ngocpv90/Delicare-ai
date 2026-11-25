@@ -67,11 +67,8 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | X | X | X | — | — | — | X | — | — | — | — | — | — | — | — | — | X | Q |
 | Đóng gói & Giao hàng › Chia suất & đóng gói | `log-packing-order` | X | X | X | — | — | — | — | S | X | — | — | — | — | — | — | — | — | X | — |
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | X | X | X | — | — | — | — | — | S | — | — | X | X | X | — | — | — | X | X |
-| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X | X | X | — | — | — | — | — | S | X | — | X | X | X | X | — | — | X | X |
-| Đóng gói & Giao hàng › Vị trí xe | `log-gps` | X | X | X | — | — | — | — | — | X | — | — | — | — | — | — | — | — | X | — |
-| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | — | — | — | — | — | S | S | — | X | X | X | X | X (IX) | — | X | — |
-| Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | X | X | X | — | — | — | — | — | S | S | — | — | — | — | — | — | — | X | — |
-| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | — | — | — | — | — | X | X | — | X | X | X | — | X (IX) | — | X | — |
+| Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | X | X | X | — | — | — | — | — | S | S | — | X | X | X | X | X (IX) | — | X | X |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | — | — | — | — | — | S | S | — | X | X | X | — | X (IX) | — | X | — |
 | Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | X | X | X | — | — | — | — | — | Q | — | — | — | — | — | — | — | — | X | — |
 | Nhân sự › Nhân viên | `adm-employee` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | X | — |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | S (IX) | X | — |
@@ -115,14 +112,14 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   OPS-WH        vào  18 mục · ô quyền   64
   OPS-SCM-HEAD  vào  33 mục · ô quyền  117
   OPS-KIT       vào  26 mục · ô quyền   44
-  OPS-LOG       vào  17 mục · ô quyền   33
-  OPS-POS       vào  12 mục · ô quyền   20
+  OPS-LOG       vào  17 mục · ô quyền   35
+  OPS-POS       vào  12 mục · ô quyền   24
   OPS-MNT       vào   5 mục · ô quyền    9
   SAL-SALES     vào  20 mục · ô quyền   38
   SAL-CON       vào  20 mục · ô quyền   68
   SAL-HEAD      vào  26 mục · ô quyền   77
   SAL-CS        vào  11 mục · ô quyền   15
-  FIN-ACC       vào  28 mục · ô quyền   79
+  FIN-ACC       vào  29 mục · ô quyền   82
   FIN-HR        vào  12 mục · ô quyền   42
   FIN-IT        vào 101 mục · ô quyền  214
   QA            vào  30 mục · ô quyền   69

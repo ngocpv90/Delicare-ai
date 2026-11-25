@@ -20,11 +20,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
 | Đóng gói & Giao hàng › Chia suất & đóng gói | `log-packing-order` | X |
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | S |
-| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | S |
-| Đóng gói & Giao hàng › Vị trí xe | `log-gps` | X |
-| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | S |
-| Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | S |
-| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X |
+| Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | S |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | S |
 | Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | Q |
 <!-- MENU5:END -->
 
@@ -50,36 +47,36 @@ Mục "Đơn giao hàng", "Xếp hàng lên xe" đã ẩn (link cũ mở màn n�
 5. **Xuất bến** (sau khi xếp) – nhập nhiệt độ lúc xuất (dưới ngưỡng ghi khắc phục).
 - **Tự lập chuyến:** chốt đơn xong hệ thống tự lập chuyến theo khu vực cho ngày giao (mọi xe sẵn sàng); thiếu xe → điểm giao vào "Chưa gán chuyến" + tin bot cho điều phối. Đơn chốt muộn / bổ sung nằm ở "Chưa gán chuyến".
 - **Bot:** "🚚 Chuyến … đủ hàng" (1 tin / chuyến); còn ≤ 30 phút tới giờ xuất bến mà chưa đủ → cảnh báo kèm điểm / món thiếu.
+- **Cần giao lại** (cột đỏ, UI-6.35): điểm giao thất bại – chọn chuyến khác ở ô "Chuyển xe" để giao lại (đơn giao về Kế hoạch rồi gán chuyến mới).
 - **Danh sách chuyến** (nút đầu màn): màn cũ – thêm chuyến, lập theo khu vực, đơn giao trong ngày, tách / gán / hủy đơn giao.
 
 ### 4.2 Lập chuyến tay – Danh sách chuyến (giữ cho trường hợp đặc biệt)
 Như trước: **Lập chuyến theo khu vực** / **Lập chuyến**, sửa điểm dừng, đổi xe / tài xế.
 
-### 4.3 Thực hiện giao – `log-execution`
-1. Chọn ngày. Thẻ đếm: Chờ xếp hàng / Đã xếp / Đã xuất phát / Đã đến / Đã giao / Thất bại.
-2. Mỗi đơn giao: số phiếu · điểm giao, khung giờ nhận, chuyến, khách · số suất · xe · tài xế; thanh tiến trình.
+### 4.3 Theo dõi giao hàng – `log-execution` (UI-6.35)
+Mục "Vị trí xe", "Xác nhận đã giao" đã ẩn (link cũ mở tab Bản đồ / Sổ giao nhận của màn này).
 
-| Trạng thái | Nút | Thao tác |
-|---|---|---|
-| Đã xuất phát | **Đã đến điểm giao** | Ghi đến (kèm tọa độ điểm giao) |
-| Đã đến | **Bàn giao & ghi POD** | SL giao, **SL khách nhận** (≤ SL giao), **Người nhận***, Ghi chú, **Nhiệt độ khi giao °C**, Khắc phục (nếu dưới ngưỡng) → **Xác nhận POD** |
-| Đã đến | **Giao thất bại** | Bắt buộc lý do → cần điều phối lại |
-| Mọi lúc | **Sự kiện**, **In phiếu**, **In POD** (khi đã có POD) | |
-| Chuyến Đang xếp / Đang giao | **Ghi vị trí hiện tại** | Lấy vị trí thiết bị (trình duyệt phải cho phép định vị) |
+**Điều phối viên** (người có quyền Điều phối giao hàng):
+1. Chọn **ngày** (◀ ▶). 4 thẻ: Chuyến đang chạy · Điểm đã giao x/y · **Điểm trễ** (quá giờ hẹn, chưa giao) · **Giao thất bại**.
+2. **Mỗi dòng một chuyến**: xe · tài xế, giờ xuất bến (+ nhiệt độ lúc xuất), **dải điểm** theo thứ tự giao (xám = chờ, xanh dương = đã đến, xanh lá = đã giao, đỏ = thất bại, viền cam = trễ), vị trí gần nhất. **Chi tiết** → bảng điểm: hẹn, đến, suất, khách nhận, khay thu, lý do thất bại.
+3. Tab **Sổ giao nhận**: các lần bàn giao trong ngày (lúc nhận, chuyến, đơn giao, khách · điểm, giao / nhận / trả lại, người nhận, nhiệt độ) – chỉ xem, **In** phiếu giao nhận.
+4. Tab **Bản đồ**: vị trí xe theo sự kiện có tọa độ (đến điểm, giao thất bại, tài xế gửi vị trí) – bấm tọa độ mở bản đồ. Không phải định vị liên tục.
 
-- Bàn giao xong mọi đơn giao của đơn hàng → đơn hàng **Đã giao**. Khách từ chối bớt suất → hệ thống **tự tạo phản ánh** `PA-…` (thiếu suất) và ghi sổ bao bì OUT.
+**Tài xế** (không có quyền điều phối, hoặc nút **Chuyến của tôi (tài xế)**; từ "Việc của tôi" bấm **Mở chuyến – bàn giao tại điểm**): giao diện điện thoại, chỉ chuyến của mình.
+- Chuyến chưa xuất bến → nhắc điều phối bấm "Xuất bến". Đang giao → mỗi điểm có:
+  - **Đã đến** – gửi tọa độ máy (nếu cho phép định vị; không cho phép vẫn ghi được).
+  - **Bàn giao** – Số suất giao, Khách nhận (≤ số giao), **Người nhận*** (điền sẵn người liên hệ của điểm), Điện thoại, Nhiệt độ, Ghi chú, và **Thu khay kỳ trước**: mỗi loại khay còn ở khách điền sẵn số thu = số còn ở khách; sửa theo số thực thu, ghi số hỏng → **Ghi bàn giao**. Một lần ghi: xác nhận giao + khay giao đi (sổ bao bì OUT) + khay thu về (sổ bao bì IN tốt / hỏng, trừ dần vào phiếu Chờ thu hồi cũ nhất, ưu tiên cùng điểm).
+  - **Giao thất bại** – chọn **lý do** theo danh mục (khách không nhận, không liên lạc được, sai địa chỉ, xe hỏng / kẹt, khác) + ghi chú → điểm vào cột **Cần giao lại** của Điều phối, điều phối nhận tin bot ngay.
+  - **Chỉ đường** – mở bản đồ tới địa chỉ điểm.
+- Khách từ chối bớt suất → hệ thống tự tạo phản ánh `PA-…` (thiếu suất) như trước.
 
-### 4.4 Vị trí xe – `log-gps`
-Bảng **Vị trí xe theo sự kiện**: chuyến, xe, tài xế, sự kiện gần nhất (đến điểm, giao không thành công, tài xế gửi vị trí), lúc, tọa độ.
-
-### 4.5 Thu hồi khay / hộp – `log-container-return`
-1. **Ghi thu hồi** (hoặc **Ghi thu hồi** trên dòng Chờ thu hồi): chọn **Đơn giao đã giao***, Số phải thu (trống = số còn ở khách), **Số thu về***, Trong đó bị hỏng, Ngày thu hồi, Loại khay / hộp (trống = loại đã giao), Ghi chú → **Ghi thu hồi**.
-2. **Kiểm tra** (dòng Đã thu hồi): **Kết quả kiểm tra*** (Đủ / Thiếu / Hỏng / Bẩn / Không đạt), Số hỏng, Số thiếu, Ghi chú (bắt buộc khi khác Đủ) → **Ghi kết quả kiểm tra**; khay dùng được tự vào mẻ vệ sinh.
-- Cột: Đơn giao, Khách hàng, Loại khay / hộp, Ngày thu hồi, Phải thu, Thu về, Hỏng, Kết quả kiểm tra, Trạng thái.
-
-### 4.6 Sổ bao bì – `log-packaging-ledger`
-- Khối **Khay hộp còn ở khách**: theo khách × loại – Đã giao, Đã thu, Trong đó hỏng, Thất thoát, **Còn ở khách** (= giao − thu − thất thoát), **Tỷ lệ thất thoát** (đỏ khi vượt ngưỡng 3%).
-- **Ghi sổ** (tay): Khách hàng*, **Loại ghi sổ*** (Giao cho khách / Khách trả lại / Thất thoát), Loại khay / hộp*, Số lượng*, Tình trạng (khi khách trả: Tốt / Hỏng), **Lý do*** → xác nhận. Sổ chỉ ghi thêm – ghi sai thì ghi dòng ngược lại.
+### 4.4 Khay hộp theo khách – `log-packaging-ledger` (UI-6.35)
+Mục "Thu hồi hộp / khay" đã ẩn (link cũ mở tab Phiếu thu hồi). **Khay giao đi và thu về ghi tự động khi tài xế bàn giao** – không ghi tay.
+1. Tab **Còn ở khách**: 4 thẻ – Khay còn ở khách (số khách) · **Quá hạn thu** (quá `ContainerReturnDueDays` = 3 ngày) · Vượt ngưỡng thất thoát · Đã thu lũy kế (hỏng). Bảng theo khách × loại: Đã giao, Đã thu, Hỏng, Thất thoát, **Còn ở khách**, **Quá hạn thu**, Tỷ lệ thất thoát (đỏ khi vượt ngưỡng).
+2. Tab **Phiếu thu hồi**: mỗi lần giao có khay sinh một phiếu Chờ thu hồi; tài xế thu ở lần giao sau – chỉ xem (phải thu, thu về, hỏng, kết quả kiểm tra, trạng thái).
+3. Tab **Sổ bao bì**: mọi dòng sổ – chỉ xem.
+- **Ghi thất thoát** (nút đầu màn): Khách hàng*, Loại*, Số lượng*, Lý do* – ghi tay duy nhất còn lại (mất / khách làm hỏng không trả). Sổ không sửa / xóa.
+- Bot nhắc điều phối khi khách có khay quá hạn thu (1 tin / khách / ngày).
 
 ### 4.7 Phản ánh – `log-complaint`
 **Đơn bù (BIZ-3.1):** phản ánh loại **Thiếu suất / Hỏng – đổ vỡ / Không đạt nhiệt độ** có gắn đơn (kể cả phản ánh tự tạo khi khách từ chối suất lúc bàn giao) → nút **Tạo đơn bù** trên dòng: số suất (trống = số khách từ chối ở POD), tích **Khách đặt thêm – tính tiền** nếu không phải lỗi Delicare. Hệ thống tạo đơn **Đã chốt** cùng ngày ăn / điểm giao / loại suất (lựa chọn chia theo đơn gốc), **giá 0** khi lỗi Delicare, ghi chú `[DON_BU:<đơn gốc>|<PA>]`; phản ánh → Đang xử lý; bot 🔴 báo Kế hoạch + điều phối **nấu ưu tiên, giao bù**. Mỗi phản ánh 1 đơn bù. Giao bù xong → bấm **Đã xử lý** phản ánh. Kế hoạch ngày đó đã phát hành → hệ thống **tự sinh lệnh + mẻ bổ sung** nhãn 🔴 *Đơn bù* (nấu ưu tiên) và phiếu xuất Nháp cho kho (D-78).
@@ -118,6 +115,7 @@ Xem `10_DIEM_PHAT.md` mục 4.3 (cùng màn).
 | Chỉ ghi vị trí khi chuyến đang xếp hàng / đang giao | |
 | Chưa cho phép trình duyệt dùng vị trí của thiết bị | Cho phép định vị trong trình duyệt |
 | Khách … chỉ còn … – không thu hồi … | Số thu về vượt số còn ở khách |
+| Khay hộp giao / thu ghi tự động khi tài xế bàn giao … chỉ ghi tay thất thoát | Thu khay trong form **Bàn giao**; ghi tay chỉ "Ghi thất thoát" |
 
 ## 7. Trên bot Telegram
 

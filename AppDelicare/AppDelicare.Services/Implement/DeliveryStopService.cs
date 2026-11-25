@@ -26,7 +26,7 @@ namespace AppDelicare.Services.Implement
     /// Fail (→ Thất bại). Mọi đơn giao của đơn hàng Đã giao → đơn hàng Đã giao; mọi điểm xong → chuyến Hoàn thành.
     /// CRUD: chỉ sửa ghi chú / thứ tự / giờ dự kiến khi chuyến + điểm còn Kế hoạch (điểm dừng sinh từ DeliveryRoute/Create).
     /// </summary>
-    public class DeliveryStopService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+    public partial class DeliveryStopService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
         , IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications, IServiceProvider services) : IDeliveryStopService
     {
         private readonly IServiceProvider _services = services;
@@ -497,12 +497,18 @@ namespace AppDelicare.Services.Implement
                     });
                     ctx.Warnings.Add(string.Format(ConstantHelper.Message.PackagingOutRecorded, DeliveryRules.Num(qty), type));
                 }
+                // UI-6.35 (D-116): thu khay kỳ trước tại cùng điểm – lỗi → không ghi gì (cả bàn giao).
+                if (request.ListReturn is { Count: > 0 } returns && await ApplyReturnsAsync(db, deliveryOrder, actor, now, returns, ctx.Warnings) is { } returnError)
+                {
+                    return returnError;
+                }
                 return null;
             });
 
         /// <summary>T19 (spec 10.3 fail): Kế hoạch / Đã đến → Thất bại (lý do bắt buộc); đơn giao → Thất bại (đơn hàng giữ Đang sản xuất, xếp chuyến lại được); sự kiện FAILED.</summary>
-        public Task<IResult<DeliveryRouteDetailModel>> Fail(DeliveryStopFailRequest request)
-            => RunAsync(request.Id, "báo giao thất bại", [DeliveryStopStatus.Planned, DeliveryStopStatus.Arrived], (stop, route, deliveryOrder, actor, ctx) =>
+        public async Task<IResult<DeliveryRouteDetailModel>> Fail(DeliveryStopFailRequest request)
+        {
+            var result = await RunAsync(request.Id, "báo giao thất bại", [DeliveryStopStatus.Planned, DeliveryStopStatus.Arrived], (stop, route, deliveryOrder, actor, ctx) =>
             {
                 if (string.IsNullOrWhiteSpace(request.Reason))
                 {
@@ -523,6 +529,16 @@ namespace AppDelicare.Services.Implement
                 ctx.Warnings.Add("Đơn hàng của điểm này vẫn Đang sản xuất – điều phối xếp chuyến giao bù");
                 return Task.FromResult<string?>(null);
             });
+            // UI-6.35 (D-116): báo điều phối – điểm vào cột "Cần giao lại".
+            if (result.ResponseCode == 200)
+            {
+                var db = _unitOfWork.DbContext;
+                var stop = await db.DeliveryStop.AsNoTracking().FirstAsync(s => s.Id == request.Id);
+                var route = await db.DeliveryRoute.AsNoTracking().FirstAsync(r => r.Id == stop.DeliveryRouteId);
+                await NotifyFailedAsync(stop, route, request.Reason.Trim());
+            }
+            return result;
+        }
 
         public async Task<IResult<DeliveryStop>> GetById(Guid id)
         {

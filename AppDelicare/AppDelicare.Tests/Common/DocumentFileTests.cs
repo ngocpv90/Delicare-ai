@@ -125,8 +125,8 @@ namespace AppDelicare.Tests.Common
             var history = (await admin.GetResultAsync($"api/Common/GetHistory?resource=ProofOfDelivery&id={pod}")).ListData.EnumerateArray().ToList();
             history.Count(h => h.GetProperty("source").GetString() == "FILE").Should().Be(2);
 
-            // Quyền theo màn của chứng từ (#/log-pod): Xem → được danh sách / tải; tải lên cần Sửa; không có quyền → 403.
-            Guid viewer = await CommonTestUsers.UserAsync(_factory, ("log-pod", "V"));
+            // Quyền theo màn của chứng từ (#/log-execution – UI-6.35): Xem → được danh sách / tải; tải lên cần Sửa; không có quyền → 403.
+            Guid viewer = await CommonTestUsers.UserAsync(_factory, ("log-execution", "V"));
             var v = _factory.CreateAuthorizedClient(viewer);
             (await v.GetAsync($"api/DocumentFile/Download?id={id}")).StatusCode.Should().Be(HttpStatusCode.OK);
             (await v.GetResultAsync($"api/DocumentFile/GetList?Resource=ProofOfDelivery&RecordId={pod}")).ListData.GetArrayLength().Should().Be(2);

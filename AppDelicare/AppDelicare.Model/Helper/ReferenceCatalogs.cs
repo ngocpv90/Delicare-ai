@@ -43,6 +43,7 @@ namespace AppDelicare.Model.Helper
         {
             ["MealType"] = "Loại suất (bữa ăn)",
             ["SupplierIssueType"] = "Loại sự cố nhà cung cấp",
+            ["DeliveryFailReason"] = "Lý do giao thất bại",
             ["SupplierIssueResolutionType"] = "Hướng xử lý sự cố nhà cung cấp",
             ["ChecklistArea"] = "Khu vực bộ kiểm tra ATTP",
             ["ChecklistFrequency"] = "Tần suất bộ kiểm tra ATTP",

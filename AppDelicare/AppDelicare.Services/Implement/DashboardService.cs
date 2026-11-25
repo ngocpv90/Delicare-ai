@@ -575,10 +575,10 @@ namespace AppDelicare.Services.Implement
                     : delivered.Count != 0 && delivered.Count == live.Count && delivered.All(d => pods.Any(p => p.DeliveryOrderId == d.Id)) ? StageStatus.Done
                     : StageStatus.InProgress;
                 var doNumbers = deliveries.ToDictionary(d => d.Id, d => d.DeliveryNumber ?? d.DeliveryNo);
-                Add(Stage.Pod, "Xác nhận giao nhận (POD)", "log-pod", podStage, pods.Count == 0 ? null : pods.Max(p => p.ConfirmedAt),
+                Add(Stage.Pod, "Xác nhận giao nhận (POD)", "log-execution", podStage, pods.Count == 0 ? null : pods.Max(p => p.ConfirmedAt),
                     [.. pods.OrderBy(p => p.ConfirmedAt).Select(p => Doc(p.Id, doNumbers.GetValueOrDefault(p.DeliveryOrderId), null,
                         $"Nhận {DeliveryRules.Num(p.AcceptedQuantity ?? p.AcceptedQty ?? 0m)} / giao {DeliveryRules.Num(p.DeliveredQuantity ?? p.DeliveredQty ?? 0m)} suất",
-                        p.ConfirmedAt, "log-pod"))]);
+                        p.ConfirmedAt, "log-execution"))]);
 
                 // 7. Đối soát – số chứng từ = số đơn (đối soát không có số riêng).
                 var recs = await db.OrderReconciliation.AsNoTracking().Where(r => !r.IsDeleted && r.OrderId == order.Id).OrderBy(r => r.ReconciliationDate).ToListAsync();

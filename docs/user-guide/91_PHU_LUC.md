@@ -29,7 +29,7 @@
 | Đơn giao | Kế hoạch → Đang giao → Đã giao / Thất bại; Hủy | `log-delivery-order` |
 | Thực hiện giao | Chờ xếp hàng → Đã xếp lên xe → Đang giao → Đã đến → Đã giao / Thất bại; Hủy | `log-execution` |
 | Xếp hàng lên xe | Đã xếp lên xe; Hủy | `log-route` |
-| Thu hồi khay | Chờ thu hồi → Đã thu hồi → Đã kiểm tra · Kết quả: Đủ / Thiếu / Hỏng / Bẩn / Không đạt | `log-container-return` |
+| Thu hồi khay | Chờ thu hồi → Đã thu hồi → Đã kiểm tra · Kết quả: Đủ / Thiếu / Hỏng / Bẩn / Không đạt | `log-packaging-ledger` (tab Phiếu thu hồi) |
 | Sổ bao bì | Giao cho khách (OUT) · Khách trả lại (IN) · Thất thoát (LOSS) · Sẵn sàng dùng lại | `log-packaging-ledger` |
 | Mẻ vệ sinh | Đang vệ sinh → Hoàn tất (Đạt – sẵn sàng dùng lại / Không đạt) | `qc-cleaning` |
 | Ca được phân | Kế hoạch → Xác nhận → Đã vào ca → Hoàn thành; Vắng | `hr-shift-assign` |
