@@ -149,7 +149,7 @@ INSERT INTO @P VALUES
     (N'#/adm-permission', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1003, N'', N'', NULL),
     (N'#/adm-objectmenu', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1004, N'', N'', NULL),
     (N'#/adm-orgunit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1005, N'', N'', NULL),
-    (N'#/adm-company', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1006, N'', N'', NULL),
+    (N'#/adm-company', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1006, N'', N'', 0),
     (N'#/sys-import', 2, NULL, 0, -1, N'', N'#/group/10', 1007, N'Nhập dữ liệu gốc (Excel)', N'P0', NULL),
     (N'#/adm-reference', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1008, N'', N'', NULL),
     (N'#/adm-admin-unit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1009, N'', N'', NULL),

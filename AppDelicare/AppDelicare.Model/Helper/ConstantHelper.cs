@@ -96,6 +96,22 @@
             public static readonly string HrBulkDone = "Phân ca hàng loạt: tạo {0} ca, bỏ qua {1}";
             public static readonly string HrBulkSkipAssigned = "Đã có ca {0}";
             public static readonly string HrBulkSkipLeave = "Nghỉ phép (đơn {0})";
+            // UI-6.41 (D-122)
+            public static readonly string OrgNameRequired = "Nhập tên đơn vị.";
+            public static readonly string OrgTypeInvalid = "Chọn loại đơn vị: {0}.";
+            public static readonly string OrgManagerNotWorking = "Trưởng đơn vị phải là nhân viên đang làm việc.";
+            public static readonly string OrgParentNotFound = "Không tìm thấy đơn vị cha.";
+            public static readonly string OrgCompanyMissing = "Chưa chọn công ty cho đơn vị gốc.";
+            public static readonly string OrgMoved = "Đã chuyển đơn vị.";
+            public static readonly string OrgStatusInvalid = "Trạng thái chỉ được Hoạt động hoặc Ngừng hoạt động.";
+            public static readonly string OrgDeactivateBlocked = "Không ngừng hoạt động được: còn {0} nhân viên đang làm và {1} đơn vị con đang hoạt động – chuyển người / đơn vị con trước.";
+            public static readonly string OrgReactivateParentInactive = "Đơn vị cha đang ngừng hoạt động – cho đơn vị cha hoạt động lại trước.";
+            public static readonly string OrgDeactivated = "Đã ngừng hoạt động đơn vị.";
+            public static readonly string OrgReactivated = "Đã cho đơn vị hoạt động lại.";
+            public static readonly string OrgManagerSet = "Đã cập nhật trưởng đơn vị.";
+            public static readonly string CompanyDeleteBlocked = "Không xóa công ty – tên, địa chỉ, mã số thuế in ở đầu mọi phiếu in và tệp Excel.";
+            public static readonly string CompanyInsertAdminOnly = "Chỉ quản trị hệ thống thêm được công ty.";
+            public static readonly string CompanyTaxCodeInvalid = "Mã số thuế phải gồm 10 hoặc 13 chữ số.";
             // UI-6.39 (D-120)
             public static readonly string HrAnnualOver = "Phép năm còn {0} ngày – đơn {1} ngày vượt phép năm.";
             public static readonly string HrLeaveTeamShort = "Ca {0} {1}: tổ còn {2} / cần {3} người nếu duyệt.";

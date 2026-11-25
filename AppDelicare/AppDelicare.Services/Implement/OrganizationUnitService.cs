@@ -16,13 +16,14 @@ using AppDelicare.Model.Request.Custom;
 
 namespace AppDelicare.Services.Implement
 {
-    public class OrganizationUnitService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IOrganizationUnitService
+    public partial class OrganizationUnitService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+        , IAuditChangeService auditChangeService, IServiceProvider services) : IOrganizationUnitService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private readonly IServiceProvider _services = services;
 
         public async Task<IResults<OrganizationUnitViewModel>> GetAll(OrganizationUnitSearchRequest request)
         {
@@ -141,6 +142,11 @@ namespace AppDelicare.Services.Implement
             {
                 return string.Format(ConstantHelper.Message.CodeExist, request.Code);
             }
+            // UI-6.41 (D-122): công ty theo đơn vị cha, loại theo danh mục, trưởng đang làm.
+            if (await RulesAsync(request, null) is { } invalid)
+            {
+                return invalid;
+            }
             var insert = _mapper.Map<OrganizationUnit>(request);
             _unitOfWork.OrganizationUnitRepository.Add(insert);
             await _unitOfWork.OrganizationUnitRepository.CommitAsync(typeSave);
@@ -173,6 +179,10 @@ namespace AppDelicare.Services.Implement
             if (CreatesCycle(request.Id!.Value, request.ParentId))
             {
                 return ConstantHelper.Message.ParentCycle;
+            }
+            if (await RulesAsync(request, exist) is { } invalid)
+            {
+                return invalid;
             }
             var update = _mapper.Map(request, exist);
             _unitOfWork.OrganizationUnitRepository.Update(update);

@@ -80,8 +80,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Phân quyền | `adm-permission` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
-| Quản trị hệ thống › Sơ đồ tổ chức | `adm-orgunit` | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | Q (IX) | — |
-| Quản trị hệ thống › Công ty | `adm-company` | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
+| Quản trị hệ thống › Công ty & đơn vị | `adm-orgunit` | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | Q (IX) | — |
 | Quản trị hệ thống › Nhập dữ liệu gốc (Excel) | `sys-import` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Danh mục dùng chung | `adm-reference` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Địa giới hành chính | `adm-admin-unit` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |

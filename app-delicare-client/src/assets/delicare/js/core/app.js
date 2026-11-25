@@ -347,7 +347,8 @@
       'qc-checklist': 'qc-checklist-result?tab=sets', // UI-6.33 (D-114)
       'log-packing-result': 'log-packing-order', 'log-delivery-order': 'log-route', 'log-loading': 'log-route', // UI-6.34 (D-115)
       'log-gps': 'log-execution?tab=map', 'log-pod': 'log-execution?tab=pod', 'log-container-return': 'log-packaging-ledger?tab=returns', // UI-6.35 (D-116)
-      'hr-swap': 'hr-leave?type=SWAP' }; // UI-6.39 (D-120)
+      'hr-swap': 'hr-leave?type=SWAP', // UI-6.39 (D-120)
+      'adm-company': 'adm-orgunit?company=1' }; // UI-6.41 (D-122)
     if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];

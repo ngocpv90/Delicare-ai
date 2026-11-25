@@ -560,3 +560,9 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Hộp duyệt đơn nghỉ: phép năm, tổ còn x / cần y, người có thể thay; "Duyệt xong mở Phân ca".
 - [ ] Lịch nghỉ 2 tuần; ngày tổ thiếu viền đỏ (cần cấu hình định biên).
 - [ ] Thẻ Ca trống do nghỉ bấm mở Phân ca.
+
+## UI-6.41 – Công ty & đơn vị (D-122)
+- [ ] Sidebar Quản trị: "Công ty & đơn vị" (không còn Công ty, Sơ đồ tổ chức); link cũ #/adm-company mở chọn sẵn công ty.
+- [ ] Cây gốc là công ty, nhãn "chưa có trưởng", số nhân viên gồm con; tìm mở nhánh; thẻ Chưa có trưởng lọc cây.
+- [ ] Chọn công ty: thông tin + Sửa (người không có quyền mục Công ty không thấy nút); mã số thuế sai → báo lỗi; không xóa được công ty.
+- [ ] Chọn đơn vị: loại tiếng Việt (không còn BRANCH / TEAM…); chọn ngay trưởng (chỉ người đang làm); ＋ Đơn vị con; Chuyển (không vào nhánh con; sang công ty khác cả nhánh đổi); Ngừng hoạt động khi còn người → báo số người.
