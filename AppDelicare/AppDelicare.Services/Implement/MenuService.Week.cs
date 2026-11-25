@@ -524,14 +524,25 @@ namespace AppDelicare.Services.Implement
                 }
                 else
                 {
-                    string code = await _documentNumberService.NextAsync(DocumentKind.Menu, monday);
-                    created = new Menu
+                    // Sinh mã chứng từ phải nằm trong transaction (DocumentNumberService.NextAsync) – thiếu thì SQL Server báo lỗi → 500.
+                    using var tran = await _unitOfWork.OpenTransaction();
+                    try
                     {
-                        Id = Guid.NewGuid(), Code = code, Name = $"Thực đơn chung tuần {monday:dd/MM/yyyy}", VersionNo = 1, EffectiveFrom = monday, EffectiveTo = monday.AddDays(6),
-                        Status = MenuStatus.Draft, MenuType = MenuScope.Common, Note = "Khung trống mẫu chuẩn",
-                    };
-                    _unitOfWork.MenuRepository.Add(created);
-                    await _unitOfWork.MenuRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                        string code = await _documentNumberService.NextAsync(DocumentKind.Menu, monday);
+                        created = new Menu
+                        {
+                            Id = Guid.NewGuid(), Code = code, Name = $"Thực đơn chung tuần {monday:dd/MM/yyyy}", VersionNo = 1, EffectiveFrom = monday, EffectiveTo = monday.AddDays(6),
+                            Status = MenuStatus.Draft, MenuType = MenuScope.Common, Note = "Khung trống mẫu chuẩn",
+                        };
+                        _unitOfWork.MenuRepository.Add(created);
+                        await _unitOfWork.MenuRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                        _unitOfWork.CommitTransaction();
+                    }
+                    catch
+                    {
+                        _unitOfWork.RollbackTransaction();
+                        throw;
+                    }
                 }
                 result.Created = true;
                 result.MenuId = created.Id;
