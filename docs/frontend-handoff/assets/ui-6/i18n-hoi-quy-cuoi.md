@@ -1,0 +1,75 @@
+# UI-6.10 – báo cáo quét tiếng Việt + thẻ chỉ số (D-88) – khổ 1440px
+
+Ngày quét: 2026-11-25 05:30 UTC · tài khoản admin · DB dev · 69 mục menu · **1 mục còn vấn đề**.
+
+| Mục | Màn | Hàng chỉ số (số thẻ → hiện / số cột) | Từ tiếng Anh / mã | Ghép chữ kỹ thuật | Khác |
+|---|---|---|---|---|---|
+| Việc của tôi | `hr-my` | – | – | – | – |
+| Bảng điều hành | `dash-exec` | 8→4 cột | – | – | – |
+| Chỉ số kinh doanh | `kpi-daily` | – | – | – | – |
+| Giá vốn & lãi gộp | `cost-meal` | 4→4 cột | – | – | – |
+| Phê duyệt8 | `wf-inbox` | 4→4 cột | – | – | – |
+| Khách hàng | `crm-customer` | 4→4 cột | – | – | – |
+| Hợp đồng | `crm-contract` | 4→4 cột | – | – | – |
+| Đăng ký suất tuần | `crm-order-week` | 4→4 cột | – | – | – |
+| Đơn hàng theo ngày | `crm-order` | 4→4 cột | – | – | – |
+| Dự báo suất ăn | `crm-forecast` | 4→4 cột | – | – | – |
+| Đối soát suất ăn | `crm-reconciliation` | 4→4 cột | – | – | – |
+| Bảng kê thanh toán | `crm-billing` | 4→4 cột | – | – | – |
+| Phản ánh khách hàng | `log-complaint` | 4→4 cột | – | – | – |
+| Thực đơn tuần | `menu-menu` | 4→4 cột | – | – | – |
+| Công thức chế biến | `menu-recipe` | – | – | – | – |
+| Món ăn | `menu-dish` | 4→4 cột, 0→ẩn | – | – | – |
+| Tính nhu cầu nguyên liệu | `scm-requirement` | 3→3 cột, 4→4 cột | – | – | – |
+| Đề nghị mua hàng | `scm-pr` | 4→4 cột | – | – | – |
+| Đơn mua hàng | `scm-po` | 4→4 cột, 4→4 cột | – | – | – |
+| Nhà cung cấp | `scm-supplier` | 4→4 cột | – | – | – |
+| Bảng giá nhà cung cấp | `scm-supplier-material` | 4→4 cột | – | – | – |
+| Nguyên liệu | `scm-ingredient` | 4→4 cột, 0→ẩn | – | – | – |
+| Nhận hàng | `scm-gr` | 4→4 cột | – | – | – |
+| Xuất kho sản xuất | `scm-issue` | 4→4 cột | – | – | – |
+| Tồn kho | `scm-inv-balance` | 4→4 cột | – | – | – |
+| Kiểm kê | `scm-stockcount` | 4→4 cột | – | – | – |
+| Kế hoạch sản xuất | `prod-plan` | 4→4 cột | – | – | – |
+| Mẻ nấu | `prod-batch` | – | – | – | – |
+| Hao hụt | `prod-waste` | 2→2 cột | – | – | – |
+| Sổ kiểm tra hàng nhập | `qc-inspection` | 4→4 cột | – | – | – |
+| Kiểm tra theo ca / mẻ | `qc-checklist-result` | 4→4 cột | – | – | – |
+| Nhật ký nhiệt độ | `qc-temperature` | 4→4 cột | – | – | – |
+| Vệ sinh khay hộp | `qc-cleaning` | 4→4 cột | – | – | – |
+| Sự cố nhà cung cấp | `qc-supplier-issue` | 4→4 cột | – | – | – |
+| Chia suất & đóng gói | `log-packing-order` | 4→4 cột | – | – | – |
+| Điều phối giao hàng | `log-route` | 4→4 cột | – | – | – |
+| Theo dõi giao hàng | `log-execution` | 4→4 cột | – | – | – |
+| Khay hộp theo khách | `log-packaging-ledger` | 4→4 cột | – | – | – |
+| Nhân viên | `adm-employee` | 4→4 cột | – | – | – |
+| Phân ca | `hr-shift-assign` | 4→4 cột | – | – | – |
+| Chấm công | `hr-attendance` | 4→4 cột | – | – | – |
+| Nghỉ & đổi ca | `hr-leave` | 4→4 cột | – | – | – |
+| Tổng quan danh mục | `sys-catalog` | – | – | – | – |
+| Công ty & đơn vị | `adm-orgunit` | 4→4 cột | – | – | – |
+| Chức vụ | `adm-position` | 1→ẩn | – | – | – |
+| Ca làm việc | `hr-shift` | 4→4 cột | – | – | – |
+| Đơn vị tính | `scm-uom` | 3→3 cột | – | – | – |
+| Kho & vị trí | `scm-warehouse` | 3→3 cột | – | – | – |
+| Dây chuyền & trạm bếp | `prod-line` | – | – | – | – |
+| Xe giao hàng | `log-vehicle` | 3→3 cột | – | – | – |
+| Danh mục dùng chung | `adm-reference` | – | – | – | – |
+| Địa giới hành chính | `adm-admin-unit` | 2→2 cột | – | – | – |
+| Danh mục chỉ số | `kpi-definition` | 2→2 cột | – | – | – |
+| Tài khoản | `adm-user` | 4→4 cột | – | – | – |
+| Nhóm quyền | `adm-usergroup` | 4→4 cột | – | – | – |
+| Cấu hình menu | `adm-objectmenu` | 3→3 cột | – | – | – |
+| Nhập dữ liệu gốc (Excel) | `sys-import` | – | Menu «oại Mã máy File mẫu Nạp file Rule Menu.xlsx – Ngân hàng món Fi» | – | – |
+| Tài liệu đính kèm | `adm-document` | 2→2 cột | – | – | – |
+| Job tự động | `adm-job` | – | – | – | – |
+| Nhật ký thay đổi dữ liệu | `adm-audit` | 2→2 cột | – | – | – |
+| Nhật ký truy cập | `adm-access-log` | 2→2 cột | – | – | – |
+| Dữ liệu trùng cần gộp | `adm-merge-conflict` | 1→ẩn | – | – | – |
+| Kênh nhắn tin | `int-channel` | 4→4 cột | – | – | – |
+| Bot | `int-bot` | 4→4 cột | – | – | – |
+| Liên kết tài khoản chat | `int-identity` | 4→4 cột | – | – | – |
+| Tin nhắn đến | `int-inbound` | 4→4 cột | – | – | – |
+| Tin nhắn đi | `int-outbound` | 4→4 cột | – | – | – |
+| Nhật ký tích hợp | `int-log` | 4→4 cột | – | – | – |
+| Nhật ký tính chỉ số | `kpi-refresh` | 4→4 cột | – | – | – |
