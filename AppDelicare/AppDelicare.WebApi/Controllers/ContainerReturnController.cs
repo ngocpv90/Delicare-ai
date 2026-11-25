@@ -148,7 +148,7 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>BE2.5 (spec 10.4 POST container-returns, Catalog 194): ghi thu hồi khay / hộp của đơn giao Đã giao → sổ bao bì IN (tốt / hỏng). Quyền Thêm của màn thu hồi.</summary>
-        [Security.Permission("log-container-return", PermissionAction.Add)]
+        [Security.Permission("log-packaging-ledger", PermissionAction.Add)] // UI-6.49 (8): "Thu hồi khay hộp" ẩn từ UI-6.35 – quyền hợp vào "Khay hộp theo khách"
         [HttpPost("Record")]
         public async Task<IActionResult> Record([FromForm] ContainerReturnRecordRequest request)
         {
@@ -171,7 +171,7 @@ namespace AppDelicare.WebApi.Controllers
         /// BE2.5 (spec 10.4 inspect, Catalog 195): kiểm tra vật dụng thu hồi (OK / SHORTAGE / DAMAGED / DIRTY / REJECTED) → ReturnInspection, phiếu Đã kiểm tra,
         /// khay dùng được → tự lập mẻ vệ sinh VS-. Quyền Thêm của màn "Kiểm tra vật dụng thu hồi".
         /// </summary>
-        [Security.Permission("log-return-inspection", PermissionAction.Add)]
+        [Security.Permission("qc-cleaning", PermissionAction.Add)] // UI-6.49 (8): "Kiểm tra khay thu hồi" ẩn từ UI-6.32 – quyền hợp vào "Vệ sinh khay hộp"
         [HttpPost("Inspect")]
         public async Task<IActionResult> Inspect([FromForm] ContainerReturnInspectRequest request)
         {
