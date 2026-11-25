@@ -153,14 +153,14 @@ namespace AppDelicare.Services.Jobs
     {
         public string Code => "MarkAbsent";
         public string Name => "Tự chuyển Vắng";
-        public string Description => "UI-6.38 (D-119 f): ca Kế hoạch / Xác nhận của hôm nay và hôm qua (ca đêm) đã hết giờ mà không vào ca → Vắng (toàn công ty; chạy lại không đổi thêm). Tắt bằng Hr:AutoMarkAbsent.";
+        public string Description => "Ca Kế hoạch / Xác nhận của hôm nay và hôm qua (ca đêm) đã hết giờ mà không vào ca → Vắng (toàn công ty; chạy lại không đổi thêm).";
         public string DefaultAt => rules.Value.Hr.AutoMarkAbsentTime;
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
         {
             if (!rules.Value.Hr.AutoMarkAbsent)
             {
-                return new JobOutcome(JobRunStatus.Succeeded, 0, now.Date, "Tự chuyển Vắng đang tắt (Hr:AutoMarkAbsent)");
+                return new JobOutcome(JobRunStatus.Succeeded, 0, now.Date, "Tự chuyển Vắng đang tắt trong cấu hình");
             }
             int marked = 0;
             foreach (var workDate in new[] { now.Date.AddDays(-1), now.Date })
