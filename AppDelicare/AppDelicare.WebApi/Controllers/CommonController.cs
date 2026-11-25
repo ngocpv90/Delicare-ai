@@ -15,6 +15,27 @@ namespace AppDelicare.WebApi.Controllers
     public class CommonController(ICommonService service, IPrintService printService, ICatalogSummaryService catalogSummary) : BaseController
     {
 
+        /// <summary>UI-6.49 (9) (D-127 g): Excel "Danh sách cần bổ sung" – mỗi loại thiếu dữ liệu 1 sheet, theo quyền Xem từng màn (service lọc).</summary>
+        [Security.SkipPermission]
+        [HttpGet("ExportDataGaps")]
+        public async Task<IActionResult> ExportDataGaps()
+        {
+            try
+            {
+                var result = await catalogSummary.ExportDataGaps();
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data.Content, result.Data.ContentType, result.Data.FileName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExportDataGaps: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>UI-6.40 (D-121): trang tổng "Danh mục hệ thống" – thẻ theo quyền Xem từng danh mục (service lọc).</summary>
         [Security.SkipPermission]
         [HttpGet("GetCatalogSummary")]

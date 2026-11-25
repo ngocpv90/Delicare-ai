@@ -32,6 +32,34 @@ namespace AppDelicare.Tests.Admin
             return user;
         }
 
+        /// <summary>UI-6.49 (9) (D-127 g): Excel "Danh sách cần bổ sung" – sheet Tổng hợp + sheet theo quyền xem (không sửa dữ liệu).</summary>
+        [Fact]
+        public async Task Ui649_data_gaps_excel_lists_missing_data_by_view_right()
+        {
+            await _factory.SeedAsync(db =>
+            {
+                db.Employee.Add(new Employee { Id = Guid.NewGuid(), Code = "GAP649", EmployeeCode = "GAP649", FullName = "NV thiếu đơn vị 649", Status = "Active" });
+                db.UserGroup.Add(new UserGroup { Id = Guid.NewGuid(), Name = "Nhóm lạ 649", Code = "LA-649" });
+                return Task.CompletedTask;
+            });
+            using var admin = _factory.CreateAuthorizedClient();
+            var res = await admin.GetAsync("/api/Common/ExportDataGaps");
+            res.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            using (var wb = new ClosedXML.Excel.XLWorkbook(await res.Content.ReadAsStreamAsync()))
+            {
+                wb.Worksheets.First().Name.Should().Be("Tổng hợp");
+                wb.Worksheet("Nhân viên chưa gắn đơn vị").RangeUsed()!.RowsUsed().Select(r => r.Cell(1).GetString()).Should().Contain("GAP649");
+                wb.Worksheet("Nhóm quyền ngoài chuẩn").RangeUsed()!.RowsUsed().Select(r => r.Cell(1).GetString()).Should().Contain("LA-649");
+            }
+            // Người chỉ xem Nhân viên: không có sheet nhóm quyền.
+            using var hr = _factory.CreateAuthorizedClient(await UserWithAsync("gap649.hr", "#/adm-employee"));
+            using (var wb = new ClosedXML.Excel.XLWorkbook(await (await hr.GetAsync("/api/Common/ExportDataGaps")).Content.ReadAsStreamAsync()))
+            {
+                wb.Worksheets.Select(w => w.Name).Should().Contain("Nhân viên chưa gắn đơn vị").And.NotContain("Nhóm quyền ngoài chuẩn");
+            }
+            (await _factory.QueryAsync(db => db.Employee.CountAsync(e => e.Code == "GAP649" && e.OrganizationUnitId == null))).Should().Be(1, "không sửa hộ dữ liệu");
+        }
+
         [Fact]
         public async Task Summary_is_filtered_by_view_right_and_counts_match_data()
         {

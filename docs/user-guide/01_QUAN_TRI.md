@@ -137,6 +137,19 @@ Các danh mục ít thay đổi gom vào một nhóm menu ngay trên **Quản tr
 - **Tổ chức:** Công ty & đơn vị · Chức vụ · Ca làm việc. **Mua hàng & kho:** Đơn vị tính · Kho & vị trí. **Sản xuất:** Dây chuyền & bàn nấu. **Giao hàng:** Xe giao hàng. **Dùng chung:** Danh mục dùng chung · Địa giới hành chính · Danh mục chỉ số.
 - **Tổng quan danh mục** (mục đầu nhóm): mỗi danh mục bạn được xem một thẻ – số bản ghi đang dùng, lần sửa gần nhất (ngày, người) và **cảnh báo thiếu dữ liệu** màu đỏ (bấm mở đúng màn): đơn vị chưa có trưởng, nhân viên chưa gắn đơn vị, chức vụ chưa có nhóm quyền gợi ý, tổ chưa có số người tối thiểu cho ca, nguyên liệu dùng đơn vị chưa có quy đổi, khu bảo quản chưa có ngưỡng nhiệt độ, nhóm món chưa gán dây chuyền, xe đang hoạt động chưa có tải trọng. Cảnh báo chưa tính được thì không hiện.
 
+### 4.6c Chuẩn bị dữ liệu trước khi chạy thật (UI-6.49)
+Trang **Danh mục hệ thống** (bấm tên nhóm trên menu) → nút **Xuất danh sách cần bổ sung** → tệp Excel: sheet **Tổng hợp** (loại · số dòng · người bổ sung · màn) + mỗi loại một sheet (chỉ loại thuộc màn bạn được xem). **Hệ thống không tự sửa** – người phụ trách bổ sung trên màn tương ứng rồi xuất lại tới khi các sheet trống.
+
+| Sheet | Người bổ sung | Làm ở đâu |
+|---|---|---|
+| Đơn vị chưa có trưởng | Nhân sự | Công ty & đơn vị → chọn đơn vị → Trưởng đơn vị |
+| Nhân viên chưa gắn đơn vị | Nhân sự | Nhân viên → Sửa → Đơn vị |
+| Số điện thoại trùng | Nhân sự | Nhân viên → sửa đúng số của từng người |
+| Tổ chưa có định biên ca | Nhân sự (IT nhập cấu hình) | Số người tối thiểu mỗi ca (`BusinessRules:Hr:ShiftMinStaff`) |
+| Nhóm quyền ngoài chuẩn | IT | Nhóm quyền → chuyển tài khoản sang nhóm chuẩn → Ngừng dùng nhóm (hoặc chọn khối) |
+| Nhóm món chưa gán dây chuyền | Bếp trưởng | Dây chuyền & bàn nấu → gán nhóm món |
+| Món / Nguyên liệu chưa phân nhóm | Bếp trưởng / Mua hàng | Món ăn, Nguyên liệu → cột trái nhóm |
+
 ### 4.7 Công ty & đơn vị – `adm-orgunit` (UI-6.41 – gộp Công ty + Sơ đồ tổ chức)
 Mục "Công ty" đã gộp vào đây (link cũ mở màn này, chọn sẵn công ty). Sửa thông tin công ty vẫn theo quyền của mục Công ty.
 - **Đầu màn:** ô **Tìm đơn vị** (mở nhánh chứa kết quả) · **Thêm đơn vị**. 4 thẻ: Đơn vị đang hoạt động (số công ty · bếp · tổ / phòng) · Nhân viên (đã gắn đơn vị) · **Chưa có trưởng đơn vị** (bấm để lọc cây) · **Nhân viên chưa gắn đơn vị** (bấm mở màn Nhân viên).

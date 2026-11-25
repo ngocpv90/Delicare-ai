@@ -39,6 +39,7 @@ namespace AppDelicare.Services.Interface
     public interface ICatalogSummaryService
     {
         Task<IResults<CatalogCardModel>> GetCatalogSummary();
+        Task<IResult<FileContentModel>> ExportDataGaps();
     }
 }
 
@@ -48,7 +49,7 @@ namespace AppDelicare.Services.Implement
     /// UI-6.40 (D-121): trang tổng "Danh mục hệ thống" – mỗi danh mục (theo quyền Xem của người gọi): số bản ghi đang dùng, sửa gần nhất,
     /// cảnh báo thiếu dữ liệu (chỉ khi tính được – không bịa số). Một lần gọi, truy vấn có tham số. Không thêm bảng / cột.
     /// </summary>
-    public class CatalogSummaryService(IUnitOfWork unitOfWork, ICurrentActor currentActor, IPermissionService permissions, IOptions<BusinessRulesOptions> rules,
+    public partial class CatalogSummaryService(IUnitOfWork unitOfWork, ICurrentActor currentActor, IPermissionService permissions, IOptions<BusinessRulesOptions> rules,
         IOptions<ReferenceListsOptions> referenceLists) : ICatalogSummaryService
     {
         /// <summary>10 mục của nhóm theo thứ tự D-121 / D-122.</summary>
