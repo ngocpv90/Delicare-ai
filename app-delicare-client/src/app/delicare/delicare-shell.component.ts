@@ -57,6 +57,7 @@ const SCRIPTS = [
   'modules/qc-temp.js', // UI-6.31 (D-112): Nhật ký nhiệt độ 3 tab – sau be3.js (thay biểu đồ trùng)
   'modules/log-dispatch.js', // UI-6.34 (D-115): Chia suất & đóng gói + Điều phối giao hàng – sau logistics.js
   'modules/log-track.js', // UI-6.35 (D-116): Theo dõi giao hàng + Khay hộp theo khách – sau logistics.js
+  'modules/hr-employee.js', // UI-6.36 (D-117): Nhân viên – danh sách nghiệp vụ, form Thêm nhân viên, nghỉ việc – sau ghep.js, employee360.js
   'modules/kho.js', // UI-6.29 (D-110): Kho 12 → 5 mục, Nhận hàng & kiểm tra, Sổ kiểm tra hàng nhập – sau scm.js, qc.js, approval.js, ghep.js
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';

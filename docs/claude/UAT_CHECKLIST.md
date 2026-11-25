@@ -525,3 +525,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Giao thất bại (chọn lý do) → điểm ở cột "Cần giao lại" của Điều phối; chuyển sang chuyến khác giao lại được.
 - [ ] Khay hộp theo khách: Quá hạn thu đúng (> 3 ngày); chỉ "Ghi thất thoát" (ghi tay OUT / IN bị chặn).
 - [ ] Quyền: uat.ops-log, uat.coo đủ; uat.ops-kit không thấy; QA xem Theo dõi giao hàng.
+
+## UI-6.36 – Nhân viên (D-117)
+- [ ] Danh sách: 4 thẻ bấm lọc đúng; mặc định chỉ Đang làm việc; chip trạng thái có số; lọc đơn vị cha gồm đơn vị con; tìm theo SĐT; cột Tài khoản / Bot đúng; không còn cột Công ty, Ngày sinh.
+- [ ] Chọn nhiều → Đề nghị cấp tài khoản (báo số bỏ qua), Tạo mã liên kết bot (mã + QR, in được), Xuất Excel.
+- [ ] Thêm nhân viên: SĐT trùng người đang làm báo ngay + khóa Lưu; trùng người đã nghỉ thì cho; không có ô Mã / Trạng thái / Công ty; giới tính ô chọn; Lưu & mở hồ sơ; tích Cấp tài khoản → yêu cầu cho IT; tích Tạo mã bot → hiện mã / QR.
+- [ ] Hồ sơ người mới: dải Việc cần làm (tài khoản, bot, phân ca, giấy khám sức khỏe) tự tích khi xong, ẩn khi đủ.
+- [ ] Cho nghỉ việc hôm nay: hộp báo trước hệ quả; xác nhận → Đã nghỉ việc, tài khoản khóa, ca sau ngày nghỉ bị hủy, lịch sử có lý do. Ngày tương lai: vẫn đang làm, "Nghỉ từ …", đúng ngày tự khóa.
+- [ ] Tạm nghỉ / Quay lại làm; form Sửa không đổi được trạng thái. Nhập Excel dòng trùng SĐT → báo lỗi dòng.
+- [ ] Quyền: COO / NS đủ; OPS-KIT, OPS-LOG, QA, sales không vào được danh sách nhân viên.

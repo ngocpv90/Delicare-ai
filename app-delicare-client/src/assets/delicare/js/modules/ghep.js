@@ -412,9 +412,10 @@
   // (liên kết bot / tên đăng nhập = mã NV / SĐT). Gắn bằng Employee/LinkPerson (quyền Sửa adm-employee + Sửa adm-user).
   const LINK_GRP = { SURE: ['Khớp chắc', 'green'], MULTI: ['Nhiều ứng viên', 'orange'], NONE: ['Không khớp', 'gray'] };
   const linkState = { group: '' };
+  APP.linkReview = (pane, f) => linkReview(pane, f);   // UI-6.36: tab Đối chiếu tài khoản của màn Nhân viên (modules/hr-employee.js)
   function linkReview(pane, f) {
     const canLink = Store.perm('adm-employee').edit !== false && Store.perm('adm-user').edit !== false;
-    pane.innerHTML = APP.header(f, '', { noNote: true, sub: 'Tài khoản ↔ con người ↔ nhân viên (D-82). Khớp chắc: script D82 tự gắn khi chạy thật; nhiều ứng viên / không khớp: chọn tay ở đây. Nhân viên chưa có tài khoản: mở hồ sơ → Đề nghị cấp tài khoản.' })
+    pane.innerHTML = APP.header(f, '', { noNote: true, sub: 'Nhân viên đang làm chưa gắn với tài khoản / hồ sơ người. Khớp chắc: bấm Gắn; nhiều ứng viên / không khớp: chọn tay. Nhân viên chưa có tài khoản: chọn ở danh sách → Đề nghị cấp tài khoản.' })
       + `<div class="card panel"><div id="lkBody">${LOADING}</div></div>`;
     const body = pane.querySelector('#lkBody');
     const load = () => Store.query('Employee/GetLinkReview', { group: linkState.group }).then(x => {
@@ -525,7 +526,7 @@
 
   // UG-1 C-03: nhập dữ liệu gốc từ Excel (ImportExcel/GetTemplateList · GetTemplate · Import). Chỉ hiện loại file tài khoản có quyền Nhập (Import) ở màn đích.
   APP.FN['sys-import'] = { extra: true, ph: 'P0', grp: 'Quản trị hệ thống', fn: 'Nhập dữ liệu gốc (Excel)', id: 'sys-import', name: 'Nhập dữ liệu gốc (Excel)', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
-  const importResult = (title, d) => {
+  const importResult = APP.importResult = (title, d) => {   // UI-6.36: dùng lại ở màn Nhân viên (Nhập từ Excel)
     const errs = (d && d.listError) || [], notes = (d && d.listNote) || [];
     UI.modal({ title: 'Kết quả nạp – ' + title, size: 'lg', body: `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">${[['Số dòng đọc', d.totalRows], ['Thêm mới', d.inserted], ['Cập nhật', d.updated], ['Bỏ qua (không đổi)', d.skipped], ['Dòng lỗi', errs.length]].map(([k, v]) => `<div><span class="muted small">${k}</span><div><b>${esc(v == null ? 0 : v)}</b></div></div>`).join('')}</div>`
       + (notes.length ? `<div class="mt"><b>Ghi chú</b><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>` : '')

@@ -36,6 +36,8 @@ namespace AppDelicare.Model.Helper
             ["CustomerComplaint.CategoryCode"] = ("ComplaintCategory", "Phân loại phản ánh"),
             // ORD-OPT-1.2 (D-74 f): loại thực đơn – COMMON = thực đơn chung của tuần; trống / CUSTOMER = thực đơn riêng (gán qua Phân công thực đơn).
             ["Menu.MenuType"] = ("MenuType", "Loại thực đơn"),
+            // UI-6.36 (D-117 c): giới tính nhân viên – ô chọn.
+            ["Employee.Gender"] = ("Gender", "Giới tính"),
         };
 
         /// <summary>MENU-4.6 (D-75 f2): tên tiếng Việt của danh mục – màn chỉ xem "Danh mục dùng chung" (adm-reference). Danh mục mới chưa có tên ở đây → lấy nhãn cột đầu tiên, rồi tới khóa.</summary>
@@ -44,6 +46,8 @@ namespace AppDelicare.Model.Helper
             ["MealType"] = "Loại suất (bữa ăn)",
             ["SupplierIssueType"] = "Loại sự cố nhà cung cấp",
             ["DeliveryFailReason"] = "Lý do giao thất bại",
+            ["Gender"] = "Giới tính",
+            ["EmployeeResignReason"] = "Lý do nghỉ việc",
             ["SupplierIssueResolutionType"] = "Hướng xử lý sự cố nhà cung cấp",
             ["ChecklistArea"] = "Khu vực bộ kiểm tra ATTP",
             ["ChecklistFrequency"] = "Tần suất bộ kiểm tra ATTP",

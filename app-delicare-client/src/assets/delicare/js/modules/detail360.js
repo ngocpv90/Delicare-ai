@@ -87,7 +87,7 @@
     const docs = box.querySelector('[data-docs]');
     const load = () => D.run(docs, Store.query('DocumentFile/GetList', { resource, recordId: id, page: 1, pageSize: 100 }), x => {
       const rows = x.list || [];
-      docs.innerHTML = D.table(rows, [{ label: 'Tệp', html: r => `<b>${esc(r.fileName || '')}</b>` }, { label: 'Loại', html: r => esc(r.category || r.fileType || '') },
+      docs.innerHTML = D.table(rows, [{ label: 'Tệp', html: r => `<b>${esc(r.fileName || '')}</b>` }, { label: 'Loại', html: r => esc(({ health: 'Giấy khám sức khỏe', contract: 'Hợp đồng', photo: 'Ảnh', signature: 'Chữ ký', evidence: 'Bằng chứng', other: 'Khác' })[r.category] || r.category || r.fileType || '') },
         { label: 'Dung lượng', num: true, html: r => U.num((r.fileSize || 0) / 1024, 0) + ' KB' }, { label: 'Người tải', html: r => esc(r.createdByName || '') }, { label: 'Ngày', html: r => D.dmy(r.createdDate) }], true);
       D.bindRows(docs, rows, r => Store.download('DocumentFile/Download', { id: r.id }));
     });

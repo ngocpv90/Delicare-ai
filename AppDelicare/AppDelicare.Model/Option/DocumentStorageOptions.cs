@@ -19,6 +19,6 @@ namespace AppDelicare.Model.Option
         public List<string> AllowedExtensions { get; set; } = [".pdf", ".jpg", ".jpeg", ".png", ".xlsx", ".docx"];
 
         /// <summary>Loại tài liệu (spec 2.4: signature, photo, evidence, contract, other).</summary>
-        public List<string> Categories { get; set; } = ["signature", "photo", "evidence", "contract", "other"];
+        public List<string> Categories { get; set; } = ["signature", "photo", "evidence", "contract", "health", "other"];
     }
 }

@@ -1615,11 +1615,12 @@ GET {{base}}/api/Shift/GetAll?SearchText=TRUA&Page=1&PageSize=5
 Authorization: Bearer {{token}}
 
 ###
+# UI-6.36 (D-117 f): SĐT không trùng người đang làm – mỗi lần chạy một số (09 + ngày giờ phút giây).
 POST {{base}}/api/Employee/Insert
 Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
-Code={{code}}-NV1&FullName=[DEMO] Nguyễn Văn Bếp {{code}}-NV1&Phone=0900000091&Status=Active
+Code={{code}}-NV1&FullName=[DEMO] Nguyễn Văn Bếp {{code}}-NV1&Phone=09{{$localDatetime "DDHHmmss"}}&Status=Active
 
 ###
 # @name nv1

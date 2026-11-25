@@ -42,6 +42,43 @@ namespace AppDelicare.WebApi.Controllers
         [Security.Permission("adm-employee", PermissionAction.Edit, AndScreens = ["adm-user"])]
         public Task<IActionResult> LinkPerson([FromBody] AppDelicare.Model.Model.EmployeeLinkPersonRequest request) => Run(nameof(LinkPerson), () => accounts.LinkPerson(request));
 
+        // ------------------------------------------------------------ UI-6.36 (D-117): danh sách nghiệp vụ, nghỉ việc, tạm nghỉ, hàng loạt
+
+        /// <summary>Danh sách "Nhân viên": lọc trạng thái (mặc định Đang làm việc), đơn vị gồm con, chức vụ, tìm; cột tài khoản / bot + 4 chỉ số.</summary>
+        [HttpGet("GetList")]
+        [Security.Permission("adm-employee", PermissionAction.View)]
+        public Task<IActionResult> GetList([FromQuery] AppDelicare.Model.Model.EmployeeListRequest request) => Run(nameof(GetList), () => _service.GetList(request));
+
+        /// <summary>Form Thêm / Sửa: kiểm định dạng + trùng SĐT khi gõ.</summary>
+        [HttpGet("CheckPhone")]
+        [Security.Permission("adm-employee", PermissionAction.View)]
+        public Task<IActionResult> CheckPhone(string? phone, Guid? exceptId) => Run(nameof(CheckPhone), () => _service.CheckPhone(phone, exceptId));
+
+        /// <summary>Hộp "Cho nghỉ việc": hệ quả (tài khoản, bot, ca sau ngày nghỉ, yêu cầu duyệt đang giữ).</summary>
+        [HttpGet("PreviewResign")]
+        [Security.Permission("adm-employee", PermissionAction.Edit)]
+        public Task<IActionResult> PreviewResign(Guid id, DateTime? resignDate) => Run(nameof(PreviewResign), () => _service.PreviewResign(id, resignDate));
+
+        /// <summary>Cho nghỉ việc (ngày + lý do): hủy ca sau ngày nghỉ, khóa tài khoản / gỡ bot (ngày tương lai → khóa đúng ngày), ghi lịch sử.</summary>
+        [HttpPost("Resign")]
+        [Security.Permission("adm-employee", PermissionAction.Edit)]
+        public Task<IActionResult> Resign([FromBody] AppDelicare.Model.Model.EmployeeResignRequest request) => Run(nameof(Resign), () => _service.Resign(request));
+
+        /// <summary>Tạm nghỉ (Inactive) / Quay lại làm (Active) – thay đổi Trạng thái trong form Sửa.</summary>
+        [HttpPost("SetStatus")]
+        [Security.Permission("adm-employee", PermissionAction.Edit)]
+        public Task<IActionResult> SetStatus([FromBody] AppDelicare.Model.Model.EmployeeSetStatusRequest request) => Run(nameof(SetStatus), () => _service.SetStatus(request));
+
+        /// <summary>Chọn nhiều → Đề nghị cấp tài khoản (mỗi người một yêu cầu cho IT; bỏ qua người đã có / đang chờ).</summary>
+        [HttpPost("RequestAccountMany")]
+        [Security.Permission("adm-employee", PermissionAction.Edit)]
+        public Task<IActionResult> RequestAccountMany([FromBody] AppDelicare.Model.Model.EmployeeIdsRequest request) => Run(nameof(RequestAccountMany), () => _service.RequestAccountMany(request));
+
+        /// <summary>Chọn nhiều → Tạo mã liên kết bot (hạn 72 giờ; bỏ qua người đã liên kết).</summary>
+        [HttpPost("CreateBotCodes")]
+        [Security.Permission("adm-employee", PermissionAction.Edit)]
+        public Task<IActionResult> CreateBotCodes([FromBody] AppDelicare.Model.Model.EmployeeIdsRequest request) => Run(nameof(CreateBotCodes), () => _service.CreateBotCodes(request));
+
         private async Task<IActionResult> Run<T>(string action, Func<Task<T>> run)
         {
             try

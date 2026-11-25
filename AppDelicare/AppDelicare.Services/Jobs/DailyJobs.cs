@@ -86,11 +86,11 @@ namespace AppDelicare.Services.Jobs
     /// HR-ACC-1.7 (D-82 h): lưới an toàn hằng ngày – nhân viên Nghỉ việc / Ngừng mà tài khoản web còn mở hoặc liên kết bot chưa thu hồi
     /// (đổi trạng thái ngoài màn Nhân viên: nhập Excel, SQL) → khóa + thu hồi + leo thang yêu cầu đang giữ, báo FIN-IT. Đổi trạng thái qua API đã khóa ngay.
     /// </summary>
-    public sealed class AccountLockResignedJob(IAccountLifecycleService accounts, IUnitOfWork unitOfWork) : IScheduledJob
+    public sealed class AccountLockResignedJob(IAccountLifecycleService accounts, IUnitOfWork unitOfWork, IEmployeeService employees) : IScheduledJob
     {
         public string Code => "AccountLockResigned";
         public string Name => "Khóa tài khoản nhân viên đã nghỉ";
-        public string Description => "Nhân viên Nghỉ việc / Ngừng còn tài khoản mở hoặc liên kết bot → khóa, thu hồi, leo thang yêu cầu đang giữ, báo FIN-IT (chỉ tiêu “đã nghỉ còn mở” = 0).";
+        public string Description => "Hẹn nghỉ việc tới ngày → Đã nghỉ việc; nhân viên Nghỉ việc / Ngừng còn tài khoản mở hoặc liên kết bot → khóa, thu hồi, leo thang yêu cầu đang giữ, báo FIN-IT (chỉ tiêu “đã nghỉ còn mở” = 0).";
         public string DefaultAt => "00:30";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
@@ -98,10 +98,12 @@ namespace AppDelicare.Services.Jobs
             using var tran = await unitOfWork.OpenTransaction();
             try
             {
+                // UI-6.36 (D-117 e): hẹn nghỉ việc tới ngày → Đã nghỉ việc + khóa (chạy lại không nhân đôi).
+                int applied = await employees.ApplyScheduledResignationsAsync();
                 var r = await accounts.LockAllResignedAsync();
                 unitOfWork.CommitTransaction();
-                return new JobOutcome(JobRunStatus.Succeeded, r.LockedUsers + r.RevokedIdentities, now.Date,
-                    $"Khóa {r.LockedUsers} tài khoản, thu hồi {r.RevokedIdentities} liên kết bot, leo thang {r.EscalatedRequests}, báo {r.NotifiedRequests}");
+                return new JobOutcome(JobRunStatus.Succeeded, applied + r.LockedUsers + r.RevokedIdentities, now.Date,
+                    $"Áp dụng {applied} hẹn nghỉ việc · khóa {r.LockedUsers} tài khoản, thu hồi {r.RevokedIdentities} liên kết bot, leo thang {r.EscalatedRequests}, báo {r.NotifiedRequests}");
             }
             catch
             {

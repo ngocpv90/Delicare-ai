@@ -27,7 +27,7 @@
     const local = Store.get('Employee', id);
     el.innerHTML = `<div class="page-head"><div><div class="breadcrumb small"><a href="javascript:void 0" data-back>${I('down')} Danh sách nhân viên</a> / <span data-e360code>${esc(local ? local.Code || '' : '')}</span></div></div></div>
       <!-- UI-2R fix (D-80 d): 1 khung bọc dòng tên + hàng chỉ số gọn (.kpis.compact) --><div class="card d360-top"><div data-e360head>${local ? headHtml({ employee: local }, true) : loading}</div>
-      <div class="kpis compact" data-e360kpi>${APP.employeeKpis(null)}</div></div>
+      <div class="kpis compact" data-e360kpi>${APP.employeeKpis(null)}</div><div data-e360onb></div></div>
       <div class="tabs c360-tabs" data-e360tabs></div><div data-e360pane></div>`;
     el.querySelector('[data-back]').onclick = () => APP.go('adm-employee');
     const ov = live() ? Store.query('Employee/GetOverview', { id }) : Promise.resolve({ ok: true, data: { employee: local || {}, listAlert: [] } });
@@ -42,6 +42,7 @@
       el.querySelector('[data-e360kpi]').innerHTML = APP.employeeKpis(live() ? d : null);
       bindGo(el.querySelector('[data-e360kpi]'));
       bindHead(el, d, id);
+      onboarding(el.querySelector('[data-e360onb]'), d, id);   // UI-6.36 (D-117 d)
       APP.D360.buildTabs(el.querySelector('[data-e360tabs]'), el.querySelector('[data-e360pane]'), TABS, d, id);
     });
   });
@@ -55,9 +56,13 @@
       e.Phone && `${I('phone')} ${esc(e.Phone)}`, e.Email && esc(e.Email)];
     const bot = partial || !live() ? '' : d.botLinked ? UI.tag('Đã liên kết bot', 'green') : UI.tag('Chưa liên kết bot', 'orange');
     const more = [p.edit !== false && live() && '<button data-h="tg">Tạo mã liên kết bot</button>', can('hr-leave', 'add') && live() && '<button data-h="leave">Tạo đơn nghỉ thay</button>',
-      '<button data-h="print">In hồ sơ</button>', p.edit !== false && e.Status !== 'Resigned' && '<button data-h="resign">Cho nghỉ việc</button>'];
+      '<button data-h="print">In hồ sơ</button>', p.edit !== false && live() && e.Status === 'Inactive' && '<button data-h="back">Quay lại làm</button>',
+      p.edit !== false && live() && e.Status === 'Resigned' && '<button data-h="back">Quay lại làm</button>',
+      p.edit !== false && live() && (e.Status || 'Active') === 'Active' && '<button data-h="pause">Tạm nghỉ</button>',
+      p.edit !== false && e.Status !== 'Resigned' && !d.scheduledResignDate && '<button data-h="resign">Cho nghỉ việc</button>',
+      p.edit !== false && live() && d.scheduledResignDate && '<button data-h="back">Hủy hẹn nghỉ việc</button>'];
     return APP.D360.headRow({ avatar: initials(e.FullName), avatarCls: 'ind', actions: !partial, meta, more,
-      title: `${esc(e.FullName || '')} ${e.Status ? UI.tag(st[0], st[1]) : ''} ${bot}`,
+      title: `${esc(e.FullName || '')} ${e.Status ? UI.tag(st[0], st[1]) : ''} ${bot}${d.scheduledResignDate ? ' ' + UI.tag('Nghỉ từ ' + U.date(d.scheduledResignDate), 'orange') : ''}`,
       buttons: [{ act: 'edit', icon: 'settings', label: 'Sửa', ok: p.edit !== false }, { act: 'assign', icon: 'calendar', label: 'Phân ca', ok: can('hr-shift-assign', 'add'), primary: true },
         { act: 'proxy', icon: 'check', label: 'Chấm công hộ', ok: can('hr-attendance', 'add') && live() }] });
   }
@@ -68,16 +73,39 @@
   function bindHead(el, d, id) {
     APP.D360.bindMore(el.querySelector('[data-e360head]'), act => {
       const row = Object.assign({}, emp(d), Store.get('Employee', id) || {});
-      if (act === 'edit') UI.form('Employee', row, { title: 'Nhân viên', onSave: () => APP.refresh() });
-      else if (act === 'assign') APP.go('hr-shift-assign');
+      if (act === 'edit') { if (live() && APP.employeeForm) APP.employeeForm(row, { onSaved: () => APP.refresh() }); else UI.form('Employee', row, { title: 'Nhân viên', onSave: () => APP.refresh() }); }   // UI-6.36: form riêng
+      else if (act === 'assign') APP.go('hr-shift-assign?employee=' + id);
+      else if (act === 'pause') APP.employeeSetStatus(row, 'Inactive', () => APP.refresh());
+      else if (act === 'back') APP.employeeSetStatus(row, 'Active', () => APP.refresh());
       else if (act === 'proxy') { if (APP.proxyCheck) APP.proxyCheck(id); }
       else if (act === 'tg') tgCode(id);
       else if (act === 'leave') leaveFor(id);
       else if (act === 'print') window.print();
+      else if (act === 'resign' && live() && APP.employeeResign) APP.employeeResign(row, () => APP.refresh());   // UI-6.36 (D-117 e): ngày + lý do + hệ quả
       else if (act === 'resign') UI.confirm(`Cho nhân viên <b>${esc(row.FullName || '')}</b> nghỉ việc? Nhân viên đã nghỉ việc không được phân ca mới.`, () => {
         Store.save('Employee', 'Update', Object.assign({}, row, { Status: 'Resigned' })).then(r => { if (!r.ok) { UI.toast(esc(r.message || 'Không lưu được'), 'err'); return; } UI.toast('Đã cập nhật trạng thái nghỉ việc', 'ok'); APP.refresh(); });
       }, { danger: true, ok: 'Cho nghỉ việc' });
     });
+  }
+
+  // ---------- UI-6.36 (D-117 d): dải "Việc cần làm cho người mới" (vào làm ≤ 30 ngày, còn việc chưa xong) ----------
+  function onboarding(box, d, id) {
+    const items = (live() && d.listOnboarding) || [];
+    if (!box || !items.length) { if (box) box.innerHTML = ''; return; }
+    const edit = Store.perm('adm-employee').edit !== false;
+    const act = it => it.done ? '' : it.code === 'ACCOUNT' && edit ? '<button class="btn xs primary" data-ob="acc">Đề nghị cấp</button>'
+      : it.code === 'BOT' && edit ? '<button class="btn xs" data-ob="bot">Tạo mã + QR</button>'
+      : it.code === 'SHIFT' && can('hr-shift-assign', 'add') ? '<button class="btn xs" data-ob="shift">Phân ca</button>'
+      : it.code === 'HEALTH' && edit ? '<button class="btn xs" data-ob="health">Tải lên</button><input type="file" data-obf hidden accept=".pdf,.jpg,.jpeg,.png">' : '';
+    box.innerHTML = `<div class="mt" style="border-top:1px solid #eef0ec;padding-top:10px"><div class="small muted mb">Việc cần làm cho người mới · ${items.filter(i => i.done).length}/${items.length}</div><div class="row-flex" style="gap:8px;flex-wrap:wrap">${items.map(it => `<div class="card" style="padding:8px 12px;flex:1;min-width:190px;${it.done ? 'background:#eef6e8' : ''}"><div class="spread"><span>${it.done ? '✓' : '○'} <b>${esc(it.label)}</b></span>${act(it)}</div>${it.detail ? `<div class="small muted">${esc(it.detail)}</div>` : ''}</div>`).join('')}</div></div>`;
+    const b = s2 => box.querySelector(`[data-ob="${s2}"]`);
+    if (b('acc')) b('acc').onclick = () => Store.act('Employee/RequestAccount', { json: { employeeId: id } }).then(r => { if (r.ok) { UI.toast('Đã gửi đề nghị cấp tài khoản cho IT', 'ok'); APP.refresh(); } });
+    if (b('bot')) b('bot').onclick = () => tgCode(id);
+    if (b('shift')) b('shift').onclick = () => APP.go('hr-shift-assign?employee=' + id);
+    if (b('health')) { const inp = box.querySelector('[data-obf]'); b('health').onclick = () => inp.click();
+      inp.onchange = () => { const file = inp.files && inp.files[0]; inp.value = ''; if (!file) return; if (file.size > 20 * 1024 * 1024) return UI.toast('Tệp vượt quá 20 MB', 'err');
+        const fd = new FormData(); fd.append('File', file); fd.append('Category', 'health'); fd.append('Resource', 'Employee'); fd.append('RecordId', id);
+        Store.act('DocumentFile/Upload', { json: fd }).then(r => { if (r.ok) { UI.toast('Đã lưu giấy khám sức khỏe', 'ok'); APP.refresh(); } }); }; }
   }
 
   // ---------- Tab Tổng quan (D-68 d → UI-2R, D-69 g–h): trái 1/3 khối thông tin rút gọn, phải 2/3 khối nghiệp vụ ----------
@@ -91,7 +119,7 @@
     const personal = live() && d.canViewPersonal;
     return {
       key: 'employee', title: 'Thông tin nhân viên', canEdit: Store.perm('adm-employee').edit !== false,
-      onEdit: () => UI.form('Employee', Object.assign({}, e, Store.get('Employee', id) || {}), { title: 'Nhân viên', onSave: () => APP.refresh() }),
+      onEdit: () => { const row = Object.assign({}, e, Store.get('Employee', id) || {}); if (live() && APP.employeeForm) APP.employeeForm(row, { onSaved: () => APP.refresh() }); else UI.form('Employee', row, { title: 'Nhân viên', onSave: () => APP.refresh() }); },
       core: [
         { icon: 'building', html: esc(join(d.positionName, d.organizationUnitName)) },
         { icon: 'phone', html: UI.tel(e.Phone) },

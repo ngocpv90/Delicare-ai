@@ -497,6 +497,11 @@ namespace AppDelicare.Services.Implement
             }
             string code = await CodeOrNewAsync(r["Mã nhân viên"], DocumentKind.Employee);
             var e = await FindAsync<Employee>(x => (x.Code == code || x.EmployeeCode == code) && !x.IsDeleted);
+            // UI-6.36 (D-117 f): cùng luật form – SĐT đúng định dạng, không trùng người đang làm khác (báo lỗi dòng).
+            if (await EmployeeRules.PhoneErrorAsync(_unitOfWork.DbContext, r["Điện thoại"], e?.Id) is { } phoneError)
+            {
+                return phoneError;
+            }
             bool isNew = e == null;
             e ??= Add(_unitOfWork.EmployeeRepository, new Employee { Id = Guid.NewGuid(), Code = code, Status = Active });
             bool changed = Set(e, x => x.Code, code) | Set(e, x => x.EmployeeCode, code) | Set(e, x => x.FullName, r["Họ tên"])

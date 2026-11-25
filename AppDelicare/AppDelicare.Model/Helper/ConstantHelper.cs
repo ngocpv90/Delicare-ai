@@ -1038,6 +1038,21 @@
             public static readonly string CustomerAlertNoLocation = "Chưa có điểm giao";
             public static readonly string CustomerAlertNoPrimaryContact = "Chưa có người liên hệ chính";
             public static readonly string CustomerTrendRangeInvalid = "Khoảng ngày không hợp lệ (từ ≤ đến, tối đa 366 ngày)";
+            // UI-6.36 (D-117)
+            public static readonly string EmployeeNameRequired = "Nhập họ tên nhân viên.";
+            public static readonly string EmployeePhoneInvalid = "Số điện thoại \"{0}\" không đúng định dạng (10 số, bắt đầu bằng 0).";
+            public static readonly string EmployeePhoneDuplicate = "Số này đang dùng cho {0} ({1}) – số điện thoại dùng để gắn tài khoản, bot và chấm công nên không được trùng.";
+            public static readonly string EmployeeAlreadyResigned = "Nhân viên đã nghỉ việc.";
+            public static readonly string EmployeeResignBeforeHire = "Ngày nghỉ việc phải từ ngày vào làm ({0}).";
+            public static readonly string EmployeeResignReasonRequired = "Chọn lý do nghỉ việc.";
+            public static readonly string EmployeeResigned = "Đã cho {0} nghỉ việc – tài khoản đã khóa, liên kết bot đã gỡ.";
+            public static readonly string EmployeeResignScheduled = "Đã hẹn {0} nghỉ việc từ {1} – tài khoản tự khóa vào ngày đó.";
+            public static readonly string EmployeeStatusInvalid = "Trạng thái chỉ được Tạm nghỉ hoặc Quay lại làm.";
+            public static readonly string EmployeeStatusSame = "Nhân viên đang ở trạng thái {0}.";
+            public static readonly string EmployeeSetInactive = "Đã chuyển sang Tạm nghỉ – tài khoản tạm khóa.";
+            public static readonly string EmployeeSetActive = "Đã cho quay lại làm – đã gửi yêu cầu mở lại tài khoản (nếu có).";
+            public static readonly string EmployeeBulkAccount = "Đã gửi {0} đề nghị cấp tài khoản cho IT · bỏ qua {1} người (đã có / đang chờ).";
+            public static readonly string EmployeeBulkBot = "Đã tạo {0} mã liên kết bot (hạn 72 giờ) · bỏ qua {1} người.";
             public static readonly string EmployeeAlertNoBot = "Chưa liên kết bot Telegram – không nhận được thông báo ca, duyệt đơn";
             public static readonly string EmployeeAlertPending = "{0} đơn nghỉ / đổi ca đang chờ duyệt";
             public static readonly string EmployeeAlertNotCheckedIn = "Có ca hôm nay ({0}) đã tới giờ mà chưa vào ca";

@@ -592,7 +592,7 @@ namespace AppDelicare.Tests.Pilot
                 db.ChangeTracker.Clear();
                 Guid trua = await db.Shift.AsNoTracking().Where(s => s.Code == "TRUA" && !s.IsDeleted).Select(s => s.Id).FirstAsync();
                 Guid employee = await Insert<Model.Entity.Employee>("Employee", q => q.Where(x => x.FullName == "[DEMO] Nguyễn Văn Bếp " + k).Select(x => x.Id).SingleAsync(),
-                    ("Code", code + "-NV1"), ("FullName", "[DEMO] Nguyễn Văn Bếp " + k), ("Phone", "0900000091"), ("Status", "Active"));
+                    ("Code", code + "-NV1"), ("FullName", "[DEMO] Nguyễn Văn Bếp " + k), ("Phone", "09" + Random.Shared.Next(10000000, 99999999).ToString()) /* UI-6.36 (D-117 f): SĐT không trùng người đang làm – mỗi lần chạy một số */, ("Status", "Active"));
                 (await Post("/api/KitchenWorkstation/Insert", ("Code", code + "-KW"), ("Name", "[DEMO] Cổng bếp " + k), ("AreaName", "[DEMO]"),
                     ("Latitude", 10.8231m), ("Longitude", 106.6297m), ("RadiusMeters", 100), ("Status", "Active"))).Ok();
                 DateTime now = clock.Now;
