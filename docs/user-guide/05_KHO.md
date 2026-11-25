@@ -4,7 +4,7 @@
 > **BIZ-2.5 – Phiếu xuất theo ca:** phát hành lệnh SX → hệ thống tạo sẵn **phiếu xuất Nháp** cho mọi lệnh của ca (số = số đã giữ chỗ, lô FEFO phân bổ sẵn), bot kho nhận "Phiếu xuất ca … sẵn sàng". Màn **Xuất kho** có khối **Phiếu xuất theo ca**: kiểm / sửa từng phiếu như phiếu thường rồi bấm **Ghi sổ cả ca** một lần. Kho xuất = kho có nhiều tồn nhất cho nguyên liệu của lệnh.
 
 
-- Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – thủ kho, nhân viên kho. Nhóm **QA** cũng có quyền sửa các màn kho.
+- Nhóm quyền: **Thủ kho** (OPS-WH – thủ kho, nhân viên kho: ghi sổ nhập / xuất, kiểm kê; MENU-5 D-79); **Trưởng mua hàng & kho** (OPS-SCM-HEAD) duyệt kiểm kê cấp 1. Quyền từng màn: `docs/claude/MENU5_MATRIX.md`.
 - Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); QR dán ở kệ / vị trí kho.
 - Việc chính: nhận hàng theo PO, ghi sổ nhập kho sau QC, theo dõi tồn theo lô (FEFO), xuất nguyên liệu cho sản xuất, chuyển kho, điều chỉnh tồn, kiểm kê, xử lý lô hết hạn, truy xuất.
 

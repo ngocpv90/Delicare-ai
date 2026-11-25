@@ -40,6 +40,8 @@ namespace AppDelicare.Model.Helper
             ["Employee.Gender"] = ("Gender", "Giới tính"),
             // UI-6.41 (D-122): loại đơn vị.
             ["OrganizationUnit.UnitType"] = ("OrganizationUnitType", "Loại đơn vị"),
+            // UI-6.43 (D-124): khối của nhóm quyền.
+            ["UserGroup.GroupBlock"] = ("UserGroupBlock", "Khối"),
         };
 
         /// <summary>MENU-4.6 (D-75 f2): tên tiếng Việt của danh mục – màn chỉ xem "Danh mục dùng chung" (adm-reference). Danh mục mới chưa có tên ở đây → lấy nhãn cột đầu tiên, rồi tới khóa.</summary>
@@ -52,6 +54,7 @@ namespace AppDelicare.Model.Helper
             ["OrganizationUnitType"] = "Loại đơn vị",
             ["AttendanceSupplementReason"] = "Lý do bổ sung giờ chấm công",
             ["EmployeeResignReason"] = "Lý do nghỉ việc",
+            ["UserGroupBlock"] = "Khối nhóm quyền",
             ["SupplierIssueResolutionType"] = "Hướng xử lý sự cố nhà cung cấp",
             ["ChecklistArea"] = "Khu vực bộ kiểm tra ATTP",
             ["ChecklistFrequency"] = "Tần suất bộ kiểm tra ATTP",
