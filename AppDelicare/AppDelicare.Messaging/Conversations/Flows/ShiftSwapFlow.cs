@@ -147,8 +147,17 @@ namespace AppDelicare.Messaging.Conversations.Flows
             await SendAsync(ctx, new NeutralMessage
             {
                 Title = "✅ " + (r.ResponseMessage ?? "Đã gửi đơn đổi ca"),
-                Lines = [$"{s.Current.Label} → {chosen.Label}", "Đơn chờ duyệt – kết quả xem ở 📝 Đơn của tôi."],
+                // UI-6.45 (UI-6.39): đơn có người nhận cụ thể ở "Chờ người nhận đồng ý" trước khi tới người duyệt.
+                Lines = [$"{s.Current.Label} → {chosen.Label}", AwaitingConsent(r.Data)
+                    ? "Đơn chờ người nhận đồng ý (họ nhận tin trên bot), sau đó tới người duyệt – kết quả xem ở 📝 Đơn của tôi."
+                    : "Đơn chờ duyệt – kết quả xem ở 📝 Đơn của tôi."],
             }, ct);
+        }
+
+        private static bool AwaitingConsent(JsonElement data)
+        {
+            var req = data.ValueKind == JsonValueKind.Object && data.TryGetProperty("request", out var rq) ? rq : data;
+            return req.ValueKind == JsonValueKind.Object && req.TryGetProperty("requestStatus", out var st) && st.ValueKind == JsonValueKind.String && st.GetString() == "AwaitingConsent";
         }
 
         private async Task CandidatesAsync(BotActionContext ctx, State s, Option current, CancellationToken ct)

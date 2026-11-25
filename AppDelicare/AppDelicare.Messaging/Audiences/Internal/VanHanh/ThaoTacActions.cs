@@ -47,7 +47,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public IEnumerable<BotAction> GetActions() =>
         [
             new BotAction { Code = "kh_regen", Module = "KEHOACH", Label = "🔄 Lập lại kế hoạch", Command = "laplai", CommandDescription = "Lập lại kế hoạch sản xuất ngày mai", Bots = ["VH"], MenuMetaLink = "#/prod-plan", Order = 5, Handler = RegenerateAskAsync },
-            new BotAction { Code = "kh_change", Module = "KEHOACH", Label = "✏️ Đề xuất đổi món", Command = "doimon", CommandDescription = "Đề xuất đổi món trong thực đơn", Bots = ["VH"], MenuMetaLink = "#/menu-change-request", Order = 6, Handler = ChangeStartAsync },
+            new BotAction { Code = "kh_change", Module = "KEHOACH", Label = "✏️ Đề xuất đổi món", Command = "doimon", CommandDescription = "Đề xuất đổi món trong thực đơn", Bots = ["VH"], MenuMetaLink = "#/menu-menu" /* UI-6.45: đổi món làm trên Thực đơn tuần (UI-6.13) */, Order = 6, Handler = ChangeStartAsync },
             // BOT-UX-2 (mục 14): mỗi chức năng 1 phân hệ chính – bỏ bản trùng "🔄 Đổi món – ý kiến khách" (Kinh doanh, cùng luồng + cùng quyền với ✏️ Đề xuất đổi món)
             // và "🧼 Lô vệ sinh hộp khay" ở Bếp (giữ ở ATTP / QC, lệnh /vesinh chuyển theo).
             new BotAction { Code = "qa_cleaning", Module = "ATTP", Label = "🧼 Lô vệ sinh hộp khay", Command = "vesinh", CommandDescription = "Lô vệ sinh hộp khay đang làm", Bots = ["VH"], MenuMetaLink = "#/qc-cleaning", Order = 6, Handler = CleaningAsync },
@@ -190,7 +190,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             await ShowAsync(ctx, new NeutralMessage
             {
                 Title = $"🧼 Lô vệ sinh đang làm ({list.Count})",
-                Lines = list.Count == 0 ? ["Không có lô vệ sinh nào đang làm."] : [.. list.Select(x => "• " + x.Label), "Ghi từng bước (hóa chất, nhiệt độ) trên web hoặc QR CLEAN; ✅ Đạt khi mọi bước đã đạt."],
+                Lines = list.Count == 0 ? ["Không có lô vệ sinh nào đang làm."] : [.. list.Select(x => "• " + x.Label), "Ghi từng bước (hóa chất, nhiệt độ) trên web hoặc QR CLEAN nếu cần; ✅ Đạt = đạt tất cả các bước và kết luận khi mọi bước đã đạt."],
                 Buttons = buttons,
             }, ct);
         }
@@ -206,12 +206,17 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 return;
             }
-            var form = new List<KeyValuePair<string, string>> { new("Id", list[index].Id.ToString()), new("QcResult", pass ? "PASS" : "REJECT") };
+            // UI-6.45 (UI-6.32): ✅ Đạt = "Đạt tất cả & kết luận" (CleaningBatch/PassAll – ghi đủ bước + kết luận trong một giao dịch, như web); ❌ vẫn kết luận Không đạt có lý do.
+            var form = new List<KeyValuePair<string, string>> { new("Id", list[index].Id.ToString()) };
+            if (!pass)
+            {
+                form.Add(new("QcResult", "REJECT"));
+            }
             if (note != null)
             {
                 form.Add(new("Note", note[..Math.Min(note.Length, 2000)]));
             }
-            var r = await Web.PostFormAsUserAsync<JsonElement>("api/CleaningBatch/Complete", form, token, ct);
+            var r = await Web.PostFormAsUserAsync<JsonElement>(pass ? "api/CleaningBatch/PassAll" : "api/CleaningBatch/Complete", form, token, ct);
             await SayAsync(ctx, r.IsOk ? $"✅ {r.ResponseMessage ?? "Đã kết luận"} – {list[index].Label}: {(pass ? "Đạt, sẵn sàng dùng lại" : "Không đạt")}" : "⚠️ " + Problem(r), ct);
         }
 

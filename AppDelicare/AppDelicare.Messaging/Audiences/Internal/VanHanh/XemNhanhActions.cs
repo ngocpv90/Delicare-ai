@@ -143,7 +143,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             await ReplyListAsync(ctx, $"🗄 Vị trí {code}", lines, "Vị trí này không còn tồn (hoặc mã vị trí không đúng).", ct);
         }
 
-        /// <summary>BOT-2.4 (QR <c>start=CLEAN</c> ở khu vệ sinh hộp khay): lô vệ sinh hôm nay. Ghi kết quả vệ sinh: trên web (#/qc-cleaning-result).</summary>
+        /// <summary>BOT-2.4 (QR <c>start=CLEAN</c> ở khu vệ sinh hộp khay): lô vệ sinh hôm nay. Ghi kết quả vệ sinh: trên web (#/qc-cleaning).</summary>
         public async Task CleaningTodayAsync(BotActionContext ctx, CancellationToken ct)
         {
             if (await GetAsync(ctx, "api/CleaningBatch/GetAll?page=1&pageSize=100", ct) is not { } r)
@@ -419,7 +419,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 return;
             }
             var lines = leave.Items.Select(x => $"🏖 {S(x, "requestNo")} {S(x, "employeeName")} · {Day(S(x, "fromDate"))}–{Day(S(x, "toDate"))} · {S(x, "leaveTypeCode")}").ToList();
-            if (ctx.Identity.IsAdmin || ctx.Identity.Menus.Contains("#/hr-swap", StringComparer.OrdinalIgnoreCase))
+            if (ctx.Identity.IsAdmin || ctx.Identity.Menus.Contains("#/hr-leave", StringComparer.OrdinalIgnoreCase) /* UI-6.45: Nghỉ & đổi ca */)
             {
                 if (await GetAsync(ctx, "api/ShiftSwapRequest/GetAll?RequestStatus=Pending&Page=1&PageSize=100", ct) is { } swap)
                 {

@@ -266,14 +266,21 @@ namespace AppDelicare.Tests.Messaging
             var buttons = ((TgInlineKeyboard)first.Markup!).InlineKeyboard.SelectMany(r => r).ToList();
             buttons[0].Text.Should().StartWith("✅").And.Contain("Rửa rau", "kết quả đã ghi điền sẵn");
             buttons[1].Text.Should().StartWith("⬜").And.Contain("❗Khử khuẩn");
-            buttons.Should().HaveCount(2, "chưa chọn hết → chưa có Hoàn tất");
+            buttons.Should().HaveCount(3, "chưa chọn hết → chưa có Hoàn tất, có Đạt tất cả (UI-6.45)");
+            buttons.Last().CallbackData.Should().Be("chk:all");
+            await h.SendAsync(Tap("chk:all", messageId: 90));
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Take(2).Should().OnlyContain(b => b.Text.StartsWith("✅"));
             await h.SendAsync(Tap("chk:1:0", messageId: 90));
             var after = ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).ToList();
             after[1].Text.Should().StartWith("❌");
             after.Last().CallbackData.Should().Be("chk:done");
             await h.SendAsync(Tap("chk:done", messageId: 90));
+            // UI-6.45 (UI-6.30): tiêu chí trọng yếu Không đạt → hỏi mẻ bị ảnh hưởng trước khi ghi.
+            h.Web.Calls.Should().NotContain(c => c.Path.StartsWith("api/FoodSafetyChecklistResult/Record"));
+            h.Sender.Edits.Last().Text.Should().Contain("mẻ nào bị ảnh hưởng");
+            await h.SendAsync(Tap("chk:nb", messageId: 90));
             string json = Last(h, "api/FoodSafetyChecklistResult/Record").Form["__json"];
-            json.Should().Contain(Checklist.ToString()).And.Contain("\"resultCode\":\"PASS\"").And.Contain("\"resultCode\":\"FAIL\"");
+            json.Should().Contain(Checklist.ToString()).And.Contain("\"resultCode\":\"PASS\"").And.Contain("\"resultCode\":\"FAIL\"").And.Contain("noBatchReason");
             h.Sender.Edits.Last().Text.Should().Contain("1 đạt, 1 không đạt");
 
             await h.SendAsync(Text("⛔ Mẻ đang giữ"));
