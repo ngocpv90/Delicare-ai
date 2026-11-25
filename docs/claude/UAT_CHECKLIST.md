@@ -589,3 +589,17 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Tab Tài khoản: thêm nhiều tài khoản; bỏ tài khoản có 1 nhóm → không cho.
 - [ ] Ngừng dùng nhóm còn tài khoản / đang duyệt → bị chặn có lý do.
 - [ ] Link cũ #/adm-permission mở Nhóm quyền; menu không còn mục Phân quyền; luồng duyệt (đề nghị mua, nghỉ phép…) vẫn tới đúng người sau khi nhóm đổi tên tiếng Việt.
+
+## UI-6 – Kịch bản đầu – cuối sau toàn đợt (UI-6.48 / UI-6.3)
+Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng nhập đúng vai trò ghi trong ngoặc).
+- [ ] **Đơn hàng** (SAL-SALES): Đơn hàng theo ngày → nhập suất ngày mai cho 1 khách có hợp đồng → lưu.
+- [ ] **Chốt 20:00** (tự động / COO bấm chốt): đơn Đã chốt; kế hoạch sản xuất tự lập + phát hành; chuyến giao tự lập theo khu vực (chuông / bot báo).
+- [ ] **Bảng sản xuất ngày** (OPS-KIT): mẻ của món × ca → Bắt đầu → Xong mẻ (nhiệt độ lõi, lưu mẫu) → tự Đạt; trên bot: ✅ Xong mẻ, Checklist ATTP (lỗi ❗ phải chọn mẻ).
+- [ ] **Chia suất & đóng gói** (OPS-KIT): ghi kết quả theo món / điểm giao; điểm đủ thực đơn → chuyến "đủ hàng".
+- [ ] **Điều phối giao hàng** (OPS-LOG): chuyến chưa đủ hàng sát giờ → chuông "Chuyến sắp xuất bến chưa đủ hàng"; xếp xe → xuất bến.
+- [ ] **Theo dõi giao hàng** (tài xế – Việc của tôi › Mở chuyến): đến điểm → giao + thu khay → điểm thất bại vào "Cần giao lại".
+- [ ] **Khay hộp** (OPS-LOG / QA): khay thu về vào sổ; Vệ sinh khay hộp → Đạt tất cả (web hoặc bot ✅ Đạt); chuông "Khay sạch thiếu cho ngày mai" nếu thiếu.
+- [ ] **22:00** đóng lệnh SX → 22:30 KPI ngày → 01:00 giá vốn (Job tự động: xem lần chạy gần nhất).
+- [ ] **Nhân sự** (FIN-HR / nhân viên): phân ca tuần → chốt; nhân viên xin đổi ca → người nhận Đồng ý (bot) → người duyệt nhóm Nghỉ & đổi ca duyệt; 23:30 tự chuyển Vắng; chuông "Ca thiếu người".
+- [ ] **Tài khoản & nhóm quyền** (FIN-IT): nhân viên nghỉ việc → chuông "Tài khoản người đã nghỉ việc còn mở" → khóa; đổi quyền nhóm ở Nhóm quyền (Xem lại & lưu) → người trong nhóm thấy menu mới.
+- [ ] **Quyền theo vai trò:** mỗi `uat.<vai trò>` thấy đúng menu như `docs/frontend-handoff/assets/ui-6/menu-roles/README.md`; link cũ (#/hr-swap, #/adm-permission, #/scm-lot, #/log-pod…) mở màn mới.
