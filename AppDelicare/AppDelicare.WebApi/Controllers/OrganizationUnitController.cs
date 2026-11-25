@@ -113,6 +113,45 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>T45R: cây đơn vị tổ chức kèm số nhân viên, số kho, tên quản lý.</summary>
+        // ------------------------------------------------------------ UI-6.41 (D-122): Công ty & đơn vị
+
+        /// <summary>Cây có công ty làm gốc + số nhân viên gồm con, cờ chưa có trưởng, tên loại tiếng Việt.</summary>
+        [HttpGet("GetOrgTree")]
+        [Security.Permission("adm-orgunit", PermissionAction.View, OrScreens = ["adm-company"])]
+        public Task<IActionResult> GetOrgTree(Guid? companyId) => Run(nameof(GetOrgTree), () => _service.GetOrgTree(companyId));
+
+        [HttpGet("GetSummary")]
+        [Security.Permission("adm-orgunit", PermissionAction.View, OrScreens = ["adm-company"])]
+        public Task<IActionResult> GetSummary() => Run(nameof(GetSummary), () => _service.GetOrgSummary());
+
+        /// <summary>Chuyển sang đơn vị khác (kiểm vòng lặp, đổi công ty cả nhánh).</summary>
+        [HttpPost("Move")]
+        [Security.Permission("adm-orgunit", PermissionAction.Edit)]
+        public Task<IActionResult> Move([FromBody] AppDelicare.Model.Model.OrgMoveRequest request) => Run(nameof(Move), () => _service.Move(request));
+
+        /// <summary>Ngừng hoạt động / Hoạt động lại.</summary>
+        [HttpPost("SetStatus")]
+        [Security.Permission("adm-orgunit", PermissionAction.Edit)]
+        public Task<IActionResult> SetStatus([FromBody] AppDelicare.Model.Model.OrgSetStatusRequest request) => Run(nameof(SetStatus), () => _service.SetStatus(request));
+
+        /// <summary>Đặt trưởng đơn vị tại chỗ.</summary>
+        [HttpPost("SetManager")]
+        [Security.Permission("adm-orgunit", PermissionAction.Edit)]
+        public Task<IActionResult> SetManager([FromBody] AppDelicare.Model.Model.OrgSetManagerRequest request) => Run(nameof(SetManager), () => _service.SetManager(request));
+
+        private async Task<IActionResult> Run<T>(string action, Func<Task<T>> run)
+        {
+            try
+            {
+                return Ok(await run());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "] ", action, ": ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetTree")]
         public async Task<IActionResult> GetTree(Guid? companyId)
         {

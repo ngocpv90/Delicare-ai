@@ -94,6 +94,7 @@ namespace AppDelicare.WebApi.Security
             ["log-packing-result"] = "log-packing-order", ["log-delivery-order"] = "log-route", ["log-loading"] = "log-route",
             ["log-gps"] = "log-execution", ["log-pod"] = "log-execution", ["log-container-return"] = "log-packaging-ledger",
             ["hr-swap"] = "hr-leave",
+            ["adm-company"] = "adm-orgunit",
         };
     }
 }

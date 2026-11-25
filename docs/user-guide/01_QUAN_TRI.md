@@ -20,8 +20,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | Q (IX) |
 | Quản trị hệ thống › Phân quyền | `adm-permission` | Q (IX) |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | Q (IX) |
-| Quản trị hệ thống › Sơ đồ tổ chức | `adm-orgunit` | Q (IX) |
-| Quản trị hệ thống › Công ty | `adm-company` | Q (IX) |
+| Quản trị hệ thống › Công ty & đơn vị | `adm-orgunit` | Q (IX) |
 | Quản trị hệ thống › Nhập dữ liệu gốc (Excel) | `sys-import` | Q (IX) |
 | Quản trị hệ thống › Danh mục dùng chung | `adm-reference` | Q (IX) |
 | Quản trị hệ thống › Địa giới hành chính | `adm-admin-unit` | Q (IX) |
@@ -152,10 +151,15 @@ Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và
 4. Thay đổi có hiệu lực với người dùng **từ lần đăng nhập sau**.
 - Lỗi: *Menu chỉ có 2 cấp…*, *Mục menu đang có mục con nên phải là mục cấp 1*, *Sắp xếp tạo vòng lặp cha – con*.
 
-### 4.7 Sơ đồ tổ chức – `adm-orgunit`
-- Khối trên: cây đơn vị (tên, loại, mã, quản lý, số nhân viên, số kho). Bấm tên để mở chi tiết.
-- Thêm / sửa đơn vị bằng **Tạo mới** / **Sửa** ở bảng dưới. Lỗi: *Đơn vị cha không được là chính nó hoặc đơn vị con của nó*.
-- Đơn vị loại **BRANCH** xuất hiện trong hộp **Đơn vị làm việc** ở đầu trang.
+### 4.7 Công ty & đơn vị – `adm-orgunit` (UI-6.41 – gộp Công ty + Sơ đồ tổ chức)
+Mục "Công ty" đã gộp vào đây (link cũ mở màn này, chọn sẵn công ty). Sửa thông tin công ty vẫn theo quyền của mục Công ty.
+- **Đầu màn:** ô **Tìm đơn vị** (mở nhánh chứa kết quả) · **Thêm đơn vị**. 4 thẻ: Đơn vị đang hoạt động (số công ty · bếp · tổ / phòng) · Nhân viên (đã gắn đơn vị) · **Chưa có trưởng đơn vị** (bấm để lọc cây) · **Nhân viên chưa gắn đơn vị** (bấm mở màn Nhân viên).
+- **Cây bên trái:** gốc là **công ty**, dưới là ban / khối / bếp / phòng / tổ; mỗi nút có biểu tượng theo loại, nhãn đỏ **chưa có trưởng**, số nhân viên (gồm đơn vị con). Điện thoại: cây trên, chi tiết dưới.
+- **Chọn công ty:** Mã · Mã số thuế · Địa chỉ · Điện thoại · Email (nút **Sửa** – tên, mã số thuế 10 / 13 số, địa chỉ, điện thoại, email, ghi chú; **không xóa công ty**) – các thông tin này **in ở đầu mọi phiếu in và tệp Excel**; bảng **Đơn vị trực thuộc**.
+- **Chọn đơn vị:** đường dẫn cha, tên + **loại** (tiếng Việt: Công ty con · Ban điều hành · Khối · Chi nhánh · Bếp · Phòng ban · Tổ · Kho) + trạng thái; Mã · **Trưởng đơn vị** (chưa có → **chọn ngay**) · Nhân viên · Kho. Nút **＋ Đơn vị con · Sửa · Chuyển sang đơn vị khác** (chuyển sang công ty khác thì cả nhánh đổi công ty; không chuyển vào chính nhánh con) **· Ngừng hoạt động / Hoạt động lại** (chặn khi còn nhân viên đang làm hoặc đơn vị con đang hoạt động; hoạt động lại khi đơn vị cha đang hoạt động). Tab **Nhân viên** (gồm đơn vị con; bấm mở hồ sơ) · **Đơn vị con** · **Kho** · **Lịch sử**.
+- **Thêm / Sửa đơn vị:** **Thuộc\*** (điền sẵn nút đang chọn) · Tên\* · Mã\* (chữ hoa không dấu; khóa khi đã dùng) · **Loại\*** · Trưởng đơn vị (chỉ nhân viên đang làm) · Điện thoại · Địa chỉ · Ghi chú. Công ty lấy theo đơn vị cha.
+- Trưởng đơn vị nhận bot nhắc lịch ca tuần sau và báo người chưa vào ca – đơn vị chưa có trưởng sẽ không ai nhận.
+- Đơn vị loại **Chi nhánh** xuất hiện trong hộp **Đơn vị làm việc** ở đầu trang.
 
 ### 4.8 Kho tài liệu – `adm-document`
 1. **Tải tệp lên** → chọn tệp (pdf, jpg, jpeg, png, xlsx, docx; tối đa 20 MB).
