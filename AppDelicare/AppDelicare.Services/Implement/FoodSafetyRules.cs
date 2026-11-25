@@ -30,6 +30,15 @@ namespace AppDelicare.Services.Implement
             return null;
         }
 
+        /// <summary>UI-6.33 (D-114): bộ hệ thống = mã có giờ hạn (ChecklistOffsetsMinutes), bộ vệ sinh khay, bộ công đoạn / lưu mẫu, SystemChecklistCodes.</summary>
+        public static bool IsSystem(string? code, BusinessRulesOptions rules)
+            => !string.IsNullOrWhiteSpace(code) && (rules.ChecklistOffsetsMinutes.ContainsKey(code) || ViaAction(code, rules) != null
+               || rules.SystemChecklistCodes.Contains(code, StringComparer.OrdinalIgnoreCase));
+
+        /// <summary>UI-6.33: hạn bộ tự tạo (không có độ lệch giờ xuất bếp) = giờ kết thúc ca của ngày (ca qua đêm → hôm sau).</summary>
+        public static DateTime? ShiftEnd(Shift shift, DateTime date)
+            => shift.EndTime is not { } e ? null : date.Date + e + (shift.StartTime is { } s && e <= s ? TimeSpan.FromDays(1) : TimeSpan.Zero);
+
         /// <summary>Bộ checklist áp dụng ngày <paramref name="date"/>: không Ngừng, trong thời gian hiệu lực.</summary>
         public static bool IsEffective(FoodSafetyChecklist checklist, DateTime date)
             => !string.Equals(checklist.Status, "Inactive", StringComparison.OrdinalIgnoreCase)

@@ -10,7 +10,8 @@
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
   // FE-E.3 (D-65): int-channel / int-bot / int-log đã hiện lại – quyền theo ma trận UserRole (khóa bí mật trong ConfigJson máy chủ đã che).
   // MENU-4.6: adm-reference = màn chỉ xem danh mục thật (modules/admin.js) – không ẩn nữa. MENU-4 (D-75 e): adm-person ẩn (trùng Tài khoản).
-  const HIDDEN_LIVE = new Set(['scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap', 'adm-person']);
+  // UI-6.33 (D-114): Bộ kiểm tra ATTP là tab của Kiểm tra theo ca / mẻ – mục DB giữ (quyền riêng), không lên sidebar.
+  const HIDDEN_LIVE = new Set(['scm-transfer', 'scm-adjustment', 'dbx-explorer', 'dbx-gap', 'adm-person', 'qc-checklist']);
   // MENU-4.2: màn ẩn (bảng con / chưa làm / trùng) → màn cha; [màn cha, bảng con, cột trỏ về chứng từ cha] để mở đúng bản ghi cha khi link có ?id=.
   const PARENT_OF = {
     'crm-contract-meal': ['crm-contract', 'ContractMeal', 'ContractId'], 'crm-order-line': ['crm-order', 'OrderLine', 'OrderId'],
@@ -342,7 +343,8 @@
     if (Store.isLive && id === 'kpi-monthly') { location.replace(APP.href('kpi-daily?view=month')); return; }
     // UI-6.29 (D-110): Kho 12 → 5 mục – link cũ mở đúng màn / tab (?id= của lô → Tồn kho tab Theo lô + truy xuất).
     const KHO_OLD = { 'scm-zone': 'scm-warehouse?tab=zone', 'scm-location': 'scm-warehouse?tab=location', 'scm-lot': 'scm-inv-balance?tab=lot', 'scm-inv-txn': 'scm-inv-balance?tab=txn', 'scm-inv-policy': 'scm-inv-balance?tab=policy', 'scm-reservation': 'scm-issue?tab=res', 'scm-consumption-var': 'cost-meal?tab=dish',
-      'qc-cleaning-result': 'qc-cleaning?tab=book', 'log-return-inspection': 'qc-cleaning' }; // UI-6.32 (D-113)
+      'qc-cleaning-result': 'qc-cleaning?tab=book', 'log-return-inspection': 'qc-cleaning', // UI-6.32 (D-113)
+      'qc-checklist': 'qc-checklist-result?tab=sets' }; // UI-6.33 (D-114)
     if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];

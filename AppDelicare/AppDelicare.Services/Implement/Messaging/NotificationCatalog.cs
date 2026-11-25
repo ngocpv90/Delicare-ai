@@ -25,6 +25,8 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string IotOutOfRange = "IOT_OUT_OF_RANGE";
         /// <summary>UI-6.31: khu đo tay đến giờ chưa đo / cảm biến mất tín hiệu.</summary>
         public const string TemperatureDue = "TEMPERATURE_DUE";
+        /// <summary>UI-6.33: sự cố NCC quá hạn xử lý.</summary>
+        public const string SupplierIssueOverdue = "SUPPLIER_ISSUE_OVERDUE";
         public const string ChecklistDue = "CHECKLIST_DUE";
         // Kế hoạch / kho / mua hàng
         public const string PlanReady = "PLAN_READY";
@@ -86,6 +88,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(CoreTempLow, X, Urgent, "Nhiệt độ lõi < 70 °C – trưởng ca, QA, bếp trưởng"),
             new(FoodSafetyCritical, C, Urgent, "Lỗi trọng yếu checklist ATTP – QA, trưởng ca, bếp trưởng, COO"),
             new(IotOutOfRange, D, Urgent, "Nhiệt độ kho / khu ngoài ngưỡng (cảm biến hoặc đo tay) – QA, thủ kho"),
+            new(SupplierIssueOverdue, D, Normal, "Sự cố nhà cung cấp quá hạn xử lý – QA, mua hàng"),
             new(TemperatureDue, D, Normal, "Khu chưa đo nhiệt độ trong ca / cảm biến mất tín hiệu – trưởng ca, QA"),
             new(ChecklistDue, D, Normal, "Kiểm tra ATTP theo ca quá hạn – trưởng ca, QA"),
             new(PlanReady, X, Normal, "Khóa đơn → kế hoạch / lịch xe chờ duyệt"),

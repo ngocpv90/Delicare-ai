@@ -35,6 +35,7 @@ const SCRIPTS = [
   'modules/qc.js',
   'modules/qc-clean.js', // UI-6.32 (D-113): Vệ sinh khay hộp – sau qc.js
   'modules/qc-shift.js', // UI-6.30 (D-111): Kiểm tra theo ca / mẻ – sau qc.js
+  'modules/qc-issue.js', // UI-6.33 (D-114): Sự cố NCC + form Bộ kiểm tra / phiên bản – sau qc-shift.js
   'modules/supplier360.js',
   'modules/employee360.js',
   'modules/logistics.js',

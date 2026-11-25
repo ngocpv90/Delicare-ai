@@ -29,7 +29,7 @@ namespace AppDelicare.Services.Implement.Messaging
     /// </list>
     /// </summary>
     public class BotWatchService(IUnitOfWork unitOfWork, IClock clock, IConfiguration configuration, ICurrentActor currentActor,
-        IOptionsMonitor<MessagingOptions> options, INotificationService notifications, IApprovalRequestService approvals, IFoodSafetyChecklistResultService checklists, ITemperatureLogService temperatures) : IBotWatchService
+        IOptionsMonitor<MessagingOptions> options, INotificationService notifications, IApprovalRequestService approvals, IFoodSafetyChecklistResultService checklists, ITemperatureLogService temperatures, ISupplierIssueService supplierIssues) : IBotWatchService
     {
         private static readonly string[] PoOpen = [PurchaseOrderStatus.Approved, PurchaseOrderStatus.Sent, PurchaseOrderStatus.PartiallyReceived];
 
@@ -51,6 +51,7 @@ namespace AppDelicare.Services.Implement.Messaging
             sent += await SafeAsync("PoLate", () => PoLateAsync(now));
             sent += await SafeAsync("ChecklistOverdue", () => checklists.RemindOverdueAsync(now));
             sent += await SafeAsync("TemperatureDue", () => temperatures.RemindAsync(now));
+            sent += await SafeAsync("SupplierIssueOverdue", () => supplierIssues.RemindOverdueAsync(now));
             sent += await SafeAsync("ApprovalOverdue", () => approvals.NotifyOverdueAsync(o.ApprovalOverdueEscalateHours, o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));
             // APR-1.4 (D-81 i): người duyệt của cấp đều nghỉ hôm nay → báo ngay bậc leo thang (1 lần / yêu cầu / cấp / ngày).
             sent += await SafeAsync("ApprovalAbsent", () => approvals.EscalateAbsentAsync(o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));

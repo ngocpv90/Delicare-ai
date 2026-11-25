@@ -928,6 +928,14 @@
 
             // BE2.5 – ATTP, vệ sinh, hộp / khay
             public static readonly string ChecklistNotFound = "Không tìm thấy bộ checklist";
+            public static readonly string ChecklistVersionDuplicate = "Bộ kiểm tra {0} đã có phiên bản {1}.";
+            public static readonly string ChecklistSystemCodeLocked = "«{0}» là bộ hệ thống (gắn giờ hạn / thao tác của mẻ, vệ sinh khay) – không đổi mã, không ngừng dùng, không xóa; sửa nội dung bằng Tạo phiên bản mới.";
+            public static readonly string ChecklistNewVersionDate = "Phiên bản mới áp dụng từ ngày mai trở đi";
+            public static readonly string ChecklistNewVersionCreated = "Đã tạo phiên bản {0} của bộ {1}, áp dụng từ {2}";
+            public static readonly string SupplierIssueNoDelete = "Sự cố nhà cung cấp là hồ sơ chất lượng, không xóa được – ghi nhầm thì đóng với hướng xử lý Khác, ghi chú 'Ghi nhầm'.";
+            public static readonly string SupplierIssueResolvedLocked = "Sự cố đã xử lý / đã đóng không sửa được – mở lại nếu cần";
+            public static readonly string SupplierIssueTypeInvalid = "Loại sự cố phải chọn trong danh mục ({0})";
+            public static readonly string SupplierIssueResolutionTypeInvalid = "Chọn hướng xử lý trong danh mục ({0})";
             public static readonly string ChecklistInactive = "Bộ checklist {0} không áp dụng ngày {1} (Ngừng hoặc ngoài thời gian hiệu lực)";
             public static readonly string ChecklistViaAction = "Bộ kiểm tra {0} ghi ở {1}";
             public static readonly string CriticalFailChooseBatch = "Có tiêu chí trọng yếu Không đạt – chọn mẻ bị ảnh hưởng (mẻ sẽ bị giữ) hoặc ghi lý do không ảnh hưởng mẻ nào";

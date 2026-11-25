@@ -149,5 +149,20 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.33 (D-114): sự cố theo NCC – loại, hướng xử lý (quyền Xem qc-supplier-issue).</summary>
+        [HttpGet("GetSummary")]
+        public async Task<IActionResult> GetSummary(DateTime? from, DateTime? to)
+        {
+            try
+            {
+                return Ok(await _service.GetSummary(from, to));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetSummary: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }
