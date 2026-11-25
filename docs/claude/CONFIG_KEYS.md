@@ -263,7 +263,7 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Messaging:Watch:BatchLateMinutes` | int | 15 | Mẻ chưa bắt đầu / chưa xong quá N phút so với kế hoạch → BATCH_LATE. | – |
 | `Messaging:Watch:TripLateMinutes` | int | 10 | Xe chưa xuất phát quá N phút so với giờ dự kiến → TRIP_NOT_DEPARTED. | – |
 | `Messaging:Watch:StopLateMinutes` | int | 15 | Điểm giao chưa đến quá N phút so với giờ dự kiến → STOP_LATE. | – |
-| `Messaging:Watch:NotCheckedInMinutes` | int | 10 | Chưa vào ca quá N phút sau giờ bắt đầu → NOT_CHECKED_IN (1 tin / ca, gom danh sách). | – |
+| `Messaging:Watch:NotCheckedInMinutes` | int | 15 | Chưa vào ca quá N phút sau giờ bắt đầu → NOT_CHECKED_IN (1 tin / ca, gom danh sách). | – |
 | `Messaging:Watch:ComplaintSlaWarnMinutes` | int | 60 | Phản ánh còn ≤ N phút tới hạn SLA → COMPLAINT_SLA (lần 2 khi đã quá hạn). | – |
 | `Messaging:Watch:ApprovalOverdueEscalateHours` | int | 24 | Duyệt quá hạn: quá hạn → người duyệt của cấp; quá thêm N giờ → nhóm (bot DH). | – |
 | `Messaging:Watch:ApprovalOverdueGroups` | List<string> | [] | Chưa có dữ liệu "cấp trên trực tiếp" → nhóm quyền theo tên (PROPOSED: COO). Khởi tạo rỗng (binder nối mảng). | – |

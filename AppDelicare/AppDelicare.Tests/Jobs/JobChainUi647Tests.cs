@@ -17,6 +17,23 @@ namespace AppDelicare.Tests.Jobs
         private static readonly string[] Idempotent = ["MarkAbsent", "ProductionAutoClose", "AccountLockResigned", "ContractExpiry", "LotExpiry", "MenuExpiry"];
 
         [Fact]
+        public async Task Ui649_job_screen_lists_bot_watch_reminders_and_not_checked_in_is_15_minutes()
+        {
+            new AppDelicare.Model.Option.MessagingOptions().Watch.NotCheckedInMinutes.Should().Be(15, "D-119: bot chưa vào ca sau 15 phút");
+            using var f = new InMemoryApiFactory();
+            using var admin = f.CreateAuthorizedClient();
+            var res = await admin.GetAsync("/api/Job/GetAll");
+            string body = await res.Content.ReadAsStringAsync();
+            res.IsSuccessStatusCode.Should().BeTrue(body);
+            using var doc = System.Text.Json.JsonDocument.Parse(body);
+            var items = doc.RootElement.GetProperty("listData").EnumerateArray().ToList();
+            var bot = items.Where(i => i.GetProperty("runsInBot").GetBoolean()).ToList();
+            bot.Select(i => i.GetProperty("jobCode").GetString()).Should().Contain(["BOT:NotCheckedIn", "BOT:ShiftWeekRemind", "BOT:SwapConsentExpire", "BOT:ContainerOverdue", "BOT:StopLate", "BOT:TemperatureDue"]);
+            bot.Should().OnlyContain(i => i.GetProperty("jobName").GetString()!.Length > 3 && !i.GetProperty("jobName").GetString()!.StartsWith("BOT"));
+            items.Count(i => !i.GetProperty("runsInBot").GetBoolean()).Should().BeGreaterThan(10, "job theo giờ vẫn đủ");
+        }
+
+        [Fact]
         public void Config_defaults_check_lists_only_missing_business_rule_keys()
         {
             var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()

@@ -80,7 +80,7 @@ namespace AppDelicare.Model.Option
         /// <summary>Điểm giao chưa đến quá N phút so với giờ dự kiến → STOP_LATE.</summary>
         public int StopLateMinutes { get; set; } = 15;
         /// <summary>Chưa vào ca quá N phút sau giờ bắt đầu → NOT_CHECKED_IN (1 tin / ca, gom danh sách).</summary>
-        public int NotCheckedInMinutes { get; set; } = 10;
+        public int NotCheckedInMinutes { get; set; } = 15; // UI-6.49 (5) (D-119): 15 phút
         /// <summary>Phản ánh còn ≤ N phút tới hạn SLA → COMPLAINT_SLA (lần 2 khi đã quá hạn).</summary>
         public int ComplaintSlaWarnMinutes { get; set; } = 60;
         /// <summary>Duyệt quá hạn: quá hạn → người duyệt của cấp; quá thêm N giờ → nhóm <see cref="ApprovalOverdueGroups"/> (bot DH).</summary>
