@@ -387,7 +387,7 @@ namespace AppDelicare.Tests.Dashboard
             using var stranger = _factory.CreateAuthorizedClient(await CommonTestUsers.UserAsync(_factory, ("prod-batch", "V")));
             var forbidden = await stranger.GetAsync($"/api/Dashboard/GetOrderJourney?orderId={order}");
             forbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-            using var sales = _factory.CreateAuthorizedClient(await CommonTestUsers.UserAsync(_factory, ("crm-order", "V"), ("log-pod", "V")));
+            using var sales = _factory.CreateAuthorizedClient(await CommonTestUsers.UserAsync(_factory, ("crm-order", "V"), ("log-execution", "V") /* UI-6.35: Xác nhận đã giao gộp vào Theo dõi */));
             var limited = (await sales.GetResultAsync($"/api/Dashboard/GetOrderJourney?orderId={order}")).Ok().GetProperty("stages").EnumerateArray()
                 .ToDictionary(x => x.GetProperty("stage").GetString()!);
             Numbers(limited["ORDER"]).Should().Equal("DH-J" + key);

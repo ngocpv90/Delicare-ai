@@ -20,5 +20,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<DeliveryRouteDetailModel>> Arrive(DeliveryStopArriveRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> Deliver(DeliveryStopDeliverRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> Fail(DeliveryStopFailRequest request);
+        /// <summary>UI-6.35 (D-116): dữ liệu form bàn giao (số kế hoạch, người liên hệ, khay còn ở khách).</summary>
+        public Task<IResult<AppDelicare.Model.Model.StopHandoverModel>> GetHandover(Guid id);
     }
 }

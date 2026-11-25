@@ -134,7 +134,7 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>T19: biên bản giao nhận (POD) chỉ ghi khi bàn giao (DeliveryStop/Deliver, kiểm nhiệt độ ≥ 60 °C) và không sửa / xóa – là căn cứ đối soát.</summary>
         private static Task<string> Blocked()
-            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Biên bản giao nhận (POD)", "DeliveryStop/Deliver"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Biên bản giao nhận", "nút Bàn giao ở màn Theo dõi giao hàng (chế độ tài xế)"));
 
         private Task<string> Insert(ProofOfDeliveryRequest request, string typeSave) => Blocked();
 

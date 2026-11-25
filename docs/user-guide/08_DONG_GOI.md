@@ -32,11 +32,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | — |
 | Đóng gói & Giao hàng › Chia suất & đóng gói | `log-packing-order` | S | X |
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | — | S |
-| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | — | S |
-| Đóng gói & Giao hàng › Vị trí xe | `log-gps` | — | X |
-| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | — | S |
-| Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | — | S |
-| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | — | X |
+| Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | — | S |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | — | S |
 | Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | — | Q |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | — |

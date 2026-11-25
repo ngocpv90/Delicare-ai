@@ -562,7 +562,7 @@ namespace AppDelicare.Services.Implement
             }
             if (items.Any(i => i.IsOverThreshold))
             {
-                alerts.Add(new CustomerAlertModel { Code = "PACKAGING_LOSS", Severity = "MEDIUM", Screen = "log-container-return",
+                alerts.Add(new CustomerAlertModel { Code = "PACKAGING_LOSS", Severity = "MEDIUM", Screen = "log-packaging-ledger",
                     Message = string.Format(ConstantHelper.Message.CustomerAlertPackagingLoss, model.PackagingLossRatePct, model.PackagingLossThresholdPct) });
             }
             if (active.Count > 0 && now.Hour >= Math.Max(0, _rules.OrderCutoffHourPreviousDay - 1))

@@ -107,6 +107,12 @@ namespace AppDelicare.Model.Option
         public bool DeliveryAutoPlanAfterLock { get; set; } = true;
         /// <summary>UI-6.34: còn N phút tới giờ xuất bến mà chuyến chưa đủ thực đơn → cảnh báo điều phối.</summary>
         public int DispatchShortWarnMinutes { get; set; } = 30;
+        /// <summary>UI-6.35 (D-116): còn N phút tới cuối khung nhận mà chưa giao → bot "sắp trễ".</summary>
+        public int DeliveryLateWarnMinutes { get; set; } = 15;
+        /// <summary>UI-6.35: phiếu Chờ thu hồi quá N ngày → "quá hạn thu" + tin gộp / ngày.</summary>
+        public int ContainerReturnDueDays { get; set; } = 3;
+        /// <summary>UI-6.35: cho ghi tay sổ bao bì loại Giao cho khách / Khách trả (mặc định tắt – tự ghi khi bàn giao, thu hồi).</summary>
+        public bool PackagingManualOutIn { get; set; }
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>

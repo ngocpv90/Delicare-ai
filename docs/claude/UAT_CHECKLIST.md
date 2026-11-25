@@ -516,3 +516,12 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Điều phối: chuyến chưa đủ → "Xếp lên xe" mở hộp thiếu điểm / món; xếp có điều kiện cần lý do (quyền duyệt); đủ → xếp; "Xuất bến" nhập nhiệt độ; "Chuyển xe" chuyển điểm.
 - [ ] Chốt đơn → tự lập chuyến cho ngày giao; thiếu xe → "Chưa gán chuyến" + tin bot. Bot "Chuyến đủ hàng" 1 tin / chuyến.
 - [ ] Quyền: uat.ops-log đủ 2 màn; uat.ops-kit chỉ Chia suất; uat.coo đủ; sales / QA xem Điều phối.
+
+## UI-6.35 – Theo dõi giao hàng + Khay hộp theo khách (D-116)
+- [ ] Sidebar: "Theo dõi giao hàng", "Khay hộp theo khách" (không còn Vị trí xe, Xác nhận đã giao, Thu hồi hộp / khay); link cũ mở đúng tab.
+- [ ] Điều phối: 4 thẻ, mỗi chuyến một dòng + dải điểm đúng màu; điểm quá giờ hẹn viền cam; bot báo sắp trễ (≤ 15 phút) / đã trễ; Sổ giao nhận in được phiếu; Bản đồ hiện vị trí theo sự kiện.
+- [ ] Tài xế (tài khoản lái xe, hoặc "Mở chuyến" ở Việc của tôi): chỉ chuyến của mình; Đã đến (có / không định vị); Bàn giao điền sẵn người nhận + khay còn ở khách; thu vượt số còn ở khách → báo lỗi, không ghi gì.
+- [ ] Bàn giao có thu khay → phiếu Chờ thu hồi cũ nhất chuyển Đã thu hồi, sổ bao bì có dòng IN tốt / hỏng; "Còn ở khách" giảm đúng.
+- [ ] Giao thất bại (chọn lý do) → điểm ở cột "Cần giao lại" của Điều phối; chuyển sang chuyến khác giao lại được.
+- [ ] Khay hộp theo khách: Quá hạn thu đúng (> 3 ngày); chỉ "Ghi thất thoát" (ghi tay OUT / IN bị chặn).
+- [ ] Quyền: uat.ops-log, uat.coo đủ; uat.ops-kit không thấy; QA xem Theo dõi giao hàng.

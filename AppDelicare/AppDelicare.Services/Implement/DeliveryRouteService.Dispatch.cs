@@ -63,6 +63,7 @@ namespace AppDelicare.Services.Implement
                     });
                 }
                 model.ListUnassigned = [.. dos.Where(d => d.DeliveryRouteId == null && d.Status == DeliveryOrderStatus.Planned).OrderBy(d => d.PlannedDeliveryTime).Select(Point)];
+                model.ListRedeliver = [.. dos.Where(d => d.Status == DeliveryOrderStatus.Failed).OrderBy(d => d.PlannedDeliveryTime).Select(Point)];
                 model.RoutesReady = model.ListRoute.Count(r => r.CanLoad);
                 var allPoints = model.ListRoute.SelectMany(r => r.ListPoint).Concat(model.ListUnassigned).ToList();
                 model.PointsTotal = allPoints.Count;
@@ -77,8 +78,20 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>Chuyển điểm giao sang chuyến khác (dùng DeliveryOrder/AssignRoute – kiểm trạng thái, giờ, tải ở đó).</summary>
-        public Task<IResult<DeliveryOrderActionModel>> MovePoint(DispatchMovePointRequest request)
-            => _services.GetRequiredService<IDeliveryOrderService>().AssignRoute(new DeliveryOrderAssignRouteRequest { Id = request.DeliveryOrderId, DeliveryRouteId = request.DeliveryRouteId });
+        public async Task<IResult<DeliveryOrderActionModel>> MovePoint(DispatchMovePointRequest request)
+        {
+            // UI-6.35 (D-116): điểm giao thất bại → mở lại (Kế hoạch, bỏ chuyến cũ) rồi gán chuyến mới.
+            var failed = _unitOfWork.DeliveryOrderRepository.GetSingle(d => d.Id == request.DeliveryOrderId && !d.IsDeleted && d.Status == DeliveryOrderStatus.Failed);
+            if (failed != null)
+            {
+                failed.Status = DeliveryOrderStatus.Planned;
+                failed.DeliveryRouteId = null;
+                _unitOfWork.DeliveryOrderRepository.Update(failed);
+                await _unitOfWork.DeliveryOrderRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                _unitOfWork.DbContext.ChangeTracker.Clear();
+            }
+            return await _services.GetRequiredService<IDeliveryOrderService>().AssignRoute(new DeliveryOrderAssignRouteRequest { Id = request.DeliveryOrderId, DeliveryRouteId = request.DeliveryRouteId });
+        }
 
         /// <summary>
         /// Tự lập chuyến theo khu vực cho ngày giao sau khi chốt đơn (cờ <c>DeliveryAutoPlanAfterLock</c>): mọi xe đang chạy được; không có xe → tin bot cho điều phối,

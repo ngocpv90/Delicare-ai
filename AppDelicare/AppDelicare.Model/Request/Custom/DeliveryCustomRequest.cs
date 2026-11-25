@@ -282,6 +282,8 @@ namespace AppDelicare.Model.Request.Custom
         /// <summary>BE2.5: loại khay / hộp; trống = loại bao bì của kết quả đóng gói của đơn, không có thì <c>PackagingDefaultType</c>.</summary>
         [MaxLength(100)]
         public string? PackagingType { get; set; }
+        /// <summary>UI-6.35 (D-116): thu khay kỳ trước tại cùng điểm khi bàn giao (một giao dịch).</summary>
+        public List<AppDelicare.Model.Model.DeliveryReturnItem>? ListReturn { get; set; }
     }
 
     /// <summary>T19: giao thất bại tại điểm (form) – lý do bắt buộc.</summary>

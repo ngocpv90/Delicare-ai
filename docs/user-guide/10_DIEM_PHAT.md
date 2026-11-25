@@ -22,10 +22,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | S |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | S |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X |
-| Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X |
-| Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | S |
-| Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | S |
-| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X |
+| Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | S |
+| Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | S |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

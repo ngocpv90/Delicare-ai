@@ -41,5 +41,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.DeliveryOrderActionModel>> MovePoint(AppDelicare.Model.Model.DispatchMovePointRequest request);
         public Task<string?> AutoPlanAfterLockAsync(DateTime date);
         public Task<int> RemindDispatchAsync(DateTime now);
+        /// <summary>UI-6.35 (D-116): Theo dõi giao hàng.</summary>
+        public Task<IResult<AppDelicare.Model.Model.TrackBoardModel>> GetTrackBoard(DateTime? date, Guid? driverId = null);
+        public Task<IResult<AppDelicare.Model.Model.TrackBoardModel>> GetMyTrack(DateTime? date);
+        public Task<IResult<List<AppDelicare.Model.Model.PodBookRowModel>>> GetPodBook(AppDelicare.Model.Model.PodBookRequest request);
+        public Task<int> RemindLateStopsAsync(DateTime now);
     }
 }

@@ -9,6 +9,8 @@ namespace AppDelicare.Model.Model
         public int PointsTotal { get; set; }
         public List<DispatchRouteModel> ListRoute { get; set; } = [];
         public List<DispatchPointModel> ListUnassigned { get; set; } = [];
+        /// <summary>UI-6.35 (D-116): điểm giao thất bại – gán chuyến khác.</summary>
+        public List<DispatchPointModel> ListRedeliver { get; set; } = [];
     }
 
     public class DispatchRouteModel
