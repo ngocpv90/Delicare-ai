@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **214 khóa** trong 9 section.
+Tổng: **215 khóa** trong 9 section.
 
 ## BusinessRules
 
@@ -101,6 +101,7 @@ Tổng: **214 khóa** trong 9 section.
 | `BusinessRules:BatchAutoPass` | bool | true | BIZ-2.7 (D-77 – C6): mẻ đủ điều kiện (lõi, sản lượng, lưu mẫu, không lỗi trọng yếu) tự Đạt QC. | BIZ-2.7 |
 | `BusinessRules:PackingAutoGenerateOnPass` | bool | true | BIZ-2.8 (D-77 – C7): mẻ Đạt → tự sinh lệnh đóng gói (PackingOrder/GenerateFromBatch). | BIZ-2.8 |
 | `BusinessRules:ProductionAutoCloseOrder` | bool | true | UI-6.24 (D-105): lệnh SX chuyển Hoàn thành (mẻ cuối đóng gói / loại) → hệ thống tự Đóng (chênh lệch tiêu hao, giá thành thực tế, giải phóng giữ chỗ dư). Tắt → đóng tay. | UI-6.24 |
+| `BusinessRules:ProductionAutoRecordOverProduction` | bool | true | UI-6.49 (3) (QĐ-26): job đóng lệnh 22:00 tự ghi Nấu dư = suất đạt − đã chia − hỏng / loại − nấu dư đã ghi (mẻ có kết quả đóng gói). false = ghi tay như cũ (đường lùi – bỏ cờ sau UAT). | UI-6.49 |
 | `BusinessRules:BatchLateStartMinutes` | int | 10 | UI-6.25 (D-106): mẻ quá giờ bắt đầu kế hoạch N phút mà chưa nấu → trễ (tô đỏ, khối Cần làm ngay). | UI-6.25 |
 | `BusinessRules:BatchQcWaitWarnMinutes` | int | 20 | UI-6.25 (D-106): mẻ Chờ QC quá N phút → cần QA xem. | UI-6.25 |
 | `BusinessRules:ProductionAutoCloseTime` | string | "22:00" | UI-6.24 (D-105): giờ job cuối ngày đóng lệnh Hoàn thành còn sót + gửi 1 tin chênh lệch tiêu hao vượt ngưỡng của ngày (HH:mm, giờ VN). | UI-6.24 |
