@@ -22,7 +22,7 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ShiftAssignmentService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+    public partial class ShiftAssignmentService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
         , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IShiftAssignmentService
     {
         private readonly INotificationService _notifications = notifications;
@@ -211,6 +211,13 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 DateTime from = (request.FromDate is { } f && f != default ? f : _clock.Today).Date;
                 int days = Math.Clamp(request.Days ?? _hr.GridDays, 1, 31);
+                bool week = request.WeekStart is { } ws && ws != default;
+                if (week)
+                {
+                    // UI-6.37 (D-118 a): tuần Thứ 2 – CN.
+                    from = WeekStartOf(request.WeekStart!.Value);
+                    days = 7;
+                }
                 DateTime to = from.AddDays(days - 1);
                 Guid? unit = request.OrganizationUnitId;
                 if (unit == null && request.MyUnit == true)
@@ -224,6 +231,10 @@ namespace AppDelicare.Services.Implement
                     unit = myUnit;
                 }
                 var employees = await EmployeesAsync(unit, request.SearchText);
+                if (request.PositionId is { } pos)
+                {
+                    employees = [.. employees.Where(e => e.PositionId == pos)];
+                }
                 var empIds = employees.Select(e => e.Id).ToList();
                 DateTime today = _clock.Today;
                 DateTime lo = from < today ? from : today, hi = to > today ? to : today;
@@ -282,6 +293,9 @@ namespace AppDelicare.Services.Implement
                     Assigned = todayRows.Count(a => a.ShiftId == s.Id),
                     CheckedIn = todayRows.Count(a => a.ShiftId == s.Id && a.AssignmentStatus is ShiftAssignmentStatus.CheckedIn or ShiftAssignmentStatus.Completed),
                 })];
+                // UI-6.37 (D-118): tổng tổ × ca, số ca / giờ tuần theo người, trạng thái tuần, đổi sau chốt, 4 chỉ số tuần.
+                model.Employees = [.. model.Employees.OrderBy(e => e.OrganizationUnitName).ThenBy(e => e.FullName)];
+                await WeekExtrasAsync(model, employees, shifts, week);
                 return Result<ShiftGridModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)
@@ -348,124 +362,14 @@ namespace AppDelicare.Services.Implement
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
-                var db = _unitOfWork.DbContext;
-                Guid actor = _currentActor.RequireActor().UserId;
-                var employee = await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == request.EmployeeId && !e.IsDeleted);
-                if (employee == null || !EmployeeStatus.IsWorking(employee.Status))
+                var (result, error, message) = await AssignCoreAsync(request, _currentActor.RequireActor().UserId);
+                if (error != null)
                 {
-                    return Fail(ConstantHelper.Message.HrEmployeeNotFound);
+                    _unitOfWork.RollbackTransaction();
+                    return Result<ShiftAssignResultModel>.Fail(error);
                 }
-                if (request.WorkDate == default)
-                {
-                    return Fail(ConstantHelper.Message.ModelStateMessage);
-                }
-                DateTime date = request.WorkDate.Date;
-                if (date < _clock.Today)
-                {
-                    return Fail(string.Format(ConstantHelper.Message.HrWorkDatePast, HrRules.Day(date)));
-                }
-                var existing = _unitOfWork.ShiftAssignmentRepository.GetAll().Where(a => a.EmployeeId == employee.Id && a.WorkDate == date && !a.IsDeleted).ToList();
-                var ids = existing.Select(a => a.Id).ToList();
-                var attended = await HrRules.AttendedAssignmentsAsync(db, ids);
-                var swaps = await HrRules.PendingSwapAssignmentsAsync(db, ids);
-                var shifts = await db.Shift.AsNoTracking().Where(s => !s.IsDeleted).ToDictionaryAsync(s => s.Id);
-                var result = new ShiftAssignResultModel();
-                if (request.ShiftId is not { } shiftId || shiftId == Guid.Empty)
-                {
-                    if (existing.Count == 0)
-                    {
-                        result.Action = "Unchanged";
-                        return Ok(result, string.Format(ConstantHelper.Message.HrAssignRemoved, HrRules.Day(date), employee.FullName));
-                    }
-                    foreach (var a in existing)
-                    {
-                        if (LockedReason(a, shifts.GetValueOrDefault(a.ShiftId), employee, attended, swaps) is { } locked)
-                        {
-                            return Fail(locked);
-                        }
-                    }
-                    foreach (var a in existing)
-                    {
-                        SoftDelete(a, $"Bỏ phân ca {_clock.Now:dd/MM/yyyy HH:mm}");
-                        _unitOfWork.ShiftAssignmentRepository.Update(a);
-                    }
-                    await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
-                    _unitOfWork.CommitTransaction();
-                    result.Action = "Removed";
-                    result.Assignment = (await HrRules.ModelsAsync(db, existing)).FirstOrDefault();
-                    return Ok(result, string.Format(ConstantHelper.Message.HrAssignRemoved, HrRules.Day(date), employee.FullName));
-                }
-                if (!shifts.TryGetValue(shiftId, out var shift) || !ShiftActive(shift))
-                {
-                    return Fail(ConstantHelper.Message.HrShiftNotFound);
-                }
-                var leave = (await HrRules.LeavesAsync(db, [employee.Id], date, date, true)).FirstOrDefault();
-                if (leave != null)
-                {
-                    return Fail(string.Format(ConstantHelper.Message.HrAssignmentOnLeave, employee.FullName, HrRules.Day(date), leave.RequestNo));
-                }
-                var (start, end) = HrRules.PlannedWindow(date, shift);
-                if (request.PlannedStart != null || request.PlannedEnd != null)
-                {
-                    start = request.PlannedStart ?? start;
-                    end = request.PlannedEnd ?? end;
-                    if (end <= start || start < date || start >= date.AddDays(1) || end > date.AddDays(2))
-                    {
-                        return Fail(ConstantHelper.Message.HrPlannedTimeInvalid);
-                    }
-                }
-                var same = existing.FirstOrDefault(a => a.ShiftId == shift.Id);
-                foreach (var a in existing)
-                {
-                    bool touches = a != same || a.PlannedStart != start || a.PlannedEnd != end;
-                    if (touches && LockedReason(a, shifts.GetValueOrDefault(a.ShiftId), employee, attended, swaps) is { } locked)
-                    {
-                        return Fail(locked);
-                    }
-                }
-                ShiftAssignment row;
-                if (same != null)
-                {
-                    row = same;
-                    bool changed = row.PlannedStart != start || row.PlannedEnd != end;
-                    row.PlannedStart = start;
-                    row.PlannedEnd = end;
-                    row.AssignedBy = actor;
-                    if (request.Note != null)
-                    {
-                        row.Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
-                    }
-                    if (changed && row.AssignmentStatus == ShiftAssignmentStatus.Confirmed)
-                    {
-                        row.AssignmentStatus = ShiftAssignmentStatus.Planned;
-                        result.ListWarning.Add(ConstantHelper.Message.HrAssignmentReconfirm);
-                    }
-                    _unitOfWork.ShiftAssignmentRepository.Update(row);
-                    foreach (var a in existing.Where(a => a != same))
-                    {
-                        SoftDelete(a, $"Đổi sang ca {shift.Code} {_clock.Now:dd/MM/yyyy HH:mm}");
-                        _unitOfWork.ShiftAssignmentRepository.Update(a);
-                    }
-                    result.Action = "Updated";
-                }
-                else
-                {
-                    foreach (var a in existing)
-                    {
-                        SoftDelete(a, $"Đổi sang ca {shift.Code} {_clock.Now:dd/MM/yyyy HH:mm}");
-                        _unitOfWork.ShiftAssignmentRepository.Update(a);
-                    }
-                    row = Place(employee.Id, shift, date, start, end, request.Note, actor);
-                    result.Action = existing.Count > 0 ? "Updated" : "Created";
-                }
-                if ((await HrRules.LeavesAsync(db, [employee.Id], date, date, false)).FirstOrDefault(l => l.RequestStatus == LeaveRequestStatus.Pending) is { } pending)
-                {
-                    result.ListWarning.Add(string.Format(ConstantHelper.Message.HrAssignmentLeavePending, employee.FullName, pending.RequestNo));
-                }
-                await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
-                result.Assignment = (await HrRules.ModelsAsync(db, [row])).FirstOrDefault();
-                return Ok(result, string.Format(ConstantHelper.Message.HrAssignSaved, shift.Code, HrRules.Day(date), employee.FullName));
+                return Result<ShiftAssignResultModel>.Success(result!, message!);
             }
             catch (Exception ex)
             {
@@ -473,15 +377,134 @@ namespace AppDelicare.Services.Implement
                 _unitOfWork.RollbackTransaction();
                 throw;
             }
+        }
 
-            IResult<ShiftAssignResultModel> Fail(string message)
+        /// <summary>UI-6.37: thân Assign trong giao dịch đang mở (Assign / AssignMany). Lỗi trả trước khi sửa dữ liệu – không ghi dở.</summary>
+        private async Task<(ShiftAssignResultModel? Result, string? Error, string? Message)> AssignCoreAsync(ShiftAssignRequest request, Guid actor)
+        {
+            var db = _unitOfWork.DbContext;
+            var employee = await db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.Id == request.EmployeeId && !e.IsDeleted);
+            if (employee == null || !EmployeeStatus.IsWorking(employee.Status))
             {
-                _unitOfWork.RollbackTransaction();
-                return Result<ShiftAssignResultModel>.Fail(message);
+                return Fail(ConstantHelper.Message.HrEmployeeNotFound);
             }
+            if (request.WorkDate == default)
+            {
+                return Fail(ConstantHelper.Message.ModelStateMessage);
+            }
+            DateTime date = request.WorkDate.Date;
+            if (date < _clock.Today)
+            {
+                return Fail(string.Format(ConstantHelper.Message.HrWorkDatePast, HrRules.Day(date)));
+            }
+            var existing = _unitOfWork.ShiftAssignmentRepository.GetAll().Where(a => a.EmployeeId == employee.Id && a.WorkDate == date && !a.IsDeleted).ToList();
+            var ids = existing.Select(a => a.Id).ToList();
+            var attended = await HrRules.AttendedAssignmentsAsync(db, ids);
+            var swaps = await HrRules.PendingSwapAssignmentsAsync(db, ids);
+            var shifts = await db.Shift.AsNoTracking().Where(s => !s.IsDeleted).ToDictionaryAsync(s => s.Id);
+            var result = new ShiftAssignResultModel();
+            if (request.ShiftId is not { } shiftId || shiftId == Guid.Empty)
+            {
+                if (existing.Count == 0)
+                {
+                    result.Action = "Unchanged";
+                    return Ok(result, string.Format(ConstantHelper.Message.HrAssignRemoved, HrRules.Day(date), employee.FullName));
+                }
+                foreach (var a in existing)
+                {
+                    if (LockedReason(a, shifts.GetValueOrDefault(a.ShiftId), employee, attended, swaps) is { } locked)
+                    {
+                        return Fail(locked);
+                    }
+                }
+                foreach (var a in existing)
+                {
+                    MarkChanged(a, shifts.GetValueOrDefault(a.ShiftId), null);
+                    SoftDelete(a, $"Bỏ phân ca {_clock.Now:dd/MM/yyyy HH:mm}");
+                    _unitOfWork.ShiftAssignmentRepository.Update(a);
+                }
+                await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                result.Action = "Removed";
+                result.Assignment = (await HrRules.ModelsAsync(db, existing)).FirstOrDefault();
+                return Ok(result, string.Format(ConstantHelper.Message.HrAssignRemoved, HrRules.Day(date), employee.FullName));
+            }
+            if (!shifts.TryGetValue(shiftId, out var shift) || !ShiftActive(shift))
+            {
+                return Fail(ConstantHelper.Message.HrShiftNotFound);
+            }
+            var leave = (await HrRules.LeavesAsync(db, [employee.Id], date, date, true)).FirstOrDefault();
+            if (leave != null)
+            {
+                return Fail(string.Format(ConstantHelper.Message.HrAssignmentOnLeave, employee.FullName, HrRules.Day(date), leave.RequestNo));
+            }
+            var (start, end) = HrRules.PlannedWindow(date, shift);
+            if (request.PlannedStart != null || request.PlannedEnd != null)
+            {
+                start = request.PlannedStart ?? start;
+                end = request.PlannedEnd ?? end;
+                if (end <= start || start < date || start >= date.AddDays(1) || end > date.AddDays(2))
+                {
+                    return Fail(ConstantHelper.Message.HrPlannedTimeInvalid);
+                }
+            }
+            var same = existing.FirstOrDefault(a => a.ShiftId == shift.Id);
+            foreach (var a in existing)
+            {
+                bool touches = a != same || a.PlannedStart != start || a.PlannedEnd != end;
+                if (touches && LockedReason(a, shifts.GetValueOrDefault(a.ShiftId), employee, attended, swaps) is { } locked)
+                {
+                    return Fail(locked);
+                }
+            }
+            ShiftAssignment row;
+            if (same != null)
+            {
+                row = same;
+                bool changed = row.PlannedStart != start || row.PlannedEnd != end;
+                row.PlannedStart = start;
+                row.PlannedEnd = end;
+                row.AssignedBy = actor;
+                if (request.Note != null)
+                {
+                    row.Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
+                }
+                if (changed && row.AssignmentStatus == ShiftAssignmentStatus.Confirmed)
+                {
+                    MarkChanged(row, shift, shift);
+                    row.AssignmentStatus = ShiftAssignmentStatus.Planned;
+                    result.ListWarning.Add(ConstantHelper.Message.HrAssignmentReconfirm);
+                }
+                _unitOfWork.ShiftAssignmentRepository.Update(row);
+                foreach (var a in existing.Where(a => a != same))
+                {
+                    MarkChanged(a, shifts.GetValueOrDefault(a.ShiftId), shift);
+                    SoftDelete(a, $"Đổi sang ca {shift.Code} {_clock.Now:dd/MM/yyyy HH:mm}");
+                    _unitOfWork.ShiftAssignmentRepository.Update(a);
+                }
+                result.Action = "Updated";
+            }
+            else
+            {
+                foreach (var a in existing)
+                {
+                    MarkChanged(a, shifts.GetValueOrDefault(a.ShiftId), shift);
+                    SoftDelete(a, $"Đổi sang ca {shift.Code} {_clock.Now:dd/MM/yyyy HH:mm}");
+                    _unitOfWork.ShiftAssignmentRepository.Update(a);
+                }
+                row = Place(employee.Id, shift, date, start, end, request.Note, actor);
+                result.Action = existing.Count > 0 ? "Updated" : "Created";
+            }
+            if ((await HrRules.LeavesAsync(db, [employee.Id], date, date, false)).FirstOrDefault(l => l.RequestStatus == LeaveRequestStatus.Pending) is { } pending)
+            {
+                result.ListWarning.Add(string.Format(ConstantHelper.Message.HrAssignmentLeavePending, employee.FullName, pending.RequestNo));
+            }
+            await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+            result.Assignment = (await HrRules.ModelsAsync(db, [row])).FirstOrDefault();
+            return Ok(result, string.Format(ConstantHelper.Message.HrAssignSaved, shift.Code, HrRules.Day(date), employee.FullName));
 
-            static IResult<ShiftAssignResultModel> Ok(ShiftAssignResultModel data, string message)
-                => Result<ShiftAssignResultModel>.Success(data, message);
+            static (ShiftAssignResultModel?, string?, string?) Fail(string message) => (null, message, null);
+
+            static (ShiftAssignResultModel?, string?, string?) Ok(ShiftAssignResultModel data, string message) => (data, null, message);
         }
 
         /// <summary>
@@ -618,7 +641,10 @@ namespace AppDelicare.Services.Implement
                     confirmed.Add(row);
                 }
                 await _unitOfWork.ShiftAssignmentRepository.CommitAsync(ConstantHelper.TypeSave.Update);
-                result.NotificationSent = await NotifyConfirmedAsync(confirmed) > 0;
+                // UI-6.37 (D-118 e): ca đổi / bỏ sau chốt → mỗi người 1 tin SHIFT_CHANGED (ngày của tin này không gửi lại SHIFT_CONFIRMED).
+                var (people, changedDays) = await NotifyChangedAsync(from, to, request.OrganizationUnitId);
+                result.ChangedNotified = people;
+                result.NotificationSent = await NotifyConfirmedAsync([.. confirmed.Where(a => !changedDays.Contains((a.EmployeeId, a.WorkDate.Date)))]) > 0 || people > 0;
                 _unitOfWork.CommitTransaction();
                 return Result<ShiftConfirmResultModel>.Success(result, string.Format(ConstantHelper.Message.HrConfirmDone, result.Confirmed, result.NotificationSent ? ConstantHelper.Message.HrConfirmNotified : string.Empty));
             }

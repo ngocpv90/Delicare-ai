@@ -31,5 +31,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<ShiftConfirmResultModel>> Confirm(ShiftConfirmRequest request);
         /// <summary>Đánh Vắng ca đã hết giờ mà không vào ca (thao tác tay – D-45).</summary>
         public Task<IResult<ShiftMarkAbsentResultModel>> MarkAbsent(ShiftMarkAbsentRequest request);
+        // UI-6.37 (D-118)
+        Task<IResult<AppDelicare.Model.Model.ShiftAssignManyResultModel>> AssignMany(AppDelicare.Model.Model.ShiftAssignManyRequest request);
+        Task<IResult<AppDelicare.Model.Model.ShiftBulkAssignResultModel>> CopyWeek(AppDelicare.Model.Model.ShiftCopyWeekRequest request);
+        Task<int> RemindNextWeekAsync();
     }
 }

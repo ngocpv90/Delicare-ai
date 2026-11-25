@@ -96,6 +96,11 @@
             public static readonly string HrBulkDone = "Phân ca hàng loạt: tạo {0} ca, bỏ qua {1}";
             public static readonly string HrBulkSkipAssigned = "Đã có ca {0}";
             public static readonly string HrBulkSkipLeave = "Nghỉ phép (đơn {0})";
+            // UI-6.37 (D-118)
+            public static readonly string HrAssignManyTooMany = "Mỗi lần tô tối đa 500 ô.";
+            public static readonly string HrAssignManyDone = "Đã lưu {0} ô{1}";
+            public static readonly string HrCopyWeekSame = "Tuần chép đến phải khác tuần nguồn.";
+            public static readonly string HrCopyWeekDone = "Đã chép {0} ca sang tuần {1} · bỏ qua {2} ô.";
             public static readonly string HrConfirmDone = "Đã xác nhận {0} ca{1}"; // UG-1 C-21: SHIFT_CONFIRMED đã gửi qua bot (BOT-1.7)
             public static readonly string HrConfirmNotified = " – đã gửi thông báo qua bot cho nhân viên đã liên kết";
             public static readonly string HrMarkAbsentDone = "Đã đánh Vắng {0} ca hết giờ mà không vào ca";

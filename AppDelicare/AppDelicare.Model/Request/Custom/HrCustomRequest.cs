@@ -16,6 +16,9 @@ namespace AppDelicare.Model.Request.Custom
         /// <summary>Tìm theo mã / tên nhân viên.</summary>
         [MaxLength(200)]
         public string? SearchText { get; set; }
+        /// <summary>UI-6.37 (D-118): ngày bất kỳ trong tuần → lưới Thứ 2 – CN (7 ngày); bỏ qua FromDate / Days.</summary>
+        public DateTime? WeekStart { get; set; }
+        public Guid? PositionId { get; set; }
     }
 
     /// <summary>
