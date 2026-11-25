@@ -105,6 +105,8 @@
     const isAdm = !!(window.DC_HOST && DC_HOST.user && DC_HOST.user.isAdmin);
     Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false || (f.id !== 'hr-my' && !isAdm)) return; const grp = f.id === 'hr-my' ? 'Việc của tôi' : f.grp; let g = out.find(x => x.name === grp); if (!g) { g = { name: grp, items: [] }; if (f.id === 'hr-my') out.unshift(g); else out.push(g); } g.items.push({ f, label: f.id === 'hr-my' ? grp : f.fn, link: f.id }); });
     const res = out.filter(g => g.items.length), my = res.findIndex(g => g.items.some(i => i.link === 'hr-my'));
+    // UI-6.40 (D-121): nhóm Danh mục hệ thống – mục đầu là trang tổng (thẻ theo quyền từng danh mục).
+    { const cg = res.find(g => g.name === 'Danh mục hệ thống'); if (cg && FN['sys-catalog']) cg.items.unshift({ f: FN['sys-catalog'], label: 'Tổng quan danh mục', link: 'sys-catalog' }); }
     if (my > 0) res.unshift(res.splice(my, 1)[0]);
     // D-93 → D-109: mục "Phê duyệt" nằm cuối nhóm Điều hành; không có quyền Bảng điều hành → nhóm Điều hành vẫn hiện với mục Phê duyệt.
     if (FN['wf-inbox'] && Store.perm('wf-inbox').access !== false) {

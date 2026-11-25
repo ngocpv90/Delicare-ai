@@ -68,27 +68,33 @@ public static partial class Seeds
             ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "crm-billing", "log-complaint", "crm-location", "crm-contact"]),
         new("#/group/03", "Thực đơn & Món ăn", [], 300, "menu", ["menu-menu", "menu-assignment", "menu-change-request", "menu-recipe", "menu-dish", "menu-dish-cat"]),
         new("#/group/04", "Mua hàng", ["Mua hàng & Kho"], 400, "scm",
-            ["scm-requirement", "scm-pr", "scm-po", "scm-supplier", "scm-supplier-material", "scm-ingredient", "scm-ingredient-cat", "scm-uom", "scm-uom-conversion"]),
+            ["scm-requirement", "scm-pr", "scm-po", "scm-supplier", "scm-supplier-material", "scm-ingredient", "scm-ingredient-cat"]),
         new("#/group/04b", "Kho", [], 450, "wh",
-            ["scm-gr", "scm-issue", "scm-inv-balance", "scm-lot", "scm-inv-txn", "scm-reservation", "scm-stockcount", "scm-consumption-var", "scm-warehouse", "scm-zone", "scm-location", "scm-inv-policy"]),
-        new("#/group/05", "Sản xuất", ["Sản xuất & Giá thành"], 500, "production", ["prod-plan", "prod-order", "prod-batch", "prod-output", "prod-waste", "prod-line", "prod-workstation"]),
+            ["scm-gr", "scm-issue", "scm-inv-balance", "scm-lot", "scm-inv-txn", "scm-reservation", "scm-stockcount", "scm-consumption-var", "scm-inv-policy"]),
+        new("#/group/05", "Sản xuất", ["Sản xuất & Giá thành"], 500, "production", ["prod-plan", "prod-order", "prod-batch", "prod-output", "prod-waste"]),
         new("#/group/05b", "Giá thành", [], 550, "cost", ["cost-standard", "cost-actual"]), // UI-6.27 (D-108): nhóm ẩn – 2 mục ẩn, quyền theo cost-meal
         new("#/group/06", "Chất lượng & ATTP", ["QC & An toàn thực phẩm"], 600, "qc",
             ["qc-inspection", "qc-checklist-result", "qc-temperature", "qc-cleaning", "qc-cleaning-result", "qc-supplier-issue", "qc-checklist"]),
         new("#/group/07", "Đóng gói & Giao hàng", ["Đóng gói & Giao nhận"], 700, "logistics",
         [
             "log-packing-order", "log-packing-result", "log-delivery-order", "log-route", "log-loading", "log-execution", "log-gps", "log-pod",
-            "log-container-return", "log-return-inspection", "log-packaging-ledger", "log-vehicle",
+            "log-container-return", "log-return-inspection", "log-packaging-ledger",
         ]),
         // #/wf-inbox (Hộp phê duyệt cũ) giữ dòng – là quyền của API duyệt (xem chi tiết mọi yêu cầu); FE bỏ khỏi sidebar khi có "Tất cả yêu cầu duyệt".
-        new("#/group/08", "Nhân sự", ["Nhân sự & Phê duyệt"], 800, "hr", ["adm-employee", "hr-shift-assign", "hr-attendance", "hr-leave", "hr-swap", "hr-shift", "adm-position", "wf-inbox"]),
+        new("#/group/08", "Nhân sự", ["Nhân sự & Phê duyệt"], 800, "hr", ["adm-employee", "hr-shift-assign", "hr-attendance", "hr-leave", "hr-swap", "wf-inbox"]),
+        // UI-6.40 (D-121): nhóm "Danh mục hệ thống" – 10 mục (+ mục ẩn đi theo màn cha), ngay trên Quản trị hệ thống; chỉ đổi nhóm / thứ tự, quyền giữ nguyên.
+        new("#/group/12", "Danh mục hệ thống", [], 950, "catalog",
+        [
+            "adm-orgunit", "adm-company", "adm-position", "hr-shift", "scm-uom", "scm-uom-conversion", "scm-warehouse", "scm-zone", "scm-location",
+            "prod-line", "prod-workstation", "log-vehicle", "adm-reference", "adm-admin-unit", "kpi-definition",
+        ]),
         new("#/group/10", "Quản trị hệ thống", [], 1000, "admin",
-            ["adm-user", "adm-usergroup", "adm-permission", "adm-objectmenu", "adm-orgunit", "adm-company", "sys-import", "adm-reference", "adm-admin-unit", "adm-document"]),
+            ["adm-user", "adm-usergroup", "adm-permission", "adm-objectmenu", "sys-import", "adm-document"]),
         // bot-van-hanh / bot-dieu-hanh: mục "quyền vào bot" (D-62, seed Integration_Telegram) – chỉ sắp chỗ, quyền KHÔNG do ma trận này quản (FE không hiện trên sidebar).
         new("#/group/09", "Nhật ký & Tích hợp", ["Tích hợp & Chỉ số", "Tích hợp & KPI"], 1050, "kpi",
         [
             "adm-job", "adm-audit", "adm-access-log", "adm-merge-conflict", "int-channel", "int-bot", "int-identity", "int-inbound", "int-outbound", "int-log",
-            "kpi-definition", "kpi-refresh", "bot-van-hanh", "bot-dieu-hanh",
+            "kpi-refresh", "bot-van-hanh", "bot-dieu-hanh",
         ]),
     ];
 

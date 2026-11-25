@@ -29,15 +29,15 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Nhà cung cấp | `scm-supplier` | Q | Q |
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | Q | Q |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | Q | Q |
-| Mua hàng › Đơn vị tính | `scm-uom` | Q | Q |
 | Kho › Nhận hàng | `scm-gr` | X | S (IX) |
 | Kho › Xuất kho sản xuất | `scm-issue` | X | S (IX) |
 | Kho › Tồn kho | `scm-inv-balance` | X | Q (IX) |
 | Kho › Kiểm kê | `scm-stockcount` | — | S (IX) |
-| Kho › Kho & vị trí | `scm-warehouse` | X | Q |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
 | Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | X | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X | X |
+| Danh mục hệ thống › Đơn vị tính | `scm-uom` | Q | Q |
+| Danh mục hệ thống › Kho & vị trí | `scm-warehouse` | X | Q |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày
