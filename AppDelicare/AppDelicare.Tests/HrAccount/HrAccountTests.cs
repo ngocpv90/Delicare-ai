@@ -288,6 +288,7 @@ namespace AppDelicare.Tests.HrAccount
     }
 
     /// <summary>DB riêng: người nghỉ việc là người duyệt DUY NHẤT của đơn nghỉ (lớp khác có thêm người duyệt hr-leave).</summary>
+    [Collection("AccountLockResignedJob")] // UI-6.36: job khóa tài khoản chạy tuần tự với EmployeeLifecycleUi636Tests (khóa job trong tiến trình)
     public class HrAccountResignTests(InMemoryApiFactory factory) : HrAccountTestBase(factory), IClassFixture<InMemoryApiFactory>
     {
         [Fact]
@@ -311,11 +312,9 @@ namespace AppDelicare.Tests.HrAccount
             (await admin.PostFormAsync("/api/LeaveRequest/Create", ("EmployeeId", staffEmp), ("FromDate", Today.AddDays(5)), ("ToDate", Today.AddDays(5)), ("LeaveTypeCode", "ANNUAL"), ("Reason", "Việc riêng"))).Ok();
             Guid held = await _factory.QueryAsync(db => db.ApprovalRequest.Where(a => a.BusinessType == LeaveRequestStatus.BusinessType && db.LeaveRequest.Any(l => l.Id == a.BusinessId && l.EmployeeId == staffEmp)).Select(a => a.Id).SingleAsync());
 
-            var update = await admin.PutAsync("/api/Employee/Update", new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["Id"] = emp.ToString(), ["FullName"] = "NV HA4-001", ["Status"] = EmployeeStatus.Resigned,
-            }));
-            (await LegacyResult.ReadAsync(update)).Ok();
+            // UI-6.36 (D-117 e): nghỉ việc qua Employee/Resign (ngày + lý do) – form Sửa không đổi trạng thái.
+            var resign = await admin.PostAsJsonAsync("/api/Employee/Resign", new { id = emp, resignDate = Today, reasonCode = "QUIT", note = "HA4" });
+            (await resign.Content.ReadAsStringAsync()).Should().Contain("\"responseCode\":200");
 
             (await _factory.QueryAsync(db => db.User.AsNoTracking().Where(u => u.Id == leaver).Select(u => u.IsActive).SingleAsync())).Should().BeFalse();
             (await leaverClient.GetAsync("/api/User/GetCurrent")).StatusCode.Should().Be(HttpStatusCode.Unauthorized, "token đang có bị chặn ngay");
@@ -332,10 +331,8 @@ namespace AppDelicare.Tests.HrAccount
             _ = job;
 
             // Quay lại làm → yêu cầu "Mở lại tài khoản" cho FIN-IT; duyệt → mở.
-            (await LegacyResult.ReadAsync(await admin.PutAsync("/api/Employee/Update", new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["Id"] = emp.ToString(), ["FullName"] = "NV HA4-001", ["Status"] = EmployeeStatus.Active,
-            })))).Ok();
+            // UI-6.36 (D-117 e): quay lại làm qua Employee/SetStatus (form Sửa không đổi trạng thái).
+            (await (await admin.PostAsJsonAsync("/api/Employee/SetStatus", new { id = emp, status = EmployeeStatus.Active })).Content.ReadAsStringAsync()).Should().Contain("\"responseCode\":200");
             Guid reopen = await _factory.QueryAsync(db => db.ApprovalRequest.Where(a => a.BusinessType == AccountLifecycleCodes.ReopenBusinessType && a.BusinessId == emp).Select(a => a.Id).SingleAsync());
             (await admin.PostFormAsync("/api/ApprovalRequest/Decide", ("Id", reopen), ("Approve", true))).Ok();
             (await _factory.QueryAsync(db => db.User.AsNoTracking().Where(u => u.Id == leaver).Select(u => u.IsActive).SingleAsync())).Should().BeTrue();

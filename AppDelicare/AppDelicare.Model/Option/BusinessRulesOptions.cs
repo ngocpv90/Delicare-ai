@@ -113,6 +113,9 @@ namespace AppDelicare.Model.Option
         public int ContainerReturnDueDays { get; set; } = 3;
         /// <summary>UI-6.35: cho ghi tay sổ bao bì loại Giao cho khách / Khách trả (mặc định tắt – tự ghi khi bàn giao, thu hồi).</summary>
         public bool PackagingManualOutIn { get; set; }
+
+        /// <summary>UI-6.36 (D-117 e): true = cho đổi Trạng thái nhân viên qua Employee/Update như cũ (mặc định false – chỉ qua Resign / SetStatus).</summary>
+        public bool EmployeeStatusViaUpdate { get; set; }
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>

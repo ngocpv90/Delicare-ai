@@ -1,6 +1,7 @@
 using AutoMapper;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Entity;
@@ -14,10 +15,10 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class EmployeeService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class EmployeeService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService
         , AppDelicare.Data.Share.IClock clock, AppDelicare.Data.Share.ICurrentActor currentActor, IPermissionService permissionService
-        , IAttendanceEventService attendanceEventService, IAccountLifecycleService accountLifecycle) : IEmployeeService
+        , IAttendanceEventService attendanceEventService, IAccountLifecycleService accountLifecycle, IServiceProvider services) : IEmployeeService
     {
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         /// <summary>MA-1.3 (D-63): mã vừa cấp khi thêm mới – báo kèm trong thông báo thành công.</summary>
@@ -26,6 +27,7 @@ namespace AppDelicare.Services.Implement
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private AppDelicare.Model.Option.BusinessRulesOptions _rules => services.GetRequiredService<Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions>>().Value;
 
         /// <summary>
         /// D-68 e (anh chốt mở rộng 2026-11-19 cho cả API cũ): ngày sinh, giới tính, địa chỉ chỉ trả cho người có quyền Sửa adm-employee
@@ -172,6 +174,13 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(EmployeeRequest request, string typeSave)
         {
+            // UI-6.36 (D-117 f): họ tên bắt buộc, SĐT đúng định dạng / không trùng, công ty theo đơn vị, trạng thái luôn Đang làm việc, ngày vào làm trống → hôm nay.
+            if (await ValidateAsync(request, null) is { } invalid)
+            {
+                return invalid;
+            }
+            request.Status = EmployeeStatus.Active;
+            request.HireDate ??= clock.Today;
             var insert = _mapper.Map<Employee>(request);
             // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (NV…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
             insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.Employee);
@@ -192,6 +201,15 @@ namespace AppDelicare.Services.Implement
             }
             // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
             request.Code = exist.Code;
+            // UI-6.36 (D-117 e, f): đổi trạng thái chỉ qua Cho nghỉ việc / Tạm nghỉ / Quay lại làm – Update bỏ qua Status gửi lên (trừ cờ cũ EmployeeStatusViaUpdate).
+            if (await ValidateAsync(request, exist.Id) is { } invalid)
+            {
+                return invalid;
+            }
+            if (!_rules.EmployeeStatusViaUpdate || string.IsNullOrWhiteSpace(request.Status))
+            {
+                request.Status = exist.Status;
+            }
             string? oldStatus = exist.Status;
             Guid? oldPosition = exist.PositionId;
             var update = _mapper.Map(request, exist);
@@ -385,6 +403,9 @@ namespace AppDelicare.Services.Implement
                 Add(m.PendingRequestCount > 0, "PENDING_REQUEST", "MEDIUM", string.Format(ConstantHelper.Message.EmployeeAlertPending, m.PendingRequestCount), "hr-leave");
                 Add(!m.BotLinked && EmployeeStatus.IsWorking(e.Status), "NO_BOT_LINK", "LOW", ConstantHelper.Message.EmployeeAlertNoBot, null);
                 Add(string.IsNullOrWhiteSpace(e.Phone), "NO_PHONE", "LOW", ConstantHelper.Message.EmployeeAlertNoPhone, null);
+                // UI-6.36 (D-117 d, e): việc cần làm cho người mới + hẹn nghỉ việc.
+                m.ListOnboarding = await OnboardingAsync(e, m);
+                m.ScheduledResignDate = (await EmployeeRules.ScheduledAsync(db, [e.Id])).TryGetValue(e.Id, out var sr) ? sr : null;
                 return Result<AppDelicare.Model.Model.EmployeeOverviewModel>.Success(m, ConstantHelper.Message.GetAllSuccessfully);
             }
             catch (Exception ex)

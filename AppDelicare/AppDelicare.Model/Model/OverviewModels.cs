@@ -258,6 +258,10 @@ namespace AppDelicare.Model.Model
         public DateTime? UsualShiftEnd { get; set; }
         public string? CreatedByName { get; set; }
         public string? ModifiedByName { get; set; }
+        /// <summary>UI-6.36 (D-117 d): việc cần làm cho người mới (rỗng = không hiện dải).</summary>
+        public List<EmployeeOnboardingItemModel> ListOnboarding { get; set; } = [];
+        /// <summary>UI-6.36: đã hẹn nghỉ việc (ngày tương lai).</summary>
+        public DateTime? ScheduledResignDate { get; set; }
         /// <summary>Đơn nghỉ / đổi ca gần đây (chờ duyệt trước, rồi mới nhất), tối đa 5.</summary>
         public List<EmployeeRequestBriefModel> ListRecentRequest { get; set; } = [];
     }
