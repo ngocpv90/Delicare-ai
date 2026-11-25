@@ -115,9 +115,9 @@ namespace AppDelicare.Services.Implement
                         $"{NotificationCatalog.RouteReady}:NOVEH:{date:yyyyMMdd}");
                     return "Chưa có xe sẵn sàng – chưa tự lập chuyến";
                 }
-                // UI-6.49 (10) (D-127 g – tạm, GAP-LOG-DRV PROPOSED: chưa có Vehicle.DefaultDriverEmployeeId): tài xế = người lái chuyến gần nhất của xe (nhân viên còn làm);
-                // xe chưa có chuyến nào / tài xế đã nghỉ → để trống + 1 tin nhắc điều phối gán tài xế.
-                var drivers = await LastDriversAsync(db, [.. vehicles.Select(v => v.Id)], date.Date);
+                // GAP-LOG-DRV (D-128): tài xế = tài xế mặc định của xe (nhân viên còn làm) → không có thì người lái chuyến gần nhất (UI-6.49 (10));
+                // vẫn không có → để trống + 1 tin nhắc điều phối gán tài xế.
+                var drivers = await PlanDriversAsync(db, vehicles, date.Date);
                 var r = await Plan(new DeliveryRoutePlanRequest
                 {
                     DeliveryDate = date.Date,
@@ -128,7 +128,7 @@ namespace AppDelicare.Services.Implement
                 if (noDriver.Count != 0)
                 {
                     await BusinessNotifier.ToMenusAsync(_notifications, db, NotificationCatalog.RouteReady, ["#/log-route"],
-                        new { title = $"{noDriver.Count} chuyến ngày {date:dd/MM} chưa có tài xế", detail = "Xe chưa có chuyến trước / tài xế cũ đã nghỉ – gán tài xế ở Điều phối giao hàng", lines = noDriver.Take(10).ToList() },
+                        new { title = $"{noDriver.Count} chuyến ngày {date:dd/MM} chưa có tài xế", detail = "Xe chưa có tài xế mặc định / tài xế đã nghỉ – gán ở Điều phối giao hàng, đặt tài xế mặc định ở Xe giao hàng", lines = noDriver.Take(10).ToList() },
                         $"{NotificationCatalog.RouteReady}:NODRV:{date:yyyyMMdd}");
                 }
                 return r.ResponseMessage;
@@ -138,6 +138,20 @@ namespace AppDelicare.Services.Implement
                 Log.Error(ex, "[DeliveryRouteService] AutoPlanAfterLockAsync {Date}", date);
                 return null;
             }
+        }
+
+        /// <summary>GAP-LOG-DRV (D-128): tài xế cho tự lập chuyến – tài xế mặc định của xe (nhân viên còn làm), không có → tài xế chuyến gần nhất (UI-6.49 (10)).</summary>
+        public static async Task<Dictionary<Guid, Guid>> PlanDriversAsync(AppDelicare.Data.Connection.DatabaseContext db, IReadOnlyCollection<AppDelicare.Model.Entity.Vehicle> vehicles, DateTime date)
+        {
+            var drivers = await LastDriversAsync(db, [.. vehicles.Select(v => v.Id)], date);
+            var defaults = vehicles.Where(v => v.DefaultDriverEmployeeId != null).Select(v => v.DefaultDriverEmployeeId!.Value).Distinct().ToList();
+            var working = (await db.Employee.AsNoTracking().Where(e => defaults.Contains(e.Id) && !e.IsDeleted).Select(e => new { e.Id, e.Status }).ToListAsync())
+                .Where(e => EmployeeStatus.IsWorking(e.Status)).Select(e => e.Id).ToHashSet();
+            foreach (var v in vehicles.Where(v => v.DefaultDriverEmployeeId is { } d && working.Contains(d)))
+            {
+                drivers[v.Id] = v.DefaultDriverEmployeeId!.Value;
+            }
+            return drivers;
         }
 
         /// <summary>UI-6.49 (10): xe → tài xế của chuyến gần nhất TRƯỚC ngày giao (nhân viên chưa nghỉ việc).</summary>

@@ -28,6 +28,7 @@ BEGIN
 			, t.[Capacity]
 			, t.[Status]
 			, t.[Note]
+			, t.[DefaultDriverEmployeeId] -- GAP-LOG-DRV (D-128)
 			, t.[CreatedDate]
 		FROM [dbo].[Vehicle] AS t
 		

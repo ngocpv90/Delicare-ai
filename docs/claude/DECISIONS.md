@@ -1409,3 +1409,13 @@ Thứ tự làm: 1 → 3 → 6 → 2.
 | (e) | Xếp có điều kiện | Mục duyệt riêng "Xếp xe chưa đủ hàng" thay cho chỉ quản trị. |
 | (f) | Tài khoản | Trang chi tiết tài khoản toàn màn như D-123. |
 | (g) | Dữ liệu | Không sửa hộ dữ liệu thật; xuất Excel danh sách cần bổ sung cho NS / IT / Bếp trưởng; quyền lẻ chỉ lập bảng, không xóa. **GAP-LOG-DRV PROPOSED:** cột tài xế mặc định cho xe – chờ anh duyệt; tạm dùng tài xế chuyến gần nhất. |
+
+## D-128 – Tài xế mặc định của xe (GAP-LOG-DRV) (anh duyệt 2026-11-25)
+
+✅ **Anh duyệt 2026-11-25** ("đồng ý bạn làm tiếp đi" – sau báo cáo UI-6.49 nêu GAP-LOG-DRV chờ duyệt).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Cột | Thêm đúng 1 cột `dbo.Vehicle.DefaultDriverEmployeeId uniqueidentifier NULL` (→ Employee, không FK vật lý – D-30); migration `DB/migrations/20261125_01_vehicle_default_driver.sql` (chạy lại được). |
+| (b) | Nhập | Màn Xe giao hàng: chọn tài xế mặc định – phải là nhân viên đang làm; xe cũ để trống (điều phối tự gán, không sửa hộ). |
+| (c) | Tự lập chuyến | Sau chốt đơn: tài xế = tài xế mặc định (còn làm) → không có thì tài xế chuyến gần nhất (UI-6.49 (10)) → vẫn không có thì để trống + bot nhắc điều phối. |
