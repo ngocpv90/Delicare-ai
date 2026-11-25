@@ -7,7 +7,10 @@ namespace AppDelicare.WebApi
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var host = CreateHostBuilder(args).Build();
+            // UI-6.47: một dòng cảnh báo các khóa BusinessRules đang dùng mặc định.
+            AppDelicare.Services.Ioc.ConfigDefaultsCheck.Warn(Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>(host.Services), "Api");
+            host.Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
