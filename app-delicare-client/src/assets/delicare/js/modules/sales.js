@@ -54,7 +54,7 @@
       afterKpis: box => {
         if (!Store.isLive || !box) return;
         cq('cus-sum|' + (Store.ctx.branch || ''), () => Store.query('Customer/GetSummary', { branchId: Store.ctx.branch || '' }))
-          .then(x => { if (box.isConnected) box.innerHTML = customerCards(x.ok && x.data ? x.data : localSummary()); });
+          .then(x => { if (!box.isConnected) return; box.innerHTML = customerCards(x.ok && x.data ? x.data : localSummary()); box.querySelectorAll('[data-go]').forEach(b => b.onclick = () => APP.go(b.dataset.go)); });
       },
       cols: [{ k: 'Code', label: 'Mã' }, { k: 'DisplayName', label: 'Khách hàng' }, { k: 'CustomerType', label: 'Loại', render: r => esc(UI.statusVi('Customer', 'CustomerType', r.CustomerType) || '') }, { k: 'BranchId', label: 'Chi nhánh phục vụ' },
         { k: 'x1', label: 'Hợp đồng hiệu lực', col: false, nosort: true, render: r => { const c = Store.by('Contract', 'CustomerId', r.Id); return c.map(x => `${esc(x.ContractNumber)} ${UI.badge(x.Status, 'Contract', 'Status')}`).join('<br>'); } },
@@ -188,7 +188,7 @@
       <div class="fw-step"><span class="n s3">3</span><div><b>Hệ thống tự chốt ${String(cut.getHours()).padStart(2, '0')}:${String(cut.getMinutes()).padStart(2, '0')}</b><span class="small muted">${d.dayState === 'OPEN' ? `Còn ${hh} giờ ${mm} phút. Chốt xong tự lập kế hoạch sản xuất.` : 'Đã chốt – kế hoạch sản xuất tự lập sau chốt.'}</span></div></div>
       <div class="fw-step"><span class="n s4">4</span><div><b>Nấu → giao → đối soát</b><span class="small muted">Hệ thống tự cập nhật theo từng khâu, không cần thao tác</span></div></div>`;
     g('#odWeek').onclick = () => APP.go('crm-order-week?week=' + mondayOf(od.day));
-    g('#odNeed').onclick = () => { od.tab = 'need'; odDraw(el, f); };
+    g('#odNeed').onclick = () => { od.tab = 'need'; od.q = ''; const q = g('#odQ'); if (q) q.value = ''; odDraw(el, f); const t = g('#odTabs'); if (t) t.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     const dev = d.forecastDeviationPct;
     g('#odKpis').innerHTML = UI.kpis([
       UI.kpi('Tổng suất ngày', U.num(d.totalQuantity), dev === null || dev === undefined ? 'chưa có dự báo' : (dev > 0 ? '+' : '') + U.num(dev, 1) + '% so dự báo', 'utensils', 'green'),
