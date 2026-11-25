@@ -831,7 +831,7 @@ namespace AppDelicare.Services.Implement
                 string? driverName = route.DriverId is { } did ? await db.Employee.AsNoTracking().Where(e => e.Id == did).Select(e => e.FullName).FirstOrDefaultAsync() : null;
                 var warnings = new List<string>();
                 DateTime now = _clock.Now;
-                // UI-6.34 (D-115, đóng GAP-C-03): chỉ xếp khi mọi điểm giao đủ thực đơn; thiếu → xếp có điều kiện (quyền Duyệt log-route + lý do, ghi vào chuyến).
+                // UI-6.34 (D-115, đóng GAP-C-03): chỉ xếp khi mọi điểm giao đủ thực đơn; thiếu → xếp có điều kiện (quyền mục duyệt "Xếp xe chưa đủ hàng" – UI-6.49 (6) – + lý do, ghi vào chuyến).
                 var missing = await PackingReadiness.MissingByOrderAsync(db, _rules, route.DeliveryDate, [.. targets.Select(t => t.OrderId).Distinct()]);
                 var lacks = targets.Where(t => missing.GetValueOrDefault(t.OrderId) is { Count: > 0 })
                     .Select(t => $"{t.DeliveryNumber ?? t.DeliveryNo}: thiếu {string.Join(", ", missing[t.OrderId])}").ToList();
@@ -842,7 +842,7 @@ namespace AppDelicare.Services.Implement
                     {
                         return Fail(string.Format(ConstantHelper.Message.LoadMenuIncomplete, string.Join("; ", lacks)));
                     }
-                    if (!_permissions.IsAllowed(await _permissions.GetAsync(actor.UserId), "log-route", PermissionAction.Approve))
+                    if (!_permissions.IsAllowed(await _permissions.GetAsync(actor.UserId), DeliveryRules.LoadShortApproveScreen, PermissionAction.Approve))
                     {
                         return Fail(ConstantHelper.Message.LoadOverrideNoRight);
                     }

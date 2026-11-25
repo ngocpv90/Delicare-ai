@@ -19,6 +19,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Việc của tôi › Việc của tôi | `hr-my` | X | X |
 | Phê duyệt › Đề nghị mua – cấp 1 | `wf-inbox?type=scm-pr-l1` | — | Duyệt |
 | Phê duyệt › Phiếu kiểm kê – cấp 1 | `wf-inbox?type=scm-stockcount` | — | Duyệt |
+| Phê duyệt › Xếp xe chưa đủ hàng | `wf-inbox?type=log-load-short` | — | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | — | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | — | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X |

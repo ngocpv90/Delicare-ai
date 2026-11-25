@@ -287,7 +287,33 @@ namespace AppDelicare.Tests.Delivery
             Guid doA = route.GetProperty("listStop")[0].GetProperty("deliveryOrderId").GetGuid();
             // UI-6.34 (D-115): chưa chia đủ thực đơn → chặn; xếp có điều kiện cần lý do (quyền Duyệt Điều phối).
             (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = driver, listItem = new[] { new { deliveryOrderId = doA, loadedQty = 34m } } })).Fail("Chưa đủ thực đơn");
-            var loaded = (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = driver, overrideReason = "Thử luồng giao tay", listItem = new[] { new { deliveryOrderId = doA, loadedQty = 34m } } })).Ok();
+            // UI-6.49 (6) (D-127 e): xếp có điều kiện = quyền mục duyệt "Phê duyệt › Xếp xe chưa đủ hàng" (không chỉ quản trị).
+            Guid UserWith(string name, params string[] links)
+            {
+                Guid uid = Guid.NewGuid(), gid = Guid.NewGuid();
+                _factory.SeedAsync(async db =>
+                {
+                    db.User.Add(new User { Id = uid, UserName = name, IsActive = true });
+                    db.UserGroup.Add(new UserGroup { Id = gid, Name = "G-" + name, Code = "G-" + name.ToUpperInvariant().Replace('.', '-') });
+                    db.UserClaim.Add(new UserClaim { Id = Guid.NewGuid(), UserId = uid, UserGroupId = gid });
+                    foreach (string link in links)
+                    {
+                        var menu = await db.ObjectMenu.FirstOrDefaultAsync(m => m.MetaLink == link) ?? db.ObjectMenu.Local.FirstOrDefault(m => m.MetaLink == link);
+                        if (menu == null)
+                        {
+                            menu = new ObjectMenu { Id = Guid.NewGuid(), Name = link, MetaLink = link, IsActive = true, LevelShow = 2 };
+                            db.ObjectMenu.Add(menu);
+                        }
+                        db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = gid, ObjectMenuId = menu.Id, AllowAccess = true, AllowAdd = true, AllowEdit = true });
+                    }
+                }).GetAwaiter().GetResult();
+                return uid;
+            }
+            using var dispatcher = _factory.CreateAuthorizedClient(UserWith("ls.dispatcher", "#/log-route"));
+            (await PostJson(dispatcher, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = driver, overrideReason = "Thử luồng giao tay", listItem = new[] { new { deliveryOrderId = doA, loadedQty = 34m } } }))
+                .Fail("Xếp xe chưa đủ hàng");
+            using var boss = _factory.CreateAuthorizedClient(UserWith("ls.coo", "#/log-route", "#/wf-inbox?type=log-load-short"));
+            var loaded = (await PostJson(boss, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = driver, overrideReason = "Thử luồng giao tay", listItem = new[] { new { deliveryOrderId = doA, loadedQty = 34m } } })).Ok();
             loaded.GetProperty("route").GetProperty("route").GetProperty("status").GetString().Should().Be("Loading");
             loaded.GetProperty("route").GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("xếp 34 / 35"));
             loaded.GetProperty("listLoading").EnumerateArray().Single().GetProperty("vehicleCode").GetString().Should().Be("XAD1");
