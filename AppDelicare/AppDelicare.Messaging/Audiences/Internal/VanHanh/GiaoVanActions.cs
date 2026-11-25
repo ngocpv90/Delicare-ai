@@ -105,10 +105,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         [
             new BotAction { Code = "gv_mine", Module = "GIAOVAN", Label = "🚚 Chuyến của tôi", Command = "chuyen", CommandDescription = "Chuyến giao hôm nay của tôi", Bots = ["VH"], MenuMetaLink = "#/log-stop", Order = 1, Handler = MineAsync },
             new BotAction { Code = "gv_board", Module = "GIAOVAN", Label = "🗺 Giao vận hôm nay", Command = "giaovan", CommandDescription = "Mọi chuyến giao hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-route", Order = 2, Handler = BoardAsync },
-            new BotAction { Code = "gv_box", Module = "GIAOVAN", Label = "📥 Nhận hộp về", Command = "hop", CommandDescription = "Ghi số hộp khay nhận về", Bots = ["VH"], MenuMetaLink = "#/log-container-return", Order = 3, Handler = BoxesAsync },
+            new BotAction { Code = "gv_box", Module = "GIAOVAN", Label = "📥 Nhận hộp về", Command = "hop", CommandDescription = "Ghi số hộp khay nhận về", Bots = ["VH"], MenuMetaLink = "#/log-packaging-ledger" /* UI-6.45: Thu hồi khay hộp trong Khay hộp theo khách (UI-6.35) */, Order = 3, Handler = BoxesAsync },
             // BOT-3.1 (UG-1 C-22): lịch xe ngày mai, hộp khay hôm nay ("Chuyến trực tiếp" = 🗺 Giao vận hôm nay → thẻ chuyến).
             new BotAction { Code = "gv_schedule", Module = "GIAOVAN", Label = "🧭 Lịch xe", Command = "lichxe", CommandDescription = "Lịch xe ngày mai", Bots = ["VH"], MenuMetaLink = "#/log-route", Order = 4, Handler = ScheduleAsync },
-            new BotAction { Code = "gv_boxes_today", Module = "GIAOVAN", Label = "📦 Hộp khay hôm nay", Command = "hopkhay", CommandDescription = "Hộp khay phải thu / đã thu hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-container-return", Order = 5, Handler = BoxesTodayAsync },
+            new BotAction { Code = "gv_boxes_today", Module = "GIAOVAN", Label = "📦 Hộp khay hôm nay", Command = "hopkhay", CommandDescription = "Hộp khay phải thu / đã thu hôm nay", Bots = ["VH"], MenuMetaLink = "#/log-packaging-ledger" /* UI-6.45: Thu hồi khay hộp trong Khay hộp theo khách (UI-6.35) */, Order = 5, Handler = BoxesTodayAsync },
         ];
 
         private string Today => VnTime.Today(time).ToString("yyyy-MM-dd");

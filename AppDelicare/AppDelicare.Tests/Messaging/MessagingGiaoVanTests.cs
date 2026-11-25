@@ -143,7 +143,7 @@ namespace AppDelicare.Tests.Messaging
         [Fact]
         public async Task Arrive_fail_with_reason_and_container_return_typed_count()
         {
-            await using var h = DriverHost(Detail("InTransit", [], "Planned", ["arrive", "recordTemperature", "deliver", "fail"]), "#/log-stop", "#/log-container-return");
+            await using var h = DriverHost(Detail("InTransit", [], "Planned", ["arrive", "recordTemperature", "deliver", "fail"]), "#/log-stop", "#/log-packaging-ledger");
             string s = Stop1.ToString("N");
             await h.SendAsync(Tap("dlv:arr:" + s));
             Last(h, "api/DeliveryStop/Arrive").Form["Id"].Should().Be(Stop1.ToString());
@@ -152,7 +152,7 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Tap("dlv:fr:" + s + ".1"));
             Last(h, "api/DeliveryStop/Fail").Form["Reason"].Should().Be("Không liên lạc được người nhận (Telegram)");
 
-            await using var h2 = DriverHost(Detail("InTransit", [], "Delivered", []), "#/log-stop", "#/log-container-return");
+            await using var h2 = DriverHost(Detail("InTransit", [], "Delivered", []), "#/log-stop", "#/log-packaging-ledger");
             await h2.SendAsync(Text("📥 Nhận hộp về"));
             string d = DeliveryOrder1.ToString("N");
             Buttons(h2.Sender.Sent.Last().Message.ReplyMarkup).Should().ContainSingle().Which.Should().Be("dlv:bx:" + d);

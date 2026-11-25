@@ -26,7 +26,14 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             public Guid ChecklistId { get; set; }
             public string Title { get; set; } = string.Empty;
             public List<(Guid ItemId, string Label, bool? Passed)> Items { get; set; } = [];
+            /// <summary>UI-6.45 (UI-6.30): tiêu chí trọng yếu Không đạt → mẻ bị ảnh hưởng (chọn từ mẻ hôm nay) hoặc lý do "không ảnh hưởng mẻ nào".</summary>
+            public List<(Guid Id, string Label)> BatchChoices { get; set; } = [];
+            public HashSet<Guid> Batches { get; set; } = [];
+            public string? NoBatchReason { get; set; }
+            public bool CriticalFailed => Items.Any(x => x.Passed == false && x.Label.StartsWith('❗'));
         }
+
+        public const string NoBatchText = "Không ảnh hưởng mẻ nào (xác nhận trên bot)";
 
         public IEnumerable<BotAction> GetActions() =>
         [
@@ -71,6 +78,29 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             if (data.Action == "done")
             {
+                await SubmitAsync(ctx, s, ct);
+                return;
+            }
+            if (data.Action == "all")
+            {
+                s.Items = [.. s.Items.Select(x => (x.ItemId, x.Label, x.Passed ?? true))];
+                await ShowAsync(ctx, InputWidgets.Checklist(s.Title, [.. s.Items.Select(x => (x.Label, x.Passed))]), ct);
+                return;
+            }
+            if (data.Action == "b" && int.TryParse(data.Id, out int bi) && bi >= 0 && bi < s.BatchChoices.Count)
+            {
+                Guid id = s.BatchChoices[bi].Id;
+                if (!s.Batches.Remove(id))
+                {
+                    s.Batches.Add(id);
+                }
+                await ShowAsync(ctx, BatchPicker(s), ct);
+                return;
+            }
+            if (data.Action == "nb")
+            {
+                s.Batches.Clear();
+                s.NoBatchReason = NoBatchText;
                 await SubmitAsync(ctx, s, ct);
                 return;
             }
@@ -124,11 +154,23 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 return;
             }
+            // UI-6.45 (UI-6.30): lỗi trọng yếu → bắt buộc chọn mẻ bị ảnh hưởng hoặc xác nhận không ảnh hưởng mẻ nào (máy chủ chặn nếu thiếu).
+            if (s.CriticalFailed && s.Batches.Count == 0 && s.NoBatchReason == null)
+            {
+                var board = await Web.GetAsUserAsync<JsonElement>("api/ProductionBatch/GetBoard?ProductionDate=" + VnTime.Today(time).ToString("yyyy-MM-dd"), token, ct);
+                var list = board.IsOk && board.Data.ValueKind == JsonValueKind.Object && board.Data.TryGetProperty("listBatch", out var lb) && lb.ValueKind == JsonValueKind.Array ? lb.EnumerateArray().ToList() : [];
+                s.BatchChoices = [.. list.Where(b => BepActions.S(b, "status") is not ("Cancelled" or "Planned") && Guid.TryParse(BepActions.S(b, "id"), out _)).Take(8)
+                    .Select(b => (Guid.Parse(BepActions.S(b, "id")!), $"{BepActions.S(b, "batchNumber")} {BepActions.S(b, "dishName")}".Trim()))];
+                await ShowAsync(ctx, BatchPicker(s), ct);
+                return;
+            }
             var r = await Web.PostJsonAsUserAsync<JsonElement>("api/FoodSafetyChecklistResult/Record", new
             {
                 checklistId = s.ChecklistId,
                 checkDate = VnTime.Today(time).ToString("yyyy-MM-dd"),
                 listItem = s.Items.Select(x => new { checklistItemId = x.ItemId, resultCode = x.Passed == true ? "PASS" : "FAIL" }),
+                listProductionBatchId = s.Batches.ToList(),
+                noBatchReason = s.NoBatchReason,
             }, token, ct);
             if (r.IsOk)
             {
@@ -140,6 +182,27 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 Title = r.IsOk ? "✅ Đã ghi checklist" : "⚠️ Chưa ghi được checklist",
                 Lines = r.IsOk ? [$"{s.Title}: {s.Items.Count - fail} đạt, {fail} không đạt.", r.ResponseMessage ?? ""] : [Problem(r)],
             }, ct);
+        }
+
+        /// <summary>UI-6.45: chọn mẻ bị ảnh hưởng bởi lỗi trọng yếu (bấm để chọn / bỏ) – hoặc "Không ảnh hưởng mẻ nào".</summary>
+        private static NeutralMessage BatchPicker(Session s)
+        {
+            var m = new NeutralMessage
+            {
+                Title = "❗ Lỗi trọng yếu – mẻ nào bị ảnh hưởng?",
+                Lines = s.BatchChoices.Count == 0 ? ["Hôm nay chưa có mẻ đang nấu / đã nấu – xác nhận không ảnh hưởng mẻ nào."] : ["Chọn mẻ bị ảnh hưởng (mẻ được chọn sẽ bị giữ chờ QC xử lý)."],
+            };
+            for (int i = 0; i < s.BatchChoices.Count; i++)
+            {
+                var (id, label) = s.BatchChoices[i];
+                m.Buttons.Add(new NeutralButton((s.Batches.Contains(id) ? "☑️ " : "⬜ ") + label, CallbackData.Build(Kind, "b", i.ToString(CultureInfo.InvariantCulture))));
+            }
+            m.Buttons.Add(new NeutralButton("🚫 Không ảnh hưởng mẻ nào", CallbackData.Build(Kind, "nb")));
+            if (s.Batches.Count != 0)
+            {
+                m.Buttons.Add(new NeutralButton($"✔️ Gửi ({s.Batches.Count} mẻ)", CallbackData.Build(Kind, "done")));
+            }
+            return m;
         }
 
         public async Task HoldAsync(BotActionContext ctx, CancellationToken ct)

@@ -56,7 +56,7 @@ namespace AppDelicare.Tests.Messaging
         [Fact]
         public async Task My_complaints_timesheet_and_pending_requests()
         {
-            await using var h = Host(false, "#/log-complaint", "#/hr-attendance", "#/hr-leave", "#/hr-swap");
+            await using var h = Host(false, "#/log-complaint", "#/hr-attendance", "#/hr-leave", "#/hr-leave");
             h.Web.Routes["api/CustomerComplaint/GetList"] = (_, _) => (200, null, JsonSerializer.Serialize(new
             {
                 listItem = new[] { new { complaint = new { complaintNo = "PA-1", receivedAt = D(Today) + "T08:00:00" }, customerName = "Trường A", statusName = "Mới", isOverdue = true, assignedToName = "CSKH Lan" } },
@@ -84,7 +84,7 @@ namespace AppDelicare.Tests.Messaging
         [Fact]
         public async Task Vehicle_schedule_tomorrow_and_boxes_today()
         {
-            await using var h = Host(false, "#/log-route", "#/log-container-return");
+            await using var h = Host(false, "#/log-route", "#/log-packaging-ledger");
             h.Web.Routes["api/DeliveryRoute/GetBoard"] = (_, _) => (200, null, JsonSerializer.Serialize(new
             {
                 listRoute = new[] { new { route = new { id = Guid.NewGuid(), routeNo = "CX-1", status = "Planned" }, statusName = "Kế hoạch", licensePlate = "51C-123", driverName = "Tài xế Hùng", listStop = Array.Empty<object>() } },

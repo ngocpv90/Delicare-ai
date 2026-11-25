@@ -55,6 +55,11 @@ namespace AppDelicare.Messaging.Experience
                 string next = passed == true ? "0" : "1";
                 message.Buttons.Add(new NeutralButton($"{icon} {label}", CallbackData.Build(CallbackData.Kinds.Checklist, i.ToString(CultureInfo.InvariantCulture), next)));
             }
+            // UI-6.45 (UI-6.30): "Đạt tất cả" – điền Đạt cho các mục chưa chọn (mục đã chọn Không đạt giữ nguyên).
+            if (items.Any(x => x.Passed == null))
+            {
+                message.Buttons.Add(new NeutralButton("✅ Đạt tất cả", CallbackData.Build(CallbackData.Kinds.Checklist, "all")));
+            }
             if (items.All(x => x.Passed != null))
             {
                 message.Buttons.Add(new NeutralButton("✔️ Hoàn tất", CallbackData.Build(CallbackData.Kinds.Checklist, "done")));
