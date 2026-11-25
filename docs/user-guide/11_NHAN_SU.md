@@ -97,11 +97,18 @@ Mở **hồ sơ nhân viên** cả trang (← về danh sách). Ai xem được 
 - Vị trí phải trong **150 m** quanh trạm bếp; ngoài bán kính vẫn ghi nhưng đánh dấu chưa hợp lệ.
 - *Tài khoản chưa gắn với nhân viên…* → nhờ NS đặt mã nhân viên = tên đăng nhập (hoặc liên kết tài khoản).
 
-### 4.4 Chấm công hộ / chốt vắng / bảng công – `hr-attendance`
-- **Chấm công hộ** (cần quyền Thêm): **Nhân viên***, **Loại*** (Vào ca / Ra ca), **Lý do chấm hộ*** → **Ghi nhận**. Ghi thêm một lần chấm – không sửa, không xóa được.
-- **Chốt vắng** (cần quyền sửa Phân ca): chọn **Ngày*** → **Đánh vắng** → mọi ca đã hết giờ mà không vào ca chuyển **Vắng** (không hoàn tác). Hằng ngày 08:00 hệ thống tự làm cho ngày hôm qua.
-- **Bảng công**: chọn từ ngày → đến ngày (≤ 62 ngày), đơn vị → bảng theo nhân viên: Mã NV, Nhân viên, Đơn vị, Ca được phân, Có mặt, Đi muộn, Về sớm, Vắng, Nghỉ phép, Giờ công… → bấm dòng → **Bảng công chi tiết** từng ngày (giờ vào / ra, hình thức GPS / QR / Máy chấm công / Chấm hộ, hợp lệ).
-- Danh sách sự kiện chấm công bên dưới chỉ xem (không sửa / xóa).
+### 4.4 Chấm công – `hr-attendance` (UI-6.38)
+Đầu màn: lọc **tổ / đơn vị** (gõ để tìm), nút **Xuất bảng công** (Excel tháng đang xem). 3 tab – nhân viên tự chấm ở **Việc của tôi** hoặc bot (không còn khối "Ca hôm nay của tôi" ở đây).
+- **Hôm nay** (mặc định): chọn ca (nút ca ghi giờ, *đang diễn ra / bắt đầu sau x giờ / đã xong*, có mặt / được phân). 4 thẻ: Có mặt / được phân · **Chưa vào ca (quá giờ)** · Đi muộn (tổng phút) · **Cần xử lý**. 4 cột:
+  - **Chưa vào ca**: "quá giờ x′" (đỏ) hoặc "chưa tới giờ", SĐT bấm gọi; **Chấm hộ** (giờ vào thực tế – trống = bây giờ, **lý do\***) · **Báo vắng** (khi đã quá giờ).
+  - **Đã vào ca**: giờ vào, "muộn x′", "ngoài bán kính N m".
+  - **Nghỉ phép**: người có đơn nghỉ đã duyệt hôm nay.
+  - **Cần xử lý** (3 ngày gần nhất): *Thiếu ra ca* → **Bổ sung giờ**; *Ngoài bán kính* → **Xác nhận hợp lệ** (ghi lý do, vd. nhận xe ở bãi).
+  - Ca hết giờ mà không vào ca **tự chuyển Vắng lúc 23:30** (không còn nút Chốt vắng). Quá giờ bắt đầu ca còn người chưa vào ca → bot báo người phụ trách chấm công + **trưởng đơn vị** của người đó.
+- **Bảng công**: ◀ **tháng** ▶; dòng = nhân viên nhóm theo tổ, cột = ngày (Chủ nhật tô nhạt); ký hiệu **✓** đủ · **M** muộn / về sớm · **V** vắng · **P** phép · **T** thiếu ra / vào ca · **!** ngoài bán kính chưa xác nhận · **–** không có ca · **…** ca hôm nay chưa vào; dấu **\*** = có lần bổ sung giờ. Cột tổng **Công · Giờ · Muộn · Vắng · Phép**. Dải **Cần xử lý trước khi xuất lương** (thiếu giờ ra / vào, ngoài bán kính chưa xác nhận, vắng không có đơn nghỉ) – bấm để lọc. Bấm ô → giờ vào / ra, muộn / về sớm + **Bổ sung giờ** (ô T / V) hoặc **Xác nhận hợp lệ** (ô !).
+- **Sổ chấm công**: mọi lần chấm – chỉ xem, không sửa / xóa.
+- **Bổ sung giờ** (quên vào / ra ca): Loại (Ra ca / Vào ca) · **Giờ thực tế\*** · **Lý do\*** (Quên chấm công · Điện thoại hết pin / mất mạng · Máy chấm công lỗi · Khác) · Ghi chú. Chỉ trong khung ca (từ trước giờ vào ca theo quy định tới 3 giờ sau giờ kết thúc) và cho ca trong **3 ngày** gần nhất; ca đã có lần chấm cùng loại thì không bổ sung. Ghi **thêm** một lần chấm "[BỔ SUNG] lý do – ghi bởi …", tính lại đi muộn / về sớm / giờ công; ca thành **Hoàn thành** khi đủ vào + ra (kể cả ca đã Vắng).
+- **Xuất bảng công**: tệp Excel tháng – mỗi người một dòng, ngày theo cột (ký hiệu), tổng công / giờ / muộn / vắng / phép.
 
 ### 4.5 Đơn nghỉ phép – `hr-leave`
 1. **Tạo đơn** → Nhân viên (trống = chính bạn; cho người khác cần quyền Thêm), **Từ ngày**, **Đến ngày** (≥ từ ngày, ≤ 30 ngày / đơn, lập lùi ≤ 7 ngày), **Loại nghỉ** (Nghỉ phép năm / Nghỉ ốm / Việc riêng có lương / Nghỉ không lương / Thai sản / Khác), **Lý do*** → lưu → *"Đã tạo đơn và gửi duyệt"* (số `DN-…`, Chờ duyệt).

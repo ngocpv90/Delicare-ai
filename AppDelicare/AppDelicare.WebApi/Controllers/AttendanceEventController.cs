@@ -1,3 +1,4 @@
+using AppDelicare.Model.Model;
 // Sinh bởi tools/AppDelicare.CodeGen (T05), nay là file của dev (BE2.6: action nghiệp vụ nhân sự) – CodeGen không ghi đè.
 #nullable enable
 using Microsoft.AspNetCore.Mvc;
@@ -121,6 +122,65 @@ namespace AppDelicare.WebApi.Controllers
         }
 
         /// <summary>BE2.6 (Catalog 206): bảng công theo nhân viên (danh sách, phân trang).</summary>
+        // ------------------------------------------------------------ UI-6.38 (D-119)
+
+        /// <summary>Bổ sung giờ thực tế (quên vào / ra ca) – trong khung ca, ≤ Hr:SupplementMaxDays ngày; ghi thêm 1 lần chấm PROXY.</summary>
+        [HttpPost("Supplement")]
+        [Security.Permission("hr-attendance", PermissionAction.Add)]
+        public Task<IActionResult> Supplement([FromBody] AttendanceSupplementRequest request) => Run(nameof(Supplement), () => _service.Supplement(request));
+
+        /// <summary>Xác nhận hợp lệ lần chấm ngoài bán kính (lý do bắt buộc).</summary>
+        [HttpPost("ConfirmValid")]
+        [Security.Permission("hr-attendance", PermissionAction.Edit)]
+        public Task<IActionResult> ConfirmValid([FromBody] AttendanceConfirmValidRequest request) => Run(nameof(ConfirmValid), () => _service.ConfirmValid(request));
+
+        /// <summary>Báo vắng một ca chưa vào (tab Hôm nay).</summary>
+        [HttpPost("ReportAbsent")]
+        [Security.Permission("hr-attendance", PermissionAction.Edit)]
+        public Task<IActionResult> ReportAbsent([FromBody] AttendanceReportAbsentRequest request) => Run(nameof(ReportAbsent), () => _service.ReportAbsent(request));
+
+        [HttpGet("GetDayBoard")]
+        [Security.Permission("hr-attendance", PermissionAction.View)]
+        public Task<IActionResult> GetDayBoard(DateTime? date, Guid? shiftId, Guid? organizationUnitId) => Run(nameof(GetDayBoard), () => _service.GetDayBoard(date, shiftId, organizationUnitId));
+
+        [HttpGet("GetMonthGrid")]
+        [Security.Permission("hr-attendance", PermissionAction.View)]
+        public Task<IActionResult> GetMonthGrid(string? month, Guid? organizationUnitId) => Run(nameof(GetMonthGrid), () => _service.GetMonthGrid(month, organizationUnitId));
+
+        /// <summary>Xuất bảng công tháng (.xlsx).</summary>
+        [HttpGet("ExportTimesheet")]
+        [Security.Permission("hr-attendance", PermissionAction.Export, OrScreens = ["hr-attendance"])]
+        public async Task<IActionResult> ExportTimesheet(string? month, Guid? organizationUnitId)
+        {
+            try
+            {
+                var result = await _service.ExportTimesheet(month, organizationUnitId);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data.Content, result.Data.ContentType, result.Data.FileName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ExportTimesheet: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        private async Task<IActionResult> Run<T>(string action, Func<Task<T>> run)
+        {
+            try
+            {
+                return Ok(await run());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "] ", action, ": ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetTimesheet")]
         public async Task<IActionResult> GetTimesheet([FromQuery] TimesheetRequest request)
         {

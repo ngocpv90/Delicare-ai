@@ -32,5 +32,12 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<MyAttendanceModel>> GetForEmployee(Guid employeeId);
         /// <summary>BOT-1.2: chấm công qua bot cho người chỉ có EmployeeId (quy tắc tự chấm, Note ghi nguồn).</summary>
         public Task<IResult<AttendanceResultModel>> CheckForEmployee(Guid employeeId, AttendanceCheckRequest request, bool checkIn, string sourceNote);
+        // UI-6.38 (D-119)
+        public Task<IResult<AttendanceResultModel>> Supplement(AttendanceSupplementRequest request);
+        public Task<IResult<bool>> ConfirmValid(AttendanceConfirmValidRequest request);
+        public Task<IResult<bool>> ReportAbsent(AttendanceReportAbsentRequest request);
+        public Task<IResult<AttendanceDayBoardModel>> GetDayBoard(DateTime? date, Guid? shiftId, Guid? organizationUnitId);
+        public Task<IResult<AttendanceMonthGridModel>> GetMonthGrid(string? month, Guid? organizationUnitId);
+        public Task<IResult<FileContentModel>> ExportTimesheet(string? month, Guid? organizationUnitId);
     }
 }

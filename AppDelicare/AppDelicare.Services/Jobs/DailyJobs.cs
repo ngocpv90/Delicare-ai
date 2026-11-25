@@ -149,18 +149,30 @@ namespace AppDelicare.Services.Jobs
     /// 08:00 – chốt Vắng cho ca của <b>hôm qua</b> đã hết giờ mà không vào ca (spec 11.2 "job cuối ngày đánh Absent", D-55 j).
     /// Chạy sáng hôm sau để ca đêm (DEM_23H kết thúc sáng nay) cũng đã hết giờ.
     /// </summary>
-    public sealed class MarkAbsentJob(IShiftAssignmentService shiftAssignmentService) : IScheduledJob
+    public sealed class MarkAbsentJob(IShiftAssignmentService shiftAssignmentService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IScheduledJob
     {
         public string Code => "MarkAbsent";
-        public string Name => "Chốt vắng ca hôm qua";
-        public string Description => "Ca Kế hoạch / Xác nhận của hôm qua đã hết giờ mà không vào ca → Vắng (như nút Đánh dấu vắng, toàn công ty).";
-        public string DefaultAt => "08:00";
+        public string Name => "Tự chuyển Vắng";
+        public string Description => "UI-6.38 (D-119 f): ca Kế hoạch / Xác nhận của hôm nay và hôm qua (ca đêm) đã hết giờ mà không vào ca → Vắng (toàn công ty; chạy lại không đổi thêm). Tắt bằng Hr:AutoMarkAbsent.";
+        public string DefaultAt => rules.Value.Hr.AutoMarkAbsentTime;
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
         {
-            DateTime workDate = now.Date.AddDays(-1);
-            var result = await shiftAssignmentService.MarkAbsent(new ShiftMarkAbsentRequest { WorkDate = workDate });
-            return JobOutcome.From(result, workDate, r => r.Marked, r => $"Đánh vắng {r.Marked} ca ngày {workDate:dd/MM/yyyy}");
+            if (!rules.Value.Hr.AutoMarkAbsent)
+            {
+                return new JobOutcome(JobRunStatus.Succeeded, 0, now.Date, "Tự chuyển Vắng đang tắt (Hr:AutoMarkAbsent)");
+            }
+            int marked = 0;
+            foreach (var workDate in new[] { now.Date.AddDays(-1), now.Date })
+            {
+                var result = await shiftAssignmentService.MarkAbsent(new ShiftMarkAbsentRequest { WorkDate = workDate });
+                if (result.ResponseCode != 200)
+                {
+                    return JobOutcome.From(result, workDate, r => r.Marked, r => string.Empty);
+                }
+                marked += result.Data?.Marked ?? 0;
+            }
+            return new JobOutcome(JobRunStatus.Succeeded, marked, now.Date, $"Đánh vắng {marked} ca (hôm qua + hôm nay)");
         }
     }
 }

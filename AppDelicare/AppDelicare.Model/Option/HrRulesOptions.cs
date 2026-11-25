@@ -29,6 +29,12 @@ namespace AppDelicare.Model.Option
         public int GridDays { get; set; } = 7;
         /// <summary>UI-6.37 (D-118 d): cảnh báo khi một người có ≥ N ca / tuần (chỉ cảnh báo).</summary>
         public int MaxShiftsPerWeek { get; set; } = 6;
+        /// <summary>UI-6.38 (D-119 d): bổ sung giờ – tối đa N giờ sau kết thúc ca, ca trong N ngày gần nhất.</summary>
+        public int SupplementWindowHours { get; set; } = 3;
+        public int SupplementMaxDays { get; set; } = 3;
+        /// <summary>UI-6.38 (D-119 f): tự chuyển Vắng hằng ngày (job MarkAbsent) – giờ chạy mặc định 23:30.</summary>
+        public bool AutoMarkAbsent { get; set; } = true;
+        public string AutoMarkAbsentTime { get; set; } = "23:30";
         /// <summary>UI-6.37 (D-118 c): định biên { "mã đơn vị": { "mã ca": n, "T7:mã ca": n, "CN:mã ca": n } } – thiếu cấu hình → không tính thiếu.</summary>
         public Dictionary<string, Dictionary<string, int>> ShiftMinStaff { get; set; } = [];
         /// <summary>UI-6.37 (D-118 f): nhắc lịch tuần sau – thứ (1 = Thứ 2 … 7 = CN; mặc định 5 = Thứ 6) và giờ.</summary>

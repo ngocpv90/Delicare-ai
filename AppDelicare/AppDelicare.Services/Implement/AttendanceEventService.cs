@@ -22,8 +22,8 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class AttendanceEventService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IPermissionService permissionService, IOptions<BusinessRulesOptions> rules) : IAttendanceEventService
+    public partial class AttendanceEventService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IPermissionService permissionService, IOptions<BusinessRulesOptions> rules, IServiceProvider services) : IAttendanceEventService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -33,6 +33,7 @@ namespace AppDelicare.Services.Implement
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly IPermissionService _permissionService = permissionService;
         private readonly HrRulesOptions _hr = rules.Value.Hr;
+        private readonly IServiceProvider _services = services;
 
         public async Task<IResults<AttendanceEventViewModel>> GetAll(AttendanceEventSearchRequest request)
         {
@@ -542,7 +543,7 @@ namespace AppDelicare.Services.Implement
                 var details = await DetailsAsync(rows);
                 var ids = rows.Select(r => r.Id).ToList();
                 var invalid = await db.AttendanceEvent.AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.IsValid == false && e.ShiftAssignmentId != null && ids.Contains(e.ShiftAssignmentId.Value))
+                    .Where(e => !e.IsDeleted && e.IsValid == false && e.ShiftAssignmentId != null && ids.Contains(e.ShiftAssignmentId.Value) && !db.AuditChange.Any(x => !x.IsDeleted && x.EntityName == "AttendanceEvent" && x.Action == ConfirmAction && x.IdChange == e.Id))
                     .GroupBy(e => e.EmployeeId).Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count);
                 var leaves = await HrRules.LeavesAsync(db, empIds, from, to, true);
                 var positionIds = pageEmployees.Where(e => e.PositionId != null).Select(e => e.PositionId!.Value).Distinct().ToList();
