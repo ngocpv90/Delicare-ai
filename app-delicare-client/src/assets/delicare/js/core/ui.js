@@ -22,6 +22,7 @@
     DAT: 'Đạt', KHONG_DAT: 'Không đạt', TAM_GIU: 'Tạm giữ', PASS: 'Đạt', FAIL: 'Không đạt', HOLD: 'Tạm giữ', REJECT: 'Loại', DIRTY: 'Bẩn', DAMAGED: 'Hỏng', CLEAN: 'Sạch', GOOD: 'Tốt', DELIVERY: 'Giao hàng', CORE: 'Lõi', RECEIVING: 'Nhận hàng', STORAGE: 'Bảo quản', Duplicate: 'Trùng lặp', SANG: 'Sáng', TRUA: 'Trưa', TOI: 'Tối', DEM: 'Đêm',
     PendingApproval: 'Chờ duyệt', Terminated: 'Chấm dứt', Obsolete: 'Hết dùng', Posted: 'Đã ghi sổ', Issued: 'Đã xuất', Matched: 'Khớp', Variance: 'Chênh lệch',
     Added: 'Thêm', Modified: 'Sửa', Deleted: 'Xóa', Download: 'Tải xuống', Login: 'Đăng nhập', Logout: 'Đăng xuất',
+    RoleSaveMany: 'Đổi quyền', ResignScheduled: 'Hẹn nghỉ việc', ResignCancelled: 'Hủy hẹn nghỉ việc', Resign: 'Nghỉ việc', ConfirmValid: 'Xác nhận hợp lệ', StatusChange: 'Đổi trạng thái', // UI-6.48 (hồi quy UI-6.49): mã hành động nhật ký mới
     Inbound: 'Đến', Outbound: 'Đi', IN: 'Đến', OUT: 'Đi', true: 'Có', false: 'Không',
   };
   // UI-6.10 (D-88): Active / Inactive một cách gọi duy nhất – bỏ biến thể cũ của danh mục (Hoạt động, Đang áp dụng, Ngừng, Không hoạt động).
