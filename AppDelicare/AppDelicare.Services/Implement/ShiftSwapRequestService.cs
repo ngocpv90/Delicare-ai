@@ -20,9 +20,9 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class ShiftSwapRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+    public partial class ShiftSwapRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
         , IClock clock, ICurrentActor currentActor, IPermissionService permissionService, IDocumentNumberService documentNumberService
-        , IApprovalRequestService approvalRequestService) : IShiftSwapRequestService
+        , IApprovalRequestService approvalRequestService, IServiceProvider services) : IShiftSwapRequestService
     {
         /// <summary>Hoán đổi 2 ca.</summary>
         public const string TypeSwap = "SWAP";
@@ -38,6 +38,7 @@ namespace AppDelicare.Services.Implement
         private readonly IPermissionService _permissionService = permissionService;
         private readonly IDocumentNumberService _documentNumberService = documentNumberService;
         private readonly IApprovalRequestService _approvalRequestService = approvalRequestService;
+        private readonly IServiceProvider _services = services;
 
         public async Task<IResults<ShiftSwapRequestViewModel>> GetAll(ShiftSwapRequestSearchRequest request)
         {
@@ -226,7 +227,7 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.HrSwapOwnerChanged;
             }
-            bool otherPending = await db.ShiftSwapRequest.AsNoTracking().AnyAsync(s => !s.IsDeleted && s.RequestStatus == ShiftSwapStatus.Pending && s.Id != swapId
+            bool otherPending = await db.ShiftSwapRequest.AsNoTracking().AnyAsync(s => !s.IsDeleted && (s.RequestStatus == ShiftSwapStatus.Pending || s.RequestStatus == ShiftSwapStatus.AwaitingConsent) && s.Id != swapId
                 && (ids.Contains(s.CurrentShiftAssignmentId) || (s.ProposedShiftAssignmentId != null && ids.Contains(s.ProposedShiftAssignmentId.Value))));
             if (otherPending)
             {
@@ -332,11 +333,18 @@ namespace AppDelicare.Services.Implement
                     CurrentShiftAssignmentId = current.Id,
                     ProposedShiftAssignmentId = proposed?.Id,
                     Reason = reason,
-                    RequestStatus = ShiftSwapStatus.Pending,
+                    RequestStatus = Hr.SwapConsentRequired ? ShiftSwapStatus.AwaitingConsent : ShiftSwapStatus.Pending,
                     SubmittedAt = _clock.Now,
                 };
                 _unitOfWork.ShiftSwapRequestRepository.Add(entity);
                 await _unitOfWork.ShiftSwapRequestRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                if (Hr.SwapConsentRequired)
+                {
+                    // UI-6.39 (D-120): chờ người nhận đồng ý – chưa tạo yêu cầu duyệt.
+                    _unitOfWork.CommitTransaction();
+                    await NotifyTargetAsync(entity);
+                    return Result<ShiftSwapDetailModel>.Success((await DetailAsync(entity.Id))!, string.Format(ConstantHelper.Message.HrSwapAwaitingConsent, entity.RequestNo));
+                }
                 var (approval, approvalError) = await _approvalRequestService.CreateAsync(ShiftSwapStatus.BusinessType, entity.Id);
                 if (approvalError != null)
                 {
@@ -395,6 +403,20 @@ namespace AppDelicare.Services.Implement
                 if (swap == null)
                 {
                     return Result<bool>.Fail(ConstantHelper.Message.HrSwapNotFound, false);
+                }
+                if (swap.RequestStatus == ShiftSwapStatus.AwaitingConsent)
+                {
+                    // UI-6.39: chưa có yêu cầu duyệt – người tạo hủy trực tiếp.
+                    var self = await HrRules.ResolveEmployeeAsync(_unitOfWork.DbContext, _currentActor.RequireActor().UserId);
+                    if (self?.Id != swap.RequesterEmployeeId && swap.CreatedBy != _currentActor.RequireActor().UserId)
+                    {
+                        return Result<bool>.Fail(ConstantHelper.Message.HrSwapCancelNotOwner, false);
+                    }
+                    var row = _unitOfWork.ShiftSwapRequestRepository.GetSingle(x => x.Id == swap.Id)!;
+                    row.RequestStatus = LeaveRequestStatus.Cancelled;
+                    _unitOfWork.ShiftSwapRequestRepository.Update(row);
+                    await _unitOfWork.ShiftSwapRequestRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+                    return Result<bool>.Success(true, ConstantHelper.Message.HrSwapCancelled);
                 }
                 var pending = await LatestApprovalAsync(request.Id, true);
                 if (swap.RequestStatus != ShiftSwapStatus.Pending || pending == null)

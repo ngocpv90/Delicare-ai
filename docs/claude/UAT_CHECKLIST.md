@@ -552,3 +552,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Sổ chấm công chỉ xem. Không còn nút Chốt vắng; 23:30 tự chuyển Vắng (chạy lại không đổi thêm).
 - [ ] Bot: quá giờ còn người chưa vào ca → trưởng đơn vị nhận 1 tin / ca.
 - [ ] Điện thoại: 4 cột xếp dọc, nút to.
+
+## UI-6.39 – Nghỉ & đổi ca (D-120)
+- [ ] Sidebar Nhân sự: Nhân viên · Phân ca · Chấm công · Nghỉ & đổi ca · Ca làm việc · Chức vụ (không còn Đơn đổi ca); link cũ #/hr-swap mở màn lọc Đổi ca; Phê duyệt › Nghỉ & đổi ca hiện cả 2 loại theo quyền duyệt từng loại.
+- [ ] Tạo đơn Xin nghỉ: hiện phép năm còn / sau, ca bị bỏ, người nghỉ trùng. Đổi ca: 2 lần chọn thẻ + lý do. Nhường ca: chọn người đang trống.
+- [ ] Đơn đổi / nhường ca mới "Chờ người nhận đồng ý"; người nhận Đồng ý (bot / Việc của tôi) → có yêu cầu duyệt; Từ chối → đơn Từ chối, người xin được báo; 24 giờ không trả lời → tự hủy.
+- [ ] Hộp duyệt đơn nghỉ: phép năm, tổ còn x / cần y, người có thể thay; "Duyệt xong mở Phân ca".
+- [ ] Lịch nghỉ 2 tuần; ngày tổ thiếu viền đỏ (cần cấu hình định biên).
+- [ ] Thẻ Ca trống do nghỉ bấm mở Phân ca.

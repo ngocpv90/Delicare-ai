@@ -480,7 +480,7 @@
   APP.register('hr-my', (el, f) => {
     if (!Store.isLive) return onlyLive(el, f);
     el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Ca làm việc, đơn nghỉ, đơn đổi ca, chuyến giao của tài khoản đang đăng nhập và liên kết bot Telegram.' }) +
-      '<div data-mylink></div>' + box('myAtt', 'Chấm công hôm nay', 'Vào ca / ra ca bằng vị trí hiện tại của thiết bị') + box('myShift', 'Ca của tôi', '14 ngày tới') + `<div class="grid g2">${box('myLeave', 'Đơn nghỉ của tôi', '', `<button class="btn sm primary" id="myLeaveNew">${I('plus')} Tạo đơn nghỉ</button>`)}${box('mySwap', 'Đơn đổi ca của tôi', '', `<a class="btn sm" href="#/hr-swap">Màn đổi ca →</a>`)}</div>` +
+      '<div data-mylink></div>' + box('myAtt', 'Chấm công hôm nay', 'Vào ca / ra ca bằng vị trí hiện tại của thiết bị') + box('myShift', 'Ca của tôi', '14 ngày tới') + /* UI-6.39 (D-120): gộp 2 khung → Nghỉ & đổi ca của tôi (+ đơn cần tôi đồng ý nhận ca) */ `<div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Nghỉ & đổi ca của tôi</div><div class="panel-desc">Đổi / nhường ca: bấm Đổi ca ở dòng ca của tôi; người nhận đồng ý rồi đơn mới chuyển người duyệt</div></div><div class="row-flex"><button class="btn sm primary" id="myLeaveNew">${I('plus')} Tạo đơn nghỉ</button></div></div><div id="myConsent"></div><div class="grid g2"><div><div class="small muted mb">Đơn nghỉ</div><div id="myLeave">${LOADING}</div></div><div><div class="small muted mb">Đơn đổi / nhường ca</div><div id="mySwap">${LOADING}</div></div></div></div>` +
       box('myRoute', 'Chuyến giao của tôi', 'Hôm nay – dành cho tài xế') + box('myTg', 'Liên kết Telegram', 'Nhận thông báo và thao tác qua bot', `<button class="btn sm primary" id="myTgNew">${I('plus')} Tạo mã liên kết</button>`);
     const shifts = () => {
       const o = el.querySelector('#myShift'); let list = [];
@@ -488,7 +488,11 @@
       return fill(el, 'myShift', 'ShiftAssignment/GetMine', { days: 14 }, x => { list = x.list; return list.length ? `<div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Ngày</th><th>Ca</th><th>Giờ</th><th>Trạng thái</th><th></th></tr></thead><tbody>${list.map((s, i) => `<tr><td>${esc(U.date(s.workDate))}</td><td>${esc(s.shiftName || s.shiftCode || '')}</td><td>${esc(U.time(s.plannedStart))} – ${esc(U.time(s.plannedEnd))}</td><td>${UI.badge(s.assignmentStatus, 'ShiftAssignment', 'AssignmentStatus')}</td><td class="actions"><button class="btn xs" data-sw="${i}">Xin đổi ca</button></td></tr>`).join('')}</tbody></table></div>` : ''; }, 'Không có ca nào trong 14 ngày tới');
     };
     const swaps = () => fill(el, 'mySwap', 'ShiftSwapRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn đổi ca');
-    const shiftsAndSwaps = () => { shifts(); swaps(); };
+    // UI-6.39: đơn đổi / nhường ca đang chờ tôi đồng ý (người nhận).
+    const consents = () => Store.query('HrRequest/GetList', { status: 'PENDING' }).then(x => { const o = el.querySelector('#myConsent'); if (!o) return; const rows = ((x.ok && x.list) || []).filter(r => (r.allowedActions || []).includes('consent'));
+      o.innerHTML = rows.length ? `<div class="notice info mb">${I('alert')}<div><b style="display:inline">Cần bạn đồng ý nhận ca:</b>${rows.map(r => `<div class="mt">${esc(r.content || '')} <span class="muted">– ${esc(r.employeeName || '')}</span> <button class="btn xs primary" data-cy="${r.id}">Đồng ý</button> <button class="btn xs" data-cn="${r.id}">Từ chối</button></div>`).join('')}</div></div>` : '';
+      o.querySelectorAll('[data-cy],[data-cn]').forEach(b => b.onclick = () => APP.hrConsent && APP.hrConsent(b.dataset.cy || b.dataset.cn, !!b.dataset.cy, () => { consents(); swaps(); })); });
+    const shiftsAndSwaps = () => { shifts(); swaps(); consents(); };
     shiftsAndSwaps();
     const leaves = () => fill(el, 'myLeave', 'LeaveRequest/GetMine', null, x => (x.list.length ? listHtml(x.list, 6) : ''), 'Chưa có đơn nghỉ');
     leaves();

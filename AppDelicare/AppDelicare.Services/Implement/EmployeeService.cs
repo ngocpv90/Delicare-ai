@@ -355,7 +355,7 @@ namespace AppDelicare.Services.Implement
                     }
                 }
                 m.PendingRequestCount = db.LeaveRequest.Count(l => !l.IsDeleted && l.EmployeeId == id && l.RequestStatus == LeaveRequestStatus.Pending)
-                    + db.ShiftSwapRequest.Count(s => !s.IsDeleted && (s.RequesterEmployeeId == id || s.TargetEmployeeId == id) && s.RequestStatus == ShiftSwapStatus.Pending);
+                    + db.ShiftSwapRequest.Count(s => !s.IsDeleted && (s.RequesterEmployeeId == id || s.TargetEmployeeId == id) && (s.RequestStatus == ShiftSwapStatus.Pending || s.RequestStatus == ShiftSwapStatus.AwaitingConsent));
 
                 // UI-2R (D-69 g–h): ca thường làm, tạo / cập nhật bởi, đơn gần đây.
                 var usual = details.Where(d => d.ShiftCode != null).GroupBy(d => d.ShiftCode).OrderByDescending(g => g.Count()).FirstOrDefault();

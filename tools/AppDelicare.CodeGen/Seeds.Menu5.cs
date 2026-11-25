@@ -289,6 +289,8 @@ public static partial class Seeds
         ("log-packing-result", "log-packing-order"), ("log-delivery-order", "log-route"), ("log-loading", "log-route"),
         // UI-6.35 (D-116): Vị trí xe, Xác nhận đã giao → Theo dõi giao hàng; Thu hồi khay hộp → Khay hộp theo khách.
         ("log-gps", "log-execution"), ("log-pod", "log-execution"), ("log-container-return", "log-packaging-ledger"),
+        // UI-6.39 (D-120): Đơn đổi ca → Nghỉ & đổi ca (quyền xem / thêm / sửa; quyền Duyệt mục duyệt giữ riêng theo loại).
+        ("hr-swap", "hr-leave"),
     ];
 
     /// <summary>D-79 (d): mục duyệt → nhóm duyệt (AllowAccess + AllowEdit). <c>crm-price-policy</c> giữ CEO cho khi có loại duyệt (mục đang ẩn).</summary>

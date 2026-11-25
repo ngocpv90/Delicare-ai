@@ -161,6 +161,14 @@ namespace AppDelicare.Model.Model
         public string? ExternalEventId { get; set; }
     }
 
+    /// <summary>UI-6.39 (D-120): người nhận trả lời đề nghị đổi / nhường ca qua bot.</summary>
+    public class BotSwapConsentRequest : BotIdentityRequest
+    {
+        public Guid SwapId { get; set; }
+        public bool Accept { get; set; }
+        public string? Note { get; set; }
+    }
+
     /// <summary>BOT-1.5a: xin nghỉ qua bot (người chỉ có EmployeeId).</summary>
     public class BotEmployeeLeaveRequest : BotIdentityRequest
     {

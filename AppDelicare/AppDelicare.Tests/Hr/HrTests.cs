@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using AppDelicare.Model.Entity;
 using AppDelicare.Tests.Integration;
@@ -399,6 +400,9 @@ namespace AppDelicare.Tests.Hr
             swap.GetProperty("targetName").GetString().Should().Be("NV 2 S1");
             (await staff1.PostFormAsync("/api/ShiftSwapRequest/Create", ("CurrentShiftAssignmentId", a), ("TargetEmployeeId", e3), ("Reason", "Bận"))).Fail("đơn đổi ca khác");
             (await Assign(admin, e1, Monday, w.Toi)).Fail("đơn đổi ca chờ duyệt");
+            // UI-6.39 (D-120): đơn mới chờ người nhận đồng ý – chưa có yêu cầu duyệt; người nhận (NV 2) đồng ý → có yêu cầu duyệt.
+            (await _factory.QueryAsync(db => db.ApprovalRequest.AsNoTracking().AnyAsync(x => x.BusinessId == swapId))).Should().BeFalse();
+            (await (await staff2.PostAsJsonAsync("/api/ShiftSwapRequest/Consent", new { id = swapId, accept = true })).Content.ReadAsStringAsync()).Should().Contain("\"responseCode\":200");
             var grid = (await admin.GetResultAsync($"/api/ShiftAssignment/GetGrid?FromDate=2026-12-14&OrganizationUnitId={w.ParentOu}")).Ok();
             grid.GetProperty("employees").EnumerateArray().Single(e => e.GetProperty("id").GetGuid() == e1).GetProperty("cells").GetProperty("2026-12-14")
                 .GetProperty("pendingSwap").GetBoolean().Should().BeTrue();
@@ -424,6 +428,7 @@ namespace AppDelicare.Tests.Hr
             (await Assign(admin, e2, Monday.AddDays(2), null)).Ok();
             var give = (await admin.PostFormAsync("/api/ShiftSwapRequest/Create", ("CurrentShiftAssignmentId", c), ("TargetEmployeeId", e2), ("Reason", "Nhường ca cho bạn"))).Ok();
             Guid giveId = give.GetProperty("request").GetProperty("id").GetGuid();
+            (await (await staff2.PostAsJsonAsync("/api/ShiftSwapRequest/Consent", new { id = giveId, accept = true })).Content.ReadAsStringAsync()).Should().Contain("\"responseCode\":200");
             give.GetProperty("swapType").GetString().Should().Be("GIVE");
             (await hr.PostFormAsync("/api/ShiftSwapRequest/Approve", ("Id", giveId))).Ok();
             var e2Rows = (await RowsAsync(e2)).Where(r => r.WorkDate == Monday.AddDays(2) && r.ShiftId == w.Trua).ToList();

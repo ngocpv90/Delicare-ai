@@ -26,8 +26,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Phê duyệt › Kiểm tra hàng nhập | `wf-inbox?type=qc-inspection` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Duyệt |
 | Phê duyệt › Mẻ nấu | `wf-inbox?type=prod-batch` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Duyệt |
 | Phê duyệt › Giữ / thả lô | `wf-inbox?type=scm-lot` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Duyệt |
-| Phê duyệt › Đơn xin nghỉ | `wf-inbox?type=hr-leave` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | Duyệt | — | — |
-| Phê duyệt › Đơn đổi ca | `wf-inbox?type=hr-swap` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | Duyệt | — | — |
+| Phê duyệt › Nghỉ & đổi ca | `wf-inbox?type=hr-leave` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | Duyệt | — | — |
 | Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Duyệt | — |
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
@@ -73,8 +72,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Nhân sự › Nhân viên | `adm-employee` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | X | — |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | S (IX) | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | X (IX) | S (IX) | X | — |
-| Nhân sự › Đơn xin nghỉ | `hr-leave` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | S (IX) | X | — |
-| Nhân sự › Đơn đổi ca | `hr-swap` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | S (IX) | X | — |
+| Nhân sự › Nghỉ & đổi ca | `hr-leave` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | S (IX) | X | — |
 | Nhân sự › Ca làm việc | `hr-shift` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | Q | X | — |
 | Nhân sự › Chức vụ | `adm-position` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | Q | X | — |
 | Nhân sự › Hộp phê duyệt | `wf-inbox` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |

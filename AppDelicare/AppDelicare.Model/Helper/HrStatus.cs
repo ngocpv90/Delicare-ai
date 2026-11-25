@@ -99,11 +99,13 @@ namespace AppDelicare.Model.Helper
         public const string Approved = "Approved";
         public const string Rejected = "Rejected";
         public const string Cancelled = "Cancelled";
+        /// <summary>UI-6.39 (D-120): người nhận chưa đồng ý – chưa có yêu cầu duyệt.</summary>
+        public const string AwaitingConsent = "AwaitingConsent";
 
         public const string BusinessType = "SHIFT_SWAP";
         public const string ScreenId = "hr-swap";
 
-        public static string Label(string? status) => LeaveRequestStatus.Label(status);
+        public static string Label(string? status) => status == AwaitingConsent ? "Chờ người nhận đồng ý" : LeaveRequestStatus.Label(status);
     }
 
     /// <summary>BE2.6: màn hình (screen-id) nhân sự dùng khi kiểm quyền trong service (thao tác tự phục vụ / chấm hộ).</summary>

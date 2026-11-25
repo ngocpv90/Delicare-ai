@@ -37,8 +37,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | — | Q |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | — |
-| Nhân sự › Đơn xin nghỉ | `hr-leave` | X | — |
-| Nhân sự › Đơn đổi ca | `hr-swap` | X | — |
+| Nhân sự › Nghỉ & đổi ca | `hr-leave` | X | — |
 | Nhân sự › Ca làm việc | `hr-shift` | X | — |
 <!-- MENU5:END -->
 

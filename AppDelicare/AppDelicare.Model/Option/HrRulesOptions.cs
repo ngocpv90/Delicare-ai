@@ -31,6 +31,13 @@ namespace AppDelicare.Model.Option
         public int MaxShiftsPerWeek { get; set; } = 6;
         /// <summary>UI-6.38 (D-119 d): bổ sung giờ – tối đa N giờ sau kết thúc ca, ca trong N ngày gần nhất.</summary>
         public int SupplementWindowHours { get; set; } = 3;
+        /// <summary>UI-6.39 (D-120): đơn đổi / nhường ca cần người nhận đồng ý trước (hạn N giờ, quá → tự hủy).</summary>
+        public bool SwapConsentRequired { get; set; } = true;
+        public int SwapConsentHours { get; set; } = 24;
+        /// <summary>UI-6.39: phép năm = N ngày / năm (loại nghỉ AnnualLeaveTypeCode); chỉ cảnh báo khi vượt (AnnualLeaveBlockOver = false).</summary>
+        public int AnnualLeaveDays { get; set; } = 12;
+        public string AnnualLeaveTypeCode { get; set; } = "ANNUAL";
+        public bool AnnualLeaveBlockOver { get; set; }
         public int SupplementMaxDays { get; set; } = 3;
         /// <summary>UI-6.38 (D-119 f): tự chuyển Vắng hằng ngày (job MarkAbsent) – giờ chạy mặc định 23:30.</summary>
         public bool AutoMarkAbsent { get; set; } = true;

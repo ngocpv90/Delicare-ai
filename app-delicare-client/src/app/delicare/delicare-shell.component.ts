@@ -60,6 +60,7 @@ const SCRIPTS = [
   'modules/hr-employee.js', // UI-6.36 (D-117): Nhân viên – danh sách nghiệp vụ, form Thêm nhân viên, nghỉ việc – sau ghep.js, employee360.js
   'modules/hr-shift.js', // UI-6.37 (D-118): Phân ca tuần Thứ 2 – CN, tô ca, sao chép tuần, thiếu người – sau hr.js, hr-employee.js (unitPicker)
   'modules/hr-attendance.js', // UI-6.38 (D-119): Chấm công – Hôm nay / Bảng công tháng / Sổ, bổ sung giờ, xác nhận ngoài bán kính – sau hr.js, hr-employee.js
+  'modules/hr-request.js', // UI-6.39 (D-120): Nghỉ & đổi ca – danh sách gộp, duyệt kèm ảnh hưởng, lịch nghỉ, tạo đơn 3 loại, người nhận đồng ý – sau hr.js
   'modules/kho.js', // UI-6.29 (D-110): Kho 12 → 5 mục, Nhận hàng & kiểm tra, Sổ kiểm tra hàng nhập – sau scm.js, qc.js, approval.js, ghep.js
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';
