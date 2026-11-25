@@ -207,12 +207,64 @@ namespace AppDelicare.Messaging.Conversations.Flows
         }
 
         /// <summary>BOT-UX-2 (mục 7): lý do nghỉ = nút lý do hay gặp (<c>Messaging:Reasons:leave-reason</c>) + [✏️ Khác…] (gõ tay).</summary>
-        private Task ReasonsAsync(BotActionContext ctx, State s, CancellationToken ct)
-            => EditOrSendAsync(ctx, new NeutralMessage
+        /// <summary>UI-6.49 (1): trước khi chọn lý do – hiện phép năm còn / sau đơn và ca bị bỏ (HrRequest/PreviewLeave; chỉ EmployeeId: BotChannel/EmployeePreviewLeave).</summary>
+        private async Task ReasonsAsync(BotActionContext ctx, State s, CancellationToken ct)
+        {
+            var lines = await PreviewLinesAsync(ctx, s, ct);
+            await EditOrSendAsync(ctx, new NeutralMessage
             {
                 Title = $"Lý do nghỉ ({s.TypeLabel}, {s.From:dd/MM}, {s.Days} ngày)",
+                Lines = lines,
                 Buttons = reasons.Buttons(ReasonCatalog.Leave, Kind, "r", "rx", "k"),
             }, ct);
+        }
+
+        private async Task<List<string>> PreviewLinesAsync(BotActionContext ctx, State s, CancellationToken ct)
+        {
+            if (s.Type == null || s.From == null || s.Days == null)
+            {
+                return [];
+            }
+            DateTime from = s.From.Value, to = from.AddDays(s.Days.Value - 1);
+            ApiResult<JsonElement> r;
+            try
+            {
+                if (ctx.Identity.HasWebAccount)
+                {
+                    var (token, _) = await tokens.GetAsync(ctx.Bot, ctx.Event.FromId, ct);
+                    if (token == null)
+                    {
+                        return [];
+                    }
+                    r = await web.GetAsUserAsync<JsonElement>($"api/HrRequest/PreviewLeave?FromDate={from:yyyy-MM-dd}&ToDate={to:yyyy-MM-dd}&LeaveTypeCode={Uri.EscapeDataString(s.Type)}", token.Token, ct);
+                }
+                else
+                {
+                    r = await api.EmployeeCallAsync("EmployeePreviewLeave", new { botCode = ctx.Bot, externalUserId = ctx.Event.FromId, fromDate = from.ToString("yyyy-MM-dd"), toDate = to.ToString("yyyy-MM-dd"), leaveTypeCode = s.Type }, ct);
+                }
+            }
+            catch (Exception)
+            {
+                return [];
+            }
+            if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object)
+            {
+                return [];
+            }
+            var d = r.Data;
+            int I(string k) => d.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
+            var lines = new List<string>();
+            if (d.TryGetProperty("isAnnual", out var ia) && ia.ValueKind == JsonValueKind.True)
+            {
+                lines.Add($"🏖 Phép năm còn {I("annualRemaining")}/{I("annualTotal")} ngày → sau đơn còn {I("annualAfter")}" + (d.TryGetProperty("annualOver", out var ov) && ov.ValueKind == JsonValueKind.True ? " ⚠️ vượt số phép" : ""));
+            }
+            if (d.TryGetProperty("listShiftDrop", out var drop) && drop.ValueKind == JsonValueKind.Array && drop.GetArrayLength() > 0)
+            {
+                lines.Add($"📅 Đơn được duyệt sẽ bỏ {drop.GetArrayLength()} ca: " + string.Join(", ", drop.EnumerateArray().Take(6).Select(x =>
+                    (x.TryGetProperty("shiftCode", out var sc) ? sc.GetString() : "") + " " + (x.TryGetProperty("workDate", out var wd) && DateTime.TryParse(wd.GetString(), out var dd) ? dd.ToString("dd/MM") : ""))));
+            }
+            return lines;
+        }
 
         private async Task AskAsync(BotActionContext ctx, string question, string flow, CancellationToken ct)
         {

@@ -261,6 +261,9 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             public bool InKitchen;
             public readonly HashSet<Guid> Arrived = [];
             public readonly HashSet<Guid> Departed = [];
+            /// <summary>UI-6.49 (1): vị trí gần nhất (dùng cho nút 📍 Đã đến khi còn mới).</summary>
+            public double? LastLat, LastLng;
+            public DateTimeOffset LastAt = DateTimeOffset.MinValue;
         }
 
         private readonly ConcurrentDictionary<string, LiveSession> _live = new();
@@ -287,6 +290,9 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             bool first = !_live.ContainsKey(key);
             var session = _live.GetOrAdd(key, _ => new LiveSession());
+            session.LastLat = loc.Latitude;
+            session.LastLng = loc.Longitude;
+            session.LastAt = time.GetUtcNow();
             if (!await session.Gate.WaitAsync(0, ct))
             {
                 return; // đang xử lý cập nhật trước – bỏ cập nhật này (cập nhật sau sẽ tới)
@@ -430,7 +436,22 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     await StopCardAsync(ctx, id, token, null, ct);
                     break;
                 case "arr":
-                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Arrive", [new("Id", id.ToString())], "Đã ghi đến điểm", ct);
+                    // UI-6.49 (1): 📍 Đã đến gửi kèm vị trí gần nhất của chia sẻ vị trí trực tiếp (≤ 10 phút); không có → ghi không tọa độ + nhắc bật chia sẻ.
+                    var arrive = new List<KeyValuePair<string, string>> { new("Id", id.ToString()) };
+                    bool located = LastFix(ctx) is { } fix;
+                    if (LastFix(ctx) is { } f2)
+                    {
+                        arrive.Add(new("Latitude", f2.Lat.ToString(CultureInfo.InvariantCulture)));
+                        arrive.Add(new("Longitude", f2.Lng.ToString(CultureInfo.InvariantCulture)));
+                    }
+                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Arrive", arrive, located ? "Đã ghi đến điểm (kèm vị trí)" : "Đã ghi đến điểm – bật 📡 chia sẻ vị trí trực tiếp để ghi kèm vị trí", ct);
+                    break;
+                case "ld":
+                    await LoadAsync(ctx, id, token, ct);
+                    break;
+                case "dvr" when v1 != null && v2 != null:
+                    // UI-6.49 (1): bước thu khay khi giao – a = thu đủ số khay còn ở khách, 0 = không thu.
+                    await DeliverAsync(ctx, id, token, v1, v2 == "-" ? null : v2, ct, null, parts.Length > 3 ? parts[3] : "0");
                     break;
                 case "full":
                     await DeliverFullAsync(ctx, id, token, ct);
@@ -452,14 +473,23 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     await AskAsync(ctx, "👤 Tên người nhận hàng tại điểm này (gõ tên):", ReplyReceiverName, id.ToString("N"), ct);
                     break;
                 case "fl":
+                {
+                    // UI-6.49 (1): lý do theo danh mục DeliveryFailReason (như web Theo dõi giao hàng); danh mục chưa tải được → lý do cấu hình bot.
+                    var listed = await FailReasonsAsync(token, ct);
                     await ShowAsync(ctx, new NeutralMessage
                     {
                         Title = "❌ Không giao được – lý do",
-                        Buttons = [.. reasons.Buttons(ReasonCatalog.DeliveryFail, Kind, "fr", "flx", id.ToString("N")), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "s", id))],
+                        Buttons = listed.Count != 0
+                            ? [.. listed.Select((r, i) => new NeutralButton(r, CallbackData.Build(Kind, "frl", $"{id:N}.{i}"))), new NeutralButton("✏️ Khác…", CallbackData.Build(Kind, "flx", id)), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "s", id))]
+                            : [.. reasons.Buttons(ReasonCatalog.DeliveryFail, Kind, "fr", "flx", id.ToString("N")), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "s", id))],
                     }, ct);
                     break;
+                }
+                case "frl" when int.TryParse(v1, out int fi) && (await FailReasonsAsync(token, ct)).ElementAtOrDefault(fi) is { } listedReason:
+                    await FailAsync(ctx, id, token, listedReason, ct);
+                    break;
                 case "fr" when reasons.At(ReasonCatalog.DeliveryFail, v1) is { } reason:
-                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Fail", [new("Id", id.ToString()), new("Reason", reason + " (Telegram)")], "Đã ghi không giao được", ct);
+                    await FailAsync(ctx, id, token, reason, ct);
                     break;
                 case "flx":
                     await AskAsync(ctx, "❌ Lý do không giao được (gõ ngắn gọn):", ReplyFail, id.ToString("N"), ct);
@@ -505,7 +535,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 string clean = text[..Math.Min(text.Length, 100)];
                 if (pending.Flow == ReplyFail)
                 {
-                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Fail", [new("Id", id.ToString()), new("Reason", clean + " (Telegram)")], "Đã ghi không giao được", ct);
+                    await StopPostAsync(ctx, id, token, "api/DeliveryStop/Fail", [new("Id", id.ToString()), new("Reason", clean)], "Đã ghi không giao được", ct);
                     return;
                 }
                 _receivers[ReceiverKey(ctx, id)] = clean;
@@ -618,6 +648,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             // BOT-3.2 (D-72): đổi xe / tài xế khi chuyến chưa xuất phát – người điều phối (mục #/log-route; api kiểm quyền Sửa).
             if (S(route, "status") is "Planned" or "Loading" && (ctx.Identity.IsAdmin || ctx.Identity.Menus.Contains("#/log-route", StringComparer.OrdinalIgnoreCase)))
             {
+                m.Buttons.Add(new NeutralButton("📦 Xếp lên xe", CallbackData.Build(Kind, "ld", routeId)));
                 m.Buttons.Add(new NeutralButton("🔁 Đổi xe", CallbackData.Build(Kind, "rv", routeId)));
                 m.Buttons.Add(new NeutralButton("👤 Đổi tài xế", CallbackData.Build(Kind, "rd", routeId)));
             }
@@ -811,8 +842,22 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         }
 
         /// <summary>Ghi bàn giao (DeliveryStop/Deliver): số suất, nhiệt độ (null = dùng lần đo tại điểm), người nhận điền sẵn.</summary>
-        private async Task DeliverAsync(BotActionContext ctx, Guid stopId, string token, string qty, string? temperature, CancellationToken ct, JsonElement? stop = null)
+        private async Task DeliverAsync(BotActionContext ctx, Guid stopId, string token, string qty, string? temperature, CancellationToken ct, JsonElement? stop = null, string? returns = null)
         {
+            // UI-6.49 (1) (UI-6.35): giao kèm thu khay – khách còn khay theo sổ bao bì → hỏi Thu đủ / Không thu, gửi ListReturn cùng lệnh Deliver.
+            var trays = await TraysAsync(stopId, token, ct);
+            if (returns == null && trays.Count != 0)
+            {
+                string t = temperature ?? "-";
+                await ShowAsync(ctx, new NeutralMessage
+                {
+                    Title = $"📥 Thu khay – {qty} suất",
+                    Lines = [.. trays.Select(x => $"• {x.Label}: khách còn {x.Qty:0} – thu luôn khi giao?")],
+                    Buttons = [new NeutralButton($"📥 Thu đủ {trays.Sum(x => x.Qty):0} & giao", CallbackData.Build(Kind, "dvr", $"{stopId:N}.{qty}.{t}.a")),
+                        new NeutralButton("Không thu, chỉ giao", CallbackData.Build(Kind, "dvr", $"{stopId:N}.{qty}.{t}.0")), .. Screens.Back("⬅️ Quay lại", CallbackData.Build(Kind, "s", stopId))],
+                }, ct);
+                return;
+            }
             if (stop == null)
             {
                 if (await StopAsync(ctx, stopId, token, ct) is not { } x)
@@ -827,7 +872,62 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             {
                 form.Add(new("TemperatureC", temperature));
             }
-            await StopPostAsync(ctx, stopId, token, "api/DeliveryStop/Deliver", form, $"Đã giao {qty} suất – {receiver}", ct);
+            int k = 0;
+            if (returns == "a")
+            {
+                foreach (var tr in trays)
+                {
+                    form.Add(new($"ListReturn[{k}].PackagingType", tr.Type));
+                    form.Add(new($"ListReturn[{k}].ReturnedQty", tr.Qty.ToString("0", CultureInfo.InvariantCulture)));
+                    form.Add(new($"ListReturn[{k}].DamagedQty", "0"));
+                    k++;
+                }
+            }
+            await StopPostAsync(ctx, stopId, token, "api/DeliveryStop/Deliver", form, $"Đã giao {qty} suất – {receiver}" + (k > 0 ? $", thu {trays.Sum(x => x.Qty):0} khay" : string.Empty), ct);
+        }
+
+        /// <summary>UI-6.49 (1): khay còn ở khách theo sổ bao bì (DeliveryStop/GetHandover – như form Bàn giao trên web).</summary>
+        private async Task<List<(string Type, string Label, decimal Qty)>> TraysAsync(Guid stopId, string token, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>("api/DeliveryStop/GetHandover?id=" + stopId, token, ct);
+            if (!r.IsOk || r.Data.ValueKind != JsonValueKind.Object)
+            {
+                return [];
+            }
+            return [.. Arr(r.Data, "listTray").Where(x => Dec(x, "atCustomer") > 0 && S(x, "packagingType") != null)
+                .Select(x => (S(x, "packagingType")!, S(x, "label") ?? S(x, "packagingType")!, Math.Floor(Dec(x, "atCustomer"))))];
+        }
+
+        /// <summary>UI-6.49 (1): lý do giao thất bại – danh mục DeliveryFailReason (MetaData/GetReferenceLists).</summary>
+        private async Task<List<string>> FailReasonsAsync(string token, CancellationToken ct)
+        {
+            var r = await Web.GetAsUserAsync<JsonElement>("api/MetaData/GetReferenceLists", token, ct);
+            var list = r.ListData ?? [];
+            var fail = list.FirstOrDefault(l => S(l, "name") == "DeliveryFailReason");
+            return fail.ValueKind == JsonValueKind.Object ? [.. Arr(fail, "listItem").Select(i => S(i, "label") ?? S(i, "code")).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).Take(8)] : [];
+        }
+
+        private Task FailAsync(BotActionContext ctx, Guid stopId, string token, string reason, CancellationToken ct)
+        {
+            var form = new List<KeyValuePair<string, string>> { new("Id", stopId.ToString()), new("Reason", reason) };
+            if (LastFix(ctx) is { } f)
+            {
+                form.Add(new("Latitude", f.Lat.ToString(CultureInfo.InvariantCulture)));
+                form.Add(new("Longitude", f.Lng.ToString(CultureInfo.InvariantCulture)));
+            }
+            return StopPostAsync(ctx, stopId, token, "api/DeliveryStop/Fail", form, "Đã ghi không giao được – điểm vào \"Cần giao lại\"", ct);
+        }
+
+        private (double Lat, double Lng)? LastFix(BotActionContext ctx)
+            => _live.TryGetValue(ctx.Bot + ":" + ctx.Event.FromId, out var sx) && sx.LastLat is { } la && sx.LastLng is { } lo && time.GetUtcNow() - sx.LastAt <= TimeSpan.FromMinutes(10)
+                ? (la, lo) : null;
+
+        /// <summary>UI-6.49 (1) (UI-6.34): 📦 Xếp lên xe (DeliveryRoute/Load – mọi đơn của chuyến chưa xếp); máy chủ chặn khi chưa đủ thực đơn → hiện thông báo + danh sách thiếu.</summary>
+        private async Task LoadAsync(BotActionContext ctx, Guid routeId, string token, CancellationToken ct)
+        {
+            var r = await Web.PostJsonAsUserAsync<JsonElement>("api/DeliveryRoute/Load", new { id = routeId, note = "Xếp lên xe – Telegram" }, token, ct);
+            CallbackAnswer.Set(r.IsOk ? "✅ Đã xếp lên xe" : "⚠️ Chưa xếp được");
+            await RouteCardAsync(ctx, routeId, token, r.IsOk ? InputWidgets.Done(r.ResponseMessage ?? "Đã xếp lên xe", time) : "⛔ " + Problem(r), ct);
         }
 
         /// <summary>BOT-UX-2 (mục 6): giao số khác (thiếu / thừa) – màn số điền sẵn số đã xếp / kế hoạch → [✅ Xác nhận] → chọn nhiệt độ bàn giao.</summary>

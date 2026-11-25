@@ -249,7 +249,7 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyQty
                         or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyCorrective or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyExtraQty
-                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyExtraReason or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyWaste:
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyExtraReason or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyWaste or AppDelicare.Messaging.Audiences.Internal.VanHanh.BepActions.ReplyFinishFix:
                         await bep.ReplyAsync(ctx, pending, ct);
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyDispatchTemp or AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions.ReplyQty

@@ -100,6 +100,10 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("EmployeeCreateLeave")]
         public Task<IActionResult> EmployeeCreateLeave([FromBody] BotEmployeeLeaveRequest request) => Run(nameof(EmployeeCreateLeave), () => employee.CreateLeave(request));
 
+        /// <summary>UI-6.49 (1): xem trước đơn nghỉ (phép năm còn, ca bị bỏ) cho người chỉ có EmployeeId.</summary>
+        [HttpPost("EmployeePreviewLeave")]
+        public Task<IActionResult> EmployeePreviewLeave([FromBody] BotEmployeeLeaveRequest request) => Run(nameof(EmployeePreviewLeave), () => employee.PreviewLeave(request));
+
         /// <summary>BOT-1.4: tin đã gửi cùng CorrelationId (mã sự việc) – sửa đồng loạt thẻ.</summary>
         [HttpPost("GetCorrelated")]
         public Task<IActionResult> GetCorrelated([FromBody] BotCorrelatedRequest request) => Run(nameof(GetCorrelated), () => _service.GetCorrelated(request));
