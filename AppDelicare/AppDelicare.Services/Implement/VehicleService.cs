@@ -127,8 +127,24 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        /// <summary>GAP-LOG-DRV (D-128): tài xế mặc định phải là nhân viên đang làm.</summary>
+        private async Task<string?> DriverErrorAsync(VehicleRequest request)
+        {
+            if (request.DefaultDriverEmployeeId is not { } id || id == Guid.Empty)
+            {
+                request.DefaultDriverEmployeeId = null;
+                return null;
+            }
+            var emp = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(_unitOfWork.DbContext.Employee, e => e.Id == id && !e.IsDeleted);
+            return emp == null || !EmployeeStatus.IsWorking(emp.Status) ? ConstantHelper.Message.VehicleDriverInvalid : null;
+        }
+
         private async Task<string> Insert(VehicleRequest request, string typeSave)
         {
+            if (await DriverErrorAsync(request) is { } driverError)
+            {
+                return driverError;
+            }
             var insert = _mapper.Map<Vehicle>(request);
             // MA-1.3 (D-63): mã danh mục máy chủ tự sinh (…), bỏ qua giá trị gửi lên; không đổi sau khi cấp.
             insert.Code = await _documentNumberService.NextCodeAsync(DocumentKind.Vehicle);
@@ -148,6 +164,10 @@ namespace AppDelicare.Services.Implement
             }
             // MA-1.3 (D-63): mã không đổi sau khi cấp – bỏ qua giá trị gửi lên.
             request.Code = exist.Code;
+            if (await DriverErrorAsync(request) is { } driverError)
+            {
+                return driverError;
+            }
             var entity = _mapper.Map(request, exist);
             _unitOfWork.VehicleRepository.Update(entity);
             await _unitOfWork.VehicleRepository.CommitAsync(typeSave);

@@ -16,5 +16,7 @@ namespace AppDelicare.Model.Request
 		[MaxLength(50, ErrorMessage = "Status tối đa 50 ký tự.")]
 		public string? Status { get; set; }
 		public string? Note { get; set; }
+		/// <summary>GAP-LOG-DRV (D-128): tài xế mặc định (nhân viên đang làm).</summary>
+		public Guid? DefaultDriverEmployeeId { get; set; }
 	}
 }

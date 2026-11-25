@@ -34,6 +34,33 @@ namespace AppDelicare.Tests.Delivery
             map[v1].Should().Be(d2);
             map[v2].Should().Be(d3, "bỏ qua tài xế đã nghỉ việc");
             map.Should().NotContainKey(v3, "xe chưa có chuyến → để trống, bot nhắc điều phối");
+
+            // GAP-LOG-DRV (D-128): tài xế mặc định của xe thắng chuyến gần nhất; mặc định đã nghỉ việc → về chuyến gần nhất.
+            var vehicles = new List<Vehicle>
+            {
+                new() { Id = v1, DefaultDriverEmployeeId = d3 }, new() { Id = v2, DefaultDriverEmployeeId = gone }, new() { Id = v3, DefaultDriverEmployeeId = d1 },
+            };
+            var plan = await f.QueryAsync(db => DeliveryRouteService.PlanDriversAsync(db, vehicles, Day));
+            plan[v1].Should().Be(d3, "tài xế mặc định");
+            plan[v2].Should().Be(d3, "mặc định đã nghỉ → tài xế chuyến gần nhất còn làm");
+            plan[v3].Should().Be(d1, "xe chưa có chuyến nhưng có tài xế mặc định");
+        }
+
+        [Fact]
+        public async Task Vehicle_default_driver_must_be_a_working_employee()
+        {
+            using var f = new InMemoryApiFactory();
+            Guid ok = Guid.NewGuid(), gone = Guid.NewGuid();
+            await f.SeedAsync(db =>
+            {
+                db.Employee.Add(new Employee { Id = ok, Code = "TXOK", FullName = "TX còn làm", Status = "Active" });
+                db.Employee.Add(new Employee { Id = gone, Code = "TXGONE", FullName = "TX nghỉ", Status = EmployeeStatus.Resigned });
+                return Task.CompletedTask;
+            });
+            using var admin = f.CreateAuthorizedClient();
+            (await admin.PostFormAsync("/api/Vehicle/Insert", ("LicensePlate", "51C-DRV1"), ("Capacity", 100), ("Status", "Active"), ("DefaultDriverEmployeeId", gone))).Fail("Tài xế mặc định");
+            (await admin.PostFormAsync("/api/Vehicle/Insert", ("LicensePlate", "51C-DRV2"), ("Capacity", 100), ("Status", "Active"), ("DefaultDriverEmployeeId", ok))).Ok();
+            (await f.QueryAsync(db => Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.SingleAsync(db.Vehicle, v => v.LicensePlate == "51C-DRV2"))).DefaultDriverEmployeeId.Should().Be(ok);
         }
     }
 }
