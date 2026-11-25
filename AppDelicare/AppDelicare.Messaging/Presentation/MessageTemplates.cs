@@ -127,6 +127,7 @@ namespace AppDelicare.Messaging.Presentation
                     Lines = [.. Present(Str(data, "title"), Prefixed("Ghi chú: ", Str(data, "comment")))],
                 },
                 "APPROVAL_DECIDED" => new NeutralMessage { Title = "Yêu cầu của bạn đã có kết quả", Lines = Lines(data, "title", "requestNo", "decision", "comment") },
+                "SWAP_CONSENT" => new NeutralMessage { Title = Str(data, "title") ?? "🔁 Đề nghị đổi / nhường ca", Lines = Array(data, "lines") },
                 "SHIFT_CHANGED" => new NeutralMessage { Title = $"🔁 Lịch ca của bạn thay đổi ({Str(data, "count") ?? "0"} ngày)", Lines = Array(data, "lines") },
                 "SHIFT_CONFIRMED" => new NeutralMessage { Title = $"📅 Lịch ca đã xác nhận ({Str(data, "count") ?? "0"} ca)", Lines = Array(data, "lines") },
                 "SHIFT_ASSIGNED" => new NeutralMessage { Title = "Bạn được phân ca", Lines = Lines(data, "workDate", "shift", "location") },

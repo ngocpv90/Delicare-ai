@@ -29,5 +29,9 @@ namespace AppDelicare.Services.Interface
         public Task<string?> DescribeAsync(Guid id);
         /// <summary>decision = Approved / Rejected / Cancelled.</summary>
         public Task<string?> ApplyDecisionAsync(Guid id, string decision);
+        // UI-6.39 (D-120)
+        Task<IResult<ShiftSwapDetailModel>> Consent(ShiftSwapConsentRequest request);
+        Task<IResult<ShiftSwapDetailModel>> ConsentForEmployee(Guid employeeId, ShiftSwapConsentRequest request);
+        Task<int> ExpireConsentsAsync();
     }
 }

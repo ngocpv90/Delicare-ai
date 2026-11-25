@@ -458,6 +458,8 @@ namespace AppDelicare.Services.Implement
                 ApprovalRequestNo = approval?.RequestNo,
                 PendingApproval = r.RequestStatus == LeaveRequestStatus.Pending ? await _approvalRequestService.OpenProgressAsync(LeaveRequestStatus.BusinessType, id) : null,
                 ListAffectedAssignment = await HrRules.ModelsAsync(db, rows),
+                // UI-6.39 (D-120): hệ quả khi duyệt – phép năm còn, tổ còn người, người nghỉ trùng, người có thể thay.
+                Impact = await HrRequestService.LeaveImpactAsync(db, _hr, r.EmployeeId, r.FromDate, r.ToDate, r.LeaveTypeCode, r.Id),
             };
             foreach (var a in detail.ListAffectedAssignment)
             {

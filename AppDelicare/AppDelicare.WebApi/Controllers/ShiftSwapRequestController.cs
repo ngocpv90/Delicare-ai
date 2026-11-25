@@ -172,6 +172,22 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.39 (D-120): người nhận (nhân viên của tài khoản) đồng ý / từ chối nhận ca – service kiểm đúng người nhận.</summary>
+        [Security.SkipPermission]
+        [HttpPost("Consent")]
+        public async Task<IActionResult> Consent([FromBody] AppDelicare.Model.Model.ShiftSwapConsentRequest request)
+        {
+            try
+            {
+                return Ok(await _service.Consent(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Consent: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>BE2.6 (Catalog 209): người tạo hủy đơn đổi ca còn Chờ duyệt – hủy luôn yêu cầu duyệt.</summary>
         [Security.SkipPermission] // quyền duyệt kiểm trong engine (ApprovalRequestService.Decide / Cancel)
         [HttpPost("Cancel")]

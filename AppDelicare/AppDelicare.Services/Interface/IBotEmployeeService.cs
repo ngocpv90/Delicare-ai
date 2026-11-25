@@ -13,5 +13,6 @@ namespace AppDelicare.Services.Interface
         Task<IResults<BotEmployeeRequestItemModel>> GetMyRequests(BotIdentityRequest request);
         IResults<AppDelicare.Model.Option.ReferenceItem> GetLeaveTypes();
         Task<IResult<LeaveRequestDetailModel>> CreateLeave(BotEmployeeLeaveRequest request);
+        Task<IResult<ShiftSwapDetailModel>> SwapConsent(BotSwapConsentRequest request);
     }
 }

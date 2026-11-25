@@ -19,7 +19,7 @@ namespace AppDelicare.Services.Implement.Identity
     /// đơn nghỉ / đổi ca 60 ngày. Ghi dưới tài khoản <c>system</c>, Note ghi nguồn "Telegram – &lt;tên&gt;".
     /// </summary>
     public class BotEmployeeService(IUnitOfWork unitOfWork, ICurrentActor currentActor, IConfiguration configuration, IClock clock,
-        IAttendanceEventService attendance, ILeaveRequestService leaves, Microsoft.Extensions.Options.IOptionsMonitor<ReferenceListsOptions> references) : IBotEmployeeService
+        IAttendanceEventService attendance, ILeaveRequestService leaves, IShiftSwapRequestService swaps, Microsoft.Extensions.Options.IOptionsMonitor<ReferenceListsOptions> references) : IBotEmployeeService
     {
         public async Task<IResults<BotEmployeeShiftModel>> GetMyShifts(BotIdentityRequest request)
         {
@@ -54,6 +54,24 @@ namespace AppDelicare.Services.Implement.Identity
             => Results<ReferenceItem>.Success(references.CurrentValue.Lists.TryGetValue("LeaveType", out var list) ? list : [], ConstantHelper.Message.GetAllSuccessfully);
 
         /// <summary>BOT-1.5a: xin nghỉ qua bot cho người chỉ có EmployeeId (quy tắc LeaveRequestService.Create, ghi dưới system).</summary>
+        /// <summary>UI-6.39 (D-120): người nhận đồng ý / từ chối đơn đổi / nhường ca qua bot.</summary>
+        public async Task<IResult<ShiftSwapDetailModel>> SwapConsent(BotSwapConsentRequest request)
+        {
+            var (employee, error) = await EmployeeAsync(request);
+            if (employee == null)
+            {
+                return Result<ShiftSwapDetailModel>.Fail(error!);
+            }
+            if (!Guid.TryParse(configuration[$"{SystemUsersOptions.Section}:{nameof(SystemUsersOptions.JobUserId)}"], out Guid system) || system == Guid.Empty)
+            {
+                return Result<ShiftSwapDetailModel>.Fail(ConstantHelper.Message.JobUserMissing);
+            }
+            using (currentActor.BeginScope(ActorInfo.ForSystem(system)))
+            {
+                return await swaps.ConsentForEmployee(employee.Id, new ShiftSwapConsentRequest { Id = request.SwapId, Accept = request.Accept, Note = request.Note });
+            }
+        }
+
         public async Task<IResult<LeaveRequestDetailModel>> CreateLeave(BotEmployeeLeaveRequest request)
         {
             var (employee, error) = await EmployeeAsync(request);

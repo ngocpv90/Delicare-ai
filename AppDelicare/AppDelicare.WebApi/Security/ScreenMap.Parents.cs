@@ -73,6 +73,8 @@ namespace AppDelicare.WebApi.Security
             // UI-6.35 (D-116): Xác nhận đã giao trong Theo dõi giao hàng (Sổ giao nhận); Thu hồi khay hộp trong Khay hộp theo khách.
             ["ProofOfDelivery"] = ("log-execution", false),
             ["ContainerReturn"] = ("log-packaging-ledger", false),
+            // UI-6.39 (D-120): Đơn đổi ca trong Nghỉ & đổi ca.
+            ["ShiftSwapRequest"] = ("hr-leave", false),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -91,6 +93,7 @@ namespace AppDelicare.WebApi.Security
             ["qc-cleaning-result"] = "qc-cleaning", ["log-return-inspection"] = "qc-cleaning",
             ["log-packing-result"] = "log-packing-order", ["log-delivery-order"] = "log-route", ["log-loading"] = "log-route",
             ["log-gps"] = "log-execution", ["log-pod"] = "log-execution", ["log-container-return"] = "log-packaging-ledger",
+            ["hr-swap"] = "hr-leave",
         };
     }
 }

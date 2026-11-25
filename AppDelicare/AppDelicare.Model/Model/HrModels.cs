@@ -258,6 +258,8 @@ namespace AppDelicare.Model.Model
         public List<HrAssignmentModel> ListAffectedAssignment { get; set; } = [];
         /// <summary>Cảnh báo ca thiếu người (spec): ca bị bỏ do nghỉ cần người thay.</summary>
         public List<string> ListWarning { get; set; } = [];
+        /// <summary>UI-6.39 (D-120): hệ quả (phép năm còn, ca bị bỏ, tổ còn người, người nghỉ trùng, người có thể thay).</summary>
+        public LeaveImpactModel? Impact { get; set; }
         public List<string> AllowedActions { get; set; } = [];
     }
 
@@ -346,5 +348,142 @@ namespace AppDelicare.Model.Model
         public int ShortSlots { get; set; }
         public int PeopleWithoutShift { get; set; }
         public int Draft { get; set; }
+    }
+}
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.39 (D-120): hệ quả của một đơn nghỉ (xem trước khi tạo / khi duyệt).</summary>
+    public class LeaveImpactModel
+    {
+        public int Days { get; set; }
+        public bool IsAnnual { get; set; }
+        public int AnnualTotal { get; set; }
+        public int AnnualUsed { get; set; }
+        public int AnnualRemaining { get; set; }
+        public int AnnualAfter { get; set; }
+        public bool AnnualOver { get; set; }
+        public List<HrAssignmentModel> ListShiftDrop { get; set; } = [];
+        public List<LeaveOverlapModel> ListOverlap { get; set; } = [];
+        public List<LeaveStaffingModel> ListStaffing { get; set; } = [];
+        public List<LeaveReplacementModel> ListReplacement { get; set; } = [];
+        public List<string> ListWarning { get; set; } = [];
+    }
+
+    public class LeaveOverlapModel
+    {
+        public Guid EmployeeId { get; set; }
+        public string? FullName { get; set; }
+        public DateTime FromDate { get; set; }
+        public DateTime ToDate { get; set; }
+        public string? Status { get; set; }
+        public string? StatusName { get; set; }
+    }
+
+    public class LeaveStaffingModel
+    {
+        public DateTime Day { get; set; }
+        public string? ShiftCode { get; set; }
+        public int Remaining { get; set; }
+        public int Assigned { get; set; }
+        public int? Required { get; set; }
+        public bool Short => Required is { } r && Remaining < r;
+    }
+
+    public class LeaveReplacementModel
+    {
+        public DateTime Day { get; set; }
+        public string? ShiftCode { get; set; }
+        public List<HrPersonBriefModel> ListPerson { get; set; } = [];
+    }
+
+    public class HrPersonBriefModel
+    {
+        public Guid Id { get; set; }
+        public string? Code { get; set; }
+        public string? FullName { get; set; }
+    }
+
+    public class LeavePreviewRequest
+    {
+        public Guid? EmployeeId { get; set; }
+        public DateTime FromDate { get; set; }
+        public DateTime ToDate { get; set; }
+        public string? LeaveTypeCode { get; set; }
+    }
+
+    /// <summary>UI-6.39: đồng ý / từ chối nhận ca (đơn đổi / nhường ca).</summary>
+    public class ShiftSwapConsentRequest
+    {
+        public Guid Id { get; set; }
+        public bool Accept { get; set; }
+        public string? Note { get; set; }
+    }
+
+    /// <summary>UI-6.39: danh sách gộp đơn nghỉ + đổi / nhường ca (HrRequest/GetList).</summary>
+    public class HrRequestListRequest
+    {
+        /// <summary>PENDING (mặc định – gồm Chờ người nhận đồng ý) | APPROVED | CLOSED (từ chối / hủy) | ALL.</summary>
+        public string? Status { get; set; }
+        /// <summary>LEAVE | SWAP | GIVE.</summary>
+        public string? Type { get; set; }
+        public string? Keyword { get; set; }
+        public Guid? OrganizationUnitId { get; set; }
+    }
+
+    public class HrRequestItemModel
+    {
+        public Guid Id { get; set; }
+        /// <summary>LEAVE | SWAP | GIVE.</summary>
+        public string Type { get; set; } = "LEAVE";
+        public string? TypeName { get; set; }
+        public string? RequestNo { get; set; }
+        public Guid EmployeeId { get; set; }
+        public string? EmployeeName { get; set; }
+        public string? UnitName { get; set; }
+        public string? Content { get; set; }
+        public List<string> ListImpact { get; set; } = [];
+        public DateTime? SubmittedAt { get; set; }
+        public bool Overdue { get; set; }
+        public string? Status { get; set; }
+        public string? StatusName { get; set; }
+        public List<string> AllowedActions { get; set; } = [];
+    }
+
+    public class HrRequestSummaryModel
+    {
+        public int Pending { get; set; }
+        public int PendingOverdue { get; set; }
+        public int PendingLeave { get; set; }
+        public int PendingSwap { get; set; }
+        public List<string> ListOffToday { get; set; } = [];
+        public int OffNext7People { get; set; }
+        public int OffNext7Days { get; set; }
+        public int EmptyShifts { get; set; }
+        public List<DateTime> ListEmptyShiftDay { get; set; } = [];
+    }
+
+    public class HrCalendarModel
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+        public List<HrCalendarDayModel> ListDay { get; set; } = [];
+    }
+
+    public class HrCalendarDayModel
+    {
+        public DateTime Day { get; set; }
+        public List<HrCalendarEntryModel> ListEntry { get; set; } = [];
+        /// <summary>Tổ sẽ thiếu nếu duyệt hết đơn chờ: "Bếp 1 thiếu 2".</summary>
+        public List<string> ListShort { get; set; } = [];
+    }
+
+    public class HrCalendarEntryModel
+    {
+        public Guid Id { get; set; }
+        /// <summary>LEAVE_APPROVED | LEAVE_PENDING | SWAP.</summary>
+        public string Kind { get; set; } = "LEAVE_APPROVED";
+        public string? FullName { get; set; }
+        public string? Detail { get; set; }
     }
 }

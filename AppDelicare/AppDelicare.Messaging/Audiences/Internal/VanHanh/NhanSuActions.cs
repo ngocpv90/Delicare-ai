@@ -14,7 +14,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     /// ca còn mở, giờ bắt đầu đã qua ≥ 10′, chưa chấm, không nghỉ phép) → [✍️ Chấm hộ] (chỉ khi có mục <c>#/hr-attendance</c>; lý do gõ tay bắt buộc –
     /// <c>AttendanceEvent/CheckIn</c> EmployeeId + SourceChannel PROXY, api kiểm quyền Thêm). Callback <c>hr:px:&lt;EmployeeId N&gt;</c>.
     /// </summary>
-    public sealed class NhanSuActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, ReasonCatalog reasons)
+    public sealed class NhanSuActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, ReasonCatalog reasons, IBotChannelApi botApi)
         : WebActions(web, tokens, sender, replies), IBotActionProvider
     {
         public const string Kind = CallbackData.Kinds.Hr;
@@ -88,6 +88,11 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     return;
                 case "pr" when reasons.At(ReasonCatalog.ProxyCheckIn, parts.Length > 1 ? parts[1] : null) is { } reason && await TokenAsync(ctx, ct) is { } token:
                     await ProxyAsync(ctx, id, token, reason, ct);
+                    return;
+                case "swy" or "swn":
+                    // UI-6.39 (D-120): người nhận đồng ý / từ chối đổi / nhường ca.
+                    var c = await botApi.EmployeeCallAsync("EmployeeSwapConsent", new { BotCode = ctx.Bot, ExternalUserId = ctx.Event.FromId, SwapId = id, Accept = data.Action == "swy" }, ct);
+                    await SayAsync(ctx, c.IsOk ? (data.Action == "swy" ? "✅ " : "❌ ") + (c.ResponseMessage ?? "Đã ghi") : "⚠️ " + (c.ResponseMessage ?? "Không ghi được"), ct);
                     return;
                 case "pxx":
                     await AskAsync(ctx, "✍️ Chấm hộ vào ca – lý do (bắt buộc, vd. quên điện thoại):", ReplyProxy, id.ToString("N"), ct);

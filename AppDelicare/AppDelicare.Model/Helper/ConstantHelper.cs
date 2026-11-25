@@ -96,6 +96,16 @@
             public static readonly string HrBulkDone = "Phân ca hàng loạt: tạo {0} ca, bỏ qua {1}";
             public static readonly string HrBulkSkipAssigned = "Đã có ca {0}";
             public static readonly string HrBulkSkipLeave = "Nghỉ phép (đơn {0})";
+            // UI-6.39 (D-120)
+            public static readonly string HrAnnualOver = "Phép năm còn {0} ngày – đơn {1} ngày vượt phép năm.";
+            public static readonly string HrLeaveTeamShort = "Ca {0} {1}: tổ còn {2} / cần {3} người nếu duyệt.";
+            public static readonly string HrSwapAwaitingConsent = "Đã gửi đơn {0} – chờ người nhận đồng ý (bot / Việc của tôi).";
+            public static readonly string HrSwapConsentNotTarget = "Chỉ người nhận ca mới trả lời được đơn này.";
+            public static readonly string HrSwapConsentClosed = "Đơn đang ở trạng thái {0} – không trả lời được.";
+            public static readonly string HrSwapConsentRejected = "Đã từ chối nhận ca – đã báo người xin.";
+            public static readonly string HrSwapConsentAccepted = "Đã đồng ý – đơn chuyển người duyệt ({0}).";
+            public static readonly string HrSwapCancelNotOwner = "Chỉ người tạo đơn được hủy.";
+            public static readonly string HrSwapCancelled = "Đã hủy đơn.";
             // UI-6.38 (D-119)
             public static readonly string HrSupplementTypeInvalid = "Chọn loại bổ sung: Vào ca hoặc Ra ca.";
             public static readonly string HrSupplementReasonRequired = "Chọn lý do bổ sung giờ.";

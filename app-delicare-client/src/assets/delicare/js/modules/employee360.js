@@ -315,8 +315,8 @@
     { label: 'Tổng quan', render: overview },
     { label: 'Lịch ca', screen: 'hr-shift-assign', render: scheduleTab },
     { label: 'Chấm công', screen: 'hr-attendance', render: attendanceTab },
-    { label: 'Nghỉ phép', screen: 'hr-leave', render: leaveTab },
-    { label: 'Đổi ca', screen: 'hr-swap', render: swapTab },
+    // UI-6.39 (D-120): gộp 2 tab → Nghỉ & đổi ca.
+    { label: 'Nghỉ & đổi ca', screen: 'hr-leave', render: (box, d, id) => { box.innerHTML = '<div data-lv></div><div class="mt" data-sw></div>'; leaveTab(box.querySelector('[data-lv]'), d, id); swapTab(box.querySelector('[data-sw]'), d, id); } },
     { label: 'Công việc', render: workTab },
     { label: 'Tài khoản và bot', render: accountTab },
     { label: 'Tài liệu', render: (box, d, id) => APP.D360.documentsTab('Employee', Store.perm('adm-employee').edit !== false)(box, d, id) },

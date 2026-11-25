@@ -57,7 +57,9 @@
   function filtered(p) {
     const typ = p && p.type && p.type !== 'wf-inbox' ? String(p.type) : '';
     const q = H.q.trim().toLowerCase();
-    return (H.mine || []).filter(i => (!typ || i.screenId === typ || String(i.screenId || '').replace(/-(l\d+|director)$/, '') === typ)
+    // UI-6.39 (D-120): "Nghỉ & đổi ca" – type=hr-leave / hr-swap hiện cả 2 loại (danh sách chỉ gồm yêu cầu người dùng được duyệt).
+    const typs = typ === 'hr-leave' || typ === 'hr-swap' ? ['hr-leave', 'hr-swap'] : [typ];
+    return (H.mine || []).filter(i => (!typ || typs.includes(i.screenId) || typs.includes(String(i.screenId || '').replace(/-(l\d+|director)$/, '')))
       && (!H.g || (sum(i).moduleName || 'Khác') === H.g)
       && (!q || [i.requestNo, sum(i).documentNo, sum(i).title, i.title, i.requestedByName, sum(i).counterparty, typeOf(i)].some(v => String(v || '').toLowerCase().includes(q))));
   }
