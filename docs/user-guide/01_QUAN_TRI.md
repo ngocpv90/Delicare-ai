@@ -16,14 +16,12 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Menu › Mục | screen-id | FIN-IT |
 |---|---|---|
 | Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | Duyệt |
+| Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | S (IX) |
 | Quản trị hệ thống › Tài khoản | `adm-user` | Q (IX) |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | Q (IX) |
 | Quản trị hệ thống › Phân quyền | `adm-permission` | Q (IX) |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | Q (IX) |
-| Quản trị hệ thống › Công ty & đơn vị | `adm-orgunit` | Q (IX) |
 | Quản trị hệ thống › Nhập dữ liệu gốc (Excel) | `sys-import` | Q (IX) |
-| Quản trị hệ thống › Danh mục dùng chung | `adm-reference` | Q (IX) |
-| Quản trị hệ thống › Địa giới hành chính | `adm-admin-unit` | Q (IX) |
 | Quản trị hệ thống › Tài liệu đính kèm | `adm-document` | Q (IX) |
 | Nhật ký & Tích hợp › Job tự động | `adm-job` | Q (IX) |
 | Nhật ký & Tích hợp › Nhật ký thay đổi dữ liệu | `adm-audit` | S (IX) |
@@ -35,7 +33,6 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Nhật ký & Tích hợp › Tin nhắn đến | `int-inbound` | S (IX) |
 | Nhật ký & Tích hợp › Tin nhắn đi | `int-outbound` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | S (IX) |
-| Nhật ký & Tích hợp › Danh mục chỉ số | `kpi-definition` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | S (IX) |
 <!-- MENU5:END -->
 
@@ -150,6 +147,11 @@ Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và
 3. **Chuyển nhóm** (mục cấp 2) → chọn nhóm đích → **Chuyển**.
 4. Thay đổi có hiệu lực với người dùng **từ lần đăng nhập sau**.
 - Lỗi: *Menu chỉ có 2 cấp…*, *Mục menu đang có mục con nên phải là mục cấp 1*, *Sắp xếp tạo vòng lặp cha – con*.
+
+### 4.6b Nhóm "Danh mục hệ thống" (UI-6.40)
+Các danh mục ít thay đổi gom vào một nhóm menu ngay trên **Quản trị hệ thống** (mã màn, link cũ và quyền từng mục giữ nguyên; nhóm chỉ hiện khi bạn được xem ít nhất một mục):
+- **Tổ chức:** Công ty & đơn vị · Chức vụ · Ca làm việc. **Mua hàng & kho:** Đơn vị tính · Kho & vị trí. **Sản xuất:** Dây chuyền & bàn nấu. **Giao hàng:** Xe giao hàng. **Dùng chung:** Danh mục dùng chung · Địa giới hành chính · Danh mục chỉ số.
+- **Tổng quan danh mục** (mục đầu nhóm): mỗi danh mục bạn được xem một thẻ – số bản ghi đang dùng, lần sửa gần nhất (ngày, người) và **cảnh báo thiếu dữ liệu** màu đỏ (bấm mở đúng màn): đơn vị chưa có trưởng, nhân viên chưa gắn đơn vị, chức vụ chưa có nhóm quyền gợi ý, tổ chưa có số người tối thiểu cho ca, nguyên liệu dùng đơn vị chưa có quy đổi, khu bảo quản chưa có ngưỡng nhiệt độ, nhóm món chưa gán dây chuyền, xe đang hoạt động chưa có tải trọng. Cảnh báo chưa tính được thì không hiện.
 
 ### 4.7 Công ty & đơn vị – `adm-orgunit` (UI-6.41 – gộp Công ty + Sơ đồ tổ chức)
 Mục "Công ty" đã gộp vào đây (link cũ mở màn này, chọn sẵn công ty). Sửa thông tin công ty vẫn theo quyền của mục Công ty.

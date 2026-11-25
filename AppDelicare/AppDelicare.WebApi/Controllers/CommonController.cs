@@ -12,8 +12,24 @@ namespace AppDelicare.WebApi.Controllers
     /// Màn hình chịu quyền phụ thuộc tham số <c>resource</c> / loại phiếu → action <c>[SkipPermission]</c>, service kiểm quyền cũ (UserRole × ObjectMenu)
     /// trên màn của danh sách; không có quyền → HTTP 403 kèm Result (responseCode = 403). Chỉ danh sách trong <c>GetResources</c> (danh sách trắng).
     /// </summary>
-    public class CommonController(ICommonService service, IPrintService printService) : BaseController
+    public class CommonController(ICommonService service, IPrintService printService, ICatalogSummaryService catalogSummary) : BaseController
     {
+
+        /// <summary>UI-6.40 (D-121): trang tổng "Danh mục hệ thống" – thẻ theo quyền Xem từng danh mục (service lọc).</summary>
+        [Security.SkipPermission]
+        [HttpGet("GetCatalogSummary")]
+        public async Task<IActionResult> GetCatalogSummary()
+        {
+            try
+            {
+                return Ok(await catalogSummary.GetCatalogSummary());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCatalogSummary: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
         private readonly ICommonService _service = service;
         private readonly IPrintService _printService = printService;
 

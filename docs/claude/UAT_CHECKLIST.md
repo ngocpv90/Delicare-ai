@@ -566,3 +566,8 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Cây gốc là công ty, nhãn "chưa có trưởng", số nhân viên gồm con; tìm mở nhánh; thẻ Chưa có trưởng lọc cây.
 - [ ] Chọn công ty: thông tin + Sửa (người không có quyền mục Công ty không thấy nút); mã số thuế sai → báo lỗi; không xóa được công ty.
 - [ ] Chọn đơn vị: loại tiếng Việt (không còn BRANCH / TEAM…); chọn ngay trưởng (chỉ người đang làm); ＋ Đơn vị con; Chuyển (không vào nhánh con; sang công ty khác cả nhánh đổi); Ngừng hoạt động khi còn người → báo số người.
+
+## UI-6.40 – Danh mục hệ thống (D-121)
+- [ ] Sidebar: nhóm "Danh mục hệ thống" ngay trên Quản trị hệ thống – Tổng quan danh mục + 10 mục đúng thứ tự; các nhóm cũ không còn các mục này.
+- [ ] Quyền mỗi vai trò không đổi (tài khoản chỉ có quyền Xe giao hàng thấy nhóm với Tổng quan + Xe giao hàng).
+- [ ] Tổng quan danh mục: số bản ghi khớp màn danh sách; cảnh báo đỏ bấm mở đúng màn; link cũ (kể cả #/adm-company) mở đúng.

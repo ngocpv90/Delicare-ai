@@ -19,9 +19,9 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Nhân sự › Phân ca | `hr-shift-assign` | S (IX) |
 | Nhân sự › Chấm công | `hr-attendance` | S (IX) |
 | Nhân sự › Nghỉ & đổi ca | `hr-leave` | S (IX) |
-| Nhân sự › Ca làm việc | `hr-shift` | Q |
-| Nhân sự › Chức vụ | `adm-position` | Q |
-| Quản trị hệ thống › Công ty & đơn vị | `adm-orgunit` | X |
+| Danh mục hệ thống › Công ty & đơn vị | `adm-orgunit` | X |
+| Danh mục hệ thống › Chức vụ | `adm-position` | Q |
+| Danh mục hệ thống › Ca làm việc | `hr-shift` | Q |
 | Nhật ký & Tích hợp › Liên kết tài khoản chat | `int-identity` | X |
 <!-- MENU5:END -->
 

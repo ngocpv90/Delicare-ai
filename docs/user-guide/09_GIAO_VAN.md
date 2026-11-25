@@ -22,7 +22,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | S |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | S |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | S |
-| Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | Q |
+| Danh mục hệ thống › Xe giao hàng | `log-vehicle` | Q |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

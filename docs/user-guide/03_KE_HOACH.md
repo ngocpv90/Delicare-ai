@@ -31,13 +31,13 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | S |
 | Sản xuất › Mẻ nấu | `prod-batch` | X |
 | Sản xuất › Hao hụt | `prod-waste` | X |
-| Sản xuất › Dây chuyền & trạm bếp | `prod-line` | Q |
 | Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | X |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | X |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X |
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X |
+| Danh mục hệ thống › Dây chuyền & trạm bếp | `prod-line` | Q |
 <!-- MENU5:END -->
 
 Mặc định **không có quyền duyệt**: duyệt công thức, **Khóa & áp dụng** công thức, **duyệt thực đơn**, **duyệt kế hoạch sản xuất** do COO / CEO (mục "Phê duyệt › …"). Bấm các nút này khi chưa được cấp → *"Bạn không có quyền …"*.

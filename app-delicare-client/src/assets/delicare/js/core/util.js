@@ -81,7 +81,7 @@
   };
   UTIL.icon = (n, cls) => `<svg class="i ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || P.clipboard}</svg>`;
   // MENU-5 (D-79): 14 nhóm theo vai trò – Việc của tôi, Phê duyệt, Mua hàng, Kho, Sản xuất, Giá thành, Nhật ký & Tích hợp (tên cũ giữ để DB chưa chạy script vẫn có biểu tượng).
-  UTIL.GROUP_ICON = { 'Việc của tôi': 'user', 'Phê duyệt': 'approve', 'Mua hàng': 'down', 'Kho': 'warehouse', 'Sản xuất': 'factory', 'Giá thành': 'calc', 'Nhật ký & Tích hợp': 'history', 'Điều hành': 'home', 'Kinh doanh': 'building', 'Thực đơn & Món ăn': 'utensils', 'Mua hàng & Kho': 'warehouse', 'Sản xuất & Giá thành': 'factory', 'Chất lượng & ATTP': 'shield', 'Đóng gói & Giao hàng': 'truck', 'Nhân sự': 'users', 'Tích hợp & Chỉ số': 'bot', 'Quản trị hệ thống': 'settings', 'Database Architecture': 'database' };
+  UTIL.GROUP_ICON = { 'Việc của tôi': 'user', 'Phê duyệt': 'approve', 'Mua hàng': 'down', 'Kho': 'warehouse', 'Sản xuất': 'factory', 'Giá thành': 'calc', 'Nhật ký & Tích hợp': 'history', 'Điều hành': 'home', 'Kinh doanh': 'building', 'Thực đơn & Món ăn': 'utensils', 'Mua hàng & Kho': 'warehouse', 'Sản xuất & Giá thành': 'factory', 'Chất lượng & ATTP': 'shield', 'Đóng gói & Giao hàng': 'truck', 'Nhân sự': 'users', 'Tích hợp & Chỉ số': 'bot', 'Quản trị hệ thống': 'settings', 'Danh mục hệ thống': 'layers', 'Database Architecture': 'database' };
   // Icon riêng cho từng mục menu con (khác icon của nhóm cha). Màn chưa khai báo ở đây → rơi về SCREEN_ICON theo tiền tố.
   UTIL.MENU_ICON = {
     'dash-exec': 'chart', 'flow-e2e': 'flow',
