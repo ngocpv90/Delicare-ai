@@ -9,6 +9,25 @@
 
 Tổng: **215 khóa** trong 9 section.
 
+## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
+
+Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản appsettings (dev, Staging, Production, Docker không ghi đè – test `FallbackFlagsUi649Tests` khóa lại). Đặt giá trị ở cột "Hành vi cũ" chỉ khi cần lùi tạm trong UAT; **bỏ cờ sau UAT** (xóa thuộc tính + nhánh code cũ).
+
+| Khóa | Mặc định (mới) | Hành vi cũ | Task | Việc sau UAT |
+|---|---|---|---|---|
+| `BusinessRules:Hr:SwapConsentRequired` | true | false | UI-6.39 | Bỏ cờ sau UAT |
+| `BusinessRules:Hr:AutoMarkAbsent` | true | false | UI-6.38 | Bỏ cờ sau UAT |
+| `BusinessRules:PurchaseAutoCreatePoOnApprove` | true | false | UI-6.18 | Bỏ cờ sau UAT |
+| `BusinessRules:PurchaseOrderAutoApproveFromApprovedRequest` | true | false | UI-6.18 | Bỏ cờ sau UAT |
+| `BusinessRules:ProductionAutoCloseOrder` | true | false | UI-6.24 | Bỏ cờ sau UAT |
+| `BusinessRules:ProductionAutoRecordOverProduction` | true | false | UI-6.49 | Bỏ cờ sau UAT |
+| `BusinessRules:PackingManualCreate` | false | true | UI-6.34 | Bỏ cờ sau UAT |
+| `BusinessRules:DeliveryAutoPlanAfterLock` | true | false | UI-6.34 | Bỏ cờ sau UAT |
+| `BusinessRules:PackagingManualOutIn` | false | true | UI-6.35 | Bỏ cờ sau UAT |
+| `BusinessRules:EmployeeStatusViaUpdate` | false | true | UI-6.36 | Bỏ cờ sau UAT |
+| `BusinessRules:ForecastAutoSuggest` | true | false | UI-6.5 | Bỏ cờ sau UAT |
+| `BusinessRules:ForecastAutoPublish` | true | false | UI-6.5 | Bỏ cờ sau UAT |
+
 ## BusinessRules
 
 | Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
