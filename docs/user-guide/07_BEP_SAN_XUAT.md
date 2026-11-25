@@ -24,7 +24,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | — |
 | Sản xuất › Mẻ nấu | `prod-batch` | S | X |
 | Sản xuất › Hao hụt | `prod-waste` | S | — |
-| Sản xuất › Dây chuyền & trạm bếp | `prod-line` | X | S |
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S | — |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S | X |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S | — |
@@ -32,9 +31,9 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Chia suất & đóng gói | `log-packing-order` | S | — |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | — |
-| Nhân sự › Đơn xin nghỉ | `hr-leave` | X | — |
-| Nhân sự › Đơn đổi ca | `hr-swap` | X | — |
-| Nhân sự › Ca làm việc | `hr-shift` | X | — |
+| Nhân sự › Nghỉ & đổi ca | `hr-leave` | X | — |
+| Danh mục hệ thống › Ca làm việc | `hr-shift` | X | — |
+| Danh mục hệ thống › Dây chuyền & trạm bếp | `prod-line` | X | S |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ca

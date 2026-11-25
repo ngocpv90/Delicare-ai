@@ -196,7 +196,7 @@ namespace AppDelicare.Services.Implement.Messaging
                     var users = await (from uc in db.UserClaim.AsNoTracking()
                                        join ug in db.UserGroup.AsNoTracking() on uc.UserGroupId equals ug.Id
                                        join u in db.User.AsNoTracking() on uc.UserId equals u.Id
-                                       where !uc.IsDeleted && !ug.IsDeleted && list[i].Groups.Contains(ug.Name!) && !u.IsDeleted && u.IsActive
+                                       where !uc.IsDeleted && !ug.IsDeleted && (list[i].Groups.Contains(ug.Code!) || (ug.Code == null && list[i].Groups.Contains(ug.Name!))) && !u.IsDeleted && u.IsActive
                                        select u.Id).Distinct().ToListAsync();
                     var original = JsonNode.Parse(origin.PayloadJson ?? "{}")?["data"];
                     sent += await BusinessNotifier.SafeEnqueueAsync(notifications, new NotificationRequest

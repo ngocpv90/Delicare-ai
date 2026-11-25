@@ -149,9 +149,9 @@ namespace AppDelicare.WebApi.Controllers
 
         /// <summary>
         /// BE2.5 (spec 9.4 results, Catalog 168): ghi kết quả các bước vệ sinh (checklist VS-KHAY, đi lần lượt) – JSON vì có danh sách bước.
-        /// Quyền Thêm của màn "Checklist vệ sinh".
+        /// Quyền Thêm của màn "Vệ sinh khay hộp" – UI-6.49 (8): mục "Kiểm tra vệ sinh" (qc-cleaning-result) đã ẩn từ UI-6.32, quyền hợp vào màn cha.
         /// </summary>
-        [Security.Permission("qc-cleaning-result", PermissionAction.Add)]
+        [Security.Permission("qc-cleaning", PermissionAction.Add)]
         [HttpPost("RecordResults")]
         public async Task<IActionResult> RecordResults([FromBody] CleaningRecordRequest request)
         {

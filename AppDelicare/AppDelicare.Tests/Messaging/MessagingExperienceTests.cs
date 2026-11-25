@@ -277,7 +277,8 @@ namespace AppDelicare.Tests.Messaging
             ok.Should().BeTrue();
             InputWidgets.ParseNumber(CallbackData.Parse("num:core:other")!, out _).Should().BeNull();
             var half = InputWidgets.Checklist("Vệ sinh", [("Rửa", true), ("Khử khuẩn", null)]);
-            half.Buttons.Should().HaveCount(2, "chưa chọn hết → chưa có Hoàn tất");
+            half.Buttons.Should().HaveCount(3, "chưa chọn hết → chưa có Hoàn tất, có Đạt tất cả (UI-6.45)");
+            half.Buttons.Last().Callback.Should().Be("chk:all");
             InputWidgets.Checklist("Vệ sinh", [("Rửa", true), ("Khử khuẩn", false)]).Buttons.Last().Callback.Should().Be("chk:done");
             ContextKeyboard.Build([new("📍 Đến điểm", true), new("✅ Xong điểm")]).Keyboard.Last().Single().Text.Should().Be(ContextKeyboard.Exit);
         }

@@ -27,6 +27,7 @@ namespace AppDelicare.Model.Helper
             ["Obsolete"] = "Hết dùng", ["Posted"] = "Đã ghi sổ", ["Issued"] = "Đã xuất", ["Matched"] = "Khớp", ["Variance"] = "Chênh lệch",
             ["DAT"] = "Đạt", ["KHONG_DAT"] = "Không đạt", ["TAM_GIU"] = "Tạm giữ", ["REJECT"] = "Loại", ["DIRTY"] = "Bẩn", ["DAMAGED"] = "Hỏng", ["CLEAN"] = "Sạch", ["GOOD"] = "Tốt", ["DELIVERY"] = "Giao hàng", ["CORE"] = "Lõi", ["RECEIVING"] = "Nhận hàng", ["STORAGE"] = "Bảo quản", ["Duplicate"] = "Trùng lặp", ["SANG"] = "Sáng", ["TRUA"] = "Trưa", ["TOI"] = "Tối", ["DEM"] = "Đêm",
             ["Added"] = "Thêm", ["Modified"] = "Sửa", ["Deleted"] = "Xóa", ["Download"] = "Tải xuống", ["Login"] = "Đăng nhập", ["Logout"] = "Đăng xuất",
+            ["RoleSaveMany"] = "Đổi quyền", ["ResignScheduled"] = "Hẹn nghỉ việc", ["ResignCancelled"] = "Hủy hẹn nghỉ việc", ["Resign"] = "Nghỉ việc", ["ConfirmValid"] = "Xác nhận hợp lệ", ["StatusChange"] = "Đổi trạng thái", // UI-6.48 (hồi quy UI-6.49)
             ["Inbound"] = "Đến", ["Outbound"] = "Đi", ["True"] = "Có", ["False"] = "Không",
         };
 

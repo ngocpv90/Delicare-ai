@@ -233,6 +233,64 @@ namespace AppDelicare.Tests.Delivery
             (await c.PostFormAsync("/api/OrderReconciliation/Close", ("Id", recB.GetProperty("reconciliation").GetProperty("id").GetGuid()))).Ok();
         }
 
+        /// <summary>
+        /// UI-6.49 (2) (D-127 b): điểm giao thất bại rồi giao lại (Cần giao lại → MovePoint sang chuyến khác) – cùng MỘT đơn giao, MỘT biên bản giao;
+        /// đối soát / bảng kê tính số giao một lần; KPI giao đúng giờ tính đơn giao một lần (trạng thái cuối Đã giao); truy xuất mẻ không lặp đơn giao.
+        /// </summary>
+        [Fact]
+        public async Task Failed_then_redelivered_point_is_counted_once_in_reconciliation_kpi_and_trace()
+        {
+            var s = await SeedAsync("RD");
+            using var c = _factory.CreateAuthorizedClient();
+            (await c.PostFormAsync("/api/ProductionBatch/RecordSampleRetained", ("Id", s.BatchNoSample), ("ActualValue", "Tủ mẫu"))).Ok();
+            var route = (await CreateRoute(c, s, s.OrderA, s.OrderB)).Ok();
+            Guid routeId = route.GetProperty("route").GetProperty("id").GetGuid();
+            var stops = Stops(route);
+            Guid stopB = stops.Single(x => x.GetProperty("orderId").GetGuid() == s.OrderB).GetProperty("id").GetGuid();
+            Guid stopA = stops.Single(x => x.GetProperty("orderId").GetGuid() == s.OrderA).GetProperty("id").GetGuid();
+            (await c.PostFormAsync("/api/DeliveryRoute/RecordTemperature", ("Id", routeId), ("TemperatureC", 65m))).Ok();
+            (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = s.Driver })).Ok();
+            (await c.PostFormAsync("/api/DeliveryRoute/Dispatch", ("Id", routeId))).Ok();
+            // B thất bại, A giao 60.
+            (await c.PostFormAsync("/api/DeliveryStop/Arrive", ("Id", stopB))).Ok();
+            (await c.PostFormAsync("/api/DeliveryStop/Fail", ("Id", stopB), ("Reason", "Khách đóng cửa"))).Ok();
+            (await c.PostFormAsync("/api/DeliveryStop/Deliver", ("Id", stopA), ("TemperatureC", 63m), ("DeliveredQuantity", 60m), ("ReceiverName", "Anh Minh"))).Ok();
+            Guid doB = await _factory.QueryAsync(db => db.DeliveryOrder.AsNoTracking().Where(d => d.OrderId == s.OrderB && !d.IsDeleted).Select(d => d.Id).SingleAsync());
+
+            // Giao lại: chuyến 2 (đơn C) – MovePoint đơn giao B sang chuyến 2.
+            Guid orderC = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                db.Order.Add(new Order { Id = orderC, OrderNumber = "PH-CRD", OrderNo = "PH-CRD", CustomerId = s.CustomerA, DeliveryLocationId = db.CustomerDeliveryLocation.Local.FirstOrDefault(l => l.CustomerId == s.CustomerA)?.Id ?? db.CustomerDeliveryLocation.First(l => l.CustomerId == s.CustomerA).Id,
+                    OrderDate = Day.AddDays(-2), MealDate = Day, DeliveryDate = Day, Status = "InProduction", TotalQuantity = 10, TotalAmount = 300_000 });
+                db.OrderLine.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = orderC, MealType = "TRUA", ShiftId = s.Shift, Quantity = 10, UnitPrice = 30_000, LineAmount = 300_000 });
+                return Task.CompletedTask;
+            });
+            var route2 = (await CreateRoute(c, s, orderC)).Ok();
+            Guid route2Id = route2.GetProperty("route").GetProperty("id").GetGuid();
+            (await c.PostFormAsync("/api/DeliveryRoute/MovePoint", ("DeliveryOrderId", doB), ("DeliveryRouteId", route2Id))).Ok();
+            (await _factory.QueryAsync(db => db.DeliveryOrder.CountAsync(d => d.OrderId == s.OrderB && !d.IsDeleted))).Should().Be(1, "giao lại dùng lại đơn giao cũ");
+            (await c.PostFormAsync("/api/DeliveryRoute/RecordTemperature", ("Id", route2Id), ("TemperatureC", 66m))).Ok();
+            (await PostJson(c, "/api/DeliveryRoute/Load", new { id = route2Id, employeeId = s.Driver })).Ok();
+            (await c.PostFormAsync("/api/DeliveryRoute/Dispatch", ("Id", route2Id))).Ok();
+            var stops2 = Stops((await c.GetResultAsync("/api/DeliveryRoute/GetDetail?id=" + route2Id)).Ok());
+            Guid stopB2 = stops2.Single(x => x.GetProperty("orderId").GetGuid() == s.OrderB).GetProperty("id").GetGuid();
+            stopB2.Should().NotBe(stopB, "điểm dừng mới trên chuyến 2");
+            (await c.PostFormAsync("/api/DeliveryStop/Deliver", ("Id", stopB2), ("TemperatureC", 64m), ("DeliveredQuantity", 40m), ("ReceiverName", "Chị Lan"))).Ok();
+
+            // Một biên bản giao, đối soát tính 40 một lần.
+            (await _factory.QueryAsync(db => db.ProofOfDelivery.CountAsync(p => p.DeliveryOrderId == doB && !p.IsDeleted))).Should().Be(1);
+            var rec = (await c.PostFormAsync("/api/OrderReconciliation/Reconcile", ("OrderId", s.OrderB), ("ServedQuantity", 40m))).Ok();
+            rec.GetProperty("reconciliation").GetProperty("deliveredQuantity").GetDecimal().Should().Be(40);
+            // KPI giao đúng giờ: đơn giao B tính một lần với trạng thái cuối Đã giao.
+            (await _factory.QueryAsync(db => db.DeliveryOrder.AsNoTracking().Where(d => d.OrderId == s.OrderB).Select(d => d.Status).SingleAsync())).Should().Be("Delivered");
+            // Truy xuất mẻ: đơn giao không lặp.
+            var trace = await c.GetResultAsync("/api/ProductionBatch/Trace?id=" + s.BatchNoSample);
+            trace.Code.Should().Be(200, trace.Message);
+            var dos = trace.Data.GetProperty("listDeliveryOrder").EnumerateArray().Select(x => x.GetProperty("id").GetGuid()).ToList();
+            dos.Should().OnlyHaveUniqueItems();
+        }
+
         [Fact]
         public async Task Dispatch_is_blocked_while_batches_are_not_packed_and_legacy_crud_cannot_break_the_flow()
         {

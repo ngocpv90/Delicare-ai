@@ -4,7 +4,7 @@
 > **BIZ-2.5 – Phiếu xuất theo ca:** phát hành lệnh SX → hệ thống tạo sẵn **phiếu xuất Nháp** cho mọi lệnh của ca (số = số đã giữ chỗ, lô FEFO phân bổ sẵn), bot kho nhận "Phiếu xuất ca … sẵn sàng". Màn **Xuất kho** có khối **Phiếu xuất theo ca**: kiểm / sửa từng phiếu như phiếu thường rồi bấm **Ghi sổ cả ca** một lần. Kho xuất = kho có nhiều tồn nhất cho nguyên liệu của lệnh.
 
 
-- Nhóm quyền: **OPS-SCM** (1.2 Mua hàng và Kho) – thủ kho, nhân viên kho. Nhóm **QA** cũng có quyền sửa các màn kho.
+- Nhóm quyền: **Thủ kho** (OPS-WH – thủ kho, nhân viên kho: ghi sổ nhập / xuất, kiểm kê; MENU-5 D-79); **Trưởng mua hàng & kho** (OPS-SCM-HEAD) duyệt kiểm kê cấp 1. Quyền từng màn: `docs/claude/MENU5_MATRIX.md`.
 - Bot dùng: **Vận hành** (phân hệ 📦 Kho & mua hàng); QR dán ở kệ / vị trí kho.
 - Việc chính: nhận hàng theo PO, ghi sổ nhập kho sau QC, theo dõi tồn theo lô (FEFO), xuất nguyên liệu cho sản xuất, chuyển kho, điều chỉnh tồn, kiểm kê, xử lý lô hết hạn, truy xuất.
 
@@ -20,6 +20,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Việc của tôi › Việc của tôi | `hr-my` | X | X |
 | Phê duyệt › Đề nghị mua – cấp 1 | `wf-inbox?type=scm-pr-l1` | — | Duyệt |
 | Phê duyệt › Phiếu kiểm kê – cấp 1 | `wf-inbox?type=scm-stockcount` | — | Duyệt |
+| Phê duyệt › Xếp xe chưa đủ hàng | `wf-inbox?type=log-load-short` | — | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | — | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | — | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | — | X |
@@ -30,15 +31,15 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mua hàng › Nhà cung cấp | `scm-supplier` | X | Q |
 | Mua hàng › Bảng giá nhà cung cấp | `scm-supplier-material` | — | Q |
 | Mua hàng › Nguyên liệu | `scm-ingredient` | X | Q |
-| Mua hàng › Đơn vị tính | `scm-uom` | — | Q |
 | Kho › Nhận hàng | `scm-gr` | S (IX) | S (IX) |
 | Kho › Xuất kho sản xuất | `scm-issue` | S (IX) | S (IX) |
 | Kho › Tồn kho | `scm-inv-balance` | Q (IX) | Q (IX) |
 | Kho › Kiểm kê | `scm-stockcount` | S (IX) | S (IX) |
-| Kho › Kho & vị trí | `scm-warehouse` | Q | Q |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
 | Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | — | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | — | X |
+| Danh mục hệ thống › Đơn vị tính | `scm-uom` | — | Q |
+| Danh mục hệ thống › Kho & vị trí | `scm-warehouse` | Q | Q |
 <!-- MENU5:END -->
 
 **UI-6.29 (D-110): menu Kho còn 5 mục** – Nhận hàng · Xuất kho sản xuất · Tồn kho · Kiểm kê · Kho & vị trí. Các mục cũ đã ẩn và mở đúng chỗ: Lô hàng & hạn dùng (`scm-lot`) → Tồn kho tab **Theo lô & hạn dùng**; Sổ kho (`scm-inv-txn`) → Tồn kho tab **Sổ kho**; Định mức tồn kho (`scm-inv-policy`) → Tồn kho tab **Định mức theo kho**; Khu bảo quản / Vị trí kệ → Kho & vị trí tab tương ứng; Giữ chỗ nguyên liệu → Xuất kho sản xuất tab **Giữ chỗ nguyên liệu**; Chênh lệch tiêu hao → Giá vốn & lãi gộp tab Theo món / Bảng sản xuất ngày. Quyền ở mục cũ được gộp vào mục cha (không ai mất quyền xem). Chuyển kho / Điều chỉnh tồn chỉ còn ở Tồn kho tab đầu (`scm-transfer`, `scm-adjustment` ẩn từ MENU-4). Các mục "Chi tiết phiếu nhập / phiếu xuất / kiểm kê" cũng đã bỏ: xem dòng trong chi tiết phiếu, hoặc **Lọc theo nguyên liệu** trên danh sách Phiếu nhập / Phiếu xuất.

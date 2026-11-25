@@ -466,7 +466,7 @@ namespace AppDelicare.Services.Implement
                 deliveryOrder.PlannedDeliveryTime = first.PlannedDeliveryTime ?? deliveryOrder.PlannedDeliveryTime;
                 deliveryOrder.Note = DeliveryRules.WithMeals(DeliveryRules.NoteText(deliveryOrder.Note), first.MealQuantity);
                 _unitOfWork.DeliveryOrderRepository.Update(deliveryOrder);
-                var stop = _unitOfWork.DeliveryStopRepository.GetSingle(s => s.DeliveryOrderId == deliveryOrder.Id && !s.IsDeleted);
+                var stop = _unitOfWork.DeliveryStopRepository.GetSingle(s => s.DeliveryOrderId == deliveryOrder.Id && !s.IsDeleted && s.StopStatus != DeliveryStopStatus.Failed); // UI-6.49 (2): điểm thất bại cũ giữ làm lịch sử (giao lại)
                 if (stop != null)
                 {
                     stop.PlannedMealQty = first.MealQuantity;
@@ -553,7 +553,7 @@ namespace AppDelicare.Services.Implement
                     return Fail(string.Format(ConstantHelper.Message.PackingOrderNotEligible, OrderNumber(order), OrderStatus.Label(order.Status)));
                 }
                 decimal meals = (await DeliveryRules.DeliveryOrderMealsAsync(db, [deliveryOrder]))[deliveryOrder.Id];
-                var oldStop = _unitOfWork.DeliveryStopRepository.GetSingle(s => s.DeliveryOrderId == deliveryOrder.Id && !s.IsDeleted);
+                var oldStop = _unitOfWork.DeliveryStopRepository.GetSingle(s => s.DeliveryOrderId == deliveryOrder.Id && !s.IsDeleted && s.StopStatus != DeliveryStopStatus.Failed); // UI-6.49 (2): điểm thất bại cũ giữ làm lịch sử (giao lại)
                 Guid? sourceRouteId = oldStop?.DeliveryRouteId;
                 if (oldStop != null && oldStop.DeliveryRouteId != target.Id)
                 {
@@ -645,7 +645,7 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(error!);
                 }
-                var stop = _unitOfWork.DeliveryStopRepository.GetSingle(s => s.DeliveryOrderId == deliveryOrder.Id && !s.IsDeleted);
+                var stop = _unitOfWork.DeliveryStopRepository.GetSingle(s => s.DeliveryOrderId == deliveryOrder.Id && !s.IsDeleted && s.StopStatus != DeliveryStopStatus.Failed); // UI-6.49 (2): điểm thất bại cũ giữ làm lịch sử (giao lại)
                 Guid? routeId = stop?.DeliveryRouteId;
                 if (stop != null)
                 {

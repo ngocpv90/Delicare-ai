@@ -355,7 +355,7 @@ namespace AppDelicare.Services.Implement
             var stops = await db.DeliveryStop.AsNoTracking().Where(s => !s.IsDeleted && s.DeliveryOrderId != null && ids.Contains(s.DeliveryOrderId.Value)).ToListAsync();
             var executions = await db.DeliveryExecution.AsNoTracking().Where(e => !e.IsDeleted && ids.Contains(e.DeliveryOrderId)).ToListAsync();
             return deliveries.ToDictionary(d => d.Id, d => DeliveryRules.ExecutionStatus(d,
-                stops.FirstOrDefault(s => s.DeliveryOrderId == d.Id),
+                stops.Where(s => s.DeliveryOrderId == d.Id).OrderBy(s => s.StopStatus == DeliveryStopStatus.Failed ? 1 : 0).FirstOrDefault(), // UI-6.49 (2): giao lại → điểm còn hiệu lực
                 executions.Where(e => e.DeliveryOrderId == d.Id).OrderByDescending(e => e.CreatedDate).FirstOrDefault()));
         }
 

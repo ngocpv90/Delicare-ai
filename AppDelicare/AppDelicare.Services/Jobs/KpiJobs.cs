@@ -13,7 +13,7 @@ namespace AppDelicare.Services.Jobs
         public string Code => KpiCode.JobDaily;
         public string Name => "KPI ngày";
         public string Description => "Tính KPI hôm nay (toàn công ty) rồi lưu chỉ số ngày – chạy lại không nhân đôi (như nút Tính lại chỉ số ngày).";
-        public string DefaultAt => "22:00";
+        public string DefaultAt => "22:30"; // UI-6.47: sau đóng lệnh SX 22:00 (cùng mốc thì chạy theo mã – KPI chạy trước)
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
         {

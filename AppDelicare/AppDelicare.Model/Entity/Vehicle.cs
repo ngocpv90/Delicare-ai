@@ -20,5 +20,7 @@ namespace AppDelicare.Model.Entity
         [MaxLength(50)]
         public string? Status { get; set; }
         public string? Note { get; set; }
+        /// <summary>GAP-LOG-DRV (D-128): tài xế mặc định (→ Employee, không FK vật lý) – tự lập chuyến gán tài xế này; trống → tài xế chuyến gần nhất.</summary>
+        public Guid? DefaultDriverEmployeeId { get; set; }
     }
 }

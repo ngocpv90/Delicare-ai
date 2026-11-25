@@ -26,7 +26,7 @@ namespace AppDelicare.Services.Implement
     /// Bảng / cột chỉ lấy từ <see cref="CommonRegistry"/>; quyền theo màn hình của danh sách (<see cref="CommonAccess"/>). Chỉ đọc.
     /// </summary>
     public partial class CommonService(IUnitOfWork unitOfWork, ICurrentActor currentActor, IPermissionService permissionService, IClock clock,
-        IOptions<BusinessRulesOptions> rules, IMemoryCache cache, IApprovalRequestService approvalRequestService) : ICommonService
+        IOptions<BusinessRulesOptions> rules, IMemoryCache cache, IApprovalRequestService approvalRequestService, IServiceProvider services) : ICommonService
     {
         public const string SourceAudit = "AUDIT";
         public const string SourceApproval = "APPROVAL";
@@ -41,6 +41,8 @@ namespace AppDelicare.Services.Implement
         private readonly AlertRulesOptions _alertRules = rules.Value.Alerts;
         private readonly IMemoryCache _cache = cache;
         private readonly IApprovalRequestService _approvalRequestService = approvalRequestService;
+        private readonly IServiceProvider _services = services;
+        private readonly BusinessRulesOptions _bizRules = rules.Value;
 
         /// <summary>Cột hệ thống không hiện trong lịch sử (đã có ở thời điểm / người thao tác).</summary>
         private static readonly HashSet<string> HiddenAuditFields = new(StringComparer.OrdinalIgnoreCase)
@@ -537,7 +539,7 @@ namespace AppDelicare.Services.Implement
             return new RecordHistoryItemModel
             {
                 At = a.CreatedDate, By = a.CreatedBy, Source = SourceAudit, Action = action,
-                ActionName = action switch { "Added" => "Tạo mới", "Modified" => "Cập nhật", "Deleted" => "Xóa", "Download" => "Tải tệp", _ => action },
+                ActionName = action switch { "Added" => "Tạo mới", "Modified" => "Cập nhật", "Deleted" => "Xóa", "Download" => "Tải tệp", "RoleSaveMany" => "Đổi quyền", "ResignScheduled" => "Hẹn nghỉ việc", "ResignCancelled" => "Hủy hẹn nghỉ việc", "Resign" => "Nghỉ việc", "ConfirmValid" => "Xác nhận hợp lệ", "StatusChange" => "Đổi trạng thái", _ => action },
                 EntityName = entity, EntityId = a.IdChange, ListChange = changes,
             };
         }

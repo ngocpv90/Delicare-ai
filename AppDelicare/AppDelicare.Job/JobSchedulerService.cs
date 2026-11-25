@@ -20,6 +20,7 @@ namespace AppDelicare.Job
             string heartbeat = configuration[JobHeartbeat.FileKey] is { Length: > 0 } hb ? hb : JobHeartbeat.DefaultPath;
             Log.Information("[Job] AppDelicare.Job bắt đầu – kiểm job mỗi {Seconds} giây, file nhịp {Heartbeat}", pollSeconds, heartbeat);
             await WarnDatabaseClockAsync();
+            AppDelicare.Services.Ioc.ConfigDefaultsCheck.Warn(configuration, "Job"); // UI-6.47
             await LogScheduleAsync();
             while (!stoppingToken.IsCancellationRequested)
             {

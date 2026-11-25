@@ -19,7 +19,7 @@ namespace AppDelicare.Services.Interface
     /// <summary>Cờ quyền trên một menu (OR qua mọi nhóm của user).</summary>
     public sealed record MenuRights(bool Access, bool Add, bool Edit, bool Delete, bool Print, bool Export, bool Import);
 
-    /// <summary>Quyền của một user: admin, các nhóm (UserGroup.Name), quyền theo MetaLink.</summary>
+    /// <summary>Quyền của một user: admin, các nhóm (UserGroup.Code + Name – UI-6.43), quyền theo MetaLink.</summary>
     public sealed record UserPermissions(bool IsAdmin, IReadOnlySet<string> Groups, IReadOnlyDictionary<string, MenuRights> Menus)
     {
         public static readonly UserPermissions None = new(false, new HashSet<string>(), new Dictionary<string, MenuRights>());
@@ -41,6 +41,17 @@ namespace AppDelicare.Services.Interface
     {
         /// <summary>Tiền tố MetaLink của mục menu duyệt.</summary>
         public const string ApproveMenuPrefix = "#/wf-inbox?type=";
+
+        /// <summary>
+        /// UI-6.46 (D-125 c): mục quyền duyệt đã gộp (mục cũ ẩn – IsActive = 0, quyền đã hợp vào mục mới) → mục còn hiện. Áp cho kiểm quyền Duyệt và tìm người duyệt,
+        /// cả yêu cầu cũ đã lưu quy trình theo mục cũ. UI-6.39: "Phê duyệt › Đơn đổi ca" gộp vào "Phê duyệt › Nghỉ &amp; đổi ca".
+        /// </summary>
+        public static readonly IReadOnlyDictionary<string, string> ApproveScreenAlias = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["hr-swap"] = "hr-leave",
+        };
+
+        public static string ApproveScreenOf(string screenId) => ApproveScreenAlias.TryGetValue(screenId, out var to) ? to : screenId;
 
         Task<UserPermissions> GetAsync(Guid userId, CancellationToken cancellationToken = default);
         bool IsAllowed(UserPermissions permissions, string screenId, PermissionAction action);

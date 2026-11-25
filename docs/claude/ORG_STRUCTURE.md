@@ -51,6 +51,8 @@ Các tổ trong bếp **đồng thời** là `KitchenWorkstation` (Code trùng v
 
 ## 2. Nhóm quyền `UserGroup` và ma trận quyền – THEO TỪNG MÀN (D-79, anh chốt 2026-11-23)
 
+**UI-6.43 (D-124):** mỗi nhóm có **Mã** (`UserGroup.Code` – các mã dưới đây, dùng cho luồng duyệt / bot / cấu hình) và **Tên** tiếng Việt (vd. OPS-WH = "Thủ kho", FIN-IT = "Quản trị hệ thống"), Mô tả, Khối (BOARD · OPS · SAL · FIN · QA). Dữ liệu cũ điền bằng `DB/scripts/UI643_usergroup_code.sql` (chỉ đổi tên khi tên còn đúng bằng mã).
+
 **MENU-5 (D-79) thay bảng theo nhóm màn cũ** (GAP-PERM-02: E = Thêm + Sửa + Xóa + Nhập áp cho cả nhóm màn → điểm phát / CSKH / QA / bếp có quyền ghi quá rộng). Nay cấp quyền **theo từng màn**:
 - **Nguồn duy nhất:** `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + Approvers5) – bảng do người đọc: ROADMAP **MENU-5.1** (bản chốt) và `docs/claude/MENU5_MATRIX.md` (bản sinh, 19 nhóm × mọi mục menu). Sinh `DB/seed/UserRole_seed.sql` (chỉ thêm dòng thiếu) và `DB/scripts/D79_permission_matrix.sql` (đặt lại cho DB đang chạy, DryRun bắt buộc).
 - **Ký hiệu:** Q = Xem + Thêm + Sửa + Xóa + Nhập (chỉ nhóm chủ dữ liệu) · S = Xem + Thêm + Sửa · X = Xem · (IX) = In + Xuất · Duyệt = Xem + Sửa trên mục "Phê duyệt › …".

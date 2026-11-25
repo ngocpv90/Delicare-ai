@@ -14,16 +14,14 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Menu › Mục | screen-id | FIN-HR |
 |---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X |
-| Phê duyệt › Đơn xin nghỉ | `wf-inbox?type=hr-leave` | Duyệt |
-| Phê duyệt › Đơn đổi ca | `wf-inbox?type=hr-swap` | Duyệt |
+| Phê duyệt › Nghỉ & đổi ca | `wf-inbox?type=hr-leave` | Duyệt |
 | Nhân sự › Nhân viên | `adm-employee` | S (IX) |
 | Nhân sự › Phân ca | `hr-shift-assign` | S (IX) |
 | Nhân sự › Chấm công | `hr-attendance` | S (IX) |
-| Nhân sự › Đơn xin nghỉ | `hr-leave` | S (IX) |
-| Nhân sự › Đơn đổi ca | `hr-swap` | S (IX) |
-| Nhân sự › Ca làm việc | `hr-shift` | Q |
-| Nhân sự › Chức vụ | `adm-position` | Q |
-| Quản trị hệ thống › Sơ đồ tổ chức | `adm-orgunit` | X |
+| Nhân sự › Nghỉ & đổi ca | `hr-leave` | S (IX) |
+| Danh mục hệ thống › Công ty & đơn vị | `adm-orgunit` | X |
+| Danh mục hệ thống › Chức vụ | `adm-position` | Q |
+| Danh mục hệ thống › Ca làm việc | `hr-shift` | Q |
 | Nhật ký & Tích hợp › Liên kết tài khoản chat | `int-identity` | X |
 <!-- MENU5:END -->
 
@@ -110,16 +108,18 @@ Mở **hồ sơ nhân viên** cả trang (← về danh sách). Ai xem được 
 - **Bổ sung giờ** (quên vào / ra ca): Loại (Ra ca / Vào ca) · **Giờ thực tế\*** · **Lý do\*** (Quên chấm công · Điện thoại hết pin / mất mạng · Máy chấm công lỗi · Khác) · Ghi chú. Chỉ trong khung ca (từ trước giờ vào ca theo quy định tới 3 giờ sau giờ kết thúc) và cho ca trong **3 ngày** gần nhất; ca đã có lần chấm cùng loại thì không bổ sung. Ghi **thêm** một lần chấm "[BỔ SUNG] lý do – ghi bởi …", tính lại đi muộn / về sớm / giờ công; ca thành **Hoàn thành** khi đủ vào + ra (kể cả ca đã Vắng).
 - **Xuất bảng công**: tệp Excel tháng – mỗi người một dòng, ngày theo cột (ký hiệu), tổng công / giờ / muộn / vắng / phép.
 
-### 4.5 Đơn nghỉ phép – `hr-leave`
-1. **Tạo đơn** → Nhân viên (trống = chính bạn; cho người khác cần quyền Thêm), **Từ ngày**, **Đến ngày** (≥ từ ngày, ≤ 30 ngày / đơn, lập lùi ≤ 7 ngày), **Loại nghỉ** (Nghỉ phép năm / Nghỉ ốm / Việc riêng có lương / Nghỉ không lương / Thai sản / Khác), **Lý do*** → lưu → *"Đã tạo đơn và gửi duyệt"* (số `DN-…`, Chờ duyệt).
-2. Dòng **Chờ duyệt**: **Hủy đơn** (lý do hủy). Bấm dòng → ngăn chi tiết mở thẳng tab **Xử lý đơn**: số đơn, trạng thái, nhân viên, loại, thời gian (số ngày), lý do, cấp duyệt, **Ca trong khoảng nghỉ**, cảnh báo (*Duyệt đơn sẽ bỏ ca … đã phân*), nút **Hủy đơn / Từ chối / Duyệt** theo quyền.
-3. Duyệt → ca trong khoảng nghỉ **tự bỏ**; nếu ca thiếu người → cảnh báo *"Ca … thiếu người … – cần phân người thay"*.
-- Chỉ xóa được đơn Từ chối / Đã hủy; không sửa đơn.
-
-### 4.6 Đơn đổi ca – `hr-swap`
-1. **Tạo đơn** → **Người nhận** (Target), **Ca hiện tại** (ca của người xin), **Ca đề xuất** (ca của người nhận – để trống = **Nhường ca**; chọn = **Hoán đổi 2 ca**), **Lý do*** → lưu (Chờ duyệt).
-2. Chi tiết: Hình thức, Người xin đổi, Người nhận, Ca của người xin, Ca đề xuất đổi, cấp duyệt; nút như đơn nghỉ.
-3. Duyệt → hệ thống đổi người trên ca; nếu không thực hiện được → *"Duyệt sẽ không thực hiện được: …"*.
+### 4.5 Nghỉ & đổi ca – `hr-leave` (UI-6.39 – gộp Đơn xin nghỉ + Đơn đổi ca)
+Mục "Đơn đổi ca" đã gộp vào đây (link cũ mở màn này, lọc Đổi ca). Phê duyệt: một mục **Phê duyệt › Nghỉ & đổi ca** hiện cả hai loại – mỗi người chỉ thấy loại mình được duyệt. Hồ sơ nhân viên: một tab **Nghỉ & đổi ca**; Việc của tôi: một khung.
+- **4 thẻ:** Chờ duyệt (quá hạn · số nghỉ · số đổi ca) · Nghỉ hôm nay (tên) · Nghỉ 7 ngày tới (người · ngày công) · **Ca trống do nghỉ** (ca bị bỏ theo đơn nghỉ đã duyệt chưa có người thay – bấm mở Phân ca).
+- **Tab Đơn:** chip trạng thái (**Chờ duyệt** mặc định – gồm *Chờ người nhận đồng ý* · Đã duyệt · Từ chối / hủy · Tất cả) + chip loại (Xin nghỉ · Đổi ca · Nhường ca) + tìm. Cột **Ảnh hưởng**: số ca bị bỏ, "tổ thiếu N người <ngày>", vượt phép năm, "người nhận đã / chưa đồng ý"; Gửi lúc đỏ khi quá hạn duyệt. Nút **Xem / duyệt**, **Hủy đơn** (người gửi), **Đồng ý / Từ chối** (người nhận ca).
+- **Hộp duyệt đơn nghỉ:** phép năm còn → sau đơn; người cùng tổ nghỉ trùng ngày; khung "Duyệt đơn sẽ bỏ N ca – tổ còn x / cần y"; **người có thể thay** (cùng tổ, ngày đó chưa có ca, không phép); ý kiến (bắt buộc khi từ chối); tick **Duyệt xong mở Phân ca** (mặc định bật khi có ca bị bỏ).
+- **Tab Lịch nghỉ:** 2 tuần (◀ ▶): nghỉ đã duyệt (nền xanh), chờ duyệt (viền cam), đổi / nhường ca (tím); ngày tổ sẽ thiếu người nếu duyệt hết đơn chờ → viền đỏ "… thiếu N".
+- **Tạo đơn** (một nút, 3 loại):
+  - **Xin nghỉ:** nhân viên (trống = chính bạn; người có quyền Thêm chọn người khác, gõ để tìm) · loại nghỉ · từ – đến ngày · **lý do\***; hiện ngay phép năm còn / sau đơn (loại phép năm), các ca sẽ bị bỏ, người cùng tổ đã xin nghỉ trùng.
+  - **Đổi ca:** chọn **thẻ ca của tôi** (ca còn mở 14 ngày tới) → **thẻ ca của đồng nghiệp** (cùng tổ ±7 ngày, đã lọc trùng giờ / phép) · lý do\*.
+  - **Nhường ca:** thẻ ca của tôi → **người cùng tổ đang trống** ngày đó · lý do\*.
+- **Người nhận đồng ý trước:** đơn đổi / nhường ca mới ở trạng thái **Chờ người nhận đồng ý**; người nhận nhận tin bot (✅ Đồng ý / ❌ Từ chối) hoặc trả lời ở **Việc của tôi**. Đồng ý → đơn chuyển người duyệt (kiểm lại 2 ca); từ chối → đơn Từ chối, báo người xin; quá **24 giờ** không trả lời → đơn tự hủy, báo người xin.
+- Duyệt nghỉ → ca trong khoảng nghỉ **tự bỏ**; duyệt đổi ca → hệ thống đổi người trên ca. Phép năm = **12 ngày / năm** trừ ngày phép năm đã duyệt trong năm (chỉ cảnh báo khi vượt, không chặn). Không sửa đơn; chỉ người gửi hủy đơn đang chờ.
 
 ## 5. Trạng thái
 

@@ -552,3 +552,54 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Sổ chấm công chỉ xem. Không còn nút Chốt vắng; 23:30 tự chuyển Vắng (chạy lại không đổi thêm).
 - [ ] Bot: quá giờ còn người chưa vào ca → trưởng đơn vị nhận 1 tin / ca.
 - [ ] Điện thoại: 4 cột xếp dọc, nút to.
+
+## UI-6.39 – Nghỉ & đổi ca (D-120)
+- [ ] Sidebar Nhân sự: Nhân viên · Phân ca · Chấm công · Nghỉ & đổi ca · Ca làm việc · Chức vụ (không còn Đơn đổi ca); link cũ #/hr-swap mở màn lọc Đổi ca; Phê duyệt › Nghỉ & đổi ca hiện cả 2 loại theo quyền duyệt từng loại.
+- [ ] Tạo đơn Xin nghỉ: hiện phép năm còn / sau, ca bị bỏ, người nghỉ trùng. Đổi ca: 2 lần chọn thẻ + lý do. Nhường ca: chọn người đang trống.
+- [ ] Đơn đổi / nhường ca mới "Chờ người nhận đồng ý"; người nhận Đồng ý (bot / Việc của tôi) → có yêu cầu duyệt; Từ chối → đơn Từ chối, người xin được báo; 24 giờ không trả lời → tự hủy.
+- [ ] Hộp duyệt đơn nghỉ: phép năm, tổ còn x / cần y, người có thể thay; "Duyệt xong mở Phân ca".
+- [ ] Lịch nghỉ 2 tuần; ngày tổ thiếu viền đỏ (cần cấu hình định biên).
+- [ ] Thẻ Ca trống do nghỉ bấm mở Phân ca.
+
+## UI-6.41 – Công ty & đơn vị (D-122)
+- [ ] Sidebar Quản trị: "Công ty & đơn vị" (không còn Công ty, Sơ đồ tổ chức); link cũ #/adm-company mở chọn sẵn công ty.
+- [ ] Cây gốc là công ty, nhãn "chưa có trưởng", số nhân viên gồm con; tìm mở nhánh; thẻ Chưa có trưởng lọc cây.
+- [ ] Chọn công ty: thông tin + Sửa (người không có quyền mục Công ty không thấy nút); mã số thuế sai → báo lỗi; không xóa được công ty.
+- [ ] Chọn đơn vị: loại tiếng Việt (không còn BRANCH / TEAM…); chọn ngay trưởng (chỉ người đang làm); ＋ Đơn vị con; Chuyển (không vào nhánh con; sang công ty khác cả nhánh đổi); Ngừng hoạt động khi còn người → báo số người.
+
+## UI-6.40 – Danh mục hệ thống (D-121)
+- [ ] Sidebar: nhóm "Danh mục hệ thống" ngay trên Quản trị hệ thống – Tổng quan danh mục + 10 mục đúng thứ tự; các nhóm cũ không còn các mục này.
+- [ ] Quyền mỗi vai trò không đổi (tài khoản chỉ có quyền Xe giao hàng thấy nhóm với Tổng quan + Xe giao hàng).
+- [ ] Tổng quan danh mục: số bản ghi khớp màn danh sách; cảnh báo đỏ bấm mở đúng màn; link cũ (kể cả #/adm-company) mở đúng.
+
+## UI-6.42 – Tài khoản (D-123)
+- [ ] Danh sách: cột Người dùng / Nhóm quyền / Truy cập gần nhất / Trạng thái; không còn nút biểu tượng không chữ, Sửa, Xóa; "Thao tác ▾" đủ mục theo quyền.
+- [ ] Chọn nhiều: thêm / bỏ nhóm (tài khoản hết nhóm bị bỏ qua có báo), khóa (không khóa chính mình).
+- [ ] Thẻ Nghỉ việc còn mở → Khóa ngay; thẻ 60 ngày lọc đúng.
+- [ ] Tab Chờ IT xử lý: Duyệt & tạo (mật khẩu tạm hiện 1 lần nếu chưa liên kết bot), Đổi nhóm & duyệt, Từ chối – kết quả như Phê duyệt › Tài khoản.
+- [ ] Tạo tài khoản cho nhân viên: tên = mã NV, nhóm gợi ý theo chức vụ; tài khoản hệ thống chỉ quản trị; người không phải quản trị tạo trực tiếp bị chặn.
+
+## UI-6.43 – Nhóm quyền (D-124)
+- [ ] Danh sách theo khối: tên tiếng Việt + mã, mô tả, số tài khoản / màn hình / loại duyệt; 4 chỉ số bấm được; tìm theo tên hoặc mã.
+- [ ] Tạo nhóm: thiếu tên / mã trùng / khối sai → báo lỗi tiếng Việt; mã tự viết hoa.
+- [ ] Sửa nhóm đang là người duyệt (vd. COO): đổi tên được, ô mã khóa.
+- [ ] Phân quyền: đổi vài màn → thanh "N thay đổi chưa lưu" → Xem lại & lưu → người trong nhóm đăng nhập lại thấy đúng menu; Lịch sử có dòng Trước → Sau.
+- [ ] Mục Phê duyệt: chọn Được duyệt → người trong nhóm duyệt được loại đó; Không → mất quyền duyệt.
+- [ ] Xem trước menu tính cả thay đổi chưa lưu; So sánh 2 nhóm ra đúng các màn khác nhau.
+- [ ] Tab Tài khoản: thêm nhiều tài khoản; bỏ tài khoản có 1 nhóm → không cho.
+- [ ] Ngừng dùng nhóm còn tài khoản / đang duyệt → bị chặn có lý do.
+- [ ] Link cũ #/adm-permission mở Nhóm quyền; menu không còn mục Phân quyền; luồng duyệt (đề nghị mua, nghỉ phép…) vẫn tới đúng người sau khi nhóm đổi tên tiếng Việt.
+
+## UI-6 – Kịch bản đầu – cuối sau toàn đợt (UI-6.48 / UI-6.3)
+Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng nhập đúng vai trò ghi trong ngoặc).
+- [ ] **Đơn hàng** (SAL-SALES): Đơn hàng theo ngày → nhập suất ngày mai cho 1 khách có hợp đồng → lưu.
+- [ ] **Chốt 20:00** (tự động / COO bấm chốt): đơn Đã chốt; kế hoạch sản xuất tự lập + phát hành; chuyến giao tự lập theo khu vực (chuông / bot báo).
+- [ ] **Bảng sản xuất ngày** (OPS-KIT): mẻ của món × ca → Bắt đầu → Xong mẻ (nhiệt độ lõi, lưu mẫu) → tự Đạt; trên bot: ✅ Xong mẻ, Checklist ATTP (lỗi ❗ phải chọn mẻ).
+- [ ] **Chia suất & đóng gói** (OPS-KIT): ghi kết quả theo món / điểm giao; điểm đủ thực đơn → chuyến "đủ hàng".
+- [ ] **Điều phối giao hàng** (OPS-LOG): chuyến chưa đủ hàng sát giờ → chuông "Chuyến sắp xuất bến chưa đủ hàng"; xếp xe → xuất bến.
+- [ ] **Theo dõi giao hàng** (tài xế – Việc của tôi › Mở chuyến): đến điểm → giao + thu khay → điểm thất bại vào "Cần giao lại".
+- [ ] **Khay hộp** (OPS-LOG / QA): khay thu về vào sổ; Vệ sinh khay hộp → Đạt tất cả (web hoặc bot ✅ Đạt); chuông "Khay sạch thiếu cho ngày mai" nếu thiếu.
+- [ ] **22:00** đóng lệnh SX → 22:30 KPI ngày → 01:00 giá vốn (Job tự động: xem lần chạy gần nhất).
+- [ ] **Nhân sự** (FIN-HR / nhân viên): phân ca tuần → chốt; nhân viên xin đổi ca → người nhận Đồng ý (bot) → người duyệt nhóm Nghỉ & đổi ca duyệt; 23:30 tự chuyển Vắng; chuông "Ca thiếu người".
+- [ ] **Tài khoản & nhóm quyền** (FIN-IT): nhân viên nghỉ việc → chuông "Tài khoản người đã nghỉ việc còn mở" → khóa; đổi quyền nhóm ở Nhóm quyền (Xem lại & lưu) → người trong nhóm thấy menu mới.
+- [ ] **Quyền theo vai trò:** mỗi `uat.<vai trò>` thấy đúng menu như `docs/frontend-handoff/assets/ui-6/menu-roles/README.md`; link cũ (#/hr-swap, #/adm-permission, #/scm-lot, #/log-pod…) mở màn mới.

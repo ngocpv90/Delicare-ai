@@ -209,7 +209,7 @@ namespace AppDelicare.Tests.Messaging
         [Fact]
         public async Task Driver_delivers_one_stop_in_full_in_three_taps_with_prefilled_quantity()
         {
-            await using var h = Host("#/log-stop", "#/log-route", "#/log-container-return");
+            await using var h = Host("#/log-stop", "#/log-route", "#/log-packaging-ledger");
             string detail = RouteDetail();
             h.Web.Routes["api/DeliveryRoute/GetMine"] = (_, _) => (200, null, "{\"listRoute\":[" + detail + "]}", null);
             h.Web.Routes["api/DeliveryRoute/GetDetail"] = (_, _) => (200, null, detail, null);
@@ -288,7 +288,7 @@ namespace AppDelicare.Tests.Messaging
 
             // Tài xế + điều phối: phân hệ Giao vận (vai trò chính) đứng trước Cá nhân.
             var registry = h.App.Services.GetRequiredService<BotActionRegistry>();
-            var driver = new BotIdentityModel { Linked = true, CanUseBot = true, HasWebAccount = true, Menus = ["#/log-stop", "#/log-route", "#/log-container-return"] };
+            var driver = new BotIdentityModel { Linked = true, CanUseBot = true, HasWebAccount = true, Menus = ["#/log-stop", "#/log-route", "#/log-packaging-ledger"] };
             registry.ModulesFor("VH", driver).First().Should().Be("GIAOVAN");
         }
 

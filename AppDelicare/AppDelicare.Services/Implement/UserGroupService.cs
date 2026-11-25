@@ -13,14 +13,15 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class UserGroupService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IUserRoleService userRoleService
-        , IMapper mapper, IAuditChangeService auditChangeService) : IUserGroupService
+    public partial class UserGroupService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IUserRoleService userRoleService
+        , IMapper mapper, IAuditChangeService auditChangeService, IServiceProvider services) : IUserGroupService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IUserRoleService _userRoleService = userRoleService;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private readonly IServiceProvider _services = services;
 
         public async Task<IResults<UserGroupViewModel>> GetAll(UserGroupSearchRequest request)
         {
@@ -152,6 +153,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(UserGroupRequest request, string typeSave)
         {
+            if (await RulesAsync(request, null) is { } rule)
+            {
+                return rule;
+            }
             var checkDuplicate = _unitOfWork.UserGroupRepository.GetSingle(x => x.Name == request.Name && !x.IsDeleted);
             if (checkDuplicate != null)
             {
@@ -170,6 +175,10 @@ namespace AppDelicare.Services.Implement
             if (string.IsNullOrEmpty(request.Id.ToString()) || exist == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            if (await RulesAsync(request, exist) is { } rule)
+            {
+                return rule;
             }
             var checkDuplicate = _unitOfWork.UserGroupRepository.GetSingle(x => x.Id != request.Id && x.Name == request.Name && !x.IsDeleted);
             if (checkDuplicate != null)

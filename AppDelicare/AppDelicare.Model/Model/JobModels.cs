@@ -29,6 +29,8 @@ namespace AppDelicare.Model.Model
         public string At { get; set; } = string.Empty;
         public DateTime NextRunAt { get; set; }
         public JobRunResultModel? LastRun { get; set; }
+        /// <summary>UI-6.49 (5): nhắc việc chạy trong vòng kiểm bot (BotChannel/RunWatch, mỗi lần kiểm) – không chạy tay ở màn Job.</summary>
+        public bool RunsInBot { get; set; }
     }
 
     /// <summary>T23 (Catalog 81 ContractExpiryJob): hợp đồng Hiệu lực đã qua ngày hết hiệu lực → Hết hạn.</summary>

@@ -106,7 +106,11 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Text("31/13", replyTo: LastSentId(h)));
             h.Sender.Sent.Last().Message.Text.Should().Contain("Ngày chưa đúng");
             await h.SendAsync(Text("25/12", replyTo: LastSentId(h)));
+            // UI-6.49 (1): trước khi chọn lý do – phép năm còn / ca bị bỏ (BotChannel/EmployeePreviewLeave).
+            h.Api.EmployeeData["EmployeePreviewLeave"] = JsonSerializer.Serialize(new { isAnnual = true, annualTotal = 12, annualRemaining = 9, annualAfter = 8, listShiftDrop = new[] { new { shiftCode = "SANG", workDate = "2026-12-25T00:00:00" } } });
             await h.SendAsync(Tap("lv:n:1"));
+            string preview = string.Join(" | ", h.Sender.Edits.Select(e => e.Text)) + string.Join(" | ", h.Sender.Sent.Select(x => x.Message.Text));
+            preview.Should().Contain("Phép năm còn 9/12 ngày → sau đơn còn 8").And.Contain("bỏ 1 ca: SANG 25/12");
             await h.SendAsync(Tap("lv:r:k.1"));
             var call = h.Api.EmployeeCalls.Should().ContainSingle(c => c.Action == "EmployeeCreateLeave").Subject;
             using var doc = JsonDocument.Parse(call.Json);
@@ -183,12 +187,25 @@ namespace AppDelicare.Tests.Messaging
             await h.SendAsync(Text("Gia nhiệt lại 15 phút", replyTo: LastSentId(h)));
             Last(h, "api/ProductionBatch/RecordCoreTemperature").Form["CorrectiveAction"].Should().Be("Gia nhiệt lại 15 phút");
 
+            // UI-6.49 (1): ✅ Xong mẻ = ProductionBatch/Complete như web – chưa đo nhiệt độ lõi thì hỏi ngay (bước 1/2), rồi số suất; dưới ngưỡng → chọn hành động khắc phục.
+            h.Web.Routes["api/ProductionBatch/Complete"] = (_, form) => form["__json"].Contains("\"correctiveAction\":\"")
+                || form["__json"].Contains("\"coreTemperatureC\":78") ? (200, "Đã xong mẻ – tự Đạt", "{}", null)
+                : (400, "Nhiệt độ lõi 65 °C dưới ngưỡng 70 °C – phải ghi hành động khắc phục (nấu tiếp / hâm lại rồi đo lại)", null, null);
             await h.SendAsync(Tap("bat:fin:" + cook));
+            h.Sender.Edits.Last().Text.Should().Contain("bước 1/2: nhiệt độ lõi");
+            await h.SendAsync(Tap("bat:ftv:" + cook + ".78"));
             ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Should().Contain(b => b.Text == "✅ Xác nhận 100 suất" && b.CallbackData == "bat:fq:" + cook + ".100", "điền sẵn số kế hoạch");
             await h.SendAsync(Tap("bat:fq:" + cook + ".100"));
-            Last(h, "api/ProductionBatch/Finish").Form["ActualQuantity"].Should().Be("100");
-            // UG-1 C-07: xong mẻ trên bot ghi luôn sản lượng (ProductionOutput) – không còn kẹt "Chưa ghi sản lượng mẻ" khi cho Đạt.
-            Last(h, "api/ProductionBatch/RecordOutput").Form.Should().Contain(new KeyValuePair<string, string>("ProducedQuantity", "100")).And.Contain(new KeyValuePair<string, string>("Id", Cooking.ToString()));
+            string done = Last(h, "api/ProductionBatch/Complete").Form["__json"];
+            done.Should().Contain("\"coreTemperatureC\":78").And.Contain("\"producedQuantity\":100").And.Contain(Cooking.ToString());
+            h.Web.Calls.Should().NotContain(c => c.Path == "api/ProductionBatch/Finish" || c.Path == "api/ProductionBatch/RecordOutput", "không còn 2 lệnh lẻ");
+            // Dưới ngưỡng → nút hành động khắc phục → Complete kèm correctiveAction.
+            await h.SendAsync(Tap("bat:fin:" + cook));
+            await h.SendAsync(Tap("bat:ftv:" + cook + ".65"));
+            await h.SendAsync(Tap("bat:fq:" + cook + ".100"));
+            h.Sender.Edits.Last().Text.Should().Contain("dưới ngưỡng");
+            await h.SendAsync(Tap("bat:fcr:" + cook + ".100.0"));
+            using (var cj = JsonDocument.Parse(Last(h, "api/ProductionBatch/Complete").Form["__json"])) { cj.RootElement.GetProperty("correctiveAction").GetString().Should().Be("Gia nhiệt lại 10 phút, đo lại"); cj.RootElement.GetProperty("coreTemperatureC").GetDecimal().Should().Be(65); }
             await h.SendAsync(Tap("bat:smp:" + cook));
             Last(h, "api/ProductionBatch/RecordSampleRetained").Form["Id"].Should().Be(Cooking.ToString());
             await h.SendAsync(Tap("bat:start:" + plan));
@@ -245,6 +262,38 @@ namespace AppDelicare.Tests.Messaging
         }
 
         [Fact]
+        public async Task Ui649_temperature_round_records_manual_zones_with_corrective_for_out_of_range()
+        {
+            await using var h = WebUserHost("#/qc-temperature");
+            Guid cold = Guid.NewGuid(), hot = Guid.NewGuid(), sensor = Guid.NewGuid();
+            h.Web.Routes["api/TemperatureLog/GetDayBoard"] = (_, _) => (200, null, JsonSerializer.Serialize(new
+            {
+                listZone = new object[]
+                {
+                    new { storageZoneId = cold, zoneName = "Kho lạnh", temperatureMin = 0m, temperatureMax = 5m, hasSensor = false, status = "DUE" },
+                    new { storageZoneId = hot, zoneName = "Tủ giữ nóng", temperatureMin = 65m, temperatureMax = 90m, hasSensor = true, status = "SILENT" },
+                    new { storageZoneId = sensor, zoneName = "Kho mát", temperatureMin = 0m, temperatureMax = 8m, hasSensor = true, status = "OK" },
+                },
+            }), null);
+            h.Web.Routes["api/TemperatureLog/RecordRound"] = (_, _) => (200, "Đã ghi 2 khu", "{}", null);
+            await h.SendAsync(Text("/nhietdo"));
+            var list = h.Sender.Sent.Last().Message;
+            list.Text.Should().Contain("Kho lạnh").And.Contain("Tủ giữ nóng").And.NotContain("Kho mát", "khu có cảm biến đang gửi số không cần ghi tay");
+            await h.SendAsync(Tap("chk:tzv:0.4"));
+            await h.SendAsync(Tap("chk:tzv:1.60"));
+            h.Sender.Edits.Last().Text.Should().Contain("ngoài ngưỡng");
+            await h.SendAsync(Tap("chk:ts"));
+            h.Sender.Sent.Last().Message.Text.Should().Contain("chưa chọn hành động khắc phục");
+            await h.SendAsync(Tap("chk:tf:1.0"));
+            await h.SendAsync(Tap("chk:ts"));
+            using var doc = JsonDocument.Parse(Last(h, "api/TemperatureLog/RecordRound").Form["__json"]);
+            var items = doc.RootElement.GetProperty("listItem").EnumerateArray().ToList();
+            items.Should().HaveCount(2);
+            items[0].GetProperty("temperatureC").GetDecimal().Should().Be(4);
+            items[1].GetProperty("correctiveAction").GetString().Should().Be("Chỉnh nhiệt độ thiết bị, đo lại sau 30 phút");
+        }
+
+        [Fact]
         public async Task Food_safety_checklist_in_one_message_records_pass_fail_and_hold_list()
         {
             await using var h = KitchenHost();
@@ -266,14 +315,21 @@ namespace AppDelicare.Tests.Messaging
             var buttons = ((TgInlineKeyboard)first.Markup!).InlineKeyboard.SelectMany(r => r).ToList();
             buttons[0].Text.Should().StartWith("✅").And.Contain("Rửa rau", "kết quả đã ghi điền sẵn");
             buttons[1].Text.Should().StartWith("⬜").And.Contain("❗Khử khuẩn");
-            buttons.Should().HaveCount(2, "chưa chọn hết → chưa có Hoàn tất");
+            buttons.Should().HaveCount(3, "chưa chọn hết → chưa có Hoàn tất, có Đạt tất cả (UI-6.45)");
+            buttons.Last().CallbackData.Should().Be("chk:all");
+            await h.SendAsync(Tap("chk:all", messageId: 90));
+            ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).Take(2).Should().OnlyContain(b => b.Text.StartsWith("✅"));
             await h.SendAsync(Tap("chk:1:0", messageId: 90));
             var after = ((TgInlineKeyboard)h.Sender.Edits.Last().Markup!).InlineKeyboard.SelectMany(r => r).ToList();
             after[1].Text.Should().StartWith("❌");
             after.Last().CallbackData.Should().Be("chk:done");
             await h.SendAsync(Tap("chk:done", messageId: 90));
+            // UI-6.45 (UI-6.30): tiêu chí trọng yếu Không đạt → hỏi mẻ bị ảnh hưởng trước khi ghi.
+            h.Web.Calls.Should().NotContain(c => c.Path.StartsWith("api/FoodSafetyChecklistResult/Record"));
+            h.Sender.Edits.Last().Text.Should().Contain("mẻ nào bị ảnh hưởng");
+            await h.SendAsync(Tap("chk:nb", messageId: 90));
             string json = Last(h, "api/FoodSafetyChecklistResult/Record").Form["__json"];
-            json.Should().Contain(Checklist.ToString()).And.Contain("\"resultCode\":\"PASS\"").And.Contain("\"resultCode\":\"FAIL\"");
+            json.Should().Contain(Checklist.ToString()).And.Contain("\"resultCode\":\"PASS\"").And.Contain("\"resultCode\":\"FAIL\"").And.Contain("noBatchReason");
             h.Sender.Edits.Last().Text.Should().Contain("1 đạt, 1 không đạt");
 
             await h.SendAsync(Text("⛔ Mẻ đang giữ"));

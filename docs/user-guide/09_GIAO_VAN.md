@@ -22,7 +22,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | S |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | S |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | S |
-| Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | Q |
+| Danh mục hệ thống › Xe giao hàng (có **tài xế mặc định** – tự lập chuyến gán sẵn, D-128) | `log-vehicle` | Q |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày
@@ -43,7 +43,7 @@ Mục "Đơn giao hàng", "Xếp hàng lên xe" đã ẩn (link cũ mở màn n�
 1. Chọn **ngày** (◀ ▶). 4 thẻ: Chuyến (số chuyến đủ hàng) · Điểm giao đủ thực đơn x/y · Chưa gán chuyến · Đã xếp xe.
 2. **Cột = chuyến** (xe, tài xế, giờ xuất bến, "x/y điểm đủ thực đơn") + cột **Chưa gán chuyến**; mỗi thẻ điểm giao: khách, điểm, suất, giờ giao, nhãn **Đủ thực đơn** hoặc **Còn thiếu** + món còn thiếu.
 3. **Chuyển xe** (ô chọn trên thẻ) – chuyển điểm giao sang chuyến khác.
-4. **Xếp lên xe** – chỉ khi mọi điểm của chuyến đủ thực đơn. Chưa đủ → hộp liệt kê điểm / món thiếu; người có quyền duyệt điều phối có thể **Xếp có điều kiện** (lý do bắt buộc, ghi vào chuyến).
+4. **Xếp lên xe** – chỉ khi mọi điểm của chuyến đủ thực đơn. Chưa đủ → hộp liệt kê điểm / món thiếu; người có quyền **Phê duyệt › Xếp xe chưa đủ hàng** (mặc định COO, Trưởng mua hàng & kho – UI-6.49) có thể **Xếp có điều kiện** (lý do bắt buộc, ghi vào chuyến).
 5. **Xuất bến** (sau khi xếp) – nhập nhiệt độ lúc xuất (dưới ngưỡng ghi khắc phục).
 - **Tự lập chuyến:** chốt đơn xong hệ thống tự lập chuyến theo khu vực cho ngày giao (mọi xe sẵn sàng); thiếu xe → điểm giao vào "Chưa gán chuyến" + tin bot cho điều phối. Đơn chốt muộn / bổ sung nằm ở "Chưa gán chuyến".
 - **Bot:** "🚚 Chuyến … đủ hàng" (1 tin / chuyến); còn ≤ 30 phút tới giờ xuất bến mà chưa đủ → cảnh báo kèm điểm / món thiếu.

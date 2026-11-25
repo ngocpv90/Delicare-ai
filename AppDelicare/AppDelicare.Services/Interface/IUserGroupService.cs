@@ -12,5 +12,11 @@ namespace AppDelicare.Services.Interface
         public Task<IResults<UserGroupViewModel>> GetAll(UserGroupSearchRequest request);
         public Task<IResult<bool>> Save(UserGroupRequest request, string typeSave);
         public Task<IResult<UserGroup>> GetById(Guid id);
+        // UI-6.43 (D-124)
+        public Task<IResult<AppDelicare.Model.Model.UserGroupListModel>> GetList(string? keyword, bool emptyOnly);
+        public Task<IResult<AppDelicare.Model.Model.AccountBulkResultModel>> AddUsers(AppDelicare.Model.Model.UserGroupUsersRequest request);
+        public Task<IResult<AppDelicare.Model.Model.AccountBulkResultModel>> RemoveUsers(AppDelicare.Model.Model.UserGroupUsersRequest request);
+        public Task<IResult<AppDelicare.Model.Model.UserGroupDetailModel>> GetDetail(Guid id);
+        public Task<IResult<bool>> Retire(AppDelicare.Model.Model.UserGroupStatusRequest request);
     }
 }

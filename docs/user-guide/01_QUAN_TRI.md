@@ -16,15 +16,11 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Menu › Mục | screen-id | FIN-IT |
 |---|---|---|
 | Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | Duyệt |
+| Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | S (IX) |
 | Quản trị hệ thống › Tài khoản | `adm-user` | Q (IX) |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | Q (IX) |
-| Quản trị hệ thống › Phân quyền | `adm-permission` | Q (IX) |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | Q (IX) |
-| Quản trị hệ thống › Sơ đồ tổ chức | `adm-orgunit` | Q (IX) |
-| Quản trị hệ thống › Công ty | `adm-company` | Q (IX) |
 | Quản trị hệ thống › Nhập dữ liệu gốc (Excel) | `sys-import` | Q (IX) |
-| Quản trị hệ thống › Danh mục dùng chung | `adm-reference` | Q (IX) |
-| Quản trị hệ thống › Địa giới hành chính | `adm-admin-unit` | Q (IX) |
 | Quản trị hệ thống › Tài liệu đính kèm | `adm-document` | Q (IX) |
 | Nhật ký & Tích hợp › Job tự động | `adm-job` | Q (IX) |
 | Nhật ký & Tích hợp › Nhật ký thay đổi dữ liệu | `adm-audit` | S (IX) |
@@ -36,7 +32,6 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Nhật ký & Tích hợp › Tin nhắn đến | `int-inbound` | S (IX) |
 | Nhật ký & Tích hợp › Tin nhắn đi | `int-outbound` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | S (IX) |
-| Nhật ký & Tích hợp › Danh mục chỉ số | `kpi-definition` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | S (IX) |
 <!-- MENU5:END -->
 
@@ -58,7 +53,7 @@ Các màn `dbx-explorer`, `dbx-gap` **đang ẩn** ở chế độ dữ liệu t
 | Các bước duyệt · Lịch sử duyệt · Chứng từ trong yêu cầu duyệt | Chi tiết yêu cầu trong **Hộp phê duyệt** |
 | Phiếu chuyển kho · Phiếu điều chỉnh tồn | Nút **Chuyển kho** / **Điều chỉnh tồn** trên màn **Tồn kho** (duyệt điều chỉnh vẫn ở Phê duyệt › Phiếu điều chỉnh tồn) |
 | Thông tin cá nhân | **Tài khoản** / **Nhân viên** |
-| Hộp phê duyệt (nhóm Nhân sự) và 20 mục "Phê duyệt › …" | 1 mục **Phê duyệt** (màn tổng – D-81); các dòng quyền giữ nguyên, cấp ở khối **Quyền duyệt** của màn Phân quyền (§4.5) |
+| Hộp phê duyệt (nhóm Nhân sự) và 20 mục "Phê duyệt › …" | 1 mục **Phê duyệt** (màn tổng – D-81); các dòng quyền giữ nguyên, cấp ở nhóm **Phê duyệt** của tab Phân quyền, trang Nhóm quyền (§4.5 – Được duyệt / Không) |
 
 Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản lượng** (ghi khi kết thúc mẻ nấu), **Xếp hàng lên xe** và **Xác nhận đã giao** (Theo dõi chuyến / bot), **Liên kết tài khoản chat** (mã liên kết; nút Liên kết / Gỡ liên kết).
 
@@ -75,28 +70,12 @@ Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản
 
 ## 4. Thao tác từng bước
 
-### 4.1 Tạo tài khoản – `adm-user`
-1. Mở **Quản trị hệ thống › Người dùng** → **Tạo người dùng**.
-2. Nhập **Tên đăng nhập**, chọn **Hồ sơ người** có sẵn – hoặc bấm **Lấy từ nhân viên** (gõ mã / tên để tìm): hệ thống tạo hồ sơ mới theo họ tên, SĐT, ngày sinh, giới tính, địa chỉ của nhân viên và gợi ý tên đăng nhập (vd. *an.nguyen*) → **Tạo người dùng**.
-   - Tên đăng nhập chỉ gồm chữ thường không dấu, số, `.` `_` `-`, 3–50 ký tự.
-   - Mỗi hồ sơ cá nhân chỉ có 1 tài khoản.
-3. Tạo xong hiện **mật khẩu tạm** một lần (bấm **Sao chép**). Người dùng đăng nhập bằng mật khẩu tạm sẽ gặp ngay hộp **Đổi mật khẩu** bắt buộc – chưa đổi thì không dùng được màn nào (chỉ có nút Đăng xuất).
-4. Gán nhóm quyền: màn **Người dùng** (`adm-user`) → **Tạo người dùng** có ô **Nhóm quyền** (chọn nhiều); tạo xong hiện **mật khẩu tạm** một lần (nút **Sao chép**, hết hạn 24 giờ, người dùng phải đổi khi đăng nhập). Tài khoản đã có: nút **Gán nhóm** trên dòng (chọn lại danh sách nhóm). Sửa tài khoản bằng nút Sửa thông thường không làm mất nhóm.
-
-**4.1b Đặt lại mật khẩu (chỉ tài khoản quản trị):**
-1. Trên dòng tài khoản bấm nút hình chìa khóa (**Đặt lại mật khẩu**) → xác nhận *"Đặt lại mật khẩu của tài khoản …? Mật khẩu hiện tại sẽ không dùng được nữa."*
-2. Hộp **Mật khẩu tạm** hiện mật khẩu – bấm **Sao chép**. Mật khẩu chỉ hiện **một lần**, hết hạn sau **24 giờ**, người dùng phải đổi khi đăng nhập.
-
-**4.1c Tài khoản của nhân viên – cấp qua duyệt (HR-ACC-1, D-82):**
-- Tài khoản ↔ **con người** ↔ **nhân viên** nối thật: tài khoản trỏ tới hồ sơ người (Person), nhân viên cũng trỏ tới đúng người đó. Đổi tên đăng nhập, mã nhân viên hay số điện thoại **không** làm mất liên kết (chấm công, bot, đơn nghỉ, chặn tự duyệt vẫn đúng người).
-- **Tuyển mới:** NS tạo nhân viên và tích **Cấp tài khoản web** (hoặc bấm **Đề nghị cấp tài khoản** ở hồ sơ nhân viên › tab **Tài khoản và bot**) → yêu cầu **Cấp tài khoản** đến IT ở màn **Phê duyệt** (mục quyền *Phê duyệt › Tài khoản*, nhóm FIN-IT). IT xem nhân viên, đơn vị, chức danh, **nhóm quyền gợi ý theo chức danh**; **tích / bỏ nhóm** ngay trên thẻ duyệt rồi **Duyệt** → hệ thống tạo hồ sơ người (nếu chưa có) + tài khoản (tên đăng nhập = **mã nhân viên viết thường**, vd. `nv-00045`, mật khẩu tạm 24 giờ, bắt đổi lần đầu) + nhóm quyền + liên kết. Nhân viên đã liên kết bot: mật khẩu tạm gửi qua bot; chưa liên kết: hộp **Đã cấp tài khoản** hiện mật khẩu tạm **1 lần** cho IT.
-- Người có quyền **Thêm** ở màn Tài khoản vẫn tạo thẳng được: hồ sơ nhân viên › **Tạo ngay (IT)** (không qua duyệt).
-- Nhóm gợi ý theo chức danh: cấu hình `BusinessRules:PositionDefaultGroups` (mã chức danh → tên nhóm) – IT điền; màn **Chức vụ** hiện cột *Nhóm gợi ý*. Đổi chức danh mà nhóm gợi ý mới khác nhóm hiện tại → tự có yêu cầu **Đổi nhóm quyền** (trong lúc chờ giữ quyền cũ).
-- Một nhân viên chỉ có 1 yêu cầu tài khoản đang mở; NS không tự cấp quyền.
-
-**4.1d Loại tài khoản (D-82 b):** mọi tài khoản hiện có là **Nội bộ** (INTERNAL). Màn **Tài khoản** ghi nhãn **Nhân viên** (đã gắn nhân viên) / **Hệ thống** (không gắn – admin, system) / **Khách hàng**. Tài khoản không phải nội bộ (khách hàng / NCC – cổng riêng sau này, GAP-PORTAL-01) **không đăng nhập** được màn nội bộ và **không gọi được API nội bộ**, kể cả khi bị gán nhầm nhóm quản trị.
-
-**4.1e Màn Tài khoản – liên kết nhân viên:** dưới tên đăng nhập có nhãn loại + mã / tên / đơn vị / trạng thái làm việc của nhân viên; **Đoán theo mã** = chưa gắn chính thức (đang dùng tạm cách đoán cũ – nhờ NS đối chiếu). Cảnh báo cố định **"N nhân viên đã nghỉ nhưng tài khoản còn mở"** (chỉ tiêu = 0); chip **Chưa gắn nhân viên** lọc tài khoản nội bộ chưa gắn.
+### 4.1 Tài khoản – `adm-user` (UI-6.42)
+- **4 thẻ:** Đang hoạt động (nhân viên · hệ thống) · **Chờ IT xử lý** (bấm mở tab) · **Nghỉ việc nhưng còn mở** (bấm → **Khóa ngay** tất cả) · **Không đăng nhập 60 ngày** (bấm lọc).
+- **Tab Tài khoản:** chip Tất cả · Nhân viên · Hệ thống; lọc trạng thái, nhóm quyền, đơn vị; tìm tên đăng nhập / họ tên / mã NV. Cột: Tên đăng nhập · **Người dùng** (họ tên, mã · chức vụ · đơn vị; "đã nghỉ việc" đỏ / "tạm nghỉ" cam; tài khoản hệ thống ghi rõ, kèm "quản trị") · **Nhóm quyền** · **Truy cập gần nhất** (+ số ngày khi lâu không đăng nhập) · Bot · **Trạng thái** (Hoạt động · Phải đổi mật khẩu · Đã khóa · Nghỉ việc – còn mở) · **Thao tác ▾**: Xem quyền hiệu lực · Đổi nhóm quyền · Đặt lại mật khẩu (quản trị) · Lịch sử truy cập · Khóa / Mở khóa. **Không còn Sửa / Xóa** – tài khoản là dấu vết người thao tác, không dùng nữa thì **Khóa**. Chọn nhiều → **Thêm nhóm quyền · Bỏ nhóm quyền · Khóa** (tài khoản sẽ hết nhóm thì giữ nguyên và báo; không khóa chính mình / quản trị cuối cùng). Bấm dòng → **trang chi tiết tài khoản** toàn màn (UI-6.49): Tổng quan · Nhóm & quyền hiệu lực · Truy cập (30 lần gần nhất) · Bot · Lịch sử; nút Đổi nhóm quyền, Khóa / Mở khóa, Đặt lại mật khẩu (quản trị). Ctrl + bấm → tab mới.
+- **Tab Chờ IT xử lý:** thẻ yêu cầu từ Nhân sự – **Tuyển mới** (cấp tài khoản) · **Đổi chức vụ** (nhóm mới / cũ) · **Quay lại làm** (mở lại); nhân viên, chức vụ, đơn vị, người gửi, ngày, nhóm gợi ý; chưa liên kết bot thì IT xem mật khẩu tạm 1 lần. Nút **Đổi nhóm & duyệt · Từ chối · Duyệt & tạo / Duyệt** – cùng quy trình với Phê duyệt › Tài khoản (người không có quyền duyệt chỉ xem).
+- **Tạo tài khoản:** **Cho nhân viên** – chọn nhân viên đang làm chưa có tài khoản (gõ để lọc); tên đăng nhập = mã NV; nhóm quyền gợi ý theo chức vụ (chọn lại được) → **Tạo & gửi mật khẩu** (gửi bot nếu đã liên kết, không thì hiện mật khẩu tạm một lần – hết hạn 24 giờ, phải đổi khi đăng nhập). **Tài khoản hệ thống** – chỉ quản trị: tên đăng nhập, mục đích, nhóm quyền. **Khách hàng** – giai đoạn sau.
+- Tài khoản cho nhân viên chỉ đi qua đường này hoặc Nhân viên › Đề nghị cấp tài khoản (IT duyệt) – không còn hộp tạo người dùng tự gõ tên / lấy từ nhân viên.
 
 ### 4.2 Khóa / mở khóa tài khoản – `adm-user`
 1. Trên dòng tài khoản bấm **Khóa** (hoặc **Mở khóa**) → xác nhận.
@@ -108,21 +87,22 @@ Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản
 ### 4.3 Xem quyền hiệu lực của một tài khoản – `adm-user`
 Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòng → bảng cây menu × 7 quyền (Truy cập, Thêm, Sửa, Xóa, In, Xuất, Nhập), cộng dồn mọi nhóm của tài khoản. Tài khoản quản trị: "có mọi quyền".
 
-### 4.4 Nhóm quyền – `adm-usergroup`
-- **Tạo mới** nhóm: tên nhóm = mã vai trò. 19 nhóm chuẩn (D-79): CEO, CEO-PMO, COO, OPS-PLAN, OPS-SCM (mua hàng), **OPS-WH** (thủ kho – mới), **OPS-SCM-HEAD** (Trưởng mua hàng & kho – mới), OPS-KIT, OPS-LOG, OPS-POS, OPS-MNT, SAL-SALES, SAL-CON, **SAL-HEAD** (Trưởng kinh doanh – mới), SAL-CS, FIN-ACC, FIN-HR, FIN-IT, QA. Quyền từng nhóm theo từng màn: `docs/claude/MENU5_MATRIX.md`.
-- **Việc cần làm sau khi chạy MENU-5 (D-79):** trên màn **Tài khoản** bấm **Gán nhóm** để chuyển người: Trưởng kinh doanh → **SAL-HEAD** (người duyệt sửa đơn sau chốt, tạo đơn bù); Trưởng mua hàng & kho → **OPS-SCM-HEAD** (duyệt đề nghị mua cấp 1, kiểm kê cấp 1); thủ kho → **OPS-WH** (ghi sổ nhập / xuất, kiểm kê). Nhóm cũ giữ nguyên (người mua hàng vẫn ở OPS-SCM nhưng không còn ghi sổ nhập, không tự duyệt cấp 1).
-- Nút **Phân quyền** trên dòng → sang ma trận quyền của nhóm.
-- Nút hình khiên **Xem trước quyền của nhóm** (quản trị) → danh sách màn được truy cập + các tài khoản thuộc nhóm.
+### 4.4 Nhóm quyền – `adm-usergroup` (UI-6.43 – gồm cả Phân quyền)
+Mỗi nhóm là một vai trò. Nhóm có **Tên** tiếng Việt (vd. "Thủ kho"), **Mã** (vd. `OPS-WH` – luồng duyệt, bot, nhóm gợi ý theo chức vụ tìm theo mã), **Khối** (Ban điều hành · Vận hành · Kinh doanh · Tài chính – Hỗ trợ · QA / ATTP) và **Mô tả**. 19 nhóm chuẩn: `docs/claude/ORG_STRUCTURE.md` §2; quyền chuẩn từng màn: `docs/claude/MENU5_MATRIX.md`.
+- **Danh sách:** 4 chỉ số – Nhóm quyền (số khối) · Tài khoản có nhóm (bấm → Tài khoản; báo số tài khoản chưa có nhóm) · Nhóm chưa có tài khoản (bấm để lọc) · Đổi trong 7 ngày. Tìm theo tên / mã. Nhóm xếp theo khối; mỗi thẻ: tên, mã, mô tả, số tài khoản · màn hình · loại duyệt, sửa gần nhất. Bấm thẻ → trang nhóm.
+- **Tạo nhóm:** Tên (bắt buộc, không trùng) · Mã (bắt buộc, chữ hoa không dấu, không trùng) · Khối · Mô tả. Nhóm mới chưa có quyền nào.
+- **Sửa:** đổi tên / khối / mô tả thoải mái. **Mã bị khóa** khi đang dùng ở bước duyệt hoặc cấu hình (nhóm gợi ý chức vụ, nhóm nhận cảnh báo duyệt quá hạn).
+- **Ngừng dùng:** chỉ khi nhóm không còn tài khoản và không là người duyệt / trong cấu hình (báo rõ lý do). Không xóa cứng.
+- **Việc cần làm sau MENU-5 (D-79):** chuyển người sang nhóm mới – Trưởng kinh doanh → **Trưởng kinh doanh** (SAL-HEAD), Trưởng mua hàng & kho → **Trưởng mua hàng & kho** (OPS-SCM-HEAD), thủ kho → **Thủ kho** (OPS-WH) – ở tab **Tài khoản** của trang nhóm hoặc màn Tài khoản.
 
-### 4.5 Phân quyền – `adm-permission`
-**APR-UI-1 (D-81 a):** các mục "Phê duyệt › …" không nằm trong cây menu nữa mà gom ở khối **Quyền duyệt** cuối bảng: mỗi loại (kèm cấp: 1 cấp / Cấp 1 / Cấp 2) **1 ô "Được duyệt"** – tick = Truy cập + Sửa trên mục quyền duyệt (D-31), bỏ tick = thu cả hai. "Tất cả yêu cầu duyệt" = **chỉ xem** mọi yêu cầu (không duyệt được). Các dòng này giữ trong DB (IsActive = 1) – đừng tắt ở màn Cấu hình menu, tắt là mất quyền duyệt.
-1. Cột trái: chọn nhóm (hiện số chức năng được truy cập, số tài khoản).
-2. Bảng phải: mỗi mục menu cấp 2 × 7 ô quyền. Tick / bỏ tick → lưu ngay ("Cấp … / Thu hồi …").
-   - Tick bất kỳ quyền nào khác → tự bật **Truy cập**.
-   - Bỏ **Truy cập** → tắt hết quyền còn lại của mục đó.
-3. **Cấp toàn bộ truy cập** / **Thu hồi toàn bộ** cho cả nhóm (thu hồi tắt cả Thêm / Sửa / Xóa / In / Xuất / Nhập) → xác nhận.
-4. **Sao chép quyền từ nhóm khác**: chọn nhóm nguồn → **Sao chép** → xác nhận *"Thay toàn bộ quyền của nhóm … bằng quyền của nhóm …?"*.
-5. **Xem trước quyền của nhóm** (quản trị): kiểm lại kết quả.
+### 4.5 Trang nhóm – Phân quyền, Tài khoản, Xem trước menu, So sánh, Lịch sử
+Mục menu "Phân quyền" đã bỏ (link cũ `#/adm-permission` mở trang Nhóm quyền). Sửa quyền cần quyền **Sửa** màn Nhóm quyền.
+1. **Phân quyền:** màn hình xếp theo nhóm menu; mỗi màn chọn **mức**: Không · Xem · Xem, in & xuất · Xem & sửa (thêm, sửa, in, xuất) · Toàn quyền (thêm cả xóa, nhập file). Quyền lẻ từ ma trận cũ hiện **Tùy chỉnh** (kèm các quyền đang có) – chọn mức khác để thay. Mục nhóm **Phê duyệt** chỉ có **Không / Được duyệt** (= Truy cập + Sửa trên mục đó, D-31); "Tất cả yêu cầu duyệt" chỉ để xem. "tất cả Xem" / "bỏ hết" áp cho cả nhóm menu; "Chỉ màn có quyền" để gọn.
+   - Đổi bao nhiêu cũng được → thanh **"N thay đổi chưa lưu"** → **Xem lại & lưu** (bảng Trước → Sau) → **Lưu thay đổi**: lưu một lần, có hiệu lực ngay với mọi tài khoản trong nhóm, ghi lịch sử. Nhóm menu tự bật khi có màn được xem, tự tắt khi không còn màn nào. **Bỏ thay đổi** / rời trang sẽ hỏi lại.
+2. **Tài khoản:** danh sách tài khoản trong nhóm (số nhóm của từng tài khoản, trạng thái). **Thêm tài khoản** (tìm, chọn nhiều) · **Bỏ khỏi nhóm** – không bỏ được nếu đó là nhóm duy nhất của tài khoản.
+3. **Xem trước menu:** menu người trong nhóm sẽ thấy, **tính cả thay đổi chưa lưu** – kiểm trước khi lưu.
+4. **So sánh:** chọn nhóm khác → các màn có mức khác nhau (và số màn giống nhau).
+5. **Lịch sử:** sửa nhóm, đổi quyền (ai, lúc nào, Trước → Sau).
 
 **Quyền Duyệt** không phải cột riêng: mỗi loại duyệt là một mục menu **"Phê duyệt › …"** (nhóm Phê duyệt). Cấp **Truy cập + Sửa** trên mục đó = được duyệt loại đó. Danh sách mục duyệt:
 
@@ -152,10 +132,33 @@ Quyền dùng bot: mục **Bot Telegram – Vận hành** (`#/bot-van-hanh`) và
 4. Thay đổi có hiệu lực với người dùng **từ lần đăng nhập sau**.
 - Lỗi: *Menu chỉ có 2 cấp…*, *Mục menu đang có mục con nên phải là mục cấp 1*, *Sắp xếp tạo vòng lặp cha – con*.
 
-### 4.7 Sơ đồ tổ chức – `adm-orgunit`
-- Khối trên: cây đơn vị (tên, loại, mã, quản lý, số nhân viên, số kho). Bấm tên để mở chi tiết.
-- Thêm / sửa đơn vị bằng **Tạo mới** / **Sửa** ở bảng dưới. Lỗi: *Đơn vị cha không được là chính nó hoặc đơn vị con của nó*.
-- Đơn vị loại **BRANCH** xuất hiện trong hộp **Đơn vị làm việc** ở đầu trang.
+### 4.6b Nhóm "Danh mục hệ thống" (UI-6.40)
+Các danh mục ít thay đổi gom vào một nhóm menu ngay trên **Quản trị hệ thống** (mã màn, link cũ và quyền từng mục giữ nguyên; nhóm chỉ hiện khi bạn được xem ít nhất một mục):
+- **Tổ chức:** Công ty & đơn vị · Chức vụ · Ca làm việc. **Mua hàng & kho:** Đơn vị tính · Kho & vị trí. **Sản xuất:** Dây chuyền & bàn nấu. **Giao hàng:** Xe giao hàng. **Dùng chung:** Danh mục dùng chung · Địa giới hành chính · Danh mục chỉ số.
+- **Tổng quan danh mục** (mục đầu nhóm): mỗi danh mục bạn được xem một thẻ – số bản ghi đang dùng, lần sửa gần nhất (ngày, người) và **cảnh báo thiếu dữ liệu** màu đỏ (bấm mở đúng màn): đơn vị chưa có trưởng, nhân viên chưa gắn đơn vị, chức vụ chưa có nhóm quyền gợi ý, tổ chưa có số người tối thiểu cho ca, nguyên liệu dùng đơn vị chưa có quy đổi, khu bảo quản chưa có ngưỡng nhiệt độ, nhóm món chưa gán dây chuyền, xe đang hoạt động chưa có tải trọng. Cảnh báo chưa tính được thì không hiện.
+
+### 4.6c Chuẩn bị dữ liệu trước khi chạy thật (UI-6.49)
+Trang **Danh mục hệ thống** (bấm tên nhóm trên menu) → nút **Xuất danh sách cần bổ sung** → tệp Excel: sheet **Tổng hợp** (loại · số dòng · người bổ sung · màn) + mỗi loại một sheet (chỉ loại thuộc màn bạn được xem). **Hệ thống không tự sửa** – người phụ trách bổ sung trên màn tương ứng rồi xuất lại tới khi các sheet trống.
+
+| Sheet | Người bổ sung | Làm ở đâu |
+|---|---|---|
+| Đơn vị chưa có trưởng | Nhân sự | Công ty & đơn vị → chọn đơn vị → Trưởng đơn vị |
+| Nhân viên chưa gắn đơn vị | Nhân sự | Nhân viên → Sửa → Đơn vị |
+| Số điện thoại trùng | Nhân sự | Nhân viên → sửa đúng số của từng người |
+| Tổ chưa có định biên ca | Nhân sự (IT nhập cấu hình) | Số người tối thiểu mỗi ca (`BusinessRules:Hr:ShiftMinStaff`) |
+| Nhóm quyền ngoài chuẩn | IT | Nhóm quyền → chuyển tài khoản sang nhóm chuẩn → Ngừng dùng nhóm (hoặc chọn khối) |
+| Nhóm món chưa gán dây chuyền | Bếp trưởng | Dây chuyền & bàn nấu → gán nhóm món |
+| Món / Nguyên liệu chưa phân nhóm | Bếp trưởng / Mua hàng | Món ăn, Nguyên liệu → cột trái nhóm |
+
+### 4.7 Công ty & đơn vị – `adm-orgunit` (UI-6.41 – gộp Công ty + Sơ đồ tổ chức)
+Mục "Công ty" đã gộp vào đây (link cũ mở màn này, chọn sẵn công ty). Sửa thông tin công ty vẫn theo quyền của mục Công ty.
+- **Đầu màn:** ô **Tìm đơn vị** (mở nhánh chứa kết quả) · **Thêm đơn vị**. 4 thẻ: Đơn vị đang hoạt động (số công ty · bếp · tổ / phòng) · Nhân viên (đã gắn đơn vị) · **Chưa có trưởng đơn vị** (bấm để lọc cây) · **Nhân viên chưa gắn đơn vị** (bấm mở màn Nhân viên).
+- **Cây bên trái:** gốc là **công ty**, dưới là ban / khối / bếp / phòng / tổ; mỗi nút có biểu tượng theo loại, nhãn đỏ **chưa có trưởng**, số nhân viên (gồm đơn vị con). Điện thoại: cây trên, chi tiết dưới.
+- **Chọn công ty:** Mã · Mã số thuế · Địa chỉ · Điện thoại · Email (nút **Sửa** – tên, mã số thuế 10 / 13 số, địa chỉ, điện thoại, email, ghi chú; **không xóa công ty**) – các thông tin này **in ở đầu mọi phiếu in và tệp Excel**; bảng **Đơn vị trực thuộc**.
+- **Chọn đơn vị:** đường dẫn cha, tên + **loại** (tiếng Việt: Công ty con · Ban điều hành · Khối · Chi nhánh · Bếp · Phòng ban · Tổ · Kho) + trạng thái; Mã · **Trưởng đơn vị** (chưa có → **chọn ngay**) · Nhân viên · Kho. Nút **＋ Đơn vị con · Sửa · Chuyển sang đơn vị khác** (chuyển sang công ty khác thì cả nhánh đổi công ty; không chuyển vào chính nhánh con) **· Ngừng hoạt động / Hoạt động lại** (chặn khi còn nhân viên đang làm hoặc đơn vị con đang hoạt động; hoạt động lại khi đơn vị cha đang hoạt động). Tab **Nhân viên** (gồm đơn vị con; bấm mở hồ sơ) · **Đơn vị con** · **Kho** · **Lịch sử**.
+- **Thêm / Sửa đơn vị:** **Thuộc\*** (điền sẵn nút đang chọn) · Tên\* · Mã\* (chữ hoa không dấu; khóa khi đã dùng) · **Loại\*** · Trưởng đơn vị (chỉ nhân viên đang làm) · Điện thoại · Địa chỉ · Ghi chú. Công ty lấy theo đơn vị cha.
+- Trưởng đơn vị nhận bot nhắc lịch ca tuần sau và báo người chưa vào ca – đơn vị chưa có trưởng sẽ không ai nhận.
+- Đơn vị loại **Chi nhánh** xuất hiện trong hộp **Đơn vị làm việc** ở đầu trang.
 
 ### 4.8 Kho tài liệu – `adm-document`
 1. **Tải tệp lên** → chọn tệp (pdf, jpg, jpeg, png, xlsx, docx; tối đa 20 MB).
@@ -211,7 +214,7 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 | Hồ sơ này đã có tài khoản đăng nhập (…) | Mỗi hồ sơ 1 tài khoản – dùng tài khoản cũ |
 | Không tìm thấy nhóm người dùng | Nhóm đã xóa – tải lại trang |
 | Đường dẫn … đã tồn tại | MetaLink menu trùng – sửa đường dẫn |
-| Người dùng báo "không có quyền truy cập màn hình này" | Cấp **Truy cập** cho nhóm của họ ở `adm-permission`; người dùng tải lại trang |
+| Người dùng báo "không có quyền truy cập màn hình này" | Nhóm quyền › trang nhóm của họ › Phân quyền: chọn mức **Xem** cho màn đó → Xem lại & lưu; người dùng tải lại trang |
 | Người dùng có quyền mà nút vẫn mờ | Thiếu quyền Thêm / Sửa / Xuất của màn đó |
 | Người dùng không duyệt được | Cấp mục **Phê duyệt › …** đúng loại (Truy cập + Sửa) |
 | … «…» không có trong danh mục (…) | Giá trị phải chọn trong danh sách – xem 4.8c; cần giá trị mới → IT bổ sung danh mục |

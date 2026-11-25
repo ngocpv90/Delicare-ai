@@ -102,6 +102,8 @@ namespace AppDelicare.Tests.Hr
                 var swaps = scope.ServiceProvider.GetRequiredService<IShiftSwapRequestService>();
                 var swap = await swaps.Create(new ShiftSwapCreateRequest { CurrentShiftAssignmentId = give, TargetEmployeeId = e3, Reason = "[DEMO] nhường ca" });
                 swap.ResponseCode.Should().Be(200, swap.ResponseMessage);
+                // UI-6.39 (D-120): người nhận đồng ý trước khi duyệt.
+                (await swaps.ConsentForEmployee(e3, new AppDelicare.Model.Model.ShiftSwapConsentRequest { Id = swap.Data!.Request!.Id, Accept = true })).ResponseCode.Should().Be(200);
                 var swapApproved = await swaps.Decide(new HrDecisionRequest { Id = swap.Data!.Request!.Id, Note = "[DEMO]" }, true);
                 swapApproved.ResponseCode.Should().Be(200, swapApproved.ResponseMessage);
                 db.ChangeTracker.Clear();

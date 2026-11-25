@@ -91,6 +91,8 @@ namespace AppDelicare.Tests.Messaging
         public MyAttendanceModel Today { get; set; } = new() { EmployeeName = "NV thử" };
         public List<BotCorrelatedMessageModel> Correlated { get; } = [];
         public ConcurrentQueue<(string Action, string Json)> EmployeeCalls { get; } = new();
+        /// <summary>UI-6.49: dữ liệu trả về giả theo action (vd EmployeePreviewLeave).</summary>
+        public Dictionary<string, string> EmployeeData { get; } = [];
 
         public Task<ApiResult<MyAttendanceModel>> EmployeeGetTodayAsync(BotIdentityRequest request, CancellationToken ct = default)
             => Task.FromResult(Record(request, new ApiResult<MyAttendanceModel> { ResponseCode = 200, Data = Today }));
@@ -153,7 +155,12 @@ namespace AppDelicare.Tests.Messaging
         {
             Guard();
             EmployeeCalls.Enqueue((action, System.Text.Json.JsonSerializer.Serialize(request)));
-            return Task.FromResult(new ApiResult<System.Text.Json.JsonElement> { ResponseCode = 200, ResponseMessage = "Đã ghi (giả)", ListData = [] });
+            var result = new ApiResult<System.Text.Json.JsonElement> { ResponseCode = 200, ResponseMessage = "Đã ghi (giả)", ListData = [] };
+            if (EmployeeData.TryGetValue(action, out var json))
+            {
+                result.Data = System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
+            }
+            return Task.FromResult(result);
         }
 
         private Task<ApiResult<BotIdentityModel>> Ok(object request, BotIdentityModel identity)

@@ -92,9 +92,17 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("GetLeaveTypes")]
         public Task<IActionResult> GetLeaveTypes() => Run(nameof(GetLeaveTypes), () => Task.FromResult(employee.GetLeaveTypes()));
 
+        /// <summary>UI-6.39 (D-120): người nhận đồng ý / từ chối đổi / nhường ca qua bot (nhân viên lấy từ định danh).</summary>
+        [HttpPost("EmployeeSwapConsent")]
+        public Task<IActionResult> EmployeeSwapConsent([FromBody] BotSwapConsentRequest request) => Run(nameof(EmployeeSwapConsent), () => employee.SwapConsent(request));
+
         /// <summary>BOT-1.5a: xin nghỉ qua bot cho người chỉ có EmployeeId (quy tắc LeaveRequest/Create).</summary>
         [HttpPost("EmployeeCreateLeave")]
         public Task<IActionResult> EmployeeCreateLeave([FromBody] BotEmployeeLeaveRequest request) => Run(nameof(EmployeeCreateLeave), () => employee.CreateLeave(request));
+
+        /// <summary>UI-6.49 (1): xem trước đơn nghỉ (phép năm còn, ca bị bỏ) cho người chỉ có EmployeeId.</summary>
+        [HttpPost("EmployeePreviewLeave")]
+        public Task<IActionResult> EmployeePreviewLeave([FromBody] BotEmployeeLeaveRequest request) => Run(nameof(EmployeePreviewLeave), () => employee.PreviewLeave(request));
 
         /// <summary>BOT-1.4: tin đã gửi cùng CorrelationId (mã sự việc) – sửa đồng loạt thẻ.</summary>
         [HttpPost("GetCorrelated")]

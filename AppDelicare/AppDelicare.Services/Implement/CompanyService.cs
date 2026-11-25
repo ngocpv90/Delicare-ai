@@ -14,7 +14,7 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     public class CompanyService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : ICompanyService
+        , IAuditChangeService auditChangeService, IServiceProvider services) : ICompanyService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -124,6 +124,15 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Insert(CompanyRequest request, string typeSave)
         {
+            // UI-6.41 (D-122): đã có công ty → chỉ quản trị thêm công ty khác.
+            if (_unitOfWork.DbContext.Company.Any(c => !c.IsDeleted) && !await IsAdminAsync())
+            {
+                return ConstantHelper.Message.CompanyInsertAdminOnly;
+            }
+            if (TaxError(request.TaxCode) is { } taxError)
+            {
+                return taxError;
+            }
             // MA-1.7 (D-63 k): mã nhóm G2 – chữ hoa không dấu A–Z 0–9 - _ (CodeRules).
             var (normalizedCode, codeError) = CodeRules.NormalizeUserCode(request.Code);
             if (codeError != null)
@@ -144,6 +153,10 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Update(CompanyRequest request, string typeSave)
         {
+            if (TaxError(request.TaxCode) is { } taxError)
+            {
+                return taxError;
+            }
             var exist = _unitOfWork.CompanyRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
             if (request.Id == null || exist == null)
             {
@@ -171,8 +184,27 @@ namespace AppDelicare.Services.Implement
             return string.Empty;
         }
 
+        private async Task<bool> IsAdminAsync()
+        {
+            var actor = services.GetService(typeof(AppDelicare.Data.Share.ICurrentActor)) as AppDelicare.Data.Share.ICurrentActor;
+            var perms = services.GetService(typeof(IPermissionService)) as IPermissionService;
+            return actor?.Actor is { } a && perms != null && (await perms.GetAsync(a.UserId)).IsAdmin;
+        }
+
+        private static string? TaxError(string? tax)
+        {
+            string t = new([.. (tax ?? string.Empty).Where(char.IsDigit)]);
+            return string.IsNullOrWhiteSpace(tax) || t.Length is 10 or 13 ? null : ConstantHelper.Message.CompanyTaxCodeInvalid;
+        }
+
         private async Task<string> Delete(Guid? id, string typeSave)
         {
+            // UI-6.41 (D-122): công ty in ở đầu mọi phiếu / Excel – không xóa.
+            await Task.CompletedTask;
+            if (id != null)
+            {
+                return ConstantHelper.Message.CompanyDeleteBlocked;
+            }
             if (id == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;

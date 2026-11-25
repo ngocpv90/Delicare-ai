@@ -22,5 +22,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<UserGroupPreviewModel>> GetPreview(Guid userGroupId);
         /// <summary>T45R: quyền hiệu lực của 1 user = OR cờ trên mọi nhóm; admin → mọi menu, mọi cờ.</summary>
         public Task<IResult<UserRoleModel>> GetByUserId(Guid userId);
+        // UI-6.43 (D-124): mức quyền, lưu nhiều thay đổi, xem trước nháp, so sánh 2 nhóm.
+        Task<IResult<AppDelicare.Model.Model.RoleLevelsModel>> GetLevels(Guid userGroupId);
+        Task<IResult<int>> SaveMany(AppDelicare.Model.Model.RoleSaveManyRequest request);
+        Task<IResult<AppDelicare.Model.Model.UserGroupPreviewModel>> GetPreviewDraft(AppDelicare.Model.Model.RoleSaveManyRequest request);
+        Task<IResult<AppDelicare.Model.Model.RoleCompareModel>> Compare(Guid groupA, Guid groupB);
     }
 }

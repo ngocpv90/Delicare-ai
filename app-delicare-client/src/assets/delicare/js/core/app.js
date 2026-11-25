@@ -105,6 +105,8 @@
     const isAdm = !!(window.DC_HOST && DC_HOST.user && DC_HOST.user.isAdmin);
     Object.values(FN).forEach(f => { if (!f.extra || used.has(f.id) || Store.perm(f.id).access === false || (f.id !== 'hr-my' && !isAdm)) return; const grp = f.id === 'hr-my' ? 'Việc của tôi' : f.grp; let g = out.find(x => x.name === grp); if (!g) { g = { name: grp, items: [] }; if (f.id === 'hr-my') out.unshift(g); else out.push(g); } g.items.push({ f, label: f.id === 'hr-my' ? grp : f.fn, link: f.id }); });
     const res = out.filter(g => g.items.length), my = res.findIndex(g => g.items.some(i => i.link === 'hr-my'));
+    // UI-6.40 (D-121): nhóm Danh mục hệ thống – mục đầu là trang tổng (thẻ theo quyền từng danh mục).
+    { const cg = res.find(g => g.name === 'Danh mục hệ thống'); if (cg && FN['sys-catalog']) cg.items.unshift({ f: FN['sys-catalog'], label: 'Tổng quan danh mục', link: 'sys-catalog' }); }
     if (my > 0) res.unshift(res.splice(my, 1)[0]);
     // D-93 → D-109: mục "Phê duyệt" nằm cuối nhóm Điều hành; không có quyền Bảng điều hành → nhóm Điều hành vẫn hiện với mục Phê duyệt.
     if (FN['wf-inbox'] && Store.perm('wf-inbox').access !== false) {
@@ -154,7 +156,7 @@
   // Chế độ API (BE3.3): Common/GetAlerts – server tính theo quyền Xem + chi nhánh đang chọn, cache 60 giây; giao diện hỏi lại mỗi 60 giây.
   // Chưa có kết quả → danh sách rỗng (không kéo 7 bảng về trình duyệt). API lỗi / backend cũ chưa có → tính cục bộ như mockup.
   const SEV_COLOR = { HIGH: 'red', MEDIUM: 'orange', LOW: 'blue' };
-  const ALERT_ICON = { STOCK_BELOW_MIN: 'alert', APPROVAL_PENDING: 'approve', QC_INCOMING_PENDING: 'shield', LOT_ON_HOLD: 'shield', TEMPERATURE_OUT_OF_RANGE: 'thermo', COMPLAINT_OVERDUE: 'msg', COMPLAINT_OPEN: 'msg', OUTBOUND_FAILED: 'bot', LOT_EXPIRING: 'lot' };
+  const ALERT_ICON = { STOCK_BELOW_MIN: 'alert', APPROVAL_PENDING: 'approve', QC_INCOMING_PENDING: 'shield', LOT_ON_HOLD: 'shield', TEMPERATURE_OUT_OF_RANGE: 'thermo', COMPLAINT_OVERDUE: 'msg', COMPLAINT_OPEN: 'msg', OUTBOUND_FAILED: 'bot', LOT_EXPIRING: 'lot', ACCOUNT_RESIGNED_OPEN: 'key', SHIFT_SHORT: 'users', CLEAN_TRAYS_SHORT: 'recycle', ROUTE_NOT_READY: 'truck' }; // UI-6.46
   const live = { alerts: null, at: 0, busy: false, branch: null, failed: false };
   const ALERT_TTL = 60000;
   function pullAlerts() {
@@ -346,8 +348,11 @@
       'qc-cleaning-result': 'qc-cleaning?tab=book', 'log-return-inspection': 'qc-cleaning', // UI-6.32 (D-113)
       'qc-checklist': 'qc-checklist-result?tab=sets', // UI-6.33 (D-114)
       'log-packing-result': 'log-packing-order', 'log-delivery-order': 'log-route', 'log-loading': 'log-route', // UI-6.34 (D-115)
-      'log-gps': 'log-execution?tab=map', 'log-pod': 'log-execution?tab=pod', 'log-container-return': 'log-packaging-ledger?tab=returns' }; // UI-6.35 (D-116)
-    if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
+      'log-gps': 'log-execution?tab=map', 'log-pod': 'log-execution?tab=pod', 'log-container-return': 'log-packaging-ledger?tab=returns', // UI-6.35 (D-116)
+      'hr-swap': 'hr-leave?type=SWAP', // UI-6.39 (D-120)
+      'adm-company': 'adm-orgunit?company=1', // UI-6.41 (D-122)
+      'adm-permission': 'adm-usergroup' }; // UI-6.43 (D-124)
+    if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : params.id && id === 'hr-swap' ? '&swap=' + encodeURIComponent(params.id) : ''))); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];
     if (up) {

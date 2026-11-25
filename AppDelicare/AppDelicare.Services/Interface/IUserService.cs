@@ -30,5 +30,11 @@ namespace AppDelicare.Services.Interface
         public Task<bool> IsTemporaryPassword(Guid userId);
         /// <summary>T45R: tài khoản đang đăng nhập + menu theo quyền.</summary>
         public Task<IResult<CurrentUserModel>> GetCurrent();
+        // UI-6.42 (D-123)
+        public Task<IResult<AppDelicare.Model.Model.AccountListModel>> GetList(AppDelicare.Model.Model.AccountListRequest request);
+        public Task<IResult<AppDelicare.Model.Model.AccountBulkResultModel>> SetGroupsMany(AppDelicare.Model.Model.AccountIdsRequest request);
+        public Task<IResult<AppDelicare.Model.Model.AccountBulkResultModel>> LockMany(AppDelicare.Model.Model.AccountIdsRequest request);
+        public Task<IResults<AppDelicare.Model.Model.AccountPendingModel>> GetPendingRequests();
+        public Task<IResult<AppDelicare.Model.Model.AccountOverviewModel>> GetOverview(Guid id);
     }
 }

@@ -217,7 +217,9 @@ namespace AppDelicare.Services.Implement
         /// <summary>UI-6.9: tài liệu in / xuất của 1 bảng kê (dùng cho xuất từng khách và xuất lô).</summary>
         private async Task<PrintDocumentModel> DocAsync(BillingStatementModel m)
         {
-            var company = await _unitOfWork.DbContext.Company.AsNoTracking().Where(c => !c.IsDeleted).OrderBy(c => c.CreatedDate).FirstOrDefaultAsync();
+            // UI-6.46: pháp nhân theo khách (Customer.CompanyId → công ty của chi nhánh khách).
+            var cust = await _unitOfWork.DbContext.Customer.AsNoTracking().Where(c => c.Id == m.CustomerId).Select(c => new { c.CompanyId, c.BranchId }).FirstOrDefaultAsync();
+            var company = await PrintCompany.ResolveAsync(_unitOfWork.DbContext, cust?.CompanyId, cust?.BranchId);
             var doc = new PrintDocumentModel
             {
                 Type = "BILLING_STATEMENT", Id = m!.CustomerId, Title = "BẢNG KÊ XÁC NHẬN KHỐI LƯỢNG SUẤT ĂN", FormCode = "BK-TT",

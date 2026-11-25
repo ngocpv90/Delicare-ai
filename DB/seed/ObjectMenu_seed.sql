@@ -202,9 +202,9 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/hr-shift-as
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/hr-attendance' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Chấm công', N'P8', N'#/hr-attendance', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/08' AND IsDeleted = 0), 2, 803, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/hr-leave' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đơn xin nghỉ', N'P8', N'#/hr-leave', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/08' AND IsDeleted = 0), 2, 804, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nghỉ & đổi ca', N'P8', N'#/hr-leave', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/08' AND IsDeleted = 0), 2, 804, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/hr-swap' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đơn đổi ca', N'P8', N'#/hr-swap', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/08' AND IsDeleted = 0), 2, 805, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đơn đổi ca', N'P8', N'#/hr-swap', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/08' AND IsDeleted = 0), 2, 805, 0, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Hộp phê duyệt', N'P8', N'#/wf-inbox', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/08' AND IsDeleted = 0), 2, 806, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-step' AND IsDeleted = 0)
@@ -238,9 +238,9 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/kpi-refresh
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Quản trị hệ thống', N'admin', N'#/group/10', NULL, 1, 1000, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-company' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Công ty', N'P0', N'#/adm-company', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1001, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Công ty', N'P0', N'#/adm-company', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1001, 0, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-orgunit' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Sơ đồ tổ chức', N'P0', N'#/adm-orgunit', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1002, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Công ty & đơn vị', N'P0', N'#/adm-orgunit', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1002, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-employee' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nhân viên', N'P0', N'#/adm-employee', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1003, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-person' AND IsDeleted = 0)
@@ -248,7 +248,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-person'
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-user' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Tài khoản', N'P0', N'#/adm-user', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1005, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-permission' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Phân quyền', N'P0', N'#/adm-permission', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1006, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Phân quyền', N'P0', N'#/adm-permission', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1006, 0, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-usergroup' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nhóm quyền', N'P0', N'#/adm-usergroup', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/10' AND IsDeleted = 0), 2, 1007, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/adm-objectmenu' AND IsDeleted = 0)
@@ -304,7 +304,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?ty
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=qc-inspection' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Kiểm tra hàng nhập', N'P6', N'#/wf-inbox?type=qc-inspection', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9912, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=hr-leave' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đơn xin nghỉ', N'P8', N'#/wf-inbox?type=hr-leave', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9913, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Nghỉ & đổi ca', N'P8', N'#/wf-inbox?type=hr-leave', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9913, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=hr-swap' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đơn đổi ca', N'P8', N'#/wf-inbox?type=hr-swap', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9914, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=wf-inbox' AND IsDeleted = 0)
@@ -442,8 +442,11 @@ UPDATE [dbo].[ObjectMenu] SET Name = N'Tất cả yêu cầu duyệt', ModifiedD
 UPDATE [dbo].[ObjectMenu] SET Name = N'Chia suất & đóng gói', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/log-packing-order' AND IsDeleted = 0 AND Name IN (N'Lệnh đóng gói', N'Duyệt – Lệnh đóng gói');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Điều phối giao hàng', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/log-route' AND IsDeleted = 0 AND Name IN (N'Chuyến giao hàng', N'Duyệt – Chuyến giao hàng');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Theo dõi giao hàng', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/log-execution' AND IsDeleted = 0 AND Name IN (N'Theo dõi chuyến giao', N'Duyệt – Theo dõi chuyến giao');
+UPDATE [dbo].[ObjectMenu] SET Name = N'Nghỉ & đổi ca', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/hr-leave' AND IsDeleted = 0 AND Name IN (N'Đơn xin nghỉ', N'Duyệt – Đơn xin nghỉ');
+UPDATE [dbo].[ObjectMenu] SET Name = N'Nghỉ & đổi ca', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=hr-leave' AND IsDeleted = 0 AND Name IN (N'Đơn xin nghỉ', N'Duyệt – Đơn xin nghỉ');
+UPDATE [dbo].[ObjectMenu] SET Name = N'Công ty & đơn vị', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/adm-orgunit' AND IsDeleted = 0 AND Name IN (N'Sơ đồ tổ chức', N'Duyệt – Sơ đồ tổ chức');
 -- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB; MENU-4 (D-75 e): ẩn bảng con, màn chưa làm, mục trùng (IsActive = 0, không xóa).
-UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment', N'#/crm-price-policy', N'#/menu-change-request', N'#/crm-location', N'#/scm-ingredient-cat', N'#/menu-dish-cat', N'#/scm-uom-conversion', N'#/prod-order', N'#/prod-output', N'#/prod-workstation', N'#/cost-standard', N'#/cost-actual', N'#/group/05b', N'#/kpi-monthly', N'#/scm-zone', N'#/scm-location', N'#/scm-lot', N'#/scm-inv-txn', N'#/scm-inv-policy', N'#/scm-reservation', N'#/scm-consumption-var', N'#/qc-cleaning-result', N'#/log-return-inspection', N'#/log-packing-result', N'#/log-delivery-order', N'#/log-loading', N'#/log-gps', N'#/log-pod', N'#/log-container-return') AND IsDeleted = 0 AND IsActive = 1;
+UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment', N'#/crm-price-policy', N'#/menu-change-request', N'#/crm-location', N'#/scm-ingredient-cat', N'#/menu-dish-cat', N'#/scm-uom-conversion', N'#/prod-order', N'#/prod-output', N'#/prod-workstation', N'#/cost-standard', N'#/cost-actual', N'#/group/05b', N'#/kpi-monthly', N'#/scm-zone', N'#/scm-location', N'#/scm-lot', N'#/scm-inv-txn', N'#/scm-inv-policy', N'#/scm-reservation', N'#/scm-consumption-var', N'#/qc-cleaning-result', N'#/log-return-inspection', N'#/log-packing-result', N'#/log-delivery-order', N'#/log-loading', N'#/log-gps', N'#/log-pod', N'#/log-container-return', N'#/hr-swap', N'#/wf-inbox?type=hr-swap', N'#/adm-company', N'#/adm-permission') AND IsDeleted = 0 AND IsActive = 1;
 -- MENU-5 (D-79): 14 nhóm theo vai trò. Seed CHỈ THÊM nhóm / mục mới (đặt thẳng vào chỗ mới); chuyển nhóm / thứ tự / đổi tên / ẩn – mở CHỈ áp cho dòng do chính lần chạy
 -- này tạo (DB mới). DB đang chạy: sắp lại bằng DB/scripts/D79_menu_regroup.sql (DryRun, AuditChange). Nguồn: tools/AppDelicare.CodeGen/Seeds.Menu5.cs.
 DECLARE @By UNIQUEIDENTIFIER = @SeedBy;
@@ -472,9 +475,10 @@ INSERT INTO @P VALUES
     (N'#/wf-inbox?type=prod-batch', 2, NULL, 0, -1, N'', N'#/group/approve', 9917, N'Mẻ nấu', N'P5', NULL),
     (N'#/wf-inbox?type=scm-lot', 2, NULL, 0, -1, N'', N'#/group/approve', 9918, N'Giữ / thả lô', N'P4', NULL),
     (N'#/wf-inbox?type=hr-leave', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9919, N'', N'', NULL),
-    (N'#/wf-inbox?type=hr-swap', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9920, N'', N'', NULL),
+    (N'#/wf-inbox?type=hr-swap', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9920, N'', N'', 0),
     (N'#/wf-inbox?type=scm-pr', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9921, N'', N'', 0),
     (N'#/wf-inbox?type=adm-user', 2, NULL, 0, -1, N'', N'#/group/approve', 9922, N'Tài khoản', N'P0', NULL),
+    (N'#/wf-inbox?type=log-load-short', 2, NULL, 0, -1, N'', N'#/group/approve', 9923, N'Xếp xe chưa đủ hàng', N'P6', NULL),
     (N'#/group/01', 1, NULL, 100, 100, N'Tổng quan điều hành', NULL, 100, N'Điều hành', N'kpi', NULL),
     (N'#/dash-exec', 2, N'#/group/01', 101, 199, N'', N'#/group/01', 101, N'', N'', NULL),
     (N'#/kpi-daily', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 102, N'', N'', NULL),
@@ -507,8 +511,6 @@ INSERT INTO @P VALUES
     (N'#/scm-supplier-material', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 405, N'', N'', NULL),
     (N'#/scm-ingredient', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 406, N'', N'', NULL),
     (N'#/scm-ingredient-cat', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 407, N'', N'', 0),
-    (N'#/scm-uom', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 408, N'', N'', NULL),
-    (N'#/scm-uom-conversion', 2, N'#/group/04', 401, 499, N'', N'#/group/04', 409, N'', N'', 0),
     (N'#/group/04b', 1, NULL, -1, -1, N'', NULL, 450, N'Kho', N'wh', NULL),
     (N'#/scm-gr', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 451, N'', N'', NULL),
     (N'#/scm-issue', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 452, N'', N'', NULL),
@@ -518,18 +520,13 @@ INSERT INTO @P VALUES
     (N'#/scm-reservation', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 456, N'', N'', 0),
     (N'#/scm-stockcount', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 457, N'', N'', NULL),
     (N'#/scm-consumption-var', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 458, N'', N'', 0),
-    (N'#/scm-warehouse', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 459, N'', N'', NULL),
-    (N'#/scm-zone', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 460, N'', N'', 0),
-    (N'#/scm-location', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 461, N'', N'', 0),
-    (N'#/scm-inv-policy', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 462, N'', N'', 0),
+    (N'#/scm-inv-policy', 2, N'#/group/04', 401, 499, N'', N'#/group/04b', 459, N'', N'', 0),
     (N'#/group/05', 1, NULL, 500, 500, N'Sản xuất & Giá thành', NULL, 500, N'Sản xuất', N'production', NULL),
     (N'#/prod-plan', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 501, N'', N'', NULL),
     (N'#/prod-order', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 502, N'', N'', 0),
     (N'#/prod-batch', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 503, N'', N'', NULL),
     (N'#/prod-output', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 504, N'', N'', 0),
     (N'#/prod-waste', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 505, N'', N'', NULL),
-    (N'#/prod-line', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 506, N'', N'', NULL),
-    (N'#/prod-workstation', 2, N'#/group/05', 501, 599, N'', N'#/group/05', 507, N'', N'', 0),
     (N'#/group/05b', 1, NULL, -1, -1, N'', NULL, 550, N'Giá thành', N'cost', NULL),
     (N'#/cost-standard', 2, N'#/group/05', 501, 599, N'', N'#/group/05b', 551, N'', N'', 0),
     (N'#/cost-actual', 2, N'#/group/05', 501, 599, N'', N'#/group/05b', 552, N'', N'', 0),
@@ -553,27 +550,36 @@ INSERT INTO @P VALUES
     (N'#/log-container-return', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 709, N'', N'', 0),
     (N'#/log-return-inspection', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 710, N'', N'', 0),
     (N'#/log-packaging-ledger', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 711, N'', N'', NULL),
-    (N'#/log-vehicle', 2, N'#/group/07', 701, 799, N'', N'#/group/07', 712, N'', N'', NULL),
     (N'#/group/08', 1, NULL, 800, 800, N'Nhân sự & Phê duyệt', NULL, 800, N'Nhân sự', N'hr', NULL),
     (N'#/adm-employee', 2, N'#/group/10', 1001, 1099, N'', N'#/group/08', 801, N'', N'', NULL),
     (N'#/hr-shift-assign', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 802, N'', N'', NULL),
     (N'#/hr-attendance', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 803, N'', N'', NULL),
     (N'#/hr-leave', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 804, N'', N'', NULL),
-    (N'#/hr-swap', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 805, N'', N'', NULL),
-    (N'#/hr-shift', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 806, N'', N'', NULL),
-    (N'#/adm-position', 2, N'#/group/10', 1001, 1099, N'', N'#/group/08', 807, N'', N'', NULL),
-    (N'#/wf-inbox', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 808, N'', N'', NULL),
+    (N'#/hr-swap', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 805, N'', N'', 0),
+    (N'#/wf-inbox', 2, N'#/group/08', 801, 899, N'', N'#/group/08', 806, N'', N'', NULL),
+    (N'#/group/12', 1, NULL, 1200, 1200, N'', NULL, 950, N'Danh mục hệ thống', N'catalog', NULL),
+    (N'#/adm-orgunit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/12', 951, N'', N'', NULL),
+    (N'#/adm-company', 2, N'#/group/10', 1001, 1099, N'', N'#/group/12', 952, N'', N'', 0),
+    (N'#/adm-position', 2, N'#/group/10', 1001, 1099, N'', N'#/group/12', 953, N'', N'', NULL),
+    (N'#/hr-shift', 2, N'#/group/08', 801, 899, N'', N'#/group/12', 954, N'', N'', NULL),
+    (N'#/scm-uom', 2, N'#/group/04', 401, 499, N'', N'#/group/12', 955, N'', N'', NULL),
+    (N'#/scm-uom-conversion', 2, N'#/group/04', 401, 499, N'', N'#/group/12', 956, N'', N'', 0),
+    (N'#/scm-warehouse', 2, N'#/group/04', 401, 499, N'', N'#/group/12', 957, N'', N'', NULL),
+    (N'#/scm-zone', 2, N'#/group/04', 401, 499, N'', N'#/group/12', 958, N'', N'', 0),
+    (N'#/scm-location', 2, N'#/group/04', 401, 499, N'', N'#/group/12', 959, N'', N'', 0),
+    (N'#/prod-line', 2, N'#/group/05', 501, 599, N'', N'#/group/12', 960, N'', N'', NULL),
+    (N'#/prod-workstation', 2, N'#/group/05', 501, 599, N'', N'#/group/12', 961, N'', N'', 0),
+    (N'#/log-vehicle', 2, N'#/group/07', 701, 799, N'', N'#/group/12', 962, N'', N'', NULL),
+    (N'#/adm-reference', 2, N'#/group/10', 1001, 1099, N'', N'#/group/12', 963, N'', N'', NULL),
+    (N'#/adm-admin-unit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/12', 964, N'', N'', NULL),
+    (N'#/kpi-definition', 2, N'#/group/09', 901, 999, N'', N'#/group/12', 965, N'', N'', NULL),
     (N'#/group/10', 1, NULL, 1000, 1000, N'', NULL, 1000, N'Quản trị hệ thống', N'admin', NULL),
     (N'#/adm-user', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1001, N'', N'', NULL),
     (N'#/adm-usergroup', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1002, N'', N'', NULL),
-    (N'#/adm-permission', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1003, N'', N'', NULL),
+    (N'#/adm-permission', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1003, N'', N'', 0),
     (N'#/adm-objectmenu', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1004, N'', N'', NULL),
-    (N'#/adm-orgunit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1005, N'', N'', NULL),
-    (N'#/adm-company', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1006, N'', N'', NULL),
-    (N'#/sys-import', 2, NULL, 0, -1, N'', N'#/group/10', 1007, N'Nhập dữ liệu gốc (Excel)', N'P0', NULL),
-    (N'#/adm-reference', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1008, N'', N'', NULL),
-    (N'#/adm-admin-unit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1009, N'', N'', NULL),
-    (N'#/adm-document', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1010, N'', N'', NULL),
+    (N'#/sys-import', 2, NULL, 0, -1, N'', N'#/group/10', 1005, N'Nhập dữ liệu gốc (Excel)', N'P0', NULL),
+    (N'#/adm-document', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1006, N'', N'', NULL),
     (N'#/group/09', 1, NULL, 900, 900, N'Tích hợp & Chỉ số|Tích hợp & KPI', NULL, 1050, N'Nhật ký & Tích hợp', N'kpi', NULL),
     (N'#/adm-job', 2, NULL, 0, -1, N'', N'#/group/09', 1051, N'Job tự động', N'P0', NULL),
     (N'#/adm-audit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/09', 1052, N'', N'', NULL),
@@ -585,10 +591,9 @@ INSERT INTO @P VALUES
     (N'#/int-inbound', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1058, N'', N'', NULL),
     (N'#/int-outbound', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1059, N'', N'', NULL),
     (N'#/int-log', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1060, N'', N'', NULL),
-    (N'#/kpi-definition', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1061, N'', N'', NULL),
-    (N'#/kpi-refresh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1062, N'', N'', NULL),
-    (N'#/bot-van-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1063, N'', N'', NULL),
-    (N'#/bot-dieu-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1064, N'', N'', NULL);
+    (N'#/kpi-refresh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1061, N'', N'', NULL),
+    (N'#/bot-van-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1062, N'', N'', NULL),
+    (N'#/bot-dieu-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1063, N'', N'', NULL);
 INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), p.NewName, p.ShortName, p.Link, NULL, 1, p.NewOrder, 1, 0, @Now, @By, 0
 FROM @P p WHERE p.Lvl = 1 AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);

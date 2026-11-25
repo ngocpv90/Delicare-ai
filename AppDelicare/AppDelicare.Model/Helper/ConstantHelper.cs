@@ -96,6 +96,40 @@
             public static readonly string HrBulkDone = "Phân ca hàng loạt: tạo {0} ca, bỏ qua {1}";
             public static readonly string HrBulkSkipAssigned = "Đã có ca {0}";
             public static readonly string HrBulkSkipLeave = "Nghỉ phép (đơn {0})";
+            // UI-6.42 (D-123)
+            public static readonly string AccountDeleteBlocked = "Tài khoản là dấu vết người thao tác, không xóa được – không dùng nữa thì Khóa.";
+            public static readonly string AccountCreateAdminOnly = "Tài khoản cho nhân viên cấp qua Nhân viên › Đề nghị cấp tài khoản (IT duyệt) hoặc Tạo ngay; tạo tài khoản hệ thống chỉ quản trị.";
+            public static readonly string AccountBulkNoGroup = "Chọn nhóm quyền cần thêm hoặc bỏ.";
+            public static readonly string AccountBulkNoGroupLeft = "{0}: không thể bỏ hết nhóm quyền – bỏ qua.";
+            public static readonly string AccountBulkGroupsDone = "Đã cập nhật nhóm quyền {0} tài khoản · bỏ qua {1}.";
+            public static readonly string AccountLastAdmin = "{0}: quản trị cuối cùng – không khóa.";
+            public static readonly string AccountBulkLockDone = "Đã khóa {0} tài khoản · bỏ qua {1}.";
+            // UI-6.41 (D-122)
+            public static readonly string OrgNameRequired = "Nhập tên đơn vị.";
+            public static readonly string OrgTypeInvalid = "Chọn loại đơn vị: {0}.";
+            public static readonly string OrgManagerNotWorking = "Trưởng đơn vị phải là nhân viên đang làm việc.";
+            public static readonly string OrgParentNotFound = "Không tìm thấy đơn vị cha.";
+            public static readonly string OrgCompanyMissing = "Chưa chọn công ty cho đơn vị gốc.";
+            public static readonly string OrgMoved = "Đã chuyển đơn vị.";
+            public static readonly string OrgStatusInvalid = "Trạng thái chỉ được Hoạt động hoặc Ngừng hoạt động.";
+            public static readonly string OrgDeactivateBlocked = "Không ngừng hoạt động được: còn {0} nhân viên đang làm và {1} đơn vị con đang hoạt động – chuyển người / đơn vị con trước.";
+            public static readonly string OrgReactivateParentInactive = "Đơn vị cha đang ngừng hoạt động – cho đơn vị cha hoạt động lại trước.";
+            public static readonly string OrgDeactivated = "Đã ngừng hoạt động đơn vị.";
+            public static readonly string OrgReactivated = "Đã cho đơn vị hoạt động lại.";
+            public static readonly string OrgManagerSet = "Đã cập nhật trưởng đơn vị.";
+            public static readonly string CompanyDeleteBlocked = "Không xóa công ty – tên, địa chỉ, mã số thuế in ở đầu mọi phiếu in và tệp Excel.";
+            public static readonly string CompanyInsertAdminOnly = "Chỉ quản trị hệ thống thêm được công ty.";
+            public static readonly string CompanyTaxCodeInvalid = "Mã số thuế phải gồm 10 hoặc 13 chữ số.";
+            // UI-6.39 (D-120)
+            public static readonly string HrAnnualOver = "Phép năm còn {0} ngày – đơn {1} ngày vượt phép năm.";
+            public static readonly string HrLeaveTeamShort = "Ca {0} {1}: tổ còn {2} / cần {3} người nếu duyệt.";
+            public static readonly string HrSwapAwaitingConsent = "Đã gửi đơn {0} – chờ người nhận đồng ý (bot / Việc của tôi).";
+            public static readonly string HrSwapConsentNotTarget = "Chỉ người nhận ca mới trả lời được đơn này.";
+            public static readonly string HrSwapConsentClosed = "Đơn đang ở trạng thái {0} – không trả lời được.";
+            public static readonly string HrSwapConsentRejected = "Đã từ chối nhận ca – đã báo người xin.";
+            public static readonly string HrSwapConsentAccepted = "Đã đồng ý – đơn chuyển người duyệt ({0}).";
+            public static readonly string HrSwapCancelNotOwner = "Chỉ người tạo đơn được hủy.";
+            public static readonly string HrSwapCancelled = "Đã hủy đơn.";
             // UI-6.38 (D-119)
             public static readonly string HrSupplementTypeInvalid = "Chọn loại bổ sung: Vào ca hoặc Ra ca.";
             public static readonly string HrSupplementReasonRequired = "Chọn lý do bổ sung giờ.";
@@ -194,6 +228,17 @@
             // T45R – thông báo nghiệp vụ bổ sung (khung cũ, D-30).
             public static readonly string CannotLockYourself = "Không thể tự khóa tài khoản của chính mình";
             public static readonly string GroupNotFound = "Không tìm thấy nhóm người dùng";
+            // UI-6.43 (D-124) – nhóm quyền có mã / khối.
+            public static readonly string GroupNameRequired = "Nhập tên nhóm";
+            public static readonly string GroupCodeRequired = "Nhập mã nhóm (chữ hoa không dấu, vd. OPS-WH)";
+            public static readonly string GroupCodeExist = "Mã nhóm {0} đã có, chọn mã khác";
+            public static readonly string GroupCodeLocked = "Mã nhóm {0} đang dùng ở luồng duyệt / cấu hình – không đổi được mã";
+            public static readonly string GroupBlockInvalid = "Khối không hợp lệ – chọn một trong: {0}";
+            public static readonly string GroupUsersAdded = "Đã thêm {0} tài khoản vào nhóm";
+            public static readonly string GroupUsersRemoved = "Đã bỏ {0} tài khoản khỏi nhóm, bỏ qua {1}";
+            public static readonly string GroupRetireBlocked = "Không ngừng dùng được: nhóm còn {0} tài khoản, {1}";
+            public static readonly string GroupRetired = "Đã ngừng dùng nhóm";
+            public static readonly string RoleSavedMany = "Đã lưu {0} thay đổi quyền";
             public static readonly string MenuNotFound = "Menu không tồn tại: {0}";
             public static readonly string MenuCycle = "Sắp xếp tạo vòng lặp cha – con";
             // T45R.8 (D-37..D-39) – quản trị người dùng, mật khẩu tạm, menu 2 cấp.
@@ -956,7 +1001,8 @@
             public static readonly string PackingManySaved = "Đã ghi chia {0} ô";
             public static readonly string PackingCreateBlocked = "Lệnh đóng gói do hệ thống tự sinh khi mẻ đạt.";
             public static readonly string LoadMenuIncomplete = "Chưa đủ thực đơn – chưa xếp lên xe được: {0}";
-            public static readonly string LoadOverrideNoRight = "Chỉ người có quyền Duyệt Điều phối giao hàng được xếp có điều kiện";
+            public static readonly string VehicleDriverInvalid = "Tài xế mặc định phải là nhân viên đang làm việc";
+            public static readonly string LoadOverrideNoRight = "Chỉ người có quyền \"Phê duyệt › Xếp xe chưa đủ hàng\" được xếp xe khi chuyến chưa đủ thực đơn";
             public static readonly string LoadOverrideReasonRequired = "Xếp có điều kiện phải ghi lý do";
             public static readonly string ChecklistVersionDuplicate = "Bộ kiểm tra {0} đã có phiên bản {1}.";
             public static readonly string ChecklistSystemCodeLocked = "«{0}» là bộ hệ thống (gắn giờ hạn / thao tác của mẻ, vệ sinh khay) – không đổi mã, không ngừng dùng, không xóa; sửa nội dung bằng Tạo phiên bản mới.";

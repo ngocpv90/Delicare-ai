@@ -99,11 +99,13 @@ namespace AppDelicare.Model.Helper
         public const string Approved = "Approved";
         public const string Rejected = "Rejected";
         public const string Cancelled = "Cancelled";
+        /// <summary>UI-6.39 (D-120): người nhận chưa đồng ý – chưa có yêu cầu duyệt.</summary>
+        public const string AwaitingConsent = "AwaitingConsent";
 
         public const string BusinessType = "SHIFT_SWAP";
         public const string ScreenId = "hr-swap";
 
-        public static string Label(string? status) => LeaveRequestStatus.Label(status);
+        public static string Label(string? status) => status == AwaitingConsent ? "Chờ người nhận đồng ý" : LeaveRequestStatus.Label(status);
     }
 
     /// <summary>BE2.6: màn hình (screen-id) nhân sự dùng khi kiểm quyền trong service (thao tác tự phục vụ / chấm hộ).</summary>
@@ -112,7 +114,8 @@ namespace AppDelicare.Model.Helper
         public const string ShiftAssign = "hr-shift-assign";
         public const string Attendance = "hr-attendance";
         public const string Leave = "hr-leave";
-        public const string Swap = "hr-swap";
+        /// <summary>UI-6.39 / 6.46: Đơn đổi ca gộp vào "Nghỉ &amp; đổi ca" (mục hr-swap ẩn, quyền đã hợp vào hr-leave).</summary>
+        public const string Swap = "hr-leave";
     }
 
     /// <summary>BE2.6: <c>Employee.Status</c> chưa có danh mục (STATUS_CATALOG) – coi Inactive / Resigned là đã nghỉ việc (PROPOSED – D-55 (a)).</summary>

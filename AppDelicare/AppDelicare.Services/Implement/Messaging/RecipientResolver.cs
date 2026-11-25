@@ -96,7 +96,7 @@ namespace AppDelicare.Services.Implement.Messaging
             return await (from uc in db.UserClaim.AsNoTracking()
                           join ug in db.UserGroup.AsNoTracking() on uc.UserGroupId equals ug.Id
                           join u in db.User.AsNoTracking() on uc.UserId equals u.Id
-                          where !uc.IsDeleted && !ug.IsDeleted && names.Contains(ug.Name!) && !u.IsDeleted && u.IsActive
+                          where !uc.IsDeleted && !ug.IsDeleted && (names.Contains(ug.Code!) || (ug.Code == null && names.Contains(ug.Name!))) && !u.IsDeleted && u.IsActive /* UI-6.43: theo mã nhóm */
                           select u.Id).Distinct().ToListAsync(ct);
         }
 
@@ -106,7 +106,7 @@ namespace AppDelicare.Services.Implement.Messaging
         /// </summary>
         public static async Task<List<Guid>> UsersWithApproveAsync(DatabaseContext db, string screenId, CancellationToken ct = default)
         {
-            string link = AppDelicare.Services.Interface.IPermissionService.ApproveMenuPrefix + screenId;
+            string link = AppDelicare.Services.Interface.IPermissionService.ApproveMenuPrefix + AppDelicare.Services.Interface.IPermissionService.ApproveScreenOf(screenId); // UI-6.46: mục duyệt đã gộp
             return await (from uc in db.UserClaim.AsNoTracking()
                           join g in db.UserGroup.AsNoTracking() on uc.UserGroupId equals g.Id
                           join r in db.UserRole.AsNoTracking() on g.Id equals r.UserGroupId

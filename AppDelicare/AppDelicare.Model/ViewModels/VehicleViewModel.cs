@@ -10,6 +10,8 @@ namespace AppDelicare.Model.ViewModels
 		public decimal? Capacity { get; set; }
 		public string? Status { get; set; }
 		public string? Note { get; set; }
+		/// <summary>GAP-LOG-DRV (D-128): tài xế mặc định.</summary>
+		public Guid? DefaultDriverEmployeeId { get; set; }
 		public DateTime? CreatedDate { get; set; }
 	}
 }

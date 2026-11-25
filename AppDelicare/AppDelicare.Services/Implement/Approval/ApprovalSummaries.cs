@@ -41,7 +41,7 @@ namespace AppDelicare.Services.Implement.Approval
                 StockCountStatus.BusinessType => ("Kiểm kê" + lv, "Kho", "scm-stockcount"),
                 StockAdjustmentStatus.BusinessType => ("Điều chỉnh tồn", "Kho", "scm-inv-balance"),
                 LeaveRequestStatus.BusinessType => ("Đơn xin nghỉ", "Nhân sự", "hr-leave"),
-                ShiftSwapStatus.BusinessType => ("Đơn đổi ca", "Nhân sự", "hr-swap"),
+                ShiftSwapStatus.BusinessType => ("Đơn đổi ca", "Nhân sự", "hr-leave"), // UI-6.39 / 6.46: màn Nghỉ & đổi ca
                 PlanBusinessType => ("Kế hoạch sản xuất", "Sản xuất", "prod-plan"),
                 // HR-ACC-1.6 (D-82 f–h): vòng đời tài khoản – người duyệt FIN-IT.
                 PriceAdjustmentStatus.BusinessType => ("Phụ lục điều chỉnh giá", "Kinh doanh", "crm-contract"),
@@ -614,7 +614,7 @@ namespace AppDelicare.Services.Implement.Approval
                 Counterparty = a1,
                 Title = r.ProposedShiftAssignmentId == null ? $"{a1} → {a2} · ca {cur}" : $"{a1} ↔ {a2} · {cur} / {prop}",
                 Reason = string.IsNullOrWhiteSpace(r.Reason) ? "Đổi ca giữa 2 nhân viên" : r.Reason,
-                OpenLink = "hr-swap?id=" + id,
+                OpenLink = "hr-leave?type=SWAP&swap=" + id, // UI-6.46: Đơn đổi ca trong Nghỉ & đổi ca
                 LineHeaders = ["Nhân viên", "Trước", "Sau"],
             };
             Lines(s,

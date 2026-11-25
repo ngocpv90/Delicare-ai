@@ -141,18 +141,49 @@ namespace AppDelicare.Tests.Messaging
         }
 
         [Fact]
+        public async Task Ui649_deliver_with_tray_return_fail_reasons_from_catalog_and_load_blocked()
+        {
+            await using var h = DriverHost(Detail("InTransit", [], "Arrived", ["recordTemperature", "deliver", "fail"]), "#/log-stop", "#/log-route");
+            string s = Stop1.ToString("N");
+            // Giao kèm thu khay (UI-6.35): khách còn 40 hộp → hỏi Thu đủ / Không thu → Deliver kèm ListReturn.
+            h.Web.Routes["api/DeliveryStop/GetHandover"] = (_, _) => (200, null, JsonSerializer.Serialize(new { stopId = Stop1, listTray = new[] { new { packagingType = "BOX", label = "Hộp nhựa", atCustomer = 40m } } }), null);
+            await h.SendAsync(Tap("dlv:dv:" + s + ".98.65"));
+            h.Web.Calls.Should().NotContain(c => c.Path == "api/DeliveryStop/Deliver", "chưa chọn thu khay");
+            Buttons(h.Sender.Edits.Last().Markup).Should().Contain(["dlv:dvr:" + s + ".98.65.a", "dlv:dvr:" + s + ".98.65.0"]);
+            await h.SendAsync(Tap("dlv:dvr:" + s + ".98.65.a"));
+            var call = Last(h, "api/DeliveryStop/Deliver").Form;
+            call["DeliveredQuantity"].Should().Be("98");
+            call["ListReturn[0].PackagingType"].Should().Be("BOX");
+            call["ListReturn[0].ReturnedQty"].Should().Be("40");
+            // Lý do giao thất bại theo danh mục DeliveryFailReason.
+            h.Web.Routes["api/MetaData/GetReferenceLists"] = (_, _) => (200, null, null, JsonSerializer.Serialize(new[] { new { name = "DeliveryFailReason", listItem = new[] { new { code = "CLOSED", label = "Khách đóng cửa" }, new { code = "NO_CONTACT", label = "Không liên lạc được" } } } }));
+            await h.SendAsync(Tap("dlv:fl:" + s));
+            Buttons(h.Sender.Edits.Last().Markup).Should().Contain(["dlv:frl:" + s + ".0", "dlv:frl:" + s + ".1"]);
+            await h.SendAsync(Tap("dlv:frl:" + s + ".1"));
+            Last(h, "api/DeliveryStop/Fail").Form["Reason"].Should().Be("Không liên lạc được");
+            // Xếp lên xe – máy chủ chặn vì chưa đủ thực đơn → hiện thông báo chặn.
+            h.Web.Routes["api/DeliveryRoute/Load"] = (_, _) => (400, "Chưa đủ thực đơn: Trường A thiếu Canh chua", null, null);
+            await using var h2 = DriverHost(Detail("Planned", ["load"], "Planned", []), "#/log-stop", "#/log-route");
+            h2.Web.Routes["api/DeliveryRoute/Load"] = (_, _) => (400, "Chưa đủ thực đơn: Trường A thiếu Canh chua", null, null);
+            await h2.SendAsync(Tap("dlv:r:" + Route.ToString("N")));
+            Buttons(h2.Sender.Edits.Last().Markup).Should().Contain("dlv:ld:" + Route.ToString("N"));
+            await h2.SendAsync(Tap("dlv:ld:" + Route.ToString("N")));
+            h2.Sender.Edits.Last().Text.Should().Contain("Chưa đủ thực đơn").And.Contain("thiếu Canh chua");
+        }
+
+        [Fact]
         public async Task Arrive_fail_with_reason_and_container_return_typed_count()
         {
-            await using var h = DriverHost(Detail("InTransit", [], "Planned", ["arrive", "recordTemperature", "deliver", "fail"]), "#/log-stop", "#/log-container-return");
+            await using var h = DriverHost(Detail("InTransit", [], "Planned", ["arrive", "recordTemperature", "deliver", "fail"]), "#/log-stop", "#/log-packaging-ledger");
             string s = Stop1.ToString("N");
             await h.SendAsync(Tap("dlv:arr:" + s));
             Last(h, "api/DeliveryStop/Arrive").Form["Id"].Should().Be(Stop1.ToString());
             await h.SendAsync(Tap("dlv:fl:" + s));
             Buttons(h.Sender.Edits.Last().Markup).Should().Contain("dlv:fr:" + s + ".1");
             await h.SendAsync(Tap("dlv:fr:" + s + ".1"));
-            Last(h, "api/DeliveryStop/Fail").Form["Reason"].Should().Be("Không liên lạc được người nhận (Telegram)");
+            Last(h, "api/DeliveryStop/Fail").Form["Reason"].Should().Be("Không liên lạc được người nhận");
 
-            await using var h2 = DriverHost(Detail("InTransit", [], "Delivered", []), "#/log-stop", "#/log-container-return");
+            await using var h2 = DriverHost(Detail("InTransit", [], "Delivered", []), "#/log-stop", "#/log-packaging-ledger");
             await h2.SendAsync(Text("📥 Nhận hộp về"));
             string d = DeliveryOrder1.ToString("N");
             Buttons(h2.Sender.Sent.Last().Message.ReplyMarkup).Should().ContainSingle().Which.Should().Be("dlv:bx:" + d);

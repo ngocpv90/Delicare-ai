@@ -62,33 +62,40 @@ public static partial class Seeds
             "wf-inbox?type=scm-po-director", "wf-inbox?type=scm-stockcount", "wf-inbox?type=scm-stockcount-l2", "wf-inbox?type=scm-adjustment",
             "wf-inbox?type=prod-plan", "wf-inbox?type=qc-inspection", "wf-inbox?type=prod-batch", "wf-inbox?type=scm-lot", "wf-inbox?type=hr-leave",
             "wf-inbox?type=hr-swap", "wf-inbox?type=scm-pr", "wf-inbox?type=adm-user",
+            "wf-inbox?type=log-load-short", // UI-6.49 (6) (D-127 e): xếp xe khi chuyến chưa đủ thực đơn
         ]),
         new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal"]), // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
             ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "crm-billing", "log-complaint", "crm-location", "crm-contact"]),
         new("#/group/03", "Thực đơn & Món ăn", [], 300, "menu", ["menu-menu", "menu-assignment", "menu-change-request", "menu-recipe", "menu-dish", "menu-dish-cat"]),
         new("#/group/04", "Mua hàng", ["Mua hàng & Kho"], 400, "scm",
-            ["scm-requirement", "scm-pr", "scm-po", "scm-supplier", "scm-supplier-material", "scm-ingredient", "scm-ingredient-cat", "scm-uom", "scm-uom-conversion"]),
+            ["scm-requirement", "scm-pr", "scm-po", "scm-supplier", "scm-supplier-material", "scm-ingredient", "scm-ingredient-cat"]),
         new("#/group/04b", "Kho", [], 450, "wh",
-            ["scm-gr", "scm-issue", "scm-inv-balance", "scm-lot", "scm-inv-txn", "scm-reservation", "scm-stockcount", "scm-consumption-var", "scm-warehouse", "scm-zone", "scm-location", "scm-inv-policy"]),
-        new("#/group/05", "Sản xuất", ["Sản xuất & Giá thành"], 500, "production", ["prod-plan", "prod-order", "prod-batch", "prod-output", "prod-waste", "prod-line", "prod-workstation"]),
+            ["scm-gr", "scm-issue", "scm-inv-balance", "scm-lot", "scm-inv-txn", "scm-reservation", "scm-stockcount", "scm-consumption-var", "scm-inv-policy"]),
+        new("#/group/05", "Sản xuất", ["Sản xuất & Giá thành"], 500, "production", ["prod-plan", "prod-order", "prod-batch", "prod-output", "prod-waste"]),
         new("#/group/05b", "Giá thành", [], 550, "cost", ["cost-standard", "cost-actual"]), // UI-6.27 (D-108): nhóm ẩn – 2 mục ẩn, quyền theo cost-meal
         new("#/group/06", "Chất lượng & ATTP", ["QC & An toàn thực phẩm"], 600, "qc",
             ["qc-inspection", "qc-checklist-result", "qc-temperature", "qc-cleaning", "qc-cleaning-result", "qc-supplier-issue", "qc-checklist"]),
         new("#/group/07", "Đóng gói & Giao hàng", ["Đóng gói & Giao nhận"], 700, "logistics",
         [
             "log-packing-order", "log-packing-result", "log-delivery-order", "log-route", "log-loading", "log-execution", "log-gps", "log-pod",
-            "log-container-return", "log-return-inspection", "log-packaging-ledger", "log-vehicle",
+            "log-container-return", "log-return-inspection", "log-packaging-ledger",
         ]),
         // #/wf-inbox (Hộp phê duyệt cũ) giữ dòng – là quyền của API duyệt (xem chi tiết mọi yêu cầu); FE bỏ khỏi sidebar khi có "Tất cả yêu cầu duyệt".
-        new("#/group/08", "Nhân sự", ["Nhân sự & Phê duyệt"], 800, "hr", ["adm-employee", "hr-shift-assign", "hr-attendance", "hr-leave", "hr-swap", "hr-shift", "adm-position", "wf-inbox"]),
+        new("#/group/08", "Nhân sự", ["Nhân sự & Phê duyệt"], 800, "hr", ["adm-employee", "hr-shift-assign", "hr-attendance", "hr-leave", "hr-swap", "wf-inbox"]),
+        // UI-6.40 (D-121): nhóm "Danh mục hệ thống" – 10 mục (+ mục ẩn đi theo màn cha), ngay trên Quản trị hệ thống; chỉ đổi nhóm / thứ tự, quyền giữ nguyên.
+        new("#/group/12", "Danh mục hệ thống", [], 950, "catalog",
+        [
+            "adm-orgunit", "adm-company", "adm-position", "hr-shift", "scm-uom", "scm-uom-conversion", "scm-warehouse", "scm-zone", "scm-location",
+            "prod-line", "prod-workstation", "log-vehicle", "adm-reference", "adm-admin-unit", "kpi-definition",
+        ]),
         new("#/group/10", "Quản trị hệ thống", [], 1000, "admin",
-            ["adm-user", "adm-usergroup", "adm-permission", "adm-objectmenu", "adm-orgunit", "adm-company", "sys-import", "adm-reference", "adm-admin-unit", "adm-document"]),
+            ["adm-user", "adm-usergroup", "adm-permission", "adm-objectmenu", "sys-import", "adm-document"]),
         // bot-van-hanh / bot-dieu-hanh: mục "quyền vào bot" (D-62, seed Integration_Telegram) – chỉ sắp chỗ, quyền KHÔNG do ma trận này quản (FE không hiện trên sidebar).
         new("#/group/09", "Nhật ký & Tích hợp", ["Tích hợp & Chỉ số", "Tích hợp & KPI"], 1050, "kpi",
         [
             "adm-job", "adm-audit", "adm-access-log", "adm-merge-conflict", "int-channel", "int-bot", "int-identity", "int-inbound", "int-outbound", "int-log",
-            "kpi-definition", "kpi-refresh", "bot-van-hanh", "bot-dieu-hanh",
+            "kpi-refresh", "bot-van-hanh", "bot-dieu-hanh",
         ]),
     ];
 
@@ -103,6 +110,8 @@ public static partial class Seeds
         ["sys-import"] = ("Nhập dữ liệu gốc (Excel)", "P0"),
         ["wf-inbox?type=prod-batch"] = ("Mẻ nấu", "P5"),
         ["wf-inbox?type=scm-lot"] = ("Giữ / thả lô", "P4"),
+        // UI-6.49 (6) (D-127 e): xếp xe có điều kiện khi chuyến chưa đủ thực đơn (DeliveryRoute/Load + OverrideReason).
+        ["wf-inbox?type=log-load-short"] = ("Xếp xe chưa đủ hàng", "P6"),
         // HR-ACC-1.6 (D-82 f–h): cấp / đổi nhóm / mở lại tài khoản – người duyệt FIN-IT.
         ["wf-inbox?type=adm-user"] = ("Tài khoản", "P0"),
     };
@@ -289,6 +298,10 @@ public static partial class Seeds
         ("log-packing-result", "log-packing-order"), ("log-delivery-order", "log-route"), ("log-loading", "log-route"),
         // UI-6.35 (D-116): Vị trí xe, Xác nhận đã giao → Theo dõi giao hàng; Thu hồi khay hộp → Khay hộp theo khách.
         ("log-gps", "log-execution"), ("log-pod", "log-execution"), ("log-container-return", "log-packaging-ledger"),
+        // UI-6.39 (D-120): Đơn đổi ca → Nghỉ & đổi ca (quyền xem / thêm / sửa; quyền Duyệt mục duyệt giữ riêng theo loại).
+        ("hr-swap", "hr-leave"),
+        // UI-6.43 (D-124): Phân quyền → Nhóm quyền (sửa quyền = Sửa nhóm quyền).
+        ("adm-permission", "adm-usergroup"),
     ];
 
     /// <summary>D-79 (d): mục duyệt → nhóm duyệt (AllowAccess + AllowEdit). <c>crm-price-policy</c> giữ CEO cho khi có loại duyệt (mục đang ẩn).</summary>
@@ -302,6 +315,7 @@ public static partial class Seeds
         ("hr-leave", ["FIN-HR", "COO"]), ("hr-swap", ["FIN-HR", "COO"]),
         ("qc-inspection", ["QA"]), ("prod-batch", ["QA"]), ("scm-lot", ["QA"]),
         ("adm-user", ["FIN-IT"]), // HR-ACC-1.6 (D-82 f)
+        ("log-load-short", ["COO", "OPS-SCM-HEAD"]), // UI-6.49 (6) (D-127 e): chưa có nhóm trưởng điều phối → COO + Trưởng mua hàng & kho
     ];
 
     /// <summary>Mọi mục cấp 2 mà ma trận quản (link '#/…'), theo thứ tự menu – trừ mục quyền vào bot.</summary>

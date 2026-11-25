@@ -14,13 +14,14 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class UserRoleService(IUnitOfWork unitOfWork, IObjectMenuService objectMenuService, IDapperRepository dapperRepository
-        , IPermissionService permissionService) : IUserRoleService
+    public partial class UserRoleService(IUnitOfWork unitOfWork, IObjectMenuService objectMenuService, IDapperRepository dapperRepository
+        , IPermissionService permissionService, IServiceProvider services) : IUserRoleService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IObjectMenuService _objectMenuService = objectMenuService;
         private readonly IPermissionService _permissionService = permissionService;
+        private readonly IServiceProvider _services = services;
 
         public async Task<IResult<bool>> DeleteByUserGroupId(Guid userGroupId)
         {

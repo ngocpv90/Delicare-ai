@@ -82,7 +82,7 @@ namespace AppDelicare.Services.Implement
         public static async Task<HashSet<Guid>> PendingSwapAssignmentsAsync(DatabaseContext db, IReadOnlyCollection<Guid> assignmentIds)
         {
             var rows = await db.ShiftSwapRequest.AsNoTracking()
-                .Where(s => !s.IsDeleted && s.RequestStatus == ShiftSwapStatus.Pending
+                .Where(s => !s.IsDeleted && (s.RequestStatus == ShiftSwapStatus.Pending || s.RequestStatus == ShiftSwapStatus.AwaitingConsent)
                     && (assignmentIds.Contains(s.CurrentShiftAssignmentId) || (s.ProposedShiftAssignmentId != null && assignmentIds.Contains(s.ProposedShiftAssignmentId.Value))))
                 .Select(s => new { s.CurrentShiftAssignmentId, s.ProposedShiftAssignmentId }).ToListAsync();
             var set = new HashSet<Guid>();

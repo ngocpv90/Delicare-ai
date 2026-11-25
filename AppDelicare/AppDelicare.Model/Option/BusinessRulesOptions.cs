@@ -89,6 +89,8 @@ namespace AppDelicare.Model.Option
         public bool PackingAutoGenerateOnPass { get; set; } = true;
         /// <summary>UI-6.24 (D-105): lệnh SX chuyển Hoàn thành (mẻ cuối đóng gói / loại) → hệ thống tự Đóng (chênh lệch tiêu hao, giá thành thực tế, giải phóng giữ chỗ dư). Tắt → đóng tay.</summary>
         public bool ProductionAutoCloseOrder { get; set; } = true;
+        /// <summary>UI-6.49 (3) (QĐ-26): job đóng lệnh 22:00 tự ghi Nấu dư = suất đạt − đã chia − hỏng / loại − nấu dư đã ghi (mẻ có kết quả đóng gói). false = ghi tay như cũ (đường lùi – bỏ cờ sau UAT).</summary>
+        public bool ProductionAutoRecordOverProduction { get; set; } = true;
         /// <summary>UI-6.25 (D-106): mẻ quá giờ bắt đầu kế hoạch N phút mà chưa nấu → trễ (tô đỏ, khối Cần làm ngay).</summary>
         public int BatchLateStartMinutes { get; set; } = 10;
         /// <summary>UI-6.25 (D-106): mẻ Chờ QC quá N phút → cần QA xem.</summary>
@@ -116,6 +118,9 @@ namespace AppDelicare.Model.Option
 
         /// <summary>UI-6.36 (D-117 e): true = cho đổi Trạng thái nhân viên qua Employee/Update như cũ (mặc định false – chỉ qua Resign / SetStatus).</summary>
         public bool EmployeeStatusViaUpdate { get; set; }
+
+        /// <summary>UI-6.42 (D-123): tài khoản không đăng nhập ≥ N ngày → cảnh báo "lâu không đăng nhập" (Account:InactiveWarnDays).</summary>
+        public int AccountInactiveWarnDays { get; set; } = 60;
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>

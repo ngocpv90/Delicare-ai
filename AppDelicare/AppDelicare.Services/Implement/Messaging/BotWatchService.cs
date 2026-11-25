@@ -29,8 +29,33 @@ namespace AppDelicare.Services.Implement.Messaging
     /// </list>
     /// </summary>
     public class BotWatchService(IUnitOfWork unitOfWork, IClock clock, IConfiguration configuration, ICurrentActor currentActor,
-        IOptionsMonitor<MessagingOptions> options, INotificationService notifications, IApprovalRequestService approvals, IFoodSafetyChecklistResultService checklists, ITemperatureLogService temperatures, ISupplierIssueService supplierIssues, IDeliveryRouteService routes, IPackagingLedgerService packaging, IShiftAssignmentService shifts) : IBotWatchService
+        IOptionsMonitor<MessagingOptions> options, INotificationService notifications, IApprovalRequestService approvals, IFoodSafetyChecklistResultService checklists, ITemperatureLogService temperatures, ISupplierIssueService supplierIssues, IDeliveryRouteService routes, IPackagingLedgerService packaging, IShiftAssignmentService shifts, IShiftSwapRequestService swaps) : IBotWatchService
     {
+        /// <summary>UI-6.49 (5) (D-127 d): các việc trong vòng kiểm bot – tên tiếng Việt cho màn Job tự động (mã = tên dùng trong SafeAsync).</summary>
+        public static readonly (string Code, string Name, string Description)[] Checks =
+        [
+            ("BatchLate", "Mẻ nấu trễ giờ", "Mẻ chưa bắt đầu / chưa xong quá số phút so với kế hoạch → người phụ trách mẻ."),
+            ("TripNotDeparted", "Chuyến chưa xuất bến", "Chuyến hôm nay quá giờ xuất phát mà chưa đi → điều phối."),
+            ("StopLate", "Điểm giao sắp trễ / đã trễ", "Điểm của chuyến đang giao sắp hết / quá khung nhận → điều phối, tài xế."),
+            ("NotCheckedIn", "Chưa vào ca", "Ca đã bắt đầu quá số phút cấu hình (15 phút) mà còn người chưa vào ca → trưởng đơn vị, người chấm hộ."),
+            ("ComplaintSla", "Phản ánh sắp quá hạn", "Phản ánh chưa xong sắp / đã quá hạn xử lý → CSKH."),
+            ("PoLate", "Đơn mua trễ hẹn giao", "Đơn mua quá ngày hẹn giao → mua hàng, thủ kho (1 lần / đơn)."),
+            ("ChecklistOverdue", "Kiểm tra ATTP quá hạn", "Lượt kiểm tra ATTP theo ca quá hạn → trưởng ca, QA."),
+            ("TemperatureDue", "Đến giờ đo nhiệt độ", "Khu đo tay đến giờ chưa đo / cảm biến mất tín hiệu → QA, thủ kho."),
+            ("SupplierIssueOverdue", "Sự cố nhà cung cấp quá hạn", "Sự cố NCC chưa xử lý quá hạn → mua hàng."),
+            ("RouteReady", "Chuyến đủ hàng / sắp xuất bến chưa đủ", "Chuyến đủ thực đơn để xếp xe, hoặc sắp xuất bến mà chưa đủ → điều phối."),
+            ("ContainerOverdue", "Khay quá hạn thu hồi", "Phiếu chờ thu hồi khay quá số ngày → điều phối (tin gộp / ngày)."),
+            ("ShiftWeekRemind", "Nhắc lập lịch ca tuần sau", "Thứ Sáu (cấu hình) nhắc trưởng đơn vị lập / chốt lịch ca tuần sau."),
+            ("SwapConsentExpire", "Hết hạn đồng ý đổi ca", "Đơn đổi / nhường ca quá hạn người nhận đồng ý → tự hủy, báo người gửi."),
+            ("ApprovalOverdue", "Duyệt quá hạn", "Yêu cầu duyệt quá hạn → nhắc người duyệt, leo thang nhóm cấu hình."),
+            ("ApprovalAbsent", "Người duyệt vắng", "Người duyệt đang nghỉ → chuyển nhóm leo thang."),
+            ("ApprovalDigest", "Tổng hợp duyệt cuối ngày", "Tin tổng hợp việc chờ duyệt (giờ cấu hình)."),
+        ];
+
+        /// <summary>UI-6.49 (5): lần chạy gần nhất của từng việc (bộ nhớ tiến trình API – vòng kiểm bot gọi BotChannel/RunWatch vào API).</summary>
+        public static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime At, int Sent, bool Error)> LastRuns = new();
+        private static DateTime _runAt;
+
         private static readonly string[] PoOpen = [PurchaseOrderStatus.Approved, PurchaseOrderStatus.Sent, PurchaseOrderStatus.PartiallyReceived];
 
         public async Task<IResult<int>> Run()
@@ -41,6 +66,7 @@ namespace AppDelicare.Services.Implement.Messaging
             }
             var o = options.CurrentValue.Watch;
             DateTime now = clock.Now;
+            _runAt = now;
             int sent = 0;
             using var scope = currentActor.BeginScope(ActorInfo.ForSystem(systemUser));
             sent += await SafeAsync("BatchLate", () => BatchLateAsync(now, o));
@@ -57,6 +83,8 @@ namespace AppDelicare.Services.Implement.Messaging
             sent += await SafeAsync("ContainerOverdue", () => packaging.RemindOverdueReturnsAsync(now));
             // UI-6.37 (D-118 f): Thứ 6 sau 15:00 – tuần sau còn ca nháp / thiếu người → 1 tin / tuần.
             sent += await SafeAsync("ShiftWeekRemind", () => shifts.RemindNextWeekAsync());
+            // UI-6.39 (D-120): đơn đổi / nhường ca quá hạn chờ người nhận → tự hủy + báo người xin.
+            sent += await SafeAsync("SwapConsentExpire", () => swaps.ExpireConsentsAsync());
             sent += await SafeAsync("ApprovalOverdue", () => approvals.NotifyOverdueAsync(o.ApprovalOverdueEscalateHours, o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));
             // APR-1.4 (D-81 i): người duyệt của cấp đều nghỉ hôm nay → báo ngay bậc leo thang (1 lần / yêu cầu / cấp / ngày).
             sent += await SafeAsync("ApprovalAbsent", () => approvals.EscalateAbsentAsync(o.EffectiveApprovalOverdueGroups, o.EffectiveApprovalOverdueTopGroups));
@@ -73,11 +101,14 @@ namespace AppDelicare.Services.Implement.Messaging
         {
             try
             {
-                return await check();
+                int n = await check();
+                LastRuns.AddOrUpdate(name, (_runAt, n, false), (_, old) => (_runAt, old.At == _runAt ? old.Sent + n : n, false));
+                return n;
             }
             catch (Exception ex)
             {
                 Log.Warning(ex, "[BotWatch] {Check}: lỗi – bỏ qua lần này", name);
+                LastRuns[name] = (_runAt, 0, true);
                 return 0;
             }
         }

@@ -162,7 +162,7 @@ namespace AppDelicare.Tests.Messaging
         [Fact]
         public async Task Regenerate_plan_menu_change_and_cleaning()
         {
-            await using var h = Host("#/prod-plan", "#/menu-change-request", "#/qc-cleaning");
+            await using var h = Host("#/prod-plan", "#/menu-menu", "#/qc-cleaning");
             h.Web.Routes["api/ProductionPlan/Generate"] = (_, _) => (200, "Đã lập kế hoạch", JsonSerializer.Serialize(new { plan = new { planNumber = "KH-9" }, statusName = "Nháp" }), null);
             await h.SendAsync(Text("/laplai"));
             string day = Today.AddDays(1).ToString("yyyyMMdd");
@@ -190,11 +190,14 @@ namespace AppDelicare.Tests.Messaging
             change["Reason"].Should().Be("Khách đề nghị");
 
             h.Web.Routes["api/CleaningBatch/GetAll"] = (_, _) => (200, null, null, JsonSerializer.Serialize(new[] { new { id = Clean, cleaningBatchNumber = "VS-1", containerQuantity = 120 } }));
-            h.Web.Routes["api/CleaningBatch/Complete"] = (_, form) => form["QcResult"] == "PASS" ? (400, "Mẻ VS-1 còn bước chưa đạt: Sấy", null, null) : (200, "Đã kết luận", "{}", null);
+            h.Web.Routes["api/CleaningBatch/Complete"] = (_, form) => (200, "Đã kết luận", "{}", null);
+            h.Web.Routes["api/CleaningBatch/PassAll"] = (_, _) => (200, "Đã đạt tất cả và kết luận", "{}", null);
             await h.SendAsync(Text("/vesinh"));
             h.Sender.Sent.Last().Message.Text.Should().Contain("VS-1 · 120 khay");
+            // UI-6.45 (UI-6.32): ✅ Đạt = Đạt tất cả & kết luận (PassAll) – không còn bị chặn vì chưa ghi từng bước.
             await h.SendAsync(Tap("op:cp:0"));
-            h.Sender.Sent.Last().Message.Text.Should().Contain("còn bước chưa đạt: Sấy", "máy chủ chặn Đạt khi chưa ghi đủ bước – bot báo rõ");
+            Last(h, "api/CleaningBatch/PassAll").Form["Id"].Should().Be(Clean.ToString());
+            h.Sender.Sent.Last().Message.Text.Should().Contain("Đạt, sẵn sàng dùng lại");
             await h.SendAsync(Tap("op:cr:0"));
             await h.SendAsync(Tap("op:crx:0"));
             await h.SendAsync(Text("Khay còn bẩn", replyTo: LastSentId(h)));

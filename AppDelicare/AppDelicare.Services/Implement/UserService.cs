@@ -18,14 +18,15 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class UserService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IOptions<AppSettingHelper> options
+    public partial class UserService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IOptions<AppSettingHelper> options
         , IImportService importService, IMapper mapper, IUserClaimService userClaimService
         , IUserGroupService userGroupService, IAuditChangeService auditChangeService
-        , ICurrentActor currentActor, IPermissionService permissionService, IUserRoleService userRoleService, IClock clock) : IUserService
+        , ICurrentActor currentActor, IPermissionService permissionService, IUserRoleService userRoleService, IClock clock, IServiceProvider services) : IUserService
     {
         /// <summary>T45R.8 (D-38): tên đăng nhập chữ thường không dấu, số, . _ - ; 2–50 ký tự, không khoảng trắng. PROPOSED – BA/PO CONFIRM.</summary>
         private static readonly System.Text.RegularExpressions.Regex UserNamePattern = new("^[a-z0-9][a-z0-9._-]{1,49}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
         private readonly IClock _clock = clock;
+        private readonly IServiceProvider _services = services;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IImportService _importService = importService;
@@ -186,6 +187,11 @@ namespace AppDelicare.Services.Implement
 
         private async Task<(string Error, PersonUserCreatedViewModel? Created)> InsertCore(UserRequest request, string typeSave)
         {
+            // UI-6.42 (D-123): tài khoản cho nhân viên đi đường D-82 (đề nghị → IT duyệt / Tạo ngay); tạo trực tiếp (hệ thống) chỉ quản trị.
+            if (!await ActorIsAdminAsync())
+            {
+                return (ConstantHelper.Message.AccountCreateAdminOnly, null);
+            }
             if (request.PersonId is Guid personId)
             {
                 if (!await _unitOfWork.PersonRepository.GetAll().AnyAsync(x => x.Id == personId && !x.IsDeleted))
@@ -327,6 +333,12 @@ namespace AppDelicare.Services.Implement
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {
+            // UI-6.42 (D-123): tài khoản là dấu vết người thao tác – không xóa; không dùng nữa thì Khóa.
+            await Task.CompletedTask;
+            if (id != null)
+            {
+                return ConstantHelper.Message.AccountDeleteBlocked;
+            }
             if (string.IsNullOrEmpty(id.ToString()))
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
@@ -642,6 +654,11 @@ namespace AppDelicare.Services.Implement
         public async Task<IResult<PersonUserCreatedViewModel>> InsertUserAfter(Guid personId, string? fullName, string typeSave
             , string? userName = null, string? listUserGroupId = null, bool isActive = false)
         {
+            // UI-6.42 (D-123): Person/Insert kèm tài khoản (tài khoản không gắn nhân viên) – chỉ quản trị.
+            if (!await ActorIsAdminAsync())
+            {
+                return Result<PersonUserCreatedViewModel>.Fail(ConstantHelper.Message.AccountCreateAdminOnly);
+            }
             try
             {
                 var existing = await _unitOfWork.UserRepository.GetAll().Where(x => x.PersonId == personId && !x.IsDeleted).Select(x => x.UserName ?? string.Empty).FirstOrDefaultAsync();
