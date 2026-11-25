@@ -534,3 +534,13 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Cho nghỉ việc hôm nay: hộp báo trước hệ quả; xác nhận → Đã nghỉ việc, tài khoản khóa, ca sau ngày nghỉ bị hủy, lịch sử có lý do. Ngày tương lai: vẫn đang làm, "Nghỉ từ …", đúng ngày tự khóa.
 - [ ] Tạm nghỉ / Quay lại làm; form Sửa không đổi được trạng thái. Nhập Excel dòng trùng SĐT → báo lỗi dòng.
 - [ ] Quyền: COO / NS đủ; OPS-KIT, OPS-LOG, QA, sales không vào được danh sách nhân viên.
+
+## UI-6.37 – Phân ca tuần (D-118)
+- [ ] Lưới luôn Thứ 2 – CN, mặc định tuần hiện tại; ngày đã qua mờ, không bấm được; Tuần sau / Tuần này.
+- [ ] Tô ca: chọn ca rồi kéo qua ~20 ô → lưu một lần; ô phép / đã chấm công trả lại như cũ kèm lý do; Bỏ ca tô được.
+- [ ] Sao chép tuần trước chỉ điền ô trống, liệt kê ô bỏ qua; bấm lại không tạo thêm.
+- [ ] Phân ca hàng loạt: chọn nhanh cả tổ / chức vụ, ô tìm.
+- [ ] Chốt & gửi lịch → nhân viên nhận lịch qua bot; sửa ô đã chốt → viền cam, nút "Gửi N thay đổi" → mỗi người 1 tin ca cũ → ca mới / đã hủy; bấm lại không gửi trùng.
+- [ ] Cấu hình định biên (Hr:ShiftMinStaff) → dòng tổng tổ đỏ khi thiếu, thẻ Ca thiếu người đúng; cột Tuần cảnh báo ≥ 6 ca / không ngày nghỉ.
+- [ ] Thứ 6 sau 15:00: tuần sau còn nháp → trưởng đơn vị + người phân ca nhận 1 tin.
+- [ ] Điện thoại: xem theo ngày, mỗi ca một khối.

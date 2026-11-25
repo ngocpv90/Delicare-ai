@@ -145,6 +145,38 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.37 (D-118 b): "Tô ca" – nhiều ô một lần (kiểm từng ô như Assign; ô lỗi không ghi, trả lý do).</summary>
+        [HttpPut("AssignMany")]
+        [Security.Permission("hr-shift-assign", PermissionAction.Edit, OrScreens = ["hr-shift-assign"])]
+        public async Task<IActionResult> AssignMany([FromBody] AppDelicare.Model.Model.ShiftAssignManyRequest request)
+        {
+            try
+            {
+                return Ok(await _service.AssignMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " AssignMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.37 (D-118 b): sao chép tuần → tuần (chỉ ô trống; bỏ qua ngày đã qua / phép / nghỉ việc).</summary>
+        [HttpPost("CopyWeek")]
+        [Security.Permission("hr-shift-assign", PermissionAction.Add)]
+        public async Task<IActionResult> CopyWeek([FromBody] AppDelicare.Model.Model.ShiftCopyWeekRequest request)
+        {
+            try
+            {
+                return Ok(await _service.CopyWeek(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CopyWeek: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetGrid")]
         public async Task<IActionResult> GetGrid([FromQuery] ShiftGridRequest request)
         {

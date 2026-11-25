@@ -15,6 +15,8 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string SystemTest = "SYSTEM_TEST";
         // Cá nhân / duyệt
         public const string ShiftConfirmed = "SHIFT_CONFIRMED";
+        /// <summary>UI-6.37 (D-118 e): ca đã chốt bị đổi / hủy – báo từng nhân viên khi bấm "Gửi N thay đổi".</summary>
+        public const string ShiftChanged = "SHIFT_CHANGED";
         public const string ApprovalPending = "APPROVAL_PENDING";
         public const string ApprovalResult = "APPROVAL_RESULT";
         // Bếp / ATTP
@@ -83,6 +85,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(ManualText, P, Normal, "Tin gửi tay từ màn Tin nhắn đi (#/int-outbound)"),
             new(SystemTest, P, Normal, "Tin thử kết nối bot"),
             new(ShiftConfirmed, P, Normal, "Phân ca đã xác nhận (ShiftAssignment/Confirm) – nhân viên được phân"),
+            new(ShiftChanged, P, Normal, "Ca đã chốt bị đổi / hủy (ShiftAssignment/Confirm – Gửi thay đổi) – nhân viên"),
             new(ApprovalPending, A, Normal, "Cấp duyệt mới (gửi duyệt / chuyển cấp) – người duyệt của cấp"),
             new(ApprovalResult, P, Normal, "Kết quả duyệt (đơn nghỉ / đổi ca / chứng từ) – người gửi"),
             new(BatchLate, D, Urgent, "Mẻ trễ > 15′ – trưởng ca"),

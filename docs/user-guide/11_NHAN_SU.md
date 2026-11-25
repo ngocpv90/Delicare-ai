@@ -74,12 +74,18 @@ Mở **hồ sơ nhân viên** cả trang (← về danh sách). Ai xem được 
 - **Tab Đối chiếu tài khoản** (màn **Nhân viên**, tab thứ 2 – NS + IT): nhân viên **chưa gắn** người, chia 3 nhóm như script chuyển dữ liệu: **Khớp chắc** (script tự gắn khi chạy thật) · **Nhiều ứng viên** (vd. 2 người trùng SĐT, các cách đoán ra người khác nhau) · **Không khớp** (chưa có tài khoản). Mỗi ứng viên ghi vì sao khớp (liên kết bot / tên đăng nhập = mã NV / trùng SĐT) → **Gắn**; hoặc **Chọn tài khoản…** (tài khoản nội bộ chưa gắn ai); nhân viên chưa có tài khoản → **Hồ sơ** › **Đề nghị cấp tài khoản**. Người đã gắn nhân viên khác không gắn lần 2. Cần quyền **Sửa** màn Nhân viên **và** **Sửa** màn Tài khoản.
 - Trong thời gian chuyển đổi (1 bản phát hành) tài khoản chưa gắn vẫn được **đoán tạm** theo cách cũ để không gián đoạn chấm công; người dùng thấy ở **Việc của tôi** thông báo *Tài khoản chưa gắn với nhân viên* → NS gắn ở tab Đối chiếu.
 
-### 4.1 Phân ca – `hr-shift-assign`
-1. Chọn tuần: **‹ Tuần trước** / **Tuần sau ›**; chọn đơn vị (hoặc **Tất cả đơn vị**). Lưới: hàng = nhân viên, cột = ngày; ô hiện mã ca + trạng thái; ô "Nghỉ phép" khi đã có đơn duyệt.
-2. **Phân từng ô:** bấm ô → hộp **Phân ca – {tên}** → bấm ca cần phân (mã, tên, giờ). Ô đã có ca: hiện *Trạng thái hiện tại* và *chấm công: đã có / chưa có*; nút **Bỏ phân ca** để bỏ. Cảnh báo vàng khi nhân viên đang nghỉ phép / có đơn nghỉ chờ duyệt / ca đang trong đơn đổi ca.
-3. **Phân ca hàng loạt** (đầu trang): **Ca làm việc***, Ghi chú, **Từ ngày*** – **Đến ngày*** (≤ 31 ngày), **Không phân vào các thứ** (tick thứ bỏ qua, vd CN), **Nhân viên*** (tick, **Chọn tất cả**) → **Phân ca**. Ô đã có ca hoặc ngày nghỉ phép giữ nguyên → kết quả *"Phân ca hàng loạt: tạo N ca, bỏ qua M"* và hộp **Các ô không được phân** (lý do từng ô).
-4. **Xác nhận lịch** → các ca Kế hoạch trong tuần chuyển **Xác nhận**.
-- Không phân ca cho ngày đã qua; ca đã chấm công không đổi / bỏ được (dùng đơn đổi ca). Đổi giờ ca đã xác nhận → ca về Kế hoạch, cần xác nhận lại.
+### 4.1 Phân ca – `hr-shift-assign` (UI-6.37 – tuần Thứ 2 – CN)
+- **Đầu màn:** ◀ **Tuần dd/mm – dd/mm** ▶ (mặc định tuần hiện tại; nút **Tuần này**, **Tuần sau**). Ngày đã qua mờ và khóa. Nhãn trạng thái tuần: *Chưa phân ca* / *Nháp · N ca chưa chốt* / *Có N thay đổi chưa gửi* / *Đã chốt & gửi*.
+- **4 thẻ:** Ca đã phân (tuần) · **Ca thiếu người** (số cặp ngày × ca × tổ dưới định biên – bấm để cuộn tới dòng tổng đỏ) · Người chưa có ca (từ hôm nay, không nghỉ phép) · Ca chưa chốt.
+- **Lọc:** tổ / đơn vị (gõ để tìm, cây cha → con), chức vụ, tìm tên / mã. Mở từ hồ sơ nhân viên (**Phân ca**) → chỉ hiện người đó (chip **Chỉ một nhân viên ✕**).
+- **Lưới:** dòng = nhân viên nhóm theo tổ; 7 cột ngày; cột **Tuần** = số ca / giờ công + cảnh báo cam khi ≥ 6 ca hoặc không có ngày nghỉ (chỉ cảnh báo). Ô: **nháp** viền đứt · **đã chốt** nền xanh · **✓** đã vào ca · **vắng** đỏ · **Phép** cam · **…** đơn nghỉ chờ duyệt · **⇄** đang có đơn đổi ca · viền cam = **đổi sau khi chốt** (chưa gửi). Rê chuột xem chi tiết.
+- **Dòng "Đã phân / cần"** dưới mỗi tổ: mỗi ngày từng ca "S 8/10" – đỏ khi thiếu, xanh khi đủ; tổ chưa cấu hình định biên chỉ hiện số đã phân.
+- **Tô ca:** chọn một nút ca (mã + giờ) hoặc **Bỏ ca**, rồi **bấm hoặc kéo** qua nhiều ô – mỗi ô một chạm, hệ thống lưu theo lô khi thả chuột / sau 1 giây; ô không đổi được (ngày đã qua, nghỉ phép đã duyệt, đã chấm công, đang đổi ca) trở lại như cũ và báo lý do. **Thôi tô** → bấm ô mở hộp chọn ca như trước.
+- **Sao chép tuần trước:** chép ca theo thứ sang tuần đang xem, **chỉ điền ô trống**; bỏ qua ngày đã qua, nghỉ phép, người đã nghỉ việc (liệt kê ô bỏ qua). Chạy lại không tạo thêm.
+- **Phân ca hàng loạt:** chọn ca, khoảng ngày (mặc định tuần đang xem từ hôm nay), thứ không phân; chọn người nhanh **Cả tổ …** / **Tất cả <chức vụ>** + ô tìm. Ô đã có ca / ngày phép giữ nguyên.
+- **Chốt & gửi lịch:** ca nháp → đã chốt, mỗi người nhận lịch qua bot. Sau khi chốt mà sửa / bỏ ô → ô viền cam, nút đổi thành **Gửi N thay đổi**: mỗi người một tin "🔁 Lịch ca của bạn thay đổi" (ca cũ → ca mới / đã hủy ca); bấm lại không gửi trùng.
+- **Thứ 6 15:00:** tuần sau còn ca nháp / thiếu người / chưa phân → bot nhắc trưởng đơn vị + người phân ca (1 tin / tuần).
+- **Điện thoại:** xem **theo ngày** (◀ ngày ▶): mỗi ca một khối "giờ · n/cần người" + danh sách người.
 
 ### 4.2 Danh mục ca – `hr-shift`
 **Tạo mới**: Mã, Tên, Giờ bắt đầu, Giờ kết thúc (khác nhau, trong 00:00–23:59; ca qua đêm kết thúc ngày hôm sau). Ca ngừng dùng không phân được.

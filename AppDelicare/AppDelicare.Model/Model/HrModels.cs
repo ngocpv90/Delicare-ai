@@ -13,6 +13,11 @@ namespace AppDelicare.Model.Model
         public List<ShiftGridEmployeeModel> Employees { get; set; } = [];
         /// <summary>Hôm nay theo ca: số được phân / số đã vào ca (Đã vào ca + Hoàn thành).</summary>
         public List<ShiftGridKpiModel> KpiToday { get; set; } = [];
+        // UI-6.37 (D-118): tuần Thứ 2 – CN
+        public DateTime? WeekStart { get; set; }
+        public List<ShiftUnitTotalModel> UnitTotals { get; set; } = [];
+        public ShiftWeekStatusModel? WeekStatus { get; set; }
+        public ShiftWeekKpiModel? Kpi { get; set; }
     }
 
     public class ShiftGridShiftModel
@@ -35,6 +40,10 @@ namespace AppDelicare.Model.Model
         public string? OrganizationUnitName { get; set; }
         /// <summary>Khóa = ngày yyyy-MM-dd (đủ mọi ngày của lưới; ô trống = chưa phân ca).</summary>
         public Dictionary<string, ShiftGridCellModel> Cells { get; set; } = [];
+        /// <summary>UI-6.37: số ca / giờ công trong tuần + cảnh báo (quá nhiều ca, không có ngày nghỉ).</summary>
+        public int WeekShiftCount { get; set; }
+        public decimal WeekHours { get; set; }
+        public List<string> Warnings { get; set; } = [];
     }
 
     public class ShiftGridCellModel
@@ -56,6 +65,9 @@ namespace AppDelicare.Model.Model
         public bool HasAttendance { get; set; }
         /// <summary>Ca đang nằm trong đơn đổi ca Chờ duyệt.</summary>
         public bool PendingSwap { get; set; }
+        /// <summary>UI-6.37: ca đã chốt bị đổi / bỏ, chưa gửi thông báo (Confirm gửi SHIFT_CHANGED).</summary>
+        public bool ChangedAfterConfirm { get; set; }
+        public string? ChangedFrom { get; set; }
     }
 
     public class ShiftGridKpiModel
@@ -122,6 +134,8 @@ namespace AppDelicare.Model.Model
         public int AlreadyConfirmed { get; set; }
         /// <summary>Spec: gửi Telegram cho nhân viên – để sau (tích hợp bot, D-44); luôn false.</summary>
         public bool NotificationSent { get; set; }
+        /// <summary>UI-6.37: số người được báo đổi / hủy ca sau chốt (SHIFT_CHANGED).</summary>
+        public int ChangedNotified { get; set; }
     }
 
     /// <summary>BE2.6: kết quả đánh Vắng (thao tác tay).</summary>
@@ -262,5 +276,75 @@ namespace AppDelicare.Model.Model
         public ApprovalProgressModel? PendingApproval { get; set; }
         public List<string> ListWarning { get; set; } = [];
         public List<string> AllowedActions { get; set; } = [];
+    }
+}
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.37 (D-118): một ô của "Tô ca" (ShiftAssignment/AssignMany) – ShiftId trống = bỏ ca.</summary>
+    public class ShiftCellRequest
+    {
+        public Guid EmployeeId { get; set; }
+        public DateTime WorkDate { get; set; }
+        public Guid? ShiftId { get; set; }
+    }
+
+    public class ShiftAssignManyRequest
+    {
+        public List<ShiftCellRequest> ListCell { get; set; } = [];
+    }
+
+    public class ShiftCellResultModel
+    {
+        public Guid EmployeeId { get; set; }
+        public DateTime WorkDate { get; set; }
+        public Guid? ShiftId { get; set; }
+        public bool Ok { get; set; }
+        public string? Message { get; set; }
+    }
+
+    public class ShiftAssignManyResultModel
+    {
+        public int Done { get; set; }
+        public int Failed { get; set; }
+        public List<ShiftCellResultModel> ListResult { get; set; } = [];
+    }
+
+    /// <summary>UI-6.37: chép ca tuần → tuần (chỉ ô trống).</summary>
+    public class ShiftCopyWeekRequest
+    {
+        public DateTime FromWeekStart { get; set; }
+        public DateTime ToWeekStart { get; set; }
+        public Guid? OrganizationUnitId { get; set; }
+        public List<Guid> EmployeeIds { get; set; } = [];
+    }
+
+    /// <summary>UI-6.37: tổng tổ × ngày × ca – đã phân / cần (định biên cấu hình Hr:ShiftMinStaff).</summary>
+    public class ShiftUnitTotalModel
+    {
+        public Guid? UnitId { get; set; }
+        public string? UnitName { get; set; }
+        public string Day { get; set; } = string.Empty;
+        public Guid ShiftId { get; set; }
+        public string? ShiftCode { get; set; }
+        public int Assigned { get; set; }
+        public int? Required { get; set; }
+        public bool Short => Required is { } r && Assigned < r;
+    }
+
+    public class ShiftWeekStatusModel
+    {
+        public int DraftCount { get; set; }
+        public int ChangedAfterConfirmCount { get; set; }
+        public int AssignedCount { get; set; }
+        public bool Confirmed { get; set; }
+    }
+
+    public class ShiftWeekKpiModel
+    {
+        public int Assigned { get; set; }
+        public int ShortSlots { get; set; }
+        public int PeopleWithoutShift { get; set; }
+        public int Draft { get; set; }
     }
 }
