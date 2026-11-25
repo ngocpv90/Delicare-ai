@@ -89,6 +89,8 @@ namespace AppDelicare.Model.Option
         public bool PackingAutoGenerateOnPass { get; set; } = true;
         /// <summary>UI-6.24 (D-105): lệnh SX chuyển Hoàn thành (mẻ cuối đóng gói / loại) → hệ thống tự Đóng (chênh lệch tiêu hao, giá thành thực tế, giải phóng giữ chỗ dư). Tắt → đóng tay.</summary>
         public bool ProductionAutoCloseOrder { get; set; } = true;
+        /// <summary>UI-6.49 (3) (QĐ-26): job đóng lệnh 22:00 tự ghi Nấu dư = suất đạt − đã chia − hỏng / loại − nấu dư đã ghi (mẻ có kết quả đóng gói). false = ghi tay như cũ (đường lùi – bỏ cờ sau UAT).</summary>
+        public bool ProductionAutoRecordOverProduction { get; set; } = true;
         /// <summary>UI-6.25 (D-106): mẻ quá giờ bắt đầu kế hoạch N phút mà chưa nấu → trễ (tô đỏ, khối Cần làm ngay).</summary>
         public int BatchLateStartMinutes { get; set; } = 10;
         /// <summary>UI-6.25 (D-106): mẻ Chờ QC quá N phút → cần QA xem.</summary>

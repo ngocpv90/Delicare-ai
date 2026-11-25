@@ -77,12 +77,77 @@ namespace AppDelicare.Services.Jobs
                     IdempotencyKey = $"{NotificationCatalog.ProductionVariance}:{day:yyyyMMdd}",
                 });
             }
+            // UI-6.49 (3) (QĐ-26, D-127 c): tự ghi Nấu dư cho mẻ của lệnh đã đóng thuộc kế hoạch hôm nay (sau chia suất – nguồn RecordResultMany đáng tin).
+            var actor = (services.GetService(typeof(AppDelicare.Data.Share.ICurrentActor)) as AppDelicare.Data.Share.ICurrentActor)?.Actor?.UserId;
+            int overRecorded = r.ProductionAutoRecordOverProduction ? await RecordOverProductionAsync(db, day, now, actor, cancellationToken) : 0;
             // UI-6.27 (D-108): lệnh vừa đóng có giá thành thực tế → tính lại giá vốn suất các đơn đã đối soát 7 ngày gần nhất còn tạm tính theo giá chuẩn.
             int recalculated = await margin.RecalcProvisionalAsync(day.AddDays(-7), day, cancellationToken);
-            string message = $"Đã đóng {closed} lệnh sản xuất" + (recalculated != 0 ? $"; tính lại giá vốn {recalculated} đơn đã đối soát" : string.Empty)
+            string message = $"Đã đóng {closed} lệnh sản xuất" + (overRecorded != 0 ? $"; tự ghi nấu dư {overRecorded} mẻ" : string.Empty) + (recalculated != 0 ? $"; tính lại giá vốn {recalculated} đơn đã đối soát" : string.Empty)
                 + (failed.Count != 0 ? $"; {failed.Count} lệnh chưa đóng được: {string.Join(", ", failed.Take(10))}" : string.Empty)
                 + (over.Count != 0 ? $"; {over.Count} dòng chênh lệch vượt ngưỡng (đã báo Bếp trưởng + COO)" : string.Empty);
-            return new JobOutcome(failed.Count == 0 ? JobRunStatus.Succeeded : JobRunStatus.Failed, closed, day, message);
+            return new JobOutcome(failed.Count == 0 ? JobRunStatus.Succeeded : JobRunStatus.Failed, closed + overRecorded, day, message);
+        }
+
+        public const string OverProductionReason = "Tự ghi nấu dư khi đóng lệnh";
+
+        /// <summary>
+        /// UI-6.49 (3): mẻ Đạt / Đã đóng gói của lệnh Đã đóng thuộc kế hoạch ngày <paramref name="day"/>, CÓ lệnh đóng gói (đã chia suất):
+        /// Nấu dư = Σ suất đạt (ProductionOutput) − Σ suất đóng gói − hỏng − loại (PackingResult; hỏng / loại đã ghi PACKING_DAMAGE riêng) − Nấu dư đã ghi (tay hoặc lần trước).
+        /// &gt; 0 → thêm 1 dòng MealWasteRecord OVERPRODUCTION. Chạy lại = 0 (phần đã ghi bị trừ).
+        /// </summary>
+        public static async Task<int> RecordOverProductionAsync(AppDelicare.Data.Connection.DatabaseContext db, DateTime day, DateTime now, Guid? actor, CancellationToken ct)
+        {
+            DateTime next = day.AddDays(1);
+            var batches = await (from b in db.ProductionBatch.AsNoTracking()
+                                 join o in db.ProductionOrder.AsNoTracking() on b.ProductionOrderId equals o.Id
+                                 join p in db.ProductionPlan.AsNoTracking() on o.ProductionPlanId equals p.Id
+                                 where !b.IsDeleted && !o.IsDeleted && o.Status == ProductionOrderStatus.Closed && p.ProductionDate >= day && p.ProductionDate < next
+                                       && (b.Status == ProductionBatchStatus.Passed || b.Status == ProductionBatchStatus.Packed)
+                                 select new { b.Id, b.DishId, OrderId = o.Id, o.ShiftId }).ToListAsync(ct);
+            if (batches.Count == 0)
+            {
+                return 0;
+            }
+            var ids = batches.Select(b => b.Id).ToList();
+            var accepted = (await db.ProductionOutput.AsNoTracking().Where(x => !x.IsDeleted && ids.Contains(x.ProductionBatchId))
+                .GroupBy(x => x.ProductionBatchId).Select(g => new { g.Key, Q = g.Sum(x => x.AcceptedQuantity) }).ToListAsync(ct)).ToDictionary(x => x.Key, x => x.Q);
+            var packing = await (from po in db.PackingOrder.AsNoTracking()
+                                 join pr in db.PackingResult.AsNoTracking() on po.Id equals pr.PackingOrderId into prs
+                                 from pr in prs.DefaultIfEmpty()
+                                 where !po.IsDeleted && ids.Contains(po.ProductionBatchId) && (pr == null || !pr.IsDeleted)
+                                 select new { po.ProductionBatchId, Used = pr == null ? 0m : pr.PackedQuantity + (pr.DamagedQty ?? 0m) + pr.RejectedQuantity, HasResult = pr != null }).ToListAsync(ct);
+            var over = (await db.MealWasteRecord.AsNoTracking().Where(w => !w.IsDeleted && w.ProductionBatchId != null && ids.Contains(w.ProductionBatchId.Value) && w.WasteType == ProductionCode.WasteOverProduction)
+                .GroupBy(w => w.ProductionBatchId!.Value).Select(g => new { g.Key, Q = g.Sum(w => w.QuantityMeals ?? 0m) }).ToListAsync(ct)).ToDictionary(x => x.Key, x => x.Q);
+            int added = 0;
+            foreach (var b in batches)
+            {
+                var mine = packing.Where(x => x.ProductionBatchId == b.Id).ToList();
+                if (mine.Count == 0 || !mine.Any(x => x.HasResult) || !accepted.TryGetValue(b.Id, out decimal ok))
+                {
+                    continue; // chưa chia suất / chưa ghi kết quả đóng gói → không đoán
+                }
+                decimal used = mine.Sum(x => x.Used), already = over.GetValueOrDefault(b.Id);
+                decimal remain = ok - used - already;
+                if (remain <= 0)
+                {
+                    continue;
+                }
+                db.MealWasteRecord.Add(new AppDelicare.Model.Entity.MealWasteRecord
+                {
+                    Id = Guid.NewGuid(), ProductionBatchId = b.Id, ProductionOrderId = b.OrderId, DishId = b.DishId, ShiftId = b.ShiftId,
+                    WasteType = ProductionCode.WasteOverProduction, QuantityMeals = remain,
+                    Reason = $"{OverProductionReason}: đạt {ProductionRules.Num(ok)} − đã chia / hỏng {ProductionRules.Num(used)}" + (already > 0 ? $" − đã ghi {ProductionRules.Num(already)}" : string.Empty),
+                    OccurredAt = now, RecordedBy = actor, CreatedDate = now, CreatedBy = actor,
+                });
+                var batch = await db.ProductionBatch.FirstAsync(x => x.Id == b.Id, ct);
+                batch.WasteQty = (batch.WasteQty ?? 0m) + remain;
+                added++;
+            }
+            if (added != 0)
+            {
+                await db.SaveChangesAsync(ConstantHelper.TypeSave.Insert);
+            }
+            return added;
         }
     }
 
