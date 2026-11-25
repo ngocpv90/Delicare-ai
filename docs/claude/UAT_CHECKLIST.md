@@ -578,3 +578,14 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Thẻ Nghỉ việc còn mở → Khóa ngay; thẻ 60 ngày lọc đúng.
 - [ ] Tab Chờ IT xử lý: Duyệt & tạo (mật khẩu tạm hiện 1 lần nếu chưa liên kết bot), Đổi nhóm & duyệt, Từ chối – kết quả như Phê duyệt › Tài khoản.
 - [ ] Tạo tài khoản cho nhân viên: tên = mã NV, nhóm gợi ý theo chức vụ; tài khoản hệ thống chỉ quản trị; người không phải quản trị tạo trực tiếp bị chặn.
+
+## UI-6.43 – Nhóm quyền (D-124)
+- [ ] Danh sách theo khối: tên tiếng Việt + mã, mô tả, số tài khoản / màn hình / loại duyệt; 4 chỉ số bấm được; tìm theo tên hoặc mã.
+- [ ] Tạo nhóm: thiếu tên / mã trùng / khối sai → báo lỗi tiếng Việt; mã tự viết hoa.
+- [ ] Sửa nhóm đang là người duyệt (vd. COO): đổi tên được, ô mã khóa.
+- [ ] Phân quyền: đổi vài màn → thanh "N thay đổi chưa lưu" → Xem lại & lưu → người trong nhóm đăng nhập lại thấy đúng menu; Lịch sử có dòng Trước → Sau.
+- [ ] Mục Phê duyệt: chọn Được duyệt → người trong nhóm duyệt được loại đó; Không → mất quyền duyệt.
+- [ ] Xem trước menu tính cả thay đổi chưa lưu; So sánh 2 nhóm ra đúng các màn khác nhau.
+- [ ] Tab Tài khoản: thêm nhiều tài khoản; bỏ tài khoản có 1 nhóm → không cho.
+- [ ] Ngừng dùng nhóm còn tài khoản / đang duyệt → bị chặn có lý do.
+- [ ] Link cũ #/adm-permission mở Nhóm quyền; menu không còn mục Phân quyền; luồng duyệt (đề nghị mua, nghỉ phép…) vẫn tới đúng người sau khi nhóm đổi tên tiếng Việt.

@@ -111,5 +111,77 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        // UI-6.43 (D-124): danh sách nhóm theo khối, thêm / bỏ tài khoản, ngừng dùng nhóm.
+        [HttpGet("GetList")]
+        public async Task<IActionResult> GetList(string? keyword, bool emptyOnly)
+        {
+            try
+            {
+                return Ok(await _service.GetList(keyword, emptyOnly));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetList: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpGet("GetDetail")]
+        public async Task<IActionResult> GetDetail(Guid id)
+        {
+            try
+            {
+                return Ok(await _service.GetDetail(id));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDetail: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpPost("AddUsers")]
+        public async Task<IActionResult> AddUsers([FromBody] AppDelicare.Model.Model.UserGroupUsersRequest request)
+        {
+            try
+            {
+                return Ok(await _service.AddUsers(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " AddUsers: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpPost("RemoveUsers")]
+        public async Task<IActionResult> RemoveUsers([FromBody] AppDelicare.Model.Model.UserGroupUsersRequest request)
+        {
+            try
+            {
+                return Ok(await _service.RemoveUsers(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RemoveUsers: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [Security.Permission("adm-usergroup", AppDelicare.Services.Interface.PermissionAction.Delete)]
+        [HttpPost("Retire")]
+        public async Task<IActionResult> Retire([FromBody] AppDelicare.Model.Model.UserGroupStatusRequest request)
+        {
+            try
+            {
+                return Ok(await _service.Retire(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Retire: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

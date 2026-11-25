@@ -64,6 +64,7 @@ const SCRIPTS = [
   'modules/admin-org.js', // UI-6.41 (D-122): Công ty & đơn vị – cây trái / chi tiết phải – sau admin.js
   'modules/catalog-home.js', // UI-6.40 (D-121): trang tổng Danh mục hệ thống
   'modules/admin-account.js', // UI-6.42 (D-123): Tài khoản – danh sách, Chờ IT xử lý, tạo tài khoản 3 lựa chọn – sau admin.js
+  'modules/admin-group.js', // UI-6.43 (D-124): Nhóm quyền – danh sách theo khối, trang nhóm (phân quyền theo mức, tài khoản, xem trước, so sánh, lịch sử) – sau admin.js
   'modules/kho.js', // UI-6.29 (D-110): Kho 12 → 5 mục, Nhận hàng & kiểm tra, Sổ kiểm tra hàng nhập – sau scm.js, qc.js, approval.js, ghep.js
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';

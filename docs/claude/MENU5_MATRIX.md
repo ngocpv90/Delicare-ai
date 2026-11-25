@@ -82,7 +82,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
 | Quản trị hệ thống › Tài khoản | `adm-user` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
-| Quản trị hệ thống › Phân quyền | `adm-permission` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Nhập dữ liệu gốc (Excel) | `sys-import` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Tài liệu đính kèm | `adm-document` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |

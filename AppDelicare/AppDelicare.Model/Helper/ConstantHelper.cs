@@ -228,6 +228,17 @@
             // T45R – thông báo nghiệp vụ bổ sung (khung cũ, D-30).
             public static readonly string CannotLockYourself = "Không thể tự khóa tài khoản của chính mình";
             public static readonly string GroupNotFound = "Không tìm thấy nhóm người dùng";
+            // UI-6.43 (D-124) – nhóm quyền có mã / khối.
+            public static readonly string GroupNameRequired = "Nhập tên nhóm";
+            public static readonly string GroupCodeRequired = "Nhập mã nhóm (chữ hoa không dấu, vd. OPS-WH)";
+            public static readonly string GroupCodeExist = "Mã nhóm {0} đã có, chọn mã khác";
+            public static readonly string GroupCodeLocked = "Mã nhóm {0} đang dùng ở luồng duyệt / cấu hình – không đổi được mã";
+            public static readonly string GroupBlockInvalid = "Khối không hợp lệ – chọn một trong: {0}";
+            public static readonly string GroupUsersAdded = "Đã thêm {0} tài khoản vào nhóm";
+            public static readonly string GroupUsersRemoved = "Đã bỏ {0} tài khoản khỏi nhóm, bỏ qua {1}";
+            public static readonly string GroupRetireBlocked = "Không ngừng dùng được: nhóm còn {0} tài khoản, {1}";
+            public static readonly string GroupRetired = "Đã ngừng dùng nhóm";
+            public static readonly string RoleSavedMany = "Đã lưu {0} thay đổi quyền";
             public static readonly string MenuNotFound = "Menu không tồn tại: {0}";
             public static readonly string MenuCycle = "Sắp xếp tạo vòng lặp cha – con";
             // T45R.8 (D-37..D-39) – quản trị người dùng, mật khẩu tạm, menu 2 cấp.

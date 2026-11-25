@@ -11,5 +11,13 @@ namespace AppDelicare.Model.Entity
     {
         public string? Name { get; set; }
         public bool IsDefault { get; set; }
+        /// <summary>UI-6.43 (D-124, GAP-PERM-03): mã nhóm (G2, không trùng giữa nhóm đang dùng) – luồng duyệt / bot / nhóm gợi ý tìm theo mã; Name là tên tiếng Việt.</summary>
+        [MaxLength(50)]
+        public string? Code { get; set; }
+        [MaxLength(500)]
+        public string? Description { get; set; }
+        /// <summary>Mã khối (ReferenceLists.UserGroupBlock): BOARD · OPS · SAL · FIN · QA.</summary>
+        [MaxLength(30)]
+        public string? GroupBlock { get; set; }
     }
 }

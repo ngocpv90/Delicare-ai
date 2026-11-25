@@ -297,6 +297,8 @@ public static partial class Seeds
         ("log-gps", "log-execution"), ("log-pod", "log-execution"), ("log-container-return", "log-packaging-ledger"),
         // UI-6.39 (D-120): Đơn đổi ca → Nghỉ & đổi ca (quyền xem / thêm / sửa; quyền Duyệt mục duyệt giữ riêng theo loại).
         ("hr-swap", "hr-leave"),
+        // UI-6.43 (D-124): Phân quyền → Nhóm quyền (sửa quyền = Sửa nhóm quyền).
+        ("adm-permission", "adm-usergroup"),
     ];
 
     /// <summary>D-79 (d): mục duyệt → nhóm duyệt (AllowAccess + AllowEdit). <c>crm-price-policy</c> giữ CEO cho khi có loại duyệt (mục đang ẩn).</summary>

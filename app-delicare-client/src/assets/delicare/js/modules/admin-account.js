@@ -10,6 +10,8 @@
   const st = { tab: 'list', type: '', status: '', group: '', unit: '', q: '', flag: '', sel: new Set() };
   const base = APP.SCREENS['adm-user'];
   const A = () => APP.adminAcc || {};
+  // UI-6.43 (D-124): yêu cầu tài khoản lưu MÃ nhóm – hiện tên tiếng Việt.
+  const gName = c => { const g = Store.rows('UserGroup').find(x => !x.IsDeleted && (x.Code === c || x.Name === c)); return g ? g.Name : c; };
   const ST = { ACTIVE: ['Hoạt động', 'green'], MUST_CHANGE: ['Phải đổi mật khẩu', 'orange'], LOCKED: ['Đã khóa', ''], RESIGNED_OPEN: ['Nghỉ việc – còn mở', 'red'] };
 
   APP.register('adm-user', (el, f, p) => {
@@ -113,7 +115,7 @@
       const rows = x.list || [];
       body.innerHTML = rows.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">${rows.map(r => `<div class="card panel" style="margin:0"><div class="spread"><b>${esc(r.employeeName || '')}</b>${UI.tag(r.typeName || '', r.businessType === 'USER_ACCOUNT_CREATE' ? 'blue' : r.businessType === 'USER_ACCOUNT_REOPEN' ? 'green' : 'orange')}</div>
         <div class="small muted">${esc([r.employeeCode, r.positionName, r.unitName].filter(Boolean).join(' · '))}</div><div class="small mt">Người gửi ${esc(r.requestedByName || '')} · ${U.dt(r.requestedAt)} · ${esc(r.requestNo || '')}</div>
-        <div class="small mt">${r.businessType === 'USER_ACCOUNT_GROUP' ? `Nhóm mới: ${(r.listGroup || []).map(g => UI.tag(g, 'blue')).join(' ')}<br>Nhóm cũ: ${(r.listPreviousGroup || []).map(g => UI.tag(g, '')).join(' ') || '–'}` : `Nhóm gợi ý: ${(r.listGroup || []).map(g => UI.tag(g, 'blue')).join(' ') || '<span class="muted">chưa cấu hình</span>'}`}</div>
+        <div class="small mt">${r.businessType === 'USER_ACCOUNT_GROUP' ? `Nhóm mới: ${(r.listGroup || []).map(g => UI.tag(gName(g), 'blue')).join(' ')}<br>Nhóm cũ: ${(r.listPreviousGroup || []).map(g => UI.tag(gName(g), '')).join(' ') || '–'}` : `Nhóm gợi ý: ${(r.listGroup || []).map(g => UI.tag(gName(g), 'blue')).join(' ') || '<span class="muted">chưa cấu hình</span>'}`}</div>
         ${r.businessType === 'USER_ACCOUNT_CREATE' && !r.botLinked ? '<div class="small warn mt">Chưa liên kết bot – IT xem mật khẩu tạm 1 lần sau khi duyệt.</div>' : ''}
         ${r.canApprove ? `<div class="row-flex mt" style="gap:6px"><button class="btn sm" data-chg="${r.approvalId}">Đổi nhóm & duyệt</button><button class="btn sm danger" data-rj="${r.approvalId}">Từ chối</button><button class="btn sm primary" data-ok="${r.approvalId}">${r.businessType === 'USER_ACCOUNT_CREATE' ? 'Duyệt & tạo' : 'Duyệt'}</button></div>` : '<div class="small muted mt">Bạn chỉ xem – không có quyền duyệt tài khoản.</div>'}</div>`).join('')}</div>` : '<div class="card panel empty">Không có yêu cầu tài khoản nào đang chờ.</div>';
       const decide = (id, approve, note, proposal) => Store.act('ApprovalRequest/Decide', { form: Object.assign({ Id: id, Approve: approve, Note: note || '' }, proposal ? { Proposal: proposal } : {}), tables: ['User', 'ApprovalRequest'] }).then(r => {
@@ -122,7 +124,7 @@
       body.querySelectorAll('[data-ok]').forEach(b => b.onclick = () => decide(b.dataset.ok, true));
       body.querySelectorAll('[data-rj]').forEach(b => b.onclick = () => UI.confirm('Từ chối yêu cầu tài khoản?', note => decide(b.dataset.rj, false, note), { ok: 'Từ chối', danger: true, input: 'Lý do', required: true }));
       body.querySelectorAll('[data-chg]').forEach(b => b.onclick = () => { const r = rows.find(z => z.approvalId === b.dataset.chg), sel = new Set(r.listGroup || []), groups = Store.rows('UserGroup').filter(g => !g.IsDeleted);
-        UI.modal({ title: 'Đổi nhóm & duyệt – ' + esc(r.employeeName || ''), size: 'md', body: `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">${groups.map(g => `<label class="small"><input type="checkbox" data-g="${esc(g.Name || '')}" ${sel.has(g.Name) ? 'checked' : ''}> ${esc(g.Name || '')}</label>`).join('')}</div>`,
+        UI.modal({ title: 'Đổi nhóm & duyệt – ' + esc(r.employeeName || ''), size: 'md', body: `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">${groups.map(g => `<label class="small"><input type="checkbox" data-g="${esc(g.Code || g.Name || '')}" ${sel.has(g.Code || g.Name) || sel.has(g.Name) ? 'checked' : ''}> ${esc(g.Name || '')}</label>`).join('')}</div>`,
           foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="cgGo">Duyệt với nhóm đã chọn</button>',
           onMount: (m, close) => m.querySelector('#cgGo').onclick = () => { const g = [...m.querySelectorAll('[data-g]:checked')].map(x => x.dataset.g); if (!g.length) return UI.toast('Chọn ít nhất 1 nhóm', 'err'); close(); decide(r.approvalId, true, '', JSON.stringify({ Groups: g })); } }); });
     });
@@ -134,7 +136,7 @@
       onMount: (m, close) => {
         const body = m.querySelector('#cdB'), go = m.querySelector('#cdGo'); let submit = null;
         const groups = Store.rows('UserGroup').filter(g => !g.IsDeleted).sort((a, b) => String(a.Name).localeCompare(String(b.Name)));
-        const chips = sel => `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;max-height:220px;overflow:auto">${groups.map(g => `<label class="small"><input type="checkbox" data-g="${esc(g.Name || '')}" ${sel.includes(g.Name) ? 'checked' : ''}> ${esc(g.Name || '')}</label>`).join('')}</div>`;
+        const chips = sel => `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;max-height:220px;overflow:auto">${groups.map(g => `<label class="small"><input type="checkbox" data-g="${esc(g.Code || g.Name || '')}" ${sel.includes(g.Code || g.Name) ? 'checked' : ''}> ${esc(g.Name || '')}</label>`).join('')}</div>`;
         const picked = () => [...body.querySelectorAll('[data-g]:checked')].map(x => x.dataset.g);
         const draw = () => {
           m.querySelectorAll('[data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === kind)); go.disabled = false;

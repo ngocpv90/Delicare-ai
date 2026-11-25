@@ -658,7 +658,7 @@ namespace AppDelicare.Services.Implement
                 {
                     s.Flags.Add(new() { Text = "Chưa có nhóm quyền – chọn nhóm trước khi duyệt" });
                 }
-                var options = await ctx.Db.UserGroup.AsNoTracking().Where(g => !g.IsDeleted && g.Name != null).OrderBy(g => g.Name).Select(g => g.Name!).ToListAsync();
+                var options = await ctx.Db.UserGroup.AsNoTracking().Where(g => !g.IsDeleted && (g.Code != null || g.Name != null)).OrderBy(g => g.Code ?? g.Name).Select(g => (g.Code ?? g.Name)!).ToListAsync(); // UI-6.43: theo mã
                 s.Edit = new ApprovalEditModel
                 {
                     Kind = "groups", Label = "Nhóm quyền sẽ cấp (IT đổi được trước khi Duyệt)", Selected = proposal.Groups, Options = options,
@@ -865,17 +865,19 @@ namespace AppDelicare.Services.Implement
         private async Task<(List<Guid> Ids, string? Error)> GroupIdsAsync(IReadOnlyCollection<string> names)
         {
             var wanted = names.Select(n => n.Trim()).Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            var found = await Db.UserGroup.AsNoTracking().Where(g => !g.IsDeleted && g.Name != null && wanted.Contains(g.Name)).Select(g => new { g.Id, g.Name }).ToListAsync();
-            var missing = wanted.Where(w => !found.Any(f => string.Equals(f.Name, w, StringComparison.OrdinalIgnoreCase))).ToList();
+            // UI-6.43 (D-124): khớp theo mã nhóm (nhóm chưa có mã → theo tên).
+            var found = (await Db.UserGroup.AsNoTracking().Where(g => !g.IsDeleted).Select(g => new { g.Id, g.Code, g.Name }).ToListAsync())
+                .Where(g => wanted.Any(w => string.Equals(w, g.Code, StringComparison.OrdinalIgnoreCase) || (g.Code == null && string.Equals(w, g.Name, StringComparison.OrdinalIgnoreCase)))).ToList();
+            var missing = wanted.Where(w => !found.Any(f => string.Equals(f.Code, w, StringComparison.OrdinalIgnoreCase) || (f.Code == null && string.Equals(f.Name, w, StringComparison.OrdinalIgnoreCase)))).ToList();
             return missing.Count > 0 ? ([], string.Format(ConstantHelper.Message.AccountGroupUnknown, string.Join(", ", missing))) : (found.Select(f => f.Id).ToList(), null);
         }
 
         private async Task<List<string>> GroupsOfAsync(Guid userId)
             => await (from c in Db.UserClaim.AsNoTracking()
                       join g in Db.UserGroup.AsNoTracking() on c.UserGroupId equals g.Id
-                      where c.UserId == userId && !c.IsDeleted && !g.IsDeleted && g.Name != null
-                      orderby g.Name
-                      select g.Name!).ToListAsync();
+                      where c.UserId == userId && !c.IsDeleted && !g.IsDeleted && (g.Code != null || g.Name != null)
+                      orderby g.Code ?? g.Name
+                      select (g.Code ?? g.Name)!).ToListAsync(); // UI-6.43: mã nhóm
 
         private async Task<List<string>> SuggestedGroupsAsync(Guid? positionId)
         {

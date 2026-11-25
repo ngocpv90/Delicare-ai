@@ -75,6 +75,8 @@ namespace AppDelicare.WebApi.Security
             ["ContainerReturn"] = ("log-packaging-ledger", false),
             // UI-6.39 (D-120): Đơn đổi ca trong Nghỉ & đổi ca.
             ["ShiftSwapRequest"] = ("hr-leave", false),
+            // UI-6.43 (D-124): mục menu Phân quyền ẩn – phân quyền là tab của trang Nhóm quyền (ghi quyền = Sửa nhóm quyền).
+            ["UserRole"] = ("adm-usergroup", true),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -95,6 +97,7 @@ namespace AppDelicare.WebApi.Security
             ["log-gps"] = "log-execution", ["log-pod"] = "log-execution", ["log-container-return"] = "log-packaging-ledger",
             ["hr-swap"] = "hr-leave",
             ["adm-company"] = "adm-orgunit",
+            ["adm-permission"] = "adm-usergroup",
         };
     }
 }
