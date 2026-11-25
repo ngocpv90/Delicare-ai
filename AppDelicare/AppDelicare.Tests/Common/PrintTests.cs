@@ -328,7 +328,7 @@ namespace AppDelicare.Tests.Common
             (await LegacyResult.ReadAsync(await admin.PostAsJsonAsync("api/Common/PrintBatch", new { items = new[] { new { type = "POD", id = Guid.NewGuid() } } }))).Fail("Không tìm thấy");
 
             // Quyền In theo từng loại phiếu: có In phiếu giao nhưng không In POD → 403.
-            Guid dispatcher = await CommonTestUsers.UserAsync(_factory, ("log-delivery-order", "VP"), ("log-pod", "V"));
+            Guid dispatcher = await CommonTestUsers.UserAsync(_factory, ("log-route", "VP") /* UI-6.34 */, ("log-pod", "V"));
             var client = _factory.CreateAuthorizedClient(dispatcher);
             (await client.PostAsJsonAsync("api/Common/PrintBatch", new { deliveryRouteId = route })).StatusCode.Should().Be(HttpStatusCode.OK);
             var denied = await client.PostAsJsonAsync("api/Common/PrintBatch", new { items = new[] { new { type = "POD", id = pod } }, deliveryRouteId = route });

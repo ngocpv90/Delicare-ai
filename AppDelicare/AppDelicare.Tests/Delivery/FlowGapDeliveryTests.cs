@@ -17,6 +17,7 @@ namespace AppDelicare.Tests.Delivery
 
         public FlowGapDeliveryTests(InMemoryApiFactory factory)
         {
+            factory.Settings["BusinessRules:PackingManualCreate"] = "true"; // UI-6.34: thử đường lập tay cũ (mặc định tắt)
             _factory = factory;
         }
 
@@ -132,6 +133,45 @@ namespace AppDelicare.Tests.Delivery
             (await c.PostFormAsync("/api/PackingResult/Insert", ("PackingOrderId", poA))).Fail("PackingOrder/RecordResult");
         }
 
+        /// <summary>UI-6.34 (D-115): ô chờ khi món chưa đủ mẻ đạt; đủ → ghi hàng loạt mọi lệnh theo mẻ, ghi lại không nhân đôi; mẻ nấu thêm → món quay lại chờ.</summary>
+        [Fact]
+        public async Task Packing_board_cells_wait_for_all_batches_and_record_many_is_idempotent()
+        {
+            var day = new DateTime(2026, 12, 28);
+            _factory.Clock.FixedNow = day.AddHours(9);
+            var k = await SeedKitchenAsync("U34", day, batchStatus: "QCPending");
+            using var c = _factory.CreateAuthorizedClient();
+            object Cell(Guid order, decimal? damaged = null) => new { orderId = order, dishId = k.Dish, damaged, reason = damaged > 0 ? "Đổ khi chia" : null };
+            string Status(System.Text.Json.JsonElement b, Guid order) => b.GetProperty("listRow").EnumerateArray().Single(r => r.GetProperty("orderId").GetGuid() == order).GetProperty("listCell")[0].GetProperty("status").GetString()!;
+
+            var board = (await c.GetResultAsync($"/api/PackingOrder/GetBoard?date={day:yyyy-MM-dd}&shiftId={k.Shift}")).Ok();
+            (Status(board, k.OrderA), board.GetProperty("listDish")[0].GetProperty("ready").GetBoolean()).Should().Be(("WAITING", false));
+            (await PostJson(c, "/api/PackingOrder/RecordResultMany", new { date = day, shiftId = k.Shift, listCell = new[] { Cell(k.OrderA) } })).Fail("chưa đủ mẻ");
+
+            await _factory.SeedAsync(async db => { (await db.ProductionBatch.SingleAsync(b => b.Id == k.Batch)).Status = "Passed"; });
+            (await c.PostFormAsync("/api/PackingOrder/GenerateFromBatch", ("ProductionBatchId", k.Batch))).Ok();
+            board = (await c.GetResultAsync($"/api/PackingOrder/GetBoard?date={day:yyyy-MM-dd}&shiftId={k.Shift}")).Ok();
+            (Status(board, k.OrderA), Status(board, k.OrderB)).Should().Be(("READY", "READY"));
+
+            var many = (await PostJson(c, "/api/PackingOrder/RecordResultMany", new { date = day, shiftId = k.Shift, listCell = new[] { Cell(k.OrderA, 2m) } })).Ok();
+            (many.GetProperty("cells").GetInt32(), many.GetProperty("orders").GetInt32()).Should().Be((1, 1));
+            (await PostJson(c, "/api/PackingOrder/RecordResultMany", new { date = day, shiftId = k.Shift, listCell = new[] { Cell(k.OrderA) } })).Ok().GetProperty("cells").GetInt32().Should().Be(0, "ô đã chia – không nhân đôi");
+            (await _factory.QueryAsync(db => (from r in db.PackingResult join p in db.PackingOrder on r.PackingOrderId equals p.Id where p.OrderId == k.OrderA select r).CountAsync())).Should().Be(1);
+            board = (await c.GetResultAsync($"/api/PackingOrder/GetBoard?date={day:yyyy-MM-dd}&shiftId={k.Shift}")).Ok();
+            Status(board, k.OrderA).Should().Be("DAMAGED");
+            board.GetProperty("listRow").EnumerateArray().Single(r => r.GetProperty("orderId").GetGuid() == k.OrderA).GetProperty("complete").GetBoolean().Should().BeTrue();
+            board.GetProperty("damagedTotal").GetDecimal().Should().Be(2m);
+
+            // Mẻ nấu thêm cùng món × ca chưa đạt → món quay lại chờ (ô chưa chia của đơn B chờ; ô đã chia giữ).
+            await _factory.SeedAsync(async db =>
+            {
+                var b0 = await db.ProductionBatch.AsNoTracking().SingleAsync(b => b.Id == k.Batch);
+                db.ProductionBatch.Add(new ProductionBatch { Id = Guid.NewGuid(), ProductionOrderId = b0.ProductionOrderId, DishId = k.Dish, BatchNumber = "ME-U34-02", BatchNo = "ME-U34-02", StartDate = day.AddHours(10), PlannedQuantity = 10, Status = "Planned" });
+            });
+            board = (await c.GetResultAsync($"/api/PackingOrder/GetBoard?date={day:yyyy-MM-dd}&shiftId={k.Shift}")).Ok();
+            (Status(board, k.OrderA), Status(board, k.OrderB)).Should().Be(("DAMAGED", "WAITING"));
+        }
+
         [Fact]
         public async Task Packing_is_blocked_for_a_batch_not_passed_or_below_core_temperature()
         {
@@ -245,13 +285,15 @@ namespace AppDelicare.Tests.Delivery
             (await c.PostFormAsync("/api/DeliveryRoute/RecordTemperature", ("Id", routeId), ("TemperatureC", 66m))).Ok();
             (await c.PostFormAsync("/api/DeliveryRoute/Dispatch", ("Id", routeId))).Fail("Chưa xếp hàng lên xe");
             Guid doA = route.GetProperty("listStop")[0].GetProperty("deliveryOrderId").GetGuid();
-            var loaded = (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = driver, listItem = new[] { new { deliveryOrderId = doA, loadedQty = 34m } } })).Ok();
+            // UI-6.34 (D-115): chưa chia đủ thực đơn → chặn; xếp có điều kiện cần lý do (quyền Duyệt Điều phối).
+            (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = driver, listItem = new[] { new { deliveryOrderId = doA, loadedQty = 34m } } })).Fail("Chưa đủ thực đơn");
+            var loaded = (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, employeeId = driver, overrideReason = "Thử luồng giao tay", listItem = new[] { new { deliveryOrderId = doA, loadedQty = 34m } } })).Ok();
             loaded.GetProperty("route").GetProperty("route").GetProperty("status").GetString().Should().Be("Loading");
             loaded.GetProperty("route").GetProperty("listWarning").EnumerateArray().Select(w => w.GetString()).Should().Contain(w => w!.Contains("xếp 34 / 35"));
             loaded.GetProperty("listLoading").EnumerateArray().Single().GetProperty("vehicleCode").GetString().Should().Be("XAD1");
             (await c.PostFormAsync("/api/DeliveryRoute/Dispatch", ("Id", routeId))).Fail("Chưa xếp hàng lên xe (DeliveryRoute/Load): " + route.GetProperty("listStop")[1].GetProperty("deliveryNumber").GetString());
             (await c.PostFormAsync("/api/DeliveryOrder/AssignRoute", ("Id", do2Id), ("DeliveryRouteId", routeId))).Fail("chỉ gán");
-            (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId })).Ok();
+            (await PostJson(c, "/api/DeliveryRoute/Load", new { id = routeId, overrideReason = "Thử luồng giao tay" })).Ok();
             (await c.PostFormAsync("/api/DeliveryOrder/Cancel", ("Id", do1Id), ("Reason", "x"))).Fail("đã xếp lên xe");
 
             // Xuất phát → thực hiện giao DISPATCHED; bảng thực hiện giao của ngày.

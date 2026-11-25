@@ -46,6 +46,8 @@ namespace AppDelicare.Model.Request.Custom
         /// <summary>Nhân viên xếp hàng (Employee) – tùy chọn.</summary>
         public Guid? EmployeeId { get; set; }
         public List<DeliveryLoadItemRequest> ListItem { get; set; } = [];
+        /// <summary>UI-6.34 (D-115): lý do xếp có điều kiện khi còn điểm chưa đủ thực đơn (quyền Duyệt Điều phối).</summary>
+        public string? OverrideReason { get; set; }
         [MaxLength(1000)]
         public string? Note { get; set; }
     }

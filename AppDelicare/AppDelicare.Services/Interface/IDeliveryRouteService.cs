@@ -36,5 +36,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<DeliveryRoutePlanModel>> Plan(DeliveryRoutePlanRequest request);
         public Task<IResult<DeliveryRouteDetailModel>> UpdateStops(DeliveryRouteStopsRequest request);
         public Task<IResult<DeliveryLoadModel>> Load(DeliveryRouteLoadRequest request);
+        /// <summary>UI-6.34 (D-115): bảng điều phối chuyến × điểm giao.</summary>
+        public Task<IResult<AppDelicare.Model.Model.DispatchBoardModel>> GetDispatchBoard(DateTime? date);
+        public Task<IResult<AppDelicare.Model.Model.DeliveryOrderActionModel>> MovePoint(AppDelicare.Model.Model.DispatchMovePointRequest request);
+        public Task<string?> AutoPlanAfterLockAsync(DateTime date);
+        public Task<int> RemindDispatchAsync(DateTime now);
     }
 }

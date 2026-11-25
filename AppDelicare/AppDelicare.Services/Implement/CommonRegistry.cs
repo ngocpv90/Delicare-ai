@@ -89,7 +89,7 @@ namespace AppDelicare.Services.Implement
             R<DeliveryRoute>("Chuyến giao", "log-route", "Status", "DeliveryDate", "RouteNo,Code,Name",
                 "RouteNo:Số chuyến,DeliveryDate,Name:Tên chuyến,VehicleId:Xe,DriverId:Tài xế,PlannedStart:Xuất phát kế hoạch,ActualStart:Xuất phát thực tế,Status",
                 attachable: true),
-            R<DeliveryOrder>("Đơn giao", "log-delivery-order", "Status", "DeliveryDate", "DeliveryNumber,Note",
+            R<DeliveryOrder>("Đơn giao", "log-route", /* UI-6.34 */ "Status", "DeliveryDate", "DeliveryNumber,Note",
                 "DeliveryNumber:Số phiếu giao,DeliveryDate,CustomerId,CustomerDeliveryLocationId:Điểm giao,OrderId,DeliveryRouteId:Chuyến,PlannedDeliveryTime:Giờ giao dự kiến,ActualDeliveryTime:Giờ giao thực tế,Status,Note",
                 attachable: true),
             R<ProofOfDelivery>("Xác nhận đã giao", "log-pod", null, "ConfirmedAt", "ReceiverName,Remark",

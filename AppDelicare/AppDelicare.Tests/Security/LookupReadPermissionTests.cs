@@ -25,7 +25,7 @@ namespace AppDelicare.Tests.Security
         [InlineData("User", "qc-supplier-issue")]
         [InlineData("Person", "int-identity")]
         [InlineData("DeliveryOrder", "log-return-inspection")]
-        [InlineData("DeliveryStop", "log-delivery-order")]
+        [InlineData("DeliveryStop", "log-route")] // UI-6.34: Đơn giao hàng gộp vào Điều phối
         [InlineData("MaterialReservation", "scm-issue")]
         [InlineData("Person", "qc-supplier-issue")]
         public void Lookup_screens_follow_logical_relations(string controller, string screen)

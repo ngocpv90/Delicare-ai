@@ -101,6 +101,12 @@ namespace AppDelicare.Model.Option
         public int IotSilenceMinutes { get; set; } = 30;
         /// <summary>UI-6.33 (D-114): mã bộ kiểm tra hệ thống thêm (ngoài mã có giờ hạn, VS-KHAY, công đoạn, lưu mẫu) – không đổi mã / ngừng / xóa.</summary>
         public string[] SystemChecklistCodes { get; set; } = ["QA_FG"];
+        /// <summary>UI-6.34 (D-115): cho lập tay lệnh đóng gói (mặc định tắt – hệ thống tự sinh theo mẻ).</summary>
+        public bool PackingManualCreate { get; set; }
+        /// <summary>UI-6.34: tự lập chuyến theo khu vực cho ngày giao sau khi chốt đơn.</summary>
+        public bool DeliveryAutoPlanAfterLock { get; set; } = true;
+        /// <summary>UI-6.34: còn N phút tới giờ xuất bến mà chuyến chưa đủ thực đơn → cảnh báo điều phối.</summary>
+        public int DispatchShortWarnMinutes { get; set; } = 30;
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>

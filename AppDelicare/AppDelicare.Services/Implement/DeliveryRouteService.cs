@@ -26,10 +26,13 @@ namespace AppDelicare.Services.Implement
     /// → (điểm dừng: DeliveryStopService Arrive / Deliver / Fail) → Completed tự động khi mọi điểm Đã giao / Thất bại.
     /// Xuất phát bị chặn khi nhiệt độ xuất phát gần nhất &lt; DeliveryTempMinC (60 °C), mẻ của ngày / ca chưa đóng gói xong, mẻ chưa lưu mẫu (anh chốt 2026-11-16).
     /// </summary>
-    public class DeliveryRouteService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class DeliveryRouteService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications) : IDeliveryRouteService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, INotificationService notifications
+        , IServiceProvider services, IPermissionService permissions) : IDeliveryRouteService
     {
+        private readonly IServiceProvider _services = services; // UI-6.34: chuyển điểm (DeliveryOrder/AssignRoute)
+        private readonly IPermissionService _permissions = permissions; // UI-6.34: xếp có điều kiện = quyền Duyệt log-route
         private readonly INotificationService _notifications = notifications; // BOT-1.7
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -828,6 +831,30 @@ namespace AppDelicare.Services.Implement
                 string? driverName = route.DriverId is { } did ? await db.Employee.AsNoTracking().Where(e => e.Id == did).Select(e => e.FullName).FirstOrDefaultAsync() : null;
                 var warnings = new List<string>();
                 DateTime now = _clock.Now;
+                // UI-6.34 (D-115, đóng GAP-C-03): chỉ xếp khi mọi điểm giao đủ thực đơn; thiếu → xếp có điều kiện (quyền Duyệt log-route + lý do, ghi vào chuyến).
+                var missing = await PackingReadiness.MissingByOrderAsync(db, _rules, route.DeliveryDate, [.. targets.Select(t => t.OrderId).Distinct()]);
+                var lacks = targets.Where(t => missing.GetValueOrDefault(t.OrderId) is { Count: > 0 })
+                    .Select(t => $"{t.DeliveryNumber ?? t.DeliveryNo}: thiếu {string.Join(", ", missing[t.OrderId])}").ToList();
+                if (lacks.Count != 0)
+                {
+                    string? reason = DeliveryRules.Clean(request.OverrideReason);
+                    if (reason == null)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.LoadMenuIncomplete, string.Join("; ", lacks)));
+                    }
+                    if (!_permissions.IsAllowed(await _permissions.GetAsync(actor.UserId), "log-route", PermissionAction.Approve))
+                    {
+                        return Fail(ConstantHelper.Message.LoadOverrideNoRight);
+                    }
+                    string note = $"Xếp có điều kiện {ProductionRules.Time(now)}: {reason} ({string.Join("; ", lacks)})";
+                    route.Description = string.IsNullOrWhiteSpace(route.Description) ? note : route.Description + " | " + note;
+                    if (route.Description.Length > 2000)
+                    {
+                        route.Description = route.Description[^2000..];
+                    }
+                    _unitOfWork.DeliveryRouteRepository.Update(route);
+                    warnings.Add(note);
+                }
                 var loadings = new List<DeliveryLoading>();
                 foreach (var deliveryOrder in targets.OrderBy(d => stops.First(s => s.DeliveryOrderId == d.Id).SequenceNo))
                 {

@@ -475,6 +475,7 @@ INSERT INTO @Allow VALUES
     (N'SAL-SALES', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/log-delivery-order', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-SALES', N'#/log-route', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/log-execution', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/log-packaging-ledger', 1, 0, 0, 0, 0, 0, 0),
@@ -494,6 +495,7 @@ INSERT INTO @Allow VALUES
     (N'SAL-CON', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-CON', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/log-delivery-order', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CON', N'#/log-route', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/log-execution', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/log-packaging-ledger', 1, 0, 0, 0, 0, 0, 0),
@@ -519,6 +521,7 @@ INSERT INTO @Allow VALUES
     (N'SAL-HEAD', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/cost-standard', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/log-delivery-order', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-HEAD', N'#/log-route', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/log-execution', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/log-packaging-ledger', 1, 0, 0, 0, 0, 0, 0),
@@ -529,11 +532,11 @@ INSERT INTO @Allow VALUES
     (N'SAL-CS', N'#/log-complaint', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-location', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-CS', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
+    (N'SAL-CS', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0);
+INSERT INTO @Allow VALUES
     (N'SAL-CS', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/log-execution', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-CS', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0);
-INSERT INTO @Allow VALUES
+    (N'SAL-CS', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/wf-inbox?type=scm-stockcount-l2', 1, 0, 1, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/dash-exec', 1, 0, 0, 0, 1, 1, 0),
@@ -702,6 +705,7 @@ INSERT INTO @Allow VALUES
     (N'QA', N'#/qc-supplier-issue', 1, 1, 1, 1, 0, 0, 1),
     (N'QA', N'#/qc-checklist', 1, 1, 1, 1, 0, 0, 1),
     (N'QA', N'#/log-delivery-order', 1, 0, 0, 0, 0, 0, 0),
+    (N'QA', N'#/log-route', 1, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/log-execution', 1, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/log-return-inspection', 1, 1, 1, 0, 1, 1, 0);
 

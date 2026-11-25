@@ -350,5 +350,36 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.34 (D-115): Điều phối giao hàng – chuyến × điểm giao, đủ thực đơn.</summary>
+        [HttpGet("GetDispatchBoard")]
+        public async Task<IActionResult> GetDispatchBoard(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _service.GetDispatchBoard(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDispatchBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.34: chuyển điểm giao sang chuyến khác.</summary>
+        [Security.Permission("log-route", PermissionAction.Edit)]
+        [HttpPost("MovePoint")]
+        public async Task<IActionResult> MovePoint([FromForm] AppDelicare.Model.Model.DispatchMovePointRequest request)
+        {
+            try
+            {
+                return Ok(await _service.MovePoint(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " MovePoint: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

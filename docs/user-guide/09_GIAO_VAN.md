@@ -18,11 +18,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X |
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X |
-| Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | X |
-| Đóng gói & Giao hàng › Kết quả đóng gói | `log-packing-result` | X |
-| Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | S |
-| Đóng gói & Giao hàng › Chuyến giao hàng | `log-route` | S |
-| Đóng gói & Giao hàng › Xếp hàng lên xe | `log-loading` | S |
+| Đóng gói & Giao hàng › Chia suất & đóng gói | `log-packing-order` | X |
+| Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | S |
 | Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | S |
 | Đóng gói & Giao hàng › Vị trí xe | `log-gps` | X |
 | Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | S |
@@ -44,47 +41,19 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 
 ## 4. Thao tác từng bước
 
-### 4.1 Đơn giao – `log-delivery-order` (hoặc khối "Đơn giao trong ngày" ở `log-route`)
-**Lập đơn giao**
-1. **Lập đơn giao** → chọn **Đơn hàng*** (đơn Đã chốt / Đang sản xuất của ngày), Điểm giao (trống = điểm giao của đơn), **Số suất** (trống = toàn bộ suất còn lại), Giờ giao dự kiến, Ghi chú.
-2. **Lập đơn giao** → đơn giao `GH-…` ở **Kế hoạch**, chưa gán chuyến. (Lập chuyến theo khu vực tự tạo đơn giao cho đơn hàng chưa có.)
+### 4.1 Điều phối giao hàng – `log-route` (UI-6.34)
+Mục "Đơn giao hàng", "Xếp hàng lên xe" đã ẩn (link cũ mở màn này). Nút đổi nhanh **Chia suất & đóng gói ⇄ Điều phối giao hàng** ở đầu màn.
+1. Chọn **ngày** (◀ ▶). 4 thẻ: Chuyến (số chuyến đủ hàng) · Điểm giao đủ thực đơn x/y · Chưa gán chuyến · Đã xếp xe.
+2. **Cột = chuyến** (xe, tài xế, giờ xuất bến, "x/y điểm đủ thực đơn") + cột **Chưa gán chuyến**; mỗi thẻ điểm giao: khách, điểm, suất, giờ giao, nhãn **Đủ thực đơn** hoặc **Còn thiếu** + món còn thiếu.
+3. **Chuyển xe** (ô chọn trên thẻ) – chuyển điểm giao sang chuyến khác.
+4. **Xếp lên xe** – chỉ khi mọi điểm của chuyến đủ thực đơn. Chưa đủ → hộp liệt kê điểm / món thiếu; người có quyền duyệt điều phối có thể **Xếp có điều kiện** (lý do bắt buộc, ghi vào chuyến).
+5. **Xuất bến** (sau khi xếp) – nhập nhiệt độ lúc xuất (dưới ngưỡng ghi khắc phục).
+- **Tự lập chuyến:** chốt đơn xong hệ thống tự lập chuyến theo khu vực cho ngày giao (mọi xe sẵn sàng); thiếu xe → điểm giao vào "Chưa gán chuyến" + tin bot cho điều phối. Đơn chốt muộn / bổ sung nằm ở "Chưa gán chuyến".
+- **Bot:** "🚚 Chuyến … đủ hàng" (1 tin / chuyến); còn ≤ 30 phút tới giờ xuất bến mà chưa đủ → cảnh báo kèm điểm / món thiếu.
+- **Danh sách chuyến** (nút đầu màn): màn cũ – thêm chuyến, lập theo khu vực, đơn giao trong ngày, tách / gán / hủy đơn giao.
 
-**Trên dòng đơn giao Kế hoạch, chưa xếp lên xe:**
-
-| Nút | Thao tác |
-|---|---|
-| **Gán chuyến** / **Chuyển chuyến** | Chọn **Chuyến xe*** (chuyến Kế hoạch cùng ngày), Thứ tự điểm dừng (trống = cuối chuyến) |
-| **Tách** | Nhập ≥ 2 phần (số suất + giờ giao từng phần, **Thêm phần** để thêm); tổng = số suất đơn giao. Phần 1 giữ số phiếu cũ, phần sau thành đơn giao mới chưa gán chuyến. Không gộp lại được |
-| **Hủy** | Bắt buộc lý do; gỡ khỏi chuyến, số suất trả lại đơn hàng |
-
-### 4.2 Lập chuyến – `log-route`
-**Tìm điểm giao (UI-6.16):** ô **Tìm điểm giao** dưới chọn ngày – gõ ≥ 2 ký tự tên điểm / địa chỉ / tên khách → bảng tối đa 8 điểm: khách, địa chỉ, khung giờ nhận, người nhận, tọa độ; bấm tên mở trang chi tiết điểm giao (cần quyền Xem Khách hàng – mục menu Điểm giao hàng đã ẩn).
-
-Chọn **Ngày giao** (chip hoặc ô ngày).
-
-**Lập chuyến theo khu vực** (cách nhanh):
-1. Tick các **Xe** sẵn sàng (biển số · loại · sức chở) và chọn **Tài xế** cho từng xe.
-2. **Lập chuyến** → hệ thống gom đơn Đang sản xuất + đơn giao chưa gán của ngày theo **khu vực**, chia cho xe theo tải còn trống; mỗi xe có hàng = 1 chuyến `CX-…`.
-- *{đơn} (… suất) không vừa tải còn trống của xe nào – xếp vào xe … (vượt tải)*.
-
-**Lập chuyến** (tay):
-1. Chọn **Xe***, Tài xế, Giờ xuất phát / kết thúc dự kiến, Tên chuyến.
-2. Tick **Đơn hàng chờ xếp chuyến** và / hoặc **Đơn giao chưa gán chuyến** (không tick = lấy mọi đơn hàng chờ của ngày).
-3. **Lập chuyến**.
-
-**Thẻ chuyến** (mỗi chuyến): số chuyến, tên, xe, tài xế, **Tải trọng N / sức chở suất** (thanh đỏ khi vượt), dòng thời gian *Bếp trung tâm (điểm đầu) → các điểm dừng (suất, giờ đến KH, trạng thái)*; dòng đỏ **"Chưa đủ điều kiện xuất bến: …"** nếu còn mẻ chưa đóng gói / chưa lưu mẫu / chưa xếp hàng.
-
-| Trạng thái chuyến | Nút |
-|---|---|
-| Kế hoạch | **Xếp hàng lên xe**, **Sắp điểm dừng**, Chi tiết, In phiếu giao (PDF), Biên bản giao hàng (Excel) |
-| Đang xếp | **Xuất bến**, Chi tiết, In… |
-
-- **Sắp điểm dừng**: sửa **Thứ tự** (số nguyên từ 1, không trùng) và **Giờ đến dự kiến** từng điểm → **Lưu thứ tự**.
-- **Xếp hàng lên xe**: ghi xếp hàng cho mọi đơn giao của chuyến (số suất = kế hoạch) → chuyến **Đang xếp**.
-- **Xuất bến**: nhập **Nhiệt độ thùng giữ nhiệt °C** và **Hành động khắc phục** (bắt buộc nếu dưới 60 °C) → **Xác nhận** → chuyến **Đang giao**.
-- **In phiếu giao (PDF)**: một tệp gồm mọi phiếu giao của chuyến (mỗi phiếu một trang, có QR). **Biên bản giao hàng (Excel)**: biên bản cả chuyến.
-
-**Trang chi tiết chuyến (UI-6):** nút **Chi tiết** trên thẻ chuyến → trang `#/log-route-detail?id=…`: thanh bước Kế hoạch → Đang xếp → Đang giao → Hoàn thành; cùng các nút của thẻ chuyến (Xếp hàng lên xe, Xuất bến, Sắp điểm dừng, Ghi vị trí hiện tại, In phiếu giao, Biên bản giao hàng); 4 chỉ số Điểm đã giao, Suất đã giao, Tải xe %, Phản ánh (đang mở). Tổng quan: xe, tài xế, giờ, nhiệt độ xuất bến so ngưỡng, điều kiện xuất bến còn thiếu, dòng thời gian điểm giao. Tab **Điểm giao & POD**, **Sự kiện & nhiệt độ**, **Mẻ phục vụ** (bấm → trang mẻ), **Phản ánh**. "← Danh sách" quay lại đúng bộ lọc / trang / vị trí cuộn; Ctrl + bấm hoặc chuột giữa → mở tab mới; tab chung **Chứng từ liên quan / Tài liệu / Lịch sử**. Quyền = quyền xem màn danh sách. Chế độ DEMO vẫn mở ngăn chi tiết.
+### 4.2 Lập chuyến tay – Danh sách chuyến (giữ cho trường hợp đặc biệt)
+Như trước: **Lập chuyến theo khu vực** / **Lập chuyến**, sửa điểm dừng, đổi xe / tài xế.
 
 ### 4.3 Thực hiện giao – `log-execution`
 1. Chọn ngày. Thẻ đếm: Chờ xếp hàng / Đã xếp / Đã xuất phát / Đã đến / Đã giao / Thất bại.

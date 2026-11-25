@@ -20,7 +20,7 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     /// <summary>BE2.1 (spec 10.1): lệnh đóng gói PH- sinh từ mẻ Đạt QC / lập tay, bắt đầu, ghi kết quả (PackingResult), hủy; mẻ chia hết + đóng gói xong → mẻ Đã đóng gói.</summary>
-    public class PackingOrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class PackingOrderService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
         , IOptions<BusinessRulesOptions> rules, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.ReferenceListsOptions> referenceLists, IServiceProvider services) : IPackingOrderService
     {
@@ -444,6 +444,11 @@ namespace AppDelicare.Services.Implement
         /// </summary>
         public async Task<IResult<PackingBatchModel>> Create(PackingOrderCreateRequest request)
         {
+            // UI-6.34 (D-115): lệnh đóng gói do hệ thống tự sinh khi mẻ đạt – lập tay chỉ khi bật PackingManualCreate.
+            if (!_rules.PackingManualCreate)
+            {
+                return Result<PackingBatchModel>.Fail(ConstantHelper.Message.PackingCreateBlocked);
+            }
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
@@ -574,7 +579,10 @@ namespace AppDelicare.Services.Implement
         /// Mẻ chia hết (còn lại ≤ 0) và mọi lệnh còn hiệu lực Đã đóng gói → mẻ Đã đóng gói (lệnh SX / kế hoạch hoàn thành như ProductionBatch/Pack).
         /// </summary>
         public Task<IResult<PackingBatchModel>> RecordResult(PackingOrderResultRequest request)
-            => RunAsync(request.Id, "ghi kết quả đóng gói", [PackingOrderStatus.Planned, PackingOrderStatus.Packing], async (packing, actor, warnings) =>
+            => RunAsync(request.Id, "ghi kết quả đóng gói", [PackingOrderStatus.Planned, PackingOrderStatus.Packing], (packing, actor, warnings) => RecordResultCoreAsync(packing, request, actor, warnings));
+
+        /// <summary>Thân ghi kết quả một lệnh (dùng chung RecordResult và RecordResultMany – UI-6.34), trong giao dịch đang mở.</summary>
+        private async Task<string?> RecordResultCoreAsync(PackingOrder packing, PackingOrderResultRequest request, ActorInfo actor, List<string> warnings)
             {
                 decimal damaged = request.DamagedQty ?? 0m, rejected = request.RejectedQuantity ?? 0m;
                 if (request.PackedQuantity < 0 || damaged < 0 || rejected < 0)
@@ -657,7 +665,7 @@ namespace AppDelicare.Services.Implement
                     }
                 }
                 return null;
-            });
+            }
 
         public async Task<IResult<PackingOrder>> GetById(Guid id)
         {

@@ -74,7 +74,7 @@ namespace AppDelicare.Tests.Common
             var print = scope.ServiceProvider.GetRequiredService<AppDelicare.Services.Interface.IPrintService>();
             foreach (var (type, cls) in prints)
             {
-                print.TypeScreens[type].Should().Be(ScreenMap.ByClass[cls]);
+                print.TypeScreens[type].Should().Be(ScreenMap.ParentByClass.TryGetValue(cls, out var parent) ? parent.Screen : ScreenMap.ByClass[cls]); // màn ẩn → màn cha (UI-6.34)
             }
             ScreenMap.ByClass["DocumentFile"].Should().Be(DocumentFileService.DocumentScreen);
         }
