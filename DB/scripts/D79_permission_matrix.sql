@@ -218,6 +218,7 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/wf-inbox?type=prod-plan', 1, 0, 1, 0, 0, 0, 0),
     (N'COO', N'#/wf-inbox?type=hr-leave', 1, 0, 1, 0, 0, 0, 0),
     (N'COO', N'#/wf-inbox?type=hr-swap', 1, 0, 1, 0, 0, 0, 0),
+    (N'COO', N'#/wf-inbox?type=log-load-short', 1, 0, 1, 0, 0, 0, 0),
     (N'COO', N'#/dash-exec', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/kpi-daily', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/kpi-monthly', 1, 0, 0, 0, 1, 1, 0),
@@ -381,6 +382,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-SCM-HEAD', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/wf-inbox?type=scm-pr-l1', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/wf-inbox?type=scm-stockcount', 1, 0, 1, 0, 0, 0, 0),
+    (N'OPS-SCM-HEAD', N'#/wf-inbox?type=log-load-short', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/dash-exec', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/kpi-monthly', 1, 0, 0, 0, 0, 0, 0),
@@ -530,10 +532,10 @@ INSERT INTO @Allow VALUES
     (N'SAL-HEAD', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/menu-assignment', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
-    (N'SAL-HEAD', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-HEAD', N'#/cost-standard', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-HEAD', N'#/log-delivery-order', 1, 0, 0, 0, 0, 0, 0);
+    (N'SAL-HEAD', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0);
 INSERT INTO @Allow VALUES
+    (N'SAL-HEAD', N'#/cost-standard', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-HEAD', N'#/log-delivery-order', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/log-route', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/log-execution', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/log-pod', 1, 0, 0, 0, 0, 0, 0),
