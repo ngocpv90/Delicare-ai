@@ -84,7 +84,14 @@
     const done = r => { const sk = (r.data && r.data.listSkipped) || []; UI.toast(esc(r.res && r.res.responseMessage || 'Đã cập nhật') + (sk.length ? '<br><span class="small">' + sk.slice(0, 4).map(esc).join('<br>') + '</span>' : ''), sk.length ? 'warn' : 'ok'); st.sel.clear(); re(); };
     body.querySelectorAll('[data-ck]').forEach(c => { c.onclick = e => e.stopPropagation(); c.onchange = () => { c.checked ? st.sel.add(c.dataset.ck) : st.sel.delete(c.dataset.ck); bar(); }; });
     body.querySelectorAll('[data-op]').forEach(b => b.onclick = e => { e.stopPropagation(); ops(rows.find(r => r.id === b.dataset.op), canEdit, admin, re); });
-    body.querySelectorAll('[data-row]').forEach(tr => tr.onclick = () => detail(rows.find(r => r.id === tr.dataset.row), canEdit, admin, re));
+    // UI-6.49 (7) (QĐ-63, D-123 c): bấm dòng → trang chi tiết tài khoản toàn màn (Ctrl / chuột giữa → tab mới).
+    body.querySelectorAll('[data-row]').forEach(tr => tr.onclick = e => {
+      if (e.target.closest('input,button,a,select')) return;
+      const url = APP.href('adm-user-detail?id=' + encodeURIComponent(tr.dataset.row));
+      if (e.ctrlKey || e.metaKey) return window.open(url, '_blank');
+      APP._back = { screen: 'adm-user', hash: location.hash, scroll: window.scrollY };
+      location.hash = url;
+    });
     bar();
   }
   function ops(r, canEdit, admin, re) {
@@ -161,5 +168,63 @@
         go.onclick = () => submit && submit();
         draw();
       } });
+  }
+
+  // ---------- UI-6.49 (7): trang chi tiết tài khoản toàn màn (#/adm-user-detail?id=) – User/GetOverview, quyền theo adm-user ----------
+  const D = APP.D360;
+  if (D && D.page) {
+    const kindVi = k => k === 'EMPLOYEE' ? 'Nhân viên' : k === 'SYSTEM' ? 'Hệ thống' : 'Khách hàng';
+    const dt = v => (v ? U.dt(v) : '–');
+    D.page({
+      id: 'adm-user-detail', screen: 'adm-user', table: 'User', kind: 'profile', api: 'User/GetOverview', resource: 'User', approval: false, related: false, docs: false,
+      head: x => {
+        const a = x.account || {}, st = ST[a.status] || ST.ACTIVE, canEdit = D.can('adm-user', 'edit'), admin = A().isAdmin && A().isAdmin();
+        return {
+          title: a.userName || 'Tài khoản', no: a.userName, avatarCls: 'person',
+          tags: [UI.tag(st[0], st[1]), UI.tag(kindVi(a.kind), 'blue')].concat(a.isAdmin ? [UI.tag('quản trị', 'purple')] : []),
+          meta: [a.fullName && esc(a.fullName), esc([a.employeeCode, a.positionName, a.unitName].filter(Boolean).join(' · ')), a.lastAccess ? 'Truy cập ' + esc(dt(a.lastAccess)) : 'Chưa đăng nhập'],
+          buttons: [
+            { act: 'grp', icon: 'users', label: 'Đổi nhóm quyền', ok: canEdit, primary: true },
+            { act: 'lock', icon: 'lock', label: a.isActive ? 'Khóa' : 'Mở khóa', ok: canEdit },
+            { act: 'reset', icon: 'key', label: 'Đặt lại mật khẩu', ok: !!admin },
+          ],
+          more: [x.employeeId && D.can('adm-employee') ? '<button data-h="emp">Hồ sơ nhân viên</button>' : ''],
+        };
+      },
+      kpis: x => {
+        const a = x.account || {};
+        return UI.kpi('Nhóm quyền', U.num((a.listGroup || []).length), (a.listGroup || []).slice(0, 2).join(', '), 'users', (a.listGroup || []).length ? 'blue' : 'red')
+          + UI.kpi('Truy cập 30 ngày', U.num(x.accessCount30d || 0), a.lastAccess ? 'gần nhất ' + dt(a.lastAccess) : 'chưa đăng nhập', 'history', 'green')
+          + UI.kpi('Bot Telegram', (x.listBot || []).some(b => b.status === 'Đang liên kết') ? 'Đã liên kết' : 'Chưa', '', 'bot', (x.listBot || []).length ? 'green' : 'orange')
+          + UI.kpi('Trạng thái', (ST[a.status] || ST.ACTIVE)[0], a.inactiveDays != null && a.inactiveDays >= 60 ? U.num(a.inactiveDays) + ' ngày chưa đăng nhập' : '', 'shield', a.status === 'RESIGNED_OPEN' ? 'red' : a.isActive ? 'green' : '');
+      },
+      overview: (box, x) => {
+        const a = x.account || {};
+        box.innerHTML = D.split(
+          D.block('Thông tin tài khoản', D.kv([['Tên đăng nhập', '<span class="mono">' + esc(a.userName || '') + '</span>'], ['Loại', kindVi(a.kind) + (a.isAdmin ? ' · quản trị' : '')],
+            ['Trạng thái', esc((ST[a.status] || ST.ACTIVE)[0])], ['Người dùng', esc(a.fullName || '')], ['Mã nhân viên', esc(a.employeeCode || '')], ['Chức vụ', esc(a.positionName || '')],
+            ['Đơn vị', esc(a.unitName || '')], ['Truy cập gần nhất', esc(dt(a.lastAccess))]])),
+          D.block('Nhóm quyền', (a.listGroup || []).map(g => UI.tag(g, 'blue')).join(' ') || '<span class="bad">Chưa có nhóm</span>'));
+      },
+      tabs: [
+        { label: 'Nhóm & quyền hiệu lực', render: (box, x) => {
+          box.innerHTML = '<div class="card panel"><div class="small muted mb">Cộng dồn quyền của mọi nhóm tài khoản thuộc về' + ((x.account || {}).isAdmin ? ' – tài khoản quản trị có mọi quyền' : '') + '.</div><div data-perm>' + D.loading + '</div></div>';
+          Store.query('UserRole/GetByUserId', { userId: (x.account || {}).id }).then(r => { const p = box.querySelector('[data-perm]'); if (!p) return; p.innerHTML = r.ok && A().permTable ? A().permTable((r.data || {}).listMenu) : D.failBox(r.message || 'Không tải được quyền'); });
+        } },
+        { label: 'Truy cập', render: (box, x) => {
+          box.innerHTML = D.block('30 lần truy cập gần nhất', D.table(x.listAccess || [], [{ label: 'Thời điểm', html: r => esc(dt(r.at)) }, { label: 'Địa chỉ IP', html: r => '<span class="mono">' + esc(r.ip || '') + '</span>' }, { label: 'Thiết bị', html: r => esc(r.device || '') }]),
+            D.can('adm-access-log') ? '<a href="' + APP.href('adm-access-log?user=' + encodeURIComponent((x.account || {}).id)) + '">Nhật ký truy cập đầy đủ</a>' : '');
+        } },
+        { label: 'Bot', render: (box, x) => {
+          box.innerHTML = D.block('Liên kết bot Telegram', D.table(x.listBot || [], [{ label: 'Kênh', html: r => esc(r.channel || '') }, { label: 'Tài khoản Telegram', html: r => esc(r.username ? '@' + r.username : r.displayName || '') },
+            { label: 'Trạng thái', html: r => UI.tag(r.status || '', r.status === 'Đang liên kết' ? 'green' : '') }, { label: 'Liên kết lúc', html: r => esc(dt(r.linkedAt)) }, { label: 'Dùng gần nhất', html: r => esc(dt(r.lastSeenAt)) }]));
+        } },
+      ],
+      onAct: (act, x, id, reload) => {
+        const a = x.account || {}, row = Object.assign({}, a, { id: a.id });
+        if (act === 'emp' && x.employeeId) return APP.go('adm-employee-360?id=' + encodeURIComponent(x.employeeId));
+        if (act === 'grp' || act === 'lock' || act === 'reset') run(act, row, reload);
+      },
+    });
   }
 })();

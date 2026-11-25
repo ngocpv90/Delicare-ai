@@ -69,6 +69,34 @@ namespace AppDelicare.Model.Model
         public List<Guid> RemoveGroupIds { get; set; } = [];
     }
 
+    /// <summary>UI-6.49 (7) (QĐ-63, D-123 c): trang chi tiết tài khoản toàn màn (User/GetOverview).</summary>
+    public class AccountOverviewModel
+    {
+        public AccountItemModel Account { get; set; } = new();
+        public Guid? EmployeeId { get; set; }
+        public List<Guid> ListGroupId { get; set; } = [];
+        public int AccessCount30d { get; set; }
+        public List<AccountAccessModel> ListAccess { get; set; } = [];
+        public List<AccountBotModel> ListBot { get; set; } = [];
+    }
+
+    public class AccountAccessModel
+    {
+        public DateTime? At { get; set; }
+        public string? Ip { get; set; }
+        public string? Device { get; set; }
+    }
+
+    public class AccountBotModel
+    {
+        public string? Channel { get; set; }
+        public string? Username { get; set; }
+        public string? DisplayName { get; set; }
+        public string? Status { get; set; }
+        public DateTime LinkedAt { get; set; }
+        public DateTime? LastSeenAt { get; set; }
+    }
+
     public class AccountBulkResultModel
     {
         public int Done { get; set; }
@@ -285,6 +313,44 @@ namespace AppDelicare.Services.Implement
                 _permissionService.Invalidate(u.Id);
             }
             return Result<AccountBulkResultModel>.Success(result, string.Format(ConstantHelper.Message.AccountBulkLockDone, result.Done, result.ListSkipped.Count));
+        }
+
+        /// <summary>UI-6.49 (7): trang chi tiết tài khoản – dòng như danh sách + nhóm + 30 lần truy cập gần nhất + liên kết bot.</summary>
+        public async Task<IResult<AccountOverviewModel>> GetOverview(Guid id)
+        {
+            var db = _unitOfWork.DbContext;
+            var user = await db.User.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
+            if (user == null)
+            {
+                return Result<AccountOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+            }
+            var list = await GetList(new AccountListRequest());
+            var item = list.Data?.ListItem.FirstOrDefault(x => x.Id == id);
+            if (item == null)
+            {
+                return Result<AccountOverviewModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+            }
+            DateTime since = _clock.Now.AddDays(-30);
+            var access = await db.LocationTracking.AsNoTracking().Where(l => l.CreatedBy == id && !l.IsDeleted).OrderByDescending(l => l.CreatedDate)
+                .Take(30).Select(l => new AccountAccessModel { At = l.CreatedDate, Ip = l.IPv4, Device = l.PcName }).ToListAsync();
+            var bots = await (from i in db.UserExternalIdentity.AsNoTracking()
+                              join c in db.IntegrationChannel.AsNoTracking() on i.IntegrationChannelId equals c.Id into cj
+                              from c in cj.DefaultIfEmpty()
+                              where !i.IsDeleted && i.UserId == id
+                              orderby i.LinkedAt descending
+                              select new AccountBotModel
+                              {
+                                  Channel = c != null ? c.ChannelName ?? c.ChannelCode : null, Username = i.ExternalUsername, DisplayName = i.DisplayName,
+                                  Status = i.IdentityStatus == null || i.IdentityStatus == "Active" ? "Đang liên kết" : "Đã hủy", LinkedAt = i.LinkedAt, LastSeenAt = i.LastSeenAt,
+                              }).ToListAsync();
+            var emp = user.PersonId is { } pid ? await db.Employee.AsNoTracking().Where(e => e.PersonId == pid && !e.IsDeleted).Select(e => (Guid?)e.Id).FirstOrDefaultAsync() : null;
+            return Result<AccountOverviewModel>.Success(new AccountOverviewModel
+            {
+                Account = item, EmployeeId = emp,
+                ListGroupId = await db.UserClaim.AsNoTracking().Where(c => !c.IsDeleted && c.UserId == id && c.UserGroupId != null).Select(c => c.UserGroupId!.Value).ToListAsync(),
+                AccessCount30d = await db.LocationTracking.AsNoTracking().CountAsync(l => l.CreatedBy == id && !l.IsDeleted && l.CreatedDate >= since),
+                ListAccess = access, ListBot = bots,
+            }, ConstantHelper.Message.GetAllSuccessfully);
         }
 
         public async Task<IResults<AccountPendingModel>> GetPendingRequests()

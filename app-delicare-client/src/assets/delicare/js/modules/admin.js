@@ -216,7 +216,7 @@
       <span class="small muted">Nhân viên đang làm chưa có tài khoản: ${U.num(d.employeeWithoutAccountCount || 0)}${Store.perm('adm-employee').access !== false ? ' – xem tab <a href="#/adm-employee?tab=link">Đối chiếu</a> ở màn Nhân viên' : ''}</span></div></div>`;
   };
   const accRow = id => accState.data && accState.data.by[id];
-  APP.adminAcc = { showTempPassword, assignGroups, openUserPermission, getAct, isAdmin }; // UI-6.42 (D-123): dùng lại ở modules/admin-account.js
+  APP.adminAcc = { showTempPassword, assignGroups, openUserPermission, getAct, isAdmin, permTable }; // UI-6.42 (D-123): dùng lại ở modules/admin-account.js
   APP.register('adm-user', (el, f) => {
     const canEdit = Store.perm(f.id).edit !== false;
     if (LIVE() && !accState.data && !accState.loading) {

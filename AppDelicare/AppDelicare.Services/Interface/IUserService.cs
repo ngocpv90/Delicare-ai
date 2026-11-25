@@ -35,5 +35,6 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.AccountBulkResultModel>> SetGroupsMany(AppDelicare.Model.Model.AccountIdsRequest request);
         public Task<IResult<AppDelicare.Model.Model.AccountBulkResultModel>> LockMany(AppDelicare.Model.Model.AccountIdsRequest request);
         public Task<IResults<AppDelicare.Model.Model.AccountPendingModel>> GetPendingRequests();
+        public Task<IResult<AppDelicare.Model.Model.AccountOverviewModel>> GetOverview(Guid id);
     }
 }
