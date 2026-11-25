@@ -66,7 +66,21 @@ namespace AppDelicare.Services.Jobs
                     NextRunAt = JobSchedule.NextRun(now, at),
                     LastRun = last.GetValueOrDefault(job.Code),
                 };
-            }).ToList();
+            }).Concat(AppDelicare.Services.Implement.Messaging.BotWatchService.Checks.Select(c =>
+            {
+                // UI-6.49 (5): nhắc việc chạy trong vòng kiểm bot – hiện cùng màn Job (nhãn "chạy trong bot").
+                bool ran = AppDelicare.Services.Implement.Messaging.BotWatchService.LastRuns.TryGetValue(c.Code, out var r);
+                return new JobInfoModel
+                {
+                    JobCode = "BOT:" + c.Code, JobName = c.Name, Description = c.Description, Enabled = true, At = "Mỗi lần kiểm bot", RunsInBot = true,
+                    NextRunAt = now.AddMinutes(1),
+                    LastRun = ran ? new JobRunResultModel
+                    {
+                        JobCode = "BOT:" + c.Code, JobName = c.Name, Trigger = "Bot", StartedAt = r.At, CompletedAt = r.At,
+                        RunStatus = r.Error ? JobRunStatus.Failed : JobRunStatus.Succeeded, RowsProcessed = r.Sent, Message = r.Error ? "Lỗi – xem log" : $"Đã gửi {r.Sent} tin",
+                    } : null,
+                };
+            })).ToList();
         }
 
         public async Task<List<string>> GetDueJobCodes()

@@ -31,7 +31,7 @@ namespace AppDelicare.Services.Ioc
                 {
                     Walk(p.PropertyType, key, configuration, missing, depth + 1);
                 }
-                else if (!exists)
+                else if (!exists && (p.PropertyType == typeof(string) || !typeof(IEnumerable).IsAssignableFrom(p.PropertyType))) // UI-6.49 (5): danh sách / từ điển để trống = mặc định trong code
                 {
                     missing.Add(key);
                 }
