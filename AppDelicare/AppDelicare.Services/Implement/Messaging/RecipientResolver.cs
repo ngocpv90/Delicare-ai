@@ -96,7 +96,7 @@ namespace AppDelicare.Services.Implement.Messaging
             return await (from uc in db.UserClaim.AsNoTracking()
                           join ug in db.UserGroup.AsNoTracking() on uc.UserGroupId equals ug.Id
                           join u in db.User.AsNoTracking() on uc.UserId equals u.Id
-                          where !uc.IsDeleted && !ug.IsDeleted && names.Contains(ug.Name!) && !u.IsDeleted && u.IsActive
+                          where !uc.IsDeleted && !ug.IsDeleted && (names.Contains(ug.Code!) || (ug.Code == null && names.Contains(ug.Name!))) && !u.IsDeleted && u.IsActive /* UI-6.43: theo mã nhóm */
                           select u.Id).Distinct().ToListAsync(ct);
         }
 

@@ -19,7 +19,7 @@ namespace AppDelicare.Services.Interface
     /// <summary>Cờ quyền trên một menu (OR qua mọi nhóm của user).</summary>
     public sealed record MenuRights(bool Access, bool Add, bool Edit, bool Delete, bool Print, bool Export, bool Import);
 
-    /// <summary>Quyền của một user: admin, các nhóm (UserGroup.Name), quyền theo MetaLink.</summary>
+    /// <summary>Quyền của một user: admin, các nhóm (UserGroup.Code + Name – UI-6.43), quyền theo MetaLink.</summary>
     public sealed record UserPermissions(bool IsAdmin, IReadOnlySet<string> Groups, IReadOnlyDictionary<string, MenuRights> Menus)
     {
         public static readonly UserPermissions None = new(false, new HashSet<string>(), new Dictionary<string, MenuRights>());

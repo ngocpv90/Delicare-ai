@@ -19,7 +19,6 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | S (IX) |
 | Quản trị hệ thống › Tài khoản | `adm-user` | Q (IX) |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | Q (IX) |
-| Quản trị hệ thống › Phân quyền | `adm-permission` | Q (IX) |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | Q (IX) |
 | Quản trị hệ thống › Nhập dữ liệu gốc (Excel) | `sys-import` | Q (IX) |
 | Quản trị hệ thống › Tài liệu đính kèm | `adm-document` | Q (IX) |
@@ -54,7 +53,7 @@ Các màn `dbx-explorer`, `dbx-gap` **đang ẩn** ở chế độ dữ liệu t
 | Các bước duyệt · Lịch sử duyệt · Chứng từ trong yêu cầu duyệt | Chi tiết yêu cầu trong **Hộp phê duyệt** |
 | Phiếu chuyển kho · Phiếu điều chỉnh tồn | Nút **Chuyển kho** / **Điều chỉnh tồn** trên màn **Tồn kho** (duyệt điều chỉnh vẫn ở Phê duyệt › Phiếu điều chỉnh tồn) |
 | Thông tin cá nhân | **Tài khoản** / **Nhân viên** |
-| Hộp phê duyệt (nhóm Nhân sự) và 20 mục "Phê duyệt › …" | 1 mục **Phê duyệt** (màn tổng – D-81); các dòng quyền giữ nguyên, cấp ở khối **Quyền duyệt** của màn Phân quyền (§4.5) |
+| Hộp phê duyệt (nhóm Nhân sự) và 20 mục "Phê duyệt › …" | 1 mục **Phê duyệt** (màn tổng – D-81); các dòng quyền giữ nguyên, cấp ở nhóm **Phê duyệt** của tab Phân quyền, trang Nhóm quyền (§4.5 – Được duyệt / Không) |
 
 Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản lượng** (ghi khi kết thúc mẻ nấu), **Xếp hàng lên xe** và **Xác nhận đã giao** (Theo dõi chuyến / bot), **Liên kết tài khoản chat** (mã liên kết; nút Liên kết / Gỡ liên kết).
 
@@ -88,21 +87,22 @@ Chỉ xem (bỏ Thêm / Sửa tay – dữ liệu do nghiệp vụ ghi): **Sản
 ### 4.3 Xem quyền hiệu lực của một tài khoản – `adm-user`
 Bấm nút hình khiên (**Quyền hiệu lực của tài khoản**) trên dòng → bảng cây menu × 7 quyền (Truy cập, Thêm, Sửa, Xóa, In, Xuất, Nhập), cộng dồn mọi nhóm của tài khoản. Tài khoản quản trị: "có mọi quyền".
 
-### 4.4 Nhóm quyền – `adm-usergroup`
-- **Tạo mới** nhóm: tên nhóm = mã vai trò. 19 nhóm chuẩn (D-79): CEO, CEO-PMO, COO, OPS-PLAN, OPS-SCM (mua hàng), **OPS-WH** (thủ kho – mới), **OPS-SCM-HEAD** (Trưởng mua hàng & kho – mới), OPS-KIT, OPS-LOG, OPS-POS, OPS-MNT, SAL-SALES, SAL-CON, **SAL-HEAD** (Trưởng kinh doanh – mới), SAL-CS, FIN-ACC, FIN-HR, FIN-IT, QA. Quyền từng nhóm theo từng màn: `docs/claude/MENU5_MATRIX.md`.
-- **Việc cần làm sau khi chạy MENU-5 (D-79):** trên màn **Tài khoản** bấm **Gán nhóm** để chuyển người: Trưởng kinh doanh → **SAL-HEAD** (người duyệt sửa đơn sau chốt, tạo đơn bù); Trưởng mua hàng & kho → **OPS-SCM-HEAD** (duyệt đề nghị mua cấp 1, kiểm kê cấp 1); thủ kho → **OPS-WH** (ghi sổ nhập / xuất, kiểm kê). Nhóm cũ giữ nguyên (người mua hàng vẫn ở OPS-SCM nhưng không còn ghi sổ nhập, không tự duyệt cấp 1).
-- Nút **Phân quyền** trên dòng → sang ma trận quyền của nhóm.
-- Nút hình khiên **Xem trước quyền của nhóm** (quản trị) → danh sách màn được truy cập + các tài khoản thuộc nhóm.
+### 4.4 Nhóm quyền – `adm-usergroup` (UI-6.43 – gồm cả Phân quyền)
+Mỗi nhóm là một vai trò. Nhóm có **Tên** tiếng Việt (vd. "Thủ kho"), **Mã** (vd. `OPS-WH` – luồng duyệt, bot, nhóm gợi ý theo chức vụ tìm theo mã), **Khối** (Ban điều hành · Vận hành · Kinh doanh · Tài chính – Hỗ trợ · QA / ATTP) và **Mô tả**. 19 nhóm chuẩn: `docs/claude/ORG_STRUCTURE.md` §2; quyền chuẩn từng màn: `docs/claude/MENU5_MATRIX.md`.
+- **Danh sách:** 4 chỉ số – Nhóm quyền (số khối) · Tài khoản có nhóm (bấm → Tài khoản; báo số tài khoản chưa có nhóm) · Nhóm chưa có tài khoản (bấm để lọc) · Đổi trong 7 ngày. Tìm theo tên / mã. Nhóm xếp theo khối; mỗi thẻ: tên, mã, mô tả, số tài khoản · màn hình · loại duyệt, sửa gần nhất. Bấm thẻ → trang nhóm.
+- **Tạo nhóm:** Tên (bắt buộc, không trùng) · Mã (bắt buộc, chữ hoa không dấu, không trùng) · Khối · Mô tả. Nhóm mới chưa có quyền nào.
+- **Sửa:** đổi tên / khối / mô tả thoải mái. **Mã bị khóa** khi đang dùng ở bước duyệt hoặc cấu hình (nhóm gợi ý chức vụ, nhóm nhận cảnh báo duyệt quá hạn).
+- **Ngừng dùng:** chỉ khi nhóm không còn tài khoản và không là người duyệt / trong cấu hình (báo rõ lý do). Không xóa cứng.
+- **Việc cần làm sau MENU-5 (D-79):** chuyển người sang nhóm mới – Trưởng kinh doanh → **Trưởng kinh doanh** (SAL-HEAD), Trưởng mua hàng & kho → **Trưởng mua hàng & kho** (OPS-SCM-HEAD), thủ kho → **Thủ kho** (OPS-WH) – ở tab **Tài khoản** của trang nhóm hoặc màn Tài khoản.
 
-### 4.5 Phân quyền – `adm-permission`
-**APR-UI-1 (D-81 a):** các mục "Phê duyệt › …" không nằm trong cây menu nữa mà gom ở khối **Quyền duyệt** cuối bảng: mỗi loại (kèm cấp: 1 cấp / Cấp 1 / Cấp 2) **1 ô "Được duyệt"** – tick = Truy cập + Sửa trên mục quyền duyệt (D-31), bỏ tick = thu cả hai. "Tất cả yêu cầu duyệt" = **chỉ xem** mọi yêu cầu (không duyệt được). Các dòng này giữ trong DB (IsActive = 1) – đừng tắt ở màn Cấu hình menu, tắt là mất quyền duyệt.
-1. Cột trái: chọn nhóm (hiện số chức năng được truy cập, số tài khoản).
-2. Bảng phải: mỗi mục menu cấp 2 × 7 ô quyền. Tick / bỏ tick → lưu ngay ("Cấp … / Thu hồi …").
-   - Tick bất kỳ quyền nào khác → tự bật **Truy cập**.
-   - Bỏ **Truy cập** → tắt hết quyền còn lại của mục đó.
-3. **Cấp toàn bộ truy cập** / **Thu hồi toàn bộ** cho cả nhóm (thu hồi tắt cả Thêm / Sửa / Xóa / In / Xuất / Nhập) → xác nhận.
-4. **Sao chép quyền từ nhóm khác**: chọn nhóm nguồn → **Sao chép** → xác nhận *"Thay toàn bộ quyền của nhóm … bằng quyền của nhóm …?"*.
-5. **Xem trước quyền của nhóm** (quản trị): kiểm lại kết quả.
+### 4.5 Trang nhóm – Phân quyền, Tài khoản, Xem trước menu, So sánh, Lịch sử
+Mục menu "Phân quyền" đã bỏ (link cũ `#/adm-permission` mở trang Nhóm quyền). Sửa quyền cần quyền **Sửa** màn Nhóm quyền.
+1. **Phân quyền:** màn hình xếp theo nhóm menu; mỗi màn chọn **mức**: Không · Xem · Xem, in & xuất · Xem & sửa (thêm, sửa, in, xuất) · Toàn quyền (thêm cả xóa, nhập file). Quyền lẻ từ ma trận cũ hiện **Tùy chỉnh** (kèm các quyền đang có) – chọn mức khác để thay. Mục nhóm **Phê duyệt** chỉ có **Không / Được duyệt** (= Truy cập + Sửa trên mục đó, D-31); "Tất cả yêu cầu duyệt" chỉ để xem. "tất cả Xem" / "bỏ hết" áp cho cả nhóm menu; "Chỉ màn có quyền" để gọn.
+   - Đổi bao nhiêu cũng được → thanh **"N thay đổi chưa lưu"** → **Xem lại & lưu** (bảng Trước → Sau) → **Lưu thay đổi**: lưu một lần, có hiệu lực ngay với mọi tài khoản trong nhóm, ghi lịch sử. Nhóm menu tự bật khi có màn được xem, tự tắt khi không còn màn nào. **Bỏ thay đổi** / rời trang sẽ hỏi lại.
+2. **Tài khoản:** danh sách tài khoản trong nhóm (số nhóm của từng tài khoản, trạng thái). **Thêm tài khoản** (tìm, chọn nhiều) · **Bỏ khỏi nhóm** – không bỏ được nếu đó là nhóm duy nhất của tài khoản.
+3. **Xem trước menu:** menu người trong nhóm sẽ thấy, **tính cả thay đổi chưa lưu** – kiểm trước khi lưu.
+4. **So sánh:** chọn nhóm khác → các màn có mức khác nhau (và số màn giống nhau).
+5. **Lịch sử:** sửa nhóm, đổi quyền (ai, lúc nào, Trước → Sau).
 
 **Quyền Duyệt** không phải cột riêng: mỗi loại duyệt là một mục menu **"Phê duyệt › …"** (nhóm Phê duyệt). Cấp **Truy cập + Sửa** trên mục đó = được duyệt loại đó. Danh sách mục duyệt:
 
@@ -201,7 +201,7 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 | Hồ sơ này đã có tài khoản đăng nhập (…) | Mỗi hồ sơ 1 tài khoản – dùng tài khoản cũ |
 | Không tìm thấy nhóm người dùng | Nhóm đã xóa – tải lại trang |
 | Đường dẫn … đã tồn tại | MetaLink menu trùng – sửa đường dẫn |
-| Người dùng báo "không có quyền truy cập màn hình này" | Cấp **Truy cập** cho nhóm của họ ở `adm-permission`; người dùng tải lại trang |
+| Người dùng báo "không có quyền truy cập màn hình này" | Nhóm quyền › trang nhóm của họ › Phân quyền: chọn mức **Xem** cho màn đó → Xem lại & lưu; người dùng tải lại trang |
 | Người dùng có quyền mà nút vẫn mờ | Thiếu quyền Thêm / Sửa / Xuất của màn đó |
 | Người dùng không duyệt được | Cấp mục **Phê duyệt › …** đúng loại (Truy cập + Sửa) |
 | … «…» không có trong danh mục (…) | Giá trị phải chọn trong danh sách – xem 4.8c; cần giá trị mới → IT bổ sung danh mục |

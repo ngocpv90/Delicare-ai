@@ -60,10 +60,11 @@ namespace AppDelicare.Services.Implement
                     .Select(c => c.UserGroupId!.Value)
                     .Distinct()
                     .ToListAsync(cancellationToken);
-                var groups = await db.UserGroup.AsNoTracking()
-                    .Where(g => groupIds.Contains(g.Id) && !g.IsDeleted && g.Name != null)
-                    .Select(g => g.Name!)
-                    .ToListAsync(cancellationToken);
+                // UI-6.43 (D-124): nhóm nhận diện theo MÃ (Code) – giữ cả tên để tương thích dữ liệu chưa có mã.
+                var groups = (await db.UserGroup.AsNoTracking()
+                    .Where(g => groupIds.Contains(g.Id) && !g.IsDeleted)
+                    .Select(g => new { g.Code, g.Name })
+                    .ToListAsync(cancellationToken)).SelectMany(g => new[] { g.Code, g.Name }).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).ToList();
                 // Chỉ nhóm chưa xóa mới cấp quyền.
                 var liveGroupIds = await db.UserGroup.AsNoTracking().Where(g => groupIds.Contains(g.Id) && !g.IsDeleted).Select(g => g.Id).ToListAsync(cancellationToken);
                 var rows = await (from r in db.UserRole.AsNoTracking()

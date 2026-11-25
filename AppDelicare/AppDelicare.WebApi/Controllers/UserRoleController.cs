@@ -126,5 +126,63 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        // UI-6.43 (D-124): trang Nhóm quyền – tab Phân quyền / Xem trước / So sánh. Quyền theo màn Nhóm quyền (ScreenMap.Parents: UserRole → adm-usergroup).
+        [HttpGet("GetLevels")]
+        public async Task<IActionResult> GetLevels(Guid userGroupId)
+        {
+            try
+            {
+                return Ok(await _service.GetLevels(userGroupId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetLevels: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpPost("SaveMany")]
+        public async Task<IActionResult> SaveMany([FromBody] AppDelicare.Model.Model.RoleSaveManyRequest request)
+        {
+            try
+            {
+                return Ok(await _service.SaveMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SaveMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [Security.Permission("adm-usergroup", AppDelicare.Services.Interface.PermissionAction.View)]
+        [HttpPost("GetPreviewDraft")]
+        public async Task<IActionResult> GetPreviewDraft([FromBody] AppDelicare.Model.Model.RoleSaveManyRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetPreviewDraft(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetPreviewDraft: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        [HttpGet("Compare")]
+        public async Task<IActionResult> Compare(Guid groupA, Guid groupB)
+        {
+            try
+            {
+                return Ok(await _service.Compare(groupA, groupB));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Compare: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

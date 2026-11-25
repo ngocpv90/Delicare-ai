@@ -26,6 +26,7 @@ namespace AppDelicare.Services.Implement
             (typeof(Company), "Code", "pháp nhân"),
             (typeof(OrganizationUnit), "Code", "đơn vị / chi nhánh"),
             (typeof(Position), "Code", "chức danh"),
+            (typeof(UserGroup), "Code", "nhóm quyền – luồng duyệt / bot / nhóm gợi ý tìm theo mã (UI-6.43)"),
             (typeof(Shift), "Code", "ca – hậu tố mã mẻ / vệ sinh (CA1…)"),
             (typeof(UnitMeasure), "Code", "đơn vị tính (KG…)"),
             (typeof(ProductionLine), "Code", "dây chuyền – QR LINE_"),
