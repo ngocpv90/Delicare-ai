@@ -12,8 +12,9 @@ using AppDelicare.Model.Request.Custom;
 namespace AppDelicare.WebApi.Controllers
 {
     /// <summary>Sổ chỉ ghi thêm: không có Update / Delete (CLAUDE.md 3.3, T08).</summary>
-    public class PackagingLedgerController(IPackagingLedgerService service) : BaseController
+    public class PackagingLedgerController(IPackagingLedgerService service, ICleaningBatchService cleaning) : BaseController
     {
+        private readonly ICleaningBatchService _cleaning = cleaning;
         private readonly IPackagingLedgerService _service = service;
 
         [HttpGet("GetAll")]
@@ -115,6 +116,22 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " Record: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.32 (D-113): khay sạch cho ngày mai theo loại (quyền Xem Vệ sinh khay hộp hoặc Sổ bao bì).</summary>
+        [Security.Permission("qc-cleaning", PermissionAction.View, OrScreens = ["log-packaging-ledger"])]
+        [HttpGet("GetCleanStock")]
+        public async Task<IActionResult> GetCleanStock(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _cleaning.GetCleanStock(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetCleanStock: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

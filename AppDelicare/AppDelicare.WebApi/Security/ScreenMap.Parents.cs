@@ -63,6 +63,9 @@ namespace AppDelicare.WebApi.Security
             ["InventoryPolicy"] = ("scm-inv-balance", false),
             ["MaterialConsumptionVariance"] = ("scm-inv-balance", false),
             ["MaterialReservation"] = ("scm-issue", false),
+            // UI-6.32 (D-113): Kiểm tra vệ sinh + Kiểm tra khay hộp thu hồi là thao tác trong "Vệ sinh khay hộp".
+            ["CleaningChecklistResult"] = ("qc-cleaning", false),
+            ["ReturnInspection"] = ("qc-cleaning", false),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -78,6 +81,7 @@ namespace AppDelicare.WebApi.Security
             ["cost-standard"] = "cost-meal", ["cost-actual"] = "cost-meal",
             ["scm-zone"] = "scm-warehouse", ["scm-location"] = "scm-warehouse", ["scm-lot"] = "scm-inv-balance", ["scm-inv-txn"] = "scm-inv-balance", ["scm-inv-policy"] = "scm-inv-balance",
             ["scm-consumption-var"] = "scm-inv-balance", ["scm-reservation"] = "scm-issue",
+            ["qc-cleaning-result"] = "qc-cleaning", ["log-return-inspection"] = "qc-cleaning",
         };
     }
 }

@@ -144,11 +144,11 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>BE2.5: phiếu thu hồi sinh khi bàn giao (Chờ thu hồi) hoặc qua ContainerReturn/Record (ghi sổ bao bì IN) – CRUD Insert không ghi.</summary>
         private static Task<string> Insert(ContainerReturnRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Phiếu thu hồi khay / hộp", "ContainerReturn/Record, Inspect"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Phiếu thu hồi khay / hộp", "màn Thu hồi khay hộp (ghi thu hồi) và Vệ sinh khay hộp (Kiểm tra)"));
 
         /// <summary>BE2.5: số thu / hỏng / trạng thái gắn sổ bao bì – chỉ đổi qua ContainerReturn/Record, Inspect.</summary>
         private static Task<string> Update(ContainerReturnRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Phiếu thu hồi khay / hộp", "ContainerReturn/Record, Inspect"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Phiếu thu hồi khay / hộp", "màn Thu hồi khay hộp (ghi thu hồi) và Vệ sinh khay hộp (Kiểm tra)"));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {
@@ -508,7 +508,8 @@ namespace AppDelicare.Services.Implement
                     Remark = note,
                     Note = note,
                     InspectionDate = now,
-                    InspectorEmployeeId = request.InspectorEmployeeId is { } i && i != Guid.Empty ? i : null,
+                    // UI-6.32 (D-113): không gửi người kiểm → người đăng nhập (nhân viên gắn tài khoản).
+                    InspectorEmployeeId = request.InspectorEmployeeId is { } i && i != Guid.Empty ? i : (await Identity.PersonLink.EmployeeOfUserAsync(db, actor.UserId))?.Id,
                 };
                 _unitOfWork.ReturnInspectionRepository.Add(inspection);
                 cr.Status = ContainerReturnStatus.Inspected;

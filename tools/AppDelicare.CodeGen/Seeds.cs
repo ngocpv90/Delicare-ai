@@ -374,7 +374,8 @@ public static partial class Seeds
         "#/prod-order", "#/prod-output", "#/prod-workstation",
         "#/cost-standard", "#/cost-actual", "#/group/05b",
         "#/kpi-monthly", // UI-6.28 (D-109): gộp vào Chỉ số kinh doanh
-        "#/scm-zone", "#/scm-location", "#/scm-lot", "#/scm-inv-txn", "#/scm-inv-policy", "#/scm-reservation", "#/scm-consumption-var"]; // UI-6.29 (D-110): Kho 12 → 5 mục // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
+        "#/scm-zone", "#/scm-location", "#/scm-lot", "#/scm-inv-txn", "#/scm-inv-policy", "#/scm-reservation", "#/scm-consumption-var", // UI-6.29 (D-110): Kho 12 → 5 mục
+        "#/qc-cleaning-result", "#/log-return-inspection"]; // UI-6.32 (D-113): Kiểm tra vệ sinh + Kiểm tra khay thu hồi gộp vào Vệ sinh khay hộp // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
 
     public static string[] HiddenMenuLinks => ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Ui6HiddenLinks];
 

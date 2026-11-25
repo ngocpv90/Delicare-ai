@@ -33,12 +33,10 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S (IX) |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S (IX) |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S (IX) |
-| Chất lượng & ATTP › Kiểm tra vệ sinh | `qc-cleaning-result` | S (IX) |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | Q |
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | Q |
 | Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | X |
 | Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X |
-| Đóng gói & Giao hàng › Kiểm tra khay hộp thu hồi | `log-return-inspection` | S (IX) |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày
@@ -128,17 +126,19 @@ Bấm thẻ mẻ trên **bảng điều độ** (ngày × ca × dây chuyền) �
 - Mẻ **Đạt**: **Loại mẻ** (nếu phát hiện sau), **Tạo lệnh đóng gói**.
 - *Mẻ … chưa đạt điều kiện ATTP: Chưa đo nhiệt độ lõi / Nhiệt độ lõi … dưới ngưỡng 70 °C / Chưa ghi sản lượng mẻ / Tiêu chí ATTP trọng yếu chưa đạt…*.
 
-### 4.6 Vệ sinh khay / hộp – `qc-cleaning`, `qc-cleaning-result`
-**Kiểm tra khay thu hồi** (nút đầu trang, cần quyền màn Kiểm tra hàng trả về):
-1. Chọn **Phiếu thu hồi*** (đang Đã thu hồi), **Kết quả kiểm tra*** (Đủ / Thiếu / Hỏng / Bẩn / Không đạt), Người kiểm, Số hỏng, Số thiếu, Người phụ trách vệ sinh, Ghi chú (bắt buộc khi khác Đủ).
-2. **Ghi kết quả kiểm tra** → xác nhận → khay dùng được **tự vào mẻ vệ sinh `VS-…`**.
+### 4.6 Vệ sinh khay hộp – `qc-cleaning` (UI-6.32)
+Một màn cho cả việc kiểm tra khay thu hồi và vệ sinh 6 bước (mục "Kiểm tra vệ sinh" và "Kiểm tra khay hộp thu hồi" đã ẩn – link cũ mở màn này). 2 tab: **Hôm nay** · **Sổ vệ sinh**.
 
-**Lập mẻ vệ sinh** (dùng khi vệ sinh lại sau mẻ không đạt): chọn Phiếu kiểm tra thu hồi*, Số khay / hộp (trống = toàn bộ số dùng được còn lại), Ca, Người phụ trách → **Lập mẻ**.
+**Đầu màn:** ngày ◀ ▶; thanh **Khay sạch cho ngày mai** theo loại bao bì: *sẵn sàng / cần (suất đã chốt ngày mai × khay mỗi suất) – thiếu N* (đỏ) · đang vệ sinh · chờ kiểm tra. Tồn khay sạch đầu kỳ ghi ở **Sổ bao bì** (loại "Sẵn sàng dùng lại"). 4 thẻ: Chờ kiểm tra · Đang vệ sinh · Hoàn tất hôm nay (đạt / tổng) · Tỷ lệ đạt 7 ngày.
 
-**Ghi 6 bước:** trên dòng mẻ bấm **Ghi bước** (Đang vệ sinh) / **Các bước** (đã xong); hoặc **Ghi bước vệ sinh** ở `qc-cleaning-result`.
-1. Bảng bước: Bước (* bắt buộc), Kết quả hiện tại (người, giờ, lần), chọn **Đạt / Không đạt**, Giá trị đo, **Hóa chất** (bắt buộc khi Đạt ở bước khử khuẩn), **Khắc phục** (bắt buộc khi Không đạt).
-2. Làm **lần lượt**: bước sau chỉ ghi được khi các bước bắt buộc trước đã Đạt. **Lưu các bước**.
-3. Kết luận: **Đạt – sẵn sàng dùng lại** (khi mọi bước đạt) → khay vào sổ bao bì "sẵn sàng dùng lại"; hoặc **Không đạt** (bắt buộc lý do) → lập mẻ mới để vệ sinh lại. Sau khi kết luận không sửa được.
+**Hôm nay – 3 cột:**
+1. **Chờ kiểm tra** (phiếu thu hồi Đã thu hồi: khách, loại, đơn giao, giờ thu, phải thu / thu về / hỏng / thiếu) → **Kiểm tra**: chọn kết quả một chạm (Đủ / Thiếu / Hỏng / Bẩn / Không đạt – gợi ý sẵn Thiếu khi thu về ít hơn, Hỏng khi có hỏng), số hỏng / thiếu điền sẵn, **người kiểm = tài khoản đang đăng nhập**, ghi chú bắt buộc khi khác Đủ → **Ghi kiểm tra & lập mẻ** (khay dùng được tự vào mẻ vệ sinh mới).
+2. **Đang vệ sinh** (mẻ: số, khách, loại, số lượng, thanh 6 bước, "Bước x/6 · người phụ trách") → **Ghi bước**: bước đã ghi hiện Đạt + người / giờ; bước còn lại **mặc định Đạt**; bước khử khuẩn **hóa chất điền sẵn** theo lần ghi gần nhất; Không đạt → khắc phục bắt buộc (khóa kết luận).
+   - **Lưu bước đã làm** – ghi lần lượt tới bước Không đạt đầu tiên.
+   - **Đạt tất cả & kết luận** – một chạm: ghi Đạt mọi bước còn lại + kết luận Đạt → khay vào sổ bao bì "sẵn sàng dùng lại". Bị chặn khi mẻ có bước Không đạt.
+3. **Hoàn tất hôm nay**: Đạt – sẵn sàng / Không đạt + lý do + **Vệ sinh lại** (lập mẻ mới đúng số khay của mẻ không đạt).
+
+**Sổ vệ sinh (chỉ xem):** gom theo ngày (số mẻ, số không đạt, **In ngày**); cột Giờ kết luận · Mẻ · Khách · Loại · Số lượng · Kết quả · Hóa chất khử khuẩn · Người làm · Khắc phục; tìm + kỳ (Hôm nay · 7 ngày · Tháng này · Chọn khoảng) + lọc kết quả; bấm số mẻ → đủ 6 bước (người, giờ, hóa chất, số lần ghi). **In sổ vệ sinh** + **Xuất Excel**. Không Sửa / Xóa.
 
 ## 5. Trạng thái
 

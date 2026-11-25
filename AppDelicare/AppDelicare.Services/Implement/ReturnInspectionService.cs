@@ -134,7 +134,7 @@ namespace AppDelicare.Services.Implement
 
         private static Task<string> Delete(Guid? id, string typeSave) => Task.FromResult(CrudBlocked);
 
-        private static string CrudBlocked => string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Phiếu kiểm tra vật dụng thu hồi", "ContainerReturn/Inspect");
+        private static string CrudBlocked => string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Phiếu kiểm tra vật dụng thu hồi", "nút Kiểm tra ở màn Vệ sinh khay hộp");
 
         public async Task<IResult<ReturnInspection>> GetById(Guid id)
         {

@@ -493,3 +493,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Khu ghi tay quá 60′ đầu ca chưa đo → "Đến giờ chưa đo" + 1 tin bot / ca; cảm biến im quá 30′ → "Cảm biến mất tín hiệu", có số đo lại → hết.
 - [ ] Sổ nhiệt độ: gom theo ngày, lọc khu / nguồn / chỉ ngoài ngưỡng / gồm lõi – giao – nhận, In sổ, Xuất Excel, không Sửa / Xóa. Biểu đồ: chỉ một biểu đồ, 48 giờ / 7 / 30 ngày.
 - [ ] Quyền: uat.qa, uat.ops-kit, uat.coo vào được; uat.ops-wh, uat.sal-sales không (theo ma trận).
+
+## UI-6.32 – Vệ sinh khay hộp (D-113)
+- [ ] Sidebar Chất lượng: không còn "Kiểm tra vệ sinh"; Đóng gói & Giao hàng: không còn "Kiểm tra khay hộp thu hồi"; link cũ mở Vệ sinh khay hộp (tab Sổ / Hôm nay).
+- [ ] Thanh "Khay sạch cho ngày mai" khớp sổ bao bì và suất đã chốt ngày mai (báo thiếu đỏ).
+- [ ] Kiểm tra: chọn kết quả một chạm, gợi ý Thiếu / Hỏng đúng, người kiểm = tài khoản đăng nhập, khác Đủ bắt buộc ghi chú → tự lập mẻ.
+- [ ] Ghi bước: mặc định Đạt, hóa chất điền sẵn; "Đạt tất cả & kết luận" xong mẻ một chạm; mẻ có bước Không đạt thì nút bị khóa; Vệ sinh lại lập đúng mẻ mới.
+- [ ] Sổ vệ sinh: gom theo ngày, lọc, bấm mẻ xem 6 bước, In / Excel, không Sửa / Xóa. Điện thoại: 3 cột xếp dọc.
+- [ ] Quyền: uat.qa, uat.ops-kit, uat.coo vào được (theo ma trận OPS-LOG / OPS-POS không có mục này).

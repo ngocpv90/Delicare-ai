@@ -283,6 +283,8 @@ public static partial class Seeds
     [
         ("scm-zone", "scm-warehouse"), ("scm-location", "scm-warehouse"), ("scm-lot", "scm-inv-balance"), ("scm-inv-txn", "scm-inv-balance"),
         ("scm-inv-policy", "scm-inv-balance"), ("scm-consumption-var", "scm-inv-balance"), ("scm-reservation", "scm-issue"),
+        // UI-6.32 (D-113): Kiểm tra vệ sinh, Kiểm tra khay hộp thu hồi → Vệ sinh khay hộp.
+        ("qc-cleaning-result", "qc-cleaning"), ("log-return-inspection", "qc-cleaning"),
     ];
 
     /// <summary>D-79 (d): mục duyệt → nhóm duyệt (AllowAccess + AllowEdit). <c>crm-price-policy</c> giữ CEO cho khi có loại duyệt (mục đang ẩn).</summary>
