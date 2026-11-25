@@ -186,7 +186,7 @@ namespace AppDelicare.Services.Implement
                 var list = new List<DeliveryExecutionItemModel>();
                 foreach (var d in deliveryOrders)
                 {
-                    var stop = stops.FirstOrDefault(s => s.DeliveryOrderId == d.Id);
+                    var stop = stops.Where(s => s.DeliveryOrderId == d.Id).OrderBy(s => s.StopStatus == DeliveryStopStatus.Failed ? 1 : 0).FirstOrDefault(); // UI-6.49 (2)
                     var route = stop != null ? routes.GetValueOrDefault(stop.DeliveryRouteId) : null;
                     var vehicle = route?.VehicleId is { } vid ? vehicles.GetValueOrDefault(vid) : null;
                     var execution = executions.Where(e => e.DeliveryOrderId == d.Id).OrderByDescending(e => e.CreatedDate).FirstOrDefault();
