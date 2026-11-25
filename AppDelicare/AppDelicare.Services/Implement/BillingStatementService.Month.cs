@@ -160,7 +160,7 @@ namespace AppDelicare.Services.Implement
                 }
                 else
                 {
-                    var docs = new List<PrintDocumentModel> { SummaryDoc(statements, from, to) };
+                    var docs = new List<PrintDocumentModel> { await SummaryDocAsync(statements, from, to) };
                     foreach (var m in statements)
                     {
                         docs.Add(await DocAsync(m));
@@ -181,12 +181,13 @@ namespace AppDelicare.Services.Implement
 
         private static string Safe(string? code) => string.Concat((code ?? "KH").Where(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_'));
 
-        private PrintDocumentModel SummaryDoc(List<BillingStatementModel> list, DateTime from, DateTime to)
+        private async Task<PrintDocumentModel> SummaryDocAsync(List<BillingStatementModel> list, DateTime from, DateTime to)
         {
+            var company = await PrintCompany.ResolveAsync(_unitOfWork.DbContext); // UI-6.46: tên pháp nhân thay chữ cố định
             var doc = new PrintDocumentModel
             {
                 Type = "BILLING_SUMMARY", Id = Guid.Empty, Title = "TỔNG HỢP BẢNG KÊ THANH TOÁN", FormCode = "BK-TH", DocumentNo = $"Tổng hợp {from:MM-yyyy}", DocumentDate = _clock.Today,
-                CompanyName = "DELICARE",
+                CompanyName = company?.Name ?? "DELICARE", CompanyAddress = company?.Address, CompanyPhone = company?.Phone, CompanyTaxCode = company?.TaxCode,
             };
             doc.ListInfo.Add(new PrintInfoRowModel { Label = "Kỳ", Value = $"{D(from)} – {D(to)}" });
             doc.ListHeader.AddRange(["Mã KH", "Khách hàng", "Suất tính tiền", "Tiền suất ăn", "Phí khay", "VAT", "Tổng thanh toán", "Đơn chờ đối soát"]);

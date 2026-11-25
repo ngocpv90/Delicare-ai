@@ -156,7 +156,7 @@
   // Chế độ API (BE3.3): Common/GetAlerts – server tính theo quyền Xem + chi nhánh đang chọn, cache 60 giây; giao diện hỏi lại mỗi 60 giây.
   // Chưa có kết quả → danh sách rỗng (không kéo 7 bảng về trình duyệt). API lỗi / backend cũ chưa có → tính cục bộ như mockup.
   const SEV_COLOR = { HIGH: 'red', MEDIUM: 'orange', LOW: 'blue' };
-  const ALERT_ICON = { STOCK_BELOW_MIN: 'alert', APPROVAL_PENDING: 'approve', QC_INCOMING_PENDING: 'shield', LOT_ON_HOLD: 'shield', TEMPERATURE_OUT_OF_RANGE: 'thermo', COMPLAINT_OVERDUE: 'msg', COMPLAINT_OPEN: 'msg', OUTBOUND_FAILED: 'bot', LOT_EXPIRING: 'lot' };
+  const ALERT_ICON = { STOCK_BELOW_MIN: 'alert', APPROVAL_PENDING: 'approve', QC_INCOMING_PENDING: 'shield', LOT_ON_HOLD: 'shield', TEMPERATURE_OUT_OF_RANGE: 'thermo', COMPLAINT_OVERDUE: 'msg', COMPLAINT_OPEN: 'msg', OUTBOUND_FAILED: 'bot', LOT_EXPIRING: 'lot', ACCOUNT_RESIGNED_OPEN: 'key', SHIFT_SHORT: 'users', CLEAN_TRAYS_SHORT: 'recycle', ROUTE_NOT_READY: 'truck' }; // UI-6.46
   const live = { alerts: null, at: 0, busy: false, branch: null, failed: false };
   const ALERT_TTL = 60000;
   function pullAlerts() {
@@ -352,7 +352,7 @@
       'hr-swap': 'hr-leave?type=SWAP', // UI-6.39 (D-120)
       'adm-company': 'adm-orgunit?company=1', // UI-6.41 (D-122)
       'adm-permission': 'adm-usergroup' }; // UI-6.43 (D-124)
-    if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
+    if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : params.id && id === 'hr-swap' ? '&swap=' + encodeURIComponent(params.id) : ''))); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];
     if (up) {

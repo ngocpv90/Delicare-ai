@@ -382,7 +382,7 @@ namespace AppDelicare.Tests.Hr
             Guid e1 = w.Employees[0], e2 = w.Employees[1], e3 = w.Employees[2];
             using var staff1 = _factory.CreateAuthorizedClient(await UserAsync(_factory, w.Codes[0]));
             using var staff2 = _factory.CreateAuthorizedClient(await UserAsync(_factory, w.Codes[1]));
-            using var hr = _factory.CreateAuthorizedClient(await UserAsync(_factory, "s1-hr", approve: ["hr-swap"]));
+            using var hr = _factory.CreateAuthorizedClient(await UserAsync(_factory, "s1-hr", approve: ["hr-leave"]));
             Guid a = (await Assign(admin, e1, Monday, w.Trua)).Ok().GetProperty("assignment").GetProperty("id").GetGuid();
             Guid b = (await Assign(admin, e2, Monday.AddDays(1), w.Toi)).Ok().GetProperty("assignment").GetProperty("id").GetGuid();
             Guid e2Monday = (await Assign(admin, e2, Monday, w.Dem)).Ok().GetProperty("assignment").GetProperty("id").GetGuid();

@@ -6,7 +6,9 @@ using AppDelicare.Data.Repositories;
 using AppDelicare.Model.Helper;
 using AppDelicare.Model.Model;
 using AppDelicare.Services.Interface;
+using AppDelicare.Model.Request.Custom;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
@@ -34,6 +36,11 @@ namespace AppDelicare.Services.Implement
             public const string ComplaintOpen = "COMPLAINT_OPEN";
             public const string OutboundFailed = "OUTBOUND_FAILED";
             public const string LotExpiring = "LOT_EXPIRING";
+            // UI-6.46 (D-125 c): cảnh báo mới của các đợt UI-6.
+            public const string AccountResignedOpen = "ACCOUNT_RESIGNED_OPEN";
+            public const string ShiftShort = "SHIFT_SHORT";
+            public const string CleanTraysShort = "CLEAN_TRAYS_SHORT";
+            public const string RouteNotReady = "ROUTE_NOT_READY";
         }
 
         /// <summary>Màn hình (screen-id) chịu quyền Xem + route của từng cảnh báo. Cảnh báo duyệt không cần quyền màn (hộp duyệt của chính người dùng).</summary>
@@ -48,6 +55,10 @@ namespace AppDelicare.Services.Implement
             [AlertCode.ComplaintOpen] = "log-complaint",
             [AlertCode.OutboundFailed] = "int-outbound",
             [AlertCode.LotExpiring] = "scm-inv-balance", // UI-6.29: tab Theo lô
+            [AlertCode.AccountResignedOpen] = "adm-user", // UI-6.42
+            [AlertCode.ShiftShort] = "hr-shift", // UI-6.37
+            [AlertCode.CleanTraysShort] = "qc-cleaning", // UI-6.32
+            [AlertCode.RouteNotReady] = "log-route", // UI-6.34
         };
 
         private const string OutboundFailedStatus = "Failed";
@@ -183,6 +194,8 @@ namespace AppDelicare.Services.Implement
                     Add(AlertCode.OutboundFailed, SeverityMedium, n, ConstantHelper.Message.AlertOutboundFailedTitle, string.Format(ConstantHelper.Message.AlertOutboundFailedDetail, n));
                 }
 
+                await NewAlertsAsync(Can, Add, branchId, now, today);
+
                 list = [.. list.OrderBy(a => SeverityRank(a.Severity)).ThenBy(a => a.Code, StringComparer.Ordinal)];
                 if (_alertRules.CacheSeconds > 0)
                 {
@@ -195,6 +208,60 @@ namespace AppDelicare.Services.Implement
                 Log.Error(string.Concat("[", GetType().Name, "]", " GetAlerts: ", ex.ToString()));
                 throw;
             }
+        }
+
+        /// <summary>
+        /// UI-6.46 (D-125 c): tài khoản nhân viên đã nghỉ còn mở (Tài khoản) · ca thiếu người 7 ngày tới (Phân ca) · khay sạch thiếu cho ngày mai (Vệ sinh khay hộp) ·
+        /// chuyến sắp xuất bến (≤ DispatchShortWarnMinutes) chưa đủ hàng (Điều phối giao hàng). Dùng lại số liệu của màn gốc; một cảnh báo lỗi không làm hỏng chuông.
+        /// </summary>
+        private async Task NewAlertsAsync(Func<string, bool> can, Action<string, string, int, string, string> add, Guid? branchId, DateTime now, DateTime today)
+        {
+            var db = _unitOfWork.DbContext;
+            async Task Safe(string code, Func<Task> run)
+            {
+                if (!can(code))
+                {
+                    return;
+                }
+                try
+                {
+                    await run();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "[CommonService] GetAlerts {Code}: bỏ qua", code);
+                }
+            }
+            await Safe(AlertCode.AccountResignedOpen, async () =>
+            {
+                var open = await (from u in db.User.AsNoTracking()
+                                  join e in db.Employee.AsNoTracking() on u.PersonId equals e.PersonId
+                                  where !u.IsDeleted && u.IsActive && !e.IsDeleted && u.PersonId != null
+                                  select new { u.Id, e.Status }).ToListAsync();
+                int n = open.GroupBy(x => x.Id).Count(g => g.All(x => !EmployeeStatus.IsWorking(x.Status)));
+                add(AlertCode.AccountResignedOpen, SeverityHigh, n, "Tài khoản của người đã nghỉ việc còn mở", $"{n} tài khoản cần khóa");
+            });
+            await Safe(AlertCode.ShiftShort, async () =>
+            {
+                var grid = (await _services.GetRequiredService<IShiftAssignmentService>().GetGrid(new ShiftGridRequest { FromDate = today, Days = 7, OrganizationUnitId = branchId })).Data;
+                string from = today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                int n = grid?.UnitTotals.Count(t => t.Short && string.CompareOrdinal(t.Day, from) >= 0) ?? 0;
+                add(AlertCode.ShiftShort, SeverityMedium, n, "Ca thiếu người", $"{n} ca trong 7 ngày tới chưa đủ định biên");
+            });
+            await Safe(AlertCode.CleanTraysShort, async () =>
+            {
+                var stock = (await _services.GetRequiredService<ICleaningBatchService>().GetCleanStock(today)).Data;
+                var shortTypes = stock?.ListType.Where(t => t.Shortage > 0).ToList() ?? [];
+                add(AlertCode.CleanTraysShort, SeverityMedium, shortTypes.Count, "Khay sạch thiếu cho ngày mai",
+                    string.Join("; ", shortTypes.Select(t => $"{t.Label ?? t.PackagingType}: thiếu {t.Shortage:#,##0}")));
+            });
+            await Safe(AlertCode.RouteNotReady, async () =>
+            {
+                var board = (await _services.GetRequiredService<IDeliveryRouteService>().GetDispatchBoard(today)).Data;
+                int n = board?.ListRoute.Count(r => (r.Status == DeliveryRouteStatus.Planned || r.Status == DeliveryRouteStatus.Loading) && r.ListPoint.Count != 0 && !r.CanLoad
+                    && r.PlannedStart is { } st && st > now && st <= now.AddMinutes(_bizRules.DispatchShortWarnMinutes)) ?? 0;
+                add(AlertCode.RouteNotReady, SeverityHigh, n, "Chuyến sắp xuất bến chưa đủ hàng", $"{n} chuyến trong {_bizRules.DispatchShortWarnMinutes} phút tới chưa đủ thực đơn");
+            });
         }
 
         private static int SeverityRank(string severity) => severity switch { SeverityHigh => 0, SeverityMedium => 1, _ => 2 };
