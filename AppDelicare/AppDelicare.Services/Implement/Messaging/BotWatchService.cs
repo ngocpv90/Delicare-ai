@@ -166,7 +166,7 @@ namespace AppDelicare.Services.Implement.Messaging
                                     && (a.AssignmentStatus == ShiftAssignmentStatus.Planned || a.AssignmentStatus == ShiftAssignmentStatus.Confirmed)
                                     && a.PlannedStart != null && a.PlannedEnd != null && a.PlannedStart < late && a.PlannedEnd > now
                                     && !db.AttendanceEvent.Any(ev => !ev.IsDeleted && ev.ShiftAssignmentId == a.Id && ev.EventType == AttendanceEventType.CheckIn)
-                              select new { a.ShiftId, a.WorkDate, Start = a.PlannedStart!.Value, ShiftName = sh != null ? sh.Name : null, Name = e.FullName ?? e.Code })
+                              select new { a.ShiftId, a.WorkDate, Start = a.PlannedStart!.Value, ShiftName = sh != null ? sh.Name : null, Name = e.FullName ?? e.Code, e.OrganizationUnitId })
                              .ToListAsync();
             int sent = 0;
             foreach (var g in rows.GroupBy(r => new { r.ShiftId, r.WorkDate }))
@@ -181,6 +181,22 @@ namespace AppDelicare.Services.Implement.Messaging
                     },
                     $"{NotificationCatalog.NotCheckedIn}:{g.Key.ShiftId:N}:{g.Key.WorkDate:yyyyMMdd}",
                     buttons: [new NotificationButton("👥 Ai chưa vào ca", "sc:run:hr_absent")], requireAdd: true);
+                // UI-6.38 (D-119 b): thêm trưởng đơn vị của người chưa vào ca – 1 tin / ca / đơn vị.
+                foreach (var u in g.Where(x => x.OrganizationUnitId != null).GroupBy(x => x.OrganizationUnitId!.Value))
+                {
+                    var manager = await db.OrganizationUnit.AsNoTracking().Where(o => o.Id == u.Key && o.ManagerId != null).Select(o => o.ManagerId).FirstOrDefaultAsync();
+                    if (manager is not { } mid)
+                    {
+                        continue;
+                    }
+                    var un = u.Select(x => x.Name).Distinct().OrderBy(x => x).ToList();
+                    sent += await BusinessNotifier.SafeEnqueueAsync(notifications, new NotificationRequest
+                    {
+                        Template = NotificationCatalog.NotCheckedIn, EmployeeIds = [mid],
+                        Data = new { title = $"Ca {first.ShiftName} {first.Start:HH:mm}: {un.Count} người trong tổ chưa vào ca", lines = un.Take(15).Select(n => "• " + n).ToList() },
+                        IdempotencyKey = $"{NotificationCatalog.NotCheckedIn}:{g.Key.ShiftId:N}:{g.Key.WorkDate:yyyyMMdd}:MGR:{u.Key:N}",
+                    });
+                }
             }
             return sent;
         }

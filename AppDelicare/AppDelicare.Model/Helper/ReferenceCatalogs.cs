@@ -47,6 +47,7 @@ namespace AppDelicare.Model.Helper
             ["SupplierIssueType"] = "Loại sự cố nhà cung cấp",
             ["DeliveryFailReason"] = "Lý do giao thất bại",
             ["Gender"] = "Giới tính",
+            ["AttendanceSupplementReason"] = "Lý do bổ sung giờ chấm công",
             ["EmployeeResignReason"] = "Lý do nghỉ việc",
             ["SupplierIssueResolutionType"] = "Hướng xử lý sự cố nhà cung cấp",
             ["ChecklistArea"] = "Khu vực bộ kiểm tra ATTP",

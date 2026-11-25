@@ -544,3 +544,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Cấu hình định biên (Hr:ShiftMinStaff) → dòng tổng tổ đỏ khi thiếu, thẻ Ca thiếu người đúng; cột Tuần cảnh báo ≥ 6 ca / không ngày nghỉ.
 - [ ] Thứ 6 sau 15:00: tuần sau còn nháp → trưởng đơn vị + người phân ca nhận 1 tin.
 - [ ] Điện thoại: xem theo ngày, mỗi ca một khối.
+
+## UI-6.38 – Chấm công (D-119)
+- [ ] Tab Hôm nay: chọn ca; 4 cột đúng; Chấm hộ có giờ thực tế (trống = bây giờ) + lý do; Báo vắng khi đã quá giờ; Cần xử lý: Bổ sung giờ (thiếu ra ca) và Xác nhận hợp lệ (ngoài bán kính, lý do bắt buộc).
+- [ ] Bổ sung giờ: ngoài khung ca / ca quá 3 ngày / đã có lần ra → báo lỗi; hợp lệ → ca Hoàn thành, giờ công đúng; sổ có dòng "[BỔ SUNG] …".
+- [ ] Bảng công tháng: ký hiệu đúng, dải Cần xử lý lọc được, bấm ô xem chi tiết; tổng khớp bảng công cũ; Xuất bảng công mở Excel đúng tiếng Việt.
+- [ ] Sổ chấm công chỉ xem. Không còn nút Chốt vắng; 23:30 tự chuyển Vắng (chạy lại không đổi thêm).
+- [ ] Bot: quá giờ còn người chưa vào ca → trưởng đơn vị nhận 1 tin / ca.
+- [ ] Điện thoại: 4 cột xếp dọc, nút to.

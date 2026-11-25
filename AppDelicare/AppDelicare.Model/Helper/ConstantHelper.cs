@@ -96,6 +96,22 @@
             public static readonly string HrBulkDone = "Phân ca hàng loạt: tạo {0} ca, bỏ qua {1}";
             public static readonly string HrBulkSkipAssigned = "Đã có ca {0}";
             public static readonly string HrBulkSkipLeave = "Nghỉ phép (đơn {0})";
+            // UI-6.38 (D-119)
+            public static readonly string HrSupplementTypeInvalid = "Chọn loại bổ sung: Vào ca hoặc Ra ca.";
+            public static readonly string HrSupplementReasonRequired = "Chọn lý do bổ sung giờ.";
+            public static readonly string HrSupplementShiftNotFound = "Không tìm thấy ca được phân của nhân viên.";
+            public static readonly string HrSupplementTooOld = "Chỉ bổ sung giờ cho ca trong {0} ngày gần nhất.";
+            public static readonly string HrSupplementOutOfWindow = "Giờ thực tế phải trong khung ca: từ {0} đến {1}.";
+            public static readonly string HrSupplementExists = "Ca này đã có lần {0} – không bổ sung thêm.";
+            public static readonly string HrSupplementOutBeforeIn = "Giờ ra ca phải sau giờ vào ca.";
+            public static readonly string HrSupplementDone = "Đã bổ sung giờ {0} {1} cho {2}.";
+            public static readonly string HrConfirmValidNoteRequired = "Ghi lý do xác nhận hợp lệ.";
+            public static readonly string HrConfirmValidNotOutside = "Lần chấm này không ở ngoài bán kính.";
+            public static readonly string HrConfirmValidAlready = "Lần chấm này đã được xác nhận.";
+            public static readonly string HrConfirmValidDone = "Đã xác nhận lần chấm hợp lệ.";
+            public static readonly string HrReportAbsentAttended = "Ca đã có chấm công hoặc không còn ở trạng thái chờ – không báo vắng được.";
+            public static readonly string HrReportAbsentFuture = "Chưa tới ngày của ca – không báo vắng được.";
+            public static readonly string HrReportAbsentDone = "Đã ghi vắng.";
             // UI-6.37 (D-118)
             public static readonly string HrAssignManyTooMany = "Mỗi lần tô tối đa 500 ô.";
             public static readonly string HrAssignManyDone = "Đã lưu {0} ô{1}";
