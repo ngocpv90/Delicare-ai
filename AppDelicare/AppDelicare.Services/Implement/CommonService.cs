@@ -539,7 +539,7 @@ namespace AppDelicare.Services.Implement
             return new RecordHistoryItemModel
             {
                 At = a.CreatedDate, By = a.CreatedBy, Source = SourceAudit, Action = action,
-                ActionName = action switch { "Added" => "Tạo mới", "Modified" => "Cập nhật", "Deleted" => "Xóa", "Download" => "Tải tệp", _ => action },
+                ActionName = action switch { "Added" => "Tạo mới", "Modified" => "Cập nhật", "Deleted" => "Xóa", "Download" => "Tải tệp", "RoleSaveMany" => "Đổi quyền", "ResignScheduled" => "Hẹn nghỉ việc", "ResignCancelled" => "Hủy hẹn nghỉ việc", "Resign" => "Nghỉ việc", "ConfirmValid" => "Xác nhận hợp lệ", "StatusChange" => "Đổi trạng thái", _ => action },
                 EntityName = entity, EntityId = a.IdChange, ListChange = changes,
             };
         }
