@@ -51,6 +51,27 @@ namespace AppDelicare.Tests.HrAccount
         }
 
         [Fact]
+        public async Task Ui649_overview_page_has_account_access_bot_and_needs_account_screen()
+        {
+            Guid user = await UserAsync("u649.ov");
+            await _factory.SeedAsync(db =>
+            {
+                db.LocationTracking.Add(new LocationTracking { Id = Guid.NewGuid(), CreatedBy = user, CreatedDate = Today.AddDays(-2), IPv4 = "10.0.0.9", PcName = "Chrome" });
+                db.UserExternalIdentity.Add(new UserExternalIdentity { Id = Guid.NewGuid(), UserId = user, IntegrationChannelId = Guid.NewGuid(), ExternalUserId = "1", ExternalUsername = "ov649", LinkedAt = Today.AddDays(-5), IdentityStatus = "Active" });
+                return Task.CompletedTask;
+            });
+            using var admin = _factory.CreateAuthorizedClient();
+            var o = (await admin.GetResultAsync("/api/User/GetOverview?id=" + user)).Ok();
+            o.GetProperty("account").GetProperty("userName").GetString().Should().Be("u649.ov");
+            o.GetProperty("listAccess")[0].GetProperty("ip").GetString().Should().Be("10.0.0.9");
+            o.GetProperty("listBot")[0].GetProperty("username").GetString().Should().Be("ov649");
+            o.GetProperty("listGroupId").GetArrayLength().Should().Be(1);
+            (await admin.GetResultAsync("/api/User/GetOverview?id=" + Guid.NewGuid())).Fail();
+            using var nobody = _factory.CreateAuthorizedClient(await UserAsync("u649.none"));
+            (await nobody.GetAsync("/api/User/GetOverview?id=" + user)).StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+        }
+
+        [Fact]
         public async Task List_shows_last_access_resigned_open_and_pending_requests()
         {
             Guid person = await PersonAsync("Người U642C");

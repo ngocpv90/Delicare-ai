@@ -85,6 +85,11 @@ namespace AppDelicare.WebApi.Controllers
         [Security.Permission("adm-user", PermissionAction.Edit)]
         public Task<IActionResult> LockMany([FromBody] AppDelicare.Model.Model.AccountIdsRequest request) => RunAccount(nameof(LockMany), () => _service.LockMany(request));
 
+        /// <summary>UI-6.49 (7): trang chi tiết tài khoản toàn màn (#/adm-user-detail?id=).</summary>
+        [HttpGet("GetOverview")]
+        [Security.Permission("adm-user", PermissionAction.View)]
+        public Task<IActionResult> GetOverview(Guid id) => RunAccount(nameof(GetOverview), () => _service.GetOverview(id));
+
         /// <summary>Tab "Chờ IT xử lý": yêu cầu tài khoản (D-82) đang chờ.</summary>
         [HttpGet("GetPendingRequests")]
         [Security.Permission("adm-user", PermissionAction.View)]
