@@ -5,7 +5,9 @@
   APP.FN['sys-catalog'] = { ph: 'P0', grp: 'Danh mục hệ thống', fn: 'Tổng quan danh mục', id: 'sys-catalog', name: 'Tổng quan danh mục', types: ['DB'], table: null, rel: [], st: 'MAPPED', note: '' };
   const ICON = { 'adm-orgunit': 'flow', 'adm-position': 'user', 'hr-shift': 'calendar', 'scm-uom': 'calc', 'scm-warehouse': 'warehouse', 'prod-line': 'factory', 'log-vehicle': 'truck', 'adm-reference': 'list', 'adm-admin-unit': 'map', 'kpi-definition': 'chart' };
   APP.register('sys-catalog', (el, f) => {
-    el.innerHTML = APP.header(f, '', { noNote: true, sub: 'Danh mục ít thay đổi dùng chung cho các phân hệ – số bản ghi, lần sửa gần nhất và dữ liệu còn thiếu.' }) + '<div id="scBody"><div class="card panel small muted">Đang tải…</div></div>';
+    el.innerHTML = APP.header(f, '<button class="btn" id="scGaps">' + UTIL.icon('export') + ' Xuất danh sách cần bổ sung</button>', { noNote: true, sub: 'Danh mục ít thay đổi dùng chung cho các phân hệ – số bản ghi, lần sửa gần nhất và dữ liệu còn thiếu.' }) + '<div id="scBody"><div class="card panel small muted">Đang tải…</div></div>';
+    // UI-6.49 (9) (D-127 g): Excel danh sách dữ liệu cần bổ sung (mỗi loại 1 sheet, theo quyền xem) – người phụ trách tự bổ sung, hệ thống không sửa hộ.
+    el.querySelector('#scGaps').onclick = () => Store.download('Common/ExportDataGaps');
     if (!Store.isLive) { el.querySelector('#scBody').innerHTML = '<div class="card panel muted">Trang tổng chỉ có ở chế độ thật.</div>'; return; }
     Store.query('Common/GetCatalogSummary').then(x => {
       const body = el.querySelector('#scBody'); if (!body) return;
