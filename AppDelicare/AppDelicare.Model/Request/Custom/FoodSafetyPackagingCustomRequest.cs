@@ -120,6 +120,8 @@ namespace AppDelicare.Model.Request.Custom
         public string To { get; set; } = string.Empty;
         [MaxLength(2000)]
         public string? Resolution { get; set; }
+        /// <summary>UI-6.33 (D-114): hướng xử lý (ReferenceLists SupplierIssueResolutionType) – bắt buộc khi → Đã xử lý; lưu Resolution "[MÃ] ghi chú".</summary>
+        public string? ResolutionType { get; set; }
         /// <summary>Người phụ trách (User.Id – PROPOSED D-54 e); chuyển Đang xử lý mà trống = người thao tác.</summary>
         public Guid? OwnerId { get; set; }
     }
@@ -132,6 +134,8 @@ namespace AppDelicare.Model.Request.Custom
         public Guid? SupplierId { get; set; }
         [MaxLength(30)]
         public string? Severity { get; set; }
+        /// <summary>UI-6.33: lọc loại sự cố.</summary>
+        public string? IssueType { get; set; }
         public bool? Overdue { get; set; }
         public DateTime? From { get; set; }
         public DateTime? To { get; set; }

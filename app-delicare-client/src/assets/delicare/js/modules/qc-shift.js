@@ -19,10 +19,23 @@
   const base = APP.SCREENS['qc-checklist-result'];
   APP.register('qc-checklist-result', (el, f, p) => {
     if (!Store.isLive) return base(el, f, p);
-    if (p && ['today', 'book', 'rate'].includes(p.tab)) st.tab = p.tab;
+    if (p && ['today', 'book', 'rate', 'sets'].includes(p.tab)) st.tab = p.tab;
+    // UI-6.33 (D-114): tab Bộ kiểm tra (mục Bộ kiểm tra ATTP bỏ khỏi sidebar) – chỉ người có quyền Xem qc-checklist.
+    const canSets = Store.perm('qc-checklist').access !== false;
+    if (st.tab === 'sets' && !canSets) st.tab = 'today';
     if (p && p.date) st.day = p.date;
-    const tabs = `<div class="tabs mb">${[['today', 'Hôm nay'], ['book', 'Sổ kiểm tra'], ['rate', 'Tỷ lệ đạt']].map(([k, l]) => `<button class="tab ${st.tab === k ? 'active' : ''}" data-qst="${k}">${l}</button>`).join('')}</div>`;
+    const tabs = `<div class="tabs mb">${[['today', 'Hôm nay'], ['book', 'Sổ kiểm tra'], ['rate', 'Tỷ lệ đạt']].concat(canSets ? [['sets', 'Bộ kiểm tra']] : []).map(([k, l]) => `<button class="tab ${st.tab === k ? 'active' : ''}" data-qst="${k}">${l}</button>`).join('')}</div>`;
     const rerender = () => APP.SCREENS['qc-checklist-result'](el, f, {});
+    if (st.tab === 'sets') {
+      const meta = Object.assign({}, APP.FN['qc-checklist'], { name: f.name });
+      const draw = () => {
+        APP.SCREENS['qc-checklist'](el, meta, {});
+        const h = el.querySelector('.page-heading'); if (h && !el.querySelector('[data-qst]')) h.insertAdjacentHTML('afterend', tabs);
+        if (APP.qcChecklistSets) APP.qcChecklistSets(el);
+        el.querySelectorAll('[data-qst]').forEach(b => b.onclick = () => { st.tab = b.dataset.qst; rerender(); });
+      };
+      return Store.ensure('FoodSafetyChecklist').then(draw, draw);
+    }
     if (st.tab === 'book') drawBook(el, f, tabs);
     else if (st.tab === 'rate') drawRate(el, f, tabs);
     else drawToday(el, f, tabs);

@@ -194,6 +194,11 @@ namespace AppDelicare.Model.Model
     /// <summary>BE2.5 (spec 9.5): sự cố NCC + tên + quá hạn + chuyển trạng thái được phép.</summary>
     public class SupplierIssueListItemModel
     {
+        /// <summary>UI-6.33 (D-114): tên loại, hướng xử lý chuẩn tách từ Resolution "[MÃ] ghi chú".</summary>
+        public string? IssueTypeName { get; set; }
+        public string? ResolutionTypeCode { get; set; }
+        public string? ResolutionTypeName { get; set; }
+        public string? ResolutionNote { get; set; }
         public SupplierIssue Issue { get; set; } = null!;
         public string? StatusName { get; set; }
         public string? SeverityName { get; set; }

@@ -501,3 +501,10 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Ghi bước: mặc định Đạt, hóa chất điền sẵn; "Đạt tất cả & kết luận" xong mẻ một chạm; mẻ có bước Không đạt thì nút bị khóa; Vệ sinh lại lập đúng mẻ mới.
 - [ ] Sổ vệ sinh: gom theo ngày, lọc, bấm mẻ xem 6 bước, In / Excel, không Sửa / Xóa. Điện thoại: 3 cột xếp dọc.
 - [ ] Quyền: uat.qa, uat.ops-kit, uat.coo vào được (theo ma trận OPS-LOG / OPS-POS không có mục này).
+
+## UI-6.33 – Sự cố nhà cung cấp, Bộ kiểm tra ATTP (D-114)
+- [ ] Sự cố NCC: chip trạng thái có số đếm, mặc định chưa đóng, quá hạn lên đầu; lọc NCC / loại / mức độ / kỳ; 4 chỉ số.
+- [ ] Lập sự cố: chỉ NCC, Loại (danh mục), Mức độ, Mô tả, chứng từ của NCC – không có ô trạng thái / cách xử lý / ngày.
+- [ ] Nhận xử lý → Đã xử lý (bắt buộc hướng xử lý + ghi chú) → Đóng; Đã xử lý không sửa; không có nút xóa (xóa qua API bị chặn).
+- [ ] Bộ kiểm tra: tab trong Kiểm tra theo ca / mẻ, sidebar không còn "Bộ kiểm tra ATTP", link cũ mở tab; bộ hệ thống có nhãn, không xóa / đổi mã / ngừng; Tạo phiên bản mới chép tiêu chí; tạo bộ mới mã tự sinh; bộ tự tạo hạn = hết ca.
+- [ ] Quyền: uat.qa, uat.ops-scm (sự cố), uat.coo; không quyền không vào được.

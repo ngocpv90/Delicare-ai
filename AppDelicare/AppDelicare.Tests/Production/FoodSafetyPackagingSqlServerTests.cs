@@ -163,7 +163,7 @@ namespace AppDelicare.Tests.Production
                 list.Data!.ListItem.Should().ContainSingle().Which.AllowedTransitions.Should().Equal("InProgress", "Resolved");
                 (await issues.Transition(new SupplierIssueTransitionRequest { Id = issue.Id, To = "InProgress" })).Data!.Issue.OwnerId.Should().Be(admin);
                 (await issues.Transition(new SupplierIssueTransitionRequest { Id = issue.Id, To = "Resolved" })).ResponseCode.Should().Be(400);
-                (await issues.Transition(new SupplierIssueTransitionRequest { Id = issue.Id, To = "Resolved", Resolution = "[DEMO] đổi hàng" })).ResponseCode.Should().Be(200);
+                (await issues.Transition(new SupplierIssueTransitionRequest { Id = issue.Id, To = "Resolved", ResolutionType = "EXCHANGE", Resolution = "[DEMO] đổi hàng" })).ResponseCode.Should().Be(200);
                 var closed = await issues.Transition(new SupplierIssueTransitionRequest { Id = issue.Id, To = "Closed" });
                 closed.ResponseCode.Should().Be(200, closed.ResponseMessage);
                 closed.Data!.Issue.ClosedAt.Should().NotBeNull();

@@ -75,15 +75,13 @@ Ngưỡng nhiệt độ nhận hàng:
 
 **Đạt một phần:** chọn Đạt một phần → hiện ô **Số đạt** (> 0 và nhỏ hơn số nhận) – chỉ phần đạt được nhập kho. **Hàng đông lạnh** nhận có điều kiện (−18 … −15 °C) → tick **Không có dấu hiệu rã đông** (bắt buộc).
 
-### 4.2 Sự cố nhà cung cấp – `qc-supplier-issue`
-- Danh sách: NCC, Phiếu nhập, Loại, Mức độ, Ghi nhận, **Hạn xử lý** (+ "Quá hạn"), Phụ trách, Trạng thái. Sự cố quá hạn xếp lên đầu.
-- Nút theo trạng thái:
-
-| Trạng thái | Nút | Ghi chú |
-|---|---|---|
-| Mới | **Nhận xử lý** / **Đã xử lý** | Nhận xử lý → bạn là người phụ trách |
-| Đang xử lý | **Đã xử lý** | Bắt buộc **Cách xử lý** |
-| Đã xử lý | **Đóng** / **Mở lại** | Đóng rồi không sửa, không mở lại |
+### 4.2 Sự cố nhà cung cấp – `qc-supplier-issue` (UI-6.33)
+- **Danh sách:** chip trạng thái có số đếm **Chưa đóng** (mặc định) · Mới · Đang xử lý · Đã xử lý · Đóng · Tất cả; quá hạn lên đầu + nhãn đỏ; cột NCC · Mô tả ngắn (rê chuột xem đủ) · Loại · Mức độ · Phiếu nhập / đơn mua · Hạn xử lý · Phụ trách · Trạng thái (+ hướng xử lý). Lọc NCC · Loại · Mức độ · kỳ (30 / 90 ngày), ô tìm. 4 thẻ: Chưa đóng · Quá hạn · Mới trong 30 ngày · NCC nhiều sự cố nhất (30 ngày).
+- **Nút bước tiếp trên dòng:** **Nhận xử lý** (bạn là người phụ trách) → **Đã xử lý** (chọn **hướng xử lý**: Đổi hàng · Trả hàng · Trừ tiền thanh toán · Cảnh cáo nhà cung cấp · Khác + ghi chú bắt buộc) → **Đóng**; **Mở lại** (ghi lý do).
+- Bấm dòng → ngăn chi tiết (mô tả đủ, chứng từ, hướng xử lý, tab **Lịch sử**). **Sửa** chỉ khi Mới / Đang xử lý (Loại, Mức độ, Mô tả, chứng từ).
+- **Lập sự cố** (nút đầu màn): **Nhà cung cấp\*** · **Loại\*** (Chất lượng · Nhiệt độ · Giao trễ · Giao thiếu · Sai quy cách · Giấy tờ / hóa đơn · Khác) · **Mức độ** (Cao · Trung bình · Thấp) · **Mô tả\*** · Phiếu nhập / đơn mua của NCC đã chọn. Trạng thái Mới, hạn xử lý tự tính.
+- Sự cố tự sinh khi ghi sổ phiếu nhập có dòng Không đạt / Đạt một phần (loại Chất lượng / Nhiệt độ).
+- **Không xóa được** (*Sự cố nhà cung cấp là hồ sơ chất lượng… ghi nhầm thì đóng với hướng xử lý Khác, ghi chú 'Ghi nhầm'*). Sự cố quá hạn: bot gửi 1 tin gộp / ngày cho QA, mua hàng.
 
 ### 4.3 Kiểm tra theo ca / mẻ – `qc-checklist-result` (UI-6.30 – kiểm thực bước 2)
 Màn có 3 tab: **Hôm nay** · **Sổ kiểm tra** · **Tỷ lệ đạt**.
@@ -101,6 +99,14 @@ Màn có 3 tab: **Hôm nay** · **Sổ kiểm tra** · **Tỷ lệ đạt**.
 **Sổ kiểm tra (chỉ xem – hồ sơ kiểm thực bước 2):** mỗi dòng = một tiêu chí đã ghi, **gom theo ngày** (mở / gập, "N lượt · M tiêu chí · K không đạt", nút **In ngày**). Cột Giờ ghi · Ca · Bộ kiểm tra · Tiêu chí (nhãn **Trọng yếu**, **Kiểm lại**) · Giá trị đo (+ chuẩn) · Kết quả · Khắc phục · Mẻ bị giữ · Người kiểm. Ô tìm + kỳ **Hôm nay · 7 ngày · Tháng này · Chọn khoảng** + lọc Bộ · Ca · Kết quả · **Chỉ lỗi trọng yếu**. Đầu màn **In sổ kiểm thực bước 2** + **Xuất Excel**. Không có Sửa / Xóa. Điện thoại: thẻ gọn.
 
 **Tỷ lệ đạt:** biểu đồ tỷ lệ đạt 30 ngày theo bộ (kết quả mới nhất mỗi tiêu chí trong ngày / ca) + bảng **tiêu chí hay Không đạt nhất** (số lần, lần gần nhất).
+
+### 4.3b Bộ kiểm tra – tab "Bộ kiểm tra" trong Kiểm tra theo ca / mẻ (UI-6.33)
+Mục "Bộ kiểm tra ATTP" không còn trên menu – mở tab **Bộ kiểm tra** (người có quyền bộ kiểm tra; link cũ `#/qc-checklist` mở tab này).
+- Danh sách: Mã (+ nhãn **Bộ hệ thống**), Tên, Khu vực, Tần suất, Số tiêu chí, Trạng thái; bấm 👁 → tab **Tiêu chí** (thêm / sửa / xếp thứ tự; tiêu chí đã có kết quả chỉ đổi thứ tự / mô tả).
+- **Tạo mới:** Tên\*, Khu vực (Bếp · Khu sơ chế · Đóng gói / khay hộp · Kho · Giao hàng), Tần suất (Mỗi ca · Mỗi mẻ · Mỗi ngày · Mỗi tuần), hiệu lực, ghi chú – **mã tự sinh** từ tên (BKT_…), phiên bản 1.
+- **Bộ hệ thống** (sơ chế, vệ sinh khu sơ chế, làm lạnh nhanh, vệ sinh bếp, vệ sinh khay, công đoạn, kiểm soát mẻ / thành phẩm): không đổi mã, không ngừng dùng, không xóa – sửa nội dung bằng **Tạo phiên bản mới**.
+- **Tạo phiên bản mới:** chọn ngày áp dụng (từ ngày mai) → chép toàn bộ tiêu chí sang phiên bản mới; bản cũ hết hiệu lực ngày trước đó. Kiểm tra theo ca tự dùng bản có hiệu lực theo ngày.
+- Hạn làm: bộ hệ thống theo giờ xuất bếp (Sơ chế −150′, Vệ sinh khu sơ chế −90′, Làm lạnh nhanh −20′, Vệ sinh bếp +90′); **bộ tự tạo – trong ca (hạn = hết ca)**.
 
 ### 4.4 Nhật ký nhiệt độ – `qc-temperature` (UI-6.31)
 3 tab: **Hôm nay** · **Sổ nhiệt độ** · **Biểu đồ**.

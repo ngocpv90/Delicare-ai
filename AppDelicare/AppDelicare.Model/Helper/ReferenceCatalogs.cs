@@ -27,6 +27,9 @@ namespace AppDelicare.Model.Helper
             ["MealWasteRecord.WasteType"] = ("WasteType", "Loại hủy"),
             ["TemperatureLog.MeasurementType"] = ("TemperatureMeasurementType", "Loại đo nhiệt độ"),
             ["PackingResult.PackagingType"] = ("PackagingType", "Loại khay / hộp"),
+            ["SupplierIssue.IssueType"] = ("SupplierIssueType", "Loại sự cố nhà cung cấp"),
+            ["FoodSafetyChecklist.AreaCode"] = ("ChecklistArea", "Khu vực bộ kiểm tra"),
+            ["FoodSafetyChecklist.FrequencyCode"] = ("ChecklistFrequency", "Tần suất bộ kiểm tra"),
             ["PackagingLedger.PackagingType"] = ("PackagingType", "Loại khay / hộp"),
             ["PackagingLedger.TransactionType"] = ("PackagingTransactionType", "Loại phát sinh bao bì"),
             ["CustomerComplaint.SourceChannel"] = ("ComplaintChannel", "Kênh tiếp nhận"),
@@ -39,6 +42,10 @@ namespace AppDelicare.Model.Helper
         public static readonly IReadOnlyDictionary<string, string> ListTitles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["MealType"] = "Loại suất (bữa ăn)",
+            ["SupplierIssueType"] = "Loại sự cố nhà cung cấp",
+            ["SupplierIssueResolutionType"] = "Hướng xử lý sự cố nhà cung cấp",
+            ["ChecklistArea"] = "Khu vực bộ kiểm tra ATTP",
+            ["ChecklistFrequency"] = "Tần suất bộ kiểm tra ATTP",
             ["LeaveType"] = "Loại nghỉ",
             ["AttendanceSource"] = "Hình thức chấm công",
             ["WarehouseType"] = "Loại kho",

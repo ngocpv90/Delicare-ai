@@ -110,5 +110,21 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.33 (D-114): tạo phiên bản mới bộ kiểm tra (quyền Thêm qc-checklist).</summary>
+        [Security.Permission("qc-checklist", PermissionAction.Add)]
+        [HttpPost("NewVersion")]
+        public async Task<IActionResult> NewVersion([FromForm] Guid id, [FromForm] DateTime? effectiveFrom)
+        {
+            try
+            {
+                return Ok(await _service.NewVersion(id, effectiveFrom));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " NewVersion: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

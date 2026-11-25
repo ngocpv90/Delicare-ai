@@ -14,5 +14,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<bool>> Save(FoodSafetyChecklistRequest request, string typeSave);
         public IResults<FoodSafetyChecklist> GetAllData();
         public Task<IResult<FoodSafetyChecklist>> GetById(Guid id);
+        /// <summary>UI-6.33 (D-114): tạo phiên bản mới (chép tiêu chí), bản cũ hết hiệu lực ngày trước.</summary>
+        public Task<IResult<FoodSafetyChecklist>> NewVersion(Guid id, DateTime? effectiveFrom);
     }
 }

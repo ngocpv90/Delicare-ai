@@ -21,5 +21,9 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<SupplierIssueListModel>> GetList(SupplierIssueListRequest request);
         /// <summary>BE2.5 (Catalog 170): chuyển trạng thái sự cố NCC.</summary>
         public Task<IResult<SupplierIssueListItemModel>> Transition(SupplierIssueTransitionRequest request);
+        /// <summary>UI-6.33 (D-114): thống kê theo NCC (loại, hướng xử lý).</summary>
+        public Task<IResult<List<AppDelicare.Services.Implement.SupplierIssueService.SupplierIssueSummaryRow>>> GetSummary(DateTime? from, DateTime? to);
+        /// <summary>UI-6.33: tin bot sự cố quá hạn (BotWatch).</summary>
+        public Task<int> RemindOverdueAsync(DateTime now);
     }
 }

@@ -375,17 +375,20 @@ namespace AppDelicare.Tests.Production
             var progress = (await c.PostFormAsync("/api/SupplierIssue/Transition", ("Id", issue.Id), ("To", "InProgress"))).Ok();
             progress.GetProperty("issue").GetProperty("ownerId").GetGuid().Should().Be(InMemoryApiFactory.UserId, "người nhận xử lý = người thao tác");
             progress.GetProperty("allowedTransitions").EnumerateArray().Select(x => x.GetString()).Should().Equal("Resolved");
-            (await c.PostFormAsync("/api/SupplierIssue/Transition", ("Id", issue.Id), ("To", "Resolved"))).Fail("cách xử lý");
-            (await c.PostFormAsync("/api/SupplierIssue/Transition", ("Id", issue.Id), ("To", "Resolved"), ("Resolution", "NCC đổi 5 kg rau"))).Ok()
-                .GetProperty("statusName").GetString().Should().Be("Đã xử lý");
-            // CRUD Update không đổi trạng thái / cách xử lý.
+            // CRUD Update (khi Đang xử lý) không đổi trạng thái / cách xử lý.
             (await c.PutFormAsync("/api/SupplierIssue/Update", ("Id", issue.Id), ("SupplierId", supplier), ("IssueType", "QUALITY"), ("Description", "Rau dập 10% (sửa)"),
                 ("IssueStatus", "Open"), ("Resolution", "xóa"))).Ok();
             var edited = await _factory.QueryAsync(db => db.SupplierIssue.AsNoTracking().SingleAsync(i => i.Id == issue.Id));
-            (edited.IssueStatus, edited.Resolution, edited.Description).Should().Be(("Resolved", "NCC đổi 5 kg rau", "Rau dập 10% (sửa)"));
+            (edited.IssueStatus, edited.Resolution, edited.Description).Should().Be(("InProgress", (string?)null, "Rau dập 10% (sửa)"));
+            (await c.PostFormAsync("/api/SupplierIssue/Transition", ("Id", issue.Id), ("To", "Resolved"))).Fail("cách xử lý");
+            (await c.PostFormAsync("/api/SupplierIssue/Transition", ("Id", issue.Id), ("To", "Resolved"), ("ResolutionType", "EXCHANGE"), ("Resolution", "NCC đổi 5 kg rau"))).Ok()
+                .GetProperty("statusName").GetString().Should().Be("Đã xử lý");
+            // UI-6.33 (D-114): Đã xử lý không sửa; cách xử lý lưu dạng chuẩn "[MÃ] ghi chú".
+            (await c.PutFormAsync("/api/SupplierIssue/Update", ("Id", issue.Id), ("SupplierId", supplier), ("IssueType", "QUALITY"), ("Description", "z"))).Fail("không sửa được");
+            (await _factory.QueryAsync(db => db.SupplierIssue.AsNoTracking().SingleAsync(i => i.Id == issue.Id))).Resolution.Should().Be("[EXCHANGE] NCC đổi 5 kg rau");
             var closed = (await c.PostFormAsync("/api/SupplierIssue/Transition", ("Id", issue.Id), ("To", "Closed"))).Ok();
             closed.GetProperty("issue").GetProperty("closedAt").GetDateTime().Should().Be(Day.AddHours(10));
-            (await c.PutFormAsync("/api/SupplierIssue/Update", ("Id", issue.Id), ("SupplierId", supplier), ("IssueType", "QUALITY"), ("Description", "y"))).Fail("đã Đóng");
+            (await c.PutFormAsync("/api/SupplierIssue/Update", ("Id", issue.Id), ("SupplierId", supplier), ("IssueType", "QUALITY"), ("Description", "y"))).Fail("không sửa được");
 
             // Sự cố quá hạn (hạn hôm qua, chưa xử lý) lên đầu danh sách, isOverdue.
             (await c.PostFormAsync("/api/SupplierIssue/Insert", ("SupplierId", supplier), ("IssueType", "TEMPERATURE"), ("Description", "Thịt 9 °C"),

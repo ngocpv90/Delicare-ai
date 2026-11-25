@@ -109,6 +109,11 @@ namespace AppDelicare.Services.Implement
                             cell.DueAt = at.AddMinutes(offset);
                             cell.DueSource = $"Giờ xuất bếp {ProductionRules.Time(at)} {(offset >= 0 ? "+" : "−")} {Math.Abs(offset)} phút";
                         }
+                        else if (FoodSafetyRules.ShiftEnd(s, day) is { } endAt)
+                        {
+                            cell.DueAt = endAt; // UI-6.33 (D-114): bộ tự tạo – hạn = hết ca
+                            cell.DueSource = $"Trong ca (hết ca {ProductionRules.Time(endAt)})";
+                        }
                         bool complete = its.Count > 0 && its.Where(i => i.IsRequired).All(i => run.ContainsKey(i.Id)) && run.Count > 0;
                         cell.Status = cell.CriticalFail > 0 ? "CRITICAL"
                             : complete ? (cell.Fail > 0 ? "FAIL" : "PASS")

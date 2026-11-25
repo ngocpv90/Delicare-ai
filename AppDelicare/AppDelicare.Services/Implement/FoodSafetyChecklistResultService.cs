@@ -283,6 +283,13 @@ namespace AppDelicare.Services.Implement
                     run.IsOverdue = run.DueAt < _clock.Now && !run.IsComplete;
                 }
             }
+            else if (shift != null && FoodSafetyRules.ShiftEnd(shift, date) is { } endAt)
+            {
+                // UI-6.33 (D-114): bộ tự tạo – hạn = hết ca.
+                run.DueAt = endAt;
+                run.DueSource = $"Trong ca (hết ca {ProductionRules.Time(endAt)})";
+                run.IsOverdue = run.DueAt < _clock.Now && !run.IsComplete;
+            }
             // Tỷ lệ đạt 7 ngày (spec 9.2 passRate7d): kết quả mới nhất mỗi (ngày, ca, mẻ, tiêu chí) của bộ – cùng ca nếu lần chạy có ca.
             DateTime first = date.AddDays(-6);
             var history = await db.FoodSafetyChecklistResult.AsNoTracking()

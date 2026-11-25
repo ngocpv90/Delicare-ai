@@ -99,6 +99,8 @@ namespace AppDelicare.Model.Option
         public int TemperatureManualDueMinutes { get; set; } = 60;
         /// <summary>UI-6.31: cảm biến (Iot:Devices) quá N phút không gửi số đo → "mất tín hiệu" (khu cần đo tay) + tin bot.</summary>
         public int IotSilenceMinutes { get; set; } = 30;
+        /// <summary>UI-6.33 (D-114): mã bộ kiểm tra hệ thống thêm (ngoài mã có giờ hạn, VS-KHAY, công đoạn, lưu mẫu) – không đổi mã / ngừng / xóa.</summary>
+        public string[] SystemChecklistCodes { get; set; } = ["QA_FG"];
         /// <summary>BIZ-2.9 (D-77 – C8): đơn Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận).</summary>
         public bool ReconciliationAutoCreate { get; set; } = true;
         /// <summary>BIZ-2.9: đối soát Khớp, không phản ánh mở, quá số giờ này → tự chốt (0 = tắt).</summary>

@@ -17,8 +17,11 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class FoodSafetyChecklistService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard) : IFoodSafetyChecklistService
+    public partial class FoodSafetyChecklistService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules, AppDelicare.Data.Share.IClock clock) : IFoodSafetyChecklistService
     {
+        private readonly AppDelicare.Model.Option.BusinessRulesOptions _rules = rules.Value; // UI-6.33: bộ hệ thống
+        private readonly AppDelicare.Data.Share.IClock _clock = clock;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -130,12 +133,17 @@ namespace AppDelicare.Services.Implement
             {
                 return invalid;
             }
-            if (_unitOfWork.FoodSafetyChecklistRepository.GetSingle(x => x.Code == request.Code && x.VersionNo == request.VersionNo && !x.IsDeleted) != null)
+            // UI-6.33 (D-114): bộ mới luôn phiên bản 1 (phiên bản sau qua Tạo phiên bản mới); mã trùng bộ khác → thêm hậu tố.
+            request.VersionNo = 1;
+            string baseCode = (request.Code ?? string.Empty).Trim().ToUpperInvariant();
+            string code = baseCode;
+            for (int n = 2; _unitOfWork.FoodSafetyChecklistRepository.GetSingle(x => x.Code == code && !x.IsDeleted) != null; n++)
             {
-                return "Dữ liệu trùng (Code, VersionNo) – vi phạm UQ_FoodSafetyChecklist_Code_Version.";
+                code = baseCode + "_" + n;
             }
+            request.Code = code;
             var insert = _mapper.Map<FoodSafetyChecklist>(request);
-            if (request.VersionNo == null) insert.VersionNo = 1;
+            insert.VersionNo = 1;
             if (request.Status == null) insert.Status = "Active";
             var entity = insert;
             _unitOfWork.FoodSafetyChecklistRepository.Add(insert);
@@ -156,9 +164,16 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
+            // UI-6.33 (D-114): bộ hệ thống không đổi mã / không ngừng dùng; phiên bản không sửa tay.
+            if (FoodSafetyRules.IsSystem(exist.Code, _rules) && (!string.Equals(request.Code?.Trim(), exist.Code, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(request.Status, "Inactive", StringComparison.OrdinalIgnoreCase)))
+            {
+                return string.Format(ConstantHelper.Message.ChecklistSystemCodeLocked, exist.Name ?? exist.Code);
+            }
+            request.VersionNo = exist.VersionNo;
             if (_unitOfWork.FoodSafetyChecklistRepository.GetSingle(x => x.Id != request.Id && x.Code == request.Code && x.VersionNo == request.VersionNo && !x.IsDeleted) != null)
             {
-                return "Dữ liệu trùng (Code, VersionNo) – vi phạm UQ_FoodSafetyChecklist_Code_Version.";
+                return string.Format(ConstantHelper.Message.ChecklistVersionDuplicate, request.Name ?? request.Code, request.VersionNo);
             }
             var entity = _mapper.Map(request, exist);
             _unitOfWork.FoodSafetyChecklistRepository.Update(entity);
@@ -181,6 +196,10 @@ namespace AppDelicare.Services.Implement
             if (delete == null)
             {
                 return ConstantHelper.Message.RecordNotFoundMessage;
+            }
+            if (FoodSafetyRules.IsSystem(delete.Code, _rules))
+            {
+                return string.Format(ConstantHelper.Message.ChecklistSystemCodeLocked, delete.Name ?? delete.Code);
             }
             _unitOfWork.FoodSafetyChecklistRepository.Update(delete);
             await _unitOfWork.FoodSafetyChecklistRepository.CommitAsync(typeSave);

@@ -21,9 +21,11 @@ using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
-    public class SupplierIssueService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : ISupplierIssueService
+    public partial class SupplierIssueService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper, IReferenceGuard referenceGuard
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, IOptions<ReferenceListsOptions> referenceLists, INotificationService notifications) : ISupplierIssueService
     {
+        private readonly INotificationService _notifications = notifications; // UI-6.33: nhắc quá hạn
+        private readonly ReferenceListsOptions _referenceLists = referenceLists.Value; // UI-6.33: loại sự cố, hướng xử lý
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -150,7 +152,12 @@ namespace AppDelicare.Services.Implement
             {
                 return ConstantHelper.Message.SupplierIssueSeverityInvalid;
             }
+            if (TypeError(request.IssueType) is { } typeError)
+            {
+                return typeError;
+            }
             var insert = _mapper.Map<SupplierIssue>(request);
+            insert.IssueType = request.IssueType!.Trim().ToUpperInvariant();
             insert.Severity = severity;
             insert.IssueStatus = SupplierIssueStatus.Open;
             insert.Resolution = null;
@@ -171,9 +178,14 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.RecordNotFoundMessage;
             }
             // BE2.5: sự cố Đóng không sửa; trạng thái / cách xử lý / ngày đóng / ngày báo giữ nguyên (chỉ đổi qua SupplierIssue/Transition).
-            if (exist.IssueStatus == SupplierIssueStatus.Closed)
+            // UI-6.33 (D-114): Đã xử lý / Đóng không sửa; chỉ đổi Loại, Mức độ, Mô tả, chứng từ.
+            if (exist.IssueStatus is SupplierIssueStatus.Closed or SupplierIssueStatus.Resolved)
             {
-                return ConstantHelper.Message.SupplierIssueClosedLocked;
+                return ConstantHelper.Message.SupplierIssueResolvedLocked;
+            }
+            if (!string.Equals(request.IssueType?.Trim(), exist.IssueType, StringComparison.OrdinalIgnoreCase) && TypeError(request.IssueType) is { } typeError)
+            {
+                return typeError;
             }
             string? severity = ComplaintSeverity.Normalize(request.Severity ?? exist.Severity);
             if (severity == null)
@@ -181,7 +193,12 @@ namespace AppDelicare.Services.Implement
                 return ConstantHelper.Message.SupplierIssueSeverityInvalid;
             }
             var (status, resolution, closedAt, reportedAt) = (exist.IssueStatus, exist.Resolution, exist.ClosedAt, exist.ReportedAt);
+            var (supplierId, dueAt, ownerId) = (exist.SupplierId, exist.DueAt, exist.OwnerId);
             var entity = _mapper.Map(request, exist);
+            entity.SupplierId = supplierId;
+            entity.DueAt = dueAt;
+            entity.OwnerId = ownerId;
+            entity.IssueType = request.IssueType?.Trim().ToUpperInvariant() ?? exist.IssueType;
             entity.IssueStatus = status;
             entity.Resolution = resolution;
             entity.ClosedAt = closedAt;
@@ -192,27 +209,30 @@ namespace AppDelicare.Services.Implement
             return string.Empty;
         }
 
-        private async Task<string> Delete(Guid? id, string typeSave)
+        /// <summary>UI-6.33 (D-114): sự cố NCC là hồ sơ chất lượng – không xóa.</summary>
+        private static Task<string> Delete(Guid? id, string typeSave) => Task.FromResult(ConstantHelper.Message.SupplierIssueNoDelete);
+
+        private List<AppDelicare.Model.Option.ReferenceItem> RefList(string name)
+            => _referenceLists.Lists.TryGetValue(name, out var l) ? l : [];
+
+        private string? TypeError(string? type)
         {
-            if (id == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            // T07: bản ghi đang được tham chiếu (quan hệ logic, truy vấn có tham số) → không cho xóa.
-            if ((await _referenceGuard.FindUsagesAsync("SupplierIssue", (Guid)id)).Count > 0)
-            {
-                return ConstantHelper.Message.DeleteExistFail;
-            }
-            var delete = _unitOfWork.SupplierIssueRepository.GetSingle(x => x.Id == id && !x.IsDeleted);
-            if (delete == null)
-            {
-                return ConstantHelper.Message.RecordNotFoundMessage;
-            }
-            _unitOfWork.SupplierIssueRepository.Update(delete);
-            await _unitOfWork.SupplierIssueRepository.CommitAsync(typeSave);
-            return string.Empty;
+            var list = RefList("SupplierIssueType");
+            return list.Count != 0 && !list.Any(x => string.Equals(x.Code, type?.Trim(), StringComparison.OrdinalIgnoreCase))
+                ? string.Format(ConstantHelper.Message.SupplierIssueTypeInvalid, string.Join(", ", list.Select(x => x.Label))) : null;
         }
 
+        /// <summary>UI-6.33: Resolution "[MÃ] ghi chú" → (mã, tên, ghi chú).</summary>
+        public (string? Code, string? Name, string? Note) ParseResolution(string? resolution)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(resolution ?? string.Empty, @"^\[([A-Z_]+)\]\s*(.*)$", System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (!m.Success)
+            {
+                return (null, null, resolution);
+            }
+            string code = m.Groups[1].Value;
+            return (code, RefList("SupplierIssueResolutionType").FirstOrDefault(x => x.Code == code)?.Label ?? code, m.Groups[2].Value);
+        }
         public async Task<IResult<SupplierIssue>> GetById(Guid id)
         {
             try
@@ -268,6 +288,11 @@ namespace AppDelicare.Services.Implement
                 {
                     DateTime end = to.Date.AddDays(1);
                     query = query.Where(i => i.ReportedAt < end);
+                }
+                if (!string.IsNullOrWhiteSpace(request.IssueType))
+                {
+                    string t = request.IssueType.Trim().ToUpperInvariant();
+                    query = query.Where(i => i.IssueType == t);
                 }
                 if (!string.IsNullOrWhiteSpace(request.SearchText))
                 {
@@ -326,6 +351,10 @@ namespace AppDelicare.Services.Implement
                 GoodsReceiptNumber = i.GoodsReceiptId is { } r ? receipts.GetValueOrDefault(r) : null,
                 PurchaseOrderNumber = i.PurchaseOrderId is { } p ? pos.GetValueOrDefault(p) : null,
                 OwnerName = i.OwnerId is { } o ? owners.GetValueOrDefault(o) : null,
+                IssueTypeName = RefList("SupplierIssueType").FirstOrDefault(x => x.Code == i.IssueType)?.Label ?? i.IssueType,
+                ResolutionTypeCode = ParseResolution(i.Resolution).Code,
+                ResolutionTypeName = ParseResolution(i.Resolution).Name,
+                ResolutionNote = ParseResolution(i.Resolution).Note,
                 IsOverdue = IsOverdue(i, now),
                 HoursToDue = i.DueAt != null && i.IssueStatus != SupplierIssueStatus.Resolved && i.IssueStatus != SupplierIssueStatus.Closed
                     ? Math.Round((decimal)(i.DueAt.Value - now).TotalHours, 2) : null,
@@ -362,6 +391,20 @@ namespace AppDelicare.Services.Implement
                 if (to == SupplierIssueStatus.Resolved && resolution == null)
                 {
                     return Fail(ConstantHelper.Message.SupplierIssueResolutionRequired);
+                }
+                if (to == SupplierIssueStatus.Resolved)
+                {
+                    // UI-6.33 (D-114): hướng xử lý chuẩn – lưu "[MÃ] ghi chú" để thống kê (không thêm cột).
+                    var types = RefList("SupplierIssueResolutionType");
+                    var rt = types.FirstOrDefault(x => string.Equals(x.Code, request.ResolutionType?.Trim(), StringComparison.OrdinalIgnoreCase));
+                    if (types.Count != 0 && rt == null)
+                    {
+                        return Fail(string.Format(ConstantHelper.Message.SupplierIssueResolutionTypeInvalid, string.Join(", ", types.Select(x => x.Label))));
+                    }
+                    if (rt != null)
+                    {
+                        resolution = $"[{rt.Code}] {resolution}";
+                    }
                 }
                 if (request.OwnerId is { } owner && owner != Guid.Empty)
                 {
