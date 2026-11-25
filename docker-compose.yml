@@ -118,6 +118,25 @@ services:
       - "8080"
     restart: unless-stopped
 
+  # Hermes Agent (Nous Research) – bot Trợ lý + các agent. CHỈ bật khi gọi profile "hermes" (lệnh "up" thường không đụng tới):
+  #   1) Cấu hình 1 lần (chọn mô hình, nhập khóa API, token bot Trợ lý – lưu trong volume hermes-data, KHÔNG nằm trong repo / .env):
+  #        docker compose --profile hermes run --rm hermes setup
+  #   2) Chạy nền:   docker compose --profile hermes up -d hermes        Xem log:   docker compose logs -f hermes
+  # Không chuỗi kết nối DB (D-62): Hermes chỉ gọi api / Tool Gateway qua mạng Docker (http://api:8080).
+  # Dùng volume có tên (không gắn thư mục máy): Docker Desktop trên Windows gắn thư mục làm hỏng SQLite của Hermes.
+  # ĐÚNG 1 container hermes trên 1 volume dữ liệu.
+  hermes:
+    profiles: ["hermes"]
+    image: nousresearch/hermes-agent:latest
+    container_name: delicare-hermes
+    command: ["gateway", "run"]
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - hermes-data:/opt/data                     # .env, config.yaml, SOUL.md, skills/, sessions/
+    restart: unless-stopped
+
 volumes:
   api-import:
   api-docs:
+  hermes-data:
