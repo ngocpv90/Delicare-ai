@@ -63,7 +63,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | X | X | X | X | — | — | — | S | X | — | X | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
-| Chất lượng & ATTP › Kiểm tra vệ sinh | `qc-cleaning-result` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X | X | X | X | X | — | X | — | — | — | — | — | — | — | — | — | — | X | Q |
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | X | X | X | — | — | — | X | — | — | — | — | — | — | — | — | — | X | Q |
 | Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | X | X | X | — | — | — | — | S | X | — | — | — | — | — | — | — | — | X | — |
@@ -75,7 +74,6 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Đóng gói & Giao hàng › Vị trí xe | `log-gps` | X | X | X | — | — | — | — | — | X | — | — | — | — | — | — | — | — | X | — |
 | Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | — | — | — | — | — | S | S | — | X | X | X | X | X (IX) | — | X | — |
 | Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | X | X | X | — | — | — | — | — | S | S | — | — | — | — | — | — | — | X | — |
-| Đóng gói & Giao hàng › Kiểm tra khay hộp thu hồi | `log-return-inspection` | X | X | X | — | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | — | — | — | — | — | X | X | — | X | X | X | — | X (IX) | — | X | — |
 | Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | X | X | X | — | — | — | — | — | Q | — | — | — | — | — | — | — | — | X | — |
 | Nhân sự › Nhân viên | `adm-employee` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | X | — |

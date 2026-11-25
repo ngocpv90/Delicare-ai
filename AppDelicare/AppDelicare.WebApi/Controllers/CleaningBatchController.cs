@@ -188,5 +188,51 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.32 (D-113): Đạt tất cả & kết luận (quyền Sửa qc-cleaning như Kết luận).</summary>
+        [Security.Permission("qc-cleaning", PermissionAction.Edit)]
+        [HttpPost("PassAll")]
+        public async Task<IActionResult> PassAll([FromForm] AppDelicare.Model.Model.CleaningPassAllRequest request)
+        {
+            try
+            {
+                return Ok(await _service.PassAll(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " PassAll: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.32: bảng 3 cột Chờ kiểm tra → Đang vệ sinh → Hoàn tất.</summary>
+        [HttpGet("GetDayBoard")]
+        public async Task<IActionResult> GetDayBoard(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _service.GetDayBoard(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDayBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.32: Sổ vệ sinh – chỉ xem.</summary>
+        [HttpGet("GetBook")]
+        public async Task<IActionResult> GetBook([FromQuery] AppDelicare.Model.Model.CleaningBookRequest request)
+        {
+            try
+            {
+                return Ok(await _service.GetBook(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBook: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

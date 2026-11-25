@@ -297,7 +297,7 @@ namespace AppDelicare.Tests.Production
             all.GetProperty("responsibleName").GetString().Should().Be("Nhân viên rửa P1A");
             var done = (await c.PostFormAsync("/api/CleaningBatch/Complete", ("Id", batch2), ("QcResult", "PASS"))).Ok();
             done.GetProperty("batch").GetProperty("qcResult").GetString().Should().Be("PASS");
-            Warnings(done).Should().Contain($"Sổ bao bì: 51 {s.Type} sạch, sẵn sàng dùng lại (AVAILABLE)");
+            Warnings(done).Should().Contain($"Sổ bao bì: 51 {s.Type} sạch, sẵn sàng dùng lại");
             var available = await _factory.QueryAsync(db => db.PackagingLedger.AsNoTracking().SingleAsync(l => l.TransactionType == "AVAILABLE" && l.PackagingType == s.Type));
             (available.Quantity, available.CustomerId, available.ConditionCode, available.ReferenceNo).Should().Be((51m, (Guid?)null, "CLEAN", second.GetProperty("batch").GetProperty("cleaningBatchNumber").GetString()));
 
@@ -321,10 +321,10 @@ namespace AppDelicare.Tests.Production
 
             // Chốt: sổ bao bì / phiếu thu hồi / kiểm tra / mẻ vệ sinh không ghi qua CRUD; phiếu đã ghi sổ không xóa.
             (await c.PostFormAsync("/api/PackagingLedger/Insert", ("CustomerId", s.Customer), ("TransactionType", "IN"), ("PackagingType", "KHAY"), ("Quantity", 1m))).Fail("PackagingLedger/Record");
-            (await c.PostFormAsync("/api/ContainerReturn/Insert", ("DeliveryOrderId", s.DeliveryOrder), ("ReturnDate", Day))).Fail("ContainerReturn/Record");
+            (await c.PostFormAsync("/api/ContainerReturn/Insert", ("DeliveryOrderId", s.DeliveryOrder), ("ReturnDate", Day))).Fail("màn Thu hồi khay hộp");
             (await c.DeleteResultAsync($"/api/ContainerReturn/Delete?id={returnId}")).Fail("đã ghi sổ bao bì");
-            (await c.PostFormAsync("/api/CleaningBatch/Insert", ("ReturnInspectionId", inspectionId), ("StartDate", Day))).Fail("CleaningBatch/Create");
-            (await c.PostFormAsync("/api/ReturnInspection/Insert", ("ContainerReturnId", returnId), ("InspectionDate", Day))).Fail("ContainerReturn/Inspect");
+            (await c.PostFormAsync("/api/CleaningBatch/Insert", ("ReturnInspectionId", inspectionId), ("StartDate", Day))).Fail("màn Vệ sinh khay hộp");
+            (await c.PostFormAsync("/api/ReturnInspection/Insert", ("ContainerReturnId", returnId), ("InspectionDate", Day))).Fail("nút Kiểm tra ở màn Vệ sinh khay hộp");
         }
 
         [Fact]

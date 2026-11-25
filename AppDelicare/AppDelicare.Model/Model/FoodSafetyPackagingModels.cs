@@ -78,6 +78,8 @@ namespace AppDelicare.Model.Model
     /// <summary>BE2.5 (spec 9.4): mẻ vệ sinh khay / hộp + 6 bước + nguồn (phiếu thu hồi / kiểm tra).</summary>
     public class CleaningBatchDetailModel
     {
+        /// <summary>UI-6.32: hóa chất khử khuẩn gợi ý (lần ghi gần nhất, ưu tiên cùng loại bao bì).</summary>
+        public string? SuggestedChemical { get; set; }
         public CleaningBatch Batch { get; set; } = null!;
         public string? StatusName { get; set; }
         public string? QcResultName { get; set; }

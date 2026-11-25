@@ -19,10 +19,11 @@ using Microsoft.Extensions.Options;
 
 namespace AppDelicare.Services.Implement
 {
-    public class CleaningBatchService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class CleaningBatchService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IClock clock, ICurrentActor currentActor
-        , IOptions<BusinessRulesOptions> rules) : ICleaningBatchService
+        , IOptions<BusinessRulesOptions> rules, IOptions<ReferenceListsOptions> referenceLists) : ICleaningBatchService
     {
+        private readonly ReferenceListsOptions _referenceLists = referenceLists.Value; // UI-6.32: tên loại bao bì
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -142,11 +143,11 @@ namespace AppDelicare.Services.Implement
 
         /// <summary>BE2.5: mẻ vệ sinh chỉ lập qua CleaningBatch/Create hoặc ContainerReturn/Inspect (số VS-, số khay theo phiếu kiểm tra) – CRUD Insert không ghi.</summary>
         private static Task<string> Insert(CleaningBatchRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Mẻ vệ sinh khay / hộp", "CleaningBatch/Create, RecordResults, Complete"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Mẻ vệ sinh khay / hộp", "màn Vệ sinh khay hộp (kiểm tra thu hồi tự lập mẻ, Ghi bước, Kết luận)"));
 
         /// <summary>BE2.5: trạng thái / kết quả QC / số khay chỉ đổi qua CleaningBatch/RecordResults, Complete – CRUD Update không ghi.</summary>
         private static Task<string> Update(CleaningBatchRequest request, string typeSave)
-            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Mẻ vệ sinh khay / hộp", "CleaningBatch/RecordResults, Complete"));
+            => Task.FromResult(string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Mẻ vệ sinh khay / hộp", "màn Vệ sinh khay hộp (Ghi bước, Kết luận)"));
 
         private async Task<string> Delete(Guid? id, string typeSave)
         {
@@ -167,7 +168,7 @@ namespace AppDelicare.Services.Implement
             // BE2.5: chỉ xóa mẻ Đang vệ sinh chưa ghi bước nào (lập nhầm); mẻ đã ghi bước / đã kết luận là bằng chứng vệ sinh.
             if (delete.Status != CleaningBatchStatus.InProgress || await _unitOfWork.DbContext.CleaningChecklistResult.AnyAsync(r => !r.IsDeleted && r.CleaningBatchId == delete.Id))
             {
-                return string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Mẻ vệ sinh đã ghi bước / đã kết luận", "CleaningBatch/Complete (REJECT để vệ sinh lại)");
+                return string.Format(ConstantHelper.Message.DeliveryCrudBlocked, "Mẻ vệ sinh đã ghi bước / đã kết luận", "Kết luận Không đạt rồi Vệ sinh lại");
             }
             _unitOfWork.CleaningBatchRepository.Update(delete);
             await _unitOfWork.CleaningBatchRepository.CommitAsync(typeSave);
@@ -208,6 +209,10 @@ namespace AppDelicare.Services.Implement
             try
             {
                 var detail = await CleaningRules.DetailAsync(_unitOfWork.DbContext, _rules, id);
+                if (detail != null && detail.Batch.Status == CleaningBatchStatus.InProgress)
+                {
+                    detail.SuggestedChemical = await SuggestedChemicalAsync(detail.PackagingType); // UI-6.32: điền sẵn hóa chất khử khuẩn
+                }
                 return detail == null ? Result<CleaningBatchDetailModel>.Fail(ConstantHelper.Message.CleaningBatchNotFound)
                     : Result<CleaningBatchDetailModel>.Success(detail, ConstantHelper.Message.GetAllSuccessfully);
             }
@@ -400,7 +405,10 @@ namespace AppDelicare.Services.Implement
         /// số khay trở lại "chờ vệ sinh" của phiếu kiểm tra (lập mẻ mới bằng CleaningBatch/Create).
         /// </summary>
         public Task<IResult<CleaningBatchDetailModel>> Complete(CleaningCompleteRequest request)
-            => RunAsync("Complete", async (actor, now, warnings) =>
+            => RunAsync("Complete", (actor, now, warnings) => CompleteCoreAsync(request, actor, now, warnings));
+
+        /// <summary>Thân kết luận mẻ (dùng chung Complete và PassAll – UI-6.32), trong giao dịch đang mở.</summary>
+        private async Task<(string? Error, Guid BatchId)> CompleteCoreAsync(CleaningCompleteRequest request, ActorInfo actor, DateTime now, List<string> warnings)
             {
                 var db = _unitOfWork.DbContext;
                 var batch = _unitOfWork.CleaningBatchRepository.GetSingle(b => b.Id == request.Id && !b.IsDeleted);
@@ -471,7 +479,7 @@ namespace AppDelicare.Services.Implement
                 batch.EndTime = now;
                 _unitOfWork.CleaningBatchRepository.Update(batch);
                 return (null, batch.Id);
-            });
+            }
 
         private static string InvalidStatus(CleaningBatch batch, string action)
             => string.Format(ConstantHelper.Message.StatusActionInvalid, action, "mẻ vệ sinh " + CleaningRules.Number(batch),

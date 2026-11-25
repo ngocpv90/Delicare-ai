@@ -29,7 +29,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Chất lượng & ATTP › Kiểm tra theo ca / mẻ | `qc-checklist-result` | S | — |
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S | X |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S | — |
-| Chất lượng & ATTP › Kiểm tra vệ sinh | `qc-cleaning-result` | S | — |
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | — |
 | Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | S | X |
 | Đóng gói & Giao hàng › Kết quả đóng gói | `log-packing-result` | S | X |
@@ -40,7 +39,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Vị trí xe | `log-gps` | — | X |
 | Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | — | S |
 | Đóng gói & Giao hàng › Thu hồi khay hộp | `log-container-return` | — | S |
-| Đóng gói & Giao hàng › Kiểm tra khay hộp thu hồi | `log-return-inspection` | S | — |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | — | X |
 | Đóng gói & Giao hàng › Xe giao hàng | `log-vehicle` | — | Q |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | — |
