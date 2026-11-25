@@ -107,7 +107,7 @@ namespace AppDelicare.Services.Implement
             }
             if (action == PermissionAction.Approve)
             {
-                return permissions.Menus.TryGetValue(IPermissionService.ApproveMenuPrefix + screenId, out var approve) && approve.Access && approve.Edit;
+                return permissions.Menus.TryGetValue(IPermissionService.ApproveMenuPrefix + IPermissionService.ApproveScreenOf(screenId), out var approve) && approve.Access && approve.Edit;
             }
             permissions.Menus.TryGetValue("#/" + screenId, out var rights);
             if (rights == null || !rights.Access)

@@ -19,6 +19,8 @@
     if (p && ['LEAVE', 'SWAP', 'GIVE'].includes(p.type)) st.type = p.type;
     if (p && p.tab === 'cal') st.tab = 'cal';
     const re = () => APP.SCREENS['hr-leave'](el, f, {});
+    // UI-6.46 (D-125 c): link từ hộp duyệt / chuông / bot – ?id= mở đơn nghỉ, ?swap= mở đơn đổi ca (link cũ #/hr-swap?id= chuyển về đây).
+    if (p && (p.id || p.swap)) { st.tab = 'list'; setTimeout(() => p.swap ? swapDlg(p.swap, re) : leaveDlg(p.id, re), 0); }
     el.innerHTML = APP.header(f, `<button class="btn primary" id="rqNew">${I('plus')} Tạo đơn</button>`, { noNote: true })
       + `<div id="rqKpi" class="kpis"></div><div class="mb"><div class="seg" style="display:inline-flex">${[['list', 'Đơn'], ['cal', 'Lịch nghỉ']].map(([k, l]) => `<button class="seg-b ${st.tab === k ? 'on' : ''}" data-rt="${k}">${l}</button>`).join('')}</div></div><div id="rqBody"><div class="card panel small muted">Đang tải…</div></div>`;
     el.querySelector('#rqNew').onclick = () => createDlg(re);

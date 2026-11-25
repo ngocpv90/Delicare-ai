@@ -114,7 +114,8 @@ namespace AppDelicare.Model.Helper
         public const string ShiftAssign = "hr-shift-assign";
         public const string Attendance = "hr-attendance";
         public const string Leave = "hr-leave";
-        public const string Swap = "hr-swap";
+        /// <summary>UI-6.39 / 6.46: Đơn đổi ca gộp vào "Nghỉ &amp; đổi ca" (mục hr-swap ẩn, quyền đã hợp vào hr-leave).</summary>
+        public const string Swap = "hr-leave";
     }
 
     /// <summary>BE2.6: <c>Employee.Status</c> chưa có danh mục (STATUS_CATALOG) – coi Inactive / Resigned là đã nghỉ việc (PROPOSED – D-55 (a)).</summary>
