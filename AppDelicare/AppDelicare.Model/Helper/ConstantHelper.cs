@@ -96,6 +96,14 @@
             public static readonly string HrBulkDone = "Phân ca hàng loạt: tạo {0} ca, bỏ qua {1}";
             public static readonly string HrBulkSkipAssigned = "Đã có ca {0}";
             public static readonly string HrBulkSkipLeave = "Nghỉ phép (đơn {0})";
+            // UI-6.42 (D-123)
+            public static readonly string AccountDeleteBlocked = "Tài khoản là dấu vết người thao tác, không xóa được – không dùng nữa thì Khóa.";
+            public static readonly string AccountCreateAdminOnly = "Tài khoản cho nhân viên cấp qua Nhân viên › Đề nghị cấp tài khoản (IT duyệt) hoặc Tạo ngay; tạo tài khoản hệ thống chỉ quản trị.";
+            public static readonly string AccountBulkNoGroup = "Chọn nhóm quyền cần thêm hoặc bỏ.";
+            public static readonly string AccountBulkNoGroupLeft = "{0}: không thể bỏ hết nhóm quyền – bỏ qua.";
+            public static readonly string AccountBulkGroupsDone = "Đã cập nhật nhóm quyền {0} tài khoản · bỏ qua {1}.";
+            public static readonly string AccountLastAdmin = "{0}: quản trị cuối cùng – không khóa.";
+            public static readonly string AccountBulkLockDone = "Đã khóa {0} tài khoản · bỏ qua {1}.";
             // UI-6.41 (D-122)
             public static readonly string OrgNameRequired = "Nhập tên đơn vị.";
             public static readonly string OrgTypeInvalid = "Chọn loại đơn vị: {0}.";

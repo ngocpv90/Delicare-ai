@@ -131,7 +131,7 @@
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="nuOk">Tạo người dùng</button>',
       onMount: (m, close) => {
         // T45R.8 (D-38): "Lấy từ nhân viên" – chọn Employee để tạo hồ sơ người mới (Person/Insert tạo kèm đúng 1 tài khoản);
-        // chỉ điền dữ liệu, không lưu liên kết Employee ↔ Person (DB không có cột – GAP-ADM-03).
+        // (Hộp cũ – chỉ chế độ DEMO; chế độ thật dùng "Tạo tài khoản" ở modules/admin-account.js, UI-6.42 / D-82: tài khoản nhân viên gắn Employee.PersonId.)
         let emp = null;
         const box = m.querySelector('#nuEmpBox'), selPerson = m.querySelector('#nuPerson');
         const showEmp = () => {
@@ -216,6 +216,7 @@
       <span class="small muted">Nhân viên đang làm chưa có tài khoản: ${U.num(d.employeeWithoutAccountCount || 0)}${Store.perm('adm-employee').access !== false ? ' – xem tab <a href="#/adm-employee?tab=link">Đối chiếu</a> ở màn Nhân viên' : ''}</span></div></div>`;
   };
   const accRow = id => accState.data && accState.data.by[id];
+  APP.adminAcc = { showTempPassword, assignGroups, openUserPermission, getAct, isAdmin }; // UI-6.42 (D-123): dùng lại ở modules/admin-account.js
   APP.register('adm-user', (el, f) => {
     const canEdit = Store.perm(f.id).edit !== false;
     if (LIVE() && !accState.data && !accState.loading) {
