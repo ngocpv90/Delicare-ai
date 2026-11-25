@@ -137,8 +137,13 @@ namespace AppDelicare.Services.Implement
         }
 
         /// <summary>Đơn giao đã có dòng xếp hàng Loaded (đã lên xe).</summary>
+        /// <summary>
+        /// Đã xếp lên xe của CHUYẾN HIỆN TẠI. UI-6.49 (2): đơn giao thất bại mở lại (Cần giao lại – bỏ chuyến cũ) không còn tính là đã xếp → gán sang chuyến khác
+        /// và xếp lại được; dòng xếp xe của chuyến cũ giữ nguyên làm lịch sử.
+        /// </summary>
         public static Task<bool> IsLoadedAsync(DatabaseContext db, Guid deliveryOrderId)
-            => db.DeliveryLoading.AsNoTracking().AnyAsync(l => !l.IsDeleted && l.DeliveryOrderId == deliveryOrderId && l.Status == DeliveryLoadingStatus.Loaded);
+            => db.DeliveryLoading.AsNoTracking().AnyAsync(l => !l.IsDeleted && l.DeliveryOrderId == deliveryOrderId && l.Status == DeliveryLoadingStatus.Loaded
+                && db.DeliveryOrder.Any(d => d.Id == deliveryOrderId && d.DeliveryRouteId == l.DeliveryRouteId));
 
         /// <summary>
         /// Đánh số lại điểm dừng của 1 chuyến – ràng buộc UNIQUE (DeliveryRouteId, SequenceNo) tính cả dòng đã xóa mềm (DDL UQ_DeliveryStop_Route_Sequence):
