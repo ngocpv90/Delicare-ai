@@ -9,24 +9,26 @@ Bộ hướng dẫn cho người dùng cuối, viết theo **code hiện tại**
 
 ## 2. Vai trò → file
 
-| File | Vai trò | Nhóm quyền |
+| File | Vai trò | Nhóm quyền (mã – tên) |
 |---|---|---|
-| `01_QUAN_TRI.md` | Quản trị hệ thống (IT) | FIN-IT |
-| `02_KINH_DOANH.md` | Kinh doanh, hợp đồng, đơn hàng | SAL-SALES, SAL-CON |
-| `03_KE_HOACH.md` | Kế hoạch: món, công thức, thực đơn, kế hoạch SX, giá thành | OPS-PLAN |
-| `04_MUA_HANG.md` | Mua hàng: MRP, đề nghị mua, đơn mua, NCC | OPS-SCM |
-| `05_KHO.md` | Kho: nhận hàng, tồn, lô, xuất, kiểm kê | OPS-SCM |
-| `06_QC_ATTP.md` | QC / ATTP: QC đầu vào, checklist, nhiệt độ, QC mẻ, vệ sinh khay | QA, OPS-KIT (QA bếp) |
-| `07_BEP_SAN_XUAT.md` | Bếp / sản xuất: mẻ nấu, lệnh SX, hao hụt | OPS-KIT |
-| `08_DONG_GOI.md` | Chia suất / đóng gói | OPS-KIT (tổ đóng gói), OPS-LOG |
-| `09_GIAO_VAN.md` | Giao vận: chuyến, xuất bến, POD, thu hồi khay | OPS-LOG |
-| `10_DIEM_PHAT.md` | Điểm phát, CSKH: đối soát suất, phản ánh | OPS-POS, SAL-CS |
-| `11_NHAN_SU.md` | Nhân sự: phân ca, chấm công, nghỉ, đổi ca | FIN-HR (+ mọi nhân viên) |
-| `12_QUAN_LY_DUYET.md` | Người duyệt: hộp phê duyệt | CEO, COO, FIN-HR, OPS-SCM, FIN-ACC |
-| `13_BAN_DIEU_HANH.md` | Ban điều hành, kế toán: dashboard, KPI | CEO, CEO-PMO, COO, FIN-ACC |
+| `01_QUAN_TRI.md` | Quản trị hệ thống (IT) | FIN-IT – Quản trị hệ thống |
+| `02_KINH_DOANH.md` | Kinh doanh, hợp đồng, đơn hàng | SAL-SALES – Kinh doanh, SAL-CON – Hợp đồng & đơn hàng |
+| `03_KE_HOACH.md` | Kế hoạch: món, công thức, thực đơn, kế hoạch SX, giá thành | OPS-PLAN – Kế hoạch vận hành |
+| `04_MUA_HANG.md` | Mua hàng: MRP, đề nghị mua, đơn mua, NCC | OPS-SCM – Mua hàng |
+| `05_KHO.md` | Kho: nhận hàng, tồn, lô, xuất, kiểm kê | OPS-WH – Thủ kho, OPS-SCM-HEAD – Trưởng mua hàng & kho (duyệt) |
+| `06_QC_ATTP.md` | QC / ATTP: QC đầu vào, checklist, nhiệt độ, QC mẻ, vệ sinh khay | QA – QA / ATTP, OPS-KIT – Bếp (QA bếp) |
+| `07_BEP_SAN_XUAT.md` | Bếp / sản xuất: mẻ nấu, lệnh SX, hao hụt | OPS-KIT – Bếp |
+| `08_DONG_GOI.md` | Chia suất / đóng gói | OPS-KIT – Bếp (tổ đóng gói), OPS-LOG – Điều phối giao hàng |
+| `09_GIAO_VAN.md` | Giao vận: chuyến, xuất bến, POD, thu hồi khay | OPS-LOG – Điều phối giao hàng |
+| `10_DIEM_PHAT.md` | Điểm phát, CSKH: đối soát suất, phản ánh | OPS-POS – Điểm phát suất, SAL-CS – Chăm sóc khách hàng |
+| `11_NHAN_SU.md` | Nhân sự: phân ca, chấm công, nghỉ, đổi ca | FIN-HR – Nhân sự (+ mọi nhân viên) |
+| `12_QUAN_LY_DUYET.md` | Người duyệt: hộp phê duyệt | CEO – Tổng giám đốc, COO – Giám đốc vận hành, FIN-HR – Nhân sự, OPS-SCM – Mua hàng, FIN-ACC – Kế toán |
+| `13_BAN_DIEU_HANH.md` | Ban điều hành, kế toán: dashboard, KPI | CEO – Tổng giám đốc, CEO-PMO – Trợ lý TGĐ / PMO, COO – Giám đốc vận hành, FIN-ACC – Kế toán |
 | `20_BOT_TELEGRAM.md` | Bot Vận hành / Điều hành | Mọi người |
 | `90_CHENH_LECH.md` | Chênh lệch tài liệu – code (đầu việc UG-1) | Đội phát triển |
 | `91_PHU_LUC.md` | Trạng thái, số chứng từ, ngưỡng, lịch job, thuật ngữ | Mọi người |
+
+> UI-6.43 (D-124): trên màn **Nhóm quyền** nhóm hiện bằng tên tiếng Việt; mã (cột trên) dùng cho luồng duyệt, bot và cấu hình.
 
 ## 3. Cấu trúc mỗi file vai trò
 
