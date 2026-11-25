@@ -31,6 +31,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public const string ReplyExtraQty = "bat-exq";
         public const string ReplyExtraReason = "bat-exr";
         public const string ReplyWaste = "bat-waste";
+        public const string ReplyFinishFix = "bat-ffix";
         public const string Menu = "#/prod-batch";
         public const string ListCode = "bep_batches";
         /// <summary>Hàng nhiệt độ lõi bấm 1 chạm trên thẻ mẻ Đang nấu.</summary>
@@ -171,11 +172,28 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "smp":
                     await PostAsync(ctx, id, token, "api/ProductionBatch/RecordSampleRetained", [new("Id", id.ToString()), new("ActualValue", "Đã lưu mẫu (Telegram)")], "Đã ghi lưu mẫu", ct);
                     break;
-                case "fin" or "fn":
+                case "fin":
+                    // UI-6.49 (1): Xong mẻ = Complete – chưa đo nhiệt độ lõi thì hỏi ngay trong luồng.
+                    await FinishStartAsync(ctx, id, token, ct);
+                    break;
+                case "fn":
                     await NumberScreenAsync(ctx, id, token, "fn", "fq", value, ct);
                     break;
+                case "ftn":
+                    await NumberScreenAsync(ctx, id, token, "ftn", "ftv", value, ct);
+                    break;
+                case "ftv" when value != null:
+                    FinishTemps[(ctx.Event.ChatId, id)] = value;
+                    await NumberScreenAsync(ctx, id, token, "fn", "fq", null, ct);
+                    break;
                 case "fq" when value != null:
-                    await FinishAsync(ctx, id, token, value, ct);
+                    await FinishAsync(ctx, id, token, value, null, ct);
+                    break;
+                case "fcr" when value != null && reasons.At(ReasonCatalog.CoreTempFix, extra) is { } fixDone:
+                    await FinishAsync(ctx, id, token, value, fixDone, ct);
+                    break;
+                case "fcx" when value != null:
+                    await AskAsync(ctx, "Nhập hành động khắc phục (vd. gia nhiệt lại 10 phút, đo lại):", ReplyFinishFix, n + "." + value, ct);
                     break;
                 case "fx":
                     await AskAsync(ctx, "Nhập số suất thực tế của mẻ:", ReplyQty, n, ct);
@@ -231,6 +249,10 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             decimal? chosen = InputWidgets.Value(value);
             switch (screen)
             {
+                case "ftn":
+                    m.Lines.Add("✅ Xong mẻ – bước 1/2: nhiệt độ lõi khi kết thúc nấu (ngưỡng ≥ 70 °C kiểm ở máy chủ):");
+                    InputWidgets.Number(m, Kind, screen, confirm, key, chosen ?? 75m, "°C", CoreTemps, 0, 150, "Tiếp ▶");
+                    break;
                 case "tn":
                     m.Lines.Add("🌡 Nhiệt độ lõi – bấm để chỉnh rồi ✅ Xác nhận (ngưỡng ≥ 70 °C kiểm ở máy chủ):");
                     InputWidgets.Number(m, Kind, screen, confirm, key, chosen ?? (Dec(b, "lastCoreTemperatureC") is > 0m and var last ? last : 75m), "°C", CoreTemps, 0, 150, "✅ Ghi");
@@ -262,6 +284,21 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             if (pending.Flow == ReplyExtraReason)
             {
                 await ExtraReasonAsync(ctx, pending, ct);
+                return;
+            }
+            if (pending.Flow == ReplyFinishFix)
+            {
+                int dot = pending.Key.IndexOf('.');
+                string action = (ctx.Event.Text ?? string.Empty).Trim();
+                if (dot > 0 && Guid.TryParseExact(pending.Key[..dot], "N", out Guid fid) && await TokenAsync(ctx, ct) is { } ftoken)
+                {
+                    if (action.Length < 3)
+                    {
+                        await AskAsync(ctx, "Nhập rõ hành động khắc phục (ít nhất 3 ký tự):", ReplyFinishFix, pending.Key, ct);
+                        return;
+                    }
+                    await FinishAsync(ctx, fid, ftoken, pending.Key[(dot + 1)..], action.Length > 500 ? action[..500] : action, ct);
+                }
                 return;
             }
             if (!Guid.TryParseExact(pending.Key, "N", out Guid id) || await TokenAsync(ctx, ct) is not { } token)
@@ -298,7 +335,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }
             else
             {
-                await FinishAsync(ctx, id, token, v.ToString(CultureInfo.InvariantCulture), ct);
+                await FinishAsync(ctx, id, token, v.ToString(CultureInfo.InvariantCulture), null, ct);
             }
         }
 
@@ -397,21 +434,59 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             => PostAsync(ctx, id, token, "api/ProductionBatch/RecordCoreTemperature",
                 [new("Id", id.ToString()), new("TemperatureC", value), new("CorrectiveAction", action.Length > 500 ? action[..500] : action)], $"Đã ghi {value} °C kèm khắc phục", ct);
 
-        /// <summary>
-        /// UG-1 C-07: "✅ Xong mẻ" = Finish (Chờ QC) rồi RecordOutput (ProductionOutput) cùng số suất – như web (production.js). Finish lỗi thì dừng.
-        /// </summary>
-        private async Task FinishAsync(BotActionContext ctx, Guid id, string token, string quantity, CancellationToken ct)
+        /// <summary>UI-6.49 (1): nhiệt độ lõi chọn ở bước 1 của "Xong mẻ" (theo chat × mẻ) – dùng khi gửi Complete.</summary>
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<(string Chat, Guid Batch), string> FinishTemps = new();
+
+        private async Task FinishStartAsync(BotActionContext ctx, Guid id, string token, CancellationToken ct)
         {
-            var fin = await Web.PostFormAsUserAsync<JsonElement>("api/ProductionBatch/Finish", [new("Id", id.ToString()), new("ActualQuantity", quantity)], token, ct);
-            if (!fin.IsOk)
+            var batch = (await BoardAsync(ctx, token, ct))?.FirstOrDefault(b => G(b) == id.ToString("N"));
+            if (batch is { } b && Dec(b, "lastCoreTemperatureC") > 0m)
             {
-                await CardAsync(ctx, id, token, "⚠️ " + Problem(fin), ct);
+                await NumberScreenAsync(ctx, id, token, "fn", "fq", null, ct);
                 return;
             }
-            var output = await Web.PostFormAsUserAsync<JsonElement>("api/ProductionBatch/RecordOutput", [new("Id", id.ToString()), new("ProducedQuantity", quantity)], token, ct);
-            CallbackAnswer.Set(output.IsOk ? $"✅ Xong mẻ – {quantity} suất" : "⚠️ Chưa ghi được sản lượng");
-            await CardAsync(ctx, id, token, output.IsOk ? InputWidgets.Done("Đã kết thúc mẻ và ghi sản lượng " + quantity + " suất – chờ QC", time)
-                : "⚠️ Đã kết thúc mẻ nhưng chưa ghi được sản lượng: " + Problem(output), ct);
+            await NumberScreenAsync(ctx, id, token, "ftn", "ftv", null, ct);
+        }
+
+        /// <summary>
+        /// UI-6.49 (1) (D-127 a, UI-6.25): "✅ Xong mẻ" = <c>ProductionBatch/Complete</c> như web – MỘT giao dịch: nhiệt độ lõi (vừa nhập ở bước 1, hoặc lần đo gần nhất),
+        /// sản lượng, kết thúc nấu → Chờ QC → tự Đạt. Dưới ngưỡng → chọn hành động khắc phục rồi gửi lại. Lưu mẫu: nút 🧪 riêng (Complete không tự lưu mẫu).
+        /// </summary>
+        private async Task FinishAsync(BotActionContext ctx, Guid id, string token, string quantity, string? corrective, CancellationToken ct)
+        {
+            var batch = (await BoardAsync(ctx, token, ct))?.FirstOrDefault(b => G(b) == id.ToString("N"));
+            string? temp = FinishTemps.TryGetValue((ctx.Event.ChatId, id), out var t) ? t
+                : batch is { } bb && Dec(bb, "lastCoreTemperatureC") is > 0m and var last ? last.ToString(CultureInfo.InvariantCulture) : null;
+            if (temp == null)
+            {
+                await NumberScreenAsync(ctx, id, token, "ftn", "ftv", null, ct);
+                return;
+            }
+            var r = await Web.PostJsonAsUserAsync<JsonElement>("api/ProductionBatch/Complete", new
+            {
+                id,
+                coreTemperatureC = decimal.Parse(temp, CultureInfo.InvariantCulture),
+                correctiveAction = corrective,
+                retainSample = false,
+                producedQuantity = decimal.TryParse(quantity, NumberStyles.Number, CultureInfo.InvariantCulture, out var q) ? q : (decimal?)null,
+                note = "Xong mẻ – Telegram",
+            }, token, ct);
+            if (!r.IsOk && corrective == null && (r.ResponseMessage ?? string.Empty).Contains("khắc phục", StringComparison.OrdinalIgnoreCase))
+            {
+                await ShowAsync(ctx, new NeutralMessage
+                {
+                    Title = $"⚠️ Nhiệt độ lõi {temp} °C dưới ngưỡng",
+                    Lines = [Problem(r), "Chọn hành động khắc phục đã làm để kết thúc mẻ:"],
+                    Buttons = reasons.Buttons(ReasonCatalog.CoreTempFix, Kind, "fcr", "fcx", $"{id:N}.{quantity}"),
+                }, ct);
+                return;
+            }
+            if (r.IsOk)
+            {
+                FinishTemps.TryRemove((ctx.Event.ChatId, id), out _);
+            }
+            CallbackAnswer.Set(r.IsOk ? $"✅ Xong mẻ – {quantity} suất" : "⚠️ " + Problem(r));
+            await CardAsync(ctx, id, token, r.IsOk ? InputWidgets.Done((r.ResponseMessage ?? "Đã xong mẻ") + $" – {quantity} suất, lõi {temp} °C", time) : "⚠️ " + Problem(r), ct);
         }
 
         private async Task PostAsync(BotActionContext ctx, Guid id, string token, string path, List<KeyValuePair<string, string>> form, string done, CancellationToken ct)

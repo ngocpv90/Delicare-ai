@@ -93,6 +93,23 @@ namespace AppDelicare.Services.Implement.Identity
             }
         }
 
+        /// <summary>UI-6.49 (1): xem trước đơn nghỉ qua bot (phép năm còn / sau, ca bị bỏ) cho người chỉ có EmployeeId – cùng công thức HrRequest/PreviewLeave.</summary>
+        public async Task<IResult<LeaveImpactModel>> PreviewLeave(BotEmployeeLeaveRequest request)
+        {
+            var (employee, error) = await EmployeeAsync(request);
+            if (employee == null)
+            {
+                return Result<LeaveImpactModel>.Fail(error!);
+            }
+            DateTime from = (request.FromDate ?? clock.Today).Date, to = (request.ToDate ?? request.FromDate ?? clock.Today).Date;
+            var hr = (configuration.GetSection(BusinessRulesOptions.Section).Get<BusinessRulesOptions>() ?? new BusinessRulesOptions()).Hr;
+            if (to < from)
+            {
+                return Result<LeaveImpactModel>.Fail(string.Format(ConstantHelper.Message.HrDateRangeInvalid, hr.LeaveMaxDays));
+            }
+            return Result<LeaveImpactModel>.Success(await HrRequestService.LeaveImpactAsync(unitOfWork.DbContext, hr, employee.Id, from, to, request.LeaveTypeCode, null), ConstantHelper.Message.GetAllSuccessfully);
+        }
+
         public async Task<IResult<MyAttendanceModel>> GetToday(BotIdentityRequest request)
         {
             var (employee, error) = await EmployeeAsync(request);

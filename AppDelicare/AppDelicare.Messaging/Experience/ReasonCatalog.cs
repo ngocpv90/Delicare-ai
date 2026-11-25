@@ -33,6 +33,8 @@ namespace AppDelicare.Messaging.Experience
         public const string DishChange = "op-change-reason";
         /// <summary>Lô vệ sinh hộp khay không đạt.</summary>
         public const string CleaningReject = "op-clean-reject";
+        /// <summary>UI-6.49 (1): khắc phục khi nhiệt độ khu bảo quản ngoài ngưỡng (ghi một lượt).</summary>
+        public const string TempFix = "qc-temp-fix";
 
         private static readonly Dictionary<string, string[]> Defaults = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -44,6 +46,7 @@ namespace AppDelicare.Messaging.Experience
             [Leave] = ["Việc gia đình", "Ốm / khám bệnh", "Việc cá nhân", "Nghỉ phép năm theo kế hoạch"],
             [Swap] = ["Việc gia đình", "Ốm / khám bệnh", "Trùng lịch học / việc riêng", "Đã thỏa thuận với đồng nghiệp"],
             [DishChange] = ["Khách đề nghị", "Thiếu nguyên liệu", "Giá nguyên liệu tăng", "Món không hợp mùa"],
+            [TempFix] = ["Chỉnh nhiệt độ thiết bị, đo lại sau 30 phút", "Chuyển hàng sang khu đạt nhiệt độ", "Báo bảo trì kiểm tra thiết bị", "Báo QA kiểm tra hàng trong khu"],
             [CleaningReject] = ["Còn bẩn / bám dầu", "Nhiệt độ rửa không đạt", "Hộp khay hỏng / nứt", "Thiếu hóa chất đúng quy định"],
         };
 

@@ -1395,3 +1395,17 @@ Thứ tự làm: 1 → 3 → 6 → 2.
 | (d) | Mỗi task | Nhánh riêng → build + test + full-flow + build FE xanh → merge `main` → commit + push git. Hết mỗi đợt chạy hồi quy UI-6.48 trên `main`. |
 | (e) | Không sửa được | Sau 3 cách thử: giữ chức năng cũ, để phần mới sau cờ cấu hình, ghi rủi ro, làm tiếp task sau – không dừng cả đợt. |
 | (f) | Báo cáo | Chỉ báo anh khi xong toàn bộ: bảng tổng đầu PROGRESS (task · kết quả · commit · ảnh · quyết định tự chọn · rủi ro còn lại). |
+
+## D-127 – Đợt hoàn thiện sau UI-6 (UI-6.49): bot theo luồng mới, số liệu KPI / đối soát, Nấu dư tự ghi, cờ đường lùi, cấu hình production, xếp có điều kiện, trang tài khoản, quyền lẻ, công cụ bổ sung dữ liệu (anh chốt 2026-11-24)
+
+✅ **Anh chốt 2026-11-24** ("đồng ý"). Task ROADMAP **UI-6.49**, chạy theo chế độ tự chạy D-126. Nguồn: phần "Chưa làm / còn rủi ro" của bảng tổng D-126 + chat tài liệu rà 71 quyết định tự chọn (không có quyết định nào trái D-xx đã chốt; QĐ-26, 46, 47, 51, 59, 63, 68, 69, 71 cần làm tiếp – đưa vào đây).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Bot | Bot dùng đúng API web: Xong mẻ = Complete, giao kèm thu khay, lý do thất bại theo danh mục, gửi vị trí khi đến, Xếp lên xe có thông báo chặn, xin nghỉ hiện phép còn, ghi nhiệt độ một lượt. |
+| (b) | Số liệu | Đối chiếu KPI / bảng điều hành 7 ngày trước – sau; đối soát / bảng kê với giao lại; truy xuất mẻ → điểm giao. |
+| (c) | Nấu dư | Tự ghi khi lệnh tự đóng, theo suất đã chia (nguồn mới đáng tin). |
+| (d) | Cờ & cấu hình | Mọi cờ đường lùi mặc định hành vi mới; khóa mới vào bản Docker / production; bot chưa vào ca 15 phút; màn Job tự động hiện cả nhắc việc chạy trong bot. |
+| (e) | Xếp có điều kiện | Mục duyệt riêng "Xếp xe chưa đủ hàng" thay cho chỉ quản trị. |
+| (f) | Tài khoản | Trang chi tiết tài khoản toàn màn như D-123. |
+| (g) | Dữ liệu | Không sửa hộ dữ liệu thật; xuất Excel danh sách cần bổ sung cho NS / IT / Bếp trưởng; quyền lẻ chỉ lập bảng, không xóa. **GAP-LOG-DRV PROPOSED:** cột tài xế mặc định cho xe – chờ anh duyệt; tạm dùng tài xế chuyến gần nhất. |
