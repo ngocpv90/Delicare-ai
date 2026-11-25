@@ -928,6 +928,13 @@
 
             // BE2.5 – ATTP, vệ sinh, hộp / khay
             public static readonly string ChecklistNotFound = "Không tìm thấy bộ checklist";
+            public static readonly string PackingManyEmpty = "Chưa chọn ô nào để ghi";
+            public static readonly string PackingDishNotReady = "Món {0} chưa đủ mẻ đạt – chưa chia được";
+            public static readonly string PackingManySaved = "Đã ghi chia {0} ô";
+            public static readonly string PackingCreateBlocked = "Lệnh đóng gói do hệ thống tự sinh khi mẻ đạt.";
+            public static readonly string LoadMenuIncomplete = "Chưa đủ thực đơn – chưa xếp lên xe được: {0}";
+            public static readonly string LoadOverrideNoRight = "Chỉ người có quyền Duyệt Điều phối giao hàng được xếp có điều kiện";
+            public static readonly string LoadOverrideReasonRequired = "Xếp có điều kiện phải ghi lý do";
             public static readonly string ChecklistVersionDuplicate = "Bộ kiểm tra {0} đã có phiên bản {1}.";
             public static readonly string ChecklistSystemCodeLocked = "«{0}» là bộ hệ thống (gắn giờ hạn / thao tác của mẻ, vệ sinh khay) – không đổi mã, không ngừng dùng, không xóa; sửa nội dung bằng Tạo phiên bản mới.";
             public static readonly string ChecklistNewVersionDate = "Phiên bản mới áp dụng từ ngày mai trở đi";

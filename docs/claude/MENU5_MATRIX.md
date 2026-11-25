@@ -65,11 +65,8 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | X | S (IX) |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X | X | X | X | X | — | X | — | — | — | — | — | — | — | — | — | — | X | Q |
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | X | X | X | — | — | — | X | — | — | — | — | — | — | — | — | — | X | Q |
-| Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | X | X | X | — | — | — | — | S | X | — | — | — | — | — | — | — | — | X | — |
-| Đóng gói & Giao hàng › Kết quả đóng gói | `log-packing-result` | X | X | X | — | — | — | — | S | X | — | — | — | — | — | — | — | — | X | — |
-| Đóng gói & Giao hàng › Đơn giao hàng | `log-delivery-order` | X | X | X | — | — | — | — | — | S | — | — | X | X | X | — | — | — | X | X |
-| Đóng gói & Giao hàng › Chuyến giao hàng | `log-route` | X | X | X | — | — | — | — | — | S | — | — | — | — | — | — | — | — | X | — |
-| Đóng gói & Giao hàng › Xếp hàng lên xe | `log-loading` | X | X | X | — | — | — | — | — | S | — | — | — | — | — | — | — | — | X | — |
+| Đóng gói & Giao hàng › Chia suất & đóng gói | `log-packing-order` | X | X | X | — | — | — | — | S | X | — | — | — | — | — | — | — | — | X | — |
+| Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | X | X | X | — | — | — | — | — | S | — | — | X | X | X | — | — | — | X | X |
 | Đóng gói & Giao hàng › Theo dõi chuyến giao | `log-execution` | X | X | X | — | — | — | — | — | S | X | — | X | X | X | X | — | — | X | X |
 | Đóng gói & Giao hàng › Vị trí xe | `log-gps` | X | X | X | — | — | — | — | — | X | — | — | — | — | — | — | — | — | X | — |
 | Đóng gói & Giao hàng › Xác nhận đã giao | `log-pod` | X | X | X | — | — | — | — | — | S | S | — | X | X | X | X | X (IX) | — | X | — |
@@ -121,13 +118,13 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   OPS-LOG       vào  17 mục · ô quyền   33
   OPS-POS       vào  12 mục · ô quyền   20
   OPS-MNT       vào   5 mục · ô quyền    9
-  SAL-SALES     vào  19 mục · ô quyền   37
-  SAL-CON       vào  19 mục · ô quyền   67
-  SAL-HEAD      vào  25 mục · ô quyền   76
+  SAL-SALES     vào  20 mục · ô quyền   38
+  SAL-CON       vào  20 mục · ô quyền   68
+  SAL-HEAD      vào  26 mục · ô quyền   77
   SAL-CS        vào  11 mục · ô quyền   15
   FIN-ACC       vào  28 mục · ô quyền   79
   FIN-HR        vào  12 mục · ô quyền   42
   FIN-IT        vào 101 mục · ô quyền  214
-  QA            vào  29 mục · ô quyền   68
+  QA            vào  30 mục · ô quyền   69
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT
 ```

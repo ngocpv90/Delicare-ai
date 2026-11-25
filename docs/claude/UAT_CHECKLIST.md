@@ -508,3 +508,11 @@ Theo D-40, các kịch bản **trên giao diện** của luồng Pilot (FE-P2 h�
 - [ ] Nhận xử lý → Đã xử lý (bắt buộc hướng xử lý + ghi chú) → Đóng; Đã xử lý không sửa; không có nút xóa (xóa qua API bị chặn).
 - [ ] Bộ kiểm tra: tab trong Kiểm tra theo ca / mẻ, sidebar không còn "Bộ kiểm tra ATTP", link cũ mở tab; bộ hệ thống có nhãn, không xóa / đổi mã / ngừng; Tạo phiên bản mới chép tiêu chí; tạo bộ mới mã tự sinh; bộ tự tạo hạn = hết ca.
 - [ ] Quyền: uat.qa, uat.ops-scm (sự cố), uat.coo; không quyền không vào được.
+
+## UI-6.34 – Chia suất & đóng gói + Điều phối giao hàng (D-115)
+- [ ] Sidebar Đóng gói & Giao hàng: "Chia suất & đóng gói", "Điều phối giao hàng" (không còn Kết quả đóng gói, Đơn giao hàng, Xếp hàng lên xe); link cũ mở đúng màn.
+- [ ] Chia suất: món chưa đủ mẻ → ô chờ, không bấm được; đủ mẻ → "Xong món này" ghi đủ mọi điểm; bấm ô ghi hỏng / thiếu (lý do bắt buộc); "Xong điểm giao"; điểm đủ mọi món → "Đủ thực đơn"; không có nút "Lập lệnh đóng gói".
+- [ ] Mẻ nấu thêm chưa đạt → điểm còn thiếu phần quay lại "chờ".
+- [ ] Điều phối: chuyến chưa đủ → "Xếp lên xe" mở hộp thiếu điểm / món; xếp có điều kiện cần lý do (quyền duyệt); đủ → xếp; "Xuất bến" nhập nhiệt độ; "Chuyển xe" chuyển điểm.
+- [ ] Chốt đơn → tự lập chuyến cho ngày giao; thiếu xe → "Chưa gán chuyến" + tin bot. Bot "Chuyến đủ hàng" 1 tin / chuyến.
+- [ ] Quyền: uat.ops-log đủ 2 màn; uat.ops-kit chỉ Chia suất; uat.coo đủ; sales / QA xem Điều phối.

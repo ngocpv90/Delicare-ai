@@ -344,7 +344,8 @@
     // UI-6.29 (D-110): Kho 12 → 5 mục – link cũ mở đúng màn / tab (?id= của lô → Tồn kho tab Theo lô + truy xuất).
     const KHO_OLD = { 'scm-zone': 'scm-warehouse?tab=zone', 'scm-location': 'scm-warehouse?tab=location', 'scm-lot': 'scm-inv-balance?tab=lot', 'scm-inv-txn': 'scm-inv-balance?tab=txn', 'scm-inv-policy': 'scm-inv-balance?tab=policy', 'scm-reservation': 'scm-issue?tab=res', 'scm-consumption-var': 'cost-meal?tab=dish',
       'qc-cleaning-result': 'qc-cleaning?tab=book', 'log-return-inspection': 'qc-cleaning', // UI-6.32 (D-113)
-      'qc-checklist': 'qc-checklist-result?tab=sets' }; // UI-6.33 (D-114)
+      'qc-checklist': 'qc-checklist-result?tab=sets', // UI-6.33 (D-114)
+      'log-packing-result': 'log-packing-order', 'log-delivery-order': 'log-route', 'log-loading': 'log-route' }; // UI-6.34 (D-115)
     if (Store.isLive && KHO_OLD[id]) { location.replace(APP.href(KHO_OLD[id] + (params.id && id === 'scm-lot' ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     if (Store.isLive && id === 'prod-workstation') { location.replace(APP.href('prod-line?tab=ws' + (params.id ? '&id=' + encodeURIComponent(params.id) : ''))); return; }
     const up = Store.isLive && PARENT_OF[id];

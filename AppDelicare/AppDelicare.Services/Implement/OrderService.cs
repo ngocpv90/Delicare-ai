@@ -965,6 +965,11 @@ namespace AppDelicare.Services.Implement
                 {
                     summary.AutoPlan = await _services.GetRequiredService<IProductionPlanService>().AutoPlanAfterLockAsync(day);
                 }
+                // UI-6.34 (D-115): chốt xong → tự lập chuyến theo khu vực cho ngày giao (cờ DeliveryAutoPlanAfterLock; lỗi không làm hỏng việc chốt).
+                if (summary.LockedCount > 0)
+                {
+                    await _services.GetRequiredService<IDeliveryRouteService>().AutoPlanAfterLockAsync(day);
+                }
                 return Result<OrderLockSummaryModel>.Success(summary, ConstantHelper.Message.SaveSuccess);
             }
             catch (Exception ex)

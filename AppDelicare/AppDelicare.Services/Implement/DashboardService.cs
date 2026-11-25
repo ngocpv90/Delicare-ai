@@ -561,11 +561,11 @@ namespace AppDelicare.Services.Implement
                     : StageStatus.InProgress;
                 DateTime? deliveredAt = executions.Select(e => e.DeliveredAt).Concat(deliveries.Select(d => d.ActualDeliveryTime)).Where(x => x != null).Max();
                 var deliveryDocs = deliveries.Select(d => Doc(d.Id, d.DeliveryNumber ?? d.DeliveryNo, statuses[d.Id], DeliveryExecutionStatus.Label(statuses[d.Id]),
-                        d.ActualDeliveryTime ?? d.PlannedDeliveryTime, "log-delivery-order"))
+                        d.ActualDeliveryTime ?? d.PlannedDeliveryTime, "log-route")) /* UI-6.34: Đơn giao hàng gộp vào Điều phối */
                     .Concat(routes.OrderBy(r => DeliveryRules.RouteNumber(r), StringComparer.Ordinal)
                         .Select(r => Doc(r.Id, DeliveryRules.RouteNumber(r), r.Status, DeliveryRouteStatus.Label(r.Status), r.ActualEnd ?? r.ActualStart ?? r.DeliveryDate, "log-route")))
                     .ToList();
-                Add(Stage.Delivery, "Giao hàng (đơn giao / chuyến xe)", "log-delivery-order", deliveryStage, deliveredAt, deliveryDocs,
+                Add(Stage.Delivery, "Giao hàng (đơn giao / chuyến xe)", "log-route", deliveryStage, deliveredAt, deliveryDocs,
                     failedDeliveries > 0 ? $"{failedDeliveries} đơn giao không thành công" : null);
 
                 // 6. Xác nhận giao (POD) theo đơn giao – số chứng từ = số đơn giao (POD không có số riêng).

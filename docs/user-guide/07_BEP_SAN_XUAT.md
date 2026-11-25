@@ -29,8 +29,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Chất lượng & ATTP › Nhật ký nhiệt độ | `qc-temperature` | S | X |
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | S | — |
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X | — |
-| Đóng gói & Giao hàng › Lệnh đóng gói | `log-packing-order` | S | — |
-| Đóng gói & Giao hàng › Kết quả đóng gói | `log-packing-result` | S | — |
+| Đóng gói & Giao hàng › Chia suất & đóng gói | `log-packing-order` | S | — |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | — |
 | Nhân sự › Đơn xin nghỉ | `hr-leave` | X | — |

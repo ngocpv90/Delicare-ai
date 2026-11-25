@@ -242,5 +242,36 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>UI-6.34 (D-115): Chia suất & đóng gói – điểm giao × món của ca.</summary>
+        [HttpGet("GetBoard")]
+        public async Task<IActionResult> GetBoard(DateTime? date, Guid? shiftId)
+        {
+            try
+            {
+                return Ok(await _service.GetBoard(date, shiftId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetBoard: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.34: ghi chia nhiều ô (Xong món / Xong điểm giao) – một giao dịch.</summary>
+        [Security.Permission("log-packing-order", PermissionAction.Edit)]
+        [HttpPost("RecordResultMany")]
+        public async Task<IActionResult> RecordResultMany([FromBody] AppDelicare.Model.Model.PackingResultManyRequest request)
+        {
+            try
+            {
+                return Ok(await _service.RecordResultMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " RecordResultMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
     }
 }

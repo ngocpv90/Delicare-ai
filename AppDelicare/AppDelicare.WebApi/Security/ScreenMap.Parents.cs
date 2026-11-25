@@ -66,6 +66,10 @@ namespace AppDelicare.WebApi.Security
             // UI-6.32 (D-113): Kiểm tra vệ sinh + Kiểm tra khay hộp thu hồi là thao tác trong "Vệ sinh khay hộp".
             ["CleaningChecklistResult"] = ("qc-cleaning", false),
             ["ReturnInspection"] = ("qc-cleaning", false),
+            // UI-6.34 (D-115): Kết quả đóng gói trong Chia suất & đóng gói; Đơn giao hàng, Xếp hàng lên xe trong Điều phối giao hàng.
+            ["PackingResult"] = ("log-packing-order", false),
+            ["DeliveryOrder"] = ("log-route", false),
+            ["DeliveryLoading"] = ("log-route", false),
         };
 
         /// <summary>Màn hình ẩn khỏi menu (MENU-4) – link tới đây mở màn cha. Dùng cho test / tài liệu.</summary>
@@ -82,6 +86,7 @@ namespace AppDelicare.WebApi.Security
             ["scm-zone"] = "scm-warehouse", ["scm-location"] = "scm-warehouse", ["scm-lot"] = "scm-inv-balance", ["scm-inv-txn"] = "scm-inv-balance", ["scm-inv-policy"] = "scm-inv-balance",
             ["scm-consumption-var"] = "scm-inv-balance", ["scm-reservation"] = "scm-issue",
             ["qc-cleaning-result"] = "qc-cleaning", ["log-return-inspection"] = "qc-cleaning",
+            ["log-packing-result"] = "log-packing-order", ["log-delivery-order"] = "log-route", ["log-loading"] = "log-route",
         };
     }
 }

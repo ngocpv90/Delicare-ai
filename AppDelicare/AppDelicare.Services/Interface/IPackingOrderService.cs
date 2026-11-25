@@ -25,5 +25,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<PackingBatchModel>> Start(PackingOrderActionRequest request);
         public Task<IResult<PackingBatchModel>> RecordResult(PackingOrderResultRequest request);
         public Task<IResult<PackingBatchModel>> Cancel(PackingOrderActionRequest request);
+        /// <summary>UI-6.34 (D-115): bảng chia suất điểm giao × món.</summary>
+        public Task<IResult<AppDelicare.Model.Model.PackingBoardModel>> GetBoard(DateTime? date, Guid? shiftId);
+        public Task<IResult<AppDelicare.Model.Model.PackingResultManyModel>> RecordResultMany(AppDelicare.Model.Model.PackingResultManyRequest request);
     }
 }
