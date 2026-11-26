@@ -54,6 +54,8 @@ namespace AppDelicare.Model.Model
     {
         public Guid? CategoryId { get; set; }
         public string? CategoryName { get; set; }
+        /// <summary>REAL-1 (D-129): thứ tự dòng trong cùng nhóm (0 = dòng đầu) – vd. bữa trưa 2 món chính, bữa sáng bánh + trứng + sữa.</summary>
+        public int Slot { get; set; }
         public List<MenuWeekCellModel> ListCell { get; set; } = [];
     }
 
@@ -133,6 +135,8 @@ namespace AppDelicare.Model.Model
         public int OptionNo { get; set; } = 1;
         public Guid? CategoryId { get; set; }
         public int Day { get; set; }
+        /// <summary>REAL-1: dòng thứ mấy trong cùng nhóm (MenuWeekRowModel.Slot, mặc định 0).</summary>
+        public int Slot { get; set; }
         /// <summary>null = xóa món của ô.</summary>
         public Guid? DishId { get; set; }
     }
@@ -143,6 +147,8 @@ namespace AppDelicare.Model.Model
         public string? MealType { get; set; }
         public int OptionNo { get; set; } = 1;
         public Guid? CategoryId { get; set; }
+        /// <summary>REAL-1: dòng thứ mấy trong cùng nhóm (mặc định 0).</summary>
+        public int Slot { get; set; }
         public Guid DishId { get; set; }
     }
 

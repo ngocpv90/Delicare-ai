@@ -876,7 +876,10 @@ namespace AppDelicare.Services.Implement
             {
                 return cached;
             }
-            var unit = await FindAsync<UnitMeasure>(x => !x.IsDeleted && (x.Code == key || x.Name == key || x.Symbol == key));
+            // REAL-1 (1) (D-129): khớp theo thứ tự Mã → Tên → Ký hiệu (1 truy vấn / bậc) – tránh ĐVT khác có Ký hiệu / Tên trùng Mã của ĐVT đúng.
+            var unit = await FindAsync<UnitMeasure>(x => !x.IsDeleted && x.Code == key)
+                ?? await FindAsync<UnitMeasure>(x => !x.IsDeleted && x.Name == key)
+                ?? await FindAsync<UnitMeasure>(x => !x.IsDeleted && x.Symbol == key);
             if (unit == null)
             {
                 unit = Add(_unitOfWork.UnitMeasureRepository, new UnitMeasure { Id = Guid.NewGuid(), Code = Slug(key, 50), Name = key, Symbol = key, Status = Active });
@@ -970,6 +973,8 @@ namespace AppDelicare.Services.Implement
             var e = await FindAsync<SupplierMaterial>(x => x.SupplierId == supplier.Id && x.IngredientId == ingredient.Id && !x.IsDeleted);
             bool isNew = e == null;
             e ??= Add(_unitOfWork.SupplierMaterialRepository, new SupplierMaterial { Id = Guid.NewGuid(), SupplierId = supplier.Id, IngredientId = ingredient.Id, Status = Active });
+            // REAL-1 (D-129): đơn giá làm tròn theo cột (decimal(18,2)) trước khi so – giá báo giá chia quy cách (15.277,777…) không bị coi là "đổi" mỗi lần nạp lại.
+            price = Math.Round(price, 2, MidpointRounding.AwayFromZero);
             bool changed = Set(e, x => x.UnitPrice, price) | Set(e, x => x.PurchaseUomId, unit?.Id ?? e.PurchaseUomId)
                 | Set(e, x => x.EffectiveFrom, from ?? e.EffectiveFrom) | Set(e, x => x.EffectiveTo, to ?? e.EffectiveTo) | Set(e, x => x.MinimumOrderQuantity, moq ?? e.MinimumOrderQuantity);
             if (preferred && !e.IsPreferred)

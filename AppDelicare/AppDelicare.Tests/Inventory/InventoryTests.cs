@@ -114,6 +114,14 @@ namespace AppDelicare.Tests.Inventory
             summary.GetProperty("usableQuantity").GetDecimal().Should().Be(80);
             summary.GetProperty("expiredQuantity").GetDecimal().Should().Be(40);
             summary.GetProperty("expiringLotCount").GetInt32().Should().Be(4, "L-B, L-D, L-E, L-F hết hạn trong 7 ngày (BusinessRules:ExpiringLotDays)");
+
+            // REAL-1 (D-129): kho đã xóa mềm (danh mục [DEMO] đã dọn) → màn tồn kho không hiện dòng tồn của kho đó; sổ kho giữ nguyên.
+            await _factory.SeedAsync(async db =>
+            {
+                var wh = await db.Warehouse.SingleAsync(w => w.Id == s.Warehouse);
+                wh.IsDeleted = true;
+            });
+            List(await c.GetResultAsync($"/api/InventoryBalance/GetSummary?warehouseId={s.Warehouse}")).Should().BeEmpty();
         }
 
         [Fact]

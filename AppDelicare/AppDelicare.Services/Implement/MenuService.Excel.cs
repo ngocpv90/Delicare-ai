@@ -160,10 +160,15 @@ namespace AppDelicare.Services.Implement
                     model.Unmatched = model.ListCell.Count - model.Matched;
                     if (apply)
                     {
+                        // REAL-1 (D-129): nhiều hàng cùng (buổi, lựa chọn, nhóm) – hàng thứ n trong file vào dòng Slot n của nhóm (không ghi đè nhau).
+                        var slots = new Dictionary<string, int>();
                         foreach (var c in model.ListCell.Where(c => c.DishId != null))
                         {
                             var cat = await _unitOfWork.DbContext.Dish.AsNoTracking().Where(x => x.Id == c.DishId).Select(x => x.DishCategoryId ?? x.CategoryId).FirstOrDefaultAsync();
-                            await ApplyCellAsync(menuId, c.MealType!, c.OptionNo, cat, c.Day, c.DishId);
+                            string slotKey = $"{c.MealType}|{c.OptionNo}|{c.Day}|{cat}";
+                            int slot = slots.GetValueOrDefault(slotKey);
+                            slots[slotKey] = slot + 1;
+                            await ApplyCellAsync(menuId, c.MealType!, c.OptionNo, cat, c.Day, c.DishId, slot);
                             await _unitOfWork.MenuLineRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                             model.Written++;
                         }
