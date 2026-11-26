@@ -39,6 +39,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Sản xuất › Kế hoạch sản xuất | `prod-plan` | X | X |
 | Chất lượng & ATTP › Sổ kiểm tra hàng nhập | `qc-inspection` | — | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | — | X |
+| Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | X | X |
 | Danh mục hệ thống › Đơn vị tính | `scm-uom` | — | Q |
 | Danh mục hệ thống › Kho & vị trí | `scm-warehouse` | Q | Q |
 <!-- MENU5:END -->

@@ -406,3 +406,77 @@
     });
   });
 })();
+
+/* ACC-6 (D-131 j – anh chốt 2026-11-26): Đóng gói & Giao hàng › Định mức bao bì (#/log-packaging-norm) – như mô phỏng dinh-muc-bao-bi.html:
+ * ma trận vật tư bao bì (CC…) × loại suất (Sáng · Trưa · Tối · Đêm · Cơm suất), số dùng cho 100 suất, sửa trong ô → Lưu (bản nháp) → Gửi duyệt
+ * (duyệt như công thức món – Phê duyệt › Công thức; duyệt xong áp dụng). Ghi kết quả đóng gói → phiếu xuất bao bì Nháp theo ca = suất đạt × định mức,
+ * tự ghi sổ khi hết ca. Không hiện số tài khoản. Rộng 390px: bảng cuộn ngang, ô nhập gọn.
+ * API: PackagingNorm/GetMatrix · GetSupplies · SaveMeal · Submit. */
+(function () {
+  const U = UTIL, I = U.icon, esc = U.esc, FN = APP.FN || {};
+  if (!FN['log-packaging-norm']) FN['log-packaging-norm'] = { extra: true, ph: 'ACC', grp: 'Đóng gói & Giao hàng', fn: 'Định mức bao bì', id: 'log-packaging-norm', name: 'Định mức bao bì', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
+  const st = { extra: [] };
+  const val = (v) => (v === null || v === undefined ? '' : String(+(+v).toFixed(3)));
+
+  function pickSupply(have, done) {
+    UI.modal({ title: 'Thêm vật tư bao bì',
+      body: `<div class="row-flex mb" style="gap:8px"><input class="input" id="pnQ" placeholder="Mã / tên vật tư (trống = mã CC…)" style="flex:1"><button class="btn" id="pnFind">${I('search')} Tìm</button></div><div id="pnList"></div>`,
+      foot: '<button class="btn" data-close>Đóng</button>',
+      onMount: (m, close) => {
+        const q = m.querySelector('#pnQ'), box = m.querySelector('#pnList');
+        const find = () => Store.query('PackagingNorm/GetSupplies', { search: q.value.trim() }).then(x => {
+          const list = ((x.ok && x.data) || []).filter(s => !have.has(s.ingredientId));
+          box.innerHTML = list.length ? list.map((s, i) => `<div class="spread" style="border-bottom:1px solid var(--line);padding:6px 0"><span><b>${esc(s.code || '')}</b> ${esc(s.name || '')} <span class="muted small">${esc(s.unitName || '')}</span></span><button class="btn sm" data-i="${i}">Thêm</button></div>`).join('')
+            : '<div class="muted small">Không có vật tư phù hợp.</div>';
+          box.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { done(list[+b.dataset.i]); close(); });
+        });
+        m.querySelector('#pnFind').onclick = find; q.onkeydown = e => { if (e.key === 'Enter') find(); }; find();
+      } });
+  }
+
+  APP.register('log-packaging-norm', (el, f) => {
+    f = f || FN['log-packaging-norm'];
+    const perm = Store.perm('log-packaging-norm'), rerender = () => APP.SCREENS['log-packaging-norm'](el, f, {});
+    el.innerHTML = APP.header(f, '', { noNote: true })
+      + '<div class="small muted mb">Số vật tư bao bì dùng cho <b>100 suất</b> theo loại suất. Khi Bếp ghi kết quả đóng gói, hệ thống lập phiếu xuất bao bì nháp theo ca = suất đạt × định mức; Thủ kho sửa được, không sửa thì tự ghi sổ khi hết ca. Sửa định mức phải gửi duyệt (như công thức món) – duyệt xong mới áp dụng.</div>'
+      + '<div id="pnBody"><div class="muted small">Đang tải…</div></div>';
+    Store.query('PackagingNorm/GetMatrix', {}).then(x => {
+      if (!el.isConnected) return;
+      const box = el.querySelector('#pnBody');
+      if (!x.ok || !x.data) { box.innerHTML = `<div class="muted small">${esc(x.message || 'Không tải được định mức')}</div>`; return; }
+      const d = x.data, meals = d.listMeal || [], rows = (d.listRow || []).concat(st.extra.filter(e => !(d.listRow || []).some(r => r.ingredientId === e.ingredientId)));
+      const locked = m => m.workStatus === 'PendingApproval' || m.workStatus === 'Approved';
+      const canEdit = perm.edit !== false;
+      const cur = (r, m) => (m.workStatus ? (r.work || {})[m.code] : (r.active || {})[m.code]);
+      const head = m => `<th class="num" style="min-width:110px">${esc(m.label)}<div class="small muted" style="font-weight:400">${m.activeVersion ? `Đang áp dụng V${m.activeVersion}${m.activeFrom ? ' từ ' + U.date(m.activeFrom).slice(0, 5) : ''}` : 'Chưa có định mức'}</div>`
+        + (m.workStatus ? `<div>${UI.tag(m.workStatusName || m.workStatus, m.workStatus === 'Draft' ? 'orange' : 'blue')}</div>` : '')
+        + (canEdit && m.workStatus === 'Draft' ? `<button class="btn xs mt" data-sub="${m.code}">Gửi duyệt</button>` : '') + '</th>';
+      box.innerHTML = UI.kpis([
+        UI.kpi('Vật tư có định mức', U.num(rows.length), 'dòng ma trận', 'package', 'blue'),
+        UI.kpi('Loại suất áp dụng', `${U.num(meals.filter(m => m.activeVersion).length)} / ${U.num(meals.length)}`, meals.some(m => m.workStatus) ? 'có bản đang sửa / chờ duyệt' : 'không có bản đang sửa', 'check', 'green'),
+        UI.kpi('Phiếu xuất bao bì nháp', U.num(d.draftIssues || 0), d.autoPost ? 'tự ghi sổ khi hết ca' : 'tự ghi sổ đang tắt – kho ghi sổ tay', 'up', d.draftIssues ? 'orange' : 'green'),
+      ])
+        + '<div class="card panel"><div class="table-wrap"><table class="table dc-table"><thead><tr><th style="min-width:170px">Vật tư (số / 100 suất)</th><th>ĐVT</th>' + meals.map(head).join('') + '</tr></thead><tbody>'
+        + (rows.length ? rows.map((r, i) => `<tr><td><b>${esc(r.code || '')}</b><div class="small">${esc(r.name || '')}</div></td><td>${esc(r.unitName || '')}</td>`
+          + meals.map(m => {
+            const v = cur(r, m), a = (r.active || {})[m.code], diff = m.workStatus && val(v) !== val(a);
+            return `<td class="num">${canEdit && !locked(m) ? `<input class="input" style="width:80px;text-align:right" type="number" min="0" step="any" data-r="${i}" data-m="${m.code}" value="${val(v)}">` : (v ? U.num(v) : '–')}`
+              + (diff ? `<div class="small muted">đang áp dụng: ${a ? U.num(a) : '–'}</div>` : '') + '</td>';
+          }).join('') + '</tr>').join('') : `<tr><td colspan="${meals.length + 2}" class="muted small">Chưa có định mức – bấm "Thêm vật tư".</td></tr>`)
+        + '</tbody></table></div>'
+        + (canEdit ? `<div class="spread mt" style="flex-wrap:wrap;gap:8px"><button class="btn" id="pnAdd">${I('plus')} Thêm vật tư</button><button class="btn primary" id="pnSave">${I('check')} Lưu bản nháp</button></div>` : '')
+        + '<div class="small muted mt">Ô trống / 0 = không dùng. Lưu tạo bản nháp cho loại suất có thay đổi; loại suất đang chờ duyệt không sửa được. Phiếu xuất bao bì xem ở Kho › Xuất kho sản xuất; chứng từ kế toán "Xuất bao bì" theo buổi.</div></div>';
+      box.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => UI.confirm(`Gửi duyệt định mức <b>${esc(meals.find(m => m.code === b.dataset.sub).label.toLowerCase())}</b>? Duyệt xong áp dụng từ hôm nay cho phiếu xuất bao bì.`,
+        () => Store.act('PackagingNorm/Submit', { json: { meal: b.dataset.sub } }).then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã gửi duyệt'), 'ok'); rerender(); } })));
+      const add = box.querySelector('#pnAdd');
+      if (add) add.onclick = () => pickSupply(new Set(rows.map(r => r.ingredientId)), s => { st.extra.push({ ingredientId: s.ingredientId, code: s.code, name: s.name, unitName: s.unitName, active: {}, work: {} }); rerender(); });
+      const save = box.querySelector('#pnSave');
+      if (save) save.onclick = () => {
+        const changed = meals.filter(m => !locked(m) && rows.some((r, i) => { const inp = box.querySelector(`[data-r="${i}"][data-m="${m.code}"]`); return inp && val(inp.value === '' ? null : +inp.value) !== val(cur(r, m)); }));
+        if (!changed.length) { UI.toast('Chưa có thay đổi', 'warn'); return; }
+        const jobs = changed.map(m => () => Store.act('PackagingNorm/SaveMeal', { json: { meal: m.code, listLine: rows.map((r, i) => ({ ingredientId: r.ingredientId, perHundred: +(box.querySelector(`[data-r="${i}"][data-m="${m.code}"]`) || {}).value || 0 })) } }));
+        jobs.reduce((p, j) => p.then(ok => (ok ? j().then(r => r.ok) : false)), Promise.resolve(true)).then(ok => { if (ok) { st.extra = []; UI.toast(`Đã lưu bản nháp ${changed.length} loại suất – bấm "Gửi duyệt" ở đầu cột`, 'ok'); rerender(); } });
+      };
+    });
+  });
+})();

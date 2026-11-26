@@ -33,6 +33,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | — | S |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | — | S |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | — | S |
+| Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | X | X |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | — |
 | Nhân sự › Nghỉ & đổi ca | `hr-leave` | X | — |

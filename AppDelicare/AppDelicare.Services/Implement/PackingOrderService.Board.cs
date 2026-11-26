@@ -242,6 +242,11 @@ namespace AppDelicare.Services.Implement
                         model.ListWarning.Add(closeNote);
                     }
                 }
+                // ACC-6 (D-131 j): suất đạt × định mức bao bì → phiếu xuất bao bì Nháp theo ca (phần chưa có phiếu).
+                if (model.Orders > 0)
+                {
+                    model.ListWarning.AddRange(await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AppDelicare.Services.Interface.IPackagingNormService>(_services).AfterPackingAsync(day));
+                }
                 return Result<PackingResultManyModel>.Success(model, string.Format(ConstantHelper.Message.PackingManySaved, model.Cells));
             }
             catch (Exception ex)

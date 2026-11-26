@@ -37,6 +37,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Chất lượng & ATTP › Vệ sinh khay hộp | `qc-cleaning` | X |
 | Chất lượng & ATTP › Sự cố nhà cung cấp | `qc-supplier-issue` | X |
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | X |
+| Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | S |
 | Danh mục hệ thống › Dây chuyền & trạm bếp | `prod-line` | Q |
 <!-- MENU5:END -->
 

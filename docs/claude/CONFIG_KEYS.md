@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **222 khóa** trong 10 section.
+Tổng: **224 khóa** trong 10 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -116,6 +116,8 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:PurchaseOrderAutoApproveFromApprovedRequest` | bool | true | UI-6.18 B (D-99): đơn mua tự lập từ đề nghị đã duyệt được tự duyệt khi mọi dòng NCC ưu tiên + giá không cao hơn ước tính + tổng &lt; ngưỡng Giám đốc. | UI-6.18 |
 | `BusinessRules:ProductionAutoReleaseAfterLock` | bool | true | BIZ-2.4 (D-77 – B5, C3): sau chốt đơn theo ngày → tự lập kế hoạch SX, tự duyệt + phát hành (trừ trường hợp phải chờ COO). | BIZ-2.4 |
 | `BusinessRules:ProductionAutoDraftIssueOnRelease` | bool | true | BIZ-2.5 (D-77 – C4): phát hành lệnh → tự tạo phiếu xuất Nháp theo ca (số = giữ chỗ, lô FEFO). | BIZ-2.5 |
+| `BusinessRules:PackagingIssueAutoDraft` | bool | true | ACC-6 (D-131 j): ghi kết quả đóng gói → tự lập phiếu xuất bao bì Nháp theo ca = suất đạt × định mức (công thức món bao bì BB-&lt;buổi&gt;). | D-131 |
+| `BusinessRules:PackagingIssueAutoPost` | bool | true | ACC-6 (D-131 j): job PackagingIssueAutoPost tự ghi sổ phiếu xuất bao bì Nháp sau khi hết ca (kho không sửa / ghi sổ tay). | D-131 |
 | `BusinessRules:GoodsReceiptAutoPostAfterQc` | bool | true | BIZ-2.6 (D-77 – C5): QC đầu vào kết luận Đạt / Đạt một phần → tự ghi sổ phiếu nhập (phần đạt). | BIZ-2.6 |
 | `BusinessRules:BatchAutoPass` | bool | true | BIZ-2.7 (D-77 – C6): mẻ đủ điều kiện (lõi, sản lượng, lưu mẫu, không lỗi trọng yếu) tự Đạt QC. | BIZ-2.7 |
 | `BusinessRules:PackingAutoGenerateOnPass` | bool | true | BIZ-2.8 (D-77 – C7): mẻ Đạt → tự sinh lệnh đóng gói (PackingOrder/GenerateFromBatch). | BIZ-2.8 |
