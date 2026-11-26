@@ -28,6 +28,7 @@
     <!-- BOT-1.3: test container messaging (client Telegram giả + api giả). Cả 2 có appsettings.json – target KeepWebApiAppSettings bên dưới giữ bản của WebApi. -->
     <ProjectReference Include="..\AppDelicare.Messaging\AppDelicare.Messaging.csproj" />
     <ProjectReference Include="..\AppDelicare.WebApi\AppDelicare.WebApi.csproj" />
+    <ProjectReference Include="..\AppDelicare.ToolGateway\AppDelicare.ToolGateway.csproj" />
     <ProjectReference Include="..\AppDelicare.Data\AppDelicare.Data.csproj" />
     <ProjectReference Include="..\AppDelicare.Model\AppDelicare.Model.csproj" />
   </ItemGroup>
