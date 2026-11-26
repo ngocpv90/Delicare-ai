@@ -21,9 +21,9 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    public class GoodsReceiptService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
+    public partial class GoodsReceiptService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IInventoryLedgerService ledger
-        , IPurchaseOrderService purchaseOrderService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IGoodsReceiptService
+        , IPurchaseOrderService purchaseOrderService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, IServiceProvider services) : IGoodsReceiptService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -228,6 +228,31 @@ namespace AppDelicare.Services.Implement
             using var tran = await _unitOfWork.OpenTransaction();
             try
             {
+                var warnings = new List<string>();
+                var (receiptId, allAuto, error) = await CreateCoreAsync(request, warnings);
+                if (error != null)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<GoodsReceiptDetailModel>.Fail(error);
+                }
+                _unitOfWork.CommitTransaction();
+                return await AfterCreateAsync(receiptId, allAuto, warnings);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Create: ", ex.ToString()));
+                _unitOfWork.RollbackTransaction();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Lõi lập 1 phiếu nhập Chờ QC (kiểm + ghi, KHÔNG mở / đóng giao dịch, không tự ghi sổ) – dùng chung cho Create (1 đơn) và CreateMany (UI-6.50, nhiều đơn
+        /// trong 1 giao dịch). Lỗi → (Guid.Empty, false, câu báo); người gọi hoàn tác.
+        /// </summary>
+        private async Task<(Guid ReceiptId, bool AllAuto, string? Error)> CreateCoreAsync(GoodsReceiptCreateRequest request, List<string> warnings, bool validateOnly = false)
+        {
+            {
                 var db = _unitOfWork.DbContext;
                 // Rà soát BE: khóa theo PO – 2 phiếu nhập cùng PO tạo cùng lúc không cùng qua kiểm "nhập vượt".
                 await DbLocks.DocumentAsync(db, "PurchaseOrderReceipt", request.PurchaseOrderId);
@@ -247,7 +272,6 @@ namespace AppDelicare.Services.Implement
                 var ingredientIds = poLines.Values.Select(l => l.IngredientId).Distinct().ToList();
                 var ingredients = await db.Ingredient.AsNoTracking().Where(i => ingredientIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
                 DateTime receiptDate = request.ReceiptDate ?? _clock.Now;
-                var warnings = new List<string>();
                 if (error == null)
                 {
                     var totals = await PurchasingRules.ReceiptTotalsAsync(db, po!.Id);
@@ -274,10 +298,9 @@ namespace AppDelicare.Services.Implement
                         }
                     }
                 }
-                if (error != null)
+                if (error != null || validateOnly)
                 {
-                    _unitOfWork.RollbackTransaction();
-                    return Result<GoodsReceiptDetailModel>.Fail(error);
+                    return (Guid.Empty, false, error);
                 }
 
                 string number = await _documentNumberService.NextAsync(DocumentKind.GoodsReceipt, receiptDate.Date);
@@ -342,12 +365,19 @@ namespace AppDelicare.Services.Implement
                     inspection.Result = IncomingQcResult.Dat;
                 }
                 await _unitOfWork.GoodsReceiptRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
-                _unitOfWork.CommitTransaction();
+                return (receipt.Id, allAuto, null);
+            }
+        }
+
+        /// <summary>Sau khi lập phiếu (đã commit): mọi dòng tự đạt → tự ghi sổ (UI-6.29); trả chi tiết phiếu + cảnh báo.</summary>
+        private async Task<IResult<GoodsReceiptDetailModel>> AfterCreateAsync(Guid receiptId, bool allAuto, List<string> warnings)
+        {
+            {
                 // UI-6.29 (D-110): mọi dòng tự đạt (không yêu cầu QC + nhiệt độ đạt) → tự ghi sổ ngay như sau kết luận QC (GoodsReceiptAutoPostAfterQc);
                 // ghi sổ lỗi → giữ phiếu Đạt + cảnh báo, kho bấm Ghi sổ tay.
                 if (allAuto && _rules.GoodsReceiptAutoPostAfterQc)
                 {
-                    var posted = await Post(new GoodsReceiptPostRequest { Id = receipt.Id, Note = "Hệ thống tự ghi sổ – mọi dòng tự đạt" });
+                    var posted = await Post(new GoodsReceiptPostRequest { Id = receiptId, Note = "Hệ thống tự ghi sổ – mọi dòng tự đạt" });
                     if (posted.ResponseCode == 200 && posted.Data != null)
                     {
                         posted.Data.ListWarning.InsertRange(0, warnings);
@@ -355,15 +385,9 @@ namespace AppDelicare.Services.Implement
                     }
                     warnings.Add(string.Format(ConstantHelper.Message.QcAutoPostFailed, posted.ResponseMessage));
                 }
-                var detail = await DetailAsync(receipt.Id);
+                var detail = await DetailAsync(receiptId);
                 detail!.ListWarning.AddRange(warnings);
                 return Result<GoodsReceiptDetailModel>.Success(detail, ConstantHelper.Message.SaveSuccess);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(string.Concat("[", GetType().Name, "]", " Create: ", ex.ToString()));
-                _unitOfWork.RollbackTransaction();
-                throw;
             }
         }
 

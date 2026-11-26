@@ -18,6 +18,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<GoodsReceipt>> GetById(Guid id);
         /// <summary>T15 (spec 7.3 receive): lập phiếu nhập Chờ QC theo PO đã duyệt (+ phiếu QC).</summary>
         public Task<IResult<GoodsReceiptDetailModel>> Create(GoodsReceiptCreateRequest request);
+        /// <summary>UI-6.50 (D-132): nhận gộp nhiều đơn mua của 1 NCC – mỗi đơn 1 phiếu, 1 giao dịch.</summary>
+        public Task<IResult<ReceivingManyResultModel>> CreateMany(GoodsReceiptCreateManyRequest request);
         /// <summary>T15 (spec 7.4 post): ghi sổ phiếu đã kết luận QC – lô NL-, nhập kho phần đạt, nhiệt độ nhận, sự cố NCC, cập nhật PO.</summary>
         public Task<IResult<GoodsReceiptDetailModel>> Post(GoodsReceiptPostRequest request);
         /// <summary>T15: hủy phiếu chưa ghi sổ (lý do bắt buộc).</summary>

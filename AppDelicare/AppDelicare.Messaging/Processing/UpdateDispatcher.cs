@@ -273,7 +273,8 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyDishFrom or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyDishTo
                         or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyChangeReason or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyCleanReject
-                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyAttendanceFile:
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyAttendanceFile
+                        or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplySupplierRefuse or AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions.ReplyVehicleTemp:
                         await thaoTac.ReplyAsync(ctx, pending, ct);
                         break;
                 }

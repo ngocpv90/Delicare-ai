@@ -30,17 +30,21 @@ namespace AppDelicare.Services.Implement
         public const string DeliveryOrder = "DELIVERY_ORDER";
         public const string Pod = "POD";
         public const string Reconciliation = "RECONCILIATION";
+        /// <summary>UI-6.50 (D-132 h): đơn mua (bản gửi NCC) – QR "PO" mở bot luồng nhận hàng của NCC.</summary>
+        public const string PurchaseOrder = "PURCHASE_ORDER";
 
         private static readonly Dictionary<string, string> Screens = new(StringComparer.OrdinalIgnoreCase)
         {
             [GoodsReceipt] = "scm-gr", [MaterialIssue] = "scm-issue", [StockCount] = "scm-stockcount",
             [DeliveryOrder] = "log-route" /* UI-6.34 */, [Pod] = "log-execution" /* UI-6.35 */, [Reconciliation] = "crm-reconciliation",
+            [PurchaseOrder] = "scm-po" /* UI-6.50 */,
         };
 
         /// <summary>BOT-1.7d: mã loại ngắn trong QR <c>start=DOC_&lt;mã&gt;_&lt;Id N&gt;</c> (tham số start ≤ 64 ký tự).</summary>
         public static readonly IReadOnlyDictionary<string, string> QrCodes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             [GoodsReceipt] = "GR", [MaterialIssue] = "MI", [StockCount] = "SC", [DeliveryOrder] = "DO", [Pod] = "POD", [Reconciliation] = "RC",
+            [PurchaseOrder] = "PO" /* UI-6.50 (D-132 h) */,
         };
 
         /// <summary>Mã QR ngắn → loại phiếu.</summary>
@@ -51,6 +55,7 @@ namespace AppDelicare.Services.Implement
         {
             ["GoodsReceipt"] = GoodsReceipt, ["MaterialIssue"] = MaterialIssue, ["StockCount"] = StockCount,
             ["DeliveryOrder"] = DeliveryOrder, ["ProofOfDelivery"] = Pod, ["OrderReconciliation"] = Reconciliation,
+            ["PurchaseOrder"] = PurchaseOrder,
         };
 
         private static readonly CultureInfo Vi = CultureInfo.GetCultureInfo("vi-VN");
@@ -114,6 +119,7 @@ namespace AppDelicare.Services.Implement
                     DeliveryOrder => await BuildDeliveryOrderAsync(id),
                     Pod => await BuildPodAsync(id),
                     Reconciliation => await BuildReconciliationAsync(id),
+                    PurchaseOrder => await BuildPurchaseOrderAsync(id),
                     _ => Result<PrintDocumentModel>.Fail(string.Format(ConstantHelper.Message.PrintTypeInvalid, type, string.Join(", ", Screens.Keys))),
                 };
             }
@@ -291,6 +297,48 @@ namespace AppDelicare.Services.Implement
                 N(detail.ListLine.Sum(l => l.AcceptedQuantity)), N(detail.ListLine.Sum(l => l.RejectedQuantity)), "", N(total), ""]);
             doc.ListNote.Add("Thành tiền = số lượng đạt × đơn giá (chưa VAT).");
             doc.ListSignature.AddRange(["Người lập phiếu", "Người giao hàng", "Nhân viên QC", "Thủ kho", "Kế toán"]);
+            return Result<PrintDocumentModel>.Success(doc, ConstantHelper.Message.GetAllSuccessfully);
+        }
+
+        // ---------------------------------------------------------------- UI-6.50 (D-132 h): Đơn đặt hàng (bản gửi NCC, có QR mở bot nhận hàng)
+
+        private async Task<IResult<PrintDocumentModel>> BuildPurchaseOrderAsync(Guid id)
+        {
+            var db = _unitOfWork.DbContext;
+            var po = await db.PurchaseOrder.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+            if (po == null)
+            {
+                return Result<PrintDocumentModel>.Fail(string.Format(ConstantHelper.Message.PrintNotFound, "đơn mua"));
+            }
+            var sup = await db.Supplier.AsNoTracking().FirstOrDefaultAsync(s => s.Id == po.SupplierId);
+            var lines = await db.PurchaseOrderLine.AsNoTracking().Where(l => l.PurchaseOrderId == id && !l.IsDeleted).OrderBy(l => l.CreatedDate).ToListAsync();
+            var ingIds = lines.Select(l => l.IngredientId).ToList();
+            var ings = await db.Ingredient.AsNoTracking().Where(i => ingIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => new { i.Code, i.Name });
+            var units = await db.UnitMeasure.AsNoTracking().ToDictionaryAsync(u => u.Id, u => u.Name ?? u.Code);
+            var codes = (await db.SupplierMaterial.AsNoTracking().Where(m => !m.IsDeleted && m.SupplierId == po.SupplierId && ingIds.Contains(m.IngredientId) && m.SupplierMaterialCode != null)
+                .Select(m => new { m.IngredientId, m.SupplierMaterialCode }).ToListAsync()).GroupBy(m => m.IngredientId).ToDictionary(g => g.Key, g => g.First().SupplierMaterialCode);
+            string no = po.PurchaseOrderNumber ?? po.PONo ?? id.ToString("N")[..8];
+            var doc = await NewDocAsync(PurchaseOrder, id, "ĐƠN ĐẶT HÀNG", "Bản gửi nhà cung cấp", no, po.OrderDate);
+            doc.IsDraft = !PurchaseOrderStatus.Receivable.Contains(po.Status ?? string.Empty) && po.Status != PurchaseOrderStatus.Received && po.Status != PurchaseOrderStatus.Closed;
+            doc.ListInfo.AddRange([
+                I("Nhà cung cấp", Join(sup?.Code, sup?.Name)),
+                I("Điện thoại / địa chỉ NCC", Join(sup?.Phone, sup?.Address)),
+                I("Ngày giao dự kiến", DT(po.ExpectedDeliveryDate ?? po.ExpectedDate)),
+                I("Trạng thái", PurchaseOrderStatus.Label(po.Status)),
+                I("Ghi chú", po.Note),
+            ]);
+            doc.ListHeader.AddRange(["STT", "Mã hàng NCC", "Mã NL", "Tên nguyên liệu", "ĐVT", "Số lượng", "Đơn giá", "Thành tiền"]);
+            int i = 0;
+            foreach (var l in lines)
+            {
+                var g = ings.GetValueOrDefault(l.IngredientId);
+                decimal amount = l.LineAmount != 0 ? l.LineAmount : l.Amount ?? l.Quantity * l.UnitPrice;
+                doc.ListRow.Add([(++i).ToString(CultureInfo.InvariantCulture), codes.GetValueOrDefault(l.IngredientId) ?? string.Empty, g?.Code ?? string.Empty, g?.Name ?? string.Empty,
+                    units.GetValueOrDefault(l.UnitId != Guid.Empty ? l.UnitId : l.UomId) ?? string.Empty, N(l.Quantity), N(l.UnitPrice), N(amount)]);
+            }
+            doc.ListFooter.Add(["", "", "", "Cộng (chưa VAT)", "", "", "", N(lines.Sum(l => l.LineAmount != 0 ? l.LineAmount : l.Amount ?? l.Quantity * l.UnitPrice))]);
+            doc.ListNote.Add("Đề nghị nhà cung cấp in kèm đơn này khi giao hàng – thủ kho quét mã QR để nhận hàng nhanh (gom mọi đơn còn mở của NCC).");
+            doc.ListSignature.AddRange(["Người lập", "Quản lý mua hàng", "Nhà cung cấp xác nhận"]);
             return Result<PrintDocumentModel>.Success(doc, ConstantHelper.Message.GetAllSuccessfully);
         }
 

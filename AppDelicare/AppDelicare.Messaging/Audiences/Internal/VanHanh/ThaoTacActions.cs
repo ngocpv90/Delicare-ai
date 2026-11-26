@@ -20,7 +20,7 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
     /// </list>
     /// Callback <c>op:&lt;hành động&gt;:&lt;id&gt;</c>; lựa chọn trong danh sách mang số thứ tự (danh sách giữ theo chat) để callback ≤ 64 byte.
     /// </summary>
-    public sealed class ThaoTacActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, ReasonCatalog reasons)
+    public sealed partial class ThaoTacActions(IDelicareApiClient web, UserTokenCache tokens, IChannelSender sender, ReplyContextStore replies, TimeProvider time, ReasonCatalog reasons)
         : WebActions(web, tokens, sender, replies), IBotActionProvider
     {
         public const string Kind = CallbackData.Kinds.Op;
@@ -53,6 +53,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             // BOT-UX-2 (mục 14): mỗi chức năng 1 phân hệ chính – bỏ bản trùng "🔄 Đổi món – ý kiến khách" (Kinh doanh, cùng luồng + cùng quyền với ✏️ Đề xuất đổi món)
             // và "🧼 Lô vệ sinh hộp khay" ở Bếp (giữ ở ATTP / QC, lệnh /vesinh chuyển theo).
             new BotAction { Code = "qa_cleaning", Module = "ATTP", Label = "🧼 Lô vệ sinh hộp khay", Command = "vesinh", CommandDescription = "Lô vệ sinh hộp khay đang làm", Bots = ["VH"], MenuMetaLink = "#/qc-cleaning", Order = 6, Handler = CleaningAsync },
+            // UI-6.50 (D-132 h): nhận hàng gom theo NCC (QR trên đơn mua in cũng mở luồng này).
+            new BotAction { Code = "kho_receive", Module = "KHO", Label = "📦 Nhận hàng theo NCC", Command = "nhanhang", CommandDescription = "Nhận hàng NCC hẹn giao hôm nay", Bots = ["VH"], MenuMetaLink = "#/scm-gr", Order = 1, Handler = ReceiveListAsync },
             new BotAction { Code = "ns_import", Module = "NHANSU", Label = "📥 Nhập file máy chấm công", Command = "nhapmcc", CommandDescription = "Gửi file Excel dữ liệu máy chấm công", Bots = ["VH"], MenuMetaLink = "#/hr-attendance", Order = 5, Handler = AttendanceAskAsync },
         ];
 
@@ -331,6 +333,13 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "bpr" when id.Split('.', 2) is [var prDay, var prShift] && DateTime.TryParseExact(prDay, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var prDate):
                     await ShortagePurchaseAsync(ctx, prDate, prShift, ct);
                     break;
+                // UI-6.50 (D-132 h): gói nhận gộp theo NCC / đơn mua (QR) – xem, nhận đủ.
+                case "rcs" when id.Length == 33:
+                    await ReceiveBundleAsync(ctx, id, ct);
+                    break;
+                case "rca" when id.Length == 33:
+                    await ReceiveAllAskAsync(ctx, id, ct);
+                    break;
                 case "srr" when Guid.TryParseExact(id, "N", out _):
                     await AskAsync(ctx, "⛔ Lý do NCC không nhận lại hàng:", ReplySupplierRefuse, id, ct);
                     break;
@@ -382,6 +391,14 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     return;
                 case ReplyChangeReason:
                     await ChangeCreateAsync(ctx, text, ct);
+                    return;
+                case ReplyVehicleTemp:
+                    if (!decimal.TryParse(text.Replace(',', '.').Replace("°C", string.Empty).Replace("°", string.Empty).Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var vt) || vt is < -40 or > 60)
+                    {
+                        await AskAsync(ctx, "Nhiệt độ không hợp lệ – gõ số °C (vd 4 hoặc -18):", pending.Flow, pending.Key, ct);
+                        return;
+                    }
+                    await ReceiveAllAsync(ctx, pending.Key, vt, ct);
                     return;
                 case ReplySupplierRefuse when text.Length < 3:
                     await AskAsync(ctx, "Lý do quá ngắn – gõ lại:", pending.Flow, pending.Key, ct);

@@ -616,3 +616,13 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] **ACC-6 Định mức bao bì** (uat.ops-plan): nhập định mức 5 loại suất → Gửi duyệt → duyệt; Bếp ghi kết quả đóng gói ca trưa → phiếu xuất bao bì Nháp đúng số; Thủ kho sửa 1 dòng; sau giờ hết ca job ghi sổ; thiếu tồn → bot Mua hàng.
 - [ ] **ACC-8 Đối chiếu với AMIS**: tải Excel mẫu → điền số từ sổ AMIS 08/2026 → nhập; kiểm 8 chỉ tiêu, dòng lệch có nút đúng chỗ; xuất NVL giá trị lệch nhẹ = "Lệch do giá xuất".
 - [ ] Quét UI-6.10 (chữ tiếng Việt, không mã kỹ thuật trên màn, không số tài khoản trên màn kho), ảnh 1440 / 390 ở `docs/frontend-handoff/assets/acc-misa/`.
+
+## UI-6.50 – Nhận hàng theo nhà cung cấp (D-132)
+
+- [ ] uat.ops-wh: Kho › Nhận hàng – thẻ NCC hẹn giao hôm nay, quá hẹn đỏ, đã nhận đủ làm mờ + Xem phiếu; ô tìm theo tên NCC / số đơn / số hóa đơn NCC.
+- [ ] Form gộp 1 NCC 3 đơn: bỏ tick 1 đơn; "Nhận đủ – Đạt tất cả"; sửa 1 dòng thiếu; nhiệt độ thùng xe; lô / hạn chỉ ở nguyên liệu quản lý lô → lưu: 3 phiếu (mỗi đơn 1), tự đạt nhập kho, cần QA chờ QA.
+- [ ] QA tại cửa kho (uat.qa): "Kết luận & nhập kho" – Đạt một phần trừ đơn mới nhất trước; sự cố NCC lập.
+- [ ] Excel phiếu giao: tải mẫu → điền → tải lên tự điền form; dòng sai báo không khớp.
+- [ ] In đơn mua PDF có QR → quét bằng camera iPhone / Android → bot mở nhận hàng NCC → Nhận đủ (bot hỏi nhiệt độ xe). Người không có quyền nhận hàng → chỉ xem đơn.
+- [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
+- [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
