@@ -44,6 +44,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Kế toán › Khóa kỳ | `acc-period` | X (IX) | X | X (IX) | Q (IX) |
 | Mua hàng › Đơn mua hàng | `scm-po` | X | X | X | X (IX) |
 | Kho › Nhận hàng | `scm-gr` | X | X | X | X (IX) |
+| Kho › Trả hàng NCC | `scm-supplier-return` | X | X | X | X (IX) |
 | Kho › Xuất kho sản xuất | `scm-issue` | X | X | X | X (IX) |
 | Kho › Tồn kho | `scm-inv-balance` | X | X | X | X (IX) |
 | Kho › Kiểm kê | `scm-stockcount` | X | X | X | X (IX) |

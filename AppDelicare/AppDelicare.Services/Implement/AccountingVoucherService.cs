@@ -270,6 +270,7 @@ namespace AppDelicare.Services.Implement
             // (f) Kho khác: điều chỉnh / kiểm kê đã duyệt, hủy lô, trả hàng NCC – theo chứng từ gốc của sổ kho.
             var other = await db.InventoryTransaction.AsNoTracking().Where(t => !t.IsDeleted && t.TransactionDate >= from && t.TransactionDate < end
                     && (t.TransactionType == "ADJUSTMENT" || t.TransactionType == "WASTE" || t.TransactionType == "RETURN")).ToListAsync();
+            other = await PurchaseReturnsAsync(other, list, ingredients.ToDictionary(k => k.Key, k => (k.Value?.Code, k.Value?.Name)), UnitOf);
             foreach (var g in other.GroupBy(t => (t.TransactionType, Ref: t.ReferenceId?.ToString("N") ?? t.TransactionNumber ?? t.TransactionNo ?? t.Id.ToString("N"))))
             {
                 var first = g.OrderBy(t => t.TransactionDate).First();
@@ -344,7 +345,7 @@ namespace AppDelicare.Services.Implement
             {
                 missing.Add($"khách {v.ObjectCode}");
             }
-            if (v.Type == VoucherType.Purchase && v.ObjectCode != null && !Set(AmisKind.Supplier).Contains(v.ObjectCode))
+            if ((v.Type is VoucherType.Purchase or VoucherType.PurchaseReturn) && v.ObjectCode != null && !Set(AmisKind.Supplier).Contains(v.ObjectCode))
             {
                 missing.Add($"NCC {v.ObjectCode}");
             }
