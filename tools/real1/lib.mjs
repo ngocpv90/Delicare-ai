@@ -1,14 +1,19 @@
 // REAL-1 (D-129): hàm dùng chung cho các bước nạp dữ liệu vận hành thật qua API (không chèn SQL trực tiếp).
 // Biến môi trường:
 //   REAL1_API   – mặc định http://localhost:5125/api
-//   REAL1_DIR   – thư mục Chuan-hoa-REAL1 (KHÔNG chép vào repo – có giá mua / doanh thu thật)
+//   REAL1_DIR   – thư mục dữ liệu nguồn; mặc định DB/data/real1 trong repo (D-130: anh duyệt đưa bộ Chuan-hoa-REAL1 vào repo)
 //   DC_USER / DC_PASS – tài khoản quản trị (nạp Excel); UAT_PASS – mật khẩu chung tài khoản uat.*
+//   Máy / server chưa có tài khoản uat.* (hoặc không đặt UAT_PASS) → mọi bước dùng tài khoản quản trị (như full-flow).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const here = path.dirname(fileURLToPath(import.meta.url));
 export const API = (process.env.REAL1_API || 'http://localhost:5125/api').replace(/\/+$/, '');
-export const DIR = (process.env.REAL1_DIR || 'D:/Duan/Tai lieu nghiep vu du an/Delicare-Share/Chuan-hoa-REAL1').replace(/[\\/]+$/, '') + '/';
+export const DIR = (process.env.REAL1_DIR || path.resolve(here, '..', '..', 'DB', 'data', 'real1')).replace(/[\\/]+$/, '') + '/';
+/** Thứ Hai của tuần thực đơn đầu tiên (10_ThucDon_tuan-23-11). Dựng sau ngày này → đặt REAL1_START = thứ Hai sắp tới, mọi tuần dời theo. */
+export const START = process.env.REAL1_START || '2026-11-23';
 export const WORK = fs.mkdtempSync(path.join(os.tmpdir(), 'real1-'));   // tệp tạm (vd. 05 đã đổi lượng tinh) – ngoài repo
 
 /** Ngày hôm nay giờ Việt Nam (yyyy-MM-dd). */
@@ -28,14 +33,22 @@ export async function waitApi() {
   throw new Error('API không phản hồi: ' + API);
 }
 
-/** Đăng nhập → client { get, form, json, upload }. user 'admin' dùng DC_USER / DC_PASS, uat.* dùng UAT_PASS. */
+const fallbackNoted = new Set();
+async function token(userName, passWord) {
+  const j = await (await fetch(API + '/Authentication/Login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userName, passWord }) })).json().catch(() => ({}));
+  return j.data?.token;
+}
+
+/** Đăng nhập → client { get, form, json, upload }. user 'admin' dùng DC_USER / DC_PASS, uat.* dùng UAT_PASS (thiếu → quản trị). */
 export async function login(user) {
-  const isAdmin = user === 'admin';
-  const body = { userName: isAdmin ? need('DC_USER') : user, passWord: isAdmin ? need('DC_PASS') : need('UAT_PASS') };
-  const j = await (await fetch(API + '/Authentication/Login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
-  const token = j.data?.token;
-  if (!token) throw new Error(`Đăng nhập ${user} thất bại: ${j.responseMessage ?? ''}`);
-  const H = { Authorization: 'Bearer ' + token };
+  let t = user !== 'admin' && process.env.UAT_PASS ? await token(user, process.env.UAT_PASS) : null;
+  if (!t) {
+    if (user !== 'admin' && !fallbackNoted.has(user)) { fallbackNoted.add(user); console.log(`   (không đăng nhập được ${user} → dùng tài khoản quản trị)`); }
+    t = await token(need('DC_USER'), need('DC_PASS'));
+  }
+  if (!t) throw new Error(`Đăng nhập ${user} thất bại – kiểm tra DC_USER / DC_PASS / API`);
+  const token_ = t;
+  const H = { Authorization: 'Bearer ' + token_ };
   const parse = async r => { const t = await r.text(); try { return JSON.parse(t); } catch { return { responseCode: r.status, responseMessage: t.slice(0, 200) }; } };
   const clean = o => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null).map(([k, v]) => [k, String(v)]));
   return {

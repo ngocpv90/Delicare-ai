@@ -5,6 +5,7 @@ Backend viết theo **khung code cũ** (D-30): route `api/<Controller>/<Action>`
 | File | Màn hình (screen-id mockup) | Nhóm FE | Task backend | File thử API |
 |---|---|---|---|---|
 | [P0-P2.md](P0-P2.md) | Quản trị (`adm-*`), danh mục P1 (khách, NCC, NL, kho, đơn vị…), món / công thức / giá P2; mục 3 nhập Excel; **mục 4 hộp duyệt 1 cấp `wf-inbox`**; mục 6 người dùng 1 bước + mật khẩu tạm | FE-1, FE-2, FE-3, **FE-P2** (mục 4) | T45R, T45B.5, T49, T12, T45R.8 | `r1.0-foundation.http`, `r1.1-admin-masterdata.http`, `t45r8-admin-users.http` |
+| [REAL-1.md](REAL-1.md) | **Dữ liệu dùng chung (D-129 / D-130):** dựng bộ dữ liệu vận hành thật trên máy FE / server test – `node tools/real1/run-all.mjs --yes`; thực đơn tuần `slot` | Tất cả | REAL-1 | – |
 | [P3.md](P3.md) | Thực đơn tuần (`menu-menu`), phân công thực đơn, đơn hàng (`crm-order`), duyệt lệch suất | FE-P3 | T13 + T46B.1 | `p3-menu-order.http` |
 | [P4.md](P4.md) | Sổ kho, tồn, lô (`scm-lot`), phiếu xuất FEFO, điều chỉnh / chuyển kho, kiểm kê | FE-P4 | T16 | `p4-inventory.http` |
 | [P5.md](P5.md) | Nhu cầu NL / MRP (`scm-requirement`), đề nghị mua (`scm-pr`), PO + duyệt (Giám đốc ≥ 50 triệu), nhận hàng (`scm-gr`), QC đầu vào (`qc-inspection`), in Phiếu trước SX / Đơn đặt hàng | FE-P5 (gồm Pilot P5 + P6) | T14, T14.1, T15, T15.1 | `p5-mrp.http`, `p6-purchasing.http` |

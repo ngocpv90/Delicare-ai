@@ -1,36 +1,72 @@
-# REAL-1 – Nạp dữ liệu vận hành thật làm dữ liệu demo / UAT (D-129)
+# REAL-1 – Dữ liệu vận hành thật làm dữ liệu demo / UAT (D-129, D-130)
 
-Dựng lại trên một DB (dev / UAT) bộ dữ liệu REAL-1 đã nạp ngày 2026-11-26. **Dữ liệu nguồn KHÔNG nằm trong repo** (có giá mua, doanh thu thật): thư mục
-`Chuan-hoa-REAL1` (sinh bằng `_nguon/normalize.py` từ Delicare-Share). Các script ở đây chỉ đọc thư mục đó và gọi API – không chèn SQL trực tiếp
-(trừ 2 script dọn / gắn nhãn trong `DB/scripts`). Mọi bước **chạy lại = 0 việc**.
+Dựng **cùng một bộ dữ liệu** trên mọi môi trường (máy dev, máy FE, server test) cho đồng nhất: 19 ĐVT, 28 NCC, 370 nguyên liệu, 575 món,
+109 công thức khóa, 482 giá NCC, 20 khách / 20 điểm giao, 11 hợp đồng, 3 thực đơn tuần, 280 đơn xác nhận (2 tuần), dự báo, tồn đầu kỳ 32 mặt hàng;
+dữ liệu `[DEMO]` cũ được dọn (hủy / chấm dứt / xóa mềm – không xóa cứng). Mọi bản ghi REAL-1 có Note bắt đầu `[DEMO] REAL-1`.
 
-## Chuẩn bị
+- Dữ liệu nguồn: `DB/data/real1/` (15 tệp Excel đã chuẩn hóa + `_nguon/normalize.py`). **D-130 (anh duyệt 2026-11-26): đưa vào repo** để clone là dựng được –
+  có giá mua NCC / đơn giá hợp đồng thật: **không chia sẻ repo ra ngoài**.
+- Script: `tools/real1/*.mjs` gọi API (đúng nghiệp vụ, đủ phê duyệt) + 2 script SQL `DB/scripts/REAL1_retire_demo.sql`, `DB/scripts/REAL1_tag.sql`.
+- Mọi bước **chạy lại = 0 việc** (chạy lại an toàn).
 
-- API chạy (`dotnet run --project AppDelicare/AppDelicare.WebApi --launch-profile http` → `http://localhost:5125`), DB đã có seed T23 (tài khoản `system`, `uat.*`).
-- Biến môi trường: `DC_USER` / `DC_PASS` (quản trị), `UAT_PASS` (mật khẩu chung tài khoản `uat.*`), `REAL1_DIR` (thư mục Chuan-hoa-REAL1),
-  tùy chọn `REAL1_API`, `REAL1_05_GROSS=0` khi tệp 05 đã sinh lại bằng `normalize.py` bản sửa (đã là lượng tinh).
-- Node ≥ 18 (fetch / FormData sẵn có), `sqlcmd`.
+## Chạy nhanh (1 lệnh)
 
-## Thứ tự
+Yêu cầu: API đang chạy và đã cập nhật code mới nhất (`main`), Node ≥ 18, `sqlcmd` trên máy chạy lệnh (kết nối được tới SQL Server của môi trường).
+
+```bash
+# 1) Chạy thử – chỉ in số dòng sẽ dọn, KHÔNG ghi
+DC_USER=admin DC_PASS=<mật khẩu admin> node tools/real1/run-all.mjs
+# 2) Chạy thật
+DC_USER=admin DC_PASS=<mật khẩu admin> node tools/real1/run-all.mjs --yes
+```
+
+PowerShell: `$env:DC_USER='admin'; $env:DC_PASS='<…>'; node tools/real1/run-all.mjs --yes`
+
+| Biến môi trường | Mặc định | Ghi chú |
+|---|---|---|
+| `DC_USER` / `DC_PASS` | – (bắt buộc) | Tài khoản quản trị web |
+| `UAT_PASS` | – | Mật khẩu chung tài khoản `uat.*`; không đặt / không có tài khoản `uat.*` → mọi bước dùng quản trị |
+| `REAL1_API` | `http://localhost:5125/api` | Server test: `http://<server>:5125/api` |
+| `REAL1_SQL_SERVER` | `(localdb)\MSSQLLocalDB` | Server test: `<host>,<cổng>` |
+| `REAL1_SQL_DB` | `AppDelicare` | Tên DB |
+| `REAL1_SQL_USER` / `REAL1_SQL_PASS` | – | Đăng nhập SQL (server test, giống `DB_USER` / `DB_PASSWORD` trong `.env`); không đặt → Windows (`-E`) |
+| `REAL1_START` | `2026-11-23` | Thứ Hai của tuần thực đơn đầu. Dựng **sau 29/11/2026** → đặt thứ Hai sắp tới (vd. `2026-12-07`): 3 thực đơn + 2 tuần đăng ký suất dời theo (đơn phải trước giờ chốt 20:00 hôm trước) |
+| `REAL1_DIR` | `DB/data/real1` | Thư mục dữ liệu khác |
+| `REAL1_05_GROSS` | `1` | `0` khi tệp 05 sinh lại bằng `normalize.py` bản đã sửa (đã là lượng tinh) |
+
+## Theo môi trường
+
+**Máy dev / máy FE (LocalDB):** `git pull` → chạy API (`dotnet run --project AppDelicare/AppDelicare.WebApi --launch-profile http`) → lệnh trên.
+Định biên ca: thêm khối `BusinessRules:Hr:ShiftMinStaff` (dưới) vào `AppDelicare/AppDelicare.WebApi/appsettings.Development.json` (tệp riêng mỗi máy, .gitignore).
+
+**Server test (Docker – `docker-compose.yml`):** `git pull` → `docker compose up -d --build` (db-sync cập nhật SP; REAL-1 không có migration mới) →
+từ máy có Node + `sqlcmd` tới được SQL Server của server test:
+
+```bash
+REAL1_API=http://<server>:5125/api REAL1_SQL_SERVER=<host>,<cổng> REAL1_SQL_DB=<DB_NAME> \
+REAL1_SQL_USER=<DB_USER> REAL1_SQL_PASS=<DB_PASSWORD> DC_USER=admin DC_PASS=<…> node tools/real1/run-all.mjs --yes
+```
+
+Định biên ca đã có trong `appsettings.Staging.json` (môi trường mặc định của Docker = Staging).
+
+Sau mỗi lần chạy `seed-demo` / full-flow trên môi trường đó: chạy lại `run-all.mjs --yes` (chỉ dọn bộ `[DEMO]` mới, REAL-1 không đổi).
+
+## Từng bước (khi cần chạy lẻ)
 
 | Bước | Lệnh | Việc |
 |---|---|---|
-| 0 | `sqlcmd -S <server> -d <db> -E -b -f 65001 -v DryRun=1 -i DB/scripts/REAL1_retire_demo.sql -s "\|" -W` rồi `DryRun=0` | Dọn dữ liệu `[DEMO]` cũ (hủy / chấm dứt / xóa mềm – không xóa cứng). |
-| 1 | `node tools/real1/01-import.mjs` | ImportExcel 01 ĐVT → 02 NCC → 03 NL → 04 món → 05 định mức (đổi lượng tinh) → 06 giá NCC → 07 khách → 08 điểm giao. |
-| 1b | chạy lại script bước 0 (`DryRun=0`) | Ngừng món "Ngân hàng món" cũ trùng tên món REAL-1 + nhóm món cũ đã rỗng. |
-| 2 | `node tools/real1/03-recipes.mjs` | Công thức Nháp → gửi (admin) → `uat.coo` duyệt (= khóa, tính giá thành chuẩn). |
-| 3 | `node tools/real1/04-setup.mjs` | 3 kho thật + 4 dây chuyền (2000 suất / mẻ, 60 phút – giả định) gán 8 nhóm món. |
-| 4 | `node tools/real1/05-contracts.mjs` | 11 hợp đồng (`uat.sal-head` lập → `uat.ceo` duyệt). |
-| 5 | `node tools/real1/06-menus.mjs` | Thực đơn chung 3 tuần (`uat.ops-plan` lập + nhập Excel → `uat.coo` duyệt → công bố). |
-| 6 | `node tools/real1/07-orders.mjs [tuần …]` | Đăng ký suất tuần (xác nhận) + dự báo công bố – mặc định tuần 30/11 và 07/12/2026. |
-| 7 | `node tools/real1/08-stock.mjs` | Tồn đầu kỳ giả định (`uat.ops-wh` điều chỉnh → `uat.coo` duyệt). |
-| 8 | `sqlcmd … -v DryRun=0 -i DB/scripts/REAL1_tag.sql` | Gắn nhãn `[DEMO] REAL-1 · ` vào đầu Note. |
+| 0 | `sqlcmd … -v DryRun=0 -i DB/scripts/REAL1_retire_demo.sql` | Dọn `[DEMO]` cũ: chứng từ ngày ≥ hôm nay hủy / chấm dứt / xóa mềm; danh mục ngừng + xóa mềm |
+| 1 | `node tools/real1/01-import.mjs` | ImportExcel 01 ĐVT → … → 08 điểm giao (05 đổi lượng tinh) |
+| 1b | lại bước 0 | Ngừng món "Ngân hàng món" cũ trùng tên + nhóm cũ đã rỗng |
+| 2 | `node tools/real1/03-recipes.mjs` | Công thức Nháp → gửi → `uat.coo` duyệt (= khóa, giá thành chuẩn) |
+| 3 | `node tools/real1/04-setup.mjs` | 3 kho + 4 dây chuyền (2000 suất / mẻ, 60 phút – giả định) |
+| 4 | `node tools/real1/05-contracts.mjs` | 11 hợp đồng (`uat.sal-head` → `uat.ceo`) |
+| 5 | `node tools/real1/06-menus.mjs` | Thực đơn chung 3 tuần (`uat.ops-plan` → `uat.coo` duyệt → công bố) |
+| 6 | `node tools/real1/07-orders.mjs [tuần …]` | Đăng ký suất tuần (xác nhận) + dự báo công bố |
+| 7 | `node tools/real1/08-stock.mjs` | Tồn đầu kỳ giả định (`uat.ops-wh` → `uat.coo` duyệt) |
+| 8 | `sqlcmd … -v DryRun=0 -i DB/scripts/REAL1_tag.sql` | Gắn nhãn `[DEMO] REAL-1 · ` đầu Note |
 
-Sau mỗi lần chạy `seed-demo` / full-flow: chạy lại bước 0 (chỉ dọn bộ `[DEMO]` mới, không đụng REAL-1).
-
-## Định biên ca (giả định, máy dev)
-
-`AppDelicare/AppDelicare.WebApi/appsettings.Development.json` (đã .gitignore):
+## Định biên ca (giả định)
 
 ```json
 { "BusinessRules": { "Hr": { "ShiftMinStaff": {
@@ -44,6 +80,7 @@ Sau mỗi lần chạy `seed-demo` / full-flow: chạy lại bước 0 (chỉ d�
 
 ## Ghi chú
 
-- 05 định mức: tệp sinh bởi `normalize.py` bản cũ ghi lượng **trước sơ chế**; hệ thống coi "Định lượng" là lượng **tinh** (BUSINESS_RULES BIZ-1.1) nên
-  `01-import` đổi = gộp × (1 − %SC) × (1 − %CB). Trên DB dev 2026-11-26, 74 công thức đã nạp bản gộp được sửa bằng phiên bản V2 (Recipe/CreateVersion).
-- Kết quả / số dòng / quyết định tự chọn: `docs/claude/PROGRESS.md` mục REAL-1.
+- 05 định mức: tệp gốc ghi lượng **trước sơ chế**; hệ thống coi "Định lượng" là lượng **tinh** (BUSINESS_RULES BIZ-1.1) → `01-import` đổi = gộp × (1 − %SC) × (1 − %CB).
+  (DB dev 2026-11-26 đã sửa 74 công thức bằng phiên bản V2 – kết quả giống.)
+- Kế hoạch / lệnh sản xuất / đề nghị mua của tuần đăng ký suất do hệ thống tự lập sau khi đơn tự chốt 20:00 hôm trước.
+- Lỗi dữ liệu nguồn còn chờ anh xác nhận: Xôi thịt kho (MON-0574), 3 món thiếu giá NCC, nhóm món lệch giữa tệp món và thực đơn – xem PROGRESS mục REAL-1.

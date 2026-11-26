@@ -177,7 +177,7 @@ PROPOSED (T17.1, chờ anh xác nhận): (a) số phần món theo ca = dòng k�
 | GAP-MNT-01 | Thiết bị, lịch bảo trì, sửa chữa, kế hoạch thiết bị | Chưa làm | R2 – D-22 |
 | GAP-CRM-01 | Lead / cơ hội bán hàng / marketing (code cũ Leads, Opportunity không có bảng) | Chưa làm | R2 – D-22 |
 | GAP-QA-01 | Sổ NCR / CAPA riêng (người chịu trách nhiệm, hạn đóng, hiệu lực) | R1: báo cáo tổng hợp từ SupplierIssue, CustomerComplaint, CorrectiveAction của checklist / nhiệt độ | R2 – D-22 |
-| GAP-ACC-01 | Kết nối / xuất dữ liệu sang MISA | Chưa làm | R2 – D-23 |
+| GAP-ACC-01 | Kết nối / xuất dữ liệu sang MISA | Đang làm – D-131 (ROADMAP ACC-1 … ACC-9), Excel + API AMIS | D-131 (trước: R2 – D-23) |
 | GAP-INT-02 | Không có unique index cho `InboundMessage` / `OutboundMessage.IdempotencyKey` | Chống trùng trong code (`UPDLOCK, HOLDLOCK`); script đề xuất ở `DB/proposed/` (D-62 p1) | PROPOSED – BA/PO CONFIRM |
 | GAP-INT-03 | `OutboundMessage` không có cột hẹn giờ gửi | `PayloadJson.notBefore` (D-62 p3) | PROPOSED – BA/PO CONFIRM |
 | GAP-INT-04 | Không có chỗ lưu bền dòng thời gian sự việc liên phòng (không phải phản ánh khách) | `PayloadJson` tin gốc theo `CorrelationId`; Obsidian khi có T50 (D-62 p4) | PROPOSED – BA/PO CONFIRM |
@@ -1432,4 +1432,35 @@ Thứ tự làm: 1 → 3 → 6 → 2.
 | (d) | Giả định demo | Nhóm NL theo tiền tố mã, kiểu bảo quản / hạn dùng theo nhóm, hợp đồng tới 30/06/2027, khung nhận 10:30 – 11:30, dây chuyền 4 cái, tồn đầu kỳ = số 31/08 – liệt kê ở sheet *Gia dinh*, phải xác nhận khi chạy thật. |
 | (e) | Dọn demo cũ | Không xóa cứng: hủy chứng từ tương lai theo máy trạng thái + ngừng / xóa mềm danh mục `[DEMO]`; sổ chỉ ghi thêm và chứng từ quá khứ giữ nguyên. Bản ghi REAL-1 gắn `Note = '[DEMO] REAL-1'`. |
 | (f) | Không nạp | Sổ kế toán / ngân hàng / BCTC, lịch sử đơn tháng 1 – 8, nhân sự (file không có). **GAP-REAL-01 PROPOSED – BA/PO CONFIRM:** cột % VAT cho `SupplierMaterial`. |
+
+## D-130 – Đưa bộ dữ liệu REAL-1 vào repo để dựng đồng nhất trên máy FE / server test (anh duyệt 2026-11-26)
+
+✅ **Anh duyệt 2026-11-26** ("commit … phần công việc cập nhật dữ liệu … để bạn FE khi lấy code về còn biết để thực hiện trên máy local và trên server test … cho đồng nhất"; chọn "Có – commit vào repo"). **Thay điểm "KHÔNG chép file / dữ liệu này vào repo" của D-129 / ROADMAP REAL-1.**
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Dữ liệu nguồn | 15 tệp `Chuan-hoa-REAL1` + `_nguon/normalize.py` ở `DB/data/real1/` (có giá mua NCC / đơn giá hợp đồng thật – **repo không chia sẻ ra ngoài**; 26 tệp Excel gốc Delicare-Share vẫn ngoài repo). |
+| (b) | Cách dựng | `node tools/real1/run-all.mjs` (chạy thử) → `--yes` (chạy thật): 2 script SQL (dọn `[DEMO]`, gắn nhãn) + 7 bước qua API (đủ phê duyệt, không chèn SQL trực tiếp); chạy lại = 0. Không có tài khoản `uat.*` → dùng quản trị. Server test: biến `REAL1_API`, `REAL1_SQL_*` (đăng nhập SQL). |
+| (c) | Ngày | Tuần thực đơn đầu `REAL1_START` (mặc định 2026-11-23), các tuần dời theo – dựng sau giờ chốt thì đặt thứ Hai sắp tới. |
+| (d) | Cấu hình | Định biên ca giả định 6 tổ bếp: `appsettings.Staging.json` (server test, có trong repo); máy dev / FE tự thêm vào `appsettings.Development.json` (.gitignore) theo `tools/real1/README.md`. |
+
+## D-131 – Kết nối kế toán MISA AMIS: Delicare chỉ cấp dữ liệu đầu vào, AMIS hạch toán; menu "Kế toán" + 2 luồng kho (anh chốt 2026-11-26)
+
+✅ **Anh chốt 2026-11-26** (chat tài liệu: "Delicare chỉ input dữ liệu đầu vào còn lại MISA thực hiện theo đúng nghiệp vụ MISA"; MISA bản online = AMIS Kế toán; làm cả Excel và API; duyệt 6 đề xuất + cấu trúc menu; "Đồng ý đưa vào task cho Claude Code thực hiện toàn bộ"). Nguồn: note lãnh đạo (4 phân hệ), 17 sổ kế toán thật tháng 08/2026 (`Delicare-Share\DB`), rà code các luồng đối soát / bảng kê / kho / đóng gói. Mô phỏng: `docs/frontend-handoff/assets/acc-misa/`. Task ROADMAP **ACC-1 … ACC-9**. **D-23 giữ nguyên** (không làm sổ sách, công nợ, thanh toán, lương trong Delicare); **GAP-ACC-01 làm ngay** (trước ghi R2).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Ranh giới | Delicare: chứng từ nghiệp vụ + kiểm soát vận hành. AMIS: hóa đơn (meInvoice), công nợ phải thu / phải trả, quỹ, ngân hàng, thuế, giá thành, BCTC, tạm ứng / hoàn ứng (AMIS Quy trình), ngân sách + cảnh báo vượt, đọc hóa đơn đầu vào. Ý lãnh đạo "AI đọc hóa đơn, ngân sách, tạm ứng, công nợ, dòng tiền" dùng tính năng AMIS, không xây lại. |
+| (b) | Menu | Nhóm mới **Kế toán** (sau Kinh doanh): Chứng từ kế toán · Bảng kê thanh toán (chuyển từ Kinh doanh) · Khớp mã AMIS · Đối chiếu với AMIS · Khóa kỳ. Thêm: Kho › Trả hàng NCC; Đóng gói & Giao hàng › Định mức bao bì; Phê duyệt › Mở lại đối soát, Mở khóa kỳ (COO); kênh MISA AMIS ở Nhật ký & Tích hợp (FIN-IT). |
+| (c) | Danh mục | **AMIS là nguồn chuẩn mã**; Delicare nhận danh mục từ AMIS (Excel / API); ghép mã = đổi mã Delicare theo mã AMIS (NL, khách, NCC); ĐVT trên chứng từ theo AMIS. Kho / thành phẩm theo buổi / lý do xuất khớp bằng cấu hình. GAP-ACC-02 (bảng khớp mã sửa trên giao diện) **không cần** nếu cách này đủ. |
+| (d) | Bán hàng | **Phiếu bán hàng theo tháng × khách × loại suất**, chỉ từ bảng kê khách đã xác nhận (không theo ngày) – khớp bảng kê, hóa đơn, phí khay, VAT. |
+| (e) | Chứng từ gửi AMIS | Mua hàng qua kho (số đạt × giá PO) · trả hàng NCC · xuất NVL theo buổi (đối tượng THCP = thành phẩm của buổi) · xuất bao bì · nhập kho thành phẩm (suất đạt) + xuất thành phẩm khác (suất bù, hủy, dư) · kho khác (kiểm kê, điều chỉnh, hủy lô) · bảng công (Excel). Excel theo mẫu AMIS + API cùng một nguồn dữ liệu; tính khi đọc, không bảng mới. |
+| (f) | Xác nhận bảng kê | Gửi email, tự nhắc 3 ngày, kế toán ghi nhận hàng loạt. Link xác nhận cho khách **không làm** đợt này (cùng GAP-PORTAL-01). |
+| (g) | Mở lại đối soát | Được khi kỳ chưa khóa, lý do bắt buộc, COO duyệt; kỳ đã khóa thì chứng từ điều chỉnh. |
+| (h) | Khóa kỳ | Bắt buộc. FIN-ACC khóa, COO duyệt mở; lưu bằng `AuditChange`; chặn hủy / đảo / sửa nghiệp vụ trong kỳ đã khóa; sửa sau khi gửi → chứng từ điều chỉnh ở kỳ đang mở. |
+| (i) | Trả hàng NCC | Luồng mới: Thủ kho lập → Mua hàng xác nhận (bot) → ghi sổ bút toán RETURN → "Trả lại hàng mua" trên AMIS. Đầu phiếu dùng `SupplierIssue`; thiếu cột → GAP PROPOSED. |
+| (j) | Bao bì | **Quản qua kho, tự xuất theo định mức** khi ghi kết quả đóng gói; định mức = công thức của "món bao bì" theo buổi (duyệt / khóa như công thức); tự ghi sổ khi hết ca. |
+| (k) | API | Làm khi có tài liệu API + thông tin kết nối AMIS (anh / IT đặt vào `Delicare-Share\MISA\`); job đêm mặc định tắt. |
+| (l) | Đối chiếu | 8 chỉ tiêu theo kỳ; số chính thức là số AMIS (giá xuất AMIS bình quân ≠ giá lô Delicare là bình thường). |
+| (m) | Màn kho | Trả hàng NCC và Bao bì có khung 390px (thủ kho dùng điện thoại). |
 
