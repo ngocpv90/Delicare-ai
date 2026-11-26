@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **220 khóa** trong 10 section.
+Tổng: **222 khóa** trong 10 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -278,6 +278,8 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Integration:Misa:WarehouseMap` | Dictionary<string, string> | new(StringComparer.OrdinalIgnoreCase) | Kho Delicare (mã hoặc tên) → mã kho AMIS. Nhiều kho cùng 1 mã AMIS → chuyển kho nội bộ giữa chúng không gửi sang AMIS. | – |
 | `Integration:Misa:ReasonCodes` | Dictionary<string, string> | new(StringComparer.OrdinalIgnoreCase) | Lý do xuất / nhập Delicare → mã lý do (diễn giải) trên AMIS (vd. PRODUCTION, PACKAGING, WASTE, ADJUSTMENT, RETURN). | – |
 | `Integration:Misa:ExcelColumns` | Dictionary<string, List<string>> | new(StringComparer.OrdinalIgnoreCase) | ACC-2 (D-131 e): cột Excel theo mẫu "Thêm bằng Excel" của AMIS – loại chứng từ (SALE, PURCHASE, ISSUE, FG_IN, FG_OUT, STOCK_OTHER) → ["Tiêu đề cột:trường"] (trường: date, number, desc, objectCode, objectName, code, na… | D-131 |
+| `Integration:Misa:CloseDueDay` | int | 10 | ACC-4 (D-131 h): hạn khóa kỳ = ngày N tháng sau (10); bot nhắc Kế toán từ ngày N (5) nếu kỳ trước chưa khóa. | D-131 |
+| `Integration:Misa:CloseRemindFromDay` | int | 5 | – | – |
 | `Integration:Misa:SnapshotKeep` | int | 30 | Danh mục AMIS lưu tối đa N bản chụp (cũ hơn vẫn còn trong tài liệu đính kèm, chỉ không đọc). | – |
 
 ## Permissions

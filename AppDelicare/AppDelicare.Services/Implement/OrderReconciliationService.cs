@@ -226,6 +226,11 @@ namespace AppDelicare.Services.Implement
                     return Fail(string.Format(ConstantHelper.Message.StatusActionInvalid, "đối soát", "đơn " + orderNo,
                         OrderStatus.Label(OrderStatus.Delivered), OrderStatus.Label(order.Status)));
                 }
+                // ACC-4 (D-131 h): kỳ kế toán của ngày ăn đã khóa → chặn ghi / sửa đối soát.
+                if (await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, order.MealDate, "ghi / sửa đối soát") is { } periodLocked)
+                {
+                    return Fail(periodLocked);
+                }
                 var existing = _unitOfWork.OrderReconciliationRepository.GetSingle(r => r.OrderId == order.Id && !r.IsDeleted);
                 if (existing?.Status == ReconciliationStatus.Closed)
                 {
@@ -368,6 +373,12 @@ namespace AppDelicare.Services.Implement
                 {
                     return Fail(string.Format(ConstantHelper.Message.StatusActionInvalid, "đóng đối soát", "bản đối soát",
                         ReconciliationStatus.Label(ReconciliationStatus.Matched) + " / " + ReconciliationStatus.Label(ReconciliationStatus.Variance), ReconciliationStatus.Label(reconciliation.Status)));
+                }
+                // ACC-4 (D-131 h): kỳ kế toán của ngày ăn đã khóa → chặn chốt.
+                var closeDay = await _unitOfWork.DbContext.Order.AsNoTracking().Where(o => o.Id == reconciliation.OrderId).Select(o => (DateTime?)o.MealDate).FirstOrDefaultAsync();
+                if (closeDay is { } cd && await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, cd, "chốt đối soát") is { } closeLocked)
+                {
+                    return Fail(closeLocked);
                 }
                 string? remark = DeliveryRules.Clean(request.Remark) ?? (IsAutoRemark(reconciliation.Remark) ? null : DeliveryRules.Clean(reconciliation.Remark));
                 decimal percent = Math.Abs(reconciliation.VariancePercent ?? 0m);

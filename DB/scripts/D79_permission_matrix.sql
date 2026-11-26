@@ -228,6 +228,7 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/wf-inbox?type=hr-swap', 1, 0, 1, 0, 0, 0, 0),
     (N'COO', N'#/wf-inbox?type=log-load-short', 1, 0, 1, 0, 0, 0, 0),
     (N'COO', N'#/wf-inbox?type=crm-recon-reopen', 1, 0, 1, 0, 0, 0, 0),
+    (N'COO', N'#/wf-inbox?type=acc-period-unlock', 1, 0, 1, 0, 0, 0, 0),
     (N'COO', N'#/dash-exec', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/kpi-daily', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/kpi-monthly', 1, 0, 0, 0, 1, 1, 0),
@@ -531,9 +532,9 @@ INSERT INTO @Allow VALUES
     (N'SAL-HEAD', N'#/dash-exec', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/kpi-monthly', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-HEAD', N'#/cost-meal', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-HEAD', N'#/crm-customer', 1, 1, 1, 1, 1, 1, 1);
+    (N'SAL-HEAD', N'#/cost-meal', 1, 0, 0, 0, 0, 0, 0);
 INSERT INTO @Allow VALUES
+    (N'SAL-HEAD', N'#/crm-customer', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-HEAD', N'#/crm-contract', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-HEAD', N'#/crm-price-policy', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-HEAD', N'#/crm-order-week', 1, 1, 1, 1, 1, 1, 1),

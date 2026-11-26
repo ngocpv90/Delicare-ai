@@ -387,6 +387,12 @@ namespace AppDelicare.Services.Implement
                 await DbLocks.DocumentAsync(db, "GoodsReceipt", request.Id); // Rà soát BE: 2 lần ghi sổ cùng lúc chạy lần lượt.
                 var receipt = _unitOfWork.GoodsReceiptRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
                 var po = receipt?.PurchaseOrderId is { } poId ? await db.PurchaseOrder.AsNoTracking().FirstOrDefaultAsync(p => p.Id == poId && !p.IsDeleted) : null;
+                // ACC-4 (D-131 h): kỳ kế toán đã khóa → chặn.
+                if (receipt != null && await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, receipt.ReceiptDate, "ghi sổ phiếu nhận") is { } periodLocked)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<GoodsReceiptDetailModel>.Fail(periodLocked);
+                }
                 string? error = receipt == null ? ConstantHelper.Message.RecordNotFoundMessage
                     : receipt.Status == GoodsReceiptStatus.QcPending ? ConstantHelper.Message.GoodsReceiptNotConcluded
                     : !GoodsReceiptStatus.Concluded.Contains(receipt.Status)
@@ -540,6 +546,12 @@ namespace AppDelicare.Services.Implement
                 string? reason = request.Reason?.Trim();
                 await DbLocks.DocumentAsync(_unitOfWork.DbContext, "GoodsReceipt", request.Id); // Rà soát BE: hủy và ghi sổ cùng lúc chạy lần lượt.
                 var receipt = _unitOfWork.GoodsReceiptRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
+                // ACC-4 (D-131 h): kỳ kế toán đã khóa → chặn.
+                if (receipt != null && await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, receipt.ReceiptDate, "hủy phiếu nhận") is { } periodLocked)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<GoodsReceiptDetailModel>.Fail(periodLocked);
+                }
                 string? error = string.IsNullOrEmpty(reason) || reason.Length < 3 ? ConstantHelper.Message.CancelReasonRequired
                     : receipt == null ? ConstantHelper.Message.RecordNotFoundMessage
                     : receipt.Status != GoodsReceiptStatus.QcPending && !GoodsReceiptStatus.Concluded.Contains(receipt.Status)

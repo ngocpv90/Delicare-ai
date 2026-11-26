@@ -1024,6 +1024,15 @@
             public static readonly string ReconReopenPending = "Đối soát này đang có yêu cầu mở lại chờ duyệt";
             public static readonly string ReconReopenSubmitted = "Đã gửi yêu cầu mở lại đối soát {0} – chờ COO duyệt";
             public static readonly string ReconReopened = "Đã mở lại đối soát – đơn về Đã giao";
+            // ACC-4 (D-131 h): khóa kỳ kế toán.
+            public static readonly string PeriodAlreadyLocked = "Kỳ này đã khóa";
+            public static readonly string PeriodNotEnded = "Chỉ khóa kỳ đã kết thúc (tháng trước trở về trước)";
+            public static readonly string PeriodConditionsLeft = "Còn {0} việc chưa xong: {1}";
+            public static readonly string PeriodLocked = "Đã khóa kỳ kế toán tháng {0}";
+            public static readonly string PeriodUnlockReasonRequired = "Nhập lý do mở khóa kỳ";
+            public static readonly string PeriodNotLocked = "Kỳ này chưa khóa";
+            public static readonly string PeriodUnlockPending = "Kỳ này đang có yêu cầu mở khóa chờ duyệt";
+            public static readonly string PeriodUnlockSubmitted = "Đã gửi yêu cầu mở khóa kỳ {0} ({1}) – chờ COO duyệt";
             // ACC-2 (D-131 e): chứng từ kế toán.
             public static readonly string VoucherNothingToExport = "Không có chứng từ nào tải được – chỉ tải chứng từ Sẵn sàng / Chờ lập / Đã sửa (dòng lỗi, chờ nghiệp vụ gốc, bảng công bỏ qua)";
             public static readonly string VoucherExported = "Đã tải {0} chứng từ – nhập vào AMIS rồi đánh dấu đã lập";

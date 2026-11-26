@@ -26,6 +26,14 @@ namespace AppDelicare.Services.Implement
             return last == ActionLock;
         }
 
+        /// <summary>Mốc thời gian cho lần khóa / mở tiếp theo – luôn sau lần trước (cùng giây vẫn xếp đúng thứ tự).</summary>
+        public static async Task<DateTime> NextStampAsync(DatabaseContext db, Guid periodId, DateTime now)
+        {
+            var last = await db.AuditChange.AsNoTracking().Where(a => !a.IsDeleted && a.EntityName == Entity && a.IdChange == periodId)
+                .OrderByDescending(a => a.CreatedDate).Select(a => (DateTime?)a.CreatedDate).FirstOrDefaultAsync();
+            return last is { } l && l >= now ? l.AddSeconds(1) : now;
+        }
+
         /// <summary>Kỳ chứa <paramref name="date"/> đã khóa → câu báo lỗi; chưa khóa → null.</summary>
         public static async Task<string?> LockedMessageAsync(DatabaseContext db, DateTime date, string action)
             => await IsLockedAsync(db, date)
