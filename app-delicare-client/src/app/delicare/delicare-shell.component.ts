@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, NgZone, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { versioned } from '../helpers/asset-version';
 import { LEGAL_NAME, URL_API } from '../helpers/constant-helper';
 import { User } from '../helpers/user';
 import { AuthenticationService } from '../services/authentication.service';
@@ -150,7 +151,7 @@ export class DelicareShellComponent implements AfterViewInit, OnDestroy {
       if (this.destroyed) return;
       await new Promise<void>((resolve, reject) => {
         const s = document.createElement('script');
-        s.src = SCRIPT_BASE + file;
+        s.src = versioned(SCRIPT_BASE + file);
         s.async = false;
         s.setAttribute(SCRIPT_ATTR, file);
         s.onload = () => resolve();

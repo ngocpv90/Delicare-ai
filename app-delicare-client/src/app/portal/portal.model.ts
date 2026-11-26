@@ -38,10 +38,14 @@ export interface PortalProduct {
   tags: string[];
   icon: string;
   tone: 'green' | 'orange';
+  /** Bữa được bán (Sáng / Trưa / Tối); trống = mọi bữa. */
+  meals?: string[];
 }
 
 export interface PortalMenuDay {
   day: string;
+  /** Ngày (yyyy-MM-dd) khi thực đơn lấy từ máy chủ – để tô "hôm nay" đúng ngày. */
+  date?: string;
   meals: Partial<Record<string, string[]>>;
 }
 
@@ -64,6 +68,10 @@ export interface PortalData {
   about: { title: string; paragraphs: string[]; values: PortalIconText[] };
   /** Nguồn danh mục sản phẩm: 'api' (máy chủ) hoặc 'file' (file cấu hình – chưa có API). */
   catalogSource?: 'api' | 'file';
+  /** false: trang khách lẻ tắt – vào #/ về trang đăng nhập (xem trước: #/?xemtruoc=1). Mặc định bật khi thiếu. */
+  portalEnabled?: boolean;
+  /** Nguồn thực đơn tuần: 'api' (thực đơn đã công bố trên hệ thống) hoặc 'file'. */
+  menuSource?: 'api' | 'file';
 }
 
 export interface CartLine {

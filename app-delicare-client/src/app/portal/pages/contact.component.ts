@@ -21,7 +21,7 @@ import { PortalDataService } from '../portal-data.service';
         <div class="pt-wrap pt-grid-3">
           <a class="pt-card pt-contact-tile" [href]="'tel:' + d.company.phoneHref">
             <span class="pt-feature-icon"><i class="material-icons">call</i></span>
-            <h3>Gọi hotline</h3>
+            <h3>Gọi điện đặt hàng</h3>
             <p class="pt-big">{{ d.company.phone }}</p>
             <span class="pt-link">Gọi ngay <i class="material-icons">arrow_forward</i></span>
           </a>

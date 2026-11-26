@@ -14,6 +14,7 @@ export const PORTAL_ROUTES: Routes = [
       { path: 'chinh-sach/:slug', loadComponent: () => import('./pages/policies.component').then((m) => m.PortalPoliciesComponent) },
       { path: 'gioi-thieu', loadComponent: () => import('./pages/about.component').then((m) => m.PortalAboutComponent) },
       { path: 'lien-he', loadComponent: () => import('./pages/contact.component').then((m) => m.PortalContactComponent) },
+      { path: 'tra-cuu-don', loadComponent: () => import('./pages/track.component').then((m) => m.PortalTrackComponent) },
       { path: 'gio-hang', loadComponent: () => import('./pages/cart.component').then((m) => m.PortalCartComponent) },
     ],
   },

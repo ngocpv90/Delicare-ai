@@ -435,3 +435,27 @@ a.pt-contact-tile:hover { border-color: var(--pt-green); }
 .pt-order-no { font-size: 20px; color: var(--pt-orange); letter-spacing: 0.5px; }
 .pt-success .pt-hero-cta { justify-content: center; }
 @media (max-width: 600px) { .pt-success { padding: 26px 18px; } }
+
+/* ---------- Thanh xem trước + liên kết nội bộ ---------- */
+.pt-preview-bar { background: #fff3cd; color: #7a5b00; text-align: center; font-size: 13px; font-weight: 600; padding: 6px 12px; }
+.pt-topbar-right { display: inline-flex; align-items: center; gap: 18px; }
+.pt-topbar a.pt-topbar-staff { font-weight: 500; color: #dfe9d0; }
+@media (max-width: 600px) { .pt-topbar-staff { display: none !important; } }
+
+/* ---------- Tra cứu đơn ---------- */
+.pt-track { display: grid; grid-template-columns: 380px 1fr; gap: 22px; align-items: start; }
+.pt-track-form { position: static; }
+.pt-track-result { padding: 24px; }
+.pt-track-result header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.pt-track-result h2 { font-size: 22px; margin: 0; color: var(--pt-orange); }
+.pt-track-status { padding: 4px 12px; border-radius: 20px; background: var(--pt-green-light); color: var(--pt-green-deep); font-weight: 700; font-size: 13px; white-space: nowrap; }
+.pt-track-status.cancel { background: #fdecec; color: #a5281b; }
+.pt-progress { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0; margin: 0 0 16px; }
+.pt-progress li { position: relative; padding-top: 22px; font-size: 13px; color: var(--pt-muted); text-align: center; }
+.pt-progress li::before { content: ''; position: absolute; top: 4px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--pt-border); }
+.pt-progress li.done { color: var(--pt-green-deep); font-weight: 600; }
+.pt-progress li.done::before { background: var(--pt-green); }
+.pt-track-lines { list-style: none; padding: 0; margin: 12px 0 0; border-top: 1px solid var(--pt-border); }
+.pt-track-lines li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--pt-border); font-size: 14px; }
+@media (max-width: 960px) { .pt-track { grid-template-columns: 1fr; } }
+@media (max-width: 1240px) { .pt-nav a { padding: 8px 8px; font-size: 13.5px; } .pt-header-in { gap: 14px; } }

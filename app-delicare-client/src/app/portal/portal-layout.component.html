@@ -1,10 +1,20 @@
 <div class="pt-root">
   @if (vm$ | async; as vm) {
   @if (vm.d; as d) {
+    @if (d.portalEnabled === false) {
+      <div class="pt-preview-bar">Đang xem trước – trang khách lẻ chưa mở công khai.</div>
+    }
     <div class="pt-topbar">
       <div class="pt-wrap pt-topbar-in">
         <span><i class="material-icons">schedule</i>{{ d.company.workingHours }}</span>
-        <a [href]="'tel:' + d.company.phoneHref"><i class="material-icons">call</i>Hotline {{ d.company.phone }}</a>
+        <span class="pt-topbar-right">
+          <a [href]="'tel:' + d.company.phoneHref"><i class="material-icons">call</i>Gọi đặt hàng {{ d.company.phone }}</a>
+          @if (staffLoggedIn) {
+            <a class="pt-topbar-staff" [routerLink]="appLink"><i class="material-icons">dashboard</i>Vào hệ thống</a>
+          } @else {
+            <a class="pt-topbar-staff" routerLink="/dang-nhap"><i class="material-icons">badge</i>Đăng nhập nội bộ</a>
+          }
+        </span>
       </div>
     </div>
 
@@ -86,6 +96,8 @@
         <span>{{ cart.count() }} món · Xem giỏ hàng</span>
       </a>
     }
+  } @else if (vm.off) {
+    <div class="pt-loading">Đang chuyển…</div>
   } @else {
     <div class="pt-loading">
       <p>Không tải được nội dung trang. Vui lòng thử lại sau ít phút.</p>

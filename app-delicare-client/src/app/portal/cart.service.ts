@@ -38,16 +38,17 @@ export class CartService {
   }
 
   /**
-   * Đồng bộ giỏ đã lưu với danh mục hiện tại: cập nhật tên / giá / đơn vị theo file cấu hình mới,
-   * bỏ món đã gỡ khỏi danh mục – tránh khách thấy giá cũ còn lưu trong trình duyệt.
+   * Đồng bộ giỏ đã lưu với danh mục hiện tại: cập nhật tên / giá / đơn vị theo danh mục mới.
+   * prune = true (danh mục lấy từ MÁY CHỦ – nguồn đúng): bỏ món đã ngừng bán.
+   * prune = false (máy chủ lỗi tạm, đang dùng file dự phòng): KHÔNG bỏ món nào – tránh mất giỏ chỉ vì một lần tải danh mục lỗi.
    */
-  public sync(products: PortalProduct[]): void {
+  public sync(products: PortalProduct[], prune: boolean): void {
     const byId = new Map(products.map((p) => [p.id, p]));
     const next = this.lines()
-      .filter((l) => byId.has(l.productId))
+      .filter((l) => !prune || byId.has(l.productId))
       .map((l) => {
-        const p = byId.get(l.productId)!;
-        return { ...l, productCode: p.code, name: p.name, price: p.price, unit: p.unit };
+        const p = byId.get(l.productId);
+        return p ? { ...l, productCode: p.code, name: p.name, price: p.price, unit: p.unit } : l;
       });
     if (JSON.stringify(next) !== JSON.stringify(this.lines())) {
       this.save(next);

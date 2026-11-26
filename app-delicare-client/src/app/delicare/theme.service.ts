@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { versioned } from '../helpers/asset-version';
 
 export type AppTheme = 'delicare' | 'w3crm';
 
@@ -26,7 +27,7 @@ export class ThemeService {
       dc = document.createElement('link');
       dc.id = DELICARE_CSS_ID;
       dc.rel = 'stylesheet';
-      dc.href = DELICARE_CSS_HREF;
+      dc.href = versioned(DELICARE_CSS_HREF);
       document.head.appendChild(dc);
     }
     if (dc) {

@@ -40,7 +40,7 @@ import { PortalData } from '../portal.model';
               }
               <div class="pt-policy-contact">
                 <i class="material-icons">support_agent</i>
-                <span>Cần hỗ trợ thêm? Gọi <a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a> hoặc <a routerLink="/lien-he">gửi yêu cầu</a>.</span>
+                <span>Cần hỗ trợ thêm? Gọi <a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a> hoặc <a [href]="d.company.zalo" target="_blank" rel="noopener">nhắn Zalo</a>.</span>
               </div>
             </article>
           </div>

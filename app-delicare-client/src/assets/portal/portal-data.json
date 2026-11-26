@@ -1,5 +1,6 @@
 {
-  "_ghiChu": "Nội dung trang khách lẻ (cổng công khai). Sản phẩm, giá, thực đơn, chính sách dưới đây là BẢN NHÁP / DỮ LIỆU MẪU – PROPOSED, chờ anh (PO) duyệt trước khi mở công khai. Sửa file này là trang đổi theo, không cần build lại. Khi có API bán lẻ (GAP-POS-01, R2) thì chuyển sang đọc từ máy chủ.",
+  "_ghiChu": "Nội dung trang khách lẻ (cổng công khai). Sản phẩm, giá, thực đơn, chính sách là BẢN NHÁP – PROPOSED, chờ anh (PO) duyệt. portalEnabled = false: trang khách lẻ TẮT (vào #/ về trang đăng nhập như cũ); xem trước bằng #/?xemtruoc=1. Khi có API RETAIL-1, sản phẩm + thực đơn tuần đọc từ máy chủ; file này là dự phòng. Trong Docker file nằm trong image web – sửa xong phải build lại web.",
+  "portalEnabled": false,
 
   "company": {
     "brand": "DELI-CARE",
@@ -44,18 +45,18 @@
   ],
 
   "products": [
-    { "id": "SP-001", "categoryId": "com-van-phong", "name": "Suất cơm trưa tiêu chuẩn", "price": 40000, "unit": "suất", "description": "2 món mặn theo thực đơn ngày, 1 món rau, canh, cơm trắng.", "tags": ["Bán chạy"], "icon": "lunch_dining", "tone": "green" },
-    { "id": "SP-002", "categoryId": "com-van-phong", "name": "Suất cơm trưa đặc biệt", "price": 55000, "unit": "suất", "description": "Thêm món chính đặc biệt trong tuần, rau, canh, tráng miệng.", "tags": ["Mới"], "icon": "set_meal", "tone": "orange" },
-    { "id": "SP-003", "categoryId": "com-van-phong", "name": "Suất cơm tối", "price": 40000, "unit": "suất", "description": "Món mặn, rau xào, canh nóng, cơm trắng – giao trước 18:00.", "tags": [], "icon": "dinner_dining", "tone": "green" },
-    { "id": "SP-004", "categoryId": "an-sang", "name": "Xôi – bánh mì buổi sáng", "price": 20000, "unit": "suất", "description": "Chọn 1 trong 3 món sáng của ngày, kèm sữa đậu nành.", "tags": ["Bán chạy"], "icon": "bakery_dining", "tone": "orange" },
-    { "id": "SP-005", "categoryId": "an-sang", "name": "Phở / bún nóng", "price": 30000, "unit": "bát", "description": "Nước dùng ninh xương, đóng hộp giữ nhiệt riêng phần nước.", "tags": [], "icon": "ramen_dining", "tone": "green" },
-    { "id": "SP-006", "categoryId": "combo", "name": "Combo văn phòng 5 suất", "price": 190000, "unit": "combo", "description": "5 suất cơm trưa tiêu chuẩn, miễn phí giao trong khu vực.", "tags": ["Tiết kiệm"], "icon": "groups", "tone": "orange" },
-    { "id": "SP-007", "categoryId": "combo", "name": "Combo văn phòng 10 suất", "price": 370000, "unit": "combo", "description": "10 suất cơm trưa tiêu chuẩn kèm tráng miệng.", "tags": ["Tiết kiệm"], "icon": "diversity_3", "tone": "green" },
-    { "id": "SP-008", "categoryId": "combo", "name": "Combo gia đình 4 người", "price": 220000, "unit": "combo", "description": "3 món mặn, 1 rau, 1 canh, cơm cho 4 người – giao bữa tối.", "tags": [], "icon": "family_restroom", "tone": "orange" },
-    { "id": "SP-009", "categoryId": "dinh-duong", "name": "Suất ăn ít tinh bột", "price": 60000, "unit": "suất", "description": "Ức gà / cá áp chảo, rau củ hấp, cơm gạo lứt phần nhỏ.", "tags": ["Lành mạnh"], "icon": "spa", "tone": "green" },
-    { "id": "SP-010", "categoryId": "dinh-duong", "name": "Suất chay thanh đạm", "price": 45000, "unit": "suất", "description": "Đậu, nấm, rau củ theo mùa, canh rau, cơm trắng.", "tags": [], "icon": "eco", "tone": "green" },
-    { "id": "SP-011", "categoryId": "trang-mieng", "name": "Tráng miệng trong ngày", "price": 12000, "unit": "phần", "description": "Hoa quả theo mùa hoặc chè / sữa chua tự làm.", "tags": [], "icon": "icecream", "tone": "orange" },
-    { "id": "SP-012", "categoryId": "trang-mieng", "name": "Nước ép – sữa hạt", "price": 18000, "unit": "chai", "description": "Chai 330 ml, ép trong ngày, không thêm đường.", "tags": [], "icon": "local_drink", "tone": "green" }
+    { "id": "SP-001", "categoryId": "com-van-phong", "name": "Suất cơm trưa tiêu chuẩn", "price": 40000, "unit": "suất", "description": "2 món mặn theo thực đơn ngày, 1 món rau, canh, cơm trắng.", "tags": ["Bán chạy"], "meals": ["Trưa"], "icon": "lunch_dining", "tone": "green" },
+    { "id": "SP-002", "categoryId": "com-van-phong", "name": "Suất cơm trưa đặc biệt", "price": 55000, "unit": "suất", "description": "Thêm món chính đặc biệt trong tuần, rau, canh, tráng miệng.", "tags": ["Mới"], "meals": ["Trưa"], "icon": "set_meal", "tone": "orange" },
+    { "id": "SP-003", "categoryId": "com-van-phong", "name": "Suất cơm tối", "price": 40000, "unit": "suất", "description": "Món mặn, rau xào, canh nóng, cơm trắng – giao trước 18:00.", "tags": [], "meals": ["Tối"], "icon": "dinner_dining", "tone": "green" },
+    { "id": "SP-004", "categoryId": "an-sang", "name": "Xôi – bánh mì buổi sáng", "price": 20000, "unit": "suất", "description": "Chọn 1 trong 3 món sáng của ngày, kèm sữa đậu nành.", "tags": ["Bán chạy"], "meals": ["Sáng"], "icon": "bakery_dining", "tone": "orange" },
+    { "id": "SP-005", "categoryId": "an-sang", "name": "Phở / bún nóng", "price": 30000, "unit": "bát", "description": "Nước dùng ninh xương, đóng hộp giữ nhiệt riêng phần nước.", "tags": [], "meals": ["Sáng"], "icon": "ramen_dining", "tone": "green" },
+    { "id": "SP-006", "categoryId": "combo", "name": "Combo văn phòng 5 suất", "price": 190000, "unit": "combo", "description": "5 suất cơm trưa tiêu chuẩn, miễn phí giao trong khu vực.", "tags": ["Tiết kiệm"], "meals": ["Trưa"], "icon": "groups", "tone": "orange" },
+    { "id": "SP-007", "categoryId": "combo", "name": "Combo văn phòng 10 suất", "price": 370000, "unit": "combo", "description": "10 suất cơm trưa tiêu chuẩn kèm tráng miệng.", "tags": ["Tiết kiệm"], "meals": ["Trưa"], "icon": "diversity_3", "tone": "green" },
+    { "id": "SP-008", "categoryId": "combo", "name": "Combo gia đình 4 người", "price": 220000, "unit": "combo", "description": "3 món mặn, 1 rau, 1 canh, cơm cho 4 người – giao bữa tối.", "tags": [], "meals": ["Tối"], "icon": "family_restroom", "tone": "orange" },
+    { "id": "SP-009", "categoryId": "dinh-duong", "name": "Suất ăn ít tinh bột", "price": 60000, "unit": "suất", "description": "Ức gà / cá áp chảo, rau củ hấp, cơm gạo lứt phần nhỏ.", "tags": ["Lành mạnh"], "meals": ["Trưa","Tối"], "icon": "spa", "tone": "green" },
+    { "id": "SP-010", "categoryId": "dinh-duong", "name": "Suất chay thanh đạm", "price": 45000, "unit": "suất", "description": "Đậu, nấm, rau củ theo mùa, canh rau, cơm trắng.", "tags": [], "meals": ["Trưa","Tối"], "icon": "eco", "tone": "green" },
+    { "id": "SP-011", "categoryId": "trang-mieng", "name": "Tráng miệng trong ngày", "price": 12000, "unit": "phần", "description": "Hoa quả theo mùa hoặc chè / sữa chua tự làm.", "tags": [], "meals": ["Sáng","Trưa","Tối"], "icon": "icecream", "tone": "orange" },
+    { "id": "SP-012", "categoryId": "trang-mieng", "name": "Nước ép – sữa hạt", "price": 18000, "unit": "chai", "description": "Chai 330 ml, ép trong ngày, không thêm đường.", "tags": [], "meals": ["Sáng","Trưa","Tối"], "icon": "local_drink", "tone": "green" }
   ],
 
   "weeklyMenu": {
@@ -80,7 +81,7 @@
       "sections": [
         { "heading": "Thời gian nhận đơn", "items": ["Nhận đơn từ 7:00 đến 20:00 hằng ngày qua website, điện thoại hoặc Zalo.", "Đơn cho ngày hôm sau chốt trước 20:00 hôm trước. Đơn sau giờ chốt được xếp sang ngày kế tiếp hoặc nhân viên liên hệ xác nhận."] },
         { "heading": "Xác nhận đơn", "items": ["Nhân viên gọi lại xác nhận món, số lượng, địa chỉ và giờ giao trong giờ làm việc.", "Đơn chỉ được chuẩn bị sau khi đã xác nhận."] },
-        { "heading": "Thay đổi, hủy đơn", "items": ["Được đổi số lượng hoặc hủy đơn miễn phí trước giờ chốt 20:00 của ngày trước ngày giao.", "Sau giờ chốt, bếp đã lên kế hoạch nấu nên đơn không hủy được; trường hợp đặc biệt vui lòng gọi hotline."] }
+        { "heading": "Thay đổi, hủy đơn", "items": ["Được đổi số lượng hoặc hủy đơn miễn phí trước giờ chốt 20:00 của ngày trước ngày giao.", "Sau giờ chốt, bếp đã lên kế hoạch nấu nên đơn không hủy được; trường hợp đặc biệt vui lòng gọi số điện thoại đặt hàng."] }
       ]
     },
     {
@@ -108,7 +109,7 @@
       "icon": "autorenew",
       "sections": [
         { "heading": "Trường hợp được đổi", "items": ["Giao sai món, thiếu suất, hộp bị đổ vỡ hoặc món có dấu hiệu không bảo đảm chất lượng."] },
-        { "heading": "Cách báo", "items": ["Báo trong vòng 30 phút kể từ khi nhận hàng qua hotline hoặc Zalo, kèm ảnh suất ăn.", "Chúng tôi giao bù suất mới hoặc hoàn tiền phần bị lỗi sau khi kiểm tra."] }
+        { "heading": "Cách báo", "items": ["Báo trong vòng 30 phút kể từ khi nhận hàng qua số điện thoại đặt hàng hoặc Zalo, kèm ảnh suất ăn.", "Chúng tôi giao bù suất mới hoặc hoàn tiền phần bị lỗi sau khi kiểm tra."] }
       ]
     },
     {
@@ -126,7 +127,7 @@
       "icon": "lock",
       "sections": [
         { "heading": "Thông tin thu thập", "items": ["Họ tên, số điện thoại, địa chỉ giao hàng và ghi chú đơn – chỉ dùng để xác nhận và giao đơn."] },
-        { "heading": "Cam kết", "items": ["Không bán, không chia sẻ thông tin khách hàng cho bên thứ ba, trừ đơn vị giao hàng cần thông tin để giao.", "Khách hàng có quyền yêu cầu xem, sửa hoặc xóa thông tin của mình qua hotline."] }
+        { "heading": "Cam kết", "items": ["Không bán, không chia sẻ thông tin khách hàng cho bên thứ ba, trừ đơn vị giao hàng cần thông tin để giao.", "Khách hàng có quyền yêu cầu xem, sửa hoặc xóa thông tin của mình qua số điện thoại đặt hàng."] }
       ]
     }
   ],

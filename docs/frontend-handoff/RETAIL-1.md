@@ -16,82 +16,23 @@ Nhân viên nhận đơn qua điện thoại / Zalo → nút "Lập đơn" trên
 
 Đơn doanh nghiệp (`Order`, `#/crm-order`, `#/crm-order-week`) **không đổi**, không hiện đơn lẻ. Báo cáo / MRP chưa tính đơn lẻ (đợt sau – mục 8).
 
-## 2. Bảng mới (migration `DB/migrations/YYYYMMDD_NN_retail_order.sql` – cần anh duyệt; CodeGen `--only RetailProduct,RetailOrder,RetailOrderLine`)
+## 2. Bảng mới – ĐÃ CÓ FILE MIGRATION `DB/migrations/20261127_01_retail_order.sql` (anh duyệt bảng mới 2026-11-26)
 
-Khuôn cột chuẩn như `SupplierIssue` (Id GUID, CreatedDate / CreatedBy / ModifiedDate / ModifiedBy / IsDeleted), giờ Việt Nam, không FK vật lý (kiểm ở Service).
+File đã viết theo khuôn `SupplierIssue`, chạy lại được, đã thử 2 lần trên DB tạm (LocalDB): 3 bảng + 8 chỉ mục, lần 2 không đổi gì. **Chưa chạy trên DB dev / production** – chạy cùng lúc backend có Entity / Service (CodeGen `--only RetailProduct,RetailOrder,RetailOrderLine`).
 
-```sql
--- delicare-migration: normal
-IF OBJECT_ID(N'dbo.RetailProduct', N'U') IS NULL
-CREATE TABLE dbo.RetailProduct (
-    Id            uniqueidentifier NOT NULL CONSTRAINT PK_RetailProduct PRIMARY KEY,
-    Code          nvarchar(50)     NOT NULL,          -- G1 SPL-NNNNN (máy chủ sinh)
-    Name          nvarchar(255)    NOT NULL,
-    CategoryCode  nvarchar(50)     NOT NULL,          -- ReferenceLists:RetailCategory (appsettings)
-    Unit          nvarchar(50)     NOT NULL,          -- suất / combo / chai…
-    Price         decimal(18, 2)   NOT NULL,          -- giá bán lẻ đã gồm VAT
-    Description   nvarchar(1000)   NULL,
-    Tags          nvarchar(255)    NULL,              -- "Bán chạy;Mới" – nhãn hiển thị
-    Icon          nvarchar(50)     NULL,              -- tên biểu tượng Material Icons (tạm thay ảnh)
-    ImageUrl      nvarchar(500)    NULL,              -- ảnh món (DocumentStorage) – để sau
-    SortOrder     int              NOT NULL CONSTRAINT DF_RetailProduct_SortOrder DEFAULT (0),
-    Status        nvarchar(30)     NOT NULL,          -- Active / Inactive (Đang bán / Ngừng bán)
-    CreatedDate datetime2(0) NOT NULL, CreatedBy uniqueidentifier NULL,
-    ModifiedDate datetime2(0) NULL,    ModifiedBy uniqueidentifier NULL,
-    IsDeleted bit NOT NULL CONSTRAINT DF_RetailProduct_IsDeleted DEFAULT (0));
+| Bảng | Cột chính |
+|---|---|
+| `RetailProduct` | `Code` (G1 SPL-NNNNN), `Name`, `CategoryCode`, **`MealTypes`** (bữa được bán, nối `;` – vd `Trưa;Tối`), `Unit`, `Price` (gồm VAT), `Description`, `Tags` (nối `;`), `Icon`, `ImageUrl`, `SortOrder`, `Status` (Active / Inactive) |
+| `RetailOrder` | `OrderNumber` (G1 BL-YYMMDD-NNNN), `Channel` (WEB / PHONE / ZALO), `CustomerName`, `PhoneNumber`, `Address`, `DeliveryDate` (date), `MealType`, `Note`, `OrderStatus`, `SubTotal`, `ShippingFee`, `TotalAmount`, `PaymentMethod` (COD / BANK), `PaymentStatus` (UNPAID / PAID), `ConfirmedAt/By`, `DeliveringAt`, `CompletedAt`, `CancelledAt`, `CancelReason`, `ClientIp`, **`ClientRequestId`** |
+| `RetailOrderLine` | `RetailOrderId`, `RetailProductId`, `ProductName` / `Unit` / `UnitPrice` (chụp lúc đặt), `Quantity`, `LineAmount` |
 
-IF OBJECT_ID(N'dbo.RetailOrder', N'U') IS NULL
-CREATE TABLE dbo.RetailOrder (
-    Id            uniqueidentifier NOT NULL CONSTRAINT PK_RetailOrder PRIMARY KEY,
-    OrderNumber   nvarchar(50)     NOT NULL,          -- G1 BL-YYMMDD-NNNN
-    Channel       nvarchar(20)     NOT NULL,          -- WEB / PHONE / ZALO
-    CustomerName  nvarchar(200)    NOT NULL,
-    PhoneNumber   nvarchar(20)     NOT NULL,          -- đã chuẩn hóa 0xxxxxxxxx
-    Address       nvarchar(500)    NOT NULL,
-    DeliveryDate  date             NOT NULL,
-    MealType      nvarchar(50)     NOT NULL,          -- mã ReferenceLists:MealType (Sáng / Trưa / Tối)
-    Note          nvarchar(1000)   NULL,
-    OrderStatus   nvarchar(30)     NOT NULL,          -- mục 4
-    SubTotal      decimal(18, 2)   NOT NULL,
-    ShippingFee   decimal(18, 2)   NOT NULL CONSTRAINT DF_RetailOrder_ShippingFee DEFAULT (0),
-    TotalAmount   decimal(18, 2)   NOT NULL,
-    PaymentMethod nvarchar(30)     NULL,              -- COD / BANK
-    PaymentStatus nvarchar(30)     NOT NULL,          -- UNPAID / PAID
-    ConfirmedAt   datetime2(0)     NULL, ConfirmedBy uniqueidentifier NULL,
-    CompletedAt   datetime2(0)     NULL,
-    CancelledAt   datetime2(0)     NULL, CancelReason nvarchar(500) NULL,
-    ClientIp      nvarchar(64)     NULL,              -- chống spam (đơn WEB) – không hiển thị
-    CreatedDate datetime2(0) NOT NULL, CreatedBy uniqueidentifier NULL,   -- đơn WEB: CreatedBy = tài khoản system
-    ModifiedDate datetime2(0) NULL,    ModifiedBy uniqueidentifier NULL,
-    IsDeleted bit NOT NULL CONSTRAINT DF_RetailOrder_IsDeleted DEFAULT (0));
-
-IF OBJECT_ID(N'dbo.RetailOrderLine', N'U') IS NULL
-CREATE TABLE dbo.RetailOrderLine (
-    Id              uniqueidentifier NOT NULL CONSTRAINT PK_RetailOrderLine PRIMARY KEY,
-    RetailOrderId   uniqueidentifier NOT NULL,
-    RetailProductId uniqueidentifier NOT NULL,
-    ProductName     nvarchar(255)    NOT NULL,        -- chụp lại lúc đặt (giá / tên đổi sau không ảnh hưởng đơn cũ)
-    Unit            nvarchar(50)     NOT NULL,
-    Quantity        decimal(18, 2)   NOT NULL,
-    UnitPrice       decimal(18, 2)   NOT NULL,
-    LineAmount      decimal(18, 2)   NOT NULL,
-    CreatedDate datetime2(0) NOT NULL, CreatedBy uniqueidentifier NULL,
-    ModifiedDate datetime2(0) NULL,    ModifiedBy uniqueidentifier NULL,
-    IsDeleted bit NOT NULL CONSTRAINT DF_RetailOrderLine_IsDeleted DEFAULT (0));
-
--- index không unique (ghi DECISIONS)
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_RetailOrder_Status_Date')
-    CREATE INDEX IX_RetailOrder_Status_Date ON dbo.RetailOrder (OrderStatus, DeliveryDate) WHERE IsDeleted = 0;
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_RetailOrder_Phone')
-    CREATE INDEX IX_RetailOrder_Phone ON dbo.RetailOrder (PhoneNumber) WHERE IsDeleted = 0;
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_RetailOrderLine_Order')
-    CREATE INDEX IX_RetailOrderLine_Order ON dbo.RetailOrderLine (RetailOrderId) WHERE IsDeleted = 0;
-```
+Menu + quyền: `DB/scripts/RETAIL1_menu.sql` (nhóm "Bán lẻ" `#/group/02c` + 2 mục + quyền theo nhóm – xem đầu file; chạy thử trên DB dev: 1 nhóm, 2 mục, 21 dòng quyền). **Lưu ý DB dev:** `UserGroup.Code` đang trống ở mọi nhóm (mã nằm ở `Name`) → script khớp `Code`, rơi về `Name` khi `Code` trống; các script ACC* chỉ khớp `Code` nên đã cấp 0 dòng quyền trên DB dev.
 
 Kèm theo:
 - BUSINESS_RULES §11: đăng ký G1 `BL-YYMMDD-NNNN` (RetailOrder.OrderNumber), `SPL-NNNNN` (RetailProduct.Code); bảng phân nhóm mã (test chặn).
 - `AuditChange` tự ghi (DbContext). Sổ append-only: không – đơn đổi trạng thái tại chỗ theo máy trạng thái mục 4.
 - Seed `[DEMO]` 12 sản phẩm từ `app-delicare-client/src/assets/portal/portal-data.json` (script seed riêng).
+- `ReferenceLists:MealType` dùng chung (Sáng / Trưa / Tối) cho `RetailProduct.MealTypes` và `RetailOrder.MealType`.
 - `ReferenceLists:RetailCategory` trong appsettings: `com-van-phong` Cơm văn phòng, `an-sang` Món ăn sáng, `combo` Combo nhóm, `dinh-duong` Suất dinh dưỡng, `trang-mieng` Tráng miệng & đồ uống.
 
 ## 3. Quy tắc (BusinessRules:Retail – appsettings, không hard-code)
@@ -104,6 +45,8 @@ Kèm theo:
 | `SubmitLimitPerPhone` / `SubmitLimitPerIp` | 3 / 10 trong 60 phút | Chống spam đơn WEB; vượt → 429 + thông báo tiếng Việt. |
 | `NotifyChannel` | Telegram Vận hành | Gửi tin đơn mới (số đơn, tên, SĐT, tổng tiền, ngày / bữa, nút mở `#/sal-retail-order?id=`). |
 
+Bữa: mọi dòng phải có `RetailProduct.MealTypes` chứa `MealType` của đơn → sai: 400 "Bữa … không bán: …".
+Chống trùng: đơn có `ClientRequestId` đã tồn tại (≤ 24 giờ) → trả lại **đơn cũ** (200, cùng `orderNumber`), không tạo đơn mới.
 Giá: **máy chủ tính lại** từ `RetailProduct.Price` (bỏ qua giá gửi lên); sản phẩm Ngừng bán / đã xóa → 400 "Sản phẩm … đã ngừng bán".
 
 ## 4. Máy trạng thái `RetailOrder.OrderStatus` (thêm vào STATUS_CATALOG + từ điển `UI.STATUS_VI`)
@@ -127,28 +70,36 @@ Sửa dòng / phí giao chỉ khi `New` / `Confirmed`. API trả `allowedTransit
 **POST `RetailPortal/SubmitOrder`** – `[FromBody]` (có danh sách dòng):
 ```json
 { "customerName": "Nguyễn Văn A", "phoneNumber": "0912345678", "address": "Số 1 Phố Huế, Hà Nội",
-  "deliveryDate": "2026-11-28", "mealType": "Trưa", "note": "Ít cay", "website": "",
+  "deliveryDate": "2026-11-28", "mealType": "Trưa", "note": "Ít cay", "website": "", "clientRequestId": "<uuid>",
   "lines": [ { "productId": "<guid>", "productCode": "SPL-00001", "quantity": 2 } ] }
 ```
 - `website` = ô bẫy (honeypot) ẩn: có giá trị → trả 200 giả, không ghi.
-- Nhận `productId` **hoặc** `productCode` (trang khách lẻ khi đọc danh mục từ JSON dự phòng chỉ có mã).
+- Nhận `productId` (GUID, ưu tiên) **hoặc** `productCode`. Trang khách chỉ gọi SubmitOrder khi danh mục lấy từ máy chủ (danh mục file dự phòng → đặt qua điện thoại).
+- Trang khách chờ tối đa **15 giây**; hết giờ / 5xx → coi là "không rõ đã lưu", khách được nhắc gọi xác nhận, gửi lại dùng cùng `clientRequestId`.
 - Trả `Result<{ id, orderNumber, totalAmount, deliveryDate, mealType }>`; 400 + `responseMessage` tiếng Việt khi sai (SĐT, ngày qua giờ chốt, sản phẩm ngừng bán…); 429 khi vượt giới hạn.
+
+**GET `RetailPortal/GetWeeklyMenu`** → `Result<{ title, meals: ["Sáng","Trưa","Tối"], days: [{ date: "2026-11-30", day: "Thứ Hai", meals: { "Trưa": ["Thịt kho trứng", …] } }] }>` – thực đơn tuần **đã công bố** (`Menu` Published, tuần chứa hôm nay; sau Thứ Bảy → tuần sau), tên món theo buổi, không lộ giá vốn / FC. Không có → trang dùng thực đơn trong file.
+
+**GET `RetailPortal/TrackOrder?orderNumber=&phoneNumber=`** → `Result<{ orderNumber, orderStatus, deliveryDate, mealType, customerName, totalAmount, paymentStatus, cancelReason, lines: [{ productName, quantity, unit, lineAmount }] }>` – **cả 2 phải khớp** (sai → 400 "Không tìm thấy đơn…", không phân biệt sai mã hay sai SĐT); giới hạn 20 lần / giờ / IP (429). Không trả địa chỉ.
 
 ### 5.2 Nội bộ – `RetailOrderController` (BaseController, ScreenMap `RetailOrder → sal-retail-order`)
 
 | Action | Kiểu | Tham số | Trả |
 |---|---|---|---|
-| `GetList` | GET | `SearchText` (số đơn / tên / SĐT), `OrderStatus`, `Channel`, `FromDate`, `ToDate` (ngày nhận), `Page`, `PageSize` | `Result<{ listItem: [RetailOrderViewModel], totalRecords, statusCounts: { New: n, … }, todayCount, todayAmount }>` |
-| `GetDetail` | GET | `id` | `Result<{ order, lines: [...], allowedTransitions: [] }>` |
+| `GetList` | GET | `SearchText` (số đơn / tên / SĐT), `OrderStatus` (**một hoặc nhiều, cách dấu phẩy** – vd `New,Confirmed,Delivering`; lọc ở máy chủ trước khi cắt trang), `Channel`, `FromDate`, `ToDate` (ngày nhận), `Page`, `PageSize` | `Result<{ listItem: [RetailOrderViewModel], totalRecords, statusCounts: { New: n, … }, todayCount, todayAmount }>` |
+| `GetDetail` | GET | `id` | `Result<{ order, lines: [{ id, retailProductId, productName, unit, quantity, unitPrice, lineAmount }], allowedTransitions: [] }>` |
+| `GetPrepSummary` | GET | `date` | `Result<{ meals: [{ mealType, orderCount, items: [{ productName, unit, quantity }] }] }>` – đơn `Confirmed` + `Delivering` của ngày nhận, cộng theo món × bữa (tổng hợp cho bếp; quyền In hoặc Truy cập) |
 | `Create` | POST `[FromBody]` | như SubmitOrder + `channel` (PHONE / ZALO), `shippingFee`, `paymentMethod` | `Result<{ id, orderNumber }>` – trạng thái `Confirmed` (nhân viên đã nói chuyện với khách) |
 | `UpdateLines` | PUT `[FromBody]` | `id`, `lines`, `shippingFee`, `note`, `address`, `deliveryDate`, `mealType` | chỉ `New` / `Confirmed` |
 | `Transition` | POST `[FromForm]` | `Id`, `To`, `Reason` (bắt buộc khi `Cancelled`), `ShippingFee`, `PaymentMethod` (khi `Confirmed`) | `Result<bool>` – `[Permission("sal-retail-order", Edit)]` |
 | `Export` | GET | như GetList | Excel danh sách đơn (tên file tiếng Việt) |
 
+`totalRecords` = tổng số đơn khớp lọc (giao diện báo khi danh sách bị cắt ở 500).
+
 `RetailOrderViewModel`: `id, orderNumber, channel, customerName, phoneNumber, address, deliveryDate, mealType, orderStatus, subTotal, shippingFee, totalAmount, paymentMethod, paymentStatus, note, lineSummary` ("Suất cơm trưa tiêu chuẩn × 2; …"), `createdDate, confirmedAt, cancelReason`.
 
 ### 5.3 Danh mục – `RetailProductController` (CRUD mẫu `WarehouseController`, ScreenMap `RetailProduct → sal-retail-product`)
-`GetAll` (`SearchText`, `CategoryCode`, `Status`, `Page`, `PageSize`) · `Insert` / `Update` `[FromForm]` (Code bỏ qua – G1) · `Delete` (xóa mềm, ReferenceGuard: đã có dòng đơn → chỉ cho Ngừng bán) · `GetById`.
+`GetAll` (`SearchText`, `CategoryCode`, `Status`, `Page`, `PageSize`; trả `Results` với `listData` gồm `mealTypes`) · `Insert` / `Update` `[FromForm]` (Code bỏ qua – G1; `MealTypes` bắt buộc, nối `;`) · `Delete` (xóa mềm, ReferenceGuard: đã có dòng đơn → chỉ cho Ngừng bán) · `GetById`.
 
 ## 6. Menu / quyền (seed – chỉ thêm)
 Nhóm menu cấp 1 mới **"Bán lẻ"** (tách khỏi "Kinh doanh" doanh nghiệp):
@@ -157,9 +108,13 @@ Nhóm menu cấp 1 mới **"Bán lẻ"** (tách khỏi "Kinh doanh" doanh nghi�
 Quyền đề xuất: nhóm Kinh doanh (SAL / SAL-HEAD) Truy cập + Thêm + Sửa + Xuất; CEO / COO Truy cập. Cập nhật `catalog.js` (CodeGen) + `CatalogMenuTests`.
 Giao diện đã khai báo 2 màn với cờ `extra` (`modules/retail.js`) → trước khi có seed, chỉ admin thấy trên sidebar.
 
+## 6b. Bật trang khách lẻ
+`assets/portal/portal-data.json` → `portalEnabled`: **false** (mặc định – nội dung còn là bản nháp): vào `#/` vẫn là trang đăng nhập như cũ; xem trước bằng `#/?xemtruoc=1`. Anh duyệt nội dung → đổi `true` rồi build lại web.
+
 ## 7. Kiểm thử cần có
-- SubmitOrder: giá gửi lên sai bị bỏ qua; ngày qua giờ chốt → 400; sản phẩm Ngừng bán → 400; honeypot; giới hạn 429; không cần token.
+- SubmitOrder: gửi lại cùng `clientRequestId` → cùng đơn; món sai bữa → 400; giá gửi lên sai bị bỏ qua; ngày qua giờ chốt → 400; sản phẩm Ngừng bán → 400; honeypot; giới hạn 429; không cần token.
 - Transition: đúng máy trạng thái, Hủy bắt buộc lý do, người thao tác = `ICurrentActor`.
+- TrackOrder: sai SĐT → 400 giống sai mã; không trả địa chỉ.
 - Đơn lẻ **không** xuất hiện trong `Order/*`, `crm-order`, MRP.
 
 ## 8. Để sau (ngoài RETAIL-1)

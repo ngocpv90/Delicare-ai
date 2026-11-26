@@ -1,7 +1,9 @@
 import { AsyncPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { todayIndex } from '../menu-day';
 import { PortalDataService } from '../portal-data.service';
+import { PortalMenuDay } from '../portal.model';
 
 @Component({
   selector: 'app-portal-weekly-menu',
@@ -27,11 +29,12 @@ import { PortalDataService } from '../portal-data.service';
           </div>
 
           <div class="pt-menu-grid">
+            @let tIdx = todayIndex(d.weeklyMenu.days);
             @for (day of d.weeklyMenu.days; track day.day; let i = $index) {
-              <article class="pt-card pt-menu-day" [class.is-today]="i === todayIndex">
+              <article class="pt-card pt-menu-day" [class.is-today]="i === tIdx">
                 <header>
                   <h3>{{ day.day }}</h3>
-                  @if (i === todayIndex) {
+                  @if (i === tIdx) {
                     <span class="pt-tag">Hôm nay</span>
                   }
                 </header>
@@ -62,5 +65,8 @@ import { PortalDataService } from '../portal-data.service';
 export class PortalWeeklyMenuComponent {
   public readonly data$ = inject(PortalDataService).data$;
   public readonly meal = signal('');
-  public readonly todayIndex = new Date().getDay() - 1; // Thứ Hai = 0; Chủ nhật = -1 (không tô)
+  /** Vị trí "hôm nay" (thực đơn máy chủ: theo ngày; file: theo thứ). */
+  public todayIndex(days: PortalMenuDay[]): number {
+    return todayIndex(days);
+  }
 }

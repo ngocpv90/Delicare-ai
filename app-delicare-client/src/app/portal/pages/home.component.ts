@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PortalDataService } from '../portal-data.service';
 import { PortalProductCardComponent } from '../product-card.component';
+import { featuredDay } from '../menu-day';
 import { PortalData, PortalMenuDay } from '../portal.model';
 
 @Component({
@@ -27,12 +28,12 @@ import { PortalData, PortalMenuDay } from '../portal.model';
               <div class="pt-today-head">
                 <i class="material-icons">today</i>
                 <div>
-                  <small>{{ isSunday ? "Thực đơn ngày mai" : "Thực đơn hôm nay" }}</small>
-                  <strong>{{ t.day }}</strong>
+                  <small>{{ t.isToday ? "Thực đơn hôm nay" : "Thực đơn sắp tới" }}</small>
+                  <strong>{{ t.day.day }}</strong>
                 </div>
               </div>
               @for (m of d.weeklyMenu.meals; track m) {
-                @if (t.meals[m]; as dishes) {
+                @if (t.day.meals[m]; as dishes) {
                   <div class="pt-today-meal">
                     <span class="pt-meal-chip">{{ m }}</span>
                     <span>{{ dishes.join(' · ') }}</span>
@@ -124,7 +125,7 @@ import { PortalData, PortalMenuDay } from '../portal.model';
           </div>
           <div class="pt-hero-cta">
             <a class="pt-btn pt-btn-lg pt-btn-light" [href]="'tel:' + d.company.phoneHref"><i class="material-icons">call</i>{{ d.company.phone }}</a>
-            <a class="pt-btn pt-btn-lg pt-btn-outline-light" routerLink="/lien-he">Gửi yêu cầu</a>
+            <a class="pt-btn pt-btn-lg pt-btn-outline-light" routerLink="/lien-he">Thông tin liên hệ</a>
           </div>
         </div>
       </section>
@@ -134,18 +135,13 @@ import { PortalData, PortalMenuDay } from '../portal.model';
 export class PortalHomeComponent {
   public readonly data$ = inject(PortalDataService).data$;
 
-  /** Danh sách thực đơn chỉ Thứ Hai – Thứ Bảy: Chủ nhật hiển thị thực đơn Thứ Hai (ngày mai). */
-  public readonly isSunday = new Date().getDay() === 0;
-
   public featured(d: PortalData) {
     const tagged = d.products.filter((p) => p.tags.length);
     return (tagged.length >= 4 ? tagged : d.products).slice(0, 8);
   }
 
-  /** Thực đơn của hôm nay theo thứ trong tuần; Chủ nhật / ngoài danh sách → ngày đầu tuần. */
-  public today(d: PortalData): PortalMenuDay | undefined {
-    const days = d.weeklyMenu.days;
-    const dow = new Date().getDay(); // 0 = Chủ nhật
-    return days[dow - 1] ?? days[0];
+  /** Thực đơn hôm nay; không có (Chủ nhật / ngoài tuần) → ngày gần nhất sắp tới. */
+  public today(d: PortalData): { day: PortalMenuDay; isToday: boolean } | undefined {
+    return featuredDay(d.weeklyMenu.days);
   }
 }

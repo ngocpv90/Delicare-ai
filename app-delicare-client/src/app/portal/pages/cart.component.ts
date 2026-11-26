@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
 import { CartService } from '../cart.service';
 import { RetailApiService } from '../retail-api.service';
 import { PortalDataService } from '../portal-data.service';
-import { PortalCompany } from '../portal.model';
+import { PortalCompany, PortalData } from '../portal.model';
 
 const VN_PHONE = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
 const DEFAULT_CUTOFF_HOUR = 20;
@@ -25,10 +25,19 @@ function notBefore(c: AbstractControl, min: () => string): ValidationErrors | nu
   return c.value && c.value < min() ? { tooEarly: true } : null;
 }
 
+/** Mã ngẫu nhiên cho mỗi lần đặt (crypto.randomUUID chỉ có trên https / localhost → dự phòng cho server http). */
+function newRequestId(): string {
+  try {
+    if (crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch {
+    /* bỏ qua */
+  }
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12);
+}
+
 /**
- * Giỏ hàng + thông tin nhận hàng.
- * Chưa có API nhận đơn bán lẻ (GAP-POS-01, R2 – PROPOSED – BA/PO CONFIRM): bấm "Gửi đơn" chỉ kiểm tra thông tin,
- * dựng nội dung đơn để khách gọi / nhắn Zalo – KHÔNG lưu đơn lên máy chủ, nói rõ với khách.
+ * Giỏ hàng + thông tin nhận hàng + gửi đơn (RETAIL-1 – docs/frontend-handoff/RETAIL-1.md mục 5.1).
+ * Máy chủ chưa có API → khách đặt qua điện thoại / Zalo (trang nói rõ đơn chưa được gửi).
  */
 @Component({
   selector: 'app-portal-cart',
@@ -54,7 +63,7 @@ function notBefore(c: AbstractControl, min: () => string): ValidationErrors | nu
               @if (ok.totalAmount) {
                 <p>Tổng tiền: <b>{{ ok.totalAmount | number: '1.0-0' : 'vi' }}đ</b> – phí giao (nếu có) báo khi xác nhận.</p>
               }
-              <p class="pt-muted">Cần đổi hoặc hủy đơn, vui lòng gọi <a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a> và đọc mã đơn trước giờ chốt.</p>
+              <p class="pt-muted">Xem tình trạng đơn tại <a [routerLink]="['/tra-cuu-don']" [queryParams]="{ ma: ok.orderNumber }">Tra cứu đơn</a>. Cần đổi hoặc hủy đơn, vui lòng gọi <a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a> và đọc mã đơn trước giờ chốt.</p>
               <div class="pt-hero-cta pt-center">
                 <a class="pt-btn" routerLink="/san-pham" (click)="done.set(null)"><i class="material-icons">restaurant</i>Đặt thêm món</a>
                 <a class="pt-btn pt-btn-ghost" routerLink="/">Về trang chủ</a>
@@ -97,7 +106,7 @@ function notBefore(c: AbstractControl, min: () => string): ValidationErrors | nu
                 <p class="pt-muted">Phí giao (nếu có) được báo khi nhân viên xác nhận đơn. <a routerLink="/chinh-sach/giao-hang">Chính sách giao hàng</a></p>
               </div>
 
-              <form class="pt-card pt-form" [formGroup]="form" (ngSubmit)="submit(d.company)" novalidate>
+              <form class="pt-card pt-form" [formGroup]="form" (ngSubmit)="submit(d)" novalidate>
                 <h2>Thông tin nhận hàng</h2>
                 <label>
                   <span>Họ tên <b>*</b></span>
@@ -126,11 +135,19 @@ function notBefore(c: AbstractControl, min: () => string): ValidationErrors | nu
                     <span>Bữa <b>*</b></span>
                     <select formControlName="meal">
                       @for (m of d.weeklyMenu.meals; track m) {
-                        <option [value]="m">Bữa {{ m.toLowerCase() }}</option>
+                        <option [value]="m" [disabled]="!mealAllowed(d, m)">Bữa {{ m.toLowerCase() }}{{ mealAllowed(d, m) ? '' : ' (không có món đã chọn)' }}</option>
                       }
                     </select>
                   </label>
                 </div>
+                @if (mealConflicts(d); as bad) {
+                  @if (bad.length) {
+                    <div class="pt-alert" role="alert">
+                      <i class="material-icons">info</i>
+                      <span>Bữa {{ form.controls.meal.value.toLowerCase() }} không có: {{ bad.join(', ') }}. Chọn bữa khác hoặc bỏ món đó khỏi giỏ.</span>
+                    </div>
+                  }
+                }
                 <label>
                   <span>Ghi chú</span>
                   <textarea formControlName="note" rows="3" placeholder="Ít cay, giao tới lễ tân…"></textarea>
@@ -155,8 +172,13 @@ function notBefore(c: AbstractControl, min: () => string): ValidationErrors | nu
       @if (summary(); as s) {
         <div class="pt-modal-backdrop" (click)="summary.set('')">
           <div id="pt-order-dialog" tabindex="-1" class="pt-card pt-modal" role="dialog" aria-modal="true" aria-labelledby="pt-order-title" (click)="$event.stopPropagation()">
-            <h2 id="pt-order-title"><i class="material-icons">receipt_long</i>Hoàn tất đặt hàng qua hotline</h2>
-            <p>Đặt hàng trực tuyến đang được nâng cấp – đơn <b>chưa được gửi tự động</b>. Vui lòng gọi hoặc nhắn Zalo và đọc / dán nội dung dưới đây, nhân viên sẽ xác nhận ngay.</p>
+            @if (uncertain()) {
+              <h2 id="pt-order-title"><i class="material-icons">help_outline</i>Vui lòng gọi xác nhận đơn</h2>
+              <p>Kết nối bị gián đoạn nên chưa xác định được đơn đã được ghi nhận hay chưa. <b>Đừng gửi lại</b> – hãy gọi hoặc nhắn Zalo kèm nội dung dưới đây để nhân viên kiểm tra, tránh đặt trùng.</p>
+            } @else {
+              <h2 id="pt-order-title"><i class="material-icons">receipt_long</i>Hoàn tất đặt hàng qua điện thoại</h2>
+              <p>Đặt hàng trực tuyến tạm thời chưa sẵn sàng – đơn <b>chưa được gửi</b>. Vui lòng gọi hoặc nhắn Zalo và đọc / dán nội dung dưới đây, nhân viên sẽ xác nhận ngay.</p>
+            }
             <pre class="pt-order-text">{{ s }}</pre>
             <div class="pt-modal-actions">
               <button type="button" class="pt-btn pt-btn-ghost" (click)="copy(s)">
@@ -186,6 +208,10 @@ export class PortalCartComponent {
   public readonly copied = signal<'' | 'ok' | 'fail'>('');
   public readonly sending = signal(false);
   public readonly serverError = signal('');
+  /** Hộp thoại gọi điện mở vì không rõ đơn đã lưu chưa (khác với "chắc chắn chưa gửi"). */
+  public readonly uncertain = signal(false);
+  /** Mã lần gửi – giữ nguyên khi khách bấm gửi lại, đổi sau khi đặt thành công (máy chủ chống tạo đơn trùng). */
+  private requestId = '';
   public readonly done = signal<{ orderNumber: string; totalAmount?: number; phone: string; date: string; meal: string } | null>(null);
   /** Ngày nhận sớm nhất: đơn chốt trước giờ chốt hôm trước (mặc định 20:00) → trước giờ chốt: ngày mai, sau giờ chốt: ngày kia. */
   public minDate = this.earliestDate(DEFAULT_CUTOFF_HOUR);
@@ -233,25 +259,54 @@ export class PortalCartComponent {
     input.value = String(this.cart.quantityOf(productId) || '');
   }
 
+  /** Bữa m có bán được mọi món đang trong giỏ không (món không khai bữa = bán mọi bữa). */
+  public mealAllowed(d: PortalData, meal: string): boolean {
+    return this.cart.items().every((l) => {
+      const p = d.products.find((x) => x.id === l.productId);
+      return !p || !p.meals?.length || p.meals.includes(meal);
+    });
+  }
+
+  /** Tên các món trong giỏ không bán ở bữa đang chọn. */
+  public mealConflicts(d: PortalData): string[] {
+    const meal = this.form.controls.meal.value;
+    return this.cart.items()
+      .filter((l) => {
+        const p = d.products.find((x) => x.id === l.productId);
+        return p && p.meals?.length && !p.meals.includes(meal);
+      })
+      .map((l) => l.name);
+  }
+
   /**
-   * Gửi đơn lên máy chủ (RetailPortal/SubmitOrder – RETAIL-1). Máy chủ tính lại giá, kiểm giờ chốt.
+   * Gửi đơn lên máy chủ (RetailPortal/SubmitOrder – RETAIL-1). Máy chủ tính lại giá, kiểm giờ chốt, bữa của món.
    * - Thành công: hiện mã đơn, xóa giỏ.
    * - Máy chủ từ chối (400 / 429): hiện lý do trên form, giữ giỏ.
-   * - Chưa có API / mất mạng / lỗi máy chủ: hiện nội dung đơn để khách gọi / nhắn Zalo (cách cũ).
+   * - Chắc chắn chưa lưu (chưa có API, không kết nối được, hoặc danh mục đang lấy từ file dự phòng – mã món không khớp máy chủ):
+   *   hiện nội dung đơn để khách gọi / nhắn Zalo.
+   * - Không rõ đã lưu chưa (hết giờ chờ / lỗi máy chủ sau khi gửi): nhắc gọi xác nhận, KHÔNG gửi lại. Gửi lại vẫn an toàn nhờ
+   *   clientRequestId (máy chủ trả lại đơn cũ thay vì tạo đơn mới).
    */
-  public submit(company: PortalCompany): void {
+  public submit(d: PortalData): void {
     if (this.sending()) return;
     this.serverError.set('');
     if (this.form.invalid || !this.cart.items().length) {
       this.form.markAllAsTouched();
       return;
     }
+    if (this.mealConflicts(d).length) return;
+    if (d.catalogSource !== 'api') {
+      this.showHotlineSummary(d.company, false);
+      return;
+    }
     const v = this.form.getRawValue();
     const phone = normalizePhone(v.phone);
     const [y, m, dd] = v.date.split('-');
+    this.requestId ||= newRequestId();
     this.sending.set(true);
     this.api
       .submit({
+        clientRequestId: this.requestId,
         customerName: v.name.trim(),
         phoneNumber: phone,
         address: v.address.trim(),
@@ -259,15 +314,12 @@ export class PortalCartComponent {
         mealType: v.meal,
         note: v.note.trim(),
         website: v.website,
-        lines: this.cart.items().map((l) => ({
-          productId: l.productCode ? l.productId : null,
-          productCode: l.productCode || l.productId,
-          quantity: l.quantity,
-        })),
+        lines: this.cart.items().map((l) => ({ productId: l.productId, productCode: l.productCode || '', quantity: l.quantity })),
       })
       .subscribe((r) => {
         this.sending.set(false);
         if (r.kind === 'ok') {
+          this.requestId = '';
           this.done.set({ orderNumber: r.orderNumber, totalAmount: r.totalAmount, phone, date: `${dd}/${m}/${y}`, meal: v.meal });
           this.cart.clear();
           this.form.reset();
@@ -275,13 +327,14 @@ export class PortalCartComponent {
         } else if (r.kind === 'rejected') {
           this.serverError.set(r.message);
         } else {
-          this.showHotlineSummary(company);
+          this.showHotlineSummary(d.company, r.kind === 'uncertain');
         }
       });
   }
 
-  /** Dự phòng khi chưa gửi được lên máy chủ: dựng nội dung đơn để khách gọi / nhắn Zalo. */
-  private showHotlineSummary(company: PortalCompany): void {
+  /** Dự phòng khi chưa gửi được / không rõ đã gửi được chưa: dựng nội dung đơn để khách gọi / nhắn Zalo. */
+  private showHotlineSummary(company: PortalCompany, uncertain: boolean): void {
+    this.uncertain.set(uncertain);
     const v = this.form.getRawValue();
     const fmt = (n: number) => n.toLocaleString('vi-VN') + 'đ';
     const [y, m, dd] = v.date.split('-');
