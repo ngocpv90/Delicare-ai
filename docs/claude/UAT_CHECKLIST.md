@@ -603,3 +603,16 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] **Nhân sự** (FIN-HR / nhân viên): phân ca tuần → chốt; nhân viên xin đổi ca → người nhận Đồng ý (bot) → người duyệt nhóm Nghỉ & đổi ca duyệt; 23:30 tự chuyển Vắng; chuông "Ca thiếu người".
 - [ ] **Tài khoản & nhóm quyền** (FIN-IT): nhân viên nghỉ việc → chuông "Tài khoản người đã nghỉ việc còn mở" → khóa; đổi quyền nhóm ở Nhóm quyền (Xem lại & lưu) → người trong nhóm thấy menu mới.
 - [ ] **Quyền theo vai trò:** mỗi `uat.<vai trò>` thấy đúng menu như `docs/frontend-handoff/assets/ui-6/menu-roles/README.md`; link cũ (#/hr-swap, #/adm-permission, #/scm-lot, #/log-pod…) mở màn mới.
+
+## ACC – Kết nối kế toán MISA AMIS (D-131, ACC-1 … ACC-8) – kịch bản tháng 08/2026
+
+> Cần: tệp xuất danh mục AMIS + mẫu "Thêm bằng Excel" (Delicare-Share\MISA\), mã kho AMIS (`Integration:Misa:WarehouseMap`), số liệu tháng 08/2026 trên DB (hiện chưa có), sổ AMIS tháng 08/2026.
+
+- [ ] **ACC-1 Khớp mã AMIS** (uat.fin-acc): nhập 5 tệp danh mục → thẻ chỉ số đúng; lọc Cần xử lý; ghép 1 nguyên liệu, 1 khách, 1 NCC theo mã AMIS; xuất mã cần tạo.
+- [ ] **ACC-2 Chứng từ kế toán**: tháng 08/2026 – có Bán hàng (theo khách × loại suất), Nhập mua, Xuất NVL (theo buổi), Xuất bao bì, Nhập / xuất thành phẩm, Kho khác, Trả lại hàng mua, Bảng công; dòng Lỗi có nút sửa; tải Excel mẫu AMIS → nhập thử vào AMIS → Đánh dấu đã lập.
+- [ ] **ACC-3 Bảng kê xác nhận**: khách đủ điều kiện → Ghi nhận xác nhận → phiếu bán tháng Sẵn sàng; Phản hồi lệch (bắt buộc ghi chú); Mở lại đối soát đã chốt → uat.coo duyệt ở Phê duyệt › Mở lại đối soát.
+- [ ] **ACC-4 Khóa kỳ**: 5 điều kiện; khóa 08/2026 khi đủ; thử hủy phiếu nhận / đảo bút toán ngày trong tháng 8 → bị chặn; Xin mở khóa → uat.coo duyệt → mở; bot 08:00 nhắc từ ngày 5.
+- [ ] **ACC-5 Trả hàng NCC** (uat.ops-wh, uat.ops-scm): lập phiếu từ lô còn tồn (lô Tạm giữ) → Mua hàng NCC đồng ý → Thủ kho ghi sổ → tồn giảm, chứng từ Trả lại hàng mua; thử NCC không nhận / Hủy (lô bỏ giữ); màn 390px.
+- [ ] **ACC-6 Định mức bao bì** (uat.ops-plan): nhập định mức 5 loại suất → Gửi duyệt → duyệt; Bếp ghi kết quả đóng gói ca trưa → phiếu xuất bao bì Nháp đúng số; Thủ kho sửa 1 dòng; sau giờ hết ca job ghi sổ; thiếu tồn → bot Mua hàng.
+- [ ] **ACC-8 Đối chiếu với AMIS**: tải Excel mẫu → điền số từ sổ AMIS 08/2026 → nhập; kiểm 8 chỉ tiêu, dòng lệch có nút đúng chỗ; xuất NVL giá trị lệch nhẹ = "Lệch do giá xuất".
+- [ ] Quét UI-6.10 (chữ tiếng Việt, không mã kỹ thuật trên màn, không số tài khoản trên màn kho), ảnh 1440 / 390 ở `docs/frontend-handoff/assets/acc-misa/`.
