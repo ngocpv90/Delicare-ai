@@ -20,6 +20,10 @@ namespace AppDelicare.Services.Implement.Messaging
         {
             if (request.UserIds.Count == 0 && request.EmployeeIds.Count == 0)
             {
+                if (NotificationCatalog.IsIncident(request.Template))
+                {
+                    try { await notifications.RecordIncidentAsync(request); } catch (Exception ex) { Log.Warning(ex, "[AgentEvent] {Key}", request.IdempotencyKey); }
+                }
                 return 0;
             }
             try
