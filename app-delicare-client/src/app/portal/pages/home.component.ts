@@ -27,7 +27,7 @@ import { PortalData, PortalMenuDay } from '../portal.model';
               <div class="pt-today-head">
                 <i class="material-icons">today</i>
                 <div>
-                  <small>Thực đơn hôm nay</small>
+                  <small>{{ isSunday ? "Thực đơn ngày mai" : "Thực đơn hôm nay" }}</small>
                   <strong>{{ t.day }}</strong>
                 </div>
               </div>
@@ -133,6 +133,9 @@ import { PortalData, PortalMenuDay } from '../portal.model';
 })
 export class PortalHomeComponent {
   public readonly data$ = inject(PortalDataService).data$;
+
+  /** Danh sách thực đơn chỉ Thứ Hai – Thứ Bảy: Chủ nhật hiển thị thực đơn Thứ Hai (ngày mai). */
+  public readonly isSunday = new Date().getDay() === 0;
 
   public featured(d: PortalData) {
     const tagged = d.products.filter((p) => p.tags.length);

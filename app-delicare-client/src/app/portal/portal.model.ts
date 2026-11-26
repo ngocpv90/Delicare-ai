@@ -10,6 +10,8 @@ export interface PortalCompany {
   email: string;
   website: string;
   workingHours: string;
+  /** Giờ chốt đơn cho ngày hôm sau (mặc định 20). */
+  orderCutoffHour?: number;
 }
 
 export interface PortalIconText {

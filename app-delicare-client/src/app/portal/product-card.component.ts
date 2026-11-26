@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, Input, inject, signal } from '@angular/core';
+import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
 import { CartService } from './cart.service';
 import { PortalProduct } from './portal.model';
 
@@ -38,11 +38,15 @@ import { PortalProduct } from './portal.model';
     </article>
   `,
 })
-export class PortalProductCardComponent {
+export class PortalProductCardComponent implements OnDestroy {
   @Input({ required: true }) public product!: PortalProduct;
   public readonly cart = inject(CartService);
   public readonly added = signal(false);
   private timer?: ReturnType<typeof setTimeout>;
+
+  public ngOnDestroy(): void {
+    clearTimeout(this.timer);
+  }
 
   public add(): void {
     this.cart.add(this.product);

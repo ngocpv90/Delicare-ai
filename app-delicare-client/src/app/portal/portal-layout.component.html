@@ -1,5 +1,6 @@
 <div class="pt-root">
-  @if (data$ | async; as d) {
+  @if (vm$ | async; as vm) {
+  @if (vm.d; as d) {
     <div class="pt-topbar">
       <div class="pt-wrap pt-topbar-in">
         <span><i class="material-icons">schedule</i>{{ d.company.workingHours }}</span>
@@ -85,6 +86,12 @@
         <span>{{ cart.count() }} món · Xem giỏ hàng</span>
       </a>
     }
+  } @else {
+    <div class="pt-loading">
+      <p>Không tải được nội dung trang. Vui lòng thử lại sau ít phút.</p>
+      <button type="button" class="pt-btn" (click)="reload()"><i class="material-icons">refresh</i>Tải lại</button>
+    </div>
+  }
   } @else {
     <div class="pt-loading">Đang tải…</div>
   }

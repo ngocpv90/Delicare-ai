@@ -1,10 +1,12 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, OnInit, ViewEncapsulation, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewEncapsulation, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { catchError, filter, map, of, tap } from 'rxjs';
 import { ThemeService } from '../delicare/theme.service';
 import { CartService } from './cart.service';
 import { PortalDataService } from './portal-data.service';
+import { PortalData } from './portal.model';
 
 /** Khung trang khách lẻ: thanh trên + menu + chân trang. Toàn bộ CSS cổng nằm ở portal.css, gói trong .pt-root. */
 @Component({
@@ -18,11 +20,18 @@ import { PortalDataService } from './portal-data.service';
 export class PortalLayoutComponent implements OnInit {
   private readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   public readonly cart = inject(CartService);
-  public readonly data$ = inject(PortalDataService).data$;
   public readonly menuOpen = signal(false);
   public readonly onCart = signal(false);
   public readonly year = new Date().getFullYear();
+
+  /** Nội dung + trạng thái lỗi: file cấu hình hỏng / không tải được thì báo lỗi thay vì "Đang tải…" mãi. */
+  public readonly vm$ = inject(PortalDataService).data$.pipe(
+    tap((d) => this.cart.sync(d.products)),
+    map((d): { d: PortalData | null } => ({ d })),
+    catchError(() => of({ d: null })),
+  );
 
   public readonly nav = [
     { link: '/', label: 'Trang chủ', exact: true },
@@ -33,18 +42,32 @@ export class PortalLayoutComponent implements OnInit {
     { link: '/lien-he', label: 'Liên hệ', exact: false },
   ];
 
+  private previousTitle = '';
+
   public ngOnInit(): void {
     // Cổng công khai không dùng lớp CSS của màn nghiệp vụ (assets/delicare/css/app.css).
     this.theme.use('w3crm');
+    this.previousTitle = document.title;
     document.title = 'DELI-CARE – Đặt suất ăn, cơm văn phòng';
+    this.destroyRef.onDestroy(() => (document.title = this.previousTitle));
+
     this.onCart.set(this.router.url.startsWith('/gio-hang'));
-    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
-      this.menuOpen.set(false);
-      this.onCart.set((e as NavigationEnd).urlAfterRedirects.startsWith('/gio-hang'));
-    });
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((e) => {
+        this.menuOpen.set(false);
+        this.onCart.set(e.urlAfterRedirects.startsWith('/gio-hang'));
+      });
   }
 
   public toggleMenu(): void {
     this.menuOpen.update((v) => !v);
+  }
+
+  public reload(): void {
+    location.reload();
   }
 }

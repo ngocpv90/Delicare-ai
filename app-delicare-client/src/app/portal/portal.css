@@ -418,3 +418,5 @@ a.pt-contact-tile:hover { border-color: var(--pt-green); }
   }
   .pt-footer { padding-bottom: 76px; }
 }
+.pt-copy-fail { flex: 1 1 100%; margin: 0; text-align: right; color: #b8520d; }
+.pt-loading .pt-btn { margin-top: 8px; }

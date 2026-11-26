@@ -19,10 +19,10 @@ import { PortalDataService } from '../portal-data.service';
 
       <section class="pt-section">
         <div class="pt-wrap">
-          <div class="pt-chips" role="tablist" aria-label="Chọn buổi">
-            <button type="button" class="pt-chip" [class.active]="meal() === ''" (click)="meal.set('')">Cả ngày</button>
+          <div class="pt-chips" aria-label="Chọn buổi">
+            <button type="button" class="pt-chip" [class.active]="meal() === ''" [attr.aria-pressed]="meal() === ''" (click)="meal.set('')">Cả ngày</button>
             @for (m of d.weeklyMenu.meals; track m) {
-              <button type="button" class="pt-chip" [class.active]="meal() === m" (click)="meal.set(m)">Bữa {{ m.toLowerCase() }}</button>
+              <button type="button" class="pt-chip" [class.active]="meal() === m" [attr.aria-pressed]="meal() === m" (click)="meal.set(m)">Bữa {{ m.toLowerCase() }}</button>
             }
           </div>
 

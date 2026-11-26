@@ -11,7 +11,8 @@
     "zalo": "https://zalo.me/0934660640",
     "email": "",
     "website": "Delicare.vn",
-    "workingHours": "Nhận đơn 7:00 – 20:00 hằng ngày. Đơn cho ngày mai chốt trước 20:00 hôm nay."
+    "workingHours": "Nhận đơn 7:00 – 20:00 hằng ngày. Đơn cho ngày mai chốt trước 20:00 hôm nay.",
+    "orderCutoffHour": 20
   },
 
   "hero": {
@@ -51,7 +52,7 @@
     { "id": "SP-006", "categoryId": "combo", "name": "Combo văn phòng 5 suất", "price": 190000, "unit": "combo", "description": "5 suất cơm trưa tiêu chuẩn, miễn phí giao trong khu vực.", "tags": ["Tiết kiệm"], "icon": "groups", "tone": "orange" },
     { "id": "SP-007", "categoryId": "combo", "name": "Combo văn phòng 10 suất", "price": 370000, "unit": "combo", "description": "10 suất cơm trưa tiêu chuẩn kèm tráng miệng.", "tags": ["Tiết kiệm"], "icon": "diversity_3", "tone": "green" },
     { "id": "SP-008", "categoryId": "combo", "name": "Combo gia đình 4 người", "price": 220000, "unit": "combo", "description": "3 món mặn, 1 rau, 1 canh, cơm cho 4 người – giao bữa tối.", "tags": [], "icon": "family_restroom", "tone": "orange" },
-    { "id": "SP-009", "categoryId": "dinh-duong", "name": "Suất ăn ít tinh bột", "price": 60000, "unit": "suất", "description": "Ức gà / cá áp chảo, rau củ hấp, cơm gạo lứt phần nhỏ.", "tags": ["Healthy"], "icon": "spa", "tone": "green" },
+    { "id": "SP-009", "categoryId": "dinh-duong", "name": "Suất ăn ít tinh bột", "price": 60000, "unit": "suất", "description": "Ức gà / cá áp chảo, rau củ hấp, cơm gạo lứt phần nhỏ.", "tags": ["Lành mạnh"], "icon": "spa", "tone": "green" },
     { "id": "SP-010", "categoryId": "dinh-duong", "name": "Suất chay thanh đạm", "price": 45000, "unit": "suất", "description": "Đậu, nấm, rau củ theo mùa, canh rau, cơm trắng.", "tags": [], "icon": "eco", "tone": "green" },
     { "id": "SP-011", "categoryId": "trang-mieng", "name": "Tráng miệng trong ngày", "price": 12000, "unit": "phần", "description": "Hoa quả theo mùa hoặc chè / sữa chua tự làm.", "tags": [], "icon": "icecream", "tone": "orange" },
     { "id": "SP-012", "categoryId": "trang-mieng", "name": "Nước ép – sữa hạt", "price": 18000, "unit": "chai", "description": "Chai 330 ml, ép trong ngày, không thêm đường.", "tags": [], "icon": "local_drink", "tone": "green" }

@@ -23,9 +23,9 @@ import { PortalData } from '../portal.model';
         <div class="pt-wrap">
           <div class="pt-toolbar">
             <div class="pt-chips">
-              <button type="button" class="pt-chip" [class.active]="category() === ''" (click)="category.set('')">Tất cả</button>
+              <button type="button" class="pt-chip" [class.active]="category() === ''" [attr.aria-pressed]="category() === ''" (click)="category.set('')">Tất cả</button>
               @for (c of d.categories; track c.id) {
-                <button type="button" class="pt-chip" [class.active]="category() === c.id" (click)="category.set(c.id)">{{ c.name }}</button>
+                <button type="button" class="pt-chip" [class.active]="category() === c.id" [attr.aria-pressed]="category() === c.id" (click)="category.set(c.id)">{{ c.name }}</button>
               }
             </div>
             <label class="pt-search">
