@@ -24,6 +24,7 @@ Bộ hướng dẫn cho người dùng cuối, viết theo **code hiện tại**
 | `11_NHAN_SU.md` | Nhân sự: phân ca, chấm công, nghỉ, đổi ca | FIN-HR – Nhân sự (+ mọi nhân viên) |
 | `12_QUAN_LY_DUYET.md` | Người duyệt: hộp phê duyệt | CEO – Tổng giám đốc, COO – Giám đốc vận hành, FIN-HR – Nhân sự, OPS-SCM – Mua hàng, FIN-ACC – Kế toán |
 | `13_BAN_DIEU_HANH.md` | Ban điều hành, kế toán: dashboard, KPI | CEO – Tổng giám đốc, CEO-PMO – Trợ lý TGĐ / PMO, COO – Giám đốc vận hành, FIN-ACC – Kế toán |
+| `14_KE_TOAN.md` | Kế toán – kết nối MISA AMIS: chứng từ, bảng kê xác nhận, khớp mã, đối chiếu, khóa kỳ | FIN-ACC – Kế toán (CEO / COO xem, COO duyệt mở khóa) |
 | `20_BOT_TELEGRAM.md` | Bot Vận hành / Điều hành | Mọi người |
 | `90_CHENH_LECH.md` | Chênh lệch tài liệu – code (đầu việc UG-1) | Đội phát triển |
 | `91_PHU_LUC.md` | Trạng thái, số chứng từ, ngưỡng, lịch job, thuật ngữ | Mọi người |

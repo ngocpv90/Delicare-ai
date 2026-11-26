@@ -37,6 +37,10 @@
 | ReturnInspection | InspectionResult | OK / SHORTAGE / DAMAGED / DIRTY / REJECTED | Đủ / Thiếu / Hỏng / Bẩn / Không đạt | Theo nguồn – không đổi |
 | CustomerComplaint | ComplaintStatus | Open → InProgress → Resolved → Closed; Rejected | Mới → Đang xử lý → Đã xử lý → Đóng; Từ chối | Mặc định SQL giữ nguyên; giá trị còn lại PROPOSED |
 | SupplierIssue | IssueStatus | Open → InProgress → Resolved → Closed | Mới → Đang xử lý → Đã xử lý → Đóng | Mặc định SQL giữ nguyên; giá trị còn lại PROPOSED |
+| SupplierIssue (IssueType RETURN – phiếu trả NCC, ACC-5) | IssueStatus (+ "st" trong thẻ [TRA_NCC]) | Open → InProgress → Resolved / Closed | Chờ NCC xác nhận → NCC đồng ý – chờ giao trả → Đã trả – đã ghi sổ / NCC không nhận · Đã hủy | D-131 i – mã hiển thị RETURN_PENDING / RETURN_AGREED / RETURN_POSTED / RETURN_REFUSED / RETURN_CANCELLED |
+| AccountingVoucher (chứng từ kế toán – tính, không bảng; ACC-2) | Status | READY · PENDING_SOURCE · WAITING_AMIS · CREATED_ON_AMIS · ERROR · CHANGED | Sẵn sàng · Chờ nghiệp vụ gốc · Chờ lập trên AMIS · Đã lập trên AMIS · Lỗi · Đã sửa – cần điều chỉnh | D-131 d, e – lịch sử AuditChange AccountingVoucher (Exported / MarkedCreated) |
+| AccountingPeriod (AuditChange, ACC-4) | Action mới nhất | Lock / Unlock | Đã khóa / Đang mở | D-131 h – mở khóa qua duyệt PERIOD_UNLOCK (COO) |
+| AmisRecon (đối chiếu – tính, ACC-8) | Result | MATCH · MISSING_VOUCHER · PRICE_METHOD · DIFF · NO_AMIS · WAIT_COUNT | Khớp · Lệch – còn chứng từ · Lệch do giá xuất · Lệch · Chưa có số AMIS · Chờ kiểm kê | D-131 l |
 | ApprovalRequest | RequestStatus | Pending → InProgress → Approved / Rejected / Cancelled | Chờ duyệt → Đang duyệt → Duyệt / Từ chối / Hủy | Mặc định SQL giữ nguyên; giá trị còn lại PROPOSED |
 | ApprovalStep | DecisionStatus | Waiting → Approved / Rejected / Skipped | Chờ → Duyệt / Từ chối / Bỏ qua | Mặc định SQL giữ nguyên; giá trị còn lại PROPOSED |
 | LeaveRequest | RequestStatus | Pending → Approved / Rejected / Cancelled | Chờ duyệt → Duyệt / Từ chối / Hủy | Mặc định SQL giữ nguyên; giá trị còn lại PROPOSED |

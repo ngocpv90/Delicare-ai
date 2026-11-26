@@ -177,3 +177,22 @@ Phân hệ **📦 Kho & mua hàng** (bot Vận hành): 📦 Tồn dưới mức 
 - **QR ở kệ / vị trí** (`?start=LOC_<mã vị trí>`): tồn tại vị trí + lô cận date.
 - **QR trên phiếu in** (phiếu nhập, phiếu xuất, phiếu kiểm kê): mở đúng phiếu trên bot.
 - Thông báo: dưới tồn tối thiểu, lô cận / hết hạn, 21:00 nguyên liệu cho ngày mai, 🔴 QC đầu vào không đạt, IoT nhiệt độ kho ngoài ngưỡng.
+
+## 8. Trả hàng NCC (ACC-5, D-131 i) – `scm-supplier-return`
+
+Trả lại NCC hàng **đã nhập kho** bị hỏng, sai quy cách, gần / quá hạn hoặc giao thừa. Hàng bị loại ngay lúc nhận thì ghi số loại ở phiếu nhận, không lập phiếu trả.
+
+1. **Thủ kho** (Kho › Trả hàng NCC) → **Lập phiếu trả** → tìm lô (mã lô, nguyên liệu, NCC, số phiếu nhận) → chọn lô → nhập **Số trả** (không vượt tồn còn trả được) + **Lý do** (Hàng hỏng / biến chất · Sai quy cách · Gần / quá hạn dùng · Giao thừa) + ghi chú → **Lập phiếu trả**. Lô chuyển **Tạm giữ** (không xuất cho sản xuất), bot Vận hành báo Mua hàng.
+2. **Mua hàng** hỏi NCC → mở phiếu → **NCC đồng ý** hoặc **NCC không nhận** (ghi lý do – lô bỏ tạm giữ).
+3. NCC đến nhận hàng → **Thủ kho** mở phiếu → **Ghi sổ – NCC đã nhận hàng** → tồn kho giảm (sổ kho "Trả lại", giá lô). Kế toán thấy chứng từ **Trả lại hàng mua**.
+4. Chưa ghi sổ thì **Hủy phiếu** được (lý do bắt buộc) – lô bỏ tạm giữ.
+
+- Số phiếu dạng **TH-yyMMdd-xxxx**; trạng thái: Chờ NCC xác nhận → NCC đồng ý – chờ giao trả → Đã trả – đã ghi sổ (hoặc NCC không nhận / Đã hủy). Phiếu hiện cả ở Chất lượng › Sự cố NCC (loại "Trả hàng NCC") nhưng chỉ đổi trạng thái ở màn này.
+- Ảnh hàng lỗi: đính kèm ở Chất lượng › Sự cố NCC (người có quyền Sửa màn đó).
+- Lỗi thường gặp: "Số trả vượt tồn còn trả được của lô: tối đa …" (trừ phần đang chờ trả ở phiếu khác) · "Lô này không gắn nhà cung cấp" · "Kỳ kế toán tháng … đã khóa".
+
+## 9. Phiếu xuất bao bì tự lập (ACC-6, D-131 j)
+
+- Khi Bếp ghi kết quả đóng gói, hệ thống lập **phiếu xuất Nháp "Xuất bao bì"** theo ca = suất đạt × định mức (Đóng gói & Giao hàng › Định mức bao bì). Phiếu nằm ở **Kho › Xuất kho sản xuất**, ghi chú bắt đầu `[XUAT_BB:…]`.
+- Thủ kho kiểm, **sửa số** nếu dùng thực tế khác, rồi Ghi sổ; không làm gì thì **23:30** job tự ghi sổ phiếu của ca đã hết giờ (lỗi thì bot báo Thủ kho).
+- Vật tư thiếu tồn không đưa vào phiếu, bot báo Mua hàng lập đề nghị mua.

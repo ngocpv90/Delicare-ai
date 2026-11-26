@@ -86,3 +86,11 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Mẻ … chưa được đóng gói: … | Mẻ chưa đủ điều kiện ATTP (nhiệt độ lõi, sản lượng, lỗi trọng yếu) |
 | Mẻ …: phải xong công đoạn Chia suất trước khi đóng gói | Mở mẻ → tab **Công đoạn** → **Xong** công đoạn Chia suất (hoặc nút **⏹ Xong Chia suất** trên thẻ mẻ ở bot) |
 | Bạn không có quyền … trên màn hình Đơn đóng gói | Thiếu quyền Sửa – C-17 |
+
+## 7. Định mức bao bì & tự xuất khi đóng gói (ACC-6, D-131 j) – `log-packaging-norm`
+
+- Màn **Đóng gói & Giao hàng › Định mức bao bì**: ma trận vật tư bao bì (hộp, đũa thìa, cốc, găng tay… mã CC…) × loại suất (Sáng · Trưa · Tối · Đêm · Cơm suất), ô = **số dùng cho 100 suất**.
+- **Kế hoạch** (OPS-PLAN) sửa trong ô → **Lưu bản nháp** → **Gửi duyệt** ở đầu cột (duyệt như công thức món ở Phê duyệt › Công thức). Duyệt xong mới áp dụng; dòng nhỏ "đang áp dụng: …" cho thấy số cũ. Đang chờ duyệt thì không sửa được.
+- Bếp **ghi kết quả đóng gói** (màn chia suất & đóng gói) → hệ thống lập phiếu xuất bao bì Nháp theo ca cho số suất đạt (mỗi đơn tính 1 lần theo món đóng nhiều suất nhất). Ghi thêm trong ca → chỉ lập phiếu bổ sung phần suất mới. Thông báo sau khi ghi cho biết số phiếu đã lập hoặc "Chưa có định mức bao bì đã duyệt…".
+- Thủ kho sửa / ghi sổ phiếu ở Kho; không ghi thì tự ghi sổ khi hết ca (23:30). Kế toán thấy chứng từ **Xuất bao bì** theo buổi.
+- Cơm suất (bán lẻ) chưa tự lập phiếu (ca không cho biết cơm suất) – kho lập tay.
