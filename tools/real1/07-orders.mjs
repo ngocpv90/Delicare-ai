@@ -1,10 +1,11 @@
 // REAL-1 (7): đăng ký suất tuần (Order/SaveWeek, xác nhận) + dự báo (nhập + công bố) theo 11_SoSuatMau – Sáng chia 3 lựa chọn (LC1 / LC2 / LC3).
-// Tuần mặc định 2026-11-30 và 2026-12-07 (đổi: node … 2027-01-04 2027-01-11). Chạy lại: SaveWeek ghi lại cùng số (không đổi); tuần đã có dự báo → bỏ qua dự báo.
+// Tuần mặc định = REAL1_START + 7 và + 14 (30/11, 07/12/2026); đổi: node … 2027-01-04 2027-01-11. Chạy lại: SaveWeek ghi lại cùng số (không đổi); tuần đã có dự báo → bỏ qua dự báo.
 // Dùng: node tools/real1/07-orders.mjs [tuần …]
 import { readXlsx } from './xlsx.mjs';
-import { addDays, file, login, waitApi } from './lib.mjs';
+import { START, addDays, file, login, waitApi } from './lib.mjs';
 
-const weeks = process.argv.slice(2).length ? process.argv.slice(2) : ['2026-11-30', '2026-12-07'];
+// Mặc định tuần thực đơn thứ 2 và 3 (REAL1_START + 7 / + 14) – tuần đầu đã qua giờ chốt khi nạp 2026-11-26.
+const weeks = process.argv.slice(2).length ? process.argv.slice(2) : [addDays(START, 7), addDays(START, 14)];
 await waitApi();
 const sal = await login('uat.sal-head');
 const rows = Object.values(readXlsx(file('11_')))[0].slice(1).filter(r => r[0]);

@@ -1,7 +1,7 @@
 /*
   REAL-1 (9) (D-129): gắn nhãn dữ liệu thử "[DEMO] REAL-1" (CLAUDE.md §3.1-10) cho mọi bản ghi đã nạp từ bộ Chuan-hoa-REAL1 – nhận theo MÃ / phạm vi nạp:
     NCC mã NCC-…, nguyên liệu + nhóm NL còn dùng (không tên [DEMO]), món mã MON-nnnn + công thức + nhóm món chứa món đó, khách mã KHnnnnn + hợp đồng /
-    đơn / dự báo của khách đó, 3 kho thật (Kho khô / mát / đông), 4 dây chuyền DC-…, thực đơn chung 3 tuần 23/11 – 07/12/2026, lô tồn đầu kỳ "REAL-1 TDK …".
+    đơn / dự báo của khách đó, 3 kho thật (Kho khô / mát / đông), 4 dây chuyền DC-…, thực đơn chung có ghi chú duyệt "REAL-1:" (3 tuần), lô tồn đầu kỳ "REAL-1 TDK …".
   Quyết định tự chọn: GHÉP nhãn vào ĐẦU Note ("[DEMO] REAL-1 · <ghi chú cũ>") thay vì ghi đè – giữ ghi chú giả định đã ghi lúc nạp. Đã có nhãn → bỏ qua (chạy lại = 0).
   Không có cột Note: ĐVT (UnitMeasure), điểm giao (CustomerDeliveryLocation), bảng giá NCC (SupplierMaterial), suất hợp đồng (ContractMeal) – nhận diện qua mã.
   KHÔNG đụng sổ chỉ ghi thêm (InventoryTransaction, AuditChange…). Ghi ModifiedDate / ModifiedBy (system) + 1 dòng AuditChange / bảng.
@@ -67,8 +67,8 @@ UPDATE dbo.ProductionLine SET Note = LEFT(CASE WHEN ISNULL(Note, N'') = N'' THEN
 WHERE ISNULL(IsDeleted, 0) = 0 AND Code IN (N'DC-NAU-CHINH', N'DC-RAU-CANH', N'DC-SANG-DEM', N'DC-PHU-TM') AND ISNULL(Note, N'') NOT LIKE @Has ESCAPE N'\';
 INSERT INTO @R VALUES (N'ProductionLine', @@ROWCOUNT);
 UPDATE dbo.Menu SET Note = CASE WHEN ISNULL(Note, N'') = N'' THEN @Tag ELSE CONCAT(@Tag, N' · ', Note) END, ModifiedDate = @Now, ModifiedBy = @SystemUser
-WHERE ISNULL(IsDeleted, 0) = 0 AND MenuType = N'COMMON' AND EffectiveFrom IN ('2026-11-23', '2026-11-30', '2026-12-07') AND Name NOT LIKE @Demo ESCAPE N'\'
-  AND ISNULL(Note, N'') NOT LIKE @Has ESCAPE N'\';
+WHERE ISNULL(IsDeleted, 0) = 0 AND MenuType = N'COMMON' AND Note LIKE N'%REAL-1:%' AND Name NOT LIKE @Demo ESCAPE N'\'
+  AND ISNULL(Note, N'') NOT LIKE @Has ESCAPE N'\';   -- nhận theo ghi chú duyệt của tools/real1/06-menus (tuần dời được bằng REAL1_START)
 INSERT INTO @R VALUES (N'Menu', @@ROWCOUNT);
 UPDATE dbo.MaterialLot SET Note = CONCAT(@Tag, N' · ', Note), ModifiedDate = @Now, ModifiedBy = @SystemUser
 WHERE ISNULL(IsDeleted, 0) = 0 AND Note LIKE N'REAL-1 TDK %';
