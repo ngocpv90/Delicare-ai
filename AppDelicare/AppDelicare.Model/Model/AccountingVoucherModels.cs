@@ -5,6 +5,7 @@ namespace AppDelicare.Model.Model
     {
         public const string Sale = "SALE";               // Bán hàng tháng × khách × loại suất (bảng kê khách đã xác nhận)
         public const string Purchase = "PURCHASE";       // Nhập mua qua kho (phiếu nhận đã ghi sổ: số đạt × giá PO)
+        public const string PurchaseReturn = "PURCHASE_RETURN"; // Trả lại hàng mua – phiếu trả NCC đã ghi sổ (ACC-5, D-131 i), đối tượng = NCC
         public const string Issue = "ISSUE";             // Xuất NVL cho sản xuất theo phiếu xuất (ca → buổi → thành phẩm = đối tượng THCP)
         public const string Packaging = "PACKAGING";     // Xuất bao bì theo buổi (ACC-6)
         public const string FinishedIn = "FG_IN";        // Nhập kho thành phẩm theo ngày × buổi
@@ -14,12 +15,12 @@ namespace AppDelicare.Model.Model
 
         public static string Label(string? t) => t switch
         {
-            Sale => "Bán hàng (tháng)", Purchase => "Nhập mua", Issue => "Xuất NVL", Packaging => "Xuất bao bì", FinishedIn => "Nhập kho thành phẩm",
+            Sale => "Bán hàng (tháng)", Purchase => "Nhập mua", PurchaseReturn => "Trả lại hàng mua", Issue => "Xuất NVL", Packaging => "Xuất bao bì", FinishedIn => "Nhập kho thành phẩm",
             FinishedOut => "Xuất thành phẩm khác", StockOther => "Kho khác", Timesheet => "Bảng công", _ => t ?? string.Empty,
         };
 
         /// <summary>Tab màn Chứng từ kế toán.</summary>
-        public static string Tab(string t) => t switch { Sale => "sale", Purchase => "purchase", Timesheet => "timesheet", _ => "stock" };
+        public static string Tab(string t) => t switch { Sale => "sale", Purchase or PurchaseReturn => "purchase", Timesheet => "timesheet", _ => "stock" };
     }
 
     public static class VoucherStatus

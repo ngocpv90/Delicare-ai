@@ -268,3 +268,141 @@
     });
   });
 })();
+
+/* ACC-5 (D-131 i – anh chốt 2026-11-26): Kho › Trả hàng NCC (#/scm-supplier-return) – như mô phỏng tra-hang-ncc.html: phiếu "TH-…",
+ * 1 Thủ kho lập (chọn lô còn tồn, số trả ≤ tồn, lý do – lô chuyển Tạm giữ) → 2 Mua hàng xác nhận NCC đồng ý / không nhận → 3 Thủ kho ghi sổ khi NCC nhận hàng
+ * → 4 Kế toán: chứng từ "Trả lại hàng mua" ở Chứng từ kế toán. Danh sách theo trạng thái, chi tiết có lịch sử. Rộng 390px: bảng cuộn ngang, hộp thoại 1 cột.
+ * API: SupplierReturn/GetList · GetDetail · GetLots · Create · Confirm · Post · Cancel. */
+(function () {
+  const U = UTIL, I = U.icon, esc = U.esc, FN = APP.FN || {};
+  if (!FN['scm-supplier-return']) FN['scm-supplier-return'] = { extra: true, ph: 'ACC', grp: 'Kho', fn: 'Trả hàng NCC', id: 'scm-supplier-return', name: 'Trả hàng NCC', types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' };
+  const COLOR = { RETURN_PENDING: 'orange', RETURN_AGREED: 'blue', RETURN_POSTED: 'green', RETURN_REFUSED: 'red', RETURN_CANCELLED: '' };
+  const TABS = [['open', 'Đang mở'], ['RETURN_POSTED', 'Đã trả'], ['RETURN_REFUSED', 'NCC không nhận'], ['RETURN_CANCELLED', 'Đã hủy'], ['all', 'Tất cả']];
+  const st = { tab: 'open', q: '' };
+  const money = v => (v === null || v === undefined ? '–' : U.money(v));
+  const has = v => v !== null && v !== undefined;
+  const done = (r, msg, cb) => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || msg), 'ok'); cb(); } };
+
+  function steps(cur) {
+    const S = [['RETURN_PENDING', 'Thủ kho lập', 'lô tạm giữ'], ['RETURN_AGREED', 'Mua hàng xác nhận NCC', 'đồng ý / không nhận'], ['RETURN_POSTED', 'Thủ kho ghi sổ', 'khi NCC nhận hàng'], ['ACC', 'Kế toán', 'chứng từ Trả lại hàng mua']];
+    const at = S.findIndex(s => s[0] === cur);
+    return '<div class="acc-steps four">' + S.map((s, i) => `<div class="acc-step ${cur && i <= at ? 'done' : ''}"><b>${i + 1}</b><div><b>${esc(s[1])}</b><div class="small muted">${esc(s[2])}</div></div></div>`).join('') + '</div>';
+  }
+
+  function createDlg(reasons, after) {
+    let lots = [], pick = null;
+    UI.modal({ title: 'Lập phiếu trả hàng NCC', size: 'lg',
+      body: '<div class="small muted mb">Chọn lô còn tồn (tìm theo mã lô, nguyên liệu, NCC hoặc số phiếu nhận). Lập xong lô chuyển <b>Tạm giữ</b> – không xuất cho sản xuất – và Mua hàng được báo để hỏi NCC.</div>'
+        + `<div class="row-flex mb" style="gap:8px;flex-wrap:wrap"><input class="input" id="srQ" placeholder="Mã lô / nguyên liệu / NCC / phiếu nhận…" style="flex:1;min-width:200px"><button class="btn" id="srFind">${I('search')} Tìm lô</button></div>`
+        + '<div id="srLots" class="mb"></div><div id="srForm"></div>',
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="srOk" disabled>Lập phiếu trả</button>',
+      onMount: (m, close) => {
+        const q = m.querySelector('#srQ'), box = m.querySelector('#srLots'), form = m.querySelector('#srForm'), ok = m.querySelector('#srOk');
+        const paintForm = () => {
+          if (!pick) { form.innerHTML = ''; ok.disabled = true; return; }
+          const unit = esc(pick.unitName || '');
+          form.innerHTML = '<div class="card panel"><div class="sr-grid small">'
+            + `<div>Nguyên liệu: <b>${esc([pick.ingredientCode, pick.ingredientName].filter(Boolean).join(' · '))}</b></div><div>Lô: <b>${esc(pick.lotNo || '–')}</b>${pick.expiryDate ? ' · HSD ' + U.date(pick.expiryDate) : ''}</div>`
+            + `<div>NCC: <b>${esc(pick.supplierName || '–')}</b></div><div>Phiếu nhận: ${esc(pick.goodsReceiptNumber || '–')}</div>`
+            + `<div>Đã nhập: ${has(pick.receivedQuantity) ? U.num(pick.receivedQuantity) : '–'} ${unit}</div><div>Còn tồn: <b>${U.num(pick.onHand)}</b> ${unit} · ${esc(pick.warehouseName || '')}</div>`
+            + `<div>Đơn giá: ${money(pick.unitCost)}</div><div>Thành tiền: <b id="srAmt">–</b></div></div>`
+            + `<div class="sr-grid mt"><label class="small">Số trả (${unit})<input class="input" id="srQty" type="number" min="0" step="any" max="${pick.onHand}"></label>`
+            + `<label class="small">Lý do<select class="input" id="srRs"><option value="">– Chọn lý do –</option>${reasons.map(r => `<option value="${esc(r.code)}">${esc(r.label)}</option>`).join('')}</select></label></div>`
+            + '<label class="small mt" style="display:block">Ghi chú (tình trạng hàng, đã báo NCC…)<textarea class="input" id="srNote" rows="2"></textarea></label>'
+            + '<div class="small muted mt">Ảnh hàng lỗi: đính kèm ở Chất lượng › Sự cố NCC sau khi lập (phiếu trả hiện ở đó với loại "Trả hàng NCC").</div></div>';
+          const qty = form.querySelector('#srQty');
+          qty.oninput = () => { const v = +qty.value; form.querySelector('#srAmt').textContent = v > 0 && has(pick.unitCost) ? U.money(Math.round(v * pick.unitCost)) : '–'; };
+          ok.disabled = false;
+        };
+        const find = () => Store.query('SupplierReturn/GetLots', { search: q.value.trim() }).then(x => {
+          lots = (x.ok && x.data) || []; pick = null; paintForm();
+          box.innerHTML = lots.length ? '<div class="table-wrap" style="max-height:240px;overflow:auto"><table class="table dc-table"><thead><tr><th></th><th>Nguyên liệu · lô</th><th>NCC · phiếu nhận</th><th class="num">Còn tồn</th></tr></thead><tbody>'
+            + lots.map((l, i) => `<tr><td><input type="radio" name="srPick" data-i="${i}" aria-label="Chọn lô"></td><td>${esc(l.ingredientName || '')}<div class="small muted">${esc(l.lotNo || '–')}${l.lotStatus === 'OnHold' ? ' · Tạm giữ' : ''}</div></td><td>${esc(l.supplierName || 'Không có NCC')}<div class="small muted">${esc(l.goodsReceiptNumber || '')}</div></td><td class="num">${U.num(l.onHand)} ${esc(l.unitName || '')}</td></tr>`).join('')
+            + '</tbody></table></div>' : `<div class="muted small">${esc(x.ok ? 'Không có lô còn tồn khớp từ khóa.' : (x.message || 'Không tải được lô'))}</div>`;
+          box.querySelectorAll('[data-i]').forEach(r => r.onchange = () => { pick = lots[+r.dataset.i]; paintForm(); });
+        });
+        m.querySelector('#srFind').onclick = find;
+        q.onkeydown = e => { if (e.key === 'Enter') find(); };
+        find();
+        ok.onclick = () => {
+          if (!pick) return;
+          const qty = +m.querySelector('#srQty').value, rs = m.querySelector('#srRs').value;
+          if (!(qty > 0)) { UI.toast('Nhập số trả lớn hơn 0', 'warn'); return; }
+          if (qty > pick.onHand) { UI.toast('Số trả vượt tồn của lô', 'warn'); return; }
+          if (!rs) { UI.toast('Chọn lý do trả hàng', 'warn'); return; }
+          Store.act('SupplierReturn/Create', { json: { materialLotId: pick.materialLotId, warehouseId: pick.warehouseId, quantity: qty, reason: rs, note: m.querySelector('#srNote').value.trim() || null } })
+            .then(r => done(r, 'Đã lập phiếu trả', () => { close(); after(r.res && r.res.data && r.res.data.id); }));
+        };
+      } });
+  }
+
+  function detailDlg(id, perm, after) {
+    Store.query('SupplierReturn/GetDetail', { id }).then(x => {
+      if (!x.ok || !x.data) { UI.toast(esc(x.message || 'Không tải được phiếu'), 'warn'); return; }
+      const d = x.data, edit = perm.edit !== false, unit = esc(d.unitName || '');
+      const row = (k, v) => `<div><span class="muted">${k}:</span> ${v}</div>`;
+      UI.modal({ title: 'Phiếu trả ' + esc(d.number), size: 'lg',
+        body: steps(d.state === 'RETURN_REFUSED' || d.state === 'RETURN_CANCELLED' ? null : d.state)
+          + `<div class="mt mb">${UI.tag(d.stateName, COLOR[d.state] || '')}</div>`
+          + '<div class="sr-grid small">'
+          + row('NCC', `<b>${esc([d.supplierCode, d.supplierName].filter(Boolean).join(' · '))}</b>`) + row('Phiếu nhận', esc(d.goodsReceiptNumber || '–'))
+          + row('Nguyên liệu', esc([d.ingredientCode, d.ingredientName].filter(Boolean).join(' · '))) + row('Lô', esc(d.lotNo || '–') + ' · ' + esc(d.warehouseName || ''))
+          + row('Đã nhập', has(d.receivedQuantity) ? U.num(d.receivedQuantity) + ' ' + unit : '–') + row('Còn tồn', U.num(d.onHand) + ' ' + unit)
+          + row('Số trả', `<b>${U.num(d.quantity)} ${unit}</b>`) + row('Đơn giá · thành tiền', money(d.unitCost) + ' · <b>' + money(d.amount) + '</b>')
+          + row('Lý do', esc(d.reasonName || '')) + row('Người lập', esc(d.createdByName || '–') + ' · ' + U.dt(d.reportedAt))
+          + (d.note ? row('Ghi chú', esc(d.note)) : '') + (d.postedAt ? row('Ghi sổ', U.dt(d.postedAt)) : '') + '</div>'
+          + '<div class="panel-title mt">Lịch sử</div>' + ((d.listHistory || []).map(h => `<div class="small" style="border-bottom:1px solid var(--line);padding:4px 0">${U.dt(h.at)} · <b>${esc(h.actionName)}</b>${h.by ? ' – ' + esc(h.by) : ''}${h.note ? `<div class="muted">${esc(h.note)}</div>` : ''}</div>`).join('') || '<div class="muted small">–</div>')
+          + (d.state === 'RETURN_POSTED' ? `<div class="notice info mt">${I('link')}<div>Đã ghi sổ kho (Trả lại). Kế toán thấy chứng từ <b>Trả lại hàng mua</b> ở <a href="#/acc-voucher?tab=purchase">Chứng từ kế toán › Mua hàng</a>.</div></div>` : ''),
+        foot: '<button class="btn" data-close>Đóng</button>'
+          + (edit && d.canCancel ? '<button class="btn" id="sdCancel">Hủy phiếu</button>' : '')
+          + (edit && d.canConfirm ? '<button class="btn" id="sdRefuse">NCC không nhận</button><button class="btn primary" id="sdAgree">NCC đồng ý</button>' : '')
+          + (edit && d.canPost ? `<button class="btn primary" id="sdPost">${I('check')} Ghi sổ – NCC đã nhận hàng</button>` : ''),
+        onMount: (m, close) => {
+          const go = (path, json, msg) => Store.act('SupplierReturn/' + path, { json }).then(r => done(r, msg, () => { close(); after(); }));
+          const b = s => m.querySelector(s);
+          if (b('#sdAgree')) b('#sdAgree').onclick = () => UI.confirm('Xác nhận <b>NCC đồng ý nhận lại</b> hàng? Thủ kho được báo để giao trả và ghi sổ.', note => go('Confirm', { id, agree: true, note: note || null }, 'Đã xác nhận'), { input: 'Ghi chú (tùy chọn)' });
+          if (b('#sdRefuse')) b('#sdRefuse').onclick = () => UI.confirm('NCC <b>không nhận</b> lại hàng? Lô sẽ bỏ tạm giữ.', note => { if (!note) { UI.toast('Ghi lý do NCC không nhận', 'warn'); return; } go('Confirm', { id, agree: false, note }, 'Đã ghi nhận'); }, { input: 'Lý do NCC không nhận (bắt buộc)' });
+          if (b('#sdPost')) b('#sdPost').onclick = () => UI.confirm(`Ghi sổ xuất trả <b>${U.num(d.quantity)} ${unit}</b> lô ${esc(d.lotNo || '')} cho ${esc(d.supplierName || 'NCC')}? Tồn kho giảm ngay.`, note => go('Post', { id, note: note || null }, 'Đã ghi sổ'), { input: 'Ghi chú (người nhận của NCC, biên bản…)' });
+          if (b('#sdCancel')) b('#sdCancel').onclick = () => UI.confirm('Hủy phiếu trả? Lô bỏ tạm giữ.', note => { if (!note) { UI.toast('Ghi lý do hủy', 'warn'); return; } go('Cancel', { id, note }, 'Đã hủy phiếu'); }, { input: 'Lý do hủy (bắt buộc)' });
+        } });
+    });
+  }
+
+  APP.register('scm-supplier-return', (el, f, p) => {
+    f = f || FN['scm-supplier-return'];
+    if (p && TABS.some(([k]) => k === p.tab)) st.tab = p.tab;
+    const perm = Store.perm('scm-supplier-return'), rerender = () => APP.SCREENS['scm-supplier-return'](el, f, {});
+    el.innerHTML = APP.header(f, '', { noNote: true })
+      + '<div class="small muted mb">Trả lại NCC hàng đã nhập kho bị hỏng, sai quy cách, gần hết hạn hoặc giao thừa. Hàng bị loại ngay lúc nhận thì ghi ở phiếu nhận (số loại), không lập phiếu trả.</div>'
+      + `<div class="card panel mb">${steps(null)}</div>`
+      + '<div id="srHead"><div class="muted small">Đang tải…</div></div>'
+      + `<div class="card panel"><div class="spread mb" style="flex-wrap:wrap;gap:8px"><div class="tabs" id="srTabs"></div><div class="row-flex" style="gap:8px;flex-wrap:wrap"><input class="input" id="srSearch" placeholder="Tìm số phiếu, NCC, nguyên liệu, lô…" value="${esc(st.q)}" style="min-width:180px">`
+      + (perm.add !== false ? `<button class="btn primary" id="srNew">${I('plus')} Lập phiếu trả</button>` : '') + '</div></div><div id="srBody"><div class="muted small">Đang tải…</div></div></div>';
+    const s = el.querySelector('#srSearch');
+    s.onkeydown = e => { if (e.key === 'Enter') { st.q = s.value.trim(); rerender(); } };
+    Store.query('SupplierReturn/GetList', { state: 'all', search: st.q }).then(x => {
+      if (!el.isConnected) return;
+      const head = el.querySelector('#srHead'), body = el.querySelector('#srBody');
+      if (!x.ok || !x.data) { head.innerHTML = ''; body.innerHTML = `<div class="muted small">${esc(x.message || 'Không tải được phiếu trả')}</div>`; return; }
+      const m = x.data, all = m.listData || [];
+      head.innerHTML = UI.kpis([
+        UI.kpi('Chờ NCC xác nhận', U.num(m.pending || 0), 'Mua hàng cần hỏi NCC', 'alert', m.pending ? 'orange' : 'green'),
+        UI.kpi('Chờ giao trả', U.num(m.agreed || 0), 'NCC đã đồng ý – Thủ kho ghi sổ khi giao', 'up', m.agreed ? 'blue' : 'green'),
+        UI.kpi('Đã trả tháng này', U.num(m.postedThisMonth || 0), money(m.postedAmountThisMonth || 0), 'check', 'green'),
+      ]);
+      const inTab = (v, k) => k === 'all' || (k === 'open' ? ['RETURN_PENDING', 'RETURN_AGREED'].includes(v.state) : v.state === k);
+      el.querySelector('#srTabs').innerHTML = TABS.map(([k, l]) => `<button class="tab ${st.tab === k ? 'active' : ''}" data-tab="${k}">${esc(l)} (${U.num(all.filter(v => inTab(v, k)).length)})</button>`).join('');
+      el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; rerender(); });
+      const list = all.filter(v => inTab(v, st.tab));
+      body.innerHTML = list.length ? '<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Số phiếu · ngày</th><th>NCC</th><th>Nguyên liệu · lô</th><th class="num">Số trả</th><th class="num">Thành tiền</th><th>Lý do</th><th>Trạng thái</th><th></th></tr></thead><tbody>'
+        + list.map((v, i) => `<tr><td><b>${esc(v.number)}</b><div class="small muted">${U.date(v.reportedAt)}</div></td><td>${esc(v.supplierName || '')}<div class="small muted">${esc(v.goodsReceiptNumber || '')}</div></td>`
+          + `<td>${esc(v.ingredientName || '')}<div class="small muted">${esc(v.lotNo || '')}</div></td><td class="num">${U.num(v.quantity)} ${esc(v.unitName || '')}</td><td class="num">${money(v.amount)}</td><td class="small">${esc(v.reasonName || '')}</td>`
+          + `<td>${UI.tag(v.stateName, COLOR[v.state] || '')}</td><td><button class="btn sm" data-v="${i}">${v.canConfirm || v.canPost ? 'Xử lý' : 'Xem'}</button></td></tr>`).join('')
+        + '</tbody></table></div>' : '<div class="muted small">Không có phiếu trả nào.</div>';
+      body.querySelectorAll('[data-v]').forEach(b => b.onclick = () => detailDlg(list[+b.dataset.v].id, perm, rerender));
+      const nw = el.querySelector('#srNew');
+      if (nw) nw.onclick = () => createDlg(m.listReason || [], nid => { rerender(); if (nid) detailDlg(nid, perm, rerender); });
+      if (p && p.id) detailDlg(p.id, perm, rerender);
+    });
+  });
+})();

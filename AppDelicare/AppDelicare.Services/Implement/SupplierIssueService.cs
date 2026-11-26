@@ -358,7 +358,7 @@ namespace AppDelicare.Services.Implement
                 IsOverdue = IsOverdue(i, now),
                 HoursToDue = i.DueAt != null && i.IssueStatus != SupplierIssueStatus.Resolved && i.IssueStatus != SupplierIssueStatus.Closed
                     ? Math.Round((decimal)(i.DueAt.Value - now).TotalHours, 2) : null,
-                AllowedTransitions = [.. new[] { SupplierIssueStatus.InProgress, SupplierIssueStatus.Resolved, SupplierIssueStatus.Closed }.Where(t => SupplierIssueStatus.CanMove(i.IssueStatus, t))],
+                AllowedTransitions = i.IssueType == SupplierReturnService.IssueType ? [] : [.. new[] { SupplierIssueStatus.InProgress, SupplierIssueStatus.Resolved, SupplierIssueStatus.Closed }.Where(t => SupplierIssueStatus.CanMove(i.IssueStatus, t))],
             })];
         }
 
@@ -377,6 +377,10 @@ namespace AppDelicare.Services.Implement
                 if (issue == null)
                 {
                     return Fail(ConstantHelper.Message.SupplierIssueNotFound);
+                }
+                if (issue.IssueType == SupplierReturnService.IssueType)
+                {
+                    return Fail(SupplierReturnService.Msg.ManagedHere); // ACC-5: phiếu trả hàng NCC chỉ đổi trạng thái ở Kho › Trả hàng NCC
                 }
                 string? to = SupplierIssueStatus.All.FirstOrDefault(s => string.Equals(s, request.To?.Trim(), StringComparison.OrdinalIgnoreCase));
                 if (to == null || to == SupplierIssueStatus.Open)
