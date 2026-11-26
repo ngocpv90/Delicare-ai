@@ -28,6 +28,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Phê duyệt › Kế hoạch sản xuất | `wf-inbox?type=prod-plan` | — | — | Duyệt | — |
 | Phê duyệt › Nghỉ & đổi ca | `wf-inbox?type=hr-leave` | — | — | Duyệt | — |
 | Phê duyệt › Xếp xe chưa đủ hàng | `wf-inbox?type=log-load-short` | — | — | Duyệt | — |
+| Phê duyệt › Mở lại đối soát | `wf-inbox?type=crm-recon-reopen` | — | — | Duyệt | — |
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) |

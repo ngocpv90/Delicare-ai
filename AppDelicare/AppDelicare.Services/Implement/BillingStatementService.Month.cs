@@ -96,6 +96,16 @@ namespace AppDelicare.Services.Implement
                     model.VatAmount += row.VatAmount;
                     model.BilledQuantity += row.BilledQuantity;
                 }
+                // ACC-3 (D-131 f): trạng thái khách xác nhận bảng kê (AuditChange).
+                var states = await BillingConfirmation.StatesAsync(db, from.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+                foreach (var row in model.ListCustomer)
+                {
+                    if (states.TryGetValue(row.CustomerId, out var stt))
+                    {
+                        (row.ConfirmState, row.ConfirmAt, row.ConfirmNote) = (stt.Code, stt.At, stt.Note);
+                    }
+                    row.ConfirmStateName = BillingConfirmation.Label(row.ConfirmState, row.Status == StatusReady);
+                }
                 // Có phát sinh trước, không phát sinh xếp cuối; trong nhóm theo tên.
                 model.ListCustomer = model.ListCustomer.OrderBy(c => c.Status == StatusNone ? 1 : 0).ThenBy(c => c.CustomerName, StringComparer.CurrentCulture).ToList();
                 return Result<BillingMonthModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);

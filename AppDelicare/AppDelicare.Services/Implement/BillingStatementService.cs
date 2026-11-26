@@ -24,6 +24,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<BillingMonthModel>> GetMonthOverview(BillingMonthRequest request);
         public Task<IResult<FileContentModel>> ExportBatch(BillingBatchRequest request);
         public Task<IResults<BillingExportLogModel>> GetExportHistory(BillingMonthRequest request);
+        /// <summary>ACC-3 (D-131 f): ghi nhận khách đã xác nhận (hàng loạt) / phản hồi lệch / gửi email (chưa nâng cấp).</summary>
+        public Task<IResult<int>> ConfirmCustomers(BillingConfirmRequest request);
+        public Task<IResult<int>> DisputeCustomer(BillingConfirmRequest request);
+        public Task<IResult<int>> SendToCustomers(BillingConfirmRequest request);
     }
 }
 

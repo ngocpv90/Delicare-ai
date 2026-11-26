@@ -6,7 +6,7 @@
 | Contract | Status | Draft → PendingApproval → Active → Expired / Terminated | Nháp → Chờ duyệt → Hiệu lực → Hết hạn / Chấm dứt | PROPOSED – BA/PO CONFIRM |
 | Forecast | Status | Draft → Published → Superseded | Nháp → Đã công bố → Bị thay thế | PROPOSED – BA/PO CONFIRM |
 | Order | Status | Draft → Submitted → Confirmed → Locked → InProduction → Delivered → Reconciled; Cancelled | Nháp → Đã gửi → Đã xác nhận → Đã chốt → Đang sản xuất → Đã giao → Đã đối soát; Hủy | PROPOSED – BA/PO CONFIRM |
-| OrderReconciliation | Status | Open → Matched / Variance → Closed | Mở → Khớp / Chênh lệch → Đóng | PROPOSED – BA/PO CONFIRM |
+| OrderReconciliation | Status | Open → Matched / Variance → Closed; Closed → Matched / Variance (mở lại – duyệt RECON_REOPEN, COO; kỳ kế toán chưa khóa – ACC-3 / D-131 g; đơn Reconciled → Delivered) | Mở → Khớp / Chênh lệch → Đóng; Đóng → Khớp / Chênh lệch (mở lại, COO duyệt) | PROPOSED – BA/PO CONFIRM; mở lại: anh chốt D-131 g |
 | Recipe | Status | Draft → PendingApproval → Approved → Locked → Obsolete | Nháp → Chờ duyệt → Đã duyệt → Đã khóa → Hết dùng | PROPOSED – BA/PO CONFIRM |
 | Menu | Status | Draft → Approved → Published → Expired | Nháp → Đã duyệt → Đã công bố → Hết hiệu lực | PROPOSED – BA/PO CONFIRM |
 | MenuChangeRequest | RequestStatus | Pending → Approved / Rejected / Cancelled | Chờ duyệt → Duyệt / Từ chối / Hủy | Mặc định SQL giữ nguyên; giá trị còn lại PROPOSED |

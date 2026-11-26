@@ -724,7 +724,13 @@
     }
     if (Store.isLive) APP.rowExtra(el, tr => {
       const r = Store.get('OrderReconciliation', tr.dataset.row), td = tr.querySelector('.actions'); if (!r || !td) return;
-      td.insertAdjacentHTML('afterbegin', `<button class="btn xs" data-prt title="In biên bản đối soát (PDF)">${I('export')} In</button> ${r.Status !== 'Closed' && canEdit ? '<button class="btn xs" data-rec title="Ghi lại suất thực tế phục vụ">Ghi lại</button> ' : ''}${r.Status !== 'Closed' ? '<button class="btn xs orange" data-cls>Chốt</button> ' : ''}`);
+      td.insertAdjacentHTML('afterbegin', `<button class="btn xs" data-prt title="In biên bản đối soát (PDF)">${I('export')} In</button> ${r.Status !== 'Closed' && canEdit ? '<button class="btn xs" data-rec title="Ghi lại suất thực tế phục vụ">Ghi lại</button> ' : ''}${r.Status !== 'Closed' ? '<button class="btn xs orange" data-cls>Chốt</button> ' : ''}${r.Status === 'Closed' && canEdit ? '<button class="btn xs" data-reo title="Gửi yêu cầu mở lại đối soát – COO duyệt">Mở lại</button> ' : ''}`);
+      // ACC-3 (D-131 g): mở lại đối soát đã chốt – lý do bắt buộc, COO duyệt (Phê duyệt › Mở lại đối soát).
+      const reo = td.querySelector('[data-reo]');
+      if (reo) reo.onclick = () => UI.modal({ title: 'Mở lại đối soát ' + esc(Store.label('Order', r.OrderId)), body: '<div class="small muted mb">Đối soát về Khớp / Chênh lệch, đơn về Đã giao sau khi COO duyệt. Kỳ kế toán đã khóa thì không mở được – lập chứng từ điều chỉnh.</div><textarea class="input" id="rcRe" rows="3" placeholder="Lý do mở lại (bắt buộc)…"></textarea>',
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="rcReOk">Gửi duyệt</button>',
+        onMount: (m, close) => m.querySelector('#rcReOk').onclick = () => { const why = m.querySelector('#rcRe').value.trim(); if (!why) { UI.toast('Nhập lý do mở lại', 'warn'); return; }
+          Store.act('OrderReconciliation/RequestReopen', { form: { Id: r.Id, Reason: why } }).then(x => { if (x.ok) { close(); UI.toast(esc((x.res && x.res.responseMessage) || 'Đã gửi duyệt'), 'ok'); } }); } });
       const rb = td.querySelector('[data-rec]'); if (rb) rb.onclick = () => reconcileForm({ orderId: r.OrderId, label: Store.label('Order', r.OrderId), ordered: r.OrderedQuantity, delivered: r.DeliveredQuantity, served: r.AcceptedQuantity });
       td.querySelector('[data-prt]').onclick = () => Store.download('OrderReconciliation/Print', { id: r.Id });
       const c = td.querySelector('[data-cls]'); if (c) c.onclick = () => UI.confirm('Chốt đối soát đơn <b>' + esc(Store.label('Order', r.OrderId)) + '</b>? Sau khi chốt không sửa được số liệu.', note => Store.act('OrderReconciliation/Close', { form: { Id: r.Id, Remark: note }, tables: ['OrderReconciliation', 'Order'] }).then(x => { if (x.ok) { UI.toast('Đã chốt đối soát', 'ok'); APP.refresh(); } }), { input: 'Ghi chú', ok: 'Chốt đối soát' });
@@ -912,7 +918,8 @@
     el.querySelector('#bkSteps').innerHTML = `
       <div class="fw-step"><span class="n s1">1</span><div><b>Chốt hết đối soát của tháng</b><span class="small muted">Khách còn đơn chờ đối soát thì chưa sẵn sàng</span></div><button class="btn sm" id="bkS1" ${d.pendingOrders ? '' : 'disabled'}>${U.num(d.pendingOrders)} đơn chờ đối soát (${U.num(d.pendingCustomers)} khách)</button></div>
       <div class="fw-step"><span class="n s2">2</span><div><b>Kiểm tra</b><span class="small muted">Bấm dòng để xem chi tiết; ⚠ = lệch &gt; ${U.num(d.deviationPct)}% so tháng trước</span></div></div>
-      <div class="fw-step"><span class="n s3">3</span><div><b>Xuất / in hàng loạt</b><span class="small muted">Chọn nhiều khách hoặc tất cả khách sẵn sàng</span></div><button class="btn sm primary" id="bkS3" ${ready.length && perm.exp !== false ? '' : 'disabled'}>${I('export')} Xuất tất cả khách sẵn sàng (${ready.length})</button></div>`;
+      <div class="fw-step"><span class="n s3">3</span><div><b>Xuất / in hàng loạt</b><span class="small muted">Chọn nhiều khách hoặc tất cả khách sẵn sàng</span></div><button class="btn sm primary" id="bkS3" ${ready.length && perm.exp !== false ? '' : 'disabled'}>${I('export')} Xuất tất cả khách sẵn sàng (${ready.length})</button></div>
+      <div class="fw-step"><span class="n s3">4</span><div><b>Khách xác nhận</b><span class="small muted">Gửi khách (email – chưa nâng cấp) hoặc xuất gửi tay, rồi chọn khách → Ghi nhận đã xác nhận</span><span class="small"><b>${U.num(d.listCustomer.filter(c => ['CONFIRMED', 'INVOICED'].includes(c.confirmState)).length)}</b> / ${U.num(ready.length)} khách đã xác nhận</span></div></div>`;
     el.querySelector('#bkKpis').innerHTML = UI.kpis([
       UI.kpi('Tổng phải thu (có VAT)', bkShort(d.grandTotal), '', 'calc', 'green'),
       UI.kpi('Khách sẵn sàng', U.num(d.readyCount), '/ ' + U.num(d.activeCount) + ' khách', 'check', d.readyCount === d.activeCount ? 'green' : 'orange'),
@@ -949,7 +956,7 @@
           <td><b>${esc(r.customerName || '')}</b><div class="small muted">${esc(r.customerCode || '')}${r.contractNumber ? ' · ' + esc(r.contractNumber) : ''}</div></td>
           <td class="num">${U.num(r.billedQuantity)}</td><td class="num">${U.num(r.mealAmount, 0)}${r.warn ? ` <span class="ow-warn" title="Lệch ${U.num(r.changePct)}% so tháng trước (${U.num(r.previousMealAmount, 0)})">⚠</span>` : ''}</td>
           <td class="num">${r.containerFee ? U.num(r.containerFee, 0) : '–'}</td><td class="num">${U.num(r.vatAmount, 0)}</td><td class="num"><b>${U.num(r.grandTotal, 0)}</b></td>
-          <td><span class="badge ${c}">${l}${r.status === 'PENDING' ? ' · ' + r.pendingOrders + ' đơn' : ''}</span></td>
+          <td><span class="badge ${c}">${l}${r.status === 'PENDING' ? ' · ' + r.pendingOrders + ' đơn' : ''}</span>${r.status !== 'NONE' ? `<div class="small ${r.confirmState === 'DISPUTED' ? 'bad' : ['CONFIRMED', 'INVOICED'].includes(r.confirmState) ? 'good' : 'muted'}" title="${esc(r.confirmNote || '')}">${esc(r.confirmStateName || '')}${r.confirmAt ? ' · ' + U.date(r.confirmAt) : ''}</div>` : ''}</td>
           <td class="actions">${r.status !== 'NONE' ? `${can.exp ? `<button class="btn xs" data-bkx="${r.customerId}" title="Xuất Excel" aria-label="Xuất Excel">XLS</button>` : ''} ${can.prt ? `<button class="btn xs" data-bkp="${r.customerId}" title="In PDF" aria-label="In PDF">PDF</button>` : ''} <button class="btn xs" data-bkg title="Gửi khách xác nhận" aria-label="Gửi khách xác nhận">${I('mail')}</button>` : ''}</td></tr>`
           + (open ? `<tr class="bk-det"><td></td><td colspan="8" data-bkdet="${r.customerId}"><div class="muted small">Đang tải chi tiết…</div></td></tr>` : ''); }).join('')}
       </tbody><tfoot><tr class="fw-foot"><td></td><td><b>Tổng</b></td><td class="num">${U.num(sum('billedQuantity'))}</td><td class="num">${U.num(sum('mealAmount'), 0)}</td><td class="num">${U.num(sum('containerFee'), 0)}</td><td class="num">${U.num(sum('vatAmount'), 0)}</td><td class="num"><b>${U.num(sum('grandTotal'), 0)}</b></td><td colspan="2"></td></tr></tfoot></table></div>`;
@@ -957,11 +964,20 @@
     const drawBar = () => {
       const sel = rows.filter(r => bkm.sel.has(r.customerId)), pend = sel.filter(r => r.status === 'PENDING').length;
       bar.hidden = !sel.length;
-      bar.innerHTML = `<span>Đã chọn <b>${sel.length}</b> khách · <b>${U.money(sel.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0))}</b>${pend ? ` <span class="bad small">· ${pend} khách còn chờ đối soát (số tạm tính)</span>` : ''}</span><span class="row-flex">${can.exp ? `<button class="btn sm" id="bkBx">${I('export')} Excel (1 tệp, mỗi khách 1 sheet)</button>` : ''}${can.prt ? `<button class="btn sm" id="bkBp">${I('print')} PDF (tệp nén, mỗi khách 1 tệp)</button>` : ''}<button class="btn sm" id="bkBg">${I('mail')} Gửi khách xác nhận</button><button class="btn sm" id="bkBc">Bỏ chọn</button></span>`;
+      bar.innerHTML = `<span>Đã chọn <b>${sel.length}</b> khách · <b>${U.money(sel.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0))}</b>${pend ? ` <span class="bad small">· ${pend} khách còn chờ đối soát (số tạm tính)</span>` : ''}</span><span class="row-flex">${can.exp ? `<button class="btn sm" id="bkBx">${I('export')} Excel (1 tệp, mỗi khách 1 sheet)</button>` : ''}${can.prt ? `<button class="btn sm" id="bkBp">${I('print')} PDF (tệp nén, mỗi khách 1 tệp)</button>` : ''}<button class="btn sm" id="bkBg">${I('mail')} Gửi khách xác nhận</button>${perm.edit !== false ? `<button class="btn sm primary" id="bkBk">${I('check')} Ghi nhận khách đã xác nhận</button><button class="btn sm" id="bkBd">Khách phản hồi lệch</button>` : ''}<button class="btn sm" id="bkBc">Bỏ chọn</button></span>`;
       const ids = sel.map(r => r.customerId);
       if (bar.querySelector('#bkBx')) bar.querySelector('#bkBx').onclick = () => bkExport(ids, 'xlsx');
       if (bar.querySelector('#bkBp')) bar.querySelector('#bkBp').onclick = () => bkExport(ids, 'pdf');
-      bar.querySelector('#bkBg').onclick = bkNotYet;
+      bar.querySelector('#bkBg').onclick = () => Store.act('BillingStatement/SendToCustomers', { json: { month: bkMonth(), listCustomerId: ids } });
+      // ACC-3 (D-131 f): ghi nhận hàng loạt khách đã xác nhận → phiếu bán tháng Sẵn sàng ở Kế toán › Chứng từ kế toán.
+      const bk = bar.querySelector('#bkBk');
+      if (bk) bk.onclick = () => UI.confirm(`Ghi nhận <b>${ids.length}</b> khách đã xác nhận bảng kê tháng? Chỉ khách Sẵn sàng (đã chốt hết đối soát) được ghi nhận.`, note =>
+        Store.act('BillingStatement/ConfirmCustomers', { json: { month: bkMonth(), listCustomerId: ids, note: note || null } }).then(x => { if (x.ok) { UI.toast(esc((x.res && x.res.responseMessage) || 'Đã ghi nhận'), 'ok'); bkm.sel = new Set(); bkm.key = null; bkBilling(el, f); } }), { input: 'Ghi chú (vd. khách xác nhận qua email ngày …)' });
+      const bd = bar.querySelector('#bkBd');
+      if (bd) bd.onclick = () => UI.modal({ title: 'Khách phản hồi lệch bảng kê', body: `<div class="small muted mb">${ids.length} khách đã chọn. Ghi nội dung khách phản hồi (bắt buộc) – kiểm tra lại đối soát, mở lại đối soát nếu cần (COO duyệt).</div><textarea class="input" id="bkDn" rows="3" placeholder="Nội dung khách phản hồi…"></textarea>`,
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="bkDok">Ghi nhận</button>',
+        onMount: (m, close) => m.querySelector('#bkDok').onclick = () => { const n = m.querySelector('#bkDn').value.trim(); if (!n) { UI.toast('Nhập nội dung khách phản hồi', 'warn'); return; }
+          Store.act('BillingStatement/DisputeCustomer', { json: { month: bkMonth(), listCustomerId: ids, note: n } }).then(x => { if (x.ok) { close(); UI.toast(esc((x.res && x.res.responseMessage) || 'Đã ghi'), 'ok'); bkm.sel = new Set(); bkm.key = null; bkBilling(el, f); } }); } });
       bar.querySelector('#bkBc').onclick = () => { bkm.sel = new Set(); bkTab(el, f, perm); };
     };
     drawBar();

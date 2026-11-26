@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using AppDelicare.Model.Helper;
+using AppDelicare.Model.Model;
 using AppDelicare.Model.Request.Custom;
 using AppDelicare.Services.Interface;
 using Serilog;
@@ -123,5 +124,28 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+
+        /// <summary>ACC-3 (D-131 f): ghi nhận khách đã xác nhận bảng kê (JSON { month, listCustomerId, note }). Quyền Sửa.</summary>
+        [Security.Permission("crm-billing", Services.Interface.PermissionAction.Edit)]
+        [HttpPost("ConfirmCustomers")]
+        public async Task<IActionResult> ConfirmCustomers([FromBody] BillingConfirmRequest request)
+        {
+            try { return Ok(await _service.ConfirmCustomers(request ?? new BillingConfirmRequest())); }
+            catch (Exception ex) { Serilog.Log.Error(string.Concat("[", GetType().Name, "]", " ConfirmCustomers: ", ex.ToString())); return StatusCode(500, ConstantHelper.Message.InternalServer); }
+        }
+
+        /// <summary>ACC-3: khách phản hồi lệch (ghi chú bắt buộc). Quyền Sửa.</summary>
+        [Security.Permission("crm-billing", Services.Interface.PermissionAction.Edit)]
+        [HttpPost("DisputeCustomer")]
+        public async Task<IActionResult> DisputeCustomer([FromBody] BillingConfirmRequest request)
+        {
+            try { return Ok(await _service.DisputeCustomer(request ?? new BillingConfirmRequest())); }
+            catch (Exception ex) { Serilog.Log.Error(string.Concat("[", GetType().Name, "]", " DisputeCustomer: ", ex.ToString())); return StatusCode(500, ConstantHelper.Message.InternalServer); }
+        }
+
+        /// <summary>ACC-3: gửi email bảng kê cho khách (chưa có hộp thư gửi → báo chưa nâng cấp). Quyền Sửa.</summary>
+        [Security.Permission("crm-billing", Services.Interface.PermissionAction.Edit)]
+        [HttpPost("SendToCustomers")]
+        public async Task<IActionResult> SendToCustomers([FromBody] BillingConfirmRequest request) => Ok(await _service.SendToCustomers(request ?? new BillingConfirmRequest()));
     }
 }

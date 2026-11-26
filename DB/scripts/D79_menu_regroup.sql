@@ -56,6 +56,7 @@ INSERT INTO @P VALUES
     (N'#/wf-inbox?type=scm-pr', 2, N'#/group/approve', 9901, 9999, N'', N'#/group/approve', 9921, N'', N'', 0),
     (N'#/wf-inbox?type=adm-user', 2, NULL, 0, -1, N'', N'#/group/approve', 9922, N'Tài khoản', N'P0', NULL),
     (N'#/wf-inbox?type=log-load-short', 2, NULL, 0, -1, N'', N'#/group/approve', 9923, N'Xếp xe chưa đủ hàng', N'P6', NULL),
+    (N'#/wf-inbox?type=crm-recon-reopen', 2, NULL, 0, -1, N'', N'#/group/approve', 9924, N'Mở lại đối soát', N'ACC', NULL),
     (N'#/group/01', 1, NULL, 100, 100, N'Tổng quan điều hành', NULL, 100, N'Điều hành', N'kpi', NULL),
     (N'#/dash-exec', 2, N'#/group/01', 101, 199, N'', N'#/group/01', 101, N'', N'', NULL),
     (N'#/kpi-daily', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 102, N'', N'', NULL),

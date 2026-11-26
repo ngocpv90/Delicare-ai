@@ -12,6 +12,10 @@ namespace AppDelicare.Services.Interface
 {
     public interface IOrderReconciliationService
     {
+        /// <summary>ACC-3 (D-131 g): yêu cầu mở lại đối soát Đã chốt (lý do bắt buộc) → duyệt RECON_REOPEN (COO).</summary>
+        public Task<IResult<string>> RequestReopen(Guid id, string? reason);
+        public Task<string?> ApplyReopenAsync(Guid id, string? proposalJson, string? note);
+        public Task<string?> DescribeReopenAsync(Guid id);
         public Task<IResults<OrderReconciliationViewModel>> GetAll(OrderReconciliationSearchRequest request);
         /// <summary>BIZ-2.9: đơn vừa Đã giao → tự tạo đối soát (suất phục vụ = suất khách nhận). Trả câu thông báo (null = không tạo).</summary>
         public Task<string?> AutoCreateAsync(Guid orderId);
