@@ -1,4 +1,6 @@
 -- delicare-migration: normal
+-- ĐỀ XUẤT (DB/proposed – KHÔNG tự chạy): chuyển sang DB/migrations/ CÙNG LÚC backend RETAIL-1 (Entity / Service / API). Để trong migrations khi chưa có backend
+-- sẽ làm db-sync DỪNG trên server có DB_AUTO_MIGRATE=0 → API không khởi động.
 -- RETAIL-1 (anh chốt 2026-11-26: "module dành riêng cho khách lẻ, đặt trên web vào đó, doanh nghiệp để riêng" – chọn BẢNG MỚI RIÊNG).
 -- Đặc tả: docs/frontend-handoff/RETAIL-1.md. Tách hẳn đơn doanh nghiệp (dbo.[Order] / hợp đồng KHÔNG đổi).
 -- Thêm 3 bảng: RetailProduct (sản phẩm bán lẻ), RetailOrder (đơn khách lẻ), RetailOrderLine (dòng món).

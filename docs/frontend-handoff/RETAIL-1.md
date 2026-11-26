@@ -16,7 +16,9 @@ Nhân viên nhận đơn qua điện thoại / Zalo → nút "Lập đơn" trên
 
 Đơn doanh nghiệp (`Order`, `#/crm-order`, `#/crm-order-week`) **không đổi**, không hiện đơn lẻ. Báo cáo / MRP chưa tính đơn lẻ (đợt sau – mục 8).
 
-## 2. Bảng mới – ĐÃ CÓ FILE MIGRATION `DB/migrations/20261127_01_retail_order.sql` (anh duyệt bảng mới 2026-11-26)
+## 2. Bảng mới – FILE MIGRATION SẴN SÀNG ở `DB/proposed/20261127_01_retail_order.sql` (anh duyệt bảng mới 2026-11-26)
+
+> **Backend:** chuyển file sang `DB/migrations/` trong CÙNG commit có Entity / Service / API. Đưa vào `DB/migrations/` sớm hơn thì server có `DB_AUTO_MIGRATE=0` sẽ dừng `db-sync` → API không lên.
 
 File đã viết theo khuôn `SupplierIssue`, chạy lại được, đã thử 2 lần trên DB tạm (LocalDB): 3 bảng + 8 chỉ mục, lần 2 không đổi gì. **Chưa chạy trên DB dev / production** – chạy cùng lúc backend có Entity / Service (CodeGen `--only RetailProduct,RetailOrder,RetailOrderLine`).
 

@@ -1,7 +1,7 @@
 /*
   RETAIL-1 (anh chốt 2026-11-26 – module Bán lẻ tách riêng đơn doanh nghiệp): nhóm menu "Bán lẻ" (#/group/02c, thứ tự 260 – sau Kế toán), 2 mục:
     Đơn khách lẻ (#/sal-retail-order) · Sản phẩm bán lẻ (#/sal-retail-product). Giao diện: app-delicare-client/src/assets/delicare/js/modules/retail.js.
-  Script DỮ LIỆU (không tạo / sửa bảng, cột; không DELETE; chạy lại = 0 việc). Bảng RetailOrder… đi bằng migration DB/migrations/20261127_01_retail_order.sql.
+  Script DỮ LIỆU (không tạo / sửa bảng, cột; không DELETE; chạy lại = 0 việc). Bảng RetailOrder… đi bằng migration DB/proposed/20261127_01_retail_order.sql (chuyển vào DB/migrations cùng backend). Chạy script này SAU khi có bảng + API.
     1. Thêm dòng nhóm + 2 mục (khi chưa có).
     2. Quyền (theo UserGroup.Code – D-124; đã có dòng thì chỉ CỘNG cờ (OR), không thu quyền nào) – PROPOSED – BA/PO CONFIRM:
          SAL-HEAD          : cả 2 mục – toàn quyền
