@@ -49,7 +49,7 @@ namespace AppDelicare.Tests.Jobs
     public class JobDependencyInjectionTests(InMemoryApiFactory factory) : IClassFixture<InMemoryApiFactory>
     {
         // BE3.4: + KPI_DAILY / KPI_MONTHLY (cấu hình Enabled = false).
-        private static readonly string[] Codes = ["AccountLockResigned", "BillingMonthReady", "ContractExpiry", "DailyReport", "DayCard", "ForecastAutoPublish", "ForecastAutoSuggest", "ForecastPublishReminder", "ForecastReadyNotice", "IngredientsTonight", "KPI_DAILY", "KPI_MONTHLY", "LeaveHandover", "LockOrders", "LotExpiry", "MarkAbsent", "MealCostRecalc", "MenuAutoDraft", "MenuDraftNotice", "MenuExpiry", "MenuWeekReminder", "MorningBrief", "Mrp", "OrderMissingAtCutoff", "OrderMissingReminder", "OrderWeekReminder", "PeriodReport", "ProductionAutoClose", "RemindUnconfirmedOrders"];
+        private static readonly string[] Codes = ["AccountingVoucherDigest", "AccountLockResigned", "BillingMonthReady", "ContractExpiry", "DailyReport", "DayCard", "ForecastAutoPublish", "ForecastAutoSuggest", "ForecastPublishReminder", "ForecastReadyNotice", "IngredientsTonight", "KPI_DAILY", "KPI_MONTHLY", "LeaveHandover", "LockOrders", "LotExpiry", "MarkAbsent", "MealCostRecalc", "MenuAutoDraft", "MenuDraftNotice", "MenuExpiry", "MenuWeekReminder", "MorningBrief", "Mrp", "OrderMissingAtCutoff", "OrderMissingReminder", "OrderWeekReminder", "PeriodReport", "ProductionAutoClose", "RemindUnconfirmedOrders"];
 
         [Fact]
         public void WebApi_container_resolves_all_jobs_and_runner()

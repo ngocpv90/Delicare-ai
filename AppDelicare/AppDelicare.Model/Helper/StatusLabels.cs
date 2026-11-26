@@ -23,7 +23,7 @@ namespace AppDelicare.Model.Helper
             ["Revoked"] = "Đã thu hồi", ["Unlinked"] = "Đã gỡ liên kết", ["Resigned"] = "Nghỉ việc", ["Suspended"] = "Tạm ngừng", ["New"] = "Mới",
             ["Planned"] = "Kế hoạch", ["Released"] = "Đã phát hành", ["Available"] = "Khả dụng", ["Reserved"] = "Đã giữ chỗ", ["Consumed"] = "Đã dùng hết",
             ["Returned"] = "Đã trả", ["Packed"] = "Đã đóng gói", ["Paid"] = "Đã thanh toán", ["Unpaid"] = "Chưa thanh toán", ["Valid"] = "Hợp lệ",
-            ["Invalid"] = "Không hợp lệ", ["Error"] = "Lỗi", ["Warning"] = "Cảnh báo", ["Info"] = "Thông tin", ["Terminated"] = "Chấm dứt",
+            ["Invalid"] = "Không hợp lệ", ["Error"] = "Lỗi", ["Warning"] = "Cảnh báo", ["Info"] = "Thông tin", ["Terminated"] = "Chấm dứt", ["READY"] = "Sẵn sàng", ["PENDING_SOURCE"] = "Chờ nghiệp vụ gốc", ["WAITING_AMIS"] = "Chờ lập trên AMIS", ["CREATED_ON_AMIS"] = "Đã lập trên AMIS", ["ERROR"] = "Lỗi", ["CHANGED"] = "Đã sửa – cần điều chỉnh", ["Exported"] = "Đã tải Excel", ["MarkedCreated"] = "Đánh dấu đã lập trên AMIS",
             ["Obsolete"] = "Hết dùng", ["Posted"] = "Đã ghi sổ", ["Issued"] = "Đã xuất", ["Matched"] = "Khớp", ["Variance"] = "Chênh lệch",
             ["DAT"] = "Đạt", ["KHONG_DAT"] = "Không đạt", ["TAM_GIU"] = "Tạm giữ", ["REJECT"] = "Loại", ["DIRTY"] = "Bẩn", ["DAMAGED"] = "Hỏng", ["CLEAN"] = "Sạch", ["GOOD"] = "Tốt", ["DELIVERY"] = "Giao hàng", ["CORE"] = "Lõi", ["RECEIVING"] = "Nhận hàng", ["STORAGE"] = "Bảo quản", ["Duplicate"] = "Trùng lặp", ["SANG"] = "Sáng", ["TRUA"] = "Trưa", ["TOI"] = "Tối", ["DEM"] = "Đêm",
             ["Added"] = "Thêm", ["Modified"] = "Sửa", ["Deleted"] = "Xóa", ["Download"] = "Tải xuống", ["Login"] = "Đăng nhập", ["Logout"] = "Đăng xuất",
