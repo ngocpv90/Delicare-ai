@@ -12,7 +12,7 @@
   const MODULES = ['Kinh doanh', 'Thực đơn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng', 'Nhân sự', 'Quản trị hệ thống', 'Khác']; /* FIX-1.1: + Quản trị hệ thống (3 loại duyệt tài khoản HR-ACC-1), Chất lượng (QC / mẻ / lô) */
   // Tên loại cho tab Tất cả (máy chủ trả typeName ở các tab khác).
   const TYPE_VI = { PURCHASE_ORDER: 'Đơn mua hàng', PURCHASE_REQUEST: 'Đề nghị mua', ORDER_CHANGE_AFTER_CUTOFF: 'Sửa đơn sau chốt', ORDER_DEVIATION: 'Lệch suất đơn đặt', CONTRACT: 'Hợp đồng',
-    RECIPE_VERSION: 'Công thức chế biến', MENU_CHANGE: 'Yêu cầu đổi món', STOCK_COUNT: 'Kiểm kê', STOCK_ADJUSTMENT: 'Điều chỉnh tồn', LEAVE_REQUEST: 'Đơn xin nghỉ', SHIFT_SWAP: 'Đơn đổi ca', RECON_REOPEN: 'Mở lại đối soát' };
+    RECIPE_VERSION: 'Công thức chế biến', MENU_CHANGE: 'Yêu cầu đổi món', STOCK_COUNT: 'Kiểm kê', STOCK_ADJUSTMENT: 'Điều chỉnh tồn', LEAVE_REQUEST: 'Đơn xin nghỉ', SHIFT_SWAP: 'Đơn đổi ca', RECON_REOPEN: 'Mở lại đối soát', PERIOD_UNLOCK: 'Mở khóa kỳ kế toán' };
   const STATUS_VI = { Pending: 'Chờ duyệt', InProgress: 'Đang duyệt', Approved: 'Đã duyệt', Rejected: 'Từ chối', Cancelled: 'Đã hủy' };
   const H = { tab: 'mine', g: '', q: '', cur: null, picked: new Set(), mine: null, mineAt: 0, sent: null, done: null, all: null, busy: false, note: '' };
   APP.aprState = H;

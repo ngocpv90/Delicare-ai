@@ -61,10 +61,11 @@ namespace AppDelicare.Services.Implement
         /// <summary>Khách → trạng thái xác nhận bảng kê của tháng (yyyy-MM).</summary>
         public static async Task<Dictionary<Guid, State>> StatesAsync(DatabaseContext db, string month)
         {
+            DateTime monthStart = DateTime.ParseExact(month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
             var rows = await db.AuditChange.AsNoTracking()
-                .Where(a => !a.IsDeleted && a.IdChange != null && a.Changes != null && a.Changes.Contains("\"m\":\"" + month + "\"")
+                .Where(a => !a.IsDeleted && a.IdChange != null && a.Changes != null && a.CreatedDate >= monthStart
                     && ((a.EntityName == Entity && (a.Action == Sent || a.Action == Confirmed || a.Action == Disputed))
-                        || (a.EntityName == AccountingVoucherService.LogEntity && a.Action == AccountingVoucherService.ActionExported && a.Changes.Contains("\"t\":\"SALE\""))))
+                        || (a.EntityName == AccountingVoucherService.LogEntity && a.Action == AccountingVoucherService.ActionExported)))
                 .OrderBy(a => a.CreatedDate).Select(a => new { a.IdChange, a.EntityName, a.Action, a.Changes, a.CreatedDate }).ToListAsync();
             var outMap = new Dictionary<Guid, State>();
             foreach (var r in rows.Where(r => Month(r.Changes) == month))
@@ -94,6 +95,7 @@ namespace AppDelicare.Services.Implement
                 if (changes != null && JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(changes) is { } j && j.TryGetValue("k", out var k) && k.ValueKind == JsonValueKind.String)
                 {
                     var parts = k.GetString()!.Split('|');
+                    if (parts[0] != "SALE") return null;
                     return parts.Length >= 2 && Guid.TryParseExact(parts[1], "N", out var g) ? g : null;
                 }
             }

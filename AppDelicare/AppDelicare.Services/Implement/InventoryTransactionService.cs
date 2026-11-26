@@ -199,6 +199,11 @@ namespace AppDelicare.Services.Implement
                 {
                     return Result<InventoryTransaction>.Fail(ConstantHelper.Message.ReasonRequired);
                 }
+                var original = await _unitOfWork.DbContext.InventoryTransaction.AsNoTracking().Where(t => t.Id == request.Id).Select(t => (DateTime?)t.TransactionDate).FirstOrDefaultAsync();
+                if (original is { } od && await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, od, "đảo bút toán kho") is { } periodLocked)
+                {
+                    return Result<InventoryTransaction>.Fail(periodLocked);
+                }
                 var reversal = await _inventoryLedgerService.ReverseAsync(request.Id, reason);
                 return Result<InventoryTransaction>.Success(reversal, ConstantHelper.Message.SaveSuccess);
             }

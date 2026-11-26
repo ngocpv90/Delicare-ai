@@ -453,6 +453,12 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 await DbLocks.DocumentAsync(db, "MaterialIssue", request.Id); // Rà soát BE: 2 lần ghi sổ / hủy cùng lúc chạy lần lượt.
                 var issue = _unitOfWork.MaterialIssueRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
+                // ACC-4 (D-131 h): kỳ kế toán đã khóa → chặn.
+                if (issue != null && await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, issue.IssueDate, "ghi sổ phiếu xuất") is { } periodLocked)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<MaterialIssueDetailModel>.Fail(periodLocked);
+                }
                 if (issue == null || issue.Status != MaterialIssueStatus.Draft)
                 {
                     _unitOfWork.RollbackTransaction();
@@ -586,6 +592,12 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 await DbLocks.DocumentAsync(db, "MaterialIssue", request.Id); // Rà soát BE: 2 lần ghi sổ / hủy cùng lúc chạy lần lượt.
                 var issue = _unitOfWork.MaterialIssueRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
+                // ACC-4 (D-131 h): kỳ kế toán đã khóa → chặn.
+                if (issue != null && await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, issue.IssueDate, "hủy phiếu xuất") is { } periodLocked)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<MaterialIssueDetailModel>.Fail(periodLocked);
+                }
                 if (issue == null || (issue.Status != MaterialIssueStatus.Draft && issue.Status != MaterialIssueStatus.Issued))
                 {
                     _unitOfWork.RollbackTransaction();

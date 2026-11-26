@@ -430,6 +430,12 @@ namespace AppDelicare.Services.Implement
             {
                 var db = _unitOfWork.DbContext;
                 var count = _unitOfWork.StockCountRepository.GetSingle(x => x.Id == request.Id && !x.IsDeleted);
+                // ACC-4 (D-131 h): kỳ kế toán đã khóa → chặn.
+                if (count != null && await AccountingPeriodRules.LockedMessageAsync(_unitOfWork.DbContext, count.CountDate, "ghi sổ phiếu kiểm kê") is { } periodLocked)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return Result<StockCountDetailModel>.Fail(periodLocked);
+                }
                 bool approvedCount = count != null && count.Status == StockCountStatus.PendingApproval && count.ApprovedBy != null;
                 if (count == null || (count.Status != StockCountStatus.Draft && count.Status != StockCountStatus.Counting && !approvedCount))
                 {

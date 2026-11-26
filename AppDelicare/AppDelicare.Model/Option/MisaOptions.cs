@@ -24,6 +24,10 @@ namespace AppDelicare.Model.Option
         /// (trường: date, number, desc, objectCode, objectName, code, name, unit, qty, price, amount, vat, target, note). Trống = bộ cột mặc định.</summary>
         public Dictionary<string, List<string>> ExcelColumns { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>ACC-4 (D-131 h): hạn khóa kỳ = ngày N tháng sau (10); bot nhắc Kế toán từ ngày N (5) nếu kỳ trước chưa khóa.</summary>
+        public int CloseDueDay { get; set; } = 10;
+        public int CloseRemindFromDay { get; set; } = 5;
+
         /// <summary>Danh mục AMIS lưu tối đa N bản chụp (cũ hơn vẫn còn trong tài liệu đính kèm, chỉ không đọc).</summary>
         public int SnapshotKeep { get; set; } = 30;
     }

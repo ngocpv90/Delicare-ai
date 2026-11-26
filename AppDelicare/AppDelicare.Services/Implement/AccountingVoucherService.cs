@@ -367,8 +367,9 @@ namespace AppDelicare.Services.Implement
 
         private async Task<List<LogEntry>> LogAsync(string month)
         {
+            DateTime monthStart = DateTime.ParseExact(month, "yyyy-MM", Inv);
             var rows = await _unitOfWork.DbContext.AuditChange.AsNoTracking()
-                .Where(a => !a.IsDeleted && a.EntityName == LogEntity && a.Changes != null && a.Changes.Contains("\"m\":\"" + month + "\""))
+                .Where(a => !a.IsDeleted && a.EntityName == LogEntity && a.Changes != null && a.CreatedDate >= monthStart) // lọc kỳ ở bộ nhớ – LIKE trên Changes quét chậm
                 .OrderBy(a => a.CreatedDate).Select(a => new { a.Action, a.Changes, a.CreatedDate }).ToListAsync();
             var outList = new List<LogEntry>();
             foreach (var r in rows)
@@ -379,6 +380,7 @@ namespace AppDelicare.Services.Implement
                     string S(string k) => j.TryGetValue(k, out var e) && e.ValueKind == JsonValueKind.String ? e.GetString()! : string.Empty;
                     decimal? D(string k) => j.TryGetValue(k, out var e) && e.ValueKind == JsonValueKind.Number ? e.GetDecimal() : null;
                     DateTime? T(string k) => DateTime.TryParse(S(k), Inv, DateTimeStyles.None, out var t) ? t : null;
+                    if (S("m") != month) continue;
                     outList.Add(new LogEntry(S("k"), S("m"), S("h"), D("a"), S("n"), S("t"), r.Action ?? string.Empty, r.CreatedDate, T("d"), S("oc"), S("on")));
                 }
                 catch (JsonException)

@@ -44,6 +44,7 @@ namespace AppDelicare.Tests.Accounting
         public async Task Vouchers_are_built_from_finished_business_and_track_sending_status()
         {
             using var f = new InMemoryApiFactory();
+            f.Clock.FixedNow = Day.AddDays(10); // tải / đánh dấu xảy ra trong kỳ (lịch sử gửi lọc theo ngày ≥ đầu kỳ)
             Guid unit = Guid.NewGuid(), ing = Guid.NewGuid(), sup = Guid.NewGuid(), wh = Guid.NewGuid(), gr = Guid.NewGuid(), grl = Guid.NewGuid(), shift = Guid.NewGuid(),
                 po = Guid.NewGuid(), mi = Guid.NewGuid(), cus = Guid.NewGuid(), o1 = Guid.NewGuid(), o2 = Guid.NewGuid();
             await f.SeedAsync(db =>

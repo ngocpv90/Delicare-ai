@@ -21,7 +21,6 @@
       + `<div class="notice info">${I('help')}<div><b>Đang xây dựng (${task}).</b> ${esc(what)}</div></div>`;
   });
   soon('acc-amis-recon', 'ACC-8', 'Đối chiếu 8 chỉ tiêu Delicare ↔ AMIS theo kỳ: doanh thu, số suất theo thành phẩm, nhập mua, xuất nguyên liệu, bao bì, thành phẩm khác, tồn cuối kỳ.');
-  soon('acc-period', 'ACC-4', 'Khóa kỳ kế toán: 5 điều kiện trước khi khóa, Kế toán khóa, COO duyệt mở khóa; kỳ đã khóa chặn sửa nghiệp vụ trong kỳ.');
 
   // ---------- Bảng kê thanh toán: thêm thanh chuyển nhanh ----------
   const billing = APP.SCREENS['crm-billing'];
@@ -208,6 +207,64 @@
         ((z.ok && z.data && z.data.listVoucher) || []).filter(v => v.status === 'READY' && v.type !== 'TIMESHEET').forEach(v => st.sel.add(v.key));
         st.tab = 'all'; rerender();
       });
+    });
+  });
+})();
+
+/* ACC-4 (D-131 h): Kế toán › Khóa kỳ (#/acc-period) – như mô phỏng khoa-ky.html: kỳ tháng ◀ ▶, 5 điều kiện (Đạt / còn việc + nút Xem / Xử lý),
+ * hạn khóa, nút Khóa kỳ (đủ điều kiện, kỳ đã hết), bảng các kỳ (Đã khóa – Xin mở khóa → COO duyệt), chứng từ điều chỉnh ĐC- của kỳ đã khóa.
+ * API: AccountingPeriod/GetOverview · Lock · RequestUnlock. */
+(function () {
+  const U = UTIL, I = U.icon, esc = U.esc, FN = APP.FN || {};
+  const st = { month: null };
+  const ym = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const shift = (m, n) => { const [y, mo] = m.split('-').map(Number); return ym(new Date(y, mo - 1 + n, 1)); };
+  const label = m => { const [y, mo] = m.split('-'); return `Tháng ${mo}/${y}`; };
+
+  function askUnlock(month, done) {
+    UI.modal({ title: 'Xin mở khóa kỳ ' + label(month).toLowerCase(), body: '<div class="small muted mb">Gửi COO duyệt (Phê duyệt › Mở khóa kỳ). Sau khi mở, sửa nghiệp vụ rồi khóa lại; mọi lần khóa / mở được ghi lịch sử.</div><textarea class="input" id="apRe" rows="3" placeholder="Lý do mở khóa (bắt buộc)…"></textarea>',
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="apReOk">Gửi duyệt</button>',
+      onMount: (m, close) => m.querySelector('#apReOk').onclick = () => { const r = m.querySelector('#apRe').value.trim(); if (!r) { UI.toast('Nhập lý do mở khóa', 'warn'); return; }
+        Store.act('AccountingPeriod/RequestUnlock', { json: { month, reason: r } }).then(x => { if (x.ok) { close(); UI.toast(esc((x.res && x.res.responseMessage) || 'Đã gửi duyệt'), 'ok'); done(); } }); } });
+  }
+
+  APP.register('acc-period', (el, f, p) => {
+    f = f || FN['acc-period'];
+    if (!st.month) st.month = shift(ym(new Date()), -1);
+    if (p && /^\d{4}-\d{2}$/.test(p.month || '')) st.month = p.month;
+    const perm = Store.perm('acc-period'), rerender = () => APP.SCREENS['acc-period'](el, f, {});
+    el.innerHTML = APP.header(f, '', { noNote: true }) + APP.accNav('acc-period')
+      + '<div class="small muted mb">Khóa kỳ khi mọi chứng từ của tháng đã lập trên AMIS. Sau khi khóa, Delicare chặn hủy / đảo phiếu kho, ghi sổ kiểm kê, sửa / chốt / mở lại đối soát có ngày trong tháng đó. Cần sửa thì lập chứng từ điều chỉnh vào kỳ đang mở.</div>'
+      + `<div class="card panel mb"><div class="fw-week"><button class="btn sm" id="apPrev" aria-label="Tháng trước">◀</button><span>${label(st.month)}</span><button class="btn sm" id="apNext" aria-label="Tháng sau">▶</button></div></div>`
+      + '<div id="apBody"><div class="muted small">Đang tải…</div></div>';
+    el.querySelector('#apPrev').onclick = () => { st.month = shift(st.month, -1); rerender(); };
+    el.querySelector('#apNext').onclick = () => { st.month = shift(st.month, 1); rerender(); };
+    Store.query('AccountingPeriod/GetOverview', { month: st.month }).then(x => {
+      if (!el.isConnected) return;
+      const box = el.querySelector('#apBody');
+      if (!x.ok || !x.data) { box.innerHTML = `<div class="muted small">${esc(x.message || 'Không tải được kỳ kế toán')}</div>`; return; }
+      const d = x.data, conds = d.listCondition || [];
+      const head = d.locked
+        ? `<div class="notice ok mb">${I('key')}<div><b>${label(d.month)} đã khóa</b>${d.lockedBy ? ' – ' + esc(d.lockedBy) : ''}${d.lockedAt ? ' · ' + U.dt(d.lockedAt) : ''}.${d.unlockPending ? ' Đang có yêu cầu mở khóa chờ COO duyệt.' : ''}</div>${!d.unlockPending && perm.edit !== false ? '<button class="btn sm" id="apUn">Xin mở khóa</button>' : ''}</div>`
+        : `<div class="card panel mb"><div class="spread mb"><b>Điều kiện khóa kỳ ${label(d.month).toLowerCase()}</b><span class="small muted">Hạn khóa: ${U.date(d.dueDate).slice(0, 5)} · ${d.remaining ? 'còn ' + d.remaining + '/' + conds.length + ' việc' : 'đủ điều kiện'}</span></div>`
+          + conds.map(c => `<div class="spread" style="border-bottom:1px solid var(--line);padding:8px 0"><span>${c.ok ? I('check') : I('alert')} ${esc(c.title)}</span><span class="row-flex" style="gap:8px">${UI.tag(c.detail || (c.ok ? 'Đạt' : ''), c.ok ? 'green' : 'orange')}${!c.ok && c.link ? `<a class="btn sm" href="${esc(c.link)}">${esc(c.actionLabel || 'Xem')}</a>` : ''}</span></div>`).join('')
+          + `<div class="spread mt"><span class="small muted">${!d.ended ? 'Kỳ chưa kết thúc – khóa sau ngày cuối tháng.' : d.remaining ? `Còn ${d.remaining} việc chưa xong ở trên – bấm "Xem" để làm tiếp.` : 'Đủ điều kiện – Kế toán khóa kỳ.'}</span>${perm.edit !== false ? `<button class="btn primary" id="apLock" ${d.canLock ? '' : 'disabled'}>${I('key')} Khóa kỳ ${label(d.month).slice(6)}</button>` : ''}</div>`
+          + '<div class="small muted mt">Kế toán khóa kỳ. Mở khóa phải gửi duyệt COO, nêu lý do; mọi lần khóa / mở ghi lịch sử. Bot nhắc Kế toán từ ngày 5 nếu kỳ trước chưa khóa.</div></div>';
+      const periods = d.listPeriod || [], adj = d.listAdjustment || [];
+      box.innerHTML = head
+        + '<div class="card panel mb"><div class="panel-title mb">Các kỳ</div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Kỳ</th><th>Trạng thái</th><th>Khóa bởi</th><th>Thời điểm</th><th></th></tr></thead><tbody>'
+        + periods.map(r => `<tr><td><a href="javascript:void 0" data-m="${r.month}">${label(r.month)}</a></td><td>${r.locked ? UI.tag('Đã khóa', 'green') : UI.tag('Đang mở', '')}${r.unlockPending ? ' ' + UI.tag('Chờ duyệt mở khóa', 'orange') : ''}</td><td>${esc(r.by || '–')}</td><td>${r.at ? U.dt(r.at) : '–'}</td><td>${r.locked && !r.unlockPending && perm.edit !== false ? `<button class="btn xs" data-un="${r.month}">Xin mở khóa</button>` : ''}</td></tr>`).join('')
+        + '</tbody></table></div></div>'
+        + '<div class="card panel"><div class="panel-title">Chứng từ điều chỉnh</div><div class="small muted mb">Hệ thống tự lập khi nghiệp vụ gốc đã gửi sang AMIS của kỳ đã khóa bị hủy / sửa; Kế toán kiểm rồi gửi như chứng từ thường (ghi vào kỳ đang mở).</div>'
+        + (adj.length ? '<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Số điều chỉnh</th><th>Chứng từ gốc</th><th>Kỳ gốc</th><th>Lý do</th><th class="num">Giá trị</th><th>Ghi vào kỳ</th></tr></thead><tbody>'
+          + adj.map(a => `<tr><td><b>${esc(a.number)}</b></td><td>${esc((a.sourceNumber || '') + ' · ' + (a.sourceType || ''))}</td><td>${esc(a.sourceMonth)} (đã khóa)</td><td class="small">${esc(a.reason || '')}</td><td class="num">${a.difference !== null && a.difference !== undefined ? U.money(a.difference) : '–'}</td><td>${esc(a.writeTo)}</td></tr>`).join('')
+          + '</tbody></table></div>' : '<div class="muted small">Không có chứng từ điều chỉnh.</div>') + '</div>';
+      box.querySelectorAll('[data-m]').forEach(a => a.onclick = () => { st.month = a.dataset.m; rerender(); });
+      box.querySelectorAll('[data-un]').forEach(b => b.onclick = () => askUnlock(b.dataset.un, rerender));
+      const un = box.querySelector('#apUn'); if (un) un.onclick = () => askUnlock(d.month, rerender);
+      const lk = box.querySelector('#apLock');
+      if (lk) lk.onclick = () => UI.confirm(`Khóa kỳ kế toán <b>${label(d.month).toLowerCase()}</b>? Sau khi khóa, mọi hủy / đảo / sửa nghiệp vụ có ngày trong tháng bị chặn; mở lại phải COO duyệt.`,
+        note => Store.act('AccountingPeriod/Lock', { json: { month: d.month, reason: note || null } }).then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã khóa kỳ'), 'ok'); rerender(); } }), { input: 'Ghi chú (tùy chọn)' });
     });
   });
 })();
