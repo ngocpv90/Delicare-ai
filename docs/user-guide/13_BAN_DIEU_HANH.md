@@ -35,7 +35,11 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | X (IX) |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X | X | X | X (IX) |
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | S (IX) |
-| Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | X (IX) |
+| Kế toán › Chứng từ kế toán | `acc-voucher` | X (IX) | X | X (IX) | Q (IX) |
+| Kế toán › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X (IX) | Q (IX) |
+| Kế toán › Khớp mã AMIS | `acc-amis-code` | X (IX) | X | X (IX) | Q (IX) |
+| Kế toán › Đối chiếu với AMIS | `acc-amis-recon` | X (IX) | X | X (IX) | Q (IX) |
+| Kế toán › Khóa kỳ | `acc-period` | X (IX) | X | X (IX) | Q (IX) |
 | Mua hàng › Đơn mua hàng | `scm-po` | X | X | X | X (IX) |
 | Kho › Nhận hàng | `scm-gr` | X | X | X | X (IX) |
 | Kho › Xuất kho sản xuất | `scm-issue` | X | X | X | X (IX) |

@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **215 khóa** trong 9 section.
+Tổng: **219 khóa** trong 10 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -269,6 +269,15 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Messaging:Watch:ApprovalOverdueGroups` | List<string> | [] | Chưa có dữ liệu "cấp trên trực tiếp" → nhóm quyền theo tên (PROPOSED: COO). Khởi tạo rỗng (binder nối mảng). | – |
 | `Messaging:Watch:ApprovalOverdueTopGroups` | List<string> | [] | BIZ-1.6 (D-77 f): bậc 3 – quá thêm ApprovalOverdueEscalateHours nữa (mặc định tổng 48 giờ sau hạn) → nhóm này (mặc định CEO). | BIZ-1.6 |
 | `Messaging:ApprovalDigestHour` | int | 18 | APR-1.7 (D-81): giờ gửi tin tổng hợp duyệt cuối ngày (giờ VN, 0–23; &lt; 0 = tắt). Gửi ở lần RunWatch đầu tiên từ giờ này, 1 lần / người / ngày. | APR-1.7 |
+
+## Integration
+
+| Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
+|---|---|---|---|---|
+| `Integration:Misa:ProductByMeal` | Dictionary<string, string> | – | Buổi / loại suất Delicare → mã thành phẩm AMIS (SANG, TRUA, TOI, DEM; COM_SUAT = cơm suất bán lẻ). | – |
+| `Integration:Misa:WarehouseMap` | Dictionary<string, string> | new(StringComparer.OrdinalIgnoreCase) | Kho Delicare (mã hoặc tên) → mã kho AMIS. Nhiều kho cùng 1 mã AMIS → chuyển kho nội bộ giữa chúng không gửi sang AMIS. | – |
+| `Integration:Misa:ReasonCodes` | Dictionary<string, string> | new(StringComparer.OrdinalIgnoreCase) | Lý do xuất / nhập Delicare → mã lý do (diễn giải) trên AMIS (vd. PRODUCTION, PACKAGING, WASTE, ADJUSTMENT, RETURN). | – |
+| `Integration:Misa:SnapshotKeep` | int | 30 | Danh mục AMIS lưu tối đa N bản chụp (cũ hơn vẫn còn trong tài liệu đính kèm, chỉ không đọc). | – |
 
 ## Permissions
 

@@ -1001,6 +1001,18 @@
             public static readonly string PackingManySaved = "Đã ghi chia {0} ô";
             public static readonly string PackingCreateBlocked = "Lệnh đóng gói do hệ thống tự sinh khi mẻ đạt.";
             public static readonly string LoadMenuIncomplete = "Chưa đủ thực đơn – chưa xếp lên xe được: {0}";
+            // ACC-1 (D-131 c): khớp mã MISA AMIS.
+            public static readonly string AmisKindInvalid = "Loại danh mục AMIS không hợp lệ: {0}";
+            public static readonly string AmisFileInvalid = "Tệp không đọc được – chọn tệp Excel (.xlsx) xuất từ AMIS";
+            public static readonly string AmisFileUnknownKind = "Không nhận ra loại danh mục trong tệp (cần cột Mã + Tên) – chọn loại danh mục rồi nhập lại";
+            public static readonly string AmisFileNoRows = "Tệp không có dòng danh mục nào (cần cột Mã + Tên)";
+            public static readonly string AmisImported = "Đã nhận {0} bản ghi {1} từ AMIS";
+            public static readonly string AmisCodeRequired = "Chọn mã AMIS để ghép";
+            public static readonly string AmisCodeNotInCatalog = "Mã {0} không có trong danh mục {1} AMIS đã nhận – nhận lại danh mục từ AMIS";
+            public static readonly string AmisCodeInUse = "Mã {0} đang dùng cho «{1}» – ghép bản ghi đó trước hoặc chọn mã khác";
+            public static readonly string AmisRemapped = "Đã ghép «{0}»: mã {1} → {2}";
+            public static readonly string AmisNoSnapshot = "Chưa nhận danh mục từ AMIS – nhập tệp Excel xuất từ AMIS trước";
+            public static readonly string AmisNothingMissing = "Không còn mã nào cần tạo trên AMIS";
             public static readonly string VehicleDriverInvalid = "Tài xế mặc định phải là nhân viên đang làm việc";
             public static readonly string LoadOverrideNoRight = "Chỉ người có quyền \"Phê duyệt › Xếp xe chưa đủ hàng\" được xếp xe khi chuyến chưa đủ thực đơn";
             public static readonly string LoadOverrideReasonRequired = "Xếp có điều kiện phải ghi lý do";

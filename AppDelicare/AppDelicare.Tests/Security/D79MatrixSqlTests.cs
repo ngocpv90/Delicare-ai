@@ -143,7 +143,7 @@ namespace AppDelicare.Tests.Security
                     SELECT STRING_AGG(MetaLink, ',') WITHIN GROUP (ORDER BY OrderShow) FROM ObjectMenu
                     WHERE IsDeleted = 0 AND IsActive = 1 AND LevelShow = 1 AND (MetaLink LIKE '#/group/%')
                     """, cn, tx);
-                (await order.ExecuteScalarAsync() as string).Should().Be("#/group/00,#/group/approve,#/group/01,#/group/02,#/group/03,#/group/04,#/group/04b,#/group/05,#/group/06,#/group/07,#/group/08,#/group/12,#/group/10,#/group/09"); // UI-6.40 (D-121): Danh mục hệ thống trên Quản trị; UI-6.27 (D-108): nhóm Giá thành (#/group/05b) ẩn
+                (await order.ExecuteScalarAsync() as string).Should().Be("#/group/00,#/group/approve,#/group/01,#/group/02,#/group/02b,#/group/03,#/group/04,#/group/04b,#/group/05,#/group/06,#/group/07,#/group/08,#/group/12,#/group/10,#/group/09"); // ACC-1 (D-131 b): Kế toán sau Kinh doanh; UI-6.40 (D-121): Danh mục hệ thống trên Quản trị; UI-6.27 (D-108): nhóm Giá thành (#/group/05b) ẩn
                 (await CountAsync("SELECT COUNT(*) FROM ObjectMenu c JOIN ObjectMenu p ON p.Id = c.ParentId WHERE p.MetaLink = '#/group/04b' AND c.IsActive = 1 AND c.IsDeleted = 0")).Should().Be(4, "UI-6.29 (D-110): Kho 12 → 5 mục; UI-6.40 (D-121): Kho & vị trí sang Danh mục hệ thống");
                 (await CountAsync("SELECT COUNT(*) FROM ObjectMenu WHERE MetaLink IN ('#/crm-contact', '#/wf-inbox?type=scm-pr', '#/crm-price-policy', '#/menu-assignment') AND IsActive = 1 AND IsDeleted = 0")).Should().Be(0);
                 (await CountAsync("SELECT COUNT(*) FROM ObjectMenu WHERE MetaLink = '#/wf-inbox?type=crm-price-policy' AND IsActive = 1 AND IsDeleted = 0")).Should().Be(1, "UI-6.4: quyền duyệt phụ lục điều chỉnh giá");
