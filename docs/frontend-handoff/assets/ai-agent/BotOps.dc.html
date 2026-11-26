@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bot Điều hành xác nhận lệnh agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2B6CB0}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 13px; background: #E9EEE4; display: flex; flex-direction: column">
+<header style="background: #fff; border-bottom: 1px solid #E8ECE5; padding: 10px 14px; display: flex; align-items: center; gap: 10px"><span style="width: 38px; height: 38px; border-radius: 19px; background: #4F6B1F; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">ĐH</span><div><b style="font-size: 15px">DELI-CARE Điều hành</b><div style="color: #607D6B; font-size: 12px">bot · duyệt và xác nhận</div></div></header>
+<div style="flex: 1; min-height: 0; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow: hidden">
+<div style="align-self: flex-start; width: 90%; background: #fff; border-radius: 12px 12px 12px 4px; padding: 10px 12px; line-height: 1.5; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 8px; align-items: center"><span style="{{proc.box}}"><svg width="{{proc.sz}}" height="{{proc.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{proc.d}}"></path></svg></span><b>Đề xuất của agent Thu mua</b></div>
+<span style="color: #607D6B; font-size: 12px">DX-261126-0007 · hết hạn 17:17</span>
+<span><b>Lập đơn mua</b> · Rau sạch Đà Lạt · <b>9.420.000 đ</b> · giao 27/11</span>
+<span>Cải ngọt 180 kg · Cà rốt 220 kg · Hành lá 40 kg</span>
+<span style="color: #3A5115">✓ Giá khớp bảng giá · dưới 50 triệu · chứng nhận còn hạn</span>
+<span style="color: #607D6B; font-size: 12px">Căn cứ: thiếu hụt sau tính nhu cầu 20:30 · SOP-30-02</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 90%"><button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.88); font-size: 13px; color: #2B6CB0; font-weight: 600">Xác nhận &amp; ghi</button><button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.88); font-size: 13px; color: #2B6CB0">Từ chối</button><button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.88); font-size: 13px; color: #2B6CB0; grid-column: 1 / -1">Xem trên web</button></div>
+<div style="align-self: flex-end; background: #DCF3C6; border-radius: 12px 12px 4px 12px; padding: 6px 12px; color: #455A64; font-size: 12px">Đã bấm: Xác nhận &amp; ghi</div>
+<div style="align-self: flex-start; width: 90%; background: #fff; border-radius: 12px 12px 12px 4px; padding: 10px 12px; line-height: 1.5">
+Đã tạo <b>PO-261126-0031</b> · Chờ gửi NCC.<br>Người lập: Nguyễn Văn An · đề xuất bởi PROC.
+<div style="color: #607D6B; font-size: 12px; margin-top: 4px">Hoàn tác được trong 5 phút.</div>
+</div>
+<div style="width: 90%"><button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.88); font-size: 13px; color: #2B6CB0; width: 100%">Hoàn tác</button></div>
+<div style="align-self: flex-start; width: 90%; background: #fff; border-radius: 12px 12px 12px 4px; padding: 10px 12px; line-height: 1.5; box-shadow: inset 3px 0 0 #C62828; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 8px; align-items: center"><span style="{{qa.box}}"><svg width="{{qa.sz}}" height="{{qa.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{qa.d}}"></path></svg></span><b style="color: #912018">Cảnh báo ATTP</b></div>
+<span>Mẻ <b>ME-261126-TOI-03</b> (gà kho gừng) nhiệt độ lõi <b>68 °C</b>, dưới ngưỡng.</span>
+<span style="color: #455A64">Phương án: nấu thêm 5 phút rồi đo lại · Trưởng ca · trước 17:40</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 90%"><button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.88); font-size: 13px; color: #2B6CB0; font-weight: 600">Đã nhận</button><button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.88); font-size: 13px; color: #2B6CB0">Mở mẻ</button></div>
+</div>
+<div style="background: #fff; border-top: 1px solid #E8ECE5; padding: 8px 10px; display: flex; gap: 8px"><button style="flex: 1; height: 40px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-size: 13px">Việc chờ tôi</button><button style="flex: 1; height: 40px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-size: 13px">Bản tin</button><button style="flex: 1; height: 40px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-size: 13px">Tra cứu</button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const IC = {VIVI:['#3A5115','#E4EFD2','M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M17 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M10 20a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M6.5 6.5l3.4 3.4M17.5 6.5l-3.4 3.4M12 15v3'],SALES:['#B4413F','#FCE4E3','M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18'],PLAN:['#2F6DB5','#E1ECFA','M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2zM8 3v4M16 3v4M3 10h18M8 14h3M8 17h6'],PROC:['#8C6D00','#F8EDC2','M3 4h2l2.4 11h11L21 8H6.2M7.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0M15.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0'],WH:['#2E7D32','#E3F3E2','M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8'],KITCHEN:['#B4570F','#FDE8D6','M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM2 10h20M9 7c0-1 1-1.5 1-3M14 7c0-1 1-1.5 1-3'],QA:['#0F7B6C','#D9F2EE','M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM8.5 12l2.5 2.5 4.5-5'],LOG:['#1A6FA0','#DCEFFA','M2 6h11v10H2zM13 10h4l4 3v3h-8M4 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'],PKG:['#4E7F75','#E2EFEC','M4 9h16l-1.5 9h-13zM8 9V6h8v3M9 13h6'],HR:['#5B4BB0','#E9E6F8','M6 8a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14.5 9a2.5 2.5 0 1 0 5.0 0a2.5 2.5 0 1 0 -5.0 0M16 14c3 0 5 2 5 5'],ACC:['#8A4B22','#F5E5DA','M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2zM8 7h8M8 12h2M14 12h2M8 16h2M14 16h2'],CSKH:['#A63366','#FAE1EC','M4 5h16v11H9l-5 4zM8 9h8M8 12h5'],KNOW:['#5E6B12','#EEF1D6','M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z']};
+const ico = (k, s) => { const c = IC[k] || IC.VIVI, z = s || 36; return { d: c[2], fg: c[0], box: 'flex:none;width:' + z + 'px;height:' + z + 'px;border-radius:' + Math.round(z * .28) + 'px;background:' + c[1] + ';color:' + c[0] + ';display:flex;align-items:center;justify-content:center', sz: Math.round(z * .58) }; };
+class Component extends DCLogic {
+  renderVals() { return { proc: ico('PROC', 28), qa: ico('QA', 28) }; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Việc của tôi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F8F4}
+a{color:#4F6B1F}a:hover{color:#3A5115}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 14px; display: flex; flex-wrap: wrap; min-height: 1000px">
+<nav aria-label="Menu chính" style="flex: 1 1 232px; max-width: 256px; background: #fff; border-right: 1px solid #E8ECE5; padding: 18px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 16px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #91AF42; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span><b style="font-size: 17px">DELI-CARE</b></div>
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="10"><a href="#" style="color: #455A64; text-decoration: none; padding: 0 12px; height: 40px; display: flex; align-items: center; border-radius: 8px">{{m}}</a></sc-for>
+<div style="margin-top: 8px; padding: 0 12px; font-size: 12px; color: #607D6B; font-weight: 600">Trợ lý AI</div>
+<sc-for list="{{ai}}" as="m" hint-placeholder-count="7"><a href="{{m.href}}" style="{{m.st}}">{{m.t}}</a></sc-for>
+</nav>
+<main style="flex: 999 1 560px; min-width: 0; padding: 22px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div><div style="color: #607D6B; font-size: 13px">Trợ lý AI › Việc của tôi</div><h1 style="margin: 4px 0 0; font-size: 20px">Việc của tôi</h1><div style="color: #546E7A; margin-top: 4px">Lê Văn Long · COO · gom mọi việc đang mở theo quyền của bạn, xếp đỏ → vàng → hạn gần nhất</div></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Việc đang mở</div><div style="font-size: 26px; font-weight: 700">8</div><div style="color: #607D6B; font-size: 12px">từ 4 nguồn</div></div>
+<div style="background: #FEF3F2; border: 1px solid #FECDCA; border-radius: 12px; padding: 14px 16px"><div style="color: #912018">Mức đỏ</div><div style="font-size: 26px; font-weight: 700; color: #B42318">2</div><div style="color: #912018; font-size: 12px">ATTP và giao hàng</div></div>
+<div style="background: #FFF6EE; border: 1px solid #FBD3B4; border-radius: 12px; padding: 14px 16px"><div style="color: #8A3E0B">Hạn trong 2 giờ</div><div style="font-size: 26px; font-weight: 700; color: #A4470C">3</div><div style="color: #8A3E0B; font-size: 12px">1 đề xuất agent hết hạn sau 12 phút</div></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Agent đang theo dõi</div><div style="font-size: 26px; font-weight: 700">3</div><div style="color: #607D6B; font-size: 12px">sẽ nhắc lại khi tới hạn</div></div>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{chips}}" as="c" hint-placeholder-count="5"><button onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">{{c.label}} <b>{{c.n}}</b></button></sc-for></div>
+<div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start">
+<div style="flex: 999 1 520px; min-width: 0; background: #fff; border: 1px solid #E8ECE5; border-radius: 12px">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<button onClick="{{r.open}}" style="{{r.wrap}}">
+<span style="{{r.dot}}"></span>
+<span style="{{r.ic.box}}"><svg width="{{r.ic.sz}}" height="{{r.ic.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.ic.d}}"></path></svg></span>
+<span style="min-width: 0; flex: 1"><span style="display: block; color: #607D6B; font-size: 12px">{{r.src}}</span><span style="display: block; font-weight: 600">{{r.title}}</span><span style="display: block; color: #546E7A; font-size: 13px; margin-top: 2px">{{r.desc}}</span></span>
+<span style="flex: none; width: 150px; font-size: 13px; color: #455A64">{{r.who}}</span>
+<span style="{{r.dueSt}}">{{r.due}}</span>
+</button>
+</sc-for>
+</div>
+<aside aria-label="Chi tiết việc" style="flex: 1 1 320px; max-width: 380px; background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 10px; align-items: center"><span style="{{cur.ic.box}}"><svg width="{{cur.ic.sz}}" height="{{cur.ic.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{cur.ic.d}}"></path></svg></span><span><span style="display: block; font-size: 12px; color: #607D6B">{{cur.src}} · theo dõi bởi {{cur.agent}}</span><b>{{cur.title}}</b></span></div>
+<div style="{{cur.levelSt}}"><div style="font-size: 12px; font-weight: 600">NHẬN XÉT</div><div style="margin-top: 4px; line-height: 1.5">{{cur.note}}</div></div>
+<div><div style="font-size: 12px; font-weight: 600; color: #546E7A">PHƯƠNG ÁN</div><sc-for list="{{cur.plan}}" as="p" hint-placeholder-count="2"><div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px; padding: 8px 0; border-bottom: 1px solid #F0F3EE; font-size: 13px"><span>{{p.a}}</span><span style="color: #546E7A">{{p.b}}</span></div></sc-for></div>
+<div style="font-size: 13px; color: #546E7A">Hạn: <b style="color: #263238">{{cur.due}}</b> · người phụ trách: <b style="color: #263238">{{cur.who}}</b></div>
+<div style="display: flex; gap: 8px; margin-top: 4px"><button style="flex: 1; height: 40px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-weight: 600">Giao lại</button><button style="flex: 2; height: 40px; border-radius: 8px; border: 0; background: #4F6B1F; color: #fff; font-weight: 600">{{cur.cta}}</button></div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+const IC = {VIVI:['#3A5115','#E4EFD2','M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M17 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M10 20a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M6.5 6.5l3.4 3.4M17.5 6.5l-3.4 3.4M12 15v3'],SALES:['#B4413F','#FCE4E3','M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18'],PLAN:['#2F6DB5','#E1ECFA','M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2zM8 3v4M16 3v4M3 10h18M8 14h3M8 17h6'],PROC:['#8C6D00','#F8EDC2','M3 4h2l2.4 11h11L21 8H6.2M7.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0M15.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0'],WH:['#2E7D32','#E3F3E2','M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8'],KITCHEN:['#B4570F','#FDE8D6','M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM2 10h20M9 7c0-1 1-1.5 1-3M14 7c0-1 1-1.5 1-3'],QA:['#0F7B6C','#D9F2EE','M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM8.5 12l2.5 2.5 4.5-5'],LOG:['#1A6FA0','#DCEFFA','M2 6h11v10H2zM13 10h4l4 3v3h-8M4 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'],PKG:['#4E7F75','#E2EFEC','M4 9h16l-1.5 9h-13zM8 9V6h8v3M9 13h6'],HR:['#5B4BB0','#E9E6F8','M6 8a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14.5 9a2.5 2.5 0 1 0 5.0 0a2.5 2.5 0 1 0 -5.0 0M16 14c3 0 5 2 5 5'],ACC:['#8A4B22','#F5E5DA','M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2zM8 7h8M8 12h2M14 12h2M8 16h2M14 16h2'],CSKH:['#A63366','#FAE1EC','M4 5h16v11H9l-5 4zM8 9h8M8 12h5'],KNOW:['#5E6B12','#EEF1D6','M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z']};
+const ico = (k, s) => { const c = IC[k] || IC.VIVI, z = s || 36; return { d: c[2], fg: c[0], box: 'flex:none;width:' + z + 'px;height:' + z + 'px;border-radius:' + Math.round(z * .28) + 'px;background:' + c[1] + ';color:' + c[0] + ';display:flex;align-items:center;justify-content:center', sz: Math.round(z * .58) }; };
+const NAV = cur => ({ menu: ['Điều hành', 'Kinh doanh', 'Thực đơn & Món ăn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng & ATTP', 'Đóng gói & Giao hàng', 'Nhân sự', 'Kế toán'],
+  ai: [['Main', 'Trung tâm agent'], ['AgentLog', 'Nhật ký & chi phí'], ['Tasks', 'Việc của tôi'], ['Flow', 'Luồng liên phòng'], ['Schedule', 'Lịch tự động'], ['Knowledge', 'Kho tri thức'], ['Approval', 'Phê duyệt']].map(m => ({ t: m[1], href: m[0] + '.dc.html',
+    st: 'text-decoration:none;padding:0 12px;height:40px;display:flex;align-items:center;border-radius:8px;' + (m[0] === cur ? 'background:#EFF5E5;color:#3A5115;font-weight:600' : 'color:#455A64') })) });
+const T = [
+ { g: 'su_co', lv: 'do', a: 'QA', src: 'Sự cố ATTP', title: 'Lô NL-261118-HTP-01 kiểm nhận không đạt', desc: 'Thịt heo nạc 64 kg, nhiệt độ nhận 9 °C. Đã chặn xuất.', who: 'Trưởng QA', due: 'Hôm nay 18:00',
+   note: 'Lô đã bị chặn xuất sản xuất. 2 mẻ ngày mai đang dùng nguyên liệu này theo kế hoạch.', plan: [['Trả NCC, ghi lỗi NCC', 'Thủ kho'], ['Đổi nguyên liệu cho 2 mẻ ngày mai', 'Trưởng bếp']], cta: 'Mở sự cố' },
+ { g: 'su_co', lv: 'do', a: 'LOG', src: 'Giao vận', title: 'Xe 51C-123 dự kiến trễ 20 phút', desc: 'Tuyến Bình Dương, 3 điểm giao, giờ nhận sớm nhất 10:30.', who: 'Điều phối giao vận', due: '10:10',
+   note: 'Khách Cty ABC – Xưởng 2 có giờ nhận cứng 10:30. Trễ quá 15 phút tính vào KPI giao đúng giờ.', plan: [['Báo trước khách qua Kinh doanh', 'TP Kinh doanh'], ['Đổi thứ tự điểm giao', 'Điều phối']], cta: 'Mở chuyến' },
+ { g: 'duyet', lv: 'vang', a: 'PROC', src: 'Lệnh của agent', title: 'Đề xuất đơn mua DX-261126-0007', desc: 'Rau sạch Đà Lạt · 9.420.000 đ · hết hạn sau 12 phút', who: 'Mua hàng', due: '17:17',
+   note: 'Agent Thu mua đề xuất sau khi tính nhu cầu. Đã chạy thử, giá khớp bảng giá, dưới ngưỡng Giám đốc.', plan: [['Xác nhận để tạo đơn mua', 'Mua hàng']], cta: 'Mở đề xuất' },
+ { g: 'duyet', lv: 'vang', a: 'SALES', src: 'Chờ tôi duyệt', title: 'Sửa đơn sau chốt ĐH-261126-0456', desc: 'Cty ABC · trưa 27/11: 1.200 → 1.350 suất (+12,5%)', who: 'Bạn', due: '19:00',
+   note: 'Khách đổi số sau giờ chốt. Kế hoạch 27/11 sẽ sinh mẻ bổ sung.', plan: [['Duyệt hoặc từ chối', 'COO']], cta: 'Mở phê duyệt' },
+ { g: 'agent', lv: 'vang', a: 'KNOW', src: 'Agent theo dõi', title: 'Bài học SC-261125-01 chờ duyệt', desc: 'Nhiệt độ giao 57 °C ở điểm Cty XYZ', who: 'Trưởng QA', due: '28/11',
+   note: 'Bài học nháp do agent Thủ thư soạn, cần chủ thư mục 45 ATTP duyệt trước khi có hiệu lực.', plan: [['Đọc và duyệt bài học', 'Trưởng QA']], cta: 'Mở ghi chú' },
+ { g: 'agent', lv: 'xanh', a: 'VIVI', src: 'Agent theo dõi', title: 'Cam kết: đổi NCC rau từ tuần 49', desc: 'Chốt trong hội thoại với Giám đốc ngày 24/11', who: 'Mua hàng', due: '30/11',
+   note: 'Vivi ghi quyết định vào thư mục 97 và sẽ nhắc Mua hàng 2 ngày trước hạn.', plan: [['Cập nhật bảng giá NCC mới', 'Mua hàng']], cta: 'Xem quyết định' },
+ { g: 'nhac', lv: 'xanh', a: 'HR', src: 'Nhắc hạn', title: 'Ca sáng 27/11 Tổ Sơ chế thiếu 1 người', desc: 'Đề xuất Võ Thu Hà thay ca đang chờ xác nhận', who: 'TP Vận hành', due: '27/11 04:00',
+   note: 'Còn 11 giờ trước giờ vào ca.', plan: [['Xác nhận người thay', 'Trưởng ca']], cta: 'Mở lịch ca' },
+ { g: 'nhac', lv: 'xanh', a: 'ACC', src: 'Nhắc hạn', title: 'Khóa kỳ kế toán tháng 11', desc: 'Hạn khóa ngày 10/12 · còn 4 bảng kê chưa xác nhận', who: 'Kế toán trưởng', due: '10/12',
+   note: 'Kỳ chưa khóa được vì còn bảng kê chưa xác nhận.', plan: [['Hoàn tất xác nhận bảng kê', 'Kế toán']], cta: 'Mở khóa kỳ' }
+];
+const LV = { do: ['#C62828', 'background:#FEF3F2;border:1px solid #FECDCA;color:#912018;border-radius:10px;padding:10px 12px'], vang: ['#E08A00', 'background:#FFF6EE;border:1px solid #FBD3B4;color:#8A3E0B;border-radius:10px;padding:10px 12px'], xanh: ['#5E8E2A', 'background:#F7FAF2;border:1px solid #DCE8C6;color:#3A5115;border-radius:10px;padding:10px 12px'] };
+const G = [['all', 'Tất cả'], ['duyet', 'Chờ duyệt'], ['su_co', 'Sự cố'], ['agent', 'Agent theo dõi'], ['nhac', 'Nhắc hạn']];
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { f: 'all', cur: 0 }; }
+  renderVals() {
+    const s = this.state, c = T[s.cur];
+    return { ...NAV('Tasks'),
+      chips: G.map(g => ({ label: g[1], n: T.filter(t => g[0] === 'all' || t.g === g[0]).length, on: s.f === g[0], pick: () => this.setState({ f: g[0] }),
+        style: 'height:36px;padding:0 14px;border-radius:18px;cursor:pointer;font-size:13px;' + (s.f === g[0] ? 'background:#4F6B1F;color:#fff;border:1px solid #4F6B1F' : 'background:#fff;color:#263238;border:1px solid #D9E0D4') })),
+      rows: T.map((t, i) => ({ t, i })).filter(x => s.f === 'all' || x.t.g === s.f).map(({ t, i }) => ({ ...t, ic: ico(t.a, 32), open: () => this.setState({ cur: i }),
+        dot: 'flex:none;width:10px;height:10px;border-radius:5px;background:' + LV[t.lv][0],
+        dueSt: 'flex:none;width:96px;font-size:13px;font-weight:600;color:' + (t.lv === 'do' ? '#B42318' : t.lv === 'vang' ? '#A4470C' : '#546E7A'),
+        wrap: 'width:100%;display:flex;align-items:center;gap:12px;padding:12px 16px;border:0;border-top:' + (i ? '1px solid #F0F3EE' : '0') + ';text-align:left;cursor:pointer;font-size:14px;color:inherit;' + (s.cur === i ? 'background:#F7FAF2;box-shadow:inset 3px 0 0 #91AF42' : 'background:transparent') })),
+      cur: { ...c, ic: ico(c.a, 40), agent: c.a, levelSt: LV[c.lv][1], plan: c.plan.map(p => ({ a: p[0], b: p[1] })) } };
+  }
+}
+</script>
+</body>
+</html>

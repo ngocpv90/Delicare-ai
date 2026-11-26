@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phê duyệt – Lệnh của agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F8F4}
+a{color:#4F6B1F}a:hover{color:#3A5115}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 14px; display: flex; flex-wrap: wrap; min-height: 960px">
+<nav aria-label="Menu chính" style="flex: 1 1 232px; max-width: 256px; background: #fff; border-right: 1px solid #E8ECE5; padding: 18px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 16px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #91AF42; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span><b style="font-size: 17px">DELI-CARE</b></div>
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="10"><a href="#" style="color: #455A64; text-decoration: none; padding: 0 12px; height: 40px; display: flex; align-items: center; border-radius: 8px">{{m}}</a></sc-for>
+<div style="margin-top: 8px; padding: 0 12px; font-size: 12px; color: #607D6B; font-weight: 600">Trợ lý AI</div>
+<sc-for list="{{ai}}" as="m" hint-placeholder-count="7"><a href="{{m.href}}" style="{{m.st}}">{{m.t}}</a></sc-for>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; padding: 22px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px">
+<div><div style="color: #607D6B; font-size: 13px">Trợ lý AI › Phê duyệt</div><h1 style="margin: 4px 0 0; font-size: 20px">Phê duyệt</h1><div style="color: #546E7A; margin-top: 4px">Nguyễn Văn An · Mua hàng · đề xuất của agent chỉ được ghi khi bạn xác nhận</div></div>
+</div>
+
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px">
+<div role="tablist" style="display: flex; gap: 4px; padding: 8px 12px 0; border-bottom: 1px solid #E8ECE5; flex-wrap: wrap">
+<button role="tab" aria-selected="false" style="height: 44px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #546E7A; font-size: 14px">Chờ tôi duyệt (4)</button>
+<button role="tab" aria-selected="true" style="height: 44px; padding: 0 14px; border: 0; border-bottom: 2px solid #4F6B1F; background: transparent; color: #3A5115; font-weight: 600; font-size: 14px">Lệnh của agent (3)</button>
+<button role="tab" aria-selected="false" style="height: 44px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #546E7A; font-size: 14px">Tôi đã gửi</button>
+<button role="tab" aria-selected="false" style="height: 44px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #546E7A; font-size: 14px">Đã xử lý</button>
+</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+<button onClick="{{r.open}}" style="{{r.wrap}}">
+<span style="min-width: 0"><span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-weight: 700; font-size: 12px; background: #EFF5E5; color: #3A5115; border-radius: 6px; padding: 2px 8px">{{r.agent}}</span><b>{{r.action}}</b><span style="color: #607D6B; font-size: 12px">{{r.no}}</span></span><span style="display: block; margin-top: 4px">{{r.summary}}</span><span style="display: block; color: #546E7A; font-size: 13px; margin-top: 2px">Căn cứ: {{r.why}}</span></span>
+<span style="{{r.dueSt}}">{{r.due}}</span>
+</button>
+</sc-for>
+</div>
+<div style="color: #607D6B; font-size: 13px; line-height: 1.5">Agent không ghi thẳng vào sổ. Khi bạn xác nhận, hệ thống chạy đúng chức năng như khi bạn tự bấm trên màn hình, ghi người thao tác là bạn và kèm mã agent. Đề xuất quá 15 phút không xác nhận sẽ tự hết hạn.</div>
+</main>
+
+<aside aria-label="Xem nhanh đề xuất" style="flex: 1 1 400px; max-width: 460px; background: #fff; border-left: 1px solid #E8ECE5; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><span style="color: #607D6B; font-size: 13px">Đề xuất của agent {{cur.agent}}</span><span style="{{cur.dueSt}}">{{cur.due}}</span></div>
+<div><div style="color: #607D6B; font-size: 13px">{{cur.action}} · {{cur.no}}</div><h2 style="margin: 4px 0 0; font-size: 19px">{{cur.summary}}</h2></div>
+<div style="background: #F6F8F4; border-radius: 10px; padding: 12px 14px"><div style="font-size: 12px; color: #546E7A; font-weight: 600">VÌ SAO AGENT ĐỀ XUẤT</div><div style="margin-top: 4px; line-height: 1.5">{{cur.reason}}</div></div>
+<div style="border: 1px solid #E8ECE5; border-radius: 10px; overflow-x: auto">
+<div style="display: grid; grid-template-columns: minmax(0, 1.6fr) 1fr 1fr; gap: 8px; padding: 8px 12px; background: #F6F8F4; font-size: 12px; color: #546E7A; font-weight: 600"><span>{{cur.h1}}</span><span>{{cur.h2}}</span><span>{{cur.h3}}</span></div>
+<sc-for list="{{cur.lines}}" as="l" hint-placeholder-count="3"><div style="display: grid; grid-template-columns: minmax(0, 1.6fr) 1fr 1fr; gap: 8px; padding: 8px 12px; border-top: 1px solid #F0F3EE; font-size: 13px"><span>{{l.a}}</span><span>{{l.b}}</span><span>{{l.c}}</span></div></sc-for>
+</div>
+<div style="background: #F7FAF2; border: 1px solid #DCE8C6; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.6"><div style="font-size: 12px; font-weight: 600; color: #3A5115">ĐÃ CHẠY THỬ – KHÔNG GHI GÌ</div><sc-for list="{{cur.checks}}" as="k" hint-placeholder-count="3"><div>✓ {{k}}</div></sc-for></div>
+<div style="font-size: 13px; color: #546E7A">Tài liệu dẫn chiếu: <a href="Knowledge.dc.html">{{cur.sop}}</a></div>
+<div style="font-size: 13px; color: #546E7A">Sau khi xác nhận: {{cur.after}}</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">Ý kiến (bắt buộc khi từ chối)<textarea rows="2" style="font: inherit; border: 1px solid #D9E0D4; border-radius: 8px; padding: 8px"></textarea></label>
+<div style="display: flex; gap: 10px; margin-top: auto"><button style="flex: 1; height: 48px; border-radius: 10px; border: 1px solid #B42318; background: #fff; color: #B42318; font-weight: 600; font-size: 15px">Từ chối</button><button style="flex: 2; height: 48px; border-radius: 10px; border: 0; background: #4F6B1F; color: #fff; font-weight: 600; font-size: 15px">Xác nhận &amp; ghi</button></div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+const P = [
+ { agent: 'PROC', action: 'Lập đơn mua', no: 'DX-261126-0007', summary: 'Rau sạch Đà Lạt · 3 nguyên liệu · 9.420.000 đ · giao 27/11', why: 'thiếu hụt sau MRP 20:30 cho ca trưa 27/11', due: 'Hết hạn sau 12 phút', soon: 1,
+   reason: 'Sau khi chốt đơn 20:00, ca trưa 27/11 thiếu 3 nguyên liệu. Nhà cung cấp chọn theo quy tắc gợi ý chung: giá hiệu lực thấp nhất, chứng nhận còn hạn, không có lỗi giao trong 30 ngày.',
+   h: ['Nguyên liệu', 'Số lượng', 'Đơn giá'], lines: [{ a: 'Cải ngọt', b: '180 kg', c: '14.500' }, { a: 'Cà rốt', b: '220 kg', c: '12.000' }, { a: 'Hành lá', b: '40 kg', c: '32.000' }],
+   checks: ['Giá khớp bảng giá NCC đang hiệu lực', 'Dưới 50 triệu – không cần Giám đốc duyệt', 'NCC có chứng nhận ATTP còn hạn tới 03/2027'],
+   sop: 'SOP-30-02 · Chọn nhà cung cấp và lập đơn mua', after: 'tạo đơn mua PO ở trạng thái Chờ gửi NCC; người lập là bạn, đề xuất bởi PROC.' },
+ { agent: 'WH', action: 'Xuất kho', no: 'DX-261126-0005', summary: 'Xuất trước lô NL-261120-RSD-02 (cải ngọt, còn 2 ngày) cho ca tối 26/11', why: 'lô cận hạn, FEFO', due: 'Còn 9 phút', soon: 1,
+   reason: 'Lô cận hạn nhất của cải ngọt chưa được xuất, trong khi phiếu xuất ca tối đang lấy lô mới hơn.',
+   h: ['Lô', 'Số lượng', 'Hạn dùng'], lines: [{ a: 'NL-261120-RSD-02', b: '35 kg', c: '28/11' }],
+   checks: ['Lô không bị chặn, kiểm nhận Đạt', 'Không vượt tồn của lô', 'Ca tối 26/11 cần 120 kg cải ngọt'],
+   sop: 'SOP-40-04 · Xuất kho theo FEFO', after: 'đổi lô trên phiếu xuất ca tối; sổ kho ghi bút toán theo lô mới.' },
+ { agent: 'HR', action: 'Đề xuất người thay ca', no: 'DX-261126-0004', summary: 'Ca sáng 27/11 Tổ Sơ chế thiếu 1 người – đề xuất Võ Thu Hà', why: 'Phạm Minh Châu nghỉ phép đã duyệt', due: 'Còn 14 phút', soon: 0,
+   reason: 'Võ Thu Hà cùng tổ, không trùng ca, chưa vượt 48 giờ / tuần.',
+   h: ['Nhân viên', 'Ca hiện tại', 'Ca đề xuất'], lines: [{ a: 'Võ Thu Hà', b: 'Nghỉ 27/11', c: 'Sáng 27/11' }],
+   checks: ['Không trùng ca, không trùng ngày nghỉ', 'Đủ giờ nghỉ giữa 2 ca', 'Cùng tổ Sơ chế'],
+   sop: 'SOP-70-02 · Thay ca và đổi ca', after: 'gửi nhân viên xác nhận qua bot Vận hành, rồi xếp ca.' }
+];
+const NAV = cur => ({ menu: ['Điều hành', 'Kinh doanh', 'Thực đơn & Món ăn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng & ATTP', 'Đóng gói & Giao hàng', 'Nhân sự', 'Kế toán'],
+  ai: [['Main', 'Trung tâm agent'], ['AgentLog', 'Nhật ký & chi phí'], ['Tasks', 'Việc của tôi'], ['Flow', 'Luồng liên phòng'], ['Schedule', 'Lịch tự động'], ['Knowledge', 'Kho tri thức'], ['Approval', 'Phê duyệt']].map(m => ({ t: m[1], href: m[0] + '.dc.html',
+    st: 'text-decoration:none;padding:0 12px;height:40px;display:flex;align-items:center;border-radius:8px;' + (m[0] === cur ? 'background:#EFF5E5;color:#3A5115;font-weight:600' : 'color:#455A64') })) });
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { cur: 0 }; }
+  renderVals() {
+    const s = this.state, c = P[s.cur];
+    const due = d => d.soon ? 'flex:none;color:#8A3E0B;background:#FFF6EE;border-radius:6px;padding:4px 8px;font-weight:600;font-size:13px' : 'flex:none;color:#546E7A;font-size:13px';
+    return { ...NAV('Approval'),
+      rows: P.map((p, i) => ({ ...p, dueSt: due(p), open: () => this.setState({ cur: i }),
+        wrap: 'width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 16px;border:0;border-top:1px solid #F0F3EE;text-align:left;cursor:pointer;font-size:14px;color:inherit;' + (s.cur === i ? 'background:#F7FAF2;box-shadow:inset 3px 0 0 #91AF42' : 'background:transparent') })),
+      cur: { ...c, dueSt: due(c), h1: c.h[0], h2: c.h[1], h3: c.h[2] }
+    };
+  }
+}
+</script>
+</body>
+</html>

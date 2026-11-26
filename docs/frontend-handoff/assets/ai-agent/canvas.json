@@ -1,0 +1,138 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-26T11:40:00Z"
+  },
+  "title": "DELI-CARE – Mockup Trợ lý AI & Kho tri thức",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1480,
+      "title": "Web – Trung tâm agent",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Knowledge.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1060,
+      "title": "Web – Kho tri thức",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Approval.dc.html": {
+      "x": 0,
+      "y": 1600,
+      "w": 1440,
+      "h": 960,
+      "title": "Web – Phê duyệt › Lệnh của agent",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Assistant.dc.html": {
+      "x": 1520,
+      "y": 1120,
+      "w": 390,
+      "h": 844,
+      "title": "Telegram – bot Trợ lý (Vivi)"
+    },
+    "Icons.dc.html": {
+      "x": 1990,
+      "y": 1120,
+      "w": 880,
+      "h": 740,
+      "title": "Bộ biểu tượng agent"
+    },
+    "Schedule.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1260,
+      "title": "Web – Lịch tự động",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Tasks.dc.html": {
+      "x": 3040,
+      "y": 1380,
+      "w": 1440,
+      "h": 1000,
+      "title": "Web – Việc của tôi",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Flow.dc.html": {
+      "x": 0,
+      "y": 2680,
+      "w": 1440,
+      "h": 900,
+      "title": "Web – Luồng liên phòng",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "AgentDetail.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 1440,
+      "h": 1100,
+      "title": "Web – Chi tiết agent (WH)",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "AgentLog.dc.html": {
+      "x": 4560,
+      "y": 1220,
+      "w": 1440,
+      "h": 1000,
+      "title": "Web – Nhật ký & chi phí agent",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "BotOps.dc.html": {
+      "x": 1520,
+      "y": 2100,
+      "w": 390,
+      "h": 844,
+      "title": "Telegram – bot Điều hành xác nhận lệnh agent"
+    },
+    "Zalo.dc.html": {
+      "x": 1990,
+      "y": 2100,
+      "w": 390,
+      "h": 844,
+      "title": "Zalo OA – khách hàng (đợt 4)"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Knowledge.dc.html",
+    "Approval.dc.html",
+    "Assistant.dc.html",
+    "Icons.dc.html",
+    "Schedule.dc.html",
+    "Tasks.dc.html",
+    "Flow.dc.html",
+    "AgentDetail.dc.html",
+    "AgentLog.dc.html",
+    "BotOps.dc.html",
+    "Zalo.dc.html"
+  ],
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "x": 0,
+      "y": -300,
+      "maxW": 6000,
+      "text": "DELI-CARE · Trợ lý AI (Hermes) và Kho tri thức – mockup hoàn chỉnh R2"
+    }
+  },
+  "designSystems": []
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nhận hàng – mô phỏng</title><style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0}.tabs span{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}.tabs span.on{border-color:#7FA43A;color:var(--ink);font-weight:600}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cl{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px}.cl.red{background:#FFF9F8;border-color:#F2C6BF}
+.cl h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between}
+.pc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pc b{font-size:13px}.pc .sub{display:block;color:var(--muted)}
+.shiftbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sh{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;cursor:pointer;background:#fff}.sh.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}.sh b{font-size:13px}
+table.g{border-collapse:separate;border-spacing:0;font-size:12px;width:100%}
+table.g th,table.g td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:center}
+table.g th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:11px}
+table.g td.l,table.g th.l{text-align:left;position:sticky;left:0;background:#fff;min-width:170px;z-index:1}table.g th.l{background:#FAFBF8}
+table.g tr.grp td{background:#F7F9F4;font-weight:700;text-align:left}
+.k{display:inline-block;min-width:22px;padding:2px 3px;border-radius:6px;font-weight:700;cursor:pointer}
+.k.ok{color:#3F5A17}.k.M{background:var(--o-bg);color:#8A3B0B}.k.V{background:var(--r-bg);color:var(--r)}.k.P{background:var(--b-bg);color:#1F4C80}.k.T{background:#FFF3CD;color:#7A5B00;outline:1px dashed #D9B44A}.k.R{background:#FDECEA;color:var(--r);outline:1px dashed #E9A8A1}.k.o{color:#c5cbc3;font-weight:400}
+td.we{background:#FBFBF9}
+.tot{font-weight:700}
+.fix{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fx{border:1px solid #F2C6BF;background:#FFF9F8;border-radius:10px;padding:6px 10px;font-size:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.f.full{grid-column:1/-1}
+@media(max-width:700px){.cols{grid-template-columns:1fr}.fg{grid-template-columns:1fr}}
+
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;background:#FAFBF8;padding:8px;border-bottom:1px solid var(--line)}table.t td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.sub{display:block;font-size:12px;color:var(--muted)}
+.sp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sc{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}.sc.late{border-color:#F2C6BF;background:#FFF9F8}.sc.done{opacity:.6}
+.sc h4{margin:0 0 4px;font-size:14px}.sc .m{font-size:12px;color:var(--muted)}
+.dlg.xl{max-width:1200px;width:96vw}
+.in.sm{height:30px;font-size:12px;padding:0 8px}
+.na{color:#b5bcb6;font-size:12px}
+.po{font-size:11px;color:var(--muted)}
+tr.edit td{background:#FFFBEA}tr.bad td{background:#FFF6F5}
+.bar2{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#F7F9F4;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.bar2 .f label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.scan{border:2px dashed #B9CB97;border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;background:#F7FBF0;font-size:13px}
+.phone{width:360px;border:1px solid var(--line);border-radius:22px;padding:14px;background:#fff;margin:auto}
+.cam{height:200px;border-radius:14px;background:#1E2620;position:relative;display:grid;place-items:center;color:#cfd8c9;font-size:13px}
+.cam:after{content:"";position:absolute;inset:40px 70px;border:3px solid #7FA43A;border-radius:10px}
+</style></head><body>
+<div id="pg"></div>
+<div class="ov" id="ovR"><div class="dlg xl" id="frm"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);function toast(m){const t=$('toast');t.innerHTML=m;t.style.display='block';setTimeout(()=>t.style.display='none',3800)}function cl(i){$(i).classList.remove('on')}
+const S=[['Rau sạch Đà Lạt','06:00',3,18,'late','quá hẹn 35 phút'],['Thịt sạch Hà Nội','06:30',2,7,'',''],['Thủy sản Biển Đông','07:00',1,5,'',''],['Gạo & khô Minh Phát','08:00',1,9,'',''],['Gia vị Hương Việt','09:30',2,11,'',''],['Sữa & trứng Ba Vì','05:30',1,4,'done','đã nhận đủ 05:42']];
+function list(){return `<div class="card"><div class="bar"><div><h1>Nhận hàng</h1><div class="small muted">Gom theo nhà cung cấp – mỗi xe giao một lần nhận cho mọi đơn mua của NCC đó.</div></div>
+<div class="bar" style="gap:8px"><div class="day"><button>◀</button>Hôm nay 26/11<button>▶</button></div><input class="in" placeholder="Tìm NCC, số đơn mua, số hóa đơn NCC…" style="width:280px;height:34px;font-size:13px" onkeydown="if(event.key==='Enter')openF(true)"></div></div>
+<div class="kpis"><div class="kpi"><div class="small muted">NCC hẹn giao hôm nay</div><div class="v">6</div><div class="s">10 đơn mua · 54 dòng</div></div><div class="kpi"><div class="small muted">Đã nhận đủ</div><div class="v">1</div><div class="s">Sữa & trứng Ba Vì</div></div><div class="kpi"><div class="small muted">Quá hẹn chưa nhận</div><div class="v" style="color:#B42318">1</div><div class="s">Rau sạch Đà Lạt · 35 phút</div></div><div class="kpi"><div class="small muted">Chờ QA kết luận</div><div class="v" style="color:#C2571A">2</div><div class="s">phiếu</div></div></div></div>
+<div class="card"><div class="sp">${S.map((s,i)=>`<div class="sc ${s[4]}"><div class="bar"><h4>${s[0]}</h4>${s[4]==='late'?'<span class="chip c-bad">'+s[5]+'</span>':s[4]==='done'?'<span class="chip c-ok">Đã nhận</span>':'<span class="chip c-n">hẹn '+s[1]+'</span>'}</div><div class="m">${s[2]} đơn mua · ${s[3]} dòng · hẹn ${s[1]}${s[4]==='done'?' · '+s[5]:''}</div>
+<div class="bar" style="margin-top:10px"><span class="small muted">${i===0?'ĐM-261125-0041 · 0043 · 0046':i===1?'ĐM-261125-0044 · 0047':''}</span>${s[4]==='done'?'<button class="sm">Xem phiếu</button>':'<button class="sm p" onclick="openF(false)">Nhận hàng</button>'}</div></div>`).join('')}</div>
+<div class="small muted" style="margin-top:10px">Đơn mua của NCC khác / ngày khác: gõ tên NCC, số đơn mua hoặc số hóa đơn NCC ở ô tìm – hệ thống tự gom các đơn còn mở của cùng NCC. NCC mang đơn mua in theo: quét QR trên phiếu bằng camera điện thoại → mở bot nhận hàng.</div></div>`}
+const L=[['Rau muống','Rau củ tươi','kg',60,'0041',0,0,''],['Cải thảo','Rau củ tươi','kg',45,'0041 + 0046',0,0,''],['Cà chua','Rau củ tươi','kg',30,'0043',0,0,''],['Hành lá','Rau củ tươi','kg',8,'0043',0,0,'bad'],['Nấm kim châm (gói 150 g)','Mát 0–5 °C','gói',120,'0046',1,1,'edit'],['Đậu phụ','Mát 0–5 °C','kg',50,'0041',1,1,'edit'],['Giá đỗ','Rau củ tươi','kg',25,'0043',0,0,'']];
+function form(scan){return `<div class="bar"><div><h3>Nhận hàng – Rau sạch Đà Lạt</h3><div class="small muted">Gộp 3 đơn mua ĐM-261125-0041 · 0043 · 0046 · 18 dòng → 7 nguyên liệu (cùng nguyên liệu đã cộng, hệ thống chia về từng đơn – đơn cũ trước)</div></div><button class="sm" onclick="cl('ovR')">✕</button></div>
+${scan?'<div class="scan" style="margin:10px 0">🔎 Tìm "ĐM-261125-0043" → tự gom 2 đơn còn mở khác của cùng NCC (bỏ tick đơn không giao hôm nay).</div>':''}
+<div class="bar2" style="margin-top:10px"><div class="f"><label>Kho nhận</label><select class="in sm"><option>Kho nguyên liệu Long Biên</option></select></div><div class="f"><label>Nhiệt độ thùng xe (°C) – áp cho hàng mát / đông</label><input class="in sm" value="3.5" style="width:90px"></div><div class="f"><label>Số hóa đơn / phiếu giao NCC</label><input class="in sm" value="HĐ 0001234" style="width:120px"></div><div class="f"><label>Phiếu giao của NCC (Excel, tùy chọn)</label><button class="sm">⬆ Tải lên – tự điền lô / hạn dùng / số giao</button></div><span style="flex:1"></span><button class="sm p" onclick="toast('Đã đặt mọi dòng = số đặt, Đạt')">✓ Nhận đủ – Đạt tất cả</button></div>
+<table class="t"><thead><tr><th>Nguyên liệu</th><th>Đơn mua</th><th>Số đặt</th><th>Số nhận</th><th>Lô NCC</th><th>Hạn dùng</th><th>Nhiệt độ</th><th>Kết quả</th><th>Nhận xét</th></tr></thead><tbody>
+${L.map(l=>`<tr class="${l[7]}"><td><b>${l[0]}</b><span class="sub">${l[1]} · ${l[2]}</span></td><td class="po">${l[4]}</td><td>${l[3]}</td><td><input class="in sm" value="${l[7]==='bad'?6:l[3]}" style="width:70px"></td>
+<td>${l[5]?`<input class="in sm" value="${l[0].startsWith('Nấm')?'KC2611A':''}" placeholder="để trống = lô nội bộ" style="width:130px">`:'<span class="na">không quản lý lô</span>'}</td>
+<td>${l[6]?`<input class="in sm" value="${l[0].startsWith('Nấm')?'03/12/2026':'29/11/2026'}" style="width:100px">${l[0].startsWith('Nấm')?' <a class="small" href="#">↓ áp dòng dưới</a>':''}`:'<span class="na">tự tính</span>'}</td>
+<td>${l[1].startsWith('Mát')?'<span class="small">3,5 (theo xe)</span> <a class="small" href="#">sửa</a>':'<span class="na">–</span>'}</td>
+<td><select class="in sm" style="width:120px"><option ${l[7]==='bad'?'':'selected'}>Đạt</option><option ${l[7]==='bad'?'selected':''}>Đạt một phần</option><option>Không đạt</option></select></td>
+<td>${l[7]==='bad'?'<input class="in sm" value="2 kg héo, trả lại" style="width:140px">':'<span class="na">–</span>'}</td></tr>`).join('')}</tbody></table>
+<div class="note" style="margin-top:10px">Chỉ nguyên liệu có <b>quản lý lô / hạn dùng</b> mới hỏi Lô NCC và Hạn dùng (2 / 7 dòng). Dòng tô vàng = cần nhập, đỏ = có vấn đề. Lưu xong: <b>tách 3 phiếu nhập theo 3 đơn mua</b>; dòng tự đạt nhập kho ngay, dòng cần QA gửi QA; Hành lá thiếu 2 kg → tự lập sự cố NCC.</div>
+<div class="bar" style="justify-content:flex-end;gap:8px;margin-top:12px"><button onclick="cl('ovR')">Hủy</button><button class="p" onclick="cl('ovR');toast('Đã lập 3 phiếu nhập (PH-261126-0012 · 0013 · 0014) · 6 dòng nhập kho ngay · 1 dòng gửi QA · 1 sự cố NCC Hành lá thiếu 2 kg')">Nhận hàng (3 phiếu)</button></div>`}
+function openF(scan){$('frm').innerHTML=form(scan);$('ovR').classList.add('on')}
+function phone(){return `<div class="phone"><div class="bar"><b>Nhận hàng</b><span class="small muted">Thủ kho · Long Biên</span></div><input class="in" placeholder="Tìm NCC / số đơn…" style="width:100%;margin:12px 0"><div class="small muted" style="margin-bottom:8px">Hẹn giao hôm nay – bấm thẻ NCC để nhận</div>
+<div class="sc" style="margin-bottom:8px"><b>Rau sạch Đà Lạt</b><div class="m">3 đơn · 7 nguyên liệu · nhiệt độ xe <b>3,5 °C</b></div></div>
+<table class="t"><tbody>${L.slice(0,5).map(l=>`<tr class="${l[7]}"><td><b>${l[0]}</b><span class="sub">${l[3]} ${l[2]}${l[5]?' · cần lô / hạn dùng':''}</span></td><td style="text-align:right">${l[7]==='bad'?'<span class="chip c-bad">6 / 8</span>':'<span class="chip c-ok">Đủ</span>'}</td></tr>`).join('')}</tbody></table>
+<button class="p" style="width:100%;margin-top:10px">✓ Nhận đủ – Đạt tất cả</button><div class="small muted" style="margin-top:6px;text-align:center">Bấm dòng để sửa số nhận / kết quả</div></div>`}
+const h=location.hash;$('pg').innerHTML=h==='#phone'?phone():list();if(h==='#form')openF(false);if(h==='#scan')openF(true);
+</script></body></html>
