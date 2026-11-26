@@ -19,12 +19,16 @@ namespace AppDelicare.Services.Implement.Messaging
     /// Người chưa liên kết bot → bỏ qua (ghi log), không làm hỏng nghiệp vụ.
     /// BOT-2.3: giờ yên lặng theo ca (<see cref="QuietHours"/>) – mỗi người nhận có notBefore riêng; 🔴 không tới người ngoài ca (trừ leo thang).
     /// </summary>
-    public class NotificationService(IUnitOfWork unitOfWork, IClock clock, IOptionsMonitor<MessagingOptions> options) : INotificationService
+    public class NotificationService(IUnitOfWork unitOfWork, IClock clock, IOptionsMonitor<MessagingOptions> options, AppDelicare.Services.Implement.Agent.IAgentIncidentService agentIncidents) : INotificationService
     {
         public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+        /// <summary>AI-4: sự cố gấp → nhật ký sự kiện agent + webhook Hermes (1 lần / sự việc, lỗi không ảnh hưởng nghiệp vụ).</summary>
+        public Task RecordIncidentAsync(NotificationRequest request, CancellationToken ct = default) => agentIncidents.RecordAsync(request, ct);
+
         public async Task<List<Guid>> EnqueueAsync(NotificationRequest request, CancellationToken ct = default)
         {
+            await agentIncidents.RecordAsync(request, ct);
             var template = NotificationCatalog.Find(request.Template)
                 ?? throw new ArgumentException(string.Format(ConstantHelper.Message.BotTemplateUnknown, request.Template));
             var db = unitOfWork.DbContext;

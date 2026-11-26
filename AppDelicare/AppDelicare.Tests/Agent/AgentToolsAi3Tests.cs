@@ -17,12 +17,12 @@ namespace AppDelicare.Tests.Agent
     /// </summary>
     public class AgentToolsAi3Tests
     {
-        private const string Key = "khoa-ai3-test";
+        internal const string Key = "khoa-ai3-test";
         private static readonly string[] Agents = ["VIVI", "WH", "KITCHEN", "QA"];
 
         private static Guid AgentUser(string code) => Guid.Parse($"a3a3a3a3-0000-4000-8000-0000000000{Array.IndexOf(Agents, code) + 10:D2}");
 
-        private static async Task<InMemoryApiFactory> FactoryAsync(params (string Key, string Value)[] settings)
+        internal static async Task<InMemoryApiFactory> FactoryAsync(params (string Key, string Value)[] settings)
         {
             var f = new InMemoryApiFactory();
             f.Settings["AGENT_KEY_T3"] = Key;
@@ -61,7 +61,7 @@ namespace AppDelicare.Tests.Agent
             return f;
         }
 
-        private static async Task<AgentCallResult> Call(InMemoryApiFactory f, string agent, string tool, object? args = null)
+        internal static async Task<AgentCallResult> Call(InMemoryApiFactory f, string agent, string tool, object? args = null)
         {
             using var scope = f.Services.CreateScope();
             return await scope.ServiceProvider.GetRequiredService<IAgentGatewayService>().CallAsync(new AgentCallRequest
@@ -130,6 +130,7 @@ namespace AppDelicare.Tests.Agent
                 .NotContainAny("0912", "345 678", "84912345678", "@delicare", "0123456789012").And.Contain(AgentMask.Hidden);
             AgentMask.Text("Lô LO-261124-NC00026-01 hạn 2026-11-30, 12 suất, mã 3fa85f64-5717-4562-b3fc-2c963f66afa6").Should()
                 .Be("Lô LO-261124-NC00026-01 hạn 2026-11-30, 12 suất, mã 3fa85f64-5717-4562-b3fc-2c963f66afa6", "không che số lô / ngày / Guid");
+            AgentMask.Text("2026-11-27T06:24:05.1234567").Should().Be("2026-11-27T06:24:05.1234567", "mốc ISO (giây lẻ) không bị che");
             var data = new
             {
                 customer = new { name = "Cty A", phoneNumber = "028 1234", contactEmail = "x", note = "LH 0987654321" },

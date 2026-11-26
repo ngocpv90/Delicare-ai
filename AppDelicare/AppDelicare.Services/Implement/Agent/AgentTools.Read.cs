@@ -221,6 +221,22 @@ namespace AppDelicare.Services.Implement.Agent
                     Status = Str(a, "trang_thai"), Overdue = Bool(a, "qua_han"), From = Date(ctx, a, "tu_ngay", -30), To = Date(ctx, a, "den_ngay"), Page = 1, PageSize = 100,
                 })),
             },
+            // ---------------- AI-4 – nguồn sự kiện (Hermes cron 5 phút)
+            new AgentToolDef
+            {
+                Name = "lay_su_kien", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "KNOW"],
+                Description = "Sự kiện mới từ mốc since: sự cố gấp, duyệt mới / quá hạn, job đã chạy / lỗi, phản ánh mới, cảnh báo đang mở. Gọi lần sau với since = next. Mỗi sự kiện có key ổn định – đừng xử lý trùng.",
+                InputSchemaJson = Schema(("since", "string", "Mốc yyyy-MM-ddTHH:mm:ss (giờ VN) – lấy từ next lần trước; trống = 24 giờ qua")),
+                RunAsync = async (ctx, a) =>
+                {
+                    DateTime? since = null;
+                    if (Str(a, "since") is { } s)
+                    {
+                        since = DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : throw new AgentToolException($"since «{s}» không hợp lệ – dùng yyyy-MM-ddTHH:mm:ss");
+                    }
+                    return await Svc<IAgentEventService>(ctx).GetEvents(since, ctx.AgentCode);
+                },
+            },
         ];
     }
 

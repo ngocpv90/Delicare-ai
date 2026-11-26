@@ -23,10 +23,14 @@ namespace AppDelicare.Services.Implement.Agent
         [GeneratedRegex(@"(?<![\w-])\d{9,16}(?![\w-])", RegexOptions.CultureInvariant)]
         private static partial Regex LongNumberRx();
 
+        /// <summary>Ngày giờ ISO (yyyy-MM-ddTHH:mm:ss.fffffff) – không che (phần giây lẻ giống số điện thoại).</summary>
+        [GeneratedRegex(@"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?)?(Z|[+-]\d{2}:\d{2})?$", RegexOptions.CultureInvariant)]
+        private static partial Regex IsoDateRx();
+
         /// <summary>Che 1 chuỗi tự do.</summary>
         public static string Text(string? s)
         {
-            if (string.IsNullOrEmpty(s))
+            if (string.IsNullOrEmpty(s) || IsoDateRx().IsMatch(s))
             {
                 return s ?? string.Empty;
             }
