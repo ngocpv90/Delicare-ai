@@ -75,7 +75,7 @@ namespace AppDelicare.Services.Implement
 
         private static string MealName(string? m) => (m ?? string.Empty).ToUpperInvariant() switch
         {
-            "SANG" => "Sáng", "TRUA" => "Trưa", "TOI" => "Tối", "DEM" => "Đêm", _ => m ?? string.Empty,
+            "SANG" => "Sáng", "TRUA" => "Trưa", "TOI" => "Tối", "DEM" => "Đêm", "COM_SUAT" => "cơm suất", _ => m ?? string.Empty,
         };
 
         // ============================================================ dựng chứng từ của kỳ
@@ -182,12 +182,14 @@ namespace AppDelicare.Services.Implement
                 }
                 Guid? shiftId = shiftOfPo.GetValueOrDefault(i.ProductionOrderId);
                 var sh = shiftId is { } sid ? shifts.GetValueOrDefault(sid) : null;
-                string? meal = MealOfShift(sh?.Code, sh?.Name);
+                var bb = PackagingNormService.ParseTag(i.Note); // ACC-6: phiếu xuất bao bì theo ca → loại Xuất bao bì
+                string? meal = bb?.Meal ?? MealOfShift(sh?.Code, sh?.Name);
                 string? target = ProductCode(meal);
+                string vType = bb != null ? VoucherType.Packaging : VoucherType.Issue;
                 var v = new VoucherModel
                 {
-                    Key = $"{VoucherType.Issue}|{i.Id:N}", Type = VoucherType.Issue, Number = i.IssueNumber ?? i.IssueNo ?? i.Id.ToString("N")[..8], Date = i.IssueDate,
-                    ObjectCode = target, ObjectName = meal != null ? "Buổi " + MealName(meal) : "Không gắn ca", Source = "Phiếu xuất theo ca đã ghi sổ",
+                    Key = $"{vType}|{i.Id:N}", Type = vType, Number = i.IssueNumber ?? i.IssueNo ?? i.Id.ToString("N")[..8], Date = i.IssueDate,
+                    ObjectCode = target, ObjectName = meal != null ? "Buổi " + MealName(meal) : "Không gắn ca", Source = bb != null ? $"Xuất bao bì ca {bb.ShiftCode} – {bb.Portions:0.##} suất đạt × định mức" : "Phiếu xuất theo ca đã ghi sổ",
                 };
                 foreach (var g in rows.GroupBy(t => t.IngredientId))
                 {
@@ -349,7 +351,7 @@ namespace AppDelicare.Services.Implement
             {
                 missing.Add($"NCC {v.ObjectCode}");
             }
-            if (v.Type is VoucherType.Issue && v.ObjectCode != null && !material.Contains(v.ObjectCode))
+            if (v.Type is VoucherType.Issue or VoucherType.Packaging && v.ObjectCode != null && !material.Contains(v.ObjectCode))
             {
                 missing.Add($"thành phẩm {v.ObjectCode}");
             }

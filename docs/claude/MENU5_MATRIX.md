@@ -73,6 +73,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | X | X | X | — | — | — | — | — | S | — | — | X | X | X | — | — | — | X | X |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | X | X | X | — | — | — | — | — | S | S | — | X | X | X | X | X (IX) | — | X | X |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | — | — | — | — | — | S | S | — | X | X | X | — | X (IX) | — | X | — |
+| Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | X | X | X | S | X | X | X | X | X | — | — | — | — | — | — | X (IX) | — | X | — |
 | Nhân sự › Nhân viên | `adm-employee` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | X | — |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | S (IX) | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | X (IX) | S (IX) | X | — |
@@ -108,24 +109,24 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào  93 mục · ô quyền  114
-  CEO-PMO       vào  89 mục · ô quyền   95
-  COO           vào 104 mục · ô quyền  134
-  OPS-PLAN      vào  38 mục · ô quyền   82
-  OPS-SCM       vào  22 mục · ô quyền   59
-  OPS-WH        vào  19 mục · ô quyền   69
-  OPS-SCM-HEAD  vào  35 mục · ô quyền  124
-  OPS-KIT       vào  26 mục · ô quyền   44
-  OPS-LOG       vào  17 mục · ô quyền   35
+  CEO           vào  94 mục · ô quyền  115
+  CEO-PMO       vào  90 mục · ô quyền   96
+  COO           vào 105 mục · ô quyền  135
+  OPS-PLAN      vào  39 mục · ô quyền   85
+  OPS-SCM       vào  23 mục · ô quyền   60
+  OPS-WH        vào  20 mục · ô quyền   70
+  OPS-SCM-HEAD  vào  36 mục · ô quyền  125
+  OPS-KIT       vào  27 mục · ô quyền   45
+  OPS-LOG       vào  18 mục · ô quyền   36
   OPS-POS       vào  12 mục · ô quyền   24
   OPS-MNT       vào   5 mục · ô quyền    9
   SAL-SALES     vào  20 mục · ô quyền   38
   SAL-CON       vào  20 mục · ô quyền   68
   SAL-HEAD      vào  26 mục · ô quyền   81
   SAL-CS        vào  11 mục · ô quyền   15
-  FIN-ACC       vào  34 mục · ô quyền  117
+  FIN-ACC       vào  35 mục · ô quyền  120
   FIN-HR        vào  12 mục · ô quyền   42
-  FIN-IT        vào 106 mục · ô quyền  195
+  FIN-IT        vào 107 mục · ô quyền  196
   QA            vào  30 mục · ô quyền   69
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; log-load-short = COO, OPS-SCM-HEAD
 ```

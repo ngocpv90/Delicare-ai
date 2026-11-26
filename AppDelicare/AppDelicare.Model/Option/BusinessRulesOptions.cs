@@ -81,6 +81,10 @@ namespace AppDelicare.Model.Option
         public bool ProductionAutoReleaseAfterLock { get; set; } = true;
         /// <summary>BIZ-2.5 (D-77 – C4): phát hành lệnh → tự tạo phiếu xuất Nháp theo ca (số = giữ chỗ, lô FEFO).</summary>
         public bool ProductionAutoDraftIssueOnRelease { get; set; } = true;
+        /// <summary>ACC-6 (D-131 j): ghi kết quả đóng gói → tự lập phiếu xuất bao bì Nháp theo ca = suất đạt × định mức (công thức món bao bì BB-&lt;buổi&gt;).</summary>
+        public bool PackagingIssueAutoDraft { get; set; } = true;
+        /// <summary>ACC-6 (D-131 j): job PackagingIssueAutoPost tự ghi sổ phiếu xuất bao bì Nháp sau khi hết ca (kho không sửa / ghi sổ tay).</summary>
+        public bool PackagingIssueAutoPost { get; set; } = true;
         /// <summary>BIZ-2.6 (D-77 – C5): QC đầu vào kết luận Đạt / Đạt một phần → tự ghi sổ phiếu nhập (phần đạt).</summary>
         public bool GoodsReceiptAutoPostAfterQc { get; set; } = true;
         /// <summary>BIZ-2.7 (D-77 – C6): mẻ đủ điều kiện (lõi, sản lượng, lưu mẫu, không lỗi trọng yếu) tự Đạt QC.</summary>
