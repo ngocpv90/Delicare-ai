@@ -75,13 +75,14 @@ namespace AppDelicare.Services.Implement.Agent
         Task<AgentCallResult> CallAsync(AgentCallRequest request);
     }
 
-    public static class AgentToolRegistry
+    public static partial class AgentToolRegistry
     {
-        public const string Version = "ai-2";
+        public const string Version = "ai-3";
         private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
+        public static JsonSerializerOptions WebJson => Web;
 
         /// <summary>Danh bạ công cụ (AI-1: ping; AI-3 thêm công cụ đọc).</summary>
-        public static IReadOnlyList<AgentToolDef> All { get; } = Build();
+        public static IReadOnlyList<AgentToolDef> All { get; } = [.. Build(), .. ReadTools()];
 
         // ---- tham số công cụ (JSON Schema đơn giản) ----
         public static string? Str(JsonElement a, string k) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String && v.GetString() is { Length: > 0 } s ? s.Trim() : null;
@@ -298,8 +299,10 @@ namespace AppDelicare.Services.Implement.Agent
                         using var scope = _currentActor.BeginScope(ActorInfo.ForAgent(id.AgentUserId, id.AgentCode), correlation);
                         var ctx = new AgentToolContext { AgentCode = id.AgentCode, AgentUserId = id.AgentUserId, AskingUserId = id.AskingUserId, CorrelationId = correlation, Services = _services };
                         var data = await tool.RunAsync(ctx, request.Arguments);
-                        rows = data is System.Collections.ICollection c ? c.Count : AgentToolRegistry.RowsOf(data);
-                        result = AgentCallResult.Ok(data);
+                        // AI-3: che dữ liệu cá nhân + cắt Agent:MaxRows TẬP TRUNG – mọi công cụ (kể cả thêm sau) đều đi qua.
+                        var (masked, n) = AgentMask.Apply(data, AgentToolRegistry.MaxRows(ctx), AgentToolRegistry.WebJson);
+                        rows = n > 0 ? n : masked == null ? 0 : 1;
+                        result = AgentCallResult.Ok(masked);
                     }
                     catch (AgentToolException ex)
                     {
