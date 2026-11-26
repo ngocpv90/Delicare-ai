@@ -102,7 +102,7 @@
     const close = () => w.remove();
     const loaded = {};
     const show = i => { w.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', +b.dataset.tab === i)); w.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('hide', +p.dataset.pane !== i)); if (typeof tabs[i].html === 'function' && !loaded[i]) { loaded[i] = 1; const p = w.querySelector(`[data-pane="${i}"]`); p.innerHTML = tabs[i].html(p); } cleanTech(w); };
-    w.addEventListener('click', e => { if (e.target === w || e.target.closest('[data-close]')) close(); const tb = e.target.closest('[data-tab]'); if (tb) show(+tb.dataset.tab); });
+    w.addEventListener('click', e => { if (e.target === w || e.target.closest('[data-close]')) close(); const gb = e.target.closest('[data-go]'); if (gb && !gb.onclick && window.APP) { close(); APP.go(gb.dataset.go); return; } const tb = e.target.closest('[data-tab]'); if (tb) show(+tb.dataset.tab); });
     show(0); onMount && onMount(w.querySelector('.drawer'), close);
     return close;
   };

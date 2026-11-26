@@ -359,14 +359,16 @@
     const menus = Store.rows('Menu').filter(m => m.MenuType === 'COMMON' && m.Status !== 'Draft').sort((a, b) => String(b.EffectiveFrom || '').localeCompare(String(a.EffectiveFrom || ''))).slice(0, 20);
     UI.modal({ title: 'Tạo thực đơn tuần ' + U.date(mw.week).slice(0, 5), size: 'sm',
       body: `<label class="mw-radio"><input type="radio" name="mwm" value="auto" checked> <b>Nhân bản tuần cùng vị trí chu kỳ 4 tuần</b><div class="small muted">Như hệ thống tự lập thứ Hai</div></label>
-        <label class="mw-radio"><input type="radio" name="mwm" value="pick"> <b>Nhân bản tuần chọn</b><select class="select mt" id="mwSrc">${menus.map(m => `<option value="${m.Id}">${esc(m.Code || '')} · ${U.date(U.day(m.EffectiveFrom))}</option>`).join('')}</select></label>
+        <label class="mw-radio"><input type="radio" name="mwm" value="pick"> <b>Nhân bản tuần chọn</b>${menus.length ? `<select class="select mt" id="mwSrc">${menus.map(m => `<option value="${m.Id}">${esc(m.Code || '')} · ${U.date(U.day(m.EffectiveFrom))}</option>`).join('')}</select>` : '<div class="small muted">Chưa có thực đơn chung nào đã công bố để nhân bản</div>'}</label>
         <label class="mw-radio"><input type="radio" name="mwm" value="blank"> <b>Khung trống mẫu chuẩn</b><div class="small muted">Sáng 3 lựa chọn × Món chính – Ăn kèm – Đồ uống; Trưa / Tối 7 nhóm món; Đêm Món chính – Đồ uống</div></label>
         <div class="small muted">Tải Excel: tạo <b>khung trống</b> (hoặc nhân bản) rồi bấm <b>Tải Excel lên</b> trên Lịch tuần (mẫu sheet "1. Menu").</div>`,
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="mwCOk">Tạo</button>',
-      onMount: (m, close) => m.querySelector('#mwCOk').onclick = () => {
-        const mode = (m.querySelector('[name=mwm]:checked') || {}).value, form = { weekStart: mw.week };
-        if (mode === 'pick') form.sourceId = m.querySelector('#mwSrc').value; if (mode === 'blank') form.blank = true;
-        Store.act('Menu/CreateWeek', { form, tables: ['Menu', 'MenuLine'] }).then(x => { if (!x.ok) return; close(); UI.toast(esc((x.data && x.data.message) || 'Đã tạo'), 'ok'); mwLoad(el, f, true).then(() => mwDraw(el, f)); });
+      onMount: (m, close) => m.querySelector('#mwCOk').onclick = e => {
+        const btn = e.currentTarget, mode = (m.querySelector('[name=mwm]:checked') || {}).value, form = { weekStart: mw.week };
+        if (mode === 'pick') { form.sourceId = (m.querySelector('#mwSrc') || {}).value; if (!form.sourceId) return UI.toast('Chưa có thực đơn nào để nhân bản – chọn cách khác', 'err'); }
+        if (mode === 'blank') form.blank = true;
+        if (btn.disabled) return; btn.disabled = true;
+        Store.act('Menu/CreateWeek', { form, tables: ['Menu', 'MenuLine'] }).then(x => { btn.disabled = false; if (!x.ok) return; close(); UI.toast(esc((x.data && x.data.message) || 'Đã tạo'), 'ok'); mwLoad(el, f, true).then(() => mwDraw(el, f)); });
       } });
   }
   function mwHist(el, f) {
