@@ -91,9 +91,9 @@ namespace AppDelicare.Services.Implement
             // (a) Bán hàng tháng × khách (bảng kê).
             var customers = await db.Order.AsNoTracking().Where(o => !o.IsDeleted && o.MealDate >= from && o.MealDate < end && o.Status == OrderStatus.Reconciled)
                 .Select(o => o.CustomerId).Distinct().ToListAsync();
-            var confirmed = (await db.AuditChange.AsNoTracking().Where(a => !a.IsDeleted && a.EntityName == "BillingStatement" && a.Action == BillingConfirmedAction && a.IdChange != null)
-                .Select(a => new { a.IdChange, a.Changes }).ToListAsync())
-                .Where(a => (a.Changes ?? string.Empty).Contains(from.ToString("yyyy-MM", Inv), StringComparison.Ordinal)).Select(a => a.IdChange!.Value).ToHashSet();
+            // ACC-3 (D-131 f): khách đã xác nhận bảng kê tháng (trạng thái mới nhất Đã xác nhận / Đã lập phiếu bán).
+            var confirmed = (await BillingConfirmation.StatesAsync(db, from.ToString("yyyy-MM", Inv)))
+                .Where(kv => kv.Value.Code is BillingConfirmation.StateConfirmed or BillingConfirmation.StateInvoiced).Select(kv => kv.Key).ToHashSet();
             foreach (var customerId in customers)
             {
                 var st = (await _billing.GetStatement(new BillingStatementRequest { CustomerId = customerId, From = from, To = to })).Data;

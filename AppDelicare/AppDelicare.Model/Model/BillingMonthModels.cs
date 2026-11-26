@@ -46,6 +46,11 @@ namespace AppDelicare.Model.Model
         public decimal? PreviousMealAmount { get; set; }
         public decimal? ChangePct { get; set; }
         public bool Warn { get; set; }
+        /// <summary>ACC-3 (D-131 f): xác nhận của khách – NOT_SENT · SENT · CONFIRMED · DISPUTED · INVOICED.</summary>
+        public string ConfirmState { get; set; } = "NOT_SENT";
+        public string? ConfirmStateName { get; set; }
+        public DateTime? ConfirmAt { get; set; }
+        public string? ConfirmNote { get; set; }
     }
 
     public class BillingPendingOrderGroupModel
@@ -56,6 +61,14 @@ namespace AppDelicare.Model.Model
     }
 
     /// <summary>Xuất lô: Excel = 1 tệp nhiều sheet (+ Tổng hợp); PDF = 1 tệp nén, mỗi khách 1 PDF.</summary>
+    /// <summary>ACC-3 (D-131 f): ghi nhận khách đã xác nhận / phản hồi lệch bảng kê tháng.</summary>
+    public class BillingConfirmRequest
+    {
+        public DateTime? Month { get; set; }
+        public List<Guid> ListCustomerId { get; set; } = [];
+        public string? Note { get; set; }
+    }
+
     public class BillingBatchRequest
     {
         public DateTime? Month { get; set; }

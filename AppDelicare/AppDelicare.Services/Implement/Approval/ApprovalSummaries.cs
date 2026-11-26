@@ -45,6 +45,7 @@ namespace AppDelicare.Services.Implement.Approval
                 PlanBusinessType => ("Kế hoạch sản xuất", "Sản xuất", "prod-plan"),
                 // HR-ACC-1.6 (D-82 f–h): vòng đời tài khoản – người duyệt FIN-IT.
                 PriceAdjustmentStatus.BusinessType => ("Phụ lục điều chỉnh giá", "Kinh doanh", "crm-contract"),
+                OrderReconciliationService.ReopenBusinessType => ("Mở lại đối soát", "Kế toán", "crm-reconciliation"), // ACC-3 (D-131 g)
                 AccountLifecycleCodes.CreateBusinessType => ("Cấp tài khoản", "Quản trị hệ thống", "adm-user"),
                 AccountLifecycleCodes.GroupBusinessType => ("Đổi nhóm quyền", "Quản trị hệ thống", "adm-user"),
                 AccountLifecycleCodes.ReopenBusinessType => ("Mở lại tài khoản", "Quản trị hệ thống", "adm-user"),

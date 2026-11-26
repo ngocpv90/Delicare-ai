@@ -1012,6 +1012,18 @@
             public static readonly string AmisCodeInUse = "Mã {0} đang dùng cho «{1}» – ghép bản ghi đó trước hoặc chọn mã khác";
             public static readonly string AmisRemapped = "Đã ghép «{0}»: mã {1} → {2}";
             public static readonly string AmisNoSnapshot = "Chưa nhận danh mục từ AMIS – nhập tệp Excel xuất từ AMIS trước";
+            // ACC-3 (D-131 f, g): xác nhận bảng kê, mở lại đối soát.
+            public static readonly string BillingConfirmNothing = "Chỉ ghi nhận được khách Sẵn sàng (đã chốt hết đối soát) chưa xác nhận";
+            public static readonly string BillingConfirmed = "Đã ghi nhận {0} khách xác nhận bảng kê – phiếu bán tháng sẵn sàng ở Chứng từ kế toán";
+            public static readonly string BillingConfirmSkipped = " ({0} khách bỏ qua: chưa sẵn sàng / đã xác nhận)";
+            public static readonly string BillingDisputeNoteRequired = "Nhập nội dung khách phản hồi lệch";
+            public static readonly string BillingDisputed = "Đã ghi {0} khách phản hồi lệch – kiểm tra lại đối soát (mở lại đối soát nếu cần)";
+            public static readonly string BillingSendNotReady = "Tính năng chưa được nâng cấp – cần hộp thư gửi email (IT cấu hình máy chủ). Tạm thời xuất Excel / PDF gửi khách rồi ghi nhận khách đã xác nhận.";
+            public static readonly string ReconReopenReasonRequired = "Nhập lý do mở lại đối soát";
+            public static readonly string ReconReopenNotClosed = "Chỉ mở lại được đối soát Đã chốt";
+            public static readonly string ReconReopenPending = "Đối soát này đang có yêu cầu mở lại chờ duyệt";
+            public static readonly string ReconReopenSubmitted = "Đã gửi yêu cầu mở lại đối soát {0} – chờ COO duyệt";
+            public static readonly string ReconReopened = "Đã mở lại đối soát – đơn về Đã giao";
             // ACC-2 (D-131 e): chứng từ kế toán.
             public static readonly string VoucherNothingToExport = "Không có chứng từ nào tải được – chỉ tải chứng từ Sẵn sàng / Chờ lập / Đã sửa (dòng lỗi, chờ nghiệp vụ gốc, bảng công bỏ qua)";
             public static readonly string VoucherExported = "Đã tải {0} chứng từ – nhập vào AMIS rồi đánh dấu đã lập";

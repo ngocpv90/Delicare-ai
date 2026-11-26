@@ -182,6 +182,22 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>ACC-3 (D-131 g): yêu cầu mở lại đối soát Đã chốt (form Id, Reason) → chờ COO duyệt (Phê duyệt › Mở lại đối soát). Quyền Sửa.</summary>
+        [Security.Permission("crm-reconciliation", Services.Interface.PermissionAction.Edit)]
+        [HttpPost("RequestReopen")]
+        public async Task<IActionResult> RequestReopen([FromForm] Guid id, [FromForm] string? reason)
+        {
+            try
+            {
+                return Ok(await _service.RequestReopen(id, reason));
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(string.Concat("[", GetType().Name, "]", " RequestReopen: ", ex.ToString()));
+                return StatusCode(500, ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T19: đóng đối soát → đơn hàng Đã đối soát; chênh lệch &gt; ngưỡng cần ghi chú.</summary>
         [HttpPost("Close")]
         public async Task<IActionResult> Close([FromForm] ReconciliationCloseRequest request)
