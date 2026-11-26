@@ -66,7 +66,9 @@ public static partial class Seeds
         ]),
         new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal"]), // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
-            ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "crm-billing", "log-complaint", "crm-location", "crm-contact"]),
+            ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "log-complaint", "crm-location", "crm-contact"]),
+        // ACC-1 (D-131 b – anh chốt 2026-11-26): nhóm "Kế toán" sau Kinh doanh – Bảng kê thanh toán CHUYỂN từ Kinh doanh (giữ screen-id crm-billing, không mất quyền).
+        new("#/group/02b", "Kế toán", [], 250, "acc", ["acc-voucher", "crm-billing", "acc-amis-code", "acc-amis-recon", "acc-period"]),
         new("#/group/03", "Thực đơn & Món ăn", [], 300, "menu", ["menu-menu", "menu-assignment", "menu-change-request", "menu-recipe", "menu-dish", "menu-dish-cat"]),
         new("#/group/04", "Mua hàng", ["Mua hàng & Kho"], 400, "scm",
             ["scm-requirement", "scm-pr", "scm-po", "scm-supplier", "scm-supplier-material", "scm-ingredient", "scm-ingredient-cat"]),
@@ -108,6 +110,11 @@ public static partial class Seeds
         ["hr-my"] = ("Việc của tôi", "P8"),
         ["adm-job"] = ("Job tự động", "P0"),
         ["sys-import"] = ("Nhập dữ liệu gốc (Excel)", "P0"),
+        // ACC-1 (D-131 b): nhóm Kế toán – Chứng từ kế toán (ACC-2), Khớp mã AMIS (ACC-1), Đối chiếu với AMIS (ACC-8), Khóa kỳ (ACC-4).
+        ["acc-voucher"] = ("Chứng từ kế toán", "ACC"),
+        ["acc-amis-code"] = ("Khớp mã AMIS", "ACC"),
+        ["acc-amis-recon"] = ("Đối chiếu với AMIS", "ACC"),
+        ["acc-period"] = ("Khóa kỳ", "ACC"),
         ["wf-inbox?type=prod-batch"] = ("Mẻ nấu", "P5"),
         ["wf-inbox?type=scm-lot"] = ("Giữ / thả lô", "P4"),
         // UI-6.49 (6) (D-127 e): xếp xe có điều kiện khi chuyến chưa đủ thực đơn (DeliveryRoute/Load + OverrideReason).
@@ -245,6 +252,13 @@ public static partial class Seeds
         G("FIN-ACC", ViewR, L("scm-supplier scm-supplier-material"));
         // UI-6.8 (D-86, anh duyệt 2026-11-24): Kế toán chốt đối soát còn lại (dòng khớp tự chốt 24 giờ) → Thêm + Sửa màn Đối soát.
         G("FIN-ACC", EditR, L("crm-reconciliation"));
+
+        // ACC-1 (D-131 b): FIN-ACC Q (IX) cả 5 mục Kế toán; SAL-HEAD Q (IX) Bảng kê; CEO / COO Xem (IX); FIN-IT Xem Khớp mã (qua "toàn bộ màn nghiệp vụ").
+        string[] acc = L("acc-voucher crm-billing acc-amis-code acc-amis-recon acc-period");
+        G("FIN-ACC", OwnR.Or(ix), acc);
+        G("SAL-HEAD", OwnR.Or(ix), ["crm-billing"]);
+        G("CEO", ix, acc);
+        G("COO", ix, acc);
 
         G("FIN-HR", OwnR, L("hr-shift adm-position"));
         G("FIN-HR", EditR.Or(ix), L("adm-employee hr-shift-assign hr-attendance hr-leave hr-swap"));

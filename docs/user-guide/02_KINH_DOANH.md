@@ -24,8 +24,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | S | Q (IX) | Q (IX) | X |
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | S | Q (IX) | Q (IX) | — |
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | S | S | X |
-| Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X (IX) | X (IX) | — |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | S | S |
+| Kế toán › Bảng kê thanh toán | `crm-billing` | X (IX) | X (IX) | Q (IX) | — |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | X |
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | X | X | X | — |

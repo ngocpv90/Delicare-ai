@@ -38,8 +38,12 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
 | Kinh doanh › Dự báo suất ăn | `crm-forecast` | X | X | X | X | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | — | — | X | — |
 | Kinh doanh › Đối soát suất ăn | `crm-reconciliation` | X | X | X | — | — | — | — | — | — | S | — | X | S | S | X | S (IX) | — | X | — |
-| Kinh doanh › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X | — | — | — | — | — | — | — | — | X (IX) | X (IX) | X (IX) | — | X (IX) | — | X | — |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | X | X | X | — | — | — | — | — | — | S | — | X | X | S | S | — | — | X | S (IX) |
+| Kế toán › Chứng từ kế toán | `acc-voucher` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — | X | — |
+| Kế toán › Bảng kê thanh toán | `crm-billing` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | X (IX) | X (IX) | Q (IX) | — | Q (IX) | — | X | — |
+| Kế toán › Khớp mã AMIS | `acc-amis-code` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — | X | — |
+| Kế toán › Đối chiếu với AMIS | `acc-amis-recon` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — | X | — |
+| Kế toán › Khóa kỳ | `acc-period` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — | X | — |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | Q | X | — | X | X | — | X | — | X | X | X | X | — | — | X | X |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | X | X | Q | X | — | X | X | — | — | — | — | — | — | — | — | — | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | Q | — | — | — | X | — | — | — | X | X | X | X | — | — | X | X |
@@ -101,9 +105,9 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào  88 mục · ô quyền  101
-  CEO-PMO       vào  84 mục · ô quyền   90
-  COO           vào  97 mục · ô quyền  115
+  CEO           vào  92 mục · ô quyền  113
+  CEO-PMO       vào  88 mục · ô quyền   94
+  COO           vào 101 mục · ô quyền  129
   OPS-PLAN      vào  38 mục · ô quyền   82
   OPS-SCM       vào  21 mục · ô quyền   57
   OPS-WH        vào  18 mục · ô quyền   64
@@ -114,11 +118,11 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   OPS-MNT       vào   5 mục · ô quyền    9
   SAL-SALES     vào  20 mục · ô quyền   38
   SAL-CON       vào  20 mục · ô quyền   68
-  SAL-HEAD      vào  26 mục · ô quyền   77
+  SAL-HEAD      vào  26 mục · ô quyền   81
   SAL-CS        vào  11 mục · ô quyền   15
-  FIN-ACC       vào  29 mục · ô quyền   82
+  FIN-ACC       vào  33 mục · ô quyền  114
   FIN-HR        vào  12 mục · ô quyền   42
-  FIN-IT        vào 101 mục · ô quyền  190
+  FIN-IT        vào 105 mục · ô quyền  194
   QA            vào  30 mục · ô quyền   69
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; log-load-short = COO, OPS-SCM-HEAD
 ```

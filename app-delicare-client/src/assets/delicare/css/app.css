@@ -891,3 +891,9 @@ tr.bb-late td{background:#FFF5F4}
 /* UI-6.27 (D-108): Giá vốn & lãi gộp – thanh tỷ lệ NL / DT so vạch ngưỡng */
 .cm-bar{position:relative;display:inline-block;width:90px;height:8px;border-radius:4px;background:#EEF1EC;vertical-align:middle;margin-left:6px}.cm-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#7FA43A}.cm-bar i.orange{background:#E8833A}.cm-bar i.red{background:#B42318}.cm-bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1E2620}
 .cm-table .l{position:sticky;left:0;background:#fff;z-index:1}
+/* ACC-1 (D-131 b): thanh chuyển nhanh 5 mục nhóm Kế toán */
+.acc-nav{display:flex;flex-wrap:wrap;gap:6px}
+.acc-nav-i{border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:13px;background:#fff;color:#5d6a60;text-decoration:none;white-space:nowrap}
+.acc-nav-i:hover{border-color:#cfe0b4;color:var(--green-dark)}
+.acc-nav-i.active{background:var(--green-soft);border-color:#cfe0b4;color:var(--green-dark);font-weight:700}
+@media(max-width:768px){.acc-nav{flex-wrap:nowrap;overflow-x:auto}}
