@@ -29,6 +29,8 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
         public const string ReplyChangeReason = "op-change-reason";
         public const string ReplyCleanReject = "op-clean-reject";
         public const string ReplyAttendanceFile = "op-mcc-file";
+        /// <summary>ACC-5 (D-131 i): lý do NCC không nhận lại hàng (nút ⛔ trên tin phiếu trả NCC).</summary>
+        public const string ReplySupplierRefuse = "op-sr-refuse";
         public const int MaxFileBytes = 5 * 1024 * 1024;
 
         private sealed class ChangeDraft
@@ -195,6 +197,29 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
             }, ct);
         }
 
+        /// <summary>ACC-5: Mua hàng xác nhận NCC đồng ý / không nhận phiếu trả – api SupplierReturn/Confirm bằng JWT của người bấm (quyền Sửa #/scm-supplier-return).</summary>
+        private async Task SupplierReturnConfirmAsync(BotActionContext ctx, Guid id, bool agree, string note, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            var r = await Web.PostJsonAsUserAsync<JsonElement>("api/SupplierReturn/Confirm", new { id, agree, note = note[..Math.Min(note.Length, 1000)] }, token, ct);
+            string number = r.IsOk && r.Data.ValueKind == JsonValueKind.Object ? S(r.Data, "number") ?? string.Empty : string.Empty;
+            await SayAsync(ctx, r.IsOk ? (agree ? $"✅ {number}: đã ghi NCC đồng ý nhận lại – Thủ kho được báo giao trả." : $"⛔ {number}: đã ghi NCC không nhận – lô bỏ tạm giữ.") : "⚠️ " + Problem(r), ct);
+        }
+
+        /// <summary>ACC-6: đề nghị mua nháp cho bao bì thiếu (api PackagingNorm/CreateShortagePr – quyền Thêm #/scm-pr; đã có thì báo số cũ).</summary>
+        private async Task ShortagePurchaseAsync(BotActionContext ctx, DateTime day, string shiftCode, CancellationToken ct)
+        {
+            if (await TokenAsync(ctx, ct) is not { } token)
+            {
+                return;
+            }
+            var r = await Web.PostJsonAsUserAsync<JsonElement>("api/PackagingNorm/CreateShortagePr", new { day = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), shiftCode }, token, ct);
+            await SayAsync(ctx, r.IsOk ? "🛒 " + (r.ResponseMessage ?? "Đã lập đề nghị mua") : "⚠️ " + Problem(r), ct);
+        }
+
         private async Task CleaningCompleteAsync(BotActionContext ctx, int index, bool pass, string? note, CancellationToken ct)
         {
             if (!_cleaning.TryGetValue(ctx.Event.ChatId, out var list) || index < 0 || index >= list.Count)
@@ -298,6 +323,17 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                 case "cp":
                     await CleaningCompleteAsync(ctx, index, true, "Kết luận qua Telegram", ct);
                     break;
+                // ACC-5 (D-131 i): tin "Phiếu trả hàng NCC" gửi Mua hàng – ✅ NCC đồng ý / ⛔ NCC không nhận (hỏi lý do).
+                case "sra" when Guid.TryParseExact(id, "N", out var returnId):
+                    await SupplierReturnConfirmAsync(ctx, returnId, true, "Xác nhận qua Telegram", ct);
+                    break;
+                // ACC-6 (D-131 j): tin thiếu bao bì – 🛒 Tạo đề nghị mua nháp phần thiếu của ngày × ca.
+                case "bpr" when id.Split('.', 2) is [var prDay, var prShift] && DateTime.TryParseExact(prDay, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var prDate):
+                    await ShortagePurchaseAsync(ctx, prDate, prShift, ct);
+                    break;
+                case "srr" when Guid.TryParseExact(id, "N", out _):
+                    await AskAsync(ctx, "⛔ Lý do NCC không nhận lại hàng:", ReplySupplierRefuse, id, ct);
+                    break;
                 case "cr":
                     await ShowAsync(ctx, new NeutralMessage
                     {
@@ -346,6 +382,12 @@ namespace AppDelicare.Messaging.Audiences.Internal.VanHanh
                     return;
                 case ReplyChangeReason:
                     await ChangeCreateAsync(ctx, text, ct);
+                    return;
+                case ReplySupplierRefuse when text.Length < 3:
+                    await AskAsync(ctx, "Lý do quá ngắn – gõ lại:", pending.Flow, pending.Key, ct);
+                    return;
+                case ReplySupplierRefuse when Guid.TryParseExact(pending.Key, "N", out var refuseId):
+                    await SupplierReturnConfirmAsync(ctx, refuseId, false, text, ct);
                     return;
                 case ReplyCleanReject when int.TryParse(pending.Key, out int i):
                     await CleaningCompleteAsync(ctx, i, false, text, ct);

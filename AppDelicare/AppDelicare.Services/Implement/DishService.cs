@@ -88,7 +88,7 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
-                var list = _unitOfWork.DishRepository.GetAll().Where(x => !x.IsDeleted).ToList();
+                var list = _unitOfWork.DishRepository.GetAll().Where(x => !x.IsDeleted && (x.Code == null || !x.Code.StartsWith(PackagingNormService.DishPrefix))).ToList(); // ACC-6: món bao bì BB-<buổi> ẩn – sửa ở Định mức bao bì
                 return new Results<Dish>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),

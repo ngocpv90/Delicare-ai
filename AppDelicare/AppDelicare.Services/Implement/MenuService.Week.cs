@@ -390,11 +390,11 @@ namespace AppDelicare.Services.Implement
                 DateTime monday = OrderService.MondayOf(request.WeekStart ?? menu.EffectiveFrom ?? _clock.Today), date = monday.AddDays(Math.Clamp(request.Day, 1, 7) - 1);
                 string? q = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
                 var candidates = await db.Dish.AsNoTracking()
-                    .Where(d => !d.IsDeleted && (d.Status == null || d.Status == "Active") && (q == null ? (request.CategoryId == null || (d.DishCategoryId ?? d.CategoryId) == request.CategoryId) : d.Name!.Contains(q)))
+                    .Where(d => !d.IsDeleted && (d.Status == null || d.Status == "Active") && (d.Code == null || !d.Code.StartsWith(PackagingNormService.DishPrefix)) && (q == null ? (request.CategoryId == null || (d.DishCategoryId ?? d.CategoryId) == request.CategoryId) : d.Name!.Contains(q)))
                     .Select(d => d.Id).Take(400).ToListAsync();
                 if (candidates.Count < 5 && q == null)
                 {
-                    candidates.AddRange(await db.Dish.AsNoTracking().Where(d => !d.IsDeleted && (d.Status == null || d.Status == "Active") && !candidates.Contains(d.Id)).Select(d => d.Id).Take(200).ToListAsync());
+                    candidates.AddRange(await db.Dish.AsNoTracking().Where(d => !d.IsDeleted && (d.Status == null || d.Status == "Active") && (d.Code == null || !d.Code.StartsWith(PackagingNormService.DishPrefix)) && !candidates.Contains(d.Id)).Select(d => d.Id).Take(200).ToListAsync());
                 }
                 var info = await DishInfoAsync(candidates);
                 // Ngày dùng gần nhất của món trong 14 ngày trước ô (mọi thực đơn chung).

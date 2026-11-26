@@ -93,4 +93,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 - **Kế hoạch** (OPS-PLAN) sửa trong ô → **Lưu bản nháp** → **Gửi duyệt** ở đầu cột (duyệt như công thức món ở Phê duyệt › Công thức). Duyệt xong mới áp dụng; dòng nhỏ "đang áp dụng: …" cho thấy số cũ. Đang chờ duyệt thì không sửa được.
 - Bếp **ghi kết quả đóng gói** (màn chia suất & đóng gói) → hệ thống lập phiếu xuất bao bì Nháp theo ca cho số suất đạt (mỗi đơn tính 1 lần theo món đóng nhiều suất nhất). Ghi thêm trong ca → chỉ lập phiếu bổ sung phần suất mới. Thông báo sau khi ghi cho biết số phiếu đã lập hoặc "Chưa có định mức bao bì đã duyệt…".
 - Thủ kho sửa / ghi sổ phiếu ở Kho; không ghi thì tự ghi sổ khi hết ca (23:30). Kế toán thấy chứng từ **Xuất bao bì** theo buổi.
+- Thiếu vật tư bao bì → tin bot Mua hàng có nút **🛒 Tạo đề nghị mua** (lập đề nghị mua nháp phần thiếu của ca, bấm lại không lập trùng).
+- Món bao bì (BB-…) không hiện ở danh mục món / chọn món thực đơn – chỉ sửa ở màn Định mức bao bì.
 - Cơm suất (bán lẻ) chưa tự lập phiếu (ca không cho biết cơm suất) – kho lập tay.

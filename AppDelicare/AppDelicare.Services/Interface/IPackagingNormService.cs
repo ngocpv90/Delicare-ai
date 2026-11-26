@@ -12,5 +12,6 @@ namespace AppDelicare.Services.Interface
         Task<IResult<bool>> Submit(PackagingNormSubmitRequest request);
         Task<List<string>> AfterPackingAsync(DateTime day);
         Task<(int Posted, List<string> Failed)> AutoPostAsync(DateTime now);
+        Task<IResult<string>> CreateShortagePurchaseRequest(DateTime day, string? shiftCode);
     }
 }

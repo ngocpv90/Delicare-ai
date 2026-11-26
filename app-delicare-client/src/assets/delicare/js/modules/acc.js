@@ -288,11 +288,11 @@
     return '<div class="acc-steps four">' + S.map((s, i) => `<div class="acc-step ${cur && i <= at ? 'done' : ''}"><b>${i + 1}</b><div><b>${esc(s[1])}</b><div class="small muted">${esc(s[2])}</div></div></div>`).join('') + '</div>';
   }
 
-  function createDlg(reasons, after) {
+  function createDlg(reasons, after, find) {
     let lots = [], pick = null;
     UI.modal({ title: 'Lập phiếu trả hàng NCC', size: 'lg',
       body: '<div class="small muted mb">Chọn lô còn tồn (tìm theo mã lô, nguyên liệu, NCC hoặc số phiếu nhận). Lập xong lô chuyển <b>Tạm giữ</b> – không xuất cho sản xuất – và Mua hàng được báo để hỏi NCC.</div>'
-        + `<div class="row-flex mb" style="gap:8px;flex-wrap:wrap"><input class="input" id="srQ" placeholder="Mã lô / nguyên liệu / NCC / phiếu nhận…" style="flex:1;min-width:200px"><button class="btn" id="srFind">${I('search')} Tìm lô</button></div>`
+        + `<div class="row-flex mb" style="gap:8px;flex-wrap:wrap"><input class="input" id="srQ" placeholder="Mã lô / nguyên liệu / NCC / phiếu nhận…" style="flex:1;min-width:200px" value="${esc(find || '')}"><button class="btn" id="srFind">${I('search')} Tìm lô</button></div>`
         + '<div id="srLots" class="mb"></div><div id="srForm"></div>',
       foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="srOk" disabled>Lập phiếu trả</button>',
       onMount: (m, close) => {
@@ -308,7 +308,7 @@
             + `<div class="sr-grid mt"><label class="small">Số trả (${unit})<input class="input" id="srQty" type="number" min="0" step="any" max="${pick.onHand}"></label>`
             + `<label class="small">Lý do<select class="input" id="srRs"><option value="">– Chọn lý do –</option>${reasons.map(r => `<option value="${esc(r.code)}">${esc(r.label)}</option>`).join('')}</select></label></div>`
             + '<label class="small mt" style="display:block">Ghi chú (tình trạng hàng, đã báo NCC…)<textarea class="input" id="srNote" rows="2"></textarea></label>'
-            + '<div class="small muted mt">Ảnh hàng lỗi: đính kèm ở Chất lượng › Sự cố NCC sau khi lập (phiếu trả hiện ở đó với loại "Trả hàng NCC").</div></div>';
+            + '<div class="small muted mt">Ảnh hàng lỗi / biên bản: tải lên ở chi tiết phiếu ngay sau khi lập.</div></div>';
           const qty = form.querySelector('#srQty');
           qty.oninput = () => { const v = +qty.value; form.querySelector('#srAmt').textContent = v > 0 && has(pick.unitCost) ? U.money(Math.round(v * pick.unitCost)) : '–'; };
           ok.disabled = false;
@@ -351,6 +351,7 @@
           + row('Lý do', esc(d.reasonName || '')) + row('Người lập', esc(d.createdByName || '–') + ' · ' + U.dt(d.reportedAt))
           + (d.note ? row('Ghi chú', esc(d.note)) : '') + (d.postedAt ? row('Ghi sổ', U.dt(d.postedAt)) : '') + '</div>'
           + '<div class="panel-title mt">Lịch sử</div>' + ((d.listHistory || []).map(h => `<div class="small" style="border-bottom:1px solid var(--line);padding:4px 0">${U.dt(h.at)} · <b>${esc(h.actionName)}</b>${h.by ? ' – ' + esc(h.by) : ''}${h.note ? `<div class="muted">${esc(h.note)}</div>` : ''}</div>`).join('') || '<div class="muted small">–</div>')
+          + '<div class="panel-title mt">Ảnh hàng lỗi / biên bản</div><div id="sdDocs" class="mt"></div>'
           + (d.state === 'RETURN_POSTED' ? `<div class="notice info mt">${I('link')}<div>Đã ghi sổ kho (Trả lại). Kế toán thấy chứng từ <b>Trả lại hàng mua</b> ở <a href="#/acc-voucher?tab=purchase">Chứng từ kế toán › Mua hàng</a>.</div></div>` : ''),
         foot: '<button class="btn" data-close>Đóng</button>'
           + (edit && d.canCancel ? '<button class="btn" id="sdCancel">Hủy phiếu</button>' : '')
@@ -358,6 +359,7 @@
           + (edit && d.canPost ? `<button class="btn primary" id="sdPost">${I('check')} Ghi sổ – NCC đã nhận hàng</button>` : ''),
         onMount: (m, close) => {
           const go = (path, json, msg) => Store.act('SupplierReturn/' + path, { json }).then(r => done(r, msg, () => { close(); after(); }));
+          const docs = m.querySelector('#sdDocs'); if (docs && APP.D360 && APP.D360.documentsTab) APP.D360.documentsTab('SupplierIssue', edit)(docs, null, id); // ACC-5: ảnh lưu theo phiếu (quyền màn Trả hàng NCC)
           const b = s => m.querySelector(s);
           if (b('#sdAgree')) b('#sdAgree').onclick = () => UI.confirm('Xác nhận <b>NCC đồng ý nhận lại</b> hàng? Thủ kho được báo để giao trả và ghi sổ.', note => go('Confirm', { id, agree: true, note: note || null }, 'Đã xác nhận'), { input: 'Ghi chú (tùy chọn)' });
           if (b('#sdRefuse')) b('#sdRefuse').onclick = () => UI.confirm('NCC <b>không nhận</b> lại hàng? Lô sẽ bỏ tạm giữ.', note => { if (!note) { UI.toast('Ghi lý do NCC không nhận', 'warn'); return; } go('Confirm', { id, agree: false, note }, 'Đã ghi nhận'); }, { input: 'Lý do NCC không nhận (bắt buộc)' });
@@ -402,6 +404,7 @@
       const nw = el.querySelector('#srNew');
       if (nw) nw.onclick = () => createDlg(m.listReason || [], nid => { rerender(); if (nid) detailDlg(nid, perm, rerender); });
       if (p && p.id) detailDlg(p.id, perm, rerender);
+      else if (p && p.find && perm.add !== false) createDlg(m.listReason || [], nid => { rerender(); if (nid) detailDlg(nid, perm, rerender); }, p.find); // ACC-5: mở từ phiếu nhận / lô
     });
   });
 })();

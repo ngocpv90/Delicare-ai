@@ -84,6 +84,17 @@ namespace AppDelicare.Tests.Accounting
             await AfterPacking(f);
             (await f.QueryAsync(db => db.MaterialIssue.CountAsync(i => i.Note!.Contains(PackagingNormService.TagPrefix)))).Should().Be(2);
 
+            // Nút 🛒 trên tin thiếu: đề nghị mua nháp phần thiếu (150 suất × 0,5 − tồn 10 = 65 đũa thìa); bấm lại → báo số cũ.
+            var pr = await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/PackagingNorm/CreateShortagePr", new { day = Day, shiftCode = "TRUA_10H" }));
+            pr.Ok();
+            var prRow = await f.QueryAsync(db => db.PurchaseRequest.AsNoTracking().SingleAsync(p => p.Note!.Contains(PackagingNormService.PurchaseTagPrefix)));
+            (await f.QueryAsync(db => db.PurchaseRequestLine.AsNoTracking().Where(l => l.PurchaseRequestId == prRow.Id).ToListAsync())).Should().ContainSingle(l => l.IngredientId == spoon).Which.Quantity.Should().Be(65);
+            (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/PackagingNorm/CreateShortagePr", new { day = Day, shiftCode = "TRUA_10H" }))).Ok();
+            (await f.QueryAsync(db => db.PurchaseRequest.CountAsync(p => p.Note!.Contains(PackagingNormService.PurchaseTagPrefix)))).Should().Be(1);
+
+            // Món / nhóm bao bì không hiện ở danh mục món (chọn món thực đơn).
+            (await c.GetResultAsync("/api/Dish/GetAllData")).ListData.EnumerateArray().Should().NotContain(d => d.GetProperty("code").GetString() == "BB-TRUA");
+
             // Chưa hết ca → không ghi sổ; sau 13:00 → ghi sổ cả 2 phiếu.
             (await Scoped(f, s => s.AutoPostAsync(Day.AddHours(12)))).Posted.Should().Be(0);
             (await Scoped(f, s => s.AutoPostAsync(Day.AddHours(14)))).Posted.Should().Be(2);

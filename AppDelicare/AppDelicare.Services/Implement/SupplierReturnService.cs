@@ -347,7 +347,7 @@ namespace AppDelicare.Services.Implement
                 db.AuditChange.Add(Audit(issue.Id, "Created", note, actor, now));
                 await db.SaveChangesAsync();
                 _unitOfWork.CommitTransaction();
-                await NotifyAsync(issue, $"↩️ Phiếu trả hàng NCC {NumberOf(issue)}: {text}. Cần Mua hàng xác nhận NCC đồng ý / không nhận.", ["OPS-SCM", "OPS-SCM-HEAD"]);
+                await NotifyAsync(issue, $"↩️ Phiếu trả hàng NCC {NumberOf(issue)}: {text}. Cần Mua hàng xác nhận NCC đồng ý / không nhận.", ["OPS-SCM", "OPS-SCM-HEAD"], true);
                 return Result<SupplierReturnModel>.Success((await GetDetail(issue.Id)).Data, string.Format(Msg.Created, NumberOf(issue)));
             }
             catch (BusinessRuleException ex)
@@ -525,7 +525,7 @@ namespace AppDelicare.Services.Implement
                 : p.PrevLotStatus is null or MaterialLotStatus.OnHold ? MaterialLotStatus.Available : p.PrevLotStatus;
         }
 
-        private async Task NotifyAsync(SupplierIssue issue, string text, string[] groups)
+        private async Task NotifyAsync(SupplierIssue issue, string text, string[] groups, bool confirmButtons = false)
         {
             try
             {
@@ -537,7 +537,10 @@ namespace AppDelicare.Services.Implement
                 await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
                 {
                     Template = NotificationCatalog.ManualText, UserIds = [.. users], BotCode = MessagingCode.BotVanHanh,
-                    Data = new { text = text + $"\nMở Kho › Trả hàng NCC: #/{ScreenId}?id={issue.Id}" }, IdempotencyKey = $"SUPPLIER_RETURN:{issue.Id:N}:{issue.IssueStatus}",
+                    Data = new { text = text + $"\nMở Kho › Trả hàng NCC: #/{ScreenId}?id={issue.Id}" },
+                    // ACC-5: Mua hàng bấm thẳng trên bot (ThaoTacActions op:sra / op:srr – quyền Sửa #/scm-supplier-return).
+                    Buttons = confirmButtons ? new[] { new NotificationButton("✅ NCC đồng ý", BusinessNotifier.Callback("op", "sra", issue.Id)), new NotificationButton("⛔ NCC không nhận", BusinessNotifier.Callback("op", "srr", issue.Id)) } : null,
+                    IdempotencyKey = $"SUPPLIER_RETURN:{issue.Id:N}:{issue.IssueStatus}",
                 });
             }
             catch (Exception ex)

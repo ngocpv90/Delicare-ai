@@ -242,6 +242,18 @@ namespace AppDelicare.Services.Implement
         private static Result<T> Forbid<T>(string message) => new() { ResponseCode = CommonAccess.Forbidden, ResponseMessage = message };
 
         /// <summary>Màn hình chịu quyền của tệp: màn của chứng từ, hoặc #/adm-document với tài liệu chung.</summary>
+        /// <summary>Quyền màn của chứng từ chủ; ACC-5 (D-131 i): ảnh phiếu trả NCC (SupplierIssue loại RETURN) – người có quyền màn Trả hàng NCC cũng được.</summary>
+        private async Task<string?> DenyOwnerAsync(CommonResource owner, Guid? recordId, PermissionAction action)
+        {
+            var deny = await CommonAccess.DenyAsync(_permissionService, _currentActor, owner.ScreenId, action);
+            if (deny == null || recordId == null || owner.Key != nameof(SupplierIssue))
+            {
+                return deny;
+            }
+            bool isReturn = await _unitOfWork.DbContext.SupplierIssue.AsNoTracking().AnyAsync(i => i.Id == recordId && i.IssueType == SupplierReturnService.IssueType);
+            return isReturn && await CommonAccess.DenyAsync(_permissionService, _currentActor, SupplierReturnService.ScreenId, action) == null ? null : deny;
+        }
+
         private static string ScreenOf(DocumentStorageRules.StorageKey key)
             => key.Resource != null && CommonRegistry.Find(key.Resource) is { } r ? r.ScreenId : DocumentScreen;
 
@@ -328,7 +340,7 @@ namespace AppDelicare.Services.Implement
                     {
                         return Result<DocumentFileItemModel>.Fail(string.Format(ConstantHelper.Message.CommonResourceNotSupported, request.Resource));
                     }
-                    if (await CommonAccess.DenyAsync(_permissionService, _currentActor, owner.ScreenId, PermissionAction.Edit) is { } deny)
+                    if (await DenyOwnerAsync(owner, request.RecordId, PermissionAction.Edit) is { } deny)
                     {
                         return Forbid<DocumentFileItemModel>(deny);
                     }
@@ -411,7 +423,7 @@ namespace AppDelicare.Services.Implement
                         return Results<DocumentFileItemModel>.Fail(owner == null || !owner.Attachable
                             ? string.Format(ConstantHelper.Message.CommonResourceNotSupported, request.Resource) : ConstantHelper.Message.FileRecordRequired);
                     }
-                    if (await CommonAccess.DenyAsync(_permissionService, _currentActor, owner.ScreenId, PermissionAction.View) is { } deny)
+                    if (await DenyOwnerAsync(owner, request.RecordId, PermissionAction.View) is { } deny)
                     {
                         return new Results<DocumentFileItemModel>([], 0) { ResponseCode = CommonAccess.Forbidden, ResponseMessage = deny };
                     }
@@ -490,7 +502,7 @@ namespace AppDelicare.Services.Implement
                 {
                     return Result<FileContentModel>.Fail(ConstantHelper.Message.FileLegacyNotSupported);
                 }
-                if (await CommonAccess.DenyAsync(_permissionService, _currentActor, ScreenOf(key), PermissionAction.View) is { } deny)
+                if ((key.Resource != null && CommonRegistry.Find(key.Resource) is { } keyOwner ? await DenyOwnerAsync(keyOwner, key.RecordId, PermissionAction.View) : await CommonAccess.DenyAsync(_permissionService, _currentActor, DocumentScreen, PermissionAction.View)) is { } deny)
                 {
                     return Forbid<FileContentModel>(deny);
                 }

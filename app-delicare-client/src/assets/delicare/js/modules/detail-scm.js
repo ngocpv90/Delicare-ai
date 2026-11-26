@@ -145,6 +145,7 @@
           { act: 'post', icon: 'check', label: 'Ghi sổ nhập kho', ok: edit && acts.includes('post'), primary: true },
           { act: 'qc', icon: 'shield', label: 'Mở phiếu QC', ok: gr.status === 'QCPending' && D.can('qc-inspection'), primary: true },
           { act: 'print', icon: 'export', label: 'In phiếu', ok: ['Accepted', 'PartiallyAccepted', 'Rejected', 'Posted'].includes(gr.status) },
+          { act: 'supplierReturn', icon: 'down', label: 'Trả hàng NCC', ok: gr.status === 'Posted' && D.can('scm-supplier-return', 'add') }, // ACC-5
         ],
         more: [edit && acts.includes('cancel') ? `<button data-h="cancel">Hủy phiếu nhập</button>` : ''],
       };
@@ -178,7 +179,7 @@
         ]);
       } },
     ],
-    onAct: (act, o) => { const A = APP.scmGr; if (A && A[act]) A[act](grRef(o.detail || {})); },
+    onAct: (act, o) => { if (act === 'supplierReturn') { const g = (o.detail || {}).goodsReceipt || {}; APP.go('scm-supplier-return?find=' + encodeURIComponent(g.receiptNumber || '')); return; } const A = APP.scmGr; if (A && A[act]) A[act](grRef(o.detail || {})); },
   });
 
   // ================= Đề nghị mua =================
@@ -259,6 +260,7 @@
           { act: 'trace', icon: 'link', label: 'Truy xuất', ok: true, primary: true },
           { act: 'hold', icon: 'alert', label: 'Tạm giữ', ok: canQa && l.status === 'Available' },
           { act: 'release', icon: 'check', label: 'Mở tạm giữ', ok: canQa && l.status === 'OnHold' },
+          { act: 'supplierReturn', icon: 'down', label: 'Trả hàng NCC', ok: (o.onHandQuantity || 0) > 0 && !!l.supplierId && D.can('scm-supplier-return', 'add') }, // ACC-5
         ],
       };
     },
@@ -288,6 +290,7 @@
     onAct: (act, o, id) => {
       const l = o.lot || {}, A = APP.scmLot; if (!A) return;
       if (act === 'trace') A.trace(id);
+      else if (act === 'supplierReturn') APP.go('scm-supplier-return?find=' + encodeURIComponent(l.lotNumber || l.lotNo || ''));
       else if (A[act]) A[act]({ Id: id, LotNumber: l.lotNumber || l.lotNo });
     },
   });
