@@ -20,7 +20,6 @@
     el.innerHTML = APP.header(f || FN[id], '', { noNote: true }) + APP.accNav(id)
       + `<div class="notice info">${I('help')}<div><b>Đang xây dựng (${task}).</b> ${esc(what)}</div></div>`;
   });
-  soon('acc-voucher', 'ACC-2', 'Chứng từ bán hàng tháng, mua hàng, xuất nguyên liệu theo buổi, nhập / xuất thành phẩm, kho khác, bảng công – tải Excel mẫu AMIS / gửi API.');
   soon('acc-amis-recon', 'ACC-8', 'Đối chiếu 8 chỉ tiêu Delicare ↔ AMIS theo kỳ: doanh thu, số suất theo thành phẩm, nhập mua, xuất nguyên liệu, bao bì, thành phẩm khác, tồn cuối kỳ.');
   soon('acc-period', 'ACC-4', 'Khóa kỳ kế toán: 5 điều kiện trước khi khóa, Kế toán khóa, COO duyệt mở khóa; kỳ đã khóa chặn sửa nghiệp vụ trong kỳ.');
 
@@ -116,6 +115,99 @@
       const cfg = el.querySelector('#acCfg');
       if (st.kind === 'product') cfg.innerHTML = `<div class="notice info">${I('help')}<div>Thành phẩm theo buổi / loại suất khớp bằng cấu hình <b>Integration:Misa:ProductByMeal</b> (IT khai trên máy chủ) – mã AMIS phải có trong danh sách vật tư hàng hóa đã nhận.</div></div>`;
       else if (st.kind === 'warehouse') cfg.innerHTML = `<div class="notice info">${I('help')}<div>Kho Delicare → kho AMIS khai ở cấu hình <b>Integration:Misa:WarehouseMap</b>. Nhiều kho cùng 1 mã AMIS thì chuyển kho nội bộ giữa chúng không gửi sang AMIS.</div></div>`;
+    });
+  });
+})();
+
+/* ACC-2 (D-131 d, e): Kế toán › Chứng từ kế toán (#/acc-voucher) – như mô phỏng chung-tu-ke-toan.html: kỳ tháng ◀ ▶, dải 3 bước, 4 thẻ chỉ số,
+ * tab Cần xử lý (mặc định) · Bán hàng · Mua hàng · Kho & sản xuất · Bảng công · Tất cả; trạng thái Sẵn sàng · Chờ nghiệp vụ gốc · Chờ lập trên AMIS · Đã lập · Lỗi ·
+ * Đã sửa – cần điều chỉnh; dòng lỗi có nút đi thẳng tới chỗ sửa; chọn nhiều → Tải file Excel mẫu AMIS / Đánh dấu đã lập / Gửi sang AMIS (chưa nâng cấp – ACC-7).
+ * API: AccountingVoucher/GetMonth · ExportExcel · MarkCreated. */
+(function () {
+  const U = UTIL, I = U.icon, esc = U.esc, FN = APP.FN || {};
+  const TABS = [['need', 'Cần xử lý'], ['sale', 'Bán hàng'], ['purchase', 'Mua hàng'], ['stock', 'Kho & sản xuất'], ['timesheet', 'Bảng công'], ['all', 'Tất cả']];
+  const COLOR = { READY: 'green', PENDING_SOURCE: '', WAITING_AMIS: 'blue', CREATED_ON_AMIS: 'green', ERROR: 'red', CHANGED: 'orange' };
+  const LABEL = { READY: 'Sẵn sàng', PENDING_SOURCE: 'Chờ nghiệp vụ gốc', WAITING_AMIS: 'Chờ lập trên AMIS', CREATED_ON_AMIS: 'Đã lập trên AMIS', ERROR: 'Lỗi', CHANGED: 'Đã sửa – cần điều chỉnh' };
+  const ym = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const shift = (m, n) => { const [y, mo] = m.split('-').map(Number); return ym(new Date(y, mo - 1 + n, 1)); };
+  const st = { month: null, tab: 'need', sel: new Set() };
+  const money = v => (v === null || v === undefined ? '–' : U.money(v));
+  const CANCELLED = 'Nghiệp vụ gốc đã hủy sau khi gửi';
+
+  function detail(v) {
+    const lines = v.listLine || [];
+    UI.modal({ title: esc(v.typeName + ' ' + v.number), size: 'lg',
+      body: `<div class="small muted mb">${esc(U.date(v.date))} · ${esc([v.objectCode, v.objectName].filter(Boolean).join(' · '))} · ${esc(v.source || '')}</div>`
+        + (lines.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Mã hàng</th><th>Tên</th><th>ĐVT</th><th class="num">Số lượng</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th><th>Đối tượng THCP / lý do</th></tr></thead><tbody>`
+          + lines.map(l => `<tr><td>${esc(l.code || '–')}</td><td>${esc(l.name || '')}</td><td>${esc(l.unit || '')}</td><td class="num">${U.num(l.quantity)}</td><td class="num">${money(l.unitPrice)}</td><td class="num">${money(l.amount)}</td><td>${esc(l.target || '')}</td></tr>`).join('')
+          + '</tbody></table></div>' : '<div class="muted small">Không có dòng hàng.</div>')
+        + (v.note ? `<div class="small mt">${esc(v.note)}</div>` : ''),
+      foot: '<button class="btn" data-close>Đóng</button>' });
+  }
+
+  APP.register('acc-voucher', (el, f, p) => {
+    f = f || FN['acc-voucher'];
+    if (!st.month) st.month = ym(new Date());
+    if (p && /^\d{4}-\d{2}$/.test(p.month || '')) st.month = p.month;
+    if (p && TABS.some(([k]) => k === p.tab)) st.tab = p.tab;
+    const perm = Store.perm('acc-voucher'), rerender = () => APP.SCREENS['acc-voucher'](el, f, {});
+    const [y, mo] = st.month.split('-');
+    const legend = Object.keys(LABEL).map(s => UI.tag(LABEL[s], COLOR[s])).join(' ');
+    el.innerHTML = APP.header(f, '', { noNote: true }) + APP.accNav('acc-voucher')
+      + '<div class="small muted mb">Delicare tự lập chứng từ từ nghiệp vụ đã xong (đối soát, nhận hàng, xuất kho, đóng gói, kiểm kê). Kế toán chỉ xử lý dòng báo lỗi, rồi gửi sang AMIS (tải file Excel đúng mẫu AMIS để nhập; tự động qua kết nối khi có API). Hạch toán, hóa đơn, công nợ làm trên AMIS.</div>'
+      + `<div class="card panel mb"><div class="fw-week"><button class="btn sm" id="avPrev" aria-label="Tháng trước">◀</button><span>Tháng ${mo}/${y}</span><button class="btn sm" id="avNext" aria-label="Tháng sau">▶</button></div><div id="avSteps" class="mt"></div></div>`
+      + '<div id="avHead"><div class="muted small">Đang tải…</div></div>'
+      + `<div class="card panel"><div class="tabs mb" id="avTabs"></div><div class="small muted mb">${legend}</div><div id="avBody"><div class="muted small">Đang tải…</div></div><div id="avBar" class="mt"></div></div>`;
+    el.querySelector('#avPrev').onclick = () => { st.month = shift(st.month, -1); st.sel.clear(); rerender(); };
+    el.querySelector('#avNext').onclick = () => { st.month = shift(st.month, 1); st.sel.clear(); rerender(); };
+    Store.query('AccountingVoucher/GetMonth', { month: st.month, tab: st.tab }).then(x => {
+      if (!el.isConnected) return;
+      const hd = el.querySelector('#avHead'), body = el.querySelector('#avBody');
+      if (!x.ok || !x.data) { hd.innerHTML = ''; body.innerHTML = `<div class="muted small">${esc(x.message || 'Không tải được chứng từ')}</div>`; return; }
+      const m = x.data, list = m.listVoucher || [], tc = m.tabCount || {};
+      el.querySelector('#avSteps').innerHTML = '<div class="acc-steps">'
+        + `<div class="acc-step"><b>1</b><div><b>Xử lý dòng cần sửa</b><div class="small muted">Mỗi dòng lỗi có nút đi thẳng tới chỗ sửa</div><button class="btn sm mt" data-tab="need">Xem ${U.num(m.needsAction || 0)} dòng cần xử lý</button></div></div>`
+        + `<div class="acc-step"><b>2</b><div><b>Gửi sang AMIS</b><div class="small muted">Chọn chứng từ sẵn sàng → tải file Excel mẫu AMIS (gửi API: ACC-7)</div><button class="btn sm mt" id="avAllReady">Chọn tất cả sẵn sàng (${U.num(m.readyCount || 0)})</button></div></div>`
+        + '<div class="acc-step"><b>3</b><div><b>Lập chứng từ trên AMIS</b><div class="small muted">Nhập file vào AMIS rồi đánh dấu đã lập; khóa kỳ ở mục Khóa kỳ</div></div></div></div>'
+        + (m.hasAmisCatalog ? '' : `<div class="notice warn mt">${I('alert')}<div>Chưa nhận danh mục AMIS – mọi chứng từ báo Lỗi tới khi nhập danh mục ở <a href="#/acc-amis-code">Khớp mã AMIS</a>.</div></div>`);
+      hd.innerHTML = UI.kpis([
+        UI.kpi('Doanh thu sẽ gửi', U.moneyShort(m.saleAmount || 0), `${U.num(m.saleCount || 0)} phiếu bán tháng · chưa VAT`, 'chart', 'green'),
+        UI.kpi('Xuất NVL cho sản xuất', U.moneyShort(m.issueAmount || 0), `${U.num(m.issueCount || 0)} phiếu theo buổi`, 'up', 'blue'),
+        UI.kpi('Đã lập trên AMIS', `${U.num(m.createdCount || 0)} / ${U.num(m.total || 0)}`, 'chứng từ của kỳ', 'check', 'green'),
+        UI.kpi('Cần xử lý', U.num(m.needsAction || 0), `${U.num(m.errorCount || 0)} lỗi · ${U.num(m.changedCount || 0)} sửa sau khi gửi`, 'alert', m.needsAction ? 'red' : 'green'),
+      ]);
+      el.querySelector('#avTabs').innerHTML = TABS.map(([k, l]) => `<button class="tab ${st.tab === k ? 'active' : ''}" data-tab="${k}">${esc(l)} (${U.num(tc[k] || 0)})</button>`).join('');
+      el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; rerender(); });
+      const selectable = v => ['READY', 'WAITING_AMIS', 'CHANGED', 'CREATED_ON_AMIS'].includes(v.status) && v.type !== 'TIMESHEET' && v.source !== CANCELLED;
+      const cell = v => (v.amount !== null && v.amount !== undefined ? money(v.amount) : v.quantity ? U.num(v.quantity) + ' suất' : '–');
+      const fix = v => (v.fixLink && v.fixLabel && ['ERROR', 'PENDING_SOURCE', 'READY'].includes(v.status) ? `<a class="btn sm" href="${esc(v.fixLink)}">${esc(v.fixLabel)}</a> ` : '');
+      body.innerHTML = list.length ? '<div class="table-wrap"><table class="table dc-table"><thead><tr><th><input type="checkbox" id="avAll"></th><th>Loại chứng từ · nguồn</th><th>Số Delicare</th><th>Ngày</th><th>Đối tượng</th><th class="num">Giá trị (chưa VAT)</th><th>Trạng thái</th><th>Ghi chú</th><th></th></tr></thead><tbody>'
+        + list.map((v, i) => `<tr><td>${selectable(v) ? `<input type="checkbox" data-sel="${i}" ${st.sel.has(v.key) ? 'checked' : ''}>` : ''}</td><td>${esc(v.typeName)}<div class="small muted">${esc(v.source || '')}</div></td><td><b>${esc(v.number)}</b></td><td>${esc(U.date(v.date))}</td>`
+          + `<td>${esc([v.objectCode, v.objectName].filter(Boolean).join(' · '))}</td><td class="num">${cell(v)}</td>`
+          + `<td>${UI.tag(v.statusName, COLOR[v.status] || '')}</td><td class="small">${esc(v.note || '')}</td><td style="white-space:nowrap">${fix(v)}<button class="btn sm" data-view="${i}">Xem</button></td></tr>`).join('')
+        + '</tbody></table></div>' : '<div class="muted small">Không có chứng từ nào trong tab này.</div>';
+      const bar = el.querySelector('#avBar');
+      const paintBar = () => {
+        const picked = list.filter(v => st.sel.has(v.key)), sum = picked.reduce((s, v) => s + (v.amount || 0), 0), dis = st.sel.size ? '' : 'disabled';
+        bar.innerHTML = `<div class="spread" style="flex-wrap:wrap;gap:8px"><span class="small">Đã chọn <b>${U.num(st.sel.size)}</b> chứng từ${picked.length ? ' · ' + money(sum) : ''}</span><div class="row-flex" style="gap:8px">`
+          + (perm.exp !== false ? `<button class="btn" id="avXls" ${dis}>${I('export')} Tải file Excel mẫu AMIS</button>` : '')
+          + (perm.edit !== false ? `<button class="btn" id="avMark" ${dis}>${I('check')} Đánh dấu đã lập trên AMIS</button>` : '')
+          + `<button class="btn primary" id="avSend" ${dis}>${I('link')} Gửi sang AMIS</button></div></div>`
+          + '<div class="small muted mt">Tự gửi hằng đêm: Tắt (bật sau khi có kết nối API AMIS – ACC-7).</div>';
+        const xls = bar.querySelector('#avXls'); if (xls) xls.onclick = () => Store.download('AccountingVoucher/ExportExcel', null, { month: st.month, listKey: [...st.sel] }).then(r => { if (r.ok) { st.sel.clear(); rerender(); } });
+        const mark = bar.querySelector('#avMark'); if (mark) mark.onclick = () => Store.act('AccountingVoucher/MarkCreated', { json: { month: st.month, listKey: [...st.sel] } }).then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã đánh dấu'), 'ok'); st.sel.clear(); rerender(); } });
+        bar.querySelector('#avSend').onclick = () => UI.toast('Tính năng chưa được nâng cấp – gửi qua API AMIS làm ở ACC-7 khi có tài liệu API + thông tin kết nối. Dùng "Tải file Excel mẫu AMIS".', 'warn');
+      };
+      paintBar();
+      body.querySelectorAll('[data-sel]').forEach(cb => cb.onchange = () => { const k = list[+cb.dataset.sel].key; if (cb.checked) st.sel.add(k); else st.sel.delete(k); paintBar(); });
+      const all = body.querySelector('#avAll');
+      if (all) all.onchange = () => { list.forEach(v => { if (selectable(v)) { if (all.checked) st.sel.add(v.key); else st.sel.delete(v.key); } }); body.querySelectorAll('[data-sel]').forEach(cb => { cb.checked = all.checked; }); paintBar(); };
+      body.querySelectorAll('[data-view]').forEach(b => b.onclick = () => detail(list[+b.dataset.view]));
+      const ar = el.querySelector('#avAllReady');
+      if (ar) ar.onclick = () => Store.query('AccountingVoucher/GetMonth', { month: st.month, tab: 'all' }).then(z => {
+        ((z.ok && z.data && z.data.listVoucher) || []).filter(v => v.status === 'READY' && v.type !== 'TIMESHEET').forEach(v => st.sel.add(v.key));
+        st.tab = 'all'; rerender();
+      });
     });
   });
 })();

@@ -20,7 +20,7 @@
     New: 'Mới', Planned: 'Kế hoạch', Released: 'Đã phát hành', Available: 'Khả dụng', Reserved: 'Đã giữ chỗ', Consumed: 'Đã dùng hết', Returned: 'Đã trả', Packed: 'Đã đóng gói',
     Paid: 'Đã thanh toán', Unpaid: 'Chưa thanh toán', Valid: 'Hợp lệ', Invalid: 'Không hợp lệ', Error: 'Lỗi', Warning: 'Cảnh báo', Info: 'Thông tin',
     DAT: 'Đạt', KHONG_DAT: 'Không đạt', TAM_GIU: 'Tạm giữ', PASS: 'Đạt', FAIL: 'Không đạt', HOLD: 'Tạm giữ', REJECT: 'Loại', DIRTY: 'Bẩn', DAMAGED: 'Hỏng', CLEAN: 'Sạch', GOOD: 'Tốt', DELIVERY: 'Giao hàng', CORE: 'Lõi', RECEIVING: 'Nhận hàng', STORAGE: 'Bảo quản', Duplicate: 'Trùng lặp', SANG: 'Sáng', TRUA: 'Trưa', TOI: 'Tối', DEM: 'Đêm',
-    PendingApproval: 'Chờ duyệt', Terminated: 'Chấm dứt', Obsolete: 'Hết dùng', Posted: 'Đã ghi sổ', Issued: 'Đã xuất', Matched: 'Khớp', Variance: 'Chênh lệch',
+    PendingApproval: 'Chờ duyệt', Terminated: 'Chấm dứt', READY: 'Sẵn sàng', PENDING_SOURCE: 'Chờ nghiệp vụ gốc', WAITING_AMIS: 'Chờ lập trên AMIS', CREATED_ON_AMIS: 'Đã lập trên AMIS', ERROR: 'Lỗi', CHANGED: 'Đã sửa – cần điều chỉnh', Exported: 'Đã tải Excel', MarkedCreated: 'Đánh dấu đã lập trên AMIS', Obsolete: 'Hết dùng', Posted: 'Đã ghi sổ', Issued: 'Đã xuất', Matched: 'Khớp', Variance: 'Chênh lệch',
     Added: 'Thêm', Modified: 'Sửa', Deleted: 'Xóa', Download: 'Tải xuống', Login: 'Đăng nhập', Logout: 'Đăng xuất',
     RoleSaveMany: 'Đổi quyền', ResignScheduled: 'Hẹn nghỉ việc', ResignCancelled: 'Hủy hẹn nghỉ việc', Resign: 'Nghỉ việc', ConfirmValid: 'Xác nhận hợp lệ', StatusChange: 'Đổi trạng thái', // UI-6.48 (hồi quy UI-6.49): mã hành động nhật ký mới
     Inbound: 'Đến', Outbound: 'Đi', IN: 'Đến', OUT: 'Đi', true: 'Có', false: 'Không',

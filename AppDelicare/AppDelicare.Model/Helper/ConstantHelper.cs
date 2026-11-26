@@ -1012,6 +1012,11 @@
             public static readonly string AmisCodeInUse = "Mã {0} đang dùng cho «{1}» – ghép bản ghi đó trước hoặc chọn mã khác";
             public static readonly string AmisRemapped = "Đã ghép «{0}»: mã {1} → {2}";
             public static readonly string AmisNoSnapshot = "Chưa nhận danh mục từ AMIS – nhập tệp Excel xuất từ AMIS trước";
+            // ACC-2 (D-131 e): chứng từ kế toán.
+            public static readonly string VoucherNothingToExport = "Không có chứng từ nào tải được – chỉ tải chứng từ Sẵn sàng / Chờ lập / Đã sửa (dòng lỗi, chờ nghiệp vụ gốc, bảng công bỏ qua)";
+            public static readonly string VoucherExported = "Đã tải {0} chứng từ – nhập vào AMIS rồi đánh dấu đã lập";
+            public static readonly string VoucherNothingToMark = "Chọn chứng từ đang Chờ lập trên AMIS để đánh dấu";
+            public static readonly string VoucherMarkedCreated = "Đã đánh dấu {0} chứng từ đã lập trên AMIS";
             public static readonly string AmisNothingMissing = "Không còn mã nào cần tạo trên AMIS";
             public static readonly string VehicleDriverInvalid = "Tài xế mặc định phải là nhân viên đang làm việc";
             public static readonly string LoadOverrideNoRight = "Chỉ người có quyền \"Phê duyệt › Xếp xe chưa đủ hàng\" được xếp xe khi chuyến chưa đủ thực đơn";

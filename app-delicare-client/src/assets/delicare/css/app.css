@@ -897,3 +897,8 @@ tr.bb-late td{background:#FFF5F4}
 .acc-nav-i:hover{border-color:#cfe0b4;color:var(--green-dark)}
 .acc-nav-i.active{background:var(--green-soft);border-color:#cfe0b4;color:var(--green-dark);font-weight:700}
 @media(max-width:768px){.acc-nav{flex-wrap:nowrap;overflow-x:auto}}
+/* ACC-2: dải 3 bước màn Chứng từ kế toán */
+.acc-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.acc-steps .acc-step{display:flex;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.acc-steps .acc-step>b{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--green-soft);color:var(--green-dark);flex:none}
+@media(max-width:768px){.acc-steps{grid-template-columns:1fr}}

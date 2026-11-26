@@ -20,6 +20,10 @@ namespace AppDelicare.Model.Option
         /// <summary>Lý do xuất / nhập Delicare → mã lý do (diễn giải) trên AMIS (vd. PRODUCTION, PACKAGING, WASTE, ADJUSTMENT, RETURN).</summary>
         public Dictionary<string, string> ReasonCodes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>ACC-2 (D-131 e): cột Excel theo mẫu "Thêm bằng Excel" của AMIS – loại chứng từ (SALE, PURCHASE, ISSUE, FG_IN, FG_OUT, STOCK_OTHER) → ["Tiêu đề cột:trường"]
+        /// (trường: date, number, desc, objectCode, objectName, code, name, unit, qty, price, amount, vat, target, note). Trống = bộ cột mặc định.</summary>
+        public Dictionary<string, List<string>> ExcelColumns { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>Danh mục AMIS lưu tối đa N bản chụp (cũ hơn vẫn còn trong tài liệu đính kèm, chỉ không đọc).</summary>
         public int SnapshotKeep { get; set; } = 30;
     }
