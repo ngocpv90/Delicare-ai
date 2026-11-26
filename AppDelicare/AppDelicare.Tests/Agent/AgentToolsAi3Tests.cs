@@ -87,7 +87,7 @@ namespace AppDelicare.Tests.Agent
                 }
                 string agent = Agents.First(a => t.AllowedFor(a));
                 var r = await Call(f, agent, t.Name);
-                bool needsId = t.Name.StartsWith("truy_xuat_", StringComparison.Ordinal);
+                bool needsId = t.InputSchemaJson.Contains("\"required\"", StringComparison.Ordinal); // tham số bắt buộc → gọi rỗng phải 400
                 if (needsId ? r.Status != 400 : r.Status != 200 || r.Data is not JsonNode)
                 {
                     failures.Add($"{t.Name}/{agent}: {r.Status} {r.Message}");

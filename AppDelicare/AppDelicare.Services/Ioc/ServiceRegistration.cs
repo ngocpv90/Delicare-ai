@@ -40,6 +40,14 @@ namespace AppDelicare.Services.Ioc
                     string root = string.IsNullOrWhiteSpace(o.RootPath) ? "App_Data/DocumentFiles" : o.RootPath;
                     o.RootPath = Path.GetFullPath(Path.IsPathRooted(root) ? root : Path.Combine(contentRootPath, root));
                 });
+            // AI-5 (D-133): kho tri thức markdown – đường dẫn tương đối tính từ ContentRoot (Docker: volume knowledge).
+            services.AddOptions<KnowledgeOptions>()
+                .Bind(configuration.GetSection(KnowledgeOptions.Section))
+                .PostConfigure(o =>
+                {
+                    string root = string.IsNullOrWhiteSpace(o.VaultPath) ? "App_Data/Knowledge" : o.VaultPath;
+                    o.VaultPath = Path.GetFullPath(Path.IsPathRooted(root) ? root : Path.Combine(contentRootPath, root));
+                });
             services.AddScoped<IReferenceGuard, ReferenceGuard>();
             // BE3.2: cảm biến IoT (Iot:ApiKeys là bí mật – biến môi trường / user-secrets).
             services.Configure<IotOptions>(configuration.GetSection(IotOptions.Section));
