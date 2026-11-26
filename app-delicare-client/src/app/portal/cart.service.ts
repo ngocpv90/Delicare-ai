@@ -19,7 +19,7 @@ export class CartService {
     if (i >= 0) {
       list[i] = { ...list[i], quantity: Math.min(MAX_QTY, list[i].quantity + quantity) };
     } else {
-      list.push({ productId: p.id, name: p.name, price: p.price, unit: p.unit, quantity });
+      list.push({ productId: p.id, productCode: p.code, name: p.name, price: p.price, unit: p.unit, quantity });
     }
     this.save(list);
   }
@@ -47,7 +47,7 @@ export class CartService {
       .filter((l) => byId.has(l.productId))
       .map((l) => {
         const p = byId.get(l.productId)!;
-        return { ...l, name: p.name, price: p.price, unit: p.unit };
+        return { ...l, productCode: p.code, name: p.name, price: p.price, unit: p.unit };
       });
     if (JSON.stringify(next) !== JSON.stringify(this.lines())) {
       this.save(next);

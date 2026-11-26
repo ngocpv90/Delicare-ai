@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CartService } from '../cart.service';
+import { RetailApiService } from '../retail-api.service';
 import { PortalDataService } from '../portal-data.service';
 import { PortalCompany } from '../portal.model';
 
@@ -44,7 +45,22 @@ function notBefore(c: AbstractControl, min: () => string): ValidationErrors | nu
 
       <section class="pt-section">
         <div class="pt-wrap">
-          @if (!cart.items().length) {
+          @if (done(); as ok) {
+            <div class="pt-card pt-success">
+              <span class="pt-success-icon"><i class="material-icons">check_circle</i></span>
+              <h2>Đặt hàng thành công</h2>
+              <p>Mã đơn của bạn: <b class="pt-order-no">{{ ok.orderNumber }}</b></p>
+              <p>Nhân viên sẽ gọi số <b>{{ ok.phone }}</b> để xác nhận đơn và giờ giao (bữa {{ ok.meal.toLowerCase() }} ngày {{ ok.date }}).</p>
+              @if (ok.totalAmount) {
+                <p>Tổng tiền: <b>{{ ok.totalAmount | number: '1.0-0' : 'vi' }}đ</b> – phí giao (nếu có) báo khi xác nhận.</p>
+              }
+              <p class="pt-muted">Cần đổi hoặc hủy đơn, vui lòng gọi <a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a> và đọc mã đơn trước giờ chốt.</p>
+              <div class="pt-hero-cta pt-center">
+                <a class="pt-btn" routerLink="/san-pham" (click)="done.set(null)"><i class="material-icons">restaurant</i>Đặt thêm món</a>
+                <a class="pt-btn pt-btn-ghost" routerLink="/">Về trang chủ</a>
+              </div>
+            </div>
+          } @else if (!cart.items().length) {
             <div class="pt-empty">
               <i class="material-icons">remove_shopping_cart</i>
               <p>Giỏ hàng đang trống.</p>
@@ -119,7 +135,16 @@ function notBefore(c: AbstractControl, min: () => string): ValidationErrors | nu
                   <span>Ghi chú</span>
                   <textarea formControlName="note" rows="3" placeholder="Ít cay, giao tới lễ tân…"></textarea>
                 </label>
-                <button type="submit" class="pt-btn pt-btn-lg pt-btn-block"><i class="material-icons">send</i>Gửi đơn</button>
+                <!-- Ô bẫy chống máy gửi tự động (RETAIL-1 mục 5.1): người dùng không thấy, không điền. -->
+                <div class="pt-hp" aria-hidden="true">
+                  <label>Website<input formControlName="website" tabindex="-1" autocomplete="off" /></label>
+                </div>
+                @if (serverError(); as err) {
+                  <div class="pt-alert" role="alert"><i class="material-icons">error_outline</i><span>{{ err }}</span></div>
+                }
+                <button type="submit" class="pt-btn pt-btn-lg pt-btn-block" [disabled]="sending()">
+                  <i class="material-icons">{{ sending() ? 'hourglass_top' : 'send' }}</i>{{ sending() ? 'Đang gửi đơn…' : 'Gửi đơn' }}
+                </button>
                 <p class="pt-muted">Bằng việc gửi đơn, bạn đồng ý với <a routerLink="/chinh-sach/dat-hang">chính sách đặt hàng</a> và <a routerLink="/chinh-sach/bao-mat">bảo mật thông tin</a>.</p>
               </form>
             </div>
@@ -156,8 +181,12 @@ export class PortalCartComponent {
   public readonly data$ = inject(PortalDataService).data$;
   public readonly cart = inject(CartService);
   private readonly injector = inject(Injector);
+  private readonly api = inject(RetailApiService);
   public readonly summary = signal('');
   public readonly copied = signal<'' | 'ok' | 'fail'>('');
+  public readonly sending = signal(false);
+  public readonly serverError = signal('');
+  public readonly done = signal<{ orderNumber: string; totalAmount?: number; phone: string; date: string; meal: string } | null>(null);
   /** Ngày nhận sớm nhất: đơn chốt trước giờ chốt hôm trước (mặc định 20:00) → trước giờ chốt: ngày mai, sau giờ chốt: ngày kia. */
   public minDate = this.earliestDate(DEFAULT_CUTOFF_HOUR);
 
@@ -168,6 +197,7 @@ export class PortalCartComponent {
     date: [this.minDate, [Validators.required, (c: AbstractControl) => notBefore(c, () => this.minDate)]],
     meal: ['Trưa', Validators.required],
     note: ['', Validators.maxLength(500)],
+    website: [''],
   });
 
   constructor() {
@@ -203,11 +233,55 @@ export class PortalCartComponent {
     input.value = String(this.cart.quantityOf(productId) || '');
   }
 
+  /**
+   * Gửi đơn lên máy chủ (RetailPortal/SubmitOrder – RETAIL-1). Máy chủ tính lại giá, kiểm giờ chốt.
+   * - Thành công: hiện mã đơn, xóa giỏ.
+   * - Máy chủ từ chối (400 / 429): hiện lý do trên form, giữ giỏ.
+   * - Chưa có API / mất mạng / lỗi máy chủ: hiện nội dung đơn để khách gọi / nhắn Zalo (cách cũ).
+   */
   public submit(company: PortalCompany): void {
+    if (this.sending()) return;
+    this.serverError.set('');
     if (this.form.invalid || !this.cart.items().length) {
       this.form.markAllAsTouched();
       return;
     }
+    const v = this.form.getRawValue();
+    const phone = normalizePhone(v.phone);
+    const [y, m, dd] = v.date.split('-');
+    this.sending.set(true);
+    this.api
+      .submit({
+        customerName: v.name.trim(),
+        phoneNumber: phone,
+        address: v.address.trim(),
+        deliveryDate: v.date,
+        mealType: v.meal,
+        note: v.note.trim(),
+        website: v.website,
+        lines: this.cart.items().map((l) => ({
+          productId: l.productCode ? l.productId : null,
+          productCode: l.productCode || l.productId,
+          quantity: l.quantity,
+        })),
+      })
+      .subscribe((r) => {
+        this.sending.set(false);
+        if (r.kind === 'ok') {
+          this.done.set({ orderNumber: r.orderNumber, totalAmount: r.totalAmount, phone, date: `${dd}/${m}/${y}`, meal: v.meal });
+          this.cart.clear();
+          this.form.reset();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (r.kind === 'rejected') {
+          this.serverError.set(r.message);
+        } else {
+          this.showHotlineSummary(company);
+        }
+      });
+  }
+
+  /** Dự phòng khi chưa gửi được lên máy chủ: dựng nội dung đơn để khách gọi / nhắn Zalo. */
+  private showHotlineSummary(company: PortalCompany): void {
     const v = this.form.getRawValue();
     const fmt = (n: number) => n.toLocaleString('vi-VN') + 'đ';
     const [y, m, dd] = v.date.split('-');

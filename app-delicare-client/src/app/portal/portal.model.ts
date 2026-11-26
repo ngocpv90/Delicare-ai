@@ -26,7 +26,10 @@ export interface PortalCategory {
 }
 
 export interface PortalProduct {
+  /** Id máy chủ (GUID) khi danh mục lấy từ API; mã trong file cấu hình khi dùng file dự phòng. */
   id: string;
+  /** Mã sản phẩm máy chủ (SPL-NNNNN). */
+  code?: string;
   categoryId: string;
   name: string;
   price: number;
@@ -59,10 +62,13 @@ export interface PortalData {
   weeklyMenu: { title: string; note: string; meals: string[]; days: PortalMenuDay[] };
   policies: PortalPolicy[];
   about: { title: string; paragraphs: string[]; values: PortalIconText[] };
+  /** Nguồn danh mục sản phẩm: 'api' (máy chủ) hoặc 'file' (file cấu hình – chưa có API). */
+  catalogSource?: 'api' | 'file';
 }
 
 export interface CartLine {
   productId: string;
+  productCode?: string;
   name: string;
   price: number;
   unit: string;

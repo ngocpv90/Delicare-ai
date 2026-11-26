@@ -420,3 +420,18 @@ a.pt-contact-tile:hover { border-color: var(--pt-green); }
 }
 .pt-copy-fail { flex: 1 1 100%; margin: 0; text-align: right; color: #b8520d; }
 .pt-loading .pt-btn { margin-top: 8px; }
+
+/* ---------- RETAIL-1: gửi đơn lên máy chủ ---------- */
+.pt-hp { position: absolute !important; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.pt-alert {
+  display: flex; gap: 8px; align-items: flex-start; margin: 0 0 12px; padding: 10px 12px; border-radius: 10px;
+  background: #fdecec; color: #a5281b; font-size: 14px;
+}
+.pt-alert .material-icons { font-size: 20px; }
+.pt-btn[disabled] { opacity: 0.7; cursor: progress; }
+.pt-success { max-width: 620px; margin: 0 auto; padding: 36px 32px; text-align: center; }
+.pt-success-icon .material-icons { font-size: 64px; color: var(--pt-green); }
+.pt-success h2 { font-size: 26px; margin: 8px 0 14px; }
+.pt-order-no { font-size: 20px; color: var(--pt-orange); letter-spacing: 0.5px; }
+.pt-success .pt-hero-cta { justify-content: center; }
+@media (max-width: 600px) { .pt-success { padding: 26px 18px; } }
