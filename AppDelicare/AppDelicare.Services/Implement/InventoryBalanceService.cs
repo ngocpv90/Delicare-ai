@@ -190,6 +190,12 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 var rows = await InventoryLotRules.LoadAsync(db, _clock.Today, _rules.ExpiringLotDays, request.WarehouseId, request.IngredientId,
                     includeZero: request.IncludeZero == true);
+                // REAL-1 (D-129): màn tồn kho bỏ dòng của kho / nguyên liệu đã xóa mềm (danh mục [DEMO] đã dọn) – sổ kho giữ nguyên; giao diện không xóa được kho / NL còn tồn.
+                var whIds = rows.Select(r => r.WarehouseId).Distinct().ToList();
+                var ingIds = rows.Select(r => r.IngredientId).Distinct().ToList();
+                var liveWh = (await db.Warehouse.AsNoTracking().Where(w => whIds.Contains(w.Id) && !w.IsDeleted).Select(w => w.Id).ToListAsync()).ToHashSet();
+                var liveIng = (await db.Ingredient.AsNoTracking().Where(i => ingIds.Contains(i.Id) && !i.IsDeleted).Select(i => i.Id).ToListAsync()).ToHashSet();
+                rows = [.. rows.Where(r => liveWh.Contains(r.WarehouseId) && liveIng.Contains(r.IngredientId))];
                 if (request.IngredientCategoryId != null)
                 {
                     var ids = rows.Select(r => r.IngredientId).Distinct().ToList();

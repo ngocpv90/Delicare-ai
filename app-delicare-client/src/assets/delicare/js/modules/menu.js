@@ -90,7 +90,7 @@
     const d = Store.get('Dishe', rs.dish);
     const vc = versionCosts(rs.dish);   // chế độ API: giá vốn / suất do server tính
     el.innerHTML = APP.header(f, `<button class="btn primary" id="rNew" ${perm.add === false ? 'disabled' : ''}>${I('plus')} Tạo phiên bản mới</button>`) + `
-    <div class="grid" style="grid-template-columns:300px minmax(0,1fr)">
+    <div class="grid rcp-layout">
       <div class="card panel"><input class="input" style="width:100%" placeholder="Tìm món…" id="rQ"><div class="tlist mt" id="rList">${dishes.map(x => { const n = Store.by('Recipe', 'DishId', x.Id); const pend = n.some(r => ['Draft', 'PendingApproval'].includes(r.Status)); return `<div class="titem ${x.Id === rs.dish ? 'active' : ''}" data-dish="${x.Id}" data-s="${esc(x.Name.toLowerCase())}"><div><b style="font-family:inherit">${esc(x.Name)}</b><small>${esc(x.Code)} · ${n.length} phiên bản</small></div>${pend ? '<span class="n tag orange">chờ</span>' : ''}</div>`; }).join('')}</div></div>
       <div>
         <div class="card panel mb"><div class="spread"><div><h2>${esc(d.Name)}${Store.isLive && APP.detailHref ? ` <a class="small" href="${APP.detailHref('Dishe', d.Id)}">Mở trang món</a>` : ''}</h2><div class="small muted">${esc(d.Description || '')}</div></div><div class="row-flex">${UI.tag(Store.label('DishCategorie', d.DishCategoryId))} ${UI.badge(d.Status, 'Dishe', 'Status')}</div></div>
@@ -220,7 +220,7 @@
       m.listOption.forEach((o, oi) => {
         h += `<tr class="mw-opt"><td class="l">${m.listOption.length > 1 ? 'Lựa chọn ' + o.optionNo : 'Giá vốn / FC%'}</td>${o.listCost.map((c, i) => { const fc = o.listFcPct[i], bad = fc != null && fc > d.fcTargetPct, miss = (o.listMissingCost || [])[i] || 0; return `<td class="mw-fc ${bad ? 'bad' : fc != null ? 'good' : ''}" ${bad && edit ? `data-mwfc="${mi}|${oi}|${i}" title="Vượt ngưỡng – bấm để đổi món đắt nhất của ngày (gợi ý món rẻ hơn cùng nhóm trước)" style="cursor:pointer"` : ''}>${miss ? '–' : c ? U.num(c) : '–'}<div class="small">${miss ? `<span class="muted">thiếu giá ${miss} món</span>` : fc != null ? U.num(fc) + '%' : ''}</div></td>`; }).join('')}<td></td></tr>`;
         o.listRow.forEach((r, ri) => {
-          h += `<tr><td class="l mw-cat">${esc(r.categoryName || 'Món')}</td>${r.listCell.map((c, di) => { const fl = MW_FLAG[c.flag]; const canChg = changeable && c.dishId && !c.changePending; const tip = c.changedDishName ? c.changeNote || '' : (c.dishName || '') + (c.cost != null ? ' · giá vốn ' + U.num(c.cost) : '') + (fl ? ' · ' + fl[1] : '') + (canChg ? ' · bấm để đổi món ngày này' : '');
+          h += `<tr><td class="l mw-cat">${esc(r.categoryName || 'Món')}${r.slot ? ' ' + (r.slot + 1) : ''}</td>${r.listCell.map((c, di) => { const fl = MW_FLAG[c.flag]; const canChg = changeable && c.dishId && !c.changePending; const tip = c.changedDishName ? c.changeNote || '' : (c.dishName || '') + (c.cost != null ? ' · giá vốn ' + U.num(c.cost) : '') + (fl ? ' · ' + fl[1] : '') + (canChg ? ' · bấm để đổi món ngày này' : '');
             return `<td><button class="mw-cell ${fl && !c.changedDishName ? fl[0] : ''} ${c.changedDishName ? 'mw-changed' : ''}" data-mwc="${mi}|${oi}|${ri}|${di}" title="${esc(tip)}" ${edit || canChg ? '' : 'disabled'}>${c.changedDishName ? `${esc(c.changedDishName)}<span class="mw-tag">đã đổi</span>` : c.dishName ? esc(c.dishName) : '<span class="muted">+ chọn món</span>'}${c.changePending ? '<span class="mw-tag pend">chờ duyệt đổi</span>' : ''}</button></td>`; }).join('')}<td>${edit ? `<button class="btn xs" data-mwf="${mi}|${oi}|${ri}" title="Điền cả hàng (7 ngày cùng món)" aria-label="Điền cả hàng">⋯</button>` : ''}</td></tr>`;
         });
       });
@@ -260,7 +260,7 @@
     const pop = document.createElement('div'); pop.className = 'mw-pop';
     const r = anchor.getBoundingClientRect();
     pop.style.top = (r.bottom + window.scrollY + 4) + 'px'; pop.style.left = Math.min(r.left + window.scrollX, window.innerWidth - 340) + 'px';
-    pop.innerHTML = `<div class="small muted mb">${fillRow ? 'Điền cả hàng – ' : ''}${esc(meal.mealName)} · ${opt.optionNo > 1 || meal.listOption.length > 1 ? 'LC ' + opt.optionNo + ' · ' : ''}${esc(row.categoryName || '')}${fillRow ? '' : ' · ' + MW_DOW[di]}</div><input class="input" id="mwQ" placeholder="Gõ để tìm món khác…" autocomplete="off"><div id="mwList" class="mw-list"><div class="muted small">Đang gợi ý…</div></div>`;
+    pop.innerHTML = `<div class="small muted mb">${fillRow ? 'Điền cả hàng – ' : ''}${esc(meal.mealName)} · ${opt.optionNo > 1 || meal.listOption.length > 1 ? 'LC ' + opt.optionNo + ' · ' : ''}${esc(row.categoryName || '')}${row.slot ? ' ' + (row.slot + 1) : ''}${fillRow ? '' : ' · ' + MW_DOW[di]}</div><input class="input" id="mwQ" placeholder="Gõ để tìm món khác…" autocomplete="off"><div id="mwList" class="mw-list"><div class="muted small">Đang gợi ý…</div></div>`;
     document.body.appendChild(pop);
     const q = pop.querySelector('#mwQ'); q.focus();
     let items = [], sel = 0, t = null;
@@ -270,10 +270,10 @@
     const paint = () => { pop.querySelector('#mwList').innerHTML = items.length ? items.map((s, i) => `<button class="mw-opt-btn ${i === sel ? 'on' : ''}" data-i="${i}"><b>${esc(s.dishName)}</b><span class="small muted">${s.hasRecipe ? '' : '⚠ chưa có công thức · '}giá vốn ${mwNum(s.cost)}${s.newFcPct != null ? ` · FC <span class="${s.newFcPct > d.fcTargetPct ? 'bad' : 'up'}">${U.num(s.newFcPct)}%</span>` : ''}${s.daysSinceUsed != null ? ' · dùng ' + s.daysSinceUsed + ' ngày trước' : ''}</span></button>`).join('') : '<div class="muted small">Không có món phù hợp</div>'; pop.querySelectorAll('[data-i]').forEach(b => b.onmousedown = e => { e.preventDefault(); sel = +b.dataset.i; choose(); }); };
     const load = () => Store.query('Menu/SuggestDish', { MenuId: d.menuId, WeekStart: mw.week, MealType: meal.mealType, OptionNo: opt.optionNo, CategoryId: row.categoryId, Day: di + 1, Search: q.value.trim() || null, CheaperFirst: cheaper || null }).then(x => { items = x.ok ? x.list || [] : []; sel = 0; paint(); });
     const after = x => { if (!x.ok) return; mw.data = x.data; mwGrid(el, f, canEdit); el.querySelector('#mwKpis') && mwDraw(el, f); };
-    const save = dishId => Store.act('Menu/SaveCell', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, day: di + 1, dishId }, tables: ['MenuLine'] });
+    const save = dishId => Store.act('Menu/SaveCell', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, slot: row.slot || 0, day: di + 1, dishId }, tables: ['MenuLine'] });
     function choose() {
       const s = items[sel]; if (!s) return;
-      if (fillRow) return Store.act('Menu/FillRow', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, dishId: s.dishId }, tables: ['MenuLine'] }).then(x => { close(); after(x); });
+      if (fillRow) return Store.act('Menu/FillRow', { json: { menuId: d.menuId, mealType: meal.mealType, optionNo: opt.optionNo, categoryId: row.categoryId, slot: row.slot || 0, dishId: s.dishId }, tables: ['MenuLine'] }).then(x => { close(); after(x); });
       save(s.dishId).then(x => { close(); after(x); if (x.ok && di < 6) { const next = el.querySelector(`[data-mwc="${mi}|${oi}|${ri}|${di + 1}"]`); if (next) { next.classList.add('mw-chgd'); mwPick(el, f, canEdit, next, false); } } });
     }
     q.oninput = () => { clearTimeout(t); t = setTimeout(load, 250); };

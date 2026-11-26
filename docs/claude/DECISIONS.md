@@ -1419,3 +1419,17 @@ Thứ tự làm: 1 → 3 → 6 → 2.
 | (a) | Cột | Thêm đúng 1 cột `dbo.Vehicle.DefaultDriverEmployeeId uniqueidentifier NULL` (→ Employee, không FK vật lý – D-30); migration `DB/migrations/20261125_01_vehicle_default_driver.sql` (chạy lại được). |
 | (b) | Nhập | Màn Xe giao hàng: chọn tài xế mặc định – phải là nhân viên đang làm; xe cũ để trống (điều phối tự gán, không sửa hộ). |
 | (c) | Tự lập chuyến | Sau chốt đơn: tài xế = tài xế mặc định (còn làm) → không có thì tài xế chuyến gần nhất (UI-6.49 (10)) → vẫn không có thì để trống + bot nhắc điều phối. |
+
+## D-129 – Dữ liệu vận hành thật dùng làm dữ liệu demo / UAT trên DB dev (REAL-1) (anh chốt 2026-11-26)
+
+✅ **Anh chốt 2026-11-26** ("Coi dữ liệu thật này là dữ liệu để demo… chuẩn hoá và cập nhật vào database dev để tôi UAT"). Nguồn: 26 file Excel ở `D:\Duan\Tai lieu nghiep vu du an\Delicare-Share` (thực đơn, báo giá, sổ bán hàng, tồn kho tháng 8); bản chuẩn hóa `Delicare-Share\Chuan-hoa-REAL1\` – không đưa vào repo. Task ROADMAP **REAL-1**; thay phần "danh mục công ty mẫu" của phương án giả lập đã bàn (SIM-1).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Mã | Nguyên liệu và khách **giữ mã kế toán** (AS0002…, KH00001…) để đối chiếu phần mềm kế toán; món `MON-xxxx`, NCC `NCC-<tên ngắn>`, điểm giao `DG-…` gán sẵn khi chuẩn hóa (bộ nhập giữ mã có sẵn – ngoại lệ có chủ đích của G1 D-63 cho dữ liệu nạp ban đầu). |
+| (b) | Khách / điểm giao | Mỗi mã khách kế toán = 1 khách (bảng kê khớp sổ bán hàng); 16 điểm của Tool tổng hợp số suất gắn vào khách theo công trường (Gia Bình → SGC Cơ điện là giả định, KD xác nhận). |
+| (c) | Định mức | Chỉ lấy định lượng có thật (thực đơn tuần 1 + 3: 109 món), quy về 100 suất; dòng chép nhầm (không có trong thành phần chuẩn của món ở Rule Menu) bị loại. Món khác chưa có công thức. |
+| (d) | Giả định demo | Nhóm NL theo tiền tố mã, kiểu bảo quản / hạn dùng theo nhóm, hợp đồng tới 30/06/2027, khung nhận 10:30 – 11:30, dây chuyền 4 cái, tồn đầu kỳ = số 31/08 – liệt kê ở sheet *Gia dinh*, phải xác nhận khi chạy thật. |
+| (e) | Dọn demo cũ | Không xóa cứng: hủy chứng từ tương lai theo máy trạng thái + ngừng / xóa mềm danh mục `[DEMO]`; sổ chỉ ghi thêm và chứng từ quá khứ giữ nguyên. Bản ghi REAL-1 gắn `Note = '[DEMO] REAL-1'`. |
+| (f) | Không nạp | Sổ kế toán / ngân hàng / BCTC, lịch sử đơn tháng 1 – 8, nhân sự (file không có). **GAP-REAL-01 PROPOSED – BA/PO CONFIRM:** cột % VAT cho `SupplierMaterial`. |
+

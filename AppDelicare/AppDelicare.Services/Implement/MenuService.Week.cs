@@ -44,7 +44,9 @@ namespace AppDelicare.Services.Implement
             DateTime end = monday.AddDays(7);
             var rows = await (from cm in _unitOfWork.DbContext.ContractMeal.AsNoTracking()
                               join c in _unitOfWork.DbContext.Contract.AsNoTracking() on cm.ContractId equals c.Id
-                              where !cm.IsDeleted && !c.IsDeleted && c.Status == ContractStatus.Active && c.EffectiveFrom < end && (c.EffectiveTo == null || c.EffectiveTo >= monday)
+                              // REAL-1 (D-129): bỏ hợp đồng của khách đã xóa mềm (khách [DEMO] đã dọn) – không kéo giá suất bình quân.
+                              join cu in _unitOfWork.DbContext.Customer.AsNoTracking() on c.CustomerId equals cu.Id
+                              where !cm.IsDeleted && !c.IsDeleted && !cu.IsDeleted && c.Status == ContractStatus.Active && c.EffectiveFrom < end && (c.EffectiveTo == null || c.EffectiveTo >= monday)
                                     && cm.MealType != null && cm.UnitPrice != null && cm.UnitPrice > 0
                               select new { cm.MealType, cm.UnitPrice }).ToListAsync();
             return rows.GroupBy(r => r.MealType!.ToUpperInvariant()).ToDictionary(g => g.Key, g => Math.Round(g.Average(r => r.UnitPrice!.Value), 0));
@@ -141,17 +143,21 @@ namespace AppDelicare.Services.Implement
                     }
                     var templateNames = BlankTemplate.TryGetValue(mealType, out var tn) ? tn.Groups : [];
                     int ri = 0;
-                    foreach (var cat in rowCats)
+                    // REAL-1 (D-129): mỗi nhóm có số dòng = số món nhiều nhất của nhóm trong 1 ngày (Slot 0, 1, …).
+                    var rowSlots = rowCats.SelectMany(cat => Enumerable.Range(0, Math.Max(1, ol.Where(l => (dishes.TryGetValue(l.DishId, out var d) ? d.CategoryId : null) == cat)
+                        .GroupBy(l => l.DayOfWeek).Select(g => g.Count()).DefaultIfEmpty(0).Max())).Select(slot => (cat, slot))).ToList();
+                    foreach (var (cat, slot) in rowSlots)
                     {
-                        var row = new MenuWeekRowModel { CategoryId = cat, CategoryName = CatName(cat) ?? (ol.Count == 0 && ri < templateNames.Length ? templateNames[ri] : "Món") };
+                        var row = new MenuWeekRowModel { CategoryId = cat, Slot = slot, CategoryName = CatName(cat) ?? (ol.Count == 0 && ri < templateNames.Length ? templateNames[ri] : "Món") };
                         ri++;
                         for (int day = 1; day <= 7; day++)
                         {
-                            var line = ol.Where(l => l.DayOfWeek == day && (dishes.TryGetValue(l.DishId, out var d) ? d.CategoryId : null) == cat).OrderBy(l => l.SortOrder).FirstOrDefault();
+                            var line = ol.Where(l => l.DayOfWeek == day && (dishes.TryGetValue(l.DishId, out var d) ? d.CategoryId : null) == cat).OrderBy(l => l.SortOrder).ThenBy(l => l.CreatedDate).ElementAtOrDefault(slot);
                             var cell = new MenuWeekCellModel { Day = day };
                             if (line == null)
                             {
-                                cell.Flag = FlagEmpty;
+                                // REAL-1: dòng thêm của nhóm (Slot ≥ 1 – số món đổi theo ngày) để trống không phải "ô trống" chặn gửi duyệt.
+                                cell.Flag = slot == 0 ? FlagEmpty : null;
                             }
                             else
                             {
@@ -261,7 +267,7 @@ namespace AppDelicare.Services.Implement
                     return Result<MenuWeekModel>.Fail(ConstantHelper.Message.MenuCellInvalid);
                 }
                 string mealType = request.MealType.Trim().ToUpperInvariant();
-                await ApplyCellAsync(menu!.Id, mealType, Math.Max(1, request.OptionNo), request.CategoryId, request.Day, request.DishId);
+                await ApplyCellAsync(menu!.Id, mealType, Math.Max(1, request.OptionNo), request.CategoryId, request.Day, request.DishId, Math.Max(0, request.Slot));
                 await _unitOfWork.MenuLineRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 return Result<MenuWeekModel>.Success(await BuildWeekAsync(OrderService.MondayOf(menu.EffectiveFrom ?? _clock.Today)), ConstantHelper.Message.SaveSuccess);
             }
@@ -272,13 +278,14 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        /// <summary>Đặt món cho ô (buổi, lựa chọn, nhóm, ngày): ô đã có món cùng nhóm → đổi / xóa; chưa có → thêm. Chưa commit.</summary>
-        private async Task ApplyCellAsync(Guid menuId, string mealType, int option, Guid? categoryId, int day, Guid? dishId)
+        /// <summary>Đặt món cho ô (buổi, lựa chọn, nhóm, dòng thứ slot trong nhóm, ngày): ô đã có món → đổi / xóa; chưa có → thêm. Chưa commit.</summary>
+        private async Task ApplyCellAsync(Guid menuId, string mealType, int option, Guid? categoryId, int day, Guid? dishId, int slot = 0)
         {
             var db = _unitOfWork.DbContext;
             var existing = await db.MenuLine.Where(l => l.MenuId == menuId && !l.IsDeleted && l.MealType == mealType && (l.SequenceNo ?? 1) == option && l.DayOfWeek == day).ToListAsync();
             var info = await DishInfoAsync(existing.Select(l => l.DishId).Concat(dishId is { } x ? [x] : []));
-            var line = existing.FirstOrDefault(l => (info.GetValueOrDefault(l.DishId)?.CategoryId) == categoryId);
+            // REAL-1 (D-129): nhiều dòng cùng nhóm (2 món chính, bánh + trứng + sữa) – dòng thứ slot theo SortOrder.
+            var line = existing.Where(l => (info.GetValueOrDefault(l.DishId)?.CategoryId) == categoryId).OrderBy(l => l.SortOrder).ThenBy(l => l.CreatedDate).ElementAtOrDefault(slot);
             if (dishId == null)
             {
                 if (line != null)
@@ -314,7 +321,7 @@ namespace AppDelicare.Services.Implement
                 string mealType = (request.MealType ?? string.Empty).Trim().ToUpperInvariant();
                 for (int day = 1; day <= 7; day++)
                 {
-                    await ApplyCellAsync(menu!.Id, mealType, Math.Max(1, request.OptionNo), request.CategoryId, day, request.DishId);
+                    await ApplyCellAsync(menu!.Id, mealType, Math.Max(1, request.OptionNo), request.CategoryId, day, request.DishId, Math.Max(0, request.Slot));
                     await _unitOfWork.MenuLineRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 }
                 return Result<MenuWeekModel>.Success(await BuildWeekAsync(OrderService.MondayOf(menu!.EffectiveFrom ?? _clock.Today)), ConstantHelper.Message.SaveSuccess);
@@ -524,6 +531,8 @@ namespace AppDelicare.Services.Implement
                 }
                 else
                 {
+                    // REAL-1 (D-129): sinh mã chứng từ phải trong transaction (SQL Server khóa dãy số tới khi ghi xong) – nhánh Clone đã tự mở.
+                    using var tran = await _unitOfWork.OpenTransaction();
                     string code = await _documentNumberService.NextAsync(DocumentKind.Menu, monday);
                     created = new Menu
                     {
@@ -532,6 +541,7 @@ namespace AppDelicare.Services.Implement
                     };
                     _unitOfWork.MenuRepository.Add(created);
                     await _unitOfWork.MenuRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
+                    _unitOfWork.CommitTransaction();
                 }
                 result.Created = true;
                 result.MenuId = created.Id;

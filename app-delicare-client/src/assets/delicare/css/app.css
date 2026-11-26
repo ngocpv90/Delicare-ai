@@ -828,6 +828,9 @@ figure.dc-chart.spark .dc-chart-box{margin-top:4px}
 .grp-menu button{border:0;background:#fff;text-align:left;padding:8px 12px;cursor:pointer;font-size:13px}.grp-menu button:hover{background:#F4F7EF}.grp-menu button[disabled]{color:#9aa39c;cursor:not-allowed}
 .grp-in{height:30px;width:100%}
 @media(max-width:768px){.grp-layout{grid-template-columns:1fr}.grp-side{position:static}.grp-list{flex-direction:row;overflow-x:auto;gap:6px}.grp-it{border:1px solid var(--line);border-radius:16px;white-space:nowrap;flex:none}.grp-hint{display:none}}
+/* REAL-1 (D-129): màn Công thức – danh sách món | chi tiết; ≤ 768px xếp 1 cột (390px khung chi tiết bị bóp chữ dọc). */
+.rcp-layout{grid-template-columns:300px minmax(0,1fr)}
+@media(max-width:768px){.rcp-layout{grid-template-columns:1fr}}
 
 /* UI-6.19 (D-100): form giá NCC + bảng so sánh */
 .sp-two{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px}

@@ -131,5 +131,54 @@ namespace AppDelicare.Tests.Menu
             var lines = await factory.QueryAsync(db => db.MenuLine.AsNoTracking().Where(l => l.MenuId == menuId && !l.IsDeleted).ToListAsync());
             lines.Select(l => (l.DishId, l.DayOfWeek)).Should().BeEquivalentTo(new[] { (dGa, (int?)1), (dCa, (int?)2) });
         }
+
+        /// <summary>REAL-1 (D-129): thực đơn thật có nhiều món cùng nhóm (trưa 2 món chính) – file 2 hàng cùng nhóm → 2 dòng Slot 0 / 1, không ghi đè; sửa ô theo Slot.</summary>
+        [Fact]
+        public async Task Import_keeps_several_rows_of_the_same_category_as_slots()
+        {
+            string k = Guid.NewGuid().ToString("N")[..4].ToUpperInvariant();
+            DateTime week = Week.AddDays(42);
+            factory.Clock.FixedNow = week.AddDays(-7);
+            Guid cat = Guid.NewGuid(), d1 = Guid.NewGuid(), d2 = Guid.NewGuid(), d3 = Guid.NewGuid();
+            await factory.SeedAsync(db =>
+            {
+                db.DishCategory.Add(new DishCategory { Id = cat, Code = "SL" + k, Name = "Món chính SL " + k });
+                db.Dish.Add(new Dish { Id = d1, Code = "SL1" + k, Name = "Thịt kho SL " + k, DishCategoryId = cat, Status = "Active" });
+                db.Dish.Add(new Dish { Id = d2, Code = "SL2" + k, Name = "Tôm chiên SL " + k, DishCategoryId = cat, Status = "Active" });
+                db.Dish.Add(new Dish { Id = d3, Code = "SL3" + k, Name = "Gà rang SL " + k, DishCategoryId = cat, Status = "Active" });
+                return Task.CompletedTask;
+            });
+            using var c = factory.CreateAuthorizedClient();
+            Guid menuId = (await c.PostFormAsync("/api/Menu/CreateWeek", ("weekStart", week.ToString("yyyy-MM-dd")), ("blank", true))).Ok().GetProperty("menuId").GetGuid();
+            using var wb = new ClosedXML.Excel.XLWorkbook();
+            var ws = wb.AddWorksheet("1. Menu");
+            ws.Cell(1, 1).Value = "Buổi"; ws.Cell(1, 2).Value = "Lựa chọn"; ws.Cell(1, 3).Value = "Nhóm món";
+            ws.Cell(2, 1).Value = "TRUA"; ws.Cell(2, 2).Value = 1; ws.Cell(2, 4).Value = "Thịt kho SL " + k;
+            ws.Cell(3, 1).Value = "TRUA"; ws.Cell(3, 2).Value = 1; ws.Cell(3, 4).Value = "Tôm chiên SL " + k;
+            using var output = new MemoryStream();
+            wb.SaveAs(output);
+            using var form = new MultipartFormDataContent { { new StringContent(menuId.ToString()), "menuId" }, { new StringContent("true"), "apply" }, { new ByteArrayContent(output.ToArray()), "file", "menu.xlsx" } };
+            (await LegacyResult.ReadAsync(await c.PostAsync("/api/Menu/ImportWeek", form))).Ok().GetProperty("written").GetInt32().Should().Be(2);
+            (await factory.QueryAsync(db => db.MenuLine.CountAsync(l => l.MenuId == menuId && !l.IsDeleted))).Should().Be(2, "2 món chính cùng ngày không ghi đè nhau");
+
+            async Task<List<(int Slot, Guid? Dish)>> RowsAsync()
+            {
+                var w = (await c.GetResultAsync($"/api/Menu/GetWeek?WeekStart={week:yyyy-MM-dd}")).Ok();
+                return [.. w.GetProperty("listMeal").EnumerateArray().Where(m => m.GetProperty("mealType").GetString() == "TRUA")
+                    .SelectMany(m => m.GetProperty("listOption").EnumerateArray()).SelectMany(o => o.GetProperty("listRow").EnumerateArray())
+                    .Where(r => r.GetProperty("categoryId").ValueKind == System.Text.Json.JsonValueKind.String && r.GetProperty("categoryId").GetGuid() == cat)
+                    .Select(r => (r.GetProperty("slot").GetInt32(), r.GetProperty("listCell")[0].GetProperty("dishId") is { ValueKind: System.Text.Json.JsonValueKind.String } x ? x.GetGuid() : (Guid?)null))];
+            }
+            (await RowsAsync()).Should().Equal((0, d1), (1, d2));
+            var week1 = (await c.GetResultAsync($"/api/Menu/GetWeek?WeekStart={week:yyyy-MM-dd}")).Ok();
+            var trua = week1.GetProperty("listMeal").EnumerateArray().Single(m => m.GetProperty("mealType").GetString() == "TRUA").GetProperty("listOption")[0].GetProperty("listRow").EnumerateArray()
+                .Where(r => r.GetProperty("categoryId").ValueKind == System.Text.Json.JsonValueKind.String && r.GetProperty("categoryId").GetGuid() == cat).ToList();
+            trua[0].GetProperty("listCell")[1].GetProperty("flag").GetString().Should().Be("EMPTY", "dòng đầu của nhóm trống → ô trống");
+            trua[1].GetProperty("listCell")[1].GetProperty("flag").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null, "dòng thêm (Slot 1) trống không tính ô trống");
+
+            // Đổi món dòng 2 (Slot 1) – dòng 1 giữ nguyên.
+            (await LegacyResult.ReadAsync(await c.PostAsJsonAsync("/api/Menu/SaveCell", new { menuId, mealType = "TRUA", optionNo = 1, categoryId = cat, slot = 1, day = 1, dishId = d3 }))).Ok();
+            (await RowsAsync()).Should().Equal((0, d1), (1, d3));
+        }
     }
 }

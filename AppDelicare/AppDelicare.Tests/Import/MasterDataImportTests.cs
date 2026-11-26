@@ -158,6 +158,36 @@ namespace AppDelicare.Tests.Import
             var rows = await _factory.QueryAsync(db => db.SupplierMaterial.AsNoTracking().Where(x => x.IngredientId == nl1.Id).ToListAsync());
             rows.Should().HaveCount(2);
             rows.Single(x => x.IsPreferred).UnitPrice.Should().Be(118000);
+
+            // REAL-1: giá lẻ nhiều chữ số → lưu 2 số lẻ; nạp lại cùng file = 0 dòng sửa.
+            var odd = await FillTemplateAsync(c, "SupplierMaterial", ["[DEMO]-IMP-NCC1", "[DEMO]-IMP-NL1", "15277,7777777", "[DEMO]kg"]);
+            (await ImportAsync(c, "SupplierMaterial", odd)).Ok().GetProperty("updated").GetInt32().Should().Be(1);
+            (await ImportAsync(c, "SupplierMaterial", odd)).Ok().GetProperty("updated").GetInt32().Should().Be(0, "giá đã làm tròn theo cột – nạp lại không đổi");
+            (await _factory.QueryAsync(db => db.SupplierMaterial.AsNoTracking().SingleAsync(x => x.IngredientId == nl1.Id && !x.IsPreferred))).UnitPrice.Should().Be(15277.78m);
+        }
+
+        /// <summary>REAL-1 (1) (D-129): cột ĐVT khớp Mã trước → Tên → Ký hiệu (ĐVT khác có Ký hiệu / Tên trùng mã không được thắng).</summary>
+        [Fact]
+        public async Task Unit_lookup_matches_code_before_name_before_symbol()
+        {
+            using var c = _factory.CreateAuthorizedClient();
+            Guid gram = Guid.NewGuid(), kilo = Guid.NewGuid(), hop = Guid.NewGuid();
+            await _factory.SeedAsync(db =>
+            {
+                db.UnitMeasure.Add(new UnitMeasure { Id = gram, Code = "[DEMO]-UQ-G", Name = "[DEMO]-UQ-HOP", Symbol = "[DEMO]-UQ-KG", Status = "Active" });
+                db.UnitMeasure.Add(new UnitMeasure { Id = kilo, Code = "[DEMO]-UQ-KG", Name = "[DEMO] kilogam UQ", Symbol = "[DEMO]-UQ-K", Status = "Active" });
+                db.UnitMeasure.Add(new UnitMeasure { Id = hop, Code = "[DEMO]-UQ-H", Name = "[DEMO] hộp UQ", Symbol = "[DEMO]-UQ-HOP", Status = "Active" });
+                return Task.CompletedTask;
+            });
+            var file = await FillTemplateAsync(c, "Ingredient",
+                ["[DEMO]-UQ-NL1", "[DEMO] NL mã ĐVT", null, "[DEMO]-UQ-KG"],
+                ["[DEMO]-UQ-NL2", "[DEMO] NL tên ĐVT", null, "[DEMO]-UQ-HOP"],
+                ["[DEMO]-UQ-NL3", "[DEMO] NL ký hiệu ĐVT", null, "[DEMO]-UQ-K"]);
+            (await ImportAsync(c, "Ingredient", file)).Ok().GetProperty("inserted").GetInt32().Should().Be(3);
+            var units = await _factory.QueryAsync(db => db.Ingredient.AsNoTracking().Where(x => x.Code.StartsWith("[DEMO]-UQ-NL")).ToDictionaryAsync(x => x.Code, x => x.BaseUnitId));
+            units["[DEMO]-UQ-NL1"].Should().Be(kilo, "khớp Mã thắng Ký hiệu của ĐVT khác");
+            units["[DEMO]-UQ-NL2"].Should().Be(gram, "khớp Tên thắng Ký hiệu của ĐVT khác");
+            units["[DEMO]-UQ-NL3"].Should().Be(kilo, "không trùng Mã / Tên → Ký hiệu");
         }
 
         [Fact]
