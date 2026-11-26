@@ -144,6 +144,22 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.50 (D-132): nhận gộp nhiều đơn mua của 1 NCC (dòng theo nguyên liệu, máy chủ chia về từng đơn – đơn cũ trước; mỗi đơn 1 phiếu; 1 giao dịch).</summary>
+        [Security.Permission("scm-gr", AppDelicare.Services.Interface.PermissionAction.Add)]
+        [HttpPost("CreateMany")]
+        public async Task<IActionResult> CreateMany([FromBody] GoodsReceiptCreateManyRequest request)
+        {
+            try
+            {
+                return null == request ? BadRequest(ConstantHelper.Message.ModelStateMessage) : Ok(await _service.CreateMany(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " CreateMany: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         /// <summary>T15 (spec 7.3 receive): lập phiếu nhập Chờ QC theo PO đã duyệt. JSON body vì có danh sách dòng lồng nhau.</summary>
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] GoodsReceiptCreateRequest request)

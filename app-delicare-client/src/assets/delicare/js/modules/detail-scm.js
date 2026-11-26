@@ -65,7 +65,8 @@
           { act: 'submit', icon: 'approve', label: 'Gửi duyệt', ok: edit && acts.includes('submit'), primary: true },
           { act: 'send', icon: 'check', label: 'Gửi NCC', ok: edit && acts.includes('send') },
           { act: 'close', icon: 'check', label: 'Đóng PO', ok: edit && acts.includes('close') },
-          { act: 'print', icon: 'export', label: 'In đơn', ok: acts.includes('export') },
+          { act: 'print', icon: 'export', label: 'In đơn (PDF, có QR)', ok: acts.includes('export') },
+          { act: 'deliveryNote', icon: 'export', label: 'Phiếu giao NCC (Excel)', ok: acts.includes('receive') || acts.includes('export') }, // UI-6.50
         ],
         more: [inbox(d), edit && acts.includes('cancel') ? `<button data-h="cancel">Hủy đơn mua</button>` : ''],
       };

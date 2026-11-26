@@ -9,9 +9,11 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class PurchaseOrderController(IPurchaseOrderService service, IQcBookService book) : BaseController
+    public class PurchaseOrderController(IPurchaseOrderService service, IQcBookService book, AppDelicare.Services.Implement.IReceivingService receiving, IPrintService print) : BaseController
     {
         private readonly IQcBookService _book = book;
+        private readonly AppDelicare.Services.Implement.IReceivingService _receiving = receiving;
+        private readonly IPrintService _print = print;
         private readonly IPurchaseOrderService _service = service;
 
         [HttpGet("GetAll")]
@@ -343,6 +345,100 @@ namespace AppDelicare.WebApi.Controllers
             catch (Exception ex)
             {
                 Log.Error(string.Concat("[", GetType().Name, "]", " ExportOrder: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>UI-6.50 (D-132): thẻ NCC hẹn giao (≤ ngày xem, còn dòng chờ) + 4 chỉ số màn Nhận hàng. Quyền Xem scm-gr.</summary>
+        [Security.Permission("scm-gr", PermissionAction.View)]
+        [HttpGet("GetDueBySupplier")]
+        public async Task<IActionResult> GetDueBySupplier(DateTime? date)
+        {
+            try
+            {
+                return Ok(await _receiving.GetDueBySupplier(date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetDueBySupplier: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+        /// <summary>UI-6.50 (D-132): gói nhận gộp – mọi đơn còn mở của NCC (supplierId | purchaseOrderId (QR DOC_PO_) | keyword: tên NCC / số đơn / số hóa đơn NCC), dòng theo nguyên liệu. Quyền Xem scm-gr.</summary>
+        [Security.Permission("scm-gr", PermissionAction.View)]
+        [HttpGet("GetReceivingBundle")]
+        public async Task<IActionResult> GetReceivingBundle(Guid? supplierId, Guid? purchaseOrderId, string? keyword, DateTime? date)
+        {
+            try
+            {
+                return Ok(await _receiving.GetReceivingBundle(supplierId, purchaseOrderId, keyword, date));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetReceivingBundle: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+        /// <summary>UI-6.50 (D-132): Excel "Phiếu giao hàng" gửi NCC (1 đơn mua hoặc mọi đơn còn mở của NCC). Quyền Xem scm-gr.</summary>
+        [Security.Permission("scm-gr", PermissionAction.View)]
+        [HttpGet("DeliveryNoteTemplate")]
+        public async Task<IActionResult> DeliveryNoteTemplate(Guid? supplierId, Guid? purchaseOrderId)
+        {
+            try
+            {
+                var result = await _receiving.DeliveryNoteTemplate(supplierId, purchaseOrderId);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data.Content, result.Data.ContentType, result.Data.FileName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " DeliveryNoteTemplate: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+        /// <summary>UI-6.50 (D-132): đọc Excel phiếu giao NCC (form: file, supplierId) → dòng điền form nhận hàng; không lưu tệp. Quyền Thêm scm-gr.</summary>
+        [Security.Permission("scm-gr", PermissionAction.Add)]
+        [HttpPost("ParseDeliveryNote")]
+        public async Task<IActionResult> ParseDeliveryNote(IFormFile? file, [FromForm] Guid supplierId)
+        {
+            try
+            {
+                if (file == null || !Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(ConstantHelper.Message.FileCorrectFormat);
+                }
+                await using var stream = file.OpenReadStream();
+                using var copy = new MemoryStream();
+                await stream.CopyToAsync(copy);
+                copy.Position = 0;
+                return Ok(await _receiving.ParseDeliveryNote(supplierId, copy));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " ParseDeliveryNote: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+        /// <summary>UI-6.50 (D-132 h): in đơn đặt hàng (bản gửi NCC – pdf mặc định / xlsx / docx) có QR mở bot nhận hàng (start=DOC_PO_&lt;Id&gt;). Quyền Xem scm-po.</summary>
+        [Security.Permission("scm-po", PermissionAction.View)]
+        [HttpGet("Print")]
+        public async Task<IActionResult> Print(Guid id, string? format = null)
+        {
+            try
+            {
+                var result = await _print.Print("PURCHASE_ORDER", id, format);
+                if (result.ResponseCode != Convert.ToInt32(HttpStatusCode.OK) || result.Data == null)
+                {
+                    return Ok(result);
+                }
+                return File(result.Data.Content, result.Data.ContentType, result.Data.FileName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " Print: ", ex.ToString()));
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }

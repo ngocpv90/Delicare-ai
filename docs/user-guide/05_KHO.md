@@ -198,3 +198,14 @@ Trả lại NCC hàng **đã nhập kho** bị hỏng, sai quy cách, gần / qu
 - Khi Bếp ghi kết quả đóng gói, hệ thống lập **phiếu xuất Nháp "Xuất bao bì"** theo ca = suất đạt × định mức (Đóng gói & Giao hàng › Định mức bao bì). Phiếu nằm ở **Kho › Xuất kho sản xuất**, ghi chú bắt đầu `[XUAT_BB:…]`.
 - Thủ kho kiểm, **sửa số** nếu dùng thực tế khác, rồi Ghi sổ; không làm gì thì **23:30** job tự ghi sổ phiếu của ca đã hết giờ (lỗi thì bot báo Thủ kho).
 - Vật tư thiếu tồn không đưa vào phiếu, bot báo Mua hàng lập đề nghị mua.
+
+## 10. Nhận hàng theo nhà cung cấp (UI-6.50, D-132)
+
+1. **Kho › Nhận hàng**: thẻ mỗi NCC hẹn giao hôm nay (số đơn, số dòng, giờ hẹn; quá hẹn tô đỏ). Xe NCC đến → bấm **Nhận hàng** trên thẻ NCC. Đơn khác ngày / NCC khác → gõ tên NCC, số đơn mua hoặc số hóa đơn NCC ở ô tìm → Enter.
+2. Form gộp mọi đơn còn mở của NCC: bỏ tick đơn không giao hôm nay. Chọn **Kho nhận**, ghi **Số hóa đơn / phiếu giao NCC** (tùy chọn), **Nhiệt độ thùng xe** (một lần cho mọi hàng mát / đông; dòng nào đo riêng bấm "sửa").
+3. Bấm **✓ Nhận đủ – Đạt tất cả** → mọi dòng = số còn phải nhận, kết quả Đạt; sửa dòng thiếu / hỏng (số nhận, kết quả, nhận xét bắt buộc khi không Đạt). Lô NCC / Hạn dùng chỉ hỏi với nguyên liệu quản lý lô / hạn; để trống = lô nội bộ / hạn tự tính; "↓ áp dòng dưới" chép cho các dòng dưới.
+4. NCC gửi **Excel phiếu giao**: bấm **Mẫu** (gửi NCC điền) / **Tải lên** → form tự điền số giao, lô, hạn dùng; dòng không khớp hiện để nhập tay.
+5. Bấm **Nhận hàng (N phiếu)** – hệ thống tách mỗi đơn mua một phiếu nhập (đơn cũ trước), tự đạt nhập kho ngay, cần QA gửi QA; QA đứng tại kho thấy **Kết luận & nhập kho (N phiếu)**.
+- **Điện thoại:** dòng hiện dạng thẻ, nút to "Nhận đủ – Đạt tất cả". Web không dùng camera.
+- **QR trên đơn mua in:** Mua hàng in đơn (PDF – nút "In đơn (PDF, có QR)" ở trang đơn mua) gửi NCC, đề nghị NCC in kèm khi giao. Thủ kho mở camera điện thoại quét QR → bot Vận hành mở nhận hàng của NCC đó → **✓ Nhận đủ – Đạt tất cả** (bot hỏi nhiệt độ thùng xe nếu có hàng mát / đông). Lệch số / lô → làm trên web. Hoặc trên bot: 📦 Nhận hàng theo NCC (`/nhanhang`).
+- Nút **Phiếu giao NCC (Excel)** ở trang đơn mua: tải mẫu để thu mua gửi NCC.
