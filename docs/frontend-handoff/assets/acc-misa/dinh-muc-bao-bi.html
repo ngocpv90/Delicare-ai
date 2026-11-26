@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng – Định mức bao bì và tự xuất khi đóng gói (D-131)</title>
+<style>
+body{margin:0;background:#F4F6F2}
+a{color:#2F64A0}a:hover{color:#1d4470}
+.card{background:#fff;border:1px solid #E6E9E4;border-radius:16px;padding:18px 20px}
+.btn{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:#1E2620;font-family:inherit}
+.btnp{background:#6F9131;border-color:#6F9131;color:#fff;font-weight:600}
+.xs{height:30px;padding:0 10px;font-size:12px}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #E6E9E4;padding:9px 8px;text-align:left;vertical-align:middle}
+th{background:#FAFBF8;color:#5d675f;font-size:12px;font-weight:600}
+td.r,th.r{text-align:right}
+</style></head><body>
+<!-- Mô phỏng D-131 (chat tài liệu 2026-11-26). Số liệu minh họa theo sổ tháng 08/2026; [..] = chưa có số. Bản gốc chỉnh được: canvas Design "Mockup – Kết nối kế toán MISA AMIS". -->
+
+<div style="box-sizing:border-box;max-width:1440px;margin:0 auto;padding:20px;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:#1E2620;display:flex;flex-direction:column;gap:16px">
+
+<div class="card" style="display:flex;flex-direction:column;gap:14px">
+ <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
+  <div style="max-width:860px">
+   <div style="font-size:12px;color:#5d675f">Sản xuất › Đóng gói › Định mức bao bì</div>
+   <h1 style="font-size:20px;margin:4px 0 6px">Định mức bao bì & tự xuất khi đóng gói</h1>
+   <div style="font-size:13px;color:#5d675f">Mỗi suất dùng bao nhiêu hộp, đũa thìa, cốc, túi. Khi ghi kết quả đóng gói, hệ thống tự lập phiếu xuất bao bì theo buổi = suất đóng gói đạt × định mức. Kho chỉ kiểm; không sửa gì thì hệ thống tự ghi sổ khi hết ca.</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Lịch sử thay đổi</button><button class="btn btnp">Lưu định mức</button></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Bao bì xuất hôm nay</div><div style="font-size:22px;font-weight:800">4 phiếu</div><div style="font-size:12px;color:#5d675f">3 đã ghi sổ · 1 chờ kho</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Thiếu tồn</div><div style="font-size:22px;font-weight:800;color:#A32D2D">1 mặt hàng</div><div style="font-size:12px;color:#5d675f">CC0006 Cốc 360 · đủ dùng 1 ngày</div><div style="margin-top:6px"><button class="btn xs btnp">Tạo đề nghị mua</button></div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Bao bì / suất tháng này</div><div style="font-size:22px;font-weight:800">[số] đ</div><div style="font-size:12px;color:#5d675f">thực xuất so với định mức</div></div>
+ </div>
+</div>
+
+<div class="card">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px"><h3 style="font-size:15px;margin:0">Định mức theo loại suất (số / suất)</h3><span style="font-size:12px;color:#5d675f">Sửa trực tiếp trong ô · 0 = không dùng · Bếp trưởng đề xuất, COO duyệt</span></div>
+ <div style="overflow-x:auto">
+ <table>
+  <thead><tr><th>Vật tư</th><th>ĐVT</th><th class="r">Sáng</th><th class="r">Trưa</th><th class="r">Tối</th><th class="r">Đêm</th><th class="r">Cơm suất</th><th class="r">Tồn hiện tại</th></tr></thead>
+  <tbody>
+   <tr><td>CC0003 · Hộp 5 ngăn</td><td>Cái</td><td class="r">0</td><td class="r" style="background:#FBFCF9">1</td><td class="r" style="background:#FBFCF9">1</td><td class="r">0</td><td class="r" style="background:#FBFCF9">1</td><td class="r">18.400</td></tr>
+   <tr><td>CC0002 · Combo đũa thìa</td><td>Bộ</td><td class="r" style="background:#FBFCF9">1</td><td class="r" style="background:#FBFCF9">1</td><td class="r" style="background:#FBFCF9">1</td><td class="r" style="background:#FBFCF9">1</td><td class="r" style="background:#FBFCF9">1</td><td class="r">32.000</td></tr>
+   <tr><td>CC0006 · Cốc 360</td><td>Cái</td><td class="r" style="background:#FBFCF9">1</td><td class="r">0</td><td class="r">0</td><td class="r" style="background:#FBFCF9">1</td><td class="r">0</td><td class="r" style="color:#A32D2D;font-weight:700">2.100</td></tr>
+   <tr><td>[Túi đựng suất]</td><td>Cái</td><td class="r" style="background:#FBFCF9">1</td><td class="r">0</td><td class="r">0</td><td class="r" style="background:#FBFCF9">1</td><td class="r">0</td><td class="r">9.800</td></tr>
+   <tr><td>CC0001 · Găng tay y tế</td><td>Đôi</td><td class="r" colspan="5" style="text-align:center;color:#5d675f">Không theo suất – xuất theo ca bếp (phiếu xuất thường)</td><td class="r">1.200</td></tr>
+  </tbody>
+ </table>
+ </div>
+</div>
+
+<div class="card">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px"><h3 style="font-size:15px;margin:0">Phiếu xuất bao bì hôm nay – 26/11/2026</h3><span style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:#5d675f">Ca Đêm tự ghi sổ lúc 01:00</span><button class="btn xs btnp">Ghi sổ ngay</button></span></div>
+ <div style="overflow-x:auto">
+ <table>
+  <thead><tr><th>Buổi</th><th class="r">Suất đóng gói đạt</th><th>Hộp 5 ngăn</th><th>Đũa thìa</th><th>Cốc 360</th><th>Túi</th><th>Trạng thái</th></tr></thead>
+  <tbody>
+   <tr><td>Sáng</td><td class="r">4.250</td><td>–</td><td>4.250</td><td>4.250</td><td>4.250</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Đã ghi sổ</span></td></tr>
+   <tr><td>Trưa</td><td class="r">4.312</td><td>4.312</td><td>4.312</td><td>–</td><td>–</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Đã ghi sổ</span></td></tr>
+   <tr><td>Tối</td><td class="r">4.290</td><td>4.290</td><td>4.290</td><td>–</td><td>–</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Đã ghi sổ</span></td></tr>
+   <tr><td>Đêm</td><td class="r">540</td><td>–</td><td>540</td><td><input aria-label="Số cốc" value="540" style="width:70px;height:28px;border:1px solid #d5dbd2;border-radius:8px;text-align:right;font-family:inherit"></td><td>540</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Chờ kho ghi sổ</span></td></tr>
+  </tbody>
+ </table>
+ </div>
+ <div style="font-size:12px;color:#5d675f;margin-top:10px">Số tự tính, kho sửa được trước khi ghi sổ (ví dụ thay loại hộp). Ghi sổ xong → phiếu "Xuất bao bì" theo buổi tự sang Kế toán. Thiếu tồn → bot báo Mua hàng kèm nút tạo đề nghị mua.</div>
+</div>
+
+</div>
+
+</body></html>

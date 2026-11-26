@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng – Chứng từ kế toán MISA AMIS (D-131)</title>
+<style>
+body{margin:0;background:#F4F6F2}
+a{color:#2F64A0}a:hover{color:#1d4470}
+.card{background:#fff;border:1px solid #E6E9E4;border-radius:16px;padding:18px 20px}
+.btn{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:#1E2620;font-family:inherit}
+.btnp{background:#6F9131;border-color:#6F9131;color:#fff;font-weight:600}
+.xs{height:30px;padding:0 10px;font-size:12px}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #E6E9E4;padding:9px 8px;text-align:left;vertical-align:middle}
+th{background:#FAFBF8;color:#5d675f;font-size:12px;font-weight:600}
+td.r,th.r{text-align:right}
+</style></head><body>
+<!-- Mô phỏng D-131 (chat tài liệu 2026-11-26). Số liệu minh họa theo sổ tháng 08/2026; [..] = chưa có số. Bản gốc chỉnh được: canvas Design "Mockup – Kết nối kế toán MISA AMIS". -->
+
+<div style="box-sizing:border-box;max-width:1440px;margin:0 auto;padding:20px;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:#1E2620;display:flex;flex-direction:column;gap:16px">
+
+<div class="card" style="display:flex;flex-direction:column;gap:14px">
+ <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
+  <div style="max-width:820px">
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#5d675f">Kế toán ›</span><div style="display:flex;gap:6px;flex-wrap:wrap"><a href="chung-tu-ke-toan.html" class="btn xs" style="text-decoration:none;background:#1E2620;color:#fff;border-color:#1E2620">Chứng từ kế toán</a><a href="bang-ke-xac-nhan.html" class="btn xs" style="text-decoration:none;">Bảng kê thanh toán</a><a href="khop-ma-amis.html" class="btn xs" style="text-decoration:none;">Khớp mã AMIS</a><a href="doi-chieu-amis.html" class="btn xs" style="text-decoration:none;">Đối chiếu với AMIS</a><a href="khoa-ky.html" class="btn xs" style="text-decoration:none;">Khóa kỳ</a></div></div>
+   <h1 style="font-size:20px;margin:4px 0 6px">Chứng từ kế toán (MISA AMIS)</h1>
+   <div style="font-size:13px;color:#5d675f">Delicare tự lập chứng từ từ nghiệp vụ đã xong (đối soát, nhận hàng, xuất kho, đóng gói, kiểm kê). Kế toán chỉ xử lý dòng báo lỗi, rồi gửi sang AMIS (tự động qua kết nối, hoặc tải file Excel đúng mẫu AMIS để nhập tay). Hạch toán, hóa đơn, công nợ làm trên AMIS.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+   <div style="display:flex;align-items:center;gap:8px;font-weight:600"><button class="btn xs" aria-label="Tháng trước">‹</button>Tháng 08/2026<button class="btn xs" aria-label="Tháng sau">›</button></div>
+   <div style="display:flex;gap:6px"><span class="st" style="background:#EFF5E5;color:#4d6b1c">AMIS: đã kết nối API</span><span class="st" style="background:#E6F1FB;color:#2F64A0">Kỳ đang mở</span></div>
+  </div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#EFF5E5;color:#4d6b1c">1</span><div><b style="display:block">Xử lý dòng cần sửa</b><span style="color:#5d675f">Mỗi dòng lỗi có sẵn nút sửa đi thẳng tới chỗ cần sửa</span><div style="margin-top:6px"><button class="btn xs">Xem 5 dòng cần xử lý</button></div></div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#EFF5E5;color:#4d6b1c">2</span><div><b style="display:block">Gửi sang AMIS</b><span style="color:#5d675f">Một nút cho mọi chứng từ sẵn sàng; dòng lỗi tự bỏ qua</span><div style="margin-top:6px;display:flex;gap:6px"><button class="btn xs btnp">Gửi tất cả sẵn sàng (412)</button><button class="btn xs">Tải file Excel mẫu AMIS</button></div></div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#EFF5E5;color:#4d6b1c">3</span><div><b style="display:block">Lập chứng từ trên AMIS</b><span style="color:#5d675f">Trên AMIS: Tiện ích › Sinh chứng từ từ đề nghị lập CT kế toán. Delicare tự cập nhật dòng nào đã lập</span><div style="margin-top:6px;display:flex;gap:6px"><button class="btn xs">Cập nhật từ AMIS</button><a href="khoa-ky.html" class="btn xs" style="text-decoration:none">Khóa kỳ tháng 08</a></div></div></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Doanh thu sẽ đẩy (chưa VAT)</div><div style="font-size:22px;font-weight:800">13.873.110.000</div><div style="font-size:12px;color:#5d675f">11 phiếu bán hàng tháng</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Xuất NVL cho sản xuất</div><div style="font-size:22px;font-weight:800">9.531.154.822</div><div style="font-size:12px;color:#5d675f">124 phiếu · 4 buổi × 31 ngày</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Đã lập trên AMIS</div><div style="font-size:22px;font-weight:800">286 / 698</div><div style="font-size:12px;color:#5d675f">chứng từ của kỳ</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Cần xử lý</div><div style="font-size:22px;font-weight:800;color:#A32D2D">5</div><div style="font-size:12px;color:#5d675f">3 lỗi · 2 sửa sau khi đẩy</div></div>
+ </div>
+</div>
+
+<div class="card">
+ <div style="display:flex;gap:20px;border-bottom:1px solid #E6E9E4;margin-bottom:12px;font-size:14px;flex-wrap:wrap">
+  <span style="padding:10px 0;font-weight:600;border-bottom:2px solid #6F9131;color:#A32D2D">Cần xử lý (5)</span><span style="padding:10px 0;color:#5d675f">Bán hàng (11)</span><span style="padding:10px 0;color:#5d675f">Mua hàng (240)</span><span style="padding:10px 0;color:#5d675f">Kho & sản xuất (446)</span><span style="padding:10px 0;color:#5d675f">Bảng công (1)</span><span style="padding:10px 0;color:#5d675f">Tất cả (698)</span>
+ </div>
+ <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#5d675f;margin-bottom:10px">
+  <span><span class="st" style="background:#EFF5E5;color:#4d6b1c">Sẵn sàng</span> đủ dữ liệu, chưa đẩy</span>
+  <span><span class="st" style="background:#E6F1FB;color:#2F64A0">Chờ lập trên AMIS</span> đã gửi, kế toán chưa lập</span>
+  <span><span class="st" style="background:#F2F4F1;color:#5d675f">Đã lập trên AMIS</span></span>
+  <span><span class="st" style="background:#FCEBEB;color:#A32D2D">Lỗi</span> AMIS từ chối / thiếu mã</span>
+  <span><span class="st" style="background:#FDF0E6;color:#a2470f">Đã sửa – cần điều chỉnh</span> nghiệp vụ gốc đổi sau khi gửi</span>
+ </div>
+ <div style="overflow-x:auto">
+ <table>
+  <thead><tr><th><input type="checkbox" aria-label="Chọn tất cả"></th><th>Loại chứng từ</th><th>Số Delicare</th><th>Ngày</th><th>Đối tượng</th><th>Nguồn nghiệp vụ</th><th class="r">Giá trị (chưa VAT)</th><th>Trạng thái</th><th>Ghi chú</th><th></th></tr></thead>
+  <tbody>
+   <tr><td><input type="checkbox" checked aria-label="Chọn"></td><td>Bán hàng (tháng)</td><td>BK-KH00002-2608</td><td>31/08/2026</td><td>KH00002 · Vin Cổ Loa</td><td>Bảng kê đã được khách xác nhận</td><td class="r">3.308.360.000</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Sẵn sàng</span></td><td style="font-size:12px;color:#5d675f">3 dòng: TP0001 · TP0002 · TP0003</td><td><button class="btn xs">Xem</button></td></tr>
+   <tr><td><input type="checkbox" checked aria-label="Chọn"></td><td>Nhập mua</td><td>PH-260812-0031</td><td>12/08/2026</td><td>NCC-SONLAM</td><td>Phiếu nhận đã ghi sổ (số đạt)</td><td class="r">48.250.000</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Sẵn sàng</span></td><td style="font-size:12px;color:#5d675f">Giao 520 kg · đạt 500 kg · loại 20 kg</td><td><button class="btn xs">Xem</button></td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>Xuất NVL</td><td>PH-260812-0107</td><td>12/08/2026</td><td>Buổi Trưa (TP0002)</td><td>Phiếu xuất theo ca đã ghi sổ</td><td class="r">121.406.300</td><td><span class="st" style="background:#E6F1FB;color:#2F64A0">Chờ lập trên AMIS</span></td><td style="font-size:12px;color:#5d675f">Gửi 02:14 · 38 dòng</td><td><button class="btn xs">Xem</button></td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>Xuất bao bì</td><td>XBB-260812-TRUA</td><td>12/08/2026</td><td>Buổi Trưa (627)</td><td>Tự xuất khi đóng gói 4.312 suất</td><td class="r">8.624.000</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Đã lập trên AMIS</span></td><td style="font-size:12px;color:#5d675f">AMIS: XK00512</td><td><button class="btn xs">Xem</button></td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>Nhập kho thành phẩm</td><td>NTP-260812-TRUA</td><td>12/08/2026</td><td>TP0002 · suất ăn trưa</td><td>Suất đạt sau QC</td><td class="r">4.312 suất</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Đã lập trên AMIS</span></td><td style="font-size:12px;color:#5d675f">AMIS tính giá thành cuối kỳ</td><td><button class="btn xs">Xem</button></td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>Xuất thành phẩm khác</td><td>XTP-260812-TRUA</td><td>12/08/2026</td><td>TP0002</td><td>Suất bù 12 · suất hủy / dư 46</td><td class="r">58 suất</td><td><span class="st" style="background:#FCEBEB;color:#A32D2D">Lỗi</span></td><td style="font-size:12px;color:#A32D2D">AMIS chưa có lý do xuất "Suất bù" – nhờ kế toán thêm trên AMIS 1 lần</td><td><button class="btn xs">Gửi lại</button></td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>Nhập mua</td><td>PH-260814-0005</td><td>14/08/2026</td><td>NCC-HUNGLAM</td><td>Phiếu nhận đã ghi sổ</td><td class="r">12.600.000</td><td><span class="st" style="background:#FCEBEB;color:#A32D2D">Lỗi</span></td><td style="font-size:12px;color:#A32D2D">Thịt mông (NLT-001) chưa có trên AMIS</td><td><a href="khop-ma-amis.html" class="btn xs" style="text-decoration:none">Ghép mã</a></td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>Xuất NVL</td><td>PH-260809-0088</td><td>09/08/2026</td><td>Buổi Tối (TP0003)</td><td>Phiếu xuất đã hủy sau khi gửi</td><td class="r">−6.210.000</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Đã sửa – cần điều chỉnh</span></td><td style="font-size:12px;color:#5d675f">Hệ thống đã lập sẵn điều chỉnh ĐC-0003 – chỉ cần gửi</td><td><button class="btn xs">Xem</button></td></tr>
+  </tbody>
+ </table>
+ </div>
+ <div style="margin-top:12px;background:#1E2620;color:#fff;border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+  <span style="font-size:13px">Đã chọn <b>2</b> chứng từ · 3.356.610.000</span>
+  <span style="display:flex;gap:8px"><button class="btn xs" style="background:#2B352E;border-color:#3A463E;color:#fff">Tải file Excel mẫu AMIS</button><button class="btn xs btnp">Gửi sang AMIS</button></span>
+ </div>
+ <div style="font-size:12px;color:#5d675f;margin-top:10px">Tự gửi hằng đêm: <b>Tắt</b> (bật sau UAT) · 7:30 sáng bot gửi Kế toán tóm tắt: bao nhiêu đã gửi, bao nhiêu cần xử lý · Số liệu minh họa theo sổ tháng 08/2026.</div>
+</div>
+
+</div>
+
+</body></html>

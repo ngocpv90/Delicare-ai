@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng – Đối chiếu Delicare và AMIS (D-131)</title>
+<style>
+body{margin:0;background:#F4F6F2}
+a{color:#2F64A0}a:hover{color:#1d4470}
+.card{background:#fff;border:1px solid #E6E9E4;border-radius:16px;padding:18px 20px}
+.btn{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:#1E2620;font-family:inherit}
+.btnp{background:#6F9131;border-color:#6F9131;color:#fff;font-weight:600}
+.xs{height:30px;padding:0 10px;font-size:12px}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #E6E9E4;padding:9px 8px;text-align:left;vertical-align:middle}
+th{background:#FAFBF8;color:#5d675f;font-size:12px;font-weight:600}
+td.r,th.r{text-align:right}
+</style></head><body>
+<!-- Mô phỏng D-131 (chat tài liệu 2026-11-26). Số liệu minh họa theo sổ tháng 08/2026; [..] = chưa có số. Bản gốc chỉnh được: canvas Design "Mockup – Kết nối kế toán MISA AMIS". -->
+
+<div style="box-sizing:border-box;max-width:1440px;margin:0 auto;padding:20px;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:#1E2620;display:flex;flex-direction:column;gap:16px">
+
+<div class="card" style="display:flex;flex-direction:column;gap:14px">
+ <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
+  <div style="max-width:860px">
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#5d675f">Kế toán ›</span><div style="display:flex;gap:6px;flex-wrap:wrap"><a href="chung-tu-ke-toan.html" class="btn xs" style="text-decoration:none;">Chứng từ kế toán</a><a href="bang-ke-xac-nhan.html" class="btn xs" style="text-decoration:none;">Bảng kê thanh toán</a><a href="khop-ma-amis.html" class="btn xs" style="text-decoration:none;">Khớp mã AMIS</a><a href="doi-chieu-amis.html" class="btn xs" style="text-decoration:none;background:#1E2620;color:#fff;border-color:#1E2620">Đối chiếu với AMIS</a><a href="khoa-ky.html" class="btn xs" style="text-decoration:none;">Khóa kỳ</a></div></div>
+   <h1 style="font-size:20px;margin:4px 0 6px">Đối chiếu Delicare ↔ AMIS</h1>
+   <div style="font-size:13px;color:#5d675f">So số lượng và giá trị từng chỉ tiêu trong kỳ. Số chính thức là số AMIS; dòng lệch cho biết chứng từ nào còn thiếu hoặc sai để xử lý trước khi khóa kỳ.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+   <div style="display:flex;align-items:center;gap:8px;font-weight:600"><button class="btn xs" aria-label="Tháng trước">‹</button>Tháng 08/2026<button class="btn xs" aria-label="Tháng sau">›</button></div>
+   <div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:#5d675f">Số AMIS lúc 07:30 hôm nay</span><button class="btn xs">Lấy lại</button><button class="btn xs">Nhập sổ AMIS (Excel)</button></div>
+  </div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Chỉ tiêu khớp</div><div style="font-size:22px;font-weight:800">5 / 8</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Lệch do còn chứng từ chưa lập trên AMIS</div><div style="font-size:22px;font-weight:800;color:#a2470f">2</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Lệch do cách tính giá xuất</div><div style="font-size:22px;font-weight:800;color:#2F64A0">1</div><div style="font-size:12px;color:#5d675f">bình thường – chỉ để biết</div></div>
+ </div>
+</div>
+
+<div class="card">
+ <div style="overflow-x:auto">
+ <table>
+  <thead><tr><th>Chỉ tiêu</th><th class="r">Delicare</th><th class="r">AMIS</th><th class="r">Chênh lệch</th><th>Kết quả</th><th>Nguyên nhân / việc cần làm</th><th></th></tr></thead>
+  <tbody>
+   <tr><td>Doanh thu bán hàng (chưa VAT)</td><td class="r">13.873.110.000</td><td class="r">13.873.110.000</td><td class="r">0</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Khớp</span></td><td style="font-size:12px;color:#5d675f">11 phiếu bán tháng từ bảng kê</td></tr>
+   <tr><td>Số suất bán (5 loại thành phẩm)</td><td class="r">416.493</td><td class="r">416.493</td><td class="r">0</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Khớp</span></td><td style="font-size:12px;color:#5d675f">Sáng 131.851 · Trưa 133.857 · Tối 133.566 · Đêm 16.799 · Cơm suất 420</td></tr>
+   <tr><td>Nhập mua NVL (số lượng)</td><td class="r">236 phiếu</td><td class="r">234 phiếu</td><td class="r">2 phiếu</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Lệch</span></td><td style="font-size:12px;color:#5d675f">2 phiếu lỗi: nguyên liệu chưa có trên AMIS</td><td><a href="khop-ma-amis.html" class="btn xs" style="text-decoration:none">Ghép mã</a></td></tr>
+   <tr><td>Xuất NVL cho sản xuất (số lượng)</td><td class="r">124 phiếu</td><td class="r">124 phiếu</td><td class="r">0</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Khớp</span></td><td style="font-size:12px;color:#5d675f">Theo 4 buổi</td></tr>
+   <tr><td>Xuất NVL cho sản xuất (giá trị)</td><td class="r">9.498.320.140</td><td class="r">9.531.154.822</td><td class="r">−32.834.682</td><td><span class="st" style="background:#E6F1FB;color:#2F64A0">Lệch do giá xuất</span></td><td style="font-size:12px;color:#5d675f">Delicare tính giá theo lô thực tế, AMIS tính bình quân. Giá vốn chính thức lấy AMIS</td></tr>
+   <tr><td>Xuất bao bì (đũa, thìa, hộp)</td><td class="r">124 phiếu</td><td class="r">118 phiếu</td><td class="r">6 phiếu</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Lệch</span></td><td style="font-size:12px;color:#5d675f">6 phiếu đã gửi, AMIS chưa lập chứng từ</td><td><button class="btn xs">Xem 6 phiếu</button></td></tr>
+   <tr><td>Xuất thành phẩm khác (suất bù, hủy, dư)</td><td class="r">1.912 suất</td><td class="r">1.854 suất</td><td class="r">58</td><td><span class="st" style="background:#FCEBEB;color:#A32D2D">Lệch</span></td><td style="font-size:12px;color:#5d675f">1 phiếu lỗi: AMIS chưa có lý do xuất "Suất bù"</td><td><a href="chung-tu-ke-toan.html" class="btn xs" style="text-decoration:none">Xem</a></td></tr>
+   <tr><td>Tồn NVL cuối kỳ (giá trị)</td><td class="r">[số Delicare]</td><td class="r">[số AMIS]</td><td class="r">–</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Chờ kiểm kê</span></td><td style="font-size:12px;color:#5d675f">So sau khi ghi sổ kiểm kê cuối tháng</td></tr>
+  </tbody>
+ </table>
+ </div>
+ <div style="font-size:12px;color:#5d675f;margin-top:10px">Dòng lệch có nút đi thẳng tới việc cần làm; dòng "lệch do giá xuất" chỉ để biết, không cần xử lý. Người làm: Kế toán · CEO xem.</div>
+</div>
+
+</div>
+
+</body></html>

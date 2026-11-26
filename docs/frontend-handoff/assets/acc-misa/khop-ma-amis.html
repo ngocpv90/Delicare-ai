@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng – Danh mục kế toán – khớp mã AMIS (D-131)</title>
+<style>
+body{margin:0;background:#F4F6F2}
+a{color:#2F64A0}a:hover{color:#1d4470}
+.card{background:#fff;border:1px solid #E6E9E4;border-radius:16px;padding:18px 20px}
+.btn{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:#1E2620;font-family:inherit}
+.btnp{background:#6F9131;border-color:#6F9131;color:#fff;font-weight:600}
+.xs{height:30px;padding:0 10px;font-size:12px}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #E6E9E4;padding:9px 8px;text-align:left;vertical-align:middle}
+th{background:#FAFBF8;color:#5d675f;font-size:12px;font-weight:600}
+td.r,th.r{text-align:right}
+</style></head><body>
+<!-- Mô phỏng D-131 (chat tài liệu 2026-11-26). Số liệu minh họa theo sổ tháng 08/2026; [..] = chưa có số. Bản gốc chỉnh được: canvas Design "Mockup – Kết nối kế toán MISA AMIS". -->
+
+<div style="box-sizing:border-box;max-width:1440px;margin:0 auto;padding:20px;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:#1E2620;display:flex;flex-direction:column;gap:16px">
+
+<div class="card" style="display:flex;flex-direction:column;gap:14px">
+ <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
+  <div style="max-width:860px">
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#5d675f">Kế toán ›</span><div style="display:flex;gap:6px;flex-wrap:wrap"><a href="chung-tu-ke-toan.html" class="btn xs" style="text-decoration:none;">Chứng từ kế toán</a><a href="bang-ke-xac-nhan.html" class="btn xs" style="text-decoration:none;">Bảng kê thanh toán</a><a href="khop-ma-amis.html" class="btn xs" style="text-decoration:none;background:#1E2620;color:#fff;border-color:#1E2620">Khớp mã AMIS</a><a href="doi-chieu-amis.html" class="btn xs" style="text-decoration:none;">Đối chiếu với AMIS</a><a href="khoa-ky.html" class="btn xs" style="text-decoration:none;">Khóa kỳ</a></div></div>
+   <h1 style="font-size:20px;margin:4px 0 6px">Danh mục kế toán (khớp mã với AMIS)</h1>
+   <div style="font-size:13px;color:#5d675f">AMIS là nguồn mã chuẩn. Delicare nhận danh mục vật tư, ĐVT, khách, NCC, kho từ AMIS và khớp với dữ liệu Delicare. Mã chỉ có ở Delicare được gom vào danh sách để kế toán tạo trên AMIS trước khi đẩy chứng từ.</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Nhận từ AMIS (API)</button><button class="btn">Nhập file Excel xuất từ AMIS</button><button class="btn btnp">Xuất danh sách mã cần tạo</button></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Đã khớp</div><div style="font-size:22px;font-weight:800">412</div><div style="font-size:12px;color:#5d675f">trên 431 bản ghi Delicare đang dùng</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Chưa có trên AMIS</div><div style="font-size:22px;font-weight:800;color:#a2470f">12</div><div style="font-size:12px;color:#5d675f">chặn đẩy chứng từ có mã này</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Lệch thông tin</div><div style="font-size:22px;font-weight:800;color:#A32D2D">7</div><div style="font-size:12px;color:#5d675f">cùng mã khác tên / ĐVT</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Lần nhận gần nhất</div><div style="font-size:22px;font-weight:800">26/11 08:05</div><div style="font-size:12px;color:#5d675f">tự nhận mỗi sáng · 1.218 bản ghi</div></div>
+ </div>
+</div>
+
+<div class="card">
+ <div style="display:flex;gap:20px;border-bottom:1px solid #E6E9E4;margin-bottom:12px;font-size:14px;flex-wrap:wrap">
+  <span style="padding:10px 0;font-weight:600;border-bottom:2px solid #6F9131">Vật tư hàng hóa (370)</span><span style="padding:10px 0;color:#5d675f">Thành phẩm theo loại suất (7)</span><span style="padding:10px 0;color:#5d675f">Đơn vị tính (19)</span><span style="padding:10px 0;color:#5d675f">Khách hàng (20)</span><span style="padding:10px 0;color:#5d675f">Nhà cung cấp (28)</span><span style="padding:10px 0;color:#5d675f">Kho (3)</span>
+ </div>
+ <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+  <span class="st" style="background:#1E2620;color:#fff">Cần xử lý (14)</span><span class="st" style="background:#FDF0E6;color:#a2470f">Chưa có trên AMIS (9)</span><span class="st" style="background:#FCEBEB;color:#A32D2D">Lệch thông tin (5)</span><span class="st" style="background:#EFF5E5;color:#4d6b1c">Đã khớp (356)</span><span class="st" style="background:#F2F4F1;color:#5d675f">Chỉ có trên AMIS (ẩn)</span><span style="flex:1"></span><button class="btn xs">Theo AMIS cho 3 dòng khác ĐVT</button>
+ </div>
+ <div style="overflow-x:auto">
+ <table>
+  <thead><tr><th>Delicare</th><th>Tên trên Delicare</th><th>ĐVT Delicare</th><th>Mã AMIS</th><th>Tên trên AMIS</th><th>ĐVT AMIS</th><th>Kết quả</th><th>Xử lý</th></tr></thead>
+  <tbody>
+   <tr><td>AS0001</td><td>Bánh bao</td><td>Chiếc</td><td>AS0001</td><td>Bánh Bao</td><td>Chiếc</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Đã khớp</span></td><td style="font-size:12px;color:#5d675f">–</td></tr>
+   <tr><td>AS0039</td><td>Bánh bao chay trắng</td><td>Chiếc</td><td>AS0039</td><td>Sữa Milo</td><td>Hộp</td><td><span class="st" style="background:#FCEBEB;color:#A32D2D">Cùng mã khác tên</span></td><td><button class="btn xs">Chọn mã AMIS đúng</button></td></tr>
+   <tr><td>RCQ0012</td><td>Gừng</td><td>kg</td><td>RCQ0012</td><td>Gừng</td><td>Kg</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Đã khớp</span></td><td style="font-size:12px;color:#5d675f">ĐVT viết hoa khác – coi là một</td></tr>
+   <tr><td>TM0018</td><td>Sữa chua Vinamilk</td><td>Cái</td><td>TM0018</td><td>Sữa chua Vinamilk</td><td>Cốc</td><td><span class="st" style="background:#FCEBEB;color:#A32D2D">Khác ĐVT</span></td><td><button class="btn xs">Theo AMIS</button></td></tr>
+   <tr><td>NLT-001</td><td>Thịt mông</td><td>kg</td><td style="color:#5d675f">–</td><td style="color:#5d675f">chưa có</td><td style="color:#5d675f">–</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Chưa có trên AMIS</span></td><td><select aria-label="Ghép mã" style="height:30px;border:1px solid #d5dbd2;border-radius:8px;font-family:inherit;max-width:220px"><option>Gõ để tìm mã AMIS… (gợi ý: THL0021 Thịt mông sấn)</option></select></td></tr>
+   <tr><td>NLT-002</td><td>Sữa Ba Vì 110ml</td><td>Hộp</td><td style="color:#5d675f">–</td><td style="color:#5d675f">chưa có</td><td style="color:#5d675f">–</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Chưa có trên AMIS</span></td><td><button class="btn xs">Ghép với mã có sẵn</button></td></tr>
+  </tbody>
+ </table>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:12px 14px;font-size:13px"><b>Thành phẩm theo loại suất</b><div style="color:#5d675f;margin-top:4px">Buổi / loại suất Delicare → mã thành phẩm AMIS: Sáng → TP0001 · Trưa → TP0002 · Tối → TP0003 · Đêm → TP0007 · Cơm suất (Phenikaa, Neoimplant) → TP0005</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:12px 14px;font-size:13px"><b>Kho</b><div style="color:#5d675f;margin-top:4px">Kho khô + Kho mát + Kho đông (Delicare) → "Nguyên liệu" (AMIS). Chuyển kho nội bộ không đẩy vì AMIS chỉ có một kho NVL. Kho thành phẩm → "Kho thành phẩm".</div></div>
+ </div>
+</div>
+
+</div>
+
+</body></html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng – Bảng kê – gửi khách xác nhận (D-131)</title>
+<style>
+body{margin:0;background:#F4F6F2}
+a{color:#2F64A0}a:hover{color:#1d4470}
+.card{background:#fff;border:1px solid #E6E9E4;border-radius:16px;padding:18px 20px}
+.btn{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:#1E2620;font-family:inherit}
+.btnp{background:#6F9131;border-color:#6F9131;color:#fff;font-weight:600}
+.xs{height:30px;padding:0 10px;font-size:12px}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #E6E9E4;padding:9px 8px;text-align:left;vertical-align:middle}
+th{background:#FAFBF8;color:#5d675f;font-size:12px;font-weight:600}
+td.r,th.r{text-align:right}
+</style></head><body>
+<!-- Mô phỏng D-131 (chat tài liệu 2026-11-26). Số liệu minh họa theo sổ tháng 08/2026; [..] = chưa có số. Bản gốc chỉnh được: canvas Design "Mockup – Kết nối kế toán MISA AMIS". -->
+
+<div style="box-sizing:border-box;max-width:1440px;margin:0 auto;padding:20px;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:#1E2620;display:flex;flex-direction:column;gap:16px">
+
+<div class="card" style="display:flex;flex-direction:column;gap:14px">
+ <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
+  <div style="max-width:860px">
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#5d675f">Kế toán ›</span><div style="display:flex;gap:6px;flex-wrap:wrap"><a href="chung-tu-ke-toan.html" class="btn xs" style="text-decoration:none;">Chứng từ kế toán</a><a href="bang-ke-xac-nhan.html" class="btn xs" style="text-decoration:none;background:#1E2620;color:#fff;border-color:#1E2620">Bảng kê thanh toán</a><a href="khop-ma-amis.html" class="btn xs" style="text-decoration:none;">Khớp mã AMIS</a><a href="doi-chieu-amis.html" class="btn xs" style="text-decoration:none;">Đối chiếu với AMIS</a><a href="khoa-ky.html" class="btn xs" style="text-decoration:none;">Khóa kỳ</a></div></div>
+   <h1 style="font-size:20px;margin:4px 0 6px">Bảng kê thanh toán – gửi khách xác nhận</h1>
+   <div style="font-size:13px;color:#5d675f">Màn bảng kê hiện có (chuyển từ menu Kinh doanh sang menu Kế toán), thêm 2 bước sau cùng: gửi bảng kê cho kế toán của khách và ghi nhận xác nhận. Bảng kê đã xác nhận là nguồn duy nhất của phiếu bán hàng tháng đẩy sang AMIS, nên số trên phiếu bán, hóa đơn và bảng kê luôn bằng nhau.</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;font-weight:600"><button class="btn xs" aria-label="Tháng trước">‹</button>Tháng 08/2026<button class="btn xs" aria-label="Tháng sau">›</button></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#EFF5E5;color:#4d6b1c">1</span><div><b style="display:block">Chốt hết đối soát</b><span style="color:#5d675f">Đã có</span></div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#EFF5E5;color:#4d6b1c">2</span><div><b style="display:block">Kiểm tra, xuất / in</b><span style="color:#5d675f">Đã có</span></div></div>
+  <div style="border:1px solid #6F9131;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#6F9131;color:#fff">3</span><div><b style="display:block">Gửi khách xác nhận</b><span style="color:#5d675f">Email PDF + Excel tới liên hệ kế toán của khách. Chưa trả lời sau 3 ngày thì tự nhắc</span><div style="margin-top:6px"><button class="btn xs btnp">Gửi tất cả khách sẵn sàng (3)</button></div></div></div>
+  <div style="border:1px solid #6F9131;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#6F9131;color:#fff">4</span><div><b style="display:block">Ghi nhận xác nhận → phiếu bán</b><span style="color:#5d675f">Khách trả lời "đồng ý" → chọn nhiều khách, ghi nhận một lần → tự lập phiếu bán tháng</span></div></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Tổng phải thu (có VAT 8 %)</div><div style="font-size:22px;font-weight:800">14.982.958.800</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Khách đã xác nhận</div><div style="font-size:22px;font-weight:800">6 / 11</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Đang chờ khách</div><div style="font-size:22px;font-weight:800;color:#a2470f">4</div><div style="font-size:12px;color:#5d675f">1 khách quá 5 ngày</div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 14px"><div style="font-size:12px;color:#5d675f">Khách phản hồi lệch</div><div style="font-size:22px;font-weight:800;color:#A32D2D">1</div><div style="font-size:12px;color:#5d675f">chuyển Kinh doanh xử lý</div></div>
+ </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+<div class="card" style="flex:999 1 620px;min-width:0">
+ <div style="overflow-x:auto">
+ <table>
+  <thead><tr><th><input type="checkbox" aria-label="Chọn tất cả"></th><th>Khách hàng</th><th class="r">Suất tính tiền</th><th class="r">Chưa VAT</th><th>Trạng thái</th><th>Gửi lúc</th><th>Phiếu bán (AMIS)</th></tr></thead>
+  <tbody>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>KH00015 · SGC Cổ Loa</td><td class="r">145.466</td><td class="r">4.815.290.000</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Đã lập phiếu bán</span></td><td>01/09 08:30</td><td style="font-size:12px">BK-KH00015-2608 → Đã lập</td></tr>
+   <tr style="background:#FBFCF9"><td><input type="checkbox" aria-label="Chọn"></td><td><b>KH00001 · Vin Ocean Park 1</b></td><td class="r">137.898</td><td class="r">4.601.820.000</td><td><span class="st" style="background:#FCEBEB;color:#A32D2D">Khách phản hồi lệch</span></td><td>01/09 08:30</td><td style="font-size:12px;color:#5d675f">chờ xử lý</td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>KH00002 · Vin Cổ Loa</td><td class="r">99.332</td><td class="r">3.308.360.000</td><td><span class="st" style="background:#EFF5E5;color:#4d6b1c">Khách đã xác nhận</span></td><td>01/09 08:30</td><td style="font-size:12px">Sẵn sàng đẩy</td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>KH00025 · SGC Km17</td><td class="r">13.306</td><td class="r">446.670.000</td><td><span class="st" style="background:#E6F1FB;color:#2F64A0">Đã gửi – chờ khách</span></td><td>01/09 08:30 · tự nhắc 04/09</td><td style="font-size:12px;color:#5d675f">–</td></tr>
+   <tr><td><input type="checkbox" checked aria-label="Chọn"></td><td>KH00016 · Vinalpha Cổ Loa</td><td class="r">7.007</td><td class="r">233.640.000</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Sẵn sàng gửi</span></td><td>–</td><td style="font-size:12px;color:#5d675f">–</td></tr>
+   <tr><td><input type="checkbox" checked aria-label="Chọn"></td><td>KH00024 · Vinalpha SX</td><td class="r">4.764</td><td class="r">158.800.000</td><td><span class="st" style="background:#FDF0E6;color:#a2470f">Sẵn sàng gửi</span></td><td>–</td><td style="font-size:12px;color:#5d675f">–</td></tr>
+   <tr><td><input type="checkbox" aria-label="Chọn"></td><td>KH00008 · Phenikaa</td><td class="r">340</td><td class="r">28.800.000</td><td><span class="st" style="background:#F2F4F1;color:#5d675f">Chờ đối soát (2 đơn)</span></td><td>–</td><td style="font-size:12px;color:#5d675f">–</td></tr>
+  </tbody>
+ </table>
+ </div>
+ <div style="margin-top:12px;background:#1E2620;color:#fff;border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+  <span style="font-size:13px">Đã chọn <b>2</b> khách</span>
+  <span style="display:flex;gap:8px"><button class="btn xs" style="background:#2B352E;border-color:#3A463E;color:#fff">Xuất Excel / PDF</button><button class="btn xs" style="background:#2B352E;border-color:#3A463E;color:#fff">Ghi nhận khách đã xác nhận</button><button class="btn xs btnp">Gửi khách xác nhận</button></span>
+ </div>
+</div>
+
+<div class="card" style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:10px">
+ <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:15px;margin:0">KH00001 · Vin Ocean Park 1</h3><span class="st" style="background:#FCEBEB;color:#A32D2D">Khách phản hồi lệch</span></div>
+ <div style="font-size:13px;color:#5d675f">Gửi tới: ketoan@[tên miền khách] (liên hệ có vai trò Kế toán) · PDF + Excel bảng kê BK-KH00001-2608</div>
+ <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px">
+  <b>Phản hồi của khách – 03/09</b>
+  <div style="color:#5d675f;margin-top:4px">"Ngày 09/08 bữa trưa nhận 4.180 suất, bảng kê ghi 4.230."</div>
+  <div style="color:#5d675f;margin-top:6px;font-size:12px">Đính kèm: bien-ban-0908.pdf</div>
+ </div>
+ <label style="font-size:12px;color:#5d675f" for="kq">Kết quả xử lý</label>
+ <select id="kq" style="height:36px;border:1px solid #d5dbd2;border-radius:10px;padding:0 8px;font-family:inherit"><option>Lập điều chỉnh giảm 50 suất ngày 09/08 rồi gửi lại</option><option>Giữ số – khách đồng ý sau giải trình</option></select>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn xs">Lập điều chỉnh suất</button><button class="btn xs">Gửi lại bảng kê</button><button class="btn xs btnp">Ghi nhận khách xác nhận</button></div>
+ <div style="font-size:12px;color:#2F64A0;background:#E6F1FB;border-radius:10px;padding:8px 10px">Đề xuất thêm (chờ anh duyệt): email có nút "Xác nhận bảng kê" – khách bấm là xong, kế toán không phải ghi nhận tay.</div>
+ <div style="font-size:12px;color:#5d675f;border-top:1px solid #E6E9E4;padding-top:8px">Người làm: Kế toán gửi và ghi nhận · Kinh doanh xử lý phản hồi · Đối soát đã chốt không mở lại được: lệch thì lập điều chỉnh suất (cần chốt cách làm).</div>
+</div>
+</div>
+
+</div>
+
+</body></html>

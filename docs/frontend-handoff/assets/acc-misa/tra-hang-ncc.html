@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô phỏng – Phiếu trả hàng nhà cung cấp (D-131)</title>
+<style>
+body{margin:0;background:#F4F6F2}
+a{color:#2F64A0}a:hover{color:#1d4470}
+.card{background:#fff;border:1px solid #E6E9E4;border-radius:16px;padding:18px 20px}
+.btn{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:36px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;color:#1E2620;font-family:inherit}
+.btnp{background:#6F9131;border-color:#6F9131;color:#fff;font-weight:600}
+.xs{height:30px;padding:0 10px;font-size:12px}
+.st{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid #E6E9E4;padding:9px 8px;text-align:left;vertical-align:middle}
+th{background:#FAFBF8;color:#5d675f;font-size:12px;font-weight:600}
+td.r,th.r{text-align:right}
+</style></head><body>
+<!-- Mô phỏng D-131 (chat tài liệu 2026-11-26). Số liệu minh họa theo sổ tháng 08/2026; [..] = chưa có số. Bản gốc chỉnh được: canvas Design "Mockup – Kết nối kế toán MISA AMIS". -->
+
+<div style="box-sizing:border-box;max-width:1440px;margin:0 auto;padding:20px;font-family:system-ui,'Segoe UI',Arial,sans-serif;color:#1E2620;display:flex;flex-direction:column;gap:16px">
+
+<div class="card" style="display:flex;flex-direction:column;gap:14px">
+ <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start">
+  <div style="max-width:860px">
+   <div style="font-size:12px;color:#5d675f">Kho › Phiếu nhập › PH-260812-0031 › Trả hàng NCC</div>
+   <h1 style="font-size:20px;margin:4px 0 6px">Phiếu trả hàng NCC <span style="font-size:14px;color:#5d675f;font-weight:600">TH-260814-0002</span> <span class="st" style="background:#FDF0E6;color:#a2470f;font-size:12px">Chờ Mua hàng xác nhận</span></h1>
+   <div style="font-size:13px;color:#5d675f">Dùng khi hàng đã nhập kho mới phát hiện lỗi: trả lại NCC để giảm công nợ (chứng từ AMIS "Trả lại hàng mua"), không ghi thành hủy hàng. Lập từ phiếu nhận, từ lô, hoặc trên điện thoại khi kiểm kho (chụp ảnh ngay).</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">In biên bản trả hàng</button><button class="btn btnp">Xác nhận NCC đồng ý</button></div>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#6F9131;color:#fff">1</span><div><b style="display:block">Thủ kho lập phiếu</b><span style="color:#5d675f">Chọn lô, số trả, lý do, ảnh. Lô chuyển Tạm giữ</span><div style="font-size:12px;color:#4d6b1c;margin-top:4px">Xong 14/08 09:12</div></div></div>
+  <div style="border:1px solid #6F9131;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#EFF5E5;color:#4d6b1c">2</span><div><b style="display:block">Mua hàng xác nhận với NCC</b><span style="color:#5d675f">Bấm "NCC đồng ý" ngay trên tin bot, ghi ngày NCC lấy hàng hoặc giao bù</span></div></div>
+  <div style="border:1px solid #E6E9E4;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px"><span style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:#F2F4F1;color:#5d675f">3</span><div><b style="display:block">Giao trả & ghi sổ</b><span style="color:#5d675f">Thủ kho ghi sổ khi NCC nhận hàng → tự sinh chứng từ trả lại hàng mua sang Đồng bộ kế toán</span></div></div>
+ </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+ <div class="card" style="flex:999 1 620px;min-width:0;display:flex;flex-direction:column;gap:12px">
+  <h3 style="font-size:15px;margin:0">Dòng trả</h3>
+  <div style="overflow-x:auto">
+  <table>
+   <thead><tr><th>Nguyên liệu</th><th>Lô</th><th class="r">Đã nhập</th><th class="r">Còn tồn</th><th class="r">Số trả</th><th>ĐVT</th><th class="r">Đơn giá</th><th class="r">Thành tiền</th><th>Lý do</th></tr></thead>
+   <tbody>
+    <tr><td>HS0004 · Cá basa phi lê</td><td>NL-260812-NCC-SONLAM-01</td><td class="r">500</td><td class="r">430</td><td class="r"><input aria-label="Số trả" value="40" style="width:70px;height:30px;border:1px solid #d5dbd2;border-radius:8px;text-align:right;font-family:inherit"></td><td>kg</td><td class="r">85.000</td><td class="r">3.400.000</td><td><select aria-label="Lý do" style="height:30px;border:1px solid #d5dbd2;border-radius:8px;font-family:inherit"><option>Hàng hỏng / biến chất</option><option>Sai quy cách</option><option>Gần / quá hạn dùng</option><option>Giao thừa</option></select></td></tr>
+   </tbody>
+  </table>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;font-size:13px">
+   <div><label for="ghichu" style="font-size:12px;color:#5d675f">Mô tả lỗi</label><textarea id="ghichu" style="width:100%;box-sizing:border-box;height:70px;border:1px solid #d5dbd2;border-radius:10px;padding:8px;font-family:inherit">Rã đông thấy mùi lạ, 2 thùng.</textarea></div>
+   <div><span style="font-size:12px;color:#5d675f">Ảnh / biên bản</span><div style="border:1px dashed #c9d0c6;border-radius:10px;height:70px;display:grid;place-items:center;color:#5d675f">2 ảnh đã đính kèm</div></div>
+  </div>
+  <div style="font-size:12px;color:#5d675f">Số trả ≤ còn tồn của lô. Lô bị giữ (không xuất cho sản xuất) cho tới khi ghi sổ trả hoặc hủy phiếu. Liên kết sự cố NCC SI-260814-0007 (tự tạo, tính vào điểm NCC).</div>
+ </div>
+
+ <div class="card" style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:10px">
+  <h3 style="font-size:15px;margin:0">Thông tin</h3>
+  <div style="font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px">
+   <span style="color:#5d675f">NCC</span><span>NCC-SONLAM · Công ty Sơn Lâm</span>
+   <span style="color:#5d675f">Phiếu nhập gốc</span><span>PH-260812-0031 (12/08/2026)</span>
+   <span style="color:#5d675f">Đơn mua</span><span>PO-260810-0012</span>
+   <span style="color:#5d675f">Người lập</span><span>Thủ kho [tên] · 14/08/2026 09:12</span>
+   <span style="color:#5d675f">Giá trị trả</span><span><b>3.400.000</b> (chưa VAT)</span>
+   <span style="color:#5d675f">Sang AMIS</span><span>Trả lại hàng mua · giảm công nợ NCC</span>
+  </div>
+  <div style="border-top:1px solid #E6E9E4;padding-top:10px;font-size:13px;display:flex;flex-direction:column;gap:6px">
+   <b>Lịch sử</b>
+   <span style="color:#5d675f">14/08 09:12 · Thủ kho lập phiếu, lô chuyển Tạm giữ</span>
+   <span style="color:#5d675f">14/08 09:13 · Bot báo Mua hàng: "Trả 40 kg cá basa – Sơn Lâm" [NCC đồng ý] [NCC không nhận]</span>
+  </div>
+ </div>
+</div>
+
+</div>
+
+</body></html>
