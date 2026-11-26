@@ -84,3 +84,20 @@ Sau mỗi lần chạy `seed-demo` / full-flow trên môi trường đó: chạy
   (DB dev 2026-11-26 đã sửa 74 công thức bằng phiên bản V2 – kết quả giống.)
 - Kế hoạch / lệnh sản xuất / đề nghị mua của tuần đăng ký suất do hệ thống tự lập sau khi đơn tự chốt 20:00 hôm trước.
 - Lỗi dữ liệu nguồn còn chờ anh xác nhận: Xôi thịt kho (MON-0574), 3 món thiếu giá NCC, nhóm món lệch giữa tệp món và thực đơn – xem PROGRESS mục REAL-1.
+
+## Bổ sung: nhân sự + đội giao vận thật (`09-hr-delivery.mjs`, 2026-11-26)
+
+Nguồn đọc thẳng từ thư mục chia sẻ (**không** đưa vào repo – có SĐT, địa chỉ cá nhân): `Delicare-Share/HR/DSNS_*.xlsx` (tệp mới nhất) và `Delicare-Share/Delivery/Đội Giao vận.xlsx`.
+
+```bash
+DC_USER=admin DC_PASS=<…> node tools/real1/09-hr-delivery.mjs          # chạy thử – in kế hoạch
+DC_USER=admin DC_PASS=<…> node tools/real1/09-hr-delivery.mjs --yes    # ghi
+# REAL1_SHARE=<đường dẫn Delicare-Share> nếu khác D:/Duan/Tai lieu nghiep vu du an/Delicare-Share
+```
+
+- **Chức vụ** (`Position`, mã `CV-<tên không dấu>`): mỗi chức vụ khác nhau trong tệp nhân sự (53).
+- **Nhân viên** (ImportExcel `Employee`, khớp theo mã NV): 139 người; đơn vị theo cột Bộ phận / Tổ → mã đơn vị ORG_STRUCTURE (Tổ chia suất → OPS-KIT-PORT, Giao vận → OPS-LOG, Bếp → OPS-KIT-COOK, Tổ sơ chế → OPS-KIT-PREP, Tổ tạp vụ → OPS-KIT-CLEAN, Kế toán → FIN-ACC, HCNS → FIN-HR, Kho / Thu mua → OPS-SCM, Trợ lý → CEO-PMO, Marketing → SAL-DEV, Kỹ thuật → OPS-MNT, Pháp chế → FIN, Vận hành → OPS; Giám đốc → CEO; Quản lý Bếp → OPS-KIT; Nấu cơm / Chia canh → OPS-KIT-RICE; không ghi tổ → DLC). Người không có mã NV → mã cố định `NV-<tổ>-<họ tên>`.
+- **SĐT + địa chỉ** lái xe / phụ xe lấy từ tệp Đội Giao vận (khớp họ tên; SĐT thêm số 0 đầu).
+- **Xe** (`Vehicle`, khớp biển số): loại xe, tải trọng (kg), ghi chú `[REAL-1] Hãng · BH TNDS đến · Tuyến · Lái xe`; lái xe mặc định khi cột lái xe chỉ nêu 1 tên gọi khớp duy nhất trong đội lái xe.
+- **Chưa lưu** (không có cột): hình thức làm việc (Fulltime / Partime / Khoán / Remote); bảng tuyến theo buổi (sáng / trưa / chiều / tối) – chuyến giao lập theo ngày ở Điều phối giao hàng.
+- Không tạo tài khoản đăng nhập (đề nghị cấp tài khoản làm ở Nhân sự › Nhân viên).
