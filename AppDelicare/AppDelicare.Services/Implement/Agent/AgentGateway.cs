@@ -82,7 +82,7 @@ namespace AppDelicare.Services.Implement.Agent
         public static JsonSerializerOptions WebJson => Web;
 
         /// <summary>Danh bạ công cụ (AI-1: ping; AI-3 thêm công cụ đọc).</summary>
-        public static IReadOnlyList<AgentToolDef> All { get; } = [.. Build(), .. ReadTools()];
+        public static IReadOnlyList<AgentToolDef> All { get; } = [.. Build(), .. ReadTools(), .. KnowledgeTools()];
 
         // ---- tham số công cụ (JSON Schema đơn giản) ----
         public static string? Str(JsonElement a, string k) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String && v.GetString() is { Length: > 0 } s ? s.Trim() : null;
