@@ -67,7 +67,7 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
-                var list = _unitOfWork.DishCategoryRepository.GetAll().Where(x => !x.IsDeleted).ToList();
+                var list = _unitOfWork.DishCategoryRepository.GetAll().Where(x => !x.IsDeleted && x.Code != PackagingNormService.CategoryCode).ToList(); // ACC-6: nhóm Bao bì ẩn
                 return new Results<DishCategory>
                 {
                     ResponseCode = Convert.ToInt32(HttpStatusCode.OK),

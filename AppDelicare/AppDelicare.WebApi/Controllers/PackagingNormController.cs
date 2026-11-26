@@ -31,6 +31,11 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("Submit")]
         public Task<IActionResult> Submit([FromBody] PackagingNormSubmitRequest request) => Run(nameof(Submit), async () => await _service.Submit(request ?? new PackagingNormSubmitRequest()));
 
+        /// <summary>Đề nghị mua Nháp cho bao bì thiếu của ngày × ca (JSON { day: yyyy-MM-dd, shiftCode }) – nút trên tin bot. Quyền Thêm màn Đề nghị mua.</summary>
+        [Security.Permission("scm-pr", Services.Interface.PermissionAction.Add)]
+        [HttpPost("CreateShortagePr")]
+        public Task<IActionResult> CreateShortagePr([FromBody] PackagingShortagePrRequest request) => Run(nameof(CreateShortagePr), async () => await _service.CreateShortagePurchaseRequest((request ?? new PackagingShortagePrRequest()).Day, request?.ShiftCode));
+
         private async Task<IActionResult> Run(string name, Func<Task<object>> action)
         {
             try

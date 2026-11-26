@@ -65,4 +65,10 @@ namespace AppDelicare.Model.Model
         public string? Meal { get; set; }
         public DateTime? EffectiveFrom { get; set; }
     }
+
+    public sealed class PackagingShortagePrRequest
+    {
+        public DateTime Day { get; set; }
+        public string? ShiftCode { get; set; }
+    }
 }

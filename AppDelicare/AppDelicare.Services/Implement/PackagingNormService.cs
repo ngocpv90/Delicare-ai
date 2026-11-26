@@ -413,10 +413,11 @@ namespace AppDelicare.Services.Implement
                     return;
                 }
                 string text = $"📦 Thiếu vật tư bao bì cho {label} ca {shiftCode} ngày {day:dd/MM}: " + string.Join("; ", lines.Select(l => $"{names.GetValueOrDefault(l.IngredientId)} cần {l.Qty:0.##}"))
-                    + ".\nLập đề nghị mua: #/scm-pr · định mức: #/" + ScreenId;
+                    + ".\nBấm 🛒 để lập đề nghị mua nháp phần thiếu · định mức: #/" + ScreenId;
                 await BusinessNotifier.SafeEnqueueAsync(_notifications, new NotificationRequest
                 {
                     Template = NotificationCatalog.ManualText, UserIds = [.. users], BotCode = MessagingCode.BotVanHanh, Data = new { text },
+                    Buttons = new[] { new NotificationButton("🛒 Tạo đề nghị mua", $"op:bpr:{day:yyyyMMdd}.{shiftCode}") }, // ACC-6: ThaoTacActions → PackagingNorm/CreateShortagePr
                     IdempotencyKey = $"PACKAGING_SHORT:{day:yyyyMMdd}:{shiftCode}:{string.Join(",", ids.OrderBy(x => x).Select(x => x.ToString("N")[..6]))}",
                 });
             }
@@ -424,6 +425,69 @@ namespace AppDelicare.Services.Implement
             {
                 Log.Warning(string.Concat("[", GetType().Name, "]", " NotifyShortage: ", ex.Message));
             }
+        }
+
+        public const string PurchaseTagPrefix = "[DN_BB:";
+
+        /// <summary>
+        /// ACC-6 (D-131 j): nút "🛒 Tạo đề nghị mua" trên tin thiếu bao bì – đề nghị mua Nháp cho phần thiếu của ngày × ca: suất đạt của ca × định mức − tồn khả dụng
+        /// (mọi kho). Đã có đề nghị cùng ngày × ca (thẻ <c>[DN_BB:yyyyMMdd|mã ca]</c>, chưa hủy) → trả số cũ, không lập trùng.
+        /// </summary>
+        public async Task<IResult<string>> CreateShortagePurchaseRequest(DateTime day, string? shiftCode)
+        {
+            var db = _unitOfWork.DbContext;
+            day = day.Date;
+            string tag = $"{PurchaseTagPrefix}{day:yyyyMMdd}|{shiftCode}]";
+            var old = await db.PurchaseRequest.AsNoTracking().Where(p => !p.IsDeleted && p.Note != null && p.Note.Contains(tag) && p.Status != "Cancelled" && p.Status != "Rejected")
+                .Select(p => p.RequestNumber ?? p.RequestNo).FirstOrDefaultAsync();
+            if (old != null)
+            {
+                return Result<string>.Success(old, string.Format(Msg.PrExists, old));
+            }
+            var shift = await db.Shift.AsNoTracking().FirstOrDefaultAsync(s => !s.IsDeleted && s.Code == shiftCode);
+            string? meal = AccountingVoucherService.MealOfShift(shift?.Code, shift?.Name);
+            if (shift == null || meal == null)
+            {
+                return Result<string>.Fail(Msg.PrNoShift);
+            }
+            decimal portions = (await db.MaterialIssue.AsNoTracking().Where(i => !i.IsDeleted && i.Status != MaterialIssueStatus.Cancelled && i.Note != null && i.Note.Contains(TagPrefix + day.ToString("yyyyMMdd")))
+                .Select(i => i.Note).ToListAsync()).Select(ParseTag).Where(t => t != null && t.ShiftCode == shiftCode).Sum(t => t!.Portions);
+            portions = Math.Max(portions, await PackedPortionsAsync(day, shift.Id));
+            var norm = await NormAsync(meal);
+            var ids = norm.Select(n => n.IngredientId).ToList();
+            var stock = (await db.InventoryBalance.AsNoTracking().Where(b => !b.IsDeleted && ids.Contains(b.IngredientId)).Select(b => new { b.IngredientId, b.AvailableQuantity }).ToListAsync())
+                .GroupBy(b => b.IngredientId).ToDictionary(g => g.Key, g => g.Sum(x => x.AvailableQuantity));
+            var lines = norm.Select(n => (n.IngredientId, Qty: Math.Ceiling(n.PerPortion * portions - stock.GetValueOrDefault(n.IngredientId)))).Where(n => n.Qty > 0).ToList();
+            if (lines.Count == 0)
+            {
+                return Result<string>.Fail(Msg.PrNothing);
+            }
+            var r = await _services.GetRequiredService<IPurchaseRequestService>().CreateWithLines(new PurchaseRequestCreateRequest
+            {
+                RequiredDate = _clock.Today.AddDays(1), Submit = false,
+                Note = $"{tag} Bổ sung vật tư bao bì thiếu cho {Meals.First(m => m.Code == meal).Label.ToLowerInvariant()} ca {shiftCode} ngày {day:dd/MM} (định mức bao bì)",
+                ListLine = [.. lines.Select(l => new PurchaseRequestLineInput { IngredientId = l.IngredientId, Quantity = l.Qty, Note = "Thiếu bao bì khi đóng gói" })],
+            });
+            if (r.ResponseCode != 200 || r.Data == null)
+            {
+                return Result<string>.Fail(r.ResponseMessage ?? Msg.PrNothing);
+            }
+            string number = r.Data.PurchaseRequest.RequestNumber ?? r.Data.PurchaseRequest.RequestNo ?? string.Empty;
+            return Result<string>.Success(number, string.Format(Msg.PrCreated, number, lines.Count));
+        }
+
+        /// <summary>Suất đạt của 1 ca trong ngày (mỗi đơn lấy món đóng nhiều suất nhất).</summary>
+        private async Task<decimal> PackedPortionsAsync(DateTime day, Guid shiftId)
+        {
+            var db = _unitOfWork.DbContext;
+            DateTime next = day.AddDays(1);
+            var rows = await (from p in db.PackingOrder.AsNoTracking()
+                              join b in db.ProductionBatch.AsNoTracking() on p.ProductionBatchId equals b.Id
+                              join o in db.ProductionOrder.AsNoTracking() on b.ProductionOrderId equals o.Id
+                              join r in db.PackingResult.AsNoTracking() on p.Id equals r.PackingOrderId
+                              where !p.IsDeleted && !r.IsDeleted && p.PackingDate >= day && p.PackingDate < next && o.ShiftId == shiftId
+                              select new { Key = p.OrderId ?? p.ProductionBatchId, b.DishId, Qty = r.PackedQuantity - r.RejectedQuantity }).ToListAsync();
+            return rows.GroupBy(x => x.Key).Sum(o => o.GroupBy(x => x.DishId).Max(d => d.Sum(x => x.Qty)));
         }
 
         // ---------------------------------------------------------------- tự ghi sổ khi hết ca
@@ -504,6 +568,10 @@ namespace AppDelicare.Services.Implement
             public const string DraftFailed = "Không lập được phiếu xuất bao bì {0}: {1}";
             public const string DraftCreated = "Đã lập phiếu xuất bao bì nháp {0} ({1}, {2} suất)";
             public const string AutoFailed = "Không tự lập được phiếu xuất bao bì – kho lập tay";
+            public const string PrExists = "Đã có đề nghị mua bao bì {0} cho ca này";
+            public const string PrNoShift = "Không xác định được ca / buổi để lập đề nghị mua";
+            public const string PrNothing = "Tồn hiện đủ – không cần đề nghị mua thêm";
+            public const string PrCreated = "Đã lập đề nghị mua nháp {0} ({1} vật tư bao bì) – Mua hàng kiểm rồi gửi duyệt";
         }
     }
 }

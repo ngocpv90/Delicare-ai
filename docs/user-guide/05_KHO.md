@@ -188,7 +188,9 @@ Trả lại NCC hàng **đã nhập kho** bị hỏng, sai quy cách, gần / qu
 4. Chưa ghi sổ thì **Hủy phiếu** được (lý do bắt buộc) – lô bỏ tạm giữ.
 
 - Số phiếu dạng **TH-yyMMdd-xxxx**; trạng thái: Chờ NCC xác nhận → NCC đồng ý – chờ giao trả → Đã trả – đã ghi sổ (hoặc NCC không nhận / Đã hủy). Phiếu hiện cả ở Chất lượng › Sự cố NCC (loại "Trả hàng NCC") nhưng chỉ đổi trạng thái ở màn này.
-- Ảnh hàng lỗi: đính kèm ở Chất lượng › Sự cố NCC (người có quyền Sửa màn đó).
+- Ảnh hàng lỗi / biên bản: tải lên ở mục **Ảnh hàng lỗi / biên bản** trong chi tiết phiếu (Thủ kho, Mua hàng đều làm được).
+- Mở nhanh: nút **Trả hàng NCC** ở trang chi tiết phiếu nhận (đã ghi sổ) hoặc trang lô → hộp lập phiếu đã lọc sẵn phiếu / lô đó.
+- Mua hàng bấm thẳng **✅ NCC đồng ý / ⛔ NCC không nhận** trên tin bot Vận hành (không nhận → bot hỏi lý do).
 - Lỗi thường gặp: "Số trả vượt tồn còn trả được của lô: tối đa …" (trừ phần đang chờ trả ở phiếu khác) · "Lô này không gắn nhà cung cấp" · "Kỳ kế toán tháng … đã khóa".
 
 ## 9. Phiếu xuất bao bì tự lập (ACC-6, D-131 j)
