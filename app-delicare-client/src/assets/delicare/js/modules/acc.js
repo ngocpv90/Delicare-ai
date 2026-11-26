@@ -3,7 +3,7 @@
  * Khớp mã AMIS (#/acc-amis-code): AMIS là nguồn mã chuẩn – nhận danh mục bằng tệp Excel xuất từ AMIS (API: ACC-7), 4 thẻ chỉ số, tab theo loại danh mục,
  * lọc Cần xử lý (mặc định) / Chưa có trên AMIS / Lệch thông tin / Đã khớp / Chỉ có trên AMIS (ẩn mặc định), ghép mã = đổi mã Delicare theo mã AMIS,
  * xuất danh sách mã cần tạo trên AMIS. API: AmisCatalog/GetMatch · ImportExcel · Remap · ExportMissing.
- * Chứng từ kế toán (ACC-2), Đối chiếu với AMIS (ACC-8), Khóa kỳ (ACC-4): màn tạm tới khi làm mục tương ứng. */
+ * Chứng từ kế toán (ACC-2), Khóa kỳ (ACC-4), Đối chiếu với AMIS (ACC-8): các khối bên dưới. */
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const NAV = [['acc-voucher', 'Chứng từ kế toán'], ['crm-billing', 'Bảng kê thanh toán'], ['acc-amis-code', 'Khớp mã AMIS'], ['acc-amis-recon', 'Đối chiếu với AMIS'], ['acc-period', 'Khóa kỳ']];
@@ -20,7 +20,6 @@
     el.innerHTML = APP.header(f || FN[id], '', { noNote: true }) + APP.accNav(id)
       + `<div class="notice info">${I('help')}<div><b>Đang xây dựng (${task}).</b> ${esc(what)}</div></div>`;
   });
-  soon('acc-amis-recon', 'ACC-8', 'Đối chiếu 8 chỉ tiêu Delicare ↔ AMIS theo kỳ: doanh thu, số suất theo thành phẩm, nhập mua, xuất nguyên liệu, bao bì, thành phẩm khác, tồn cuối kỳ.');
 
   // ---------- Bảng kê thanh toán: thêm thanh chuyển nhanh ----------
   const billing = APP.SCREENS['crm-billing'];
@@ -477,6 +476,75 @@
         const jobs = changed.map(m => () => Store.act('PackagingNorm/SaveMeal', { json: { meal: m.code, listLine: rows.map((r, i) => ({ ingredientId: r.ingredientId, perHundred: +(box.querySelector(`[data-r="${i}"][data-m="${m.code}"]`) || {}).value || 0 })) } }));
         jobs.reduce((p, j) => p.then(ok => (ok ? j().then(r => r.ok) : false)), Promise.resolve(true)).then(ok => { if (ok) { st.extra = []; UI.toast(`Đã lưu bản nháp ${changed.length} loại suất – bấm "Gửi duyệt" ở đầu cột`, 'ok'); rerender(); } });
       };
+    });
+  });
+})();
+
+/* ACC-8 (D-131 l – anh chốt 2026-11-26): Kế toán › Đối chiếu với AMIS (#/acc-amis-recon) – như mô phỏng doi-chieu-amis.html: kỳ tháng ◀ ▶, nguồn số AMIS
+ * (Excel mẫu / nhập tay – API: ACC-7), 3 thẻ (chỉ tiêu khớp · lệch do còn chứng từ · lệch do giá xuất), bảng 8 chỉ tiêu Delicare | AMIS | chênh lệch | kết quả |
+ * nguyên nhân + nút tới việc cần làm. "Lệch do giá xuất" chỉ để biết – giá vốn chính thức lấy AMIS.
+ * API: AmisRecon/GetMonth · SaveFigures · Template · ImportExcel. */
+(function () {
+  const U = UTIL, I = U.icon, esc = U.esc, FN = APP.FN || {};
+  const st = { month: null };
+  const ym = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const shift = (m, n) => { const [y, mo] = m.split('-').map(Number); return ym(new Date(y, mo - 1 + n, 1)); };
+  const COLOR = { MATCH: 'green', MISSING_VOUCHER: 'orange', PRICE_METHOD: 'blue', DIFF: 'red', NO_AMIS: '', WAIT_COUNT: '' };
+  const fmt = (r, v) => (v === null || v === undefined ? '–' : r.kind === 'amount' ? U.num(v) : U.num(v) + ' ' + esc(r.unitLabel || ''));
+
+  function enter(d, done) {
+    UI.modal({ title: 'Nhập số AMIS tháng ' + d.month.slice(5) + '/' + d.month.slice(0, 4), size: 'lg',
+      body: '<div class="small muted mb">Lấy số từ sổ / báo cáo AMIS của kỳ. Ô trống = chưa có số. Hoặc tải Excel mẫu, điền cột "Số AMIS" rồi nhập tệp.</div>'
+        + '<div class="row-flex mb" style="gap:8px;flex-wrap:wrap"><button class="btn" id="arTpl">' + I('down') + ' Tải Excel mẫu</button><input type="file" class="input" id="arFile" accept=".xlsx" style="flex:1;min-width:180px"><button class="btn" id="arUp">' + I('up') + ' Nhập tệp</button></div>'
+        + '<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Chỉ tiêu</th><th class="num">Delicare</th><th class="num">Số AMIS</th></tr></thead><tbody>'
+        + d.listRow.map(r => `<tr><td>${esc(r.title)}</td><td class="num">${fmt(r, r.delicare)}</td><td class="num"><input class="input" style="width:150px;text-align:right" type="number" step="any" data-c="${r.code}" value="${r.amis === null || r.amis === undefined ? '' : r.amis}"></td></tr>`).join('')
+        + '</tbody></table></div>',
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="arOk">Lưu số AMIS</button>',
+      onMount: (m, close) => {
+        m.querySelector('#arTpl').onclick = () => Store.download('AmisRecon/Template', { month: d.month });
+        m.querySelector('#arUp').onclick = () => {
+          const file = m.querySelector('#arFile').files[0]; if (!file) { UI.toast('Chọn tệp Excel', 'warn'); return; }
+          const fd = new FormData(); fd.append('file', file); fd.append('month', d.month);
+          Store.act('AmisRecon/ImportExcel', { json: fd }).then(x => { if (x.ok) { close(); UI.toast(esc((x.res && x.res.responseMessage) || 'Đã nhận số AMIS'), 'ok'); done(); } });
+        };
+        m.querySelector('#arOk').onclick = () => {
+          const list = [...m.querySelectorAll('[data-c]')].map(i => ({ code: i.dataset.c, value: i.value === '' ? null : +i.value }));
+          Store.act('AmisRecon/SaveFigures', { json: { month: d.month, listFigure: list } }).then(x => { if (x.ok) { close(); UI.toast(esc((x.res && x.res.responseMessage) || 'Đã lưu'), 'ok'); done(); } });
+        };
+      } });
+  }
+
+  APP.register('acc-amis-recon', (el, f, p) => {
+    f = f || FN['acc-amis-recon'];
+    if (!st.month) st.month = shift(ym(new Date()), -1);
+    if (p && /^\d{4}-\d{2}$/.test(p.month || '')) st.month = p.month;
+    const perm = Store.perm('acc-amis-recon'), rerender = () => APP.SCREENS['acc-amis-recon'](el, f, {});
+    const [y, mo] = st.month.split('-');
+    el.innerHTML = APP.header(f, '', { noNote: true }) + APP.accNav('acc-amis-recon')
+      + '<div class="small muted mb">So số lượng và giá trị từng chỉ tiêu trong kỳ. Số chính thức là số AMIS; dòng lệch cho biết chứng từ nào còn thiếu hoặc sai để xử lý trước khi khóa kỳ.</div>'
+      + `<div class="card panel mb"><div class="spread" style="flex-wrap:wrap;gap:8px"><div class="fw-week"><button class="btn sm" id="arPrev" aria-label="Tháng trước">◀</button><span>Tháng ${mo}/${y}</span><button class="btn sm" id="arNext" aria-label="Tháng sau">▶</button></div><div id="arSrc" class="row-flex small" style="gap:8px;flex-wrap:wrap"></div></div></div>`
+      + '<div id="arBody"><div class="muted small">Đang tải…</div></div>';
+    el.querySelector('#arPrev').onclick = () => { st.month = shift(st.month, -1); rerender(); };
+    el.querySelector('#arNext').onclick = () => { st.month = shift(st.month, 1); rerender(); };
+    Store.query('AmisRecon/GetMonth', { month: st.month }).then(x => {
+      if (!el.isConnected) return;
+      const box = el.querySelector('#arBody');
+      if (!x.ok || !x.data) { box.innerHTML = `<div class="muted small">${esc(x.message || 'Không tải được đối chiếu')}</div>`; return; }
+      const d = x.data, rows = d.listRow || [];
+      el.querySelector('#arSrc').innerHTML = `<span class="muted">${d.amisAt ? `Số AMIS: ${esc(d.amisSource || '')} · ${U.dt(d.amisAt)}${d.amisBy ? ' · ' + esc(d.amisBy) : ''}` : 'Chưa có số AMIS của kỳ'}</span>`
+        + `<button class="btn sm" id="arApi" title="Lấy số qua API AMIS">${I('reset')} Lấy lại</button>`
+        + (perm.edit !== false || perm.imp !== false ? `<button class="btn sm primary" id="arIn">${I('up')} Nhập sổ AMIS (Excel)</button>` : '');
+      box.innerHTML = UI.kpis([
+        UI.kpi('Chỉ tiêu khớp', `${U.num(d.matchCount || 0)} / ${U.num(d.total || 0)}`, d.amisAt ? 'so với số AMIS đã nhập' : 'chưa nhập số AMIS', 'check', 'green'),
+        UI.kpi('Còn chứng từ', U.num(d.missingCount || 0), 'lệch do chưa lập trên AMIS / lỗi', 'alert', d.missingCount ? 'orange' : 'green'),
+        UI.kpi('Lệch do giá xuất', U.num(d.priceCount || 0), 'AMIS bình quân – chỉ để biết', 'calc', 'blue'),
+      ])
+        + '<div class="card panel"><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Chỉ tiêu</th><th class="num">Delicare</th><th class="num">AMIS</th><th class="num">Chênh lệch</th><th>Kết quả</th><th>Nguyên nhân / việc cần làm</th></tr></thead><tbody>'
+        + rows.map(r => `<tr><td><b>${esc(r.title)}</b></td><td class="num">${fmt(r, r.delicare)}</td><td class="num">${fmt(r, r.amis)}</td><td class="num">${r.difference === null || r.difference === undefined ? '–' : (r.difference > 0 ? '+' : '') + fmt(r, r.difference)}</td>`
+          + `<td>${UI.tag(r.resultName, COLOR[r.result] || '')}</td><td class="small">${esc(r.reason || '')}${r.link ? ` <a class="btn xs" href="${esc(r.link)}">${esc(r.linkLabel || 'Xem')}</a>` : ''}</td></tr>`).join('')
+        + '</tbody></table></div><div class="small muted mt">Dòng lệch có nút đi thẳng tới việc cần làm; dòng "lệch do giá xuất" chỉ để biết, không cần xử lý. Người làm: Kế toán · CEO xem.</div></div>';
+      el.querySelector('#arApi').onclick = () => UI.toast('Tính năng chưa được nâng cấp – lấy số qua API AMIS làm ở ACC-7 khi có tài liệu API. Dùng "Nhập sổ AMIS (Excel)".', 'warn');
+      const inp = el.querySelector('#arIn'); if (inp) inp.onclick = () => enter(d, rerender);
     });
   });
 })();
