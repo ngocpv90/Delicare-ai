@@ -5,7 +5,6 @@ import { DOMAIN_ROUTER } from './helpers/constant-helper';
 // FE-0 (D-35): only the DELI-CARE app. The W3CRM demo pages (pages/**, components/**, plugins/**,
 // elements/admin-layout) are kept on disk as reference but are no longer routed.
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: '/dang-nhap' },
   {
     path: 'dang-nhap',
     loadChildren: () =>
@@ -24,6 +23,12 @@ export const routes: Routes = [
     path: 'khong-co-quyen-truy-cap',
     loadChildren: () =>
       import('./not-found/not-found.module').then((m) => m.NotFoundModule),
+  },
+  // Trang khách lẻ công khai (trang chủ, thực đơn tuần, sản phẩm, chính sách, giới thiệu, liên hệ, giỏ hàng) – không cần đăng nhập.
+  // Đặt trước ':screenId' để '/thuc-don', '/san-pham'… không bị chuyển vào /quan-tri.
+  {
+    path: '',
+    loadChildren: () => import('./portal/portal.routes').then((m) => m.PORTAL_ROUTES),
   },
   // ObjectMenu.MetaLink pasted as a URL ('#/<screen-id>') -> same screen inside the app
   { path: ':screenId', redirectTo: `/${DOMAIN_ROUTER}/:screenId` },

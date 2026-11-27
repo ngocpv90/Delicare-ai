@@ -1,0 +1,148 @@
+{
+  "_ghiChu": "Nội dung trang khách lẻ (cổng công khai). Sản phẩm, giá, thực đơn, chính sách là BẢN NHÁP – PROPOSED, chờ anh (PO) duyệt. portalEnabled = true: trang khách lẻ BẬT (anh bật lại 2026-11-27); đặt false thì vào / về trang đăng nhập, xem trước bằng /?xemtruoc=1. Khi có API RETAIL-1, sản phẩm + thực đơn tuần đọc từ máy chủ; file này là dự phòng. Trong Docker file nằm trong image web – sửa xong phải build lại web.",
+  "portalEnabled": true,
+
+  "company": {
+    "brand": "DELI-CARE",
+    "legalName": "CÔNG TY CỔ PHẦN THƯƠNG MẠI DỊCH VỤ DELICARE VN",
+    "slogan": "Bữa ăn sạch – nấu mỗi ngày từ bếp trung tâm",
+    "address": "Lô E2A, Cụm Công nghiệp Thực phẩm Hapro, Xã Thuận An, TP Hà Nội",
+    "phone": "0934 660 640",
+    "phoneHref": "0934660640",
+    "zalo": "https://zalo.me/0934660640",
+    "email": "",
+    "website": "Delicare.vn",
+    "workingHours": "Nhận đơn 7:00 – 20:00 hằng ngày. Đơn cho ngày mai chốt trước 20:00 hôm nay.",
+    "orderCutoffHour": 20
+  },
+
+  "hero": {
+    "eyebrow": "Suất ăn công nghiệp · Cơm văn phòng · Đặt lẻ",
+    "title": "Cơm nhà nấu chuẩn bếp, giao tận nơi đúng giờ",
+    "subtitle": "Thực đơn đổi mỗi tuần, nguyên liệu rõ nguồn gốc, đóng hộp kín và giao theo buổi. Đặt một suất hay cả văn phòng đều được."
+  },
+
+  "highlights": [
+    { "icon": "verified", "title": "An toàn thực phẩm", "text": "Bếp trung tâm theo quy trình kiểm soát nhiệt độ, lưu mẫu từng mẻ nấu." },
+    { "icon": "eco", "title": "Nguyên liệu rõ nguồn", "text": "Nhập từ nhà cung cấp được đánh giá, truy xuất được theo lô." },
+    { "icon": "schedule", "title": "Giao đúng giờ", "text": "Giao theo buổi sáng – trưa – tối, xác nhận khi giao nhận." },
+    { "icon": "restaurant_menu", "title": "Đổi món mỗi tuần", "text": "Thực đơn cân bằng dinh dưỡng, mỗi buổi có nhiều lựa chọn." }
+  ],
+
+  "steps": [
+    { "title": "Chọn món", "text": "Xem thực đơn tuần và chọn suất, combo phù hợp." },
+    { "title": "Gửi đơn", "text": "Điền tên, số điện thoại, địa chỉ và ngày nhận." },
+    { "title": "Xác nhận", "text": "Nhân viên gọi lại xác nhận đơn và thời gian giao." },
+    { "title": "Nhận hàng", "text": "Nhận suất ăn nóng, thanh toán khi nhận hoặc chuyển khoản." }
+  ],
+
+  "categories": [
+    { "id": "com-van-phong", "name": "Cơm văn phòng" },
+    { "id": "an-sang", "name": "Món ăn sáng" },
+    { "id": "combo", "name": "Combo nhóm" },
+    { "id": "dinh-duong", "name": "Suất dinh dưỡng" },
+    { "id": "trang-mieng", "name": "Tráng miệng & đồ uống" }
+  ],
+
+  "products": [
+    { "id": "SP-001", "categoryId": "com-van-phong", "name": "Suất cơm trưa tiêu chuẩn", "price": 40000, "unit": "suất", "description": "2 món mặn theo thực đơn ngày, 1 món rau, canh, cơm trắng.", "tags": ["Bán chạy"], "meals": ["Trưa"], "icon": "lunch_dining", "tone": "green" },
+    { "id": "SP-002", "categoryId": "com-van-phong", "name": "Suất cơm trưa đặc biệt", "price": 55000, "unit": "suất", "description": "Thêm món chính đặc biệt trong tuần, rau, canh, tráng miệng.", "tags": ["Mới"], "meals": ["Trưa"], "icon": "set_meal", "tone": "orange" },
+    { "id": "SP-003", "categoryId": "com-van-phong", "name": "Suất cơm tối", "price": 40000, "unit": "suất", "description": "Món mặn, rau xào, canh nóng, cơm trắng – giao trước 18:00.", "tags": [], "meals": ["Tối"], "icon": "dinner_dining", "tone": "green" },
+    { "id": "SP-004", "categoryId": "an-sang", "name": "Xôi – bánh mì buổi sáng", "price": 20000, "unit": "suất", "description": "Chọn 1 trong 3 món sáng của ngày, kèm sữa đậu nành.", "tags": ["Bán chạy"], "meals": ["Sáng"], "icon": "bakery_dining", "tone": "orange" },
+    { "id": "SP-005", "categoryId": "an-sang", "name": "Phở / bún nóng", "price": 30000, "unit": "bát", "description": "Nước dùng ninh xương, đóng hộp giữ nhiệt riêng phần nước.", "tags": [], "meals": ["Sáng"], "icon": "ramen_dining", "tone": "green" },
+    { "id": "SP-006", "categoryId": "combo", "name": "Combo văn phòng 5 suất", "price": 190000, "unit": "combo", "description": "5 suất cơm trưa tiêu chuẩn, miễn phí giao trong khu vực.", "tags": ["Tiết kiệm"], "meals": ["Trưa"], "icon": "groups", "tone": "orange" },
+    { "id": "SP-007", "categoryId": "combo", "name": "Combo văn phòng 10 suất", "price": 370000, "unit": "combo", "description": "10 suất cơm trưa tiêu chuẩn kèm tráng miệng.", "tags": ["Tiết kiệm"], "meals": ["Trưa"], "icon": "diversity_3", "tone": "green" },
+    { "id": "SP-008", "categoryId": "combo", "name": "Combo gia đình 4 người", "price": 220000, "unit": "combo", "description": "3 món mặn, 1 rau, 1 canh, cơm cho 4 người – giao bữa tối.", "tags": [], "meals": ["Tối"], "icon": "family_restroom", "tone": "orange" },
+    { "id": "SP-009", "categoryId": "dinh-duong", "name": "Suất ăn ít tinh bột", "price": 60000, "unit": "suất", "description": "Ức gà / cá áp chảo, rau củ hấp, cơm gạo lứt phần nhỏ.", "tags": ["Lành mạnh"], "meals": ["Trưa","Tối"], "icon": "spa", "tone": "green" },
+    { "id": "SP-010", "categoryId": "dinh-duong", "name": "Suất chay thanh đạm", "price": 45000, "unit": "suất", "description": "Đậu, nấm, rau củ theo mùa, canh rau, cơm trắng.", "tags": [], "meals": ["Trưa","Tối"], "icon": "eco", "tone": "green" },
+    { "id": "SP-011", "categoryId": "trang-mieng", "name": "Tráng miệng trong ngày", "price": 12000, "unit": "phần", "description": "Hoa quả theo mùa hoặc chè / sữa chua tự làm.", "tags": [], "meals": ["Sáng","Trưa","Tối"], "icon": "icecream", "tone": "orange" },
+    { "id": "SP-012", "categoryId": "trang-mieng", "name": "Nước ép – sữa hạt", "price": 18000, "unit": "chai", "description": "Chai 330 ml, ép trong ngày, không thêm đường.", "tags": [], "meals": ["Sáng","Trưa","Tối"], "icon": "local_drink", "tone": "green" }
+  ],
+
+  "weeklyMenu": {
+    "title": "Thực đơn tuần này",
+    "note": "Món có thể thay đổi theo nguồn nguyên liệu trong ngày. Đơn đặt trước 20:00 sẽ được giao theo thực đơn của ngày hôm sau.",
+    "meals": ["Sáng", "Trưa", "Tối"],
+    "days": [
+      { "day": "Thứ Hai", "meals": { "Sáng": ["Xôi gà xé", "Bánh mì trứng ốp"], "Trưa": ["Thịt kho trứng", "Cá basa sốt cà chua", "Rau muống xào tỏi", "Canh bí nấu tôm"], "Tối": ["Gà rang gừng", "Đậu phụ sốt cà", "Canh rau ngót"] } },
+      { "day": "Thứ Ba", "meals": { "Sáng": ["Bún bò", "Bánh cuốn chả"], "Trưa": ["Sườn xào chua ngọt", "Trứng đúc thịt", "Bắp cải luộc", "Canh chua cá"], "Tối": ["Thịt ba chỉ rang", "Cải chíp xào nấm", "Canh mướp"] } },
+      { "day": "Thứ Tư", "meals": { "Sáng": ["Phở gà", "Xôi xéo"], "Trưa": ["Bò xào hành tây", "Chả lá lốt", "Su su xào", "Canh cải thịt bằm"], "Tối": ["Cá thu sốt cà", "Đậu cove xào", "Canh bầu"] } },
+      { "day": "Thứ Năm", "meals": { "Sáng": ["Bánh mì pate", "Cháo sườn"], "Trưa": ["Gà kho sả ớt", "Đậu nhồi thịt", "Rau cải xào", "Canh rau dền"], "Tối": ["Thịt viên sốt cà", "Bí xanh xào", "Canh trứng cà chua"] } },
+      { "day": "Thứ Sáu", "meals": { "Sáng": ["Bún riêu", "Xôi lạc"], "Trưa": ["Thịt rang cháy cạnh", "Cá chiên sốt mắm", "Giá xào", "Canh bí đỏ"], "Tối": ["Gà luộc lá chanh", "Rau muống luộc", "Canh rau cải"] } },
+      { "day": "Thứ Bảy", "meals": { "Sáng": ["Bánh giò", "Mì xào bò"], "Trưa": ["Vịt om sấu", "Đậu sốt nấm", "Rau lang xào", "Canh khoai sọ"], "Tối": ["Thịt luộc chấm mắm", "Dưa cải xào", "Canh cua rau đay"] } }
+    ]
+  },
+
+  "policies": [
+    {
+      "slug": "dat-hang",
+      "title": "Chính sách đặt hàng",
+      "icon": "shopping_bag",
+      "sections": [
+        { "heading": "Thời gian nhận đơn", "items": ["Nhận đơn từ 7:00 đến 20:00 hằng ngày qua website, điện thoại hoặc Zalo.", "Đơn cho ngày hôm sau chốt trước 20:00 hôm trước. Đơn sau giờ chốt được xếp sang ngày kế tiếp hoặc nhân viên liên hệ xác nhận."] },
+        { "heading": "Xác nhận đơn", "items": ["Nhân viên gọi lại xác nhận món, số lượng, địa chỉ và giờ giao trong giờ làm việc.", "Đơn chỉ được chuẩn bị sau khi đã xác nhận."] },
+        { "heading": "Thay đổi, hủy đơn", "items": ["Được đổi số lượng hoặc hủy đơn miễn phí trước giờ chốt 20:00 của ngày trước ngày giao.", "Sau giờ chốt, bếp đã lên kế hoạch nấu nên đơn không hủy được; trường hợp đặc biệt vui lòng gọi số điện thoại đặt hàng."] }
+      ]
+    },
+    {
+      "slug": "giao-hang",
+      "title": "Chính sách giao hàng",
+      "icon": "local_shipping",
+      "sections": [
+        { "heading": "Khu vực và thời gian", "items": ["Giao trong khu vực nội thành và các khu công nghiệp lân cận; khu vực khác vui lòng liên hệ.", "Khung giờ giao: bữa sáng 6:00 – 7:30, bữa trưa 10:30 – 11:45, bữa tối 16:30 – 18:00."] },
+        { "heading": "Phí giao hàng", "items": ["Miễn phí giao cho combo văn phòng và đơn đạt giá trị tối thiểu theo khu vực.", "Đơn nhỏ lẻ: phí giao được báo khi xác nhận đơn."] },
+        { "heading": "Giao nhận", "items": ["Suất ăn đóng hộp kín, dán tem ngày giờ nấu.", "Người nhận kiểm tra số lượng và tình trạng hộp khi nhận."] }
+      ]
+    },
+    {
+      "slug": "thanh-toan",
+      "title": "Chính sách thanh toán",
+      "icon": "payments",
+      "sections": [
+        { "heading": "Hình thức", "items": ["Tiền mặt khi nhận hàng.", "Chuyển khoản theo thông tin nhân viên gửi khi xác nhận đơn.", "Khách đặt định kỳ (văn phòng, doanh nghiệp) có thể thanh toán theo tuần hoặc tháng theo thỏa thuận."] },
+        { "heading": "Hóa đơn", "items": ["Xuất hóa đơn điện tử theo yêu cầu – vui lòng cung cấp thông tin xuất hóa đơn khi đặt."] }
+      ]
+    },
+    {
+      "slug": "doi-tra",
+      "title": "Chính sách đổi trả",
+      "icon": "autorenew",
+      "sections": [
+        { "heading": "Trường hợp được đổi", "items": ["Giao sai món, thiếu suất, hộp bị đổ vỡ hoặc món có dấu hiệu không bảo đảm chất lượng."] },
+        { "heading": "Cách báo", "items": ["Báo trong vòng 30 phút kể từ khi nhận hàng qua số điện thoại đặt hàng hoặc Zalo, kèm ảnh suất ăn.", "Chúng tôi giao bù suất mới hoặc hoàn tiền phần bị lỗi sau khi kiểm tra."] }
+      ]
+    },
+    {
+      "slug": "an-toan-thuc-pham",
+      "title": "Cam kết an toàn thực phẩm",
+      "icon": "health_and_safety",
+      "sections": [
+        { "heading": "Quy trình bếp", "items": ["Nguyên liệu kiểm tra khi nhập kho, bảo quản theo khu khô – mát – đông.", "Kiểm tra nhiệt độ lõi món ăn khi nấu, lưu mẫu từng mẻ theo quy định.", "Dụng cụ, khay, hộp được vệ sinh theo quy trình nhiều bước."] },
+        { "heading": "Khuyến nghị dùng", "items": ["Dùng ngay trong vòng 2 giờ sau khi nhận; không để qua đêm ở nhiệt độ phòng."] }
+      ]
+    },
+    {
+      "slug": "bao-mat",
+      "title": "Chính sách bảo mật thông tin",
+      "icon": "lock",
+      "sections": [
+        { "heading": "Thông tin thu thập", "items": ["Họ tên, số điện thoại, địa chỉ giao hàng và ghi chú đơn – chỉ dùng để xác nhận và giao đơn."] },
+        { "heading": "Cam kết", "items": ["Không bán, không chia sẻ thông tin khách hàng cho bên thứ ba, trừ đơn vị giao hàng cần thông tin để giao.", "Khách hàng có quyền yêu cầu xem, sửa hoặc xóa thông tin của mình qua số điện thoại đặt hàng."] }
+      ]
+    }
+  ],
+
+  "about": {
+    "title": "Về DELI-CARE",
+    "paragraphs": [
+      "DELI-CARE là đơn vị cung cấp suất ăn công nghiệp cho nhà máy, văn phòng và trường học, vận hành bếp trung tâm tại Cụm Công nghiệp Thực phẩm Hapro, Hà Nội.",
+      "Mỗi ngày, thực đơn được lên theo tuần, cân đối dinh dưỡng giữa các buổi; nguyên liệu được kiểm tra khi nhập, nấu theo công thức định lượng và kiểm soát nhiệt độ trước khi đóng hộp giao đi.",
+      "Bên cạnh khách hàng doanh nghiệp, chúng tôi nhận đặt lẻ suất cơm văn phòng, combo nhóm và bữa ăn gia đình với cùng tiêu chuẩn bếp."
+    ],
+    "values": [
+      { "icon": "favorite", "title": "Tận tâm", "text": "Nấu như bữa cơm cho người nhà." },
+      { "icon": "fact_check", "title": "Minh bạch", "text": "Nguồn nguyên liệu, định lượng và giá rõ ràng." },
+      { "icon": "bolt", "title": "Đúng hẹn", "text": "Chốt đơn, nấu và giao theo khung giờ cố định." }
+    ]
+  }
+}

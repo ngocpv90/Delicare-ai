@@ -313,6 +313,25 @@
   function setLoading(on) { document.getElementById('main-wrapper').classList.toggle('dc-loading', !!on); }
   // ---------- Router ----------
   let routeSeq = 0, cycleActive = false, navErrKey = '';
+  // Tải nhanh: nhớ các bảng mỗi màn đã đọc (localStorage, chỉ tên bảng) → lần sau mở màn đó gọi API TẤT CẢ một lượt
+  // trước khi vẽ, thay vì vẽ → thấy thiếu bảng → tải → vẽ lại → thấy thêm bảng khóa ngoại… (tối đa 6 vòng nối đuôi).
+  const TABLES_KEY = 'dc-screen-tables';
+  let screenMemo = {};
+  try { screenMemo = JSON.parse(localStorage.getItem(TABLES_KEY) || '{}') || {}; } catch (e) { screenMemo = {}; }
+  let memoTimer = null;
+  function rememberTables(id, tables) {
+    if (!Store.isLive || !tables.length) return;
+    const old = screenMemo[id] || [];
+    const merged = [...new Set([...old, ...tables])];
+    if (merged.length === old.length) return;
+    screenMemo[id] = merged;
+    clearTimeout(memoTimer);
+    memoTimer = setTimeout(() => { try { localStorage.setItem(TABLES_KEY, JSON.stringify(screenMemo)); } catch (e) { /* đầy bộ nhớ: bỏ qua */ } }, 500);
+  }
+  function prefetchTables(id) {
+    if (!Store.isLive) return;
+    (screenMemo[id] || []).forEach(t => { if (Store.schema.tables[t]) Store.ensure(t); });
+  }
   function route() {
     const seq = ++routeSeq;
     const base = APP.base(), raw = location.hash;
@@ -374,6 +393,7 @@
         : `<div class="card panel empty">${I('key')}<h2 class="mt">Vai trò "${esc(Store.user.group)}" không có quyền truy cập màn hình này</h2><p class="muted">Theo bảng <code>UserRole</code> (AllowAccess) × <code>ObjectMenu</code> (MetaLink = #/${f.id}).</p><button class="btn primary" data-role>Đổi vai trò</button></div>`);
       screenTables = []; return finish(el);
     }
+    prefetchTables(f.id); Store.touched.clear();   // touched chỉ ghi bảng màn hình thật sự đọc
     try {
       if (SCREENS[f.id]) SCREENS[f.id](el, f, params);
       else if (!f.table) gapScreen(el, f);
@@ -388,6 +408,7 @@
       }
     }
     screenTables = [...Store.touched];
+    rememberTables(f.id, screenTables);
     // Chỉ báo lỗi khi chính bảng của màn hình đang xem bị lỗi thật. Bảng phụ lỗi / backend chưa có API (404) → bỏ qua (menu của bảng đó đã ẩn), ghi console.
     const failed = screenTables.filter(t => Store.srcOf(t) === 'error');
     const errs = failed.filter(t => t === f.table && !Store.isMissing(t));
@@ -613,12 +634,13 @@
     // Dò API của mọi màn hình trước khi vẽ màn đầu tiên: backend đang nối thiếu controller nào thì ẩn menu của nó.
     // Vẽ màn hình đầu tiên NGAY; dò API chạy nền, xong thì dựng lại menu (và vẽ lại nếu màn đang xem thuộc bảng vừa bị ẩn).
     route();
-    Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => {
+    // Dò API SAU khi màn đầu đã có dữ liệu (không tranh kết nối với dữ liệu người dùng đang chờ).
+    Store.idle().then(() => new Promise(r => setTimeout(r, 400))).then(() => Store.probe(Object.values(FN).filter(f => f.table && !CHILD.has(f.id) && !HIDDEN_LIVE.has(f.id)).map(f => f.table)).then(() => {
       const before = document.querySelectorAll('[data-nav]').length;
       buildNav();
       const cur = FN[APP.current];
       if (document.querySelectorAll('[data-nav]').length !== before && cur && cur.table && Store.isMissing(cur.table) && !overlayOpen()) route();
-    });
+    }));
   };
   window.APP = APP;
 })();

@@ -1,0 +1,110 @@
+<div class="pt-root">
+  @if (vm$ | async; as vm) {
+  @if (vm.d; as d) {
+    @if (d.portalEnabled === false) {
+      <div class="pt-preview-bar">Đang xem trước – trang khách lẻ chưa mở công khai.</div>
+    }
+    <div class="pt-topbar">
+      <div class="pt-wrap pt-topbar-in">
+        <span><i class="material-icons">schedule</i>{{ d.company.workingHours }}</span>
+        <span class="pt-topbar-right">
+          <a [href]="'tel:' + d.company.phoneHref"><i class="material-icons">call</i>Gọi đặt hàng {{ d.company.phone }}</a>
+          @if (staffLoggedIn) {
+            <a class="pt-topbar-staff" [routerLink]="appLink"><i class="material-icons">dashboard</i>Vào hệ thống</a>
+          } @else {
+            <a class="pt-topbar-staff" routerLink="/dang-nhap"><i class="material-icons">badge</i>Đăng nhập nội bộ</a>
+          }
+        </span>
+      </div>
+    </div>
+
+    <header class="pt-header">
+      <div class="pt-wrap pt-header-in">
+        <a class="pt-logo" routerLink="/" aria-label="Về trang chủ">
+          <span class="pt-logo-mark">D</span>
+          <span class="pt-logo-text">DELI<b>-</b>CARE</span>
+        </a>
+
+        <nav class="pt-nav" [class.open]="menuOpen()" aria-label="Menu chính">
+          @for (n of nav; track n.link) {
+            <a [routerLink]="n.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: n.exact }">{{ n.label }}</a>
+          }
+          <a class="pt-nav-login" routerLink="/dang-nhap"><i class="material-icons">badge</i>Đăng nhập nội bộ</a>
+        </nav>
+
+        <div class="pt-header-actions">
+          <a class="pt-cart-btn" routerLink="/gio-hang" aria-label="Giỏ hàng">
+            <i class="material-icons">shopping_cart</i>
+            <span class="pt-cart-label">Giỏ hàng</span>
+            @if (cart.count() > 0) {
+              <span class="pt-badge">{{ cart.count() }}</span>
+            }
+          </a>
+          <button type="button" class="pt-burger" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen()" aria-label="Mở menu">
+            <i class="material-icons">{{ menuOpen() ? 'close' : 'menu' }}</i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="pt-main">
+      <router-outlet />
+    </main>
+
+    <footer class="pt-footer">
+      <div class="pt-wrap pt-footer-grid">
+        <div>
+          <div class="pt-logo pt-logo-light">
+            <span class="pt-logo-mark">D</span>
+            <span class="pt-logo-text">DELI<b>-</b>CARE</span>
+          </div>
+          <p class="pt-footer-legal">{{ d.company.legalName }}</p>
+          <p><i class="material-icons">place</i>{{ d.company.address }}</p>
+          <p><i class="material-icons">call</i><a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a></p>
+          @if (d.company.email) {
+            <p><i class="material-icons">mail</i><a [href]="'mailto:' + d.company.email">{{ d.company.email }}</a></p>
+          }
+        </div>
+        <div>
+          <h4>Mua hàng</h4>
+          <a routerLink="/thuc-don">Thực đơn tuần</a>
+          <a routerLink="/san-pham">Sản phẩm</a>
+          <a routerLink="/gio-hang">Giỏ hàng</a>
+          <a routerLink="/lien-he">Liên hệ đặt hàng</a>
+        </div>
+        <div>
+          <h4>Chính sách</h4>
+          @for (p of d.policies; track p.slug) {
+            <a [routerLink]="['/chinh-sach', p.slug]">{{ p.title }}</a>
+          }
+        </div>
+        <div>
+          <h4>Về chúng tôi</h4>
+          <a routerLink="/gioi-thieu">Giới thiệu</a>
+          <a routerLink="/chinh-sach/an-toan-thuc-pham">An toàn thực phẩm</a>
+          <a routerLink="/dang-nhap">Đăng nhập nội bộ</a>
+        </div>
+      </div>
+      <div class="pt-footer-bottom">
+        <div class="pt-wrap">© {{ year }} {{ d.company.legalName }} · {{ d.company.website }}</div>
+      </div>
+    </footer>
+
+    @if (cart.count() > 0 && !onCart()) {
+      <a class="pt-cart-float" routerLink="/gio-hang">
+        <i class="material-icons">shopping_cart</i>
+        <span>{{ cart.count() }} món · Xem giỏ hàng</span>
+      </a>
+    }
+  } @else if (vm.off) {
+    <div class="pt-loading">Đang chuyển…</div>
+  } @else {
+    <div class="pt-loading">
+      <p>Không tải được nội dung trang. Vui lòng thử lại sau ít phút.</p>
+      <button type="button" class="pt-btn" (click)="reload()"><i class="material-icons">refresh</i>Tải lại</button>
+    </div>
+  }
+  } @else {
+    <div class="pt-loading">Đang tải…</div>
+  }
+</div>

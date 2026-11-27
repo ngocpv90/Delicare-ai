@@ -69,13 +69,35 @@
     return out;
   }
   function setRows(t, rows) { data[t] = rows; idx[t] = {}; rows.forEach(r => { if (r.Id !== undefined) idx[t][r.Id] = r; }); }
-  function load() {
+  // Bộ đệm dữ liệu bảng (delicare-shell → table-cache.ts, IndexedDB theo tài khoản): bảng có dữ liệu lần trước thì vẽ NGAY,
+  // lần đọc đầu tiên trong phiên tải bản mới ở nền (stale) rồi vẽ lại nếu khác. Bảng nhật ký phân trang không đệm.
+  const CACHE = (HOST && HOST.cache) || null;
+  const stale = {};                 // table -> true: đang hiện dữ liệu đệm, chưa tải lại từ API trong phiên này
+  const cachePut = (t, rows) => { if (CACHE && !PAGED.has(t)) CACHE.put(t, rows); };
+  function load(fresh) {
     Object.keys(S.tables).forEach(t => {
-      if (isApi(t)) { setRows(t, []); src[t] = 'idle'; delete errMsg[t]; }
+      delete stale[t];
+      const cached = !fresh && CACHE && CACHE.rows[t];
+      if (isApi(t) && cached) { setRows(t, cached); src[t] = 'api'; stale[t] = true; delete errMsg[t]; }
+      else if (isApi(t)) { setRows(t, []); src[t] = 'idle'; delete errMsg[t]; }
       else { setRows(t, demoRows(t)); src[t] = 'demo'; }
     });
   }
   load();
+  // Tải lại bảng đang hiện dữ liệu đệm, KHÔNG tính là "đang tải" (màn không hiện chờ). Dữ liệu khác bản đệm → báo vẽ lại.
+  function revalidate(t) {
+    delete stale[t];
+    const before = data[t];
+    fetchTable(t).then(rows => {
+      if (stale[t] || src[t] === 'pending') return;   // đã reload / reset trong lúc chờ
+      cachePut(t, rows);
+      if (JSON.stringify(rows) === JSON.stringify(before)) return;
+      setRows(t, rows); src[t] = 'api'; notify(t);
+    }).catch(e => {
+      if (e && e.status === 404) { missing[t] = true; setRows(t, []); src[t] = 'error'; errMsg[t] = HOST.errorText(e); notify(t); }
+      else console.warn('[DELICARE] Không làm mới được', t, e);   // giữ dữ liệu đệm
+    });
+  }
 
   // ---------- Chuẩn hóa dữ liệu API ----------
   const isBit = (t, c) => COLMETA[t][c] && COLMETA[t][c].type === 'bit';
@@ -278,20 +300,24 @@
     probe(tables) {
       if (mode !== 'api' || !HOST) return Promise.resolve();
       const list = [...new Set(tables)].filter(t => S.tables[t] && isApi(t) && !NO_PROBE.has(t) && !probed[t]);
-      return Promise.all(list.map(t => {
-        probed[t] = true;
-        return HOST.get(`${ctrlOf(t)}/GetById?id=${EMPTY_GUID}`).then(() => { }, e => {
-          if (e && e.status === 404) { missing[t] = true; setRows(t, []); src[t] = 'error'; errMsg[t] = HOST.errorText(e); }
-        });
-      }));
+      list.forEach(t => { probed[t] = true; });
+      // Tối đa 3 lượt dò cùng lúc: trình duyệt chỉ mở ~6 kết nối / máy chủ – dò ~100 bảng một lượt làm dữ liệu
+      // của màn đang xem (và màn người dùng bấm sang) phải xếp hàng chờ.
+      const one = t => HOST.get(`${ctrlOf(t)}/GetById?id=${EMPTY_GUID}`).then(() => { }, e => {
+        if (e && e.status === 404) { missing[t] = true; delete stale[t]; setRows(t, []); src[t] = 'error'; errMsg[t] = HOST.errorText(e); }
+      });
+      let i = 0;
+      const worker = () => (i < list.length ? one(list[i++]).then(worker) : Promise.resolve());
+      return Promise.all([worker(), worker(), worker()]);
     },
     ensure(t) {
       if (!S.tables[t]) return Promise.resolve();
       touched.add(t);
       if (missing[t]) { src[t] = 'error'; return Promise.resolve(); }   // backend chưa có API → không gọi lại
+      if (stale[t]) { revalidate(t); return Promise.resolve(); }      // có dữ liệu đệm → dùng ngay, làm mới ở nền
       if (src[t] === 'idle') {
         src[t] = 'pending';
-        inflight[t] = fetchTable(t).then(rows => { setRows(t, rows); src[t] = 'api'; delete errMsg[t]; })
+        inflight[t] = fetchTable(t).then(rows => { setRows(t, rows); src[t] = 'api'; delete errMsg[t]; cachePut(t, rows); })
           .catch(e => { setRows(t, []); src[t] = 'error'; errMsg[t] = HOST.errorText(e); if (e && e.status === 404) missing[t] = true; console.warn('[DELICARE] Không tải được', t, e); })
           .finally(() => { delete inflight[t]; notify(t); });
       }
@@ -300,7 +326,7 @@
     // Tải lại các bảng từ API (sau action nghiệp vụ làm đổi nhiều bảng).
     reload(tables) {
       const list = (tables || []).filter(t => S.tables[t] && isApi(t));
-      list.forEach(t => { if (src[t] !== 'pending') src[t] = 'idle'; });
+      list.forEach(t => { delete stale[t]; if (src[t] !== 'pending') src[t] = 'idle'; });
       return Promise.all(list.map(t => Store.ensure(t)));
     },
     // ---- Action nghiệp vụ (api/<Controller>/<Action>) ----
@@ -432,7 +458,7 @@
       } else { data[t] = data[t].filter(r => r !== row); delete idx[t][id]; Store.audit(t, id, 'DELETE', 'Xóa (bảng không có IsDeleted)'); }
       if (isApi(t)) write(t, 'Delete', row);
     },
-    reset() { load(); Store.audit('System', 'reset', 'RESET', mode === 'api' ? 'Tải lại dữ liệu từ API' : 'Khôi phục dữ liệu demo'); notify(null); },
+    reset() { load(true); Store.audit('System', 'reset', 'RESET', mode === 'api' ? 'Tải lại dữ liệu từ API' : 'Khôi phục dữ liệu demo'); notify(null); },
     // Phân quyền theo UserRole × ObjectMenu (MetaLink = '#/screen-id')
     permAlias(alias, screen) { PERM_ALIAS[alias] = screen; },
     perm(screen) {
