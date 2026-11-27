@@ -97,6 +97,20 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:Dashboard:ChartDays` | int | 7 | Biểu đồ suất ăn: số ngày tính tới ngày chọn (spec 12.1: 7 ngày). | – |
 | `BusinessRules:Dashboard:OrdersTake` | int | 6 | Khối "đơn hàng trong ngày": số đơn đầu tiên trả về (spec 12.1: 6). | – |
 | `BusinessRules:Dashboard:JourneyMaxDocuments` | int | 20 | Hành trình đơn: tối đa N chứng từ mỗi chặng (tổng vẫn trả ở documentCount). | – |
+| `BusinessRules:Retail:OrderCutoffHour` | int | 20 | RETAIL-1 – giờ chốt đơn khách lẻ: đặt trước giờ này nhận sớm nhất ngày mai, sau thì ngày kia (máy chủ kiểm lại). | PROPOSED |
+| `BusinessRules:Retail:MaxDaysAhead` | int | 14 | Đặt trước tối đa N ngày. | PROPOSED |
+| `BusinessRules:Retail:MaxLines` / `MaxQuantityPerLine` | int | 20 / 999 | Chặn đơn bất thường (số dòng / số lượng mỗi dòng). | PROPOSED |
+| `BusinessRules:Retail:SubmitLimitPerPhone` / `SubmitLimitPerIp` | int | 3 / 10 | Chống spam đơn trên trang web trong `LimitWindowMinutes` – vượt trả HTTP 429. IP lấy từ `X-Real-IP` của nginx khi kết nối đến từ mạng nội bộ. | PROPOSED |
+| `BusinessRules:Retail:TrackLimitPerIp` | int | 20 | Tra cứu đơn tối đa N lần / IP / cửa sổ. | PROPOSED |
+| `BusinessRules:Retail:LimitWindowMinutes` | int | 60 | Cửa sổ đếm của các giới hạn trên (phút). | PROPOSED |
+| `BusinessRules:Retail:DuplicateRequestHours` | int | 24 | Gửi lại cùng `clientRequestId` trong N giờ → trả lại đơn cũ, không tạo đơn trùng. | PROPOSED |
+| `BusinessRules:Retail:NotifyNewOrder` | bool | true | Báo đơn WEB mới qua bot (mẫu `RETAIL_ORDER_NEW`) cho người có quyền Thêm ở `#/sal-retail-order`. | PROPOSED |
+| `BusinessRules:Retail:SessionDays` | int | 30 | RETAIL-2 – phiên đăng nhập khách lẻ (header `X-Retail-Token`) hết hạn sau N ngày. | PROPOSED |
+| `BusinessRules:Retail:PasswordMinLength` | int | 6 | Độ dài tối thiểu mật khẩu khách lẻ (tối đa 100). | PROPOSED |
+| `BusinessRules:Retail:LoginFailLimit` / `LoginLockMinutes` | int | 5 / 15 | Sai mật khẩu N lần theo SĐT → khóa tạm M phút (HTTP 429). | PROPOSED |
+| `BusinessRules:Retail:RegisterLimitPerIp` | int | 5 | Tạo tài khoản khách tối đa N lần / IP / `LimitWindowMinutes`. | PROPOSED |
+| `ReferenceLists:Lists:RetailCategory` | danh sách | 5 nhóm | Nhóm sản phẩm bán lẻ (`RetailProduct.CategoryCode`). | PROPOSED |
+| `SystemUsers:JobUserId` | Guid | – | **Bắt buộc cho trang khách lẻ:** đơn đặt trên web ghi dưới tài khoản `system` này; thiếu → trang khách báo gọi điện đặt hàng. | – |
 | `BusinessRules:OrderCutoffHourPreviousDay` | int | 20 | – | – |
 | `BusinessRules:OrderLockJobTime` | string | "20:00" | – | – |
 | `BusinessRules:MrpJobTime` | string | "20:30" | – | – |

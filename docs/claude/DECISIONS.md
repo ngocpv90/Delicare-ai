@@ -1510,3 +1510,36 @@ Thứ tự làm: 1 → 3 → 6 → 2.
 | (d) | Tự kiểm | `DB/scripts/CHECK_menu_permission.sql` (hoặc tham số `-Check` của `Deploy-Database.ps1`): in mục menu / ô quyền / script chuyển đổi chưa chạy lệch so với đích – **0 dòng = đúng**; chạy cuối quy trình cập nhật, có lệch thì báo lỗi rõ. API: trang admin hiện cảnh báo khi DB lệch (mở rộng cảnh báo FIX-1.4). |
 | (e) | Quy tắc về sau | Mọi task có script DB **phải** thêm vào `scripts.order` (cấu hình) hoặc danh sách chạy 1 lần (chuyển đổi) trong cùng commit; test tự động đỏ nếu có file trong `DB/scripts/` không được khai báo. Ghi vào `CLAUDE.md` mục Definition of Done (bổ sung D-92 b). |
 | (f) | Nhánh | Máy FE / server test cập nhật từ **`main`**; nhánh `develop` (dừng 17/11) và `release/pilot` (dừng 19/11) ghi rõ trong `deploy/README.md` là không dùng (hoặc đưa về bằng `main` nếu quy trình server đang trỏ vào – Claude Code kiểm, ghi PROGRESS). |
+
+## D-135 – RETAIL-1: backend module Bán lẻ + bật trang khách lẻ (anh giao 2026-11-27)
+
+✅ **Anh giao 2026-11-27** ("làm hết cả be luôn đi phần này tôi care luôn"): làm cả backend module Bán lẻ (bảng mới riêng đã duyệt 2026-11-26 – tách đơn doanh nghiệp). Chỉ áp cho phần Bán lẻ.
+
+| # | Nội dung | Quyết định / trạng thái |
+|---|---|---|
+| (a) | Bảng | `DB/migrations/20261127_01_retail_order.sql` (3 bảng, không FK vật lý, chỉ mục không unique) – chuyển từ DB/proposed cùng commit có API. CodeGen + SchemaMappingTests đọc bảng mới tạo bằng migration. |
+| (b) | Trang khách | `portalEnabled = true` (anh hỏi vì sao vào trang là ra đăng nhập – cờ do RETAIL-1 rà soát đặt false). Nội dung chính sách / giới thiệu vẫn là bản nháp. |
+| (c) | Bữa | Lưu NHÃN (Sáng / Trưa / Tối) ở RetailOrder.MealType, RetailProduct.MealTypes; máy chủ nhận cả mã ReferenceLists. **PROPOSED – BA/PO CONFIRM.** |
+| (d) | Thực đơn tuần công khai | Chỉ `Menu.MenuType = COMMON` đã công bố của tuần (Chủ Nhật → tuần sau). **PROPOSED.** |
+| (e) | Chống lạm dụng | Ô bẫy; 3 đơn / SĐT, 10 đơn / IP, 20 tra cứu / IP trong 60′ (BusinessRules:Retail); IP từ `X-Real-IP` khi kết nối từ mạng nội bộ. **PROPOSED.** |
+| (f) | Người thao tác | Đơn WEB ghi dưới `SystemUsers:JobUserId` (system) – cấu hình bắt buộc trên server có trang khách. |
+| (g) | Menu / quyền | Seed chỉ thêm `DB/seed/ObjectMenu_retail_seed.sql` trong scripts.order (D-134); ma trận quyền đề xuất như đầu `DB/scripts/RETAIL1_menu.sql` – **PROPOSED, anh duyệt khi UAT.** |
+| (h) | Cần anh | STATUS_CATALOG (docs/reference) thêm `RetailOrder.OrderStatus`: New → Confirmed / Cancelled; Confirmed → Delivering / Cancelled; Delivering → Completed / Cancelled. Đề xuất: anh cho phép em thêm dòng này (giống ngoại lệ API Catalog). |
+| (i) | Lỗi có sẵn phát hiện thêm | `AuthenticationController` khóa đăng nhập sai theo `RemoteIpAddress` – sau nginx là IP container nên mọi người dùng chung bộ đếm 50 lần. **Đề xuất:** dùng cùng cách lấy IP như RetailPortal (X-Real-IP khi từ mạng nội bộ) hoặc bật ForwardedHeaders. Chưa sửa (ngoài phần Bán lẻ). |
+
+## D-136 – RETAIL-2: tài khoản khách lẻ + Đơn của tôi + tiến độ + theo dõi chuyến + nguồn gốc (anh giao 2026-11-27)
+
+✅ **Anh giao 2026-11-27** ("làm thêm phần login / đăng ký tài khoản… Đơn của tôi đang giao / đã giao… truy xuất nguồn gốc trên từng đơn… đơn đang giao cho phép theo dõi chuyến… đang sơ chế / đang nấu / đang đóng gói / đang giao… be có rồi thì ghép còn không thì viết mới phần portal"), kèm tài liệu "Tài liệu chung" (chuỗi 9 khâu: đầu vào → chọn NCC → nhập & bảo quản → sơ chế & chế biến → bảo quản & đóng gói → vệ sinh dụng cụ → lưu mẫu → vận chuyển → thu hồi).
+
+| # | Nội dung | Quyết định / trạng thái |
+|---|---|---|
+| (a) | Bảng / cột | Migration `DB/migrations/20261127_02_retail_customer.sql`: bảng **RetailCustomer** (tài khoản khách lẻ) + 2 cột **RetailOrder.RetailCustomerId**, **RetailOrder.DeliveryRouteId**; không FK vật lý, chỉ mục không unique, chạy lại được. **PROPOSED – BA/PO CONFIRM** (bảng / cột mới – anh duyệt; nằm cùng đợt Bán lẻ anh đã duyệt bảng riêng 2026-11-26). |
+| (b) | Tách tài khoản nhân viên | Khách lẻ **không** vào `dbo.[User]` (User gắn nhóm quyền / menu nội bộ). Phiên khách ở header `X-Retail-Token` (HMAC, khóa suy ra từ `Jwt:SigningKey` theo nhãn riêng) – không bao giờ mở được API nội bộ (có test). Mật khẩu PBKDF2-SHA256 100.000 vòng (không MD5); đổi mật khẩu → phiên cũ hết hiệu lực. |
+| (c) | Chưa có OTP | Chưa có cổng SMS → đăng ký không xác thực SĐT. Đơn đặt khi chưa đăng nhập **không tự gắn**, khách tự "Thêm đơn" bằng số đơn + phải trùng SĐT tài khoản. **Rủi ro:** người đăng ký trước bằng SĐT của người khác + biết số đơn sẽ thấy địa chỉ đơn đó. **Đề xuất:** thêm OTP khi có cổng SMS / Zalo ZNS (R2); trước đó chấp nhận vì số đơn chỉ chủ đơn có. **PROPOSED.** |
+| (d) | Chống dò | Sai SĐT / sai mật khẩu báo như nhau; khóa tạm theo SĐT sau `LoginFailLimit` lần sai (`LoginLockMinutes`); tạo tài khoản tối đa `RegisterLimitPerIp` / IP / cửa sổ; ô bẫy. **PROPOSED.** |
+| (e) | Tiến độ đơn | Đơn lẻ không gắn mẻ trực tiếp → suy theo **ngày nhận + bữa** từ dữ liệu bếp: Chờ xác nhận → Đã xác nhận → Đang sơ chế → Đang nấu → Đang đóng gói → Đang giao → Đã giao (RetailProgress). **PROPOSED – BA/PO CONFIRM.** |
+| (f) | Theo dõi chuyến | Nhân viên gán chuyến ở màn **Đơn khách lẻ** (khối "Chuyến giao" trong chi tiết đơn, hoặc khi "Bắt đầu giao"); chỉ chuyến chưa hủy, cùng ngày nhận. Khách thấy số chuyến, trạng thái, tài xế, biển số, số điểm đã giao, vị trí gần nhất – **không** lộ tên / địa chỉ điểm giao khác. |
+| (g) | Nguồn gốc | Mẻ nấu của ngày + bữa (món, giờ nấu, kết quả kiểm tra, nhiệt độ lõi, **đã lưu mẫu** – khâu lưu mẫu theo tài liệu chung), nguyên liệu theo lô (NCC, ngày nhận, hạn dùng, kiểm tra đầu vào). Không lộ PO / giá / khách khác. |
+| (h) | Người thao tác | Ghi của khách (đăng ký, sửa hồ sơ, đổi mật khẩu, gắn đơn) dưới `SystemUsers:JobUserId`; khách thật ghi ở log. |
+| (i) | Tra cứu công khai | Vẫn chỉ cần số đơn + SĐT, có thêm tiến độ + chuyến; **không** trả địa chỉ / ghi chú (test giữ). Địa chỉ chỉ hiện ở "Đơn của tôi" khi đã đăng nhập. |
+| (j) | Loại tài khoản (anh chốt 2026-11-27) | **Cá nhân** bắt buộc SĐT (đăng nhập); **Doanh nghiệp** bắt buộc thêm tên doanh nghiệp + mã số thuế (10 số hoặc 10-3 số, không trùng) + email; mọi loại đăng nhập bằng SĐT. Migration `20261127_03_retail_customer_type.sql` thêm `RetailCustomer.AccountType / CompanyName / TaxCode` (anh duyệt, đã chạy DB dev). Loại tài khoản không đổi sau khi tạo; tài khoản cũ (NULL) coi là cá nhân. |

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CartService } from '../cart.service';
+import { CustomerAccountService } from '../account.service';
 import { RetailApiService } from '../retail-api.service';
 import { PortalDataService } from '../portal-data.service';
 import { PortalCompany, PortalData } from '../portal.model';
@@ -62,6 +63,11 @@ function newRequestId(): string {
               <p>Nhân viên sẽ gọi số <b>{{ ok.phone }}</b> để xác nhận đơn và giờ giao (bữa {{ ok.meal.toLowerCase() }} ngày {{ ok.date }}).</p>
               @if (ok.totalAmount) {
                 <p>Tổng tiền: <b>{{ ok.totalAmount | number: '1.0-0' : 'vi' }}đ</b> – phí giao (nếu có) báo khi xác nhận.</p>
+              }
+              @if (account.loggedIn()) {
+                <p><a class="pt-btn pt-btn-sm" [routerLink]="['/don-cua-toi', ok.orderNumber]"><i class="material-icons">timeline</i>Theo dõi đơn trong Đơn của tôi</a></p>
+              } @else {
+                <p class="pt-muted"><a routerLink="/tai-khoan/dang-nhap" [queryParams]="{ tao: 1 }">Tạo tài khoản</a> để theo dõi đơn, chuyến giao và nguồn gốc suất ăn (thêm đơn này bằng số đơn).</p>
               }
               <p class="pt-muted">Xem tình trạng đơn tại <a [routerLink]="['/tra-cuu-don']" [queryParams]="{ ma: ok.orderNumber }">Tra cứu đơn</a>. Cần đổi hoặc hủy đơn, vui lòng gọi <a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a> và đọc mã đơn trước giờ chốt.</p>
               <div class="pt-hero-cta pt-center">
@@ -204,6 +210,8 @@ export class PortalCartComponent {
   public readonly cart = inject(CartService);
   private readonly injector = inject(Injector);
   private readonly api = inject(RetailApiService);
+  /** RETAIL-2: khách đã đăng nhập → điền sẵn thông tin nhận hàng, đơn vào "Đơn của tôi". */
+  public readonly account = inject(CustomerAccountService);
   public readonly summary = signal('');
   public readonly copied = signal<'' | 'ok' | 'fail'>('');
   public readonly sending = signal(false);
@@ -227,6 +235,8 @@ export class PortalCartComponent {
   });
 
   constructor() {
+    const p = this.account.profile();
+    if (p) this.form.patchValue({ name: p.fullName ?? '', phone: p.phoneNumber ?? '', address: p.address ?? '' });
     // Giờ chốt lấy từ cấu hình portal-data.json (company.orderCutoffHour) khi có.
     this.data$.pipe(takeUntilDestroyed()).subscribe((d) => {
       const hour = d.company.orderCutoffHour ?? DEFAULT_CUTOFF_HOUR;
@@ -323,6 +333,8 @@ export class PortalCartComponent {
           this.done.set({ orderNumber: r.orderNumber, totalAmount: r.totalAmount, phone, date: `${dd}/${m}/${y}`, meal: v.meal });
           this.cart.clear();
           this.form.reset();
+          const p = this.account.profile();
+          if (p) this.form.patchValue({ name: p.fullName ?? '', phone: p.phoneNumber ?? '', address: p.address ?? '' });
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (r.kind === 'rejected') {
           this.serverError.set(r.message);

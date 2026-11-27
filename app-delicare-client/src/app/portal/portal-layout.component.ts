@@ -5,6 +5,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { catchError, filter, map, of, tap } from 'rxjs';
 import { ThemeService } from '../delicare/theme.service';
 import { AUTHEN, DOMAIN_ROUTER } from '../helpers/constant-helper';
+import { CustomerAccountService } from './account.service';
 import { CartService } from './cart.service';
 import { PortalDataService } from './portal-data.service';
 import { PortalData } from './portal.model';
@@ -23,6 +24,8 @@ export class PortalLayoutComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   public readonly cart = inject(CartService);
+  /** RETAIL-2: tài khoản khách lẻ (Đăng nhập / Đơn của tôi trên thanh đầu trang). */
+  public readonly account = inject(CustomerAccountService);
   public readonly menuOpen = signal(false);
   public readonly onCart = signal(false);
   public readonly year = new Date().getFullYear();
@@ -50,10 +53,11 @@ export class PortalLayoutComponent implements OnInit {
     { link: '/', label: 'Trang chủ', exact: true },
     { link: '/thuc-don', label: 'Thực đơn tuần', exact: false },
     { link: '/san-pham', label: 'Sản phẩm', exact: false },
-    { link: '/chinh-sach', label: 'Chính sách', exact: false },
-    { link: '/gioi-thieu', label: 'Giới thiệu', exact: false },
     { link: '/tra-cuu-don', label: 'Tra cứu đơn', exact: false },
     { link: '/lien-he', label: 'Liên hệ', exact: false },
+    // Mục phụ: máy tính nằm trên thanh xanh phía trên (header chính chỉ giữ việc mua hàng – anh báo menu đè nút Đăng nhập 2026-11-27); menu ☰ vẫn có.
+    { link: '/gioi-thieu', label: 'Giới thiệu', exact: false, secondary: true },
+    { link: '/chinh-sach', label: 'Chính sách', exact: false, secondary: true },
   ];
   public readonly appLink = '/' + DOMAIN_ROUTER;
 

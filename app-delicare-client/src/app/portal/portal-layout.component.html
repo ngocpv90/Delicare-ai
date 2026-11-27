@@ -8,6 +8,8 @@
       <div class="pt-wrap pt-topbar-in">
         <span><i class="material-icons">schedule</i>{{ d.company.workingHours }}</span>
         <span class="pt-topbar-right">
+          <a class="pt-topbar-link" routerLink="/gioi-thieu" routerLinkActive="active">Giới thiệu</a>
+          <a class="pt-topbar-link" routerLink="/chinh-sach" routerLinkActive="active">Chính sách</a>
           <a [href]="'tel:' + d.company.phoneHref"><i class="material-icons">call</i>Gọi đặt hàng {{ d.company.phone }}</a>
           @if (staffLoggedIn) {
             <a class="pt-topbar-staff" [routerLink]="appLink"><i class="material-icons">dashboard</i>Vào hệ thống</a>
@@ -27,12 +29,28 @@
 
         <nav class="pt-nav" [class.open]="menuOpen()" aria-label="Menu chính">
           @for (n of nav; track n.link) {
-            <a [routerLink]="n.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: n.exact }">{{ n.label }}</a>
+            <a [routerLink]="n.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: n.exact }" [class.pt-nav-secondary]="n.secondary">{{ n.label }}</a>
+          }
+          @if (account.loggedIn()) {
+            <a class="pt-nav-account" routerLink="/don-cua-toi"><i class="material-icons">receipt_long</i>Đơn của tôi</a>
+            <a class="pt-nav-account" routerLink="/tai-khoan"><i class="material-icons">manage_accounts</i>Tài khoản</a>
+          } @else {
+            <a class="pt-nav-account" routerLink="/tai-khoan/dang-nhap"><i class="material-icons">person</i>Đăng nhập / Tạo tài khoản</a>
           }
           <a class="pt-nav-login" routerLink="/dang-nhap"><i class="material-icons">badge</i>Đăng nhập nội bộ</a>
         </nav>
 
         <div class="pt-header-actions">
+          @if (account.profile(); as p) {
+            <a class="pt-account-btn" routerLink="/don-cua-toi" routerLinkActive="active" [attr.aria-label]="'Đơn của tôi – ' + p.fullName">
+              <i class="material-icons">account_circle</i><span class="pt-cart-label">Đơn của tôi</span>
+            </a>
+          } @else {
+            <a class="pt-account-btn" routerLink="/tai-khoan/dang-nhap" aria-label="Đăng nhập tài khoản khách">
+              <i class="material-icons">person</i><span class="pt-cart-label">Đăng nhập</span>
+            </a>
+            <a class="pt-register-btn" routerLink="/tai-khoan/dang-nhap" [queryParams]="{ tao: 1 }" aria-label="Đăng ký tài khoản khách">Đăng ký</a>
+          }
           <a class="pt-cart-btn" routerLink="/gio-hang" aria-label="Giỏ hàng">
             <i class="material-icons">shopping_cart</i>
             <span class="pt-cart-label">Giỏ hàng</span>
@@ -71,6 +89,7 @@
           <a routerLink="/san-pham">Sản phẩm</a>
           <a routerLink="/gio-hang">Giỏ hàng</a>
           <a routerLink="/lien-he">Liên hệ đặt hàng</a>
+          <a routerLink="/don-cua-toi">Đơn của tôi</a>
         </div>
         <div>
           <h4>Chính sách</h4>

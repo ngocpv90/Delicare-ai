@@ -59,6 +59,8 @@ namespace AppDelicare.Services.Interface
         QcInspection,
         /// <summary>Lần tính nhu cầu nguyên liệu – <c>MR-YYMMDD-NNN</c> (MaterialRequirement.RequirementNo).</summary>
         MaterialRequirement,
+        /// <summary>Đơn khách lẻ – <c>BL-YYMMDD-NNNN</c> (RetailOrder.OrderNumber, RETAIL-1).</summary>
+        RetailOrder,
 
         // ---------- Danh mục (dạng A) ----------
         /// <summary>Khách hàng doanh nghiệp – <c>KHB-NNNNN</c> (Customer.Code, CIF = Code).</summary>
@@ -85,6 +87,8 @@ namespace AppDelicare.Services.Interface
         DishCategory,
         /// <summary>Nhóm nguyên liệu – <c>NN-NNNNN</c> (IngredientCategorie.Code; anh chốt 2026-11-22).</summary>
         IngredientCategory,
+        /// <summary>Sản phẩm bán lẻ – <c>SPL-NNNNN</c> (RetailProduct.Code, RETAIL-1).</summary>
+        RetailProduct,
     }
 
     /// <summary>

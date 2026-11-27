@@ -40,6 +40,10 @@ namespace AppDelicare.Services.Mapping
             CreateMap<OutboundMessageRequest, OutboundMessage>();
             CreateMap<PackagingLedgerRequest, PackagingLedger>();
             CreateMap<ProductionLineRequest, ProductionLine>();
+            CreateMap<RetailCustomerRequest, RetailCustomer>();
+            CreateMap<RetailOrderRequest, RetailOrder>();
+            CreateMap<RetailOrderLineRequest, RetailOrderLine>();
+            CreateMap<RetailProductRequest, RetailProduct>();
             CreateMap<ShiftAssignmentRequest, ShiftAssignment>();
             CreateMap<ShiftSwapRequestRequest, ShiftSwapRequest>();
             CreateMap<SupplierIssueRequest, SupplierIssue>();

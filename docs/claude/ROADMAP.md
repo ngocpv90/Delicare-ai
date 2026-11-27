@@ -43,7 +43,13 @@ Mỗi task có: mục tiêu, phụ thuộc, việc cần làm, **tiêu chí nghi
 
 Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/user-guide/*` liên quan; xong bước nào báo anh mở thử giao diện bước đó.
 
+## ★ RETAIL-1 – MODULE BÁN LẺ (khách lẻ đặt trên web, D-135) · `PARTIAL` 2026-11-27 (code + test xong; DB dev server đã chạy 2026-11-27)
+Đặc tả + trạng thái: `docs/frontend-handoff/RETAIL-1.md`. Còn: chạy migration + seed trên DB dev máy anh, full-flow.http, kiểm SQL Server 2022 Docker, dòng STATUS_CATALOG (cần anh – docs/reference). Để sau (mục 8 đặc tả): tài khoản khách, thanh toán trực tuyến, đưa đơn lẻ vào MRP / kế hoạch, ảnh sản phẩm, báo cáo doanh thu, AMIS.
+
 ## ★ ƯU TIÊN CỦA ANH (2026-11-14): RELEASE 1 = CHỈ BACKEND (.NET + SQL) đủ API cho mockup
+
+## ★ RETAIL-2 – TÀI KHOẢN KHÁCH LẺ + ĐƠN CỦA TÔI (D-136) · `PARTIAL` 2026-11-27 (code + test + DB dev xong, kiểm thật 13/13; còn kiểm vai trò không phải admin trên giao diện)
+Đăng ký / đăng nhập khách lẻ (bảng RetailCustomer, tách tài khoản nhân viên), Đơn của tôi (đang xử lý / đã giao / đã hủy), tiến độ Sơ chế → Nấu → Đóng gói → Giao, theo dõi chuyến, nguồn gốc từng đơn (mẻ, nhiệt độ lõi, lưu mẫu, lô nguyên liệu, NCC); màn nội bộ gán chuyến cho đơn lẻ. Đặc tả: `docs/frontend-handoff/RETAIL-1.md` mục 10. Còn: tài khoản `uat.*` trên DB dev để kiểm vai trò không phải admin, gán chuyến thật khi có chuyến, OTP (R2).
 
 > **⚠ ĐỔI HƯỚNG 2026-11-15 (D-30):** **khung chuẩn là code cũ**, không sinh thêm API `/api/v1`. Mọi task dưới đây hiểu là: rà soát code cũ → bổ sung method vào Service cũ + action vào Controller cũ theo CLAUDE.md mục 4. Spec API chỉ là danh sách yêu cầu nghiệp vụ. Chỗ nào trong file này còn ghi `/api/v1/...` thì đọc là "chức năng đó, viết thành action kiểu cũ `api/<Entity>/<Action>`". (T45R đã DONE 2026-11-15.) **Từ 2026-11-16: làm theo bảng LÁT PILOT ngay dưới đây.**
 

@@ -77,6 +77,8 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string OrderWeekMissing = "ORDER_WEEK_MISSING";
         /// <summary>BIZ-3.3: giá NCC đổi làm thực đơn vượt FC %.</summary>
         public const string FoodCostOver = "FOOD_COST_OVER";
+        /// <summary>RETAIL-1: khách lẻ đặt đơn trên trang web – người xử lý đơn khách lẻ gọi xác nhận.</summary>
+        public const string RetailOrderNew = "RETAIL_ORDER_NEW";
 
         private const string P = MessagingCode.Scope.Personal, D = MessagingCode.Scope.Department, X = MessagingCode.Scope.CrossDepartment,
             A = MessagingCode.Scope.Approval, C = MessagingCode.Scope.Critical;
@@ -97,6 +99,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(FoodSafetyCritical, C, Urgent, "Lỗi trọng yếu checklist ATTP – QA, trưởng ca, bếp trưởng, COO"),
             new(IotOutOfRange, D, Urgent, "Nhiệt độ kho / khu ngoài ngưỡng (cảm biến hoặc đo tay) – QA, thủ kho"),
             new(SupplierIssueOverdue, D, Normal, "Sự cố nhà cung cấp quá hạn xử lý – QA, mua hàng"),
+            new(RetailOrderNew, D, Normal, "Đơn khách lẻ mới đặt trên trang web – nhân viên bán lẻ (quyền Thêm màn Đơn khách lẻ)"),
             new(RouteReady, D, Normal, "Chuyến đủ hàng / sắp xuất bến mà chưa đủ thực đơn – điều phối"),
             new(TemperatureDue, D, Normal, "Khu chưa đo nhiệt độ trong ca / cảm biến mất tín hiệu – trưởng ca, QA"),
             new(ChecklistDue, D, Normal, "Kiểm tra ATTP theo ca quá hạn – trưởng ca, QA"),
