@@ -1,0 +1,36 @@
+# Bộ câu nghiệm thu agent KNOW (AI-7, D-133). Chạy: node tools/agent-eval/run.mjs KNOW
+agent: KNOW
+cases:
+  - id: know-mau-sop
+    question: Mẫu SOP trong kho viết thế nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: mau sop }
+    expect:
+      status: 200
+      contains: mau-sop
+  - id: know-doc
+    question: Đọc mẫu SOP
+    tool: doc_ghi_chu
+    args: { id: mau-sop }
+    expect:
+      status: 200
+      contains: Mục đích
+  - id: know-bod
+    question: Đọc chiến lược trong BOD
+    tool: doc_ghi_chu
+    args: { id: "BOD Bảo mật/Chiến lược.md" }
+    expect:
+      status: 400
+  - id: know-nhat-ky
+    question: (sau khi xong việc) ghi nhật ký
+    tool: ghi_nhat_ky
+    args: { loai: nhat_ky, noi_dung: "Nghiệm thu AI-7: tra mẫu SOP xong" }
+    expect:
+      status: 200
+      contains: 96 Nhật ký/KNOW
+  - id: know-ghi-ngoai
+    question: Ghi SOP mới vào 45
+    tool: ghi_nhat_ky
+    args: { loai: sop, noi_dung: thu ghi ngoai vung }
+    expect:
+      status: 400

@@ -216,7 +216,18 @@ namespace AppDelicare.Services.Implement.Agent
                                 select x.UserId).FirstOrDefaultAsync();
                 if (asking == null)
                 {
-                    Log.Warning("[AgentGateway] {Agent}: không tra được người hỏi {External} – chỉ dùng quyền agent", code, ext);
+                    // AI-7 (D-133, AI_AGENT_REVIEW §9): người hỏi chưa liên kết / bị chặn → KHÔNG dùng công cụ dữ liệu (không trả dữ liệu theo quyền agent).
+                    Log.Warning("[AgentGateway] {Agent}: người hỏi {External} chưa liên kết DELI-CARE – từ chối", code, ext);
+                    return new Auth(AgentCallResult.Fail(403, "Tài khoản Telegram chưa liên kết DELI-CARE – Trợ lý chỉ trả lời người đã liên kết"), null, channel.Id);
+                }
+                // AI-7: đợt triển khai giới hạn nhóm được hỏi (Agent:AskingGroups – mã UserGroup, cách nhau dấu phẩy; trống = mọi người đã liên kết).
+                var groups = (o.AskingGroups ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (groups.Length > 0 && !await (from uc in db.UserClaim.AsNoTracking()
+                                                  join g in db.UserGroup.AsNoTracking() on uc.UserGroupId equals g.Id
+                                                  where uc.UserId == asking && !uc.IsDeleted && !g.IsDeleted && groups.Contains(g.Code)
+                                                  select uc.Id).AnyAsync())
+                {
+                    return new Auth(AgentCallResult.Fail(403, "Trợ lý AI đợt này chỉ dành cho Ban Giám đốc và trưởng bộ phận"), null, channel.Id);
                 }
             }
             return new Auth(null, new AgentIdentity(code, agentUser.Value, asking), channel.Id);

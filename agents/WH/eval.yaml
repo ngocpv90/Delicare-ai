@@ -1,0 +1,48 @@
+# Bộ câu nghiệm thu agent WH (AI-7, D-133): câu hỏi · công cụ phải gọi · điều kiện đúng.
+# Chạy: node tools/agent-eval/run.mjs WH   (ToolGateway + API đang chạy; khóa AGENT_KEY_WH và tài khoản web so số EVAL_WEB_USER / EVAL_WEB_PASS ở biến môi trường)
+# expect: status (mã HTTP), has (đường dẫn phải có), contains / notContains (chuỗi trong JSON), equalsWeb (số của công cụ = số trên màn web cùng quyền).
+agent: WH
+webUser: uat.ops-wh
+cases:
+  - id: wh-ton-kho
+    question: Kho đang có bao nhiêu mặt hàng nguyên liệu?
+    tool: get_ton_kho
+    args: {}
+    expect:
+      status: 200
+      equalsWeb: { tool: total, web: "InventoryBalance/GetSummary", webPath: listData }
+  - id: wh-duoi-toi-thieu
+    question: Có mặt hàng nào dưới tồn tối thiểu không?
+    tool: get_ton_kho
+    args: { duoi_toi_thieu: true }
+    expect:
+      status: 200
+      equalsWeb: { tool: total, web: "InventoryBalance/GetSummary?BelowMin=true", webPath: listData }
+  - id: wh-lo-can-date
+    question: Lô nào sắp hết hạn trong 3 ngày tới?
+    tool: get_lo_can_date
+    args: { so_ngay: 3 }
+    expect:
+      status: 200
+      equalsWeb: { tool: "", web: "MaterialLot/GetList?ExpiringWithinDays=3&InStock=true", webPath: listData }
+  - id: wh-truy-xuat-sai
+    question: Truy xuất lô LO-KHONG-CO
+    tool: truy_xuat_lo
+    args: { so_lo: LO-KHONG-CO }
+    expect:
+      status: 400
+      contains: Không tìm thấy lô
+  - id: wh-canh-bao
+    question: Kho có cảnh báo gì đang mở?
+    tool: canh_bao
+    args: {}
+    expect:
+      status: 200
+  - id: wh-quy-trinh
+    question: Quy trình nhập kho hàng lạnh thế nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: quy trinh nhap kho }
+    expect:
+      status: 200
+      has: [ghi_chu, note]
+      notContains: BOD Bảo mật

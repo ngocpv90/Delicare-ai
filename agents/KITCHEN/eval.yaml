@@ -1,0 +1,41 @@
+# Bộ câu nghiệm thu agent KITCHEN (AI-7, D-133). Chạy: node tools/agent-eval/run.mjs KITCHEN
+agent: KITCHEN
+webUser: uat.ops-kit
+cases:
+  - id: kit-tien-do
+    question: Bếp hôm nay tiến độ thế nào?
+    tool: tien_do_bep
+    args: {}
+    expect:
+      status: 200
+  - id: kit-cong-doan
+    question: Tiến độ theo công đoạn?
+    tool: tien_do_bep_chi_tiet
+    args: {}
+    expect:
+      status: 200
+  - id: kit-ke-hoach
+    question: Kế hoạch sản xuất 7 ngày tới?
+    tool: ke_hoach_ngay
+    args: {}
+    expect:
+      status: 200
+  - id: kit-thuc-don
+    question: Thực đơn tuần này?
+    tool: thuc_don_tuan
+    args: {}
+    expect:
+      status: 200
+  - id: kit-hao-hut
+    question: Hao hụt 7 ngày qua?
+    tool: hao_hut_khoang
+    args: {}
+    expect:
+      status: 200
+  - id: kit-ton-kho
+    question: Kho còn bao nhiêu mặt hàng?
+    tool: get_ton_kho
+    args: {}
+    expect:
+      status: 200
+      has: [total, items]

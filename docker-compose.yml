@@ -32,10 +32,18 @@ services:
       # BOT-1.1 / 1.2 (D-62): khóa client messaging (SHA-256 hex) + khóa ký mã liên kết Telegram – trống = tắt.
       Clients__MESSAGING__KeyHash: ${MESSAGING_CLIENT_KEY_HASH:-}
       Messaging__LinkSigningKey: ${MESSAGING_LINK_SIGNING_KEY:-}
+      Agent__SchedulesFile: /app/agents/schedules.json
+      # AI-6: Trung tâm agent báo "máy chủ có khóa agent" – cùng biến với toolgateway (trống = chưa cấp).
+      AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
+      AGENT_KEY_QA: ${AGENT_KEY_QA:-}
+      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
     volumes:
       - api-import:/app/wwwroot/Import            # ảnh đại diện / tệp nhập Excel
       - api-docs:/app/App_Data/DocumentFiles      # tệp đính kèm (DocumentFile)
       - knowledge:/app/App_Data/Knowledge          # AI-1 (D-133): kho tri thức (AI-5)
+      - ./agents:/app/agents:ro                    # AI-6 / AI-7: agents/schedules.json (màn Lịch chạy) – chỉ đọc
     depends_on:
       db-sync:
         condition: service_completed_successfully
@@ -137,6 +145,12 @@ services:
       ConnectionStrings__MainConnectionString: "Server=${DB_SERVER:?Đặt DB_SERVER trong .env};Database=${DB_NAME:?Đặt DB_NAME trong .env};User Id=${DB_USER:?Đặt DB_USER trong .env};Password=${DB_PASSWORD:?Đặt DB_PASSWORD trong .env};Encrypt=${DB_ENCRYPT:-False};TrustServerCertificate=True;MultipleActiveResultSets=true;"
       DocumentStorage__RootPath: /app/App_Data/DocumentFiles
       Knowledge__VaultPath: /app/App_Data/Knowledge
+      # AI-2 / AI-7 (D-133): khóa từng agent – tên biến ghi ở BotConfiguration.SecretReference; giá trị chỉ ở .env của server.
+      AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
+      AGENT_KEY_QA: ${AGENT_KEY_QA:-}
+      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
     volumes:
       - api-docs:/app/App_Data/DocumentFiles
       - knowledge:/app/App_Data/Knowledge
@@ -156,10 +170,23 @@ services:
     image: nousresearch/hermes-agent:latest
     container_name: delicare-hermes
     command: ["gateway", "run"]
+    depends_on:
+      - toolgateway
     environment:
       TZ: Asia/Ho_Chi_Minh
+      # AI-7 (D-133): config.yaml theo agents/hermes.config.example.yaml – mọi khóa đọc từ biến môi trường (.env của server, không commit).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      HERMES_MODEL_DEFAULT: ${HERMES_MODEL_DEFAULT:-claude-sonnet-5-5}
+      HERMES_MODEL_SCHEDULED: ${HERMES_MODEL_SCHEDULED:-claude-haiku-5-5}
+      TELEGRAM_BOT_TOKEN_TRO_LY: ${TELEGRAM_BOT_TOKEN_TRO_LY:-}
+      AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
+      AGENT_KEY_QA: ${AGENT_KEY_QA:-}
+      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
     volumes:
       - hermes-data:/opt/data                     # .env, config.yaml, SOUL.md, skills/, sessions/
+      - ./agents:/opt/delicare-agents:ro          # AI-7: SOUL / tools / eval / schedules / hermes.config.example.yaml (chỉ đọc)
     restart: unless-stopped
 
 volumes:
