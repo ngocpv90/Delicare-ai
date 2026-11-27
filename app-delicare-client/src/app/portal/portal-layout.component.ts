@@ -53,10 +53,11 @@ export class PortalLayoutComponent implements OnInit {
     { link: '/', label: 'Trang chủ', exact: true },
     { link: '/thuc-don', label: 'Thực đơn tuần', exact: false },
     { link: '/san-pham', label: 'Sản phẩm', exact: false },
-    { link: '/chinh-sach', label: 'Chính sách', exact: false },
-    { link: '/gioi-thieu', label: 'Giới thiệu', exact: false },
     { link: '/tra-cuu-don', label: 'Tra cứu đơn', exact: false },
     { link: '/lien-he', label: 'Liên hệ', exact: false },
+    // Mục phụ: máy tính nằm trên thanh xanh phía trên (header chính chỉ giữ việc mua hàng – anh báo menu đè nút Đăng nhập 2026-11-27); menu ☰ vẫn có.
+    { link: '/gioi-thieu', label: 'Giới thiệu', exact: false, secondary: true },
+    { link: '/chinh-sach', label: 'Chính sách', exact: false, secondary: true },
   ];
   public readonly appLink = '/' + DOMAIN_ROUTER;
 

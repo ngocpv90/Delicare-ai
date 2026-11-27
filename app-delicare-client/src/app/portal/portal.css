@@ -572,7 +572,7 @@ a.pt-contact-tile:hover { border-color: var(--pt-green); }
 /* ===== Header: không xuống dòng (logo, nút Đăng nhập / Đăng ký / Giỏ hàng) – anh báo vỡ header 2026-11-27 ===== */
 .pt-logo, .pt-logo-text, .pt-account-btn, .pt-register-btn, .pt-cart-btn, .pt-cart-label { white-space: nowrap; }
 .pt-logo, .pt-header-actions { flex-shrink: 0; }
-.pt-nav { min-width: 0; }
+.pt-nav { flex-shrink: 0; } /* không co nhỏ hơn nội dung – co là chữ tràn đè sang nút Đăng nhập */
 .pt-register-btn {
   display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px;
   border: 1.5px solid var(--pt-green); color: var(--pt-green-dark) !important; font-weight: 600; font-size: 14px; background: #fff;
@@ -601,3 +601,26 @@ a.pt-contact-tile:hover { border-color: var(--pt-green); }
 .pt-section .pt-chips.pt-type-chips { margin-bottom: 16px; }
 .pt-type-chips .pt-chip { display: inline-flex; align-items: center; gap: 6px; }
 .pt-type-chips .pt-chip .material-icons { font-size: 18px; }
+
+/* ===== Header v2 (anh báo "Liên hệ" đè nút Đăng nhập 2026-11-27) =====
+   Menu chính 5 mục mua hàng; Giới thiệu / Chính sách lên thanh xanh phía trên; màn ≤ 1100px dùng menu ☰ (đủ chỗ cho Đăng nhập / Đăng ký / Giỏ hàng). */
+.pt-nav .pt-nav-secondary { display: none; }
+.pt-topbar a.pt-topbar-link { font-weight: 500; color: #dfe9d0; }
+.pt-topbar a.pt-topbar-link.active { color: #fff; text-decoration: underline; }
+.pt-header-actions { margin-left: 8px; }
+@media (max-width: 1440px) { .pt-nav a { padding: 8px 11px; } }
+@media (max-width: 1100px) {
+  .pt-burger { display: grid; place-items: center; }
+  .pt-nav {
+    position: absolute; top: 100%; left: 0; right: 0; display: none; flex-direction: column; align-items: stretch; gap: 2px;
+    padding: 10px 16px 16px; background: #fff; border-bottom: 1px solid var(--pt-border); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  }
+  .pt-nav.open { display: flex; }
+  .pt-nav a { padding: 12px 12px; font-size: 15px; }
+  .pt-nav .pt-nav-secondary { display: block; }
+  .pt-nav .pt-nav-login { display: flex; align-items: center; gap: 8px; margin-top: 6px; border-top: 1px solid var(--pt-border); border-radius: 0; padding-top: 14px; color: var(--pt-muted); }
+  .pt-header-actions { margin-left: auto; }
+  .pt-topbar a.pt-topbar-link { display: none; }
+  .pt-cart-btn .pt-cart-label { display: inline; }
+}
+@media (max-width: 600px) { .pt-cart-btn .pt-cart-label { display: none; } }

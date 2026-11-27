@@ -8,6 +8,8 @@
       <div class="pt-wrap pt-topbar-in">
         <span><i class="material-icons">schedule</i>{{ d.company.workingHours }}</span>
         <span class="pt-topbar-right">
+          <a class="pt-topbar-link" routerLink="/gioi-thieu" routerLinkActive="active">Giới thiệu</a>
+          <a class="pt-topbar-link" routerLink="/chinh-sach" routerLinkActive="active">Chính sách</a>
           <a [href]="'tel:' + d.company.phoneHref"><i class="material-icons">call</i>Gọi đặt hàng {{ d.company.phone }}</a>
           @if (staffLoggedIn) {
             <a class="pt-topbar-staff" [routerLink]="appLink"><i class="material-icons">dashboard</i>Vào hệ thống</a>
@@ -27,7 +29,7 @@
 
         <nav class="pt-nav" [class.open]="menuOpen()" aria-label="Menu chính">
           @for (n of nav; track n.link) {
-            <a [routerLink]="n.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: n.exact }">{{ n.label }}</a>
+            <a [routerLink]="n.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: n.exact }" [class.pt-nav-secondary]="n.secondary">{{ n.label }}</a>
           }
           @if (account.loggedIn()) {
             <a class="pt-nav-account" routerLink="/don-cua-toi"><i class="material-icons">receipt_long</i>Đơn của tôi</a>
