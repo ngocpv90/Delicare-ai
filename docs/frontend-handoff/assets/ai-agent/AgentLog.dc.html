@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhật ký và chi phí agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F8F4}
+a{color:#4F6B1F}a:hover{color:#3A5115}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 14px; display: flex; flex-wrap: wrap; min-height: 1000px">
+<nav aria-label="Menu chính" style="flex: 1 1 232px; max-width: 256px; background: #fff; border-right: 1px solid #E8ECE5; padding: 18px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 16px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #91AF42; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span><b style="font-size: 17px">DELI-CARE</b></div>
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="10"><a href="#" style="color: #455A64; text-decoration: none; padding: 0 12px; height: 40px; display: flex; align-items: center; border-radius: 8px">{{m}}</a></sc-for>
+<div style="margin-top: 8px; padding: 0 12px; font-size: 12px; color: #607D6B; font-weight: 600">Trợ lý AI</div>
+<sc-for list="{{ai}}" as="m" hint-placeholder-count="7"><a href="{{m.href}}" style="{{m.st}}">{{m.t}}</a></sc-for>
+</nav>
+<main style="flex: 999 1 560px; min-width: 0; padding: 22px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div><div style="color: #607D6B; font-size: 13px">Trợ lý AI › Nhật ký &amp; chi phí</div><h1 style="margin: 4px 0 0; font-size: 20px">Nhật ký &amp; chi phí agent</h1><div style="color: #546E7A; margin-top: 4px">Mỗi lệnh của agent ghi một dòng nhật ký tích hợp, có mã liên kết để lần theo cả hội thoại</div></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Lệnh hôm nay</div><div style="font-size: 26px; font-weight: 700">1.386</div><div style="color: #607D6B; font-size: 12px">142 việc · 0 bị chặn quyền</div></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Tin đã gửi</div><div style="font-size: 26px; font-weight: 700">37</div><div style="color: #607D6B; font-size: 12px">qua bot Vận hành, Điều hành, Trợ lý</div></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Ghi thẳng vào sổ</div><div style="font-size: 26px; font-weight: 700">0</div><div style="color: #607D6B; font-size: 12px">luôn bằng 0 – mọi ghi đi qua đề xuất</div></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Chi phí hôm nay</div><div style="font-size: 26px; font-weight: 700">0,61 <span style="font-size: 15px; color: #607D6B; font-weight: 500">USD</span></div><div style="color: #607D6B; font-size: 12px">trung bình 30 ngày 0,55</div></div>
+</div>
+<div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start">
+<section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{chips}}" as="c" hint-placeholder-count="6"><button onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}"><sc-if value="{{c.hasIc}}" hint-placeholder-val="{{ true }}"><span style="{{c.ic.box}}"><svg width="{{c.ic.sz}}" height="{{c.ic.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.ic.d}}"></path></svg></span></sc-if>{{c.label}}</button></sc-for></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; overflow-x: auto"><div style="min-width: 820px">
+<div style="display: grid; grid-template-columns: 62px 112px 96px minmax(0, 1fr) 150px 84px 70px; gap: 10px; padding: 10px 16px; background: #F6F8F4; font-size: 12px; color: #546E7A; font-weight: 600"><span>Giờ</span><span>Agent</span><span>Loại</span><span>Việc</span><span>Công cụ</span><span>Kết quả</span><span>Chi phí</span></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="10"><div style="display: grid; grid-template-columns: 62px 112px 96px minmax(0, 1fr) 150px 84px 70px; gap: 10px; padding: 0 16px; min-height: 50px; align-items: center; border-top: 1px solid #F0F3EE; font-size: 13px"><span style="color: #607D6B">{{r.t}}</span><span style="display: flex; gap: 6px; align-items: center; font-weight: 600; font-size: 12px; color: #455A64"><span style="{{r.ic.box}}"><svg width="{{r.ic.sz}}" height="{{r.ic.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.ic.d}}"></path></svg></span>{{r.a}}</span><span style="{{r.kSt}}">{{r.k}}</span><span>{{r.x}}</span><code style="font-size: 12px; color: #455A64">{{r.tool}}</code><span style="{{r.okSt}}">{{r.ok}}</span><span style="color: #607D6B">{{r.c}}</span></div></sc-for>
+</div></div>
+</section>
+<aside aria-label="Chi phí theo agent" style="flex: 1 1 300px; max-width: 360px; background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+<b>Chi phí tháng 11 theo agent</b>
+<div style="font-size: 13px; color: #546E7A">14,2 / 60 USD · cảnh báo khi tới 48 USD (80%)</div>
+<div style="height: 8px; background: #EFF5E5; border-radius: 4px"><div style="width: 24%; height: 8px; background: #91AF42; border-radius: 4px"></div></div>
+<sc-for list="{{cost}}" as="k" hint-placeholder-count="5"><div style="display: grid; grid-template-columns: 28px 70px minmax(0, 1fr) 56px; gap: 8px; align-items: center; font-size: 13px"><span style="{{k.ic.box}}"><svg width="{{k.ic.sz}}" height="{{k.ic.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.ic.d}}"></path></svg></span><b style="font-size: 12px; color: #455A64">{{k.a}}</b><span style="height: 10px; background: #F0F3EE; border-radius: 5px"><span style="{{k.bar}}"></span></span><span style="text-align: right">{{k.v}}</span></div></sc-for>
+<div style="border-top: 1px solid #E8ECE5; padding-top: 10px; font-size: 13px; color: #546E7A; line-height: 1.5">VIVI tốn nhiều nhất vì dùng Sonnet cho bản tin và hỏi đáp. Các agent theo lịch dùng Haiku. Giới hạn cứng đặt ở nhà cung cấp mô hình.</div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+const IC = {VIVI:['#3A5115','#E4EFD2','M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M17 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M10 20a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M6.5 6.5l3.4 3.4M17.5 6.5l-3.4 3.4M12 15v3'],SALES:['#B4413F','#FCE4E3','M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18'],PLAN:['#2F6DB5','#E1ECFA','M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2zM8 3v4M16 3v4M3 10h18M8 14h3M8 17h6'],PROC:['#8C6D00','#F8EDC2','M3 4h2l2.4 11h11L21 8H6.2M7.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0M15.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0'],WH:['#2E7D32','#E3F3E2','M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8'],KITCHEN:['#B4570F','#FDE8D6','M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM2 10h20M9 7c0-1 1-1.5 1-3M14 7c0-1 1-1.5 1-3'],QA:['#0F7B6C','#D9F2EE','M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM8.5 12l2.5 2.5 4.5-5'],LOG:['#1A6FA0','#DCEFFA','M2 6h11v10H2zM13 10h4l4 3v3h-8M4 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'],PKG:['#4E7F75','#E2EFEC','M4 9h16l-1.5 9h-13zM8 9V6h8v3M9 13h6'],HR:['#5B4BB0','#E9E6F8','M6 8a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14.5 9a2.5 2.5 0 1 0 5.0 0a2.5 2.5 0 1 0 -5.0 0M16 14c3 0 5 2 5 5'],ACC:['#8A4B22','#F5E5DA','M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2zM8 7h8M8 12h2M14 12h2M8 16h2M14 16h2'],CSKH:['#A63366','#FAE1EC','M4 5h16v11H9l-5 4zM8 9h8M8 12h5'],KNOW:['#5E6B12','#EEF1D6','M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z']};
+const ico = (k, s) => { const c = IC[k] || IC.VIVI, z = s || 36; return { d: c[2], fg: c[0], box: 'flex:none;width:' + z + 'px;height:' + z + 'px;border-radius:' + Math.round(z * .28) + 'px;background:' + c[1] + ';color:' + c[0] + ';display:flex;align-items:center;justify-content:center', sz: Math.round(z * .58) }; };
+const NAV = cur => ({ menu: ['Điều hành', 'Kinh doanh', 'Thực đơn & Món ăn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng & ATTP', 'Đóng gói & Giao hàng', 'Nhân sự', 'Kế toán'],
+  ai: [['Main', 'Trung tâm agent'], ['AgentLog', 'Nhật ký & chi phí'], ['Tasks', 'Việc của tôi'], ['Flow', 'Luồng liên phòng'], ['Schedule', 'Lịch tự động'], ['Knowledge', 'Kho tri thức'], ['Approval', 'Phê duyệt']].map(m => ({ t: m[1], href: m[0] + '.dc.html',
+    st: 'text-decoration:none;padding:0 12px;height:40px;display:flex;align-items:center;border-radius:8px;' + (m[0] === cur ? 'background:#EFF5E5;color:#3A5115;font-weight:600' : 'color:#455A64') })) });
+const L = [
+ ['17:05','VIVI','Trả lời','“Chiều nay có gì cần tôi xử lý?” – gom 3 việc','giao_viec_agent','Xong','0,012'],
+ ['17:02','KITCHEN','Tin nhắn','Báo mẻ ME-261126-TRUA-07 trễ 12 phút cho Trưởng ca','gui_tin','Đã gửi','0,002'],
+ ['16:58','KITCHEN','Đọc','Tiến độ 42 mẻ ngày 26/11','tien_do_bep','Xong','0,001'],
+ ['16:45','WH','Đọc','Lô còn ≤ 3 ngày hạn','lo_can_date','Xong','0,001'],
+ ['16:45','WH','Tin nhắn','Nhắc xuất trước lô NL-261120-RSD-02','gui_tin','Đã gửi','0,002'],
+ ['16:30','VIVI','Trả lời','“Tuần này lô nào không đạt?”','lo_bi_chan','Xong','0,009'],
+ ['16:12','KNOW','Ghi chú','Bài học nháp SC-261125-01 vào thư mục 98','ghi_nhat_ky','Chờ duyệt','0,006'],
+ ['15:40','WH','Đọc','Hỏi lương nhân viên kho','—','Từ chối','0,001'],
+ ['15:10','QA','Đọc','Truy xuất lô NL-261118-HTP-01 → 4 mẻ → 3 khách','truy_xuat','Xong','0,004'],
+ ['07:00','VIVI','Tin nhắn','Bản tin sáng 26/11 cho 4 người','gui_tin','Đã gửi','0,041']
+];
+const KST = { 'Đọc': 'color:#455A64;background:#F0F3EE', 'Tin nhắn': 'color:#1A6FA0;background:#DCEFFA', 'Ghi chú': 'color:#5E6B12;background:#EEF1D6', 'Trả lời': 'color:#3A5115;background:#EFF5E5' };
+const C = [['VIVI',6.8],['KITCHEN',2.4],['QA',2.1],['WH',1.9],['KNOW',1.0]];
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { f: 'all' }; }
+  renderVals() {
+    const s = this.state;
+    const chip = k => ({ label: k === 'all' ? 'Tất cả' : k, hasIc: k !== 'all', ic: ico(k === 'all' ? 'VIVI' : k, 22), on: s.f === k, pick: () => this.setState({ f: k }),
+      style: 'height:36px;padding:0 12px 0 ' + (k === 'all' ? '12' : '6') + 'px;display:flex;align-items:center;gap:6px;border-radius:18px;cursor:pointer;font-size:13px;' + (s.f === k ? 'background:#4F6B1F;color:#fff;border:1px solid #4F6B1F' : 'background:#fff;color:#263238;border:1px solid #D9E0D4') });
+    return { ...NAV('AgentLog'),
+      chips: ['all', 'VIVI', 'WH', 'KITCHEN', 'QA', 'KNOW'].map(chip),
+      rows: L.filter(r => s.f === 'all' || r[1] === s.f).map(r => ({ t: r[0], a: r[1], ic: ico(r[1], 24), k: r[2], x: r[3], tool: r[4], ok: r[5], c: r[6],
+        kSt: 'font-size:12px;font-weight:600;border-radius:10px;padding:2px 10px;justify-self:start;' + KST[r[2]],
+        okSt: 'font-size:13px;font-weight:600;color:' + (r[5] === 'Từ chối' ? '#B42318' : r[5] === 'Chờ duyệt' ? '#A4470C' : '#3A5115') })),
+      cost: C.map(c => ({ a: c[0], ic: ico(c[0], 24), v: c[1].toFixed(1).replace('.', ',') + ' $', bar: 'display:block;height:10px;border-radius:5px;background:' + IC[c[0]][0] + ';width:' + Math.round(c[1] / 6.8 * 100) + '%' })) };
+  }
+}
+</script>
+</body>
+</html>

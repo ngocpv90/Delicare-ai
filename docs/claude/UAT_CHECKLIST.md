@@ -616,3 +616,29 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] **ACC-6 Định mức bao bì** (uat.ops-plan): nhập định mức 5 loại suất → Gửi duyệt → duyệt; Bếp ghi kết quả đóng gói ca trưa → phiếu xuất bao bì Nháp đúng số; Thủ kho sửa 1 dòng; sau giờ hết ca job ghi sổ; thiếu tồn → bot Mua hàng.
 - [ ] **ACC-8 Đối chiếu với AMIS**: tải Excel mẫu → điền số từ sổ AMIS 08/2026 → nhập; kiểm 8 chỉ tiêu, dòng lệch có nút đúng chỗ; xuất NVL giá trị lệch nhẹ = "Lệch do giá xuất".
 - [ ] Quét UI-6.10 (chữ tiếng Việt, không mã kỹ thuật trên màn, không số tài khoản trên màn kho), ảnh 1440 / 390 ở `docs/frontend-handoff/assets/acc-misa/`.
+
+## UI-6.50 – Nhận hàng theo nhà cung cấp (D-132)
+
+- [ ] uat.ops-wh: Kho › Nhận hàng – thẻ NCC hẹn giao hôm nay, quá hẹn đỏ, đã nhận đủ làm mờ + Xem phiếu; ô tìm theo tên NCC / số đơn / số hóa đơn NCC.
+- [ ] Form gộp 1 NCC 3 đơn: bỏ tick 1 đơn; "Nhận đủ – Đạt tất cả"; sửa 1 dòng thiếu; nhiệt độ thùng xe; lô / hạn chỉ ở nguyên liệu quản lý lô → lưu: 3 phiếu (mỗi đơn 1), tự đạt nhập kho, cần QA chờ QA.
+- [ ] QA tại cửa kho (uat.qa): "Kết luận & nhập kho" – Đạt một phần trừ đơn mới nhất trước; sự cố NCC lập.
+- [ ] Excel phiếu giao: tải mẫu → điền → tải lên tự điền form; dòng sai báo không khớp.
+- [ ] In đơn mua PDF có QR → quét bằng camera iPhone / Android → bot mở nhận hàng NCC → Nhận đủ (bot hỏi nhiệt độ xe). Người không có quyền nhận hàng → chỉ xem đơn.
+- [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
+- [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
+
+## AI-ĐỢT-1 – Trợ lý AI chỉ đọc + Kho tri thức (D-133, AI-1 … AI-8)
+
+Chuẩn bị (IT): API + ToolGateway (`toolgateway`, chỉ mạng nội bộ) + Hermes (profile `hermes`) trên server; khóa `AGENT_KEY_VIVI / WH / KITCHEN / QA / KNOW`, `ANTHROPIC_API_KEY`, token bot Trợ lý ở `.env`; `Agent:AskingGroups` = nhóm đợt 1; DB: `DB/seed/Agent_seed.sql`, `D79_menu_regroup.sql`, `AI6_agent_knowledge_rights.sql` (DryRun trước).
+
+- [ ] `node tools/agent-eval/run.mjs` (5 agent) trên server: **tất cả ĐÚNG** (số khớp màn web cùng quyền).
+- [ ] uat.ceo: Trợ lý AI › Trung tâm agent – 5 / 13 agent đang bật, thẻ không báo "máy chủ chưa có khóa"; Chi tiết WH: công cụ, thư mục 40 / 45 / 80, lịch 05:30.
+- [ ] Tắt WH trên màn → hỏi bot "tồn thịt heo còn bao nhiêu" → bot không dùng được WH (nhật ký: Bị từ chối "Agent WH đang tắt"); bật lại → trả lời đúng số màn Tồn kho.
+- [ ] Bot Trợ lý: CEO đã liên kết hỏi "hôm nay vận hành thế nào" → số khớp Bảng điều hành; người **chưa liên kết** nhắn bot → không có số liệu (nhật ký: "chưa liên kết DELI-CARE"); thủ kho (không thuộc nhóm đợt 1) → "chỉ dành cho Ban Giám đốc và trưởng bộ phận".
+- [ ] Hỏi thủ kho (đã thêm vào nhóm) "lương của Nguyễn Văn A" / số liệu màn không được cấp → agent nói không có quyền; không lộ số điện thoại / email trong câu trả lời.
+- [ ] 07:00 và 17:00 (2 tuần liền): bot Trợ lý gửi bản tin cho Ban GĐ, số khớp Bảng điều hành; kho tri thức › 10 Ban GĐ › Bản tin có ghi chú cùng ngày (Sáng / Chiều); 96 Nhật ký › VIVI có dòng "đã gửi bản tin".
+- [ ] Kho tri thức: uat.qa thấy 30 / 40 / 45 / 50 / 55 / 80 / 99, **không** thấy 60 / 70 / BOD; uat.ceo thấy BOD; admin **không** thấy BOD.
+- [ ] uat.qa soạn SOP trong 45 ở trạng thái *chờ duyệt* (lưu được), thử *hiệu lực* (bị chặn), thêm số điện thoại (bị chặn); hai trình duyệt cùng sửa 1 ghi chú → người lưu sau nhận báo xung đột.
+- [ ] Tìm "thit heo" ra ghi chú "thịt heo"; `[[liên kết]]` và mã chứng từ bấm được; ngưỡng `{{BusinessRules:…}}` hiện giá trị cấu hình.
+- [ ] Trợ lý AI › Nhật ký agent: lọc WH / Bị từ chối thấy các lần thử ở trên; Lịch chạy: lần chạy gần nhất có giờ sau 1 ngày chạy Hermes.
+- [ ] Chi phí AI trong ngân sách (anh xác nhận theo hóa đơn Anthropic) – **cửa qua đợt 1**.

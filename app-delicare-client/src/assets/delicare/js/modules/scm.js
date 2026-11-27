@@ -156,7 +156,10 @@
   // UI-6 (D-80) nhóm B: thao tác dùng chung danh sách + trang chi tiết – r = { Id, PurchaseOrderNumber }.
   const poNo = r => esc(r.PurchaseOrderNumber || '');
   const poAct = {
-    print: r => Store.download('PurchaseOrder/ExportOrder', { id: r.Id }).then(x => { if (x.ok) UI.toast('Đã tải ' + esc(x.fileName || 'đơn đặt hàng'), 'ok'); }),
+    // UI-6.50 (D-132 h): in đơn mua = PDF bản gửi NCC có QR mở bot nhận hàng; Excel đơn đặt hàng giữ ở nút Xuất Excel.
+    print: r => Store.download('PurchaseOrder/Print', { id: r.Id }).then(x => { if (x.ok) UI.toast('Đã tải ' + esc(x.fileName || 'đơn đặt hàng (PDF)') + ' – có mã QR để NCC mang theo khi giao', 'ok'); }),
+    excel: r => Store.download('PurchaseOrder/ExportOrder', { id: r.Id }).then(x => { if (x.ok) UI.toast('Đã tải ' + esc(x.fileName || 'đơn đặt hàng'), 'ok'); }),
+    deliveryNote: r => Store.download('PurchaseOrder/DeliveryNoteTemplate', { purchaseOrderId: r.Id }).then(x => { if (x.ok) UI.toast('Đã tải mẫu phiếu giao hàng – gửi NCC điền số giao, lô, hạn dùng', 'ok'); }),
     cancel: r => askReason(`Hủy đơn mua <b>${poNo(r)}</b>?`, note => run('PurchaseOrder/Cancel', { Id: r.Id, Reason: note }, 'Đã hủy đơn mua')),
     close: r => UI.confirm(`Đóng đơn mua <b>${poNo(r)}</b>?`, () => run('PurchaseOrder/Close', { Id: r.Id }, 'Đã đóng đơn mua'), { ok: 'Đóng PO' }),
     receive: r => receiveLive(r),

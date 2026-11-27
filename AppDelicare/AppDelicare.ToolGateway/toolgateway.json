@@ -1,0 +1,5 @@
+{
+  // AI-1 (D-133): cấu hình riêng ToolGateway (nghiệp vụ dùng chung appsettings.shared.json = appsettings của WebApi).
+  "Serilog": { "MinimumLevel": { "Default": "Information", "Override": { "Microsoft": "Warning", "System": "Warning" } } },
+  "AllowedHosts": "*"
+}

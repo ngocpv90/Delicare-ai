@@ -93,6 +93,8 @@ public static partial class Seeds
             "adm-orgunit", "adm-company", "adm-position", "hr-shift", "scm-uom", "scm-uom-conversion", "scm-warehouse", "scm-zone", "scm-location",
             "prod-line", "prod-workstation", "log-vehicle", "adm-reference", "adm-admin-unit", "kpi-definition",
         ]),
+        // AI-6 (D-133): nhóm "Tri thức" – Kho tri thức + mục quyền từng thư mục (knowledge?folder=<mã>: Xem = đọc, Sửa = soạn; không lên sidebar – điều hướng trong màn).
+        new("#/group/13", "Tri thức", [], 980, "knowledge", ["knowledge", "knowledge?folder=10", "knowledge?folder=20", "knowledge?folder=30", "knowledge?folder=40", "knowledge?folder=45", "knowledge?folder=50", "knowledge?folder=55", "knowledge?folder=60", "knowledge?folder=70", "knowledge?folder=80", "knowledge?folder=95", "knowledge?folder=96", "knowledge?folder=97", "knowledge?folder=98", "knowledge?folder=99", "knowledge?folder=bod"]),
         new("#/group/10", "Quản trị hệ thống", [], 1000, "admin",
             ["adm-user", "adm-usergroup", "adm-permission", "adm-objectmenu", "sys-import", "adm-document"]),
         // bot-van-hanh / bot-dieu-hanh: mục "quyền vào bot" (D-62, seed Integration_Telegram) – chỉ sắp chỗ, quyền KHÔNG do ma trận này quản (FE không hiện trên sidebar).
@@ -101,6 +103,29 @@ public static partial class Seeds
             "adm-job", "adm-audit", "adm-access-log", "adm-merge-conflict", "int-channel", "int-bot", "int-identity", "int-inbound", "int-outbound", "int-log",
             "kpi-refresh", "bot-van-hanh", "bot-dieu-hanh",
         ]),
+        // AI-6 (D-133): nhóm "Trợ lý AI" – Trung tâm agent, Nhật ký agent, Lịch chạy (CEO / COO / FIN-IT).
+        new("#/group/14", "Trợ lý AI", [], 1060, "ai", ["ai-agents", "ai-agent-log", "ai-schedule"]),
+    ];
+
+    /// <summary>AI-6 (D-133) §7.4: thư mục kho tri thức → nhóm được xem / chủ thư mục (Sửa). Ban GĐ xem mọi thư mục (kể cả BOD); 80 + 99 mọi nhóm xem.</summary>
+    public static readonly (string Folder, string[] Viewers, string[] Owners)[] KnowledgeFolderRights =
+    [
+        ("10", [], ["CEO", "COO"]),
+        ("20", ["SAL-SALES", "SAL-CON", "SAL-HEAD", "SAL-CS", "FIN-ACC", "OPS-LOG"], ["SAL-HEAD"]),
+        ("30", ["OPS-PLAN", "OPS-SCM", "OPS-SCM-HEAD", "OPS-KIT", "SAL-HEAD", "QA"], ["OPS-KIT"]),
+        ("40", ["OPS-SCM", "OPS-SCM-HEAD", "OPS-WH", "OPS-PLAN", "QA", "FIN-ACC"], ["OPS-WH", "OPS-SCM-HEAD"]),
+        ("45", ["QA", "OPS-KIT", "OPS-WH", "OPS-LOG"], ["QA"]),
+        ("50", ["OPS-KIT", "OPS-PLAN", "QA"], ["OPS-KIT"]),
+        ("55", ["OPS-LOG", "SAL-CS", "SAL-HEAD", "QA"], ["OPS-LOG"]),
+        ("60", ["FIN-ACC", "OPS-SCM-HEAD"], ["FIN-ACC"]),
+        ("70", ["FIN-HR"], ["FIN-HR"]),
+        ("80", [], ["COO"]),
+        ("95", ["FIN-IT"], ["FIN-IT"]),
+        ("96", ["FIN-IT"], []),
+        ("97", ["FIN-IT"], []),
+        ("98", ["FIN-IT"], []),
+        ("99", [], ["FIN-IT"]),
+        ("bod", [], ["CEO"]),
     ];
 
     /// <summary>Mục do seed / màn khác quản quyền – ma trận không đặt cờ (D-62 quyền vào bot).</summary>
@@ -127,6 +152,27 @@ public static partial class Seeds
         ["wf-inbox?type=log-load-short"] = ("Xếp xe chưa đủ hàng", "P6"),
         // HR-ACC-1.6 (D-82 f–h): cấp / đổi nhóm / mở lại tài khoản – người duyệt FIN-IT.
         ["wf-inbox?type=adm-user"] = ("Tài khoản", "P0"),
+        // AI-6 (D-133): Trợ lý AI + Tri thức.
+        ["ai-agents"] = ("Trung tâm agent", "AI"),
+        ["ai-agent-log"] = ("Nhật ký agent", "AI"),
+        ["ai-schedule"] = ("Lịch chạy", "AI"),
+        ["knowledge"] = ("Kho tri thức", "AI"),
+        ["knowledge?folder=10"] = ("10 Ban GĐ", "AI"),
+        ["knowledge?folder=20"] = ("20 Kinh doanh & Hợp đồng", "AI"),
+        ["knowledge?folder=30"] = ("30 Thực đơn & Công thức", "AI"),
+        ["knowledge?folder=40"] = ("40 Kho & Truy xuất", "AI"),
+        ["knowledge?folder=45"] = ("45 ATTP", "AI"),
+        ["knowledge?folder=50"] = ("50 Sản xuất", "AI"),
+        ["knowledge?folder=55"] = ("55 Giao vận", "AI"),
+        ["knowledge?folder=60"] = ("60 Kế toán", "AI"),
+        ["knowledge?folder=70"] = ("70 Nhân sự", "AI"),
+        ["knowledge?folder=80"] = ("80 Đào tạo", "AI"),
+        ["knowledge?folder=95"] = ("95 Nguồn BOT", "AI"),
+        ["knowledge?folder=96"] = ("96 Nhật ký", "AI"),
+        ["knowledge?folder=97"] = ("97 Tương tác", "AI"),
+        ["knowledge?folder=98"] = ("98 Công việc", "AI"),
+        ["knowledge?folder=99"] = ("99 Mẫu", "AI"),
+        ["knowledge?folder=bod"] = ("BOD Bảo mật", "AI"),
     };
 
     /// <summary>Đổi tên MENU-5 (mục duyệt rõ cấp): link → (tên seed cũ – có thể nhiều biến thể, tên mới). Chỉ đổi khi DB đang mang tên cũ.</summary>
@@ -155,7 +201,7 @@ public static partial class Seeds
 
     // ------------------------------------------------------------------ tập màn
     private static readonly string[] Kpi = ["dash-exec", "kpi-daily", "kpi-monthly"];
-    private static readonly HashSet<string> NonBusinessGroups = [MyWorkGroupLink, ApprovalGroupLink, "#/group/10", "#/group/09"];
+    private static readonly HashSet<string> NonBusinessGroups = [MyWorkGroupLink, ApprovalGroupLink, "#/group/10", "#/group/09", "#/group/14", "#/group/13"];
 
     /// <summary>"Toàn bộ màn nghiệp vụ": mục cấp 2 của nhóm Điều hành → Nhân sự, trừ Hộp phê duyệt cũ (#/wf-inbox – giới hạn riêng) và mục đã ẩn.</summary>
     private static string[] Business() => [.. Menu5Groups.Where(g => !NonBusinessGroups.Contains(g.Link)).SelectMany(g => g.Items)
@@ -288,6 +334,33 @@ public static partial class Seeds
         G("QA", EditR.Or(ix), L("qc-inspection qc-checklist-result qc-temperature qc-cleaning qc-cleaning-result log-return-inspection log-complaint"));
         G("QA", ViewR, [.. L("scm-supplier scm-ingredient scm-gr scm-lot scm-inv-balance prod-batch prod-output prod-plan menu-dish menu-recipe menu-menu log-delivery-order log-execution"), .. Kpi]);
 
+        // AI-6 (D-133): Trợ lý AI – CEO / COO / FIN-IT xem; bật / tắt agent = Sửa Trung tâm agent.
+        foreach (string role in new[] { "CEO", "COO", "FIN-IT" })
+        {
+            G(role, EditR, ["ai-agents"]);
+            G(role, ViewR, ["ai-agent-log", "ai-schedule"]);
+        }
+        // AI-6: Kho tri thức – mọi nhóm nội bộ xem màn + 80 Đào tạo + 99 Mẫu; thư mục theo bộ phận (§7.4), chủ thư mục Sửa; Ban GĐ xem mọi thư mục (kể cả BOD).
+        static string K(string folder) => "knowledge?folder=" + folder;
+        foreach (string role in StandardRoles)
+        {
+            G(role, ViewR, ["knowledge", K("80"), K("99")]);
+        }
+        foreach (string role in new[] { "CEO", "CEO-PMO", "COO" })
+        {
+            G(role, ViewR, [.. new[] { "10", "20", "30", "40", "45", "50", "55", "60", "70", "95", "96", "97", "98", "bod" }.Select(K)]);
+        }
+        foreach (var (folder, viewers, owners) in KnowledgeFolderRights)
+        {
+            foreach (string role in viewers)
+            {
+                G(role, ViewR, [K(folder)]);
+            }
+            foreach (string role in owners)
+            {
+                G(role, EditR, [K(folder)]);
+            }
+        }
         foreach (string role in StandardRoles)
         {
             G(role, ViewR, ["hr-my"]);
@@ -888,7 +961,7 @@ public static partial class Seeds
     [
         .. Menu5Groups.Where(g => g.Link != ApprovalGroupLink).Select(g =>
         {
-            var items = g.Items.Where(i => i != "wf-inbox" && !MatrixSkipLinks.Contains("#/" + i) && !HiddenNow.Contains("#/" + i)).ToList();
+            var items = g.Items.Where(i => i != "wf-inbox" && !i.StartsWith("knowledge?", StringComparison.Ordinal) && !MatrixSkipLinks.Contains("#/" + i) && !HiddenNow.Contains("#/" + i)).ToList();
             if (g.Link == "#/group/01")
             {
                 items.Add("wf-inbox"); // UI-6.28 (D-109): Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt

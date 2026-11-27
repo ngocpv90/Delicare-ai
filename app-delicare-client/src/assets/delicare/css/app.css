@@ -906,3 +906,61 @@ tr.bb-late td{background:#FFF5F4}
 .sr-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
 @media(max-width:768px){.acc-steps.four{grid-template-columns:1fr 1fr}.sr-grid{grid-template-columns:1fr}}
 @media(max-width:420px){.acc-steps.four{grid-template-columns:1fr}}
+/* UI-6.50 (D-132): Nhận hàng theo NCC – thẻ NCC, ô tìm, form gộp (390px: bảng thành thẻ) */
+.rcv-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.rcv-search{display:flex;align-items:center;gap:8px;flex:1;max-width:560px;min-width:240px}
+.rcv-search .input{flex:1}
+.rcv-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.rcv-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+.rcv-card.late{border-color:#e57373;background:#fff6f6}
+.rcv-card.done{opacity:.6}
+.rcv-bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.rcv-bar label{display:flex;flex-direction:column;gap:4px;min-width:170px}
+.rcv-bar .rcv-all{margin-left:auto}
+.rcv-orders{display:flex;flex-wrap:wrap;gap:8px}
+.rcv-chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.rcv-chip.on{border-color:var(--green);background:var(--green-soft)}
+.rcv-table tr.rcv-need td{background:#fff8e1}
+.rcv-table tr.rcv-bad td{background:#ffebee}
+.rcv-table td .input,.rcv-table td .select{min-width:0}
+@media(max-width:640px){
+  .rcv-bar .rcv-all{margin-left:0;width:100%;height:48px;font-size:16px}
+  .rcv-bar label{min-width:0;flex:1 1 45%}
+  .rcv-table table,.rcv-table tbody,.rcv-table tr,.rcv-table td{display:block;width:100%}
+  .rcv-table thead{display:none}
+  .rcv-table tr{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:8px 10px}
+  .rcv-table td{border:none;padding:3px 0;display:flex;gap:8px;align-items:center;justify-content:space-between;text-align:right}
+  .rcv-table td::before{content:attr(data-l);color:var(--muted,#6b7280);font-size:12px;text-align:left;flex:none}
+  .rcv-table td:first-child{display:block;text-align:left}
+  .rcv-table td:first-child::before{content:none}
+  .rcv-table td .input,.rcv-table td .select{max-width:60%}
+}
+
+/* AI-6 (D-133): Trợ lý AI + Kho tri thức */
+.ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.ai-card.off { opacity: .72; }
+.ai-ico { border-radius: 10px; flex: none; vertical-align: middle; }
+.ai-switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+.ai-switch input { width: 34px; height: 18px; accent-color: var(--primary, #2e7d32); cursor: pointer; }
+.kn-wrap { display: grid; grid-template-columns: 300px 1fr; gap: 12px; align-items: start; }
+.kn-side { max-height: calc(100vh - 220px); overflow: auto; position: sticky; top: 12px; }
+.kn-fold { display: flex; width: 100%; align-items: center; gap: 6px; background: none; border: 0; padding: 6px 4px; text-align: left; cursor: pointer; font-weight: 600; color: inherit; border-radius: 6px; }
+.kn-fold:hover { background: rgba(0, 0, 0, .04); }
+.kn-fold .i { transform: rotate(-90deg); transition: transform .15s; }
+.kn-folder.open > .kn-fold .i { transform: none; }
+.kn-notes { padding: 2px 0 8px 22px; display: flex; flex-direction: column; gap: 2px; }
+.kn-note { padding: 3px 6px; border-radius: 6px; font-size: 13px; text-decoration: none; color: inherit; }
+.kn-note.active, .kn-note:hover { background: rgba(46, 125, 50, .1); }
+.kn-body { line-height: 1.6; }
+.kn-body h2, .kn-body h3, .kn-body h4 { margin: 16px 0 6px; }
+.kn-body blockquote { margin: 8px 0; padding: 6px 12px; border-left: 3px solid #cfd8dc; color: #546e7a; }
+.kn-link { font-weight: 500; }
+.kn-link.missing { color: #b0bec5; text-decoration: underline dotted; cursor: help; }
+.kn-doc { font-family: ui-monospace, monospace; font-size: .92em; }
+.kn-hit { padding: 10px 0; border-bottom: 1px solid #eceff1; }
+.kn-edit { font-family: ui-monospace, monospace; font-size: 13px; width: 100%; }
+@media (max-width: 760px) { .kn-wrap { grid-template-columns: 1fr; } .kn-side { position: static; max-height: 46vh; } }
+.kn-body ul, .kn-body ol { padding-left: 22px; margin: 4px 0 10px; }
+.kn-body ul > li { list-style: disc outside !important; display: list-item !important; }
+.kn-body ol > li { list-style: decimal outside !important; display: list-item !important; }
+.kn-body li { margin: 2px 0; }

@@ -1,0 +1,61 @@
+# AI-7 (D-133) – MẪU cấu hình Hermes Agent cho DELI-CARE (đợt 1: VIVI, WH, KITCHEN, QA, KNOW).
+# Chép vào HERMES_HOME (~/.hermes/config.yaml hoặc volume hermes-data:/opt/data/config.yaml) rồi chỉnh. KHÔNG ghi khóa thật vào tệp này:
+# mọi khóa đọc từ biến môi trường (${TÊN}) – đặt ở .env của server / docker compose, không commit.
+model:
+  provider: anthropic
+  default: ${HERMES_MODEL_DEFAULT:-claude-sonnet-5-5}     # VIVI + phân tích
+  api_key: ${ANTHROPIC_API_KEY}
+auxiliary:
+  compression:
+    model: ${HERMES_MODEL_SCHEDULED:-claude-haiku-5-5}   # việc theo lịch / nén ngữ cảnh
+
+agent:
+  # D-133: Hermes KHÔNG có terminal / file / code / browser / web – chỉ MCP trỏ ToolGateway.
+  disabled_toolsets: [terminal, file, code_execution, browser, computer_use, delegation, cronjob, web, search, x_search, image_gen, video_gen, tts, kanban, catalog, connections]
+skills:
+  write_approval: true
+
+# Mỗi agent MỘT mục MCP + khóa riêng (ToolGateway biết agent nào gọi, kiểm quyền agent ∩ người hỏi).
+# Hermes gắn thêm X-On-Behalf-Of = Telegram user id của người hỏi (bot Trợ lý) – người chưa liên kết DELI-CARE bị ToolGateway từ chối.
+mcp_servers:
+  delicare-vivi:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: VIVI, X-Agent-Key: "${AGENT_KEY_VIVI}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-wh:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: WH, X-Agent-Key: "${AGENT_KEY_WH}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-kitchen:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: KITCHEN, X-Agent-Key: "${AGENT_KEY_KITCHEN}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-qa:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: QA, X-Agent-Key: "${AGENT_KEY_QA}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-know:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: KNOW, X-Agent-Key: "${AGENT_KEY_KNOW}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+
+# Bot Trợ lý (Telegram) qua gateway của Hermes: token ở biến môi trường. Ai được hỏi do DELI-CARE quyết
+# (UserExternalIdentity đã liên kết + Agent:AskingGroups của API – đợt 1 Ban GĐ + trưởng bộ phận), không liệt kê người trong tệp này.
+platforms:
+  telegram:
+    enabled: true
+    bot_token: ${TELEGRAM_BOT_TOKEN_TRO_LY}
+
+# Profile: đợt 1 một profile "vivi" – agent phòng ban là kỹ năng / trợ lý con (agents/<MÃ>/SOUL.md → skills/delicare-<mã>/SKILL.md).
+# Lịch: node tools/agent-eval/gen-cron.mjs (từ agents/schedules.json) – hạn chót nghiệp vụ vẫn do job lõi AppDelicare.Job.
+timezone: Asia/Ho_Chi_Minh

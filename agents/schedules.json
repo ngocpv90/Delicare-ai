@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "timezone": "Asia/Ho_Chi_Minh",
+  "note": "AI-6 / AI-7 (D-133): MỘT nguồn lịch cho màn Lịch chạy (ai-schedule) và cron của Hermes (tools/agent-eval/gen-cron.mjs). Lời gọi theo lịch gửi X-Correlation-Id = sched:<id>:<yyyyMMddHHmm> để màn web biết lần chạy gần nhất. Job lõi (AppDelicare.Job) vẫn chạy đúng giờ dù Hermes tắt.",
+  "items": [
+    { "id": "vivi-events", "agent": "VIVI", "cron": "*/5 * * * *", "at": "mỗi 5 phút", "title": "Lấy sự kiện mới và phân cho agent", "tools": ["lay_su_kien"], "coreJob": null, "wave": 1, "enabled": true },
+    { "id": "wh-morning-stock", "agent": "WH", "cron": "30 5 * * *", "at": "05:30", "title": "Báo cáo kho sáng: tồn dưới tối thiểu, lô cận hạn", "tools": ["get_ton_kho", "get_lo_can_date", "canh_bao"], "coreJob": "LotExpiry", "wave": 1, "enabled": true },
+    { "id": "vivi-morning-brief", "agent": "VIVI", "cron": "0 7 * * *", "at": "07:00", "title": "Bản tin sáng cho Ban GĐ (ghi kho 10 + nhật ký 96)", "tools": ["bao_cao_dieu_hanh", "kpi_khoang", "su_co_ngay", "ds_cho_duyet", "ghi_nhat_ky"], "coreJob": "MorningBrief", "wave": 1, "enabled": true },
+    { "id": "qa-morning-check", "agent": "QA", "cron": "30 8 * * *", "at": "08:30", "title": "Rà nhiệt độ, lô tạm giữ, phản ánh quá hạn", "tools": ["nhiet_do_ngay", "canh_bao", "phan_anh_khach"], "coreJob": null, "wave": 1, "enabled": true },
+    { "id": "kitchen-progress", "agent": "KITCHEN", "cron": "0 10 * * *", "at": "10:00", "title": "Tiến độ bếp trước giờ giao trưa", "tools": ["tien_do_bep", "tien_do_bep_chi_tiet"], "coreJob": null, "wave": 1, "enabled": true },
+    { "id": "vivi-daily-report", "agent": "VIVI", "cron": "0 17 * * *", "at": "17:00", "title": "Báo cáo cuối ngày (ghi kho 10 + nhật ký 96)", "tools": ["bao_cao_dieu_hanh", "su_co_ngay", "hao_hut_khoang", "ghi_nhat_ky"], "coreJob": "DailyReport", "wave": 1, "enabled": true },
+    { "id": "know-review", "agent": "KNOW", "cron": "0 22 * * 1", "at": "22:00 thứ Hai", "title": "Rà ghi chú quá hạn rà soát, gom nhật ký tuần", "tools": ["tim_tri_thuc", "ghi_nhat_ky"], "coreJob": "KnowledgeExport", "wave": 1, "enabled": true },
+    { "id": "cskh-remind", "agent": "CSKH", "cron": "0 19 * * *", "at": "19:00", "title": "Nhắc khách chưa chốt số suất ngày mai", "tools": [], "coreJob": "RemindUnconfirmedOrders", "wave": 4, "enabled": false },
+    { "id": "sales-locked", "agent": "SALES", "cron": "5 20 * * *", "at": "20:05", "title": "Báo số đơn đã khóa và đơn chưa chốt", "tools": [], "coreJob": "LockOrders", "wave": 2, "enabled": false },
+    { "id": "plan-shortage", "agent": "PLAN", "cron": "40 20 * * *", "at": "20:40", "title": "Tóm tắt thiếu hụt sau MRP", "tools": [], "coreJob": "Mrp", "wave": 2, "enabled": false },
+    { "id": "proc-po", "agent": "PROC", "cron": "10 21 * * *", "at": "21:10", "title": "Đề xuất đơn mua kèm nút xác nhận", "tools": [], "coreJob": null, "wave": 2, "enabled": false }
+  ]
+}

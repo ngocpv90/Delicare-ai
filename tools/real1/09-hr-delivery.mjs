@@ -1,19 +1,20 @@
-// REAL-1 bổ sung (anh yêu cầu 2026-11-26): nạp NHÂN SỰ + ĐỘI GIAO VẬN thật từ thư mục chia sẻ Delicare-Share (không đưa tệp nhân sự vào repo – có SĐT, địa chỉ).
+// REAL-1 bổ sung (anh yêu cầu 2026-11-26): nạp NHÂN SỰ + ĐỘI GIAO VẬN thật. Tệp nguồn trong repo: DB/data/real1/HR, DB/data/real1/Delivery
+// (anh duyệt đưa vào repo 2026-11-26 như D-130 – có họ tên, SĐT, địa chỉ: KHÔNG chia sẻ repo ra ngoài). Phần chưa nạp: docs/claude/GAP_REAL1_HR_DELIVERY.md.
 //   HR/DSNS_*.xlsx (mới nhất)      → Chức vụ (Position, mã CV-…) + Nhân viên (ImportExcel Employee: mã NV, họ tên, đơn vị, chức vụ, SĐT)
 //   Delivery/Đội Giao vận.xlsx     → SĐT + địa chỉ lái xe / phụ xe (khớp theo họ tên) + 9 xe (Vehicle: biển số, loại, tải trọng kg, ghi chú BH TNDS / tuyến / lái xe, lái xe mặc định)
 // Chạy lại = 0 việc (khớp theo mã chức vụ / mã NV / biển số). Không xóa gì.
 //
 //   DC_USER=admin DC_PASS=… node tools/real1/09-hr-delivery.mjs          → chạy thử: in kế hoạch, không ghi
 //   DC_USER=admin DC_PASS=… node tools/real1/09-hr-delivery.mjs --yes    → ghi
-//   REAL1_SHARE = thư mục Delicare-Share (mặc định D:/Duan/Tai lieu nghiep vu du an/Delicare-Share)
+//   REAL1_SHARE = thư mục chứa HR/ và Delivery/ (mặc định DB/data/real1 trong repo; có tệp mới hơn thì trỏ tới Delicare-Share)
 import fs from 'node:fs';
 import path from 'node:path';
-import { API, WORK, login, need, ok, waitApi } from './lib.mjs';
+import { API, DIR, WORK, login, need, ok, waitApi } from './lib.mjs';
 import { readXlsx } from './xlsx.mjs';
 import { writeXlsx } from './xlsxw.mjs';
 
 const apply = process.argv.includes('--yes');
-const SHARE = (process.env.REAL1_SHARE || 'D:/Duan/Tai lieu nghiep vu du an/Delicare-Share').replace(/[\\/]+$/, '');
+const SHARE = (process.env.REAL1_SHARE || DIR).replace(/[\\/]+$/, '');
 need('DC_USER'); need('DC_PASS');
 
 const norm = s => String(s ?? '').normalize('NFC').replace(/\s+/g, ' ').trim();

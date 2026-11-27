@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bot Trợ lý trên Telegram</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2B6CB0}a:hover{color:#1E4E8C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 13px; background: #E9EEE4; display: flex; flex-direction: column">
+<header style="background: #fff; border-bottom: 1px solid #E8ECE5; padding: 10px 14px; display: flex; align-items: center; gap: 10px">
+<span style="width: 38px; height: 38px; border-radius: 19px; background: #91AF42; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">V</span>
+<div><b style="font-size: 15px">Trợ lý DELI-CARE</b><div style="color: #607D6B; font-size: 12px">Vivi · bot · chỉ trả lời theo quyền của bạn</div></div>
+</header>
+
+<div style="flex: 1; min-height: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden">
+<div style="align-self: flex-start; max-width: 88%; background: #fff; border-radius: 12px 12px 12px 4px; padding: 10px 12px; line-height: 1.5">
+<b>Bản tin sáng 26/11</b>
+<div style="margin-top: 4px">Hôm nay 18.640 suất · 3 ca · 42 mẻ.</div>
+<div style="margin-top: 6px"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: #C62828; margin-right: 6px"></span>Lô NL-261118-HTP-01 kiểm nhận không đạt – đã chặn xuất.</div>
+<div><span style="display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: #C62828; margin-right: 6px"></span>Xe 51C-123 dự kiến trễ 20 phút tuyến Bình Dương.</div>
+<div><span style="display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: #E08A00; margin-right: 6px"></span>2 việc chờ anh duyệt, 1 sắp hết hạn.</div>
+<div style="color: #607D6B; font-size: 11.5px; margin-top: 6px; text-align: right">07:00</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-width: 88%">
+<button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.85); font-size: 13px; color: #2B6CB0">Xem chi tiết</button>
+<button style="height: 36px; border: 0; border-radius: 8px; background: rgba(255,255,255,.85); font-size: 13px; color: #2B6CB0">Mở Phê duyệt</button>
+</div>
+
+<div style="align-self: flex-end; max-width: 80%; background: #DCF3C6; border-radius: 12px 12px 4px 12px; padding: 8px 12px">Ngày mai thiếu nguyên liệu gì?</div>
+
+<div style="align-self: flex-start; max-width: 88%; background: #fff; border-radius: 12px 12px 12px 4px; padding: 10px 12px; line-height: 1.5">
+Ca trưa 27/11 thiếu 3 nguyên liệu: cải ngọt 180 kg, cà rốt 220 kg, hành lá 40 kg.
+<div style="margin-top: 4px">Agent Thu mua đã tạo đề xuất <a href="#">DX-261126-0007</a> (9,42 triệu, NCC Rau sạch Đà Lạt), đang chờ Mua hàng xác nhận.</div>
+<div style="color: #607D6B; font-size: 11.5px; margin-top: 6px">Nguồn: Tính nhu cầu 20:30 · 21:04</div>
+</div>
+
+<div style="align-self: flex-end; max-width: 80%; background: #DCF3C6; border-radius: 12px 12px 4px 12px; padding: 8px 12px">Nhận hàng lạnh phải kiểm gì?</div>
+
+<div style="align-self: flex-start; max-width: 88%; background: #fff; border-radius: 12px 12px 12px 4px; padding: 10px 12px; line-height: 1.5">
+Đối chiếu PO, đo nhiệt độ lõi 3 mẫu mỗi lô (hàng mát ≤ 5 °C), lô không đạt bị chặn xuất và chỉ được trả NCC hoặc hủy.
+<div style="color: #607D6B; font-size: 11.5px; margin-top: 6px">Nguồn: <a href="Knowledge.dc.html">SOP-40-03</a>, hiệu lực 20/11/2026 · 21:06</div>
+</div>
+</div>
+
+<div style="background: #fff; border-top: 1px solid #E8ECE5; padding: 8px 10px; display: flex; gap: 8px; align-items: center">
+<label style="flex: 1; display: flex"><span style="position: absolute; left: -9999px">Tin nhắn</span><input placeholder="Hỏi Vivi…" style="flex: 1; height: 40px; border: 1px solid #D9E0D4; border-radius: 20px; padding: 0 14px; font: inherit"></label>
+<button aria-label="Gửi" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: #4F6B1F; color: #fff; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12l16-8-6 16-2-7z"/></svg></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

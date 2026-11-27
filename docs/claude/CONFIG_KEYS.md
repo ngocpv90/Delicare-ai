@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **224 khóa** trong 10 section.
+Tổng: **235 khóa** trong 12 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -27,6 +27,19 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:EmployeeStatusViaUpdate` | false | true | UI-6.36 | Bỏ cờ sau UAT |
 | `BusinessRules:ForecastAutoSuggest` | true | false | UI-6.5 | Bỏ cờ sau UAT |
 | `BusinessRules:ForecastAutoPublish` | true | false | UI-6.5 | Bỏ cờ sau UAT |
+
+## Agent
+
+| Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
+|---|---|---|---|---|
+| `Agent:Enabled` | bool | true | Tắt hết agent (ToolGateway trả 503) – nghiệp vụ lõi vẫn chạy đúng giờ. | – |
+| `Agent:ReadOnly` | bool | – | Chặn mọi công cụ ghi propose_* (chỉ đọc). | – |
+| `Agent:RateLimitPerMinute` | int | 60 | Số lời gọi tối đa / phút / agent (vượt → 429). 0 = không giới hạn. | – |
+| `Agent:MaxRows` | int | 50 | Số dòng tối đa một công cụ đọc trả về (AI-3). | – |
+| `Agent:AskingBotCode` | string? | – | Mã bot Telegram nơi người hỏi liên kết (tra X-On-Behalf-Of); trống = mọi kênh Telegram. | – |
+| `Agent:AskingGroups` | string? | – | AI-7: mã nhóm (UserGroup.Code, cách nhau dấu phẩy) được hỏi Trợ lý qua bot; trống = mọi người đã liên kết. Người hỏi chưa liên kết luôn bị từ chối. | – |
+| `Agent:HermesWebhookUrl` | string? | – | AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt. | – |
+| `Agent:SchedulesFile` | string | "agents/schedules.json" | AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục agents). | – |
 
 ## BusinessRules
 
@@ -242,6 +255,14 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 |---|---|---|---|---|
 | `Jobs:Enabled` | bool | true | false = AppDelicare.Job không tự chạy (vẫn bấm tay được qua api/Job/Run). | – |
 | `Jobs:At` | string? | – | Giờ chạy hằng ngày "HH:mm" (giờ VN). Trống = dùng giờ mặc định của job. | – |
+
+## Knowledge
+
+| Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
+|---|---|---|---|---|
+| `Knowledge:VaultPath` | string | "App_Data/Knowledge" | Thư mục gốc của kho; tương đối thì tính từ ContentRoot (như DocumentStorage). | – |
+| `Knowledge:MaxNotesPerQuery` | int | 5 | Số ghi chú tối đa một lần tìm của agent (§7.8-4). | – |
+| `Knowledge:SnippetLength` | int | 400 | Độ dài đoạn trích trả cho agent (ký tự). | – |
 
 ## Messaging
 

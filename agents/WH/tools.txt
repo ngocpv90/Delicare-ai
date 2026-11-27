@@ -1,0 +1,12 @@
+# Công cụ của agent WH – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
+canh_bao
+doc_ghi_chu
+ds_cho_duyet
+du_bao_thieu_hut
+get_lo_can_date
+get_ton_kho
+ghi_nhat_ky
+lay_su_kien
+ping
+tim_tri_thuc
+truy_xuat_lo

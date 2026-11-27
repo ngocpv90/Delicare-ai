@@ -37,6 +37,14 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Chất lượng & ATTP › Bộ kiểm tra ATTP | `qc-checklist` | Q |
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | X |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | X |
+| Tri thức › Kho tri thức | `knowledge` | X |
+| Tri thức › 30 Thực đơn & Công thức | `knowledge?folder=30` | X |
+| Tri thức › 40 Kho & Truy xuất | `knowledge?folder=40` | X |
+| Tri thức › 45 ATTP | `knowledge?folder=45` | S |
+| Tri thức › 50 Sản xuất | `knowledge?folder=50` | X |
+| Tri thức › 55 Giao vận | `knowledge?folder=55` | X |
+| Tri thức › 80 Đào tạo | `knowledge?folder=80` | X |
+| Tri thức › 99 Mẫu | `knowledge?folder=99` | X |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

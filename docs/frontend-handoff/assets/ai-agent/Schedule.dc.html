@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Lịch tự động</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F8F4}
+a{color:#4F6B1F}a:hover{color:#3A5115}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 14px; display: flex; flex-wrap: wrap; min-height: 1000px">
+<nav aria-label="Menu chính" style="flex: 1 1 232px; max-width: 256px; background: #fff; border-right: 1px solid #E8ECE5; padding: 18px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 16px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #91AF42; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span><b style="font-size: 17px">DELI-CARE</b></div>
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="10"><a href="#" style="color: #455A64; text-decoration: none; padding: 0 12px; height: 40px; display: flex; align-items: center; border-radius: 8px">{{m}}</a></sc-for>
+<div style="margin-top: 8px; padding: 0 12px; font-size: 12px; color: #607D6B; font-weight: 600">Trợ lý AI</div>
+<sc-for list="{{ai}}" as="m" hint-placeholder-count="7"><a href="{{m.href}}" style="{{m.st}}">{{m.t}}</a></sc-for>
+</nav>
+<main style="flex: 999 1 560px; min-width: 0; padding: 22px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div><div style="color: #607D6B; font-size: 13px">Trợ lý AI › Lịch tự động</div><h1 style="margin: 4px 0 0; font-size: 20px">Lịch tự động</h1><div style="color: #546E7A; margin-top: 4px">Job của hệ thống chạy đúng giờ kể cả khi agent tắt. Agent chỉ nhận kết quả để nhắc và tóm tắt.</div></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Lịch đang bật</div><div style="font-size: 26px; font-weight: 700">16 <span style="font-size: 15px; color: #607D6B; font-weight: 500">/ 16</span></div><div style="color: #607D6B; font-size: 12px">12 job hệ thống · 4 lịch của agent</div></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Lỗi hôm nay</div><div style="font-size: 26px; font-weight: 700">0</div><div style="color: #607D6B; font-size: 12px">hôm qua 1 lỗi – đã chạy bù 00:47</div></div>
+<div style="background: #FFF6EE; border: 1px solid #FBD3B4; border-radius: 12px; padding: 14px 16px"><div style="color: #8A3E0B">Chạy chậm</div><div style="font-size: 26px; font-weight: 700; color: #A4470C">1</div><div style="color: #8A3E0B; font-size: 12px">Tính nhu cầu NL hôm qua 94 giây</div></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px"><div style="color: #546E7A">Lần chạy kế tiếp</div><div style="font-size: 26px; font-weight: 700">20:00</div><div style="color: #607D6B; font-size: 12px">Khóa đơn ngày 27/11</div></div>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{chips}}" as="c" hint-placeholder-count="4"><button onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">{{c.label}} <b>{{c.n}}</b></button></sc-for></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; overflow-x: auto">
+<div style="min-width: 980px">
+<div style="display: grid; grid-template-columns: 88px minmax(0, 1.8fr) 100px 170px 130px 110px 120px 96px; gap: 10px; padding: 10px 16px; background: #F6F8F4; font-size: 12px; color: #546E7A; font-weight: 600"><span>Giờ chạy</span><span>Việc</span><span>Chạy ở</span><span>Agent nhận kết quả</span><span>Hôm nay</span><span>Hôm qua</span><span>Trạng thái</span><span></span></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 88px minmax(0, 1.8fr) 100px 170px 130px 110px 120px 96px; gap: 10px; padding: 0 16px; min-height: 52px; align-items: center; border-top: 1px solid #F0F3EE; font-size: 13px">
+<b>{{r.at}}</b>
+<span><span style="display: block; font-weight: 500; font-size: 14px">{{r.name}}</span><span style="color: #607D6B; font-size: 12px">{{r.code}}</span></span>
+<span style="{{r.whereSt}}">{{r.where}}</span>
+<span style="display: flex; gap: 6px; align-items: center"><span style="{{r.ic.box}}"><svg width="{{r.ic.sz}}" height="{{r.ic.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.ic.d}}"></path></svg></span>{{r.agent}}</span>
+<span>{{r.today}}</span>
+<span style="color: #607D6B">{{r.yday}}</span>
+<span style="{{r.stSt}}">{{r.st}}</span>
+<span><sc-if value="{{r.core}}" hint-placeholder-val="{{ true }}"><button style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-size: 12px">Chạy tay</button></sc-if></span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="color: #607D6B; font-size: 13px">Chạy tay chỉ dành cho quản trị, gọi đúng chức năng như nút bấm trên màn nghiệp vụ. Không chạy trùng nhờ khóa theo tên job. Lịch của agent đặt trong Hermes, tắt agent thì lịch đó dừng.</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+const IC = {VIVI:['#3A5115','#E4EFD2','M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M17 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M10 20a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M6.5 6.5l3.4 3.4M17.5 6.5l-3.4 3.4M12 15v3'],SALES:['#B4413F','#FCE4E3','M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18'],PLAN:['#2F6DB5','#E1ECFA','M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2zM8 3v4M16 3v4M3 10h18M8 14h3M8 17h6'],PROC:['#8C6D00','#F8EDC2','M3 4h2l2.4 11h11L21 8H6.2M7.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0M15.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0'],WH:['#2E7D32','#E3F3E2','M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8'],KITCHEN:['#B4570F','#FDE8D6','M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM2 10h20M9 7c0-1 1-1.5 1-3M14 7c0-1 1-1.5 1-3'],QA:['#0F7B6C','#D9F2EE','M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM8.5 12l2.5 2.5 4.5-5'],LOG:['#1A6FA0','#DCEFFA','M2 6h11v10H2zM13 10h4l4 3v3h-8M4 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'],PKG:['#4E7F75','#E2EFEC','M4 9h16l-1.5 9h-13zM8 9V6h8v3M9 13h6'],HR:['#5B4BB0','#E9E6F8','M6 8a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14.5 9a2.5 2.5 0 1 0 5.0 0a2.5 2.5 0 1 0 -5.0 0M16 14c3 0 5 2 5 5'],ACC:['#8A4B22','#F5E5DA','M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2zM8 7h8M8 12h2M14 12h2M8 16h2M14 16h2'],CSKH:['#A63366','#FAE1EC','M4 5h16v11H9l-5 4zM8 9h8M8 12h5'],KNOW:['#5E6B12','#EEF1D6','M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z']};
+const ico = (k, s) => { const c = IC[k] || IC.VIVI, z = s || 36; return { d: c[2], fg: c[0], box: 'flex:none;width:' + z + 'px;height:' + z + 'px;border-radius:' + Math.round(z * .28) + 'px;background:' + c[1] + ';color:' + c[0] + ';display:flex;align-items:center;justify-content:center', sz: Math.round(z * .58) }; };
+const NAV = cur => ({ menu: ['Điều hành', 'Kinh doanh', 'Thực đơn & Món ăn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng & ATTP', 'Đóng gói & Giao hàng', 'Nhân sự', 'Kế toán'],
+  ai: [['Main', 'Trung tâm agent'], ['AgentLog', 'Nhật ký & chi phí'], ['Tasks', 'Việc của tôi'], ['Flow', 'Luồng liên phòng'], ['Schedule', 'Lịch tự động'], ['Knowledge', 'Kho tri thức'], ['Approval', 'Phê duyệt']].map(m => ({ t: m[1], href: m[0] + '.dc.html',
+    st: 'text-decoration:none;padding:0 12px;height:40px;display:flex;align-items:center;border-radius:8px;' + (m[0] === cur ? 'background:#EFF5E5;color:#3A5115;font-weight:600' : 'color:#455A64') })) });
+const J = [
+ ['00:15','Khóa lô hết hạn','LotExpiry',1,'WH','Kho','1 lần · 2 giây','1 lần · 2 giây','ok'],
+ ['00:30','Nhắc hợp đồng sắp hết hạn','ContractExpiry',1,'SALES','Kinh doanh','1 lần · 1 giây','1 lần · lỗi, chạy bù','ok'],
+ ['07:00','Bản tin sáng','vivi-ban-tin-sang',0,'VIVI','Điều phối','gửi 4 người','gửi 4 người','ok'],
+ ['07:30','Tổng hợp chứng từ kế toán','AccountingVoucherDigest',1,'ACC','Kế toán','1 lần · 6 giây','1 lần · 5 giây','ok'],
+ ['08:00','Nhắc khóa kỳ kế toán','AccountingPeriodReminder',1,'ACC','Kế toán','1 lần · 1 giây','1 lần · 1 giây','ok'],
+ ['5 phút','Lấy sự kiện mới cho agent','vivi-lay-su-kien',0,'VIVI','Điều phối','204 lần · 0 lỗi','288 lần · 0 lỗi','ok'],
+ ['15 phút','Hạn xử lý phản ánh','ComplaintSla',1,'SALES','Kinh doanh','68 lần','96 lần','ok'],
+ ['Mỗi giờ','Hết hạn yêu cầu duyệt','ApprovalExpiry',1,'VIVI','Điều phối','17 lần','24 lần','ok'],
+ ['17:00','Báo cáo cuối ngày','vivi-cuoi-ngay',0,'VIVI','Điều phối','–','gửi 4 người','wait'],
+ ['20:00','Khóa đơn ngày mai','LockOrders',1,'SALES','Kinh doanh','–','1 lần · 3 giây','wait'],
+ ['20:30','Tính nhu cầu nguyên liệu','Mrp',1,'PROC','Thu mua','–','1 lần · 94 giây','slow'],
+ ['21:00','Lập đề nghị mua','PurchaseProposal',1,'PROC','Thu mua','–','1 lần · 8 giây','wait'],
+ ['21:15','Tóm tắt thiếu hụt sau MRP','proc-tom-tat',0,'PROC','Thu mua','–','gửi 2 người','wait'],
+ ['22:00','Đóng lệnh sản xuất trong ngày','ProductionAutoClose',1,'KITCHEN','Bếp','–','1 lần · 4 giây','wait'],
+ ['22:15','Xuất kho tri thức','KnowledgeExport (mới)',1,'KNOW','Thủ thư','–','–','new'],
+ ['23:30','Ghi xuất bao bì tự động','PackagingIssueAutoPost',1,'WH','Kho','–','1 lần · 5 giây','wait']
+];
+const ST = { ok: ['Đúng giờ', 'color:#3A5115;background:#EFF5E5'], wait: ['Chưa tới giờ', 'color:#546E7A;background:#F0F3EE'], slow: ['Chậm hôm qua', 'color:#8A3E0B;background:#FFF6EE'], new: ['Mới – R2', 'color:#2F6DB5;background:#E1ECFA'] };
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { f: 'all' }; }
+  renderVals() {
+    const s = this.state;
+    const keep = j => s.f === 'all' || (s.f === 'core' && j[3]) || (s.f === 'agent' && !j[3]) || (s.f === 'warn' && j[8] === 'slow');
+    const chip = (k, l) => ({ label: l, n: J.filter(j => k === 'all' || (k === 'core' && j[3]) || (k === 'agent' && !j[3]) || (k === 'warn' && j[8] === 'slow')).length, on: s.f === k, pick: () => this.setState({ f: k }),
+      style: 'height:36px;padding:0 14px;border-radius:18px;cursor:pointer;font-size:13px;' + (s.f === k ? 'background:#4F6B1F;color:#fff;border:1px solid #4F6B1F' : 'background:#fff;color:#263238;border:1px solid #D9E0D4') });
+    return { ...NAV('Schedule'),
+      chips: [chip('all', 'Tất cả'), chip('core', 'Job hệ thống'), chip('agent', 'Lịch của agent'), chip('warn', 'Cần chú ý')],
+      rows: J.filter(keep).map(j => ({ at: j[0], name: j[1], code: j[2], core: !!j[3], where: j[3] ? 'Hệ thống' : 'Hermes',
+        whereSt: 'font-size:12px;font-weight:600;border-radius:10px;padding:2px 10px;justify-self:start;' + (j[3] ? 'background:#F0F3EE;color:#455A64' : 'background:#E4EFD2;color:#3A5115'),
+        ic: ico(j[4], 24), agent: j[5], today: j[6], yday: j[7], st: ST[j[8]][0], stSt: 'font-size:12px;font-weight:600;border-radius:10px;padding:2px 10px;justify-self:start;' + ST[j[8]][1] })) };
+  }
+}
+</script>
+</body>
+</html>

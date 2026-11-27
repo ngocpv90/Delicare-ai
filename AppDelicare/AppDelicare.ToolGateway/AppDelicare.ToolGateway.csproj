@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- AI-1 (D-133): cửa vào thứ ba – ToolGateway cho agent (Hermes). MCP /mcp (Streamable HTTP) + REST POST /tools/{name}.
+       Chỉ gọi method Service sẵn có (AppDelicare.Services) – không truy cập CSDL riêng. Chỉ mở trong mạng nội bộ Docker. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Cùng user-secrets với WebApi / Job (máy dev). -->
+    <UserSecretsId>ad53db9f-706b-403a-aece-bf7333200eba</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
+    <!-- AI-0: SDK MCP chính thức cho C# – ghim đúng bản (anh duyệt dùng SDK chính thức). -->
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.4.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AppDelicare.Services\AppDelicare.Services.csproj" />
+  </ItemGroup>
+
+  <!-- Cấu hình nghiệp vụ dùng CHUNG file của WebApi (như AppDelicare.Job). -->
+  <ItemGroup>
+    <None Include="..\AppDelicare.WebApi\appsettings.json" Link="appsettings.shared.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\AppDelicare.WebApi\appsettings.Staging.json" Link="appsettings.shared.Staging.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\AppDelicare.WebApi\appsettings.Production.json" Link="appsettings.shared.Production.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="toolgateway*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-rvv3-g6hj-g44x" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gpwp-5797-mjff" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-6vhm-j9h7-f9gh" />
+  </ItemGroup>
+
+</Project>

@@ -67,8 +67,10 @@ const SCRIPTS = [
   'modules/admin-account.js', // UI-6.42 (D-123): Tài khoản – danh sách, Chờ IT xử lý, tạo tài khoản 3 lựa chọn – sau admin.js
   'modules/admin-group.js', // UI-6.43 (D-124): Nhóm quyền – danh sách theo khối, trang nhóm (phân quyền theo mức, tài khoản, xem trước, so sánh, lịch sử) – sau admin.js
   'modules/kho.js', // UI-6.29 (D-110): Kho 12 → 5 mục, Nhận hàng & kiểm tra, Sổ kiểm tra hàng nhập – sau scm.js, qc.js, approval.js, ghep.js
-  'modules/acc.js', // ACC-1 (D-131): nhóm Kế toán – thanh chuyển nhanh, Khớp mã AMIS, bọc Bảng kê (crm-billing) – CUỐI danh sách
+  'modules/receive.js', // UI-6.50 (D-132): Nhận hàng theo NCC – thẻ NCC, ô tìm, form gộp nhiều đơn mua – sau kho.js
+  'modules/acc.js', // ACC-1 (D-131): nhóm Kế toán – thanh chuyển nhanh, Khớp mã AMIS, bọc Bảng kê (crm-billing)
   'modules/retail.js', // RETAIL-1: nhóm Bán lẻ – Đơn khách lẻ, Sản phẩm bán lẻ (tách khỏi đơn doanh nghiệp) – sau acc.js
+  'modules/ai.js', // AI-6 (D-133): Trợ lý AI (Trung tâm agent, Nhật ký agent, Lịch chạy) + Kho tri thức – CUỐI danh sách
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';
 const SCRIPT_ATTR = 'data-delicare';

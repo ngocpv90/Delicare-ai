@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Kho tri thức</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F8F4}
+a{color:#4F6B1F}a:hover{color:#3A5115}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 14px; display: flex; flex-wrap: wrap; min-height: 1000px">
+
+<nav aria-label="Menu chính" style="flex: 1 1 232px; max-width: 256px; background: #fff; border-right: 1px solid #E8ECE5; padding: 18px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 16px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #91AF42; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span><b style="font-size: 17px">DELI-CARE</b></div>
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="10"><a href="#" style="color: #455A64; text-decoration: none; padding: 0 12px; height: 40px; display: flex; align-items: center; border-radius: 8px">{{m}}</a></sc-for>
+<div style="margin-top: 8px; padding: 0 12px; font-size: 12px; color: #607D6B; font-weight: 600">Trợ lý AI</div>
+<sc-for list="{{ai}}" as="m" hint-placeholder-count="7"><a href="{{m.href}}" style="{{m.st}}">{{m.t}}</a></sc-for>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; padding: 22px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px">
+<div><div style="color: #607D6B; font-size: 13px">Trợ lý AI › Kho tri thức</div><h1 style="margin: 4px 0 0; font-size: 20px">Kho tri thức</h1><div style="color: #546E7A; margin-top: 4px">SOP, bài học, quyết định và bản chụp báo cáo · số liệu hiện tại luôn lấy từ hệ thống</div></div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+<label style="display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 12px; height: 40px; min-width: 280px"><span style="color: #607D6B">Tìm</span><input placeholder="gõ có dấu hoặc không dấu: nhan hang lanh" style="border: 0; outline: 0; flex: 1; font: inherit"></label>
+<button onClick="{{toggleEdit}}" aria-pressed="{{edit}}" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #4F6B1F; color: #fff; font-weight: 600">{{editLabel}}</button>
+</div>
+</div>
+
+<div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start">
+<section aria-label="Thư mục" style="flex: 1 1 220px; max-width: 250px; background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{folders}}" as="f" hint-placeholder-count="12"><button onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}"><span>{{f.name}}</span><span style="color: #607D6B; font-size: 12px">{{f.n}}</span></button></sc-for>
+<div style="border-top: 1px solid #E8ECE5; margin-top: 6px; padding: 8px 10px 2px; font-size: 12px; color: #607D6B; line-height: 1.5">BOD Bảo mật chỉ Ban GĐ thấy. Agent không đọc thư mục này.</div>
+</section>
+
+<section style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px">
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="3"><button onClick="{{n.pick}}" style="{{n.row}}"><span style="min-width: 0"><span style="display: block; font-weight: 600">{{n.title}}</span><span style="display: block; color: #607D6B; font-size: 12px; margin-top: 2px">{{n.meta}}</span></span><span style="{{n.badge}}">{{n.kind}}</span></button></sc-for>
+</div>
+
+<sc-if value="{{edit}}" hint-placeholder-val="{{ false }}">
+<form aria-label="Soạn ghi chú" style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 18px">Ghi chú mới</h2>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Tiêu đề<input value="SOP-40-06 · Nhận hàng khô và gia vị" style="height: 40px; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: #263238; background: #fff"></label>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Loại<select style="height: 40px; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: #263238; background: #fff"><option>SOP</option><option>Bài học</option><option>Hướng dẫn</option><option>Quyết định</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Thư mục<select style="height: 40px; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: #263238; background: #fff"><option>40 Kho &amp; Truy xuất</option><option>45 ATTP</option><option>80 Đào tạo</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Mức mật<select style="height: 40px; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: #263238; background: #fff"><option>Nội bộ</option><option>Công khai</option><option>Hạn chế</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Hiệu lực từ<input value="01/12/2026" style="height: 40px; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: #263238; background: #fff"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Rà soát trước<input value="01/06/2027" style="height: 40px; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: #263238; background: #fff"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Liên quan (mã)<input value="NL-00041, NCC-00012" style="height: 40px; border: 1px solid #D9E0D4; border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: #263238; background: #fff"></label>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #455A64">Nội dung (markdown, liên kết bằng [[tên ghi chú]])<textarea rows="8" style="font: inherit; font-size: 14px; color: #263238; border: 1px solid #D9E0D4; border-radius: 8px; padding: 10px; line-height: 1.6">## Các bước
+1. Đối chiếu phiếu giao với đơn mua.
+2. Kiểm bao bì nguyên vẹn, hạn dùng còn tối thiểu [cấu hình: hạn dùng tối thiểu] ngày.
+3. Ghi lô và vị trí theo [[SOP-40-04 · Xuất kho theo FEFO]].</textarea></label>
+<div style="background: #F7FAF2; border: 1px solid #DCE8C6; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #3A5115; line-height: 1.5">Máy chủ đã kiểm: đủ trường bắt buộc · không có số điện thoại, CCCD, số tài khoản · ngưỡng dẫn chiếu cấu hình, không chép số. SOP sẽ gửi Thủ kho duyệt trước khi có hiệu lực.</div>
+<div style="display: flex; gap: 10px; justify-content: flex-end"><button type="button" onClick="{{toggleEdit}}" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-weight: 600">Lưu nháp</button><button type="button" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #4F6B1F; color: #fff; font-weight: 600">Gửi duyệt</button></div>
+</form>
+</sc-if>
+<sc-if value="{{view}}" hint-placeholder-val="{{ true }}">
+<article style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start"><div><div style="color: #607D6B; font-size: 12px">{{cur.path}}</div><h2 style="margin: 4px 0 0; font-size: 19px">{{cur.title}}</h2></div><div style="display: flex; gap: 8px"><button disabled="{{cur.ro}}" style="{{cur.editBtn}}">{{cur.editText}}</button></div></div>
+<sc-if value="{{cur.auto}}" hint-placeholder-val="{{ false }}"><div style="background: #F0F3EE; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #455A64">Ghi chú tự sinh từ hệ thống lúc {{cur.when}}. Chỉ đọc – muốn bình luận hãy viết ghi chú riêng và liên kết tới đây.</div></sc-if>
+<sc-for list="{{cur.body}}" as="b" hint-placeholder-count="5"><div style="{{b.st}}">{{b.t}}<span style="{{b.chipSt}}">{{b.chip}}</span>{{b.after}}</div></sc-for>
+<div style="font-size: 13px; color: #546E7A; border-top: 1px solid #E8ECE5; padding-top: 10px">Liên kết: <a href="#">[[Đánh giá NCC rau củ quý 4]]</a> · <a href="#">[[Lô kiểm nhận không đạt – xử lý]]</a> · chứng từ <a href="#">GR-261125-0014</a></div>
+</article>
+</sc-if>
+</section>
+
+<aside aria-label="Thông tin ghi chú" style="flex: 1 1 260px; max-width: 300px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 8px 10px; font-size: 13px">
+<b style="grid-column: 1 / -1; font-size: 14px">Thông tin</b>
+<sc-for list="{{cur.info}}" as="i" hint-placeholder-count="7"><span style="color: #607D6B">{{i.k}}</span><span style="{{i.st}}">{{i.v}}</span></sc-for>
+</div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px; font-size: 13px; display: flex; flex-direction: column; gap: 8px">
+<b style="font-size: 14px">Liên kết ngược</b>
+<a href="#">SOP-45-01 · Kiểm nhận thực phẩm tươi</a><a href="#">Bài học SC-261125-01 · nhiệt độ giao 57°C</a><a href="#">Hồ sơ NCC Rau sạch Đà Lạt</a>
+</div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 14px 16px; font-size: 13px; display: flex; flex-direction: column; gap: 6px">
+<b style="font-size: 14px">Lịch sử</b>
+<span>20/11 · Đỗ Thị Hạnh sửa bước 3 · <span style="color: #3A5115; font-weight: 600">Trưởng QA duyệt</span></span>
+<span>02/10 · Bản 1 có hiệu lực</span>
+<span style="color: #607D6B">Agent đã trích dẫn 12 lần trong 30 ngày (WH, QA, KNOW)</span>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+const F = [['10 Ban GĐ',38],['20 Kinh doanh & Hợp đồng',64],['30 Thực đơn & Công thức',112],['40 Kho & Truy xuất',27],['45 ATTP',41],['50 Sản xuất',18],['55 Giao vận',33],['60 Kế toán',9],['70 Nhân sự',12],['80 Đào tạo',24],['96 Nhật ký agent',310],['98 Công việc agent',17]];
+const N = [
+ { title: 'SOP-40-03 · Nhận hàng kho lạnh', meta: 'Đỗ Thị Hạnh · rà soát trước 20/05/2027', kind: 'SOP · Hiệu lực', auto: false,
+   info: [['Loại','SOP'],['Thư mục','40 Kho & Truy xuất'],['Chủ','Thủ kho'],['Trạng thái','Hiệu lực',1],['Hiệu lực từ','20/11/2026'],['Rà soát trước','20/05/2027'],['Mức mật','Nội bộ'],['Nguồn','Người viết – đã duyệt']],
+   body: [
+    ['h','Mục đích'],['p','Bảo đảm nguyên liệu lạnh nhập kho đúng nhiệt độ, đúng hạn dùng và truy xuất được tới nhà cung cấp.'],
+    ['h','Các bước'],
+    ['p','1. Đối chiếu xe giao với đơn mua (mã PO trên phiếu giao).'],
+    ['p','2. Đo nhiệt độ lõi 3 mẫu mỗi lô. Hàng mát phải ','≤ 5 °C · lấy từ cấu hình',' – vượt thì ghi “Không đạt”.'],
+    ['p','3. Lô ghi “Không đạt” bị chặn xuất sản xuất, chỉ được trả NCC hoặc hủy. Hệ thống tự ghi lỗi NCC.'],
+    ['p','4. Dán nhãn lô; hệ thống gợi ý vị trí theo FEFO.']
+   ] },
+ { title: 'Bài học · lệch kiểm kê thịt heo tháng 11', meta: 'KNOW đề xuất · Thủ kho duyệt 22/11', kind: 'Bài học', auto: false,
+   info: [['Loại','Bài học'],['Thư mục','40 Kho & Truy xuất'],['Chủ','Thủ kho'],['Trạng thái','Hiệu lực',1],['Hiệu lực từ','22/11/2026'],['Mức mật','Nội bộ'],['Nguồn','Agent KNOW – đã duyệt']],
+   body: [['h','Chuyện gì đã xảy ra'],['p','Kiểm kê 23/11 lệch −5,6% thịt heo nạc ở kho lạnh 1, vượt ngưỡng duyệt.'],['h','Nguyên nhân'],['p','Cân xuất ca sáng chưa trừ khay; ghi xuất theo khối lượng cả khay.'],['h','Đã đổi'],['p','Cân trừ bì trước khi xuất; thêm bước 4b vào SOP-40-05.']] },
+ { title: 'Tồn kho cuối ngày 25/11', meta: 'Hệ thống · 22:00 25/11', kind: 'Tự sinh', auto: true,
+   info: [['Loại','Báo cáo'],['Thư mục','40 Kho & Truy xuất'],['Chủ','Thủ kho'],['Trạng thái','Bản chụp',1],['Mức mật','Nội bộ'],['Nguồn','delicare-core']],
+   body: [['h','Tóm tắt'],['p','124 nguyên liệu còn tồn · 6 dưới tồn tối thiểu · 3 lô cận hạn ≤ 3 ngày · 1 lô bị chặn.'],['p','Số liệu này là bản chụp lúc 22:00. Tồn hiện tại xem tại màn Tồn kho.']] }
+];
+const NAV = cur => ({ menu: ['Điều hành', 'Kinh doanh', 'Thực đơn & Món ăn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng & ATTP', 'Đóng gói & Giao hàng', 'Nhân sự', 'Kế toán'],
+  ai: [['Main', 'Trung tâm agent'], ['AgentLog', 'Nhật ký & chi phí'], ['Tasks', 'Việc của tôi'], ['Flow', 'Luồng liên phòng'], ['Schedule', 'Lịch tự động'], ['Knowledge', 'Kho tri thức'], ['Approval', 'Phê duyệt']].map(m => ({ t: m[1], href: m[0] + '.dc.html',
+    st: 'text-decoration:none;padding:0 12px;height:40px;display:flex;align-items:center;border-radius:8px;' + (m[0] === cur ? 'background:#EFF5E5;color:#3A5115;font-weight:600' : 'color:#455A64') })) });
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { f: 3, n: 0, edit: false }; }
+  renderVals() {
+    const s = this.state, c = N[s.n];
+    return {
+      ...NAV('Knowledge'), edit: s.edit, view: !s.edit, editLabel: s.edit ? 'Đóng soạn thảo' : 'Viết ghi chú', toggleEdit: () => this.setState({ edit: !s.edit }),
+      folders: F.map((f, i) => ({ name: f[0], n: f[1], on: s.f === i, pick: () => this.setState({ f: i }),
+        style: 'display:flex;justify-content:space-between;align-items:center;gap:8px;height:40px;padding:0 10px;border:0;border-radius:8px;text-align:left;cursor:pointer;font-size:13px;' + (s.f === i ? 'background:#EFF5E5;color:#3A5115;font-weight:600' : 'background:transparent;color:#263238') })),
+      notes: N.map((n, i) => ({ title: n.title, meta: n.meta, kind: n.kind, pick: () => this.setState({ n: i }),
+        row: 'width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border:0;border-top:' + (i ? '1px solid #F0F3EE' : '0') + ';text-align:left;cursor:pointer;font-size:14px;color:inherit;' + (s.n === i ? 'background:#F7FAF2;box-shadow:inset 3px 0 0 #91AF42' : 'background:transparent'),
+        badge: 'flex:none;font-size:12px;font-weight:600;border-radius:10px;padding:2px 10px;' + (n.auto ? 'background:#F0F3EE;color:#546E7A' : 'background:#EFF5E5;color:#3A5115') })),
+      cur: { title: c.title, path: 'Kho tri thức › ' + c.info[1][1], auto: c.auto, when: '22:00 25/11', ro: c.auto,
+        editText: c.auto ? 'Chỉ đọc' : 'Sửa (gửi duyệt)',
+        editBtn: 'height:36px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:600;' + (c.auto ? 'border:1px dashed #D9E0D4;background:#F6F8F4;color:#607D6B' : 'border:1px solid #D9E0D4;background:#fff;color:#263238;cursor:pointer'),
+        info: c.info.map(i => ({ k: i[0], v: i[1], st: i[2] ? 'color:#3A5115;font-weight:600' : '' })),
+        body: c.body.map(b => ({ t: b[1], chip: b[2] || '', after: b[3] || '', chipSt: b[2] ? 'background:#FFF6EE;color:#8A3E0B;border-radius:6px;padding:1px 8px;font-weight:600;margin:0 2px' : 'display:none',
+          st: b[0] === 'h' ? 'font-weight:700;font-size:15px;margin-top:4px' : 'line-height:1.6' })) }
+    };
+  }
+}
+</script>
+</body>
+</html>

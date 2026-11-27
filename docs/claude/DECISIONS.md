@@ -1464,3 +1464,49 @@ Thứ tự làm: 1 → 3 → 6 → 2.
 | (l) | Đối chiếu | 8 chỉ tiêu theo kỳ; số chính thức là số AMIS (giá xuất AMIS bình quân ≠ giá lô Delicare là bình thường). |
 | (m) | Màn kho | Trả hàng NCC và Bao bì có khung 390px (thủ kho dùng điện thoại). |
 
+
+## D-132 – Nhận hàng theo nhà cung cấp: một form cho mọi đơn mua của NCC, bấm thẻ NCC / ô tìm, QR trên phiếu in đơn mua mở bot, chỉ hỏi lô / hạn dùng khi cần, nhiệt độ thùng xe một lần, "Nhận đủ – Đạt tất cả" (anh chốt 2026-11-26)
+
+✅ **Anh chốt 2026-11-26** ("đồng ý tạo task"). Task ROADMAP **UI-6.50**; mô phỏng `docs/frontend-handoff/assets/receive-mockup.html`. Giữ nguyên luật UI-6.29 / D-110 và dữ liệu cấp AMIS (D-131).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Danh sách | Thẻ theo NCC (số đơn, số dòng, giờ hẹn, quá hẹn đỏ); 4 chỉ số; ô tìm theo tên NCC / số đơn mua / số hóa đơn NCC. Xe đến → bấm thẻ NCC (1 chạm). |
+| (b) | Form gộp | Một form cho mọi đơn còn mở của NCC; dòng theo nguyên liệu (cộng các đơn); máy chủ chia về từng đơn – đơn cũ trước – và lập mỗi đơn một phiếu nhập trong một lần lưu. |
+| (c) | Bớt nhập tay | Lô / hạn dùng chỉ hỏi khi nguyên liệu quản lý lô / hạn; lô trống = lô nội bộ; "áp dòng dưới"; nhiệt độ thùng xe nhập một lần; nút "Nhận đủ – Đạt tất cả". |
+| (d) | QR | **Sửa 2026-11-26:** không làm trình quét QR trong web (phiếu đơn mua chưa có QR; Safari iPhone không có sẵn đọc QR; không cần vì đã có thẻ NCC). **Thêm QR vào phiếu in / PDF đơn mua** – link mở bot Telegram; camera mặc định iPhone / Android mở được, bot mở luồng nhận hàng gom theo NCC. Chỉ có tác dụng khi NCC mang đơn mua in theo. |
+| (e) | Excel NCC | Mẫu "Phiếu giao hàng" gửi NCC; tải lên form để tự điền số giao / lô / hạn dùng (không lưu tệp). |
+| (f) | Giữ nguyên | Tự đạt ghi sổ ngay, cần QA gửi QA, không đạt lập sự cố NCC; mỗi phiếu nhập một đơn mua (AMIS không đổi). |
+| (g) | Dữ liệu | Không thêm bảng / cột. **GAP-PUR-BAR PROPOSED:** `SupplierMaterial.Barcode` để quét mã vạch thùng hàng – chờ anh duyệt. |
+
+## D-133 – Trợ lý AI: Hermes làm trung tâm điều khiển, ToolGateway, 13 agent, kho tri thức trong app (anh chốt 2026-11-26)
+
+✅ **Anh chốt 2026-11-26** (chat tài liệu: duyệt kiến trúc + mockup Trợ lý AI & Kho tri thức, "đồng ý tạo task cho Claude Code phát triển"). Tài liệu: `docs/claude/AI_AGENT_ARCHITECTURE.md`; mockup `docs/frontend-handoff/assets/ai-agent/`. Task ROADMAP **★ AI – AI-0 … AI-19** (thay T30–T35, T43, T44, T50, T51; T41 → AI-19). Bỏ "Hermes + quản lý agent" khỏi danh sách ĐỂ SAU của D-44 / D-45.
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Kiến trúc | Thêm 1 project `AppDelicare.ToolGateway` (MCP `/mcp` + REST `/tools/*`), chỉ gọi Service sẵn có – không SQL riêng. Hermes chỉ nói chuyện với lõi qua ToolGateway, không chuỗi kết nối DB, tắt công cụ terminal / file / code / browser / web. Người dùng web vẫn gọi thẳng `api`. |
+| (b) | Dữ liệu | **Không bảng / cột mới.** Tài khoản agent = `User` + `UserGroup AGENT_<MÃ>`; danh mục + công tắc = `IntegrationChannel HERMES` + `BotConfiguration`; đề xuất ghi = `ApprovalRequest` `AGENT_WRITE`; nhật ký + chi phí = `IntegrationLog`; tin chủ động = `OutboundMessage`; lịch sử ghi chú = `AuditChange`. |
+| (c) | Agent | **13 agent**: VIVI (điều phối) + 11 agent phòng ban (AGENTS.md, thực đơn gộp vào PLAN) + **KNOW – Thủ thư tri thức** (mới). Lên 4 đợt: (1) chỉ đọc VIVI, WH, KITCHEN, QA, KNOW · (2) ghi 2 pha + PROC, SALES, LOG, HR · (3) PLAN, PKG, ACC · (4) CSKH Zalo (chờ D-06). Hết mỗi đợt dừng, anh xác nhận cửa qua. |
+| (d) | Ghi | Mọi lệnh ghi = `propose_*` → người có quyền xác nhận (mục menu Phê duyệt › Lệnh của agent, bot Điều hành) → method Service thật; người thao tác = người duyệt; hết hạn 15′; idempotent. Agent không đi vòng qua được quy tắc nghiệp vụ nào. Quyền khi hỏi = quyền agent ∩ quyền người hỏi. |
+| (e) | Thư viện | Duyệt dùng **SDK MCP chính thức cho C#** (`ModelContextProtocol`, `ModelContextProtocol.AspNetCore`), ghim phiên bản; không ổn định trên .NET 8 thì tự viết lớp JSON-RPC tối thiểu (AI-0). |
+| (f) | Kho tri thức | **Phương án B**: thư mục markdown chuẩn Obsidian trên volume `knowledge`, màn "Kho tri thức" trong app, quyền theo mục `ObjectMenu` từng thư mục, SOP có duyệt, lịch sử trong `AuditChange`; Obsidian máy cá nhân chỉ là bản đồng bộ. Luật kho, nguồn dữ liệu, khi ghi / khi tra: `AI_AGENT_ARCHITECTURE.md` §7.4–7.8. |
+| (g) | Giá trị mặc định | SOP rà soát 6 tháng, đào tạo 12 tháng; nhật ký 96 giữ 90 ngày rồi gộp tóm tắt tháng; bản tin ngày giữ 13 tháng; tối đa 5 ghi chú mỗi lượt tra. Đặt trong cấu hình `Knowledge:*` / `Agent:*` (ghi `CONFIG_KEYS.md`), đổi được không cần sửa code. |
+| (h) | Mô hình | Sonnet cho VIVI và phân tích, Haiku cho việc theo lịch (biến môi trường, đổi được). Giới hạn chi tiêu cứng đặt ở nhà cung cấp; app cảnh báo khi dùng tới 80 % `Agent:MonthlyBudget`. |
+| (i) | Người dùng bot Trợ lý đợt 1 | Ban GĐ + trưởng bộ phận (danh sách nhóm trong cấu hình). Người xác nhận từng loại đề xuất theo bảng §4 của tài liệu kiến trúc, cấp trên ma trận quyền cũ. |
+| (j) | Thời điểm | Làm sau các mục đang có trong "THỨ TỰ LÀM TIẾP" của ROADMAP; đợt 1 chỉ đọc nên làm được trên DB dev / server test trước khi lõi chạy thật. |
+
+**PROPOSED – anh điền / xác nhận khi qua cửa đợt 1:** `Agent:MonthlyBudget` (ngân sách AI mỗi tháng – em chưa đặt số); tỉ lệ "đề xuất được duyệt không sửa" để qua cửa đợt 2 (đề xuất ≥ 80 %).
+
+## D-134 – Đồng bộ menu / quyền / dữ liệu cấu hình cho mọi DB (máy FE, server test) qua quy trình cập nhật (anh duyệt 2026-11-27)
+
+✅ **Anh duyệt 2026-11-27** (chat tài liệu). Anh thấy menu + phân quyền trên máy FE và server test vẫn là bản cũ, còn sai, trong khi máy anh đúng. Chat rà: **git không thiếu** – `main` = `origin/main` = `909d634` (đẩy 27/11 07:39), MENU-5, FIX-NOW-1 (D-93), CHART-1, UI-6.x, ACC, REAL-1, AI-0 … AI-6 đã gộp và đẩy. **Nguyên nhân:** menu / quyền nằm trong DB; `Deploy-Database.ps1` và docker `db-init` chỉ chạy `deploy/db/scripts.order` (SP + seed chỉ thêm dòng thiếu) – **50 script trong `DB/scripts/` không có dòng nào trong `scripts.order`**, nên chỉ DB máy anh (FIX-NOW-1 chạy tay) được áp; khối chuyển nhóm trong `ObjectMenu_seed.sql` bỏ qua mục có thứ tự lệch (DB chưa chạy MENU-2 / MENU-4); `UserRole_seed.sql` không thu quyền; `deploy/README.md` ghi lần cập nhật server gần nhất 17/11. Việc làm: ROADMAP **DEPLOY-SYNC-1** (làm ngay, trước mọi task).
+
+| # | Điểm | Đã chốt |
+|---|---|---|
+| (a) | Mục tiêu | Chỉ cần `git pull origin main` + `Deploy-Database.ps1` (Windows) hoặc `db-init` (Docker) là **mọi DB** (máy anh, máy FE, server test, DB mới) có menu, quyền và dữ liệu cấu hình **giống hệt nhau** và đúng bản chốt mới nhất. Không còn bước "chạy tay script X". |
+| (b) | Phân loại script | **Cấu hình** (menu, nhóm quyền, ma trận quyền, mục duyệt, ẩn / đổi tên mục – chạy lại được, kết quả hội tụ) → vào `scripts.order` sau nhóm Seed, theo thứ tự thời gian. **Chuyển đổi dữ liệu** (đổi mã, dọn / gộp dữ liệu, gắn liên kết, dọn [DEMO], đóng đơn cũ …) → chạy **đúng 1 lần mỗi DB**, ghi nhận đã chạy theo cùng cơ chế với `DB/migrations` (`Migrations.ps1` / `migrations.sh`), không thêm bảng mới nếu cơ chế sẵn có đủ; cần bảng / cột thì ghi GAP chờ anh. Script nào không còn cần (đã bị script sau thay) ghi rõ lý do bỏ. |
+| (c) | Hội tụ | Menu: nguồn duy nhất CodeGen (`Menu5Groups` + các thay đổi sau) sinh **trạng thái đích** (nhóm cha, thứ tự, tên, bật / tắt) và áp **không phụ thuộc thứ tự cũ**; mục admin tự tạo thêm (ngoài danh sách nguồn) giữ nguyên. Quyền: ma trận đích cho các nhóm chuẩn áp mỗi lần cập nhật (cả **cấp và thu**); nhóm quyền admin tự tạo không đụng. Chạy lại lần 2 = 0 thay đổi. |
+| (d) | Tự kiểm | `DB/scripts/CHECK_menu_permission.sql` (hoặc tham số `-Check` của `Deploy-Database.ps1`): in mục menu / ô quyền / script chuyển đổi chưa chạy lệch so với đích – **0 dòng = đúng**; chạy cuối quy trình cập nhật, có lệch thì báo lỗi rõ. API: trang admin hiện cảnh báo khi DB lệch (mở rộng cảnh báo FIX-1.4). |
+| (e) | Quy tắc về sau | Mọi task có script DB **phải** thêm vào `scripts.order` (cấu hình) hoặc danh sách chạy 1 lần (chuyển đổi) trong cùng commit; test tự động đỏ nếu có file trong `DB/scripts/` không được khai báo. Ghi vào `CLAUDE.md` mục Definition of Done (bổ sung D-92 b). |
+| (f) | Nhánh | Máy FE / server test cập nhật từ **`main`**; nhánh `develop` (dừng 17/11) và `release/pilot` (dừng 19/11) ghi rõ trong `deploy/README.md` là không dùng (hoặc đưa về bằng `main` nếu quy trình server đang trỏ vào – Claude Code kiểm, ghi PROGRESS). |

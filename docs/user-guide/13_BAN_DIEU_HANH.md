@@ -53,6 +53,11 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | X (IX) |
 | Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | X | X | X | X (IX) |
 | Nhân sự › Chấm công | `hr-attendance` | X | X | X | X (IX) |
+| Tri thức › 10 Ban GĐ | `knowledge?folder=10` | S | X | S | — |
+| Tri thức › 60 Kế toán | `knowledge?folder=60` | X | X | X | S |
+| Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X |
+| Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — |
+| Trợ lý AI › Trung tâm agent | `ai-agents` | S | — | S | — |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

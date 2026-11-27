@@ -146,6 +146,8 @@ if (Layer("security"))
     Write(Path.Combine(root, "DB", "seed", "UserRole_seed.sql"), Seeds.UserRoleSeed5(), true);
     Write(Path.Combine(root, "DB", "scripts", "D79_menu_regroup.sql"), Seeds.Menu5RegroupScript(screens, menuOrder), true);
     Write(Path.Combine(root, "DB", "scripts", "D79_permission_matrix.sql"), Seeds.PermissionMatrixScript(), true);
+    // AI-2 (D-133): danh tính 13 agent – cùng ma trận Menu5 (chỉ Xem theo vai trò người tương ứng).
+    Write(Path.Combine(root, "DB", "seed", "Agent_seed.sql"), Seeds.AgentSeed(), true);
     // FIX-1.4 (D-92, D-93): menu dự phòng FE cùng nguồn Menu5Groups (grp, fn, menuOrder, menuGroups) – test CatalogMenuTests so khớp.
     string feCatalog = Path.Combine(root, "app-delicare-client", "src", "assets", "delicare", "js", "data", "catalog.js");
     Write(feCatalog, Seeds.FrontCatalog(File.ReadAllText(feCatalog), screens), true);

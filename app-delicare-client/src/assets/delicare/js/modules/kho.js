@@ -147,7 +147,7 @@
     const note = el.querySelector('.notice.info'); if (note) note.remove();
     const h = el.querySelector('.page-heading');
     if (h && !el.querySelector('#grDue')) h.insertAdjacentHTML('afterend', '<div class="card panel mb" id="grDue"><div class="small muted">Đang tải đơn mua hẹn giao…</div></div>');
-    drawDue(el);
+    if (APP.rcvDue) APP.rcvDue(el); else drawDue(el); // UI-6.50: thẻ NCC (receive.js)
     // Phiếu chờ kết luận: QA mở cùng form; kho chỉ thấy trạng thái.
     const qa = Store.canApprove('qc-inspection');
     APP.rowExtra(el, tr => tr.querySelectorAll('.actions button').forEach(b => {
@@ -183,7 +183,7 @@
     });
   }
   // Nút "Nhận hàng" ở màn Đơn mua / trang chi tiết đơn mua → cùng form.
-  if (APP.scmPo) APP.scmPo.receive = r => receiveForm({ po: r });
+  if (APP.scmPo) APP.scmPo.receive = r => (APP.rcvOpen ? APP.rcvOpen({ purchaseOrderId: r.Id || r.purchaseOrderId }) : receiveForm({ po: r })); // UI-6.50: form gộp theo NCC
   if (APP.scmGr) APP.scmGr.qc = r => { const q = r && Store.one('QCInspection', 'GoodsReceiptId', r.Id); if (q && Store.canApprove('qc-inspection')) receiveForm({ inspectionId: q.Id }); else UI.toast('Phiếu đang chờ QA kết luận', 'warn'); };
 
   // ================= Hàng chờ QA – Phê duyệt › Kiểm tra hàng nhập =================

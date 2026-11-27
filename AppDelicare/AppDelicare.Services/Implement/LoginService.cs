@@ -71,6 +71,15 @@ namespace AppDelicare.Services.Implement
                     Message = ConstantHelper.Message.AccountNotInternal
                 };
             }
+            // AI-2 (D-133): tài khoản dịch vụ agent (liên kết kênh HERMES) không đăng nhập web – kể cả khi admin lỡ đặt mật khẩu.
+            if (await AppDelicare.Services.Implement.Agent.AgentAccounts.IsAgentAsync(_unitOfWork.DbContext, user.Id))
+            {
+                return new Response<AuthenticateResponse>
+                {
+                    Code = Convert.ToInt32(HttpStatusCode.Forbidden),
+                    Message = AppDelicare.Services.Implement.Agent.AgentAccounts.LoginDenied
+                };
+            }
             // T45R.8 (D-39): mật khẩu tạm – quá hạn 24 giờ thì từ chối; còn hạn thì đăng nhập được nhưng bắt buộc đổi mật khẩu.
             bool mustChangePassword = EncriptFunctionsHelper.IsTemporary(user.PassWord);
             if (mustChangePassword && EncriptFunctionsHelper.IsTemporaryExpired(user.PassWord, _clock.UtcNow))

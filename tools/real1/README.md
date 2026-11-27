@@ -87,12 +87,12 @@ Sau mỗi lần chạy `seed-demo` / full-flow trên môi trường đó: chạy
 
 ## Bổ sung: nhân sự + đội giao vận thật (`09-hr-delivery.mjs`, 2026-11-26)
 
-Nguồn đọc thẳng từ thư mục chia sẻ (**không** đưa vào repo – có SĐT, địa chỉ cá nhân): `Delicare-Share/HR/DSNS_*.xlsx` (tệp mới nhất) và `Delicare-Share/Delivery/Đội Giao vận.xlsx`.
+Nguồn trong repo (anh duyệt đưa vào 2026-11-26, như D-130 – có họ tên, SĐT, địa chỉ: **không chia sẻ repo ra ngoài**): `DB/data/real1/HR/DSNS_*.xlsx` (tệp mới nhất) và `DB/data/real1/Delivery/Đội Giao vận.xlsx` (chép từ `Delicare-Share`). Có tệp mới hơn: chép đè vào 2 thư mục này (hoặc đặt `REAL1_SHARE` trỏ tới Delicare-Share) rồi chạy lại.
 
 ```bash
 DC_USER=admin DC_PASS=<…> node tools/real1/09-hr-delivery.mjs          # chạy thử – in kế hoạch
 DC_USER=admin DC_PASS=<…> node tools/real1/09-hr-delivery.mjs --yes    # ghi
-# REAL1_SHARE=<đường dẫn Delicare-Share> nếu khác D:/Duan/Tai lieu nghiep vu du an/Delicare-Share
+# REAL1_SHARE=<thư mục chứa HR/ và Delivery/> nếu không dùng bản trong repo
 ```
 
 - **Chức vụ** (`Position`, mã `CV-<tên không dấu>`): mỗi chức vụ khác nhau trong tệp nhân sự (53).
@@ -101,3 +101,4 @@ DC_USER=admin DC_PASS=<…> node tools/real1/09-hr-delivery.mjs --yes    # ghi
 - **Xe** (`Vehicle`, khớp biển số): loại xe, tải trọng (kg), ghi chú `[REAL-1] Hãng · BH TNDS đến · Tuyến · Lái xe`; lái xe mặc định khi cột lái xe chỉ nêu 1 tên gọi khớp duy nhất trong đội lái xe.
 - **Chưa lưu** (không có cột): hình thức làm việc (Fulltime / Partime / Khoán / Remote); bảng tuyến theo buổi (sáng / trưa / chiều / tối) – chuyến giao lập theo ngày ở Điều phối giao hàng.
 - Không tạo tài khoản đăng nhập (đề nghị cấp tài khoản làm ở Nhân sự › Nhân viên).
+- Phần chưa nạp / em tự quyết tạm – chờ anh trao đổi: `docs/claude/GAP_REAL1_HR_DELIVERY.md`.

@@ -44,7 +44,7 @@ namespace AppDelicare.Services.Implement.Identity
             else
             {
                 user = await db.User.AsNoTracking().FirstOrDefaultAsync(u => u.Id == identity.UserId && !u.IsDeleted);
-                if (user == null || !user.IsActive || !PersonLink.IsInternal(user.AccountType)) // HR-ACC-1.4 (D-82 b): bot chỉ nhận tài khoản nội bộ
+                if (user == null || !user.IsActive || !PersonLink.IsInternal(user.AccountType) || await AppDelicare.Services.Implement.Agent.AgentAccounts.IsAgentAsync(db, user.Id)) // HR-ACC-1.4 (D-82 b): bot chỉ nhận tài khoản nội bộ; AI-2: không cấp JWT cho tài khoản agent
                 {
                     reason = ConstantHelper.Message.BotUserInactive;
                 }

@@ -25,6 +25,8 @@ Bộ hướng dẫn cho người dùng cuối, viết theo **code hiện tại**
 | `12_QUAN_LY_DUYET.md` | Người duyệt: hộp phê duyệt | CEO – Tổng giám đốc, COO – Giám đốc vận hành, FIN-HR – Nhân sự, OPS-SCM – Mua hàng, FIN-ACC – Kế toán |
 | `13_BAN_DIEU_HANH.md` | Ban điều hành, kế toán: dashboard, KPI | CEO – Tổng giám đốc, CEO-PMO – Trợ lý TGĐ / PMO, COO – Giám đốc vận hành, FIN-ACC – Kế toán |
 | `14_KE_TOAN.md` | Kế toán – kết nối MISA AMIS: chứng từ, bảng kê xác nhận, khớp mã, đối chiếu, khóa kỳ | FIN-ACC – Kế toán (CEO / COO xem, COO duyệt mở khóa) |
+| `15_TRO_LY_AI.md` | Trợ lý AI (D-133 đợt 1): Trung tâm agent, bật / tắt, nhật ký, lịch chạy, hỏi bot Trợ lý | CEO / COO / FIN-IT; Ban GĐ + trưởng bộ phận hỏi bot |
+| `16_KHO_TRI_THUC.md` | Kho tri thức: tìm không dấu, đọc / soạn ghi chú theo thư mục, ghi chú tự sinh, agent dùng kho | Mọi người (chủ thư mục soạn) |
 | `20_BOT_TELEGRAM.md` | Bot Vận hành / Điều hành | Mọi người |
 | `90_CHENH_LECH.md` | Chênh lệch tài liệu – code (đầu việc UG-1) | Đội phát triển |
 | `91_PHU_LUC.md` | Trạng thái, số chứng từ, ngưỡng, lịch job, thuật ngữ | Mọi người |

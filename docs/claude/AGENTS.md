@@ -1,5 +1,7 @@
 # AGENTS – Hermes và các agent phòng ban
 
+> **D-133 (anh chốt 2026-11-26):** kiến trúc, danh mục đầy đủ (mục tiêu, nhiệm vụ, công cụ từng agent), luồng và kho tri thức ở `docs/claude/AI_AGENT_ARCHITECTURE.md`; rà soát kỹ thuật ở `AI_AGENT_REVIEW.md`. File này là bảng tóm tắt. **13 agent** = VIVI + 11 agent phòng ban + **KNOW** (Thủ thư tri thức); thực đơn gộp vào **PLAN**. Lên dần 4 đợt (Đợt 1 chỉ đọc: VIVI, WH, KITCHEN, QA, KNOW).
+
 **Nguyên tắc:**
 1. Agent không truy cập DB, Sheets hay Obsidian trực tiếp. Mọi việc đi qua ToolGateway (MCP).
 2. Agent **đọc** thì trả lời ngay. Agent **ghi** chỉ qua `propose_*`, có người xác nhận mới `commit`.
@@ -13,7 +15,7 @@
 |---|---|---|---|---|
 | VIVI | Điều phối trung tâm | Ban GĐ, mọi người | `bao_cao_dieu_hanh`, `kpi_khoang`, `su_co_ngay`, `ds_cho_duyet` + định tuyến câu hỏi | không ghi trực tiếp; chuyển cho agent phòng ban |
 | SALES | Đơn hàng / Kinh doanh | KD, TP KD | `get_don_hang_ngay`, `don_hang_khoang`, `danh_muc`, hợp đồng | `propose_order_change` → TP KD (sau 20h thì thêm duyệt cutoff) |
-| PLAN | Kế hoạch sản xuất | TP vận hành, trưởng bếp | `ke_hoach_ngay`, `tinh_nguyen_lieu`, năng lực dây chuyền | `propose_production_plan` → trưởng bếp |
+| PLAN | Kế hoạch sản xuất & thực đơn | TP vận hành, trưởng bếp | `ke_hoach_ngay`, `tinh_nguyen_lieu`, `thuc_don_tuan`, `doi_mon_khoang`, năng lực dây chuyền | `propose_production_plan` → trưởng bếp |
 | PROC | Thu mua | Mua hàng | `du_bao_thieu_hut`, NCC, giá | `propose_purchase_order` → TP vận hành / GĐ theo giá trị |
 | WH | Kho | Thủ kho | `get_ton_kho`, `get_lo_can_date`, `truy_xuat_lo` | `propose_goods_receipt`, `propose_issue`, `propose_stock_count` → thủ kho / duyệt khi lệch > 2% |
 | KITCHEN | Bếp | Trưởng ca, tổ trưởng | `tien_do_bep`, `tien_do_bep_chi_tiet`, `thuc_don_tuan` | `propose_batch_event` (bắt đầu / xong / nhiệt độ / lưu mẫu) → trưởng ca |
@@ -23,6 +25,7 @@
 | HR | Nhân sự | NS, trưởng bộ phận | `cham_cong_ngay`, `chua_vao_ca`, `cong_thang` | `propose_leave`, `propose_shift_swap`, `propose_attendance_fix` → trưởng bộ phận |
 | ACC | Kế toán | Kế toán | doanh thu, chi phí NL, giá thành suất, phí thất thoát hộp | `propose_container_loss_charge` → KT trưởng |
 | CSKH | CSKH – Zalo | Khách hàng | đơn và thực đơn **của chính khách đó** | `propose_portion_confirm`, `propose_shortage_report`, `propose_complaint` → KD / điều phối (khách không tự commit) |
+| KNOW | Thủ thư tri thức (mới – D-133) | Mọi agent, mọi người | tìm SOP / tiền lệ trong kho tri thức (`KnowledgeService`, không bao giờ đọc thư mục / ghi chú BOD) | ghi bài học nháp vào thư mục 96–98 → người phụ trách thư mục duyệt (AI-12) |
 
 **Bổ sung R2 (theo sơ đồ tổ chức – ORG_STRUCTURE.md):** POS (điểm phát suất / bán lẻ – bộ phận 1.5) và MNT (thiết bị / bảo trì – 1.6), khi có bảng tương ứng (GAP-POS-01, GAP-MNT-01). ACC chỉ đọc số liệu hệ thống và xuất cho MISA, không thay MISA (D-23).
 
@@ -30,7 +33,7 @@ Tên công cụ đọc giữ theo hàm cũ để Hermes không phải học lạ
 
 ## 2. Lịch chạy
 
-| Giờ | Job lõi (Hangfire – quyết định) | Agent (thông báo / xin xác nhận) |
+| Giờ | Job lõi (`AppDelicare.Job` – D-48, quyết định) | Agent (thông báo / xin xác nhận) |
 |---|---|---|
 | 19:00 | `RemindUnconfirmedOrdersJob`: lập danh sách khách chưa chốt cho D+1 | CSKH nhắn Zalo cho khách; SALES nhắn Telegram cho nhân viên KD phụ trách |
 | 20:00 | `LockOrdersJob`: khóa đơn D+1 (Confirmed → Locked) | SALES báo số đơn đã khóa và đơn chưa chốt |

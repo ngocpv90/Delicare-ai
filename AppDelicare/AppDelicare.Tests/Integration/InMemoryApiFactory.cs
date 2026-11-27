@@ -54,6 +54,8 @@ namespace AppDelicare.Tests.Integration
                     ["JwtIssuerOptions:Audience"] = Audience,
                     // BOT-2.3: giờ yên lặng theo ca TẮT mặc định trong test (test cũ chạy theo giờ thật) – test giờ yên lặng bật qua Settings.
                     ["Messaging:QuietHours:Enabled"] = "false",
+                    // AI-5: kho tri thức của test ở thư mục tạm riêng (không ghi vào App_Data của repo).
+                    ["Knowledge:VaultPath"] = Path.Combine(Path.GetTempPath(), "dc-knowledge-" + _databaseName),
                 });
                 // BE2.3: cấu hình riêng của 1 test (vd. BusinessRules:ApprovalSteps:CONTRACT:0) – đặt trước lần gọi CreateClient đầu tiên.
                 if (Settings.Count > 0)

@@ -9,13 +9,13 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
     /// <c>LOC_&lt;mã&gt;</c> kệ / vị trí kho → tồn theo lô, lô cận date; <c>CLEAN</c> khu vệ sinh hộp khay → lô vệ sinh hôm nay.
     /// Mã: <c>[A-Za-z0-9_-]</c>, ≤ 50 ký tự (tham số start ≤ 64). Người chưa liên kết quét → đăng ký trước (OnboardingActions).
     /// </summary>
-    public sealed class QrActions(BepActions bep, GiaoVanActions giaoVan, XemNhanhActions xem)
+    public sealed class QrActions(BepActions bep, GiaoVanActions giaoVan, XemNhanhActions xem, ThaoTacActions thaoTac)
     {
         public const string Clean = "CLEAN";
         private static readonly string[] Prefixes = ["LINE_", "VEH_", "LOC_", Doc];
         /// <summary>BOT-1.7d: QR in trên phiếu – <c>DOC_&lt;GR | MI | SC | DO | POD | RC&gt;_&lt;Id N&gt;</c> (mã loại = PrintService.QrCodes).</summary>
         public const string Doc = "DOC_";
-        private static readonly string[] DocTypes = ["GR", "MI", "SC", "DO", "POD", "RC"];
+        private static readonly string[] DocTypes = ["GR", "MI", "SC", "DO", "POD", "RC", "PO" /* UI-6.50 (D-132 h): đơn mua → nhận hàng theo NCC */];
 
         /// <summary>Tách tham số QR → (loại, mã); không phải QR vật thể → null.</summary>
         public static (string Kind, string Code)? Parse(string? arg)
@@ -50,11 +50,21 @@ namespace AppDelicare.Messaging.Audiences.Internal.Chung
             return i > 0 && DocTypes.Contains(code[..i].ToUpperInvariant()) && Guid.TryParseExact(code[(i + 1)..], "N", out Guid id) ? (code[..i].ToUpperInvariant(), id) : null;
         }
 
+        /// <summary>UI-6.50: QR đơn mua – người nhận hàng được mở gói nhận gộp của NCC; không quyền / không còn đơn mở → chỉ xem thông tin đơn.</summary>
+        private async Task ReceiveOrViewAsync(BotActionContext ctx, Guid poId, CancellationToken ct)
+        {
+            if (!await thaoTac.ReceiveBundleAsync(ctx, "P" + poId.ToString("N"), ct, quiet: true))
+            {
+                await xem.DocumentAsync(ctx, "PO", poId, ct);
+            }
+        }
+
         public Task HandleAsync(BotActionContext ctx, string arg, CancellationToken ct) => Parse(arg) switch
         {
             ("LINE_", var code) => bep.LineAsync(ctx, code, ct),
             ("VEH_", var code) => giaoVan.VehicleAsync(ctx, code, ct),
             ("LOC_", var code) => xem.LocationStockAsync(ctx, code, ct),
+            (Doc, var code) when DocOf(code) is { Type: "PO" } po => ReceiveOrViewAsync(ctx, po.Id, ct),
             (Doc, var code) when DocOf(code) is { } doc => xem.DocumentAsync(ctx, doc.Type, doc.Id, ct),
             (Clean, _) => xem.CleaningTodayAsync(ctx, ct),
             _ => Task.CompletedTask,

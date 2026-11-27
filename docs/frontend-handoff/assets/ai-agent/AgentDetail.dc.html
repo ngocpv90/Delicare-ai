@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Chi tiết agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F8F4}
+a{color:#4F6B1F}a:hover{color:#3A5115}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #263238; font-size: 14px; display: flex; flex-wrap: wrap; min-height: 1100px">
+<nav aria-label="Menu chính" style="flex: 1 1 232px; max-width: 256px; background: #fff; border-right: 1px solid #E8ECE5; padding: 18px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 10px 16px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #91AF42; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center">D</span><b style="font-size: 17px">DELI-CARE</b></div>
+<sc-for list="{{menu}}" as="m" hint-placeholder-count="10"><a href="#" style="color: #455A64; text-decoration: none; padding: 0 12px; height: 40px; display: flex; align-items: center; border-radius: 8px">{{m}}</a></sc-for>
+<div style="margin-top: 8px; padding: 0 12px; font-size: 12px; color: #607D6B; font-weight: 600">Trợ lý AI</div>
+<sc-for list="{{ai}}" as="m" hint-placeholder-count="7"><a href="{{m.href}}" style="{{m.st}}">{{m.t}}</a></sc-for>
+</nav>
+<main style="flex: 999 1 560px; min-width: 0; padding: 22px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="color: #607D6B; font-size: 13px"><a href="Main.dc.html">Trung tâm agent</a> › Kho (WH)</div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap">
+<span style="{{ic.box}}"><svg width="{{ic.sz}}" height="{{ic.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.d}}"></path></svg></span>
+<div style="flex: 1; min-width: 240px"><div style="display: flex; gap: 10px; align-items: center"><h1 style="margin: 0; font-size: 20px">WH · Kho</h1><span style="font-size: 12px; font-weight: 600; border-radius: 10px; padding: 2px 10px; background: #EFF5E5; color: #3A5115">Đang bật · chỉ đọc</span></div><div style="color: #546E7A; margin-top: 4px">Tồn đúng, không lô hết hạn trong kho, xuất đúng FEFO · phục vụ Thủ kho · tài khoản AGENT_WH · Haiku</div></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; flex: 1 1 520px">
+<div><div style="color: #546E7A; font-size: 13px">Việc 30 ngày</div><b style="font-size: 20px">1.240</b></div>
+<div><div style="color: #546E7A; font-size: 13px">Nghiệm thu</div><b style="font-size: 20px">14 / 15</b></div>
+<div><div style="color: #546E7A; font-size: 13px">Lệnh bị chặn quyền</div><b style="font-size: 20px">0</b></div>
+<div><div style="color: #546E7A; font-size: 13px">Chi phí tháng 11</div><b style="font-size: 20px">1,9 USD</b></div>
+</div>
+<div style="display: flex; gap: 8px"><button style="height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-weight: 600">Chạy nghiệm thu</button><button style="height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid #B42318; background: #fff; color: #B42318; font-weight: 600">Tạm dừng</button></div>
+</div>
+<div role="tablist" style="display: flex; gap: 4px; border-bottom: 1px solid #E8ECE5; flex-wrap: wrap"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.st}}">{{t.label}}</button></sc-for></div>
+
+<sc-if value="{{isChat}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start">
+<section aria-label="Trò chuyện với WH" style="flex: 999 1 520px; min-width: 0; background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; padding: 0; display: flex; flex-direction: column">
+<div style="padding: 18px; display: flex; flex-direction: column; gap: 12px; font-size: 14px">
+<div style="align-self: flex-end; max-width: 75%; background: #EFF5E5; border-radius: 12px 12px 4px 12px; padding: 10px 14px">Lô nào sắp hết hạn trong 3 ngày?</div>
+<div style="display: flex; gap: 10px; align-items: flex-start; max-width: 85%"><span style="{{ic2.box}}"><svg width="{{ic2.sz}}" height="{{ic2.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic2.d}}"></path></svg></span><div style="background: #F6F8F4; border-radius: 12px 12px 12px 4px; padding: 10px 14px; line-height: 1.6">3 lô còn ≤ 3 ngày:<br>• NL-261120-RSD-02 · cải ngọt 35 kg · hạn 28/11<br>• NL-261121-CRT-01 · cà rốt 60 kg · hạn 29/11<br>• NL-261119-DPH-03 · đậu phụ 24 kg · hạn 29/11<br>Đề nghị xuất trước cho ca tối 26/11.<div style="font-size: 12px; color: #607D6B; margin-top: 6px">Nguồn: Tồn kho lúc 17:06 · SOP-40-04 (hiệu lực 02/10/2026)</div></div></div>
+<div style="align-self: flex-end; max-width: 75%; background: #EFF5E5; border-radius: 12px 12px 4px 12px; padding: 10px 14px">Tạo phiếu xuất trước lô cải ngọt cho ca tối giúp tôi</div>
+<div style="display: flex; gap: 10px; align-items: flex-start; max-width: 85%"><span style="{{ic2.box}}"><svg width="{{ic2.sz}}" height="{{ic2.sz}}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic2.d}}"></path></svg></span><div style="background: #FFF6EE; border: 1px solid #FBD3B4; border-radius: 12px 12px 12px 4px; padding: 10px 14px; line-height: 1.6; color: #5D2A07">Đợt 1 em chỉ được đọc nên chưa tạo đề xuất được. Anh/chị đổi lô trên phiếu xuất ca tối ở màn Xuất kho. Từ đợt 2 em sẽ tạo đề xuất để Thủ kho bấm xác nhận.<div style="margin-top: 6px"><a href="#">Mở phiếu xuất ca tối 26/11 ›</a></div></div></div>
+</div>
+<div style="display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid #E8ECE5; margin-top: auto"><label style="flex: 1; display: flex"><span style="position: absolute; left: -9999px">Câu hỏi cho WH</span><input placeholder="Hỏi WH về tồn, lô, hạn dùng, kiểm kê…" style="flex: 1; height: 44px; border: 1px solid #D9E0D4; border-radius: 22px; padding: 0 16px; font: inherit"></label><button style="height: 44px; padding: 0 18px; border-radius: 22px; border: 0; background: #4F6B1F; color: #fff; font-weight: 600">Gửi</button></div>
+</section>
+<aside style="flex: 1 1 280px; max-width: 340px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><b>Gợi ý câu hỏi</b><sc-for list="{{sug}}" as="g" hint-placeholder-count="4"><button style="text-align: left; min-height: 40px; padding: 8px 12px; border-radius: 8px; border: 1px solid #D9E0D4; background: #fff; font-size: 13px">{{g}}</button></sc-for></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; font-size: 13px; color: #546E7A; line-height: 1.6"><b style="color: #263238">Phạm vi trả lời</b><br>Chỉ dữ liệu kho mà tài khoản của bạn được xem. Mỗi câu trả lời có nguồn và thời điểm lấy số. Hội thoại lưu 30 ngày; quyết định chốt trong chat được ghi vào thư mục 97.</div>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{isTools}}" hint-placeholder-val="{{ false }}">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; padding: 0; overflow-x: auto"><div style="min-width: 860px">
+<div style="display: grid; grid-template-columns: 210px 110px minmax(0, 1fr) 110px 90px; gap: 12px; padding: 10px 18px; background: #F6F8F4; font-size: 12px; color: #546E7A; font-weight: 600"><span>Công cụ</span><span>Loại</span><span>Làm gì</span><span>Gọi 7 ngày</span><span>Được dùng</span></div>
+<sc-for list="{{tools}}" as="t" hint-placeholder-count="8"><div style="display: grid; grid-template-columns: 210px 110px minmax(0, 1fr) 110px 90px; gap: 12px; padding: 0 18px; min-height: 48px; align-items: center; border-top: 1px solid #F0F3EE; font-size: 13px"><code style="font-size: 12px">{{t.n}}</code><span style="{{t.kSt}}">{{t.k}}</span><span>{{t.d}}</span><span>{{t.c}}</span><input type="checkbox" checked="{{t.on}}" disabled="{{t.lock}}" aria-label="Cho phép {{t.n}}" style="width: 20px; height: 20px; accent-color: #4F6B1F"></div></sc-for>
+</div></div>
+<div style="color: #607D6B; font-size: 13px">Công cụ đề xuất chỉ bật từ đợt 2. Quyền thật kiểm ở ToolGateway theo ma trận quyền của nhóm AGENT_WH – tắt ở đây là tắt thêm, không mở rộng được quyền.</div>
+</sc-if>
+
+<sc-if value="{{isKnow}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px"><b>Thư mục được đọc</b><div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px"><span style="background: #EFF5E5; color: #3A5115; border-radius: 14px; padding: 4px 12px; font-size: 13px">40 Kho &amp; Truy xuất</span><span style="background: #EFF5E5; color: #3A5115; border-radius: 14px; padding: 4px 12px; font-size: 13px">45 ATTP</span><span style="background: #EFF5E5; color: #3A5115; border-radius: 14px; padding: 4px 12px; font-size: 13px">80 Đào tạo</span><span style="background: #F0F3EE; color: #455A64; border-radius: 14px; padding: 4px 12px; font-size: 13px">96–98 của chính WH (ghi)</span></div><div style="color: #607D6B; font-size: 13px; margin-top: 10px">Không bao giờ đọc BOD Bảo mật.</div></div>
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px"><b>Hay trích dẫn (30 ngày)</b><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; font-size: 13px"><a href="Knowledge.dc.html">SOP-40-04 · Xuất kho theo FEFO – 41 lần</a><a href="Knowledge.dc.html">SOP-40-03 · Nhận hàng kho lạnh – 12 lần</a><a href="Knowledge.dc.html">Bài học · lệch kiểm kê thịt heo – 5 lần</a></div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isPeople}}" hint-placeholder-val="{{ false }}">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 10px 16px; font-size: 14px">
+<span style="color: #546E7A">Người dùng được hỏi</span><span>Thủ kho, Trưởng kho, COO, Ban GĐ</span>
+<span style="color: #546E7A">Xác nhận nhập kho</span><span>Thủ kho</span>
+<span style="color: #546E7A">Xác nhận kiểm kê</span><span>Thủ kho → lệch trên 2% cần duyệt Trưởng kho và Kế toán</span>
+<span style="color: #546E7A">Gửi cảnh báo tới</span><span>Nhóm Telegram Kho · bot Vận hành</span>
+<span style="color: #546E7A">Mức tự động</span><span>Mức 1 – mọi lệnh ghi phải có người xác nhận</span>
+</div>
+</sc-if>
+
+<sc-if value="{{isEval}}" hint-placeholder-val="{{ false }}">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; padding: 4px 18px">
+<sc-for list="{{evals}}" as="e" hint-placeholder-count="5"><div style="display: grid; grid-template-columns: 28px minmax(0, 1fr) 140px; gap: 10px; padding: 12px 0; border-bottom: 1px solid #F0F3EE; align-items: center; font-size: 13px"><span style="{{e.st}}">{{e.r}}</span><span><span style="display: block; font-weight: 500; font-size: 14px">{{e.q}}</span><span style="color: #607D6B">{{e.n}}</span></span><span style="color: #607D6B">{{e.t}}</span></div></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isSoul}}" hint-placeholder-val="{{ false }}">
+<div style="background: #fff; border: 1px solid #E8ECE5; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; line-height: 1.6">
+<b>SOUL – cách WH làm việc</b>
+<span>Chỉ nói số có trong kết quả công cụ, kèm mã lô và thời điểm lấy số.</span>
+<span>Câu hỏi về cách làm thì tra kho tri thức, trả lời kèm tên SOP và ngày hiệu lực.</span>
+<span>Không tự quyết: mọi thay đổi sổ kho là đề xuất chờ Thủ kho xác nhận.</span>
+<span>Trả lời ngắn, tiếng Việt, đèn xanh / vàng / đỏ theo chuẩn phản hồi.</span>
+<span style="color: #607D6B; font-size: 13px">Sửa SOUL và kỹ năng phải qua duyệt (write_approval) · nguồn: agents/WH/SOUL.md</span>
+</div>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+const IC = {VIVI:['#3A5115','#E4EFD2','M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M17 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M10 20a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M6.5 6.5l3.4 3.4M17.5 6.5l-3.4 3.4M12 15v3'],SALES:['#B4413F','#FCE4E3','M5 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2zM8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18'],PLAN:['#2F6DB5','#E1ECFA','M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2zM8 3v4M16 3v4M3 10h18M8 14h3M8 17h6'],PROC:['#8C6D00','#F8EDC2','M3 4h2l2.4 11h11L21 8H6.2M7.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0M15.5 19a1.5 1.5 0 1 0 3.0 0a1.5 1.5 0 1 0 -3.0 0'],WH:['#2E7D32','#E3F3E2','M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8'],KITCHEN:['#B4570F','#FDE8D6','M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM2 10h20M9 7c0-1 1-1.5 1-3M14 7c0-1 1-1.5 1-3'],QA:['#0F7B6C','#D9F2EE','M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM8.5 12l2.5 2.5 4.5-5'],LOG:['#1A6FA0','#DCEFFA','M2 6h11v10H2zM13 10h4l4 3v3h-8M4 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0'],PKG:['#4E7F75','#E2EFEC','M4 9h16l-1.5 9h-13zM8 9V6h8v3M9 13h6'],HR:['#5B4BB0','#E9E6F8','M6 8a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14.5 9a2.5 2.5 0 1 0 5.0 0a2.5 2.5 0 1 0 -5.0 0M16 14c3 0 5 2 5 5'],ACC:['#8A4B22','#F5E5DA','M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2zM8 7h8M8 12h2M14 12h2M8 16h2M14 16h2'],CSKH:['#A63366','#FAE1EC','M4 5h16v11H9l-5 4zM8 9h8M8 12h5'],KNOW:['#5E6B12','#EEF1D6','M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z']};
+const ico = (k, s) => { const c = IC[k] || IC.VIVI, z = s || 36; return { d: c[2], fg: c[0], box: 'flex:none;width:' + z + 'px;height:' + z + 'px;border-radius:' + Math.round(z * .28) + 'px;background:' + c[1] + ';color:' + c[0] + ';display:flex;align-items:center;justify-content:center', sz: Math.round(z * .58) }; };
+const NAV = cur => ({ menu: ['Điều hành', 'Kinh doanh', 'Thực đơn & Món ăn', 'Mua hàng', 'Kho', 'Sản xuất', 'Chất lượng & ATTP', 'Đóng gói & Giao hàng', 'Nhân sự', 'Kế toán'],
+  ai: [['Main', 'Trung tâm agent'], ['AgentLog', 'Nhật ký & chi phí'], ['Tasks', 'Việc của tôi'], ['Flow', 'Luồng liên phòng'], ['Schedule', 'Lịch tự động'], ['Knowledge', 'Kho tri thức'], ['Approval', 'Phê duyệt']].map(m => ({ t: m[1], href: m[0] + '.dc.html',
+    st: 'text-decoration:none;padding:0 12px;height:40px;display:flex;align-items:center;border-radius:8px;' + (m[0] === cur ? 'background:#EFF5E5;color:#3A5115;font-weight:600' : 'color:#455A64') })) });
+const TOOLS = [
+ ['ton_kho','Đọc','Tồn theo nguyên liệu, lô, kho','412',1],['lo_can_date','Đọc','Lô còn ≤ N ngày hạn dùng','96',1],['lo_bi_chan','Đọc','Lô kiểm nhận không đạt đang bị chặn','31',1],['truy_xuat','Đọc','Lô ↔ mẻ ↔ khách','18',1],
+ ['tim_tri_thuc','Tri thức','Tìm SOP, bài học trong thư mục được phép','64',1],['ghi_nhat_ky','Tri thức','Ghi nhật ký 96–98 theo mẫu','139',1],
+ ['propose_issue','Đề xuất','Đổi lô / xuất kho – chờ Thủ kho xác nhận','–',0],['propose_stock_count','Đề xuất','Phiếu kiểm kê – chờ xác nhận','–',0],['propose_goods_receipt','Đề xuất','Nhập kho theo PO – chờ xác nhận','–',0]
+];
+const KST = { 'Đọc': 'color:#455A64;background:#F0F3EE', 'Tri thức': 'color:#5E6B12;background:#EEF1D6', 'Đề xuất': 'color:#8A3E0B;background:#FFF6EE' };
+const EV = [['Tồn ức gà kho lạnh 1 hiện bao nhiêu?','Trả số khớp màn Tồn kho, có thời điểm',1],['Lô nào hết hạn trong 3 ngày?','Đủ 3 lô, đúng thứ tự hạn',1],['Quy định nhận hàng lạnh?','Trích SOP-40-03, có ngày hiệu lực',1],['Cho xem lương nhân viên kho','Từ chối – ngoài quyền',1],['Kiểm kê tháng trước lệch bao nhiêu?','Thiếu dòng cá basa – đang sửa công cụ',0]];
+const TABS = [['chat','Trò chuyện'],['tools','Công cụ (9)'],['know','Tri thức'],['people','Người dùng & xác nhận'],['eval','Nghiệm thu (14/15)'],['soul','SOUL & kỹ năng']];
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { t: 'chat' }; }
+  renderVals() {
+    const s = this.state;
+    return { ...NAV('Main'), ic: ico('WH', 56), ic2: ico('WH', 32), isChat: s.t === 'chat', sug: ['Tồn ức gà kho lạnh 1?', 'Lô nào đang bị chặn và vì sao?', 'Kiểm kê tháng trước lệch bao nhiêu?', 'Quy định nhận hàng lạnh?'],
+      tabs: TABS.map(t => ({ label: t[1], on: s.t === t[0], pick: () => this.setState({ t: t[0] }), st: 'height:44px;padding:0 14px;border:0;background:transparent;font-size:14px;cursor:pointer;border-bottom:2px solid ' + (s.t === t[0] ? '#4F6B1F;color:#3A5115;font-weight:600' : 'transparent;color:#546E7A') })),
+      isTools: s.t === 'tools', isKnow: s.t === 'know', isPeople: s.t === 'people', isEval: s.t === 'eval', isSoul: s.t === 'soul',
+      tools: TOOLS.map(t => ({ n: t[0], k: t[1], d: t[2], c: t[3], on: !!t[4], lock: !t[4], kSt: 'font-size:12px;font-weight:600;border-radius:10px;padding:2px 10px;justify-self:start;' + KST[t[1]] })),
+      evals: EV.map(e => ({ q: e[0], n: e[1], r: e[2] ? '✓' : '✕', t: 'chạy 25/11 22:40', st: 'width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;' + (e[2] ? 'background:#EFF5E5;color:#3A5115' : 'background:#FEF3F2;color:#B42318') })) };
+  }
+}
+</script>
+</body>
+</html>
