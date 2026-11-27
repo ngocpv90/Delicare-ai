@@ -624,3 +624,68 @@ a.pt-contact-tile:hover { border-color: var(--pt-green); }
   .pt-cart-btn .pt-cart-label { display: inline; }
 }
 @media (max-width: 600px) { .pt-cart-btn .pt-cart-label { display: none; } }
+
+/* ===== Tra cứu đơn v2 (anh báo 2026-11-27: màn to mà form bé, khoảng trắng bên phải to) =====
+   Thanh tra cứu trải ngang · kết quả toàn chiều rộng (tiến độ | món + tổng tiền) · chưa tra cứu: hướng dẫn các bước. */
+.pt-track-search { padding: 22px 24px; margin-bottom: 22px; }
+.pt-track-search-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end; }
+.pt-track-search-row label { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.pt-track-search-row label > span:first-child { font-weight: 600; font-size: 14px; }
+.pt-track-search-row label b { color: #d93025; }
+.pt-track-search-row .pt-btn { height: 48px; padding: 0 28px; white-space: nowrap; }
+.pt-input-icon { position: relative; display: block; }
+.pt-input-icon .material-icons { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--pt-muted); pointer-events: none; }
+.pt-input-icon input { width: 100%; height: 48px; padding-left: 42px; }
+.pt-track-search .pt-alert { margin-top: 14px; }
+.pt-track-note { margin: 14px 0 0; font-size: 13.5px; }
+.pt-track-note .pt-sep { margin: 0 8px; }
+.pt-track-result { padding: 26px; }
+.pt-track-result header p { margin: 4px 0 0; }
+.pt-track-result-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px; align-items: start; }
+.pt-track-summary { border-left: 1px solid var(--pt-border); padding-left: 24px; }
+.pt-track-summary h3 { font-size: 16px; margin: 0 0 4px; }
+.pt-track-guide { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 18px; }
+.pt-track-flow { padding: 22px 24px; }
+.pt-track-flow h3, .pt-track-tip h3 { font-size: 16px; margin: 0 0 14px; }
+.pt-track-flow ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; counter-reset: s; }
+.pt-track-flow li { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; position: relative; }
+.pt-track-flow li::before { content: ''; position: absolute; top: 19px; left: -50%; width: 100%; height: 2px; background: var(--pt-border); z-index: 0; }
+.pt-track-flow li:first-child::before { display: none; }
+.pt-track-flow .dot { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--pt-green-light); color: var(--pt-green-dark); position: relative; z-index: 1; }
+.pt-track-flow .dot .material-icons { font-size: 20px; }
+.pt-track-flow b { font-size: 13.5px; }
+.pt-track-flow small { font-size: 12px; color: var(--pt-muted); line-height: 1.35; }
+.pt-track-tip { padding: 22px 24px; display: flex; gap: 14px; align-items: flex-start; }
+.pt-track-tip > .material-icons { font-size: 28px; color: var(--pt-green-dark); background: var(--pt-green-light); border-radius: 12px; padding: 8px; }
+.pt-track-tip h3 { margin-bottom: 6px; }
+.pt-track-tip p { margin: 0 0 10px; font-size: 14px; }
+@media (max-width: 1100px) {
+  .pt-track-guide { grid-template-columns: 1fr 1fr; }
+  .pt-track-flow { grid-column: 1 / -1; }
+  .pt-track-result-grid { grid-template-columns: 1fr; }
+  .pt-track-summary { border-left: 0; padding-left: 0; border-top: 1px solid var(--pt-border); padding-top: 18px; }
+}
+@media (max-width: 700px) {
+  .pt-track-search { padding: 18px; }
+  .pt-track-search-row { grid-template-columns: 1fr; }
+  .pt-track-search-row .pt-btn { width: 100%; }
+  .pt-track-guide { grid-template-columns: 1fr; }
+  .pt-track-flow ol { grid-template-columns: 1fr; gap: 10px; }
+  .pt-track-flow li { flex-direction: row; text-align: left; gap: 12px; }
+  .pt-track-flow li::before { display: none; }
+  .pt-track-flow li small { margin-left: auto; text-align: right; }
+}
+/* Form tra cứu dùng chung kiểu ô nhập của .pt-form; bỏ khoảng dưới / dính khi cuộn của .pt-form cho thanh ngang. */
+.pt-form.pt-track-search { position: static; }
+.pt-form.pt-track-search .pt-track-search-row label { margin: 0; }
+.pt-form.pt-track-search .pt-track-search-row label > span.pt-input-icon { display: block; margin: 0; font-weight: 400; }
+.pt-form.pt-track-search .pt-input-icon input { padding-left: 42px; height: 48px; }
+
+/* ===== Ô ngày (anh báo 2026-11-27: giỏ hàng bấm ô Bữa / nút Gửi đơn cũng bật lịch, ô nhập lag) =====
+   assets/css/style.css (theme cũ) đặt ::-webkit-calendar-picker-indicator của MỌI input[type=date] là position:absolute + inset 0 → lớp phủ vô hình
+   trùm cả form (khung cha gần nhất có định vị). Giữ lớp phủ trong khung ô ngày, trả biểu tượng lịch về bình thường (cùng cách app.css 2026-11-21). */
+.pt-root input[type=date], .pt-root input[type=datetime-local], .pt-root input[type=time], .pt-root input[type=month] { position: relative; }
+.pt-root input[type=date]::-webkit-calendar-picker-indicator,
+.pt-root input[type=datetime-local]::-webkit-calendar-picker-indicator {
+  position: static; background: revert; color: revert; width: revert; height: revert; cursor: pointer; opacity: 0.7;
+}
