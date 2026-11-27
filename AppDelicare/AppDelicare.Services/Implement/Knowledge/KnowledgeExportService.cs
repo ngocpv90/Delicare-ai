@@ -177,6 +177,32 @@ namespace AppDelicare.Services.Implement.Knowledge
         }
     }
 
+    /// <summary>
+    /// AI-8 (D-133): bản tin 07:00 / 17:00 ghi kho thư mục 10 (ghi chú tự sinh, số liệu chụp lúc xuất) – chạy cùng giờ bản tin bot (MorningBrief / DailyReport)
+    /// và lịch VIVI (agents/schedules.json); Hermes tắt thì bản tin vẫn vào kho đúng giờ.
+    /// </summary>
+    public sealed class KnowledgeBriefMorningJob(IKnowledgeExportService exporter) : IScheduledJob
+    {
+        public string Code => "KnowledgeBriefMorning";
+        public string Name => "Bản tin sáng vào kho tri thức";
+        public string Description => "Ghi bản tin sáng (số liệu điều hành trong ngày) vào kho tri thức thư mục 10 – chạy lại trong ngày chỉ cập nhật cùng ghi chú";
+        public string DefaultAt => "07:00";
+
+        public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
+            => new(JobRunStatus.Succeeded, await exporter.ExportDailyBrief(now.Date, "sang"), now.Date, "Bản tin sáng");
+    }
+
+    public sealed class KnowledgeBriefEveningJob(IKnowledgeExportService exporter) : IScheduledJob
+    {
+        public string Code => "KnowledgeBriefEvening";
+        public string Name => "Báo cáo cuối ngày vào kho tri thức";
+        public string Description => "Ghi báo cáo 17:00 vào kho tri thức thư mục 10 – chạy lại trong ngày chỉ cập nhật cùng ghi chú";
+        public string DefaultAt => "17:00";
+
+        public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
+            => new(JobRunStatus.Succeeded, await exporter.ExportDailyBrief(now.Date, "chieu"), now.Date, "Báo cáo cuối ngày");
+    }
+
     /// <summary>AI-5: job đêm xuất ghi chú tự sinh vào kho tri thức (ghi <c>AnalyticsRefreshLog</c> như mọi job).</summary>
     public sealed class KnowledgeExportJob(IKnowledgeExportService exporter) : IScheduledJob
     {

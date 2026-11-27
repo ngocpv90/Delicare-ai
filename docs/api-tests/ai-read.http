@@ -1,0 +1,117 @@
+### AI đợt 1 (D-133: AI-1 … AI-8) – ToolGateway (REST) + API Trợ lý AI / Kho tri thức.
+### Biến: đặt trong http-client.env.json (KHÔNG ghi khóa thật vào tệp này).
+@gw = http://localhost:5130
+@api = http://localhost:5125/api
+@agentKey = {{AGENT_KEY_WH}}
+@token = {{WEB_TOKEN}}
+
+### 1. Sức khỏe + danh sách công cụ của agent (theo quyền agent ∩ người hỏi)
+GET {{gw}}/health
+
+###
+GET {{gw}}/tools
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+
+### 2. Công cụ đọc (AI-3) – số khớp màn Tồn kho
+POST {{gw}}/tools/get_ton_kho
+Content-Type: application/json
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+X-Correlation-Id: http-test-1
+
+{ "duoi_toi_thieu": true }
+
+### Lô sắp hết hạn 3 ngày
+POST {{gw}}/tools/get_lo_can_date
+Content-Type: application/json
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+
+{ "so_ngay": 3 }
+
+### Công cụ ngoài danh sách agent → 403 + nhật ký Denied
+POST {{gw}}/tools/tien_do_bep_chi_tiet
+Content-Type: application/json
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+
+{}
+
+### Người hỏi Telegram chưa liên kết → 403 (AI-7)
+POST {{gw}}/tools/get_ton_kho
+Content-Type: application/json
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+X-On-Behalf-Of: 999999999
+
+{}
+
+### 3. Nguồn sự kiện (AI-4) – gọi lại với since = next không trùng
+POST {{gw}}/tools/lay_su_kien
+Content-Type: application/json
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+
+{ "since": "2026-11-27T00:00:00" }
+
+### 4. Kho tri thức qua agent (AI-5) – tìm không dấu, không bao giờ BOD
+POST {{gw}}/tools/tim_tri_thuc
+Content-Type: application/json
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+
+{ "cau_hoi": "quy trinh nhap kho" }
+
+### Ghi nhật ký 96 (chỉ 96 / 97 / 98)
+POST {{gw}}/tools/ghi_nhat_ky
+Content-Type: application/json
+X-Agent-Code: WH
+X-Agent-Key: {{agentKey}}
+
+{ "loai": "nhat_ky", "noi_dung": "Thử từ ai-read.http" }
+
+### 5. Web – Trung tâm agent (AI-6): CEO / COO / FIN-IT
+GET {{api}}/Agent/GetAll
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/Agent/GetById?code=WH
+Authorization: Bearer {{token}}
+
+### Tắt agent (Sửa Trung tâm agent) – ToolGateway từ chối ngay lời gọi sau; bật lại: active=true
+POST {{api}}/Agent/SaveIsActive
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+code=WH&active=false
+
+###
+GET {{api}}/Agent/GetActivity?agent=WH&status=Denied
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/Agent/GetSchedules
+Authorization: Bearer {{token}}
+
+### 6. Web – Kho tri thức (quyền theo thư mục knowledge?folder=…)
+GET {{api}}/Knowledge/GetTree
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/Knowledge/Search?keyword=thit%20heo
+Authorization: Bearer {{token}}
+
+### Lưu ghi chú (thiếu frontmatter → 400; prevHash cũ → 409)
+POST {{api}}/Knowledge/Save
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "path": "80 Đào tạo/Thử AI-8.md", "content": "---\nid: thu-ai8\ntype: huong-dan\nsource: human\nowner: COO\nstatus: nháp\nvalid_from: 2026-11-27\nreview_by: 2027-11-27\nconfidentiality: nội bộ\nrefs: []\n---\n# Thử AI-8\n", "prevHash": null }
+
+### 7. Job (AI-5 / AI-8) – chạy tay (FIN-IT / admin): KnowledgeExport, KnowledgeBriefMorning, KnowledgeBriefEvening
+POST {{api}}/Job/Run
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+jobCode=KnowledgeBriefMorning
