@@ -23,6 +23,9 @@ namespace AppDelicare.Model.Option
         /// <summary>Mã bot Telegram nơi người hỏi liên kết (tra <c>X-On-Behalf-Of</c>); trống = mọi kênh Telegram.</summary>
         public string? AskingBotCode { get; set; }
 
+        /// <summary>AI-7: mã nhóm (UserGroup.Code, cách nhau dấu phẩy) được hỏi Trợ lý qua bot; trống = mọi người đã liên kết. Người hỏi chưa liên kết luôn bị từ chối.</summary>
+        public string? AskingGroups { get; set; }
+
         /// <summary>AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt.</summary>
         public string? HermesWebhookUrl { get; set; }
 

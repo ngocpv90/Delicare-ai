@@ -1,0 +1,38 @@
+# Bộ câu nghiệm thu agent QA (AI-7, D-133). Chạy: node tools/agent-eval/run.mjs QA
+agent: QA
+webUser: uat.qa
+cases:
+  - id: qa-nhiet-do
+    question: Nhiệt độ hôm nay có lần nào vượt ngưỡng?
+    tool: nhiet_do_ngay
+    args: {}
+    expect:
+      status: 200
+  - id: qa-phan-anh
+    question: Phản ánh khách 30 ngày qua?
+    tool: phan_anh_khach
+    args: {}
+    expect:
+      status: 200
+      notContains: "@"
+  - id: qa-lo-can-date
+    question: Lô nào sắp hết hạn trong 3 ngày?
+    tool: get_lo_can_date
+    args: { so_ngay: 3 }
+    expect:
+      status: 200
+      equalsWeb: { tool: "", web: "MaterialLot/GetList?ExpiringWithinDays=3&InStock=true", webPath: listData }
+  - id: qa-truy-xuat-me-sai
+    question: Truy xuất mẻ ME-KHONG-CO
+    tool: truy_xuat_me
+    args: { so_me: ME-KHONG-CO }
+    expect:
+      status: 400
+      contains: Không tìm thấy mẻ
+  - id: qa-sop
+    question: Mẻ chỉ đạt 68 độ thì xử lý thế nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: nhiet do loi me nau }
+    expect:
+      status: 200
+      has: [ghi_chu]

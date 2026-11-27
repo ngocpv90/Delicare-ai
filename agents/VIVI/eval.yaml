@@ -1,0 +1,52 @@
+# Bộ câu nghiệm thu agent VIVI (AI-7, D-133). Chạy: node tools/agent-eval/run.mjs VIVI
+agent: VIVI
+webUser: uat.ceo
+cases:
+  - id: vivi-dieu-hanh
+    question: Hôm nay vận hành thế nào?
+    tool: bao_cao_dieu_hanh
+    args: {}
+    expect:
+      status: 200
+      has: [kpi, kpi.orders, alerts]
+      equalsWeb: { tool: kpi.orders.total, web: "Dashboard/GetExecutive", webPath: data.kpi.orders.total }
+  - id: vivi-kpi-tuan
+    question: KPI 7 ngày qua?
+    tool: kpi_khoang
+    args: {}
+    expect:
+      status: 200
+  - id: vivi-su-co
+    question: Hôm nay có sự cố gì?
+    tool: su_co_ngay
+    args: {}
+    expect:
+      status: 200
+      has: [canh_bao, ngay]
+  - id: vivi-cho-duyet
+    question: Có gì đang chờ tôi duyệt?
+    tool: ds_cho_duyet
+    args: {}
+    expect:
+      status: 200
+  - id: vivi-su-kien
+    question: (theo lịch 5 phút) sự kiện mới
+    tool: lay_su_kien
+    args: {}
+    expect:
+      status: 200
+      has: [items, next]
+  - id: vivi-phan-anh
+    question: Phản ánh nào đang quá hạn?
+    tool: phan_anh_khach
+    args: { qua_han: true }
+    expect:
+      status: 200
+      notContains: "@"
+  - id: vivi-ngay-sai
+    question: Báo cáo ngày 31-31-2026
+    tool: bao_cao_dieu_hanh
+    args: { ngay: 31-31-2026 }
+    expect:
+      status: 400
+      contains: không hợp lệ
