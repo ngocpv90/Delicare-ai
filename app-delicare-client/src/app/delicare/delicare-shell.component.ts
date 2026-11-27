@@ -1,11 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, NgZone, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { versioned } from '../helpers/asset-version';
+import { assetVersion, versioned } from '../helpers/asset-version';
 import { LEGAL_NAME, URL_API } from '../helpers/constant-helper';
 import { User } from '../helpers/user';
 import { AuthenticationService } from '../services/authentication.service';
 import { createDelicareHost } from './delicare-host';
+import { openTableCache, TableCache } from './table-cache';
 import { ThemeService } from './theme.service';
 
 /** Thứ tự nạp giống docs/mockup/index.html. store.js đọc window.DC_HOST nên host phải gán trước. */
@@ -104,19 +105,24 @@ export class DelicareShellComponent implements AfterViewInit, OnDestroy {
   }
 
   public ngAfterViewInit(): void {
-    // Menu + quyền lấy mới từ database mỗi lần mở khung (api/User/GetCurrent): đổi cấu hình ở màn "Menu chức năng" / ma trận quyền
-    // là có hiệu lực sau khi tải lại trang. Lỗi mạng → dùng menu đã lưu lúc đăng nhập.
+    // Tải nhanh: 3 việc chạy SONG SONG thay vì nối đuôi – (1) tải trước toàn bộ script engine, (2) menu + quyền mới nhất
+    // (api/User/GetCurrent: đổi cấu hình ở "Menu chức năng" / ma trận quyền có hiệu lực sau khi tải lại trang; lỗi mạng → menu lúc đăng nhập),
+    // (3) mở bộ đệm dữ liệu bảng (table-cache.ts) để màn đầu vẽ ngay bằng dữ liệu lần trước, API cập nhật ở nền.
+    this.preloadScripts();
     const stored = this.auth.userValue;
-    firstValueFrom(this.http.get<any>(`${URL_API}User/GetCurrent`))
+    const current = firstValueFrom(this.http.get<any>(`${URL_API}User/GetCurrent`))
       .then((res) => (Array.isArray(res?.data?.listMenu) && stored ? { ...stored, listMenu: res.data.listMenu, isAdmin: res.data.user?.isAdmin ?? stored.isAdmin, mustChangePassword: res.data.mustChangePassword ?? stored.mustChangePassword } : stored))
-      .catch(() => stored)
-      .then((user) => this.startEngine(user));
+      .catch(() => stored);
+    const owner = String(stored?.userId || stored?.id || stored?.userName || '');
+    const cache = openTableCache(owner, assetVersion() || 'dev');
+    Promise.all([current, cache]).then(([user, c]) => this.startEngine(user, c));
   }
 
-  private startEngine(user: User | null): void {
+  private startEngine(user: User | null, cache: TableCache): void {
     if (this.destroyed) return;
     const w = window as any;
-    w.DC_HOST = createDelicareHost(this.http, user, () => this.logout());
+    // Mật khẩu tạm: không dùng dữ liệu đệm (máy chủ chặn mọi API khác tới khi đổi mật khẩu).
+    w.DC_HOST = { ...createDelicareHost(this.http, user, () => this.logout()), cache: user?.mustChangePassword ? null : cache };
     // Engine thao tác DOM trực tiếp: chạy ngoài Angular zone để không kích change detection liên tục.
     this.zone.runOutsideAngular(() => {
       this.loadScripts()
@@ -145,21 +151,38 @@ export class DelicareShellComponent implements AfterViewInit, OnDestroy {
     setTimeout(() => window.location.reload(), 50);
   }
 
+  /** Tải trước (chưa chạy) mọi script engine cùng lúc, trong khi chờ GetCurrent – lúc gắn thẻ script thì đã có sẵn trong bộ nhớ trình duyệt. */
+  private preloadScripts(): void {
+    SCRIPTS.forEach((file) => {
+      const href = versioned(SCRIPT_BASE + file);
+      if (document.querySelector(`link[rel="preload"][href="${href}"]`)) return;
+      const l = document.createElement('link');
+      l.rel = 'preload';
+      l.as = 'script';
+      l.href = href;
+      document.head.appendChild(l);
+    });
+  }
+
   // Engine dùng biến toàn cục (window.Store, window.APP…) tạo lúc nạp script: luôn nạp lại để store.js
-  // đọc DC_HOST của phiên hiện tại.
-  private async loadScripts(): Promise<void> {
+  // đọc DC_HOST của phiên hiện tại. Gắn TẤT CẢ thẻ script một lượt với async = false: trình duyệt tải song song
+  // nhưng vẫn CHẠY đúng thứ tự trong SCRIPTS (trước đây chờ từng file xong mới tải file sau – ~70 lượt nối đuôi).
+  private loadScripts(): Promise<void> {
     document.querySelectorAll(`script[${SCRIPT_ATTR}]`).forEach((s) => s.remove());
-    for (const file of SCRIPTS) {
-      if (this.destroyed) return;
-      await new Promise<void>((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = versioned(SCRIPT_BASE + file);
-        s.async = false;
-        s.setAttribute(SCRIPT_ATTR, file);
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error('Không tải được ' + s.src));
-        document.body.appendChild(s);
-      });
-    }
+    if (this.destroyed) return Promise.resolve();
+    return Promise.all(
+      SCRIPTS.map(
+        (file) =>
+          new Promise<void>((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = versioned(SCRIPT_BASE + file);
+            s.async = false;
+            s.setAttribute(SCRIPT_ATTR, file);
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('Không tải được ' + s.src));
+            document.body.appendChild(s);
+          })
+      )
+    ).then(() => undefined);
   }
 }

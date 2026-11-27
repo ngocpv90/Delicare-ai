@@ -8,7 +8,7 @@ import {
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, Observable, of, throwError } from 'rxjs';
-import { AuthenticationService } from '../services/authentication.service';
+import { AuthenticationService, inStaffArea } from '../services/authentication.service';
 import { URL_API } from './constant-helper';
 
 @Injectable()
@@ -23,7 +23,8 @@ export class JwtInterceptor implements HttpInterceptor {
     if (err.status === 401) {
       const returnUrl = this.router.url;
       this.authenticationService.clearSession();
-      if (!returnUrl.startsWith('/dang-nhap')) {
+      // Trang khách lẻ công khai gọi API lỗi 401 → chỉ xóa phiên, khách ở lại trang.
+      if (inStaffArea() && !returnUrl.startsWith('/dang-nhap')) {
         this.router.navigate(['/dang-nhap'], { queryParams: { returnUrl } });
       }
       return of(err.message);

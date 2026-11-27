@@ -6,11 +6,16 @@ import Swal from 'sweetalert2';
 import { catchError, map } from 'rxjs/operators';
 import {
   AUTHEN,
+  DOMAIN_ROUTER,
   NOTIFICATION_TITLE,
   UN_AUTHORIZED,
   URL_API,
 } from '../helpers/constant-helper';
 import { User } from '../helpers/user';
+import { clearTableCache } from '../delicare/table-cache';
+
+/** Đang ở khu nội bộ (/quan-tri…) – ngoài đó là trang khách lẻ công khai, không bao giờ tự chuyển sang đăng nhập. */
+export const inStaffArea = (): boolean => location.pathname.startsWith('/' + DOMAIN_ROUTER);
 
 @Injectable({
   providedIn: 'root',
@@ -96,6 +101,8 @@ export class AuthenticationService {
 
   // Drop the session without navigating (used by logout and by JwtInterceptor on 401)
   public clearSession(): void {
+    // Hết phiên / đăng xuất: xóa luôn dữ liệu bảng đã đệm trên máy (delicare/table-cache.ts).
+    if (localStorage.getItem(AUTHEN)) clearTableCache();
     localStorage.removeItem(AUTHEN);
     this.currentLoaded = false;
     clearTimeout(this.autoLogoutTimer);
@@ -110,6 +117,7 @@ export class AuthenticationService {
   private autoLogout(expireDate: number): any {
     clearTimeout(this.autoLogoutTimer);
     this.autoLogoutTimer = setTimeout(() => {
+      if (!inStaffArea()) { this.clearSession(); return; }
       Swal.fire({
         icon: 'warning',
         title: NOTIFICATION_TITLE,
@@ -132,7 +140,9 @@ export class AuthenticationService {
     const todaysDate = new Date().getTime();
     const expireDate = userData.expireTime;
     if (todaysDate > expireDate) {
-      this.logout();
+      // Trang khách lẻ công khai: token cũ hết hạn chỉ xóa phiên, không đẩy khách sang trang đăng nhập.
+      if (inStaffArea()) this.logout();
+      else this.clearSession();
     } else {
       this.autoLogout(expireDate - todaysDate);
     }

@@ -1,6 +1,6 @@
 {
-  "_ghiChu": "Nội dung trang khách lẻ (cổng công khai). Sản phẩm, giá, thực đơn, chính sách là BẢN NHÁP – PROPOSED, chờ anh (PO) duyệt. portalEnabled = false: trang khách lẻ TẮT (vào #/ về trang đăng nhập như cũ); xem trước bằng #/?xemtruoc=1. Khi có API RETAIL-1, sản phẩm + thực đơn tuần đọc từ máy chủ; file này là dự phòng. Trong Docker file nằm trong image web – sửa xong phải build lại web.",
-  "portalEnabled": false,
+  "_ghiChu": "Nội dung trang khách lẻ (cổng công khai). Sản phẩm, giá, thực đơn, chính sách là BẢN NHÁP – PROPOSED, chờ anh (PO) duyệt. portalEnabled = true: trang khách lẻ BẬT (anh bật lại 2026-11-27); đặt false thì vào / về trang đăng nhập, xem trước bằng /?xemtruoc=1. Khi có API RETAIL-1, sản phẩm + thực đơn tuần đọc từ máy chủ; file này là dự phòng. Trong Docker file nằm trong image web – sửa xong phải build lại web.",
+  "portalEnabled": true,
 
   "company": {
     "brand": "DELI-CARE",
