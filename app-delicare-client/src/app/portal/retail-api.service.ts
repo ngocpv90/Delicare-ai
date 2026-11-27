@@ -2,6 +2,7 @@ import { HttpBackend, HttpClient, HttpErrorResponse } from '@angular/common/http
 import { Injectable, inject } from '@angular/core';
 import { Observable, TimeoutError, catchError, map, of, timeout } from 'rxjs';
 import { URL_API } from '../helpers/constant-helper';
+import { CustomerAccountService, OrderDetail } from './account.service';
 
 /**
  * Kết quả gửi đơn:
@@ -78,6 +79,7 @@ const READ_TIMEOUT_MS = 8000;
 @Injectable({ providedIn: 'root' })
 export class RetailApiService {
   private readonly http = new HttpClient(inject(HttpBackend));
+  private readonly account = inject(CustomerAccountService);
 
   /** Danh mục sản phẩm từ máy chủ; null khi API chưa có / lỗi → trang dùng file cấu hình. */
   public catalog(): Observable<RetailCatalogDto | null> {
@@ -90,9 +92,9 @@ export class RetailApiService {
   }
 
   /** Tra cứu đơn theo mã đơn + SĐT đặt hàng (cả 2 phải khớp). */
-  public track(orderNumber: string, phoneNumber: string): Observable<{ ok: true; data: TrackOrderDto } | { ok: false; message: string; missing?: boolean }> {
+  public track(orderNumber: string, phoneNumber: string): Observable<{ ok: true; data: OrderDetail } | { ok: false; message: string; missing?: boolean }> {
     const q = `?orderNumber=${encodeURIComponent(orderNumber)}&phoneNumber=${encodeURIComponent(phoneNumber)}`;
-    return this.http.get<ApiResult<TrackOrderDto>>(URL_API + 'RetailPortal/TrackOrder' + q).pipe(
+    return this.http.get<ApiResult<OrderDetail>>(URL_API + 'RetailPortal/TrackOrder' + q).pipe(
       timeout(READ_TIMEOUT_MS),
       map((r) =>
         (r?.responseCode ?? 200) === 200 && r?.data
@@ -111,7 +113,7 @@ export class RetailApiService {
   }
 
   public submit(req: SubmitOrderRequest): Observable<SubmitResult> {
-    return this.http.post<ApiResult<{ orderNumber: string; totalAmount?: number }>>(URL_API + 'RetailPortal/SubmitOrder', req).pipe(
+    return this.http.post<ApiResult<{ orderNumber: string; totalAmount?: number }>>(URL_API + 'RetailPortal/SubmitOrder', req, { headers: this.account.authHeaders() }).pipe(
       timeout(SUBMIT_TIMEOUT_MS),
       map((r): SubmitResult => {
         const code = r?.responseCode ?? 200;

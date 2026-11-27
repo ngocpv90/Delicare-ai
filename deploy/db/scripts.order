@@ -144,6 +144,8 @@ DB/sp/uspUserRole_GetAll.sql
 DB/sp/uspUserRole_GetByUserGroupId.sql
 DB/sp/uspVehicle_GetAll.sql
 DB/sp/uspWarehouse_GetAll.sql
+# RETAIL-1 (2026-11-27): danh sách sản phẩm bán lẻ (màn #/sal-retail-product)
+DB/sp/uspRetailProduct_GetAll.sql
 
 # ---- Tài khoản quản trị ban đầu ----
 # Nhận biến AdminUserName / AdminPasswordHash (PBKDF2, script tự tính từ mật khẩu ở biến môi trường / tham số).
@@ -168,3 +170,5 @@ DB/seed/KpiMetricDefinition_seed.sql
 DB/seed/Integration_Telegram_seed.sql
 # ORD-OPT-1.8 (D-74 g): menu #/crm-order-week "Đăng ký suất tuần" + quyền chép từ #/crm-order – chỉ thêm
 DB/seed/ObjectMenu_crm_order_week_seed.sql
+# RETAIL-1 (2026-11-27, D-134): menu "Bán lẻ" (#/sal-retail-order, #/sal-retail-product) + quyền nhóm – chỉ thêm, không sửa quyền đã có
+DB/seed/ObjectMenu_retail_seed.sql

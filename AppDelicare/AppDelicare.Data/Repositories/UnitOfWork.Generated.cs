@@ -206,6 +206,14 @@ namespace AppDelicare.Data.Repositories
         public IRecipeRepository RecipeRepository => _RecipeRepository ??= new RecipeRepository(this);
         private IRecipeLineRepository? _RecipeLineRepository;
         public IRecipeLineRepository RecipeLineRepository => _RecipeLineRepository ??= new RecipeLineRepository(this);
+        private IRetailCustomerRepository? _RetailCustomerRepository;
+        public IRetailCustomerRepository RetailCustomerRepository => _RetailCustomerRepository ??= new RetailCustomerRepository(this);
+        private IRetailOrderRepository? _RetailOrderRepository;
+        public IRetailOrderRepository RetailOrderRepository => _RetailOrderRepository ??= new RetailOrderRepository(this);
+        private IRetailOrderLineRepository? _RetailOrderLineRepository;
+        public IRetailOrderLineRepository RetailOrderLineRepository => _RetailOrderLineRepository ??= new RetailOrderLineRepository(this);
+        private IRetailProductRepository? _RetailProductRepository;
+        public IRetailProductRepository RetailProductRepository => _RetailProductRepository ??= new RetailProductRepository(this);
         private IReturnInspectionRepository? _ReturnInspectionRepository;
         public IReturnInspectionRepository ReturnInspectionRepository => _ReturnInspectionRepository ??= new ReturnInspectionRepository(this);
         private IShiftRepository? _ShiftRepository;

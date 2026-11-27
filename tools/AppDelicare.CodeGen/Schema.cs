@@ -138,6 +138,94 @@ public static partial class DdlParser
         return tables;
     }
 
+    /// <summary>
+    /// RETAIL-1: bảng MỚI tạo bằng migration (DB/migrations, "-- delicare-migration: normal") – DB/migrations là nguồn cấu trúc
+    /// (DB-MIGRATIONS m1). Đọc khối <c>CREATE TABLE [dbo].[X] (</c> … <c>CONSTRAINT [PK_X] PRIMARY KEY</c>, giá trị DEFAULT viết ngay trong dòng cột.
+    /// Bảng đã có trong DDL gốc thì bỏ qua (DDL gốc ưu tiên).
+    /// </summary>
+    public static void MergeMigrationTables(string migrationsDir, Dictionary<string, Table> tables)
+    {
+        if (!Directory.Exists(migrationsDir))
+        {
+            return;
+        }
+        foreach (string file in Directory.GetFiles(migrationsDir, "*.sql").Order(StringComparer.Ordinal))
+        {
+            string[] lines = File.ReadAllLines(file);
+            if (!lines.Any(l => MigrationNormal().IsMatch(l)))
+            {
+                continue;
+            }
+            Table? current = null;
+            foreach (string raw in lines)
+            {
+                string line = raw.TrimEnd();
+                var create = MigrationCreateTable().Match(line);
+                if (create.Success)
+                {
+                    current = tables.ContainsKey(create.Groups[1].Value) ? null : new Table(create.Groups[1].Value);
+                    if (current != null)
+                    {
+                        tables[current.Name] = current;
+                    }
+                    continue;
+                }
+                if (current == null)
+                {
+                    continue;
+                }
+                string trimmed = line.TrimStart();
+                if (trimmed.StartsWith("CONSTRAINT", StringComparison.Ordinal) || trimmed.StartsWith(")", StringComparison.Ordinal))
+                {
+                    current = null;
+                    continue;
+                }
+                var col = ColumnLine().Match(StripComment(line));
+                if (col.Success)
+                {
+                    var column = ToColumn(col);
+                    var df = InlineDefault().Match(col.Groups[4].Value);
+                    if (df.Success)
+                    {
+                        column.Default = df.Groups[1].Value.Trim();
+                    }
+                    current.Columns.Add(column);
+                }
+            }
+            // RETAIL-2: cột thêm bằng "ALTER TABLE [dbo].[X] ADD [Cột] [kiểu](độ dài) NULL" (bảng DDL gốc hoặc bảng migration).
+            foreach (string raw in lines)
+            {
+                var add = MigrationAddColumn().Match(raw);
+                if (add.Success && tables.TryGetValue(add.Groups[1].Value, out var target) && target.Find(add.Groups[2].Value) == null)
+                {
+                    var col = ColumnLine().Match("    [" + add.Groups[2].Value + "] " + StripComment(add.Groups[3].Value).TrimEnd(';'));
+                    if (col.Success)
+                    {
+                        target.Columns.Add(ToColumn(col));
+                    }
+                }
+            }
+        }
+    }
+
+    [GeneratedRegex(@"^\s*ALTER TABLE \[dbo\]\.\[(\w+)\] ADD \[(\w+)\] (\[.*)$")]
+    private static partial Regex MigrationAddColumn();
+
+    private static string StripComment(string line)
+    {
+        int i = line.IndexOf("--", StringComparison.Ordinal);
+        return (i >= 0 ? line[..i] : line).TrimEnd().TrimEnd(',');
+    }
+
+    [GeneratedRegex(@"^--\s*delicare-migration:\s*normal")]
+    private static partial Regex MigrationNormal();
+
+    [GeneratedRegex(@"^\s*CREATE TABLE \[dbo\]\.\[([^\]]+)\]\s*\($")]
+    private static partial Regex MigrationCreateTable();
+
+    [GeneratedRegex(@"DEFAULT\s*\((.*)\)\s*$")]
+    private static partial Regex InlineDefault();
+
     private static Column ToColumn(Match m)
     {
         string name = m.Groups[1].Value;

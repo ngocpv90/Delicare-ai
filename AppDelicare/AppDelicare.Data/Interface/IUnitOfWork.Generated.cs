@@ -104,6 +104,10 @@ namespace AppDelicare.Data.Interface
         public IQcInspectionLineRepository QcInspectionLineRepository { get; }
         public IRecipeRepository RecipeRepository { get; }
         public IRecipeLineRepository RecipeLineRepository { get; }
+        public IRetailCustomerRepository RetailCustomerRepository { get; }
+        public IRetailOrderRepository RetailOrderRepository { get; }
+        public IRetailOrderLineRepository RetailOrderLineRepository { get; }
+        public IRetailProductRepository RetailProductRepository { get; }
         public IReturnInspectionRepository ReturnInspectionRepository { get; }
         public IShiftRepository ShiftRepository { get; }
         public IShiftAssignmentRepository ShiftAssignmentRepository { get; }

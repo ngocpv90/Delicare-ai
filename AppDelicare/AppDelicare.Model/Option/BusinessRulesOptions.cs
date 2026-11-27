@@ -18,6 +18,8 @@ namespace AppDelicare.Model.Option
         public KpiRulesOptions Kpi { get; set; } = new();
         /// <summary>BE3.5: dashboard điều hành + hành trình đơn – section <c>BusinessRules:Dashboard</c> (PROPOSED – D-57 ad–ai).</summary>
         public DashboardRulesOptions Dashboard { get; set; } = new();
+        /// <summary>RETAIL-1: quy tắc đơn khách lẻ (BusinessRules:Retail) – PROPOSED – BA/PO CONFIRM.</summary>
+        public RetailRulesOptions Retail { get; set; } = new();
         public int OrderCutoffHourPreviousDay { get; set; } = 20;
         public string OrderLockJobTime { get; set; } = "20:00";
         public string MrpJobTime { get; set; } = "20:30";

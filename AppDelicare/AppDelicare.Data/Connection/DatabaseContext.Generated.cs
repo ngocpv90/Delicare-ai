@@ -107,6 +107,10 @@ namespace AppDelicare.Data.Connection
         public virtual DbSet<QcInspectionLine> QcInspectionLine { get; set; }
         public virtual DbSet<Recipe> Recipe { get; set; }
         public virtual DbSet<RecipeLine> RecipeLine { get; set; }
+        public virtual DbSet<RetailCustomer> RetailCustomer { get; set; }
+        public virtual DbSet<RetailOrder> RetailOrder { get; set; }
+        public virtual DbSet<RetailOrderLine> RetailOrderLine { get; set; }
+        public virtual DbSet<RetailProduct> RetailProduct { get; set; }
         public virtual DbSet<ReturnInspection> ReturnInspection { get; set; }
         public virtual DbSet<Shift> Shift { get; set; }
         public virtual DbSet<ShiftAssignment> ShiftAssignment { get; set; }
@@ -234,6 +238,10 @@ namespace AppDelicare.Data.Connection
             modelBuilder.Entity<QcInspectionLine>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
             modelBuilder.Entity<Recipe>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
             modelBuilder.Entity<RecipeLine>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
+            modelBuilder.Entity<RetailCustomer>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });
+            modelBuilder.Entity<RetailOrder>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });
+            modelBuilder.Entity<RetailOrderLine>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });
+            modelBuilder.Entity<RetailProduct>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });
             modelBuilder.Entity<ReturnInspection>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
             modelBuilder.Entity<Shift>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
             modelBuilder.Entity<ShiftAssignment>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });

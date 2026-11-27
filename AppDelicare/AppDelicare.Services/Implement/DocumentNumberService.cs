@@ -58,6 +58,8 @@ namespace AppDelicare.Services.Implement
             [DocumentKind.ShiftSwap] = new("DC", 4, false, [new(typeof(ShiftSwapRequest), ["RequestNo"])]),
             [DocumentKind.QcInspection] = new("QC", 4, false, [new(typeof(QcInspection), ["InspectionNumber"])]),
             [DocumentKind.MaterialRequirement] = new("MR", 3, false, [new(typeof(MaterialRequirement), ["RequirementNo"])]),
+            // RETAIL-1: đơn khách lẻ (trang web / điện thoại / Zalo) – tách đơn doanh nghiệp DH-.
+            [DocumentKind.RetailOrder] = new("BL", 4, false, [new(typeof(RetailOrder), ["OrderNumber"])]),
 
             // ---------- Danh mục (dạng A) ----------
             // KHB / KHC dùng chung cột Customer.Code nhưng đếm riêng theo tiền tố (mã gốc khác nhau).
@@ -73,6 +75,7 @@ namespace AppDelicare.Services.Implement
             [DocumentKind.PricePolicy] = new("BG", 5, false, [new(typeof(PricePolicy), ["Code"])], Catalog: true),
             [DocumentKind.DishCategory] = new("NM", 5, false, [new(typeof(DishCategory), ["Code"])], Catalog: true),
             [DocumentKind.IngredientCategory] = new("NN", 5, false, [new(typeof(IngredientCategory), ["Code"])], Catalog: true),
+            [DocumentKind.RetailProduct] = new("SPL", 5, false, [new(typeof(RetailProduct), ["Code"])], Catalog: true),
         };
 
         /// <summary>Thông tin tiền tố cho API quy tắc mã / test (không lộ cấu trúc nội bộ).</summary>

@@ -1,4 +1,6 @@
-# RETAIL-1 – Module Bán lẻ (khách lẻ đặt trên web) – đặc tả cho backend
+# RETAIL-1 – Module Bán lẻ (khách lẻ đặt trên web) – đặc tả + trạng thái
+
+> **2026-11-27 – BACKEND ĐÃ LÀM** (anh giao làm cả backend): migration `DB/migrations/20261127_01_retail_order.sql` · `RetailPortalController` (công khai) · `RetailOrderController` · `RetailProductController` · service ở `AppDelicare.Services/Implement/Retail/` · test `AppDelicare.Tests/Sales/RetailTests.cs`. Kiểm đầu-cuối trên LocalDB: 28/28 lời gọi API đạt + đặt đơn thật trên giao diện trang khách. Lệch so với đặc tả: xem mục 9.
 
 > Trạng thái: **PROPOSED – BA/PO CONFIRM**. Anh chốt 2026-11-26: tạo **bảng mới riêng** cho khách lẻ, **tách hẳn** đơn doanh nghiệp (`Order` / hợp đồng giữ nguyên).
 > Frontend (trang khách lẻ `#/` + màn nội bộ `#/sal-retail-order`, `#/sal-retail-product`) **đã làm**, gọi đúng các API dưới đây; khi API chưa có:
@@ -111,7 +113,7 @@ Quyền đề xuất: nhóm Kinh doanh (SAL / SAL-HEAD) Truy cập + Thêm + S�
 Giao diện đã khai báo 2 màn với cờ `extra` (`modules/retail.js`) → trước khi có seed, chỉ admin thấy trên sidebar.
 
 ## 6b. Bật trang khách lẻ
-`assets/portal/portal-data.json` → `portalEnabled`: **false** (mặc định – nội dung còn là bản nháp): vào `#/` vẫn là trang đăng nhập như cũ; xem trước bằng `#/?xemtruoc=1`. Anh duyệt nội dung → đổi `true` rồi build lại web.
+`assets/portal/portal-data.json` → `portalEnabled`: **true** (anh bật lại 2026-11-27). Đặt `false` thì vào `#/` là trang đăng nhập như cũ; xem trước bằng `#/?xemtruoc=1`. Nội dung chính sách / giới thiệu trong file vẫn là bản nháp chờ anh duyệt.
 
 ## 7. Kiểm thử cần có
 - SubmitOrder: gửi lại cùng `clientRequestId` → cùng đơn; món sai bữa → 400; giá gửi lên sai bị bỏ qua; ngày qua giờ chốt → 400; sản phẩm Ngừng bán → 400; honeypot; giới hạn 429; không cần token.
@@ -121,3 +123,38 @@ Giao diện đã khai báo 2 màn với cờ `extra` (`modules/retail.js`) → t
 
 ## 8. Để sau (ngoài RETAIL-1)
 Tài khoản khách / tra cứu đơn của tôi (GAP-PORTAL-01) · thanh toán trực tuyến · đưa đơn lẻ vào kế hoạch sản xuất / MRP · ảnh sản phẩm · báo cáo doanh thu bán lẻ · đồng bộ kế toán AMIS.
+
+## 9. Ghi chú khi cài backend (2026-11-27)
+- **Bữa** lưu NHÃN (`Trưa`) ở `RetailOrder.MealType` / `RetailProduct.MealTypes` vì giao diện bán lẻ + trang khách dùng nhãn; máy chủ nhận cả mã (`TRUA`) lẫn nhãn và chuẩn hóa về nhãn. PROPOSED – BA/PO CONFIRM.
+- **Thực đơn tuần công khai** (`GetWeeklyMenu`) chỉ lấy thực đơn CHUNG (`Menu.MenuType = COMMON`) đã công bố – không lộ thực đơn riêng của khách doanh nghiệp. Chưa có → trang dùng thực đơn trong file.
+- **Không có CRUD chung** cho `RetailOrder` / `RetailOrderLine` (đơn đi theo máy trạng thái; dòng chỉ sửa qua `UpdateLines` để tổng tiền không lệch).
+- **IP khách** (giới hạn 429): đọc header `X-Real-IP` do nginx đặt, chỉ khi kết nối đến từ mạng nội bộ / loopback.
+- **Tin bot** `RETAIL_ORDER_NEW` gửi người có quyền Thêm ở `#/sal-retail-order` (đã liên kết bot); không có nút mở web (bot chưa có link về web).
+- **Seed** `DB/seed/RetailProduct_demo_seed.sql` = 12 món [DEMO] từ portal-data.json – CHỈ máy dev (không nằm trong `deploy/db/scripts.order`).
+- **Chưa làm** (mục 8 giữ nguyên) + STATUS_CATALOG (docs/reference – chỉ đọc) chưa có dòng `RetailOrder.OrderStatus`: máy trạng thái ở `Model/Helper/RetailOrderStatus.cs`.
+
+## 10. RETAIL-2 – tài khoản khách lẻ, Đơn của tôi, tiến độ, chuyến giao, nguồn gốc (D-136, 2026-11-27)
+
+**DB:** `DB/migrations/20261127_02_retail_customer.sql` – bảng RetailCustomer + RetailOrder.RetailCustomerId / DeliveryRouteId (PROPOSED – anh duyệt).
+
+**API công khai – `RetailPortal`** (phiên khách gửi ở header `X-Retail-Token`, hết phiên / sai → HTTP 401; vượt giới hạn → 429):
+
+| Action | Kiểu | Ghi chú |
+|---|---|---|
+| `Register` | POST JSON `{fullName, phoneNumber, password, email?, address?, website}` | trả `{token, expiresAt, profile}`; SĐT không trùng; ô bẫy `website` |
+| `Login` | POST JSON `{phoneNumber, password}` | sai SĐT / mật khẩu báo như nhau; khóa tạm sau `LoginFailLimit` lần |
+| `GetProfile` / `UpdateProfile` / `ChangePassword` | GET / POST JSON | đổi mật khẩu trả phiên mới, phiên cũ hết hiệu lực |
+| `GetMyOrders?group=active|done|cancelled|all` | GET | danh sách + `groupCounts`; mỗi đơn có `stageLabel` |
+| `GetMyOrder?orderNumber=` | GET | chi tiết + `listStep` (tiến độ) + `route` (chuyến) + địa chỉ |
+| `GetOrderTrace?orderNumber=` | GET | mẻ nấu (QC, nhiệt độ lõi, `sampleRetainedAt`), lô nguyên liệu, NCC |
+| `ClaimOrder` | POST JSON `{orderNumber}` | gắn đơn đặt khi chưa đăng nhập – SĐT đơn phải trùng SĐT tài khoản |
+| `SubmitOrder` | (cũ) | có phiên → đơn gắn vào tài khoản |
+| `TrackOrder` | (cũ) | thêm tiến độ + chuyến; **không** trả địa chỉ / ghi chú |
+
+**API nội bộ – `RetailOrder`:** `GetDetail` thêm `deliveryRouteId`, `route`, `listRouteOption` (chuyến cùng ngày nhận), `stageLabel`, `listStep`, `hasAccount`; `AssignRoute` (form `Id`, `DeliveryRouteId` – trống = bỏ gán; quyền Sửa `sal-retail-order`); `Transition` sang Delivering nhận thêm `DeliveryRouteId`.
+
+**Trang khách (Angular `src/app/portal`):** `/tai-khoan/dang-nhap` (đăng nhập / đăng ký), `/tai-khoan` (hồ sơ, đổi mật khẩu), `/don-cua-toi` (3 nhóm), `/don-cua-toi/:so` (tab Tiến độ & giao hàng – tự tải lại mỗi phút khi đơn còn chạy; tab Nguồn gốc suất ăn). Giỏ hàng điền sẵn tên / SĐT / địa chỉ khi đã đăng nhập. **Màn nội bộ** `#/sal-retail-order`: chi tiết đơn có khối "Chuyến giao" (chọn + Lưu chuyến) và tab "Tiến độ".
+
+**Kiểm thử:** `Sales/RetailAccountTests` (5 test: đăng ký / đăng nhập không lộ mật khẩu, SĐT không trùng, khóa sau N lần sai, phiên bị sửa → 401, đổi mật khẩu hủy phiên cũ, Đơn của tôi chỉ thấy đơn mình, gắn đơn phải trùng SĐT, phiên khách không vào API nội bộ).
+
+**Để sau:** OTP xác thực SĐT (cần cổng SMS / Zalo ZNS), quên mật khẩu (cần OTP), bản đồ vị trí xe trực tiếp.

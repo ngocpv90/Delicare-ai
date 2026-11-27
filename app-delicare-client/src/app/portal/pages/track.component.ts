@@ -3,7 +3,9 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PortalDataService } from '../portal-data.service';
-import { RetailApiService, TrackOrderDto } from '../retail-api.service';
+import { RetailApiService } from '../retail-api.service';
+import { OrderDetail } from '../account.service';
+import { OrderProgressComponent } from '../order-progress.component';
 
 /** Trạng thái đơn khách lẻ → chữ hiển thị + bước trên thanh tiến trình (RETAIL-1 mục 4). */
 const STEPS = [
@@ -20,7 +22,7 @@ const STEPS = [
 @Component({
   selector: 'app-portal-track',
   standalone: true,
-  imports: [AsyncPipe, DecimalPipe, RouterLink, ReactiveFormsModule],
+  imports: [AsyncPipe, DecimalPipe, RouterLink, ReactiveFormsModule, OrderProgressComponent],
   template: `
     @if (data$ | async; as d) {
       <section class="pt-page-head">
@@ -48,6 +50,7 @@ const STEPS = [
               <i class="material-icons">search</i>{{ loading() ? 'Đang tra cứu…' : 'Tra cứu' }}
             </button>
             <p class="pt-muted">Cần đổi / hủy đơn: gọi <a [href]="'tel:' + d.company.phoneHref">{{ d.company.phone }}</a> trước giờ chốt.</p>
+            <p class="pt-muted"><a routerLink="/tai-khoan/dang-nhap">Đăng nhập</a> để xem mọi đơn của bạn và truy xuất nguồn gốc suất ăn.</p>
           </form>
 
           @if (result(); as o) {
@@ -57,14 +60,10 @@ const STEPS = [
                   <small class="pt-muted">Mã đơn</small>
                   <h2>{{ o.orderNumber }}</h2>
                 </div>
-                <span class="pt-track-status" [class.cancel]="o.orderStatus === 'Cancelled'">{{ statusLabel(o.orderStatus) }}</span>
+                <span class="pt-track-status" [class.cancel]="o.orderStatus === 'Cancelled'">{{ o.stageLabel || statusLabel(o.orderStatus) }}</span>
               </header>
-              @if (o.orderStatus !== 'Cancelled') {
-                <ol class="pt-progress">
-                  @for (s of steps; track s.code; let i = $index) {
-                    <li [class.done]="i <= stepIndex(o.orderStatus)">{{ s.label }}</li>
-                  }
-                </ol>
+              @if (o.listStep.length) {
+                <app-order-progress [o]="o" />
               } @else if (o.cancelReason) {
                 <p class="pt-muted">Lý do hủy: {{ o.cancelReason }}</p>
               }
@@ -91,7 +90,7 @@ export class PortalTrackComponent {
   public readonly steps = STEPS;
   public readonly loading = signal(false);
   public readonly error = signal('');
-  public readonly result = signal<TrackOrderDto | null>(null);
+  public readonly result = signal<OrderDetail | null>(null);
 
   public readonly form = inject(FormBuilder).nonNullable.group({
     orderNumber: [inject(ActivatedRoute).snapshot.queryParamMap.get('ma') ?? '', Validators.required],

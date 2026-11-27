@@ -58,6 +58,7 @@ namespace AppDelicare.Messaging.Presentation
             ["STOP_LATE"] = "⏰ Điểm giao trễ",
             ["DELIVERY_TEMP_LOW"] = "🌡 Nhiệt độ giao thấp",
             ["SHORTAGE_REPORTED"] = "🍱 Báo thiếu suất",
+            ["RETAIL_ORDER_NEW"] = "🛒 Đơn khách lẻ mới",
             ["COMPLAINT_NEW"] = "📣 Phản ánh mới",
             ["COMPLAINT_SLA"] = "⏱ Phản ánh sắp quá hạn",
             ["CONTAINER_LOSS"] = "📦 Thất thoát hộp khay",

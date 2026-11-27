@@ -8,6 +8,7 @@ string root = options.Root ?? FindRepoRoot(Directory.GetCurrentDirectory())
     ?? throw new InvalidOperationException("Không tìm thấy thư mục gốc repo (có CLAUDE.md). Dùng --root <path>.");
 string ddl = Path.Combine(root, "docs", "reference", "20261113_structure_db_appdelicare.sql");
 var tables = DdlParser.Parse(ddl);
+DdlParser.MergeMigrationTables(Path.Combine(root, "DB", "migrations"), tables); // RETAIL-1: bảng mới tạo bằng migration
 var meta = Metadata.Load(root);
 var templates = new Templates(tables, meta);
 var all = tables.Values.OrderBy(t => t.Name, StringComparer.Ordinal).ToList();

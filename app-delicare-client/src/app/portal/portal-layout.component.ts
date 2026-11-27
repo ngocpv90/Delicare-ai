@@ -5,6 +5,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { catchError, filter, map, of, tap } from 'rxjs';
 import { ThemeService } from '../delicare/theme.service';
 import { AUTHEN, DOMAIN_ROUTER } from '../helpers/constant-helper';
+import { CustomerAccountService } from './account.service';
 import { CartService } from './cart.service';
 import { PortalDataService } from './portal-data.service';
 import { PortalData } from './portal.model';
@@ -23,6 +24,8 @@ export class PortalLayoutComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   public readonly cart = inject(CartService);
+  /** RETAIL-2: tài khoản khách lẻ (Đăng nhập / Đơn của tôi trên thanh đầu trang). */
+  public readonly account = inject(CustomerAccountService);
   public readonly menuOpen = signal(false);
   public readonly onCart = signal(false);
   public readonly year = new Date().getFullYear();

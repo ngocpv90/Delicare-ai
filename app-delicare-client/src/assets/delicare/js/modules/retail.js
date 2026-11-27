@@ -192,6 +192,28 @@
     });
     UI.confirm(to === 'Completed' ? `Hoàn thành ${who}? Đơn chuyển sang <b>Đã thanh toán</b>.` : `${ACT[to]} ${who}?`, () => run(), { ok: ACT[to] });
   }
+  /** RETAIL-2: khối Giao hàng trong chi tiết đơn – chuyến đang gán + chọn chuyến cùng ngày nhận (đơn chưa Hoàn thành / Hủy). */
+  function routeBlock(d, o, canEdit) {
+    const r = d.route, opts = d.listRouteOption || [], open = !['Completed', 'Cancelled'].includes(o.orderStatus);
+    const cur = r ? `<div><b>${esc(r.routeNumber || '')}</b> · ${esc(r.statusLabel || '')}${r.driverName ? ' · tài xế ' + esc(r.driverName) : ''}${r.licensePlate ? ' · xe ' + esc(r.licensePlate) : ''}
+        <div class="small muted">Đã giao ${U.num(r.stopDoneCount || 0)}/${U.num(r.stopCount || 0)} điểm${r.actualStart ? ' · xuất phát ' + U.dt(r.actualStart) : r.plannedStart ? ' · dự kiến ' + U.dt(r.plannedStart) : ''}</div></div>`
+      : '<div class="muted">Chưa gán chuyến giao.</div>';
+    const pick = canEdit && open ? (opts.length
+      ? `<div class="row-flex mt" style="gap:8px;align-items:center"><select class="select" id="roRoute" style="flex:1"><option value="">Không gán chuyến</option>${opts.map(x => `<option value="${esc(x.id)}" ${x.id === d.deliveryRouteId ? 'selected' : ''}>${esc(x.label)}</option>`).join('')}</select>
+          <button type="button" class="btn primary" id="roRouteSave">Lưu chuyến</button></div>`
+      : `<div class="small muted mt">Chưa có chuyến giao ngày ${U.date(o.deliveryDate)} – tạo chuyến ở màn Giao hàng rồi gán tại đây.</div>`) : '';
+    return `<div class="mt"><div class="muted small" style="margin-bottom:4px">Chuyến giao${d.hasAccount ? ' · khách có tài khoản, theo dõi được trên trang khách' : ''}</div>${cur}${pick}</div>`;
+  }
+  /** RETAIL-2: các bước tiến độ đơn (cùng dữ liệu khách thấy ở "Đơn của tôi"). */
+  function progressHtml(d) {
+    const steps = d.listStep || [];
+    if (!steps.length) return '<div class="empty">Chưa có dữ liệu tiến độ.</div>';
+    const color = { done: 'green', current: 'orange', cancelled: 'red', pending: 'gray' };
+    return `<div class="muted small" style="margin-bottom:8px">Bước hiện tại: <b>${esc(d.stageLabel || '')}</b></div>
+      <div class="table-wrap"><table class="table dc-table"><thead><tr><th>Bước</th><th>Trạng thái</th><th>Thời điểm</th></tr></thead><tbody>
+      ${steps.map(s => `<tr><td>${esc(s.label || '')}${s.note ? `<div class="small muted">${esc(s.note)}</div>` : ''}</td><td>${UI.tag(s.state === 'done' ? 'Đã xong' : s.state === 'current' ? 'Đang thực hiện' : s.state === 'cancelled' ? 'Đã hủy' : 'Chưa tới', color[s.state] || 'gray')}</td><td>${s.at ? U.dt(s.at) : '–'}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  }
   function openDetail(id, done) {
     Store.query('RetailOrder/GetDetail', { id }).then(x => {
       if (!x.ok) return errToast(x.message);
@@ -210,7 +232,9 @@
               ${lines.map(l => `<tr><td>${esc(l.productName || '')}</td><td class="num">${U.num(l.quantity)} ${esc(l.unit || '')}</td><td class="num">${vnd(l.unitPrice)}</td><td class="num">${vnd(l.lineAmount)}</td></tr>`).join('')}
               <tr><td colspan="3" class="num muted">Tạm tính</td><td class="num">${vnd(o.subTotal)}</td></tr>
               <tr><td colspan="3" class="num muted">Phí giao</td><td class="num">${vnd(o.shippingFee)}</td></tr>
-              <tr><td colspan="3" class="num"><b>Tổng tiền</b></td><td class="num"><b>${vnd(o.totalAmount)}</b></td></tr></tbody></table></div>` },
+              <tr><td colspan="3" class="num"><b>Tổng tiền</b></td><td class="num"><b>${vnd(o.totalAmount)}</b></td></tr></tbody></table></div>
+            ${routeBlock(d, o, canEdit)}` },
+          { label: 'Tiến độ', html: progressHtml(d) },
           { label: 'Lịch sử', html: pane => { UI.history('RetailOrder', o.id, pane); return '<div class="small muted">Đang tải…</div>'; } },
         ],
         foot: canEdit ? (['New', 'Confirmed'].includes(o.orderStatus) ? '<button class="btn" data-ed>Sửa đơn</button>' : '') + next.map(t => `<button class="btn ${t === 'Cancelled' ? '' : 'primary'}" data-go="${t}">${ACT[t] || esc(t)}</button>`).join('') : '',
@@ -218,6 +242,19 @@
           const foot = dw.parentNode;
           foot.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { close(); transit([Object.assign({}, o)], b.dataset.go, done); });
           const ed = foot.querySelector('[data-ed]'); if (ed) ed.onclick = () => { close(); orderForm(done, { order: o, lines }); };
+          // RETAIL-2: gán / bỏ chuyến giao – khách đã đăng nhập theo dõi chuyến ở "Đơn của tôi" (RetailOrder/AssignRoute).
+          const rs = dw.querySelector('#roRouteSave');
+          if (rs) rs.onclick = () => {
+            const rid = dw.querySelector('#roRoute').value;
+            if (rid === (d.deliveryRouteId || '')) return UI.toast('Chuyến giao không đổi.', 'warn');
+            rs.disabled = true;
+            act('RetailOrder/AssignRoute', { form: { Id: o.id, DeliveryRouteId: rid } }).then(r => {
+              rs.disabled = false;
+              if (!r.ok) return;
+              UI.toast(rid ? 'Đã gán chuyến giao cho đơn.' : 'Đã bỏ gán chuyến giao.', 'ok');
+              close(); openDetail(id, done);
+            });
+          };
         }
       });
     });

@@ -232,6 +232,7 @@ Chấm công hợp lệ khi nằm trong bán kính bếp (GPS), hoặc quét QR 
 | `KO` | Kho | Warehouse.Code | bản ghi cũ giữ mã (QR `LOC_`) |
 | `XE` | Phương tiện | Vehicle.Code | bản ghi cũ giữ mã (QR `VEH_`) |
 | `NV` | Nhân viên | Employee.EmployeeCode / Code (= tên đăng nhập) | chỉ nhân viên mới |
+| `SPL` | Sản phẩm bán lẻ (RETAIL-1) | RetailProduct.Code | bảng mới 2026-11-27; seed [DEMO] dev SPL-00001…
 
 **Chứng từ (dạng B)**
 
@@ -259,6 +260,7 @@ Chấm công hợp lệ khi nằm trong bán kính bếp (GPS), hoặc quét QR 
 | `XN` | `XN-YYMMDD-NNN` | Yêu cầu duyệt | ApprovalRequest.RequestNo | XN |
 | `DN` | `DN-YYMMDD-NNNN` | Đơn nghỉ | LeaveRequest | DN |
 | `DC` | `DC-YYMMDD-NNNN` | Đơn đổi ca | ShiftSwapRequest.RequestNo | PH |
+| `BL` | `BL-YYMMDD-NNNN` | Đơn khách lẻ (RETAIL-1 – trang web / điện thoại / Zalo; tách đơn doanh nghiệp `DH`) | RetailOrder.OrderNumber | – |
 | `CC` | `CC-YYMMDD-NNNN` | Chấm công | AttendanceEvent – **chưa có cột số** (GAP, giữ như trước D-63, chưa sinh) | CC |
 
 Cách cài: `IDocumentNumberService.Next(kind, date, suffix)`. Dùng `sp_getapplock` theo khóa mã gốc (`TIỀNTỐ` cho danh mục, `TIỀNTỐ-YYMMDD[-HẬU TỐ]` cho chứng từ), đọc MAX số hiện có trong cột đích (cả cột cũ), rồi +1. **Không tạo bảng đếm và không tạo SEQUENCE** (luật DB).
@@ -267,8 +269,8 @@ Cách cài: `IDocumentNumberService.Next(kind, date, suffix)`. Dùng `sp_getappl
 
 | Nhóm | Quy tắc | Bảng.cột |
 |---|---|---|
-| **G1 – tự sinh, danh mục (dạng A)** | Máy chủ sinh, giao diện chỉ đọc | Customer.Code (`KHB` / `KHC`) · Supplier.Code (`NC`) · Ingredient.Code (`NL`) · Dishe.Code (`MA`) · Warehouse.Code (`KO`) · Vehicle.Code (`XE`) · Employee.EmployeeCode / Code (`NV`, chỉ người mới) · CustomerDeliveryLocation.Code (`DP` – điểm phát / giao) · PricePolicie.Code (`BG` – bảng giá) |
-| **G1 – tự sinh, chứng từ (dạng B)** | Máy chủ sinh, giao diện chỉ đọc | Bảng chứng từ ở §11 (Order, Contract, Menu `NU`, MenuChangeRequest, PurchaseRequest, PurchaseOrder, GoodsReceipt, MaterialIssue, StockCount, InventoryTransaction, MaterialLot, ProductionPlan, ProductionOrder, ProductionBatche, PackingOrder, DeliveryOrder, DeliveryRoute.RouteNo, CleaningBatche, CustomerComplaint, ApprovalRequest, LeaveRequest, ShiftSwapRequest) · QCInspection.InspectionNumber (`QC-YYMMDD-NNNN`) · MaterialRequirement.RequirementNo (`MR-YYMMDD-NNN`) |
+| **G1 – tự sinh, danh mục (dạng A)** | Máy chủ sinh, giao diện chỉ đọc | Customer.Code (`KHB` / `KHC`) · RetailProduct.Code (`SPL`, RETAIL-1) · Supplier.Code (`NC`) · Ingredient.Code (`NL`) · Dishe.Code (`MA`) · Warehouse.Code (`KO`) · Vehicle.Code (`XE`) · Employee.EmployeeCode / Code (`NV`, chỉ người mới) · CustomerDeliveryLocation.Code (`DP` – điểm phát / giao) · PricePolicie.Code (`BG` – bảng giá) |
+| **G1 – tự sinh, chứng từ (dạng B)** | Máy chủ sinh, giao diện chỉ đọc | Bảng chứng từ ở §11 (Order, Contract, Menu `NU`, MenuChangeRequest, PurchaseRequest, PurchaseOrder, GoodsReceipt, MaterialIssue, StockCount, InventoryTransaction, MaterialLot, ProductionPlan, ProductionOrder, ProductionBatche, PackingOrder, DeliveryOrder, DeliveryRoute.RouteNo, CleaningBatche, CustomerComplaint, ApprovalRequest, LeaveRequest, ShiftSwapRequest) · QCInspection.InspectionNumber (`QC-YYMMDD-NNNN`) · MaterialRequirement.RequirementNo (`MR-YYMMDD-NNN`) · RetailOrder.OrderNumber (`BL-YYMMDD-NNNN`, RETAIL-1) |
 | **G2 – mã nghiệp vụ người đặt** | Nhập tay; chữ hoa không dấu, A–Z 0–9 `-` `_`; không trùng; không sửa khi đã được dùng (QR, hậu tố, công thức, cấu hình) | Company · OrganizationUnit · Position · Shift (`CA1`… – hậu tố mẻ / vệ sinh) · UnitMeasure (`KG`…) · DishCategorie · IngredientCategorie · ProductionLine (QR `LINE_`) · KitchenWorkstation · StorageZone · StorageLocation (QR `LOC_`) · FoodSafetyChecklist.Code · FoodSafetyChecklistItem.ItemCode · SupplierMaterial.SupplierMaterialCode (mã hàng của NCC) · BotConfiguration.BotCode · IntegrationChannel.ChannelCode · KpiMetricDefinition.MetricCode · AdministrativeProvince / District / Ward.Code (mã hành chính nhà nước) |
 | **G3 – không phải mã định danh** | Không áp quy tắc | Cột mã loại / trạng thái / tiền tệ / đơn vị (`…TypeCode`, `CurrencyCode`, `UnitCode`, `CategoryCode`, `ConditionCode`, `PriorityCode`, `ResultCode`, `DecisionCode`, `ActionCode`, `ApproverRoleCode`, `DomainCode`, `AggregationCode`, `FrequencyCode`, `AreaCode`, `DirectionCode`, `OperationCode`, `ErrorCode`, `ProviderCode`, `EnvironmentCode`, `JobCode`, `MigrationCode`, `DeviceCode`) · cột sao chép / tham chiếu (`DeliveryExecution` / `DeliveryLoading.VehicleCode`, `PackagingLedger.ReferenceNo`, `GoodsReceiptLine.LotNumber`, `KpiDaily` / `MonthlySnapshot.MetricCode`, `DeliveryRoute.Code`) · số thứ tự (`StepNo`, `SequenceNo`, `CurrentStepNo`) · phiên bản (`Menu` / `Recipe.VersionCode`) · bảng cũ / ngoài phạm vi (`*_Legacy_*`, `TestDemo`, `Patient`) |
 

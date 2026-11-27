@@ -40,6 +40,18 @@ public static partial class Seeds
 
     public const string FallbackScreen = "dbx-explorer";
 
+    /// <summary>
+    /// RETAIL-1: màn không có trong catalog.js của mockup (khai báo ở FE modules/retail.js) – bảng → screen-id cho ScreenMap.
+    /// Dòng đơn (RetailOrderLine) nhập ở màn đơn: quyền theo màn cha (ScreenMap.Parents.cs).
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> ExtraScreenByTable = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["RetailProduct"] = "sal-retail-product",
+        ["RetailOrder"] = "sal-retail-order",
+        ["RetailOrderLine"] = "sal-retail-order",
+        ["RetailCustomer"] = "sal-retail-order",
+    };
+
     /// <summary>D-31: nhóm menu "Phê duyệt" và mục "Duyệt …" của từng màn hình có loại AP. Quyền duyệt = UserRole.AllowEdit trên mục đó.</summary>
     public const string ApprovalGroupLink = "#/group/approve";
     public const string ApprovalLinkPrefix = "#/wf-inbox?type=";
@@ -136,7 +148,8 @@ public static partial class Seeds
         sb.AppendLine("        {");
         foreach (var t in tables.Values.OrderBy(t => t.Name, StringComparer.Ordinal))
         {
-            string screen = screens.FirstOrDefault(s => string.Equals(s.Table, t.Name, StringComparison.OrdinalIgnoreCase))?.Id ?? FallbackScreen;
+            string screen = screens.FirstOrDefault(s => string.Equals(s.Table, t.Name, StringComparison.OrdinalIgnoreCase))?.Id
+                ?? (ExtraScreenByTable.TryGetValue(t.Name, out var extra) ? extra : FallbackScreen);
             sb.AppendLine($"            [\"{Metadata.ClassOf(t.Name)}\"] = \"{screen}\",");
         }
         sb.AppendLine("        };");

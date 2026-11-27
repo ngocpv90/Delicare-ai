@@ -55,13 +55,44 @@ namespace AppDelicare.Tests.Schema
                     current[col.Groups[1].Value] = col.Groups[2].Value.ToLowerInvariant();
                 }
             }
-            // Cột do migration normal thêm (DB-MIGRATIONS m1: DB/migrations là nguồn cấu trúc).
+            BaselineTableCount = tables.Count;
+            // Cột / bảng do migration normal thêm (DB-MIGRATIONS m1: DB/migrations là nguồn cấu trúc).
             foreach (string file in Directory.GetFiles(Path.Combine(dir!, "DB", "migrations"), "*.sql").Order(StringComparer.Ordinal))
             {
                 string sql = File.ReadAllText(file);
                 if (!Regex.IsMatch(sql, @"^--\s*delicare-migration:\s*normal", RegexOptions.Multiline))
                 {
                     continue;
+                }
+                // RETAIL-1: bảng mới – khối "CREATE TABLE [dbo].[X] (" … "CONSTRAINT [PK_…]" (có thụt lề, DEFAULT viết trong dòng cột).
+                Dictionary<string, string>? created = null;
+                foreach (string line in sql.Split('\n'))
+                {
+                    var ct = MigrationCreateTable().Match(line.TrimEnd());
+                    if (ct.Success)
+                    {
+                        created = tables.ContainsKey(ct.Groups[1].Value) ? null : new Dictionary<string, string>(StringComparer.Ordinal);
+                        if (created != null)
+                        {
+                            tables[ct.Groups[1].Value] = created;
+                        }
+                        continue;
+                    }
+                    if (created == null)
+                    {
+                        continue;
+                    }
+                    string t = line.TrimStart();
+                    if (t.StartsWith("CONSTRAINT", StringComparison.Ordinal) || t.StartsWith(')'))
+                    {
+                        created = null;
+                        continue;
+                    }
+                    var col = ColumnLine().Match(line);
+                    if (col.Success)
+                    {
+                        created[col.Groups[1].Value] = col.Groups[2].Value.ToLowerInvariant();
+                    }
                 }
                 foreach (Match add in AddColumn().Matches(sql))
                 {
@@ -77,6 +108,12 @@ namespace AppDelicare.Tests.Schema
         [GeneratedRegex(@"ALTER\s+TABLE\s+\[dbo\]\.\[(\w+)\]\s+ADD\s+\[(\w+)\]\s+\[(\w+)\]", RegexOptions.IgnoreCase)]
         private static partial Regex AddColumn();
 
+        [GeneratedRegex(@"^\s*CREATE TABLE \[dbo\]\.\[([^\]]+)\]\s*\($")]
+        private static partial Regex MigrationCreateTable();
+
+        /// <summary>Số bảng của DDL gốc (docs/reference) – trước khi cộng bảng tạo bằng migration.</summary>
+        private static int BaselineTableCount;
+
         private static IModel BuildModel()
         {
             var options = new DbContextOptionsBuilder<DatabaseContext>()
@@ -89,7 +126,8 @@ namespace AppDelicare.Tests.Schema
         [Fact]
         public void Ddl_has_124_tables()
         {
-            Ddl.Value.Should().HaveCount(124);
+            _ = Ddl.Value;
+            BaselineTableCount.Should().Be(124);
         }
 
         [Fact]
