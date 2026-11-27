@@ -17,6 +17,8 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 |---|---|---|
 | Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | Duyệt |
 | Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | S (IX) |
+| Tri thức › 95 Nguồn BOT | `knowledge?folder=95` | S |
+| Tri thức › 99 Mẫu | `knowledge?folder=99` | S |
 | Quản trị hệ thống › Tài khoản | `adm-user` | Q (IX) |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | Q (IX) |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | Q (IX) |
@@ -33,6 +35,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Nhật ký & Tích hợp › Tin nhắn đi | `int-outbound` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | S (IX) |
+| Trợ lý AI › Trung tâm agent | `ai-agents` | S |
 <!-- MENU5:END -->
 
 | `adm-reference` | Danh mục dùng chung | **Chỉ xem** các giá trị chọn sẵn (loại suất, loại kho, kênh phản ánh…) và màn / cột đang dùng. Thêm / sửa giá trị = sửa cấu hình máy chủ (liên hệ quản trị hệ thống) |

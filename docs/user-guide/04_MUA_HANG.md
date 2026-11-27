@@ -41,6 +41,12 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | X | X |
 | Danh mục hệ thống › Đơn vị tính | `scm-uom` | Q | Q |
 | Danh mục hệ thống › Kho & vị trí | `scm-warehouse` | X | Q |
+| Tri thức › Kho tri thức | `knowledge` | X | X |
+| Tri thức › 30 Thực đơn & Công thức | `knowledge?folder=30` | X | X |
+| Tri thức › 40 Kho & Truy xuất | `knowledge?folder=40` | X | S |
+| Tri thức › 60 Kế toán | `knowledge?folder=60` | — | X |
+| Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X |
+| Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

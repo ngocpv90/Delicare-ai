@@ -35,7 +35,7 @@ namespace AppDelicare.Tests.Menu
             foreach (var g in rows.Where(r => r.Level == 1 && r.Link != "#/group/approve").OrderBy(r => r.Order))
             {
                 var items = rows.Where(r => r.Level == 2 && r.Parent == g.Link && r.Active != "0").OrderBy(r => r.Order)
-                    .Select(r => r.Link[2..]).Where(i => i != "wf-inbox" && !i.StartsWith("bot-", StringComparison.Ordinal)).ToList();
+                    .Select(r => r.Link[2..]).Where(i => i != "wf-inbox" && !i.StartsWith("bot-", StringComparison.Ordinal) && !i.StartsWith("knowledge?", StringComparison.Ordinal)).ToList(); // AI-6: mục quyền thư mục kho không lên sidebar
                 if (g.Link == "#/group/01")
                 {
                     items.Add("wf-inbox"); // UI-6.28 (D-109): Phê duyệt cuối nhóm Điều hành

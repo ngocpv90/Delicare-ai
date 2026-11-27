@@ -89,6 +89,23 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Danh mục hệ thống › Danh mục dùng chung | `adm-reference` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 | Danh mục hệ thống › Địa giới hành chính | `adm-admin-unit` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 | Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
+| Tri thức › Kho tri thức | `knowledge` | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X |
+| Tri thức › 10 Ban GĐ | `knowledge?folder=10` | S | X | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Tri thức › 20 Kinh doanh & Hợp đồng | `knowledge?folder=20` | X | X | X | — | — | — | — | — | X | — | — | X | X | S | X | X | — | — | — |
+| Tri thức › 30 Thực đơn & Công thức | `knowledge?folder=30` | X | X | X | X | X | — | X | S | — | — | — | — | — | X | — | — | — | — | X |
+| Tri thức › 40 Kho & Truy xuất | `knowledge?folder=40` | X | X | X | X | X | S | S | — | — | — | — | — | — | — | — | X | — | — | X |
+| Tri thức › 45 ATTP | `knowledge?folder=45` | X | X | X | — | — | X | — | X | X | — | — | — | — | — | — | — | — | — | S |
+| Tri thức › 50 Sản xuất | `knowledge?folder=50` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | — | X |
+| Tri thức › 55 Giao vận | `knowledge?folder=55` | X | X | X | — | — | — | — | — | S | — | — | — | — | X | X | — | — | — | X |
+| Tri thức › 60 Kế toán | `knowledge?folder=60` | X | X | X | — | — | — | X | — | — | — | — | — | — | — | — | S | — | — | — |
+| Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — | — |
+| Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X |
+| Tri thức › 95 Nguồn BOT | `knowledge?folder=95` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
+| Tri thức › 96 Nhật ký | `knowledge?folder=96` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Tri thức › 97 Tương tác | `knowledge?folder=97` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Tri thức › 98 Công việc | `knowledge?folder=98` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | S | X |
+| Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Quản trị hệ thống › Tài khoản | `adm-user` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
@@ -105,28 +122,31 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Nhật ký & Tích hợp › Tin nhắn đi | `int-outbound` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
 | Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
+| Trợ lý AI › Trung tâm agent | `ai-agents` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
+| Trợ lý AI › Nhật ký agent | `ai-agent-log` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Trợ lý AI › Lịch chạy | `ai-schedule` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào  94 mục · ô quyền  115
-  CEO-PMO       vào  90 mục · ô quyền   96
-  COO           vào 105 mục · ô quyền  135
-  OPS-PLAN      vào  39 mục · ô quyền   85
-  OPS-SCM       vào  23 mục · ô quyền   60
-  OPS-WH        vào  20 mục · ô quyền   70
-  OPS-SCM-HEAD  vào  36 mục · ô quyền  125
-  OPS-KIT       vào  27 mục · ô quyền   45
-  OPS-LOG       vào  18 mục · ô quyền   36
-  OPS-POS       vào  12 mục · ô quyền   24
-  OPS-MNT       vào   5 mục · ô quyền    9
-  SAL-SALES     vào  20 mục · ô quyền   38
-  SAL-CON       vào  20 mục · ô quyền   68
-  SAL-HEAD      vào  26 mục · ô quyền   81
-  SAL-CS        vào  11 mục · ô quyền   15
-  FIN-ACC       vào  35 mục · ô quyền  120
-  FIN-HR        vào  12 mục · ô quyền   42
-  FIN-IT        vào 107 mục · ô quyền  196
-  QA            vào  30 mục · ô quyền   69
+  CEO           vào 114 mục · ô quyền  141
+  CEO-PMO       vào 107 mục · ô quyền  113
+  COO           vào 125 mục · ô quyền  161
+  OPS-PLAN      vào  45 mục · ô quyền   91
+  OPS-SCM       vào  28 mục · ô quyền   65
+  OPS-WH        vào  25 mục · ô quyền   77
+  OPS-SCM-HEAD  vào  42 mục · ô quyền  133
+  OPS-KIT       vào  33 mục · ô quyền   55
+  OPS-LOG       vào  24 mục · ô quyền   44
+  OPS-POS       vào  15 mục · ô quyền   27
+  OPS-MNT       vào   8 mục · ô quyền   12
+  SAL-SALES     vào  24 mục · ô quyền   42
+  SAL-CON       vào  24 mục · ô quyền   72
+  SAL-HEAD      vào  32 mục · ô quyền   89
+  SAL-CS        vào  16 mục · ô quyền   20
+  FIN-ACC       vào  41 mục · ô quyền  128
+  FIN-HR        vào  16 mục · ô quyền   48
+  FIN-IT        vào 117 mục · ô quyền  212
+  QA            vào  38 mục · ô quyền   79
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; log-load-short = COO, OPS-SCM-HEAD
 ```

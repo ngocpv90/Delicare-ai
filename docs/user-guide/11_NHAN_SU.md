@@ -22,6 +22,10 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Danh mục hệ thống › Công ty & đơn vị | `adm-orgunit` | X |
 | Danh mục hệ thống › Chức vụ | `adm-position` | Q |
 | Danh mục hệ thống › Ca làm việc | `hr-shift` | Q |
+| Tri thức › Kho tri thức | `knowledge` | X |
+| Tri thức › 70 Nhân sự | `knowledge?folder=70` | S |
+| Tri thức › 80 Đào tạo | `knowledge?folder=80` | X |
+| Tri thức › 99 Mẫu | `knowledge?folder=99` | X |
 | Nhật ký & Tích hợp › Liên kết tài khoản chat | `int-identity` | X |
 <!-- MENU5:END -->
 

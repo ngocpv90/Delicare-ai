@@ -91,7 +91,7 @@
     // MENU-5 (D-79): #/bot-van-hanh, #/bot-dieu-hanh là quyền VÀO BOT (D-62) – không phải màn hình, không lên sidebar.
     // APR-1.1 (D-81 a): mọi mục "Phê duyệt › …" (wf-inbox?type=…) và "Hộp phê duyệt" cũ KHÔNG lên sidebar / tìm kiếm (DB giữ – là quyền duyệt);
     // thay bằng 1 mục "Phê duyệt" (màn tổng) trong nhóm Điều hành dưới Bảng điều hành (D-93) cho người có quyền duyệt / xem hộp chung / đã gửi yêu cầu.
-    const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || id === 'wf-inbox' || /^bot-/.test(id); };
+    const skip = link => { const id = link.split('?')[0]; return (link === id && (CHILD.has(id) || HIDDEN_LIVE.has(id))) || id === 'wf-inbox' || /^bot-/.test(id) || (id === 'knowledge' && link !== id); }; // AI-6: mục quyền thư mục kho (knowledge?folder=…) không lên sidebar
     const out = menu.map(g => ({ name: g.name, items: g.items.filter(i => !skip(i.link)).filter(i => !used.has(i.link)).map(i => {
       used.add(i.link); const id = i.link.split('?')[0]; used.add(id);
       // Mục DB có mà FE chưa có màn: đăng ký màn giữ chỗ để bấm vào không rơi về trang tổng quan.

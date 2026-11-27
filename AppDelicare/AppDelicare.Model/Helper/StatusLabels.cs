@@ -29,6 +29,7 @@ namespace AppDelicare.Model.Helper
             ["Added"] = "Thêm", ["Modified"] = "Sửa", ["Deleted"] = "Xóa", ["Download"] = "Tải xuống", ["Login"] = "Đăng nhập", ["Logout"] = "Đăng xuất",
             ["RoleSaveMany"] = "Đổi quyền", ["ResignScheduled"] = "Hẹn nghỉ việc", ["ResignCancelled"] = "Hủy hẹn nghỉ việc", ["Resign"] = "Nghỉ việc", ["ConfirmValid"] = "Xác nhận hợp lệ", ["StatusChange"] = "Đổi trạng thái", // UI-6.48 (hồi quy UI-6.49)
             ["Inbound"] = "Đến", ["Outbound"] = "Đi", ["True"] = "Có", ["False"] = "Không",
+            ["Denied"] = "Bị từ chối", ["Recorded"] = "Đã ghi nhận", // AI-2 / AI-4 (D-133): nhật ký agent
         };
 
         /// <summary>Biến thể cũ của Active / Inactive trong STATUS_CATALOG → thống nhất (D-88).</summary>

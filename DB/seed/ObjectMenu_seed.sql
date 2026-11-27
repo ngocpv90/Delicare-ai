@@ -582,6 +582,24 @@ INSERT INTO @P VALUES
     (N'#/adm-reference', 2, N'#/group/10', 1001, 1099, N'', N'#/group/12', 963, N'', N'', NULL),
     (N'#/adm-admin-unit', 2, N'#/group/10', 1001, 1099, N'', N'#/group/12', 964, N'', N'', NULL),
     (N'#/kpi-definition', 2, N'#/group/09', 901, 999, N'', N'#/group/12', 965, N'', N'', NULL),
+    (N'#/group/13', 1, NULL, 1300, 1300, N'', NULL, 980, N'Tri thức', N'knowledge', NULL),
+    (N'#/knowledge', 2, NULL, 0, -1, N'', N'#/group/13', 981, N'Kho tri thức', N'AI', NULL),
+    (N'#/knowledge?folder=10', 2, NULL, 0, -1, N'', N'#/group/13', 982, N'10 Ban GĐ', N'AI', NULL),
+    (N'#/knowledge?folder=20', 2, NULL, 0, -1, N'', N'#/group/13', 983, N'20 Kinh doanh & Hợp đồng', N'AI', NULL),
+    (N'#/knowledge?folder=30', 2, NULL, 0, -1, N'', N'#/group/13', 984, N'30 Thực đơn & Công thức', N'AI', NULL),
+    (N'#/knowledge?folder=40', 2, NULL, 0, -1, N'', N'#/group/13', 985, N'40 Kho & Truy xuất', N'AI', NULL),
+    (N'#/knowledge?folder=45', 2, NULL, 0, -1, N'', N'#/group/13', 986, N'45 ATTP', N'AI', NULL),
+    (N'#/knowledge?folder=50', 2, NULL, 0, -1, N'', N'#/group/13', 987, N'50 Sản xuất', N'AI', NULL),
+    (N'#/knowledge?folder=55', 2, NULL, 0, -1, N'', N'#/group/13', 988, N'55 Giao vận', N'AI', NULL),
+    (N'#/knowledge?folder=60', 2, NULL, 0, -1, N'', N'#/group/13', 989, N'60 Kế toán', N'AI', NULL),
+    (N'#/knowledge?folder=70', 2, NULL, 0, -1, N'', N'#/group/13', 990, N'70 Nhân sự', N'AI', NULL),
+    (N'#/knowledge?folder=80', 2, NULL, 0, -1, N'', N'#/group/13', 991, N'80 Đào tạo', N'AI', NULL),
+    (N'#/knowledge?folder=95', 2, NULL, 0, -1, N'', N'#/group/13', 992, N'95 Nguồn BOT', N'AI', NULL),
+    (N'#/knowledge?folder=96', 2, NULL, 0, -1, N'', N'#/group/13', 993, N'96 Nhật ký', N'AI', NULL),
+    (N'#/knowledge?folder=97', 2, NULL, 0, -1, N'', N'#/group/13', 994, N'97 Tương tác', N'AI', NULL),
+    (N'#/knowledge?folder=98', 2, NULL, 0, -1, N'', N'#/group/13', 995, N'98 Công việc', N'AI', NULL),
+    (N'#/knowledge?folder=99', 2, NULL, 0, -1, N'', N'#/group/13', 996, N'99 Mẫu', N'AI', NULL),
+    (N'#/knowledge?folder=bod', 2, NULL, 0, -1, N'', N'#/group/13', 997, N'BOD Bảo mật', N'AI', NULL),
     (N'#/group/10', 1, NULL, 1000, 1000, N'', NULL, 1000, N'Quản trị hệ thống', N'admin', NULL),
     (N'#/adm-user', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1001, N'', N'', NULL),
     (N'#/adm-usergroup', 2, N'#/group/10', 1001, 1099, N'', N'#/group/10', 1002, N'', N'', NULL),
@@ -602,7 +620,11 @@ INSERT INTO @P VALUES
     (N'#/int-log', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1060, N'', N'', NULL),
     (N'#/kpi-refresh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1061, N'', N'', NULL),
     (N'#/bot-van-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1062, N'', N'', NULL),
-    (N'#/bot-dieu-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1063, N'', N'', NULL);
+    (N'#/bot-dieu-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1063, N'', N'', NULL),
+    (N'#/group/14', 1, NULL, 1400, 1400, N'', NULL, 1060, N'Trợ lý AI', N'ai', NULL),
+    (N'#/ai-agents', 2, NULL, 0, -1, N'', N'#/group/14', 1061, N'Trung tâm agent', N'AI', NULL),
+    (N'#/ai-agent-log', 2, NULL, 0, -1, N'', N'#/group/14', 1062, N'Nhật ký agent', N'AI', NULL),
+    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/14', 1063, N'Lịch chạy', N'AI', NULL);
 INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), p.NewName, p.ShortName, p.Link, NULL, 1, p.NewOrder, 1, 0, @Now, @By, 0
 FROM @P p WHERE p.Lvl = 1 AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);

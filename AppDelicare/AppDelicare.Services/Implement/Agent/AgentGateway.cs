@@ -149,7 +149,7 @@ namespace AppDelicare.Services.Implement.Agent
     /// ErrorMessage = JSON {ms, user, rows} – GAP-AI-LOG tạm, PayloadHash = SHA-256 tham số).
     /// </summary>
     public class AgentGatewayService(IServiceProvider services, ICurrentActor currentActor, IUnitOfWork unitOfWork, IPermissionService permissions,
-        IOptionsMonitor<AgentOptions> options, IConfiguration configuration, IMemoryCache cache) : IAgentGatewayService
+        IOptionsMonitor<AgentOptions> options, IConfiguration configuration, IMemoryCache cache, IClock clock) : IAgentGatewayService
     {
         public const string ChannelCode = "HERMES";
         private readonly IServiceProvider _services = services;
@@ -170,12 +170,12 @@ namespace AppDelicare.Services.Implement.Agent
             var channel = await db.IntegrationChannel.AsNoTracking().Where(c => !c.IsDeleted && c.ChannelCode == ChannelCode).Select(c => new { c.Id, c.ChannelStatus }).FirstOrDefaultAsync();
             if (!o.Enabled || channel == null || channel.ChannelStatus != "Active")
             {
-                return new Auth(AgentCallResult.Fail(503, "Trợ lý AI đang tắt (Agent:Enabled / kênh HERMES)"), null, channel?.Id);
+                return new Auth(AgentCallResult.Fail(503, "Trợ lý AI đang tắt"), null, channel?.Id);
             }
             string code = (request.AgentCode ?? string.Empty).Trim().ToUpperInvariant();
             if (code.Length == 0 || string.IsNullOrEmpty(request.AgentKey))
             {
-                return new Auth(AgentCallResult.Fail(401, "Thiếu mã hoặc khóa agent (X-Agent-Code, X-Agent-Key)"), null, channel.Id);
+                return new Auth(AgentCallResult.Fail(401, "Thiếu mã hoặc khóa agent"), null, channel.Id);
             }
             var bot = await db.BotConfiguration.AsNoTracking().Where(b => !b.IsDeleted && b.IntegrationChannelId == channel.Id && b.BotCode == code)
                 .Select(b => new { b.BotStatus, b.SecretReference }).FirstOrDefaultAsync();
@@ -202,7 +202,7 @@ namespace AppDelicare.Services.Implement.Agent
                 .Select(x => x.UserId).FirstOrDefaultAsync();
             if (agentUser == null || !await db.User.AsNoTracking().AnyAsync(u => u.Id == agentUser && !u.IsDeleted && u.IsActive))
             {
-                return new Auth(AgentCallResult.Fail(403, $"Agent {code} chưa có tài khoản dịch vụ (chạy DB/seed/Agent_seed.sql)"), null, channel.Id);
+                return new Auth(AgentCallResult.Fail(403, $"Agent {code} chưa có tài khoản dịch vụ"), null, channel.Id);
             }
             Guid? asking = null;
             if (!string.IsNullOrWhiteSpace(request.OnBehalfOf))
@@ -231,14 +231,20 @@ namespace AppDelicare.Services.Implement.Agent
             var agent = await permissions.GetAsync(agentUserId);
             if (!agent.IsAdmin && !permissions.IsAllowed(agent, screenId, action))
             {
-                return $"Agent không có quyền {action} màn {screenId}";
+                return $"Agent không có quyền {ActionVi(action)} màn {screenId}";
             }
             if (askingUserId is { } u && !permissions.IsAllowed(await permissions.GetAsync(u), screenId, action))
             {
-                return $"Người hỏi không có quyền {action} màn {screenId}";
+                return $"Người hỏi không có quyền {ActionVi(action)} màn {screenId}";
             }
             return null;
         }
+
+        private static string ActionVi(PermissionAction a) => a switch
+        {
+            PermissionAction.View => "Xem", PermissionAction.Add => "Thêm", PermissionAction.Edit => "Sửa", PermissionAction.Delete => "Xóa",
+            PermissionAction.Approve => "Duyệt", PermissionAction.Export => "Xuất", PermissionAction.Print => "In", PermissionAction.Import => "Nhập", _ => a.ToString(),
+        };
 
         public async Task<(AgentCallResult Error, IReadOnlyList<AgentToolDef> Tools)> ListToolsAsync(AgentCallRequest request)
         {
@@ -266,7 +272,7 @@ namespace AppDelicare.Services.Implement.Agent
         public async Task<AgentCallResult> CallAsync(AgentCallRequest request)
         {
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            DateTime started = DateTime.Now;
+            DateTime started = clock.Now; // giờ VN (IClock) – như mọi bản ghi khác
             string correlation = string.IsNullOrWhiteSpace(request.CorrelationId) ? Guid.NewGuid().ToString("N") : request.CorrelationId!;
             var auth = await AuthenticateAsync(request, countRate: true);
             AgentCallResult result;
@@ -281,7 +287,7 @@ namespace AppDelicare.Services.Implement.Agent
                 var tool = AgentToolRegistry.Find(request.Tool);
                 string? deny = tool == null ? null
                     : !tool.AllowedFor(id.AgentCode) ? $"Công cụ «{tool.Name}» không thuộc agent {id.AgentCode}"
-                    : _options.CurrentValue.ReadOnly && tool.Name.StartsWith("propose_", StringComparison.Ordinal) ? "Trợ lý AI đang ở chế độ chỉ đọc (Agent:ReadOnly)"
+                    : _options.CurrentValue.ReadOnly && tool.Name.StartsWith("propose_", StringComparison.Ordinal) ? "Trợ lý AI đang ở chế độ chỉ đọc"
                     : tool.ScreenId != null ? await DenyAsync(_permissions, id.AgentUserId, id.AskingUserId, tool.ScreenId, PermissionAction.View)
                     : null;
                 if (tool == null)
@@ -336,12 +342,12 @@ namespace AppDelicare.Services.Implement.Agent
                 db.IntegrationLog.Add(new IntegrationLog
                 {
                     Id = Guid.NewGuid(), IntegrationChannelId = auth.ChannelId, DirectionCode = "IN", OperationCode = Trim(request.Tool, 100), CorrelationId = Trim(correlation, 100),
-                    RequestAt = started, ResponseAt = DateTime.Now, HttpStatus = result.Status,
+                    RequestAt = started, ResponseAt = clock.Now, HttpStatus = result.Status,
                     LogStatus = result.Status == 200 ? "Succeeded" : result.Status is 401 or 403 or 429 or 503 ? "Denied" : "Failed",
                     ErrorCode = Trim(result.Status == 200 ? "AGENT:" + code : $"{result.Status}:AGENT:{code}", 100),
                     ErrorMessage = Trim(JsonSerializer.Serialize(new { ms, rows, user = auth.Identity?.AskingUserId, onBehalfOf = request.OnBehalfOf, error = result.Message }, ReadableJson), 2000),
                     PayloadHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(args))),
-                    CreatedDate = DateTime.Now, CreatedBy = actorId, IsDeleted = false,
+                    CreatedDate = clock.Now, CreatedBy = actorId, IsDeleted = false,
                 });
                 await db.SaveChangesAsync();
             }
