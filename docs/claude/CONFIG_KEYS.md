@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **233 khóa** trong 12 section.
+Tổng: **234 khóa** trong 12 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -38,6 +38,7 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Agent:MaxRows` | int | 50 | Số dòng tối đa một công cụ đọc trả về (AI-3). | – |
 | `Agent:AskingBotCode` | string? | – | Mã bot Telegram nơi người hỏi liên kết (tra X-On-Behalf-Of); trống = mọi kênh Telegram. | – |
 | `Agent:HermesWebhookUrl` | string? | – | AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt. | – |
+| `Agent:SchedulesFile` | string | "agents/schedules.json" | AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục agents). | – |
 
 ## BusinessRules
 
