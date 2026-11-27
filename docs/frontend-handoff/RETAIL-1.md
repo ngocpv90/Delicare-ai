@@ -142,6 +142,7 @@ Tài khoản khách / tra cứu đơn của tôi (GAP-PORTAL-01) · thanh toán 
 | Action | Kiểu | Ghi chú |
 |---|---|---|
 | `Register` | POST JSON `{fullName, phoneNumber, password, email?, address?, website}` | trả `{token, expiresAt, profile}`; SĐT không trùng; ô bẫy `website` |
+| ↳ D-136 j | | `accountType` = `INDIVIDUAL` (mặc định) / `BUSINESS`; doanh nghiệp bắt buộc `companyName`, `taxCode`, `email`; hồ sơ trả `accountType`, `companyName`, `taxCode`; `UpdateProfile` nhận thêm `companyName`, `taxCode` (doanh nghiệp không được bỏ trống MST / email) |
 | `Login` | POST JSON `{phoneNumber, password}` | sai SĐT / mật khẩu báo như nhau; khóa tạm sau `LoginFailLimit` lần |
 | `GetProfile` / `UpdateProfile` / `ChangePassword` | GET / POST JSON | đổi mật khẩu trả phiên mới, phiên cũ hết hiệu lực |
 | `GetMyOrders?group=active|done|cancelled|all` | GET | danh sách + `groupCounts`; mỗi đơn có `stageLabel` |

@@ -8,7 +8,13 @@ import { TrackOrderDto } from './retail-api.service';
 const SESSION_KEY = 'dc_retail_session';
 const TIMEOUT_MS = 10000;
 
+export type CustomerAccountType = 'INDIVIDUAL' | 'BUSINESS';
+
 export interface CustomerProfile {
+  /** D-136 j: cá nhân / doanh nghiệp (doanh nghiệp có tên DN + mã số thuế + email). */
+  accountType?: CustomerAccountType;
+  companyName?: string | null;
+  taxCode?: string | null;
   fullName: string;
   phoneNumber: string;
   email?: string | null;
@@ -120,7 +126,7 @@ export class CustomerAccountService {
   public readonly profile = computed(() => this.session()?.profile ?? null);
   public readonly loggedIn = computed(() => !!this.session());
 
-  public register(body: { fullName: string; phoneNumber: string; password: string; email?: string; address?: string; website?: string }): Observable<ApiOutcome<CustomerProfile>> {
+  public register(body: { accountType: CustomerAccountType; companyName?: string; taxCode?: string; fullName: string; phoneNumber: string; password: string; email?: string; address?: string; website?: string }): Observable<ApiOutcome<CustomerProfile>> {
     return this.call<Session>('post', 'Register', body).pipe(map((r) => this.keep(r)));
   }
 
@@ -141,7 +147,7 @@ export class CustomerAccountService {
     return this.call<CustomerProfile>('get', 'GetProfile').pipe(tap((r) => r.ok && this.patchProfile(r.data)));
   }
 
-  public updateProfile(body: { fullName: string; email?: string; address?: string }): Observable<ApiOutcome<CustomerProfile>> {
+  public updateProfile(body: { fullName: string; email?: string; address?: string; companyName?: string; taxCode?: string }): Observable<ApiOutcome<CustomerProfile>> {
     return this.call<CustomerProfile>('post', 'UpdateProfile', body).pipe(tap((r) => r.ok && this.patchProfile(r.data)));
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CustomerAccountService } from '../account.service';
@@ -19,10 +19,15 @@ import { CustomerAccountService } from '../account.service';
       <div class="pt-wrap pt-auth">
         <form class="pt-card pt-form" [formGroup]="profileForm" (ngSubmit)="save()" novalidate>
           <h2>Thông tin nhận hàng</h2>
+          <label><span>Loại tài khoản</span><input [value]="biz() ? 'Doanh nghiệp' : 'Cá nhân'" readonly /></label>
           <label><span>Số điện thoại (đăng nhập)</span><input [value]="account.profile()?.phoneNumber || ''" readonly /></label>
-          <label><span>Họ tên <b>*</b></span><input formControlName="fullName" autocomplete="name" /></label>
+          @if (biz()) {
+            <label><span>Tên doanh nghiệp <b>*</b></span><input formControlName="companyName" autocomplete="organization" /></label>
+            <label><span>Mã số thuế <b>*</b></span><input formControlName="taxCode" inputmode="numeric" autocomplete="off" /></label>
+          }
+          <label><span>{{ biz() ? 'Người liên hệ' : 'Họ tên' }} <b>*</b></span><input formControlName="fullName" autocomplete="name" /></label>
           <label><span>Địa chỉ giao thường dùng</span><input formControlName="address" autocomplete="street-address" /></label>
-          <label><span>Email</span><input formControlName="email" type="email" autocomplete="email" /></label>
+          <label><span>Email @if (biz()) { <b>*</b> }</span><input formControlName="email" type="email" autocomplete="email" /></label>
           @if (msg(); as m) { <p [class.pt-ok-text]="ok()" [class.pt-err-text]="!ok()">{{ m }}</p> }
           <button type="submit" class="pt-btn" [disabled]="busy()"><i class="material-icons">save</i>Lưu thông tin</button>
         </form>
@@ -51,7 +56,9 @@ export class PortalAccountProfileComponent implements OnInit {
   public readonly ok = signal(false);
   public readonly pwMsg = signal('');
   public readonly pwOk = signal(false);
-  public readonly profileForm = this.fb.group({ fullName: ['', Validators.required], address: [''], email: [''] });
+  public readonly profileForm = this.fb.group({ fullName: ['', Validators.required], address: [''], email: [''], companyName: [''], taxCode: [''] });
+  /** D-136 j: tài khoản doanh nghiệp (loại không đổi được sau khi tạo). */
+  public readonly biz = computed(() => this.account.profile()?.accountType === 'BUSINESS');
   public readonly pwForm = this.fb.group({ current: [''], next: [''], confirm: [''] });
 
   public ngOnInit(): void {
@@ -74,7 +81,7 @@ export class PortalAccountProfileComponent implements OnInit {
       return;
     }
     this.busy.set(true);
-    this.account.updateProfile({ fullName: v.fullName.trim(), address: v.address.trim(), email: v.email.trim() }).subscribe((r) => {
+    this.account.updateProfile({ fullName: v.fullName.trim(), address: v.address.trim(), email: v.email.trim(), ...(this.biz() ? { companyName: v.companyName.trim(), taxCode: v.taxCode.replace(/[\s.]/g, '') } : {}) }).subscribe((r) => {
       this.busy.set(false);
       this.ok.set(r.ok);
       this.msg.set(r.ok ? 'Đã lưu thông tin.' : r.message);
@@ -103,6 +110,6 @@ export class PortalAccountProfileComponent implements OnInit {
 
   private fill(): void {
     const p = this.account.profile();
-    if (p) this.profileForm.setValue({ fullName: p.fullName ?? '', address: p.address ?? '', email: p.email ?? '' });
+    if (p) this.profileForm.setValue({ fullName: p.fullName ?? '', address: p.address ?? '', email: p.email ?? '', companyName: p.companyName ?? '', taxCode: p.taxCode ?? '' });
   }
 }

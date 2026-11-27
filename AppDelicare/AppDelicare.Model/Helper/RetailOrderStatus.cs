@@ -108,6 +108,12 @@ namespace AppDelicare.Model.Helper
         public const string SessionExpired = "Phiên đăng nhập đã hết hạn – vui lòng đăng nhập lại.";
         public const string CurrentPasswordWrong = "Mật khẩu hiện tại chưa đúng.";
         public const string EmailInvalid = "Email chưa đúng.";
+        // D-136 j: tài khoản doanh nghiệp bắt buộc tên DN + mã số thuế + email.
+        public const string AccountTypeInvalid = "Loại tài khoản chưa đúng – chọn Cá nhân hoặc Doanh nghiệp.";
+        public const string CompanyNameRequired = "Vui lòng nhập tên doanh nghiệp.";
+        public const string TaxCodeInvalid = "Mã số thuế chưa đúng (10 số, hoặc 10 số - 3 số với chi nhánh).";
+        public const string TaxCodeTaken = "Mã số thuế này đã có tài khoản – vui lòng đăng nhập bằng số điện thoại đã đăng ký (hoặc gọi hotline).";
+        public const string BusinessEmailRequired = "Tài khoản doanh nghiệp cần email để nhận hóa đơn / thông báo.";
         public const string Registered = "Đã tạo tài khoản.";
         public const string LoggedIn = "Đăng nhập thành công.";
         public const string ProfileSaved = "Đã lưu thông tin.";

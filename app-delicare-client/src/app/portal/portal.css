@@ -568,3 +568,36 @@ a.pt-contact-tile:hover { border-color: var(--pt-green); }
   .pt-timeline li::before { top: -50%; left: 17px; width: 3px; height: 100%; }
   .pt-timeline b { margin-top: 6px; }
 }
+
+/* ===== Header: không xuống dòng (logo, nút Đăng nhập / Đăng ký / Giỏ hàng) – anh báo vỡ header 2026-11-27 ===== */
+.pt-logo, .pt-logo-text, .pt-account-btn, .pt-register-btn, .pt-cart-btn, .pt-cart-label { white-space: nowrap; }
+.pt-logo, .pt-header-actions { flex-shrink: 0; }
+.pt-nav { min-width: 0; }
+.pt-register-btn {
+  display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px;
+  border: 1.5px solid var(--pt-green); color: var(--pt-green-dark) !important; font-weight: 600; font-size: 14px; background: #fff;
+}
+.pt-register-btn:hover { background: var(--pt-green-light); }
+@media (max-width: 1440px) {
+  .pt-header-in { gap: 12px; }
+  .pt-nav { gap: 0; }
+  .pt-nav a { padding: 8px 9px; font-size: 14px; }
+  .pt-account-btn { padding: 8px 8px; }
+}
+@media (max-width: 1280px) {
+  .pt-nav a { padding: 8px 7px; font-size: 13.5px; }
+  .pt-cart-btn .pt-cart-label { display: none; }
+}
+@media (max-width: 960px) {
+  .pt-account-btn .pt-cart-label { display: none; }
+}
+@media (max-width: 560px) {
+  .pt-register-btn { display: none; } /* điện thoại: Đăng ký nằm trong menu ☰ (Đăng nhập / Tạo tài khoản) */
+}
+
+/* D-136 j: chọn loại tài khoản (Cá nhân | Doanh nghiệp) trên form tạo tài khoản */
+.pt-field-label { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+.pt-field-label b { color: #d93025; }
+.pt-section .pt-chips.pt-type-chips { margin-bottom: 16px; }
+.pt-type-chips .pt-chip { display: inline-flex; align-items: center; gap: 6px; }
+.pt-type-chips .pt-chip .material-icons { font-size: 18px; }

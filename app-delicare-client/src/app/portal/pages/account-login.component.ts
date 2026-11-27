@@ -1,4 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CustomerAccountService } from '../account.service';
@@ -48,8 +49,23 @@ const clean = (p: string) => p.replace(/[\s.\-]/g, '');
             </form>
           } @else {
             <form [formGroup]="registerForm" (ngSubmit)="register()" novalidate>
+              <div class="pt-field-label">Loại tài khoản <b>*</b></div>
+              <div class="pt-chips pt-type-chips" role="radiogroup" aria-label="Loại tài khoản">
+                <button type="button" class="pt-chip" role="radio" [attr.aria-checked]="type() === 'INDIVIDUAL'" [class.active]="type() === 'INDIVIDUAL'" (click)="setType('INDIVIDUAL')"><i class="material-icons">person</i>Cá nhân</button>
+                <button type="button" class="pt-chip" role="radio" [attr.aria-checked]="type() === 'BUSINESS'" [class.active]="type() === 'BUSINESS'" (click)="setType('BUSINESS')"><i class="material-icons">business</i>Doanh nghiệp</button>
+              </div>
+              @if (type() === 'BUSINESS') {
+                <label>
+                  <span>Tên doanh nghiệp <b>*</b></span>
+                  <input formControlName="companyName" autocomplete="organization" />
+                </label>
+                <label>
+                  <span>Mã số thuế <b>*</b></span>
+                  <input formControlName="taxCode" inputmode="numeric" placeholder="10 số, chi nhánh: 10 số-3 số" autocomplete="off" />
+                </label>
+              }
               <label>
-                <span>Họ tên <b>*</b></span>
+                <span>{{ type() === 'BUSINESS' ? 'Người liên hệ' : 'Họ tên' }} <b>*</b></span>
                 <input formControlName="fullName" autocomplete="name" />
               </label>
               <label>
@@ -72,8 +88,9 @@ const clean = (p: string) => p.replace(/[\s.\-]/g, '');
                 <input formControlName="address" autocomplete="street-address" />
               </label>
               <label>
-                <span>Email</span>
+                <span>Email @if (type() === 'BUSINESS') { <b>*</b> }</span>
                 <input formControlName="email" type="email" autocomplete="email" />
+                @if (type() === 'BUSINESS') { <em class="pt-hint">Nhận hóa đơn và thông báo đơn hàng của doanh nghiệp.</em> }
               </label>
               <input formControlName="website" class="pt-hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
               @if (error(); as e) { <div class="pt-alert" role="alert"><i class="material-icons">error_outline</i><span>{{ e }}</span></div> }
@@ -101,14 +118,19 @@ const clean = (p: string) => p.replace(/[\s.\-]/g, '');
 export class PortalAccountLoginComponent {
   private readonly account = inject(CustomerAccountService);
   private readonly router = inject(Router);
-  private readonly back = inject(ActivatedRoute).snapshot.queryParamMap.get('ve') || '/don-cua-toi';
-  public readonly mode = signal<'login' | 'register'>(inject(ActivatedRoute).snapshot.queryParamMap.get('tao') ? 'register' : 'login');
+  private readonly route = inject(ActivatedRoute);
+  private readonly back = this.route.snapshot.queryParamMap.get('ve') || '/don-cua-toi';
+  public readonly mode = signal<'login' | 'register'>(this.route.snapshot.queryParamMap.get('tao') ? 'register' : 'login');
   public readonly busy = signal(false);
+  /** D-136 j: cá nhân bắt buộc SĐT; doanh nghiệp bắt buộc thêm tên DN + mã số thuế + email. */
+  public readonly type = signal<'INDIVIDUAL' | 'BUSINESS'>('INDIVIDUAL');
   public readonly error = signal('');
   private readonly fb = inject(FormBuilder).nonNullable;
 
   public readonly loginForm = this.fb.group({ phone: ['', Validators.required], password: ['', Validators.required] });
   public readonly registerForm = this.fb.group({
+    companyName: ['', Validators.maxLength(255)],
+    taxCode: ['', Validators.maxLength(20)],
     fullName: ['', [Validators.required, Validators.maxLength(200)]],
     phone: ['', Validators.required],
     password: ['', [Validators.required, Validators.minLength(6)]],
@@ -120,10 +142,17 @@ export class PortalAccountLoginComponent {
 
   constructor() {
     if (this.account.loggedIn()) this.router.navigateByUrl(this.back, { replaceUrl: true });
+    // Nút "Đăng ký" trên header (?tao=1) bấm khi đang ở trang này → đổi tab, không tạo lại component.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe((q) => this.switch(q.get('tao') ? 'register' : 'login'));
   }
 
   public switch(m: 'login' | 'register'): void {
     this.mode.set(m);
+    this.error.set('');
+  }
+
+  public setType(t: 'INDIVIDUAL' | 'BUSINESS'): void {
+    this.type.set(t);
     this.error.set('');
   }
 
@@ -138,11 +167,16 @@ export class PortalAccountLoginComponent {
   public register(): void {
     const v = this.registerForm.getRawValue();
     const phone = clean(v.phone);
-    if (v.fullName.trim().length < 2) return this.error.set('Vui lòng nhập họ tên.');
+    const biz = this.type() === 'BUSINESS';
+    const tax = v.taxCode.replace(/[\s.]/g, '');
+    if (biz && v.companyName.trim().length < 2) return this.error.set('Vui lòng nhập tên doanh nghiệp.');
+    if (biz && !/^\d{10}(-\d{3})?$/.test(tax)) return this.error.set('Mã số thuế chưa đúng (10 số, hoặc 10 số - 3 số với chi nhánh).');
+    if (v.fullName.trim().length < 2) return this.error.set(biz ? 'Vui lòng nhập tên người liên hệ.' : 'Vui lòng nhập họ tên.');
     if (!PHONE.test(phone)) return this.error.set('Số điện thoại chưa đúng (10 số, bắt đầu bằng 03, 05, 07, 08 hoặc 09).');
     if (v.password.length < 6) return this.error.set('Mật khẩu cần tối thiểu 6 ký tự.');
     if (v.password !== v.confirm) return this.error.set('Hai lần nhập mật khẩu chưa khớp.');
-    this.run(this.account.register({ fullName: v.fullName.trim(), phoneNumber: phone, password: v.password, address: v.address.trim(), email: v.email.trim(), website: v.website }));
+    if (biz && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email.trim())) return this.error.set('Tài khoản doanh nghiệp cần email hợp lệ để nhận hóa đơn / thông báo.');
+    this.run(this.account.register({ accountType: this.type(), companyName: biz ? v.companyName.trim() : undefined, taxCode: biz ? tax : undefined, fullName: v.fullName.trim(), phoneNumber: phone, password: v.password, address: v.address.trim(), email: v.email.trim(), website: v.website }));
   }
 
   private run(obs: ReturnType<CustomerAccountService['login']>): void {

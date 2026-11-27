@@ -29,5 +29,11 @@ namespace AppDelicare.Model.Entity
         [Required]
         [MaxLength(30)]
         public string? Status { get; set; }
+        [MaxLength(20)]
+        public string? AccountType { get; set; }
+        [MaxLength(255)]
+        public string? CompanyName { get; set; }
+        [MaxLength(20)]
+        public string? TaxCode { get; set; }
     }
 }

@@ -66,7 +66,7 @@ namespace AppDelicare.Services.Implement
             // RETAIL-1: SĐT khách lẻ, nhóm món bán lẻ (ReferenceLists:RetailCategory) – không phải mã định danh.
             (typeof(RetailOrder), "PhoneNumber"), (typeof(RetailProduct), "CategoryCode"),
             // RETAIL-2 (D-136): SĐT đăng nhập của tài khoản khách lẻ – không trùng kiểm ở Service, không phải mã định danh.
-            (typeof(RetailCustomer), "PhoneNumber"),
+            (typeof(RetailCustomer), "PhoneNumber"), (typeof(RetailCustomer), "TaxCode"),
             // Cột sao chép / tham chiếu mã của bảng khác.
             (typeof(DeliveryExecution), "VehicleCode"), (typeof(DeliveryLoading), "VehicleCode"), (typeof(PackagingLedger), "ReferenceNo"),
             (typeof(GoodsReceiptLine), "LotNumber"), (typeof(KpiDailySnapshot), "MetricCode"), (typeof(KpiMonthlySnapshot), "MetricCode"),

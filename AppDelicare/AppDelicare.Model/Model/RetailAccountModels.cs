@@ -5,6 +5,10 @@ namespace AppDelicare.Model.Model
     /// <summary>RETAIL-2: hồ sơ khách lẻ (không bao giờ trả mật khẩu / mã băm).</summary>
     public class RetailCustomerProfileModel
     {
+        /// <summary>INDIVIDUAL / BUSINESS (D-136 j).</summary>
+        public string AccountType { get; set; } = "INDIVIDUAL";
+        public string? CompanyName { get; set; }
+        public string? TaxCode { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string? Email { get; set; }

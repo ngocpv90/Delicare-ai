@@ -81,6 +81,10 @@ namespace AppDelicare.Model.Request.Custom
     /// <summary>RETAIL-2: đăng ký tài khoản khách lẻ (SĐT + mật khẩu).</summary>
     public class RetailRegisterRequest
     {
+        /// <summary>D-136 j: INDIVIDUAL (mặc định) / BUSINESS. Doanh nghiệp bắt buộc CompanyName + TaxCode + Email.</summary>
+        public string? AccountType { get; set; }
+        public string? CompanyName { get; set; }
+        public string? TaxCode { get; set; }
         public string? FullName { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Password { get; set; }
@@ -98,6 +102,9 @@ namespace AppDelicare.Model.Request.Custom
 
     public class RetailProfileRequest
     {
+        /// <summary>Chỉ áp cho tài khoản doanh nghiệp (loại tài khoản không đổi được).</summary>
+        public string? CompanyName { get; set; }
+        public string? TaxCode { get; set; }
         public string? FullName { get; set; }
         public string? Email { get; set; }
         public string? Address { get; set; }

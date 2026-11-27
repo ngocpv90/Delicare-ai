@@ -175,6 +175,39 @@ namespace AppDelicare.Tests.Sales
         }
 
         [Fact]
+        public async Task Business_account_needs_company_tax_code_and_email_tax_code_unique()
+        {
+            using var f = await FactoryAsync();
+            var c = f.CreateClient();
+            object Biz(string phone, string? company = "Công ty TNHH Thử", string? tax = "0101234567", string? email = "ketoan@thu.vn")
+                => new { accountType = "BUSINESS", fullName = "Người liên hệ", phoneNumber = phone, password = "matkhau1", companyName = company, taxCode = tax, email };
+
+            Msg((await PostAsync(c, "/api/RetailPortal/Register", Biz("0912000001", company: ""))).Body).Should().Be(RetailMessage.CompanyNameRequired);
+            Msg((await PostAsync(c, "/api/RetailPortal/Register", Biz("0912000001", tax: "12345"))).Body).Should().Be(RetailMessage.TaxCodeInvalid);
+            Msg((await PostAsync(c, "/api/RetailPortal/Register", Biz("0912000001", email: null))).Body).Should().Be(RetailMessage.BusinessEmailRequired);
+            Msg((await PostAsync(c, "/api/RetailPortal/Register", new { accountType = "OTHER", fullName = "A B", phoneNumber = "0912000001", password = "matkhau1" })).Body)
+                .Should().Be(RetailMessage.AccountTypeInvalid);
+
+            var ok = await PostAsync(c, "/api/RetailPortal/Register", Biz("0912000001", tax: "0101 234 567-001"));
+            Code(ok.Body).Should().Be(200, Msg(ok.Body));
+            var profile = ok.Body.GetProperty("data").GetProperty("profile");
+            profile.GetProperty("accountType").GetString().Should().Be("BUSINESS");
+            profile.GetProperty("taxCode").GetString().Should().Be("0101234567-001", "bỏ khoảng trắng khi lưu");
+            Msg((await PostAsync(c, "/api/RetailPortal/Register", Biz("0912000002", tax: "0101234567-001"))).Body).Should().Be(RetailMessage.TaxCodeTaken);
+
+            // Cập nhật hồ sơ: doanh nghiệp không được bỏ email / MST.
+            string token = ok.Body.GetProperty("data").GetProperty("token").GetString()!;
+            Msg((await PostAsync(c, "/api/RetailPortal/UpdateProfile", new { fullName = "Người liên hệ", email = "", companyName = "Công ty TNHH Thử" }, token)).Body)
+                .Should().Be(RetailMessage.BusinessEmailRequired);
+
+            // Cá nhân: không cần MST / email; trường doanh nghiệp gửi lên bị bỏ qua.
+            var person = await PostAsync(c, "/api/RetailPortal/Register", new { fullName = "Cá Nhân", phoneNumber = "0912000003", password = "matkhau1", taxCode = "0101234567" });
+            Code(person.Body).Should().Be(200, Msg(person.Body));
+            person.Body.GetProperty("data").GetProperty("profile").GetProperty("accountType").GetString().Should().Be("INDIVIDUAL");
+            person.Body.GetProperty("data").GetProperty("profile").GetProperty("taxCode").ValueKind.Should().Be(JsonValueKind.Null);
+        }
+
+        [Fact]
         public async Task Customer_token_never_opens_internal_api()
         {
             using var f = await FactoryAsync();

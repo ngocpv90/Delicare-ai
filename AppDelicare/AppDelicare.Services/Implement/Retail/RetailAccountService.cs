@@ -30,6 +30,9 @@ namespace AppDelicare.Services.Implement.Retail
         public const string GroupDone = "done";
         public const string GroupCancelled = "cancelled";
         private const string StatusActive = "Active";
+        /// <summary>D-136 j: loại tài khoản khách lẻ.</summary>
+        public const string TypeIndividual = "INDIVIDUAL";
+        public const string TypeBusiness = "BUSINESS";
 
         private readonly RetailRulesOptions _rules = rules.Value.Retail;
         private readonly ReferenceListsOptions _lists = referenceLists.Value;
@@ -61,6 +64,17 @@ namespace AppDelicare.Services.Implement.Retail
             {
                 return Result<RetailSessionModel>.Fail(RetailMessage.EmailInvalid);
             }
+            // D-136 j: cá nhân – SĐT (đã kiểm ở trên); doanh nghiệp – thêm tên DN + mã số thuế + email.
+            string? type = NormalizeType(request.AccountType);
+            if (type == null)
+            {
+                return Result<RetailSessionModel>.Fail(RetailMessage.AccountTypeInvalid);
+            }
+            var (company, taxCode, bizError) = Business(type, request.CompanyName, request.TaxCode, email);
+            if (bizError != null)
+            {
+                return Result<RetailSessionModel>.Fail(bizError);
+            }
             string ipKey = "retail-register:" + (clientIp ?? "-");
             int count = cache.TryGetValue(ipKey, out int c) ? c : 0;
             if (count >= _rules.RegisterLimitPerIp)
@@ -76,6 +90,10 @@ namespace AppDelicare.Services.Implement.Retail
             {
                 return Result<RetailSessionModel>.Fail(RetailMessage.PhoneTaken);
             }
+            if (taxCode != null && await db.RetailCustomer.AsNoTracking().AnyAsync(x => x.TaxCode == taxCode && !x.IsDeleted))
+            {
+                return Result<RetailSessionModel>.Fail(RetailMessage.TaxCodeTaken);
+            }
             DateTime now = clock.Now;
             using (currentActor.BeginScope(ActorInfo.ForSystem(system)))
             {
@@ -85,6 +103,7 @@ namespace AppDelicare.Services.Implement.Retail
                     var entity = new RetailCustomer
                     {
                         Id = Guid.NewGuid(), PhoneNumber = phone, FullName = name, Email = email, Address = RetailRules.Clean(request.Address, 500),
+                        AccountType = type, CompanyName = company, TaxCode = taxCode,
                         PasswordHash = RetailAccountRules.HashPassword(request.Password), PasswordChangedAt = now, LastLoginAt = now, Status = StatusActive,
                     };
                     unitOfWork.RetailCustomerRepository.Add(entity);
@@ -187,11 +206,25 @@ namespace AppDelicare.Services.Implement.Retail
             {
                 return Result<RetailCustomerProfileModel>.Fail(RetailMessage.EmailInvalid);
             }
+            // Loại tài khoản không đổi; doanh nghiệp luôn phải đủ tên DN + mã số thuế + email.
+            string type = NormalizeType(me.AccountType) ?? TypeIndividual;
+            var (company, taxCode, bizError) = Business(type, request.CompanyName ?? me.CompanyName, request.TaxCode ?? me.TaxCode, email);
+            if (bizError != null)
+            {
+                return Result<RetailCustomerProfileModel>.Fail(bizError);
+            }
+            if (taxCode != null && taxCode != me.TaxCode
+                && await unitOfWork.DbContext.RetailCustomer.AsNoTracking().AnyAsync(x => x.TaxCode == taxCode && x.Id != me.Id && !x.IsDeleted))
+            {
+                return Result<RetailCustomerProfileModel>.Fail(RetailMessage.TaxCodeTaken);
+            }
             var saved = await SaveAsync(me.Id, c =>
             {
                 c.FullName = name;
                 c.Email = email;
                 c.Address = RetailRules.Clean(request.Address, 500);
+                c.CompanyName = company;
+                c.TaxCode = taxCode;
             }, nameof(UpdateProfile));
             return saved == null ? Result<RetailCustomerProfileModel>.Fail(RetailMessage.AccountUnavailable)
                 : Result<RetailCustomerProfileModel>.Success(Profile(saved), RetailMessage.ProfileSaved);
@@ -411,8 +444,42 @@ namespace AppDelicare.Services.Implement.Retail
             return new RetailSessionModel { Token = RetailAccountRules.IssueToken(_key!, c.Id, c.PasswordHash, exp), ExpiresAt = exp, Profile = Profile(c) };
         }
 
+        /// <summary>Trống = cá nhân (tài khoản cũ); chỉ nhận INDIVIDUAL / BUSINESS, sai → null.</summary>
+        private static string? NormalizeType(string? type)
+        {
+            string t = (type ?? string.Empty).Trim().ToUpperInvariant();
+            return t.Length == 0 ? TypeIndividual : t is TypeIndividual or TypeBusiness ? t : null;
+        }
+
+        /// <summary>
+        /// D-136 j: doanh nghiệp bắt buộc tên DN + mã số thuế (10 số hoặc 10-3 số; bỏ khoảng trắng / dấu chấm) + email; cá nhân không lưu 2 trường DN.
+        /// </summary>
+        private static (string? Company, string? TaxCode, string? Error) Business(string type, string? companyName, string? taxCode, string? email)
+        {
+            if (type != TypeBusiness)
+            {
+                return (null, null, null);
+            }
+            string? company = RetailRules.Clean(companyName, 255);
+            if (company == null || company.Length < 2)
+            {
+                return (null, null, RetailMessage.CompanyNameRequired);
+            }
+            string tax = (taxCode ?? string.Empty).Replace(" ", string.Empty).Replace(".", string.Empty).Trim();
+            if (!TaxCodePattern().IsMatch(tax))
+            {
+                return (null, null, RetailMessage.TaxCodeInvalid);
+            }
+            if (email == null)
+            {
+                return (null, null, RetailMessage.BusinessEmailRequired);
+            }
+            return (company, tax, null);
+        }
+
         private static RetailCustomerProfileModel Profile(RetailCustomer c) => new()
         {
+            AccountType = NormalizeType(c.AccountType) ?? TypeIndividual, CompanyName = c.CompanyName, TaxCode = c.TaxCode,
             FullName = c.FullName ?? string.Empty, PhoneNumber = c.PhoneNumber ?? string.Empty, Email = c.Email, Address = c.Address, CreatedDate = c.CreatedDate,
         };
 
@@ -420,5 +487,9 @@ namespace AppDelicare.Services.Implement.Retail
 
         [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
         private static partial Regex EmailPattern();
+
+        /// <summary>Mã số thuế: 10 số, hoặc 10 số - 3 số (chi nhánh) – cùng quy tắc CustomerService.</summary>
+        [GeneratedRegex(@"^\d{10}(-\d{3})?$")]
+        private static partial Regex TaxCodePattern();
     }
 }
