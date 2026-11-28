@@ -16,6 +16,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Menu › Mục | screen-id | FIN-IT |
 |---|---|---|
 | Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | Duyệt |
+| Điều hành › Kết quả kinh doanh | `dash-pl` | X (IX) |
 | Điều hành › Trung tâm Agent | `ai-agents` | S |
 | Điều hành › Giao việc | `ai-tasks` | S |
 | Điều hành › Lịch chạy | `ai-schedule` | S |

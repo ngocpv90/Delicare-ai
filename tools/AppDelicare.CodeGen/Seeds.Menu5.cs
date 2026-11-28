@@ -68,7 +68,7 @@ public static partial class Seeds
             "wf-inbox?type=ai-agent-cmd", // AI-9 (D-133): lệnh ghi của agent (ghi 2 pha)
             "wf-inbox?type=kb-sop", // AI-12 (D-133): duyệt SOP / hướng dẫn / quyết định của kho tri thức
         ]),
-        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal", "ai-agents", "ai-agent-log", "ai-flow", "ai-tasks", "ai-schedule", "ai-cost"]), // AI-21 (D-138 a, b): Trung tâm Agent dưới Phê duyệt; 5 mục tab ẩn khỏi sidebar (FE), giữ dòng quyền IsActive = 1 // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
+        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal", "dash-pl", "ai-agents", "ai-agent-log", "ai-flow", "ai-tasks", "ai-schedule", "ai-cost"]), // AI-21 (D-138 a, b): Trung tâm Agent dưới Phê duyệt; 5 mục tab ẩn khỏi sidebar (FE), giữ dòng quyền IsActive = 1 // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
             ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "log-complaint", "crm-location", "crm-contact"]),
         // ACC-1 (D-131 b – anh chốt 2026-11-26): nhóm "Kế toán" sau Kinh doanh – Bảng kê thanh toán CHUYỂN từ Kinh doanh (giữ screen-id crm-billing, không mất quyền).
@@ -164,6 +164,7 @@ public static partial class Seeds
         ["wf-inbox?type=ai-agent-cmd"] = ("Lệnh của agent", "AI"), // AI-9 (D-133)
         ["wf-inbox?type=kb-sop"] = ("Duyệt SOP", "AI"), // AI-12 (D-133)
         ["ai-tasks"] = ("Giao việc", "AI"), // AI-12 (D-133); AI-21 (D-138 b): tab Giao việc của Trung tâm Agent
+        ["dash-pl"] = ("Kết quả kinh doanh", "RPT"), // RPT-1.1 (D-140 a): tab Kết quả kinh doanh của Bảng điều hành – mục quyền ẩn
         ["ai-cost"] = ("Sử dụng & chi phí", "AI"), // AI-21 (D-138 g): mục quyền ẩn – chi phí AI chỉ CEO / COO / FIN-IT
         ["acc-amis-code"] = ("Khớp mã AMIS", "ACC"),
         ["acc-amis-recon"] = ("Đối chiếu với AMIS", "ACC"),
@@ -234,7 +235,7 @@ public static partial class Seeds
 
     /// <summary>"Toàn bộ màn nghiệp vụ": mục cấp 2 của nhóm Điều hành → Nhân sự, trừ Hộp phê duyệt cũ (#/wf-inbox – giới hạn riêng) và mục đã ẩn.</summary>
     private static string[] Business() => [.. Menu5Groups.Where(g => !NonBusinessGroups.Contains(g.Link)).SelectMany(g => g.Items)
-        .Where(i => i != "wf-inbox" && !i.StartsWith("ai-", StringComparison.Ordinal) && !Menu5HiddenLinks.Contains("#/" + i) && !CatalogFromAdmin.Contains(i) && i != "kpi-definition")];
+        .Where(i => i != "wf-inbox" && !i.StartsWith("ai-", StringComparison.Ordinal) && i != "dash-pl" && !Menu5HiddenLinks.Contains("#/" + i) && !CatalogFromAdmin.Contains(i) && i != "kpi-definition")];
 
     /// <summary>D-134: mục UI-6.40 chuyển từ Quản trị sang "Danh mục hệ thống" – quyền GIỮ như màn quản trị (FIN-IT toàn quyền; không tính là màn nghiệp vụ). Khớp DB đang chạy.</summary>
     private static readonly string[] CatalogFromAdmin = ["adm-orgunit", "adm-company", "adm-admin-unit", "adm-reference"];
@@ -268,6 +269,11 @@ public static partial class Seeds
         // Ban điều hành – chỉ xem (D-79 c). Mọi nhóm xem "Việc của tôi".
         G("CEO", ViewR, business);
         G("CEO", ix, [.. Kpi, "crm-billing", "cost-meal"]);
+        // RPT-1.1 (D-140 a): Kết quả kinh doanh (số tài chính) – chỉ CEO, COO, FIN-IT, FIN-ACC: Xem + In + Xuất.
+        foreach (string role in new[] { "CEO", "COO", "FIN-IT", "FIN-ACC" })
+        {
+            G(role, ix, ["dash-pl"]);
+        }
         G("CEO", ViewR, ["adm-company", "adm-orgunit", "adm-employee", "int-outbound", "wf-inbox"]);
         G("CEO-PMO", ViewR, business);
         G("CEO-PMO", ix, Kpi);

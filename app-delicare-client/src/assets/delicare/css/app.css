@@ -1127,3 +1127,21 @@ tr.bb-late td{background:#FFF5F4}
 .dx-f { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; } .dx-f > span:first-child { font-size: 12px; color: #5E6853; }
 .dx-f.off select { opacity: .5; }
 @media (max-width: 760px) { .dx-bar { gap: 8px 12px; } .dx-f select { max-width: 60vw; } }
+
+/* RPT-1 (D-140): tab Kết quả kinh doanh – thẻ chỉ số tự xuống hàng, bảng số triệu đồng */
+.rp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.rp-card { padding: 14px 16px !important; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.rp-card.amis { background: #FBFAF5; border-color: #EFE3C2; }
+.rp-n { font-size: 13px; color: #5E6853; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.rp-src { font-size: 11px; border-radius: 999px; padding: 2px 8px; background: #EEF5E4; color: #3A5115; white-space: nowrap; flex: none; }
+.rp-src.amis { background: #FFF4DA; color: #8A5A00; }
+.rp-v { font-size: 24px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.rp-v.muted { font-size: 16px; font-weight: 600; }
+.rp-v small { font-size: 12px; color: #5E6853; font-weight: 500; }
+.rp-d { line-height: 1.6; }
+.rp-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.rp-t td, .rp-t th { white-space: nowrap; }
+.rp-12 td:first-child, .rp-t td:first-child { white-space: normal; min-width: 140px; }
+.rp-grid.eq { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 1100px) { .rp-grid, .rp-grid.eq { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .rp-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rp-v { font-size: 19px; } }

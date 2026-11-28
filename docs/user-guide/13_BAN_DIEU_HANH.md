@@ -35,6 +35,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) |
+| Điều hành › Kết quả kinh doanh | `dash-pl` | X (IX) | — | X (IX) | X (IX) |
 | Điều hành › Trung tâm Agent | `ai-agents` | S | — | S | — |
 | Điều hành › Giao việc | `ai-tasks` | S | — | S | — |
 | Điều hành › Lịch chạy | `ai-schedule` | S | — | S | — |
@@ -158,3 +159,13 @@ Mục **Điều hành › Giá vốn & lãi gộp** thay 3 màn cũ (Giá thành
 
 ## Chỉ số kinh doanh (UI-6.28, D-109) – `kpi-daily`
 Nhóm **Điều hành** nay gồm: **Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt** (Phê duyệt cuối nhóm, vẫn hiện số việc chờ duyệt). "Chỉ số theo ngày" và "Chỉ số theo tháng" gộp thành **Chỉ số kinh doanh** với công tắc **Theo ngày | Theo tháng** ở đầu màn (máy nhớ lựa chọn): Theo ngày = 30 ngày gần nhất, Theo tháng = 12 tháng (tháng đang chạy tính đến hôm nay). Chip lọc mảng, thẻ từng chỉ tiêu (số mới nhất, Đạt / Chưa đạt / Thiếu dữ liệu, biểu đồ nhỏ có vạch mục tiêu) giữ nguyên; nút **Làm mới số liệu** (admin) chạy đúng job theo chế độ đang xem. Chỉ tiêu tài chính hiện "Tỷ lệ nguyên liệu / doanh thu", "Giá vốn nguyên liệu / suất" (chưa có định mức nhân công / chung). Link cũ `#/kpi-monthly` mở chế độ tháng.
+
+## Kết quả kinh doanh (RPT-1, D-140) – `dash-exec?tab=pl`
+
+Tab thứ 4 của **Bảng điều hành**, chỉ **CEO, COO, FIN-IT, Kế toán (FIN-ACC)** thấy (mục quyền ẩn `dash-pl`; người khác không có tab, API bị từ chối). Tháng = **tháng của ngày đang chọn** ở bộ lọc chung; ô Ca mờ.
+
+- **Hai lớp số:** **Tạm tính** (Delicare tự tính, cập nhật hằng ngày khi kỳ còn mở) và **Chính thức · AMIS** (có sau khi Kế toán nhập sổ AMIS của tháng – RPT-1.2). Mỗi thẻ ghi rõ lớp; thẻ AMIS chưa có số ghi **"Chờ số AMIS"**.
+- **Thẻ chỉ số** (so tháng trước + cùng kỳ năm trước, ▲ / ▼ màu theo tốt / xấu): Doanh thu · Số suất · Nguyên vật liệu · Bao bì · % NVL / doanh thu · Lãi gộp theo NVL (Tạm tính) · Lợi nhuận gộp · Chi phí bán hàng & quản lý · Lợi nhuận trước thuế (Chính thức). Doanh thu, NVL, % NVL **trùng số tab Giá vốn & lãi gộp**. Bao bì = phiếu xuất bao bì theo định mức (ACC-6).
+- **Doanh thu theo khách × bữa** (Sáng / Trưa / Tối / Đêm): khách chưa xác nhận bảng kê tháng gắn nhãn **"chưa xác nhận"** (số từ đơn × đơn giá hợp đồng). Hiện theo khách – chưa gộp nhóm khách (SGC, Vinalpha, Vin) vì dữ liệu khách chưa có quan hệ cha – con (GAP-RPT-01 chờ duyệt).
+- **Nguyên vật liệu theo nhóm**: xuất kho × giá lô theo nhóm nguyên liệu (không gồm bao bì), tháng này so tháng trước; **Pareto** (% lũy kế – dòng đậm là nhóm trong 80 % chi phí); bảng **12 tháng**. Hiện 12 nhóm lớn nhất + dòng "N nhóm khác".
+- Đơn vị **triệu đồng (trđ, 1 chữ số thập phân)** – rê chuột lên số xem số đầy đủ.
