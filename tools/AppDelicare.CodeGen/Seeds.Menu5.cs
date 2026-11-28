@@ -826,8 +826,8 @@ public static partial class Seeds
         sb.AppendLine("-- Ký hiệu: Q = Thêm + Sửa + Xóa + Nhập · S = Thêm + Sửa · X = Xem · IX = In + Xuất · Duyệt = Xem + Sửa trên mục #/wf-inbox?type=<màn> (D-31).");
         foreach (string role in StandardRoles)
         {
-            sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = {Sql(role)} AND IsDeleted = 0)");
-            sb.AppendLine($"    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(role)}, 0, @Now, @SeedBy, 0);");
+            sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = {Sql(role)} AND IsDeleted = 0)"); // D-134: theo Code (UI-6.43)
+            sb.AppendLine($"    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), {Sql(role)}, {Sql(role)}, 0, @Now, @SeedBy, 0);");
         }
         sb.AppendLine();
         sb.AppendLine("DECLARE @R TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(400), A BIT, Ad BIT, E BIT, D BIT, P BIT, X BIT, I BIT);");
@@ -837,7 +837,7 @@ public static partial class Seeds
             INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
             SELECT NEWID(), g.Id, m.Id, r.A, r.Ad, r.E, r.D, r.P, r.X, r.I, @Now, @SeedBy, 0
             FROM @R r
-            JOIN [dbo].[UserGroup] g ON g.Name = r.GroupName AND g.IsDeleted = 0
+            JOIN [dbo].[UserGroup] g ON ISNULL(NULLIF(g.Code, N''), g.Name) = r.GroupName AND g.IsDeleted = 0
             JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
             WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
             COMMIT;

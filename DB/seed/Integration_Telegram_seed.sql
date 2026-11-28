@@ -50,7 +50,7 @@ SELECT g.Name, N'#/bot-dieu-hanh' FROM (VALUES (N'CEO'), (N'CEO-PMO'), (N'COO'),
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), g.Id, m.Id, 1, 0, 0, 0, 0, 0, 0, @Now, @SeedBy, 0
 FROM @R r
-JOIN [dbo].[UserGroup] g ON g.Name = r.GroupName AND g.IsDeleted = 0
+JOIN [dbo].[UserGroup] g ON ISNULL(NULLIF(g.Code, N''), g.Name) = r.GroupName AND g.IsDeleted = 0 -- D-134: theo Code (UI-6.43 đổi Name sang tiếng Việt)
 JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
 WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
 

@@ -120,7 +120,7 @@ namespace AppDelicare.Tests.Security
                 // Admin chỉnh: thu hồi quyền duyệt công thức của CEO và đổi tên menu.
                 await ScalarAsync("""
                     UPDATE r SET AllowAccess = 0, AllowEdit = 0 FROM UserRole r JOIN UserGroup g ON g.Id = r.UserGroupId JOIN ObjectMenu m ON m.Id = r.ObjectMenuId
-                    WHERE g.Name = 'CEO' AND m.MetaLink = '#/wf-inbox?type=menu-recipe' AND r.IsDeleted = 0;
+                    WHERE ISNULL(NULLIF(g.Code, ''), g.Name) = 'CEO' AND m.MetaLink = '#/wf-inbox?type=menu-recipe' AND r.IsDeleted = 0;
                     UPDATE ObjectMenu SET Name = N'[DEMO] Tên admin đặt' WHERE MetaLink = '#/crm-customer' AND IsDeleted = 0;
                     """);
 
@@ -129,7 +129,7 @@ namespace AppDelicare.Tests.Security
 
                 (await ScalarAsync("""
                     SELECT CAST(r.AllowEdit AS int) FROM UserRole r JOIN UserGroup g ON g.Id = r.UserGroupId JOIN ObjectMenu m ON m.Id = r.ObjectMenuId
-                    WHERE g.Name = 'CEO' AND m.MetaLink = '#/wf-inbox?type=menu-recipe' AND r.IsDeleted = 0
+                    WHERE ISNULL(NULLIF(g.Code, ''), g.Name) = 'CEO' AND m.MetaLink = '#/wf-inbox?type=menu-recipe' AND r.IsDeleted = 0
                     """)).Should().Be(0, "seed không được cấp lại quyền admin đã thu hồi");
                 (await ScalarAsync("SELECT Name FROM ObjectMenu WHERE MetaLink = '#/crm-customer' AND IsDeleted = 0")).Should().Be("[DEMO] Tên admin đặt");
                 (await ScalarAsync("SELECT COUNT(*) FROM ObjectMenu WHERE MetaLink LIKE '#/approve/%' AND IsDeleted = 0")).Should().Be(0);
