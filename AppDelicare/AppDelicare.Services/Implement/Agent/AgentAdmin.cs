@@ -18,15 +18,15 @@ namespace AppDelicare.Services.Implement.Agent
         [
             new("VIVI", "Điều phối trung tâm", "Ban GĐ, mọi người", "Bản tin sáng / cuối ngày, KPI, sự cố, việc chờ duyệt; định tuyến câu hỏi cho agent phòng ban", "Không ghi trực tiếp – chuyển cho agent phòng ban", 1, "#7c3aed"),
             new("SALES", "Đơn hàng / Kinh doanh", "KD, TP KD", "Đơn hàng ngày, hợp đồng, danh mục; nhắc đơn chưa chốt", "propose_order_change → TP KD", 2, "#2563eb"),
-            new("PLAN", "Kế hoạch sản xuất & thực đơn", "TP vận hành, trưởng bếp", "Kế hoạch ngày, nhu cầu nguyên liệu, thực đơn tuần, năng lực dây chuyền", "propose_production_plan → trưởng bếp", 2, "#0891b2"),
+            new("PLAN", "Kế hoạch sản xuất & thực đơn", "TP vận hành, trưởng bếp", "Kế hoạch ngày, nhu cầu nguyên liệu, thực đơn tuần, giá vốn", "propose_production_plan / menu_change → TP kế hoạch", 3, "#0891b2"),
             new("PROC", "Thu mua", "Mua hàng", "Dự báo thiếu hụt, NCC, giá; đề xuất đơn mua", "propose_purchase_order → TP vận hành / GĐ", 2, "#ca8a04"),
             new("WH", "Kho", "Thủ kho", "Tồn kho, lô cận hạn, truy xuất lô, nhu cầu nguyên liệu", "propose_goods_receipt / issue / stock_count → thủ kho", 1, "#16a34a"),
             new("KITCHEN", "Bếp", "Trưởng ca, tổ trưởng", "Tiến độ bếp theo mẻ / công đoạn, kế hoạch, thực đơn, hao hụt", "propose_batch_event → trưởng ca", 1, "#ea580c"),
             new("QA", "ATTP và Truy xuất", "QA, trưởng bếp", "Truy xuất lô / mẻ, nhiệt độ, phản ánh, lô tạm giữ", "propose_qc_result / hold_lot → QA lead", 1, "#dc2626"),
             new("LOG", "Giao vận", "Điều phối GV, tài xế", "Chuyến giao trong ngày, giao trực tiếp", "propose_route / delivery_event → điều phối GV", 3, "#0d9488"),
-            new("PKG", "Hộp / khay và Vệ sinh", "Tổ vệ sinh, KT", "Hộp khay, lô vệ sinh", "propose_container_return / cleaning_step → tổ trưởng VS", 3, "#64748b"),
+            new("PKG", "Hộp / khay và Vệ sinh", "Tổ vệ sinh, KT", "Hộp khay khách giữ, thất thoát, lô vệ sinh", "propose_container_return → giao vận; cleaning_step → tổ trưởng VS / QA", 3, "#64748b"),
             new("HR", "Nhân sự", "NS, trưởng bộ phận", "Chấm công ngày, chưa vào ca, công tháng", "propose_leave / shift_swap / attendance_fix → trưởng bộ phận", 2, "#db2777"),
-            new("ACC", "Kế toán", "Kế toán", "Doanh thu, chi phí nguyên liệu, giá thành suất", "propose_container_loss_charge → KT trưởng", 3, "#4f46e5"),
+            new("ACC", "Kế toán", "Kế toán", "Chứng từ kế toán, đối chiếu AMIS, giá vốn & lãi gộp (chỉ đọc – không thay MISA)", "propose_container_loss_charge → người có quyền Sổ hộp khay", 3, "#4f46e5"),
             new("CSKH", "CSKH – Zalo", "Khách hàng", "Đơn và thực đơn của chính khách đang hỏi", "propose_portion_confirm / shortage_report / complaint → KD / điều phối", 4, "#0284c7"),
             new("KNOW", "Thủ thư tri thức", "Mọi agent, mọi người", "Tìm SOP / tiền lệ trong kho tri thức (không bao giờ BOD)", "Ghi nhật ký / bài học nháp 96–98 → chủ thư mục duyệt", 1, "#9333ea"),
         ];

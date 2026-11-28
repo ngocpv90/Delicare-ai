@@ -16,6 +16,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Menu › Mục | screen-id | OPS-POS |
 |---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X |
+| Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | Duyệt |
 | Kinh doanh › Khách hàng | `crm-customer` | X |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X |

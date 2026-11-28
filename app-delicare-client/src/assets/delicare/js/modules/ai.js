@@ -80,7 +80,7 @@
   APP.register('ai-agents', (el, f, p) => {
     if (p && p.code) return detail(el, f, p.code);
     el.innerHTML = APP.header(f || FN['ai-agents'], '', { noNote: true }) + nav('ai-agents')
-      + `<div class="notice info mb">${I('help')}<div><b>Đợt 2.</b> Agent trả lời bằng số liệu lõi và kho tri thức, đề xuất ghi chờ người có quyền xác nhận (Phê duyệt › Lệnh của agent), cảnh báo chủ động tới người phụ trách. Tắt một agent → cổng công cụ từ chối ngay từ lời gọi sau.</div></div>`
+      + `<div class="notice info mb">${I('help')}<div><b>Đợt 3 – đủ phòng ban.</b> Agent trả lời bằng số liệu lõi và kho tri thức, đề xuất ghi chờ người có quyền xác nhận (Phê duyệt › Lệnh của agent), cảnh báo chủ động tới người phụ trách. Tắt một agent → cổng công cụ từ chối ngay từ lời gọi sau.</div></div>`
       + `<div id="aiKpi">${loading}</div><div id="aiCost" class="mt"></div><div id="aiGrid" class="ai-grid mt"></div>`;
     costCard(el.querySelector('#aiCost'));
     const canEdit = Store.perm('ai-agents').edit !== false;

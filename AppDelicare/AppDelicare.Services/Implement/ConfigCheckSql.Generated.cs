@@ -577,6 +577,7 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/ai-tasks', 1, 1, 1, 0, 0, 0, 0),
     (N'COO', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-PLAN', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/dash-exec', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/kpi-monthly', 1, 0, 0, 0, 0, 0, 0),
@@ -727,9 +728,9 @@ INSERT INTO @Allow VALUES
     (N'OPS-SCM-HEAD', N'#/ai-tasks', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/wf-inbox?type=kb-sop', 1, 0, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/sal-retail-order', 1, 0, 0, 0, 1, 0, 0);
+    (N'OPS-KIT', N'#/wf-inbox?type=kb-sop', 1, 0, 1, 0, 0, 0, 0);
 INSERT INTO @Allow VALUES
+    (N'OPS-KIT', N'#/sal-retail-order', 1, 0, 0, 0, 1, 0, 0),
     (N'OPS-KIT', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/menu-recipe', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
@@ -792,6 +793,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-LOG', N'#/knowledge?folder=99', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/ai-tasks', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-POS', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-order-week', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-order', 1, 0, 0, 0, 0, 0, 0),
@@ -1185,7 +1187,8 @@ INSERT INTO @Once VALUES
     (N'UI643_usergroup_code.sql'),
     (N'SYNC1_dedupe_usergroups.sql'),
     (N'UI651_purchase_plan.sql'),
-    (N'AI10_activate_agents.sql');
+    (N'AI10_activate_agents.sql'),
+    (N'AI16_activate_agents.sql');
 INSERT INTO @Out
 SELECT N'Chuyển đổi – chưa chạy', o.FileName, N'chưa ghi nhận DelicareOnce (chạy Deploy-Database / db-init)' FROM @Once o
 WHERE NOT EXISTS (SELECT 1 FROM sys.extended_properties p WHERE p.class = 0 AND p.name = N'DelicareOnce:' + o.FileName);

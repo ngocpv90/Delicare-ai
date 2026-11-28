@@ -627,6 +627,20 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-16 – Bật PLAN, PKG, ACC (D-133 đợt 3)
+
+Chuẩn bị (IT): `.env` server thêm `AGENT_KEY_PLAN / PKG / ACC` (PLAN, ACC ở `hermes-van-phong`; PKG ở `hermes-van-hanh`); DB cũ chạy `AI16_activate_agents.sql` (once.order tự chạy khi deploy); lịch `gen-cron.mjs --group van-hanh / van-phong` chạy lại.
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | uat.ceo | Trung tâm agent | 12 / 13 agent bật (chỉ CSKH tắt); thẻ PLAN / PKG / ACC không báo "máy chủ chưa có khóa" |
+| 2 | Kế hoạch (uat.ops-plan) | Hỏi PLAN "ngày mai tính lại kế hoạch" → duyệt ở Lệnh của agent | Trước khi duyệt kế hoạch không đổi; duyệt = như bấm Tính lại kế hoạch (tự phát lệnh / giữ lại kèm lý do) |
+| 3 | uat.ops-plan | PLAN đề xuất đổi món thực đơn đã công bố (thiếu nguyên liệu) → duyệt | Yêu cầu đổi món mới ở tab Đổi món: tự duyệt nếu cùng nhóm + công thức khóa + FC đạt + trước giờ chốt, còn lại Chờ duyệt (COO); thực đơn Nháp → agent báo sửa trực tiếp |
+| 4 | Giao vận (uat.ops-log) | PKG đề xuất khách trả 20 khay theo phiếu giao → duyệt | Sổ hộp khay có dòng IN tốt / hỏng; số trả > số khách giữ → cảnh báo trong bản xem trước, duyệt bị từ chối |
+| 5 | Bếp / QA (uat.qa) | PKG đề xuất bước 3 trước bước 1 / bước 5 thiếu hóa chất / FAIL thiếu khắc phục | Agent báo lỗi ngay, không tạo đề xuất; bước đúng thứ tự → duyệt → dòng kết quả như bấm trên màn Vệ sinh |
+| 6 | Kế toán (uat.fin-acc) | Hỏi ACC chứng từ tháng / lệch AMIS / lãi gộp | Số khớp các màn tương ứng; ACC không có lệnh lập / xuất chứng từ |
+| 7 | uat.fin-acc + uat.ops-log | ACC đề xuất ghi 2 khay thất thoát của khách vượt ngưỡng → uat.fin-acc thử duyệt → uat.ops-log duyệt | uat.fin-acc bị từ chối (cần quyền Thêm Sổ hộp khay); uat.ops-log duyệt → dòng LOSS; bảng kê thanh toán tháng tính phí nếu đã đặt `BusinessRules:ContainerLossFee` |
+
 ## AI-ĐỢT-2 – Lệnh ghi, cảnh báo, chi phí, chat web, 3 container Hermes (D-133, AI-9 … AI-15)
 
 Chuẩn bị (IT): `.env` server có `AGENT_KEY_<MÃ>` của 9 agent đang bật (VIVI, WH, KITCHEN, QA, KNOW, SALES, PROC, LOG, HR), `HERMES_API_KEY`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN_TRO_LY`; `Agent:MonthlyBudget`; `docker compose --profile hermes up -d` → 3 container `hermes-vivi / hermes-van-hanh / hermes-van-phong` (config từ `agents/hermes/<nhóm>.config.example.yaml`, lịch `gen-cron.mjs --group <nhóm>`).

@@ -459,7 +459,7 @@ public static partial class Seeds
         ("adm-user", ["FIN-IT"]), // HR-ACC-1.6 (D-82 f)
         ("crm-recon-reopen", ["COO"]), // ACC-3 (D-131 g): mở lại đối soát đã chốt
         ("acc-period-unlock", ["COO"]), // ACC-4 (D-131 h): mở khóa kỳ kế toán
-        ("ai-agent-cmd", ["OPS-WH", "OPS-KIT", "QA", "OPS-SCM", "OPS-SCM-HEAD", "SAL-HEAD", "OPS-LOG", "FIN-HR", "COO"]), // AI-9 (D-133): người xác nhận lệnh agent theo bảng §4 – mỗi lệnh còn kiểm quyền thao tác trên màn đích
+        ("ai-agent-cmd", ["OPS-WH", "OPS-KIT", "QA", "OPS-SCM", "OPS-SCM-HEAD", "SAL-HEAD", "OPS-LOG", "FIN-HR", "COO", "OPS-PLAN", "OPS-POS"]), // AI-9 / AI-16 (D-133): người xác nhận lệnh agent theo bảng §4 (đợt 3: kế hoạch, điểm phát) – mỗi lệnh còn kiểm quyền thao tác trên màn đích
         ("kb-sop", ["CEO", "COO", "OPS-KIT", "QA", "OPS-WH", "OPS-SCM-HEAD", "SAL-HEAD", "OPS-LOG", "FIN-ACC", "FIN-HR"]), // AI-12 (D-133): chủ thư mục kho duyệt SOP – còn kiểm quyền Sửa thư mục
         ("log-load-short", ["COO", "OPS-SCM-HEAD"]), // UI-6.49 (6) (D-127 e): chưa có nhóm trưởng điều phối → COO + Trưởng mua hàng & kho
     ];

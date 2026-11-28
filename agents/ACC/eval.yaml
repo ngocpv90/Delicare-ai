@@ -1,0 +1,28 @@
+# Bộ câu nghiệm thu agent ACC (AI-16, D-133). Chạy: node tools/agent-eval/run.mjs ACC
+agent: ACC
+webUser: uat.fin-acc
+cases:
+  - id: acc-chung-tu
+    question: Chứng từ kế toán tháng này?
+    tool: chung_tu_ke_toan
+    args: {}
+    expect:
+      status: 200
+  - id: acc-amis
+    question: Đối chiếu AMIS tháng này lệch gì?
+    tool: doi_chieu_amis
+    args: {}
+    expect:
+      status: 200
+  - id: acc-lai-gop
+    question: Lãi gộp theo khách tháng này?
+    tool: gia_von_lai_gop
+    args: {}
+    expect:
+      status: 200
+  - id: acc-that-thoat-khach-sai
+    question: Tính phí 5 hộp mất của khách KH-KHONG-CO
+    tool: propose_container_loss_charge
+    args: { ma_khach: KH-KHONG-CO, loai_hop: KHAY, so_luong: 5, ly_do: "khách báo mất" }
+    expect:
+      status: 400

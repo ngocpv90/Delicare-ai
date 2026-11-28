@@ -26,7 +26,7 @@ namespace AppDelicare.Services.Implement.Agent
         [
             new AgentToolDef
             {
-                Name = "gui_canh_bao", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR"],
+                Name = "gui_canh_bao", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR", "PLAN", "PKG", "ACC"],
                 Description = "Gửi 1 tin cảnh báo chủ động qua bot tới người phụ trách màn liên quan (người có quyền Thêm trên màn đó): tiêu đề, nhận xét, tối đa 5 phương án. "
                     + "khoa_su_kien = khóa sự kiện (Key của lay_su_kien) – mỗi khóa chỉ gửi 1 lần. Dùng X-Correlation-Id của luồng để màn Luồng liên phòng nối các bước.",
                 InputSchemaJson = "{\"type\":\"object\",\"properties\":{\"khoa_su_kien\":{\"type\":\"string\"},\"man\":{\"type\":\"string\",\"description\":\"screen-id liên quan, vd scm-requirement\"},"

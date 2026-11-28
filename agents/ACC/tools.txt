@@ -1,6 +1,16 @@
 # Công cụ của agent ACC – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
 bao_chi_phi
+canh_bao
+chung_tu_ke_toan
 doc_ghi_chu
+doi_chieu_amis
+ds_cho_duyet
 ghi_nhat_ky
+gia_von_lai_gop
+gui_canh_bao
+hop_khay
+lay_su_kien
 ping
+propose_container_loss_charge
+propose_note_update
 tim_tri_thuc
