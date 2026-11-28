@@ -27,8 +27,9 @@ INSERT INTO @Roles VALUES (N'CEO', 1), (N'CEO-PMO', 2), (N'COO', 3), (N'OPS-PLAN
 DECLARE @Skip TABLE (MetaLink NVARCHAR(400) PRIMARY KEY);
 INSERT INTO @Skip VALUES (N'#/bot-van-hanh'), (N'#/bot-dieu-hanh');
 -- D-79 (b): nhóm quyền mới (UserGroup.Name = mã) – thêm nếu chưa có.
-INSERT INTO dbo.UserGroup (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted)
-SELECT NEWID(), r.Name, 0, @Now, @By, 0 FROM @Roles r WHERE NOT EXISTS (SELECT 1 FROM dbo.UserGroup g WHERE g.Name = r.Name AND ISNULL(g.IsDeleted, 0) = 0);
+-- D-134: nhóm nhận diện theo UserGroup.Code (UI-6.43 đổi Name sang tiếng Việt); DB cũ chưa có Code thì theo Name.
+INSERT INTO dbo.UserGroup (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted)
+SELECT NEWID(), r.Name, r.Name, 0, @Now, @By, 0 FROM @Roles r WHERE NOT EXISTS (SELECT 1 FROM dbo.UserGroup g WHERE ISNULL(NULLIF(g.Code, N''), g.Name) = r.Name AND ISNULL(g.IsDeleted, 0) = 0);
 DECLARE @NewGroups INT = @@ROWCOUNT;
 -- Quyền đích (chỉ dòng có quyền) – không có dòng ở đây = không quyền.
 DECLARE @Allow TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(300), A BIT, Ad BIT, E BIT, D BIT, P BIT, X BIT, I BIT, PRIMARY KEY (GroupName, MetaLink));
@@ -56,6 +57,8 @@ INSERT INTO @Allow VALUES
     (N'CEO', N'#/acc-amis-code', 1, 0, 0, 0, 1, 1, 0),
     (N'CEO', N'#/acc-amis-recon', 1, 0, 0, 0, 1, 1, 0),
     (N'CEO', N'#/acc-period', 1, 0, 0, 0, 1, 1, 0),
+    (N'CEO', N'#/sal-retail-order', 1, 0, 0, 0, 1, 1, 0),
+    (N'CEO', N'#/sal-retail-product', 1, 0, 0, 0, 1, 1, 0),
     (N'CEO', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/menu-assignment', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/menu-change-request', 1, 0, 0, 0, 0, 0, 0),
@@ -123,9 +126,6 @@ INSERT INTO @Allow VALUES
     (N'CEO', N'#/prod-line', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/prod-workstation', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/log-vehicle', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO', N'#/adm-reference', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO', N'#/adm-admin-unit', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO', N'#/kpi-definition', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/knowledge', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/knowledge?folder=10', 1, 1, 1, 0, 0, 0, 0),
     (N'CEO', N'#/knowledge?folder=20', 1, 0, 0, 0, 0, 0, 0),
@@ -167,6 +167,8 @@ INSERT INTO @Allow VALUES
     (N'CEO-PMO', N'#/acc-amis-code', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/acc-amis-recon', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/acc-period', 1, 0, 0, 0, 0, 0, 0),
+    (N'CEO-PMO', N'#/sal-retail-order', 1, 0, 0, 0, 0, 0, 0),
+    (N'CEO-PMO', N'#/sal-retail-product', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/menu-assignment', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/menu-change-request', 1, 0, 0, 0, 0, 0, 0),
@@ -223,7 +225,6 @@ INSERT INTO @Allow VALUES
     (N'CEO-PMO', N'#/hr-swap', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/wf-inbox', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/adm-orgunit', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO-PMO', N'#/adm-company', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/adm-position', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/hr-shift', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/scm-uom', 1, 0, 0, 0, 0, 0, 0),
@@ -234,9 +235,6 @@ INSERT INTO @Allow VALUES
     (N'CEO-PMO', N'#/prod-line', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/prod-workstation', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/log-vehicle', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO-PMO', N'#/adm-reference', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO-PMO', N'#/adm-admin-unit', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO-PMO', N'#/kpi-definition', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/knowledge', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/knowledge?folder=10', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/knowledge?folder=20', 1, 0, 0, 0, 0, 0, 0),
@@ -288,6 +286,8 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/acc-amis-code', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/acc-amis-recon', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/acc-period', 1, 0, 0, 0, 1, 1, 0),
+    (N'COO', N'#/sal-retail-order', 1, 0, 0, 0, 1, 1, 0),
+    (N'COO', N'#/sal-retail-product', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/menu-assignment', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/menu-change-request', 1, 0, 0, 0, 0, 0, 0),
@@ -343,8 +343,6 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/hr-leave', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/hr-swap', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/wf-inbox', 1, 0, 0, 0, 0, 0, 0),
-    (N'COO', N'#/adm-orgunit', 1, 0, 0, 0, 0, 0, 0),
-    (N'COO', N'#/adm-company', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/adm-position', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/hr-shift', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/scm-uom', 1, 0, 0, 0, 0, 0, 0),
@@ -355,9 +353,6 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/prod-line', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/prod-workstation', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/log-vehicle', 1, 0, 0, 0, 0, 0, 0),
-    (N'COO', N'#/adm-reference', 1, 0, 0, 0, 0, 0, 0),
-    (N'COO', N'#/adm-admin-unit', 1, 0, 0, 0, 0, 0, 0),
-    (N'COO', N'#/kpi-definition', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/knowledge', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/knowledge?folder=10', 1, 1, 1, 0, 0, 0, 0),
     (N'COO', N'#/knowledge?folder=20', 1, 0, 0, 0, 0, 0, 0),
@@ -390,6 +385,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-PLAN', N'#/crm-order', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-forecast', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-location', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-PLAN', N'#/sal-retail-order', 1, 0, 0, 0, 1, 0, 0),
     (N'OPS-PLAN', N'#/menu-menu', 1, 1, 1, 1, 0, 0, 1),
     (N'OPS-PLAN', N'#/menu-assignment', 1, 1, 1, 1, 0, 0, 1),
     (N'OPS-PLAN', N'#/menu-change-request', 1, 1, 1, 1, 0, 0, 1),
@@ -520,6 +516,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-SCM-HEAD', N'#/knowledge?folder=80', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/knowledge?folder=99', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-KIT', N'#/sal-retail-order', 1, 0, 0, 0, 1, 0, 0),
     (N'OPS-KIT', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/menu-recipe', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
@@ -532,12 +529,12 @@ INSERT INTO @Allow VALUES
     (N'OPS-KIT', N'#/prod-waste', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/qc-checklist-result', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/qc-temperature', 1, 1, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/qc-cleaning', 1, 1, 1, 0, 0, 0, 0);
-INSERT INTO @Allow VALUES
+    (N'OPS-KIT', N'#/qc-cleaning', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/qc-cleaning-result', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/qc-checklist', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-packing-order', 1, 1, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/log-packing-result', 1, 1, 1, 0, 0, 0, 0),
+    (N'OPS-KIT', N'#/log-packing-result', 1, 1, 1, 0, 0, 0, 0);
+INSERT INTO @Allow VALUES
     (N'OPS-KIT', N'#/log-return-inspection', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/log-packaging-norm', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/hr-shift-assign', 1, 0, 0, 0, 0, 0, 0),
@@ -557,6 +554,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-LOG', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-order', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-location', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-LOG', N'#/sal-retail-order', 1, 0, 1, 0, 1, 0, 0),
     (N'OPS-LOG', N'#/prod-plan', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/qc-temperature', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/log-packing-order', 1, 0, 0, 0, 0, 0, 0),
@@ -584,6 +582,8 @@ INSERT INTO @Allow VALUES
     (N'OPS-POS', N'#/crm-reconciliation', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/log-complaint', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-location', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-POS', N'#/sal-retail-order', 1, 1, 1, 0, 1, 1, 0),
+    (N'OPS-POS', N'#/sal-retail-product', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/log-execution', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/log-pod', 1, 1, 1, 0, 0, 0, 0),
@@ -611,6 +611,8 @@ INSERT INTO @Allow VALUES
     (N'SAL-SALES', N'#/log-complaint', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-location', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-billing', 1, 0, 0, 0, 1, 1, 0),
+    (N'SAL-SALES', N'#/sal-retail-order', 1, 1, 1, 0, 1, 1, 0),
+    (N'SAL-SALES', N'#/sal-retail-product', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/menu-assignment', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
@@ -664,6 +666,8 @@ INSERT INTO @Allow VALUES
     (N'SAL-HEAD', N'#/log-complaint', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/crm-location', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-HEAD', N'#/crm-billing', 1, 1, 1, 1, 1, 1, 1),
+    (N'SAL-HEAD', N'#/sal-retail-order', 1, 1, 1, 1, 1, 1, 1),
+    (N'SAL-HEAD', N'#/sal-retail-product', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-HEAD', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/menu-assignment', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
@@ -686,6 +690,8 @@ INSERT INTO @Allow VALUES
     (N'SAL-CS', N'#/crm-reconciliation', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/log-complaint', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-location', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CS', N'#/sal-retail-order', 1, 1, 1, 0, 1, 1, 0),
+    (N'SAL-CS', N'#/sal-retail-product', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
@@ -712,6 +718,8 @@ INSERT INTO @Allow VALUES
     (N'FIN-ACC', N'#/acc-amis-code', 1, 1, 1, 1, 1, 1, 1),
     (N'FIN-ACC', N'#/acc-amis-recon', 1, 1, 1, 1, 1, 1, 1),
     (N'FIN-ACC', N'#/acc-period', 1, 1, 1, 1, 1, 1, 1),
+    (N'FIN-ACC', N'#/sal-retail-order', 1, 0, 0, 0, 1, 1, 0),
+    (N'FIN-ACC', N'#/sal-retail-product', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/scm-po', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/scm-supplier', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/scm-supplier-material', 1, 0, 0, 0, 0, 0, 0),
@@ -773,6 +781,8 @@ INSERT INTO @Allow VALUES
     (N'FIN-IT', N'#/acc-amis-code', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/acc-amis-recon', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/acc-period', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/sal-retail-order', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/sal-retail-product', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/menu-assignment', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/menu-change-request', 1, 0, 0, 0, 0, 0, 0),
@@ -828,8 +838,8 @@ INSERT INTO @Allow VALUES
     (N'FIN-IT', N'#/hr-leave', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/hr-swap', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/wf-inbox', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/adm-orgunit', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/adm-company', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/adm-orgunit', 1, 1, 1, 1, 1, 1, 1),
+    (N'FIN-IT', N'#/adm-company', 1, 1, 1, 1, 1, 1, 1),
     (N'FIN-IT', N'#/adm-position', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/hr-shift', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/scm-uom', 1, 0, 0, 0, 0, 0, 0),
@@ -840,8 +850,8 @@ INSERT INTO @Allow VALUES
     (N'FIN-IT', N'#/prod-line', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/prod-workstation', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/log-vehicle', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/adm-reference', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/adm-admin-unit', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/adm-reference', 1, 1, 1, 1, 1, 1, 1),
+    (N'FIN-IT', N'#/adm-admin-unit', 1, 1, 1, 1, 1, 1, 1),
     (N'FIN-IT', N'#/kpi-definition', 1, 1, 1, 0, 1, 1, 0),
     (N'FIN-IT', N'#/knowledge', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/knowledge?folder=80', 1, 0, 0, 0, 0, 0, 0),
@@ -913,13 +923,13 @@ DECLARE @T TABLE (UserGroupId UNIQUEIDENTIFIER, GroupName NVARCHAR(100), Ord INT
                   A BIT, Ad BIT, E BIT, D BIT, P BIT, X BIT, I BIT, UserRoleId UNIQUEIDENTIFIER NULL,
                   OA BIT, OAd BIT, OE BIT, OD BIT, OP BIT, OX BIT, OI BIT);
 INSERT INTO @T
-SELECT g.Id, g.Name, r.Ord, m.Id, m.MetaLink, m.Name,
+SELECT g.Id, r.Name, r.Ord, m.Id, m.MetaLink, m.Name,
        ISNULL(a.A, 0), ISNULL(a.Ad, 0), ISNULL(a.E, 0), ISNULL(a.D, 0), ISNULL(a.P, 0), ISNULL(a.X, 0), ISNULL(a.I, 0),
        ur.Id, ISNULL(ur.AllowAccess, 0), ISNULL(ur.AllowAdd, 0), ISNULL(ur.AllowEdit, 0), ISNULL(ur.AllowDelete, 0), ISNULL(ur.AllowPrint, 0), ISNULL(ur.AllowExport, 0), ISNULL(ur.AllowImport, 0)
 FROM dbo.UserGroup g
-JOIN @Roles r ON r.Name = g.Name
+JOIN @Roles r ON r.Name = ISNULL(NULLIF(g.Code, N''), g.Name)
 CROSS JOIN dbo.ObjectMenu m
-LEFT JOIN @Allow a ON a.GroupName = g.Name AND a.MetaLink = m.MetaLink
+LEFT JOIN @Allow a ON a.GroupName = r.Name AND a.MetaLink = m.MetaLink
 OUTER APPLY (SELECT TOP 1 x.* FROM dbo.UserRole x WHERE x.UserGroupId = g.Id AND x.ObjectMenuId = m.Id AND ISNULL(x.IsDeleted, 0) = 0 ORDER BY x.CreatedDate) ur
 WHERE ISNULL(g.IsDeleted, 0) = 0 AND ISNULL(m.IsDeleted, 0) = 0 AND m.IsActive = 1 AND m.LevelShow = 2 AND m.MetaLink LIKE N'#/%'
   AND NOT EXISTS (SELECT 1 FROM @Skip s WHERE s.MetaLink = m.MetaLink);

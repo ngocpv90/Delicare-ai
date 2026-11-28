@@ -104,7 +104,6 @@ INSERT INTO @R VALUES
     (N'AGENT_VIVI', N'#/knowledge?folder=99'),
     (N'AGENT_VIVI', N'#/knowledge?folder=bod'),
     (N'AGENT_VIVI', N'#/kpi-daily'),
-    (N'AGENT_VIVI', N'#/kpi-definition'),
     (N'AGENT_VIVI', N'#/kpi-monthly'),
     (N'AGENT_VIVI', N'#/log-complaint'),
     (N'AGENT_VIVI', N'#/log-container-return'),
@@ -140,6 +139,8 @@ INSERT INTO @R VALUES
     (N'AGENT_VIVI', N'#/qc-inspection'),
     (N'AGENT_VIVI', N'#/qc-supplier-issue'),
     (N'AGENT_VIVI', N'#/qc-temperature'),
+    (N'AGENT_VIVI', N'#/sal-retail-order'),
+    (N'AGENT_VIVI', N'#/sal-retail-product'),
     (N'AGENT_VIVI', N'#/scm-consumption-var'),
     (N'AGENT_VIVI', N'#/scm-gr'),
     (N'AGENT_VIVI', N'#/scm-ingredient'),
@@ -192,6 +193,8 @@ INSERT INTO @R VALUES
     (N'AGENT_SALES', N'#/menu-change-request'),
     (N'AGENT_SALES', N'#/menu-dish'),
     (N'AGENT_SALES', N'#/menu-menu'),
+    (N'AGENT_SALES', N'#/sal-retail-order'),
+    (N'AGENT_SALES', N'#/sal-retail-product'),
     (N'AGENT_PLAN', N'#/cost-actual'),
     (N'AGENT_PLAN', N'#/cost-meal'),
     (N'AGENT_PLAN', N'#/cost-standard'),
@@ -231,6 +234,7 @@ INSERT INTO @R VALUES
     (N'AGENT_PLAN', N'#/qc-inspection'),
     (N'AGENT_PLAN', N'#/qc-supplier-issue'),
     (N'AGENT_PLAN', N'#/qc-temperature'),
+    (N'AGENT_PLAN', N'#/sal-retail-order'),
     (N'AGENT_PLAN', N'#/scm-ingredient'),
     (N'AGENT_PLAN', N'#/scm-inv-balance'),
     (N'AGENT_PLAN', N'#/scm-lot'),
@@ -317,6 +321,7 @@ INSERT INTO @R VALUES
     (N'AGENT_KITCHEN', N'#/qc-cleaning'),
     (N'AGENT_KITCHEN', N'#/qc-cleaning-result'),
     (N'AGENT_KITCHEN', N'#/qc-temperature'),
+    (N'AGENT_KITCHEN', N'#/sal-retail-order'),
     (N'AGENT_KITCHEN', N'#/scm-inv-balance'),
     (N'AGENT_KITCHEN', N'#/scm-issue'),
     (N'AGENT_QA', N'#/dash-exec'),
@@ -376,6 +381,7 @@ INSERT INTO @R VALUES
     (N'AGENT_LOG', N'#/log-vehicle'),
     (N'AGENT_LOG', N'#/prod-plan'),
     (N'AGENT_LOG', N'#/qc-temperature'),
+    (N'AGENT_LOG', N'#/sal-retail-order'),
     (N'AGENT_PKG', N'#/hr-attendance'),
     (N'AGENT_PKG', N'#/hr-leave'),
     (N'AGENT_PKG', N'#/hr-shift'),
@@ -406,6 +412,7 @@ INSERT INTO @R VALUES
     (N'AGENT_PKG', N'#/qc-cleaning'),
     (N'AGENT_PKG', N'#/qc-cleaning-result'),
     (N'AGENT_PKG', N'#/qc-temperature'),
+    (N'AGENT_PKG', N'#/sal-retail-order'),
     (N'AGENT_PKG', N'#/scm-inv-balance'),
     (N'AGENT_PKG', N'#/scm-issue'),
     (N'AGENT_HR', N'#/hr-attendance'),
@@ -446,11 +453,14 @@ INSERT INTO @R VALUES
     (N'AGENT_ACC', N'#/log-packaging-norm'),
     (N'AGENT_ACC', N'#/log-pod'),
     (N'AGENT_ACC', N'#/prod-waste'),
+    (N'AGENT_ACC', N'#/sal-retail-order'),
+    (N'AGENT_ACC', N'#/sal-retail-product'),
     (N'AGENT_ACC', N'#/scm-consumption-var'),
     (N'AGENT_ACC', N'#/scm-gr'),
     (N'AGENT_ACC', N'#/scm-inv-balance'),
     (N'AGENT_ACC', N'#/scm-inv-txn'),
-    (N'AGENT_ACC', N'#/scm-issue'),
+    (N'AGENT_ACC', N'#/scm-issue');
+INSERT INTO @R VALUES
     (N'AGENT_ACC', N'#/scm-lot'),
     (N'AGENT_ACC', N'#/scm-po'),
     (N'AGENT_ACC', N'#/scm-stockcount'),
@@ -459,8 +469,7 @@ INSERT INTO @R VALUES
     (N'AGENT_ACC', N'#/scm-supplier-return'),
     (N'AGENT_CSKH', N'#/crm-customer'),
     (N'AGENT_CSKH', N'#/crm-location'),
-    (N'AGENT_CSKH', N'#/crm-order');
-INSERT INTO @R VALUES
+    (N'AGENT_CSKH', N'#/crm-order'),
     (N'AGENT_CSKH', N'#/crm-reconciliation'),
     (N'AGENT_CSKH', N'#/knowledge'),
     (N'AGENT_CSKH', N'#/knowledge?folder=20'),
@@ -472,7 +481,9 @@ INSERT INTO @R VALUES
     (N'AGENT_CSKH', N'#/log-pod'),
     (N'AGENT_CSKH', N'#/menu-change-request'),
     (N'AGENT_CSKH', N'#/menu-dish'),
-    (N'AGENT_CSKH', N'#/menu-menu');
+    (N'AGENT_CSKH', N'#/menu-menu'),
+    (N'AGENT_CSKH', N'#/sal-retail-order'),
+    (N'AGENT_CSKH', N'#/sal-retail-product');
 
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), g.Id, m.Id, 1, 0, 0, 0, 0, 0, 0, @Now, @SeedBy, 0

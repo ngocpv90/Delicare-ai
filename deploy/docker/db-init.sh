@@ -71,7 +71,7 @@ else
 fi
 SQL=("$SQLCMD_BIN" -S "${DB_SERVER:-db,1433}" "${AUTH[@]}" -C -b -I -f 65001)
 scalar() { "${SQL[@]}" -d "$1" -r1 -h -1 -W -Q "SET NOCOUNT ON; $2" | tr -d '[:space:]'; }
-run_file() { "${SQL[@]}" -d "$DB_NAME" -i "$REPO/$1" || die "Lỗi khi chạy $1"; }
+run_file() { "${SQL[@]}" -d "$DB_NAME" -v DryRun=0 -i "$REPO/$1" || die "Lỗi khi chạy $1"; }  # D-134: script cấu hình hội tụ dùng $(DryRun)
 
 TMP_DIR=$(mktemp -d)
 # Git Bash trên Windows: sqlcmd của Windows hiểu "/tmp/…" là tùy chọn "/t…" → đổi sang đường dẫn C:… (Linux / Docker không có cygpath – giữ nguyên).
@@ -135,6 +135,13 @@ for rel in "${ORDER[@]}" "${EXTRA[@]}"; do
   esac
 done
 echo "  + Stored procedure: $SP_COUNT file"
+
+# DEPLOY-SYNC-1 (D-134): chuyển đổi dữ liệu 1 lần (deploy/db/once.order; ADOPT_ONCE=1 = chỉ ghi nhận) → tự kiểm menu / quyền (CHECK lệch → dừng; SKIP_CHECK=1 bỏ qua).
+run_once_scripts
+if [ "${SKIP_CHECK:-0}" != "1" ]; then
+  "${SQL[@]}" -d "$DB_NAME" -W -s "|" -i "$REPO/DB/scripts/CHECK_menu_permission.sql" || die "CHECK menu / quyền lệch (D-134) – xem danh sách phía trên"
+  echo "  = CHECK menu / quyền: 0 lệch"
+fi
 
 # T48.4 (D-60): tài khoản SQL riêng cho api / job (đọc + ghi + EXECUTE, không DDL) – chỉ khi đặt APP_DB_USER + APP_DB_PASSWORD.
 # Mật khẩu → hex ASCII trong file tạm (quyền 600), không đưa lên dòng lệnh. APP_DB_RESET_PASSWORD=1 để đặt lại mật khẩu login đã có.

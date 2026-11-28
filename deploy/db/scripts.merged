@@ -1,0 +1,50 @@
+# DELICARE – SCRIPT DB/scripts KHÔNG CHẠY TRONG QUY TRÌNH CẬP NHẬT (DEPLOY-SYNC-1, D-134) – giữ file để tra cứu, KHÔNG xóa.
+# Mỗi file trong DB/scripts phải nằm ở ĐÚNG MỘT chỗ: deploy/db/scripts.order, deploy/db/once.order hoặc file này (test DbScriptsDeclaredTests).
+# Cột: <đường dẫn> # <loại> – <lý do>
+#
+# ---- Đã gộp vào cấu hình hội tụ (DB/seed/Z_Menu_sync.sql + DB/scripts/D79_permission_matrix.sql + seed – nguồn CodeGen Seeds.Menu5.cs) ----
+DB/scripts/ACC1_menu.sql                    # đã gộp – D-134: nhóm Kế toán
+DB/scripts/ACC3_recon_reopen_menu.sql       # đã gộp – D-134: mục duyệt Mở lại đối soát
+DB/scripts/ACC4_period_unlock_menu.sql      # đã gộp – D-134: mục duyệt Mở khóa kỳ
+DB/scripts/ACC5_supplier_return_menu.sql    # đã gộp – D-134: Kho › Trả hàng NCC
+DB/scripts/ACC6_packaging_norm_menu.sql     # đã gộp – D-134: Định mức bao bì
+DB/scripts/AI6_agent_knowledge_rights.sql   # đã gộp – D-134: Trợ lý AI + Tri thức
+DB/scripts/BIZ2_order_approvers.sql         # đã gộp – D-134: người duyệt đơn (Approvers5 trong ma trận)
+DB/scripts/D71_revoke_int_screens.sql       # đã gộp – D-134: màn tích hợp chỉ FIN-IT
+DB/scripts/D78_restrict_tech_screens.sql    # đã gộp – D-134: màn kỹ thuật chỉ quản trị
+DB/scripts/D79_menu_regroup.sql             # đã gộp – D-134: thay bằng DB/seed/Z_Menu_sync.sql (hội tụ, không giữ thứ tự cũ)
+DB/scripts/MENU1_rename_approve_menu.sql    # đã gộp – D-134: tên mục duyệt
+DB/scripts/MENU2_rename_all_menu.sql        # đã gộp – D-134: tên 110 mục (MenuRenames)
+DB/scripts/MENU4_cleanup_menu.sql           # đã gộp – D-134: ẩn mục (HiddenNow)
+DB/scripts/RETAIL1_menu.sql                 # đã gộp – D-134: nhóm Bán lẻ (Menu5Groups + RetailRights; seed ObjectMenu_retail_seed.sql giữ trong scripts.order)
+DB/scripts/UG1_D69_permissions.sql          # đã gộp – D-134: quyền D-69 (ma trận)
+DB/scripts/UI612_hide_menu_assignment.sql   # đã gộp – D-134
+DB/scripts/UI613_hide_menu_change_request.sql # đã gộp – D-134
+DB/scripts/UI615_rename_crm_order.sql       # đã gộp – D-134
+DB/scripts/UI616_hide_crm_location.sql      # đã gộp – D-134
+DB/scripts/UI621_hide_category_menus.sql    # đã gộp – D-134
+DB/scripts/UI624_production_menu.sql        # đã gộp – D-134
+DB/scripts/UI627_cost_menu.sql              # đã gộp – D-134
+DB/scripts/UI628_kpi_menu.sql               # đã gộp – D-134
+DB/scripts/UI629_kho_menu.sql               # đã gộp – D-134
+DB/scripts/UI632_cleaning_menu.sql          # đã gộp – D-134
+DB/scripts/UI634_packing_menu.sql           # đã gộp – D-134
+DB/scripts/UI635_delivery_menu.sql          # đã gộp – D-134
+DB/scripts/UI639_leave_swap_menu.sql        # đã gộp – D-134
+DB/scripts/UI640_catalog_menu.sql           # đã gộp – D-134
+DB/scripts/UI641_org_menu.sql               # đã gộp – D-134
+DB/scripts/UI643_usergroup_menu.sql         # đã gộp – D-134
+DB/scripts/UI649_load_short_menu.sql        # đã gộp – D-134
+DB/scripts/UI64_hide_price_policy_menu.sql  # đã gộp – D-134
+#
+# ---- Bước tự kiểm (deploy chạy sau cùng, không nằm trong scripts.order) ----
+DB/scripts/CHECK_menu_permission.sql        # tự kiểm – D-134 (SYNC-1.5)
+DB/scripts/CHECK_sidebar_fingerprint.sql    # công cụ so 2 DB – dấu vân tay sidebar theo vai trò (SYNC-1.6, chỉ đọc)
+#
+# ---- Chỉ báo cáo / quy trình riêng ----
+DB/scripts/UI624_close_completed_orders.sql # chỉ báo cáo – CHỈ LIỆT KÊ lệnh hoàn thành chưa đóng (không ghi)
+DB/scripts/REAL1_retire_demo.sql            # REAL-1 – quy trình tools/real1/run-all.mjs (D-130), không chạy tự động
+DB/scripts/REAL1_tag.sql                    # REAL-1 – quy trình tools/real1/run-all.mjs (D-130), không chạy tự động
+#
+# ---- Seed dữ liệu demo (không chạy tự động) ----
+DB/seed/RetailProduct_demo_seed.sql         # RETAIL-1 – sản phẩm mẫu, chạy tay khi cần demo

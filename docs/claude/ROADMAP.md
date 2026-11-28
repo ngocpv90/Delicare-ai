@@ -135,7 +135,7 @@ Mỗi bước: build FE + BE xanh, test xanh, cập nhật PROGRESS và `docs/us
 
 **AC:** bấm khách ở danh sách → mở màn 360 đầy đủ; số liệu khớp các màn gốc (đơn hàng, đối soát, khay hộp, phản ánh); khối Cần chú ý hiện đúng điều kiện; tab ẩn theo quyền; build FE + test BE xanh.
 
-## ★ DEPLOY-SYNC-1 – MỌI DB CẬP NHẬT ĐÚNG MENU / QUYỀN / DỮ LIỆU CẤU HÌNH QUA QUY TRÌNH CHUẨN (D-134, anh duyệt 2026-11-27) · `TODO` · **LÀM NGAY, TRƯỚC MỌI TASK**
+## ★ DEPLOY-SYNC-1 – MỌI DB CẬP NHẬT ĐÚNG MENU / QUYỀN / DỮ LIỆU CẤU HÌNH QUA QUY TRÌNH CHUẨN (D-134, anh duyệt 2026-11-27) · `PARTIAL 2026-11-28` (4 DB CHECK 0 + cùng dấu vân tay sidebar; còn cảnh báo admin trên web SYNC-1.5 + chạy thử Docker) · **LÀM NGAY, TRƯỚC MỌI TASK**
 
 > Lý do: DECISIONS D-134. Git đã đủ (`main` = `origin/main` = `909d634`); lỗi ở chỗ 50 script `DB/scripts/*.sql` không nằm trong `deploy/db/scripts.order` nên máy FE / server test không bao giờ chạy. Tuân thủ chuẩn Hoàn thành D-92 (b). Làm trên nhánh `fix/DEPLOY-SYNC-1` từ `main`, gộp + đẩy `main` khi xong.
 

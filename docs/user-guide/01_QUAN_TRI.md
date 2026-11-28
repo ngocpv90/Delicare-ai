@@ -16,6 +16,9 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Menu › Mục | screen-id | FIN-IT |
 |---|---|---|
 | Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | Duyệt |
+| Danh mục hệ thống › Công ty & đơn vị | `adm-orgunit` | Q (IX) |
+| Danh mục hệ thống › Danh mục dùng chung | `adm-reference` | Q (IX) |
+| Danh mục hệ thống › Địa giới hành chính | `adm-admin-unit` | Q (IX) |
 | Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | S (IX) |
 | Tri thức › 95 Nguồn BOT | `knowledge?folder=95` | S |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | S |

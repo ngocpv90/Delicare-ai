@@ -359,6 +359,7 @@ public static partial class Seeds
         ("#/wf-inbox?type=crm-contract", "Hợp đồng suất ăn", "Hợp đồng"),
         ("#/wf-inbox?type=menu-menu", "Thực đơn & phiên bản", "Thực đơn tuần"),
         ("#/wf-inbox?type=crm-order", "Đơn đặt suất ăn", "Đơn đặt suất"),
+        ("#/wf-inbox?type=crm-order", "Đơn đặt suất", "Đơn đặt suất (sửa sau chốt)"), // D-134: tên đang dùng trên DB của anh (duyệt sửa đơn sau giờ chốt) – nguồn theo DB
         ("#/wf-inbox?type=prod-plan", "Kế hoạch sản xuất theo ngày/ca", "Kế hoạch sản xuất"),
         ("#/wf-inbox?type=qc-inspection", "Phiếu QC đầu vào", "Kiểm tra hàng nhập"),
         ("#/wf-inbox?type=wf-inbox", "Hộp phê duyệt tập trung", "Tất cả yêu cầu duyệt"),

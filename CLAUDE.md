@@ -244,6 +244,7 @@ Task chỉ được ghi **DONE** trong ROADMAP / PROGRESS khi đủ **cả 7 đi
 5. **Không chỉ admin:** kiểm bằng tài khoản **không phải admin** cho các vai trò liên quan (tài khoản thử `uat.<vai trò>` trên DB dev) + trường hợp biên / lỗi / không có quyền.
 6. **Xanh toàn bộ:** `dotnet test`, `full-flow.http` (`tools/seed-demo`), build FE; mở mọi màn liên quan không lỗi JS / 500 / trang trắng.
 7. **PROGRESS trung thực:** có mục **"Chưa làm / còn rủi ro"**; còn mục nào thì không ghi DONE.
+8. **Script DB khai báo (D-134):** script DB mới phải khai báo trong `deploy/db/scripts.order` (cấu hình hội tụ) hoặc `deploy/db/once.order` (chuyển đổi 1 lần) – hoặc `scripts.merged` kèm lý do – **cùng commit**; menu / quyền mới sửa ở nguồn CodeGen `Seeds.Menu5.cs` (không viết script menu lẻ); `CHECK_menu_permission.sql` = 0 trên DB thử trạng thái cũ và DB dev.
 
 ## 5. Tra cứu nhanh
 

@@ -71,6 +71,8 @@ public static partial class Seeds
             ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "log-complaint", "crm-location", "crm-contact"]),
         // ACC-1 (D-131 b – anh chốt 2026-11-26): nhóm "Kế toán" sau Kinh doanh – Bảng kê thanh toán CHUYỂN từ Kinh doanh (giữ screen-id crm-billing, không mất quyền).
         new("#/group/02b", "Kế toán", [], 250, "acc", ["acc-voucher", "crm-billing", "acc-amis-code", "acc-amis-recon", "acc-period"]),
+        // RETAIL-1 (D-135) – D-134: đưa vào nguồn hội tụ (trước đây chỉ ở DB/seed/ObjectMenu_retail_seed.sql) – quyền ở RetailRights.
+        new("#/group/02c", "Bán lẻ", [], 260, "retail", ["sal-retail-order", "sal-retail-product"]),
         new("#/group/03", "Thực đơn & Món ăn", [], 300, "menu", ["menu-menu", "menu-assignment", "menu-change-request", "menu-recipe", "menu-dish", "menu-dish-cat"]),
         new("#/group/04", "Mua hàng", ["Mua hàng & Kho"], 400, "scm",
             ["scm-requirement", "scm-pr", "scm-po", "scm-supplier", "scm-supplier-material", "scm-ingredient", "scm-ingredient-cat"]),
@@ -105,6 +107,22 @@ public static partial class Seeds
         ]),
         // AI-6 (D-133): nhóm "Trợ lý AI" – Trung tâm agent, Nhật ký agent, Lịch chạy (CEO / COO / FIN-IT).
         new("#/group/14", "Trợ lý AI", [], 1060, "ai", ["ai-agents", "ai-agent-log", "ai-schedule"]),
+    ];
+
+    /// <summary>RETAIL-1 (D-135): nhóm × mục Bán lẻ × cờ XemThemSuaXoaInXuatNhap (nguồn: ObjectMenu_retail_seed.sql).</summary>
+    public static readonly (string Role, string Link, string Flags)[] RetailRights =
+    [
+        ("SAL-HEAD", "sal-retail-order", "1111111"), ("SAL-HEAD", "sal-retail-product", "1111111"),
+        ("SAL-SALES", "sal-retail-order", "1110110"), ("SAL-SALES", "sal-retail-product", "1000000"),
+        ("SAL-CS", "sal-retail-order", "1110110"), ("SAL-CS", "sal-retail-product", "1000000"),
+        ("OPS-POS", "sal-retail-order", "1110110"), ("OPS-POS", "sal-retail-product", "1000000"),
+        ("OPS-LOG", "sal-retail-order", "1010100"),
+        ("OPS-KIT", "sal-retail-order", "1000100"), ("OPS-PLAN", "sal-retail-order", "1000100"),
+        ("FIN-ACC", "sal-retail-order", "1000110"), ("FIN-ACC", "sal-retail-product", "1000110"),
+        ("CEO", "sal-retail-order", "1000110"), ("CEO", "sal-retail-product", "1000110"),
+        ("COO", "sal-retail-order", "1000110"), ("COO", "sal-retail-product", "1000110"),
+        ("CEO-PMO", "sal-retail-order", "1000000"), ("CEO-PMO", "sal-retail-product", "1000000"),
+        ("FIN-IT", "sal-retail-order", "1000000"), ("FIN-IT", "sal-retail-product", "1000000"),
     ];
 
     /// <summary>AI-6 (D-133) §7.4: thư mục kho tri thức → nhóm được xem / chủ thư mục (Sửa). Ban GĐ xem mọi thư mục (kể cả BOD); 80 + 99 mọi nhóm xem.</summary>
@@ -152,6 +170,9 @@ public static partial class Seeds
         ["wf-inbox?type=log-load-short"] = ("Xếp xe chưa đủ hàng", "P6"),
         // HR-ACC-1.6 (D-82 f–h): cấp / đổi nhóm / mở lại tài khoản – người duyệt FIN-IT.
         ["wf-inbox?type=adm-user"] = ("Tài khoản", "P0"),
+        // RETAIL-1 (D-135): nhóm Bán lẻ.
+        ["sal-retail-order"] = ("Đơn khách lẻ", "RETAIL"),
+        ["sal-retail-product"] = ("Sản phẩm bán lẻ", "RETAIL"),
         // AI-6 (D-133): Trợ lý AI + Tri thức.
         ["ai-agents"] = ("Trung tâm agent", "AI"),
         ["ai-agent-log"] = ("Nhật ký agent", "AI"),
@@ -201,13 +222,16 @@ public static partial class Seeds
 
     // ------------------------------------------------------------------ tập màn
     private static readonly string[] Kpi = ["dash-exec", "kpi-daily", "kpi-monthly"];
-    private static readonly HashSet<string> NonBusinessGroups = [MyWorkGroupLink, ApprovalGroupLink, "#/group/10", "#/group/09", "#/group/14", "#/group/13"];
+    private static readonly HashSet<string> NonBusinessGroups = [MyWorkGroupLink, ApprovalGroupLink, "#/group/10", "#/group/09", "#/group/14", "#/group/13", "#/group/02c"];
 
     /// <summary>"Toàn bộ màn nghiệp vụ": mục cấp 2 của nhóm Điều hành → Nhân sự, trừ Hộp phê duyệt cũ (#/wf-inbox – giới hạn riêng) và mục đã ẩn.</summary>
     private static string[] Business() => [.. Menu5Groups.Where(g => !NonBusinessGroups.Contains(g.Link)).SelectMany(g => g.Items)
-        .Where(i => i != "wf-inbox" && !Menu5HiddenLinks.Contains("#/" + i))];
+        .Where(i => i != "wf-inbox" && !Menu5HiddenLinks.Contains("#/" + i) && !CatalogFromAdmin.Contains(i) && i != "kpi-definition")];
 
-    private static string[] AdminScreens() => Menu5Groups.First(g => g.Link == "#/group/10").Items;
+    /// <summary>D-134: mục UI-6.40 chuyển từ Quản trị sang "Danh mục hệ thống" – quyền GIỮ như màn quản trị (FIN-IT toàn quyền; không tính là màn nghiệp vụ). Khớp DB đang chạy.</summary>
+    private static readonly string[] CatalogFromAdmin = ["adm-orgunit", "adm-company", "adm-admin-unit", "adm-reference"];
+
+    private static string[] AdminScreens() => [.. Menu5Groups.First(g => g.Link == "#/group/10").Items, .. CatalogFromAdmin];
 
     /// <summary>Màn tích hợp / kỹ thuật (D-71, D-78 (6)) – chỉ FIN-IT.</summary>
     private static readonly string[] IntegrationTechScreens = ["adm-audit", "adm-merge-conflict", "kpi-definition", "kpi-refresh", "int-channel", "int-bot", "int-identity", "int-inbound", "int-outbound", "int-log"];
@@ -334,6 +358,11 @@ public static partial class Seeds
         G("QA", EditR.Or(ix), L("qc-inspection qc-checklist-result qc-temperature qc-cleaning qc-cleaning-result log-return-inspection log-complaint"));
         G("QA", ViewR, [.. L("scm-supplier scm-ingredient scm-gr scm-lot scm-inv-balance prod-batch prod-output prod-plan menu-dish menu-recipe menu-menu log-delivery-order log-execution"), .. Kpi]);
 
+        // RETAIL-1 (D-135, PROPOSED – BA/PO CONFIRM): quyền Bán lẻ đúng như DB/seed/ObjectMenu_retail_seed.sql (cờ A Ad E D P X I).
+        foreach (var (role, link, flags) in RetailRights)
+        {
+            G(role, new Right(flags[0] == '1', flags[1] == '1', flags[2] == '1', flags[3] == '1', flags[4] == '1', flags[5] == '1', flags[6] == '1'), [link]);
+        }
         // AI-6 (D-133): Trợ lý AI – CEO / COO / FIN-IT xem; bật / tắt agent = Sửa Trung tâm agent.
         foreach (string role in new[] { "CEO", "COO", "FIN-IT" })
         {
@@ -703,8 +732,9 @@ public static partial class Seeds
         sb.AppendLine("INSERT INTO @Skip VALUES " + string.Join(", ", MatrixSkipLinks.Select(l => $"({Sql(l)})")) + ";");
         sb.AppendLine("-- D-79 (b): nhóm quyền mới (UserGroup.Name = mã) – thêm nếu chưa có.");
         sb.AppendLine("""
-            INSERT INTO dbo.UserGroup (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted)
-            SELECT NEWID(), r.Name, 0, @Now, @By, 0 FROM @Roles r WHERE NOT EXISTS (SELECT 1 FROM dbo.UserGroup g WHERE g.Name = r.Name AND ISNULL(g.IsDeleted, 0) = 0);
+            -- D-134: nhóm nhận diện theo UserGroup.Code (UI-6.43 đổi Name sang tiếng Việt); DB cũ chưa có Code thì theo Name.
+            INSERT INTO dbo.UserGroup (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted)
+            SELECT NEWID(), r.Name, r.Name, 0, @Now, @By, 0 FROM @Roles r WHERE NOT EXISTS (SELECT 1 FROM dbo.UserGroup g WHERE ISNULL(NULLIF(g.Code, N''), g.Name) = r.Name AND ISNULL(g.IsDeleted, 0) = 0);
             DECLARE @NewGroups INT = @@ROWCOUNT;
             """);
         sb.AppendLine("-- Quyền đích (chỉ dòng có quyền) – không có dòng ở đây = không quyền.");
@@ -716,13 +746,13 @@ public static partial class Seeds
                               A BIT, Ad BIT, E BIT, D BIT, P BIT, X BIT, I BIT, UserRoleId UNIQUEIDENTIFIER NULL,
                               OA BIT, OAd BIT, OE BIT, OD BIT, OP BIT, OX BIT, OI BIT);
             INSERT INTO @T
-            SELECT g.Id, g.Name, r.Ord, m.Id, m.MetaLink, m.Name,
+            SELECT g.Id, r.Name, r.Ord, m.Id, m.MetaLink, m.Name,
                    ISNULL(a.A, 0), ISNULL(a.Ad, 0), ISNULL(a.E, 0), ISNULL(a.D, 0), ISNULL(a.P, 0), ISNULL(a.X, 0), ISNULL(a.I, 0),
                    ur.Id, ISNULL(ur.AllowAccess, 0), ISNULL(ur.AllowAdd, 0), ISNULL(ur.AllowEdit, 0), ISNULL(ur.AllowDelete, 0), ISNULL(ur.AllowPrint, 0), ISNULL(ur.AllowExport, 0), ISNULL(ur.AllowImport, 0)
             FROM dbo.UserGroup g
-            JOIN @Roles r ON r.Name = g.Name
+            JOIN @Roles r ON r.Name = ISNULL(NULLIF(g.Code, N''), g.Name)
             CROSS JOIN dbo.ObjectMenu m
-            LEFT JOIN @Allow a ON a.GroupName = g.Name AND a.MetaLink = m.MetaLink
+            LEFT JOIN @Allow a ON a.GroupName = r.Name AND a.MetaLink = m.MetaLink
             OUTER APPLY (SELECT TOP 1 x.* FROM dbo.UserRole x WHERE x.UserGroupId = g.Id AND x.ObjectMenuId = m.Id AND ISNULL(x.IsDeleted, 0) = 0 ORDER BY x.CreatedDate) ur
             WHERE ISNULL(g.IsDeleted, 0) = 0 AND ISNULL(m.IsDeleted, 0) = 0 AND m.IsActive = 1 AND m.LevelShow = 2 AND m.MetaLink LIKE N'#/%'
               AND NOT EXISTS (SELECT 1 FROM @Skip s WHERE s.MetaLink = m.MetaLink);

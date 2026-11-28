@@ -17,6 +17,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Việc của tôi › Việc của tôi | `hr-my` | X | X |
 | Kinh doanh › Khách hàng | `crm-customer` | — | X |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | — | X |
+| Bán lẻ › Đơn khách lẻ | `sal-retail-order` | X (IX) | Sửa (IX) |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | — |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | — |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | — |

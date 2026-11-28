@@ -114,3 +114,31 @@ function Invoke-Migrations([switch] $AllowCreateSchema) {
     }
     Write-Host "  = Migration: chạy $ran, ghi nhận $adopted, tổng $(@(Get-MigrationFiles).Count) file"
 }
+
+# ---- DEPLOY-SYNC-1 (D-134): script CHUYỂN ĐỔI DỮ LIỆU 1 LẦN (deploy/db/once.order) – cùng cơ chế ghi nhận với migration (bản bash: migrations.sh run_once_scripts) ----
+# Ghi nhận: DelicareOnce:<tên file> = <RUN|ADOPT>|<giờ UTC>|sha256:<16>. Chạy theo thứ tự once.order (Invoke-Sql đã truyền -v DryRun=0).
+# -Adopt: CHỈ ghi nhận, không chạy – cho DB đã chạy tay các script này (vd DB dev của anh: chạy lại sẽ đổi dữ liệu nạp sau).
+function Invoke-OnceScripts([switch] $Adopt) {
+    $orderFile = Join-Path $root "deploy/db/once.order"
+    if (-not (Test-Path $orderFile)) { return }
+    $saved = $script:MigPrefix
+    $script:MigPrefix = "DelicareOnce:"
+    try {
+        foreach ($raw in Get-Content $orderFile -Encoding UTF8) {
+            $rel = ($raw -replace '#.*$', '').Trim()
+            if (-not $rel) { continue }
+            $path = Join-Path $root $rel
+            if (-not (Test-Path $path -PathType Leaf)) { throw "once.order: không thấy file $rel" }
+            $file = Get-Item -LiteralPath $path
+            if (Get-MigrationRecord $file) { continue }
+            if ($Adopt) {
+                Set-MigrationRecord $file "ADOPT"
+                Write-Host "  = Ghi nhận (ADOPT) chuyển đổi $rel"
+            } else {
+                Invoke-Sql $Database $file.FullName
+                Set-MigrationRecord $file "RUN"
+                Write-Host "  + Chuyển đổi 1 lần: $rel"
+            }
+        }
+    } finally { $script:MigPrefix = $saved }
+}
