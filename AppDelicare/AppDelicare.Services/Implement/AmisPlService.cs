@@ -34,6 +34,10 @@ namespace AppDelicare.Services.Implement
         public decimal? TotalAssetsBegin { get; set; }
         public decimal? EquityEnd { get; set; }
         public decimal? EquityBegin { get; set; }
+        /// <summary>RPT-1.5 (đối chiếu): mã 100 tài sản ngắn hạn, 200 tài sản dài hạn, 440 tổng nguồn vốn – cuối kỳ.</summary>
+        public decimal? ShortTermAssetsEnd { get; set; }
+        public decimal? LongTermAssetsEnd { get; set; }
+        public decimal? TotalSourcesEnd { get; set; }
     }
 
     public sealed class AmisPlImportRequest
@@ -125,6 +129,7 @@ namespace AppDelicare.Services.Implement
         public static List<AmisPlRule> DefaultRules() =>
         [
             R("511", "sang", "Bữa sáng"), R("511", "trua", "Bữa trưa"), R("511", "toi", "Bữa tối"), R("511", "dem", "Bữa đêm"),
+            R("511", "com suat", "Cơm suất"), R("511", "50.000|50000|50k", "Suất ăn 50.000"), R("511", "com trang", "Cơm trắng"), R("511", "giam tru", "Giảm trừ doanh thu"),
             R("621", "lon|heo|ba chi|nac vai|suon|chan gio", "Thịt lợn"), R("621", "bo ", "Thịt bò"), R("621", "trau", "Thịt trâu"), R("621", "ga |vit|canh ga|dui ga|uc ga", "Thịt gia cầm"),
             R("621", "ca |tom|muc|ngao|hai san", "Thủy hải sản"), R("621", "trung", "Trứng"), R("621", "gao", "Gạo"), R("621", "cha |gio ", "Giò chả"),
             R("621", "muoi|hat nem|mi chinh|duong|nuoc mam|dau an|dau hao|tuong|bot canh|tieu|toi |hanh kho", "Gia vị"), R("621", "chuoi|cam |tao|dua hau|buoi|thanh long|hoa qua", "Hoa quả"),
@@ -320,12 +325,13 @@ namespace AppDelicare.Services.Implement
             {
                 void Put(string k, decimal? v) { if (v is { } x) values[$"{Prefix}{k}"] = x; }
                 Put("TOTAL_ASSETS_END", b.TotalAssetsEnd); Put("TOTAL_ASSETS_BEGIN", b.TotalAssetsBegin); Put("EQUITY_END", b.EquityEnd); Put("EQUITY_BEGIN", b.EquityBegin);
+                Put("ST_ASSETS_END", b.ShortTermAssetsEnd); Put("LT_ASSETS_END", b.LongTermAssetsEnd); Put("TOTAL_SOURCES_END", b.TotalSourcesEnd);
             }
 
             // Ghi đè số của các tài khoản / bảng cân đối có trong lần nhập (mã cũ của tài khoản đó không còn → xóa mềm).
             var existing = await db.KpiMonthlySnapshot.Where(k => k.SnapshotMonth == m0 && k.BranchId == null && k.MetricCode.StartsWith(Prefix) && !k.IsDeleted).ToListAsync();
             bool Owned(string code) => accounts.Any(a => code == $"{Prefix}ACC_{a}" || code.StartsWith($"{Prefix}I{a}_", StringComparison.Ordinal))
-                || (request.Balance != null && (code.StartsWith($"{Prefix}TOTAL_ASSETS_", StringComparison.Ordinal) || code.StartsWith($"{Prefix}EQUITY_", StringComparison.Ordinal)));
+                || (request.Balance != null && BalanceCodes.Any(b => code.StartsWith(Prefix + b, StringComparison.Ordinal)));
             foreach (var k in existing.Where(k => Owned(k.MetricCode) && !values.ContainsKey(k.MetricCode)))
             {
                 k.IsDeleted = true; k.ModifiedDate = now; k.ModifiedBy = actor.UserId;
@@ -386,6 +392,9 @@ namespace AppDelicare.Services.Implement
                 + (unclassified.Count > 0 ? $" · {unclassified.Count} nhóm dòng chưa phân loại (tính vào Khác) – thêm quy tắc rồi nhập lại" : string.Empty));
             return Result<AmisPlMonthModel>.Success(res, res.Messages[0]);
         }
+
+        /// <summary>Mã bảng cân đối (tiền tố) – nhập B01 = ghi đè cả nhóm.</summary>
+        private static readonly string[] BalanceCodes = ["TOTAL_ASSETS_", "EQUITY_", "ST_ASSETS_", "LT_ASSETS_", "TOTAL_SOURCES_"];
 
         private static string? Cut(string? s, int n) => s == null ? null : s.Length <= n ? s : s[..n];
 
@@ -460,6 +469,7 @@ namespace AppDelicare.Services.Implement
                 "REVENUE" => "Doanh thu", "COGS" => "Giá vốn hàng bán", "GROSS_PROFIT" => "Lợi nhuận gộp", "SELLING_ADMIN" => "Chi phí bán hàng & quản lý", "NET_OPERATING" => "Lợi nhuận thuần",
                 "OTHER_INCOME" => "Thu nhập khác", "OTHER_EXPENSE" => "Chi phí khác", "PROFIT_BEFORE_TAX" => "Lợi nhuận trước thuế", "ROA" => "ROA (theo tháng)", "ROE" => "ROE (theo tháng)",
                 "TOTAL_ASSETS_END" => "Tổng tài sản cuối kỳ", "TOTAL_ASSETS_BEGIN" => "Tổng tài sản đầu kỳ", "EQUITY_END" => "Vốn chủ sở hữu cuối kỳ", "EQUITY_BEGIN" => "Vốn chủ sở hữu đầu kỳ",
+                "ST_ASSETS_END" => "Tài sản ngắn hạn cuối kỳ", "LT_ASSETS_END" => "Tài sản dài hạn cuối kỳ", "TOTAL_SOURCES_END" => "Tổng nguồn vốn cuối kỳ",
                 _ => k,
             };
         }
@@ -567,7 +577,7 @@ namespace AppDelicare.Services.Implement
             return (first, month, lines);
         }
 
-        /// <summary>Bảng cân đối B01-DN: cột "Mã số", "Số cuối kỳ", "Số đầu kỳ" – mã 280 (tổng tài sản), 400 (vốn chủ sở hữu).</summary>
+        /// <summary>Bảng cân đối B01-DN: cột "Mã số", "Số cuối kỳ", "Số đầu kỳ" – mã 280 (tổng tài sản), 400 (vốn chủ sở hữu); RPT-1.5 đối chiếu: 100, 200, 440 (cuối kỳ).</summary>
         public static AmisBalance ReadBalance(IXLWorksheet ws)
         {
             var used = ws.RangeUsed()!;
@@ -588,6 +598,9 @@ namespace AppDelicare.Services.Implement
                 string ma = ws.Cell(r, cMa).GetString().Trim();
                 if (ma == "280") { b.TotalAssetsEnd = Num(ws.Cell(r, cEnd)); b.TotalAssetsBegin = cBeg > 0 ? Num(ws.Cell(r, cBeg)) : null; }
                 if (ma == "400") { b.EquityEnd = Num(ws.Cell(r, cEnd)); b.EquityBegin = cBeg > 0 ? Num(ws.Cell(r, cBeg)) : null; }
+                if (ma == "100") b.ShortTermAssetsEnd = Num(ws.Cell(r, cEnd));
+                if (ma == "200") b.LongTermAssetsEnd = Num(ws.Cell(r, cEnd));
+                if (ma == "440") b.TotalSourcesEnd = Num(ws.Cell(r, cEnd));
             }
             return b;
         }

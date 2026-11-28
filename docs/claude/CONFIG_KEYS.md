@@ -127,6 +127,8 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:Pl:ItemMinAmount` | decimal | 10_000_000m | … và tăng ít nhất bao nhiêu đồng (bỏ khoản nhỏ). | – |
 | `BusinessRules:Pl:MarginWarnPct` | decimal | 5m | Biên lợi nhuận trước thuế dưới bao nhiêu % doanh thu thì cảnh báo. | – |
 | `BusinessRules:Pl:FoodCostWarnPct` | decimal | 55m | % NVL / doanh thu (lớp tạm tính) trên bao nhiêu thì cảnh báo. | – |
+| `BusinessRules:Pl:UnclassifiedWarnPct` | decimal | 15m | RPT-1.5 đối chiếu: phần "khác / chưa phân loại" của 1 tài khoản (621, 627, 641, 642) từ bao nhiêu % thì cảnh báo. | – |
+| `BusinessRules:Pl:EstRevenueGapPct` | decimal | 5m | RPT-1.5 đối chiếu: doanh thu sổ AMIS lệch doanh thu Delicare (tạm tính) từ bao nhiêu % thì cảnh báo. | – |
 | `BusinessRules:OrderCutoffHourPreviousDay` | int | 20 | – | – |
 | `BusinessRules:OrderLockJobTime` | string | "20:00" | – | – |
 | `BusinessRules:MrpJobTime` | string | "20:30" | – | – |

@@ -192,3 +192,16 @@ Tab thứ 4 của **Bảng điều hành**, chỉ **CEO, COO, FIN-IT, Kế toán
 - Đầu khung **Báo cáo kết quả kinh doanh**: **Nhận xét tự động** (✓ tốt · ⚠ cần chú ý · • thông tin): doanh thu tăng / giảm so tháng trước và cùng kỳ, giá vốn tăng nhanh hơn doanh thu, % giá vốn / doanh thu, lợi nhuận trước thuế và biên lợi nhuận, **3 khoản chi phí tăng mạnh nhất**. Chưa có số AMIS → nhận xét theo số tạm tính (doanh thu, % NVL / doanh thu, nhóm NVL tăng mạnh).
 - Ngưỡng ở cấu hình `BusinessRules:Pl` (IT / Kế toán đề xuất chỉnh): doanh thu đổi ≥ 5 % mới nêu; giá vốn nhanh hơn doanh thu ≥ 2 điểm %; khoản chi phí tăng ≥ 20 % và ≥ 10 triệu; biên lợi nhuận trước thuế < 5 %; % NVL / doanh thu (tạm tính) > 55 %.
 - **Xuất Excel** / **In PDF** (người có quyền Xuất – CEO, COO, FIN-IT, Kế toán): báo cáo KQKD tháng + lũy kế (% doanh thu), nhận xét, thẻ chỉ số, trang 2 theo quý; tên tệp `Ket-qua-kinh-doanh-<yyyy-MM>`.
+
+### Đối chiếu số liệu + ROA / ROE quy năm (RPT-1.5, 28/11/2026)
+
+- Dưới khung Nhận xét: **Đối chiếu số liệu tháng** (có khi đã nhập sổ AMIS) – hệ thống tự soát thay các kiểm tay trên file Excel:
+  - **Thiếu sổ** 511 / 621 / 622 / 627 / 641 / 642 → chưa đủ để tính giá vốn / lợi nhuận.
+  - **Doanh thu (TK 511) chưa xếp được vào bữa** (vd diễn giải lạ "Doanh thu 817 suất cơm…") – vẫn tính vào tổng doanh thu, nhưng cần thêm quy tắc phân loại.
+  - Phần **"khác / chưa phân loại"** của 621 / 627 / 641 / 642 từ **15 %** số của tài khoản → thêm quy tắc phân loại.
+  - **Doanh thu sổ AMIS lệch doanh thu Delicare** (suất đã giao × giá) từ **5 %** → soát hóa đơn chưa xuất / xuất trùng / giảm trừ.
+  - **Bảng cân đối**: chưa nhập (chưa có ROA / ROE); tài sản dài hạn âm; tổng tài sản khác tổng nguồn vốn; số đầu kỳ khác số cuối kỳ tháng trước.
+  - Không có gì bất thường → "✓ Đối chiếu không thấy bất thường".
+- Bảng KQKD thêm **ROA / ROE quy năm (tháng × 12)** cạnh ROA / ROE tháng – để so với mức năm (không phải số thực tế cả năm).
+- Cách tính hệ thống (đã soát với file kế toán 08/2026): ROA / ROE = lợi nhuận trước thuế ÷ **bình quân** (đầu kỳ + cuối kỳ) tổng tài sản / vốn chủ sở hữu; lợi nhuận thuần theo quý = lợi nhuận gộp − chi phí bán hàng & quản lý (không trừ chi phí khác 811); % tăng so tháng trước chia cho **tháng trước**. Số trên file Excel có thể khác ở 3 chỗ này cho đến khi Kế toán sửa công thức file.
+- Ngưỡng ở `BusinessRules:Pl`: `UnclassifiedWarnPct` (15), `EstRevenueGapPct` (5).
