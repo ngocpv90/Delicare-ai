@@ -22,5 +22,11 @@ namespace AppDelicare.Model.Option
 
         /// <summary>% NVL / doanh thu (lớp tạm tính) trên bao nhiêu thì cảnh báo.</summary>
         public decimal FoodCostWarnPct { get; set; } = 55m;
+
+        /// <summary>RPT-1.5 đối chiếu: phần "khác / chưa phân loại" của 1 tài khoản (621, 627, 641, 642) từ bao nhiêu % số của tài khoản thì cảnh báo.</summary>
+        public decimal UnclassifiedWarnPct { get; set; } = 15m;
+
+        /// <summary>RPT-1.5 đối chiếu: doanh thu sổ AMIS lệch doanh thu Delicare (tạm tính) từ bao nhiêu % thì cảnh báo.</summary>
+        public decimal EstRevenueGapPct { get; set; } = 5m;
     }
 }

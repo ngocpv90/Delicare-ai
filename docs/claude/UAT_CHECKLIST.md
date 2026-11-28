@@ -637,6 +637,16 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## RPT-1.5 – Đối chiếu số liệu KQKD + ROA / ROE quy năm (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | CEO (uat.ceo) | Bảng điều hành → Kết quả kinh doanh, tháng 08/2026 | Khối "Đối chiếu số liệu": ⚠ 641 khác 26,9 %; ⚠ tài sản dài hạn âm 160,6 trđ |
+| 2 | CEO | Cùng tháng, bảng KQKD | ROA 5 % · ROE 18,8 % (tháng); quy năm 59,6 % / 225,6 % |
+| 3 | Kế toán (uat.fin-acc) | Nhập sổ chỉ TK 511 cho 1 tháng mới | ⚠ "Chưa nhập sổ TK 621, 622, 627, 641, 642"; • chưa nhập bảng cân đối |
+| 4 | Kế toán | Nhập sổ 511 có dòng diễn giải lạ | ⚠ "… trđ doanh thu (TK 511) chưa xếp được vào bữa – … dòng, vd «…»" |
+| 5 | CEO | Xuất Excel / PDF tháng 08/2026 | Có các dòng "Đối chiếu: …" và ROA / ROE quy năm |
+
 ## RPT-1.4 – Nhận xét tự động + xuất Excel / PDF (D-140 h, 28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

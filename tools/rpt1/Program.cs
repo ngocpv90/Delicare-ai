@@ -7,7 +7,7 @@
 //   1. Sinh bảng quy tắc phân loại từ chính phân loại của Kế toán trong file: GVHB (621 → cột Phân loại_NVL; 627 → Phân loại), CP (641 / 642 / 811 → Phân loại)
 //      – mỗi diễn giải một quy tắc (nguyên cụm), đặt TRƯỚC các quy tắc đang có → Dashboard/SavePlRules.
 //   2. Mỗi tháng: dòng sổ 511 (DTBH), 621 / 622 / 627 (GVHB), 641 / 642 / 811 (CP), 711 (TNK – lấy số bút toán kết chuyển 911 vì sheet thiếu dòng phát sinh ở vài tháng),
-//      bảng cân đối mã 280 / 400 (Raw BCD – cuối kỳ = cột tháng, đầu kỳ = cột tháng trước) → Dashboard/ImportAmisLines (cùng quy tắc với nhập Excel AMIS).
+//      bảng cân đối mã 280 / 400 (+ 100 / 200 / 440 cho đối chiếu – RPT-1.5) (Raw BCD – cuối kỳ = cột tháng, đầu kỳ = cột tháng trước) → Dashboard/ImportAmisLines (cùng quy tắc với nhập Excel AMIS).
 //   3. So từng tháng với sheet Data_DB (Doanh thu, GVHB, Lợi nhuận gộp, Chi phí, Lợi nhuận ròng – triệu đồng) → KHỚP / LỆCH. --check: chỉ so, không ghi.
 using System.Globalization;
 using System.Net.Http.Headers;
@@ -37,6 +37,7 @@ var seen = new HashSet<string>();
 ReadLedger("DTBH", null);
 ReadLedger("GVHB", r => r.Acc == "621" ? r.Cell("Phân loại_NVL") : r.Acc == "627" ? r.Cell("Phân loại") : null);
 ReadLedger("CP", r => r.Cell("Phân loại"));
+ReadRevenueRules();
 var other = ReadOtherIncome();
 var balance = ReadBalance();
 var target = ReadTargets();
@@ -127,6 +128,20 @@ void ReadLedger(string sheet, Func<Row, string?>? classify)
     }
 }
 
+// RPT-1.5: 511 – dòng doanh thu theo bữa / loại suất của sheet YTD (cột D = diễn giải sổ, cột E = tên dòng) → quy tắc (đặt trước quy tắc mặc định).
+void ReadRevenueRules()
+{
+    var ws = wb.Worksheet("YTD");
+    for (int r = 7; r <= 18; r++)
+    {
+        string d = ws.Cell(r, 4).GetString().Trim(), e = ws.Cell(r, 5).GetString().Trim();
+        if (d.Length > 0 && e.Length > 0 && !int.TryParse(d, out _) && seen.Add("511|" + Fold(d)))
+        {
+            rules.Insert(0, new Rule("511", d, null, e == "Giảm trừ" ? "Giảm trừ doanh thu" : e));
+        }
+    }
+}
+
 Dictionary<int, decimal> ReadOtherIncome()
 {
     var ws = wb.Worksheet("TNK");
@@ -162,7 +177,7 @@ Dictionary<int, Balance> ReadBalance()
     foreach (var m in head.Keys.Where(k => Regex.IsMatch(k, @"^\d{6}$")).Select(int.Parse))
     {
         int prev = m % 100 == 1 ? m - 89 : m - 1;
-        res[m] = new Balance(Val("280", m), Val("280", prev), Val("400", m), Val("400", prev));
+        res[m] = new Balance(Val("280", m), Val("280", prev), Val("400", m), Val("400", prev), Val("100", m), Val("200", m), Val("440", m));
     }
     return res;
 }
@@ -227,7 +242,7 @@ static Dictionary<string, decimal> Derive(List<Line> ls)
 
 record Line(string account, string counterAccount, decimal debit, decimal credit, string? description, string? docNo);
 record Rule(string account, string? keyword, string? counter, string item);
-record Balance(decimal? totalAssetsEnd, decimal? totalAssetsBegin, decimal? equityEnd, decimal? equityBegin);
+record Balance(decimal? totalAssetsEnd, decimal? totalAssetsBegin, decimal? equityEnd, decimal? equityBegin, decimal? shortTermAssetsEnd, decimal? longTermAssetsEnd, decimal? totalSourcesEnd);
 
 record Row(IXLWorksheet Ws, int R, Dictionary<string, int> Head)
 {

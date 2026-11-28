@@ -47,6 +47,8 @@ namespace AppDelicare.Services.Implement
         public bool HasAmis { get; set; }
         /// <summary>RPT-1.4 (D-140 h): nhận xét tự động theo quy tắc (ngưỡng BusinessRules:Pl).</summary>
         public List<PlCommentModel> Comments { get; set; } = [];
+        /// <summary>RPT-1.5: đối chiếu số liệu tháng (thiếu sổ, dòng chưa phân loại, lệch doanh thu Delicare, bảng cân đối bất thường) – khi đã nhập sổ AMIS.</summary>
+        public List<PlCommentModel> Checks { get; set; } = [];
     }
 
     public sealed class PlCommentModel
@@ -75,6 +77,12 @@ namespace AppDelicare.Services.Implement
             ("REVENUE", "Doanh thu"), ("COGS", "Giá vốn hàng bán"), ("GROSS_PROFIT", "Lợi nhuận gộp"), ("SELLING_ADMIN", "Chi phí bán hàng & quản lý"), ("NET_OPERATING", "Lợi nhuận thuần"),
             ("OTHER_INCOME", "Thu nhập khác"), ("OTHER_EXPENSE", "Chi phí khác"), ("PROFIT_BEFORE_TAX", "Lợi nhuận trước thuế"), ("ROA", "ROA (theo tháng)"), ("ROE", "ROE (theo tháng)"),
         ];
+
+        /// <summary>Mã dòng tỷ lệ (%, không cộng lũy kế) – ROA / ROE tháng và quy năm (× 12, RPT-1.5).</summary>
+        public static readonly string[] RatioCodes = ["ROA", "ROE", "ROA_Y", "ROE_Y"];
+
+        /// <summary>6 sổ bắt buộc để tính lợi nhuận trước thuế (711 / 811 không phát sinh thì AMIS không xuất sổ).</summary>
+        private static readonly string[] Required = ["511", "621", "622", "627", "641", "642"];
 
         public async Task<IResult<PlReportModel>> GetReport(string? month)
         {
@@ -129,6 +137,10 @@ namespace AppDelicare.Services.Implement
             st.Add(Line("PROFIT_BEFORE_TAX", "Lợi nhuận trước thuế", 0));
             st.Add(Line("ROA", "ROA (theo tháng)", 1, ratio: true));
             st.Add(Line("ROE", "ROE (theo tháng)", 1, ratio: true));
+            // RPT-1.5: quy năm = tháng × 12 (đọc cạnh mức năm của ngân hàng / nhà đầu tư; không phải số cả năm).
+            PlStatementLine Year(string code, string name) { var b = st.Last(l => l.Code == code); return new() { Code = code + "_Y", Name = name, Level = 1, Month = b.Month * 12, PrevMonth = b.PrevMonth * 12 }; }
+            st.Add(Year("ROA", "ROA quy năm (tháng × 12)"));
+            st.Add(Year("ROE", "ROE quy năm (tháng × 12)"));
 
             // Theo quý của năm.
             for (int q = 1; q <= 4; q++)
@@ -149,6 +161,10 @@ namespace AppDelicare.Services.Implement
             foreach (var l in Items("627")) mix.Add(new AmisPlItemModel { Account = "627", Item = l.Name, Value = l.Month ?? 0 });
             model.CogsMix = [.. mix.Where(x => x.Value != 0).OrderByDescending(x => x.Value)];
             model.Comments = await CommentsAsync(model, m0);
+            if (model.HasAmis || Required.Any(x => Get(m0, A("ACC_" + x)) != null))
+            {
+                model.Checks = await ChecksAsync(m0, Get, A);
+            }
             return Result<PlReportModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
         }
 
@@ -245,6 +261,78 @@ namespace AppDelicare.Services.Implement
             return list;
         }
 
+        // ---------------------------------------------------------------- RPT-1.5 đối chiếu số liệu
+        /// <summary>
+        /// Soát số tháng sau khi nhập sổ AMIS (thay các kiểm tay của file báo cáo kế toán): thiếu sổ bắt buộc; doanh thu 511 chưa xếp được vào bữa;
+        /// phần "khác / chưa phân loại" của 621 / 627 / 641 / 642 từ ngưỡng; doanh thu AMIS lệch doanh thu Delicare (tạm tính) từ ngưỡng;
+        /// bảng cân đối: chưa nhập, tài sản dài hạn âm, tổng tài sản khác tổng nguồn vốn, tổng tài sản nhỏ hơn tài sản ngắn hạn, đầu kỳ khác cuối kỳ tháng trước.
+        /// </summary>
+        private async Task<List<PlCommentModel>> ChecksAsync(DateTime m0, Func<DateTime, string, decimal?> get, Func<string, string> a)
+        {
+            var list = new List<PlCommentModel>();
+            void Add(string level, string text) => list.Add(new PlCommentModel { Level = level, Text = text });
+            decimal? G(string k) => get(m0, a(k));
+            var missing = Required.Where(x => G("ACC_" + x) == null).ToList();
+            if (missing.Count > 0)
+            {
+                Add("warn", $"Chưa nhập sổ TK {string.Join(", ", missing)} – chưa đủ để tính giá vốn / lợi nhuận của tháng.");
+            }
+            var mon = (await amis.GetMonth(m0.ToString("yyyy-MM"))).Data;
+            var un = mon?.ListUnclassified ?? [];
+            if (G("I511_KHAC") is { } r511 && r511 != 0)
+            {
+                var u = un.Where(x => x.Account == "511").ToList();
+                Add("warn", $"{Tr(r511)} doanh thu (TK 511) chưa xếp được vào bữa{(u.Count > 0 ? $" – {u.Sum(x => x.Count)} dòng, vd «{u.OrderByDescending(x => Math.Abs(x.Amount)).First().Description}»" : string.Empty)}. Vẫn tính vào tổng doanh thu; thêm quy tắc phân loại để tách đúng bữa.");
+            }
+            foreach (var (acc, name) in new[] { ("621", "nguyên vật liệu"), ("627", "chi phí sản xuất chung"), ("641", "chi phí bán hàng"), ("642", "chi phí quản lý") })
+            {
+                if (G("ACC_" + acc) is { } tot && tot > 0 && G($"I{acc}_KHAC") is { } k && k != 0 && k / tot * 100m >= _o.UnclassifiedWarnPct)
+                {
+                    Add("warn", $"{Pc(k / tot * 100m)} {name} (TK {acc}, {Tr(k)}) đang ở nhóm «khác / chưa phân loại» – từ ngưỡng {Pc(_o.UnclassifiedWarnPct)} nên thêm quy tắc phân loại.");
+                }
+            }
+            if (G("REVENUE") is { } rev && get(m0, AmisPlService.EstPrefix + "REVENUE") is { } est && est > 0)
+            {
+                decimal gap = (rev - est) / est * 100m;
+                bool off = Math.Abs(gap) >= _o.EstRevenueGapPct;
+                Add(off ? "warn" : "good", off
+                    ? $"Doanh thu sổ AMIS {Tr(rev)} lệch doanh thu Delicare (suất đã giao × giá) {Tr(est)}: {(gap >= 0 ? "+" : "")}{Pc(gap)} – soát hóa đơn chưa xuất / xuất trùng / giảm trừ."
+                    : $"Doanh thu sổ AMIS khớp doanh thu Delicare trong ngưỡng {Pc(_o.EstRevenueGapPct)} ({(gap >= 0 ? "+" : "")}{Pc(gap)}).");
+            }
+            decimal? ta = G("TOTAL_ASSETS_END"), src = G("TOTAL_SOURCES_END"), lt = G("LT_ASSETS_END"), stA = G("ST_ASSETS_END");
+            if (ta == null && G("EQUITY_END") == null)
+            {
+                Add("info", "Chưa nhập bảng cân đối (B01-DN) – chưa tính ROA / ROE.");
+            }
+            else
+            {
+                if (lt is { } l && l < 0)
+                {
+                    Add("warn", $"Bảng cân đối: tài sản dài hạn (mã 200) âm {Tr(-l)} – thường do đã trích khấu hao mà chưa ghi nguyên giá TSCĐ; báo Kế toán soát.");
+                }
+                if (ta is { } t && src is { } so && Math.Abs(t - so) >= 1000)
+                {
+                    Add("warn", $"Bảng cân đối không cân: tổng tài sản (280) {Tr(t)} khác tổng nguồn vốn (440) {Tr(so)}.");
+                }
+                if (ta is { } t2 && stA is { } s2 && t2 < s2 && (lt ?? 0) >= 0)
+                {
+                    Add("warn", $"Bảng cân đối: tổng tài sản {Tr(t2)} nhỏ hơn tài sản ngắn hạn {Tr(s2)}.");
+                }
+                foreach (var (k, n) in new[] { ("TOTAL_ASSETS", "tổng tài sản"), ("EQUITY", "vốn chủ sở hữu") })
+                {
+                    if (G(k + "_BEGIN") is { } b && get(m0.AddMonths(-1), a(k + "_END")) is { } pe && Math.Abs(b - pe) >= 1000)
+                    {
+                        Add("warn", $"Số đầu kỳ {n} {Tr(b)} khác số cuối kỳ tháng {m0.AddMonths(-1):MM/yyyy} {Tr(pe)} – ROA / ROE (bình quân đầu + cuối kỳ) sẽ lệch.");
+                    }
+                }
+            }
+            if (!list.Any(x => x.Level == "warn"))
+            {
+                list.Insert(0, new PlCommentModel { Level = "good", Text = "Đối chiếu không thấy bất thường." });
+            }
+            return list;
+        }
+
         // ---------------------------------------------------------------- RPT-1.4 xuất Excel / PDF
         public async Task<IResult<FileContentModel>> Export(string? month, string? format)
         {
@@ -269,13 +357,14 @@ namespace AppDelicare.Services.Implement
             };
             foreach (var l in rep.Statement.Where(l => l.Level < 2 || l.Month != null || l.Ytd != null))
             {
-                bool ratio = l.Code is "ROA" or "ROE";
+                bool ratio = RatioCodes.Contains(l.Code);
                 string ind = new(' ', l.Level * 3);
                 doc.ListRow.Add(ratio
                     ? [ind + l.Name, l.Month is { } rv ? rv.ToString("0.00", CultureInfo.GetCultureInfo("vi-VN")) + "%" : "–", "", "", ""]
                     : [ind + (l.Level == 0 ? l.Name.ToUpperInvariant() : l.Name), Mn(l.Month), Pp(l.Month, revRow?.Month), Mn(l.Ytd), Pp(l.Ytd, revRow?.Ytd)]);
             }
             doc.ListNote.AddRange(rep.Comments.Select(c => (c.Level == "warn" ? "⚠ " : c.Level == "good" ? "✓ " : "• ") + c.Text));
+            doc.ListNote.AddRange(rep.Checks.Select(c => "Đối chiếu: " + (c.Level == "warn" ? "⚠ " : c.Level == "good" ? "✓ " : "• ") + c.Text));
             if (cards != null)
             {
                 doc.ListNote.Add("Thẻ chỉ số: " + string.Join(" · ", cards.ListCard.Where(c => c.Value != null).Select(c => $"{c.Name} {(c.Unit == "PCT" ? c.Value!.Value.ToString("0.0", CultureInfo.GetCultureInfo("vi-VN")) + "%" : c.Unit == "MEAL" ? c.Value!.Value.ToString("#,0", CultureInfo.GetCultureInfo("vi-VN")) + " suất" : Mn(c.Value) + " trđ")}")));
